@@ -111,7 +111,7 @@
 |---|---|---|
 | `unknown_package` | 没有这个包 | |
 | `package_invalid` | 清单写错了 | `problem`、`line` |
-| `package_conflict`、`package_exists`、`package_id_taken`、`package_required` | 带的名字撞了；和出厂的同编号；编号和已有的账号重名；卸必需的 | |
+| `package_conflict`、`package_exists`、`package_id_taken` | 带的名字撞了；和出厂的同编号；编号和已有的账号重名 | |
 | `package_file_bad`、`wrong_target` | 包文件解不开；清单写的 `targets` 里没有本机这一种系统 | |
 | `download_failed`、`source_unreachable` | 从软件源装：包文件哪一处都没下成；软件源一处都没连上，本机也没有索引 | `why` |
 | `depends_missing`、`package_depended` | 依赖没装；别的包依赖它 | `missing`、`by` |

@@ -60,7 +60,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 | 必需的、界面、小程序、吉祥物包，只带技能、脚本的 `bundle`（施工 X-13 上） | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
-2. 没有的包 `unknown_package`；程序不在的 `program_missing`；必需的 `package_required`。
+2. 没有的包 `unknown_package`；程序不在的 `program_missing`（施工 BS-1 上中起没有必需的包）。
 3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
 
 ### `config.schema` 里包的配置项

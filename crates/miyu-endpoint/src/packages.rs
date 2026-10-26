@@ -147,7 +147,31 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     if !peer.admin {
         items.iter_mut().for_each(for_members);
     }
-    Ok(json!({ "packages": items }))
+    Ok(json!({ "packages": items, "groups": group_table(core, peer.language) }))
+}
+
+/// 回应顶上的 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表里的每个组，编号、名字、说明照连接的语言挑。组表读不成
+/// 的记一行、当没有。
+fn group_table(core: &Core, language: &str) -> Vec<Value> {
+    let path = core.resources.path().join("packages").join("groups.toml");
+    let groups = match std::fs::read_to_string(&path) {
+        Ok(text) => miyu_config::package::groups::read(&text).unwrap_or_else(|error| {
+            tracing::warn!(target: TARGET, error = %error, "package groups not read");
+            Vec::new()
+        }),
+        Err(_) => Vec::new(),
+    };
+    groups
+        .iter()
+        .map(|group| {
+            let mut shown =
+                json!({"id": group.id, "name": crate::personas::pick(&group.name, language)});
+            if let Some(summary) = crate::personas::pick(&group.summary, language) {
+                shown["summary"] = json!(summary);
+            }
+            shown
+        })
+        .collect()
 }
 
 /// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）；装着的、卸掉了的出厂的都有，都不是的没有。
@@ -166,8 +190,8 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
 /// 的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法（可能带
 /// 环境变量、请求头）、读坏了的原话（`problem`、`line`）只给管理员。
 const FOR_MEMBERS: &[&str] = &[
-    "package", "layer", "removed", "kind", "name", "version", "summary", "icon", "from",
-    "features", "contents", "status", "enabled", "page", "code", "missing",
+    "package", "layer", "removed", "kind", "name", "groups", "version", "summary", "icon", "from",
+    "author", "upstream", "features", "contents", "status", "enabled", "page", "code", "missing",
 ];
 
 /// 把一项删到 [`FOR_MEMBERS`] 那几格。

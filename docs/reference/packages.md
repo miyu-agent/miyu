@@ -31,7 +31,7 @@
 
 ## `package.list`
 
-**参数**：没有。**回应**：`{"packages": [...]}`，照编号排。一项：
+**参数**：没有。**回应**：`{"packages": [...], "groups": [...]}`：包照编号排；组是出厂组表里的组，每个 `{"id", "name", "summary"?}`，照连接的语言（头照它把组里的包收在一起）。一项：
 
 | 名字 | 说明 |
 |---|---|
@@ -41,7 +41,7 @@
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
 | `from` | 从哪来：`shipped`（出厂）、`official`（从官方软件源装的）、`local`（本机文件夹、包文件装的）；以后有了社区软件源再多 `community` |
 | `version`、`protocol`、`state` | 版本、说的协议版本、状态 |
-| `required` | 必需的，卸不了 |
+| `groups` | 在哪几个组里（只有出厂的内置包有，`basesystem` 是基础系统）；不在组里的没有 |
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `page` | 有后台页的 |
@@ -90,7 +90,6 @@
 | `package_file_bad` | 包文件解不开 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
 | `wrong_target` | 清单写了 `targets`，里面没有本机这一种系统 |
-| `package_required` | 卸必需的 |
 | `depends_missing` | 依赖的包没装，`data.missing` |
 | `package_depended` | 别的装着的包依赖它，`data.by` |
 | `unknown_package` | 没装的、没卸过的 |
@@ -132,7 +131,7 @@
 
 - 扩展：开是拉起进程，关是请它退出、它登记的工具出目录。
 - `bundle`：开是起它带的 MCP 服务，关是停下。
-- 出厂的、不是必需的内置包：关是卸掉，开是装回来。
+- 出厂的内置包：关是卸掉，开是装回来。
 - `restart`：重启扩展的进程和它带的 MCP 服务，连续失败从零数。
 
 **出错**
@@ -140,7 +139,6 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `unknown_package` | 没有这个包 |
-| `package_required` | 关必需的 |
 | `not_switchable` | 界面、小程序、吉祥物包、主题包没有开关 |
 | `program_missing` | 包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有） |
 | `needs_approval` | 要的能力还有没批的，`data.capabilities` |

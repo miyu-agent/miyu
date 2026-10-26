@@ -15,6 +15,7 @@ mod content;
 mod credits;
 mod features;
 mod fields;
+pub mod groups;
 mod kinds;
 mod links;
 mod look;

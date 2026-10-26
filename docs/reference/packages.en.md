@@ -31,7 +31,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 
 ## `package.list`
 
-**Params**: none. **Response**: `{"packages": [...]}`, by id. An item:
+**Params**: none. **Response**: `{"packages": [...], "groups": [...]}`: the packages by id, and the groups in the shipped group table, each `{"id", "name", "summary"?}` in the connection's language (heads gather a group's packages under it). An item:
 
 | Name | Notes |
 |---|---|
@@ -41,7 +41,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
 | `from` | Where it came from: `shipped`, `official` (installed from the official software source), `local` (a local folder or package file); `community` will join once community sources exist |
 | `version`, `protocol`, `state` | Version, protocol it speaks, state |
-| `required` | Required; can't be removed |
+| `groups` | The groups it is in (only shipped built-in packages have them; `basesystem` is the base system); absent when none |
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `page` | Has a package page |
@@ -90,7 +90,6 @@ Install and remove take effect at once: processes start or stop per their switch
 | `package_file_bad` | The package file can't be unpacked |
 | `download_failed` | Installing from the package source, the file couldn't be downloaded anywhere (a size or hash mismatch counts); `data.why` lists each place's reason |
 | `wrong_target` | The manifest lists `targets` and this system isn't one of them |
-| `package_required` | Removing a required package |
 | `depends_missing` | A dependency isn't installed, `data.missing` |
 | `package_depended` | Another installed package depends on it, `data.by` |
 | `unknown_package` | Not installed, or never removed |
@@ -132,7 +131,7 @@ Upgrade from the package source. Only packages installed from the source are tou
 
 - Extensions: on starts the process; off asks it to exit and its tools leave the catalog.
 - `bundle`: on starts its MCP servers; off stops them.
-- Built-in packages that aren't required: off removes it, on installs it back.
+- Shipped built-in packages: off removes it, on installs it back.
 - `restart`: restarts the extension process and its MCP servers; the failure count starts over.
 
 **Errors**
@@ -140,7 +139,6 @@ Upgrade from the package source. Only packages installed from the source are tou
 | `data.reason` | When |
 |---|---|
 | `unknown_package` | No such package |
-| `package_required` | Turning off a required one |
 | `not_switchable` | UI, worker, mascot and theme packages have no switch |
 | `program_missing` | The package's program wasn't found (neither in the package folder's `bin/` nor next to `miyu`) |
 | `needs_approval` | Capabilities still need approval, `data.capabilities` |

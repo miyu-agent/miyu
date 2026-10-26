@@ -15,6 +15,10 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
         item["protocol"] = json!(protocol);
     }
     item["name"] = json!(pick(&manifest.name, language));
+    // 归哪几个组（施工 BS-1 下）：头照它把组里的包收在一起。
+    if !manifest.groups.is_empty() {
+        item["groups"] = json!(manifest.groups);
+    }
     if let Some(version) = &manifest.version {
         item["version"] = json!(version);
     }
