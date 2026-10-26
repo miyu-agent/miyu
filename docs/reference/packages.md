@@ -71,7 +71,9 @@
 | `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 同 `package.list` 的一项 |
 | `package.install` | `package`：出厂包的编号是把卸掉的装回来；别的编号同 `source`，从软件源装 | 同上 |
 | `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接 | 同上，一起装了依赖的多 `with` |
+| `package.install` | `package`：组名（`package.list` 顶上的 `groups`，例如 `basesystem`）是把组里卸掉的出厂包一起装回来 | `{"group", "packages": [<同 `package.list` 的一项>…]}`，一个都没卸过的是空的 |
 | `package.remove` | `package` | `{"package", "removed": true}` |
+| `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们） | `{"group", "removed": [<编号>…]}` |
 
 都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
 

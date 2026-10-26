@@ -3,6 +3,14 @@
 use super::Language;
 
 impl Language {
+    /// 装回、卸掉整个组（施工 BS-1 下中）时组里没有要动的包。
+    pub(crate) fn nothing_in_group(&self, group: &str) -> String {
+        match self {
+            Language::Chinese => format!("{group} 里没有要动的包"),
+            Language::English => format!("Nothing to do in {group}"),
+        }
+    }
+
     /// 第一行：将安装、将装回、将卸载哪个包（带版本的接版本）。
     pub(crate) fn will(&self, doing: Doing, id: &str) -> String {
         match (self, doing) {

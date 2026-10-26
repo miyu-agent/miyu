@@ -6,6 +6,7 @@
 //! `check` 查出改了少了的也是 1（照 pacman）；参数写错的 2，由 clap 管。
 
 mod confirm;
+mod group;
 mod install;
 mod open;
 mod pack;
@@ -31,7 +32,7 @@ use miyu_store::root::DataRoot;
 
 use crate::ask::Format;
 use crate::exit;
-use crate::language::{self, Doing, Language};
+use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{offset, say};
@@ -292,15 +293,7 @@ async fn act(
             install::run(rpc, plan, params, (input, out, err)).await
         }
         PkgCommand::Remove { package } => {
-            let params = json!({"package": package});
-            if !plan.args.yes {
-                let shown = ask(rpc, "package.remove", previewed(&params), language, err).await?;
-                lines(out, confirm::plan(&shown, Doing::Remove, language));
-                confirm::asked(input, out, err, Doing::Remove, language)?;
-            }
-            let result = ask(rpc, "package.remove", params, language, err).await?;
-            say(out, &language.uninstalled(package_of(&result)));
-            Ok(())
+            group::remove(rpc, plan, &package, (input, out, err)).await
         }
         PkgCommand::Info { package } => {
             let params = json!({"package": package});

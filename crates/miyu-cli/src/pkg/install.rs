@@ -21,6 +21,16 @@ pub(super) async fn run(
     let language = &plan.language;
     // 看一眼：没写 `--yes` 的印出来、问一句；要的能力装好以后打开时一并批（作者说明第九节第 1 条）。
     let shown = ask(rpc, "package.install", previewed(&params), language, err).await?;
+    // 写的是组名的（施工 BS-1 下中）：组里卸掉了的一起装回来。
+    if super::group::is_group(&shown) {
+        return super::group::run(
+            rpc,
+            plan,
+            ("package.install", params, &shown),
+            (input, out, err),
+        )
+        .await;
+    }
     let download = shown["download"].as_u64();
     if !plan.args.yes {
         let doing = match (params.get("path"), download) {

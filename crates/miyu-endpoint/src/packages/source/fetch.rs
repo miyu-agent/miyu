@@ -71,10 +71,14 @@ pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
         params.get("package").and_then(Value::as_str),
         params.get("path"),
     ) {
-        (Some(id), None) => !Packages::shipped(&core.resources)
-            .read()
-            .iter()
-            .any(|shipped| shipped.id == id),
+        // 组名（施工 BS-1 下中）照装回出厂的那一路走。
+        (Some(id), None) => {
+            !Packages::shipped(&core.resources)
+                .read()
+                .iter()
+                .any(|shipped| shipped.id == id)
+                && !crate::packages::group::is_group(core, id)
+        }
         _ => false,
     }
 }

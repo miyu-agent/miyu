@@ -26,6 +26,10 @@ pub(crate) async fn call(
         "package.install" if super::source::fetch::wanted(core, &request.params) => {
             super::source::fetch::install(core, peer, Some(&caller.reverse), params(request)?).await
         }
+        // 写组名的（施工 BS-1 下中）：整组装回、卸掉。
+        "package.install" | "package.remove" if super::group::named(core, &request.params) => {
+            super::group::call(core, peer, &request.method, params(request)?).await
+        }
         "package.install" => super::manage::install(core, peer, params(request)?).await,
         "package.remove" => super::manage::remove(core, params(request)?).await,
         "package.info" => super::local::info(core, params(request)?).await,

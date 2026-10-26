@@ -26,6 +26,7 @@ mod oobe;
 mod packages;
 mod packages_live;
 mod pkg;
+mod pkg_group;
 mod pkg_pack;
 mod pkg_session;
 mod recap;

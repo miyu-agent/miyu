@@ -71,7 +71,9 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 | `package.install` | `path`: absolute path to a local package folder (the folder name is the id), to its `package.toml`, or to a `.miyu` package file | An item as in `package.list` |
 | `package.install` | `package`: a built-in id installs the removed package back; any other id is the same as `source`, from the package source | The same |
 | `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
+| `package.install` | `package`: a group id (from `groups` at the top of `package.list`, such as `basesystem`) installs back all of its removed shipped packages | `{"group", "packages": [<an item as in `package.list`>…]}`, empty when none was removed |
 | `package.remove` | `package` | `{"package", "removed": true}` |
+| `package.remove` | `package`: a group id removes all of its installed packages; refused as a whole when an installed package outside the group depends on one (`package_depended`, `data.by` names them) | `{"group", "removed": [<id>…]}` |
 
 Both take `preview: true`: look without changing anything, refused the same way the real thing would be. The install preview returns `package`, `version`, `replaces: {"version"}` when replacing, `restores: true` for a built-in coming back, and what it carries (`program`, `mcp`, `command` (the first subcommand name), `commands` (every subcommand name), `page`, `mascot`, `theme`, `connection`, `system_account`, `settings`, `capabilities`, `files`, `size`); the remove preview returns `package`, `layer`, `version`, `files`, `size`, `settings` (config keys removed along with it) and `state` (whether it has a state directory).
 

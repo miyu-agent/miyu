@@ -845,6 +845,7 @@ flowchart LR
 | BS-1 中下 | 会话里的 `miyu pkg` 走通道 | 看见 `MIYU_CALL_SOCK` 的经通道发 `op: "pkg"`、不连协议；子命令换成调 `packages`、`package`（`info` 写路径的看文件夹），只在本机做的说 `pkg-unavailable.txt`；不认 `--yes`、`--system`；`call.rs` 拆出 `exchange`；`package-creator`、`skill-creator` 改用 `miyu pkg`；设计 44 更正没有 `enable`、`disable` | `BS-1中下-会话里的miyu-pkg走通道.md` |
 | U23-R | 成员读软件包列表 | 成员名单加 `package.list`，每一项只留名字、说明、种类、状态、开没开这些（`FOR_MEMBERS`），路径、程序、MCP 服务、原话只给管理员；软件包的流照旧不给成员 | `U23-R-成员读软件包列表.md` |
 | BS-1 下上 | 软件包列表带组 | 组表读法 `package::groups::read`；`package.list` 每一项多 `groups`、顶上多 `groups`（照连接的语言）；成员也看得到，补 `author`、`upstream`；出厂清单的组都在组表里；参考文档删掉漏改的 `required`、`package_required` | `BS-1下上-软件包列表带组.md` |
+| BS-1 下中 | 装卸整个组 | `package.install`、`package.remove` 写组名：装回组里卸掉的、卸掉组里装着的（组外依赖的整个拒，组里照依赖先后）；看一眼回会动的那几个；`miyu pkg install|remove <组>` 印计划、问一句、一个一行 | `BS-1下中-整组装卸.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |

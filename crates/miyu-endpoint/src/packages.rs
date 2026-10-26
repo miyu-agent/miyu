@@ -23,6 +23,7 @@ pub(crate) mod changes;
 pub(crate) mod depends;
 pub(crate) mod fill;
 mod folder;
+pub(crate) mod group;
 pub(crate) mod left;
 pub(crate) mod local;
 pub(crate) mod manage;
@@ -153,14 +154,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
 /// 回应顶上的 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表里的每个组，编号、名字、说明照连接的语言挑。组表读不成
 /// 的记一行、当没有。
 fn group_table(core: &Core, language: &str) -> Vec<Value> {
-    let path = core.resources.path().join("packages").join("groups.toml");
-    let groups = match std::fs::read_to_string(&path) {
-        Ok(text) => miyu_config::package::groups::read(&text).unwrap_or_else(|error| {
-            tracing::warn!(target: TARGET, error = %error, "package groups not read");
-            Vec::new()
-        }),
-        Err(_) => Vec::new(),
-    };
+    let groups = group::table(core);
     groups
         .iter()
         .map(|group| {

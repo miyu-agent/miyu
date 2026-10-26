@@ -11,6 +11,25 @@ use crate::exit;
 use crate::language::{Carried, Doing, Language, PlanLabel};
 use crate::shown::{say, write};
 
+/// 装回、卸掉整个组看一眼的那一份（施工 BS-1 下中，核心回 `{"group", "packages": [<编号>…]}`）：一行说动哪个组，一行列这一次
+/// 会动的包。
+pub(crate) fn group_plan(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
+    let ids: Vec<&str> = preview["packages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect();
+    vec![
+        language.will(doing, preview["group"].as_str().unwrap_or_default()),
+        format!(
+            "{}{}",
+            language.plan_label(PlanLabel::Includes),
+            ids.join(language.list_separator())
+        ),
+    ]
+}
+
 /// 看一眼的回应 `preview` 印成几行：哪个包（版本、换下哪一份）、包含什么、读不成的（施工 X-13 补）、需要什么能力、一并删除
 /// 什么、多大。没有的那一行不印。
 pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {

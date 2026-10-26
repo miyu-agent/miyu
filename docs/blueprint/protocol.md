@@ -766,6 +766,8 @@
 
 **`package.install`、`package.remove`**（施工 F-5 上，`packages.md`「装卸」）
 
+写组名（施工 BS-1 下中，设计 44 第三节第 2 条，照 pacman）：`package` 是组表里的组、又不是哪个出厂包的编号的，`package.install` 把组里卸掉了的出厂包一个个装回来，回 `{"group", "packages": [<列表那一项>…]}`；`package.remove` 把组里装着的一个个卸掉（组里互相依赖的先卸依赖别人的），回 `{"group", "removed": [<编号>…]}`，组外装着的包依赖组里的整个拒 `package_depended`、什么都不卸。带 `preview` 的回 `{"group", "packages": [<编号>…]}`：这一次会装回、会卸掉的那几个，一个都没有的是空的。
+
 - `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装进管理员家目录那一层，同一个编号已经有的换成新的。回应同 `package.list` 的一项。
 - `package.install {"package"}`：编号是出厂包的，把卸掉的装回来（没卸的 `unknown_package`）；不是出厂包的照软件源装，同下一条 `{"source"}`（施工 G-4 下：装只有一个动词，核心判断走哪条路）。回应同 `package.list` 的一项。
 - `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。
