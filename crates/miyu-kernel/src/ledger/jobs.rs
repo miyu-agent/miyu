@@ -229,6 +229,7 @@ impl Jobs {
                 };
                 Some(JobStarted {
                     foreground,
+                    fork: false,
                     title: self.1.get(&job).cloned().unwrap_or_default(),
                     job,
                     what,

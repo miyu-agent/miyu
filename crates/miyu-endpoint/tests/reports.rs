@@ -143,6 +143,19 @@ async fn reports_come_up_one_layer_at_a_time() {
     home.until_turns(&parent, 2).await;
     let log = home.log(&parent);
     let child = started_child(&log);
+    // 普通子代理（施工 A-F 补）：会话表那一行不写 `forked`，任务表那一项不写 `fork`。
+    let listed = client.call("l1", "session.list", json!({})).await;
+    let row = listed["result"]["sessions"]
+        .as_array()
+        .and_then(|rows| rows.iter().find(|row| row["session"] == json!(child)))
+        .cloned()
+        .unwrap_or_else(|| panic!("列着子会话：{listed}"));
+    assert!(row.get("forked").is_none(), "{row}");
+    let watched = client.subscribe("w0", &parent).await;
+    assert!(
+        watched["result"]["jobs"][0].get("fork").is_none(),
+        "{watched}"
+    );
     let (event, reported) = the_report(&log);
     assert_eq!(event.by, By::Session(Session { id: child.clone() }));
     let woken = last_turn(&home.log(child.as_str()));

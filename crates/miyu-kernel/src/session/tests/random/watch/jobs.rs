@@ -43,6 +43,7 @@ impl Watch {
         };
         Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job,
             what,
             title: "t".to_string(),

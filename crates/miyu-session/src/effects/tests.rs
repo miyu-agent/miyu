@@ -215,6 +215,7 @@ fn a_started_job_passes_through_and_is_not_a_seen_file() {
     let scratch = Scratch::new();
     let started = JobStarted {
         foreground: false,
+        fork: false,
         job: miyu_kernel::id::JobId::new(1).unwrap(),
         what: JobKind::Command,
         title: "跑测试".to_string(),

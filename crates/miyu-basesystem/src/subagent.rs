@@ -180,6 +180,7 @@ impl Tool for Subagent {
                 .said(said("agent/started").with("job", &job).with("title", title))
                 .effect(Effect::JobStarted(JobStarted {
                     foreground: false,
+                    fork,
                     job: spawned.job,
                     what: JobKind::Agent,
                     title: args.description,

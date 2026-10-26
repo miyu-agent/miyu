@@ -75,4 +75,4 @@
 | `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推。无工具的会话 `preset` 是 `null`、另带 `no_tools: true`，同会话列表（施工 P-16 下补） |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |
-| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |
+| `jobs` | 这个会话直接派出去的任务（在跑的和最近做完的 20 个）：`{job, what, title, state, started, ended, session, command, exit_code, signal, why, nested, fork}`（`nested` 同 `tool` 的，脚本调过工具的后台命令才有；`fork` 只有 fork 子代理才有，是 `true`，头照它换图标），`state` 是 `running`、`done`、`failed`、`stopped`、`aborted` |

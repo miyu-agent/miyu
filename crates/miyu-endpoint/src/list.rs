@@ -123,6 +123,8 @@ pub(crate) struct Listed {
     pub(crate) dream: Option<Dream>,
     /// 从哪开的（施工 8-33 四补）：终端集成开的是 `terminal`，别的会话没有。
     pub(crate) origin: Option<String>,
+    /// fork 子代理（施工 A-F 补）：头照它换图标，写 `forked: true`；别的不写。
+    pub(crate) forked: bool,
 }
 
 impl Listed {
@@ -150,6 +152,7 @@ impl Listed {
             default_workspace: None,
             dream: row.dream,
             origin: row.origin,
+            forked: row.forked,
         }
     }
 
@@ -200,6 +203,10 @@ impl Listed {
         // 终端集成开的（施工 8-33 四补）：头的会话列表照它写「终端集成」。别的不写，字节不变。
         if let Some(origin) = &self.origin {
             item["origin"] = json!(origin);
+        }
+        // fork 子代理（施工 A-F 补）：头照它换图标。别的不写，字节不变。
+        if self.forked {
+            item["forked"] = json!(true);
         }
         context::write(&mut item, self);
         item

@@ -82,6 +82,7 @@ fn only_spawned_subagents_count_as_unclaimed() {
     let started = |n: &str, what: JobKind, session: Option<SessionId>| {
         Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: job(n),
             what,
             title: "查".to_string(),

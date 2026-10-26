@@ -181,6 +181,7 @@ impl Shell {
                     .said(said("shell/background").with("job", id))
                     .effect(Effect::JobStarted(JobStarted {
                         foreground: false,
+                        fork: false,
                         job,
                         what: JobKind::Command,
                         title: args.description,
@@ -231,6 +232,7 @@ impl Shell {
                     .said(said("shell/moved").with("job", id))
                     .effect(Effect::JobStarted(JobStarted {
                         foreground: false,
+                        fork: false,
                         job,
                         what: JobKind::Command,
                         title,

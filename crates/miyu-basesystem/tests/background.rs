@@ -87,6 +87,7 @@ async fn a_background_command_returns_at_once_and_keeps_running() {
         done.effects,
         [Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: JobId::new(7).unwrap(),
             what: JobKind::Command,
             title: "Count".to_string(),

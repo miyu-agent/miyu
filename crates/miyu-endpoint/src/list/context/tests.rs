@@ -28,6 +28,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         default_workspace: None,
         dream: None,
         origin: None,
+        forked: false,
     }
 }
 

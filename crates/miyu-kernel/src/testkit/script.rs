@@ -240,12 +240,26 @@ impl Play {
         Play::starts(job, title, JobKind::Agent, Some(session))
     }
 
+    /// 同 [`Play::starts_agent`]，派的是 fork 子代理（施工 A-F 补）：`job.started` 写 `fork`。
+    ///
+    /// # Panics
+    ///
+    /// 同 [`Play::starts_agent`]。
+    pub fn forks_agent(job: u64, title: &str, session: &str) -> Play {
+        let mut play = Play::starts_agent(job, title, session);
+        if let Play::Starts { started, .. } = &mut play {
+            started.fork = true;
+        }
+        play
+    }
+
     fn starts(job: u64, title: &str, what: JobKind, session: Option<SessionId>) -> Play {
         let job = JobId::new(job).unwrap_or_else(|| panic!("任务编号从 1 数起"));
         Play::Starts {
             text: format!("Started {job}."),
             started: JobStarted {
                 foreground: false,
+                fork: false,
                 job,
                 what,
                 title: title.to_string(),

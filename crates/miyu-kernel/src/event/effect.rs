@@ -132,6 +132,10 @@ pub struct JobStarted {
     /// 后台的、以前的日志不写。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub foreground: bool,
+    /// fork 子代理（施工 A-F 补，`agents.md`「一补、fork 子代理」）：从父会话这一轮派它的那一步分叉出来的。头照它换图标；
+    /// 普通子代理、后台命令、以前的日志不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fork: bool,
 }
 
 /// `job.messaged`：给自己派的子代理留了言（施工 7-7，`agents.md` 第六条）。子代理收到父会话的留言就欠一份回报，父会话

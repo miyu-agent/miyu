@@ -145,6 +145,7 @@ fn a_report_after_unreverting_an_edit_opens_a_turn_at_once() {
     if let Input::ToolDone { effects, .. } = &mut done {
         effects.push(Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: JobId::new(1).unwrap(),
             what: JobKind::Command,
             title: "跑测试".to_string(),
@@ -253,6 +254,7 @@ fn a_command_ending_while_reading_back_waits_for_the_undo() {
     if let Input::ToolDone { effects, .. } = &mut done {
         effects.push(Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: JobId::new(3).unwrap(),
             what: JobKind::Command,
             title: "跑测试".to_string(),

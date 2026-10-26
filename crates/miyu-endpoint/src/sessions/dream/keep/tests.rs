@@ -33,6 +33,7 @@ fn listed(n: u8, persona: &str, busy: bool) -> Listed {
             from: None,
         }),
         origin: None,
+        forked: false,
     }
 }
 

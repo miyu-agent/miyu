@@ -62,6 +62,8 @@ pub struct Row {
     pub dream: Option<Dream>,
     /// 从哪开的（施工 8-33 四补）：`session.created` 的 `origin`，终端集成开的是 `terminal`。别的会话没有。
     pub origin: Option<String>,
+    /// fork 子代理（施工 A-F 补）：`session.created` 的 `forked` 写了 `within` 的。头照它换图标。
+    pub forked: bool,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -104,6 +106,10 @@ impl Row {
             context_model: None,
             dream: created.dream.clone(),
             origin: created.origin.clone(),
+            forked: created
+                .forked
+                .as_ref()
+                .is_some_and(|forked| forked.within.is_some()),
         })
     }
 
@@ -214,11 +220,12 @@ impl Row {
                 .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream")))
                 .transpose()?,
             origin: row.get(22)?,
+            forked: row.get::<_, i64>(23)? != 0,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 23], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 24], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -256,6 +263,7 @@ impl Row {
                 None => Value::Null,
             },
             optional(self.origin.as_deref()),
+            Value::Integer(i64::from(self.forked)),
         ])
     }
 }

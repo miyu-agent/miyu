@@ -208,6 +208,38 @@ async fn two_forks_from_one_step_share_the_parents_prefix_and_report() {
         "{page}"
     );
 
+    // 头认得出 fork 的（施工 A-F 补）：会话表那一行写 `forked: true`，主会话那一行不写；主会话的任务表里两项都是 `fork: true`。
+    let listed = client.call("l1", "session.list", json!({})).await;
+    let sessions = listed["result"]["sessions"]
+        .as_array()
+        .unwrap_or_else(|| panic!("有会话：{listed}"))
+        .clone();
+    for child in &children {
+        let row = sessions
+            .iter()
+            .find(|row| row["session"] == json!(child))
+            .unwrap_or_else(|| panic!("列着 fork 子会话：{listed}"));
+        assert_eq!(row["forked"], json!(true), "{row}");
+    }
+    let main_row = sessions
+        .iter()
+        .find(|row| row["session"] == json!(parent))
+        .unwrap_or_else(|| panic!("列着主会话：{listed}"));
+    assert!(main_row.get("forked").is_none(), "{main_row}");
+    let forks: Vec<bool> = log
+        .iter()
+        .filter_map(|event| match &event.body {
+            Body::ToolResult(result) => Some(&result.effects),
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|effect| match effect {
+            Effect::JobStarted(started) => Some(started.fork),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(forks, [true, true], "job.started 写 fork");
+
     // 重启以后照样载入：分叉点在一轮当中的底子照样认得。
     core.stop_sessions().await;
     drop(client);

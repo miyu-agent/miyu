@@ -95,6 +95,7 @@ fn a_started_job_round_trips() {
         round_trip(agent),
         Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: JobId::parse("j2").unwrap(),
             what: JobKind::Agent,
             title: "查 CI 为什么红".to_string(),
@@ -103,6 +104,7 @@ fn a_started_job_round_trips() {
     );
     let command = Effect::JobStarted(JobStarted {
         foreground: false,
+        fork: false,
         job: JobId::parse("j1").unwrap(),
         what: JobKind::Command,
         title: "跑全部测试".to_string(),
@@ -118,6 +120,12 @@ fn a_started_job_round_trips() {
     // 写成 null 的当没有。
     let null: Effect = serde_json::from_str(&json.replace("}", r#","session":null}"#)).unwrap();
     assert_eq!(null, command);
+    // fork 子代理（施工 A-F 补）：写 `fork: true`；不是的不写（上面两条），以前的日志没有这一格照读成不是。
+    let forked = r#"{"kind":"job.started","job":"j3","what":"agent","title":"数标题","session":"01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91","fork":true}"#;
+    let Effect::JobStarted(started) = round_trip(forked) else {
+        panic!("是 job.started");
+    };
+    assert!(started.fork);
 }
 
 /// 新版本才有的任务种类：原样留着，写出去还是原样；会话照写着的读。

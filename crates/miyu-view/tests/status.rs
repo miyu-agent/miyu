@@ -208,6 +208,35 @@ fn jobs_are_listed_from_start_to_end() {
     assert!(row.ended.is_some());
 }
 
+/// fork 子代理那一行写 `fork`（施工 A-F 补），头照它换图标；普通的子代理不写。
+#[test]
+fn a_forked_subagent_row_says_so() {
+    let mut stage = stage();
+    stage.model([
+        Line::calls(
+            "",
+            &[
+                ("shell", r#"{"command":"a","description":"A"}"#),
+                ("shell", r#"{"command":"b","description":"B"}"#),
+            ],
+        ),
+        Line::says("Started."),
+    ]);
+    stage.tools([
+        Play::forks_agent(1, "A", "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91"),
+        Play::starts_agent(2, "B", "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d92"),
+    ]);
+    stage.say("go");
+    let jobs = paged(&stage).jobs;
+    let fork: Vec<(&str, bool)> = jobs
+        .iter()
+        .map(|row| (row.title.as_str(), row.fork))
+        .collect();
+    assert_eq!(fork, [("A", true), ("B", false)]);
+    let shown = serde_json::to_value(&jobs[1]).unwrap();
+    assert!(shown.get("fork").is_none(), "普通的不写：{shown}");
+}
+
 #[test]
 fn a_stopped_job_says_why() {
     let mut stage = stage();

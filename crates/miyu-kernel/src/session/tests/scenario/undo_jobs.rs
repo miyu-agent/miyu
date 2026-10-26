@@ -140,6 +140,7 @@ fn stopping_comes_before_restoring_files() {
             }),
             Effect::JobStarted(JobStarted {
                 foreground: false,
+                fork: false,
                 job: job(1),
                 what: JobKind::Command,
                 title: "跑测试".to_string(),

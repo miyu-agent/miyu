@@ -190,6 +190,7 @@ async fn it_hands_the_task_to_the_port_and_reports_the_job() {
         done.effects,
         [Effect::JobStarted(JobStarted {
             foreground: false,
+            fork: false,
             job: JobId::new(1).unwrap(),
             what: JobKind::Agent,
             title: "查导出".to_string(),

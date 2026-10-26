@@ -49,9 +49,10 @@
 | `context`、`context_model` | 上下文用了多少、那一次请求的模型（施工 9-5 再补），可以是空的 | 最近一次带用量的主请求的输入三项和 `<供应商>/<模型>`；压缩以后空 |
 | `dream` | 整理会话的哪一间、怎么来的（施工 D-1 下，设计 41），别的会话是空的 | `session.created` 的 `dream`，存成它的 JSON |
 | `origin` | 从哪开的（施工 8-33 四补）：终端集成开的是 `terminal`，别的会话是空的 | `session.created` 的 `origin` |
+| `forked` | fork 子代理（施工 A-F 补）：是不是，头照它换图标 | `session.created` 的 `forked` 写了 `within` |
 
 - 忙不忙不进索引：列会话时从会话表的内存里拿（`protocol.md` 的 `session.list` 第 5 条）。
-- 结构的版本记在 SQLite 的 `user_version` 里，现在是 11（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
+- 结构的版本记在 SQLite 的 `user_version` 里，现在是 12（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`、A-F 补多了 `forked`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
 - 日志模式是 WAL，`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏。丢了的那几次，照到的位置落在后面，列会话照日志补（下面第 3 条）。
 
 ### 怎么走

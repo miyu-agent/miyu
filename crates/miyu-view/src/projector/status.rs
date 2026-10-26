@@ -253,6 +253,7 @@ impl Projector {
                         signal: None,
                         why: None,
                         nested: None,
+                        fork: started.fork,
                     });
                 }
                 Effect::JobMessaged(messaged) => {

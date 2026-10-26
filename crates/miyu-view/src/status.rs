@@ -188,6 +188,9 @@ pub struct JobRow {
     /// 后台命令下面脚本里调过的工具（施工 M-5 上）：个数和最近一个。没调过的不写。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nested: Option<crate::entry::Nested>,
+    /// fork 子代理（施工 A-F 补）：照 `job.started` 的 `fork`。普通子代理、后台命令不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fork: bool,
 }
 
 /// 任务的状态。
