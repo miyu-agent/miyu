@@ -29,6 +29,7 @@ fn request() -> Request {
         described: BTreeMap::new(),
         full_parameters: [("lookup".to_string(), raw(FULL))].into(),
         output_cap: None,
+        used: None,
     }
 }
 

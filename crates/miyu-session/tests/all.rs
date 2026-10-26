@@ -112,6 +112,7 @@ mod route_cost;
 mod route_effort;
 mod route_facts;
 mod route_failover;
+mod route_ordered;
 mod route_pools;
 mod route_responses;
 mod route_retire;

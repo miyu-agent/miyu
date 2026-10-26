@@ -8,6 +8,7 @@
 //! - 钉住：会话第一次需要它时（造会话、载入时没有可认的成员）取指针指的那个成员，指针加一；载入时最近一条发出去了的
 //!   `model.called` 是这个池的成员的，钉着它（[`Pool::find`]），不另记一格。
 //! - 轮换：每次请求从指针指的那个成员起排候选，指针加一。
+//! - 照先后（施工 Q-4 上）：每次请求从第一个成员起排候选，不动指针。
 //! - 指针一个池一个，核心一份（[`Pointers`]，`state/models/pools.json`：`{"<池>":<下一个是第几个>}`，由执行器读写）。成员变了，
 //!   指针对新的个数取余。
 //!
@@ -39,14 +40,17 @@ pub enum Strategy {
     Pin,
     /// 轮换：每次请求换下一个成员。
     Rotate,
+    /// 照先后（施工 Q-4 上，设计 43 第三节第 5 条第 1 款）：每次请求从第一个排起，主力加备用；前面的恢复了就回到前面。
+    Ordered,
 }
 
 impl Strategy {
-    /// 配置、`model.list` 里的写法：`pin`、`rotate`。
+    /// 配置、`model.list` 里的写法：`pin`、`rotate`、`ordered`。
     pub fn as_str(self) -> &'static str {
         match self {
             Strategy::Pin => "pin",
             Strategy::Rotate => "rotate",
+            Strategy::Ordered => "ordered",
         }
     }
 }
@@ -159,6 +163,7 @@ fn strategy(values: &Values, written: Option<&str>, members: &[Member]) -> Strat
     };
     match written {
         Some("rotate") => Strategy::Rotate,
+        Some("ordered") => Strategy::Ordered,
         Some(_) => Strategy::Pin,
         None if !members.is_empty() && members.iter().all(per_request) => Strategy::Rotate,
         None => Strategy::Pin,

@@ -4,6 +4,9 @@
 //! - 钉住：造端口时钉上一个成员：载入的、最近一条发出去了的 `model.called` 是这个池的成员的，就是它；不是的、新造的，取
 //!   指针指的那个，指针加一。以后每次请求先发给它。
 //! - 轮换：每次请求从指针指的那个成员起，指针加一。
+//! - 照先后（施工 Q-4 上）：每次请求从第一个成员起，不动指针、不钉；限额照第一个（主力），看不看得了图照全体。
+//! - 窗口放不下的（施工 Q-4 上，[`Routes::fitting`]）：会话的主请求带着内核算的用量（同压缩判线），窗口说得出、比它不大的
+//!   候选不挑、出错也不换过去；一个都不剩的照上下文超长报（内核先压再来）。窗口说不出的照旧算放得下。
 //! - 候选：从挑中的那个起，照写的先后绕一圈，每个成员的 key 照 `route/choice.rs` 排。这时用不了的（那一家推不出驱动、地址，
 //!   地址、key 取不到）跳过；都用不了的，交第一个的原话。钉住的池，钉着的成员只在成了时换成真发的那一个（施工 8-9，
 //!   `route/ended.rs`：出错换过去的、这时用不了跳过去的都一样）。
@@ -23,7 +26,7 @@ use miyu_models::pools::{Member, Pool, Strategy};
 use miyu_models::provider::{self, NoModel, Target};
 
 use super::base::Seat;
-use super::choice::Choice;
+use super::choice::{Choice, Unsent};
 use super::{Routes, images, none, nothing};
 use crate::TARGET;
 use crate::config::TurnConfig;
@@ -39,6 +42,14 @@ impl Routes {
     ) -> (Option<Member>, Limits) {
         let values = config.resolved.values();
         match pool.strategy {
+            // 照先后的（施工 Q-4 上）：主力是第一个，限额照它；不钉，出错照先后换。
+            Strategy::Ordered => {
+                let member = &pool.members[0];
+                let mut limits = target(&self.data, &values, member)
+                    .map_or_else(|_| nothing(), |target| self.limits(config, &target));
+                limits.blind = self.blind(config, &values, pool);
+                (None, limits)
+            }
             Strategy::Pin => {
                 let at = sent
                     .and_then(|sent| pool.find(sent.endpoint.as_str(), sent.model.as_str()))
@@ -108,7 +119,10 @@ impl Routes {
             .held
             .filter(|_| pool.strategy == Strategy::Pin)
             .and_then(|member| pool.find(&member.provider, &member.model));
-        let first = held.unwrap_or_else(|| take(data, pool));
+        let first = match pool.strategy {
+            Strategy::Ordered => 0,
+            Strategy::Pin | Strategy::Rotate => held.unwrap_or_else(|| take(data, pool)),
+        };
         let mut choices = Vec::new();
         let mut problem = None;
         for at in pool.order(first) {
@@ -127,6 +141,51 @@ impl Routes {
             (true, Some(problem)) => Err(problem),
             (true, None) => Err(NoModel(format!("pool {:?} has no models", pool.name))),
         }
+    }
+}
+
+impl Routes {
+    /// 剔掉窗口放不下这份请求的候选（施工 Q-4 上，见模块的说明）：`used` 是内核算的用量，窗口说得出、不比它大的不要。一个都
+    /// 不剩的 [`Unsent::TooLong`]，原话写用量和每个候选的窗口。
+    pub(super) fn fitting(
+        &self,
+        config: &TurnConfig,
+        choices: Vec<Choice>,
+        used: u64,
+    ) -> Result<Vec<Choice>, Unsent> {
+        let window = |choice: &Choice| {
+            let (facts, _) = self.data.with(|knowledge| {
+                facts(
+                    &config.resolved,
+                    knowledge,
+                    &choice.target.provider,
+                    &choice.target.model,
+                )
+            });
+            facts.window.value
+        };
+        let windows: Vec<Option<u64>> = choices.iter().map(window).collect();
+        let named: Vec<String> = choices
+            .iter()
+            .zip(&windows)
+            .map(|(choice, window)| match window {
+                Some(window) => format!("{} {window}", super::choice::name(&choice.who)),
+                None => super::choice::name(&choice.who),
+            })
+            .collect();
+        let kept: Vec<Choice> = choices
+            .into_iter()
+            .zip(windows)
+            .filter(|(_, window)| window.is_none_or(|window| used < window))
+            .map(|(choice, _)| choice)
+            .collect();
+        if kept.is_empty() {
+            return Err(Unsent::TooLong(format!(
+                "request of about {used} tokens fits no candidate's window: {}",
+                named.join(", ")
+            )));
+        }
+        Ok(kept)
     }
 }
 

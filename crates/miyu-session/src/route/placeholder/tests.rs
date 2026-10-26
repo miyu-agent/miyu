@@ -15,6 +15,7 @@ fn request(tools: Vec<ToolSpec>) -> Request {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     }
 }
 

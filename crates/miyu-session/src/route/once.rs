@@ -155,6 +155,12 @@ impl From<Unsent> for Unanswered {
         match unsent {
             Unsent::NoModel(no_model) => no_model.into(),
             Unsent::Cooling { message, wait_ms } => Unanswered::Cooling { message, wait_ms },
+            Unsent::TooLong(message) => Unanswered::Failed(CallError {
+                class: ErrorClass::ContextTooLong,
+                message,
+                status: None,
+                retry_after_ms: None,
+            }),
         }
     }
 }
@@ -279,6 +285,7 @@ impl OneShot {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         };
         let texts = listing_texts().map_err(|why| Unanswered::Failed(other(why)))?;
         let mut held: Option<Member> = None;
@@ -287,6 +294,7 @@ impl OneShot {
             let seat = Seat {
                 seed: &ask.purpose,
                 held: held.as_ref(),
+                used: None,
                 sticky: None,
             };
             let (picked, _) = routes.pick(config, &values, &resolved, &seat)?;

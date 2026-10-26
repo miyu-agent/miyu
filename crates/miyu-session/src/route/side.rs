@@ -53,11 +53,14 @@ impl Route {
             seed: self.session.as_str(),
             held: None,
             sticky: None,
+            used: None,
         };
         let (picked, _) = match routes.pick(config, &values, &resolved, &seat) {
             Ok(picked) => picked,
             Err(Unsent::NoModel(no_model)) => return Picked::Unavailable(no_model.0),
-            Err(Unsent::Cooling { message, .. }) => return Picked::Unavailable(message),
+            Err(Unsent::Cooling { message, .. } | Unsent::TooLong(message)) => {
+                return Picked::Unavailable(message);
+            }
         };
         let texts = self
             .texts
@@ -150,7 +153,7 @@ async fn session(
     reports: Reports,
     stop: &mut Stop,
 ) {
-    match route.choose(config, false) {
+    match route.choose(config, false, None) {
         Ok(chosen) => {
             send::attempt(chosen, request, reports, stop, false).await;
         }

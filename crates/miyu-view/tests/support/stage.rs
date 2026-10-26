@@ -35,6 +35,7 @@ impl Assembler for Nothing {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         }
     }
 

@@ -84,6 +84,7 @@ fn request(system: &str, messages: Vec<Message>) -> Request {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     }
 }
 

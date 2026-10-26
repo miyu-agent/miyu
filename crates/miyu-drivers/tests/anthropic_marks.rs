@@ -118,6 +118,7 @@ fn loop_request() -> Request {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     }
 }
 
@@ -189,6 +190,7 @@ fn the_stable_mark_counts_the_blocks_the_demos_wrote() {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     };
     assert_eq!(
         marks(&request),
@@ -212,6 +214,7 @@ fn a_block_is_marked_once_and_never_more_than_four() {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     };
     assert_eq!(
         marks(&request),
@@ -289,6 +292,7 @@ fn session(seed: u64) -> Vec<Request> {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     };
     request.messages.push(user(vec![text("开始")]));
     let mut requests = vec![request.clone()];

@@ -58,6 +58,7 @@ fn written(snapshot: &Snapshot) -> String {
         described: [(picture().blob, "Sunset.".to_string())].into(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     };
     let call = Call {
         model: ModelName::parse("m").unwrap(),

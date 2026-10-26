@@ -267,7 +267,7 @@ impl ModelPort for Route {
             return;
         }
         let main = reports.purpose().is_none();
-        match self.choose(config, main) {
+        match self.choose(config, main, request.used) {
             Ok(chosen) => send::spawn(chosen, request, reports, cancel),
             Err(error) => refused(reports, error),
         }
@@ -280,6 +280,14 @@ fn refused(reports: Reports, error: Unsent) {
         Unsent::NoModel(NoModel(message)) => {
             tracing::warn!(target: TARGET, why = %message, "no model");
             reports.ended(None, Some(unsent(ErrorClass::NoModel, message)), None, None);
+        }
+        Unsent::TooLong(message) => {
+            reports.ended(
+                None,
+                Some(unsent(ErrorClass::ContextTooLong, message)),
+                None,
+                None,
+            );
         }
         Unsent::Cooling { message, wait_ms } => {
             // 最早恢复的那一个还要多久也记进出错，给头说什么时候回来（施工 3-5 四补）。
@@ -300,7 +308,12 @@ impl Route {
     /// 这一次请求发给谁、带哪个 key，照这一轮的配置 `config`。钉着的引用解析不出（供应商、池删了，池空了）的退回这一轮
     /// 的 `models.chat`，以后钉在它上面；排候选、挑一个、备好都调底子（`route/base.rs`）。`main`：主请求才认「说到一半
     /// 断了还发给它」。
-    fn choose(&self, config: &TurnConfig, main: bool) -> Result<send::Chosen, Unsent> {
+    fn choose(
+        &self,
+        config: &TurnConfig,
+        main: bool,
+        used: Option<u64>,
+    ) -> Result<send::Chosen, Unsent> {
         let values = config.resolved.values();
         let routes = &self.shared;
         let resolve = |text: &str| routes.resolve(&values, text);
@@ -323,6 +336,7 @@ impl Route {
             seed: self.session.as_str(),
             held: pinned.member.as_ref(),
             sticky: pinned.sticky.as_ref().filter(|_| main),
+            used: used.filter(|_| main),
         };
         let (picked, pins) = routes.pick(config, &values, &resolved, &seat)?;
         pinned.last = model_of(&picked.choice.target);

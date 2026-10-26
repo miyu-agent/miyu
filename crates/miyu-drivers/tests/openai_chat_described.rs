@@ -32,6 +32,7 @@ fn request(messages: Vec<Message>, described: &[(&[u8], &str)]) -> Request {
             .collect(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     }
 }
 

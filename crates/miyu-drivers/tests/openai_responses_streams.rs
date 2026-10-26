@@ -170,6 +170,7 @@ fn encoded_back(reply: Vec<miyu_kernel::block::Block>) -> Value {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     };
     let encoded = encode(
         &request,

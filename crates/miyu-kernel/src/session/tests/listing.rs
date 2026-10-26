@@ -37,6 +37,7 @@ impl Assembler for Listing {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         }
     }
 
@@ -132,6 +133,7 @@ impl Assembler for Listing {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         };
         Some((request, upto))
     }
@@ -173,6 +175,7 @@ impl Assembler for Listing {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         };
         Some((request, events[answer].seq))
     }
@@ -191,6 +194,7 @@ impl Assembler for Listing {
             described: Default::default(),
             full_parameters: Default::default(),
             output_cap: None,
+            used: None,
         })
     }
 

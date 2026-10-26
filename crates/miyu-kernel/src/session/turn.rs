@@ -342,6 +342,8 @@ impl Session {
         }
         // 放不下整份输出预留、还放得下回答的下限的，这一次的回答压到窗口剩下的（施工 6-11 三补，`breaker.rs`）。
         request.output_cap = self.output_cap(&request);
+        // 挑池里的成员时照它剔掉窗口放不下的，和压缩判线是同一个数（施工 Q-4 上）。
+        request.used = self.used(&request);
         let fingerprint = request.fingerprint();
         let difference = self
             .last_request

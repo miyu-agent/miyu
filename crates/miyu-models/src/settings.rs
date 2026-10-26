@@ -293,9 +293,10 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "models", group: "pools", control: list },
         },
-        /// 怎么分：`pin` 钉住（一个会话一直用一个成员），`rotate` 轮换（每次请求换下一个）。不写的照成员的缓存类别定。
+        /// 怎么分：`pin` 钉住（一个会话一直用一个成员），`rotate` 轮换（每次请求换下一个），`ordered` 照先后（每次从第一个
+        /// 排起，主力加备用，施工 Q-4 上）。不写的照成员的缓存类别定。
         strategy: Option<String> = none {
-            kind: option ["pin", "rotate"],
+            kind: option ["pin", "rotate", "ordered"],
             layers: [System, Personal],
             applies: next_turn,
             ui: { page: "models", group: "pools", control: select },

@@ -636,10 +636,11 @@
             "type": "array"
           },
           "strategy": {
-            "description": "Keep a session on one member, or take the next member for every request. Left out, a pool whose members are all billed per request rotates and the others pin. Allowed: pin or rotate. Only in the system config or personal settings. Takes effect next turn.",
+            "description": "Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin. Allowed: pin, rotate or ordered. Only in the system config or personal settings. Takes effect next turn.",
             "enum": [
               "pin",
-              "rotate"
+              "rotate",
+              "ordered"
             ],
             "title": "Pool strategy",
             "type": "string"

@@ -45,6 +45,8 @@ pub(super) enum Unsent {
     NoModel(NoModel),
     /// 全在冷却：原话，最早恢复的那一个还要等多少毫秒。
     Cooling { message: String, wait_ms: u64 },
+    /// 候选的窗口都比这份请求的用量小（施工 Q-4 上）：原话。内核照上下文超长办（先压再来）。
+    TooLong(String),
 }
 
 impl From<NoModel> for Unsent {

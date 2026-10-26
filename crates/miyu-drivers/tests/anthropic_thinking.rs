@@ -28,6 +28,7 @@ fn request(reply: Vec<Block>) -> Request {
         described: Default::default(),
         full_parameters: Default::default(),
         output_cap: None,
+        used: None,
     }
 }
 

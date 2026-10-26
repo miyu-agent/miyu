@@ -346,8 +346,8 @@ start_read_only = false
 # Allowed: a list of <provider>/<model>. Only in the system config or personal settings. Takes effect next turn.
 # models =
 
-# Pool strategy: Keep a session on one member, or take the next member for every request. Left out, a pool whose members are all billed per request rotates and the others pin.
-# Allowed: pin or rotate. Only in the system config or personal settings. Takes effect next turn.
+# Pool strategy: Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin.
+# Allowed: pin, rotate or ordered. Only in the system config or personal settings. Takes effect next turn.
 # strategy =
 
 # Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.

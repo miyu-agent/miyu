@@ -219,10 +219,11 @@
       },
       "pools.<id>.strategy": {
         "name": "Pool strategy",
-        "description": "Keep a session on one member, or take the next member for every request. Left out, a pool whose members are all billed per request rotates and the others pin.",
+        "description": "Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin.",
         "options": {
           "pin": "Pin",
-          "rotate": "Rotate"
+          "rotate": "Rotate",
+          "ordered": "In order"
         }
       },
       "pools.<id>.subagent": {

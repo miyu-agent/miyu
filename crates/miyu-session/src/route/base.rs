@@ -41,6 +41,8 @@ pub(super) struct Seat<'a> {
     pub(super) held: Option<&'a Member>,
     /// 说到一半断了的那一个：不挑，还发给它。只有会话的主请求有。
     pub(super) sticky: Option<&'a Candidate>,
+    /// 这份请求的用量（施工 Q-4 上，`Request::used`）：窗口比它小的候选不挑、出错也不换过去。只有会话的主请求有。
+    pub(super) used: Option<u64>,
 }
 
 /// 备好了的这一次：发给谁、怎么编码、空闲多久算断，报了上限记到哪。
@@ -86,6 +88,9 @@ impl Routes {
                 pool.strategy == Strategy::Pin,
             ),
         };
+        if let Some(used) = seat.used {
+            choices = self.fitting(config, choices, used)?;
+        }
         let at = choice::pick(&choices, seat.sticky, &self.data, wall_now())?;
         let choice = choices.remove(at);
         let picked = Picked {
