@@ -20,6 +20,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         budget: Some(budget),
         limit: None,
         names: Default::default(),
+        me: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -56,6 +57,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         budget: Some(4096),
         limit: Some(2),
         names: Default::default(),
+        me: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -77,6 +79,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         budget: Some(4096),
         limit: None,
         names: Default::default(),
+        me: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,

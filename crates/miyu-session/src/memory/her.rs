@@ -5,11 +5,16 @@
 //!
 //! 名字是会话造的、载入的时候照人格交的（[`Memory::name_her`]），端点照人格找那一间时也交；没交过的那一间照没有名字算，
 //! 和以前一样。只在内存里，不落盘：人格改了名字，下一次开会话就换。
+//!
+//! 她在场所里叫什么（施工 E-1 修三）：群里大家叫她的未必是人格的名字（人格叫「美羽」、群名片是「Miyu」），桥每条场所消息带
+//! `venue.my_name`（群名片，空的用昵称）。和人格的名字一起算她：抽取照这一段里出现过的（[`called_in`]），她当场记照这个会话
+//! 最近一条的（[`last_called`]，`Keeper` 拿着），整理认人照出处那几轮的会话日志里的。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Mutex;
 
 use miyu_config::phrases::Label;
+use miyu_kernel::event::{Body, Event};
 use miyu_recall::extract::Candidate;
 use miyu_store::recall::Room;
 
@@ -67,6 +72,29 @@ fn names(name: Option<&Label>) -> BTreeSet<String> {
         .map(fold)
         .filter(|name| !name.is_empty())
         .collect()
+}
+
+/// `events` 里她在场所里被叫过的名字（人话的 `venue.my_name`，施工 E-1 修三），照 [`fold`] 过的。
+pub(crate) fn called_in(events: &[Event]) -> BTreeSet<String> {
+    events
+        .iter()
+        .filter_map(my_name)
+        .map(fold)
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+/// `events` 里最后一条带了 `venue.my_name` 的人话里她叫什么（施工 E-1 修三），原样的；没有的没有。
+pub(crate) fn last_called(events: &[Event]) -> Option<String> {
+    events.iter().rev().find_map(my_name).map(str::to_string)
+}
+
+/// 一条人话里她在场所里叫什么。
+fn my_name(event: &Event) -> Option<&str> {
+    let Body::MessageUser(message) = &event.body else {
+        return None;
+    };
+    message.venue.as_ref()?.my_name.as_deref()
 }
 
 /// 比名字的写法：去掉前后空白、不分大小写（中文照原样）。

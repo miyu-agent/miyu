@@ -5,8 +5,9 @@
 //! - 谁在听（施工 R-13 上，[`Listener`]）只管记下时写什么；哪儿都想得起全部（施工 R-29，2026-10-21 项目主人：记忆是一个整体）。
 //! - 出处活不活照回合库的墓碑（第二条第 4 款）：一处都没有（人记的）的算活；有的，活着一处就算。
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, ModuleId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::{By, Module, Person};
 use miyu_kernel::time::Timestamp;
@@ -34,6 +35,9 @@ pub struct Keeper {
     pub(super) memory: Arc<Memory>,
     room: Room,
     listener: Listener,
+    /// 这个会话里她最近在场所里叫什么（施工 E-1 修三，`her.rs`）：会话的记忆端口照它记下的人话更新，复制出来的共用一份；协议
+    /// 造的、没有会话的是空的。
+    here: Arc<Mutex<Option<String>>>,
 }
 
 /// 谁、什么时候、经哪条命令写的。
@@ -68,6 +72,7 @@ impl Keeper {
             memory: Arc::clone(memory),
             room,
             listener,
+            here: Arc::default(),
         }
     }
 
@@ -76,9 +81,36 @@ impl Keeper {
         &self.room
     }
 
-    /// 这一间里她叫什么（施工 E-1 修，`her.rs`）：照 `fold` 过的，没交过的是空的。
+    /// 这一间里她叫什么（施工 E-1 修，`her.rs`）：照 `fold` 过的，没交过的是空的。这个会话里她最近在场所里叫的那个也算
+    /// （施工 E-1 修三）。
     pub(crate) fn her(&self) -> std::collections::BTreeSet<String> {
-        self.memory.her(&self.room)
+        let mut names = self.memory.her(&self.room);
+        let here = self
+            .here
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+        if let Some(name) = here.map(|name| super::her::fold(&name))
+            && !name.is_empty()
+        {
+            names.insert(name);
+        }
+        names
+    }
+
+    /// 记下的事件 `events` 里有她在场所里叫什么的（施工 E-1 修三），记住最后那一个；没有的不动。
+    pub(crate) fn hear(&self, events: &[Event]) {
+        self.called(super::her::last_called(events));
+    }
+
+    /// 她在这个会话里最近叫 `name`（施工 E-1 修三）：没有的不动。
+    pub(crate) fn called(&self, name: Option<String>) {
+        if let Some(name) = name {
+            *self
+                .here
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(name);
+        }
     }
 
     /// 运行日志里这一间的短号（施工 LG-1 下）：和 [`Room::kind`] 一起写，不写账号、人格名、会话编号。
@@ -398,6 +430,7 @@ impl Keeper {
             memory: Arc::clone(&self.memory),
             room: self.room.clone(),
             listener: Listener::Owner(By::Person(Person::new(account.clone()))),
+            here: Arc::clone(&self.here),
         }
     }
 

@@ -20,6 +20,10 @@ pub struct VenueMessage {
     /// 发的人此刻在这个场所里叫什么（群名片，没有的用昵称）。名字会变，每条消息各记各的。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// 她此刻在这个场所里叫什么（施工 E-1 修三，`docs/blueprint/venues.md`「场所的格」）：群名片，空的用昵称，私聊也是昵称。
+    /// 名字会变，每条消息各记各的；记忆认她的时候和人格的名字一起算（`miyu-session` 的 `memory/her.rs`）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub my_name: Option<String>,
     /// @ 了谁：平台身份。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub mentions: Vec<ExternalId>,

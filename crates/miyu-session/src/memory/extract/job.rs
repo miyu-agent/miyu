@@ -79,9 +79,10 @@ impl Job {
                 more,
                 since,
                 names,
+                me,
             } => {
                 let recorded = match self.dropped(text, since).await {
-                    Some(text) => self.ask(upto, text, turns, &names).await,
+                    Some(text) => self.ask(upto, text, turns, (&names, me)).await,
                     None => false,
                 };
                 if recorded && more {
@@ -153,7 +154,7 @@ impl Job {
         upto: Seq,
         text: String,
         turns: BTreeSet<u64>,
-        names: &BTreeMap<String, Option<String>>,
+        (names, here): (&BTreeMap<String, Option<String>>, BTreeSet<String>),
     ) -> bool {
         let started = Instant::now();
         let secrets = secrets(&self.config);
@@ -186,7 +187,10 @@ impl Job {
             .and_then(|answer| candidates(&answer.text, &turns, TEXT_CHARS));
         match answered {
             Ok(mut found) => {
-                super::place_people(&mut found, names, &self.keeper.her());
+                // 她：人格的名字，加这一段里她在场所里被叫过的（施工 E-1 修三）。
+                let mut me = self.keeper.her();
+                me.extend(here);
+                super::place_people(&mut found, names, &me);
                 for candidate in &mut found {
                     candidate.text = redact(&candidate.text, &secrets, &shapes);
                 }

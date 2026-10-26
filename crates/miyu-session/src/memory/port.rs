@@ -91,6 +91,11 @@ impl Calls {
         (&self.keeper, &self.session, &self.owner, &self.extractor)
     }
 
+    /// 会话记下了 `events`（施工 E-1 修三）：人话带着她在场所里叫什么的，记住最新的，她当场记的时候认她（`her.rs`）。
+    pub(crate) fn heard(&self, events: &[miyu_kernel::event::Event]) {
+        self.keeper.hear(events);
+    }
+
     /// 记忆放在哪一间：交给 [`crate::Handle`]，协议照它找这个会话的记忆（施工 R-3 补）。
     pub(crate) fn room(&self) -> &Room {
         self.keeper.room()

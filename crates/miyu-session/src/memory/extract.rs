@@ -304,6 +304,8 @@ pub(crate) enum Plan {
         since: Timestamp,
         /// 这一段里说话的人怎么叫（施工 E-1 上，[`Voices::names`]）连同主人的称呼：抽出来的认识的人照它换成平台编号。
         names: BTreeMap<String, Option<String>>,
+        /// 这一段里她在场所里被叫过的名字（施工 E-1 修三，[`Voices::me`]）：和这一间人格的名字一起算她。
+        me: BTreeSet<String>,
     },
 }
 
@@ -365,6 +367,7 @@ pub(crate) fn plan(
         more: upto != last,
         since: first.at,
         names,
+        me: voices.me.clone(),
     }
 }
 

@@ -51,6 +51,7 @@ fn owner(spoken: &[Spoken]) -> Voices {
         budget: None,
         limit: None,
         names: Default::default(),
+        me: Default::default(),
     }
 }
 
@@ -330,6 +331,7 @@ fn each_line_says_who_spoke_and_lines_not_from_people_stay_out() {
         budget: None,
         limit: None,
         names: Default::default(),
+        me: Default::default(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,

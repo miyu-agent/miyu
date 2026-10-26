@@ -9,7 +9,8 @@
 //! （真用过的、他那几条记忆的正文里写着的），编的不要（实测交回过源消息里从没出现过的名字，有的又空着、少了改名以前的）。
 //!
 //! 她自己不是认识的人（施工 E-1 修，`her.rs`）：`who` 是这一间她的名字的不算谁（不合卡、不认成同名群友的编号），她的名字也
-//! 不拿来认人、不进谁的叫法。以前记下的这种照旧留着，只是不再合进卡。
+//! 不拿来认人、不进谁的叫法。以前记下的这种照旧留着，只是不再合进卡。她的名字除了人格的，还有出处那几轮的会话日志里她在场所
+//! 里被叫过的（`venue.my_name`，施工 E-1 修三）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -100,30 +101,36 @@ impl Keeper {
                 .collect()
         };
         let by_her = sessions_of(true);
-        let me = self.her();
-        let mut known = BTreeMap::new();
-        let mut last: BTreeMap<String, BTreeMap<String, Timestamp>> = BTreeMap::new();
+        let mut me = self.her();
+        let mut read: Vec<(&SessionId, Vec<Event>)> = Vec::new();
         for session in sessions_of(false) {
             let Some(dir) = self.session_dir(session) else {
                 continue;
             };
             match read_events(&dir) {
                 Ok(events) => {
-                    used_in(&events, &me, &mut last);
-                    if !by_her.contains(session) {
-                        continue;
-                    }
-                    for (name, id) in Voices::of(&events, None).names {
-                        if let Some(id) = id
-                            && id != name
-                            && !crate::memory::her::is_her(&me, &name)
-                        {
-                            known.insert(name, id);
-                        }
-                    }
+                    // 她在出处里被叫过的名字也算她（施工 E-1 修三）：先全读完再认人。
+                    me.extend(crate::memory::her::called_in(&events));
+                    read.push((session, events));
                 }
                 Err(error) => {
                     tracing::warn!(target: TARGET, error = %error, "memory people not read");
+                }
+            }
+        }
+        let mut known = BTreeMap::new();
+        let mut last: BTreeMap<String, BTreeMap<String, Timestamp>> = BTreeMap::new();
+        for (session, events) in &read {
+            used_in(events, &me, &mut last);
+            if !by_her.contains(session) {
+                continue;
+            }
+            for (name, id) in Voices::of(events, None).names {
+                if let Some(id) = id
+                    && id != name
+                    && !crate::memory::her::is_her(&me, &name)
+                {
+                    known.insert(name, id);
                 }
             }
         }

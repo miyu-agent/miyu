@@ -3,7 +3,7 @@
 //! 名字；群里一行本来就带着名字和记号（`miyu-assemble` 的群消息那一行），原样放。不是人说的（别的会话、harness 发来的）不进：
 //! 事实只从人说的话里取（第五条）。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::Seq;
@@ -33,6 +33,8 @@ pub(crate) struct Voices {
     /// 这一段里说话的人怎么叫（施工 E-1 上）：名字、平台编号对着他的平台编号；主人（`Owner`、对应表认出的本人在群里的名字）
     /// 对着没有。抽出来的认识的人照它把名字换成平台编号。
     pub(crate) names: BTreeMap<String, Option<String>>,
+    /// 这一段里她在场所里被叫过的名字（施工 E-1 修三，人话的 `venue.my_name`），照 `fold` 过的：和人格的名字一起算她。
+    pub(crate) me: BTreeSet<String>,
 }
 
 impl Voices {
@@ -87,6 +89,7 @@ impl Voices {
             budget: group,
             limit: None,
             names,
+            me: crate::memory::her::called_in(events),
         }
     }
 }

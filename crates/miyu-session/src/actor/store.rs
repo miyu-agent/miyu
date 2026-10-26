@@ -89,6 +89,10 @@ impl Actor {
         self.tools.note_jobs(&events);
         // 压缩、撤销、恢复了的，交过的子目录项目指令清掉重来（施工 P-14 下）。
         self.tools.note_docs(&events);
+        // 人话带着她在场所里叫什么的，记忆记住最新的：她当场记的时候认她（施工 E-1 修三）。
+        if let Some((memory, _)) = self.tools.memory() {
+            memory.heard(&events);
+        }
         // 累计的也是（施工 9-6 上）：写完、内核记下「落了盘」之前收件箱不动，订阅插不进来，和它拿到的落盘到哪一条对得上。
         {
             let mut counted = self.counted();
