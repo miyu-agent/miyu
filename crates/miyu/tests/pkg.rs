@@ -42,7 +42,7 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert_eq!(listed.status.code(), Some(0), "{listed:?}");
     let text = stdout(&listed);
     assert!(
-        line(&text, "basesystem").is_some_and(|line| line.ends_with("基础系统")),
+        line(&text, "shell").is_some_and(|line| line.ends_with("运行命令")),
         "{text}"
     );
 
@@ -91,15 +91,16 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     .await;
     assert_eq!(stdout(&back), "装好了：net\n", "{back:?}");
 
-    let required = run(
+    // 施工 BS-1 上中起没有必需的包；卸没有的照旧拒。
+    let unknown = run(
         &root,
         &cwd,
         zh,
-        &["pkg", "remove", "basesystem", "--yes", "--system"],
+        &["pkg", "remove", "nope", "--yes", "--system"],
     )
     .await;
-    assert_eq!(required.status.code(), Some(1));
-    assert_eq!(stderr(&required), "必需的软件包，无法卸载。\n");
+    assert_eq!(unknown.status.code(), Some(1));
+    assert_eq!(stderr(&unknown), "软件包不存在。\n");
     let bad = run(
         &root,
         &cwd,
@@ -115,7 +116,7 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     assert!(
         packages
             .as_array()
-            .is_some_and(|all| all.iter().any(|one| one["package"] == "basesystem")),
+            .is_some_and(|all| all.iter().any(|one| one["package"] == "shell")),
         "{packages}"
     );
     drop(held);

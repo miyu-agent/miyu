@@ -76,7 +76,7 @@ pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Cho
     let file = found
         .file
         .following(crate::switches::of(values))
-        .switching_off(crate::packages_off::of(values), features);
+        .switching_off(crate::packages_off::of(values));
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
     Ok(match refresh.images {
         true => chosen,

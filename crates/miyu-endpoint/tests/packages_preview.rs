@@ -135,16 +135,6 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     let config = std::fs::read_to_string(home.root.path().join("system/config.toml"));
     assert!(config.is_ok_and(|text| text.contains("port = 9")));
 
-    let required = call(
-        &mut client,
-        "package.remove",
-        json!({"package": "basesystem", "preview": true}),
-    )
-    .await;
-    assert_eq!(
-        required["error"]["data"]["reason"], "package_required",
-        "{required}"
-    );
     let shipped = call(
         &mut client,
         "package.remove",

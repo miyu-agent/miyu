@@ -165,7 +165,7 @@ pub(crate) fn enabled(
     if runs(manifest) {
         return Some(!removed && crate::extensions::switched_on(core, id, manifest));
     }
-    (manifest.kind == PackageKind::Builtin && shipped && !manifest.required).then_some(!removed)
+    (manifest.kind == PackageKind::Builtin && shipped).then_some(!removed)
 }
 
 #[cfg(test)]

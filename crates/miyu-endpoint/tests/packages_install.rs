@@ -215,14 +215,14 @@ async fn a_shipped_package_is_removed_by_a_note_and_comes_back() {
 }
 
 #[tokio::test]
-async fn required_and_unknown_packages_cannot_be_removed() {
+async fn unknown_packages_cannot_be_removed() {
+    // 施工 BS-1 上中起没有必需的包，`basesystem` 是组、不是包：卸它照没有这个包。
     let home = Home::new();
     let mut client = connected(&home).await;
     let reply = client
         .call("r1", "package.remove", json!({"package": "basesystem"}))
         .await;
-    assert_eq!(reason(&reply), Some("package_required"), "{reply}");
-    assert!(!mine(&home, "basesystem.removed").exists());
+    assert_eq!(reason(&reply), Some("unknown_package"), "{reply}");
     let reply = client
         .call("r2", "package.remove", json!({"package": "nothing"}))
         .await;

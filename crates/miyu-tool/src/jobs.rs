@@ -7,9 +7,9 @@
 //! 查和停（施工 7-4，`docs/blueprint/tools/jobs.md`）：`jobs` 经同一个端口列出这个会话派出去的任务、读输出、停掉。后台命令和
 //! 子代理都管：子代理那一头执行器经会话表的端口去读、去停，工具不认识会话表。
 
-/// 「后台运行」这个功能的编号（施工 T-1 上，设计 `30-插件框架.md` 第三节第 6、7 条）：基础系统里管 `jobs`、`shell` 放到后台、
-/// 子代理在后台跑。关着的会话没有后台。
-pub const BACKGROUND: &str = "background";
+/// 「后台运行」的编号（施工 T-1 上，设计 `30-插件框架.md` 第三节第 6、7 条）：管 `jobs`、`shell` 放到后台、子代理在后台跑；
+/// 关着的会话没有后台。施工 BS-1 上中起是包 `jobs`（原来是基础系统的功能 `background`，设计 44）。
+pub const BACKGROUND: &str = "jobs";
 
 /// `shell` 这件工具的名字。
 pub const SHELL: &str = "shell";

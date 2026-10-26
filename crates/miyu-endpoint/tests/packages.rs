@@ -94,7 +94,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
 }
 
 /// 种类多的两种、功能、平台接入、依赖、小程序（施工 F-1，设计 30）：照连接的语言列出来；没写功能的扩展包列出照包算的那一个，
-/// 界面、小程序没有 `features`；必需的才有 `required`。
+/// 界面、小程序没有 `features`（施工 BS-1 上中起没有 `required`）。
 #[tokio::test]
 async fn features_connections_and_workers_are_listed() {
     let home = Home::new();
@@ -102,7 +102,6 @@ async fn features_connections_and_workers_are_listed() {
         &home,
         "xbase",
         r#"[package]
-required = true
 protocol = [1, 1]
 name = { en = "Base", zh = "基础" }
 
@@ -168,7 +167,6 @@ args = ["serve"]
                 "kind": "builtin",
                 "protocol": [1, 1],
                 "name": "基础",
-                "required": true,
                 "features": [
                     {"id": "xfiles", "name": "文件读写", "summary": "读写文件"},
                     {"id": "xcmd", "name": "Commands"},
@@ -220,7 +218,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
     let mut found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
     miyu_endpoint::packages::compiled(
         &mut found,
-        &["basesystem", "memory", "mermaid", "net", "roleplay"],
+        &["shell", "memory", "mermaid", "net", "roleplay"],
     );
     let codes: Vec<(&str, Option<&str>)> = found
         .iter()
@@ -238,7 +236,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
         "{codes:?}"
     );
     assert!(codes.contains(&("term", None)), "不是内置的不管");
-    assert!(codes.contains(&("basesystem", None)), "编进来了的照常");
+    assert!(codes.contains(&("shell", None)), "编进来了的照常");
     assert!(
         miyu_endpoint::packages::is_installed(&found, "memory"),
         "读成了的内置包算装了"

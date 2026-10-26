@@ -1,22 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
-    "basesystem": {
-      "properties": {
-        "show": {
-          "properties": {
-            "system_hint": {
-              "default": true,
-              "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.",
-              "title": "Remind the AI to use Show",
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        }
-      },
-      "type": "object"
-    },
     "clicall": {
       "properties": {
         "mcp": {
@@ -992,13 +976,24 @@
         },
         "tools": {
           "additionalProperties": {
-            "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only. Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.",
+            "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only. Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.",
             "maxLength": 200,
             "minLength": 1,
             "title": "No sandbox: this tool",
             "type": "string"
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "show": {
+      "properties": {
+        "system_hint": {
+          "default": true,
+          "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.",
+          "title": "Remind the AI to use Show",
+          "type": "boolean"
         }
       },
       "type": "object"

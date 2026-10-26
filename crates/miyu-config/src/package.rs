@@ -72,8 +72,9 @@ pub struct Manifest {
     pub check: Option<Check>,
     /// 配置项（施工 9-1 下）：照写的先后；没有的是空的。
     pub settings: Vec<Setting>,
-    /// 必需的（施工 F-1）：卸不掉，只有内置包能写；没写的是假。
-    pub required: bool,
+    /// 在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：只有内置包能写，照写的先后；没写的是空的。原来的 `required`
+    /// （必需的包）项目主人 2026-10-26 定删掉：出厂带什么是打包时挑的事。
+    pub groups: Vec<String>,
     /// 写了的功能（施工 F-1）：没写 `[features]` 的没有，写了空表的是空的；算上照包算的那一个用 [`Manifest::features_of`]。
     pub features: Option<Vec<Feature>>,
     /// 平台接入（施工 F-1）：只有扩展包能写。
@@ -414,7 +415,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         ui,
         check,
         settings,
-        required: head.required,
+        groups: head.groups,
         features,
         connection,
         depends: depends?,

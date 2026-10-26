@@ -197,12 +197,17 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         listed.push(item);
         carried_ids.insert(id);
     }
+    // `[software]` 里写的组名（施工 BS-1 上中，`basesystem = true`）不是没装的包：它照组分给了组里的包，不另列。
+    let groups: BTreeSet<&String> = file.groups.values().flatten().collect();
     let written: BTreeSet<&String> = file
         .features
         .keys()
         .chain(file.software.keys())
         .filter(|id| {
-            !table.installed(id) && !packages.contains(id.as_str()) && !carried_ids.contains(*id)
+            !table.installed(id)
+                && !packages.contains(id.as_str())
+                && !carried_ids.contains(*id)
+                && !groups.contains(id)
         })
         .collect();
     for id in written {

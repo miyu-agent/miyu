@@ -125,29 +125,44 @@ fn a_persona_choice_carries_its_name_and_summary() {
     assert_eq!(persona_choice("cat".to_string(), &both).name, "cat");
 }
 
-/// 一个基础系统：`shell`，和一件脚本里能不能调照 `clicall` 的 `web_fetch`。
+/// 一个基础系统组：包 `shell`，和包 `web` 里一件脚本里能不能调照 `clicall` 的 `web_fetch`（施工 BS-1 上中起一件一个包）。
 fn scripting(clicall: bool) -> Catalog {
     let fetch =
         miyu_tool::Tool::spec(Fake::new("web_fetch", Access::Network, Act::Echo).as_ref()).clone();
-    Catalog::in_packages([(
-        "basesystem",
-        vec![
-            Fake::commanding(
+    Catalog::in_packages([
+        (
+            "shell",
+            vec![Fake::commanding(
                 miyu_tool::SHELL,
                 Access::Execute,
                 Some(miyu_tool::RUN_IN_BACKGROUND),
                 Act::Echo,
-            ) as Arc<dyn miyu_tool::Tool>,
-            Fake::from_spec(miyu_tool::Spec { clicall, ..fetch }, Act::Echo),
-        ],
-    )])
+            ) as Arc<dyn miyu_tool::Tool>],
+        ),
+        (
+            "web",
+            vec![
+                Fake::from_spec(miyu_tool::Spec { clicall, ..fetch }, Act::Echo)
+                    as Arc<dyn miyu_tool::Tool>,
+            ],
+        ),
+    ])
     .expect("合写法")
+}
+
+/// 测试里的组（施工 BS-1 上中）：`shell`、`web`、`clicall` 三个包都在 `basesystem` 组里。
+fn grouped(mut file: miyu_policy::preset::PresetFile) -> miyu_policy::preset::PresetFile {
+    file.groups = ["shell", "web", "clicall"]
+        .into_iter()
+        .map(|id| (id.to_string(), vec!["basesystem".to_string()]))
+        .collect();
+    file
 }
 
 /// 照目录 `catalog`、预设 `preset`（TOML 原文，没有的是没预设）拼本机会话的工具面。
 fn scripted_face(catalog: &Catalog, preset: Option<&str>) -> Vec<miyu_policy::ToolEntry> {
     let venue = VenueId::parse("local").expect("合写法");
-    let file = preset.map(|toml| miyu_policy::preset::read(toml).expect("合写法"));
+    let file = preset.map(|toml| grouped(miyu_policy::preset::read(toml).expect("合写法")));
     Agents::face(
         catalog,
         Site {
@@ -186,7 +201,7 @@ fn a_preset_without_tools_from_scripts_makes_nothing_scriptable() {
     );
     let everything = "[preset]\nunlisted = \"on\"\n";
     assert_eq!(scriptable(Some(everything)), ["web_fetch"], "全部功能");
-    let minimal = "[preset]\nunlisted = \"off\"\n[features]\ncommands = true\nweb = true\n";
+    let minimal = "[preset]\nunlisted = \"off\"\n[software]\nshell = true\nweb = true\n";
     assert!(
         scriptable(Some(minimal)).is_empty(),
         "极简开发：没写「脚本调工具」，关着"
@@ -244,7 +259,7 @@ fn the_background_only_parameter_follows_what_the_tool_declares() {
             .cloned()
             .collect()
     };
-    let no_background = "[preset]\nunlisted = \"on\"\n[features]\nbackground = false\n";
+    let no_background = "[preset]\nunlisted = \"on\"\n[software]\njobs = false\n";
     let face = scripted_face(&catalog, Some(no_background));
     assert_eq!(keys(&face, "bash"), ["command", "run_in_background"]);
     assert_eq!(

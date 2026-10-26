@@ -70,11 +70,8 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
     links(item, id, manifest, language);
 }
 
-/// 施工 F-1 加的几格（设计 30）：必需的、带的功能（照包算的那一个也列，名字、说明照语言挑；不列工具）、平台接入、依赖、小程序。
+/// 施工 F-1 加的几格（设计 30）：带的功能（照包算的那一个也列，名字、说明照语言挑；不列工具）、平台接入、依赖、小程序。
 fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
-    if manifest.required {
-        item["required"] = json!(true);
-    }
     if matches!(
         manifest.kind,
         PackageKind::Builtin | PackageKind::Process | PackageKind::Bundle

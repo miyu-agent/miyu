@@ -5,7 +5,7 @@
         "name": "后台命令最长运行时间",
         "description": "AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。"
       },
-      "basesystem.show.system_hint": {"name": "提醒 AI 用展示", "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。"},
+      "show.system_hint": {"name": "提醒 AI 用展示", "description": "让 AI 把做出来或拿到的图片、网页、文档、音视频用「展示」直接给你看，而不只是给一个路径。"},
       "compaction.prepare": {
         "name": "提前压好",
         "description": "上下文快满时，在后台先把旧的那一段压成摘要，到了要压缩的时候直接换上，不用停下来等。关掉的话，照旧到线再压。"
@@ -175,11 +175,11 @@
       },
       "sandbox.tools.<name>": {
         "name": "不套沙盒：这件工具",
-        "description": "管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 basesystem；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。"
+        "description": "管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。"
       },
       "packages.<id>.off": {
         "name": "把这个包关掉",
-        "description": "只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。必需的包关不了。"
+        "description": "只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。"
       },
       "features.<name>": {
         "name": "这个技能、脚本或 MCP 服务开着",
@@ -654,6 +654,7 @@
     "package-problems/bad_widget": "界面块的写法不对：{detail}",
     "package-problems/bad_content": "给别的包带的内容写法不对：{detail}",
     "package-problems/bad_needs": "要求的写法不对，现在只认 images：{detail}",
+    "package-problems/bad_group": "组名写法不对、重复了，或者出厂没有这个组：{detail}",
     "package-problems/bad_targets": "系统的写法不对，只认 linux-x86_64、linux-aarch64、macos-aarch64、windows-x86_64，不能重复：{detail}",
     "package-problems/bad_miyu": "{detail} 要写成三段数字的版本，例如 0.2.0",
     "package-problems/needs_newer_miyu": "这个包要 Miyu {detail} 以上，先更新 Miyu",

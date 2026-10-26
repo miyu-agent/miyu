@@ -5,7 +5,7 @@
         "name": "Longest background command",
         "description": "A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours."
       },
-      "basesystem.show.system_hint": {"name": "Remind the AI to use Show", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
+      "show.system_hint": {"name": "Remind the AI to use Show", "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path."},
       "compaction.prepare": {
         "name": "Prepare compaction early",
         "description": "When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before."
@@ -175,11 +175,11 @@
       },
       "sandbox.tools.<name>": {
         "name": "No sandbox: this tool",
-        "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only."
+        "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only."
       },
       "packages.<id>.off": {
         "name": "Turn this package off for me",
-        "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off."
+        "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it."
       },
       "features.<name>": {
         "name": "Turn this skill, script or MCP server on",
@@ -658,6 +658,7 @@
     "package-problems/bad_widget": "Badly written widget: {detail}",
     "package-problems/bad_content": "Badly written content for another package: {detail}",
     "package-problems/bad_needs": "Unknown or repeated need, only images is known: {detail}",
+    "package-problems/bad_group": "Group name is malformed, repeated, or not a shipped group: {detail}",
     "package-problems/bad_targets": "Unknown or repeated target, known are linux-x86_64, linux-aarch64, macos-aarch64, windows-x86_64: {detail}",
     "package-problems/bad_miyu": "{detail} must be a version of three numbers, such as 0.2.0",
     "package-problems/needs_newer_miyu": "This package needs Miyu {detail} or newer: update Miyu first",

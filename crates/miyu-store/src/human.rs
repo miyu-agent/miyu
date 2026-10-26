@@ -252,7 +252,7 @@ impl Human {
             if let Some(name) = pick(&manifest.name) {
                 self.config.groups.insert(id.to_string(), name);
             }
-            if let Some(words) = off.as_ref().filter(|_| !manifest.required) {
+            if let Some(words) = off.as_ref() {
                 self.config
                     .items
                     .insert(miyu_config::key::fill(OFF, &[id]), words.clone());

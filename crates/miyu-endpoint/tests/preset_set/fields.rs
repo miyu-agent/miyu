@@ -56,13 +56,13 @@ async fn a_feature_is_switched_by_its_id() {
         &mut client,
         "f1",
         "full",
-        json!([{"key": "features.commands", "value": false}]),
+        json!([{"key": "features.shell", "value": false}]),
     )
     .await;
-    assert_eq!(on(&reply, "commands"), Some(false), "{reply}");
-    assert_eq!(on(&reply, "files"), Some(true));
+    assert_eq!(on(&reply, "shell"), Some(false), "{reply}");
+    assert_eq!(on(&reply, "read"), Some(true));
     assert_eq!(
         mine(&home, "full").as_deref(),
-        Some("[features]\ncommands = false\n")
+        Some("[features]\nshell = false\n")
     );
 }

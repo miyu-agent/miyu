@@ -43,10 +43,10 @@ async fn the_package_list_says_where_a_package_puts_things() {
         ]),
         "{wx}"
     );
-    let basesystem = entry(&listed, "packages", "package", "basesystem");
+    let shell = entry(&listed, "packages", "package", "shell");
     assert!(
-        basesystem.get("widgets").is_none(),
-        "没声明的不带这一格：{basesystem}"
+        shell.get("widgets").is_none(),
+        "没声明的不带这一格：{shell}"
     );
 }
 

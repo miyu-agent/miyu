@@ -87,11 +87,12 @@ async fn the_list_says_status_switch_icon_and_page() {
     );
     let bare = entry(&mut client, "bare").await;
     assert_eq!((bare.get("icon"), bare.get("page")), (None, None), "{bare}");
-    let basesystem = entry(&mut client, "basesystem").await;
-    assert_eq!(basesystem["status"], "ready");
-    assert!(
-        basesystem.get("enabled").is_none(),
-        "必需的没有开关：{basesystem}"
+    // 施工 BS-1 上中起没有必需的包：原来基础系统的 shell 也是个能关的出厂内置包。
+    let shell = entry(&mut client, "shell").await;
+    assert_eq!(
+        (shell["status"].clone(), shell["enabled"].clone()),
+        (json!("ready"), json!(true)),
+        "{shell}"
     );
     let memory = entry(&mut client, "memory").await;
     assert_eq!(
@@ -175,8 +176,6 @@ async fn switches_that_do_not_apply_are_refused() {
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     for (method, id, reason) in [
-        ("package.enable", "basesystem", "package_required"),
-        ("package.disable", "basesystem", "package_required"),
         ("package.enable", "screen", "not_switchable"),
         ("package.disable", "screen", "not_switchable"),
         ("package.enable", "ghost", "program_missing"),

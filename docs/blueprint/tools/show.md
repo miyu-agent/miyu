@@ -17,7 +17,7 @@
 | `resources/software/basesystem/tools/show.json` | 说明和参数格式 |
 | `resources/software/basesystem/show/*.txt`、`common/*.txt` | 输出里给她看的几句 |
 | `resources/software/basesystem/show/system.txt`、`crates/miyu-policy/src/compose.rs` | system 里的那一句（施工 D-5 补二，`Snapshot::with_show`） |
-| `crates/miyu-session/src/settings.rs` | 那一句的开关 `basesystem.show.system_hint`（`ShowSettings`，造会话时在 `open/face.rs` 读） |
+| `crates/miyu-session/src/settings.rs` | 那一句的开关 `show.system_hint`（`ShowSettings`，造会话时在 `open/face.rs` 读） |
 | `resources/packages/basesystem/package.toml` | 功能「展示」（`show`） |
 
 ### 对外的样子
@@ -39,7 +39,7 @@
 | `title` | 否 | 标题：去掉前后空白，空的当没写；没写的头照文件名 |
 
 - 别的参数不认，也不报错。
-- system 里的一句（施工 D-5 补二，项目主人 2026-10-24 定留）：工具面上有 `show`、开关 `basesystem.show.system_hint` 开着（默认开）的会话，system 在调工具的程序那一段后面单成一段带 `show/system.txt`（常量字节，不拼会变的东西）；没有的、关着的、以前造的快照不带。开关造会话时读一次钉进快照（`no_show_hint`，关着的才写），换人格、换预设重拼照钉下的，会话中途改了 system 不变（新会话生效）。`session.context` 里是 `system.show`。原文：
+- system 里的一句（施工 D-5 补二，项目主人 2026-10-24 定留）：工具面上有 `show`、开关 `show.system_hint` 开着（默认开）的会话，system 在调工具的程序那一段后面单成一段带 `show/system.txt`（常量字节，不拼会变的东西）；没有的、关着的、以前造的快照不带。开关造会话时读一次钉进快照（`no_show_hint`，关着的才写），换人格、换预设重拼照钉下的，会话中途改了 system 不变（新会话生效）。`session.context` 里是 `system.show`。原文：
 
   ```text
   When you make or fetch something meant to be looked at — an image, a web page, a document, video or audio — handing it over with show lets the user see it right away, rather than just a path.

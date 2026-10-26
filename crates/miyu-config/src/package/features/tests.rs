@@ -5,7 +5,7 @@ use crate::package::{Code, PackageKind, read};
 
 /// 基础系统那种：内置、必需、两个功能。
 const BASESYSTEM: &str = r#"[package]
-required = true
+groups = ["basesystem"]
 protocol = [1, 1]
 name = { en = "Base system", zh = "基础系统" }
 
@@ -46,7 +46,7 @@ fn wrong(text: &str) -> (Code, Option<usize>) {
 fn a_builtin_package_reads_its_features_in_order() {
     let manifest = read(BASESYSTEM).unwrap();
     assert_eq!(manifest.kind, PackageKind::Builtin);
-    assert!(manifest.required);
+    assert_eq!(manifest.groups, ["basesystem"]);
     let features = manifest.features_of("basesystem");
     let ids: Vec<&str> = features.iter().map(|feature| feature.id.as_str()).collect();
     assert_eq!(ids, ["files", "commands"], "照写的先后");

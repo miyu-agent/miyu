@@ -16,12 +16,13 @@ use crate::support::venues::configured_core;
 use crate::support::*;
 
 /// 关了后台运行的预设。
-const QUIET: &str = "[preset]\nname = { en = \"Quiet\" }\n\n[features]\nbackground = false\n";
+const QUIET: &str = "[preset]\nname = { en = \"Quiet\" }\n\n[features]\njobs = false\n";
 
 /// 照 `script` 起来、工具目录是出厂的基础系统的核心，造一个用预设 `preset` 的会话、说一句，交回会话编号。
 async fn session(home: &Home, script: &Script, preset: &str) -> String {
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
+    let tools =
+        Catalog::in_packages(miyu_basesystem::packages(&default_resources()).expect("出厂的工具"))
+            .expect("合写法");
     let mut client = Client::connect(configured_core(home, script, tools));
     client.hello().await;
     let reply = client
@@ -194,8 +195,9 @@ async fn interrupting_the_parent_stops_its_foreground_subagent() {
         )]),
         Play::Holds,
     ]);
-    let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
-        .expect("合写法");
+    let tools =
+        Catalog::in_packages(miyu_basesystem::packages(&default_resources()).expect("出厂的工具"))
+            .expect("合写法");
     let mut client = Client::connect(configured_core(&home, &script, tools));
     client.hello().await;
     let reply = client

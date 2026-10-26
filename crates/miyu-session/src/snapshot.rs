@@ -28,7 +28,7 @@ pub(crate) struct Parts {
     pub(crate) group: Option<(i32, Option<u64>)>,
     /// 后台运行关着（施工 T-1 上，[`crate::agents::Agents::foreground`]）。
     pub(crate) foreground: bool,
-    /// show 的那一句开着（施工 D-5 补二，配置 `basesystem.show.system_hint`）：造会话时照配置，重拼照旧快照钉下的。
+    /// show 的那一句开着（施工 D-5 补二，配置 `show.system_hint`）：造会话时照配置，重拼照旧快照钉下的。
     pub(crate) show_hint: bool,
     /// 她查得到的知识库那一块（施工 K-1 补，[`crate::knowledge::listing`]）：工具面上有知识库那两件的才有。
     pub(crate) knowledge: Option<String>,

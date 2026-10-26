@@ -1,11 +1,6 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
 # Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.
 
-[basesystem.show]
-# Remind the AI to use Show: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
-system_hint = true
-
 [clicall.mcp]
 # Callable from scripts: this MCP server's tools: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.
 # Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
@@ -184,47 +179,137 @@ mirrors = []
 source = "https://miyu-agent.github.io/packages/"
 
 [packages."<id>"]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.ask_user]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.authoring]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.clicall]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.edit]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.env]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.glob]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.goal]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.grep]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.history]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.jobs]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.knowledge]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.memory]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.mermaid]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.net]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.packages]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.project-docs]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.read]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
 [packages.roleplay]
-# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off.
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.session_usage]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.sessions]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.shell]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.show]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.subagent]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.todowrite]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.trash]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.write]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
@@ -420,9 +505,14 @@ enabled = true
 # remove =
 
 [sandbox.tools]
-# No sandbox: this tool: The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, basesystem for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only.
+# No sandbox: this tool: The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only.
 # Allowed: text of at most 200 characters. Only in the system config. Takes effect next turn.
 # "<name>" =
+
+[show]
+# Remind the AI to use Show: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
+# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+system_hint = true
 
 [terminal]
 # New session after idle: After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one.

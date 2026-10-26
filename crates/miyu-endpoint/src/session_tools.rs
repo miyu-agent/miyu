@@ -151,7 +151,7 @@ pub(crate) fn source(
     let package = core
         .catalog_of(owner)
         .package_of(name)
-        .map_or_else(|| miyu_tool::BASESYSTEM.to_string(), str::to_string);
+        .map_or_else(|| name.to_string(), str::to_string);
     let (kind, shown) = package_of(core, language, &package);
     (json!({"kind": kind, "id": package, "name": shown}), None)
 }

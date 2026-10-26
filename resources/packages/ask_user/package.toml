@@ -1,0 +1,17 @@
+# 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+protocol = [1, 1]
+groups = ["basesystem"]
+name = { en = "Questions", zh = "提问", ja = "質問" }
+summary = { en = "Ask you a question with choices", zh = "带选项地问你一个问题", ja = "選択肢付きであなたに質問します" }
+
+# 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
+[features.ask_user]
+name = { en = "Questions", zh = "提问", ja = "質問" }
+summary = { en = "Ask you a question with choices", zh = "带选项地问你一个问题", ja = "選択肢付きであなたに質問します" }
+tools = ["ask_user"]
+
+[builtin]

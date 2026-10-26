@@ -358,19 +358,10 @@ async fn presets_are_listed_and_read_by_layer() {
     assert_eq!(
         features,
         [
-            ("files", "文件读写", true, true),
-            ("commands", "运行命令", true, true),
-            ("background", "后台运行", true, true),
-            ("subagents", "子代理", true, true),
-            ("peers", "跨会话消息", true, true),
-            ("questions", "提问", true, true),
-            ("todos", "待办清单", true, true),
-            ("history", "翻查本会话", true, true),
-            ("usage", "用量", true, true),
-            ("packages", "软件包", true, true),
-            ("show", "展示", true, true),
-            ("project-docs", "项目指令", true, true),
+            // 施工 BS-1 上中起基础系统一件一个包，照清单读的先后（包的编号排）；常规开发照组 basesystem 全开，组名不另列。
+            ("ask_user", "提问", true, true),
             ("clicall", "脚本调工具", true, true),
+            ("edit", "改文件", true, true),
             ("env-time", "时间", true, true),
             ("env-workdir", "工作目录", true, true),
             ("env-permission", "权限级别", true, true),
@@ -379,12 +370,27 @@ async fn presets_are_listed_and_read_by_layer() {
             ("env-harness", "Harness 版本", true, true),
             ("env-machine", "本机系统", true, true),
             ("env-profile", "用户身份", true, true),
+            ("glob", "找文件", true, true),
             ("goal", "长期目标", true, true),
+            ("grep", "搜内容", true, true),
+            ("history", "翻查本会话", true, true),
+            ("jobs", "后台运行", true, true),
             ("knowledge", "知识库", false, true),
             ("memory", "人格记忆", true, true),
             ("web-search", "网络搜索", true, true),
             ("web-fetch", "抓取网页", true, true),
+            ("packages", "软件包", true, true),
+            ("project-docs", "项目指令", true, true),
+            ("read", "读文件", true, true),
             ("roleplay", "人设遵循提醒", false, true),
+            ("session_usage", "用量", true, true),
+            ("sessions", "跨会话消息", true, true),
+            ("shell", "运行命令", true, true),
+            ("show", "展示", true, true),
+            ("subagent", "子代理", true, true),
+            ("todowrite", "待办清单", true, true),
+            ("trash", "删到回收站", true, true),
+            ("write", "写文件", true, true),
             // 出厂包 authoring 带的两个技能（施工 X-13 下），名字照连接的语言；「常规开发」开着它（施工 P-8）。
             ("skill-package-creator", "写脚本和包", true, true),
             ("skill-skill-creator", "写技能", true, true),
@@ -401,7 +407,13 @@ async fn presets_are_listed_and_read_by_layer() {
             .expect("有人设遵循提醒")["summary"],
         "隔几轮把人设提醒短语再给 AI 看一遍，聊久了也不出戏"
     );
-    assert!(got["features"][0].get("summary").is_none(), "没说明的不写");
+    let kb = got["features"]
+        .as_array()
+        .expect("是一个个功能")
+        .iter()
+        .find(|one| one["id"] == "kb")
+        .expect("有写了没装的 kb");
+    assert!(kb.get("summary").is_none(), "没说明的不写");
     assert!(got.get("software").is_none() && got.get("tools").is_none());
     let full = client
         .call("g2", "preset.get", json!({"preset": "full"}))

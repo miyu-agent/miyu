@@ -185,9 +185,6 @@ pub(super) fn removable<'a>(found: &'a [Found], id: &str) -> Result<&'a Found, R
         .iter()
         .find(|one| one.id == id)
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    if one.read.as_ref().is_ok_and(|manifest| manifest.required) {
-        return Err(Refusal::PACKAGE_REQUIRED);
-    }
     // 被别的装着的包依赖着的卸不掉，说清被谁（施工 F-11，照 pacman）。
     let by = super::depends::dependents(found, id);
     if !by.is_empty() {

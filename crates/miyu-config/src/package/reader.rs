@@ -11,7 +11,7 @@ pub(super) struct Head {
     pub(super) protocol: Option<[u32; 2]>,
     pub(super) name: Phrases,
     pub(super) summary: Phrases,
-    pub(super) required: bool,
+    pub(super) groups: Vec<String>,
     pub(super) icon: Option<String>,
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
@@ -101,9 +101,9 @@ impl Reader<'_> {
             Some(item) => self.phrases(item, "package.summary")?,
             None => Phrases::new(),
         };
-        let required = match table.get("required") {
-            None => false,
-            Some(item) => self.required_flag(kind, item)?,
+        let groups = match table.get("groups") {
+            None => Vec::new(),
+            Some(item) => self.groups(kind, table, item)?,
         };
         let icon = match table.get("icon") {
             Some(item) => Some(super::look::icon(self, item)?),
@@ -117,7 +117,7 @@ impl Reader<'_> {
             protocol,
             name,
             summary,
-            required,
+            groups,
             icon,
             needs,
             targets,
@@ -149,24 +149,35 @@ impl Reader<'_> {
         Ok(needs)
     }
 
-    /// `[package] required`（施工 F-1）：开关，只有内置包能写。
-    fn required_flag(&self, kind: PackageKind, item: &Item) -> Result<bool, Problem> {
+    /// `[package] groups`（施工 BS-1 上中，设计 44 第三节第 2 条）：这个包在哪几个组里，只有内置包能写；组名的写法同包的编号，
+    /// 不重复，照写的先后。组名在不在出厂的组表里由读清单的一方查（`miyu_store::packages::groups`）。
+    fn groups(
+        &self,
+        kind: PackageKind,
+        table: &dyn TableLike,
+        item: &Item,
+    ) -> Result<Vec<String>, Problem> {
         if kind != PackageKind::Builtin {
             return Err(self.problem(
                 Some(item),
                 Code::WrongKind,
-                "package.required",
-                "package.required is only for a [builtin] package".to_string(),
+                "package.groups",
+                "package.groups is only for a [builtin] package".to_string(),
             ));
         }
-        item.as_bool().ok_or_else(|| {
-            self.problem(
-                Some(item),
-                Code::NotBool,
-                "package.required",
-                "package.required must be true or false".to_string(),
-            )
-        })
+        let mut groups = Vec::new();
+        for name in self.texts(table, "package", "groups")? {
+            if !crate::key::valid(crate::key::ID, &name) || groups.contains(&name) {
+                return Err(self.problem(
+                    Some(item),
+                    Code::BadGroup,
+                    &name,
+                    format!("package.groups: \"{name}\" is not a group name or is listed twice"),
+                ));
+            }
+            groups.push(name);
+        }
+        Ok(groups)
     }
 
     /// `[process]`。

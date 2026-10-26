@@ -51,7 +51,7 @@ impl PresetPlaces {
             .ok()?
             .file
             .following(switches)
-            .switching_off(off, &self.features);
+            .switching_off(off);
         if !images {
             file.withheld = self.features.image_packages().clone();
         }

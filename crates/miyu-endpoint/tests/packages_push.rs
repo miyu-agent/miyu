@@ -44,7 +44,7 @@ async fn subscribers_get_the_list_then_each_package_that_changed() {
         .as_array()
         .unwrap_or_else(|| panic!("{subscribed}"));
     assert!(
-        listed.iter().any(|one| one["package"] == "basesystem"),
+        listed.iter().any(|one| one["package"] == "shell"),
         "回应是整份列表"
     );
 

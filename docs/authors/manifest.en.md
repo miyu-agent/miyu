@@ -78,7 +78,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"0.2.0"`. Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
-| `required` | Only for packages that ship with Miyu: `true` means it can't be removed. Other packages get an error |
+| `groups` | Only for packages that ship with Miyu: the groups it belongs to (for example `["basesystem"]`); a preset that names a group switches the packages in it. Other packages get an error. The old `required` (also shipped-only) was dropped on 2026-10-26 |
 | `targets` | Which systems it installs on: `linux-x86_64`, `linux-aarch64`, `macos-aarch64`, `windows-x86_64`. Leave it out for any system; when listed, other systems refuse it, and `miyu pkg pack --target` makes one package file per system |
 
 ## `[command]`

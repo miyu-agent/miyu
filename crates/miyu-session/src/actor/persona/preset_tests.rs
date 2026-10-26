@@ -259,7 +259,7 @@ fn a_preset_turning_background_off_marks_the_snapshot() {
         .find(|entry| entry.name == "shell")
         .cloned()
         .expect("有 shell");
-    write_preset(&root, "[features]\nbackground = false\n");
+    write_preset(&root, "[software]\njobs = false\n");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {
         panic!("改了要换");
     };

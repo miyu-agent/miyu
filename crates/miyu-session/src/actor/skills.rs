@@ -33,12 +33,7 @@ impl Actor {
         let looked = blocking(move || {
             let file = wanted.zip(places).and_then(|(id, places)| {
                 let found = places.presets.find(&id).ok()?;
-                Some(
-                    found
-                        .file
-                        .following(switches)
-                        .switching_off(off, &places.features),
-                )
+                Some(found.file.following(switches).switching_off(off))
             });
             let looked = watch.look(&resources, &face, file.as_ref())?;
             let tail = skills::tail(

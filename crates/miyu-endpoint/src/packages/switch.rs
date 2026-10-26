@@ -79,11 +79,8 @@ fn find(core: &Core, id: &str) -> Result<(Manifest, Layer, PathBuf, bool), Refus
     Ok((manifest, found.layer, found.files_dir(), true))
 }
 
-/// 这个包的开关怎么做：必需的 `package_required`，没有开关的 `not_switchable`。
+/// 这个包的开关怎么做：没有开关的 `not_switchable`。
 fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
-    if manifest.required {
-        return Err(Refusal::PACKAGE_REQUIRED);
-    }
     match manifest.kind {
         PackageKind::Process => Ok(Switch::Extension),
         PackageKind::Builtin if layer == Layer::Shipped => Ok(Switch::Shipped),

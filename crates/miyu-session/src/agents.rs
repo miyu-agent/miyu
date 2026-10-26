@@ -26,9 +26,9 @@ use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::Personas;
 use miyu_tool::{
-    ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
-    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, REMEMBER, SEND_MESSAGE, SESSION_USAGE, SESSIONS,
-    SUBAGENT, TODOWRITE, is_subagent,
+    ASK_USER, AgentPort, BACKGROUND, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE,
+    KB_SEARCH, MEMORY_SEARCH, REMEMBER, SEND_MESSAGE, SESSION_USAGE, SESSIONS, SUBAGENT, TODOWRITE,
+    is_subagent,
 };
 
 use crate::TARGET;
@@ -259,7 +259,7 @@ impl Agents {
             })
             .filter(|spec| {
                 preset.is_none_or(|(preset, features)| {
-                    let package = tools.package_of(&spec.name).unwrap_or(BASESYSTEM);
+                    let package = tools.package_of(&spec.name).unwrap_or(&spec.name);
                     let feature = features
                         .and_then(|features| features.of_tool(package, &spec.name))
                         .unwrap_or(package);
@@ -307,7 +307,7 @@ impl Agents {
     /// 预设 `preset` 关了后台运行没有（施工 T-1 上，设计 30 第三节第 7 条）：关了的会话没有后台，快照记 `foreground`、`shell`
     /// 不放到后台。没有预设的照开着。
     pub(crate) fn foreground(preset: Option<&PresetFile>) -> bool {
-        preset.is_some_and(|file| !file.opens_in(BACKGROUND, BASESYSTEM))
+        preset.is_some_and(|file| !file.opens(BACKGROUND))
     }
 
     /// 快照的工具面 `face` 上派子代理能选的池（施工 8-8 补）：`subagent`（以前的名字也算）的 `pool` 的 `enum`。没有这件、

@@ -1,0 +1,6 @@
+# 出厂的组（施工 BS-1 上中，设计 44 第三节第 2 条）：一个组一段，编号是段名。组里有哪些包由包的清单写（`[package] groups`），只有出厂
+# 那一层的内置包能写；这里只给名字、说明。给人看的字，不发给模型。
+
+[basesystem]
+name = { en = "Base system", zh = "基础系统", ja = "基本システム" }
+summary = { en = "Read and edit files, run commands, look up earlier talk", zh = "读写文件、跑命令、查以前说过的话", ja = "ファイルの読み書き、コマンドの実行、前の話の検索" }

@@ -128,7 +128,11 @@ async fn preset_get_says_which_package_each_feature_is_in() {
     for id in miyu_policy::shown::ALL {
         assert_eq!(package_of(&got, id), Some("env"), "{id}");
     }
-    assert_eq!(package_of(&got, "files"), Some("basesystem"));
+    assert_eq!(
+        package_of(&got, "read"),
+        Some("read"),
+        "施工 BS-1 上中起一件一个包"
+    );
 
     client
         .call("d", "package.disable", json!({"package": "env"}))

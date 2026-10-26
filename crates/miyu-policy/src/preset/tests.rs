@@ -358,17 +358,20 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
 }
 
 /// 每个人关掉的包（施工 U23 末上）：它的功能、工具都不开，功能算进没开的那几个（快照记的不一样，开着的会话下一轮换上）；
-/// 场所显示不了图片再扣也不冲掉；必需的关不了；指纹不变。
+/// 场所显示不了图片再扣也不冲掉；指纹不变。施工 BS-1 上中起没有必需的包，哪个都关得掉。
 #[test]
-fn packages_switched_off_are_withheld_but_never_the_required_ones() {
-    let features = installed().requiring(["basesystem".to_string()]);
+fn packages_switched_off_are_withheld() {
+    let features = installed();
     let file = read("[features]\nmemory = false\n").unwrap();
     let plain = Chosen::new("full".to_string(), file.clone(), &features);
-    let off = file.switching_off(["onebot".to_string(), "basesystem".to_string()], &features);
+    let off = file.switching_off(["onebot".to_string(), "basesystem".to_string()]);
     let chosen = Chosen::new("full".to_string(), off, &features);
     assert!(!chosen.file.opens_in("qq", "onebot"), "关了的不开");
     assert!(!chosen.file.keeps("qq", "onebot", "send"), "工具不留");
-    assert!(chosen.file.opens_in("files", "basesystem"), "必需的关不了");
+    assert!(
+        !chosen.file.opens_in("files", "basesystem"),
+        "原来必需的包也关得掉"
+    );
     assert_eq!(chosen.digest, plain.digest, "指纹不变");
     assert!(
         chosen.off.contains(&"qq".to_string()),
@@ -378,4 +381,25 @@ fn packages_switched_off_are_withheld_but_never_the_required_ones() {
     assert_ne!(chosen.pin(), plain.pin(), "快照记的不一样");
     let blind = chosen.blind(&features);
     assert!(!blind.file.opens_in("qq", "onebot"), "再扣要图的不冲掉");
+}
+
+/// 组（施工 BS-1 上中，设计 44 第三节第 2 条）：`[software]` 写了组名的，组里没单独写的包照组的；单独写了的照它自己的；不在组里的
+/// 照 `unlisted`。
+#[test]
+fn a_group_switches_its_packages_unless_one_is_written() {
+    let mut file =
+        read("[preset]\nunlisted = \"off\"\n[software]\nbasesystem = true\nshell = false\n")
+            .unwrap();
+    file.groups = [
+        ("read".to_string(), vec!["basesystem".to_string()]),
+        ("shell".to_string(), vec!["basesystem".to_string()]),
+    ]
+    .into_iter()
+    .collect();
+    assert!(file.opens("read"), "照组开");
+    assert!(!file.opens("shell"), "单独写了的照自己");
+    assert!(!file.opens("net"), "不在组里的照 unlisted");
+    let digest = file.digest();
+    file.groups.clear();
+    assert_eq!(file.digest(), digest, "组不进指纹");
 }

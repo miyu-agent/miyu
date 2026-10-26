@@ -219,9 +219,15 @@ fn the_shipped_presets_read_cleanly() {
     );
     let minimal = presets.find("minimal").unwrap();
     assert_eq!(minimal.file.unlisted(), Unlisted::Off);
-    assert!(
-        minimal.file.software.is_empty(),
-        "不开整个基础系统：以后新加的功能照 unlisted 关着"
+    // 施工 BS-1 上中起只开四个包，不开整个基础系统组：组里以后新加的包照 unlisted 关着。
+    assert_eq!(
+        minimal
+            .file
+            .software
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["edit", "read", "shell", "write"]
     );
     assert_eq!(
         minimal
@@ -231,7 +237,6 @@ fn the_shipped_presets_read_cleanly() {
             .map(|(id, on)| (id.as_str(), *on))
             .collect::<Vec<_>>(),
         [
-            ("commands", true),
             ("env-harness", true),
             ("env-machine", true),
             ("env-model", true),
@@ -240,7 +245,6 @@ fn the_shipped_presets_read_cleanly() {
             ("env-session", true),
             ("env-time", true),
             ("env-workdir", true),
-            ("files", true)
         ]
     );
     assert_eq!(
@@ -250,7 +254,8 @@ fn the_shipped_presets_read_cleanly() {
             .iter()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["glob", "grep", "trash"]
+        Vec::<&str>::new(),
+        "施工 BS-1 上中起不用一件件关：glob、grep、trash 是自己的包，照 unlisted 关着"
     );
     // 无功能（施工 P-17）：什么都不写，照 unlisted 全关，以后新装的也关。
     let none = presets.find("none").unwrap();

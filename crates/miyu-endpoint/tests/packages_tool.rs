@@ -43,7 +43,7 @@ async fn a_session_looks_at_packages_through_the_core() {
     std::fs::write(folder.join("package.toml"), PANE).expect("写得进");
     let script = Script::new([
         Play::calls(&[("packages", "{}")]),
-        Play::calls(&[("packages", r#"{"package":"basesystem"}"#)]),
+        Play::calls(&[("packages", r#"{"package":"shell"}"#)]),
         Play::calls(&[("packages", &json!({"path": folder}).to_string())]),
         Play::Says("看完了。"),
     ]);
@@ -60,7 +60,7 @@ async fn a_session_looks_at_packages_through_the_core() {
     assert!(
         results[0]
             .lines()
-            .any(|line| line.starts_with("basesystem: Base system.")),
+            .any(|line| line.starts_with("shell: Commands.")),
         "列出来一个一行，名字照英文：{}",
         results[0]
     );
@@ -72,7 +72,7 @@ async fn a_session_looks_at_packages_through_the_core() {
             info["name"].clone(),
             info["layer"].clone()
         ),
-        (json!("basesystem"), json!("Base system"), json!("shipped")),
+        (json!("shell"), json!("Commands"), json!("shipped")),
         "{info}"
     );
     let (lead, preview) = results[2].split_once('\n').unwrap_or_default();
@@ -152,11 +152,11 @@ async fn a_script_sees_the_same_packages_as_a_direct_call() {
     let results = home_results(&home, &session);
     assert_eq!(results.len(), 2, "{results:?}");
     let direct = &results[0];
-    assert!(direct.contains("basesystem: Base system."), "{direct}");
+    assert!(direct.contains("shell: Commands."), "{direct}");
     let scripted = &results[1];
     assert!(scripted.starts_with("packages ok "), "{scripted}");
     assert!(
-        scripted.contains("basesystem: Base system."),
+        scripted.contains("shell: Commands."),
         "脚本里看到的和直接调的一样：{scripted}"
     );
 }

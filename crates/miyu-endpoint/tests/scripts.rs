@@ -80,7 +80,12 @@ pub(crate) fn echo(name: &str) -> String {
 /// 读系统配置、个人设置的核心，工具目录里有基础系统的 `read`，装着造脚本的端口；照起来时那样登记脚本。
 pub(crate) fn core(home: &Home, script: &Script) -> Arc<Core> {
     let read: Arc<dyn Tool> = Fake::new("read", Access::Read, Act::Echo);
-    let core = configured_core(home, script, Catalog::new([read]).expect("合写法"));
+    // 施工 BS-1 上中起 read 是自己一个包。
+    let core = configured_core(
+        home,
+        script,
+        Catalog::in_packages([("read", vec![read])]).expect("合写法"),
+    );
     let core = Arc::new(
         Arc::into_inner(core)
             .expect("只有这一份")

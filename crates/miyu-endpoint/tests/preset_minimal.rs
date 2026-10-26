@@ -39,11 +39,10 @@ fn catalog() -> Catalog {
         "package",
         "show",
     ];
-    Catalog::in_packages([
-        ("basesystem", basesystem.map(fake).to_vec()),
-        ("memory", vec![fake("remember")]),
-    ])
-    .expect("合写法")
+    // 施工 BS-1 上中起一件一个包（`miyu_basesystem::grouped`）。
+    let mut groups = miyu_basesystem::grouped(basesystem.map(fake).to_vec());
+    groups.push(("memory", vec![fake("remember")]));
+    Catalog::in_packages(groups).expect("合写法")
 }
 
 #[tokio::test]

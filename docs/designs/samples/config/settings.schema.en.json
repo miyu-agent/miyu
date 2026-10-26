@@ -1,22 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
-    "basesystem": {
-      "properties": {
-        "show": {
-          "properties": {
-            "system_hint": {
-              "default": true,
-              "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.",
-              "title": "Remind the AI to use Show",
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        }
-      },
-      "type": "object"
-    },
     "clicall": {
       "properties": {
         "mcp": {
@@ -469,7 +453,7 @@
       "additionalProperties": {
         "properties": {
           "off": {
-            "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Required packages can't be turned off. Allowed: true or false. Only in personal settings. Takes effect next turn.",
+            "description": "Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it. Allowed: true or false. Only in personal settings. Takes effect next turn.",
             "title": "Turn this package off for me",
             "type": "boolean"
           }
@@ -891,6 +875,17 @@
           ],
           "title": "Sandbox strength",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "show": {
+      "properties": {
+        "system_hint": {
+          "default": true,
+          "description": "Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path. Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.",
+          "title": "Remind the AI to use Show",
+          "type": "boolean"
         }
       },
       "type": "object"

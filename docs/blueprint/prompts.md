@@ -62,7 +62,7 @@ You can write programs that call tools. When a task takes many tool calls or rea
 
 #### `software/basesystem/show/system.txt`
 
-- 什么时候加进来：工具面上有 `show`、开关 `basesystem.show.system_hint` 开着（默认开，造会话时钉下）的会话，每次请求（施工 D-5 补二起；没有的、关着的、以前造的快照不带，一个字节不变）
+- 什么时候加进来：工具面上有 `show`、开关 `show.system_hint` 开着（默认开，造会话时钉下）的会话，每次请求（施工 D-5 补二起；没有的、关着的、以前造的快照不带，一个字节不变）
 - token：45（2026-10-24 照 o200k 数）
 - 为什么加：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看，不只给一个路径（施工 D-5 补二，项目主人 2026-10-24 定留：改后说明不带这一句 8/12 主动用，带 12/12）；常量字节，前缀稳定
 - 指纹：`5dd51cfe`

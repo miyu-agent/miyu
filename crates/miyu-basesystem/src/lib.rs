@@ -89,3 +89,68 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
         Arc::new(package::Package::load(resources)?),
     ])
 }
+
+/// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`project-docs`、`clicall` 没有工具。
+pub const PACKAGES: [&str; 18] = [
+    "read",
+    "write",
+    "edit",
+    "glob",
+    "grep",
+    "trash",
+    "shell",
+    "jobs",
+    "subagent",
+    "ask_user",
+    "todowrite",
+    "history",
+    "session_usage",
+    "sessions",
+    "packages",
+    "show",
+    "project-docs",
+    "clicall",
+];
+
+/// 基础系统的组名（施工 BS-1 上中）：上面这些包的清单都写着它，出厂的组表 `resources/packages/groups.toml` 里有它。
+pub const GROUP: &str = "basesystem";
+
+/// 一件工具归哪个包（施工 BS-1 上中）：`sessions`、`send_message` 一个包，`packages`、`package` 一个包，别的一件一个包、编号同
+/// 工具名。不是基础系统的工具照 `basesystem` 算（[`grouped`] 给测试的假工具用）。
+pub fn package_of(tool: &str) -> &'static str {
+    match tool {
+        "send_message" => "sessions",
+        "package" => "packages",
+        other => PACKAGES
+            .iter()
+            .copied()
+            .find(|id| *id == other)
+            .unwrap_or("basesystem"),
+    }
+}
+
+/// 包的编号和它的几件工具，照 [`PACKAGES`] 的先后（施工 BS-1 上中）。
+pub type Packaged = Vec<(&'static str, Vec<Arc<dyn Tool>>)>;
+
+/// 基础系统的工具照包分好（施工 BS-1 上中）：包的编号和它的几件，照 [`PACKAGES`] 的先后；没有工具的包不在里面。
+///
+/// # Errors
+///
+/// 同 [`tools`]。
+pub fn packages(resources: &Path) -> Result<Packaged, LoadError> {
+    Ok(grouped(tools(resources)?))
+}
+
+/// 几件工具照 [`package_of`] 分到基础系统的包里（施工 BS-1 上中），照 [`PACKAGES`] 的先后：核心登记时用，测试拿假工具造目录也用。
+pub fn grouped(tools: Vec<Arc<dyn Tool>>) -> Packaged {
+    let mut grouped: Packaged = Vec::new();
+    for tool in tools {
+        let package = package_of(&tool.spec().name);
+        match grouped.iter_mut().find(|(id, _)| *id == package) {
+            Some((_, tools)) => tools.push(tool),
+            None => grouped.push((package, vec![tool])),
+        }
+    }
+    grouped.sort_by_key(|(id, _)| PACKAGES.iter().position(|one| one == id));
+    grouped
+}

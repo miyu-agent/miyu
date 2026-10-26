@@ -31,6 +31,7 @@ pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
     let scope = crate::scope::scope(core, account);
     Presets::new(&core.resources, &core.root, &scope.user)
         .with_packages(&crate::packages::folders(core, account))
+        .with_groups(crate::packages::groups(&core.system_packages()))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（个人设置压着系统配置，都没写的是出厂的 `full`）。指着没有
@@ -69,7 +70,7 @@ pub(crate) fn chosen(core: &Core, owner: &AccountId, found: Found) -> Chosen {
     let file = found
         .file
         .following(switches(core, owner))
-        .switching_off(core.packages_off(owner), &features);
+        .switching_off(core.packages_off(owner));
     Chosen::new(found.id, file, &features)
 }
 

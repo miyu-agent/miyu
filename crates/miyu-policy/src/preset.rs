@@ -76,6 +76,10 @@ pub struct PresetFile {
     /// 人设的全局开关（施工 X-27，`switches.rs`）：功能编号到开不开，只认技能、脚本、MCP 三类。不是文件里写的：核心照这一轮的
     /// 配置放进来（[`PresetFile::following`]），不进 [`PresetFile::digest`]、不叠层。
     pub global: BTreeMap<String, bool>,
+    /// 包在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：包的编号到组名，照出厂的清单。`[software]` 里写了组名（`basesystem =
+    /// true`）的，组里的包没单独写就照组的（[`PresetFile::decided`]）。不是文件里写的：找预设时放进来
+    /// （`miyu_store::presets::Presets::with_groups`），不进 [`PresetFile::digest`]、不叠层。
+    pub groups: BTreeMap<String, Vec<String>>,
 }
 
 impl PresetFile {

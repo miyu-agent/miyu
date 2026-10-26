@@ -31,12 +31,6 @@ impl Refusal {
         reason: "package_id_taken",
         data: None,
     };
-    /// 卸必需的包（施工 F-5 上）：基础系统。
-    pub(crate) const PACKAGE_REQUIRED: Refusal = Refusal {
-        code: REFUSED,
-        reason: "package_required",
-        data: None,
-    };
     /// 包的程序不在 `miyu` 旁边（施工 F-6 上）：当没装，开不了。
     pub(crate) const PROGRAM_MISSING: Refusal = Refusal {
         code: REFUSED,

@@ -2,7 +2,7 @@
 //! `<资源目录>/presets/<编号>.toml`、装着的软件包带的 `<包文件夹>/presets/<编号>.toml`（施工 P-11 上，一个编号只认一份）、系统区 `system/presets/<编号>.toml`、管理员家目录 `home/<管理员>/presets/<编号>.toml`，同名的
 //! 后面的叠在前面的上面，逐格盖。文件怎么读成样子在 `miyu_policy::preset`。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -67,6 +67,8 @@ impl std::error::Error for PresetError {}
 #[derive(Debug, Clone)]
 pub struct Presets {
     dirs: Vec<(Layer, PathBuf)>,
+    /// 包在哪几个组里（施工 BS-1 上中，[`Presets::with_groups`]）：找到的预设带上它。
+    groups: BTreeMap<String, Vec<String>>,
 }
 
 impl Presets {
@@ -78,6 +80,7 @@ impl Presets {
                 (Layer::System, root.system().join("presets")),
                 (Layer::Home, root.account_dir(admin).join("presets")),
             ],
+            groups: BTreeMap::new(),
         }
     }
 
@@ -86,6 +89,14 @@ impl Presets {
     #[must_use]
     pub fn with_packages(mut self, packages: &[PathBuf]) -> Presets {
         with_packages(&mut self.dirs, packages, "presets");
+        self
+    }
+
+    /// 包在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：包的编号到组名，照出厂的清单。找到的预设带上它，`[software]`
+    /// 里写了组名的，组里没单独写的包照组的（`miyu_policy::preset::PresetFile::groups`）。
+    #[must_use]
+    pub fn with_groups(mut self, groups: BTreeMap<String, Vec<String>>) -> Presets {
+        self.groups = groups;
         self
     }
 
@@ -181,6 +192,7 @@ impl Presets {
         if found.layers.is_empty() {
             return Err(PresetError::NotFound(id.to_string()));
         }
+        found.file.groups = self.groups.clone();
         Ok(found)
     }
 

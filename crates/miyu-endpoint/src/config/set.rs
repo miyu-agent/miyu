@@ -14,8 +14,6 @@
 //!
 //! 第 3 步的重读和监视看到手改走同一条路（`observe.rs`）：手改过的先当手改推、记，再改。
 
-use std::collections::BTreeSet;
-
 use serde::{Deserialize, Deserializer};
 use serde_json::{Map, Value as Json, json};
 
@@ -172,16 +170,8 @@ fn set_in(
         WriteLayer::System => Layer::System,
         WriteLayer::Personal => Layer::Personal,
     };
-    // 必需的包（施工 U23 末上：`packages.<编号>.off` 关不了它们），在拿配置的锁之前照这一刻的清单算好。
-    let required = crate::packages::off::required(&core.system_packages());
     let mut config = mine.config();
-    let plan = plan(
-        &config,
-        layer,
-        params,
-        &words,
-        (core.home.as_deref(), &required),
-    )?;
+    let plan = plan(&config, layer, params, &words, core.home.as_deref())?;
     let via = match &plan {
         Plan::Changes(_) => Via::Set,
         Plan::Text(..) => Via::Edit,
@@ -249,15 +239,15 @@ fn plan(
     }
 }
 
-/// 照类型查以外多查的几道要的：系统的家目录（私密目录，施工 5-15 下）、必需的包（施工 U23 末上）。
-type Checks<'a> = (Option<&'a std::path::Path>, &'a BTreeSet<String>);
+/// 照类型查以外多查的一道要的：系统的家目录（私密目录，施工 5-15 下）。
+type Checks<'a> = Option<&'a std::path::Path>;
 
 /// 每一项照类型读成值、查能不能写在这一层；有一项不对整条不收（`config_invalid`，每一处一条）。
 fn wanted(
     config: &Config,
     layer: Layer,
     changes: Vec<ChangeParam>,
-    (words, (home, required)): (&Human, Checks<'_>),
+    (words, home): (&Human, Checks<'_>),
 ) -> Result<Vec<Wanted>, Refusal> {
     let mut wanted = Vec::new();
     let mut problems = Vec::new();
@@ -285,10 +275,9 @@ fn wanted(
                     None => Some(Code::WrongType),
                     Some(read) => item.kind.check(read).err(),
                 };
-                // 私密目录多查一道（施工 5-15 下）：写错的那一个照原样说；关必需的包不收（施工 U23 末上）。
+                // 私密目录多查一道（施工 5-15 下）：写错的那一个照原样说。
                 let code = match (code, &read) {
-                    (None, Some(read)) => super::private::problem(&change.key, read, home)
-                        .or_else(|| crate::packages::off::problem(&change.key, read, required)),
+                    (None, Some(read)) => super::private::problem(&change.key, read, home),
                     (code, _) => code.map(|code| (code, raw.clone())),
                 };
                 if let Some((code, raw)) = code {

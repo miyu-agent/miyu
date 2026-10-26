@@ -154,7 +154,7 @@ async fn scripts_mcp_services_and_knowledge_bases_count_too() {
     );
     assert_eq!(
         conflicts(&install(&mut client, &reader).await),
-        vec![json!({"kind": "tool", "name": "read", "package": "basesystem"})]
+        vec![json!({"kind": "tool", "name": "read", "package": "read"})]
     );
     let mcp =
         "[package]\nname = { en = \"M\" }\n\n[[mcp]]\nname = \"lone\"\ncommand = [\"server\"]\n";

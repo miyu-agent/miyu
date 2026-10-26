@@ -60,8 +60,8 @@ shell = false
 1. `name`、`summary` 照人格的写法：一句字，名字去掉前后空白不能是空的，说明可以是空的字、就是没有说明（施工 P-3 补、再补）；以前写成语言表（`zh`、`en`、`ja`）的照样认，出厂的照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。叠好的文件的指纹照以前的写法算（没写的是空表、语言表照原样）：以前造的快照照旧对得上。
 2. 没有 `default_persona`（施工 P-4 上撤了，2026-10-08 项目主人：「人格、记忆、预设相互之间耦合了」，只去掉预设的默认人格）：以前写了的认出来当没写，指纹照没写算，下一次 `preset.set` 写这份文件时去掉；`preset.set` 写这个键是 `bad_params`。
 3. `unlisted`：几层都没写的照 `on`。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
-4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。写了没装的不报错。这个人关了的包（施工 U23 末上，个人设置 `packages.<编号>.off`，`switched_off`）整包不开，同场所扣下的包；不同的是它的功能算进没开的那几个，快照记的跟着变，开着的会话下一个回合换上工具面、技能；必需的关不了。
-   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统 `basesystem`、记忆 `memory`（三件工具和回合开始的召回）、知识库 `knowledge`（两件工具，施工 K-1 下）、角色扮演 `roleplay`（人格的角色扮演提示和风格锁），和清单装的 `process` 包（桥）；联网 `net`、长期目标 `goal` 等它们做出来。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
+4. `[features]`（施工 F-3 上）的键是功能的编号（设计 30 第三节第 6 条那十五个，加上装了的包自己声明的），写法同包的编号，值是开关。一个功能开不开的先后：`[features]` 写了的；没写的照 `[software]`，先认功能的编号、再认它所在的包的编号、再认包所在的组（施工 BS-1 上中：`basesystem = true` 开组里没单独写的包；组照出厂清单的 `groups`，找预设时放进 `PresetFile::groups`，不进指纹）；都没写的照全局开关（下面「全局开关」，只管技能、脚本、MCP 服务，只在 `unlisted` 开着的预设里算，施工 X-27）；再没有的照 `unlisted`（`PresetFile::opens_in`、`decided`）。写了没装的不报错。这个人关了的包（施工 U23 末上，个人设置 `packages.<编号>.off`，`switched_off`）整包不开，同场所扣下的包；不同的是它的功能算进没开的那几个，快照记的跟着变，开着的会话下一个回合换上工具面、技能（施工 BS-1 上中起没有必需的包）。
+   以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里的十八个包）、记忆 `memory`（三件工具和回合开始的召回）、知识库 `knowledge`（两件工具，施工 K-1 下）、角色扮演 `roleplay`（人格的角色扮演提示和风格锁），和清单装的 `process` 包（桥）；联网 `net`、长期目标 `goal` 等它们做出来。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
 
@@ -71,7 +71,7 @@ shell = false
 |---|---|---|
 | `full` | 全部功能 | `unlisted = "on"`：装了的全开，以后新装的也开。`preset.default` 出厂是它 |
 | `dev` | 常规开发 | `unlisted = "off"`，开 `basesystem`、`env`（注入环境信息，施工 ENV-1）、`net`、`goal`、`memory`（人格记忆，2026-10-20 项目主人定，施工 P-15）、`authoring`（写技能、写包的两个技能，施工 P-8，2026-10-12 项目主人照推荐定：不开她要写技能时看不到，只能在本机目录里翻） |
-| `minimal` | 极简开发 | `unlisted = "off"`，不写 `[software]`，`[features]` 只开基础系统的 `files`、`commands`，`[tools]` 关 `glob`、`grep`、`trash`：留 `shell`、`read`、`write`、`edit`。基础系统以后新加的功能照 `unlisted` 关着（「脚本调工具」`clicall` 就是，施工 M-6）；往 `files`、`commands` 里加的新工具会冒出来。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
+| `minimal` | 极简开发 | `unlisted = "off"`，`[software]` 只开 `read`、`write`、`edit`、`shell` 四个包（施工 BS-1 上中起一件一个包，不用再一件件关）。基础系统组以后新加的包照 `unlisted` 关着（「脚本调工具」`clicall` 就是，施工 M-6）。环境那七个（施工 C-11，下面「环境那几块」）和「用户身份」（施工 ENV-1）照旧开着，`[features]` 写明了 |
 | `none` | 无功能 | `unlisted = "off"`，什么都不写：菜单里能开关的全关，以后新装的也关（施工 P-17，下面「无功能」） |
 
 - 名字三种语言：全部功能、Everything、すべての機能；常规开发、Development、開発（2026-10-20 项目主人改名，原来是基础功能、Basics、基本機能，施工 P-15）；极简开发、Minimal、ミニマル開発；无功能、Nothing、機能なし（施工 P-17）。图标 `boxes`、`box`、`square-terminal`、`circle-off`。编号照旧 `full`、`dev`、`minimal`，加 `none`，只在核心和配置 `preset.default` 里用，界面上不露。

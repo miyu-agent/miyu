@@ -136,7 +136,7 @@ fn the_registered_list_is_well_formed() {
             "memory.merge_every",
             "memory.merge_sessions",
             "memory.dream_keep",
-            "basesystem.show.system_hint",
+            "show.system_hint",
             "net.search.source",
             "net.search.exa.key",
             "net.search.deepseek.key",

@@ -57,10 +57,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",
         ),
-        "package_required" => (
-            "必需的软件包，无法卸载。",
-            "Required package, cannot be removed.",
-        ),
         "package_invalid" => ("清单有误，无法安装。", "Invalid manifest, cannot install."),
         "package_file_bad" => ("包文件无法解开。", "Cannot unpack the package file."),
         "download_failed" => ("软件包下载失败。", "Package download failed."),

@@ -23,7 +23,9 @@ use crate::support::*;
 fn catalog() -> Catalog {
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
     Catalog::in_packages([
-        ("basesystem", vec![fake("read"), fake("shell")]),
+        // 施工 BS-1 上中起一件一个包。
+        ("read", vec![fake("read")]),
+        ("shell", vec![fake("shell")]),
         (
             "memory",
             vec![fake("remember"), fake("forget"), fake("memory_search")],
@@ -214,11 +216,9 @@ async fn preset_get_lists_features_with_their_tools() {
         .call("g1", "preset.get", json!({"preset": "dev"}))
         .await;
     let listed = switches(&dev);
-    assert_eq!(
-        listed[..2],
-        [("files", true, true), ("commands", true, true)],
-        "{dev}"
-    );
+    // 施工 BS-1 上中起基础系统一件一个包，常规开发照组 basesystem 全开。
+    assert!(listed.contains(&("read", true, true)), "{dev}");
+    assert!(listed.contains(&("shell", true, true)), "{dev}");
     assert!(
         listed.contains(&("memory", true, true)),
         "常规开发开着记忆（施工 P-15）"
@@ -227,11 +227,10 @@ async fn preset_get_lists_features_with_their_tools() {
         listed.contains(&("goal", true, true)),
         "长期目标装了（施工 X-8 上）"
     );
-    let files = feature(&dev, "files");
     assert_eq!(
-        files["tools"],
+        feature(&dev, "read")["tools"],
         json!([{"name": "read", "label": "读取", "on": true}]),
-        "目录里只有 read 归文件读写"
+        "read 包只有 read"
     );
     assert_eq!(
         feature(&dev, "memory")["tools"],
@@ -274,7 +273,7 @@ async fn preset_get_lists_features_with_their_tools() {
         1,
         "只列一遍"
     );
-    assert_eq!(feature(&nosh, "commands")["tools"][0]["label"], "执行命令");
+    assert_eq!(feature(&nosh, "shell")["tools"][0]["label"], "执行命令");
 }
 
 /// 回应里编号是 `id` 的那个功能。
@@ -375,7 +374,7 @@ async fn a_feature_switched_off_takes_its_tools_and_is_named() {
     let home = Home::new();
     home.write(
         "home/alice/presets/noshell.toml",
-        "[preset]\nname = { en = \"No shell\" }\n\n[features]\ncommands = false\n",
+        "[preset]\nname = { en = \"No shell\" }\n\n[features]\nshell = false\n",
     );
     let (session, request) = first_request(
         &home,
@@ -392,7 +391,7 @@ async fn a_feature_switched_off_takes_its_tools_and_is_named() {
         request.system
     );
     let pin = snapshot(&home, &session).preset.expect("记了预设");
-    assert_eq!(pin.off, ["commands"]);
+    assert_eq!(pin.off, ["shell"]);
 }
 
 /// 没装人格记忆（没有它的清单，施工 F-3 上）：全部功能的预设、带人格的会话，记忆的范围也是 `off`，三件工具不给，那一行也不写

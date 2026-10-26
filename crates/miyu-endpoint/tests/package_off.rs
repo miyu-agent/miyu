@@ -104,16 +104,13 @@ async fn a_package_switched_off_is_gone_for_that_person_only() {
         "别人照旧有"
     );
 
-    // 必需的关不了；系统配置里写不进。
-    let required = set(&mut alice, 2, "personal", "packages.basesystem.off", true).await;
-    assert_eq!(
-        required["error"]["data"]["reason"], "config_invalid",
-        "{required}"
-    );
+    // 施工 BS-1 上中起没有必需的包：原来基础系统的 trash 也关得掉；系统配置里写不进。
+    let trash = set(&mut alice, 2, "personal", "packages.trash.off", true).await;
+    assert!(trash["result"].is_object(), "{trash}");
     let system = set(&mut alice, 3, "system", "packages.kit.off", true).await;
     assert!(system["error"].is_object(), "系统层写不进：{system}");
 
-    // 设置页：每个包那一组有这一项，必需的没有（测试的核心照重读清单那一次拼包的项：装一个别的包）。
+    // 设置页：每个包那一组有这一项（测试的核心照重读清单那一次拼包的项：装一个别的包）。
     let folder = home.work.join("other");
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(
@@ -143,25 +140,20 @@ async fn a_package_switched_off_is_gone_for_that_person_only() {
         .collect();
     assert!(keys.contains(&"packages.kit.off"), "{keys:?}");
     assert!(
-        !keys.contains(&"packages.basesystem.off"),
-        "必需的没有：{keys:?}"
+        keys.contains(&"packages.shell.off"),
+        "原来基础系统的包也有：{keys:?}"
     );
 }
 
-/// 手改个人设置把必需的包写成关着的（`config.set` 拦不住手改）：当没写，它的工具照旧在。
+/// 原来基础系统的包对自己关掉（施工 BS-1 上中起没有必需的包）：手改个人设置写成关着的，工具就没了，别的包照旧。
 #[tokio::test]
-async fn a_required_package_written_off_by_hand_stays_on() {
+async fn a_former_basesystem_package_written_off_by_hand_is_off() {
     let home = Home::new();
-    home.write(
-        "home/alice/settings.toml",
-        "[packages.basesystem]\noff = true\n",
-    );
+    home.write("home/alice/settings.toml", "[packages.read]\noff = true\n");
     let script = Arc::new(Script::new([]));
     let core = core(&home, &script);
     let mut alice = Client::connect(Arc::clone(&core));
     alice.hello().await;
-    assert!(
-        face(&mut alice).await.contains(&"read".to_string()),
-        "必需的照旧开着"
-    );
+    let face = face(&mut alice).await;
+    assert!(!face.contains(&"read".to_string()), "{face:?}");
 }

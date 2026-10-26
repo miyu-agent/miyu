@@ -46,15 +46,15 @@ async fn only_a_session_with_show_carries_the_show_line() {
     assert!(!without.system.contains(line), "{}", without.system);
 }
 
-/// show 那一句的开关（施工 D-5 补二，项目主人 10-24 定：`basesystem.show.system_hint`，默认开）：关了的会话工具面上有
+/// show 那一句的开关（施工 D-5 补二，项目主人 10-24 定：`show.system_hint`，默认开）：关了的会话工具面上有
 /// `show` 也不带；开着的照带。
 #[tokio::test]
 async fn the_show_line_follows_its_switch() {
     let line = include_str!("../../../resources/software/basesystem/show/system.txt").trim_end();
     let show = Fake::new("show", Access::Read, Act::Echo);
     for (source, carried) in [
-        ("[basesystem.show]\nsystem_hint = false\n", false),
-        ("[basesystem.show]\nsystem_hint = true\n", true),
+        ("[show]\nsystem_hint = false\n", false),
+        ("[show]\nsystem_hint = true\n", true),
     ] {
         let mut home = Home::new();
         home.configs = crate::support::routing::configs(source, &[]);

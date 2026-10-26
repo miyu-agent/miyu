@@ -156,19 +156,21 @@ pub fn main(options: Options) -> ExitCode {
 /// （`miyu_endpoint::packages::compiled`）。画 mermaid、联网照 cargo 开关。
 pub fn built_in() -> Vec<&'static str> {
     // 照开关挑，不用 `#[cfg]` 掉 `push`：两个开关都关着时 `mut` 就成了多余的，clippy 报（不带默认开关单独编它时就是这样）。
-    [
-        Some(miyu_tool::BASESYSTEM),
-        Some(miyu_memory::PACKAGE),
-        Some(miyu_goal::PACKAGE),
-        Some(miyu_knowledge::PACKAGE),
-        Some(ROLEPLAY),
-        Some(miyu_policy::shown::PACKAGE),
-        cfg!(feature = "mermaid").then_some("mermaid"),
-        cfg!(feature = "net").then_some("net"),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
+    miyu_basesystem::PACKAGES
+        .iter()
+        .copied()
+        .map(Some)
+        .chain([
+            Some(miyu_memory::PACKAGE),
+            Some(miyu_goal::PACKAGE),
+            Some(miyu_knowledge::PACKAGE),
+            Some(ROLEPLAY),
+            Some(miyu_policy::shown::PACKAGE),
+            cfg!(feature = "mermaid").then_some("mermaid"),
+            cfg!(feature = "net").then_some("net"),
+        ])
+        .flatten()
+        .collect()
 }
 
 /// 人设遵循提醒这个内置包的编号（施工 F-2）：代码在策略、会话两层，核心这里只认编号。
@@ -205,10 +207,13 @@ type Builtin = (&'static str, Vec<Arc<dyn miyu_tool::Tool>>);
 fn groups(resources: &ResourceRoot, found: &[Found], kit: &Kit) -> Result<Vec<Builtin>, String> {
     let installed = |id| miyu_endpoint::packages::is_installed(found, id);
     let mut groups = Vec::new();
-    if installed(miyu_tool::BASESYSTEM) {
-        let basesystem =
-            miyu_basesystem::tools(resources.path()).map_err(|error| error.to_string())?;
-        groups.push((miyu_tool::BASESYSTEM, basesystem));
+    // 基础系统拆成的包（施工 BS-1 上中，设计 44）：装了哪个登记哪个。
+    for (package, tools) in
+        miyu_basesystem::packages(resources.path()).map_err(|error| error.to_string())?
+    {
+        if installed(package) {
+            groups.push((package, tools));
+        }
     }
     // 记忆这个软件包的三件（施工 R-3 中，`memory.md`「工具」）：工具面上只给本机的主会话。
     if installed(miyu_memory::PACKAGE) {
@@ -318,13 +323,10 @@ fn manifests_of(core: &Arc<Core>) -> settings::Manifests {
     })
 }
 
-/// 读两层清单（施工 9-1 上），再标出这一份核心没编进来的内置包（施工 F-2）。必需的基础系统没装，记一行 `WARN`，照样起来。
+/// 读两层清单（施工 9-1 上），再标出这一份核心没编进来的内置包（施工 F-2）。
 fn load_packages(resources: &ResourceRoot, root: &DataRoot, owner: &AccountId) -> Vec<Found> {
     let mut found = miyu_endpoint::packages::load(resources, root, owner);
     miyu_endpoint::packages::compiled(&mut found, &built_in());
-    if !miyu_endpoint::packages::is_installed(&found, miyu_tool::BASESYSTEM) {
-        tracing::warn!(target: TARGET, package = miyu_tool::BASESYSTEM, "required package missing");
-    }
     found
 }
 

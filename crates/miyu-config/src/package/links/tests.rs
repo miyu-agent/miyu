@@ -60,7 +60,7 @@ fn a_worker_reads_its_program_and_args() {
     );
     let bare = read(&EMBED.replace("args = [\"serve\"]\n", "")).unwrap();
     assert!(bare.worker.unwrap().args.is_empty(), "参数可以不写");
-    assert!(!manifest.required);
+    assert!(manifest.groups.is_empty());
 }
 
 #[test]
@@ -120,14 +120,22 @@ fn a_process_package_reads_its_connection() {
     assert_eq!(wrong(&text), (Code::MissingKey, Some(13)));
 }
 
+/// 组（施工 BS-1 上中）：只有内置包能写；组名照包的编号的写法、不重复；照写的先后。原来的 `required` 删了，写了照不认识的键。
 #[test]
-fn only_builtins_are_required() {
-    let text = BRIDGE.replace("[package]\n", "[package]\nrequired = true\n");
+fn only_builtins_have_groups() {
+    let text = BRIDGE.replace("[package]\n", "[package]\ngroups = [\"basesystem\"]\n");
     assert_eq!(wrong(&text), (Code::WrongKind, Some(2)));
-    let text = MEMORY.replace("[package]\n", "[package]\nrequired = \"yes\"\n");
-    assert_eq!(wrong(&text), (Code::NotBool, Some(2)));
-    let text = MEMORY.replace("[package]\n", "[package]\nrequired = false\n");
-    assert!(!read(&text).unwrap().required);
+    let text = MEMORY.replace("[package]\n", "[package]\ngroups = [\"Bad Name\"]\n");
+    assert_eq!(wrong(&text), (Code::BadGroup, Some(2)));
+    let text = MEMORY.replace("[package]\n", "[package]\ngroups = [\"a\", \"a\"]\n");
+    assert_eq!(wrong(&text), (Code::BadGroup, Some(2)));
+    let text = MEMORY.replace(
+        "[package]\n",
+        "[package]\ngroups = [\"basesystem\", \"extra\"]\n",
+    );
+    assert_eq!(read(&text).unwrap().groups, ["basesystem", "extra"]);
+    let text = MEMORY.replace("[package]\n", "[package]\nrequired = true\n");
+    assert_eq!(wrong(&text).0, Code::UnknownKey);
 }
 
 #[test]

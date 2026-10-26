@@ -16,14 +16,14 @@ use std::time::Duration;
 miyu_config::settings! {
     /// 展示（施工 D-5 补二，项目主人 2026-10-24 定）：核心替基础系统声明，挂在「软件包」那一页、`basesystem` 那一组。造会话时
     /// 读一次钉进快照（`miyu_policy::Snapshot::no_show_hint`），新会话生效：会话中途改了 system 不变，前缀稳定。
-    pub struct ShowSettings in "basesystem.show" {
+    pub struct ShowSettings in "show" {
         /// system 里带 show 的那一句（`show/system.txt`）：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看。工具面上
         /// 有 `show` 的才带。
         system_hint: bool = true {
             kind: bool,
             layers: [System, Personal],
             applies: new_session,
-            ui: { page: "packages", group: "basesystem", package: "basesystem", control: toggle },
+            ui: { page: "packages", group: "show", package: "show", control: toggle },
         },
     }
 }

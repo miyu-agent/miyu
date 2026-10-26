@@ -1,6 +1,6 @@
 # 极简开发（施工 P-16 上，2026-10-23 项目主人定）：只给 shell 和读写文件的四件，让 AI 照它原来会的做。
-# 不写 [software] basesystem：只开基础系统的「文件读写」「运行命令」两个功能，没写的功能照 unlisted 关着，基础系统以后新加的
-# 功能在这里也是关的。「文件读写」里另外几件单独关掉。
+# 不写 [software] basesystem：施工 BS-1 上中起基础系统拆成一件一个包（设计 44），这里只开读、写、改、运行命令四个包，没写的照
+# unlisted 关着，基础系统组以后新加的包在这里也是关的。
 [preset]
 name = { zh = "极简开发", en = "Minimal", ja = "ミニマル開発" }
 # 说明：给人看的，不发给模型。
@@ -9,9 +9,13 @@ summary = { zh = "只提供Shell和读写文件的工具，最小化工具集以
 icon = "square-terminal"
 unlisted = "off"
 
+[software]
+read = true
+write = true
+edit = true
+shell = true
+
 [features]
-files = true
-commands = true
 # 环境那几块（施工 C-11；施工 ENV-1 起在内置包 env 里，编号不变）：极简开发照旧全开，和拆开以前一样；「用户身份」是原来的「关于你」，
 # 原来就拼。
 env-time = true
@@ -22,8 +26,3 @@ env-model = true
 env-harness = true
 env-machine = true
 env-profile = true
-
-[tools]
-glob = false
-grep = false
-trash = false

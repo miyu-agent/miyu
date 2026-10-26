@@ -97,22 +97,43 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
             .any(|name| name.starts_with("web_")),
         "没装联网，没有 web_fetch、web_search"
     );
+    // 施工 BS-1 上中起基础系统是一个组：卸掉组里的全部包，才一件都没有；只卸 shell 的只少它。
+    let mut without: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    without.extend(["knowledge", "net"]);
     assert_eq!(
-        names_without(&["basesystem", "knowledge", "net"]),
+        names_without(&without),
         ["forget", "goal", "memory_search", "remember"],
-        "没装基础系统、知识库、联网，只有记忆的三件和长期目标的一件"
+        "没装基础系统组、知识库、联网，只有记忆的三件和长期目标的一件"
     );
+    let without_shell = names_without(&["shell"]);
+    assert!(
+        !without_shell.contains(&"shell".to_string()),
+        "没装 shell 包，没有 shell"
+    );
+    assert!(without_shell.contains(&"read".to_string()), "别的包照旧");
+    let without_sessions = names_without(&["sessions"]);
+    assert!(
+        !without_sessions.contains(&"send_message".to_string())
+            && !without_sessions.contains(&"sessions".to_string()),
+        "sessions 包带着 send_message 一起没"
+    );
+    let mut only_knowledge: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    only_knowledge.extend(["memory", "goal", "net"]);
     assert_eq!(
-        names_without(&["basesystem", "memory", "goal", "net"]),
+        names_without(&only_knowledge),
         ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
         "只装知识库（施工 K-1 下、K-3），只有它的五件"
     );
+    let mut only_net: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    only_net.extend(["memory", "goal", "knowledge"]);
     assert_eq!(
-        names_without(&["basesystem", "memory", "goal", "knowledge"]),
+        names_without(&only_net),
         ["web_fetch", "web_search"],
         "只装联网（施工 N-1、N-2 上），只有它的两件"
     );
-    assert!(names_without(&["basesystem", "memory", "goal", "knowledge", "net"]).is_empty());
+    let mut none: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    none.extend(["memory", "goal", "knowledge", "net"]);
+    assert!(names_without(&none).is_empty());
 }
 
 /// 写错了的清单不算装了（施工 F-2）：照读成了的认。
@@ -182,10 +203,12 @@ fn every_shipped_tool_belongs_to_a_feature() {
             .find(|(name, _)| name == tool)
             .map(|(_, feature)| feature.as_str())
     };
-    assert_eq!(owner("shell"), Some("commands"));
-    assert_eq!(owner("jobs"), Some("background"));
-    assert_eq!(owner("edit"), Some("files"));
-    assert_eq!(owner("send_message"), Some("peers"));
+    // 施工 BS-1 上中起基础系统一件一个包，包就是它的功能。
+    assert_eq!(owner("shell"), Some("shell"));
+    assert_eq!(owner("jobs"), Some("jobs"));
+    assert_eq!(owner("edit"), Some("edit"));
+    assert_eq!(owner("send_message"), Some("sessions"));
+    assert_eq!(owner("package"), Some("packages"));
     assert_eq!(owner("remember"), Some("memory"));
 }
 

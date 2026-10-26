@@ -258,10 +258,8 @@ pub fn settle_with(
         let Ok(manifest) = &one.read else {
             continue;
         };
-        // 每个人能把它对自己整个关掉（施工 U23 末上）：「软件包」页这个包那一组底下一个开关，必需的没有。
-        if !manifest.required {
-            items.push(miyu_session::packages_off::item_for(&one.id));
-        }
+        // 每个人能把它对自己整个关掉（施工 U23 末上）：「软件包」页这个包那一组底下一个开关。
+        items.push(miyu_session::packages_off::item_for(&one.id));
         if manifest.settings.is_empty() {
             continue;
         }
@@ -320,6 +318,18 @@ impl Core {
         self.knowledge
             .use_packages(crate::knowledge::carried(packages));
     }
+}
+
+/// 包在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：读成了的清单里写了 `[package] groups` 的，包的编号到组名。找预设时
+/// 照它把 `[software]` 里写的组名分给组里的包（`miyu_store::presets::Presets::with_groups`）。
+pub fn groups(found: &[Found]) -> std::collections::BTreeMap<String, Vec<String>> {
+    found
+        .iter()
+        .filter_map(|one| {
+            let manifest = one.read.as_ref().ok()?;
+            (!manifest.groups.is_empty()).then(|| (one.id.clone(), manifest.groups.clone()))
+        })
+        .collect()
 }
 
 /// 内置包 `id` 装了（施工 F-2）：有它读成了的清单，种类是内置。编进来的代码照它起不起。

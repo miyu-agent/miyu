@@ -12,7 +12,6 @@
 use std::collections::BTreeMap;
 
 use super::{PresetFile, Unlisted};
-use crate::features::Features;
 
 /// 三类功能编号的开头：技能 `skill-<名字>`、脚本 `script-<工具名>`、MCP 服务 `mcp-<服务名>`。
 const SWITCHABLE: [&str; 3] = ["skill-", "script-", "mcp-"];
@@ -45,18 +44,11 @@ impl By {
 }
 
 impl PresetFile {
-    /// 放进这一轮这个人关了的包 `off`（施工 U23 末上，个人设置 `packages.<编号>.off`）：整份换掉原来的，`features` 记下的必需的
-    /// 不算（[`PresetFile::switched_off`]）。改了从下一个回合开始生效。
+    /// 放进这一轮这个人关了的包 `off`（施工 U23 末上，个人设置 `packages.<编号>.off`）：整份换掉原来的（[`PresetFile::switched_off`]）。
+    /// 改了从下一个回合开始生效。施工 BS-1 上中起没有必需的包，哪个都关得掉。
     #[must_use]
-    pub fn switching_off(
-        mut self,
-        off: impl IntoIterator<Item = String>,
-        features: &Features,
-    ) -> PresetFile {
-        self.switched_off = off
-            .into_iter()
-            .filter(|id| !features.required().contains(id))
-            .collect();
+    pub fn switching_off(mut self, off: impl IntoIterator<Item = String>) -> PresetFile {
+        self.switched_off = off.into_iter().collect();
         self
     }
 
@@ -74,7 +66,15 @@ impl PresetFile {
             .features
             .get(feature)
             .or_else(|| self.software.get(feature))
-            .or_else(|| self.software.get(package));
+            .or_else(|| self.software.get(package))
+            .or_else(|| {
+                // 包没单独写的照它所在的组（施工 BS-1 上中）：先写的组先算。
+                self.groups
+                    .get(package)
+                    .into_iter()
+                    .flatten()
+                    .find_map(|group| self.software.get(group))
+            });
         if let Some(on) = written {
             return (*on, By::Preset);
         }
