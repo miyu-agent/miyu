@@ -29,7 +29,12 @@ impl Kit {
         Kit {
             read: Fake::new("read", Access::Read, Act::Echo),
             write: Fake::new("write", Access::Write, Act::Echo),
-            shell: Fake::new("shell", Access::Execute, Act::Echo),
+            shell: Fake::commanding(
+                "shell",
+                Access::Execute,
+                Some(miyu_tool::RUN_IN_BACKGROUND),
+                Act::Echo,
+            ),
         }
     }
 

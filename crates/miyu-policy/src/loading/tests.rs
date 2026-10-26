@@ -16,6 +16,7 @@ fn entry(name: &str, need_load: bool) -> ToolEntry {
         access: Access::Read,
         need_load,
         clicall: false,
+        runs_commands: false,
     }
 }
 

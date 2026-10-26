@@ -336,8 +336,13 @@ impl Tools {
             usage: crate::usage::for_call(self.ledger.as_ref(), usage),
             questions: questions::port(self.asks, call_id, &self.backs),
             goals: goals::port(self.goals, call_id, &self.backs),
-            nested: (name == miyu_tool::SHELL && !clicall.is_empty())
-                .then(|| self.nested_port(call_id, clicall)),
+            // 通道只开给跑命令的工具（施工 BS-1 上，原来照名字认 `shell`）。
+            nested: (!clicall.is_empty()
+                && self
+                    .catalog
+                    .get(&name)
+                    .is_some_and(|tool| tool.runs_commands()))
+            .then(|| self.nested_port(call_id, clicall)),
             memory: self
                 .memory
                 .as_ref()

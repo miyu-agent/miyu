@@ -158,9 +158,10 @@ async fn a_script_reads_this_sessions_usage_too() {
     ])
     .window(100_000)
     .priced(tariff());
-    let shell = Fake::new(
+    let shell = Fake::commanding(
         "shell",
         Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
         Act::Calls(vec![("session_usage", "{}")]),
     );
     let mut tools: Vec<std::sync::Arc<dyn Tool>> = miyu_basesystem::tools(home.resources.path())

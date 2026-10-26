@@ -54,9 +54,10 @@ fn text(result: &ToolResult) -> String {
 
 #[tokio::test]
 async fn a_script_calls_tools_through_the_kernel_and_hears_back_after_the_log() {
-    let shell = Fake::new(
+    let shell = Fake::commanding(
         "shell",
         Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
         Act::Calls(vec![
             ("web_search", r#"{"query":"niri"}"#),
             ("lookup", "{}"),
@@ -154,7 +155,12 @@ async fn a_script_calls_tools_through_the_kernel_and_hears_back_after_the_log() 
 
 #[tokio::test]
 async fn interrupting_the_shell_cancels_what_runs_under_it() {
-    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("slow", "{}")]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("slow", "{}")]),
+    );
     let slow = Fake::callable("slow", Access::Read, Act::Holds);
     let home = Home::new();
     let script = Script::new([
@@ -215,9 +221,10 @@ async fn interrupting_the_shell_cancels_what_runs_under_it() {
 async fn a_call_under_a_new_background_job_waits_for_the_job_to_be_logged() {
     let held = Held::new(&[]);
     let heard = Arc::new(Mutex::new(Vec::new()));
-    let shell = Fake::new(
+    let shell = Fake::commanding(
         "shell",
         Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
         Act::BackgroundCalls(Arc::clone(&held), "web_search", Arc::clone(&heard), true, 0),
     );
     let search = Fake::callable(
@@ -256,7 +263,12 @@ async fn a_call_under_a_new_background_job_waits_for_the_job_to_be_logged() {
 /// 工具面上一件脚本里能调的都没有的会话：`shell` 拿不到端口，不开通道（施工 M-3）。
 #[tokio::test]
 async fn a_session_without_callable_tools_gives_the_shell_no_port() {
-    let shell = Fake::new("shell", Access::Read, Act::Echo);
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Echo,
+    );
     let lookup = Fake::new("lookup", Access::Read, Act::Echo);
     let home = Home::new();
     let script = Script::new([
@@ -272,6 +284,30 @@ async fn a_session_without_callable_tools_gives_the_shell_no_port() {
     assert!(shell.calls()[0].nested.is_none());
 }
 
+/// 通道只开给跑命令的工具（施工 BS-1 上）：有能调的工具时，声明了跑命令的那件拿得到端口，没声明的（名字叫什么都一样）拿不到。
+#[tokio::test]
+async fn only_a_tool_that_runs_commands_gets_the_port() {
+    let runner = Fake::commanding("bash", Access::Read, None, Act::Echo);
+    let other = Fake::new("shell", Access::Read, Act::Echo);
+    let search = Fake::callable("web_search", Access::Read, Act::Echo);
+    let home = Home::new();
+    let script = Script::new([
+        Play::calls(&[
+            ("bash", r#"{"command":"ls"}"#),
+            ("shell", r#"{"command":"ls"}"#),
+        ]),
+        Play::Says("好。"),
+    ]);
+    let handle = home
+        .create_with(&script, &catalog(&[&runner, &other, &search]))
+        .await;
+    let mut pushes = watch(&handle).await;
+    ask(&handle, "cmd-1", say("跑")).await.expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    assert!(runner.calls()[0].nested.is_some(), "声明了的拿得到");
+    assert!(other.calls()[0].nested.is_none(), "叫 shell 没声明的拿不到");
+}
+
 /// 派它的那次 `shell` 的结果没报这个任务（施工 M-3，内核那边审时提的）：等着的那一次再也等不到，当场答「父级不在了」，
 /// 不让脚本一直等；什么都不记。调用比结果先到（等 0 毫秒）、后到（等 300 毫秒，CI 上撞出来过：收下时就要认出来）都一样。
 #[tokio::test]
@@ -279,9 +315,10 @@ async fn a_call_under_a_job_that_never_gets_logged_is_answered_gone() {
     for wait in [0, 300] {
         let held = Held::new(&[]);
         let heard = Arc::new(Mutex::new(Vec::new()));
-        let shell = Fake::new(
+        let shell = Fake::commanding(
             "shell",
             Access::Read,
+            Some(miyu_tool::RUN_IN_BACKGROUND),
             Act::BackgroundCalls(
                 Arc::clone(&held),
                 "web_search",

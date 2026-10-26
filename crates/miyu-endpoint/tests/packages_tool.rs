@@ -131,7 +131,12 @@ async fn a_script_sees_the_same_packages_as_a_direct_call() {
         Play::Says("看完了。"),
     ]);
     // 假的 `shell`：经端口调一次 `packages`，交回的写成一行 `packages ok text=…`。
-    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("packages", "{}")]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("packages", "{}")]),
+    );
     let mut tools: Vec<Arc<dyn Tool>> = miyu_basesystem::tools(&default_resources())
         .expect("出厂的工具")
         .into_iter()

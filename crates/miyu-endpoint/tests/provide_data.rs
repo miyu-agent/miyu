@@ -45,9 +45,10 @@ async fn an_extension_tool_data_reaches_scripts_only() {
         &steps(&[&step, "hello", &format!("ask:provide:{}", tools()), "serve"]),
     );
     // 假的 `shell`：命令里经端口调这两件，答回来的一件一行。
-    let shell = Fake::new(
+    let shell = Fake::commanding(
         "shell",
         Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
         Act::Calls(vec![("data", "{}"), ("data_error", "{}")]),
     );
     let catalog = Catalog::new([Arc::clone(&shell) as Arc<dyn Tool>]).expect("合写法");

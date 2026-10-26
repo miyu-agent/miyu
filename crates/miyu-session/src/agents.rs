@@ -27,8 +27,8 @@ use miyu_store::blob::Blobs;
 use miyu_store::personas::Personas;
 use miyu_tool::{
     ASK_USER, AgentPort, BACKGROUND, BASESYSTEM, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT,
-    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, REMEMBER, RUN_IN_BACKGROUND, SEND_MESSAGE,
-    SESSION_USAGE, SESSIONS, SHELL, SUBAGENT, TODOWRITE, is_subagent,
+    KB_READ, KB_SAVE, KB_SEARCH, MEMORY_SEARCH, REMEMBER, SEND_MESSAGE, SESSION_USAGE, SESSIONS,
+    SUBAGENT, TODOWRITE, is_subagent,
 };
 
 use crate::TARGET;
@@ -267,6 +267,7 @@ impl Agents {
                 })
             })
             .map(|spec| {
+                let tool = tools.get(&spec.name);
                 let mut entry = ToolEntry {
                     name: spec.name.clone(),
                     description: spec.description.clone(),
@@ -274,14 +275,19 @@ impl Agents {
                     access: spec.access.clone(),
                     need_load: offers.loading.need_load(&spec.name, spec.need_load),
                     clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
+                    runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                 };
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {
                     entry.offer(POOL, &offers.pools);
                     entry.offer(PERSONA_PARAMETER, &offers.personas);
                 }
-                if foreground && spec.name == SHELL {
-                    entry.without(RUN_IN_BACKGROUND);
+                // 只在有后台时才给的参数照工具自己声明的去掉（施工 BS-1 上，原来照名字认 `shell`）。
+                if let Some(parameter) = tool
+                    .filter(|_| foreground)
+                    .and_then(|tool| tool.background_parameter())
+                {
+                    entry.without(parameter);
                 }
                 // 在后台跑的工具换前台的说法（施工 T-1 下）：`subagent` 派出去等它报回来。
                 if let Some(said) = foreground

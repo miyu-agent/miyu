@@ -131,7 +131,12 @@ async fn a_session_whose_owner_is_not_an_admin_gets_no_log_dir() {
 async fn a_call_made_from_a_script_carries_the_round_that_sent_it() {
     for (by, owner) in [(owner_in_group(), true), (stranger(), false)] {
         let home = Home::new();
-        let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("note", "{}")]));
+        let shell = Fake::commanding(
+            "shell",
+            Access::Read,
+            Some(miyu_tool::RUN_IN_BACKGROUND),
+            Act::Calls(vec![("note", "{}")]),
+        );
         let note = Fake::callable("note", Access::Read, Act::Echo);
         let script = Script::new([
             Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),

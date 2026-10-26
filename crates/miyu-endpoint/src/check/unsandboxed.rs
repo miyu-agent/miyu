@@ -44,7 +44,9 @@ pub(super) fn unsandboxed(core: &Core, words: &Human) -> Vec<Value> {
                     &[("name", name), ("real", &real)],
                 ));
             }
-            Some(_) if name == miyu_tool::SHELL => problems.push(warn("sandbox_shell", &[])),
+            Some(_) if catalog.get(name).is_some_and(|tool| tool.runs_commands()) => {
+                problems.push(warn("sandbox_shell", &[]));
+            }
             Some(_) => {}
         }
     }

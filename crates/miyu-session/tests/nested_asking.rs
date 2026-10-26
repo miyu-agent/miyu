@@ -15,7 +15,12 @@ use crate::support::*;
 
 /// 一个脚本：经端口调一次要联网的 `fetch`。工作区这一级联网要问人。
 async fn scripted(home: &Home, attended: bool) -> miyu_session::Handle {
-    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("fetch", "{}")]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("fetch", "{}")]),
+    );
     let fetch = Fake::callable("fetch", Access::Network, Act::Echo);
     let script = Script::new([
         Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),

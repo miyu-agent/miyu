@@ -49,7 +49,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 
 #### `core/clicall.txt`
 
-- 什么时候加进来：工具面上有 `shell`、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的快照不带，一个字节不变）
+- 什么时候加进来：工具面上有跑命令的工具（出厂的是 `shell`，施工 BS-1 上起照 `Tool::runs_commands` 认）、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的快照不带，一个字节不变）
 - token：92（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
 - 为什么加：设计 39 第九节 MC12：什么时候写成程序、什么时候直接调；第二轮只写 shell 说明的用得少
 - 指纹：`e4636fa1`
@@ -5093,7 +5093,7 @@ Its double quotes were lost on the way, as Windows PowerShell 5.1 does. Pipe the
 
 #### `software/basesystem/shell/call/describe.txt`
 
-- 什么时候加进来：工具面上有 `shell`、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的会话不带，一个字节不变）。`{tools}` 照会话的工具面填
+- 什么时候加进来：工具面上有跑命令的工具（出厂的是 `shell`，施工 BS-1 上起照 `Tool::runs_commands` 认）、有脚本里能调的工具的会话，每次请求（施工 M-4 起；没有的、以前造的会话不带，一个字节不变）。`{tools}` 照会话的工具面填
 - token：256，`{tools}` 按出厂九件填（2026-10-21 照开发端点量，接在 `hi` 和一个换行后面）
 - 为什么加：设计 39 第九节：她不知道就不会用（第十节第一轮 27 次只用了 4 次）；写法照第四重跑、第五轮
 - 指纹：`27c6beca`

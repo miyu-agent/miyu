@@ -132,7 +132,12 @@ fn scripting(clicall: bool) -> Catalog {
     Catalog::in_packages([(
         "basesystem",
         vec![
-            Fake::new(miyu_tool::SHELL, Access::Execute, Act::Echo) as Arc<dyn miyu_tool::Tool>,
+            Fake::commanding(
+                miyu_tool::SHELL,
+                Access::Execute,
+                Some(miyu_tool::RUN_IN_BACKGROUND),
+                Act::Echo,
+            ) as Arc<dyn miyu_tool::Tool>,
             Fake::from_spec(miyu_tool::Spec { clicall, ..fetch }, Act::Echo),
         ],
     )])
@@ -203,5 +208,53 @@ fn switched_off_the_face_is_the_same_as_without_tools_from_scripts() {
     assert!(
         crate::agents::clicall::tells(&on),
         "开着的照旧带 system 那一句"
+    );
+}
+
+/// 只在有后台时给的参数照工具自己的声明去掉（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话里，声明了的那件去掉它
+/// 声明的参数，名字叫不叫 `shell` 都一样；没声明的名字叫 `shell` 也不动。开着后台的照旧都在。
+#[test]
+fn the_background_only_parameter_follows_what_the_tool_declares() {
+    let parameters = r#"{"type":"object","properties":{"command":{"type":"string"},"later":{"type":"boolean"},"run_in_background":{"type":"boolean"}}}"#;
+    let catalog = Catalog::in_packages([(
+        "basesystem",
+        vec![
+            Fake::commanding_with(
+                "bash",
+                Access::Execute,
+                parameters,
+                Some("later"),
+                Act::Echo,
+            ) as Arc<dyn miyu_tool::Tool>,
+            Fake::with_parameters(miyu_tool::SHELL, Access::Execute, parameters, Act::Echo),
+        ],
+    )])
+    .expect("合写法");
+    let keys = |face: &[miyu_policy::ToolEntry], name: &str| -> Vec<String> {
+        let entry = face
+            .iter()
+            .find(|entry| entry.name == name)
+            .expect("在面上");
+        let value: serde_json::Value =
+            serde_json::from_str(entry.parameters.get()).expect("是 JSON");
+        value["properties"]
+            .as_object()
+            .expect("有 properties")
+            .keys()
+            .cloned()
+            .collect()
+    };
+    let no_background = "[preset]\nunlisted = \"on\"\n[features]\nbackground = false\n";
+    let face = scripted_face(&catalog, Some(no_background));
+    assert_eq!(keys(&face, "bash"), ["command", "run_in_background"]);
+    assert_eq!(
+        keys(&face, miyu_tool::SHELL),
+        ["command", "later", "run_in_background"],
+        "没声明的不看名字"
+    );
+    let face = scripted_face(&catalog, None);
+    assert_eq!(
+        keys(&face, "bash"),
+        ["command", "later", "run_in_background"]
     );
 }

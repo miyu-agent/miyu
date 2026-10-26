@@ -278,7 +278,12 @@ fn a_preset_turning_tools_from_scripts_off_takes_them_back() {
         },
         Act::Echo,
     );
-    let shell: Arc<dyn Tool> = Fake::new("shell", Access::Execute, Act::Echo);
+    let shell: Arc<dyn Tool> = Fake::commanding(
+        "shell",
+        Access::Execute,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Echo,
+    );
     let tools = Catalog::in_packages([("basesystem", vec![shell, fetch])]).expect("合写法");
     let (_scratch, root, mut refresh) = setup_in("preset-clicall", "", tools);
     let before = refresh.snapshot.tools.clone();

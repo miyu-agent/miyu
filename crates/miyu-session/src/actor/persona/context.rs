@@ -158,7 +158,12 @@ fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
         name: old.persona.clone(),
         texts,
         attended: old.attended,
-        face: old.tools.clone(),
+        face: crate::agents::clicall::stamped(old.tools.clone(), |name| {
+            refresh
+                .tools
+                .get(name)
+                .is_some_and(|tool| tool.runs_commands())
+        }),
         memory: old.memory.clone(),
         child: refresh.child,
         preset: old.preset.clone(),

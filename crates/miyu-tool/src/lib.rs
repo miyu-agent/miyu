@@ -232,8 +232,20 @@ pub trait Tool: Send + Sync {
 
     /// 说明末尾讲脚本调工具的那一段（施工 M-4，设计 `39-脚本调工具.md` 第九节）：这个会话的工具面上有脚本里能调的工具时，组
     /// 工具面的一方把它接在说明后面。`tools` 是能调的名单（一个 MCP 服务的几件并成 `mcp__<服务>__*`），`shapes` 是有结构化结果
-    /// 的那几件的样子（`名字 样子`，`; ` 隔开；一件都没有的是空的）。只有 `shell` 有，别的没有。
+    /// 的那几件的样子（`名字 样子`，`; ` 隔开；一件都没有的是空的）。跑命令的工具（[`Tool::runs_commands`]）有，别的没有。
     fn clicall_section(&self, _tools: &str, _shapes: &str) -> Option<String> {
+        None
+    }
+
+    /// 跑命令的工具（施工 BS-1 上，设计 `44-基础系统拆包.md` 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道，说明后面接
+    /// [`Tool::clicall_section`]，没有沙盒时 `miyu check` 提醒。核心照这一条认，不看名字：别人的包带的同类工具照样声明。默认不是。
+    fn runs_commands(&self) -> bool {
+        false
+    }
+
+    /// 只在会话有后台时才给的那个参数（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话，工具面上去掉它。`shell` 的是
+    /// `run_in_background`。默认没有。
+    fn background_parameter(&self) -> Option<&'static str> {
         None
     }
 }

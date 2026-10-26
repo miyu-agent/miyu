@@ -16,6 +16,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         access,
         need_load: false,
         clicall: false,
+        runs_commands: false,
     }
 }
 

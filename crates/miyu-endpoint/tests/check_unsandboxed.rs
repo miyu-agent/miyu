@@ -36,7 +36,11 @@ async fn each_grant_is_checked_against_the_catalog() {
             ],
         ),
         ("smart-home", vec![fake("lamp")]),
-        ("basesystem", vec![fake("shell")]),
+        // 跑命令照工具自己的声明认（施工 BS-1 上），不看名字。
+        (
+            "basesystem",
+            vec![Fake::commanding("shell", Access::Execute, None, Act::Echo) as Arc<dyn Tool>],
+        ),
     ])
     .expect("合写法");
     let mut client = Client::connect(configured_core(&home, &Script::new([]), catalog));

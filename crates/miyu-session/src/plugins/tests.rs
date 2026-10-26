@@ -91,6 +91,7 @@ fn the_face_is_sifted_and_replugged() {
                 access: Access::Read,
                 need_load: false,
                 clicall: false,
+                runs_commands: false,
             })
             .collect()
     };

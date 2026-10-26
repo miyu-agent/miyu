@@ -376,7 +376,12 @@ async fn the_owners_private_chat_runs_a_granted_tool() {
 #[tokio::test]
 async fn a_nested_call_of_a_granted_tool_runs_outside_the_sandbox() {
     let mut home = Home::outside_temp();
-    let shell = Fake::new("shell", Access::Execute, Act::Calls(vec![("run", "{}")]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Execute,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("run", "{}")]),
+    );
     let fake = Fake::callable("run", Access::Execute, Act::Echo);
     let call = Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]);
     turn(

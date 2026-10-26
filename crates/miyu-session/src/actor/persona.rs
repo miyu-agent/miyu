@@ -274,7 +274,12 @@ fn look(
             followed(refresh, values, catalog, None, reach),
             old.preset.clone(),
         ),
-        _ => (old.tools.clone(), old.preset.clone()),
+        _ => (
+            crate::agents::clicall::stamped(old.tools.clone(), |name| {
+                catalog.get(name).is_some_and(|tool| tool.runs_commands())
+            }),
+            old.preset.clone(),
+        ),
     };
     let face = match &shelved {
         Some(fresh) => crate::plugins::replug(reshelved(face, fresh), fresh, catalog, plugs),

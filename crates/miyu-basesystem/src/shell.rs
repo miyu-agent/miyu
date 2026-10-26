@@ -264,6 +264,14 @@ impl Tool for Shell {
         Some(self.section.render(tools, shapes))
     }
 
+    fn runs_commands(&self) -> bool {
+        true
+    }
+
+    fn background_parameter(&self) -> Option<&'static str> {
+        Some(miyu_tool::RUN_IN_BACKGROUND)
+    }
+
     fn outside_sandbox(&self, call: &Call) -> bool {
         serde_json::from_str::<Args>(&call.args).is_ok_and(|args| args.outside_sandbox)
     }

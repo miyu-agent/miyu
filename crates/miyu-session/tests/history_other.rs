@@ -254,9 +254,10 @@ async fn a_script_reads_another_session_through_history() {
     // A：真的基础系统，`shell` 换成在脚本里调 `history` 读 B 的假的。
     let args: &'static str =
         Box::leak(format!(r#"{{"session":"{}"}}"#, b_id.short()).into_boxed_str());
-    let shell = miyu_tool::testkit::Fake::new(
+    let shell = miyu_tool::testkit::Fake::commanding(
         "shell",
         miyu_kernel::tool::Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
         miyu_tool::testkit::Act::Calls(vec![("history", args)]),
     );
     let tools = miyu_basesystem::tools(home.resources.path())

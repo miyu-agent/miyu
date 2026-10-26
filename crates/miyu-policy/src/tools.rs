@@ -38,6 +38,10 @@ pub struct ToolEntry {
     /// 的快照读成不能：字节和以前一样，以前的会话里一件都不开（2026-10-20 项目主人定）。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub clicall: bool,
+    /// 跑命令的工具（施工 BS-1 上，`miyu_tool::Tool::runs_commands`）：组工具面时照目录写进来，拼 system 时照它判通道开不开。
+    /// 没有的不写，以前造的快照读成不是：以前的快照不再重拼 system，字节不受影响。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub runs_commands: bool,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时

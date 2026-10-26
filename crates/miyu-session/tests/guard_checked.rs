@@ -90,7 +90,12 @@ async fn a_nested_call_gets_the_positions_the_guard_judged() {
     file(&home, "work/a.txt");
     let args = serde_json::json!({"path": at(&home, "work/a.txt")}).to_string();
     let args: &'static str = Box::leak(args.into_boxed_str());
-    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("look", args)]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("look", args)]),
+    );
     let look = Fake::callable("look", Access::Read, Act::Echo);
     let script = Script::new([
         Play::calls(&[("shell", r#"{"command":"python3 x.py"}"#)]),

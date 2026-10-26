@@ -206,7 +206,12 @@ async fn a_script_cannot_reach_a_plugin_tool_turned_off_within_the_turn() {
     let home = Home::new();
     home.plugins
         .set(VenueId::parse(GROUP).expect("合写法"), on(&["qq-admin"]));
-    let shell = Fake::new("shell", Access::Read, Act::Calls(vec![("qq_mute", "{}")]));
+    let shell = Fake::commanding(
+        "shell",
+        Access::Read,
+        Some(miyu_tool::RUN_IN_BACKGROUND),
+        Act::Calls(vec![("qq_mute", "{}")]),
+    );
     let mute = Fake::from_spec(
         Spec {
             plugin: Some("qq-admin".to_string()),

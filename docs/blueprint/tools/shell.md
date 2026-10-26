@@ -44,7 +44,7 @@
 | `command` | 是 | 要执行的命令 |
 | `description` | 是 | 这条命令在做什么的短标题，几个词。前台的不用它跑命令，记在调用里，前端显示用（施工 4-13，2026-09-28 项目主人定；前端随 M8）；后台的是任务的标题，记进 `job.started`（施工 7-3）。没写的，参数不对 |
 | `timeout` | 否 | 毫秒。没给、给了 0，是 120000；大过 600000 的照 600000。要是不小于 0 的整数，负数参数不对。后台的不看它，照样查写法 |
-| `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」） |
+| `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameter` 去掉，不看名字） |
 | `outside_sandbox` | 否 | 布尔，没写是假。真的：这一次要在沙盒外跑，先问人（施工 D-4，2026-10-07 项目主人定，照 Claude Code 的 `dangerouslyDisableSandbox`）。说明里写明被挡下就直接带它重跑、别先在聊天里问：带上它就是在问人（施工 D-4 补，2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」）。工具自己不看它决定套不套沙盒，只报给权限策略和执行器（`Tool::outside_sandbox`）；写成字符串的照参数格式修正成布尔 |
 
 - 别的参数不认，也不报错。
@@ -131,7 +131,7 @@
    - `schema.txt` 换进名字、说明、参数格式，说明和参数不转义：是工具面上的原样，她在 tools 数组里看到的也是原样。
 8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`channel::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。
 9. 关：丢掉端点就掐掉服务、删掉套接字，令牌跟着作废，等着的 `miyu call` 读到结尾（退出码 3）。前台的命令结束时丢。
-10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有 `shell`、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`；预设关了「脚本调工具」的一件都不算，施工 M-6）的，`shell` 的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`shell/section.rs`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
+10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有跑命令的工具（`Tool::runs_commands`，施工 BS-1 上起不看名字；出厂的就是 `shell`）、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`；预设关了「脚本调工具」的一件都不算，施工 M-6）的，`shell` 的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`shell/section.rs`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
     - `call/describe.txt`：怎么用，`{tools}` 换成能调的名单，照名字排，一个 MCP 服务的几件并成 `mcp__<服务>__*`。
     - `call/example.txt`：`Example: {example}`，核心起来时和 `{shell}` 一起挑一次：PowerShell 的用 `call/example-powershell.txt`；bash、zsh 的 `PATH` 上有 `jq` 用 `example-jq.txt`，没有、有 `python3` 用 `example-python.txt`；都没有的不带这一行。
     - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。

@@ -74,6 +74,8 @@ pub struct Fake {
     file: Option<PathBuf>,
     calls: Mutex<Vec<Call>>,
     dropped: Arc<AtomicUsize>,
+    /// 声明自己跑命令、只在有后台时给的参数（施工 BS-1 上，[`Fake::commanding`]）。
+    commands: Option<Option<&'static str>>,
 }
 
 impl Fake {
@@ -117,7 +119,37 @@ impl Fake {
             file: None,
             calls: Mutex::new(Vec::new()),
             dropped: Arc::new(AtomicUsize::new(0)),
+            commands: None,
         })
+    }
+
+    /// 像 `shell` 那样声明自己跑命令的假工具（施工 BS-1 上：核心照声明认，不看名字），`background` 是只在有后台时给的参数。
+    pub fn commanding(
+        name: &str,
+        access: Access,
+        background: Option<&'static str>,
+        act: Act,
+    ) -> Arc<Fake> {
+        Fake::commanding_with(name, access, r#"{"type":"object"}"#, background, act)
+    }
+
+    /// 同 [`Fake::commanding`]，参数格式照 `parameters` 的原文。
+    ///
+    /// # Panics
+    ///
+    /// `parameters` 不是 JSON。
+    pub fn commanding_with(
+        name: &str,
+        access: Access,
+        parameters: &str,
+        background: Option<&'static str>,
+        act: Act,
+    ) -> Arc<Fake> {
+        let mut fake = Fake::with_parameters(name, access, parameters, act);
+        if let Some(fake) = Arc::get_mut(&mut fake) {
+            fake.commands = Some(background);
+        }
+        fake
     }
 
     /// 给 `venues` 那几种会话的假工具，像提供者的（施工 O-2 上）。
@@ -220,6 +252,14 @@ pub fn call(args: &str) -> Call {
 impl Tool for Fake {
     fn spec(&self) -> &Spec {
         &self.spec
+    }
+
+    fn runs_commands(&self) -> bool {
+        self.commands.is_some()
+    }
+
+    fn background_parameter(&self) -> Option<&'static str> {
+        self.commands.flatten()
     }
 
     fn venues(&self) -> Option<Venues> {

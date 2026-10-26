@@ -20,6 +20,7 @@ fn face(names: &[&str]) -> Vec<ToolEntry> {
             access: Access::Read,
             need_load: false,
             clicall: false,
+            runs_commands: false,
         })
         .collect()
 }
