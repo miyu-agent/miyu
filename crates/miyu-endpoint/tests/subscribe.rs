@@ -49,9 +49,9 @@ async fn pushes_come_before_the_reply() {
             .all(|push| push["params"]["session"] == json!(session))
     );
 
-    // 接着是增量、她的回复、回合结束。
+    // 接着是增量、她的回复、回合结束。回应等后台同步（施工 V-19），会话不等它：后面这几样可能有的已经排在回应前面了。
     let after = client.until_turn_ends(&session).await;
-    let kinds = kinds(&after);
+    let kinds = kinds(&[before, after].concat());
     for kind in ["model.delta", "message.assistant", "turn.ended"] {
         assert!(
             kinds.contains(&kind.to_string()),

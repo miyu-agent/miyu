@@ -29,6 +29,8 @@ impl Actor {
         }
         inputs.extend(restarted);
         if self.drain(inputs).await.is_ok() {
+            // 写了还没同步的同步完，扣着的回应交出去（施工 V-19）。
+            self.settle_sync().await;
             self.jobs.close().await;
             tracing::info!(target: TARGET, "stopped");
             answer(reply, ());
@@ -48,7 +50,8 @@ impl Actor {
             return false;
         }
         self.jobs.close().await;
-        // 先关日志再回：会话表一收到就挪会话目录，Windows 上开着的文件挪不走。
+        // 先同步完、放下后台同步的句柄（施工 V-19），再关日志再回：会话表一收到就挪会话目录，Windows 上开着的文件挪不走。
+        self.settle_sync().await;
         self.store = None;
         tracing::info!(target: TARGET, "stopped for deletion");
         answer(reply, Ok(()));

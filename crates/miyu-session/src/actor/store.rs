@@ -1,18 +1,24 @@
-//! 落盘和读回（施工 3-7 中；施工 6-9 从 `actor.rs` 挪出来，那边放不下了）：在阻塞线程里写一批、同步；撤掉压缩时读回
-//! 更早的日志（`docs/blueprint/session/actor.md` 第 4 条）。写不进去、读不回来，会话都停下：内存里的会话和磁盘对不上了，
+//! 落盘和读回（施工 3-7 中；施工 6-9 从 `actor.rs` 挪出来，那边放不下了）：在阻塞线程里写一批，提交点的交给后台同步
+//! （施工 V-19）；撤掉压缩时读回更早的日志（`docs/blueprint/session/actor.md` 第 4 条）。写不进去、读不回来，会话都停下：内存里的会话和磁盘对不上了，
 //! 从磁盘重新载入最清楚（`07-存储.md` 第四节「写不进去」）。
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, CompactableChanged, Event, Transient, TransientBody};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
-use miyu_kernel::session::Input;
+use miyu_kernel::session::{Input, Outcome};
 
-use super::{Actor, Stop};
+use std::io;
+use std::sync::Arc;
+
+use tokio::sync::oneshot;
+
+use super::{Actor, Stop, answer};
 use crate::TARGET;
 use crate::current::{Current, Tally};
 use crate::effects;
 use crate::goal::Goals;
+use crate::store::Flush;
 
 impl Actor {
     /// 这一刻「当前的」几样（施工 9-6 上）：订阅时和订阅在同一步里交回。权限、还在跑的任务照内核这一刻的，累计的照给头看的
@@ -75,7 +81,8 @@ impl Actor {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    /// 在阻塞线程里写、同步，写完交回「落盘了」。写不进去就停下。撤销、恢复落了盘，她看过的照日志重算一遍
+    /// 在阻塞线程里写，写完交回「落盘了」；要同步的交给后台，不等它（施工 V-19，`durable.rs`）。写不进去就停下。撤销、
+    /// 恢复落了盘，她看过的照日志重算一遍
     /// （施工 4-7 上）：重算不出来的记一条运行日志，照旧用原来的，改的工具照样先核对。
     pub(super) async fn append(&mut self, events: Vec<Event>) -> Result<Option<Input>, Stop> {
         let Some(upto) = events.last().map(|event| event.seq) else {
@@ -103,9 +110,16 @@ impl Actor {
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let sync = must_sync(&events);
+        // 同步挪到后台的（施工 V-19）：只写、不同步，写完拿最新的句柄；不挪的照旧连同同步写。
+        let background = store.background();
         let written = tokio::task::spawn_blocking(move || {
             span.in_scope(|| {
-                let result = store.write(&events, sync);
+                let result = match background {
+                    true => store
+                        .write(&events, false)
+                        .and_then(|()| store.sync_handle().map(Some)),
+                    false => store.write(&events, sync).map(|()| None),
+                };
                 let seen = (reseen && result.is_ok())
                     .then(|| store.events().map(|all| effects::seen_in(&all)));
                 (store, result, seen)
@@ -113,8 +127,9 @@ impl Actor {
         })
         .await;
         match written {
-            Ok((store, Ok(()), seen)) => {
+            Ok((store, Ok(handle), seen)) => {
                 self.store = Some(store);
+                self.written(upto, sync, handle);
                 match seen {
                     Some(Ok(seen)) => self.tools.see(seen),
                     Some(Err(error)) => {
@@ -169,6 +184,96 @@ impl Actor {
                 Err(Stop)
             }
         }
+    }
+}
+
+impl Actor {
+    /// 写进去了一批（施工 V-19，`session/actor.md` 第 5 条第 9 款）：有句柄的记下，要同步的交给后台；没有句柄的（不做后台
+    /// 同步的）写的时候已经同步过，当场算同步到了这一条。
+    fn written(&mut self, upto: Seq, sync: bool, handle: Option<Arc<dyn Flush>>) {
+        match handle {
+            Some(handle) => {
+                self.sync.flush = Some(handle);
+                if let Some(upto) = self.sync.durable.written(upto, sync) {
+                    self.dispatch(upto);
+                }
+            }
+            None => {
+                self.sync.durable.written(upto, false);
+                let (released, _) = self.sync.durable.done(upto);
+                release(released);
+            }
+        }
+    }
+
+    /// 派一次后台同步，同步到 `upto`：在阻塞线程里对最新的句柄做，做完报回 actor（`synced`）。没有句柄的（还没写过、不做
+    /// 后台同步的）当场算同步到了。
+    pub(super) fn dispatch(&mut self, upto: Seq) {
+        let Some(flush) = self.sync.flush.clone() else {
+            let (released, _) = self.sync.durable.done(upto);
+            return release(released);
+        };
+        let done = self.syncs.clone();
+        let span = tracing::Span::current();
+        tokio::task::spawn_blocking(move || {
+            let result = span.in_scope(|| flush.flush());
+            // actor 已经退出了：没人收，丢掉。
+            drop(done.send((upto, result)));
+        });
+    }
+
+    /// 一次后台同步做完了：放出等到了的回应，该接着做的接着派。同步不了的和写不进去一样，记一行，会话停下。
+    pub(super) fn synced(&mut self, upto: Seq, result: io::Result<()>) -> Result<(), Stop> {
+        if let Err(error) = result {
+            tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
+            self.sync.failed = true;
+            return Err(Stop);
+        }
+        let (released, next) = self.sync.durable.done(upto);
+        release(released);
+        if let Some(next) = next {
+            self.dispatch(next);
+        }
+        Ok(())
+    }
+
+    /// 停下以前（第 11 款）：等路上的同步做完，把写了还没同步的同步完，交扣着的回应，放下句柄（Windows 上开着的句柄挡着挪
+    /// 目录）。同步不了的记一行，扣着的回应不交：等的那一头收到会话停了。
+    pub(super) async fn settle_sync(&mut self) {
+        while self.sync.durable.busy() {
+            let Some((upto, result)) = self.synced.recv().await else {
+                break;
+            };
+            if self.synced(upto, result).is_err() {
+                self.sync.flush = None;
+                return;
+            }
+        }
+        if let (Some(upto), Some(flush)) = (self.sync.durable.pending(), self.sync.flush.clone()) {
+            match tokio::task::spawn_blocking(move || flush.flush()).await {
+                Ok(Ok(())) => release(self.sync.durable.done(upto).0),
+                Ok(Err(error)) => {
+                    tracing::warn!(target: TARGET, kind = ?error.kind(), "sync failed, stopped");
+                    self.sync.failed = true;
+                    self.sync.flush = None;
+                    return;
+                }
+                Err(_) => {
+                    tracing::error!(target: TARGET, "panicked, stopped");
+                    self.sync.flush = None;
+                    return;
+                }
+            }
+        }
+        release(self.sync.durable.release_all());
+        self.sync.flush = None;
+    }
+}
+
+/// 交出放出来的回应。
+fn release(released: Vec<(oneshot::Sender<Outcome>, Outcome)>) {
+    for (reply, outcome) in released {
+        answer(reply, outcome);
     }
 }
 

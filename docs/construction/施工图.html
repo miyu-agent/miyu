@@ -482,6 +482,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV17a"><span class="n">V-17 上</span>投影提速<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV17b"><span class="n">V-17 下</span>组装少做重复的活<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV18"><span class="n">V-18</span>少落盘<span class="st">✓</span></a></li>
+        <li><a class="step" href="#sV19"><span class="n">V-19</span>盘忙不卡<span class="st">…</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -10118,6 +10119,41 @@ a.step:hover{border-color:var(--primary)}
         <div><dt>日期</dt><dd class="mono">2026-10-26</dd></div>
         <div><dt>提交</dt><dd class="mono">V-18</dd></div>
         <div><dt>验收</dt><dd>真任务 strace：落盘调用 71 → 28，块写中位数约 4.6 → 1.5 MiB；本地门禁；手写变异 29 个都红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+</section>
+
+<section class="sheet" id="sV19" aria-labelledby="h-sV19">
+  <div class="sheet-head"><h2 id="h-sV19"><span class="no">V-19</span>盘忙不卡</h2><span class="pill">施工中</span></div>
+  <p class="purpose">盘忙时一次 fdatasync 卡几秒，同步挡在推送、派工具前面，她就停在那里。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">盘忙不卡</span><span class="dir-note">V-19</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>写进去就送「落了盘」：推送、派工具、发请求不等同步</li>
+              <li>提交点那几批交给后台同步，一次一个、几批合成一次</li>
+              <li>回应命令等它的事件同步完才交；停下以前同步完</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">S4</span><span class="rl">回应等同步，别的只等写进去</span></div>
+          <div class="tile new"><span class="nm">内核</span><span class="rl">不动：扣回应是执行器的事</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-19</dd></div>
+        <div><dt>名称</dt><dd>盘忙不卡</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-26</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-19</dd></div>
+        <div><dt>验收</dt><dd>本地门禁；手写变异；改元数据的负载下真任务复现，不再有秒级的空档</dd></div>
       </dl>
     </figcaption>
   </figure>

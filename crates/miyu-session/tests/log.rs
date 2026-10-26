@@ -89,7 +89,7 @@ async fn the_log_says_what_happened_and_nothing_that_was_said() {
     // 另一个会话：端口一叫就 panic。
     let broken = home.create(&Script::new([Play::Panics])).await;
     let b = broken.id().as_str().to_string();
-    // 这句话落了盘就回应了，请求模型时端口才 panic。
+    // 这句话落了盘就回应了，请求模型时端口才 panic。回应扣着等后台同步的，actor 退出时再同步一次照接受交出去（施工 V-19）。
     let said = ask(&broken, "cmd-1", say("早上好")).await;
     assert!(matches!(said, Ok(Outcome::Accepted { .. })), "{said:?}");
     wait_for(&memory, &format!("session  {b} panicked, stopped")).await;

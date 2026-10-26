@@ -4,6 +4,7 @@
 //! （落盘了、挂接点跑完了）放进本地的队列，先于收件箱里的送：和执行器替身（`miyu-kernel` 的 `testkit`）一个先后。
 
 use std::collections::{BTreeMap, VecDeque};
+use std::io;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -30,8 +31,10 @@ use crate::report::Reporter;
 use crate::shown::{Next, Shown};
 use crate::store::Store;
 use crate::tools::{ToolKit, Tools};
+use durable::Syncing;
 
 mod back;
+mod durable;
 mod extract;
 mod goal;
 mod halt;
@@ -71,6 +74,12 @@ pub(crate) struct Actor {
     pushes: broadcast::Sender<Arc<Pushed>>,
     /// 等着回应的命令：同一个编号来了几次，照先后排着。
     replies: BTreeMap<CommandId, VecDeque<oneshot::Sender<Outcome>>>,
+    /// 后台同步的账、句柄、扣着的回应（施工 V-19，`actor/durable.rs`）。
+    sync: Syncing,
+    /// 后台同步做完报回来的：同步到哪一条、成没成。actor 自己拿着送的那一头，通道不会自己关。
+    synced: mpsc::UnboundedReceiver<(Seq, io::Result<()>)>,
+    /// 交给后台同步、往 `synced` 里送的那一头。
+    syncs: mpsc::UnboundedSender<(Seq, io::Result<()>)>,
     /// 还没说完的请求：叫停它的那一头，和交给端口的那一刻（算用时）。
     calls: BTreeMap<Seq, (oneshot::Sender<()>, Instant)>,
     /// 还没说完的辅助请求（施工 3-8 四补的回顾、五补的起标题，`model.rs`）：用途、照到第几条、叫停它的那一头（拿着不用：
@@ -143,6 +152,7 @@ impl Actor {
         config: Turning,
     ) -> Actor {
         let (backs, back) = mpsc::unbounded_channel();
+        let (syncs, synced) = mpsc::unbounded_channel();
         let tools = Tools::new(tools, backs.clone());
         let jobs = SessionJobs::new(jobs, backs.clone());
         let (pushes, _) = broadcast::channel(PUSH_QUEUE);
@@ -164,6 +174,9 @@ impl Actor {
             backs,
             pushes,
             replies: BTreeMap::new(),
+            sync: Syncing::new(),
+            synced,
+            syncs,
             calls: BTreeMap::new(),
             asides: Vec::new(),
             clock,
@@ -235,10 +248,15 @@ impl Actor {
                     Some(input) => input,
                     None => continue,
                 },
+                // 后台同步做完了（施工 V-19）：放出等到了的回应，接着派下一次；出错的停下。
+                Some((upto, result)) = self.synced.recv() => match self.synced(upto, result) {
+                    Ok(()) => continue,
+                    Err(Stop) => return,
+                },
                 message = self.inbox.recv() => match message.map(|message| self.mail(message)) {
                     Some(Mail::Input(input)) => input,
                     Some(Mail::Done) => continue,
-                    Some(Mail::Retired) => return,
+                    Some(Mail::Retired) => return self.settle_sync().await,
                     Some(Mail::Stop(reply)) => return self.stop(reply).await,
                     Some(Mail::Halt(halt)) => match self.halt(halt).await {
                         Ok(()) => continue,
@@ -249,6 +267,7 @@ impl Actor {
                         false => continue,
                     },
                     None => {
+                        self.settle_sync().await;
                         tracing::info!(target: TARGET, "closed");
                         return;
                     }
@@ -455,8 +474,12 @@ impl Actor {
         if waiting.is_empty() {
             self.replies.remove(&id);
         }
-        if let Some(reply) = first {
-            answer(reply, outcome);
+        let Some(reply) = first else {
+            return;
+        };
+        // 接受了、带着事件的，事件都同步了才交（施工 V-19，`session/actor.md` 第 5 条第 10 款）；别的当场交。
+        if let Some(upto) = durable::route(&mut self.sync.durable, reply, outcome) {
+            self.dispatch(upto);
         }
     }
 }

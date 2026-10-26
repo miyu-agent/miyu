@@ -76,7 +76,7 @@
 
 **缓存目录** `cache_root(env)`：只找不建。核心起来时算一次，沙盒的缓存放在它下面的 `sandbox/<账号>/`（施工 5-4 下，`core.md`），后台拉的 models.dev 目录放在 `models/`：`models-dev.json`、`models-dev.meta.json`（带 `ETag`，施工 8-7，`models.md`「文件」）。
 
-**会话日志** `SessionLog`：`create(目录, 上限)`、`open(目录, 上限)`、`open_each(目录, 上限, 每一块)`（施工 V-15）、`append(一批事件)`、`next_seq()`、`dir()`、`mark()`（写到哪了：正在写的那一段、它的长度、下一条该是几号，一起叫 `Mark`，施工 3-8 七补）；只读的 `read_events(目录)`、`read_segments(目录, 每一段)`、`read_marked(目录, 从哪里, 每一段)`（施工 3-8 七补）、`first_event(目录)`。一段的上限 `SEGMENT_LIMIT` 是 64 MiB（67,108,864 字节）。
+**会话日志** `SessionLog`：`create(目录, 上限)`、`open(目录, 上限)`、`open_each(目录, 上限, 每一块)`（施工 V-15）、`append(一批事件)`、`write(一批事件)`、`sync()`（施工 V-18）、`sync_handle()`（施工 V-19：正在写的那一段的另一个句柄，别的线程对它 `sync_data`，同步的是那一刻以前写进去的；换段以后要再拿）、`next_seq()`、`dir()`、`mark()`（写到哪了：正在写的那一段、它的长度、下一条该是几号，一起叫 `Mark`，施工 3-8 七补）；只读的 `read_events(目录)`、`read_segments(目录, 每一段)`、`read_marked(目录, 从哪里, 每一段)`（施工 3-8 七补）、`first_event(目录)`。一段的上限 `SEGMENT_LIMIT` 是 64 MiB（67,108,864 字节）。
 
 **blob** `Blobs::new(目录)`：`put(内容)` 交回内容哈希，`get(哈希)` 交回内容，`path(哈希)` 交回它放在哪；`put_file(文件, 每一段)` 照文件边读边存，读到的每一段也交给调的那一头（施工 7-12 下，后台命令的输出最多 5 GB，不整份读进内存）。
 

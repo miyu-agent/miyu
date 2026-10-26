@@ -22,6 +22,22 @@ use crate::TARGET;
 use crate::memory::{Calls, Source, TurnLane};
 
 /// 一次写一批。在阻塞线程里用，所以要能挪到别的线程上。
+/// 能在别的线程里同步的句柄（施工 V-19，`session/actor.md` 第 5 条第 9 款）：会话日志正在写的那一段的另一个句柄。
+pub(crate) trait Flush: Send + Sync {
+    /// 同步：这个句柄所在的那一段，到这一刻写进去的都落了盘。
+    ///
+    /// # Errors
+    ///
+    /// 同步不了。
+    fn flush(&self) -> io::Result<()>;
+}
+
+impl Flush for std::fs::File {
+    fn flush(&self) -> io::Result<()> {
+        self.sync_data()
+    }
+}
+
 pub(crate) trait Store: Send + 'static {
     /// 追加一批，返回时这一批都落了盘。
     fn append(&mut self, events: &[Event]) -> io::Result<()>;
@@ -31,6 +47,21 @@ pub(crate) trait Store: Send + 'static {
     fn write(&mut self, events: &[Event], sync: bool) -> io::Result<()> {
         let _ = sync;
         self.append(events)
+    }
+
+    /// 同步挪到后台做不做（施工 V-19）：做的，写的时候一律不同步，写完拿 [`Store::sync_handle`] 交给后台；不做的（测试里
+    /// 不在磁盘上的）照旧同步地写，写完就算同步了。
+    fn background(&self) -> bool {
+        false
+    }
+
+    /// 后台同步用的句柄（施工 V-19）：写完一批再拿，换了段也是新的那一段。不做后台同步的没有。
+    ///
+    /// # Errors
+    ///
+    /// 给不出句柄；不做后台同步的一律报不支持。
+    fn sync_handle(&self) -> io::Result<std::sync::Arc<dyn Flush>> {
+        Err(io::ErrorKind::Unsupported.into())
     }
 
     /// 只读地读回整份日志。
@@ -70,6 +101,14 @@ impl Store for SessionLog {
             SessionLog::sync(self)?;
         }
         Ok(())
+    }
+
+    fn background(&self) -> bool {
+        true
+    }
+
+    fn sync_handle(&self) -> io::Result<std::sync::Arc<dyn Flush>> {
+        Ok(std::sync::Arc::new(SessionLog::sync_handle(self)?))
     }
 
     fn events(&self) -> Result<Vec<Event>, String> {
@@ -148,6 +187,14 @@ impl Indexed {
 impl Store for Indexed {
     fn append(&mut self, events: &[Event]) -> io::Result<()> {
         self.write(events, true)
+    }
+
+    fn background(&self) -> bool {
+        Store::background(&self.log)
+    }
+
+    fn sync_handle(&self) -> io::Result<std::sync::Arc<dyn Flush>> {
+        Store::sync_handle(&self.log)
     }
 
     /// 先写进日志（`sync` 的连同同步），再更新索引、写用量汇总、更新回合索引。更新失败只记一行
