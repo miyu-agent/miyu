@@ -2801,6 +2801,171 @@ The goal is marked blocked and this autonomous run is ending. Write the closing 
 </goal_blocked>
 ```
 
+#### `software/schedule/common/bad-args.txt`
+
+- 什么时候加进来：`cron_*` 的参数读不出来、`prompt` 是空的
+- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说清哪里不对（施工 J-2），同 `goal`
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/schedule/common/off.txt`
+
+- 什么时候加进来：这次调用没有定时的端口、唤醒表用不了
+- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说清楚，不当成别的错（施工 J-2）
+- 指纹：`1ac894a9`
+
+```text
+Scheduled jobs are not available in this session.
+```
+
+#### `software/schedule/cron/created.txt`
+
+- 什么时候加进来：`cron_create` 成了
+- token：12（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：编号和下一次几点（施工 J-2）：照会话时区写到分钟，她告诉人什么时候跑照这个时刻，不照 cron 原文猜
+- 指纹：`d04d72a9`
+
+```text
+Scheduled {id}. Next run: {next}.
+```
+
+#### `software/schedule/cron/full.txt`
+
+- 什么时候加进来：她在这个会话里已经挂满 20 个（设计 45 第三节第 3 条）
+- token：17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：上限写在报错里，不写进说明（施工 J-2），叫她先删
+- 指纹：`70995250`
+
+```text
+This session already has {limit} jobs. Delete one with cron_delete first.
+```
+
+#### `software/schedule/cron/bad-cron.txt`
+
+- 什么时候加进来：唤醒表说 cron 写法不对
+- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：照唤醒表的原话说哪里不对（施工 J-2）
+- 指纹：`45bc9c29`
+
+```text
+The cron expression is not valid: {error}.
+```
+
+#### `software/schedule/cron/not-found.txt`
+
+- 什么时候加进来：`cron_delete` 的编号不在这个会话上
+- token：12（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：带上她给的编号（施工 J-2）
+- 指纹：`7b28b21d`
+
+```text
+There is no job {id} in this session.
+```
+
+#### `software/schedule/cron/deleted.txt`
+
+- 什么时候加进来：`cron_delete` 成了
+- token：5（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：删了哪个（施工 J-2）
+- 指纹：`d8706690`
+
+```text
+Deleted {id}.
+```
+
+#### `software/schedule/cron/none.txt`
+
+- 什么时候加进来：`cron_list` 时这个会话上一个都没有
+- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说没有，不交空字（施工 J-2）
+- 指纹：`424ca87c`
+
+```text
+No jobs are scheduled in this session.
+```
+
+#### `software/schedule/cron/row.txt`
+
+- 什么时候加进来：`cron_list` 的一行，一项一行
+- token：23（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：编号、什么时候、哪一种（`once`、`recurring`、`loop:fixed`、`loop:dynamic`）、下一次（暂停的 `paused`、停着的 `stopped`）、到点交进来的话（施工 J-2）：她删之前认得出是哪一个
+- 指纹：`e8fa7d2b`
+
+```text
+{id} | {when} | {repeat} | next: {next} | {prompt}
+```
+
+#### `software/loop/common/bad-args.txt`
+
+- 什么时候加进来：`schedule_wakeup` 的参数读不出来
+- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：同上
+- 指纹：`18997814`
+
+```text
+The arguments are not right: {error}.
+```
+
+#### `software/loop/common/off.txt`
+
+- 什么时候加进来：这次调用没有定时的端口、唤醒表用不了
+- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：同上
+- 指纹：`7cc085ef`
+
+```text
+Loops are not available in this session.
+```
+
+#### `software/loop/wakeup/set.txt`
+
+- 什么时候加进来：`schedule_wakeup` 定好了下一次
+- token：7（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：下一次几点（施工 J-2），照会话时区写到分钟
+- 指纹：`3d388faf`
+
+```text
+Next iteration at {next}.
+```
+
+#### `software/loop/wakeup/stopped.txt`
+
+- 什么时候加进来：`schedule_wakeup` 带 `stop: true`
+- token：4（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：循环停了（施工 J-2）
+- 指纹：`00ba36a9`
+
+```text
+Loop stopped.
+```
+
+#### `software/loop/wakeup/no-loop.txt`
+
+- 什么时候加进来：这个会话没开过动态循环
+- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说没有在跑的循环（设计 45 第四节，施工 J-2）
+- 指纹：`507f2e2b`
+
+```text
+No loop is running in this session.
+```
+
+#### `software/loop/wakeup/no-delay.txt`
+
+- 什么时候加进来：没写 `delay_seconds` 也不是 `stop`
+- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说要写间隔（施工 J-2）：参数都能不写，缺了才在这里说
+- 指纹：`45f7b4e6`
+
+```text
+delay_seconds is required unless stop is true.
+```
+
 #### `software/knowledge/common/bad-args.txt`
 
 - 什么时候加进来：两件的参数读不懂（字段按 ``missing field `path` at line 1 column 14`` 填）
@@ -4206,6 +4371,59 @@ You are a fork of the agent above. It wrote the task below, not the person. Your
 </session-message>
 ```
 
+### 人这边：定时任务交进来的话（一块带标签的事实）
+
+#### `software/schedule/common/message-open.txt`
+
+- 什么时候加进来：标签那一行，`by` 是定时任务、不是动态循环的（普通定时任务、固定间隔循环；施工 J-1 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
+- token：9（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：注明是定时任务叫的、哪一个，不是人刚说的（施工 J-2）：A/B 两家各 24 次，她照抄人的第一人称原话（「提醒我起来活动一下」）时，不带标签 nemotron 有 1 次当成人又要她建一个，带了 48 次都直接提醒；2026-10-26 主会话定带。写法同别的 harness、别的会话发来的话
+- 指纹：`a39ce18f`
+
+```text
+<scheduled-task id="{id}">
+```
+
+### 人这边：定时任务交进来的话
+
+#### `software/schedule/common/message-close.txt`
+
+- 什么时候加进来：收尾那一行，同 `message-open.txt`
+- token：6（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：标签的收尾（施工 J-2）
+- 指纹：`a3eb61f2`
+
+```text
+</scheduled-task>
+```
+
+### 人这边：动态循环叫醒交进来的话（一块带标签的事实）
+
+#### `software/loop/common/message-open.txt`
+
+- 什么时候加进来：标签那一行，`by` 是动态循环的（施工 J-1 交进会话时照 `by` 的种类包，造会话时进快照），之后每次请求照原文带
+- token：11（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：注明是动态循环叫醒的、哪一个（施工 J-2），写法同上
+- 指纹：`56f9a83e`
+
+```text
+<loop-wakeup id="{id}">
+```
+
+### 人这边：动态循环叫醒交进来的话
+
+#### `software/loop/common/message-close.txt`
+
+- 什么时候加进来：收尾那一块：一句提醒加收尾的标签，同 `message-open.txt`
+- token：17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：不说她不会续：A/B（两家各 12 次，她查了一次 CI 还在跑，之后每次查都还在跑，推到她只回话或者调了 `schedule_wakeup`，最多 5 步）只有标签时续上 1/24，加这一句 12/24；换成一句更长的说明 5/24。没续上的都是一轮里一直盯着等（施工 J-2）
+- 指纹：`3b3c1ccd`
+
+```text
+Call schedule_wakeup to continue the loop.
+</loop-wakeup>
+```
+
 ### 人这边：空了的通知（一块带标签的事实）
 
 #### `core/peers/idle-open.txt`
@@ -4805,6 +5023,62 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 {
   "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
   "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
+}
+```
+
+#### `software/schedule/tools/cron_create.json`
+
+- 什么时候加进来：会话的工具面里有定时任务这个包（预设开着 `schedule`；施工 J-2 起），每次请求都带
+- token：183（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，录到的 24 件工具面上的边际份量）
+- 为什么加：在这个会话上建定时任务（设计 45 第三节第 3 条，施工 J-2）：照 Claude Code 的 `CronCreate` 改短成三句，是什么、五段 cron 照本机时区、一次性的怎么写；Claude Code 里「避开整点」「会话关了就没了」「7 天过期」三段不照搬（我们一个人用、表落盘、不过期），20 个的上限、下一次几点写在结果里
+- 指纹：`58bb6d37`
+
+```json
+{
+  "description": "Schedule a prompt to be sent into this session later, once or on a schedule. Uses standard 5-field cron in this machine's local time: \"0 9 * * 1-5\" is weekdays at 9am. For a one-off reminder, pin minute, hour, day and month and set recurring to false.",
+  "parameters": {"type":"object","properties":{"cron":{"type":"string","description":"minute hour day-of-month month day-of-week."},"prompt":{"type":"string","description":"Sent as a message each time the job runs."},"recurring":{"type":"boolean","description":"Default true. false runs once, then deletes the job."}},"required":["cron","prompt"]}
+}
+```
+
+#### `software/schedule/tools/cron_delete.json`
+
+- 什么时候加进来：同 `cron_create.json`
+- token：60（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- 为什么加：删这个会话上的一个（施工 J-2）：照 Claude Code 的 `CronDelete`
+- 指纹：`6bd85168`
+
+```json
+{
+  "description": "Delete a job scheduled in this session.",
+  "parameters": {"type":"object","properties":{"id":{"type":"string","description":"From cron_create or cron_list."}},"required":["id"]}
+}
+```
+
+#### `software/schedule/tools/cron_list.json`
+
+- 什么时候加进来：同 `cron_create.json`
+- token：40（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- 为什么加：列这个会话上的，带下一次几点（施工 J-2）：照 Claude Code 的 `CronList`
+- 指纹：`501a9fcd`
+
+```json
+{
+  "description": "List the jobs scheduled in this session, with their next run times.",
+  "parameters": {"type":"object","properties":{}}
+}
+```
+
+#### `software/loop/tools/schedule_wakeup.json`
+
+- 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
+- token：152（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；60～3600 秒写在参数里，`reason` 只给人看
+- 指纹：`e6bfe440`
+
+```json
+{
+  "description": "Set when the next iteration of a self-paced /loop runs. Call it in every iteration you want to continue, or the loop stops, and pick the delay by what you are waiting for. Pass stop to end the loop.",
+  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"Clamped to 60-3600."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, in one short sentence."},"stop":{"type":"boolean"}}}
 }
 ```
 

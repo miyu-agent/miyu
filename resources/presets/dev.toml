@@ -13,6 +13,9 @@ basesystem = true
 env = true
 net = true
 goal = true
+# 定时任务、循环（施工 J-2，2026-10-26 项目主人定）：常规开发开着。
+schedule = true
+loop = true
 # 人格记忆（施工 P-15，2026-10-20 项目主人定）。
 memory = true
 # 写技能、写包的两个技能（施工 P-8，2026-10-12 项目主人照推荐定）：不开的话她要写技能时看不到，只能在本机的目录里翻。

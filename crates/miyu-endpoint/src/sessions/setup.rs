@@ -108,6 +108,7 @@ impl Setup {
             lineage: None,
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(core, &who.owner)),
+            schedules: Some(crate::schedules::port::port(core, &who.owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             index: Some(core.index_for(&who.owner)),

@@ -244,6 +244,7 @@ pub fn call(args: &str) -> Call {
         knowledge: None,
         packages: None,
         goals: None,
+        schedules: None,
         nested: None,
         ids: None,
         settings: None,

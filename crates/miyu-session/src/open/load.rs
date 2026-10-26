@@ -79,6 +79,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         sandbox_cache,
         sessions,
         packages,
+        schedules,
         hooks,
         jobs,
         index,
@@ -230,6 +231,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         .tools
         .iter()
         .any(|tool| tool.name == miyu_tool::GOAL);
+    let loops = snapshot
+        .tools
+        .iter()
+        .any(|tool| tool.name == miyu_tool::SCHEDULE_WAKEUP);
     // 默认工作区用哪个会话的（施工 5-14）：照 `session.created` 记的，没记的用自己的。
     let default_workspace =
         DefaultWorkspace::new(root, &owner, created.workspace_from.as_ref().unwrap_or(&id));
@@ -409,6 +414,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             workplace: Some(default_workspace.clone()),
             names: skill_names,
             packages,
+            schedules,
             hooks,
             preset: preset_id,
         },
@@ -470,7 +476,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     };
     let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
         .with_memory(room)
-        .with_goals(on_face);
+        .with_goals(on_face)
+        .with_loops(loops);
     Ok((handle, placed))
 }
 

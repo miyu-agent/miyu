@@ -1,0 +1,17 @@
+{
+  "tools": {
+    "schedule_wakeup": {
+      "name": "Next wakeup",
+      "subject": "reason",
+      "icon": "↻"
+    }
+  },
+  "said": {
+    "wakeup/set": "Next at {next}: {reason}",
+    "wakeup/stopped": "Loop stopped",
+    "wakeup/no-loop": "No loop is running",
+    "wakeup/no-delay": "No delay given",
+    "common/bad-args": "Bad arguments: {error}",
+    "common/off": "Loops are not available in this session"
+  }
+}

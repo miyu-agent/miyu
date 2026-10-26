@@ -44,6 +44,11 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
                 {"form": "/goal resume", "summary": "继续"},
                 {"form": "/goal clear", "summary": "清除"},
             ]},
+            {"name": "loop", "aliases": [], "summary": "循环执行", "argument": "[<间隔>] <要说的话> | off", "usage": [
+                {"form": "/loop <间隔> <要说的话>", "summary": "每隔一段时间说一次，例如 5m、2h"},
+                {"form": "/loop <要说的话>", "summary": "由 AI 自己定下一次什么时候"},
+                {"form": "/loop off", "summary": "停止此会话的循环"},
+            ]},
             {"name": "remember", "aliases": [], "summary": "添加记忆", "argument": "<内容>"},
             {"name": "stop", "aliases": [], "summary": "全部停止"},
             {"name": "todo", "aliases": [], "summary": "待办", "argument": "[clear]", "usage": [

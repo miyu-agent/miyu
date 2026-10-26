@@ -1,0 +1,2 @@
+Call schedule_wakeup to continue the loop.
+</loop-wakeup>

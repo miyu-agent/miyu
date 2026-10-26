@@ -1,0 +1,29 @@
+{
+  "tools": {
+    "cron_create": {
+      "name": "新建定时",
+      "subject": "cron",
+      "icon": "◷"
+    },
+    "cron_delete": {
+      "name": "删除定时",
+      "subject": "id",
+      "icon": "◷"
+    },
+    "cron_list": {
+      "name": "查看定时",
+      "icon": "◷"
+    }
+  },
+  "said": {
+    "cron/created": "已建 {id}",
+    "cron/full": "此会话已有 {limit} 个定时任务",
+    "cron/bad-cron": "cron 写法不对：{error}",
+    "cron/not-found": "没有 {id}",
+    "cron/deleted": "已删除 {id}",
+    "cron/listed": "{count} 个定时任务",
+    "cron/none": "无定时任务",
+    "common/bad-args": "参数不对：{error}",
+    "common/off": "此会话不支持定时任务"
+  }
+}

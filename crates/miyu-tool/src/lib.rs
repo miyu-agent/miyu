@@ -40,6 +40,7 @@ pub mod private;
 mod questions;
 pub mod readonly;
 mod run;
+mod schedules;
 mod sessions;
 mod settings;
 mod shelf;
@@ -83,6 +84,11 @@ pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{
     Call, CallIds, Done, Effect, Hazard, Picture, Previewing, Progress, Running, Seen, ShownFile,
     Target,
+};
+pub use schedules::{
+    CRON_CREATE, CRON_DELETE, CRON_LIST, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
+    ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled, WAKEUP_MAX,
+    WAKEUP_MIN,
 };
 pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,

@@ -1,0 +1,4 @@
+{
+  "description": "List the jobs scheduled in this session, with their next run times.",
+  "parameters": {"type":"object","properties":{}}
+}

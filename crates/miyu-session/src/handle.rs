@@ -21,6 +21,7 @@ use miyu_tool::{JobError, Log, Output};
 use crate::backlog::Backlog;
 
 mod dream;
+mod face;
 mod jobs;
 mod retire;
 mod subscription;
@@ -58,6 +59,9 @@ pub struct Handle {
     memory: crate::memory::RoomCell,
     /// 有没有长期目标（施工 X-8 下）：造会话、载入时工具面上有 `goal` 的才有，`/goal` 照它判；中途换了预设，下次载入照新的。
     goals: bool,
+    /// 认不认 `/loop`（施工 J-2）：造会话、载入时工具面上有 `schedule_wakeup` 的才认（循环这个包装了、预设开着）；中途换了
+    /// 预设，下次载入照新的。
+    loops: bool,
 }
 
 /// 发给 actor 的。
@@ -187,6 +191,7 @@ impl Handle {
             shown,
             memory: crate::memory::RoomCell::default(),
             goals: false,
+            loops: false,
         }
     }
 
@@ -200,18 +205,6 @@ impl Handle {
     /// 这个会话的记忆这时放在哪一间（施工 R-3 补，`memory.md`「协议」；中途换了人格的跟着换，施工 P-13）：范围 `off` 的没有。
     pub fn memory_room(&self) -> Option<Room> {
         self.memory.read().ok()?.clone()
-    }
-
-    /// 带上这个会话有没有长期目标（施工 X-8 下）。
-    #[must_use]
-    pub(crate) fn with_goals(mut self, goals: bool) -> Handle {
-        self.goals = goals;
-        self
-    }
-
-    /// 这个会话有没有长期目标（施工 X-8 下）：工具面上有 `goal`（本机的主会话、长期目标装了、预设开着）。
-    pub fn goals(&self) -> bool {
-        self.goals
     }
 
     /// 有没有在跑的回合：核心看它决定能不能空闲退出（施工 3-9 上）。会话停了的，不算在跑。

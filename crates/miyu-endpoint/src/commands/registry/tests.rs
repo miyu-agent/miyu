@@ -37,6 +37,7 @@ fn the_built_in_commands_are_registered_in_name_order() {
             "clear-memory",
             "dream",
             "goal",
+            "loop",
             "remember",
             "stop",
             "todo",

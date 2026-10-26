@@ -215,7 +215,16 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["authoring", "basesystem", "env", "goal", "memory", "net"]
+        [
+            "authoring",
+            "basesystem",
+            "env",
+            "goal",
+            "loop",
+            "memory",
+            "net",
+            "schedule"
+        ]
     );
     let minimal = presets.find("minimal").unwrap();
     assert_eq!(minimal.file.unlisted(), Unlisted::Off);

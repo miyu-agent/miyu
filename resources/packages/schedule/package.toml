@@ -1,0 +1,18 @@
+# 定时任务（施工 J-2，设计 45 第三节第 3 条、第 6 条）：基础系统组的一个包，内置，代码编在核心里，默认装、能关能卸。工具
+# `cron_create`、`cron_delete`、`cron_list`。给人看的字，不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+protocol = [1, 1]
+groups = ["basesystem"]
+name = { en = "Scheduled tasks", zh = "定时任务", ja = "定期実行" }
+summary = { en = "The AI can schedule a message for later, once or on a schedule", zh = "AI 可以把一句话定在以后发给自己，一次或者定期", ja = "AI が後で届くメッセージを一回だけ、または定期的に予約できます" }
+
+# 一个功能，编号同包（施工 BS-1 上中的写法）：写明带的工具，装别的包时照它查工具撞名。
+[features.schedule]
+name = { en = "Scheduled tasks", zh = "定时任务", ja = "定期実行" }
+summary = { en = "The AI can schedule a message for later, once or on a schedule", zh = "AI 可以把一句话定在以后发给自己，一次或者定期", ja = "AI が後で届くメッセージを一回だけ、または定期的に予約できます" }
+tools = ["cron_create", "cron_delete", "cron_list"]
+
+[builtin]

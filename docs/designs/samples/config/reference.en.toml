@@ -238,6 +238,11 @@ source = "https://miyu-agent.github.io/packages/"
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
+[packages.loop]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
 [packages.memory]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
@@ -269,6 +274,11 @@ source = "https://miyu-agent.github.io/packages/"
 # off =
 
 [packages.roleplay]
+# Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
+# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# off =
+
+[packages.schedule]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =

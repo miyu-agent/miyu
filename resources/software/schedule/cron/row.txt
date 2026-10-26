@@ -1,0 +1,1 @@
+{id} | {when} | {repeat} | next: {next} | {prompt}

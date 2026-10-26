@@ -74,6 +74,9 @@ pub struct Call {
     /// 长期目标的端口（施工 X-8 上）：执行器照这一次调用造一个，只给本机的主会话，只有 `goal` 用。别的会话、测试里的假调用
     /// 没有，`goal` 说这个会话用不了。
     pub goals: Option<Arc<dyn GoalPort>>,
+    /// 定时和循环的端口（施工 J-2）：协议端点造会话、载入时照属主交进来，只有 `cron_*`、`schedule_wakeup` 用。测试里的假调用、
+    /// 核心没交的没有，几件照「这个会话用不了定时」出错。
+    pub schedules: Option<Arc<dyn crate::SchedulePort>>,
     /// 脚本调工具的端口（施工 M-2，设计 `39-脚本调工具.md`）：执行器照每一次直接调的 `shell` 造一个，挂在这次调用下面；
     /// `shell` 交给通道的那一头（施工 M-3）。别的工具、嵌套调用里跑的、测试里的假调用没有。
     pub nested: Option<Arc<dyn crate::NestedPort>>,

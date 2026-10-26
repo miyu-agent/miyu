@@ -309,6 +309,7 @@ impl Sessions {
             lineage: Some(child.lineage),
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(core, &child.owner)),
+            schedules: Some(crate::schedules::port::port(core, &child.owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             model: child.model,

@@ -2003,6 +2003,7 @@ dependencies = [
  "miyu-net",
  "miyu-policy",
  "miyu-sandbox",
+ "miyu-schedule",
  "miyu-session",
  "miyu-store",
  "miyu-tool",
@@ -2049,6 +2050,7 @@ dependencies = [
  "miyu-policy",
  "miyu-recall",
  "miyu-sandbox",
+ "miyu-schedule",
  "miyu-seeds",
  "miyu-session",
  "miyu-source",
@@ -2304,6 +2306,17 @@ dependencies = [
  "serde",
  "serde_json",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "miyu-schedule"
+version = "0.0.0"
+dependencies = [
+ "miyu-kernel",
+ "miyu-tool",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

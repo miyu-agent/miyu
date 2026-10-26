@@ -737,6 +737,7 @@ flowchart LR
 | P-16 下补 | 无工具口径对齐 | 视图流的会话状态同会话列表写无工具（`preset: null` 加 `no_tools: true`，不再写空字）；中途换人格、预设马上推 `sessions.changed`，不等下一轮。施工单见 `P-16-预设的说明和无工具.md` |
 | P-17 | 设置页「新会话」一组 | `persona.default`、`preset.default`、`permission.start_read_only` 三项归进通用页新的 `new_session` 组（新会话、New sessions、新しいセッション），去掉只剩空的 `persona`、`preset` 组；终端的 `tui.skip_pick` 自己挪进来，网页照这个组画。施工单见 `P-17-新会话设置组.md` |
 | J-1 上 | 唤醒表和到点 | 一个账号一份 `home/<账号>/state/schedules.db`（是真相：坏了改名留着、比这一版新的不动）；cron 照标准五段、本机时区（croner），某个时刻一次、每隔一阵；核心起来时错过的跳过；到点交进已有的会话或照建时定下的开一个新的，记成 `by: schedule`，正忙的排在这一轮后面；会话没了停掉；她建的照会话现在的预设判。核心的入口给 J-2 用，协议是 J-1 下。施工单见 `J-1上-唤醒表和到点.md` |
+| J-2 | 她的定时工具和 `/loop` | `miyu-schedule`：`cron_create`、`cron_delete`、`cron_list`（包 `schedule`），`schedule_wakeup`（包 `loop`）；端口 `SchedulePort` 端点照属主接唤醒表；`/loop` 固定、动态、`off`，一个会话一个循环；标签的字；两个包在基础系统组里 | `J-2-定时工具和循环.md` |
 | J-1 上修 | 写不进下一次的不再空转 | 唤醒表写不进（盘满、只读、锁住）时，到点的那一个在内存里记「不早于」，1 秒起翻倍、最多 5 分钟，写进了清掉；表的连接锁住了不等；睡到点的那个每一轮让一下线程。原来马上又醒、又写不进，吃满一个核、警告刷屏（主会话审出来的）。施工单见 `J-1上-唤醒表和到点.md` |
 | J-1 上修二 | 开会话不再吃满栈 | 造会话、载入的 future 有几十 KB（`open::create` 三十多 KB、`open::load` 近二十 KB），没装箱时每个调用方的 future 跟着大，调试构建在 Windows 较深的调用链上栈溢出（J-1 上的 CI 在 `route_learned` 上撞到）。两处在里面装箱再等，签名不变；`route_learned` 要的栈从将近 2 MB 降到 768 KB 以内。`tests/stack.rs` 在 1 MB 栈的线程上开会话、说一轮守着。施工单见 `J-1上-唤醒表和到点.md` |
 | 9-1 再补 | 配置项多一层组 | 清单 `[settings.<组>.<名字>]`，键 `<包>.<组>.<名字>`（接入通讯平台的 `im.qq.listen`、`im.web.port`）。施工单见 `9-1-软件包清单（再补）.md` |

@@ -74,6 +74,7 @@ pub(crate) fn builtin() -> Commands {
     basic::register(&mut commands);
     crate::memory::slash::register(&mut commands);
     goal::register(&mut commands);
+    looping::register(&mut commands);
     todo::register(&mut commands);
     commands
 }
@@ -312,6 +313,7 @@ mod basic;
 mod catalog;
 mod declared;
 mod goal;
+mod looping;
 mod pages;
 mod prompts;
 mod registry;

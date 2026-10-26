@@ -102,6 +102,8 @@ miyu-memory = { path = "../miyu-memory" }
 miyu-goal = { path = "../miyu-goal" }
 # 测试里她照剧本调知识库的工具（施工 K-2：会话里照意思找）。
 miyu-knowledge = { path = "../miyu-knowledge" }
+# 测试里她照剧本调定时、循环的工具（施工 J-2）。
+miyu-schedule = { path = "../miyu-schedule" }
 # 测试里的等待有时限。
 tokio = { version = "1", features = ["io-util", "macros", "rt", "sync", "time"] }
 

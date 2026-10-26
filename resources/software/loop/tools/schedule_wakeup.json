@@ -1,0 +1,4 @@
+{
+  "description": "Set when the next iteration of a self-paced /loop runs. Call it in every iteration you want to continue, or the loop stops, and pick the delay by what you are waiting for. Pass stop to end the loop.",
+  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"Clamped to 60-3600."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, in one short sentence."},"stop":{"type":"boolean"}}}
+}

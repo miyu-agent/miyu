@@ -256,6 +256,7 @@ impl Tools {
             knowledge: crate::knowledge::port(self.knowledge.as_ref(), &config),
             packages: self.packages.clone(),
             goals: None,
+            schedules: None,
             nested: None,
             ids: Some(CallIds {
                 session: self.session.clone(),

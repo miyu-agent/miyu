@@ -227,9 +227,17 @@ async fn her_own_ones_follow_the_session_s_preset_and_people_s_do_not() {
     let home = Home::new();
     let script = Script::new([Play::Says("好。")]);
     let hand = Hand::at(START);
-    let (core, _client, session) = started(&home, &script, &hand).await;
+    // 施工 J-2 起有了 `schedule` 包、在基础系统组里：会话用的预设单独关掉它，她建的不跑。
+    home.write(
+        "home/alice/presets/quiet.toml",
+        "[preset]\nname = { en = \"Quiet\" }\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nschedule = false\n",
+    );
+    let (core, mut client, _) = started(&home, &script, &hand).await;
+    let cwd = home.work.to_string_lossy().into_owned();
+    let session = client
+        .create_with("c2", json!({"cwd": cwd, "preset": "quiet"}))
+        .await;
     let id = SessionId::parse(&session).unwrap();
-    // 这一版还没有 `schedule` 包（施工 J-2 建清单）：没装的包算关，她建的不跑。
     core.schedules()
         .add(
             &alice(),

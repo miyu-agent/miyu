@@ -18,6 +18,13 @@ fn installed(resources: &ResourceRoot, without: &[&str]) -> Vec<Found> {
     found
 }
 
+/// 基础系统组里的包：`miyu-basesystem` 的十八个，加上定时、循环两个（施工 J-2，它们的代码在 `miyu-schedule`）。
+fn group() -> Vec<&'static str> {
+    let mut group = miyu_basesystem::PACKAGES.to_vec();
+    group.extend([miyu_schedule::SCHEDULE, miyu_schedule::LOOP]);
+    group
+}
+
 /// 工具目录里的名字，照名字排。
 fn names(found: &[Found]) -> Vec<String> {
     let resources = shipped_resources();
@@ -35,6 +42,9 @@ fn the_catalog_has_the_base_system() {
         names,
         [
             "ask_user",
+            "cron_create",
+            "cron_delete",
+            "cron_list",
             "edit",
             "forget",
             "glob",
@@ -52,6 +62,7 @@ fn the_catalog_has_the_base_system() {
             "packages",
             "read",
             "remember",
+            "schedule_wakeup",
             "send_message",
             "session_usage",
             "sessions",
@@ -98,7 +109,7 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         "没装联网，没有 web_fetch、web_search"
     );
     // 施工 BS-1 上中起基础系统是一个组：卸掉组里的全部包，才一件都没有；只卸 shell 的只少它。
-    let mut without: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    let mut without: Vec<&str> = group();
     without.extend(["knowledge", "net"]);
     assert_eq!(
         names_without(&without),
@@ -117,21 +128,21 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
             && !without_sessions.contains(&"sessions".to_string()),
         "sessions 包带着 send_message 一起没"
     );
-    let mut only_knowledge: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    let mut only_knowledge: Vec<&str> = group();
     only_knowledge.extend(["memory", "goal", "net"]);
     assert_eq!(
         names_without(&only_knowledge),
         ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
         "只装知识库（施工 K-1 下、K-3），只有它的五件"
     );
-    let mut only_net: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    let mut only_net: Vec<&str> = group();
     only_net.extend(["memory", "goal", "knowledge"]);
     assert_eq!(
         names_without(&only_net),
         ["web_fetch", "web_search"],
         "只装联网（施工 N-1、N-2 上），只有它的两件"
     );
-    let mut none: Vec<&str> = miyu_basesystem::PACKAGES.to_vec();
+    let mut none: Vec<&str> = group();
     none.extend(["memory", "goal", "knowledge", "net"]);
     assert!(names_without(&none).is_empty());
 }

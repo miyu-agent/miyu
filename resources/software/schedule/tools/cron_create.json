@@ -1,0 +1,4 @@
+{
+  "description": "Schedule a prompt to be sent into this session later, once or on a schedule. Uses standard 5-field cron in this machine's local time: \"0 9 * * 1-5\" is weekdays at 9am. For a one-off reminder, pin minute, hour, day and month and set recurring to false.",
+  "parameters": {"type":"object","properties":{"cron":{"type":"string","description":"minute hour day-of-month month day-of-week."},"prompt":{"type":"string","description":"Sent as a message each time the job runs."},"recurring":{"type":"boolean","description":"Default true. false runs once, then deletes the job."}},"required":["cron","prompt"]}
+}

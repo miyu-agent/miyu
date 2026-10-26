@@ -117,6 +117,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         lineage,
         sessions,
         packages,
+        schedules,
         hooks,
         jobs,
         index,
@@ -151,6 +152,10 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     );
     let goals = Agents::lists_sessions(&venue, lineage.as_ref().map(|lineage| &lineage.parent));
     let on_face = parts.face.iter().any(|tool| tool.name == miyu_tool::GOAL);
+    let loops = parts
+        .face
+        .iter()
+        .any(|tool| tool.name == miyu_tool::SCHEDULE_WAKEUP);
     let pools = Agents::pools_in(&parts.face);
     let agents_personas = Agents::personas_in(&parts.face);
     let child = lineage.is_some();
@@ -339,6 +344,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             workplace: Some(workplace.clone()),
             names: skill_names,
             packages,
+            schedules,
             hooks,
             preset: preset_id,
         },
@@ -390,7 +396,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             };
             Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)
                 .with_memory(room)
-                .with_goals(on_face))
+                .with_goals(on_face)
+                .with_loops(loops))
         }
         Err(_) => {
             error::abandoned(abandoned, &id).await;

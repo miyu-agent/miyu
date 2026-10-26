@@ -10,6 +10,7 @@ mod clock;
 mod fire;
 mod hold;
 mod next;
+pub(crate) mod port;
 mod run;
 
 use std::collections::BTreeMap;

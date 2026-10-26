@@ -1,0 +1,29 @@
+{
+  "tools": {
+    "cron_create": {
+      "name": "定期実行を作成",
+      "subject": "cron",
+      "icon": "◷"
+    },
+    "cron_delete": {
+      "name": "定期実行を削除",
+      "subject": "id",
+      "icon": "◷"
+    },
+    "cron_list": {
+      "name": "定期実行の一覧",
+      "icon": "◷"
+    }
+  },
+  "said": {
+    "cron/created": "{id} を作成",
+    "cron/full": "このセッションには定期実行が {limit} 件あります",
+    "cron/bad-cron": "cron の書き方が正しくありません：{error}",
+    "cron/not-found": "{id} はありません",
+    "cron/deleted": "{id} を削除",
+    "cron/listed": "定期実行 {count} 件",
+    "cron/none": "定期実行なし",
+    "common/bad-args": "引数が正しくありません：{error}",
+    "common/off": "このセッションでは定期実行を使えません"
+  }
+}

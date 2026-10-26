@@ -67,6 +67,8 @@ pub(crate) struct ToolKit {
     pub(crate) knowledge: Option<Arc<crate::knowledge::Shelves>>,
     /// 看软件包的端口（施工 F-10 上）：协议端点交了的才有，每次调用原样带上。
     pub(crate) packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    /// 定时和循环的端口（施工 J-2）：协议端点交了的才有，每次调用原样带上。
+    pub(crate) schedules: Option<Arc<dyn miyu_tool::SchedulePort>>,
     /// 回合开始问扩展要加的字（施工 X-16）。
     pub(crate) hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     /// 开着的技能文件夹（施工 X-10 中）：沙盒藏着数据根，照它单独放开只读。

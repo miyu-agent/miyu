@@ -102,6 +102,8 @@ pub(crate) struct Tools {
     knowledge: Option<Arc<crate::knowledge::Shelves>>,
     /// 看软件包的端口（施工 F-10 上）；会话用的预设（施工 F-10 下下）。
     packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
+    /// 定时和循环的端口（施工 J-2）。
+    schedules: Option<Arc<dyn miyu_tool::SchedulePort>>,
     /// 回合开始问扩展要加的字（施工 X-16）。
     hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     preset: Option<String>,
@@ -236,6 +238,7 @@ impl Tools {
             knowledge: kit.knowledge,
             preset: kit.preset,
             packages: kit.packages,
+            schedules: kit.schedules,
             hooks: kit.hooks,
             running: BTreeMap::new(),
             checked: BTreeMap::new(),
@@ -347,6 +350,7 @@ impl Tools {
                 .map(|memory| memory.port(turn, compacted, call_id, at, &config)),
             knowledge: crate::knowledge::port(self.knowledge.as_ref(), &config),
             packages: self.packages.clone(),
+            schedules: self.schedules.clone(),
             ids: Some(CallIds {
                 session: self.session.clone(),
                 owner: self.owner.clone(),
@@ -394,8 +398,7 @@ impl Tools {
             Progress::new(move |text| send(&backs, ToolBack::Progress { call_id, text }))
         };
         let span = tracing::Span::current();
-        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。管理员
-        // 放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
+        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。管理员放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
         let wrap = self.wrap(&name, &tool, &call);
         let sandbox = self.sandbox.clone().filter(|_| wrap.needs_spec());
         let unless = wrap.unless();

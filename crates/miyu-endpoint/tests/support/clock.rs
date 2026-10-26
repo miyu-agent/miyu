@@ -58,6 +58,16 @@ impl Clock for Hand {
 
 /// 一份核心，唤醒表照 `hand` 看时间：读个人设置里的预设那几项，和 [`Home::core_with_items`] 一样读磁盘上的配置。
 pub fn core_with(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
+    core_with_tools(home, script, hand, miyu_tool::Catalog::default())
+}
+
+/// 同 [`core_with`]，工具目录是 `tools`（施工 J-2：`/loop` 只在工具面上有 `schedule_wakeup` 的会话里认）。
+pub fn core_with_tools(
+    home: &Home,
+    script: &Script,
+    hand: &Arc<Hand>,
+    tools: miyu_tool::Catalog,
+) -> Arc<Core> {
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PresetSettings::ITEMS,
@@ -75,7 +85,7 @@ pub fn core_with(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
     );
     let clock: Arc<dyn Clock> = Arc::clone(hand) as Arc<dyn Clock>;
     Arc::new(
-        home.core_full(script, miyu_tool::Catalog::default(), None, TOKEN)
+        home.core_full(script, tools, None, TOKEN)
             .with_config(config)
             .with_clock(clock),
     )

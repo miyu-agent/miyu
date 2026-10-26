@@ -88,6 +88,7 @@ impl Sessions {
             lineage: None,
             sessions: Some(spawn::port(core)),
             packages: None,
+            schedules: None,
             hooks: None,
             jobs: &core.jobs,
             model: spec.model,

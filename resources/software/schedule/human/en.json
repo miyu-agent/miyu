@@ -1,0 +1,30 @@
+{
+  "tools": {
+    "cron_create": {
+      "name": "Schedule",
+      "subject": "cron",
+      "icon": "◷"
+    },
+    "cron_delete": {
+      "name": "Unschedule",
+      "subject": "id",
+      "icon": "◷"
+    },
+    "cron_list": {
+      "name": "Scheduled jobs",
+      "icon": "◷"
+    }
+  },
+  "said": {
+    "cron/created": "Scheduled {id}",
+    "cron/full": "This session already has {limit} jobs",
+    "cron/bad-cron": "Invalid cron: {error}",
+    "cron/not-found": "No job {id}",
+    "cron/deleted": "Deleted {id}",
+    "cron/listed": "{count} jobs",
+    "cron/listed/one": "{count} job",
+    "cron/none": "No jobs",
+    "common/bad-args": "Bad arguments: {error}",
+    "common/off": "Scheduled jobs are not available in this session"
+  }
+}

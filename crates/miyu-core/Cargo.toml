@@ -50,6 +50,8 @@ miyu-basesystem = { path = "../miyu-basesystem" }
 miyu-memory = { path = "../miyu-memory" }
 # 长期目标这个软件包的工具（施工 X-8 上）。
 miyu-goal = { path = "../miyu-goal" }
+# 定时任务、循环两个软件包（施工 J-2）。
+miyu-schedule = { path = "../miyu-schedule" }
 # 知识库这个软件包的两件工具（施工 K-1 下）。
 miyu-knowledge = { path = "../miyu-knowledge" }
 # 脚本读好的开头（施工 X-12 中）：造脚本工具的端口照它造。
