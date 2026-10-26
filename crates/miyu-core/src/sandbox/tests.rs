@@ -5,19 +5,41 @@
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, PoisonError};
 
 use miyu_log::{LevelFilter, Memory};
 
 use super::*;
 
+/// 探一次就设一遍进程里那一份「关起来的会话的套接字管不管得住」（[`miyu_sandbox::set_confines_sockets`]）：探的测试并行跑
+/// 会互相改它（施工 BUG-3），所以一律串着探，在锁里读出来再设回没设过的样子（管得住）。
+static PROBING: Mutex<()> = Mutex::new(());
+
+/// 在锁里跑一次探测 `run`，交回它的结果和探完时关起来的会话能不能跑命令（[`miyu_sandbox::confines_others`]）。
+fn serially<T>(run: impl FnOnce() -> T) -> (T, bool) {
+    let _probing = PROBING.lock().unwrap_or_else(PoisonError::into_inner);
+    let found = run();
+    let others = miyu_sandbox::confines_others();
+    miyu_sandbox::set_confines_sockets(true);
+    (found, others)
+}
+
 /// 探一次 `exe`，交回探到的结果和记下的行。
 fn probed(exe: Option<&Path>) -> (Availability, Vec<String>) {
+    let (found, lines, _) = probed_with_others(exe);
+    (found, lines)
+}
+
+/// 探一次 `exe`，交回探到的结果、记下的行和探完时关起来的会话能不能跑命令。
+fn probed_with_others(exe: Option<&Path>) -> (Availability, Vec<String>, bool) {
     let memory = Memory::new();
-    let helper = tracing::subscriber::with_default(
-        miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
-        || probe(exe, None),
-    );
-    (helper, memory.lines())
+    let (helper, others) = serially(|| {
+        tracing::subscriber::with_default(
+            miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
+            || probe(exe, None),
+        )
+    });
+    (helper, memory.lines(), others)
 }
 
 /// 一个用完就删的临时目录，里面有一个假的主程序 `miyu`。
@@ -138,7 +160,7 @@ fn a_helper_of_another_build_is_logged_with_how_to_rebuild() {
 fn a_helper_with_mechanisms_is_handed_on() {
     let dir = Dir::new();
     fake_helper(&dir, &said(&["landlock", "landlock-sockets"]));
-    let (found, lines) = probed(Some(&dir.exe()));
+    let (found, lines, others) = probed_with_others(Some(&dir.exe()));
     assert_eq!(
         found,
         Availability::Usable(dir.0.join(miyu_sandbox::HELPER)),
@@ -149,7 +171,7 @@ fn a_helper_with_mechanisms_is_handed_on() {
         lines[0].contains(" INFO ") && lines[0].ends_with(" mechanisms=landlock,landlock-sockets"),
         "{lines:?}"
     );
-    assert!(miyu_sandbox::confines_others(), "管得住套接字");
+    assert!(others, "管得住套接字");
 }
 
 /// 沙盒能用、关起来的会话的 Unix 套接字却管不住的（施工 MB-1：内核的 Landlock 太老、又没有 seccomp）：照样能用（管理员本人的
@@ -159,9 +181,7 @@ fn a_helper_with_mechanisms_is_handed_on() {
 fn a_sandbox_that_cannot_confine_sockets_is_logged_and_keeps_others_off() {
     let dir = Dir::new();
     fake_helper(&dir, &said(&["landlock"]));
-    let (found, lines) = probed(Some(&dir.exe()));
-    let others = miyu_sandbox::confines_others();
-    miyu_sandbox::set_confines_sockets(true);
+    let (found, lines, others) = probed_with_others(Some(&dir.exe()));
     assert_eq!(
         found,
         Availability::Usable(dir.0.join(miyu_sandbox::HELPER))
@@ -264,10 +284,12 @@ fn no_cache_dir_is_logged_and_gives_none() {
 #[cfg(unix)]
 fn probed_in(exe: &Path, state: &Path) -> (Availability, Vec<String>) {
     let memory = Memory::new();
-    let found = tracing::subscriber::with_default(
-        miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
-        || probe(Some(exe), Some(state)),
-    );
+    let (found, _) = serially(|| {
+        tracing::subscriber::with_default(
+            miyu_log::subscriber(memory.clone(), LevelFilter::INFO, None),
+            || probe(Some(exe), Some(state)),
+        )
+    });
     (found, memory.lines())
 }
 
