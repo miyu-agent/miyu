@@ -1,6 +1,6 @@
 # Writing a Miyu package
 
-For third-party authors. Chinese version: [README.md](README.md). Every protocol method is in the [protocol reference](../reference/README.en.md).
+For third-party authors. Chinese version: [README.md](README.md). The guides, templates and examples in this directory are under Apache-2.0 (`LICENSES/Apache-2.0.txt` at the repository root), so what you write from them can use any license; packages and extensions that only talk to Miyu over its protocol are separate works and the core's AGPL does not reach them. Every protocol method is in the [protocol reference](../reference/README.en.md).
 
 ## What a package can bring
 

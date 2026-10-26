@@ -805,6 +805,7 @@ flowchart LR
 | Y-13 上 | 存 key 改名 `miyu provider` | `miyu provider login|list|logout` 替掉 `miyu login`、`miyu logout`，login 留给登录账号。施工单见 `Y-13上-存key改名provider.md` |
 | 7-4 修 | `job.stop` 在后台答 | 一下子停上百个不再排成一队、大半不回。施工单见 `7-4修-job.stop后台答.md` |
 | 4-8 补三 | `shell` 前台不许干等 | 顶层一段就是不短于 2 秒的 `sleep` 的整条不跑，后台任务会自己回报。施工单见 `4-8补三-前台不许干等.md` |
+| LIC-1 | 许可证分层 | 核心和第一方程序 AGPL-3.0-or-later，作者说明、协议参考、写包技能 Apache-2.0；只经协议说话的程序是独立作品。施工单见 `LIC-1-许可证分层AGPL.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |

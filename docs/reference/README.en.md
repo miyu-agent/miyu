@@ -1,6 +1,6 @@
 # Miyu core protocol reference
 
-For programs that talk to the core: "heads" such as the terminal and web UIs, and extensions the core launches. It covers how to call each method that exists today, what comes back, and how it fails. It does not cover why things are the way they are or when they were built (that lives in `docs/blueprint/`). Chinese version: [README.md](README.md).
+For programs that talk to the core: "heads" such as the terminal and web UIs, and extensions the core launches. It covers how to call each method that exists today, what comes back, and how it fails. It does not cover why things are the way they are or when they were built (that lives in `docs/blueprint/`). Chinese version: [README.md](README.md). This reference is under Apache-2.0 (`LICENSES/Apache-2.0.txt` at the repository root): you can write your own clients and extensions from it under any license.
 
 ## Conventions
 

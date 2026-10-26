@@ -1,6 +1,6 @@
 # 写一个 Miyu 软件包
 
-给第三方作者。英文版：[README.en.md](README.en.md)。协议的每个方法查 [协议参考](../reference/README.md)。
+给第三方作者。英文版：[README.en.md](README.en.md)。这个目录里的说明、模板和例子用 Apache-2.0（仓库根目录 `LICENSES/Apache-2.0.txt`），照着写的东西用什么许可证都行；只经协议和 Miyu 说话的软件包、扩展是独立的作品，核心的 AGPL 管不到它们。协议的每个方法查 [协议参考](../reference/README.md)。
 
 ## 包能带什么
 

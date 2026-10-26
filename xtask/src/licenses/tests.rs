@@ -67,7 +67,7 @@ fn each_bad_package_is_named_once_with_its_platforms() {
         judge(&found),
         [
             "bare 1.0.0（x86_64-pc-windows-msvc）：没写 license，要人看过",
-            "gpl-thing 1.0.0（aarch64-apple-darwin、x86_64-unknown-linux-gnu）：GPL-2.0-only 和 GPL-3.0-or-later 合不到一起",
+            "gpl-thing 1.0.0（aarch64-apple-darwin、x86_64-unknown-linux-gnu）：GPL-2.0-only 和 AGPL-3.0-or-later 合不到一起",
         ]
     );
 }
@@ -81,7 +81,7 @@ fn only_third_party_packages_in_the_graph_are_looked_at() {
             {"id": "registry+https://github.com/rust-lang/crates.io-index#serde@1.0.0"},
         ]},
         "packages": [
-            {"id": "path+file:///repo#miyu@0.0.0", "name": "miyu", "version": "0.0.0", "license": "GPL-3.0-or-later"},
+            {"id": "path+file:///repo#miyu@0.0.0", "name": "miyu", "version": "0.0.0", "license": "AGPL-3.0-or-later"},
             {"id": "registry+https://github.com/rust-lang/crates.io-index#serde@1.0.0", "name": "serde", "version": "1.0.0", "license": "MIT OR Apache-2.0"},
             {"id": "registry+https://github.com/rust-lang/crates.io-index#winapi@0.3.9", "name": "winapi", "version": "0.3.9", "license": "MIT/Apache-2.0"},
             {"id": "registry+https://github.com/rust-lang/crates.io-index#nolicense@1.0.0", "name": "nolicense", "version": "1.0.0", "license": null},

@@ -2,14 +2,15 @@
 
 ### 是什么
 
-仓库用 GPL-3.0-or-later。第三方依赖的许可证都要能和它合在一起发，门禁的「许可证」一项查。
+仓库用 AGPL-3.0-or-later（2026-10-26 项目主人定，原来是 GPL-3.0-or-later：Miyu 以后主要是在服务器上给人连着用，GPL 管不到「改了只在网上提供服务」）。给别人照着写东西用的几处分出来用 Apache-2.0（分层，下面「对外的样子」）。第三方依赖的许可证都要能和 AGPL 合在一起发，门禁的「许可证」一项查：能和 GPL-3.0 合的宽松许可证也都能和 AGPL-3.0 合（AGPL 第 13 条），所以能用的那张表不变。
 
 ### 在哪
 
 | 文件 | 管什么 |
 |---|---|
-| `LICENSE` | GPL-3.0 全文，照自由软件基金会发的原样：35149 字节，sha256 以 `3972dc97` 开头 |
-| `Cargo.toml` | 工作区的 `license = "GPL-3.0-or-later"`，每个 crate 照它（`license.workspace = true`） |
+| `LICENSE` | AGPL-3.0 全文，照自由软件基金会发的原样（`https://www.gnu.org/licenses/agpl-3.0.txt`）：34523 字节，sha256 以 `0d96a4ff` 开头 |
+| `LICENSES/Apache-2.0.txt` | Apache-2.0 全文，照 Apache 软件基金会发的原样（`https://www.apache.org/licenses/LICENSE-2.0.txt`）：11358 字节，sha256 以 `cfc7749b` 开头；管 README 列的那几个目录 |
+| `Cargo.toml` | 工作区的 `license = "AGPL-3.0-or-later"`，每个 crate 照它（`license.workspace = true`） |
 | `README.md` 的「许可证」一节 | 对外怎么说 |
 | `xtask/src/licenses.rs` | 门禁的「许可证」一项 |
 
@@ -20,9 +21,13 @@ README 那一节（例子）：
 ```text
 ## 许可证
 
-GPL-3.0-or-later，见 `LICENSE`。
+核心（这个仓库自己写的代码和资源）用 AGPL-3.0-or-later，见 `LICENSE`：改过的 Miyu 拿去给别人用，包括只在网上提供服务，要把改过的源码交给用它的人。
 
-扩展、脚本、MCP 服务器是另外的进程，走协议和 Miyu 说话，用什么许可证都行。以后给扩展用的开发包用 MIT。
+给别人照着写东西用的这几处用 Apache-2.0（`LICENSES/Apache-2.0.txt`）：`docs/authors/`（写软件包、扩展、脚本、技能、MCP 服务的说明、模板和例子）、`docs/reference/`（协议参考）、`resources/packages/authoring/`（教 AI 写软件包、技能的那两份技能）。开发包 `miyu-sdk` 也用 Apache-2.0。
+
+只经协议和 Miyu 说话的程序是独立的作品：扩展、软件包、脚本、MCP 服务器、另写的终端或网页，用什么许可证都行，AGPL 管不到它们。
+
+不是这个仓库自己写的东西照它们原来的许可证，AGPL 和 Apache 只管这里自己写的部分：Rust 依赖照各自的 `license`；仓库里收的第三方数据（模型目录、分词词表这些）清单和各自的许可证见 `docs/blueprint/licenses.md`「资源里的第三方数据」；发行包里带的字体、ONNX Runtime 这些照各自的许可证，随包附上原文。
 ```
 
 ### 怎么走：门禁的「许可证」
@@ -41,7 +46,7 @@ GPL-3.0-or-later，见 `LICENSE`。
 
 | 什么时候 | 报的话 |
 |---|---|
-| 一个包的许可证不能用 | `<包名> <版本>（<平台>、<平台>）：<license 原文> 和 GPL-3.0-or-later 合不到一起` |
+| 一个包的许可证不能用 | `<包名> <版本>（<平台>、<平台>）：<license 原文> 和 AGPL-3.0-or-later 合不到一起` |
 | 没写 `license` | `<包名> <版本>（<平台>）：没写 license，要人看过` |
 | `cargo metadata` 跑不起来 | `跑不了 cargo metadata（<平台>）：<原话>` |
 
@@ -84,4 +89,4 @@ GPL-3.0-or-later，见 `LICENSE`。
 
 ### 出处
 
-- `12-进程形态与分发.md` R15：为什么是 GPL-3.0-or-later。
+- `12-进程形态与分发.md` R15：为什么分层，核心是 AGPL-3.0-or-later（以前是 GPL-3.0-or-later）。

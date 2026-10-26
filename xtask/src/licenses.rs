@@ -1,4 +1,4 @@
-//! 门禁的「许可证」一项（施工 4-12，`docs/blueprint/licenses.md`）：仓库是 GPL-3.0-or-later，发布的四个平台上用得到的
+//! 门禁的「许可证」一项（施工 4-12，`docs/blueprint/licenses.md`）：仓库是 AGPL-3.0-or-later，发布的四个平台上用得到的
 //! 第三方依赖，许可证都要能和它合在一起发。照每个包 `license` 里的 SPDX 表达式算，自己算，不加依赖。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -15,7 +15,7 @@ pub const PLATFORMS: [&str; 4] = [
     "x86_64-pc-windows-msvc",
 ];
 
-/// 能和 GPL-3.0-or-later 合在一起发的许可证。
+/// 能和 AGPL-3.0-or-later 合在一起发的许可证。
 const ALLOWED: [&str; 14] = [
     "MIT",
     "Apache-2.0",
@@ -71,7 +71,7 @@ pub(crate) fn judge(found: &[(Package, &str)]) -> Vec<String> {
         match &package.license {
             None => problems.push(format!("{head}：没写 license，要人看过")),
             Some(license) if !allowed(license) => {
-                problems.push(format!("{head}：{license} 和 GPL-3.0-or-later 合不到一起"));
+                problems.push(format!("{head}：{license} 和 AGPL-3.0-or-later 合不到一起"));
             }
             Some(_) => {}
         }
