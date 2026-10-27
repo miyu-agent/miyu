@@ -23,14 +23,14 @@ pub(super) struct Table {
 /// `[package]`。
 pub(super) const PACKAGE: &[&str] = &[
     "version", "protocol", "name", "summary", "groups", "icon", "needs", "targets", "author",
-    "upstream", "miyu",
+    "upstream", "miyu", "members",
 ];
 
 /// `[command]`、`[[command]]`。
 pub(super) const COMMAND: &[&str] = &["name", "program", "about", "args"];
 
 /// `[process]`。
-pub(super) const PROCESS: &[&str] = &["args", "start", "capabilities", "system_account"];
+pub(super) const PROCESS: &[&str] = &["args", "start", "capabilities", "system_account", "scope"];
 
 /// `[ui]`：界面包。
 pub(super) const UI: &[&str] = &["opens", "pages_dir"];

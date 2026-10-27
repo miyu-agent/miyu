@@ -84,6 +84,7 @@ fn a_process_package_reads_its_start_check_and_settings() {
             start: Start::Manual,
             capabilities: Vec::new(),
             system_account: false,
+            scope: Scope::System,
         })
     );
     assert_eq!(
@@ -104,9 +105,46 @@ fn a_process_package_reads_its_start_check_and_settings() {
             start: Start::Manual,
             capabilities: Vec::new(),
             system_account: false,
+            scope: Scope::System,
         }),
         "都不写：没有参数、等开关、不要能力"
     );
+    assert!(!manifest.members, "没写的成员不能用");
+}
+
+/// 每人一份（施工 IM-1 上）：`scope` 认 `system`、`account`，`account` 不能和系统账号一起写；`[package] members` 是布尔。
+#[test]
+fn a_process_package_can_run_one_per_account_and_let_members_in() {
+    let each = BRIDGE.replace(
+        "start = \"manual\"\n",
+        "start = \"manual\"\nscope = \"account\"\n",
+    );
+    assert_ne!(each, BRIDGE, "锚点对得上");
+    assert_eq!(read(&each).unwrap().process.unwrap().scope, Scope::Account);
+    let system = BRIDGE.replace(
+        "start = \"manual\"\n",
+        "start = \"manual\"\nscope = \"system\"\n",
+    );
+    assert_eq!(read(&system).unwrap().process.unwrap().scope, Scope::System);
+    let odd = BRIDGE.replace(
+        "start = \"manual\"\n",
+        "start = \"manual\"\nscope = \"user\"\n",
+    );
+    assert_eq!(read(&odd).unwrap_err().code, Code::BadScope);
+    let both = BRIDGE.replace(
+        "start = \"manual\"\n",
+        "start = \"manual\"\nscope = \"account\"\nsystem_account = true\n",
+    );
+    assert_eq!(
+        read(&both).unwrap_err().code,
+        Code::BadScope,
+        "按人的不能有系统账号"
+    );
+    let members = BRIDGE.replacen("[package]\n", "[package]\nmembers = true\n", 1);
+    assert_ne!(members, BRIDGE, "锚点对得上");
+    assert!(read(&members).unwrap().members);
+    let bad = BRIDGE.replacen("[package]\n", "[package]\nmembers = \"yes\"\n", 1);
+    assert_eq!(read(&bad).unwrap_err().code, Code::NotBool);
 }
 
 #[test]

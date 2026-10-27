@@ -61,7 +61,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`（施工 BS-1 上中起没有必需的包）。
-3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
+3. 「成员也能用」（施工 IM-1 上）：带进程的包（扩展、带 MCP 服务的 `bundle`）列表那一项多 `members`，管理员用 `package.members {package, on}` 改；没改过的照清单 `[package] members`。成员的会话照它有没有这个包，判法同个人设置里关掉的包（`packages/off.rs`）。
+4. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
 
 ### `config.schema` 里包的配置项
 

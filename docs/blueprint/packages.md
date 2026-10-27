@@ -335,6 +335,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_group` | `[package] groups` 里的组名写法不对、重复了（施工 BS-1 上中） |
 | `needs_command` | `[process]`、`[check]` 没有 `[command]` |
 | `two_programs`、`bad_protocol`、`bad_start` | 程序表 `[ui]`、`[process]`、`[builtin]`、`[worker]` 写了不止一张（施工 F-8 上补，原来的 `bad_kind` 去掉）；`protocol` 不是两个非负整数、最低不大于最高；`start` 不是 `manual`、`always` |
+| `bad_scope` | `[process] scope` 不是 `system`、`account`，或者 `account` 和 `system_account = true` 一起写了（施工 IM-1 上） |
 | `not_text`、`not_texts` | `version` 不是字；`args` 不是字的数组 |
 | `not_phrases`、`unknown_language`、`empty_phrase` | 「语言到一句话」那一格写错 |
 | `bad_command_name`、`bad_program`、`bad_page`、`bad_pages_dir` | 子命令名、程序名、页名、页面目录的写法不对（`pages_dir` 不能是绝对路径、带 `..`、`\`、`:`） |

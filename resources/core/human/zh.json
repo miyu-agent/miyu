@@ -637,6 +637,7 @@
     "package-problems/bad_command_name": "{detail} 要小写字母开头，只用小写字母、数字和 -",
     "package-problems/bad_program": "{detail} 只写程序名，不带路径",
     "package-problems/bad_start": "{detail} 只能是 manual 或 always",
+    "package-problems/bad_scope": "{detail} 只能是 system 或 account，account 不能和 system_account 一起写",
     "package-problems/bad_page": "{detail} 里的页名只用小写字母、数字、- 和 _",
     "package-problems/bad_pages_dir": "{detail} 要写资源目录里的相对目录，不能有 .. 和开头的 /",
     "package-problems/duplicate": "已经有一个出厂的包叫 {detail}，这一份不算",

@@ -23,6 +23,7 @@ const SYSTEM: &[&str] = &[
     "package.clean",
     "package.sync",
     "package.restart",
+    "package.members",
     "extension.enable",
     "extension.disable",
     "extension.restart",

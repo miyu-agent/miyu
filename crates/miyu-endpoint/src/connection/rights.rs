@@ -128,6 +128,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "package.enable"
         | "package.disable"
         | "package.restart"
+        | "package.members"
         | "package.sync"
         | "package.search"
         | "package.clean"

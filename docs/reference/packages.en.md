@@ -8,6 +8,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`package.info`, `package.files`, `package.owns`, `package.check`](#packageinfo-packagefiles-packageowns-packagecheck) | A package's info and files; which package owns a path; whether installed files changed |
 | [`package.install`, `package.remove`](#packageinstall-packageremove) | Install, remove |
 | [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
+| [`package.members`](#packagemembers) | Whether members may use it |
 | [`package.sync`](#packagesync) | Fetch the index from the package source |
 | [`package.search`](#packagesearch) | Search the package source |
 | [`package.clean`](#packageclean) | Delete downloaded package files |
@@ -25,7 +26,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.members`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
 **Two layers**: built-in (installed with Miyu) and installed by the admin (`system/packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
 
@@ -44,6 +45,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `groups` | The groups it is in (only shipped built-in packages have them; `basesystem` is the base system); absent when none |
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
+| `members` | With a process (an extension, or one that brings MCP servers): whether members may use it. Admins only |
 | `page` | Has a package page |
 | `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `need_load`, `on` and `skipped` as in `mcp.list` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
@@ -146,6 +148,14 @@ Upgrade from the package source. Only packages installed from the source are tou
 | `needs_approval` | Capabilities still need approval, `data.capabilities` |
 | `package_depended` | Turning off one another package depends on |
 | `package_off`, `not_restartable` | `restart` on one that's off; nothing to restart |
+
+## `package.members`
+
+**Params**: `package`, `on` (boolean). **Response**: an item as in `package.list`. Admins only, in admin mode.
+
+A package that runs a process (an extension, or one that brings MCP servers) is usable only by the admin group by default. `on: true` lets members use it; `false` takes it back. Until an admin sets it, the manifest's `[package] members` decides. Members' sessions follow it from their next turn.
+
+**Errors**: `unknown_package` for no such package; `not_switchable` for one without a process, or a removed one.
 
 ## `package.file`, `package.call`
 

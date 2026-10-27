@@ -153,6 +153,7 @@ mod package_group_manage;
 mod package_groups;
 mod package_list_member;
 mod package_mascot;
+mod package_members;
 mod package_names;
 mod package_off;
 mod package_off_more;

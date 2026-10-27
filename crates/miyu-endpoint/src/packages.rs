@@ -185,6 +185,7 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
 /// （`problem`、`line`）。别的照给：不是管理员组的账号也有扩展（接入QQ 的 `im`）照 `export`、`connection` 这些找挂在自己身上的
 /// 包（施工 U23-R修，U23-R 起照白名单删掉了它们）。
 const ADMINS_ONLY: &[&str] = &[
+    "members",
     "state",
     "pages_dir",
     "command",
@@ -237,6 +238,10 @@ fn listed(
             }
             if status::page(found, manifest) {
                 item["page"] = json!(true);
+            }
+            // 成员也能用（施工 IM-1 上）：带进程的才有这一格，只给管理员。
+            if status::runs(manifest) {
+                item["members"] = json!(core.members_may(&found.id, manifest));
             }
             item["state"] = json!(places.state_dir(&found.id).to_string_lossy());
             if let Some(range) = mismatch(manifest) {

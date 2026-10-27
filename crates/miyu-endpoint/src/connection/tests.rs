@@ -26,6 +26,7 @@ fn people_only_stays_people_only() {
         "package.enable",
         "package.disable",
         "package.restart",
+        "package.members",
         "package.sync",
         "package.search",
         "package.clean",

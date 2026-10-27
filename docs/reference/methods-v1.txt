@@ -95,6 +95,7 @@ package.files
 package.info
 package.install
 package.list
+package.members
 package.methods
 package.owns
 package.progress

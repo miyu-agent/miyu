@@ -75,6 +75,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `summary` | A one-line summary |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
 | `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
+| `members` | `true`: members may use it by default. A package that runs a process (an extension, or one that brings MCP servers) is usable only by the admin group by default; an admin's choice at the system layer wins. Ignored for packages a member installs for themselves. Default `false` |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"0.2.0"`. Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
@@ -97,6 +98,7 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 | `system_account` | Every package with a process has its own account, named after the package: what you upload is stored under it, and normally it works for the person who installed Miyu. `true`: it's a chat platform bridge that works for people on the platform, and group sessions belong to this account |
+| `scope` | `system` (default): one process, running as the package's own account. `account`: one per person who uses it, running as that person, with its data in their own home that nobody else (admins included) can see; started when first needed. Cannot go with `system_account = true` |
 
 **Capabilities**: only these seventeen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 

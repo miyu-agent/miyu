@@ -641,6 +641,7 @@
     "package-problems/bad_command_name": "{detail} must start with a lowercase letter and use only lowercase letters, digits and -",
     "package-problems/bad_program": "{detail} must be a program name without a path",
     "package-problems/bad_start": "{detail} must be manual or always",
+    "package-problems/bad_scope": "{detail} must be system or account, and account cannot go with system_account",
     "package-problems/bad_page": "{detail} must list page names in lowercase letters, digits, - and _",
     "package-problems/bad_pages_dir": "{detail} must be a relative directory inside the resource directory, without .. or a leading /",
     "package-problems/duplicate": "A shipped package is already called {detail}; this one does not count",

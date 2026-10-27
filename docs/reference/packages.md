@@ -8,6 +8,7 @@
 | [`package.info`、`package.files`、`package.owns`、`package.check`](#packageinfopackagefilespackageownspackagecheck) | 一个包的信息、文件；一个路径归哪个包；装好的文件改没改 |
 | [`package.install`、`package.remove`](#packageinstallpackageremove) | 装、卸 |
 | [`package.enable`、`package.disable`、`package.restart`](#packageenablepackagedisablepackagerestart) | 开、关、重启 |
+| [`package.members`](#packagemembers) | 成员能不能用 |
 | [`package.sync`](#packagesync) | 从软件源拿索引 |
 | [`package.search`](#packagesearch) | 在软件源里搜 |
 | [`package.clean`](#packageclean) | 清下载过的包文件 |
@@ -25,7 +26,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.members`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **两层**：出厂的（随 Miyu 装的）、管理员装的（数据根的 `system/packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
 
@@ -44,6 +45,7 @@
 | `groups` | 在哪几个组里（只有出厂的内置包有，`basesystem` 是基础系统）；不在组里的没有 |
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
+| `members` | 带进程的（扩展、带 MCP 服务的）：成员能不能用。只给管理员 |
 | `page` | 有后台页的 |
 | `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`need_load`、`on`、`skipped` 同 `mcp.list` 的一项 |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
@@ -146,6 +148,14 @@
 | `needs_approval` | 要的能力还有没批的，`data.capabilities` |
 | `package_depended` | 关一个别的包依赖的 |
 | `package_off`、`not_restartable` | `restart` 一个关着的；没有能重启的进程、服务 |
+
+## `package.members`
+
+**参数**：`package`、`on`（布尔）。**回应**：同 `package.list` 的一项。只给管理员，要进入管理员模式。
+
+带进程的包（扩展、带 MCP 服务的）默认只有管理员组的人能用。`on: true` 让成员也能用；`false` 收回。没改过的照清单的 `[package] members`。成员的会话下一轮起照它有没有这个包。
+
+**出错**：没有的包 `unknown_package`；不带进程的、卸掉了的 `not_switchable`。
 
 ## `package.file`、`package.call`
 

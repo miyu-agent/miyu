@@ -33,6 +33,8 @@
 
 没写的照清单的 `start`：`always` 的开着，`manual` 的关着。写了的照写的。读不成的当没有，记一行 `WARN`，照样起来；写的时候盖掉。
 
+成员能不能用（施工 IM-1 上，`package.members`）记在同一份里的 `members`：`{"version":1,"on":{},"members":{"im":true}}`。没写的照清单的 `[package] members`；一个都没改过的不写这一格。
+
 批过的能力（施工 Y-5 下上，设计 06 U16「能力即组」）记在组表 `system/groups.json` 里：批了就是把包的账号加进它声明的每一个能力的组 `ext.<能力>`（同一张表上人的组是 `admin` 这类不带点的，施工 Y-12 中下，设计 06 U16「落地」）：
 
 ```json

@@ -2,7 +2,7 @@
 
 use toml_edit::{Item, TableLike};
 
-use super::{Capability, Code, Command, Need, PackageKind, Pages, Problem, Process, Start};
+use super::{Capability, Code, Command, Need, PackageKind, Pages, Problem, Process, Scope, Start};
 use crate::phrases::{self, PhraseError, Phrases};
 
 /// `[package]` 读出来的几格。
@@ -16,6 +16,7 @@ pub(super) struct Head {
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
     pub(super) credits: super::credits::Credits,
+    pub(super) members: bool,
 }
 
 /// 照原文算行号。
@@ -112,6 +113,7 @@ impl Reader<'_> {
         let needs = self.needs(table)?;
         let targets = self.targets(table)?;
         let credits = super::credits::read(self, table)?;
+        let members = self.flag(table, "package", "members")?;
         Ok(Head {
             version,
             protocol,
@@ -122,6 +124,7 @@ impl Reader<'_> {
             needs,
             targets,
             credits,
+            members,
         })
     }
 
@@ -198,23 +201,53 @@ impl Reader<'_> {
                 }
             },
         };
-        let system_account = match table.get("system_account") {
-            None => false,
-            Some(item) => item.as_bool().ok_or_else(|| {
-                self.problem(
-                    Some(item),
-                    Code::NotBool,
-                    "process.system_account",
-                    "process.system_account must be true or false".to_string(),
-                )
-            })?,
+        let system_account = self.flag(table, "process", "system_account")?;
+        let scope = match table.get("scope") {
+            None => Scope::System,
+            Some(item) => match item.as_str() {
+                Some("system") => Scope::System,
+                Some("account") if !system_account => Scope::Account,
+                Some("account") => {
+                    return Err(self.problem(
+                        Some(item),
+                        Code::BadScope,
+                        "process.scope",
+                        "process.scope = \"account\" cannot go with process.system_account"
+                            .to_string(),
+                    ));
+                }
+                _ => {
+                    return Err(self.problem(
+                        Some(item),
+                        Code::BadScope,
+                        "process.scope",
+                        "process.scope must be system or account".to_string(),
+                    ));
+                }
+            },
         };
         Ok(Process {
             args: self.texts(table, "process", "args")?,
             start,
             capabilities: self.capabilities(table)?,
             system_account,
+            scope,
         })
+    }
+
+    /// 表 `table`（叫 `name`）里一格 `key`：`true`、`false`，没写的是假。
+    fn flag(&self, table: &dyn TableLike, name: &str, key: &str) -> Result<bool, Problem> {
+        match table.get(key) {
+            None => Ok(false),
+            Some(item) => item.as_bool().ok_or_else(|| {
+                self.problem(
+                    Some(item),
+                    Code::NotBool,
+                    &format!("{name}.{key}"),
+                    format!("{name}.{key} must be true or false"),
+                )
+            }),
+        }
     }
 
     /// `[process] capabilities`（施工 9-4 下上）：字的列表，每个都是认识的能力名、不重复；照表的先后排好。

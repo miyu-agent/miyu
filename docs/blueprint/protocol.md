@@ -205,6 +205,7 @@
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
 | `package.restart` | 重启扩展的进程和它带的 MCP 服务、`bundle` 带的服务（施工 X-4，`package-pages.md`「开关」） |
+| `package.members` | 带进程的包成员能不能用（施工 IM-1 上，`package-pages.md`「开关」） |
 | `mcp.list`、`mcp.restart` | 管理员个人设置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「个人设置里的一张表」） |
 | `mcp.set`、`mcp.remove` | 管理员个人设置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
 | `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
@@ -813,6 +814,13 @@
 - 参数 `{"package"}`。回应同 `package.list` 的一项。
 - 扩展：同 `extension.restart`，再重启它带的 MCP 服务；`bundle`：重启它带的服务。请它们退出、等它们退出，再起，连续失败从零数；服务的工具留在目录里，起好、列完照新的换。
 - 拒绝：没有的 `unknown_package`；关着的（卸掉了的出厂包也算）`package_off`；内置包、界面、小程序、吉祥物包没有能重启的，`not_restartable`；扩展要的能力还有没批的照 `extension.restart` 回 `needs_approval`。扩展自己调回 `local_only`。
+
+**`package.members`**（施工 IM-1 上，`package-pages.md`「开关」，设计 06 第八再又补第 2 条）
+
+- 参数 `{"package", "on"}`。回应同 `package.list` 的一项。只给管理员组，改系统那一层，要进入管理员模式；扩展调回 `local_only`。
+- 记在 `system/extensions.json` 的 `members`，盖过清单的 `[package] members`。不在管理员组的人，成员用不了的包当他自己关了（同个人设置的 `packages.<编号>.off`）：新会话、开着的会话下一轮都没有它。
+- `package.list` 里带进程的那一项多 `members`（照这一格算好的，只给管理员）。
+- 拒绝：没有的 `unknown_package`；不带进程的、卸掉了的 `not_switchable`。
 
 **`package.file`、`package.methods`、`package.call`**（施工 F-6 中，`package-pages.md`）
 
