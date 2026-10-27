@@ -255,19 +255,19 @@ impl Subscriptions {
         self.sessions = None;
     }
 
-    /// 核心拉起的扩展握了手（施工 9-4 下下，`extension_config.rs`）：包是 `package`，握手交出去的是 `handed`，`current` 是
+    /// 核心拉起的扩展握了手（施工 9-4 下下，`extension_config.rs`）：是 `instance` 那一份，握手交出去的是 `handed`，`current` 是
     /// 握手时拿的盯配置的那一头；变了推 `extension.config`。握手的回应写出去以后调。
     pub(crate) fn add_extension_config(
         &mut self,
         core: &Arc<Core>,
-        package: String,
+        instance: crate::extensions::Instance,
         handed: BTreeMap<String, serde_json::Value>,
         current: tokio::sync::watch::Receiver<Arc<crate::config::Config>>,
         out: &mpsc::Sender<String>,
     ) {
         self.extension_config = Some(ExtensionConfigForwarder::start(
             Arc::clone(core),
-            package,
+            instance,
             handed,
             current,
             out.clone(),

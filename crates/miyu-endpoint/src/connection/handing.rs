@@ -7,9 +7,10 @@ use serde_json::Value;
 use crate::Core;
 use crate::extensions::Instance;
 
-/// 握手时交给核心拉起的扩展的那份（施工 9-4 下下）：包、交出去的键到值、握手时拿的盯配置的那一头。
+/// 握手时交给核心拉起的扩展的那份（施工 9-4 下下）：哪一份（施工 IM-1 中下五起带账号）、交出去的键到值、握手时拿的盯配置的
+/// 那一头。
 pub(super) struct Handing {
-    pub(super) package: String,
+    pub(super) instance: Instance,
     pub(super) handed: std::collections::BTreeMap<String, Value>,
     pub(super) current: tokio::sync::watch::Receiver<Arc<crate::config::Config>>,
 }
@@ -27,7 +28,7 @@ impl Handing {
         let handed = crate::extensions::config::own(&config, package);
         tracing::debug!(target: "miyu::endpoint", package, keys = handed.len(), "extension config handed");
         Handing {
-            package: package.to_string(),
+            instance: instance.clone(),
             handed,
             current,
         }

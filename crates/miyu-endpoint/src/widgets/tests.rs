@@ -5,13 +5,17 @@ use std::collections::BTreeSet;
 
 use serde_json::json;
 
+use miyu_kernel::id::AccountId;
+
 use super::{Key, Shown, Widgets};
+use crate::extensions::Instance;
 
 fn key(widget: &str, session: Option<&str>) -> Key {
     Key {
         package: "wx".into(),
         widget: widget.into(),
         session: session.map(str::to_string),
+        account: None,
     }
 }
 
@@ -30,9 +34,13 @@ fn only_the_first_look_and_the_last_leave_are_told() {
     widgets.look(&today);
     widgets.look(&today);
     widgets.leave(&today);
-    assert_eq!(widgets.watched("wx"), today, "还有一个人看着");
+    assert_eq!(
+        widgets.watched(&Instance::system("wx")),
+        today,
+        "还有一个人看着"
+    );
     widgets.leave(&today);
-    assert!(widgets.watched("wx").is_empty());
+    assert!(widgets.watched(&Instance::system("wx")).is_empty());
     let first = told.try_recv().expect("开始看说一声");
     assert!(first.on && first.key == key("today", Some("s1")));
     let last = told.try_recv().expect("最后一个走了说一声");
@@ -81,9 +89,38 @@ fn clear_and_forget_say_what_changed() {
     assert_eq!(changed.try_recv().ok(), Some(key("temp", None)));
     widgets.clear(key("temp", None));
     assert!(changed.try_recv().is_err(), "清过的再清不说");
-    widgets.forget("other");
+    widgets.forget(&Instance::system("other"));
     assert!(changed.try_recv().is_err(), "别的包的不碰");
-    widgets.forget("wx");
+    widgets.forget(&Instance::system("wx"));
     assert_eq!(changed.try_recv().ok(), Some(key("week", None)));
     assert!(widgets.get(&key("week", None)).is_none());
+}
+
+/// 每人一份的包（施工 IM-1 中下五）：两个人的块各记各的，谁在看、程序停了清内容都只碰那一份。
+#[test]
+fn each_person_s_copy_has_its_own_widgets() {
+    let widgets = Widgets::default();
+    let person = |name: &str| AccountId::parse(name).expect("合写法");
+    let theirs = |name: &str| Key {
+        account: Some(person(name)),
+        ..key("today", None)
+    };
+    let copy = |name: &str| Instance {
+        package: "wx".into(),
+        account: Some(person(name)),
+    };
+    widgets.look(&[theirs("alice"), theirs("bob")].into());
+    assert!(widgets.put(theirs("alice"), shown("alice 的")));
+    assert!(widgets.put(theirs("bob"), shown("bob 的")));
+    assert_eq!(widgets.watched(&copy("bob")), [theirs("bob")].into());
+    assert!(
+        widgets.watched(&Instance::system("wx")).is_empty(),
+        "一份的那一份没人看"
+    );
+    widgets.forget(&copy("alice"));
+    assert!(
+        widgets.get(&theirs("alice")).is_none(),
+        "alice 那一份停了，她的清掉"
+    );
+    assert!(widgets.get(&theirs("bob")).is_some(), "bob 的还在");
 }

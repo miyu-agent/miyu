@@ -360,7 +360,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         if let Some(given) = handing.take() {
             subscriptions.add_extension_config(
                 &core,
-                given.package,
+                given.instance,
                 given.handed,
                 given.current,
                 &out,

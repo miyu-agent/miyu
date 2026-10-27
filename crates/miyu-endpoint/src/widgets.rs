@@ -15,6 +15,10 @@ use std::sync::{Mutex, PoisonError};
 use serde_json::Value;
 use tokio::sync::broadcast;
 
+use miyu_kernel::id::AccountId;
+
+use crate::extensions::Instance;
+
 /// 一块：哪个包的哪一块，跟着会话的带会话的编号。
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub(crate) struct Key {
@@ -24,6 +28,15 @@ pub(crate) struct Key {
     pub(crate) widget: String,
     /// 跟着会话的：哪个会话。
     pub(crate) session: Option<String>,
+    /// 每人一份的包（施工 IM-1 中下五）：哪个人那一份的块；一份的包没有。
+    pub(crate) account: Option<AccountId>,
+}
+
+impl Key {
+    /// 这一块归 `instance` 那一份：包对得上，每人一份的人也对得上。
+    pub(crate) fn of(&self, instance: &Instance) -> bool {
+        self.package == instance.package && self.account == instance.account
+    }
 }
 
 /// 程序推来的、这一刻的一份。
@@ -84,12 +97,12 @@ impl Widgets {
         self.watches.subscribe()
     }
 
-    /// 这一刻有人在看的、包 `package` 的那几块。
-    pub(crate) fn watched(&self, package: &str) -> BTreeSet<Key> {
+    /// 这一刻有人在看的、`instance` 那一份的那几块。
+    pub(crate) fn watched(&self, instance: &Instance) -> BTreeSet<Key> {
         self.state()
             .watchers
             .keys()
-            .filter(|key| key.package == package)
+            .filter(|key| key.of(instance))
             .cloned()
             .collect()
     }
@@ -150,14 +163,14 @@ impl Widgets {
         }
     }
 
-    /// 包 `package` 的程序停了：它的内容全清，清掉的各广播一声。
-    pub(crate) fn forget(&self, package: &str) {
+    /// `instance` 那一份的程序停了：它的内容全清，清掉的各广播一声。别人那一份的不动（施工 IM-1 中下五）。
+    pub(crate) fn forget(&self, instance: &Instance) {
         let gone: Vec<Key> = {
             let mut state = self.state();
             let gone: Vec<Key> = state
                 .shown
                 .keys()
-                .filter(|key| key.package == package)
+                .filter(|key| key.of(instance))
                 .cloned()
                 .collect();
             for key in &gone {

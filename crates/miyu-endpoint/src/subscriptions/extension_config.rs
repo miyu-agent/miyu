@@ -25,18 +25,19 @@ pub(super) struct ExtensionConfigForwarder {
 }
 
 impl ExtensionConfigForwarder {
-    /// 起一个：包是 `package`，握手时交出去的是 `handed`，`current` 是握手时拿的盯配置的那一头，写进 `out`。
+    /// 起一个：是 `instance` 那一份，握手时交出去的是 `handed`，`current` 是握手时拿的盯配置的那一头，写进 `out`。
     pub(super) fn start(
         core: Arc<crate::Core>,
-        package: String,
+        instance: crate::extensions::Instance,
         handed: BTreeMap<String, Value>,
         current: watch::Receiver<Arc<Config>>,
         out: mpsc::Sender<String>,
     ) -> ExtensionConfigForwarder {
+        let package = instance.package.clone();
         ExtensionConfigForwarder {
             _watching: crate::widgets::watch::Watching::start(
                 Arc::clone(&core),
-                package.clone(),
+                instance,
                 out.clone(),
             ),
             _content: crate::content::Watch::start(core, package.clone(), out.clone()),

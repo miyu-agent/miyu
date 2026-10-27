@@ -106,7 +106,7 @@ impl HeadForwarder {
             core.package_changes.subscribe(),
             core.extensions.subscribe(),
         );
-        let items = visible(&core, &looking, None);
+        let items = visible(&core, &looking, None, shaken.whose());
         let keys = watched(&items, &looking);
         core.widgets.look(&keys);
         let language = shaken.now(&core).language;
@@ -152,9 +152,14 @@ impl Drop for HeadForwarder {
     }
 }
 
-/// 头看得到的块：没带会话的不列跟着会话的；只要包 `only` 的就写上它。
-fn visible(core: &Core, looking: &Looking, only: Option<&str>) -> Vec<Item> {
-    declared(core, only)
+/// `viewer` 的头看得到的块：没带会话的不列跟着会话的；只要包 `only` 的就写上它。
+fn visible(
+    core: &Core,
+    looking: &Looking,
+    only: Option<&str>,
+    viewer: &miyu_kernel::id::AccountId,
+) -> Vec<Item> {
+    declared(core, only, viewer)
         .into_iter()
         .filter(|item| !item.widget.per_session || looking.session.is_some())
         .collect()
@@ -237,6 +242,7 @@ impl Follow {
         let mine = self.items.iter().any(|item| {
             item.package == key.package
                 && item.widget.id == key.widget
+                && item.owner == key.account
                 && (key.session.is_none() || key.session == self.looking.session)
         });
         if !mine {
@@ -282,7 +288,12 @@ impl Follow {
 
     /// 包装卸、开关、程序起停了：照这一刻重算它的块，没了的推 `null`、不看了，新的记成在看，别的整块推一遍。
     fn package_changed(&mut self, package: &str) -> Vec<String> {
-        let now = visible(&self.core, &self.looking, Some(package));
+        let now = visible(
+            &self.core,
+            &self.looking,
+            Some(package),
+            self.shaken.whose(),
+        );
         let before: Vec<Item> = self
             .items
             .iter()

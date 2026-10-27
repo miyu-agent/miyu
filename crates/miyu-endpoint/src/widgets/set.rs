@@ -94,10 +94,15 @@ fn locate(
                 .collect()
         })
         .unwrap_or_default();
+    // 每人一份的包推的是它替的那个人那一份的块（施工 IM-1 中下五）：别人的头看不见。
+    let account = manifest
+        .is_some_and(crate::extensions::per_account)
+        .then(|| caller.acting_for().clone());
     let key = Key {
         package: package.to_string(),
         widget: widget.to_string(),
         session,
+        account,
     };
     Ok((key, declared.place, pages))
 }

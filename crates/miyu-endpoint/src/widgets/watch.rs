@@ -12,12 +12,13 @@ use tokio::task::JoinHandle;
 
 use super::Key;
 use crate::Core;
+use crate::extensions::Instance;
 
 /// 推给一个程序的任务。
 pub(crate) struct Watching {
     task: JoinHandle<()>,
     core: Arc<Core>,
-    package: String,
+    instance: Instance,
 }
 
 impl std::fmt::Debug for Watching {
@@ -27,13 +28,17 @@ impl std::fmt::Debug for Watching {
 }
 
 impl Watching {
-    /// 起一个：包是 `package`，写进 `out`。
-    pub(crate) fn start(core: Arc<Core>, package: String, out: mpsc::Sender<String>) -> Watching {
-        let task = tokio::spawn(tell(Arc::clone(&core), package.clone(), out));
+    /// 起一个：是 `instance` 那一份（施工 IM-1 中下五：每人一份的只听他那一份的块），写进 `out`。
+    pub(crate) fn start(
+        core: Arc<Core>,
+        instance: Instance,
+        out: mpsc::Sender<String>,
+    ) -> Watching {
+        let task = tokio::spawn(tell(Arc::clone(&core), instance.clone(), out));
         Watching {
             task,
             core,
-            package,
+            instance,
         }
     }
 }
@@ -41,19 +46,19 @@ impl Watching {
 impl Drop for Watching {
     fn drop(&mut self) {
         self.task.abort();
-        self.core.widgets.forget(&self.package);
+        self.core.widgets.forget(&self.instance);
     }
 }
 
-async fn tell(core: Arc<Core>, package: String, out: mpsc::Sender<String>) {
+async fn tell(core: Arc<Core>, instance: Instance, out: mpsc::Sender<String>) {
     let mut changes = core.widgets.watch_changes();
     let mut told = BTreeSet::new();
-    if !catch_up(&core, &package, &mut told, &out).await {
+    if !catch_up(&core, &instance, &mut told, &out).await {
         return;
     }
     loop {
         match changes.recv().await {
-            Ok(watch) if watch.key.package == package => {
+            Ok(watch) if watch.key.of(&instance) => {
                 let fresh = match watch.on {
                     true => told.insert(watch.key.clone()),
                     false => told.remove(&watch.key),
@@ -64,7 +69,7 @@ async fn tell(core: Arc<Core>, package: String, out: mpsc::Sender<String>) {
             }
             Ok(_) => {}
             Err(RecvError::Lagged(_)) => {
-                if !catch_up(&core, &package, &mut told, &out).await {
+                if !catch_up(&core, &instance, &mut told, &out).await {
                     return;
                 }
             }
@@ -76,11 +81,11 @@ async fn tell(core: Arc<Core>, package: String, out: mpsc::Sender<String>) {
 /// 照这一刻有人在看的对一遍：说过、现在没人看的推 `widget.unwatch`，新的推 `widget.watch`。连接断了交回 `false`。
 async fn catch_up(
     core: &Core,
-    package: &str,
+    instance: &Instance,
     told: &mut BTreeSet<Key>,
     out: &mpsc::Sender<String>,
 ) -> bool {
-    let now = core.widgets.watched(package);
+    let now = core.widgets.watched(instance);
     let lines: Vec<String> = told
         .difference(&now)
         .map(|key| line(key, false))
