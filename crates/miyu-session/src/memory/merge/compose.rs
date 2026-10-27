@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use miyu_kernel::id::Seq;
 use miyu_recall::{Entry, MemoryId, Swept};
+use miyu_tool::Line;
 use miyu_tool::load::say;
 
 use super::super::Using;
@@ -21,15 +22,15 @@ impl MergeJob {
     pub(super) async fn compose(&self, batch: Batch) -> Asked {
         let texts = &self.extraction.merge;
         let row = |entry: &Entry, about: &[String]| {
-            say(
-                &texts.line,
-                &[
-                    ("id", &entry.id.to_string()),
-                    ("class", &marked(entry, about)),
-                    ("date", &entry.at.local_date(self.offset)),
-                    ("text", &entry.text.replace('\n', " ")),
-                ],
-            )
+            texts.lines.say(&Line {
+                id: &entry.id.to_string(),
+                class: &marked(entry, about),
+                date: &entry.at.local_date(self.offset),
+                text: &entry.text.replace('\n', " "),
+                venue: entry.venue.as_ref(),
+                place: entry.place.as_deref(),
+                retired: false,
+            })
         };
         let summary = match &batch.summary {
             Some(text) => say(&texts.summary, &[("text", text)]),

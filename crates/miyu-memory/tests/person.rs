@@ -69,6 +69,8 @@ async fn a_person_found_shows_who() {
                 at: at(5),
                 retired: false,
                 who: Some("qq:2".into()),
+                venue: None,
+                place: None,
             }],
             turns: Vec::new(),
             cards: Vec::new(),
@@ -111,6 +113,8 @@ async fn cards_found_come_after_memories() {
                 at: at(5),
                 retired: false,
                 who: Some("qq:2".into()),
+                venue: None,
+                place: None,
             }],
             turns: vec![FoundTurn {
                 session,

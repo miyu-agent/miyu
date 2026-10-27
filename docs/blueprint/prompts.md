@@ -2606,26 +2606,15 @@ Say who this person memory is about in who: their name, or their id like qq:1008
 Retired {id}.
 ```
 
-#### `software/memory/memory_search/memory.txt`
-
-- 什么时候加进来：`memory_search` 记下的一条一行（字段按 `m12`、`user`、`2026-10-07`、`用户用 N 卡` 填）
-- token：18（2026-10-07 量）
-- 为什么加：编号、类、日期、正文：她能接着改、作废，看得出多久以前（施工 R-3 中）
-- 指纹：`42e97fd1`
-
-```text
-{id} {class} {date}: {text}
-```
-
 #### `software/memory/memory_search/retired.txt`
 
 - 什么时候加进来：`memory_search` 带 `forgotten` 时作废的一条（字段同上）
-- token：21（2026-10-07 量）
-- 为什么加：和现在算数的分得开（施工 R-3 中）
-- 指纹：`dd447828`
+- token：21（2026-10-07 量；施工 E-4 下多一个 `{where}`，空的时候一字不差）
+- 为什么加：和现在算数的分得开（施工 R-3 中）；在哪儿同上一行（施工 E-4 下）
+- 指纹：`02fa62b5`
 
 ```text
-{id} {class} {date} (retired): {text}
+{id} {class} {date}{where} (retired): {text}
 ```
 
 #### `software/memory/memory_search/turn.txt`
@@ -3903,6 +3892,39 @@ would write to a raw disk device
 
 ```text
 would give a container full access to this machine's devices
+```
+
+#### `software/memory/memory_search/where-group-unnamed.txt`
+
+- 什么时候加进来：场所是群（`qq:group:…`）、没有群名的（E-4 上以前记的、桥没交群名的；字段按 `QQ` 填）
+- token：一行多 4（同上量）
+- 为什么加：群名不知道也看得出是在群里，不是私聊（施工 E-4 下）
+- 指纹：`9c722bac`
+
+```text
+in a {platform} group
+```
+
+#### `software/memory/memory_search/where-private.txt`
+
+- 什么时候加进来：场所是私聊（`qq:private:…`，别人的私聊；主人自己的私聊记在主人那边、没有场所；字段按 `QQ` 填）
+- token：一行多 5（同上量）
+- 为什么加：同上（施工 E-4 下）
+- 指纹：`b3aeec8b`
+
+```text
+in a {platform} private chat
+```
+
+#### `software/memory/memory_search/where-other.txt`
+
+- 什么时候加进来：场所编号不是「平台:group/private:…」的形状（字段按平台那一截填）
+- token：一行多 3（同上量，`on matrix`）
+- 为什么加：核心不解读场所编号，别的形状只写平台（施工 E-4 下）
+- 指纹：`8015c8cf`
+
+```text
+on {platform}
 ```
 
 #### `packages/authoring/skills/package-creator/SKILL.md`
@@ -5490,6 +5512,32 @@ would delete the root directory
 
 ```text
 the user, translated into the language you write in
+```
+
+### 工具结果；常驻那一块、联想、抽取里忘掉的那几行、整理和写关键词的请求同一行
+
+#### `software/memory/memory_search/memory.txt`
+
+- 什么时候加进来：`memory_search` 记下的一条一行（字段按 `m12`、`user`、`2026-10-07`、空的在哪儿、`用户用 N 卡` 填）
+- token：18（2026-10-07 量）；施工 E-4 下多一个 `{where}`，空的时候一字不差（2026-10-27 照 tiktoken `o200k_base` 量，接在 `hi` 和一个换行后面、带行尾换行，还是 18）
+- 为什么加：编号、类、日期、正文：她能接着改、作废，看得出多久以前（施工 R-3 中）。施工 E-4 下（2026-10-27 项目主人定「她看得到每条记忆在哪儿发生的」，选了推荐的「写进每一行」）：日期后面接在哪儿发生的（`where-*.txt`），主人那边、本机的不加
+- 指纹：`66050266`
+
+```text
+{id} {class} {date}{where}: {text}
+```
+
+### 同 `memory_search/memory.txt` 那一行，接在日期后面
+
+#### `software/memory/memory_search/where-group.txt`
+
+- 什么时候加进来：记下那一刻有群名的（`place`，施工 E-4 上；字段按 `QQ`、`周末摄影群` 填）
+- token：一行多 9（2026-10-27 照 tiktoken `o200k_base` 量同一行带和不带的差，群名五个字）
+- 为什么加：她知道这件事是在哪个群里发生的（施工 E-4 下，2026-10-27 项目主人定）。群名用「」括起来：换进去的字照模板的规矩转义，英文引号会被转掉；群名原样换进这一小段、整行再转义一次
+- 指纹：`519576d9`
+
+```text
+in {platform} group 「{place}」
 ```
 
 ### 事实：常驻的记忆摘要那一块的开头

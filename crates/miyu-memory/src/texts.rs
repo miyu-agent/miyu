@@ -8,7 +8,7 @@ use miyu_kernel::event::Said;
 use miyu_kernel::template::Template;
 use miyu_recall::MemoryId;
 use miyu_tool::load::{self, LoadError, say};
-use miyu_tool::{Done, Refused};
+use miyu_tool::{Done, MemoryLines, Refused};
 
 use crate::PACKAGE;
 
@@ -28,8 +28,8 @@ pub(crate) struct All {
     pub(crate) unknown_class: Template,
     pub(crate) no_who: Template,
     pub(crate) retired: Template,
-    pub(crate) memory: Template,
-    pub(crate) memory_retired: Template,
+    /// 记下的一条一行（作废的另一份；施工 E-4 下起带在哪儿）。
+    pub(crate) lines: MemoryLines,
     pub(crate) turn: Template,
     pub(crate) card: Template,
     pub(crate) nothing: Template,
@@ -53,8 +53,7 @@ impl Texts {
             unknown_class: text("remember", "unknown-class", &["class"])?,
             no_who: text("remember", "no-who", &[])?,
             retired: text("forget", "retired", &["id"])?,
-            memory: text("memory_search", "memory", &["id", "class", "date", "text"])?,
-            memory_retired: text("memory_search", "retired", &["id", "class", "date", "text"])?,
+            lines: MemoryLines::load(resources, PACKAGE)?,
             turn: text("memory_search", "turn", &["date", "session", "text"])?,
             card: text("memory_search", "card", &["who", "text"])?,
             nothing: text("memory_search", "nothing", &[])?,

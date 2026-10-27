@@ -4,7 +4,7 @@
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::AccountId;
+use miyu_kernel::id::{AccountId, VenueId};
 use miyu_kernel::session::Command;
 use miyu_recall::{Card, CardRetired, MemoryEvent, PERSON, Saved};
 use miyu_session::Handle;
@@ -47,11 +47,12 @@ fn person(home: &Home, who: &str, text: &str) {
         audience: Vec::new(),
         replaces: None,
         about: None,
-        venue: None,
+        // 在群里记的（施工 E-4 下：搜到的那一行写在哪个群）。
+        venue: Some(VenueId::parse("qq:group:7").expect("合写法")),
         keywords: None,
         who: Some(who.into()),
         people: Vec::new(),
-        place: None,
+        place: Some("周末摄影群".into()),
     };
     write(home, &MemoryEvent::Saved(saved));
 }
@@ -144,6 +145,10 @@ async fn asking_whether_she_knows_someone_finds_their_card() {
     assert!(
         lines[0].starts_with("m1 person qq:20017 ") && lines[0].ends_with(": 小林用 RX 7800 XT"),
         "记下的在前：{found}"
+    );
+    assert!(
+        lines[0].contains(" in QQ group 「周末摄影群」: "),
+        "写在哪个群（施工 E-4 下）：{found}"
     );
     assert_eq!(lines[1], XIAOLIN, "{found}");
 }

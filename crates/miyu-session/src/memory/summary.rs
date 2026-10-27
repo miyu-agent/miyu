@@ -17,6 +17,7 @@ use miyu_kernel::session::Injection;
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
 use miyu_tool::load::{self, LoadError};
+use miyu_tool::{Line, MemoryLines};
 
 use super::merge::made_by_merge;
 use super::{Filter, Keeper};
@@ -36,7 +37,7 @@ pub const LIMIT: usize = 3000;
 #[derive(Debug, Clone)]
 pub struct SummaryTexts {
     open: Template,
-    line: Template,
+    lines: MemoryLines,
     more: Template,
     close: Template,
     digest: Template,
@@ -55,13 +56,7 @@ impl SummaryTexts {
     pub fn load(resources: &Path) -> Result<SummaryTexts, LoadError> {
         Ok(SummaryTexts {
             open: load::text(resources, PACKAGE, "summary", "open", &[])?,
-            line: load::text(
-                resources,
-                PACKAGE,
-                "memory_search",
-                "memory",
-                &["id", "class", "date", "text"],
-            )?,
+            lines: MemoryLines::load(resources, PACKAGE)?,
             more: load::text(resources, PACKAGE, "summary", "more", &["count"])?,
             close: load::text(resources, PACKAGE, "summary", "close", &[])?,
             digest: load::text(resources, PACKAGE, "summary", "digest", &["text"])?,
@@ -134,18 +129,20 @@ impl Keeper {
         for entry in &entries {
             let (id, date) = (entry.id.to_string(), entry.at.local_date(offset));
             let text = entry.text.replace('\n', " ");
-            let row = say(
-                &texts.line,
-                &[
-                    ("id", &id),
-                    (
-                        "class",
-                        &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
-                    ),
-                    ("date", &date),
-                    ("text", &text),
-                ],
-            );
+            let class = miyu_recall::shown_class(&entry.class, entry.who.as_deref());
+            let row = texts
+                .lines
+                .say(&Line {
+                    id: &id,
+                    class: &class,
+                    date: &date,
+                    text: &text,
+                    venue: entry.venue.as_ref(),
+                    place: entry.place.as_deref(),
+                    retired: false,
+                })
+                .trim_end()
+                .to_string();
             if used + row.len() + 1 > room {
                 break;
             }

@@ -21,6 +21,7 @@ use miyu_recall::redact::redact;
 use miyu_recall::tag::keywords;
 use miyu_recall::{Entry, MemoryId};
 use miyu_tool::load::{self, LoadError, say};
+use miyu_tool::{Line, MemoryLines};
 
 use super::extract::secrets;
 use super::merge::MergeJob;
@@ -43,7 +44,7 @@ const PACKAGE: &str = "memory";
 #[derive(Debug, Clone)]
 pub struct TagTexts {
     instruction: Template,
-    line: Template,
+    lines: MemoryLines,
 }
 
 impl TagTexts {
@@ -55,13 +56,7 @@ impl TagTexts {
     pub fn load(resources: &Path) -> Result<TagTexts, LoadError> {
         Ok(TagTexts {
             instruction: load::text(resources, PACKAGE, "tag", "instruction", &[])?,
-            line: load::text(
-                resources,
-                PACKAGE,
-                "memory_search",
-                "memory",
-                &["id", "class", "date", "text"],
-            )?,
+            lines: MemoryLines::load(resources, PACKAGE)?,
         })
     }
 }
@@ -90,18 +85,15 @@ impl Tagging {
         let rows: Vec<String> = entries
             .iter()
             .map(|entry| {
-                say(
-                    &texts.line,
-                    &[
-                        ("id", &entry.id.to_string()),
-                        (
-                            "class",
-                            &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
-                        ),
-                        ("date", &entry.at.local_date(self.offset)),
-                        ("text", &entry.text.replace('\n', " ")),
-                    ],
-                )
+                texts.lines.say(&Line {
+                    id: &entry.id.to_string(),
+                    class: &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                    date: &entry.at.local_date(self.offset),
+                    text: &entry.text.replace('\n', " "),
+                    venue: entry.venue.as_ref(),
+                    place: entry.place.as_deref(),
+                    retired: false,
+                })
             })
             .collect();
         let given: BTreeSet<MemoryId> = entries.iter().map(|entry| entry.id).collect();

@@ -27,7 +27,7 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::redact::KeyShapes;
 use miyu_store::blob::Blobs;
 use miyu_tool::load::{self, LoadError, say};
-use miyu_tool::{FORGET, REMEMBER};
+use miyu_tool::{FORGET, MemoryLines, REMEMBER};
 
 use crate::config::Turn;
 use crate::route::OneShot;
@@ -64,7 +64,7 @@ pub struct ExtractTexts {
     assistant: Template,
     excerpted: Template,
     pub(super) dropped: Template,
-    pub(super) line: Template,
+    pub(super) lines: MemoryLines,
     unnamed: Template,
 }
 
@@ -88,13 +88,7 @@ impl ExtractTexts {
             assistant: text("assistant", &["text"])?,
             excerpted: text("excerpted", &[])?,
             dropped: text("dropped", &[])?,
-            line: load::text(
-                resources,
-                PACKAGE,
-                "memory_search",
-                "memory",
-                &["id", "class", "date", "text"],
-            )?,
+            lines: MemoryLines::load(resources, PACKAGE)?,
             unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
         })
     }

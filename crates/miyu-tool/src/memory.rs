@@ -6,9 +6,13 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use miyu_kernel::id::{SessionId, TurnId};
+use miyu_kernel::id::{SessionId, TurnId, VenueId};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::MemoryId;
+
+mod lines;
+
+pub use lines::{Line, MemoryLines};
 
 /// 记一条的那件工具的名字：只有记忆开着的本机主会话，造会话时工具面上有它（施工 R-3 中）。
 pub const REMEMBER: &str = "remember";
@@ -116,6 +120,10 @@ pub struct FoundMemory {
     pub retired: bool,
     /// 说的是谁（施工 E-1 上）：认识的人那一类才有。
     pub who: Option<String>,
+    /// 在哪个场所说的（施工 E-4 下：那一行写在哪儿）；主人那边、本机的没有。
+    pub venue: Option<VenueId>,
+    /// 记下那一刻的群名（施工 E-4 上）；没有的没有。
+    pub place: Option<String>,
 }
 
 /// 搜到的一轮以前的对话。

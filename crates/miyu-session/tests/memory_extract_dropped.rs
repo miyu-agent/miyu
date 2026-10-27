@@ -18,6 +18,11 @@ fn says(n: usize) -> Script {
 
 /// 人记一条（改的写 `replaces`），交回编号。
 fn save(home: &Home, text: &str, replaces: Option<MemoryId>) -> MemoryId {
+    save_in(home, text, replaces, None)
+}
+
+/// 同 [`save`]，在群里记的、记下那时群叫 `place`（施工 E-4 下）。
+fn save_in(home: &Home, text: &str, replaces: Option<MemoryId>, place: Option<&str>) -> MemoryId {
     let (log, _) = home.logs.open(&persona()).expect("开得了");
     let saved = Saved {
         class: "user".into(),
@@ -26,11 +31,11 @@ fn save(home: &Home, text: &str, replaces: Option<MemoryId>) -> MemoryId {
         audience: vec![alice()],
         replaces,
         about: None,
-        venue: None,
+        venue: place.map(|_| miyu_kernel::id::VenueId::parse("qq:group:7").expect("合写法")),
         keywords: None,
         who: None,
         people: Vec::new(),
-        place: None,
+        place: place.map(str::to_string),
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")
@@ -69,7 +74,7 @@ async fn what_was_dropped_after_the_slice_began_follows_it() {
     let moved = save(&home, "用户以前住在大阪", None);
     retire(&home, moved);
     let checkup = save(&home, "用户下周三上午去体检", None);
-    let cat = save(&home, "用户养了一只猫", None);
+    let cat = save_in(&home, "用户养了一只猫", None, Some("周末摄影群"));
     save(&home, "用户喜欢咖啡", None);
     let handle = home
         .create_full(
@@ -91,6 +96,10 @@ async fn what_was_dropped_after_the_slice_began_follows_it() {
     assert!(
         names(&lines[0], cat, "用户养了一只猫"),
         "新的在前：{lines:?}"
+    );
+    assert!(
+        lines[0].contains(" in QQ group 「周末摄影群」: "),
+        "群里记的写在哪个群（施工 E-4 下）：{lines:?}"
     );
     assert!(
         names(&lines[1], checkup, "用户下周三上午去体检"),

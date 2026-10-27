@@ -96,6 +96,21 @@ fn a_block_is_exact_and_stays_within_the_limit() {
     assert!(render(&texts(), &[], east9).is_none());
 }
 
+/// 一行写在哪儿发生的（施工 E-4 下）：群里记的带群名，同 `memory_search` 的写法。
+#[test]
+fn a_line_says_where_it_was_said() {
+    let east9 = UtcOffset::from_minutes(540).unwrap();
+    let mut a = entry(3, "小林教用户拍日落");
+    a.class = "episode".into();
+    a.venue = Some(miyu_kernel::id::VenueId::parse("qq:group:7").unwrap());
+    a.place = Some("周末摄影群".into());
+    let block = render(&texts(), &[&a], east9).expect("有");
+    assert_eq!(
+        block.fact.text,
+        "<recalled>\nm3 episode 2026-10-08 in QQ group 「周末摄影群」: 小林教用户拍日落\n</recalled>\n"
+    );
+}
+
 /// 出厂的两张表各是各的（施工 R-14）：她主动搜的下限照 `core/memory/search.toml`，不是联想的门槛那一张。
 #[test]
 fn the_shipped_search_floors_come_from_their_own_table() {

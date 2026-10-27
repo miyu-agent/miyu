@@ -1,1 +1,1 @@
-{id} {class} {date} (retired): {text}
+{id} {class} {date}{where} (retired): {text}

@@ -8,7 +8,7 @@
 use std::time::Duration;
 
 use miyu_http::testkit::Server;
-use miyu_kernel::id::Seq;
+use miyu_kernel::id::{Seq, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::{Entry, MemoryEvent, MemoryId, Merged, Retired, Saved};
@@ -356,7 +356,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         audience: vec![alice()],
         replaces: None,
         about: None,
-        venue: None,
+        venue: Some(VenueId::parse("qq:group:7").expect("合写法")),
         keywords: None,
         who: Some("qq:2".into()),
         people: Vec::new(),
@@ -389,6 +389,14 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         ("person", Some("qq:2"), Some("周末摄影群")),
         "类、是谁、在哪个群照旧"
     );
+    // 合并的请求里这一行写在哪个群（施工 E-4 下）。
+    let asked = server.received().iter().any(|received| {
+        serde_json::from_slice::<serde_json::Value>(&received.body)
+            .expect("JSON")
+            .to_string()
+            .contains("m1 person qq:2 2026-10-01 in QQ group 「周末摄影群」: 小林用 N 卡")
+    });
+    assert!(asked, "合并的请求里带群名");
     assert!(
         book(&home, |book| book
             .all()

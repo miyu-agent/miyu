@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use miyu_kernel::block::Block;
-use miyu_kernel::id::{Seq, SessionId, TurnId};
+use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::MemoryId;
 use miyu_tool::{
@@ -349,6 +349,8 @@ async fn searching_lists_memories_then_past_conversations() {
                     at: at(5),
                     retired: false,
                     who: None,
+                    venue: Some(VenueId::parse("qq:group:900001").expect("合写法")),
+                    place: Some("周末摄影".into()),
                 },
                 FoundMemory {
                     id: id(1),
@@ -357,6 +359,8 @@ async fn searching_lists_memories_then_past_conversations() {
                     at: at(1),
                     retired: true,
                     who: None,
+                    venue: Some(VenueId::parse("qq:private:10086").expect("合写法")),
+                    place: None,
                 },
             ],
             turns: vec![
@@ -387,7 +391,7 @@ async fn searching_lists_memories_then_past_conversations() {
     assert_eq!(
         text(&done),
         format!(
-            "m3 user 2026-10-05: 用户用 N 卡\nm1 user 2026-10-01 (retired): 用户用 A 卡\n2026-10-06 session 22334455: 我换了显卡 / 好的\n2026-10-06 session 22334455: {}…",
+            "m3 user 2026-10-05 in QQ group 「周末摄影」: 用户用 N 卡\nm1 user 2026-10-01 in a QQ private chat (retired): 用户用 A 卡\n2026-10-06 session 22334455: 我换了显卡 / 好的\n2026-10-06 session 22334455: {}…",
             "长".repeat(300)
         )
     );

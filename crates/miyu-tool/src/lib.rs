@@ -72,8 +72,8 @@ pub use knowledge::{
 };
 pub use log::{Log, ReadLog};
 pub use memory::{
-    CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, MEMORIES, MEMORY_SEARCH, MemoryPort, Pending,
-    REMEMBER, Refused, Remember, Searched, TEXT_CHARS, TURNS,
+    CARDS, FORGET, FoundCard, FoundMemory, FoundTurn, Line, MEMORIES, MEMORY_SEARCH, MemoryLines,
+    MemoryPort, Pending, REMEMBER, Refused, Remember, Searched, TEXT_CHARS, TURNS,
 };
 pub use messages::{
     Delivered, MessagePort, NotSent, Recipient, SEND_MESSAGE, SEND_MESSAGE_FORMERLY, Sending,

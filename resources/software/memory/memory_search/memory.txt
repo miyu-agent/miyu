@@ -1,1 +1,1 @@
-{id} {class} {date}: {text}
+{id} {class} {date}{where}: {text}

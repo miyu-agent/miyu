@@ -21,6 +21,7 @@ use miyu_recall::associate::{KEYWORDS, Thresholds, pick};
 use miyu_recall::{Entry, MemoryId};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::load::{self, LoadError};
+use miyu_tool::{Line, MemoryLines};
 
 use super::{Keeper, Query, Using};
 use crate::blocking::blocking;
@@ -48,7 +49,7 @@ const WIDE: usize = 32;
 pub struct RecallTexts {
     open: Template,
     close: Template,
-    line: Template,
+    lines: MemoryLines,
     thresholds: Thresholds,
     search: Thresholds,
     /// 搜以前的对话时只照意思找到的那一路的下限（施工 R-20，`core/memory/turns.toml`）。
@@ -131,13 +132,7 @@ impl RecallTexts {
         Ok(RecallTexts {
             open: load::text(resources, MODULE, "recall", "open", &[])?,
             close: load::text(resources, MODULE, "recall", "close", &[])?,
-            line: load::text(
-                resources,
-                MODULE,
-                "memory_search",
-                "memory",
-                &["id", "class", "date", "text"],
-            )?,
+            lines: MemoryLines::load(resources, MODULE)?,
             thresholds,
             search: Thresholds::default(),
             turns: Thresholds::default(),
@@ -254,18 +249,20 @@ fn render(texts: &RecallTexts, entries: &[&Entry], offset: UtcOffset) -> Option<
     for entry in entries {
         let (id, date) = (entry.id.to_string(), entry.at.local_date(offset));
         let text = entry.text.replace('\n', " ");
-        let row = say(
-            &texts.line,
-            &[
-                ("id", &id),
-                (
-                    "class",
-                    &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
-                ),
-                ("date", &date),
-                ("text", &text),
-            ],
-        );
+        let class = miyu_recall::shown_class(&entry.class, entry.who.as_deref());
+        let row = texts
+            .lines
+            .say(&Line {
+                id: &id,
+                class: &class,
+                date: &date,
+                text: &text,
+                venue: entry.venue.as_ref(),
+                place: entry.place.as_deref(),
+                retired: false,
+            })
+            .trim_end()
+            .to_string();
         if used + row.len() + 1 > LIMIT {
             break;
         }

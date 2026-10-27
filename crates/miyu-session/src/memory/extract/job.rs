@@ -15,8 +15,8 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::Skipped;
 use miyu_recall::extract::candidates;
 use miyu_recall::redact::redact;
-use miyu_tool::TEXT_CHARS;
 use miyu_tool::load::say;
+use miyu_tool::{Line, TEXT_CHARS};
 
 use super::{DROPPED, Extraction, Extractor, PURPOSE, Plan, TRIES, secrets};
 use crate::TARGET;
@@ -130,20 +130,19 @@ impl Job {
         let lines: Vec<String> = dropped
             .iter()
             .map(|entry| {
-                say(
-                    &texts.line,
-                    &[
-                        ("id", &entry.id.to_string()),
-                        (
-                            "class",
-                            &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
-                        ),
-                        ("date", &entry.at.local_date(self.offset)),
-                        ("text", &entry.text.replace('\n', " ")),
-                    ],
-                )
-                .trim_end()
-                .to_string()
+                texts
+                    .lines
+                    .say(&Line {
+                        id: &entry.id.to_string(),
+                        class: &miyu_recall::shown_class(&entry.class, entry.who.as_deref()),
+                        date: &entry.at.local_date(self.offset),
+                        text: &entry.text.replace('\n', " "),
+                        venue: entry.venue.as_ref(),
+                        place: entry.place.as_deref(),
+                        retired: false,
+                    })
+                    .trim_end()
+                    .to_string()
             })
             .collect();
         Some(format!(

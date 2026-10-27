@@ -11,7 +11,10 @@ use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_recall::shown_class;
 use miyu_tool::load::{self, LoadError};
-use miyu_tool::{Call, Done, FoundCard, MEMORY_SEARCH, Progress, Running, Searched, Spec, Tool};
+use miyu_tool::{
+    Call, Done, FoundCard, Line as MemoryLine, MEMORY_SEARCH, Progress, Running, Searched, Spec,
+    Tool,
+};
 
 use crate::texts::{Texts, line, said};
 use crate::{PACKAGE, TURN_CHARS};
@@ -69,22 +72,22 @@ impl Tool for Search {
             }
             let mut lines = Vec::new();
             for memory in &found.memories {
-                let template = if memory.retired {
-                    &all.memory_retired
-                } else {
-                    &all.memory
-                };
                 let (id, date) = (memory.id.to_string(), memory.at.local_date(call.offset));
                 let class = shown_class(&memory.class, memory.who.as_deref());
-                lines.push(line(
-                    template,
-                    &[
-                        ("id", &id),
-                        ("class", &class),
-                        ("date", &date),
-                        ("text", &memory.text),
-                    ],
-                ));
+                lines.push(
+                    all.lines
+                        .say(&MemoryLine {
+                            id: &id,
+                            class: &class,
+                            date: &date,
+                            text: &memory.text,
+                            venue: memory.venue.as_ref(),
+                            place: memory.place.as_deref(),
+                            retired: memory.retired,
+                        })
+                        .trim_end()
+                        .to_string(),
+                );
             }
             for card in &found.cards {
                 lines.push(line(

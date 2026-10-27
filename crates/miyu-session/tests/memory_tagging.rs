@@ -95,6 +95,26 @@ async fn a_failed_tagging_leaves_the_memory_as_it_was() {
     assert_eq!(saved.keywords, None, "写不成的不碍抽取");
 }
 
+/// 群里记的一条，记下那时群叫 `place`（施工 E-4 下：写关键词的请求那一行也写在哪儿）。
+fn save_in_group(home: &Home, text: &str, place: &str) {
+    let (log, _) = home.logs.open(&persona()).expect("开得了");
+    let saved = Saved {
+        class: "user".into(),
+        text: text.into(),
+        sources: Vec::new(),
+        audience: vec![alice()],
+        replaces: None,
+        about: None,
+        venue: Some(miyu_kernel::id::VenueId::parse("qq:group:7").expect("合写法")),
+        keywords: None,
+        who: None,
+        people: Vec::new(),
+        place: Some(place.into()),
+    };
+    log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
+        .expect("记得下");
+}
+
 /// 主人当场记的一条，`keywords` 照给的。
 fn save_tagged(home: &Home, text: &str, keywords: &str) {
     let (log, _) = home.logs.open(&persona()).expect("开得了");
@@ -129,9 +149,10 @@ async fn a_merge_fills_in_up_to_twenty_without_keywords() {
     let mut home = Home::new();
     organizer_tagging(&mut home, &server, "merge_sessions = 1\n");
     // 二十五条以前记的、没有关键词；一条有了的；一条作废了的。
-    for n in 0..25 {
+    for n in 0..24 {
         save(&home, &format!("以前记的第 {n} 件事"));
     }
+    save_in_group(&home, "以前记的第 24 件事", "周末摄影群");
     save_tagged(&home, "有了关键词的一条", "已经有了");
     save(&home, "作废了的一条");
     let (log, _) = home.logs.open(&persona()).expect("开得了");
@@ -157,6 +178,11 @@ async fn a_merge_fills_in_up_to_twenty_without_keywords() {
     assert!(text.starts_with("Below are memories you keep."), "{text}");
     let rows: Vec<&str> = text.lines().filter(|line| line.starts_with('m')).collect();
     assert_eq!(rows.len(), 20, "最多二十条：{text}");
+    assert!(
+        text.contains("m25 user ")
+            && text.contains(" in QQ group 「周末摄影群」: 以前记的第 24 件事"),
+        "群里记的写在哪个群（施工 E-4 下）：{text}"
+    );
     assert!(!text.contains("有了关键词的一条"), "有了的不交：{text}");
     assert!(!text.contains("作废了的一条"), "作废的不交：{text}");
     assert!(

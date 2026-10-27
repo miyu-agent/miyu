@@ -5,6 +5,7 @@
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Body;
+use miyu_kernel::id::VenueId;
 use miyu_kernel::origin::By;
 use miyu_kernel::request::{Message, Request};
 use miyu_kernel::session::Command;
@@ -34,6 +35,19 @@ fn save(
     audience: By,
     replaces: Option<MemoryId>,
 ) -> MemoryId {
+    save_in(home, class, text, audience, replaces, None, None)
+}
+
+/// 同 [`save`]，在场所 `venue`（群名 `place`）说的（施工 E-4 下）。
+fn save_in(
+    home: &Home,
+    class: &str,
+    text: &str,
+    audience: By,
+    replaces: Option<MemoryId>,
+    venue: Option<&str>,
+    place: Option<&str>,
+) -> MemoryId {
     let (log, _) = home.logs.open(&persona()).expect("开得了");
     let saved = Saved {
         class: class.into(),
@@ -42,11 +56,11 @@ fn save(
         audience: vec![audience.clone()],
         replaces,
         about: None,
-        venue: None,
+        venue: venue.map(|venue| VenueId::parse(venue).expect("合写法")),
         keywords: None,
         who: None,
         people: Vec::new(),
-        place: None,
+        place: place.map(str::to_string),
     };
     log.append(saved_at(), audience, None, &MemoryEvent::Saved(saved))
         .expect("记得下")
@@ -152,6 +166,51 @@ async fn the_first_turn_has_the_block_before_the_trigger_and_later_turns_keep_it
         injected,
         [vec![short.to_string(), cat.to_string()]],
         "只交了一次，带着那几条的编号"
+    );
+    stop(&handle).await;
+}
+
+/// 一行写在哪儿发生的（施工 E-4 下）：群里有群名的写群名，没群名的写是个群，私聊写私聊，主人那边的不加。名字、群号、群名都
+/// 是编的。
+#[tokio::test]
+async fn each_line_says_where_it_was_said() {
+    let home = Home::new();
+    let named = save_in(
+        &home,
+        "episode",
+        "小林教用户拍日落",
+        alice(),
+        None,
+        Some("qq:group:7"),
+        Some("周末摄影群"),
+    );
+    let unnamed = save_in(
+        &home,
+        "episode",
+        "群里在聊显卡",
+        alice(),
+        None,
+        Some("qq:group:8"),
+        None,
+    );
+    let private = save_in(
+        &home,
+        "episode",
+        "小林说下周搬家",
+        alice(),
+        None,
+        Some("qq:private:20017"),
+        None,
+    );
+    let here = save(&home, "user", "用户养了一只猫", alice(), None);
+    let script = Script::new([Play::Says("好。")]);
+    let handle = home.create(&script).await;
+    chat(&handle, "cmd-1", "在吗").await;
+    assert_eq!(
+        summaries(&script.requests()[0].1),
+        [format!(
+            "<memories>\n{here} user 2026-10-08: 用户养了一只猫\n{private} episode 2026-10-08 in a QQ private chat: 小林说下周搬家\n{unnamed} episode 2026-10-08 in a QQ group: 群里在聊显卡\n{named} episode 2026-10-08 in QQ group 「周末摄影群」: 小林教用户拍日落\n</memories>\n"
+        )]
     );
     stop(&handle).await;
 }

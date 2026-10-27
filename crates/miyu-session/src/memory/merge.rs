@@ -26,6 +26,7 @@ use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
 use miyu_recall::{Entry, MemoryId, Merging, Swept};
 use miyu_store::recall::Room;
+use miyu_tool::MemoryLines;
 use miyu_tool::load::{self, LoadError};
 
 use super::{DreamResult, DreamRoom, DreamSpec, Extraction, Keeper};
@@ -76,7 +77,7 @@ pub struct MergeTexts {
     /// 他们现在的卡那一块的标题，和一张一行（施工 E-1 下）。
     cards: Template,
     card: Template,
-    line: Template,
+    lines: MemoryLines,
     unnamed: Template,
 }
 
@@ -101,13 +102,7 @@ impl MergeTexts {
             people: text("people", &["people"])?,
             cards: text("cards", &[])?,
             card: text("card", &["who", "text"])?,
-            line: load::text(
-                resources,
-                PACKAGE,
-                "memory_search",
-                "memory",
-                &["id", "class", "date", "text"],
-            )?,
+            lines: MemoryLines::load(resources, PACKAGE)?,
             unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
         })
     }
