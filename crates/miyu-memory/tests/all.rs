@@ -4,5 +4,6 @@
 //! 在 `Cargo.toml` 里另列。新加的测试文件在下面添一行。
 
 mod budget;
+mod past;
 mod person;
 mod tools;

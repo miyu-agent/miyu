@@ -72,7 +72,7 @@ fn seeded(home: Home, texts: RecallTexts, model: &str) -> (Home, Keeper) {
 /// 搜 `query`，交回找到的是第几轮。
 fn turns(keeper: &Keeper, query: &str, near: Option<&Query>) -> Vec<u64> {
     keeper
-        .turns(query, 5, None, near)
+        .turns(query, 5, (None, None), near)
         .expect("搜得了")
         .into_iter()
         .map(|found| found.turn.started().get())

@@ -77,13 +77,18 @@ impl Calls {
         (source, own): (super::Source, Vec<miyu_kernel::event::Event>),
     ) -> (Option<super::TurnLane>, Option<Calls>) {
         let account = personas.memory_account(&self.owner);
+        // 是不是主会话照日志第一条（施工 E-6）：读回的整份从 `session.created` 起。
+        let main = match own.first().map(|event| &event.body) {
+            Some(miyu_kernel::event::Body::SessionCreated(created)) => created.parent.is_none(),
+            _ => true,
+        };
         super::connect(
             Some(&self.keeper.memory),
             miyu_policy::memory::MemoryScope::Persona,
             &account,
             &self.owner,
             (persona, personas),
-            &self.session,
+            (&self.session, main),
             venue,
             (super::Laid::Given(own), source),
         )
@@ -264,7 +269,8 @@ impl Inner {
             })
             .collect();
         let seen = (&self.calls.session, self.compacted);
-        let turns = keeper.turns(query, TURNS, Some(seen), near)?;
+        // 打不打得开照这个会话的属主判（施工 E-6）：同 `history` 认的那一批。
+        let turns = keeper.turns(query, TURNS, (Some(seen), Some(&self.calls.owner)), near)?;
         // 认识的人的卡（施工 E-3）：这一段上下文里认出来带过的照给，她搜了就是要看。
         let cards = keeper
             .search_cards(query, CARDS)?

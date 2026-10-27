@@ -2628,6 +2628,17 @@ Retired {id}.
 {date} session {session}: {text}
 ```
 
+#### `software/memory/memory_search/turn-elsewhere.txt`
+
+- 什么时候加进来：`memory_search` 以前的对话里她打不开的会话的一段（群会话、分叉出来的支线、别人的，场所会话里搜的一律；字段按 `2026-10-06`、在哪儿、`我换了显卡 / 好的` 填）
+- token：16（在哪儿空的时候；`in a QQ group` 多 4；2026-10-27 照 tiktoken `o200k_base` 量，接在 `hi` 和一个换行后面、带行尾换行，同法量 `turn.txt` 是 21）
+- 为什么加：不给她打不开的编号（施工 E-6：真数据复测里她拿群会话的编号去 `history` 查，回「没有这个会话」，白调两次工具；`history` 只认属主一样的主会话），写在哪聊的（同 `where-*.txt`）
+- 指纹：`d9d4f8b3`
+
+```text
+{date}{where}: {text}
+```
+
 #### `software/memory/memory_search/card.txt`
 
 - 什么时候加进来：`memory_search` 搜到的一张人卡一行（字段按 `qq:10086 (小林, 林林)`、`小林是群友，喜欢拍照` 填）

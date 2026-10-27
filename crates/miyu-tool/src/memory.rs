@@ -137,6 +137,11 @@ pub struct FoundTurn {
     pub at: Timestamp,
     /// 人的话加她的回答（回合索引里的一条）。
     pub text: String,
+    /// 那个会话在哪个场所（施工 E-6，回合库的 `places`）：本机的没有。
+    pub venue: Option<VenueId>,
+    /// 搜的这个会话打得开它（施工 E-6）：属主一样的主会话，`history` 认得出它的编号。打不开的（群会话、分叉出来的支线、
+    /// 别人的）不给她编号，只写在哪聊的；她能不能读别的会话（`Call::sessions`）另看。
+    pub opens: bool,
 }
 
 impl std::fmt::Debug for dyn MemoryPort {

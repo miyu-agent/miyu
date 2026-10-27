@@ -3,9 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::id::{Seq, SessionId, TurnId};
+use miyu_kernel::id::{AccountId, Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::fuse_above;
+use miyu_store::recall::Origin;
 use miyu_tool::FoundTurn;
 
 use super::Keeper;
@@ -17,7 +18,8 @@ impl Keeper {
     /// 里清空掉的几轮原来搜不到）。人经协议搜的不跳过（施工 R-12 下）。哪儿都搜得到全部（施工 R-29：原来一个场所里只搜得到会话在
     /// 这个场所的）。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。下限照模型（施工 R-20，
     /// `docs/blueprint/recall.md` 第三条第 3 款）：只照意思找到的照 `core/memory/turns.toml`（表里没有的 0.40），只照关键词找到的
-    /// 和问句不够像的照记忆搜那张 `core/memory/search.toml` 不要（表里没有的不设，还没补上向量的照留）。
+    /// 和问句不够像的照记忆搜那张 `core/memory/search.toml` 不要（表里没有的不设，还没补上向量的照留）。每一段带上那个会话在哪个
+    /// 场所、属主是 `asker` 的会话打不打得开它（施工 E-6，没有 `asker` 的一律打不开）。
     ///
     /// # Errors
     ///
@@ -26,11 +28,13 @@ impl Keeper {
         &self,
         query: &str,
         limit: usize,
-        seen: Option<(&SessionId, Option<Seq>)>,
+        (seen, asker): (Option<(&SessionId, Option<Seq>)>, Option<&AccountId>),
         near: Option<&Query>,
     ) -> Result<Vec<FoundTurn>, String> {
         self.memory.settle();
         let (turns, _) = self.memory.turns.turns(self.room());
+        let places = turns.places().map_err(|error| error.to_string())?;
+        let origins = turns.origins().map_err(|error| error.to_string())?;
         let own = seen.map(|(session, after)| (format!("{session}/"), after));
         let wide = limit.saturating_mul(4);
         let mut hits = turns
@@ -83,11 +87,17 @@ impl Keeper {
                 let (text, at) = found.remove(&key)?;
                 let (session, turn) = key.split_once('/')?;
                 let turn = turn.parse().ok().and_then(miyu_kernel::id::Seq::new)?;
+                let venue = places
+                    .get(session)
+                    .and_then(|venue| VenueId::parse(venue).ok());
+                let opens = asker.is_some_and(|asker| opens(asker, origins.get(session), &venue));
                 Some(FoundTurn {
                     session: SessionId::parse(session).ok()?,
                     turn: TurnId::new(turn),
                     at,
                     text,
+                    venue,
+                    opens,
                 })
             })
             .take(limit)
@@ -98,4 +108,14 @@ impl Keeper {
 /// 这个会话的第 `turn` 轮（键的后一半）是不是已经被压缩、清空替代掉了：回合编号不大于 `after` 的是。没有 `after` 的都还在。
 fn replaced(turn: &str, after: Option<Seq>) -> bool {
     after.is_some_and(|after| turn.parse::<u64>().is_ok_and(|turn| turn <= after.get()))
+}
+
+/// 属主是 `asker` 的会话打不打得开这一段的会话（施工 E-6）：同 `history` 认编号的那一批（`SessionsPort::list`：属主一样的主
+/// 会话）。回合库记着从哪来的照它判；没记过的（接上回合索引以前的库、还没载入过的会话）照场所判：场所会话的属主是桥的系统
+/// 账号，打不开，本机的当是自己的主会话（原来的样子）。
+fn opens(asker: &AccountId, origin: Option<&Origin>, venue: &Option<VenueId>) -> bool {
+    match origin {
+        Some(origin) => origin.main && origin.owner == asker.as_str(),
+        None => venue.is_none(),
+    }
 }

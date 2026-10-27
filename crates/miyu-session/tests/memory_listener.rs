@@ -351,7 +351,7 @@ async fn past_turns_from_any_place_are_found_anywhere() {
     }
     let found = |listener: Listener| {
         let mut sessions: Vec<String> = Keeper::new(&home.memory, room(), listener)
-            .turns("日语", 10, None, None)
+            .turns("日语", 10, (None, None), None)
             .expect("搜得了")
             .into_iter()
             .map(|turn| turn.session.to_string())

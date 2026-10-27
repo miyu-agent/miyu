@@ -95,16 +95,30 @@ impl Tool for Search {
                     &[("who", &who(card)), ("text", &card.text.replace('\n', " "))],
                 ));
             }
+            // 以前的对话：她读得了别的会话（有 `sessions` 的端口，本机的主会话才有）、又打得开那一个的才给编号，`history` 照它
+            // 读得到；别的（群会话、分叉出来的支线、别人的，场所会话里搜的一律）不给编号，写在哪聊的（施工 E-6）。
+            let reads = call.sessions.is_some();
             for turn in &found.turns {
                 let date = turn.at.local_date(call.offset);
-                lines.push(line(
-                    &all.turn,
-                    &[
-                        ("date", &date),
-                        ("session", turn.session.short()),
-                        ("text", &flat(&turn.text)),
-                    ],
-                ));
+                let text = flat(&turn.text);
+                lines.push(match reads && turn.opens {
+                    true => line(
+                        &all.turn,
+                        &[
+                            ("date", &date),
+                            ("session", turn.session.short()),
+                            ("text", &text),
+                        ],
+                    ),
+                    false => line(
+                        &all.turn_elsewhere,
+                        &[
+                            ("date", &date),
+                            ("where", &all.lines.place(turn.venue.as_ref(), None)),
+                            ("text", &text),
+                        ],
+                    ),
+                });
             }
             let (memories, turns, cards) = (
                 found.memories.len().to_string(),

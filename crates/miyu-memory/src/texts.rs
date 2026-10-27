@@ -31,6 +31,8 @@ pub(crate) struct All {
     /// 记下的一条一行（作废的另一份；施工 E-4 下起带在哪儿）。
     pub(crate) lines: MemoryLines,
     pub(crate) turn: Template,
+    /// 她打不开的会话里的一段（施工 E-6）：不给编号，写在哪聊的。
+    pub(crate) turn_elsewhere: Template,
     pub(crate) card: Template,
     pub(crate) nothing: Template,
 }
@@ -55,6 +57,11 @@ impl Texts {
             retired: text("forget", "retired", &["id"])?,
             lines: MemoryLines::load(resources, PACKAGE)?,
             turn: text("memory_search", "turn", &["date", "session", "text"])?,
+            turn_elsewhere: text(
+                "memory_search",
+                "turn-elsewhere",
+                &["date", "where", "text"],
+            )?,
             card: text("memory_search", "card", &["who", "text"])?,
             nothing: text("memory_search", "nothing", &[])?,
         })))

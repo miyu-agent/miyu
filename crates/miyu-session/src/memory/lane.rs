@@ -15,7 +15,7 @@ use std::sync::{Arc, OnceLock, mpsc};
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId, VenueId};
 use miyu_store::log::{SessionLog, read_events};
-use miyu_store::recall::{RecallIndexes, Room};
+use miyu_store::recall::{Origin, RecallIndexes, Room};
 
 use super::Turns;
 use crate::TARGET;
@@ -51,6 +51,7 @@ pub(crate) struct Opening {
     pub(crate) recall: Arc<RecallIndexes>,
     pub(crate) room: Room,
     pub(crate) session: SessionId,
+    pub(crate) origin: Origin,
     pub(crate) venue: VenueId,
     pub(crate) floor: Option<Seq>,
     pub(crate) laid: Laid<'static>,
@@ -233,6 +234,7 @@ fn connect(opening: Opening) -> Option<Open> {
         recall,
         room,
         session,
+        origin,
         venue,
         floor,
         laid,
@@ -251,7 +253,7 @@ fn connect(opening: Opening) -> Option<Open> {
     };
     let base = source.base.as_deref().map_or(&[][..], Vec::as_slice);
     let (base, mine) = super::recast::split(base, &own, floor);
-    let turns = Turns::connect(&recall, &room, &session, &venue, &base, mine)?;
+    let turns = Turns::connect(&recall, &room, (&session, origin), &venue, &base, mine)?;
     let upto = own.last().map(|event| event.seq);
     Some(Open {
         turns,

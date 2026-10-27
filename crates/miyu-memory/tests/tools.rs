@@ -13,6 +13,8 @@ use miyu_tool::{
     Tool,
 };
 
+use crate::past::call_reading;
+
 /// 一个假端口：记下她要做的，照预先定好的交回。
 #[derive(Default)]
 pub(crate) struct Fake {
@@ -67,7 +69,7 @@ pub(crate) fn at(day: u32) -> Timestamp {
     Timestamp::parse(&format!("2026-10-{day:02}T08:00:00.000Z")).expect("合写法")
 }
 
-fn tools() -> Vec<Arc<dyn Tool>> {
+pub(crate) fn tools() -> Vec<Arc<dyn Tool>> {
     miyu_memory::tools(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"))
         .expect("读得出")
 }
@@ -369,20 +371,24 @@ async fn searching_lists_memories_then_past_conversations() {
                     turn: TurnId::new(Seq::new(8).expect("从 1 起")),
                     at: at(6),
                     text: "我换了显卡\n\n好的".into(),
+                    venue: None,
+                    opens: true,
                 },
                 FoundTurn {
                     session,
                     turn: TurnId::new(Seq::new(12).expect("从 1 起")),
                     at: at(6),
                     text: long,
+                    venue: None,
+                    opens: true,
                 },
             ],
             cards: Vec::new(),
         },
         ..Fake::default()
     });
-    let done = call(
-        Some(Arc::clone(&port)),
+    let done = call_reading(
+        Arc::clone(&port),
         "memory_search",
         serde_json::json!({"query":"显卡","forgotten":true}),
     )

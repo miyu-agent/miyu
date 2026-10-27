@@ -34,7 +34,7 @@ pub(super) async fn turns(
     let searched = keeper.clone();
     let found = blocking(move || {
         searched
-            .turns(&query, limit, None, near.as_ref())
+            .turns(&query, limit, (None, None), near.as_ref())
             .map_err(Refused::Failed)
     })
     .await?;

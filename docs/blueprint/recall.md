@@ -26,7 +26,7 @@
 | `crates/miyu-store/src/recall.rs` | 一个检索库：开（坏了删掉重建）、放进一条、拿掉一条、照关键词找（R-1）；一批和照到哪一起写、拿掉一个来源（R-2 上） | R-1 |
 | `crates/miyu-store/src/recall/vectors.rs` | 向量表：放、照模型列出缺的、读出来逐条算最像的（第三条第 1、2 款） | R-5 下 |
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
-| `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款） | R-13 下 |
+| `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款）；每个会话从哪来（属主、是不是主会话，施工 E-6） | R-13 下、E-6 |
 | `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源、只记指纹不动块（跳过的文档，W-15 再补；`knowledge.md`「怎么走」第三条） | K-1 上 |
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
@@ -91,6 +91,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 - R-3 上加一张 `buried(key TEXT PRIMARY KEY)`：墓碑，版本加一成 3。
 - 向量表随 R-5 加，版本跟着加一：派生的，删掉重建，不写迁移。
 - R-13 下加一张 `places(source TEXT PRIMARY KEY, venue TEXT)`：回合库里场所会话在哪个场所（`place`、`places`），本机的会话不记；搜以前的对话照它挑（`memory.md` 第一条第 1 款、第九条）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上。
+- E-6 加一张 `origins(source TEXT PRIMARY KEY, owner TEXT NOT NULL, main INTEGER NOT NULL)`：回合库里每个会话的属主、是不是主会话（`session.created` 不带 `parent`），本机的、场所的都记；接上回合索引时记一次（`places.rs` 的 `origin`、`origins`），搜以前的对话照它判她打不打得开那个会话（`memory.md`「工具」）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上，以前的库里没接上过的会话没有这一行（调的一方照场所判）。
 - K-1 上加一张 `stamps(source TEXT PRIMARY KEY, stamp TEXT NOT NULL)`：知识库的索引里每个文档的指纹（`knowledge.md`「对外的样子」索引那一段）。来源和块的键照 `#` 分（`a.md` 是 `a.md.bak` 的前缀也不碍事）；整份换掉、拿掉一个来源照键的范围删（`<来源>#` 到 `<来源>$`，走 `key` 上的索引；K-4 前照 `substr` 比，每个来源扫一遍整张表，3000 篇的知识库头一次补 5 秒上下，改了以后 0.6 秒上下），范围里只删 `#` 后面全是数字的：名字是它加 `#` 开头的另一篇（`a.md#2.md`，块是 `a.md#2.md#0`）也落在范围里，不是它的（鲁棒性 B-6）。同向量表不换版本，开库、重建以后补上。
 - R-4 下加一张 `uses(key TEXT, memory TEXT, at INTEGER, PRIMARY KEY (key, memory))`：回合库里记一条记忆用到过的每一次，键是 `会话/事件的序号`，`at` 是那一条事件的时刻（毫秒）。同向量表不换版本，每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上（`memory.md` 第八条）。
 
@@ -235,7 +236,7 @@ R-5 下做好的：
 | `crates/miyu-recall/src/vector/tests.rs`、`fuse/tests.rs` | 第三条第 1、3 款：写成字节读回一位不差、小端、长度不对的读不出、点积、维数对不上算 0；只有一路的照它的先后、两路都有的在前、只有向量一路找到的过下限、关键词也找到的不看下限、名次照原来的先后数、分一样的照先来后到 |
 | `crates/miyu-store/tests/recall_vectors.rs` | 第三条第 1、2 款：缺的照模型列、从哪一行往后列、最多几条；最像的在前、带着字和时刻、别的模型的不算；条目拿掉、换了字、整个来源拿掉、一批里拿掉的，向量跟着没；条目没了的不放；以前的库（没有这张表）照样开、不重建、补上表 |
 | `crates/miyu-store/tests/recall_uses.rs`（R-4 下） | 「库的结构」的 `uses`：一条事件带上一条记忆再写不重复；照记忆分组数次数、最近一次是最晚的那一条；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
-| `crates/miyu-store/tests/recall_places.rs`（R-13 下） | 「库的结构」的 `places`：记一次、再记不碍事；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
+| `crates/miyu-store/tests/recall_places.rs`（R-13 下、E-6） | 「库的结构」的 `places`、`origins`：记一次、再记不碍事（`origins` 换成新的）；照来源列出；删会话（`forget`）跟着拿掉；重开还在，重建是空的 |
 | `crates/miyu-session/tests/memory_vectors.rs` | 第三条第 4 到 6 款，测试用的小程序 `miyu-test-embed`（S-7 上以前是真的 `miyu-embed`）、手造的小模型（R-5 三补改成摆成包目录）：一条和问句一个字都不重合的记忆，第一次只走关键词找不到，后台补上向量以后照意思找得到；以前的对话也一样；补的是头一个要的也补齐（等那一次核对，R-5 五补）；她 `remember` 了的不搜就补上，下一轮头一次搜就照意思找得到（R-5 五补）；`off` 的不补、不拉起小程序，关键词照旧找得到 |
 | `crates/miyu-session/tests/memory_near_floor.rs`、`memory/recall/tests.rs` 的 `the_shipped_near_floor_comes_from_its_own_table`（R-24） | 第三条第 3 款记忆主动搜只照意思找到的那一路的下限：关键词撞不上的问句，下限比最像的那条高的一条不交、比它低的照交，表里没有的模型照 0.40，关键词找到的不看这张表；出厂的照 `core/memory/near.toml` 读（granite 0.80），和 `turns.toml` 各是各的，`with` 造的空表照 0.40 |
 | `crates/miyu-session/tests/memory_turns_floor.rs`（R-20） | 第三条第 3 款搜以前的对话的两道下限：只照意思找到的照表（空表、表里没有的照 0.40），只照关键词找到的不够像的不要、还没补上向量的照留、没有问句向量的照旧；出厂的两张表接上就照它们办 |

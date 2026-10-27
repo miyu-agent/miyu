@@ -193,7 +193,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             &memory_account,
             &owner_of,
             (name.as_deref().unwrap_or(NO_PERSONA), &persona_book),
-            &id_of,
+            (&id_of, !child),
             &venue_of,
             (memory::Laid::Empty, memory::Source::of(&log, None)),
         );

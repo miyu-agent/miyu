@@ -7,7 +7,7 @@ use miyu_kernel::event::Event;
 use miyu_kernel::id::{AccountId, SessionId, VenueId};
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
-use miyu_store::recall::{RecallIndexes, Room};
+use miyu_store::recall::{Origin, RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use super::{Laid, Lanes, Opening, Source};
@@ -90,6 +90,7 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
             recall: Arc::clone(&recall),
             room: room.clone(),
             session: session.clone(),
+            origin: origin(),
             venue: VenueId::parse(LOCAL).expect("场所写对了"),
             floor: None,
             laid: Laid::Read(&[]),
@@ -147,6 +148,7 @@ fn nothing_is_opened_until_the_lane_is_started() {
             recall: Arc::clone(&recall),
             room: room.clone(),
             session: session.clone(),
+            origin: origin(),
             venue: VenueId::parse(LOCAL).expect("场所写对了"),
             floor: None,
             laid: Laid::Read(&[]),
@@ -235,6 +237,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
         recall: Arc::clone(&recall),
         room: Room::session(&account, session),
         session: session.clone(),
+        origin: origin(),
         venue: venue.clone(),
         floor: None,
         laid: Laid::Read(&[]),
@@ -281,4 +284,12 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
         !recall.alive(&room, &source).expect("读得了"),
         "撤销落盘回来，那一轮已经埋上"
     );
+}
+
+/// 本机的主会话，属主是管理员（施工 E-6）。
+fn origin() -> Origin {
+    Origin {
+        owner: "shorin".to_string(),
+        main: true,
+    }
 }

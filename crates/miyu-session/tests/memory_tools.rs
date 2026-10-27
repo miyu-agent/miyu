@@ -11,10 +11,11 @@ use miyu_kernel::request::Request;
 use miyu_kernel::session::Command;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Handle, Lineage};
+use miyu_session::{Handle, Lineage, SessionPort};
 use miyu_store::recall::Room;
 use miyu_tool::Catalog;
 
+use crate::support::table::Table;
 use crate::support::*;
 
 /// 基础系统加记忆的三件，和核心里一样。
@@ -173,7 +174,12 @@ async fn what_she_remembers_comes_from_this_turn_and_is_found_from_another_sessi
         call("memory_search", serde_json::json!({"query":"显卡"})),
         Play::Says("你用 N 卡。"),
     ]);
-    let second = session(&home, &script, Lines::default()).await;
+    // 本机的主会话有会话表（施工 E-6）：她读得了别的会话，以前的对话才带编号。
+    let lines = Lines {
+        sessions: Some(std::sync::Arc::new(Table::default()) as std::sync::Arc<dyn SessionPort>),
+        ..Lines::default()
+    };
+    let second = session(&home, &script, lines).await;
     let log = chat(&home, &second, 1, "我用什么显卡？").await;
     let found = last_result(&log);
     let lines: Vec<&str> = found.lines().collect();

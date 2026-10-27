@@ -14,7 +14,7 @@ use miyu_policy::Snapshot;
 use miyu_policy::memory::MemoryScope;
 use miyu_store::blob::Blobs;
 use miyu_store::log::read_events;
-use miyu_store::recall::{NO_PERSONA, RecallIndexes, Room};
+use miyu_store::recall::{NO_PERSONA, Origin, RecallIndexes, Room};
 use miyu_store::root::DataRoot;
 
 use crate::TARGET;
@@ -129,6 +129,10 @@ fn one(
     // 中途换成这个人格的（施工 P-13）：换过来以前的几轮不在这一间记。
     let floor = super::recast::floor(&events, persona);
     let (base, own) = super::recast::split(&base, &events, floor);
-    Turns::connect(recall, room, session, &created.venue, &base, own);
+    let origin = Origin {
+        owner: created.owner.to_string(),
+        main: created.parent.is_none(),
+    };
+    Turns::connect(recall, room, (session, origin), &created.venue, &base, own);
     Ok(true)
 }

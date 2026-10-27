@@ -6,6 +6,7 @@ use std::sync::{Arc, PoisonError};
 use miyu_kernel::id::{Seq, SessionId, TurnId};
 use miyu_tool::{FoundCard, FoundMemory, FoundTurn, Searched};
 
+use crate::past::call_reading;
 use crate::tools::{Fake, at, call, id, text};
 
 /// 认识的人（施工 E-1 上）：要写是谁，没写的不记、说一句；写了的照收（去掉前后空白）；别的类写了是谁也不收；改一条没写是谁的
@@ -121,6 +122,8 @@ async fn cards_found_come_after_memories() {
                 turn: TurnId::new(Seq::new(8).expect("从 1 起")),
                 at: at(6),
                 text: "小林来了".into(),
+                venue: None,
+                opens: true,
             }],
             cards: vec![
                 card(
@@ -133,8 +136,8 @@ async fn cards_found_come_after_memories() {
         },
         ..Fake::default()
     });
-    let done = call(
-        Some(port),
+    let done = call_reading(
+        port,
         "memory_search",
         serde_json::json!({"query":"你认识小林吗"}),
     )

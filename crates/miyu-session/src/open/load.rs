@@ -154,7 +154,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             &personas.memory_account(&owner_of),
             &owner_of,
             (persona, &personas),
-            &id_of,
+            (&id_of, created.parent.is_none()),
             &created.venue,
             (
                 memory::Laid::Read(&laid),
