@@ -7,6 +7,12 @@ use miyu_store::packages::conflicts::Holder;
 use super::{REFUSED, Refusal};
 
 impl Refusal {
+    /// 从软件源装写的 `from` 没有这个软件源（施工 U23 下下）：配置里没加、写错了，或者是别人个人设置里的。
+    pub(crate) const UNKNOWN_SOURCE: Refusal = Refusal {
+        code: REFUSED,
+        reason: "unknown_source",
+        data: None,
+    };
     /// 装的包和出厂的同一个编号（施工 F-5 上）。
     pub(crate) const PACKAGE_EXISTS: Refusal = Refusal {
         code: REFUSED,

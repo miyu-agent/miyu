@@ -595,6 +595,43 @@
             }
           ],
           "title": "软件源地址"
+        },
+        "sources": {
+          "additionalProperties": {
+            "properties": {
+              "key": {
+                "description": "签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。能写：最多 64 个字的文字。只能写在系统配置或个人设置里。立即生效。",
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "别的软件源的公钥",
+                "type": "string"
+              },
+              "url": {
+                "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；系统配置里的大家都用，个人设置里的只给自己。能写：http:// 或 https:// 开头的网址 或 { env = \"…\" }。只能写在系统配置或个人设置里。立即生效。",
+                "oneOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "env"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "title": "别的软件源的地址"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
         }
       },
       "type": "object"

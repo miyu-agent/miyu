@@ -772,7 +772,7 @@
 
 - `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装进哪一层照管理员模式（施工 U23 下上）：在管理员模式里的装进系统那一层；不在的装进替谁干活那个人自己那一层，只收不带程序的包（界面、扩展、内置、小程序，写了子命令、`[process]`、`[worker]`、MCP 服务的都算带程序），带的管理员拒 `admin_mode_required`、成员拒 `not_permitted`；成员从本机路径装的只能是他自己家目录里的，别的 `not_permitted`。同一个编号这一层已经有的换成新的。回应同 `package.list` 的一项。
 - `package.install {"package"}`：编号是出厂包的，把卸掉的装回来（没卸的 `unknown_package`）；不是出厂包的照软件源装，同下一条 `{"source"}`（施工 G-4 下：装只有一个动词，核心判断走哪条路）。回应同 `package.list` 的一项。
-- `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。装进哪一层同 `{"path"}`（施工 U23 下上）：装进自己那一层的，要装的连同补的依赖照索引的 `kind`、`provides` 看有带程序的，不下载就拒；缺的依赖照他看得到的算（系统装的、他自己装的都算有）。
+- `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。装进哪一层同 `{"path"}`（施工 U23 下上）：装进自己那一层的，要装的连同补的依赖照索引的 `kind`、`provides` 看有带程序的，不下载就拒；缺的依赖照他看得到的算（系统装的、他自己装的都算有）。从哪个软件源（施工 U23 下下）：写了 `from` 的（源的名字、`official`）只照那一个，这一层用不了的 `unknown_source`；不写的照先后找第一个有这个编号的（官方、系统配置加的、自己那一层的人个人设置里加的；管理员模式里不认个人层的源）。依赖先在同一个源里找，找不到的照官方的。别的源的包文件照索引写的地址下（没有镜像），个人层的照地址闸只连公网、下进它自己的目录；本地库的 `desc` 另记源名 `feed`（官方的不记），看一眼的回应多 `source`。
   - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "origin", "capabilities", "provides", "download", "with", "replaces"?}`：`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version"}]`，同编号已经装着的带 `replaces: {"version"}`。
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
 - `package.remove {"package"}`：系统那一层的删掉；出厂的记一笔。不在管理员模式里的只卸他自己那一层的（施工 U23 下上），卸系统装的、出厂的照上一条拒。回应 `{"package", "removed": true}`。
@@ -785,12 +785,13 @@
 - 照系统配置的 `packages.mirrors`、`packages.source` 的先后试（写 `{ env = … }` 的照核心的环境取，取不到的跳过；都补上结尾的 `/`），每一处拿 `index.json`、`index.json.sig`（各有大小上限），照编进来的官方公钥验签（测试换成自己的钥匙，`Core::with_source_keys`），读不成、签名不对、比本机那份旧（`generated` 早）的都算这一处不成，试下一处。本机地址不走代理。
 - 拿成了的照收到的字节存进 `state/packages/.sync/`（`index.json`、`index.json.sig`，另写拿到的时刻 `fetched`；先写临时文件再换过去）。本机存的那份每次读都再验一遍签名，验不过的当没有。
 - 回应 `{"generated", "fetched", "packages", "stale"?}`：一处都没拿成、用的是本机那份的带 `stale`，是最后一处的原因（英文原话，带地址）。
-- 拒绝：参数不对 `bad_params`；一处都没拿成、本机也没有 `source_unreachable`（`data.why` 是最后一处的原因）。扩展调回 `local_only`。
+- 别的软件源（施工 U23 下下，设计 37 第五节，配置 `packages.sources.<名字>` 的 `url`、`key`）：官方的拿完，再拿系统配置里加的、调的人个人设置里加的，各照各的公钥验、存在各自的目录（系统层的 `state/packages/.sources/<名字>/`，个人层的 `home/<账号>/state/packages/sources/<名字>/`）。个人层的源照替成员上网的那道闸只连公网（`miyu-http` 的 `guarded.rs`，同 `net.md`「怎么走」第 3 到 5 条）。回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有的那一项是 `{"source", "error": "source_unreachable"}`，不耽误官方那一份；配置里没有别的源的不带这一格。
+- 拒绝：参数不对 `bad_params`；官方的一处都没拿成、本机也没有 `source_unreachable`（`data.why` 是最后一处的原因）。扩展调回 `local_only`。
 
 **`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
 
 - 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
-- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
+- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）；`source` 是哪个软件源的（施工 U23 下下：官方的是 `official`，别的是配置里起的名字），别的源里的 `official` 一律是假的，同编号的各列各的；官方的照先后在前，再照 `package.sync` 的先后接别的源（拿不成的跳过）。`generated`、`stale` 照官方的。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
 - 拒绝、谁能调同 `package.sync`。
 
 **`package.clean`**（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条，照 pacman 的 `-Sc`）
@@ -800,6 +801,7 @@
 
 **`package.upgrades`、`package.upgrade`**（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，照 pacman 的 `-Su`）
 
+- 照装的时候的软件源比（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了、这一层用不了的进 `gone`，不换到别的源上同名的包；升照那个源装。
 - 只碰从软件源装的：本地库 `desc` 记了来源仓库 `origin` 的；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。先照 `package.sync` 不带 `force` 那样拿索引。盘点、升哪一层照管理员模式（施工 U23 下上）：在管理员模式里的是系统那一层，不在的只看他自己那一层装的（本地库记在他那层的 `.local`）。
 - `package.upgrades`（没有参数）盘点：被拉黑的（编号或来源仓库对上）进 `blocked`；索引里没有了的进 `gone`；来源仓库和装的时候不一样的进 `moved`，不升；版本和索引的一样的不动；系统配置 `packages.hold` 里的进 `held`；别的进 `upgrades`。回应 `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone": [...], "blocked": [{"package", "reason"}], "held": [...], "generated", "stale"?}`。版本不比大小：索引的那一版和装着的不一样就升，作者撤回新版也跟着回去。
 - `package.upgrade {"packages"?, "preview"?}`：升 `upgrades` 里的（写了 `packages` 的只升列着的）；看一眼回 `{"upgrades", "download"}`（要下多少字节），真升回 `{"upgraded": [{"package", "from", "to"}]}`。升一个就是照 `package.install {"source"}` 重装它（缺的新依赖一起装，下载进度照推）：设置、状态、开关都留着；新版多要的能力照旧要人批了才开。没有能升的回空的列表。只给人；成员也调得了，只升他自己那一层的（施工 U23 下上）。
@@ -1374,6 +1376,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_file` | -32010 | `check` 写的文件不是 Miyu 读的那几种（施工 8-30） |
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
+| `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了，或者是别人个人设置里的、管理员模式里的个人层源（施工 U23 下下） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
 | `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号（装进自己那一层的是要盖的系统那一份带程序，施工 U23 下上）；编号和人占着的名字撞了（施工 Y-5 中下） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |

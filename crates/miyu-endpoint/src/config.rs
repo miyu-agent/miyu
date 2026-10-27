@@ -366,6 +366,12 @@ impl Config {
             &|name| providers.iter().any(|id| id == name) || resolved.aliases.contains_key(name),
             &|name| pools.iter().any(|pool| pool == name),
         ));
+        // 别的软件源（施工 U23 下下）：叫 `official` 的、写了一半的、公钥读不成的，个人设置里和系统配置同名的。
+        found.extend(crate::packages::source::feeds::problems(
+            parsed,
+            layer,
+            Some(&self.system.parsed),
+        ));
         if let Some(data) = &self.models {
             found.extend(effort::unknown(data, parsed, layer, resolved));
             found.extend(effort::unusable_temperature(data, parsed, layer, resolved));

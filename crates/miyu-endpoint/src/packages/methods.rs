@@ -50,7 +50,9 @@ pub(crate) async fn call(
         "package.files" => super::local::files(core, caller.acting_for(), params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
-        "package.sync" => super::source::sync::method(core, params(request)?).await,
+        "package.sync" => {
+            super::source::sync::method(core, caller.acting_for(), params(request)?).await
+        }
         "package.search" => {
             let whose = (peer, caller.acting_for());
             super::source::search::search(core, whose, params(request)?).await

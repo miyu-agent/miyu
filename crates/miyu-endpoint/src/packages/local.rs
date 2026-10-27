@@ -54,15 +54,22 @@ pub(super) fn record_at(
         source: source.to_string(),
         size: local::size(&files),
         origin: None,
+        feed: None,
     };
     local::write(root, &desc, &files)
 }
 
-/// 包 `id` 是从软件源装的：本地库 `root` 里那一份记上来源仓库 `origin`（施工 G-4 上）。
-pub(super) fn set_origin(root: &Path, id: &str, origin: &str) -> std::io::Result<()> {
+/// 包 `id` 是从软件源装的：本地库 `root` 里那一份记上来源仓库 `origin`（施工 G-4 上）和软件源的名字 `feed`（施工 U23 下下，
+/// 官方的不记）。
+pub(super) fn set_origin(
+    root: &Path,
+    id: &str,
+    (origin, feed): (&str, Option<&str>),
+) -> std::io::Result<()> {
     let (mut desc, files) =
         local::read(root, id).ok_or_else(|| std::io::Error::other("package not recorded"))?;
     desc.origin = Some(origin.to_string());
+    desc.feed = feed.map(str::to_string);
     local::write(root, &desc, &files)
 }
 

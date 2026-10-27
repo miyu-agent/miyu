@@ -23,11 +23,11 @@ use miyu_store::packages::Packages;
 use super::super::scope::Scope;
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
+use super::feeds::{Feed, Tier};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::reverse::Peer as Reverse;
-use crate::settings::SourceSettings;
 
 /// 进度最多多久推一次。
 const EVERY: Duration = Duration::from_millis(200);
@@ -40,6 +40,9 @@ pub(crate) struct SourceParams {
     /// 索引里的编号。
     #[serde(alias = "package")]
     source: String,
+    /// 从哪个软件源装（施工 U23 下下）：配置里起的名字、`official`；不写的照先后找（官方的、系统配置加的、自己加的）。
+    #[serde(default)]
+    from: Option<String>,
     /// 只看一眼。
     #[serde(default)]
     preview: bool,
@@ -50,6 +53,16 @@ impl SourceParams {
     pub(crate) fn of(id: &str) -> SourceParams {
         SourceParams {
             source: id.to_string(),
+            from: None,
+            preview: false,
+        }
+    }
+
+    /// 从源 `feed` 真装编号是 `id` 的（施工 U23 下下：升级照装的时候那个源换）。
+    pub(crate) fn from(id: &str, feed: &str) -> SourceParams {
+        SourceParams {
+            source: id.to_string(),
+            from: Some(feed.to_string()),
             preview: false,
         }
     }
@@ -58,6 +71,7 @@ impl SourceParams {
     pub(crate) fn looking(id: &str) -> SourceParams {
         SourceParams {
             source: id.to_string(),
+            from: None,
             preview: true,
         }
     }
@@ -85,8 +99,9 @@ pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
     }
 }
 
-/// 要装的一个：索引里那一条、挑好的文件、文件名。
+/// 要装的一个：从哪个源、索引里那一条、挑好的文件、文件名。
 struct Step<'a> {
+    feed: &'a Feed,
     entry: &'a Entry,
     file: &'a File,
     name: String,
@@ -102,10 +117,10 @@ pub(crate) async fn install(
     if !miyu_store::personas::valid(&params.source) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let synced = super::sync::sync(core, false).await?;
+    let indexes = chosen(core, scope, &params).await?;
     let seen = scope.installed(core);
     let installed: BTreeSet<String> = seen.iter().map(|found| found.id.clone()).collect();
-    let steps = plan(&synced.index, &params.source, &installed)?;
+    let steps = plan(&indexes, &params.source, &installed)?;
     if steps.iter().any(|step| runs_program(step.entry)) {
         scope.system_only(peer.admin)?;
     }
@@ -113,18 +128,22 @@ pub(crate) async fn install(
         return Ok(preview(&steps, &seen));
     }
     let _one_at_a_time = core.packaging.lock().await;
-    let settings = SourceSettings::from(&core.config().resolved().values());
-    let mirrors = super::sync::resolved(settings.mirrors.iter());
-    let places = packages(core);
-    let cache = download::cache_dir(places.state_root());
+    let shared = download::cache_dir(packages(core).state_root());
+    let guarded = super::sync::guarded(core);
     let mut answer = Value::Null;
     let mut with = Vec::new();
     for step in &steps {
         let report = progress(caller, &step.entry.id);
+        // 个人层的源下进它自己的目录，照地址闸只连公网；官方的、系统层的进共用的缓存（施工 U23 下下）。
+        let (cache, guard) = match step.feed.guarded() {
+            true => (step.feed.dir.join("files"), Some(&guarded)),
+            false => (shared.clone(), None),
+        };
         let wanted = Wanted {
             name: &step.name,
             file: step.file,
-            mirrors: &mirrors,
+            mirrors: step.feed.mirrors(),
+            guarded: guard,
         };
         let file = download::fetch(&cache, &wanted, &report)
             .await
@@ -135,8 +154,9 @@ pub(crate) async fn install(
             step.entry.id.clone(),
             step.entry.origin.clone(),
         );
+        let feed = (step.feed.tier != Tier::Official).then(|| step.feed.name.clone());
         let recorded = tokio::task::spawn_blocking(move || {
-            super::super::local::set_origin(&record, &id, &origin)
+            super::super::local::set_origin(&record, &id, (&origin, feed.as_deref()))
         })
         .await
         .map_err(|_| Refusal::INTERNAL)?;
@@ -153,19 +173,68 @@ pub(crate) async fn install(
     Ok(answer)
 }
 
-/// 照依赖排好先后：依赖在前，要装的那个最后；装着的依赖不再装。
+/// 装要用的几个源的索引（施工 U23 下下）：挑中的那个在前，依赖在它里面找不到的再照官方的找。
+type Indexes = Vec<(Feed, Index)>;
+
+/// 挑从哪个源装：写了 `from` 的只看那一个，没写的照先后（官方的、系统配置加的、`scope` 自己那一层的人加的）找第一个有这个
+/// 编号的。系统那一层的（管理员模式里）不认个人层的源。官方的拿不成、别的源也没有的照官方的拒；`from` 写的源没有的
+/// `unknown_source`；都没有的 `unknown_package`。别的源拿不成的跳过，记一行。
+async fn chosen(
+    core: &Arc<Core>,
+    scope: &Scope,
+    params: &SourceParams,
+) -> Result<Indexes, Refusal> {
+    let account = match scope {
+        Scope::System => None,
+        Scope::Own(account) => Some(account),
+    };
+    let feeds = super::feeds::feeds(core, account);
+    let wanted: Vec<&Feed> = feeds
+        .iter()
+        .filter(|feed| params.from.as_deref().is_none_or(|name| feed.name == name))
+        .collect();
+    if wanted.is_empty() {
+        return Err(Refusal::UNKNOWN_SOURCE);
+    }
+    let mut failed = None;
+    for feed in wanted {
+        match super::sync::sync_feed(core, feed, false).await {
+            Ok(synced) if synced.index.entry(&params.source).is_some() => {
+                let mut indexes = vec![(feed.clone(), synced.index)];
+                if feed.tier != Tier::Official {
+                    let official = super::feeds::official(core);
+                    if let Ok(synced) = super::sync::sync_feed(core, &official, false).await {
+                        indexes.push((official, synced.index));
+                    }
+                }
+                return Ok(indexes);
+            }
+            Ok(_) => {}
+            Err(refusal) if feed.tier == Tier::Official || params.from.is_some() => {
+                failed.get_or_insert(refusal);
+            }
+            Err(refusal) => {
+                tracing::info!(target: TARGET, source = feed.name.as_str(), reason = refusal.reason, "package source skipped");
+            }
+        }
+    }
+    Err(failed.unwrap_or(Refusal::UNKNOWN_PACKAGE))
+}
+
+/// 照依赖排好先后：依赖在前，要装的那个最后；装着的依赖不再装。要装的照 `indexes` 头一个找，依赖照先后找。
 fn plan<'a>(
-    index: &'a Index,
+    indexes: &'a Indexes,
     id: &str,
     installed: &BTreeSet<String>,
 ) -> Result<Vec<Step<'a>>, Refusal> {
+    let (feed, index) = indexes.first().ok_or(Refusal::UNKNOWN_PACKAGE)?;
     let target = index.entry(id).ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    let mut order: Vec<&Entry> = Vec::new();
+    let mut order: Vec<(&Feed, &Entry)> = Vec::new();
     let mut missing: Vec<String> = Vec::new();
     let mut seen: BTreeSet<String> = BTreeSet::new();
     visit(
-        index,
-        target,
+        indexes,
+        (feed, target),
         installed,
         &mut seen,
         &mut order,
@@ -177,10 +246,11 @@ fn plan<'a>(
     }
     order
         .into_iter()
-        .map(|entry| {
+        .map(|(feed, entry)| {
             let file = pick(entry).ok_or(Refusal::WRONG_TARGET)?;
             let target = file.target.as_deref().and_then(Target::parse);
             Ok(Step {
+                feed,
                 entry,
                 file,
                 name: archive::file_name(&entry.id, &entry.version, target),
@@ -191,11 +261,11 @@ fn plan<'a>(
 
 /// 深度优先：先排它的依赖，再排它自己；排过的、装着的依赖跳过（依赖成环的也停得下来）。
 fn visit<'a>(
-    index: &'a Index,
-    entry: &'a Entry,
+    indexes: &'a Indexes,
+    (feed, entry): (&'a Feed, &'a Entry),
     installed: &BTreeSet<String>,
     seen: &mut BTreeSet<String>,
-    order: &mut Vec<&'a Entry>,
+    order: &mut Vec<(&'a Feed, &'a Entry)>,
     missing: &mut Vec<String>,
 ) {
     if !seen.insert(entry.id.clone()) {
@@ -205,13 +275,16 @@ fn visit<'a>(
         if installed.contains(dep) || seen.contains(dep) {
             continue;
         }
-        match index.entry(dep) {
-            Some(found) => visit(index, found, installed, seen, order, missing),
+        let found = indexes
+            .iter()
+            .find_map(|(feed, index)| Some((feed, index.entry(dep)?)));
+        match found {
+            Some(found) => visit(indexes, found, installed, seen, order, missing),
             None if !missing.contains(dep) => missing.push(dep.clone()),
             None => {}
         }
     }
-    order.push(entry);
+    order.push((feed, entry));
 }
 
 /// 本机能用的那个文件：写了本机这一种的先，不分系统的其次。
@@ -248,7 +321,9 @@ fn preview(steps: &[Step<'_>], now: &[miyu_store::packages::Found]) -> Value {
     let mut answer = json!({
         "package": entry.id,
         "version": entry.version,
-        "official": entry.official,
+        // 别的源里的不算官方（施工 U23 下下）：那一格是它的索引自己写的。
+        "official": entry.official && last.feed.tier == Tier::Official,
+        "source": last.feed.name,
         "origin": entry.origin,
         "capabilities": entry.capabilities.iter().map(|name| json!({"name": name})).collect::<Vec<_>>(),
         "download": steps.iter().map(|step| step.file.size).sum::<u64>(),

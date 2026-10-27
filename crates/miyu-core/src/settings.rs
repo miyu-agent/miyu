@@ -16,7 +16,7 @@ use miyu_config::{Item, Layer, Missing, Values, Words, reference, schema};
 use miyu_endpoint::config::{Config, Environment};
 use miyu_endpoint::settings::{
     CommandSettings, EXTERNAL_BINDINGS, PermissionSettings, PersonaSettings, PresetSettings,
-    SourceSettings, TerminalSettings, UiSettings,
+    SOURCE_FEEDS, SourceSettings, TerminalSettings, UiSettings,
 };
 use miyu_kernel::id::AccountId;
 use miyu_log::settings::LogSettings;
@@ -42,7 +42,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 41] = [
+const MODULES: [&[Item]; 42] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -84,6 +84,7 @@ const MODULES: [&[Item]; 41] = [
     NET[5],
     NET[6],
     SourceSettings::ITEMS,
+    SOURCE_FEEDS,
     crate::serve::CoreSettings::ITEMS,
     LogSettings::ITEMS,
 ];

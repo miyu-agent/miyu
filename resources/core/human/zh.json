@@ -358,6 +358,8 @@
       "packages.source": {"name": "软件源地址", "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。"},
       "packages.mirrors": {"name": "镜像", "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。"},
       "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个包（写编号），照旧用装着的那一版。"},
+      "packages.sources.<id>.url": {"name": "别的软件源的地址", "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；系统配置里的大家都用，个人设置里的只给自己。"},
+      "packages.sources.<id>.key": {"name": "别的软件源的公钥", "description": "签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。"},
       "models.catalog.url": {
         "name": "目录的地址",
         "description": "从哪拉模型目录。"
@@ -760,6 +762,10 @@
     "config/readonly-not-shipped": "{got} 不是出厂的受保护路径：只能去掉出厂清单里的",
     "config/readonly-bad-path": "{got} 写法不对：要写成 ~/…、绝对路径，或者工作区里的相对路径（不能有 ..）",
     "config/readonly-too-broad": "{got} 是家目录或它的上级，不能整个保护：家目录里改什么都要先问",
+    "config/source-reserved": "official 是官方软件源的名字，别的源不能用",
+    "config/source-shadowed": "系统配置里已经有叫 {name} 的软件源，个人设置里这一条不用",
+    "config/source-incomplete": "软件源 {name} 要同时写 url 和 key 才能用",
+    "config/source-key": "软件源 {name} 的 key 读不成：要写 base64 的 Ed25519 公钥",
     "config/fix-example": "改成其中一个，例如 {example}",
     "config/fix-write": "改成 {example}",
     "config/fix-move": "挪到{layers}里去",

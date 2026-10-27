@@ -74,7 +74,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 |---|---|---|
 | `package.install` | `path`: absolute path to a local package folder (the folder name is the id), to its `package.toml`, or to a `.miyu` package file | An item as in `package.list` |
 | `package.install` | `package`: a built-in id installs the removed package back; any other id is the same as `source`, from the package source | The same |
-| `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading | The same, plus `with` listing the dependencies installed along |
+| `package.install` | `source`: install this id from the package source (missing dependencies come along, installed first); pushes `package.progress {"package", "done", "total"}` to this connection while downloading. `from` (optional): which source to install from (`official` or the name of a source added in the configuration); without it the sources are tried in order | The same, plus `with` listing the dependencies installed along |
 | `package.install` | `package`: a group id (from `groups` at the top of `package.list`, such as `basesystem`) installs back all of its removed shipped packages | `{"group", "packages": [<an item as in `package.list`>…]}`, empty when none was removed |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 | `package.remove` | `package`: a group id removes all of its installed packages; refused as a whole when an installed package outside the group depends on one (`package_depended`, `data.by` names them) | `{"group", "removed": [<id>…]}` |
@@ -99,12 +99,15 @@ Install and remove take effect at once: processes start or stop per their switch
 | `depends_missing` | A dependency isn't installed, `data.missing` |
 | `package_depended` | Another installed package depends on it, `data.by` |
 | `unknown_package` | Not installed, or never removed |
+| `unknown_source` | The source named in `from` doesn't exist (not added, misspelt, or in someone else's personal settings) |
 
 ## `package.sync`
 
 Fetch the index from the package source. Param `force` (optional): `true` fetches even if the local copy is recent; otherwise a local copy younger than 24 hours is used as is. Addresses are tried in the order of the system config's `packages.mirrors`, then `packages.source`; the index is verified against the official public keys built into Miyu, and one older than the local copy is not taken.
 
 Response `{"generated", "fetched", "packages", "stale"?}`: when the index was generated and fetched (RFC 3339), and how many packages it lists; `stale` (the last place's reason, in English) means nothing could be fetched this time and the local copy is used.
+
+Other package sources: `packages.sources.<name>` in the configuration with a `url` and a `key` (a base64 Ed25519 public key). Those in the system configuration are for everyone, those in personal settings only for that person. They're fetched after the official one, each verified against its own key; the response adds `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`, with `{"source", "error"}` for one that couldn't be fetched. Sources in personal settings are only reached at public addresses.
 
 **Errors**
 
@@ -116,7 +119,7 @@ Response `{"generated", "fetched", "packages", "stale"?}`: when the index was ge
 
 Search the package source. Param `query` (optional): words separated by spaces, each of which must appear in the id, name or summary (any language), case-insensitive; empty or absent lists everything. Fetches the index as `package.sync` does first (a local copy younger than 24 hours is used as is).
 
-Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't; `contents` lists which packages it carries content for (as in `package.list`), an empty array when none; `provides` is what it carries, kind to names, the kinds being `command` (subcommands), `features`, `mcp` (MCP servers), `slash` (slash commands), `content` (packages it carries content for), `skills`, `scripts`, `personas`, `presets`, with empty kinds left out and `{}` when it carries none of them; `depends` lists the ids of the packages it depends on, an empty array when none; `kind` is the package kind as written in the manifest's `[package] kind` (`process`, `ui`, `theme`, `mascot`, `bundle`, …, new ones passed through as they are), missing from indexes generated before it was added. Errors as in `package.sync`.
+Response `{"packages": [...], "generated", "stale"?}`, each item `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`: name and summary in the connection's language (falling back to English, Chinese, Japanese), `null` when missing; `installed` is the installed version (empty text when installed without one), `null` when not installed; `official` says whether it comes from the owner's own repositories; `blocked` is the reason it was blocked, `null` when it wasn't; `contents` lists which packages it carries content for (as in `package.list`), an empty array when none; `provides` is what it carries, kind to names, the kinds being `command` (subcommands), `features`, `mcp` (MCP servers), `slash` (slash commands), `content` (packages it carries content for), `skills`, `scripts`, `personas`, `presets`, with empty kinds left out and `{}` when it carries none of them; `depends` lists the ids of the packages it depends on, an empty array when none; `kind` is the package kind as written in the manifest's `[package] kind` (`process`, `ui`, `theme`, `mascot`, `bundle`, …, new ones passed through as they are), missing from indexes generated before it was added; `source` is which package source it comes from (`official` or the name given in the configuration), and `official` is always `false` for other sources. Errors as in `package.sync`.
 
 ## `package.clean`
 

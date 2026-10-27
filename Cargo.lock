@@ -2037,6 +2037,7 @@ dependencies = [
  "miyu-assemble",
  "miyu-basesystem",
  "miyu-config",
+ "miyu-endpoint",
  "miyu-fs",
  "miyu-goal",
  "miyu-http",
@@ -2114,6 +2115,8 @@ dependencies = [
 name = "miyu-http"
 version = "0.0.0"
 dependencies = [
+ "http",
+ "hyper-util",
  "miyu-drivers",
  "miyu-http",
  "miyu-kernel",
@@ -2232,8 +2235,6 @@ dependencies = [
  "encoding_rs",
  "flate2",
  "htmd",
- "http",
- "hyper-util",
  "markup5ever_rcdom",
  "miyu-config",
  "miyu-http",

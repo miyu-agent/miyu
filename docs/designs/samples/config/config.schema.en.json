@@ -595,6 +595,43 @@
             }
           ],
           "title": "Package source address"
+        },
+        "sources": {
+          "additionalProperties": {
+            "properties": {
+              "key": {
+                "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken. Allowed: text of at most 64 characters. Only in the system config or personal settings. Takes effect immediately.",
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "Other source key",
+                "type": "string"
+              },
+              "url": {
+                "description": "The folder holding its index. Together with a key it makes a source you trust; in the system configuration it's for everyone, in personal settings only for you. Allowed: an address starting with http:// or https:// or { env = \"…\" }. Only in the system config or personal settings. Takes effect immediately.",
+                "oneOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "env"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "title": "Other source address"
+              }
+            },
+            "type": "object"
+          },
+          "type": "object"
         }
       },
       "type": "object"

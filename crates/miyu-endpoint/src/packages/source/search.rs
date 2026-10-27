@@ -12,8 +12,9 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::id::AccountId;
-use miyu_source::index::Entry;
+use miyu_source::index::{Entry, Index};
 
+use super::feeds::OFFICIAL;
 use crate::Core;
 use crate::hello::Peer;
 use crate::personas::pick;
@@ -35,7 +36,9 @@ impl SearchParams {
     }
 }
 
-/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。装没装照 `account` 看得到的（施工 U23 下上）。
+/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。装没装照 `account` 看得到的（施工 U23 下上）。照先后搜官方的、
+/// 系统配置加的、他自己加的源（施工 U23 下下），每一行带 `source`（源的名字）；别的源里的 `official` 一律是假的，同编号的各列各的。
+/// `generated`、`stale` 照官方的；别的源拿不成的跳过，记一行。
 pub(crate) async fn search(
     core: &Arc<Core>,
     (peer, account): (Peer, &AccountId),
@@ -55,25 +58,53 @@ pub(crate) async fn search(
         .split_whitespace()
         .map(str::to_lowercase)
         .collect();
-    let rows: Vec<Value> = synced
-        .index
+    let mut rows = matching((OFFICIAL, &synced.index), &installed, &words, peer.language);
+    for feed in super::feeds::feeds(core, Some(account)).iter().skip(1) {
+        match super::sync::sync_feed(core, feed, false).await {
+            Ok(other) => rows.extend(matching(
+                (&feed.name, &other.index),
+                &installed,
+                &words,
+                peer.language,
+            )),
+            Err(refusal) => {
+                tracing::info!(target: super::super::TARGET, source = feed.name.as_str(), reason = refusal.reason, "package source skipped");
+            }
+        }
+    }
+    let mut answer = json!({"packages": rows, "generated": synced.index.generated});
+    if let Some(stale) = synced.stale {
+        answer["stale"] = Value::String(stale);
+    }
+    Ok(answer)
+}
+
+/// 源 `source`（名字）的索引 `index` 里合得上 `words` 的那几行。
+fn matching(
+    (source, index): (&str, &Index),
+    installed: &BTreeMap<String, Option<String>>,
+    words: &[String],
+    language: &str,
+) -> Vec<Value> {
+    index
         .packages
         .iter()
-        .filter(|entry| matches(entry, &words))
+        .filter(|entry| matches(entry, words))
         .map(|entry| {
             let mut row = json!({
                 "package": entry.id,
                 "version": entry.version,
-                "name": pick(&entry.name, peer.language),
-                "summary": pick(&entry.summary, peer.language),
-                "official": entry.official,
+                "name": pick(&entry.name, language),
+                "summary": pick(&entry.summary, language),
+                "official": entry.official && source == OFFICIAL,
+                "source": source,
                 // 给哪几个包带了内容（施工 G-9）：索引的 `provides` 里的 `content`；没带的是空的。
                 "contents": entry.provides.get("content").cloned().unwrap_or_default(),
                 // 带了哪几样、依赖哪几个包（施工 G-10，网页的软件市场照种类筛）：索引里的原样，没有的是空的。
                 "provides": entry.provides,
                 "depends": entry.depends,
                 "installed": installed.get(&entry.id).map(|version| version.clone().unwrap_or_default()),
-                "blocked": synced.index.blocked(&entry.id, &entry.origin).map(|blocked| blocked.reason.clone()),
+                "blocked": index.blocked(&entry.id, &entry.origin).map(|blocked| blocked.reason.clone()),
             });
             // 包的种类（施工 G-11）：索引里的原样，以前生成的索引没有的不写。
             if let Some(kind) = &entry.kind {
@@ -81,12 +112,7 @@ pub(crate) async fn search(
             }
             row
         })
-        .collect();
-    let mut answer = json!({"packages": rows, "generated": synced.index.generated});
-    if let Some(stale) = synced.stale {
-        answer["stale"] = Value::String(stale);
-    }
-    Ok(answer)
+        .collect()
 }
 
 /// 每个词都出现在编号、名字、说明（哪种语言都算）里。

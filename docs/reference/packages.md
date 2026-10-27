@@ -74,7 +74,7 @@
 |---|---|---|
 | `package.install` | `path`：本机一个包文件夹的绝对路径（文件夹名就是编号），或者那份 `package.toml` 的路径，或者一个包文件 `.miyu` 的路径 | 同 `package.list` 的一项 |
 | `package.install` | `package`：出厂包的编号是把卸掉的装回来；别的编号同 `source`，从软件源装 | 同上 |
-| `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接 | 同上，一起装了依赖的多 `with` |
+| `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖）；下载时推 `package.progress {"package", "done", "total"}` 给这个连接。`from`（可以不写）：从哪个软件源装（`official` 或配置里加的源的名字），不写的照先后找（施工 U23 下下） | 同上，一起装了依赖的多 `with` |
 | `package.install` | `package`：组名（`package.list` 顶上的 `groups`，例如 `basesystem`）是把组里卸掉的出厂包一起装回来 | `{"group", "packages": [<同 `package.list` 的一项>…]}`，一个都没卸过的是空的 |
 | `package.remove` | `package` | `{"package", "removed": true}` |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们） | `{"group", "removed": [<编号>…]}` |
@@ -99,12 +99,15 @@
 | `depends_missing` | 依赖的包没装，`data.missing` |
 | `package_depended` | 别的装着的包依赖它，`data.by` |
 | `unknown_package` | 没装的、没卸过的 |
+| `unknown_source` | `from` 写的软件源没有（没加、写错了，或者是别人个人设置里的） |
 
 ## `package.sync`
 
 从软件源拿索引（施工 G-3 上）。参数 `force`（可以不写）：`true` 不管本机那份新不新都去拿；不写的本机那份不到 24 小时就直接用。地址照系统配置的 `packages.mirrors`、`packages.source` 的先后试，索引照编进来的官方公钥验签，比本机那份旧的不收。
 
 回应 `{"generated", "fetched", "packages", "stale"?}`：索引生成的时刻、拿到的时刻（都是 RFC 3339）、几个包；这一次一处都没拿成、用的是本机那份的带 `stale`（最后一处的原因，英文）。
+
+别的软件源（施工 U23 下下）：配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的，系统配置里的大家都用，个人设置里的只给自己。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。个人设置里加的源只连公网地址。
 
 **出错**
 
@@ -116,7 +119,7 @@
 
 在软件源里搜（施工 G-3 下）。参数 `query`（可以不写）：几个词，空白分开，都得出现在编号、名字、说明（哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 拿索引（本机那份不到 24 小时的直接用）。
 
-回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`，没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包的编号，没有的是空数组（施工 G-10：软件市场照种类筛）；`kind` 是包的种类，照清单 `[package] kind` 的原样（`process`、`ui`、`theme`、`mascot`、`bundle`……，以后多了的照样原样），以前生成的索引没有这一格（施工 G-11）。出错同 `package.sync`。
+回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`，没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包的编号，没有的是空数组（施工 G-10：软件市场照种类筛）；`kind` 是包的种类，照清单 `[package] kind` 的原样（`process`、`ui`、`theme`、`mascot`、`bundle`……，以后多了的照样原样），以前生成的索引没有这一格（施工 G-11）；`source` 是哪个软件源的（`official` 或配置里起的名字，施工 U23 下下），别的源里的 `official` 一律是 `false`。出错同 `package.sync`。
 
 ## `package.clean`
 

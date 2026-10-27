@@ -35,6 +35,10 @@ pub struct Desc {
     /// 来源变没变、碰不碰（设计 37 第四节第 6 条）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    /// 从哪个软件源装的（施工 U23 下下）：配置里起的名字；官方的、不是从软件源装的没有。升级照它找那个源，源删了的不换到
+    /// 别的源上（换源就是换信任的对象）。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feed: Option<String>,
 }
 
 /// 包目录里的一个文件（`files` 的一行）。

@@ -186,6 +186,39 @@ miyu_config::settings! {
 #[cfg(test)]
 mod tests;
 
+/// 别的软件源（施工 U23 下下，设计 `37-软件源.md` 第五节）：`packages.sources.<id>.url` 放索引的那一层目录，`.key` 签它的
+/// Ed25519 公钥（base64），两样都写了才算一个源；加了就是信任它。系统配置里的所有人用，个人设置里的只给自己（装进他自己那一层）。
+/// 名字不许叫 `official`，个人设置和系统配置同名的那一条不认（`packages/source/feeds.rs`）。`settings!` 只认「段加字段名」，
+/// 中间一段是占位的手写。当场生效。
+pub const SOURCE_FEEDS: &[miyu_config::Item] = &[
+    source_feed("packages.sources.<id>.url", miyu_config::Kind::Url),
+    source_feed(
+        "packages.sources.<id>.key",
+        miyu_config::Kind::Text { max: 64 },
+    ),
+];
+
+/// [`SOURCE_FEEDS`] 的一项：系统配置、个人设置都能写，「软件包」页「软件源」那一组。
+const fn source_feed(key: &'static str, kind: miyu_config::Kind) -> miyu_config::Item {
+    miyu_config::Item {
+        key,
+        kind,
+        default: None,
+        layers: &[miyu_config::Layer::System, miyu_config::Layer::Personal],
+        tighten: None,
+        env: None,
+        applies: miyu_config::Applies::Now,
+        ui: miyu_config::Ui {
+            page: "packages",
+            group: "source",
+            package: None,
+            common: false,
+            control: miyu_config::Control::Text,
+            hidden: false,
+        },
+    }
+}
+
 /// 终端管理员的平台账号（施工 O-3；以前叫主人对应表，`docs/blueprint/venues.md`）：`external.bindings.<external>`，键是通讯平台上的身份，值是本机账号。
 /// `settings!` 只认「段加字段名」，最后一段是占位的这一项手写。只能写在系统配置，当场生效：下一句就照新的认。
 pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {

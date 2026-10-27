@@ -310,6 +310,15 @@ source = "https://miyu-agent.github.io/packages/"
 # Allowed: true or false. Only in personal settings. Takes effect next turn.
 # off =
 
+[packages.sources."<id>"]
+# Other source key: The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken.
+# Allowed: text of at most 64 characters. Only in the system config or personal settings. Takes effect immediately.
+# key =
+
+# Other source address: The folder holding its index. Together with a key it makes a source you trust; in the system configuration it's for everyone, in personal settings only for you.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect immediately.
+# url =
+
 [packages.subagent]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
 # Allowed: true or false. Only in personal settings. Takes effect next turn.

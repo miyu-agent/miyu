@@ -4,6 +4,7 @@
 
 pub(crate) mod clean;
 mod download;
+pub(crate) mod feeds;
 pub(crate) mod fetch;
 pub(crate) mod search;
 pub(crate) mod sync;

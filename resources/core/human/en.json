@@ -358,6 +358,8 @@
       "packages.source": {"name": "Package source address", "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key."},
       "packages.mirrors": {"name": "Mirrors", "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it."},
       "packages.hold": {"name": "Held packages", "description": "Packages (by id) skipped when upgrading; the installed version stays."},
+      "packages.sources.<id>.url": {"name": "Other source address", "description": "The folder holding its index. Together with a key it makes a source you trust; in the system configuration it's for everyone, in personal settings only for you."},
+      "packages.sources.<id>.key": {"name": "Other source key", "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken."},
       "models.catalog.url": {
         "name": "Catalog address",
         "description": "Where to fetch the model catalog from."
@@ -764,6 +766,10 @@
     "config/readonly-not-shipped": "{got} isn't a built-in protected path: only built-in ones can be removed",
     "config/readonly-bad-path": "{got} isn't written right: use ~/…, an absolute path, or a path inside the workspace (without ..)",
     "config/readonly-too-broad": "{got} is your home folder or above it, so it can't be protected as a whole: every change in your home folder would need asking first",
+    "config/source-reserved": "official is the name of the official package source; other sources can't use it",
+    "config/source-shadowed": "the system configuration already has a package source named {name}, so this one isn't used",
+    "config/source-incomplete": "package source {name} needs both url and key",
+    "config/source-key": "the key of package source {name} isn't readable: write a base64 Ed25519 public key",
     "config/fix-example": "Write one of them, e.g. {example}",
     "config/fix-write": "Write {example}",
     "config/fix-move": "Move it to {layers}",

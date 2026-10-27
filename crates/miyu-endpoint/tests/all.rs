@@ -150,6 +150,7 @@ mod orphans;
 mod owner;
 mod package_check;
 mod package_depends;
+mod package_feeds;
 mod package_group_manage;
 mod package_groups;
 mod package_list_member;

@@ -78,6 +78,16 @@ pub enum Code {
     ReadonlyPath,
     /// 去掉的不是这台机器出厂的受保护路径（施工 5-17 下）。协议上写 `not_an_option`，说的话单给一句。
     ReadonlyNotShipped,
+    /// 别的软件源（施工 U23 下下，`packages.sources.<名字>`）起名叫 `official`：留给官方那一个。`name` 是名字。协议上写
+    /// `not_an_option`。
+    SourceReserved,
+    /// 个人设置里的软件源和系统配置里的同名（施工 U23 下下）：这一条不用，免得顶掉管理员加的。`name` 是名字。只报不丢，协议上写
+    /// `not_an_option`。
+    SourceShadowed,
+    /// 软件源只写了 `url`、`key` 里的一样（施工 U23 下下）：这个源不用。`name` 是名字。协议上写 `bad_format`。
+    SourceIncomplete,
+    /// 软件源的 `key` 读不成 base64 的 Ed25519 公钥（施工 U23 下下）：这个源不用。`name` 是名字。协议上写 `bad_format`。
+    SourceKey,
 }
 
 impl Code {
@@ -109,15 +119,19 @@ impl Code {
             Code::ReadonlyTooBroad => "readonly_too_broad",
             Code::ReadonlyPath => "bad_format",
             Code::ReadonlyNotShipped => "not_an_option",
+            Code::SourceReserved | Code::SourceShadowed => "not_an_option",
+            Code::SourceIncomplete | Code::SourceKey => "bad_format",
         }
     }
 
     /// 是错误还是警告。
     pub fn severity(self) -> Severity {
         match self {
-            Code::UnknownKey | Code::UntrustedProject | Code::UnknownSecret | Code::EnvNotSet => {
-                Severity::Warning
-            }
+            Code::UnknownKey
+            | Code::UntrustedProject
+            | Code::UnknownSecret
+            | Code::EnvNotSet
+            | Code::SourceShadowed => Severity::Warning,
             _ => Severity::Error,
         }
     }

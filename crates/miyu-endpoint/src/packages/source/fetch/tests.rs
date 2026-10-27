@@ -21,6 +21,24 @@ fn index(entries: Vec<serde_json::Value>) -> Index {
     .expect("读得成")
 }
 
+/// 只有一个源（官方的）的索引。
+fn one(index: Index) -> Indexes {
+    vec![(feed(OFFICIAL_NAME, Tier::Official), index)]
+}
+
+const OFFICIAL_NAME: &str = "official";
+
+/// 一个源：名字、谁加的，地址、钥匙、目录都空着（排先后用不着）。
+fn feed(name: &str, tier: Tier) -> Feed {
+    Feed {
+        name: name.to_string(),
+        tier,
+        bases: Vec::new(),
+        keys: Vec::new(),
+        dir: std::path::PathBuf::new(),
+    }
+}
+
 fn ids(steps: &[Step<'_>]) -> Vec<String> {
     steps.iter().map(|step| step.entry.id.clone()).collect()
 }
@@ -28,12 +46,12 @@ fn ids(steps: &[Step<'_>]) -> Vec<String> {
 #[test]
 fn dependencies_come_first_and_installed_ones_are_skipped() {
     let any = [None];
-    let index = index(vec![
+    let index = one(index(vec![
         entry("app", &["lib", "base"], &any),
         entry("lib", &["base", "core"], &any),
         entry("base", &[], &any),
         entry("core", &[], &any),
-    ]);
+    ]));
     let none = BTreeSet::new();
     assert_eq!(
         ids(&plan(&index, "app", &none)
@@ -60,11 +78,11 @@ fn dependencies_come_first_and_installed_ones_are_skipped() {
 #[test]
 fn missing_and_unknown_are_refused_and_cycles_stop() {
     let any = [None];
-    let index = index(vec![
+    let index = one(index(vec![
         entry("app", &["gone", "also-gone"], &any),
         entry("a", &["b"], &any),
         entry("b", &["a"], &any),
-    ]);
+    ]));
     let none = BTreeSet::new();
     let missing = plan(&index, "app", &none).err().expect("缺依赖");
     assert_eq!(missing.reason, "depends_missing");
@@ -87,10 +105,10 @@ fn the_file_for_this_system_is_picked() {
         .map(Target::as_str)
         .find(|target| Some(*target) != here)
         .expect("有别的");
-    let index = index(vec![
+    let index = one(index(vec![
         entry("both", &[], &[None, here]),
         entry("elsewhere", &[], &[Some(other)]),
-    ]);
+    ]));
     let none = BTreeSet::new();
     let steps =
         plan(&index, "both", &none).unwrap_or_else(|refusal| panic!("排得出：{}", refusal.reason));
@@ -101,5 +119,36 @@ fn the_file_for_this_system_is_picked() {
     assert_eq!(
         plan(&index, "elsewhere", &none).err().map(|r| r.reason),
         Some("wrong_target")
+    );
+}
+
+/// 别的源里的包（施工 U23 下下）：依赖先在它自己的源里找，找不到的照官方的；每一步记着从哪个源下。
+#[test]
+fn dependencies_fall_back_to_the_official_source() {
+    let any = [None];
+    let indexes = vec![
+        (
+            feed("friends", Tier::Personal),
+            index(vec![
+                entry("app", &["lib", "base"], &any),
+                entry("lib", &[], &any),
+            ]),
+        ),
+        (
+            feed(OFFICIAL_NAME, Tier::Official),
+            index(vec![entry("base", &[], &any), entry("lib", &[], &any)]),
+        ),
+    ];
+    let none = BTreeSet::new();
+    let steps =
+        plan(&indexes, "app", &none).unwrap_or_else(|refusal| panic!("排得出：{}", refusal.reason));
+    let from: Vec<(&str, &str)> = steps
+        .iter()
+        .map(|step| (step.entry.id.as_str(), step.feed.name.as_str()))
+        .collect();
+    assert_eq!(
+        from,
+        [("lib", "friends"), ("base", "official"), ("app", "friends")],
+        "自己源里有的照自己的，没有的照官方的"
     );
 }

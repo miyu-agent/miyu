@@ -32,6 +32,7 @@ fn a_package_is_scanned_written_and_read_back() {
         source: "/home/me/pkg".to_string(),
         size: size(&files),
         origin: Some("github.com/miyu-agent/pkg".to_string()),
+        feed: Some("friends".to_string()),
     };
     write(&root, &desc, &files).expect("写得进");
     assert_eq!(read(&root, "pkg"), Some((desc.clone(), files.clone())));

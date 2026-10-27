@@ -148,6 +148,8 @@ fn the_registered_list_is_well_formed() {
             "packages.source",
             "packages.mirrors",
             "packages.hold",
+            "packages.sources.<id>.url",
+            "packages.sources.<id>.key",
             "core.idle_exit",
             "log.level"
         ],

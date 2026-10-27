@@ -358,6 +358,8 @@
       "packages.source": {"name": "ソフトウェアソースのアドレス", "description": "ここでパッケージを検索・ダウンロードします。既定は公式のソースです。別のアドレスでも公式の署名がある内容が必要です。"},
       "packages.mirrors": {"name": "ミラー", "description": "公式のソースにつながらない・遅いとき、先に順番に試します。内容は署名とハッシュで確かめるので、ミラーが書き換えることはできません。"},
       "packages.hold": {"name": "更新しないパッケージ", "description": "更新のときに飛ばすパッケージ（ID）。入っている版をそのまま使います。"},
+      "packages.sources.<id>.url": {"name": "ほかのソフトウェアソースのアドレス", "description": "インデックスを置いたフォルダー。公開鍵と一緒に書くとソースになり、信頼したことになります。システム設定のものは全員、個人設定のものは自分だけが使います。"},
+      "packages.sources.<id>.key": {"name": "ほかのソフトウェアソースの公開鍵", "description": "インデックスに署名した Ed25519 公開鍵（base64）。検証できないインデックスは受け取りません。"},
       "models.catalog.url": {
         "name": "カタログのアドレス",
         "description": "モデルカタログをどこから取ってくるか。"
@@ -760,6 +762,10 @@
     "config/readonly-not-shipped": "{got} は組み込みの保護パスではありません。外せるのは組み込みのものだけです",
     "config/readonly-bad-path": "{got} の書き方が違います。~/…、絶対パス、またはワークスペース内の相対パス（.. なし）で書いてください",
     "config/readonly-too-broad": "{got} はホームフォルダかその上位なので、まるごと保護できません。ホームフォルダ内の変更がすべて確認待ちになります",
+    "config/source-reserved": "official は公式ソフトウェアソースの名前なので、ほかのソースには使えません",
+    "config/source-shadowed": "システム設定に {name} という名前のソフトウェアソースがすでにあるため、個人設定のこの項目は使われません",
+    "config/source-incomplete": "ソフトウェアソース {name} には url と key の両方が必要です",
+    "config/source-key": "ソフトウェアソース {name} の key を読めません。base64 の Ed25519 公開鍵を書いてください",
     "config/fix-example": "どれかに直してください。例：{example}",
     "config/fix-write": "{example} に直してください",
     "config/fix-move": "{layers}に移してください",

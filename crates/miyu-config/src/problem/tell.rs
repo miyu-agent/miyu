@@ -151,6 +151,16 @@ pub fn tell(
                 &[("got", got)],
             )?);
         }
+        Code::SourceReserved | Code::SourceShadowed | Code::SourceIncomplete | Code::SourceKey => {
+            let said = match problem.code {
+                Code::SourceReserved => "config/source-reserved",
+                Code::SourceShadowed => "config/source-shadowed",
+                Code::SourceIncomplete => "config/source-incomplete",
+                _ => "config/source-key",
+            };
+            let name = problem.name.as_deref().unwrap_or_default();
+            parts.push(sentence(words, said, &[("name", name)])?);
+        }
         Code::UnknownSecret
         | Code::EnvNotSet
         | Code::NoProvider

@@ -10,6 +10,7 @@ fn installed(id: &str, version: Option<&str>, origin: Option<&str>) -> Installed
         id: id.to_string(),
         version: version.map(str::to_string),
         origin: origin.map(str::to_string),
+        feed: None,
     }
 }
 
@@ -46,7 +47,8 @@ fn the_survey_sorts_each_installed_package() {
         installed("evil", Some("1.0"), Some("github.com/a/evil")),
         installed("local", Some("1.0"), None),
     ];
-    let survey = survey(&all, &index(), &["held".to_string()]);
+    let indexes = Indexes::from([(OFFICIAL.to_string(), index())]);
+    let survey = survey(&all, &indexes, &["held".to_string()]);
     assert_eq!(
         survey.upgrades,
         [
