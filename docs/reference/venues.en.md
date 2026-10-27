@@ -14,7 +14,7 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 | [`venue.records`](#venuerecords) | Group chat records for the judge |
 | [`venue.*` in `events.append`](#venue-in-eventsappend) | Record recalls and messages she delivered |
 
-**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections only (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
+**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections (extensions of packages that declare a system account) and per-account copies of a package (`[process] scope = "account"`); others get `no_system_account`. For a per-account copy, venue sessions always belong to the person it runs for (even a private chat whose peer is in the owner's binding table); the owner's binding table only counts in the owner's own copy, so a member's copy gets `null` from `venue.binding` and `as` in sessions under the member is an external identity without an account; `venue.sessions` lists only that person's sessions on the package's platform. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 

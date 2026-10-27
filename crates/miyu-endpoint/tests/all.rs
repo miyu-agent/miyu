@@ -190,6 +190,7 @@ mod per_account_extension;
 mod per_account_pages;
 mod per_account_retire;
 mod per_account_routes;
+mod per_account_venues;
 mod per_account_widgets;
 mod permission;
 mod persona_appearance;

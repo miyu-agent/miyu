@@ -6,6 +6,8 @@
 //! 平台的身份对着的本机账号（终端管理员的私聊，2026-10-11 核心定）。别的不列：属主换过、旧的留在系统账号名下的（再来一句找的是
 //! 新的那一个），别的平台的，对应表里已经没有这个平台的身份对着它的。平台只认前缀，对应表的键也是这个写法，核心不解读场所编号
 //! 别的部分。只给系统账号的连接，别的回 `no_system_account`。
+//!
+//! 每人一份的包的那一份（施工 IM-2）：列替谁跑的那个人名下、这个包的平台的场所会话（包没写平台的列他名下全部场所会话），不列别人的。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -15,8 +17,9 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{AccountId, SessionId};
 
-use super::mains;
+use super::{Bridge, mains};
 use crate::Core;
+use crate::hello::Caller;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
@@ -29,16 +32,19 @@ pub(crate) struct SessionsParams {}
 /// 是它进过的群和私聊，桥起来时一次要全。
 pub(crate) async fn sessions(
     core: &Arc<Core>,
-    caller: &AccountId,
+    caller: &Caller,
     _params: SessionsParams,
 ) -> Result<Value, Refusal> {
-    if !core.is_system(caller) {
-        return Err(Refusal::NO_SYSTEM_ACCOUNT);
-    }
-    let owners = owners(core, caller);
-    // 场所 → 最新的会话和它的属主：场所会话的属主只会是管理员（对应表里的）或者系统账号，核心认的账号都看。
+    let bridge = super::bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
+    let caller = bridge.account();
+    let owners = bridge.owners(core);
+    // 场所 → 最新的会话和它的属主：场所会话的属主只会是管理员（对应表里的）或者系统账号，核心认的账号都看；每人一份的只看他自己。
+    let accounts = match bridge {
+        Bridge::System(_) => core.accounts(),
+        Bridge::Personal { .. } => vec![caller.clone()],
+    };
     let mut newest: BTreeMap<String, (SessionId, AccountId)> = BTreeMap::new();
-    for account in core.accounts() {
+    for account in accounts {
         for listed in mains(core, &account, |row| row.venue != LOCAL, None).await? {
             let newer = newest
                 .get(&listed.venue)
@@ -50,7 +56,7 @@ pub(crate) async fn sessions(
     }
     let mut mine: Vec<(SessionId, String)> = newest
         .into_iter()
-        .filter(|(venue, (_, owner))| owner == caller || owners.take(venue, owner))
+        .filter(|(venue, (_, owner))| owners.lists(venue, owner, caller))
         .map(|(venue, (session, _))| (session, venue))
         .collect();
     mine.sort_by(|a, b| b.0.as_str().cmp(a.0.as_str()));
@@ -68,17 +74,13 @@ pub(crate) async fn sessions(
 pub(crate) struct Owners {
     platform: Option<String>,
     bound: BTreeSet<AccountId>,
+    /// 每人一份的那一份的（施工 IM-2）：他自己名下的也照平台筛。
+    personal: bool,
 }
 
 /// 照这时的清单、配置算 [`Owners`]。
 pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
-    let packages = core.system_packages();
-    let platform = packages
-        .iter()
-        .find(|found| found.id == caller.as_str())
-        .and_then(|found| found.read.as_ref().ok())
-        .and_then(|manifest| manifest.connection.as_ref())
-        .map(|connection| connection.platform.clone());
+    let platform = platform_of_package(core, caller.as_str());
     let bound = match &platform {
         Some(platform) => super::written(core)
             .into_iter()
@@ -88,10 +90,42 @@ pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
             .collect(),
         None => BTreeSet::new(),
     };
-    Owners { platform, bound }
+    Owners {
+        platform,
+        bound,
+        personal: false,
+    }
+}
+
+/// 包 `package` 清单 `[connection] platform` 写的平台；没写的、读不成的没有。
+fn platform_of_package(core: &Core, package: &str) -> Option<String> {
+    core.system_packages()
+        .iter()
+        .find(|found| found.id == package)
+        .and_then(|found| found.read.as_ref().ok())
+        .and_then(|manifest| manifest.connection.as_ref())
+        .map(|connection| connection.platform.clone())
 }
 
 impl Owners {
+    /// 每人一份的包 `package` 的那一份（施工 IM-2）：平台照它的清单，不列别人名下的。
+    pub(crate) fn of_package(core: &Core, package: &str) -> Owners {
+        Owners {
+            platform: platform_of_package(core, package),
+            bound: BTreeSet::new(),
+            personal: true,
+        }
+    }
+
+    /// `venue.sessions` 列不列场所 `venue` 最新的、属主是 `owner` 的会话，调用的是 `caller` 名下：他自己名下的列（施工 IM-2：
+    /// 他名下的不全是这个包的，包写了平台的只列这个平台的；平台桥照旧都列），别人名下的照 [`Owners::take`]。
+    fn lists(&self, venue: &str, owner: &AccountId, caller: &AccountId) -> bool {
+        if owner != caller {
+            return self.take(venue, owner);
+        }
+        !self.personal || self.platform.is_none() || self.platform_is(venue)
+    }
+
     /// 场所 `venue` 是不是这个桥的平台的（施工 O-60）：平台前缀是它包清单 `[connection] platform` 写的；没写平台的都不是。
     pub(crate) fn platform_is(&self, venue: &str) -> bool {
         self.platform.is_some() && platform_of(venue) == self.platform.as_deref()

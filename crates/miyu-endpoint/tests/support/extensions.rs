@@ -163,6 +163,7 @@ pub fn core_with_script(home: &Home, timing: Timing, script: &Script) -> Arc<Cor
         miyu_endpoint::settings::PersonaSettings::ITEMS,
         miyu_endpoint::settings::PresetSettings::ITEMS,
         miyu_endpoint::settings::PermissionSettings::ITEMS,
+        miyu_endpoint::settings::EXTERNAL_BINDINGS,
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(super::default_resources());

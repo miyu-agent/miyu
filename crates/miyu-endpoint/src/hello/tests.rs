@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 /// 用到 `caller.account` 的文件和次数（相对 `src/`）。
-const IDENTITY: [(&str, usize); 6] = [
+const IDENTITY: [(&str, usize); 7] = [
     // 包调包时答的那一份的 blob 拷给调的那条连接（施工 IM-1 中下）：它照 `blob.get` 读，`blob.get` 照谁交的找。
     ("backstage/calls.rs", 1),
     // 吊销、身份那一格、握手、握手认出来的、登录凭据、账号方法两处。
@@ -19,6 +19,8 @@ const IDENTITY: [(&str, usize); 6] = [
     ("methods/later.rs", 1),
     // 会话里的话、命令是谁说的（`sessions::person`，施工 Y-2 下下上）：记的是说话的人，身份。
     ("sessions.rs", 1),
+    // 连接是不是平台桥（施工 IM-2）：照身份认系统账号，同 `connection.rs` 的桥。
+    ("venues/bridge.rs", 2),
 ];
 
 /// `dir` 下每个 `.rs`（测试文件不算）里 `caller.account` 出现几次。

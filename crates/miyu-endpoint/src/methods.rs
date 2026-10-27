@@ -229,27 +229,17 @@ pub(crate) fn call<'a>(
             answer(move || async move { venues::records(core, params(request)?).await })
         }
         "venue.binding" => {
-            answer(
-                move || async move { venues::binding(core, caller.acting_for(), params(request)?) },
-            )
+            answer(move || async move { venues::binding(core, caller, params(request)?) })
         }
         "venue.plugins" => {
-            answer(
-                move || async move { venues::plugins(core, caller.acting_for(), params(request)?) },
-            )
+            answer(move || async move { venues::plugins(core, caller, params(request)?) })
         }
         "venue.session" => answer(move || async move {
-            venues::session(
-                core,
-                caller.acting_for(),
-                request.id.clone(),
-                params(request)?,
-            )
-            .await
+            venues::session(core, caller, request.id.clone(), params(request)?).await
         }),
         "venue.sessions" => answer(move || async move {
             let params: venues::SessionsParams = params(request)?;
-            venues::sessions(core, caller.acting_for(), params).await
+            venues::sessions(core, caller, params).await
         }),
         "session.send" => answer(move || session::send(core, caller, request)),
         "session.interrupt" => answer(move || session::interrupt(core, caller, request)),

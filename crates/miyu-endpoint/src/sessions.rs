@@ -391,11 +391,11 @@ pub(crate) fn owner_by(core: &Core, owner: &AccountId) -> By {
     }
 }
 
-/// 照连接记成谁（施工 Y-2 下下上）：人记他自己（成员发的命令记在成员名下）；核心拉起的扩展照旧记成管理员。机主自己连上来的
-/// 和以前一字不差。
+/// 照连接记成谁（施工 Y-2 下下上）：人记他自己（成员发的命令记在成员名下）；核心拉起的扩展照替谁干活的记（[`owner_by`]）：
+/// 平台桥、替机主的照旧记成管理员，每人一份的包的那一份记成替谁跑的那个人（施工 IM-2）。机主自己连上来的和以前一字不差。
 pub(crate) fn person(core: &Core, caller: &crate::hello::Caller) -> By {
     match caller.package {
-        Some(_) => admin(core),
+        Some(_) => owner_by(core, caller.acting_for()),
         None => By::Person(Person::new(caller.account.clone())),
     }
 }
