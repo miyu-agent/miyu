@@ -112,40 +112,38 @@ async fn she_reads_then_writes_and_the_log_keeps_both_contents() {
     }
 }
 
+/// 停下再载入：她读过的从日志里重建。拿「读过以后又被改了」看（施工 ED-2 起没读过的照写）：记着的拦下，忘了的会写。
 #[tokio::test]
 async fn what_she_read_still_counts_after_the_session_is_loaded_again() {
     let home = Home::outside_temp();
     let file = home.scratch.0.join("work/a.txt");
     std::fs::write(&file, "old\n").expect("写得进");
-    let write = r#"{"file_path":"a.txt","content":"new\n"}"#;
     let script = Script::new([
-        Play::calls(&[("write", write)]),
         Play::calls(&[("read", r#"{"file_path":"a.txt"}"#)]),
         Play::Says("读过了。"),
     ]);
     let handle = home
         .create_as(&script, &base_system(), opening(&home))
         .await;
-    talk(&handle, "cmd-1", "改一下").await;
-    let first = results(&home, &handle);
-    assert_eq!(first[0].status, ToolStatus::Error, "没读过就写，不让");
-    assert_eq!(
-        first[0].human,
-        Some(Said::new("software/basesystem/common/not-read"))
-    );
-    assert_eq!(std::fs::read(&file).expect("读得出"), b"old\n", "没写");
-    // 停下再载入：她读过的从日志里重建，不用再读一遍就能写。
+    talk(&handle, "cmd-1", "看一下").await;
     let session = handle.id().clone();
     stop(&handle).await;
-    let script = Script::new([Play::calls(&[("write", write)]), Play::Says("改好了。")]);
+    // 停着的时候被别人改了。
+    std::fs::write(&file, "changed\n").expect("写得进");
+    let write = r#"{"file_path":"a.txt","content":"new\n"}"#;
+    let script = Script::new([Play::calls(&[("write", write)]), Play::Says("好。")]);
     let handle = home
         .load_at(&session, &script, &base_system(), &work(&home))
         .await;
     talk(&handle, "cmd-2", "现在改").await;
     let all = results(&home, &handle);
     let last = all.last().expect("有结果");
-    assert_eq!(last.status, ToolStatus::Ok, "{all:?}");
-    assert_eq!(std::fs::read(&file).expect("读得出"), b"new\n");
+    assert_eq!(last.status, ToolStatus::Error, "{all:?}");
+    assert_eq!(
+        last.human,
+        Some(Said::new("software/basesystem/common/stale"))
+    );
+    assert_eq!(std::fs::read(&file).expect("读得出"), b"changed\n", "没写");
 }
 
 #[tokio::test]
@@ -201,7 +199,7 @@ async fn she_reads_then_edits_twice_without_reading_again() {
     );
 }
 
-/// 删了的从她看过的里拿掉（施工 4-6 下）：原处又冒出一个同名的，她得先读，说的是「没读过」，不是「读过以后被改了」。
+/// 删了的从她看过的里拿掉（施工 4-6 下）：原处又冒出一个同名的，当她没看过照写（施工 ED-2），不说「读过以后被改了」。
 /// 回收站在场地的假家目录里，只在 Linux 上跑：别的平台删进的是系统真的回收站。
 #[cfg(target_os = "linux")]
 #[tokio::test]
@@ -250,9 +248,11 @@ async fn a_trashed_file_is_no_longer_one_she_has_seen() {
     talk(&handle, "cmd-2", "写一下").await;
     let all = results(&home, &handle);
     assert_eq!(
-        all.last().expect("有结果").human,
-        Some(Said::new("software/basesystem/common/not-read"))
+        all.last().expect("有结果").status,
+        ToolStatus::Ok,
+        "{all:?}"
     );
+    assert_eq!(std::fs::read(&file).expect("读得出"), b"x\n");
 }
 
 /// 真的 `shell`（施工 4-8）：她执行一条命令，完全放开这一级不用问人、不进沙盒（施工 5-4 上起，工作区这一级要沙盒

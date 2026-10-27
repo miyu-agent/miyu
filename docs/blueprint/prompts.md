@@ -3485,17 +3485,6 @@ Web search is not available right now.
 No results for {query}.
 ```
 
-#### `software/basesystem/common/not-read.txt`
-
-- 什么时候加进来：`write` 要改的文件已经在了、她这个会话里没看过（`edit` 施工 ED-1 起不拦）
-- token：约 15（估的）
-- 为什么加：改之前核对（照 Claude Code，`10-自带软件.md` 第五节「她看过的」）：告诉她先读。施工 4-6 中从 `write/` 挪来，两件共用，字节没改
-- 指纹：`09ba3a44`
-
-```text
-"{path}" already exists and has not been read. Read it first.
-```
-
 #### `software/basesystem/common/stale.txt`
 
 - 什么时候加进来：她看过以后文件又被人或者别的程序改了
@@ -4860,13 +4849,13 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/write.json`
 
 - 什么时候加进来：会话的工具面里有 `write`（每次请求都带）
-- token：100
-- 为什么加：`write` 的说明和参数，照 Claude Code：`file_path`、`content`，`content` 看名字就懂，不写说明（W2）；说明三句：新建或者整体覆盖，已经在了的要先读过，只改一部分的用 `edit`（第三句施工 4-6 中有了 `edit` 才加）（施工 4-6 上）
-- 指纹：`5c81c0e9`
+- token：约 91（原来 100 减去去掉的那一句，估的）
+- 为什么加：`write` 的说明和参数，照 Claude Code：`file_path`、`content`，`content` 看名字就懂，不写说明（W2）；说明两句：新建或者整体覆盖，只改一部分的用 `edit`（第二句施工 4-6 中有了 `edit` 才加）（施工 4-6 上）。「已经在了的要先读过」那一句随施工 ED-2 去掉：没读过的也能写（2026-10-27 项目主人定）
+- 指纹：`a2095031`
 
 ```json
 {
-  "description": "Create a file, or replace all of its content. A file that already exists must be read first. To change part of a file, use `edit`.",
+  "description": "Create a file, or replace all of its content. To change part of a file, use `edit`.",
   "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"content":{"type":"string"}},"required":["file_path","content"]}
 }
 ```

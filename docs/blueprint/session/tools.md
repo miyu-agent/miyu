@@ -255,7 +255,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | `crates/miyu-session/tests/stop.rs` | 打断时在跑的写：叫它停只举旗、不掐，停在改之前的记「已取消」；叫它停的时候已经改完的照记；不停的，又打断一次就掐掉 |
 | `crates/miyu-session/src/effects/tests.rs` | 改前改后小的写进效果、不建 blob 目录，正好 32 KiB 的写、多一个字节的存成 blob，不是 UTF-8 的存成 blob（施工 V-18）、别的照原样过去；存不成的照样有哈希；载入时重建看过的不留原文（施工 V-18）；读过的记整份的哈希、写过的记改后的、删了的拿掉、后来的盖前面的；从日志重建的和一路记下的一样 |
 | `crates/miyu-session/src/pictures/tests.rs` | 交回的图片存成 blob，块里是哈希、媒体类型、宽高，照先后；存不下来的交回空的（施工 4-13） |
-| `crates/miyu-session/tests/write.rs` | 先读后写，日志里两次结果的效果对得上、效果里写着改前改后、没另存 blob（施工 V-18）；重新载入以后读过的照样算；改完一次接着改不用重读；删了的不再算看过；执行的命令（完全放开）记进日志、退出码在说法里 |
+| `crates/miyu-session/tests/write.rs` | 先读后写，日志里两次结果的效果对得上、效果里写着改前改后、没另存 blob（施工 V-18）；重新载入以后读过的照样算、删了的不再算看过（施工 ED-2 起都拿读过以后又被改了的看出来）；改完一次接着改不用重读；执行的命令（完全放开）记进日志、退出码在说法里 |
 | `crates/miyu-session/tests/read.rs`、`search.rs` | 真的 `read`、`glob`、`grep` 在会话里跑：工作区里的读得到、搜得到；边界以外的也读得到、搜得到，没人能确认也不用问（施工 5-4 上）；数据根里的读被拒；从上面往下搜不进数据根 |
 | `crates/miyu-session/tests/sandbox.rs` | 执行器写的沙盒（施工 5-4 上）：工具链的缓存只在工作区这一级放、设五个变量、建出来只给本人、cargo 配置的链接（有的建、指错了的换、没有的不建）、没交进来缓存的不设（施工 5-4 下）；工作区能写工作目录、临时目录，藏数据根；只读（连同不认识的级别）哪儿都不能写；完全放开不带；数据根在临时目录里的用 `<数据根>-sandbox-tmp`、`TMPDIR` 指过去，建出来是 0700，有了照用；别人进得去的不用，这次调用不跑、照崩了交回；Unix 上有收紧手段的，真的经助手跑 `shell`：工作区里写得进，外面写不进、读得到，数据根读不到，只读时写不进；加进来的目录在工作区这一级能写、排在工作目录后面、`~` 接家目录，只读的哪儿都写不了（施工 5-10 上） |
 | `crates/miyu-session/tests/sandbox_private.rs`、`src/sandbox/tests.rs`（施工 5-13） | 藏私密目录：这台机器上有的才写、排在数据根后面、照清单的先后，工作区、只读两级都藏；工作目录是家目录的照藏（能写的是会话的默认工作区，施工 5-14），工作区开在 `~/.config` 时里面的 `gh` 不藏、加进来的目录就是它的不藏；数据根就是 `~/.miyu` 的只写一次；Unix 上有收紧手段的真跑：私密目录里的读不到，家目录别处照读 |
@@ -273,7 +273,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 | `crates/miyu-session/tests/jobs_stop.rs`、`jobs_stop/agents.rs`（施工 7-4） | 真的 `jobs` 在会话里：读到这时的输出、说还在跑，停掉（`by` 是那次调用、`cause` 是那一轮的、`by_model`、用时和到这时的输出、整组杀了），列出来是停掉的，不叫醒她；人停的叫醒她、回应之前推过了、`by` 是人、`cause` 是那条命令，再停、没有的交回已经结束了、没有；自己先退出了的停不了、不记第二条；子代理最近的回答和在跑的工具，停掉它（经会话表停、命令编号、回报记成它交来的、正文、`by_model`、不叫醒）；人停子代理叫醒她、停过的不再停；全停连后台命令和子代理、都带 `by_model`、不叫醒；太长的回答照向上回报的截法截（施工 7-4） |
 | `crates/miyu-endpoint/tests/job_output.rs`（施工 7-4 补） | 头经协议读后台命令的输出：跑着的读到这时的、和她用 `jobs` 读的一样；结束了的读 blob，和 `jobs` 读的一字不差；子代理、没有的读不了（`protocol.md`） |
 | `crates/miyu-session/tests/jobs_stop/undo.rs`（施工 7-8） | 撤销停掉那一轮派出去的：后台命令回应之前就整组杀了、记 `undone`、`by` 是撤销的人、`cause` 是撤销的命令、到这时的输出；子代理经会话表停、回报记成它交来的 `undone`；都不叫醒；停了以后自己退出不再报；恢复不重起；自己退出了的不再杀 |
-| `crates/miyu-session/tests/undo_files.rs`（施工 U-1） | 会话里用真的工具：改过的文件撤销、恢复以后原样不动，日志里没有 `files.restored`；她看过的照有效历史走，撤掉的那一轮读过的要重读 |
+| `crates/miyu-session/tests/undo_files.rs`（施工 U-1） | 会话里用真的工具：改过的文件撤销、恢复以后原样不动，日志里没有 `files.restored`；她看过的照有效历史走：撤掉的那一轮读过的不算、恢复以后又算（施工 ED-2 起拿读过以后又被改了的看出来） |
 | `crates/miyu-session/src/jobs/roster/tests.rs`、`peek/tests.rs` | 名册照事件样本记、用时三种算法、最近结束的 5 个；报过以后又被留了言的记回在跑，留言发出以后到的回报算回了、被停掉的不记回（施工 3-8 三补）；子代理最近的回答、这一轮完没完、在跑的工具（施工 7-4） |
 
 ### 出处

@@ -36,17 +36,6 @@ async fn every_write_outcome_says_something_people_can_read() {
         human(
             run(
                 serde_json::json!({"file_path": "old.txt", "content": "x"}),
-                Seen::new(),
-            )
-            .await,
-        ),
-        said("common/not-read"),
-    );
-    check(
-        &mut checked,
-        human(
-            run(
-                serde_json::json!({"file_path": "old.txt", "content": "x"}),
                 saw(b"other"),
             )
             .await,

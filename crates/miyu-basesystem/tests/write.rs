@@ -108,20 +108,22 @@ async fn an_empty_new_file_keeps_the_plain_key() {
     assert_eq!(done.human, Some(said("write/created").with("count", "0")));
 }
 
+/// 没读过的照写（施工 ED-2）；读过以后被别人改了的不写，看的是现在的样子就写。
 #[tokio::test]
-async fn an_existing_file_needs_to_have_been_seen_as_it_is() {
+async fn an_existing_file_is_written_unless_it_changed_since_seen() {
     let site = Site::new();
     site.file("work/a.txt", b"old\n");
     let done = write(&site, "a.txt", "new\n", Seen::new()).await;
-    assert!(done.error);
+    assert!(!done.error, "{done:?}");
+    assert_eq!(text(&done), format!("Updated {}.\n", quoted("a.txt")));
     assert_eq!(
-        text(&done),
-        format!(
-            "{} already exists and has not been read. Read it first.\n",
-            quoted("a.txt")
-        )
+        done.effects,
+        [Effect::Changed {
+            path: site.real("work/a.txt"),
+            before: Some(b"old\n".to_vec()),
+            after: b"new\n".to_vec(),
+        }]
     );
-    assert_eq!(done.human, Some(said("common/not-read")));
     let seen = seen_now(&site, &["work/a.txt"]);
     // 她看过以后，文件被别人改了。
     site.file("work/a.txt", b"changed by someone\n");
