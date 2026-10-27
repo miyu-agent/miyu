@@ -9,6 +9,7 @@
 | [`package.methods`、`method.call`](#packagemethodsmethodcall) | 两个方向 | 登记后台页、界面块要调的方法；核心转来的调用 |
 | [`package.emit`](#packageemit) | 扩展 → 核心 | 推给开着它页面的人 |
 | [`process.retire`、`process.keep`](#processretireprocesskeep) | 扩展 → 核心 | 问能不能自己退；要不要常驻（施工 IM-1 下） |
+| [`port.claim`、`port.release`、`port.list`](#portclaimportreleaseportlist) | 扩展 → 核心（`port.list` 给管理员） | 登记、放开要听的端口；看整张表（施工 IM-5） |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
@@ -38,6 +39,17 @@
 - **`process.keep {"on": true|false}`**：这个人的这一份要不要常驻，回 `{"on": <现在的值>}`。核心记下，重启也在；核心起来时只替说了要常驻的人拉起，别的等用到。进程退出不清，只由你自己改。比如配了 QQ 连接的 im 要常驻（NapCat 反连它的端口，它退了就没人听）。
 
 只有一份的包也能 `retire`，但不会因为用到再起，要等重启扩展、核心再起来；`keep` 回 `{"on": true}`（本来就常驻），不记。不是核心拉起的连接调这两个回 `not_an_extension`。
+
+## `port.claim`、`port.release`、`port.list`
+
+要自己开端口听的扩展（比如 NapCat 反连 im 的那个）先登记：撞了的当场知道，不用等系统说绑不上。核心只记一张表，不替你听，真正抢端口的还是操作系统。
+
+- **`port.claim {"port": 1–65535}`**：没人登记的记成你的，回 `{}`；你这个连接再登记一次照回 `{}`；别的扩展登记着回 `port_taken`，不说是谁。`0` 回 `bad_params`。
+- **`port.release {"port"}`**：是你登记的就拿掉，不是的不动，都回 `{}`。
+- **退出就放开**：进程退出、连接断了（包括 `process.retire` 以后退的）登记的都算放开，不用自己放。核心重启表就空了，起来再登记。
+- **`port.list {}`**：只给管理员（别人 `not_permitted`）：`{"ports": [{"port", "package", "account"?}]}`，照端口排，`account` 是每人一份的那个人。
+
+不是核心拉起的连接调 `port.claim`、`port.release` 回 `not_an_extension`。
 
 ## 能力
 

@@ -100,6 +100,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "package_off" => ("软件包已停用。", "Package disabled."),
         "not_an_extension" => ("不是扩展。", "Not an extension."),
         "extension_off" => ("扩展已停用。", "Extension disabled."),
+        "port_taken" => ("端口已被占用。", "Port in use."),
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),
         "session_not_found" => ("会话不存在。", "Session not found."),
         "unknown_call" => ("调用不存在。", "Call not found."),

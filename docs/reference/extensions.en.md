@@ -9,6 +9,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`package.methods`, `method.call`](#packagemethods-methodcall) | both | Register methods its page and widgets call; calls forwarded by the core |
 | [`package.emit`](#packageemit) | extension → core | Push to people who have its page open |
 | [`process.retire`, `process.keep`](#processretire-processkeep) | extension → core | Ask whether it may exit on its own; whether to stay up (construction IM-1 part three) |
+| [`port.claim`, `port.release`, `port.list`](#portclaim-portrelease-portlist) | extension → core (`port.list` for admins) | Claim and release the ports it listens on; see the whole table (construction IM-5) |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
@@ -38,6 +39,17 @@ A per-account extension (`[process] scope = "account"`) starts when it's first n
 - **`process.keep {"on": true|false}`**: whether this person's copy should stay up; replies `{"on": <the current value>}`. The core remembers it across restarts; on startup it starts copies only for the people who asked to be kept, the rest wait until they're needed. An exit doesn't clear it; only you change it. For example im with a QQ connection set up stays up (NapCat connects back to its port, so nobody would be listening if it exited).
 
 A single-copy package may `retire` too, but it isn't started again on demand: it waits for an extension restart or the next core start. Its `keep` replies `{"on": true}` (it's always up) and records nothing. A connection the core didn't start gets `not_an_extension` for both.
+
+## `port.claim`, `port.release`, `port.list`
+
+An extension that listens on a port of its own (like the one NapCat connects back to for im) claims it first, so a clash shows up at once instead of as a failed bind. The core only keeps a table and doesn't listen for you; the operating system still decides who gets the port.
+
+- **`port.claim {"port": 1–65535}`**: an unclaimed port becomes yours and you get `{}`; claiming it again on the same connection also gets `{}`; one another extension holds gets `port_taken`, without saying who. `0` gets `bad_params`.
+- **`port.release {"port"}`**: removes it if you claimed it, leaves it alone otherwise; always `{}`.
+- **Released on exit**: when the process exits or the connection drops (including exiting after `process.retire`), its ports count as released; no need to release them yourself. The table is empty after a core restart; claim again when you start.
+- **`port.list {}`**: admins only (others get `not_permitted`): `{"ports": [{"port", "package", "account"?}]}`, by port; `account` is the person a per-account copy runs for.
+
+A connection the core didn't start gets `not_an_extension` from `port.claim` and `port.release`.
 
 ## Capabilities
 

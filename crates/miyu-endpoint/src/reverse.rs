@@ -126,10 +126,16 @@ impl Peer {
         true
     }
 
-    /// 不再往它发了：连接断了（[`Peer::close`] 过），或者答应它退了（[`Peer::retire`]）。找连接的都跳过它。
+    /// 和 `other` 是同一个连接的一头（施工 IM-5：端口表照它认是谁登记的）。
+    pub(crate) fn same(&self, other: &Peer) -> bool {
+        Arc::ptr_eq(&self.state, &other.state)
+    }
+
+    /// 不再往它发了：连接断了（[`Peer::close`] 过，或者连接整个被丢下、写的那一头没了：核心停扩展时就是这样，施工 IM-5），或者
+    /// 答应它退了（[`Peer::retire`]）。找连接的都跳过它。
     pub(crate) fn closed(&self) -> bool {
         let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        state.out.is_none() || state.retired
+        state.out.as_ref().is_none_or(mpsc::Sender::is_closed) || state.retired
     }
 
     /// 不等这一条了。

@@ -120,3 +120,13 @@ async fn retiring_waits_for_answers_and_then_nothing_more_goes_out() {
     assert!(!peer.notify("schedule.fired", json!({})));
     assert!(lines.try_recv().is_err(), "什么都没再发");
 }
+
+/// 连接整个被丢下（写的那一头没了，施工 IM-5）：没调过 `close` 也算断了。
+#[tokio::test]
+async fn a_dropped_connection_counts_as_closed() {
+    let (out, lines) = mpsc::channel(8);
+    let peer = Peer::new(out);
+    assert!(!peer.closed());
+    drop(lines);
+    assert!(peer.closed());
+}

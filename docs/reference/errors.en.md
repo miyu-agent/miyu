@@ -120,6 +120,7 @@ Chinese version: [errors.md](errors.md).
 | `program_missing`, `not_switchable` | The program wasn't found; no switch | |
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
 | `extension_off` | Restarting an extension that's off | |
+| `port_taken` | Another extension has claimed the port (`port.claim`); it doesn't say which | |
 | `unknown_server` | No such MCP server in personal settings | |
 | `oauth_unregistered`, `oauth_failed` | `mcp.login`: no client and no dynamic registration; the login can't go through (`mcp.login_finish`: the pasted address doesn't match) | `why` |
 | `not_logged_in` | `mcp.logout`: this server was never logged in | |

@@ -13,6 +13,12 @@ impl Refusal {
         reason: "unknown_source",
         data: None,
     };
+    /// 端口别的扩展登记着（施工 IM-5，`extensions/ports.rs`）：不说是谁。
+    pub(crate) const PORT_TAKEN: Refusal = Refusal {
+        code: REFUSED,
+        reason: "port_taken",
+        data: None,
+    };
     /// 装的包和出厂的同一个编号（施工 F-5 上）。
     pub(crate) const PACKAGE_EXISTS: Refusal = Refusal {
         code: REFUSED,

@@ -52,6 +52,8 @@
 | `extension.disable` | `{"package"}` | `<一个>`：关了、记下来、在跑的请它退出 |
 | `extension.restart` | `{"package"}` | `<一个>`：请它退出、重新拉起，连续失败从零数；关着的拒绝 `extension_off`，还有没批的能力拒绝 `needs_approval` |
 | `process.retire` | `{}` | 扩展自己调（施工 IM-1 下）：`{"ok": true}` 是核心答应了、可以退了，`{"ok": false}` 是还有核心发给它、没回的请求，过一会儿再问（「怎么走」第 9 条） |
+| `port.claim`、`port.release` | `{"port"}` | 扩展自己调（施工 IM-5）：登记、放开要听的端口，回 `{}`；别的扩展登记着的 `port_taken`（「怎么走」第 10 条） |
+| `port.list` | 无 | 只给管理员（施工 IM-5）：`{"ports": [{"port", "package", "account"?}]}` |
 | `process.keep` | `{"on"}` | 扩展自己调（施工 IM-1 下）：每人一份的那一份要不要常驻，回 `{"on": <现在的值>}`；一份的本来就常驻，回 `{"on": true}`、不记 |
 
 一个：
@@ -151,6 +153,11 @@
    - `process.keep {"on"}`：照（包，账号）记在 `system/kept.json`（`miyu_store::kept`，`{"version":1,"kept":{"im":["alice"]}}`，一个都没有的包不写），核心重启也在。放 `system/`、不放 `state/`：删了的话没起的那一份没机会再说。进程退出不清，只由扩展自己改。核心起来、装上、升级这个包时，每人一份的包替名单里的人拉起（`Core::start_kept`），照 `start_for` 那几道查。
    - `start_for` 多一道（施工 IM-1 下）：这个人还在（管理员，或者登记过、没停用的成员，`login::members::active`）。常驻名单里留着删掉、停用的人，不替他们起。
    - 不是核心拉起的扩展的连接调这两个回 `not_an_extension`；谁都能调（`Anyone`），不另要能力。
+10. **端口登记**（施工 IM-5，接入通讯平台设计 06 第 4.6 节第 5 样，`extensions/ports.rs`）：只是一张表，不替扩展听，真正抢端口的是操作系统。表在扩展表里（`Extensions.ports`），只在内存里，核心重启就空了。
+   - `port.claim {"port"}`：记成（这一份、这个连接）。别的还连着的连接登记着的回 `port_taken`，不说是谁；同一个连接再登记照收；`0` 回 `bad_params`（`field` 是 `port`）。
+   - `port.release {"port"}`：是这个连接登记的拿掉，不是的不动，都回 `{}`。
+   - 连接断了算放开：查的时候登记它的连接 `Peer::closed()` 的当没有，列表时顺手拿掉，不另做收尾。`closed()` 施工 IM-5 起写的那一头没了也算：核心停扩展时整个连接被丢下，`reverse.close` 没机会跑。答应了 `process.retire` 的同样算断了。
+   - `port.list`：只给人（权限表），不是管理员的回 `not_permitted`；照端口排，每人一份的带 `account`。
 
 ### 出错
 
@@ -169,6 +176,7 @@
 | `crates/miyu-endpoint/src/extensions/stderr/tests.rs` | 追加；太大的挪成 `.old`、盖掉上一份；最后 20 行、最多 4 KiB、截了半截的那一行不要 |
 | `crates/miyu-endpoint/tests/extensions.rs` | 真核心、真进程（测试用的小程序 `miyu-test-extension`，`crates/miyu-endpoint/src/bin/`，三个平台一样，拷在测试程序旁边）：`manual` 的开了才拉起、工作目录、握手不出示凭据、扩展调 `extension.*` 被拒、标准错误进日志、开关的文件；`always` 的不用开、新核心照开关拉起、随核心退出；有开着的核心不空闲；退出码 1 停下带标准错误的最后几行；别的退出连续 5 次停下；不握手也算失败；关了标准输入不退的到时杀掉；`restart` 换一个新进程、关着的拒绝；程序没找到、协议版本对不上、界面包、没有的包、参数不对；拉起的环境里 `MIYU_HOME`、`MIYU_RESOURCES` 是核心的数据根、资源目录（施工 O-18），`MIYU_PACKAGE_DIR` 是这个包的文件夹，自己装的指家目录里的那一份（施工 S-6 上）。夹具（测试用的扩展、装清单、造核心、等状态）在 `tests/support/extensions.rs` |
 | `crates/miyu-endpoint/tests/per_account_retire.rs`、`src/reverse/tests.rs`、`crates/miyu-store/src/kept/tests.rs`（施工 IM-1 下） | 每人一份的那一份问 `process.retire` 得 `ok: true`、退出码 0：停在 `retired`、失败 0、过了退避也不重启；再 `package.call` 替他起一份、答得上。说了 `process.keep` 的，核心再起来时只替他拉起，用过、没说的成员那一份不起。有在等回应的不答应，答应了以后请求、通知都不发、找连接的跳过它。常驻名单记上、拿掉、最后一个拿掉的包不写 |
+| `crates/miyu-endpoint/tests/ports.rs`、`src/reverse/tests.rs`（施工 IM-5） | 端口登记：同一个连接登记两次照收，别人登记着的 `port_taken` 不说是谁，放开了的别人能登记，`0` 是 `bad_params`，放别人的不动；管理员看整张表、头的连接登记回 `not_an_extension`；扩展停了它登记的放开、没人接手的也不列；写的那一头没了的连接算断 |
 | `crates/miyu-endpoint/tests/packages_programs.rs`（施工 F-8 上再补） | 程序在包文件夹的 `bin/` 里、不在测试程序旁边的扩展装上就拉起；程序被开着写的（只在 Linux 上测）不记成起不来，放开以后在跑 |
 | `crates/miyu-endpoint/tests/extension_stream.rs`（施工 9-4 补） | 订阅回整份、名字照语言；开了推到在跑、关了推到关着；带 `after` 和会话的参数不对；取消了不推 |
 | `crates/miyu-endpoint/tests/extension_rights.rs`、`src/connection/tests.rs`、`xtask/src/rights/tests.rs`（施工 X-30） | 真核心拉起只声明 `tools` 的测试扩展：只给人的、表里没有的回 `local_only`，缺能力的回 `needs_approval`、`data.capabilities` 是缺的那一项（参数都不看），读模型目录照常；声明了 `sessions.drive`、`events.read` 的造会话、说话、订阅照常，说的话 `by` 是 `harness`、名字是包编号，带 `from` 回 `bad_params`。表：原来只给人的照旧、新挡的几类、照参数分的（`as`、`venue.*` 事件、空的 `provide`、订阅的流）。门禁只认方法样子的字面量 |

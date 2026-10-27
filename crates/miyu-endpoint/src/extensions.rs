@@ -10,6 +10,7 @@ pub(crate) mod config;
 mod demand;
 mod instance;
 pub(crate) mod methods;
+mod ports;
 mod retire;
 mod state;
 pub(crate) mod stderr;
@@ -18,6 +19,7 @@ mod supervise;
 pub(crate) use approval::{described, forget as forget_switch, held};
 pub(crate) use instance::{Instance, per_account, scoped};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
+pub(crate) use ports::{claim as claim_port, list as list_ports, release as release_port};
 pub(crate) use retire::{keep, retire};
 pub(crate) use state::{Cell, Reason, State, Status};
 pub use supervise::Timing;
@@ -65,6 +67,8 @@ pub(crate) struct Extensions {
     changed: broadcast::Sender<String>,
     /// 改常驻名单 `system/kept.json` 一件件办（施工 IM-1 下）。
     kept: Mutex<()>,
+    /// 扩展登记的端口（施工 IM-5，`ports.rs`）。
+    ports: ports::Ports,
 }
 
 impl Extensions {
@@ -80,6 +84,7 @@ impl Extensions {
             timing,
             changed: broadcast::channel(CHANGES).0,
             kept: Mutex::new(()),
+            ports: ports::Ports::default(),
         }
     }
 

@@ -143,6 +143,16 @@ pub(crate) fn call<'a>(
         "process.keep" => {
             answer(move || async move { crate::extensions::keep(core, caller, params(request)?) })
         }
+        // 端口登记（施工 IM-5）。
+        "port.claim" => {
+            answer(
+                move || async move { crate::extensions::claim_port(core, caller, params(request)?) },
+            )
+        }
+        "port.release" => answer(move || async move {
+            crate::extensions::release_port(core, caller, params(request)?)
+        }),
+        "port.list" => answer(move || async move { crate::extensions::list_ports(core, caller) }),
         "persona.get" => answer(move || async move {
             personas::get(core, caller.acting_for(), peer, params(request)?).await
         }),

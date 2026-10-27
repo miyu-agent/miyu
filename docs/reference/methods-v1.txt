@@ -114,6 +114,9 @@ persona.get
 persona.list
 persona.read
 persona.set
+port.claim
+port.list
+port.release
 preset.delete
 preset.get
 preset.list
