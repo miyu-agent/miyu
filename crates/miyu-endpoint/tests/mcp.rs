@@ -231,8 +231,19 @@ async fn a_server_that_dies_mid_call_is_unavailable_then_comes_back() {
     let session = open(&mut client).await;
     client.say("s1", &session, "挂掉").await;
     home.until_turns(&session, 1).await;
-    // 退出以后退避着重启，又在跑了。
-    until_status(&mut client, "probe", "running").await;
+    // 退出以后退避着重启，又在跑了：等到它记下了一次失败再等在跑，不然看到的还是挂之前的那个「在跑」（忙的时候 CI 上撞到过）。
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+    loop {
+        let one = until_status(&mut client, "probe", "running").await;
+        if one["mcp"][0]["failures"]
+            .as_u64()
+            .is_some_and(|failures| failures >= 1)
+        {
+            break;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "没重启：{one}");
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
     client.say("s2", &session, "再来").await;
     home.until_turns(&session, 2).await;
     assert_eq!(
