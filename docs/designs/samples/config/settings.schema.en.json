@@ -91,6 +91,21 @@
           "title": "Wait before organizing memories",
           "type": "string"
         },
+        "extract_max_turns": {
+          "default": 20,
+          "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. Allowed: a whole number from 2 to 500. Only in the system config or personal settings. Takes effect next turn.",
+          "maximum": 500,
+          "minimum": 2,
+          "title": "Turns before organizing a busy chat",
+          "type": "integer"
+        },
+        "extract_max_wait": {
+          "default": "1h",
+          "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.",
+          "pattern": "^[0-9]+[smh]?$",
+          "title": "Longest wait in a busy chat",
+          "type": "string"
+        },
         "extract_turns": {
           "default": 2,
           "description": "The AI organizes only after at least this many turns since the last time. Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.",

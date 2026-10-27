@@ -135,6 +135,8 @@ fn the_registered_list_is_well_formed() {
             "jobs.max_running",
             "memory.extract_idle",
             "memory.extract_turns",
+            "memory.extract_max_turns",
+            "memory.extract_max_wait",
             "memory.merge_every",
             "memory.merge_sessions",
             "memory.dream_keep",
@@ -384,8 +386,8 @@ fn builtin_package_settings_follow_their_package() {
         .collect();
     assert_eq!(
         owned.len(),
-        5,
-        "抽取的两项（整理用的模型施工 Q-2 去掉了）、合并的两项（施工 R-7 上）、整理会话留几趟（施工 D-1 下）"
+        7,
+        "抽取的两项（整理用的模型施工 Q-2 去掉了）、一直不闲的会话抽取的两项（施工 E-5）、合并的两项（施工 R-7 上）、整理会话留几趟（施工 D-1 下）"
     );
     for item in owned {
         assert_eq!(

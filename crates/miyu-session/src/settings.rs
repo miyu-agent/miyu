@@ -88,6 +88,20 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
+        /// 一直不闲的会话（施工 E-5）：上次抽以后结束了这么多轮就不等闲、在后台抽。
+        extract_max_turns: i64 = 20 {
+            kind: int [2, 500],
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "packages", group: "memory", package: "memory", control: number },
+        },
+        /// 一直不闲的会话（施工 E-5）：最早没抽的那一轮结束了这么久就不等闲、在后台抽。
+        extract_max_wait: Duration = "1h" {
+            kind: duration [600, 86400],
+            layers: [System, Personal],
+            applies: next_turn,
+            ui: { page: "packages", group: "memory", package: "memory", control: text },
+        },
         /// 离上次合并至少多久才再合（施工 R-7 上）。
         merge_every: Duration = "24h" {
             kind: duration [3600, 2592000],

@@ -74,10 +74,29 @@ pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, personal: &st
     organizer_full(home, server, extra, personal, Duration::from_millis(100));
 }
 
+/// 同 [`organizer`]，闲一小时才抽（等于一直不闲），一直不闲的会话最早那一轮结束 `max_wait` 就不等闲（施工 E-5）。
+pub fn organizer_busy(home: &mut Home, server: &Server, extra: &str, max_wait: Option<Duration>) {
+    organizer_with(
+        home,
+        server,
+        extra,
+        "",
+        (Duration::from_secs(3600), max_wait),
+        false,
+    );
+}
+
 /// 同 [`organizer`]，另交写关键词的字（施工 R-15 下）：抽取记下以后、合并落完以后各多一次请求。别的场地不交，照旧只有抽取、
 /// 合并那几次。
 pub fn organizer_tagging(home: &mut Home, server: &Server, extra: &str) {
-    organizer_with(home, server, extra, "", Duration::from_millis(100), true);
+    organizer_with(
+        home,
+        server,
+        extra,
+        "",
+        (Duration::from_millis(100), None),
+        true,
+    );
 }
 
 /// 整理记忆的照开发端点（施工 R-16 的量尺）：`MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`、`MIYU_DEV_MODEL` 都设了才接，交回接没接上。
@@ -107,6 +126,7 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
         ask: entry(&routes(serde_json::json!({}), Duration::from_secs(300))),
         blobs: Blobs::new(home.root.blobs(&alice_account())),
         idle: Some(Duration::from_secs(3600)),
+        max_wait: None,
         merge: MergeTexts::load(&resources).expect("读得到"),
         tag: None,
     };
@@ -115,7 +135,7 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
 }
 
 fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str, idle: Duration) {
-    organizer_with(home, server, extra, personal, idle, false);
+    organizer_with(home, server, extra, personal, (idle, None), false);
 }
 
 fn organizer_with(
@@ -123,7 +143,7 @@ fn organizer_with(
     server: &Server,
     extra: &str,
     personal: &str,
-    idle: Duration,
+    (idle, max_wait): (Duration, Option<Duration>),
     tagging: bool,
 ) {
     let source = format!(
@@ -147,6 +167,7 @@ fn organizer_with(
         ask: entry(&routes(serde_json::json!({}), Duration::from_secs(60))),
         blobs: Blobs::new(home.root.blobs(&alice_account())),
         idle: Some(idle),
+        max_wait,
         merge: MergeTexts::load(&resources).expect("读得到"),
         tag: tagging.then(|| TagTexts::load(&resources).expect("读得到")),
     };

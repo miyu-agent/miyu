@@ -65,6 +65,14 @@ dream_keep = 20
 # Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
 extract_idle = "30m"
 
+# Turns before organizing a busy chat: When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause.
+# Allowed: a whole number from 2 to 500. Only in the system config or personal settings. Takes effect next turn.
+extract_max_turns = 20
+
+# Longest wait in a busy chat: When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause.
+# Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+extract_max_wait = "1h"
+
 # Turns before organizing: The AI organizes only after at least this many turns since the last time.
 # Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.
 extract_turns = 2

@@ -7,6 +7,9 @@
 //!    的日志）。
 //! 3. 读回来、还是那个闹钟、还闲着：拼一份留着一切的历史（`History::whole`，压缩替代掉的也在），交给会话的组装器渲染这一段，
 //!    定怎么办，派出去。读的时候来了新一轮的这一次作废，等下次闲了再来。
+//! 4. 一直不闲的会话（施工 E-5）：每送完一批看一眼，上次开始抽以后结束了 `memory.extract_max_turns` 轮、或者最早那一轮结束
+//!    满 `memory.extract_max_wait`，不等闲就上一次不等闲的：不看闲不闲、新一轮开始不撤它，读回来只取到读的那一刻结束了的
+//!    最后一轮（正在跑的那一轮不交，留给下次）。抽取本来就不进内核、不挡会话。
 
 use std::sync::Arc;
 
@@ -20,7 +23,9 @@ use tokio::sync::oneshot;
 use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
-use crate::memory::{Dreamed, Hush, Job, NotDreamed, Voices, called, plan, remembered_since};
+use crate::memory::{
+    Dreamed, Extractor, Hush, Job, NotDreamed, Voices, called, ended_only, plan, remembered_since,
+};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 
@@ -73,8 +78,41 @@ impl Actor {
         let backs = self.backs.clone();
         tokio::spawn(async move {
             tokio::time::sleep(idle).await;
-            answer_back(&backs, Back::ExtractDue { generation });
+            answer_back(
+                &backs,
+                Back::ExtractDue {
+                    generation,
+                    forced: false,
+                },
+            );
         });
+    }
+
+    /// 送完一批（施工 E-5）：一直不闲的会话攒够了轮（`memory.extract_max_turns`）、最早那一轮等够了（`extract_max_wait`），
+    /// 不等闲就抽。
+    pub(super) fn extract_when_overdue(&mut self) {
+        let Some((calls, _)) = self.tools.memory() else {
+            return;
+        };
+        let (keeper, _, _, extractor) = calls.extracting();
+        let Some(extraction) = keeper.extraction() else {
+            return;
+        };
+        let settings = MemorySettings::from(&self.config.current().resolved.values());
+        let max_turns = u32::try_from(settings.extract_max_turns).unwrap_or(u32::MAX);
+        let max_wait = extraction.max_wait.unwrap_or(settings.extract_max_wait);
+        let now = self.clock.now();
+        if !extractor.overdue(now, max_turns, max_wait) || !extractor.force() {
+            return;
+        }
+        tracing::debug!(target: crate::TARGET, "memory extraction forced while busy");
+        answer_back(
+            &self.backs,
+            Back::ExtractDue {
+                generation: 0,
+                forced: true,
+            },
+        );
     }
 
     /// 记忆的闹钟上着、或者有一次抽取在路上（施工 V-2 再补，`life.rs`）：这时不退下。
@@ -98,22 +136,31 @@ impl Actor {
         }
     }
 
-    /// 第 `generation` 个闹钟响了：还算数、还闲着的，在阻塞线程里读这一段。
-    pub(super) fn extract_due(&self, generation: u64) {
+    /// 第 `generation` 个闹钟响了：还算数、还闲着的，在阻塞线程里读这一段。不等闲的那一次（`forced`，施工 E-5）不看第几个、
+    /// 闲不闲，只看没有一次在路上。
+    pub(super) fn extract_due(&self, generation: u64, forced: bool) {
         let Some((calls, _)) = self.tools.memory() else {
             return;
         };
         let (keeper, session, _, extractor) = calls.extracting();
+        let put_down = |extractor: &Extractor| match forced {
+            true => extractor.unforce(),
+            false => extractor.disarm(generation),
+        };
         let dir = self.store.as_ref().and_then(|store| store.dir());
         let Some(dir) = dir else {
-            return extractor.disarm(generation);
+            return put_down(extractor);
         };
-        if !extractor.due(generation) || !self.session.vacant() {
-            return extractor.disarm(generation);
+        let due = match forced {
+            true => !extractor.running(),
+            false => extractor.due(generation) && self.session.vacant(),
+        };
+        if !due {
+            return put_down(extractor);
         }
         if !keeper.installed() {
             tracing::debug!(target: crate::TARGET, why = "uninstalled", "memory extraction skipped");
-            return extractor.disarm(generation);
+            return put_down(extractor);
         }
         let floor = calls.floor();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
@@ -126,23 +173,46 @@ impl Actor {
                         miyu_store::log::read_events(&dir).map_err(|error| error.to_string())?;
                     Ok((after.unwrap_or(Seq::FIRST).max(floor), events))
                 });
-            answer_back(&backs, Back::ExtractRead { generation, read });
+            answer_back(
+                &backs,
+                Back::ExtractRead {
+                    generation,
+                    forced,
+                    read,
+                },
+            );
         });
     }
 
-    /// 读回来了：还是那个闹钟、还闲着的，渲染这一段、定怎么办、派出去。
-    pub(super) fn extract_read(&self, generation: u64, read: Result<(Seq, Vec<Event>), String>) {
+    /// 读回来了：还是那个闹钟、还闲着的，渲染这一段、定怎么办、派出去。不等闲的那一次（`forced`，施工 E-5）不看闲不闲，只
+    /// 取到读的那一刻结束了的最后一轮：正在跑的那一轮留给下次。
+    pub(super) fn extract_read(
+        &self,
+        generation: u64,
+        forced: bool,
+        read: Result<(Seq, Vec<Event>), String>,
+    ) {
         let Some((calls, offset)) = self.tools.memory() else {
             return;
         };
         let (keeper, session, owner, extractor) = calls.extracting();
         let Some(extraction) = keeper.extraction() else {
-            return extractor.disarm(generation);
+            return match forced {
+                true => extractor.unforce(),
+                false => extractor.disarm(generation),
+            };
         };
-        if !self.session.vacant() || !extractor.start(generation) {
-            return extractor.disarm(generation);
+        let started = match forced {
+            true => extractor.start_forced(),
+            false => self.session.vacant() && extractor.start(generation),
+        };
+        if !started {
+            if !forced {
+                extractor.disarm(generation);
+            }
+            return;
         }
-        let (after, events) = match read {
+        let (after, mut events) = match read {
             Ok(read) => read,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory extraction failed");
@@ -150,6 +220,9 @@ impl Actor {
                 return;
             }
         };
+        if forced {
+            ended_only(&mut events);
+        }
         let mut history = History::whole();
         for event in events {
             history.append(event);
@@ -182,11 +255,16 @@ impl Actor {
             fallback: self.model.reference(),
             after,
             extractor: Arc::clone(extractor),
+            // 放不下、接着抽剩下的：不等闲的那一次接着也不等闲（施工 E-5）。
             again: {
                 let (extractor, backs) = (Arc::clone(extractor), self.backs.clone());
                 Box::new(move || {
-                    let generation = extractor.arm();
-                    answer_back(&backs, Back::ExtractDue { generation });
+                    let generation = match forced {
+                        true if !extractor.force() => return,
+                        true => 0,
+                        false => extractor.arm(),
+                    };
+                    answer_back(&backs, Back::ExtractDue { generation, forced });
                 })
             },
         };

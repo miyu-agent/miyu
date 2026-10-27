@@ -374,11 +374,12 @@ pub(crate) enum Back {
         blob: ContentHash,
         seen: Result<(Model, String), String>,
     },
-    /// 抽取的第 `generation` 个闹钟响了（施工 R-6 上，`actor/extract.rs`）。
-    ExtractDue { generation: u64 },
-    /// 抽取读回来的（施工 R-6 上）：第几个闹钟；上次抽到哪、日志里的事件，读不成的是为什么。
+    /// 抽取的第 `generation` 个闹钟响了（施工 R-6 上，`actor/extract.rs`）；`forced` 的是不等闲的那一次（施工 E-5），不看第几个。
+    ExtractDue { generation: u64, forced: bool },
+    /// 抽取读回来的（施工 R-6 上）：第几个闹钟、是不是不等闲的那一次；上次抽到哪、日志里的事件，读不成的是为什么。
     ExtractRead {
         generation: u64,
+        forced: bool,
         read: Result<(Seq, Vec<miyu_kernel::event::Event>), String>,
     },
     /// 人叫她现在就整理（施工 R-7 补，`/dream`）读回来的：第几个闹钟；上次抽到哪、日志里的事件，读不成的是为什么；合完把结果

@@ -81,6 +81,8 @@ impl Actor {
             // 从忙到闲：抽取的闹钟（施工 R-6 上）。
             self.extract_when_idle();
         }
+        // 一直不闲的会话攒够了轮、等够了时候，不等闲就抽（施工 E-5）。
+        self.extract_when_overdue();
         self.notify_if_vacant();
     }
 

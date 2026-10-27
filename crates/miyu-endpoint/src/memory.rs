@@ -480,6 +480,7 @@ pub(crate) fn extraction(
             ask,
             blobs: miyu_store::blob::Blobs::new(root.blobs(admin)),
             idle: None,
+            max_wait: None,
             merge,
             tag: Some(tag),
         }),

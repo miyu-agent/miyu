@@ -25,6 +25,14 @@
         "name": "Turns before organizing",
         "description": "The AI organizes only after at least this many turns since the last time."
       },
+      "memory.extract_max_turns": {
+        "name": "Turns before organizing a busy chat",
+        "description": "When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause."
+      },
+      "memory.extract_max_wait": {
+        "name": "Longest wait in a busy chat",
+        "description": "When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause."
+      },
       "memory.merge_every": {
         "name": "How often to consolidate memories",
         "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you."

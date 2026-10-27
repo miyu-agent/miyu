@@ -278,6 +278,8 @@ miyu_config::settings! {
 | `jobs.max_running` | 时长，60 秒到 2 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | 7-12 下（`agents.md`「后台命令」第 7 条，照 Claude Code）：后台命令最多跑多久，派活时照这一轮的配置读。设置页在「通用」那一页的「会话」一组 |
 | `memory.extract_idle` | 时长，60 秒到 1 小时 | `30m` | 系统、个人 | 不能写 | `next_turn` | R-6 上（`memory.md` 第六条第 1 款）：会话闲了多久才抽新的一段；`memory.*` 几项由核心替人格记忆这个内置包声明，施工 F-4 起归它那一组（`miyu_core::settings` 的 `OWNED`），包没装的照样认、设置页不画。整理用哪个模型原来是 `memory.organizer`，施工 Q-2 去掉了：照登记的档位走 `normal` 池（`models.md`「旁路请求」），写了的照不认识的键警告；设置页在「软件包」那一页、人格记忆那一组（施工 F-4 从「高级」那一页挪过来），记忆包没装的不画 |
 | `memory.extract_turns` | 整数 1 到 100 | `2` | 系统、个人 | 不能写 | `next_turn` | R-6 上：上次抽到以后至少有几轮她答了话才抽 |
+| `memory.extract_max_turns` | 整数 2 到 500 | `20` | 系统、个人 | 不能写 | `next_turn` | E-5（`memory.md` 第六条第 1 款）：一直不闲的会话上次开始抽以后结束了这么多轮就不等闲、在后台抽（2026-10-27 主人本机 QQ 主群一下午 299 轮、最长只停 10.7 分钟，闲 30 分钟才抽的一次都没抽） |
+| `memory.extract_max_wait` | 时长，10 分钟到 1 天 | `1h` | 系统、个人 | 不能写 | `next_turn` | E-5：一直不闲的会话最早没抽的那一轮结束了这么久就不等闲、在后台抽 |
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统、个人 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统、个人 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
@@ -1063,6 +1065,14 @@ dream_keep = 20
 # 能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。
 extract_idle = "30m"
 
+# 一直在聊时攒几轮就整理：群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。
+# 能写：2 到 500 之间的整数。只能写在系统配置或个人设置里。下一轮生效。
+extract_max_turns = 20
+
+# 一直在聊时最多等多久：群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。
+# 能写：10m 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。
+extract_max_wait = "1h"
+
 # 攒几轮再整理：上次整理以后至少聊了这么多轮才整理。
 # 能写：1 到 100 之间的整数。只能写在系统配置或个人设置里。下一轮生效。
 extract_turns = 2
@@ -1661,6 +1671,21 @@ currency = "USD"
           "description": "聊完闲了这么久，AI 把新聊的内容里值得记的整理成记忆。能写：1m 到 1h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。",
           "pattern": "^[0-9]+[smh]?$",
           "title": "整理记忆前等多久",
+          "type": "string"
+        },
+        "extract_max_turns": {
+          "default": 20,
+          "description": "群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。能写：2 到 500 之间的整数。只能写在系统配置或个人设置里。下一轮生效。",
+          "maximum": 500,
+          "minimum": 2,
+          "title": "一直在聊时攒几轮就整理",
+          "type": "integer"
+        },
+        "extract_max_wait": {
+          "default": "1h",
+          "description": "群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。能写：10m 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。",
+          "pattern": "^[0-9]+[smh]?$",
+          "title": "一直在聊时最多等多久",
           "type": "string"
         },
         "extract_turns": {
@@ -2671,6 +2696,10 @@ currency = "USD"
 | 说明 | 聊完闲了这么久，她把新聊的内容里值得记的整理成记忆。 | Once the conversation has been quiet this long, she turns what is worth keeping from the new part into memories. | 会話がこの時間止まると、新しい部分のうち覚えておく価値のあるものを記憶にまとめます。 |
 | `memory.extract_turns` 名字（R-6 上） | 攒几轮再整理 | Turns before organizing | 整理までのターン数 |
 | 说明 | 上次整理以后至少聊了这么多轮才整理。 | She organizes only after at least this many turns since the last time. | 前回の整理からこのターン数以上話したときだけ整理します。 |
+| `memory.extract_max_turns` 名字（E-5） | 一直在聊时攒几轮就整理 | Turns before organizing a busy chat | 会話が続くときの整理までのターン数 |
+| 说明 | 群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、前回の整理からこのターン数に達したら、止まるのを待たずに裏で整理します。 |
+| `memory.extract_max_wait` 名字（E-5） | 一直在聊时最多等多久 | Longest wait in a busy chat | 会話が続くときの最長の待ち時間 |
+| 说明 | 群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。 | When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause. | グループで誰かが話し続けて会話が止まらないとき、まだ整理していない最初のターンからこの時間がたったら、止まるのを待たずに裏で整理します。 |
 | 说明 | 整理记忆时用的模型，照用量算钱。没选的用主对话的模型。 | The model used to organize memories, billed by usage. If none is chosen, the chat model is used. | 記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。 |
 | `memory.merge_every` 名字（R-7 上） | 多久归纳一次记忆 | How often to consolidate memories | 記憶をまとめる間隔 |
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |

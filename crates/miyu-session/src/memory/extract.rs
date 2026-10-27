@@ -22,7 +22,7 @@ use miyu_config::Value;
 use miyu_config::secret::Reference;
 use miyu_kernel::assemble::Spoken;
 use miyu_kernel::block::Block;
-use miyu_kernel::event::Body;
+use miyu_kernel::event::{Body, Event};
 use miyu_kernel::history::History;
 use miyu_kernel::id::{Seq, TurnId};
 use miyu_kernel::template::{Template, escape};
@@ -110,6 +110,8 @@ pub struct Extraction {
     pub blobs: Blobs,
     /// 闲多久才抽：没有的照配置 `memory.extract_idle`；测试里设短的，不用真等一分钟。
     pub idle: Option<std::time::Duration>,
+    /// 一直不闲的会话最早没抽的那一轮结束了多久就不等闲（施工 E-5）：没有的照配置 `memory.extract_max_wait`；测试里设短的。
+    pub max_wait: Option<std::time::Duration>,
     /// 合并给模型看的字（施工 R-7 上）：合并在抽取记下以后起，照同一个一次性入口发。
     pub merge: super::MergeTexts,
     /// 写关键词给模型看的字（施工 R-15 下）：抽取记下以后、合并落完以后另发一次，照同一个一次性入口。没交的不写（核心总交；
@@ -307,6 +309,16 @@ pub(crate) fn remembered_since(history: &History, after: Seq) -> BTreeSet<TurnId
             _ => None,
         })
         .collect()
+}
+
+/// 不等闲的那一次只取到读的那一刻结束了的最后一轮（施工 E-5）：最后一条 `turn.ended` 以后的不要，正在跑的那一轮、还没
+/// 开始的人话留给下次（它们在抽到了哪以后）。一轮都没结束的什么都不留。
+pub(crate) fn ended_only(events: &mut Vec<Event>) {
+    let cut = events
+        .iter()
+        .rposition(|event| matches!(event.body, Body::TurnEnded(_)))
+        .map_or(0, |at| at + 1);
+    events.truncate(cut);
 }
 
 /// 一轮写成一块：头、人的话、她的回答、尾，一样一行。

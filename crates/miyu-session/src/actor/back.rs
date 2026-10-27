@@ -44,8 +44,8 @@ impl Actor {
             } => return self.goal_asked(at, call_id, ask, reply),
             Back::Job(ended) => self.jobs.arrived(at, ended),
             // 抽取（施工 R-6 上，`extract.rs`）：不进内核。
-            Back::ExtractDue { generation } => {
-                self.extract_due(generation);
+            Back::ExtractDue { generation, forced } => {
+                self.extract_due(generation, forced);
                 return None;
             }
             Back::DreamRead {
@@ -57,8 +57,12 @@ impl Actor {
                 self.dream_read(generation, read, reply, hush);
                 return None;
             }
-            Back::ExtractRead { generation, read } => {
-                self.extract_read(generation, read);
+            Back::ExtractRead {
+                generation,
+                forced,
+                read,
+            } => {
+                self.extract_read(generation, forced, read);
                 return None;
             }
             // 等的会话等不到了（施工 C-6，`crate::peers`）：内核照账本还在等、确实到了点的才记。

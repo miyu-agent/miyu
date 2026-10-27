@@ -27,3 +27,32 @@ fn background_commands_run_half_an_hour_by_default() {
         miyu_config::Kind::Duration { min: 60, max: 7200 }
     );
 }
+
+/// `memory.extract_max_turns`、`memory.extract_max_wait`（施工 E-5）：一直不闲的会话攒 20 轮、或者最早那一轮等满一小时就
+/// 不等闲抽；轮数 2 到 500，时长 10 分钟到一天；系统、个人两层，下一轮生效。
+#[test]
+fn a_busy_session_is_extracted_after_twenty_turns_or_an_hour() {
+    let defaults = MemorySettings::from(&Values::defaults(MemorySettings::ITEMS));
+    assert_eq!(defaults.extract_max_turns, 20);
+    assert_eq!(defaults.extract_max_wait, Duration::from_secs(60 * 60));
+    let item = |key: &str| {
+        MemorySettings::ITEMS
+            .iter()
+            .find(|item| item.key == key)
+            .unwrap_or_else(|| panic!("{key} 登记了"))
+    };
+    let turns = item("memory.extract_max_turns");
+    assert_eq!(turns.kind, miyu_config::Kind::Int { min: 2, max: 500 });
+    let wait = item("memory.extract_max_wait");
+    assert_eq!(
+        wait.kind,
+        miyu_config::Kind::Duration {
+            min: 600,
+            max: 86_400
+        }
+    );
+    for item in [turns, wait] {
+        assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
+        assert_eq!(item.applies, Applies::NextTurn);
+    }
+}

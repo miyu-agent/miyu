@@ -62,6 +62,7 @@ mod memory_dream_stop;
 mod memory_dreaming;
 mod memory_eval;
 mod memory_extract;
+mod memory_extract_busy;
 mod memory_extract_dropped;
 mod memory_extract_more;
 mod memory_filling;

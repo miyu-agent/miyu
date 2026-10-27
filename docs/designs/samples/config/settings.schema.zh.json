@@ -91,6 +91,21 @@
           "title": "整理记忆前等多久",
           "type": "string"
         },
+        "extract_max_turns": {
+          "default": 20,
+          "description": "群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。能写：2 到 500 之间的整数。只能写在系统配置或个人设置里。下一轮生效。",
+          "maximum": 500,
+          "minimum": 2,
+          "title": "一直在聊时攒几轮就整理",
+          "type": "integer"
+        },
+        "extract_max_wait": {
+          "default": "1h",
+          "description": "群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。能写：10m 到 24h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。",
+          "pattern": "^[0-9]+[smh]?$",
+          "title": "一直在聊时最多等多久",
+          "type": "string"
+        },
         "extract_turns": {
           "default": 2,
           "description": "上次整理以后至少聊了这么多轮才整理。能写：1 到 100 之间的整数。只能写在系统配置或个人设置里。下一轮生效。",

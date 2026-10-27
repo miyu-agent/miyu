@@ -25,6 +25,14 @@
         "name": "攒几轮再整理",
         "description": "上次整理以后至少聊了这么多轮才整理。"
       },
+      "memory.extract_max_turns": {
+        "name": "一直在聊时攒几轮就整理",
+        "description": "群里一直有人说话、总闲不下来时，上次整理以后聊满这么多轮就不等闲，在后台整理。"
+      },
+      "memory.extract_max_wait": {
+        "name": "一直在聊时最多等多久",
+        "description": "群里一直有人说话、总闲不下来时，最早没整理的那一轮过了这么久就不等闲，在后台整理。"
+      },
       "memory.merge_every": {
         "name": "多久归纳一次记忆",
         "description": "隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。"
