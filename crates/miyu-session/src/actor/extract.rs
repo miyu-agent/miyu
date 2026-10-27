@@ -68,6 +68,8 @@ impl Actor {
                 MemorySettings::from(&self.config.current().resolved.values()).extract_idle
             });
         let generation = extractor.arm();
+        let idle_ms = u64::try_from(idle.as_millis()).unwrap_or(u64::MAX);
+        tracing::debug!(target: crate::TARGET, idle_ms, "memory extraction alarm set");
         let backs = self.backs.clone();
         tokio::spawn(async move {
             tokio::time::sleep(idle).await;
@@ -106,7 +108,11 @@ impl Actor {
         let Some(dir) = dir else {
             return extractor.disarm(generation);
         };
-        if !extractor.due(generation) || !self.session.vacant() || !keeper.installed() {
+        if !extractor.due(generation) || !self.session.vacant() {
+            return extractor.disarm(generation);
+        }
+        if !keeper.installed() {
+            tracing::debug!(target: crate::TARGET, why = "uninstalled", "memory extraction skipped");
             return extractor.disarm(generation);
         }
         let floor = calls.floor();

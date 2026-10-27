@@ -380,7 +380,8 @@
 | `crates/miyu-recall/src/memory/tests.rs`（R-3 补的两条） | 第二条第 5 款：`cleared` 带会话的、整间的写成事件读回一字不差；清掉一个会话的只清出处全在它里面的，有别的出处的、人记的不动；整间的清掉那以前全部，以后记的照常；清过的不再算 |
 | `crates/miyu-store/tests/memory.rs`（R-3 补的一条） | 清空交回清掉几条、记忆库里的字跟着删；记忆库删了照日志重建，清掉的不放回去 |
 | `crates/miyu-endpoint/tests/memory_api.rs` | 「协议」：五个方法各走一遍（新的在前、照类、`limit`、搜、改了旧的不出来、类照旧、作废的只在 `forgotten` 时出来）；写错的几种（超长带 `data`、120 字记得下、类不认识、空白、两样都写、`as`、人格编号、没有的人格、没有的会话、`limit` 出范围、`from` 写错），什么都没记；默认人格、会话那一间、跟着人格的会话、`off` 的 `memory_unavailable`；同一个命令编号记、改、作废、清空再发只算一次，重启以后也是；没设默认人格的不写人格就找不到哪一间；无人格的会话里 `/remember` 记进无人格那一间，另一个无人格会话照会话看得到、人格那一间看不到；无人格的会话重启载入照样接回那一间（施工 P-12） |
-| `crates/miyu-session/tests/memory_installed.rs`（R-10） | 第十一条，真会话：没装的这一轮不交摘要、装回来下一轮交、以前记的都在；没装的闲了不抽、装回来照常抽；上了闹钟以后卸掉的响了也不抽 |
+| `crates/miyu-session/tests/memory_installed.rs`（R-10） | 第十一条，真会话：没装的这一轮不交摘要、装回来下一轮交、以前记的都在；没装的闲了不抽、装回来照常抽 |
+| `crates/miyu-session/tests/memory_installed_log.rs`（R-10，BUG-5） | 第十一条，上了闹钟以后卸掉的响了也不抽：照运行日志认先后（看到闹钟上了就卸，等到「没装、跳过」那一行再看假服务器），不等被后台同步扣着的回应，不靠睡多久 |
 | `crates/miyu-endpoint/tests/memory_installed.rs`（R-10） | 第十一条，真核心经 `package.remove` 卸掉出厂的人格记忆：`memory.*` 五个都回 `memory_not_installed`、原话照语言；`/remember` 回 `memory_unavailable`、为什么说没装，`command.catalog` 不列它；装回来以前记的都在、又列出来 |
 | `crates/miyu-core/tests/packages.rs` 的 `memory_removed_before_start_says_not_installed`、`crates/miyu-endpoint/tests/preset_face.rs` 的 `memory_not_in_the_given_list_says_not_installed`（R-10） | 第十一条第 1 款：起来时就卸掉了的（`Core::new` 读的那一份、`Core::with_packages` 交进来的那一份），`memory.*` 回 `memory_not_installed` |
 | `crates/miyu-endpoint/tests/memory_clear.rs` | 清空：她记的和人记的一起清，清一个会话的回一条、清掉的作废的里也没有，清整间回两条、搜不到、改它说不算了；会话那一间清会话的就是整间 |

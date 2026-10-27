@@ -155,6 +155,8 @@
 | `endpoint` | WARN | `probe text unreadable` | `error` | `provider.test` 读不了 `core/models/probe.txt`，回 `internal_error`（施工 8-11） |
 | `session` | INFO | `model call` | `purpose`、`provider`、`model`、`input`、`output`（没报用量的没有后两个）；远程的 embedding 是 `purpose`、`provider`、`model`、`input`（没报用量的没有）、`took_ms` | 一次性入口成了一次（`models.md` 第十二条第 6 条，施工 8-20）：`input` 是没命中、命中、写进缓存三项加起来。不属于哪个会话，不带会话编号；替看不了图的模型看图那一次（`purpose` 是 `vision`）在会话的 span 里发，带会话编号（施工 8-17）。远程的 embedding 算了一句（`purpose` 是 `embedding`，`recall.md` 第四条第 7 款，施工 R-5 补）：在派出去的后台任务里算，不带会话编号 |
 | `session` | INFO | `model call failed` | `purpose`、`reason`、`class`（只有 `model_failed` 带）；远程的 embedding 是 `purpose`、`provider`、`model`、`took_ms`、`error` | 一次性入口没成（施工 8-20）：`reason` 是 `unknown_model`、`no_model`、`cooling`、`model_failed`。不带会话编号；`vision` 的带（施工 8-17）。远程的 embedding 没算成（施工 R-5 补）：`error` 是英文的原话，不带地址、key |
+| `session` | DEBUG | `memory extraction alarm set` | `idle_ms` | 会话从忙到闲，抽取的闹钟上了，`idle_ms` 以后响（`memory.md` 第六条第 1 款，施工 BUG-5）。带会话编号 |
+| `session` | DEBUG | `memory extraction skipped` | `why`（`uninstalled`） | 闹钟响了、人格记忆这时没装，不抽（施工 R-10，BUG-5）。带会话编号 |
 | `session` | INFO | `memory extraction started` | `session`、`turns` | 抽取发出去了一次（`memory.md` 第六条，施工 R-6 上）：这一段有几轮。在派出去的任务里，带会话编号 |
 | `session` | INFO | `memory extracted` | `session`、`count`、`took_ms` | 抽取记下了：几条（零条是常态）、从起抽到记完多少毫秒（施工 R-6 上） |
 | `session` | WARN | `memory extraction failed` | `session`、`tries`（同一段第几次；读日志不成的没有）、`error` | 抽取没成：一次性入口没答成的原因码、交回读不成的为什么、日志读不了的原话；第三次的这一段放过（施工 R-6 上） |
