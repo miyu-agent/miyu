@@ -2,8 +2,11 @@
 //! 票，带在跳转的网址里；接的一方（im 的页面服务）拿它换一个登录令牌，人不用再登录一次。票只在内存里，最多 16 张，一个字都不进
 //! 运行日志。
 //!
-//! - `login.ticket`：只给人（本机令牌、登录令牌、密码连上的），一次性码连上的、核心拉起的扩展回 `local_only`。
+//! - `login.ticket`：只给人（本机令牌、登录令牌、密码连上的），一次性码连上的、核心拉起的扩展回 `local_only`。回应带票是谁的
+//!   （`account`，施工 LT-1：网页的 `as` 照它）。
 //! - `login.redeem {ticket}`：谁拿着票谁能换（票是 32 个随机字节，猜不出来）；没有、过期、用过的回 `bad_ticket`。
+//! - 握手的凭据 `ticket`（施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）：待遇同密码，对上了当场作废，回应带新的登录令牌，
+//!   连接就是票的那个账号（[`handshake`]）；不认的同样是 `bad_ticket`。
 
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
@@ -98,23 +101,34 @@ fn issue(core: &Core, via: Option<&Via>, account: &AccountId) -> Result<Value, R
         .put(ticket.clone(), account.clone(), until);
     let expires = crate::sessions::now().unix_millis() + millis(TICKET_TTL);
     tracing::info!(target: TARGET, "ticket issued");
-    Ok(json!({"ticket": ticket, "expires": stamp(expires)}))
+    Ok(json!({"ticket": ticket, "expires": stamp(expires), "account": account.as_str()}))
 }
 
 /// `login.redeem`：票对得上的造一个登录令牌，交回 `{account, login: {token, expires}}`。
 async fn redeem(core: &Core, ticket: &str) -> Result<Value, Refusal> {
+    let (account, login, _) = exchange(core, ticket).await?;
+    Ok(json!({"account": account.as_str(), "login": login}))
+}
+
+/// 握手的凭据 `ticket`（施工 LT-1）：票对得上的当场作废、造一个登录令牌，交回 `{token, expires}` 和这个连接怎么算（同密码连上的：
+/// 带着新令牌的哈希和票的账号，登出它的时候连接跟着断）。
+pub(crate) async fn handshake(core: &Core, ticket: &str) -> Result<(Value, Via), Refusal> {
+    let (account, login, hash) = exchange(core, ticket).await?;
+    Ok((login, Via::Login(hash, account)))
+}
+
+/// 用掉票、给它的账号造一个登录令牌：交回账号、`{token, expires}`、令牌的哈希。
+async fn exchange(core: &Core, ticket: &str) -> Result<(AccountId, Value, String), Refusal> {
     let account = core
         .identity
         .tickets
         .take(ticket)
         .ok_or(Refusal::BAD_TICKET)?;
     let _queue = core.identity.files.lock().await;
-    let (token, _, expires) = files::issue(core, &account, crate::sessions::now())?;
+    let (token, hash, expires) = files::issue(core, &account, crate::sessions::now())?;
     tracing::info!(target: TARGET, via = "ticket", "login issued");
-    Ok(json!({
-        "account": account.as_str(),
-        "login": {"expires": expires, "token": token},
-    }))
+    let login = json!({"expires": expires, "token": token});
+    Ok((account, login, hash))
 }
 
 #[cfg(test)]

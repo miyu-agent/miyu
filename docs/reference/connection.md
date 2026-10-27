@@ -59,8 +59,9 @@
 | `login` | 字符串 | 登录令牌（网页记住的登录） |
 | `user`、`password` | 字符串 | 网页登录的用户名、密码，一起写；管理员、成员都用它 |
 | `invite` | 字符串 | 邀请码：还没注册的人凭它连上，只能注册 |
+| `ticket` | 字符串 | 交接票（`login.ticket` 要的）：别的页面带过来的，换成一个登录令牌连上 |
 
-凭据正好写一种：`token`、`code`、`login`、`invite`，或者 `user` 加 `password`。扩展不写。回应的 `account` 是认出来的账号：登录令牌、用户名密码连上的是那个账号；用邀请码连上的还没注册，是 `null`，另带 `"register": true`。
+凭据正好写一种：`token`、`code`、`login`、`invite`、`ticket`，或者 `user` 加 `password`。扩展不写。回应的 `account` 是认出来的账号：登录令牌、用户名密码、交接票连上的是那个账号；用邀请码连上的还没注册，是 `null`，另带 `"register": true`。
 
 **回应**
 
@@ -77,7 +78,7 @@
 | `config_errors` | 配置里现在有几处错误，没有的不写 |
 | `config` | 只有扩展有：这个包自己的配置项的最终值（密钥是真值）。之后变了推 `extension.config` |
 | `setup` | `true`：用一次性码连上的，只能设用户名和密码 |
-| `login` | `{"expires", "token"}`：用用户名、密码连上的才有，网页记住它下次用 |
+| `login` | `{"expires", "token"}`：用用户名密码、交接票连上的才有，网页记住它下次用。交接票连上的票当场作废 |
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"zh-CN","token":"3f9a…"}}
@@ -96,6 +97,7 @@
 | `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开）；停用了的账号密码不对的也是 `bad_password` |
 | `account_disabled` | 用户名、密码都对，账号停用了（断开） |
 | `bad_invite` | 邀请码不对、过期了、用过了、撤掉了（断开） |
+| `bad_ticket` | 交接票没有、过期了、用过了（断开） |
 | `login_throttled` | 密码错太多次，先等一会儿（断开） |
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
@@ -206,16 +208,19 @@ OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自
 
 ## `login.ticket`、`login.redeem`
 
-交接票：已经登录的人从一个页面跳到另一个程序的页面（网页跳到接入通讯平台的页面），不用再登录一次。跳过去之前要一张票带在网址里，接的一方拿它换一个登录令牌，再照这个登录令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。
+交接票：已经登录的人从一个页面跳到另一个程序的页面（网页跳到接入通讯平台的页面，`miyu web` 打开网页），不用再登录一次。跳过去之前要一张票带在网址里，接的一方拿它连核心，有两种接法：
 
-**谁能调**：`login.ticket` 只给人（本机令牌、登录令牌、密码连上的），核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
+- 握手时交 `ticket`（上面「握手」的凭据）：一步连上，回应带换到的登录令牌，连接就是票的那个账号。浏览器里直连核心的页面用它。
+- `login.redeem` 换一个登录令牌，再照这个登录令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。老的接法，照旧能用。
+
+**谁能调**：`login.ticket` 只给人：本机令牌（终端）、登录令牌、密码、交接票连上的都能要，核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `login.ticket` | 没有 | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废，绑这个连接的账号 |
+| `login.ticket` | 没有 | `{"ticket", "expires", "account"}`：64 位十六进制的票，60 秒后作废，绑这个连接的账号；`account` 就是那个账号（跳过去的网址里照它写 `as`） |
 | `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`：票绑的账号、换出的登录令牌（30 天） |
 
-一张票只换一次；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。
+一张票只用一次（握手交了、`login.redeem` 换了都算）；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。
 
 **出错**
 

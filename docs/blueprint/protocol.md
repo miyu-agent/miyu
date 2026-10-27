@@ -150,7 +150,7 @@
 
 1. 参数读不成（缺了必写的格、哪一格类型不对）：`bad_params`，连接不断。
 2. `1` 不在 `[最低, 最高]` 里：`protocol_mismatch`，回完断开。
-3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，或者 `user` 加 `password`。写了不止一种、`user` 和 `password` 只写了一个：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外三种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条。用户名、密码都对、账号停用了的回 `account_disabled`，回完断开；密码不对的照旧 `bad_password`，不透露停没停（施工 Y-1 上补）。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`；还没有机主的核心（设置那一段，施工 Y-12 中上，`core.md`「起来的先后」）本机令牌连上的只能调 `hello`、`human.get`、`account.setup`、`account.setup_code`，别的回 `setup_first`；用登录令牌、密码连上的，它靠的登录令牌作废了就断开。核心亲手拉起的扩展经标准输入输出连上，不看凭据，写了的也不看；它调 `extension.*` 回 `local_only`（施工 9-4 上，`extensions.md`）。
+3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），或者 `user` 加 `password`。写了不止一种、`user` 和 `password` 只写了一个：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外三种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条。用户名、密码都对、账号停用了的回 `account_disabled`，回完断开；密码不对的照旧 `bad_password`，不透露停没停（施工 Y-1 上补）。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`；还没有机主的核心（设置那一段，施工 Y-12 中上，`core.md`「起来的先后」）本机令牌连上的只能调 `hello`、`human.get`、`account.setup`、`account.setup_code`，别的回 `setup_first`；交接票（`ticket`，施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）待遇同密码：票对得上的当场作废（和 `login.redeem` 同一张表），给票的账号造一个登录令牌，回应带 `login: {token, expires}`，连接就是那个账号、照登录令牌连上的算；没有、过期、用过的 `bad_ticket`，回完断开。用登录令牌、密码、交接票连上的，它靠的登录令牌作废了就断开。核心亲手拉起的扩展经标准输入输出连上，不看凭据，写了的也不看；它调 `extension.*` 回 `local_only`（施工 9-4 上，`extensions.md`）。
 4. 过了：本机令牌的连接就是机主（施工 Y-12 中上：OOBE 时注册的那个人，账号文件里标了 `owner`；`admin` 是系统、不登录）。它发的命令都记成他发的（`by` 是 `{"kind":"person","account":"<机主>"}`），命令引起的事件，`cause` 是请求的 `id`（`kernel/events.md`）。
 5. 握手以前：别的方法一律 `hello_first`，连接不断；读不懂的行照「请求」的表回；通知不理。
 6. 握手以前的拒绝说英文；`hello` 本身被拒的，话照这一次报的 `locale` 说（读得出来的话，施工 4-9 再补三上）。过了的，话照回应的 `language` 说（施工 8-2）：`ui.language` 定成 `en` 的，报 `zh-CN` 的头也听英文。握手以后再发 `hello`：照样从第 1 条查起；过了，换成这一次算出的语言和能力；这一次被拒的，话照这一次报的语言说，没断开的还是上一次握手的语言和能力。
@@ -229,7 +229,7 @@
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：第一次给管理员设网页登录的用户名和密码、忘了密码重设；只给出示本机令牌的连接（施工 W-8） |
-| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性、绑这个账号的票，接的一方换一个登录令牌；扩展要不了票。详见 `docs/reference/connection.md` |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性、绑这个账号的票（本机令牌、登录令牌、密码、交接票连上的都能要），回应带 `account`（票是谁的，施工 LT-1）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个登录令牌；扩展要不了票。详见 `docs/reference/connection.md` |
 | `account.setup` | 用一次性码连上的设用户名和密码，换一个登录令牌（施工 W-8）；设置那一段（施工 Y-12 中上）注册机主：用户名就是账号编号（`admin`、系统账号、已有的不收，`username_taken`），已经有机主了的 `not_permitted`；成了回应多 `account`，这个连接答完就断，这一段别的连接一起断，核心在同一个套接字上照机主起完整的那一份，头重连进来就是他 |
 | `account.logout` | 作废登录令牌：这一个，或者 `all` 全部（施工 W-8）；作废的是这个连接自己账号的（施工 Y-1 上） |
 | `account.invite`、`account.invites`、`account.invite_revoke` | 管理员发、列、撤邀请码：一次性、默认 7 天，`invites.json` 只存哈希（施工 Y-1 上，设计 06 U15） |
@@ -1469,7 +1469,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `DEBUG` | `connected` | 接上一个连接 |
 | `INFO` | `connected head=… version=… protocol=1 via=…` | 握手过了；`via` 是 `token`、`code`、`login`、`password`（施工 W-8） |
 | `INFO` | `admin mode account=… method=…` | 一个带 `"scope": "system"` 的请求过了闸门：谁以管理员身份做了什么（施工 Y-12 下） |
-| `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`login throttled head=…` | 握手被拒、断开 |
+| `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`bad ticket head=…`（施工 LT-1）、`login throttled head=…` | 握手被拒、断开 |
 | `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
 | `DEBUG` | `request method=…` | 每一条请求 |
 | `WARN` | `line too long, closed` | 一行太长 |
@@ -1707,6 +1707,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/hello.rs`（施工 W-3） | 握手的 `host`：三格总有、`platform` 是这台机器的、`workspace` 换成真实的位置（链接也换成指的地方）、没有系统的家目录 `home` 是 `null`、没人建过工作区就回原样的路径（不替连上来的头造目录）。`fs.realpath`：`~` 照家目录接、`cwd` 可以不写也可以本身是 `~`；相对的没给 `cwd` 的 `bad_params`；往上找最近在的一层、后面几段原样接上；路中间的链接换成指的地方；落在数据根里的照样换，不查边界；一层都不在（没有家目录）`path_unreadable` |
 | `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」）；交接票只给人、换一次、换出的登录令牌认得（W-8 补） |
 | `crates/miyu-endpoint/tests/oobe.rs`、`crates/miyu/tests/oobe.rs`、`crates/miyu-store/src/accounts/tests.rs`（施工 Y-12 中上） | 设置那一段：本机令牌握手说要设置、不是谁，别的方法 `setup_first`，`admin` 注册不成；注册了机主答完就断、这一段别的连接一起断、那一声响了；远程网页拿一次性码也注册得成，晚到的 `not_permitted`；真核心注册以后重连就是机主、会话在他的家目录里、不建 `admin` 的家目录；账号文件认机主（标了、没停用的） |
+| `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上的是票的账号、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；成员的票换出的是成员、不是管理员；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉；`login.ticket` 的回应带 `account` |
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |

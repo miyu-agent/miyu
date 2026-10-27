@@ -59,8 +59,9 @@ The handshake. It must be the first message; before it every other method gets `
 | `login` | string | A login token (a remembered web login) |
 | `user`, `password` | string | Web username and password, together; the admin and members both use them |
 | `invite` | string | Invite code: someone not registered yet connects with it and can only register |
+| `ticket` | string | A hand-off ticket (from `login.ticket`) brought over by another page; it is exchanged for a login token on the spot |
 
-Give exactly one kind of credential: `token`, `code`, `login`, `invite`, or `user` plus `password`. Extensions give none. The reply's `account` is the account recognized: the one the login token or username belongs to; a connection made with an invite code hasn't registered yet, so it is `null`, with `"register": true`.
+Give exactly one kind of credential: `token`, `code`, `login`, `invite`, `ticket`, or `user` plus `password`. Extensions give none. The reply's `account` is the account recognized: the one the login token, username or hand-off ticket belongs to; a connection made with an invite code hasn't registered yet, so it is `null`, with `"register": true`.
 
 **Response**
 
@@ -77,7 +78,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `invite`, or `use
 | `config_errors` | How many errors the config has right now; omitted when none |
 | `config` | Extensions only: the final values of this package's own settings (secrets as real values). Later changes arrive as `extension.config` |
 | `setup` | `true`: connected with a one-time code; can only set the username and password |
-| `login` | `{"expires", "token"}`: only when connected with username and password; the web app keeps it for next time |
+| `login` | `{"expires", "token"}`: only when connected with username and password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent |
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"en-US","token":"3f9a…"}}
@@ -96,6 +97,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes); a wrong password for a disabled account is also `bad_password` |
 | `account_disabled` | Right username and password, but the account is disabled (closes) |
 | `bad_invite` | Wrong, expired, used or revoked invite code (closes) |
+| `bad_ticket` | No such hand-off ticket, expired, or already used (closes) |
 | `login_throttled` | Too many wrong passwords; wait a while (closes) |
 | `hello_first` | Another method before the handshake (does not close) |
 | `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup`; or, while there is no owner, connected with the local token and called something other than `human.get`, `account.setup` and `account.setup_code` |
@@ -206,16 +208,19 @@ The username is the account id: starts with a lowercase letter, only lowercase l
 
 ## `login.ticket`, `login.redeem`
 
-Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side redeems it for a login token and connects to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got).
+Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page, or `miyu web` opening the web app) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side connects with it in one of two ways:
 
-**Who can call**: `login.ticket` is for people only (connected with the local token, a login token or a password); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
+- Give `ticket` in the handshake (see the credentials above): connected in one step; the reply carries the new login token and the connection is the ticket's account. Pages that connect to the core straight from the browser use this.
+- Redeem it with `login.redeem` for a login token and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). The older way; it still works.
+
+**Who can call**: `login.ticket` is for people only (connected with the local token, as the terminal does, or a login token, a password or a hand-off ticket); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
 
 | Method | Params | Result |
 |---|---|---|
-| `login.ticket` | none | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds, bound to this connection's account |
+| `login.ticket` | none | `{"ticket", "expires", "account"}`: a 64-hex-digit ticket, valid for 60 seconds, bound to this connection's account; `account` is that account (put it in the jump URL as `as`) |
 | `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`: the ticket's account and a new login token (30 days) |
 
-A ticket works once. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
+A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
 
 **Errors**
 

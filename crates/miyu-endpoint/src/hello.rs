@@ -2,9 +2,9 @@
 //! 都支持的最高的；本机连接出示本机令牌（第四节）。握手以后这个连接就是管理员（`06-多用户与身份.md`
 //! 第二节）。
 //!
-//! 施工 W-8 起凭据正好写一种（`web-module.md`「怎么走」第一条）：本机令牌 `token`、一次性码 `code`、登录令牌 `login`，
-//! 或者用户名 `user` 加密码 `password`。用一次性码的回应多 `"setup": true`，用密码的多一个登录令牌 `login`。写了不止一种、
-//! 用户名和密码只写了一个：`bad_params`，回完断开。
+//! 施工 W-8 起凭据正好写一种（`web-module.md`「怎么走」第一条）：本机令牌 `token`、一次性码 `code`、登录令牌 `login`、
+//! 交接票 `ticket`（施工 LT-1），或者用户名 `user` 加密码 `password`。用一次性码的回应多 `"setup": true`，用密码、交接票的多一个
+//! 登录令牌 `login`。写了不止一种、用户名和密码只写了一个：`bad_params`，回完断开。
 //!
 //! 回应带这个连接给人看的字用哪种语言 `language`，和配置里有几处错误 `config_errors`（施工 8-2，`config.md`
 //! 「协议」）：语言照 `ui.language` 的最终值，是 `auto` 的照头报的系统语言 `locale`。
@@ -60,6 +60,9 @@ struct Params {
     /// 邀请码（施工 Y-1 上）：只能注册。
     #[serde(default)]
     invite: Option<String>,
+    /// 交接票（施工 LT-1）：`login.ticket` 要的，待遇同密码。
+    #[serde(default)]
+    ticket: Option<String>,
     /// 用户名（施工 W-8）。
     #[serde(default)]
     user: Option<String>,
@@ -287,6 +290,7 @@ async fn credentials(
         params.code.is_some(),
         params.login.is_some(),
         params.invite.is_some(),
+        params.ticket.is_some(),
         params.user.is_some() || params.password.is_some(),
     ];
     if written.iter().filter(|written| **written).count() > 1 {
@@ -308,6 +312,13 @@ async fn credentials(
         return login::login(core, token)
             .map(|via| (via, None))
             .ok_or((Refusal::BAD_LOGIN, Some("bad login")));
+    }
+    // 交接票（施工 LT-1）：同密码，对上了当场作废、回应带新的登录令牌。
+    if let Some(ticket) = &params.ticket {
+        return login::ticket::handshake(core, ticket)
+            .await
+            .map(|(issued, via)| (via, Some(issued)))
+            .map_err(|refusal| (refusal, Some("bad ticket")));
     }
     if let Some(code) = &params.invite {
         return login::invites::admit(core, code)
