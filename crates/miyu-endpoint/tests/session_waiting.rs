@@ -56,11 +56,7 @@ async fn a_question_marks_the_session_as_waiting_until_answered() {
     client.say("s1", &session, "hi").await;
     let waiting = until_waiting(&mut client, &session, true).await;
     assert_eq!(waiting["busy"], true, "等人的时候回合还没完：{waiting}");
-    let call = logged(&home, &session)
-        .into_iter()
-        .find(|event| event["kind"] == "question.asked")
-        .map(|event| event["body"]["call_id"].clone())
-        .expect("问了");
+    let call = until_logged(&home, &session, "question.asked").await["body"]["call_id"].clone();
     let params = json!({"session": session, "call": call, "answers": [{"picked": ["甲"]}]});
     client.call("a", "session.answer", params).await;
     home.until_turns(&session, 1).await;
@@ -94,10 +90,7 @@ async fn a_nested_approval_counts_too() {
     let session = client.create("c1", &cwd).await;
     client.say("s1", &session, "装上它").await;
     until_waiting(&mut client, &session, true).await;
-    let asked = logged(&home, &session)
-        .into_iter()
-        .find(|event| event["kind"] == "tool.approval_requested")
-        .expect("问了");
+    let asked = until_logged(&home, &session, "tool.approval_requested").await;
     let call = asked["body"]["call_id"].clone();
     client
         .call(
@@ -138,11 +131,7 @@ async fn the_sessions_stream_pushes_waiting_as_it_changes() {
             break;
         }
     }
-    let call = logged(&home, &session)
-        .into_iter()
-        .find(|event| event["kind"] == "question.asked")
-        .map(|event| event["body"]["call_id"].clone())
-        .expect("问了");
+    let call = until_logged(&home, &session, "question.asked").await["body"]["call_id"].clone();
     let params = json!({"session": session, "call": call, "answers": [{"picked": ["甲"]}]});
     client.call("a", "session.answer", params).await;
     loop {
@@ -150,6 +139,22 @@ async fn the_sessions_stream_pushes_waiting_as_it_changes() {
         if entry.get("waiting").is_none() {
             break;
         }
+    }
+}
+
+/// 等到会话 `session` 的日志里有一条 `kind`，交回它，最多一分钟：在等人的状态先变、那一条晚一点才落盘（列表照状态报，
+/// 不等落盘），读早了会扑空（Windows 上偶发过）。
+async fn until_logged(home: &Home, session: &str, kind: &str) -> Value {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+    loop {
+        if let Some(event) = logged(home, session)
+            .into_iter()
+            .find(|event| event["kind"] == kind)
+        {
+            return event;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "等不到 {kind}");
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
 }
 
