@@ -145,6 +145,8 @@ pub(super) async fn run(
                 return;
             }
         };
+        // 「说要退了」只算这一次拉起的（施工 IM-1 下）：上一次答应了又崩了的不带过来。
+        shared.take_retiring();
         let pid = child.id().unwrap_or_default();
         tracing::info!(target: TARGET, package = id, pid, "extension started");
         set(&shared, State::Starting { pid: Some(pid) }, failures);
@@ -175,6 +177,12 @@ pub(super) async fn run(
         let said = status.map_or_else(|| "unknown".to_string(), |status| status.to_string());
         if stopping {
             tracing::info!(target: TARGET, package = id, status = said.as_str(), "extension exited");
+            return;
+        }
+        // 问过 `process.retire`、核心答应了、退出码 0 的算自己退（施工 IM-1 下）：不重启、不算失败。没问过就退的照崩溃算。
+        if code == Some(0) && shared.take_retiring() {
+            tracing::info!(target: TARGET, package = id, status = said.as_str(), "extension retired");
+            set(&shared, State::Stopped(Reason::Retired), 0);
             return;
         }
         tracing::warn!(target: TARGET, package = id, status = said.as_str(), "extension exited");

@@ -1,6 +1,7 @@
 //! 反向调用（施工 O-2 上，`docs/blueprint/providers.md`「怎么走」第 1、2 条）：核心发给一个连接的请求，编号 `core-<n>`，照连接
 //! 从 1 数起；对上编号的回应交给等它的，对不上的不理。连接断了（[`Peer::close`]），在等的和以后发的都了结成 [`Gone`]。不等了的
-//! （等它的 future 被丢掉）从表里拿掉；通知（[`Peer::notify`]，`tool.cancel`）不带编号、不等回应（施工 O-2 下）。
+//! （等它的 future 被丢掉）从表里拿掉；通知（[`Peer::notify`]，`tool.cancel`）不带编号、不等回应（施工 O-2 下）。扩展说要退了、
+//! 核心答应了的（[`Peer::retire`]，施工 IM-1 下）不再往它发：同断了。
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -36,6 +37,8 @@ struct State {
     /// 往连接写的一头；连接断了放掉，是 `None`（施工 O-2 再补：提供者表里存着这一头，留着它，写的那一头就一直不结束，
     /// 核心察觉不到扩展退出，崩了不重新拉起）。
     out: Option<mpsc::Sender<String>>,
+    /// 答应它退了（施工 IM-1 下）：以后发的同断了。
+    retired: bool,
 }
 
 impl Peer {
@@ -61,7 +64,7 @@ impl Peer {
     ) -> Result<Result<Value, Value>, Gone> {
         let (id, answer, out) = {
             let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-            let Some(out) = state.out.clone() else {
+            let Some(out) = state.out.clone().filter(|_| !state.retired) else {
                 return Err(Gone);
             };
             state.last += 1;
@@ -85,7 +88,7 @@ impl Peer {
     /// 发一条通知（施工 O-2 下）：不带编号、不等回应。连接断了、写队列满了的发不出去，交回 `false`。
     pub(crate) fn notify(&self, method: &str, params: Value) -> bool {
         let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        let Some(out) = state.out.as_ref() else {
+        let Some(out) = state.out.as_ref().filter(|_| !state.retired) else {
             return false;
         };
         let line = json!({"jsonrpc": "2.0", "method": method, "params": params});
@@ -112,13 +115,21 @@ impl Peer {
         state.out = None;
     }
 
-    /// 连接断了（[`Peer::close`] 过）。
+    /// 扩展说要退了（`process.retire`，施工 IM-1 下）：没有在等回应的，记下不再往它发、交回 `true`；有的交回 `false`。查和记在
+    /// 同一把锁里：答应以后不会再有新的一条发出去。
+    pub(crate) fn retire(&self) -> bool {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        if !state.waiting.is_empty() {
+            return false;
+        }
+        state.retired = true;
+        true
+    }
+
+    /// 不再往它发了：连接断了（[`Peer::close`] 过），或者答应它退了（[`Peer::retire`]）。找连接的都跳过它。
     pub(crate) fn closed(&self) -> bool {
-        self.state
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .out
-            .is_none()
+        let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        state.out.is_none() || state.retired
     }
 
     /// 不等这一条了。

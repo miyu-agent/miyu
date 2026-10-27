@@ -8,6 +8,7 @@
 | [`tool.call`、`tool.cancel`](#toolcalltoolcancel) | 核心 → 扩展 | 调它的工具；放下一次调用 |
 | [`package.methods`、`method.call`](#packagemethodsmethodcall) | 两个方向 | 登记后台页、界面块要调的方法；核心转来的调用 |
 | [`package.emit`](#packageemit) | 扩展 → 核心 | 推给开着它页面的人 |
+| [`process.retire`、`process.keep`](#processretireprocesskeep) | 扩展 → 核心 | 问能不能自己退；要不要常驻（施工 IM-1 下） |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
@@ -27,7 +28,16 @@
 - **标准错误**：追加到 `state/logs/<编号>.stderr`，超过 1 MiB 的先挪成 `.old`。
 - **握手**：照常发 `hello`，不出示凭据。回应的 `account` 是它的账号（声明了系统账号的是那个账号，别的是 `admin`），`config` 是它自己的配置项的最终值（密钥是真值）。
 - **退出**：核心关它的标准输入就是「请退出」，5 秒没退的杀掉。
-- **崩了**：退出码 1 以外的退出、被杀、握手不成都算一次失败，退避 1、2、4、8、16 秒再拉起，连续 5 次停下（`failed_repeatedly`）。**退出码 1** 表示配置错、端口被占这类重启也没用的：不再拉起，直接停下（`config_error`）。连着跑满 60 秒的，失败次数从零数。
+- **崩了**：退出码 1 以外的退出（问过 `process.retire`、核心答应了的退出码 0 除外，见下）、被杀、握手不成都算一次失败，退避 1、2、4、8、16 秒再拉起，连续 5 次停下（`failed_repeatedly`）。**退出码 1** 表示配置错、端口被占这类重启也没用的：不再拉起，直接停下（`config_error`）。连着跑满 60 秒的，失败次数从零数。
+
+## `process.retire`、`process.keep`
+
+每人一份的扩展（`[process] scope = "account"`）用到时才起，空闲了可以自己退：
+
+- **`process.retire {}`**：问能不能退。核心发给你、你还没回的请求一条都没有的，回 `{"ok": true}`，之后不再给你发任何东西，你以退出码 0 退出；有的回 `{"ok": false}`，过一会儿再问。这样退的状态是 `stopped`、`reason` 是 `retired`，不重启、不算失败；这个人再用到时核心再起一份，等着的调用交给新的那一份。没问就退的照「崩了」算。
+- **`process.keep {"on": true|false}`**：这个人的这一份要不要常驻，回 `{"on": <现在的值>}`。核心记下，重启也在；核心起来时只替说了要常驻的人拉起，别的等用到。进程退出不清，只由你自己改。比如配了 QQ 连接的 im 要常驻（NapCat 反连它的端口，它退了就没人听）。
+
+只有一份的包也能 `retire`，但不会因为用到再起，要等重启扩展、核心再起来；`keep` 回 `{"on": true}`（本来就常驻），不记。不是核心拉起的连接调这两个回 `not_an_extension`。
 
 ## 能力
 

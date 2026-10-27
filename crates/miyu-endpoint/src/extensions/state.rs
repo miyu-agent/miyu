@@ -1,6 +1,7 @@
 //! 一个扩展的状态（施工 9-4 上；施工 IM-1 中从 `extensions.rs` 挪出来：那边到了行数上限）：在哪一步、为什么停下、连续失败了
 //! 几次，和表、看管的任务一起拿着的那一格。
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError};
 
 use tokio::sync::broadcast;
@@ -67,6 +68,8 @@ pub(crate) enum Reason {
     NeedsApproval,
     /// 网址的 MCP 服务要浏览器登录（施工 X-42 上）：人登录了（`mcp.login`）、令牌存进密钥文件才重连。
     NeedsLogin,
+    /// 自己退的（施工 IM-1 下）：问过 `process.retire`、核心答应了，退出码 0。不算崩溃、不重启；每人一份的用到时再拉起。
+    Retired,
 }
 
 impl Reason {
@@ -80,6 +83,7 @@ impl Reason {
             Reason::ProtocolMismatch => "protocol_mismatch",
             Reason::NeedsApproval => "needs_approval",
             Reason::NeedsLogin => "needs_login",
+            Reason::Retired => "retired",
         }
     }
 }
@@ -101,6 +105,8 @@ pub(crate) struct Cell {
     pub(super) status: Mutex<Status>,
     /// 谁变了：广播包的编号。
     pub(super) changed: broadcast::Sender<String>,
+    /// 这一次拉起的进程问过 `process.retire`、核心答应了（施工 IM-1 下）：看管的任务每拉起一次清掉，退出码 0 又有它的算自己退。
+    pub(super) retiring: AtomicBool,
 }
 
 impl Cell {
@@ -115,5 +121,15 @@ impl Cell {
         if self.changed.send(self.id.clone()).is_err() {
             // 没有订阅着的连接：不用说。
         }
+    }
+
+    /// 记下这一次拉起的进程说要退了、核心答应了。
+    pub(crate) fn retire(&self) {
+        self.retiring.store(true, Ordering::SeqCst);
+    }
+
+    /// 拿走「说要退了」：交回刚才有没有，之后没有。
+    pub(super) fn take_retiring(&self) -> bool {
+        self.retiring.swap(false, Ordering::SeqCst)
     }
 }

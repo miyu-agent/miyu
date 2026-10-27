@@ -186,6 +186,7 @@ mod packages_upgrade;
 mod peers;
 mod per_account_extension;
 mod per_account_pages;
+mod per_account_retire;
 mod per_account_routes;
 mod per_account_widgets;
 mod permission;

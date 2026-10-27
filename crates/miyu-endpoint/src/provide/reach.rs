@@ -1,6 +1,7 @@
 //! 找每人一份的那一份（施工 IM-1 中，接入通讯平台设计 06 第 4.6 节第 1、6 样）：她替会话的属主调每人一份的包的工具，转给他那
 //! 一份；还没起、退出了的，核心当场替他拉起（他能用这个包才起，`Core::start_for`），等它连上来、登记了工具再转。最多等
-//! [`WAIT`]；起不来、停下了、没等到的交回没有，工具照「暂时不可用」答。
+//! [`WAIT`]；起不来、停下了、没等到的交回没有，工具照「暂时不可用」答。自己退了的（施工 IM-1 下）再拉起：答应它退以后来的
+//! 调用等它退干净了交给新的那一份。
 
 use std::time::Duration;
 
@@ -9,7 +10,7 @@ use tokio::sync::broadcast::error::RecvError;
 use miyu_kernel::id::AccountId;
 
 use super::Provided;
-use crate::extensions::Instance;
+use crate::extensions::{Instance, Reason, State};
 use crate::reverse::Peer;
 
 /// 最多等多久：同扩展命令。
@@ -83,9 +84,15 @@ impl Provided {
             if let Some(peer) = found(instance) {
                 return Some(peer);
             }
-            // 停下了、被关了的不等（起不来的退避中照样等，它还会再起）。
+            // 停下了、被关了的不等（起不来的退避中照样等，它还会再起）。自己退了的（施工 IM-1 下）再替他起一份接着等：答应它退以后
+            // 来的调用就是在等这一刻。
             let core = weak.upgrade()?;
-            if !core.extensions.status_of(instance).state.busy() {
+            let state = core.extensions.status_of(instance).state;
+            if state == State::Stopped(Reason::Retired) {
+                if !core.start_for(instance) {
+                    return None;
+                }
+            } else if !state.busy() {
                 return None;
             }
             drop(core);

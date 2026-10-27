@@ -120,6 +120,11 @@ pub(crate) fn person_holds(core: &Core, name: &str) -> bool {
         || written.of(name).is_some()
 }
 
+/// `account` 是还在用的人（施工 IM-1 下：核心起来时只替他们拉起常驻的那一份）：管理员，或者登记过、没停用的成员。
+pub(crate) fn active(core: &Core, account: &AccountId) -> bool {
+    files::login_accounts(core).contains(account)
+}
+
 /// 登记过的人（`accounts.json` 里的，停用了的也在）：用量照他们补（施工 Y-2 下下中下）。
 pub(crate) fn people(core: &Core) -> Vec<AccountId> {
     files::read_accounts(core)

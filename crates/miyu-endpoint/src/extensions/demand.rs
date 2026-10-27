@@ -1,6 +1,6 @@
 //! 用到时拉起（施工 IM-1 中，接入通讯平台设计 06 第 4.6 节第 1 样）：每人一份的包不在核心起来时全起，她替谁调到它的工具时才替
 //! 那个人起一份。起之前照开机时那几道查：开关开着、依赖的包都在、程序在、要的能力都批了；再加一道：他在管理员组，或者包勾了
-//! 「成员也能用」。包自己的账号（平台桥这些）不替它们起。
+//! 「成员也能用」。包自己的账号（平台桥这些）不替它们起；没登记、停用了的人不替他们起（施工 IM-1 下：常驻名单里留着删掉的人）。
 
 use std::sync::Arc;
 
@@ -28,6 +28,7 @@ impl Core {
         };
         let (switches, _) = read_switches(self);
         let usable = per_account(manifest)
+            && crate::login::members::active(self, account)
             && on(&switches, id, manifest)
             && (crate::login::admins::is_admin(self, account) || self.members_may(id, manifest))
             && crate::packages::depends::missing(&all, manifest).is_empty()

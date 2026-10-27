@@ -10,6 +10,7 @@ pub(crate) mod config;
 mod demand;
 mod instance;
 pub(crate) mod methods;
+mod retire;
 mod state;
 pub(crate) mod stderr;
 mod supervise;
@@ -17,6 +18,7 @@ mod supervise;
 pub(crate) use approval::{described, forget as forget_switch, held};
 pub(crate) use instance::{Instance, per_account, scoped};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
+pub(crate) use retire::{keep, retire};
 pub(crate) use state::{Cell, Reason, State, Status};
 pub use supervise::Timing;
 pub(crate) use supervise::backoff;
@@ -61,6 +63,8 @@ pub(crate) struct Extensions {
     timing: Timing,
     /// 谁变了（施工 9-4 补）。
     changed: broadcast::Sender<String>,
+    /// 改常驻名单 `system/kept.json` 一件件办（施工 IM-1 下）。
+    kept: Mutex<()>,
 }
 
 impl Extensions {
@@ -75,6 +79,7 @@ impl Extensions {
             ops: tokio::sync::Mutex::new(()),
             timing,
             changed: broadcast::channel(CHANGES).0,
+            kept: Mutex::new(()),
         }
     }
 
@@ -145,6 +150,7 @@ impl Extensions {
                     failures: 0,
                 }),
                 changed: self.changed.clone(),
+                retiring: std::sync::atomic::AtomicBool::new(false),
             }),
             task: None,
         })
@@ -158,7 +164,8 @@ impl Extensions {
             .set(State::Stopped(reason), 0);
     }
 
-    /// 拉起 `instance`（清单是 `manifest`）：在跑、在等的不动；程序没找到、协议版本对不上的直接停下。
+    /// 拉起 `instance`（清单是 `manifest`）：在跑、在等的不动；程序没找到、协议版本对不上的直接停下。记成停下了的当没在跑：
+    /// 看管的任务记完就交回，这时可能还没交回完（自己退了的那一份，等着它的马上要再拉起，施工 IM-1 下）。
     pub(crate) fn launch(&self, core: &Arc<Core>, instance: &Instance, manifest: &Manifest) {
         let mut slots = self.slots();
         let slot = self.slot(&mut slots, instance);
@@ -166,6 +173,7 @@ impl Extensions {
             .task
             .as_ref()
             .is_some_and(|(_, task)| !task.is_finished())
+            && !matches!(slot.status.get().state, State::Stopped(_))
         {
             return;
         }
@@ -282,21 +290,20 @@ impl Core {
     }
 
     /// 拉起包 `id`（照缓存登记上了工具的是 `cached`）。每人一份的用到时才起（施工 IM-1 中）：她调到它的工具时替那个人拉起；
-    /// 还没有登记缓存的（头一回装上）先替机主起一份，把工具登记上，不然谁都调不到它。
+    /// 还没有登记缓存的（头一回装上）先替机主起一份，把工具登记上，不然谁都调不到它。说了要常驻的人的那一份跟着起（施工 IM-1 下）。
     pub(crate) fn launch_or_wait(self: &Arc<Self>, id: &str, manifest: &Manifest, cached: bool) {
-        match per_account(manifest) {
-            false => self
-                .extensions
-                .launch(self, &Instance::system(id), manifest),
-            true if !cached => {
-                let owner = Instance {
-                    package: id.to_string(),
-                    account: Some(self.admin.clone()),
-                };
-                self.start_for(&owner);
-            }
-            true => {}
+        if !per_account(manifest) {
+            self.extensions
+                .launch(self, &Instance::system(id), manifest);
+            return;
         }
+        if !cached {
+            self.start_for(&Instance {
+                package: id.to_string(),
+                account: Some(self.admin.clone()),
+            });
+        }
+        self.start_kept(id);
     }
 
     /// 装卸时照清单从 `before` 换到 `now` 跟着拉起、停下扩展（施工 F-5 下，设计 30 第九节）。卸包是删文件以前先换到去掉它

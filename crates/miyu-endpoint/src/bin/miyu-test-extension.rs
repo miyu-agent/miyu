@@ -28,7 +28,9 @@
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
 //! - `hang`：不管标准输入，一直睡；
-//! - `exit:<数>`：以这个退出码退出。
+//! - `exit:<数>`：以这个退出码退出；
+//! - `retire`：问 `process.retire`，记下回应，核心答应了的等工作目录里的 `linger` 没了，以退出码 0 退出（施工 IM-1 下）；
+//! - `if:<路径>:<一步>`：起来时这个路径（相对工作目录）在的才做这一步（施工 IM-1 下：每人一份的各有各的工作目录）。
 //!
 //! 照 `#!` 起的（包里的程序是一个脚本、第一行 `#!` 指着它，施工 X-34），第一个参数是脚本本身：是一个在的文件的跳过。
 //!
@@ -57,7 +59,16 @@ fn main() {
         args.first()
             .is_some_and(|first| std::path::Path::new(first).is_file()),
     );
-    for (n, step) in args.into_iter().skip(script).enumerate() {
+    let steps = args.into_iter().skip(script).filter_map(|step| {
+        let Some(rest) = step.strip_prefix("if:") else {
+            return Some(step);
+        };
+        let (path, step) = rest.split_once(':').expect("写成 if:<路径>:<一步>");
+        std::path::Path::new(path)
+            .exists()
+            .then(|| step.to_string())
+    });
+    for (n, step) in steps.enumerate() {
         if let Some(path) = step.strip_prefix("record:") {
             let mut file = OpenOptions::new()
                 .create(true)
@@ -202,6 +213,18 @@ fn main() {
         } else if step == "hang" {
             loop {
                 std::thread::sleep(Duration::from_secs(60));
+            }
+        } else if step == "retire" {
+            send(&format!(
+                r#"{{"jsonrpc":"2.0","id":"s{n}","method":"process.retire","params":{{}}}}"#
+            ));
+            let reply = read(&mut input);
+            keep(&mut record, &reply);
+            if reply.contains(r#""ok":true"#) {
+                while std::path::Path::new("linger").exists() {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                std::process::exit(0);
             }
         } else if let Some(code) = step.strip_prefix("exit:") {
             std::process::exit(code.parse().expect("退出码是数"));

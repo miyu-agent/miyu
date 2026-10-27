@@ -8,6 +8,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`tool.call`, `tool.cancel`](#toolcall-toolcancel) | core → extension | Call one of its tools; drop a call |
 | [`package.methods`, `method.call`](#packagemethods-methodcall) | both | Register methods its page and widgets call; calls forwarded by the core |
 | [`package.emit`](#packageemit) | extension → core | Push to people who have its page open |
+| [`process.retire`, `process.keep`](#processretire-processkeep) | extension → core | Ask whether it may exit on its own; whether to stay up (construction IM-1 part three) |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
@@ -27,7 +28,16 @@ Other methods go through one table: those for people only (answering for the per
 - **Stderr**: appended to `state/logs/<id>.stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `account` is its account (the system account if it declares one, otherwise `admin`), and `config` holds the final values of its own settings (secrets as real values).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
-- **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
+- **Crashes**: an exit with any code other than 1 (except exit code 0 after `process.retire` was granted, see below), being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
+
+## `process.retire`, `process.keep`
+
+A per-account extension (`[process] scope = "account"`) starts when it's first needed, and may exit on its own when idle:
+
+- **`process.retire {}`**: ask whether you may exit. If the core has no request to you still waiting for your answer, it replies `{"ok": true}`, sends you nothing more, and you exit with code 0; otherwise it replies `{"ok": false}` and you ask again later. An extension that exits this way is `stopped` with `reason` `retired`: it isn't restarted and doesn't count as a failure. When that person needs it again the core starts a new copy and hands the waiting calls to it. Exiting without asking counts as a crash.
+- **`process.keep {"on": true|false}`**: whether this person's copy should stay up; replies `{"on": <the current value>}`. The core remembers it across restarts; on startup it starts copies only for the people who asked to be kept, the rest wait until they're needed. An exit doesn't clear it; only you change it. For example im with a QQ connection set up stays up (NapCat connects back to its port, so nobody would be listening if it exited).
+
+A single-copy package may `retire` too, but it isn't started again on demand: it waits for an extension restart or the next core start. Its `keep` replies `{"on": true}` (it's always up) and records nothing. A connection the core didn't start gets `not_an_extension` for both.
 
 ## Capabilities
 

@@ -138,6 +138,11 @@ pub(crate) fn call<'a>(
                 move || async move { crate::extensions::restart(core, peer, params(request)?).await },
             )
         }
+        // 扩展自己退、常驻（施工 IM-1 下）。
+        "process.retire" => answer(move || async move { crate::extensions::retire(core, caller) }),
+        "process.keep" => {
+            answer(move || async move { crate::extensions::keep(core, caller, params(request)?) })
+        }
         "persona.get" => answer(move || async move {
             personas::get(core, caller.acting_for(), peer, params(request)?).await
         }),
