@@ -42,6 +42,10 @@ pub(super) fn listed(
             if let Some(on) = status::enabled(core, &found.id, manifest, shipped, removed) {
                 item["enabled"] = json!(on);
             }
+            // 包自带的图标（施工 F-18 上）：合规矩的带版本，图用 `package.logo` 读；没写、不合的不带。
+            if let Some(logo) = super::logo::of(found, manifest) {
+                item["logo"] = json!(logo.version);
+            }
             if status::page(found, manifest) {
                 item["page"] = json!(true);
             }

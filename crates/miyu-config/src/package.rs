@@ -36,6 +36,7 @@ pub use code::Code;
 pub use content::Content;
 pub use features::Feature;
 pub use links::{Connection, Worker};
+pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE};
 pub use mcp::{
     EnvValue, McpServer, Reach, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
     venues_fit,
@@ -90,6 +91,9 @@ pub struct Manifest {
     pub worker: Option<Worker>,
     /// 图标（施工 F-6 上）：Lucide 的图标名，只查过写法；没写的没有。
     pub icon: Option<String>,
+    /// 包自带的图标（施工 F-18 上，`[package] logo`）：包目录里一张 PNG 或 WebP 的相对路径；有它的头用图，没有的照 `icon`。
+    /// 只查写法，图本身在不在、合不合上限由核心查（`packages/status.rs` 的 `logo_problem`）。没写的没有。
+    pub logo: Option<String>,
     /// 软件后台页（施工 F-6 上）：包目录里的子目录，入口是里面的 `index.html`；没写的没有。只有扩展、内置包能写。
     pub page: Option<String>,
     /// 吉祥物（`kind = "mascot"`，施工 F-7）：模型文件在包目录里的相对路径。
@@ -458,6 +462,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         recommends: recommends?,
         worker,
         icon: head.icon,
+        logo: head.logo,
         page,
         mascot,
         theme,

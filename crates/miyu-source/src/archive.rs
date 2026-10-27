@@ -10,6 +10,7 @@
 //! - **解的时候查路径**：每一项都在同一个最上层文件夹里，不许绝对路径、`..`；最多 [`MOST_ENTRIES`] 项、[`MOST_BYTES`]
 //!   字节（防压缩炸弹）。
 
+use std::collections::BTreeMap;
 use std::fmt;
 use std::fs::{self, File};
 use std::io::{self, Read, Write};
@@ -103,9 +104,24 @@ pub fn file_name(id: &str, version: &str, target: Option<Target>) -> String {
 ///
 /// 读写不成；文件夹里有链接、设备这些，名字不是 UTF-8 的。
 pub fn pack(folder: &Path, id: &str, out: &Path) -> Result<Packed, Error> {
+    pack_replacing(folder, id, out, &BTreeMap::new())
+}
+
+/// 同 [`pack`]，`replaced` 里写了的文件（相对包文件夹、`/` 分开）照给的字节打进去，不照磁盘上的（施工 F-18 上：`miyu pkg pack`
+/// 把超了上限的图标缩好了再打，源文件夹不动）。没写的照磁盘上的。
+///
+/// # Errors
+///
+/// 同 [`pack`]。
+pub fn pack_replacing(
+    folder: &Path,
+    id: &str,
+    out: &Path,
+    replaced: &BTreeMap<String, Vec<u8>>,
+) -> Result<Packed, Error> {
     let items = walk(folder)?;
     let partial = out.with_extension(format!("{EXTENSION}.partial"));
-    let written = write(&items, id, &partial);
+    let written = write(&items, (id, replaced), &partial);
     let (sha256, size) = match written {
         Ok(done) => done,
         Err(error) => {
@@ -191,7 +207,11 @@ fn executable_bit(_meta: &fs::Metadata) -> bool {
 }
 
 /// 照 `items` 写包文件 `to`，交回 SHA-256 和字节数。
-fn write(items: &[Item], id: &str, to: &Path) -> Result<(String, u64), Error> {
+fn write(
+    items: &[Item],
+    (id, replaced): (&str, &BTreeMap<String, Vec<u8>>),
+    to: &Path,
+) -> Result<(String, u64), Error> {
     let hashing = Hashing {
         inner: File::create(to)?,
         hasher: Sha256::new(),
@@ -210,6 +230,10 @@ fn write(items: &[Item], id: &str, to: &Path) -> Result<(String, u64), Error> {
         if item.folder {
             let path = format!("{id}/{}/", item.relative);
             builder.append_data(&mut header(0, mode, true), path, io::empty())?;
+        } else if let Some(bytes) = replaced.get(&item.relative) {
+            let path = format!("{id}/{}", item.relative);
+            let size = bytes.len() as u64;
+            builder.append_data(&mut header(size, mode, false), path, bytes.as_slice())?;
         } else {
             let file = File::open(&item.path)?;
             let size = file.metadata()?.len();

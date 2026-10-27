@@ -28,6 +28,7 @@ pub(crate) mod group;
 mod item;
 pub(crate) mod left;
 pub(crate) mod local;
+pub(crate) mod logo;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;

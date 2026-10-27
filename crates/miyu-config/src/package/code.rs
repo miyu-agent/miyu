@@ -85,6 +85,8 @@ pub enum Code {
     NotBuiltIn,
     /// `[package] icon` 不是 Lucide 图标名的写法（施工 F-6 上）。
     BadIcon,
+    /// `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上）。
+    BadLogo,
     /// `[page] dir` 不是包目录里的相对目录（施工 F-6 上）。
     BadPageDir,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
@@ -166,6 +168,7 @@ impl Code {
             Code::FeatureTaken => "feature_taken",
             Code::NotBuiltIn => "not_built_in",
             Code::BadIcon => "bad_icon",
+            Code::BadLogo => "bad_logo",
             Code::BadPageDir => "bad_page_dir",
             Code::BadMascotModel => "bad_mascot_model",
             Code::BadThemeFile => "bad_theme_file",
@@ -187,7 +190,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 56] = [
+    pub const ALL: [Code; 57] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -229,6 +232,7 @@ impl Code {
         Code::FeatureTaken,
         Code::NotBuiltIn,
         Code::BadIcon,
+        Code::BadLogo,
         Code::BadPageDir,
         Code::BadMascotModel,
         Code::BadThemeFile,

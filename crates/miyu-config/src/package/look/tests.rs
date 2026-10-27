@@ -74,3 +74,29 @@ fn only_extensions_and_built_in_packages_have_a_page() {
     let worker = "[package]\nprotocol = [1, 1]\nname = { en = \"W\" }\n\n[worker]\nprogram = \"w\"\n\n[page]\ndir = \"page\"\n";
     assert_eq!(read(worker).unwrap_err().code, Code::WrongKind);
 }
+
+/// 包自带的图标（施工 F-18 上）：包目录里一张 `.png`、`.webp` 的相对路径；不许 `..`、开头的 `/`、别的扩展名。
+#[test]
+fn a_logo_is_a_relative_png_or_webp_path() {
+    for logo in ["logo.png", "art/Logo.WEBP"] {
+        let manifest = read(&process(&format!("logo = \"{logo}\""), "")).unwrap();
+        assert_eq!(manifest.logo.as_deref(), Some(logo));
+    }
+    assert_eq!(read(&process("", "")).unwrap().logo, None);
+    for logo in [
+        "\"\"",
+        "\"./logo.png\"",
+        "\"../logo.png\"",
+        "\"/logo.png\"",
+        "\"logo.jpg\"",
+        "\"logo\"",
+        "1",
+    ] {
+        let problem = read(&process(&format!("logo = {logo}"), "")).unwrap_err();
+        assert_eq!(
+            (problem.code, problem.line),
+            (Code::BadLogo, Some(4)),
+            "{logo}"
+        );
+    }
+}

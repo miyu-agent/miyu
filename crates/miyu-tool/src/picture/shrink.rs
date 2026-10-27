@@ -38,11 +38,29 @@ pub struct Shrunk {
 /// 把 `bytes` 这张图缩到上限以内。解不开的（不是这四种图、坏了、太大解不开）、缩到最小还超的是空的。没超上限的原样交回
 /// 不在这里管：调的人先照 [`super::fits`] 看。
 pub fn shrink(bytes: &[u8]) -> Option<Shrunk> {
-    within(bytes, MAX_BYTES, MAX_SIDE)
+    within(bytes, (MAX_BYTES, MAX_SIDE), &encode)
 }
 
-/// 同 [`shrink`]，上限照给的：每边不超过 `side`、字节不超过 `limit`。
-fn within(bytes: &[u8], limit: u64, side: u32) -> Option<Shrunk> {
+/// 编成哪一种（施工 F-18 上：包自带的图标照原来的格式）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Encoding {
+    /// PNG。
+    Png,
+    /// 无损的 WebP。
+    WebP,
+}
+
+/// 同 [`shrink`]，上限照给的（每边不超过 `side`、字节不超过 `limit`），编成 `encoding`（施工 F-18 上：`miyu pkg pack` 缩包的
+/// 图标，PNG 照 PNG、WebP 照无损 WebP，透明照留）。
+pub fn shrink_as(bytes: &[u8], (limit, side): (u64, u32), encoding: Encoding) -> Option<Shrunk> {
+    within(bytes, (limit, side), &|image, _| encode_as(image, encoding))
+}
+
+/// 一张解好的图怎么编：交回字节和媒体类型。
+type Encode<'a> = &'a dyn Fn(&DynamicImage, bool) -> Option<(Vec<u8>, &'static str)>;
+
+/// 缩到每边不超过 `side`、字节不超过 `limit`，照 `encode` 编。
+fn within(bytes: &[u8], (limit, side): (u64, u32), encode: Encode<'_>) -> Option<Shrunk> {
     let image = decode(bytes)?;
     let alpha = image.color().has_alpha();
     let (mut width, mut height) = bounded(image.width(), image.height(), side);
@@ -82,6 +100,23 @@ fn bounded(width: u32, height: u32, side: u32) -> (u32, u32) {
     }
     let scale = |n: u32| ((u64::from(n) * u64::from(side) / u64::from(long)) as u32).max(1);
     (scale(width), scale(height))
+}
+
+/// 编成 `encoding`：透明照留。
+fn encode_as(image: &DynamicImage, encoding: Encoding) -> Option<(Vec<u8>, &'static str)> {
+    let mut out = Cursor::new(Vec::new());
+    match encoding {
+        Encoding::Png => {
+            image.write_to(&mut out, ImageFormat::Png).ok()?;
+            Some((out.into_inner(), "image/png"))
+        }
+        Encoding::WebP => {
+            let rgba = DynamicImage::ImageRgba8(image.to_rgba8());
+            let encoder = image::codecs::webp::WebPEncoder::new_lossless(&mut out);
+            rgba.write_with_encoder(encoder).ok()?;
+            Some((out.into_inner(), "image/webp"))
+        }
+    }
 }
 
 /// 有透明的编 PNG，没有的编 JPEG。

@@ -126,6 +126,8 @@ const METHODS: &[&str] = &[
     "provider.test",
     // 装了哪些软件包（施工 U23-R：照包开关他自己的，只给 `packages.rs` 的那几格；订阅软件包的流不给，那里还推 MCP 服务）。
     "package.list",
+    // 包自带的图标（施工 F-18 上）：同列表，只读他看得到的。
+    "package.logo",
     // 往自己那一层装、卸、升级不带程序的包，从软件源搜、拿索引，看自己看得到的包（施工 U23 下上，`packages/scope.rs`）。
     // `package.files` 不给：交的是这台电脑上的路径。
     "package.install",

@@ -45,7 +45,7 @@ pub fn fits(bytes: u64, width: u32, height: u32) -> bool {
 
 mod shrink;
 
-pub use shrink::{DECODE_LIMIT, Shrunk, shrink};
+pub use shrink::{DECODE_LIMIT, Encoding, Shrunk, shrink, shrink_as};
 
 #[cfg(test)]
 mod tests;

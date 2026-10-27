@@ -13,6 +13,7 @@ pub(super) struct Head {
     pub(super) summary: Phrases,
     pub(super) groups: Vec<String>,
     pub(super) icon: Option<String>,
+    pub(super) logo: Option<String>,
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
     pub(super) credits: super::credits::Credits,
@@ -110,6 +111,10 @@ impl Reader<'_> {
             Some(item) => Some(super::look::icon(self, item)?),
             None => None,
         };
+        let logo = match table.get("logo") {
+            Some(item) => Some(super::look::logo(self, item)?),
+            None => None,
+        };
         let needs = self.needs(table)?;
         let targets = self.targets(table)?;
         let credits = super::credits::read(self, table)?;
@@ -121,6 +126,7 @@ impl Reader<'_> {
             summary,
             groups,
             icon,
+            logo,
             needs,
             targets,
             credits,

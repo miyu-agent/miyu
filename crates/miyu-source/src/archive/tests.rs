@@ -362,3 +362,34 @@ fn a_link_inside_a_skipped_folder_does_not_stop_packing() {
     std::os::unix::fs::symlink("/etc/passwd", folder.join(".DS_Store")).expect("建得了链接");
     pack(&folder, "pudding", &scratch.path().join("p.miyu")).expect("打得成");
 }
+
+/// 打包时换掉个别文件的内容（施工 F-18 上：`miyu pkg pack` 把超了上限的图标缩好了再打）：包里是给的字节，源文件夹不动，
+/// 没写的照磁盘上的。
+#[test]
+fn replaced_files_are_packed_from_memory() {
+    let scratch = Scratch::new();
+    let folder = sample(scratch.path());
+    put(&folder, "art/logo.png", b"the original");
+    let replaced = BTreeMap::from([("art/logo.png".to_string(), b"shrunk".to_vec())]);
+    let packed = pack_replacing(
+        &folder,
+        "pudding",
+        &scratch.path().join("p.miyu"),
+        &replaced,
+    )
+    .expect("打得成");
+    let unpacked = unpack(&packed.path, &scratch.path().join("out")).expect("解得开");
+    assert_eq!(
+        fs::read(unpacked.folder.join("art/logo.png")).expect("在"),
+        b"shrunk"
+    );
+    assert_eq!(
+        fs::read(folder.join("art/logo.png")).expect("在"),
+        b"the original",
+        "源文件夹不动"
+    );
+    assert_eq!(
+        fs::read(unpacked.folder.join("package.toml")).expect("在"),
+        fs::read(folder.join("package.toml")).expect("在")
+    );
+}

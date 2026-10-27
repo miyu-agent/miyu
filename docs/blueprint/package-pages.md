@@ -10,13 +10,19 @@
 
 ```toml
 [package]
-icon = "message-circle"   # 可以不写：Lucide 的图标名
+icon = "message-circle"   # 可以不写：Lucide 的图标名，没有 logo 时的退路
+logo = "art/logo.png"     # 可以不写：包自带的图标，一张 PNG 或 WebP（施工 F-18 上）；有它的头用图
 
 [page]                    # 软件后台页，可以不写；只有扩展（process）、内置包（builtin）能写
 dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入口是里面的 index.html
 ```
 
 1. `icon`：小写字母开头，只有小写字母、数字、`-`，最多 64 个。核心只查写法，不查 Lucide 里有没有；头认不出的照没写画。不合写法的 `bad_icon`。
+1. `logo`（施工 F-18 上，2026-10-28 项目主人「放一张图就行，超了大小就压缩」）：包目录里一张 PNG 或 WebP 的相对路径（写法同 `[page] dir`，扩展名是 `.png`、`.webp`），不合写法的 `bad_logo`。头照先后：有 logo 用图，没有的用 `icon`，都没有的用默认。一张就够，不分尺寸。
+   - 上限：不超过 256 KiB，宽高都不超过 512 像素（`miyu_config::package::LOGO_MAX_BYTES`、`LOGO_MAX_SIDE`），不求正方形（头照自己的框裁）。
+   - 谁压：`miyu pkg pack` 打包时查，超了的在打进包的那一份上缩（PNG 照 PNG、WebP 编无损 WebP，透明照留），源文件不动，印一句（`cli/pkg.md`）；不在、不是 PNG / WebP、缩不下去的打包失败。
+   - 核心只查、不解码不缩（看开头的字节认格式、只看文件头量宽高，同人格的头像，`packages/logo.rs`）：不在（照真实路径，出了包目录的也算不在）、不是 PNG / WebP、超了上限的当没有图标，包照装，`miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`。本地开发目录同一个上限。
+   - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里没装的包的图标随 F-18 下进索引。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
 3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，管理员装的是家目录的 `packages/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
 
@@ -25,9 +31,14 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 | 格 | 有的时候 | 是什么 |
 |---|---|---|
 | `icon` | 清单写了 | 照原样 |
+| `logo` | 清单写了、合规矩 | 图标的版本：内容的 SHA-256 前 16 位十六进制，头照它换缓存；图用 `package.logo` 读（施工 F-18 上） |
 | `page` | 有后台页 | `true`：清单写了 `[page]`，`index.html` 在 |
 | `status` | 读成了的 | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，见下 |
 | `enabled` | 有开关的 | 开关现在是开是关，见「开关」 |
+
+### `package.logo`（施工 F-18 上）
+
+`package.logo {"package"}`：读一个装着的包自带的图标，回应 `{"package", "logo", "media_type", "data"}`：`logo` 是版本（同列表那一格），`media_type` 是 `image/png` 或 `image/webp`，`data` 是 base64；清单没写、不合规矩的三格都是 `null`。照连接替谁干活的那个人看得到的找（他自己那一层的盖过系统的），没装的 `unknown_package`。成员调得了（同 `package.list`），扩展照能力表能调。不复用 `package.file`：它只读后台页目录里的，没有后台页的包回 `no_page`。形状同 `persona.avatar`。
 
 `status`：
 

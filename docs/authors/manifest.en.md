@@ -17,6 +17,7 @@ summary = { en = "Greets people by name", zh = "照名字打招呼" }   # option
 author = "Alice <alice@example.com>"               # optional
 upstream = "https://github.com/alice/hello"         # source repository, optional
 icon = "hand"                                       # a Lucide icon name, optional
+logo = "art/logo.png"                               # a picture shipped in the package, optional
 needs = ["images"]                                  # optional: off where images can't be shown (voice)
 targets = ["linux-x86_64", "macos-aarch64"]         # optional: the systems its own programs run on
 
@@ -77,6 +78,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
 | `members` | `true`: members may use it by default. A package that runs a process (an extension, or one that brings MCP servers) is usable only by the admin group by default; an admin's choice at the system layer wins. Ignored for packages a member installs for themselves. Default `false` |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
+| `logo` | A picture shipped in the package: a relative path inside the package folder, `.png` or `.webp`. At most 256 KiB and 512 pixels a side; `miyu pkg pack` shrinks a bigger one in its own format while packing (the original in the folder stays). A missing, broken or oversized one counts as no logo: the package still installs and `miyu check` warns. Heads draw it first and fall back to `icon` |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
 | `miyu` | The oldest Miyu it works with: three numbers, such as `"0.2.0"`. Write it when you use newly added fields or methods; an older Miyu then says it needs updating instead of reporting keys it doesn't know |
 | `groups` | Only for packages that ship with Miyu: the groups it belongs to (for example `["basesystem"]`); a preset that names a group switches the packages in it. Other packages get an error. The old `required` (also shipped-only) was dropped on 2026-10-26 |

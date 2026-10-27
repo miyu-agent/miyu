@@ -98,7 +98,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "content.read" | "kb.documents" | "kb.list" | "kb.read" | "kb.search"
         | "login.redeem" | "memory.cards" | "memory.list" | "memory.search" | "memory.turns"
         | "mermaid.render" | "model.call" | "model.embed" | "model.list" | "package.check"
-        | "package.emit" | "package.files" | "package.info" | "package.list" | "package.methods"
+        | "package.emit" | "package.files" | "package.info" | "package.list" | "package.logo" | "package.methods"
         | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
         | "feature.offer" | "persona.list" | "persona.read" | "port.claim" | "port.release" | "preset.get"
         | "preset.list" | "process.keep" | "process.retire" | "provider.catalog"

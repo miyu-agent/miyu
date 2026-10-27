@@ -17,6 +17,7 @@ summary = { en = "Greets people by name", zh = "照名字打招呼" }   # 可以
 author = "Alice <alice@example.com>"               # 作者，可以不写
 upstream = "https://github.com/alice/hello"         # 源码仓库，可以不写
 icon = "hand"                                       # Lucide 的图标名，可以不写
+logo = "art/logo.png"                               # 包里自带的一张图标，可以不写
 needs = ["images"]                                  # 可以不写：显示不了图片的地方（语音）整包当没开
 targets = ["linux-x86_64", "macos-aarch64"]         # 可以不写：带了本机程序的写它能跑的几种系统
 
@@ -77,6 +78,7 @@ place = "status"
 | `upstream` | 上游：这个包的源码仓库，`https://` 开头。软件包信息页上露出来 |
 | `members` | `true`：默认成员也能用。带进程的包（扩展、带 MCP 服务的）默认只有管理员组的人能用；管理员在系统那一层改了的照他的。成员自己装的包不认这一格。默认 `false` |
 | `icon` | Lucide 的图标名。界面不一定认得 Lucide 的全部名字：终端界面只认它对照表里的那些，认不出的画通用的工具图标（扳手） |
+| `logo` | 包里自带的一张图标：包目录里的相对路径，`.png` 或 `.webp`。不超过 256 KiB、每边不超过 512；`miyu pkg pack` 打包时超了的照原格式缩到以内（目录里的原图不动）。不在、不是图、超了的当没有图标，包照装，`miyu check` 报警告。界面有它先画它，没有画 `icon` |
 | `needs` | 要这个地方有什么才有用：现在只认 `images`（显示不了图片的会话里整包当没开） |
 | `miyu` | 最低要哪一版 Miyu：三段数字，例如 `"0.2.0"`。用了新加的格、新的方法时写上；旧版本的 Miyu 读到会说清要更新，不会报看不懂的键 |
 | `groups` | 只给出厂的包：在哪几个组里（例如 `["basesystem"]`），预设写组名就开关组里的包。别的包写了报错。原来的 `required`（也只给出厂的包）2026-10-26 去掉了 |

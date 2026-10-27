@@ -10,6 +10,12 @@ use super::{Code, PackageKind, Problem};
 /// 图标名最多几个字符。
 const ICON_MAX: usize = 64;
 
+/// 包自带的图标最多几个字节（施工 F-18 上）：256 KiB。核心照它查（不解码、不缩），`miyu pkg pack` 照它缩。
+pub const LOGO_MAX_BYTES: u64 = 256 * 1024;
+
+/// 包自带的图标每边最多几个像素（施工 F-18 上）。
+pub const LOGO_MAX_SIDE: u32 = 512;
+
 /// `[package] icon`：小写字母开头，只有小写字母、数字、`-`，最多 64 个。
 pub(super) fn icon(reader: &Reader<'_>, item: &Item) -> Result<String, Problem> {
     item.as_str()
@@ -23,6 +29,28 @@ pub(super) fn icon(reader: &Reader<'_>, item: &Item) -> Result<String, Problem> 
                 format!("package.icon must be a Lucide icon name: a lowercase letter, then lowercase letters, digits and -, at most {ICON_MAX}"),
             )
         })
+}
+
+/// `[package] logo`（施工 F-18 上）：包目录里的相对路径（写法同 `[page] dir`：不许 `..`、开头的 `/`），扩展名是 `.png` 或
+/// `.webp`（不分大小写）。图本身由核心查。
+pub(super) fn logo(reader: &Reader<'_>, item: &Item) -> Result<String, Problem> {
+    item.as_str()
+        .filter(|path| relative_dir(path) && image_name(path))
+        .map(str::to_string)
+        .ok_or_else(|| {
+            reader.problem(
+                Some(item),
+                Code::BadLogo,
+                "package.logo",
+                "package.logo must be a relative path to a .png or .webp file inside the package directory".to_string(),
+            )
+        })
+}
+
+/// 文件名是 `.png`、`.webp` 结尾的（不分大小写）。
+fn image_name(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    lower.ends_with(".png") || lower.ends_with(".webp")
 }
 
 /// `[page]`：只有 `dir`，必写，包目录里的相对目录（写法同 `[ui] pages_dir`）。

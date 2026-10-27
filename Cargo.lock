@@ -1928,6 +1928,7 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "getrandom 0.4.3",
+ "image",
  "jiff",
  "miyu-config",
  "miyu-core",

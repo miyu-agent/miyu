@@ -100,6 +100,7 @@ package.files
 package.info
 package.install
 package.list
+package.logo
 package.members
 package.methods
 package.owns

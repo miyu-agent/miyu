@@ -355,6 +355,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `feature_taken` | 功能的编号被先读到的包占了（施工 F-1） |
 | `not_built_in` | 清单是内置包，这一份核心没编进它的代码（施工 F-2，核心起来时标；`miyu check` 不查） |
 | `bad_icon`、`bad_page_dir` | `[package] icon` 不是 Lucide 图标名的写法，`[page] dir` 不是包目录里的相对目录（施工 F-6 上） |
+| `bad_logo` | `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上，`package-pages.md`「清单多的几格」）；图本身不合规矩的在 `miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`，包照装 |
 | `bad_export` | `[export] methods` 里有不是方法名的、重复的（施工 X-18） |
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |
 | `bad_slash` | `[[slash]]` 写错了（施工 X-14 下，`slash.md`「扩展的命令」）：命令名、说明、提示，同一个包里重了；声明了却没在 `[process] capabilities` 写 `commands`（`detail` 是 `slash`，报在第一段）；`detail` 是哪一格（`slash.<名字>.<格>`）、报在那一段 |

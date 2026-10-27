@@ -44,6 +44,7 @@ const READS: &[&str] = &[
     "model.call",
     "provider.detect",
     "package.list",
+    "package.logo",
     "package.info",
     "package.files",
     "package.file",
