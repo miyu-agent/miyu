@@ -238,6 +238,12 @@
 
 `decision`、`answers` 正好写一个。**回应**：`{"events": [序号…]}`。
 
+**选 `session` 记住的是什么**：推送里的 `rule`（没有就不能选 `session`），紧凑的 JSON：`tool` 哪件工具，`write` 放行写的几个目录（连同下面的）。命令要越过沙盒时，`write` 是工作目录，工具认得出命令前缀的另有 `prefix`（例如 `"docker ps"`、`"npm run"`）：选了以后，这个会话里工作目录在这个目录下面时，同一前缀的命令越过沙盒不再问。连起来的几段前缀不一样、开头有变量赋值、包了 `sudo`、`env`、`sh -c` 这类一层的命令没有 `prefix`，照旧每次问。头可以把 `prefix` 显示成「以后 `docker ps` 开头的命令在这个目录不再询问」。
+
+```json
+{"prefix":"docker ps","tool":"shell","write":["/home/me/proj"]}
+```
+
 **出错**
 
 | `data.reason` | 什么时候 |

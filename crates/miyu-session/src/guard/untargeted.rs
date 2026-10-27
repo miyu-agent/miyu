@@ -1,6 +1,8 @@
 //! 不报路径的调用怎么判（从 `guard.rs` 挪来，施工 5-18：那边到了 500 行）：照访问类别、级别、沙盒能不能用，在场所里做的事
 //! 照会话在不在场所里，要在沙盒外跑的照级别（`session/guard.md` 第四条）。
 
+use std::path::Path;
+
 use serde_json::json;
 
 use miyu_kernel::raw::RawJson;
@@ -8,6 +10,7 @@ use miyu_kernel::session::Verdict;
 use miyu_kernel::tool::Access;
 use miyu_policy::GuardTexts;
 
+use super::asking::{prefixed, this_dir};
 use super::levels::Effective;
 use super::{Place, deny, module, raw};
 
@@ -45,20 +48,30 @@ pub(super) fn in_venue(place: &Place) -> Verdict {
     }
 }
 
-/// 要在沙盒外跑的（施工 D-4，第四条）：拒绝的照拒（数据根这些），完全放开照判的（本来就不套沙盒），只读拒绝，工作区问人、
-/// 不提规则（一次放开整个沙盒，不该一劳永逸；本会话放行过的规则只管路径，管不到它）。
+/// 要在沙盒外跑的（施工 D-4，第四条）：拒绝的照拒（数据根这些），完全放开照判的（本来就不套沙盒），只读拒绝，工作区问人。
+/// 执行命令的（`access` 是执行）问人时另提「此目录不再询问」：放行工作目录 `cwd`（真实的位置）的写（施工 5-15），工具报了命令
+/// 前缀 `prefix` 的带上它（施工 SB-3）；本会话放行过（`grants`）同一件工具、同一前缀、这个目录（连同下面的）的，工作区这一级
+/// 不再问。高危、只碰得到自己工作区的在这之前拦下了。
 pub(super) fn beyond(
     verdict: Verdict,
     level: Effective,
-    (name, access, rule): (&str, Access, Option<RawJson>),
-    asking: &[(&'static str, String)],
+    (name, access, prefix, cwd): (&str, Access, Option<String>, &Path),
+    (grants, asking): (&[RawJson], &[(&'static str, String)]),
     texts: &GuardTexts,
 ) -> Verdict {
     match (verdict, level) {
         (denied @ Verdict::Deny { .. }, _) => denied,
         (verdict, Effective::Full) => verdict,
         (_, Effective::ReadOnly) => deny(texts.read_only()),
+        (_, Effective::Workspace)
+            if prefix
+                .as_deref()
+                .is_some_and(|prefix| prefixed(grants, name, prefix, cwd)) =>
+        {
+            Verdict::Allow
+        }
         (_, Effective::Workspace) => {
+            let rule = (access == Access::Execute).then(|| this_dir(name, cwd, prefix.as_deref()));
             let detail = described(name, &access, asking);
             Verdict::Ask {
                 module: module(),

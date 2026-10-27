@@ -231,6 +231,15 @@ Exit code 2
 5. 认：`rm`、`rmdir`、`unlink`、`shred`、`find … -delete`（`-exec rm`）的目标照字面换成绝对路径（`dir/*`、`dir/.*` 照删 `dir` 算），是根、家目录或它上面的、根下一层、数据根或装着它的（各账号的工作区里面除外）、工作目录或它上面的；带变量、命令替换又是整个往下删的照删不清；git 跳过 `-C`、`-c`、`--git-dir`、`--work-tree`、`--namespace` 和别的选项再认子命令：`push` 带 `-f`、`--force*`、`+分支`，`reset --hard`，`clean -f`，`checkout .`（不是 `-b`），`restore .`（不是 `--staged`），`stash drop`、`stash clear`；`mkfs*`、`wipefs`、`mke2fs`，`dd of=` 或者 `>` 写 `/dev/sd*` 这类裸设备；`shutdown`、`reboot`、`halt`、`poweroff`、`init 0`、`init 6`、`systemctl poweroff` 这类；`curl`、`wget` 接到读标准输入的 shell 或解释器，`bash <(curl …)`、`sh -c "$(curl …)"`；容器（施工 5-17 三补，`docker`、`podman`、`nerdctl` 的 `run`、`create`、`container run`）：`--privileged`、`--cap-add` 加 `ALL`/`SYS_ADMIN`、把宿主的 `/`、`/dev`、`/sys` 整个挂进去（`-v`、`--volume`、`--mount` 的 `source`）是 `container_host`（拒），`--device`、`--device-cgroup-rule`、`--pid`/`--net`/`--network`/`--ipc` 写 `host`、挂 `/dev`、`/sys` 下面的某一个是 `container_share`（问人）；入口是 systemd 本身不拦（不带特权的 `podman --systemd=always` 是测 systemd 单元该用的）。
 6. 几处都认出来的，交回拒的那一种，都是问的交回最先认出的；灭顶的那几种带写给她的一句和说法（上面的表）。
 
+### 命令前缀（施工 SB-3）
+
+报给权限策略（`Tool::prefix`，`session/guard.md` 第四条）：越过沙盒问人时「此目录不再询问」的规则带上它，选了的这个会话在这个目录下同一前缀的命令越过沙盒不再问。前缀是规则能放开多大，取得宁可窄，取不清的不报（照旧每次问）。只认 bash、zsh 的写法，同高危；照 `miyu_policy::hazard::prefix`，用高危那一套拆命令：
+
+1. 第一个词照写的原样，不去路径：`./docker`、`/tmp/x/docker` 和 `docker` 是三个前缀（放行过 `docker` 不放行本地叫 docker 的脚本）。
+2. 「程序 + 子命令」那几个（`git`、`npm`、`pnpm`、`yarn`、`bun`、`npx`、`cargo`、`rustup`、`docker`、`podman`、`kubectl`、`helm`、`go`、`pip`、`pip3`、`uv`、`poetry`、`systemctl`、`brew`、`gh`）带上紧跟着的子命令：`docker ps`、`npm run`。紧跟着的是选项（`git -C dir status`、`docker --version`）的不报：选项后面哪个词是子命令要照每个程序的写法认，认错了规则就放大了。
+3. 不报：开头有变量赋值的（`PATH=…`、`LD_PRELOAD=…` 能把同一个前缀换成别的程序）；第一个词是包一层的（`env`、`sudo`、`doas`、`xargs`、`nohup`、`timeout`、`time`、`nice`、`exec`、`eval`、`command`、`builtin`、`source`、`.`、`sh`、`bash`、`zsh`、`fish`、`dash`：放行一次 `timeout` 就等于放行一切）；引号外有子 shell、花括号（`${名字}` 不算）、命令替换（`$( )`、反引号、`<( )`，双引号里的也算）的；前缀的词里有变量的。
+4. `|`、`&&`、`||`、`;`、`&`、换行连起来的：每一段的前缀都一样才报这一个，有一段不同就不报。只有重定向的空段不算一段。
+
 只认字面，挡不住刻意绕的，防幻觉够用（2026-10-20 项目主人定）。
 
 ### 出错

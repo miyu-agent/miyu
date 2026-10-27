@@ -124,11 +124,42 @@ pub(super) fn hazardous(
     }
 }
 
-/// 命令越过沙盒问人时提的规则（施工 5-15，「此目录不再询问」）：放行工作目录 `cwd`（换成真实的位置）的写，连同下面的。
-/// 家目录本身也照放：人看得到放行的是哪个目录，私密目录照旧另问（[`granted`]），沙盒照旧藏数据根。
-pub(super) fn this_dir(name: &str, cwd: &str, home: Option<&Path>) -> RawJson {
-    let real = resolve(Path::new("/"), home, cwd).unwrap_or_else(|_| PathBuf::from(cwd));
-    raw(&json!({ "tool": name, "write": [text(&real)] }))
+/// 工作目录 `cwd` 的真实位置；换不了的照写的。
+pub(super) fn real_dir(cwd: &str, home: Option<&Path>) -> PathBuf {
+    resolve(Path::new("/"), home, cwd).unwrap_or_else(|_| PathBuf::from(cwd))
+}
+
+/// 命令越过沙盒问人时提的规则（施工 5-15，「此目录不再询问」）：放行工作目录 `cwd`（真实的位置）的写，连同下面的。
+/// 家目录本身也照放：人看得到放行的是哪个目录，私密目录照旧另问（[`granted`]），沙盒照旧藏数据根。工具报了命令前缀的另写
+/// `prefix`（施工 SB-3）：选了的，这个目录下同一前缀的命令越过沙盒不再问（[`prefixed`]）。
+pub(super) fn this_dir(name: &str, cwd: &Path, prefix: Option<&str>) -> RawJson {
+    let mut rule = json!({ "tool": name, "write": [text(cwd)] });
+    if let Some(prefix) = prefix {
+        rule["prefix"] = json!(prefix);
+    }
+    raw(&rule)
+}
+
+/// 放行过的规则里有一条认这一次越过沙盒的命令（施工 SB-3）：工具 `name` 一样，前缀 `prefix` 一字不差，工作目录的真实位置
+/// `cwd` 是规则放行写的某个目录本身、或者在它下面（按路径的段比，同 [`granted`]）。读不懂的、没写前缀的规则不算。
+pub(super) fn prefixed(grants: &[RawJson], name: &str, prefix: &str, cwd: &Path) -> bool {
+    grants.iter().any(|rule| {
+        serde_json::from_str::<Value>(rule.get())
+            .ok()
+            .is_some_and(|rule| {
+                rule.get("tool").and_then(Value::as_str) == Some(name)
+                    && rule.get("prefix").and_then(Value::as_str) == Some(prefix)
+                    && rule
+                        .get("write")
+                        .and_then(Value::as_array)
+                        .is_some_and(|scopes| {
+                            scopes
+                                .iter()
+                                .filter_map(Value::as_str)
+                                .any(|scope| cwd.starts_with(scope))
+                        })
+            })
+    })
 }
 
 /// 要问人的一条落在放行过的规则里没有（施工 D-1）：规则里照是读是写（`read`、`write`）列着放行的范围，这一条是其中一个

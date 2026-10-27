@@ -46,7 +46,7 @@ use bounds::Bounds;
 pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
 
-use asking::{Asked, ask, granted, hazardous, this_dir};
+use asking::{Asked, ask, granted, hazardous, real_dir};
 pub(crate) use confined::{Confined, Own, Reach};
 use untargeted::{beyond, described, in_venue, untargeted};
 
@@ -357,11 +357,19 @@ impl Guard {
             };
         }
         if tool.outside_sandbox(&call) || access == Access::Install {
-            // 命令越过沙盒问人时另提「此目录不再询问」：放行工作目录的写（施工 5-15）。
-            let offer =
-                (access == Access::Execute).then(|| this_dir(name, &cwd, self.home.as_deref()));
+            // 命令越过沙盒的另报前缀（施工 SB-3）：放行过同一前缀、这个目录的不再问，问人时规则带上它。
+            let prefix = (access == Access::Execute)
+                .then(|| tool.prefix(&call))
+                .flatten();
+            let real = real_dir(&cwd, self.home.as_deref());
             let texts = self.lettering.guard();
-            beyond(verdict, level, (name, access, offer), &asking, &texts)
+            beyond(
+                verdict,
+                level,
+                (name, access, prefix, &real),
+                (grants, &asking),
+                &texts,
+            )
         } else {
             verdict
         }

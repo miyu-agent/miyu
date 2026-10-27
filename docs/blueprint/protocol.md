@@ -616,7 +616,7 @@
 1. 先查参数，再找会话：`decision`、`answers` 两样都写、都不写；回答提问却带了 `reason`、外面的 `attachments`；`call` 不合调用编号的写法；`nested` 不是正整数，或者回答提问时写了；`decision` 不是这三种（`workspace`、大写的也算）：`bad_params`。「这个工作区以后都允许」以后再加（2026-09-28 项目主人定），协议先不认：内核的 `unknown_decision` 因此从协议上碰不到。
    附件（施工 Q-A，2026-10-22 项目主人：「回答的时候用户需要图片辅助表达自己的信息」）照 `session.send` 那一套：找会话之前换成块（`unknown_attachment`、`attachment_too_big`、写法不对的 `bad_params`，什么都不送），找到会话以后照属主拷过去、没有本机路径的落成会话里的文件。拒绝的附件记在 `tool.approval_decided` 的 `attachments`，接在理由后面进 `denied` 的结果；回答的附件记在 `question.answered` 那一道的 `attachments`，`ask_user` 在那道的回答后面写一句附了几个（`ask_user/attached.txt`），东西照题目的先后跟在结果的字后面。给她的办法同用户消息的附件：看不了图的模型照旧替看。
 2. 交给内核（`Command::Answer`），`by` 取自连接（现在都是管理员），`cause` 是这一条的 `id`。内核拒的：这个调用没在等回答（答过了、了结了、不是这一种），`not_asking`；请求没提放行规则却选了本会话都允许，`no_rule`；允许却带了理由、附件，`unexpected_reason`；回答和题目对不上，`bad_answer`（`kernel/asking.md`）。空的理由当没写。
-3. 允许的，决定落了盘这个调用才跑；本会话都允许的，这个会话以后落在同一个范围里的写入不再问（`session/guard.md`「判一次调用」第 7 条）。拒绝的，再记一条 `denied` 的结果，写了理由的带上，她接着干（`11-权限与沙盒.md` A13）。
+3. 允许的，决定落了盘这个调用才跑；本会话都允许的，这个会话以后落在同一个范围里的写入不再问（`session/guard.md`「判一次调用」第 7 条）。命令越过沙盒的确认请求，`rule` 是 `{"prefix", "tool", "write"}`：`write` 是工作目录，`prefix` 是工具报的命令前缀（施工 SB-3，取不清的不写）；本会话都允许的，以后工作目录在这个目录下、同一前缀的命令越过沙盒不再问（`session/guard.md` 第四条、第五条第 1 款）。协议不加格：`rule` 原来就是原样交给头的 JSON。拒绝的，再记一条 `denied` 的结果，写了理由的带上，她接着干（`11-权限与沙盒.md` A13）。
 4. 头收起抽屉照推送：这个调用有了结果（`tool.result`），或者回答落了盘（`tool.approval_decided`、`question.answered`）。
 
 **`session.clear`**（施工 6-8 补，`compaction.md` 第十四条）

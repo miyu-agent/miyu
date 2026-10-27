@@ -306,6 +306,15 @@ impl Tool for Fake {
         })
     }
 
+    /// 参数里的 `prefix`（施工 SB-3）：假工具不拆命令，测试自己写。
+    fn prefix(&self, call: &Call) -> Option<String> {
+        serde_json::from_str::<serde_json::Value>(&call.args)
+            .ok()?
+            .get("prefix")?
+            .as_str()
+            .map(str::to_string)
+    }
+
     fn file(&self) -> Option<&Path> {
         self.file.as_deref()
     }

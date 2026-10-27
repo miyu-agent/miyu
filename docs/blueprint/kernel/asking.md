@@ -79,7 +79,7 @@
    2. 实际生效的是只读，要的是写入（`write`，或者不认识的）：不记请求，记一条 `denied`，`by` 是内核，`read-only`。
    3. 别的：记一条 `tool.approval_requested`，调用到 `Asking`，停下来等人。
 6. 记了结果的，这一步因此齐了就往下走（`session.md`「调工具」第 7 条）；然后派后面轮到的。
-7. 内核只记放行规则，不判：选了 `session`、`workspace` 以后怎么放行，是链照日志去用的事。
+7. 内核只记放行规则，不判：选了 `session`、`workspace` 以后怎么放行，是链照日志去用的事。规则里有哪几格（`tool`、`write`，越过沙盒的命令另有 `prefix`，施工 SB-3）也是链的事，内核原样记（`session/guard.md` 第五条）。
 
 **人确认**（`Answer::Approval`）：
 

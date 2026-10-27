@@ -321,6 +321,15 @@ impl Tool for Shell {
         })
     }
 
+    /// 命令前缀（施工 SB-3，`miyu_policy::hazard::prefix`）：只认 bash、zsh 的命令，同高危。
+    fn prefix(&self, call: &Call) -> Option<String> {
+        if !self.program.kind.posix() {
+            return None;
+        }
+        let args = serde_json::from_str::<Args>(&call.args).ok()?;
+        miyu_policy::hazard::prefix(&args.command)
+    }
+
     fn asking(&self, call: &Call) -> Vec<(&'static str, String)> {
         serde_json::from_str::<Args>(&call.args).map_or_else(
             |_| Vec::new(),

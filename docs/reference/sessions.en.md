@@ -238,6 +238,12 @@ When she does something that needs approval she stops and asks (pushed as `tool.
 
 Give exactly one of `decision` and `answers`. **Response**: `{"events": [numbers…]}`.
 
+**What `session` remembers**: the pushed request's `rule` (without one, `session` can't be chosen), compact JSON: `tool` is which tool, `write` the folders whose writes are allowed (with everything below). When a command wants to run outside the sandbox, `write` is the working folder, and if the tool can tell the command's prefix there is also `prefix` (for example `"docker ps"`, `"npm run"`): once chosen, in this session, while the working folder is that folder or below it, commands with the same prefix run outside the sandbox without asking again. Chained commands whose parts have different prefixes, commands starting with a variable assignment, and commands wrapped in `sudo`, `env`, `sh -c` and the like have no `prefix` and are asked every time. A head can show `prefix` as "Don't ask again for commands starting with `docker ps` in this folder".
+
+```json
+{"prefix":"docker ps","tool":"shell","write":["/home/me/proj"]}
+```
+
 **Errors**
 
 | `data.reason` | When |
