@@ -147,3 +147,45 @@ async fn remove(core: &Arc<Core>, group: &str, preview: bool) -> Result<Value, R
     }
     Ok(json!({"group": group, "removed": removed}))
 }
+
+/// 回应顶上的 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表里的每个组，编号、名字、说明照连接的语言挑。组表读不成
+/// 的记一行、当没有。
+pub(super) fn listed(core: &Core, language: &str) -> Vec<Value> {
+    let groups = table(core);
+    groups
+        .iter()
+        .map(|group| {
+            let mut shown =
+                json!({"id": group.id, "name": crate::personas::pick(&group.name, language)});
+            if let Some(summary) = crate::personas::pick(&group.summary, language) {
+                shown["summary"] = json!(summary);
+            }
+            shown["packages"] = json!(installed(core, group));
+            shown
+        })
+        .collect()
+}
+
+/// 组 `group` 里装着的包（施工 PG-1）：照组表的 `order` 排，没写到的排在后面、照编号。
+fn installed(core: &Core, group: &Group) -> Vec<String> {
+    let mut ids: Vec<String> = core
+        .system_packages()
+        .iter()
+        .filter(|found| {
+            found
+                .read
+                .as_ref()
+                .is_ok_and(|manifest| manifest.groups.contains(&group.id))
+        })
+        .map(|found| found.id.clone())
+        .collect();
+    let rank = |id: &String| {
+        group
+            .order
+            .iter()
+            .position(|one| one == id)
+            .unwrap_or(usize::MAX)
+    };
+    ids.sort_by(|a, b| rank(a).cmp(&rank(b)).then_with(|| a.cmp(b)));
+    ids
+}

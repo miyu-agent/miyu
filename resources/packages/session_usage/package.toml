@@ -5,12 +5,12 @@ author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 protocol = [1, 1]
 groups = ["basesystem"]
-name = { en = "Usage", zh = "用量", ja = "使用量" }
+name = { en = "Usage lookup", zh = "用量查询", ja = "使用量の照会" }
 summary = { en = "Check how many tokens this session has used", zh = "看这个会话用了多少 token", ja = "このセッションのトークン使用量を見ます" }
 
 # 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
 [features.session_usage]
-name = { en = "Usage", zh = "用量", ja = "使用量" }
+name = { en = "Usage lookup", zh = "用量查询", ja = "使用量の照会" }
 summary = { en = "Check how many tokens this session has used", zh = "看这个会话用了多少 token", ja = "このセッションのトークン使用量を見ます" }
 tools = ["session_usage"]
 

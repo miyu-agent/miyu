@@ -158,24 +158,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             for_members(item);
         }
     }
-    Ok(json!({ "packages": items, "groups": group_table(core, peer.language) }))
-}
-
-/// 回应顶上的 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表里的每个组，编号、名字、说明照连接的语言挑。组表读不成
-/// 的记一行、当没有。
-fn group_table(core: &Core, language: &str) -> Vec<Value> {
-    let groups = group::table(core);
-    groups
-        .iter()
-        .map(|group| {
-            let mut shown =
-                json!({"id": group.id, "name": crate::personas::pick(&group.name, language)});
-            if let Some(summary) = crate::personas::pick(&group.summary, language) {
-                shown["summary"] = json!(summary);
-            }
-            shown
-        })
-        .collect()
+    Ok(json!({ "packages": items, "groups": group::listed(core, peer.language) }))
 }
 
 /// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）；装着的、卸掉了的出厂的都有，都不是的没有。
@@ -268,6 +251,12 @@ fn listed(
                 item["members"] = json!(core.members_may(&found.id, manifest));
             }
             item["state"] = json!(places.state_dir(&found.id).to_string_lossy());
+            // 装的时刻（施工 PG-1：预设页照装的先后排）：本地库只记装进家目录的，出厂的没有。
+            if let Some(at) =
+                miyu_store::packages::local::installed(&places.local_root(), &found.id)
+            {
+                item["installed_at"] = json!(at);
+            }
             if let Some(range) = mismatch(manifest) {
                 item["code"] = json!("protocol_mismatch");
                 item["problem"] = json!(sentence(words, "protocol_mismatch", &range));

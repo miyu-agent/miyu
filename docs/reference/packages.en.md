@@ -32,7 +32,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 
 ## `package.list`
 
-**Params**: none. **Response**: `{"packages": [...], "groups": [...]}`: the packages by id, and the groups in the shipped group table, each `{"id", "name", "summary"?}` in the connection's language (heads gather a group's packages under it). An item:
+**Params**: none. **Response**: `{"packages": [...], "groups": [...]}`: the packages by id, and the groups in the shipped group table, each `{"id", "name", "summary"?, "packages"}` in the connection's language; `packages` lists the installed packages in the group by their order of use (as written in the shipped group table; any not listed come after, by id). Heads gather a group's packages under it in that order. An item:
 
 | Name | Notes |
 |---|---|
@@ -40,6 +40,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a terminal theme, with `theme: {"file"}`; `package.file` gives only that file), `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
+| `installed_at` | When it was installed; absent for shipped ones. Heads sort the rest by it |
 | `from` | Where it came from: `shipped`, `official` (installed from the official software source), `local` (a local folder or package file); `community` will join once community sources exist |
 | `version`, `protocol`, `state` | Version, protocol it speaks, state |
 | `groups` | The groups it is in (only shipped built-in packages have them; `basesystem` is the base system); absent when none |

@@ -32,7 +32,7 @@
 
 ## `package.list`
 
-**参数**：没有。**回应**：`{"packages": [...], "groups": [...]}`：包照编号排；组是出厂组表里的组，每个 `{"id", "name", "summary"?}`，照连接的语言（头照它把组里的包收在一起）。一项：
+**参数**：没有。**回应**：`{"packages": [...], "groups": [...]}`：包照编号排；组是出厂组表里的组，每个 `{"id", "name", "summary"?, "packages"}`，照连接的语言；`packages` 是组里装着的包，照用途的先后（出厂组表写的，没写到的排在后面、照编号），头照它把组里的包收在一起、照这个先后排。一项：
 
 | 名字 | 说明 |
 |---|---|
@@ -40,6 +40,7 @@
 | `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（终端的主题，带 `theme: {"file"}`，`package.file` 只给那一份）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
+| `installed_at` | 装的时刻；出厂的没有。头照它排「别的按安装先后」 |
 | `from` | 从哪来：`shipped`（出厂）、`official`（从官方软件源装的）、`local`（本机文件夹、包文件装的）；以后有了社区软件源再多 `community` |
 | `version`、`protocol`、`state` | 版本、说的协议版本、状态 |
 | `groups` | 在哪几个组里（只有出厂的内置包有，`basesystem` 是基础系统）；不在组里的没有 |

@@ -44,10 +44,24 @@ async fn listed(home: &Home) -> Vec<Value> {
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let reply = client.call("p1", "package.list", json!({})).await;
-    reply["result"]["packages"]
+    let mut items = reply["result"]["packages"]
         .as_array()
         .unwrap_or_else(|| panic!("{reply}"))
-        .clone()
+        .clone();
+    // 装的时刻每次不一样（施工 PG-1）：装上的（读得成的）都带、出厂的都不带，查过再拿掉，下面照整项比。
+    for item in &mut items {
+        let at = item
+            .as_object_mut()
+            .and_then(|fields| fields.remove("installed_at"));
+        // 清单读不成的只有原因，不带别的格。
+        let readable = item.get("code").is_none() || item.get("kind").is_some();
+        assert_eq!(
+            at.is_some(),
+            readable && item["layer"] == "home",
+            "装上的带装的时刻、出厂的不带：{item}"
+        );
+    }
+    items
 }
 
 #[tokio::test]

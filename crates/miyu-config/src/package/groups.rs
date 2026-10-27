@@ -1,5 +1,5 @@
 //! 出厂的组表 `resources/packages/groups.toml`（施工 BS-1 下，设计 `44-基础系统拆包.md` 第三节第 2 条）：一个组一段，段名是
-//! 编号（写法同包的编号），`name` 必写、`summary` 可写，都是语言表。组里有哪些包由包的清单写（`[package] groups`）。
+//! 编号（写法同包的编号），`name` 必写、`summary` 可写，都是语言表；`order` 可写，组里的包照用途的先后（施工 PG-1）。组里有哪些包由包的清单写（`[package] groups`）。
 
 use toml_edit::DocumentMut;
 
@@ -14,6 +14,8 @@ pub struct Group {
     pub name: Phrases,
     /// 说明；没写的是空的。
     pub summary: Phrases,
+    /// 组里的包照用途的先后（施工 PG-1，`order`）：只管排，谁在组里照旧由包的清单写；没写的是空的。
+    pub order: Vec<String>,
 }
 
 /// 读组表的原文 `text`，照写的先后。
@@ -35,7 +37,7 @@ pub fn read(text: &str) -> Result<Vec<Group>, String> {
         }
         if let Some((key, _)) = table
             .iter()
-            .find(|(key, _)| !matches!(*key, "name" | "summary"))
+            .find(|(key, _)| !matches!(*key, "name" | "summary" | "order"))
         {
             return Err(format!("{id}.{key}: unknown key"));
         }
@@ -47,10 +49,23 @@ pub fn read(text: &str) -> Result<Vec<Group>, String> {
         if name.is_empty() {
             return Err(format!("{id}.name: missing"));
         }
+        let order = match table.get("order") {
+            None => Vec::new(),
+            Some(item) => item
+                .as_array()
+                .and_then(|items| {
+                    items
+                        .iter()
+                        .map(|one| one.as_str().map(str::to_string))
+                        .collect::<Option<Vec<String>>>()
+                })
+                .ok_or_else(|| format!("{id}.order: not a list of ids"))?,
+        };
         groups.push(Group {
             id: id.to_string(),
             name,
             summary: phrases("summary")?,
+            order,
         });
     }
     Ok(groups)
