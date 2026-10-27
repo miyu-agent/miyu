@@ -1217,6 +1217,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sM-7ab"><span class="n">M-7 上补</span>等人计时那条测试留足余量<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sM-8"><span class="n">M-8</span>脚本调工具在 Windows 上实测出的三处<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sED-1"><span class="n">ED-1</span>edit 没读过的文件也能改<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sED-2"><span class="n">ED-2</span>write 没读过的文件也能写<span class="st">✓</span></a></li>
         <li><span class="step"><span class="n">L-1</span>工具登记带 need_load</span></li>
         <li><span class="step"><span class="n">L-2</span>吃不下空外壳的供应商</span></li>
       </ol>
@@ -43464,6 +43465,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/ED-1-edit没读过也能改.md</code>，设计 10 第六节，蓝图 tools/edit。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sED-2" aria-labelledby="h-sED2">
+  <div class="sheet-head"><h2 id="h-sED2"><span class="no">ED-2</span>write 没读过的文件也能写</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">write 照 edit 只拦读过以后又被改了的，没读过的照写：对照实验里她在 shell 里看过文件再整份重写，撞上「先读」又多一轮、多写一遍。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">write 没读过的文件也能写</span><span class="dir-note">ED-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>write 改用 Common::stale；unseen 和 common/not-read.txt 没人用了，删掉</li>
+              <li>说明去掉「要先读」那一句，登记簿换指纹</li>
+              <li>会话里看「她看过的」记没记对的几条测试，改拿「又被改了」看</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">write 没读过的</span><span class="rl">照写</span></div>
+          <div class="tile"><span class="nm">读过以后又被改了</span><span class="rl">照旧不写</span></div>
+          <div class="tile"><span class="nm">给人看的「没读过」</span><span class="rl">留着，旧日志要显示</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">ED-2</dd></div>
+        <div><dt>名称</dt><dd>write 没读过的文件也能写</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">ED-2</dd></div>
+        <div><dt>验收</dt><dd>本机门禁、三平台 CI 全过</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>没读过的照写；读过以后被改了的不写、文件不动</span></li>
+        <li><span class="ok">✓</span><span>重新载入、删了、撤销、恢复以后她看过的照样记对</span></li>
+        <li><span class="ok">✓</span><span>手写变异八个全杀</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/ED-2-write没读过也能写.md</code>，设计 10 第三节、第五节，蓝图 tools/write、tools/edit、session/tools。</li>
       </ul>
     </div>
   </div>

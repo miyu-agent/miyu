@@ -81,12 +81,13 @@ async fn trash_leaves_the_file_in_place_once_stopped() {
 
 #[tokio::test]
 async fn the_checks_before_the_flag_still_answer_first() {
-    // 旗只管「改不改」：参数不对、没看过的，照旧出错，和没举旗一样。
+    // 旗只管「改不改」：参数不对、读过以后被改了的，照旧出错，和没举旗一样。
     let site = Site::new();
     site.file("work/c.txt", b"c");
     let args = json!({"file_path": "c.txt", "content": "new"});
+    let saw_before = Seen::from([(site.real("work/c.txt"), ContentHash::of(b"before"))]);
     let done = site
-        .done_with("work", "write", args, Seen::new(), raised())
+        .done_with("work", "write", args, saw_before, raised())
         .await;
     assert!(done.error && !done.stopped, "{done:?}");
     assert_eq!(content(&site, "work/c.txt"), b"c");

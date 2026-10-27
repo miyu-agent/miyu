@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use miyu_kernel::event::{Body, Level, Permission, Said, ToolResult};
+use miyu_kernel::event::{Body, Level, Permission, Said, ToolResult, ToolStatus};
 use miyu_kernel::id::TurnId;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_session::testkit::{Play, Script};
@@ -114,7 +114,7 @@ async fn an_edit_stays_as_it_is_after_undo_and_redo() {
     );
 }
 
-/// 撤掉的那一轮里读过的不算她看过：接着改要先读，文件照旧是撤销前的样子。
+/// 撤掉的那一轮里读过的、写过的不算她看过：接着写当没看过照写（施工 ED-2），不会拿撤掉的那一轮看到的去比、说改过了。
 #[tokio::test]
 async fn what_she_read_in_an_undone_turn_no_longer_counts() {
     let home = Home::outside_temp();
@@ -125,7 +125,7 @@ async fn what_she_read_in_an_undone_turn_no_longer_counts() {
         Play::calls(&[("read", r#"{"file_path":"a.txt"}"#)]),
         Play::calls(&[("write", write)]),
         Play::Says("改好了。"),
-        Play::calls(&[("write", write)]),
+        Play::calls(&[("write", r#"{"file_path":"a.txt","content":"newer\n"}"#)]),
         Play::Says("好。"),
     ]);
     let handle = home
@@ -134,20 +134,15 @@ async fn what_she_read_in_an_undone_turn_no_longer_counts() {
     talk(&handle, "cmd-1", "改一下").await;
     let turn = last_turn(&home, &handle);
     undo(&handle, "cmd-2", Command::Revert { turn: Some(turn) }).await;
+    // 撤销不改回文件（施工 U-1）；再被别人改一下：撤掉的那一轮看到的要是还算，就对不上、不写了。
+    std::fs::write(&file, "changed\n").expect("写得进");
     talk(&handle, "cmd-3", "再改一下").await;
     let last = results(&home, &handle).pop().expect("有结果");
-    assert_eq!(
-        last.human,
-        Some(Said::new("software/basesystem/common/not-read"))
-    );
-    assert_eq!(
-        std::fs::read(&file).expect("读得出"),
-        b"new\n",
-        "撤销没改回、这一次也没写"
-    );
+    assert_eq!(last.status, ToolStatus::Ok, "{last:?}");
+    assert_eq!(std::fs::read(&file).expect("读得出"), b"newer\n");
 }
 
-/// 恢复以后，那一轮里读过的又算她看过：接着改用不着重读。
+/// 恢复以后，那一轮里读过的、写过的又算她看过：拿「又被改了」看（施工 ED-2 起没看过的照写），记着的拦下。
 #[tokio::test]
 async fn after_a_redo_what_she_read_counts_again() {
     let home = Home::outside_temp();
@@ -162,6 +157,12 @@ async fn after_a_redo_what_she_read_counts_again() {
     let turn = last_turn(&home, &handle);
     undo(&handle, "cmd-2", Command::Revert { turn: Some(turn) }).await;
     undo(&handle, "cmd-3", Command::Unrevert).await;
+    put(&home, "a.txt", "changed\n");
     talk(&handle, "cmd-4", "再改一下").await;
-    assert_eq!(read(&home, "a.txt").as_deref(), Some("newer\n"));
+    let last = results(&home, &handle).pop().expect("有结果");
+    assert_eq!(
+        last.human,
+        Some(Said::new("software/basesystem/common/stale"))
+    );
+    assert_eq!(read(&home, "a.txt").as_deref(), Some("changed\n"), "没写");
 }

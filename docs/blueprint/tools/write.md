@@ -2,7 +2,7 @@
 
 ### 是什么
 
-新建一个文件，或者整体覆盖一个文件。已经在了的，要她这个会话里看过、而且现在的内容和她看到的一样才写；照原来的编码、BOM、换行写。先写临时文件再改名盖上去。报 `file.changed`：改前改后的内容本身。
+新建一个文件，或者整体覆盖一个文件。已经在了的，没读过的也能写；读过、之后文件又被改了的不写（施工 ED-2，2026-10-27 项目主人定）。照原来的编码、BOM、换行写。先写临时文件再改名盖上去。报 `file.changed`：改前改后的内容本身。
 
 ### 在哪
 
@@ -24,7 +24,7 @@
 
 ```json
 {
-  "description": "Create a file, or replace all of its content. A file that already exists must be read first. To change part of a file, use `edit`.",
+  "description": "Create a file, or replace all of its content. To change part of a file, use `edit`.",
   "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"content":{"type":"string"}},"required":["file_path","content"]}
 }
 ```
@@ -48,10 +48,9 @@
    - 是普通文件：整份读进来，读不了：写不了。
    - 打不开（没有的以外的错）：写不了。
 4. 已经在了的，改之前核对她看过的（`tools/interface.md` 第四节）：照真实的位置找。
-   - 她没看过：`"{path}" already exists and has not been read. Read it first.`，出错，不写。
+   - 她没看过：照写（施工 ED-2：原来说先读、不写；她多半已经知道内容，例如在 shell 里看过，先读一遍只是为了过这道检查）。
    - 看过，可现在整份内容的哈希和她看到的不一样（被人或者别的程序改过了）：`"{path}" has changed since it was last read. Read it again first.`，出错，不写。
    - 对得上：往下写。她自己刚写过的，看到的就是改后的，接着写不用重读。
-   - `read` 读二进制文件不报效果，所以已经在了的二进制文件，除非这个会话里她自己写过，都说没读过。
 5. 照原来的写法把 `content` 写成字节（`text.rs`）：
    - 编码：开头 `FF FE` 的写成小端 UTF-16，`FE FF` 的写成大端 UTF-16，都带着那个 BOM；别的写成 UTF-8，原来开头有 UTF-8 的 BOM（`EF BB BF`）的照带。认不出的别的编码当 UTF-8。
    - 换行：照原来第一处换行认，它是 `\r\n` 的，`content` 里的单个 `\n` 都换成 `\r\n`（原来就是 `\r\n` 的不重复换）；不是的，照给的写。
@@ -90,7 +89,6 @@ Created "src/new/a.rs".
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
 | 参数不对 | `The arguments are not right: {error}.` | `common/bad-args`，字段 `error` |
-| 没读过 | `"{path}" already exists and has not been read. Read it first.`（`common/not-read.txt`） | `common/not-read` |
 | 读过以后又改过了 | `"{path}" has changed since it was last read. Read it again first.`（`common/stale.txt`） | `common/stale` |
 | 是目录 | `"{path}" is a directory.`（`common/directory.txt`） | `common/directory` |
 | 不是普通文件 | `"{path}" is not a regular file.`（`common/not-a-regular-file.txt`） | `common/not-a-regular-file` |
@@ -107,7 +105,7 @@ Created "src/new/a.rs".
 |---|---|---|---|
 | `write/created`（`count`） | 新建了 | `新建，{count} 行` | `new, {count} lines` |
 | `write/updated`（`count`） | 覆盖了 | `覆盖，{count} 行` | `replaced, {count} lines` |
-| `common/not-read` | 没读过 | 没读过，要先读 | not read yet, read it first |
+| `common/not-read` | 没读过（施工 ED-2 起不再说，以前的日志里有） | 没读过，要先读 | not read yet, read it first |
 | `common/stale` | 读过以后又改过了 | 读过以后又改过了，要重读 | changed since read, read it again |
 | `common/directory` | 是目录 | 是个目录 | is a directory |
 | `common/not-a-regular-file` | 不是普通文件 | 不是普通文件 | not a regular file |
@@ -126,12 +124,12 @@ Created "src/new/a.rs".
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/write.rs` | 报要写的路径；新建带建上级目录、工作区里的绝对路径照样写相对的；没读过的、读过以后被改了的不写，看的是现在的样子就写，自己刚写过的接着写；覆盖时照原来的 CRLF、BOM、UTF-16；目录、只读的不写；原来的权限照留、不留临时文件；`/dev/null` 不写；读过的二进制盖得了；FIFO 说不是普通文件、不卡住 |
+| `crates/miyu-basesystem/tests/write.rs` | 报要写的路径；新建带建上级目录、工作区里的绝对路径照样写相对的；没读过的照写（施工 ED-2）、读过以后被改了的不写，看的是现在的样子就写，自己刚写过的接着写；覆盖时照原来的 CRLF、BOM、UTF-16；目录、只读的不写；原来的权限照留、不留临时文件；`/dev/null` 不写；读过的二进制盖得了；FIFO 说不是普通文件、不卡住 |
 | `crates/miyu-basesystem/src/text/tests.rs` | 从原来的字节认写法、照原来的写法写回、UTF-16 写得回去解得回来、几行怎么数 |
-| `crates/miyu-basesystem/tests/stop.rs` | 旗举了：新建的不建、上级目录也不建，已经在了的不盖；没看过的照旧先说没看过 |
+| `crates/miyu-basesystem/tests/stop.rs` | 旗举了：新建的不建、上级目录也不建，已经在了的不盖；读过以后被改了的照旧先说改过了 |
 | `crates/miyu-fs/src/replace/tests.rs` | 整体换、只读的不写、盖不上去时临时文件删掉 |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
-| `crates/miyu-session/tests/write.rs` | 会话里先读后写，日志里两次结果的效果对得上、blob 里有改前改后；新建的不用先读；没读过的被拒；重新载入以后她读过的照样算 |
+| `crates/miyu-session/tests/write.rs` | 会话里先读后写，日志里两次结果的效果对得上、效果里写着改前改后；新建的不用先读；重新载入以后她读过的照样算（施工 ED-2 起拿读过以后又被改了的看出来） |
 | `crates/miyu-session/tests/restore.rs` | 撤销时照 `write` 报的 `file.changed` 写回改前的，恢复时再写回改后的 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |
 

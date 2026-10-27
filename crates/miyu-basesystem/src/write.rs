@@ -108,8 +108,8 @@ fn write(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     };
     let after = match &before {
         Some(old) => {
-            // 改之前核对：她没看过的不写；看过、可现在的内容和她看到的不一样的，也不写。
-            if let Some(refused) = texts.common.unseen(call, path, &real, old) {
+            // 改之前核对：看过、可现在的内容和她看到的不一样的不写；没看过的照写（施工 ED-2）。
+            if let Some(refused) = texts.common.stale(call, path, &real, old) {
                 return refused;
             }
             Style::of(old).encode(&args.content)

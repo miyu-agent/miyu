@@ -1,6 +1,6 @@
 //! 几件工具都要用的（施工 4-4 下）：几件都要说的几句字（`26-提示词.md` 第八节，`software/basesystem/common/`），
 //! 结果里的路径怎么写（[`Shown`]），找不到时同一个目录里相近的名字，当没传的几种写法（[`given`]）；改一个已经在了
-//! 的文件之前核对她看过的（[`Common::unseen`]，施工 4-6 中从 `write` 挪来，`edit` 也用）；写成字符串的整数也认（[`integer()`]，
+//! 的文件之前核对她看过的（[`Common::stale`]，施工 4-6 中从 `write` 挪来，`edit` 也用；没看过的不拦，施工 ED-1、ED-2）；写成字符串的整数也认（[`integer()`]，
 //! 施工 4-9 再补二）。
 
 mod integer;
@@ -35,7 +35,6 @@ pub(crate) struct Common {
     bad_args: Template,
     bad_glob: Template,
     no_files: Template,
-    not_read: Template,
     stale: Template,
     directory: Template,
     not_regular: Template,
@@ -53,7 +52,6 @@ impl Common {
             bad_args: text("bad-args", &["error"])?,
             bad_glob: text("bad-glob", &["glob", "error"])?,
             no_files: text("no-files", &[])?,
-            not_read: text("not-read", &["path"])?,
             stale: text("stale", &["path"])?,
             directory: text("directory", &["path"])?,
             not_regular: text("not-a-regular-file", &["path"])?,
@@ -83,18 +81,9 @@ impl Common {
     }
 
     /// 改一个已经在了的文件之前核对她看过的（`10-自带软件.md` 第五节「她看过的」）：她给的是 `path`，真实的位置
-    /// 是 `real`，现在的内容是 `old`。她没看过的、看过以后又被改了的，交回不改的结果；对得上的是空的。
-    pub(crate) fn unseen(&self, call: &Call, path: &str, real: &Path, old: &[u8]) -> Option<Done> {
-        let (template, key) = match call.seen.get(real) {
-            None => (&self.not_read, "common/not-read"),
-            Some(hash) if *hash != ContentHash::of(old) => (&self.stale, "common/stale"),
-            Some(_) => return None,
-        };
-        Some(Done::error(say(template, &[("path", path)])).said(said(key)))
-    }
-
-    /// 同 [`Common::unseen`]，只是没看过的不拦（`edit` 用，施工 ED-1）：`old_string` 要和原文对得上、唯一才改，
-    /// 没读过也改不到别处去；看过、可现在的内容和她看到的不一样的，照旧不改，免得她照着旧的内容盖掉别人刚做的改动。
+    /// 是 `real`，现在的内容是 `old`。看过、可现在的内容和她看到的不一样的，交回不改的结果，免得她照着旧的内容盖掉
+    /// 别人刚做的改动；没看过的不拦（`edit` 施工 ED-1、`write` 施工 ED-2）：她多半已经知道内容，先读一遍只是为了过这
+    /// 道检查。对得上的、没看过的是空的。
     pub(crate) fn stale(&self, call: &Call, path: &str, real: &Path, old: &[u8]) -> Option<Done> {
         match call.seen.get(real) {
             Some(hash) if *hash != ContentHash::of(old) => {
