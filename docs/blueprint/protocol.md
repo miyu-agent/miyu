@@ -210,8 +210,8 @@
 | `mcp.set`、`mcp.remove` | 管理员个人设置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
 | `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
 | `skill.remove` | 删管理员自己放的技能，几个一起，整个文件夹挪进回收站；随包来的不能删（施工 W-13，网页的技能页） |
-| `script.list` | 列出登记上的脚本：工具名、给人看的名字和说明、从哪来、文件在哪、时限、加载方式和谁定的、全局开关（施工 X-27，`skills.md`「脚本」） |
-| `tool.set_loading`、`feature.set` | 改个人设置的加载方式（`loading.tools.<工具名>`、`loading.mcp.<服务名>`）、全局开关（`features.<功能编号>`），`null` 删掉；只给人（施工 X-27，`presets.md`「全局开关」） |
+| `script.list` | 列出登记上的脚本：工具名、给人看的名字和说明、从哪来、文件在哪、时限、全局开关（施工 X-27，`skills.md`「脚本」） |
+| `tool.set_loading`、`feature.set` | 前一个退役（施工 FL-1，照旧收、什么都不改），后一个改全局开关（`features.<功能编号>`），`null` 删掉；只给人（施工 X-27，`presets.md`「全局开关」） |
 | `package.file`、`package.call` | 读一个包的后台页里的文件（吉祥物包读它的模型文件，施工 F-7）；调它的程序登记的方法，核心反向发 `method.call`，在后台答（施工 F-6 中，`package-pages.md`） |
 | `package.methods` | 核心拉起的扩展登记它的后台页要调的方法（施工 F-6 中，`package-pages.md`） |
 | `extension.status`、`extension.enable`、`extension.disable`、`extension.restart` | 核心拉起的扩展：列状态、开、关、重启（施工 9-4 上，`extensions.md`） |
@@ -506,7 +506,7 @@
 | `persona` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的人格，同 `session.create`（`null` 是无人格，不写的照 `persona.default`） |
 | `preset` | 字符串或 `null`，可以不写 | 不写 `session` 时：新会话用的预设，同 `session.create`（`null` 是无工具，CX-2 补） |
 
-回应 `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?, "loaded"?}]}`，照发给模型的先后（名字的字节序）。`source.kind` 是 `builtin`（内置的包）、`package`、`mcp`、`script`；`source.name` 是包名、服务名、脚本的显示名，照连接的语言挑。`summary` 只有脚本有（脚本的 `# 描述：` 那一槽）。要先加载、只露名字的写 `loaded: false`，这时多一件 `load_tools`。
+回应 `{"tools": [{"name", "source": {"kind", "id", "name"}, "summary"?}]}`，照发给模型的先后（名字的字节序）。`source.kind` 是 `builtin`（内置的包）、`package`、`mcp`、`script`；`source.name` 是包名、服务名、脚本的显示名，照连接的语言挑。`summary` 只有脚本有（脚本的 `# 描述：` 那一槽）。工具一律全量（施工 FL-1），以前只露名字的那一格 `loaded: false` 不再出现。
 
 1. 写了 `session` 的：会话照回合开始换快照那一套看一遍（人格、预设、工具目录、知识库换了的照换了以后的），只看不换。
 2. 没写的：和 `session.create` 照同一份拼（找预设、人格，拼工具面），只拼不造。
@@ -529,7 +529,7 @@
 | `part` | 是什么 |
 |---|---|
 | `system` | system 一整段，下面照拼的先后：`system.persona`（人设）、`system.venue`（子代理的场所说明）、`system.group`（群聊说明）、`system.profile`（关于你）、`system.project`（项目说明）、`system.core`（核心的几行：权限、本机文件的路径、本机系统、跑的是哪一版）、`system.clicall`（什么时候写成调工具的程序）、`system.show`（show 的那一句）、`system.skills`（技能目录）、`system.knowledge`（知识库那一块）、`system.style_lock`（风格锁）、`system.appended:<包>`（扩展追加的，`label` 是包名）。拼的时候每一步量多了哪一截，拼出来的字不变；已有的会话照快照原来的料重拼一遍（人设照这时的文件），和快照逐字节一样的照它拆；对不上的（旧核心造的、人设改过，CX-2）逐块到快照的 system 里照先后找原文，找得到的各成一块，找不到的、改过的那几截并成 `system.other`。人设文件没了拼不出来的，只拆快照里单存了原文的几块（技能、知识库、关于你、项目说明、扩展追加的），其余的是 `system.other` |
-| `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`、`tools.deferred`（要先加载、只露名字的） |
+| `tools` | 工具的说明和参数格式；下面 `tools.builtin`、`tools.package:<包>`、`tools.mcp:<服务>`（`label` 是包名、服务名）、`tools.scripts`（以前的 `tools.deferred` 施工 FL-1 起没有了） |
 | `demos` | 示范对话 |
 | `summary` | 检查点的摘要 |
 | `messages` | 对话；下面 `messages.user`（人说的，场所里旁听的不进上下文、不算）、`messages.assistant`（她说的：回复、思考、工具调用）、`messages.memory`（记忆，下面 `messages.memory.resident` 常驻的、`messages.memory.recall` 召回的）、`messages.knowledge`（知识库想起的）、`messages.facts`（别的事实）、`messages.project_docs`（仓库里的 AGENTS.md，施工 P-14）、`messages.reports`（子代理、后台命令交回的回报，CX-2）、`messages.tool_results` |
@@ -1239,12 +1239,12 @@
 
 **`mcp.*`**（施工 F-9 补，管理员个人设置里的 MCP 服务，`mcp.md`「个人设置里的一张表」；只给本机的人用，扩展调回 `local_only`）
 
-- `mcp.list`：不带参数。回应 `{"servers": [...]}`，照个人设置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`need_load` 是 `{"value", "by"}`：服务那一级要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的）；`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在个人设置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`；`need_load` 别经 `mcp.set` 交回（那是 `tool.set_loading` 的事）。
+- `mcp.list`：不带参数。回应 `{"servers": [...]}`，照个人设置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在个人设置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
 - `mcp.restart {"name"}`：停下、再起，连续失败从零数，工具留在目录里、起好列完照新的换（同 `package.restart`）。回应是那一项。个人设置里没有这个名字的 `unknown_server`。
-- `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "need_load"?, "clicall"?}`（施工 X-26，网页设置页要的编辑页）：在个人设置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。个人设置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。个人设置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「个人设置手改了」那条路换（`mcp.md`「个人设置里的一张表」第 6 条），状态变了推 `mcp.changed`。
-- `script.list {}`（施工 X-27，`skills.md`「脚本」；人、扩展都能调）：回应 `{"scripts": [...], "dir"}`（`dir` 是管理员自己放脚本的文件夹 `home/<管理员>/scripts/`，还没建的也照写、家目录下的写成 `~/…`，网页「打开目录」用，施工 X-27 补；`skill.list` 同样多 `dir`，是 `home/<管理员>/skills/`），登记上的脚本照工具名排，一项 `{"tool", "display_name"?, "description"?, "from", "package"?, "path", "timeout", "need_load": {"value", "by"}, "on"}`：`display_name`、`description` 是脚本开头给人看的一槽，照连接的语言挑（同 `skill.list`）；`from`、`package`、`path` 同 `skill.list`；`timeout` 是秒；`need_load.by` 是 `source`（脚本开头写的或默认）或 `setting`（`loading.tools.<工具名>` 盖过的）；`on` 是全局开关 `features.script-<工具名>`，没写的是 `true`。`skill.list` 每项同样多 `on`（`features.skill-<名字>`）。
-- `tool.set_loading {"tool"?, "server"?, "need_load": true|false|null}`（施工 X-27）：`tool`、`server` 正好一个，写管理员个人设置的 `loading.tools.<工具名>`（工具名照占位 `<name>`）或 `loading.mcp.<服务名>`（照 `<id>`），`null` 删掉、回到来处；写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`）。回应 `{}`。写不进键的、`tool`、`server` 不是正好一个的、少了 `need_load` 的 `bad_params`；别的同 `config.set`。只给人。
-- `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写管理员个人设置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法、回应、出错同 `tool.set_loading`。只给人。
+- `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "need_load"?, "clicall"?}`（`need_load` 退役，照旧收、不看；施工 X-26，网页设置页要的编辑页）：在个人设置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。个人设置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。个人设置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「个人设置手改了」那条路换（`mcp.md`「个人设置里的一张表」第 6 条），状态变了推 `mcp.changed`。
+- `script.list {}`（施工 X-27，`skills.md`「脚本」；人、扩展都能调）：回应 `{"scripts": [...], "dir"}`（`dir` 是管理员自己放脚本的文件夹 `home/<管理员>/scripts/`，还没建的也照写、家目录下的写成 `~/…`，网页「打开目录」用，施工 X-27 补；`skill.list` 同样多 `dir`，是 `home/<管理员>/skills/`），登记上的脚本照工具名排，一项 `{"tool", "display_name"?, "description"?, "from", "package"?, "path", "timeout", "on"}`：`display_name`、`description` 是脚本开头给人看的一槽，照连接的语言挑（同 `skill.list`）；`from`、`package`、`path` 同 `skill.list`；`timeout` 是秒；`on` 是全局开关 `features.script-<工具名>`，没写的是 `true`。`skill.list` 每项同样多 `on`（`features.skill-<名字>`）。
+- `tool.set_loading {"tool"?, "server"?, "need_load": true|false|null}`（施工 X-27）：施工 FL-1 起退役（工具一律全量）：协议 1 冻结了它，照旧收、照旧查参数（`tool`、`server` 正好一个、名字照占位，少了 `need_load` 的 `bad_params`），回应 `{}`，个人设置一个字不写。只给人。
+- `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写管理员个人设置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`），回应 `{}`；写不进键的、少了 `on` 的 `bad_params`，别的同 `config.set`。只给人。
 - `mcp.remove {"name"}`（施工 X-26）：从个人设置里删掉这一张（连同子表、后面的空行；在文件末尾的连前面的空行），回应 `{}`；没写这个名字的 `unknown_server`。
 
 **记忆日志的推送**（施工 R-12 上，`memory.md`「协议」；2026-10-11 项目主人定：给什么核心定、照仿 Linux 的原则给，一切皆文件、日志式，怎么画是头的事）
@@ -1425,7 +1425,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_asking` | -32010 | `session.answer` 回答的调用没在等回答：答过了、了结了、等的不是这一种（施工 D-1） |
 | `not_exported` | -32010 | 扩展经 `package.call` 调了对方清单 `[export]` 里没有的方法；`data.method` 是哪一个（施工 X-18） |
 | `not_a_provider` | -32010 | `provide` 不是核心拉起的扩展发的（施工 O-2 上） |
-| `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`need_load`（施工 L-1）、`clicall`（施工 M-2）、`result`（施工 M-4：不是字、空白的）之一（施工 O-2 上） |
+| `bad_tool` | -32010 | `provide` 的一件工具规格不对、撞名；`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`（施工 O-2 下）、`clicall`（施工 M-2）、`result`（施工 M-4：不是字、空白的）之一（施工 O-2 上） |
 | `not_ambient` | -32010 | `session.respond` 的 `to` 里有不是这个会话里旁听的 `message.user` 的；`data.messages` 是那几条（施工 O-14 上） |
 | `already_answered` | -32010 | `session.respond` 的 `to` 里有已经当过触发的；`data.messages` 是那几条（施工 O-14 上） |
 | `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |

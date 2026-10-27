@@ -39,10 +39,8 @@ pub struct McpServer {
     pub venues: Vec<String>,
     /// 一次调用等多久，毫秒。
     pub timeout_ms: u64,
-    /// 这个服务的工具都要先加载（施工 L-1，`25-工具加载.md` W9）：没写的先加载（施工 L-3，2026-10-20 项目主人改：一个服务常有
-    /// 十几件工具），`false`、`"no"` 全量；`"yes"`、`"no"` 大小写不论。个人设置的 `loading.mcp.<服务名>` 盖过它。
-    pub need_load: bool,
-    /// 这个服务的工具脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：没写的能，`false`、`"no"` 不能，写法同 `need_load`。
+    /// 这个服务的工具脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：没写的能，`false`、`"no"` 不能；`"yes"`、`"no"` 大小写
+    /// 不论。
     /// 个人设置的 `clicall.mcp.<服务名>`、`clicall.tools.<工具名>` 盖过它。
     pub clicall: bool,
     /// 这一段写在第几行。
@@ -178,14 +176,12 @@ fn fields(
             })?,
         None => TIMEOUT_DEFAULT,
     };
-    let need_load = switch(table, "need_load", &at, line)?;
     let clicall = switch(table, "clicall", &at, line)?;
     Ok(McpServer {
         name,
         reach,
         venues,
         timeout_ms,
-        need_load,
         clicall,
         line,
     })

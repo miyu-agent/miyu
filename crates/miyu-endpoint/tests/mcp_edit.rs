@@ -58,6 +58,8 @@ async fn a_set_server_is_written_followed_replaced_and_removed() {
                 "args": [record],
                 "env": {"MIYU_MCP_PROBE": "mine"},
                 "timeout_ms": 1000,
+                // 退役的一格（施工 FL-1）：老的头照旧交得进来，不写进服务表。
+                "need_load": true,
             }),
         )
         .await;
@@ -68,6 +70,7 @@ async fn a_set_server_is_written_followed_replaced_and_removed() {
         text.contains("[mcp.probe]\n") && text.contains("env = { MIYU_MCP_PROBE = \"mine\" }"),
         "{text}"
     );
+    assert!(!text.contains("need_load"), "{text}");
     let first = until_listed(&mut client, "probe", |one| one["state"] == "running").await;
     let pid = first["pid"].as_u64().expect("在跑的带进程号");
 

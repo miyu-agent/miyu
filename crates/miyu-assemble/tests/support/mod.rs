@@ -80,7 +80,6 @@ fn policy_with(system: String) -> Policy {
             per_session: 16,
         },
         foreground: false,
-        loading: None,
         assembler: Box::new(DefaultAssembler::new(stable(system), texts())),
         facts: templates(),
         tools: BTreeMap::from([

@@ -1,7 +1,9 @@
-//! 技能、脚本、MCP 三页上改的两样（施工 X-27，网页设置页要的）：加载方式 `tool.set_loading`（施工 L-3 的
-//! `loading.tools.<工具名>`、`loading.mcp.<服务名>`）、全局开关 `feature.set`（`features.<功能编号>`，`miyu_session::switches`）。
-//! 都只改管理员的个人设置，写法照 `config.set` 改一项（`config/set.rs`：带版本、不覆盖同时的手改、写成了推 `config.changed`）；
-//! 交 `null` 的删掉那一项，回到来处、回到跟着预设。下一个回合生效。只给本机的人用（`connection/people.rs`）。
+//! 技能、脚本、MCP 三页上改的（施工 X-27，网页设置页要的）：全局开关 `feature.set`（`features.<功能编号>`，
+//! `miyu_session::switches`），只改管理员的个人设置，写法照 `config.set` 改一项（`config/set.rs`：带版本、不覆盖同时的手改、
+//! 写成了推 `config.changed`）；交 `null` 的删掉那一项，回到跟着预设。下一个回合生效。只给本机的人用（`connection/people.rs`）。
+//!
+//! 加载方式 `tool.set_loading`（施工 L-3）施工 FL-1 起什么都不改：工具一律全量。协议 1 冻结了这个方法，照旧收、照旧查参数，
+//! 回 `{}`；头的加载开关去掉了。
 
 use serde::{Deserialize, Deserializer};
 use serde_json::{Value, json};
@@ -19,14 +21,15 @@ use crate::refusal::Refusal;
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct LoadingParams {
-    /// 工具名：改 `loading.tools.<工具名>`。
+    /// 工具名。
     #[serde(default)]
     tool: Option<String>,
-    /// MCP 服务名：改 `loading.mcp.<服务名>`。
+    /// MCP 服务名。
     #[serde(default)]
     server: Option<String>,
-    /// 要不要先加载；`null` 是删掉。必写。
+    /// 要不要先加载；`null` 是删掉。必写（退役了也照旧要写，老的头写错了照旧知道）。
     #[serde(deserialize_with = "present")]
+    #[expect(dead_code, reason = "协议 1 冻结的参数：照旧要写，不再用")]
     need_load: Option<bool>,
 }
 
@@ -46,27 +49,17 @@ fn present<'de, D: Deserializer<'de>>(d: D) -> Result<Option<bool>, D::Error> {
     Option::<bool>::deserialize(d)
 }
 
-/// `tool.set_loading`：改个人设置的 `loading.tools.<工具名>` 或 `loading.mcp.<服务名>`，回应 `{}`。
+/// `tool.set_loading`：退役（施工 FL-1，工具一律全量），什么都不改，回应 `{}`。
 ///
 /// # Errors
 ///
-/// `tool`、`server` 不是正好一个，名字写不进键（工具名照 `<name>`、服务名照 `<id>`）的 `bad_params`；别的同 `config.set`。
-pub(crate) fn set_loading(
-    core: &Core,
-    (caller, peer): (&crate::hello::Caller, Peer),
-    cause: &CommandId,
-    params: LoadingParams,
-) -> Result<Value, Refusal> {
-    let real = match (params.tool, params.server) {
-        (Some(tool), None) if key::valid(NAME, &tool) => {
-            key::fill(miyu_session::loading::TOOL, &[&tool])
-        }
-        (None, Some(server)) if key::valid(ID, &server) => {
-            key::fill(miyu_session::loading::MCP, &[&server])
-        }
-        _ => return Err(Refusal::BAD_PARAMS),
-    };
-    written(core, (caller, peer), cause, real, params.need_load)
+/// `tool`、`server` 不是正好一个，名字写法不对（工具名照 `<name>`、服务名照 `<id>`）的 `bad_params`：老的头照旧知道写错了。
+pub(crate) fn set_loading(params: &LoadingParams) -> Result<Value, Refusal> {
+    match (&params.tool, &params.server) {
+        (Some(tool), None) if key::valid(NAME, tool) => Ok(json!({})),
+        (None, Some(server)) if key::valid(ID, server) => Ok(json!({})),
+        _ => Err(Refusal::BAD_PARAMS),
+    }
 }
 
 /// `feature.set`：改个人设置的 `features.<功能编号>`，回应 `{}`。

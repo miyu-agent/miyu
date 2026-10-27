@@ -188,7 +188,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         Some(layout) => crate::snapshot::pieces(&layout, breakdown.system),
         None => vec![(SystemPart::Other, breakdown.system)],
     };
-    let offered = miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref());
+    let offered = miyu_policy::sent_names(&snapshot.tools);
     Ok(Context {
         breakdown,
         system,

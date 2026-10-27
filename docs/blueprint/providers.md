@@ -30,7 +30,7 @@
    - `name` 只用英文字母、数字、`_`、`-`，1 到 64 个字符；
    - `input_schema` 是 `{"type":"object",…}`；
    - `access` 是 `read`、`write`、`execute`、`network`、`outbound`、`venue`、`install` 之一（`venue` 施工 O-31 前，见下面「在场所里做的事」；`install` 施工 F-10 下，改这台机器上装了什么，`tools/package.md`）；
-   - `need_load` 可以不写：`true` 是要先加载，tools 数组里只给名字、说明和空的参数外壳（`25-工具加载.md` W9，施工 L-1）；不是布尔的 `bad_tool`，`problem` 是 `need_load`；
+   - `need_load` 退役（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照旧登记得上，写什么都不看；
    - `clicall` 可以不写：`true` 是脚本里能经 `miyu call` 调（施工 M-2，设计 `39-脚本调工具.md` 第三节），不写、`false` 的不能；不是布尔的 `bad_tool`，`problem` 是 `clicall`；
    - `timeout_ms` 可以不写：等它答多久，1000 到 600000 毫秒，不写是 60000（施工 O-2 下）；
    - `display_name` 可以不写：给人看的名字，语言到名字（`{"zh": "发到群里", "en": "Send to group"}`），时间线上照连接的语言写它，没写的照工具名（施工 9-8 六补）；语言、名字是空白的拒；

@@ -50,13 +50,11 @@ fn a_package_with_only_mcp_servers_is_a_bundle_and_reads_every_field() {
     );
     assert_eq!(github.venues, ["local", "group"]);
     assert_eq!(github.timeout_ms, 120_000);
-    assert!(github.need_load, "施工 L-1");
     assert_eq!(github.line, Some(4));
     let fetch = &manifest.mcp[1];
     assert!(matches!(&fetch.reach, Reach::Command { env, .. } if env.is_empty()));
     assert_eq!(fetch.venues, ["local"], "没写的只给本机的会话");
     assert_eq!(fetch.timeout_ms, TIMEOUT_DEFAULT);
-    assert!(fetch.need_load, "没写的先加载（施工 L-3）");
     assert_eq!(fetch.line, Some(12));
 }
 
@@ -204,10 +202,6 @@ fn every_mistake_is_bad_mcp_at_its_server() {
             "mcp.g.timeout_ms",
         ),
         (
-            "name = \"g\"\ncommand = [\"x\"]\nneed_load = \"maybe\"",
-            "mcp.g.need_load",
-        ),
-        (
             "name = \"g\"\ncommand = [\"x\"]\nclicall = 1",
             "mcp.g.clicall",
         ),
@@ -230,25 +224,24 @@ fn every_mistake_is_bad_mcp_at_its_server() {
     assert_eq!(table.code, Code::NotATable);
 }
 
-/// 不写、`"yes"` 都是先加载，`false`、`"no"` 全量，大小写不论（施工 L-3）。
+/// 退役的 `need_load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写过的包照旧读得进，写什么都一样。
 #[test]
-fn need_load_takes_yes_and_no_and_defaults_to_on_demand() {
-    for (line, need) in [
-        ("", true),
-        ("need_load = \"yes\"", true),
-        ("need_load = \"No\"", false),
-        ("need_load = false", false),
-        ("need_load = true", true),
+fn a_retired_need_load_is_read_and_ignored() {
+    let plain = "[package]\nname = { en = \"P\" }\n\n[[mcp]]\nname = \"g\"\ncommand = [\"x\"]\n";
+    let wanted = read(plain).expect("读得进").mcp;
+    for line in [
+        "need_load = \"yes\"",
+        "need_load = false",
+        "need_load = \"maybe\"",
     ] {
-        let text = format!(
-            "[package]\nname = {{ en = \"P\" }}\n\n[[mcp]]\nname = \"g\"\ncommand = [\"x\"]\n{line}\n"
-        );
-        let manifest = read(&text).expect(line);
-        assert_eq!(manifest.mcp[0].need_load, need, "{line}");
+        let text = format!("{plain}{line}\n");
+        let mcp = read(&text).expect(line).mcp;
+        assert_eq!(mcp[0].reach, wanted[0].reach, "{line}");
+        assert_eq!(mcp[0].clicall, wanted[0].clicall, "{line}");
     }
 }
 
-/// 脚本里能调（施工 M-2）：不写、`"yes"` 都能，`false`、`"no"` 不能，大小写不论，写法同 `need_load`。
+/// 脚本里能调（施工 M-2）：不写、`"yes"` 都能，`false`、`"no"` 不能，大小写不论。
 #[test]
 fn clicall_takes_yes_and_no_and_defaults_to_on() {
     for (line, on) in [

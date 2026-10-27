@@ -270,8 +270,6 @@ impl Agents {
                     description: spec.description.clone(),
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
-                    // 一律全量（施工 FL-1，2026-10-27 项目主人定）：参数格式一开始就发完整的，不给先加载的外壳。
-                    need_load: false,
                     clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),

@@ -34,6 +34,7 @@ pub mod plain;
 pub mod problem;
 pub mod reference;
 pub mod rename;
+mod retired;
 pub mod schema;
 pub mod secret;
 mod value;

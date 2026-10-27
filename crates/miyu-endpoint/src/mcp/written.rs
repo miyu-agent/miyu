@@ -39,8 +39,6 @@ pub(super) struct Entry {
     pub(super) venues: Option<Vec<String>>,
     /// 一次调用等多久；没交的不写。
     pub(super) timeout_ms: Option<i64>,
-    /// 要先加载（`25-工具加载.md` W9）；没交的不写，照读服务表时的默认。
-    pub(super) need_load: Option<bool>,
     /// 脚本里能调（施工 M-2）；没交的不写，照读服务表时的默认。
     pub(super) clicall: Option<bool>,
 }
@@ -77,9 +75,6 @@ pub(super) fn block(entry: &Entry) -> Option<String> {
     }
     if let Some(ms) = entry.timeout_ms {
         lines.push(format!("timeout_ms = {ms}"));
-    }
-    if let Some(need_load) = entry.need_load {
-        lines.push(format!("need_load = {need_load}"));
     }
     if let Some(clicall) = entry.clicall {
         lines.push(format!("clicall = {clicall}"));

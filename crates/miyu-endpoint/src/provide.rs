@@ -126,10 +126,9 @@ struct ToolParams {
     /// `problem` 是 `subject`。头在时间线上照它在名字后面写那个参数。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     subject: Option<String>,
-    /// 要先加载（施工 L-1，`25-工具加载.md` W9）：`true` 的工具面上只给名字、说明和空的参数外壳。不写、写 `false` 的全量；别的
-    /// 写法 `bad_tool`，`problem` 是 `need_load`。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    need_load: Option<Value>,
+    /// 退役的「要先加载」（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的扩展照旧登记得上，值不看，缓存里不写。
+    #[serde(default, rename = "need_load", skip_serializing)]
+    _retired_need_load: Option<serde::de::IgnoredAny>,
     /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：`true` 的开，不写、写 `false` 的关；别的写法 `bad_tool`，`problem` 是
     /// `clicall`。访问类别不是读、联网、执行的，写了也调不成。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -302,11 +301,6 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             return Err(bad_tool(&tool.name, "subject"));
         }
     }
-    let need_load = match &tool.need_load {
-        None => false,
-        Some(Value::Bool(need)) => *need,
-        Some(_) => return Err(bad_tool(&tool.name, "need_load")),
-    };
     let clicall = match &tool.clicall {
         None => false,
         Some(Value::Bool(on)) => *on,
@@ -328,7 +322,6 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             description: tool.description,
             parameters,
             access,
-            need_load,
             clicall,
             result,
             plugin,

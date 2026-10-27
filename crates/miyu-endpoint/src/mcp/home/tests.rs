@@ -13,7 +13,6 @@ fn server(name: &str, command: &[&str], line: usize) -> McpServer {
         },
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
-        need_load: false,
         clicall: true,
         line: Some(line),
     }

@@ -116,7 +116,6 @@ fn loop_request() -> Request {
         stable: 2,
         continuation: false,
         described: Default::default(),
-        full_parameters: Default::default(),
         output_cap: None,
         used: None,
     }
@@ -188,7 +187,6 @@ fn the_stable_mark_counts_the_blocks_the_demos_wrote() {
         stable: 1,
         continuation: false,
         described: Default::default(),
-        full_parameters: Default::default(),
         output_cap: None,
         used: None,
     };
@@ -212,7 +210,6 @@ fn a_block_is_marked_once_and_never_more_than_four() {
         stable: 1,
         continuation: false,
         described: Default::default(),
-        full_parameters: Default::default(),
         output_cap: None,
         used: None,
     };
@@ -290,7 +287,6 @@ fn session(seed: u64) -> Vec<Request> {
         stable: 2,
         continuation: false,
         described: Default::default(),
-        full_parameters: Default::default(),
         output_cap: None,
         used: None,
     };

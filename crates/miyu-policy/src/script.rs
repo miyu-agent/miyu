@@ -54,8 +54,6 @@ pub struct ScriptHead {
     pub display_name: BTreeMap<String, String>,
     /// 给人看的一句说明，照语言：`zh` 是 `描述`。
     pub summary: BTreeMap<String, String>,
-    /// 要先加载（`Need load`，施工 L-1）。
-    pub need_load: bool,
     /// 脚本里能调（`Clicall`，施工 M-2）：写了 `yes` 的能，没写的不能（施工 M-2 三补）。
     pub clicall: bool,
     /// 给哪种会话（`Venues`，施工 X-43）：照写的先后；没写的没有，哪种会话都有。
@@ -75,8 +73,6 @@ pub enum ScriptProblem {
     BadParameters(String),
     /// `Parameters` 顶层不是 `"type": "object"`。
     NotAnObject,
-    /// `Need load` 不是 `yes`、`no`（施工 L-1）：写的原样。
-    BadNeedLoad(String),
     /// `Clicall` 不是 `yes`、`no`（施工 M-2）：写的原样。
     BadClicall(String),
     /// `Venues` 不是认的几种（施工 X-43）：空的、不认识的、重了的。写的原样。
@@ -93,7 +89,6 @@ impl fmt::Display for ScriptProblem {
             }
             ScriptProblem::BadParameters(why) => write!(f, "Parameters is not valid JSON: {why}"),
             ScriptProblem::NotAnObject => f.write_str("Parameters must be a JSON object schema"),
-            ScriptProblem::BadNeedLoad(text) => write!(f, "Need load {text:?} is not yes or no"),
             ScriptProblem::BadClicall(text) => write!(f, "Clicall {text:?} is not yes or no"),
             ScriptProblem::BadVenues(text) => write!(
                 f,
@@ -118,7 +113,6 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
         timeout: TIMEOUT,
         display_name: BTreeMap::new(),
         summary: BTreeMap::new(),
-        need_load: true,
         clicall: false,
         venues: None,
     };
@@ -140,7 +134,7 @@ pub fn read(file_name: &str, text: &str) -> Result<ScriptHead, ScriptProblem> {
                     .ok_or_else(|| ScriptProblem::BadTimeout(value.to_string()))?;
             }
             "Parameters" => head.parameters = parameters(value, &mut rest)?,
-            "Need load" => head.need_load = yes_or_no(value, ScriptProblem::BadNeedLoad)?,
+            // 退役的 `Need load`（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照别的不认识的那几行，不管。
             "Clicall" => head.clicall = yes_or_no(value, ScriptProblem::BadClicall)?,
             "Venues" => head.venues = Some(venues(value)?),
             _ => {}

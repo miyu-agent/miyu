@@ -137,7 +137,6 @@ impl Script {
                 description: head.description.clone(),
                 parameters,
                 access: Access::Execute,
-                need_load: head.need_load,
                 clicall: head.clicall,
                 result: None,
                 plugin: None,

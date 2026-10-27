@@ -145,32 +145,20 @@ fn the_timeout_is_checked() {
     }
 }
 
-/// 要先加载（施工 L-1）：`true` 的规格里记上，不写、`false` 的全量；不是布尔的拒，`problem` 是 `need_load`。
+/// 退役的「要先加载」（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的扩展照旧登记得上，写什么都一样。
 #[test]
-fn need_load_is_a_boolean() {
+fn a_retired_need_load_is_accepted_whatever_it_says() {
     let marked = |need: Value| {
         let mut params = serde_json::to_value(tool("read", json!(["local"]))).unwrap();
         params["need_load"] = need;
         serde_json::from_value::<ToolParams>(params).unwrap()
     };
-    assert!(checked(marked(json!(true))).expect("合写法").spec.need_load);
-    assert!(
-        !checked(marked(json!(false)))
-            .expect("合写法")
-            .spec
-            .need_load
-    );
-    assert!(
-        !checked(tool("read", json!(["local"])))
-            .expect("合写法")
-            .spec
-            .need_load
-    );
-    for bad in [json!("yes"), json!(1)] {
-        assert_eq!(
-            refused_for(marked(bad)),
-            json!({"tool": "send_group", "problem": "need_load"}),
-        );
+    let plain = checked(tool("read", json!(["local"])))
+        .expect("合写法")
+        .spec;
+    for need in [json!(true), json!(false), json!("yes"), json!(1)] {
+        let spec = checked(marked(need.clone())).expect("合写法").spec;
+        assert_eq!(spec, plain, "{need}");
     }
 }
 

@@ -220,7 +220,6 @@ fn same(a: &McpServer, b: &McpServer) -> bool {
         && a.reach == b.reach
         && a.venues == b.venues
         && a.timeout_ms == b.timeout_ms
-        && a.need_load == b.need_load
         && a.clicall == b.clicall
 }
 

@@ -14,7 +14,6 @@ fn entry(name: &str, command: &[&str]) -> Entry {
         headers: Vec::new(),
         venues: None,
         timeout_ms: None,
-        need_load: None,
         clicall: None,
     }
 }
@@ -28,10 +27,9 @@ fn a_block_is_written_in_the_settings_shape() {
     ];
     full.venues = Some(vec!["local".to_string(), "group".to_string()]);
     full.timeout_ms = Some(1000);
-    full.need_load = Some(true);
     assert_eq!(
         block(&full).unwrap(),
-        "[mcp.github]\ncommand = [\"npx\", \"-y\", \"server\"]\nenv = { A = \"1\", TOKEN = { secret = \"github\" } }\nvenues = [\"local\", \"group\"]\ntimeout_ms = 1000\nneed_load = true\n"
+        "[mcp.github]\ncommand = [\"npx\", \"-y\", \"server\"]\nenv = { A = \"1\", TOKEN = { secret = \"github\" } }\nvenues = [\"local\", \"group\"]\ntimeout_ms = 1000\n"
     );
     assert_eq!(
         block(&entry("a b", &["x"])).unwrap(),

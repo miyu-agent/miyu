@@ -98,7 +98,6 @@ pub(super) fn register(
                 description: description(tool.description.as_deref()),
                 parameters,
                 access: access(tool),
-                need_load: server.need_load,
                 clicall: server.clicall,
                 result: None,
                 plugin: None,

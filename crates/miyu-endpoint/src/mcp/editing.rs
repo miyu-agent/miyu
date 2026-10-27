@@ -52,9 +52,9 @@ pub(crate) struct SetParams {
     /// 一次调用等多久，毫秒；不写的照读服务表时的默认。
     #[serde(default)]
     timeout_ms: Option<i64>,
-    /// 这个服务的工具要先加载；不写的不写进去，照读服务表时的默认。
-    #[serde(default)]
-    need_load: Option<bool>,
+    /// 退役的「要先加载」（施工 FL-1，工具一律全量）：老的头照旧写得进来，不看、不写进服务表。
+    #[serde(default, rename = "need_load")]
+    _retired_need_load: Option<bool>,
     /// 这个服务的工具脚本里能调（施工 M-2）；不写的照原来写的留着，原来没写的照读服务表时的默认（能）。
     #[serde(default)]
     clicall: Option<bool>,
@@ -96,7 +96,6 @@ pub(crate) fn set(
         headers: params.headers.unwrap_or_default().into_iter().collect(),
         venues: params.venues,
         timeout_ms: params.timeout_ms,
-        need_load: params.need_load,
         clicall: params.clicall,
     };
     let block = written::block(&entry).ok_or(Refusal::BAD_PARAMS)?;

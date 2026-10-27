@@ -165,14 +165,6 @@
         "name": "Start new sessions read-only",
         "description": "When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on."
       },
-      "loading.tools.<name>": {
-        "name": "Load this tool on demand",
-        "description": "When on, only the tool's name and description are sent, and its full parameters load before use; when off, it is sent in full. Unset follows how it was registered (scripts and MCP servers load on demand, built-in and extension tools go in full)."
-      },
-      "loading.mcp.<id>": {
-        "name": "Load this MCP server's tools on demand",
-        "description": "When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one."
-      },
       "clicall.tools.<name>": {
         "name": "Callable from scripts",
         "description": "When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on."
@@ -299,10 +291,6 @@
           "best_effort": "Best effort",
           "per_request": "Per request"
         }
-      },
-      "providers.<id>.compat.strict_tools": {
-        "name": "Constrained decoding",
-        "description": "This provider writes only what the parameter schema allows, so a tool shown with an empty schema gets {}. When on, tools that need loading are sent to it in full. Left out, it follows the profile."
       },
       "providers.<id>.models.<model>.catalog": {
         "name": "Catalog entry",
@@ -436,7 +424,6 @@
       "core": "Core",
       "log": "Runtime log",
       "sessions": "Sessions",
-      "loading": "Tool loading",
       "clicall": "Calling tools from scripts",
       "features": "Feature switches",
       "terminal": "Shell integration session",

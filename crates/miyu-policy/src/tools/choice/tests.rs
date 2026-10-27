@@ -17,7 +17,6 @@ fn entry(parameters: &str) -> ToolEntry {
         description: "Start a subagent.".to_string(),
         parameters: serde_json::from_str(parameters).expect("是 JSON"),
         access: Access::Read,
-        need_load: false,
         clicall: false,
         runs_commands: false,
         command_only: false,

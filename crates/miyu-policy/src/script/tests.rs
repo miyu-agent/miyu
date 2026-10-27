@@ -99,10 +99,6 @@ fn wrong_ones_say_what_is_wrong() {
             "# Description: Hi.\n# Parameters: {\"type\": \"string\"}\n",
             ScriptProblem::NotAnObject,
         ),
-        (
-            "# Description: Hi.\n# Need load: maybe\n",
-            ScriptProblem::BadNeedLoad("maybe".to_string()),
-        ),
     ];
     for (text, wanted) in cases {
         assert_eq!(read("a", text), Err(wanted), "{text}");
@@ -124,23 +120,21 @@ fn wrong_ones_say_what_is_wrong() {
     );
 }
 
-/// `Need load`（施工 L-1）：`yes`、`true`、没写的要先加载（施工 L-3，2026-10-20 项目主人改，原来没写的全量），`no`、`false`
-/// 全量，大小写不论。
+/// 退役的 `Need load`（施工 L-1 登记、FL-1 拆掉）：以前写了的脚本照旧读得进，写什么都一样，不报错。
 #[test]
-fn need_load_is_yes_or_no() {
-    for (line, need) in [
-        ("# Need load: yes\n", true),
-        ("# Need load: TRUE\n", true),
-        ("# Need load：No\n", false),
-        ("# Need load: false\n", false),
-        ("", true),
+fn a_retired_need_load_line_is_ignored() {
+    let plain = read("a.py", "# Description: Hi.\n").expect("读得进");
+    for line in [
+        "# Need load: yes\n",
+        "# Need load: no\n",
+        "# Need load: maybe\n",
     ] {
         let head = read("a.py", &format!("# Description: Hi.\n{line}")).expect(line);
-        assert_eq!(head.need_load, need, "{line}");
+        assert_eq!(head, plain, "{line}");
     }
 }
 
-/// `Clicall`（施工 M-2）：`yes` 能在脚本里调，没写的、`no` 不能（施工 M-2 三补）；写错的照 `Need load` 一样报。
+/// `Clicall`（施工 M-2）：`yes` 能在脚本里调，没写的、`no` 不能（施工 M-2 三补）；写错的报。
 #[test]
 fn clicall_is_yes_or_no() {
     for (line, on) in [

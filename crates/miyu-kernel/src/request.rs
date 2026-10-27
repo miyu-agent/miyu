@@ -37,11 +37,6 @@ pub struct Request {
     /// 字节和哈希都不变。不算进指纹。
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub described: BTreeMap<ContentHash, String>,
-    /// 要先加载的工具的完整参数格式（施工 L-2，`docs/designs/25-工具加载.md` W9）：名字 → 原样的参数格式。工具面上它们是外壳；
-    /// 标了 `compat.strict_tools` 的那一家（约束解码，见了外壳只能发 `{}`）编码时换回这里的，别的照外壳发。照真发给的那一家定，
-    /// 不照会话能用到的全部模型。空的不写进规范字节：没有要先加载的工具的请求，字节和哈希都不变。不算进指纹。
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    pub full_parameters: BTreeMap<String, RawJson>,
     /// 这一次回答至多多少 token（施工 6-11 三补，`docs/blueprint/compaction.md` 第十五条第 4 条）：用量加输出预留放不下了、
     /// 加上回答的下限还放得下的主请求，内核写成窗口减用量，驱动发的输出上限照它压。没有的照模型的。不写进规范字节、不算进
     /// 指纹：平常的请求字节和哈希都不变。

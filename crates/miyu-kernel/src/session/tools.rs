@@ -81,22 +81,6 @@ impl Session {
                 ));
                 continue;
             }
-            // `load_tools`（施工 L-1）：内核当场答，照快照里冻着的完整格式。
-            if let Some((ok, text)) = self.loaded(&call) {
-                let status = match ok {
-                    true => ToolStatus::Ok,
-                    false => ToolStatus::Error,
-                };
-                events.push(self.written_result(
-                    at,
-                    By::Kernel,
-                    cause.clone(),
-                    call.call_id,
-                    status,
-                    text,
-                ));
-                continue;
-            }
             // 不上工具面的她看不见，直接调的当不认识（施工 BS-1 中）。
             let checked = match self.policy.tools.get(&call.name) {
                 None => Err(self.policy.tool_texts.unknown(&call.name)),
@@ -230,16 +214,6 @@ impl Session {
             return Vec::new();
         };
         call.state = State::Done;
-        // 要先加载的工具没加载直接调、出错了（施工 L-1）：附上它的完整参数格式，她照着再调一次。
-        if result.status == ToolStatus::Error
-            && let Some(contract) = self
-                .policy
-                .loading
-                .as_ref()
-                .and_then(|loading| loading.contract_of(&call.name))
-        {
-            result.blocks.push(Block::Text(Text { text: contract }));
-        }
         // 要结束这一轮（施工 4-14）：记下头一件，这一步齐了再结束，同一步别的照常跑完。
         if result.end_turn && result.status == ToolStatus::Ok && step.ending.is_none() {
             step.ending = Some(call_id);

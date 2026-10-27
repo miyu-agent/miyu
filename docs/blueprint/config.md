@@ -177,7 +177,7 @@ trusted = true
 | 表 `table` | `[a.b]`，或者 `{ … }` | 键照名字的写法，值照元素的类型查 | 同上 |
 
 - 类型照「不为以后写代码」一样一样加：哪一步第一次有一项用到它，哪一步加。8-1 只有选项，8-2 加开关，8-5 加密钥，8-6 加整数、网址、名字、引用、列表，8-7 加小数、文字、时长，8-8 补加给模型看的字，R-5 补加模型或几个字，列表的元素可以是选项（宏里写 `options [..]`，`config.schema` 照样带 `options`，选项的名字照样要有字）、文字（`texts [..]`）。路径、表随用到它的那一步。
-- **人起的名字**（8-6，`miyu_config::key`）：键里可以有一段是人起的名字，清单里写成占位：`<id>` 照「路径里的名字」（`kernel/ids.md`：小写字母开头，只有小写字母、数字、`-`、`_`，最长 32 个字符，不是 Windows 的保留名，它要当 `state/` 下的文件名），`<model>` 照「短名字」（1 到 128 字节，没有控制字符），`<external>` 是通讯平台上的身份，写法同 `<model>`（施工 O-3，主人对应表），`<name>` 是工具名、功能编号这类比 `<id>` 长的名字（1 到 128 个字符，没有 `.` 和控制字符，大写也行；施工 X-27：MCP 工具的全名 `mcp__<服务>__<工具>`、带前缀的功能编号常超过 32 个字，`loading.tools.<name>`、`features.<name>`），写错了的话是「1 到 128 个字符，没有 . 和控制字符」。占位不能是第一段；O-3 起可以是最后一段：一张按名字的表，每一格就是这一项（`external.bindings."qq:10001" = "admin"`），Schema 里写成那张表的 `additionalProperties`，参考文件里写成 `# "<external>" =`。文件里、协议上、最终值里的是真的键，照 TOML 点号连着的键写：能裸着写的一段（只有字母、数字、`-`、`_`）照写，别的带双引号，例如 `providers.dev.models."deepseek-v4.1-flash".window`。哪一层写了哪几个名字，每个名字各合各的；没有默认值、哪一层都没写的，最终值里没有它。名字写法不对的那一段报一条 `bad_format`（原因码一样，话是「<键> 里的 <名字> 不能当名字：…」），底下的都不收。键里有人起的名字的项不能由环境变量压过。
+- **人起的名字**（8-6，`miyu_config::key`）：键里可以有一段是人起的名字，清单里写成占位：`<id>` 照「路径里的名字」（`kernel/ids.md`：小写字母开头，只有小写字母、数字、`-`、`_`，最长 32 个字符，不是 Windows 的保留名，它要当 `state/` 下的文件名），`<model>` 照「短名字」（1 到 128 字节，没有控制字符），`<external>` 是通讯平台上的身份，写法同 `<model>`（施工 O-3，主人对应表），`<name>` 是工具名、功能编号这类比 `<id>` 长的名字（1 到 128 个字符，没有 `.` 和控制字符，大写也行；施工 X-27：MCP 工具的全名 `mcp__<服务>__<工具>`、带前缀的功能编号常超过 32 个字，`clicall.tools.<name>`、`features.<name>`），写错了的话是「1 到 128 个字符，没有 . 和控制字符」。占位不能是第一段；O-3 起可以是最后一段：一张按名字的表，每一格就是这一项（`external.bindings."qq:10001" = "admin"`），Schema 里写成那张表的 `additionalProperties`，参考文件里写成 `# "<external>" =`。文件里、协议上、最终值里的是真的键，照 TOML 点号连着的键写：能裸着写的一段（只有字母、数字、`-`、`_`）照写，别的带双引号，例如 `providers.dev.models."deepseek-v4.1-flash".window`。哪一层写了哪几个名字，每个名字各合各的；没有默认值、哪一层都没写的，最终值里没有它。名字写法不对的那一段报一条 `bad_format`（原因码一样，话是「<键> 里的 <名字> 不能当名字：…」），底下的都不收。键里有人起的名字的项不能由环境变量压过。
 
 **生效时机** `applies`（G7）：
 
@@ -324,7 +324,7 @@ miyu_config::settings! {
 | `models.catalog.every` | 时长 1 小时到 30 天 | `24h` | 系统、个人 | 不能写 | `now` | 8-7 |
 | `models.cooldown.rate_limited.base`、`retryable.base`、`auth.base` | 时长 1 秒到 1 小时 | `30s`、`10s`、`10m` | 系统、个人 | 不能写 | `now` | 8-9 |
 | `models.cooldown.rate_limited.max`、`retryable.max`、`auth.max` | 时长 1 秒到 1 天 | `10m`、`5m`、`2h` | 系统、个人 | 不能写 | `now` | 8-9 |
-| 模型的 `driver`，供应商的 `headers`、`compat`（施工 L-2 先登记了 `compat.strict_tools`）、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
+| 模型的 `driver`，供应商的 `headers`、`compat`（施工 L-2 登记过 `compat.strict_tools`，施工 FL-1 拆了，写过的照退役的键读）、`placeholder_tools`，`models.*` 的别的 | 见 `models.md` | | | | | 8-10 到 8-15 |
 
 - `ui.language` 的 `auto`：跟着系统，终端的头照系统的语言，网页照浏览器（第二条第 8 条，2026-10-01 项目主人定）。它的界面提示：`general` 页的 `display` 组，常用项，下拉。`log.level` 的：`advanced` 页的 `log` 组，下拉。
 - 项目配置能写的，M8 里只有 `permission.start_read_only` 这一项（2026-10-01 项目主人定）。
@@ -682,7 +682,7 @@ miyu_config::settings! {
 3. 解析（`miyu-config` 的 `parse.rs`，用 `toml_edit`）：
    1. TOML 写法不对：`syntax`，行、列照 `toml_edit` 报的位置（它报的错的开头，例如字没收尾的，指到那一行行尾）。`why` 只取它的原话（`TomlError::message` 的最后一行），不带它印出来的那一行原文：原文可能很长，密钥文件里更不能印。
    2. 照清单一项项认：键在清单里、这一层能写、类型和范围对的，收下，记下键所在的行。
-   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。个人设置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::personal_mcp` 另读（施工 F-9 上，`mcp.md`「个人设置里的一张表」）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
+   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。退役的键（以前登记过、拆掉了的，`miyu_config` 的 `retired.rs`，施工 FL-1 起：`providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`）不报，也不进最终值：写过的人查配置不多一条警告。个人设置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::personal_mcp` 另读（施工 F-9 上，`mcp.md`「个人设置里的一张表」）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
    4. 类型、范围、写法不对：那一项报错，不进最终值。
    5. 这一层不能写的：`wrong_layer`，不进最终值；值写得对的照样记下来，`explain` 列得出它、写明不算。
    6. 位置：一项的问题指到值（`log.level = "verbose"` 的第 9 列），不认识的键指到键；点号连着写的键（`ui.langauge = …`）指到整个键的开头。来源的 `line` 是键所在的那一行。列照 Unicode 字符数，`\r\n` 的 `\r` 在行尾不算进列。
@@ -1040,16 +1040,6 @@ idle_exit = 0
 # 后台命令最长运行时间：AI 放到后台跑的命令最多跑这么久，到了就停掉并告诉 AI。最长 2 小时。
 # 能写：1m 到 2h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置或个人设置里。下一轮生效。
 max_running = "30m"
-
-[loading.mcp]
-# 这个 MCP 服务的工具先加载：开着的话，这个服务的工具都只给名字和说明，用之前先加载；关着的照全量给。单件工具另写了的照那一件的。
-# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
-# "<id>" =
-
-[loading.tools]
-# 这件工具先加载：开着的话，工具面上只给这件工具的名字和说明，用之前先加载完整的参数；关着的照全量给。不写的照它自己登记的（脚本、MCP 服务默认先加载，自带的、扩展的默认全量）。
-# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
-# "<name>" =
 
 [log]
 # 运行日志的级别：运行日志记到哪一级。排查问题时调成 debug。设了环境变量 MIYU_LOG 的，那一次启动照它。
@@ -1437,11 +1427,6 @@ default = "full"
 # 能写：0 到 1000 之间的数。只能写在系统配置或个人设置里。下一轮生效。
 # price_multiplier =
 
-[providers."<id>".compat]
-# 约束解码：这家照参数格式出字，空的参数外壳只能填 {}。打开后，要先加载的工具发给它时带完整格式。不写照档案。
-# 能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。
-# strict_tools =
-
 [providers."<id>".models."<model>"]
 # 对应目录里的：照 models.dev 目录里的哪一个：<供应商>/<模型>。不写的照名字找。
 # 能写：最多 256 个字的文字。只能写在系统配置或个人设置里。下一轮生效。
@@ -1631,27 +1616,6 @@ currency = "USD"
           "pattern": "^[0-9]+[smh]?$",
           "title": "后台命令最长运行时间",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "loading": {
-      "properties": {
-        "mcp": {
-          "additionalProperties": {
-            "description": "开着的话，这个服务的工具都只给名字和说明，用之前先加载；关着的照全量给。单件工具另写了的照那一件的。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-            "title": "这个 MCP 服务的工具先加载",
-            "type": "boolean"
-          },
-          "type": "object"
-        },
-        "tools": {
-          "additionalProperties": {
-            "description": "开着的话，工具面上只给这件工具的名字和说明，用之前先加载完整的参数；关着的照全量给。不写的照它自己登记的（脚本、MCP 服务默认先加载，自带的、扩展的默认全量）。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-            "title": "这件工具先加载",
-            "type": "boolean"
-          },
-          "type": "object"
         }
       },
       "type": "object"
@@ -2224,16 +2188,6 @@ currency = "USD"
             "description": "这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。下一轮生效。",
             "title": "对应的供应商",
             "type": "string"
-          },
-          "compat": {
-            "properties": {
-              "strict_tools": {
-                "description": "这家照参数格式出字，空的参数外壳只能填 {}。打开后，要先加载的工具发给它时带完整格式。不写照档案。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-                "title": "约束解码",
-                "type": "boolean"
-              }
-            },
-            "type": "object"
           },
           "driver": {
             "description": "怎么和这家说话。认得出的供应商可以不写。能写：openai-chat、anthropic 或 openai-responses。只能写在系统配置或个人设置里。下一轮生效。",

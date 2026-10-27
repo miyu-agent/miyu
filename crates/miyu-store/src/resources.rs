@@ -374,7 +374,6 @@ impl ResourceRoot {
             }),
             forward: Some(self.forward()?),
             private_media: Some(self.private_media()?),
-            loading: Some(self.loading()?),
         })
     }
 
@@ -453,7 +452,6 @@ impl ResourceRoot {
 
 mod fork;
 mod goal;
-mod loading;
 mod mcp_tools;
 mod memory;
 mod project_docs;

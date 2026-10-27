@@ -97,27 +97,6 @@
       },
       "type": "object"
     },
-    "loading": {
-      "properties": {
-        "mcp": {
-          "additionalProperties": {
-            "description": "开着的话，这个服务的工具都只给名字和说明，用之前先加载；关着的照全量给。单件工具另写了的照那一件的。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-            "title": "这个 MCP 服务的工具先加载",
-            "type": "boolean"
-          },
-          "type": "object"
-        },
-        "tools": {
-          "additionalProperties": {
-            "description": "开着的话，工具面上只给这件工具的名字和说明，用之前先加载完整的参数；关着的照全量给。不写的照它自己登记的（脚本、MCP 服务默认先加载，自带的、扩展的默认全量）。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-            "title": "这件工具先加载",
-            "type": "boolean"
-          },
-          "type": "object"
-        }
-      },
-      "type": "object"
-    },
     "log": {
       "properties": {
         "level": {
@@ -740,16 +719,6 @@
             "description": "这家对应资料里的哪一家，例如只转 DeepSeek 的中转写 deepseek。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置或个人设置里。下一轮生效。",
             "title": "对应的供应商",
             "type": "string"
-          },
-          "compat": {
-            "properties": {
-              "strict_tools": {
-                "description": "这家照参数格式出字，空的参数外壳只能填 {}。打开后，要先加载的工具发给它时带完整格式。不写照档案。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",
-                "title": "约束解码",
-                "type": "boolean"
-              }
-            },
-            "type": "object"
           },
           "driver": {
             "description": "怎么和这家说话。认得出的供应商可以不写。能写：openai-chat、anthropic 或 openai-responses。只能写在系统配置或个人设置里。下一轮生效。",

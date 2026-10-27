@@ -26,7 +26,6 @@ fn catalog() -> Catalog {
             description: "Look a word up.".to_string(),
             parameters: serde_json::from_str::<RawJson>(FULL).expect("是 JSON"),
             access: Access::Read,
-            need_load: true,
             clicall: false,
             result: None,
             plugin: None,

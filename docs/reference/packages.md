@@ -21,7 +21,7 @@
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
 | [`skill.remove`](#skillremove) | 删管理员自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
-| [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 改一件工具、一个 MCP 服务的加载方式；改技能、脚本、MCP 服务的全局开关 |
+| [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 退役（照旧收、什么都不改）；改技能、脚本、MCP 服务的全局开关 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
@@ -49,7 +49,7 @@
 | `members` | 带进程的（扩展、带 MCP 服务的）：成员能不能用。只给管理员 |
 | `available` | 只在成员拿到的列表里：带进程、没对他开放的包写 `false`（不在管理员组、包没勾「成员也能用」），开放了的不写。头照它写「管理员没开放」 |
 | `page` | 有后台页的；成员拿到的只有他打得开的才带（每人一份、勾了「成员也能用」的，施工 IM-1 中下一补），头照它列「软件后台」 |
-| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`need_load`、`on`、`skipped` 同 `mcp.list` 的一项。成员拿到的每个服务只有 `name`、`state`（停下的带 `reason`） |
+| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。成员拿到的每个服务只有 `name`、`state`（停下的带 `reason`） |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `contents` | 给哪几个包带了内容（清单里 `[content.<包>]` 的编号）；没带的没有这一格 |
@@ -205,7 +205,7 @@
 
 管理员个人设置（`home/admin/settings.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改个人设置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
-**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`need_load` 是 `{"value", "by"}`：这个服务的工具要不要先加载，`by` 是 `source`（服务表写的，没写的先加载）或 `setting`（个人设置的 `loading.mcp.<服务名>` 盖过的，见 `tool.set_loading`）。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在个人设置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
+**`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在个人设置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
 
 **`mcp.restart`**：参数 `name`。回应是那一项。**出错**：`unknown_server`。
 
@@ -222,7 +222,7 @@
 | `headers` | 对象 | 别的请求头，值的写法同 `env` 的；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version` 留给核心；跟着 `url` |
 | `venues` | 字符串数组 | 给哪种会话：`local`、`private`、`group`；不写是只给本机的会话 |
 | `timeout_ms` | 整数 | 一次调用等多久，1000 到 3600000；不写是 600000 |
-| `need_load` | 布尔 | 这个服务的工具要先加载；不写的照个人设置里没写的算 |
+| `need_load` | 布尔 | 退役（施工 FL-1，工具一律全量）：照旧收，不看、不写进服务表 |
 | `clicall` | 布尔 | 这个服务的工具 AI 在命令里用 `miyu call` 能不能调；不写的照原来写的留着，原来没写的能 |
 
 没交的格子不写：整条换掉时原来写着、这次没交的也没了。写之前照读服务表的规矩查，写法同 `config.set`（带版本，不覆盖同时的手改）。回应 `{"name"}`；服务随后照新写的换，状态变了推 `mcp.changed`。**出错**：`mcp_invalid`（写错了，`data.problem` 说哪里不对：`command`、`url` 都没写、两样混写的也是）；`bad_params`（交了 `args` 没交 `command`）；`server_from_package`（个人设置里没写这个名字、有包带着同名服务：随包来的不经它改）；`config_file_broken`（个人设置读不进来，或者 `mcp` 写成了放不下的样子）；`config_conflict`。
@@ -277,24 +277,23 @@
 | `from`、`package` | 同 `skill.list`：`home` 是管理员自己放的（`home/admin/scripts/`） |
 | `path` | 脚本文件在哪，写法同 `skill.list` |
 | `timeout` | 一次等多少秒 |
-| `need_load` | `{"value", "by"}`：要不要先加载；`by` 是 `source`（脚本开头写的，没写的先加载）或 `setting`（个人设置的 `loading.tools.<工具名>` 盖过的） |
 | `on` | 全局开关（`features.script-<工具名>`）：没写的是 `true` |
 
 ## `tool.set_loading`、`feature.set`
 
-技能、脚本、MCP 服务那几页改的两样，都写管理员的个人设置，写法同 `config.set` 改一项（带版本，不覆盖同时的手改，写成了推 `config.changed`）。从下一个回合开始生效。回应 `{}`。
+技能、脚本、MCP 服务那几页改的。回应 `{}`。
 
-**`tool.set_loading`**：改一件工具（`loading.tools.<工具名>`）或一个 MCP 服务（`loading.mcp.<服务名>`）要不要先加载。工具自己那一项先，MCP 的工具再照服务那一项，都没写的照来处。
+**`tool.set_loading`**：退役（施工 FL-1，2026-10-27 项目主人定：工具一律全量，没有先加载了）。协议 1 冻结了这个方法：照旧收、照旧查参数，什么都不改，个人设置一个字不写。以前写进个人设置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>` 照退役的键读，不报错、不起作用。
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `tool` | 字符串 | 工具名：1 到 128 个字符，没有 `.` 和控制字符 |
 | `server` | 字符串 | MCP 服务名 |
-| `need_load` | 布尔或 `null`，必写 | `null` 删掉这一项，回到来处写的 |
+| `need_load` | 布尔或 `null`，必写 | 照旧要写，不看 |
 
 `tool`、`server` 正好写一个。
 
-**`feature.set`**：改一个技能、脚本、MCP 服务的全局开关（`features.<功能编号>`）。`unlisted` 是 `on` 的预设照它；预设里单独写了开或关的照预设（`preset.get` 每个功能的 `by`）。`unlisted` 是 `off` 的预设不照它：没写的照旧关着。
+**`feature.set`**：改一个技能、脚本、MCP 服务的全局开关（`features.<功能编号>`），写管理员的个人设置，写法同 `config.set` 改一项（带版本，不覆盖同时的手改，写成了推 `config.changed`），从下一个回合开始生效。`unlisted` 是 `on` 的预设照它；预设里单独写了开或关的照预设（`preset.get` 每个功能的 `by`）。`unlisted` 是 `off` 的预设不照它：没写的照旧关着。
 
 | 名字 | 类型 | 说明 |
 |---|---|---|

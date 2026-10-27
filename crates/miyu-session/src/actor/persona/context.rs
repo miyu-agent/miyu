@@ -32,7 +32,7 @@ impl Actor {
             let context = blocking(move || {
                 let snapshot = &refresh.snapshot;
                 let system = system_of(&refresh, snapshot, breakdown.system);
-                let offered = miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref());
+                let offered = miyu_policy::sent_names(&snapshot.tools);
                 Context {
                     breakdown,
                     system,

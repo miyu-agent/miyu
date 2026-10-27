@@ -44,7 +44,6 @@ fn request() -> Request {
         stable: 0,
         continuation: false,
         described: Default::default(),
-        full_parameters: Default::default(),
         output_cap: None,
         used: None,
     }
@@ -168,33 +167,6 @@ fn descriptions_are_written_last_only_when_there_are_some() {
             .first_difference(&request().fingerprint()),
         None,
         "转述不算进指纹"
-    );
-}
-
-/// 要先加载的工具的完整参数格式（施工 L-2）：空的不写进规范字节，以前的请求字节、哈希不变；有的原样照抄写在最后；不算进指纹。
-#[test]
-fn full_parameters_are_written_last_only_when_there_are_some() {
-    let plain = String::from_utf8(request().canonical_bytes()).unwrap();
-    assert!(!plain.contains("full_parameters"), "{plain}");
-    let mut full = request();
-    full.full_parameters.insert(
-        "lookup".to_string(),
-        serde_json::from_str(r#"{"type":"object", "required":["word"]}"#).unwrap(),
-    );
-    let bytes = String::from_utf8(full.canonical_bytes()).unwrap();
-    assert_eq!(
-        bytes,
-        format!(
-            r#"{},"full_parameters":{{"lookup":{{"type":"object", "required":["word"]}}}}}}"#,
-            plain.strip_suffix('}').unwrap()
-        )
-    );
-    assert_ne!(full.hash(), request().hash());
-    assert_eq!(
-        full.fingerprint()
-            .first_difference(&request().fingerprint()),
-        None,
-        "完整格式不算进指纹"
     );
 }
 

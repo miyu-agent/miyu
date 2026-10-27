@@ -15,7 +15,7 @@ use miyu_models::catalog::{Catalog, CatalogSource, Loaded};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::{
-    CatalogSettings, CompatSettings, ModelSettings, PriceSettings, ProviderSettings, UseSettings,
+    CatalogSettings, ModelSettings, PriceSettings, ProviderSettings, UseSettings,
 };
 use miyu_session::testkit::Script;
 use miyu_session::{ModelData, Observed};
@@ -71,7 +71,6 @@ fn core(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Core> {
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
-        CompatSettings::ITEMS,
         CatalogSettings::ITEMS,
     ]
     .concat();

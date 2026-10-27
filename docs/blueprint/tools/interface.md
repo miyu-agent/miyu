@@ -40,7 +40,6 @@
 | `description` | 给模型看的说明，英文，原样进 tools 数组 |
 | `parameters` | 参数的 JSON Schema，原样进 tools 数组，一个字节不改（`RawJson`）；必须是 `{"type":"object",…}` |
 | `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
-| `need_load` | 要先加载（施工 L-1，`25-工具加载.md` W9）：登记的一方说的，人能在个人设置里改（`loading.*`） |
 | `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在个人设置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`、`history`、`sessions`、`session_usage`、`packages`（施工 M-2 补、再补：要读、要查、shell 原本不方便做到的就开）；扩展 `provide` 写 `true` 才开；MCP 服务默认开（`clicall = false` 关）；脚本工具写 `# Clicall: yes` 才开（施工 M-2 三补）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
 | `result` | 脚本里调到时交回的结构化结果（`Done.data`）的样子（施工 M-4，设计 `39-脚本调工具.md` 第九节第 3 条）：一行紧凑的字，例如 `{"hits":[{"kb","path","snippet"}]}`。只有交结构化结果的写：内置、软件包的说明文件写 `"result"`（出厂 `web_search`、`memory_search`、`kb_search`、`kb_read`），扩展 `provide` 写；MCP、脚本工具没有。不直接发给模型：换进 `shell` 说明末尾那一段（`tools/shell.md`「脚本调工具」第 10 条）、`miyu call --schema` 的 `Result:` |
 

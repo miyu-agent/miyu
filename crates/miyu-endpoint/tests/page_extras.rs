@@ -1,6 +1,6 @@
 //! 技能、脚本、MCP 三页另要的两样（施工 X-27 补，网页报的）：`skill.list`、`script.list` 顶上带 `dir`，管理员自己放的那个
-//! 文件夹，一个都没有、还没建的也照写；软件包列表上包带的 MCP 服务每一格带 `need_load`、`on`，同 `mcp.list` 的一项，改了
-//! 加载方式、全局开关跟着变。
+//! 文件夹，一个都没有、还没建的也照写；软件包列表上包带的 MCP 服务每一格带 `on`，同 `mcp.list` 的一项，改了全局开关跟着变。
+//! 加载方式那一格施工 FL-1 拆了：工具一律全量，`tool.set_loading` 照旧回 `{}`、什么都不改。
 
 use std::sync::Arc;
 
@@ -28,18 +28,15 @@ async fn both_lists_name_the_folder_even_when_nothing_is_in_it() {
 }
 
 #[tokio::test]
-async fn a_bundled_service_shows_its_loading_and_switch_and_follows_changes() {
+async fn a_bundled_service_shows_its_switch_and_follows_changes() {
     let home = Home::new();
     bundle(&home, "probe", "probe", &[]);
     let core = core(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let before = entry(&mut client, "probe").await["mcp"][0].clone();
-    assert_eq!(
-        (&before["need_load"], &before["on"]),
-        (&json!({"value": false, "by": "source"}), &json!(true)),
-        "{before}"
-    );
+    assert_eq!(before["on"], json!(true), "{before}");
+    assert!(before.get("need_load").is_none(), "{before}");
     let set = client
         .call(
             "t",
@@ -57,11 +54,9 @@ async fn a_bundled_service_shows_its_loading_and_switch_and_follows_changes() {
         .await;
     assert_eq!(off["result"], json!({}), "{off}");
     let after = entry(&mut client, "probe").await["mcp"][0].clone();
-    assert_eq!(
-        (&after["need_load"], &after["on"]),
-        (&json!({"value": true, "by": "setting"}), &json!(false)),
-        "{after}"
-    );
+    assert_eq!(after["on"], json!(false), "{after}");
+    assert!(after.get("need_load").is_none(), "{after}");
+    assert!(!settings(&home).contains("loading"), "{}", settings(&home));
     core.stop_extensions().await;
 }
 

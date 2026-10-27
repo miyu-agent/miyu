@@ -4,7 +4,6 @@
 use tokio::sync::oneshot;
 
 use miyu_kernel::session::Breakdown;
-use miyu_policy::Offered;
 
 use super::{Handle, Message, Stopped};
 
@@ -46,8 +45,8 @@ pub struct Context {
     pub breakdown: Breakdown,
     /// system 拆开：认得出的几块照快照里的先后，最后是其他；加起来就是 `breakdown.system`。一块都认不出的只有其他。
     pub system: Vec<(SystemPart, u64)>,
-    /// 现在的工具面，照发的先后：`loaded` 是假的只露名字，要先加载。
-    pub offered: Vec<Offered>,
+    /// 现在的工具面，照发的先后（名字）。
+    pub offered: Vec<String>,
 }
 
 /// 头问的是哪一样（施工 CX-3：两样走同一条消息）。

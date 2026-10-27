@@ -33,7 +33,6 @@ impl Assembler for Nothing {
             stable: 0,
             continuation: false,
             described: Default::default(),
-            full_parameters: Default::default(),
             output_cap: None,
             used: None,
         }
@@ -81,7 +80,6 @@ pub fn policy() -> Policy {
             per_session: 16,
         },
         foreground: false,
-        loading: None,
         assembler: Box::new(Nothing),
         facts: FactTemplates::new(
             r#"<e t="{time}"/>"#,

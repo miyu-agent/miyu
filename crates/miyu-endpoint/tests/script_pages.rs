@@ -1,6 +1,6 @@
 //! 技能、脚本、MCP 三页要的协议（施工 X-27，`docs/blueprint/skills.md`「脚本」、`presets.md`「全局开关」）：`script.list`
-//! 列出登记上的脚本，给人看的两格照连接的语言挑；`tool.set_loading` 改加载方式，`need_load.by` 跟着从 `source` 变成
-//! `setting`、下一个会话的工具面照新的；`feature.set` 改全局开关，没写这个功能的预设照它、明写了的照预设，`preset.get`
+//! 列出登记上的脚本，给人看的两格照连接的语言挑；`tool.set_loading` 施工 FL-1 起照旧收、什么都不改（工具一律全量）；
+//! `feature.set` 改全局开关，没写这个功能的预设照它、明写了的照预设，`preset.get`
 //! 每一项说是谁定的；写错的拒，什么都不写。
 
 use serde_json::{Value, json};
@@ -115,14 +115,16 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
                 "description": description,
                 "from": "home",
                 "timeout": 5,
-                "need_load": {"value": false, "by": "source"},
                 "on": true,
             }),
             "{language}"
         );
         let plain = &scripts[1];
         assert_eq!(plain["timeout"], 60, "没写的 60 秒");
-        assert_eq!(plain["need_load"], json!({"value": true, "by": "source"}));
+        assert!(
+            plain.get("need_load").is_none(),
+            "加载方式那一格拆了（施工 FL-1）"
+        );
         assert!(plain.get("display_name").is_none() && plain.get("description").is_none());
         let dice = &scripts[0];
         assert_eq!(
@@ -134,96 +136,69 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
     }
 }
 
+/// 退役的 `tool.set_loading`（施工 FL-1，工具一律全量）：照旧收、照旧查参数，回 `{}`，个人设置一个字不写，工具面照旧全量；
+/// `mcp.list` 不再带 `need_load`，全局开关照常。
 #[tokio::test]
-async fn set_loading_moves_the_source_to_the_setting_and_the_next_face() {
+async fn set_loading_is_accepted_and_changes_nothing() {
     let home = Home::new();
     home.write(
         "home/alice/scripts/weather.py",
-        &echo("weather").replace("# Need load: no\n", ""),
+        &echo("weather").replace("# Need load: no\n", "# Need load: yes\n"),
     );
     home.write(
         "home/alice/settings.toml",
         "[ui]\nlanguage = \"zh\"\n\n[mcp.github]\ncommand = [\"miyu-absent-mcp-server\"]\n",
     );
-    let script = Script::new([Play::Says("一。"), Play::Says("二。"), Play::Says("三。")]);
+    let script = Script::new([Play::Says("一。")]);
     let mut client = Client::connect(core(&home, &script));
     client.hello().await;
+    let before = settings(&home);
+    for (id, params) in [
+        ("t1", json!({"tool": "weather", "need_load": true})),
+        ("t2", json!({"tool": "weather", "need_load": null})),
+        ("t3", json!({"server": "github", "need_load": false})),
+    ] {
+        let set = client.call(id, "tool.set_loading", params).await;
+        assert_eq!(set["result"], json!({}), "{set}");
+    }
+    let refused = client
+        .call(
+            "t4",
+            "tool.set_loading",
+            json!({"tool": "weather", "server": "github", "need_load": true}),
+        )
+        .await;
+    assert_eq!(
+        refused["error"]["data"]["reason"], "bad_params",
+        "{refused}"
+    );
+    assert_eq!(settings(&home), before, "什么都不写");
+    assert!(
+        listed(&mut client, "weather")
+            .await
+            .get("need_load")
+            .is_none()
+    );
+
     let work = home.work.to_string_lossy().into_owned();
-    let open = json!({"cwd": work, "preset": "full"});
-    assert_eq!(
-        listed(&mut client, "weather").await["need_load"],
-        json!({"value": true, "by": "source"})
-    );
-    session(&mut client, &home, "c1", open.clone()).await;
-    // 工具面一律全量（施工 FL-1）：设置只记下来，不再改工具面。
-    assert_eq!(names(&face(&script, 0)), ["read", "weather"]);
+    session(
+        &mut client,
+        &home,
+        "c1",
+        json!({"cwd": work, "preset": "full"}),
+    )
+    .await;
+    let first = face(&script, 0);
+    assert_eq!(names(&first), ["read", "weather"]);
+    assert!(first[1].1.contains("\"say\""), "完整的参数：{}", first[1].1);
 
-    let set = client
-        .call(
-            "t1",
-            "tool.set_loading",
-            json!({"tool": "weather", "need_load": false}),
-        )
-        .await;
-    assert_eq!(set["result"], json!({}), "{set}");
-    assert!(
-        settings(&home).contains("weather = false"),
-        "{}",
-        settings(&home)
-    );
-    assert_eq!(
-        listed(&mut client, "weather").await["need_load"],
-        json!({"value": false, "by": "setting"})
-    );
-    session(&mut client, &home, "c2", open.clone()).await;
-    let second = face(&script, 1);
-    assert_eq!(names(&second), ["read", "weather"]);
-    assert!(
-        second[1].1.contains("\"say\""),
-        "完整的参数：{}",
-        second[1].1
-    );
-
-    // 删掉那一项：回到来处。
-    let unset = client
-        .call(
-            "t2",
-            "tool.set_loading",
-            json!({"tool": "weather", "need_load": null}),
-        )
-        .await;
-    assert_eq!(unset["result"], json!({}), "{unset}");
-    assert!(!settings(&home).contains("weather"), "{}", settings(&home));
-    assert_eq!(
-        listed(&mut client, "weather").await["need_load"],
-        json!({"value": true, "by": "source"})
-    );
-    session(&mut client, &home, "c3", open).await;
-    assert_eq!(names(&face(&script, 2)), ["read", "weather"]);
-
-    // MCP 服务那一级：`mcp.list` 照 `loading.mcp.<服务名>` 说。
+    // MCP 服务那一级：`mcp.list` 不带 `need_load`；全局开关照 `features.mcp-<服务名>`。
     let server = |reply: &Value| reply["result"]["servers"][0].clone();
-    let before = client.call("m1", "mcp.list", json!({})).await;
-    assert_eq!(
-        (&server(&before)["need_load"], &server(&before)["on"]),
-        (&json!({"value": true, "by": "source"}), &json!(true)),
-        "{before}"
+    let listed_mcp = client.call("m1", "mcp.list", json!({})).await;
+    assert!(
+        server(&listed_mcp).get("need_load").is_none(),
+        "{listed_mcp}"
     );
-    let set = client
-        .call(
-            "t3",
-            "tool.set_loading",
-            json!({"server": "github", "need_load": false}),
-        )
-        .await;
-    assert_eq!(set["result"], json!({}), "{set}");
-    let after = client.call("m2", "mcp.list", json!({})).await;
-    assert_eq!(
-        server(&after)["need_load"],
-        json!({"value": false, "by": "setting"}),
-        "{after}"
-    );
-    // 全局开关：`mcp.list` 的 `on` 照 `features.mcp-<服务名>`。
     let off = client
         .call(
             "f1",

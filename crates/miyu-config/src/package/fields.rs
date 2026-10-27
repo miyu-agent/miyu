@@ -91,6 +91,7 @@ pub(super) const MCP_SERVER: [&str; 9] = [
     "headers",
     "venues",
     "timeout_ms",
+    // 退役的（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写了的照旧认得这个键，值不读。
     "need_load",
     "clicall",
 ];

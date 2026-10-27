@@ -13,7 +13,6 @@ use serde_json::{Value, json};
 
 use miyu_config::package::PackageKind;
 use miyu_kernel::id::{AccountId, SessionId};
-use miyu_policy::Offered;
 use miyu_session::new_id;
 
 use crate::Core;
@@ -62,7 +61,7 @@ pub(crate) async fn tools(
     let language = peer.language.to_string();
     let tools: Vec<Value> = offered
         .iter()
-        .map(|offered| entry(core, (&owner, &language), offered))
+        .map(|name| entry(core, (&owner, &language), name))
         .collect();
     Ok(json!({ "tools": tools }))
 }
@@ -74,7 +73,7 @@ async fn preview(
     account: &miyu_kernel::id::AccountId,
     persona: Option<Option<String>>,
     preset: Option<String>,
-) -> Result<Vec<Offered>, Refusal> {
+) -> Result<Vec<String>, Refusal> {
     let mut setup = new_session(core, peer, account, persona, preset).await?;
     Ok(miyu_session::preview(setup.create(core)).await)
 }
@@ -116,15 +115,12 @@ pub(crate) async fn new_session(
     .await
 }
 
-/// 一件：名字、来处、说明（有的才写）、只露名字的 `loaded: false`。
-fn entry(core: &Core, (owner, language): (&AccountId, &str), offered: &Offered) -> Value {
-    let (source, summary) = source(core, (owner, language), &offered.name);
-    let mut entry = json!({ "name": offered.name, "source": source });
+/// 一件：名字、来处、说明（有的才写）。工具一律全量（施工 FL-1）以后没有只露名字的，`loaded: false` 不再出现。
+fn entry(core: &Core, (owner, language): (&AccountId, &str), name: &str) -> Value {
+    let (source, summary) = source(core, (owner, language), name);
+    let mut entry = json!({ "name": name, "source": source });
     if let Some(summary) = summary {
         entry["summary"] = json!(summary);
-    }
-    if !offered.loaded {
-        entry["loaded"] = json!(false);
     }
     entry
 }

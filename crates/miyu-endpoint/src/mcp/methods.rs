@@ -10,7 +10,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::{EnvValue, MCP_TIMEOUT_DEFAULT, McpServer, Reach};
-use miyu_session::loading::Loading;
 use miyu_store::scripts::HOME_PACKAGE;
 use miyu_tool::mcp_prefix;
 
@@ -56,9 +55,8 @@ pub(crate) async fn restart(core: &Arc<Core>, params: RestartParams) -> Result<V
 
 /// 一项：名字、命令、给哪种会话、状态（同软件包列表上服务的那一格），盖住了哪些包里的同名服务，知道了的另带工具，浏览器登录过的
 /// 带 `logged_in`（施工 X-42 下再补）。
-/// `need_load` 是服务那一级要不要先加载、谁定的（施工 X-27）：`source` 是服务表写的（没写的先加载），`setting` 是个人设置的
-/// `loading.mcp.<服务名>` 盖过的；`on` 是全局开关 `features.mcp-<服务名>`，没写的算开。配置照最近换上的那一份读，不拿配置
-/// 服务的锁：推 `mcp.changed` 时也调它。
+/// `on` 是全局开关 `features.mcp-<服务名>`，没写的算开。配置照最近换上的那一份读，不拿配置服务的锁：推 `mcp.changed` 时也
+/// 调它。
 fn one(core: &Core, server: &McpServer) -> Value {
     let status = core.mcp.service(HOME_PACKAGE, &server.name);
     let mut one = json!({
@@ -156,16 +154,11 @@ fn value_written(value: &EnvValue) -> Value {
     }
 }
 
-/// 给服务 `server` 的那一格填上 `need_load`、`on`（施工 X-27；软件包列表上包带的服务同样，X-27 补）。配置照最近换上的那一份
-/// 读，不拿配置服务的锁：推送时也调它。
+/// 给服务 `server` 的那一格填上 `on`（施工 X-27；软件包列表上包带的服务同样，X-27 补）。`need_load` 那一格施工 FL-1 拆了：
+/// 工具一律全量。配置照最近换上的那一份读，不拿配置服务的锁：推送时也调它。
 pub(crate) fn toggles(core: &Core, server: &McpServer, one: &mut Value) {
     let values = core.config_now().borrow().resolved().values();
-    let set = Loading::of(&values).server(&server.name);
     let switches = miyu_session::switches::of(&values);
-    one["need_load"] = json!({
-        "value": set.unwrap_or(server.need_load),
-        "by": if set.is_some() { "setting" } else { "source" },
-    });
     one["on"] = json!(miyu_session::switches::on(&switches, &server.feature_id()));
 }
 

@@ -89,7 +89,6 @@ fn the_face_is_sifted_and_replugged() {
                 description: String::new(),
                 parameters: serde_json::from_str("{}").expect("合写法"),
                 access: Access::Read,
-                need_load: false,
                 clicall: false,
                 runs_commands: false,
                 command_only: false,

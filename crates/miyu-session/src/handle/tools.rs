@@ -2,8 +2,6 @@
 
 use tokio::sync::oneshot;
 
-use miyu_policy::Offered;
-
 use super::{Handle, Message, Stopped};
 
 impl Handle {
@@ -12,7 +10,7 @@ impl Handle {
     /// # Errors
     ///
     /// 会话停了。
-    pub async fn tools(&self) -> Result<Vec<Offered>, Stopped> {
+    pub async fn tools(&self) -> Result<Vec<String>, Stopped> {
         let (reply, answer) = oneshot::channel();
         self.send(Message::Tools(reply))?;
         answer.await.map_err(|_| Stopped)

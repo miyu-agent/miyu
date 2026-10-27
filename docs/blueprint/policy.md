@@ -17,7 +17,6 @@
 | `crates/miyu-policy/src/drivers.rs` | 快照里驱动的几句占位 `DriverPlaceholders`，读成驱动的占位（施工 3-9 四补从 `snapshot.rs` 挪出来） |
 | `crates/miyu-policy/src/tools.rs` | 工具面：排序、拆成两份；执行器替工具写的两句 |
 | `crates/miyu-policy/src/tools/choice.rs` | 工具面上一件的一个参数照会话开局时的配置填上能选的几个（`ToolEntry::offer`：插 `enum`、说明后面一行一个，一个都没有的拿掉这个参数），照快照读回能选的（`ToolEntry::offered`）；照原样的 JSON 搬，别的字节不动（施工 8-8 补，`subagent` 的 `pool`） |
-| `crates/miyu-policy/src/loading.rs` | 要先加载的工具：参数换成外壳、加上 `load_tools`、快照里的几句字 `LoadingTexts`（施工 L-1，`kernel/tools.md`） |
 | `crates/miyu-policy/src/guard.rs` | 权限策略拒绝时写的三句 |
 | `crates/miyu-policy/src/image_name.rs` | 带名字的图片的三句（施工 3-9 四补） |
 | `crates/miyu-policy/src/attached_path.rs` | 看不了的附件带上原来的路径的两句（施工 3-9 五补） |
@@ -55,7 +54,7 @@
 | `peers` | 对象 | 别的会话发来的话怎么防刷屏（施工 C-2，`cross-session.md`「对外的样子」）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句，现在是 5、600、50（数是估的，待 C-7 实测）。排在 `title` 后面。以前造的快照里没有，读成没有、不写：照出厂的数，防刷屏不能因为会话旧就不管。施工 C-6 加两格，排在后面：`watch_hours` 订了多久没等到就作废（小时，出厂 12）、`status_chars` 通知那一行最多几个字（出厂 200）；C-2 时造的快照里没有这两格，读成没有、不写，照出厂的数 |
 | `memory` | 字符串 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`、`session`、`off`，造会话时定（`with_memory`），新造的都写明；排在 `peers` 后面、最后。以前造的快照里没有，读成没有、不写，照 `persona`；认不出的照 `off` |
 
-**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`need_load`（施工 L-1）、`clicall`（施工 M-2：脚本里能调，来处的默认、个人设置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。
+**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、个人设置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
 
 **`CoreTexts`**，每一格是 `resources/core/` 下一份文件的原文：
 

@@ -144,7 +144,6 @@ mod models_name;
 mod models_only;
 mod models_pools;
 mod models_retire;
-mod models_strict;
 mod models_temperature;
 mod note;
 mod orphans;

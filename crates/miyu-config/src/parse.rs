@@ -3,7 +3,8 @@
 //!
 //! - TOML 写法不对：整份的问题 `syntax`，行、列照 `toml_edit` 报的位置，为什么只取它的原话，不带它印出来的那一行
 //!   原文（原文可能很长，密钥文件里更不能印）。
-//! - 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值；拼错的给出离得最近的键名。
+//! - 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值；拼错的给出离得最近的键名。退役的键（`retired.rs`，
+//!   施工 FL-1）不报。
 //! - 一组键（`ui`）下面写成了一个值：`wrong_type`，期望一张表。
 //! - 这一层不能写的：`wrong_layer`；值写得对的照样记下来（不算），`miyu config explain` 列得出它。
 //! - 键里人起的名字那一段（施工 8-6）：照清单里的样子认（[`crate::key`]），写法不对的那一段报一条 `bad_format`，底下的
@@ -165,6 +166,8 @@ impl Reader<'_> {
         } else if let Some(table) = node.as_table_like() {
             // 不认识的一张表：往里走，每一项照整个键报，离得最近的键名才找得准（`uii.language` 找得到 `ui.language`）。
             self.table(table, path, inner(table));
+        } else if crate::retired::retired(path) {
+            // 退役的键（施工 FL-1）：以前写的照旧读得进，不进最终值，也不报。
         } else {
             let raw = self.raw(node, key);
             let mut problem = Problem::item(Code::UnknownKey, self.layer, &full, key_at, &raw);

@@ -14,7 +14,7 @@ use miyu_kernel::event::{Body, ModelCalled};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::{
-    CompatSettings, ModelSettings, PoolSettings, PriceSettings, ProviderSettings, UseSettings,
+    ModelSettings, PoolSettings, PriceSettings, ProviderSettings, UseSettings,
 };
 use miyu_session::{Configs, Handle, ModelData, Observed, Routes, fixed_with};
 
@@ -26,7 +26,6 @@ pub fn items() -> Vec<Item> {
         ProviderSettings::ITEMS,
         ModelSettings::ITEMS,
         PriceSettings::ITEMS,
-        CompatSettings::ITEMS,
         UseSettings::ITEMS,
         PoolSettings::ITEMS,
         miyu_models::settings::FIXED_POOL_ITEMS,

@@ -58,7 +58,6 @@ pub(super) fn tools(
                 description: text.description,
                 parameters: text.parameters,
                 access: Access::Read,
-                need_load: server.need_load,
                 clicall: server.clicall,
                 result: None,
                 plugin: None,

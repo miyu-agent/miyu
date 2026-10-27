@@ -37,7 +37,7 @@ MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP
 | `crates/miyu-endpoint/src/mcp/tool.rs` | 一件 MCP 工具（`Tool` 的实现）：照这时连着的客户端调，时限、暂时不可用、出错（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/content.rs` | 回来的内容换成结果块、截断（施工 X-3 上） |
 | `crates/miyu-endpoint/src/mcp/switch.rs` | `bundle` 的开关：和扩展同一份文件、同一把锁（施工 X-3 上） |
-| `crates/miyu-endpoint/src/mcp/methods.rs` | `mcp.list`、`mcp.restart` 和推送 `mcp.changed` 的那一项（施工 F-9 补）；每一项带服务那一级的 `need_load`（`by` 是 `source` 或 `setting`）和全局开关 `on`（施工 X-27） |
+| `crates/miyu-endpoint/src/mcp/methods.rs` | `mcp.list`、`mcp.restart` 和推送 `mcp.changed` 的那一项（施工 F-9 补）；每一项带全局开关 `on`（施工 X-27；加载方式 `need_load` 施工 FL-1 拆了） |
 | `crates/miyu-endpoint/src/mcp/editing.rs`、`mcp/written.rs`、`config/rewrite.rs` | `mcp.set`、`mcp.remove`：查写法、在个人设置的字上加上、换掉、删掉一张，照 `config.set` 的规矩写（施工 X-26） |
 | `crates/miyu-endpoint/src/mcp/home.rs` | 个人设置里的服务：起来时定下谁盖住谁、挂在 `~home` 下起，跟着配置换（新写的起、删掉的停、改了的重起、包里被盖住的停下或起回来）（施工 F-9 下） |
 | `crates/miyu-config/src/package/mcp/personal.rs` | 个人设置的 `[mcp.<名字>]` 读成服务，写错的那一个不收（施工 F-9 上） |
@@ -72,7 +72,7 @@ bearer = { secret = "github" }                    # 可以不写：发成 Author
 headers = { X-Team = "core" }                     # 可以不写：别的请求头，写法同上；Authorization、Mcp-Session-Id、MCP-Protocol-Version 不收
 ```
 
-`env` 只跟着 `command`，`bearer`、`headers` 只跟着 `url`，混着写、两个都没写的报 `bad_mcp`。`venues`、`timeout_ms`、`need_load`、`clicall` 照旧。
+`env` 只跟着 `command`，`bearer`、`headers` 只跟着 `url`，混着写、两个都没写的报 `bad_mcp`。`venues`、`timeout_ms`、`clicall` 照旧；`need_load` 退役（施工 FL-1），写了的照旧认得、不读。
 
 **个人设置里的一张表**（施工 F-9，`31-软件包.md` 第五节）：管理员的个人设置 `home/<管理员>/settings.toml` 里一个服务一张 `[mcp.<名字>]`，名字照清单的写法，格子同上、不写 `name`（名字就是表名）：
 
@@ -158,7 +158,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 **七、资源**（施工 X-41，2026-10-21 项目主人定：照规范、照推荐，先给她两件工具，只改核心）
 
 1. **认**：服务的本事里声明了 `resources`（`capabilities.resources` 是对象；新时代看 `server/discover` 的回应，旧时代看 `initialize` 的回应）。目录缓存多一格 `resources`（以前的缓存没有的照没声明），照缓存先登记的那一回也登这两件。
-2. **两件工具，跟着这个服务登记**：`spec::register` 那一回在服务的工具后面多放 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource`，同一个包、同一个前缀，所以预设照功能 `mcp-<服务名>`、场所照 `venues`、先加载照 `need_load`、`miyu call` 照 `clicall`、等多久照 `timeout_ms`、服务停了一起撤、工具面照「提供的工具跟着登记走」换，都不另开特例。只开放资源、没有工具的服务也上了工具面，它的说明（第三条第 5 条）跟着带。访问类别是只读。服务自己有同名工具的，服务的赢，这一件不登记，记一行 `WARN mcp resource tool skipped`。说明、参数照 `core/mcp/list_resources.json`、`read_resource.json`。不做全局一对、带服务名参数的（Claude Code 是那样）：那要给执行器开一条到 MCP 的端口、工具面另开特例。
+2. **两件工具，跟着这个服务登记**：`spec::register` 那一回在服务的工具后面多放 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource`，同一个包、同一个前缀，所以预设照功能 `mcp-<服务名>`、场所照 `venues`、`miyu call` 照 `clicall`、等多久照 `timeout_ms`、服务停了一起撤、工具面照「提供的工具跟着登记走」换，都不另开特例。只开放资源、没有工具的服务也上了工具面，它的说明（第三条第 5 条）跟着带。访问类别是只读。服务自己有同名工具的，服务的赢，这一件不登记，记一行 `WARN mcp resource tool skipped`。说明、参数照 `core/mcp/list_resources.json`、`read_resource.json`。不做全局一对、带服务名参数的（Claude Code 是那样）：那要给执行器开一条到 MCP 的端口、工具面另开特例。
 3. **`list_resources {cursor?}`**：一次一页，回一行 JSON `{"resources", "resourceTemplates"?, "nextCursor"?}`，结构照 MCP 原样、不另写给她看的话。资源每项只留 `uri`、`name`、`title`、`description`、`mimeType`、`size`，模板每项只留 `uriTemplate`、`name`、`title`、`description`、`mimeType`，没有地址的那一项不收。模板只在第一页（不带 `cursor` 的）列，只列模板的第一页；服务没实现模板（回 JSON-RPC 的错）的照没有。结构化的那一份同时交 `miyu call`。
 4. **`read_resource {uri}`**：`resources/read`，每一段照工具结果换块（第四条）：文字原样；类型是图的二进制换成图，照工具交的图收（张数、尺寸上限同别的工具，主会话 2026-10-21 定）；别的二进制写成 `core/mcp/not-shown.txt` 那一行，不灌原文；加起来超过 10 万个字的截。服务回错的原话交回。
 5. **不做**：订阅（`resources/subscribe`、`notifications/resources/updated`）；资源变了的通知（`notifications/resources/list_changed`：列是现取的）；参数补全（`completion/complete`）；人在输入框里 `@服务:地址` 附资源。
@@ -211,8 +211,8 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-mcp/tests/resources.rs`、`crates/miyu-endpoint/src/mcp/resources/tests.rs`、`tests/mcp_resources.rs`、`src/mcp/cache/tests.rs`（施工 X-41） | 声明了 `resources` 的才认、新旧两个时代；一次一页、照 `nextCursor` 拿下一页、只留那几格、没地址的不收；读回字、二进制，没有的照原话；图的二进制换成图；真核心：声明了的两件上工具面、没声明的没有，第一页带模板和下一页、第二页不带模板，读的字原样、图成图、别的二进制一行、没有的照原话，只开放资源的服务说明照带，服务自己的同名工具赢，预设关了的没有，照缓存先登记的也有 |
 | `crates/miyu-mcp/src/oauth/tests.rs`、`tests/oauth.rs`、`src/http/tests.rs`、`crates/miyu-endpoint/src/mcp/login/tests.rs`、`tests/mcp_login.rs`、`tests/oauth_log.rs`、`crates/miyu-cli/src/mcp/tests.rs`（施工 X-42 上） | 规范和 RFC 里的例子（挑战、规范网址、两种 well-known 的先后、`issuer`、不认 `S256` 的拒、RFC 7636 的 `S256`、授权页、回调、RFC 9207 那张表、`scope`）；假授权服务器走一遍：发现、注册、PKCE、换令牌、令牌服务认，只照 well-known 也找得到，要精确端口的同一个端口照过、换了端口不跳回来，`code_verifier` 不对的换不到；`401` 记下挑战；真核心：要登录的停在 `needs_login`、不算失败，`mcp.login` 的授权页带 PKCE、`state`、`resource`、`scope`，点了同意令牌进密钥文件（0600）、服务连上带 `Bearer`、协议上只有名字，`state` 对不上的不认、对的照样等得到，第二次登录绑同一个端口、不重新注册，删了服务存的那一份清掉，写了令牌的不走登录；运行日志、系统日志里搜不到令牌、授权码、`code_verifier`、`state` |
 | `crates/miyu-mcp/src/http/tests/credentials.rs`、`tests/oauth.rs` 的续期那一条、`crates/miyu-endpoint/tests/mcp_relogin.rs`、`tests/oauth_log.rs` 的续期那一段（施工 X-42 下） | 被拒的续一次、照新令牌重发，续不成的关掉、记下挑战，要更多范围的同样；续期换来新的一对、带同一个 `resource`，拒了的照 OAuth 的错误回答报；真核心：快过期的请求前续、不重起，`401` 的续一次重发，续不成的停在 `needs_login`，续期期间在跑的调用不断、人自己 `secret.set` 改了的照旧重起，要更多范围的停下、下次登录的范围并上，`mcp.logout` 删掉那一份、没登录过的 `not_logged_in`，贴回来的对不上的 `oauth_failed`、那一次登录还在等、贴对的连上，没在等的 `not_waiting`；运行日志里续成了、续不成的各一行，新的令牌、`refresh_token` 搜不到 |
-| `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_moves_the_source_to_the_setting_and_the_next_face`（施工 X-27） | `mcp.list` 的 `need_load` 照 `loading.mcp.<服务名>` 从 `source` 变 `setting`，`on` 照 `features.mcp-<服务名>` |
-| `crates/miyu-endpoint/tests/page_extras.rs`（施工 X-27 补） | 软件包列表上包带的服务带 `need_load`、`on`，改了跟着变；`mcp.list` 带回原来写的 `env`、`timeout_ms`，照它存回去个人设置一个字不变，没写的不带 |
+| `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_is_accepted_and_changes_nothing`（施工 X-27、FL-1） | `tool.set_loading` 照旧收、什么都不写；`mcp.list` 不带 `need_load`，`on` 照 `features.mcp-<服务名>` |
+| `crates/miyu-endpoint/tests/page_extras.rs`（施工 X-27 补） | 软件包列表上包带的服务带 `on`，改了跟着变；`mcp.list` 带回原来写的 `env`、`timeout_ms`，照它存回去个人设置一个字不变，没写的不带 |
 | `crates/miyu-endpoint/tests/mcp_edit.rs`、`src/mcp/written/tests.rs` | 头改个人设置里的服务（施工 X-26）：`mcp.set` 加上、整条换掉，别的字不动、正在跑的照新写的换；写错的、随包来的拒、什么都不写；`mcp.remove` 删掉、没有的拒；`mcp.list` 起好列完的、照缓存登记的带 `tools`，不知道的不带；表写成点号、行内表、子表的照样换、删，`mcp` 写成放不下的样子的不改；网址的服务（施工 X-32 下，`tests/mcp_url.rs`）经 `mcp.set` 写进去、连上，`mcp.list` 照写的交回 `url`、`bearer`、`headers`，原样交回一字不变；混写的、留给核心的头拒 `mcp_invalid`，有参数没程序的拒 `bad_params` |
 | `crates/miyu-mcp/src/http/tests.rs`、`crates/miyu-endpoint/tests/mcp_url.rs`（施工 X-32 上） | SSE 拆成一条条；经网址认时代（不认 `server/discover` 的退回握手）、列、调，JSON、SSE 两种回法都通，令牌和请求头每次都带、握手以后带会话编号和版本；401 连不上、日志里一行；连上以后回 500 的那一次马上拿到带原话的错；新时代的假服务（照 GitHub，`_meta` 的版本和头对不上回 `400`）认成新时代、列、调都通，每个请求的头和 `_meta` 一样，老时代的握手那一次不带版本头（施工 X-32 补）；回应超过 64 MiB 的那一次拿到「太长」的错、不往下读，连接照旧能用（施工 X-32 下）；会话过期连接断开、标记亮着。真核心：个人设置里写 `url` 的服务连上、`mcp.list` 带 `url` 不带 `pid`、会话里调得到；`http://` 别的机器的停下 `cannot_start`、日志说清；连着过期三次，每次照样回到 `running`、`failures` 一直是 0、重连了三次。缓存照网址和请求头的名字认、换了令牌照旧（`src/mcp/cache/tests.rs`）。清单：网址、令牌、请求头的写法，和命令混写、写错的报 `bad_mcp`（`miyu-config` 的 `package/mcp/tests.rs`） |
 | `crates/miyu-endpoint/src/mcp/secrets/tests.rs`、`tests/mcp_url.rs` 的 `a_server_follows_the_secret_it_uses`、`tests/secrets_log.rs`（施工 X-32 补） | 密钥变了重起谁：新存的、删掉的、改了值的都算；引用照 `env`、`bearer`、`headers` 的 `{ secret = … }` 认。真核心：先配服务、没存令牌的连不上，`secret.set` 存进去以后自己连上、失败从零数；换了值的照新令牌重连；删了的停下重连；没引用的只握一次手；包没开的一个请求都收不到。运行日志有 `mcp restarted … secret=<名字>`，整份搜不到 key |
@@ -235,8 +235,8 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 ### 还没有的
 
-- 工具加载：W9 起不按组（`25-工具加载.md`），`[[mcp]]`、个人设置的服务写 `need_load` 的照它，这个服务的工具都算（施工 L-1）；没写的先加载，要全量的写 `false` 或 `"no"`（施工 L-3，2026-10-20 项目主人改，原来没写的全量）。个人设置的 `loading.mcp.<服务名>` 盖过它，单件工具的 `loading.tools.<工具名>` 再盖过服务那一项；头经 `tool.set_loading` 改，`mcp.list` 的 `need_load.by` 说是服务表写的（`source`）还是人改的（`setting`）（施工 X-27）。每个服务还有全局开关 `features.mcp-<服务名>`（`presets.md`「全局开关」），经 `feature.set` 改，`mcp.list` 的 `on` 是它现在的值。
-- 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`[[mcp]]`、个人设置的服务写 `clicall` 的照它，这个服务的工具都算；没写的能，写 `false`、`"no"` 不能（写法同 `need_load`）。个人设置的 `clicall.mcp.<服务名>` 盖过它，单件工具的 `clicall.tools.<工具名>` 再盖过服务那一项。只改这一格也算改了，那个服务照旧重起。工具交回的 `structuredContent` 不管有没有文字都原样交给脚本（`Done.data`），出错的不交。`mcp.set` 没交 `clicall` 的照原来写的 `clicall = false` 留着：网页的编辑页还不认这一格，编辑一次别的格不会把它丢了。
+- 工具加载：施工 FL-1 起一律全量（`25-工具加载.md` W10，2026-10-27 项目主人定）。`[[mcp]]`、个人设置的服务写了 `need_load` 的照旧认得、不读；个人设置的 `loading.mcp.*`、`loading.tools.*` 照退役的键读；`tool.set_loading` 照旧收、什么都不改。每个服务还有全局开关 `features.mcp-<服务名>`（`presets.md`「全局开关」），经 `feature.set` 改，`mcp.list` 的 `on` 是它现在的值。
+- 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`[[mcp]]`、个人设置的服务写 `clicall` 的照它，这个服务的工具都算；没写的能，写 `false`、`"no"` 不能，大小写不论。个人设置的 `clicall.mcp.<服务名>` 盖过它，单件工具的 `clicall.tools.<工具名>` 再盖过服务那一项。只改这一格也算改了，那个服务照旧重起。工具交回的 `structuredContent` 不管有没有文字都原样交给脚本（`Done.data`），出错的不交。`mcp.set` 没交 `clicall` 的照原来写的 `clicall = false` 留着：网页的编辑页还不认这一格，编辑一次别的格不会把它丢了。
 
 - 网址的服务要浏览器登录的（OAuth）：2026-10-20 项目主人定推迟，2026-10-21 重开（「命令行先，头也做」）；登录施工 X-42 上做了，续期、权限不够、登出、手贴回调施工 X-42 下做了（「怎么走」第八条）；两个头的按钮由两个头做，CIMD 等项目主人定网址，见下面「待定（施工 X-42）」；令牌、请求头那一种施工 X-32 上做了。
 - 补全参数（`completion/complete`）、Tasks 扩展、MCP Apps、资源的订阅：都先不接。服务的 `instructions`、提示词施工 X-39 接了（「怎么走」第三条第 5 条、第六条），资源施工 X-41 接了（第七条），都是 2026-10-21 项目主人定重开。

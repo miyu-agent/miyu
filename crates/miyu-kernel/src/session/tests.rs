@@ -27,7 +27,6 @@ mod landed;
 mod limits;
 mod listing;
 mod load;
-mod loading;
 mod meta;
 mod peers;
 mod permission;
@@ -227,7 +226,6 @@ fn policy() -> Policy {
             per_session: 16,
         },
         foreground: false,
-        loading: None,
         assembler: Box::new(Listing),
         facts: FactTemplates::new(
             r#"<e t="{time}" z="{timezone}" d="{cwd}"/>"#,

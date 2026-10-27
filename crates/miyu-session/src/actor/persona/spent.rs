@@ -14,7 +14,7 @@ use miyu_kernel::event::{Body, Event, ModelCalled};
 use miyu_kernel::history::History;
 use miyu_kernel::id::{ContentHash, Seq};
 use miyu_kernel::session::{Frame, breakdown_in};
-use miyu_policy::{Offered, Snapshot};
+use miyu_policy::Snapshot;
 
 use super::Actor;
 use super::context::system_of;
@@ -25,7 +25,7 @@ use crate::{Charged, Context, Spent, SystemPart};
 pub(super) struct Prepared {
     pub(super) frame: Frame,
     pub(super) system: Vec<(SystemPart, u64)>,
-    pub(super) offered: Vec<Offered>,
+    pub(super) offered: Vec<String>,
 }
 
 impl Actor {
@@ -61,7 +61,7 @@ pub(super) fn prepare(
     let frame = Frame::of(&snapshot.policy().ok()?);
     Some(Prepared {
         system: split(frame.system),
-        offered: miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref()),
+        offered: miyu_policy::sent_names(&snapshot.tools),
         frame,
     })
 }

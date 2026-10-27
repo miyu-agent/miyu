@@ -41,16 +41,6 @@ idle_exit = 0
 # Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
 max_running = "30m"
 
-[loading.mcp]
-# Load this MCP server's tools on demand: When on, the server's tools send only their names and descriptions and load before use; when off, they are sent in full. A tool with its own setting follows that one.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
-# "<id>" =
-
-[loading.tools]
-# Load this tool on demand: When on, only the tool's name and description are sent, and its full parameters load before use; when off, it is sent in full. Unset follows how it was registered (scripts and MCP servers load on demand, built-in and extension tools go in full).
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
-# "<name>" =
-
 [log]
 # Runtime log level: How much the runtime log records. Set debug when chasing a problem. MIYU_LOG, when set, wins for that launch.
 # Allowed: error, warn, info, debug, trace or off. Only in the system config. Takes effect immediately.
@@ -436,11 +426,6 @@ default = "full"
 # Price multiplier: Prices of this provider are multiplied by it. 1 if left out. A multiplier on the model wins.
 # Allowed: a number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.
 # price_multiplier =
-
-[providers."<id>".compat]
-# Constrained decoding: This provider writes only what the parameter schema allows, so a tool shown with an empty schema gets {}. When on, tools that need loading are sent to it in full. Left out, it follows the profile.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
-# strict_tools =
 
 [providers."<id>".models."<model>"]
 # Catalog entry: Which models.dev entry to use: <provider>/<model>. Left out, it is found by name.

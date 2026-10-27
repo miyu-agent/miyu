@@ -1,7 +1,7 @@
 //! 软件包列表上每个 MCP 服务这时的状态（施工 X-4，`docs/blueprint/mcp.md`「头上的状态」）：`mcp` 的每一格同 `extension.status`
 //! 的一项多 `state`、`failures`，在跑的带 `pid`，在等的带 `retry_in`，停下的带 `reason` 和标准错误的最后几行 `stderr`。服务的
-//! 状态变了照扩展那样报一声（`mcp.rs` 的 `Shared::set`），订阅着软件包列表的连接收到这个包的新一项。每一格另带加载方式
-//! `need_load` 和全局开关 `on`，同 `mcp.list` 的一项（施工 X-27 补，网页的 MCP 页要）。
+//! 状态变了照扩展那样报一声（`mcp.rs` 的 `Shared::set`），订阅着软件包列表的连接收到这个包的新一项。每一格另带全局开关
+//! `on`，同 `mcp.list` 的一项（施工 X-27 补，网页的 MCP 页要；加载方式 `need_load` 施工 FL-1 拆了）。
 
 use serde_json::{Value, json};
 

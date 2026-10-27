@@ -16,9 +16,6 @@
 | `crates/miyu-kernel/src/session/policy.rs` | 冻结在会话上的 `tools`（工具名到 `ToolRule`）和 `tool_texts` |
 | `crates/miyu-kernel/src/session/tools.rs`、`approval.rs`、`question.rs`、`interrupt.rs`、`restart.rs`、`load.rs` | 什么时候写哪一句（`kernel/session.md`、`kernel/asking.md`） |
 | `crates/miyu-policy/src/tools.rs` | 造策略时，把快照里的工具面拆成组装器的 `ToolSpec` 和内核的 `ToolRule`（`policy.md`） |
-| `crates/miyu-policy/src/loading.rs`（施工 L-1） | 要先加载的：参数换成外壳 `{"type":"object"}`、加上 `load_tools`，交回内核的 `Loading`；用的字 `LoadingTexts`（`resources/core/loading/`） |
-| `crates/miyu-kernel/src/tool/loading.rs`（施工 L-1） | `Loading`：答 `load_tools`、出了错附上的完整格式 |
-| `crates/miyu-kernel/src/session/loading.rs`（施工 L-1、L-2） | 认出 `load_tools` 的调用（参数先照参数格式修正）；请求带上完整格式 `full_parameters` |
 | `resources/core/tool-results/*.txt` | 给模型看的原文：内核写的十三句，执行器写的两句 |
 | `resources/core/permissions/*.txt` | 权限策略拒绝时写的两句 |
 | `resources/core/human/{zh,en}.json` | 给人看的字：上面每一句一条 |
@@ -218,8 +215,8 @@
 ### 还没有的
 
 - 规格里给内核看的另外几格：`timeout` 默认超时、`venues` 哪些场所能用、`group` 按组加载属于哪一组（`05-内核接口.md` 第六节）。
-- 要先加载的工具（`25-工具加载.md` W9，施工 L-1、L-2）：登记时带 `need_load` 的，tools 数组里只给名字、说明和 `{"type": "object"}`；`load_tools` 交回完整格式；不加载直接调照完整格式校验，错了在报错里附上这一件的完整格式。施工 L-1 起：拆工具面时（`miyu_policy::loading::stub`）要先加载的参数换成外壳，照名字排进 `load_tools`，几句字冻在快照的 `core.loading` 里；内核当场答 `load_tools`（`tool::Loading`，`by` 是内核，不派给执行器）：每件一行 `{"name","description","parameters"}`，不用加载、不存在的另说一句；要先加载的那件出了错的，结果后面附上它的完整格式。施工 L-2 起请求的 `full_parameters` 带上这几件的完整格式，标了 `compat.strict_tools` 的那一家驱动编码时换回（`kernel/request.md`、`drivers/openai-chat.md`）。默认值照来处：MCP 服务、脚本没写的先加载，内置工具、扩展的工具没写的全量（施工 L-3）；个人设置的 `loading.tools.<工具名>`、`loading.mcp.<服务名>` 盖过来处，造工具面时照这一轮的配置算（`miyu-session/src/loading.rs`），改了下一个回合生效。工具名那一段是占位 `<name>`（施工 X-27：MCP 工具的全名常超过 `<id>` 的 32 个字，`config.md`「人起的名字」）；头经 `tool.set_loading` 改，`script.list`、`mcp.list` 的 `need_load.by` 说是来处（`source`）还是人改的（`setting`）。
-- 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`ToolRule` 多一格 `clicall`，拆工具面时照快照 `ToolEntry.clicall` 填（`miyu_policy::tools::split`）；`load_tools` 那一件是假。嵌套调用在访问类别之外再查它，不是真的当场答 `NotAllowed`、什么都不记（`session.md`「嵌套调用」）。
+- 要先加载的工具（施工 L-1、L-2、L-3）施工 FL-1 拆了：工具一律全量（`25-工具加载.md` W10，2026-10-27 项目主人定），没有外壳、没有 `load_tools`、请求不另带完整格式。以前造的快照里的 `need_load`、冻着的那几句字读的时候不认，老会话下一次请求照完整格式发（缓存掉一次）；以前日志里调过的 `load_tools` 照原样回放。
+- 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：`ToolRule` 多一格 `clicall`，拆工具面时照快照 `ToolEntry.clicall` 填（`miyu_policy::tools::split`）。嵌套调用在访问类别之外再查它，不是真的当场答 `NotAllowed`、什么都不记（`session.md`「嵌套调用」）。
 - 参数类型不对时报「期望整数，收到字符串 "1"」这样的错（`05-内核接口.md` 第六节）：现在还原不了的原样交给工具。
 - 执行时交给工具的调用编号、会话、身份、沙盒范围、截止时间（`05-内核接口.md` 第六节，`tools/interface.md`）。
 - `network`、`outbound` 两类还没有工具。`venue` 只有提供者登记的（通讯平台的桥，施工 O-31）。

@@ -327,7 +327,7 @@ impl Session {
         if let Some(looking) = self.look(&request) {
             return looking;
         }
-        let mut request = self.with_full_parameters(self.with_descriptions(request));
+        let mut request = self.with_descriptions(request);
         // 手动压缩单开的那一轮：不问熔断，发摘要请求（施工 6-8，`manual.rs`）。
         if let Some(due) = self.manual_due(&request) {
             return self.begin_compaction(at, due);

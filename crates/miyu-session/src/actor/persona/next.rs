@@ -3,7 +3,7 @@
 
 use tokio::sync::oneshot;
 
-use miyu_policy::{Offered, Snapshot};
+use miyu_policy::Snapshot;
 
 use super::recast::Wanted;
 use super::{Actor, Seen, look};
@@ -11,7 +11,7 @@ use crate::blocking::blocking;
 
 impl Actor {
     /// 交回下一次请求会发的工具。没有人格快照的（测试里造的）是空的；裸的（整理会话）照现在的快照。
-    pub(in crate::actor) fn next_tools(&self, reply: oneshot::Sender<Vec<Offered>>) {
+    pub(in crate::actor) fn next_tools(&self, reply: oneshot::Sender<Vec<String>>) {
         let Some(refresh) = self.persona.clone() else {
             super::super::answer(reply, Vec::new());
             return;
@@ -43,6 +43,6 @@ impl Actor {
     }
 }
 
-fn offered(snapshot: &Snapshot) -> Vec<Offered> {
-    miyu_policy::offered(&snapshot.tools, snapshot.core.loading.as_ref())
+fn offered(snapshot: &Snapshot) -> Vec<String> {
+    miyu_policy::sent_names(&snapshot.tools)
 }

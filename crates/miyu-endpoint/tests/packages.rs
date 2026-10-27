@@ -448,7 +448,7 @@ venues = ["local", "group"]
     assert_eq!(
         mine["mcp"],
         json!([{"name": "xgithub", "command": ["npx", "-y", "server-github"], "venues": ["local", "group"],
-                "state": "off", "failures": 0, "need_load": {"value": true, "by": "source"}, "on": true}]),
+                "state": "off", "failures": 0, "on": true}]),
         "关着的服务也带状态（施工 X-4）、加载方式和全局开关（施工 X-27 补）"
     );
     assert!(!mine.to_string().contains("TOKEN"), "环境变量不列：{mine}");

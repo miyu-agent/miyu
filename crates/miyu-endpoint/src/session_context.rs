@@ -289,14 +289,7 @@ fn tree(context: &Context, namer: &Namer) -> Vec<Part> {
         .collect();
     let mut tools = Vec::new();
     for (name, tokens) in &breakdown.tools {
-        let deferred = context
-            .offered
-            .iter()
-            .any(|offered| offered.name == *name && !offered.loaded);
-        let (id, shown) = match deferred {
-            true => ("tools.deferred".to_string(), None),
-            false => (namer.tool)(name),
-        };
+        let (id, shown) = (namer.tool)(name);
         add(&mut tools, id, shown, *tokens);
     }
     let mut messages = Vec::new();

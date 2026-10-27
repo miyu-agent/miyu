@@ -170,10 +170,6 @@ pub(crate) fn provider(
                     entry["catalog"] =
                         json!({"provider": recognized.provider, "how": recognized.how.as_str()});
                 }
-                // 约束解码的（施工 L-2，档案的、手写的）：要先加载的工具发给它时带完整格式。不是的不写。
-                if found.compat.strict_tools {
-                    entry["strict_tools"] = json!(true);
-                }
                 // 图标照认出来的目录里那一家（施工 8-31）；认不出的（自定义、本机服务）是 null。
                 entry["logo"] =
                     crate::providers::logo(data, recognized.map(|known| known.provider.as_str()));

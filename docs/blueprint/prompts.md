@@ -549,39 +549,6 @@ A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but 
 The tool returned no output.
 ```
 
-#### `core/loading/unknown.txt`
-
-- 什么时候加进来：`load_tools` 要的名字里有不用加载、不存在的（施工 L-1）
-- token：11（同上，`names` 按 `grep` 填）
-- 为什么加：说清哪几个不用加载，她别再找
-- 指纹：`eb657bc2`
-
-```text
-These need no loading or do not exist: {names}.
-```
-
-#### `core/loading/bad-args.txt`
-
-- 什么时候加进来：`load_tools` 的参数里没有名字的列表（施工 L-1）
-- token：11（同上）
-- 为什么加：说清该怎么写
-- 指纹：`c4e6d253`
-
-```text
-List the names of the tools to load in tools.
-```
-
-#### `core/loading/contract.txt`
-
-- 什么时候加进来：要先加载的工具没加载直接调、出错了，结果后面接这一句和它的完整参数格式（施工 L-1，W6）
-- token：6（同上，`name` 按 `kb_search` 填；不算后面的参数格式）
-- 为什么加：第一次调错就学会，不用再来回一次
-- 指纹：`98965270`
-
-```text
-Full parameters of {name}:
-```
-
 #### `core/tool-results/unknown.txt`
 
 - 什么时候加进来：模型编了没有的工具名
@@ -4733,21 +4700,22 @@ Describe what this image shows for someone who cannot see it. Copy all text in i
 Reply with OK.
 ```
 
-### tools 数组
+### system（尾部，同扩展经 `system.append` 放的那几段，第四节第 8 块）
 
-#### `core/loading/load_tools.json`
+#### `core/mcp/instructions.txt`
 
-- 什么时候加进来：会话的工具面上有登记了 `need_load` 的工具（施工 L-1，`25-工具加载.md` W9）；出厂的工具都不标，出厂的包也不带脚本、MCP 服务（这两样施工 L-3 起默认先加载），所以出厂的会话里没有它
-- token：84（2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，和一件小工具一起时的边际份量）
-- 为什么加：要先加载的工具 tools 数组里只有名字、说明和空的外壳，她用之前照它拿完整格式：两句，是什么、什么时候调；一个参数一句
-- 指纹：`51ecfe50`
+- 什么时候加进来：会话用得上的 MCP 服务交了说明（`instructions`）：工具面上有这个服务的工具才带，一个服务一段，服务名、原文换进去（施工 X-39）
+- token：14（2026-10-21 照项目主人给的端点量：服务名按 `github` 填、原文空，连同前面空的一行）
+- 为什么加：服务的说明告诉她什么时候去拿这个服务的工具（工具先加载以后她只看得到名字和一句说明，设计 25 W9）；外壳带服务名、分得出是哪个服务的、圈住第三方的原文（Claude Code 同样把服务的说明放进 system，`mcp.md`「怎么走」第三条第 5 条）
+- 指纹：`39baed4e`
 
-```json
-{
-  "description": "Load the full parameters of tools listed with only a name and a description. Call it before using such a tool.",
-  "parameters": {"type":"object","properties":{"tools":{"type":"array","items":{"type":"string"},"description":"Names of the tools to load."}},"required":["tools"]}
-}
+```text
+<mcp-instructions server="{name}">
+{text}
+</mcp-instructions>
 ```
+
+### tools 数组
 
 #### `core/mcp/list_resources.json`
 
@@ -5254,21 +5222,6 @@ Rerun this script outside the sandbox. When the sandbox blocks the script, retry
   "clicall": true,
   "result": "{\"kind\":\"links\",\"links\":[{\"title\",\"url\",\"snippet\",\"site\",\"date\"}]}"
 }
-```
-
-### system（尾部，同扩展经 `system.append` 放的那几段，第四节第 8 块）
-
-#### `core/mcp/instructions.txt`
-
-- 什么时候加进来：会话用得上的 MCP 服务交了说明（`instructions`）：工具面上有这个服务的工具才带，一个服务一段，服务名、原文换进去（施工 X-39）
-- token：14（2026-10-21 照项目主人给的端点量：服务名按 `github` 填、原文空，连同前面空的一行）
-- 为什么加：服务的说明告诉她什么时候去拿这个服务的工具（工具先加载以后她只看得到名字和一句说明，设计 25 W9）；外壳带服务名、分得出是哪个服务的、圈住第三方的原文（Claude Code 同样把服务的说明放进 system，`mcp.md`「怎么走」第三条第 5 条）
-- 指纹：`39baed4e`
-
-```text
-<mcp-instructions server="{name}">
-{text}
-</mcp-instructions>
 ```
 
 ### 人这边

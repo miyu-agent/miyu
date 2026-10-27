@@ -5,15 +5,12 @@
 //!   语言挑（同 `skill.list`），一种都没写的不带；
 //! - `from`、`package`、`path`：同 `skill.list`，`path` 是脚本文件；
 //! - `timeout`：一次等多少秒；
-//! - `need_load`：`{"value", "by"}`，要不要先加载、谁定的：`source` 是脚本开头写的（没写的先加载），`setting` 是个人设置的
-//!   `loading.tools.<工具名>` 盖过的（施工 L-3）；
 //! - `on`：技能、脚本、MCP 三页的全局开关这时开不开（`features.script-<工具名>`），没写的算开。
 
 use serde_json::{Value, json};
 
 use miyu_kernel::id::AccountId;
 use miyu_policy::script::feature_id;
-use miyu_session::loading::Loading;
 use miyu_session::switches::on;
 use miyu_store::scripts::Script;
 
@@ -27,7 +24,6 @@ use crate::personas::pick;
 /// 照属主叠自己的脚本另排一步（Y-2 中-脚本目录）。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value {
     let values = core.mine(account).config().resolved().values();
-    let loading = Loading::of(&values);
     let switches = miyu_session::switches::of(&values);
     let packages = core.packages_of(account);
     // 登记上的脚本本来照工具名排（`Core::scripts`）；现找的 `find` 也照工具名排。
@@ -50,18 +46,10 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value 
         .iter()
         .map(|script: &Script| {
             let name = &script.head.name;
-            let by = match loading.tool(name) {
-                Some(_) => "setting",
-                None => "source",
-            };
             let mut one = json!({
                 "tool": name,
                 "path": shown(&script.file, core.home.as_deref()),
                 "timeout": script.head.timeout,
-                "need_load": {
-                    "value": loading.need_load(name, script.head.need_load),
-                    "by": by,
-                },
                 "on": on(&switches, &feature_id(name)),
             });
             crate::skills::from(&mut one, &packages, script.package.as_deref());

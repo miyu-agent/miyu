@@ -5,7 +5,6 @@ use serde_json::json;
 
 use miyu_kernel::id::{FactKind, ModuleId};
 use miyu_kernel::session::{Breakdown, ContextLimits, Said};
-use miyu_policy::Offered;
 use miyu_session::{Context, SystemPart};
 
 use super::{Namer, shape};
@@ -28,7 +27,7 @@ fn context(anchor: Option<u64>) -> Context {
             anchor,
             system: 300,
             tools: vec![
-                ("load_tools".to_string(), 20),
+                ("glob".to_string(), 20),
                 ("mcp__web__fetch".to_string(), 40),
                 ("read".to_string(), 50),
                 ("shell".to_string(), 60),
@@ -53,16 +52,9 @@ fn context(anchor: Option<u64>) -> Context {
             (SystemPart::Appended("weather-pack".to_string()), 10),
             (SystemPart::Other, 250),
         ],
-        offered: ["load_tools", "mcp__web__fetch", "read", "shell", "weather"]
+        offered: ["mcp__web__fetch", "read", "shell", "weather", "web_search"]
             .into_iter()
-            .map(|name| Offered {
-                name: name.to_string(),
-                loaded: true,
-            })
-            .chain([Offered {
-                name: "web_search".to_string(),
-                loaded: false,
-            }])
+            .map(str::to_string)
             .collect(),
     }
 }
@@ -108,10 +100,9 @@ fn the_context_comes_in_named_parts() {
                     leaf("system.other", 250),
                 ]},
                 {"part": "tools", "label": "<tools>", "tokens": 205, "children": [
-                    leaf("tools.builtin", 130),
+                    leaf("tools.builtin", 135),
                     {"part": "tools.mcp:web", "label": "web", "tokens": 40},
                     {"part": "tools.package:weather-pack", "label": "天气", "tokens": 30},
-                    leaf("tools.deferred", 5),
                 ]},
                 leaf("summary", 70),
                 {"part": "messages", "label": "<messages>", "tokens": 543, "children": [

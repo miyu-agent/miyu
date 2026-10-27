@@ -4,9 +4,9 @@
 use std::sync::Arc;
 
 use miyu_config::Values;
+use miyu_policy::ToolEntry;
 use miyu_policy::memory::MemoryScope;
 use miyu_policy::preset::{Chosen, MEMORY};
-use miyu_policy::{Offered, ToolEntry};
 use miyu_tool::Edition;
 
 use super::Create;
@@ -112,10 +112,9 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
 }
 
 /// 照 `setup` 造出来的会话第一次请求会发的工具（施工 S-T，`session.tools` 不写会话的）：只拼不造，什么都不写。
-pub async fn preview(setup: Create<'_>) -> Vec<Offered> {
+pub async fn preview(setup: Create<'_>) -> Vec<String> {
     let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
     let values = config.current().resolved.values();
     let opened = open(&setup, &values).await;
-    let texts = setup.resources.loading().ok();
-    miyu_policy::offered(&opened.face, texts.as_ref())
+    miyu_policy::sent_names(&opened.face)
 }

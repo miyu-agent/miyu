@@ -17,7 +17,6 @@ fn url_server(bearer: Option<&str>, headers: &[(&str, &str)]) -> McpServer {
         },
         venues: vec!["local".to_string()],
         timeout_ms: 600_000,
-        need_load: true,
         clicall: true,
         line: None,
     }

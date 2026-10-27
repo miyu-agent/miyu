@@ -14,7 +14,6 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         description: format!("The {name} tool."),
         parameters: serde_json::from_str::<RawJson>(parameters).unwrap(),
         access,
-        need_load: false,
         clicall: false,
         runs_commands: false,
         command_only: false,
@@ -88,6 +87,38 @@ fn the_policy_gets_the_face_and_the_rules() {
     );
     assert_eq!(request.tools[1].description, "The read tool.");
     assert_eq!(request.tools[1].parameters.get(), READ_PARAMETERS);
+}
+
+/// 以前造的快照（施工 L-1 到 FL-1 之间）：工具那一格带 `"need_load":true`、冻着先加载用的字的，照旧读得进；造策略时不认，
+/// 照完整格式发，没有 `load_tools`（施工 FL-1，工具一律全量）。
+#[test]
+fn an_old_snapshot_with_tools_to_load_is_sent_whole() {
+    let text = String::from_utf8(engineer().with_tools(two()).to_bytes()).unwrap();
+    let read = r#""access":"read""#;
+    assert_eq!(text.matches(read).count(), 1, "{text}");
+    let text = text.replace(read, r#""access":"read","need_load":true"#);
+    let core = r#""core":{"#;
+    assert_eq!(text.matches(core).count(), 1, "{text}");
+    let text = text.replace(
+        core,
+        r#""core":{"loading":{"description":"Load tools.","parameters":{"type":"object"},"unknown":"u","bad_args":"b","contract":"c"},"#,
+    );
+    let old = Snapshot::from_bytes(text.as_bytes()).expect("以前的快照照旧读得进");
+    let request = old
+        .policy()
+        .unwrap()
+        .assembler
+        .assemble(&History::default());
+    assert_eq!(
+        names(request.tools.iter().map(|tool| &tool.name)),
+        ["edit", "read"],
+        "没有 load_tools"
+    );
+    assert_eq!(
+        request.tools[1].parameters.get(),
+        READ_PARAMETERS,
+        "完整的参数"
+    );
 }
 
 /// 脚本里能调（施工 M-2）：开的写 `"clicall":true`、交给内核的规则；以前的快照没有这一格，读成不能，写回去一字不差。

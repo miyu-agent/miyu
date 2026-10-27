@@ -39,9 +39,9 @@ impl std::error::Error for LoadError {}
 struct SpecFile {
     description: String,
     parameters: RawJson,
-    /// 要先加载（施工 L-1）：出厂的都不写，全量。
-    #[serde(default)]
-    need_load: bool,
+    /// 退役的「要先加载」（施工 L-1 登记、FL-1 拆掉：工具一律全量）：写过的包照旧读得进，不用。
+    #[serde(default, rename = "need_load")]
+    _retired_need_load: Option<serde::de::IgnoredAny>,
     /// 脚本里能调（施工 M-2）：出厂只有几件写 `true`，没写的关。
     #[serde(default)]
     clicall: bool,
@@ -81,7 +81,6 @@ pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError
         description: parsed.description,
         parameters: parsed.parameters,
         access,
-        need_load: parsed.need_load,
         clicall: parsed.clicall,
         result: parsed.result,
         plugin: None,

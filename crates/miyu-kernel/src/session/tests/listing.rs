@@ -35,7 +35,6 @@ impl Assembler for Listing {
             stable: 0,
             continuation: false,
             described: Default::default(),
-            full_parameters: Default::default(),
             output_cap: None,
             used: None,
         }
@@ -131,7 +130,6 @@ impl Assembler for Listing {
             stable: 0,
             continuation: false,
             described: Default::default(),
-            full_parameters: Default::default(),
             output_cap: None,
             used: None,
         };
@@ -173,7 +171,6 @@ impl Assembler for Listing {
             stable: 0,
             continuation: false,
             described: Default::default(),
-            full_parameters: Default::default(),
             output_cap: None,
             used: None,
         };
@@ -192,7 +189,6 @@ impl Assembler for Listing {
             stable: 0,
             continuation: false,
             described: Default::default(),
-            full_parameters: Default::default(),
             output_cap: None,
             used: None,
         })

@@ -157,7 +157,7 @@ impl Session {
             true => assembler.summarize_isolated(&self.history, upto, None, None),
             false => assembler.summarize(&self.history, upto, None, None),
         };
-        let request = self.with_full_parameters(self.with_descriptions(request));
+        let request = self.with_descriptions(request);
         let aside = Aside::new(upto, request.messages.len());
         self.prepare.state = Some(State::Asking {
             aside,

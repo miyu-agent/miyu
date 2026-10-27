@@ -188,9 +188,6 @@ pub struct CoreTexts {
     /// 以前渲染；没有的不写。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub private_media: Option<PrivateMediaTexts>,
-    /// 要先加载的工具用的字（`loading/`，施工 L-1）。以前造的快照里没有，读成没有：那时还没有要先加载的工具；没有的不写。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub loading: Option<crate::loading::LoadingTexts>,
 }
 
 impl Snapshot {
@@ -307,13 +304,8 @@ impl Snapshot {
             private_media: self.private_media(),
             group: self.group.as_ref().map(GroupChat::texts).transpose()?,
         };
-        let (mut face, mut rules) = tools::split(&self.tools)?;
-        let loading =
-            crate::loading::stub(&self.tools, core.loading.as_ref(), &mut face, &mut rules)
-                .map_err(|error| BuildError::Texts {
-                    which: "loading texts",
-                    error,
-                })?;
+        // 工具一律全量（施工 FL-1，设计 25 W10）：以前造的快照里登记成要先加载的、冻着先加载的字的，也照完整格式发。
+        let (face, rules) = tools::split(&self.tools)?;
         let stable = Stable {
             tools: face,
             system: self.system.clone(),
@@ -341,7 +333,6 @@ impl Snapshot {
             peers: self.peers(),
             nested: self.nested_limits(),
             foreground: self.foreground,
-            loading,
         })
     }
 

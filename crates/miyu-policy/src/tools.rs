@@ -30,10 +30,6 @@ pub struct ToolEntry {
     pub parameters: RawJson,
     /// 访问类别。
     pub access: Access,
-    /// 要先加载（施工 L-1，`25-工具加载.md` W9）：tools 数组里参数换成空的外壳，完整格式由 `load_tools` 交。没有的不写，以前
-    /// 造的快照读成没有：字节和以前一样。
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub need_load: bool,
     /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：来处写的、人在个人设置里改过的，算好了写进来。没有的不写，以前造
     /// 的快照读成不能：字节和以前一样，以前的会话里一件都不开（2026-10-20 项目主人定）。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -115,6 +111,15 @@ impl Snapshot {
         self.tools = tools;
         self
     }
+}
+
+/// 工具面照发出去的先后（名字的字节序）：`session.tools` 照它列（施工 S-T）。不上工具面的不在里面；工具面读不成的是空的。
+pub fn sent_names(tools: &[ToolEntry]) -> Vec<String> {
+    let Ok((mut face, _)) = split(tools) else {
+        return Vec::new();
+    };
+    face.sort_by(|one, other| one.name.cmp(&other.name));
+    face.into_iter().map(|spec| spec.name).collect()
 }
 
 /// 拆成组装器的工具面、内核的工具规则，照快照里的先后。

@@ -119,7 +119,6 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             description: "Changed.".to_string(),
             parameters: serde_json::from_str::<RawJson>(r#"{"type":"object"}"#).expect("是 JSON"),
             access: Access::Read,
-            need_load: false,
             clicall: false,
             result: None,
             plugin: None,
@@ -148,7 +147,6 @@ async fn a_tool_that_asks_to_load_on_demand_is_sent_whole() {
             description: "Look a word up.".to_string(),
             parameters: serde_json::from_str::<RawJson>(schema).expect("是 JSON"),
             access: Access::Read,
-            need_load: true,
             clicall: false,
             result: None,
             plugin: None,
@@ -171,22 +169,8 @@ async fn a_tool_that_asks_to_load_on_demand_is_sent_whole() {
         .find(|tool| tool.name == "lookup")
         .expect("在工具面上");
     assert_eq!(whole.parameters.get(), schema, "完整的参数");
-    assert!(first.full_parameters.is_empty(), "不用另带完整格式");
     assert_eq!(lookup.calls().len(), 1, "照常跑");
     assert_eq!(requests[1].1.tools, first.tools, "前缀不变");
-}
-
-/// 没有要先加载的工具的（施工 L-2）：请求不带完整格式，字节和以前一样。
-#[tokio::test]
-async fn a_face_without_tools_to_load_carries_no_full_parameters() {
-    let home = Home::new();
-    let echo = Fake::new("echo", Access::Read, Act::Echo);
-    let script = Script::new([Play::Says("好。")]);
-    let handle = home.create_with(&script, &catalog(&[&echo])).await;
-    turn(&handle, "cmd-1").await;
-    let request = &script.requests()[0].1;
-    assert_eq!(names(request), ["echo"]);
-    assert!(request.full_parameters.is_empty());
 }
 
 #[tokio::test]

@@ -51,9 +51,6 @@ pub struct Policy {
     pub nested: NestedLimits,
     /// 后台运行关着（施工 T-1 上、下）：派的子代理前台跑，派它的那一步等它报回来。
     pub foreground: bool,
-    /// 要先加载的工具（施工 L-1，`docs/designs/25-工具加载.md` W9）：工具面上有要先加载的才有。`load_tools` 由内核当场答，
-    /// 没加载直接调、出错了的附上完整格式（`tool::Loading`）。
-    pub loading: Option<crate::tool::Loading>,
 }
 
 /// 嵌套调用的两道上限（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」第 2 条）：同时过链、在跑的最多几个，到了的排着，

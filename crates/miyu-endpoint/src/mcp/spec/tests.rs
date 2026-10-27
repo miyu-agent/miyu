@@ -22,7 +22,6 @@ fn server(venues: &[&str]) -> McpServer {
         },
         venues: venues.iter().map(|venue| (*venue).to_string()).collect(),
         timeout_ms: 600_000,
-        need_load: false,
         clicall: true,
         line: None,
     }
