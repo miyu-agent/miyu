@@ -35,7 +35,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 | `Endpoint::with_header(名字, 值)` | 另配一个头，照先后 |
 | `Attempt` | 发一次要的：`client`、`endpoint`、`driver`（`Driver`）、`body`（编码好的字节）、`path`（编码交回的 `Encoded.path`）、`idle`（空闲超时） |
 | `send(Attempt, cancel, on) -> Outcome` | 发一次；`cancel` 是一个 future，一完成就停；`on` 收一路上交出来的 `Progress` |
-| `Progress` | `Sent { request }`：发出去了，`request` 是请求字节的内容哈希；`Delta(增量)` |
+| `Progress` | `Sent { request, at }`：发出去了，`request` 是请求字节的内容哈希，`at` 是交给网络的那一刻（造不出请求的是报的那一刻）；`Delta(增量)` |
 | `Outcome` | `Ended { usage, error }`：说完了或者出错了，`error` 是驱动的 `Classified`（分类、原话、要等多久）；`Cancelled`：被叫停了 |
 
 | 常量 | 值 | 在哪 |
@@ -66,7 +66,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
    - `Accept: text/event-stream`
    - 端点另配的头，照先后；和上面同名的，换掉上面那个，不是再加一个（施工 4-9 再补三下）。名字、值写得不对的，不发，出错 `other`（下面「出错」）。值是路由照档案的模板换好的（施工 8-14，`models.md`「怎么走」第一条第 4 条），这里不认模板。
    - `User-Agent` 由客户端带上。
-3. 先报 `Sent`，带上请求字节的 SHA-256，再造请求、真的发：连不上的、造不出请求的（地址、另配的头写得不对）也报过了，`model.called` 里照样有发给了谁、请求的哈希。
+3. 造请求、真的发，`Sent` 在任何增量之前报，带上请求字节的 SHA-256 和交给网络的那一刻：连不上的、造不出请求的（地址、另配的头写得不对）、发的时候被叫停的也报过，`model.called` 里照样有发给了谁、请求的哈希。哈希等请求交给网络、响应头回来（或者出错、叫停）以后再算，不挡在请求上线前面：上下文长了请求有几百 KB，算一遍要零点几毫秒（施工 PERF-1）；`provider.test` 量到第一个字多久照 `at` 算。
 4. 等响应头：最多等 `idle`。
    - 地址写得不对（造不出请求）：出错 `other`，不重试（施工 4-9 再补三下：原来交给驱动分类，落成 `retryable`，白等 5 次）。
    - 发不出去（连不上、域名解析、TLS）：没有状态，交给驱动分类，响应体是 reqwest 的错连同它的来由，一层层用 `: ` 接起来。
@@ -132,7 +132,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-http/tests/send.rs` | 先报 `Sent`、增量和直接解码一样；发出去的方法、路径（多一个斜杠不成两个）、四个头、另配的头、请求体一字不差；不带 `Accept-Encoding`（W-7 补：`miyu-net` 开的 gzip/brotli/deflate/zstd 不该带出来）；见到 `[DONE]` 就停；HTTP 出错交给分类、要等多久、HTTP 状态码（施工 3-5 三补）；停住了空闲超时、之前的增量照样交出；`finish_reason` 到了只差 `[DONE]` 时停住，算说完；另配的头换掉同名的；地址、头写坏了是 `other`；流里限速带着要等多久、没有 HTTP 状态码；叫停马上停、连接断开；没人听是 `retryable`，原话里没有地址，没有 HTTP 状态码；说到一半断开是 `retryable`；声明了长度没写够是「连接断了：」；打印端点只写主机名，不漏 key 和头的值 |
+| `crates/miyu-http/tests/send.rs` | 先报 `Sent`、增量和直接解码一样；`Sent` 的时刻是交给网络的那一刻，不是响应头回来的那一刻（施工 PERF-1，假服务器压着响应头）；发出去的方法、路径（多一个斜杠不成两个）、四个头、另配的头、请求体一字不差；不带 `Accept-Encoding`（W-7 补：`miyu-net` 开的 gzip/brotli/deflate/zstd 不该带出来）；见到 `[DONE]` 就停；HTTP 出错交给分类、要等多久、HTTP 状态码（施工 3-5 三补）；停住了空闲超时、之前的增量照样交出；`finish_reason` 到了只差 `[DONE]` 时停住，算说完；另配的头换掉同名的；地址、头写坏了是 `other`；流里限速带着要等多久、没有 HTTP 状态码；叫停马上停、连接断开；没人听是 `retryable`，原话里没有地址，没有 HTTP 状态码；说到一半断开是 `retryable`；声明了长度没写够是「连接断了：」；打印端点只写主机名，不漏 key 和头的值 |
 | `crates/miyu-http/tests/auth.rs`（施工 8-6） | 认证头照驱动：`openai-chat` 带 `Bearer`，带 `x-api-key` 的驱动不带 `Authorization`；没有 key 的端点一个认证头都不带；打印端点不漏 key |
 | `crates/miyu-http/tests/get.rs`（施工 8-7） | 带头、带 `If-None-Match`、交回 `ETag`；304；不是 2xx 的、超过上限的、超时的各说一句；连不上的原话里没有地址和 key；`fetcher()` 也不带 `Accept-Encoding`（W-7 补） |
 | `crates/miyu-http/tests/log.rs` | 说完、限速、连不上、地址读不出主机名、叫停，各记哪两行；key、请求体和回复里的字、路径和参数、出错的原话一个字都不记 |

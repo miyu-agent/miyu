@@ -287,7 +287,7 @@ async fn ask(
     let outcome = send(attempt, stop.notified(), |progress| {
         let mut seen = seen.lock().unwrap_or_else(PoisonError::into_inner);
         match progress {
-            Progress::Sent { .. } => seen.sent = Some(Instant::now()),
+            Progress::Sent { at, .. } => seen.sent = Some(at),
             Progress::Delta(delta) => {
                 seen.first.get_or_insert_with(Instant::now);
                 if seen.text(&delta) {

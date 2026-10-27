@@ -36,6 +36,8 @@ pub enum Piece {
     Drop,
     /// 等别的连接也走到这一道闸，一起放行（施工 8-11）：几个连接得同时在才回得出来，证明对方是一起发的。
     Gate(Arc<tokio::sync::Barrier>),
+    /// 放在最前面的：收完请求先等这么久再回响应头（施工 PERF-1：模型想半天才回头的那种）。放在别处的不算数。
+    HoldHead(Duration),
 }
 
 impl Reply {
@@ -185,6 +187,12 @@ async fn serve(
     log.lock()
         .unwrap_or_else(PoisonError::into_inner)
         .push(request);
+    for piece in &reply.body {
+        match piece {
+            Piece::HoldHead(wait) => tokio::time::sleep(*wait).await,
+            _ => break,
+        }
+    }
     let mut head = format!("HTTP/1.1 {} X\r\n", reply.status);
     for (name, value) in &reply.headers {
         head.push_str(&format!("{name}: {value}\r\n"));
@@ -216,6 +224,7 @@ async fn serve(
             Piece::Gate(gate) => {
                 gate.wait().await;
             }
+            Piece::HoldHead(_) => {}
         }
     }
     let _unused = socket.shutdown().await;

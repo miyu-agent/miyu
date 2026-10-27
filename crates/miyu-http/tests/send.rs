@@ -1,7 +1,7 @@
 //! 发一次请求（`docs/designs/05-内核接口.md` 第七节「HTTP 执行器」）：照剧本回的假服务器，查发出去的、
 //! 读回来的、空闲超时、打断、连不上、说到一半断开。
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::support::{BODY, driver, sample};
 use miyu_drivers::openai_chat::Decoder;
@@ -70,14 +70,14 @@ async fn a_stream_comes_back_as_deltas() {
     ])])
     .await;
     let endpoint = Endpoint::new(&server.base_url, "sk-test");
+    let before = Instant::now();
     let (progress, outcome) = run(&endpoint, Duration::from_secs(5), never()).await;
-    // 先报发出去了，带着请求字节的哈希。
-    assert_eq!(
-        progress.first(),
-        Some(&Progress::Sent {
-            request: ContentHash::of(BODY)
-        })
-    );
+    // 先报发出去了，带着请求字节的哈希、交给网络的那一刻（施工 PERF-1）。
+    let Some(Progress::Sent { request, at }) = progress.first() else {
+        panic!("头一个报的是发出去了：{progress:?}");
+    };
+    assert_eq!(*request, ContentHash::of(BODY));
+    assert!(before <= *at && *at <= Instant::now());
     // 增量和直接解这份样本的一样，收块的也在。
     let mut decoder = Decoder::new();
     let mut expected = decoder.feed(&stream);
@@ -228,6 +228,44 @@ async fn cancelling_stops_right_away() {
     assert!(started.elapsed() < Duration::from_secs(5), "马上停");
     // 假服务器看到连接断了。
     server.wait_closed(1).await;
+}
+
+/// 「发出去了」的时刻是交给网络的那一刻，不是响应头回来的那一刻（施工 PERF-1：哈希挪到后面算以后，`provider.test` 照它量到
+/// 第一个字多久）。
+#[tokio::test]
+async fn sent_is_timed_when_handed_to_the_network() {
+    let held = Duration::from_millis(150);
+    let server = Server::start(vec![Reply::stream(vec![
+        Piece::HoldHead(held),
+        Piece::Bytes(sample("openai-text")),
+    ])])
+    .await;
+    let endpoint = Endpoint::new(&server.base_url, "sk-test");
+    let mut sent = None;
+    let mut first = None;
+    let client = client(Proxy::Off).expect("造得出客户端");
+    let driver = driver();
+    let attempt = Attempt {
+        client: &client,
+        endpoint: &endpoint,
+        driver: &driver,
+        body: BODY,
+        path: "/chat/completions",
+        idle: Duration::from_secs(5),
+    };
+    send(attempt, never(), |step| match step {
+        Progress::Sent { at, .. } => sent = Some(at),
+        Progress::Delta(_) => {
+            first.get_or_insert_with(Instant::now);
+        }
+    })
+    .await;
+    let (sent, first) = (sent.expect("报了发出去了"), first.expect("有增量"));
+    assert!(
+        first.saturating_duration_since(sent) >= held,
+        "从交给网络到头一个字至少隔着服务器压着的那一阵：{:?}",
+        first.saturating_duration_since(sent)
+    );
 }
 
 #[tokio::test]

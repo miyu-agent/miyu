@@ -125,7 +125,7 @@ pub(super) async fn attempt(
         &chosen.blobs,
         stop,
         |progress| match progress {
-            Progress::Sent { request } => reports.sent(ready.model.clone(), request),
+            Progress::Sent { request, .. } => reports.sent(ready.model.clone(), request),
             Progress::Delta(delta) => {
                 received = true;
                 reports.delta(delta);

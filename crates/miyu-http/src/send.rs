@@ -50,10 +50,13 @@ pub struct Attempt<'a> {
 /// 读的过程中交出去的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Progress {
-    /// 发出去了：请求字节的哈希，记进 `model.called`。
+    /// 发出去了：请求字节的哈希，记进 `model.called`。在任何增量之前报，可不一定在真发之前：哈希等请求交给网络以后再算
+    /// （施工 PERF-1：上下文长了请求有几百 KB，算一遍要零点几毫秒，原来挡在请求上线前面）。
     Sent {
         /// 请求字节的 SHA-256。
         request: ContentHash,
+        /// 交给网络的那一刻（`provider.test` 照它量到第一个字多久）；造不出请求的是报的那一刻。
+        at: Instant,
     },
     /// 解出来的一段增量。
     Delta(Delta),
@@ -118,10 +121,14 @@ async fn exchange(
     status: &mut Option<u16>,
 ) -> Outcome {
     tokio::pin!(cancel);
-    // 先报发出去了：连不上的、造不出请求的也报过，`model.called` 里照样有发给了谁、请求的哈希。
-    on(Progress::Sent {
-        request: ContentHash::of(attempt.body),
-    });
+    // 「发出去了」在增量之前报：连不上的、造不出请求的、被叫停的也报过，`model.called` 里照样有发给了谁、请求的哈希。哈希
+    // 等请求交给网络以后再算，不挡在前面（施工 PERF-1）。
+    let mut sent = |at: Instant| {
+        on(Progress::Sent {
+            request: ContentHash::of(attempt.body),
+            at,
+        });
+    };
     let url = format!(
         "{}{}",
         attempt.endpoint.base_url.trim_end_matches('/'),
@@ -136,11 +143,17 @@ async fn exchange(
         .unwrap_or_default();
     let auth = match extra_headers(&auth) {
         Ok(auth) => auth,
-        Err(_) => return misconfigured("认证头"),
+        Err(_) => {
+            sent(Instant::now());
+            return misconfigured("认证头");
+        }
     };
     let extra = match extra_headers(&attempt.endpoint.headers) {
         Ok(extra) => extra,
-        Err(why) => return misconfigured(&why),
+        Err(why) => {
+            sent(Instant::now());
+            return misconfigured(&why);
+        }
     };
     let request = attempt
         .client
@@ -151,10 +164,15 @@ async fn exchange(
         // 另配的头换掉同名的，不是再加一个（施工 4-9 再补三下）。
         .headers(extra)
         .body(attempt.body.to_vec());
+    let at = Instant::now();
     let waited = tokio::select! {
         biased;
-        () = &mut cancel => return Outcome::Cancelled,
-        waited = timeout(attempt.idle, request.send()) => waited,
+        () = &mut cancel => None,
+        waited = timeout(attempt.idle, request.send()) => Some(waited),
+    };
+    sent(at);
+    let Some(waited) = waited else {
+        return Outcome::Cancelled;
     };
     let mut response = match waited {
         Ok(Ok(response)) => response,
