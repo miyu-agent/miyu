@@ -154,6 +154,7 @@ impl Remote {
             model: self.model.clone(),
             usage: Some(usage),
             cost: tariff.and_then(|tariff| tariff.cost(&usage)),
+            venue: None,
         };
         let owner = self.owner.clone();
         blocking(move || {

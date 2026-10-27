@@ -120,11 +120,16 @@ pub(crate) async fn call(
             }
         }
     };
-    let fallback = match &params.session {
-        None => None,
+    // 带了会话的（旁路请求）：没写模型的照它下一次请求的模型；记账挂上它的场所（施工 UC-2：分得出这个群的判官用了多少）。
+    let (fallback, venue) = match &params.session {
+        None => (None, None),
         Some(id) => {
             let id = SessionId::parse(id).map_err(|_| Refusal::BAD_PARAMS)?;
-            core.sessions.get(core, &id).await?.handle.next().reference
+            let found = core.sessions.get(core, &id).await?;
+            (
+                found.handle.next().reference,
+                Some(found.handle.venue().as_str().to_string()),
+            )
         }
     };
     let max_tokens = match params.max_tokens {
@@ -170,6 +175,7 @@ pub(crate) async fn call(
         max_tokens,
         // 用量记在这个连接的人名下（施工 Y-2 下下中下）。
         owner: account.clone(),
+        venue,
     };
     let replied = match &side {
         Some((id, tier)) => {

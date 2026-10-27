@@ -48,6 +48,7 @@ pub(super) fn spawn(
         messages: request.messages,
         max_tokens: None,
         owner,
+        venue: None,
     };
     let config = TurnConfig::clone(config);
     let task = async move {

@@ -1,7 +1,7 @@
 //! 扩展登记的旁路请求（施工 Q-3，设计 `43-旁路请求和档位池.md` 第三节第 2 到 4 条）：清单 `[[side]]` 登记了的，`model.call` 写
 //! `side` 照档位从固定池取；池是空的用会话的模型（写了 `session` 的照那个会话，没写的照 `models.chat`）。只认自己包里登记的
 //! 编号；`side` 和 `model`、`use` 不能同写，`session` 只跟着 `side`；人的连接没有包，写了 `side` 的 `bad_params`。`model.list`
-//! 的 `side` 列出扩展登记的，编号是 `<包>/<编号>`。
+//! 的 `side` 列出扩展登记的，编号是 `<包>/<编号>`。写了 `session` 的记账挂上那个会话的场所（施工 UC-2）。
 
 use serde_json::{Value, json};
 
@@ -163,7 +163,7 @@ async fn an_empty_tier_pool_falls_to_the_session_model_or_models_chat() {
         "wait",
     ]);
     install_bot(&home, &program.name(), &script);
-    let _core = routed_serving(&home, data(profiles(json!({}))));
+    let core = routed_serving(&home, data(profiles(json!({}))));
     let read = replies(&path, 5).await;
     assert!(read[1]["result"]["session"].is_string(), "{:?}", read[1]);
     assert_eq!(read[2]["result"]["text"], "one", "{:?}", read[2]);
@@ -179,4 +179,32 @@ async fn an_empty_tier_pool_falls_to_the_session_model_or_models_chat() {
         .find(|one| one["id"] == "bot/judge")
         .expect("列出");
     assert_eq!(bot["resolved"], "session", "{bot}");
+
+    // 记账（施工 UC-2）：写了会话的挂上那个会话的场所，没写的不挂；照场所、用途分得出来。
+    let mut owner = Client::connect(core);
+    owner.hello().await;
+    let split = owner
+        .call("u", "usage.query", json!({"group": ["venue", "purpose"]}))
+        .await;
+    let mut rows: Vec<(Value, Value, Value)> = split["result"]["rows"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{split}"))
+        .iter()
+        .map(|row| {
+            (
+                row["venue"].clone(),
+                row["purpose"].clone(),
+                row["requests"].clone(),
+            )
+        })
+        .collect();
+    rows.sort_by_key(|row| row.0.to_string());
+    assert_eq!(
+        rows,
+        [
+            (json!("local"), json!("judge"), json!(1)),
+            (Value::Null, json!("judge"), json!(1)),
+        ],
+        "{split}"
+    );
 }

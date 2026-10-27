@@ -95,6 +95,7 @@ async fn the_messages_go_in_order_without_tools_and_with_the_output_limit() {
         ],
         max_tokens: Some(64),
         owner: miyu_kernel::id::AccountId::parse("admin").unwrap(),
+        venue: None,
     };
     let answered = entry(&routes).call(&config, &blobs, ask).await;
     assert!(answered.is_ok(), "{answered:?}");

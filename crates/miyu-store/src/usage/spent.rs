@@ -61,6 +61,9 @@ pub struct OneShotCall {
     /// 金额；算不出的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cost: Option<Cost>,
+    /// 场所（施工 UC-2）：`model.call` 带了会话的，是那个会话的场所，好照场所分出「这个群的判官用了多少」；别的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub venue: Option<String>,
 }
 
 /// 一行。
@@ -146,6 +149,7 @@ impl Spent {
             (call.usage, call.cost.as_ref()),
         );
         spent.purpose = Some(call.purpose.clone());
+        spent.venue.clone_from(&call.venue);
         spent
     }
 

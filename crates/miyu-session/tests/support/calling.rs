@@ -43,6 +43,7 @@ pub fn asking(model: Option<&str>, purpose: &str, text: &str) -> Ask {
         messages: vec![user(text)],
         max_tokens: None,
         owner: miyu_kernel::id::AccountId::parse("admin").expect("账号合写法"),
+        venue: None,
     }
 }
 

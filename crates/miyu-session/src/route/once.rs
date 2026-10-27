@@ -90,6 +90,8 @@ pub struct Ask {
     pub max_tokens: Option<u32>,
     /// 谁付钱（施工 8-15）：`model.call` 是这个连接的账号，替看图是会话的属主。用量记在他的账号日志里。
     pub owner: AccountId,
+    /// 记账时挂哪个场所（施工 UC-2）：`model.call` 带了会话的是那个会话的场所；没有的不挂。
+    pub venue: Option<String>,
 }
 
 /// 交回的：整段回答。
@@ -336,6 +338,7 @@ impl OneShot {
             if let (true, Exchanged::Ended { usage, .. }) = (reply.sent(), &exchanged) {
                 let spent = Spent {
                     owner: &ask.owner,
+                    venue: ask.venue.as_deref(),
                     purpose: &ask.purpose,
                     target: &picked.choice.target,
                 };
@@ -374,6 +377,7 @@ impl OneShot {
 /// 发出去了的一次：记在谁的账上、用途、真发给的。
 struct Spent<'a> {
     owner: &'a AccountId,
+    venue: Option<&'a str>,
     purpose: &'a str,
     target: &'a Target,
 }
@@ -392,6 +396,7 @@ impl Spent<'_> {
             cost: tariff
                 .zip(usage.as_ref())
                 .and_then(|(tariff, usage)| tariff.cost(usage)),
+            venue: self.venue.map(str::to_string),
         };
         let owner = self.owner.clone();
         let purpose = self.purpose.to_string();

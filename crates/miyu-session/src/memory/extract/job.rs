@@ -177,6 +177,7 @@ impl Job {
             }],
             max_tokens: None,
             owner: self.owner.clone(),
+            venue: None,
         };
         let answered = self
             .extraction

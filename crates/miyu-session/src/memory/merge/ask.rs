@@ -174,6 +174,7 @@ impl MergeJob {
             }],
             max_tokens: None,
             owner: self.owner.clone(),
+            venue: None,
         };
         let mut tell = self.watcher(asked);
         let calling = self.extraction.ask.call_side_watching(

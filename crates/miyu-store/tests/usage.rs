@@ -273,11 +273,19 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
         model: "deepseek-flash".to_string(),
         usage: Some(usage(812, 0, 0, 9)),
         cost: None,
+        venue: None,
     };
     index.one_shot(&admin(), at(30), &call).unwrap();
     index.one_shot(&admin(), at(31), &call).unwrap();
+    // 带了会话的旁路请求挂上那个会话的场所（施工 UC-2）：照场所、用途分得出这个群的判官。
+    let judged = OneShotCall {
+        purpose: "judge".to_string(),
+        venue: Some("qq:group:42".to_string()),
+        ..call.clone()
+    };
+    index.one_shot(&admin(), at(32), &judged).unwrap();
     let journal = fs::read_to_string(root.account_dir(&admin()).join(journal::FILE)).unwrap();
-    assert_eq!(journal.lines().count(), 2);
+    assert_eq!(journal.lines().count(), 3);
     assert!(journal.contains(r#""kind":"usage.oneshot""#), "{journal}");
     let by_purpose = |index: &UsageIndex| {
         let totals = totals(index, &query(&[Group::Purpose, Group::Session]));
@@ -286,12 +294,36 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
             .map(|total| (total.keys.clone(), total.requests, total.unpriced))
             .collect::<Vec<_>>()
     };
-    let expected = vec![(vec![Some("vision".to_string()), None], 2, 2)];
+    let expected = vec![
+        (vec![Some("judge".to_string()), None], 1, 1),
+        (vec![Some("vision".to_string()), None], 2, 2),
+    ];
     assert_eq!(by_purpose(&index), expected, "没有会话，有用途");
+    let by_venue = |index: &UsageIndex| {
+        totals(index, &query(&[Group::Venue, Group::Purpose]))
+            .iter()
+            .map(|total| (total.keys.clone(), total.requests))
+            .collect::<Vec<_>>()
+    };
+    let venues = vec![
+        (vec![None, Some("vision".to_string())], 2),
+        (
+            vec![Some("qq:group:42".to_string()), Some("judge".to_string())],
+            1,
+        ),
+    ];
+    let mut got = by_venue(&index);
+    got.sort();
+    let mut want = venues.clone();
+    want.sort();
+    assert_eq!(got, want, "带了场所的分得出来");
     drop(index);
     forget(&root);
     let (rebuilt, _) = UsageIndex::open(&root);
     assert_eq!(by_purpose(&rebuilt), expected, "照账号日志读回来");
+    let mut again = by_venue(&rebuilt);
+    again.sort();
+    assert_eq!(again, want, "场所也照账号日志读回来");
     let other = AccountId::parse("bob").unwrap();
     assert!(
         totals(&rebuilt, &query(&[Group::Account]))
