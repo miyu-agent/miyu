@@ -204,7 +204,7 @@ fn at_every_and_the_target() {
             tokyo()
         )
         .expect("成"),
-        json!({"when": {"every": 600}, "prompt": "看", "target": {"new": {"persona": "miyu", "preset": "dev", "cwd": "/nowhere/here/sub"}}})
+        json!({"when": {"every": 600}, "prompt": "看", "target": {"new": {"persona": "miyu", "preset": "dev", "cwd": PathBuf::from("/nowhere/here").join("sub").to_string_lossy()}}})
     );
     assert_eq!(
         add_params(&["add", "--every", "1h", "--no-persona", "看"], tokyo()).expect("成")["target"],
