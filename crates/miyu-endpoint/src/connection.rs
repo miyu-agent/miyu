@@ -38,6 +38,7 @@ mod tests;
 
 use streams::{Stream, stream_of};
 
+use crate::extensions::Instance;
 use crate::hello::{Caller, Shaken, hello};
 use crate::login::{self, Revoked, Via};
 use crate::methods;
@@ -66,18 +67,18 @@ pub(crate) async fn serve_spawned<S>(
     stream: S,
     core: Arc<Core>,
     shook: oneshot::Sender<()>,
-    package: String,
+    instance: Instance,
 ) where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    serve_from(stream, core, Some((shook, package)), Reach::Local).await;
+    serve_from(stream, core, Some((shook, instance)), Reach::Local).await;
 }
 
 /// 两种连接共用的：`spawned` 有的是核心亲手拉起的扩展：握成了告诉看管的那一头，和它是哪个包（施工 9-4 下下）。
 async fn serve_from<S>(
     stream: S,
     core: Arc<Core>,
-    spawned: Option<(oneshot::Sender<()>, String)>,
+    spawned: Option<(oneshot::Sender<()>, Instance)>,
     reach: Reach,
 ) where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -110,18 +111,25 @@ async fn read_all<R: AsyncRead + Unpin>(
     read: R,
     core: Arc<Core>,
     out: mpsc::Sender<String>,
-    (mut spawned, mut reach): (Option<(oneshot::Sender<()>, String)>, Reach),
+    (mut spawned, mut reach): (Option<(oneshot::Sender<()>, Instance)>, Reach),
 ) {
     let from_core = spawned.is_some();
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
-    let package = spawned.as_ref().map(|(_, package)| package.clone());
+    let instance = spawned.as_ref().map(|(_, instance)| instance.clone());
+    let package = instance.as_ref().map(|instance| instance.package.clone());
     // 这个连接是谁（施工 O-4 下、Y-5 中上）：核心拉起的带进程的包是它自己的账号，别的是管理员；没声明系统账号的包替机主干活。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
-    let account = core.account_of(package.as_deref());
+    // 每人一份的那一份（施工 IM-1 中）是那个人自己，替他干活：能力照他取交集（`extensions::held`）。
+    let mine = instance
+        .as_ref()
+        .and_then(|instance| instance.account.clone());
+    let account = mine
+        .clone()
+        .unwrap_or_else(|| core.account_of(package.as_deref()));
     let mut caller = Caller {
         reverse: reverse.clone(),
-        serving: core.serving(&account),
+        serving: mine.or_else(|| core.serving(&account)),
         account,
         package: package.clone(),
     };
@@ -263,8 +271,8 @@ async fn read_all<R: AsyncRead + Unpin>(
                         {
                             // 看管它的那一头不等了：不用说。
                         }
-                        if let Some(package) = &package {
-                            let given = Handing::now(&core, package);
+                        if let Some(instance) = &instance {
+                            let given = Handing::now(&core, instance);
                             result["config"] = json!(given.handed);
                             handing = Some(given);
                         }
@@ -470,9 +478,14 @@ struct Handing {
 }
 
 impl Handing {
-    /// 照这一刻的配置算包 `package` 的那份，盯配置的那一头记成看过这一份。
-    fn now(core: &Core, package: &str) -> Handing {
-        let mut current = core.config_now();
+    /// 照这一刻的配置算包 `instance.package` 的那份，盯配置的那一头记成看过这一份。每人一份的照那个人自己的配置（施工 IM-1
+    /// 中：系统配置、他的个人设置合出来的），一份的照机主那一份，和以前一样。
+    fn now(core: &Core, instance: &Instance) -> Handing {
+        let package = instance.package.as_str();
+        let mut current = match &instance.account {
+            Some(account) => core.mine(account).hub().current(),
+            None => core.config_now(),
+        };
         let config = Arc::clone(&current.borrow_and_update());
         let handed = crate::extensions::config::own(&config, package);
         tracing::debug!(target: "miyu::endpoint", package, keys = handed.len(), "extension config handed");

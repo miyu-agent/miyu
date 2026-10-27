@@ -28,15 +28,16 @@ pub(super) fn write(core: &Core, package: &str, kept: &[u8]) {
     }
 }
 
-/// 照缓存先登记包 `package` 的工具：核心起来拉起扩展以前、开扩展时调。没有缓存的什么都不做。
-pub(crate) fn restore(core: &Core, package: &str) {
+/// 照缓存先登记包 `package` 的工具：核心起来拉起扩展以前、开扩展时调。没有缓存的什么都不做。交回登记上了没有（施工 IM-1 中：
+/// 每人一份的包没登记上的，先替机主起一份把工具登记上）。
+pub(crate) fn restore(core: &Core, package: &str) -> bool {
     let path = path(core, package);
     let text = match std::fs::read(&path) {
         Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return false,
         Err(error) => {
             tracing::warn!(target: TARGET, package, file = %path.display(), error = %error, "provided tools cache unreadable");
-            return;
+            return false;
         }
     };
     let restored = serde_json::from_slice::<ProvideParams>(&text)
@@ -46,10 +47,12 @@ pub(crate) fn restore(core: &Core, package: &str) {
         });
     match restored {
         Ok(count) => {
-            tracing::info!(target: TARGET, package, tools = count, "provided tools restored")
+            tracing::info!(target: TARGET, package, tools = count, "provided tools restored");
+            true
         }
         Err(error) => {
             tracing::warn!(target: TARGET, package, file = %path.display(), error = error.as_str(), "provided tools cache not used");
+            false
         }
     }
 }

@@ -61,8 +61,10 @@ impl Default for Timing {
 /// 怎么拉起一个包。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Plan {
-    /// 包的编号。
+    /// 运行日志里写的：一份的是包的编号，每人一份的带上账号（[`super::Instance::label`]）。
     pub(super) id: String,
+    /// 哪一份（施工 IM-1 中）：连进来时照它认是谁。
+    pub(super) instance: super::Instance,
     /// 怎么起程序：包的 `bin/` 里的、`miyu` 旁边的，Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。
     pub(super) launch: miyu_store::packages::Launch,
     /// 参数：清单的 `[process] args`。
@@ -152,7 +154,12 @@ pub(super) async fn run(
             return;
         };
         let (ready, shook) = oneshot::channel();
-        let serving = serve_spawned(tokio::io::join(output, input), owner, ready, id.to_string());
+        let serving = serve_spawned(
+            tokio::io::join(output, input),
+            owner,
+            ready,
+            plan.instance.clone(),
+        );
         let watched = Watched {
             shared: &shared,
             id,

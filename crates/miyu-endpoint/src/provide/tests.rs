@@ -59,8 +59,8 @@ async fn the_table_follows_the_package_and_a_new_registration_replaces_the_old()
     assert!(provided.peer("onebot").is_none());
     let (first_out, mut first) = mpsc::channel(1);
     let (second_out, mut second) = mpsc::channel(1);
-    provided.register("onebot", Peer::new(first_out));
-    provided.register("onebot", Peer::new(second_out));
+    provided.register(Instance::system("onebot"), Peer::new(first_out));
+    provided.register(Instance::system("onebot"), Peer::new(second_out));
     let peer = provided.peer("onebot").expect("有");
     tokio::spawn(async move { peer.call("tool.call", json!({})).await });
     assert!(second.recv().await.is_some(), "发给后来的那个");
@@ -99,7 +99,7 @@ async fn without_a_live_connection_a_provided_tool_is_unavailable() {
     // 有连接，可是发不出去（那一头关了）。
     let (out, lines) = mpsc::channel(1);
     drop(lines);
-    provided.register("onebot", Peer::new(out));
+    provided.register(Instance::system("onebot"), Peer::new(out));
     unavailable(remote.run(miyu_tool::testkit::call("{}"), progress()).await);
 }
 
@@ -115,7 +115,14 @@ fn texts() -> Texts {
 fn stores() -> (Stores, std::path::PathBuf) {
     let (root, dir) = crate::test_support::temp_root("provide");
     let provider = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
-    (Stores { root, provider }, dir)
+    (
+        Stores {
+            root,
+            provider,
+            per_account: false,
+        },
+        dir,
+    )
 }
 
 /// 时限（施工 O-2 下）：不写是一分钟；一秒到十分钟，出了这个范围的拒，`problem` 是 `timeout`。

@@ -3,6 +3,7 @@
 //! 「暂时不可用」。登记缓存在磁盘上，核心起来、开扩展时先照缓存登记；关掉扩展，它的工具出目录（施工 O-2 中，[`cache`]）。
 
 mod cache;
+mod reach;
 mod remote;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -17,6 +18,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::{Problem, Spec, Tool, Venues};
 
 use crate::Core;
+use crate::extensions::Instance;
 use crate::hello::Caller;
 use crate::refusal::Refusal;
 use crate::reverse::Peer;
@@ -25,28 +27,47 @@ use crate::reverse::Peer;
 use remote::referenced;
 use remote::{RemoteTool, Stores, Texts};
 
-/// 哪个包现在由哪个连接提供。
+/// 哪一份进程现在由哪个连接提供（施工 IM-1 中起按（包，账号）记）。
 #[derive(Default)]
 pub(crate) struct Provided {
-    peers: Mutex<HashMap<String, Peer>>,
+    peers: Mutex<HashMap<Instance, Peer>>,
+    /// 每登记一次加一：等每人一份的那一份连上来的照它醒（[`reach`]）。
+    arrived: tokio::sync::watch::Sender<u64>,
+    /// 核心：用到时替人拉起每人一份的那一份（施工 IM-1 中）。核心起来时接上（[`Provided::attach`]），没接的（测试里自己造的）
+    /// 不拉起。
+    core: std::sync::OnceLock<std::sync::Weak<Core>>,
 }
 
 impl Provided {
-    /// 现在提供包 `package` 的连接；没有的是没有。
+    /// 现在提供包 `package` 那一份（一份的）的连接；没有的是没有。
     pub(crate) fn peer(&self, package: &str) -> Option<Peer> {
+        self.peer_of(&Instance::system(package))
+    }
+
+    /// 现在提供 `instance` 的连接；没有的是没有。
+    pub(crate) fn peer_of(&self, instance: &Instance) -> Option<Peer> {
         self.peers
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .get(package)
+            .get(instance)
             .cloned()
     }
 
-    /// 记下包 `package` 由 `peer` 提供，换掉以前的。
-    fn register(&self, package: &str, peer: Peer) {
+    /// 记下 `instance` 由 `peer` 提供，换掉以前的；等着它的醒过来。
+    fn register(&self, instance: Instance, peer: Peer) {
         self.peers
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(package.to_string(), peer);
+            .insert(instance, peer);
+        self.arrived
+            .send_modify(|count| *count = count.wrapping_add(1));
+    }
+
+    /// 接上核心：之后每人一份的用到时拉起。接过的不再换。
+    pub(crate) fn attach(&self, core: &Arc<Core>) {
+        if self.core.set(Arc::downgrade(core)).is_err() {
+            // 接过了：同一个核心。
+        }
     }
 }
 
@@ -120,10 +141,31 @@ pub(crate) async fn provide(
     };
     let kept = serde_json::to_vec(&params).map_err(|_| Refusal::INTERNAL)?;
     let count = register(core, package, params.tools)?;
-    core.provided.register(package, caller.reverse.clone());
+    core.provided
+        .register(instance_of(core, caller, package), caller.reverse.clone());
     cache::write(core, package, &kept);
     tracing::info!(target: "miyu::endpoint", package, tools = count, "provided");
     Ok(json!({ "tools": count }))
+}
+
+/// 包 `package` 是不是每人一份的（施工 IM-1 中）。
+fn per_account(core: &Core, package: &str) -> bool {
+    core.system_packages()
+        .iter()
+        .find(|found| found.id == package)
+        .and_then(|found| found.read.as_ref().ok())
+        .is_some_and(crate::extensions::per_account)
+}
+
+/// 这个连接是包 `package` 的哪一份：每人一份的是它替的那个人那一份（施工 IM-1 中），别的是那一份。
+fn instance_of(core: &Core, caller: &Caller, package: &str) -> Instance {
+    match per_account(core, package) {
+        true => Instance {
+            package: package.to_string(),
+            account: Some(caller.acting_for().clone()),
+        },
+        false => Instance::system(package),
+    }
 }
 
 /// 照规格 `tools` 换掉包 `package` 在目录里的工具，交回几件：`provide`、读缓存共用。两处同时换的一个接一个（[`miyu_tool::Shelf`]）。
@@ -141,6 +183,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     };
     let count = tools.len();
     let listed = listed(core, package);
+    let per = per_account(core, package);
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
     for tool in tools {
         // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。
@@ -162,6 +205,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
             Stores {
                 root: core.root.clone(),
                 provider: core.account_of(Some(package)),
+                per_account: per,
             },
         )));
     }

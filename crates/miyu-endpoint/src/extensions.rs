@@ -7,12 +7,17 @@
 
 mod approval;
 pub(crate) mod config;
+mod demand;
+mod instance;
 pub(crate) mod methods;
+mod state;
 pub(crate) mod stderr;
 mod supervise;
 
 pub(crate) use approval::{described, forget as forget_switch, held};
+pub(crate) use instance::{Instance, per_account};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
+pub(crate) use state::{Cell, Reason, State, Status};
 pub use supervise::Timing;
 pub(crate) use supervise::backoff;
 
@@ -33,125 +38,12 @@ use crate::Core;
 /// 运行日志的目标。
 const TARGET: &str = "miyu::extensions";
 
-/// 一个扩展这时在哪一步。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum State {
-    /// 关着。
-    Off,
-    /// 要拉起、拉起了，还没握手。
-    Starting {
-        /// 进程号：还没起来的没有。
-        pid: Option<u32>,
-    },
-    /// 握了手。
-    Running {
-        /// 进程号：网址的 MCP 服务没有进程，没有（施工 X-32 上）。
-        pid: Option<u32>,
-    },
-    /// 退避中：到点再拉起。
-    Waiting {
-        /// 哪一刻拉起。
-        until: tokio::time::Instant,
-    },
-    /// 不再拉起：开关照旧开着，`restart` 再试，核心下次起来也再试。
-    Stopped(Reason),
-}
-
-impl State {
-    /// 协议里的写法。
-    pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            State::Off => "off",
-            State::Starting { .. } => "starting",
-            State::Running { .. } => "running",
-            State::Waiting { .. } => "waiting",
-            State::Stopped(_) => "stopped",
-        }
-    }
-
-    /// 在干活、或者等着再干：核心不算空闲。
-    pub(crate) fn busy(self) -> bool {
-        matches!(
-            self,
-            State::Starting { .. } | State::Running { .. } | State::Waiting { .. }
-        )
-    }
-}
-
-/// 为什么停下了。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Reason {
-    /// 退出码 1：配置错、端口被占这类重启也没用的。
-    ConfigError,
-    /// 连续失败到了上限。
-    FailedRepeatedly,
-    /// 程序不在 `miyu` 旁边。
-    NotInstalled,
-    /// 起不来：程序在，系统不让起、建不了它的目录和标准错误的文件。
-    CannotStart,
-    /// 清单说的协议版本不包含核心的。
-    ProtocolMismatch,
-    /// 要的能力还有没批的（施工 9-4 下上）：批了（`extension.enable` 带 `approve`）才拉起。
-    NeedsApproval,
-    /// 网址的 MCP 服务要浏览器登录（施工 X-42 上）：人登录了（`mcp.login`）、令牌存进密钥文件才重连。
-    NeedsLogin,
-}
-
-impl Reason {
-    /// 协议里的写法。
-    pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            Reason::ConfigError => "config_error",
-            Reason::FailedRepeatedly => "failed_repeatedly",
-            Reason::NotInstalled => "not_installed",
-            Reason::CannotStart => "cannot_start",
-            Reason::ProtocolMismatch => "protocol_mismatch",
-            Reason::NeedsApproval => "needs_approval",
-            Reason::NeedsLogin => "needs_login",
-        }
-    }
-}
-
-/// 一个扩展的状态和连续失败了几次：看管的任务写，列状态时读。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Status {
-    /// 在哪一步。
-    pub(crate) state: State,
-    /// 连续失败了几次。
-    pub(crate) failures: u32,
-}
-
-/// 表和看管的任务一起拿着的那一份：状态，改了就广播是哪个包变了（施工 9-4 补，订阅的连接照它推 `extension.changed`）。
-pub(crate) struct Cell {
-    /// 包的编号。
-    id: String,
-    /// 状态。
-    status: Mutex<Status>,
-    /// 谁变了：广播包的编号。
-    changed: broadcast::Sender<String>,
-}
-
-impl Cell {
-    /// 这时的状态。
-    pub(crate) fn get(&self) -> Status {
-        *self.status.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-
-    /// 记下状态，广播一声。
-    pub(crate) fn set(&self, state: State, failures: u32) {
-        *self.status.lock().unwrap_or_else(PoisonError::into_inner) = Status { state, failures };
-        if self.changed.send(self.id.clone()).is_err() {
-            // 没有订阅着的连接：不用说。
-        }
-    }
-}
-
 type Shared = Arc<Cell>;
 
 /// 广播最多攒多少条还没被读走的：读得慢的连接掉了队，推 `resync`。
 const CHANGES: usize = 64;
 
-/// 一个包一格。
+/// 一份一格。
 struct Slot {
     /// 状态。
     status: Shared,
@@ -161,8 +53,8 @@ struct Slot {
 
 /// 扩展的表：核心一份。
 pub(crate) struct Extensions {
-    /// 包的编号到它那一格。
-    slots: Mutex<BTreeMap<String, Slot>>,
+    /// 每一份到它那一格（施工 IM-1 中起按（包，账号））。
+    slots: Mutex<BTreeMap<Instance, Slot>>,
     /// 开、关、重启一件件办：两个连接同时开同一个，不拉起两个。
     ops: tokio::sync::Mutex<()>,
     /// 等多久、退避多久。
@@ -203,13 +95,18 @@ impl Extensions {
         }
     }
 
-    fn slots(&self) -> std::sync::MutexGuard<'_, BTreeMap<String, Slot>> {
+    fn slots(&self) -> std::sync::MutexGuard<'_, BTreeMap<Instance, Slot>> {
         self.slots.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 包 `id` 这时的状态：没拉起过的关着。
+    /// 包 `id` 那一份（一份的）这时的状态：没拉起过的关着。
     pub(crate) fn status(&self, id: &str) -> Status {
-        self.slots().get(id).map_or(
+        self.status_of(&Instance::system(id))
+    }
+
+    /// `instance` 这时的状态：没拉起过的关着。
+    pub(crate) fn status_of(&self, instance: &Instance) -> Status {
+        self.slots().get(instance).map_or(
             Status {
                 state: State::Off,
                 failures: 0,
@@ -225,11 +122,15 @@ impl Extensions {
             .any(|slot| slot.status.get().state.busy())
     }
 
-    /// 包 `id` 那一格：没有的照关着建一格。
-    fn slot<'a>(&self, slots: &'a mut BTreeMap<String, Slot>, id: &str) -> &'a mut Slot {
-        slots.entry(id.to_string()).or_insert_with(|| Slot {
+    /// `instance` 那一格：没有的照关着建一格。广播的是包的编号。
+    fn slot<'a>(
+        &self,
+        slots: &'a mut BTreeMap<Instance, Slot>,
+        instance: &Instance,
+    ) -> &'a mut Slot {
+        slots.entry(instance.clone()).or_insert_with(|| Slot {
             status: Arc::new(Cell {
-                id: id.to_string(),
+                id: instance.package.clone(),
                 status: Mutex::new(Status {
                     state: State::Off,
                     failures: 0,
@@ -240,18 +141,18 @@ impl Extensions {
         })
     }
 
-    /// 开着、不拉起的包 `id`（施工 9-4 下上：要的能力还有没批的）：记成停下，`reason` 照交的。
+    /// 开着、不拉起的包 `id`（施工 9-4 下上：要的能力还有没批的）：一份的那一格记成停下，`reason` 照交的。
     fn hold(&self, id: &str, reason: Reason) {
         let mut slots = self.slots();
-        self.slot(&mut slots, id)
+        self.slot(&mut slots, &Instance::system(id))
             .status
             .set(State::Stopped(reason), 0);
     }
 
-    /// 拉起包 `id`（清单是 `manifest`）：在跑、在等的不动；程序没找到、协议版本对不上的直接停下。
-    fn launch(&self, core: &Arc<Core>, id: &str, manifest: &Manifest) {
+    /// 拉起 `instance`（清单是 `manifest`）：在跑、在等的不动；程序没找到、协议版本对不上的直接停下。
+    pub(crate) fn launch(&self, core: &Arc<Core>, instance: &Instance, manifest: &Manifest) {
         let mut slots = self.slots();
-        let slot = self.slot(&mut slots, id);
+        let slot = self.slot(&mut slots, instance);
         if slot
             .task
             .as_ref()
@@ -259,10 +160,10 @@ impl Extensions {
         {
             return;
         }
-        let plan = match plan(core, id, manifest) {
+        let plan = match plan(core, instance, manifest) {
             Ok(plan) => plan,
             Err(reason) => {
-                tracing::warn!(target: TARGET, package = id, reason = reason.as_str(), "extension not started");
+                tracing::warn!(target: TARGET, package = instance.label(), reason = reason.as_str(), "extension not started");
                 slot.status.set(State::Stopped(reason), 0);
                 slot.task = None;
                 return;
@@ -281,45 +182,46 @@ impl Extensions {
         slot.task = Some((stop, task));
     }
 
-    /// 请包 `id` 退出、等它退出（最多等到杀掉它），状态记成关着。
+    /// 请包 `id` 的每一份退出、等它们退出（最多等到杀掉），状态记成关着：一份的，和每人一份的全部。
     async fn halt(&self, id: &str) {
-        let task = self.slots().get_mut(id).and_then(|slot| slot.task.take());
-        if let Some((stop, task)) = task {
-            if stop.send(true).is_err() {
-                // 任务自己停下了，没人收：不用管。
-            }
-            if let Err(error) = task.await {
-                tracing::error!(target: TARGET, package = id, panic = error.is_panic(), "extension task failed");
-            }
-        }
-        self.mark_off(id);
+        let tasks = self.take(|instance| instance.package == id);
+        self.join(tasks).await;
     }
 
     /// 请全部退出、一起等。
     async fn halt_all(&self) {
-        let tasks: Vec<(String, JoinHandle<()>)> = self
-            .slots()
-            .iter_mut()
-            .filter_map(|(id, slot)| {
-                let (stop, task) = slot.task.take()?;
-                if stop.send(true).is_err() {
-                    // 任务自己停下了，没人收：不用管。
-                }
-                Some((id.clone(), task))
-            })
-            .collect();
-        for (id, task) in tasks {
-            if let Err(error) = task.await {
-                tracing::error!(target: TARGET, package = id.as_str(), panic = error.is_panic(), "extension task failed");
-            }
-            self.mark_off(&id);
-        }
+        let tasks = self.take(|_| true);
+        self.join(tasks).await;
     }
 
-    /// 把包 `id` 记成关着、连续失败从零数。
-    fn mark_off(&self, id: &str) {
-        if let Some(slot) = self.slots().get(id) {
-            slot.status.set(State::Off, 0);
+    /// 合 `which` 的那几格：请它们的任务停下，交回任务。
+    fn take(&self, which: impl Fn(&Instance) -> bool) -> Vec<(Instance, Option<JoinHandle<()>>)> {
+        self.slots()
+            .iter_mut()
+            .filter(|(instance, _)| which(instance))
+            .map(|(instance, slot)| {
+                let task = slot.task.take().map(|(stop, task)| {
+                    if stop.send(true).is_err() {
+                        // 任务自己停下了，没人收：不用管。
+                    }
+                    task
+                });
+                (instance.clone(), task)
+            })
+            .collect()
+    }
+
+    /// 等交回的任务退出，那几格记成关着、连续失败从零数。
+    async fn join(&self, tasks: Vec<(Instance, Option<JoinHandle<()>>)>) {
+        for (instance, task) in tasks {
+            if let Some(task) = task
+                && let Err(error) = task.await
+            {
+                tracing::error!(target: TARGET, package = instance.label(), panic = error.is_panic(), "extension task failed");
+            }
+            if let Some(slot) = self.slots().get(&instance) {
+                slot.status.set(State::Off, 0);
+            }
         }
     }
 }
@@ -328,6 +230,8 @@ impl Core {
     /// 照开关拉起开着的扩展（施工 9-4 上）：核心起来、开始接连接之前调一次。要在 tokio 的运行时里调。要的能力还有没批的
     /// 不拉起，记成停下（`needs_approval`，施工 9-4 下上）。拉起以前照登记缓存先登记它的工具（施工 O-2 中）。
     pub fn start_extensions(self: &Arc<Self>) {
+        // 每人一份的用到时拉起（施工 IM-1 中）：提供者表接上核心。
+        self.provided.attach(self);
         // 扩展以系统账号的身份连进来：先建它们的家目录（施工 O-4 下）。
         crate::system_accounts::prepare(self);
         // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
@@ -359,12 +263,30 @@ impl Core {
         }
         match approval::unapproved(self, id, manifest).is_empty() {
             true => {
-                crate::provide::restore(self, id);
-                self.extensions.launch(self, id, manifest);
+                let cached = crate::provide::restore(self, id);
+                self.launch_or_wait(id, manifest, cached);
                 // 它带的 MCP 服务跟着起（施工 X-3 下）。
                 self.start_services(id, manifest);
             }
             false => self.extensions.hold(id, Reason::NeedsApproval),
+        }
+    }
+
+    /// 拉起包 `id`（照缓存登记上了工具的是 `cached`）。每人一份的用到时才起（施工 IM-1 中）：她调到它的工具时替那个人拉起；
+    /// 还没有登记缓存的（头一回装上）先替机主起一份，把工具登记上，不然谁都调不到它。
+    pub(crate) fn launch_or_wait(self: &Arc<Self>, id: &str, manifest: &Manifest, cached: bool) {
+        match per_account(manifest) {
+            false => self
+                .extensions
+                .launch(self, &Instance::system(id), manifest),
+            true if !cached => {
+                let owner = Instance {
+                    package: id.to_string(),
+                    account: Some(self.admin.clone()),
+                };
+                self.start_for(&owner);
+            }
+            true => {}
         }
     }
 
@@ -472,7 +394,8 @@ pub(crate) fn read_switches(core: &Core) -> (Switches, Option<String>) {
 }
 
 /// 怎么拉起包 `id`：程序没找到、协议版本对不上的交回为什么。
-fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, Reason> {
+fn plan(core: &Core, instance: &Instance, manifest: &Manifest) -> Result<supervise::Plan, Reason> {
+    let id = instance.package.as_str();
     if crate::packages::mismatch(manifest).is_some() {
         return Err(Reason::ProtocolMismatch);
     }
@@ -488,13 +411,14 @@ fn plan(core: &Core, id: &str, manifest: &Manifest) -> Result<supervise::Plan, R
         .map(|process| process.args.clone())
         .unwrap_or_default();
     Ok(supervise::Plan {
-        id: id.to_string(),
+        id: instance.label(),
+        instance: instance.clone(),
         launch,
         args,
-        dir: crate::packages::packages(core).state_dir(id),
+        dir: instance.state_dir(core),
         home: core.root.path().to_path_buf(),
         resources: core.resources.path().to_path_buf(),
         package: dir,
-        log: stderr::path(core, id),
+        log: stderr::path(core, &instance.label()),
     })
 }

@@ -82,8 +82,8 @@ pub(crate) async fn turn_on(
     approval::approve(core, id, manifest, approve).await?;
     switches.on.insert(id.to_string(), true);
     write(core, id, &switches, version.as_deref())?;
-    crate::provide::restore(core, id);
-    core.extensions.launch(core, id, manifest);
+    let cached = crate::provide::restore(core, id);
+    core.launch_or_wait(id, manifest, cached);
     // 它带的 MCP 服务跟着起（施工 X-3 下）。
     core.start_services(id, manifest);
     core.extensions.notify(id);
@@ -140,8 +140,12 @@ pub(crate) async fn restart_process(
     if !left.is_empty() {
         return Err(needs_approval(&left));
     }
+    // 每人一份的全停下，用到时再起（施工 IM-1 中）。
     core.extensions.halt(id).await;
-    core.extensions.launch(core, id, manifest);
+    if !super::per_account(manifest) {
+        core.extensions
+            .launch(core, &super::Instance::system(id), manifest);
+    }
     Ok(one(core, id, manifest, &switches, peer))
 }
 

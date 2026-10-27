@@ -112,6 +112,15 @@ impl Peer {
         state.out = None;
     }
 
+    /// 连接断了（[`Peer::close`] 过）。
+    pub(crate) fn closed(&self) -> bool {
+        self.state
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .out
+            .is_none()
+    }
+
     /// 不等这一条了。
     fn forget(&self, id: &str) {
         self.state

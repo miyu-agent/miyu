@@ -183,6 +183,7 @@ mod packages_sync;
 mod packages_tool;
 mod packages_upgrade;
 mod peers;
+mod per_account_extension;
 mod permission;
 mod persona_appearance;
 mod persona_avatar;
