@@ -2639,6 +2639,17 @@ Retired {id}.
 {date} session {session}: {text}
 ```
 
+#### `software/memory/memory_search/card.txt`
+
+- 什么时候加进来：`memory_search` 搜到的一张人卡一行（字段按 `qq:10086 (小林, 林林)`、`小林是群友，喜欢拍照` 填）
+- token：25（2026-10-27 照 tiktoken `o200k_base` 量，接在 `hi` 和一个换行后面、带行尾换行，同法量 `memory.txt` 也是 18）
+- 为什么加：问她认不认识谁时交得出那个人的卡（施工 E-3，设计 42 第三节第 4 条）：是谁、叫法、正文，排在记下的后面
+- 指纹：`363639e0`
+
+```text
+card of {who}: {text}
+```
+
 #### `software/memory/memory_search/nothing.txt`
 
 - 什么时候加进来：`memory_search` 什么都没搜到
@@ -4999,16 +5010,16 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/memory/tools/memory_search.json`
 
 - 什么时候加进来：会话的工具面里有 `memory_search`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
-- token：70（2026-10-07 照开发端点量，十八件一起时的边际份量）
-- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
-- 指纹：`0c271672`
+- token：75（2026-10-07 照开发端点量 70，十八件一起时的边际份量；2026-10-27 施工 E-3 说明多「the people you know」，照 tiktoken `o200k_base` 量多 5）
+- 为什么加：搜记下的和以前别的会话里的对话（回合索引，施工 R-2 上）：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。`forgotten` 连作废的一起；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）；2026-10-27 施工 E-3 说明里写搜得到认识的人，`result` 多 `cards`
+- 指纹：`6e882b67`
 
 ```json
 {
-  "description": "Search your memories and your past conversations in other sessions.",
+  "description": "Search your memories, the people you know and your past conversations in other sessions.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"forgotten":{"type":"boolean","description":"Include retired memories."}},"required":["query"]},
   "clicall": true,
-  "result": "{\"memories\":[{\"id\",\"class\",\"date\",\"text\"}],\"turns\":[{\"date\",\"session\",\"text\"}]}"
+  "result": "{\"memories\":[{\"id\",\"class\",\"date\",\"text\"}],\"turns\":[{\"date\",\"session\",\"text\"}],\"cards\":[{\"who\",\"names\",\"date\",\"text\"}]}"
 }
 ```
 

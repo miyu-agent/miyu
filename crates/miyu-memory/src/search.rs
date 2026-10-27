@@ -1,5 +1,7 @@
-//! `memory_search`（施工 R-3 中）：搜记下的和以前的对话。记下的一条一行在前，以前的对话一条一行在后；什么都没有说一句。
-//! 挑哪些（现在算数的、出处活着的、听众合的）是端口的事，这里只照端口交回的写。
+//! `memory_search`（施工 R-3 中）：搜记下的、认识的人的卡（施工 E-3）和以前的对话。记下的一条一行在前，卡一张一行在中间，
+//! 以前的对话一条一行在后；什么都没有说一句。挑哪些（现在算数的、出处活着的、听众合的）是端口的事，这里只照端口交回的写。
+//!
+//! 卡排在记下的后面：用到几次照开头那几行的编号数（`miyu_recall::uses`，头一个词不是编号的那一行就停），卡排前面就数不到了。
 
 use std::path::Path;
 
@@ -9,7 +11,7 @@ use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_recall::shown_class;
 use miyu_tool::load::{self, LoadError};
-use miyu_tool::{Call, Done, MEMORY_SEARCH, Progress, Running, Searched, Spec, Tool};
+use miyu_tool::{Call, Done, FoundCard, MEMORY_SEARCH, Progress, Running, Searched, Spec, Tool};
 
 use crate::texts::{Texts, line, said};
 use crate::{PACKAGE, TURN_CHARS};
@@ -59,7 +61,7 @@ impl Tool for Search {
                 Err(error) => return texts.refused(&miyu_tool::Refused::Failed(error)),
             };
             let shown = detail(&found, call.offset);
-            if found.memories.is_empty() && found.turns.is_empty() {
+            if found.memories.is_empty() && found.turns.is_empty() && found.cards.is_empty() {
                 return Done::ok(line(&all.nothing, &[]))
                     .said(said("memory_search/nothing", &[]))
                     .data(shown.clone())
@@ -84,6 +86,12 @@ impl Tool for Search {
                     ],
                 ));
             }
+            for card in &found.cards {
+                lines.push(line(
+                    &all.card,
+                    &[("who", &who(card)), ("text", &card.text.replace('\n', " "))],
+                ));
+            }
             for turn in &found.turns {
                 let date = turn.at.local_date(call.offset);
                 lines.push(line(
@@ -95,17 +103,26 @@ impl Tool for Search {
                     ],
                 ));
             }
-            let counts = [
-                ("memories", found.memories.len().to_string()),
-                ("turns", found.turns.len().to_string()),
-            ];
-            let human = said(
-                "memory_search/found",
-                &[
-                    ("memories", counts[0].1.as_str()),
-                    ("turns", counts[1].1.as_str()),
-                ],
+            let (memories, turns, cards) = (
+                found.memories.len().to_string(),
+                found.turns.len().to_string(),
+                found.cards.len().to_string(),
             );
+            // 有卡的另一句（施工 E-3）：没卡的照旧，以前的样子不变。
+            let human = match found.cards.is_empty() {
+                true => said(
+                    "memory_search/found",
+                    &[("memories", &memories), ("turns", &turns)],
+                ),
+                false => said(
+                    "memory_search/found-cards",
+                    &[
+                        ("cards", &cards),
+                        ("memories", &memories),
+                        ("turns", &turns),
+                    ],
+                ),
+            };
             Done::ok(lines.join("\n"))
                 .said(human)
                 .data(shown.clone())
@@ -115,7 +132,7 @@ impl Tool for Search {
 }
 
 /// 给头看的那一份（施工 W-11，`docs/blueprint/memory.md`「工具」）：记忆、对话片段照给她看的先后，日期照会话的时区 `offset`；
-/// 作废的带 `forgotten`，对话片段是原文（不截、不换行），会话写整个编号。
+/// 作废的带 `forgotten`，对话片段是原文（不截、不换行），会话写整个编号；有卡的多 `cards`（是谁、叫法、日期、原文，施工 E-3）。
 fn detail(found: &Searched, offset: UtcOffset) -> serde_json::Value {
     let memories: Vec<serde_json::Value> = found
         .memories
@@ -147,7 +164,32 @@ fn detail(found: &Searched, offset: UtcOffset) -> serde_json::Value {
             })
         })
         .collect();
-    serde_json::json!({ "memories": memories, "turns": turns })
+    let cards: Vec<serde_json::Value> = found
+        .cards
+        .iter()
+        .map(|card| {
+            serde_json::json!({
+                "who": card.who,
+                "names": card.names,
+                "date": card.at.local_date(offset),
+                "text": card.text,
+            })
+        })
+        .collect();
+    let mut shown = serde_json::json!({ "memories": memories, "turns": turns });
+    // 没卡的不写这一格（施工 E-3）：以前的样子不变。
+    if !cards.is_empty() {
+        shown["cards"] = serde_json::Value::Array(cards);
+    }
+    shown
+}
+
+/// 卡上的是谁：有叫法的接在后面，同认出来那一块（`card/person.txt`）。
+fn who(card: &FoundCard) -> String {
+    match card.names.is_empty() {
+        true => card.who.clone(),
+        false => format!("{} ({})", card.who, card.names.join(", ")),
+    }
 }
 
 /// 一段对话写成一行：换行（人的话和她的回答之间的空行）换成 ` / `，截到 [`TURN_CHARS`] 个字，截了的末尾接 `…`。

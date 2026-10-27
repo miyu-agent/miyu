@@ -13,7 +13,10 @@ use miyu_kernel::session::Injection;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::{MemoryId, Source};
 use miyu_store::recall::Room;
-use miyu_tool::{FoundMemory, MEMORIES, MemoryPort, Pending, Refused, Remember, Searched, TURNS};
+use miyu_tool::{
+    CARDS, FoundCard, FoundMemory, MEMORIES, MemoryPort, Pending, Refused, Remember, Searched,
+    TURNS,
+};
 
 use crate::blocking::blocking;
 use crate::config::TurnConfig;
@@ -237,7 +240,8 @@ impl Inner {
         Ok(saved)
     }
 
-    /// 记下的最多 [`MEMORIES`] 条在前，以前的对话最多 [`TURNS`] 段在后：这个会话还在上下文里的几轮不算（施工 R-13 补）。
+    /// 记下的最多 [`MEMORIES`] 条在前，以前的对话最多 [`TURNS`] 段在后：这个会话还在上下文里的几轮不算（施工 R-13 补）；另搜
+    /// 人卡最多 [`CARDS`] 张（施工 E-3）。
     fn search(
         &self,
         query: &str,
@@ -259,6 +263,21 @@ impl Inner {
             .collect();
         let seen = (&self.calls.session, self.compacted);
         let turns = keeper.turns(query, TURNS, Some(seen), near)?;
-        Ok(Searched { memories, turns })
+        // 认识的人的卡（施工 E-3）：这一段上下文里认出来带过的照给，她搜了就是要看。
+        let cards = keeper
+            .search_cards(query, CARDS)?
+            .into_iter()
+            .map(|card| FoundCard {
+                who: card.who,
+                names: card.names,
+                text: card.text,
+                at: card.at,
+            })
+            .collect();
+        Ok(Searched {
+            memories,
+            turns,
+            cards,
+        })
     }
 }

@@ -1,6 +1,7 @@
-//! 搜记下的（施工 R-3 补；R-14 加关键词那一路的下限，R-24 加只照意思那一路照模型的下限，从 `keeper.rs` 拆出来）。
+//! 搜记下的（施工 R-3 补；R-14 加关键词那一路的下限，R-24 加只照意思那一路照模型的下限，从 `keeper.rs` 拆出来）；搜人卡
+//! （施工 E-3）。
 
-use miyu_recall::{Entry, MemoryId, fuse_above};
+use miyu_recall::{Entry, MemoryId, PersonCard, find_cards, fuse_above};
 
 use super::{Keeper, Query, failed};
 
@@ -64,5 +65,26 @@ impl Keeper {
             .filter(|entry| self.shown(entry, forgotten))
             .take(limit)
             .collect())
+    }
+
+    /// 搜人卡（施工 E-3，设计 42 第三节第 4 条），最多 `limit` 张，最相关的在前：只给没作废的；怎么对照
+    /// [`miyu_recall::find_cards`]（是谁、叫法、平台编号，没对上是谁的照正文）。卡在这一间的底账里，没有听众之分（R-29）。
+    ///
+    /// # Errors
+    ///
+    /// 记忆日志开不了。
+    pub fn search_cards(&self, query: &str, limit: usize) -> Result<Vec<PersonCard>, String> {
+        let log = self.log().map_err(failed)?;
+        Ok(log.book(|book| {
+            let cards: Vec<PersonCard> = book
+                .cards()
+                .filter(|card| card.retired.is_none())
+                .cloned()
+                .collect();
+            find_cards(query, &cards, limit)
+                .into_iter()
+                .cloned()
+                .collect()
+        }))
     }
 }

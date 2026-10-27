@@ -24,6 +24,7 @@
     "remember/no-who": "Say who a person memory is about",
     "forget/retired": "Forgot {id}",
     "memory_search/found": "Memories: {memories}, past turns: {turns}",
+    "memory_search/found-cards": "People: {cards}, memories: {memories}, past turns: {turns}",
     "memory_search/nothing": "Nothing found",
     "common/bad-args": "Bad arguments: {error}",
     "common/off": "Memory is off in this session",

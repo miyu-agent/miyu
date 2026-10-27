@@ -6,7 +6,9 @@
 //! 314 个 token，合 1100 字节。施工 R-15 上 `remember` 多一格 `keywords`：2026-10-19 照同一个网关的
 //! `group/auto-deepseek-v4-1-flash` 量，`remember` 149 → 184，三件合计 320 个 token、1143 字节；预算照实测加一成改成 352 个
 //! token，合 1260 字节。施工 E-1 上 `remember` 多一类 `person`、一格 `who`：2026-10-21 照同一个网关量，184 → 225，三件合计
-//! 361 个 token、1298 字节；预算照实测加一成改成 397 个 token，合 1430 字节。加工具、改说明超了，重新量过再改这里和设计。
+//! 361 个 token、1298 字节；预算照实测加一成改成 397 个 token，合 1430 字节。施工 E-3 `memory_search` 的说明多「the people you
+//! know」：2026-10-27 照 tiktoken `o200k_base` 量多 5 个 token，三件合计 1321 字节，预算不变。加工具、改说明超了，重新量过再改
+//! 这里和设计。
 
 use std::path::Path;
 

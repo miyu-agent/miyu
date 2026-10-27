@@ -373,6 +373,7 @@ async fn searching_lists_memories_then_past_conversations() {
                     text: long,
                 },
             ],
+            cards: Vec::new(),
         },
         ..Fake::default()
     });

@@ -37,13 +37,22 @@ pub fn index_terms(text: &str) -> String {
     terms.join(" ")
 }
 
-/// 一句话拼成 FTS5 的 `MATCH` 写法；一个词都切不出来的交回 `None`，不查。
-///
-/// 汉字假名的段，两个字以上的只出挨着的两两（长段里的单字只是噪声），只有一个字的出那个字；别的段照 `unicode61` 的规矩
-/// 切成词（字母、数字连着的算一个），转成小写。去重、照先后留前 [`MAX_QUERY_TERMS`] 个，每个包上双引号、用 ` OR ` 连：中了
-/// 越多、越少见的 bm25 越靠前。双引号也让 `OR`、`NOT`、`NEAR` 这些 FTS5 的关键字只当普通的词。词里只有字母、数字、汉字假名，
-/// 不会有双引号，不用转义。
+/// 一句话拼成 FTS5 的 `MATCH` 写法；一个词都切不出来的交回 `None`，不查。词照 [`query_terms`] 切，每个包上双引号、用 ` OR `
+/// 连：中了越多、越少见的 bm25 越靠前。双引号也让 `OR`、`NOT`、`NEAR` 这些 FTS5 的关键字只当普通的词。词里只有字母、数字、
+/// 汉字假名，不会有双引号，不用转义。
 pub fn query(text: &str) -> Option<String> {
+    let terms = query_terms(text);
+    if terms.is_empty() {
+        return None;
+    }
+    let quoted: Vec<String> = terms.iter().map(|term| format!("\"{term}\"")).collect();
+    Some(quoted.join(" OR "))
+}
+
+/// 一句话切出的查询词（[`query`] 照它拼；搜人卡也照它对，施工 E-3）：汉字假名的段，两个字以上的只出挨着的两两（长段里的
+/// 单字只是噪声），只有一个字的出那个字；别的段照 `unicode61` 的规矩切成词（字母、数字连着的算一个），转成小写。去重、照
+/// 先后留前 [`MAX_QUERY_TERMS`] 个。
+pub fn query_terms(text: &str) -> Vec<String> {
     let mut terms: Vec<String> = Vec::new();
     let mut add = |term: String| {
         if terms.len() < MAX_QUERY_TERMS && !terms.contains(&term) {
@@ -67,11 +76,7 @@ pub fn query(text: &str) -> Option<String> {
             }
         }
     }
-    if terms.is_empty() {
-        return None;
-    }
-    let quoted: Vec<String> = terms.iter().map(|term| format!("\"{term}\"")).collect();
-    Some(quoted.join(" OR "))
+    terms
 }
 
 /// 切开的一段。
@@ -111,7 +116,7 @@ fn segments(text: &str) -> Vec<Segment<'_>> {
 
 /// 算不算汉字、假名：照 Unicode 的区块（施工单 R-1「定了的」第 3 条）。片假名的中点 `・` 是标点，不算；韩文有空格，
 /// `unicode61` 切得开，也不算。
-fn is_cjk(c: char) -> bool {
+pub(crate) fn is_cjk(c: char) -> bool {
     matches!(c,
         '\u{3005}' | '\u{3007}'          // 々 〇
         | '\u{3040}'..='\u{309F}'        // 平假名

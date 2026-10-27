@@ -24,6 +24,7 @@
     "remember/no-who": "知り合いの記憶は誰のことか書いてください",
     "forget/retired": "{id} を忘れた",
     "memory_search/found": "記憶 {memories} 件、会話 {turns} 件",
+    "memory_search/found-cards": "人のカード {cards} 枚、記憶 {memories} 件、会話 {turns} 件",
     "memory_search/nothing": "見つからない",
     "common/bad-args": "引数が正しくない：{error}",
     "common/off": "このセッションでは記憶がオフ",

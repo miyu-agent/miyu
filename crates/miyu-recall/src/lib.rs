@@ -4,6 +4,7 @@
 //!
 //! - [`index_terms`]：存进 FTS5 那一列的词；
 //! - [`query`]：拼成 FTS5 的 `MATCH` 写法；
+//! - [`find_cards`]：照一句话找人卡（施工 E-3）；
 //! - [`embedding`]：本机 embedding 模型的清单（施工 R-5 中，小程序 `miyu-embed` 和核心都照它）；
 //! - [`vector`]、[`fuse()`]：向量的写法、两路合并（施工 R-5 下）；
 //! - [`extract`]、[`merge`]：抽取、合并交回来的怎么读（施工 R-6 上、R-7 上）；
@@ -19,6 +20,7 @@ pub mod embedding;
 pub mod extract;
 mod fuse;
 pub mod kb;
+mod known;
 mod memory;
 pub mod merge;
 pub mod redact;
@@ -29,11 +31,12 @@ pub mod uses;
 pub mod vector;
 
 pub use fuse::{FLOOR, fuse, fuse_above};
+pub use known::find_cards;
 pub use memory::{
     CLASSES, Card, CardRetired, Cleared, EPISODE, Entry, Extracted, INTERRUPTED, KEYWORD_CHARS,
     MemoryBook, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, PERSON, PersonCard, Restored,
     RetireKind, Retired, STOPPED, Saved, Skipped, Source, Summary, Swept, Tagged, from_event,
     indexed, keywords_of, shown_class, to_event,
 };
-pub use terms::{MAX_QUERY_TERMS, index_terms, query};
+pub use terms::{MAX_QUERY_TERMS, index_terms, query, query_terms};
 pub use turns::{Change, TurnFeed, TurnItem, key, replay};

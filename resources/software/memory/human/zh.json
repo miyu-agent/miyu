@@ -24,6 +24,7 @@
     "remember/no-who": "认识的人要写是谁",
     "forget/retired": "忘掉了 {id}",
     "memory_search/found": "找到 {memories} 条记忆、{turns} 段对话",
+    "memory_search/found-cards": "找到 {cards} 张人卡、{memories} 条记忆、{turns} 段对话",
     "memory_search/nothing": "没找到",
     "common/bad-args": "参数不对：{error}",
     "common/off": "这个会话没开记忆",

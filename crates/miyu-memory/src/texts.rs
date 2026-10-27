@@ -31,6 +31,7 @@ pub(crate) struct All {
     pub(crate) memory: Template,
     pub(crate) memory_retired: Template,
     pub(crate) turn: Template,
+    pub(crate) card: Template,
     pub(crate) nothing: Template,
 }
 
@@ -55,6 +56,7 @@ impl Texts {
             memory: text("memory_search", "memory", &["id", "class", "date", "text"])?,
             memory_retired: text("memory_search", "retired", &["id", "class", "date", "text"])?,
             turn: text("memory_search", "turn", &["date", "session", "text"])?,
+            card: text("memory_search", "card", &["who", "text"])?,
             nothing: text("memory_search", "nothing", &[])?,
         })))
     }

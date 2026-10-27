@@ -23,6 +23,9 @@ pub const MEMORIES: usize = 10;
 /// `memory_search` 最多给几段以前的对话。
 pub const TURNS: usize = 5;
 
+/// `memory_search` 最多给几张人卡（施工 E-3）：问的多半是一两个人，一张最多 400 字。
+pub const CARDS: usize = 3;
+
 /// 一条记忆最多几个字（数 Unicode 字符）：旧版实测，整理出来的超过 120 字的多半是技术问答的全文（调研第一节第 1 个坑）。
 /// 她的工具和人经协议、斜杠命令记的照同一个数（施工 R-3 补从 `miyu-memory` 挪来）。出厂值只在这一处，照 `jobs.output_chars`
 /// 的放法，不进快照；以后要改再进配置。
@@ -81,6 +84,21 @@ pub struct Searched {
     pub memories: Vec<FoundMemory>,
     /// 以前的对话，最相关的在前。
     pub turns: Vec<FoundTurn>,
+    /// 认识的人的卡（施工 E-3），最相关的在前：没作废的。
+    pub cards: Vec<FoundCard>,
+}
+
+/// 搜到的一张人卡（施工 E-3）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FoundCard {
+    /// 是谁：平台编号（`qq:10086`），没有平台号的是名字。
+    pub who: String,
+    /// 几个叫法。
+    pub names: Vec<String>,
+    /// 正文。
+    pub text: String,
+    /// 写下的时刻。
+    pub at: Timestamp,
 }
 
 /// 搜到的一条记下的。
