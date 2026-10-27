@@ -203,10 +203,13 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     // 照他看得到的包（施工 U23 末上：关了的不在）。
     let packaged = crate::packages::features(&core.packages_of(owner));
     let images = packaged.image_packages().clone();
+    let connections = packaged.connections().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.scripts_for(owner).iter().map(script_feature));
     if !core.machine_side(owner) {
-        return Features::new(list).needing_images(images);
+        return Features::new(list)
+            .needing_images(images)
+            .connecting(connections);
     }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
@@ -215,7 +218,9 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
         service: Some(server.name.clone()),
         script: None,
     }));
-    Features::new(list).needing_images(images)
+    Features::new(list)
+        .needing_images(images)
+        .connecting(connections)
 }
 
 /// 一个登记上的脚本的功能。

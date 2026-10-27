@@ -1,7 +1,7 @@
 //! 这台机器上装了的功能（施工 F-3 上，设计 `30-插件框架.md` 第三节）：预设照功能开关，工具挂在功能下。表由核心照读成了的
 //! 软件包清单拼好交进来（`miyu-endpoint` 的 `presets::features`），这里只认编号：功能在哪个包、写明了哪几件工具。纯逻辑。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// 一个装了的功能。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,8 +22,11 @@ pub struct Feature {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Features {
     list: Vec<Feature>,
-    /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::blind`]）。
+    /// 清单写了 `needs = ["images"]` 的包（施工 X-25）：显示不了图片的会话里整包当没开（[`crate::preset::Chosen::situated`]）。
     images: BTreeSet<String>,
+    /// 接平台的包（施工 IM-4）：包的编号到清单 `[connection] platform` 写的平台。在自己平台的场所会话里整包不过预设开关
+    /// （[`crate::preset::Chosen::situated`]）。
+    connections: BTreeMap<String, BTreeSet<String>>,
 }
 
 impl Features {
@@ -32,6 +35,7 @@ impl Features {
         Features {
             list,
             images: BTreeSet::new(),
+            connections: BTreeMap::new(),
         }
     }
 
@@ -40,6 +44,30 @@ impl Features {
     pub fn needing_images(mut self, packages: impl IntoIterator<Item = String>) -> Features {
         self.images = packages.into_iter().collect();
         self
+    }
+
+    /// 记下接平台的包和它们接的平台（施工 IM-4，清单的 `[connection] platform`）。
+    #[must_use]
+    pub fn connecting(mut self, connections: BTreeMap<String, BTreeSet<String>>) -> Features {
+        self.connections = connections;
+        self
+    }
+
+    /// 接平台的包和它们接的平台（施工 IM-4）。
+    pub fn connections(&self) -> &BTreeMap<String, BTreeSet<String>> {
+        &self.connections
+    }
+
+    /// 场所 `venue` 的平台（第一个 `:` 前面那一段）是哪几个包接的（施工 IM-4）：本机的、没有平台前缀的一个都没有。
+    pub fn connected_to(&self, venue: &str) -> BTreeSet<String> {
+        let Some((platform, _)) = venue.split_once(':') else {
+            return BTreeSet::new();
+        };
+        self.connections
+            .iter()
+            .filter(|(_, platforms)| platforms.contains(platform))
+            .map(|(package, _)| package.clone())
+            .collect()
     }
 
     /// 要这个地方显示得了图片的包（施工 X-25），照编号排。

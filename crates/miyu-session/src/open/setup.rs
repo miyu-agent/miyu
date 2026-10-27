@@ -37,12 +37,12 @@ pub struct PresetPlaces {
 }
 
 impl PresetPlaces {
-    /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。显示不了图片的（`images` 是假）要图的包
-    /// 照旧扣下（施工 X-25），带上这一轮的全局开关 `switches`（施工 X-27）、这个人关了的包 `off`（施工 U23 末上）。
+    /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。照场所定（`images`、`venue`，施工 X-25、
+    /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）、这个人关了的包 `off`（施工 U23 末上）。
     pub(crate) fn file(
         &self,
         id: &str,
-        images: bool,
+        (images, venue): (bool, &str),
         (switches, off): (BTreeMap<String, bool>, BTreeSet<String>),
     ) -> Option<PresetFile> {
         let mut file = self
@@ -52,9 +52,7 @@ impl PresetPlaces {
             .file
             .following(switches)
             .switching_off(off);
-        if !images {
-            file.withheld = self.features.image_packages().clone();
-        }
+        file.situate(&self.features, images, venue);
         Some(file)
     }
 }
@@ -164,7 +162,7 @@ pub struct Create<'a> {
     /// 属主是不是管理员（施工 5-12）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊）只碰得到自己的工作区
     /// （`11-权限与沙盒.md` 第三节「外部身份」）。
     pub owner_is_admin: bool,
-    /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::blind`]），记进 `session.created`。
+    /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::situated`]），记进 `session.created`。
     pub images: bool,
     /// 自动起标题吗（施工 O-43）：假的记进 `session.created`，这个会话从此不自动起标题。
     pub titles: bool,
@@ -252,15 +250,16 @@ pub struct Load<'a> {
     pub owner_is_admin: bool,
 }
 
-/// 场所显示不了图片的会话（施工 X-25）：预设里要图的包整包扣下（[`Chosen::blind`]）。没交装了的功能的（测试里造的）照旧。
-pub(crate) fn blinded(
+/// 照场所定预设（[`Chosen::situated`]）：显示不了图片的会话里要图的包整包扣下（施工 X-25），接这个场所平台的包整包开着（施工
+/// IM-4）。没交装了的功能的（测试里造的）照旧。
+pub(crate) fn situated(
     preset: Option<Chosen>,
-    images: bool,
+    (images, venue): (bool, &str),
     features: Option<&Features>,
 ) -> Option<Chosen> {
-    match (images, features) {
-        (false, Some(features)) => preset.map(|chosen| chosen.blind(features)),
-        _ => preset,
+    match features {
+        Some(features) => preset.map(|chosen| chosen.situated(features, images, venue)),
+        None => preset,
     }
 }
 

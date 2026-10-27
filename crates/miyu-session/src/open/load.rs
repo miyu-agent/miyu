@@ -334,10 +334,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 crate::switches::of(&values),
                 crate::packages_off::of(&values),
             );
+            let site = venue.clone();
             blocking(move || {
                 let file = wanted
                     .zip(places)
-                    .and_then(|(id, places)| places.file(&id, images, looked));
+                    .and_then(|(id, places)| places.file(&id, (images, site.as_str()), looked));
                 let found =
                     skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
                 (skills::shelves(&found), skills::names(&found))

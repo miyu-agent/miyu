@@ -437,10 +437,7 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
         .following(crate::switches::of(values))
         .switching_off(crate::packages_off::of(values));
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
-    let chosen = match refresh.images {
-        true => chosen,
-        false => chosen.blind(features),
-    };
+    let chosen = chosen.situated(features, refresh.images, refresh.venue.as_str());
     // 以前的快照记的是包的编号（施工 F-3 上）：照现在的功能读一样的算没改，不为改了写法换一次快照。
     Ok(match pin.means_the_same(&chosen.pin(), features) {
         true => Preset::Same(chosen),

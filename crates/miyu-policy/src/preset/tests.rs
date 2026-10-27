@@ -347,7 +347,8 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
     let features = installed().needing_images(["onebot".to_string()]);
     let file = read("[features]\nmemory = false\n").unwrap();
     let seeing = Chosen::new("full".to_string(), file.clone(), &features);
-    let blind = Chosen::new("full".to_string(), file, &features).blind(&features);
+    let blind =
+        Chosen::new("full".to_string(), file, &features).situated(&features, false, "local");
     assert!(seeing.file.opens_in("qq", "onebot"), "看得了图的照旧");
     assert!(!blind.file.opens_in("qq", "onebot"), "扣下的包不开");
     assert!(!blind.file.keeps("qq", "onebot", "send"), "工具不留");
@@ -355,6 +356,67 @@ fn a_blind_session_withholds_the_packages_that_need_images() {
     assert_eq!(blind.off, ["memory"], "扣下的不算没开，预设关的照算");
     assert_eq!(blind.digest, seeing.digest, "指纹不变");
     assert_eq!(blind.pin(), seeing.pin(), "快照记的一样");
+}
+
+/// 接平台的包在自己平台的场所会话里不过开关（施工 IM-4，接入通讯平台设计 06 第 4.6 节第 3 样）：预设关了它的功能、单件关了它的
+/// 工具，在它平台的场所里照开、照留，不算进没开的；别的平台的、本机的照预设；显示不了图片扣下的、这个人关了的照旧不开；指纹不变。
+#[test]
+fn a_platform_package_ignores_the_preset_in_its_own_venues() {
+    let connections = std::collections::BTreeMap::from([(
+        "onebot".to_string(),
+        BTreeSet::from(["qq".to_string(), "tg".to_string()]),
+    )]);
+    let features = installed().connecting(connections);
+    assert_eq!(
+        features.connected_to("tg:group:1"),
+        BTreeSet::from(["onebot".to_string()])
+    );
+    let file = read(
+        "[features]
+qq = false
+memory = false
+
+[tools]
+send = false
+",
+    )
+    .unwrap();
+    let chosen = |venue: &str| {
+        Chosen::new("full".to_string(), file.clone(), &features).situated(&features, true, venue)
+    };
+    for venue in ["qq:group:1", "tg:private:2"] {
+        let own = chosen(venue);
+        assert!(own.file.opens_in("qq", "onebot"), "{venue}");
+        assert!(own.file.keeps("qq", "onebot", "send"), "{venue}");
+        assert_eq!(own.off, ["memory"], "{venue}：不算进没开的，别的照预设");
+    }
+    for venue in ["local", "discord:group:3"] {
+        let other = chosen(venue);
+        assert!(!other.file.opens_in("qq", "onebot"), "{venue}");
+        assert_eq!(other.off, ["memory", "qq"], "{venue}");
+    }
+    let plain = Chosen::new("full".to_string(), file.clone(), &features);
+    assert_eq!(
+        chosen("qq:group:1").pin().digest,
+        plain.pin().digest,
+        "指纹不变"
+    );
+    let held = installed()
+        .connecting(features.connections().clone())
+        .needing_images(["onebot".to_string()]);
+    let blind =
+        Chosen::new("full".to_string(), file.clone(), &held).situated(&held, false, "qq:group:1");
+    assert!(
+        !blind.file.opens_in("qq", "onebot"),
+        "显示不了图片的照旧扣下"
+    );
+    let off = Chosen::new(
+        "full".to_string(),
+        file.clone().switching_off(["onebot".to_string()]),
+        &features,
+    )
+    .situated(&features, true, "qq:group:1");
+    assert!(!off.file.opens_in("qq", "onebot"), "这个人关了的照旧不开");
 }
 
 /// 每个人关掉的包（施工 U23 末上）：它的功能、工具都不开，功能算进没开的那几个（快照记的不一样，开着的会话下一轮换上）；
@@ -379,7 +441,7 @@ fn packages_switched_off_are_withheld() {
         chosen.off
     );
     assert_ne!(chosen.pin(), plain.pin(), "快照记的不一样");
-    let blind = chosen.blind(&features);
+    let blind = chosen.situated(&features, false, "local");
     assert!(!blind.file.opens_in("qq", "onebot"), "再扣要图的不冲掉");
 }
 

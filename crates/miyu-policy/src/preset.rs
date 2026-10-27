@@ -67,8 +67,12 @@ pub struct PresetFile {
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
-    /// （[`Chosen::blind`]），不进 [`PresetFile::digest`]、不叠层。
+    /// （[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
+    /// 这个会话里不过开关的包（施工 IM-4，接入通讯平台设计 06 第 4.6 节第 3 样）：接平台的包在自己平台的场所会话里整包开着，
+    /// `[features]`、`[software]`、`[tools]`、全局开关、`unlisted` 都不管它；扣下的、这个人关了的照旧不开。不是文件里写的：
+    /// 会话照场所算好放进来（[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
+    pub own: BTreeSet<String>,
     /// 这个人关了的包（施工 U23 末上，个人设置 `packages.<编号>.off`，[`PresetFile::switching_off`]）：同扣下的包都不开；和扣下的
     /// 不一样的是它的功能算进没开的那几个，改了快照记的不一样，开着的会话下一个回合换上工具面。不是文件里写的，不进
     /// [`PresetFile::digest`]、不叠层。
@@ -97,6 +101,14 @@ impl PresetFile {
         lower
     }
 
+    /// 照场所放进扣下的、不过开关的包（[`Chosen::situated`]）。
+    pub fn situate(&mut self, features: &Features, images: bool, venue: &str) {
+        if !images {
+            self.withheld = features.image_packages().clone();
+        }
+        self.own = features.connected_to(venue);
+    }
+
     /// 没列出来的软件开不开：几层都没写的是开。功能全开是默认，`[tools]` 里只关一两件的写法也是建在「其余都开」上的。
     pub fn unlisted(&self) -> Unlisted {
         self.unlisted.unwrap_or(Unlisted::On)
@@ -109,7 +121,7 @@ impl PresetFile {
         if self.withheld.contains(package) || self.switched_off.contains(package) {
             return false;
         }
-        self.decided(feature, package).0
+        self.own.contains(package) || self.decided(feature, package).0
     }
 
     /// 编号和包一样的功能 `feature` 开不开：人格记忆、人设遵循提醒这种没写功能、整个包算一个的（[`PresetFile::opens_in`]）。
@@ -119,7 +131,8 @@ impl PresetFile {
 
     /// 包 `package` 里归功能 `feature` 的工具 `tool` 留不留在工具面上：功能开着，这一件也没被 `[tools]` 关掉（走查 C1）。
     pub fn keeps(&self, feature: &str, package: &str, tool: &str) -> bool {
-        self.opens_in(feature, package) && !self.tools_off.contains(tool)
+        self.opens_in(feature, package)
+            && (self.own.contains(package) || !self.tools_off.contains(tool))
     }
 
     /// 叠好的文件的指纹（施工 P-2 下）：记进快照，回合开始时执行器照它认出预设的文件改了。名字、说明照以前的写法算
@@ -212,11 +225,11 @@ impl Chosen {
         self
     }
 
-    /// 场所显示不了图片（施工 X-25）：`features` 里要图的包整包扣下，当没开；也不算进没开的那几个（「装了没开」那一行是说
-    /// 换个预设就有，这里换了也没有）。指纹不变。
+    /// 照场所定（施工 X-25、IM-4）：场所 `venue` 显示不了图片的（`images` 是假），`features` 里要图的包整包扣下，当没开，也不算
+    /// 进没开的那几个（「装了没开」那一行是说换个预设就有，这里换了也没有）；接这个场所平台的包整包开着、不过开关。指纹不变。
     #[must_use]
-    pub fn blind(mut self, features: &Features) -> Chosen {
-        self.file.withheld = features.image_packages().clone();
+    pub fn situated(mut self, features: &Features, images: bool, venue: &str) -> Chosen {
+        self.file.situate(features, images, venue);
         self.off = off(&self.file, features);
         self
     }

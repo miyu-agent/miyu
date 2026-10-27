@@ -78,10 +78,7 @@ pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Cho
         .following(crate::switches::of(values))
         .switching_off(crate::packages_off::of(values));
     let chosen = Chosen::new(found.id, file, features).keeping_memory(memory, features);
-    Ok(match refresh.images {
-        true => chosen,
-        false => chosen.blind(features),
-    })
+    Ok(chosen.situated(features, refresh.images, refresh.venue.as_str()))
 }
 
 /// 换了人格的知识库：照新人格查。没接知识库的没有。

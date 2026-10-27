@@ -10,7 +10,7 @@ use miyu_policy::preset::{Chosen, MEMORY};
 use miyu_tool::Edition;
 
 use super::Create;
-use super::setup::blinded;
+use super::setup::situated;
 use crate::agents::{Agents, Holds, Offers, Reach, Site, persona_choices};
 use crate::blocking::blocking;
 use crate::config::Turning;
@@ -39,7 +39,11 @@ pub(super) struct Opened {
 pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
     // 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的）当都装着。
     let features = setup.presets.as_ref().map(|places| &places.features);
-    let preset = blinded(setup.preset.clone(), setup.images, features);
+    let preset = situated(
+        setup.preset.clone(),
+        (setup.images, setup.venue.as_str()),
+        features,
+    );
     let installed = |feature| features.is_none_or(|features| features.installed(feature));
     // 预设没开记忆的，范围一律 `off`（施工 P-2 中，走查 E2：开不开记忆归预设）。没装人格记忆的也是（施工 F-3 上）。
     // 无人格的也有记忆（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：跟着人格的落在无人格那一间。
