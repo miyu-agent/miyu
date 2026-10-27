@@ -5,7 +5,7 @@
 ### 一、做了什么
 
 1. **内核**：新事件 `dream.ended`（`event/dream.rs`），`body` 是 `given`、`revised`、`retired`、`summary`，叫停的多 `stopped: true`，没叫停的不写。新命令 `Command::EndDream`（`session/dream.rs`）记一条，不带回合编号（回合进行中也不带），落了盘回应；封存了照收。不进她的上下文（渲染时不出）。
-2. **会话层**：`DreamSessions::close(session, keep, result: Option<DreamResult>)`，`DreamResult` 就是 `DreamEnded`。合并任务现在交 `None`，由记忆会话接上自己算出的结果。actor 推过 `dream.ended` 的报会话列表这一项变了。
+2. **会话层**：`DreamSessions::close(session, keep, result: Option<DreamResult>)`，`DreamResult` 就是 `DreamEnded`。合并任务照回执交：合完的、叫停的交这一趟的数，出错、会话那一路断了的交 `None`（记忆会话 D-2补 接上）。actor 推过 `dream.ended` 的报会话列表这一项变了。
 3. **端点**：`close` 收到结果的，先以记忆模块的名义、命令编号 `<会话>/ended` 记 `dream.ended`，记不上的记一行运行日志，照样删旧的几趟。
 4. **索引**：多一列 `dream_result`（版本 13），照最后一条 `dream.ended` 算。`session.list`、`sessions.changed` 的 `dream` 多 `result`（`body` 原样），没跑完、崩了没记上的不写。
 5. **顺带**：`session.rs` 到了 500 行，回应的三个小函数挪进 `action.rs`。
