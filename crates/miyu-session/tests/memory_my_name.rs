@@ -228,7 +228,7 @@ async fn a_dream_counts_her_name_in_the_venue_as_her() {
         "她在群里的名字不认成同名群友：{row}"
     );
     assert!(
-        asked.contains(&format!("{PEOPLE} qq:2.")),
+        asked.contains(&format!("{PEOPLE} qq:2 (小林).")),
         "她不在认识的人里：{asked}"
     );
     let written = cards(&home);

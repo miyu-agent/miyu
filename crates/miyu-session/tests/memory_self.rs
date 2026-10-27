@@ -144,8 +144,8 @@ async fn a_dream_never_cards_her_or_gives_her_things_to_a_namesake() {
     assert!(!row.contains("qq:3888"), "她的名字不认成那个群友：{row}");
     assert!(asked.contains(" person qq:2 "), "{asked}");
     assert!(
-        asked.contains(&format!("{PEOPLE} qq:2, qq:3888.")),
-        "她不在认识的人里：{asked}"
+        asked.contains(&format!("{PEOPLE} qq:2 (小林), qq:3888.")),
+        "她不在认识的人里，她的名字也不列成同名群友的名字（施工 E-1 修六）：{asked}"
     );
     let written = cards(&home);
     let whom: Vec<&str> = written.iter().map(|card| card.who.as_str()).collect();

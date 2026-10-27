@@ -120,7 +120,11 @@ impl MergeJob {
             }
         }
         if !people.is_empty() {
-            let named = people.iter().cloned().collect::<Vec<_>>().join(", ");
+            let named = people
+                .iter()
+                .map(|who| listed(who, &known.names_of(who)))
+                .collect::<Vec<_>>()
+                .join(", ");
             text.push_str(&format!(
                 "\n\n{}",
                 say(&texts.people, &[("people", &named)]).trim_end()
@@ -185,6 +189,18 @@ impl MergeJob {
                 Vec::new()
             }
         }
+    }
+}
+
+/// 合卡那一段里列的一个人（施工 E-1 修六）：是谁后面接他在出处里用过的名字（[`super::people::People::names_of`]，最近用的在
+/// 前，同卡的叫法去重、最多 [`miyu_recall::merge::NAMES`] 个），写法同搜到的卡（`qq:10086 (小林, 林林)`）；没有名字的只写是谁。
+/// 记忆正文里写的是名片，带着说明的（「我不是 X」「本群最大 baka」）模型分不清哪截是名字，列出来才对得上（2026-10-27 主人旧
+/// 主群真数据离线比：带说明名片的人卡 48% 把名片里的话写成他的事，列出来加一句以后 5%）。
+fn listed(who: &str, names: &[String]) -> String {
+    let names = miyu_recall::merge::names(who, names, &[]);
+    match names.is_empty() {
+        true => who.to_string(),
+        false => format!("{who} ({})", names.join(", ")),
     }
 }
 

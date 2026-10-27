@@ -117,7 +117,10 @@ async fn a_dream_writes_a_card_for_the_people_in_the_batch() {
         asked.contains(" person qq:2 "),
         "她记的名字照会话日志认成平台编号：{asked}"
     );
-    assert!(asked.contains(&format!("{PEOPLE} qq:2.")), "{asked}");
+    assert!(
+        asked.contains(&format!("{PEOPLE} qq:2 (小林).")),
+        "列人时接他在出处里用过的名字（施工 E-1 修六）：{asked}"
+    );
     assert!(
         asked.ends_with("Their current cards:\nqq:2: 在群里认识的。"),
         "接着他现在的卡写：{asked}"
