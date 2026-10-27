@@ -28,7 +28,7 @@ use miyu_recall::{Entry, MemoryId, Merging, Swept};
 use miyu_store::recall::Room;
 use miyu_tool::load::{self, LoadError};
 
-use super::{DreamRoom, DreamSpec, Extraction, Keeper};
+use super::{DreamResult, DreamRoom, DreamSpec, Extraction, Keeper};
 use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
@@ -290,7 +290,14 @@ impl MergeJob {
         let mut trip = None;
         let done = self.batches(check, &mut trip).await;
         if let Some(trip) = trip {
-            self.close_trip(trip).await;
+            let result = done.as_ref().ok().map(|done| DreamResult {
+                given: done.given,
+                revised: done.revised,
+                retired: done.retired,
+                summary: done.summary,
+                stopped: done.stopped,
+            });
+            self.close_trip(trip, result).await;
         }
         done
     }
@@ -425,13 +432,13 @@ impl MergeJob {
         }
     }
 
-    /// 这一趟跑完了（设计 41 DS9，施工 D-1 下的 `close`）：照 `memory.dream_keep` 只留这一间最近几趟。收不成的记一行，不影响
-    /// 回执。
-    async fn close_trip(&self, trip: ask::Trip) {
+    /// 这一趟跑完了（设计 41 DS9，施工 D-1 下的 `close`）：照 `memory.dream_keep` 只留这一间最近几趟，交上这一趟做了什么
+    /// （`result`，施工 DR-1、D-2 补：合完的、叫停的是回执的几样数，出错没跑完的是空的，核心照它记不记 `dream.ended`）。收不成
+    /// 的记一行，不影响回执。
+    async fn close_trip(&self, trip: ask::Trip, result: Option<DreamResult>) {
         let keep = MemorySettings::from(&self.config.resolved.values()).dream_keep;
         let keep = usize::try_from(keep).unwrap_or(0);
-        // 这一趟做了什么由记忆这一头算（施工 DR-1 的另一半），还没接上的不记。
-        if let Err(why) = trip.sessions.close(trip.session, keep, None).await {
+        if let Err(why) = trip.sessions.close(trip.session, keep, result).await {
             tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session not closed");
         }
     }

@@ -1,166 +1,22 @@
-//! 合并跑在整理会话里（施工 D-2，设计 `41-整理会话.md`）：真记忆日志、假的会话表（记下开的、每一批的字，照剧本交回）。
+//! 合并跑在整理会话里（施工 D-2，设计 `41-整理会话.md`）：真记忆日志、假的会话表（`support/dreaming.rs`）。
 //! 接了会话表的：真有要合的才开、一趟一个会话，一批一轮（`<会话>/dream/<n>`），请求的字遮过 key；答了的照旧读、核对、落，
 //! `merging` 带会话，回执带会话；会话出错结束的数一次失败、连着三次跳过；会话自己停了、人叫停了（打断那一轮）的放弃这一批、
 //! 不数；会话那一路断了的这一趟停、不数。没接的照旧走一次性入口（别的测试）。
 
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use miyu_http::testkit::Server;
-use miyu_kernel::id::{CommandId, SessionId};
-use miyu_kernel::time::UtcOffset;
+use miyu_kernel::id::CommandId;
 use miyu_recall::merge::{Revised, Seen};
 use miyu_recall::{MemoryEvent, MergeFailed, STOPPED, from_event};
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{
-    DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec, Dreamed, Keeper, Listener,
-    NotDreamed, Pending, Turn, Watched,
-};
-use tokio::sync::Notify;
+use miyu_session::{DreamResult, DreamRoom, Dreamed, NotDreamed};
 
+use crate::support::dreaming::*;
 use crate::support::extracting::*;
-use crate::support::meaning::{catalog, chat, persona, save};
+use crate::support::meaning::{catalog, chat, save};
 use crate::support::*;
-
-/// 会话表那一头照剧本怎么交回一批。
-#[derive(Debug, Clone)]
-enum Step {
-    Answer(String),
-    Fail(&'static str),
-    /// 会话自己停了（例如有人直接打断了整理会话）。
-    Stopped,
-    /// 会话那一路断了：核心在停。
-    Gone,
-    /// 一直等到叫停。
-    Hold,
-    /// 边流边交（`Watched`），交完了答这一整段：`Gate` 那里等测试放行。
-    Stream(Vec<Piece>),
-}
-
-/// 流里的一样。
-#[derive(Debug, Clone)]
-enum Piece {
-    Text(&'static str),
-    Restart,
-    /// 等测试放行（`Fake::gate`）。
-    Gate,
-}
-
-/// 假的会话表：记下开的、每一批、每一次叫停。
-#[derive(Debug, Default)]
-struct Fake {
-    opened: Mutex<Vec<DreamSpec>>,
-    batches: Mutex<Vec<(SessionId, CommandId, String)>>,
-    stops: Mutex<Vec<CommandId>>,
-    steps: Mutex<VecDeque<Step>>,
-    stopped: Notify,
-    holding: Notify,
-    gate: Notify,
-    closed: Mutex<Vec<(SessionId, usize)>>,
-}
-
-fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(PoisonError::into_inner)
-}
-
-fn session_id() -> SessionId {
-    SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").expect("合写法")
-}
-
-impl DreamSessions for Fake {
-    fn open(&self, spec: DreamSpec) -> Pending<'_, Result<SessionId, String>> {
-        lock(&self.opened).push(spec);
-        Box::pin(async { Ok(session_id()) })
-    }
-
-    fn batch<'a>(
-        &'a self,
-        session: SessionId,
-        id: CommandId,
-        text: String,
-        watch: &'a mut (dyn FnMut(Watched<'_>) + Send),
-    ) -> Pending<'a, Result<DreamBatch, String>> {
-        lock(&self.batches).push((session, id, text));
-        let step = lock(&self.steps).pop_front().expect("剧本里还有");
-        Box::pin(async move {
-            match step {
-                Step::Stream(pieces) => {
-                    let mut answer = String::new();
-                    for piece in pieces {
-                        match piece {
-                            Piece::Text(text) => {
-                                answer.push_str(text);
-                                watch(Watched::Text(text));
-                            }
-                            Piece::Restart => {
-                                answer.clear();
-                                watch(Watched::Restart);
-                            }
-                            Piece::Gate => self.gate.notified().await,
-                        }
-                    }
-                    Ok(DreamBatch::Answered(answer))
-                }
-                Step::Answer(text) => Ok(DreamBatch::Answered(text)),
-                Step::Fail(why) => Ok(DreamBatch::Failed(why.to_string())),
-                Step::Stopped => Ok(DreamBatch::Stopped),
-                Step::Gone => Err("core stopping".to_string()),
-                Step::Hold => {
-                    self.holding.notify_one();
-                    self.stopped.notified().await;
-                    Ok(DreamBatch::Stopped)
-                }
-            }
-        })
-    }
-
-    fn close(
-        &self,
-        session: SessionId,
-        keep: usize,
-        _result: Option<DreamResult>,
-    ) -> Pending<'_, Result<usize, String>> {
-        lock(&self.closed).push((session, keep));
-        Box::pin(async { Ok(0) })
-    }
-
-    fn stop(&self, _session: SessionId, id: CommandId) -> Pending<'_, Result<(), String>> {
-        lock(&self.stops).push(id);
-        self.stopped.notify_one();
-        Box::pin(async { Ok(()) })
-    }
-}
-
-/// 场地接上抽取（合并的一次性入口指着一台什么都不交的服务器：接了会话表的不该去问它），装上照 `steps` 交回的会话表。
-async fn world(steps: Vec<Step>) -> (Home, Arc<Fake>, Server) {
-    let server = Server::start(Vec::new()).await;
-    let mut home = Home::new();
-    organizer(&mut home, &server, "extract_turns = 5\n");
-    let fake = Arc::new(Fake {
-        steps: Mutex::new(steps.into()),
-        ..Fake::default()
-    });
-    assert!(home.memory.give_dream_sessions(fake.clone()), "头一次接上");
-    (home, fake, server)
-}
-
-fn keeper(home: &Home) -> Keeper {
-    Keeper::new(&home.memory, persona(), Listener::Owner(alice()))
-}
-
-/// 不经会话的那一趟：照场地这时的配置。
-async fn dream(home: &Home) -> Result<Dreamed, NotDreamed> {
-    let source = Arc::clone(&*home.configs.borrow());
-    let config = Arc::new(Turn::new(source.with_project("~"), source));
-    keeper(home)
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
-        .await
-}
 
 /// 这一间记过的整理事件。
 fn merges(home: &Home) -> Vec<MemoryEvent> {
@@ -267,7 +123,7 @@ async fn nothing_to_dream_opens_no_session() {
 
 #[tokio::test]
 async fn a_failed_turn_counts_and_the_third_skips_the_batch() {
-    let (home, _fake, _server) = world(vec![
+    let (home, fake, _server) = world(vec![
         Step::Fail("error: model_failed"),
         Step::Fail("error: model_failed"),
         Step::Fail("error: model_failed"),
@@ -295,6 +151,11 @@ async fn a_failed_turn_counts_and_the_third_skips_the_batch() {
             .any(|event| matches!(event, MemoryEvent::Merged(merged) if merged.failed)),
         "连着第三次跳过这一批"
     );
+    assert_eq!(
+        lock(&fake.results).clone(),
+        vec![None, None, None],
+        "出错没跑完的不交结果（施工 D-2 补）"
+    );
 }
 
 #[tokio::test]
@@ -306,14 +167,30 @@ async fn a_lost_session_stops_the_trip_without_counting() {
     let dreamed = dream(&home).await.expect("下次接着合");
     assert_eq!(dreamed.revised, 1);
     assert_eq!(lock(&fake.opened).len(), 2, "一趟开一个");
+    assert_eq!(
+        lock(&fake.results).first(),
+        Some(&None),
+        "断了的那一趟不交结果"
+    );
 }
 
 #[tokio::test]
 async fn a_session_stopped_on_its_own_gives_up_the_batch() {
-    let (home, _fake, _server) = world(vec![Step::Stopped, revise_m1()]).await;
+    let (home, fake, _server) = world(vec![Step::Stopped, revise_m1()]).await;
     save(&home, "用户养了一只猫");
     let dreamed = dream(&home).await.expect("交回了");
     assert!(dreamed.stopped, "{dreamed:?}");
+    assert_eq!(
+        lock(&fake.results).clone(),
+        vec![Some(DreamResult {
+            given: 0,
+            revised: 0,
+            retired: 0,
+            summary: false,
+            stopped: true,
+        })],
+        "叫停的照交，带 stopped（施工 D-2 补）"
+    );
     assert_eq!(
         failures(&home)
             .iter()
@@ -497,4 +374,47 @@ async fn closing_keeps_as_many_as_configured() {
     save(&home, "用户养了一只猫");
     dream(&home).await.expect("整理了");
     assert_eq!(lock(&fake.closed).clone(), vec![(session_id(), 3)]);
+}
+
+/// 合完的一趟把回执的几样数交给 `close`（施工 DR-1、D-2 补）：核心照它记 `dream.ended`，会话列表写 `dream.result`。
+#[tokio::test]
+async fn a_finished_dream_hands_what_it_did_to_close() {
+    let (home, fake, _server) = world(vec![Step::Answer(
+        serde_json::json!({
+            "revised": [{"id": "m1", "text": "用户 2026-10-09 养了一只猫"}],
+            "retired": [{"id": "m2", "kind": "repeat", "by": "m1", "why": "重复 m1"}],
+            "summary": "用户养了一只猫。"
+        })
+        .to_string(),
+    )])
+    .await;
+    save(&home, "用户养了一只猫");
+    save(&home, "用户有只猫");
+    save(&home, "用户在学日语");
+    let dreamed = dream(&home).await.expect("整理了");
+    let expected = DreamResult {
+        given: 3,
+        revised: 1,
+        retired: 1,
+        summary: true,
+        stopped: false,
+    };
+    assert_eq!(
+        (
+            dreamed.given,
+            dreamed.revised,
+            dreamed.retired,
+            dreamed.summary,
+            dreamed.stopped
+        ),
+        (
+            expected.given,
+            expected.revised,
+            expected.retired,
+            expected.summary,
+            expected.stopped
+        ),
+        "回执"
+    );
+    assert_eq!(lock(&fake.results).clone(), vec![Some(expected)], "同回执");
 }
