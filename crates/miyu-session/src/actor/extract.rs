@@ -38,7 +38,7 @@ impl Actor {
         }))
     }
 
-    /// 群里每一轮带多少（字节预算、最多几条，施工 O-13 再补）：定这一段里人这边每一句是谁说的（[`planned`]）。
+    /// 群里每一轮带多少（字节预算、最多几条，施工 O-13 再补）：定这一段里人这边每一句是谁说的（[`planned()`]）。
     fn voicing(&self) -> (Option<usize>, Option<usize>) {
         let limit = self
             .persona
