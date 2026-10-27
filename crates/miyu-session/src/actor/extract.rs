@@ -6,7 +6,8 @@
 //! 2. 响了、还闲着、没有一次在路上：在阻塞线程里读记忆日志里它抽到了哪、会话日志里那以后的事件（不占 actor，不碰 actor 手里
 //!    的日志）。
 //! 3. 读回来、还是那个闹钟、还闲着：拼一份留着一切的历史（`History::whole`，压缩替代掉的也在），交给会话的组装器渲染这一段，
-//!    定怎么办，派出去。读的时候来了新一轮的这一次作废，等下次闲了再来。
+//!    定怎么办，派出去。读的时候来了新一轮的这一次作废，等下次闲了再来。拼、渲染、定在阻塞线程里做（施工 PERF-4，`planned.rs`），
+//!    不占会话。
 //! 4. 一直不闲的会话（施工 E-5）：每送完一批看一眼，上次开始抽以后结束了 `memory.extract_max_turns` 轮、或者最早那一轮结束
 //!    满 `memory.extract_max_wait`，不等闲就上一次不等闲的：不看闲不闲、新一轮开始不撤它，读回来只取到读的那一刻结束了的
 //!    最后一轮（正在跑的那一轮不交，留给下次）。抽取本来就不进内核、不挡会话。
@@ -14,7 +15,6 @@
 use std::sync::Arc;
 
 use miyu_kernel::event::Event;
-use miyu_kernel::history::History;
 use miyu_kernel::id::Seq;
 use tracing::Instrument;
 
@@ -23,11 +23,10 @@ use tokio::sync::oneshot;
 use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
-use crate::memory::{
-    Dreamed, Extractor, Hush, Job, NotDreamed, Voices, called, ended_only, plan, remembered_since,
-};
+use crate::memory::{Dreamed, Extractor, Hush, Job, NotDreamed, called, ended_only};
 use crate::port::Back;
 use crate::settings::MemorySettings;
+use planned::{Planning, planned};
 
 impl Actor {
     /// 群会话的群聊近况预算（施工 R-13 上，`memory.md` 第六条第 4 款）：抽取照它每一轮只带她当时看到的那几句；不是群会话的
@@ -39,15 +38,14 @@ impl Actor {
         }))
     }
 
-    /// 这一段人这边每一句是谁说的、群里每一轮带多少（字节预算、最多几条，施工 O-13 再补）。
-    fn voices(&self, events: &[miyu_kernel::event::Event]) -> Voices {
-        let mut voices = Voices::of(events, self.group_budget());
-        voices.limit = self
+    /// 群里每一轮带多少（字节预算、最多几条，施工 O-13 再补）：定这一段里人这边每一句是谁说的（[`planned`]）。
+    fn voicing(&self) -> (Option<usize>, Option<usize>) {
+        let limit = self
             .persona
             .as_ref()
             .and_then(|refresh| refresh.snapshot.group.as_ref()?.recent.as_ref()?.limit)
             .map(|limit| usize::try_from(limit).unwrap_or(usize::MAX));
-        voices
+        (self.group_budget(), limit)
     }
 
     /// 抽取照称呼写主人（施工 R-6 再修）：这个会话的快照带了「关于你」才用配置 `config` 里的称呼。不带的（群聊、别人的
@@ -223,26 +221,11 @@ impl Actor {
         if forced {
             ended_only(&mut events);
         }
-        let mut history = History::whole();
-        for event in events {
-            history.append(event);
-        }
-        let spoken = self.session.spoken_in(&history, after);
-        let remembered = remembered_since(&history, after);
-        let voices = self.voices(history.events());
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
         let min_turns = usize::try_from(settings.extract_turns).unwrap_or(1);
         let name = self.owner_name(&config);
-        let plan = plan(
-            &spoken,
-            &remembered,
-            min_turns,
-            offset,
-            &extraction.texts,
-            &voices,
-            name.as_deref(),
-        );
+        let (assembler, (budget, limit)) = (self.session.assembler(), self.voicing());
         let job = Job {
             offset,
             dream: None,
@@ -268,7 +251,25 @@ impl Actor {
                 })
             },
         };
-        tokio::spawn(job.run(plan).in_current_span());
+        // 拼历史、渲染、定怎么办挪进阻塞线程（施工 PERF-4）：大会话上要几毫秒，不占会话；定好了直接派出去。用的都是这一刻
+        // 拿好的，同原来在 actor 上一口气做完的一样。
+        let (runtime, span) = (tokio::runtime::Handle::current(), tracing::Span::current());
+        tokio::task::spawn_blocking(move || {
+            let plan = planned(
+                events,
+                after,
+                &Planning {
+                    assembler: assembler.as_ref(),
+                    budget,
+                    limit,
+                    min_turns,
+                    offset,
+                    texts: &job.extraction.texts,
+                    name: name.as_deref(),
+                },
+            );
+            runtime.spawn(job.run(plan).instrument(span));
+        });
     }
 }
 
@@ -347,22 +348,21 @@ impl Actor {
             tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
-        let mut history = History::whole();
-        for event in events {
-            history.append(event);
-        }
-        let spoken = self.session.spoken_in(&history, after);
-        let remembered = remembered_since(&history, after);
-        let voices = self.voices(history.events());
         let name = self.owner_name(&config);
-        let plan = plan(
-            &spoken,
-            &remembered,
-            1,
-            offset,
-            &extraction.texts,
-            &voices,
-            name.as_deref(),
+        let (budget, limit) = self.voicing();
+        let assembler = self.session.assembler();
+        let plan = planned(
+            events,
+            after,
+            &Planning {
+                assembler: assembler.as_ref(),
+                budget,
+                limit,
+                min_turns: 1,
+                offset,
+                texts: &extraction.texts,
+                name: name.as_deref(),
+            },
         );
         let job = Job {
             offset,
@@ -381,3 +381,5 @@ impl Actor {
         tokio::spawn(job.run(plan).in_current_span());
     }
 }
+
+mod planned;
