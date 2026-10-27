@@ -15,11 +15,11 @@ use reqwest::Url;
 use tokio::sync::Semaphore;
 
 use crate::fetch::{Fetcher, Hop, Missed};
-use crate::guard::Guard;
-use crate::proxy::Proxies;
 use crate::rules::{self, Reading};
 use crate::{Asker, TARGET};
 use convert::{Kind, Unconverted};
+use miyu_http::guard::Guard;
+use miyu_http::proxy::Proxies;
 
 /// 同时至多几份在换 Markdown。
 static CONVERTING: Semaphore = Semaphore::const_new(2);

@@ -1,7 +1,6 @@
 use std::net::Ipv6Addr;
 
 use super::*;
-use crate::testkit::Testing;
 
 /// 照桥的 `guard.rs` 测试搬过来的表；`198.18.0.0/15` 改成公网（`net.md`「怎么走」第 5 条）。
 #[test]

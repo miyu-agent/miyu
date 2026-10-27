@@ -15,8 +15,8 @@
 | `crates/miyu-net/`（第 3 层，执行器） | 地址闸、钉住解析好的地址、代理、自己跟跳转、读到 `</head>`、挖元数据、认图 |
 | `crates/miyu-net/src/lib.rs` | `LinkPreview`：懒读规矩、记着抓过的、图存成 blob、交回卡片 |
 | `crates/miyu-net/src/rules.rs` | 读 `link_preview.json` |
-| `crates/miyu-net/src/guard.rs` | 地址闸三层：样子、解析、IP 段 |
-| `crates/miyu-net/src/proxy.rs` | 这一跳走不走代理：照环境变量，和请求模型同一套读法 |
+| `crates/miyu-http/src/guard.rs`（施工 U23 下下从 `miyu-net` 挪下来） | 地址闸三层：样子、解析、IP 段；替成员下软件源（`miyu-http` 的 `guarded.rs`）也照它，规矩只有一份 |
+| `crates/miyu-http/src/proxy.rs`（同上） | 这一跳走不走代理：照环境变量，和请求模型同一套读法 |
 | `crates/miyu-net/src/fetch.rs`、`fetch/clients.rs` | 一跳一跳地抓：每一跳过闸、钉地址或者交给代理、自己跟跳转；客户端复用 |
 | `crates/miyu-net/src/body.rs` | 读到 `</head>` 或者 `<body` 为止，YouTube 读到要的几样都有为止；读一张图、一份接口的回应；照开头的魔数认图 |
 | `crates/miyu-net/src/html.rs` | 挖元数据：标题、简介、图、站名、图标；找某一个标签的某一格（站要的那几样） |
@@ -259,7 +259,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-net/src/guard/tests.rs` | IP 段的表（照桥的 `guard.rs` 测试，`198.18.0.0/15` 改成公网，映射、NAT64、6to4 照里面那个 IPv4 判）；地址的样子；主机写的就是 IP 的不查 DNS；解析出一个不是公网的整个不去 |
+| `crates/miyu-http/src/guard/tests.rs` | IP 段的表（照桥的 `guard.rs` 测试，`198.18.0.0/15` 改成公网，映射、NAT64、6to4 照里面那个 IPv4 判）；地址的样子；主机写的就是 IP 的不查 DNS；解析出一个不是公网的整个不去 |
 | `crates/miyu-net/src/html/tests.rs` | 元数据的先后、站名、图标、相对地址、截断、实体；坏的标记不崩；`<head>` 里没挖到东西时接着往正文找 `og:title`；`<head>` 里已经有 `<title>` 的不去正文找；`meta_is_og_title` 的键、`name` 退路、内容不空 |
 | `crates/miyu-net/src/body/tests.rs` | 只收五种图、不收 SVG；读到 `</head>`、`<body` 就停；`HeadSignals` 边读边找 `<title>`、不空的 `og:title`，标签跨在接缝上不丢、处理过的不重扫 |
 | `crates/miyu-net/src/remember/tests.rs` | 三种结果各记多久；满了整个清空 |

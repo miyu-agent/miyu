@@ -25,8 +25,8 @@ use reqwest::Url;
 
 use crate::TARGET;
 use crate::fetch::clients::{Clients, Way};
-use crate::proxy::Proxies;
 use cooldown::Cooldowns;
+use miyu_http::proxy::Proxies;
 use rules::{Kind, Needs, Rules, Source};
 
 pub use extension::{Answered, SearchPort, Unanswered};

@@ -14,7 +14,12 @@ miyu-kernel = { path = "../miyu-kernel" }
 # 理由见 docs/construction/3-5-发请求与读流（上）.md「我定的」：异步里流式读取、超时、打断最顺；
 # TLS 用 rustls，证书认系统的和 webpki 自带的两份，不依赖 OpenSSL。
 reqwest = { version = "0.12", default-features = false, features = ["http2", "rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
-tokio = { version = "1", features = ["macros", "time"] }
+tokio = { version = "1", features = ["macros", "net", "time"] }
+# 这一跳走不走代理（施工 U23 下下从 miyu-net 挪下来的 `proxy.rs`）：reqwest 自己照环境变量走代理用的就是它的 `Matcher`，
+# `NO_PROXY` 的读法和请求模型一字不差。本来就在依赖图里（reqwest 带进来的）。MIT。
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
+# `Matcher` 收的地址是 `http::Uri`。本来就在依赖图里。MIT 或 Apache-2.0。
+http = "1"
 # 整个进程共用一份 TLS 配置（施工 V-5 上）：照 reqwest 自己的拼法，证书只读一次。三个都是 reqwest 本来就带进来的同一版、
 # 同一套功能，没有新包。
 rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "ring"] }

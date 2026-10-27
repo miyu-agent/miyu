@@ -1,5 +1,6 @@
 //! 地址闸（`net.md`「怎么走」第 3 条，照桥的 `guard.rs`，桥照的是旧版 `tools/net_guard.rs`）：网址是模型写的、
-//! 别人发来的，核心照它去连，这里挡住内网、本机。三层依次过，每一跳都过：
+//! 别人发来的，核心照它去连，这里挡住内网、本机。施工 U23 下下从 `miyu-net` 挪下来：成员自己的软件源也照它连
+//! （[`crate::Guarded`]），替成员上网的规矩只有这一份。三层依次过，每一跳都过：
 //!
 //! 1. 样子：只认 http、https；不带用户名、密码；`localhost`、`*.localhost`、`*.local` 不去；主机写的就是 IP 的
 //!    照第 3 层判（`127.1`、`0x7f000001`、`2130706433` 这些写法读网址时已经规整成 `127.0.0.1`）。
@@ -17,7 +18,7 @@ use reqwest::Url;
 
 /// 这一跳过了闸以后，主机在哪。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Resolved {
+pub enum Resolved {
     /// 主机写的就是 IP（已经过了第 3 层）：照它连，不用解析、不用钉。
     Literal,
     /// 本机解析出来的地址，都是公网的：不走代理的钉进这一跳。
@@ -28,31 +29,31 @@ pub(crate) enum Resolved {
 
 /// 过不了闸。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Refused;
+pub struct Refused;
 
 /// 地址闸：平时就是三层；`testkit` 开关打开时多一个测试的口子（`testkit.rs` 的 `Testing`）。
 #[derive(Debug, Clone, Default)]
-pub(crate) struct Guard {
+pub struct Guard {
     #[cfg(any(test, feature = "testkit"))]
-    testing: Option<crate::testkit::Testing>,
+    testing: Option<Testing>,
 }
 
 impl Guard {
     /// 平时的闸：没有任何口子。
-    pub(crate) fn new() -> Guard {
+    pub fn new() -> Guard {
         Guard::default()
     }
 
     /// 测试的闸：回环当不当公网、照哪张表解析，照 `testing`。
     #[cfg(any(test, feature = "testkit"))]
-    pub(crate) fn testing(testing: crate::testkit::Testing) -> Guard {
+    pub fn testing(testing: Testing) -> Guard {
         Guard {
             testing: Some(testing),
         }
     }
 
     /// 这个地址能不能去：公网的能去（第 3 层）。测试打开了「回环当公网」的，回环也能去。
-    pub(crate) fn allows(&self, ip: IpAddr) -> bool {
+    pub fn allows(&self, ip: IpAddr) -> bool {
         #[cfg(any(test, feature = "testkit"))]
         if self
             .testing
@@ -66,7 +67,7 @@ impl Guard {
     }
 
     /// 第 1 层（主机写的就是 IP 的连第 3 层一起判），不解析。
-    pub(crate) fn shape(&self, url: &Url) -> bool {
+    pub fn shape(&self, url: &Url) -> bool {
         if !matches!(url.scheme(), "http" | "https")
             || !url.username().is_empty()
             || url.password().is_some()
@@ -88,7 +89,7 @@ impl Guard {
     /// # Errors
     ///
     /// 过不了闸（[`Refused`]）：样子不合规、没有端口、解析出来的地址有一个不是公网的。
-    pub(crate) async fn pass(&self, url: &Url, budget: Duration) -> Result<Resolved, Refused> {
+    pub async fn pass(&self, url: &Url, budget: Duration) -> Result<Resolved, Refused> {
         if !self.shape(url) {
             return Err(Refused);
         }
@@ -136,7 +137,7 @@ fn is_loopback(ip: IpAddr) -> bool {
 }
 
 /// 是不是公网地址（第 3 层）：表照桥的 `guard.rs`，测性能的段 `198.18.0.0/15` 算公网（第 5 条）。
-pub(crate) fn is_public(ip: IpAddr) -> bool {
+pub fn is_public(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(ip) => {
             let [a, b, c, _] = ip.octets();
@@ -191,6 +192,33 @@ pub(crate) fn is_public(ip: IpAddr) -> bool {
 /// 两段 16 位拼回一个 IPv4。
 fn v4_of(high: u16, low: u16) -> Ipv4Addr {
     Ipv4Addr::from((u32::from(high) << 16) | u32::from(low))
+}
+
+/// 测试时闸和代理照这个走，不照平时的（`net.md`「起草时定的」第 3 条，施工 U23 下下从 `miyu-net` 的 `testkit.rs` 挪来）：本机的
+/// 假服务器在回环上，地址闸本来不许去；测试也不该碰真的 DNS、不该看开发机上设的代理。只在 `testkit` 开关打开时编进去。
+#[cfg(any(test, feature = "testkit"))]
+#[derive(Debug, Clone, Default)]
+pub struct Testing {
+    /// 回环的地址（`127.0.0.0/8`、`::1`，嵌着回环 IPv4 的 IPv6 也算）当公网：本机的假服务器在回环上。别的段照旧。
+    pub loopback_public: bool,
+    /// 主机名只照这张表解析（名字，地址），不问系统：表里没有的当解析不出来。
+    pub hosts: Vec<(String, IpAddr)>,
+    /// 代理照这个，不读环境变量：`None` 是不走代理。
+    pub proxy: Option<String>,
+    /// `NO_PROXY` 照这个，写法和环境变量的一样。
+    pub no_proxy: String,
+}
+
+#[cfg(any(test, feature = "testkit"))]
+impl Testing {
+    /// 照表解析：名字不分大小写，表里没有的是空的。
+    pub fn lookup(&self, name: &str, port: u16) -> Vec<SocketAddr> {
+        self.hosts
+            .iter()
+            .filter(|(host, _)| host.eq_ignore_ascii_case(name))
+            .map(|(_, ip)| SocketAddr::new(*ip, port))
+            .collect()
+    }
 }
 
 #[cfg(test)]

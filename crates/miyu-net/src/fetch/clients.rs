@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use reqwest::Client;
 use reqwest::redirect::Policy;
 
-use crate::proxy::Via;
+use miyu_http::proxy::Via;
 
 /// 这一跳怎么连。
 #[derive(Debug, Clone)]

@@ -18,11 +18,11 @@ use reqwest::{Response, Url};
 use tokio::time::Instant;
 
 use crate::body::{self, Until};
-use crate::guard::{Guard, Resolved};
-use crate::proxy::Proxies;
 use crate::rules::{Challenge, Fetching, Rules};
 use crate::{Asker, Why};
 use clients::{Clients, Way};
+use miyu_http::guard::{Guard, Resolved};
+use miyu_http::proxy::Proxies;
 
 /// 照规矩抓：闸、代理、复用的客户端、请求头。
 pub(crate) struct Fetcher {

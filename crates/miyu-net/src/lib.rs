@@ -13,9 +13,7 @@
 mod body;
 mod document;
 mod fetch;
-mod guard;
 mod html;
-mod proxy;
 mod remember;
 mod rules;
 mod search;
@@ -35,8 +33,8 @@ use miyu_store::blob::Blobs;
 use reqwest::Url;
 
 use fetch::Fetcher;
-use guard::Guard;
-use proxy::Proxies;
+use miyu_http::guard::Guard;
+use miyu_http::proxy::Proxies;
 use remember::{Keep, Remember};
 use rules::{Clip, Sites};
 
