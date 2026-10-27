@@ -24,6 +24,10 @@ pub const SCHEDULE_WAKEUP: &str = "schedule_wakeup";
 /// 一个会话里她最多同时挂几个定时任务（设计 45 第三节第 3 条）：照谁建的数，超了报错叫她先删。
 pub const PER_SESSION: usize = 20;
 
+/// 一个账号最多挂几个定时任务（施工 J-3 上，项目主人 2026-10-27 定）：人建、她建、包建合计，熔断性质的安全上限；到了只拒新建，
+/// 已有的照跑。
+pub const PER_ACCOUNT: usize = 200;
+
 /// 动态循环最短隔多久再醒（秒）：短了照它。
 pub const WAKEUP_MIN: u64 = 60;
 
@@ -99,6 +103,8 @@ pub enum ScheduleAnswer {
 pub enum ScheduleRefused {
     /// 她在这个会话里已经挂满了 [`PER_SESSION`] 个。
     Full,
+    /// 这个账号已经挂满了 [`PER_ACCOUNT`] 个（施工 J-3 上）。
+    AccountFull,
     /// cron 写法不对：唤醒表说的原话。
     BadCron(String),
     /// 这个会话上没有这个编号。

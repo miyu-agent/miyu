@@ -852,6 +852,7 @@ flowchart LR
 | DR-1 | 整理会话记下结果 | 内核新事件 `dream.ended`、命令 `EndDream`（不带回合、落盘回应）；`DreamSessions::close` 多 `result`，有的以记忆模块的名义记；索引多 `dream_result`（版本 13）；`session.list`、`sessions.changed` 的 `dream` 多 `result` | `DR-1-整理会话记下结果.md` |
 | IM-1 上 | 成员也能用、清单的 scope | 清单多 `[process] scope`（`system`、`account`）、`[package] members`；系统开关多 `members`，带进程又没勾的包对不在管理员组的人当关了；`package.members`；`package.list` 多 `members`（只给管理员）；设计 06 U23 第 5 条改成桥每人一份 | `IM-1-按账号起扩展进程.md` |
 | IM-1 中上 | 每人一份的扩展进程 | 进程按（包，账号）；每人一份的以那个人的身份连进来、能力和他取交集、数据在他家里、握手交他的配置；用到时拉起（`start_for`、`provide/reach.rs`），头一回装上先替机主起一份登记工具；工具调用照会话属主转 | `IM-1-按账号起扩展进程.md` |
+| J-3 上 | 定时的时区和上限 | cron 多可选 `zone`（建时记下，不交的记本机的，照它读）；每账号 200 个上限（`too_many_schedules`，她拿到 `account-full`）；每次新开的工作目录建时就查（`problem: cwd`） | `J-3-定时的时区上限和通知.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |

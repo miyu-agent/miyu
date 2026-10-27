@@ -26,6 +26,7 @@ use miyu_kernel::time::Timestamp;
 use miyu_store::root::DataRoot;
 use miyu_store::schedules::{self as table, NewSchedule, Opened, Schedules as Table};
 use miyu_store::sqlite::DbError;
+use miyu_tool::PER_ACCOUNT;
 
 pub use clock::{Clock, Sleep, SystemClock};
 pub use miyu_store::schedules::{Creator, Last, Loop, Schedule, Target, When};
@@ -62,6 +63,10 @@ pub enum ScheduleError {
     TooShort,
     /// 没有这个编号。
     Unknown,
+    /// 交的时区不认识（施工 J-3 上）。
+    Zone,
+    /// 这个账号挂满了 [`PER_ACCOUNT`] 个（施工 J-3 上）。
+    TooMany,
     /// 这个账号的唤醒表这一回用不了（坏了又开不了空的、版本比这一版新）。
     Unusable,
     /// 读写库出错。
@@ -117,13 +122,26 @@ impl Schedules {
     /// # Errors
     ///
     /// cron 读不成、算不出第一次、隔得太短；表用不了、写不了。
-    pub fn add(&self, account: &AccountId, wanted: Wanted) -> Result<Schedule, ScheduleError> {
-        match &wanted.when {
-            When::Cron { cron, .. } => {
+    pub fn add(&self, account: &AccountId, mut wanted: Wanted) -> Result<Schedule, ScheduleError> {
+        match &mut wanted.when {
+            When::Cron {
+                cron, zone: named, ..
+            } => {
                 next::parse(cron).map_err(ScheduleError::Cron)?;
+                // 时区建时记下（施工 J-3 上）：交了的要认得，没交的记这台机器这一刻的。
+                match named {
+                    Some(name) => {
+                        TimeZone::get(name).map_err(|_| ScheduleError::Zone)?;
+                    }
+                    None => *named = zone().iana_name().map(str::to_string),
+                }
             }
             When::Every { every } if *every < MIN_EVERY => return Err(ScheduleError::TooShort),
             When::At { .. } | When::Every { .. } => {}
+        }
+        // 熔断性质的安全上限（施工 J-3 上）：人建、她建、包建合计；到了只拒新建。
+        if self.list(account)?.len() >= PER_ACCOUNT {
+            return Err(ScheduleError::TooMany);
         }
         let now = self.now();
         let first = match wanted.first {
@@ -365,6 +383,8 @@ impl std::fmt::Display for ScheduleError {
             ScheduleError::NoNext => f.write_str("no next time"),
             ScheduleError::TooShort => write!(f, "shorter than {MIN_EVERY} seconds"),
             ScheduleError::Unknown => f.write_str("unknown schedule"),
+            ScheduleError::Zone => f.write_str("unknown time zone"),
+            ScheduleError::TooMany => write!(f, "more than {PER_ACCOUNT} schedules"),
             ScheduleError::Unusable => f.write_str("schedules unusable"),
             ScheduleError::Db(error) => error.fmt(f),
         }

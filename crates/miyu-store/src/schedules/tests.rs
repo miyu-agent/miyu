@@ -69,6 +69,7 @@ fn a_schedule_is_written_read_changed_and_removed() {
                 when: When::Cron {
                     cron: "0 8 * * *".to_string(),
                     recurring: false,
+                    zone: None,
                 },
                 prompt: "早报".to_string(),
                 target: Target::New {

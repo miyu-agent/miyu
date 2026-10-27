@@ -80,11 +80,15 @@ async fn she_creates_lists_and_deletes_on_her_session() {
         },
         "跑在这个会话上"
     );
+    // 时区建时记下这台机器的（施工 J-3 上）。
     assert_eq!(
         row.when,
         When::Cron {
             cron: "*/5 * * * *".to_string(),
-            recurring: true
+            recurring: true,
+            zone: jiff::tz::TimeZone::try_system()
+                .ok()
+                .and_then(|zone| zone.iana_name().map(str::to_string)),
         }
     );
     assert!(row.next.is_some(), "照现在往后算了下一次");

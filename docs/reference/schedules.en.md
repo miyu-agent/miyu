@@ -17,7 +17,7 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | Name | Meaning |
 |---|---|
 | `id` | `t1`, `t2`…, counting up per account; ids are never reused |
-| `when` | When: `{"cron": "0 8 * * *", "recurring": true}` (standard five fields, in the core machine's time zone), `{"at": "<time>"}` (once), `{"every": <seconds>}` (at least 60) |
+| `when` | When: `{"cron": "0 8 * * *", "recurring": true, "zone": "Asia/Tokyo"}` (standard five fields, read in `zone`: the one given when it was added, or the core machine's zone at that moment; older ones without `zone` use the core machine's), `{"at": "<time>"}` (once), `{"every": <seconds>}` (at least 60) |
 | `prompt` | The line handed to the session, as written |
 | `target` | Where: `{"session": <id>}`, or `{"new": {"persona", "preset", "cwd"}}` (a new session each time; `persona` `null` means none) |
 | `by` | Who added it: `{"kind": "person", "account"}`, the AI in a session `{"kind": "model", "session"}`, a package `{"kind": "package", "package"}` |
@@ -34,11 +34,11 @@ Absent fields are left out. Times are written as elsewhere: `2026-10-26T08:00:00
 
 | Param | Type | Meaning |
 |---|---|---|
-| `when` | object, required | One of the three, as above; `recurring` only with `cron` |
+| `when` | object, required | One of the three, as above; `recurring` and `zone` (an IANA time zone name such as `Asia/Tokyo`) only with `cron` |
 | `prompt` | string, required | Not empty |
 | `target` | object, optional | `{"session": <id>}` or `{"new": {"persona"?, "preset"?, "cwd"?}}`, one of the two; omitted means a new session each time. Missing `persona`, `preset` are fixed to the current defaults; missing `cwd` is the home directory |
 
-Response `{"schedule": <item>}`. A bad one adds nothing and gets `bad_params` with `data.problem`: `when` (not exactly one kind, or a bad time), `cron` (unreadable), `past` (the time has passed), `short` (under 60 seconds), `prompt` (empty), `session` (no such session, or not yours), `target` (both kinds written). An unknown persona or preset gets `unknown_persona`, `unknown_preset`, as when opening a session.
+Response `{"schedule": <item>}`. A bad one adds nothing and gets `bad_params` with `data.problem`: `when` (not exactly one kind, or a bad time), `cron` (unreadable), `past` (the time has passed), `short` (under 60 seconds), `prompt` (empty), `session` (no such session, or not yours), `target` (both kinds written). An unknown persona or preset gets `unknown_persona`, `unknown_preset`, as when opening a session. Also `zone` (unknown time zone) and `cwd` (the new-session folder is missing, not a folder, or inside the data root somewhere not yours). An account that already has 200 schedules (added by people, the AI and packages together; a safety limit) gets `too_many_schedules`: remove some first; existing ones keep running.
 
 ## `schedule.list`
 

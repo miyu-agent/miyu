@@ -16,7 +16,7 @@ use miyu_kernel::time::UtcOffset;
 use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{
-    CRON_CREATE, CRON_DELETE, CRON_LIST, Call, Done, PER_SESSION, Progress, Running,
+    CRON_CREATE, CRON_DELETE, CRON_LIST, Call, Done, PER_ACCOUNT, PER_SESSION, Progress, Running,
     ScheduleAnswer, ScheduleAsk, ScheduleRefused, Scheduled, Spec, Tool,
 };
 
@@ -139,6 +139,7 @@ struct Texts {
     common: Common,
     created: miyu_kernel::template::Template,
     full: miyu_kernel::template::Template,
+    account_full: miyu_kernel::template::Template,
     bad_cron: miyu_kernel::template::Template,
     not_found: miyu_kernel::template::Template,
     deleted: miyu_kernel::template::Template,
@@ -154,6 +155,7 @@ impl Texts {
             common: Common::load(resources, PACKAGE)?,
             created: cron("created", &["id", "next"])?,
             full: cron("full", &["limit"])?,
+            account_full: cron("account-full", &["limit"])?,
             bad_cron: cron("bad-cron", &["error"])?,
             not_found: cron("not-found", &["id"])?,
             deleted: cron("deleted", &["id"])?,
@@ -220,6 +222,14 @@ impl Texts {
             ScheduleRefused::Full => {
                 let limit = PER_SESSION.to_string();
                 PACKAGE.error(&self.full, "cron/full", &[("limit", &limit)])
+            }
+            ScheduleRefused::AccountFull => {
+                let limit = PER_ACCOUNT.to_string();
+                PACKAGE.error(
+                    &self.account_full,
+                    "cron/account-full",
+                    &[("limit", &limit)],
+                )
             }
             ScheduleRefused::BadCron(error) => {
                 PACKAGE.error(&self.bad_cron, "cron/bad-cron", &[("error", &error)])

@@ -23,6 +23,7 @@ fn cron(text: &str, recurring: bool) -> When {
     When::Cron {
         cron: text.to_string(),
         recurring,
+        zone: None,
     }
 }
 

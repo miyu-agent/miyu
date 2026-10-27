@@ -1,4 +1,4 @@
-//! 下一次是什么时候（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：cron 照标准五段写法、照本机时区算（croner，夏令时照
+//! 下一次是什么时候（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：cron 照标准五段写法、照记下的时区算（施工 J-3 上，以前建的照本机的）（croner，夏令时照
 //! OCPS 规范：跳过的那一小时里的时点挪到跳过以后，重复的那一小时只算一次）；某个时刻一次的就是那一刻；每隔一阵的照上一次往后
 //! 数。错过的不补：照现在往后找。
 
@@ -29,7 +29,9 @@ pub fn parse(cron: &str) -> Result<Cron, String> {
 /// 算不出的（cron 读不成、往后再没有了）没有。
 pub fn first(when: &When, now: Timestamp, zone: &TimeZone) -> Option<Timestamp> {
     match when {
-        When::Cron { cron, .. } => cron_after(cron, now, zone),
+        When::Cron {
+            cron, zone: named, ..
+        } => cron_after(cron, now, &read_in(named, zone)),
         When::At { at } => (*at > now).then_some(*at),
         When::Every { every } => plus(now, *every),
     }
@@ -39,7 +41,9 @@ pub fn first(when: &When, now: Timestamp, zone: &TimeZone) -> Option<Timestamp> 
 /// 往后找；某个时刻一次的没有下一次。
 pub fn after(when: &When, due: Timestamp, now: Timestamp, zone: &TimeZone) -> Option<Timestamp> {
     match when {
-        When::Cron { cron, .. } => cron_after(cron, now, zone),
+        When::Cron {
+            cron, zone: named, ..
+        } => cron_after(cron, now, &read_in(named, zone)),
         When::At { .. } => None,
         When::Every { every } => {
             let step = i64::try_from(every.checked_mul(1000)?).ok()?;
@@ -73,6 +77,14 @@ fn cron_after(cron: &str, now: Timestamp, zone: &TimeZone) -> Option<Timestamp> 
         .to_zoned(zone.clone());
     let next = cron.find_next_occurrence(&start, false).ok()?;
     Timestamp::from_unix_millis(next.timestamp().as_millisecond())
+}
+
+/// cron 照哪个时区读（施工 J-3 上）：记下的那个，读不成（以前建的没有、名字不认识了）的照 `fallback`。
+fn read_in(named: &Option<String>, fallback: &TimeZone) -> TimeZone {
+    named
+        .as_deref()
+        .and_then(|name| TimeZone::get(name).ok())
+        .unwrap_or_else(|| fallback.clone())
 }
 
 /// `at` 往后 `seconds` 秒。

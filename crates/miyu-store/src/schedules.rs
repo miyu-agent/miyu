@@ -77,12 +77,16 @@ pub enum Creator {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum When {
-    /// cron，照本机时区。
+    /// cron，照 `zone` 那个时区读。
     Cron {
         /// 标准五段的写法。
         cron: String,
         /// 假的跑一次就删。
         recurring: bool,
+        /// 照哪个时区读（施工 J-3 上）：IANA 的名字，例如 `Asia/Tokyo`。建时记下（人交的，不交的照这台机器那一刻的）；以前建的
+        /// 没有，照本机的。
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        zone: Option<String>,
     },
     /// 某个时刻一次。
     At {

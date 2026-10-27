@@ -18,6 +18,7 @@
   "said": {
     "cron/created": "{id} を作成",
     "cron/full": "このセッションには定期実行が {limit} 件あります",
+    "cron/account-full": "このアカウントには定期実行が {limit} 件あります",
     "cron/bad-cron": "cron の書き方が正しくありません：{error}",
     "cron/not-found": "{id} はありません",
     "cron/deleted": "{id} を削除",

@@ -64,7 +64,11 @@ impl Port {
                     by: Creator::Model {
                         session: session.clone(),
                     },
-                    when: When::Cron { cron, recurring },
+                    when: When::Cron {
+                        cron,
+                        recurring,
+                        zone: None,
+                    },
                     prompt,
                     target: Target::Session {
                         session: session.clone(),
@@ -132,7 +136,9 @@ fn dynamic<'a>(here: &[&'a Schedule], session: &SessionId) -> Option<&'a Schedul
 /// 给她看的那几样。
 fn shown(one: &Schedule) -> Scheduled {
     let (when, recurring) = match &one.when {
-        When::Cron { cron, recurring } => (cron.clone(), *recurring),
+        When::Cron {
+            cron, recurring, ..
+        } => (cron.clone(), *recurring),
         When::Every { every } => (format!("every {every}s"), true),
         When::At { at } => (at.to_string(), false),
     };
@@ -156,8 +162,10 @@ fn refused(error: ScheduleError) -> ScheduleRefused {
         ScheduleError::Cron(why) => ScheduleRefused::BadCron(why),
         ScheduleError::Unknown => ScheduleRefused::NotFound,
         ScheduleError::NoNext => ScheduleRefused::BadCron("no future time matches".to_string()),
-        ScheduleError::TooShort | ScheduleError::Unusable | ScheduleError::Db(_) => {
-            ScheduleRefused::Unavailable
-        }
+        ScheduleError::TooMany => ScheduleRefused::AccountFull,
+        ScheduleError::TooShort
+        | ScheduleError::Zone
+        | ScheduleError::Unusable
+        | ScheduleError::Db(_) => ScheduleRefused::Unavailable,
     }
 }

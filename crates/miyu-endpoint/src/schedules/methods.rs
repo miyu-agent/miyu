@@ -105,6 +105,8 @@ pub(crate) struct AddParams {
 struct WhenParams {
     cron: Option<String>,
     recurring: Option<bool>,
+    /// cron 照哪个时区读（施工 J-3 上）：IANA 的名字；不写的记这台机器的。只能和 `cron` 一起写。
+    zone: Option<String>,
     at: Option<String>,
     every: Option<u64>,
 }
@@ -152,15 +154,18 @@ async fn wanted(
         WhenParams {
             cron: Some(cron),
             recurring,
+            zone,
             at: None,
             every: None,
         } => When::Cron {
             cron,
             recurring: recurring.unwrap_or(true),
+            zone,
         },
         WhenParams {
             cron: None,
             recurring: None,
+            zone: None,
             at: Some(at),
             every: None,
         } => {
@@ -173,6 +178,7 @@ async fn wanted(
         WhenParams {
             cron: None,
             recurring: None,
+            zone: None,
             at: None,
             every: Some(every),
         } => When::Every { every },
@@ -233,6 +239,12 @@ async fn opened(core: &Arc<Core>, account: &AccountId, new: NewParams) -> Result
     let preset = crate::presets::resolve(core, account, new.preset.as_deref())
         .await?
         .id;
+    // 写了的建时就查（施工 J-3 上）：到点开不成的每次只记一句 `not_opened`，人不知道。
+    if let Some(cwd) = &new.cwd
+        && !usable(core, account, cwd)
+    {
+        return Err(Refusal::bad_schedule("cwd"));
+    }
     let cwd = new.cwd.unwrap_or_else(|| {
         let (_, own) = crate::sessions::roots(core, account);
         own.to_string_lossy().into_owned()
@@ -244,6 +256,17 @@ async fn opened(core: &Arc<Core>, account: &AccountId, new: NewParams) -> Result
     })
 }
 
+/// 每次新开的工作目录用得了：照开会话的同一套换成真实位置（`~` 照家目录），要是一个在的目录，不落在数据根里别人的地方
+/// （数据根里只有他自己的工作区能当工作目录，`sessions::pick`）。
+fn usable(core: &Core, account: &AccountId, cwd: &str) -> bool {
+    let home = crate::workspace::home(core);
+    let Ok(real) = miyu_fs::resolve(std::path::Path::new("/"), home.as_deref(), cwd) else {
+        return false;
+    };
+    let (data_root, own) = crate::sessions::roots(core, account);
+    real.is_dir() && (!miyu_fs::within(&real, &data_root) || miyu_fs::within(&real, &own))
+}
+
 /// 建、改出的错照协议说。
 fn refusal(error: ScheduleError) -> Refusal {
     match error {
@@ -251,6 +274,8 @@ fn refusal(error: ScheduleError) -> Refusal {
         ScheduleError::NoNext => Refusal::bad_schedule("past"),
         ScheduleError::TooShort => Refusal::bad_schedule("short"),
         ScheduleError::Unknown => Refusal::UNKNOWN_SCHEDULE,
+        ScheduleError::Zone => Refusal::bad_schedule("zone"),
+        ScheduleError::TooMany => Refusal::TOO_MANY_SCHEDULES,
         ScheduleError::Unusable | ScheduleError::Db(_) => Refusal::INTERNAL,
     }
 }
@@ -258,8 +283,16 @@ fn refusal(error: ScheduleError) -> Refusal {
 /// 一项的写法（`docs/blueprint/schedules.md` 第五节第 4 条）。
 pub(crate) fn entry(schedule: &Schedule) -> Value {
     let (when, recurring) = match &schedule.when {
-        When::Cron { cron, recurring } => {
-            (json!({"cron": cron, "recurring": recurring}), *recurring)
+        When::Cron {
+            cron,
+            recurring,
+            zone,
+        } => {
+            let mut when = json!({"cron": cron, "recurring": recurring});
+            if let Some(zone) = zone {
+                when["zone"] = json!(zone);
+            }
+            (when, *recurring)
         }
         When::At { at } => (json!({"at": at}), false),
         When::Every { every } => (json!({"every": every}), true),

@@ -93,10 +93,15 @@ async fn schedules_are_added_listed_paused_resumed_and_cancelled() {
         .await;
     let daily = &daily["result"]["schedule"];
     assert_eq!(daily["id"], "t2");
-    assert_eq!(
-        daily["when"],
-        json!({"cron": "0 8 * * *", "recurring": false})
-    );
+    // 没交时区的记这台机器的（施工 J-3 上）。
+    let mut when = json!({"cron": "0 8 * * *", "recurring": false});
+    if let Some(zone) = jiff::tz::TimeZone::try_system()
+        .ok()
+        .and_then(|zone| zone.iana_name().map(str::to_string))
+    {
+        when["zone"] = json!(zone);
+    }
+    assert_eq!(daily["when"], when);
     assert_eq!(daily["recurring"], false);
     let new = &daily["target"]["new"];
     assert_eq!(new["preset"], "full", "不写的照这时的默认预设：{daily}");

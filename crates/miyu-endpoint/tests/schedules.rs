@@ -316,6 +316,7 @@ async fn bad_ones_are_refused_and_pause_resume_cancel_work() {
         When::Cron {
             cron: "0 0 8 * * *".to_string(),
             recurring: true,
+            zone: None,
         },
         When::Every { every: 59 },
         When::At { at: at(START) },

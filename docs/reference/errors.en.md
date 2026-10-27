@@ -104,6 +104,7 @@ Chinese version: [errors.md](errors.md).
 | `reason` | When | `data` |
 |---|---|---|
 | `unknown_schedule` | This account has no such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume` (construction J-1 lower) | |
+| `too_many_schedules` | This account already has 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add` (construction J-3 upper). Remove some first; existing ones keep running | |
 | `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |
 
 ## Packages, extensions, commands

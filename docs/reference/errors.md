@@ -104,6 +104,7 @@
 | `reason` | 什么时候 | `data` |
 |---|---|---|
 | `unknown_schedule` | 这个账号没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`（施工 J-1 下） | |
+| `too_many_schedules` | 这个账号的定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`（施工 J-3 上）。先删几个，已有的照跑 | |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 
 ## 软件包、扩展、命令

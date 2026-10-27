@@ -32,7 +32,7 @@
 
 ### 二、什么时候跑
 
-1. **cron**：只认标准五段（分、时、日、月、星期），不认秒和年，照本机时区算（读不出时区的当 UTC）。日、星期两段照 Vixie cron 的「或」。夏令时照 OCPS 规范：跳过的那一小时里的时点挪到跳过以后，重复的那一小时只算一次。库是 croner 4.0.1（`jiff` 特性，不带 chrono）。`recurring` 是假的跑一次就删。
+1. **cron**：只认标准五段（分、时、日、月、星期），不认秒和年，照这一个记下的时区算（施工 J-3 上：`when.zone`，IANA 名；建的时候人交的，不交的记这台机器那一刻的；以前建的没有，照本机时区；记下的认不出了也照本机），读不出本机时区的当 UTC。日、星期两段照 Vixie cron 的「或」。夏令时照 OCPS 规范：跳过的那一小时里的时点挪到跳过以后，重复的那一小时只算一次。库是 croner 4.0.1（`jiff` 特性，不带 chrono）。`recurring` 是假的跑一次就删。
 2. **某个时刻一次**：建的时候已经过了的不收（核心的入口另有 `first`，见第四节）。跑过就删。
 3. **每隔一阵**：最短 60 秒。下一次照上一次往后数整数个间隔，错过的几个跳过，正好是现在这一刻的也算过去了。
 4. **错过的不补**（同旧版定时消息）：核心起来时已经过了的一律跳过，记 `INFO schedule missed`。一次的删掉，她自己定节奏的停着等，别的照现在往后找下一次。核心开着时醒晚了的（机器睡过一觉）照常跑一次。
@@ -68,7 +68,7 @@
 
 都照调用者的账号那一份表，别人的编号一律 `unknown_schedule`。
 
-1. `schedule.add {when: {"cron", "recurring"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来（`personas::resolve`、`presets::resolve`，找不到的照开会话回 `unknown_persona`、`unknown_preset`），`cwd` 不写照家目录。回 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 是 `when`（三种没写对一种、时刻写法不对）、`cron`、`past`、`short`、`prompt`（空的）、`session`（没有、不是他的）、`target`（两种都写了）。时刻照核心的写法（带毫秒）。带 `target.new.cwd` 的只给本机的连接（`reach.rs`，同项目的 `workspace`）。
+1. `schedule.add {when: {"cron", "recurring"?, "zone"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来（`personas::resolve`、`presets::resolve`，找不到的照开会话回 `unknown_persona`、`unknown_preset`），`cwd` 不写照家目录。回 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 是 `when`（三种没写对一种、时刻写法不对）、`cron`、`past`、`short`、`prompt`（空的）、`session`（没有、不是他的）、`target`（两种都写了）、`zone`（不认识，施工 J-3 上）、`cwd`（每次新开的工作目录建时就查：照开会话的写法换成真实位置，不在、不是目录、落在数据根里又不在他自己工作区里的，施工 J-3 上）。这个账号已有 `PER_ACCOUNT`（200）个的回 `too_many_schedules`：人建、她建、包建合计，熔断性质的安全上限（项目主人 2026-10-27 定），已有的照跑；她经工具建的照 `software/schedule/cron/account-full.txt` 告诉她叫人删。时刻照核心的写法（带毫秒）。带 `target.new.cwd` 的只给本机的连接（`reach.rs`，同项目的 `workspace`）。
 2. `schedule.list {session?}`：写了 `session` 的只列跑在它上面的，回 `{"schedules": [<一项>…]}`。
 3. `schedule.cancel {id}` 回 `{}`；`schedule.pause {id}`、`schedule.resume {id}` 回 `{"schedule": <一项>}`。
 4. 一项：`{"id","when","prompt","target","by","recurring","paused","loop"?,"next"?,"last"?: {"at","result","session"?},"created"}`。
