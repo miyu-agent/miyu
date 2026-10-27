@@ -124,6 +124,11 @@ impl Shaken {
         self.system
     }
 
+    /// 这一刻的这个连接，`admin` 照握手时替谁干活的那个人算（施工 U23-R修二：订列表的回应、推送照它裁格子）。
+    pub(crate) fn now_whose(&self, core: &Core) -> Peer {
+        self.now_as(core, &self.whose)
+    }
+
     /// 握手时声明了认识管理员模式（施工 Y-12 下）。
     pub(crate) fn scoped(&self) -> bool {
         self.scope

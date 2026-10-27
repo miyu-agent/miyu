@@ -172,12 +172,19 @@ fn group_table(core: &Core, language: &str) -> Vec<Value> {
 pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     let words = words(core, peer.language).ok()?;
     let places = packages(core);
-    if let Some(found) = core.system_packages().iter().find(|found| found.id == id) {
-        return Some(listed(core, found, &places, &words, peer.language, false));
+    let mut item = match core.system_packages().iter().find(|found| found.id == id) {
+        Some(found) => listed(core, found, &places, &words, peer.language, false),
+        None => {
+            let removed = places.read_removed();
+            let found = removed.iter().find(|found| found.id == id)?;
+            listed(core, found, &places, &words, peer.language, true)
+        }
+    };
+    // 同 [`list`]：不是管理员的裁掉只给管理员的那几格（施工 U23-R修二）。
+    if !peer.admin {
+        for_members(&mut item);
     }
-    let removed = places.read_removed();
-    let found = removed.iter().find(|found| found.id == id)?;
-    Some(listed(core, found, &places, &words, peer.language, true))
+    Some(item)
 }
 
 /// 只给管理员的那几格（施工 U23-R，U23 末上、末下：成员在软件包页照包开关）：这台机器上的路径（`state`、`pages_dir`）、程序

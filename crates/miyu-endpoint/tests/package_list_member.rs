@@ -1,6 +1,6 @@
 //! 成员读软件包列表（施工 U23-R，U23 末上、末下：成员在软件包页照包开关他自己的）：成员调 `package.list` 拿得到，只有名字、说明、
 //! 种类、状态、开没开这几格，这台机器上的路径、程序、MCP 服务的写法不给；机主照旧拿全份；软件包的流成员订不了（那里还推 MCP
-//! 服务）。
+//! 服务）。管理员订的流回应里拿全份（施工 U23-R修二）。
 
 use serde_json::json;
 
@@ -49,6 +49,16 @@ async fn a_member_lists_packages_without_the_machine_details() {
         .cloned()
         .unwrap_or_else(|| panic!("{full}"));
     assert!(shell.get("state").is_some(), "机主照旧拿全份：{shell}");
+    // 订软件包的流（只给管理员组）回应里的那一份同 `package.list` 给管理员的（施工 U23-R修二：原来照成员的裁了）。
+    let streamed = owner
+        .call("w", "subscribe", json!({"stream": "packages"}))
+        .await;
+    let shell = streamed["result"]["packages"]
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["package"] == "shell"))
+        .cloned()
+        .unwrap_or_else(|| panic!("{streamed}"));
+    assert!(shell.get("state").is_some(), "流里机主也拿全份：{shell}");
 
     let subscribed = bob
         .call("s", "subscribe", json!({"stream": "packages"}))

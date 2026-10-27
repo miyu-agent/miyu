@@ -92,7 +92,7 @@ impl Listed {
                     json!({"jsonrpc": "2.0", "method": "mcp.changed", "params": {"name": name, "server": server}})
                 }
                 None => {
-                    let entry = crate::packages::entry(core, id, shaken.now(core));
+                    let entry = crate::packages::entry(core, id, shaken.now_whose(core));
                     json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
                 }
             },
@@ -219,7 +219,8 @@ impl Subscriptions {
             out.clone(),
         ));
         match listed {
-            Listed::Packages => crate::packages::list(core, shaken.now(core)),
+            // 照订的人是不是管理员裁格子（施工 U23-R修二：原来的 `now` 恒当不是，管理员拿到的也是成员那一份）。
+            Listed::Packages => crate::packages::list(core, shaken.now_whose(core)),
             _ => Ok(crate::extensions::status(core, shaken.now(core))),
         }
     }
