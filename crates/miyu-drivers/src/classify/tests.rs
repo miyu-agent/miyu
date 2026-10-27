@@ -153,6 +153,14 @@ fn content_policy() {
     }
 }
 
+/// 中转把 Google 的拒绝说明放进出错事件（施工 AG-1）：照「prohibited use policy」认成内容策略，流里来的（没有状态码）也是。
+#[test]
+fn google_prohibited_use_policy_is_content_policy() {
+    let body = r#"{"error":{"message":"The prompt could not be submitted. The prompt contains sensitive words that violate Google's Generative AI Prohibited Use policy."}}"#;
+    assert_eq!(class(None, &[], body).0, ErrorClass::ContentPolicy);
+    assert_eq!(class(Some(400), &[], body).0, ErrorClass::ContentPolicy);
+}
+
 #[test]
 fn auth_and_quota() {
     let bad_key = r#"{"error":{"message":"Authentication Fails (no such user)","type":"authentication_error","param":null,"code":"invalid_request_error"}}"#;

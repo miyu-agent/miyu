@@ -16,7 +16,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::request::{Message, Request};
 
 /// 流的样本，一份一种情形。
-const STREAMS: [&str; 13] = [
+const STREAMS: [&str; 18] = [
     "deepseek-reasoning-tools",
     "openai-text",
     "tool-call-fragments",
@@ -30,6 +30,13 @@ const STREAMS: [&str; 13] = [
     "bad-json",
     "done-without-finish",
     "ended-early",
+    // 中转把 Google 的拒绝说明当正文流回来（施工 AG-1）：紧跟着出错、流断了、中间夹着只报用量的的整段丢、照内容策略出错；
+    // 照常说完的、后面又有正文的照原样交出去。
+    "relay-refusal-error",
+    "relay-refusal-cut",
+    "relay-refusal-usage-error",
+    "refusal-quoted-finished",
+    "refusal-quoted-then-text",
 ];
 
 fn stream(name: &str) -> Vec<u8> {

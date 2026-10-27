@@ -104,8 +104,10 @@ const POLICY_CODES: [&str; 8] = [
 ];
 
 /// 内容策略的说法。
-const POLICY_PHRASES: [&str; 7] = [
+const POLICY_PHRASES: [&str; 8] = [
     "violating our usage policy",
+    // Google 生成式 AI 的禁用政策（施工 AG-1）：中转把拒绝说明放进出错事件时照它认。
+    "prohibited use policy",
     "blocked by content filtering policy",
     "content policy",
     "content-policy",

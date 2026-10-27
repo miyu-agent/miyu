@@ -15,6 +15,7 @@
 | `crates/miyu-drivers/src/media.rs` | 图片、文件发不了时换成的字（占位、替它看的图、文本文件、带名字的图片的标签）和要哪些 blob：施工 8-12 从 `openai_chat/messages.rs`、`openai_chat.rs` 挪出来，和 `anthropic` 共用；施工 8-13 把拼字（`join`）也挪进来，和 `openai-responses` 共用。这一页的样本一个字节没变 |
 | `crates/miyu-drivers/src/openai_chat/wire.rs` | 线上的 JSON 结构、工具面 |
 | `crates/miyu-drivers/src/openai_chat/decode.rs` | 解码：块、工具调用、`finish_reason`、流里的错 |
+| `crates/miyu-drivers/src/openai_chat/refusal.rs` | 认中转转来的 Google 拒绝说明（施工 AG-1）：开头那一句、政策链接都在；照 `content_policy` 出错 |
 | `crates/miyu-drivers/src/openai_chat/usage.rs` | 各家的用量归成四项 |
 | `crates/miyu-drivers/src/openai_chat/models.rs` | 列模型：`GET /models` 的回应读出模型名和报了的窗口（施工 8-7） |
 | `crates/miyu-drivers/src/sse.rs` | SSE 分帧 |
@@ -132,6 +133,10 @@
    - 工具调用：`tool_calls` 里的每一片，见下。
 9. 思考、正文一次响应各最多一块：第一次来时 `Start`，以后都是这一块的 `Text`。块照第一次出现的先后编号，从 0 数起，和工具调用共用一套编号。
 10. `finish_reason` 不是空串的记下，以后来的盖掉以前的。
+11. **中转转来的拒绝说明**（施工 AG-1，`openai_chat/refusal.rs`）：Google 的内容政策拦下请求时，有的中转（Antigravity 那一路）把拒绝说明当成一段普通的正文流回来，接着发一个出错事件、流断了，照原样走会落成她说的话。回复的第一段正文（这一次响应还没有别的块）同时有开头那一句「The prompt could not be submitted.」和 Google 政策的链接 `policies.google.com/terms/generative-ai/use-policy`、这一段又没带 `finish_reason` 的，先扣住不交：
+    - 紧跟着来的是出错（`event: error`、`error` 有内容），或者流完了没有 `finish_reason` 也没有 `[DONE]`：整段丢掉，这一次照 `content_policy` 出错，原话是拒绝说明（最长 500 个字）；
+    - 来的是带内容的一段（正文、思考、工具调用、`finish_reason`）或者 `[DONE]`：照原样交出去，只晚一段。只报用量的一段不算。
+    - 认得尽量窄：误杀面是真模型回复的第一段正好同时有这一句和这个链接、紧接着流又出错，那一轮本来就是出错；漏认面是 Google 换了说法、别的语言、拒绝说明分几段到、别的中转换了包法，照旧落成被打断的半截。
 
 **工具调用的一片**：
 
@@ -153,6 +158,7 @@
 | 别的 | `other`，原话 `finish_reason: <它>` |
 | 没有 `finish_reason`，见到了 `[DONE]` | 正常说完 |
 | 两样都没见到 | `retryable`，「流断了：没等到 finish_reason，也没等到 [DONE]」 |
+| 扣着中转转来的拒绝说明（第 11 条），流里报了错或者断了 | `content_policy`，原话是拒绝说明；扣着的不交 |
 
 2. 正常说完的：开始了的块（正文、思考、有名字的调用）照编号一块块 `End`；`finish_reason` 是 `length` 的，收完再交一段 `Truncated`（写到了输出上限，施工 3-10，`kernel/session.md`「写到输出上限」）。出了错的不收，交给内核照出错处理。
 3. 用量取最后记下的那一份。
@@ -194,7 +200,7 @@
    - 超长的说法（23 句）：`prompt is too long`、`prompt too long`、`input is too long`、`too large for model`、`exceeds the context window`、`context window exceeds`、`maximum context length`、`context length exceeded`、`context_length_exceeded`、`context length is only`、`greater than the context length`、`longer than the model`、`exceeds the available context size`、`the configured context size`、`exceeded model token limit`、`token limit exceeded`、`too many tokens`、`tokens in request more than max tokens allowed`、`reduce the length of the messages`、`maximum prompt length is`、`maximum allowed input length`、`range of input length should be`、`exceed context limit`（Anthropic 的老模型输入加 `max_tokens` 超了窗口时这样说，施工 8-12 加，两家共用）。
    - 限速的说法：`rate limit`、`rate_limit`、`too many requests`、`throttling`、`service unavailable`。
    - 内容策略的错误码：`content_filter`、`responsibleaipolicyviolation`、`content_policy_violation`、`image_content_policy_violation`、`refusal`、`cyber_policy`、`bio_policy`、`misalignment_policy_violation`。
-   - 内容策略的说法：`violating our usage policy`、`blocked by content filtering policy`、`content policy`、`content-policy`、`content_policy`、`contentpolicy`、`rejected as a result of our safety system`。
+   - 内容策略的说法：`violating our usage policy`、`blocked by content filtering policy`、`content policy`、`content-policy`、`content_policy`、`contentpolicy`、`rejected as a result of our safety system`、`prohibited use policy`（Google 生成式 AI 的禁用政策，施工 AG-1：中转把拒绝说明放进出错事件时照它认）。
    - 额度的说法（也找错误码、类型，因为它们在找说法的字里）：`insufficient_quota`、`insufficient quota`、`insufficient balance`、`insufficient_balance`、`exceeded your current quota`、`quota exceeded`、`billing_hard_limit_reached`、`credit balance is too low`、`usagelimiterror`。
 5. **原话**：有 HTTP 状态的写成 `HTTP <状态>: <原话>`，流里报的只写原话；最长 2000 字节，截在字的边界上。原话给查问题的人看，不进上下文。HTTP 状态码另写进 `status`，原话开头的 `HTTP <状态>: ` 照留；连不上的、流里报的没有，流里的 `code` 只拿来分类（施工 3-5 三补）。
 6. **要等多久**，先有的算：头 `retry-after-ms`（毫秒）；头 `retry-after`（秒，可以带小数；写成日期的不认）；找说法的字里的 `try again in <数>`，单位 `ms` 是毫秒、`s` 开头的是秒（`s`、`seconds`）。非负的数才算，四舍五入到毫秒。都没有就不写，由内核退避。头的名字不分大小写，值去掉前后空白。流里报的错，解码器连同要等多久一起留下，收尾时交给 HTTP 执行器（施工 4-9 再补三下）。要等多久写进出错的 `retry_after_ms`，一路记进 `model.called`，头照它说什么时候回来（施工 3-5 四补）。
@@ -226,7 +232,7 @@
 
 探针的每一次请求编码以后的样子：`docs/designs/samples/probe/terminal/openai-chat/`（DeepSeek 那一套，模型 `deepseek-v4`，上限 8192）。
 
-**流**，样本在同一目录的 `streams/` 下：`.sse` 是进去的字节，`.txt` 是解出来的，一行一条：`deepseek-reasoning-tools`、`openai-text`（CRLF）、`tool-call-fragments`、`late-name`、`moonshot-usage-in-choice`、`gateway-noise`、`stream-error`、`cut-off`、`content-filter`、`length`、`bad-json`、`done-without-finish`、`ended-early`。
+**流**，样本在同一目录的 `streams/` 下：`.sse` 是进去的字节，`.txt` 是解出来的，一行一条：`deepseek-reasoning-tools`、`openai-text`（CRLF）、`tool-call-fragments`、`late-name`、`moonshot-usage-in-choice`、`gateway-noise`、`stream-error`、`cut-off`、`content-filter`、`length`、`bad-json`、`done-without-finish`、`ended-early`；施工 AG-1 加五份：`relay-refusal-error`、`relay-refusal-cut`、`relay-refusal-usage-error`（中转转来的拒绝说明后面紧跟着出错、断了、夹着只报用量的一段再出错：没有正文，`content_policy`），`refusal-quoted-finished`、`refusal-quoted-then-text`（照常说完、后面还有正文：照原样交出去）。
 
 **给模型看的几句**，原文在 `resources/core/drivers/`，行尾的换行也算，登记在 `26-提示词.md` 第十节：
 
@@ -290,7 +296,8 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/src/text_file/tests.rs` | 什么算文本：空的、UTF-8、BOM 算，NUL（在后面的也算）、Latin-1、PDF 不算；截到 64 KiB、截在字的边界上 |
 | `crates/miyu-drivers/tests/openai_chat_effort.rs` | 思考强度（施工 8-18）：没写的不加；档位发 `reasoning_effort`、接在最后；`off`、`on` 照开关；没有开关的 `off` 发 `none`、`on` 不加；前面的字节一个不动 |
 | `crates/miyu-drivers/tests/openai_chat_continuation.rs` | DeepSeek 接着写（样本、路径、半截带思考）；没有开关或者没有记号一字不变；`partial` 的写法 |
-| `crates/miyu-drivers/tests/openai_chat_streams.rs` | 十三份流的样本；从哪里切开喂都一样；累积器一条都不拒；解出来的编码回去用供应商的编号；驱动的接口走一遍；`error` 是 `false`、`0`、`[]` 的是噪声，有内容的照旧出错；流里的限速连同要等多久交回；`finished()` 在 `finish_reason` 到了以后才说是 |
+| `crates/miyu-drivers/src/openai_chat/refusal/tests.rs`（施工 AG-1） | 开头那一句、政策链接两样都在才认；前面的空白不算；只有一样、那一句不在开头、大小写不对的不认；照 `content_policy` 出错，原话去掉前后空白、最长 500 个字 |
+| `crates/miyu-drivers/tests/openai_chat_streams.rs` | 十八份流的样本（施工 AG-1 加了中转转来的拒绝说明那五份）；从哪里切开喂都一样；累积器一条都不拒；解出来的编码回去用供应商的编号；驱动的接口走一遍；`error` 是 `false`、`0`、`[]` 的是噪声，有内容的照旧出错；流里的限速连同要等多久交回；`finished()` 在 `finish_reason` 到了以后才说是 |
 | `crates/miyu-drivers/src/sse/tests.rs` | 三种换行、切开的 CRLF、几行 data 和注释、只有注释、事件名、切开的汉字、断在半条上、从哪里切开都一样；正好 64 MiB 还收、多一个字节就不收，一条事件一直不空行的也停（鲁棒性 B-3） |
 | `crates/miyu-drivers/tests/robust_streams.rs`（鲁棒性 B-3） | 三家的解码器喂一行一直不换行的、一条一直不空行的，都停下、收尾带错 |
 | `crates/miyu-drivers/src/openai_chat/models/tests.rs` | 列模型：名字和报了的窗口、三种窗口的写法先后、坏的跳过；回应坏了说是模型列表（施工 8-7） |

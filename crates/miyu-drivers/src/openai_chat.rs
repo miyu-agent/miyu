@@ -12,6 +12,7 @@ mod decode;
 mod effort;
 mod messages;
 mod models;
+mod refusal;
 mod usage;
 mod wire;
 

@@ -1,0 +1,4 @@
+data: {"id":"c1","object":"chat.completion.chunk","model":"antigravity/gemini-3.8-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"The prompt could not be submitted. The prompt contains sensitive words that violate Google's [Generative AI Prohibited Use policy](https://policies.google.com/terms/generative-ai/use-policy). Try rephrasing the prompt. If you think this was an error, [send feedback](https://ai.google.dev/gemini-api/docs/troubleshooting)."},"finish_reason":null}]}
+
+data: {"error":{"message":"Antigravity: the reply ended before it was complete","type":"upstream_error"}}
+

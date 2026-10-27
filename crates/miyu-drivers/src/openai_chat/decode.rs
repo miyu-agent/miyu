@@ -15,6 +15,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::FAMILY;
+use super::refusal::{is_refusal, refused};
 use super::usage::usage;
 use crate::Ending;
 use crate::classify::{Failure, classify};
@@ -40,6 +41,8 @@ pub struct Decoder {
     done: bool,
     /// 流里报了错，或者流坏了。
     error: Option<CallError>,
+    /// 扣着的中转转来的拒绝说明（施工 AG-1，`refusal.rs`）：这一段的增量和原文。
+    held: Option<(Vec<Delta>, String)>,
 }
 
 /// 一次工具调用解到哪了。
@@ -96,7 +99,16 @@ impl Decoder {
         for event in mem::take(&mut self.sse).finish() {
             self.event(event, true, &mut deltas);
         }
-        let error = self.error.take().or_else(|| self.ending_error());
+        let mut error = self.error.take().or_else(|| self.ending_error());
+        // 扣着拒绝说明流就断了：整段丢掉，照内容策略出错；正常说完的照原样交出去（施工 AG-1）。
+        if let Some((held, text)) = self.held.take() {
+            match error {
+                Some(_) => error = Some(refused(&text)),
+                None => {
+                    deltas.splice(0..0, held);
+                }
+            }
+        }
         if error.is_none() {
             let mut open: Vec<usize> = self.text.into_iter().chain(self.reasoning).collect();
             open.extend(self.calls.iter().filter_map(|call| call.block));
@@ -145,6 +157,7 @@ impl Decoder {
         }
         let data = event.data.trim();
         if data == "[DONE]" {
+            self.release(out);
             self.done = true;
             return;
         }
@@ -178,8 +191,20 @@ impl Decoder {
 
     /// 流里报的错：照出错分类分，供应商说要等多久的一起留下（施工 4-9 再补三下）。
     fn stream_error(&mut self, data: &str) {
+        // 扣着的拒绝说明后面紧跟着出错：整段丢掉，照内容策略出错（施工 AG-1）。
+        if let Some((_, text)) = self.held.take() {
+            self.error = Some(refused(&text));
+            return;
+        }
         let classified = classify(&Failure::stream(data.as_bytes()));
         self.error = Some(classified.error);
+    }
+
+    /// 扣着的拒绝说明照原样交出去：后面来的不是出错。
+    fn release(&mut self, out: &mut Vec<Delta>) {
+        if let Some((held, _)) = self.held.take() {
+            out.extend(held);
+        }
     }
 
     /// 一段 JSON。
@@ -187,6 +212,14 @@ impl Decoder {
         if chunk.error.as_ref().is_some_and(has_content) {
             self.stream_error(data);
             return;
+        }
+        // 扣着拒绝说明，又来了有内容的一段（正文、思考、工具调用、`finish_reason`）：不是出错，照原样交出去。只报用量的不算。
+        if chunk
+            .choices
+            .as_ref()
+            .is_some_and(|choices| choices.iter().any(Choice::carries))
+        {
+            self.release(out);
         }
         if let Some(found) = chunk.usage.as_ref().and_then(usage) {
             self.usage = Some(found);
@@ -221,8 +254,23 @@ impl Decoder {
                 out.push(Delta::Text { index, text });
             }
             if let Some(text) = delta.content.filter(|text| !text.is_empty()) {
-                let index = open(&mut self.text, &mut self.next, Kind::Text, out);
-                out.push(Delta::Text { index, text });
+                // 回复的第一段就是中转转来的拒绝说明（施工 AG-1）：先扣住，看后面来的是不是出错。
+                let ends_here = choice
+                    .finish_reason
+                    .as_deref()
+                    .is_some_and(|reason| !reason.is_empty());
+                if self.next == 0 && !ends_here && is_refusal(&text) {
+                    let mut held = Vec::new();
+                    let index = open(&mut self.text, &mut self.next, Kind::Text, &mut held);
+                    held.push(Delta::Text {
+                        index,
+                        text: text.clone(),
+                    });
+                    self.held = Some((held, text));
+                } else {
+                    let index = open(&mut self.text, &mut self.next, Kind::Text, out);
+                    out.push(Delta::Text { index, text });
+                }
             }
             for piece in delta.tool_calls.into_iter().flatten() {
                 self.tool_call(piece, out);
@@ -373,6 +421,24 @@ struct Choice {
     finish_reason: Option<String>,
     /// Moonshot 把用量放在这里。
     usage: Option<Value>,
+}
+
+impl Choice {
+    /// 带着内容：正文、思考、工具调用，或者 `finish_reason`。
+    fn carries(&self) -> bool {
+        let filled = |text: &Option<String>| text.as_deref().is_some_and(|text| !text.is_empty());
+        filled(&self.finish_reason)
+            || self.delta.as_ref().is_some_and(|delta| {
+                filled(&delta.content)
+                    || filled(&delta.reasoning_content)
+                    || filled(&delta.reasoning)
+                    || filled(&delta.reasoning_text)
+                    || delta
+                        .tool_calls
+                        .as_ref()
+                        .is_some_and(|calls| !calls.is_empty())
+            })
+    }
 }
 
 #[derive(Debug, Deserialize)]
