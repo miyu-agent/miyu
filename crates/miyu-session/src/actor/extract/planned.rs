@@ -45,4 +45,3 @@ pub(crate) fn planned(events: Vec<Event>, after: Seq, how: &Planning<'_>) -> cra
         how.name,
     )
 }
-
