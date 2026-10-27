@@ -25,6 +25,7 @@ mod image_name;
 mod jobs;
 pub mod memory;
 mod open_path;
+pub mod overrides;
 mod pause;
 mod peers;
 pub mod persona;

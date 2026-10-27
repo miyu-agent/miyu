@@ -90,8 +90,8 @@ pub use memory::{
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError,
-    OfferedFeatures, PresetPlaces, Within, Workplace, create, fork, load, load_placed, preview,
-    preview_context,
+    OfferedFeatures, PresetPlaces, ToolOverrides, Within, Workplace, create, fork, load,
+    load_placed, preview, preview_context,
 };
 pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};

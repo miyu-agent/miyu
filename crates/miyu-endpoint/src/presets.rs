@@ -21,6 +21,7 @@ use crate::refusal::Refusal;
 use crate::settings::PresetSettings;
 
 mod features;
+pub(crate) mod overrides;
 pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
@@ -65,6 +66,8 @@ pub(crate) fn default_of(core: &Core, account: &AccountId) -> String {
 pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPlaces {
     // 扩展这时交的功能（施工 IM-6）每回合开始取一次：拿着核心的弱引用，会话活在核心里面。
     let (weak, whose) = (std::sync::Arc::downgrade(core), owner.clone());
+    // 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
+    let (weak_written, written_by) = (std::sync::Arc::downgrade(core), owner.clone());
     PresetPlaces {
         presets: presets(core, owner),
         features: crate::scripts::features(core, owner),
@@ -72,6 +75,14 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
             move || {
                 weak.upgrade()
                     .map(|core| core.extensions.offers.features_of(&whose))
+                    .unwrap_or_default()
+            },
+        ))),
+        overrides: Some(miyu_session::ToolOverrides(std::sync::Arc::new(
+            move || {
+                weak_written
+                    .upgrade()
+                    .map(|core| std::sync::Arc::new(overrides::of(&core, &written_by).merged))
                     .unwrap_or_default()
             },
         ))),

@@ -11,6 +11,7 @@
 //! 列着哪几个池（施工 8-8 补，`models.md`「工具」）：造会话时照那时的配置拼进工具面上 `subagent` 的 `pool`（[`Agents::face`]），
 //! 造会话、载入时再照快照读回（[`Agents::pools_in`]），存在 [`Agents::pools`]，整个会话不变。
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_config::Values;
@@ -20,6 +21,7 @@ use miyu_kernel::id::{AccountId, CallId, CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Session};
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
+use miyu_policy::overrides::ToolOverride;
 use miyu_policy::persona::PersonaFile;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
@@ -115,6 +117,8 @@ pub(crate) struct Offers {
     pub(crate) personas: Vec<Choice>,
     /// 脚本里能不能调，人改的那一层（施工 M-2）。
     pub(crate) clicall: Loading,
+    /// 属主写的工具说明的覆盖（施工 OV-1 上）：工具名到叠好的那一份；没写的没有。
+    pub(crate) overrides: Arc<BTreeMap<String, ToolOverride>>,
 }
 
 impl Offers {
@@ -124,7 +128,15 @@ impl Offers {
             pools: choices(values),
             personas,
             clicall: Loading::clicall_of(values),
+            overrides: Arc::default(),
         }
+    }
+
+    /// 带上属主写的工具说明的覆盖（施工 OV-1 上）。
+    #[must_use]
+    pub(crate) fn overriding(mut self, overrides: Arc<BTreeMap<String, ToolOverride>>) -> Offers {
+        self.overrides = overrides;
+        self
     }
 }
 
@@ -285,6 +297,12 @@ impl Agents {
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),
                 };
+                // 属主写的覆盖（施工 OV-1 上）：换不进的（参数格式里没有那个参数）照出厂的，记一行。
+                if let Some(written) = offers.overrides.get(&spec.name)
+                    && let Err(why) = written.apply(&mut entry)
+                {
+                    tracing::warn!(target: "miyu::session", tool = spec.name.as_str(), why = why.as_str(), "tool override not applied");
+                }
                 // 以前的名字也填：只在测试里拿改名以前的目录造会话时碰得到，照同一个规矩，两张工具面只差名字。
                 if is_subagent(&spec.name) {
                     entry.offer(POOL, &offers.pools);

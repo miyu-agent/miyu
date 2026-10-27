@@ -43,6 +43,7 @@ mod links;
 pub mod log;
 pub mod logins;
 pub mod memory;
+pub mod overrides;
 pub mod packages;
 pub mod personas;
 pub mod presets;

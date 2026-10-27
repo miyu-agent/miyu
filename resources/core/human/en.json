@@ -697,6 +697,7 @@
     "package-problems/check_output": "The package's own check printed {detail} lines that are not problems; they were skipped",
     "package-problems/files_modified": "{detail} files differ from when the package was installed",
     "package-problems/files_missing": "{detail} files from the install are missing",
+    "package-problems/override_bad": "This tool override isn't used; the shipped text applies: {detail}",
     "package-problems/script_skipped": "This script was skipped: {detail}",
     "package-problems/script_link_outside": "This script is a link to {detail} inside the data root, outside this account's own folders; skipped",
     "package-problems/script_state_left": "There is a state folder for the script {detail}, but no such script now; delete the folder yourself if it is no longer needed",

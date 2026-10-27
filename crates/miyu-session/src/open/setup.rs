@@ -36,6 +36,30 @@ pub struct PresetPlaces {
     pub features: Features,
     /// 扩展这时替属主交的功能（施工 IM-6，`feature.offer`）：每回合开始取一次，接在 `features` 后面。没交的（测试里造的）没有。
     pub offers: Option<OfferedFeatures>,
+    /// 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时取一次。没交的（测试里造的）当没写。
+    pub overrides: Option<ToolOverrides>,
+}
+
+/// 取属主写的工具说明的覆盖（施工 OV-1 上）：协议端点给的，工具名到叠好的那一份。
+#[derive(Clone)]
+pub struct ToolOverrides(
+    pub Arc<dyn Fn() -> Arc<BTreeMap<String, miyu_policy::overrides::ToolOverride>> + Send + Sync>,
+);
+
+impl std::fmt::Debug for ToolOverrides {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ToolOverrides")
+    }
+}
+
+impl PresetPlaces {
+    /// 属主这时写的工具说明的覆盖：没交的是空的。
+    pub(crate) fn overrides(&self) -> Arc<BTreeMap<String, miyu_policy::overrides::ToolOverride>> {
+        self.overrides
+            .as_ref()
+            .map(|overrides| (overrides.0)())
+            .unwrap_or_default()
+    }
 }
 
 /// 取扩展这时替属主交的功能（施工 IM-6）：协议端点给的，只读内存里的一张小表。

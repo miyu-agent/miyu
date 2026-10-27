@@ -78,7 +78,12 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
     };
     // 工具面照这时的配置拼：`subagent` 能选哪几个池（施工 8-8 补）、哪几个人格（施工 P-2 补），以后照快照、载入不重拼。
     // 照预设筛（施工 P-2 中）。
-    let offers = Offers::of(values, persona_choices(&setup.personas));
+    let overrides = setup
+        .presets
+        .as_ref()
+        .map(super::PresetPlaces::overrides)
+        .unwrap_or_default();
+    let offers = Offers::of(values, persona_choices(&setup.personas)).overriding(overrides);
     // 照架子上现在的那一代拼；记下第几代，回合开头看换没换（施工 O-2 中）。
     let edition = setup.tools.edition();
     // 明着选了无工具的（施工 P-16 下）一件都不给。

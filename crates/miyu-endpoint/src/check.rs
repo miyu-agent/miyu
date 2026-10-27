@@ -102,6 +102,11 @@ pub(crate) async fn check(
             problems.extend(skipped::skipped(core, &words).await);
             // MCP 服务列出来却没登记的工具（施工 X-37）。
             problems.extend(mcp::skipped(core, &words));
+            // 工具说明的覆盖写坏了的（施工 OV-1 上）：照出厂的，各一条。
+            for (path, why) in crate::presets::overrides::problems(core, account) {
+                let message = crate::packages::sentence(&words, "override_bad", &why);
+                problems.push(json!({"kind": "override", "file": shown(core, &path), "code": "override_bad", "level": "warning", "message": message.unwrap_or_default()}));
+            }
             // 管理员放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
             problems.extend(unsandboxed::unsandboxed(core, &words));
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。

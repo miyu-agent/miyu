@@ -266,6 +266,7 @@ mod terminal_session;
 mod title;
 mod todos;
 mod tool_detail;
+mod tool_override;
 mod tools;
 mod undo;
 mod undo_jobs;

@@ -27,7 +27,13 @@ pub(super) fn offered(
             group: old.group.is_some(),
         },
         refresh.lineage.as_ref(),
-        &Offers::of(values, persona_choices(&refresh.personas)),
+        &Offers::of(values, persona_choices(&refresh.personas)).overriding(
+            refresh
+                .presets
+                .as_ref()
+                .map(crate::open::PresetPlaces::overrides)
+                .unwrap_or_default(),
+        ),
         old.attended,
         Holds {
             memory: old.memory_scope(),

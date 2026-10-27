@@ -693,6 +693,7 @@
     "package-problems/check_output": "这个包自己的检查印了 {detail} 行看不懂的，跳过了",
     "package-problems/files_modified": "有 {detail} 个文件和装的时候不一样",
     "package-problems/files_missing": "装的时候有的文件少了 {detail} 个",
+    "package-problems/override_bad": "这个工具说明的覆盖没用上，照出厂的：{detail}",
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
     "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
     "package-problems/script_state_left": "有这个脚本的状态目录（{detail}），可现在没有这个脚本了；用不上的话自己删掉这个目录",
