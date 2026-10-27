@@ -138,7 +138,9 @@ async fn a_lane_found_in_another_session_has_no_id() {
         .await;
     chat(&asker, "c3", "我以前说过日语的事吗").await;
     let result = last_result(&home.log(asker.id()));
-    let date = now().local_date(miyu_kernel::time::UtcOffset::UTC);
+    // 搜索那一路照会话的时区写日期（`miyu-memory` 的 `search.rs`，`call.offset`）；测试里的会话是东九区（`environment()`）。
+    // 照 UTC 算，东京零点到九点两边差一天（施工 E-6 修）。
+    let date = now().local_date(environment().offset);
     let short = parent.id().short().to_string();
     let lines: Vec<&str> = result.lines().collect();
     assert!(
