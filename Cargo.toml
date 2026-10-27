@@ -32,9 +32,12 @@ missing_panics_doc = "warn"
 # 发出去的、量尺量的都是 release（施工 V-5 下）：整个程序一起优化、一份代码单元。程序 60 → 40 MB，核心空闲时碰到的
 # 代码页少了约 4 MB（核心空闲 24.3 → 20.4 MB，连着头安静以后 28.8 → 24.8 MB）；代价是 release 多编几分钟，日常的
 # `cargo xtask check` 编的是 dev，不受影响。panic 照旧展开：阻塞线程里崩了要接得住。
+# 照体积优化（施工 PERF-3）：代码段 32.7 → 21.0 MB，核心碰到的代码页少了，连着头安静以后 28.7 → 25.2 MB、空闲
+# 23.9 → 21.9 MB；时间项都在预算里，吃 CPU 的几条路慢了一成上下（施工单的表），没有哪一个 crate 要单独留在 3。
 [profile.release]
 lto = "fat"
 codegen-units = 1
+opt-level = "s"
 
 [profile.dev.package.argon2]
 opt-level = 3
