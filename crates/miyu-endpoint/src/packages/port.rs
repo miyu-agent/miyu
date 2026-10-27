@@ -190,7 +190,7 @@ impl PackagesPort for Port {
                 .collect();
             let params = serde_json::from_value(json!({ "package": package, "approve": approve }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            super::switch::enable(&core, self.peer(&core), params)
+            super::switch::enable(&core, (self.peer(&core), &self.owner), params)
                 .await
                 .map_err(refused)
         })

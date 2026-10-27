@@ -64,10 +64,18 @@ pub(crate) async fn call(
             let reverse = Some(&caller.reverse);
             super::source::upgrade::upgrade(core, (peer, &scope), reverse, params(request)?).await
         }
-        "package.enable" => super::switch::enable(core, peer, params(request)?).await,
-        "package.disable" => super::switch::disable(core, peer, params(request)?).await,
-        "package.restart" => super::switch::restart(core, peer, params(request)?).await,
-        "package.members" => super::switch::members(core, peer, params(request)?).await,
+        "package.enable" => {
+            super::switch::enable(core, (peer, caller.acting_for()), params(request)?).await
+        }
+        "package.disable" => {
+            super::switch::disable(core, (peer, caller.acting_for()), params(request)?).await
+        }
+        "package.restart" => {
+            super::switch::restart(core, (peer, caller.acting_for()), params(request)?).await
+        }
+        "package.members" => {
+            super::switch::members(core, (peer, caller.acting_for()), params(request)?).await
+        }
         "package.file" => crate::backstage::read(core, caller, params(request)?).await,
         "package.emit" => crate::backstage::emit(core, caller, params(request)?),
         "package.methods" => crate::backstage::register(core, caller, params(request)?),

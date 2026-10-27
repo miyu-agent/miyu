@@ -10,6 +10,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use miyu_config::package::{Manifest, PackageKind};
+use miyu_kernel::id::AccountId;
 use miyu_store::packages::Layer;
 
 use super::{listed, manage, packages};
@@ -107,7 +108,7 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
 /// `package.enable`。卸掉了的出厂包先装回来；扩展再照 `approve` 打开。
 pub(crate) async fn enable(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, whose): (Peer, &AccountId),
     params: EnableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, layer, dir, removed) = find(core, &params.package)?;
@@ -125,13 +126,13 @@ pub(crate) async fn enable(
         Switch::Bundle => crate::mcp::turn_on(core, &params.package, &manifest).await?,
         Switch::Shipped => {}
     }
-    item(core, peer, &params.package)
+    item(core, (peer, whose), &params.package)
 }
 
 /// `package.disable`。扩展关掉进程；出厂的内置包卸掉。
 pub(crate) async fn disable(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, whose): (Peer, &AccountId),
     params: DisableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, layer, _, removed) = find(core, &params.package)?;
@@ -147,14 +148,14 @@ pub(crate) async fn disable(
             Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
         }
     }
-    item(core, peer, &params.package)
+    item(core, (peer, whose), &params.package)
 }
 
 /// `package.restart`（施工 X-4）：扩展同 `extension.restart`（关着的、要批的能力还有没批的照它拒），再重启它带的 MCP 服务；
 /// `bundle` 重启它带的服务。关着的 `package_off`；别的种类没有能重启的，`not_restartable`。
 pub(crate) async fn restart(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, whose): (Peer, &AccountId),
     params: DisableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, _, _, removed) = find(core, &params.package)?;
@@ -169,14 +170,14 @@ pub(crate) async fn restart(
         restart_process(core, peer, id).await?;
     }
     core.restart_services(id, &manifest).await;
-    item(core, peer, id)
+    item(core, (peer, whose), id)
 }
 
 /// `package.members`（施工 IM-1 上）：系统装的带进程的包成员能不能用，记在系统那一层的开关里，盖过清单的 `[package] members`。
 /// 不带进程的、卸掉了的 `not_switchable`。下一轮起成员的会话照它有没有这个包。
 pub(crate) async fn members(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, whose): (Peer, &AccountId),
     params: MembersParams,
 ) -> Result<Value, Refusal> {
     let (manifest, _, _, removed) = find(core, &params.package)?;
@@ -188,11 +189,12 @@ pub(crate) async fn members(
     switches.members.insert(params.package.clone(), params.on);
     write_switches(core, &params.package, &switches, version.as_deref())?;
     core.extensions.notify(&params.package);
-    item(core, peer, &params.package)
+    item(core, (peer, whose), &params.package)
 }
 
-/// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）。
-fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
+/// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）：每人一份的扩展的状态照 `whose` 那一份（施工
+/// U23 下上）。
+fn item(core: &Core, (peer, whose): (Peer, &AccountId), id: &str) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
     let system = core.system_packages();
@@ -200,7 +202,7 @@ fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
         return Ok(listed(
             core,
             found,
-            (&places, &system),
+            (&places, &system, Some(whose)),
             &words,
             peer.language,
             false,
@@ -214,7 +216,7 @@ fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
     Ok(listed(
         core,
         found,
-        (&places, &system),
+        (&places, &system, Some(whose)),
         &words,
         peer.language,
         true,

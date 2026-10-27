@@ -146,14 +146,32 @@ pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value
     let seen = core.packages_seen(account);
     let mut items: Vec<Value> = seen
         .iter()
-        .map(|found| listed(core, found, (&places, &seen), &words, peer.language, false))
+        .map(|found| {
+            listed(
+                core,
+                found,
+                (&places, &seen, Some(account)),
+                &words,
+                peer.language,
+                false,
+            )
+        })
         .collect();
     items.extend(
         places
             .read_removed()
             .iter()
             .filter(|found| !seen.iter().any(|one| one.id == found.id))
-            .map(|found| listed(core, found, (&places, &seen), &words, peer.language, true)),
+            .map(|found| {
+                listed(
+                    core,
+                    found,
+                    (&places, &seen, Some(account)),
+                    &words,
+                    peer.language,
+                    true,
+                )
+            }),
     );
     if !peer.admin {
         // 没对成员开放的（施工 U23-R修三）：头照它写「管理员没开放」、把他自己的开关灰掉。
@@ -178,11 +196,25 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer, account: &AccountId) -> O
     let places = packages(core);
     let seen = core.packages_seen(account);
     let mut item = match seen.iter().find(|found| found.id == id) {
-        Some(found) => listed(core, found, (&places, &seen), &words, peer.language, false),
+        Some(found) => listed(
+            core,
+            found,
+            (&places, &seen, Some(account)),
+            &words,
+            peer.language,
+            false,
+        ),
         None => {
             let removed = places.read_removed();
             let found = removed.iter().find(|found| found.id == id)?;
-            listed(core, found, (&places, &seen), &words, peer.language, true)
+            listed(
+                core,
+                found,
+                (&places, &seen, Some(account)),
+                &words,
+                peer.language,
+                true,
+            )
         }
     };
     // 同 [`list`]：不是管理员的裁掉只给管理员的那几格（施工 U23-R修二）。
@@ -231,11 +263,12 @@ fn for_members(core: &Core, item: &mut Value) {
     }
 }
 
-/// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。依赖缺没缺照 `installed`（看的人看得到的那些）认。
+/// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。依赖缺没缺照 `installed`（看的人看得到的那些）认，每人一份的扩展的
+/// 状态照看的人 `viewer` 那一份（[`status::status`]）。
 fn listed(
     core: &Core,
     found: &Found,
-    (places, installed): (&Packages, &[Found]),
+    (places, installed, viewer): (&Packages, &[Found], Option<&AccountId>),
     words: &Human,
     language: &str,
     removed: bool,
@@ -250,7 +283,7 @@ fn listed(
             item["from"] = json!(fill::from(found, places).as_str());
             services::fill(core, &found.id, manifest, &mut item);
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
-            item["status"] = json!(status::status(core, found, manifest, removed));
+            item["status"] = json!(status::status(core, found, (manifest, viewer), removed));
             // 依赖的包缺了（施工 F-11）：不起，写明缺谁。
             let missing = depends::missing(&installed.iter().collect::<Vec<_>>(), manifest);
             if !removed && !missing.is_empty() {

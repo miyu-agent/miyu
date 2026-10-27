@@ -68,13 +68,20 @@ pub(super) fn snapshot(core: &Core) -> BTreeMap<String, Value> {
     let mut items: BTreeMap<String, Value> = system
         .iter()
         .map(|found| {
-            let item = listed(core, found, (&places, &system), &words, "en", false);
+            let item = listed(core, found, (&places, &system, None), &words, "en", false);
             (found.id.clone(), item)
         })
         .collect();
     for found in places.read_removed() {
         if let Entry::Vacant(slot) = items.entry(found.id.clone()) {
-            slot.insert(listed(core, &found, (&places, &system), &words, "en", true));
+            slot.insert(listed(
+                core,
+                &found,
+                (&places, &system, None),
+                &words,
+                "en",
+                true,
+            ));
         }
     }
     items

@@ -314,7 +314,7 @@ pub(super) async fn from_path(
     Ok(listed(
         core,
         mine,
-        (&places, &now),
+        (&places, &now, None),
         &words,
         peer.language,
         false,
@@ -351,7 +351,7 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
     Ok(listed(
         core,
         back,
-        (&places, &now),
+        (&places, &now, None),
         &words,
         peer.language,
         false,

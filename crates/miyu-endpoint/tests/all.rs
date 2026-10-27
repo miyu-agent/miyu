@@ -161,6 +161,7 @@ mod package_off_more;
 mod package_own_layer;
 mod package_personas;
 mod package_settings;
+mod package_status_per_account;
 mod package_switch;
 mod package_theme;
 mod package_tool;

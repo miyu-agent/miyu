@@ -33,8 +33,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. `program_missing`：要程序的包（扩展、界面、小程序），程序不在包文件夹的 `bin/`、也不在 `miyu` 旁边（找法同 `packages.md`「转交」，施工 F-8 上再补）。
 2. `off`：关着。扩展、带了服务的 `bundle` 的开关关着；出厂的包卸掉了（`removed: true`）。
-3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。`bundle` 照它带的 MCP 服务合起来算（施工 X-3 上）：有停下的 `stopped`，都在跑的 `running`，别的 `starting`；每个服务的状态、停下的原因随 X-4 给头。
-4. `ready`：别的。内置包装着，小程序、界面的程序在；只带技能、脚本的 `bundle`（施工 X-13 上，没有开关，技能、脚本照预设开关）。
+3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。`bundle` 照它带的 MCP 服务合起来算（施工 X-3 上）：有停下的 `stopped`，都在跑的 `running`，别的 `starting`；每个服务的状态、停下的原因随 X-4 给头。每人一份的扩展（`[process] scope = "account"`，施工 IM-1 中）照列出来的那个连接替谁干活的那个人自己那一份算（施工 U23 下上：照系统那一份恒是关着，网页报的），开关开着、他那一份还没起过的是 `ready`。
+4. `ready`：别的。内置包装着，小程序、界面的程序在；只带技能、脚本的 `bundle`（施工 X-13 上，没有开关，技能、脚本照预设开关）；每人一份的扩展开着、看的人那一份还没起过（用到时才起）。
 
 头照它写「运行中」「启动中」「已停止」「已停用」「已启用」「程序未安装」。
 

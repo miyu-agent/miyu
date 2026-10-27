@@ -4,10 +4,11 @@
 use std::path::{Path, PathBuf};
 
 use miyu_config::package::{Manifest, Mascot, PackageKind, Theme};
+use miyu_kernel::id::AccountId;
 use miyu_store::packages::{Found, locate};
 
 use crate::Core;
-use crate::extensions::State;
+use crate::extensions::{Instance, State, per_account};
 
 /// 有开关、起得来停得下的（施工 X-13 上）：扩展，带了 MCP 服务的 `bundle`。只带技能、脚本的 `bundle` 没有要起的东西，
 /// 技能、脚本照预设开关（`skills.md`）。
@@ -116,11 +117,13 @@ fn data_problem(found: &Found, path: &str) -> Option<Data> {
 }
 
 /// `status`：`program_missing`、`off`、`running`、`starting`、`stopped`、`ready` 之一。`removed` 是出厂的包卸掉了。`bundle`
-/// 开着的照它带的服务合起来算（[`crate::mcp::Servers::state`]）。
+/// 开着的照它带的服务合起来算（[`crate::mcp::Servers::state`]）。每人一份的扩展（`[process] scope = "account"`）照看的人
+/// `viewer` 那一份报（施工 U23 下上，网页报的：照系统那一份恒是关着），他还没起过的报 `ready`：用到时才起，不是关着；没有看的人
+/// （比前后的那一份）照系统那一份。
 pub(crate) fn status(
     core: &Core,
     found: &Found,
-    manifest: &Manifest,
+    (manifest, viewer): (&Manifest, Option<&AccountId>),
     removed: bool,
 ) -> &'static str {
     let id = found.id.as_str();
@@ -139,7 +142,16 @@ pub(crate) fn status(
     match manifest.kind {
         // `bundle` 照它带的服务合起来算（施工 X-3 上）。
         PackageKind::Bundle => of_state(core.mcp.state(core, id, manifest).unwrap_or(State::Off)),
-        _ => of_state(core.extensions.status(id).state),
+        _ => match viewer.filter(|_| per_account(manifest)) {
+            Some(account) => {
+                let mine = Instance::serving(core, id, account);
+                match core.extensions.status_of(&mine).state {
+                    State::Off => "ready",
+                    state => of_state(state),
+                }
+            }
+            None => of_state(core.extensions.status(id).state),
+        },
     }
 }
 
