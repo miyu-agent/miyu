@@ -76,6 +76,12 @@ impl Provided {
             .send_modify(|count| *count = count.wrapping_add(1));
     }
 
+    /// 有一份登记了什么（施工 IM-1 中下：后台页的方法）：等着的醒过来再找一遍。
+    pub(crate) fn nudge(&self) {
+        self.arrived
+            .send_modify(|count| *count = count.wrapping_add(1));
+    }
+
     /// `instance` 握了手、还连着的连接。
     fn linked_of(&self, instance: &Instance) -> Option<Peer> {
         self.linked
@@ -164,31 +170,13 @@ pub(crate) async fn provide(
     };
     let kept = serde_json::to_vec(&params).map_err(|_| Refusal::INTERNAL)?;
     let count = register(core, package, params.tools)?;
-    core.provided
-        .register(instance_of(core, caller, package), caller.reverse.clone());
+    core.provided.register(
+        Instance::serving(core, package, caller.acting_for()),
+        caller.reverse.clone(),
+    );
     cache::write(core, package, &kept);
     tracing::info!(target: "miyu::endpoint", package, tools = count, "provided");
     Ok(json!({ "tools": count }))
-}
-
-/// 包 `package` 是不是每人一份的（施工 IM-1 中）。
-fn per_account(core: &Core, package: &str) -> bool {
-    core.system_packages()
-        .iter()
-        .find(|found| found.id == package)
-        .and_then(|found| found.read.as_ref().ok())
-        .is_some_and(crate::extensions::per_account)
-}
-
-/// 这个连接是包 `package` 的哪一份：每人一份的是它替的那个人那一份（施工 IM-1 中），别的是那一份。
-fn instance_of(core: &Core, caller: &Caller, package: &str) -> Instance {
-    match per_account(core, package) {
-        true => Instance {
-            package: package.to_string(),
-            account: Some(caller.acting_for().clone()),
-        },
-        false => Instance::system(package),
-    }
 }
 
 /// 照规格 `tools` 换掉包 `package` 在目录里的工具，交回几件：`provide`、读缓存共用。两处同时换的一个接一个（[`miyu_tool::Shelf`]）。
@@ -206,7 +194,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     };
     let count = tools.len();
     let listed = listed(core, package);
-    let per = per_account(core, package);
+    let per = crate::extensions::scoped(core, package);
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
     for tool in tools {
         // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。

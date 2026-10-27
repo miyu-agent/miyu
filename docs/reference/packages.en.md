@@ -165,6 +165,8 @@ A package that runs a process (an extension, or one that brings MCP servers) is 
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
 
+Per-account packages (`[process] scope = "account"`): the call goes to the caller's own copy (for a page, the person viewing it; for an extension, the person it acts for). If that copy isn't running the core starts it for them and forwards once it has registered its methods, waiting up to 60 seconds. Members (people who aren't admins) can only use `package.file` and `package.call` on per-account packages they may use (marked usable by members); single-copy packages and unmarked ones get `not_permitted` (construction IM-1 lower-middle).
+
 Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
 
 **Errors**
@@ -172,7 +174,8 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `data.reason` | When |
 |---|---|
 | `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file |
-| `program_not_running` | The program isn't connected |
+| `program_not_running` | The program isn't connected; a per-account copy couldn't be started or didn't register its methods within 60 seconds |
+| `not_permitted` | A member reaching a single-copy package, or one not marked usable by members |
 | `unregistered` | The program didn't register that method, `data.method` |
 | `method_failed` | The program answered with an error, `data.message`, `data.code` |
 | `method_timeout` | No answer in time |

@@ -165,6 +165,8 @@
 
 **`package.call`**：参数 `package`、`method`、`params`（可不写）。核心把它转给那个包的程序（`method.call`），程序回什么交回什么。在后台答。界面块上的按钮、整页的表单保存都走它。
 
+每人一份的包（`[process] scope = "account"`）：谁调就转给谁那一份（页面是看页面的那个人，扩展调的是它替的那个人）；那一份没在跑的，核心替他拉起，等它登记了方法再转，最多等 60 秒。成员（不是管理员的人）只碰得到他能用的每人一份的包（勾了「成员也能用」）的 `package.file`、`package.call`，整台机器一份的、没勾的回 `not_permitted`（施工 IM-1 中下）。
+
 扩展也能调 `package.call`：要在清单里声明能力 `packages.call`，只调得到对方清单 `[export]` 里列的方法；转过去带 `from`（调的包的编号）。对方回应里出现的、它自己存的 blob，调用方之后也读得到（见 [附件](blob.md#blobget)）。
 
 **出错**
@@ -172,7 +174,8 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件 |
-| `program_not_running` | 程序没连着 |
+| `program_not_running` | 程序没连着；每人一份的拉不起来、60 秒没登记方法 |
+| `not_permitted` | 成员碰整台机器一份的、没勾「成员也能用」的包 |
 | `unregistered` | 程序没登记这个方法，`data.method` |
 | `method_failed` | 程序回了错，`data.message`、`data.code` |
 | `method_timeout` | 到时限没回 |

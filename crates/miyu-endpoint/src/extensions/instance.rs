@@ -26,6 +26,14 @@ impl Instance {
         }
     }
 
+    /// 替 `account` 找包 `package` 的哪一份（施工 IM-1 中）：每人一份的是他那一份，别的是那一份。
+    pub(crate) fn serving(core: &Core, package: &str, account: &AccountId) -> Instance {
+        Instance {
+            package: package.to_string(),
+            account: scoped(core, package).then(|| account.clone()),
+        }
+    }
+
     /// 运行日志、标准错误的文件名里写的：一份的是包的编号，每人一份的是 `<编号>.<账号>`（账号的写法里没有点）。
     pub(crate) fn label(&self) -> String {
         match &self.account {
@@ -54,4 +62,13 @@ pub(crate) fn per_account(manifest: &Manifest) -> bool {
         .process
         .as_ref()
         .is_some_and(|process| process.scope == Scope::Account)
+}
+
+/// 装着的包 `package` 是不是每人一份的（施工 IM-1 中）：读不成的、没装的不是。
+pub(crate) fn scoped(core: &Core, package: &str) -> bool {
+    core.system_packages()
+        .iter()
+        .find(|found| found.id == package)
+        .and_then(|found| found.read.as_ref().ok())
+        .is_some_and(per_account)
 }

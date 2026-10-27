@@ -48,6 +48,9 @@ const METHODS: &[&str] = &[
     "view.detail",
     "command.run",
     "command.catalog",
+    // 他能用的每人一份的包的后台页（施工 IM-1 中下，`backstage::opened_to` 再照包挡）。
+    "package.file",
+    "package.call",
     // 自己的附件。
     "blob.put",
     "blob.open",

@@ -22,7 +22,7 @@ impl Provided {
             package: package.to_string(),
             account: Some(owner.clone()),
         };
-        self.wait(&instance, Self::live).await
+        self.wait(&instance, |instance| self.live(instance)).await
     }
 
     /// 包 `package` 替 `account` 的那一份的连接（施工 J-4：到点推给建它的扩展），只要握了手、不用登记工具：每人一份的没在跑
@@ -33,25 +33,26 @@ impl Provided {
         package: &str,
         account: &AccountId,
     ) -> Option<Peer> {
-        if super::per_account(core, package) {
+        if crate::extensions::scoped(core, package) {
             let instance = Instance {
                 package: package.to_string(),
                 account: Some(account.clone()),
             };
-            self.wait(&instance, Self::linked_of).await
+            self.wait(&instance, |instance| self.linked_of(instance))
+                .await
         } else {
             self.linked_of(&Instance::system(package))
         }
     }
 
-    /// `instance` 照 `found` 找得到的连接：找得到的直接交回，没有的替那个人拉起，等到找得到。最多等 [`WAIT`]；起不来、停下了、
-    /// 没等到的交回没有。
-    async fn wait(
+    /// `instance` 照 `found` 找得到的连接：找得到的直接交回，没有的替那个人拉起，等到找得到（每登记工具、握手、登记后台页的
+    /// 方法一次醒一次，[`Provided::nudge`]）。最多等 [`WAIT`]；起不来、停下了、没等到的交回没有。
+    pub(crate) async fn wait(
         &self,
         instance: &Instance,
-        found: fn(&Self, &Instance) -> Option<Peer>,
+        found: impl Fn(&Instance) -> Option<Peer>,
     ) -> Option<Peer> {
-        if let Some(peer) = found(self, instance) {
+        if let Some(peer) = found(instance) {
             return Some(peer);
         }
         let weak = self.core.get()?.clone();
@@ -64,7 +65,7 @@ impl Provided {
         drop(core);
         let deadline = tokio::time::Instant::now() + WAIT;
         loop {
-            if let Some(peer) = found(self, instance) {
+            if let Some(peer) = found(instance) {
                 return Some(peer);
             }
             // 停下了、被关了的不等（起不来的退避中照样等，它还会再起）。

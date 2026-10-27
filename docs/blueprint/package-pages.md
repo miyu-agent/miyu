@@ -92,7 +92,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. **登记**：扩展连上以后发 `package.methods {"methods": [{"name", "timeout_ms"?}]}`。
    - `name`：小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个；同一次里不重复；`timeout_ms` 同工具的，1000 到 600000，不写是 30000。
-   - 换掉这个包上一次登记的；不用另批能力：只有管理员的头在这个软件自己的页上调得到。
+   - 换掉这一份上一次登记的（施工 IM-1 中下起照（包，账号）记：每人一份的包，各人那一份各登记各的）；不用另批能力：只有管理员的头、能用这个包的成员在这个软件自己的页上调得到。
    - 不缓存：连接断了、扩展停了就没有了，调到的回 `program_not_running`。
    - 不是核心拉起的扩展的连接调它，`not_an_extension`。名字写法不对、重复、时限不在范围里的 `bad_params`，什么都不换。回应 `{"methods": 个数}`。
 2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人）调得到登记的全部。施工 X-18 起扩展也能调别的软件（「软件之间互相调」）：要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到对方清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。
@@ -100,6 +100,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
+   - 每人一份的包（施工 IM-1 中下）：转给调的那个人那一份（人调的是他自己，扩展调的是它替的那个人，`Instance::serving`）；那一份还没登记方法的，替他拉起，等到登记了再转（`Provided::wait`，最多 60 秒，登记方法时 `nudge` 叫醒），没等到的 `program_not_running`。答的那一份的账号是那个人，转 blob 照它拷。
+   - 成员（施工 IM-1 中下，`backstage::opened_to`）：`package.file`、`package.call` 只碰得到他能用的每人一份的包（勾了「成员也能用」），那一份就是他自己的；整台机器一份的、没勾的回 `not_permitted`。管理员、扩展不查这一道。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
 
 **软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条）：

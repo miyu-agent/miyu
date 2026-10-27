@@ -15,7 +15,7 @@ pub(crate) mod stderr;
 mod supervise;
 
 pub(crate) use approval::{described, forget as forget_switch, held};
-pub(crate) use instance::{Instance, per_account};
+pub(crate) use instance::{Instance, per_account, scoped};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
 pub(crate) use state::{Cell, Reason, State, Status};
 pub use supervise::Timing;

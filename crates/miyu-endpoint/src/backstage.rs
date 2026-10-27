@@ -7,3 +7,24 @@ mod file;
 
 pub(crate) use calls::{Methods, call, register};
 pub(crate) use file::{beneath, read, segments};
+
+use crate::Core;
+use crate::hello::Caller;
+use crate::refusal::Refusal;
+
+/// 成员碰不碰得到包 `package` 的后台页（施工 IM-1 中下）：只碰得到每人一份、他能用的（勾了「成员也能用」），那一份是他自己的；
+/// 整台机器一份的后台页只给管理员。管理员、扩展（照 `packages.call` 能力挡）不查。不能的 `not_permitted`。
+pub(crate) fn opened_to(core: &Core, caller: &Caller, package: &str) -> Result<(), Refusal> {
+    if caller.package.is_some() || crate::login::admins::is_admin(core, caller.acting_for()) {
+        return Ok(());
+    }
+    let packages = core.system_packages();
+    let usable = packages
+        .iter()
+        .find(|found| found.id == package)
+        .and_then(|found| found.read.as_ref().ok())
+        .is_some_and(|manifest| {
+            crate::extensions::per_account(manifest) && core.members_may(package, manifest)
+        });
+    usable.then_some(()).ok_or(Refusal::NOT_PERMITTED)
+}

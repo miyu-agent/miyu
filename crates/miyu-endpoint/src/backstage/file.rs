@@ -10,6 +10,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use crate::Core;
+use crate::hello::Caller;
 use crate::refusal::Refusal;
 
 /// `package.file` 的参数。
@@ -22,8 +23,13 @@ pub(crate) struct FileParams {
     offset: u64,
 }
 
-/// 读一块：`{"data", "size", "eof"}`。
-pub(crate) async fn read(core: &Core, params: FileParams) -> Result<Value, Refusal> {
+/// 读一块：`{"data", "size", "eof"}`。成员只读得到他能用的每人一份的包的（[`super::opened_to`]，施工 IM-1 中下）。
+pub(crate) async fn read(
+    core: &Core,
+    caller: &Caller,
+    params: FileParams,
+) -> Result<Value, Refusal> {
+    super::opened_to(core, caller, &params.package)?;
     let (dir, segments) = located(core, &params.package, &params.path)?;
     let offset = params.offset;
     tokio::task::spawn_blocking(move || {
