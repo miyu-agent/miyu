@@ -19,6 +19,7 @@ pub(super) fn offered(
     reach: Reach,
 ) -> Vec<ToolEntry> {
     let old = &refresh.snapshot;
+    let features = features(refresh);
     Agents::face(
         catalog,
         Site {
@@ -32,7 +33,7 @@ pub(super) fn offered(
             memory: old.memory_scope(),
             knowledge: reach,
         },
-        file.map(|file| (file, features(refresh))),
+        file.map(|file| (file, features.as_deref())),
     )
 }
 

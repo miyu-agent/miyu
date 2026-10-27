@@ -70,7 +70,7 @@ pub(super) fn preset(refresh: &Refresh, id: &str, values: &Values) -> Result<Cho
         .as_ref()
         .ok_or_else(|| "presets not available".to_string())?;
     let found = places.presets.find(id).map_err(|error| error.to_string())?;
-    let features = &places.features;
+    let features = &places.features();
     let memory = refresh.snapshot.memory_scope() != MemoryScope::Off;
     // 这个人关了的包（施工 U23 末上）照这一轮的配置扣下：开着的会话下一个回合就没有它的东西。
     let file = found

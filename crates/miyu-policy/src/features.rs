@@ -27,6 +27,8 @@ pub struct Features {
     /// 接平台的包（施工 IM-4）：包的编号到清单 `[connection] platform` 写的平台。在自己平台的场所会话里整包不过预设开关
     /// （[`crate::preset::Chosen::situated`]）。
     connections: BTreeMap<String, BTreeSet<String>>,
+    /// 扩展这时替这个人交的功能（施工 IM-6，`feature.offer`）：归交的那个包；列出来的工具归它，不归包自己的功能。
+    offered: Vec<Feature>,
 }
 
 impl Features {
@@ -36,6 +38,7 @@ impl Features {
             list,
             images: BTreeSet::new(),
             connections: BTreeMap::new(),
+            offered: Vec::new(),
         }
     }
 
@@ -51,6 +54,18 @@ impl Features {
     pub fn connecting(mut self, connections: BTreeMap<String, BTreeSet<String>>) -> Features {
         self.connections = connections;
         self
+    }
+
+    /// 换上扩展交的功能（施工 IM-6）：整份替换。
+    #[must_use]
+    pub fn offering(mut self, offered: Vec<Feature>) -> Features {
+        self.offered = offered;
+        self
+    }
+
+    /// 扩展交的功能（施工 IM-6）。
+    pub fn offered(&self) -> &[Feature] {
+        &self.offered
     }
 
     /// 接平台的包和它们接的平台（施工 IM-4）。
@@ -75,20 +90,27 @@ impl Features {
         &self.images
     }
 
-    /// 每一个，照先后。
+    /// 每一个，照先后；扩展交的（施工 IM-6）接在最后。
     pub fn iter(&self) -> impl Iterator<Item = &Feature> {
-        self.list.iter()
+        self.list.iter().chain(&self.offered)
     }
 
     /// 功能 `id` 装了没有。
     pub fn installed(&self, id: &str) -> bool {
-        self.list.iter().any(|feature| feature.id == id)
+        self.iter().any(|feature| feature.id == id)
     }
 
     /// 包 `package` 里的工具 `tool` 归哪个功能：MCP 服务的工具（`mcp__<服务名>__…`）归那个服务的功能（施工 X-2），脚本的工具
     /// 归那个脚本的功能（施工 X-12 中）；别的照包自己的功能算（MCP 服务的、脚本的不算在里面）：清单里写明了的照写的，包只有
-    /// 一个功能的归它；都不是的（没装的包、写了几个功能又没列它的）没有。
+    /// 一个功能的归它；都不是的（没装的包、写了几个功能又没列它的）没有。扩展交的功能列了的先归它（施工 IM-6），不算进「包只有
+    /// 一个功能」。
     pub fn of_tool(&self, package: &str, tool: &str) -> Option<&str> {
+        // 扩展交的功能列了的先认（施工 IM-6）：它只列自己登记的工具。
+        if let Some(offered) = self.offered.iter().find(|feature| {
+            feature.package == package && feature.tools.iter().any(|name| name == tool)
+        }) {
+            return Some(&offered.id);
+        }
         let in_package = self
             .list
             .iter()

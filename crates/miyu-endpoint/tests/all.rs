@@ -76,6 +76,7 @@ mod extension_config;
 mod extension_rights;
 mod extension_stream;
 mod extensions;
+mod feature_offer;
 mod files;
 mod fork;
 mod fork_subagent;

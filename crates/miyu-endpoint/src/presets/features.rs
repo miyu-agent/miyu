@@ -1,6 +1,6 @@
 //! `preset.get` 的一个个功能（施工 F-3 下，设计 `30-插件框架.md` 第四节，`docs/blueprint/presets.md`「怎么走」第 8 条）：
 //! 装了的功能照清单读的先后，每个带开不开、下面的每件工具开不开；接着是登记上的脚本（施工 X-12 中）、用得上的技能（施工
-//! X-11 上）、模板命令（施工 X-14 上），一个一个功能；预设里写了、没装的接在后面。头照它一个功能一个开关画，展开能逐件关。
+//! X-11 上）、模板命令（施工 X-14 上），一个一个功能；扩展替这个人交的（施工 IM-6）接在装了的包后面；预设里写了、没装的接在后面。头照它一个功能一个开关画，展开能逐件关。
 
 use std::collections::BTreeSet;
 
@@ -76,6 +76,31 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             }
             listed.push(one);
         }
+    }
+    // 扩展替这个人交的功能（施工 IM-6，`feature.offer`）：归交的那个包，写法同包自己的功能。
+    for offer in core.extensions.offers.of(&carried.account) {
+        let (id, package) = (&offer.feature.id, offer.feature.package.as_str());
+        let (on, by) = file.decided(id, package);
+        let tools = tools_of(&catalog, &table, (package, id), |name| {
+            json!({
+                "name": name,
+                "label": label(words.as_ref(), &catalog, name, language),
+                "on": on && !file.tools_off.contains(name),
+            })
+        });
+        let mut one = json!({
+            "id": id,
+            "name": pick(&offer.name, language).unwrap_or_else(|| id.clone()),
+            "package": package,
+            "on": on,
+            "by": by.as_str(),
+            "installed": true,
+            "tools": tools,
+        });
+        if let Some(summary) = pick(&offer.summary, language) {
+            one["summary"] = json!(summary);
+        }
+        listed.push(one);
     }
     // 机主私人的（挂在 `~home` 下的脚本、个人设置里的 MCP 服务，施工 U23 中上）只列给机主这一侧，别人的列他自己那一层的（施工
     // U23 中下），同会话的工具面（`scripts::features`）。

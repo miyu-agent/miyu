@@ -9,6 +9,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`package.methods`, `method.call`](#packagemethods-methodcall) | both | Register methods its page and widgets call; calls forwarded by the core |
 | [`package.emit`](#packageemit) | extension → core | Push to people who have its page open |
 | [`process.retire`, `process.keep`](#processretire-processkeep) | extension → core | Ask whether it may exit on its own; whether to stay up (construction IM-1 part three) |
+| [`feature.offer`](#featureoffer) | extension → core | Offer features to this person's preset menu (construction IM-6) |
 | [`port.claim`, `port.release`, `port.list`](#portclaim-portrelease-portlist) | extension → core (`port.list` for admins) | Claim and release the ports it listens on; see the whole table (construction IM-5) |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
@@ -39,6 +40,22 @@ A per-account extension (`[process] scope = "account"`) starts when it's first n
 - **`process.keep {"on": true|false}`**: whether this person's copy should stay up; replies `{"on": <the current value>}`. The core remembers it across restarts; on startup it starts copies only for the people who asked to be kept, the rest wait until they're needed. An exit doesn't clear it; only you change it. For example im with a QQ connection set up stays up (NapCat connects back to its port, so nobody would be listening if it exited).
 
 A single-copy package may `retire` too, but it isn't started again on demand: it waits for an extension restart or the next core start. Its `keep` replies `{"on": true}` (it's always up) and records nothing. A connection the core didn't start gets `not_an_extension` for both.
+
+## `feature.offer`
+
+Offer a few features to this person's preset menu, such as "QQ history", with their tools:
+
+```json
+{"features": [{"id": "qq-history", "name": {"zh": "查询 QQ 群聊记录", "en": "QQ history"}, "summary": {"en": "…"}, "tools": ["qq_history"]}]}
+```
+
+- Replies `{}`. Each call sends the whole set, replacing what you last offered for this person; an empty list withdraws them all.
+- Kept only in the core's memory: offer again every time you connect or your own switches change, and after a core restart. Exiting doesn't clear it.
+- `id` is written like a package id and must not clash with this person's installed features or another package's offers; `name` and `summary` are one string or a table of languages (as in manifest `[features]`); `tools` must be tools you `provide`d. Anything wrong gets `bad_params` (`field` is `features`) and nothing changes.
+- Offered features show up in this person's preset menu under your package; the tools they list belong to them, not to your package's own feature. Whether they're on follows the preset: the shipped "Everything" turns them on, the other shipped presets off, and people turn them on in their preset. Open sessions follow the new set from their next turn.
+- In groups and private chats on your own platforms your whole package skips the preset (`venues.en.md`); offers only matter in local sessions and on other platforms.
+
+The core also has `feature.set`, for people changing global switches; don't mix them up.
 
 ## `port.claim`, `port.release`, `port.list`
 

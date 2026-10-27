@@ -53,7 +53,7 @@ pub use face::preview;
 pub use fork::{Fork, ForkError, Within, fork};
 pub use load::{load, load_placed};
 pub(crate) use scan::current_policy;
-pub use setup::{Create, GroupSettings, Installed, Load, PresetPlaces, Workplace};
+pub use setup::{Create, GroupSettings, Installed, Load, OfferedFeatures, PresetPlaces, Workplace};
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
 /// 造会话；`session.created` 落了盘，才交回 [`Handle`]。子会话（带着 [`Create::lineage`]）的 system 接上场所说明

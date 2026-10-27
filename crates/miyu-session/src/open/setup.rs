@@ -32,11 +32,36 @@ use crate::spawn::{Lineage, SessionPort};
 pub struct PresetPlaces {
     /// 几层。
     pub presets: Presets,
-    /// 装了的功能（设计 `30-插件框架.md` 第三节）。
+    /// 装了的功能（设计 `30-插件框架.md` 第三节）：开会话、载入时的那一份。
     pub features: Features,
+    /// 扩展这时替属主交的功能（施工 IM-6，`feature.offer`）：每回合开始取一次，接在 `features` 后面。没交的（测试里造的）没有。
+    pub offers: Option<OfferedFeatures>,
+}
+
+/// 取扩展这时替属主交的功能（施工 IM-6）：协议端点给的，只读内存里的一张小表。
+#[derive(Clone)]
+pub struct OfferedFeatures(pub Arc<dyn Fn() -> Vec<miyu_policy::features::Feature> + Send + Sync>);
+
+impl std::fmt::Debug for OfferedFeatures {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("OfferedFeatures")
+    }
 }
 
 impl PresetPlaces {
+    /// 这一刻装了的功能：开会话时的那一份，接上扩展这时交的（施工 IM-6）。两边都没交的照原样借出去，不拷。
+    pub fn features(&self) -> std::borrow::Cow<'_, Features> {
+        let offered = self
+            .offers
+            .as_ref()
+            .map(|offers| (offers.0)())
+            .unwrap_or_default();
+        if offered.is_empty() && self.features.offered().is_empty() {
+            return std::borrow::Cow::Borrowed(&self.features);
+        }
+        std::borrow::Cow::Owned(self.features.clone().offering(offered))
+    }
+
     /// 照编号 `id` 找叠好的预设文件（载入时放开技能的文件夹用）：找不着、写错了的没有。照场所定（`images`、`venue`，施工 X-25、
     /// IM-4，[`PresetFile::situate`]），带上这一轮的全局开关 `switches`（施工 X-27）、这个人关了的包 `off`（施工 U23 末上）。
     pub(crate) fn file(
@@ -52,7 +77,7 @@ impl PresetPlaces {
             .file
             .following(switches)
             .switching_off(off);
-        file.situate(&self.features, images, venue);
+        file.situate(&self.features(), images, venue);
         Some(file)
     }
 }

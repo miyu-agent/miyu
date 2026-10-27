@@ -34,6 +34,7 @@ extension.disable
 extension.enable
 extension.restart
 extension.status
+feature.offer
 feature.set
 fs.find
 fs.list

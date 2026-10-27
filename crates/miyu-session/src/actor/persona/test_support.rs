@@ -155,6 +155,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         presets: Some(PresetPlaces {
             presets,
             features: installed(),
+            offers: None,
         }),
         seen: Some(Shelf::new(tools.clone()).edition()),
         tools: Shelf::new(tools),

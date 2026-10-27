@@ -209,7 +209,8 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     if !core.machine_side(owner) {
         return Features::new(list)
             .needing_images(images)
-            .connecting(connections);
+            .connecting(connections)
+            .offering(core.extensions.offers.features_of(owner));
     }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
@@ -221,6 +222,7 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     Features::new(list)
         .needing_images(images)
         .connecting(connections)
+        .offering(core.extensions.offers.features_of(owner))
 }
 
 /// 一个登记上的脚本的功能。

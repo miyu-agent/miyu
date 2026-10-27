@@ -147,3 +147,28 @@ fn a_script_tool_belongs_to_its_script_and_the_package_keeps_its_own() {
     );
     assert_eq!(features.of_tool("other", "weather"), None, "别的包的不算");
 }
+
+/// 扩展交的功能（施工 IM-6）：列了的工具归它，没列的照旧归包只有的那一个功能；算装了，接在最后；整份换掉。
+#[test]
+fn an_offered_feature_takes_the_tools_it_lists() {
+    let features = installed().offering(vec![feature("qq-history", "onebot", &["qq_history"])]);
+    assert_eq!(features.of_tool("onebot", "qq_history"), Some("qq-history"));
+    assert_eq!(
+        features.of_tool("onebot", "qq_send"),
+        Some("qq"),
+        "没列的照旧"
+    );
+    assert_eq!(
+        features.of_tool("memory", "qq_history"),
+        Some("memory"),
+        "别的包的不算"
+    );
+    assert!(features.installed("qq-history"));
+    assert_eq!(
+        features.iter().last().map(|one| one.id.as_str()),
+        Some("qq-history")
+    );
+    let cleared = features.offering(Vec::new());
+    assert!(!cleared.installed("qq-history"));
+    assert_eq!(cleared.of_tool("onebot", "qq_history"), Some("qq"));
+}

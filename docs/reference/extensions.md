@@ -9,6 +9,7 @@
 | [`package.methods`、`method.call`](#packagemethodsmethodcall) | 两个方向 | 登记后台页、界面块要调的方法；核心转来的调用 |
 | [`package.emit`](#packageemit) | 扩展 → 核心 | 推给开着它页面的人 |
 | [`process.retire`、`process.keep`](#processretireprocesskeep) | 扩展 → 核心 | 问能不能自己退；要不要常驻（施工 IM-1 下） |
+| [`feature.offer`](#featureoffer) | 扩展 → 核心 | 替这个人交预设菜单里的功能（施工 IM-6） |
 | [`port.claim`、`port.release`、`port.list`](#portclaimportreleaseportlist) | 扩展 → 核心（`port.list` 给管理员） | 登记、放开要听的端口；看整张表（施工 IM-5） |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
@@ -39,6 +40,22 @@
 - **`process.keep {"on": true|false}`**：这个人的这一份要不要常驻，回 `{"on": <现在的值>}`。核心记下，重启也在；核心起来时只替说了要常驻的人拉起，别的等用到。进程退出不清，只由你自己改。比如配了 QQ 连接的 im 要常驻（NapCat 反连它的端口，它退了就没人听）。
 
 只有一份的包也能 `retire`，但不会因为用到再起，要等重启扩展、核心再起来；`keep` 回 `{"on": true}`（本来就常驻），不记。不是核心拉起的连接调这两个回 `not_an_extension`。
+
+## `feature.offer`
+
+替这个人往预设菜单里交几个功能，比如「查询 QQ 群聊记录」，带上它的工具：
+
+```json
+{"features": [{"id": "qq-history", "name": {"zh": "查询 QQ 群聊记录", "en": "QQ history"}, "summary": {"zh": "…"}, "tools": ["qq_history"]}]}
+```
+
+- 回 `{}`。每次交整份，换掉你上一次替这个人交的；空的是全撤。
+- 只记在核心内存里：每次连上、你自己的开关变了都交一遍，核心重启以后再交。进程退了不清。
+- `id` 写法同包的编号，不能和这个人装了的功能、别的包交的撞；`name`、`summary` 是一句字或者语言到字的表（同清单 `[features]`）；`tools` 必须是你 `provide` 过的工具。不对的回 `bad_params`（`field` 是 `features`），什么都不换。
+- 交了的出现在这个人的预设菜单里，归你的包；列出来的工具归它，不归你包自己的功能。开不开照预设：出厂「全部功能」开，别的出厂预设关，人在预设里打开。开着的会话下一个回合照新的算。
+- 你接的平台的群、私聊里你整包不过预设（`venues.md`），这里交的只管本机会话、别的平台。
+
+核心另有给人改全局开关的 `feature.set`，名字不同、别弄混。
 
 ## `port.claim`、`port.release`、`port.list`
 

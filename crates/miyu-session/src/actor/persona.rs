@@ -406,9 +406,9 @@ enum Preset {
     Changed(Chosen),
 }
 
-/// 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的、以前的）没有，当都装着。
-fn features(refresh: &Refresh) -> Option<&Features> {
-    refresh.presets.as_ref().map(|places| &places.features)
+/// 装了的功能（施工 F-3 上；施工 IM-6 起接上扩展这时交的）：没交预设几层的（测试里造的、以前的）没有，当都装着。
+fn features(refresh: &Refresh) -> Option<std::borrow::Cow<'_, Features>> {
+    refresh.presets.as_ref().map(PresetPlaces::features)
 }
 
 /// 照快照里预设的编号重新找一遍（施工 P-2 下），全局开关照这一轮的配置 `values`（施工 X-27）。
@@ -429,7 +429,7 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
         .presets
         .find(&pin.id)
         .map_err(|error| error.to_string())?;
-    let features = &places.features;
+    let features = &places.features();
     let memory = !pin.off.iter().any(|feature| feature == MEMORY);
     // 这个人关了的包（施工 U23 末上）照这一轮的配置扣下：开着的会话下一个回合就没有它的东西。
     let file = found

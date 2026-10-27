@@ -89,8 +89,9 @@ pub use memory::{
     MergeTexts, NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, TagTexts, Using, Vectors,
 };
 pub use open::{
-    Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError, PresetPlaces,
-    Within, Workplace, create, fork, load, load_placed, preview, preview_context,
+    Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError,
+    OfferedFeatures, PresetPlaces, Within, Workplace, create, fork, load, load_placed, preview,
+    preview_context,
 };
 pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};

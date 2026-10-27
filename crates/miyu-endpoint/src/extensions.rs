@@ -10,6 +10,7 @@ pub(crate) mod config;
 mod demand;
 mod instance;
 pub(crate) mod methods;
+mod offers;
 mod ports;
 mod retire;
 mod state;
@@ -19,6 +20,7 @@ mod supervise;
 pub(crate) use approval::{described, forget as forget_switch, held};
 pub(crate) use instance::{Instance, per_account, scoped};
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
+pub(crate) use offers::offer;
 pub(crate) use ports::{claim as claim_port, list as list_ports, release as release_port};
 pub(crate) use retire::{keep, retire};
 pub(crate) use state::{Cell, Reason, State, Status};
@@ -69,6 +71,8 @@ pub(crate) struct Extensions {
     kept: Mutex<()>,
     /// 扩展登记的端口（施工 IM-5，`ports.rs`）。
     ports: ports::Ports,
+    /// 扩展按账号交的预设功能（施工 IM-6，`offers.rs`）。
+    pub(crate) offers: offers::Offers,
 }
 
 impl Extensions {
@@ -85,6 +89,7 @@ impl Extensions {
             changed: broadcast::channel(CHANGES).0,
             kept: Mutex::new(()),
             ports: ports::Ports::default(),
+            offers: offers::Offers::default(),
         }
     }
 

@@ -56,10 +56,19 @@ pub(crate) async fn resolve(
 
 /// 交给属主是 `owner` 的会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能；施工 Y-2 中上起照属主）：改了预设的
 /// 文件，开着的会话下一个回合换上。
-pub(crate) fn places(core: &Core, owner: &AccountId) -> PresetPlaces {
+pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPlaces {
+    // 扩展这时交的功能（施工 IM-6）每回合开始取一次：拿着核心的弱引用，会话活在核心里面。
+    let (weak, whose) = (std::sync::Arc::downgrade(core), owner.clone());
     PresetPlaces {
         presets: presets(core, owner),
         features: crate::scripts::features(core, owner),
+        offers: Some(miyu_session::OfferedFeatures(std::sync::Arc::new(
+            move || {
+                weak.upgrade()
+                    .map(|core| core.extensions.offers.features_of(&whose))
+                    .unwrap_or_default()
+            },
+        ))),
     }
 }
 

@@ -100,7 +100,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "mermaid.render" | "model.call" | "model.embed" | "model.list" | "package.check"
         | "package.emit" | "package.files" | "package.info" | "package.list" | "package.methods"
         | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
-        | "persona.list" | "persona.read" | "port.claim" | "port.release" | "preset.get"
+        | "feature.offer" | "persona.list" | "persona.read" | "port.claim" | "port.release" | "preset.get"
         | "preset.list" | "process.keep" | "process.retire" | "provider.catalog"
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
