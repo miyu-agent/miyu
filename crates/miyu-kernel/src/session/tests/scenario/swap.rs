@@ -49,7 +49,7 @@ impl Assembler for Swapped {
 /// 换上的那一份策略：组装换成 [`Swapped`]，别的和替身的一样。
 fn swapped() -> Policy {
     let mut policy = policy();
-    policy.assembler = Box::new(Swapped);
+    policy.assembler = std::sync::Arc::new(Swapped);
     policy
 }
 

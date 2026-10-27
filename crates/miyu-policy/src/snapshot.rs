@@ -319,7 +319,7 @@ impl Snapshot {
         // 裸的回合开始不注入事实（施工 D-1 上）：请求和原来的一次性请求逐字节一样。
         let facts = if self.bare { facts.quiet() } else { facts };
         Ok(Policy {
-            assembler: Box::new(DefaultAssembler::new(stable, texts)),
+            assembler: std::sync::Arc::new(DefaultAssembler::new(stable, texts)),
             facts,
             tools: rules,
             step_limit: self.step_limit,

@@ -70,7 +70,7 @@ impl Assembler for Drifting {
 fn a_rewritten_system_is_the_first_difference() {
     let created: SessionCreated = serde_json::from_str(CREATED).unwrap();
     let mut policy = policy();
-    policy.assembler = Box::new(Drifting);
+    policy.assembler = std::sync::Arc::new(Drifting);
     let (mut session, _) = Session::create(
         session_id(),
         id(0),

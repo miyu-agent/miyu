@@ -286,7 +286,7 @@ fn an_old_snapshot_does_not_describe() {
         }
     }
     let old = || Policy {
-        assembler: Box::new(Old),
+        assembler: std::sync::Arc::new(Old),
         ..policy()
     };
     let mut stage = Stage::new(old, environment("~/src/miyu"), at(0));

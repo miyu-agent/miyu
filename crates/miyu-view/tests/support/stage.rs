@@ -80,7 +80,7 @@ pub fn policy() -> Policy {
             per_session: 16,
         },
         foreground: false,
-        assembler: Box::new(Nothing),
+        assembler: std::sync::Arc::new(Nothing),
         facts: FactTemplates::new(
             r#"<e t="{time}"/>"#,
             r#"<p l="{level}"/>"#,

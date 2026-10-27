@@ -73,7 +73,7 @@ impl Assembler for Lines {
 /// 会提前压的策略：一条事件一行地组装，输出预留、余量各 10，尾巴 40，提前量 60。
 fn preparing_policy() -> Policy {
     let mut policy = policy();
-    policy.assembler = Box::new(Lines);
+    policy.assembler = std::sync::Arc::new(Lines);
     policy.compaction = Some(Compaction {
         reserve_cap: 10,
         margin: 10,

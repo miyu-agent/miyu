@@ -80,7 +80,7 @@ fn policy_with(system: String) -> Policy {
             per_session: 16,
         },
         foreground: false,
-        assembler: Box::new(DefaultAssembler::new(stable(system), texts())),
+        assembler: std::sync::Arc::new(DefaultAssembler::new(stable(system), texts())),
         facts: templates(),
         tools: BTreeMap::from([
             ("read".to_string(), rule(Access::Read)),

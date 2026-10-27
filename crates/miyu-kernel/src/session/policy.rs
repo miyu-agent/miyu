@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use crate::assemble::Assembler;
 use crate::estimate::{self, Flat};
@@ -20,8 +21,9 @@ use super::Session;
 /// 冻结在会话上的策略：造会话时由执行器照策略快照造好交进来（施工 3-6），会话里不再变。
 pub struct Policy {
     /// 组装请求的做法，一个会话一种（`05-内核接口.md` 第五节「组装请求」）。会话是一个 actor，
-    /// 会被挪到别的线程上跑（02 第七节），所以要 `Send`。
-    pub assembler: Box<dyn Assembler + Send>,
+    /// 会被挪到别的线程上跑（02 第七节），所以要 `Send`；施工 PERF-4 起共享着放（`Sync`）：组装是同步的纯函数，记忆抽取
+    /// 拿一份在阻塞线程里渲染那一段（[`Session::assembler`]），不占会话。
+    pub assembler: Arc<dyn Assembler + Send + Sync>,
     /// 事实的模板：环境、权限、会话编号，和回复被截断的那一句（`08-上下文投影.md` 第五节「环境和状态的事实怎么写」）。
     pub facts: FactTemplates,
     /// 工具面上每件工具的访问类别和参数格式，照名字查。不在这里的名字是模型编的。
