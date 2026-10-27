@@ -87,7 +87,8 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::Answer { .. }
         | Command::Recap
         | Command::Report(_)
-        | Command::PeerIdle { .. } => true,
+        | Command::PeerIdle { .. }
+        | Command::EndDream(_) => true,
         Command::Send { .. }
         | Command::Typed { .. }
         | Command::Respond { .. }

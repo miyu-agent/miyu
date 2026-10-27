@@ -1,5 +1,4 @@
 //! 合并跑在整理会话里（施工 D-2，设计 `41-整理会话.md`）：真记忆日志、假的会话表（记下开的、每一批的字，照剧本交回）。
-//!
 //! 接了会话表的：真有要合的才开、一趟一个会话，一批一轮（`<会话>/dream/<n>`），请求的字遮过 key；答了的照旧读、核对、落，
 //! `merging` 带会话，回执带会话；会话出错结束的数一次失败、连着三次跳过；会话自己停了、人叫停了（打断那一轮）的放弃这一批、
 //! 不数；会话那一路断了的这一趟停、不数。没接的照旧走一次性入口（别的测试）。
@@ -15,8 +14,8 @@ use miyu_recall::merge::{Revised, Seen};
 use miyu_recall::{MemoryEvent, MergeFailed, STOPPED, from_event};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{
-    DreamBatch, DreamRoom, DreamSessions, DreamSpec, Dreamed, Keeper, Listener, NotDreamed,
-    Pending, Turn, Watched,
+    DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec, Dreamed, Keeper, Listener,
+    NotDreamed, Pending, Turn, Watched,
 };
 use tokio::sync::Notify;
 
@@ -116,7 +115,12 @@ impl DreamSessions for Fake {
         })
     }
 
-    fn close(&self, session: SessionId, keep: usize) -> Pending<'_, Result<usize, String>> {
+    fn close(
+        &self,
+        session: SessionId,
+        keep: usize,
+        _result: Option<DreamResult>,
+    ) -> Pending<'_, Result<usize, String>> {
         lock(&self.closed).push((session, keep));
         Box::pin(async { Ok(0) })
     }

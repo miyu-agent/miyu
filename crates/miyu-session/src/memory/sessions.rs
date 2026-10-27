@@ -3,6 +3,8 @@
 
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 
+pub use miyu_kernel::event::DreamEnded as DreamResult;
+
 use crate::route::Watched;
 use crate::spawn::Pending;
 
@@ -58,8 +60,15 @@ pub trait DreamSessions: Send + Sync + std::fmt::Debug {
     ) -> Pending<'a, Result<DreamBatch, String>>;
 
     /// 这一趟跑完了（施工 D-1 下，设计 41 DS9）：照删会话的路删掉这一间最旧的几趟（进回收处），只留最近 `keep` 趟（这一趟
-    /// 也算；`0` 是连它一起删）。有回合在跑的不删。交回删了几个；没了的、删不成的记一行运行日志，不算错。
-    fn close(&self, session: SessionId, keep: usize) -> Pending<'_, Result<usize, String>>;
+    /// 也算；`0` 是连它一起删）。有回合在跑的不删。交回删了几个；没了的、删不成的记一行运行日志，不算错。`result` 是这一趟
+    /// 做了什么（施工 DR-1）：有的先以记忆模块的名义在这一趟的日志末尾记一条 `dream.ended`，会话列表照它写 `result`；记不上的
+    /// 记一行运行日志，照样删旧的。
+    fn close(
+        &self,
+        session: SessionId,
+        keep: usize,
+        result: Option<DreamResult>,
+    ) -> Pending<'_, Result<usize, String>>;
 
     /// 叫停：打断这个会话在跑的那一轮，[`DreamSessions::batch`] 那一头交回 [`DreamBatch::Stopped`]。
     fn stop(&self, session: SessionId, id: CommandId) -> Pending<'_, Result<(), String>>;

@@ -352,3 +352,27 @@ impl Reason {
         }
     }
 }
+
+/// 回应：接受了，附上它产生的事件的序号。
+pub(super) fn accepted(id: CommandId, events: Vec<Seq>) -> Action {
+    Action::Reply {
+        id,
+        outcome: Outcome::Accepted { events },
+    }
+}
+
+/// 回应：拒绝了，附上原因。
+pub(super) fn rejected(id: CommandId, reason: Reason) -> Action {
+    Action::Reply {
+        id,
+        outcome: Outcome::rejected(reason),
+    }
+}
+
+/// 拒绝，带上针对的是哪几条（施工 O-14 上）。
+pub(super) fn rejected_about(id: CommandId, reason: Reason, about: Vec<Seq>) -> Action {
+    Action::Reply {
+        id,
+        outcome: Outcome::Rejected { reason, about },
+    }
+}

@@ -70,6 +70,7 @@ kinds! {
     Clear,
     /// 清掉待办（施工 D-3 再补）。
     ClearTodos,
+    EndDream,
     /// 子会话交来的回报（施工 7-2）。
     Report,
     /// 等的会话交来的「空了」（施工 C-6）。
@@ -169,6 +170,7 @@ impl InputKind {
                 Command::Report(_) => InputKind::Report,
                 Command::PeerIdle { .. } => InputKind::PeerIdle,
                 Command::Recap => InputKind::Recap,
+                Command::EndDream(_) => InputKind::EndDream,
             },
             Input::Nested(_) => InputKind::Nested,
             Input::Stored { .. } => InputKind::Stored,

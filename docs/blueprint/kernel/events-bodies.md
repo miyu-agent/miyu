@@ -10,6 +10,7 @@
 |---|---|
 | `crates/miyu-kernel/src/event/session.rs` | `session.created`、`session.policy_changed`、`session.meta_changed`、`session.workspace_changed`（施工 9-7 上）、`session.recapped`（施工 3-8 四补）、`session.sealed`（施工 C-8 下）、`command.ran`（施工 O-6）、`todos.cleared`（施工 D-3 再补）；权限 `Permission`、级别 `Level` |
 | `crates/miyu-kernel/src/event/turn.rs` | `turn.joined`（施工 O-14 下）、`turn.started`、`turn.ended`（`EndReason`）、`turn.reverted`、`turn.unreverted` |
+| `crates/miyu-kernel/src/event/dream.rs` | `dream.ended`（施工 DR-1） |
 | `crates/miyu-kernel/src/event/restore.rs` | `files.restored`（`Restored`、`RestoreAction`、`RestoreOutcome`） |
 | `crates/miyu-kernel/src/event/message.rs` | `message.user`、`message.assistant`、`message.withdrawn` |
 | `crates/miyu-kernel/src/event/tool.rs` | `tool.result`（`ToolStatus`、给人看的说法 `Said`）、`tool.approval_requested`、`tool.approval_decided`（`Decision`） |
@@ -116,6 +117,16 @@
 | `goal.changed` | 改完的整份：`text`、`limit`（不写的是不限了） |
 | `goal.paused`、`goal.resumed` | `{}` |
 | `goal.ended` | `outcome`（`completed`、`blocked`、`cleared`，不认识的原样留着、也算结束了）、`reason`（卡在哪，卡住的才写） |
+
+**`dream.ended`**：整理会话跑完了一趟（施工 DR-1，设计 `41-整理会话.md`）。合并任务收尾时交给会话表（`DreamSessions::close` 的 `result`），核心以记忆模块的名义记在这一趟整理会话的日志末尾。`by` 是记忆模块，`cause` 是 `<会话>/ended`，不带 `turn`。没跑完、崩了没记上的没有这一条；有几条的照最后一条。不进她的上下文（渲染时不出）；会话列表照它给这一项写 `dream.result`（`store/index.md` 的 `dream_result` 一列）。
+
+| 格 | 写法 | 有没有 | 是什么 |
+|---|---|---|---|
+| `given` | 整数 | 必有 | 新记了几条 |
+| `revised` | 整数 | 必有 | 改了几条 |
+| `retired` | 整数 | 必有 | 作废了几条 |
+| `summary` | 布尔 | 必有 | 写了这一间的摘要 |
+| `stopped` | 布尔 | 叫停的才写（写 `true`） | 半路叫停的：做了的照数，没做完的不算 |
 
 **`session.sealed`**：分叉出来的会话跑满了 `forked.seal_after` 轮，封存了（施工 C-8 下，`session/fork.md`「封存」）。`body` 是 `{}`。`by` 是内核，`cause` 同它前面那条 `turn.ended`，不带 `turn`：和那一轮的结束同一批追加，崩了载入时收尾的那一轮也是。之后不再开一轮（账本查，`kernel/history.md`）；不进上下文。
 

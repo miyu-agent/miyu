@@ -13,6 +13,7 @@ mod configure;
 mod cost;
 mod difference;
 mod dirs;
+mod dream;
 mod edits;
 mod end_turn;
 mod executor;

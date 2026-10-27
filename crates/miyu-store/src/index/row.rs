@@ -5,7 +5,7 @@
 use rusqlite::Row as SqlRow;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Dream, Event};
+use miyu_kernel::event::{Body, Dream, DreamEnded, Event};
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
@@ -64,6 +64,8 @@ pub struct Row {
     pub origin: Option<String>,
     /// fork 子代理（施工 A-F 补）：`session.created` 的 `forked` 写了 `within` 的。头照它换图标。
     pub forked: bool,
+    /// 整理会话这一趟做了什么（施工 DR-1）：最后一条 `dream.ended`。没跑完、崩了没记上的、别的会话没有。表里存成它的 JSON。
+    pub dream_result: Option<DreamEnded>,
 }
 
 /// `preview` 最多几个字（按 Unicode 的字数）。
@@ -110,6 +112,7 @@ impl Row {
                 .forked
                 .as_ref()
                 .is_some_and(|forked| forked.within.is_some()),
+            dream_result: None,
         })
     }
 
@@ -151,6 +154,9 @@ impl Row {
                     _ => None,
                 };
             }
+        }
+        if let Body::DreamEnded(ended) = &event.body {
+            self.dream_result = Some(*ended);
         }
         if let Body::ContextCompacted(_) = &event.body {
             self.context = None;
@@ -221,11 +227,15 @@ impl Row {
                 .transpose()?,
             origin: row.get(22)?,
             forked: row.get::<_, i64>(23)? != 0,
+            dream_result: row
+                .get::<_, Option<String>>(24)?
+                .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream_result")))
+                .transpose()?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 24], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 25], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -264,6 +274,12 @@ impl Row {
             },
             optional(self.origin.as_deref()),
             Value::Integer(i64::from(self.forked)),
+            match &self.dream_result {
+                Some(result) => text(&serde_json::to_string(result).map_err(|error| {
+                    IndexError::Bad(format!("row {}: dream_result: {error}", self.id.as_str()))
+                })?),
+                None => Value::Null,
+            },
         ])
     }
 }

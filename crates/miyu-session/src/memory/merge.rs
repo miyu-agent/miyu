@@ -430,7 +430,8 @@ impl MergeJob {
     async fn close_trip(&self, trip: ask::Trip) {
         let keep = MemorySettings::from(&self.config.resolved.values()).dream_keep;
         let keep = usize::try_from(keep).unwrap_or(0);
-        if let Err(why) = trip.sessions.close(trip.session, keep).await {
+        // 这一趟做了什么由记忆这一头算（施工 DR-1 的另一半），还没接上的不记。
+        if let Err(why) = trip.sessions.close(trip.session, keep, None).await {
             tracing::warn!(target: TARGET, room_kind = self.keeper.room().kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "dream session not closed");
         }
     }

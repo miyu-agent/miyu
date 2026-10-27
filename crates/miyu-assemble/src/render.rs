@@ -138,6 +138,8 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             | Body::GoalPaused(_)
             | Body::GoalResumed(_)
             | Body::GoalEnded(_)
+            // 整理会话这一趟的结果只给会话列表看（施工 DR-1）。
+            | Body::DreamEnded(_)
             // 换工作区不进上下文：下一轮开始时变了的环境照旧注成一块事实（施工 9-7 上）。
             | Body::WorkspaceChanged(_)
             | Body::SessionRecapped(_)

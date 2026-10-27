@@ -30,6 +30,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         dream: None,
         origin: None,
         forked: false,
+        dream_result: None,
     }
 }
 

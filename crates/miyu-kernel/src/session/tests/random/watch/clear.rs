@@ -4,10 +4,11 @@
 //!   回复、工具结果、回报）拒绝，`nothing_to_clear`；拒绝的只有一个回应；
 //! - 收下的只追加一批：没有触发的 `turn.started`、替代到它前面那一条的空检查点（`clear`，别的格都没有）、`completed` 的
 //!   `turn.ended`，`by` 都是内核、`cause` 都是命令；不请求模型、不跑回合开始的挂接点；
+//! - 交整理的结果（施工 DR-1）回回收下，只追加一条不带回合的 `dream.ended`；
 //! - 检查点是还算数的最近一次压缩：之后的请求照它以后的（`watch/compaction.rs`），撤销能撤掉它（`watch/undo.rs`）。
 
 use super::*;
-use crate::event::{CompactTrigger, ContextCompacted, TurnEnded, TurnStarted};
+use crate::event::{CompactTrigger, ContextCompacted, DreamEnded, TurnEnded, TurnStarted};
 
 /// 送进去之前判出来的：哪个命令，该怎样。
 pub(super) enum Expect {
@@ -17,6 +18,8 @@ pub(super) enum Expect {
     Cleared(CommandId, Seq),
     /// 清掉待办（施工 D-3 再补）：随机的会话从不写待办，回回拒绝。
     NoTodos(CommandId),
+    /// 交整理的结果（施工 DR-1）：回回收下，只追加一条不带回合的 `dream.ended`。
+    Dreamed(CommandId, DreamEnded),
 }
 
 impl Watch {
@@ -30,6 +33,9 @@ impl Watch {
         }
         if received.command == Command::ClearTodos {
             return Some(Expect::NoTodos(received.id.clone()));
+        }
+        if let Command::EndDream(ended) = &received.command {
+            return Some(Expect::Dreamed(received.id.clone(), *ended));
         }
         if received.command != Command::Clear {
             return None;
@@ -93,6 +99,19 @@ impl Watch {
                 return;
             }
             Expect::Cleared(command, upto) => (command, upto),
+            Expect::Dreamed(command, ended) => {
+                self.seen_paths.insert("记下了整理的结果");
+                let [Action::Append(events)] = actions else {
+                    panic!("种子 {seed}：交整理的结果只追加一批：{actions:?}");
+                };
+                let [event] = events.as_slice() else {
+                    panic!("种子 {seed}：交整理的结果追加一条：{events:?}");
+                };
+                assert_eq!(event.body, Body::DreamEnded(ended), "种子 {seed}");
+                assert_eq!(event.turn, None, "种子 {seed}：不带回合编号");
+                assert_eq!(event.cause.as_ref(), Some(&command), "种子 {seed}");
+                return;
+            }
             Expect::NoTodos(command) => {
                 self.seen_paths.insert("没有待办时清待办被拒");
                 assert_eq!(

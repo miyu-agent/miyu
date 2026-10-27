@@ -2,8 +2,8 @@
 
 use crate::block::Block;
 use crate::event::{
-    Body, ChildReported, ContextInjected, Decision, Level, Response, TypedCommand, VenueDelivered,
-    VenueMessage, VenueRecalled,
+    Body, ChildReported, ContextInjected, Decision, DreamEnded, Level, Response, TypedCommand,
+    VenueDelivered, VenueMessage, VenueRecalled,
 };
 use crate::id::EventKind;
 use crate::id::{CallId, Seq, TurnId};
@@ -155,6 +155,9 @@ pub enum Command {
     /// 改长期目标（施工 X-7，`docs/blueprint/goal.md`，`session/goal.rs`）：`/goal` 命令、`goal` 工具、到了轮数上限都走它。
     /// 合的记一条 `goal.*`，不合的拒。
     Goal(GoalChange),
+    /// 整理会话跑完了一趟（施工 DR-1，设计 `41-整理会话.md`）：只有核心以记忆模块的名义发给它开的整理会话。记一条
+    /// `dream.ended`，不带回合编号；回合进行中照收，封存了照收。
+    EndDream(DreamEnded),
 }
 
 /// 长期目标怎么改（施工 X-7）。

@@ -13,6 +13,7 @@ use crate::time::Timestamp;
 
 mod context;
 mod cost;
+mod dream;
 mod effect;
 mod goal;
 mod image;
@@ -34,6 +35,7 @@ pub use context::{
     CompactTrigger, CompactionPaused, ContextCompacted, ContextInjected, PauseReason, RestoredFile,
 };
 pub use cost::{Cost, Prices, Real};
+pub use dream::DreamEnded;
 pub use effect::{
     Effect, FileChanged, FileRead, FileShown, FileTrashed, JobKind, JobMessaged, JobStarted,
     PeerWatch, Todo, TodoStatus, TodoWritten,
@@ -229,6 +231,8 @@ bodies! {
     GoalResumed = "goal.resumed",
     /// 长期目标结束了（施工 X-6）。
     GoalEnded = "goal.ended",
+    /// 整理会话跑完了一趟（施工 DR-1）。
+    DreamEnded = "dream.ended",
 }
 
 impl Event {

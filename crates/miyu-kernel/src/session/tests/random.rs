@@ -84,7 +84,8 @@ use crate::raw::RawJson;
 use crate::tool::Access;
 use asking::{some_answer, some_question, some_reply, some_verdict};
 use compacting::{
-    random_policy, some_clear, some_clear_todos, some_compact, some_limits, some_overflow,
+    random_policy, some_clear, some_clear_todos, some_compact, some_end_dream, some_limits,
+    some_overflow,
 };
 use endings::some_ending;
 use kinds::InputKind;
@@ -361,6 +362,7 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
         watch.prepares.seeded = preparing;
         // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
         let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
+        let mut dreams = Rng(seed ^ 0xD2EA_3E7D);
         // 三个种子里有一个跑脚本里的 `miyu call`（施工 M-1）：另一串随机数。
         let (mut nests, nesting) = (Rng(seed ^ 0x2E57_ED00), seed % 3 == 0);
         for _ in 0..300 {
@@ -398,6 +400,9 @@ fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKi
                 watch.feed(&mut session, input);
             }
             if let Some(input) = some_clear_todos(&mut todo_clears, &mut next_id) {
+                watch.feed(&mut session, input);
+            }
+            if let Some(input) = some_end_dream(&mut dreams, seed) {
                 watch.feed(&mut session, input);
             }
             if peering && let Some(input) = peering::some_peer(&mut peers, &watch, &mut next_id) {

@@ -35,6 +35,7 @@ fn listed(n: u8, persona: &str, busy: bool) -> Listed {
         }),
         origin: None,
         forked: false,
+        dream_result: None,
     }
 }
 

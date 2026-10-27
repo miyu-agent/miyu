@@ -51,6 +51,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `image.described` | A description of an image (seen by the vision model for a model that can't see images) |
 | `todos.cleared` | The to-do list was cleared |
 | `goal.set`, `goal.changed`, `goal.paused`, `goal.resumed`, `goal.ended` | A standing goal was set, changed, paused, resumed, ended |
+| `dream.ended` | A memory consolidation run finished: how many memories it added, revised and retired, whether it wrote the summary, whether it was stopped |
 | `venue.recalled`, `venue.delivered` | Someone recalled a message on the platform; her message reached the platform |
 | `ext.<package>.<name>` | Recorded by an extension (`events.append`) |
 

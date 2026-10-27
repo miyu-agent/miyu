@@ -36,7 +36,9 @@ impl Actor {
                 | Body::MetaChanged(_)
                 | Body::WorkspaceChanged(_)
                 | Body::TurnStarted(_)
-                | Body::TurnEnded(_) => true,
+                | Body::TurnEnded(_)
+                // 整理会话这一趟的结果（施工 DR-1）：列表那一项照它写 `dream.result`。
+                | Body::DreamEnded(_) => true,
                 // 中途换人格、预设（施工 P-16 下补）：列表那一项照索引写着它们，人换了就报，不等下一轮。
                 Body::PolicyChanged(changed) => {
                     changed.persona.is_some() || changed.preset.is_some()

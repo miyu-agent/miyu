@@ -17,6 +17,7 @@ mod call;
 mod clear;
 mod compaction;
 mod configure;
+mod dream;
 mod fork;
 mod goal;
 mod grants;
@@ -90,6 +91,7 @@ use crate::ledger::Ledger;
 use crate::origin::By;
 use crate::request::Fingerprint;
 use crate::time::Timestamp;
+use action::{accepted, rejected, rejected_about};
 use jobs::Arrived;
 use recent::Recent;
 use revert::ReadingBack;
@@ -440,6 +442,7 @@ impl Session {
             Command::Report(reported) => self.report(id, by, at, reported),
             Command::PeerIdle { status } => self.peer_idle(id, by, at, status),
             Command::Goal(change) => self.goal(id, by, at, change),
+            Command::EndDream(ended) => self.end_dream(id, by, at, ended),
         }
     }
 
@@ -469,30 +472,6 @@ impl Session {
         actions.extend(self.title_up(at, &closed));
         actions.extend(self.advance(at));
         actions
-    }
-}
-
-/// 回应：接受了，附上它产生的事件的序号。
-fn accepted(id: CommandId, events: Vec<Seq>) -> Action {
-    Action::Reply {
-        id,
-        outcome: Outcome::Accepted { events },
-    }
-}
-
-/// 回应：拒绝了，附上原因。
-fn rejected(id: CommandId, reason: Reason) -> Action {
-    Action::Reply {
-        id,
-        outcome: Outcome::rejected(reason),
-    }
-}
-
-/// 拒绝，带上针对的是哪几条（施工 O-14 上）。
-fn rejected_about(id: CommandId, reason: Reason, about: Vec<Seq>) -> Action {
-    Action::Reply {
-        id,
-        outcome: Outcome::Rejected { reason, about },
     }
 }
 

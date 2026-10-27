@@ -1,6 +1,7 @@
 //! 整理会话（施工 D-1 上，设计 41）：开一趟记 `session.created` 的 `dream`；一批一轮，请求只有这一批的原文（没有 system、
 //! 工具、事实，同原来的一次性请求）；批间清空；主请求的 `model.called` 用途是 `memory`；叫停交回 `Stopped`。D-1 下：正文边流边
-//! 交（思考不交）；`session.list` 带 `kind`、照 `dream` 挑，她的 `sessions` 工具不列；跑完一趟只留这一间最近几趟。
+//! 交（思考不交）；`session.list` 带 `kind`、照 `dream` 挑，她的 `sessions` 工具不列；跑完一趟只留这一间最近几趟。DR-1：收尾
+//! 交了结果的记一条 `dream.ended`，列表照它写 `dream.result`、推一声。
 
 use std::sync::Arc;
 
@@ -9,11 +10,12 @@ use miyu_kernel::event::{Body, Purpose};
 use miyu_kernel::id::{AccountId, CommandId, SessionId};
 use miyu_kernel::request::Message;
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{DreamBatch, DreamRoom, DreamSpec, Watched};
+use miyu_session::{DreamBatch, DreamResult, DreamRoom, DreamSpec, Watched};
 use miyu_store::log::read_events;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
+use super::memory_module;
 use crate::Core;
 use crate::test_support::{resources, temp_root};
 
@@ -267,16 +269,94 @@ async fn closing_keeps_only_the_newest_of_the_room() {
     let other = port.open(spec_of(&admin, "other")).await.expect("开得成");
     let exists = |session: &SessionId| root.session_dir(&admin, session).exists();
 
-    assert_eq!(port.close(engineer[2].clone(), 2).await, Ok(1));
+    assert_eq!(port.close(engineer[2].clone(), 2, None).await, Ok(1));
     assert!(!exists(&engineer[0]), "最旧的删了");
     assert!(exists(&engineer[1]) && exists(&engineer[2]));
     assert!(exists(&other), "别间的不动");
 
     assert_eq!(
-        port.close(engineer[2].clone(), 0).await,
+        port.close(engineer[2].clone(), 0, None).await,
         Ok(2),
         "0 连它一起删"
     );
     assert!(!exists(&engineer[1]) && !exists(&engineer[2]));
     assert!(exists(&other));
+}
+
+/// 列表里会话 `session` 那一项。
+async fn listed(core: &Arc<Core>, admin: &AccountId, session: &SessionId) -> serde_json::Value {
+    crate::list::list(core, admin, false, None, None)
+        .await
+        .expect("列得出")
+        .into_iter()
+        .find(|item| item["session"] == session.as_str())
+        .expect("照常列")
+}
+
+#[tokio::test]
+async fn closing_with_a_result_records_it_and_lists_it() {
+    let (core, root, admin) = core(&Script::new([]));
+    let port = core.memory.dream_sessions().expect("接上了").clone();
+    let done = port.open(spec(&admin)).await.expect("开得成");
+    let stopped = port.open(spec(&admin)).await.expect("开得成");
+    let bare = port.open(spec(&admin)).await.expect("开得成");
+    let mut pushes = core.listing.subscribe();
+    let result = DreamResult {
+        given: 3,
+        revised: 1,
+        retired: 2,
+        summary: true,
+        stopped: false,
+    };
+    assert_eq!(port.close(done.clone(), 5, Some(result)).await, Ok(0));
+    let halted = DreamResult {
+        given: 1,
+        revised: 0,
+        retired: 0,
+        summary: false,
+        stopped: true,
+    };
+    assert_eq!(port.close(stopped.clone(), 5, Some(halted)).await, Ok(0));
+    assert_eq!(port.close(bare.clone(), 5, None).await, Ok(0));
+
+    let events = read_events(&root.session_dir(&admin, &done)).expect("读得出");
+    let last = events.last().expect("有事件");
+    assert!(
+        matches!(&last.body, Body::DreamEnded(ended) if *ended == result),
+        "末尾记一条：{last:?}"
+    );
+    assert_eq!(
+        last.by,
+        memory_module().expect("合写法"),
+        "以记忆模块的名义"
+    );
+    assert_eq!(last.turn, None, "不带回合");
+
+    let item = listed(&core, &admin, &done).await;
+    assert_eq!(
+        item["dream"]["result"],
+        serde_json::json!({"given": 3, "revised": 1, "retired": 2, "summary": true}),
+        "没叫停的不写 stopped：{item}"
+    );
+    let item = listed(&core, &admin, &stopped).await;
+    assert_eq!(item["dream"]["result"]["stopped"], true, "{item}");
+    let item = listed(&core, &admin, &bare).await;
+    assert!(
+        item["dream"].get("result").is_none(),
+        "没交结果的不写：{item}"
+    );
+    assert_eq!(item["dream"]["persona"], "engineer");
+
+    // 会话列表的推送照它报一声（`sessions.changed`）。
+    let pushed = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        loop {
+            let change = pushes.recv().await.expect("推送还在");
+            if change.line.contains(done.as_str()) && change.line.contains("\"result\"") {
+                return change;
+            }
+        }
+    })
+    .await
+    .expect("推了带结果的那一项");
+    assert_eq!(pushed.owner, admin);
 }

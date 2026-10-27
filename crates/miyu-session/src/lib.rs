@@ -84,9 +84,9 @@ pub use handle::context::{Charged, Context, Spent, SystemPart};
 pub use handle::{Ended, Handle, Pushed, Retire, Stopped, Subscription};
 pub use jobs::{Jobs, Peek, Unreadable, peek};
 pub use memory::{
-    CardRefused, DreamBatch, DreamFeed, DreamRoom, DreamSessions, DreamSpec, Dreamed, Dreaming,
-    EMBED_LOCAL, ExtractTexts, Extraction, Filter, Following, Keeper, Listener, Memory, MergeTexts,
-    NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, TagTexts, Using, Vectors,
+    CardRefused, DreamBatch, DreamFeed, DreamResult, DreamRoom, DreamSessions, DreamSpec, Dreamed,
+    Dreaming, EMBED_LOCAL, ExtractTexts, Extraction, Filter, Following, Keeper, Listener, Memory,
+    MergeTexts, NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, TagTexts, Using, Vectors,
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError, PresetPlaces,

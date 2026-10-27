@@ -51,6 +51,7 @@
 | `image.described` | 一张图的转述（看不了图的模型由看图的模型替它看过） |
 | `todos.cleared` | 待办清空了 |
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标设下、改了、停了、继续、结束 |
+| `dream.ended` | 一趟整理记忆跑完了：新记、改了、作废了几条，有没有写摘要，是不是叫停的 |
 | `venue.recalled`、`venue.delivered` | 平台上有人撤回了一条；她的话发到了平台上 |
 | `ext.<包>.<名字>` | 扩展自己记的（`events.append`） |
 

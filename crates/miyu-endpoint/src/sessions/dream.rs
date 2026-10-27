@@ -12,8 +12,8 @@ use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
-    Create, DreamBatch, DreamRoom, DreamSessions, DreamSpec, Pending, Pushed, Watched, create,
-    new_id,
+    Create, DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec, Pending, Pushed, Watched,
+    create, new_id,
 };
 
 use super::{Running, Sessions, environment, now};
@@ -139,6 +139,26 @@ impl Table {
     }
 }
 
+/// 以记忆模块的名义在这一趟的日志末尾记一条 `dream.ended`（施工 DR-1），落了盘才交回。一趟只记一次：命令编号是
+/// `<会话>/ended`。
+async fn ended(core: &Arc<Core>, session: &SessionId, result: DreamResult) -> Result<(), String> {
+    let found = core
+        .sessions
+        .get(core, session)
+        .await
+        .map_err(|refusal| format!("session {session} not found: {refusal:?}"))?;
+    let id = CommandId::parse(&format!("{session}/ended")).map_err(|error| error.to_string())?;
+    let outcome = found
+        .handle
+        .command(id, memory_module()?, Command::EndDream(result))
+        .await
+        .map_err(|_| format!("session {session} stopped"))?;
+    match outcome {
+        Outcome::Accepted { .. } => Ok(()),
+        outcome => Err(format!("session {session} refused the result: {outcome:?}")),
+    }
+}
+
 impl DreamSessions for Table {
     fn open(&self, spec: DreamSpec) -> Pending<'_, Result<SessionId, String>> {
         Box::pin(async move {
@@ -243,9 +263,19 @@ impl DreamSessions for Table {
         })
     }
 
-    fn close(&self, session: SessionId, keep: usize) -> Pending<'_, Result<usize, String>> {
+    fn close(
+        &self,
+        session: SessionId,
+        keep: usize,
+        result: Option<DreamResult>,
+    ) -> Pending<'_, Result<usize, String>> {
         Box::pin(async move {
             let core = self.core()?;
+            if let Some(result) = result
+                && let Err(why) = ended(&core, &session, result).await
+            {
+                tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = why.as_str(), "dream result not recorded");
+            }
             Ok(keep::prune(&core, &session, keep).await)
         })
     }

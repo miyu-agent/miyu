@@ -45,7 +45,7 @@ pub(crate) const MODULE: &str = "memory";
 pub(crate) use port::Calls;
 pub use recall::RecallTexts;
 pub(crate) use recast::{RoomCell, room_cell};
-pub use sessions::{DreamBatch, DreamRoom, DreamSessions, DreamSpec};
+pub use sessions::{DreamBatch, DreamResult, DreamRoom, DreamSessions, DreamSpec};
 pub use summary::SummaryTexts;
 pub use tag::TagTexts;
 pub use vectors::{LOCAL as EMBED_LOCAL, Query, Using, Vectors};

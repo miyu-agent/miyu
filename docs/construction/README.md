@@ -848,6 +848,7 @@ flowchart LR
 | BS-1 下中 | 装卸整个组 | `package.install`、`package.remove` 写组名：装回组里卸掉的、卸掉组里装着的（组外依赖的整个拒，组里照依赖先后）；看一眼回会动的那几个；`miyu pkg install|remove <组>` 印计划、问一句、一个一行 | `BS-1下中-整组装卸.md` |
 | BS-1 下下 | 斜杠命令照归属 | `Slash::package` 可以没有（核心自带 `/clear`、`/stop`、`/workspace`），`/todo` 归 `todowrite`；包没装的命令当没有（菜单、`command.run`、撞名都不算），名字空出来；撞了核心自带的写 `core: true`；删掉走不到的「未安装」两句 | `BS-1下下-斜杠命令照归属.md` |
 | SL-1 | 会话列表看得出在等人 | 内核 `waiting_on_person`（这一步的确认、提问，嵌套调用的确认）；actor 照 `busy` 写和 `Handle` 共用的「在等人」，变了报；`session.list`、`sessions.changed` 多 `waiting: true`；`package` 显示名改「管理软件包」 | `SL-1-会话列表看得出在等人.md` |
+| DR-1 | 整理会话记下结果 | 内核新事件 `dream.ended`、命令 `EndDream`（不带回合、落盘回应）；`DreamSessions::close` 多 `result`，有的以记忆模块的名义记；索引多 `dream_result`（版本 13）；`session.list`、`sessions.changed` 的 `dream` 多 `result` | `DR-1-整理会话记下结果.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
 | Y-1 下 | 本机和远程 | 连接分本机、本机的另一个人、远程（网页软件握手之前说 `connection.remote`）；读本机文件、交本机路径、选本机目录这一类只给本机，别的回 `local_machine_only`，握手回应不给 `host`。下：第二个本机入口 `run/public.sock`。施工单见 `Y-1下-本机和远程.md` |
 | Z-1 上 | 核心一直开着 | 核心起来了就不因为空闲退出，系统配置 `core.idle_exit`（分钟，`0` 不退，默认 `0`，只在系统层，当场生效）配了的照原规矩退，`--idle-seconds` 盖过它；`packaging/` 放 systemd 用户服务、XDG 自启动、launchd、Windows 任务计划，服务器的 systemd 系统服务（专门的用户 `miyu`、`/var/lib/miyu`）、网页软件那一份（`miyu-web serve`，`web.idle_seconds = 0`）和 OpenRC、runit、dinit 样例；头先拉起的照握手说 `running` 退出码 0。施工单见 `Z-1-进程形态.md` |

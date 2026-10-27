@@ -48,6 +48,7 @@
 | `session.recapped` | 一句回顾（施工 3-8 四补，`kernel/session.md`「回顾」）：推给头，不进上下文 | 内核 | 不带：它不属于哪一轮，撤哪一轮都不会跟着拿走（和回报一样） | `session.recapped.jsonl` |
 | `session.sealed` | 分叉出来的会话跑满了轮数，封存了（施工 C-8 下，`session/fork.md`「封存」）：不进上下文 | 内核 | 不带：和那一轮的 `turn.ended` 同一批，排在它后面 | `session.sealed.jsonl` |
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标：设、改、停、接着跑、结束（施工 X-6，`goal.md`）：不进上下文 | 人用命令的是人，她用工具的是那次调用，替她收尾的是内核 | 回合里记的带，回合外的不带 | `goal.set.jsonl` 等五份 |
+| `dream.ended` | 整理会话跑完了一趟：做了什么（施工 DR-1，设计 41）：不进上下文，会话列表照它写 `dream.result` | 记忆模块 | 不带：回合进行中记的也不带 | `dream.ended.jsonl` |
 | `command.ran` | 人用了一个斜杠命令（施工 O-6，`kernel/session.md`「斜杠命令」）：不进上下文 | 说命令的人 | 回合进行中记的带上 | `command.ran.jsonl` |
 | `turn.started` | 回合开始 | 内核 | 它自己的序号 | `turn.started.jsonl` |
 | `turn.ended` | 回合结束 | 内核；被打断的，是打断的人 | 必带 | `turn.ended.jsonl` |

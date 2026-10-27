@@ -2,6 +2,7 @@
 //! 的数也很小，几段的模板短，一眼认得出（施工 6-5）。手动压缩（施工 6-8）、清空（施工 6-8 补）也各用一串随机数。
 
 use super::*;
+use crate::event::DreamEnded;
 
 /// 随机测试的策略：一个回合最多请求 [`STEP_LIMIT`] 次；`attended` 是有没有人能确认、回答。压缩的数很小：替身的
 /// 组装一条事件约五个 token，几十条就过线（施工 6-2 上）。提前量 40（施工 6-11 下从 20 放大）：窗口 300 的 G 是 40，
@@ -152,6 +153,28 @@ pub(super) fn some_clear_todos(rng: &mut Rng, next_id: &mut u64) -> Option<Input
         by: alice(),
         at: at(n % 60),
         command: Command::ClearTodos,
+    }))
+}
+
+/// 交整理的结果（施工 DR-1），另用一串随机数：九个种子里有一个，一百五十回里一回，什么时候都收下。命令编号也另用（照这串
+/// 随机数的状态，一个种子里不会重），不占原来那串的编号：别的种子、原来那串输入一点不变，少见的路照旧走得到。
+pub(super) fn some_end_dream(rng: &mut Rng, seed: u64) -> Option<Input> {
+    if seed % 9 != 7 || rng.below(150) != 0 {
+        return None;
+    }
+    let n = rng.0;
+    let ended = DreamEnded {
+        given: u32::try_from(rng.below(5)).unwrap_or(0),
+        revised: u32::try_from(rng.below(3)).unwrap_or(0),
+        retired: u32::try_from(rng.below(3)).unwrap_or(0),
+        summary: rng.below(2) == 0,
+        stopped: rng.below(4) == 0,
+    };
+    Some(Input::Command(Received {
+        id: id(n),
+        by: alice(),
+        at: at(n % 60),
+        command: Command::EndDream(ended),
     }))
 }
 

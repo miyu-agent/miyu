@@ -13,7 +13,7 @@ use std::path::Path;
 
 use serde_json::{Value, json};
 
-use miyu_kernel::event::Dream;
+use miyu_kernel::event::{Dream, DreamEnded};
 use miyu_kernel::id::{AccountId, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_store::index::{FILE, Opened, Row, SessionIndex};
@@ -127,6 +127,8 @@ pub(crate) struct Listed {
     pub(crate) default_workspace: Option<String>,
     /// 整理会话的哪一间、怎么来的（施工 D-1 下）：别的会话没有。
     pub(crate) dream: Option<Dream>,
+    /// 整理会话这一趟做了什么（施工 DR-1）：最后一条 `dream.ended`，没有的不写。
+    pub(crate) dream_result: Option<DreamEnded>,
     /// 从哪开的（施工 8-33 四补）：终端集成开的是 `terminal`，别的会话没有。
     pub(crate) origin: Option<String>,
     /// fork 子代理（施工 A-F 补）：头照它换图标，写 `forked: true`；别的不写。
@@ -158,6 +160,7 @@ impl Listed {
             window: None,
             default_workspace: None,
             dream: row.dream,
+            dream_result: row.dream_result,
             origin: row.origin,
             forked: row.forked,
         }
@@ -209,6 +212,10 @@ impl Listed {
         if let Some(dream) = &self.dream {
             item["kind"] = json!("dream");
             item["dream"] = json!(dream);
+            // 这一趟做了什么（施工 DR-1）：没跑完、崩了没记上的不写。
+            if let Some(result) = &self.dream_result {
+                item["dream"]["result"] = json!(result);
+            }
         }
         // 终端集成开的（施工 8-33 四补）：头的会话列表照它写「终端集成」。别的不写，字节不变。
         if let Some(origin) = &self.origin {
