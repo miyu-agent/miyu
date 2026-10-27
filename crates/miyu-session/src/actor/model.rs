@@ -157,8 +157,9 @@ impl Actor {
         self.tools.set_weak(strength == crate::settings::WEAK);
         let prepare = CompactionSettings::from(&values).prepare;
         let policy = self.refresh_persona(values.clone()).await;
-        let skills = self.skills_turn(&present, &values).await;
-        let docs = self.project_docs_turn(&present).await;
+        // 技能、项目指令在阻塞线程里读盘，和挂接点、扩展一起等，不排在前面干等（施工 PERF-1）。
+        let skills = self.skills_turn(&present, &values);
+        let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。
         self.project_docs_look();
         // 管理员放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
@@ -170,7 +171,7 @@ impl Actor {
         let knowledge = self.recalling();
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
         let extensions = self.extension_injections(said.clone());
-        let (mut injected, extended) = tokio::join!(
+        let (mut injected, extended, skills, docs) = tokio::join!(
             hooks(
                 self.tools.memory(),
                 knowledge,
@@ -178,8 +179,11 @@ impl Actor {
                 said,
                 config
             ),
-            extensions
+            extensions,
+            skills,
+            docs
         );
+        let skills = self.skills_take(skills);
         injected.extend(extended);
         injected.extend(skills);
         injected.extend(docs);

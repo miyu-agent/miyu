@@ -78,8 +78,14 @@ pub(super) async fn exchange(
     on: impl FnMut(Progress) + Send,
 ) -> Exchanged {
     let needed = ready.driver.blobs_needed(request, &ready.call);
-    let blobs = blobs.clone();
-    let fetched = blocking(move || fetch(&blobs, needed)).await;
+    // 一个 blob 都不用的（多数请求）不跳阻塞线程：两核的机器上那一跳偶尔要等上一两毫秒，正落在投影里（施工 PERF-1）。
+    let fetched = match needed.is_empty() {
+        true => BTreeMap::new(),
+        false => {
+            let blobs = blobs.clone();
+            blocking(move || fetch(&blobs, needed)).await
+        }
+    };
     // 占位工具（施工 8-14 补）：档案点名了哪几件、工具面里缺的才拷一份补上；不缺的、没点名的原样编码，一个字节不动。
     let filled = match super::placeholder::missing(request, &ready.placeholders) {
         false => None,
