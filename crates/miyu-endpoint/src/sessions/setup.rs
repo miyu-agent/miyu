@@ -30,6 +30,8 @@ pub(crate) struct Setup {
     profile: Profile,
     preset: Option<miyu_store::presets::Found>,
     persona: Option<miyu_store::personas::Found>,
+    /// 属主的资源目录：压着他写的提示词覆盖（施工 OV-1 中）。
+    resources: miyu_store::resources::ResourceRoot,
 }
 
 impl Setup {
@@ -59,7 +61,9 @@ impl Setup {
             wanted => Some(presets::resolve(core, &who.owner, wanted).await?),
         };
         let persona = personas::resolve(core, &who.owner, persona).await?;
+        let resources = crate::presets::overrides::resources(core, &who.owner);
         Ok(Setup {
+            resources,
             id,
             command,
             workspace,
@@ -81,7 +85,7 @@ impl Setup {
         let persona = self.persona.as_ref();
         Create {
             root: &core.root,
-            resources: &core.resources,
+            resources: &self.resources,
             id: self.id.clone(),
             persona: persona.map(|found| found.id.as_str()),
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),

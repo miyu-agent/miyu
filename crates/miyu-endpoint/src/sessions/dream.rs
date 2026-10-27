@@ -50,9 +50,10 @@ impl Sessions {
         let owner = spec.owner;
         let shelf = core.shelf_of(&owner);
         let workspace = "~".to_string();
+        let resources = crate::presets::overrides::resources(core, &owner);
         let handle = create(Create {
             root: &core.root,
-            resources: &core.resources,
+            resources: &resources,
             id: id.clone(),
             persona: None,
             persona_texts: Default::default(),

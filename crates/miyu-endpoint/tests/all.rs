@@ -20,6 +20,7 @@ mod profile;
 mod projects;
 mod projects_scope;
 mod projects_sessions;
+mod prompt_override;
 mod provide;
 mod provide_data;
 mod provide_detail;

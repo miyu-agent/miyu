@@ -40,10 +40,12 @@ impl Open {
         let pick = Box::new(move |last: Option<&str>| {
             super::pick(&picking, &owner_of, last.unwrap_or(NO_CWD), &fallback).cwd
         });
+        // 属主写的提示词覆盖（施工 OV-1 中）。
+        let resources = crate::presets::overrides::resources(core, &owner);
         let loaded = load_placed(Load {
             root: &core.root,
             personas: crate::personas::personas(core, &owner),
-            resources: &core.resources,
+            resources: &resources,
             owner: owner.clone(),
             id: id.clone(),
             place: Workplace::Remembered {

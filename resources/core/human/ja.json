@@ -693,6 +693,7 @@
     "package-problems/check_output": "パッケージ自身のチェックが読めない行を {detail} 行出したので、飛ばしました",
     "package-problems/files_modified": "{detail} 個のファイルがインストール時と違います",
     "package-problems/files_missing": "インストール時にあったファイルが {detail} 個ありません",
+    "package-problems/prompt_override_bad": "このプロンプトの上書きは使われず、下の層か出荷時のものになります：{detail}",
     "package-problems/override_bad": "このツール説明の上書きは使われず、出荷時のものになります：{detail}",
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
     "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",

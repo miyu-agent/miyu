@@ -1,6 +1,9 @@
 //! 工具说明的同名覆盖（施工 OV-1 上，`miyu_policy::overrides`）：照属主找两层，系统区 `system/tools/<工具>.toml`、他家目录
 //! `home/<账号>/tools/<工具>.toml`，他的压着系统的、一格一格压；写坏了的整份不认，照下一层，`check` 报。会话拼工具面时照它换
 //! （`PresetPlaces::overrides`）。
+//!
+//! 提示词的同名覆盖（施工 OV-1 中，[`resources`]）：`home/<账号>/prompts/<同样的路径>` 压着 `system/prompts/<同样的路径>` 压着
+//! 出厂的，查法在 `miyu_store::resources`。造会话、载入会话时照属主交给会话。
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -8,6 +11,7 @@ use std::path::PathBuf;
 use miyu_kernel::id::AccountId;
 use miyu_policy::overrides::ToolOverride;
 use miyu_store::overrides::{TOOLS, tools_in};
+use miyu_store::resources::{PROMPTS, ResourceRoot};
 
 use crate::Core;
 
@@ -68,4 +72,12 @@ pub(crate) fn problems(core: &Core, owner: &AccountId) -> Vec<(PathBuf, String)>
         }
     }
     bad
+}
+
+/// 属主 `owner` 的资源目录：压上他自己、系统区两层提示词的覆盖（施工 OV-1 中）。
+pub(crate) fn resources(core: &Core, owner: &AccountId) -> ResourceRoot {
+    core.resources.overlaid(vec![
+        core.root.account_dir(owner).join(PROMPTS),
+        core.root.system().join(PROMPTS),
+    ])
 }

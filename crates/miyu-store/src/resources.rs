@@ -24,6 +24,8 @@ use crate::env::Env;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceRoot {
     path: PathBuf,
+    /// 压在出厂的字上面的几层同名覆盖（施工 OV-1 中，`overlay.rs`），从上往下排；没有的是空的。
+    overlays: Vec<PathBuf>,
 }
 
 /// 找不到资源目录。
@@ -103,7 +105,7 @@ impl ResourceRoot {
                 return Err(ResourceError::Relative(path));
             }
             return match path.is_dir() {
-                true => Ok(ResourceRoot { path }),
+                true => Ok(ResourceRoot::at(path)),
                 false => Err(ResourceError::Missing(path)),
             };
         }
@@ -115,16 +117,17 @@ impl ResourceRoot {
             tried.push(prefix.join("share").join("miyu"));
         }
         match tried.iter().find(|candidate| candidate.is_dir()) {
-            Some(found) => Ok(ResourceRoot {
-                path: found.clone(),
-            }),
+            Some(found) => Ok(ResourceRoot::at(found.clone())),
             None => Err(ResourceError::NotFound(tried)),
         }
     }
 
     /// 就用 `path` 这个目录：测试、工具指定的。
     pub fn at(path: impl Into<PathBuf>) -> ResourceRoot {
-        ResourceRoot { path: path.into() }
+        ResourceRoot {
+            path: path.into(),
+            overlays: Vec::new(),
+        }
     }
 
     /// 资源目录本身。
@@ -446,7 +449,9 @@ impl ResourceRoot {
         let path = parts
             .iter()
             .fold(self.path.clone(), |path, part| path.join(part));
-        std::fs::read_to_string(&path).map_err(|error| SourceError::Read { path, error })
+        let shipped =
+            std::fs::read_to_string(&path).map_err(|error| SourceError::Read { path, error })?;
+        Ok(self.overlaid_text(parts, shipped))
     }
 }
 
@@ -454,6 +459,7 @@ mod fork;
 mod goal;
 mod mcp_tools;
 mod memory;
+mod overlay;
 mod project_docs;
 mod schedules;
 mod skills;
@@ -462,6 +468,7 @@ mod venues;
 
 pub use goal::GoalRounds;
 pub use mcp_tools::ToolText;
+pub use overlay::PROMPTS;
 pub use project_docs::ProjectDocTexts;
 pub use skills::SkillTexts;
 

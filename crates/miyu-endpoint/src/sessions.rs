@@ -272,9 +272,10 @@ impl Sessions {
         };
         let owner_is_admin = child.owner == core.admin;
         let presets_of = presets::places(core, &child.owner);
+        let resources = presets::overrides::resources(core, &child.owner);
         let handle = create(Create {
             root: &core.root,
-            resources: &core.resources,
+            resources: &resources,
             id: id.clone(),
             persona: persona.as_ref().map(|found| found.id.as_str()),
             persona_texts: persona
