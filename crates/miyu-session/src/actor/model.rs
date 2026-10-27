@@ -156,9 +156,15 @@ impl Actor {
         let strength = crate::settings::SandboxSettings::from(&values).strength;
         self.tools.set_weak(strength == crate::settings::WEAK);
         let prepare = CompactionSettings::from(&values).prepare;
-        let policy = self.refresh_persona(values.clone()).await;
-        // 技能、项目指令在阻塞线程里读盘，和挂接点、扩展一起等，不排在前面干等（施工 PERF-1）。
-        let skills = self.skills_turn(&present, &values);
+        // 技能照这一刻的快照先找起来，和刷新人格并着等（施工 PERF-2）：两样都在阻塞线程里读盘，原来技能排在人格后面干等。
+        // 人格、预设真换了的（交回新快照的哈希，很少见），工具面跟着变，照新的再找一次。
+        let speculated = self.skills_turn(&present, &values);
+        let (policy, skills) = tokio::join!(self.refresh_persona(values.clone()), speculated);
+        let skills = match policy {
+            Some(_) => self.skills_turn(&present, &values).await,
+            None => skills,
+        };
+        // 项目指令在阻塞线程里读盘，和挂接点、扩展一起等，不排在前面干等（施工 PERF-1）。
         let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。
         self.project_docs_look();
@@ -171,7 +177,7 @@ impl Actor {
         let knowledge = self.recalling();
         // 扩展和记忆、知识库一起问：各有各的限时，这一轮只等慢的那一个（施工 X-16）。
         let extensions = self.extension_injections(said.clone());
-        let (mut injected, extended, skills, docs) = tokio::join!(
+        let (mut injected, extended, docs) = tokio::join!(
             hooks(
                 self.tools.memory(),
                 knowledge,
@@ -180,7 +186,6 @@ impl Actor {
                 config
             ),
             extensions,
-            skills,
             docs
         );
         let skills = self.skills_take(skills);

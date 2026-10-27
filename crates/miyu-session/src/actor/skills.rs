@@ -18,7 +18,7 @@ pub(super) type Looked = Result<(Vec<PathBuf>, skills::Names, Option<Injection>)
 
 impl Actor {
     /// 照会话现在的快照（工具面、预设的编号、system 里那一块）和预设的几层再找一遍，全局开关照这一轮的配置 `values`（施工
-    /// X-27）：交回在阻塞线程里找的那一件，不借 actor，和回合开始的挂接点一起等（施工 PERF-1：原来排在挂接点前面干等）；
+    /// X-27）：交回在阻塞线程里找的那一件，不借 actor，和刷新人格并着等（施工 PERF-2：原来排在人格后面干等；人格真换了的照新快照再找一次）；
     /// 找回来的交给 [`Actor::skills_take`]。没交装了的软件包的、没有人格刷新那一份的什么都不找。
     pub(super) fn skills_turn(
         &self,

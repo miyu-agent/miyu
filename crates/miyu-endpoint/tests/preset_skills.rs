@@ -184,6 +184,56 @@ async fn turning_a_skill_on_mid_session_brings_it_in_the_next_turn() {
     assert!(!requests[1].1.system.contains("- notes:"), "system 不改");
 }
 
+/// 会话中途换预设（施工 PERF-2）：技能和刷新人格并着找，用的是换之前的快照；换了预设的照新的再找一次，下一轮尾巴上是新预设
+/// 开着的技能，文件夹放开只读。
+#[tokio::test]
+async fn switching_the_preset_mid_session_lists_the_new_presets_skills() {
+    let home = Home::new();
+    let skill = put(&home);
+    let skill = if cfg!(windows) {
+        skill.replace('\\', "/")
+    } else {
+        skill
+    };
+    let read = Fake::new("read", Access::Read, Act::Echo);
+    let tools = Catalog::new([Arc::clone(&read) as Arc<dyn Tool>]).expect("合写法");
+    let script = Script::new([
+        Play::Says("一。"),
+        Play::calls(&[("read", &json!({ "path": skill }).to_string())]),
+        Play::Says("二。"),
+    ]);
+    let mut client = Client::connect(configured_core(&home, &script, tools));
+    client.hello_without_input().await;
+    let work = home.work.to_string_lossy().into_owned();
+    let reply = client
+        .call(
+            "c1",
+            "session.create",
+            json!({"cwd": work, "preset": "lean"}),
+        )
+        .await;
+    let session = reply["result"]["session"]
+        .as_str()
+        .unwrap_or_else(|| panic!("没造出来：{reply}"))
+        .to_string();
+    client.say("s1", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    let switched = client
+        .call(
+            "k1",
+            "session.configure",
+            json!({"session": session, "preset": "full"}),
+        )
+        .await;
+    assert!(switched.get("error").is_none(), "{switched}");
+    client.say("s2", &session, "again").await;
+    home.until_turns(&session, 2).await;
+    assert_eq!(read.calls().len(), 1, "新预设开着的技能文件夹放开只读");
+    let requests = script.requests();
+    let asked = format!("{:?}", requests[1].1);
+    assert!(asked.contains("- notes: Take notes."), "{asked}");
+}
+
 /// 会话中途装一个带技能的包（施工 X-11 下）：会话取的是这一刻装了的包，下一轮尾巴上就有它带的技能。包的程序不在也照样
 /// 装得上、清单读得成（施工 F-6 上：程序不在的只是功能不算），只带技能的包现在的清单格式还写不出来（X-13）。
 #[tokio::test]
