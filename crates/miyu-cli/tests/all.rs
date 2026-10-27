@@ -18,6 +18,7 @@ mod pkg_source;
 mod recap;
 mod redo;
 mod rename;
+mod schedule;
 mod setup;
 mod setup_custom;
 mod setup_skip;

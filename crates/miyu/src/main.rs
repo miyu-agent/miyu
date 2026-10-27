@@ -65,6 +65,8 @@ enum Command {
     Pkg(miyu_cli::Pkg),
     /// 管知识库：列、搜、读、建、改、加、删、挂、重建（施工 K-7 下）。
     Kb(miyu_cli::Kb),
+    /// 管定时任务：列、建、删、停、续（施工 J-3 下）。
+    Schedule(miyu_cli::Schedule),
     /// 供应商的 key：存、列、删（施工 8-5，施工 Y-13 上从 `login`、`logout` 挪来）。
     Provider(miyu_cli::Provider),
     /// 第一次接入模型（施工 8-11）。
@@ -185,6 +187,14 @@ fn main() -> ExitCode {
                 kb.mut_subcommand(name, |sub| sub.override_help(help))
             })
         })
+        .mut_subcommand("schedule", |schedule| {
+            let help = page(language, Page::Schedule);
+            ["list", "add", "rm", "pause", "resume"]
+                .into_iter()
+                .fold(schedule.override_help(help), |schedule, name| {
+                    schedule.mut_subcommand(name, |sub| sub.override_help(help))
+                })
+        })
         .mut_subcommand("mcp", |mcp| {
             let help = page(language, Page::Mcp);
             mcp.override_help(help)
@@ -235,6 +245,7 @@ fn main() -> ExitCode {
         Some(Command::Memory(args)) => miyu_cli::memory(args, core),
         Some(Command::Pkg(args)) => miyu_cli::pkg(args, core),
         Some(Command::Kb(args)) => miyu_cli::kb(args, core),
+        Some(Command::Schedule(args)) => miyu_cli::schedule(args, core),
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
         Some(Command::Web(args)) => miyu_cli::web(args, &miyu_core::admin()),

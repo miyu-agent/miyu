@@ -108,6 +108,12 @@ fn each_page_lists_exactly_the_options_there_are() {
         ("KB", "<库>"),
         ("PAGE", "<页>"),
         ("DESCRIPTION", "<说明>"),
+        ("CRON", "<五段>"),
+        ("ZONE", "<时区>"),
+        ("WHEN", "<时刻>"),
+        ("INTERVAL", "<间隔>"),
+        ("PERSONA", "<人格>"),
+        ("PRESET", "<预设>"),
     ];
     let english = [
         ("SESSION", "<id>"),
@@ -124,6 +130,12 @@ fn each_page_lists_exactly_the_options_there_are() {
         ("KB", "<kb>"),
         ("PAGE", "<page>"),
         ("DESCRIPTION", "<description>"),
+        ("CRON", "<fields>"),
+        ("ZONE", "<zone>"),
+        ("WHEN", "<time>"),
+        ("INTERVAL", "<interval>"),
+        ("PERSONA", "<persona>"),
+        ("PRESET", "<preset>"),
     ];
     for (language, id) in [(Language::Chinese, &chinese), (Language::English, &english)] {
         assert_eq!(
@@ -208,6 +220,17 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&kb, id),
             "{language:?} kb"
         );
+        // `schedule` 那一页（施工 J-3 下）：`--format` 是全局的，别的分在 `list`、`add` 上，页上列的是它们加起来的。
+        let schedule = crate::Schedule::augment_args(Command::new("schedule"));
+        let mut expected = real(&schedule, id);
+        for sub in schedule.get_subcommands() {
+            expected.extend(real(sub, id));
+        }
+        assert_eq!(
+            listed(page(language, Page::Schedule)),
+            expected,
+            "{language:?} schedule"
+        );
         // `provider` 那一页（施工 8-5，Y-13 上并成一页）：`provider`、`login`、`list`、`logout` 印的都是它。名字是位置参数，不算
         // 选项；选项分在子命令上（`--system` 在 `login`、`logout`，`--format` 在 `list`），页上列的是它们加起来的。
         let provider = Provider::augment_args(Command::new("provider"));
@@ -268,6 +291,7 @@ fn each_page_is_its_own_file() {
             (Page::Memory, "memory"),
             (Page::Pkg, "pkg"),
             (Page::Kb, "kb"),
+            (Page::Schedule, "schedule"),
         ] {
             let file = dir.join(code).join(format!("{name}.txt"));
             let on_disk = std::fs::read_to_string(&file).expect("有这一页");
@@ -312,6 +336,7 @@ fn pages_fit_in_eighty_columns_and_end_with_one_newline() {
             Page::Memory,
             Page::Pkg,
             Page::Kb,
+            Page::Schedule,
         ] {
             let text = page(language, which);
             assert!(

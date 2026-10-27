@@ -46,6 +46,7 @@ mod redo;
 mod rename;
 mod rpc;
 mod sandbox;
+mod schedule;
 mod service;
 mod setup;
 mod shown;
@@ -71,6 +72,10 @@ pub use recap::{Recap, RecapPlan, recap, recap_on};
 pub use redo::{Redo, RedoPlan, redo, redo_on};
 pub use rename::{Rename, RenamePlan, rename, rename_on};
 pub use sandbox::{Action as SandboxAction, OwnerArgs, Sandbox, sandbox};
+pub use schedule::{
+    Add as ScheduleAdd, Schedule, ScheduleCommand, SchedulePlan, interval, moment, schedule,
+    schedule_on,
+};
 pub use service::{Service, ServiceAction, service};
 pub use setup::{HeadEnv, Setup, SetupPlan, model_ready_on, setup, setup_on};
 pub use undo::{Direction, Undo, UndoPlan, undo, undo_on};

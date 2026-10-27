@@ -10,6 +10,7 @@ Commands:
   rename <title>        Give the session a title
   memory [command]      What the AI remembers: search, add, edit, forget, clear
   kb [command]          Knowledge bases: list, search, read, add, remove, mount
+  schedule [command]    Schedules: list, add, remove, pause, resume
   pkg [command]         See installed packages; install, remove
   mcp login <server>    Log in to a URL MCP server needing a browser login
   mcp logout <server>   Log out of a URL MCP server

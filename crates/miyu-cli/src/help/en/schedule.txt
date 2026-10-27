@@ -1,0 +1,29 @@
+Usage: miyu schedule [command] [options]
+
+Manage schedules: at the set time, a message goes to a session for one turn.
+No command means list. Times missed while the core was stopped are skipped.
+
+Commands:
+  list                    List this account's schedules
+  add <message>...        Add one; pick one of --cron, --at, --every
+  rm <id>                 Remove one
+  pause <id>              Pause one
+  resume <id>             Resume one; the next time counts from now
+
+Options:
+      --cron <fields>     add: a five-field cron such as '0 8 * * *', read in
+                          this machine's time zone
+      --once              add: the --cron one runs only once
+      --zone <zone>       add: read --cron in this time zone, e.g. Asia/Tokyo
+      --at <time>         add: run once, e.g. '2026-10-28 08:00' (this
+                          machine's time zone) or 2026-10-28T08:00:00+09:00
+      --every <interval>  add: repeat; seconds or 90s, 10m, 2h, 1d; at least 60s
+      --session <id>      add: run in this existing session; list: only those
+      --persona <persona>
+                          add: open a new session each time with this persona
+      --no-persona        add: open a new session each time with no persona
+      --preset <preset>   add: the new session uses this preset
+      --cwd <dir>         add: open the new session in this folder (home if
+                          not given)
+      --format text|json  list: json for scripts
+  -h, --help              Print help

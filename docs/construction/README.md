@@ -856,6 +856,7 @@ flowchart LR
 | IM-1 中上 | 每人一份的扩展进程 | 进程按（包，账号）；每人一份的以那个人的身份连进来、能力和他取交集、数据在他家里、握手交他的配置；用到时拉起（`start_for`、`provide/reach.rs`），头一回装上先替机主起一份登记工具；工具调用照会话属主转 | `IM-1-按账号起扩展进程.md` |
 | J-3 上 | 定时的时区和上限 | cron 多可选 `zone`（建时记下，不交的记本机的，照它读）；每账号 200 个上限（`too_many_schedules`，她拿到 `account-full`）；每次新开的工作目录建时就查（`problem: cwd`） | `J-3-定时的时区上限和通知.md` |
 | J-3 中 | 定时跑完告诉人 | 账号级 `notices` 流：每次新开会话的定时那一轮结束推 `notice {kind: schedule.ran, schedule, session, ok}`，唤醒表坏了换空的推 `schedules.reset`；成员能订、扩展不能、不存盘 | `J-3-定时的时区上限和通知.md` |
+| J-3 下 | 定时的命令行 | `miyu schedule list\|add\|rm\|pause\|resume`：`--cron`（交本机的时区，`--zone` 覆盖，`--once`）、`--at`（不带偏移的照本机时区）、`--every`（`10m` 这类）；跑在已有会话或者每次新开；参数错的照 `problem` 说清是哪一样 | `J-3-定时的时区上限和通知.md` |
 | PG-1 | 预设页照软件包分组 | 组表多 `order`；`package.list` 的组多 `packages`（照用途的先后）、每项多 `installed_at`（出厂的不写）；`session_usage` 改名「用量查询」、`show` 改名「展示给用户」 | `PG-1-预设页照软件包分组.md` |
 | UC-2 | 旁路请求的用量记场所 | `model.call` 写了 `session` 的，`usage.oneshot` 和汇总那一行挂上那个会话的场所；`usage.query` 照场所、用途分得出群的判官用量 | `UC-2-旁路请求的用量记场所.md` |
 | Y-1 上补 | 停用的账号说已停用 | 停用了的账号用户名、密码都对的握手回 `account_disabled`（回完断开），网页说「这个账号已被停用」；密码不对的照旧 `bad_password`，不透露停没停（项目主人验收时要的）。施工单见 `Y-1上-多账号和邀请.md` 末节「补」 |
