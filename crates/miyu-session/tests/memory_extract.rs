@@ -2,7 +2,8 @@
 //! `org/m`，经一次性入口），交回的记成记忆。会话的模型照剧本回。
 //!
 //! 两轮以后闲了就抽：一条 user，指令在前，后面一轮一块；没有 system；记下的 `by` 是记忆模块、出处是那一轮、听众是属主；
-//! 记下抽到了哪。只有一轮的不抽；她这一段调过 `remember` 的整段跳过、不发；人说的 key 发出去以前遮掉。
+//! 记下抽到了哪。只有一轮的不抽；她调过 `remember` 的那一轮不交、别的照抽，每一轮都调过的整段跳过、不发（施工 E-5）；人说的 key
+//! 发出去以前遮掉。
 
 use std::time::Duration;
 
@@ -94,8 +95,9 @@ async fn one_turn_is_not_enough_and_a_new_turn_resets_the_pause() {
 }
 
 #[tokio::test]
-async fn a_slice_where_she_remembered_is_skipped_without_asking() {
-    let server = Server::start(vec![every_turn("不该有")]).await;
+async fn the_turn_where_she_remembered_is_left_out_and_the_rest_is_asked() {
+    // 施工 E-5：她在第一轮当场记过，那一轮不交；第二轮照抽（原来整段跳过）。
+    let server = Server::start(vec![every_turn("用户说好的")]).await;
     let mut home = Home::new();
     organizer(&mut home, &server, "");
     let remember = serde_json::json!({"class": "user", "text": "用户养了一只猫"}).to_string();
@@ -113,7 +115,46 @@ async fn a_slice_where_she_remembered_is_skipped_without_asking() {
         )
         .await;
     chat(&home, &handle, 1, "记住我养了一只猫").await;
-    chat(&home, &handle, 2, "好的").await;
+    chat(&home, &handle, 2, "今天天气不错").await;
+    requested(&server, 1).await;
+    let text = asked(&server, 0);
+    assert!(text.contains("今天天气不错"), "{text}");
+    assert!(
+        !text.contains("记住我养了一只猫"),
+        "记过的那一轮不交：{text}"
+    );
+    let turns = ended_turns(&home, handle.id());
+    assert!(
+        !text.contains(&format!("<turn number=\"{}\"", turns[0].started().get())),
+        "{text}"
+    );
+    stop(&handle).await;
+}
+
+#[tokio::test]
+async fn a_slice_where_she_remembered_in_every_turn_is_skipped_without_asking() {
+    let server = Server::start(vec![every_turn("不该有")]).await;
+    let mut home = Home::new();
+    organizer(&mut home, &server, "");
+    let first = serde_json::json!({"class": "user", "text": "用户养了一只猫"}).to_string();
+    // 第二轮调的是 forget（编号对不上也算她当场管过记忆）。
+    let second = serde_json::json!({"id": "m99", "why": "说错了"}).to_string();
+    let script = Script::new([
+        Play::calls(&[("remember", &first)]),
+        Play::Says("记住了。"),
+        Play::calls(&[("forget", &second)]),
+        Play::Says("忘掉了。"),
+    ]);
+    let handle = home
+        .create_full(
+            &script,
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    chat(&home, &handle, 1, "记住我养了一只猫").await;
+    chat(&home, &handle, 2, "忘了那条吧").await;
     for _ in 0..100 {
         if mark(&home, handle.id()).is_some() {
             break;

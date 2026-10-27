@@ -9,18 +9,21 @@
 //!   工具面。最多 [`ROOM`] 字节：放不下的照先后取最老的几轮，`upto` 记到取到的最后一轮；一轮自己就放不下的留头尾、截中间，
 //!   照样抽，`upto` 照样往前走，不卡在一轮上。
 //! - **忘掉的**：这一段开始以后作废的、改掉的，接在这一段后面列出来，说清别再记（施工 R-6 修）；没有的请求一字不变。
-//! - **跳过**：这一段里她调过 `remember`、`forget` 的整段跳过，只记抽到了哪。
+//! - **跳过**：这一段里她调过 `remember`、`forget` 的那几轮不交（她当场记过了），别的轮照抽；整段都是这种的只记抽到了哪
+//!   （施工 E-5：原来整段跳过，群里一段几十轮，她记一句就扔掉整段）。
 //! - **发**：经一次性入口发 `memory.organizer`（没写的照 `models.chat`），用途 `memory`，记在会话属主的账上。发出去以前遮掉
 //!   key（配置里引用的密钥的原文、常见的写法），交回来的再遮一遍。
 //! - **出错**：这一段不往前挪，下次闲了再抽；同一段连着三次不成的跳过，记 `WARN memory extraction failed`。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::sync::{Mutex, PoisonError};
 
 use miyu_config::Value;
 use miyu_config::secret::Reference;
 use miyu_kernel::assemble::Spoken;
+use miyu_kernel::block::Block;
+use miyu_kernel::event::Body;
+use miyu_kernel::history::History;
 use miyu_kernel::id::{Seq, TurnId};
 use miyu_kernel::template::{Template, escape};
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -122,98 +125,6 @@ impl std::fmt::Debug for Extraction {
     }
 }
 
-/// 一个会话的抽取：闹钟是第几个、有没有一次在路上、同一段失败了几次；叫停这个会话叫的整理的那一头（施工 R-22）。
-#[derive(Debug, Default)]
-pub(crate) struct Extractor {
-    state: Mutex<State>,
-    pub(crate) hushes: super::merge::Hushes,
-}
-
-#[derive(Debug, Default)]
-struct State {
-    /// 第几个闹钟：上了新的、撤掉的都往上数，响的时候对不上的是作废的。
-    generation: u64,
-    /// 有一次在路上。
-    running: bool,
-    /// 第 `generation` 个闹钟上了，还没响完（施工 V-2 再补）：响了开始抽、作废了、读不了的放下。
-    armed: bool,
-    /// 从第几条起抽、失败了几次。
-    failures: Option<(Seq, u32)>,
-}
-
-impl Extractor {
-    fn state(&self) -> std::sync::MutexGuard<'_, State> {
-        self.state.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-
-    /// 上一个新闹钟，交回它是第几个。
-    pub(crate) fn arm(&self) -> u64 {
-        let mut state = self.state();
-        state.generation += 1;
-        state.armed = true;
-        state.generation
-    }
-
-    /// 撤掉闹钟：新一轮开始了。在路上的那一次照样走完。
-    pub(crate) fn cancel(&self) {
-        let mut state = self.state();
-        state.generation += 1;
-        state.armed = false;
-    }
-
-    /// 第 `generation` 个闹钟响了、不抽（还没闲着、没装记忆、正有一次在路上……）：放下它。对不上的是作废的，不管。
-    pub(crate) fn disarm(&self, generation: u64) {
-        let mut state = self.state();
-        if state.generation == generation {
-            state.armed = false;
-        }
-    }
-
-    /// 有闹钟上着、或者有一次在路上（施工 V-2 再补）：会话这时退下，这一段要等下次载入、闲下来才抽。
-    pub(crate) fn pending(&self) -> bool {
-        let state = self.state();
-        state.armed || state.running
-    }
-
-    /// 第 `generation` 个闹钟还算数、没有一次在路上。
-    pub(crate) fn due(&self, generation: u64) -> bool {
-        let state = self.state();
-        state.generation == generation && !state.running
-    }
-
-    /// 第 `generation` 个闹钟还算数就开始一次，交回开没开成。
-    pub(crate) fn start(&self, generation: u64) -> bool {
-        let mut state = self.state();
-        if state.generation != generation || state.running {
-            return false;
-        }
-        state.running = true;
-        state.armed = false;
-        true
-    }
-
-    /// 这一次读不成（日志读不了）：放下，不算这一段失败了一次，下次闲了再来。
-    pub(crate) fn abandon(&self) {
-        self.state().running = false;
-    }
-
-    /// 这一次走完了：成了的清掉失败的次数；没成的交回从第 `after` 条起这是第几次。
-    fn finish(&self, after: Seq, ok: bool) -> u32 {
-        let mut state = self.state();
-        state.running = false;
-        if ok {
-            state.failures = None;
-            return 0;
-        }
-        let tries = match state.failures {
-            Some((from, tries)) if from == after => tries + 1,
-            _ => 1,
-        };
-        state.failures = (tries < TRIES).then_some((after, tries));
-        tries
-    }
-}
-
 /// 一轮：编号、她回答的时刻、人这边的几句（谁说的、字）、她的回答、她那一条的序号。
 struct Exchange {
     turn: TurnId,
@@ -277,7 +188,7 @@ fn within(said: Vec<(Voice, String)>, budget: usize, limit: Option<usize>) -> Ve
 pub(crate) enum Plan {
     /// 答了的轮数不够：等下次。
     Wait,
-    /// 整段跳过（她当场记过了），只记抽到第 `upto` 条。
+    /// 整段跳过（每一轮她都当场记过了），只记抽到第 `upto` 条。
     Skip {
         /// 抽到第几条。
         upto: Seq,
@@ -303,11 +214,11 @@ pub(crate) enum Plan {
     },
 }
 
-/// 照这一段 `spoken`（她在里面调过的工具 `called`，每一句是谁说的 `voices`）定怎么办：答了的轮数至少 `min_turns`；日期照
-/// 会话的时区 `offset`；主人照称呼 `name` 写，没有的写「用户」那一句（施工 R-6 再修）。
+/// 照这一段 `spoken`（她调过 `remember`、`forget` 的那几轮 `remembered`，每一句是谁说的 `voices`）定怎么办：答了的轮数至少
+/// `min_turns`；日期照会话的时区 `offset`；主人照称呼 `name` 写，没有的写「用户」那一句（施工 R-6 再修）。
 pub(crate) fn plan(
     spoken: &[Spoken],
-    called: &BTreeSet<String>,
+    remembered: &BTreeSet<TurnId>,
     min_turns: usize,
     offset: UtcOffset,
     texts: &ExtractTexts,
@@ -324,7 +235,11 @@ pub(crate) fn plan(
     if exchanges.len() < min_turns.max(1) {
         return Plan::Wait;
     }
-    if called.contains(REMEMBER) || called.contains(FORGET) {
+    // 她当场记过的那几轮不交（施工 E-5）：整段都是的只记抽到了哪。
+    if exchanges
+        .iter()
+        .all(|exchange| remembered.contains(&exchange.turn))
+    {
         return Plan::Skip { upto: last };
     }
     let mut blocks: Vec<String> = Vec::new();
@@ -333,6 +248,10 @@ pub(crate) fn plan(
     let mut upto = last;
     let mut bytes = 0;
     for exchange in &exchanges {
+        if remembered.contains(&exchange.turn) {
+            upto = exchange.seq;
+            continue;
+        }
         let block = render(exchange, offset, texts);
         let needed = block.len() + if blocks.is_empty() { 0 } else { GAP.len() };
         if !blocks.is_empty() && bytes + needed > ROOM {
@@ -368,6 +287,26 @@ pub(crate) fn plan(
         me: voices.me.clone(),
         places,
     }
+}
+
+/// 上次抽到第 `after` 条以后她调过 `remember`、`forget` 的那几轮（施工 E-5）：这几轮她当场记过了，抽取不交。口径同
+/// [`History::called_since`]：撤掉的回合不算。
+pub(crate) fn remembered_since(history: &History, after: Seq) -> BTreeSet<TurnId> {
+    history
+        .ordered()
+        .into_iter()
+        .filter(|event| event.seq > after)
+        .filter_map(|event| match &event.body {
+            Body::MessageAssistant(reply)
+                if reply.blocks.iter().any(|block| {
+                    matches!(block, Block::ToolCall(call) if call.name == REMEMBER || call.name == FORGET)
+                }) =>
+            {
+                event.turn
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 /// 一轮写成一块：头、人的话、她的回答、尾，一样一行。
@@ -430,10 +369,12 @@ pub(super) fn secrets(config: &Turn) -> Vec<String> {
     found
 }
 
+mod extractor;
 mod job;
 mod place;
 mod voices;
 
+pub(crate) use extractor::Extractor;
 pub(crate) use job::Job;
 pub(crate) use place::place_people;
 pub(crate) use voices::{Voice, Voices};

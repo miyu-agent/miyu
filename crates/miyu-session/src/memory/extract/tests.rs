@@ -72,13 +72,13 @@ pub(super) fn ask(plan: Plan) -> (Seq, String, BTreeSet<u64>, bool) {
 /// 没有称呼的抽取：这里的几条不管主人怎么写（施工 R-6 再修另有一条）。
 pub(super) fn plan(
     spoken: &[Spoken],
-    called: &BTreeSet<String>,
+    remembered: &BTreeSet<TurnId>,
     min_turns: usize,
     offset: UtcOffset,
     texts: &ExtractTexts,
     voices: &Voices,
 ) -> Plan {
-    super::plan(spoken, called, min_turns, offset, texts, voices, None)
+    super::plan(spoken, remembered, min_turns, offset, texts, voices, None)
 }
 
 /// 没有称呼时的指令。
@@ -162,28 +162,65 @@ fn too_few_answered_turns_wait_and_an_unanswered_line_is_left_for_later() {
 }
 
 #[test]
-fn a_slice_where_she_remembered_is_skipped_whole() {
+fn only_the_turns_where_she_remembered_are_left_out() {
+    // 施工 E-5：她在第二轮当场记过，那一轮不交，第一、三轮照抽，抽到最后一轮。
+    let spoken = [
+        exchange(2, "一", "答一"),
+        exchange(6, "二", "答二"),
+        exchange(10, "三", "答三"),
+    ]
+    .concat();
+    let remembered: BTreeSet<TurnId> = [TurnId::new(seq(7))].into_iter().collect();
+    let (upto, text, turns, more) = ask(plan(
+        &spoken,
+        &remembered,
+        2,
+        UtcOffset::UTC,
+        &texts(),
+        &owner(&spoken),
+    ));
+    assert_eq!(upto, seq(12), "记过的那一轮也算抽过了");
+    assert!(!more);
+    assert!(text.contains("答一") && text.contains("答三"), "{text}");
+    assert!(!text.contains("答二") && !text.contains("二"), "{text}");
+    assert_eq!(turns, [3, 11].into_iter().collect::<BTreeSet<u64>>());
+    // 最后一轮是记过的：照样抽到它那一条，别的照交。
+    let remembered: BTreeSet<TurnId> = [TurnId::new(seq(11))].into_iter().collect();
+    let (upto, text, _, _) = ask(plan(
+        &spoken,
+        &remembered,
+        2,
+        UtcOffset::UTC,
+        &texts(),
+        &owner(&spoken),
+    ));
+    assert_eq!(upto, seq(12));
+    assert!(text.contains("答二") && !text.contains("答三"), "{text}");
+}
+
+#[test]
+fn a_slice_where_she_remembered_in_every_turn_is_skipped() {
     let spoken = [exchange(2, "一", "答一"), exchange(6, "二", "答二")].concat();
-    for name in [REMEMBER, FORGET] {
-        let called: BTreeSet<String> = [name.to_string(), "read".to_string()].into_iter().collect();
-        assert_eq!(
-            plan(
-                &spoken,
-                &called,
-                2,
-                UtcOffset::UTC,
-                &texts(),
-                &owner(&spoken)
-            ),
-            Plan::Skip { upto: seq(8) },
-            "{name}"
-        );
-    }
-    let called: BTreeSet<String> = ["read".to_string()].into_iter().collect();
+    let remembered: BTreeSet<TurnId> = [TurnId::new(seq(3)), TurnId::new(seq(7))]
+        .into_iter()
+        .collect();
+    assert_eq!(
+        plan(
+            &spoken,
+            &remembered,
+            2,
+            UtcOffset::UTC,
+            &texts(),
+            &owner(&spoken)
+        ),
+        Plan::Skip { upto: seq(8) },
+    );
+    // 别的轮记过的不算这一段的：照抽。
+    let elsewhere: BTreeSet<TurnId> = [TurnId::new(seq(99))].into_iter().collect();
     assert!(matches!(
         plan(
             &spoken,
-            &called,
+            &elsewhere,
             2,
             UtcOffset::UTC,
             &texts(),
@@ -191,6 +228,13 @@ fn a_slice_where_she_remembered_is_skipped_whole() {
         ),
         Plan::Ask { .. }
     ));
+    // 轮数不够的照旧等，不因为记过就跳。
+    let one = exchange(2, "一", "答一");
+    let remembered: BTreeSet<TurnId> = [TurnId::new(seq(3))].into_iter().collect();
+    assert_eq!(
+        plan(&one, &remembered, 2, UtcOffset::UTC, &texts(), &owner(&one)),
+        Plan::Wait
+    );
 }
 
 #[test]
@@ -234,66 +278,6 @@ fn what_does_not_fit_waits_for_the_next_go_and_one_huge_turn_is_excerpted() {
     assert!(text.contains("[... excerpted ...]"));
     assert!(text.contains("答一"), "尾巴留着");
     assert!(text.len() < ROOM + instruction().len() + 64);
-}
-
-#[test]
-fn an_alarm_is_void_once_another_is_set_or_a_turn_starts() {
-    let extractor = Extractor::default();
-    let first = extractor.arm();
-    assert!(extractor.due(first));
-    let second = extractor.arm();
-    assert!(!extractor.due(first), "上了新的，旧的作废");
-    extractor.cancel();
-    assert!(!extractor.due(second), "忙起来了");
-    let third = extractor.arm();
-    assert!(extractor.start(third));
-    assert!(!extractor.due(third), "在路上的只有一个");
-    assert!(!extractor.start(third));
-    assert_eq!(extractor.finish(seq(1), true), 0);
-    assert!(extractor.due(third));
-    extractor.start(third);
-    extractor.abandon();
-    assert!(extractor.due(third), "读不成的放下，不算失败");
-}
-
-#[test]
-fn the_same_slice_failing_three_times_is_let_go() {
-    let extractor = Extractor::default();
-    let failed = |after: u64| {
-        let generation = extractor.arm();
-        assert!(extractor.start(generation));
-        extractor.finish(seq(after), false)
-    };
-    assert_eq!(failed(5), 1);
-    assert_eq!(failed(5), 2);
-    assert_eq!(failed(9), 1, "换了一段重新数");
-    assert_eq!(failed(9), 2);
-    assert_eq!(failed(9), 3);
-    assert_eq!(failed(9), 1, "放过以后重新数");
-}
-
-#[test]
-fn an_alarm_is_pending_until_it_starts_or_is_let_go() {
-    let extractor = Extractor::default();
-    assert!(!extractor.pending(), "没上过闹钟");
-    let first = extractor.arm();
-    assert!(extractor.pending(), "上了，还没响");
-    extractor.disarm(first);
-    assert!(!extractor.pending(), "响了、不抽，放下了");
-    let second = extractor.arm();
-    extractor.disarm(first);
-    assert!(extractor.pending(), "作废的那一个放下不算数");
-    assert!(extractor.start(second));
-    assert!(extractor.pending(), "在路上");
-    extractor.finish(seq(1), true);
-    assert!(!extractor.pending(), "抽完了");
-    extractor.arm();
-    extractor.cancel();
-    assert!(!extractor.pending(), "忙起来撤掉了");
-    let third = extractor.arm();
-    extractor.start(third);
-    extractor.abandon();
-    assert!(!extractor.pending(), "读不成的放下了");
 }
 
 /// 一句人话：第 `n` 条。

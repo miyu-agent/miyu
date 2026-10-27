@@ -20,7 +20,7 @@ use tokio::sync::oneshot;
 use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
-use crate::memory::{Dreamed, Hush, Job, NotDreamed, Voices, called, plan};
+use crate::memory::{Dreamed, Hush, Job, NotDreamed, Voices, called, plan, remembered_since};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 
@@ -155,7 +155,7 @@ impl Actor {
             history.append(event);
         }
         let spoken = self.session.spoken_in(&history, after);
-        let called = history.called_since(after);
+        let remembered = remembered_since(&history, after);
         let voices = self.voices(history.events());
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
@@ -163,7 +163,7 @@ impl Actor {
         let name = self.owner_name(&config);
         let plan = plan(
             &spoken,
-            &called,
+            &remembered,
             min_turns,
             offset,
             &extraction.texts,
@@ -274,12 +274,12 @@ impl Actor {
             history.append(event);
         }
         let spoken = self.session.spoken_in(&history, after);
-        let called = history.called_since(after);
+        let remembered = remembered_since(&history, after);
         let voices = self.voices(history.events());
         let name = self.owner_name(&config);
         let plan = plan(
             &spoken,
-            &called,
+            &remembered,
             1,
             offset,
             &extraction.texts,
