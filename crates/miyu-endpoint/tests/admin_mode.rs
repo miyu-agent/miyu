@@ -54,7 +54,10 @@ async fn system_writes_need_admin_mode_when_the_head_knows_it() {
         ),
         ("account.invite", json!({})),
         ("account.list", json!({})),
-        ("package.install", json!({"package": "x"})),
+        // 装回、卸出厂的包是系统那一层的事（施工 U23 下上：装进自己那一层的不要管理员模式）。
+        ("package.install", json!({"package": "glob"})),
+        ("package.remove", json!({"package": "glob"})),
+        ("package.enable", json!({"package": "x"})),
         ("mcp.set", json!({})),
     ] {
         let reply = owner.call("x", method, params).await;

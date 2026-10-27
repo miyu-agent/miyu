@@ -6,6 +6,7 @@
 //! - 看一眼只照索引说要装哪几个、要下多大，不下载。
 //! - 真装：一次只装一件（`core.packaging`）；一个一个下（[`super::download`]，进度推 `package.progress` 给发起的连接），再照
 //!   装包文件那一条装（[`super::super::archive`]），本地库记上来源仓库。下不成的 `download_failed`（`data.why` 是每一处的原因），前面装好的留着。
+//! - 装进哪一层照 [`Scope`]（施工 U23 下上）：自己那一层的，要装的（连同补的依赖）照索引看带程序的，不下载就拒（[`Scope::system_only`]）。
 
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -19,6 +20,7 @@ use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
 use miyu_store::packages::Packages;
 
+use super::super::scope::Scope;
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use crate::Core;
@@ -90,10 +92,10 @@ struct Step<'a> {
     name: String,
 }
 
-/// 从软件源装 `params.source`。
+/// 从软件源装 `params.source` 进 `scope` 那一层。
 pub(crate) async fn install(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, scope): (Peer, &Scope),
     caller: Option<&Reverse>,
     params: SourceParams,
 ) -> Result<Value, Refusal> {
@@ -101,14 +103,14 @@ pub(crate) async fn install(
         return Err(Refusal::BAD_PARAMS);
     }
     let synced = super::sync::sync(core, false).await?;
-    let installed: BTreeSet<String> = core
-        .system_packages()
-        .iter()
-        .map(|found| found.id.clone())
-        .collect();
+    let seen = scope.installed(core);
+    let installed: BTreeSet<String> = seen.iter().map(|found| found.id.clone()).collect();
     let steps = plan(&synced.index, &params.source, &installed)?;
+    if steps.iter().any(|step| runs_program(step.entry)) {
+        scope.system_only(peer.admin)?;
+    }
     if params.preview {
-        return Ok(preview(&steps, core));
+        return Ok(preview(&steps, &seen));
     }
     let _one_at_a_time = core.packaging.lock().await;
     let settings = SourceSettings::from(&core.config().resolved().values());
@@ -127,9 +129,9 @@ pub(crate) async fn install(
         let file = download::fetch(&cache, &wanted, &report)
             .await
             .map_err(Refusal::download_failed)?;
-        answer = super::super::archive::install(core, peer, &file, false).await?;
+        answer = super::super::archive::install(core, peer, scope, &file, false).await?;
         let (record, id, origin) = (
-            places.clone(),
+            scope.local_root(core),
             step.entry.id.clone(),
             step.entry.origin.clone(),
         );
@@ -222,8 +224,22 @@ pub(super) fn pick(entry: &Entry) -> Option<&File> {
         .or_else(|| entry.files.iter().find(|file| file.target.is_none()))
 }
 
-/// 看一眼：要装的那个、一起装的依赖、要下多大。
-fn preview(steps: &[Step<'_>], core: &Core) -> Value {
+/// 索引里的这一条带程序（同 `miyu_store::packages::runs_program`，施工 U23 下上）：种类是界面、扩展、内置、小程序的，带了子命令、
+/// MCP 服务的。以前生成的、没写种类的照带的认。
+fn runs_program(entry: &Entry) -> bool {
+    matches!(
+        entry.kind.as_deref(),
+        Some("ui" | "process" | "builtin" | "worker")
+    ) || ["command", "mcp"].iter().any(|kind| {
+        entry
+            .provides
+            .get(*kind)
+            .is_some_and(|names| !names.is_empty())
+    })
+}
+
+/// 看一眼：要装的那个、一起装的依赖、要下多大；换下哪一份照装进的那一层看得到的 `now` 认。
+fn preview(steps: &[Step<'_>], now: &[miyu_store::packages::Found]) -> Value {
     let Some((last, before)) = steps.split_last() else {
         return Value::Null;
     };
@@ -245,7 +261,6 @@ fn preview(steps: &[Step<'_>], core: &Core) -> Value {
             _ => answer[kind.as_str()] = json!(names),
         }
     }
-    let now = core.system_packages();
     if let Some(old) = now.iter().find(|one| one.id == entry.id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
         answer["replaces"] = json!({ "version": version });

@@ -14,25 +14,39 @@ use miyu_store::packages::{Layer, Packages};
 use super::folder::source;
 use super::manage::{clear_of_conflicts, removable, setting_keys, shipped_clear_of_conflicts};
 use super::packages;
+use super::scope::Scope;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
-/// 从包文件夹 `path` 装：编号、版本、换下哪一份（同编号已经装了的）、带了什么、要什么能力、几个文件多大。
+/// 从包文件夹 `path` 装进 `scope` 那一层：编号、版本、换下哪一份（这一层看得到的同编号的）、带了什么、要什么能力、几个文件
+/// 多大。
 pub(crate) async fn installing(
     core: &Arc<Core>,
     peer: Peer,
+    scope: &Scope,
     path: &Path,
 ) -> Result<Value, Refusal> {
-    let (folder, id, manifest) = source(core, peer, path)?;
-    clear_of_conflicts((core, peer), &id, manifest.clone(), folder.clone()).await?;
+    let (folder, id, manifest) = match scope {
+        Scope::System => {
+            let read = source(core, peer, path)?;
+            clear_of_conflicts((core, peer), &read.1, read.2.clone(), read.0.clone()).await?;
+            read
+        }
+        Scope::Own(account) => {
+            let read = super::mine::admitted(core, peer, account, path)?;
+            let (dir, id, manifest) = (read.0.clone(), &read.1, read.2.clone());
+            super::mine::clear_of_conflicts(core, account, id, manifest, dir).await?;
+            read
+        }
+    };
     let (files, content) =
         tokio::task::spawn_blocking(move || (local::scan(&folder), Content::of(&folder)))
             .await
             .map_err(|_| Refusal::INTERNAL)?;
     let files = files.map_err(|_| Refusal::PATH_UNREADABLE)?;
     let mut answer = carries(core, peer, &id, &manifest, &content);
-    let now = core.system_packages();
+    let now = scope.installed(core);
     if let Some(old) = now.iter().find(|one| one.id == id) {
         let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
         answer.insert("replaces".into(), json!({ "version": version }));
@@ -84,7 +98,7 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
         answer.insert("version".into(), json!(version));
     }
     if one.layer == Layer::Home {
-        let looked = super::local::entry(core, id).await?;
+        let looked = super::local::entry(core, None, id).await?;
         answer.insert("files".into(), json!(looked.files.len()));
         answer.insert("size".into(), json!(local::size(&looked.files)));
     }

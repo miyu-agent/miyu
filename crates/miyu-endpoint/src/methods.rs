@@ -69,9 +69,9 @@ pub(crate) fn call<'a>(
 ) -> Answer<'a> {
     match request.method.as_str() {
         "session.create" => answer(move || session::create(core, peer, caller, request)),
-        "check" => {
-            answer(move || async move { crate::check::check(core, peer, params(request)?).await })
-        }
+        "check" => answer(move || async move {
+            crate::check::check(core, (peer, caller.acting_for()), params(request)?).await
+        }),
         "persona.list" => {
             answer(move || async move { personas::list(core, caller.acting_for(), peer).await })
         }

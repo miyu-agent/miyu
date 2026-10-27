@@ -1,5 +1,5 @@
-//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）：属主是成员的，打开写进他自己那一层的同名覆盖，机主的不碰。成员现在
-//! 装不了包、从外面走不到这里，所以直接调。
+//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）：属主是成员的，打开写进他自己那一层的同名覆盖，机主的不碰。会话里装包
+//! 一律装进属主自己那一层（施工 U23 下上）：不带程序的装得上，系统那一层的事拒。
 
 use std::sync::Arc;
 
@@ -53,42 +53,109 @@ async fn opening_in_a_preset_writes_the_owner_s_own_layer() {
     }
 }
 
-/// 会话端口上改机器的每一件（施工 Y-5 下下）：属主是成员的都拒 `not_permitted`，一件一件挡（工具先看一眼再做，只挡看一眼的话
-/// 直接调做的那一件就漏了）；只读的照旧给。
+/// 会话端口上改系统那一层的每一件（施工 Y-5 下下；U23 下上起装、卸进属主自己那一层）：开扩展、带程序的包、属主家目录以外的路径，
+/// 属主是成员的拒 `not_permitted`、是机主的拒 `admin_mode_required`，一件一件挡（工具先看一眼再做，只挡看一眼的话直接调做的那一件
+/// 就漏了）；不带程序的装进他自己那一层、卸得掉，只读的照旧给。
 #[tokio::test]
-async fn a_member_s_port_refuses_every_change_but_still_lists() {
+async fn a_port_installs_into_the_owner_s_own_layer_and_refuses_system_things() {
     let (root, dir) = temp_root("port-member");
+    let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        AccountId::parse("alice").expect("合写法"),
+        alice.clone(),
         "token".to_string(),
     ));
-    let port = Port {
+    let bob = AccountId::parse("bob").expect("合写法");
+    let port = |owner: &AccountId| Port {
         core: Arc::downgrade(&core),
-        owner: AccountId::parse("bob").expect("合写法"),
+        owner: owner.clone(),
     };
-    let path = dir.join("kit");
+    let put = |folder: &std::path::Path, text: &str| {
+        std::fs::create_dir_all(folder).expect("建得了");
+        std::fs::write(folder.join("package.toml"), text).expect("写得了");
+    };
+    let mine = root.account_dir(&bob).join("workspace/kit");
+    put(&mine, "[package]\nname = { en = \"Kit\" }\n");
+    let tool = root.account_dir(&bob).join("workspace/tool");
+    put(
+        &tool,
+        "[package]\nname = { en = \"Tool\" }\nprotocol = [1, 1]\n\n[command]\nname = \"tool\"\nprogram = \"miyu-tool\"\nabout = { en = \"Open tool\" }\n\n[ui]\n",
+    );
+    let outside = dir.join("kit");
+    put(&outside, "[package]\nname = { en = \"Kit\" }\n");
+    let reason =
+        |got: Result<serde_json::Value, PackageRefusal>| got.err().map(|refusal| refusal.reason);
+    let member = port(&bob);
     let refused = [
-        ("inspect", port.inspect(path.clone()).await),
-        ("install", port.install(path.clone(), None).await),
-        ("enabling", port.enabling("ext".to_string()).await),
-        ("enable", port.enable("ext".to_string()).await),
-        ("removing", port.removing("kit".to_string()).await),
-        ("remove", port.remove("kit".to_string()).await),
-        ("fetching", port.fetching("kit".to_string()).await),
-        ("fetch", port.fetch("kit".to_string(), None).await),
-        ("upgrading", port.upgrading(None).await),
-        ("upgrade", port.upgrade(None).await),
+        (
+            "inspect elsewhere",
+            reason(member.inspect(outside.clone()).await),
+        ),
+        (
+            "install elsewhere",
+            reason(member.install(outside.clone(), None).await),
+        ),
+        (
+            "inspect a program",
+            reason(member.inspect(tool.clone()).await),
+        ),
+        (
+            "install a program",
+            reason(member.install(tool.clone(), None).await),
+        ),
+        ("enabling", reason(member.enabling("ext".to_string()).await)),
+        ("enable", reason(member.enable("ext".to_string()).await)),
     ];
     for (what, got) in refused {
-        let reason = got.err().map(|refusal| refusal.reason);
-        assert_eq!(reason.as_deref(), Some("not_permitted"), "{what}");
+        assert_eq!(got.as_deref(), Some("not_permitted"), "{what}");
     }
-    assert!(port.list().await.is_ok(), "列得出");
+    let owner = port(&alice);
+    for (what, got) in [
+        (
+            "install a program",
+            reason(owner.install(tool.clone(), None).await),
+        ),
+        ("enable", reason(owner.enable("ext".to_string()).await)),
+    ] {
+        assert_eq!(
+            got.as_deref(),
+            Some("admin_mode_required"),
+            "机主也要进管理员模式：{what}"
+        );
+    }
+    assert!(member.inspect(mine.clone()).await.is_ok(), "看一眼他自己的");
+    let installed = member.install(mine, None).await.expect("装进他自己那一层");
+    assert_eq!(installed["layer"], "user");
+    assert!(
+        root.account_dir(&bob)
+            .join("packages/kit/package.toml")
+            .is_file()
+    );
+    assert!(
+        !root.system_packages().join("kit").exists(),
+        "系统那一层不动"
+    );
+    assert!(
+        reason(
+            port(&AccountId::parse("carol").expect("合写法"))
+                .remove("kit".to_string())
+                .await
+        )
+        .as_deref()
+            == Some("unknown_package"),
+        "别人看不到"
+    );
+    assert!(member.removing("kit".to_string()).await.is_ok());
+    assert!(member.remove("kit".to_string()).await.is_ok());
+    assert!(
+        !root.account_dir(&bob).join("packages/kit").exists(),
+        "卸掉了"
+    );
+    assert!(member.list().await.is_ok(), "列得出");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

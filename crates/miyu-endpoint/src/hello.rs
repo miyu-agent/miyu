@@ -127,7 +127,8 @@ impl Shaken {
         self.system
     }
 
-    /// 握手时替谁干活的那个人（施工 IM-1 中下四：扩展的状态里每人一份的包照他那一份报）。
+    /// 握手时替谁干活的那个人（施工 IM-1 中下四：扩展的状态里每人一份的包照他那一份报；施工 U23 下上：软件包列表照他看得到的
+    /// 推）。
     pub(crate) fn whose(&self) -> &AccountId {
         &self.whose
     }

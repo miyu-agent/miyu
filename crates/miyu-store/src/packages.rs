@@ -29,8 +29,10 @@ mod launch;
 pub mod leftovers;
 pub mod local;
 pub mod migrate;
+mod overrides;
 
 pub use launch::{Launch, first_line, launcher};
+pub use overrides::runs_program;
 
 /// 清单在包文件夹里的名字（施工 F-8 上）。
 pub const MANIFEST: &str = "package.toml";
@@ -150,8 +152,8 @@ impl Packages {
     }
 
     /// 系统那一份 `system`（核心手里核对过的，[`Packages::read`] 读的）接上账号自己那一层（[`Packages::of_account`]），照
-    /// [`Packages::read`] 的规矩认撞没撞：他那一层读在最后，同编号、子命令名、功能编号撞了的报在他那份上（施工 U23 上下：先到
-    /// 先得，「自己的盖过系统的」等 U23 下），系统那几份原样不动。没有他那一层的交回系统那一份。
+    /// [`Packages::read`] 的规矩认撞没撞：他那一层读在最后，同编号的盖过系统那一份（施工 U23 下上，带程序的不盖），子命令名、
+    /// 功能编号撞了的报在他那份上（先到先得）。没有他那一层的交回系统那一份。
     pub fn read_over(&self, system: &[Found]) -> Vec<Found> {
         let mut found = system.to_vec();
         found.extend(
@@ -198,6 +200,7 @@ impl Packages {
     /// 照编号排（同一个编号先读的层在前），认撞没撞（[`Packages::read`]）。
     fn checked(&self, mut found: Vec<Found>) -> Vec<Found> {
         found.sort_by(|one, other| (&one.id, one.layer).cmp(&(&other.id, other.layer)));
+        overrides::overridden(&mut found);
         duplicates(&mut found);
         taken(&mut found);
         features_taken(&mut found);

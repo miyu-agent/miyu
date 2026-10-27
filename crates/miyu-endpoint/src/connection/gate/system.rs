@@ -6,7 +6,8 @@
 
 use serde_json::Value;
 
-/// 改系统那一层的方法：账号管理、系统装的包和扩展、MCP 服务、供应商改名。
+/// 改系统那一层的方法：账号管理、系统装的包和扩展、MCP 服务、供应商改名。装、卸、升级软件包不在里面（施工 U23 下上）：不在管理员
+/// 模式里的装进、卸出自己那一层（`packages/scope.rs`）；拿索引（`package.sync`）只是取一份公开的、签了名的清单。
 const SYSTEM: &[&str] = &[
     "account.invite",
     "account.invites",
@@ -15,13 +16,9 @@ const SYSTEM: &[&str] = &[
     "account.disable",
     "account.enable",
     "account.set_admin",
-    "package.install",
-    "package.remove",
-    "package.upgrade",
     "package.enable",
     "package.disable",
     "package.clean",
-    "package.sync",
     "package.restart",
     "package.members",
     "extension.enable",

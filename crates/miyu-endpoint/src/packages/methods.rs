@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
+use super::scope::Scope;
 use crate::Core;
 use crate::hello::{Caller, Peer};
 use crate::methods::params;
@@ -21,28 +22,47 @@ pub(crate) async fn call(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "package.list" => super::list(core, peer),
-        // 从软件源装（施工 G-4 上、下）：带 `source` 的，只写 `package`、又不是卸掉的出厂包的；要往发起的连接推下载进度。
+        "package.list" => super::list(core, peer, caller.acting_for()),
+        // 从软件源装（施工 G-4 上、下）：带 `source` 的，只写 `package`、又不是卸掉的出厂包的；要往发起的连接推下载进度。装、卸、
+        // 升级进哪一层照请求在不在管理员模式里（施工 U23 下上，`scope.rs`）。
         "package.install" if super::source::fetch::wanted(core, &request.params) => {
-            super::source::fetch::install(core, peer, Some(&caller.reverse), params(request)?).await
+            let scope = Scope::of(peer, caller, request);
+            let reverse = Some(&caller.reverse);
+            super::source::fetch::install(core, (peer, &scope), reverse, params(request)?).await
         }
-        // 写组名的（施工 BS-1 下中）：整组装回、卸掉。
+        // 写组名的（施工 BS-1 下中）：整组装回、卸掉，只有系统那一层。
         "package.install" | "package.remove" if super::group::named(core, &request.params) => {
+            Scope::of(peer, caller, request).system_only(peer.admin)?;
             super::group::call(core, peer, &request.method, params(request)?).await
         }
-        "package.install" => super::manage::install(core, peer, params(request)?).await,
-        "package.remove" => super::manage::remove(core, params(request)?).await,
-        "package.info" => super::local::info(core, params(request)?).await,
-        "package.files" => super::local::files(core, params(request)?).await,
+        "package.install" => {
+            let scope = Scope::of(peer, caller, request);
+            super::asked::install(core, peer, &scope, params(request)?).await
+        }
+        "package.remove" => {
+            let scope = Scope::of(peer, caller, request);
+            super::asked::remove(core, peer, &scope, params(request)?).await
+        }
+        "package.info" => {
+            let whose = (caller.acting_for(), peer.admin);
+            super::local::info(core, whose, params(request)?).await
+        }
+        "package.files" => super::local::files(core, caller.acting_for(), params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
         "package.sync" => super::source::sync::method(core, params(request)?).await,
-        "package.search" => super::source::search::search(core, peer, params(request)?).await,
+        "package.search" => {
+            let whose = (peer, caller.acting_for());
+            super::source::search::search(core, whose, params(request)?).await
+        }
         "package.clean" => super::source::clean::clean(core).await,
-        "package.upgrades" => super::source::upgrade::upgrades(core).await,
+        "package.upgrades" => {
+            super::source::upgrade::upgrades(core, &Scope::of(peer, caller, request)).await
+        }
         "package.upgrade" => {
-            super::source::upgrade::upgrade(core, peer, Some(&caller.reverse), params(request)?)
-                .await
+            let scope = Scope::of(peer, caller, request);
+            let reverse = Some(&caller.reverse);
+            super::source::upgrade::upgrade(core, (peer, &scope), reverse, params(request)?).await
         }
         "package.enable" => super::switch::enable(core, peer, params(request)?).await,
         "package.disable" => super::switch::disable(core, peer, params(request)?).await,

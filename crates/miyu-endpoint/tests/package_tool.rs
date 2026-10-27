@@ -1,7 +1,8 @@
 //! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
 //! 施工 BS-1 中起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`），确认请求带着那一次的序号。
 //! 工作区那一级每次问人，确认请求的说明里带着看一眼的那一份（装的同 `package.install` 带 `preview`，卸的同 `package.remove`
-//! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。
+//! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。会话里装进属主自己那一层（施工 U23
+//! 下上）：装回出厂的、整组的是系统那一层的事，不问人、照拒绝交回她，让人进管理员模式。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -87,8 +88,17 @@ fn requests(home: &Home, session: &str) -> Vec<Value> {
         .collect()
 }
 
+/// 装进了会话属主（机主 `alice`）自己那一层（施工 U23 下上）；系统那一层一直不动。
 fn installed(home: &Home, id: &str) -> bool {
-    home.root.path().join("system/packages").join(id).exists()
+    assert!(
+        !home.root.path().join("system/packages").join(id).exists(),
+        "系统那一层不动"
+    );
+    home.root
+        .path()
+        .join("home/alice/packages")
+        .join(id)
+        .exists()
 }
 
 #[tokio::test]
@@ -131,7 +141,7 @@ async fn at_the_workspace_level_each_change_asks_with_the_preview() {
     assert!(installed(&home, "kit"), "允许了才装");
     let asked = requests(&home, &session).remove(1);
     assert_eq!(asked["detail"]["preview"]["package"], "kit", "{asked}");
-    assert_eq!(asked["detail"]["preview"]["layer"], "home", "{asked}");
+    assert_eq!(asked["detail"]["preview"]["layer"], "user", "{asked}");
     let call = asked["call_id"].as_str().expect("有编号").to_string();
     client
         .call(
@@ -207,10 +217,10 @@ async fn a_name_clash_tells_her_what_and_where() {
     assert!(!installed(&home, "akit"));
 }
 
-/// 她装回卸掉的出厂包（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源，问人的卡片是装回的那一份
-/// （`restores`），允许了装回来；写组名的整组装回。
+/// 她装回卸掉的出厂包、整组（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源；装回是系统那一层的
+/// 事（施工 U23 下上），会话里没有管理员模式，不问人、照拒绝交回她：让人进管理员模式，什么都不装回来。
 #[tokio::test]
-async fn she_brings_back_a_removed_shipped_package_and_a_group() {
+async fn bringing_back_a_shipped_package_or_a_group_needs_admin_mode() {
     let home = Home::new();
     let commands: Vec<(&str, &str)> = vec![
         ("package", r#"{"install":"mermaid"}"#),
@@ -218,7 +228,7 @@ async fn she_brings_back_a_removed_shipped_package_and_a_group() {
     ];
     let plays = vec![
         Play::calls(&[("shell", &pkg::run(&commands))]),
-        Play::Says("装回来了。"),
+        Play::Says("要进管理员模式。"),
     ];
     let core = Arc::new(home.core_full(&Script::new(plays), pkg::catalog(), None, TOKEN));
     let mut client = Client::connect(Arc::clone(&core));
@@ -232,51 +242,19 @@ async fn she_brings_back_a_removed_shipped_package_and_a_group() {
     let cwd = home.work.to_string_lossy().into_owned();
     let session = client.create("c1", &cwd).await;
     client.say("s1", &session, "把 mermaid 装回来").await;
-    until("装回的确认请求", || {
-        requests(&home, &session).len() == 1
-    })
-    .await;
-    let asked = requests(&home, &session).remove(0);
-    assert_eq!(
-        asked["detail"]["preview"]["restores"], true,
-        "卡片是装回的那一份：{asked}"
-    );
-    assert_eq!(asked["detail"]["preview"]["package"], "mermaid", "{asked}");
-    let call = asked["call_id"].as_str().expect("有编号").to_string();
-    let reply = client
-        .call(
-            "a1",
-            "session.answer",
-            json!({"session": session, "call": call, "decision": "once", "nested": 1}),
-        )
-        .await;
-    assert!(reply["result"].is_object(), "{reply}");
-    until("整组的确认请求", || {
-        requests(&home, &session).len() == 2
-    })
-    .await;
-    let asked = requests(&home, &session).remove(1);
-    assert_eq!(asked["detail"]["preview"]["group"], "basesystem", "{asked}");
-    assert_eq!(
-        asked["detail"]["preview"]["packages"],
-        json!(["trash"]),
-        "{asked}"
-    );
-    client
-        .call(
-            "a2",
-            "session.answer",
-            json!({"session": session, "call": call, "decision": "once", "nested": 2}),
-        )
-        .await;
     home.until_turns(&session, 1).await;
+    assert!(requests(&home, &session).is_empty(), "不问人");
+    let said = results(&home, &session);
+    assert_eq!(said.len(), 1, "{said:?}");
+    assert_eq!(said[0].matches("enter admin mode").count(), 2, "{said:?}");
     let listed = client.call("l", "package.list", json!({})).await;
-    let removed: Vec<&str> = listed["result"]["packages"]
+    let mut removed: Vec<&str> = listed["result"]["packages"]
         .as_array()
         .expect("有")
         .iter()
         .filter(|item| item.get("removed").is_some())
         .filter_map(|item| item["package"].as_str())
         .collect();
-    assert!(removed.is_empty(), "都装回来了：{removed:?}");
+    removed.sort_unstable();
+    assert_eq!(removed, ["mermaid", "trash"], "都没装回来");
 }

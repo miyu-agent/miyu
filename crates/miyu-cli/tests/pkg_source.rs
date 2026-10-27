@@ -385,14 +385,15 @@ async fn upgrade_shows_what_changes_and_asks() {
     }
 }
 
-/// 改全机的软件包没写 `--system`（施工 Y-12 下下）：先说加上它，再照核心的原话说，什么都不动。
+/// 改全机的软件包没写 `--system`（施工 Y-12 下下）：先说加上它，再照核心的原话说，什么都不动。拿索引（`update`）施工 U23 下上起
+/// 不用管理员模式，这里照清缓存（`clean`）。
 #[tokio::test]
 async fn changing_packages_without_system_says_to_add_it() {
     let (_, trusted) = keys();
     let (other, _) = keys();
     let server = Server::start(serving("2026-10-19T03:00:00Z", 1, &other)).await;
     let home = home(&server.base_url, trusted);
-    let refused = pkg_with(&home, &["update"], b"", false).await;
+    let refused = pkg_with(&home, &["clean"], b"", false).await;
     assert_eq!(
         refused,
         (

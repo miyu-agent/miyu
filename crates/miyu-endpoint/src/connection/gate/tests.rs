@@ -17,11 +17,18 @@ fn members_get_their_own_things_and_nothing_machine_wide() {
         "secret.list",
         "provider.test",
         "model.list",
+        // 往自己那一层装、卸、升级（施工 U23 下上）。
+        "package.install",
+        "package.remove",
+        "package.upgrade",
+        "package.sync",
     ] {
         assert!(allowed(method, &json!({})), "{method}");
     }
     for method in [
-        "package.install",
+        "package.enable",
+        "package.files",
+        "package.clean",
         "extension.enable",
         "provider.detect",
         "fs.read",

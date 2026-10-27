@@ -1,12 +1,15 @@
 //! 软件包列表的推送（施工 F-8 三补，`docs/blueprint/protocol.md`「软件包列表的推送」）：核心重读清单的前后，照英文各算一份每个
 //! 包在列表里的样子，多了的、少了的、变了的各报一声「这个包变了」；订阅着的连接照这一刻、照自己的语言算那一项推出去
-//! （`subscriptions/listed.rs`）。装、卸、装回、关掉出厂的内置包都重读清单；扩展开关、状态变了另由扩展那边报。
+//! （`subscriptions/listed.rs`）。装、卸、装回、关掉出厂的内置包都重读清单；扩展开关、状态变了另由扩展那边报。账号自己那一层
+//! 装卸了的（施工 U23 下上）只报给他自己：广播里写成 `<账号>\n<编号>`（[`own_changed`]、[`whose`]），同项目变了的写法。
 
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 
 use serde_json::Value;
 use tokio::sync::broadcast;
+
+use miyu_kernel::id::AccountId;
 
 use super::{listed, packages, words};
 use crate::Core;
@@ -38,6 +41,20 @@ impl Changes {
     }
 }
 
+/// 账号 `account` 自己那一层的包 `id` 装上、卸掉了（施工 U23 下上）：只报给他。
+pub(crate) fn own_changed(core: &Core, account: &AccountId, id: &str) {
+    core.package_changes
+        .notify(&format!("{}\n{id}", account.as_str()));
+}
+
+/// 广播来的一条 `changed` 给不给 `account`：是的交回包的编号。系统那一层的（只写编号的）谁都给；某个人自己那一层的只给他。
+pub(crate) fn whose<'a>(changed: &'a str, account: &AccountId) -> Option<&'a str> {
+    match changed.split_once('\n') {
+        None => Some(changed),
+        Some((owner, id)) => (owner == account.as_str()).then_some(id),
+    }
+}
+
 /// 每个包这时在列表里的样子，照编号：照英文算，只用来比变没变。英文的字读不出来的是空的（前后一比，后面的全算变了）。
 ///
 /// 核心手里装着的照手里的算，卸掉了的出厂包照磁盘上记的那一笔：重读以前算的那一份，磁盘上已经记上了「卸掉」、手里还装着，
@@ -47,17 +64,17 @@ pub(super) fn snapshot(core: &Core) -> BTreeMap<String, Value> {
         return BTreeMap::new();
     };
     let places = packages(core);
-    let mut items: BTreeMap<String, Value> = core
-        .system_packages()
+    let system = core.system_packages();
+    let mut items: BTreeMap<String, Value> = system
         .iter()
         .map(|found| {
-            let item = listed(core, found, &places, &words, "en", false);
+            let item = listed(core, found, (&places, &system), &words, "en", false);
             (found.id.clone(), item)
         })
         .collect();
     for found in places.read_removed() {
         if let Entry::Vacant(slot) = items.entry(found.id.clone()) {
-            slot.insert(listed(core, &found, &places, &words, "en", true));
+            slot.insert(listed(core, &found, (&places, &system), &words, "en", true));
         }
     }
     items

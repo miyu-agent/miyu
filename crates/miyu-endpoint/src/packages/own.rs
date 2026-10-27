@@ -2,9 +2,10 @@
 //! 进程、包账号、扩展照它；一个人看得到、用得到的（他的会话的工具面、技能、预设，`package.list`）是系统那一份接上他自己装的那一层
 //! （`home/<账号>/packages/`，[`Core::packages_of`]）。
 //!
-//! 他那一层读在最后：同编号、子命令名、功能编号和系统那一份撞了的报在他那份上（先到先得，「自己的盖过系统的」等 U23 下）。用到时
-//! 造一份留着，连同造它时的系统那一份：取的时候系统那一份换了（装卸，[`Core::reload_packages`]）的当场重造，正读着的时候换了也
-//! 不会留下旧的；装卸以后另外整个清掉，省得不再用的人那几份一直占着。他那一层是空的就是系统那一份本身。
+//! 他那一层读在最后：同编号的盖过系统那一份（施工 U23 下上，系统那一份带程序的不盖），子命令名、功能编号和系统那一份撞了的报在
+//! 他那份上（先到先得）。用到时造一份留着，连同造它时的系统那一份：取的时候系统那一份换了（装卸，[`Core::reload_packages`]）的
+//! 当场重造，正读着的时候换了也不会留下旧的；装卸以后另外整个清掉，省得不再用的人那几份一直占着；他自己那一层装卸了的清掉他那
+//! 一份（[`Own::forget_account`]）。他那一层是空的就是系统那一份本身。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -37,6 +38,14 @@ impl Own {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clear();
+    }
+
+    /// 清掉账号 `account` 那一份（施工 U23 下上：他自己那一层装卸了）。
+    pub(crate) fn forget_account(&self, account: &AccountId) {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(account);
     }
 }
 
@@ -79,6 +88,16 @@ impl Core {
                 },
             );
         found
+    }
+
+    /// 账号 `account` 看得到的软件包，他关了的也在（施工 U23 下上：列表、条目、装卸照它比）：同 [`Core::packages_of`]，不去掉
+    /// 他关了的、不留着。碰磁盘。
+    pub(crate) fn packages_seen(&self, account: &AccountId) -> Arc<Vec<Found>> {
+        let system = self.system_packages();
+        if self.package_accounts().contains(account) {
+            return system;
+        }
+        self.read_own(account, &system, &BTreeSet::new())
     }
 
     /// 读一份：系统那一份 `system` 接上 `account` 那一层（[`Packages::read_over`]），他那一层再照核心这边认一遍（没编进来的内置包、

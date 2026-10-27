@@ -195,13 +195,28 @@ pub(crate) async fn members(
 fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
-    if let Some(found) = core.system_packages().iter().find(|found| found.id == id) {
-        return Ok(listed(core, found, &places, &words, peer.language, false));
+    let system = core.system_packages();
+    if let Some(found) = system.iter().find(|found| found.id == id) {
+        return Ok(listed(
+            core,
+            found,
+            (&places, &system),
+            &words,
+            peer.language,
+            false,
+        ));
     }
     let removed = places.read_removed();
     let found = removed
         .iter()
         .find(|found| found.id == id)
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    Ok(listed(core, found, &places, &words, peer.language, true))
+    Ok(listed(
+        core,
+        found,
+        (&places, &system),
+        &words,
+        peer.language,
+        true,
+    ))
 }

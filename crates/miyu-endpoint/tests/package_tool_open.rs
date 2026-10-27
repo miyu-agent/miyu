@@ -1,6 +1,7 @@
 //! 她打开装着的包、装上的包在会话的预设里打开（施工 F-10 下下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节、
-//! 16 第三节）：真核心的会话调 `package`（施工 BS-1 中起经命令里的 `miyu pkg`，`support::pkg`）。打开扩展问人一次，卡片里有它要的能力，允许了就打开、能力一并批；程序不在的不问、当场
-//! 拒。不开没列出来的软件的预设里装的包，往那一份预设的同名覆盖里写上打开；开着没列出来的预设不写。
+//! 16 第三节）：真核心的会话调 `package`（施工 BS-1 中起经命令里的 `miyu pkg`，`support::pkg`）。打开扩展是系统那一层的事（施工
+//! U23 下上）：会话里没有管理员模式，不问人、当场拒，她让人进管理员模式；程序不在的同样不问、当场拒。不开没列出来的软件的预设里
+//! 装的包（装进属主自己那一层），往那一份预设的同名覆盖里写上打开；开着没列出来的预设不写。
 
 use std::sync::Arc;
 
@@ -67,7 +68,7 @@ async fn entry(client: &mut Client, id: &str) -> Value {
 }
 
 #[tokio::test]
-async fn opening_an_extension_asks_with_its_capabilities() {
+async fn opening_an_extension_needs_admin_mode() {
     let home = Home::new();
     let program = Program::new();
     home.write(
@@ -78,20 +79,15 @@ async fn opening_an_extension_asks_with_its_capabilities() {
         ),
     );
     let (mut client, session) = started(&home, r#"{"enable":"relay"}"#.to_string(), "full").await;
-    let asked = allow(&mut client, &home, &session, 1).await;
-    assert_eq!(asked["access"], "install", "{asked}");
-    let preview = &asked["detail"]["preview"];
-    assert_eq!(preview["program"], "process", "{asked}");
-    assert_eq!(
-        preview["capabilities"][0]["id"], "tools",
-        "卡片里有要的能力：{asked}"
-    );
     home.until_turns(&session, 1).await;
-    assert_eq!(
-        entry(&mut client, "relay").await["enabled"],
-        true,
-        "允许了就打开"
-    );
+    assert!(requests(&home, &session).is_empty(), "不问人");
+    let said = logged(&home, &session)
+        .into_iter()
+        .filter(|event| event["kind"] == json!("tool.result"))
+        .map(|event| event["body"].to_string())
+        .collect::<String>();
+    assert!(said.contains("enter admin mode"), "{said}");
+    assert_ne!(entry(&mut client, "relay").await["enabled"], true, "没打开");
 }
 
 #[tokio::test]
@@ -129,8 +125,12 @@ async fn installing_in_a_preset_that_keeps_unlisted_off_opens_it_there() {
         allow(&mut client, &home, &session, 1).await;
         home.until_turns(&session, 1).await;
         assert!(
-            home.root.path().join("system/packages").join(&id).exists(),
-            "装上了 {id}"
+            home.root
+                .path()
+                .join("home/alice/packages")
+                .join(&id)
+                .exists(),
+            "装进机主自己那一层 {id}"
         );
         let file = home
             .root

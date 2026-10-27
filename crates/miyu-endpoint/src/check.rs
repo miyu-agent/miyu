@@ -19,6 +19,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::{Layer, Words};
+use miyu_kernel::id::AccountId;
 use miyu_store::config_file::{self, ReadError};
 use miyu_store::human::Human;
 use miyu_store::packages::{Found, Issue};
@@ -58,8 +59,13 @@ struct ConfigFile {
     shown: String,
 }
 
-/// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。
-pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
+/// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。软件包照 `account` 看得到的查（施工
+/// U23 下上：系统那一份接上他自己那一层）。
+pub(crate) async fn check(
+    core: &Core,
+    (peer, account): (Peer, &AccountId),
+    params: CheckParams,
+) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let home = core.home.clone();
     let cwd = params
@@ -86,7 +92,7 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                 .map_err(|_| Refusal::INTERNAL)?;
             problems.extend(checked.iter().map(|one| preset_problem(core, &words, one)));
             problems.extend(
-                check_packages(core, &words, None)
+                check_packages((core, account), &words, None)
                     .await?
                     .unwrap_or_default(),
             );
@@ -122,7 +128,8 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                 problems.extend(check_config(core, &words, &file)?);
             } else if real(&secrets_path) == path {
                 problems.extend(secrets);
-            } else if let Some(found) = check_packages(core, &words, Some(&path)).await? {
+            } else if let Some(found) = check_packages((core, account), &words, Some(&path)).await?
+            {
                 problems.extend(found);
             } else if let Some(found) = check_preset(core, &words, &path).await? {
                 problems.extend(found);
@@ -227,11 +234,11 @@ fn unreadable(words: &Human, shown: &str, kind: &str, error: &ReadError) -> Valu
 /// 软件包清单（施工 9-1 上，`packages.md`）：照磁盘读两层。`wanted` 没写的交回全部的问题；写了的，它是某一层 `packages/`
 /// 下的 `<编号>/package.toml` 才交回这一份的（还没有的报读不了），不是的交回没有（施工 F-8 上：一个文件夹一个包）。
 async fn check_packages(
-    core: &Core,
+    (core, account): (&Core, &AccountId),
     words: &Human,
     wanted: Option<&Path>,
 ) -> Result<Option<Vec<Value>>, Refusal> {
-    let places = crate::packages::packages(core);
+    let places = crate::packages::scope::places_of(core, account);
     if let Some(path) = wanted {
         let folder = path
             .parent()

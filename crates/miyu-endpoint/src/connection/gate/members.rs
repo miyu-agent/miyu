@@ -5,7 +5,7 @@
 //! 配置照人分开以后（施工 Y-2 下下中上）放读配置、查、配置清单、开关、加载方式、信任和订阅配置：都是他自己那一份。密钥也分成
 //! 系统、个人两份以后（Y-2 下下中中）放写配置、存删列密钥、模型列表、测试供应商：写的只能是他的个人设置、个人密钥（系统层
 //! 回 `not_permitted`），用得上的密钥是他自己的加系统那一份。不在名单里的：MCP、一次性调模型、认供应商（`provider.detect`）；
-//! 整台机器的事（装包、扩展、读本机文件、诊断）只给管理员。`link.preview` 从核心往外连，先不给（成员上网的规矩见 MB-2）。
+//! 整台机器的事（系统那一层的包、扩展、读本机文件、诊断）只给管理员；往自己那一层装不带程序的包给（施工 U23 下上）。`link.preview` 从核心往外连，先不给（成员上网的规矩见 MB-2）。
 
 use serde_json::Value;
 
@@ -123,6 +123,15 @@ const METHODS: &[&str] = &[
     "provider.test",
     // 装了哪些软件包（施工 U23-R：照包开关他自己的，只给 `packages.rs` 的那几格；订阅软件包的流不给，那里还推 MCP 服务）。
     "package.list",
+    // 往自己那一层装、卸、升级不带程序的包，从软件源搜、拿索引，看自己看得到的包（施工 U23 下上，`packages/scope.rs`）。
+    // `package.files` 不给：交的是这台电脑上的路径。
+    "package.install",
+    "package.remove",
+    "package.upgrade",
+    "package.upgrades",
+    "package.search",
+    "package.sync",
+    "package.info",
     // 不碰谁的：供应商的出厂目录、画图。
     "provider.catalog",
     "mermaid.render",

@@ -11,6 +11,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use miyu_kernel::id::AccountId;
 use miyu_source::index::Entry;
 
 use crate::Core;
@@ -34,15 +35,15 @@ impl SearchParams {
     }
 }
 
-/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。
+/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。装没装照 `account` 看得到的（施工 U23 下上）。
 pub(crate) async fn search(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, account): (Peer, &AccountId),
     params: SearchParams,
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
     let installed: BTreeMap<String, Option<String>> = core
-        .system_packages()
+        .packages_seen(account)
         .iter()
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());

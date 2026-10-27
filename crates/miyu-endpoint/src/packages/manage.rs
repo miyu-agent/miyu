@@ -1,11 +1,11 @@
 //! 装、卸（施工 F-5 上，设计 `30-插件框架.md` 第九节，`docs/blueprint/packages.md`「装卸」）：`package.install`、
-//! `package.remove`。只动管理员家目录那一层（磁盘上怎么做在 `miyu_store::packages::install`），做完照两层重读、当场换掉核心
-//! 手里的清单（[`Core::reload_packages`]）：`package.list`、预设的功能、开着的会话下一个回合都照新的。一次只做一件。
+//! `package.remove` 改系统那一层的（照请求分层在 `asked.rs`，自己那一层的在 `mine.rs`，施工 U23 下上）。只动系统那一层（磁盘上
+//! 怎么做在 `miyu_store::packages::install`），做完照两层重读、当场换掉核心手里的清单（[`Core::reload_packages`]）：
+//! `package.list`、预设的功能、开着的会话下一个回合都照新的。一次只做一件。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package;
@@ -21,29 +21,6 @@ use crate::config::methods::words;
 use crate::extensions::processes_of;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
-
-/// `package.install` 的参数：从一份清单装（`path`），或者把卸掉的出厂的包装回来（`package`），二者写一个。
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct InstallParams {
-    #[serde(default)]
-    path: Option<String>,
-    #[serde(default)]
-    package: Option<String>,
-    /// 只看一眼、什么都不动（施工 F-8 下补，`preview.rs`）。
-    #[serde(default)]
-    preview: bool,
-}
-
-/// `package.remove` 的参数。
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RemoveParams {
-    package: String,
-    /// 只看一眼、什么都不动（施工 F-8 下补）。
-    #[serde(default)]
-    preview: bool,
-}
 
 impl Core {
     /// 照两层重读软件包清单，标没编进来的内置包、认配置项撞没撞，当场换掉核心手里的那一份（施工 F-5 上）。整份配置清单照
@@ -146,34 +123,6 @@ impl Core {
             .package_of(method)
             .is_none_or(|package| super::is_installed(&self.system_packages(), package))
     }
-}
-
-/// `package.install`。
-pub(crate) async fn install(
-    core: &Arc<Core>,
-    peer: Peer,
-    params: InstallParams,
-) -> Result<Value, Refusal> {
-    let _one_at_a_time = core.packaging.lock().await;
-    match (params.path, params.package, params.preview) {
-        (Some(path), None, preview) if super::archive::is_package_file(Path::new(&path)) => {
-            super::archive::install(core, peer, Path::new(&path), preview).await
-        }
-        (Some(path), None, false) => from_path(core, peer, Path::new(&path), None).await,
-        (None, Some(id), false) => bring_back(core, peer, &id).await,
-        (Some(path), None, true) => super::preview::installing(core, peer, Path::new(&path)).await,
-        (None, Some(id), true) => super::preview::restoring(core, peer, &id).await,
-        _ => Err(Refusal::BAD_PARAMS),
-    }
-}
-
-/// `package.remove`：家目录那一层的删掉；出厂的记一笔；必需的拒绝。
-pub(crate) async fn remove(core: &Arc<Core>, params: RemoveParams) -> Result<Value, Refusal> {
-    if params.preview {
-        let _one_at_a_time = core.packaging.lock().await;
-        return super::preview::removing(core, &params.package).await;
-    }
-    remove_package(core, params.package).await
 }
 
 /// 卸 `id` 之前查的（卸、看一眼共用）：编号合写法、装着、不是必需的。
@@ -362,7 +311,14 @@ pub(super) async fn from_path(
         .iter()
         .find(|one| one.id == id)
         .ok_or(Refusal::INTERNAL)?;
-    Ok(listed(core, mine, &places, &words, peer.language, false))
+    Ok(listed(
+        core,
+        mine,
+        (&places, &now),
+        &words,
+        peer.language,
+        false,
+    ))
 }
 
 /// 把卸掉的出厂的包 `id` 装回来：删掉家目录里记的那一笔。
@@ -392,7 +348,14 @@ pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result
         .iter()
         .find(|one| one.id == id)
         .ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    Ok(listed(core, back, &places, &words, peer.language, false))
+    Ok(listed(
+        core,
+        back,
+        (&places, &now),
+        &words,
+        peer.language,
+        false,
+    ))
 }
 
 /// 要装的包（编号 `id`、清单 `manifest`、文件夹 `dir`）和装着的别的包、核心内置的斜杠命令（施工 X-14 上补）重了名的
@@ -466,7 +429,7 @@ pub(super) fn invalid(words: &miyu_store::human::Human, problem: &package::Probl
 }
 
 /// 在阻塞线程里动磁盘；动不了的记一行、算内部出错。
-async fn blocking<T: Send + 'static>(
+pub(super) async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> std::io::Result<T> + Send + 'static,
 ) -> Result<T, Refusal> {
     match tokio::task::spawn_blocking(work).await {

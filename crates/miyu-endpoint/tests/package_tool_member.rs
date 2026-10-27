@@ -1,6 +1,6 @@
-//! 成员不能装包（施工 Y-5 下下）：成员自己的会话里她调 `package`（施工 BS-1 中起经命令里的 `miyu pkg`，`support::pkg`）装带
-//! `[process]` 的、只带技能的包，看一眼那一步就拒
-//! `not_permitted`、不问人、什么都不装；机主的会话照装。端口照会话的属主判（`packages/port.rs`）。
+//! 会话里装包（施工 Y-5 下下；施工 U23 下上起装进会话属主自己那一层）：她调 `package`（施工 BS-1 中起经命令里的 `miyu pkg`，
+//! `support::pkg`）装带 `[process]` 的，看一眼那一步就拒、不问人、什么都不装：成员的会话 `not_permitted`，机主的会话也要人进管理员
+//! 模式（她照着说）；只带技能的装进属主自己那一层。端口照会话的属主判（`packages/port.rs`）。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -13,7 +13,7 @@ use miyu_kernel::id::AccountId;
 use miyu_session::testkit::{Play, Script};
 
 use crate::support::extensions::{dir, until_turns_in};
-use crate::support::login::member;
+use crate::support::login::{hello_with, member, member_with_token};
 use crate::support::*;
 
 /// 在 `dir` 里放一个带进程的包 `id`，交回它的文件夹。
@@ -86,7 +86,7 @@ async fn a_member_s_session_cannot_install_a_package_with_a_process() {
 }
 
 #[tokio::test]
-async fn the_owner_s_session_still_installs_it() {
+async fn the_owner_s_session_asks_for_admin_mode_for_a_package_with_a_process() {
     let home = Home::new();
     let folder = extension(&home.work, "ext");
     let core = started(&home, vec![json!({"install": folder})]);
@@ -100,23 +100,31 @@ async fn the_owner_s_session_still_installs_it() {
     assert_eq!(reply["result"], json!({}), "{reply}");
     client.say("s1", &session, "装上它").await;
     home.until_turns(&session, 1).await;
+    let said = results(&home, &alice(), &session);
+    assert_eq!(said.len(), 1, "{said:?}");
     assert!(
-        home.root.path().join("system/packages/ext").exists(),
-        "{:?}",
-        results(&home, &alice(), &session)
+        said[0].contains("enter admin mode"),
+        "她照着告诉人：{said:?}"
     );
+    assert!(!home.root.path().join("system/packages/ext").exists());
+    assert!(!home.root.path().join("home/alice/packages/ext").exists());
 }
 
-/// 不带进程的包成员也装不了（施工 Y-5 下下，主会话 2026-10-24 定）：现在装进的是机主家目录那一层、对所有人生效，等 U23「装进
-/// 自己家目录」再放开。
+/// 不带进程的包装进成员自己那一层（施工 U23 下上）：问他一次，卡片是装进他那一层的样子，允许了才装；只对他生效，系统那一层不动。
 #[tokio::test]
-async fn a_member_s_session_cannot_install_a_package_without_a_process_either() {
+async fn a_member_s_session_installs_a_package_without_a_process_into_his_own_layer() {
     let home = Home::new();
     let bob = AccountId::parse("bob").expect("合写法");
     let workspace = home.root.workspace(&bob);
     let folder = workspace.join("kit");
     let core = started(&home, vec![json!({"install": folder})]);
-    let mut client = member(&core, "bob").await;
+    let (_, token) = member_with_token(&core, "bob").await;
+    let mut client = Client::connect(Arc::clone(&core));
+    hello_with(
+        &mut client,
+        json!({"login": token, "caps": {"input": true}}),
+    )
+    .await;
     std::fs::create_dir_all(folder.join("skills/notes")).expect("建得了");
     std::fs::write(
         folder.join("package.toml"),
@@ -130,11 +138,34 @@ async fn a_member_s_session_cannot_install_a_package_without_a_process_either() 
     .expect("写得进");
     let session = client.create("c1", &workspace.to_string_lossy()).await;
     client.say("s1", &session, "装上它").await;
+    let asked = || {
+        miyu_store::log::read_events(&dir(&home, &bob, &session))
+            .unwrap_or_default()
+            .into_iter()
+            .map(|event| {
+                serde_json::from_str::<serde_json::Value>(&event.to_line()).expect("是 JSON")
+            })
+            .filter(|event| event["kind"] == json!("tool.approval_requested"))
+            .map(|event| event["body"].clone())
+            .collect::<Vec<_>>()
+    };
+    until("确认请求", || asked().len() == 1).await;
+    let request = asked().remove(0);
+    assert_eq!(request["detail"]["preview"]["package"], "kit", "{request}");
+    let call = request["call_id"].as_str().expect("有编号").to_string();
+    let params =
+        json!({"session": session, "call": call, "decision": "once", "nested": request["nested"]});
+    let reply = client.call("a", "session.answer", params).await;
+    assert!(reply["result"].is_object(), "{reply}");
     until_turns_in(&dir(&home, &bob, &session), 1).await;
     let said = results(&home, &bob, &session);
-    assert_eq!(said.len(), 1, "{said:?}");
-    assert!(said[0].contains("not_permitted"), "{said:?}");
-    assert!(!home.root.path().join("home/bob/packages/kit").exists());
+    assert!(
+        home.root
+            .path()
+            .join("home/bob/packages/kit/package.toml")
+            .is_file(),
+        "{said:?}"
+    );
     assert!(!home.root.path().join("system/packages/kit").exists());
 }
 

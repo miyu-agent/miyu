@@ -19,6 +19,7 @@ use miyu_store::root::DataRoot;
 use crate::Core;
 
 mod archive;
+pub(crate) mod asked;
 pub(crate) mod changes;
 pub(crate) mod depends;
 pub(crate) mod fill;
@@ -29,10 +30,12 @@ pub(crate) mod local;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
+mod mine;
 pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
+pub(crate) mod scope;
 mod services;
 pub(crate) mod source;
 pub(crate) mod status;
@@ -116,11 +119,16 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Vec
 
 /// 系统那一层从机主 `admin` 家目录挪到 `system/packages/`（施工 U23 上上）：挪了记 `INFO packages moved to system`；两边都有的
 /// 旧的不动、照新位置用，记 `WARN packages left in home`；挪不动的照旧位置读这一次（[`Packages::new`]），记
-/// `WARN packages not moved to system`。
+/// `WARN packages not moved to system`。没什么要挪的建好 `system/packages/`（施工 U23 下上）：机主自己那一层就是旧位置，
+/// 不建的话他装进自己那层的第一个包会让旧位置被当成系统那一层。
 fn to_system(root: &DataRoot, admin: &AccountId) {
     let old = migrate::old_system_layer(root, admin);
     match migrate::to_system_layer(&old, &root.system_packages()) {
-        ToSystem::Nothing => {}
+        ToSystem::Nothing => {
+            if let Err(error) = std::fs::create_dir_all(root.system_packages()) {
+                tracing::warn!(target: TARGET, error = %error, "system packages not created");
+            }
+        }
         ToSystem::Moved => tracing::info!(target: TARGET, "packages moved to system"),
         ToSystem::Both => tracing::warn!(target: TARGET, "packages left in home"),
         ToSystem::Failed(error) => {
@@ -130,20 +138,22 @@ fn to_system(root: &DataRoot, admin: &AccountId) {
 }
 
 /// `package.list`：核心这时认的（起来时读的，装卸以后当场换，施工 F-5 上），照编号排；卸掉的出厂的接在后面，带
-/// `removed: true`（施工 F-5 上），好让头给人装回来。
-pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
+/// `removed: true`（施工 F-5 上），好让头给人装回来。照 `account` 看得到的列（施工 U23 下上：他自己那一层的带 `layer: "user"`，
+/// 盖过系统的同编号那一份）。
+pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
-    let mut items: Vec<Value> = core
-        .system_packages()
+    let seen = core.packages_seen(account);
+    let mut items: Vec<Value> = seen
         .iter()
-        .map(|found| listed(core, found, &places, &words, peer.language, false))
+        .map(|found| listed(core, found, (&places, &seen), &words, peer.language, false))
         .collect();
     items.extend(
         places
             .read_removed()
             .iter()
-            .map(|found| listed(core, found, &places, &words, peer.language, true)),
+            .filter(|found| !seen.iter().any(|one| one.id == found.id))
+            .map(|found| listed(core, found, (&places, &seen), &words, peer.language, true)),
     );
     if !peer.admin {
         // 没对成员开放的（施工 U23-R修三）：头照它写「管理员没开放」、把他自己的开关灰掉。
@@ -161,16 +171,18 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     Ok(json!({ "packages": items, "groups": group::listed(core, peer.language) }))
 }
 
-/// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）；装着的、卸掉了的出厂的都有，都不是的没有。
-pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
+/// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）、`account` 看得到的（施工 U23 下上，同 [`list`]）；
+/// 装着的、卸掉了的出厂的都有，都不是的没有。
+pub(crate) fn entry(core: &Core, id: &str, peer: Peer, account: &AccountId) -> Option<Value> {
     let words = words(core, peer.language).ok()?;
     let places = packages(core);
-    let mut item = match core.system_packages().iter().find(|found| found.id == id) {
-        Some(found) => listed(core, found, &places, &words, peer.language, false),
+    let seen = core.packages_seen(account);
+    let mut item = match seen.iter().find(|found| found.id == id) {
+        Some(found) => listed(core, found, (&places, &seen), &words, peer.language, false),
         None => {
             let removed = places.read_removed();
             let found = removed.iter().find(|found| found.id == id)?;
-            listed(core, found, &places, &words, peer.language, true)
+            listed(core, found, (&places, &seen), &words, peer.language, true)
         }
     };
     // 同 [`list`]：不是管理员的裁掉只给管理员的那几格（施工 U23-R修二）。
@@ -219,11 +231,11 @@ fn for_members(core: &Core, item: &mut Value) {
     }
 }
 
-/// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。
+/// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。依赖缺没缺照 `installed`（看的人看得到的那些）认。
 fn listed(
     core: &Core,
     found: &Found,
-    places: &Packages,
+    (places, installed): (&Packages, &[Found]),
     words: &Human,
     language: &str,
     removed: bool,
@@ -240,7 +252,6 @@ fn listed(
             // 施工 F-6 上（`package-pages.md`）：状态、开关、后台页。
             item["status"] = json!(status::status(core, found, manifest, removed));
             // 依赖的包缺了（施工 F-11）：不起，写明缺谁。
-            let installed = core.system_packages();
             let missing = depends::missing(&installed.iter().collect::<Vec<_>>(), manifest);
             if !removed && !missing.is_empty() {
                 item["status"] = json!("depends_missing");
@@ -260,7 +271,7 @@ fn listed(
             item["state"] = json!(places.state_dir(&found.id).to_string_lossy());
             // 装的时刻（施工 PG-1：预设页照装的先后排）：本地库只记装进家目录的，出厂的没有。
             if let Some(at) =
-                miyu_store::packages::local::installed(&places.local_root(), &found.id)
+                miyu_store::packages::local::installed(&local::root_of(found, places), &found.id)
             {
                 item["installed_at"] = json!(at);
             }

@@ -39,7 +39,10 @@ async fn a_member_reaches_only_his_own_things() {
     }
     // 整台机器的事、还没照人分开的：不给。
     for (method, params) in [
-        ("package.install", json!({"package": "x"})),
+        // 装回、卸出厂的包是系统那一层的事（施工 U23 下上：他自己那一层的装得了，见 `package_own_layer.rs`）。
+        ("package.install", json!({"package": "glob"})),
+        ("package.remove", json!({"package": "glob"})),
+        ("package.files", json!({"package": "glob"})),
         ("extension.enable", json!({"package": "x"})),
         ("provider.detect", json!({})),
         ("model.call", json!({})),

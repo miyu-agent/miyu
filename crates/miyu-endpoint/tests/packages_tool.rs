@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use serde_json::json;
+use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Body;
@@ -14,7 +14,8 @@ use miyu_tool::Catalog;
 use crate::support::*;
 
 /// 一个界面包。
-const PANE: &str = "[package]\nprotocol = [1, 1]\nversion = \"2\"\nname = { en = \"Pane\", zh = \"面板\" }\n\n[ui]\n";
+/// 不带程序的包（施工 U23 下上：会话里看一眼的是装进属主自己那一层的样子，带程序的照拒）。
+const PANE: &str = "[package]\nversion = \"2\"\nname = { en = \"Pane\", zh = \"面板\" }\n";
 
 /// 会话里每一条工具结果的字，照先后。
 fn home_results(home: &Home, session: &str) -> Vec<String> {
@@ -96,7 +97,7 @@ async fn a_session_looks_at_packages_through_the_core() {
             preview["version"].clone(),
             preview["program"].clone()
         ),
-        (json!("pane"), json!("2"), json!("ui"))
+        (json!("pane"), json!("2"), Value::Null)
     );
     assert!(
         !home.root.path().join("system/packages/pane").exists(),

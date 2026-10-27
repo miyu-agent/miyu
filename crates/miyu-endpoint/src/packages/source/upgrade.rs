@@ -5,6 +5,7 @@
 //!   `packages.hold` 里的跳过；软件源里没有了的、被拉黑的照用，报一句（第 5 条，装着的人自己定卸不卸）。
 //! - 换就是照从软件源装那一条重装这一个（[`super::fetch`]）：缺的新依赖一起装，设置、状态、开关都留着；新版多要的能力照旧
 //!   要人批了才开（扩展的批准记在 `system/extensions.json`，核心照它起）。
+//! - 盘点、换哪一层照 [`Scope`]（施工 U23 下上）：系统那一层的只看系统那一份，自己那一层的只看他自己装的（记在他那层的本地库）。
 
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ use serde_json::{Value, json};
 
 use miyu_source::index::Index;
 
-use super::super::packages;
+use super::super::scope::Scope;
 use super::fetch::{self, SourceParams};
 use crate::Core;
 use crate::hello::Peer;
@@ -66,10 +67,10 @@ impl UpgradeParams {
     }
 }
 
-/// `package.upgrades`：回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
-pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
+/// `package.upgrades`：`scope` 那一层的，回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
+pub(crate) async fn upgrades(core: &Arc<Core>, scope: &Scope) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
-    let survey = survey_core(core, &synced.index).await?;
+    let survey = survey_core(core, scope, &synced.index).await?;
     let mut answer = shown(&survey);
     answer["generated"] = json!(synced.index.generated);
     if let Some(stale) = synced.stale {
@@ -82,12 +83,12 @@ pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
 /// `[{"package", "from", "to"}]`）。
 pub(crate) async fn upgrade(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, scope): (Peer, &Scope),
     caller: Option<&Reverse>,
     params: UpgradeParams,
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
-    let survey = survey_core(core, &synced.index).await?;
+    let survey = survey_core(core, scope, &synced.index).await?;
     let wanted: Vec<&(String, Option<String>, String)> = survey
         .upgrades
         .iter()
@@ -112,23 +113,27 @@ pub(crate) async fn upgrade(
         return Ok(json!({"upgrades": rows, "download": download}));
     }
     for (id, ..) in &wanted {
-        fetch::install(core, peer, caller, SourceParams::of(id)).await?;
+        fetch::install(core, (peer, scope), caller, SourceParams::of(id)).await?;
     }
     Ok(json!({"upgraded": rows}))
 }
 
-/// 照核心手里的包、本地库、配置盘点。
-async fn survey_core(core: &Arc<Core>, index: &Index) -> Result<Survey, Refusal> {
-    let places = packages(core);
-    let found: Vec<(String, Option<String>)> = core
-        .system_packages()
+/// 照 `scope` 那一层装着的包、那一层的本地库、配置盘点：自己那一层的只算他自己装的。
+async fn survey_core(core: &Arc<Core>, scope: &Scope, index: &Index) -> Result<Survey, Refusal> {
+    let mine = |found: &&miyu_store::packages::Found| match scope {
+        Scope::System => true,
+        Scope::Own(_) => found.layer == miyu_store::packages::Layer::User,
+    };
+    let found: Vec<(String, Option<String>)> = scope
+        .installed(core)
         .iter()
+        .filter(mine)
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());
             (found.id.clone(), version)
         })
         .collect();
-    let root = places.local_root();
+    let root = scope.local_root(core);
     let installed = tokio::task::spawn_blocking(move || {
         found
             .into_iter()

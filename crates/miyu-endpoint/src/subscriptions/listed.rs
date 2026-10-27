@@ -113,7 +113,10 @@ impl Listed {
                     json!({"jsonrpc": "2.0", "method": "mcp.changed", "params": {"name": name, "server": server}})
                 }
                 None => {
-                    let entry = crate::packages::entry(core, id, shaken.now_whose(core));
+                    // 某个人自己那一层的（施工 U23 下上）只推给他；推的那一项照握手时替谁干活的那个人看得到的算。
+                    let whose = shaken.whose();
+                    let id = crate::packages::changes::whose(id, whose)?;
+                    let entry = crate::packages::entry(core, id, shaken.now_whose(core), whose);
                     json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
                 }
             },
@@ -241,7 +244,7 @@ impl Subscriptions {
         ));
         match listed {
             // 照订的人是不是管理员裁格子（施工 U23-R修二：原来的 `now` 恒当不是，管理员拿到的也是成员那一份）。
-            Listed::Packages => crate::packages::list(core, shaken.now_whose(core)),
+            Listed::Packages => crate::packages::list(core, shaken.now_whose(core), shaken.whose()),
             _ => Ok(crate::extensions::status(
                 core,
                 shaken.now_whose(core),

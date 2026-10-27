@@ -13,8 +13,23 @@ use crate::refusal::Refusal;
 
 /// 从 `path` 装之前查的（装、看一眼共用）：包文件夹（写成里面的 `package.toml` 的取它的上一层）、编号（文件夹名）、读成了的
 /// 清单。路径不是绝对的、编号不合写法的 `bad_params`；读不了的 `path_unreadable`；写错的 `package_invalid`；清单写了
-/// `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1）；和出厂的撞了的 `package_exists`。
+/// `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1）；和出厂的撞了的 `package_exists`（装进系统那一层的；自己那一层
+/// 的盖得过，照 [`read`] 另查，施工 U23 下上）。
 pub(super) fn source(
+    core: &Core,
+    peer: Peer,
+    path: &Path,
+) -> Result<(PathBuf, String, package::Manifest), Refusal> {
+    let (folder, id, manifest) = read(core, peer, path)?;
+    let shipped = Packages::shipped(&core.resources).read();
+    if shipped.iter().any(|one| one.id == id) {
+        return Err(Refusal::PACKAGE_EXISTS);
+    }
+    Ok((folder, id, manifest))
+}
+
+/// 同 [`source`]，不和出厂的比（施工 U23 下上：装进自己那一层的同编号盖过出厂的）。
+pub(super) fn read(
     core: &Core,
     peer: Peer,
     path: &Path,
@@ -38,10 +53,6 @@ pub(super) fn source(
         .map_err(|problem| invalid(&words, &problem))?;
     if !fits_here(&manifest.targets, Target::here()) {
         return Err(Refusal::WRONG_TARGET);
-    }
-    let shipped = Packages::shipped(&core.resources).read();
-    if shipped.iter().any(|one| one.id == id) {
-        return Err(Refusal::PACKAGE_EXISTS);
     }
     Ok((folder.to_path_buf(), id, manifest))
 }
