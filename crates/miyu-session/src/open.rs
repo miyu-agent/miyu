@@ -380,6 +380,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let busy = actor.busy();
     let watched = actor.watched();
     let shown = actor.shown();
+    let on_person = actor.waiting();
     let (reply, answer) = oneshot::channel();
     actor.wait_for(command, reply, false);
     span.in_scope(|| {
@@ -397,7 +398,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)
                 .with_memory(room)
                 .with_goals(on_face)
-                .with_loops(loops))
+                .with_loops(loops)
+                .with_waiting(on_person))
         }
         Err(_) => {
             error::abandoned(abandoned, &id).await;

@@ -356,6 +356,16 @@ impl Sessions {
             .collect()
     }
 
+    /// 这时在等人确认、回答的会话（施工 SL-1）：在表里、`Handle::waiting` 的。列会话时照它写 `waiting`。
+    pub(crate) async fn waiting_ids(&self) -> BTreeSet<SessionId> {
+        let open = self.open.lock().await;
+        open.running
+            .iter()
+            .filter(|(_, running)| running.handle.waiting())
+            .map(|(id, _)| id.clone())
+            .collect()
+    }
+
     /// 有计划地停下全部在跑的会话：跑到一半的回合记成「重启了」，下次载入接着干（施工 3-9 上）。
     pub(crate) async fn stop_all(&self) {
         let running = std::mem::take(&mut self.open.lock().await.running);

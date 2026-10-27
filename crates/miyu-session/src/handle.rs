@@ -46,6 +46,8 @@ pub struct Handle {
     inbox: mpsc::UnboundedSender<Message>,
     /// 有没有在跑的回合：actor 每送完一批输入就写一次（施工 3-9 上）。
     busy: Arc<AtomicBool>,
+    /// 在不在等人确认、回答（施工 SL-1）：和 actor 共用，照 `busy` 写。
+    waiting: Arc<AtomicBool>,
     /// 一次性的会话：`miyu ask` 开的（`session.created` 的 `oneshot`）。造好以后不变（施工 C-5，`send_message` 照它和
     /// [`Handle::watched`] 决定说 `sent` 还是 `held`）。
     oneshot: bool,
@@ -186,6 +188,7 @@ impl Handle {
             workspace,
             inbox,
             busy,
+            waiting: Arc::new(AtomicBool::new(false)),
             oneshot,
             watched,
             shown,

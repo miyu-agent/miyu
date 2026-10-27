@@ -182,6 +182,7 @@ async fn work(
 /// 算属主是 `owner` 的会话 `session` 的一项：不在了（删了、没有日志）的是空的，在阻塞线程里读索引和日志。
 async fn entry(core: &Core, owner: &AccountId, session: &SessionId) -> Option<Value> {
     let busy = core.sessions.busy_ids().await.contains(session);
+    let waiting = core.sessions.waiting_ids().await.contains(session);
     let (root, owner, index) = (core.root.clone(), owner.clone(), core.index_for(owner));
     let session = session.clone();
     let window = crate::list::windows(core);
@@ -192,6 +193,7 @@ async fn entry(core: &Core, owner: &AccountId, session: &SessionId) -> Option<Va
         crate::list::tokens::fill(std::slice::from_mut(&mut listed), &index);
         crate::list::context::fill(std::slice::from_mut(&mut listed), &window);
         crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root, &owner);
+        listed.waiting = waiting;
         Some(listed.to_json())
     })
     .await

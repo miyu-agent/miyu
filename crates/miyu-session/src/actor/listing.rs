@@ -47,12 +47,20 @@ impl Actor {
         let _ = self.pushes.send(Arc::new(pushed));
     }
 
+    /// 在不在等人：交给 `Handle` 的那一份（施工 SL-1）。
+    pub(crate) fn waiting(&self) -> Arc<std::sync::atomic::AtomicBool> {
+        Arc::clone(&self.waiting)
+    }
+
     /// 每批送完：写「有没有在跑的回合」（和 `Handle` 共用）；记下了、或者忙不忙变了的，经会话表的端口报这一项变了。没有会话表
     /// 端口的（测试里自己造的会话）不报。
     pub(super) fn settle_busy(&mut self) {
         let busy = !self.session.idle();
         let was = self.busy.swap(busy, Ordering::AcqRel);
-        if (std::mem::take(&mut self.marks.listed) || was != busy)
+        // 在不在等人（施工 SL-1）：变了同样报，会话列表那一项多 `waiting`。
+        let waiting = self.session.waiting_on_person();
+        let was_waiting = self.waiting.swap(waiting, Ordering::AcqRel);
+        if (std::mem::take(&mut self.marks.listed) || was != busy || was_waiting != waiting)
             && let Some(agents) = self.tools.agents()
         {
             agents.port.listing(agents.session.clone());

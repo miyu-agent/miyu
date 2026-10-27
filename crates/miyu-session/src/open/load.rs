@@ -428,6 +428,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let busy = actor.busy();
     let watched = actor.watched();
     let shown = actor.shown();
+    let on_person = actor.waiting();
     if let Some(upstream) = upstream {
         actor.report_to(Reporter::start(upstream, span.clone()));
     }
@@ -477,7 +478,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
         .with_memory(room)
         .with_goals(on_face)
-        .with_loops(loops);
+        .with_loops(loops)
+        .with_waiting(on_person);
     Ok((handle, placed))
 }
 

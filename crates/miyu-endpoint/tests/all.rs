@@ -227,6 +227,7 @@ mod search_extension;
 mod secrets;
 mod session_context;
 mod session_tools;
+mod session_waiting;
 mod sessions;
 mod sessions_changed;
 mod skill_list;

@@ -27,4 +27,19 @@ impl Handle {
     pub fn loops(&self) -> bool {
         self.loops
     }
+
+    /// 带上和 actor 共用的「在不在等人」（施工 SL-1）。
+    #[must_use]
+    pub(crate) fn with_waiting(
+        mut self,
+        waiting: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) -> Handle {
+        self.waiting = waiting;
+        self
+    }
+
+    /// 在不在等人确认、回答（施工 SL-1）：会话列表照它写 `waiting`。会话停了的照最后一次写的。
+    pub fn waiting(&self) -> bool {
+        self.waiting.load(std::sync::atomic::Ordering::Acquire)
+    }
 }

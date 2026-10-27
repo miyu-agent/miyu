@@ -15,6 +15,7 @@ fn listed(context: Option<u64>, model: Option<&str>) -> Listed {
         pinned: false,
         cwd: "~".to_string(),
         busy: false,
+        waiting: false,
         last_active: miyu_kernel::time::Timestamp::from_unix_millis(0).expect("是时刻"),
         preview: String::new(),
         venue: "local".to_string(),

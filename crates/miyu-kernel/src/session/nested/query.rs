@@ -1,6 +1,8 @@
 //! 嵌套调用的几样纯查询（施工 M-1、M-3，施工 BS-1 中挪出来）：执行器照它们开通道、答 `miyu call --schema`，头重连时接着画。
 
 use super::super::Session;
+use super::super::step::Pending;
+use super::super::turn::Stage;
 use super::{NestedRunning, Phase};
 use crate::raw::RawJson;
 
@@ -38,5 +40,19 @@ impl Session {
             .collect();
         running.sort_by(|a, b| a.id.cmp(&b.id));
         running
+    }
+
+    /// 在等人（施工 SL-1，终端第 21 条）：这一步有调用在等确认、在问人，或者命令里脚本调的工具在等确认。会话列表照它写
+    /// `waiting`，口径同视图流会话状态的 `state: waiting`。纯查询。
+    pub fn waiting_on_person(&self) -> bool {
+        let step = match self.turn.as_ref().map(|turn| &turn.stage) {
+            Some(Stage::Tools(step)) => step.calls.iter().any(Pending::awaiting_person),
+            _ => false,
+        };
+        step || self
+            .nested
+            .calls
+            .iter()
+            .any(|call| call.phase == super::Phase::Asking)
     }
 }
