@@ -119,3 +119,29 @@ fn the_last_switched_snapshot_is_taken_unless_it_is_the_one_in_hand() {
     assert_eq!(scan.switched(&b, &created), None, "照着取的就是最后那一份");
     assert_eq!(scan.switched(&a, &created), Some(b));
 }
+
+/// 接上记忆时交的几条（施工 E-1 修三补）：换人格的都在，加最后一条带她叫什么的人话，照先后。
+#[test]
+fn memory_gets_the_recasts_and_the_last_name_she_was_called() {
+    let said = |seq: u64, venue: &str| {
+        event(
+            seq,
+            "message.user",
+            &format!(r#"{{"blocks":[],"venue":{venue}}}"#),
+        )
+    };
+    let mut log = log();
+    log.extend([
+        said(7, r#"{"msg":"1","my_name":"米羽"}"#),
+        said(8, r#"{"msg":"2","my_name":"Miyu"}"#),
+        said(9, r#"{"msg":"3"}"#),
+    ]);
+    for size in [1, 4, 9] {
+        let mut scan = Scan::default();
+        for piece in log.chunks(size) {
+            scan.note(piece);
+        }
+        let laid: Vec<u64> = scan.laid().iter().map(|event| event.seq.get()).collect();
+        assert_eq!(laid, [3, 5, 8], "{size} 条一块");
+    }
+}

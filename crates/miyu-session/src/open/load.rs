@@ -147,6 +147,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let scope = memory::scope(memory::subagent(&created), true, snapshot.memory_scope());
         let snapshotted = snapshotted + snapshotting.elapsed();
         let connecting = Instant::now();
+        let laid = scan.laid();
         let turns = connect(
             memory.as_ref(),
             scope,
@@ -156,7 +157,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             &id_of,
             &created.venue,
             (
-                memory::Laid::Read(&scan.recasts),
+                memory::Laid::Read(&laid),
                 memory::Source::of(&log, base.clone()),
             ),
         );

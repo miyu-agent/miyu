@@ -312,3 +312,64 @@ async fn extraction_counts_her_name_in_the_group_as_her() {
     );
     stop(&handle).await;
 }
+
+/// 载入以后照样认得她在群里叫什么（施工 E-1 修三补）：头一轮小林叫她「米羽」；会话停了再载入，这一句没带她叫什么，她当场
+/// 记 `who` 是米羽的照样记成关于她自己的事。原来载入时只把换人格的几条交给记忆，这里接不上，记成了认识的人。
+#[tokio::test]
+async fn after_a_load_she_still_knows_what_the_group_calls_her() {
+    let home = Home::new();
+    let script = Script::new([
+        Play::Says("在。"),
+        Play::calls(&[(
+            "remember",
+            r#"{"class":"person","text":"米羽是群管理","who":"米羽"}"#,
+        )]),
+        Play::Says("记住了。"),
+    ]);
+    let lines = Lines {
+        venue: place(),
+        group: true,
+        ..Lines::default()
+    };
+    let handle = home
+        .create_full(&script, &catalog(&home), Opening::default(), lines)
+        .await;
+    let session = handle.id().clone();
+    let mut pushes = watch(&handle).await;
+    within(
+        "回应",
+        handle.command(id("cmd-1"), member(), heard("@米羽 在吗", "8801", "米羽")),
+    )
+    .await
+    .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    stop(&handle).await;
+
+    let handle = home.load_with(&session, &script, &catalog(&home)).await;
+    let mut unnamed = heard("你是群管理，记一下", "8802", "米羽");
+    if let Command::Send {
+        venue: Some(venue), ..
+    } = &mut unnamed
+    {
+        venue.my_name = None;
+    }
+    let mut pushes = watch(&handle).await;
+    within("回应", handle.command(id("cmd-2"), member(), unnamed))
+        .await
+        .expect("会话在跑");
+    until_turn_ends(&mut pushes).await;
+    stop(&handle).await;
+    let found: Vec<(String, String, Option<String>)> = keeper(&home)
+        .list(&Filter {
+            limit: 50,
+            ..Filter::default()
+        })
+        .expect("列得出")
+        .into_iter()
+        .map(|entry| (entry.text, entry.class, entry.who))
+        .collect();
+    assert_eq!(
+        found,
+        [("米羽是群管理".to_string(), "episode".to_string(), None)]
+    );
+}
