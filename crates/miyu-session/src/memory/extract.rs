@@ -304,6 +304,8 @@ pub(crate) enum Plan {
         names: BTreeMap<String, Option<String>>,
         /// 这一段里她在场所里被叫过的名字（施工 E-1 修三，[`Voices::me`]）：和这一间人格的名字一起算她。
         me: BTreeSet<String>,
+        /// 交进去的每一轮那时的群名（施工 E-4 上，[`Voices::places`]）：轮的编号对着群名，没有的不在里面。记下的照它写在哪个群。
+        places: BTreeMap<u64, String>,
     },
 }
 
@@ -333,6 +335,7 @@ pub(crate) fn plan(
     }
     let mut blocks: Vec<String> = Vec::new();
     let mut turns = BTreeSet::new();
+    let mut places = BTreeMap::new();
     let mut upto = last;
     let mut bytes = 0;
     for exchange in &exchanges {
@@ -349,6 +352,9 @@ pub(crate) fn plan(
         bytes += needed;
         blocks.push(block);
         turns.insert(exchange.turn.started().get());
+        if let Some(place) = super::keeper::place_at(&voices.places, exchange.seq) {
+            places.insert(exchange.turn.started().get(), place);
+        }
         upto = exchange.seq;
         if bytes >= ROOM {
             break;
@@ -366,6 +372,7 @@ pub(crate) fn plan(
         since: first.at,
         names,
         me: voices.me.clone(),
+        places,
     }
 }
 

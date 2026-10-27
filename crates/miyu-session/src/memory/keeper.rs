@@ -5,9 +5,9 @@
 //! - 谁在听（施工 R-13 上，[`Listener`]）只管记下时写什么；哪儿都想得起全部（施工 R-29，2026-10-21 项目主人：记忆是一个整体）。
 //! - 出处活不活照回合库的墓碑（第二条第 4 款）：一处都没有（人记的）的算活；有的，活着一处就算。
 
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, ModuleId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::{By, Module, Person};
 use miyu_kernel::time::Timestamp;
@@ -26,9 +26,12 @@ use super::Memory;
 use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
+mod heard;
 mod search;
 mod tag;
 mod update;
+
+pub(crate) use heard::{Heard, place_at, places};
 
 /// 一间记忆，连同这次会被谁看到（听众）。可以复制：每次调用照它做。
 #[derive(Debug, Clone)]
@@ -36,9 +39,9 @@ pub struct Keeper {
     pub(super) memory: Arc<Memory>,
     room: Room,
     listener: Listener,
-    /// 这个会话里她最近在场所里叫什么（施工 E-1 修三，`her.rs`）：会话的记忆端口照它记下的人话更新，复制出来的共用一份；协议
-    /// 造的、没有会话的是空的。
-    here: Arc<Mutex<Option<String>>>,
+    /// 这个会话里最近听到的她叫什么、这个群叫什么（施工 E-1 修三、E-4 上，`keeper/heard.rs`）：会话的记忆端口照它记下的人话
+    /// 更新，复制出来的共用一份；协议造的、没有会话的是空的。
+    here: Arc<Mutex<Heard>>,
 }
 
 /// 谁、什么时候、经哪条命令写的。
@@ -82,38 +85,6 @@ impl Keeper {
         &self.room
     }
 
-    /// 这一间里她叫什么（施工 E-1 修，`her.rs`）：照 `fold` 过的，没交过的是空的。这个会话里她最近在场所里叫的那个也算
-    /// （施工 E-1 修三）。
-    pub(crate) fn her(&self) -> std::collections::BTreeSet<String> {
-        let mut names = self.memory.her(&self.room);
-        let here = self
-            .here
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone();
-        if let Some(name) = here.map(|name| super::her::fold(&name))
-            && !name.is_empty()
-        {
-            names.insert(name);
-        }
-        names
-    }
-
-    /// 记下的事件 `events` 里有她在场所里叫什么的（施工 E-1 修三），记住最后那一个；没有的不动。
-    pub(crate) fn hear(&self, events: &[Event]) {
-        self.called(super::her::last_called(events));
-    }
-
-    /// 她在这个会话里最近叫 `name`（施工 E-1 修三）：没有的不动。
-    pub(crate) fn called(&self, name: Option<String>) {
-        if let Some(name) = name {
-            *self
-                .here
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(name);
-        }
-    }
-
     /// 运行日志里这一间的短号（施工 LG-1 下）：和 [`Room::kind`] 一起写，不写账号、人格名、会话编号。
     pub(crate) fn room_id(&self) -> String {
         self.memory.room_id(&self.room)
@@ -134,13 +105,13 @@ impl Keeper {
     ) -> Result<MemoryId, Refused> {
         let log = self.log()?;
         // 改一条没给关键词、是谁的，带上旧的（施工 R-15 上、E-1 上）：说的还是那件事、那个人；发生过的事涉及谁照旧带上（施工
-        // E-1 修四：她的工具不收涉及谁）。
-        let (carried, carried_who, carried_people) = match remember.replaces {
+        // E-1 修四：她的工具不收涉及谁）；这个会话没听到过群名的，在哪个群照旧的（施工 E-4 上）。
+        let (carried, carried_who, carried_people, carried_place) = match remember.replaces {
             Some(old) => {
                 let old = self.current(&log, old)?;
-                (old.keywords, old.who, old.people)
+                (old.keywords, old.who, old.people, old.place)
             }
-            None => (None, None, Vec::new()),
+            None => (None, None, Vec::new(), None),
         };
         let who = (remember.class == PERSON)
             .then(|| remember.who.filter(|who| !who.is_empty()).or(carried_who))
@@ -172,6 +143,7 @@ impl Keeper {
             },
             who,
             people,
+            place: self.place().or(carried_place),
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -196,8 +168,8 @@ impl Keeper {
         Ok(self.log()?.book(|book| book.extracted(session)))
     }
 
-    /// 记下会话 `session` 抽出来的几条（施工 R-6 上）：`by` 是记忆模块，出处各是那一轮，听众是这次的听众；再记一条它抽到了
-    /// 第 `upto` 条（整段跳过的带上为什么）。交回记下的那几条的编号（施工 R-15 下：接着给它们写关键词）。候选在前、记号在后：
+    /// 记下会话 `session` 抽出来的几条（施工 R-6 上）：`by` 是记忆模块，出处各是那一轮，听众是这次的听众，在哪个群照
+    /// `places` 里那一轮的群名（施工 E-4 上，轮的编号对着群名）；再记一条它抽到了第 `upto` 条（整段跳过的带上为什么）。交回记下的那几条的编号（施工 R-15 下：接着给它们写关键词）。候选在前、记号在后：
     /// 中途写不进的，下次重抽这一段。
     ///
     /// # Errors
@@ -208,7 +180,7 @@ impl Keeper {
         at: Timestamp,
         session: &SessionId,
         upto: Seq,
-        found: Vec<Candidate>,
+        (found, places): (Vec<Candidate>, &BTreeMap<u64, String>),
         skipped: Option<Skipped>,
     ) -> Result<Vec<MemoryId>, Refused> {
         let log = self.log()?;
@@ -235,6 +207,7 @@ impl Keeper {
                 keywords: None,
                 who: candidate.who,
                 people: candidate.people,
+                place: places.get(&candidate.turn).cloned(),
             };
             let stamp = Stamp {
                 at,

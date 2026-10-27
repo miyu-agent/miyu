@@ -21,6 +21,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         limit: None,
         names: Default::default(),
         me: Default::default(),
+        places: Vec::new(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -58,6 +59,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         limit: Some(2),
         names: Default::default(),
         me: Default::default(),
+        places: Vec::new(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,
@@ -80,6 +82,7 @@ fn a_group_round_keeps_its_own_lines_and_only_what_fits_before_it() {
         limit: None,
         names: Default::default(),
         me: Default::default(),
+        places: Vec::new(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,

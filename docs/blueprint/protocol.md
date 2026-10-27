@@ -340,7 +340,7 @@
 | `attachments` | 数组，可以不写 | 附件（施工 3-9 三补）：`blob.put` 的回应，照先后。每一项要 `blob`、`name`、`media_type`；可以另写 `path`：这个附件原来在本机的哪儿，就是 `blob.put` 传的那个路径（施工 3-9 五补，剪贴板贴的、传 `data` 的不写），绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头）、没有控制字符、最多 4096 字节，不对的 `bad_params`；核心只查写法、不碰磁盘，记进块里，模型看不了这个附件时占位那一句带上它。没写 `path` 的（施工 3-9 六补）：核心把它拷成会话目录 `attachments/` 里的一个文件（`store.md`「会话目录」），块里记那个路径；她读得到（`fs.md` 第一节第 2 行），删会话时跟着走。别的格不看 |
 | `from` | 字符串，可以不写 | 别的 harness 报的自己的名字（施工 7-10，`agents.md` 第十一条第 4 条）：写了的，这一句是它说的，不是本人。核心拉起的扩展不能写（`bad_params`，冒充不了）：它不带 `as` 说的话记成 `harness`、名字是包的编号，组装照「别的 harness 发来的话」告诉她这不是人说的（施工 X-30，`04-核心协议.md` 第四节；不用 `By::Module`：它当一句人话的作者要动内核的追加检查和组装） |
 | `as` | 对象，可以不写 | 代表通讯平台上的人（施工 O-3，`venues.md`）：`{"external": <平台身份>, "role": "manager"|"member"}`。只给场所会话，场所会话也只收带它的（不带的回 `venue_session`）；和 `from` 不能一起写 |
-| `venue` | 对象，可以不写 | 通讯平台上的一条消息的那几格（施工 O-13 上，`venues.md`「场所的格」）：只跟着 `as` 来，原样记进 `message.user` 的 `venue`；`my_name` 是她此刻在这个场所里叫什么（施工 E-1 修三，记忆照它和人格的名字认她）；`ambient` 的只记下，不开回合，回合进行中也不排进这一轮。可选的 `forwards` 是合并转发的内容（施工 O-34）：`[{nodes: [{name, text, media?, forwards?}], more?}]`，套最多 3 层、一个最多 100 条、一条正文最多 4096 字节；整条消息合起来最多 100 条、名字和正文最多 16 KiB，超了的 `bad_params` 带 `data.limit`（`forward_nodes`、`forward_bytes`）。不带 `as` 的、格写错的 `bad_params`，什么都不记 |
+| `venue` | 对象，可以不写 | 通讯平台上的一条消息的那几格（施工 O-13 上，`venues.md`「场所的格」）：只跟着 `as` 来，原样记进 `message.user` 的 `venue`；`my_name` 是她此刻在这个场所里叫什么（施工 E-1 修三，记忆照它和人格的名字认她）；`place` 是这个群此刻叫什么（施工 E-4 上，只给记忆，请求里没有它）；`ambient` 的只记下，不开回合，回合进行中也不排进这一轮。可选的 `forwards` 是合并转发的内容（施工 O-34）：`[{nodes: [{name, text, media?, forwards?}], more?}]`，套最多 3 层、一个最多 100 条、一条正文最多 4096 字节；整条消息合起来最多 100 条、名字和正文最多 16 KiB，超了的 `bad_params` 带 `data.limit`（`forward_nodes`、`forward_bytes`）。不带 `as` 的、格写错的 `bad_params`，什么都不记 |
 
 回应：`events` 是 `[<这一句 message.user 的序号>]`；`cwd` 是会话现在实际在哪个目录里干活；`untrusted_project` 照 `session.create` 的写法，照这时实际干活的目录找（施工 8-2）。
 
@@ -859,7 +859,7 @@
 | `memory.card_update` | `who`、`text` 必写，`names`（字符串的列表）可以不写（施工 E-1 下） | `{}`（第 10 条） |
 | `memory.card_forget` | `who` 必写，`why` 可以不写（施工 E-1 下） | `{}`（第 10 条） |
 
-1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上；另有 `keywords`、`who`（施工 R-15 上、E-1 上），`people` 是发生过的事涉及谁（平台编号或名字的列表，没有的是空列表），施工 E-1 修四。
+1. 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（照名字排）：`by` 是 `person` 或 `tool`，`sources` 是 `[{"session", "turn"}]`，`retired` 是作废的原因、没作废的 `null`，`at` 是记下的时刻；`used` 是用到几次（没用过的是 0），`used_at` 是最近一次的时刻（没用过的是 `null`），施工 R-4 下，`memory.md` 第八条；`venue` 是在哪个场所说的（本机的是 `null`），施工 R-13 上；另有 `keywords`、`who`（施工 R-15 上、E-1 上），`people` 是发生过的事涉及谁（平台编号或名字的列表，没有的是空列表），施工 E-1 修四；`place` 是在哪个群（记下那一刻的群名，没有的是 `null`），施工 E-4 上。
 2. `text` 去掉前后空白再记；空的 `bad_params`，超过 120 字（数 Unicode 字符）的 `memory_too_long`，`data.chars`、`data.limit`。`class` 不是那四种、`id` 不合 `m<序号>` 的写法、`limit` 出了范围、`id` 和 `clear` 都写或都不写、`clear` 不是那两种：`bad_params`。
 3. `id` 没有这一条、听众不合：`unknown_memory`；已经改掉、作废、清掉了：`memory_not_current`（恢复的是已经改掉、清掉了）。
 4. 记、改、作废、清空、恢复落了盘才回应；写不进记忆日志的 `internal_error`，原因记一行 `WARN memory failed`。

@@ -39,6 +39,9 @@ pub(crate) struct VenueMessageParams {
     /// 她此刻在这个场所里叫什么（施工 E-1 修三）：同 `name` 的规矩。
     #[serde(default)]
     my_name: Option<String>,
+    /// 这个场所此刻叫什么（施工 E-4 上）：群名，同 `name` 的规矩。
+    #[serde(default)]
+    place: Option<String>,
     #[serde(default)]
     mentions: Vec<String>,
     #[serde(default)]
@@ -135,6 +138,7 @@ impl VenueMessageParams {
             reply_to: self.reply_to.map(platform_id).transpose()?,
             name: self.name.map(|name| words(name, NAME)).transpose()?,
             my_name: self.my_name.map(|name| words(name, NAME)).transpose()?,
+            place: self.place.map(|name| words(name, NAME)).transpose()?,
             mentions: self
                 .mentions
                 .iter()

@@ -208,6 +208,7 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     };
     log.append(long_ago, alice(), None, &MemoryEvent::Saved(elsewhere))
         .expect("记得下");
@@ -347,7 +348,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     let mut home = Home::new();
     organizer(&mut home, &server, "merge_sessions = 1\n");
     let (log, _) = home.logs.open(&persona()).expect("开得了");
-    // 认识的人那一条（施工 E-1 上）：改写的照旧是这一类、是谁带过去。
+    // 认识的人那一条（施工 E-1 上）：改写的照旧是这一类、是谁、在哪个群（施工 E-4 上）带过去。
     let feedback = Saved {
         class: "person".into(),
         text: "小林用 N 卡".into(),
@@ -359,6 +360,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
         keywords: None,
         who: Some("qq:2".into()),
         people: Vec::new(),
+        place: Some("周末摄影群".into()),
     };
     log.append(
         Timestamp::parse("2026-10-01T00:00:00.000Z").expect("合写法"),
@@ -379,9 +381,13 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     })
     .expect("改了 m1");
     assert_eq!(
-        (revised.class.as_str(), revised.who.as_deref()),
-        ("person", Some("qq:2")),
-        "类、是谁照旧"
+        (
+            revised.class.as_str(),
+            revised.who.as_deref(),
+            revised.place.as_deref()
+        ),
+        ("person", Some("qq:2"), Some("周末摄影群")),
+        "类、是谁、在哪个群照旧"
     );
     assert!(
         book(&home, |book| book

@@ -32,6 +32,7 @@ async fn extensions_reach_the_owner_s_memory_not_their_own_account_s() {
             keywords: None,
             who: None,
             people: Vec::new(),
+            place: None,
         };
         let at = miyu_kernel::time::Timestamp::parse("2026-10-23T08:00:00.000Z").expect("合写法");
         log.append(

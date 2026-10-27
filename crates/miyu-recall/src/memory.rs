@@ -186,6 +186,10 @@ pub struct Saved {
     /// 的、以前记的是空的，不写。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub people: Vec<String>,
+    /// 在哪个群（施工 E-4 上）：记下那一刻这个场所叫什么（出处那一轮人话的 `venue.place`，群名）；私聊、主人那边记的、人经协议记的、
+    /// 以前记的没有，不写。群改了名字的，以前记的照旧是那时的名字。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place: Option<String>,
 }
 
 /// `ext.memory.tagged` 的 `body`：只换一条的关键词，编号不变（施工 R-15 上）。空的是去掉。

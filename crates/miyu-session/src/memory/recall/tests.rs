@@ -48,6 +48,7 @@ fn entry(n: u64, text: &str) -> Entry {
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     }
 }
 

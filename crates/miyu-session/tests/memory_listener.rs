@@ -50,6 +50,7 @@ fn save(home: &Home, text: &str, venue: Option<VenueId>) -> MemoryId {
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")

@@ -80,6 +80,7 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 | `reply_to` | The id of the message it quotes |
 | `name` | What the sender is called here right now (group card, else nickname), at most 64 characters |
 | `my_name` | What she is called here right now (group card, else nickname; in a private chat, the nickname), at most 64 characters. Memory treats it like her persona's name: things about this name are kept as her own, not as someone she knows |
+| `place` | What the group is called right now (its name), at most 64 characters; not written for private chats. Only memory uses it: memories saved in the group carry it, nothing she reads shows it |
 | `mentions` | Who was @-mentioned (platform identities) |
 | `mentions_me`, `mentions_all` | Mentioned her; mentioned everyone |
 | `media` | What it carries `[{"kind", "id", "name"?, "size"?, "shown"?}]`: `kind` is `image`, `file`, `voice`, `video`, `sticker`; `id` is the platform's id (not downloaded); `shown` means the original was already passed in as an attachment |

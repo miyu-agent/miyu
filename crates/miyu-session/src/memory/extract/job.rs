@@ -66,7 +66,11 @@ impl Job {
             }
             Plan::Skip { upto } => {
                 let marked = self
-                    .mark(upto, Vec::new(), Some(Skipped::Remembered))
+                    .mark(
+                        upto,
+                        (Vec::new(), BTreeMap::new()),
+                        Some(Skipped::Remembered),
+                    )
                     .await
                     .is_some();
                 self.extractor.finish(self.after, true);
@@ -80,9 +84,10 @@ impl Job {
                 since,
                 names,
                 me,
+                places,
             } => {
                 let recorded = match self.dropped(text, since).await {
-                    Some(text) => self.ask(upto, text, turns, (&names, me)).await,
+                    Some(text) => self.ask(upto, text, turns, (&names, me), places).await,
                     None => false,
                 };
                 if recorded && more {
@@ -155,6 +160,7 @@ impl Job {
         text: String,
         turns: BTreeSet<u64>,
         (names, here): (&BTreeMap<String, Option<String>>, BTreeSet<String>),
+        places: BTreeMap<u64, String>,
     ) -> bool {
         let started = Instant::now();
         let secrets = secrets(&self.config);
@@ -194,7 +200,7 @@ impl Job {
                 for candidate in &mut found {
                     candidate.text = redact(&candidate.text, &secrets, &shapes);
                 }
-                let recorded = self.mark(upto, found, None).await;
+                let recorded = self.mark(upto, (found, places), None).await;
                 if let Some(saved) = &recorded {
                     let took_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                     let count = saved.len();
@@ -212,7 +218,8 @@ impl Job {
                 let tries = self.extractor.finish(self.after, false);
                 tracing::warn!(target: TARGET, session = %self.session, tries, error = why.as_str(), "memory extraction failed");
                 if tries >= TRIES {
-                    self.mark(upto, Vec::new(), Some(Skipped::Failed)).await;
+                    self.mark(upto, (Vec::new(), BTreeMap::new()), Some(Skipped::Failed))
+                        .await;
                 }
                 false
             }
@@ -270,17 +277,18 @@ impl Job {
         }
     }
 
-    /// 记下几条、记抽到了第 `upto` 条，交回记下的编号；写不进的记一行，交回没有。
+    /// 记下几条（`found`，每一轮的群名 `places`）、记抽到了第 `upto` 条，交回记下的编号；写不进的记一行，交回没有。
     async fn mark(
         &self,
         upto: Seq,
-        found: Vec<miyu_recall::extract::Candidate>,
+        (found, places): (Vec<miyu_recall::extract::Candidate>, BTreeMap<u64, String>),
         skipped: Option<Skipped>,
     ) -> Option<Vec<miyu_recall::MemoryId>> {
         let (keeper, session) = (self.keeper.clone(), self.session.clone());
-        let recorded =
-            blocking(move || keeper.record_extraction(wall_now(), &session, upto, found, skipped))
-                .await;
+        let recorded = blocking(move || {
+            keeper.record_extraction(wall_now(), &session, upto, (found, &places), skipped)
+        })
+        .await;
         recorded
             .inspect_err(|error| {
                 tracing::warn!(target: TARGET, session = %self.session, error = ?error, "memory extraction not recorded");

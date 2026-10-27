@@ -52,6 +52,7 @@ fn owner(spoken: &[Spoken]) -> Voices {
         limit: None,
         names: Default::default(),
         me: Default::default(),
+        places: Vec::new(),
     }
 }
 
@@ -332,6 +333,7 @@ fn each_line_says_who_spoke_and_lines_not_from_people_stay_out() {
         limit: None,
         names: Default::default(),
         me: Default::default(),
+        places: Vec::new(),
     };
     let (_, text, _, _) = ask(plan(
         &spoken,

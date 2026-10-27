@@ -145,3 +145,37 @@ fn memory_gets_the_recasts_and_the_last_name_she_was_called() {
         assert_eq!(laid, [3, 5, 8], "{size} 条一块");
     }
 }
+
+/// 接上记忆时交的几条（施工 E-4 上）：换人格的都在，加最后一条带她叫什么的、最后一条带群名的人话，照先后；
+/// 一条两样都带的只交一次。
+#[test]
+fn memory_gets_the_recasts_and_the_last_names_heard() {
+    let said = |seq: u64, venue: &str| {
+        event(
+            seq,
+            "message.user",
+            &format!(r#"{{"blocks":[],"venue":{venue}}}"#),
+        )
+    };
+    let mut log = log();
+    log.extend([
+        said(7, r#"{"msg":"1","my_name":"米羽","place":"周末摄影群"}"#),
+        said(8, r#"{"msg":"2","place":"摄影爱好者"}"#),
+        said(9, r#"{"msg":"3"}"#),
+    ]);
+    for size in [1, 4, 9] {
+        let mut scan = Scan::default();
+        for piece in log.chunks(size) {
+            scan.note(piece);
+        }
+        let laid: Vec<u64> = scan.laid().iter().map(|event| event.seq.get()).collect();
+        assert_eq!(laid, [3, 5, 7, 8], "{size} 条一块");
+    }
+    let mut both = Scan::default();
+    both.note(&[said(
+        1,
+        r#"{"msg":"1","my_name":"米羽","place":"周末摄影群"}"#,
+    )]);
+    let laid: Vec<u64> = both.laid().iter().map(|event| event.seq.get()).collect();
+    assert_eq!(laid, [1]);
+}

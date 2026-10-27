@@ -41,8 +41,8 @@ pub(super) struct Scan {
     pub(super) policy: Option<ContentHash>,
     /// 换了人格的 `session.policy_changed`，照先后：记忆认换到这个人格的那一条（`memory::recast::floor`）只看这几条。
     pub(super) recasts: Vec<Event>,
-    /// 最后一条带着她在场所里叫什么的人话（施工 E-1 修三补）：记忆载入时照它接上她最近在场所里叫什么（`her::last_called`）。
-    called: Option<Event>,
+    /// 最后一条带着她在场所里叫什么、带着群名的人话（施工 E-1 修三补、E-4 上）：记忆载入时照它们接上最近听到的（`Heard::last`）。
+    heard: [Option<Event>; 2],
     /// 最后一次记下的工作目录（同 [`remembered`]）。
     cwd: Option<String>,
     /// 最后一次记下的加进来的目录（同 [`remembered`]）。
@@ -95,12 +95,15 @@ impl Scan {
                     }
                 }
                 Body::MessageUser(message) => {
-                    if message
-                        .venue
-                        .as_ref()
-                        .is_some_and(|venue| venue.my_name.is_some())
-                    {
-                        self.called = Some(event.clone());
+                    if let Some(venue) = &message.venue {
+                        for (n, has) in [venue.my_name.is_some(), venue.place.is_some()]
+                            .into_iter()
+                            .enumerate()
+                        {
+                            if has {
+                                self.heard[n] = Some(event.clone());
+                            }
+                        }
                     }
                 }
                 Body::TurnStarted(started) => self.dirs = Some(started.dirs.clone()),
@@ -128,10 +131,14 @@ impl Scan {
         self.count += events.len();
     }
 
-    /// 接上记忆时交的那几条（`memory::Laid::Read`）：换了人格的，加最后一条带着她叫什么的人话，照先后。
+    /// 接上记忆时交的那几条（`memory::Laid::Read`）：换了人格的，加最后一条带着她叫什么、带着群名的人话，照先后。
     pub(super) fn laid(&self) -> Vec<Event> {
         let mut laid = self.recasts.clone();
-        laid.extend(self.called.clone());
+        for event in self.heard.iter().flatten() {
+            if !laid.iter().any(|seen| seen.seq == event.seq) {
+                laid.push(event.clone());
+            }
+        }
         laid.sort_by_key(|event| event.seq);
         laid
     }

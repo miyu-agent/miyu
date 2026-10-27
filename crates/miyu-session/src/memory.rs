@@ -263,8 +263,8 @@ pub(crate) fn connect(
         MemoryScope::Persona => recast::floor(laid.own(), persona),
         _ => None,
     };
-    // 载入的、换人格时读回的：她最近在场所里叫什么照日志接上（施工 E-1 修三）。
-    let here = her::last_called(laid.own());
+    // 载入的、换人格时读回的：她最近在场所里叫什么、这个群叫什么照日志接上（施工 E-1 修三、E-4 上）。
+    let here = keeper::Heard::last(laid.own());
     let lane = memory.lanes.open(lane::Opening {
         recall: Arc::clone(&memory.turns),
         room: room.clone(),

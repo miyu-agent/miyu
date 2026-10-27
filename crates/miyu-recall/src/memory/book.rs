@@ -35,6 +35,8 @@ pub struct Entry {
     pub who: Option<String>,
     /// 涉及谁（施工 E-1 修四）：发生过的事那一类才有，没有的是空的。
     pub people: Vec<String>,
+    /// 在哪个群（施工 E-4 上）：记下那一刻的群名；没有的没有。
+    pub place: Option<String>,
     /// 记下的时刻。
     pub at: Timestamp,
     /// 谁记的。
@@ -216,6 +218,7 @@ impl MemoryBook {
                         keywords: saved.keywords,
                         who: saved.who,
                         people: saved.people,
+                        place: saved.place,
                         replaces: saved.replaces,
                         at: event.at,
                         by: event.by.clone(),

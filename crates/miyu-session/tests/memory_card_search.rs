@@ -51,6 +51,7 @@ fn person(home: &Home, who: &str, text: &str) {
         keywords: None,
         who: Some(who.into()),
         people: Vec::new(),
+        place: None,
     };
     write(home, &MemoryEvent::Saved(saved));
 }

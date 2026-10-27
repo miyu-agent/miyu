@@ -35,6 +35,8 @@ pub(crate) struct Voices {
     pub(crate) names: BTreeMap<String, Option<String>>,
     /// 这一段里她在场所里被叫过的名字（施工 E-1 修三，人话的 `venue.my_name`），照 `fold` 过的：和人格的名字一起算她。
     pub(crate) me: BTreeSet<String>,
+    /// 这一段里带着群名的人话（施工 E-4 上，人话的 `venue.place`）：序号和群名，照先后。每一轮记下的照它找那时的群名。
+    pub(crate) places: Vec<(Seq, String)>,
 }
 
 impl Voices {
@@ -90,6 +92,7 @@ impl Voices {
             limit: None,
             names,
             me: crate::memory::her::called_in(events),
+            places: crate::memory::keeper::places(events),
         }
     }
 }

@@ -24,6 +24,10 @@ pub struct VenueMessage {
     /// 名字会变，每条消息各记各的；记忆认她的时候和人格的名字一起算（`miyu-session` 的 `memory/her.rs`）。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub my_name: Option<String>,
+    /// 这个场所此刻叫什么（施工 E-4 上，`docs/blueprint/venues.md`「场所的格」）：群名，私聊不写。名字会变，每条消息各记各的；
+    /// 只给记忆用（记下时存进 `ext.memory.saved` 的 `place`），渲染她上下文的地方不读它。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place: Option<String>,
     /// @ 了谁：平台身份。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub mentions: Vec<ExternalId>,

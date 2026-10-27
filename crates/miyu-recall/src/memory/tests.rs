@@ -11,6 +11,7 @@ mod cards;
 mod dropped;
 mod keywords;
 mod merged;
+mod place;
 mod restored;
 mod trace;
 mod venue;
@@ -51,6 +52,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     }
 }
 

@@ -53,6 +53,7 @@ With neither, the default persona's. To follow changes, subscribe to the `memory
 | `keywords` | Words used only to find it (one line, comma-separated, at most 200 characters), `null` if none: searches and recall match them, she never sees this line |
 | `who` | Who a `person` memory is about: a platform id (`qq:10086`) or a name; `null` for other classes |
 | `people` | Who an `episode` involves: a list of platform ids or names (never her or the owner); empty when there are none and for other classes |
+| `place` | Which group it was in: the group's name when it was saved (as the bridge passed it); `null` for private chats, local sessions, memories people saved through the protocol and older memories. A group renamed later keeps the old name on older memories |
 
 ## `memory.list`, `memory.search`
 

@@ -76,6 +76,7 @@ mod memory_my_name;
 mod memory_near_floor;
 mod memory_owner;
 mod memory_people;
+mod memory_place;
 mod memory_recall;
 mod memory_remote;
 mod memory_restore;

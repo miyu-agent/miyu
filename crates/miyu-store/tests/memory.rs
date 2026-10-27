@@ -33,6 +33,7 @@ fn saved(text: &str) -> MemoryEvent {
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     })
 }
 

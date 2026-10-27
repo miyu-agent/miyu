@@ -17,8 +17,8 @@ use crate::handle::{Dream, Halt, Message, Taken};
 
 /// 收件箱里的一封怎么办。
 pub(super) enum Mail {
-    /// 送进内核。
-    Input(Input),
+    /// 送进内核。装在盒子里，同 [`Message::Command`]（clippy 的 `large_enum_variant`）。
+    Input(Box<Input>),
     /// 当场办完了。
     Done,
     /// 有计划地停下，停好了回这一头。
@@ -46,12 +46,12 @@ impl Actor {
             } => {
                 self.wait_for(id.clone(), reply, super::durable::outside(&by));
                 let at = self.clock.now();
-                Mail::Input(Input::Command(Received {
+                Mail::Input(Box::new(Input::Command(Received {
                     id,
                     by,
                     at,
-                    command,
-                }))
+                    command: *command,
+                })))
             }
             // 补发补到哪一条和订阅在这同一步里拿（施工 3-8 六补）：这一步之前落了盘的都推过了，之后的都还没推。正在流的
             // 那次请求推过的增量也在这一步里拼好（施工 9-8 八补）：之前推过的都在里面，之后的照常推。
@@ -127,8 +127,8 @@ impl Actor {
         };
         self.watched.store(self.watchers > 0, Ordering::Release);
         match (before, self.watchers) {
-            (0, 1) => Mail::Input(Input::Watched { watched: true }),
-            (1, 0) => Mail::Input(Input::Watched { watched: false }),
+            (0, 1) => Mail::Input(Box::new(Input::Watched { watched: true })),
+            (1, 0) => Mail::Input(Box::new(Input::Watched { watched: false })),
             _ => Mail::Done,
         }
     }

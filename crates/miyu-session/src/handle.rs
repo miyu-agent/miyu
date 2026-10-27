@@ -69,11 +69,12 @@ pub struct Handle {
 /// 发给 actor 的。
 #[derive(Debug)]
 pub(crate) enum Message {
-    /// 一个命令，和等它回应的那一头。
+    /// 一个命令，和等它回应的那一头。命令装在盒子里：场所消息的格多了（施工 E-4 上的 `place`）以后它比别的种类大出两百多
+    /// 字节，收件箱里每一封都照最大的那一种占地方（clippy 的 `large_enum_variant`）。
     Command {
         id: CommandId,
         by: By,
-        command: Command,
+        command: Box<Command>,
         reply: oneshot::Sender<Outcome>,
     },
     /// 要订阅：从这一刻起的推送都交给它。一个订阅算一个在看着的头（施工 7-9）。
@@ -298,7 +299,7 @@ impl Handle {
         self.send(Message::Command {
             id,
             by,
-            command,
+            command: Box::new(command),
             reply,
         })?;
         answer.await.map_err(|_| Stopped)

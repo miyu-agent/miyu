@@ -130,6 +130,7 @@ impl Keeper {
                 keywords: old.keywords,
                 who: old.who,
                 people: old.people,
+                place: old.place,
             };
             self.append(&log, stamp(), &MemoryEvent::Saved(saved))?;
             revised += 1;

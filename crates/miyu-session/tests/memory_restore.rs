@@ -28,6 +28,7 @@ async fn it_can_be_restored_anywhere() {
         keywords: None,
         who: None,
         people: Vec::new(),
+        place: None,
     };
     log.append(now(), stranger(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

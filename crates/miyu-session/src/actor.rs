@@ -257,7 +257,7 @@ impl Actor {
                     Err(Stop) => return,
                 },
                 message = self.inbox.recv() => match message.map(|message| self.mail(message)) {
-                    Some(Mail::Input(input)) => input,
+                    Some(Mail::Input(input)) => *input,
                     Some(Mail::Done) => continue,
                     Some(Mail::Retired) => return self.settle_sync().await,
                     Some(Mail::Stop(reply)) => return self.stop(reply).await,

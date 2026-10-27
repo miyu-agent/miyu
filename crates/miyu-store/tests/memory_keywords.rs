@@ -27,6 +27,7 @@ fn saved(text: &str, keywords: Option<&str>) -> MemoryEvent {
         keywords: keywords.map(str::to_string),
         who: None,
         people: Vec::new(),
+        place: None,
     })
 }
 
