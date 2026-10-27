@@ -24,7 +24,7 @@ mod plugins;
 mod records;
 mod sessions;
 pub(crate) use bridge::{Bridge, binds_for, bridge};
-pub(crate) use sessions::{Owners, bridged, owners};
+pub(crate) use sessions::{Owners, bridged, owners, platforms_of_package};
 
 pub(crate) use message::{VenueMessageParams, platform_id};
 pub(crate) use plugins::plugins;

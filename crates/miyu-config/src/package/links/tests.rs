@@ -111,13 +111,32 @@ fn a_process_package_reads_its_connection() {
     assert_eq!(
         manifest.connection,
         Some(Connection {
-            platform: "qq".to_string(),
+            platforms: vec!["qq".to_string()],
         })
     );
     let text = BRIDGE.replace("platform = \"qq\"", "platform = \"QQ\"");
     assert_eq!(wrong(&text), (Code::BadPlatform, Some(14)));
     let text = BRIDGE.replace("platform = \"qq\"\n", "");
     assert_eq!(wrong(&text), (Code::MissingKey, Some(13)));
+}
+
+/// 接几个平台（施工 IM-3）：写列表的照写的先后；空的、重复的、有一个写法不对的、不是字的都是 `bad_platform`。
+#[test]
+fn a_connection_lists_several_platforms() {
+    let text = BRIDGE.replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
+    let connection = read(&text).unwrap().connection.expect("有");
+    assert_eq!(connection.platforms, ["qq", "tg"]);
+    assert!(connection.has("tg") && !connection.has("discord"));
+    for bad in [
+        "[]",
+        "[\"qq\", \"qq\"]",
+        "[\"qq\", \"TG\"]",
+        "[\"qq\", 1]",
+        "1",
+    ] {
+        let text = BRIDGE.replace("platform = \"qq\"", &format!("platform = {bad}"));
+        assert_eq!(wrong(&text), (Code::BadPlatform, Some(14)), "{bad}");
+    }
 }
 
 /// 组（施工 BS-1 上中）：只有内置包能写；组名照包的编号的写法、不重复；照写的先后。原来的 `required` 删了，写了照不认识的键。

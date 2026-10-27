@@ -54,7 +54,7 @@
 
 ## `venue.sessions`
 
-**参数**：没有。**回应**：`{"sessions": [{"session", "venue"}…]}`，从新到旧。列的是：归这个系统账号的场所会话，和对应表里这个平台的身份对着的主人的私聊（照清单 `[connection] platform` 认平台）。一个场所只列最新的那一个。桥起来时照它订阅。
+**参数**：没有。**回应**：`{"sessions": [{"session", "venue"}…]}`，从新到旧。列的是：归这个系统账号的场所会话，和对应表里这个平台的身份对着的主人的私聊（照清单 `[connection] platform` 认平台，能写几个）。一个场所只列最新的那一个。桥起来时照它订阅。
 
 ## `venue.binding`
 
@@ -64,7 +64,7 @@
 
 **参数**：`venue`：场所；`on`：开着的场所插件的名字（同 `provide` 的 `plugin`），不写或空的是全不给。**回应**：`{}`。
 
-整份替换。写了 `plugin` 的工具在这个场所的会话里只有开着才给，下一轮生效；这一轮里刚关掉的再调回「暂时不可用」。核心只在内存里记，重启以后哪个场所都不给：桥连上以后对每个场所发一次。只管自己平台的场所（照清单 `[connection] platform`），别的平台的 `bad_params`（`data.field` 是 `venue`），名字写法不对的 `bad_params`（`data.field` 是 `on`）。
+整份替换。写了 `plugin` 的工具在这个场所的会话里只有开着才给，下一轮生效；这一轮里刚关掉的再调回「暂时不可用」。核心只在内存里记，重启以后哪个场所都不给：桥连上以后对每个场所发一次。只管自己平台的场所（照清单 `[connection] platform`，能写几个），别的平台的 `bad_params`（`data.field` 是 `venue`），名字写法不对的 `bad_params`（`data.field` 是 `on`）。
 
 ## `session.send` 的 `as`、`venue`
 

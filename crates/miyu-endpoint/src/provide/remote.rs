@@ -55,6 +55,8 @@ pub(crate) struct RemoteTool {
     subject: Option<String>,
     timeout: Duration,
     package: String,
+    /// 是哪个通讯平台专用的（施工 IM-3，[`Tool::platform`]）。
+    platform: Option<String>,
     provided: Arc<Provided>,
     texts: Texts,
     stores: Stores,
@@ -99,10 +101,27 @@ impl RemoteTool {
             subject: checked.subject,
             timeout: checked.timeout,
             package: package.to_string(),
+            platform: None,
             provided,
             texts,
             stores,
         }
+    }
+
+    /// 专用于平台 `platform`（施工 IM-3）：包接的平台里，名字以 `<平台>_` 开头的那一个；都不是的不分平台。
+    pub(super) fn for_platform<'a>(
+        mut self,
+        platforms: impl IntoIterator<Item = &'a String>,
+    ) -> RemoteTool {
+        let name = self.spec.name.as_str();
+        self.platform = platforms
+            .into_iter()
+            .find(|platform| {
+                name.strip_prefix(platform.as_str())
+                    .is_some_and(|rest| rest.starts_with('_'))
+            })
+            .cloned();
+        self
     }
 
     /// 暂时不可用：说法同执行器替目录里没有的工具写的那一句。
@@ -208,6 +227,10 @@ impl Tool for RemoteTool {
 
     fn venues(&self) -> Option<Venues> {
         Some(self.venues)
+    }
+
+    fn platform(&self) -> Option<&str> {
+        self.platform.as_deref()
     }
 
     fn display_name(&self) -> BTreeMap<String, String> {

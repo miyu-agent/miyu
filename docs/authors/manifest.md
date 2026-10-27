@@ -246,7 +246,9 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 
 ## `[connection]`
 
-`platform`：接的聊天平台，写法同包的编号（例如 `qq`）。只有扩展能写；接聊天平台的桥写它。
+`platform`：接的聊天平台，写法同包的编号（例如 `qq`）；接几个的写列表（`["qq", "tg"]`）。只有扩展能写；接聊天平台的桥写它。
+
+接几个平台的，工具名照平台起头：`qq_send` 只在 `qq:` 的群、私聊里给，`tg_send` 只在 `tg:` 的里给；本机的会话都给。不带平台前缀的工具哪里都给。
 
 ## `[depends]`、`[recommends]`
 

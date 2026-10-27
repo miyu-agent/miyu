@@ -9,8 +9,8 @@ use miyu_kernel::origin::By;
 use miyu_session::testkit::Script;
 
 use crate::support::extensions::*;
+use crate::support::served::{replies, served_core};
 use crate::support::*;
-use crate::system_account::{replies, served_core};
 
 /// 扩展调 `memory.*` 照替谁干活找那一间（施工 Y-7）：没声明系统账号的包替机主干活，平台桥的记忆归机主；都不是包自己的账号那一间。
 #[tokio::test]

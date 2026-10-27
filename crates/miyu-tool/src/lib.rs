@@ -166,6 +166,12 @@ pub trait Tool: Send + Sync {
         None
     }
 
+    /// 是哪个通讯平台专用的（施工 IM-3，接入通讯平台设计 07 第 4.6 节第 1 样）：场所会话里只给场所是这个平台的，本机的会话照给。
+    /// 接平台的包登记的、名字以 `<平台>_` 开头的是；别的没有，不分平台。
+    fn platform(&self) -> Option<&str> {
+        None
+    }
+
     /// 给人看的名字，照语言（`zh`、`en`……；施工 9-8 六补）：脚本、MCP 的、扩展的工具交，执行器派它那一刻取下、随结果记进
     /// 日志，头照连接的语言挑。核心自带的不交，照核心的字（`resources/core/human/`）。默认空。
     fn display_name(&self) -> BTreeMap<String, String> {

@@ -254,6 +254,17 @@ impl Agents {
                         }
                     })
             })
+            // 平台专用的工具只给那个平台的场所（施工 IM-3）：`tg:` 的群里不给 `qq_*`；本机的会话照给。
+            .filter(|spec| {
+                local
+                    || tools
+                        .get(&spec.name)
+                        .and_then(|tool| tool.platform())
+                        .is_none_or(|platform| {
+                            venue.as_str().split_once(':').map(|(prefix, _)| prefix)
+                                == Some(platform)
+                        })
+            })
             .filter(|spec| {
                 preset.is_none_or(|(preset, features)| {
                     let package = tools.package_of(&spec.name).unwrap_or(&spec.name);

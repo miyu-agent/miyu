@@ -246,7 +246,9 @@ Bring a folder of content for another package (sticker content packs work this w
 
 ## `[connection]`
 
-`platform`: the chat platform it connects to, written like a package id (e.g. `qq`). Extensions only; chat platform bridges write it.
+`platform`: the chat platform it connects to, written like a package id (e.g. `qq`); a list for several (`["qq", "tg"]`). Extensions only; chat platform bridges write it.
+
+With several platforms, start tool names with the platform: `qq_send` is only given in `qq:` groups and private chats, `tg_send` only in `tg:` ones; local sessions get all of them. Tools without a platform prefix are given everywhere.
 
 ## `[depends]`, `[recommends]`
 

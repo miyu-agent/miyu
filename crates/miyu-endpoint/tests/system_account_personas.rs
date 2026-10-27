@@ -3,8 +3,8 @@
 use miyu_session::testkit::Script;
 
 use crate::support::extensions::*;
+use crate::support::served::{replies, served_core};
 use crate::support::*;
-use crate::system_account::{replies, served_core};
 /// 系统账号的会话照它服务的人（管理员）家目录里的人格找（施工 Y-2 中上，核心主会话报的）：主人在自己家目录建的人格，群里照样
 /// 找得到；照桥自己的家目录找的话这里回「没有这个人格」。
 #[tokio::test]

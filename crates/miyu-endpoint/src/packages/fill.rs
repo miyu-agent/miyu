@@ -98,7 +98,11 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
         item["features"] = json!(features);
     }
     if let Some(connection) = &manifest.connection {
-        item["connection"] = json!({"platform": connection.platform});
+        // 施工 IM-3 起能写几个：`platform` 照旧是第一个；接几个的另带 `platforms`，是全部。
+        item["connection"] = json!({"platform": connection.platforms.first()});
+        if connection.platforms.len() > 1 {
+            item["connection"]["platforms"] = json!(connection.platforms);
+        }
     }
     // 依赖、推荐的包（施工 F-11：以前只写小程序，叫 `workers`）。
     for (key, packages) in [

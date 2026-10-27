@@ -12,8 +12,8 @@ use miyu_kernel::request::Request;
 use miyu_session::testkit::{Play, Script};
 
 use crate::support::extensions::*;
+use crate::support::served::{replies, served_core};
 use crate::support::*;
-use crate::system_account::{replies, served_core};
 
 fn bot() -> AccountId {
     AccountId::parse("bot").expect("合写法")

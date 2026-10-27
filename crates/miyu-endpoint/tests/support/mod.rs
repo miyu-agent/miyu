@@ -14,6 +14,7 @@ pub mod pkg;
 pub mod providers;
 mod pushes;
 mod reading;
+pub mod served;
 pub mod shipped;
 pub mod source;
 pub mod venues;

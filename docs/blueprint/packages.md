@@ -101,7 +101,7 @@ summary = { en = "Read, write and search files" }   # 可以不写
 tools = ["read", "write", "edit"]                    # 下面的工具，可以不写；同一个包里一件只列一次
 
 [connection]                     # 平台接入：只有扩展包能写
-platform = "qq"                  # 写法同包的编号
+platform = "qq"                  # 写法同包的编号；接几个的写列表 ["qq", "tg"]（施工 IM-3）
 
 [[side]]                         # 旁路请求（施工 Q-3，设计 43）：只有扩展包能写，一段一条，不另要能力
 id = "judge"                     # 包里不重，写法同命令名；model.call 写 side = "judge"，model.list 里是 <包>/judge
@@ -195,7 +195,7 @@ program = "miyu-embed"
 | `kind`、`protocol`、`name`、`state` | 读成了的 | `ui`、`process`、`builtin`、`worker`、`mascot`、`bundle`（施工 X-2），照带的表推出来（施工 F-8 上补）；`[最低, 最高]`；照连接的语言挑的名字（挑法同 `persona.list`：这种语言、`en`、`zh`、`ja`）；放状态的目录的真路径 |
 | `version`、`summary` | 写了的 | 原样；照语言挑 |
 | `features` | `builtin`、`process` 包（施工 F-1） | `[{"id", "name", "summary"}]`：照包算的那一个也列；名字、说明照语言挑，没说明的没有 `summary`；不列工具 |
-| `connection` | 写了的（施工 F-1） | `{"platform"}` |
+| `connection` | 写了的（施工 F-1） | `{"platform"}`；接几个平台的 `platform` 是第一个，另带 `platforms`（全部，照写的先后，施工 IM-3） |
 | `depends`、`recommends` | 写了、不空的（施工 F-1） | `{"packages": [...]}`，照写的先后（施工 F-11；以前是 `{"workers": [...]}`） |
 | `missing` | 依赖的包缺了的（施工 F-11） | 缺的那几个，照写的先后；这时 `status` 是 `depends_missing` |
 | `export` | 写了 `[export]` 的（施工 F-11） | `{"methods": [...]}`，照写的先后：别的软件经 `package.call` 调得到的方法 |

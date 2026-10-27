@@ -204,7 +204,11 @@ fn carries(
         answer.insert("theme".into(), json!(true));
     }
     if let Some(connection) = &manifest.connection {
-        answer.insert("connection".into(), json!(connection.platform));
+        // 接的平台（施工 IM-3 起能写几个）：`connection` 照旧是第一个；接几个的另带 `platforms`，是全部。
+        answer.insert("connection".into(), json!(connection.platforms.first()));
+        if connection.platforms.len() > 1 {
+            answer.insert("platforms".into(), json!(connection.platforms));
+        }
     }
     if manifest
         .process

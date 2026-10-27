@@ -72,90 +72,92 @@ pub(crate) async fn sessions(
 ///
 /// 清单照「系统账号的编号就是包的编号」找（施工 O-4 下的约定）：以后系统账号改了名、不再和包同名，这里要跟着改。
 pub(crate) struct Owners {
-    platform: Option<String>,
-    bound: BTreeSet<AccountId>,
+    /// 包清单写的平台（施工 IM-3 起能写几个）。
+    platforms: BTreeSet<String>,
+    /// 对应表里这几个平台的身份对着的本机账号：（平台，账号）。
+    bound: BTreeSet<(String, AccountId)>,
     /// 每人一份的那一份的（施工 IM-2）：他自己名下的也照平台筛。
     personal: bool,
 }
 
 /// 照这时的清单、配置算 [`Owners`]。
 pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
-    let platform = platform_of_package(core, caller.as_str());
-    let bound = match &platform {
-        Some(platform) => super::written(core)
-            .into_iter()
-            .filter(|(id, _)| platform_of(id) == Some(platform.as_str()))
-            .filter_map(|(_, account)| AccountId::parse(&account).ok())
-            .filter(|account| *account == core.admin)
-            .collect(),
-        None => BTreeSet::new(),
-    };
+    let platforms = platforms_of_package(core, caller.as_str());
+    let bound = super::written(core)
+        .into_iter()
+        .filter_map(|(id, account)| {
+            let platform = platform_of(&id).filter(|platform| platforms.contains(*platform))?;
+            let account = AccountId::parse(&account).ok()?;
+            (account == core.admin).then(|| (platform.to_string(), account))
+        })
+        .collect();
     Owners {
-        platform,
+        platforms,
         bound,
         personal: false,
     }
 }
 
-/// 包 `package` 清单 `[connection] platform` 写的平台；没写的、读不成的没有。
-fn platform_of_package(core: &Core, package: &str) -> Option<String> {
+/// 包 `package` 清单 `[connection] platform` 写的平台（施工 IM-3 起能写几个）；没写的、读不成的是空的。
+pub(crate) fn platforms_of_package(core: &Core, package: &str) -> BTreeSet<String> {
     core.system_packages()
         .iter()
         .find(|found| found.id == package)
         .and_then(|found| found.read.as_ref().ok())
         .and_then(|manifest| manifest.connection.as_ref())
-        .map(|connection| connection.platform.clone())
+        .map(|connection| connection.platforms.iter().cloned().collect())
+        .unwrap_or_default()
 }
 
 impl Owners {
     /// 每人一份的包 `package` 的那一份（施工 IM-2）：平台照它的清单，不列别人名下的。
     pub(crate) fn of_package(core: &Core, package: &str) -> Owners {
         Owners {
-            platform: platform_of_package(core, package),
+            platforms: platforms_of_package(core, package),
             bound: BTreeSet::new(),
             personal: true,
         }
     }
 
     /// `venue.sessions` 列不列场所 `venue` 最新的、属主是 `owner` 的会话，调用的是 `caller` 名下：他自己名下的列（施工 IM-2：
-    /// 他名下的不全是这个包的，包写了平台的只列这个平台的；平台桥照旧都列），别人名下的照 [`Owners::take`]。
+    /// 他名下的不全是这个包的，包写了平台的只列这几个平台的；平台桥照旧都列），别人名下的照 [`Owners::take`]。
     fn lists(&self, venue: &str, owner: &AccountId, caller: &AccountId) -> bool {
         if owner != caller {
             return self.take(venue, owner);
         }
-        !self.personal || self.platform.is_none() || self.platform_is(venue)
+        !self.personal || self.platforms.is_empty() || self.platform_is(venue)
     }
 
-    /// 场所 `venue` 是不是这个桥的平台的（施工 O-60）：平台前缀是它包清单 `[connection] platform` 写的；没写平台的都不是。
+    /// 场所 `venue` 是不是这个桥的平台的（施工 O-60；施工 IM-3 起是不是其中一个）：平台前缀在它包清单 `[connection] platform`
+    /// 里；没写平台的都不是。
     pub(crate) fn platform_is(&self, venue: &str) -> bool {
-        self.platform.is_some() && platform_of(venue) == self.platform.as_deref()
+        platform_of(venue).is_some_and(|platform| self.platforms.contains(platform))
     }
 
-    /// 场所 `venue` 最新的会话属主是 `owner`、不是调用的系统账号的，列不列：平台对得上、属主是对应表里这个平台的身份对着的。
+    /// 场所 `venue` 最新的会话属主是 `owner`、不是调用的系统账号的，列不列：平台是它的、属主是对应表里这个平台的身份对着的。
     pub(crate) fn take(&self, venue: &str, owner: &AccountId) -> bool {
-        self.platform.is_some()
-            && platform_of(venue) == self.platform.as_deref()
-            && self.bound.contains(owner)
+        platform_of(venue).is_some_and(|platform| {
+            self.platforms.contains(platform)
+                && self.bound.contains(&(platform.to_string(), owner.clone()))
+        })
     }
 }
 
 /// 系统账号 `caller` 的桥碰不碰得到场所 `venue`、属主是 `owner` 的会话（施工 Y-2 上，`connection/checks.rs` 照它放行）：会话不在
-/// 本机；平台照桥清单 `[connection] platform` 写的，没写的照场所编号自己的前缀；属主是对应表里这个平台的某个身份对着的本机账号
+/// 本机；平台在桥清单 `[connection] platform` 里，没写的照场所编号自己的前缀；属主是对应表里这个平台的某个身份对着的本机账号
 /// （`venue.session` 照同一张表把主人的私聊归主人）。
 pub(crate) fn bridged(core: &Core, caller: &AccountId, venue: &str, owner: &AccountId) -> bool {
     if venue == LOCAL {
         return false;
     }
-    let Some(platform) = owners(core, caller)
-        .platform
-        .or_else(|| platform_of(venue).map(str::to_string))
-    else {
+    let Some(platform) = platform_of(venue) else {
         return false;
     };
-    platform_of(venue) == Some(platform.as_str())
-        && super::written(core).into_iter().any(|(id, account)| {
-            platform_of(&id) == Some(platform.as_str()) && account == owner.as_str()
-        })
+    let platforms = platforms_of_package(core, caller.as_str());
+    (platforms.is_empty() || platforms.contains(platform))
+        && super::written(core)
+            .into_iter()
+            .any(|(id, account)| platform_of(&id) == Some(platform) && account == owner.as_str())
 }
 
 /// 场所编号、平台身份的平台前缀：第一个 `:` 前面那一段；没有 `:` 的是空的。

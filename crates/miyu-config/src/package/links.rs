@@ -7,11 +7,19 @@ use super::reader::{Reader, program_name};
 use super::{Code, Problem};
 use crate::secret::valid_name;
 
-/// `[connection]`：这个扩展接的是哪个通讯平台。
+/// `[connection]`：这个扩展接的是哪几个通讯平台。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Connection {
-    /// 平台名，写法同包的编号，例如 `qq`。
-    pub platform: String,
+    /// 平台名，写法同包的编号，例如 `qq`；照写的先后、不重复、至少一个。清单里写一个字的是一个，写列表的是几个（施工 IM-3，
+    /// 接入通讯平台设计 07 第 4.6 节第 1 样：一个 im 接几个平台）。
+    pub platforms: Vec<String>,
+}
+
+impl Connection {
+    /// 接不接平台 `platform`。
+    pub fn has(&self, platform: &str) -> bool {
+        self.platforms.iter().any(|one| one == platform)
+    }
 }
 
 /// `[worker]`：小程序怎么拉起。
@@ -23,7 +31,7 @@ pub struct Worker {
     pub args: Vec<String>,
 }
 
-/// `[connection]`：`platform` 必写。
+/// `[connection]`：`platform` 必写，一个字或者一列字（施工 IM-3）；列表不能空、不能重复。
 pub(super) fn connection(
     reader: &Reader<'_>,
     table: &dyn TableLike,
@@ -31,17 +39,33 @@ pub(super) fn connection(
 ) -> Result<Connection, Problem> {
     reader.only(table, "connection", super::fields::CONNECTION)?;
     let item = reader.required(table, at, "connection", "platform")?;
-    let platform = item.as_str().filter(|name| valid_name(name)).ok_or_else(|| {
+    let bad = || {
         reader.problem(
             Some(item),
             Code::BadPlatform,
             "connection.platform",
-            "connection.platform must start with a lowercase letter and use only lowercase letters, digits, - and _".to_string(),
+            "connection.platform must be a name or a non-empty list of distinct names; a name starts with a lowercase letter and uses only lowercase letters, digits, - and _".to_string(),
         )
-    })?;
-    Ok(Connection {
-        platform: platform.to_string(),
-    })
+    };
+    let written: Vec<&str> = match (item.as_str(), item.as_array()) {
+        (Some(one), _) => vec![one],
+        (None, Some(list)) => list
+            .iter()
+            .map(|value| value.as_str().ok_or_else(bad))
+            .collect::<Result<_, _>>()?,
+        (None, None) => return Err(bad()),
+    };
+    let mut platforms: Vec<String> = Vec::new();
+    for name in written {
+        if !valid_name(name) || platforms.iter().any(|seen| seen == name) {
+            return Err(bad());
+        }
+        platforms.push(name.to_string());
+    }
+    if platforms.is_empty() {
+        return Err(bad());
+    }
+    Ok(Connection { platforms })
 }
 
 /// `[depends]`、`[recommends]`（`name` 是哪一张）：`packages` 是别的包的编号，什么种类都行（施工 F-11，照 pacman 只有一份包名）；

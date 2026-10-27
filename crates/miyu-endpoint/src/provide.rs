@@ -194,6 +194,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     let count = tools.len();
     let listed = listed(core, package);
     let per = crate::extensions::scoped(core, package);
+    let platforms = crate::venues::platforms_of_package(core, package);
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
     for tool in tools {
         // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。
@@ -207,17 +208,20 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
         {
             return Err(bad_tool(&tool.name, "feature"));
         }
-        built.push(Arc::new(RemoteTool::new(
-            checked(tool)?,
-            package,
-            Arc::clone(&core.provided),
-            texts.clone(),
-            Stores {
-                root: core.root.clone(),
-                provider: core.account_of(Some(package)),
-                per_account: per,
-            },
-        )));
+        built.push(Arc::new(
+            RemoteTool::new(
+                checked(tool)?,
+                package,
+                Arc::clone(&core.provided),
+                texts.clone(),
+                Stores {
+                    root: core.root.clone(),
+                    provider: core.account_of(Some(package)),
+                    per_account: per,
+                },
+            )
+            .for_platform(&platforms),
+        ));
     }
     core.tools
         .replace(|catalog| catalog.replacing(package, built))

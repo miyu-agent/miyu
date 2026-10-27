@@ -54,7 +54,7 @@ Nobody can approve anything in venue sessions: everything needing approval is re
 
 ## `venue.sessions`
 
-**Params**: none. **Response**: `{"sessions": [{"session", "venue"}…]}`, newest first: the venue sessions owned by this system account, and the owner's private chats with this platform's identities in the bindings (the platform is read from the manifest's `[connection] platform`). Only the newest session per venue. Bridges subscribe to these on start.
+**Params**: none. **Response**: `{"sessions": [{"session", "venue"}…]}`, newest first: the venue sessions owned by this system account, and the owner's private chats with this platform's identities in the bindings (the platforms are read from the manifest's `[connection] platform`, which may list several). Only the newest session per venue. Bridges subscribe to these on start.
 
 ## `venue.binding`
 
@@ -64,7 +64,7 @@ Nobody can approve anything in venue sessions: everything needing approval is re
 
 **Params**: `venue`: the venue; `on`: the names of the venue plugins it has on (as in `provide`'s `plugin`); unset or empty means none. **Response**: `{}`.
 
-Replaces the whole list. Tools with a `plugin` are only given in this venue's sessions while it is on, from the next turn; a call this turn to one just turned off gets "not available right now". The core keeps this in memory only, so after a restart no venue has any: send it once per venue after connecting. Only for venues on your own platform (from the manifest's `[connection] platform`): other platforms get `bad_params` (`data.field` is `venue`), badly written names get `bad_params` (`data.field` is `on`).
+Replaces the whole list. Tools with a `plugin` are only given in this venue's sessions while it is on, from the next turn; a call this turn to one just turned off gets "not available right now". The core keeps this in memory only, so after a restart no venue has any: send it once per venue after connecting. Only for venues on your own platforms (from the manifest's `[connection] platform`, which may list several): other platforms get `bad_params` (`data.field` is `venue`), badly written names get `bad_params` (`data.field` is `on`).
 
 ## `as` and `venue` in `session.send`
 
