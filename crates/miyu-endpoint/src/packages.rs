@@ -146,7 +146,17 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             .map(|found| listed(core, found, &places, &words, peer.language, true)),
     );
     if !peer.admin {
-        items.iter_mut().for_each(for_members);
+        // 没对成员开放的（施工 U23-R修三）：头照它写「管理员没开放」、把他自己的开关灰掉。
+        let barred = core.barred_from_members();
+        for item in &mut items {
+            if item["package"]
+                .as_str()
+                .is_some_and(|id| barred.iter().any(|one| one == id))
+            {
+                item["available"] = json!(false);
+            }
+            for_members(item);
+        }
     }
     Ok(json!({ "packages": items, "groups": group_table(core, peer.language) }))
 }
@@ -200,15 +210,22 @@ const ADMINS_ONLY: &[&str] = &[
     "process",
     "worker",
     "check",
-    "mcp",
     "problem",
     "line",
 ];
 
-/// 把一项里 [`ADMINS_ONLY`] 那几格去掉。
+/// 把一项里 [`ADMINS_ONLY`] 那几格去掉。带的 MCP 服务只留名字、状态、停下的原因（施工 U23-R修三：头照它认得出带服务的包、照实写
+/// 状态），怎么起（命令、网址、环境变量、请求头、标准错误）只给管理员。
 fn for_members(item: &mut Value) {
     if let Some(fields) = item.as_object_mut() {
         fields.retain(|key, _| !ADMINS_ONLY.contains(&key.as_str()));
+        if let Some(Value::Array(servers)) = fields.get_mut("mcp") {
+            for server in servers.iter_mut() {
+                if let Some(server) = server.as_object_mut() {
+                    server.retain(|key, _| matches!(key.as_str(), "name" | "state" | "reason"));
+                }
+            }
+        }
     }
 }
 

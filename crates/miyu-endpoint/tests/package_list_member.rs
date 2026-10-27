@@ -34,7 +34,6 @@ async fn a_member_lists_packages_without_the_machine_details() {
             "commands",
             "process",
             "worker",
-            "mcp",
             "problem",
         ] {
             assert!(item.get(hidden).is_none(), "成员看不到 {hidden}：{item}");

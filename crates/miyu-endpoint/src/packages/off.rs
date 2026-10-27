@@ -32,7 +32,7 @@ impl Core {
     }
 
     /// 成员用不了的系统装的包：带进程、没勾「成员也能用」的。
-    fn barred_from_members(&self) -> Vec<String> {
+    pub(crate) fn barred_from_members(&self) -> Vec<String> {
         self.system_packages()
             .iter()
             .filter_map(|found| {

@@ -46,8 +46,9 @@
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `members` | 带进程的（扩展、带 MCP 服务的）：成员能不能用。只给管理员 |
+| `available` | 只在成员拿到的列表里：带进程、没对他开放的包写 `false`（不在管理员组、包没勾「成员也能用」），开放了的不写。头照它写「管理员没开放」 |
 | `page` | 有后台页的 |
-| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`need_load`、`on`、`skipped` 同 `mcp.list` 的一项 |
+| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`need_load`、`on`、`skipped` 同 `mcp.list` 的一项。成员拿到的每个服务只有 `name`、`state`（停下的带 `reason`） |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `contents` | 给哪几个包带了内容（清单里 `[content.<包>]` 的编号）；没带的没有这一格 |

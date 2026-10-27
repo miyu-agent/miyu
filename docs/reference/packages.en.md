@@ -46,8 +46,9 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `members` | With a process (an extension, or one that brings MCP servers): whether members may use it. Admins only |
+| `available` | Only in a member's list: `false` for a package with a process that isn't open to them (not in the admin group, and the package isn't ticked for members); absent when open. Heads show "not opened by the admin" from it |
 | `page` | Has a package page |
-| `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `need_load`, `on` and `skipped` as in `mcp.list` |
+| `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `need_load`, `on` and `skipped` as in `mcp.list`. In a member's list each server has only `name` and `state` (`reason` when stopped) |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
 | `contents` | Which packages it carries content for (the ids under `[content.<package>]` in its manifest); absent when none |

@@ -63,10 +63,49 @@ async fn members_get_a_process_package_only_when_it_is_ticked() {
         "[package]\nname = { en = \"Kit\" }\n",
     );
     home.write("system/packages/kit/scripts/card.py", &echo("card"));
+    home.write(
+        "system/packages/svc/package.toml",
+        "[package]\nname = { en = \"svc\" }\n\n[[mcp]]\nname = \"lone\"\ncommand = [\"nothere\"]\nenv = { TOKEN = \"secret-value\" }\n",
+    );
     let core = core(&home, &Arc::new(Script::new([])));
     let mut alice = Client::connect(Arc::clone(&core));
     alice.hello().await;
     let mut bob = member(&core, "bob").await;
+
+    // 成员拿到的列表（施工 U23-R修三）：没对他开放的带 `available: false`；带的 MCP 服务只有名字、状态。
+    let svc = listed(&mut bob, "svc").await;
+    assert_eq!(svc["available"], false, "{svc}");
+    let servers = svc["mcp"]
+        .as_array()
+        .unwrap_or_else(|| panic!("成员也看得到带服务：{svc}"));
+    for server in servers {
+        let keys: Vec<&String> = server.as_object().expect("一项").keys().collect();
+        assert!(
+            keys.iter()
+                .all(|key| ["name", "state", "reason"].contains(&key.as_str())),
+            "只留名字、状态：{server}"
+        );
+    }
+    assert_eq!(servers[0]["name"], "lone");
+    assert!(!svc.to_string().contains("secret-value"), "{svc}");
+    assert_eq!(listed(&mut bob, "ext").await["available"], false);
+    assert!(
+        listed(&mut bob, "open").await.get("available").is_none(),
+        "开放了的不写"
+    );
+    assert!(
+        listed(&mut bob, "kit").await.get("available").is_none(),
+        "不带进程的不写"
+    );
+    assert!(
+        listed(&mut alice, "ext").await.get("available").is_none(),
+        "管理员那一份不写"
+    );
+    let full = listed(&mut alice, "svc").await;
+    assert!(
+        full["mcp"][0].get("command").is_some(),
+        "管理员照旧拿全份：{full}"
+    );
 
     let mine = face(&mut alice).await;
     assert!(mine.contains(&"dice".to_string()), "管理员有：{mine:?}");
