@@ -54,6 +54,16 @@ pub(crate) struct GroupParams {
     preview: bool,
 }
 
+impl GroupParams {
+    /// 组 `package`，`preview` 的只看一眼（她的工具经端口装回组用，施工 BS-1 中下修）。
+    pub(crate) fn of(package: &str, preview: bool) -> GroupParams {
+        GroupParams {
+            package: package.to_string(),
+            preview,
+        }
+    }
+}
+
 /// 写组名的 `package.install`、`package.remove`。
 pub(crate) async fn call(
     core: &Arc<Core>,

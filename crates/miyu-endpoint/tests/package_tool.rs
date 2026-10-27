@@ -206,3 +206,77 @@ async fn a_name_clash_tells_her_what_and_where() {
     );
     assert!(!installed(&home, "akit"));
 }
+
+/// 她装回卸掉的出厂包（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源，问人的卡片是装回的那一份
+/// （`restores`），允许了装回来；写组名的整组装回。
+#[tokio::test]
+async fn she_brings_back_a_removed_shipped_package_and_a_group() {
+    let home = Home::new();
+    let commands: Vec<(&str, &str)> = vec![
+        ("package", r#"{"install":"mermaid"}"#),
+        ("package", r#"{"install":"basesystem"}"#),
+    ];
+    let plays = vec![
+        Play::calls(&[("shell", &pkg::run(&commands))]),
+        Play::Says("装回来了。"),
+    ];
+    let core = Arc::new(home.core_full(&Script::new(plays), pkg::catalog(), None, TOKEN));
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    for id in ["mermaid", "trash"] {
+        let removed = client
+            .call("r", "package.remove", json!({"package": id}))
+            .await;
+        assert!(removed["result"].is_object(), "{removed}");
+    }
+    let cwd = home.work.to_string_lossy().into_owned();
+    let session = client.create("c1", &cwd).await;
+    client.say("s1", &session, "把 mermaid 装回来").await;
+    until("装回的确认请求", || {
+        requests(&home, &session).len() == 1
+    })
+    .await;
+    let asked = requests(&home, &session).remove(0);
+    assert_eq!(
+        asked["detail"]["preview"]["restores"], true,
+        "卡片是装回的那一份：{asked}"
+    );
+    assert_eq!(asked["detail"]["preview"]["package"], "mermaid", "{asked}");
+    let call = asked["call_id"].as_str().expect("有编号").to_string();
+    let reply = client
+        .call(
+            "a1",
+            "session.answer",
+            json!({"session": session, "call": call, "decision": "once", "nested": 1}),
+        )
+        .await;
+    assert!(reply["result"].is_object(), "{reply}");
+    until("整组的确认请求", || {
+        requests(&home, &session).len() == 2
+    })
+    .await;
+    let asked = requests(&home, &session).remove(1);
+    assert_eq!(asked["detail"]["preview"]["group"], "basesystem", "{asked}");
+    assert_eq!(
+        asked["detail"]["preview"]["packages"],
+        json!(["trash"]),
+        "{asked}"
+    );
+    client
+        .call(
+            "a2",
+            "session.answer",
+            json!({"session": session, "call": call, "decision": "once", "nested": 2}),
+        )
+        .await;
+    home.until_turns(&session, 1).await;
+    let listed = client.call("l", "package.list", json!({})).await;
+    let removed: Vec<&str> = listed["result"]["packages"]
+        .as_array()
+        .expect("有")
+        .iter()
+        .filter(|item| item.get("removed").is_some())
+        .filter_map(|item| item["package"].as_str())
+        .collect();
+    assert!(removed.is_empty(), "都装回来了：{removed:?}");
+}

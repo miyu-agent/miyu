@@ -13,7 +13,7 @@
 
 ### 二、不做什么
 
-- 她那一头（会话里的 `miyu pkg install|remove <组>`）：她的 `package` 工具装编号只走软件源（`PackagesPort::fetch`），连装回一个卸掉的出厂包也不认，组更不认；要的话另排（连带装回单个出厂包）。
+- 她那一头（会话里的 `miyu pkg install|remove <组>`）当时没做：她的 `package` 工具装编号只走软件源，连装回一个卸掉的出厂包也不认。网页 2026-10-27 报了，BS-1 中下修补上：端口的 `fetching`、`fetch` 先认组名、卸掉的出厂包，走装回那一路（`packages/port.rs` 的 `back`），卡片照装回的那一份；卸组照旧走 `remove`。
 - 斜杠命令的拥有者是 BS-1 下下。
 
 ### 三、怎么验

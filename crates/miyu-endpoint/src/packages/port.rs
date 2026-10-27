@@ -203,6 +203,21 @@ impl PackagesPort for Port {
     fn fetching(&self, package: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.managing()?;
+            // 卸掉的出厂包、组名（施工 BS-1 中下修）：看一眼装回来的那一份，不走软件源。
+            match back(&core, &package) {
+                Some(Back::Group) => {
+                    let params = super::group::GroupParams::of(&package, true);
+                    return super::group::call(&core, self.peer(&core), "package.install", params)
+                        .await
+                        .map_err(refused);
+                }
+                Some(Back::Shipped) => {
+                    return super::preview::restoring(&core, self.peer(&core), &package)
+                        .await
+                        .map_err(refused);
+                }
+                None => {}
+            }
             source::fetch::install(
                 &core,
                 self.peer(&core),
@@ -217,6 +232,29 @@ impl PackagesPort for Port {
     fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
         Box::pin(async move {
             let core = self.managing()?;
+            // 卸掉的出厂包、组名（施工 BS-1 中下修）：装回来，不走软件源；装回一个的照旧在会话用的预设里打开。
+            match back(&core, &package) {
+                Some(Back::Group) => {
+                    let params = super::group::GroupParams::of(&package, false);
+                    let mut done =
+                        super::group::call(&core, self.peer(&core), "package.install", params)
+                            .await
+                            .map_err(refused)?;
+                    // 工具照 `package` 说装好了谁：写组名。
+                    done["package"] = json!(package);
+                    return Ok(done);
+                }
+                Some(Back::Shipped) => {
+                    let entry = super::manage::bring_back(&core, self.peer(&core), &package)
+                        .await
+                        .map_err(refused)?;
+                    if let Some(preset) = preset {
+                        open_in(&core, (&self.owner, self.peer(&core)), &preset, &package).await;
+                    }
+                    return Ok(entry);
+                }
+                None => {}
+            }
             let entry =
                 source::fetch::install(&core, self.peer(&core), None, SourceParams::of(&package))
                     .await
@@ -250,6 +288,24 @@ impl PackagesPort for Port {
             .map_err(refused)
         })
     }
+}
+
+/// 她装的编号是要装回来的（施工 BS-1 中下修）：组名，或者卸掉了的出厂包；都不是的走软件源。
+enum Back {
+    Group,
+    Shipped,
+}
+
+/// `package` 装回来走哪一路；不是装回来的没有。
+fn back(core: &Core, package: &str) -> Option<Back> {
+    if super::group::is_group(core, package) {
+        return Some(Back::Group);
+    }
+    super::packages(core)
+        .removed()
+        .iter()
+        .any(|removed| removed == package)
+        .then_some(Back::Shipped)
 }
 
 /// 在会话用的预设 `preset` 里打开她装的包 `package`（施工 F-10 下下，16 第三节）：预设不开没列出来的软件、也没写这个包的，往

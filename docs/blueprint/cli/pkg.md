@@ -56,7 +56,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 | `list`、`-Q` | `packages {}` |
 | `info <编号>`、`-Qi` | `packages {"package"}`；写的是路径（同 `install` 认路径的写法）的 `packages {"path"}`：看那个包文件夹 |
 | `search <词…>`、`-Ss` | `packages {"search"}`，几个词照空格连起来 |
-| `install <路径\|编号>`、`-U`、`-S <编号…>` | `package {"install"}`，一个一次；路径照现在的目录换成绝对的、`.`、`..` 照字面去掉，写到 `package.toml` 的取它所在的文件夹 |
+| `install <路径\|编号>`、`-U`、`-S <编号…>` | `package {"install"}`，一个一次（施工 BS-1 中下修起：卸掉的出厂包、组名照装回走，不去软件源，问人的卡片是装回的那一份）；路径照现在的目录换成绝对的、`.`、`..` 照字面去掉，写到 `package.toml` 的取它所在的文件夹 |
 | `remove <编号>`、`-R` | `package {"remove"}` |
 | `upgrade`、`-Su`、`-Syu` | `package {"upgrade": "all"}`（`-y` 在会话里不另拿索引） |
 | `pack` | 照旧在本机打 |
