@@ -1,5 +1,5 @@
 //! `command.catalog`（施工 O-6 补，`docs/construction/O-6-斜杠命令由核心解析（补）.md`）：不带会话列核心认的全部，照名字排，
-//! 带别名、参数提示，照连接的语言；带会话的只列这个会话里打了不会被拒的（记忆关着的没有 `remember`）；场所会话不收，写错的
+//! 带别名、参数提示，照连接的语言，跟着包的照默认预设筛（施工 CC-1）；带会话的只列这个会话里打了不会被拒的（记忆关着的没有 `remember`）；场所会话不收，写错的
 //! 编号是参数不对，没有的会话照找不到说。
 
 use serde_json::{Value, json};
@@ -59,6 +59,30 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
         ]),
         "{reply}"
     );
+}
+
+/// 不带会话的（施工 CC-1）：跟着包的命令照默认预设筛，默认预设没开那个包的不列（开会话的话敲了是 `unknown_command`）。
+#[tokio::test]
+async fn without_a_session_package_commands_follow_the_default_preset() {
+    let home = Home::new();
+    home.write(
+        "home/alice/settings.toml",
+        "[preset]\ndefault = \"minimal\"\n",
+    );
+    let core = crate::support::venues::configured_core(&home, &Script::new([]), Catalog::default());
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let reply = client.call("c1", "command.catalog", json!({})).await;
+    let listed = names(&reply);
+    for gone in ["goal", "loop", "todo"] {
+        assert!(
+            !listed.iter().any(|name| name == gone),
+            "{gone}：{listed:?}"
+        );
+    }
+    for kept in ["clear", "stop", "workspace"] {
+        assert!(listed.iter().any(|name| name == kept), "{kept}：{listed:?}");
+    }
 }
 
 #[tokio::test]

@@ -357,7 +357,7 @@
 
 ## `command.catalog`
 
-**参数**：`session`（可不写）：写了只列这个连接在这个会话里打了不会被拒的。
+**参数**：`session`（可不写）：写了只列这个连接在这个会话里打了不会被拒的；不写的列全部，跟着包的命令（`/loop`、`/goal`、`/todo`）照你的默认预设筛，默认预设没开那个包的不列。
 
 **回应**：`{"commands": [{"name", "aliases", "summary", "argument"?, "usage"?, "opens"?}…]}`，照名字排。在跑的 MCP 服务的提示词也在里面：名字 `<服务名>:<提示词名>`，`summary` 是服务写的 `title`（没有的照 `description`，不分语言），`argument` 照声明的参数拼（必填的 `<名字>`、可选的 `[名字]`）。`argument` 是名字后面跟什么的提示，`usage` 是有几种写法的命令一行一种（`{"form", "summary"}`），`opens` 是打开整页的命令。`summary`、`argument` 照连接的语言。
 

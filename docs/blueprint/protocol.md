@@ -664,7 +664,7 @@
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
-| `session` | 字符串，可以不写 | 哪个会话：写了只列这个连接在这个会话里打了不会被拒的 |
+| `session` | 字符串，可以不写 | 哪个会话：写了只列这个连接在这个会话里打了不会被拒的；不写的列全部，只是跟着包的核心命令（`/loop`、`/goal`、`/todo`）照替谁干活的那个人的默认预设筛：默认预设没开那个包的不列，开会话的话敲了是 `unknown_command`（施工 CC-1，`presets::package_on`）。模板、扩展声明的命令不写会话的照旧都列 |
 
 回应 `{"commands": [{"name": "clear", "aliases": ["reset"], "summary": "清空上下文"}, {"name": "workspace", "aliases": [], "summary": "切换工作区", "argument": "<路径>"}, …]}`：照名字排；`summary`、`argument` 照这个连接的语言，字在 `core/human/<语言>.json` 的 `commands/summary/<名字>`、`commands/argument/<名字>`；名字后面要跟字的（`workspace`、`remember`）才有 `argument`。
 

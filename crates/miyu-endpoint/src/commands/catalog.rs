@@ -4,7 +4,8 @@
 //!
 //! 模板命令（施工 X-14 上，[`super::templates`]）、扩展声明的命令（施工 X-14 下，[`super::declared`]）、MCP 服务的提示词（施工
 //! X-39，[`super::prompts`]）、整页的命令（施工 X-15 下，[`super::pages`]，带 `opens`）一起列，照名字排进去：
-//! 不写会话的照管理员的家目录、装了的包找全部；写了的照会话属主找，只列预设开着的。自己放的模板盖住扩展声明的同名的。
+//! 不写会话的照管理员的家目录、装了的包找全部，跟着包的核心命令照默认预设筛（施工 CC-1）；写了的照会话属主找，只列预设开着的。
+//! 自己放的模板盖住扩展声明的同名的。
 
 use std::sync::Arc;
 
@@ -52,12 +53,20 @@ pub(crate) async fn catalog(
         .filter(|slash| super::registry::present(core, slash.as_ref()));
     let declared = declared::found(core);
     let (listed, templates, declared, handle): Found<'_> = match params.session {
-        None => (
-            all.collect(),
-            templates::found(core, caller.acting_for()).await,
-            declared,
-            None,
-        ),
+        // 不写会话的（施工 CC-1）：跟着包的命令照替谁干活的人的默认预设筛，开会话的话那个包没开的不列（`/loop`、`/goal` 在
+        // 会话里照工具面上有没有那件工具认，没开的敲了是 `unknown_command`）。
+        None => {
+            let owner = caller.acting_for();
+            let default = crate::presets::default_of(core, owner);
+            let listed = all
+                .filter(|slash| {
+                    slash.package().is_none_or(|package| {
+                        crate::presets::package_on(core, owner, Some(&default), package)
+                    })
+                })
+                .collect();
+            (listed, templates::found(core, owner).await, declared, None)
+        }
         Some(text) => {
             let session = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
             let found = core.sessions.get(core, &session).await?;

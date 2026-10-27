@@ -43,7 +43,7 @@ pub(crate) async fn resolve(
 ) -> Result<Found, Refusal> {
     let id = match wanted {
         Some(id) => id.to_string(),
-        None => PresetSettings::from(&core.mine(account).config().resolved().values()).default,
+        None => default_of(core, account),
     };
     let presets = presets(core, account);
     let found = tokio::task::spawn_blocking(move || presets.find(&id)).await;
@@ -52,6 +52,12 @@ pub(crate) async fn resolve(
         Ok(Err(error)) => Err(refusal(&error)),
         Err(_) => Err(Refusal::INTERNAL),
     }
+}
+
+/// `account` 这时的 `preset.default`：个人设置压着系统配置，都没写的是出厂的 `full`（施工 CC-1 从 [`resolve`] 挪出来，不写会话的
+/// 命令菜单照它筛）。
+pub(crate) fn default_of(core: &Core, account: &AccountId) -> String {
+    PresetSettings::from(&core.mine(account).config().resolved().values()).default
 }
 
 /// 交给属主是 `owner` 的会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能；施工 Y-2 中上起照属主）：改了预设的

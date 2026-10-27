@@ -357,7 +357,7 @@ The same `id` sent again counts once.
 
 ## `command.catalog`
 
-**Params**: `session` (optional): only list what this connection can use in this session without being refused.
+**Params**: `session` (optional): only list what this connection can use in this session without being refused; without it everything is listed, except that commands that come with a package (`/loop`, `/goal`, `/todo`) follow your default preset and are left out when it doesn't turn that package on.
 
 **Response**: `{"commands": [{"name", "aliases", "summary", "argument"?, "usage"?, "opens"?}…]}`, by name. Prompts of running MCP servers are listed too: named `<server>:<prompt>`, `summary` is the server's `title` (or its `description`; not per language), and `argument` is built from the declared arguments (`<name>` for required, `[name]` for optional). `argument` hints what follows the name, `usage` lists the forms of commands with several (`{"form", "summary"}`), `opens` marks commands that open a page. `summary` and `argument` are in the connection's language.
 
