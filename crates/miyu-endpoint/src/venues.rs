@@ -19,6 +19,7 @@ use crate::refusal::Refusal;
 use crate::sessions::Opening;
 
 mod bridge;
+mod me;
 mod message;
 mod plugins;
 mod records;
@@ -144,7 +145,11 @@ pub(crate) fn binding(
 ) -> Result<Value, Refusal> {
     let bridge = bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
-    let account = bound(core, &id).filter(|_| bridge.binds(core));
+    // 他那一份先认他自己写的（施工 BD-1），再照主人的表（只在主人那一份里认）。
+    let account = match &bridge {
+        Bridge::Personal { account, .. } if me::claims(core, account, &id) => Some(account.clone()),
+        _ => bound(core, &id).filter(|_| bridge.binds(core)),
+    };
     Ok(json!({"account": account.as_ref().map(AccountId::as_str)}))
 }
 
@@ -271,7 +276,11 @@ pub(crate) fn speaker(
     params: AsParams,
 ) -> Result<By, Refusal> {
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
-    let account = bound(core, &id).filter(|_| binds_for(core, owner));
+    // 属主自己写的号是他本人（施工 BD-1）；别的照主人的表（只在主人、平台桥名下认）。
+    let account = match me::claims(core, owner, &id) {
+        true => Some(owner.clone()),
+        false => bound(core, &id).filter(|_| binds_for(core, owner)),
+    };
     if account.as_ref() == Some(owner) {
         let mut person = Person::new(owner.clone());
         person.via = Some(id);

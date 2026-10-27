@@ -276,6 +276,7 @@ mod venue_backfill;
 mod venue_binding;
 mod venue_forwards;
 mod venue_judge;
+mod venue_me;
 mod venue_my_name;
 mod venue_place;
 mod venue_plugins;

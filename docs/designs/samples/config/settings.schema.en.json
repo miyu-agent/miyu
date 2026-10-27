@@ -33,6 +33,21 @@
       },
       "type": "object"
     },
+    "external": {
+      "properties": {
+        "me": {
+          "description": "Which platform identities are you, for example qq:10001. Only counts on the chat platforms you connect yourself. Allowed: a list of text of at most 128 characters. Only in personal settings. Takes effect immediately.",
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "My platform accounts",
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "features": {
       "additionalProperties": {
         "description": "Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it. Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.",

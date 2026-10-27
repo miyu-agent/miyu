@@ -28,6 +28,7 @@
 | `crates/miyu-endpoint/src/appending.rs` | `events.append`：种类、大小、格怎么查，记成谁（施工 O-13 上） |
 | `crates/miyu-endpoint/tests/venue_binding.rs`（施工 O-31 前） | `venue.binding`：系统账号的扩展问对着管理员的、没写的、对着不存在的账号的；写错的、多写格的、一次问几个的 `bad_params`；本机的头 `no_system_account`；只读 |
 | `crates/miyu-endpoint/tests/per_account_venues.rs`（施工 IM-2） | 每人一份的包：机主那一份的群、主人号的私聊都归机主，问对应表认主人；成员那一份的群、私聊（对方是主人的号）都归成员，问对应表是 `null`，列场所会话只列他自己的两个；成员群里主人的号是外部身份不带账号，机主群里是机主本人；成员那一份造的别的平台（`tg:`）的群不列；它在自己开的会话里不带 `as` 跑的命令记成成员本人 |
+| `crates/miyu-endpoint/tests/venue_me.rs`、`src/settings/tests.rs`、`tests/platform_tools.rs` 平台桥那一段（施工 BD-1） | 成员写了 `external.me` 以后，他那一份问对应表认得出他、他群里这个号是他本人（带 `via`）；机主那一份不认他写的号；平台桥的群里不认机主写的；这一项在起来时就认、只有个人那一层 |
 | `crates/miyu-endpoint/tests/platform_tools.rs`、`crates/miyu-config/src/package/links/tests.rs`（施工 IM-3） | 清单写两个平台：`tg:` 的群工具面有 `tg_send` 没有 `qq_send`、`qq:` 的群反过来，本机的会话都有；`qqnote`（没下划线）、`note` 哪里都给；两个平台的场所都能 `venue.plugins`，别的平台的 `bad_params`；主人第二个平台的私聊归主人、桥碰得到、列得出；软件包列表另带 `platforms`。列表空的、重复的、写法不对的、不是字的 `bad_platform` |
 | `crates/miyu-endpoint/tests/venue_sessions.rs`（施工 O-32 前） | `venue.sessions`（两、三份核心先后起在同一个数据根上）：列得出、从新到旧；终端管理员这个平台的私聊列得出；删了的、别的平台的、系统账号自己造的本机会话不列；从回收处拿回来的旧的、属主换过的旧的不列；对应表里没有这个平台的身份了，管理员名下的不列；多写格的 `bad_params`；本机的头 `no_system_account` |
 | `crates/miyu-endpoint/src/venues/records.rs` | `venue.records`：照会话日志和快照里的时区渲染判官看的记录（施工 O-24） |
@@ -98,12 +99,19 @@
 **每人一份的包**（施工 IM-2，接入通讯平台设计 06 第 4.6 节第 2 样，`venues/bridge.rs`）：清单 `[process] scope = "account"` 的包（`extensions.md`「怎么走」第 8 条）替谁跑，就以谁的身份在场所里做事，上面几条照下面改：
 
 1. `venue.session`：场所会话一律归替谁跑的那个人，私聊的对方在主人对应表里的也一样（不归主人）。
-2. 主人对应表是主人的，只在主人自己那一份、主人和平台桥名下的会话里认：成员那一份问 `venue.binding` 一律 `{"account": null}`；成员名下的场所会话里 `as` 一律记成外部身份、不带 `account`。成员自己的对应表随 BD-1。
+2. 主人对应表是主人的，只在主人自己那一份、主人和平台桥名下的会话里认：成员那一份问 `venue.binding` 除了他自己写的号（下面「自己的平台身份」）一律 `{"account": null}`；成员名下的场所会话里 `as` 除了他自己写的号一律记成外部身份、不带 `account`。
 3. `venue.sessions`：只列他名下的场所会话，包清单写了 `[connection] platform` 的只列这几个平台的（没写的列他名下全部场所会话）。不列别人名下的。
 4. `venue.plugins`：平台照这个包的清单（同桥）。
 5. 他的头碰不碰得到这些会话照「会话只给属主」：属主就是他，和他本机的会话一样碰得到（场所会话的头上照旧只读，「不在本机的头上」）。
 6. 它不带 `as` 跑的命令、会话的控制命令这类照连接记的，记成他本人（`sessions::person` 照 `owner_by` 记，平台桥、替机主的包照旧记成管理员）。
 7. 记忆、用量、索引都是他自己的：会话本来就在他名下。
+
+**自己的平台身份**（施工 BD-1，项目主人 10-27 定，`venues/me.rs`）：每个人在个人设置里写 `external.me = ["qq:12345", "tg:7890123456"]`，说这几个号是他（一格列表，接入通讯平台的会话 f4 提的；只有个人设置那一层，`config.md`）。
+
+1. 只能指自己：没有写别的账号的格；只有本人改得了（个人设置本来就只有他能写）；号不查写法、不查在不在，填错算他自己的。头照连接的平台拼前缀，写法同主人对应表。
+2. 只在他名下的场所会话里认：他那一份每人一份的包问 `venue.binding` 他写的号回他本人；他名下的会话里这个号说的话（`as`）记成他本人（带 `via`）。别人名下的会话不认他写的号。
+3. 主人的系统对应表照旧，只在主人那一份、主人和平台桥名下认；主人自己也能写 `external.me`，在他自己那一份里同样认。
+4. 平台桥（系统账号）名下的会话不认任何人的这张表：平台桥的配置是机主那一份，认了会把机主写的号记成平台桥本人。
 
 **平台包不过预设**（施工 IM-4）：接平台的包在自己平台的场所会话里整包开着，预设关不掉它（`presets.md`「接平台的包在自己平台的场所会话里」）。平台自己的开关（场所插件 `venue.plugins`、平台后台的功能开关）照旧管。
 

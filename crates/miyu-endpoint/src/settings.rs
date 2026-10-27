@@ -239,6 +239,25 @@ pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {
     },
 }];
 
+/// 自己的平台身份（施工 BD-1，`venues/me.rs`）：`external.me = ["qq:12345"]` 说「这几个号是我」，只有个人设置那一层。
+pub const EXTERNAL_ME: &[miyu_config::Item] = &[miyu_config::Item {
+    key: "external.me",
+    kind: miyu_config::Kind::List(&miyu_config::Kind::Text { max: 128 }),
+    default: None,
+    layers: &[miyu_config::Layer::Personal],
+    tighten: None,
+    env: None,
+    applies: miyu_config::Applies::Now,
+    ui: miyu_config::Ui {
+        page: "advanced",
+        group: "external",
+        package: None,
+        common: false,
+        control: miyu_config::Control::List,
+        hidden: false,
+    },
+}];
+
 /// 家底刚造出来、还没换上全部的清单时认的几项（[`crate::Core::new`]）：界面、人格、预设、权限、终端、工具加载和脚本里能不能调、
 /// 功能开关、管理员放行出沙盒的（施工 X-36）、档案、外部身份。
 pub(crate) fn core_items() -> Vec<miyu_config::Item> {
@@ -254,6 +273,7 @@ pub(crate) fn core_items() -> Vec<miyu_config::Item> {
         miyu_session::unsandboxed::ITEMS,
         miyu_session::settings::ProfileSettings::ITEMS,
         EXTERNAL_BINDINGS,
+        EXTERNAL_ME,
     ]
     .concat()
 }

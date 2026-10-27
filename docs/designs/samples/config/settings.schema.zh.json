@@ -33,6 +33,21 @@
       },
       "type": "object"
     },
+    "external": {
+      "properties": {
+        "me": {
+          "description": "通讯平台上哪几个号是你本人，例如 qq:10001。只在你自己接的通讯平台里认。能写：最多 128 个字的文字 的列表。只能写在个人设置里。立即生效。",
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "我的平台账号",
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "features": {
       "additionalProperties": {
         "description": "默认全开的预设照它开关这个技能、脚本或 MCP 服务，预设里单独写了开或关的照预设。默认关的预设不照它。能写：true 或 false。只能写在系统配置或个人设置里。下一轮生效。",

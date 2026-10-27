@@ -28,6 +28,7 @@ pub fn served_core_with(home: &Home, script: &Script, config: &str) -> Arc<Core>
         miyu_endpoint::settings::PresetSettings::ITEMS,
         miyu_endpoint::settings::PermissionSettings::ITEMS,
         miyu_endpoint::settings::EXTERNAL_BINDINGS,
+        miyu_endpoint::settings::EXTERNAL_ME,
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());

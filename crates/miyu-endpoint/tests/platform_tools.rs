@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::event::Body;
 use miyu_kernel::id::AccountId;
+use miyu_kernel::origin::By;
 use miyu_policy::Snapshot;
 use miyu_session::testkit::{Play, Script};
 use miyu_store::blob::Blobs;
@@ -194,6 +195,8 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         "system/presets/off.toml",
         "[preset]\nname = { en = \"Off\" }\n\n[software]\nbridge = false\n\n[tools]\nnote = false\n",
     );
+    // 机主自己的号写在个人设置里（施工 BD-1）：平台桥名下的会话不认，照旧是外部身份。
+    home.write("home/alice/settings.toml", "[external]\nme = [\"tg:5\"]\n");
     let core = served_core_with(
         &home,
         &Script::new([Play::Says("一。"), Play::Says("二。")]),
@@ -216,6 +219,17 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         "不算进没开的：{off:?}"
     );
     until_turns_in(&dir(&home, &bridge, session), 1).await;
+    let said: Vec<By> = read_events(&dir(&home, &bridge, session))
+        .expect("读得了")
+        .into_iter()
+        .filter(|event| matches!(event.body, Body::MessageUser(_)))
+        .map(|event| event.by)
+        .collect();
+    assert!(
+        said.iter()
+            .all(|by| matches!(by, By::External(external) if external.account.is_none())),
+        "平台桥的群里不认机主自己写的号：{said:?}"
+    );
     let (tools, off) = latest(&home, &bridge, &got[2]);
     assert_eq!(
         tools,

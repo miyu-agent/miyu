@@ -30,3 +30,13 @@ fn a_chosen_language_wins_over_the_system() {
     assert_eq!(chosen("zh").language_for(None), "zh");
     assert_eq!(chosen("en").language_for(Some("ja_JP.UTF-8")), "en");
 }
+
+/// 自己的平台身份（施工 BD-1）在起来时就认的那几项里，只有个人设置那一层。
+#[test]
+fn own_platform_numbers_are_a_personal_setting_known_from_the_start() {
+    let item = super::core_items()
+        .into_iter()
+        .find(|item| item.key == "external.me")
+        .expect("在");
+    assert_eq!(item.layers, [miyu_config::Layer::Personal]);
+}
