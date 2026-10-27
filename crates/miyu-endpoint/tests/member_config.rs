@@ -92,8 +92,8 @@ fn account(name: &str) -> miyu_kernel::id::AccountId {
     miyu_kernel::id::AccountId::parse(name).expect("合写法")
 }
 
-/// 成员的会话照他那一份配置（施工 Y-2 下下中上）：他把 `read` 改成按需加载，他开的会话工具面上是 `load_tools` 加占位；机主的
-/// 会话照旧全量。
+/// 成员的会话照他那一份配置（施工 Y-2 下下中上）：他把 `read` 这个包对自己关了，他开的会话工具面上没有 `read`；机主的会话照旧
+/// 有（施工 FL-1 起工具一律全量，原来拿「改成按需加载」当记号，换成这一项）。
 #[tokio::test]
 async fn a_members_session_runs_on_his_own_settings() {
     use miyu_session::testkit::Play;
@@ -102,14 +102,8 @@ async fn a_members_session_runs_on_his_own_settings() {
     let core = crate::scripts::core(&home, &script);
     let mut owner = local(&core).await;
     let mut bob = member(&core, "bob").await;
-    let set = bob
-        .call(
-            "t",
-            "tool.set_loading",
-            json!({"tool": "read", "need_load": true}),
-        )
-        .await;
-    assert_eq!(set["result"], json!({}), "{set}");
+    let set = set(&mut bob, "personal", "packages.read.off", json!(true)).await;
+    assert!(set.get("result").is_some(), "{set}");
     let names = |n: usize| -> Vec<String> {
         script.requests()[n]
             .1
@@ -127,7 +121,7 @@ async fn a_members_session_runs_on_his_own_settings() {
     bob.say("s", &his, "hi").await;
     until("他的那一轮发出去", || !script.requests().is_empty()).await;
     assert!(
-        names(0).iter().any(|name| name == "load_tools"),
+        !names(0).iter().any(|name| name == "read"),
         "{:?}",
         names(0)
     );
@@ -138,11 +132,7 @@ async fn a_members_session_runs_on_his_own_settings() {
         script.requests().len() > 1
     })
     .await;
-    assert!(
-        !names(1).iter().any(|name| name == "load_tools"),
-        "{:?}",
-        names(1)
-    );
+    assert!(names(1).iter().any(|name| name == "read"), "{:?}", names(1));
 }
 
 /// 给人看的字照这个人那一份的 `ui.language`（施工 Y-2 下下末）：bob 设成英文，他的连接说英文；机主照旧中文。

@@ -155,7 +155,8 @@ async fn set_loading_moves_the_source_to_the_setting_and_the_next_face() {
         json!({"value": true, "by": "source"})
     );
     session(&mut client, &home, "c1", open.clone()).await;
-    assert_eq!(names(&face(&script, 0)), ["load_tools", "read", "weather"]);
+    // 工具面一律全量（施工 FL-1）：设置只记下来，不再改工具面。
+    assert_eq!(names(&face(&script, 0)), ["read", "weather"]);
 
     let set = client
         .call(
@@ -176,7 +177,7 @@ async fn set_loading_moves_the_source_to_the_setting_and_the_next_face() {
     );
     session(&mut client, &home, "c2", open.clone()).await;
     let second = face(&script, 1);
-    assert_eq!(names(&second), ["read", "weather"], "人改成全量的照全量");
+    assert_eq!(names(&second), ["read", "weather"]);
     assert!(
         second[1].1.contains("\"say\""),
         "完整的参数：{}",
@@ -198,7 +199,7 @@ async fn set_loading_moves_the_source_to_the_setting_and_the_next_face() {
         json!({"value": true, "by": "source"})
     );
     session(&mut client, &home, "c3", open).await;
-    assert_eq!(names(&face(&script, 2)), ["load_tools", "read", "weather"]);
+    assert_eq!(names(&face(&script, 2)), ["read", "weather"]);
 
     // MCP 服务那一级：`mcp.list` 照 `loading.mcp.<服务名>` 说。
     let server = |reply: &Value| reply["result"]["servers"][0].clone();

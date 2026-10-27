@@ -1,5 +1,5 @@
-//! 吃不下空外壳的那一家（施工 L-2，`docs/designs/25-工具加载.md` W9）：配置里手写标了 `compat.strict_tools` 的，发到线上的
-//! tools 里要先加载的那一件是完整格式；没标的照旧是外壳；别的工具、会话自己的请求不受影响。
+//! 吃不下空外壳的那一家（施工 L-2）：施工 FL-1 起（2026-10-27 项目主人定）工具一律全量，哪一家、标没标 `compat.strict_tools`，
+//! 发到线上的 tools 里都是完整格式，没有 `load_tools`。登记成要先加载的也一样。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -76,19 +76,12 @@ fn parameters<'a>(tools: &'a [(String, Value)], name: &str) -> &'a Value {
 }
 
 #[tokio::test]
-async fn a_hand_written_strict_provider_gets_the_full_parameters() {
-    let tools = sent_tools("\n[providers.relay.compat]\nstrict_tools = true\n").await;
-    let names: Vec<&str> = tools.iter().map(|(name, _)| name.as_str()).collect();
-    assert_eq!(names, ["echo", "load_tools", "lookup"], "load_tools 照样在");
+async fn every_provider_gets_the_full_parameters() {
     let full: Value = serde_json::from_str(FULL).expect("是 JSON");
-    assert_eq!(parameters(&tools, "lookup"), &full);
-}
-
-#[tokio::test]
-async fn an_unmarked_provider_gets_the_shell() {
-    let tools = sent_tools("").await;
-    assert_eq!(
-        parameters(&tools, "lookup"),
-        &serde_json::json!({"type": "object"})
-    );
+    for compat in ["", "\n[providers.relay.compat]\nstrict_tools = true\n"] {
+        let tools = sent_tools(compat).await;
+        let names: Vec<&str> = tools.iter().map(|(name, _)| name.as_str()).collect();
+        assert_eq!(names, ["echo", "lookup"], "没有 load_tools：{compat}");
+        assert_eq!(parameters(&tools, "lookup"), &full, "{compat}");
+    }
 }

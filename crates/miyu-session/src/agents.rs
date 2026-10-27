@@ -113,8 +113,6 @@ pub(crate) struct Agents {
 pub(crate) struct Offers {
     pub(crate) pools: Vec<Choice>,
     pub(crate) personas: Vec<Choice>,
-    /// 人改的加载方式（施工 L-3）：照这时的配置。
-    pub(crate) loading: Loading,
     /// 脚本里能不能调，人改的那一层（施工 M-2）。
     pub(crate) clicall: Loading,
 }
@@ -125,7 +123,6 @@ impl Offers {
         Offers {
             pools: choices(values),
             personas,
-            loading: Loading::of(values),
             clicall: Loading::clicall_of(values),
         }
     }
@@ -273,7 +270,8 @@ impl Agents {
                     description: spec.description.clone(),
                     parameters: spec.parameters.clone(),
                     access: spec.access.clone(),
-                    need_load: offers.loading.need_load(&spec.name, spec.need_load),
+                    // 一律全量（施工 FL-1，2026-10-27 项目主人定）：参数格式一开始就发完整的，不给先加载的外壳。
+                    need_load: false,
                     clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),
