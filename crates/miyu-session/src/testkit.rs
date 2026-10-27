@@ -44,6 +44,14 @@ pub enum Play {
     /// 调这几件工具，每件写工具名和参数原文，照先后放在一次回复里（施工 4-2）。块都等流完了才一起收，
     /// 和驱动一样。用量同 [`Play::Says`]。用 [`Play::calls`] 造。
     Calls(Vec<(String, String)>),
+    /// 先说一句、再调这几件工具，放在同一次回复里（正文在前，块都等流完了才一起收）：这一轮有了一条有正文的回复，
+    /// 却还没结束（施工 E-5 修：抽取不交正在跑、已经说了半截的那一轮）。用量同 [`Play::Says`]。
+    SaysThenCalls {
+        /// 先说的那一句。
+        text: &'static str,
+        /// 工具名和参数原文。
+        calls: Vec<(String, String)>,
+    },
     /// 出错：分类，供应商说要等多久。
     Fails {
         /// 出错的分类。
@@ -323,6 +331,25 @@ impl ModelPort for Script {
                     reports.ended(Some(usage), None, None, None);
                 }
                 Play::Floods(n) => says(reports, &"字".repeat(n), n, usage),
+                Play::SaysThenCalls { text, calls } => {
+                    let mut said = text_block(text, 1);
+                    let mut ends: Vec<Delta> = said.pop().into_iter().collect();
+                    for delta in said {
+                        reports.delta(delta);
+                    }
+                    for (index, (name, args)) in calls.iter().enumerate() {
+                        let kind = Kind::ToolCall { name: name.clone() };
+                        let mut deltas = block(index + 1, kind, args, 1);
+                        ends.extend(deltas.pop());
+                        for delta in deltas {
+                            reports.delta(delta);
+                        }
+                    }
+                    for end in ends {
+                        reports.delta(end);
+                    }
+                    reports.ended(Some(usage), None, None, None);
+                }
                 Play::Calls(calls) => {
                     let mut ends = Vec::new();
                     for (index, (name, args)) in calls.iter().enumerate() {

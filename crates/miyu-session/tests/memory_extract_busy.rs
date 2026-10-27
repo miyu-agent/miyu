@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Text};
+use miyu_kernel::event::Body;
 use miyu_kernel::session::Command;
 use miyu_session::testkit::{Play, Script};
 
@@ -236,5 +237,78 @@ async fn a_session_that_never_goes_idle_is_still_extracted() {
     assert!(found[0].contains("第一句"), "{}", found[0]);
     assert!(!found[0].contains("一直在说的第二句"), "{}", found[0]);
     assert_eq!(ended_turns(&home, handle.id()).len(), 1, "第二轮一直在跑");
+    stop(&handle).await;
+}
+
+#[tokio::test]
+async fn a_running_turn_that_already_said_something_is_left_for_next_time() {
+    // 第三轮先说了一句、再调工具，下一次请求一直停着：这一轮已经有一条有正文的回复，却还没结束。等满以后来的一批（改标题，
+    // 不开回合）看出该抽了，读回来只取到第二轮结束为止：说了半截的第三轮不交（施工 E-5 修：`ended_only` 挡的就是它）。
+    let server = Server::start(vec![every_turn("用户在聊天")]).await;
+    let mut home = Home::new();
+    organizer_busy(
+        &mut home,
+        &server,
+        "extract_max_turns = 500\n",
+        Some(Duration::from_secs(2)),
+    );
+    let script = Script::new([
+        Play::Says("好。"),
+        Play::Says("好。"),
+        Play::SaysThenCalls {
+            text: "我先查一下。",
+            calls: vec![("nope".to_string(), "{}".to_string())],
+        },
+        Play::Holds,
+    ]);
+    let handle = home
+        .create_full(
+            &script,
+            &catalog(&home),
+            Opening::default(),
+            Lines::default(),
+        )
+        .await;
+    chat(&home, &handle, 1, "第一句").await;
+    chat(&home, &handle, 2, "第二句").await;
+    let said = Command::Send {
+        blocks: vec![Block::Text(Text {
+            text: "第三句".to_string(),
+        })],
+        urgent: false,
+        venue: None,
+    };
+    handle
+        .command(id("cmd-3"), alice(), said)
+        .await
+        .expect("会话在跑");
+    until_logged(&home, handle.id(), |log| {
+        log.iter()
+            .any(|event| matches!(&event.body, Body::ToolResult(_)))
+    })
+    .await;
+    assert!(extractions(&server).is_empty(), "还没等够");
+    tokio::time::sleep(Duration::from_millis(2300)).await;
+    let renamed = Command::SetMeta {
+        title: Some("随便聊聊".to_string()),
+        pinned: None,
+        project: None,
+    };
+    handle
+        .command(id("cmd-4"), alice(), renamed)
+        .await
+        .expect("会话在跑");
+    let found = extracted_times(&server, 1).await;
+    assert!(
+        found[0].contains("第一句") && found[0].contains("第二句"),
+        "{}",
+        found[0]
+    );
+    assert!(
+        !found[0].contains("第三句") && !found[0].contains("我先查一下。"),
+        "说了半截的那一轮不交：{}",
+        found[0]
+    );
+    assert_eq!(ended_turns(&home, handle.id()).len(), 2, "第三轮还在跑");
     stop(&handle).await;
 }
