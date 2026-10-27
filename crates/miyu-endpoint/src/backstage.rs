@@ -20,13 +20,19 @@ pub(crate) fn opened_to(core: &Core, caller: &Caller, package: &str) -> Result<(
     if caller.package.is_some() || crate::login::admins::is_admin(core, caller.acting_for()) {
         return Ok(());
     }
-    let packages = core.system_packages();
-    let usable = packages
+    members_open(core, package)
+        .then_some(())
+        .ok_or(Refusal::NOT_PERMITTED)
+}
+
+/// 包 `package` 的后台页成员打不打得开：每人一份、他能用（勾了「成员也能用」）的才打得开。挡调用（[`opened_to`]）和给成员的
+/// 软件包列表留不留 `page`（`packages.rs`）照同一个判法。
+pub(crate) fn members_open(core: &Core, package: &str) -> bool {
+    core.system_packages()
         .iter()
         .find(|found| found.id == package)
         .and_then(|found| found.read.as_ref().ok())
         .is_some_and(|manifest| {
             crate::extensions::per_account(manifest) && core.members_may(package, manifest)
-        });
-    usable.then_some(()).ok_or(Refusal::NOT_PERMITTED)
+        })
 }

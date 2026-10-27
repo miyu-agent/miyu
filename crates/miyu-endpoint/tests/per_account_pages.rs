@@ -1,5 +1,6 @@
 //! 每人一份的包的后台页（施工 IM-1 中下）：登记的方法照（包，账号）记，`package.call` 转给调的那个人那一份，没在跑的替他拉起、
-//! 等它登记了方法再转。成员只碰得到他能用的每人一份的包的后台页：整台机器一份的、没勾「成员也能用」的回 `not_permitted`。
+//! 等它登记了方法再转。成员只碰得到他能用的每人一份的包的后台页：整台机器一份的、没勾「成员也能用」的回 `not_permitted`，给他的
+//! 软件包列表里也不带 `page`（施工 IM-1 中下一补）。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -45,7 +46,7 @@ async fn until_line(path: &Path, needle: &str) {
     }
 }
 
-/// 装上 `id`：登记后台页的方法 `whoami`，接着答。`account` 是每人一份，`members` 勾了「成员也能用」。
+/// 装上 `id`：带后台页，登记后台页的方法 `whoami`，接着答。`account` 是每人一份，`members` 勾了「成员也能用」。
 fn install(home: &Home, program: &Program, id: &str, (account, members): (bool, bool)) {
     install_providing(
         home,
@@ -67,7 +68,24 @@ fn install(home: &Home, program: &Program, id: &str, (account, members): (bool, 
     if account {
         text = text.replacen("[process]\n", "[process]\nscope = \"account\"\n", 1);
     }
-    std::fs::write(&manifest, text).expect("写得进");
+    std::fs::write(&manifest, text + "\n[page]\ndir = \"page\"\n").expect("写得进");
+    let page = home.root.system_packages().join(id).join("page");
+    std::fs::create_dir_all(&page).expect("建得了");
+    std::fs::write(page.join("index.html"), "<p>hi</p>").expect("写得进");
+}
+
+/// `client` 拿到的软件包列表里，带 `page` 的那几个包。
+async fn with_pages(client: &mut Client, id: &str) -> Vec<String> {
+    let listed = client.call(id, "package.list", json!({})).await;
+    let mut pages: Vec<String> = listed["result"]["packages"]
+        .as_array()
+        .expect("列表")
+        .iter()
+        .filter(|item| item["page"] == true)
+        .filter_map(|item| item["package"].as_str().map(str::to_string))
+        .collect();
+    pages.sort();
+    pages
 }
 
 /// 调 `package` 的 `whoami`。
@@ -115,6 +133,21 @@ async fn each_person_s_page_reaches_their_own_copy() {
     );
     until_line(&theirs, "method.call").await;
     assert_eq!(count(&mine, "method.call"), 1, "他的调用没落到机主那一份上");
+
+    // 后台页：机主三个都列；成员只列他打得开的那一个，读得到它的文件。
+    assert_eq!(
+        with_pages(&mut owner, "c-5d1f0a7e2b9c4386-5").await,
+        ["each", "kept", "solo"]
+    );
+    assert_eq!(with_pages(&mut bob, "c-5d1f0a7e2b9c4386-6").await, ["each"]);
+    let file = bob
+        .call(
+            "c-5d1f0a7e2b9c4386-7",
+            "package.file",
+            json!({"package": "each", "path": "index.html"}),
+        )
+        .await;
+    assert_eq!(file["result"]["eof"], true, "{file}");
 
     // 整台机器一份的、没勾「成员也能用」的：成员碰不到；机主照常。
     for package in ["solo", "kept"] {

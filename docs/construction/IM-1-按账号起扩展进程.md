@@ -85,3 +85,9 @@
 1. 端点 `package_events.rs`：扩展推的，订了这个包的本账号连接收到原样的事件；订了别的包的、别的账号（成员）订了同一个包的都收不到；没装的包订不了；人调 `package.emit` 回 `not_an_extension`；事件名不对 `bad_params`；扩展订 `local_only`。
 2. 手写变异 7 个全杀：别的包的推给了、别的账号的推给了、事件名不查、没装的包也能订、扩展能订、成员订不了、订阅的回应没交给转发任务。掉了队推的 `resync` 带不带 `package` 测不到（要撑爆广播），照代码审过。
 3. 本机门禁全过。
+
+### 十二、中下一补：成员列表的 `page`
+
+网页的会话 10-27 提：成员拿到的 `package.list` 把 `process` 整格裁了，分不出哪个包是每人一份的；整台机器一份、勾了「成员也能用」的也带 `page`，点进去才回 `not_permitted`。改成成员拿到的列表（`packages` 流的推送同）只有他打得开后台页的才带 `page`，判法和挡 `package.file`、`package.call` 的是同一个函数（`backstage::members_open`）。不另加 `scope` 那一格。
+
+怎么验：`per_account_pages.rs` 加两条断言，机主的列表三个包都带 `page`，成员的只带每人一份、对他开放的那一个，他读得到那一个的 `index.html`；撤掉去 `page` 那一句，成员拿到三个，测试红。

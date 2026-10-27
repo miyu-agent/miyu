@@ -155,7 +155,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             {
                 item["available"] = json!(false);
             }
-            for_members(item);
+            for_members(core, item);
         }
     }
     Ok(json!({ "packages": items, "groups": group::listed(core, peer.language) }))
@@ -175,7 +175,7 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     };
     // 同 [`list`]：不是管理员的裁掉只给管理员的那几格（施工 U23-R修二）。
     if !peer.admin {
-        for_members(&mut item);
+        for_members(core, &mut item);
     }
     Some(item)
 }
@@ -198,10 +198,17 @@ const ADMINS_ONLY: &[&str] = &[
 ];
 
 /// 把一项里 [`ADMINS_ONLY`] 那几格去掉。带的 MCP 服务只留名字、状态、停下的原因（施工 U23-R修三：头照它认得出带服务的包、照实写
-/// 状态），怎么起（命令、网址、环境变量、请求头、标准错误）只给管理员。
-fn for_members(item: &mut Value) {
+/// 状态），怎么起（命令、网址、环境变量、请求头、标准错误）只给管理员。后台页他打不开的去掉 `page`（施工 IM-1 中下一补：头照它
+/// 列「软件后台」，同 [`crate::backstage::members_open`]）。
+fn for_members(core: &Core, item: &mut Value) {
+    let shut = item["package"]
+        .as_str()
+        .is_some_and(|id| !crate::backstage::members_open(core, id));
     if let Some(fields) = item.as_object_mut() {
         fields.retain(|key, _| !ADMINS_ONLY.contains(&key.as_str()));
+        if shut {
+            fields.remove("page");
+        }
         if let Some(Value::Array(servers)) = fields.get_mut("mcp") {
             for server in servers.iter_mut() {
                 if let Some(server) = server.as_object_mut() {
