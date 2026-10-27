@@ -7,6 +7,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`provide`](#provide) | extension → core | Register the tools it provides |
 | [`tool.call`, `tool.cancel`](#toolcall-toolcancel) | core → extension | Call one of its tools; drop a call |
 | [`package.methods`, `method.call`](#packagemethods-methodcall) | both | Register methods its page and widgets call; calls forwarded by the core |
+| [`package.emit`](#packageemit) | extension → core | Push to people who have its page open |
 | [`command.call`](#commandcall) | core → extension | A person typed a slash command it declared |
 | [`user.append`](#userappend) | core → extension | At the start of a turn, ask whether it wants to add a few lines to the context |
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
@@ -127,6 +128,12 @@ Who may ask for what, and who may be acted on, is the providing side's job: chec
 **`method.call`** (core → extension): `{"method", "params", "from"?}`: a person's head or another package called it through `package.call`; `from` is the calling package's id (absent when a person called). Whatever it answers is what `package.call` returns; a JSON-RPC error becomes `method_failed` on the other side.
 
 To let other extensions call a method, list it in the manifest's `[export] methods`.
+
+Per-account packages (`[process] scope = "account"`): each person's copy registers its own methods, and calls go to the caller's copy (construction IM-1 lower-middle).
+
+## `package.emit`
+
+Extension → core (construction IM-1 lower-middle 2): `{"event", "data"?}` pushes to connections of the account it acts for that subscribed with `subscribe {"stream": "package", "package": <its id>}`; they get `package.event {"package", "event", "data"}`. Pages update from it instead of polling. Response `{}`, also when nobody is subscribed. `event` follows the method-name rules (starts with a lowercase letter; lowercase letters, digits, `_`, `.`, `-`; at most 64), `data` is at most 256 KiB as JSON; otherwise `bad_params`. Other connections get `not_an_extension`. Not stored, not replayed.
 
 ## `search.query`
 

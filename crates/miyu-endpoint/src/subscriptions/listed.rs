@@ -32,6 +32,8 @@ pub(super) enum Listed {
     Knowledge(AccountId),
     /// 这个账号的通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`，别的账号的不推。
     Notices(AccountId),
+    /// 包推给这个账号的（施工 IM-1 中下二，`backstage/events.rs`）：推 `package.event`，别的账号、别的包的不推。
+    PackageEvents(AccountId, String),
 }
 
 impl Listed {
@@ -44,6 +46,15 @@ impl Listed {
             Listed::Schedules(_) => "schedules",
             Listed::Knowledge(_) => "kb",
             Listed::Notices(_) => "notices",
+            Listed::PackageEvents(..) => "package",
+        }
+    }
+
+    /// 掉了队推的 `resync` 的参数：照包分的带上是哪个包。
+    fn resync(&self) -> serde_json::Value {
+        match self {
+            Listed::PackageEvents(_, package) => json!({"stream": "package", "package": package}),
+            _ => json!({"stream": self.stream()}),
         }
     }
 
@@ -65,6 +76,7 @@ impl Listed {
             Listed::Schedules(_) => (core.schedules().subscribe(), None),
             Listed::Knowledge(_) => (core.kb_progress.subscribe(), None),
             Listed::Notices(_) => (core.schedules().notices().subscribe(), None),
+            Listed::PackageEvents(..) => (core.backstage.events.subscribe(), None),
         }
     }
 
@@ -75,6 +87,9 @@ impl Listed {
             // 通知那一行同样广播时就写好了（施工 J-3 下），写法同进度。
             Listed::Knowledge(account) | Listed::Notices(account) => {
                 return crate::knowledge::progress::mine(id, account).map(str::to_string);
+            }
+            Listed::PackageEvents(account, package) => {
+                return crate::backstage::mine(id, account, package).map(str::to_string);
             }
             Listed::Projects(account) => {
                 let project = crate::projects::changes::mine(id, account)?;
@@ -182,7 +197,7 @@ async fn forward(
             }
             Err(RecvError::Lagged(_)) => {
                 tracing::warn!(target: "miyu::endpoint", stream = listed.stream(), "lagged, resync");
-                let line = json!({"jsonrpc": "2.0", "method": "resync", "params": {"stream": listed.stream()}});
+                let line = json!({"jsonrpc": "2.0", "method": "resync", "params": listed.resync()});
                 if out.send(line.to_string()).await.is_err() {
                     // 连接断了：没人收。
                 }
@@ -325,5 +340,29 @@ impl Subscriptions {
     /// 取消订阅通知。
     pub(crate) fn remove_notices(&mut self) {
         self.notices = None;
+    }
+
+    /// 订阅包 `package` 推给这个账号 `account` 的（施工 IM-1 中下二）：回应是空的，不补以前的；一个连接能订几个包，同一个包再订
+    /// 换一个新的。
+    pub(crate) fn add_package_events(
+        &mut self,
+        core: &Arc<Core>,
+        (account, package): (AccountId, String),
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> serde_json::Value {
+        let forwarder = ListedForwarder::start(
+            Arc::clone(core),
+            Listed::PackageEvents(account, package.clone()),
+            shaken,
+            out.clone(),
+        );
+        self.package_events.insert(package, forwarder);
+        json!({})
+    }
+
+    /// 取消订阅包 `package` 推给人的。
+    pub(crate) fn remove_package_events(&mut self, package: &str) {
+        self.package_events.remove(package);
     }
 }

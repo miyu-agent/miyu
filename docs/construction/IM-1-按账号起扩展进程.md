@@ -73,3 +73,15 @@
 2. 后台页、包调包、blob 转交原有的测试照过。
 3. 手写变异 7 个全杀：每人一份的当成一份、成员能碰整台机器一份的、成员能碰没勾的、登记方法不叫醒等着的、成员闸去掉 `package.call`、`package.file` 不查、`package.call` 不查。
 4. 本机门禁：头一遍守卫 `caller_account_is_only_used_for_identity` 红，转 blob 给调的那条连接用的是身份（`blob.get` 照谁交的找），登记进守卫的表；其余全过。
+
+### 十、中下二：做了什么
+
+1. 扩展调 `package.emit {"event", "data"?}`，核心推 `package.event {"package", "event", "data"}` 给它替的那个账号、订了这个包的连接（im 设计 07 第 4.6 节第 3 样，项目主人定 im 网页不许轮询）。
+2. 订阅 `subscribe {"stream": "package", "package"}`：回 `{}`、不补；没装的包 `unknown_package`；一个连接能订几个包；人、成员都能订，扩展订不了。掉了队推带 `package` 的 `resync`。
+3. 广播挂在后台页那份结构上（`core.backstage.events`）：`lib.rs` 已经贴着行数上限，推给页面本来就是后台页的事。
+
+### 十一、中下二：怎么验
+
+1. 端点 `package_events.rs`：扩展推的，订了这个包的本账号连接收到原样的事件；订了别的包的、别的账号（成员）订了同一个包的都收不到；没装的包订不了；人调 `package.emit` 回 `not_an_extension`；事件名不对 `bad_params`；扩展订 `local_only`。
+2. 手写变异 7 个全杀：别的包的推给了、别的账号的推给了、事件名不查、没装的包也能订、扩展能订、成员订不了、订阅的回应没交给转发任务。掉了队推的 `resync` 带不带 `package` 测不到（要撑爆广播），照代码审过。
+3. 本机门禁全过。

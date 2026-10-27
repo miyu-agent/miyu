@@ -103,6 +103,11 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 每人一份的包（施工 IM-1 中下）：转给调的那个人那一份（人调的是他自己，扩展调的是它替的那个人，`Instance::serving`）；那一份还没登记方法的，替他拉起，等到登记了再转（`Provided::wait`，最多 60 秒，登记方法时 `nudge` 叫醒），没等到的 `program_not_running`。答的那一份的账号是那个人，转 blob 照它拷。
    - 成员（施工 IM-1 中下，`backstage::opened_to`）：`package.file`、`package.call` 只碰得到他能用的每人一份的包（勾了「成员也能用」），那一份就是他自己的；整台机器一份的、没勾的回 `not_permitted`。管理员、扩展不查这一道。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
+4. **推给页面**（施工 IM-1 中下二，im 设计 07 第 4.6 节第 3 样，形状 2026-10-27 主会话定）：扩展的状态变了，不让页面轮询，推过去。
+   - 扩展发 `package.emit {"event", "data"?}`：推给它替的那个账号；`event` 写法同方法名，`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；不是扩展的连接 `not_an_extension`。回 `{}`，没人订着也是。
+   - 页面（经网页转、或者 im 网页直连）发 `subscribe {"stream": "package", "package"}`：回 `{}`，不补以前的；没装的包 `unknown_package`；一个连接一个包一个，同一个包再订换新的；人、成员都能订，只收自己账号的，扩展订不了（`local_only`）。
+   - 推 `package.event {"package", "event", "data"}`。广播一条是「账号、换行、包、换行、那一行」（`backstage/events.rs`），订阅的转发任务只挑自己账号、自己订的包的（`subscriptions/listed.rs` 的 `Listed::PackageEvents`）。掉了队推 `resync {"stream": "package", "package"}`，这个订阅停下，页面重新订、重新拉一遍。
+   - 不存盘：没订着的收不到。
 
 **软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条）：
 

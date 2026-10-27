@@ -137,6 +137,8 @@ const STREAMS: &[&str] = &[
     "schedules",
     "kb",
     "notices",
+    // 他能用的包推给他的（施工 IM-1 中下二）：只推他自己账号的。
+    "package",
     "memory",
     "widgets",
     "config",

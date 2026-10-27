@@ -25,6 +25,9 @@ struct StreamParams {
     /// 记忆日志的流照人格找那一间（施工 R-12 上）。
     #[serde(default)]
     persona: Option<String>,
+    /// 包推给人的流照包分（施工 IM-1 中下二）。
+    #[serde(default)]
+    package: Option<String>,
     stream: String,
 }
 
@@ -49,6 +52,8 @@ pub(super) enum Stream {
     Knowledge,
     /// 这个账号的通知（施工 J-3 下）。
     Notices,
+    /// 包推给这个账号的（施工 IM-1 中下二，`backstage/events.rs`）。
+    Package(String),
     /// 一间的记忆日志（施工 R-12 上，`memory.md`「协议」）。
     Memory(MemoryAt),
     /// 界面块（施工 X-15 中，`widgets.md`「头」）：头这一刻在看什么。
@@ -124,6 +129,18 @@ pub(super) async fn subscribe(
             let reply = subscriptions.add_notices(core, caller.acting_for().clone(), shook, out);
             (Ok(reply), Some(Target::Notices))
         }
+        (Ok(Stream::Package(package)), Some(shook)) => {
+            if !core
+                .system_packages()
+                .iter()
+                .any(|found| found.id == package)
+            {
+                return (Err(Refusal::UNKNOWN_PACKAGE), None);
+            }
+            let whose = (caller.acting_for().clone(), package.clone());
+            let reply = subscriptions.add_package_events(core, whose, shook, out);
+            (Ok(reply), Some(Target::PackageEvents(package)))
+        }
         (Ok(Stream::Events(session)), _) => {
             session_reply(events(core, subscriptions, request, session, out).await)
         }
@@ -148,6 +165,7 @@ pub(super) async fn subscribe(
                 | Stream::Schedules
                 | Stream::Knowledge
                 | Stream::Notices
+                | Stream::Package(_)
                 | Stream::View(_)
                 | Stream::Widgets(_),
             ),
@@ -420,6 +438,10 @@ pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
         ("schedules", None) if request.params.get("after").is_none() => Ok(Stream::Schedules),
         ("kb", None) if request.params.get("after").is_none() => Ok(Stream::Knowledge),
         ("notices", None) if request.params.get("after").is_none() => Ok(Stream::Notices),
+        ("package", None) if request.params.get("after").is_none() => params
+            .package
+            .map(Stream::Package)
+            .ok_or(Refusal::BAD_PARAMS),
         _ => Err(Refusal::BAD_PARAMS),
     }
 }

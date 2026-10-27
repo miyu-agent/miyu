@@ -49,6 +49,7 @@ pub(crate) async fn call(
         "package.restart" => super::switch::restart(core, peer, params(request)?).await,
         "package.members" => super::switch::members(core, peer, params(request)?).await,
         "package.file" => crate::backstage::read(core, caller, params(request)?).await,
+        "package.emit" => crate::backstage::emit(core, caller, params(request)?),
         "package.methods" => crate::backstage::register(core, caller, params(request)?),
         "widget.set" => crate::widgets::set::set(core, caller, params(request)?),
         "widget.clear" => crate::widgets::set::clear(core, caller, params(request)?),

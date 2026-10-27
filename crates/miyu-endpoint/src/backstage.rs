@@ -3,9 +3,11 @@
 //! `package.methods` 登记方法，核心反向发 `method.call`。页面能做的只有这几样，别的本事由它的程序用自己批过的能力做。
 
 mod calls;
+mod events;
 mod file;
 
 pub(crate) use calls::{Methods, call, register};
+pub(crate) use events::{emit, mine};
 pub(crate) use file::{beneath, read, segments};
 
 use crate::Core;

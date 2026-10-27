@@ -14,6 +14,7 @@ mod member_secrets;
 mod model_embed;
 mod oobe;
 mod package_call_ext;
+mod package_events;
 mod page_extras;
 mod profile;
 mod projects;

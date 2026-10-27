@@ -26,10 +26,11 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 /// 时限能写的范围，毫秒（同工具的）。
 const TIMEOUT_RANGE: std::ops::RangeInclusive<u64> = 1000..=600_000;
 
-/// 哪一份（包，账号）登记了哪些方法、由哪个连接答。
+/// 哪一份（包，账号）登记了哪些方法、由哪个连接答；包推给人的广播（施工 IM-1 中下二，`events.rs`）。
 #[derive(Default)]
 pub(crate) struct Methods {
     table: Mutex<HashMap<Instance, Registered>>,
+    pub(crate) events: super::events::Events,
 }
 
 /// 一个包登记的。
@@ -210,7 +211,7 @@ impl Methods {
 }
 
 /// 方法名：小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个。
-pub(super) fn valid(name: &str) -> bool {
+pub(crate) fn valid(name: &str) -> bool {
     name.len() <= 64
         && name.starts_with(|c: char| c.is_ascii_lowercase())
         && name

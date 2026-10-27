@@ -7,6 +7,7 @@
 | [`provide`](#provide) | 扩展 → 核心 | 登记它提供的工具 |
 | [`tool.call`、`tool.cancel`](#toolcalltoolcancel) | 核心 → 扩展 | 调它的工具；放下一次调用 |
 | [`package.methods`、`method.call`](#packagemethodsmethodcall) | 两个方向 | 登记后台页、界面块要调的方法；核心转来的调用 |
+| [`package.emit`](#packageemit) | 扩展 → 核心 | 推给开着它页面的人 |
 | [`command.call`](#commandcall) | 核心 → 扩展 | 人打了它声明的斜杠命令 |
 | [`user.append`](#userappend) | 核心 → 扩展 | 回合开始时问它要不要往上下文里放几句 |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
@@ -127,6 +128,12 @@
 **`method.call`**（核心 → 扩展）：`{"method", "params", "from"?}`：人的头、别的包经 `package.call` 调到它；`from` 是调的包的编号（人调的没有）。回什么，`package.call` 就交回什么；回 JSON-RPC 错误的，对方收到 `method_failed`。
 
 想让别的扩展调到：在清单 `[export] methods` 里列出来。
+
+每人一份的包（`[process] scope = "account"`）：各人那一份各登记各的，调用转给调的那个人那一份（施工 IM-1 中下）。
+
+## `package.emit`
+
+扩展 → 核心（施工 IM-1 中下二）：`{"event", "data"?}`，推给它替的那个账号、订了 `subscribe {"stream": "package", "package": <它的编号>}` 的连接，对方收到 `package.event {"package", "event", "data"}`。页面照它更新，不用轮询。回应 `{}`；没人订着也是。`event` 写法同方法名（小写字母开头，小写字母、数字、`_`、`.`、`-`，最多 64 个），`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；别的连接 `not_an_extension`。不存盘、不补。
 
 ## `search.query`
 

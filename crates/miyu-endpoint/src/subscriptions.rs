@@ -69,6 +69,8 @@ pub(crate) struct Subscriptions {
     kb: Option<ListedForwarder>,
     /// 给人的通知（施工 J-3 下）。
     notices: Option<ListedForwarder>,
+    /// 包推给人的（施工 IM-1 中下二）：照包，一个包一个。
+    package_events: BTreeMap<String, ListedForwarder>,
     /// 核心拉起的扩展自己的配置的推送（施工 9-4 下下）：握手以后起，不用订阅。
     extension_config: Option<ExtensionConfigForwarder>,
     /// 会话订阅交回应的那一头的弱引用：开通道时一起记下，在后台答的回应照它走（施工 R-7 补）。
@@ -100,6 +102,8 @@ pub(crate) enum Target {
     Knowledge,
     /// 通知的订阅的回应：同上（施工 J-3 下）。
     Notices,
+    /// 包推给人的订阅的回应：同上（施工 IM-1 中下二）。
+    PackageEvents(String),
     /// 记忆日志的订阅的回应：经它写出去，排在补的后面、之后的推送前面（施工 R-12 上）。
     Memory(MemoryAt),
     /// 界面块的订阅的回应：经它写出去，排在之后的推送前面（施工 X-15 中）。
@@ -316,15 +320,17 @@ impl Subscriptions {
                 | Target::Projects
                 | Target::Schedules
                 | Target::Knowledge
-                | Target::Notices),
+                | Target::Notices
+                | Target::PackageEvents(_)),
             ) => {
                 let slot = match target {
-                    Target::Packages => &mut self.packages,
-                    Target::Projects => &mut self.projects,
-                    Target::Schedules => &mut self.schedules,
-                    Target::Knowledge => &mut self.kb,
-                    Target::Notices => &mut self.notices,
-                    _ => &mut self.extensions,
+                    Target::Packages => self.packages.as_mut(),
+                    Target::Projects => self.projects.as_mut(),
+                    Target::Schedules => self.schedules.as_mut(),
+                    Target::Knowledge => self.kb.as_mut(),
+                    Target::Notices => self.notices.as_mut(),
+                    Target::PackageEvents(package) => self.package_events.get_mut(package),
+                    _ => self.extensions.as_mut(),
                 };
                 match slot {
                     Some(forwarder) => match forwarder.reply(line) {

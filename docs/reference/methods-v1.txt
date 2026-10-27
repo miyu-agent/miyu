@@ -89,7 +89,9 @@ package.changed
 package.check
 package.clean
 package.disable
+package.emit
 package.enable
+package.event
 package.file
 package.files
 package.info

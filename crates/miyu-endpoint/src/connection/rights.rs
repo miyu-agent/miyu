@@ -54,7 +54,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         }
         "subscribe" => match params.get("stream").and_then(Value::as_str) {
             Some("events" | "view" | "sessions") => Needs(EventsRead),
-            Some("projects" | "schedules" | "notices") => People,
+            Some("projects" | "schedules" | "notices" | "package") => People,
             _ => Anyone,
         },
         // 驱动会话。
@@ -98,7 +98,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "content.read" | "kb.documents" | "kb.list" | "kb.read" | "kb.search"
         | "login.redeem" | "memory.cards" | "memory.list" | "memory.search" | "memory.turns"
         | "mermaid.render" | "model.call" | "model.embed" | "model.list" | "package.check"
-        | "package.files" | "package.info" | "package.list" | "package.methods"
+        | "package.emit" | "package.files" | "package.info" | "package.list" | "package.methods"
         | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
         | "persona.list" | "persona.read" | "preset.get" | "preset.list" | "provider.catalog"
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
