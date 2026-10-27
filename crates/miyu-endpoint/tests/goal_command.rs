@@ -16,7 +16,7 @@ use crate::support::venues::{bound_core, configured_core};
 use crate::support::*;
 
 /// 有长期目标的工具的目录：记着归哪个包，预设才关得掉它。
-fn goal_tools() -> Catalog {
+pub(crate) fn goal_tools() -> Catalog {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let tools = miyu_goal::tools(&resources).expect("读得出");
     Catalog::in_packages([(miyu_goal::PACKAGE, tools)]).expect("合写法")

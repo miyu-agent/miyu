@@ -251,7 +251,7 @@ pub(crate) fn call<'a>(
             let params: venues::SessionsParams = params(request)?;
             venues::sessions(core, caller, params).await
         }),
-        "session.send" => answer(move || session::send(core, caller, request)),
+        "session.send" => answer(move || session::send(core, (caller, peer), request)),
         "session.interrupt" => answer(move || session::interrupt(core, caller, request)),
         "session.withdraw" => answer(move || session::withdraw(core, caller, request)),
         "session.revert" => answer(move || session::revert(core, caller, request)),
@@ -262,7 +262,7 @@ pub(crate) fn call<'a>(
         "command.catalog" => answer(move || async move {
             commands::catalog(core, (caller, &peer), params(request)?).await
         }),
-        "session.redo" => answer(move || session::redo(core, caller, request)),
+        "session.redo" => answer(move || session::redo(core, (caller, peer), request)),
         "session.compact" => answer(move || session::compact(core, caller, request)),
         "session.set_permission_level" => {
             answer(move || session::set_permission_level(core, caller, request))

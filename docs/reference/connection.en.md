@@ -53,7 +53,7 @@ The handshake. It must be the first message; before it every other method gets `
 | `protocol` | `[lowest, highest]`, required | The protocol major versions you support; the core only has `1` |
 | `head` | `{"kind", "version"}`, required | What you are and which version; only logged |
 | `locale` | string | Your system's language (`zh-CN`, `en_US.UTF-8` both work). Sets the connection's language when the `ui.language` setting is `auto` |
-| `caps` | object | `input` (boolean): whether you can let a person type. `scope` (boolean): you know admin mode (see **Admin mode** above) |
+| `caps` | object | `input` (boolean): whether you can let a person type. `scope` (boolean): you know admin mode (see **Admin mode** above). `prefix_ask` (boolean): you ask the person when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.en.md#sessionsend)) |
 | `token` | string | The local token |
 | `code` | string | A one-time code (first web password, password reset) |
 | `login` | string | A login token (a remembered web login) |

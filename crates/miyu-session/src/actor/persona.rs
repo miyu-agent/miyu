@@ -46,6 +46,8 @@ pub(crate) struct Refresh {
     pub(crate) child: bool,
     pub(crate) presets: Option<PresetPlaces>,
     pub(crate) tools: Shelf,
+    /// 文件改动的版本（施工 OV-1 下）：和 [`crate::Handle`] 共用，回合开始照它比。
+    pub(crate) prefix: Arc<crate::prefix::Prefix>,
     /// 现在的快照照的是架子上的哪一代（施工 O-2 中）：载入的不知道是哪一代，是没有，第一个回合照现在的对一次。
     pub(crate) seen: Option<Edition>,
     pub(crate) venue: VenueId,
@@ -88,17 +90,16 @@ enum Seen {
 impl Actor {
     /// 人格的文件改了，下一个回合换上：造会话、载入时交。
     pub(crate) fn watch_persona(&mut self, refresh: Refresh) {
+        if !follows_files(&refresh) {
+            refresh.prefix.hold();
+        }
         self.persona = Some(refresh);
     }
 
     /// 回合开始：看人格、预设的文件改了没有，工具目录换没换代。改了、换得了的，新策略交给内核放着，交回新快照的哈希。
     /// `values` 是这一轮冻结的配置：新打开的 `subagent` 照它填能选的池。
     pub(super) async fn refresh_persona(&mut self, values: Values) -> Option<ContentHash> {
-        // 裸的（整理会话，施工 D-1 上）不换：换了就拼回 system 和工具。fork 子代理的（施工 A-F 中）也不换。
-        let refresh = self
-            .persona
-            .clone()
-            .filter(|refresh| !refresh.snapshot.bare && !refresh.frozen)?;
+        let refresh = self.persona.clone().filter(follows_files)?;
         let persona = refresh.snapshot.persona.clone();
         let now = refresh.tools.edition();
         let seen = now.clone();
@@ -111,14 +112,22 @@ impl Actor {
         // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。人中途换的人格、预设（施工 P-13）。
         let project = self.session.project().map(str::to_string);
         let wanted = Wanted::of(&self.session, &refresh.snapshot, refresh.child);
-        match blocking(move || look(&refresh, &values, &now, (asked, project, wanted))).await {
+        // 属主的覆盖、人格、预设、技能那几棵树改过的（施工 OV-1 下）：只比号，变了照现在的文件重拼。
+        let edits = refresh.presets.as_ref().map_or(0, PresetPlaces::edits);
+        let prefix = Arc::clone(&refresh.prefix);
+        let edited = edits > prefix.seen();
+        match blocking(move || look(&refresh, &values, &now, (asked, project, wanted, edited)))
+            .await
+        {
             Seen::Same => {
+                prefix.see(edits);
                 if let Some(refresh) = self.persona.as_mut() {
                     refresh.seen = Some(seen);
                 }
                 None
             }
             Seen::Swapped(snapshot, policy, hash, texts, recast) => {
+                prefix.see(edits);
                 tracing::info!(target: TARGET, persona = persona.as_deref(), to = snapshot.persona.as_deref(), "persona swapped");
                 self.session.stage_policy(*policy);
                 let Retext { driver, run, guard } = *texts;
@@ -146,13 +155,24 @@ impl Actor {
     }
 }
 
+/// 回合开始照文件换快照的会话：裸的（整理会话，施工 D-1 上）不换，换了就拼回 system 和工具；fork 子代理的（施工 A-F 中）
+/// 也不换。不换的前缀不会因为文件变，发送前也不问（施工 OV-1 下）。
+fn follows_files(refresh: &Refresh) -> bool {
+    !refresh.snapshot.bare && !refresh.frozen
+}
+
 /// 在阻塞线程里看一遍：`now` 是架子上现在的那一代，`asked` 是开场所会话的扩展这一刻要插的那一段（施工 X-20，没说过的是
 /// `None`）。
 fn look(
     refresh: &Refresh,
     values: &Values,
     now: &Edition,
-    (asked, project, wanted): (BTreeMap<String, Option<String>>, Option<String>, Wanted),
+    (asked, project, wanted, files): (
+        BTreeMap<String, Option<String>>,
+        Option<String>,
+        Wanted,
+        bool,
+    ),
 ) -> Seen {
     let old = &refresh.snapshot;
     // 项目的附加提示词（施工 H-3）：照这一刻拼，和快照里的不一样这一轮要换。
@@ -246,6 +266,8 @@ fn look(
         None => old.knowledge.clone(),
     };
     let relisted = listing != old.knowledge;
+    // 文件改过的（施工 OV-1 下）：照现在的覆盖重拼工具面和 system，字节一样的照旧不换。
+    let moved = moved || files;
     if same
         && !moved
         && !flipped
@@ -340,6 +362,7 @@ fn look(
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
     let edited = !same
+        || files
         || matches!(
             preset,
             Preset::Changed(_) | Preset::NoTools { changed: true }

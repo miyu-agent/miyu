@@ -311,3 +311,34 @@ fn a_new_and_a_deleted_file_in_a_watched_directory_are_seen() {
     fs::remove_file(dir.join("weather.py")).unwrap();
     assert_eq!(received.recv_timeout(WAIT).unwrap(), dir);
 }
+
+/// 往下递归看的（施工 OV-1 下）：哪一层的文件变了都认，交出去的是那个文件；路上有点开头的那一段不算。
+#[test]
+fn a_watched_tree_hands_over_the_file_that_changed() {
+    let (_temp, dir) = scratch();
+    let table = Table::of_tree(&dir);
+    let modify = EventKind::Modify(ModifyKind::Any);
+    let deep = dir.join("core").join("facts").join("env.txt");
+    assert_eq!(
+        table.touched(&event(modify, &deep)),
+        std::slice::from_ref(&deep)
+    );
+    for path in [dir.join(".git").join("x"), dir.join("core").join(".x.swp")] {
+        assert!(table.touched(&event(modify, &path)).is_empty(), "{path:?}");
+    }
+    assert!(
+        table.touched(&event(modify, &dir)).is_empty(),
+        "目录自己不算"
+    );
+}
+
+#[test]
+fn a_file_deep_in_a_watched_tree_is_seen() {
+    let (_temp, dir) = scratch();
+    let deep = dir.join("core").join("facts");
+    fs::create_dir_all(&deep).unwrap();
+    let (on_change, received) = collect();
+    let _watching = watch_tree(&dir, on_change).unwrap();
+    fs::write(deep.join("env.txt"), "Mine.\n").unwrap();
+    assert_eq!(received.recv_timeout(WAIT).unwrap(), deep.join("env.txt"));
+}

@@ -101,6 +101,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "not_an_extension" => ("不是扩展。", "Not an extension."),
         "extension_off" => ("扩展已停用。", "Extension disabled."),
         "port_taken" => ("端口已被占用。", "Port in use."),
+        "prefix_changing" => (
+            "检测到文件变动，继续对话会因缓存失效多付输入费用。",
+            "Files changed; continuing will cost extra input because the cache is invalidated.",
+        ),
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),
         "session_not_found" => ("会话不存在。", "Session not found."),
         "unknown_call" => ("调用不存在。", "Call not found."),

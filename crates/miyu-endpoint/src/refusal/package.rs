@@ -13,6 +13,12 @@ impl Refusal {
         reason: "unknown_source",
         data: None,
     };
+    /// 文件改了、前缀要变（施工 OV-1 下，`sessions/prefix.rs`）：`data.files` 是改了的文件，头问人以后带 `prefix` 重发。
+    pub(crate) const PREFIX_CHANGING: Refusal = Refusal {
+        code: REFUSED,
+        reason: "prefix_changing",
+        data: None,
+    };
     /// 端口别的扩展登记着（施工 IM-5，`extensions/ports.rs`）：不说是谁。
     pub(crate) const PORT_TAKEN: Refusal = Refusal {
         code: REFUSED,

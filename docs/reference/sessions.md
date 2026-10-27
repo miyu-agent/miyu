@@ -133,6 +133,7 @@
 | `text` | 字符串，必写 | 要说的话 |
 | `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
 | `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
+| `prefix` | `"keep"` 或 `"compact"` | 前缀要变时人选的：直接发送、压缩上下文并发送（下面「前缀要变」） |
 | `from` | 字符串 | 你是别的 agent 程序：写上你的名字，这句话记成你说的，不是本人 |
 | `cwd` | 字符串 | 先换到这个工作目录再说（终端无缝集成：每一轮的工作目录跟着 shell 走）：查法、太宽的 `wide` 同 [`session.set_workspace`](#sessionset_workspace)；和现在一样的什么都不记，换了的推 `session.workspace_changed`。场所会话不收 |
 | `as`、`venue` | 对象 | 只给场所会话，见 [场所](venues.md) |
@@ -142,6 +143,8 @@
 1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。
 3. 附件先查再找会话：附件的 blob 要在、照内容再认一遍（见 [附件](blob.md)）。
+
+**前缀要变**（握手 `caps.prefix_ask: true` 的头才有）：属主的工具说明、提示词覆盖、人格、预设、技能目录里的文件改了，下一轮的请求前缀会变、缓存失效。会话空着时开新一轮（`session.send`、`session.redo`、开轮的 `command.run`）不带 `prefix` 的，回 `prefix_changing`，`data.files` 是改了的文件（照数据根写的相对路径，最多 20 个），多的在 `data.more`。给人弹「直接发送」「压缩上下文并发送」「取消」，选了再带 `"prefix": "keep"` 或 `"compact"` 发一次。`compact` 先压缩再说，压不了的回压缩的拒绝（例如 `nothing_to_compact`），这句没发。放行过的这一批不再问。
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"看看这张图","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
@@ -286,11 +289,11 @@
 
 撤掉最后一轮，把开它的话再发一次，开新的一轮。网页里「编辑上一句」也走它。
 
-**参数**：`session`；`text`：换掉开这一轮那句话的字（不写照原来的）；`attachments`：换掉它的附件（不写照原来的，空数组是不要附件）。
+**参数**：`session`；`text`：换掉开这一轮那句话的字（不写照原来的）；`attachments`：换掉它的附件（不写照原来的，空数组是不要附件）；`prefix`：同 `session.send`「前缀要变」。
 
 **回应**：同撤销，`events` 最后是重发的每一句的序号。新的一轮 `turn.started` 的 `cause` 是这一条的 `id`。
 
-**出错**：`not_redoable`（最后一轮不是人说话开的，或者一轮都没有）、`turn_running`、`empty_message`（换完一块都不剩），附件的同 `session.send`。
+**出错**：`not_redoable`（最后一轮不是人说话开的，或者一轮都没有）、`turn_running`、`empty_message`（换完一块都不剩），附件的同 `session.send`，`prefix_changing`。
 
 ## `session.compact`
 

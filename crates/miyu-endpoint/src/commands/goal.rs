@@ -73,7 +73,7 @@ impl Slash for GoalCommand {
                 call.peer,
                 (call.session, handle),
                 call.id,
-                call.by,
+                (call.by, call.prefix),
                 call.rest,
             )
             .await?;
@@ -107,7 +107,7 @@ pub(super) async fn run(
     peer: &Peer,
     (session, handle): (&SessionId, &Handle),
     id: &CommandId,
-    by: &By,
+    (by, prefix): (&By, Option<crate::sessions::prefix::Choice>),
     asked: &str,
 ) -> Result<(Vec<u64>, Said), Refusal> {
     // 停着、卡住的改完接着跑（施工 X-8 再补）。
@@ -143,6 +143,10 @@ pub(super) async fn run(
             reason: None,
         },
     };
+    // 设定、继续长期目标会开一轮（施工 OV-1 下）：文件改了、前缀要变的先问人。
+    if matches!(change, GoalChange::Set { .. } | GoalChange::Resume) {
+        crate::sessions::prefix::ask(core, (*peer, by), (handle, id), prefix).await?;
+    }
     let said = receipt(&change);
     let mut events =
         accepted(command(core, session, handle, id, by, Command::Goal(change)).await?)?;

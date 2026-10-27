@@ -319,6 +319,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `text` | string, required | What the person typed, e.g. `/stop` |
 | `cwd` | string | The head's directory; only used to resolve a relative path after `/workspace` |
 | `as` | object | Venue sessions: speaking for a person on the platform, as in `session.send` |
+| `prefix` | `"keep"` or `"compact"` | For commands that start a turn (templates, MCP prompts, setting or resuming `/goal`): the person's choice when the prefix is changing, as in `session.send` (**Prefix changing**) |
 
 **Response**: `{"command", "events", "said"}`: the canonical name (aliases resolved), the events appended, and the reply line (in the connection's language, shown to the person as-is). A command that opens a page returns `{"command", "opens": {"package", "widget"}, "said": ""}` and the head opens that page.
 

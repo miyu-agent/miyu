@@ -80,7 +80,7 @@ async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
 }
 
 /// 会话 `session` 现在的快照（最后一次换上的）的 system。
-fn latest_system(home: &Home, session: &str) -> String {
+pub(crate) fn latest_system(home: &Home, session: &str) -> String {
     let policy = home
         .log(session)
         .iter()

@@ -75,6 +75,16 @@ pub fn watch_dir(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Resu
     begin(Table::of_dir(dir), Backend::Native, QUIET, on_change)
 }
 
+/// 监视目录 `dir` 和它下面所有的子目录（施工 OV-1 下：覆盖、人格、预设、技能那几棵树）：哪一个文件变了（合并过的），交的是
+/// 那个文件的路径（照 `dir` 拼的，不是真实的位置）；点开头的名字（路上哪一段都算）不算。目录要已经有了。别的同 [`watch`]。
+///
+/// # Errors
+///
+/// 轮询也起不来（目录没有、线程开不了）：原因。
+pub fn watch_tree(dir: &Path, on_change: impl Fn(&Path) + Send + 'static) -> Result<Watch, String> {
+    begin(Table::of_tree(dir), Backend::Native, QUIET, on_change)
+}
+
 /// 用哪一种看。
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Backend {
@@ -166,6 +176,8 @@ struct Target {
     /// 只认这个名字；没有的是目录里点开头的以外哪个都认（[`Table::of_dir`]）。
     name: Option<OsString>,
     file: PathBuf,
+    /// 往下递归看，交出去的是变了的那个文件（[`Table::of_tree`]）。
+    tree: bool,
 }
 
 impl Target {
@@ -191,6 +203,7 @@ impl Table {
                 dir: dir.clone(),
                 name: Some(name.to_os_string()),
                 file: file.clone(),
+                tree: false,
             });
             if let Ok(body) = std::fs::canonicalize(file)
                 && body != dir.join(name)
@@ -200,6 +213,7 @@ impl Table {
                     dir: parent.to_path_buf(),
                     name: Some(name.to_os_string()),
                     file: file.clone(),
+                    tree: false,
                 });
             }
         }
@@ -213,6 +227,19 @@ impl Table {
                 dir: real(dir),
                 name: None,
                 file: dir.to_path_buf(),
+                tree: false,
+            }],
+        }
+    }
+
+    /// 看目录 `dir` 和它下面的每一层（真实的位置）：交出去的是变了的那个文件，照 `dir` 拼。
+    pub(crate) fn of_tree(dir: &Path) -> Table {
+        Table {
+            targets: vec![Target {
+                dir: real(dir),
+                name: None,
+                file: dir.to_path_buf(),
+                tree: true,
             }],
         }
     }
@@ -223,24 +250,28 @@ impl Table {
         dirs.sort_unstable();
         dirs.dedup();
         for dir in dirs {
-            watcher.watch(dir, RecursiveMode::NonRecursive)?;
+            let mode = match self.targets.iter().any(|t| t.tree && t.dir == dir) {
+                true => RecursiveMode::Recursive,
+                false => RecursiveMode::NonRecursive,
+            };
+            watcher.watch(dir, mode)?;
         }
         Ok(watcher)
     }
 
     /// 表里全部的几份，照给的先后，不重。
-    fn files(&self) -> Vec<&Path> {
-        let mut files: Vec<&Path> = Vec::new();
+    fn files(&self) -> Vec<PathBuf> {
+        let mut files: Vec<PathBuf> = Vec::new();
         for target in &self.targets {
-            if !files.contains(&target.file.as_path()) {
-                files.push(&target.file);
+            if !files.contains(&target.file) {
+                files.push(target.file.clone());
             }
         }
         files
     }
 
     /// 这一个变动碰到了哪几份。
-    pub(crate) fn touched(&self, event: &Event) -> Vec<&Path> {
+    pub(crate) fn touched(&self, event: &Event) -> Vec<PathBuf> {
         if event.need_rescan() {
             return self.files();
         }
@@ -250,17 +281,40 @@ impl Table {
         {
             return Vec::new();
         }
-        let mut touched: Vec<&Path> = Vec::new();
+        let mut touched: Vec<PathBuf> = Vec::new();
         for path in &event.paths {
+            // 往下递归看的（[`Table::of_tree`]）：在它下面、路上没有点开头的那一段的，交出去的是这个文件。
+            for target in self.targets.iter().filter(|target| target.tree) {
+                let real_path = real(path);
+                let under = path
+                    .strip_prefix(&target.dir)
+                    .ok()
+                    .or_else(|| real_path.strip_prefix(&target.dir).ok());
+                if let Some(rest) = under
+                    && !rest.as_os_str().is_empty()
+                    && !rest
+                        .components()
+                        .any(|part| part.as_os_str().to_string_lossy().starts_with('.'))
+                {
+                    let file = target.file.join(rest);
+                    if !touched.contains(&file) {
+                        touched.push(file);
+                    }
+                }
+            }
             let (Some(parent), Some(name)) = (path.parent(), path.file_name()) else {
                 continue;
             };
             let mut dir: Option<PathBuf> = None;
-            for target in self.targets.iter().filter(|target| target.names(name)) {
+            for target in self
+                .targets
+                .iter()
+                .filter(|target| !target.tree && target.names(name))
+            {
                 let same =
                     parent == target.dir || *dir.get_or_insert_with(|| real(parent)) == target.dir;
-                if same && !touched.contains(&target.file.as_path()) {
-                    touched.push(&target.file);
+                if same && !touched.contains(&target.file) {
+                    touched.push(target.file.clone());
                 }
             }
         }
@@ -287,7 +341,7 @@ pub(crate) fn run(
             Some(due) => events.recv_timeout(due.saturating_duration_since(Instant::now())),
             None => events.recv().map_err(|_| RecvTimeoutError::Disconnected),
         };
-        let touched: Vec<&Path> = match &received {
+        let touched: Vec<PathBuf> = match &received {
             Ok(Ok(event)) => table.touched(event),
             // 监视报错：当这几份都变了，重读一遍（第 6 条）。
             Ok(Err(_)) => table.files(),
@@ -296,8 +350,8 @@ pub(crate) fn run(
         };
         let now = Instant::now();
         for file in touched {
-            pending.retain(|(waiting, _)| waiting != file);
-            pending.push((file.to_path_buf(), now));
+            pending.retain(|(waiting, _)| *waiting != file);
+            pending.push((file, now));
         }
         let (ready, waiting): (Vec<_>, Vec<_>) = pending
             .into_iter()

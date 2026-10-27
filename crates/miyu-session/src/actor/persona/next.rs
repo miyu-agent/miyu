@@ -29,15 +29,20 @@ impl Actor {
             .unwrap_or_default();
         let project = self.session.project().map(str::to_string);
         let wanted = Wanted::of(&self.session, &refresh.snapshot, refresh.child);
+        // 文件改过的照改过的算（施工 OV-1 下）。
+        let edited = refresh
+            .presets
+            .as_ref()
+            .map_or(0, crate::open::PresetPlaces::edits)
+            > refresh.prefix.seen();
         tokio::spawn(async move {
-            let tools =
-                blocking(
-                    move || match look(&refresh, &values, &now, (asked, project, wanted)) {
-                        Seen::Swapped(snapshot, ..) => offered(&snapshot),
-                        _ => offered(&refresh.snapshot),
-                    },
-                )
-                .await;
+            let tools = blocking(move || {
+                match look(&refresh, &values, &now, (asked, project, wanted, edited)) {
+                    Seen::Swapped(snapshot, ..) => offered(&snapshot),
+                    _ => offered(&refresh.snapshot),
+                }
+            })
+            .await;
             super::super::answer(reply, tools);
         });
     }

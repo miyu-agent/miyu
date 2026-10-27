@@ -75,6 +75,7 @@ fn setup_with(
         presets: None,
         seen: Some(Shelf::new(tools.clone()).edition()),
         tools: Shelf::new(tools),
+        prefix: std::sync::Arc::default(),
         venue: VenueId::parse("local").expect("场所合写法"),
         lineage: None,
         knowledge: None,
@@ -240,4 +241,20 @@ fn a_persona_whose_files_are_gone_is_kept_quietly() {
     let (_scratch, root, refresh) = setup("gone", "You are Miyu.\n");
     std::fs::remove_dir_all(root.path().join("home/alice/personas/miyu")).expect("删得掉");
     assert!(matches!(seen(&refresh), Seen::Same));
+}
+
+/// 回合开始不换快照的（fork 子代理的、整理会话的）前缀不跟着文件变，发送前不问（施工 OV-1 下）。
+#[test]
+fn only_sessions_that_follow_files_are_asked() {
+    let (_scratch, _root, mut refresh) = setup("prefix-follows", "You are Miyu.\n");
+    assert!(follows_files(&refresh));
+    refresh.frozen = true;
+    assert!(!follows_files(&refresh));
+    refresh.frozen = false;
+    refresh.snapshot.bare = true;
+    assert!(!follows_files(&refresh));
+    let prefix = crate::prefix::Prefix::new(3);
+    prefix.hold();
+    prefix.see(5);
+    assert_eq!(prefix.seen(), u64::MAX, "不问的一直不问");
 }

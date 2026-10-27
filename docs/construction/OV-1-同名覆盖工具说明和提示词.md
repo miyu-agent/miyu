@@ -94,3 +94,38 @@
 2. 端点 `prompt_override.rs`：系统那一层改了版本那一行、自己那一层的占位不对 → 照系统的；自己那一层改了本地路径那一行、系统那一层也改了 → 照自己的，出厂的、系统的都不在；`check` 报自己那一层占位不对的那一份。
 3. 手写变异：见结果。
 4. 本机门禁全过。
+
+### 十、下：定下的（技术题，主会话定；交互是项目主人 10-26 定的，协议和终端头 10-28 对过）
+
+1. **盯哪些**：每个账号两层（系统区、他的家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`、`skills/`，往下递归。还没有的目录登记时建空的：这几个本来就是给人放自定义的地方。只盯这五样，不盯整个家目录（会话目录变动多，递归盯它浪费系统的监视名额）。
+2. **版本号**：每个账号一个，盯着的文件一变就加一，记下这一下是哪个文件（照数据根写的相对路径，最近的 64 条）。系统区的一变，所有账号都加一。只在内存里：核心重启从零数，会话也从零记，不会误判。
+3. **会话怎么用**：会话记着它最后一次拼快照时看到的号。回合开始只比号，变了就照现在的文件把工具面、system 重拼一遍（人格、预设本来每回合就照内容比，这一步补上工具说明、提示词的覆盖和技能目录），拼出来的字节和快照一样就不换，不一样就换（`session.policy_changed`），再记下这个号。
+4. **问一声（反应式）**：
+   - 握手 `caps.prefix_ask: true` 的头才问；没声明的照旧直接发、下一轮换上。
+   - 开新一轮的入口：`session.send`、开轮的 `command.run`、`session.redo`。会话空着、是本机会话、有人确认、属主的号比会话记着的新、这一批没放行过的，不带 `prefix` 就拒 `prefix_changing`，`data.files` 是变了的文件（最多 20 个，多的带 `more`）。
+   - 带 `"prefix": "keep"` 的放行这一批，照常说；带 `"prefix": "compact"` 的先压缩再说，压不了的回压缩自己的拒绝、这句不发。
+   - 放行照会话记；之后有新的改动再问。正在跑一轮时说的话、跑着时排进去的那句、场所会话、子会话、定时和 `/loop` 自己起的轮都不问。
+5. **显示名的覆盖**（从上挪过来）：留到以后单开一步，这一步不做。头上的显示名照出厂的。
+
+### 十一、下：做了什么
+
+1. `miyu-store` 的 `watch.rs`：`watch_tree` 往下递归盯一棵树，交回变了的那个文件（照调的一方给的根写，跳过点开头的）。
+2. `miyu-endpoint` 的 `presets/edits.rs`：`Edits` 记每一层最后一下的号和最近 64 条改动；`version` 取属主那一层和系统区大的那个，`since` 交回号以后改了的文件和还有几个。`Core::watch_edits` 在 `places` 里照属主登记，系统区头一回一起盯，没有的目录建空的。
+3. `miyu-session` 的 `prefix.rs`：`Prefix` 记会话照着拼过的号（`seen`）、人放行过的号（`allowed`），actor 和 `Handle` 共用一份；`PresetPlaces.edits` 取属主这时的号。回合开始（`actor/persona.rs`）号比 `seen` 新的照现在的文件重拼，换了、没换都记下这个号。回合开始不换快照的会话（整理记忆的、fork 子代理的，`follows_files`）`hold`：永远不问。
+4. 握手 `caps.prefix_ask`；`sessions/prefix.rs` 的 `ask`：`session.send`、`session.redo`、模板命令、MCP 提示词、`/goal` 设定和继续开轮前调；`prefix` 参数 `keep`、`compact`；拒绝 `prefix_changing`（三种语言的话、`data.files`、`data.more`）。`compact` 照 `session.compact` 开一轮，开了才放行，这一句排在它后面。
+5. 蓝图 `protocol.md` `session.send` 第 9 条、`caps`、三处参数表、拒绝表；参考 `connection`、`sessions`、`packages`、`errors` 中英两份。
+
+### 十二、下：怎么验
+
+1. `miyu-store` 单测：盯一棵树交回变了的那个文件，深几层的也看得到。
+2. `miyu-endpoint` 单测 `presets/edits/tests.rs`：号照属主那一层和系统区取大的，别人的改动不算；挪出表的数进「还有」。
+3. `miyu-session` 单测：回合开始不换快照的（fork 子代理的、整理会话的）永远不问。
+4. 端点 `prefix_ask.rs`（声明了 `caps.prefix_ask` 的头，改 `home/alice/prompts/core/local-paths-rule.txt`）：
+   - 没改过的不问；改了以后 `send` 拒 `prefix_changing`、`files` 里有这一份，`keep` 照常说、这一轮的 system 是新的，拼过了再说不问。
+   - 再改：`redo`、模板命令、`/goal` 都拒；模板命令带 `keep` 开得了轮。
+   - 再改：没声明的头直接发，这一轮照新的拼；之后声明了的头也不再问。
+   - 再改：带 `compact` 的压完了才开这一句的那一轮，那一轮照新的拼。
+   - `/goal` 带 `keep` 设得上。
+5. 手写变异 15 个，杀 13 个：不看 `caps`、号比反了、`compact` 不压、表不照号筛、号不看自己那一层、不盯自己那一层、回合开始不比号、重拼了不记号、fork 子代理的也问、`send`、模板、`/goal` 不问、命令的 `prefix` 不往下传。后两个头一轮活了，补了「没声明的头发过以后不再问」和 `/goal` 带 `keep` 才杀掉。
+   - 活着的两个：`keep`、`compact` 放行时不记号。下一轮重拼也记号，两处互相兜着，端点上看不出来。留着它是为了重拼不成的会话（人格、预设写坏了，`Seen::Kept`、`Seen::Unreadable` 不记号）：人放行一次以后不再每句都问。
+6. 本机门禁全过。

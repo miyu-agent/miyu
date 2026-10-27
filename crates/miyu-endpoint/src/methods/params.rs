@@ -83,6 +83,9 @@ pub(super) struct SendParams {
     /// 通讯平台上的一条消息的那几格（施工 O-13 上）：只跟着 `as` 来，原样记进 `message.user`；旁听的不开回合。
     #[serde(default)]
     pub(super) venue: Option<crate::venues::VenueMessageParams>,
+    /// 前缀要变了时人选的（施工 OV-1 下，`sessions/prefix.rs`）。
+    #[serde(default)]
+    pub(super) prefix: Option<crate::sessions::prefix::Choice>,
 }
 
 /// `session.interrupt` 的参数。
@@ -124,6 +127,9 @@ pub(super) struct RedoParams {
     pub(super) text: Option<String>,
     #[serde(default)]
     pub(super) attachments: Option<Vec<Attachment>>,
+    /// 前缀要变了时人选的（施工 OV-1 下）。
+    #[serde(default)]
+    pub(super) prefix: Option<crate::sessions::prefix::Choice>,
 }
 
 /// `session.clear` 的参数（施工 6-8 补）。

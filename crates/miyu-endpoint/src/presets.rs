@@ -20,6 +20,7 @@ use crate::personas::{label, remove};
 use crate::refusal::Refusal;
 use crate::settings::PresetSettings;
 
+pub(crate) mod edits;
 mod features;
 pub(crate) mod overrides;
 pub(crate) mod write;
@@ -68,6 +69,9 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
     let (weak, whose) = (std::sync::Arc::downgrade(core), owner.clone());
     // 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
     let (weak_written, written_by) = (std::sync::Arc::downgrade(core), owner.clone());
+    // 文件改动的版本（施工 OV-1 下）：盯上他那一层，会话回合开始比号。
+    core.watch_edits(owner);
+    let (weak_edits, edited_by) = (std::sync::Arc::downgrade(core), owner.clone());
     PresetPlaces {
         presets: presets(core, owner),
         features: crate::scripts::features(core, owner),
@@ -76,6 +80,13 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
                 weak.upgrade()
                     .map(|core| core.extensions.offers.features_of(&whose))
                     .unwrap_or_default()
+            },
+        ))),
+        edits: Some(miyu_session::prefix::EditsVersion(std::sync::Arc::new(
+            move || {
+                weak_edits
+                    .upgrade()
+                    .map_or(0, |core| core.edits.version(&edited_by))
             },
         ))),
         overrides: Some(miyu_session::ToolOverrides(std::sync::Arc::new(

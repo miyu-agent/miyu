@@ -170,6 +170,8 @@ pub(super) async fn run(
         blocks,
         command: typed,
     };
+    // 文件改了、前缀要变的，开这一轮之前问人（施工 OV-1 下）。
+    crate::sessions::prefix::ask(core, (*peer, &by), (&handle, id), params.prefix).await?;
     let events = accepted(command(core, &session, &handle, id, &by, sent).await?)?;
     Ok(json!({"command": template.name, "events": events, "said": ""}))
 }

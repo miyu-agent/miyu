@@ -133,6 +133,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 | `text` | string, required | What to say |
 | `attachments` | array | Attachments, each the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine) |
 | `urgent` | boolean, default `false` | Cut in: if she's busy, she sees it at the next step |
+| `prefix` | `"keep"` or `"compact"` | What the person chose when the prefix is changing: send as is, or compact and send (see **Prefix changing** below) |
 | `from` | string | You are another agent program: your name; the message is recorded as yours, not the person's |
 | `cwd` | string | Move to this working directory first (shell integration: each turn's directory follows the shell): checked like [`session.set_workspace`](#sessionset_workspace), `wide` included; the same directory records nothing, a change pushes `session.workspace_changed`. Not for venue sessions |
 | `as`, `venue` | object | Venue sessions only; see [Venues](venues.en.md) |
@@ -142,6 +143,8 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
 3. Attachments are checked before the session is looked up: the blob must exist and is recognized again from its content (see [Attachments](blob.en.md)).
+
+**Prefix changing** (only for heads that sent `caps.prefix_ask: true` in the hello): when files in the owner's tool description and prompt overrides, personas, presets or skills change, the next request's prefix changes and the cache is lost. Starting a new turn in an idle session (`session.send`, `session.redo`, or a `command.run` that starts a turn) without `prefix` is refused with `prefix_changing`; `data.files` lists the changed files (paths relative to the data root, at most 20) and `data.more` counts the rest. Offer the person "Send", "Compact and send" and "Cancel", then send again with `"prefix": "keep"` or `"compact"`. `compact` compacts first; if it can't, you get the compaction's refusal (for example `nothing_to_compact`) and the message is not sent. A batch that was let through is not asked again.
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"Look at this image","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
@@ -285,11 +288,11 @@ Undo takes the last turn (or every turn from one on) out of the conversation; fi
 
 Undo the last turn and send the messages that started it again, starting a new turn. Editing your last message in the web UI goes through this.
 
-**Params**: `session`; `text`: replace the text of the message that started the turn (omitted keeps it); `attachments`: replace its attachments (omitted keeps them; an empty array removes them).
+**Params**: `session`; `text`: replace the text of the message that started the turn (omitted keeps it); `attachments`: replace its attachments (omitted keeps them; an empty array removes them); `prefix`: as in `session.send` (**Prefix changing**).
 
 **Response**: as for undo; `events` ends with the numbers of the resent messages. The new turn's `turn.started` has this request's `id` as `cause`.
 
-**Errors**: `not_redoable` (the last turn wasn't started by a person, or there are no turns), `turn_running`, `empty_message` (nothing left after the replacement), and the attachment errors of `session.send`.
+**Errors**: `not_redoable` (the last turn wasn't started by a person, or there are no turns), `turn_running`, `empty_message` (nothing left after the replacement), and the attachment errors of `session.send`, and `prefix_changing`.
 
 ## `session.compact`
 

@@ -38,6 +38,8 @@ pub struct PresetPlaces {
     pub offers: Option<OfferedFeatures>,
     /// 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时取一次。没交的（测试里造的）当没写。
     pub overrides: Option<ToolOverrides>,
+    /// 属主的文件改动的版本（施工 OV-1 下）：回合开始比一次。没交的（测试里造的）一直是零。
+    pub edits: Option<crate::prefix::EditsVersion>,
 }
 
 /// 取属主写的工具说明的覆盖（施工 OV-1 上）：协议端点给的，工具名到叠好的那一份。
@@ -53,6 +55,11 @@ impl std::fmt::Debug for ToolOverrides {
 }
 
 impl PresetPlaces {
+    /// 属主这时的文件改动的版本：没交的是零。
+    pub(crate) fn edits(&self) -> u64 {
+        self.edits.as_ref().map_or(0, |edits| (edits.0)())
+    }
+
     /// 属主这时写的工具说明的覆盖：没交的是空的。
     pub(crate) fn overrides(&self) -> Arc<BTreeMap<String, miyu_policy::overrides::ToolOverride>> {
         self.overrides

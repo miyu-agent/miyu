@@ -34,6 +34,7 @@ mod idle;
 mod opening;
 mod orphans;
 mod places;
+pub(crate) mod prefix;
 mod setup;
 
 pub(crate) use opening::Opening;

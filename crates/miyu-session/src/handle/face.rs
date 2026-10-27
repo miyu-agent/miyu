@@ -28,6 +28,18 @@ impl Handle {
         self.loops
     }
 
+    /// 带上和 actor 共用的文件改动的版本（施工 OV-1 下）。
+    #[must_use]
+    pub(crate) fn with_prefix(mut self, prefix: std::sync::Arc<crate::prefix::Prefix>) -> Handle {
+        self.prefix = prefix;
+        self
+    }
+
+    /// 文件改动的版本：会话看到的、人放行过的（施工 OV-1 下）。
+    pub fn prefix(&self) -> &crate::prefix::Prefix {
+        &self.prefix
+    }
+
     /// 带上和 actor 共用的「在不在等人」（施工 SL-1）。
     #[must_use]
     pub(crate) fn with_waiting(

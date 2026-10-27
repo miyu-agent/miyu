@@ -37,6 +37,8 @@ pub(crate) struct Call<'a> {
     pub(crate) rest: &'a str,
     /// 头所在的目录（`command.run` 的 `cwd`）。
     pub(crate) head: Option<&'a str>,
+    /// 前缀要变了时人选的（施工 OV-1 下）：开新一轮的命令先问人。
+    pub(crate) prefix: Option<crate::sessions::prefix::Choice>,
 }
 
 impl Call<'_> {

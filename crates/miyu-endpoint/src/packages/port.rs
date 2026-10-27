@@ -74,6 +74,7 @@ impl Port {
             input: false,
             admin: crate::login::admins::is_admin(core, &self.owner),
             scoped: false,
+            prefix_ask: false,
         }
     }
 }

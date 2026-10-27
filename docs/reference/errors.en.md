@@ -58,6 +58,7 @@ Chinese version: [errors.md](errors.md).
 | `unknown_call` | `view.detail` can't find that call or compaction | |
 | `unknown_job`, `not_a_command` | No such job; reading the output of a subagent | |
 | `goal_exists`, `no_goal`, `goal_paused`, `goal_running`, `goal_unavailable` | A goal command doesn't fit the goal's state; this session has no standing goal | `why` |
+| `prefix_changing` | Files changed and the prefix is about to change; ask the person before starting a new turn (only for heads that sent `caps.prefix_ask`) | `files`, `more` |
 
 ## Attachments and files
 

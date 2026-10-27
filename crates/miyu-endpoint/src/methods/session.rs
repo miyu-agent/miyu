@@ -85,10 +85,11 @@ pub(super) async fn create(
 /// `session.send`：说话。`caller` 是核心拉起的扩展的，它不带 `as` 说的话记成它自己（施工 X-30）。
 pub(super) async fn send(
     core: &Arc<Core>,
-    caller: &Caller,
+    (caller, peer): (&Caller, crate::hello::Peer),
     request: &Request,
 ) -> Result<Value, Refusal> {
     let params: SendParams = params(request)?;
+    let choice = params.prefix;
     // 别的 harness 报的名字先查（施工 7-10）：不对的，会话里什么都不送。代表外部的人（施工 O-3）和它不能同时写。
     if params.from.is_some() && params.as_external.is_some() {
         return Err(Refusal::BAD_PARAMS);
@@ -145,6 +146,11 @@ pub(super) async fn send(
         }
         _ => false,
     };
+    // 文件改了、前缀要变的，开新一轮之前问人（施工 OV-1 下）。
+    if local {
+        let asked = (&found.handle, &request.id);
+        crate::sessions::prefix::ask(core, (peer, &by), asked, choice).await?;
+    }
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     let mut reply = json!({"events": events, "cwd": found.cwd});
     if wide {
@@ -232,7 +238,7 @@ pub(super) async fn unrevert(
 /// `session.redo`：重做。
 pub(super) async fn redo(
     core: &Arc<Core>,
-    caller: &Caller,
+    (caller, peer): (&Caller, crate::hello::Peer),
     request: &Request,
 ) -> Result<Value, Refusal> {
     let params: RedoParams = params(request)?;
@@ -247,6 +253,15 @@ pub(super) async fn redo(
         attach::hand_over(core, (&caller.account, found.handle.owner()), blocks).await?;
         attach::keep(core, found.handle.owner(), &session, blocks).await?;
     }
+    // 文件改了、前缀要变的，重发之前问人（施工 OV-1 下）。
+    let by = crate::sessions::person(core, caller);
+    crate::sessions::prefix::ask(
+        core,
+        (peer, &by),
+        (&found.handle, &request.id),
+        params.prefix,
+    )
+    .await?;
     let command = Command::Redo {
         text: params.text.map(said),
         attachments,

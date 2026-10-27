@@ -52,6 +52,7 @@ mod peers;
 mod pictures;
 mod plugins;
 mod port;
+pub mod prefix;
 mod project_docs;
 pub mod rates;
 mod report;

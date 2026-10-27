@@ -434,6 +434,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     if let Some(upstream) = upstream {
         actor.report_to(Reporter::start(upstream, span.clone()));
     }
+    // 文件改动的版本（施工 OV-1 下）：照这一刻的号起，和 Handle 共用。
+    let prefix = std::sync::Arc::new(crate::prefix::Prefix::new(
+        presets.as_ref().map_or(0, crate::open::PresetPlaces::edits),
+    ));
     actor.watch_persona(Refresh {
         personas: watching,
         resources: shipped,
@@ -442,6 +446,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         child: tasked.is_some(),
         presets,
         tools: tools.clone(),
+        prefix: std::sync::Arc::clone(&prefix),
         // 快照是以前拼的，照的目录不知道是哪一代：第一个回合照现在的对一次（施工 O-2 中）。
         seen: None,
         venue: refresh_venue,
@@ -481,7 +486,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         .with_memory(room)
         .with_goals(on_face)
         .with_loops(loops)
-        .with_waiting(on_person);
+        .with_waiting(on_person)
+        .with_prefix(prefix);
     Ok((handle, placed))
 }
 

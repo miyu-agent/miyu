@@ -207,6 +207,7 @@ mod persona_swap_upgrade;
 mod personas;
 mod platform_tools;
 mod ports;
+mod prefix_ask;
 mod preset_background;
 mod preset_env;
 mod preset_face;

@@ -48,6 +48,9 @@ pub(crate) struct RunParams {
     /// 本机会话里说命令的人（施工 Y-2 下下上）：照连接的人，不从参数读。没填的（不经 [`run`] 的）照旧是管理员。
     #[serde(skip)]
     person: Option<By>,
+    /// 前缀要变了时人选的（施工 OV-1 下，`sessions/prefix.rs`）：开新一轮的命令（模板、提示词、设定和继续长期目标）照它。
+    #[serde(default)]
+    prefix: Option<crate::sessions::prefix::Choice>,
 }
 
 /// 这一条 `command.run` 在后台答不答（施工 R-7 补，`methods::answered_later` 问它）：照原文认出的命令问
@@ -157,6 +160,7 @@ pub(crate) async fn run(
         by: &by,
         rest,
         head: params.cwd.as_deref(),
+        prefix: params.prefix,
     };
     let Ran { mut events, said } = slash.run(call).await?;
     let note = Command::Ran {

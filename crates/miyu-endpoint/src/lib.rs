@@ -233,6 +233,8 @@ pub struct Core {
     project_changes: projects::changes::Changes,
     /// 界面块（施工 X-15 中，`widgets.rs`）：程序推来的内容、谁在看。
     widgets: widgets::Widgets,
+    /// 文件改动的版本（施工 OV-1 下，`presets/edits.rs`）。
+    edits: presets::edits::Edits,
     /// 扩展放在 system 尾部的（施工 X-20，`appends.rs`）。
     appends: appends::Appends,
     /// 重读清单的次数（施工 X-22，`content.rs`）：给别的包带的内容变没变照它查。
@@ -335,6 +337,7 @@ impl Core {
             projects: tokio::sync::Mutex::new(()),
             project_changes: projects::changes::Changes::default(),
             widgets: widgets::Widgets::default(),
+            edits: presets::edits::Edits::default(),
             appends: appends::Appends::default(),
             content_rereads: content::Rereads::default(),
         }

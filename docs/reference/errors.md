@@ -58,6 +58,7 @@
 | `unknown_call` | `view.detail` 找不到那次调用、那次压缩 | |
 | `unknown_job`、`not_a_command` | 没有这个任务；读输出的是子代理 | |
 | `goal_exists`、`no_goal`、`goal_paused`、`goal_running`、`goal_unavailable` | 长期目标的命令和现在的样子不合；这个会话没有长期目标 | `why` |
+| `prefix_changing` | 文件改了、前缀要变，开新一轮之前先问人（只对声明了 `caps.prefix_ask` 的头） | `files`、`more` |
 
 ## 附件与文件
 

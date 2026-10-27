@@ -127,7 +127,7 @@
 | `protocol` | 两个非负整数 `[最低, 最高]` | 头支持的主版本范围，必写 |
 | `head` | `{"kind": 字符串, "version": 字符串}` | 头的种类和版本，必写，只记进运行日志 |
 | `locale` | 字符串，可以不写 | 头所在系统的语言（BCP 47 或者 `LANG` 的写法都行）。`ui.language` 是 `auto` 时照它定这个连接的语言：`zh` 开头的（区分大小写）是 `zh`，`ja` 开头的是 `ja`，别的、没写的是 `en`（施工 8-2） |
-| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`scope`（布尔，不写是 `false`，施工 Y-12 下）：认识管理员模式，改系统那一层的请求会带 `"scope": "system"`（上面「请求」）。别的格不理 |
+| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`scope`（布尔，不写是 `false`，施工 Y-12 下）：认识管理员模式，改系统那一层的请求会带 `"scope": "system"`（上面「请求」）。`prefix_ask`（布尔，不写是 `false`，施工 OV-1 下）：文件改了、前缀要变时，开新一轮之前先问人（`session.send` 第 9 条）。别的格不理 |
 | `token` | 字符串，可以不写 | 本机令牌（`ipc.md`）；本机的头出示它 |
 | `code` | 字符串，可以不写 | 一次性码：64 位小写十六进制（施工 W-8，`web-module.md`「怎么走」第一条） |
 | `login` | 字符串，可以不写 | 登录令牌：64 位小写十六进制（施工 W-8） |
@@ -338,6 +338,7 @@
 | `session` | 字符串，必写 | 哪个会话 |
 | `text` | 字符串，必写 | 要说的话，照原样成一块文字；空的一块都没有 |
 | `urgent` | 布尔，不写是 `false` | 急着插话 |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 前缀要变时人选的（第 9 条）：直接发送、压缩上下文并发送 |
 | `cwd`、`dirs` | 可以不写 | 施工 9-7 上起照收不理：工作区是会话的属性，换它走 `session.set_workspace`。一个连接第一次收到带它们的，记一行运行日志 `WARN session.send cwd ignored`，看得出谁还在发 |
 | `attachments` | 数组，可以不写 | 附件（施工 3-9 三补）：`blob.put` 的回应，照先后。每一项要 `blob`、`name`、`media_type`；可以另写 `path`：这个附件原来在本机的哪儿，就是 `blob.put` 传的那个路径（施工 3-9 五补，剪贴板贴的、传 `data` 的不写），绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头）、没有控制字符、最多 4096 字节，不对的 `bad_params`；核心只查写法、不碰磁盘，记进块里，模型看不了这个附件时占位那一句带上它。没写 `path` 的（施工 3-9 六补）：核心把它拷成会话目录 `attachments/` 里的一个文件（`store.md`「会话目录」），块里记那个路径；她读得到（`fs.md` 第一节第 2 行），删会话时跟着走。别的格不看 |
 | `from` | 字符串，可以不写 | 别的 harness 报的自己的名字（施工 7-10，`agents.md` 第十一条第 4 条）：写了的，这一句是它说的，不是本人。核心拉起的扩展不能写（`bad_params`，冒充不了）：它不带 `as` 说的话记成 `harness`、名字是包的编号，组装照「别的 harness 发来的话」告诉她这不是人说的（施工 X-30，`04-核心协议.md` 第四节；不用 `By::Module`：它当一句人话的作者要动内核的追加检查和组装） |
@@ -354,6 +355,11 @@
 6. `from`（施工 7-10）：写了的，这条 `message.user` 的 `by` 记成 `{"kind":"harness","name":<名字>}`；不写的、写 `null` 的照旧记成本人。名字照短名字的规矩收（`kernel/ids.md`）：先去掉控制字符（Unicode 的 Cc 类），再截到 128 字节以内，不截断一个字；剩下是空的，`bad_params`。不是字符串的（数字、数组……）也是 `bad_params`。名字不核对，照它报的记；给模型看之前照不可信的文本转义（`kernel/request.md`「别的 harness 发来的话」）。它先查，查在附件前面：拒了的什么都不送。
 7. 带 `from` 的这一句是别处来的，内核照「别的 harness 发来的话」收（`kernel/session.md`，和子代理的留言一样）：她闲着开一轮，`turn.started` 的 `cause` 是这一条的 `id`；正忙的，下一步看到；不带回合编号，打断时不撤回，不作废在等本人答的题。`urgent` 不看。附件照收，和本人附的一样。
 8. 只有 `session.send` 收 `from`：`session.create`、`session.redo` 写了也不理（「请求」最后一条）。会话照旧是本人造的；重做的撤销记成发重做的人，重发的只有人说的话（`by` 照原来的），别的 harness 发来的话开的那一轮重做不了（`session.redo` 第 3 条）。
+9. 前缀要变了先问人（施工 OV-1 下，项目主人 10-26 定的交互，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：
+   - 核心盯每个账号两层（系统区、家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`、`skills/`，往下递归，变一下属主的号加一（系统区的算大家的），只在内存里。会话记着最后一次拼快照时看到的号，回合开始比号，变了照现在的文件重拼，字节不一样的换（`session.policy_changed`）。
+   - 只问握手 `caps.prefix_ask: true` 的头。开新一轮的三个入口：`session.send`、`session.redo`、开轮的 `command.run`（模板、MCP 提示词、`/goal` 设定和继续）。会话空着、是本机会话、属主的号比会话照着拼过的和人放行过的都新的，不带 `prefix` 就拒 `prefix_changing`，`data.files` 是这以后改了的文件（照数据根写的相对路径，先后、不重，最多 20 个；多的、太早挪出表的数进 `data.more`）。
+   - `"keep"`：放行到这个号，照常说。`"compact"`：先手动压缩（同 `session.compact`，不带要求），开了才放行再说这一句，这一句排在压缩那一轮后面；压不了的回压缩自己的拒绝（`nothing_to_compact` 等），这句不发，不退回直接发。
+   - 放行照会话记，之后有新的改动再问。正在跑一轮时说的、场所会话、回合开始不换快照的会话（fork 子代理、整理记忆）、定时和 `/loop`、长期目标自己续的轮不问；没声明的头照旧直接发，下一轮换上。
 
 **`blob.put`**（施工 3-9 三补，`04-核心协议.md` 第九节）
 
@@ -562,6 +568,7 @@
 | `session` | 字符串，必写 | 哪个会话 |
 | `text` | 字符串，可以不写 | 开这一轮的那一句里的字换成这句话，写法照 `session.send` 的 `text`：照原样成一块文字，空的是不要字。不写的字照原来的 |
 | `attachments` | 数组，可以不写 | 开这一轮的那一句里的附件换成这几个，写法照 `session.send` 的 `attachments`；空的是不要附件。不写的附件照原来的 |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 前缀要变时人选的，同 `session.send` 第 9 条（施工 OV-1 下） |
 
 回应照撤销的（`protocol/undo.md`）：`events` 照先后是 `turn.reverted`、重发的每一句 `message.user` 的序号；`cwd`、`turns`、`said`、`compactions`、`clears`、`jobs` 照撤销写（施工 U-1 拿掉了 `files`、`commands`），`said` 是撤掉的那一轮原来那一句的第一行。重发的都落了盘才回，和 `session.send` 一样不等新的一轮做完。
 
@@ -641,6 +648,7 @@
 | `text` | 字符串，必写 | 人打的原文，例如 `/stop` |
 | `as` | 对象，可以不写 | 代表通讯平台上的人，同 `session.send` 的 `as`：只给场所会话，场所会话也只收带它的 |
 | `cwd` | 字符串，可以不写 | 头所在的目录，绝对的或者 `~` 开头的：只用来接 `/workspace` 后面相对的路径（施工 9-7 下） |
+| `prefix` | `"keep"`、`"compact"`，可以不写 | 开新一轮的命令（模板、MCP 提示词、`/goal` 设定和继续）前缀要变时人选的，同 `session.send` 第 9 条（施工 OV-1 下）；别的命令不看 |
 
 回应 `{"command": "clear"|"stop"|"workspace"|"remember"|"dream"|"clear-memory"|"goal", "events": [...], "said": "<回执>"}`：`command` 是正名（别名换成了正名），`events` 是这一次追加的全部事件的序号、最后一条是记下的 `command.ran`，`said` 是回执那一句，照这个连接的语言（`ui.language`），头原样发给人。
 
@@ -1436,6 +1444,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `session_sealed` | -32010 | 会话封存了（分叉时写了 `seal_after`、跑满了），改对话的命令不收（施工 C-8 下，`session/fork.md`「封存」） |
 | `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | -32010 | 改长期目标不合现在的样子（施工 X-7，`goal.md`）：已经有一个没完成的（跑着、停着、卡住）再设；没有的改、停、接着跑、结束；停着、卡住的再停；跑着的接着跑。`/goal` 回它们（`command.run` 第 10 条，施工 X-8 下） |
 | `goal_unavailable` | -32010 | `/goal`：这个会话没有长期目标（`command.run` 第 10 条，施工 X-8 下） |
+| `prefix_changing` | -32010 | 文件改了、前缀要变，开新一轮之前先问人；`data.files` 是改了的文件，`data.more` 是还有几个（`session.send` 第 9 条，施工 OV-1 下） |
 | `no_rule` | -32010 | `session.answer` 选了本会话都允许，请求却没提放行规则（施工 D-1） |
 | `unexpected_reason` | -32010 | `session.answer` 允许却带了理由（施工 D-1） |
 | `bad_answer` | -32010 | `session.answer` 的回答和题目对不上：条数不对、选了题目里没有的、单选的选了几项、选重了（施工 D-1） |
@@ -1629,6 +1638,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `goal_paused` | 长期目标已暂停。 | Goal paused. |
 | `goal_running` | 长期目标正在进行。 | Goal running. |
 | `goal_unavailable` | 此会话不支持长期目标。 | Goals are not available in this session. |
+| `prefix_changing` | 检测到文件变动，继续对话会因缓存失效多付输入费用。 | Files changed; continuing will cost extra input because the cache is invalidated. |
 | `no_rule` | 只能允许本次或拒绝。 | Only allow once or deny. |
 | `unexpected_reason` | 仅拒绝可附理由。 | Only a denial can carry a reason. |
 | `bad_answer` | 回答与题目不匹配。 | Answers do not match the questions. |
@@ -1699,6 +1709,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |
 | `crates/miyu-endpoint/tests/goal_heads.rs`（施工 X-8 补） | 事件流订阅的回应没有目标的不写 `goal`、有的同会话状态；设了、开一轮、等人开口各推一条 `goal.changed`（`by` 模块 `goal`，带上限）；续轮消息的 `cause` 是 `goal-1-…`；视图条目带 `round` |
 | `crates/miyu-endpoint/tests/goal_command.rs`、`src/commands/goal/tests.rs`（施工 X-8 下） | `command.run` 第 10 条：设了就开续轮，看、停、改、继续、清掉各一句回执，`goal.*` 的 `by` 是打命令的人，执行了的记 `command.ran`、被拒的不记；没写上限的改照原来的；卡住的再设、停拒，改了上限能接着跑；工具面上没有、预设关了（带预设的名字）、通讯平台的会话 `goal_unavailable`，命令菜单不列；子命令只在后面没字时认，`--rounds` 的几种写法 |
+| `crates/miyu-endpoint/tests/prefix_ask.rs`、`src/presets/edits/tests.rs`、`miyu-session` 的 `actor/persona/tests.rs`（施工 OV-1 下） | `session.send` 第 9 条：覆盖改了，声明了的头 `send`、`redo`、模板命令、`/goal` 都拒 `prefix_changing` 带文件；`keep` 照常说、这一轮照新的拼、拼过不再问；没声明的头不问；`compact` 压完了才开这一句的那一轮；号照两层算、改动表挪出去的数进 `more`；不换快照的会话不问 |
 | `crates/miyu-endpoint/tests/workspace_command.rs`（施工 9-7 下） | `/workspace <路径>` 同 `set_workspace` 只换工作目录、加进来的目录照旧，回执是中文那一句，一样的不记换；相对的照 `cwd` 接、没带的照会话的接，路径里的空白照留，`cwd` 不是绝对的参数不对；不带路径的只说现在在哪；不在的、文件、数据根里的照原因拒绝、什么都不记；`~` 太宽退回账号的默认工作区、回执说一声；场所里管理的人 `owner_only`，主人能换 |
 | `crates/miyu-endpoint/tests/clear.rs` | 协议上清空（施工 6-8 补）：回应是那一轮的开头、订阅的推送里是那一批三条、不请求模型；下一次请求里没有清空以前的；撤掉那一轮回应里撤掉了一次压缩、没有 `said`，再问看得到了；有回合在进行、本来就空的两种拒绝，中文、英文；会话编号不对、没写的参数不对 |
 | `crates/miyu-endpoint/src/sessions/tests.rs` | 父会话不在会话表里的不再造子会话、什么都没建（施工 3-8 三补） |

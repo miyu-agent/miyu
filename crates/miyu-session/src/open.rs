@@ -360,6 +360,10 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         actor.report_to(Reporter::start(upstream, span.clone()));
     }
     let (resources, blobs) = (shipped, stored);
+    // 文件改动的版本（施工 OV-1 下）：照这一刻的号起，和 Handle 共用。
+    let prefix = std::sync::Arc::new(crate::prefix::Prefix::new(
+        presets.as_ref().map_or(0, crate::open::PresetPlaces::edits),
+    ));
     actor.watch_persona(Refresh {
         personas,
         resources,
@@ -368,6 +372,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         child,
         presets,
         tools: tools.clone(),
+        prefix: std::sync::Arc::clone(&prefix),
         seen: Some(edition.clone()),
         venue: venue.clone(),
         lineage: lineage.clone(),
@@ -401,7 +406,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .with_memory(room)
                 .with_goals(on_face)
                 .with_loops(loops)
-                .with_waiting(on_person))
+                .with_waiting(on_person)
+                .with_prefix(prefix))
         }
         Err(_) => {
             error::abandoned(abandoned, &id).await;

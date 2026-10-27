@@ -64,6 +64,8 @@ pub struct Handle {
     /// 认不认 `/loop`（施工 J-2）：造会话、载入时工具面上有 `schedule_wakeup` 的才认（循环这个包装了、预设开着）；中途换了
     /// 预设，下次载入照新的。
     loops: bool,
+    /// 文件改动的版本，和 actor 共用（施工 OV-1 下，[`crate::prefix::Prefix`]）。
+    prefix: Arc<crate::prefix::Prefix>,
 }
 
 /// 发给 actor 的。
@@ -196,6 +198,7 @@ impl Handle {
             memory: crate::memory::RoomCell::default(),
             goals: false,
             loops: false,
+            prefix: Arc::default(),
         }
     }
 

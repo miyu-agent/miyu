@@ -86,6 +86,9 @@ struct Caps {
     input: bool,
     /// 认识管理员模式（施工 Y-12 下）：改系统那一层的请求带 `"scope": "system"`。没声明的老头照以前的意思。
     scope: bool,
+    /// 文件改了、前缀要变时发送前问人（施工 OV-1 下）：开新一轮的请求可能回 `prefix_changing`，头弹窗、带 `prefix` 重发。没声明
+    /// 的老头照旧直接发、下一轮换上。
+    prefix_ask: bool,
 }
 
 /// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入，替谁干活。
@@ -97,6 +100,8 @@ pub(crate) struct Shaken {
     input: bool,
     /// 认识管理员模式（施工 Y-12 下）。
     scope: bool,
+    /// 会问人「前缀要变了」（施工 OV-1 下）。
+    prefix_ask: bool,
     /// 握手时替谁干活：给人看的字照他那一份配置的 `ui.language`（施工 Y-2 下下末，以前一律照机主的）。
     whose: AccountId,
 }
@@ -111,6 +116,7 @@ impl Shaken {
             input: self.input,
             admin: false,
             scoped: self.scope,
+            prefix_ask: self.prefix_ask,
         }
     }
 
@@ -190,6 +196,8 @@ pub(crate) struct Peer {
     pub(crate) admin: bool,
     /// 握手时声明了认识管理员模式（施工 Y-12 下）。
     pub(crate) scoped: bool,
+    /// 握手时声明了会问人「前缀要变了」（施工 OV-1 下）。
+    pub(crate) prefix_ask: bool,
 }
 
 impl Peer {
@@ -246,6 +254,7 @@ pub(crate) async fn hello(
         system: system(params.locale.as_deref()),
         input: params.caps.input,
         scope: params.caps.scope,
+        prefix_ask: params.caps.prefix_ask,
         whose: account.clone(),
     };
     let language = shaken.now(core).language;

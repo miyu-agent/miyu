@@ -319,6 +319,7 @@
 | `text` | 字符串，必写 | 人打的原文，例如 `/stop` |
 | `cwd` | 字符串 | 头所在的目录，只用来接 `/workspace` 后面相对的路径 |
 | `as` | 对象 | 场所会话：代表平台上的人，同 `session.send` |
+| `prefix` | `"keep"` 或 `"compact"` | 开新一轮的命令（模板、MCP 提示词、`/goal` 设定和继续）前缀要变时人选的，同 `session.send`「前缀要变」 |
 
 **回应**：`{"command", "events", "said"}`：正名（别名换成正名）、这一次追加的事件、回执那一句（照连接的语言，原样给人看）。打开整页的命令回 `{"command", "opens": {"package", "widget"}, "said": ""}`，头打开那一页。
 
