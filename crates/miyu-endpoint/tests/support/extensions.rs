@@ -153,6 +153,11 @@ pub fn quick() -> Timing {
 
 /// 同 [`core`]，配置清单照 `miyu-core` 起来时那样拼进包的配置项（施工 9-4 下下：握手交包自己的配置）。
 pub fn core_with_settings(home: &Home, timing: Timing) -> Arc<Core> {
+    core_with_script(home, timing, &Script::new([]))
+}
+
+/// 同 [`core_with_settings`]，模型照 `script` 答（施工 IM-1 中下三：要跑一轮的）。
+pub fn core_with_script(home: &Home, timing: Timing, script: &Script) -> Arc<Core> {
     let core_items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -173,7 +178,7 @@ pub fn core_with_settings(home: &Home, timing: Timing) -> Arc<Core> {
         miyu_endpoint::config::Environment::of(&[]),
     );
     let core = Arc::new(
-        home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
+        home.core_full(script, Catalog::default(), None, TOKEN)
             .with_extension_timing(timing)
             .with_config(config)
             .with_packages(found),

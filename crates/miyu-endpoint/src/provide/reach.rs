@@ -45,6 +45,21 @@ impl Provided {
         }
     }
 
+    /// 包 `package` 替 `account` 的那一份准备好了的连接（施工 IM-1 中下三：她、人用到的斜杠命令、搜索来源）：登记过工具（哪怕是
+    /// 空的）才算准备好，同工具调用。每人一份的没在跑的拉起、等它登记；只有一份的是登记过的那一份。
+    pub(crate) async fn ready(
+        &self,
+        core: &crate::Core,
+        package: &str,
+        account: &AccountId,
+    ) -> Option<Peer> {
+        if crate::extensions::scoped(core, package) {
+            self.reach(package, account).await
+        } else {
+            self.peer(package)
+        }
+    }
+
     /// `instance` 照 `found` 找得到的连接：找得到的直接交回，没有的替那个人拉起，等到找得到（每登记工具、握手、登记后台页的
     /// 方法一次醒一次，[`Provided::nudge`]）。最多等 [`WAIT`]；起不来、停下了、没等到的交回没有。
     pub(crate) async fn wait(

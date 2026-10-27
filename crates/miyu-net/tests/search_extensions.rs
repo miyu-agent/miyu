@@ -14,17 +14,18 @@ use miyu_net::{Answered, Found, Hit, Missed, Query, Search, SearchPort, Unanswer
 
 use crate::support::{Reply, Site, resources};
 
-/// 假的端口：照 `answer` 答，数着被问了几次、问的是哪个来源。
+/// 假的端口：照 `answer` 答，数着被问了几次、问的是哪个来源、替谁问的。
 struct Port {
     asked: AtomicUsize,
     sources: Mutex<Vec<String>>,
+    owners: Mutex<Vec<Option<String>>>,
     answer: Result<Answered, Unanswered>,
 }
 
 impl SearchPort for Port {
     fn query<'a>(
         &'a self,
-        source: &'a str,
+        (source, owner): (&'a str, Option<&'a miyu_kernel::id::AccountId>),
         _query: &'a Query,
         _want: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Answered, Unanswered>> + Send + 'a>> {
@@ -33,6 +34,10 @@ impl SearchPort for Port {
             .lock()
             .expect("锁没坏")
             .push(source.to_string());
+        self.owners
+            .lock()
+            .expect("锁没坏")
+            .push(owner.map(|owner| owner.as_str().to_string()));
         let answer = self.answer.clone();
         Box::pin(async move { answer })
     }
@@ -42,6 +47,7 @@ fn port(answer: Result<Answered, Unanswered>) -> Arc<Port> {
     Arc::new(Port {
         asked: AtomicUsize::new(0),
         sources: Mutex::new(Vec::new()),
+        owners: Mutex::new(Vec::new()),
         answer,
     })
 }
@@ -149,4 +155,64 @@ async fn without_a_port_the_shipped_order_answers() {
         .await
         .expect("搜得到");
     assert_eq!(found.source, "Exa");
+}
+
+/// 设置里挑了 `source` 的那一轮的配置。
+struct Picked(&'static str);
+
+impl miyu_tool::SettingsPort for Picked {
+    fn values(&self) -> miyu_config::Values {
+        let mut values = miyu_config::Values::defaults(miyu_net::SearchSettings::ITEMS);
+        values.set("net.search.source", miyu_config::Value::Text(self.0.into()));
+        values
+    }
+
+    fn secret(
+        &self,
+        _reference: &miyu_config::secret::Reference,
+    ) -> Option<miyu_config::secret::Secret> {
+        None
+    }
+}
+
+/// 她在 bob 的会话里用 `web_search`：问扩展的来源时带上 bob（施工 IM-1 中下三：每人一份的包问他那一份）。
+#[tokio::test]
+async fn the_tool_asks_the_extension_for_the_session_s_owner() {
+    let (_site, search) = shipped().await;
+    let port = port(found_by("Finder"));
+    search.attach(port.clone());
+    let tool = miyu_net::tools_with(
+        &resources(),
+        Arc::new(miyu_net::Pages::new(&resources())),
+        Arc::new(search),
+    )
+    .expect("字读得出")
+    .into_iter()
+    .find(|tool| tool.spec().name == miyu_net::WEB_SEARCH)
+    .expect("有 web_search");
+    let ids = miyu_tool::CallIds {
+        session: miyu_kernel::id::SessionId::parse("01890000-0000-7000-8000-000000000001")
+            .expect("合写法"),
+        owner: miyu_kernel::id::AccountId::parse("bob").expect("合写法"),
+        call: miyu_kernel::id::CallId::parse("call_1_1").expect("合写法"),
+        asked: None,
+        preset: None,
+    };
+    let call = miyu_tool::Call {
+        args: json!({"query": "rust"}).to_string(),
+        settings: Some(Arc::new(Picked("finder/web"))),
+        ids: Some(ids),
+        ..miyu_tool::testkit::call("{}")
+    };
+    let done = tokio::time::timeout(
+        Duration::from_secs(60),
+        tool.run(call, miyu_tool::Progress::new(|_| {})),
+    )
+    .await
+    .expect("一分钟内搜完");
+    assert!(!done.error, "搜得到");
+    assert_eq!(
+        *port.owners.lock().expect("锁没坏"),
+        [Some("bob".to_string())]
+    );
 }

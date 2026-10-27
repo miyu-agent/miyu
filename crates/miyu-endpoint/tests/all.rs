@@ -187,6 +187,7 @@ mod packages_upgrade;
 mod peers;
 mod per_account_extension;
 mod per_account_pages;
+mod per_account_routes;
 mod permission;
 mod persona_appearance;
 mod persona_avatar;

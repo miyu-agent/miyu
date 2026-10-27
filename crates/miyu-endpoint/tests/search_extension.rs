@@ -27,9 +27,10 @@ async fn ask(
     source: &str,
     text: &str,
 ) -> Result<(String, serde_json::Value), Asked> {
+    let owner = alice();
     query(
         core,
-        source,
+        (source, Some(&owner)),
         json!({"source": source, "query": text, "want": 8}),
         Duration::from_secs(30),
     )

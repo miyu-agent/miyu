@@ -25,7 +25,7 @@ pub(super) struct Extensions(pub(super) Weak<Core>);
 impl SearchPort for Extensions {
     fn query<'a>(
         &'a self,
-        source: &'a str,
+        (source, owner): (&'a str, Option<&'a miyu_kernel::id::AccountId>),
         asked: &'a Query,
         want: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Answered, Unanswered>> + Send + 'a>> {
@@ -41,7 +41,7 @@ impl SearchPort for Extensions {
                 "allowed_domains": asked.allowed,
                 "blocked_domains": asked.blocked,
             });
-            match query(&core, source, params, TIMEOUT).await {
+            match query(&core, (source, owner), params, TIMEOUT).await {
                 Ok((name, result)) => Ok(Answered {
                     name,
                     hits: hits(&result),
