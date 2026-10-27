@@ -118,6 +118,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "account.invites"
         | "account.list"
         | "account.logout"
+        | "account.avatar"
+        | "account.set_avatar"
         | "account.set_admin"
         | "account.register"
         | "account.setup"

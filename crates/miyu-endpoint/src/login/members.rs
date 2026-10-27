@@ -163,6 +163,16 @@ pub(crate) fn list(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
         }
         listed.push(one);
     }
+    // 头像的版本（施工 AV-1）：有的才带。
+    for one in &mut listed {
+        if let Some(avatar) = one["account"]
+            .as_str()
+            .and_then(|name| AccountId::parse(name).ok())
+            .and_then(|account| super::avatar::version(core, &account))
+        {
+            one["avatar"] = json!(avatar);
+        }
+    }
     for system in core.system_accounts() {
         listed.push(json!({"account": system.as_str(), "kind": "system", "admin": false}));
     }

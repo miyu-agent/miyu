@@ -82,6 +82,15 @@ pub(super) async fn call(
             Changed::answer(login::members::switch(core, account, params, false).await)
         }
         "account.set_admin" => Changed::answer(login::admins::set(core, account, params).await),
+        // 账号头像（施工 AV-1）。
+        "account.set_avatar" => Changed::answer(match crate::methods::params(request) {
+            Ok(params) => login::avatar::set(core, account, params).await,
+            Err(refusal) => Err(refusal),
+        }),
+        "account.avatar" => Changed::answer(match crate::methods::params(request) {
+            Ok(params) => login::avatar::read(core, account, params).await,
+            Err(refusal) => Err(refusal),
+        }),
         _ => Changed::answer(Err(Refusal::UNKNOWN_METHOD)),
     }
 }

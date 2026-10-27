@@ -95,7 +95,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_persona`, `unknown_preset` | No such persona or preset | |
 | `persona_invalid`, `preset_invalid` | Its files are wrong | `problem`, `message`, `line` |
-| `persona_conflict`, `preset_conflict` | `expect` doesn't match | `current` |
+| `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is the account avatar, construction AV-1) | `current` |
 | `nothing_to_delete` | You have no layer to delete | |
 | `avatar_not_image`, `avatar_too_big`, `background_not_image`, `background_too_big` | The avatar or background isn't an image, or is too big | measured size and limit |
 

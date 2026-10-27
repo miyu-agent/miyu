@@ -15,6 +15,7 @@
 //! 一件件改（[`Identity`] 的锁），argon2 放进阻塞线程。
 
 pub(crate) mod admins;
+pub(crate) mod avatar;
 mod files;
 pub(crate) use files::read_groups;
 pub(crate) mod invites;

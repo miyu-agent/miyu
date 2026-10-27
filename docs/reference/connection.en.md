@@ -69,6 +69,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `invite`, `ticket
 |---|---|
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
+| `avatar` | The version of this account's avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
 | `account` | Who you are: local people are `admin`; an extension of a package that declares a system account is that account (named after the package), other extensions are `admin` too |
 | `admin` | Boolean: whether this account is an admin (the owner, and people in the admin group; construction Y-2 lower-lower-middle-upper). Heads use it to decide whether to show the machine-wide parts of the settings and account management. `false` before registering or while there is no owner yet |
 | `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace. For the admin there is also `dirs`: `{"pictures", "videos", "documents", "downloads"}`, this account's XDG-style folders, the real path when it exists and as is otherwise (step Y-11); members get none. Not given to remote connections (Y-1 下) |
@@ -192,6 +193,13 @@ Several people can use one Miyu: the admin hands out invite codes, and whoever h
 | `account.list` | none | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?}]}`: `kind` is `admin` (the owner), `member` or `system`; `admin` says whether the person is an admin (always true for the owner) |
 | `account.disable`, `account.enable` | `account` | `{"account", "disabled"}`: disabling revokes all its logins and closes its connections; data stays |
 | `account.set_admin` | `account`, `admin` (bool) | `{}`: make a member an admin or stop them being one; the owner is always an admin and can't be removed. The owner, the system, package accounts and unknown accounts get `unknown_account`; a disabled member gets `member_disabled` |
+
+**Avatars** (construction AV-1): anyone can set, remove and read their own; only admins can read someone else's, others get `not_permitted`. One PNG, JPEG or WebP, at most 1 MiB and 1024 pixels a side (as for persona avatars). Which accounts have logged in on this browser is the web page's business; the core doesn't list them to anyone not logged in. `account.list` rows carry `avatar` (the version) when there is one.
+
+| Method | Params | Response |
+|---|---|---|
+| `account.set_avatar` | `blob` (uploaded with `blob.put` first) or `unset: true`, optionally `expect` (the version you last read, `null` for none yet) | `{"avatar": <version or null>}`; a stale `expect` gets `avatar_conflict` (`data` carries the current version); not a picture gets `avatar_not_image`, too big `avatar_too_big` |
+| `account.avatar` | `account` (optional, yourself by default) | `{"avatar", "media_type", "data"}` (version, media type, base64), or `null` when there is none |
 
 The username is the account id: starts with a lowercase letter, only lowercase letters, digits and `-`, at most 32; it can't be the admin's, an existing account's or a system account's, nor `users`. Invite codes are single-use; if registering fails (say the username is taken) the code stays usable.
 

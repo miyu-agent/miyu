@@ -95,7 +95,7 @@
 |---|---|---|
 | `unknown_persona`、`unknown_preset` | 没有这个人格、预设 | |
 | `persona_invalid`、`preset_invalid` | 文件写错了 | `problem`、`message`、`line` |
-| `persona_conflict`、`preset_conflict` | `expect` 对不上 | `current` |
+| `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 是账号头像，施工 AV-1） | `current` |
 | `nothing_to_delete` | 你那一层本来就没有 | |
 | `avatar_not_image`、`avatar_too_big`、`background_not_image`、`background_too_big` | 头像、背景图不是图、太大 | 量到的和上限 |
 

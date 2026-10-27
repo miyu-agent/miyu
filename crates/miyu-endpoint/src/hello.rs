@@ -261,6 +261,10 @@ pub(crate) async fn hello(
         // 视图投影的版本（施工 9-8 中，`view.md`「握手」）：头照它决定用条目还是自己算。
         "view": miyu_view::VERSION,
     });
+    // 账号头像的版本（施工 AV-1）：有的才带，头照它换缓存。
+    if let Some(avatar) = crate::login::avatar::version(core, account) {
+        result["avatar"] = json!(avatar);
+    }
     let errors = core.config().errors();
     if errors > 0 {
         result["config_errors"] = json!(errors);

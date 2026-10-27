@@ -70,6 +70,7 @@
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
 | `account` | 你是谁：本机的人是 `admin`；声明了系统账号的包的扩展是那个系统账号（账号名同包的编号），别的扩展也是 `admin` |
+| `avatar` | 这个账号头像的版本，有头像的才带（施工 AV-1）：头照它换缓存，图用 `account.avatar` 取 |
 | `admin` | 布尔：这个账号是不是管理员（机主，和管理员组里的人；施工 Y-2 下下中上）。头照它决定给不给设置页里管整台机器的那些、账号管理。还没注册、还没有机主的是 `false` |
 | `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。管理员的另有 `dirs`：`{"pictures", "videos", "documents", "downloads"}`，这个账号照 XDG 的几处，在的给真实位置、还没建的照原样（施工 Y-11 上）；成员的没有。远程的连接整个没有（施工 Y-1 下） |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
@@ -189,9 +190,16 @@ OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自
 | `account.invites` | 没有 | `{"invites": [{"id", "created", "expires", "used"?}]}`：还能用的、最近用掉的（`used` 是 `{"account", "at"}`） |
 | `account.invite_revoke` | `id` | `{"revoked": true}`：撤掉一个还没用的 |
 | `account.register` | `username`、`password` | `{"account", "username", "login": {"expires", "token"}}`：注册好了，这个连接从此是这个账号 |
-| `account.list` | 没有 | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?}]}`：`kind` 是 `admin`（机主）、`member`、`system`；`admin` 是这个人是不是管理员（机主恒是） |
+| `account.list` | 没有 | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?, "avatar"?}]}`：`avatar` 是头像的版本（施工 AV-1）；`kind` 是 `admin`（机主）、`member`、`system`；`admin` 是这个人是不是管理员（机主恒是） |
 | `account.disable`、`account.enable` | `account` | `{"account", "disabled"}`：停用的登录全部作废、连着的断开，数据留着 |
 | `account.set_admin` | `account`、`admin`（布尔） | `{}`：把一个成员设成、撤掉管理员；机主恒是管理员、撤不掉。机主、系统、包的账号、没有的账号 `unknown_account`，停用了的成员 `member_disabled` |
+
+**头像**（施工 AV-1）：谁都能换、删、读自己的；别人的只有管理员读得了，别人回 `not_permitted`。一张 PNG、JPEG、WebP，最大 1 MiB、宽高不超过 1024（同人格头像）。这台浏览器登录过哪些账号由网页自己记，核心不列给没登录的人。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `account.set_avatar` | `blob`（先 `blob.put` 传上来）或 `unset: true`，可带 `expect`（上次读到的版本，`null` 是还没有） | `{"avatar": <版本或 null>}`；`expect` 对不上的 `avatar_conflict`（`data` 带现在的版本）；不是图 `avatar_not_image`，太大 `avatar_too_big` |
+| `account.avatar` | `account`（可以不写，是自己） | `{"avatar", "media_type", "data"}`（版本、媒体类型、base64）；没有的是 `null` |
 
 用户名就是账号编号：小写字母开头，只用小写字母、数字、`-`，最多 32 个；不能和管理员、已有的账号、系统账号重名，也不能叫 `users`。邀请码一次性；注册没成（比如用户名被占了）码还在。
 

@@ -118,6 +118,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Terminal and group admins only.",
         ),
         "nothing_to_delete" => ("没有可删除的内容。", "Nothing to delete."),
+        "avatar_conflict" => (
+            "头像已被修改，请刷新后重试。",
+            "Avatar was modified. Refresh and try again.",
+        ),
         "persona_conflict" => (
             "人格已被修改，请刷新后重试。",
             "Persona was modified. Refresh and try again.",

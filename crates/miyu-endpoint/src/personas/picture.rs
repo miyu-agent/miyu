@@ -168,33 +168,61 @@ pub(crate) fn apply(personas: &Personas, id: &str, checked: &Checked) -> Result<
             return Err(Refusal::conflict("persona_conflict", Some(json!(current))));
         }
     }
-    let failed = |error: std::io::Error| {
+    replace(&dir, checked).map_err(|error| {
         tracing::warn!(target: TARGET, persona = id, picture = picture.field(), kind = ?error.kind(), "persona picture not written");
         Refusal::INTERNAL
-    };
+    })
+}
+
+/// 把查过的写进目录 `dir`（施工 AV-1 从 [`apply`] 挪出来，账号的头像同一个写法）：先删这一种图原来的几个名字，再写新的（先写
+/// 临时文件再改名）；删掉的不写。
+pub(crate) fn replace(dir: &Path, checked: &Checked) -> std::io::Result<()> {
+    let picture = checked.picture;
     if checked.bytes.is_some() {
-        std::fs::create_dir_all(&dir).map_err(failed)?;
+        std::fs::create_dir_all(dir)?;
     }
     for name in picture.names() {
         match std::fs::remove_file(dir.join(name)) {
             Ok(()) => {}
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(failed(error)),
+            Err(error) => return Err(error),
         }
     }
     if let Some((bytes, extension)) = &checked.bytes {
         let field = picture.field();
         let temporary = dir.join(format!(".{field}.{extension}.tmp"));
-        std::fs::write(&temporary, bytes).map_err(failed)?;
-        std::fs::rename(&temporary, dir.join(format!("{field}.{extension}"))).map_err(failed)?;
+        std::fs::write(&temporary, bytes)?;
+        std::fs::rename(&temporary, dir.join(format!("{field}.{extension}")))?;
     }
     Ok(())
 }
 
+impl Checked {
+    /// 写之前要对照的版本：没交的不对照，`Some(None)` 是「还没有」。
+    pub(crate) fn expect(&self) -> Option<&Option<String>> {
+        self.expect.as_ref()
+    }
+}
+
 /// 图的版本：字节的 SHA-256 前 16 位十六进制；读不了的没有。
-fn version_of(path: &Path) -> Option<String> {
+pub(crate) fn version_of(path: &Path) -> Option<String> {
     let bytes = std::fs::read(path).ok()?;
     Some(ContentHash::of(&bytes).hex()[..16].to_string())
+}
+
+/// 读出 `path` 那张图：`{"<avatar|background>": <版本>, "media_type", "data"}`（施工 AV-1 起账号的头像也照它）。
+pub(crate) fn encoded(path: &Path, picture: Picture) -> std::io::Result<Value> {
+    let bytes = std::fs::read(path)?;
+    let media_type = match path.extension().and_then(|extension| extension.to_str()) {
+        Some("png") => "image/png",
+        Some("webp") => "image/webp",
+        _ => "image/jpeg",
+    };
+    Ok(json!({
+        picture.field(): ContentHash::of(&bytes).hex()[..16].to_string(),
+        "media_type": media_type,
+        "data": STANDARD.encode(&bytes),
+    }))
 }
 
 /// `persona.avatar`、`persona.background` 的参数。
@@ -219,17 +247,7 @@ pub(crate) async fn read(
         let Some(path) = picture.of(&found) else {
             return Ok(Value::Null);
         };
-        let bytes = std::fs::read(path).map_err(|_| Refusal::INTERNAL)?;
-        let media_type = match path.extension().and_then(|extension| extension.to_str()) {
-            Some("png") => "image/png",
-            Some("webp") => "image/webp",
-            _ => "image/jpeg",
-        };
-        Ok(json!({
-            picture.field(): ContentHash::of(&bytes).hex()[..16].to_string(),
-            "media_type": media_type,
-            "data": STANDARD.encode(&bytes),
-        }))
+        encoded(path, picture).map_err(|_| Refusal::INTERNAL)
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?

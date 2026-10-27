@@ -35,6 +35,7 @@ mod system_append;
 mod ticket_extension;
 mod turn_inject;
 
+mod account_avatar;
 mod admin_mode;
 mod admins;
 mod answer;

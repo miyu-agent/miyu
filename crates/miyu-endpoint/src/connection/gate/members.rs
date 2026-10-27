@@ -16,6 +16,9 @@ const METHODS: &[&str] = &[
     "human.get",
     "unsubscribe",
     "account.logout",
+    // 自己的头像（施工 AV-1）：别人的照方法自己挡。
+    "account.avatar",
+    "account.set_avatar",
     "login.ticket",
     "login.redeem",
     // 自己的会话。
