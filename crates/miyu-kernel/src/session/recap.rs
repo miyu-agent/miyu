@@ -13,10 +13,12 @@
 //!
 //! 同一份取法给抽取用（施工 R-6 上，[`Session::spoken_in`]）：会话那一层照日志拼的历史，交给这个会话的组装器渲染。
 
+use std::sync::Arc;
+
 use super::Session;
 use super::action::{Action, Outcome, Reason};
 use super::aside::{Aside, Finished};
-use crate::assemble::Spoken;
+use crate::assemble::{Assembler, Spoken};
 use crate::event::{Body, CallError, Cost, Purpose, SessionRecapped, Usage};
 use crate::history::History;
 use crate::id::{CommandId, Seq};
@@ -32,6 +34,11 @@ pub(super) struct Recapping {
 }
 
 impl Session {
+    /// 这个会话的组装器（施工 PERF-4）：记忆抽取在阻塞线程里照它渲染那一段（同 [`Session::spoken_in`]），不占会话。
+    pub fn assembler(&self) -> Arc<dyn Assembler + Send + Sync> {
+        Arc::clone(&self.policy.assembler)
+    }
+
     /// `history` 里第 `after` 条以后的几段话，照这个会话的组装器渲染（施工 R-6 上，`memory.md` 第六条）：抽取的那一段。
     /// `history` 是会话那一层照日志拼的（可以是留着一切的那一份，压缩替代掉的也在），不碰这个会话手里的历史；组装器别的
     /// 本事不往外露。只读。

@@ -226,7 +226,7 @@ fn policy() -> Policy {
             per_session: 16,
         },
         foreground: false,
-        assembler: Box::new(Listing),
+        assembler: std::sync::Arc::new(Listing),
         facts: FactTemplates::new(
             r#"<e t="{time}" z="{timezone}" d="{cwd}"/>"#,
             r#"<p l="{level}"/>"#,
