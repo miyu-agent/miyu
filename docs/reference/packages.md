@@ -196,6 +196,8 @@
 | `retry_in` | 在等的：多少毫秒以后再拉起 |
 | `reason`、`stderr` | 停下的：为什么（`failed_repeatedly`、`config_error`、`needs_approval`、网址的服务要浏览器登录的 `needs_login`……）、标准错误的最后几行 |
 | `capabilities`、`unapproved` | 声明的能力 `[{id, name, summary}]`、还没批的 |
+| `scope` | 每人一份的包（`[process] scope = "account"`）是 `"account"`，别的没有这一格。这时 `state` 这几格是看的人自己那一份的：他还没用过的是 `off`，用到时才起，不是关着（开关看 `on`）（施工 IM-1 中下四） |
+| `copies` | 管理员看每人一份的包才有：拉起过的每一份 `[{account, state, failures, pid?, retry_in?, reason?, stderr?}]`，照账号排。关掉、重启这个包，每一份都停 |
 
 要一直跟着最新的，订阅 `extensions` 流。
 

@@ -196,6 +196,8 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `retry_in` | While waiting: milliseconds until the next start |
 | `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`, `needs_login` for a URL server that needs a browser login…), the last lines of stderr |
 | `capabilities`, `unapproved` | Declared capabilities `[{id, name, summary}]`, those not yet approved |
+| `scope` | `"account"` for per-account packages (`[process] scope = "account"`), absent otherwise. Then the `state` fields are the viewer's own copy: `off` if they haven't used it yet, since it starts on demand; that isn't switched off (see `on`) (construction IM-1 lower-middle 4) |
+| `copies` | Only for admins, on per-account packages: every copy started so far, `[{account, state, failures, pid?, retry_in?, reason?, stderr?}]`, by account. Turning the package off or restarting it stops every copy |
 
 To keep up to date, subscribe to the `extensions` stream.
 

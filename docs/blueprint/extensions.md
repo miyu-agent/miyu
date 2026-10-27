@@ -47,7 +47,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `extension.status` | 无 | `{"extensions": [<一个>…]}`，照编号排，只列读成了的 `process` 包 |
+| `extension.status` | 无 | `{"extensions": [<一个>…]}`，照编号排，只列读成了的 `process` 包。每人一份的包照看的人那一份报，带 `scope: "account"`；管理员另带 `copies`，拉起过的每一份一项（施工 IM-1 中下四） |
 | `extension.enable` | `{"package", "approve"?}` | `<一个>`：要的能力还有没批的，`approve`（能力名的列表）要盖住它们，批了记下（见「能力」）；开着、记下来、没在跑的拉起 |
 | `extension.disable` | `{"package"}` | `<一个>`：关了、记下来、在跑的请它退出 |
 | `extension.restart` | `{"package"}` | `<一个>`：请它退出、重新拉起，连续失败从零数；关着的拒绝 `extension_off`，还有没批的能力拒绝 `needs_approval` |

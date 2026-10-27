@@ -1,6 +1,7 @@
 //! 每人一份的包的后台页（施工 IM-1 中下）：登记的方法照（包，账号）记，`package.call` 转给调的那个人那一份，没在跑的替他拉起、
 //! 等它登记了方法再转。成员只碰得到他能用的每人一份的包的后台页：整台机器一份的、没勾「成员也能用」的回 `not_permitted`，给他的
-//! 软件包列表里也不带 `page`（施工 IM-1 中下一补）。
+//! 软件包列表里也不带 `page`（施工 IM-1 中下一补）。扩展的状态照看的人那一份报，管理员看得到每一份；关掉的时候每一份都停
+//! （施工 IM-1 中下四）。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -168,5 +169,50 @@ async fn each_person_s_page_reaches_their_own_copy() {
             "{package}：{file}"
         );
     }
+
+    // 扩展的状态（施工 IM-1 中下四）：每人一份的照看的人那一份报，管理员另带拉起过的每一份。
+    let each = status(&mut owner, "each").await;
+    assert_eq!(each["scope"], "account", "{each}");
+    assert_eq!(each["state"], "running", "机主那一份：{each}");
+    let copies = |each: &Value| -> Vec<(String, String)> {
+        each["copies"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{each}"))
+            .iter()
+            .map(|copy| {
+                (
+                    copy["account"].as_str().unwrap_or_default().to_string(),
+                    copy["state"].as_str().unwrap_or_default().to_string(),
+                )
+            })
+            .collect()
+    };
+    assert_eq!(
+        copies(&each),
+        [
+            ("alice".to_string(), "running".to_string()),
+            ("bob".to_string(), "running".to_string())
+        ]
+    );
+    let solo = status(&mut owner, "solo").await;
+    assert!(
+        solo.get("scope").is_none() && solo.get("copies").is_none(),
+        "{solo}"
+    );
+
+    // 关掉：每一份都停（中上欠的那条）。
+    let off = owner
+        .call(
+            "c-5d1f0a7e2b9c4386-8",
+            "extension.disable",
+            json!({"package": "each"}),
+        )
+        .await;
+    assert!(off["result"].is_object(), "{off}");
+    let each = status(&mut owner, "each").await;
+    assert!(
+        copies(&each).iter().all(|(_, state)| state == "off"),
+        "{each}"
+    );
     core.stop_extensions().await;
 }

@@ -104,3 +104,16 @@
 2. `miyu-net` 的 `search_extensions.rs`：她在 bob 的会话里用 `web_search` 挑了扩展的来源，端口收到的是替 bob 问。
 3. 手写变异 4 个全杀：挂接点照一份问、命令转给机主、搜索照一份问、`web_search` 不填属主。最后这个头一轮活了下来，补了第 2 条才杀掉。
 4. 本机门禁全过。
+
+### 十五、中下四：做了什么
+
+1. `extension.status` 和推送 `extension.changed`：每人一份的包照看的人那一份报（`Instance::serving`），多一格 `scope: "account"`；管理员另带 `copies`，拉起过的每一份一项（`Extensions::copies_of`）。网页的会话报的「每人一份的包显示已停用」就是原来照系统那份报（没有那一份，恒为 `off`）。
+2. 推送照订的人算：订阅的回应、推送原来用 `Shaken::now`（`admin` 恒假），改成 `now_whose` 加 `Shaken::whose`。
+3. 软件包列表的状态（`packages/status.rs`）同样照系统那份报，归 core-sub1 正在做的 U23下（它给列表加了「替谁」），等它合了再改。
+4. 界面块照（包，账号）分另开一步（中下五）：记录不分账号，每人一份的包推的全局块会被所有人看见，要连头那边的订阅一起改。
+
+### 十六、中下四：怎么验
+
+1. `per_account_pages.rs` 接着往下：机主、成员两份都起来以后，机主看 `each` 带 `scope: "account"`、自己那一份 `running`、`copies` 两份都 `running`；一份的 `solo` 不带这两格；`extension.disable` 以后 `copies` 全是 `off`（中上欠的「关的时候每一份都停」）。
+2. 手写变异 4 个全杀：照系统那份报、管理员不带 `copies`、关的时候只停系统那份、不带 `scope`。
+3. 本机门禁全过。

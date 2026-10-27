@@ -18,6 +18,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
+use miyu_kernel::id::AccountId;
 
 /// `disable`、`restart` 的参数。
 #[derive(Debug, Deserialize)]
@@ -38,21 +39,22 @@ pub(crate) struct EnableParams {
     approve: Option<Vec<String>>,
 }
 
-/// `extension.status`：起来时读到的 `process` 包，照编号排。订阅扩展的推送时的回应也是它（施工 9-4 补）。
-pub(crate) fn status(core: &Core, peer: Peer) -> Value {
+/// `extension.status`：起来时读到的 `process` 包，照编号排。订阅扩展的推送时的回应也是它（施工 9-4 补）。每人一份的包照
+/// `viewer` 那一份报（施工 IM-1 中下四）。
+pub(crate) fn status(core: &Core, peer: Peer, viewer: &AccountId) -> Value {
     let (switches, _) = read_switches(core);
     let packages = core.system_packages();
     let listed: Vec<Value> = processes(&packages)
-        .map(|(id, manifest)| one(core, id, manifest, &switches, peer))
+        .map(|(id, manifest)| one(core, id, manifest, &switches, (peer, viewer)))
         .collect();
     json!({ "extensions": listed })
 }
 
 /// 包 `id` 这时的一项（施工 9-4 补，`extension.changed` 推的就是它）：不是起来时读到的 `process` 包的没有。
-pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
+pub(crate) fn entry(core: &Core, id: &str, peer: Peer, viewer: &AccountId) -> Option<Value> {
     let manifest = &extension(core, id).ok()?;
     let (switches, _) = read_switches(core);
-    Some(one(core, id, manifest, &switches, peer))
+    Some(one(core, id, manifest, &switches, (peer, viewer)))
 }
 
 /// `extension.enable`：要的能力还有没批的，照 `approve` 批（施工 9-4 下上）；批过的、开着的一起记下，照登记缓存先登记
@@ -87,7 +89,7 @@ pub(crate) async fn turn_on(
     // 它带的 MCP 服务跟着起（施工 X-3 下）。
     core.start_services(id, manifest);
     core.extensions.notify(id);
-    Ok(one(core, id, manifest, &switches, peer))
+    Ok(one(core, id, manifest, &switches, (peer, &core.admin)))
 }
 
 /// `extension.disable`：记成关着，在跑的请它退出、等它退出，它的工具出目录（施工 O-2 中）。
@@ -111,7 +113,7 @@ pub(crate) async fn turn_off(core: &Arc<Core>, peer: Peer, id: &str) -> Result<V
     // 它带的 MCP 服务跟着停、工具出目录（施工 X-3 下）。
     core.stop_services(id, manifest).await;
     core.extensions.notify(id);
-    Ok(one(core, id, manifest, &switches, peer))
+    Ok(one(core, id, manifest, &switches, (peer, &core.admin)))
 }
 
 /// `extension.restart`：请它退出、等它退出，重新拉起，连续失败从零数。关着的拒绝；要的能力还有没批的拒绝
@@ -146,7 +148,7 @@ pub(crate) async fn restart_process(
         core.extensions
             .launch(core, &super::Instance::system(id), manifest);
     }
-    Ok(one(core, id, manifest, &switches, peer))
+    Ok(one(core, id, manifest, &switches, (peer, &core.admin)))
 }
 
 /// 编号是 `id` 的 `process` 包的清单：没有、读不成的 `unknown_package`，是界面的 `not_an_extension`。
@@ -184,9 +186,20 @@ pub(crate) fn write(
 
 /// 一个扩展：编号、名字（照连接的语言挑）、`start`、开没开、这时的状态；声明了能力的多 `capabilities`，还有没批的多
 /// `unapproved`（施工 9-4 下上）。开没开、批过哪些照 `switches`。
-fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Peer) -> Value {
+///
+/// 每人一份的包（施工 IM-1 中下四）：`state` 这几格照 `viewer` 那一份报，他没起过的是 `off`（用到时才起），多一格
+/// `scope: "account"` 让头分得出「用到时才起」和「关着」；管理员另带 `copies`，拉起过的每一份一项。
+fn one(
+    core: &Core,
+    id: &str,
+    manifest: &Manifest,
+    switches: &Switches,
+    (peer, viewer): (Peer, &AccountId),
+) -> Value {
     let on = super::on(switches, id, manifest);
-    let status = core.extensions.status(id);
+    let scoped = super::per_account(manifest);
+    let instance = super::Instance::serving(core, id, viewer);
+    let status = core.extensions.status_of(&instance);
     let start = manifest
         .process
         .as_ref()
@@ -199,7 +212,17 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
         "state": status.state.as_str(),
         "failures": status.failures,
     });
-    details(&mut item, status.state, &stderr::path(core, id));
+    details(
+        &mut item,
+        status.state,
+        &stderr::path(core, &instance.label()),
+    );
+    if scoped {
+        item["scope"] = json!("account");
+        if peer.admin {
+            item["copies"] = copies(core, id);
+        }
+    }
     if let Some((listed, left)) = approval::shown(core, id, manifest, peer.language) {
         item["capabilities"] = listed;
         if let Some(left) = left {
@@ -207,6 +230,33 @@ fn one(core: &Core, id: &str, manifest: &Manifest, switches: &Switches, peer: Pe
         }
     }
     item
+}
+
+/// 包 `id` 拉起过的每人一份：`account` 加同 [`one`] 的 `state`、`failures` 和细节。
+fn copies(core: &Core, id: &str) -> Value {
+    let listed: Vec<Value> = core
+        .extensions
+        .copies_of(id)
+        .into_iter()
+        .map(|(account, status)| {
+            let instance = super::Instance {
+                package: id.to_string(),
+                account: Some(account.clone()),
+            };
+            let mut copy = json!({
+                "account": account,
+                "state": status.state.as_str(),
+                "failures": status.failures,
+            });
+            details(
+                &mut copy,
+                status.state,
+                &stderr::path(core, &instance.label()),
+            );
+            copy
+        })
+        .collect();
+    json!(listed)
 }
 
 /// 一个进程这时的细节（施工 X-4 从 `one` 挪出来，软件包列表上的 MCP 服务也用）：在跑的带 `pid`（网址的 MCP 服务没有，施工 X-32 上），在等的带 `retry_in`（还差几毫秒），

@@ -119,7 +119,9 @@ pub(crate) fn call<'a>(
             answer(move || async move { crate::view::detail(core, peer, params(request)?).await })
         }
         "extension.status" => {
-            answer(move || async move { Ok(crate::extensions::status(core, peer)) })
+            answer(
+                move || async move { Ok(crate::extensions::status(core, peer, caller.acting_for())) },
+            )
         }
         "extension.enable" => {
             answer(

@@ -115,6 +115,15 @@ impl Extensions {
         )
     }
 
+    /// 包 `id` 每人一份的那几份（施工 IM-1 中下四）：拉起过的，照账号排，带这时的状态。
+    pub(crate) fn copies_of(&self, id: &str) -> Vec<(miyu_kernel::id::AccountId, Status)> {
+        self.slots()
+            .iter()
+            .filter(|(instance, _)| instance.package == id)
+            .filter_map(|(instance, slot)| Some((instance.account.clone()?, slot.status.get())))
+            .collect()
+    }
+
     /// 有在干活、或者等着再干的。
     pub(crate) fn busy(&self) -> bool {
         self.slots()
