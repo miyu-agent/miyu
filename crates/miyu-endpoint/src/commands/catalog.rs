@@ -45,7 +45,11 @@ pub(crate) async fn catalog(
     (caller, peer): (&crate::hello::Caller, &Peer),
     params: CatalogParams,
 ) -> Result<Value, Refusal> {
-    let all = core.commands.all();
+    // 包没装的命令不列（施工 BS-1 下下）。
+    let all = core
+        .commands
+        .all()
+        .filter(|slash| super::registry::present(core, slash.as_ref()));
     let declared = declared::found(core);
     let (listed, templates, declared, handle): Found<'_> = match params.session {
         None => (

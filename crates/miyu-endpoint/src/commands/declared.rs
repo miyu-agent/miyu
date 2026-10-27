@@ -40,7 +40,11 @@ pub(crate) fn found(core: &Core) -> Vec<Declared> {
                 command: command.clone(),
             })
         })
-        .filter(|declared| core.commands.find(&declared.command.name).is_none())
+        .filter(|declared| {
+            core.commands
+                .find_present(core, &declared.command.name)
+                .is_none()
+        })
         .collect();
     all.sort_by(|a, b| a.command.name.cmp(&b.command.name));
     all

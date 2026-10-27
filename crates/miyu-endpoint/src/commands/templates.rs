@@ -37,7 +37,7 @@ pub(crate) async fn found(core: &Core, owner: &AccountId) -> Vec<Template> {
         .unwrap_or_default();
     found
         .into_iter()
-        .filter(|template| core.commands.find(&template.name).is_none())
+        .filter(|template| core.commands.find_present(core, &template.name).is_none())
         .collect()
 }
 

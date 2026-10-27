@@ -37,8 +37,8 @@ impl Slash for LoopCommand {
         "loop"
     }
 
-    fn package(&self) -> &'static str {
-        LOOP_PACKAGE
+    fn package(&self) -> Option<&'static str> {
+        Some(LOOP_PACKAGE)
     }
 
     fn summary(&self) -> &'static str {

@@ -91,10 +91,12 @@ fn refused(refusal: Refusal) -> PackageRefusal {
                         kind: field(one, "kind"),
                         name: field(one, "name"),
                         // 撞了人格、预设的一层的（施工 P-11 下）照那一层的写法填：`home`、`system`、`shipped`。
+                        // 核心自带的斜杠命令（施工 BS-1 下下）写成 `core`。
                         package: one
                             .get("package")
                             .or_else(|| one.get("layer"))
                             .and_then(Value::as_str)
+                            .or_else(|| one.get("core").map(|_| "core"))
                             .unwrap_or_default()
                             .to_string(),
                     })

@@ -36,8 +36,8 @@ impl Slash for GoalCommand {
         "goal"
     }
 
-    fn package(&self) -> &'static str {
-        super::why::GOAL_PACKAGE
+    fn package(&self) -> Option<&'static str> {
+        Some(super::why::GOAL_PACKAGE)
     }
 
     fn summary(&self) -> &'static str {

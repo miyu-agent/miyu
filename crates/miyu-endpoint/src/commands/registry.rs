@@ -19,9 +19,6 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::sessions::Found;
 
-/// 基础系统这个包的编号：核心自己的命令算它的。
-const BASESYSTEM: &str = "basesystem";
-
 /// 执行一条命令时手里有的。
 pub(crate) struct Call<'a> {
     /// 核心。
@@ -70,9 +67,10 @@ pub(crate) trait Slash: Send + Sync {
         &[]
     }
 
-    /// 拥有它的软件包（施工 X-14 上补，装包时查斜杠命令撞名说「已在哪个包中」）：核心自己的算基础系统。
-    fn package(&self) -> &'static str {
-        BASESYSTEM
+    /// 拥有它的软件包（施工 X-14 上补，装包时查斜杠命令撞名说「已在哪个包中」）：没有的是核心自带的（施工 BS-1 下下：`/clear`、
+    /// `/stop`、`/workspace` 是会话本身的操作）。有包的照包走：包没装的这条命令当没有（[`Commands::find_present`]）。
+    fn package(&self) -> Option<&'static str> {
+        None
     }
 
     /// 做什么的那一句：`core/human/<语言>.json` 的键（`command.catalog` 的 `summary`）。
@@ -134,22 +132,40 @@ impl Commands {
             .find(|slash| slash.name() == name || slash.aliases().contains(&name))
     }
 
+    /// 名字或别名是 `name`、拥有它的包装着的那一条（施工 BS-1 下下，项目主人 2026-10-27 定：包没装的就没有这条命令，名字空出来）。
+    pub(crate) fn find_present(&self, core: &Core, name: &str) -> Option<&Arc<dyn Slash>> {
+        self.find(name)
+            .filter(|slash| present(core, slash.as_ref()))
+    }
+
     /// 全部，照名字排。
     pub(crate) fn all(&self) -> impl Iterator<Item = &Arc<dyn Slash>> {
         self.list.iter()
     }
 
-    /// 每个名字、别名和拥有它的包（施工 X-14 上补）：装包时模板命令不能和它们撞名。
-    pub(crate) fn reserved(&self) -> Vec<(String, String)> {
+    /// 每个名字、别名和拥有它的包（施工 X-14 上补；没有包的是核心自带的）：装包时模板命令不能和它们撞名。包没装的（照
+    /// `installed` 判）不算，名字空出来（施工 BS-1 下下）。
+    pub(crate) fn reserved(
+        &self,
+        installed: impl Fn(&str) -> bool,
+    ) -> Vec<(String, Option<String>)> {
         self.list
             .iter()
+            .filter(|slash| slash.package().is_none_or(&installed))
             .flat_map(|slash| {
                 std::iter::once(slash.name())
                     .chain(slash.aliases().iter().copied())
-                    .map(|name| (name.to_string(), slash.package().to_string()))
+                    .map(|name| (name.to_string(), slash.package().map(str::to_string)))
             })
             .collect()
     }
+}
+
+/// 这条命令现在有没有：核心自带的一直有，跟着包的照包装没装（施工 BS-1 下下）。
+pub(crate) fn present(core: &Core, slash: &dyn Slash) -> bool {
+    slash
+        .package()
+        .is_none_or(|package| crate::packages::is_installed(&core.system_packages(), package))
 }
 
 #[cfg(test)]

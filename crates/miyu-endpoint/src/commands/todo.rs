@@ -5,7 +5,7 @@
 //! - `/todo clear` 清掉：交内核 `ClearTodos`，记一条 `todos.cleared`，头照 `todos.changed` 收起清单。没有待办的说没有，什么都
 //!   不记（内核拒的 `nothing_to_clear` 也照这样说）。
 //!
-//! 后面跟别的字的参数不对。归基础系统：待办是它的 `todowrite` 写的。
+//! 后面跟别的字的参数不对。跟着 `todowrite` 包（施工 BS-1 下下）：待办是它写的，没装的就没有这条命令。
 
 use std::sync::Arc;
 
@@ -20,6 +20,9 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
+/// 写待办的那个包。
+const TODOWRITE: &str = "todowrite";
+
 /// 登记 `/todo`。
 pub(super) fn register(commands: &mut Commands) {
     commands.register(Arc::new(TodoCommand));
@@ -31,6 +34,11 @@ struct TodoCommand;
 impl Slash for TodoCommand {
     fn name(&self) -> &'static str {
         "todo"
+    }
+
+    /// 跟着 `todowrite` 包（施工 BS-1 下下，设计 44 第三节第 3 条）：待办是它写的，没装的就没有这条。
+    fn package(&self) -> Option<&'static str> {
+        Some(TODOWRITE)
     }
 
     fn summary(&self) -> &'static str {

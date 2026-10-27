@@ -416,7 +416,9 @@ pub(super) async fn clear_of_conflicts(
     if !missing.is_empty() {
         return Err(Refusal::depends_missing(&missing));
     }
-    let reserved = core.commands.reserved();
+    let reserved = core
+        .commands
+        .reserved(|package| super::is_installed(&installed, package));
     // 人格、预设还和出厂、系统区、家目录里有的比（施工 P-11 下）。
     let layers = super::left::layers(core, id);
     let id = id.to_string();

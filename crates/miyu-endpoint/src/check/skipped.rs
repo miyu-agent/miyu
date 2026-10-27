@@ -106,7 +106,7 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
     problems.extend(
         slash
             .iter()
-            .filter(|template| core.commands.find(&template.name).is_some())
+            .filter(|template| core.commands.find_present(core, &template.name).is_some())
             .map(|template| warn("slash", "slash_builtin", &template.file, &template.name)),
     );
     // 包里带的人格、预设被出厂的、排在前面的包盖住了（施工 P-11 上）。
@@ -138,7 +138,7 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         problems.extend(
             manifest
                 .slash_names()
-                .filter(|name| core.commands.find(name).is_some())
+                .filter(|name| core.commands.find_present(core, name).is_some())
                 .map(|name| warn("slash", "slash_builtin", &found.path, name)),
         );
     }

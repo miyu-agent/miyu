@@ -61,7 +61,7 @@ pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
     else {
         return false;
     };
-    match core.commands.find(name) {
+    match core.commands.find_present(core, name) {
         Some(slash) => slash.later(),
         // 扩展声明的命令要等它的程序答（施工 X-14 下）：同 `/dream` 在后台答。
         None => declared::named(core, name).is_some(),
@@ -126,7 +126,7 @@ pub(crate) async fn run(
     {
         return Err(Refusal::BAD_PARAMS);
     }
-    let Some(slash) = core.commands.find(name) else {
+    let Some(slash) = core.commands.find_present(core, name) else {
         if name.is_empty() {
             return Err(Refusal::UNKNOWN_COMMAND);
         }

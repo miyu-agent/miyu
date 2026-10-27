@@ -233,6 +233,7 @@ mod skill_list;
 mod skill_remove;
 mod skills;
 mod slash_extension;
+mod slash_owners;
 mod slash_templates;
 mod socket;
 mod spawn;

@@ -70,9 +70,13 @@ impl Language {
                 Some(layer) => self.conflict_layer(layer).to_string(),
                 None => one["package"].as_str().unwrap_or_default().to_string(),
             };
-            said.push(match self {
-                Language::Chinese => format!("{kind} {name} 已在 {holder} 中"),
-                Language::English => format!("{kind} {name} exists in {holder}"),
+            // 核心自带的斜杠命令（施工 BS-1 下下）。
+            let core = one["core"].as_bool() == Some(true);
+            said.push(match (self, core) {
+                (Language::Chinese, true) => format!("{kind} {name} 是核心自带的"),
+                (Language::English, true) => format!("{kind} {name} is built into the core"),
+                (Language::Chinese, false) => format!("{kind} {name} 已在 {holder} 中"),
+                (Language::English, false) => format!("{kind} {name} exists in {holder}"),
             });
         }
         said.join("\n")

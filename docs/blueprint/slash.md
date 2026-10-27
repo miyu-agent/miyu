@@ -52,7 +52,8 @@
 
 ### 装包时查（施工 X-14 上补）
 
-1. `packages.md`「冲突」多一样 `slash`：包的 `commands/` 里读得成的命令名，和装着的别的包的、核心内置的（名字和别名，`Commands::reserved`）比；内置的那几条记在拥有它的包上（`Slash::package`：`/clear`、`/stop`、`/workspace`、`/todo` 是 `basesystem`，`/remember`、`/dream`、`/clear-memory` 是 `memory`，`/goal` 是 `goal`），拥有它的包自己不算。命令行写「斜杠命令 review 已在 kit 中」、英文 `slash command review exists in kit`。
+1. `packages.md`「冲突」多一样 `slash`：包的 `commands/` 里读得成的命令名，和装着的别的包的、核心内置的（名字和别名，`Commands::reserved`）比；内置的那几条记在拥有它的包上（`Slash::package`：`/todo` 是 `todowrite`，`/remember`、`/dream`、`/clear-memory` 是 `memory`，`/goal` 是 `goal`，`/loop` 是 `loop`；`/clear`、`/stop`、`/workspace` 是核心自带的，没有包，施工 BS-1 下下），拥有它的包自己不算。命令行写「斜杠命令 review 已在 kit 中」、英文 `slash command review exists in kit`；撞了核心自带的，`data.conflicts` 那一条写 `core: true`、不写包，命令行写「斜杠命令 stop 是核心自带的」、英文 `slash command stop is built into the core`。
+1. 跟着包的命令包没装的就没有这条（施工 BS-1 下下，项目主人 2026-10-27 定）：`command.catalog` 不列，`command.run` 照「没有这条命令」认（先看模板），装包时不和它比、名字空出来；装着但预设关了、群里用不了的照旧回 `memory_unavailable`、`goal_unavailable` 和为什么。
 2. 看一眼（`preview: true`）多一格 `slash`：包带的模板的名字；读不成的另列在 `skipped`（同技能、脚本）。命令行「包含：」照它印「斜杠命令 /<名字>」。
 
 ### `miyu check`（施工 X-14 上补）

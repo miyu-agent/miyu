@@ -68,13 +68,15 @@ pub struct Conflict {
     pub holder: Holder,
 }
 
-/// 已经有它的（施工 P-11 下）：装着的一个包，或者人格、预设的一层（出厂、系统区、家目录）。
+/// 已经有它的（施工 P-11 下）：装着的一个包，或者人格、预设的一层（出厂、系统区、家目录），或者核心自带的斜杠命令（施工 BS-1 下下）。
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Holder {
     /// 包的编号。
     Package(String),
     /// 人格、预设的一层。
     Layer(Layer),
+    /// 核心自带的（`/clear`、`/stop`、`/workspace`）。
+    Core,
 }
 
 /// 编号是 `id`、清单是 `manifest`、文件夹是 `dir` 的包，和装着的 `installed`（读成了的，同编号的不算）、核心内置的斜杠命令
@@ -85,7 +87,7 @@ pub fn conflicts(
     manifest: &Manifest,
     dir: &Path,
     installed: &[Found],
-    reserved: &[(String, String)],
+    reserved: &[(String, Option<String>)],
     layers: &dyn Fn(Kind, &str) -> Vec<Layer>,
 ) -> Vec<Conflict> {
     let mine = names(id, manifest, dir);
@@ -102,12 +104,15 @@ pub fn conflicts(
             });
         }
     }
-    for (name, package) in reserved.iter().filter(|(_, package)| package != id) {
+    for (name, package) in reserved
+        .iter()
+        .filter(|(_, package)| package.as_deref() != Some(id))
+    {
         if mine.contains(&(Kind::Slash, name.clone())) {
             found.insert(Conflict {
                 kind: Kind::Slash,
                 name: name.clone(),
-                holder: Holder::Package(package.clone()),
+                holder: package.clone().map_or(Holder::Core, Holder::Package),
             });
         }
     }

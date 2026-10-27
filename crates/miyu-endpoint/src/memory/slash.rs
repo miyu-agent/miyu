@@ -39,8 +39,8 @@ impl Slash for Remember {
         "remember"
     }
 
-    fn package(&self) -> &'static str {
-        PACKAGE
+    fn package(&self) -> Option<&'static str> {
+        Some(PACKAGE)
     }
 
     fn summary(&self) -> &'static str {
@@ -86,8 +86,8 @@ impl Slash for Dream {
         "dream"
     }
 
-    fn package(&self) -> &'static str {
-        PACKAGE
+    fn package(&self) -> Option<&'static str> {
+        Some(PACKAGE)
     }
 
     fn summary(&self) -> &'static str {
@@ -153,8 +153,8 @@ impl Slash for ClearMemory {
         &["reset-memory"]
     }
 
-    fn package(&self) -> &'static str {
-        PACKAGE
+    fn package(&self) -> Option<&'static str> {
+        Some(PACKAGE)
     }
 
     fn summary(&self) -> &'static str {

@@ -159,6 +159,10 @@ impl Refusal {
                 Holder::Layer(layer) => {
                     serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "layer": layer.as_str()})
                 }
+                // 核心自带的斜杠命令（施工 BS-1 下下）：写 `core: true`，不写包。
+                Holder::Core => {
+                    serde_json::json!({"kind": one.kind.as_str(), "name": one.name, "core": true})
+                }
             })
             .collect();
         Refusal::with(

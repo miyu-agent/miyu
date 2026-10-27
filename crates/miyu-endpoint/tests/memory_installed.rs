@@ -87,8 +87,8 @@ async fn without_the_package_remember_is_refused_and_not_listed() {
             json!({"session": session, "text": "/remember 用户喜欢猫"}),
         )
         .await;
-    assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
-    assert_eq!(reply["error"]["data"]["why"], "人格记忆未安装。");
+    // 包没装的就没有这条命令（施工 BS-1 下下，项目主人 2026-10-27 定）。
+    assert_eq!(reason(&reply), Some("unknown_command"), "{reply}");
     let reply = client
         .call("c2", "command.catalog", json!({"session": session}))
         .await;

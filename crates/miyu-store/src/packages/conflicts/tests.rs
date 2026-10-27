@@ -40,6 +40,7 @@ fn holder(one: &Conflict) -> String {
     match &one.holder {
         Holder::Package(id) => id.clone(),
         Holder::Layer(layer) => layer.as_str().to_string(),
+        Holder::Core => "core".to_string(),
     }
 }
 
@@ -154,8 +155,9 @@ fn slash_commands_meet_installed_packages_and_the_builtins() {
         &[("commands/review.md", "Review.\n")],
     )];
     let reserved = vec![
-        ("remember".to_string(), "memory".to_string()),
-        ("reset".to_string(), "basesystem".to_string()),
+        ("remember".to_string(), Some("memory".to_string())),
+        // 核心自带的（施工 BS-1 下下）：没有包。
+        ("reset".to_string(), None),
     ];
     let new = package(
         &dir.join("new"),
@@ -182,7 +184,7 @@ fn slash_commands_meet_installed_packages_and_the_builtins() {
     assert_eq!(
         found,
         vec![
-            ("slash", "reset".to_string(), "basesystem".to_string()),
+            ("slash", "reset".to_string(), "core".to_string()),
             ("slash", "review".to_string(), "kit".to_string()),
         ]
     );

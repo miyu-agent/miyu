@@ -260,7 +260,8 @@ async fn slash_command_templates_count_and_the_builtins_too() {
         conflicts(&install(&mut client, &second).await),
         vec![
             json!({"kind": "slash", "name": "remember", "package": "memory"}),
-            json!({"kind": "slash", "name": "reset", "package": "basesystem"}),
+            // 核心自带的（施工 BS-1 下下）写 `core: true`。
+            json!({"kind": "slash", "name": "reset", "core": true}),
             json!({"kind": "slash", "name": "review", "package": "zkit"}),
         ]
     );
