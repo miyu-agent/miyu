@@ -309,6 +309,14 @@ async fn check_packages(
                     let message = crate::packages::sentence(words, code, &mascot.model);
                     problems.push(json!({"kind": "package", "file": file, "code": code, "level": "error", "message": message.unwrap_or_default()}));
                 }
+                // 包自带的图标（施工 F-18 上）：不在、不是 PNG / WebP、超了上限的当没有图标，包照装，报警告。
+                if let (Some(logo), Some(code)) = (
+                    manifest.logo.as_ref(),
+                    crate::packages::logo::problem(one, manifest),
+                ) {
+                    let message = crate::packages::sentence(words, code, logo);
+                    problems.push(json!({"kind": "package", "file": file, "code": code, "level": "warning", "message": message.unwrap_or_default()}));
+                }
                 // 主题包的主题文件（施工 F-16）：同吉祥物。
                 if let Some(theme) = &manifest.theme
                     && let Some(code) = crate::packages::status::theme_problem(one, theme)

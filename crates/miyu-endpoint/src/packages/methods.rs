@@ -48,6 +48,7 @@ pub(crate) async fn call(
             super::local::info(core, whose, params(request)?).await
         }
         "package.files" => super::local::files(core, caller.acting_for(), params(request)?).await,
+        "package.logo" => super::logo::method(core, caller.acting_for(), params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
         "package.sync" => {

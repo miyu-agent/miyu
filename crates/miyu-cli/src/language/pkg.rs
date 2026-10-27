@@ -235,6 +235,46 @@ impl Language {
         }
     }
 
+    /// 包的图标超了上限，打进去的是缩好的那一份（施工 F-18 上）：源文件夹不动。
+    pub(crate) fn logo_shrunk(
+        &self,
+        logo: &str,
+        (width, height, size): (u32, u32, usize),
+    ) -> String {
+        match self {
+            Language::Chinese => {
+                format!(
+                    "图标 {logo} 超了上限，打进去的缩成 {width}×{height}、{size} 字节（源文件没动）"
+                )
+            }
+            Language::English => format!(
+                "Logo {logo} was over the limit; packed a {width}×{height}, {size}-byte copy (the source file is unchanged)"
+            ),
+        }
+    }
+
+    /// 包的图标打不进去（施工 F-18 上）：不在、不是 PNG / WebP、缩不到上限以内。
+    pub(crate) fn bad_logo(&self, logo: &str, why: LogoWhy) -> String {
+        match (self, why) {
+            (Language::Chinese, LogoWhy::Missing) => format!("打包失败：包文件夹里没有图标 {logo}"),
+            (Language::English, LogoWhy::Missing) => {
+                format!("Cannot pack: the logo {logo} is not in the package folder")
+            }
+            (Language::Chinese, LogoWhy::NotImage) => {
+                format!("打包失败：图标 {logo} 不是 PNG 或 WebP 图片")
+            }
+            (Language::English, LogoWhy::NotImage) => {
+                format!("Cannot pack: the logo {logo} is not a PNG or WebP image")
+            }
+            (Language::Chinese, LogoWhy::TooBig) => {
+                format!("打包失败：图标 {logo} 缩不到 256 KiB、512×512 以内，换一张简单些的图")
+            }
+            (Language::English, LogoWhy::TooBig) => format!(
+                "Cannot pack: the logo {logo} can't be shrunk under 256 KiB and 512×512; use a simpler picture"
+            ),
+        }
+    }
+
     /// 文件夹名不是包的编号。
     pub(crate) fn not_a_package_id(&self, name: &str) -> String {
         match self {
@@ -415,4 +455,15 @@ impl Language {
             Language::English => format!("note: {id} is held; skipped"),
         }
     }
+}
+
+/// 包的图标为什么打不进去（施工 F-18 上）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LogoWhy {
+    /// 包文件夹里没有。
+    Missing,
+    /// 不是 PNG、WebP。
+    NotImage,
+    /// 缩不到上限以内。
+    TooBig,
 }

@@ -54,7 +54,7 @@ fn too_many_bytes_shrinks_again_until_it_fits() {
     });
     let bytes = png(DynamicImage::ImageRgb8(noisy));
     let limit = 20 * 1024;
-    let shrunk = within(&bytes, limit, 1000).expect("缩得了");
+    let shrunk = within(&bytes, (limit, 1000), &encode).expect("缩得了");
     assert!(shrunk.bytes.len() as u64 <= limit);
     assert!(shrunk.width < 240, "缩过不止一次：{}", shrunk.width);
     assert_eq!(shrunk.width, shrunk.height, "照比例");
@@ -64,4 +64,24 @@ fn too_many_bytes_shrinks_again_until_it_fits() {
 fn what_does_not_decode_is_not_shrunk() {
     assert_eq!(shrink(b"\x89PNG\r\n\x1a\nnot really"), None);
     assert_eq!(shrink(b"hello"), None);
+}
+
+/// 包的图标照原来的格式缩（施工 F-18 上）：PNG 照 PNG、WebP 编无损 WebP，透明照留，缩到给的边长、字节以内。
+#[test]
+fn a_logo_keeps_its_format_and_transparency() {
+    let big = png(DynamicImage::ImageRgba8(RgbaImage::from_pixel(
+        1024,
+        600,
+        Rgba([10, 20, 30, 128]),
+    )));
+    let shrunk = shrink_as(&big, (256 * 1024, 512), Encoding::Png).expect("缩得了");
+    assert_eq!(shrunk.media_type, "image/png");
+    assert_eq!((shrunk.width, shrunk.height), (512, 300));
+    assert_eq!(crate::picture::kind(&shrunk.bytes), Some("image/png"));
+    let webp = shrink_as(&big, (256 * 1024, 512), Encoding::WebP).expect("缩得了");
+    assert_eq!(webp.media_type, "image/webp");
+    assert_eq!(crate::picture::kind(&webp.bytes), Some("image/webp"));
+    assert_eq!(measure(&webp.bytes), Some((512, 300)));
+    let decoded = image::load_from_memory(&webp.bytes).expect("解得开");
+    assert!(decoded.color().has_alpha(), "透明照留");
 }

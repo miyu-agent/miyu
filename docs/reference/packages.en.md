@@ -39,6 +39,7 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `package`, `layer` | Id; `shipped` or `home` |
 | `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a terminal theme, with `theme: {"file"}`; `package.file` gives only that file), `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
+| `logo` | The version of the package's own logo: only when the manifest has `[package] logo` and the picture follows the rules; read the picture with `package.logo` |
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
 | `installed_at` | When it was installed; absent for shipped ones. Heads sort the rest by it |
 | `from` | Where it came from: `shipped`, `official` (installed from the official software source), `local` (a local folder or package file); `community` will join once community sources exist |
@@ -61,6 +62,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 
 | Method | Params | Response |
 |---|---|---|
+| `package.logo` | `package` | `{"package", "logo", "media_type", "data"}`: the package's own logo; `logo` is its version (the first 16 hex digits of the content's SHA-256, as in `package.list`), `data` is base64, `media_type` is `image/png` or `image/webp`; all three are `null` when the manifest has no logo or it breaks the rules (missing, not PNG / WebP, over 256 KiB, wider or taller than 512). Members can call it too |
 | `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`: where it came from (as in `package.list`), file count, bytes, author, upstream, install time, the local path it was installed from |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`; `path` is relative to `dir` |
 | `package.owns` | `path` (absolute) | `{"package", "layer", "path", "recorded"}`; `{"package": null}` when no package owns it |

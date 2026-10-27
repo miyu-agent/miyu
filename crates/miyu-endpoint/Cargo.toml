@@ -88,7 +88,7 @@ miyu-mcp = { path = "../miyu-mcp", features = ["testkit"] }
 # 网址的服务登录（施工 X-42 上）：读授权页网址里的几格。工作区里本来就有的那一份。
 url = "2"
 # 人格头像的候选主色（施工 P-6 补）：测试里画一张真的 PNG 当头像。
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 # 撤销的回应（施工 4-7 下）：她用真的写文件的工具改过文件。
 miyu-basesystem = { path = "../miyu-basesystem" }
 # 测试用的假工具（施工 4-2）。
