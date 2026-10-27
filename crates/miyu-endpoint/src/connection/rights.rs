@@ -54,7 +54,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         }
         "subscribe" => match params.get("stream").and_then(Value::as_str) {
             Some("events" | "view" | "sessions") => Needs(EventsRead),
-            Some("projects" | "schedules") => People,
+            Some("projects" | "schedules" | "notices") => People,
             _ => Anyone,
         },
         // 驱动会话。

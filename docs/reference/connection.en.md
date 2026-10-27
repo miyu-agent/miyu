@@ -106,7 +106,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 
 Subscribe to a push stream: from now on its pushes go to this connection.
 
-**Who can call**: people, extensions; extensions need the `events.read` capability for the `events`, `view` and `sessions` streams, and the `projects` and `schedules` streams are for people only (`local_only`).
+**Who can call**: people, extensions; extensions need the `events.read` capability for the `events`, `view` and `sessions` streams, and the `projects`, `schedules` and `notices` streams are for people only (`local_only`).
 
 **Params**
 
@@ -127,13 +127,14 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `packages` | One item of the package list changed | `{"packages": […]}` |
 | `projects` | One of this account's projects changed | `{"projects": […]}`, all of them |
 | `schedules` | One of this account's schedules changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
+| `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`; earlier ones are not replayed |
 | `kb` | Index-building progress of this account's knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 
 What each stream pushes is in [Pushes](pushes.en.md).
 
-1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects` and `widgets` are one each per connection.
+1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects`, `schedules`, `notices`, `kb` and `widgets` are one each per connection.
 2. **Replay**: with `after`, the events with a higher sequence number that were on disk when you subscribed are pushed one by one, then the response (with `upto`), then everything from `upto + 1` on, with nothing lost or repeated. If a model request is streaming at that moment, its deltas so far (`model.delta`) are pushed once more after the replay so the live ones that follow line up. Transient events without sequence numbers are not replayed.
 3. **Falling behind**: if you read too slowly, a session keeps at most 1024 pushes per subscription (16 for config, 64 for memory); beyond that it pushes `resync` and the subscription stops. A stopped session also pushes `resync`. Subscribe again, with the last sequence number you saw as `after`, to catch up.
 4. Being subscribed to a session counts as watching it: in a session nobody is watching, a subagent's report is recorded without waking her.

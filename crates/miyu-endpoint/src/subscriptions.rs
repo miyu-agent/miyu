@@ -67,6 +67,8 @@ pub(crate) struct Subscriptions {
     schedules: Option<ListedForwarder>,
     /// 知识库建索引的进度（施工 W-15）。
     kb: Option<ListedForwarder>,
+    /// 给人的通知（施工 J-3 下）。
+    notices: Option<ListedForwarder>,
     /// 核心拉起的扩展自己的配置的推送（施工 9-4 下下）：握手以后起，不用订阅。
     extension_config: Option<ExtensionConfigForwarder>,
     /// 会话订阅交回应的那一头的弱引用：开通道时一起记下，在后台答的回应照它走（施工 R-7 补）。
@@ -96,6 +98,8 @@ pub(crate) enum Target {
     Schedules,
     /// 知识库建索引的进度的订阅的回应：同上（施工 W-15）。
     Knowledge,
+    /// 通知的订阅的回应：同上（施工 J-3 下）。
+    Notices,
     /// 记忆日志的订阅的回应：经它写出去，排在补的后面、之后的推送前面（施工 R-12 上）。
     Memory(MemoryAt),
     /// 界面块的订阅的回应：经它写出去，排在之后的推送前面（施工 X-15 中）。
@@ -311,13 +315,15 @@ impl Subscriptions {
                 | Target::Packages
                 | Target::Projects
                 | Target::Schedules
-                | Target::Knowledge),
+                | Target::Knowledge
+                | Target::Notices),
             ) => {
                 let slot = match target {
                     Target::Packages => &mut self.packages,
                     Target::Projects => &mut self.projects,
                     Target::Schedules => &mut self.schedules,
                     Target::Knowledge => &mut self.kb,
+                    Target::Notices => &mut self.notices,
                     _ => &mut self.extensions,
                 };
                 match slot {

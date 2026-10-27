@@ -95,6 +95,11 @@ pub(super) async fn deliver(
     let Ok(id) = CommandId::parse(&format!("{base}/say")) else {
         return Delivered::skipped("bad_id", Some(session), false);
     };
+    // 每次新开的跑完要告诉人（施工 J-3 下）：先订阅，交进去的那一轮的事件一定在订阅以后。
+    let watching = match schedule.target {
+        Target::New { .. } => found.handle.subscribe().await.ok(),
+        Target::Session { .. } => None,
+    };
     let busy = found.handle.busy();
     let send = Command::Send {
         blocks: vec![Block::Text(Text {
@@ -104,11 +109,18 @@ pub(super) async fn deliver(
         venue: None,
     };
     match found.handle.command(id, by, send).await {
-        Ok(Outcome::Accepted { .. }) => Delivered {
-            result: if busy { "queued" } else { "ran" }.to_string(),
-            session: Some(session),
-            stop: false,
-        },
+        Ok(Outcome::Accepted { events }) => {
+            if let (Some(pushes), Some(said)) = (watching, events.first().copied()) {
+                let which = (schedule.id.clone(), session.clone());
+                core.schedules()
+                    .watch_ran(account.clone(), which, said, pushes);
+            }
+            Delivered {
+                result: if busy { "queued" } else { "ran" }.to_string(),
+                session: Some(session),
+                stop: false,
+            }
+        }
         Ok(_) => Delivered::skipped("refused", Some(session), false),
         Err(_) => {
             core.sessions.forget(&session).await;

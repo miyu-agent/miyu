@@ -12,7 +12,9 @@ mod fire;
 mod hold;
 pub(crate) mod methods;
 mod next;
+pub(crate) mod notices;
 pub(crate) mod port;
+mod ran;
 mod run;
 
 use std::collections::BTreeMap;
@@ -83,6 +85,8 @@ pub struct Schedules {
     holds: hold::Holds,
     /// 哪个任务变了（`changes.rs`，施工 J-1 下）。
     changes: tokio::sync::broadcast::Sender<String>,
+    /// 给人的通知（`notices.rs`，施工 J-3 下）。
+    notices: notices::Notices,
 }
 
 impl crate::Core {
@@ -109,7 +113,13 @@ impl Schedules {
             wake: Arc::new(Notify::new()),
             holds: hold::Holds::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
+            notices: notices::Notices::default(),
         }
+    }
+
+    /// 给人的通知（施工 J-3 下）：订阅 `notices` 的连接照它推。
+    pub(crate) fn notices(&self) -> &notices::Notices {
+        &self.notices
     }
 
     /// 现在。
@@ -287,7 +297,7 @@ impl Schedules {
             return Err(ScheduleError::Unknown);
         }
         let (opened, how) = Table::open(&self.root, account);
-        said(account, &how);
+        said(account, &how, (&self.notices, self.now()));
         let opened = opened.map(Arc::new);
         tables.insert(account.clone(), opened.clone());
         opened.ok_or(ScheduleError::Unusable)
@@ -348,13 +358,15 @@ impl Schedules {
     }
 }
 
-/// 开一份表是什么情形，照它记日志：坏了改名留着的、比这一版新的、开不了的都是 `WARN`（施工 J-3 起另给人发一条通知）。
-fn said(account: &AccountId, how: &Opened) {
+/// 开一份表是什么情形，照它记日志：坏了改名留着的、比这一版新的、开不了的都是 `WARN`。坏了换了一份空的，另给人推一条
+/// `schedules.reset`（施工 J-3 下）：原来的都没了，要告诉他。
+fn said(account: &AccountId, how: &Opened, (notices, now): (&notices::Notices, Timestamp)) {
     match how {
         Opened::Kept => {}
         Opened::Created => tracing::info!(target: TARGET, account = %account, "schedules created"),
         Opened::SetAside { why, .. } => {
             tracing::warn!(target: TARGET, account = %account, error = %why, "schedules set aside");
+            notices.send(account, "schedules.reset", now, serde_json::json!({}));
         }
         Opened::Newer(version) => {
             tracing::warn!(target: TARGET, account = %account, version, "schedules newer");

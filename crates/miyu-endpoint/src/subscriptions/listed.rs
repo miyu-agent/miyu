@@ -30,6 +30,8 @@ pub(super) enum Listed {
     Schedules(AccountId),
     /// 这个账号的知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`，别的账号的不推。
     Knowledge(AccountId),
+    /// 这个账号的通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`，别的账号的不推。
+    Notices(AccountId),
 }
 
 impl Listed {
@@ -41,6 +43,7 @@ impl Listed {
             Listed::Projects(_) => "projects",
             Listed::Schedules(_) => "schedules",
             Listed::Knowledge(_) => "kb",
+            Listed::Notices(_) => "notices",
         }
     }
 
@@ -61,6 +64,7 @@ impl Listed {
             Listed::Projects(_) => (core.project_changes.subscribe(), None),
             Listed::Schedules(_) => (core.schedules().subscribe(), None),
             Listed::Knowledge(_) => (core.kb_progress.subscribe(), None),
+            Listed::Notices(_) => (core.schedules().notices().subscribe(), None),
         }
     }
 
@@ -68,7 +72,8 @@ impl Listed {
     fn line(&self, core: &Core, id: &str, shaken: &Shaken) -> Option<String> {
         let line = match self {
             // 进度那一行广播时就写好了（施工 W-15）：只挑自己账号的。
-            Listed::Knowledge(account) => {
+            // 通知那一行同样广播时就写好了（施工 J-3 下），写法同进度。
+            Listed::Knowledge(account) | Listed::Notices(account) => {
                 return crate::knowledge::progress::mine(id, account).map(str::to_string);
             }
             Listed::Projects(account) => {
@@ -298,5 +303,27 @@ impl Subscriptions {
     /// 取消订阅知识库建索引的进度：转发任务当场停。
     pub(crate) fn remove_kb(&mut self) {
         self.kb = None;
+    }
+
+    /// 订阅这个账号 `account` 的通知（施工 J-3 下）：回应是空的，不补以前的。
+    pub(crate) fn add_notices(
+        &mut self,
+        core: &Arc<Core>,
+        account: AccountId,
+        shaken: Shaken,
+        out: &mpsc::Sender<String>,
+    ) -> serde_json::Value {
+        self.notices = Some(ListedForwarder::start(
+            Arc::clone(core),
+            Listed::Notices(account),
+            shaken,
+            out.clone(),
+        ));
+        json!({})
+    }
+
+    /// 取消订阅通知。
+    pub(crate) fn remove_notices(&mut self) {
+        self.notices = None;
     }
 }

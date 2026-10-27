@@ -125,7 +125,7 @@ const METHODS: &[&str] = &[
     "mermaid.render",
 ];
 
-/// 成员订得了的流：自己的会话、事件、视图、项目、定时任务（施工 J-1 下）、知识库、记忆、界面块、他自己的配置（施工 Y-2 下下中上）。扩展、软件包的不给。
+/// 成员订得了的流：自己的会话、事件、视图、项目、定时任务（施工 J-1 下）、通知（施工 J-3 下）、知识库、记忆、界面块、他自己的配置（施工 Y-2 下下中上）。扩展、软件包的不给。
 const STREAMS: &[&str] = &[
     "events",
     "view",
@@ -133,6 +133,7 @@ const STREAMS: &[&str] = &[
     "projects",
     "schedules",
     "kb",
+    "notices",
     "memory",
     "widgets",
     "config",
