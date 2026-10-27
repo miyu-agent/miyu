@@ -5,7 +5,7 @@ use std::sync::{Arc, Weak};
 
 use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
-use miyu_store::schedules::{Loop, Schedule, Schedules as Table};
+use miyu_store::schedules::{Loop, Schedule, Schedules as Table, Target};
 
 use super::{TARGET, next, zone};
 use crate::Core;
@@ -97,6 +97,10 @@ async fn fire(
         Some(Loop::Dynamic) => None,
         _ => next::after(&schedule.when, due, now, &zone()),
     };
+    // 错过的这一次推的时候一起报了（施工 J-4）：清零。
+    if let Target::Package { missed } = &mut ahead.target {
+        *missed = 0;
+    }
     let written = if once {
         table.remove(&schedule.id).map(|_| ())
     } else {
@@ -131,10 +135,14 @@ async fn fire(
     core.schedules.notify(account, &schedule.id);
 }
 
-/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，别的照现在算下一次；记一行。
+/// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，别的照现在算下一次；记一行。推给扩展的
+/// 记下错过了几次，下一次推的时候报（施工 J-4）。
 pub(super) fn skip(table: &Table, account: &AccountId, mut schedule: Schedule, now: Timestamp) {
     let due = schedule.next;
     tracing::info!(target: TARGET, account = %account, schedule = %schedule.id, "schedule missed");
+    if let (Target::Package { missed }, Some(due)) = (&mut schedule.target, due) {
+        *missed = missed.saturating_add(next::missed(&schedule.when, due, now, &zone()));
+    }
     let written = if next::once(&schedule.when) && schedule.looping != Some(Loop::Dynamic) {
         table.remove(&schedule.id).map(|_| ())
     } else {

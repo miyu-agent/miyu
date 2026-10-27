@@ -12,6 +12,7 @@ An extension is a program a package brings. The core launches it from the manife
 | [`system.append`](#systemappend) | extension → core | Put a section at the end of the system prompt |
 | [`widget.set`, `widget.clear`, `widget.watch`, `widget.unwatch`](#widgetset-widgetclear-widgetwatch-widgetunwatch) | both | Widget content |
 | [`extension.config`](#extensionconfig) | core → extension | Its own settings changed |
+| [`schedule.fired`](schedules.en.md#schedulefired) | core → extension | A schedule it added is due (construction J-4) |
 | [`content.list`, `content.read`, `content.changed`](#contentlist-contentread-contentchanged) | both | Read content other packages bring for it |
 | [`events.append`](#eventsappend) | extension → core | Record an event of its own in a session |
 

@@ -36,7 +36,7 @@ pub(crate) fn line(item: &Value, language: &Language, zone: &TimeZone) -> String
         let result = item["last"]["result"].as_str().unwrap_or_default();
         parts.push(language.schedule_last(&local(at, zone), &language.schedule_result(result)));
     }
-    parts.push(target(&item["target"], language));
+    parts.push(target(item, language));
     let prompt = item["prompt"].as_str().unwrap_or_default();
     parts.push(language.schedule_prompt(&cut(prompt)));
     parts.join("  ")
@@ -57,10 +57,15 @@ fn when(when: &Value, language: &Language, zone: &TimeZone) -> String {
     }
 }
 
-/// 跑在哪：已有的会话，或者每次新开（写了人格、预设、目录的跟着写）。
-fn target(target: &Value, language: &Language) -> String {
+/// 跑在哪：已有的会话，推给建它的包（施工 J-4），或者每次新开（写了人格、预设、目录的跟着写）。
+fn target(item: &Value, language: &Language) -> String {
+    let target = &item["target"];
     if let Some(session) = target["session"].as_str() {
         return language.schedule_on_session(session);
+    }
+    if target.get("package").is_some() {
+        let package = item["by"]["package"].as_str().unwrap_or_default();
+        return language.schedule_on_package(package);
     }
     let new = &target["new"];
     let persona = match new.get("persona") {

@@ -94,3 +94,34 @@ fn a_one_off_is_there_only_while_it_is_ahead() {
     assert!(!once(&cron("0 8 * * *", true)));
     assert!(!once(&When::Every { every: 60 }));
 }
+
+#[test]
+fn missed_counts_every_one_due_while_stopped() {
+    let zone = tokyo();
+    let every = When::Every { every: 600 };
+    assert_eq!(
+        missed(&every, local(8, 0), local(8, 30), &zone),
+        4,
+        "8:00、8:10、8:20、8:30"
+    );
+    assert_eq!(missed(&every, local(8, 0), local(8, 9), &zone), 1);
+    assert_eq!(
+        missed(&every, local(8, 30), local(8, 0), &zone),
+        0,
+        "还没到"
+    );
+    let hourly = cron("0 * * * *", true);
+    assert_eq!(
+        missed(&hourly, local(8, 0), local(11, 30), &zone),
+        4,
+        "8、9、10、11 点"
+    );
+    let minutely = cron("* * * * *", true);
+    assert_eq!(
+        missed(&minutely, local(0, 0), local(23, 59), &zone),
+        MISSED_CAP,
+        "数到上限就停"
+    );
+    let once = When::At { at: local(8, 0) };
+    assert_eq!(missed(&once, local(8, 0), local(9, 0), &zone), 1);
+}

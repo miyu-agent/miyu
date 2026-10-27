@@ -1,6 +1,9 @@
 //! `schedule.*`（施工 J-1 下，`docs/blueprint/schedules.md` 第五节，设计 `45-定时和循环.md` 第三节第 3 条）：人经协议建、列、
 //! 删、停、续定时任务。都照调用者替谁干活的那个账号的表：别人的编号一律 `unknown_schedule`。一项的写法在 [`entry`]，推送
 //! （`schedules.changed`）也用它。
+//!
+//! 施工 J-4：扩展也能调（要批过 `sessions.drive`），建的记成包建的；它只看得到、改得了自己建的，别的编号一样 `unknown_schedule`。
+//! 只有扩展能写「跑在哪」是 `package`（到点推 `schedule.fired` 给它自己，`fire.rs`）。
 
 use std::sync::Arc;
 
@@ -24,10 +27,11 @@ pub(crate) async fn call(
     request: &Request,
 ) -> Result<Value, Refusal> {
     let account = caller.acting_for();
+    let package = caller.package.as_deref();
     let schedules = core.schedules();
     match request.method.as_str() {
         "schedule.add" => {
-            let wanted = wanted(core, account, params(request)?).await?;
+            let wanted = wanted(core, account, package, params(request)?).await?;
             let added = schedules.add(account, wanted).map_err(refusal)?;
             Ok(json!({"schedule": entry(&added)}))
         }
@@ -40,6 +44,7 @@ pub(crate) async fn call(
                 .list(account)
                 .map_err(refusal)?
                 .iter()
+                .filter(|schedule| mine(package, schedule))
                 .filter(|schedule| {
                     session.as_ref().is_none_or(|session| {
                         matches!(&schedule.target, Target::Session { session: on } if on == session)
@@ -51,20 +56,45 @@ pub(crate) async fn call(
         }
         "schedule.cancel" => {
             let IdParams { id } = params(request)?;
+            own(core, account, package, &id)?;
             schedules.cancel(account, &id).map_err(refusal)?;
             Ok(json!({}))
         }
         "schedule.pause" => {
             let IdParams { id } = params(request)?;
+            own(core, account, package, &id)?;
             let paused = schedules.pause(account, &id).map_err(refusal)?;
             Ok(json!({"schedule": entry(&paused)}))
         }
         "schedule.resume" => {
             let IdParams { id } = params(request)?;
+            own(core, account, package, &id)?;
             let resumed = schedules.resume(account, &id).map_err(refusal)?;
             Ok(json!({"schedule": entry(&resumed)}))
         }
         _ => Err(Refusal::UNKNOWN_METHOD),
+    }
+}
+
+/// 这个连接看得到的：人看得到全部，扩展只看得到包 `package` 建的（施工 J-4）。
+fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
+    match (package, &schedule.by) {
+        (None, _) => true,
+        (Some(package), Creator::Package { package: by }) => by == package,
+        (Some(_), _) => false,
+    }
+}
+
+/// 扩展只改得了自己建的（施工 J-4）：别的、没有的都是 `unknown_schedule`。人的不查。
+fn own(core: &Core, account: &AccountId, package: Option<&str>, id: &str) -> Result<(), Refusal> {
+    if package.is_none() {
+        return Ok(());
+    }
+    let schedule = core.schedules().get(account, id).map_err(refusal)?;
+    if mine(package, &schedule) {
+        Ok(())
+    } else {
+        Err(Refusal::UNKNOWN_SCHEDULE)
     }
 }
 
@@ -111,13 +141,19 @@ struct WhenParams {
     every: Option<u64>,
 }
 
-/// 跑在哪：`session`、`new` 写一种；都不写的是每次新开。
+/// 跑在哪：`session`、`new`、`package` 写一种；都不写的是每次新开。`package` 只有扩展能写（施工 J-4）。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct TargetParams {
     session: Option<String>,
     new: Option<NewParams>,
+    package: Option<PackageParams>,
 }
+
+/// 推给建它的扩展自己：没有可写的。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PackageParams {}
 
 /// 每次新开的：人格（`null` 是无人格）、预设、工作目录，不写的照这时的默认定下来。
 #[derive(Debug, Default, Deserialize)]
@@ -144,10 +180,11 @@ pub(crate) struct IdParams {
     id: String,
 }
 
-/// 照参数拼出要建的：时刻、会话都查过；每次新开的人格、预设照这时的默认定下来。
+/// 照参数拼出要建的：时刻、会话都查过；每次新开的人格、预设照这时的默认定下来。扩展（`package`）建的记成包建的。
 async fn wanted(
     core: &Arc<Core>,
     account: &AccountId,
+    package: Option<&str>,
     params: AddParams,
 ) -> Result<Wanted, Refusal> {
     let when = match params.when {
@@ -191,6 +228,7 @@ async fn wanted(
         Some(TargetParams {
             session: Some(session),
             new: None,
+            package: None,
         }) => Target::Session {
             session: session_of(core, account, &session).await?,
         },
@@ -198,17 +236,34 @@ async fn wanted(
         | Some(TargetParams {
             session: None,
             new: None,
+            package: None,
         }) => opened(core, account, NewParams::default()).await?,
         Some(TargetParams {
             session: None,
             new: Some(new),
+            package: None,
         }) => opened(core, account, new).await?,
+        Some(TargetParams {
+            session: None,
+            new: None,
+            package: Some(PackageParams {}),
+        }) if package.is_some() => Target::Package { missed: 0 },
+        // 人写了 `package`：没有「建它的扩展」可推。
+        Some(TargetParams {
+            package: Some(_), ..
+        }) if package.is_none() => return Err(Refusal::BAD_PARAMS),
         Some(_) => return Err(Refusal::bad_schedule("target")),
     };
-    Ok(Wanted {
-        by: Creator::Person {
+    let by = match package {
+        Some(package) => Creator::Package {
+            package: package.to_string(),
+        },
+        None => Creator::Person {
             account: account.clone(),
         },
+    };
+    Ok(Wanted {
+        by,
         when,
         prompt: params.prompt,
         target,
@@ -306,6 +361,7 @@ pub(crate) fn entry(schedule: &Schedule) -> Value {
         } => {
             json!({"new": {"persona": persona, "preset": preset, "cwd": cwd}})
         }
+        Target::Package { .. } => json!({"package": {}}),
     };
     let by = match &schedule.by {
         Creator::Person { account } => json!({"kind": "person", "account": account}),

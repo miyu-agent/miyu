@@ -127,6 +127,7 @@ provider.rename
 provider.test
 schedule.add
 schedule.cancel
+schedule.fired
 schedule.list
 schedule.pause
 schedule.resume

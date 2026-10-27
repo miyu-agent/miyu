@@ -43,6 +43,15 @@ fn one_line_each_in_the_local_zone() {
         line(&at, &Language::Chinese, &TimeZone::UTC),
         "t3  at 2026-10-28 00:00  下一次 2026-10-28 00:00  上一次 2026-10-27 00:00 跳过：会话没了  新开 无人格  「提醒我开会」"
     );
+    let pushed = json!({
+        "id": "t5", "when": {"every": 600}, "prompt": "{}", "target": {"package": {}},
+        "by": {"kind": "package", "package": "im"},
+        "last": {"at": "2026-10-27T00:00:00.000Z", "result": "skipped:package_unavailable"},
+    });
+    assert_eq!(
+        line(&pushed, &Language::Chinese, &TimeZone::UTC),
+        "t5  every 10m  上一次 2026-10-27 00:00 跳过：包没在跑  推给包 im  「{}」"
+    );
     let once = json!({"id": "t4", "when": {"cron": "30 7 * * 1", "recurring": false}, "prompt": "x", "target": {"new": {}}});
     assert_eq!(
         line(&once, &Language::English, &TimeZone::UTC),

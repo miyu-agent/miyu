@@ -57,6 +57,50 @@ pub fn after(when: &When, due: Timestamp, now: Timestamp, zone: &TimeZone) -> Op
     }
 }
 
+/// 错过的最多数到几个：每分钟一次的停了一天也不用一个一个数完。
+const MISSED_CAP: u32 = 1000;
+
+/// 从 `due` 那一次（含）到 `now`（含）本该响几次（施工 J-4）：核心停着时错过的个数，最多数到 [`MISSED_CAP`]。`due` 还没到的
+/// 是零。
+pub fn missed(when: &When, due: Timestamp, now: Timestamp, zone: &TimeZone) -> u32 {
+    if due > now {
+        return 0;
+    }
+    match when {
+        When::At { .. } => 1,
+        When::Every { every } => {
+            let Some(step) = every
+                .checked_mul(1000)
+                .and_then(|step| i64::try_from(step).ok())
+            else {
+                return 1;
+            };
+            if step <= 0 {
+                return 1;
+            }
+            let behind = now.unix_millis().saturating_sub(due.unix_millis());
+            u32::try_from(behind / step + 1).map_or(MISSED_CAP, |count| count.min(MISSED_CAP))
+        }
+        When::Cron {
+            cron, zone: named, ..
+        } => {
+            let zone = read_in(named, zone);
+            let mut count = 1;
+            let mut at = due;
+            while count < MISSED_CAP {
+                match cron_after(cron, at, &zone) {
+                    Some(later) if later <= now => {
+                        count += 1;
+                        at = later;
+                    }
+                    _ => break,
+                }
+            }
+            count
+        }
+    }
+}
+
 /// 跑完是不是就没了：某个时刻一次的、不循环的 cron。
 pub fn once(when: &When) -> bool {
     matches!(

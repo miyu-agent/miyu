@@ -12,6 +12,7 @@
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词末尾放一段 |
 | [`widget.set`、`widget.clear`、`widget.watch`、`widget.unwatch`](#widgetsetwidgetclearwidgetwatchwidgetunwatch) | 两个方向 | 界面块的内容 |
 | [`extension.config`](#extensionconfig) | 核心 → 扩展 | 它自己的配置变了 |
+| [`schedule.fired`](schedules.md#schedulefired) | 核心 → 扩展 | 它建的定时到点了（施工 J-4） |
 | [`content.list`、`content.read`、`content.changed`](#contentlistcontentreadcontentchanged) | 两个方向 | 读别的包给它带的内容 |
 | [`events.append`](#eventsappend) | 扩展 → 核心 | 往会话里记一条自己的事件 |
 

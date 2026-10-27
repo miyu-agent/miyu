@@ -168,7 +168,7 @@ impl Cells {
             target: json(serde_json::to_string(&schedule.target))?,
             target_session: match &schedule.target {
                 Target::Session { session } => Some(session.as_str().to_string()),
-                Target::New { .. } => None,
+                Target::New { .. } | Target::Package { .. } => None,
             },
             looping: schedule.looping.map(|looping| match looping {
                 Loop::Fixed => "fixed",

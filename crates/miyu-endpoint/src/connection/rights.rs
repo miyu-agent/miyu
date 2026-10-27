@@ -64,6 +64,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
         // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉自己名下的，属主照 `checks.rs` 查。
         "session.delete" => Needs(SessionsDrive),
+        // 定时任务（施工 J-1 下）：只碰自己账号的唤醒表。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
+        "schedule.add" | "schedule.list" | "schedule.cancel" | "schedule.pause"
+        | "schedule.resume" => Needs(SessionsDrive),
         // 读会话里的东西。
         "session.list"
         | "session.recap"
@@ -157,16 +160,10 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "project.create"
         | "project.update"
         | "project.delete"
-        // 定时任务（施工 J-1 下）：只碰自己账号的唤醒表。
-        | "schedule.add"
-        | "schedule.list"
-        | "schedule.cancel"
-        | "schedule.pause"
-        | "schedule.resume"
         // 整个核心的检查（施工 Y-2 下下上补进表：原来照「表里没有的当只给人」落到这里）。
         | "check" => People,
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。
-        "tool.call" | "tool.cancel" | "command.call" | "method.call" | "search.query"
+        "tool.call" | "tool.cancel" | "command.call" | "method.call" | "search.query" | "schedule.fired"
         | "user.append" | "widget.watch" | "widget.unwatch" | "view.add" | "view.append"
         | "view.update" | "view.remove" | "view.hidden" | "package.progress" => People,
         _ => People,

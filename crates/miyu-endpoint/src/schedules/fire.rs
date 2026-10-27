@@ -61,6 +61,7 @@ pub(super) async fn deliver(
         }),
     });
     let session = match &schedule.target {
+        Target::Package { missed } => return pushed(core, account, schedule, due, *missed).await,
         Target::Session { session } => session.clone(),
         Target::New {
             persona,
@@ -98,7 +99,7 @@ pub(super) async fn deliver(
     // 每次新开的跑完要告诉人（施工 J-3 下）：先订阅，交进去的那一轮的事件一定在订阅以后。
     let watching = match schedule.target {
         Target::New { .. } => found.handle.subscribe().await.ok(),
-        Target::Session { .. } => None,
+        Target::Session { .. } | Target::Package { .. } => None,
     };
     let busy = found.handle.busy();
     let send = Command::Send {
@@ -126,6 +127,35 @@ pub(super) async fn deliver(
             core.sessions.forget(&session).await;
             Delivered::skipped("session_gone", Some(session), true)
         }
+    }
+}
+
+/// 推给建它的扩展（施工 J-4）：`schedule.fired` 交给那个包替这个账号的那一份，没在跑的照用到时拉起（每人一份的）。推不到的记
+/// `skipped:package_unavailable`，一次性的照常删、周期的等下一次。
+async fn pushed(
+    core: &Arc<Core>,
+    account: &AccountId,
+    schedule: &Schedule,
+    due: Timestamp,
+    missed: u32,
+) -> Delivered {
+    let Creator::Package { package } = &schedule.by else {
+        return Delivered::skipped("package_unavailable", None, false);
+    };
+    let Some(peer) = core.provided.toward(core, package, account).await else {
+        return Delivered::skipped("package_unavailable", None, false);
+    };
+    let mut fired = serde_json::json!({"id": schedule.id, "at": due, "prompt": schedule.prompt});
+    if missed > 0 {
+        fired["missed"] = serde_json::json!(missed);
+    }
+    if !peer.notify("schedule.fired", fired) {
+        return Delivered::skipped("package_unavailable", None, false);
+    }
+    Delivered {
+        result: "sent".to_string(),
+        session: None,
+        stop: false,
     }
 }
 

@@ -130,11 +130,15 @@ impl Language {
         }
     }
 
-    /// 上一次的结果：`ran`、`queued`、`skipped:<原因>`；不认得的照原样。
+    /// 上一次的结果：`ran`、`queued`、`sent`、`skipped:<原因>`；不认得的照原样。
     pub(crate) fn schedule_result(&self, result: &str) -> String {
         let said = match (self, result) {
             (Language::Chinese, "ran") => "跑了",
             (Language::Chinese, "queued") => "排在后面",
+            (Language::Chinese, "sent") => "推给了包",
+            (Language::English, "sent") => "sent to package",
+            (Language::Chinese, "skipped:package_unavailable") => "跳过：包没在跑",
+            (Language::English, "skipped:package_unavailable") => "skipped: package not running",
             (Language::Chinese, "skipped:session_gone") => "跳过：会话没了",
             (Language::Chinese, "skipped:preset_off") => "跳过：预设关了它",
             (Language::Chinese, "skipped:not_opened") => "跳过：新会话开不成",
@@ -173,6 +177,14 @@ impl Language {
         match self {
             Language::Chinese => format!("会话 {session}"),
             Language::English => format!("session {session}"),
+        }
+    }
+
+    /// 推给建它的包（施工 J-4）。
+    pub(crate) fn schedule_on_package(&self, package: &str) -> String {
+        match self {
+            Language::Chinese => format!("推给包 {package}"),
+            Language::English => format!("to package {package}"),
         }
     }
 

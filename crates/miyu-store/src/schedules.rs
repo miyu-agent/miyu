@@ -119,6 +119,21 @@ pub enum Target {
         /// 工作目录。
         cwd: String,
     },
+    /// 建它的扩展自己（施工 J-4）：到点不进会话，推 `schedule.fired` 给那个包替这个账号的那一份。只有包建的有。
+    Package {
+        /// 核心停着时错过了几次，下一次推的时候一起报、报完清零（错过的照旧不补）。
+        #[serde(default, skip_serializing_if = "is_zero")]
+        missed: u32,
+    },
+}
+
+/// 没错过：不写进表。
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde 的 skip_serializing_if 只交引用"
+)]
+fn is_zero(missed: &u32) -> bool {
+    *missed == 0
 }
 
 /// 循环的种类。

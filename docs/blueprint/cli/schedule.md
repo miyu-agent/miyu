@@ -45,7 +45,7 @@
 2. **读时刻、间隔**：`--at`、`--every` 读不懂的不连核心以后发，说清写法，退出码 2。
 3. **发**：照上面的表；没给的选项不写那一格。
 4. **印**（标准输出）：
-   - `list`：一项一行，两个空格隔开：编号、什么时候（`cron <五段>`，记了时区、只跑一次的跟在括号里；`at <时刻>`；`every <间隔>`，间隔说成最大的整单位）、循环的接「循环」（她定节奏的「循环，她定节奏」）、停着的接「停着」、「下一次 <时刻>」、「上一次 <时刻> <结果>」、跑在哪（「会话 <编号>」，或者「新开」接写了的人格、预设、目录）、那句话（「」括起来，换行换成空格，多于 40 个字的截掉接 `…`）。时刻照本机时区印到分钟。没有的不写。一个都没有的：「还没有定时任务。」
+   - `list`：一项一行，两个空格隔开：编号、什么时候（`cron <五段>`，记了时区、只跑一次的跟在括号里；`at <时刻>`；`every <间隔>`，间隔说成最大的整单位）、循环的接「循环」（她定节奏的「循环，她定节奏」）、停着的接「停着」、「下一次 <时刻>」、「上一次 <时刻> <结果>」、跑在哪（「会话 <编号>」，扩展建的推给它自己的「推给包 <编号>」（施工 J-4），或者「新开」接写了的人格、预设、目录）、那句话（「」括起来，换行换成空格，多于 40 个字的截掉接 `…`）。时刻照本机时区印到分钟。没有的不写。一个都没有的：「还没有定时任务。」
    - `add`：「建好了：<那一项>」；`pause`、`resume`：「停了：<那一项>」「续上了：<那一项>」；`rm`：「删掉了：<编号>」。
 5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1；`bad_params` 带了 `data.problem` 的，原话（去掉句号）后面接「：」和是哪一样（下面的表）。核心断开、请求写不出去照 `miyu memory`。远程登录连上的核心拒 `cwd` 的（`local_machine_only`）照原话。
 
@@ -79,9 +79,9 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
 | 循环 | 循环、循环，她定节奏 | loop、loop, her pace |
 | 停着 | 停着 | paused |
 | 下一次、上一次 | 下一次 {时刻}、上一次 {时刻} {结果} | next {time}、last {time} {result} |
-| 上一次的结果 | `ran` 跑了、`queued` 排在后面、`skipped:session_gone` 跳过：会话没了、`skipped:preset_off` 跳过：预设关了它、`skipped:not_opened` 跳过：新会话开不成，别的照原样 | ran、queued、skipped: session gone、skipped: preset turned it off、skipped: new session didn't open |
+| 上一次的结果 | `ran` 跑了、`queued` 排在后面、`sent` 推给了包、`skipped:session_gone` 跳过：会话没了、`skipped:preset_off` 跳过：预设关了它、`skipped:not_opened` 跳过：新会话开不成、`skipped:package_unavailable` 跳过：包没在跑，别的照原样 | ran、queued、sent to package、skipped: session gone、skipped: preset turned it off、skipped: new session didn't open、skipped: package not running |
 | 只跑一次（`cron`） | 只跑一次 | once |
-| 跑在哪 | 会话 {id}、新开 人格 {p} / 无人格 预设 {p} 目录 {dir} | session {id}、new persona {p} / no persona preset {p} in {dir} |
+| 跑在哪 | 会话 {id}、推给包 {id}、新开 人格 {p} / 无人格 预设 {p} 目录 {dir} | session {id}、to package {id}、new persona {p} / no persona preset {p} in {dir} |
 
 **帮助页**：`-h`、`--help`、`miyu help schedule`、各个子命令的 `-h` 印的都是这一页，规矩见 `cli/main.md`「帮助页」。
 

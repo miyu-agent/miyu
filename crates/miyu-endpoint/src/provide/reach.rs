@@ -16,31 +16,60 @@ use crate::reverse::Peer;
 const WAIT: Duration = Duration::from_secs(60);
 
 impl Provided {
-    /// 包 `package` 替 `owner` 的那一份的连接：在的直接交回，没有的拉起、等它连上。
+    /// 包 `package` 替 `owner` 的那一份的连接：在的直接交回，没有的拉起、等它连上、登记了工具。
     pub(super) async fn reach(&self, package: &str, owner: &AccountId) -> Option<Peer> {
         let instance = Instance {
             package: package.to_string(),
             account: Some(owner.clone()),
         };
-        if let Some(peer) = self.live(&instance) {
+        self.wait(&instance, Self::live).await
+    }
+
+    /// 包 `package` 替 `account` 的那一份的连接（施工 J-4：到点推给建它的扩展），只要握了手、不用登记工具：每人一份的没在跑
+    /// 的拉起、等它握手；只有一份的是连着的那一份，没连着的没有（它归开机、扩展管理拉起）。
+    pub(crate) async fn toward(
+        &self,
+        core: &crate::Core,
+        package: &str,
+        account: &AccountId,
+    ) -> Option<Peer> {
+        if super::per_account(core, package) {
+            let instance = Instance {
+                package: package.to_string(),
+                account: Some(account.clone()),
+            };
+            self.wait(&instance, Self::linked_of).await
+        } else {
+            self.linked_of(&Instance::system(package))
+        }
+    }
+
+    /// `instance` 照 `found` 找得到的连接：找得到的直接交回，没有的替那个人拉起，等到找得到。最多等 [`WAIT`]；起不来、停下了、
+    /// 没等到的交回没有。
+    async fn wait(
+        &self,
+        instance: &Instance,
+        found: fn(&Self, &Instance) -> Option<Peer>,
+    ) -> Option<Peer> {
+        if let Some(peer) = found(self, instance) {
             return Some(peer);
         }
         let weak = self.core.get()?.clone();
         let core = weak.upgrade()?;
         let mut arrived = self.arrived.subscribe();
         let mut changed = core.extensions.subscribe();
-        if !core.start_for(&instance) {
+        if !core.start_for(instance) {
             return None;
         }
         drop(core);
         let deadline = tokio::time::Instant::now() + WAIT;
         loop {
-            if let Some(peer) = self.live(&instance) {
+            if let Some(peer) = found(self, instance) {
                 return Some(peer);
             }
             // 停下了、被关了的不等（起不来的退避中照样等，它还会再起）。
             let core = weak.upgrade()?;
-            if !core.extensions.status_of(&instance).state.busy() {
+            if !core.extensions.status_of(instance).state.busy() {
                 return None;
             }
             drop(core);

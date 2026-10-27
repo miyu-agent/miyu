@@ -31,7 +31,10 @@ use remote::{RemoteTool, Stores, Texts};
 #[derive(Default)]
 pub(crate) struct Provided {
     peers: Mutex<HashMap<Instance, Peer>>,
-    /// 每登记一次加一：等每人一份的那一份连上来的照它醒（[`reach`]）。
+    /// 握手成了的那几份的连接（施工 J-4）：不管登没登记工具，推通知（`schedule.fired`）照它找。工具调用照旧只认登记了工具的
+    /// （[`Provided::peers`]），握了手还没登记的不转过去。
+    linked: Mutex<HashMap<Instance, Peer>>,
+    /// 每登记、每握手一次加一：等每人一份的那一份连上来的照它醒（[`reach`]）。
     arrived: tokio::sync::watch::Sender<u64>,
     /// 核心：用到时替人拉起每人一份的那一份（施工 IM-1 中）。核心起来时接上（[`Provided::attach`]），没接的（测试里自己造的）
     /// 不拉起。
@@ -61,6 +64,26 @@ impl Provided {
             .insert(instance, peer);
         self.arrived
             .send_modify(|count| *count = count.wrapping_add(1));
+    }
+
+    /// 记下 `instance` 握手成了、连接是 `peer`（施工 J-4），换掉以前的；等着它的醒过来。
+    pub(crate) fn link(&self, instance: Instance, peer: Peer) {
+        self.linked
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(instance, peer);
+        self.arrived
+            .send_modify(|count| *count = count.wrapping_add(1));
+    }
+
+    /// `instance` 握了手、还连着的连接。
+    fn linked_of(&self, instance: &Instance) -> Option<Peer> {
+        self.linked
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(instance)
+            .filter(|peer| !peer.closed())
+            .cloned()
     }
 
     /// 接上核心：之后每人一份的用到时拉起。接过的不再换。

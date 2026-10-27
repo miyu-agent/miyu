@@ -223,6 +223,7 @@ mod revert;
 mod schedule_limits;
 mod schedule_methods;
 mod schedule_notices;
+mod schedule_package;
 mod schedule_tools;
 mod schedules;
 mod script_pages;
