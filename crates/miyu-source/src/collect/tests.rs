@@ -363,3 +363,54 @@ fn entries_are_sorted_by_id() {
         .collect();
     assert_eq!(ids, ["alpha", "zeta"], "{:?}", got.notes);
 }
+
+#[test]
+fn a_logo_is_taken_out_of_the_package_and_a_bad_one_is_left_out() {
+    let scratch = Scratch::new();
+    let mut net = Net::default();
+    let png = b"\x89PNG\r\n\x1a\nnot really drawn".to_vec();
+    for (id, bytes) in [("good", png.clone()), ("gif", b"GIF89a....".to_vec())] {
+        // 先放进 `package` 照编号、版本建的那个包目录，再打包。
+        let root = scratch.path().join("logo-src");
+        let folder = root.join("src").join(format!("{id}-1.0.0-any")).join(id);
+        put(&folder, "art/logo.png", &bytes);
+        let (name, packed) = package(
+            &root,
+            id,
+            "1.0.0",
+            "icon = \"cat\"\nlogo = \"art/logo.png\"\n",
+            None,
+        );
+        net.release(&format!("miyu-agent/miyu-{id}"), &[(name, packed)]);
+    }
+    let got = collect(
+        &rules(&["miyu-agent/miyu-good", "miyu-agent/miyu-gif"]),
+        &net,
+        API,
+        &scratch_dir(&scratch),
+        "2026-10-28T03:00:00Z",
+    );
+    assert_eq!(
+        got.index.packages.len(),
+        2,
+        "图标不合的包照收：{:?}",
+        got.notes
+    );
+    let good = got.index.entry("good").expect("收了");
+    assert_eq!(good.icon.as_deref(), Some("cat"));
+    let logo = good.logo.as_ref().expect("带图标");
+    assert!(logo.well_formed(), "{logo:?}");
+    assert!(logo.path.ends_with(".png"));
+    assert_eq!(logo.size, png.len() as u64);
+    assert_eq!(got.logos.get(&logo.path), Some(&png));
+    let gif = got.index.entry("gif").expect("收了");
+    assert!(gif.logo.is_none());
+    assert_eq!(got.logos.len(), 1);
+    assert!(
+        got.notes
+            .iter()
+            .any(|note| note.contains("miyu-gif") && note.contains("logo left out")),
+        "{:?}",
+        got.notes
+    );
+}

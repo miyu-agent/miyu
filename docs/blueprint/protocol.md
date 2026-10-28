@@ -203,7 +203,7 @@
 | `package.clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条） |
 | `package.upgrades`、`package.upgrade` | 盘点能升级的、照软件源升级（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条） |
 | `package.info`、`package.files` | 一个包的信息、装了哪些文件（施工 F-8 中上，`packages.md`「本地库」） |
-| `package.logo` | 读一个装着的包自带的图标：`{"package", "logo", "media_type", "data"}`，没写、不合规矩的 `null`（施工 F-18 上，`package-pages.md`「`package.logo`」） |
+| `package.logo` | 读一个装着的包自带的图标：`{"package", "logo", "media_type", "data"}`，没写、不合规矩的 `null`（施工 F-18 上，`package-pages.md`「`package.logo`」）；写了 `from` 的读那个软件源里的（施工 F-18 下） |
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
 | `package.restart` | 重启扩展的进程和它带的 MCP 服务、`bundle` 带的服务（施工 X-4，`package-pages.md`「开关」） |
@@ -801,7 +801,7 @@
 **`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
 
 - 参数 `{"query"?}`：几个词，空白分开；每个词都得出现在编号、名字、说明（索引里哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 不带 `force` 那样拿索引。
-- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）；`source` 是哪个软件源的（施工 U23 下下：官方的是 `official`，别的是配置里起的名字），别的源里的 `official` 一律是假的，同编号的各列各的；官方的照先后在前，再照 `package.sync` 的先后接别的源（拿不成的跳过）。`generated`、`stale` 照官方的。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
+- 回应 `{"packages": [...], "generated", "stale"?}`，照索引的先后（编号），每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?, "icon"?, "logo"?}`：名字、说明照连接的语言挑，挑法同 `package.list`；`installed` 是装着的那一份清单写的版本（装着、没写版本的是空的字），没装的 `null`；`blocked` 是索引里拉黑的理由（编号或来源仓库对上的），没有的 `null`；`contents` 是给哪几个包带了内容（索引 `provides` 的 `content`，施工 G-9：im 的商城只列 im 的插件），没带的是空数组；`provides`、`depends` 是索引里的原样（施工 G-10，网页的软件市场照种类筛）：带了哪几样（种类到名字，空的种类不写）、依赖的包的编号；`kind` 是包的种类，索引里的原样（施工 G-11，网页的软件市场照它筛；索引照清单的 `[package] kind` 写，以前生成的没有这一格，不写）；`source` 是哪个软件源的（施工 U23 下下：官方的是 `official`，别的是配置里起的名字），别的源里的 `official` 一律是假的，同编号的各列各的；`icon`、`logo` 是 Lucide 图标名、包自带图标的版本（施工 F-18 下，索引里有的才写，图用 `package.logo {"from"}` 读，`package-pages.md`「软件源里的图标」）；官方的照先后在前，再照 `package.sync` 的先后接别的源（拿不成的跳过）。`generated`、`stale` 照官方的。只放人要的（2026-10-08 的规矩）：来源仓库、文件、哈希不给。
 - 拒绝、谁能调同 `package.sync`。
 
 **`package.clean`**（施工 G-4 下，设计 `37-软件源.md` 第四节第 5 条，照 pacman 的 `-Sc`）

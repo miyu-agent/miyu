@@ -4,6 +4,8 @@
 //! - 一个仓库最新的 Release 里只能是同一个包的同一个版本：不分系统的一个文件，或者一种系统一个文件；文件名要和清单对得上
 //!   （[`archive::file_name`]）。对不上的、读不成的整个仓库这一次不收，记一笔。
 //! - 网络走 [`Fetch`]：小程序接 HTTP，测试接内存里的一张表。
+//! - 包自带的图标（施工 F-18 下，`[package] logo`）从包文件里取出来，放进 [`Collected::logos`]（照 [`Logo::path_for`]），和索引
+//!   一起发；条目记位置、哈希、大小。在包目录外、不是 PNG / WebP、超过 [`LOGO_MAX_BYTES`] 的不收图标、记一笔，包照收。
 //! - 社区那种来源（`kind = "topic"`）现在读得懂、不收，记一笔（第三节第 5 条：写法先备好）。
 
 pub mod rules;
@@ -14,10 +16,10 @@ use std::path::Path;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use miyu_config::package::{self, Manifest, Target};
+use miyu_config::package::{self, LOGO_MAX_BYTES, Manifest, Target};
 
 use crate::archive;
-use crate::index::{Entry, File, Index, VERSION};
+use crate::index::{Entry, File, Index, Logo, VERSION};
 pub use rules::{Rules, Source};
 
 /// 一个包文件最多多大。
@@ -45,6 +47,15 @@ pub struct Collected {
     pub names: BTreeMap<String, String>,
     /// 一行一件事：收了的、跳过的和为什么。
     pub notes: Vec<String>,
+    /// 收了的包自带的图标（施工 F-18 下）：相对输出目录的位置（同条目里 `logo.path`）到字节。
+    pub logos: BTreeMap<String, Vec<u8>>,
+}
+
+/// 一个仓库收成的：一条、它的图标、要记的一笔。
+struct Gathered {
+    entry: Entry,
+    logo: Option<Vec<u8>>,
+    note: Option<String>,
 }
 
 /// GitHub 的 Release 说明里用得上的。
@@ -85,19 +96,23 @@ pub fn collect(
     }
     let mut names = rules.names.clone();
     let mut packages: Vec<Entry> = Vec::new();
+    let mut logos = BTreeMap::new();
     for (n, repo) in repos.iter().enumerate() {
         let origin = rules::origin(repo);
         let official = rules.official.contains(repo);
         let place = scratch.join(n.to_string());
         let entry = one_repo(repo, &origin, official, fetch, api, &place);
         discard(&place);
-        let entry = match entry {
-            Ok(entry) => entry,
+        let Gathered { entry, logo, note } = match entry {
+            Ok(one) => one,
             Err(why) => {
                 notes.push(format!("{repo}: skipped, {why}"));
                 continue;
             }
         };
+        if let Some(note) = note {
+            notes.push(format!("{repo}: {note}"));
+        }
         match names.get(&entry.id) {
             Some(owner) if *owner != origin => {
                 notes.push(format!(
@@ -121,6 +136,9 @@ pub fn collect(
             continue;
         }
         notes.push(format!("{repo}: {} {}", entry.id, entry.version));
+        if let (Some(at), Some(bytes)) = (&entry.logo, logo) {
+            logos.insert(at.path.clone(), bytes);
+        }
         packages.push(entry);
     }
     packages.sort_by(|a, b| a.id.cmp(&b.id));
@@ -133,6 +151,7 @@ pub fn collect(
         },
         names,
         notes,
+        logos,
     }
 }
 
@@ -144,7 +163,7 @@ fn one_repo(
     fetch: &dyn Fetch,
     api: &str,
     place: &Path,
-) -> Result<Entry, String> {
+) -> Result<Gathered, String> {
     let url = format!("{}/repos/{repo}/releases/latest", api.trim_end_matches('/'));
     let release: Release = serde_json::from_slice(&fetch.get(&url, MOST_RELEASE)?)
         .map_err(|error| format!("unreadable release: {error}"))?;
@@ -154,6 +173,8 @@ fn one_repo(
         .filter(|asset| asset.name.ends_with(&format!(".{}", archive::EXTENSION)))
         .collect();
     let mut entry: Option<Entry> = None;
+    let mut logo: Option<Vec<u8>> = None;
+    let mut note = None;
     let mut files: Vec<File> = Vec::new();
     for (n, asset) in assets.iter().enumerate() {
         let bytes = fetch.get(&asset.browser_download_url, MOST_FILE)?;
@@ -172,7 +193,7 @@ fn one_repo(
             .clone()
             .ok_or_else(|| format!("{}: no version", asset.name))?;
         let target = target_of(&asset.name, &unpacked.id, &version, &manifest.targets)?;
-        let this = entry_of(
+        let mut this = entry_of(
             &unpacked.id,
             &version,
             &manifest,
@@ -181,7 +202,17 @@ fn one_repo(
             official,
         );
         match &entry {
-            None => entry = Some(this),
+            None => {
+                match logo_of(&manifest, &unpacked.folder) {
+                    Ok(Some((at, bytes))) => {
+                        this.logo = Some(at);
+                        logo = Some(bytes);
+                    }
+                    Ok(None) => {}
+                    Err(why) => note = Some(format!("logo left out, {why}")),
+                }
+                entry = Some(this);
+            }
             Some(first) if first.id != this.id || first.version != this.version => {
                 return Err("files of different packages in one release".to_string());
             }
@@ -197,7 +228,41 @@ fn one_repo(
     let mut entry = entry.ok_or("no package file in the latest release")?;
     files.sort_by(|a, b| a.target.cmp(&b.target));
     entry.files = files;
-    Ok(entry)
+    Ok(Gathered { entry, logo, note })
+}
+
+/// 包自带的图标：清单写了的照包目录里的真实位置读，认 PNG、WebP 开头的字节，不超过 [`LOGO_MAX_BYTES`]。没写的没有；不合的
+/// 交回为什么（英文）。边长不在这里量：打包时已经缩过，客户端读的时候再查。
+fn logo_of(manifest: &Manifest, folder: &Path) -> Result<Option<(Logo, Vec<u8>)>, String> {
+    let Some(path) = manifest.logo.as_deref() else {
+        return Ok(None);
+    };
+    let root = std::fs::canonicalize(folder).map_err(|error| error.to_string())?;
+    let real = std::fs::canonicalize(folder.join(path))
+        .ok()
+        .filter(|real| real.starts_with(&root) && real.is_file())
+        .ok_or_else(|| format!("{path} is not in the package"))?;
+    let size = std::fs::metadata(&real)
+        .map_err(|error| error.to_string())?
+        .len();
+    if size > LOGO_MAX_BYTES {
+        return Err(format!("{path} is over {LOGO_MAX_BYTES} bytes"));
+    }
+    let bytes = std::fs::read(&real).map_err(|error| error.to_string())?;
+    let extension = if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        "png"
+    } else if bytes.len() >= 12 && bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP" {
+        "webp"
+    } else {
+        return Err(format!("{path} is not a PNG or WebP"));
+    };
+    let sha256 = hex(&Sha256::digest(&bytes));
+    let logo = Logo {
+        path: Logo::path_for(&sha256, extension),
+        sha256,
+        size: bytes.len() as u64,
+    };
+    Ok(Some((logo, bytes)))
 }
 
 /// 文件名照清单算是给哪一种系统的；对不上的不收。
@@ -236,6 +301,8 @@ fn entry_of(
         origin: origin.to_string(),
         official,
         kind: Some(manifest.kind.as_str().to_string()),
+        icon: manifest.icon.clone(),
+        logo: None,
         provides: provides(manifest, folder),
         capabilities: manifest
             .process
