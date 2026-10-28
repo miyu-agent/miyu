@@ -20,14 +20,14 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 
 **Your own numbers** (construction BD-1): anyone can write `external.me = ["qq:12345"]` in their personal settings to say those identities are them. They only count in venue sessions under that person: their per-account copy gets them back from `venue.binding`, and what that identity says in their groups is recorded as them. Sessions under a platform bridge ignore it.
 
-**Owner bindings**: the system setting `[external.bindings]`, platform identity → local account:
+**Owner bindings**: the system setting `[external.bindings]`: every platform identity written there is the owner (there is only one owner, so any value counts; an empty one doesn't):
 
 ```toml
 [external.bindings]
 "qq:10001" = "admin"
 ```
 
-In a private chat this identity is that account's person; in a group it's the owner.
+In a private chat this identity is the owner in person; in a group it's the owner.
 
 ## `venue.session`
 

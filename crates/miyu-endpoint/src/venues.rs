@@ -93,21 +93,17 @@ pub(crate) struct AsParams {
     role: Option<Role>,
 }
 
-/// 平台身份 `id` 在主人对应表里对着的本机账号。没写的、写了不存在的账号（现在只有管理员）当没写：后者记一行运行日志。
+/// 平台身份 `id` 在主人对应表里是不是主人：是的交回主人的账号。
 pub(crate) fn bound(core: &Core, id: &ExternalId) -> Option<AccountId> {
-    let (_, found) = written(core)
-        .into_iter()
-        .find(|(key, _)| key == id.as_str())?;
-    let account = AccountId::parse(&found).ok()?;
-    if account != core.admin {
-        tracing::warn!(target: "miyu::endpoint", account = account.as_str(), "binding to an unknown account ignored");
-        return None;
-    }
-    Some(account)
+    owners_ids(core)
+        .iter()
+        .any(|one| one == id.as_str())
+        .then(|| core.admin.clone())
 }
 
-/// 主人对应表照写的样子：（平台身份，本机账号），都是原文，没查账号在不在。值不是字的不算。
-fn written(core: &Core) -> Vec<(String, String)> {
+/// 主人对应表里是主人的平台身份（施工 SU-1 补：只有一个主人，写了非空的字就是，值不再查是哪个账号；SU-3 改成只列平台身份）。
+/// 值不是字的、空的不算。
+fn owners_ids(core: &Core) -> Vec<String> {
     let values = core.config().resolved().values();
     values
         .keys()
@@ -118,8 +114,8 @@ fn written(core: &Core) -> Vec<(String, String)> {
                 return None;
             };
             match values.get(key) {
-                Some(miyu_config::Value::Text(account)) => {
-                    Some((names.first()?.clone(), account.to_string()))
+                Some(miyu_config::Value::Text(value)) if !value.is_empty() => {
+                    Some(names.first()?.clone())
                 }
                 _ => None,
             }

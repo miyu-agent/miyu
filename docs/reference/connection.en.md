@@ -76,6 +76,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 | `config_errors` | How many errors the config has right now; omitted when none |
 | `config` | Extensions only: the final values of this package's own settings (secrets as real values). Later changes arrive as `extension.config` |
 | `setup` | `true`: connected with a one-time code; can only set the access password |
+| `password_set` | Whether an access password is set (boolean): heads decide from it whether "allow LAN access" can be turned on |
 | `login` | `{"expires", "token"}`: only when connected with the access password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent |
 
 ```json
@@ -156,22 +157,23 @@ What each stream pushes is in [Pushes](pushes.en.md).
 
 The access password is only needed to connect from the local network (a phone, a browser on another computer); local heads use the local token. Sign in once from the network with the access password and the browser keeps a device token for 30 days.
 
-**Who can call**: people. `account.setup_code` only on a connection made with the local token; `account.setup` on connections made with the local token or a one-time code; `account.logout` on any.
+**Who can call**: people. `account.setup_code` only on a connection made with the local token; `account.setup` and `account.logout` on any (a device-token connection changing the access password must give the current one, see below).
 
 | Method | Params | Result |
 |---|---|---|
 | `account.setup_code` | none | `{"code", "expires", "first"}`: the one-time code, when it expires, and whether no access password has been set yet |
-| `account.setup` | `password` | `{}` on a local-token connection; `{"login": {"expires", "token"}}` on a one-time-code connection, which counts as signed in from then on |
+| `account.setup` | `password`, `old`? | `{}` on a local-token connection; otherwise `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
 | `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
 
-A one-time code works once. Setting or changing the access password revokes every device and closes their connections. The password is 8 to 1024 bytes and not all spaces.
+A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is 8 to 1024 bytes and not all spaces. A device-token connection (a web page opened from `miyu web`, or a LAN login) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Local-token and one-time-code connections never need it.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Wrong params; the password is not acceptable |
-| `local_only` | An extension called it; `account.setup_code` not on a local-token connection; `account.setup` not on a local-token or one-time-code connection |
+| `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection changing the access password without `old` |
+| `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds (`data.retry_after_ms`) |
+| `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
 
 ## Your avatar
 

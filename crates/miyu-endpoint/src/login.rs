@@ -177,21 +177,29 @@ pub(crate) fn setup_code(core: &Core, via: &Via) -> Result<Value, Refusal> {
 #[serde(deny_unknown_fields)]
 struct SetupParams {
     password: String,
+    /// 现在的访问密码（施工 SU-1 补）：设备令牌连上的、已经设过的要带。
+    #[serde(default)]
+    old: Option<String>,
 }
 
-/// `account.setup`：本机令牌、一次性码连上的设、改访问密码。以前的设备令牌全部作废、连着的断开；一次性码连上的另交回一个新的
-/// 设备令牌，这个连接从此算登录了。交回回应和这个连接以后怎么算（没换的照旧）。
+/// `account.setup`：设、改访问密码。本机令牌、一次性码连上的直接设；设备令牌连上的（施工 SU-1 补：网页从 `miyu web` 打开的、
+/// 局域网登录的）已经设过的要带对现在的 `old`，照来源 `source` 限流，同密码登录；扩展拉起的连接 `local_only`。以前的设备令牌全部
+/// 作废、连着的断开；不是本机令牌的另交回一个新的设备令牌，这个连接从此照它算。交回回应和这个连接以后怎么算（没换的照旧）。
 pub(crate) async fn setup(
     core: &Arc<Core>,
-    via: &Via,
+    (via, source): (&Via, Option<&str>),
     params: Value,
 ) -> Result<(Value, Option<Via>), Refusal> {
-    if !matches!(via, Via::Code | Via::Token) {
+    if *via == Via::Spawned {
         return Err(Refusal::LOCAL_ONLY);
     }
     let params: SetupParams = serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?;
     if !good_password(&params.password) {
         return Err(Refusal::BAD_PARAMS);
+    }
+    if via.login().is_some() && password_set(core) {
+        let old = params.old.ok_or(Refusal::BAD_PARAMS)?;
+        verify(core, source, old).await?;
     }
     let password = params.password;
     let hashed = tokio::task::spawn_blocking(move || accounts::hash(&password))
@@ -236,6 +244,19 @@ pub(crate) async fn password(
     source: Option<&str>,
     password: String,
 ) -> Result<(Value, Via), Refusal> {
+    verify(core, source, password).await?;
+    let _queue = core.identity.files.lock().await;
+    let (token, hash, expires) = files::issue(core, crate::sessions::now())?;
+    tracing::info!(target: TARGET, via = "password", "login issued");
+    Ok((
+        json!({"expires": expires, "token": token}),
+        Via::Password(hash),
+    ))
+}
+
+/// 对一遍访问密码 `password`，照来源 `source` 限流（没有的算 `local`）：60 秒错满 5 次的 `login_throttled`，没设的
+/// `password_not_set`，错的 `bad_password`；对了清掉这个来源错的次数。
+async fn verify(core: &Core, source: Option<&str>, password: String) -> Result<(), Refusal> {
     let source = source.unwrap_or("local").to_string();
     if let Err(wait) = admit(&core.identity, &source) {
         return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
@@ -260,13 +281,7 @@ pub(crate) async fn password(
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .remove(&source);
-    let _queue = core.identity.files.lock().await;
-    let (token, hash, expires) = files::issue(core, crate::sessions::now())?;
-    tracing::info!(target: TARGET, via = "password", "login issued");
-    Ok((
-        json!({"expires": expires, "token": token}),
-        Via::Password(hash),
-    ))
+    Ok(())
 }
 
 /// 设备令牌 `token` 握手：认得的交回这个连接怎么算。

@@ -35,6 +35,14 @@ pub async fn hello_with(client: &mut Client, credentials: Value) -> Value {
     client.call("h", "hello", params).await
 }
 
+/// 网页软件替 `from` 来的人开的连接：握手之前先说 `connection.remote`。
+pub async fn remote(core: &Arc<Core>, from: &str) -> Client {
+    let mut client = Client::connect(Arc::clone(core));
+    let notice = json!({"jsonrpc": "2.0", "method": "connection.remote", "params": {"from": from}});
+    client.line(&notice.to_string()).await;
+    client
+}
+
 /// 出示本机令牌连上的一个客户端。
 pub async fn local(core: &Arc<Core>) -> Client {
     let mut client = Client::connect(Arc::clone(core));

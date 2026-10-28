@@ -15,9 +15,8 @@ use miyu_tool::Catalog;
 
 use super::{Home, TOKEN, alice};
 
-/// 系统配置：`qq:10001` 是 alice 本人，`qq:10003` 对着一个不存在的账号。
-pub const BINDINGS: &str =
-    "[external.bindings]\n\"qq:10001\" = \"alice\"\n\"qq:10003\" = \"nobody\"\n";
+/// 系统配置：`qq:10001` 是主人 alice（施工 SU-1 补：写了的值不再查是哪个账号，头照旧写 `admin`），`qq:10003` 没写。
+pub const BINDINGS: &str = "[external.bindings]\n\"qq:10001\" = \"admin\"\n";
 
 /// 照对应表起来、工具目录是 `tools` 的核心：先把对应表写进系统配置。
 pub fn bound_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {

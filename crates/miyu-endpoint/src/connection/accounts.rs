@@ -31,13 +31,17 @@ impl Changed {
     }
 }
 
-/// 办一条 `account.*`：`via` 是这个连接现在的凭据。
-pub(super) async fn call(core: &Arc<Core>, via: Option<&Via>, request: &Request) -> Changed {
+/// 办一条 `account.*`：`via` 是这个连接现在的凭据，`source` 是它的来源（网页软件转来的地址；本机来的没有）。
+pub(super) async fn call(
+    core: &Arc<Core>,
+    (via, source): (Option<&Via>, Option<&str>),
+    request: &Request,
+) -> Changed {
     let now = via.cloned().unwrap_or(Via::Token);
     let params = request.params.clone();
     match request.method.as_str() {
         "account.setup_code" => Changed::answer(login::setup_code(core, &now)),
-        "account.setup" => match login::setup(core, &now, params).await {
+        "account.setup" => match login::setup(core, (&now, source), params).await {
             Ok((result, by)) => Changed {
                 result: Ok(result),
                 close: false,

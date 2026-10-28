@@ -1,5 +1,5 @@
 //! `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：核心拉起的、以系统账号连进来的扩展问一个平台身份在主人对应表里
-//! 对着谁：对着管理员的回账号，没写的、对着不存在的账号的回 `null`；身份写错的（空的）、多写格的、一次问几个的 `bad_params`；本机的头（不是系统
+//! 对着谁：写了的回主人的账号（施工 SU-1 补：值是什么都算主人），没写的回 `null`；身份写错的（空的）、多写格的、一次问几个的 `bad_params`；本机的头（不是系统
 //! 账号）回 `no_system_account`。只读：对应表照旧。
 
 use std::path::Path;
@@ -93,11 +93,7 @@ async fn a_bridge_asks_who_a_platform_id_is_bound_to() {
     assert!(got[0].get("result").is_some(), "握手成了：{got:?}");
     assert_eq!(got[1]["result"], json!({"account": "alice"}), "{got:?}");
     assert_eq!(got[2]["result"], json!({"account": null}), "没写的");
-    assert_eq!(
-        got[3]["result"],
-        json!({"account": null}),
-        "对着不存在的账号的当没写"
-    );
+    assert_eq!(got[3]["result"], json!({"account": null}), "没写的");
     for refused in &got[4..7] {
         assert_eq!(
             refused["error"]["data"]["reason"], "bad_params",

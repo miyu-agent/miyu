@@ -258,6 +258,8 @@ pub(crate) async fn hello(
     if via == Via::Code {
         result["setup"] = json!(true);
     }
+    // 设过访问密码没有（施工 SU-1 补）：头照它决定「允许局域网访问」能不能开。
+    result["password_set"] = json!(crate::login::password_set(core));
     if let Some(login) = login {
         result["login"] = login;
     }

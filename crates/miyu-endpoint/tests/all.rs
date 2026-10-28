@@ -93,6 +93,7 @@ mod list;
 mod list_tokens;
 mod local_machine;
 mod login;
+mod login_device;
 mod login_ticket;
 mod loop_command;
 mod mcp;

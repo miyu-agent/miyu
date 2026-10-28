@@ -83,12 +83,11 @@ pub(crate) struct Owners {
 /// 照这时的清单、配置算 [`Owners`]。
 pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
     let platforms = platforms_of_package(core, caller.as_str());
-    let bound = super::written(core)
-        .into_iter()
-        .filter_map(|(id, account)| {
-            let platform = platform_of(&id).filter(|platform| platforms.contains(*platform))?;
-            let account = AccountId::parse(&account).ok()?;
-            (account == core.admin).then(|| (platform.to_string(), account))
+    let bound = super::owners_ids(core)
+        .iter()
+        .filter_map(|id| {
+            let platform = platform_of(id).filter(|platform| platforms.contains(*platform))?;
+            Some((platform.to_string(), core.admin.clone()))
         })
         .collect();
     Owners {
@@ -155,12 +154,16 @@ pub(crate) fn bridged(core: &Core, caller: &AccountId, venue: &str, owner: &Acco
     };
     let platforms = platforms_of_package(core, caller.as_str());
     (platforms.is_empty() || platforms.contains(platform))
-        && super::written(core)
-            .into_iter()
-            .any(|(id, account)| platform_of(&id) == Some(platform) && account == owner.as_str())
+        && *owner == core.admin
+        && super::owners_ids(core)
+            .iter()
+            .any(|id| platform_of(id) == Some(platform))
 }
 
 /// 场所编号、平台身份的平台前缀：第一个 `:` 前面那一段；没有 `:` 的是空的。
 fn platform_of(text: &str) -> Option<&str> {
     text.split_once(':').map(|(prefix, _)| prefix)
 }
+
+#[cfg(test)]
+mod tests;

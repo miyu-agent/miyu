@@ -29,14 +29,6 @@ fn logins_of(home: &Home) -> logins::Logins {
         .logins
 }
 
-/// 网页软件替 `from` 来的人开的连接：握手之前先说 `connection.remote`。
-async fn remote(core: &Arc<miyu_endpoint::Core>, from: &str) -> Client {
-    let mut client = Client::connect(Arc::clone(core));
-    let notice = json!({"jsonrpc": "2.0", "method": "connection.remote", "params": {"from": from}});
-    client.line(&notice.to_string()).await;
-    client
-}
-
 #[tokio::test]
 async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
     let home = Home::new();
@@ -87,13 +79,13 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
         &logins::digest(token),
         miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合")
     ));
-    // 设好了，这个连接什么都调得了；设备令牌连上的改不了密码（要在这台电脑上改）。
+    // 设好了，这个连接什么都调得了；设备令牌连上的改密码要带现在的（施工 SU-1 补，见下面）。
     let listed = browser.call("l", "session.list", json!({})).await;
     assert!(listed.get("result").is_some(), "{listed}");
     let refused = browser
         .call("s", "account.setup", json!({"password": "another one"}))
         .await;
-    assert_eq!(why(&refused), "local_only", "{refused}");
+    assert_eq!(why(&refused), "bad_params", "{refused}");
     let refused = browser.call("c", "account.setup_code", json!({})).await;
     assert_eq!(why(&refused), "local_only", "{refused}");
     assert_eq!(setup_code(&core).await["first"], false, "设过了");
