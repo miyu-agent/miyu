@@ -282,6 +282,12 @@ impl Refusal {
         reason: "bad_password",
         data: None,
     };
+    /// 还没设访问密码（施工 SU-1）：局域网来的连不进来，先在这台电脑上设。
+    pub(crate) const PASSWORD_NOT_SET: Refusal = Refusal {
+        code: REFUSED,
+        reason: "password_not_set",
+        data: None,
+    };
     /// 用一次性码连上的，先设密码（施工 W-8）。
     pub(crate) const SETUP_FIRST: Refusal = Refusal {
         code: REFUSED,

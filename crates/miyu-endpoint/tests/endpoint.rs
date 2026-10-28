@@ -28,10 +28,10 @@ async fn hello_comes_first_and_is_checked() {
     assert_eq!(reply["id"], json!("c1"));
     assert_eq!(reply["error"]["message"], json!("Send hello first."));
 
-    // 握手：选定的主版本、核心的版本、你是谁。
+    // 握手：选定的主版本、核心的版本（施工 SU-1 起不再说你是谁：只有主人）。
     let reply = client.hello().await;
     assert_eq!(reply["result"]["protocol"], json!(1), "{reply}");
-    assert_eq!(reply["result"]["account"], json!("alice"));
+    assert!(reply["result"].get("account").is_none(), "{reply}");
     assert!(reply["result"]["core"]["version"].is_string());
 
     // 令牌不对：拒绝，断开。

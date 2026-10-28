@@ -100,8 +100,6 @@ pub struct Core {
     write: WriteHalf<Connection>,
     /// 握手回的 `language`。
     language: Option<String>,
-    /// 握手回的 `account`（施工 W-8 再补）。
-    account: Option<String>,
 }
 
 impl Core {
@@ -149,23 +147,22 @@ impl Core {
             .map(|(core, _)| core)
     }
 
-    /// 连已经在跑的核心（不拉起）、照用户名 `user`、密码 `password` 握手（施工 W-8 再补，接入通讯平台的页面登录框用）：不读
-    /// 本机令牌。交回连上的核心和换到的登录令牌（以后照它 [`Core::connect_login`]）。
+    /// 连已经在跑的核心（不拉起）、照访问密码 `password` 握手（施工 W-8 再补，接入通讯平台的页面登录框用；施工 SU-1 起没有
+    /// 用户名）：不读本机令牌。交回连上的核心和换到的设备令牌（以后照它 [`Core::connect_login`]）。
     ///
     /// # Errors
     ///
-    /// 核心没在跑、连不上；用户名或密码不对（`bad_password`）、错多了被挡（`login_throttled`，带还要等多久）；没回。
+    /// 核心没在跑、连不上；密码不对（`bad_password`）、还没设（`password_not_set`）、错多了被挡（`login_throttled`，带还要等
+    /// 多久）；没回。
     pub async fn connect_password(
         root: &DataRoot,
-        user: &str,
         password: &str,
         kind: &str,
     ) -> Result<(Core, Login), Refused> {
         let connection = miyu_ipc::connect_bare(root)
             .await
             .map_err(|error| Refused::local("unreachable", error))?;
-        let (core, shaken) =
-            Core::shake(connection, &[("user", user), ("password", password)], kind).await?;
+        let (core, shaken) = Core::shake(connection, &[("password", password)], kind).await?;
         let login = Login {
             token: shaken["login"]["token"]
                 .as_str()
@@ -179,7 +176,7 @@ impl Core {
         Ok((core, login))
     }
 
-    /// 在连上的 `connection` 上出示凭据 `credentials`（`token` 本机令牌、`login` 登录令牌、`user` 加 `password`）握手，报自己
+    /// 在连上的 `connection` 上出示凭据 `credentials`（`token` 本机令牌、`login` 设备令牌、`password` 访问密码）握手，报自己
     /// 是 `kind`。交回连上的核心和握手的回应。
     async fn shake(
         connection: Connection,
@@ -191,7 +188,6 @@ impl Core {
             lines: BufReader::new(read),
             write,
             language: None,
-            account: None,
         };
         let mut hello = json!({
             "protocol": [1, 1],
@@ -203,18 +199,12 @@ impl Core {
         }
         let shaken = core.call("hello", "hello", hello).await?;
         core.language = shaken["language"].as_str().map(str::to_string);
-        core.account = shaken["account"].as_str().map(str::to_string);
         Ok((core, shaken))
     }
 
     /// 握手回的 `language`：没回的是空的。
     pub fn language(&self) -> Option<&str> {
         self.language.as_deref()
-    }
-
-    /// 握手回的 `account`：这条连接是哪个账号（照用户名密码连上的，账号不一定就是用户名）；没回的是空的。
-    pub fn account(&self) -> Option<&str> {
-        self.account.as_deref()
     }
 
     /// 发一条请求、等它的回应：交回 `result`，拒绝的交回原话。

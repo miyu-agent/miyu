@@ -262,7 +262,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "account_disabled" => ("账号已停用。", "Account disabled."),
         "username_taken" => ("用户名已被使用。", "Username taken."),
         "not_permitted" => ("没有权限。", "Not permitted."),
-        "admin_mode_required" => ("要先进入管理员模式。", "Enter admin mode first."),
         "unknown_account" => ("账号不存在。", "Account not found."),
         "member_disabled" => (
             "这个成员已停用，先启用。",
@@ -271,7 +270,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_invite" => ("邀请码不存在。", "Invite not found."),
         "bad_ticket" => ("交接票已失效。", "Ticket expired."),
         "bad_login" => ("登录已失效，请重新登录。", "Login expired. Sign in again."),
-        "bad_password" => ("用户名或密码错误。", "Incorrect username or password."),
+        "bad_password" => ("访问密码错误。", "Incorrect access password."),
+        "password_not_set" => (
+            "还没有设访问密码，请在这台电脑上打开后设置。",
+            "No access password yet. Set one on this computer first.",
+        ),
         "login_throttled" => (
             "尝试次数过多，请一分钟后重试。",
             "Too many attempts. Try again in a minute.",

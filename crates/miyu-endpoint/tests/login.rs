@@ -1,7 +1,8 @@
-//! 身份（施工 W-8，`docs/blueprint/web-module.md`「怎么走」第一条）：一次性码只给出示本机令牌的连接、5 分钟、一次；用码连上的
-//! 只能设用户名和密码，设好了换出登录令牌、落了盘才回、以前的登录全部作废；密码登录对的进、错的一样的话、同一个用户名
-//! 60 秒错 5 次就先拒；登录令牌认得、过期、作废的不认；凭据只写一种；`account.logout` 作废一个、全部，断开用登录令牌、
-//! 密码连着的连接；文件坏了的样子。
+//! 身份（施工 W-8，`docs/blueprint/web-module.md`「怎么走」第一条；施工 SU-1 起只有一个主人）：一次性码只给出示本机令牌的连接、
+//! 5 分钟、一次；用码连上的只能设访问密码，设好了换出设备令牌、落了盘才回、以前的设备全部作废；本机令牌连上的也能设、改；访问
+//! 密码登录对的进、错的一样的话，照来源 60 秒错 5 次就先拒；没设访问密码的不认；网页软件转来的远程连接什么都没写、又没设密码的回
+//! `password_not_set`；设备令牌认得、过期、作废的不认；凭据只写一种；`account.logout` 作废一个、全部，断开用设备令牌、密码连着的
+//! 连接；文件坏了的样子。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,11 +22,19 @@ fn accounts_of(home: &Home) -> accounts::Accounts {
         .accounts
 }
 
-/// 读管理员的 `logins.json`。
+/// 读主人的 `logins.json`。
 fn logins_of(home: &Home) -> logins::Logins {
     logins::read(&home.root.account_dir(&alice()).join(logins::FILE))
         .expect("读得了")
         .logins
+}
+
+/// 网页软件替 `from` 来的人开的连接：握手之前先说 `connection.remote`。
+async fn remote(core: &Arc<miyu_endpoint::Core>, from: &str) -> Client {
+    let mut client = Client::connect(Arc::clone(core));
+    let notice = json!({"jsonrpc": "2.0", "method": "connection.remote", "params": {"from": from}});
+    client.line(&notice.to_string()).await;
+    client
 }
 
 #[tokio::test]
@@ -39,8 +48,12 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
     assert!(issued["expires"].is_string(), "{issued}");
     let mut browser = Client::connect(Arc::clone(&core));
     let reply = hello_with(&mut browser, json!({"code": code})).await;
-    assert_eq!(reply["result"]["account"], "alice", "{reply}");
-    assert_eq!(reply["result"]["setup"], true);
+    assert_eq!(reply["result"]["setup"], true, "{reply}");
+    assert!(
+        reply["result"].get("account").is_none(),
+        "没有账号这一格了：{reply}"
+    );
+    assert!(reply["result"].get("admin").is_none(), "{reply}");
     assert!(reply["result"].get("login").is_none());
     // 设好以前只能设密码；给人看的字照给。
     let refused = browser.call("l", "session.list", json!({})).await;
@@ -49,94 +62,70 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
     assert!(human.get("result").is_some(), "{human}");
     let refused = browser.call("c", "account.setup_code", json!({})).await;
     assert_eq!(why(&refused), "setup_first", "{refused}");
-    // 写法不对的照旧是设密码的样子，可以再来。
-    for (username, password) in [
-        ("Shorin", "correct horse"),
-        ("1st", "correct horse"),
-        ("a-very-long-username-over-32-chars", "correct horse"),
-        ("shorin", "short"),
-        ("shorin", "        "),
+    // 写法不对的照旧是设密码的样子，可以再来；用户名那一格不认了。
+    for params in [
+        json!({"password": "short"}),
+        json!({"password": "        "}),
+        json!({"password": "x".repeat(1025)}),
+        json!({"username": "shorin", "password": "correct horse"}),
     ] {
-        let refused = browser
-            .call(
-                "s",
-                "account.setup",
-                json!({"username": username, "password": password}),
-            )
-            .await;
-        assert_eq!(
-            why(&refused),
-            "bad_params",
-            "{username} {password}: {refused}"
-        );
+        let refused = browser.call("s", "account.setup", params.clone()).await;
+        assert_eq!(why(&refused), "bad_params", "{params}: {refused}");
     }
-    let long = "x".repeat(1025);
-    let refused = browser
-        .call(
-            "s",
-            "account.setup",
-            json!({"username": "shorin", "password": long}),
-        )
-        .await;
-    assert_eq!(why(&refused), "bad_params", "{refused}");
     assert!(accounts_of(&home).accounts.is_empty(), "什么都没写");
     let reply = browser
-        .call(
-            "s",
-            "account.setup",
-            json!({"username": "shorin", "password": "correct horse"}),
-        )
+        .call("s", "account.setup", json!({"password": "correct horse"}))
         .await;
-    assert_eq!(reply["result"]["username"], "shorin", "{reply}");
     let token = reply["result"]["login"]["token"].as_str().expect("有令牌");
-    assert!(is_hex64(token));
+    assert!(is_hex64(token), "{reply}");
     assert!(reply["result"]["login"]["expires"].is_string());
-    // 落了盘才回。
-    let account = accounts_of(&home)
-        .find("shorin")
-        .cloned()
-        .expect("写进去了");
-    assert_eq!(account.id, "alice");
-    assert!(accounts::verify(&account.password, "correct horse"));
+    // 落了盘才回：写在主人那一行。
+    let owner = accounts_of(&home).of("alice").cloned().expect("写进去了");
+    assert!(owner.owner);
+    assert!(accounts::verify(&owner.password, "correct horse"));
     assert!(logins_of(&home).valid(
         &logins::digest(token),
         miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合")
     ));
-    // 设好了，这个连接是完整的管理员。
+    // 设好了，这个连接什么都调得了；设备令牌连上的改不了密码（要在这台电脑上改）。
     let listed = browser.call("l", "session.list", json!({})).await;
     assert!(listed.get("result").is_some(), "{listed}");
     let refused = browser
-        .call(
-            "s",
-            "account.setup",
-            json!({"username": "again", "password": "correct horse"}),
-        )
+        .call("s", "account.setup", json!({"password": "another one"}))
         .await;
-    assert_eq!(
-        why(&refused),
-        "bad_params",
-        "不是用码连上的不能设：{refused}"
-    );
-    // 浏览器拿到登录令牌也换不出一次性码。
+    assert_eq!(why(&refused), "local_only", "{refused}");
     let refused = browser.call("c", "account.setup_code", json!({})).await;
     assert_eq!(why(&refused), "local_only", "{refused}");
-    // 系统日志记一条。
-    let journal = std::fs::read_to_string(home.root.system().join(miyu_store::journal::FILE))
-        .expect("有系统日志");
-    let line = journal
-        .lines()
-        .find(|line| line.contains("\"account.password_set\""))
-        .expect("记了一条");
-    assert!(line.contains("\"username\":\"shorin\""), "{line}");
+    assert_eq!(setup_code(&core).await["first"], false, "设过了");
+}
+
+/// 本机令牌连上的直接改访问密码（施工 SU-1）：以前的设备全部作废、连着的断开；这个连接照旧是本机的，不另给设备令牌。
+#[tokio::test]
+async fn the_local_token_changes_the_password_and_drops_every_device() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let old = set_up(&core, "correct horse").await;
+    let mut phone = Client::connect(Arc::clone(&core));
     assert!(
-        !line.contains("correct horse") && !line.contains(token),
-        "{line}"
+        hello_with(&mut phone, json!({"login": old}))
+            .await
+            .get("result")
+            .is_some()
     );
-    // 用过的码不能再用。
-    let mut again = Client::connect(Arc::clone(&core));
-    let refused = hello_with(&mut again, json!({"code": code})).await;
-    assert_eq!(why(&refused), "bad_code", "{refused}");
-    assert!(is_closed(&mut again).await, "回完断开");
+    let mut local = local(&core).await;
+    let reply = local
+        .call("s", "account.setup", json!({"password": "battery staple"}))
+        .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    assert!(is_closed(&mut phone).await, "以前的设备断开");
+    let mut stale = Client::connect(Arc::clone(&core));
+    assert_eq!(
+        why(&hello_with(&mut stale, json!({"login": old})).await),
+        "bad_login"
+    );
+    let mut fresh = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut fresh, json!({"password": "battery staple"})).await;
+    assert!(reply["result"]["login"]["token"].is_string(), "{reply}");
 }
 
 #[tokio::test]
@@ -169,57 +158,61 @@ async fn codes_expire_and_only_the_newest_sixteen_are_kept() {
 }
 
 #[tokio::test]
-async fn passwords_log_in_and_too_many_failures_are_refused_without_checking() {
+async fn passwords_log_in_and_too_many_failures_from_one_place_are_refused() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    set_up(&core, "shorin", "correct horse").await;
-    let mut browser = Client::connect(Arc::clone(&core));
-    let reply = hello_with(
-        &mut browser,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
-    assert_eq!(reply["result"]["account"], "alice", "{reply}");
-    let token = reply["result"]["login"]["token"].as_str().expect("有令牌");
-    assert!(is_hex64(token));
-    assert!(reply["result"].get("setup").is_none());
-    let listed = browser.call("l", "session.list", json!({})).await;
-    assert!(listed.get("result").is_some(), "{listed}");
-    // 用户名不对和密码不对一样说，回完断开。
-    for (user, password) in [("shorin", "wrong horse"), ("nobody", "correct horse")] {
-        let mut wrong = Client::connect(Arc::clone(&core));
-        let refused = hello_with(&mut wrong, json!({"user": user, "password": password})).await;
-        assert_eq!(why(&refused), "bad_password", "{refused}");
-        assert!(is_closed(&mut wrong).await, "回完断开");
-    }
-    for _ in 0..4 {
-        let mut wrong = Client::connect(Arc::clone(&core));
-        let refused = hello_with(&mut wrong, json!({"user": "shorin", "password": "wrong"})).await;
-        assert_eq!(why(&refused), "bad_password");
-    }
-    let mut right = Client::connect(Arc::clone(&core));
-    let refused = hello_with(
-        &mut right,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    // 还没设：密码一律不认；远程来的什么都没写的说清楚是没设。
+    let mut early = remote(&core, "192.168.1.20").await;
     assert_eq!(
-        why(&refused),
-        "login_throttled",
-        "错了 5 次，对的也先拒：{refused}"
+        why(&hello_with(&mut early, json!({"password": "correct horse"})).await),
+        "password_not_set"
     );
-    let wait = refused["error"]["data"]["retry_after_ms"]
-        .as_u64()
-        .expect("说要等多久");
-    assert!(wait > 0 && wait <= 60_000, "{wait}");
-    // 忘了密码怎么办由头自己给（2026-10-10 项目主人定），拒绝的话只说结果。
-    let message = refused["error"]["message"].as_str().unwrap_or("");
+    let mut bare = remote(&core, "192.168.1.20").await;
+    assert_eq!(
+        why(&hello_with(&mut bare, json!({})).await),
+        "password_not_set"
+    );
+    set_up(&core, "correct horse").await;
+    let mut bare = remote(&core, "192.168.1.20").await;
+    assert_eq!(
+        why(&hello_with(&mut bare, json!({})).await),
+        "bad_token",
+        "设了以后照常"
+    );
+    let mut right = remote(&core, "192.168.1.20").await;
+    let reply = hello_with(&mut right, json!({"password": "correct horse"})).await;
+    assert!(is_hex64(
+        reply["result"]["login"]["token"].as_str().expect("{reply}")
+    ));
+    assert!(reply["result"]["login"]["expires"].is_string());
+    // 同一个来源错 5 次，第 6 次连对的也先拒、不验。
+    for n in 0..5 {
+        let mut wrong = remote(&core, "192.168.1.20").await;
+        let reply = hello_with(&mut wrong, json!({"password": "wrong one"})).await;
+        assert_eq!(why(&reply), "bad_password", "第 {n} 次：{reply}");
+    }
+    let mut held = remote(&core, "192.168.1.20").await;
+    let reply = hello_with(&mut held, json!({"password": "correct horse"})).await;
+    assert_eq!(why(&reply), "login_throttled", "{reply}");
     assert!(
-        matches!(
-            message,
-            "尝试次数过多，请一分钟后重试。" | "Too many attempts. Try again in a minute."
-        ),
-        "{message}"
+        reply["error"]["data"]["retry_after_ms"]
+            .as_u64()
+            .is_some_and(|ms| ms > 0)
+    );
+    // 别的来源、本机来的各算各的。
+    let mut other = remote(&core, "192.168.1.21").await;
+    assert!(
+        hello_with(&mut other, json!({"password": "correct horse"}))
+            .await
+            .get("result")
+            .is_some()
+    );
+    let mut here = Client::connect(Arc::clone(&core));
+    assert!(
+        hello_with(&mut here, json!({"password": "correct horse"}))
+            .await
+            .get("result")
+            .is_some()
     );
 }
 
@@ -227,11 +220,11 @@ async fn passwords_log_in_and_too_many_failures_are_refused_without_checking() {
 async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    let token = set_up(&core, "shorin", "correct horse").await;
+    let token = set_up(&core, "correct horse").await;
     let mut browser = Client::connect(Arc::clone(&core));
     let reply = hello_with(&mut browser, json!({"login": token})).await;
-    assert_eq!(reply["result"]["account"], "alice", "{reply}");
-    assert!(reply["result"].get("login").is_none(), "用登录令牌的不另发");
+    assert!(reply.get("result").is_some(), "{reply}");
+    assert!(reply["result"].get("login").is_none(), "用设备令牌的不另发");
     for bad in [&"0".repeat(64), "not hex"] {
         let mut stranger = Client::connect(Arc::clone(&core));
         let refused = hello_with(&mut stranger, json!({"login": bad})).await;
@@ -259,11 +252,7 @@ async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
         let mut browser = Client::connect(Arc::clone(&core));
         hello_with(&mut browser, json!({"code": issued["code"]})).await;
         let reply = browser
-            .call(
-                "s",
-                "account.setup",
-                json!({"username": "admin", "password": "battery staple"}),
-            )
+            .call("s", "account.setup", json!({"password": "battery staple"}))
             .await;
         reply["result"]["login"]["token"]
             .as_str()
@@ -279,46 +268,29 @@ async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
     );
     assert!(is_closed(&mut browser).await, "以前登着的连接断开");
     let mut stale = Client::connect(Arc::clone(&core));
-    let refused = hello_with(
-        &mut stale,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    let refused = hello_with(&mut stale, json!({"password": "correct horse"})).await;
     assert_eq!(why(&refused), "bad_password", "{refused}");
     let mut fresh = Client::connect(Arc::clone(&core));
     let reply = hello_with(&mut fresh, json!({"login": new_token})).await;
-    assert_eq!(reply["result"]["account"], "alice", "{reply}");
-    assert_eq!(
-        accounts_of(&home).accounts.len(),
-        1,
-        "还是一个账号，用户名换了"
-    );
-    assert_eq!(accounts_of(&home).accounts[0].username, "admin");
+    assert!(reply.get("result").is_some(), "{reply}");
+    assert_eq!(accounts_of(&home).accounts.len(), 1, "还是主人那一行");
 }
 
 #[tokio::test]
 async fn logout_revokes_one_or_all_and_closes_their_connections() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    let first = set_up(&core, "shorin", "correct horse").await;
+    let first = set_up(&core, "correct horse").await;
     let mut a = Client::connect(Arc::clone(&core));
     hello_with(&mut a, json!({"login": first})).await;
     let mut b = Client::connect(Arc::clone(&core));
-    let reply = hello_with(
-        &mut b,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    let reply = hello_with(&mut b, json!({"password": "correct horse"})).await;
     let second = reply["result"]["login"]["token"]
         .as_str()
         .expect("有")
         .to_string();
     let mut c = Client::connect(Arc::clone(&core));
-    let reply = hello_with(
-        &mut c,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    let reply = hello_with(&mut c, json!({"password": "correct horse"})).await;
     assert!(reply.get("result").is_some());
     let mut terminal = local(&core).await;
     let reply = a.call("o", "account.logout", json!({})).await;
@@ -352,11 +324,7 @@ async fn logout_revokes_one_or_all_and_closes_their_connections() {
     assert!(logins_of(&home).tokens.is_empty());
     // 密码不动。
     let mut d = Client::connect(Arc::clone(&core));
-    let reply = hello_with(
-        &mut d,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    let reply = hello_with(&mut d, json!({"password": "correct horse"})).await;
     assert!(reply.get("result").is_some(), "{reply}");
 }
 
@@ -370,9 +338,8 @@ async fn only_one_kind_of_credential_is_accepted() {
         .to_string();
     for credentials in [
         json!({"token": TOKEN, "code": code}),
-        json!({"user": "shorin"}),
-        json!({"password": "correct horse"}),
-        json!({"login": "a", "user": "b", "password": "c"}),
+        json!({"login": "a", "password": "c"}),
+        json!({"ticket": "a", "password": "c"}),
     ] {
         let mut client = Client::connect(Arc::clone(&core));
         let refused = hello_with(&mut client, credentials.clone()).await;
@@ -396,24 +363,16 @@ async fn broken_files_read_as_empty() {
     let issued = setup_code(&core).await;
     assert_eq!(issued["first"], true, "坏了的当没设过：{issued}");
     let mut browser = Client::connect(Arc::clone(&core));
-    let refused = hello_with(
-        &mut browser,
-        json!({"user": "admin", "password": "whatever1"}),
-    )
-    .await;
-    assert_eq!(why(&refused), "bad_password");
-    let token = set_up(&core, "shorin", "correct horse").await;
+    let refused = hello_with(&mut browser, json!({"password": "whatever1"})).await;
+    assert_eq!(why(&refused), "password_not_set", "{refused}");
+    let token = set_up(&core, "correct horse").await;
     assert_eq!(accounts_of(&home).accounts.len(), 1, "坏的那份换成了好的");
     home.write("home/alice/logins.json", "{");
     let mut stale = Client::connect(Arc::clone(&core));
     let refused = hello_with(&mut stale, json!({"login": token})).await;
     assert_eq!(why(&refused), "bad_login", "{refused}");
     let mut browser = Client::connect(Arc::clone(&core));
-    let reply = hello_with(
-        &mut browser,
-        json!({"user": "shorin", "password": "correct horse"}),
-    )
-    .await;
+    let reply = hello_with(&mut browser, json!({"password": "correct horse"})).await;
     assert!(
         reply["result"]["login"]["token"].is_string(),
         "坏的那份换成了好的：{reply}"
@@ -449,7 +408,10 @@ async fn tickets_are_for_people_and_redeem_once() {
     let redeemed = local
         .call("r", "login.redeem", json!({"ticket": value}))
         .await;
-    assert_eq!(redeemed["result"]["account"], "alice", "{redeemed}");
+    assert!(
+        redeemed["result"].get("account").is_none(),
+        "不带账号了：{redeemed}"
+    );
     let token = redeemed["result"]["login"]["token"]
         .as_str()
         .expect("换出登录令牌")
@@ -463,4 +425,35 @@ async fn tickets_are_for_people_and_redeem_once() {
     assert_eq!(why(&again), "bad_ticket");
     let bad = local.call("r3", "login.redeem", json!({})).await;
     assert_eq!(why(&bad), "bad_params");
+}
+
+/// 第一次起来的样子（施工 SU-1，`miyu_core::owner::ensure`）：账号文件里已经有主人那一行、密码是空的，照样算没设访问密码。
+#[tokio::test]
+async fn an_owner_row_without_a_password_is_not_a_password() {
+    let home = Home::new();
+    let row = accounts::Account {
+        id: "alice".to_string(),
+        username: "alice".to_string(),
+        password: String::new(),
+        changed: miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合"),
+        created: None,
+        disabled: false,
+        owner: true,
+    };
+    let mut written = accounts::Accounts::default();
+    written.put(row);
+    std::fs::create_dir_all(home.root.system()).expect("建得了");
+    accounts::write(&home.root.system().join(accounts::FILE), &written, None).expect("写得进");
+    let core = home.core(&Script::new([]));
+    assert_eq!(setup_code(&core).await["first"], true, "还没设过");
+    let mut bare = remote(&core, "192.168.1.30").await;
+    assert_eq!(
+        why(&hello_with(&mut bare, json!({})).await),
+        "password_not_set"
+    );
+    let mut guess = remote(&core, "192.168.1.30").await;
+    assert_eq!(
+        why(&hello_with(&mut guess, json!({"password": "anything at all"})).await),
+        "password_not_set"
+    );
 }

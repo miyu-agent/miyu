@@ -1,0 +1,85 @@
+## SU：移除多用户，改回一个人用
+
+状态：主会话做，分 SU-1 到 SU-6。项目主人 2026-10-28 拍板：移除所有多用户设计，让占用降下来；网页局域网能用（http + 访问密码）；终端远程走 SSH；两个头、接入通讯平台（im）跟着移除。移除完统一量一次占用，中间不每步量。
+
+### 一、为什么
+
+空闲匿名内存从 10-22（多用户开工前）的 6.2 MB 涨到约 10 MB；多用户让每个功能都多一层「归谁、谁能看、成员能不能用」，开发难度和项目管理都失控了，而且没有一个真实的第二个用户。朋友要用就各跑一份 Miyu；跨机器的 agent 留言以后走 PT-4（A2A 扩展包）；聊天室留给第三方扩展。
+
+### 二、留着的（不是多用户，是安全）
+
+1. 场所里不可信的外部身份、角色、判官、场所会话（QQ 群这一套）；场所会话的命令沙盒、上网不碰本机和局域网。
+2. 扩展包当独立的身份，能力照批过的挡；核心拉起的扩展照旧只碰批过的方法。
+3. 主人自己在平台上的号的对应（私聊她时认出是主人），只剩主人一份。
+4. 本机才能用的方法：远程连上来的照旧拒，名单以后照「路径在不在同一台机器上」再审。
+5. 交接票（`login.ticket`、`login.redeem`）：im 的网页从主网页跳过去还要用。
+6. 「你的」头像（原来的账号头像，只剩一张）。
+
+### 三、拿掉的
+
+| 块 | 拿掉什么 |
+|---|---|
+| 账号管理 | `account.disable`、`account.enable`、`account.invite`、`account.invite_revoke`、`account.invites`、`account.list`、`account.register`、`account.set_admin`、`package.members`；握手的 `user`、`invite`；回应的 `account`、`admin`；拒绝 `account_disabled`、`bad_invite`、`register_first`、`not_permitted`（成员闸） |
+| 管理员模式 | 请求外壳的 `"scope": "system"`、`caps.scope`、`admin_mode_required`；命令行 `--system` |
+| 组 | `system/groups.json` 的管理员组；能力组 `ext.<能力>` 换成 `extensions.json`（包 → 批过的能力） |
+| 包的账号 | 带程序的包不再是一个账号（包编号和用户名互相占位、包的家目录）；包的数据放 `data/<包>/`，身份照旧是包 |
+| 每人一份 | 配置、密钥（系统一层 + 个人一层 → 一份）；用量按人；记忆按账号分层（Y-7）；人格、预设、技能、脚本、提示词和工具说明覆盖的「系统 + 自己」两层 → 「你的 + 出厂」；软件包系统层 + 个人层、个人的软件源、对自己关掉某个包；扩展 `[process] scope = "account"`（每人一份的扩展进程、`copies`）；成员自己的平台号；每人一份的场所会话（IM-2）；会话索引、项目、定时任务的按账号分；定时任务每账号 200 条 → 全机 200 条 |
+| 成员的限制 | 成员沙盒、成员上网闸、成员只装不带程序的包、「成员也能用」开关 |
+| 存储布局 | `system/` + `home/<账号>/` 两层 → 数据根一层（第五节） |
+| OOBE | 注册机主账号；admin 只当系统、不能登录这一套 |
+
+### 四、新的登录（只有主人一个）
+
+1. **本机**：照旧凭只有你读得到的本机令牌（`token`），不用密码。
+2. **访问密码**：只在要从局域网连时需要。`account.setup {"password"}` 设、改，只给本机令牌、一次性码连上的连接；`account.setup_code` 只给本机令牌的连接，交回一次性码，网页第一次设密码用（`#setup=` 照旧）。密码 8 到 1024 个字节，argon2id 存。改了密码，全部设备令牌作废。
+3. **登录**：握手写 `password`，对了交回 `login: {"expires", "token"}`（设备令牌，30 天）；之后握手写 `login`。`code`、`ticket` 照旧。
+4. **吊销**：`account.logout {}` 作废这一个连接用的设备令牌；`account.logout {"all": true}` 全部作废，用着它们的连接断开。
+5. **限流**：60 秒内错 5 次，剩下的时间先拒，`login_throttled`（`data.retry_after_ms`，照旧）；密码不对 `bad_password`。原来照用户名数，改成照来源数：网页软件转过来的连接带着来源地址的照地址分，不知道来源的算一份。
+6. **网页局域网**：网页软件照配置听局域网的地址，http；没设访问密码时只认本机来的连接。
+
+### 五、新的数据根（SU-5）
+
+```text
+<数据根>/
+├── config.toml  secrets.toml  journal.jsonl  trust.toml  access.json（访问密码的哈希）  logins.json（设备令牌）
+├── personas/ presets/ skills/ commands/ scripts/ prompts/ tools/   你的，同名盖出厂的
+├── packages/  extensions.json  data/<包>/
+├── sessions/ trash/ index/ blobs/ workspace/ memory/
+├── state/  run/
+```
+
+主人的部署在 SU 合进 main 以后由一次性脚本搬（停核心 → 整份备份 → 搬 → 逐项核数，赞助账本专门核），onebot 会话执行，时间项目主人定。不在产品里做兼容。
+
+### 六、分步
+
+| 步 | 内容 | 头、im 要跟着切 |
+|---|---|---|
+| SU-1 | 管理员模式、成员闸、账号管理、邀请、管理员组拿掉；新登录（第四节）；OOBE 不建账号 | 两个头：登录、OOBE、账号页、管理员模式 |
+| SU-2 | 包和扩展：包的账号、能力组 → `extensions.json`、软件包两层、个人软件源、每人一份的扩展、`package.members`、「成员也能用」 | 两个头：软件包页、扩展页；im：每人一份 |
+| SU-3 | 配置、密钥、用量、记忆、项目、定时、平台号、头像改成一份 | 两个头：设置页的层；im：平台号 |
+| SU-4 | 场所会话归包、IM-2 拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
+| SU-5 | 存储布局一层；搬家脚本 | 无（头不碰路径） |
+| SU-6 | 剩下的账号参数收尾、蓝图和设计（06 标作废）、作者文档；量占用 | 无 |
+
+每一步：协议改了的，合之前把形状发给两个头和 im，大家同一步切；本机门禁、变异照常。
+
+### 七、SU-1：做了什么
+
+1. 端点的身份（`login.rs`）只剩主人：`Via::Login`、`Via::Password` 不再带账号，`Revoked` 只有「全部」「这一个」；`account.setup {password}`（本机令牌、一次性码连上的），一次性码连上的另交设备令牌；访问密码握手照来源（`connection.remote` 的地址，本机来的算一份）限流；主人那一行密码是空的算没设，回 `password_not_set`；设备令牌只认主人的 `logins.json`。删掉 `admins.rs`、`invites.rs`、`members.rs`、`oobe.rs`。
+2. 握手（`hello.rs`）：凭据去掉 `user`、`invite`，`caps.scope` 不认；回应去掉 `account`、`admin`、`register`；远程来的什么都没写、又没设密码的回 `password_not_set`。`Peer.admin` 照「替主人干活」算，`admin_mode` 就是它。
+3. 闸门（`connection/gate.rs`）只剩一次性码那一道；成员名单、管理员模式两份删掉。请求外壳的 `scope` 照收不理。
+4. 交接票不再绑账号，回应不带 `account`；头像只有主人一张，`account.avatar` 不收 `account`。
+5. 核心起来（`miyu-core/src/owner.rs`）：没有主人当场照系统用户名建一个、不设密码；「只能设置」的那一段（`Core::in_setup`）删掉。
+6. 软件包：会话里属主是主人的装进系统那一层（`packages/port.rs`），不再提示进管理员模式；给模型看的 `software/basesystem/package/admin-mode.txt` 删掉（登记簿、蓝图跟着删）。
+7. 命令行去掉管理员模式（`Rpc::in_admin_mode`、握手的 `caps.scope`、「加 --system」的提示）；`--system` 选层留到 SU-2、SU-3。客户端库 `miyu-client` 的 `connect_password` 去掉用户名，`account()` 删掉。
+8. 协议 1 冻结的方法清单删掉 8 个账号管理方法（`account.disable`、`enable`、`invite`、`invite_revoke`、`invites`、`list`、`register`、`set_admin`）：项目主人 10-28 拍板移除多用户，协议还没发过版。`package.members` 留到 SU-2。
+9. 测试：删掉只测成员、管理员、每人一份扩展的 21 个文件；登录、交接票、头像、软件包工具、包名占位照单人化重写。
+10. 文档：参考 `connection`、`errors` 中英两份，蓝图 `protocol.md`、`core.md`，方法清单、扩展能调什么的表。
+
+### 八、SU-1：怎么验
+
+1. `miyu-core` 单测：第一次起来照系统用户名建主人、不设密码，有了照旧；用户名换成账号的写法，换不成的叫 `me`。
+2. 端点 `login.rs`：一次性码只给本机令牌、只能设访问密码、设好换设备令牌、写在主人那一行；设备令牌连上的改不了密码；本机令牌改密码以后以前的设备断开；还没设的密码登录、远程空凭据回 `password_not_set`，设了以后空凭据 `bad_token`；同一个来源错 5 次先拒、别的来源和本机各算各的；主人那一行密码是空的照样算没设。交接票、头像、软件包工具（主人装进系统那一层、装回出厂的、打开扩展先问再开）各一组。
+3. 总程序的测试：交接票、密码登录（`connect_password` 只带密码）、拉起核心。
+4. 手写变异 11 个全杀；「主人那一行密码是空的」头一轮活了，补了照真机第一次起来写好的那一行才杀掉。
+5. 本机门禁全过。

@@ -83,7 +83,7 @@ pub(crate) async fn query(
 ) -> Result<Value, Refusal> {
     let mut query = read(params, crate::sessions::offset)?;
     let whose = caller.acting_for();
-    if !crate::login::admins::is_admin(core, whose) {
+    if !crate::login::is_owner(core, whose) {
         query.account = Some(whose.as_str().to_string());
     }
     let currency = currency(core, whose);

@@ -258,7 +258,7 @@ pub async fn pkg_on(
     out: &mut dyn Write,
     err: &mut dyn Write,
 ) -> u8 {
-    let mut rpc = Rpc::new(connection, "pkg").in_admin_mode(plan.args.system);
+    let mut rpc = Rpc::new(connection, "pkg");
     let language = &plan.language;
     if let Err(code) = link::hello(&mut rpc, token, language, false, err).await {
         return code;

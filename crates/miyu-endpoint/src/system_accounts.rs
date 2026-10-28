@@ -33,15 +33,9 @@ impl Core {
             .collect()
     }
 
-    /// 用量照哪几个账号补（施工 Y-2 下下中下）：管理员、系统账号，和登记过的人（停用了的也算：用过的照旧算数）。
+    /// 用量照哪几个账号补（施工 Y-2 下下中下）：主人、系统账号。
     pub(crate) fn usage_accounts(&self) -> Vec<AccountId> {
-        let mut accounts = self.accounts();
-        for person in crate::login::members::people(self) {
-            if !accounts.contains(&person) {
-                accounts.push(person);
-            }
-        }
-        accounts
+        self.accounts()
     }
 
     /// 这次起来认的带进程的包的账号（施工 Y-5 中上），照编号排：平台桥在里面。

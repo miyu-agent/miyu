@@ -2342,17 +2342,6 @@ Nothing to upgrade.
 Turned on {package}. Its tools come in on the next turn.
 ```
 
-#### `software/basesystem/package/admin-mode.txt`
-
-- 什么时候加进来：`package`：核心拒 `admin_mode_required`（会话里没有管理员模式：带程序的包、开扩展、装回和卸出厂的、卸系统装的，施工 U23 下上）
-- token：32（2026-10-28 量）
-- 为什么加：会话里装包一律装进属主自己那一层，系统那一层的事要人自己进管理员模式；只给原因代码她说不清该让人做什么
-- 指纹：`e5955ad2`
-
-```text
-Could not change {what}: that changes the system for everyone, which needs admin mode. Ask the person to enter admin mode and do it on the packages page.
-```
-
 #### `software/basesystem/package/refused.txt`
 
 - 什么时候加进来：`package`：别的拒绝（和出厂的撞名、读不了、必需的、核心正在停）

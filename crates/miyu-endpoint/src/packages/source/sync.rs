@@ -22,7 +22,7 @@ use miyu_kernel::id::AccountId;
 use miyu_source::index::{Index, may_replace};
 use miyu_source::sign::{self, PublicKey};
 
-use super::super::{TARGET, packages};
+use super::super::TARGET;
 use super::feeds::Feed;
 use crate::Core;
 use crate::refusal::Refusal;
@@ -307,14 +307,6 @@ async fn get(client: &reqwest::Client, url: &str, limit: usize) -> Result<Vec<u8
         Got::Body { bytes, .. } => Ok(bytes),
         Got::NotModified => Err("not modified".to_string()),
     }
-}
-
-/// 本机存的那份索引里的包编号（施工 Y-5 中下：注册时这些名字算占着）：不联网，没拿过、验不过的是空的。碰磁盘。
-pub(crate) fn indexed_ids(core: &Core) -> Vec<String> {
-    let dir = packages(core).state_root().join(".sync");
-    stored(&dir, &core.trust.keys).map_or_else(Vec::new, |(index, _)| {
-        index.packages.into_iter().map(|entry| entry.id).collect()
-    })
 }
 
 /// 本机存的那份：签名验得过、读得成的才算；拿到的时刻读不成的当很久以前。

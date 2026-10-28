@@ -6,8 +6,8 @@
 |---|---|
 | [`hello`](#hello) | 握手：说明你是谁、出示凭据 |
 | [`subscribe`、`unsubscribe`](#subscribeunsubscribe) | 订阅、取消订阅一条推送流 |
-| [`account.setup_code`、`account.setup`、`account.logout`](#accountsetup_codeaccountsetupaccountlogout) | 网页登录用的一次性码、设用户名和密码、作废登录 |
-| [`account.invite`、`account.register` 这几个](#成员) | 成员：邀请码、注册、列出、停用 |
+| [`account.setup_code`、`account.setup`、`account.logout`](#accountsetup_codeaccountsetupaccountlogout) | 访问密码：网页第一次设用的一次性码、设和改、作废设备 |
+| [`account.set_avatar`、`account.avatar`](#你的头像) | 你的头像 |
 
 ## 怎么连
 
@@ -23,7 +23,7 @@
 
 **请求**是 JSON-RPC 2.0：`jsonrpc` 写 `"2.0"`，`method` 是方法名，`params` 是对象（不写当 `{}`，写成数组回 `bad_params`），`id` 是 1 到 128 字节、不含控制字符的字符串。没有 `id` 的是通知，核心不理，只认握手之前的 `connection.remote`（上面「网页」）。参数里不认识的格不理；写 `null` 等于没写。
 
-**管理员模式**：管理员组的人改系统那一层（系统配置、系统那一份密钥、系统装的包和扩展、MCP、账号管理、`provider.rename`），请求外壳多写一格 `"scope": "system"`（和 `method` 同级），不带的回 `admin_mode_required`。只对握手时 `caps.scope: true` 的连接这样要求，没声明的照以前。`secret.set`、`secret.delete` 不写 `layer` 的，管理员模式里存系统那一份，平时存自己的。不是管理员的人带了一律 `not_permitted`；`scope` 写别的值是 `invalid_request`。
+**只有一个人**：Miyu 只给装它的那个人（主人）用，没有账号、成员、管理员模式（2026-10-28 起）。老头请求外壳里带的 `"scope"` 照收不理。
 
 **回应**：成了的在 `result`；拒了的在 `error`：`code` 是错误码，`message` 是给人看的一句（照这个连接的语言），`data.reason` 是给程序看的原因码，有的另带几格。
 
@@ -38,7 +38,7 @@
 
 1. 一个连接上的请求一条条办：上一条回了才读下一条。少数要等很久的在后台答，不挡后面的请求，回应照 `id` 对上：`model.call`、`memory.dream`、`link.preview`、`job.stop`、带 `wait` 的 `fs.find`、`job.output`，和 `command.run` 里要等的几条（例如 `/dream`）。
 2. 先见结果，后见回应：一个命令引起的推送，一定比它的回应先到。
-3. 同一个 `id` 再发一次（同一个会话最近 1024 个之内）：照上一次的回应答，不再做一遍。被拒的不记，再发重新判。这是给断线重发用的，**不分连接**：新连上的连接用了以前用过的 `id`，也当成重发，拿到的是上一次的回应、什么都不做（例如 `session.send` 有回应，会话里却没有这句话）。所以每个连接的 `id` 要和以前的都不一样，最简单的是每次连接取一个随机前缀，后面接递增的数字。`session.create` 也照 `id` 认重发：同一个账号用同一个 `id` 再造，交回上一次造的那个会话，核心重启以后也认得；不同账号碰巧用了同一个 `id` 的各造各的。
+3. 同一个 `id` 再发一次（同一个会话最近 1024 个之内）：照上一次的回应答，不再做一遍。被拒的不记，再发重新判。这是给断线重发用的，**不分连接**：新连上的连接用了以前用过的 `id`，也当成重发，拿到的是上一次的回应、什么都不做（例如 `session.send` 有回应，会话里却没有这句话）。所以每个连接的 `id` 要和以前的都不一样，最简单的是每次连接取一个随机前缀，后面接递增的数字。`session.create` 也照 `id` 认重发：用同一个 `id` 再造，交回上一次造的那个会话，核心重启以后也认得。
 
 ## `hello`
 
@@ -53,15 +53,14 @@
 | `protocol` | `[最低, 最高]`，必写 | 你支持的协议主版本范围；核心只有 `1` |
 | `head` | `{"kind", "version"}`，必写 | 你是什么、哪一版，只记进运行日志 |
 | `locale` | 字符串 | 你所在系统的语言（`zh-CN`、`en_US.UTF-8` 都行）。配置 `ui.language` 是 `auto` 时照它定这个连接的语言 |
-| `caps` | 对象 | `input`（布尔）：你能不能让人输入。`scope`（布尔）：你认识管理员模式（上面「管理员模式」）。`prefix_ask`（布尔）：文件改了、前缀要变时你先问人（[`session.send`](sessions.md#sessionsend)「前缀要变」） |
+| `caps` | 对象 | `input`（布尔）：你能不能让人输入。`prefix_ask`（布尔）：文件改了、前缀要变时你先问人（[`session.send`](sessions.md#sessionsend)「前缀要变」） |
 | `token` | 字符串 | 本机令牌 |
-| `code` | 字符串 | 一次性码（网页第一次设密码、重设密码） |
-| `login` | 字符串 | 登录令牌（网页记住的登录） |
-| `user`、`password` | 字符串 | 网页登录的用户名、密码，一起写；管理员、成员都用它 |
-| `invite` | 字符串 | 邀请码：还没注册的人凭它连上，只能注册 |
-| `ticket` | 字符串 | 交接票（`login.ticket` 要的）：别的页面带过来的，换成一个登录令牌连上 |
+| `code` | 字符串 | 一次性码（网页第一次设访问密码） |
+| `login` | 字符串 | 设备令牌（网页记住的登录） |
+| `password` | 字符串 | 访问密码：从局域网连时用 |
+| `ticket` | 字符串 | 交接票（`login.ticket` 要的）：别的页面带过来的，换成一个设备令牌连上 |
 
-凭据正好写一种：`token`、`code`、`login`、`invite`、`ticket`，或者 `user` 加 `password`。扩展不写。回应的 `account` 是认出来的账号：登录令牌、用户名密码、交接票连上的是那个账号；用邀请码连上的还没注册，是 `null`，另带 `"register": true`。
+凭据正好写一种：`token`、`code`、`login`、`ticket`、`password`。扩展不写。网页软件转来的远程连接（`connection.remote`）什么凭据都没写、又还没设访问密码的回 `password_not_set`。
 
 **回应**
 
@@ -69,21 +68,19 @@
 |---|---|
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
-| `account` | 你是谁：本机的人是 `admin`；声明了系统账号的包的扩展是那个系统账号（账号名同包的编号），别的扩展也是 `admin` |
-| `avatar` | 这个账号头像的版本，有头像的才带（施工 AV-1）：头照它换缓存，图用 `account.avatar` 取 |
-| `admin` | 布尔：这个账号是不是管理员（机主，和管理员组里的人；施工 Y-2 下下中上）。头照它决定给不给设置页里管整台机器的那些、账号管理。还没注册、还没有机主的是 `false` |
-| `host` | `{"home", "platform", "workspace"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、这个账号的默认工作区。管理员的另有 `dirs`：`{"pictures", "videos", "documents", "downloads"}`，这个账号照 XDG 的几处，在的给真实位置、还没建的照原样（施工 Y-11 上）；成员的没有。远程的连接整个没有（施工 Y-1 下） |
+| `avatar` | 你的头像的版本，有头像的才带（施工 AV-1）：头照它换缓存，图用 `account.avatar` 取 |
+| `host` | `{"home", "platform", "workspace", "dirs"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、默认工作区、照 XDG 的几处 `{"pictures", "videos", "documents", "downloads"}`（在的给真实位置、还没建的照原样，施工 Y-11 上）。远程的连接整个没有（施工 Y-1 下）；扩展的没有 `dirs` |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
 | `view` | 视图投影的版本，现在是 `1`（见 [会话](sessions.md) 的 `view.page`） |
 | `sandbox` | `{"usable": true}`，或者 `{"usable": false, "reason"}`：`helper_missing`、`helper_failed`、`no_mechanism` |
 | `config_errors` | 配置里现在有几处错误，没有的不写 |
 | `config` | 只有扩展有：这个包自己的配置项的最终值（密钥是真值）。之后变了推 `extension.config` |
-| `setup` | `true`：用一次性码连上的，只能设用户名和密码 |
-| `login` | `{"expires", "token"}`：用用户名密码、交接票连上的才有，网页记住它下次用。交接票连上的票当场作废 |
+| `setup` | `true`：用一次性码连上的，只能设访问密码 |
+| `login` | `{"expires", "token"}`：用访问密码、交接票连上的才有，网页记住它下次用。交接票连上的票当场作废 |
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"zh-CN","token":"3f9a…"}}
-← {"id":"h1","jsonrpc":"2.0","result":{"account":"admin","core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/home/admin/workspace"},"language":"zh","protocol":1,"sandbox":{"usable":true},"view":1}}
+← {"id":"h1","jsonrpc":"2.0","result":{"core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/home/me/workspace"},"language":"zh","protocol":1,"sandbox":{"usable":true},"view":1}}
 ```
 
 握手以后再发一次 `hello` 也行：过了的照新的语言和能力；被拒的，没断开的还照上一次的。
@@ -92,141 +89,59 @@
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 缺了必写的、类型不对；凭据写了不止一种、`user`/`password` 只写一个（断开） |
+| `bad_params`（`-32602`） | 缺了必写的、类型不对；凭据写了不止一种（断开） |
 | `protocol_mismatch` | `1` 不在你给的范围里（断开） |
 | `bad_token` | 没写凭据，或者本机令牌不对（断开） |
-| `bad_code`、`bad_login`、`bad_password` | 一次性码、登录令牌、用户名密码不对（断开）；停用了的账号密码不对的也是 `bad_password` |
-| `account_disabled` | 用户名、密码都对，账号停用了（断开） |
-| `bad_invite` | 邀请码不对、过期了、用过了、撤掉了（断开） |
+| `bad_code`、`bad_login`、`bad_password` | 一次性码、设备令牌、访问密码不对（断开） |
+| `password_not_set` | 还没设访问密码：写了 `password` 的，或者远程来的什么都没写（断开）。先在这台电脑上设 |
 | `bad_ticket` | 交接票没有、过期了、用过了（断开） |
-| `login_throttled` | 密码错太多次，先等一会儿（断开） |
+| `login_throttled` | 同一个来源 60 秒里密码错了 5 次，先等一会儿（断开）；`data.retry_after_ms` 是还要等多久 |
 | `hello_first` | 握手以前调了别的方法（不断开） |
-| `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法；还没有机主时本机令牌连上的，调了 `human.get`、`account.setup`、`account.setup_code` 以外的方法 |
-| `register_first` | 用邀请码连上的，调了 `human.get`、`account.register` 以外的方法 |
-| `not_permitted` | 成员的连接调了名单以外的方法（施工 Y-2 下下上，`connection/gate/members.rs`）：成员调得了只碰自己东西的那些——自己的会话（说话、打断、撤销、压缩、换模型、改标题、回答、回顾、工作区、权限级别、工具、上下文、终端会话、视图、后台任务）、斜杠命令、附件、人格、预设、技能、脚本、项目、定时任务、知识库、记忆、用量（只算自己名下的）、`provider.catalog`、`mermaid.render`，订阅 `events`、`view`、`sessions`、`projects`、`schedules`、`kb`、`memory`、`widgets` 几种流；施工 Y-2 下下中上起还有他自己那一份配置：读、查、清单（`config.get`、`config.check`、`config.schema`）、开关和加载方式（`feature.set`、`tool.set_loading`）、项目配置信不信任（`config.trust`）、订阅 `config`；施工 Y-2 下下中中起还有写他的个人设置（`config.set` 的 `personal`）、他自己那一份密钥（`secret.set`、`secret.delete`、`secret.list`）、照他那一份配置列模型、试供应商（`model.list`、`provider.test`）。写系统配置、系统那一份密钥、MCP、一次性调模型、认供应商（`provider.detect`）、链接预览、整台机器的事（装包、扩展、读本机文件、`check`）不给。成员切权限级别到 `full` 也回它（2026-10-23 项目主人定：成员最高到工作区）。管理员组里的成员另外调得了账号管理那几个（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`） |
-
-## `subscribe`、`unsubscribe`
-
-订阅一条推送流：从这一刻起，这条流的推送都转给这个连接。
-
-**谁能调**：人、扩展；扩展订阅 `events`、`view`、`sessions` 流要能力 `events.read`，`projects`、`schedules`、`notices`、`package` 流只给人（`local_only`）。
-
-**参数**
-
-| 名字 | 类型 | 说明 |
-|---|---|---|
-| `stream` | 字符串，必写 | 哪条流，见下表 |
-| `session` | 字符串 | `events`、`view` 必写；`config`、`sessions` 不能写；`memory` 可写（那个会话用的那一间） |
-| `persona` | 字符串 | 只有 `memory` 认：这个人格那一间 |
-| `after` | 非负整数 | 只有 `events`、`memory` 认：先补发序号大于它的，`0` 是从头 |
-
-| `stream` | 推什么 | `subscribe` 的回应 |
-|---|---|---|
-| `events` | 一个会话的事件，原样 | 会话这一刻的样子：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（这个会话的默认工作区）、`compactable`（这一刻有没有能压的，`session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的另带 `persona`、`preset`、`todos`、`goal`、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是开始跑的时刻）；写了 `after` 的多 `upto` |
-| `view` | 一个会话的视图投影（给界面直接画的条目） | 上一格那些，加最新一页的条目、整份会话状态 `status` |
-| `config` | 配置变了 | `{}` |
-| `sessions` | 会话列表的一项变了 | `{"sessions": [<一项>…]}`，全部 |
-| `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
-| `packages` | 软件包列表的一项变了 | `{"packages": […]}` |
-| `projects` | 这个账号的一个项目变了（施工 H-1） | `{"projects": […]}`，全部 |
-| `schedules` | 这个账号的一个定时任务变了、到点交过了（施工 J-1 下） | `{"schedules": […]}`，全部 |
-| `notices` | 给人的通知（施工 J-3 中）：每次新开会话的定时那一轮答完了、唤醒表坏了换了一份空的。头照它弹系统通知 | `{}`，不补以前的 |
-| `package` | 带 `package`：这个包推给这个账号的（施工 IM-1 中下二），包的页面照它更新、不用轮询。没装的包 `unknown_package` | `{}`，不补以前的 |
-| `kb` | 这个账号的知识库建索引的进度（施工 W-15）：`kb.indexing`、`kb.indexed` | `{}`：这一刻的样子照 `kb.list` |
-| `memory` | 一间记忆的日志 | `{"upto": <那一刻最后一条的序号>}` |
-| `widgets` | 界面块 | 见 [软件包与扩展](packages.md) |
-
-各条流的推送长什么样见 [推送](pushes.md)。
-
-1. 一个连接对一个会话只有一个订阅（`events` 和 `view` 也算同一个）；再订阅换一个新的。`sessions`、`config`、`extensions`、`packages`、`projects`、`schedules`、`notices`、`kb`、`widgets` 一个连接各一个；`package` 一个包一个。
-2. **补发**：写了 `after` 的，先把日志里序号大于它、订阅那一刻已经落了盘的事件一条条推过来，再回应（带 `upto`），之后从 `upto + 1` 接着推，不丢不重。会话正有一次模型请求在流的，补完以后另推一遍这次请求到目前为止的增量（`model.delta`），接得上后面实时推的。不带序号的瞬时事件不补。
-3. **掉队**：你读得太慢，会话给一个订阅最多攒 1024 份（配置 16 份、记忆 64 条），再多就推一条 `resync`，这个订阅停了。会话停了也推 `resync`。重新订阅，带上最后看到的序号（`after`）就能补回来。
-4. 订阅着一个会话，就算你在看着它：没人看着的会话，子代理报回来只记下、不叫醒她。
-5. `unsubscribe`：同样的 `stream`、`session`/`persona`，停掉转发，回 `{}`；没订阅过的也回 `{}`。
-
-```json
-→ {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
-← （先推第 31 到 42 条 event）
-← {"id":"s1","jsonrpc":"2.0","result":{"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,…}}
-```
-
-**出错**
-
-| `data.reason` | 什么时候 |
-|---|---|
-| `bad_params`（`-32602`） | `stream` 不认识；`session` 该写没写、不该写写了；`after` 不是非负整数，或者这条流不认 `after` |
-| `session_not_found`、`session_broken`、`session_stopped` | 会话没有、读不了、停了（再订阅一次会重新载入） |
-| `memory_not_installed`、`memory_unavailable` | `memory` 流：没装记忆，或者这一间没有记忆 |
+| `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法 |
 
 ## `account.setup_code`、`account.setup`、`account.logout`
 
-OOBE 和网页登录。装 Miyu 的那个人（机主）第一次用时注册自己的账号：核心还没有机主时，本机令牌握手的回应写 `"setup": true`、`"account": null`，这时只能调 `account.setup`（注册机主）、`account.setup_code`（给远程的网页一次性码，网页拿码注册）。注册成了，这个连接答完就断，核心照机主重起，头重连进来就是他。`admin` 是系统，不能注册、不能登录。以后用用户名、密码在网页登录，浏览器记住 30 天。
+访问密码：只在要从局域网（手机、别的电脑的浏览器）连时需要；本机的头凭本机令牌，不用密码。从局域网用访问密码登录一次，浏览器记住设备令牌 30 天。
 
-**谁能调**：人。`account.setup_code` 只给出示本机令牌连上的；`account.setup` 给用一次性码连上的，还没有机主时本机令牌连上的也能调；`account.logout` 都能调。
+**谁能调**：人。`account.setup_code` 只给出示本机令牌连上的；`account.setup` 给本机令牌、一次性码连上的；`account.logout` 都能调。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `account.setup_code` | 没有 | `{"code", "expires", "first"}`：一次性码、到什么时候作废、是不是还没设过密码 |
-| `account.setup` | `username`、`password` | `{"username", "login": {"expires", "token"}}`：设好了，换一个登录令牌；注册机主的多 `account`，答完连接就断 |
-| `account.logout` | `all`（布尔，默认 `false`） | `{"revoked": <作废了几个>}`：作废这一个登录令牌，`all` 的作废全部 |
+| `account.setup_code` | 没有 | `{"code", "expires", "first"}`：一次性码、到什么时候作废、是不是还没设过访问密码 |
+| `account.setup` | `password` | 本机令牌连上的回 `{}`；一次性码连上的回 `{"login": {"expires", "token"}}`，这个连接从此算登录了 |
+| `account.logout` | `all`（布尔，默认 `false`） | `{"revoked": <作废了几个>}`：作废这一个设备令牌，`all` 的作废全部 |
 
-一次性码用过就作废。设好密码以后，以前的浏览器登录全部作废。
+一次性码用过就作废。设、改了访问密码，以前的设备全部作废，连着的断开。密码 8 到 1024 个字节，不能全是空白。
 
 **出错**
 
 | `data.reason` | 什么时候 |
 |---|---|
-| `bad_params`（`-32602`） | 参数不对；用户名、密码不合要求 |
-| `local_only` | 扩展调了，或者不是本机令牌连上的调了 `account.setup_code` |
-## 成员
+| `bad_params`（`-32602`） | 参数不对；密码不合要求 |
+| `local_only` | 扩展调了；不是本机令牌连上的调了 `account.setup_code`；不是本机令牌、一次性码连上的调了 `account.setup` |
 
-一个 Miyu 可以有几个人用：管理员发邀请码，拿到码的人自己注册一个账号（成员）。各自的会话只有自己看得到。
+## 你的头像
 
-**谁能调**：`account.register` 给用邀请码连上的；别的只给管理员（机主，和管理员组里的人），别的成员调了回 `not_permitted`。
-
-| 方法 | 参数 | 回应 |
-|---|---|---|
-| `account.invite` | `days`（1 到 30，默认 7） | `{"code", "id", "expires"}`：邀请码只在这里给一次，以后只列得出编号 |
-| `account.invites` | 没有 | `{"invites": [{"id", "created", "expires", "used"?}]}`：还能用的、最近用掉的（`used` 是 `{"account", "at"}`） |
-| `account.invite_revoke` | `id` | `{"revoked": true}`：撤掉一个还没用的 |
-| `account.register` | `username`、`password` | `{"account", "username", "login": {"expires", "token"}}`：注册好了，这个连接从此是这个账号 |
-| `account.list` | 没有 | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?, "avatar"?}]}`：`avatar` 是头像的版本（施工 AV-1）；`kind` 是 `admin`（机主）、`member`、`system`；`admin` 是这个人是不是管理员（机主恒是） |
-| `account.disable`、`account.enable` | `account` | `{"account", "disabled"}`：停用的登录全部作废、连着的断开，数据留着 |
-| `account.set_admin` | `account`、`admin`（布尔） | `{}`：把一个成员设成、撤掉管理员；机主恒是管理员、撤不掉。机主、系统、包的账号、没有的账号 `unknown_account`，停用了的成员 `member_disabled` |
-
-**头像**（施工 AV-1）：谁都能换、删、读自己的；别人的只有管理员读得了，别人回 `not_permitted`。一张 PNG、JPEG、WebP，最大 1 MiB、宽高不超过 1024（同人格头像）。这台浏览器登录过哪些账号由网页自己记，核心不列给没登录的人。
+一张 PNG、JPEG、WebP，最大 1 MiB、宽高不超过 1024（同人格头像）。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
 | `account.set_avatar` | `blob`（先 `blob.put` 传上来）或 `unset: true`，可带 `expect`（上次读到的版本，`null` 是还没有） | `{"avatar": <版本或 null>}`；`expect` 对不上的 `avatar_conflict`（`data` 带现在的版本）；不是图 `avatar_not_image`，太大 `avatar_too_big` |
-| `account.avatar` | `account`（可以不写，是自己） | `{"avatar", "media_type", "data"}`（版本、媒体类型、base64）；没有的是 `null` |
-
-用户名就是账号编号：小写字母开头，只用小写字母、数字、`-`，最多 32 个；不能和管理员、已有的账号、系统账号重名，也不能叫 `users`。邀请码一次性；注册没成（比如用户名被占了）码还在。
-
-**出错**
-
-| `data.reason` | 什么时候 |
-|---|---|
-| `bad_params`（`-32602`） | 参数不对；用户名、密码不合要求 |
-| `username_taken` | 用户名被占了 |
-| `unknown_invite` | 没有这个邀请码，或者已经用了 |
-| `unknown_account` | 没有这个账号，或者它不是成员 |
-| `member_disabled` | `account.set_admin` 的那个成员停用了：先启用 |
-| `not_permitted` | 不是管理员 |
+| `account.avatar` | 没有 | `{"avatar", "media_type", "data"}`（版本、媒体类型、base64）；没有的是 `null` |
 
 ## `login.ticket`、`login.redeem`
 
 交接票：已经登录的人从一个页面跳到另一个程序的页面（网页跳到接入通讯平台的页面，`miyu web` 打开网页），不用再登录一次。跳过去之前要一张票带在网址里，接的一方拿它连核心，有两种接法：
 
-- 握手时交 `ticket`（上面「握手」的凭据）：一步连上，回应带换到的登录令牌，连接就是票的那个账号。浏览器里直连核心的页面用它。
-- `login.redeem` 换一个登录令牌，再照这个登录令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。老的接法，照旧能用。
+- 握手时交 `ticket`（上面「握手」的凭据）：一步连上，回应带换到的设备令牌。浏览器里直连核心的页面用它。
+- `login.redeem` 换一个设备令牌，再照这个设备令牌连核心（`miyu-client` 的 `connect_login`，经本机套接字，握手带 `login`；页面自己的登录框用 `connect_password`，交回换到的登录令牌）。老的接法，照旧能用。
 
-**谁能调**：`login.ticket` 只给人：本机令牌（终端）、登录令牌、密码、交接票连上的都能要，核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
+**谁能调**：`login.ticket` 只给人：本机令牌（终端）、设备令牌、密码、交接票连上的都能要，核心拉起的扩展回 `local_only`；`login.redeem` 谁拿着票谁能调。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `login.ticket` | 没有 | `{"ticket", "expires", "account"}`：64 位十六进制的票，60 秒后作废，绑这个连接的账号；`account` 就是那个账号（跳过去的网址里照它写 `as`） |
-| `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`：票绑的账号、换出的登录令牌（30 天） |
+| `login.ticket` | 没有 | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废 |
+| `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`：换出的设备令牌（30 天） |
 
 一张票只用一次（握手交了、`login.redeem` 换了都算）；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。
 

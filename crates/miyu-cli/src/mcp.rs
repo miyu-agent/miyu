@@ -89,7 +89,7 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
         Ok(connected) => connected,
         Err(error) => return failed(&error.to_string()),
     };
-    let mut rpc = Rpc::new(connection, "mcp").in_admin_mode(args.system);
+    let mut rpc = Rpc::new(connection, "mcp");
     let err = &mut io::stderr();
     let language = match link::hello(&mut rpc, &token, &language, false, err).await {
         Ok(hello) => link::spoken(&hello, language),

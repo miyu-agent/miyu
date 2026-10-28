@@ -468,31 +468,3 @@ async fn logout_deletes_by_name_or_pick() {
     );
     assert!(!secrets(&home).contains("sk-FAKE"));
 }
-
-/// 不写 `--system` 的存进自己那一份（施工 Y-12 下下）：大家共用的那一份不动；删也只删自己的。
-#[tokio::test]
-async fn without_system_the_key_is_your_own() {
-    let home = home();
-    let mut console = piping(&format!("{FAKE}\n"));
-    let asked = run_as(
-        &home,
-        (Language::Chinese, login("deepseek"), false),
-        &mut console,
-    )
-    .await;
-    assert_eq!(asked.code, 0, "{}", asked.screen);
-    let own = std::fs::read_to_string(home.root.path().join("home/admin/secrets.toml"))
-        .unwrap_or_default();
-    assert!(own.contains("deepseek"), "{own}");
-    assert!(!secrets(&home).contains("deepseek"), "共用的那一份没动");
-    let asked = run_as(
-        &home,
-        (Language::Chinese, logout("deepseek"), false),
-        &mut piping(""),
-    )
-    .await;
-    assert_eq!(asked.code, 0, "{}", asked.screen);
-    let own = std::fs::read_to_string(home.root.path().join("home/admin/secrets.toml"))
-        .unwrap_or_default();
-    assert!(!own.contains("deepseek"), "{own}");
-}

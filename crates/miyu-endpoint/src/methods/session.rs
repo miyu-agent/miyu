@@ -301,7 +301,7 @@ pub(super) async fn set_permission_level(
         LevelParam::Full => Level::Full,
     });
     // 完全放开只给管理员（施工 Y-2 下下上，2026-10-23 项目主人定：成员最高到工作区）：完全放开的命令不进沙盒，等于碰得到这台电脑。
-    if level == Some(Level::Full) && !crate::login::admins::is_admin(core, caller.acting_for()) {
+    if level == Some(Level::Full) && !crate::login::is_owner(core, caller.acting_for()) {
         return Err(Refusal::NOT_PERMITTED);
     }
     let session = session(&params.session)?;

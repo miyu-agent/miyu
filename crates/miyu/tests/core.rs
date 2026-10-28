@@ -19,7 +19,10 @@ async fn a_head_starts_the_core_and_talks_to_it() {
         .expect("拉得起");
     let reply = hello(connection, &token).await;
     assert_eq!(reply["result"]["protocol"], json!(1), "{reply}");
-    assert_eq!(reply["result"]["account"], json!("admin"), "管理员叫 admin");
+    assert!(
+        reply["result"].get("account").is_none(),
+        "只有主人，不再说是谁：{reply}"
+    );
     home.until_stopped().await;
     let log = home.core_log();
     assert_eq!(count(&log, "starting"), 1, "{log}");

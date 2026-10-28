@@ -235,17 +235,6 @@ impl Language {
         }
     }
 
-    /// 改系统那一层没写 `--system`（施工 Y-12 下下）。
-    pub(crate) fn needs_system(&self) -> String {
-        match self {
-            Language::Chinese => "这一步改的是全机的东西：加 --system 以管理员身份做".to_string(),
-            Language::English => {
-                "This changes things for the whole machine: add --system to do it as an admin"
-                    .to_string()
-            }
-        }
-    }
-
     /// 附件传不上（施工 3-9 三补）：哪个文件，核心照握手时报的语言说的原因。
     pub(crate) fn not_attached(&self, file: &str, reason: &str) -> String {
         match self {

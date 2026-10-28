@@ -6,8 +6,8 @@ Chinese version: [connection.md](connection.md).
 |---|---|
 | [`hello`](#hello) | Handshake: who you are, your credentials |
 | [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribe to or leave a push stream |
-| [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | One-time code for web login, setting the username and password, revoking logins |
-| [`account.invite`, `account.register` and the rest](#members) | Members: invite codes, registering, listing, disabling |
+| [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | Access password: the one-time code for setting it from the web, setting and changing it, revoking devices |
+| [`account.set_avatar`, `account.avatar`](#your-avatar) | Your avatar |
 
 ## Connecting
 
@@ -23,7 +23,7 @@ Chinese version: [connection.md](connection.md).
 
 **Requests** are JSON-RPC 2.0: `jsonrpc` is `"2.0"`, `method` the method name, `params` an object (omitted means `{}`, an array gets `bad_params`), `id` a string of 1 to 128 bytes with no control characters. A message without `id` is a notification and the core ignores it, except `connection.remote` before the hello (see **Web** above). Unknown params are ignored; `null` means omitted.
 
-**Admin mode**: when people in the admin group change the system layer (system settings, the system secrets, system-installed packages and extensions, MCP, account management, `provider.rename`), the request envelope carries `"scope": "system"` (next to `method`); without it the answer is `admin_mode_required`. This applies only to connections that sent `caps.scope: true` in the hello; others keep the old meaning. `secret.set` and `secret.delete` without `layer` use the system shelf in admin mode and the person's own otherwise. Non-admins sending it always get `not_permitted`; any other `scope` value is `invalid_request`.
+**Just one person**: Miyu is for the one person who installed it (the owner); there are no accounts, members or admin mode (since 2026-10-28). A `"scope"` that old heads put in the request envelope is accepted and ignored.
 
 **Responses**: success in `result`; refusal in `error`: `code` is the error code, `message` a sentence for people (in the connection's language), `data.reason` the reason code for programs, sometimes with more fields.
 
@@ -38,7 +38,7 @@ Chinese version: [connection.md](connection.md).
 
 1. Requests on one connection are handled one at a time: the next line is read after the previous one is answered. A few slow ones are answered in the background without blocking later requests, matched by `id`: `model.call`, `memory.dream`, `link.preview`, `job.stop`, `fs.find` and `job.output` with `wait`, and the slow cases of `command.run` (such as `/dream`).
 2. Results before responses: the pushes a command causes always arrive before its response.
-3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again. This is for resending after a dropped connection, and it **does not depend on the connection**: a new connection that reuses an `id` used before is treated as a resend, gets the earlier response, and nothing happens (for example `session.send` answers, but the message never reaches the session). So every connection's `id`s must differ from all earlier ones; the simplest way is a random prefix per connection followed by an increasing number. `session.create` also recognizes resends by `id`: the same account creating again with the same `id` gets back the session made the first time, even after the core restarts; different accounts that happen to use the same `id` each get their own session.
+3. Sending the same `id` again (within a session's last 1024): you get the previous response and nothing is done twice. Refused ones are not remembered; sending again is judged again. This is for resending after a dropped connection, and it **does not depend on the connection**: a new connection that reuses an `id` used before is treated as a resend, gets the earlier response, and nothing happens (for example `session.send` answers, but the message never reaches the session). So every connection's `id`s must differ from all earlier ones; the simplest way is a random prefix per connection followed by an increasing number. `session.create` also recognizes resends by `id`: creating again with the same `id` gets back the session made the first time, even after the core restarts.
 
 ## `hello`
 
@@ -53,15 +53,14 @@ The handshake. It must be the first message; before it every other method gets `
 | `protocol` | `[lowest, highest]`, required | The protocol major versions you support; the core only has `1` |
 | `head` | `{"kind", "version"}`, required | What you are and which version; only logged |
 | `locale` | string | Your system's language (`zh-CN`, `en_US.UTF-8` both work). Sets the connection's language when the `ui.language` setting is `auto` |
-| `caps` | object | `input` (boolean): whether you can let a person type. `scope` (boolean): you know admin mode (see **Admin mode** above). `prefix_ask` (boolean): you ask the person when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.en.md#sessionsend)) |
+| `caps` | object | `input` (boolean): whether you can let a person type. `prefix_ask` (boolean): you ask the person when changed files are about to change the prefix (see **Prefix changing** under [`session.send`](sessions.en.md#sessionsend)) |
 | `token` | string | The local token |
-| `code` | string | A one-time code (first web password, password reset) |
-| `login` | string | A login token (a remembered web login) |
-| `user`, `password` | string | Web username and password, together; the admin and members both use them |
-| `invite` | string | Invite code: someone not registered yet connects with it and can only register |
-| `ticket` | string | A hand-off ticket (from `login.ticket`) brought over by another page; it is exchanged for a login token on the spot |
+| `code` | string | A one-time code (setting the access password from the web the first time) |
+| `login` | string | A device token (a remembered web login) |
+| `password` | string | The access password, for connecting from the local network |
+| `ticket` | string | A hand-off ticket (from `login.ticket`) brought over by another page; it is exchanged for a device token on the spot |
 
-Give exactly one kind of credential: `token`, `code`, `login`, `invite`, `ticket`, or `user` plus `password`. Extensions give none. The reply's `account` is the account recognized: the one the login token, username or hand-off ticket belongs to; a connection made with an invite code hasn't registered yet, so it is `null`, with `"register": true`.
+Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `password`. Extensions give none. A remote connection passed on by the web software (`connection.remote`) that gives no credential while no access password is set gets `password_not_set`.
 
 **Response**
 
@@ -70,20 +69,18 @@ Give exactly one kind of credential: `token`, `code`, `login`, `invite`, `ticket
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
 | `avatar` | The version of this account's avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
-| `account` | Who you are: local people are `admin`; an extension of a package that declares a system account is that account (named after the package), other extensions are `admin` too |
-| `admin` | Boolean: whether this account is an admin (the owner, and people in the admin group; construction Y-2 lower-lower-middle-upper). Heads use it to decide whether to show the machine-wide parts of the settings and account management. `false` before registering or while there is no owner yet |
-| `host` | `{"home", "platform", "workspace"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, this account's default workspace. For the admin there is also `dirs`: `{"pictures", "videos", "documents", "downloads"}`, this account's XDG-style folders, the real path when it exists and as is otherwise (step Y-11); members get none. Not given to remote connections (Y-1 下) |
+| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the default workspace, and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise, step Y-11). Not given to remote connections (Y-1 下); extensions get no `dirs` |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
 | `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |
 | `config_errors` | How many errors the config has right now; omitted when none |
 | `config` | Extensions only: the final values of this package's own settings (secrets as real values). Later changes arrive as `extension.config` |
-| `setup` | `true`: connected with a one-time code; can only set the username and password |
-| `login` | `{"expires", "token"}`: only when connected with username and password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent |
+| `setup` | `true`: connected with a one-time code; can only set the access password |
+| `login` | `{"expires", "token"}`: only when connected with the access password or a hand-off ticket; the web app keeps it for next time. A ticket used this way is spent |
 
 ```json
 → {"jsonrpc":"2.0","id":"h1","method":"hello","params":{"protocol":[1,1],"head":{"kind":"tui","version":"0.1.0"},"locale":"en-US","token":"3f9a…"}}
-← {"id":"h1","jsonrpc":"2.0","result":{"account":"admin","core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/home/admin/workspace"},"language":"en","protocol":1,"sandbox":{"usable":true},"view":1}}
+← {"id":"h1","jsonrpc":"2.0","result":{"core":{"version":"0.0.1"},"host":{"home":"/home/me","platform":"linux","workspace":"/home/me/.miyu/home/me/workspace"},"language":"en","protocol":1,"sandbox":{"usable":true},"view":1}}
 ```
 
 Sending `hello` again after the handshake is fine: if it passes, the new language and capabilities apply; if it is refused and the connection stays open, the previous ones stay.
@@ -92,18 +89,15 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | A required field is missing or has the wrong type; more than one kind of credential, or only one of `user`/`password` (closes) |
+| `bad_params` (`-32602`) | A required field is missing or has the wrong type; more than one kind of credential (closes) |
 | `protocol_mismatch` | `1` is not in your range (closes) |
 | `bad_token` | No credential, or a wrong local token (closes) |
-| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, login token, username or password (closes); a wrong password for a disabled account is also `bad_password` |
-| `account_disabled` | Right username and password, but the account is disabled (closes) |
-| `bad_invite` | Wrong, expired, used or revoked invite code (closes) |
+| `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, device token or access password (closes) |
+| `password_not_set` | No access password yet: a `password` was given, or a remote connection gave nothing (closes). Set one on this computer first |
 | `bad_ticket` | No such hand-off ticket, expired, or already used (closes) |
-| `login_throttled` | Too many wrong passwords; wait a while (closes) |
+| `login_throttled` | Five wrong passwords from the same place within 60 seconds; wait a while (closes). `data.retry_after_ms` says how long |
 | `hello_first` | Another method before the handshake (does not close) |
-| `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup`; or, while there is no owner, connected with the local token and called something other than `human.get`, `account.setup` and `account.setup_code` |
-| `register_first` | Connected with an invite code and called something other than `human.get` and `account.register` |
-| `not_permitted` | A member's connection called something outside the member list (construction Y-2 lower-lower-upper, `connection/gate/members.rs`). Members can call what only touches their own things: their own sessions (send, interrupt, undo, compact, change model, rename, answer, recap, workspace, permission level, tools, context, terminal session, view, background jobs), slash commands, attachments, personas, presets, skills, scripts, projects, schedules, knowledge bases, memory, usage (their own only), `provider.catalog`, `mermaid.render`, and subscribing to the `events`, `view`, `sessions`, `projects`, `schedules`, `kb`, `memory` and `widgets` streams. Since construction Y-2 lower-lower-middle-upper also their own configuration: reading, checking and the schema (`config.get`, `config.check`, `config.schema`), toggles and loading (`feature.set`, `tool.set_loading`), trusting project configs (`config.trust`) and the `config` stream. Since Y-2 lower-lower-middle-middle also writing their personal settings (`config.set` with `personal`), their own secrets (`secret.set`, `secret.delete`, `secret.list`), and listing models and testing providers on their own configuration (`model.list`, `provider.test`). Not writing system settings or system secrets, MCP, one-off model calls, detecting providers (`provider.detect`), link previews, or anything machine-wide (packages, extensions, reading local files, `check`). A member setting the permission level to `full` also gets it (the owner decided 2026-10-23: members go up to workspace). Members in the admin group can also call the account management methods (`account.invite`, `account.invites`, `account.invite_revoke`, `account.list`, `account.disable`, `account.enable`, `account.set_admin`) |
+| `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup` |
 
 ## `subscribe`, `unsubscribe`
 
@@ -160,73 +154,47 @@ What each stream pushes is in [Pushes](pushes.en.md).
 
 ## `account.setup_code`, `account.setup`, `account.logout`
 
-First-run setup and web login. The person who installed Miyu (the owner) registers their own account on first use: while the core has no owner, the hello response on the local token says `"setup": true` and `"account": null`, and only `account.setup` (register the owner) and `account.setup_code` (a one-time code for a remote web page, which then registers) work. Once registered, that connection closes after the reply, the core restarts as the owner, and a head that reconnects is the owner. `admin` is the system: it can't be registered and can't log in. From then on the browser logs in with the username and password and stays logged in for 30 days.
+The access password is only needed to connect from the local network (a phone, a browser on another computer); local heads use the local token. Sign in once from the network with the access password and the browser keeps a device token for 30 days.
 
-**Who can call**: people. `account.setup_code` only on connections that showed the local token; `account.setup` on connections that used a one-time code, and on local-token connections while there is no owner yet; `account.logout` on any.
+**Who can call**: people. `account.setup_code` only on a connection made with the local token; `account.setup` on connections made with the local token or a one-time code; `account.logout` on any.
 
-| Method | Params | Response |
+| Method | Params | Result |
 |---|---|---|
-| `account.setup_code` | none | `{"code", "expires", "first"}`: the one-time code, when it expires, whether no password has been set yet |
-| `account.setup` | `username`, `password` | `{"username", "login": {"expires", "token"}}`: set, and a login token in exchange; registering the owner adds `account` and closes the connection after the reply |
-| `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this login token, or all of them |
+| `account.setup_code` | none | `{"code", "expires", "first"}`: the one-time code, when it expires, and whether no access password has been set yet |
+| `account.setup` | `password` | `{}` on a local-token connection; `{"login": {"expires", "token"}}` on a one-time-code connection, which counts as signed in from then on |
+| `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
 
-A one-time code works once. Setting the password revokes every earlier browser login.
+A one-time code works once. Setting or changing the access password revokes every device and closes their connections. The password is 8 to 1024 bytes and not all spaces.
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Wrong params; username or password not acceptable |
-| `local_only` | Called by an extension, or `account.setup_code` on a connection that didn't use the local token |
-## Members
+| `bad_params` (`-32602`) | Wrong params; the password is not acceptable |
+| `local_only` | An extension called it; `account.setup_code` not on a local-token connection; `account.setup` not on a local-token or one-time-code connection |
 
-Several people can use one Miyu: the admin hands out invite codes, and whoever has one registers an account of their own (a member). Each person's sessions are visible only to them.
+## Your avatar
 
-**Who can call**: `account.register` on connections made with an invite code; the rest only admins (the owner, and people in the admin group), other members get `not_permitted`.
+One PNG, JPEG or WebP, at most 1 MiB and 1024 pixels wide or tall (as for persona avatars).
 
-| Method | Params | Response |
+| Method | Params | Result |
 |---|---|---|
-| `account.invite` | `days` (1 to 30, default 7) | `{"code", "id", "expires"}`: the code is given only here, later only its id is listed |
-| `account.invites` | none | `{"invites": [{"id", "created", "expires", "used"?}]}`: usable ones and recently used ones (`used` is `{"account", "at"}`) |
-| `account.invite_revoke` | `id` | `{"revoked": true}`: revokes one not yet used |
-| `account.register` | `username`, `password` | `{"account", "username", "login": {"expires", "token"}}`: registered; this connection is now that account |
-| `account.list` | none | `{"accounts": [{"account", "kind", "admin", "username"?, "created"?, "disabled"?}]}`: `kind` is `admin` (the owner), `member` or `system`; `admin` says whether the person is an admin (always true for the owner) |
-| `account.disable`, `account.enable` | `account` | `{"account", "disabled"}`: disabling revokes all its logins and closes its connections; data stays |
-| `account.set_admin` | `account`, `admin` (bool) | `{}`: make a member an admin or stop them being one; the owner is always an admin and can't be removed. The owner, the system, package accounts and unknown accounts get `unknown_account`; a disabled member gets `member_disabled` |
-
-**Avatars** (construction AV-1): anyone can set, remove and read their own; only admins can read someone else's, others get `not_permitted`. One PNG, JPEG or WebP, at most 1 MiB and 1024 pixels a side (as for persona avatars). Which accounts have logged in on this browser is the web page's business; the core doesn't list them to anyone not logged in. `account.list` rows carry `avatar` (the version) when there is one.
-
-| Method | Params | Response |
-|---|---|---|
-| `account.set_avatar` | `blob` (uploaded with `blob.put` first) or `unset: true`, optionally `expect` (the version you last read, `null` for none yet) | `{"avatar": <version or null>}`; a stale `expect` gets `avatar_conflict` (`data` carries the current version); not a picture gets `avatar_not_image`, too big `avatar_too_big` |
-| `account.avatar` | `account` (optional, yourself by default) | `{"avatar", "media_type", "data"}` (version, media type, base64), or `null` when there is none |
-
-The username is the account id: starts with a lowercase letter, only lowercase letters, digits and `-`, at most 32; it can't be the admin's, an existing account's or a system account's, nor `users`. Invite codes are single-use; if registering fails (say the username is taken) the code stays usable.
-
-**Errors**
-
-| `data.reason` | When |
-|---|---|
-| `bad_params` (`-32602`) | Wrong params; username or password not acceptable |
-| `username_taken` | The username is taken |
-| `unknown_invite` | No such invite code, or already used |
-| `unknown_account` | No such account, or it isn't a member |
-| `member_disabled` | The member given to `account.set_admin` is disabled: enable them first |
-| `not_permitted` | Not the admin |
+| `account.set_avatar` | `blob` (upload with `blob.put` first) or `unset: true`, optionally `expect` (the version you last read, `null` for none) | `{"avatar": <version or null>}`; a mismatched `expect` gets `avatar_conflict` (`data` carries the current version); not a picture `avatar_not_image`, too big `avatar_too_big` |
+| `account.avatar` | none | `{"avatar", "media_type", "data"}` (version, media type, base64), or `null` when there is none |
 
 ## `login.ticket`, `login.redeem`
 
 Hand-off tickets: a signed-in person jumps from one page to another program's page (from the web app to the messaging page, or `miyu web` opening the web app) without signing in again. Before the jump, ask for a ticket and put it in the URL; the other side connects with it in one of two ways:
 
-- Give `ticket` in the handshake (see the credentials above): connected in one step; the reply carries the new login token and the connection is the ticket's account. Pages that connect to the core straight from the browser use this.
-- Redeem it with `login.redeem` for a login token and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). The older way; it still works.
+- Give `ticket` in the handshake (see the credentials above): connected in one step; the reply carries the new device token. Pages that connect to the core straight from the browser use this.
+- Redeem it with `login.redeem` for a device token and connect to the core with that token (`connect_login` in `miyu-client`, over the local socket, `login` in the handshake; a page's own sign-in form uses `connect_password`, which returns the login token it got). The older way; it still works.
 
-**Who can call**: `login.ticket` is for people only (connected with the local token, as the terminal does, or a login token, a password or a hand-off ticket); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
+**Who can call**: `login.ticket` is for people only (connected with the local token, as the terminal does, or a device token, a password or a hand-off ticket); extensions started by the core get `local_only`. Anyone holding a ticket can call `login.redeem`.
 
 | Method | Params | Result |
 |---|---|---|
-| `login.ticket` | none | `{"ticket", "expires", "account"}`: a 64-hex-digit ticket, valid for 60 seconds, bound to this connection's account; `account` is that account (put it in the jump URL as `as`) |
-| `login.redeem` | `ticket` | `{"account", "login": {"expires", "token"}}`: the ticket's account and a new login token (30 days) |
+| `login.ticket` | none | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds |
+| `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`: a new device token (30 days) |
 
 A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.
 

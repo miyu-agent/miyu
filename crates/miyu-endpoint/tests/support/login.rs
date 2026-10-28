@@ -1,4 +1,4 @@
-//! 身份的测试共用的（施工 W-8）：照凭据握手、出示本机令牌连上、要一次性码、设好用户名和密码，读拒绝的原因码。
+//! 身份的测试共用的（施工 W-8；施工 SU-1 起只有主人）：照凭据握手、出示本机令牌连上、要一次性码、设好访问密码，读拒绝的原因码。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,7 +22,7 @@ impl Home {
     }
 }
 
-/// 握手：中文，凭据照 `credentials`（`token`、`code`、`login`、`user` 和 `password` 这几格）。
+/// 握手：中文，凭据照 `credentials`（`token`、`code`、`login`、`ticket`、`password` 这几格）。
 pub async fn hello_with(client: &mut Client, credentials: Value) -> Value {
     let mut params = json!({
         "protocol": [1, 1],
@@ -33,14 +33,6 @@ pub async fn hello_with(client: &mut Client, credentials: Value) -> Value {
         params.extend(more);
     }
     client.call("h", "hello", params).await
-}
-
-/// 同 [`Client::call`]，在管理员模式里发（外壳带 `"scope": "system"`，施工 Y-12 下）。
-pub async fn call_system(client: &mut Client, id: &str, method: &str, params: Value) -> Value {
-    let request =
-        json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params, "scope": "system"});
-    client.line(&request.to_string()).await;
-    client.next().await.expect("有回应")
 }
 
 /// 出示本机令牌连上的一个客户端。
@@ -57,8 +49,8 @@ pub async fn setup_code(core: &Arc<Core>) -> Value {
     reply["result"].clone()
 }
 
-/// 用一次性码进来、设好 `username`、`password`，交回登录令牌。
-pub async fn set_up(core: &Arc<Core>, username: &str, password: &str) -> String {
+/// 用一次性码进来、设好访问密码 `password`，交回设备令牌。
+pub async fn set_up(core: &Arc<Core>, password: &str) -> String {
     let code = setup_code(core).await["code"]
         .as_str()
         .expect("有码")
@@ -67,11 +59,7 @@ pub async fn set_up(core: &Arc<Core>, username: &str, password: &str) -> String 
     let reply = hello_with(&mut client, json!({"code": code})).await;
     assert_eq!(reply["result"]["setup"], true, "{reply}");
     let reply = client
-        .call(
-            "s",
-            "account.setup",
-            json!({"username": username, "password": password}),
-        )
+        .call("s", "account.setup", json!({"password": password}))
         .await;
     reply["result"]["login"]["token"]
         .as_str()
@@ -110,34 +98,4 @@ pub async fn is_closed(client: &mut Client) -> bool {
         tokio::time::timeout(Duration::from_secs(2), client.reader.read_line(&mut line)).await,
         Ok(Ok(0) | Err(_))
     )
-}
-
-/// 机主发一个邀请码，用它注册 `username`，交回这个人登录进来的连接。
-pub async fn member(core: &Arc<Core>, username: &str) -> Client {
-    member_with_token(core, username).await.0
-}
-
-/// 同 [`member`]，连同登录令牌：重启以后（同一个数据根上换一份核心）照它再登录。
-pub async fn member_with_token(core: &Arc<Core>, username: &str) -> (Client, String) {
-    let mut owner = local(core).await;
-    let code = owner.call("i", "account.invite", json!({})).await["result"]["code"]
-        .as_str()
-        .expect("有码")
-        .to_string();
-    let mut client = Client::connect(Arc::clone(core));
-    hello_with(&mut client, json!({"invite": code})).await;
-    let made = client
-        .call(
-            "r",
-            "account.register",
-            json!({"username": username, "password": "correct horse"}),
-        )
-        .await;
-    let token = made["result"]["login"]["token"]
-        .as_str()
-        .unwrap_or_else(|| panic!("{made}"))
-        .to_string();
-    let mut back = Client::connect(Arc::clone(core));
-    hello_with(&mut back, json!({"login": token})).await;
-    (back, token)
 }

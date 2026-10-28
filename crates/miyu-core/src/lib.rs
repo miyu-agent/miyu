@@ -24,7 +24,7 @@ pub mod embed;
 mod kit;
 pub mod memlog;
 pub mod models;
-pub mod oobe;
+pub mod owner;
 pub mod packages;
 mod sandbox;
 mod serve;
@@ -65,7 +65,7 @@ pub struct Options {
 }
 
 /// 系统的账号名 `admin`（`06-多用户与身份.md` U22，施工 Y-12 中上起）：系统、不登录；装 Miyu 的那个人是机主
-/// （[`oobe::owner`]），核心照他起。还没有机主时设置那一段的核心照它占着位置。
+/// （[`owner::owner`]），核心照他起。
 pub fn admin() -> AccountId {
     AccountId::parse("admin").unwrap_or_else(|e| unreachable!("「admin」合账号的写法：{e}"))
 }

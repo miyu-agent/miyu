@@ -22,8 +22,6 @@ pub(crate) struct Request {
     pub(crate) method: String,
     /// 参数；没写的是空对象。
     pub(crate) params: Value,
-    /// 外壳写了 `"scope": "system"`：管理员模式里的请求（施工 Y-12 下）。
-    pub(crate) system: bool,
 }
 
 /// 读到的一行是什么。
@@ -118,12 +116,8 @@ pub(crate) fn parse(line: &[u8]) -> Incoming {
     if object.get("jsonrpc") != Some(&Value::String("2.0".to_string())) {
         return Incoming::Bad(echo, Refusal::INVALID);
     }
-    // 管理员模式（施工 Y-12 下）：只认 `system`，别的写法和类型不收。
-    let system = match object.remove("scope") {
-        None => false,
-        Some(Value::String(scope)) if scope == "system" => true,
-        Some(_) => return Incoming::Bad(echo, Refusal::INVALID),
-    };
+    // 管理员模式（施工 Y-12 下）施工 SU-1 拿掉了：老头带着的 `scope` 照收不理。
+    object.remove("scope");
     let params = match object.remove("params") {
         None => Value::Object(serde_json::Map::new()),
         Some(params @ (Value::Object(_) | Value::Array(_))) => params,
@@ -142,12 +136,7 @@ pub(crate) fn parse(line: &[u8]) -> Incoming {
     if params.is_array() {
         return Incoming::Bad(echo, Refusal::BAD_PARAMS);
     }
-    Incoming::Request(Request {
-        id,
-        method,
-        params,
-        system,
-    })
+    Incoming::Request(Request { id, method, params })
 }
 
 /// 把一个对象认成回应：要是 2.0，`id` 是字符串；`result` 照原样，没有的照 `error` 的原样。

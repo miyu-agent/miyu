@@ -1,5 +1,5 @@
-//! 每个人把某个包对自己整个关掉（施工 U23 末上）：机主关了 `kit`，她新开的会话、开着的会话下一轮都没有它的脚本工具，技能列表、
-//! 预设页也不列；成员照旧有。必需的包关不了（`config_invalid`），系统配置里写不进；设置页上每个包那一组有这一项，必需的没有。
+//! 把某个包整个关掉（施工 U23 末上）：主人关了 `kit`，她新开的会话、开着的会话下一轮都没有它的脚本工具，技能列表、预设页也
+//! 不列。必需的包关不了（`config_invalid`），系统配置里写不进；设置页上每个包那一组有这一项，必需的没有。
 
 use std::sync::Arc;
 
@@ -8,7 +8,6 @@ use serde_json::{Value, json};
 use miyu_session::testkit::{Play, Script};
 
 use crate::scripts::{core, echo};
-use crate::support::login::member;
 use crate::support::*;
 
 /// 新会话会拿到的工具名（`session.tools` 不写会话）。
@@ -48,7 +47,7 @@ fn sent(script: &Script, n: usize) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn a_package_switched_off_is_gone_for_that_person_only() {
+async fn a_package_switched_off_is_gone() {
     let home = Home::new();
     home.write(
         "system/packages/kit/package.toml",
@@ -98,12 +97,6 @@ async fn a_package_switched_off_is_gone_for_that_person_only() {
             .any(|one| one["id"] == "script-dice" || one["id"] == "kit"),
         "预设页不列：{preset}"
     );
-    let mut bob = member(&core, "bob").await;
-    assert!(
-        face(&mut bob).await.contains(&"dice".to_string()),
-        "别人照旧有"
-    );
-
     // 施工 BS-1 上中起没有必需的包：原来基础系统的 trash 也关得掉；系统配置里写不进。
     let trash = set(&mut alice, 2, "personal", "packages.trash.off", true).await;
     assert!(trash["result"].is_object(), "{trash}");

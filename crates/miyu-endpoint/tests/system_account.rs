@@ -62,10 +62,7 @@ async fn the_bridge_runs_as_its_system_account_and_owns_the_group() {
     let core = served_core(&home, &script);
     let got = replies(&path, 5).await;
 
-    assert_eq!(
-        got[0]["result"]["account"], "bot",
-        "握手：这个连接是系统账号"
-    );
+    assert!(got[0].get("result").is_some(), "握手成了：{got:?}");
     let made = &got[1]["result"];
     assert_eq!(made["created"], true, "{got:?}");
     assert_eq!(made["account"], "bot", "群归系统账号");
@@ -269,7 +266,7 @@ async fn a_package_installed_later_gets_its_system_account_at_once() {
     assert_eq!(reply["result"]["package"], "bot", "{reply}");
 
     let got = replies(&path, 3).await;
-    assert_eq!(got[0]["result"]["account"], "bot", "{got:?}");
+    assert!(got[0].get("result").is_some(), "{got:?}");
     assert_eq!(got[1]["result"]["account"], "bot", "{got:?}");
     assert!(got[2].get("error").is_none(), "{got:?}");
     assert!(home.root.workspace(&bot()).is_dir(), "装上就建了它的工作区");
@@ -334,10 +331,7 @@ async fn an_extension_without_a_system_account_is_its_own_account_working_for_th
     assert!(home.root.workspace(&quiet).is_dir(), "起来时建了它的工作区");
     let plain = AccountId::parse("plain").expect("合写法");
     let got = replies(&path, 3).await;
-    assert_eq!(
-        got[0]["result"]["account"], "plain",
-        "握手：这个连接是包自己的账号"
-    );
+    assert!(got[0].get("result").is_some(), "握手成了：{got:?}");
     assert_eq!(reason(&got[1]), Some("no_system_account"), "{got:?}");
     assert!(home.root.workspace(&plain).is_dir(), "建了家目录");
     let session = got[2]["result"]["session"]

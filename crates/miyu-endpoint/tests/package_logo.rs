@@ -1,5 +1,5 @@
 //! 包自带的图标（施工 F-18 上，`[package] logo`）：真核心走一遍。合规矩的（PNG / WebP、不超过 256 KiB、每边不超过 512）
-//! `package.list` 带版本（内容的 SHA-256 前 16 位），`package.logo` 读得到，成员也读得到；不在、不是图、超了的当没有图标、
+//! `package.list` 带版本（内容的 SHA-256 前 16 位），`package.logo` 读得到；不在、不是图、超了的当没有图标、
 //! 包照装，`miyu check` 报警告；没装的包 `unknown_package`。
 
 use std::io::Cursor;
@@ -12,7 +12,6 @@ use sha2::{Digest, Sha256};
 
 use miyu_session::testkit::Script;
 
-use crate::support::login::member;
 use crate::support::*;
 
 /// 带图标 `art/logo.png` 的包。
@@ -75,7 +74,7 @@ async fn listed(client: &mut Client, id: &str) -> Value {
 }
 
 #[tokio::test]
-async fn a_logo_is_listed_by_version_and_read_by_anyone_who_sees_the_package() {
+async fn a_logo_is_listed_by_version_and_read_back() {
     let home = Home::new();
     let logo = png(64, 64);
     put(&home, "kit", Some(&logo));
@@ -95,15 +94,6 @@ async fn a_logo_is_listed_by_version_and_read_by_anyone_who_sees_the_package() {
         read["result"],
         json!({"package": "kit", "logo": version, "media_type": "image/png", "data": STANDARD.encode(&logo)}),
         "{read}"
-    );
-    let mut bob = member(&core, "bob").await;
-    let theirs = bob
-        .call("r", "package.logo", json!({"package": "kit"}))
-        .await;
-    assert_eq!(
-        theirs["result"]["logo"],
-        json!(version),
-        "成员也读得到：{theirs}"
     );
     let none = owner
         .call("n", "package.logo", json!({"package": "nothing"}))

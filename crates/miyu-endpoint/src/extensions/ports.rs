@@ -102,7 +102,7 @@ pub(crate) fn release(core: &Core, caller: &Caller, params: PortParams) -> Resul
 
 /// `port.list`：只给管理员，别人 `not_permitted`。
 pub(crate) fn list(core: &Core, caller: &Caller) -> Result<Value, Refusal> {
-    if !crate::login::admins::is_admin(core, caller.acting_for()) {
+    if !crate::login::is_owner(core, caller.acting_for()) {
         return Err(Refusal::NOT_PERMITTED);
     }
     let ports: Vec<Value> = core

@@ -113,20 +113,7 @@ async fn a_port_installs_into_the_owner_s_own_layer_and_refuses_system_things() 
     for (what, got) in refused {
         assert_eq!(got.as_deref(), Some("not_permitted"), "{what}");
     }
-    let owner = port(&alice);
-    for (what, got) in [
-        (
-            "install a program",
-            reason(owner.install(tool.clone(), None).await),
-        ),
-        ("enable", reason(owner.enable("ext".to_string()).await)),
-    ] {
-        assert_eq!(
-            got.as_deref(),
-            Some("admin_mode_required"),
-            "机主也要进管理员模式：{what}"
-        );
-    }
+    // 主人的装进系统那一层（施工 SU-1，`tests/package_tool.rs` 守着）。
     assert!(member.inspect(mine.clone()).await.is_ok(), "看一眼他自己的");
     let installed = member.install(mine, None).await.expect("装进他自己那一层");
     assert_eq!(installed["layer"], "user");

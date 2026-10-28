@@ -1,5 +1,4 @@
-//! 包推给人（施工 IM-1 中下二）：扩展调 `package.emit`，核心推 `package.event` 给它替的那个账号、订了这个包的连接；别的账号、
-//! 订了别的包的收不到。没装的包订不了，人调 `package.emit` 回 `not_an_extension`，事件名不对的 `bad_params`。
+//! 包推给人（施工 IM-1 中下二）：扩展调 `package.emit`，核心推 `package.event` 给订了这个包的连接；订了别的包的收不到。没装的包订不了，人调 `package.emit` 回 `not_an_extension`，事件名不对的 `bad_params`。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -7,7 +6,6 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use crate::support::extensions::*;
-use crate::support::login::member;
 use crate::support::*;
 
 /// 等到 `client` 收到一条 `package.event`：别的跳过，最多 60 秒。
@@ -96,15 +94,6 @@ async fn a_package_pushes_to_its_own_account_s_subscribers() {
         )
         .await;
     assert_eq!(other["result"], json!({}), "{other}");
-    let mut bob = member(&core, "bob").await;
-    let his = bob
-        .call(
-            "p4",
-            "subscribe",
-            json!({"stream": "package", "package": "watch"}),
-        )
-        .await;
-    assert_eq!(his["result"], json!({}), "成员也能订：{his}");
     let said = owner
         .call("e1", "package.emit", json!({"event": "x"}))
         .await;
@@ -120,7 +109,6 @@ async fn a_package_pushes_to_its_own_account_s_subscribers() {
         json!({"package": "watch", "event": "cards.changed", "data": {"n": 1}})
     );
     assert!(!heard(&mut others).await, "订了别的包的收不到");
-    assert!(!heard(&mut bob).await, "别的账号的收不到");
 
     // 头一行是工作目录，接着握手和三步的回应。
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);

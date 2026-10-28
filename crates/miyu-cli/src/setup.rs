@@ -154,7 +154,7 @@ pub async fn setup_on(
         return code;
     }
     // 第一次设置配的是大家共用的模型和 key（系统配置、系统那一份密钥），一直在管理员模式里（施工 Y-12 下下）。
-    let mut rpc = Rpc::new(connection, "setup").in_admin_mode(true);
+    let mut rpc = Rpc::new(connection, "setup");
     let plan = match link::hello(&mut rpc, token, &plan.language, false, err).await {
         Ok(hello) => SetupPlan {
             language: link::spoken(&hello, plan.language),

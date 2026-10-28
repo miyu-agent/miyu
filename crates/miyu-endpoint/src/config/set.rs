@@ -132,8 +132,7 @@ pub(crate) fn set(
     params: SetParams,
 ) -> Result<Json, Refusal> {
     let account = caller.acting_for();
-    if matches!(params.layer, WriteLayer::System) && !crate::login::admins::is_admin(core, account)
-    {
+    if matches!(params.layer, WriteLayer::System) && !crate::login::is_owner(core, account) {
         return Err(Refusal::NOT_PERMITTED);
     }
     let by = By::Person(Person::new(account.clone()));

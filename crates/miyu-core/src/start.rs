@@ -1,15 +1,14 @@
-//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：开套接字，找机主（[`crate::oobe::owner`]），还没有的先跑设置那一段
-//! （[`crate::oobe::setup`]）；有了机主，照他建家目录、读两层清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
-//! 设置那一段和完整的那一份用同一个监听器、同一把锁。
+//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：开套接字，找主人（没有的当场建，[`crate::owner::ensure`]），照他建
+//! 家目录、读两层清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
 
 use std::process::ExitCode;
 
-use miyu_ipc::{Dirs, Lock, Ready};
+use miyu_ipc::{Dirs, Lock};
 use miyu_store::env::Env;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
-use super::{Live, Options, failed, load_packages, models, oobe, run, say, serve, settings};
+use super::{Live, Options, failed, load_packages, models, run, settings};
 
 /// 后半段：见这一页开头。`logging` 是起来时照 `MIYU_LOG` 定的级别和装好的运行日志，读完配置照 `log.level` 换。
 pub(super) async fn start(
@@ -19,28 +18,19 @@ pub(super) async fn start(
     (level, log): (&miyu_log::Level, &miyu_log::Guard),
     catalog: models::Early,
 ) -> ExitCode {
-    let mut opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
+    let opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
         Ok(opened) => opened,
         Err(error) => return failed("socket", error.to_string()),
     };
-    let (owner, said) = match oobe::owner(&root) {
-        Some(owner) => (owner, false),
-        None => {
-            // 拉起它的头在等这一行：设置那一段就答，头连进来走 OOBE。
-            say(&Ready::Ready);
-            let set = oobe::setup(
-                (&env, &root, &resources),
-                (&mut opened.listener, &opened.token),
-                (serve::signal(), options.idle),
-            )
-            .await;
-            match set {
-                Ok(Some(owner)) => (owner, true),
-                Ok(None) => return ExitCode::SUCCESS,
-                Err(reason) => return failed("setup", reason),
-            }
-        }
+    // 主人（施工 SU-1）：第一次起来照系统用户名当场建一个，没有「只能设置」的那一段。
+    let user = std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .ok();
+    let owner = match crate::owner::ensure(&root, user.as_deref(), crate::trash::now()) {
+        Ok(owner) => owner,
+        Err(reason) => return failed("owner", reason),
     };
+    let said = false;
     if let Err(error) = root.prepare_home(&owner) {
         return failed("home", error.to_string());
     }

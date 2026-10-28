@@ -30,24 +30,12 @@ pub(super) struct Who<'a> {
     pub(super) acting_for: &'a AccountId,
     pub(super) reach: &'a reach::Reach,
     pub(super) declared: &'a [Capability],
-    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
-    pub(super) scoped: bool,
 }
 
 /// 照先后过几道，第一个拒的交回拒绝；都过了的没有。
 pub(super) async fn refuse(core: &Arc<Core>, who: &Who<'_>, request: &Request) -> Option<Refusal> {
-    let asked = gate::Asked {
-        method: &request.method,
-        params: &request.params,
-        system: request.system,
-        scoped: who.scoped,
-    };
-    if let Some(refusal) = gate::refuse(core, who.via, who.account, &asked) {
+    if let Some(refusal) = gate::refuse(who.via, &request.method) {
         return Some(refusal);
-    }
-    // 管理员模式里做的，每一个记一行谁、什么方法（设计 06 八再补第 2 条：日志记「谁以管理员身份做了什么」）。
-    if request.system {
-        tracing::info!(target: "miyu::endpoint", account = who.account.as_str(), method = request.method.as_str(), "admin mode");
     }
     if let Some(refusal) = reach::refuse(who.reach, request) {
         return Some(refusal);

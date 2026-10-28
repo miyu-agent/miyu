@@ -147,11 +147,6 @@ async fn handed_over_from_its_own_blobs(system_account: bool) {
         assert!(tokio::time::Instant::now() < deadline, "等不到登记");
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    assert!(
-        read(&path).contains(r#""account":"memes""#),
-        "{}",
-        read(&path)
-    );
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let session = client.create("c1", "~").await;

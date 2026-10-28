@@ -39,8 +39,6 @@ struct Texts {
     upgraded: Template,
     nothing: Template,
     refused: Template,
-    /// 核心拒 `admin_mode_required`（施工 U23 下上）：让人进管理员模式。
-    admin_mode: Template,
     unavailable: Template,
     invalid: Template,
     invalid_line: Template,
@@ -89,7 +87,6 @@ impl Package {
                 upgraded: own("upgraded", &["packages"])?,
                 nothing: own("nothing-to-upgrade", &[])?,
                 refused: own("refused", &["what", "reason"])?,
-                admin_mode: own("admin-mode", &["what"])?,
                 unavailable: own("unavailable", &[])?,
                 invalid: shared("invalid", &["path", "problem"])?,
                 invalid_line: shared("invalid-line", &["path", "line", "problem"])?,
@@ -149,10 +146,6 @@ impl Texts {
             } => say(&self.invalid, &[("path", what), ("problem", problem)]),
             refusal if refusal.reason == "unknown_package" => {
                 say(&self.unknown, &[("package", what)])
-            }
-            // 系统那一层的事（施工 U23 下上）：她照着告诉人进管理员模式。
-            refusal if refusal.reason == "admin_mode_required" => {
-                say(&self.admin_mode, &[("what", what)])
             }
             // 撞了名的说清每一处（施工 F-8 六补修）：只给原因代码她改不了自己的包。
             refusal if !refusal.conflicts.is_empty() => crate::packages::conflicting(

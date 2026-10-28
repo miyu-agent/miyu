@@ -283,7 +283,7 @@ pub async fn config_on(
     if let Some(code) = early(&plan.command, plan.language, console, err) {
         return code;
     }
-    let mut rpc = Rpc::new(connection, "config").in_admin_mode(plan.command.writes_system());
+    let mut rpc = Rpc::new(connection, "config");
     let plan = match link::hello(&mut rpc, token, &plan.language, false, err).await {
         Ok(hello) => ConfigPlan {
             language: link::spoken(&hello, plan.language),

@@ -36,13 +36,11 @@ impl Scope {
         }
     }
 
-    /// 只有系统那一层做得了的事：是系统那一层的照做；不是的拒，`admin`（替谁干活的那个人是管理员）的 `admin_mode_required`，
-    /// 别的 `not_permitted`。
+    /// 只有系统那一层做得了的事：是系统那一层的照做；不是的拒 `not_permitted`（施工 SU-1 起没有管理员模式）。
     pub(crate) fn system_only(&self, admin: bool) -> Result<(), Refusal> {
         match (self, admin) {
             (Scope::System, _) => Ok(()),
-            (Scope::Own(_), true) => Err(Refusal::ADMIN_MODE_REQUIRED),
-            (Scope::Own(_), false) => Err(Refusal::NOT_PERMITTED),
+            (Scope::Own(_), _) => Err(Refusal::NOT_PERMITTED),
         }
     }
 

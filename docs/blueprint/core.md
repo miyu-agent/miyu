@@ -10,7 +10,7 @@
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令 `core`、`--idle-seconds` |
 | `crates/miyu-core/src/lib.rs` | `main`：起来的先后；系统的账号名 `admin`；工具目录；写那一行 |
-| `crates/miyu-core/src/start.rs`、`oobe.rs` | 起来的后半段：开套接字、找机主，没有的先跑设置那一段，有了照他读清单和配置（施工 Y-12 中上） |
+| `crates/miyu-core/src/start.rs`、`owner.rs` | 起来的后半段：开套接字、找主人，没有的当场照系统用户名建一个（施工 SU-1），照他读清单和配置 |
 | `crates/miyu-core/src/models.rs`、`models/` | 读资源目录里的供应商档案（TOML 读成 JSON 交给 `miyu-models`）和模型资料，造会话的路由（施工 8-6，`models.md`） |
 | `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号 |
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
@@ -73,7 +73,7 @@
 2. 找数据根，建骨架（`store.md`）。
 3. 拿单实例锁 `run/core.lock`，不等。拿不到：已经有一个核心在跑，写 `running`，退出码 0，运行日志一个字都不写。先拿锁、再装日志：两个核心不写同一份日志。
 4. 装运行日志 `state/logs/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
-5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着找机主（施工 Y-12 中上，设计 06 U22，`miyu_core::oobe`）：`system/accounts.json` 里标了 `owner`、没停用的那个账号，核心照他起，他的家目录 `home/<机主>/` 和工作区没有就建（Unix 上 0700）。`admin` 是系统、不登录、不建它的家目录。还没有机主的先跑设置那一段：先写 `ready`，一份只能设置的核心（`Core::in_setup`，不拉扩展、不起任何监视）接连接，本机令牌的连接只能握手（回应 `setup: true`、`account: null`）、注册机主、要一次性码；注册成了不再接新连接（留在套接字的队列里），等这一段的连接写完回应各自断开（最多 2 秒，没断的掐掉），收掉这一份，在同一个套接字、同一把锁上照机主接着往下起，不再写 `ready`。收到停的信号就退出；一个连接都没有满空闲时限（`--idle-seconds`，同完整的那一份）也退出，记 `INFO stopped reason=idle`（施工 Y-12 中上修）。
+5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着找主人（施工 SU-1，项目主人 2026-10-28 定移除多用户，`miyu_core::owner`）：`system/accounts.json` 里标了 `owner` 的那一行，核心照他起，他的家目录 `home/<主人>/` 和工作区没有就建（Unix 上 0700）。还没有的（第一次起来）当场建一个：名字照系统的用户名（`USER`、`USERNAME`）换成账号的写法，换不成的叫 `me`，不设访问密码（要从局域网连时用 `account.setup` 设），记 `INFO owner created`；写不下账号文件的起不来。没有「只能设置」的那一段了。
 6. 找资源目录（`store.md`）。有了机主以后读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条；施工 Y-12 中上起挪到找到机主以后）：系统配置、机主的个人设置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `state/config/`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。
 7. 起运行时：多线程，两个工作线程，接连接、会话、请求都在上面。
 8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。

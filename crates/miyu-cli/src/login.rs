@@ -209,7 +209,7 @@ pub async fn login_on(
     if let Some(code) = early(&plan.command, plan.language, console, err) {
         return code;
     }
-    let mut rpc = Rpc::new(connection, "login").in_admin_mode(plan.system);
+    let mut rpc = Rpc::new(connection, "login");
     let plan = match link::hello(&mut rpc, token, &plan.language, false, err).await {
         Ok(hello) => LoginPlan {
             language: link::spoken(&hello, plan.language),

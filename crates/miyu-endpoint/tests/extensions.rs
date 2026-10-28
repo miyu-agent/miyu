@@ -55,10 +55,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
         "工作目录是它放状态的目录"
     );
     let hello: Value = serde_json::from_str(lines[1]).expect("回应是 JSON");
-    assert_eq!(
-        hello["result"]["account"], "echo",
-        "没出示凭据也握成了，是包自己的账号（施工 Y-5 中上）：{hello}"
-    );
+    assert!(hello.get("result").is_some(), "没出示凭据也握成了：{hello}");
     let refused: Value = serde_json::from_str(lines[2]).expect("回应是 JSON");
     assert_eq!(
         refused["error"]["data"]["reason"], "local_only",

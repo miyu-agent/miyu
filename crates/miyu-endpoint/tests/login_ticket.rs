@@ -1,6 +1,6 @@
 //! 握手认交接票（施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）：凭据多一种 `ticket`，待遇同 `password`：对上了当场
-//! 作废，回应带新的登录令牌 `login`，连接就是票的那个账号；用过、不认得的照 `login.redeem` 回 `bad_ticket`、断开；和别的凭据
-//! 一起写的 `bad_params`。`login.ticket` 的回应带 `account`（票是谁的）。
+//! 作废，回应带新的设备令牌 `login`；用过、不认得的照 `login.redeem` 回 `bad_ticket`、断开；和别的凭据一起写的 `bad_params`。
+//! 施工 SU-1 起回应都不带 `account`、`admin`。
 
 use std::sync::Arc;
 
@@ -31,13 +31,15 @@ async fn a_ticket_logs_a_connection_in_once() {
     let core = home.core(&Script::new([]));
     let mut owner = local(&core).await;
     let issued = ticket(&mut owner).await;
-    assert_eq!(issued["result"]["account"], "alice", "票是谁的：{issued}");
+    assert!(
+        issued["result"].get("account").is_none(),
+        "不带账号：{issued}"
+    );
     let value = value(&issued);
 
     let mut browser = Client::connect(Arc::clone(&core));
     let shaken = hello_with(&mut browser, json!({"ticket": value})).await;
-    assert_eq!(shaken["result"]["account"], "alice", "{shaken}");
-    assert_eq!(shaken["result"]["admin"], true, "{shaken}");
+    assert!(shaken["result"].get("account").is_none(), "{shaken}");
     let token = shaken["result"]["login"]["token"]
         .as_str()
         .unwrap_or_else(|| panic!("回应带新的登录令牌：{shaken}"))
@@ -49,7 +51,7 @@ async fn a_ticket_logs_a_connection_in_once() {
     // 换出的登录令牌认得。
     let mut later = Client::connect(Arc::clone(&core));
     let again = hello_with(&mut later, json!({"login": token})).await;
-    assert_eq!(again["result"]["account"], "alice", "{again}");
+    assert!(again.get("result").is_some(), "{again}");
 
     // 同一张票只能用一次。
     let mut twice = Client::connect(Arc::clone(&core));
@@ -61,27 +63,6 @@ async fn a_ticket_logs_a_connection_in_once() {
         .call("r", "login.redeem", json!({"ticket": value}))
         .await;
     assert_eq!(why(&redeemed), "bad_ticket", "{redeemed}");
-}
-
-#[tokio::test]
-async fn someone_else_s_ticket_logs_in_as_them() {
-    let home = Home::new();
-    let core = home.core(&Script::new([]));
-    let mut bob = member(&core, "bob").await;
-    let issued = ticket(&mut bob).await;
-    let whose = issued["result"]["account"]
-        .as_str()
-        .unwrap_or_else(|| panic!("{issued}"))
-        .to_string();
-    assert_ne!(whose, "alice", "是成员自己的账号：{issued}");
-
-    let mut browser = Client::connect(Arc::clone(&core));
-    let shaken = hello_with(&mut browser, json!({"ticket": value(&issued)})).await;
-    assert_eq!(shaken["result"]["account"], whose.as_str(), "{shaken}");
-    assert_eq!(
-        shaken["result"]["admin"], false,
-        "成员的票换不成管理员：{shaken}"
-    );
 }
 
 #[tokio::test]
@@ -97,7 +78,7 @@ async fn a_bad_ticket_or_another_credential_with_it_is_refused() {
     let value = value(&ticket(&mut owner).await);
     for credentials in [
         json!({"ticket": value, "token": TOKEN}),
-        json!({"ticket": value, "user": "shorin", "password": "correct horse"}),
+        json!({"ticket": value, "password": "correct horse"}),
         json!({"ticket": value, "login": "a"}),
     ] {
         let mut client = Client::connect(Arc::clone(&core));
@@ -107,5 +88,5 @@ async fn a_bad_ticket_or_another_credential_with_it_is_refused() {
     // 上面一起写的没用掉这张票。
     let mut browser = Client::connect(Arc::clone(&core));
     let shaken = hello_with(&mut browser, json!({"ticket": value})).await;
-    assert_eq!(shaken["result"]["account"], "alice", "{shaken}");
+    assert!(shaken["result"]["login"]["token"].is_string(), "{shaken}");
 }

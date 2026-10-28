@@ -1,5 +1,5 @@
-//! 账号头像（施工 AV-1，接入通讯平台设计 07 第 4.6 节第 8 样）：人换、删自己的头像，读得回；别人的只有管理员读得了；
-//! 握手回应、`account.list` 带版本；对照的版本不对的 `avatar_conflict`；不是图、太大的照人格头像的规矩拒。
+//! 你的头像（施工 AV-1；施工 SU-1 起只有主人一张）：换、删，读得回；握手回应带版本；`account` 那一格不认了；对照的版本不对的
+//! `avatar_conflict`；不是图、太大的照人格头像的规矩拒。
 
 use std::sync::Arc;
 
@@ -8,7 +8,6 @@ use base64::engine::general_purpose::STANDARD;
 use serde_json::{Value, json};
 
 use crate::attach::png;
-use crate::support::login::member_with_token;
 use crate::support::*;
 use miyu_session::testkit::Script;
 
@@ -33,16 +32,15 @@ fn why(reply: &Value) -> &str {
 }
 
 #[tokio::test]
-async fn a_person_sets_reads_and_unsets_their_own_avatar() {
+async fn the_owner_sets_reads_and_unsets_the_avatar() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    let mut admin = Client::connect(Arc::clone(&core));
-    let hello = admin.hello().await;
+    let mut bob = Client::connect(Arc::clone(&core));
+    let hello = bob.hello().await;
     assert!(
         hello["result"].get("avatar").is_none(),
         "没有的不带：{hello}"
     );
-    let (mut bob, token) = member_with_token(&core, "bob").await;
 
     // 换上：回版本，读得回原样。
     let picture = png(32, 32);
@@ -59,26 +57,15 @@ async fn a_person_sets_reads_and_unsets_their_own_avatar() {
     assert_eq!(read["result"]["media_type"], "image/png");
     assert_eq!(read["result"]["data"], STANDARD.encode(&picture));
 
-    // 别人的：成员读不了机主的，管理员读得了成员的。
+    // 只有一张：`account` 那一格不认了。
     let refused = bob
         .call("a3", "account.avatar", json!({"account": "alice"}))
         .await;
-    assert_eq!(why(&refused), "not_permitted", "{refused}");
-    let seen = admin
-        .call("a4", "account.avatar", json!({"account": "bob"}))
-        .await;
-    assert_eq!(seen["result"]["avatar"], version.as_str(), "{seen}");
-    let listed = admin.call("a5", "account.list", json!({})).await;
-    let row = listed["result"]["accounts"]
-        .as_array()
-        .and_then(|rows| rows.iter().find(|row| row["account"] == "bob"))
-        .cloned()
-        .unwrap_or_else(|| panic!("{listed}"));
-    assert_eq!(row["avatar"], version.as_str(), "{row}");
+    assert_eq!(why(&refused), "bad_params", "{refused}");
 
     // 再连上：握手带版本。
     let mut again = Client::connect(Arc::clone(&core));
-    let shook = crate::support::login::hello_with(&mut again, json!({"login": token})).await;
+    let shook = again.hello().await;
     assert_eq!(shook["result"]["avatar"], version.as_str(), "{shook}");
 
     // 对照的版本不对、不是图、太大的拒，什么都不动。

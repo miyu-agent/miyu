@@ -2,9 +2,10 @@
 //! 都支持的最高的；本机连接出示本机令牌（第四节）。握手以后这个连接就是管理员（`06-多用户与身份.md`
 //! 第二节）。
 //!
-//! 施工 W-8 起凭据正好写一种（`web-module.md`「怎么走」第一条）：本机令牌 `token`、一次性码 `code`、登录令牌 `login`、
-//! 交接票 `ticket`（施工 LT-1），或者用户名 `user` 加密码 `password`。用一次性码的回应多 `"setup": true`，用密码、交接票的多一个
-//! 登录令牌 `login`。写了不止一种、用户名和密码只写了一个：`bad_params`，回完断开。
+//! 施工 W-8 起凭据正好写一种（`web-module.md`「怎么走」第一条）：本机令牌 `token`、一次性码 `code`、设备令牌 `login`、
+//! 交接票 `ticket`（施工 LT-1），或者访问密码 `password`（施工 SU-1 起没有用户名，只有主人一个）。用一次性码的回应多
+//! `"setup": true`，用密码、交接票的多一个设备令牌 `login`。写了不止一种：`bad_params`，回完断开。网页软件转来的远程连接
+//! （`connection.remote`）什么凭据都没写、又还没设访问密码的回 `password_not_set`，头照它告诉人先在这台电脑上设。
 //!
 //! 回应带这个连接给人看的字用哪种语言 `language`，和配置里有几处错误 `config_errors`（施工 8-2，`config.md`
 //! 「协议」）：语言照 `ui.language` 的最终值，是 `auto` 的照头报的系统语言 `locale`。
@@ -54,19 +55,13 @@ struct Params {
     /// 一次性码（施工 W-8）。
     #[serde(default)]
     code: Option<String>,
-    /// 登录令牌（施工 W-8）。
+    /// 设备令牌（施工 W-8）。
     #[serde(default)]
     login: Option<String>,
-    /// 邀请码（施工 Y-1 上）：只能注册。
-    #[serde(default)]
-    invite: Option<String>,
     /// 交接票（施工 LT-1）：`login.ticket` 要的，待遇同密码。
     #[serde(default)]
     ticket: Option<String>,
-    /// 用户名（施工 W-8）。
-    #[serde(default)]
-    user: Option<String>,
-    /// 密码（施工 W-8）。
+    /// 访问密码（施工 W-8；施工 SU-1 起没有用户名）。
     #[serde(default)]
     password: Option<String>,
 }
@@ -78,14 +73,12 @@ struct Head {
     version: String,
 }
 
-/// 头能做什么：能不能让人输入，认不认识管理员模式。
+/// 头能做什么：能不能让人输入，会不会问人「前缀要变了」。
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 struct Caps {
     /// 能让人输入：确认、提问有人答。
     input: bool,
-    /// 认识管理员模式（施工 Y-12 下）：改系统那一层的请求带 `"scope": "system"`。没声明的老头照以前的意思。
-    scope: bool,
     /// 文件改了、前缀要变时发送前问人（施工 OV-1 下）：开新一轮的请求可能回 `prefix_changing`，头弹窗、带 `prefix` 重发。没声明
     /// 的老头照旧直接发、下一轮换上。
     prefix_ask: bool,
@@ -98,8 +91,6 @@ pub(crate) struct Shaken {
     system: &'static str,
     /// 能让人输入。
     input: bool,
-    /// 认识管理员模式（施工 Y-12 下）。
-    scope: bool,
     /// 会问人「前缀要变了」（施工 OV-1 下）。
     prefix_ask: bool,
     /// 握手时替谁干活：给人看的字照他那一份配置的 `ui.language`（施工 Y-2 下下末，以前一律照机主的）。
@@ -115,15 +106,14 @@ impl Shaken {
             language,
             input: self.input,
             admin: false,
-            scoped: self.scope,
             prefix_ask: self.prefix_ask,
         }
     }
 
-    /// 同 [`Shaken::now`]，`admin` 照这一刻替 `acting_for` 干活的人是不是管理员算（施工 Y-5 下下）：机主只比账号，不读组表。
+    /// 同 [`Shaken::now`]，`admin` 照这一刻替 `acting_for` 干活的是不是主人算（施工 SU-1：包的账号不是）。
     pub(crate) fn now_as(&self, core: &Core, acting_for: &AccountId) -> Peer {
         Peer {
-            admin: crate::login::admins::is_admin(core, acting_for),
+            admin: crate::login::is_owner(core, acting_for),
             ..self.now(core)
         }
     }
@@ -142,11 +132,6 @@ impl Shaken {
     /// 这一刻的这个连接，`admin` 照握手时替谁干活的那个人算（施工 U23-R修二：订列表的回应、推送照它裁格子）。
     pub(crate) fn now_whose(&self, core: &Core) -> Peer {
         self.now_as(core, &self.whose)
-    }
-
-    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
-    pub(crate) fn scoped(&self) -> bool {
-        self.scope
     }
 }
 
@@ -192,28 +177,26 @@ pub(crate) struct Peer {
     pub(crate) language: &'static str,
     /// 能让人输入：它造的会话有人确认。
     pub(crate) input: bool,
-    /// 这一刻是不是管理员（施工 Y-5 下下）：成员不能装包、卸包、启用扩展（`packages/may_manage.rs`）。
+    /// 这一刻替主人干活（施工 SU-1：以前的「管理员」）：包自己的账号（平台的桥）不是，改不了全机的东西。
     pub(crate) admin: bool,
-    /// 握手时声明了认识管理员模式（施工 Y-12 下）。
-    pub(crate) scoped: bool,
     /// 握手时声明了会问人「前缀要变了」（施工 OV-1 下）。
     pub(crate) prefix_ask: bool,
 }
 
 impl Peer {
-    /// 这一个请求 `request` 是不是在管理员模式里（施工 Y-12 下）：管理员带了 `"scope": "system"` 的；没声明认识管理员模式的
-    /// 老头，管理员的请求照以前的意思都算。成员的一律不算。
-    pub(crate) fn admin_mode(self, request: &crate::wire::Request) -> bool {
-        self.admin && (request.system || !self.scoped)
+    /// 这一个请求能不能改全机的东西（施工 SU-1：没有管理员模式了，主人的请求都算）。
+    pub(crate) fn admin_mode(self, _request: &crate::wire::Request) -> bool {
+        self.admin
     }
 }
 
 /// 握手：交回这个连接记下的、它是怎么认出来的（施工 W-8）和回应。拒绝的，交回拒绝和要不要断开。`spawned` 的是核心亲手拉起的
-/// 扩展（施工 9-4 上）：不看凭据，写了的也不看。`account` 是这个连接是谁（施工 O-4 下：声明了系统账号的包的扩展是它）。
+/// 扩展（施工 9-4 上）：不看凭据，写了的也不看。`account` 是这个连接是谁（施工 O-4 下：声明了系统账号的包的扩展是它）。`source` 是
+/// 网页软件转来的远程连接的来源地址（`connection.remote`，本机的没有）：密码登录照它限流。
 pub(crate) async fn hello(
     core: &Arc<Core>,
     params: Value,
-    spawned: bool,
+    (spawned, source): (bool, Option<&str>),
     account: &AccountId,
 ) -> Result<(Shaken, Via, Value), (Refusal, bool)> {
     let params: Params =
@@ -232,7 +215,7 @@ pub(crate) async fn hello(
     let head = params.head.kind.as_str();
     let checked = match spawned {
         true => Ok((Via::Spawned, None)),
-        false => credentials(core, &params).await,
+        false => credentials(core, &params, source).await,
     };
     let (via, login) = checked.map_err(|(refusal, said)| {
         if let Some(said) = said {
@@ -248,12 +231,9 @@ pub(crate) async fn hello(
         via = via.label(),
         "connected"
     );
-    // 凭据认出来的账号（施工 Y-1 上）：登录令牌、密码连上的是那个账号；本机令牌、扩展的照连接原来的。
-    let account = via.account().unwrap_or(account);
     let shaken = Shaken {
         system: system(params.locale.as_deref()),
         input: params.caps.input,
-        scope: params.caps.scope,
         prefix_ask: params.caps.prefix_ask,
         whose: account.clone(),
     };
@@ -261,36 +241,22 @@ pub(crate) async fn hello(
     let mut result = json!({
         "protocol": PROTOCOL,
         "core": {"version": env!("CARGO_PKG_VERSION")},
-        "account": account.as_str(),
-        // 是不是管理员（施工 Y-2 下下中上）：头照它决定给不给设置页、账号管理这些，不用拿请求去试。
-        "admin": crate::login::admins::is_admin(core, account),
         "host": host(core, account),
         "sandbox": sandbox(&core.sandbox),
         "language": language,
         // 视图投影的版本（施工 9-8 中，`view.md`「握手」）：头照它决定用条目还是自己算。
         "view": miyu_view::VERSION,
     });
-    // 账号头像的版本（施工 AV-1）：有的才带，头照它换缓存。
-    if let Some(avatar) = crate::login::avatar::version(core, account) {
+    // 你的头像的版本（施工 AV-1）：有的才带，头照它换缓存。
+    if let Some(avatar) = crate::login::avatar::version(core) {
         result["avatar"] = json!(avatar);
     }
     let errors = core.config().errors();
     if errors > 0 {
         result["config_errors"] = json!(errors);
     }
-    if via == Via::Code || core.setting_up() {
+    if via == Via::Code {
         result["setup"] = json!(true);
-    }
-    if core.setting_up() && via == Via::Token {
-        // 还没有机主（施工 Y-12 中上）：注册成了才是谁，同邀请码。
-        result["account"] = Value::Null;
-        result["admin"] = json!(false);
-    }
-    if matches!(via, Via::Invite(_)) {
-        result["admin"] = json!(false);
-        // 还没注册，不是谁（施工 Y-1 上）：注册成了回应里才有账号。
-        result["account"] = Value::Null;
-        result["register"] = json!(true);
     }
     if let Some(login) = login {
         result["login"] = login;
@@ -303,14 +269,14 @@ pub(crate) async fn hello(
 async fn credentials(
     core: &Arc<Core>,
     params: &Params,
+    source: Option<&str>,
 ) -> Result<(Via, Option<Value>), (Refusal, Option<&'static str>)> {
     let written = [
         params.token.is_some(),
         params.code.is_some(),
         params.login.is_some(),
-        params.invite.is_some(),
         params.ticket.is_some(),
-        params.user.is_some() || params.password.is_some(),
+        params.password.is_some(),
     ];
     if written.iter().filter(|written| **written).count() > 1 {
         return Err((Refusal::BAD_PARAMS, None));
@@ -339,27 +305,25 @@ async fn credentials(
             .map(|(issued, via)| (via, Some(issued)))
             .map_err(|refusal| (refusal, Some("bad ticket")));
     }
-    if let Some(code) = &params.invite {
-        return login::invites::admit(core, code)
-            .map(|via| (via, None))
-            .ok_or((Refusal::BAD_INVITE, Some("bad invite")));
-    }
-    match (&params.user, &params.password) {
-        (None, None) => Err((Refusal::BAD_TOKEN, Some("bad token"))),
-        (Some(user), Some(password)) => login::password(core, user, password.clone())
-            .await
-            .map(|(issued, via)| (via, Some(issued)))
-            .map_err(|refusal| {
-                let said = match refusal.reason {
-                    "login_throttled" => Some("login throttled"),
-                    "bad_password" => Some("bad password"),
-                    "account_disabled" => Some("account disabled"),
-                    _ => None,
-                };
-                (refusal, said)
-            }),
-        _ => Err((Refusal::BAD_PARAMS, None)),
-    }
+    let Some(password) = &params.password else {
+        // 远程来的、什么都没写：还没设访问密码的说清楚，头照它让人先在这台电脑上设（施工 SU-1）。
+        return match source.is_some() && !login::password_set(core) {
+            true => Err((Refusal::PASSWORD_NOT_SET, Some("password not set"))),
+            false => Err((Refusal::BAD_TOKEN, Some("bad token"))),
+        };
+    };
+    login::password(core, source, password.clone())
+        .await
+        .map(|(issued, via)| (via, Some(issued)))
+        .map_err(|refusal| {
+            let said = match refusal.reason {
+                "login_throttled" => Some("login throttled"),
+                "bad_password" => Some("bad password"),
+                "password_not_set" => Some("password not set"),
+                _ => None,
+            };
+            (refusal, said)
+        })
 }
 
 /// 头报的系统语言 `locale` 照 `auto` 算出的那一种（`config.md` 第二条第 8 条）：`zh` 开头的是 `zh`，`ja` 开头的是 `ja`，

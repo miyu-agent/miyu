@@ -1,6 +1,6 @@
 //! 照人的登录连核心、交接票（接入通讯平台要的，它的设计 01 第九节第 2、3 条）：真核心、真套接字。用一次性码设好密码拿到登录令牌，
 //! `miyu_client` 的 `connect_login` 照它另开一条连接（不读本机令牌）；这条连接要一张交接票，换出一个登录令牌，再换一次不认。
-//! 登录令牌不认的连不上；照用户名、密码连（`connect_password`）换到登录令牌。拒绝照 `Refused::reason` 认（施工 W-8 再补）。
+//! 登录令牌不认的连不上；照访问密码连（`connect_password`）换到设备令牌。拒绝照 `Refused::reason` 认（施工 W-8 再补）。
 
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -49,7 +49,7 @@ async fn a_login_connection_hands_off_a_ticket_once() {
             json!({"jsonrpc": "2.0", "id": "h", "method": "hello", "params": {
                 "protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"}, "code": code}}),
             json!({"jsonrpc": "2.0", "id": "s", "method": "account.setup", "params": {
-                "username": "admin", "password": "correct horse battery"}}),
+                "password": "correct horse battery"}}),
         ],
     )
     .await;
@@ -94,18 +94,13 @@ async fn a_login_connection_hands_off_a_ticket_once() {
     assert_eq!(wrong.as_deref(), Some("bad_login"), "登录令牌不认的连不上");
 
     let (mut by_password, issued) = within(
-        "用户名、密码连上",
-        Core::connect_password(&home.root, "admin", "correct horse battery", "im"),
+        "访问密码连上",
+        Core::connect_password(&home.root, "correct horse battery", "im"),
     )
     .await
-    .expect("用户名、密码对");
+    .expect("访问密码对");
     assert_eq!(issued.token.len(), 64, "换到一个登录令牌");
     assert!(!issued.expires.is_empty());
-    assert_eq!(
-        by_password.account(),
-        redeemed["account"].as_str(),
-        "握手回的账号存下来"
-    );
     by_password
         .call("t2", "login.ticket", json!({}))
         .await
@@ -116,7 +111,7 @@ async fn a_login_connection_hands_off_a_ticket_once() {
     )
     .await
     .expect("认得");
-    let bad = Core::connect_password(&home.root, "admin", "wrong password", "im")
+    let bad = Core::connect_password(&home.root, "wrong password", "im")
         .await
         .err()
         .map(|refused| refused.reason);

@@ -30,7 +30,7 @@ Chinese version: [errors.md](errors.md).
 
 ## Connecting and logging in
 
-`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `account_disabled`, `bad_invite`, `login_throttled` (all close the connection after answering), `setup_first`, `register_first`, `not_permitted`, `admin_mode_required` (an admin changing the system layer without `"scope": "system"`); `username_taken`, `unknown_invite`, `unknown_account`, `member_disabled` (the member being made an admin is disabled) from the member methods; `bad_ticket` when the ticket for `login.redeem` doesn't exist, has expired or was already used. See [Connection](connection.en.md).
+`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `password_not_set` (no access password yet), `login_throttled` (all close the connection after answering), `setup_first`; `not_permitted` (a package's own account changing machine-wide things); `bad_ticket` when the ticket for `login.redeem` doesn't exist, has expired or was already used. See [Connection](connection.en.md).
 
 ## Sessions
 

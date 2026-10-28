@@ -25,7 +25,7 @@ impl Core {
         }
         let values = self.mine(account).config().resolved().values();
         let mut off = miyu_session::packages_off::of(&values);
-        if !crate::login::admins::is_admin(self, account) {
+        if !crate::login::is_owner(self, account) {
             off.extend(self.barred_from_members());
         }
         off

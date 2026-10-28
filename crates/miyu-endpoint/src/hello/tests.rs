@@ -10,7 +10,7 @@ const IDENTITY: [(&str, usize); 7] = [
     // 包调包时答的那一份的 blob 拷给调的那条连接（施工 IM-1 中下）：它照 `blob.get` 读，`blob.get` 照谁交的找。
     ("backstage/calls.rs", 1),
     // 吊销、身份那一格、握手、握手认出来的、登录凭据、账号方法两处。
-    ("connection.rs", 7),
+    ("connection.rs", 2),
     // `blob.put`、`blob.open`、`blob.get`：上传的东西归谁交的。
     ("methods.rs", 3),
     // 附件照谁交的找、交给会话属主（`attach::blocks`、`attach::hand_over`）。

@@ -1,1 +1,0 @@
-Could not change {what}: that changes the system for everyone, which needs admin mode. Ask the person to enter admin mode and do it on the packages page.

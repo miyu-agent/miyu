@@ -104,7 +104,6 @@ pub(crate) async fn follow(
             .map_err(|_| Refusal::BAD_PARAMS)?,
         method: request.method.clone(),
         params: Value::Null,
-        system: request.system,
     };
     command_to(core, caller, &moving, session, &found.handle, command).await?;
     core.sessions.moved(session, picked.cwd.clone(), None).await;

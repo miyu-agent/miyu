@@ -28,9 +28,8 @@ impl Core {
         };
         let (switches, _) = read_switches(self);
         let usable = per_account(manifest)
-            && crate::login::members::active(self, account)
+            && crate::login::is_owner(self, account)
             && on(&switches, id, manifest)
-            && (crate::login::admins::is_admin(self, account) || self.members_may(id, manifest))
             && crate::packages::depends::missing(&all, manifest).is_empty()
             && !crate::packages::program_missing(self, id, manifest)
             && approval::unapproved(self, id, manifest).is_empty();

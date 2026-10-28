@@ -3,7 +3,6 @@
 
 use serde_json::{Value, json};
 
-use crate::support::login::member;
 use crate::support::*;
 
 /// 出厂的组表和清单。
@@ -111,22 +110,9 @@ async fn the_list_says_which_group_each_package_is_in() {
     };
     assert_eq!(groups_of("shell"), json!(["basesystem"]));
     assert_eq!(groups_of("memory"), Value::Null, "不在组里的不写");
-
-    let mut bob = member(&core, "bob").await;
-    let theirs = bob.call("l", "package.list", json!({})).await;
-    assert_eq!(
-        theirs["result"]["groups"], result["groups"],
-        "成员也看得到组"
-    );
-    let shell = theirs["result"]["packages"]
-        .as_array()
-        .and_then(|items| items.iter().find(|item| item["package"] == "shell"))
-        .cloned()
-        .unwrap_or_default();
-    assert_eq!(shell["groups"], json!(["basesystem"]), "{theirs}");
 }
 
-/// 装的时刻（施工 PG-1，预设页照装的先后排）：装上的包带 `installed_at`，出厂的不写；成员那一份也有。
+/// 装的时刻（施工 PG-1，预设页照装的先后排）：装上的包带 `installed_at`，出厂的不写。
 #[tokio::test]
 async fn installed_packages_say_when_they_were_installed() {
     let home = Home::new();
@@ -163,7 +149,4 @@ async fn installed_packages_say_when_they_were_installed() {
         item(&listed, "shell").get("installed_at").is_none(),
         "出厂的不写"
     );
-    let mut bob = member(&core, "bob").await;
-    let theirs = bob.call("l", "package.list", json!({})).await;
-    assert_eq!(item(&theirs, "extra")["installed_at"], at, "成员也有");
 }

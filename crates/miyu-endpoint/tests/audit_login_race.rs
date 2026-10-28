@@ -2,7 +2,7 @@
 //! argon2 验证，同时进来的握手都看到「还没错满 5 次」，都去验密码。60 秒 5 次的上限挡不住并发：攻击者一批开 N 个连接，
 //! 一分钟就能试 N 个密码，而且每个都占一份 19 MiB 的 argon2 内存。
 //!
-//! 期望（安全的样子）：同一个用户名，60 秒内不管怎么并发，至多 5 次真的去验密码、回 `bad_password`，其余回
+//! 期望（安全的样子）：同一个来源，60 秒内不管怎么并发，至多 5 次真的去验密码、回 `bad_password`，其余回
 //! `login_throttled`。修之前这条是红的。
 
 use std::sync::Arc;
@@ -19,7 +19,7 @@ use crate::support::*;
 async fn concurrent_wrong_passwords_are_still_held_to_five_a_minute() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    set_up(&core, "shorin", "correct horse").await;
+    set_up(&core, "correct horse").await;
     let mut tries = JoinSet::new();
     for n in 0..20 {
         let core = Arc::clone(&core);
@@ -27,7 +27,7 @@ async fn concurrent_wrong_passwords_are_still_held_to_five_a_minute() {
             let mut client = Client::connect(core);
             let reply = hello_with(
                 &mut client,
-                json!({"user": "shorin", "password": format!("guess number {n}")}),
+                json!({"password": format!("guess number {n}")}),
             )
             .await;
             why(&reply).to_string()
@@ -53,12 +53,12 @@ async fn concurrent_wrong_passwords_are_still_held_to_five_a_minute() {
 async fn a_right_password_clears_the_count() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    set_up(&core, "shorin", "correct horse").await;
+    set_up(&core, "correct horse").await;
     let attempt = |password: &'static str| {
         let core = Arc::clone(&core);
         async move {
             let mut client = Client::connect(core);
-            hello_with(&mut client, json!({"user": "shorin", "password": password})).await
+            hello_with(&mut client, json!({"password": password})).await
         }
     };
     for _ in 0..4 {

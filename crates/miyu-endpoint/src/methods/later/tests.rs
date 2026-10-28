@@ -29,7 +29,6 @@ fn stopping_a_job_is_answered_in_the_background() {
         id: CommandId::parse("c1").expect("合写法"),
         method: method.to_string(),
         params: json!({"session": "s", "job": "j1"}),
-        system: false,
     };
     assert!(answered_later(&core, &request("job.stop")));
     assert!(answered_later(&core, &request("model.call")));

@@ -1,4 +1,4 @@
-//! 装卸落在哪一层（施工 U23 下上）：只有系统那一层做得了的，自己那一层的拒，管理员 `admin_mode_required`、成员 `not_permitted`。
+//! 装卸落在哪一层（施工 U23 下上）：只有系统那一层做得了的，自己那一层的拒 `not_permitted`（施工 SU-1 起没有管理员模式）。
 
 use super::*;
 
@@ -9,8 +9,8 @@ fn only_the_system_scope_does_system_things() {
     assert!(Scope::System.system_only(true).is_ok());
     assert_eq!(
         own.system_only(true).map_err(|refusal| refusal.reason),
-        Err("admin_mode_required"),
-        "管理员照着告诉人进管理员模式"
+        Err("not_permitted"),
+        "施工 SU-1 起没有管理员模式"
     );
     assert_eq!(
         own.system_only(false).map_err(|refusal| refusal.reason),

@@ -69,7 +69,7 @@ pub(crate) fn held(core: &Core, package: &str, serving: Option<&AccountId>) -> V
         return Vec::new();
     };
     if serving.is_some_and(|person| {
-        !crate::login::admins::is_admin(core, person) && !core.members_may(package, manifest)
+        !crate::login::is_owner(core, person) && !core.members_may(package, manifest)
     }) {
         return Vec::new();
     }

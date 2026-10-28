@@ -84,7 +84,6 @@ fn retire(core: &Core, reference: &str) {
         input: false,
         // 改配置，不装包。
         admin: false,
-        scoped: false,
         prefix_ask: false,
     };
     for (layer, changes) in by_layer {

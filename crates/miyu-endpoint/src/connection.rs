@@ -129,7 +129,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     let account = mine
         .clone()
         .unwrap_or_else(|| core.account_of(package.as_deref()));
-    let mut caller = Caller {
+    let caller = Caller {
         reverse: reverse.clone(),
         serving: mine.or_else(|| core.serving(&account)),
         account,
@@ -144,9 +144,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     let mut shaken: Option<Shaken> = None;
     // 这个连接是怎么认出来的（施工 W-8）：用登录令牌、密码连上的另收作废的广播。
     let mut via: Option<Via> = None;
-    // 设置那一段（施工 Y-12 中上）谁都收：注册了机主就一起断开。
-    let mut revoked: Option<tokio::sync::broadcast::Receiver<Revoked>> =
-        core.setting_up().then(|| core.identity.revoked());
+    let mut revoked: Option<tokio::sync::broadcast::Receiver<Revoked>> = None;
     let mut subscriptions = Subscriptions::default();
     // 这个连接上的分块上传（施工 W-5）：和请求一条条办，不用锁。
     let mut uploads = Uploads::new(core.upload_idle);
@@ -164,7 +162,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                     .to_string();
                 tokio::select! {
                     read = wire::read_line(&mut reader) => read,
-                    () = until_revoked(revoked, &mine, &caller.account) => {
+                    () = until_revoked(revoked, &mine) => {
                         tracing::info!(target: "miyu::endpoint", "login revoked, closed");
                         break;
                     }
@@ -226,7 +224,6 @@ async fn read_all<R: AsyncRead + Unpin>(
             acting_for: caller.acting_for(),
             reach: &reach,
             declared: &declared,
-            scoped: shaken.as_ref().is_some_and(crate::hello::Shaken::scoped),
         };
         if let Some(refusal) = checks::refuse(&core, &who, &request).await {
             let id = Value::String(request.id.as_str().to_string());
@@ -265,7 +262,14 @@ async fn read_all<R: AsyncRead + Unpin>(
         let id = || Value::String(request.id.as_str().to_string());
         let (answer, target, close) = match (request.method.as_str(), peer) {
             ("hello", _) => {
-                match hello(&core, request.params.clone(), from_core, &caller.account).await {
+                match hello(
+                    &core,
+                    request.params.clone(),
+                    (from_core, reach.source()),
+                    &caller.account,
+                )
+                .await
+                {
                     Ok((shook, by, mut result)) => {
                         reach::strip(&reach, &mut result);
                         if let Some((ready, _)) = spawned.take()
@@ -280,12 +284,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                             handing = Some(given);
                         }
                         shaken = Some(shook);
-                        revoked = (by.login().is_some() || core.setting_up())
-                            .then(|| core.identity.revoked());
-                        // 凭据认出来的账号就是这个连接（施工 Y-1 上）。
-                        if let Some(account) = by.account() {
-                            caller.account = account.clone();
-                        }
+                        revoked = by.login().is_some().then(|| core.identity.revoked());
                         via = Some(by);
                         (wire::result(&request.id, result), None, false)
                     }
@@ -309,17 +308,13 @@ async fn read_all<R: AsyncRead + Unpin>(
                 (answer(&request, result, peer.locale), target, false)
             }
             (name, Some(_)) if name.starts_with("login.") => {
-                let result =
-                    login::ticket::call(&core, via.as_ref(), &caller.account, &request).await;
+                let result = login::ticket::call(&core, via.as_ref(), &request).await;
                 (answer(&request, result, locale), None, false)
             }
             (name, Some(_)) if name.starts_with("account.") => {
-                let changed = accounts::call(&core, via.as_ref(), &caller.account, &request).await;
+                let changed = accounts::call(&core, via.as_ref(), &request).await;
                 if let Some(by) = changed.via {
                     revoked = Some(core.identity.revoked());
-                    if let Some(account) = by.account() {
-                        caller.account = account.clone();
-                    }
                     via = Some(by);
                 }
                 (
@@ -381,17 +376,12 @@ async fn read_all<R: AsyncRead + Unpin>(
     }
 }
 
-/// 等到作废了这个连接靠的登录令牌 `mine`（施工 W-8）：这个账号 `account` 的全部作废（施工 Y-1 上起只断这个账号的）、作废的
-/// 正是它；收慢了丢了几条的也当作废了（页面照登录令牌重连，还认得的照常进来）。
-async fn until_revoked(
-    revoked: &mut tokio::sync::broadcast::Receiver<Revoked>,
-    mine: &str,
-    account: &miyu_kernel::id::AccountId,
-) {
+/// 等到作废了这个连接靠的设备令牌 `mine`（施工 W-8）：全部作废、作废的正是它；收慢了丢了几条的也当作废了（页面照设备令牌重连，
+/// 还认得的照常进来）。
+async fn until_revoked(revoked: &mut tokio::sync::broadcast::Receiver<Revoked>, mine: &str) {
     loop {
         match revoked.recv().await {
             Ok(Revoked::One(hash)) if hash != mine => {}
-            Ok(Revoked::All(whose)) if whose != *account => {}
             Ok(_) | Err(_) => return,
         }
     }

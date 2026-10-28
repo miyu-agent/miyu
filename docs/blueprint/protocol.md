@@ -78,13 +78,7 @@
 - 认不成请求的，回应里的 `id`：这一行的 `id` 是字符串或数字的照原样带回，别的（没有、`null`、对象……）写 `null`。
 - 头发来的通知只认一种：握手之前的 `connection.remote`（施工 Y-1 下）。
 - `params` 是数组的：`bad_params`（施工 4-9 再补三上）。方法都照名字取参数；照位置读的话，回应找不到该交给哪个订阅，破了「先见结果，后见回应」。
-- **管理员模式**（施工 Y-12 下，设计 06 八再补第 2 条；2026-10-24 项目主人定本机也要切、账号管理也在管理员模式下）：请求外壳可以多一格 `"scope": "system"`（和 `method`、`params` 同级）。
-  - 只对握手时 `caps.scope` 是 `true` 的连接要求（协议 1 冻结：没声明的老头照以前的意思，管理员改系统那一层不用带）。
-  - 改系统那一层的要带，不带的管理员回 `admin_mode_required`：账号管理（`account.invite`、`account.invites`、`account.invite_revoke`、`account.list`、`account.disable`、`account.enable`、`account.set_admin`），软件包的写（`package.enable`、`disable`、`clean`、`restart`、`members`；装、卸、升级见下一条），`extension.enable`、`disable`、`restart`，MCP 的写（`mcp.set`、`remove`、`login`、`login_finish`、`logout`、`restart`），`provider.rename`，`config.set` 写 `system` 层，`secret.set`、`secret.delete` 写系统那一份。`secret.set`、`secret.delete` 不写 `layer` 的，管理员模式里是系统那一份，平时是个人的（老头的管理员照旧是系统那一份）。
-  - 装、卸、升级软件包（`package.install`、`remove`、`upgrade`、`upgrades`，施工 U23 下上，设计 06 第八又补第 5 条）：带了的改系统那一层；不带的改「替谁干活」那个人自己那一层（`home/<账号>/packages/`），只对他生效。系统那一层的事不带的拒，管理员 `admin_mode_required`、成员 `not_permitted`：带程序的包、装回和卸出厂的、卸系统装的、整组装卸。拿索引（`package.sync`）只是取一份公开、签了名的清单，带不带一样。
-  - 不是管理员的人带了，什么方法都回 `not_permitted`；核心拉起的扩展带了也是。握手那一条带了不看（头在管理员模式里重连，第一条也带着，施工 Y-12 下下）。读的、改自己那一份的带不带一样。
-  - 管理员组里机主以外的人平时照成员的名单（`connection/gate/members.rs`），加上读这台电脑的几样（`fs.*`、`link.preview`、`model.call`、`provider.detect`、软件包、扩展、MCP 的读）和改系统那一层的（`connection/gate/system.rs`）。
-  - 系统配置、系统那一份密钥大家共用：组里谁改的都照机主那一份写，再发给别人那几份。每个带 `scope` 的请求记一行 `INFO admin mode`。
+- **只有一个人**（施工 SU-1，项目主人 2026-10-28 定移除多用户）：没有账号、成员、管理员模式。老头外壳里带的 `"scope"` 照收不理。
 - 参数里不认识的格不理。标着「可以不写」的格，写 `null` 等于没写；标着「不写是……」的格写 `null`，是 `bad_params`。
 
 #### 回应
@@ -127,11 +121,11 @@
 | `protocol` | 两个非负整数 `[最低, 最高]` | 头支持的主版本范围，必写 |
 | `head` | `{"kind": 字符串, "version": 字符串}` | 头的种类和版本，必写，只记进运行日志 |
 | `locale` | 字符串，可以不写 | 头所在系统的语言（BCP 47 或者 `LANG` 的写法都行）。`ui.language` 是 `auto` 时照它定这个连接的语言：`zh` 开头的（区分大小写）是 `zh`，`ja` 开头的是 `ja`，别的、没写的是 `en`（施工 8-2） |
-| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`scope`（布尔，不写是 `false`，施工 Y-12 下）：认识管理员模式，改系统那一层的请求会带 `"scope": "system"`（上面「请求」）。`prefix_ask`（布尔，不写是 `false`，施工 OV-1 下）：文件改了、前缀要变时，开新一轮之前先问人（`session.send` 第 9 条）。别的格不理 |
+| `caps` | 对象，不写是 `{}` | `input`（布尔，不写是 `false`）：这个头能不能让人输入。`prefix_ask`（布尔，不写是 `false`，施工 OV-1 下）：文件改了、前缀要变时，开新一轮之前先问人（`session.send` 第 9 条）。别的格不理 |
 | `token` | 字符串，可以不写 | 本机令牌（`ipc.md`）；本机的头出示它 |
 | `code` | 字符串，可以不写 | 一次性码：64 位小写十六进制（施工 W-8，`web-module.md`「怎么走」第一条） |
-| `login` | 字符串，可以不写 | 登录令牌：64 位小写十六进制（施工 W-8） |
-| `user`、`password` | 字符串，可以不写 | 网页登录用的用户名、密码，一起写（施工 W-8） |
+| `login` | 字符串，可以不写 | 设备令牌（登录令牌）：64 位小写十六进制（施工 W-8） |
+| `password` | 字符串，可以不写 | 访问密码：从局域网连时用（施工 W-8；施工 SU-1 起没有用户名） |
 
 回应：
 
@@ -139,20 +133,19 @@
 |---|---|
 | `protocol` | 选定的主版本：`1`，核心只支持这一个 |
 | `core` | `{"version": <核心的版本号>}` |
-| `account` | 你是谁：管理员的账号，核心里固定是 `admin`（`core.md`）；核心拉起的、清单声明了系统账号的包的扩展是那个系统账号，账号名是包的编号（施工 O-4 下，`packages.md`） |
-| `host` | `{"home": <系统的家目录>, "platform": "linux" 或 "macos" 或 "windows", "workspace": <这个账号的默认工作区>}`，总有（施工 W-3，`web-module.md`「四、路径」）：`home` 是核心起来时拿到的系统的家目录，照原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是这个账号的默认工作区，换成真实的位置（管理员、系统账号的默认工作区核心起来时就建好了，`core.md`、施工 O-4 下；握手不另外建） |
+| `host` | `{"home": <系统的家目录>, "platform": "linux" 或 "macos" 或 "windows", "workspace": <默认工作区>, "dirs": <照 XDG 的几处>}`（施工 W-3，`web-module.md`「四、路径」）：`home` 是核心起来时拿到的系统的家目录，照原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是默认工作区，换成真实的位置（核心起来时就建好了，握手不另外建）。远程的连接整个没有，扩展的没有 `dirs` |
 | `language` | `zh`、`en`、`ja` 之一：这个连接给人看的字用哪种（施工 8-2，`config.md` 第二条第 8 条）。`ui.language` 的最终值（默认值、系统配置、个人设置）定了的就是它，`auto` 的照 `locale`。`ui.language` 改了，连接下一句就照新的说，不用再握手（施工 8-4）：回应里这一格只是握手那一刻的。核心拒绝时的话只有中文、英文，`ja` 的照英文；配置的名字、说明、报错的话有日文 |
 | `view` | 视图投影的版本，现在是 `1`（施工 9-8 中，`view.md`「握手」）：有它的核心能在 `view.page` 交条目；没有的是旧核心，头照旧照事件自己算。条目的格只加不改，改了已有的格才加一 |
 | `config_errors` | 系统配置、个人设置、密钥文件（施工 8-5）里现在有几处错误（不算警告，施工 8-2）。没有的不写 |
 | `config` | 只有核心拉起的扩展的连接有（施工 9-4 下下，`extensions.md`「配置」）：这个包自己的配置项的最终值，密钥是真值；之后变了推 `extension.config`（`{"keys": {键: 新值或 null}}`） |
-| `setup` | `true`：用一次性码连上的，只能设用户名和密码（施工 W-8）；还没有机主的核心（设置那一段，施工 Y-12 中上），本机令牌连上的也写，`account` 是 `null`，头照它出 OOBE 那一页。别的不写 |
-| `login` | `{"expires": <时刻>, "token": <登录令牌>}`：用用户名、密码连上的才有（施工 W-8） |
+| `setup` | `true`：用一次性码连上的，只能设访问密码（施工 W-8）。别的不写 |
+| `login` | `{"expires": <时刻>, "token": <设备令牌>}`：用访问密码、交接票连上的才有（施工 W-8） |
 | `sandbox` | 这台机器上的沙盒能不能用（核心起来时探的，`sandbox.md`）：`{"usable": true}`，或者 `{"usable": false, "reason": <原因>}`。原因是 `helper_missing`（主程序旁边没有助手）、`helper_failed`（助手跑不起来、超时、说的读不懂、和核心不是同一份源码编的）、`no_mechanism`（探成了，这台机器上却没有能用的手段）之一（施工 5-4 下） |
 
 1. 参数读不成（缺了必写的格、哪一格类型不对）：`bad_params`，连接不断。
 2. `1` 不在 `[最低, 最高]` 里：`protocol_mismatch`，回完断开。
-3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），或者 `user` 加 `password`。写了不止一种、`user` 和 `password` 只写了一个：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外三种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条。用户名、密码都对、账号停用了的回 `account_disabled`，回完断开；密码不对的照旧 `bad_password`，不透露停没停（施工 Y-1 上补）。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`；还没有机主的核心（设置那一段，施工 Y-12 中上，`core.md`「起来的先后」）本机令牌连上的只能调 `hello`、`human.get`、`account.setup`、`account.setup_code`，别的回 `setup_first`；交接票（`ticket`，施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）待遇同密码：票对得上的当场作废（和 `login.redeem` 同一张表），给票的账号造一个登录令牌，回应带 `login: {token, expires}`，连接就是那个账号、照登录令牌连上的算；没有、过期、用过的 `bad_ticket`，回完断开。用登录令牌、密码、交接票连上的，它靠的登录令牌作废了就断开。核心亲手拉起的扩展经标准输入输出连上，不看凭据，写了的也不看；它调 `extension.*` 回 `local_only`（施工 9-4 上，`extensions.md`）。
-4. 过了：本机令牌的连接就是机主（施工 Y-12 中上：OOBE 时注册的那个人，账号文件里标了 `owner`；`admin` 是系统、不登录）。它发的命令都记成他发的（`by` 是 `{"kind":"person","account":"<机主>"}`），命令引起的事件，`cause` 是请求的 `id`（`kernel/events.md`）。
+3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），`password`（施工 SU-1 起没有用户名）。写了不止一种：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；网页软件转来的远程连接（`connection.remote`）一种都没写、又还没设访问密码的回 `password_not_set`。本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外几种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`password_not_set`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条：密码登录照来源（`connection.remote` 的地址，本机来的算一份）60 秒错 5 次先拒。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`。
+4. 过了：连上来的人就是主人（施工 SU-1：只有一个人，没有账号、成员；核心第一次起来时照系统用户名建好主人，`core.md`）。他发的命令都记成他发的（`by` 是 `{"kind":"person","account":"<主人>"}`），命令引起的事件，`cause` 是请求的 `id`（`kernel/events.md`）。
 5. 握手以前：别的方法一律 `hello_first`，连接不断；读不懂的行照「请求」的表回；通知不理。
 6. 握手以前的拒绝说英文；`hello` 本身被拒的，话照这一次报的 `locale` 说（读得出来的话，施工 4-9 再补三上）。过了的，话照回应的 `language` 说（施工 8-2）：`ui.language` 定成 `en` 的，报 `zh-CN` 的头也听英文。握手以后再发 `hello`：照样从第 1 条查起；过了，换成这一次算出的语言和能力；这一次被拒的，话照这一次报的语言说，没断开的还是上一次握手的语言和能力。
 7. 握手的时限：连上 10 秒还没握手成的，断开（施工 4-9 再补三上）。不然一个连上不说话的本机进程，能让核心一直不空闲退出。
@@ -230,15 +223,11 @@
 | `job.stop` | 停掉一个后台命令或者子代理（施工 7-4） |
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
-| `account.setup_code` | 要一个一次性码：第一次给管理员设网页登录的用户名和密码、忘了密码重设；只给出示本机令牌的连接（施工 W-8） |
-| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性、绑这个账号的票（本机令牌、登录令牌、密码、交接票连上的都能要），回应带 `account`（票是谁的，施工 LT-1）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个登录令牌；扩展要不了票。详见 `docs/reference/connection.md` |
-| `account.setup` | 用一次性码连上的设用户名和密码，换一个登录令牌（施工 W-8）；设置那一段（施工 Y-12 中上）注册机主：用户名就是账号编号（`admin`、系统账号、已有的不收，`username_taken`），已经有机主了的 `not_permitted`；成了回应多 `account`，这个连接答完就断，这一段别的连接一起断，核心在同一个套接字上照机主起完整的那一份，头重连进来就是他 |
-| `account.logout` | 作废登录令牌：这一个，或者 `all` 全部（施工 W-8）；作废的是这个连接自己账号的（施工 Y-1 上） |
-| `account.invite`、`account.invites`、`account.invite_revoke` | 管理员发、列、撤邀请码：一次性、默认 7 天，`invites.json` 只存哈希（施工 Y-1 上，设计 06 U15） |
-| `account.register` | 用邀请码握手的连接注册成员：用户名就是账号编号，建家目录、用掉邀请码、换一个登录令牌（施工 Y-1 上） |
-| `account.list`、`account.disable`、`account.enable` | 管理员列账号（管理员、成员、系统账号）、停用启用成员：停用当场作废它的登录、断开它的连接（施工 Y-1 上） |
-| `account.set_admin` | 管理员把成员设成、撤掉管理员（施工 Y-12 中下，组表 `system/groups.json` 的 `admin` 组）；机主恒是管理员、撤不掉；`account.list` 每个人带 `admin` |
-| `account.set_avatar`、`account.avatar` | 账号头像（施工 AV-1，`login/avatar.rs`，接入通讯平台设计 07 第 4.6 节第 8 样）：放在账号家目录 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；换、删自己的，带 `expect` 对照版本（对不上 `avatar_conflict`）；读自己的、管理员读别人的；握手回应、`account.list` 有的才带版本 `avatar`。不在管理员模式那一串里：都只碰自己的。这台浏览器登录过哪些由网页自己记 |
+| `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要，施工 SU-1 起回应不带 `account`）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌；扩展要不了票。详见 `docs/reference/connection.md` |
+| `account.setup` | 设、改访问密码（施工 W-8；施工 SU-1 起只有 `password`）：本机令牌连上的回 `{}`，一次性码连上的换一个设备令牌；以前的设备全部作废、连着的断开 |
+| `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
+| `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`；施工 SU-1 起只有主人一张）：放在主人家目录 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |
 | `blob.open`、`blob.write`、`blob.close` | 分块传一个附件，最后存成 blob，回应和 `blob.put` 一样；跟着连接走，60 秒不写、连接断了都作废（施工 W-5） |
 | `blob.get` | 分块读一个 blob：照连接的账号名下给（施工 Y-2 中下，以前一律照管理员）；写了 `session` 的照那个会话的属主（施工 W-6、W-6 补）；扩展只读得到它拿得到的（施工 W-6 三补）。施工 Y-2 上起管理员不再越过属主（U2）：别人名下的会话里的 blob 一律 `unknown_blob`；它不走「会话只给属主」那一道，免得拿两种拒绝的说法探编号 |
 | `fs.list` | 列一层目录：数据根只有账号自己的默认工作区能列（施工 W-2） |
@@ -1483,7 +1472,6 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 |---|---|---|
 | `DEBUG` | `connected` | 接上一个连接 |
 | `INFO` | `connected head=… version=… protocol=1 via=…` | 握手过了；`via` 是 `token`、`code`、`login`、`password`（施工 W-8） |
-| `INFO` | `admin mode account=… method=…` | 一个带 `"scope": "system"` 的请求过了闸门：谁以管理员身份做了什么（施工 Y-12 下） |
 | `WARN` | `protocol mismatch head=… low=… high=…`、`bad token head=…`、`bad code head=…`、`bad login head=…`、`bad password head=…`、`bad ticket head=…`（施工 LT-1）、`login throttled head=…` | 握手被拒、断开 |
 | `INFO` | `login revoked, closed` | 这个连接靠的登录令牌作废了，断开（施工 W-8） |
 | `DEBUG` | `request method=…` | 每一条请求 |

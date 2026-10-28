@@ -43,38 +43,30 @@ async fn the_log_says_what_happened_and_never_a_secret() {
     let mut browser = Client::connect(Arc::clone(&core));
     hello_with(&mut browser, json!({"code": code})).await;
     let first = browser
-        .call(
-            "s",
-            "account.setup",
-            json!({"username": "shorin", "password": password}),
-        )
+        .call("s", "account.setup", json!({"password": password}))
         .await["result"]["login"]["token"]
         .as_str()
         .expect("有令牌")
         .to_string();
     let mut second = Client::connect(Arc::clone(&core));
-    let token = hello_with(&mut second, json!({"user": "shorin", "password": password})).await
-        ["result"]["login"]["token"]
-        .as_str()
-        .expect("有令牌")
-        .to_string();
+    let token =
+        hello_with(&mut second, json!({"password": password})).await["result"]["login"]["token"]
+            .as_str()
+            .expect("有令牌")
+            .to_string();
     let mut third = Client::connect(Arc::clone(&core));
     hello_with(&mut third, json!({"login": first})).await;
     for credentials in [
         json!({"code": code}),
         json!({"login": "0".repeat(64)}),
-        json!({"user": "shorin", "password": "wrong horse"}),
+        json!({"password": "wrong horse"}),
     ] {
         let mut stranger = Client::connect(Arc::clone(&core));
         hello_with(&mut stranger, credentials).await;
     }
     for _ in 0..5 {
         let mut stranger = Client::connect(Arc::clone(&core));
-        hello_with(
-            &mut stranger,
-            json!({"user": "shorin", "password": "wrong horse"}),
-        )
-        .await;
+        hello_with(&mut stranger, json!({"password": "wrong horse"})).await;
     }
     terminal
         .call("o", "account.logout", json!({"all": true}))

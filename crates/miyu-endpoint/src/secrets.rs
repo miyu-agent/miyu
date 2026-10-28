@@ -108,9 +108,7 @@ fn whose<'a>(
         Shelf::Personal
     });
     match layer {
-        Shelf::System if !crate::login::admins::is_admin(core, account) => {
-            Err(Refusal::NOT_PERMITTED)
-        }
+        Shelf::System if !crate::login::is_owner(core, account) => Err(Refusal::NOT_PERMITTED),
         Shelf::System => Ok((core.mine(&core.admin), layer)),
         Shelf::Personal => Ok((core.mine(account), layer)),
     }

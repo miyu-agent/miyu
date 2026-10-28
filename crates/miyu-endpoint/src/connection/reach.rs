@@ -32,6 +32,14 @@ impl Reach {
         *self == Reach::Local
     }
 
+    /// 网页软件转来的远程连接的来源地址（施工 SU-1：密码登录照它限流）；别的没有。
+    pub(crate) fn source(&self) -> Option<&str> {
+        match self {
+            Reach::Remote { from } => Some(from),
+            Reach::Local | Reach::Public => None,
+        }
+    }
+
     /// 握手之前听到的通知 `notice`：网页软件说的 `connection.remote {from}` 把这个连接标成远程，记一行。只能往下标：标了就变不回
     /// 本机，远程的再说一次照旧是第一次说的那个地址。握手以后说的不理（通知不回应）。交回标了没有。
     pub(crate) fn heard(&mut self, notice: &Notice, shaken: bool) -> bool {
