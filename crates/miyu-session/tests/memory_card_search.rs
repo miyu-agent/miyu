@@ -173,16 +173,9 @@ async fn the_id_and_the_text_find_cards_and_retired_ones_stay_out() {
     );
 }
 
-/// 别的账号那一间搜不到这一间的卡（施工 Y-7：甲乙的记忆不串）；没有卡的照旧。
+/// 没有卡的人只搜得到记下的那一条。
 #[tokio::test]
-async fn another_account_does_not_find_these_cards() {
-    let home = Home::new();
-    known(&home);
-    let bob = AccountId::parse("bob").expect("合写法");
-    assert_eq!(
-        searched(&home, "你认识小林吗", Some(bob)).await,
-        "Nothing found."
-    );
+async fn a_person_without_a_card_is_found_by_what_was_remembered() {
     let home = Home::new();
     person(&home, "qq:20017", "小林用 RX 7800 XT");
     let found = searched(&home, "小林", None).await;

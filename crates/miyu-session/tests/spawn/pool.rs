@@ -310,17 +310,14 @@ async fn only_personas_turned_on_for_subagents_are_offered() {
             subagent_parameters(&script.requests()[0].1)
         }
     };
-    let cat = (
-        "home/alice/personas/cat/persona.toml",
-        "[persona]\nname = \"Cat\"\n",
-    );
+    let cat = ("personas/cat/persona.toml", "[persona]\nname = \"Cat\"\n");
     let offered = parameters(&[cat]).await;
     assert!(
         offered.contains(r#""enum":["engineer"]"#),
         "没开的猫不列：{offered}"
     );
     let off = (
-        "home/alice/personas/engineer/persona.toml",
+        "personas/engineer/persona.toml",
         "[persona]\nsubagent = false\n",
     );
     let none = parameters(&[cat, off]).await;

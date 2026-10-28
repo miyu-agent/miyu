@@ -1,5 +1,5 @@
 //! 记忆日志的登记（施工 R-3 上，`docs/blueprint/memory.md`「对外的样子」的记忆日志、底账、记忆库）：一处记忆（房间，[`Room`]，
-//! 施工 R-3 下）一份记忆日志，跟着人格的在 `home/<账号>/modules/memory/<人格>/`，只在会话里的在会话目录的 `memory/log/`，照会话
+//! 施工 R-3 下）一份记忆日志，跟着人格的在 `modules/memory/<人格>/`，只在会话里的在会话目录的 `memory/log/`，照会话
 //! 日志的外壳和写法（[`SessionLog`]：崩了截掉半行、同步、按段）。
 //!
 //! - 几个会话同时往一份里写：核心一份登记，一份日志一把锁，序号在锁里领，所以连续不重。
@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, CommandId, Seq};
+use miyu_kernel::id::{CommandId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::{Entry, MemoryBook, MemoryEvent, MemoryId, from_event, indexed, to_event};
@@ -116,12 +116,8 @@ impl MemoryLogs {
     /// # Errors
     ///
     /// 列不出目录（不在的当一个都没有）。
-    pub fn personas(&self, account: &AccountId) -> std::io::Result<Vec<String>> {
-        let dir = self
-            .root
-            .account_dir(account)
-            .join("modules")
-            .join("memory");
+    pub fn personas(&self) -> std::io::Result<Vec<String>> {
+        let dir = self.root.path().join("modules").join("memory");
         let entries = match std::fs::read_dir(dir) {
             Ok(entries) => entries,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),

@@ -47,7 +47,7 @@ fn face(home: &Home, session: &str) -> Vec<String> {
         })
         .next_back()
         .expect("有快照");
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&policy)
         .expect("快照在 blob 里");
     let mut names: Vec<String> = Snapshot::from_bytes(&bytes)
@@ -109,7 +109,7 @@ async fn offered_features_take_their_tools_into_the_preset_from_the_next_turn() 
     );
     // 只开包自己的功能、没列的都关着：交以前 qq_history 归包的功能、开着；交了以后归交的功能、关着。
     home.write(
-        "home/alice/presets/p.toml",
+        "presets/p.toml",
         "[preset]\nname = { en = \"P\" }\nunlisted = \"off\"\n\n[features]\neach = true\n",
     );
     let core = core_with_script(
@@ -124,7 +124,7 @@ async fn offered_features_take_their_tools_into_the_preset_from_the_next_turn() 
         .create_with("c1", json!({"cwd": "~", "preset": "p"}))
         .await;
     client.say("s1", &session, "一").await;
-    until_turns_in(&dir(&home, &alice(), &session), 1).await;
+    until_turns_in(&dir(&home, &session), 1).await;
     assert_eq!(face(&home, &session), ["qq_history", "qq_send"], "交以前");
 
     std::fs::write(&go, "").expect("写得进");
@@ -149,7 +149,7 @@ async fn offered_features_take_their_tools_into_the_preset_from_the_next_turn() 
 
     // 开着的会话下一个回合照新的算。
     client.say("s2", &session, "二").await;
-    until_turns_in(&dir(&home, &alice(), &session), 2).await;
+    until_turns_in(&dir(&home, &session), 2).await;
     assert_eq!(face(&home, &session), ["qq_send"], "交了以后");
     core.stop_extensions().await;
 }

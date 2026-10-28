@@ -15,7 +15,7 @@ pub const PENDING: &[(&str, &str)] = &[
     ("crates/miyu-session/src/knowledge.rs", "kb"),
     ("crates/miyu-endpoint/src/secrets.rs", "name"),
     ("crates/miyu-endpoint/src/mcp/secrets.rs", "secret"),
-    // 数据根里的文件、目录（带账号的 `home/<账号>/…`）改成 `layer=`、`kind=`。
+    // 数据根里的文件、目录（带账号的 `…`）改成 `layer=`、`kind=`。
     ("crates/miyu-core/src/lib.rs", "root"),
     ("crates/miyu-core/src/sandbox.rs", "helper"),
     ("crates/miyu-core/src/settings.rs", "file"),

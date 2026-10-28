@@ -46,7 +46,7 @@ async fn everything_on_keeps_every_block_and_line() {
 async fn a_preset_turns_the_blocks_and_their_lines_off() {
     let home = Home::new();
     home.write(
-        "home/alice/presets/group.toml",
+        "presets/group.toml",
         "[preset]\nname = { en = \"Group\" }\n\n[features]\nenv-workdir = false\nenv-permission = false\nenv-session = false\nenv-model = false\nenv-harness = false\nenv-machine = false\n",
     );
     let (_, request) = first_request(
@@ -78,7 +78,7 @@ async fn a_preset_turns_the_blocks_and_their_lines_off() {
     }
     // 时间也关了：环境那一块整块没有。
     home.write(
-        "home/alice/presets/silent.toml",
+        "presets/silent.toml",
         "[preset]\nname = { en = \"Silent\" }\n\n[features]\nenv-time = false\nenv-workdir = false\n",
     );
     let (_, silent) = first_request(

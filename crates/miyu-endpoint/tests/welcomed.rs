@@ -56,7 +56,7 @@ async fn the_welcome_flag_is_hidden_and_written_by_the_heads() {
         after["result"]["items"]["ui.welcomed"]["value"], true,
         "{after}"
     );
-    let system = std::fs::read_to_string(home.root.path().join("system/config.toml"))
-        .expect("写进了系统配置");
+    let system =
+        std::fs::read_to_string(home.root.path().join("config.toml")).expect("写进了系统配置");
     assert!(system.contains("[ui]\nwelcomed = true\n"), "{system}");
 }

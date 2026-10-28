@@ -128,7 +128,7 @@ fn logout(name: &str) -> KeyCommand {
 
 /// 密钥文件现在的字。
 fn secrets(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("system/secrets.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.path().join("secrets.toml")).unwrap_or_default()
 }
 
 #[tokio::test]

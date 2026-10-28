@@ -162,13 +162,13 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let agents_personas = Agents::personas_in(&parts.face);
     let child = lineage.is_some();
     let count = parts.face.len();
-    let dir = root.session_dir(&owner, &id);
+    let dir = root.session_dir(&id);
     // 会话日志的目录只交给主人本人的会话（施工 E-M，U25）。
     let session_log = (!shut_in).then(|| dir.clone());
     let abandoned = dir.clone();
     let log_dir = LogDir(dir.clone());
     let offset = environment.offset;
-    let blobs = Blobs::new(root.blobs(&owner));
+    let blobs = Blobs::new(root.blobs());
     let store = blobs.clone();
     let (table, jobs_dir) = (Arc::clone(jobs), dir.clone());
     let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
@@ -220,7 +220,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     );
     // 默认工作区用哪个会话的（施工 5-14）：子会话照父会话的，主会话用自己的。
     let workspace_from = lineage.as_ref().map(Lineage::workspace_of);
-    let workplace = DefaultWorkspace::new(root, &owner, workspace_from.as_ref().unwrap_or(&id));
+    let workplace = DefaultWorkspace::new(root, workspace_from.as_ref().unwrap_or(&id));
     let agents = sessions.map(|port| {
         Arc::new(Agents {
             port,
@@ -297,14 +297,14 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, (&owner, &id), shipped.path())
+    .for_session(root, &id, shipped.path())
     .with_workplace(workplace.clone());
     let who = Who {
         owner: owner.clone(),
         venue: venue.clone(),
         parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
     };
-    let ledger = Ledger::of(usage.as_ref(), &id, &owner);
+    let ledger = Ledger::of(usage.as_ref(), &id);
     let mut actor = Actor::new(
         session,
         Box::new(Indexed::new(
@@ -340,7 +340,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
-            attachments: miyu_store::attachments::dir(root, &owner, &id),
+            attachments: miyu_store::attachments::dir(root, &id),
             workplace: Some(workplace.clone()),
             names: skill_names,
             packages,
@@ -377,7 +377,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         knowledge: shelves,
         skills: watch,
         images,
-        projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
+        projects: root.path().join(miyu_store::projects::FILE),
         room: room.clone(),
         plugins,
         frozen: false,

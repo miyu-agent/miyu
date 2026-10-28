@@ -184,7 +184,7 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                     searching.search(&owner, &search.query, only.as_deref(), limit, meaning)?;
                 let searched = match only {
                     Some(only) => only,
-                    None => searching.ids(&owner)?,
+                    None => searching.ids()?,
                 };
                 Ok((hits, skipped, searched))
             })
@@ -219,8 +219,7 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             if !valid(&read.kb) || page == 0 {
                 return Err(Refusal::BAD_PARAMS);
             }
-            let page =
-                blocking(move || knowledge.read(&account, &read.kb, &read.path, page)).await?;
+            let page = blocking(move || knowledge.read(&read.kb, &read.path, page)).await?;
             Ok(json!({ "text": page.text, "page": page.page, "pages": page.pages }))
         }
         _ => Err(Refusal::UNKNOWN_METHOD),

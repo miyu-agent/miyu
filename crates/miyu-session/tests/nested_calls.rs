@@ -132,7 +132,7 @@ async fn a_script_calls_tools_through_the_kernel_and_hears_back_after_the_log() 
             == 4,
         "都记在 shell 的结果前面"
     );
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let first = settled[0].result.as_ref().expect("存了结果");
     let line = br#"{"kind":"links","links":[{"title":"niri"}]}"#;
     assert_eq!(

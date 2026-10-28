@@ -34,7 +34,7 @@ fn source(home: &Home, id: &str, text: &str) -> PathBuf {
 
 /// 管理员家目录那一层里的这个文件。
 fn mine(home: &Home, relative: &str) -> PathBuf {
-    home.root.path().join("system/packages").join(relative)
+    home.root.path().join("packages").join(relative)
 }
 
 async fn connected(home: &Home) -> Client {
@@ -231,7 +231,7 @@ async fn unknown_packages_cannot_be_removed() {
 
 /// 家目录那一层里点开头的：暂存、备份。
 fn leftovers(home: &Home) -> Vec<String> {
-    std::fs::read_dir(home.root.path().join("system/packages"))
+    std::fs::read_dir(home.root.path().join("packages"))
         .expect("读得了")
         .flatten()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())

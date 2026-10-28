@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use serde_json::json;
 
-use crate::support::{Client, Home, TOKEN, alice};
+use crate::support::{Client, Home, TOKEN};
 use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::testkit::{Act, Fake};
@@ -16,12 +16,12 @@ use miyu_tool::{Catalog, Tool};
 async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     let home = Home::new();
     home.write(
-        "home/alice/skills/notes/SKILL.md",
+        "skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\n\n照这样记。\n",
     );
     let skill = home
         .root
-        .account_dir(&alice())
+        .path()
         .join("skills")
         .join("notes")
         .join("SKILL.md")
@@ -33,9 +33,7 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     } else {
         skill
     };
-    let folder =
-        std::fs::canonicalize(home.root.account_dir(&alice()).join("skills").join("notes"))
-            .expect("在");
+    let folder = std::fs::canonicalize(home.root.path().join("skills").join("notes")).expect("在");
     let read = Fake::new("read", Access::Read, Act::Echo);
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = || {

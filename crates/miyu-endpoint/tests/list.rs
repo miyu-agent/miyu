@@ -4,7 +4,7 @@
 
 use serde_json::json;
 
-use crate::support::{Client, Home, alice};
+use crate::support::{Client, Home};
 use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::Script;
 
@@ -43,7 +43,7 @@ async fn sessions_are_listed_newest_first_and_oneshot_ones_can_be_picked() {
     let own = |session: &str| {
         let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号");
         home.root
-            .session_workspace(&alice(), &id)
+            .session_workspace(&id)
             .to_string_lossy()
             .into_owned()
     };

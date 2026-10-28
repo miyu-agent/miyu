@@ -21,7 +21,7 @@ Chinese version: [config.md](config.md).
 
 ## The layers
 
-Settings stack from the bottom up: built-in defaults → system config (`system/config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `system/secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
+Settings stack from the bottom up: built-in defaults → system config (`config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
 
 **Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted.
 
@@ -69,7 +69,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 | `problems` | All current problems in these files |
 
 ```json
-{"files":{"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"system/config.toml","layer":"system","line":3},"value":"en"}},"problems":[]}
+{"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"en"}},"problems":[]}
 ```
 
 **Errors**: `unknown_config_key`.
@@ -91,7 +91,7 @@ Give exactly one of `changes` and `text`. Each change: `key` (required); one of 
 
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"en"}]}}
-← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"en","origin":{"file":"system/config.toml","layer":"system","line":3},"value":"en"}},"version":"sha256:…"}}
+← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"en","origin":{"file":"config.toml","layer":"system","line":3},"value":"en"}},"version":"sha256:…"}}
 ```
 
 All changes are checked and written together: one bad item refuses the whole request. The response comes after the file is written and `config.changed` is pushed.
@@ -129,7 +129,7 @@ All changes are checked and written together: one bad item refuses the whole req
 
 The value is stored with surrounding whitespace removed. `secret.list` never returns values: it lists secrets that are set and those referenced by config but not set; `used_by` is the setting keys that refer to each.
 
-There is one secrets file: `system/secrets.toml`.
+There is one secrets file: `secrets.toml`.
 
 **Errors**: `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
 

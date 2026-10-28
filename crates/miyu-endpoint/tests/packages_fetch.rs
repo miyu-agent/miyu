@@ -40,7 +40,7 @@ fn desc(home: &Home, id: &str) -> Value {
 fn installed(home: &Home, id: &str) -> bool {
     home.root
         .path()
-        .join("system/packages")
+        .join("packages")
         .join(id)
         .join("package.toml")
         .is_file()

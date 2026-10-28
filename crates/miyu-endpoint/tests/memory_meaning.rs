@@ -39,7 +39,7 @@ fn program() -> PathBuf {
 
 /// 接上小模型的核心：系统配置里默认人格是软件工程师。
 fn core(home: &Home) -> Arc<miyu_endpoint::Core> {
-    home.write("system/config.toml", "[persona]\ndefault = \"engineer\"\n");
+    home.write("config.toml", "[persona]\ndefault = \"engineer\"\n");
     let setup = local();
     let configured = venues::configured_core(home, &Script::new([]), miyu_tool::Catalog::default());
     let core = Arc::try_unwrap(configured).unwrap_or_else(|_| panic!("刚造的只有一份"));
@@ -109,12 +109,8 @@ async fn a_remote_model_is_asked_with_the_current_config_and_billed_to_the_admin
     let first = &server.received()[0];
     assert_eq!(first.path, "/v1/embeddings");
     assert_eq!(first.header("authorization"), Some("Bearer sk-emb"));
-    let journal = std::fs::read_to_string(
-        home.root
-            .account_dir(&alice())
-            .join(miyu_store::journal::FILE),
-    )
-    .expect("有账号日志");
+    let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
+        .expect("有账号日志");
     assert!(
         journal.contains(r#""body":{"purpose":"embedding","endpoint":"emb","model":"text-emb","usage":{"uncached":5"#),
         "{journal}"
@@ -126,7 +122,7 @@ async fn a_remote_model_is_asked_with_the_current_config_and_billed_to_the_admin
 #[tokio::test]
 async fn the_built_in_option_notes_the_local_model() {
     let home = Home::new();
-    home.write("system/config.toml", "");
+    home.write("config.toml", "");
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_models::settings::UseSettings::ITEMS,
@@ -157,10 +153,7 @@ async fn the_built_in_option_notes_the_local_model() {
 
 /// 记忆库里 `key` 那一条有没有小模型的向量（不经 `memory.search`）。
 fn vectored(home: &Home, key: &str) -> bool {
-    let path = home
-        .root
-        .account_dir(&alice())
-        .join("index/recall/memory-engineer.db");
+    let path = home.root.path().join("index/recall/memory-engineer.db");
     let (index, _) = miyu_store::recall::RecallIndex::open(&path);
     let missing = index.missing("local:tiny", 0, 1000).unwrap_or_default();
     index

@@ -8,7 +8,7 @@ use miyu_store::recall::RecallIndex;
 use crate::support::*;
 
 fn place(scratch: &Scratch) -> PathBuf {
-    root_in(scratch).index(&admin()).join("kb").join("notes.db")
+    root_in(scratch).index().join("kb").join("notes.db")
 }
 
 fn keys(index: &RecallIndex) -> Vec<String> {

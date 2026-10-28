@@ -1,4 +1,4 @@
-//! 登录令牌 `home/<账号>/logins.json`（`docs/blueprint/web-module.md`「怎么走」第一条第 6、7 条，施工 W-8）：只存令牌的
+//! 登录令牌 `logins.json`（`docs/blueprint/web-module.md`「怎么走」第一条第 6、7 条，施工 W-8）：只存令牌的
 //! SHA-256、造的时刻、过期的时刻。令牌是 32 个随机字节，哈希够了，用不着 argon2（「起草时定的」第 5 条）。
 //!
 //! 每次加的时候删掉过期的；最多 64 行，多了删最早造的。

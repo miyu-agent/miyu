@@ -10,7 +10,7 @@ use miyu_store::config_file::version;
 use crate::support::*;
 
 /// 系统配置在数据根里的位置。
-const CONFIG: &str = "system/config.toml";
+const CONFIG: &str = "config.toml";
 
 /// 连上一个照磁盘上的配置起来的核心，握过手。
 async fn client(home: &Home) -> Client {
@@ -47,7 +47,7 @@ async fn a_new_file_is_made_with_the_schema_line_and_the_change_is_logged() {
         json!({"layer": "system", "changes": [{"key": "ui.language", "input": "zh"}]}),
     )
     .await;
-    let text = "#:schema ../state/config/config.schema.json\n\n[ui]\nlanguage = \"zh\"\n";
+    let text = "#:schema state/config/config.schema.json\n\n[ui]\nlanguage = \"zh\"\n";
     assert_eq!(read(&home, CONFIG).as_deref(), Some(text));
     assert_eq!(
         reply["result"],
@@ -61,7 +61,7 @@ async fn a_new_file_is_made_with_the_schema_line_and_the_change_is_logged() {
             "version": version(text.as_bytes()),
         })
     );
-    let logged = journal(&home, "system/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(logged.len(), 1);
     assert_eq!(logged[0]["seq"], 1);
     assert_eq!(logged[0]["kind"], "config.changed");
@@ -89,7 +89,7 @@ async fn only_that_item_changes_and_the_system_config_goes_to_the_system_log() {
     let home = Home::new();
     let system =
         "# 管理员写的\n[log]\nlevel = \"info\"   # 平时\n\n[ui]\nlanguage = \"en\"\nweird = 1\n";
-    home.write("system/config.toml", system);
+    home.write("config.toml", system);
     let mut client = client(&home).await;
     let reply = set(
         &mut client,
@@ -101,7 +101,7 @@ async fn only_that_item_changes_and_the_system_config_goes_to_the_system_log() {
     )
     .await;
     let after = "# 管理员写的\n[log]\nlevel = \"debug\"   # 平时\n\n[ui]\nweird = 1\n";
-    assert_eq!(read(&home, "system/config.toml").as_deref(), Some(after));
+    assert_eq!(read(&home, "config.toml").as_deref(), Some(after));
     let keys = &reply["result"]["keys"];
     assert_eq!(keys["log.level"]["value"], "debug");
     assert_eq!(
@@ -109,7 +109,7 @@ async fn only_that_item_changes_and_the_system_config_goes_to_the_system_log() {
         json!({"applies": "now", "effective": "auto", "origin": {"layer": "default"}}),
         "删掉的没有 value，照下面一层"
     );
-    let logged = journal(&home, "system/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(
         logged[0]["body"]["changes"],
         json!([{"key": "log.level", "old": "info", "new": "debug"}, {"key": "ui.language", "old": "en"}]),
@@ -135,7 +135,7 @@ async fn nothing_changes_when_it_already_is() {
         reply["result"],
         json!({"keys": {}, "version": version(b"[ui]\nlanguage = \"zh\"\n")})
     );
-    assert!(read(&home, "system/journal.jsonl").is_none(), "没写就不记");
+    assert!(read(&home, "journal.jsonl").is_none(), "没写就不记");
     let home = Home::new();
     let mut fresh = self::client(&home).await;
     let reply = set(
@@ -145,10 +145,7 @@ async fn nothing_changes_when_it_already_is() {
     )
     .await;
     assert_eq!(reply["result"], json!({"keys": {}, "version": null}));
-    assert!(
-        read(&home, "system/config.toml").is_none(),
-        "删一项不新建文件"
-    );
+    assert!(read(&home, "config.toml").is_none(), "删一项不新建文件");
 }
 
 #[tokio::test]
@@ -411,7 +408,7 @@ async fn a_whole_new_text_needs_the_version_it_was_read_at_and_no_errors() {
         "只有警告的照样存"
     );
     assert_eq!(read(&home, CONFIG).as_deref(), Some(warned));
-    let logged = journal(&home, "system/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(logged[0]["body"]["via"], "edit");
 }
 
@@ -438,7 +435,7 @@ async fn a_hand_edit_is_read_again_before_the_change() {
         "在新的字上改，BOM、换行照原文件"
     );
     // 手改的先当手改记一条（`via: file`，施工 8-4），这一次改的只记它自己的那一项。
-    let logged = journal(&home, "system/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(logged.len(), 2, "{logged:?}");
     assert_eq!(logged[0]["body"]["via"], "file");
     assert_eq!(
@@ -458,7 +455,7 @@ async fn a_write_that_fails_changes_nothing() {
     use std::os::unix::fs::PermissionsExt;
     let home = Home::new();
     home.write(CONFIG, "[ui]\nlanguage = \"en\"\n");
-    let dir = home.root.path().join("system");
+    let dir = home.root.path().to_path_buf();
     std::fs::create_dir_all(dir.join("personas")).expect("建得了");
     std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).expect("改得了");
     let mut client = client(&home).await;
@@ -487,7 +484,7 @@ async fn a_write_that_fails_changes_nothing() {
     names.sort(); // 列目录的先后各平台不一样（macOS 不照名字排）。
     assert_eq!(
         names,
-        ["config.toml", "personas"],
+        [".miyu-root", "config.toml", "personas", "run", "state"],
         "没留下临时文件、没记日志"
     );
     let again = set(

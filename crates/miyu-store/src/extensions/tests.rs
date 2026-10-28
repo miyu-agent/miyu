@@ -8,7 +8,7 @@ use crate::test_support::Scratch;
 #[test]
 fn a_missing_file_has_no_switches_and_a_written_one_reads_back() {
     let temp = Scratch::new();
-    let path = temp.path().join("system").join(FILE);
+    let path = temp.path().join(FILE);
     let empty = read(&path).expect("没有的是空的");
     assert!(empty.switches.on.is_empty());
     assert_eq!(empty.version, None);

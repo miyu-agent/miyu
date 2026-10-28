@@ -10,7 +10,7 @@ use crate::support::*;
 
 fn place(scratch: &Scratch) -> PathBuf {
     root_in(scratch)
-        .index(&admin())
+        .index()
         .join("recall")
         .join("turns-test.db")
 }

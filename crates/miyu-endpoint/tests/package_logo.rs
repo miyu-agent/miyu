@@ -53,9 +53,9 @@ fn jpeg() -> Vec<u8> {
 
 /// 放一个带图标的包 `id`，图标的字节是 `logo`（没有的不放）。
 fn put(home: &Home, id: &str, logo: Option<&[u8]>) {
-    home.write(&format!("system/packages/{id}/package.toml"), KIT);
+    home.write(&format!("packages/{id}/package.toml"), KIT);
     if let Some(logo) = logo {
-        let path = home.root.system_packages().join(id).join("art/logo.png");
+        let path = home.root.packages().join(id).join("art/logo.png");
         std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
         std::fs::write(path, logo).expect("写得进");
     }
@@ -112,8 +112,7 @@ async fn a_logo_that_breaks_the_rules_is_left_out_and_reported() {
     put(&home, "heavy", Some(&heavy));
     put(&home, "jpeg", Some(&jpeg()));
     put(&home, "folder", None);
-    std::fs::create_dir_all(home.root.system_packages().join("folder/art/logo.png"))
-        .expect("建得了");
+    std::fs::create_dir_all(home.root.packages().join("folder/art/logo.png")).expect("建得了");
     put(&home, "fine", Some(&png(16, 16)));
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;

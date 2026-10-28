@@ -11,7 +11,7 @@ use crate::support::*;
 const WX: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Weather\" }\n\n[command]\nname = \"wx\"\nprogram = \"miyu-wx\"\nabout = { en = \"W\" }\n\n[process]\ncapabilities = [\"widgets\"]\n\n[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = { en = \"Weather\", zh = \"天气\" }\nscope = \"session\"\n\n[[widget]]\nid = \"temp\"\nplace = \"status\"\n\n[[widget]]\nid = \"week\"\nplace = \"page\"\ntitle = { en = \"This week\" }\ncommand = \"stop\"\n";
 
 async fn connected(home: &Home) -> Client {
-    home.write("system/packages/wx/package.toml", WX);
+    home.write("packages/wx/package.toml", WX);
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     client

@@ -21,7 +21,7 @@ const WEEK: Duration = Duration::from_secs(7 * 24 * 3600);
 /// 回顾带人民币，一次没金额。
 fn spoken(root: &DataRoot, index: &UsageIndex) {
     let id = session(2);
-    let mut log = write_log(&root.session_dir(&admin(), &id), &[]);
+    let mut log = write_log(&root.session_dir(&id), &[]);
     let parent = session(1);
     land(
         index,
@@ -61,8 +61,8 @@ fn spoken(root: &DataRoot, index: &UsageIndex) {
 
 /// 挪进回收处，八天以后清：交回清了几个。
 fn purge_later(root: &DataRoot) -> trash::Purged {
-    trash::discard(root, &admin(), &session(2), at(2000)).expect("挪得进回收处");
-    trash::purge(root, &admin(), at(2000 + 8 * 24 * 60), WEEK).expect("回收处读得了")
+    trash::discard(root, &session(2), at(2000)).expect("挪得进回收处");
+    trash::purge(root, at(2000 + 8 * 24 * 60), WEEK).expect("回收处读得了")
 }
 
 /// 照 `group` 分组、照 `offset` 分天的几行：分组的几格、请求数、用量、金额、没金额的次数。
@@ -90,13 +90,8 @@ fn purging_keeps_the_usage_and_the_totals_stay_the_same() {
     let before = (total(&index), rows(&index, &groups, 0));
     let purged = purge_later(&root);
     assert_eq!((purged.removed, purged.failed.clone()), (1, Vec::new()));
-    assert!(
-        !root
-            .trashed_sessions(&admin())
-            .join(session(2).as_str())
-            .exists()
-    );
-    let journal = fs::read_to_string(root.account_dir(&admin()).join(journal::FILE)).unwrap();
+    assert!(!root.trashed_sessions().join(session(2).as_str()).exists());
+    let journal = fs::read_to_string(root.path().join(journal::FILE)).unwrap();
     assert_eq!(journal.lines().count(), 1);
     assert!(journal.contains(r#""kind":"usage.purged""#), "{journal}");
     let after = (total(&index), rows(&index, &groups, 0));
@@ -120,7 +115,7 @@ fn the_summary_is_hourly_by_provider_model_and_purpose() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
-    let dir = root.session_dir(&admin(), &session(2));
+    let dir = root.session_dir(&session(2));
     let summary = purged::of_log(&dir, &session(2)).unwrap().unwrap();
     let written = serde_json::to_string(&summary).unwrap();
     assert_eq!(
@@ -137,9 +132,9 @@ fn the_summary_is_hourly_by_provider_model_and_purpose() {
     assert_eq!(back, summary);
     // 一次请求都没有的不写。
     let empty = session(9);
-    write_log(&root.session_dir(&admin(), &empty), &[created(at(0), None)]);
+    write_log(&root.session_dir(&empty), &[created(at(0), None)]);
     assert_eq!(
-        purged::of_log(&root.session_dir(&admin(), &empty), &empty).unwrap(),
+        purged::of_log(&root.session_dir(&empty), &empty).unwrap(),
         None
     );
 }
@@ -177,7 +172,7 @@ fn a_half_hour_offset_puts_a_purged_hour_on_the_day_it_starts() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     let id = session(2);
-    let mut log = write_log(&root.session_dir(&admin(), &id), &[]);
+    let mut log = write_log(&root.session_dir(&id), &[]);
     // 18:40 UTC 是印度的次日 00:10；那一小时 18:00 起，是印度的当天 23:30。
     land(
         &index,
@@ -215,7 +210,7 @@ fn a_summary_written_twice_counts_once() {
     spoken(&root, &index);
     let before = total(&index);
     // 崩在写完账号日志、删目录之前：目录还在，下次再清又写一条。
-    let dir = root.session_dir(&admin(), &session(2));
+    let dir = root.session_dir(&session(2));
     let summary = purged::of_log(&dir, &session(2)).unwrap().unwrap();
     let entry = || journal::Entry {
         at: at(3000),
@@ -224,7 +219,7 @@ fn a_summary_written_twice_counts_once() {
         kind: miyu_kernel::id::EventKind::parse("usage.purged").unwrap(),
         body: serde_json::from_str(&serde_json::to_string(&summary).unwrap()).unwrap(),
     };
-    let path = root.account_dir(&admin()).join(journal::FILE);
+    let path = root.path().join(journal::FILE);
     journal::append(&path, entry()).unwrap();
     assert_eq!(total(&index), before, "目录还在也只算一处");
     journal::append(&path, entry()).unwrap();
@@ -243,10 +238,10 @@ fn without_a_journal_the_session_is_kept() {
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
     // 账号日志的位置是个目录：写不进去。
-    fs::create_dir_all(root.account_dir(&admin()).join(journal::FILE)).unwrap();
+    fs::create_dir_all(root.path().join(journal::FILE)).unwrap();
     let purged = purge_later(&root);
     assert_eq!(purged.removed, 0);
     assert_eq!(purged.failed.len(), 1, "{:?}", purged.failed);
-    let kept = root.trashed_sessions(&admin()).join(session(2).as_str());
+    let kept = root.trashed_sessions().join(session(2).as_str());
     assert!(kept.join(DELETED_AT).exists(), "写不进账号日志的不删");
 }

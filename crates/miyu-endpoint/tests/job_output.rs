@@ -128,9 +128,7 @@ async fn a_running_command_reads_so_far_and_an_ended_one_reads_it_all() {
     .await;
     home.until_turns(&session, 3).await;
     // 结束了的读存下的那一份（blob），不读会话目录下的输出文件：拿掉它照样读得到。
-    let dir = home
-        .root
-        .session_dir(&alice(), &SessionId::parse(&session).unwrap());
+    let dir = home.root.session_dir(&SessionId::parse(&session).unwrap());
     let file = miyu_store::jobs::output_path(&dir, &JobId::new(1).unwrap());
     std::fs::remove_file(&file).expect("输出文件在");
     let ended = read(&mut client, "r1", &session, None).await;
@@ -191,9 +189,7 @@ async fn an_output_that_cannot_be_opened_reads_empty() {
     let held = Held::new(&["x\n"]);
     let (mut client, session) = started(&home, &held, Vec::new()).await;
     read_until(&mut client, &session, |got| got["lines"] == json!(1)).await;
-    let dir = home
-        .root
-        .session_dir(&alice(), &SessionId::parse(&session).unwrap());
+    let dir = home.root.session_dir(&SessionId::parse(&session).unwrap());
     std::fs::remove_file(miyu_store::jobs::output_path(&dir, &JobId::new(1).unwrap()))
         .expect("输出文件在");
     assert_eq!(

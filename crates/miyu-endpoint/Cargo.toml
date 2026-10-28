@@ -136,9 +136,6 @@ path = "tests/index_log.rs"
 name = "login_log"
 path = "tests/login_log.rs"
 
-[[test]]
-name = "packages_log"
-path = "tests/packages_log.rs"
 
 [[test]]
 name = "schedules_log"

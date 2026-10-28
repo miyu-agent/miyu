@@ -728,7 +728,7 @@
     "package-problems/slash_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_builtin": "Same name as Miyu's built-in /{detail}; this one is not used",
     "config/reference-header": "Every Miyu setting and its default. This file is generated. Editing it has no effect.",
-    "config/reference-where": "Write the system config in system/config.toml.",
+    "config/reference-where": "Write the config in config.toml in the data root.",
     "config/reference-item": "{name}: {description}",
     "config/facts": "Allowed: {values}. Only in {layers}. {applies}.",
     "config/schema-description": "{description} {facts}",

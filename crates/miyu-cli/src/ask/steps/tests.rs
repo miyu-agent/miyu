@@ -379,7 +379,7 @@ fn a_result_for_a_call_never_seen_prints_nothing() {
 #[test]
 fn a_directory_too_wide_says_where_she_works() {
     let sep = MAIN_SEPARATOR;
-    let used = under(&["home", ".miyu", "home", "admin", "workspace"]);
+    let used = under(&["home", ".miyu", "workspace"]);
     let used = used.to_string_lossy();
     let home = under(&["home"]).to_string_lossy().into_owned();
     let chinese = Plan {
@@ -388,7 +388,7 @@ fn a_directory_too_wide_says_where_she_works() {
     };
     assert_eq!(
         moved(&chinese, &used).paint(false),
-        format!("· 目录太宽（~），这次在 ~{sep}.miyu{sep}home{sep}admin{sep}workspace 里干活\n")
+        format!("· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n")
     );
     let english = Plan {
         cwd: home,
@@ -397,7 +397,7 @@ fn a_directory_too_wide_says_where_she_works() {
     assert_eq!(
         moved(&english, &used).paint(true),
         format!(
-            "\x1b[90m· Working directory too wide (~), using ~{sep}.miyu{sep}home{sep}admin{sep}workspace this time\x1b[0m\n"
+            "\x1b[90m· Working directory too wide (~), using ~{sep}.miyu{sep}workspace this time\x1b[0m\n"
         )
     );
 }

@@ -17,7 +17,7 @@ For third-party authors. Chinese version: [README.md](README.md). The guides, te
 
 Every manifest field is in [The manifest](manifest.en.md). For extensions in Python or Rust there are ready-made development kits ([Using a development kit](extensions.en.md#using-a-development-kit)).
 
-**Without a package**: put skills, scripts and command templates straight into `~/.miyu/home/admin/skills/`, `scripts/`, `commands/`, and MCP servers into personal settings. They work the same; they just aren't managed as a package.
+**Without a package**: put skills, scripts and command templates straight into `~/.miyu/skills/`, `scripts/`, `commands/`, and MCP servers into the config. They work the same; they just aren't managed as a package.
 
 ## What a package looks like
 

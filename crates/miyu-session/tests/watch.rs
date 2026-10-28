@@ -324,7 +324,7 @@ async fn a_session_waiting_for_its_subagent_is_not_idle() {
 
 /// 把会话 `id` 的日志里每一条的时刻往前挪 `hours` 小时。
 fn age(home: &Home, id: &SessionId, hours: i64) {
-    let dir = home.root.session_dir(&crate::support::alice_account(), id);
+    let dir = home.root.session_dir(id);
     for entry in std::fs::read_dir(&dir).expect("读得了会话目录") {
         let path = entry.expect("读得了").path();
         if path

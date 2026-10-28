@@ -1,6 +1,6 @@
 //! 扩展能力的审批（施工 9-4 下上，`docs/blueprint/extensions.md`「能力」，`05-内核接口.md` 第三节）：清单的
 //! `[process] capabilities` 声明要哪些，人在 `extension.enable` 那一下带上 `approve` 批。批了就是记进开关文件
-//! `system/extensions.json` 的 `approved`（施工 SU-2 中：组表拿掉了），批的时候声明的全部。还没批的是「声明的减记着的」：升级
+//! `extensions.json` 的 `approved`（施工 SU-2 中：组表拿掉了），批的时候声明的全部。还没批的是「声明的减记着的」：升级
 //! 以后多了的只问多的。出厂的包（资源目录里随 Miyu 装的）和编译进核心的模块一样本来就被信任，算批过的、不记。
 
 use serde_json::{Value, json};

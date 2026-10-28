@@ -200,7 +200,7 @@ async fn a_child_whose_parent_is_gone_is_deleted_without_a_report() {
     // 删主会话删到一半崩了的样子：主会话已经进了回收处，子会话还在原处。
     let (from, to) = (
         home.root
-            .session_dir(&alice(), &SessionId::parse(&parent).expect("合写法")),
+            .session_dir(&SessionId::parse(&parent).expect("合写法")),
         trashed(&home, &parent),
     );
     std::fs::create_dir_all(to.parent().expect("有上一级")).expect("建得了");

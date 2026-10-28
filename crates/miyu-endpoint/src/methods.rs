@@ -69,9 +69,9 @@ pub(crate) fn call<'a>(
 ) -> Answer<'a> {
     match request.method.as_str() {
         "session.create" => answer(move || session::create(core, peer, request)),
-        "check" => answer(move || async move {
-            crate::check::check(core, (peer, &core.admin), params(request)?).await
-        }),
+        "check" => {
+            answer(move || async move { crate::check::check(core, peer, params(request)?).await })
+        }
         "persona.list" => {
             answer(move || async move { personas::list(core, &core.admin, peer).await })
         }
@@ -341,9 +341,9 @@ pub(crate) fn call<'a>(
             let by = (&core.admin, caller.package.as_deref());
             attach::put(core, by, params(request)?).await
         }),
-        "blob.open" => answer(move || async move {
-            uploads::open(core, (uploads, &core.admin), params(request)?).await
-        }),
+        "blob.open" => {
+            answer(move || async move { uploads::open(core, uploads, params(request)?).await })
+        }
         "blob.write" => {
             answer(move || async move { uploads::write(uploads, params(request)?).await })
         }

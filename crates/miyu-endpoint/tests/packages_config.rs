@@ -111,7 +111,7 @@ async fn changed(client: &mut Client, before: Vec<Value>, n: usize) -> Vec<Value
 async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_removed() {
     let home = Home::new();
     let program = crate::support::extensions::Program::new();
-    home.write("system/config.toml", "xcfg.port = 9000\n");
+    home.write("config.toml", "xcfg.port = 9000\n");
     let core = served(&home);
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;

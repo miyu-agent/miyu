@@ -21,11 +21,7 @@ use crate::support::*;
 
 /// 在 alice 家目录里放技能 `notes`，旁边放一份不给碰的；交回技能文件夹的真实位置。
 fn put(home: &Home) -> PathBuf {
-    let dir = home
-        .root
-        .account_dir(&alice_account())
-        .join("skills")
-        .join("notes");
+    let dir = home.root.path().join("skills").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(
         dir.join("SKILL.md"),
@@ -175,7 +171,7 @@ async fn a_script_in_the_data_root_runs_in_the_sandbox() {
         return;
     }
     let home = Home::outside_temp();
-    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    let scripts = home.root.path().join("scripts");
     std::fs::create_dir_all(&scripts).expect("建得了");
     let marker = home.root.path().join("marker");
     std::fs::write(&marker, "secret\n").expect("写得进");
@@ -222,7 +218,7 @@ async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
         return;
     }
     let home = Home::outside_temp();
-    let account = home.root.account_dir(&alice_account());
+    let account = home.root.path().to_path_buf();
     let (scripts, real) = (
         account.join("scripts"),
         account.join("packages/kit/scripts"),
@@ -281,7 +277,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
         return;
     }
     let home = Home::outside_temp();
-    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    let scripts = home.root.path().join("scripts");
     std::fs::create_dir_all(&scripts).expect("建得了");
     let file = scripts.join("snap.sh");
     // 1×1 的 PNG 头：认格式、量尺寸只看这几个字节。
@@ -315,7 +311,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
 /// 在 alice 家目录里放脚本 `keep.sh`（内容 `text`），在场所 `venue` 的会话里经真助手调一次：交回结果的状态、字。
 #[cfg(unix)]
 async fn keep(home: &Home, helper: &Path, text: &str, venue: (&str, bool)) -> (ToolStatus, String) {
-    let scripts = home.root.account_dir(&alice_account()).join("scripts");
+    let scripts = home.root.path().join("scripts");
     std::fs::create_dir_all(&scripts).expect("建得了");
     let file = scripts.join("keep.sh");
     std::fs::write(&file, text).expect("写得进");
@@ -355,7 +351,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
         return;
     }
     let home = Home::outside_temp();
-    let other = home.root.path().join("state/scripts/alice/~home/other");
+    let other = home.root.path().join("state/scripts/~home/other");
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
@@ -365,7 +361,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "kept\nblocked-other\n");
-    let kept = home.root.path().join("state/scripts/alice/~home/keep/n");
+    let kept = home.root.path().join("state/scripts/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
@@ -382,7 +378,7 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     let group2 = home
         .root
         .path()
-        .join("state/scripts/alice/@qq_3agroup_3a2/~home/keep");
+        .join("state/scripts/@qq_3agroup_3a2/~home/keep");
     std::fs::create_dir_all(&group2).expect("建得了");
     std::fs::write(group2.join("n"), "secret\n").expect("写得进");
     let text = format!(
@@ -398,7 +394,7 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     let kept = home
         .root
         .path()
-        .join("state/scripts/alice/@qq_3agroup_3a1/~home/keep/n");
+        .join("state/scripts/@qq_3agroup_3a1/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
@@ -413,7 +409,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
         return;
     }
     let home = Home::outside_temp();
-    let other = home.root.cache(&alice_account()).join("~home/other");
+    let other = home.root.cache().join("~home/other");
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
@@ -423,7 +419,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "cached\nblocked-other\n");
-    let kept = home.root.cache(&alice_account()).join("~home/keep/n");
+    let kept = home.root.cache().join("~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
 }
 
@@ -442,7 +438,7 @@ async fn a_local_script_in_the_sandbox_writes_into_the_owner_s_pictures() {
     let (status, output) = keep(&home, &helper, text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "saved\n");
-    let account = home.root.account_dir(&alice_account());
+    let account = home.root.path().to_path_buf();
     let read = |path: &str| std::fs::read_to_string(account.join(path)).expect("写进去了");
     assert_eq!(read("pictures/a.txt"), "drawn\n");
     assert_eq!(read("downloads/b.txt"), "got\n");

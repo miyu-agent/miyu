@@ -23,7 +23,7 @@ use serde_json::Value;
 
 use miyu_fs::{Places, Readonly, ResolveError, Zone, resolve, resolve_itself};
 use miyu_kernel::event::{Permission, Said};
-use miyu_kernel::id::{AccountId, ModuleId, SessionId};
+use miyu_kernel::id::{ModuleId, SessionId};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::Verdict;
 use miyu_kernel::time::UtcOffset;
@@ -147,18 +147,14 @@ impl Guard {
     pub(crate) fn for_session(
         mut self,
         root: &DataRoot,
-        (owner, id): (&AccountId, &SessionId),
+        id: &SessionId,
         resources: &Path,
     ) -> Guard {
-        self.confines = Confines::of(root, (owner, self.confined.is_none()), resources);
+        self.confines = Confines::of(root, self.confined.is_none(), resources);
         // 会话属主自己的几处（施工 Y-11 上，家目录里照 XDG 的 pictures 这些）：边界表照工作区算，只给文件工具。成员的会话另算
         // 上他的工作区（施工 Y-2 下①）：他报的工作目录不在里面时，数据根照旧禁着，他自己的工作区不能跟着被禁。
-        self.places.own = root
-            .user_dirs(owner)
-            .into_iter()
-            .map(|(_, dir)| dir)
-            .collect();
-        self.with_attachments(miyu_store::attachments::dir(root, owner, id))
+        self.places.own = root.user_dirs().into_iter().map(|(_, dir)| dir).collect();
+        self.with_attachments(miyu_store::attachments::dir(root, id))
     }
 
     /// 管理员管得住的地方：回合开始照它和这一轮的放行表拼一份。

@@ -18,7 +18,7 @@ use crate::support::*;
 
 /// 管理员（测试里是 alice）家目录里的人格 `id` 的一个文件。
 fn mine(home: &Home, id: &str, file: &str, text: &str) {
-    home.write(&format!("home/alice/personas/{id}/{file}"), text);
+    home.write(&format!("personas/{id}/{file}"), text);
 }
 
 /// 读系统配置、个人设置的核心（`support::venues`）。
@@ -164,13 +164,13 @@ async fn without_a_persona_the_default_is_used() {
     client.say("s1", &first, "hi").await;
     home.until_turns(&first, 1).await;
     // 系统配置写了 miyu。
-    home.write("system/config.toml", "[persona]\ndefault = \"miyu\"\n");
+    home.write("config.toml", "[persona]\ndefault = \"miyu\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let second = client.create("c2", "~").await;
     client.say("s2", &second, "hi").await;
     home.until_turns(&second, 1).await;
     // 系统配置改成 kiki。
-    home.write("system/config.toml", "[persona]\ndefault = \"kiki\"\n");
+    home.write("config.toml", "[persona]\ndefault = \"kiki\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let third = client.create("c3", "~").await;
     client.say("s3", &third, "hi").await;
@@ -214,7 +214,7 @@ async fn missing_bad_and_broken_personas_are_refused() {
     let listed = client.call("l1", "session.list", json!({})).await;
     assert_eq!(listed["result"]["sessions"], json!([]), "什么都没造");
     // 默认人格指着没有的：当没设，造无人格的会话（施工 P-4 上：配置是以前写的，人格可能后来删了）。
-    home.write("system/config.toml", "[persona]\ndefault = \"nobody\"\n");
+    home.write("config.toml", "[persona]\ndefault = \"nobody\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let reply = create(&mut client, "c4", json!({"cwd": "~"})).await;
     assert!(reply["result"]["session"].is_string(), "{reply}");
@@ -227,7 +227,7 @@ async fn missing_bad_and_broken_personas_are_refused() {
 #[tokio::test]
 async fn a_venue_session_is_made_with_the_given_persona_and_found_again_without_it() {
     let home = Home::new();
-    home.write("system/config.toml", BINDINGS);
+    home.write("config.toml", BINDINGS);
     mine(&home, "miyu", "prompts/persona.md", "You are Miyu.\n");
     let script = Script::new([Play::Says("在。")]);
     let mut client = connected(configured(&home, &script)).await;
@@ -410,7 +410,7 @@ async fn sessions_from_older_logs_name_no_persona() {
     client.say("s1", &session, "hi").await;
     home.until_turns(&session, 1).await;
     // 把造会话那一条改回以前的样子：去掉 persona。
-    let dir = home.root.path().join("home/alice/sessions").join(&session);
+    let dir = home.root.path().join("sessions").join(&session);
     let first = dir.join("000000000001.jsonl");
     let text = std::fs::read_to_string(&first).unwrap();
     let old = text.replacen(",\"persona\":\"engineer\"", "", 1);

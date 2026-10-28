@@ -1,11 +1,11 @@
 //! 一个库在哪（施工 K-8 从 `knowledge.rs` 挪出来、加了包里的，`docs/blueprint/knowledge.md`「对外的样子」）：自己的在
-//! `home/<账号>/kb/<编号>/`（挂进来的也是，`kb.toml` 写着挂哪），软件包带来的在包目录的 `kb/<编号>/`（照约定，同 `skills/`）。
+//! `kb/<编号>/`（挂进来的也是，`kb.toml` 写着挂哪），软件包带来的在包目录的 `kb/<编号>/`（照约定，同 `skills/`）。
 //! 这里管看得见哪几个、索引放哪、包里的库自动想起的开关人改了记在哪，装卸以后怎么跟上。
 //!
 //! - 看得见：自己的全部，加装了的包里的；同编号的自己的赢，两个包同编号的照包的编号先到先得（同技能）。
-//! - 索引：自己的 `home/<账号>/index/kb/<编号>.db`；包里的 `home/<账号>/index/kb/packages/<包>/<编号>.db`（自己的编号不带
+//! - 索引：自己的 `index/kb/<编号>.db`；包里的 `index/kb/packages/<包>/<编号>.db`（自己的编号不带
 //!   `/`，撞不上）。
-//! - 开关：包里的库照包里 `kb.toml` 的 `auto`；人改了的记在账号自己的 `home/<账号>/kb.toml`：`[auto]` 下一行
+//! - 开关：包里的库照包里 `kb.toml` 的 `auto`；人改了的记在账号自己的 `kb.toml`：`[auto]` 下一行
 //!   `"<包>/<编号>" = true/false`（项目主人 2026-10-13 定：包里的库只读，自动想起人能开关，卸包以后跟着没有）。
 
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ use crate::recall::RecallIndex;
 
 /// 一个库在哪。
 pub(super) enum Place {
-    /// 自己的（连挂进来的）：`home/<账号>/kb/<编号>/`。
+    /// 自己的（连挂进来的）：`kb/<编号>/`。
     Own(PathBuf),
     /// 软件包 `package` 带来的：包目录里的 `kb/<编号>/`，只读。
     Package {
@@ -68,7 +68,7 @@ impl Knowledge {
         *self.packages_now() = packages;
     }
 
-    /// 装卸以后照新的一份（编号、包目录）跟上（施工 K-8）：卸掉的包，每个账号里它的库的索引、自动想起的开关一起删（项目主人
+    /// 装卸以后照新的一份（编号、包目录）跟上（施工 K-8）：卸掉的包，它的库的索引、自动想起的开关一起删（项目主人
     /// 2026-10-13 定：卸包以后跟着没有）。交回删不掉的那几处为什么（调的一方记日志），照样换上新的一份。
     #[must_use]
     pub fn follow_packages(&self, packages: Vec<(String, PathBuf)>) -> Vec<String> {
@@ -85,16 +85,10 @@ impl Knowledge {
         if gone.is_empty() {
             return Vec::new();
         }
-        let accounts = match self.root.accounts() {
-            Ok(accounts) => accounts,
-            Err(error) => return vec![format!("home: {error}")],
-        };
         let mut problems = Vec::new();
-        for account in accounts {
-            for package in &gone {
-                if let Err(error) = self.forget_package(&account, package) {
-                    problems.push(format!("{account} {package}: {error}"));
-                }
+        for package in &gone {
+            if let Err(error) = self.forget_package(package) {
+                problems.push(format!("{package}: {error}"));
             }
         }
         problems
@@ -106,8 +100,8 @@ impl Knowledge {
     /// # Errors
     ///
     /// 知识库的目录读不了。
-    pub fn ids(&self, account: &AccountId) -> Result<Vec<String>, KnowledgeError> {
-        let mut ids = self.own_ids(account)?;
+    pub fn ids(&self) -> Result<Vec<String>, KnowledgeError> {
+        let mut ids = self.own_ids()?;
         for (id, _, _) in self.carried() {
             if !ids.contains(&id) {
                 ids.push(id);
@@ -118,16 +112,16 @@ impl Knowledge {
     }
 
     /// 账号下的知识库都在哪个目录下。
-    pub(super) fn top(&self, account: &AccountId) -> PathBuf {
-        self.root.account_dir(account).join("kb")
+    pub(super) fn top(&self) -> PathBuf {
+        self.root.path().join("kb")
     }
 
     /// 库 `id` 在哪：编号合写法；自己的目录在的是自己的，不然是包里的（施工 K-8）。
-    pub(super) fn place(&self, account: &AccountId, id: &str) -> Result<Place, KnowledgeError> {
+    pub(super) fn place(&self, id: &str) -> Result<Place, KnowledgeError> {
         if !valid(id) {
             return Err(KnowledgeError::UnknownBase);
         }
-        let own = self.top(account).join(id);
+        let own = self.top().join(id);
         if own.is_dir() {
             return Ok(Place::Own(own));
         }
@@ -139,8 +133,8 @@ impl Knowledge {
     }
 
     /// 库 `id` 的目录（`kb.toml` 在这里）。
-    pub(super) fn dir(&self, account: &AccountId, id: &str) -> Result<PathBuf, KnowledgeError> {
-        Ok(self.place(account, id)?.dir().to_path_buf())
+    pub(super) fn dir(&self, id: &str) -> Result<PathBuf, KnowledgeError> {
+        Ok(self.place(id)?.dir().to_path_buf())
     }
 
     /// 库 `id` 开着的索引：开过的交回同一份。没有的库照自己的那一格开一份空的。
@@ -149,8 +143,8 @@ impl Knowledge {
         if let Some(shelf) = self.lock().get(&key) {
             return Arc::clone(shelf);
         }
-        let indexes = self.root.index(account).join("kb");
-        let path = match self.place(account, id) {
+        let indexes = self.root.index().join("kb");
+        let path = match self.place(id) {
             Ok(Place::Package { package, .. }) => indexes
                 .join("packages")
                 .join(package)
@@ -174,22 +168,16 @@ impl Knowledge {
     }
 
     /// 包里的库 `place` 自动想起的开关人改过的（账号自己的 `kb.toml`）；自己的、没改过的、读不了的没有。
-    pub(super) fn switched(&self, account: &AccountId, id: &str, place: &Place) -> Option<bool> {
+    pub(super) fn switched(&self, id: &str, place: &Place) -> Option<bool> {
         let package = place.package()?;
-        let text = std::fs::read_to_string(self.switches(account)).ok()?;
+        let text = std::fs::read_to_string(self.switches()).ok()?;
         let switches = miyu_recall::kb::switches(&text).ok()?;
         switches.get(&format!("{package}/{id}")).copied()
     }
 
     /// 包 `package` 里的库 `id` 自动想起开、关（施工 K-8）：记在账号自己的 `kb.toml`，别的照原样。
-    pub(super) fn switch(
-        &self,
-        account: &AccountId,
-        package: &str,
-        id: &str,
-        auto: bool,
-    ) -> Result<(), KnowledgeError> {
-        let file = self.real_switches(account)?;
+    pub(super) fn switch(&self, package: &str, id: &str, auto: bool) -> Result<(), KnowledgeError> {
+        let file = self.real_switches()?;
         let text = read_or_empty(&file)?;
         let key = format!("auto.\"{package}/{id}\"");
         let text = apply(&text, Change::Set(&key, &Value::Bool(auto))).map_err(|blocked| {
@@ -199,21 +187,21 @@ impl Knowledge {
     }
 
     /// 账号自己记开关的那一份。
-    fn switches(&self, account: &AccountId) -> PathBuf {
-        self.root.account_dir(account).join("kb.toml")
+    fn switches(&self) -> PathBuf {
+        self.root.path().join("kb.toml")
     }
 
     /// 同 `switches`，换成真实的位置，写之前用：数据根的路上可能有链接（macOS 的临时目录 `/var`），
     /// `miyu_fs::replace` 一层链接都不跟。账号的目录不在的建上。
-    fn real_switches(&self, account: &AccountId) -> Result<PathBuf, KnowledgeError> {
-        let dir = self.root.account_dir(account);
+    fn real_switches(&self) -> Result<PathBuf, KnowledgeError> {
+        let dir = self.root.path().to_path_buf();
         std::fs::create_dir_all(&dir).map_err(io)?;
         Ok(std::fs::canonicalize(dir).map_err(io)?.join("kb.toml"))
     }
 
-    /// 自己的库的编号：`home/<账号>/kb/` 下合写法的目录。
-    fn own_ids(&self, account: &AccountId) -> Result<Vec<String>, KnowledgeError> {
-        let entries = match std::fs::read_dir(self.top(account)) {
+    /// 自己的库的编号：`kb/` 下合写法的目录。
+    fn own_ids(&self) -> Result<Vec<String>, KnowledgeError> {
+        let entries = match std::fs::read_dir(self.top()) {
             Ok(entries) => entries,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(io(error)),
@@ -243,23 +231,18 @@ impl Knowledge {
         self.packages.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 卸掉的包 `package` 在账号 `account` 里留下的：开着的索引关上、连目录删掉，开关那几行拿掉。
+    /// 卸掉的包 `package` 留下的：开着的索引关上、连目录删掉，开关那几行拿掉。
     ///
     /// # Errors
     ///
     /// 索引关不上、删不掉；账号的 `kb.toml` 读不了、读不懂、写不进。
-    fn forget_package(&self, account: &AccountId, package: &str) -> Result<(), KnowledgeError> {
-        let indexes = self
-            .root
-            .index(account)
-            .join("kb")
-            .join("packages")
-            .join(package);
+    fn forget_package(&self, package: &str) -> Result<(), KnowledgeError> {
+        let indexes = self.root.index().join("kb").join("packages").join(package);
         let closing: Vec<Arc<Shelf>> = {
             let mut open = self.lock();
             let keys: Vec<(AccountId, String)> = open
                 .iter()
-                .filter(|((owner, _), shelf)| owner == account && shelf.path.starts_with(&indexes))
+                .filter(|(_, shelf)| shelf.path.starts_with(&indexes))
                 .map(|(key, _)| key.clone())
                 .collect();
             keys.iter().filter_map(|key| open.remove(key)).collect()
@@ -275,7 +258,7 @@ impl Knowledge {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io(error)),
             _ => {}
         }
-        let file = self.real_switches(account)?;
+        let file = self.real_switches()?;
         let mut text = read_or_empty(&file)?;
         let switches = miyu_recall::kb::switches(&text).map_err(KnowledgeError::Io)?;
         let prefix = format!("{package}/");

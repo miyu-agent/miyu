@@ -7,8 +7,6 @@ use serde_json::{Value, json};
 use crate::support::providers::{core, data, profiles, routed, said};
 use crate::support::*;
 use miyu_http::testkit::{Piece, Reply, Server};
-use miyu_kernel::id::AccountId;
-use miyu_store::blob::Blobs;
 
 /// 一家 `a` 在假服务器上，不带 key；`a/v` 收图；`models.chat` 是 `a/m`。
 fn config(server: &Server) -> String {
@@ -20,7 +18,7 @@ fn config(server: &Server) -> String {
 
 /// 照 `config` 写好系统配置，连上请求模型是真路由的核心、握好手。
 async fn connected(home: &Home, config: &str) -> Client {
-    home.write("system/config.toml", config);
+    home.write("config.toml", config);
     let mut client = Client::connect(routed(home, &[], data(profiles(json!({})))));
     client.hello().await;
     client
@@ -56,10 +54,7 @@ async fn the_answer_has_text_provider_model_and_usage_and_no_session_is_made() {
     assert_eq!(sent["messages"], json!([{"role": "user", "content": "hi"}]));
     let listed = client.call("c2", "session.list", json!({})).await;
     assert_eq!(listed["result"]["sessions"], json!([]), "{listed}");
-    let made = home
-        .root
-        .sessions(&alice())
-        .map_or(0, |sessions| sessions.len());
+    let made = home.root.sessions().map_or(0, |sessions| sessions.len());
     assert_eq!(made, 0, "一个会话都没造");
 }
 
@@ -140,10 +135,8 @@ async fn an_image_is_this_accounts_blob_and_goes_out_after_the_words() {
     let content = &sent["messages"][0]["content"];
     assert_eq!(content[0], json!({"type": "text", "text": "What is this?"}));
     assert_eq!(content[1]["type"], "image_url", "先字后图：{sent}");
-    // 别的账号的 blob、这个核心里没有的：不认。
-    let elsewhere = Blobs::new(home.root.blobs(&AccountId::parse("bob").expect("合写法")))
-        .put(&png(4, 4))
-        .expect("存得进去");
+    // 没存过的、这个核心里没有的：不认。
+    let elsewhere = miyu_kernel::id::ContentHash::of(&png(4, 4));
     let missing = "0".repeat(64);
     for absent in [elsewhere.as_str().to_string(), format!("sha256:{missing}")] {
         let reply = client
@@ -185,7 +178,7 @@ async fn each_failure_has_its_reason_and_data() {
         config(&server),
         url = server.base_url
     );
-    home.write("system/config.toml", &two);
+    home.write("config.toml", &two);
     let core = routed(
         &home,
         &[("K1", "sk-1"), ("K2", "sk-2")],
@@ -247,7 +240,7 @@ async fn no_model_says_why_and_a_scripted_core_has_no_one_shot() {
     );
     let server = Server::start(Vec::new()).await;
     let scripted = Home::new();
-    scripted.write("system/config.toml", &config(&server));
+    scripted.write("config.toml", &config(&server));
     let mut client = Client::connect(core(&scripted, &[], data(profiles(json!({})))));
     client.hello().await;
     let reply = client.call("c2", "model.call", asked("hi")).await;

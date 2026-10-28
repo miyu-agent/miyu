@@ -93,7 +93,7 @@ impl Listed {
             }
             Listed::Projects(account) => {
                 let project = crate::projects::changes::mine(id, account)?;
-                let params = crate::projects::item(core, account, project)?;
+                let params = crate::projects::item(core, project)?;
                 json!({"jsonrpc": "2.0", "method": "projects.changed", "params": params})
             }
             Listed::Schedules(account) => {
@@ -260,7 +260,7 @@ impl Subscriptions {
             shaken,
             out.clone(),
         ));
-        crate::projects::listed(core, &account).await
+        crate::projects::listed(core).await
     }
 
     /// 取消订阅扩展的状态（`packages` 是假的）、软件包列表的推送：转发任务当场停。

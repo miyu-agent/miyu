@@ -92,7 +92,7 @@ impl Home {
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
         // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
-        miyu_session::testkit::install_sample_persona(&root, &alice());
+        miyu_session::testkit::install_sample_persona(&root);
         let work = std::env::temp_dir().join(format!(
             "miyu-endpoint-work-{}-{}-{n}",
             std::process::id(),
@@ -198,7 +198,7 @@ impl Home {
         )
     }
 
-    /// 写一份配置文件：`relative` 是相对数据根的路径（`system/config.toml`），目录没有的建上。
+    /// 写一份配置文件：`relative` 是相对数据根的路径（`config.toml`），目录没有的建上。
     pub fn write(&self, relative: &str, text: &str) {
         let path = self.root.path().join(relative);
         std::fs::create_dir_all(path.parent().expect("有上一级")).expect("建得了目录");
@@ -285,7 +285,7 @@ impl Home {
     /// 磁盘上会话 `session` 的日志，照先后。只读：会话可能正在写，载入用的 `SessionLog::open` 会截掉正在写的那半行（施工 3-9 下在 macOS 的 CI 上撞到过：会话目录刚建、第一段还没有，它报没有这个会话）。还没写出第一条的当是空的。
     pub fn log(&self, session: &str) -> Vec<Event> {
         let session = SessionId::parse(session).expect("会话编号合写法");
-        let dir = self.root.session_dir(&alice(), &session);
+        let dir = self.root.session_dir(&session);
         read_events(&dir).unwrap_or_default()
     }
 

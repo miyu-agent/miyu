@@ -455,7 +455,6 @@ pub(crate) fn extraction(
     models: &dyn miyu_session::Models,
     resources: &miyu_store::resources::ResourceRoot,
     root: &miyu_store::root::DataRoot,
-    admin: &miyu_kernel::id::AccountId,
 ) -> Option<miyu_session::Extraction> {
     let ask = models.one_shot()?;
     let texts = miyu_session::ExtractTexts::load(resources.path())
@@ -476,7 +475,7 @@ pub(crate) fn extraction(
             texts,
             shapes,
             ask,
-            blobs: miyu_store::blob::Blobs::new(root.blobs(admin)),
+            blobs: miyu_store::blob::Blobs::new(root.blobs()),
             idle: None,
             max_wait: None,
             merge,

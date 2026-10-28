@@ -18,17 +18,17 @@ fn skill(name: &str, metadata: &[&str]) -> String {
 
 /// 写好三种来处的技能：家目录里的 `notes`、盖住出厂同名的 `package-creator`，管理员装的包 `kit` 带的 `kit-notes`。
 fn written(home: &Home) {
-    home.write("home/alice/skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
     home.write(
-        "home/alice/skills/package-creator/SKILL.md",
+        "skills/package-creator/SKILL.md",
         &skill("package-creator", &["  display_name: My packages"]),
     );
     home.write(
-        "system/packages/kit/package.toml",
+        "packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
     home.write(
-        "system/packages/kit/skills/kit-notes/SKILL.md",
+        "packages/kit/skills/kit-notes/SKILL.md",
         &skill(
             "kit-notes",
             &[
@@ -42,10 +42,7 @@ fn written(home: &Home) {
 
 /// 照个人设置的语言 `language` 起一份核心（系统的家目录当是数据根），列一次。
 async fn listed(home: &Home, language: &str) -> Vec<Value> {
-    home.write(
-        "system/config.toml",
-        &format!("[ui]\nlanguage = \"{language}\"\n"),
-    );
+    home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);
     let mut client = Client::connect(core);
     client.hello().await;
@@ -87,7 +84,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
 
     assert_eq!(
         named(&skills, "notes"),
-        &json!({"name": "notes", "from": "home", "path": "~/home/alice/skills/notes/SKILL.md", "on": true}),
+        &json!({"name": "notes", "from": "home", "path": "~/skills/notes/SKILL.md", "on": true}),
         "自己放的：没有包，没写给人看的两格的不带"
     );
     let mine = named(&skills, "package-creator");
@@ -121,7 +118,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
             "package": "kit",
             "display_name": "キットメモ",
             "summary": "只有中文的说明",
-            "path": "~/system/packages/kit/skills/kit-notes/SKILL.md",
+            "path": "~/packages/kit/skills/kit-notes/SKILL.md",
             "on": true,
         }),
         "装的包带的：照日文挑，没写日文、英文的说明照中文"
@@ -151,10 +148,10 @@ async fn names_follow_the_connection_language() {
 async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
     let home = Home::new();
     home.write(
-        "home/alice/skills/pdf-main/SKILL.md",
+        "skills/pdf-main/SKILL.md",
         "---\nname: pdf\ndescription: Use this skill when: the user mentions PDFs.\n---\nBody.\n",
     );
-    home.write("home/alice/skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
     let skills = listed(&home, "zh").await;
     let pdf = named(&skills, "pdf");
     let codes: Vec<&str> = pdf["warnings"]
@@ -198,7 +195,7 @@ async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
 #[tokio::test]
 async fn skills_in_the_shared_agents_folder_say_where_they_come_from() {
     let home = Home::new().with_shared_skills();
-    home.write("home/alice/skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
     for name in ["notes", "pdf"] {
         let file = home
             .work

@@ -94,7 +94,7 @@ async fn built_in(client: &mut Client, id: &str) -> Value {
 #[tokio::test]
 async fn the_local_model_follows_install_upgrade_and_removal() {
     let home = Home::new();
-    home.write("system/config.toml", "");
+    home.write("config.toml", "");
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         &alice(),

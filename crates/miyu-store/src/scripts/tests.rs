@@ -13,7 +13,6 @@ struct Places {
     scratch: Scratch,
     root: DataRoot,
     resources: ResourceRoot,
-    admin: AccountId,
 }
 
 impl Places {
@@ -31,7 +30,6 @@ impl Places {
         Places {
             resources: ResourceRoot::at(scratch.path().join("res")),
             root: DataRoot::locate(&env).unwrap(),
-            admin: AccountId::parse("admin").unwrap(),
             scratch,
         }
     }
@@ -43,8 +41,8 @@ impl Places {
     }
 
     fn found(&self) -> (Vec<Script>, Vec<Skipped>) {
-        let packages = Packages::new(&self.resources, &self.root, &self.admin).read();
-        find(&packages, &self.root, &self.admin)
+        let packages = Packages::new(&self.resources, &self.root).read();
+        find(&packages, &self.root)
     }
 }
 
@@ -67,15 +65,12 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
         "res/packages/tools/scripts/shared.sh",
         &script("From the package."),
     );
-    places.write("data/home/admin/scripts/shared", &script("My own."));
-    places.write("data/home/admin/scripts/notes", &script("Mine."));
-    places.write("data/home/admin/scripts/.hidden", &script("No."));
-    places.write("data/home/admin/scripts/nested/inner", &script("No."));
-    places.write(
-        "data/home/admin/scripts/broken",
-        b"#!/bin/sh\necho no header\n",
-    );
-    places.write("data/home/admin/scripts/binary", &[0xff, 0xfe, 0x00]);
+    places.write("data/scripts/shared", &script("My own."));
+    places.write("data/scripts/notes", &script("Mine."));
+    places.write("data/scripts/.hidden", &script("No."));
+    places.write("data/scripts/nested/inner", &script("No."));
+    places.write("data/scripts/broken", b"#!/bin/sh\necho no header\n");
+    places.write("data/scripts/binary", &[0xff, 0xfe, 0x00]);
     places.write("res/packages/bad/package.toml", b"[package\n");
     places.write("res/packages/bad/scripts/lost", &script("No."));
     let (scripts, skipped) = places.found();
@@ -128,7 +123,7 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
     );
     // 被谁盖住（施工 X-13 中）：自己放的那一份；别的跳过的没有。
     let by = skipped[2].by.as_ref().expect("同名的记了被谁盖住");
-    assert!(by.ends_with("data/home/admin/scripts/shared"), "{by:?}");
+    assert!(by.ends_with("data/scripts/shared"), "{by:?}");
     assert!(skipped[..2].iter().all(|one| one.by.is_none()));
 }
 
@@ -145,12 +140,9 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
         "res/packages/z-tools/scripts/weather.sh",
         &script("Shipped."),
     );
+    places.write("data/packages/a-kit/package.toml", &manifest("a-kit"));
     places.write(
-        "data/system/packages/a-kit/package.toml",
-        &manifest("a-kit"),
-    );
-    places.write(
-        "data/system/packages/a-kit/scripts/weather.sh",
+        "data/packages/a-kit/scripts/weather.sh",
         &script("Installed."),
     );
     let (scripts, skipped) = places.found();
@@ -160,7 +152,7 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     assert!(
         skipped[0]
             .path
-            .ends_with("system/packages/a-kit/scripts/weather.sh")
+            .ends_with("packages/a-kit/scripts/weather.sh")
     );
 }
 
@@ -198,7 +190,7 @@ fn a_linked_script_is_read_through_and_kept_as_the_link() {
     let places = Places::new();
     places.write("elsewhere/weather.py", &script("Weather."));
     places.write("elsewhere/sub/inner.sh", &script("Inner."));
-    let own = own_dir(&places.root, &places.admin);
+    let own = own_dir(&places.root);
     fs::create_dir_all(&own).unwrap();
     let (weather, gone) = (own.join("weather.py"), own.join("gone.py"));
     if !(link(
@@ -225,37 +217,30 @@ fn a_linked_script_is_read_through_and_kept_as_the_link() {
     assert!(skipped[0].why.starts_with("broken link: "), "{skipped:?}");
 }
 
-/// 状态目录（施工 X-44）：照账号、来处、工具名分，在数据根的 `state/scripts/` 下面。
+/// 状态目录（施工 X-44）：照来处、工具名分，在数据根的 `state/scripts/` 下面。
 #[test]
-fn a_scripts_state_lives_under_its_account_source_and_name() {
+fn a_scripts_state_lives_under_its_source_and_name() {
     let root = Path::new("/data");
-    let alice = AccountId::parse("alice").expect("合写法");
     assert_eq!(state_root(root), Path::new("/data/state/scripts"));
     assert_eq!(
-        state_dir(root, &alice, None, HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/state/scripts/alice/~home/dice"))
+        state_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/state/scripts/~home/dice"))
     );
     assert_eq!(
-        state_dir(root, &alice, None, "bilibili", "live").as_deref(),
-        Some(Path::new("/data/state/scripts/alice/bilibili/live"))
+        state_dir(root, None, "bilibili", "live").as_deref(),
+        Some(Path::new("/data/state/scripts/bilibili/live"))
     );
 }
 
-/// 列出各账号的状态目录、卸包时删一个来处的（施工 X-44）：照路径排；不是文件夹的不算；删一个来处只删它，别的来处、别的账号的
-/// 同名来处都删、没有的不算错。
+/// 列出状态目录、卸包时删一个来处的（施工 X-44）：照路径排；不是文件夹的不算；删一个来处只删它，别的来处不动，没有的不算错。
 #[test]
 fn states_are_listed_and_one_source_is_forgotten_everywhere() {
     let scratch = Scratch::new();
     let root = scratch.path();
-    for dir in [
-        "alice/~home/dice",
-        "alice/kit/live",
-        "bot/kit/watch",
-        "bot/other/x",
-    ] {
+    for dir in ["~home/dice", "kit/live", "kit/watch", "other/x"] {
         fs::create_dir_all(state_root(root).join(dir)).expect("建得了");
     }
-    fs::write(state_root(root).join("alice/kit/stray"), "x").expect("写得进");
+    fs::write(state_root(root).join("kit/stray"), "x").expect("写得进");
     let listed: Vec<(String, String)> = states(root)
         .into_iter()
         .map(|state| (state.source, state.tool))
@@ -265,19 +250,16 @@ fn states_are_listed_and_one_source_is_forgotten_everywhere() {
         listed,
         [
             pair("kit", "live"),
-            pair("~home", "dice"),
             pair("kit", "watch"),
             pair("other", "x"),
+            pair("~home", "dice"),
         ]
     );
-    assert_eq!(
-        states(root)[0].path,
-        state_root(root).join("alice/kit/live")
-    );
+    assert_eq!(states(root)[0].path, state_root(root).join("kit/live"));
     forget_states(root, "kit").expect("删得掉");
     forget_states(root, "nothing").expect("没有的不算错");
     let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
-    assert_eq!(left, ["dice", "x"]);
+    assert_eq!(left, ["x", "dice"]);
     assert!(states(&root.join("missing")).is_empty());
 }
 
@@ -311,21 +293,17 @@ fn a_venue_turns_into_a_folder_name_and_back() {
 #[test]
 fn a_venue_session_gets_its_own_state_folder() {
     let root = Path::new("/data");
-    let alice = AccountId::parse("alice").expect("合写法");
-    let bot = AccountId::parse("bridge").expect("合写法");
     assert_eq!(
-        state_dir(root, &alice, Some(&venue("local")), HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/state/scripts/alice/~home/dice")),
+        state_dir(root, Some(&venue("local")), HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/state/scripts/~home/dice")),
         "本机的会话照旧"
     );
     assert_eq!(
-        state_dir(root, &bot, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
-        Some(Path::new(
-            "/data/state/scripts/bridge/@qq_3agroup_3a1/kit/live"
-        ))
+        state_dir(root, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
+        Some(Path::new("/data/state/scripts/@qq_3agroup_3a1/kit/live"))
     );
     assert_eq!(
-        state_dir(root, &bot, Some(&venue(&"Z".repeat(128))), "kit", "live"),
+        state_dir(root, Some(&venue(&"Z".repeat(128))), "kit", "live"),
         None
     );
 }
@@ -336,10 +314,10 @@ fn states_under_a_venue_are_listed_and_forgotten_too() {
     let scratch = Scratch::new();
     let root = scratch.path();
     for dir in [
-        "bridge/@qq_3agroup_3a1/kit/live",
-        "bridge/@qq_3agroup_3a2/kit/live",
-        "bridge/@qq_3agroup_3a2/other/x",
-        "alice/kit/live",
+        "@qq_3agroup_3a1/kit/live",
+        "@qq_3agroup_3a2/kit/live",
+        "@qq_3agroup_3a2/other/x",
+        "kit/live",
     ] {
         fs::create_dir_all(state_root(root).join(dir)).expect("建得了");
     }
@@ -347,35 +325,31 @@ fn states_under_a_venue_are_listed_and_forgotten_too() {
         .into_iter()
         .map(|state| format!("{}/{}", state.source, state.tool))
         .collect();
-    assert_eq!(listed, ["kit/live", "kit/live", "kit/live", "other/x"]);
+    assert_eq!(listed, ["kit/live", "kit/live", "other/x", "kit/live"]);
     forget_states(root, "kit").expect("删得掉");
     let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
     assert_eq!(left, ["x"]);
 }
 
-/// 脚本的缓存目录（施工 Y-11 上）：家目录的 `cache/<来处>/<工具名>/`，场所会话多一层场所；场所写不成目录名的没有。
+/// 脚本的缓存目录（施工 Y-11 上）：`cache/<来处>/<工具名>/`，场所会话多一层场所；场所写不成目录名的没有。
 #[test]
 fn a_script_s_cache_lives_in_the_home_split_like_its_state() {
     let root = Path::new("/data");
-    let alice = AccountId::parse("alice").expect("合写法");
-    let bot = AccountId::parse("bridge").expect("合写法");
     assert_eq!(
-        cache_dir(root, &alice, None, HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/home/alice/cache/~home/dice"))
+        cache_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
+        Some(Path::new("/data/cache/~home/dice"))
     );
     assert_eq!(
-        cache_dir(root, &alice, Some(&venue("local")), "kit", "live").as_deref(),
-        Some(Path::new("/data/home/alice/cache/kit/live")),
+        cache_dir(root, Some(&venue("local")), "kit", "live").as_deref(),
+        Some(Path::new("/data/cache/kit/live")),
         "本机的会话不分场所"
     );
     assert_eq!(
-        cache_dir(root, &bot, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
-        Some(Path::new(
-            "/data/home/bridge/cache/@qq_3agroup_3a1/kit/live"
-        ))
+        cache_dir(root, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
+        Some(Path::new("/data/cache/@qq_3agroup_3a1/kit/live"))
     );
     assert_eq!(
-        cache_dir(root, &bot, Some(&venue(&"Z".repeat(128))), "kit", "live"),
+        cache_dir(root, Some(&venue(&"Z".repeat(128))), "kit", "live"),
         None
     );
 }

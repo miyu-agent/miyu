@@ -65,7 +65,7 @@ impl Builtins for Kit {
 /// 照起来时那样造核心：清单里装着 `xkit`，编进来的内置包有它和出厂的几个。
 fn core(home: &Home, script: &Script) -> Arc<Core> {
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let found = miyu_endpoint::packages::load(&resources, &home.root);
     let groups = Kit.tools(&found).expect("拼得出");
     let catalog = Catalog::in_packages(
         groups
@@ -129,7 +129,7 @@ async fn ping(client: &mut Client) -> Value {
 #[tokio::test]
 async fn a_removed_builtin_leaves_old_sessions_saying_uninstalled_and_comes_back() {
     let home = Home::new();
-    home.write("system/packages/xkit/package.toml", XKIT);
+    home.write("packages/xkit/package.toml", XKIT);
     let script = Script::new([
         Play::Says("在。"),
         Play::calls(&[("xprobe", "{}")]),

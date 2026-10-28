@@ -209,8 +209,7 @@ async fn answered_with(stores: Stores, owner: &str, blocks: Vec<Block>) -> miyu_
 #[tokio::test]
 async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
     let (place, dir) = stores();
-    let admin = AccountId::parse("admin").expect("合写法");
-    let blob = miyu_store::blob::Blobs::new(place.root.blobs(&admin))
+    let blob = miyu_store::blob::Blobs::new(place.root.blobs())
         .put(b"not really a png")
         .expect("存得进");
     let done = answered_with(place, "admin", vec![image(blob.clone())]).await;
@@ -303,13 +302,7 @@ async fn a_call_carries_where_the_owner_s_pictures_go() {
     let real = std::fs::canonicalize(&data).expect("在");
     assert_eq!(
         sent["params"]["pictures"],
-        json!(
-            real.join("home")
-                .join("bob")
-                .join("pictures")
-                .display()
-                .to_string()
-        )
+        json!(real.join("pictures").display().to_string())
     );
     let (without, _) = sent_for(None).await;
     assert!(without["params"].get("pictures").is_none(), "{without}");

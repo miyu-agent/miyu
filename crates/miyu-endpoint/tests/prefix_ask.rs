@@ -16,7 +16,7 @@ use crate::prompt_override::latest_system;
 use crate::support::*;
 
 /// 改的那一份覆盖。
-const RULE: &str = "home/alice/prompts/core/local-paths-rule.txt";
+const RULE: &str = "prompts/core/local-paths-rule.txt";
 
 /// 握手：令牌对，中文，能输入，会问「前缀要变」。
 async fn hello_asking(client: &mut Client) -> Value {
@@ -56,8 +56,8 @@ fn reason(reply: &Value) -> &str {
 #[tokio::test]
 async fn an_edited_prefix_is_asked_before_the_next_turn() {
     let home = Home::new();
-    std::fs::create_dir_all(home.root.path().join("home/alice/prompts/core")).expect("建得了");
-    home.write("home/alice/commands/review.md", "Review $ARGUMENTS.\n");
+    std::fs::create_dir_all(home.root.path().join("prompts/core")).expect("建得了");
+    home.write("commands/review.md", "Review $ARGUMENTS.\n");
     let script = Script::new([
         Play::Says("一。"),
         Play::Says("二。"),
@@ -191,7 +191,7 @@ async fn an_edited_prefix_is_asked_before_the_next_turn() {
 #[tokio::test]
 async fn a_goal_is_set_once_the_change_is_let_through() {
     let home = Home::new();
-    std::fs::create_dir_all(home.root.path().join("home/alice/prompts/core")).expect("建得了");
+    std::fs::create_dir_all(home.root.path().join("prompts/core")).expect("建得了");
     let script = Script::new([Play::Says("一。"), Play::Says("做完了。")]);
     let core = home.core_with_tools(&script, goal_tools(), TOKEN);
     let mut asking = Client::connect(Arc::clone(&core));
@@ -224,7 +224,7 @@ async fn a_goal_is_set_once_the_change_is_let_through() {
 #[tokio::test]
 async fn an_edited_skill_does_not_ask_because_the_prefix_stays() {
     let home = Home::new();
-    const SKILL: &str = "home/alice/skills/notes/SKILL.md";
+    const SKILL: &str = "skills/notes/SKILL.md";
     home.write(
         SKILL,
         "---\nname: notes\ndescription: Take notes.\n---\nWrite them down.\n",
@@ -275,7 +275,7 @@ async fn an_override_in_a_new_folder_is_asked_too() {
     let first = asking.say("s1", &session, "在吗").await;
     assert_eq!(reason(&first), "ok", "{first}");
     home.until_turns(&session, 1).await;
-    assert!(!home.root.path().join("home/alice/prompts/core").exists());
+    assert!(!home.root.path().join("prompts/core").exists());
 
     edit(&home, &core, "Mine about local paths.\n").await;
     let refused = asking.say("s2", &session, "好").await;

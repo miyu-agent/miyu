@@ -11,7 +11,7 @@ use miyu_store::root::DataRoot;
 use crate::support::*;
 
 fn kb(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.account_dir(&admin()).join("kb").join(id);
+    let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     dir
 }
@@ -67,15 +67,13 @@ fn a_pdf_is_searched_and_read_page_by_page() {
         Some(3),
         "部首补充那一段也换"
     );
-    let page = knowledge
-        .read(&admin(), "notes", "cat.pdf", 2)
-        .expect("读得到");
+    let page = knowledge.read("notes", "cat.pdf", 2).expect("读得到");
     assert_eq!(
         (page.text.as_str(), page.page, page.pages),
         ("Vaccines are given every October.", 2, 3)
     );
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "cat.pdf", 4),
+        knowledge.read("notes", "cat.pdf", 4),
         Err(KnowledgeError::BadPage)
     ));
 }
@@ -103,7 +101,7 @@ fn a_pdf_without_text_and_a_broken_one_are_skipped() {
     assert!(big.why.starts_with("unreadable PDF"), "{}", big.why);
     assert!(
         matches!(
-            knowledge.read(&admin(), "notes", "broken.pdf", 1),
+            knowledge.read("notes", "broken.pdf", 1),
             Err(KnowledgeError::Io(_))
         ),
         "读不了的照实说"
@@ -132,9 +130,7 @@ fn a_web_page_is_searched_by_heading_and_read_as_text() {
     assert!(found(&knowledge, "hidden").is_empty(), "脚本里的不算");
     assert!(found(&knowledge, "color").is_empty(), "样式里的不算");
     assert_eq!(found(&knowledge, "旧的网页")[0].0, "old.htm");
-    let page = knowledge
-        .read(&admin(), "notes", "cat.html", 1)
-        .expect("读得到");
+    let page = knowledge.read("notes", "cat.html", 1).expect("读得到");
     assert_eq!(
         page.text,
         "# 猫\n\n团子是橘猫，[链接]。\n\n## 疫苗\n\n每年十月打针。\n"
@@ -152,20 +148,20 @@ fn only_text_documents_are_written_but_any_can_be_trashed() {
     for path in ["cat.pdf", "new.pdf", "cat.html", "new.htm"] {
         assert!(
             matches!(
-                knowledge.save(&admin(), "notes", path, "x", true),
+                knowledge.save("notes", path, "x", true),
                 Err(KnowledgeError::NotText)
             ),
             "{path}"
         );
     }
     assert!(matches!(
-        knowledge.edit(&admin(), "notes", "cat.html", "团子", "小橘"),
+        knowledge.edit("notes", "cat.html", "团子", "小橘"),
         Err(KnowledgeError::NotText)
     ));
     assert!(!dir.join("new.pdf").exists() && !dir.join("new.htm").exists());
     let home = scratch.0.join("home");
     std::fs::create_dir_all(&home).expect("建得了");
-    match knowledge.trash(&admin(), "notes", "cat.pdf", Some(&home)) {
+    match knowledge.trash("notes", "cat.pdf", Some(&home)) {
         Ok(_) => assert!(!dir.join("cat.pdf").exists(), "挪走了"),
         // 有的机器上临时目录那块盘没有能放的回收站：照实报。
         Err(KnowledgeError::Trash(_)) => {}
@@ -190,7 +186,7 @@ fn without_the_extractor_pdfs_and_web_pages_are_skipped() {
         "{skipped:?}"
     );
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "cat.pdf", 1),
+        knowledge.read("notes", "cat.pdf", 1),
         Err(KnowledgeError::Io(_))
     ));
 }

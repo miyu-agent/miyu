@@ -15,7 +15,6 @@ use serde_json::json;
 
 use miyu_config::package::{Manifest, PackageKind};
 use miyu_ipc::connect_or_start;
-use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
 use miyu_store::packages::{Found, Launch, Packages};
 use miyu_store::resources::ResourceRoot;
@@ -36,7 +35,7 @@ pub enum Opened {
 }
 
 /// 打开 `ui.head` 指的界面，要的是 `page` 那一页（没有的是它的默认页）。管理员是 `admin`，拉起核心用 `start`。
-pub fn open(page: Option<&str>, admin: &AccountId, start: impl FnOnce() -> Command) -> Opened {
+pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -58,7 +57,7 @@ pub fn open(page: Option<&str>, admin: &AccountId, start: impl FnOnce() -> Comma
         }
     };
     let found = match (DataRoot::locate(&env), ResourceRoot::locate(&env)) {
-        (Ok(root), Ok(resources)) => Packages::new(&resources, &root, admin).read(),
+        (Ok(root), Ok(resources)) => Packages::new(&resources, &root).read(),
         _ => Vec::new(),
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));

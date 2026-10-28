@@ -28,7 +28,7 @@ opens = ["config"]
 
 /// 管理员（测试里是 alice）家目录里的一份清单。
 fn mine(home: &Home, id: &str, text: &str) {
-    home.write(&format!("system/packages/{id}/package.toml"), text);
+    home.write(&format!("packages/{id}/package.toml"), text);
 }
 
 /// 只留这几个编号的，照列出的先后。
@@ -229,7 +229,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
     );
     mine(&home, "term", TERM);
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
     miyu_endpoint::packages::compiled(
         &mut found,
         &["shell", "memory", "mermaid", "net", "roleplay"],
@@ -354,7 +354,7 @@ async fn check_reads_the_manifests_from_disk() {
         packages,
         [&json!({
             "kind": "package",
-            "file": "system/packages/bad/package.toml",
+            "file": "packages/bad/package.toml",
             "code": "two_programs",
             "level": "error",
             "line": 5,
@@ -362,12 +362,12 @@ async fn check_reads_the_manifests_from_disk() {
         })],
         "{reply}"
     );
-    let file = home.root.path().join("system/packages/term/package.toml");
+    let file = home.root.path().join("packages/term/package.toml");
     let reply = client
         .call("c2", "check", json!({"file": file.to_string_lossy()}))
         .await;
     assert_eq!(reply["result"], json!({"problems": []}), "{reply}");
-    let file = home.root.path().join("system/packages/bad/package.toml");
+    let file = home.root.path().join("packages/bad/package.toml");
     let reply = client
         .call("c3", "check", json!({"file": file.to_string_lossy()}))
         .await;
@@ -377,41 +377,13 @@ async fn check_reads_the_manifests_from_disk() {
     );
     // 包目录里别的文件、以前那种放在 `packages/` 下的 `<编号>.toml` 都不是清单（施工 F-8 上）。
     for stray in ["term/notes.toml", "old.toml"] {
-        home.write(&format!("system/packages/{stray}"), "x");
-        let file = home.root.path().join("system/packages").join(stray);
+        home.write(&format!("packages/{stray}"), "x");
+        let file = home.root.path().join("packages").join(stray);
         let reply = client
             .call("c4", "check", json!({"file": file.to_string_lossy()}))
             .await;
         assert_eq!(reason(&reply), Some("unknown_file"), "{stray}: {reply}");
     }
-}
-
-/// 家目录里以前的写法（`<编号>.toml` 加同名目录，施工 F-8 上，设计 `31-软件包.md` 第七节第 2 条）：读清单时挪成一个文件夹一个包，
-/// 照样读得成，包自己的文件照旧在。
-#[test]
-fn an_old_layout_in_the_home_is_moved_when_read() {
-    let home = Home::new();
-    // 施工 F-8 上补以前的清单还写着 `kind`：挪的同时改成照表认的。
-    home.write(
-        "system/packages/term.toml",
-        &TERM.replace("[package]\n", "[package]\nkind = \"ui\"\n"),
-    );
-    home.write("system/packages/term/page/index.html", "<p>");
-    let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
-    assert!(
-        found.iter().any(|one| one.id == "term" && one.read.is_ok()),
-        "挪了照样读得成"
-    );
-    let dir = home.root.path().join("system/packages");
-    assert!(dir.join("term/package.toml").is_file());
-    assert!(!dir.join("term.toml").exists());
-    assert!(
-        dir.join("term/page/index.html").is_file(),
-        "包自己的文件照旧在"
-    );
-    let text = std::fs::read_to_string(dir.join("term/package.toml")).expect("在");
-    assert!(!text.contains("kind"), "{text}");
 }
 
 /// 只带 MCP 服务的包（施工 X-2）：种类是 `bundle`，不说协议；一个服务一个功能 `mcp-<服务名>`，名字是服务名；`mcp` 列出名字、

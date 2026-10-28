@@ -226,12 +226,12 @@ impl RemoteTool {
     /// 没有引用的、不知道是哪个会话的（测试里的假调用）原样交回；不在的记一行，照暂时不可用。
     async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
         let hashes = referenced(&done);
-        let Some(owner) = owner.filter(|_| !hashes.is_empty()) else {
+        if owner.is_none() || hashes.is_empty() {
             return done;
-        };
+        }
         let root = self.stores.root.clone();
         let there = tokio::task::spawn_blocking(move || {
-            let blobs = miyu_store::blob::Blobs::new(root.blobs(&owner));
+            let blobs = miyu_store::blob::Blobs::new(root.blobs());
             hashes.iter().all(|hash| blobs.path(hash).is_file())
         })
         .await;
@@ -295,9 +295,9 @@ impl Tool for RemoteTool {
                 .caller
                 .as_ref()
                 .is_some_and(|caller| caller.venue.as_str() == crate::list::LOCAL);
-            if let (Some(root), Some(ids), true) = (call.data_root.as_deref(), ids, local) {
+            if let (Some(root), true, true) = (call.data_root.as_deref(), ids.is_some(), local) {
                 let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
-                let pictures = miyu_store::root::user_dir(&root, &ids.owner, "pictures");
+                let pictures = miyu_store::root::user_dir(&root, "pictures");
                 params["pictures"] = json!(pictures.display().to_string());
             }
             let mut cancel = Cancel {

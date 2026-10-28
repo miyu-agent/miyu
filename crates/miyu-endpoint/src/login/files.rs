@@ -17,7 +17,7 @@ use crate::refusal::Refusal;
 
 /// 读 `system/accounts.json`：坏了的当空的。
 pub(super) fn read_accounts(core: &Core) -> accounts::Read {
-    let path = core.root.system().join(accounts::FILE);
+    let path = core.root.path().join(accounts::FILE);
     accounts::read(&path).unwrap_or_else(|error| {
         tracing::warn!(target: TARGET, error = %error, "accounts not read");
         accounts::Read {
@@ -55,7 +55,7 @@ pub(super) fn put_password(core: &Core, hashed: String, now: Timestamp) -> Resul
         disabled: false,
         owner: true,
     });
-    let path = core.root.system().join(accounts::FILE);
+    let path = core.root.path().join(accounts::FILE);
     accounts::write(&path, &accounts, read.version.as_deref())
         .map_err(|error| not_written("accounts not written", &error))?;
     Ok(first)
@@ -121,14 +121,14 @@ pub(super) fn record(
     kind: &str,
     body: &impl Serialize,
 ) {
-    let path = core.config().places.system_journal.clone();
-    let shown = format!("system/{}", miyu_store::journal::FILE);
+    let path = core.config().places.journal.clone();
+    let shown = miyu_store::journal::FILE.to_string();
     crate::config::journal::record(&path, &shown, at, by(who), None, kind, body);
 }
 
 /// 主人的 `logins.json` 在哪。
 fn logins_path(core: &Core) -> std::path::PathBuf {
-    core.root.account_dir(&core.admin).join(logins::FILE)
+    core.root.path().join(logins::FILE)
 }
 
 /// 磁盘上现在那份的版本：坏了的文件写回时照它盖。没有的、读不了的是空的。

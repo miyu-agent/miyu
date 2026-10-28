@@ -81,7 +81,7 @@ fn hidden_places_cannot_be_read_listed_looked_at_written_or_run() {
 fn a_workspace_inside_the_hidden_data_root_is_usable() {
     let base = Dir::new();
     let data = real(base.path()).join("data");
-    let workspace = data.join("home/admin/workspace");
+    let workspace = data.join("workspace");
     fs::create_dir_all(&workspace).expect("建得了目录");
     let token = data.join("token");
     fs::write(&token, b"secret\n").expect("写得进");
@@ -109,7 +109,7 @@ fn a_revealed_folder_inside_the_hidden_data_root_is_read_only() {
     let base = Dir::new();
     let root = real(base.path());
     let data = root.join("data");
-    let skill = data.join("home/admin/skills/notes");
+    let skill = data.join("skills/notes");
     fs::create_dir_all(&skill).expect("建得了目录");
     let file = skill.join("SKILL.md");
     fs::write(&file, b"steps\n").expect("写得进");

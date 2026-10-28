@@ -57,7 +57,7 @@ async fn a_path_is_read_stored_and_told_apart_by_its_content() {
         line.contains(r#""result":{"blob":"#) && line.contains(r#""name":"shot.jpg","width":800}"#),
         "格照名字的字母先后排：{line}"
     );
-    let stored = Blobs::new(home.root.blobs(&alice()));
+    let stored = Blobs::new(home.root.blobs());
     assert_eq!(
         stored.get(&blob).expect("存下了"),
         picture,
@@ -179,7 +179,7 @@ async fn files_in_the_data_root_are_not_given_but_the_workspace_is() {
     assert_eq!(reason(&reply), Some("attachment_in_data_root"), "{reply}");
     assert_eq!(reply["error"]["message"], "不能附加数据目录里的文件。");
     // 管理员的工作区在数据根里，照边界表是能读能写的那一片：给。
-    let workspace = home.root.workspace(&alice());
+    let workspace = home.root.workspace();
     std::fs::create_dir_all(&workspace).unwrap();
     let mine = workspace.join("mine.txt");
     std::fs::write(&mine, b"mine").unwrap();
@@ -241,10 +241,7 @@ async fn params_that_do_not_fit_are_bad_params() {
         let reply = put(&mut client, "b1", params.clone()).await;
         assert_eq!(reason(&reply), Some("bad_params"), "{params}：{reply}");
     }
-    assert!(
-        std::fs::read_dir(home.root.blobs(&alice())).is_err(),
-        "一个都没存"
-    );
+    assert!(std::fs::read_dir(home.root.blobs()).is_err(), "一个都没存");
 }
 
 #[tokio::test]
@@ -299,8 +296,6 @@ async fn an_oversized_real_image_is_stored_scaled_down() {
     );
     assert_eq!(result["media_type"], "image/jpeg");
     let blob = ContentHash::parse(result["blob"].as_str().expect("有编号")).expect("合写法");
-    let stored = Blobs::new(home.root.blobs(&alice()))
-        .get(&blob)
-        .expect("存进去了");
+    let stored = Blobs::new(home.root.blobs()).get(&blob).expect("存进去了");
     assert_eq!(miyu_tool::picture::measure(&stored), Some((8000, 26)));
 }

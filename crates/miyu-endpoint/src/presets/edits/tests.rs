@@ -11,28 +11,25 @@ fn versions_and_changed_files_are_counted() {
     let edits = Edits::default();
     let alice = account("alice");
     assert_eq!(edits.version(&alice), 0);
-    edits.record(alice.clone(), "home/alice/prompts/core/a.txt".to_string());
-    edits.record(alice.clone(), "home/alice/presets/full.toml".to_string());
-    edits.record(alice.clone(), "home/alice/prompts/core/a.txt".to_string());
+    edits.record(alice.clone(), "prompts/core/a.txt".to_string());
+    edits.record(alice.clone(), "presets/full.toml".to_string());
+    edits.record(alice.clone(), "prompts/core/a.txt".to_string());
     assert_eq!(edits.version(&alice), 3);
     assert_eq!(
         edits.since(&alice, 0, 20),
         (
             vec![
-                "home/alice/prompts/core/a.txt".to_string(),
-                "home/alice/presets/full.toml".to_string()
+                "prompts/core/a.txt".to_string(),
+                "presets/full.toml".to_string()
             ],
             0
         ),
         "不重"
     );
-    assert_eq!(
-        edits.since(&alice, 2, 20).0,
-        ["home/alice/prompts/core/a.txt"]
-    );
+    assert_eq!(edits.since(&alice, 2, 20).0, ["prompts/core/a.txt"]);
     assert_eq!(
         edits.since(&alice, 0, 1),
-        (vec!["home/alice/prompts/core/a.txt".to_string()], 1),
+        (vec!["prompts/core/a.txt".to_string()], 1),
         "多的说还有几个"
     );
 }
@@ -42,7 +39,7 @@ fn old_changes_out_of_the_table_still_count() {
     let edits = Edits::default();
     let alice = account("alice");
     for n in 0..(KEPT + 5) {
-        edits.record(alice.clone(), format!("home/alice/tools/t{n}.toml"));
+        edits.record(alice.clone(), format!("tools/t{n}.toml"));
     }
     let (files, more) = edits.since(&alice, 0, 100);
     assert_eq!(files.len(), KEPT);

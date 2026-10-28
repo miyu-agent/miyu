@@ -120,7 +120,7 @@ async fn projects_are_created_listed_updated_and_deleted() {
         listed["result"]["projects"].as_array().map(Vec::len),
         Some(1)
     );
-    let file = home.root.account_dir(&alice()).join("projects.json");
+    let file = home.root.path().join("projects.json");
     let text = std::fs::read_to_string(&file).expect("存在家目录");
     assert!(text.contains(&bare) && !text.contains(&id), "{text}");
 }
@@ -163,7 +163,7 @@ async fn wrong_fields_are_refused_and_nothing_is_written() {
         let reply = client.call("c", "project.create", params.clone()).await;
         assert_eq!(refused(&reply), want, "{params}：{reply}");
     }
-    let file = home.root.account_dir(&alice()).join("projects.json");
+    let file = home.root.path().join("projects.json");
     assert!(!file.exists(), "拒了的什么都不写");
 
     let made = client

@@ -56,7 +56,7 @@ async fn results(home: &Home, script: &Script) -> Vec<String> {
 #[tokio::test]
 async fn a_pdf_is_found_by_page_read_by_page_and_never_written() {
     let home = Home::new();
-    let dir = home.root.account_dir(&alice_account()).join("kb/manuals");
+    let dir = home.root.path().join("kb/manuals");
     std::fs::create_dir_all(&dir).expect("建得了");
     assert!(
         extractor().is_some(),
@@ -97,11 +97,7 @@ async fn a_pdf_is_found_by_page_read_by_page_and_never_written() {
         ]
     );
     assert!(
-        !home
-            .root
-            .account_dir(&alice_account())
-            .join("kb/fresh")
-            .exists(),
+        !home.root.path().join("kb/fresh").exists(),
         "写不了的不建库"
     );
     assert_eq!(

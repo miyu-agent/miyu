@@ -72,7 +72,6 @@ impl SessionPort for Forks {
             let id = new_id(now());
             miyu_session::fork(Fork {
                 root: &self.root,
-                owner: &child.owner,
                 parent: &child.lineage.parent,
                 id: id.clone(),
                 cause: child.command.clone(),

@@ -103,7 +103,7 @@ async fn what_a_switched_off_extension_appends_goes_next_turn() {
 async fn a_switched_off_package_s_settings_are_not_shown_but_its_switch_is() {
     let home = Home::new();
     home.write(
-        "system/packages/kit/package.toml",
+        "packages/kit/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Kit\" }\n\n[ui]\n\n[settings.mode]\ntype = \"text\"\ndefault = \"x\"\nlayers = [\"system\"]\nname = { en = \"Mode\" }\n",
     );
     let core = crate::scripts::core(&home, &Script::new([]));
@@ -228,11 +228,11 @@ async fn menu(client: &mut Client) -> Vec<String> {
 async fn a_switched_off_package_s_commands_and_pages_are_gone() {
     let home = Home::new();
     home.write(
-        "system/packages/wx/package.toml",
+        "packages/wx/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Weather\" }\n\n[command]\nname = \"wx\"\nprogram = \"miyu-wx\"\nabout = { en = \"W\" }\n\n[process]\nstart = \"manual\"\ncapabilities = [\"commands\"]\n\n[[slash]]\nname = \"weather\"\nsummary = { en = \"Today's weather\" }\n",
     );
     home.write(
-        "system/packages/wk/package.toml",
+        "packages/wk/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Week\" }\n\n[command]\nname = \"wk\"\nprogram = \"miyu-wk\"\nabout = { en = \"W\" }\n\n[process]\nstart = \"always\"\ncapabilities = [\"widgets\"]\n\n[[widget]]\nid = \"week\"\nplace = \"page\"\ntitle = { en = \"This week\" }\ncommand = \"week\"\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));

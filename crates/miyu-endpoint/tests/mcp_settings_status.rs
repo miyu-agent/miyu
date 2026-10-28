@@ -19,14 +19,14 @@ async fn covered_services_are_marked_and_settings_servers_are_listed_and_restart
     bundle(&home, "kit", "probe", &[&record]);
     // 带两个服务、只被盖住一个的包：包那一项不带 `covered`。
     home.write(
-        "system/packages/pair/package.toml",
+        "packages/pair/package.toml",
         &format!(
             "[package]\nname = {{ en = \"pair\" }}\n\n[[mcp]]\nname = \"lone\"\ncommand = ['{SERVER}']\n\n[[mcp]]\nname = \"spare\"\ncommand = ['{SERVER}']\n"
         ),
     );
     let (ours, record) = recording(&home, "settings");
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("{}\n[mcp.lone]\ncommand = ['{SERVER}']\n", mine(&record)),
     );
     let core = configured(&home, &Script::new([]));
@@ -81,8 +81,8 @@ async fn covered_services_are_marked_and_settings_servers_are_listed_and_restart
 #[tokio::test]
 async fn subscribers_hear_mcp_changed_and_never_a_home_package() {
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
-    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.root.prepare_workspace().expect("建得了家目录");
+    home.write("config.toml", "[ui]\nlanguage = \"zh\"\n");
     let core = configured(&home, &Script::new([]));
     let _watching = core.watch_config().expect("监视得了");
     core.start_extensions();
@@ -96,7 +96,7 @@ async fn subscribers_hear_mcp_changed_and_never_a_home_package() {
 
     let (_, record) = recording(&home, "settings");
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[ui]\nlanguage = \"zh\"\n\n{}", mine(&record)),
     );
     let running = until_mcp(&mut watcher, |params| {
@@ -104,7 +104,7 @@ async fn subscribers_hear_mcp_changed_and_never_a_home_package() {
     })
     .await;
     assert_eq!(running["name"], "probe", "{running}");
-    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.write("config.toml", "[ui]\nlanguage = \"zh\"\n");
     let gone = until_mcp(&mut watcher, |params| params["server"].is_null()).await;
     assert_eq!(gone["name"], "probe", "删掉的推 null：{gone}");
     core.stop_extensions().await;

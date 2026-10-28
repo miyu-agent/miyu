@@ -13,19 +13,13 @@ pub(crate) fn confined(core: &Core, owner: &AccountId) -> bool {
 
 /// 会话 `id`（属主 `owner`）关没关着（施工 SU-4 中）：照日志第一条 `session.created` 的 `confined`；以前的日志没这一格，属主不是
 /// 主人的算关着。读不了的算关着。
-pub(crate) async fn confined_of(core: &Core, owner: &AccountId, id: &SessionId) -> bool {
-    placed(core, owner, id)
-        .await
-        .is_none_or(|(_, confined)| confined)
+pub(crate) async fn confined_of(core: &Core, id: &SessionId) -> bool {
+    placed(core, id).await.is_none_or(|(_, confined)| confined)
 }
 
 /// 会话 `id`（属主 `owner`）的场所、关没关着（同 [`confined_of`]）：照日志第一条读，读不了的没有。
-pub(crate) async fn placed(
-    core: &Core,
-    owner: &AccountId,
-    id: &SessionId,
-) -> Option<(VenueId, bool)> {
-    let dir = core.root.session_dir(owner, id);
+pub(crate) async fn placed(core: &Core, id: &SessionId) -> Option<(VenueId, bool)> {
+    let dir = core.root.session_dir(id);
     let first = tokio::task::spawn_blocking(move || first_event(&dir)).await;
     match first {
         Ok(Ok(event)) => match event.body {

@@ -16,12 +16,12 @@ use miyu_store::log::read_events;
 use miyu_tool::testkit::Renamed;
 use miyu_tool::{Catalog, Tool};
 
-use super::{Client, Home, alice, default_resources};
+use super::{Client, Home, default_resources};
 
 /// 回收处里会话 `session` 的目录。
 pub fn trashed(home: &Home, session: &str) -> PathBuf {
     home.root
-        .account_dir(&alice())
+        .path()
         .join("trash")
         .join("sessions")
         .join(session)
@@ -30,7 +30,7 @@ pub fn trashed(home: &Home, session: &str) -> PathBuf {
 /// 会话目录还在不在原处。
 pub fn in_place(home: &Home, session: &str) -> bool {
     let id = SessionId::parse(session).expect("合写法");
-    home.root.session_dir(&alice(), &id).exists()
+    home.root.session_dir(&id).exists()
 }
 
 /// 回收处里那一份的日志。

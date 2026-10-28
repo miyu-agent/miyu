@@ -35,7 +35,7 @@ pub fn remote_with(
     tools: Catalog,
 ) -> Arc<miyu_endpoint::Core> {
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[persona]\ndefault = \"engineer\"\n\n[providers.emb]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\nkey = {{ env = \"EMB_KEY\" }}\n\n[models]\nembedding = \"emb/text-emb\"\n",
             server.base_url

@@ -1,5 +1,5 @@
 //! 终端会话（施工 8-33，设计 `22-命令行.md` 第七节，2026-10-20 项目主人定）：在 shell 里说的话进的那个一直续下去的会话。
-//! 指针按账号记在 `home/<账号>/terminal.json`（`miyu_store::terminal`）。哪个算、什么时候换新的由核心定，不在头：头去建
+//! 指针按账号记在 `terminal.json`（`miyu_store::terminal`）。哪个算、什么时候换新的由核心定，不在头：头去建
 //! 会话、定规则，是向上依赖。
 //!
 //! - `session.terminal {cwd?, fresh?}`：交回终端会话。指着的还在、是这个账号自己的本机主会话，就是它；闲置超过
@@ -75,7 +75,7 @@ pub(crate) async fn get(
         return Err(Refusal::BAD_PARAMS);
     }
     let _one = core.terminal.lock().await;
-    let path = core.root.account_dir(account).join(terminal::FILE);
+    let path = core.root.path().join(terminal::FILE);
     let (mut pointers, version) = read(&path)?;
     let pointer = current(&pointers, key.as_deref());
     let settings = TerminalSettings::from(&core.mine(account).config().resolved().values());
@@ -148,7 +148,7 @@ pub(crate) async fn set(
         return Err(Refusal::NOT_FOUND);
     }
     let _one = core.terminal.lock().await;
-    let path = core.root.account_dir(account).join(terminal::FILE);
+    let path = core.root.path().join(terminal::FILE);
     let (mut pointers, version) = read(&path)?;
     let pointer = Pointer {
         session: Some(id.as_str().to_string()),

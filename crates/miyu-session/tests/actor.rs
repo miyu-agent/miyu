@@ -4,8 +4,7 @@
 use std::time::{Duration, Instant};
 
 use crate::support::{
-    Home, alice_account, ask, id, kinds, say, stop, until_delta, until_logged, until_turn_ends,
-    watch, within,
+    Home, ask, id, kinds, say, stop, until_delta, until_logged, until_turn_ends, watch, within,
 };
 use miyu_kernel::event::{Body, EndReason, ErrorClass, Event, TransientBody};
 use miyu_kernel::id::Seq;
@@ -35,7 +34,7 @@ async fn creating_stores_the_snapshot_and_the_first_event() {
         panic!("第 1 条应该是造会话：{:?}", log[0]);
     };
     // 先落 blob，再写引用它的事件：它记的哈希取得出快照。
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let bytes = blobs.get(&created.policy).expect("快照在 blob 里");
     let snapshot = Snapshot::from_bytes(&bytes).expect("读得懂");
     assert_eq!(snapshot.persona.as_deref(), Some("engineer"));
@@ -301,10 +300,7 @@ async fn a_loaded_session_never_goes_back_in_time() {
     stop(&handle).await;
     // 磁盘上的时刻挪到 2100 年：像是系统时间在两次运行之间往回拨了。
     let later = Timestamp::parse("2100-01-01T00:00:00.000Z").expect("时刻合写法");
-    let segment = home
-        .root
-        .session_dir(&alice_account(), &session)
-        .join("000000000001.jsonl");
+    let segment = home.root.session_dir(&session).join("000000000001.jsonl");
     let text = std::fs::read_to_string(&segment).expect("读得了第一段");
     let moved: String = text
         .lines()

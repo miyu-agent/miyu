@@ -146,7 +146,7 @@ fn accepted(cwd: &Path) -> Value {
 #[test]
 fn a_directory_too_wide_is_said_once() {
     let sep = MAIN_SEPARATOR;
-    let used = under(&["home", ".miyu", "home", "admin", "workspace"]);
+    let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
         ..plan(Format::Text, Language::Chinese)
@@ -159,7 +159,7 @@ fn a_directory_too_wide_is_said_once() {
     assert_eq!(
         screen,
         format!(
-            "· 目录太宽（~），这次在 ~{sep}.miyu{sep}home{sep}admin{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
+            "· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
         ),
         "说一次，在最前面；后面的思考是一段，前后空一行"
     );
@@ -183,7 +183,7 @@ fn a_directory_too_wide_is_said_once() {
 #[test]
 fn paths_are_written_short_against_where_she_really_works() {
     // 退回了账号的工作区：她读那里面的文件，路径照实际干活的目录写相对的，不照敲命令时的目录。
-    let used = under(&["home", ".miyu", "home", "admin", "workspace"]);
+    let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
         ..plan(Format::Text, Language::Chinese)
@@ -206,7 +206,7 @@ fn paths_are_written_short_against_where_she_really_works() {
 #[test]
 fn an_unusable_sandbox_is_said_first_and_right_before_the_directory() {
     let sep = MAIN_SEPARATOR;
-    let used = under(&["home", ".miyu", "home", "admin", "workspace"]);
+    let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
         ..plan(Format::Text, Language::Chinese)
@@ -219,7 +219,7 @@ fn an_unusable_sandbox_is_said_first_and_right_before_the_directory() {
     assert_eq!(
         screen,
         format!(
-            "· 沙盒用不了（主程序旁边没有 miyu-sandbox：重装一次 Miyu）：执行命令要你确认，miyu ask 里确认不了\n· 目录太宽（~），这次在 ~{sep}.miyu{sep}home{sep}admin{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
+            "· 沙盒用不了（主程序旁边没有 miyu-sandbox：重装一次 Miyu）：执行命令要你确认，miyu ask 里确认不了\n· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
         ),
         "最先说，和目录太宽那一句连着、不空行"
     );

@@ -20,10 +20,8 @@ async fn client(home: &Home) -> Client {
 
 /// 建好账号的家目录、工作区（`session.create` 以前就要用到工作区时，测试自己先建）。交回工作区的真实位置。
 fn workspace(home: &Home) -> std::path::PathBuf {
-    home.root
-        .prepare_home(&alice())
-        .expect("建得了家目录、工作区");
-    std::fs::canonicalize(home.root.workspace(&alice())).expect("工作区在")
+    home.root.prepare_workspace().expect("建得了家目录、工作区");
+    std::fs::canonicalize(home.root.workspace()).expect("工作区在")
 }
 
 fn touch(root: &Path, relative: &str) {

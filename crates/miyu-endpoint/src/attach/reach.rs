@@ -1,4 +1,4 @@
-//! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话的属主找 blob，不照连接的账号。
+//! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话引用过的找 blob。
 //!
 //! 谁读得到（施工 SU-4 中起照场所认，同 `connection/checks.rs` 的第 4 道）：本机的会话、主人本人的私聊（没关起来的），主人这边
 //! 的人的连接随便读；扩展的连接（施工 W-6 三补）要的 blob 还得是那个会话引用过的；平台桥只读得到它的平台的场所会话里引用过的
@@ -7,7 +7,7 @@
 //! 写一句带着哈希的话、读走主人别的 blob。不合的一律 `unknown_blob`，不说是哪一样不对：免得拿它探某个 blob 在不在。
 
 use miyu_kernel::event::{Body, Effect, Event};
-use miyu_kernel::id::{AccountId, ContentHash, SessionId};
+use miyu_kernel::id::{ContentHash, SessionId};
 
 use super::blocking;
 use crate::Core;
@@ -15,34 +15,33 @@ use crate::hello::Caller;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
-/// 照会话 `session` 找 blob `hash` 时，去哪个账号名下读（会话的属主）；`caller` 是连接（平台桥照它的包认），`extension` 是不是
-/// 扩展的连接。会话编号不合写法的 `bad_params`。
-pub(super) async fn owner(
+/// 照会话 `session` 找 blob `hash` 读不读得到；`caller` 是连接（平台桥照它的包认），`extension` 是不是扩展的连接。会话编号
+/// 不合写法的 `bad_params`。
+pub(super) async fn check(
     core: &Core,
     (caller, extension): (&Caller, bool),
     session: &str,
     hash: &ContentHash,
-) -> Result<AccountId, Refusal> {
+) -> Result<(), Refusal> {
     let id = SessionId::parse(session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let owner = core
-        .sessions
+    core.sessions
         .owner(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;
-    let (venue, confined) = crate::sessions::placed(core, &owner, &id)
+    let (venue, confined) = crate::sessions::placed(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;
     let reachable = match crate::venues::bridge(core, caller) {
         Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
-        None => owner == core.admin && (venue.as_str() == LOCAL || !confined),
+        None => venue.as_str() == LOCAL || !confined,
     };
     if !reachable {
         return Err(Refusal::UNKNOWN_BLOB);
     }
     if !extension {
-        return Ok(owner);
+        return Ok(());
     }
-    let dir = core.root.session_dir(&owner, &id);
+    let dir = core.root.session_dir(&id);
     let hash = hash.clone();
     blocking(move || {
         let mut found = false;
@@ -51,7 +50,7 @@ pub(super) async fn owner(
             !found
         });
         match read.is_ok() && found {
-            true => Ok(owner),
+            true => Ok(()),
             false => Err(Refusal::UNKNOWN_BLOB),
         }
     })

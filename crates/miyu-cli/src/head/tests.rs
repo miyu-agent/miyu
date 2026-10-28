@@ -17,7 +17,7 @@ fn ui(id: &str, program: &str, opens: &[&str]) -> Found {
     Found {
         id: id.to_string(),
         layer: Layer::Home,
-        path: PathBuf::from(format!("/data/system/packages/{id}/package.toml")),
+        path: PathBuf::from(format!("/data/packages/{id}/package.toml")),
         read: Ok(miyu_config::package::read(&text).expect("清单合写法")),
     }
 }

@@ -1,4 +1,4 @@
-//! 唤醒表（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：一个账号一份 `home/<账号>/state/schedules.db`，一行一个到点
+//! 唤醒表（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：一个账号一份 `state/schedules.db`，一行一个到点
 //! 叫她跑一轮的任务。定时任务、固定间隔的循环、她自己定节奏的循环都记在这里。
 //!
 //! 它是真相，不是派生的：和会话列表的索引、用量汇总不一样，坏了不删不重建（`open.rs`）。写盘照 `synchronous = FULL`，断电
@@ -181,14 +181,14 @@ pub struct Schedules {
 }
 
 /// 账号 `account` 的唤醒表在哪。
-pub fn path(root: &DataRoot, account: &AccountId) -> PathBuf {
-    root.account_dir(account).join("state").join("schedules.db")
+pub fn path(root: &DataRoot) -> PathBuf {
+    root.path().join("state").join("schedules.db")
 }
 
 impl Schedules {
     /// 打开账号 `account` 的唤醒表，没有就建；交回开着的表（打不开的没有）和是什么情形，调的一方照它记日志。
-    pub fn open(root: &DataRoot, account: &AccountId) -> (Option<Schedules>, Opened) {
-        let path = path(root, account);
+    pub fn open(root: &DataRoot) -> (Option<Schedules>, Opened) {
+        let path = path(root);
         let (db, opened) = open::open(&path);
         (
             db.map(|db| Schedules {

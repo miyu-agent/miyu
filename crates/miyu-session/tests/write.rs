@@ -93,7 +93,7 @@ async fn she_reads_then_writes_and_the_log_keeps_both_contents() {
         })]
     );
     // 小的内容写在效果里，不另存 blob（施工 V-18）。
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     assert!(
         blobs.get(&ContentHash::of(b"old\n")).is_err(),
         "改前的没存 blob"
@@ -192,7 +192,7 @@ async fn she_reads_then_edits_twice_without_reading_again() {
         [changed(b"one\n2\n", b"1\n2\n")],
         "第一次改完，她看过的就是改后的：第二次不用重读"
     );
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     assert!(
         blobs.get(&ContentHash::of(b"1\n2\n")).is_err(),
         "改后的写在效果里，没存 blob"

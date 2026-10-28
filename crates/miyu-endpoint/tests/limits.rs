@@ -26,7 +26,7 @@ fn reply_of(home: &Home, session: &str, limits: serde_json::Value) -> serde_json
 fn workspace(home: &Home, session: &str) -> String {
     let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号");
     home.root
-        .session_workspace(&alice(), &id)
+        .session_workspace(&id)
         .to_string_lossy()
         .into_owned()
 }
@@ -41,7 +41,7 @@ fn script(window: u64) -> Script {
 async fn the_reply_is_the_drawing_example() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.deepseek]\nlocal = false\n\n[models]\nchat = \"deepseek/deepseek-v4\"\n",
     );
     let items = [ProviderSettings::ITEMS, UseSettings::ITEMS].concat();

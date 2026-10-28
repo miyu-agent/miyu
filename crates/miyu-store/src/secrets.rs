@@ -1,4 +1,4 @@
-//! 读、写密钥文件 `system/secrets.toml`（`docs/blueprint/config.md`「怎么走」第九条第 1、2、4 条，G9，施工 8-5）。
+//! 读、写密钥文件 `secrets.toml`（`docs/blueprint/config.md`「怎么走」第九条第 1、2、4 条，G9，施工 8-5）。
 //!
 //! 读照配置文件的规矩（[`config_file::read`]：没有的是空的、1 MiB、BOM、UTF-8、版本），另外看一眼权限：Unix 上组、别人
 //! 读得到的照用，交回 [`Stored::open`] 由调用的一方记 `WARN secrets readable by others`，不去改它（`miyu doctor` 以后报）。
@@ -12,7 +12,7 @@ use std::path::Path;
 
 use crate::config_file::{self, ConfigText, Mode, ReadError, WriteError};
 
-/// 文件名：在 `system/` 里。
+/// 文件名：在数据根下。
 pub const FILE: &str = "secrets.toml";
 
 /// 读好的密钥文件。

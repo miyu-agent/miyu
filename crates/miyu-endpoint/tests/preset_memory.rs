@@ -16,7 +16,7 @@ const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[softwar
 #[tokio::test]
 async fn a_preset_without_memory_drops_it() {
     let home = Home::new();
-    home.write("home/alice/presets/quiet.toml", QUIET);
+    home.write("presets/quiet.toml", QUIET);
     let (session, request) = first_request(&home, json!({"cwd": "~", "preset": "quiet"})).await;
     assert_eq!(tool_names(&request), ["read", "shell"], "记忆没开");
     assert!(
@@ -67,7 +67,7 @@ async fn a_preset_without_memory_drops_it() {
 #[tokio::test]
 async fn a_feature_that_is_off_has_all_its_tools_off() {
     let home = Home::new();
-    home.write("home/alice/presets/quiet.toml", QUIET);
+    home.write("presets/quiet.toml", QUIET);
     let mut client = connected(configured(&home, &Script::new([]))).await;
     let quiet = client
         .call("g1", "preset.get", json!({"preset": "quiet"}))

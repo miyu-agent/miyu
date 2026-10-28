@@ -13,7 +13,6 @@ struct Places {
     scratch: Scratch,
     root: DataRoot,
     resources: ResourceRoot,
-    admin: AccountId,
 }
 
 impl Places {
@@ -31,7 +30,6 @@ impl Places {
         Places {
             resources: ResourceRoot::at(scratch.path().join("res")),
             root: DataRoot::locate(&env).unwrap(),
-            admin: AccountId::parse("admin").unwrap(),
             scratch,
         }
     }
@@ -43,8 +41,8 @@ impl Places {
     }
 
     fn found(&self) -> (Vec<Command>, Vec<Skipped>) {
-        let packages = Packages::new(&self.resources, &self.root, &self.admin).read();
-        find(&packages, &self.root, &self.admin)
+        let packages = Packages::new(&self.resources, &self.root).read();
+        find(&packages, &self.root)
     }
 }
 
@@ -77,14 +75,14 @@ fn commands_come_from_installed_packages_and_the_home_folder() {
         "res/packages/tools/commands/shared.md",
         "From the package.\n",
     );
-    places.write("data/home/admin/commands/shared.md", "My own.\n");
+    places.write("data/commands/shared.md", "My own.\n");
     places.write(
-        "data/home/admin/commands/notes.md",
+        "data/commands/notes.md",
         "---\ndescription: Notes\n---\nMine.\n",
     );
-    places.write("data/home/admin/commands/.hidden.md", "No.\n");
-    places.write("data/home/admin/commands/readme.txt", "No.\n");
-    places.write("data/home/admin/commands/deeper/inner.md", "No.\n");
+    places.write("data/commands/.hidden.md", "No.\n");
+    places.write("data/commands/readme.txt", "No.\n");
+    places.write("data/commands/deeper/inner.md", "No.\n");
     // 读坏了的清单：它带的命令不算。
     places.write("res/packages/broken/package.toml", "[package\n");
     places.write("res/packages/broken/commands/lost.md", "No.\n");
@@ -99,7 +97,7 @@ fn commands_come_from_installed_packages_and_the_home_folder() {
         "照名字排，同名的自己放的赢"
     );
     assert_eq!(commands[0].template.summary["en"], "Notes");
-    assert!(commands[0].file.ends_with("home/admin/commands/notes.md"));
+    assert!(commands[0].file.ends_with("commands/notes.md"));
     assert_eq!(skipped.len(), 1, "撞名的那一个：{skipped:?}");
     assert!(
         skipped[0]
@@ -108,7 +106,7 @@ fn commands_come_from_installed_packages_and_the_home_folder() {
     );
     assert!(skipped[0].why.contains("already provided by "));
     let by = skipped[0].by.as_ref().expect("同名的记了被谁盖住");
-    assert!(by.ends_with("data/home/admin/commands/shared.md"), "{by:?}");
+    assert!(by.ends_with("data/commands/shared.md"), "{by:?}");
 }
 
 #[test]
@@ -116,11 +114,8 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     let places = Places::new();
     places.write("res/packages/z-tools/package.toml", &package("z-tools"));
     places.write("res/packages/z-tools/commands/review.md", "Shipped.\n");
-    places.write("data/system/packages/a-kit/package.toml", &package("a-kit"));
-    places.write(
-        "data/system/packages/a-kit/commands/review.md",
-        "Installed.\n",
-    );
+    places.write("data/packages/a-kit/package.toml", &package("a-kit"));
+    places.write("data/packages/a-kit/commands/review.md", "Installed.\n");
     let (commands, skipped) = places.found();
     assert_eq!(
         brief(&commands),
@@ -130,19 +125,19 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     assert!(
         skipped[0]
             .path
-            .ends_with("system/packages/a-kit/commands/review.md")
+            .ends_with("packages/a-kit/commands/review.md")
     );
 }
 
 #[test]
 fn a_bad_name_or_head_is_skipped_and_said_why() {
     let places = Places::new();
-    places.write("data/home/admin/commands/Bad_Name.md", "x\n");
+    places.write("data/commands/Bad_Name.md", "x\n");
     places.write(
-        "data/home/admin/commands/broken.md",
+        "data/commands/broken.md",
         "---\ndescription: [x\n---\nbody\n",
     );
-    places.write("data/home/admin/commands/fine.md", "ok\n");
+    places.write("data/commands/fine.md", "ok\n");
     let (commands, skipped) = places.found();
     assert_eq!(brief(&commands), [("fine", "ok\n", None)]);
     let mut why: Vec<(String, &str)> = skipped
@@ -188,22 +183,20 @@ fn a_package_folder_says_which_commands_it_carries() {
     assert_eq!(skipped.len(), 1);
 }
 
-/// 模板是链接（施工 X-37）：照它指到的读；指到 `system/` 的跳过、带真实位置。
+/// 模板是链接（施工 X-37）：照它指到的读；指到数据根里别处的跳过、带真实位置。
 #[test]
 fn a_linked_template_is_read_through() {
     let places = Places::new();
     places.write("elsewhere/notes.md", "Linked.\n");
-    places.write("data/system/secrets.toml", "token = \"no\"\n");
-    places.write("data/home/admin/commands/own.md", "Mine.\n");
-    let own = places.root.account_dir(&places.admin).join("commands");
+    places.write("data/secrets.toml", "token = \"no\"\n");
+    places.write("data/commands/own.md", "Mine.\n");
+    let own = places.root.path().join("commands");
     let leak = own.join("leak.md");
     if !(link(
         &places.scratch.path().join("elsewhere/notes.md"),
         &own.join("notes.md"),
-    ) && link(
-        &places.scratch.path().join("data/system/secrets.toml"),
-        &leak,
-    )) {
+    ) && link(&places.scratch.path().join("data/secrets.toml"), &leak))
+    {
         return;
     }
     let (commands, skipped) = places.found();
@@ -216,7 +209,7 @@ fn a_linked_template_is_read_through() {
         (skipped[0].path.clone(), skipped[0].outside.clone()),
         (
             leak,
-            fs::canonicalize(places.scratch.path().join("data/system/secrets.toml")).ok()
+            fs::canonicalize(places.scratch.path().join("data/secrets.toml")).ok()
         )
     );
 }

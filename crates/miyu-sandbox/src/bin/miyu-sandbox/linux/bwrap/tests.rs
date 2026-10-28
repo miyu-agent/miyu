@@ -23,7 +23,7 @@ fn mounts_go_whole_disk_then_writable_then_covers_then_holes_then_read_only() {
     let base = std::env::temp_dir().join(format!("miyu-bwrap-args-{}", std::process::id()));
     let home = base.join("home");
     let data = home.join(".miyu");
-    let ws = data.join("home/admin/workspace/s1");
+    let ws = data.join("workspace/s1");
     let skill = data.join("packages/kit/skills/x");
     let key = home.join(".ssh-key");
     for dir in [&ws, &skill] {

@@ -15,7 +15,7 @@ use base64::engine::general_purpose::STANDARD;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, ContentHash, FileName, Hasher, MediaType};
+use miyu_kernel::id::{ContentHash, FileName, Hasher, MediaType};
 use miyu_store::blob::Blobs;
 use miyu_tool::attachment::fit;
 
@@ -154,10 +154,10 @@ impl Uploads {
     }
 }
 
-/// `blob.open`：在连接的账号 `account` 名下建一个新的暂存文件，交回上传编号。
+/// `blob.open`：建一个新的暂存文件，交回上传编号。
 pub(crate) async fn open(
     core: &Core,
-    (uploads, account): (&mut Uploads, &AccountId),
+    uploads: &mut Uploads,
     params: OpenParams,
 ) -> Result<Value, Refusal> {
     let name = attach::file_name(&params.name)?;
@@ -176,7 +176,7 @@ pub(crate) async fn open(
         return Err(Refusal::TOO_MANY_UPLOADS);
     }
     let id = upload_id()?;
-    let blobs = Blobs::new(core.root.blobs(account));
+    let blobs = Blobs::new(core.root.blobs());
     let created = id.clone();
     let stored = blobs.clone();
     let path = blocking(move || {

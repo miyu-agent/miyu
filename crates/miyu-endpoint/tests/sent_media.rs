@@ -25,7 +25,7 @@ fn tools() -> Value {
 #[tokio::test]
 async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
     let home = Home::new();
-    let blob = Blobs::new(home.root.blobs(&alice()))
+    let blob = Blobs::new(home.root.blobs())
         .put(b"\x89PNG fake sticker")
         .expect("存得进");
     let program = Program::new();
@@ -104,7 +104,7 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
 #[tokio::test]
 async fn a_packages_image_is_in_the_owner_s_blobs() {
     let home = Home::new();
-    let blob = Blobs::new(home.root.blobs(&alice()))
+    let blob = Blobs::new(home.root.blobs())
         .put(b"\x89PNG fake sticker")
         .expect("存得进");
     let program = Program::new();
@@ -147,7 +147,7 @@ async fn a_packages_image_is_in_the_owner_s_blobs() {
         .collect();
     assert_eq!(sent.len(), 1, "{sent:?}");
     assert!(
-        Blobs::new(home.root.blobs(&alice())).path(&blob).is_file(),
+        Blobs::new(home.root.blobs()).path(&blob).is_file(),
         "在主人名下"
     );
     core.stop_extensions().await;

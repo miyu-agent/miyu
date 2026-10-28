@@ -296,12 +296,12 @@ async fn opened(core: &Arc<Core>, account: &AccountId, new: NewParams) -> Result
         .id;
     // 写了的建时就查（施工 J-3 上）：到点开不成的每次只记一句 `not_opened`，人不知道。
     if let Some(cwd) = &new.cwd
-        && !usable(core, account, cwd)
+        && !usable(core, cwd)
     {
         return Err(Refusal::bad_schedule("cwd"));
     }
     let cwd = new.cwd.unwrap_or_else(|| {
-        let (_, own) = crate::sessions::roots(core, account);
+        let (_, own) = crate::sessions::roots(core);
         own.to_string_lossy().into_owned()
     });
     Ok(Target::New {
@@ -313,12 +313,12 @@ async fn opened(core: &Arc<Core>, account: &AccountId, new: NewParams) -> Result
 
 /// 每次新开的工作目录用得了：照开会话的同一套换成真实位置（`~` 照家目录），要是一个在的目录，不落在数据根里别人的地方
 /// （数据根里只有他自己的工作区能当工作目录，`sessions::pick`）。
-fn usable(core: &Core, account: &AccountId, cwd: &str) -> bool {
+fn usable(core: &Core, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
     let Ok(real) = miyu_fs::resolve(std::path::Path::new("/"), home.as_deref(), cwd) else {
         return false;
     };
-    let (data_root, own) = crate::sessions::roots(core, account);
+    let (data_root, own) = crate::sessions::roots(core);
     real.is_dir() && (!miyu_fs::within(&real, &data_root) || miyu_fs::within(&real, &own))
 }
 

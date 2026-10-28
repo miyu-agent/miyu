@@ -121,7 +121,7 @@ pub struct Places<'a> {
     pub cwd: &'a str,
     /// 系统的家目录：`~`、`$HOME` 照它接。
     pub home: Option<&'a str>,
-    /// Miyu 的数据根。账号的工作区 `home/<账号>/workspace/` 里面的不算（施工 5-14 起会话的默认工作区都在它下面）。
+    /// Miyu 的数据根。工作区 `workspace/` 里面的不算（施工 5-14 起会话的默认工作区都在它下面）。
     pub data_root: &'a str,
 }
 

@@ -184,10 +184,7 @@ async fn a_granted_tool_whose_file_is_elsewhere_stays_in_the_sandbox() {
 #[tokio::test]
 async fn a_granted_script_in_the_home_folder_runs_outside() {
     let mut home = Home::outside_temp();
-    let file = home
-        .root
-        .account_dir(&alice_account())
-        .join("scripts/run.py");
+    let file = home.root.path().join("scripts/run.py");
     std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
     std::fs::write(&file, "x").expect("写得进");
     let fake = Fake::with_file("run", Access::Execute, file, Act::Echo);

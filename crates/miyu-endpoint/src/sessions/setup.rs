@@ -61,7 +61,7 @@ impl Setup {
             wanted => Some(presets::resolve(core, &who.owner, wanted).await?),
         };
         let persona = personas::resolve(core, &who.owner, persona).await?;
-        let resources = crate::presets::overrides::resources(core, &who.owner);
+        let resources = crate::presets::overrides::resources(core);
         Ok(Setup {
             resources,
             id,
@@ -108,7 +108,7 @@ impl Setup {
             tools: core.tools.clone(),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
-            sandbox_cache: core.sandbox_cache_of(&who.owner),
+            sandbox_cache: core.sandbox_cache_of(),
             lineage: None,
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(

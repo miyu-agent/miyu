@@ -111,8 +111,7 @@ async fn extensions_append_to_the_system_prompt_and_change_it_next_turn() {
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let session = client.create("c1", "~").await;
-    let created =
-        crate::support::venues::snapshot(&home, &alice(), &dir(&home, &alice(), &session));
+    let created = crate::support::venues::snapshot(&home, &dir(&home, &session));
     assert_eq!(
         created.appended.keys().collect::<Vec<_>>(),
         ["alpha", "bravo"],

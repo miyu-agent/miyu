@@ -1,5 +1,5 @@
-//! 知识库（施工 K-1 上，`docs/blueprint/knowledge.md`）：一个知识库是 `home/<账号>/kb/<编号>/` 这个目录，里面是文档，外加一份
-//! 派生的索引 `home/<账号>/index/kb/<编号>.db`（检索库，`recall.md`）。真相是目录里的文件，索引随时能删掉照文件重建。
+//! 知识库（施工 K-1 上，`docs/blueprint/knowledge.md`）：一个知识库是 `kb/<编号>/` 这个目录，里面是文档，外加一份
+//! 派生的索引 `index/kb/<编号>.db`（检索库，`recall.md`）。真相是目录里的文件，索引随时能删掉照文件重建。
 //!
 //! - 列、搜之前先照文件补这个库（`knowledge/catch_up.rs`）：新的、变了的整份重切，没了的拿掉，没变的（指纹一样）不重读。
 //!   一个库一把锁：两个请求同时来，后来的等前面的补完。碰磁盘，调的一方放在阻塞线程里。
@@ -302,7 +302,7 @@ impl Knowledge {
     pub fn list(&self, account: &AccountId) -> Result<(Vec<Base>, Vec<Skipped>), KnowledgeError> {
         let mut bases = Vec::new();
         let mut skipped = Vec::new();
-        for id in self.ids(account)? {
+        for id in self.ids()? {
             if self.shelf(account, &id).catching_up.try_lock().is_err() {
                 bases.push(self.counted(account, &id, None)?);
                 continue;
@@ -340,11 +340,11 @@ impl Knowledge {
         let ids = match only {
             Some(ids) => {
                 for id in ids {
-                    self.dir(account, id)?;
+                    self.dir(id)?;
                 }
                 ids.to_vec()
             }
-            None => self.ids(account)?,
+            None => self.ids()?,
         };
         let floor = near.map_or(miyu_recall::FLOOR, |near| self.floor(near.model));
         let mut skipped = Vec::new();
@@ -373,14 +373,8 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库、库里没有这个文档、没有这一页；文件读不了。
-    pub fn read(
-        &self,
-        account: &AccountId,
-        kb: &str,
-        path: &str,
-        page: usize,
-    ) -> Result<Page, KnowledgeError> {
-        let dir = match self.documents(account, kb)?.usable() {
+    pub fn read(&self, kb: &str, path: &str, page: usize) -> Result<Page, KnowledgeError> {
+        let dir = match self.documents(kb)?.usable() {
             Err(KnowledgeError::Unavailable(_)) => return Err(KnowledgeError::UnknownDocument),
             dir => dir?,
         };
@@ -393,8 +387,8 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库。
-    pub fn title(&self, account: &AccountId, id: &str) -> Result<(String, String), KnowledgeError> {
-        let dir = self.dir(account, id)?;
+    pub fn title(&self, id: &str) -> Result<(String, String), KnowledgeError> {
+        let dir = self.dir(id)?;
         let (about, _) = catch_up::about(&dir);
         Ok((
             about.name.unwrap_or_else(|| id.to_string()),
@@ -407,9 +401,9 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库。
-    pub fn auto(&self, account: &AccountId, id: &str) -> Result<bool, KnowledgeError> {
-        let place = self.place(account, id)?;
-        let switched = self.switched(account, id, &place);
+    pub fn auto(&self, id: &str) -> Result<bool, KnowledgeError> {
+        let place = self.place(id)?;
+        let switched = self.switched(id, &place);
         Ok(switched
             .or(catch_up::about(place.dir()).0.auto)
             .unwrap_or(false))

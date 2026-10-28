@@ -19,7 +19,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::{Layer, Words};
-use miyu_kernel::id::AccountId;
 use miyu_store::config_file::{self, ReadError};
 use miyu_store::human::Human;
 use miyu_store::packages::{Found, Issue};
@@ -61,11 +60,7 @@ struct ConfigFile {
 
 /// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。软件包照 `account` 看得到的查（施工
 /// U23 下上：系统那一份接上他自己那一层）。
-pub(crate) async fn check(
-    core: &Core,
-    (peer, account): (Peer, &AccountId),
-    params: CheckParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let home = core.home.clone();
     let cwd = params
@@ -103,14 +98,12 @@ pub(crate) async fn check(
             // MCP 服务列出来却没登记的工具（施工 X-37）。
             problems.extend(mcp::skipped(core, &words));
             // 工具说明的覆盖写坏了的（施工 OV-1 上）：照出厂的，各一条。
-            for (path, why) in crate::presets::overrides::problems(core, account) {
+            for (path, why) in crate::presets::overrides::problems(core) {
                 let message = crate::packages::sentence(&words, "override_bad", &why);
                 problems.push(json!({"kind": "override", "file": shown(core, &path), "code": "override_bad", "level": "warning", "message": message.unwrap_or_default()}));
             }
             // 提示词的覆盖写坏了的（施工 OV-1 中）：照下一层、最后照出厂的，各一条。
-            for (path, why) in
-                crate::presets::overrides::resources(core, account).overlay_problems()
-            {
+            for (path, why) in crate::presets::overrides::resources(core).overlay_problems() {
                 let message = crate::packages::sentence(&words, "prompt_override_bad", &why);
                 problems.push(json!({"kind": "override", "file": shown(core, &path), "code": "prompt_override_bad", "level": "warning", "message": message.unwrap_or_default()}));
             }

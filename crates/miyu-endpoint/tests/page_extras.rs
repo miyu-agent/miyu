@@ -23,7 +23,13 @@ async fn both_lists_name_the_folder_even_when_nothing_is_in_it() {
             .as_str()
             .unwrap_or_else(|| panic!("{reply}"))
             .replace('\\', "/");
-        assert!(dir.ends_with(&format!("home/alice/{folder}")), "{dir}");
+        let root = home
+            .root
+            .path()
+            .file_name()
+            .expect("有名字")
+            .to_string_lossy();
+        assert!(dir.ends_with(&format!("{root}/{folder}")), "{dir}");
     }
 }
 
@@ -62,13 +68,13 @@ async fn a_bundled_service_shows_its_switch_and_follows_changes() {
 
 /// 个人设置的字。
 fn settings(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("system/config.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
 }
 
 #[tokio::test]
 async fn a_written_server_comes_back_whole_and_saving_it_again_changes_nothing() {
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let core = configured(&home, &Script::new([]));
     let _watching = core.watch_config().expect("监视得了");
     let _following = core.follow_home_mcp();

@@ -27,10 +27,9 @@ impl Places {
             exe: None,
         };
         let root = DataRoot::locate(&env).unwrap();
-        let admin = AccountId::parse("admin").unwrap();
         // 两个装着的包 `a`、`b`（施工 P-11 上）：先后照交进来的。
         let packages = [scratch.path().join("pkgs/a"), scratch.path().join("pkgs/b")];
-        let presets = Presets::new(&resources, &root, &admin).with_packages(&packages);
+        let presets = Presets::new(&resources, &root).with_packages(&packages);
         Places { scratch, presets }
     }
 
@@ -39,7 +38,7 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/presets",
             Layer::Package => "pkgs/a/presets",
-            Layer::Home => "data/home/admin/presets",
+            Layer::Home => "data/presets",
         };
         self.scratch.path().join(base)
     }
@@ -174,7 +173,7 @@ fn check_reads_every_layer_and_knows_its_files() {
     for other in [
         places.dir(Layer::Home).join("notes.txt"),
         places.dir(Layer::Home).join("sub").join("a.toml"),
-        places.scratch.path().join("data/system/config.toml"),
+        places.scratch.path().join("data/config.toml"),
     ] {
         assert!(places.presets.check_file(&other).is_none(), "{other:?}");
     }
@@ -195,7 +194,7 @@ fn the_shipped_presets_read_cleanly() {
         exe: None,
     };
     let root = DataRoot::locate(&env).unwrap();
-    let presets = Presets::new(&resources, &root, &AccountId::parse("admin").unwrap());
+    let presets = Presets::new(&resources, &root);
     assert!(presets.check().is_empty(), "{:?}", presets.check());
     let full = presets.find("full").unwrap();
     assert_eq!(full.file.unlisted(), Unlisted::On);

@@ -32,8 +32,7 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     };
     // 出厂的 `dev` 不开没列出来的软件：打开要写进同名覆盖。
     open_in(&core, (&alice, port.peer()), "dev", "kit").await;
-    let preset = std::fs::read_to_string(root.account_dir(&alice).join("presets/dev.toml"))
-        .unwrap_or_default();
+    let preset = std::fs::read_to_string(root.path().join("presets/dev.toml")).unwrap_or_default();
     assert!(preset.contains("kit = true"), "写进主人那一份：{preset}");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
@@ -97,7 +96,7 @@ async fn a_confined_session_cannot_change_packages() {
     for (what, got) in refused {
         assert_eq!(got.as_deref(), Some("not_permitted"), "{what}");
     }
-    assert!(!root.system_packages().join("kit").exists(), "什么都没装");
+    assert!(!root.packages().join("kit").exists(), "什么都没装");
     assert!(outsider.list().await.is_ok(), "列得出");
     let owner = Port {
         core: Arc::downgrade(&core),

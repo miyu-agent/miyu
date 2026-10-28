@@ -36,7 +36,7 @@ pub fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {
 /// 系统配置里默认人格是软件工程师的核心：施工 P-4 上起出厂不设默认人格，不带人格的会话、不写人格的 `memory.*` 记忆都不
 /// 生效（17 L17）。
 pub fn with_persona(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {
-    home.write("system/config.toml", "[persona]\ndefault = \"engineer\"\n");
+    home.write("config.toml", "[persona]\ndefault = \"engineer\"\n");
     configured_core(home, script, tools)
 }
 

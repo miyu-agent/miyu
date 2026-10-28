@@ -55,7 +55,7 @@ async fn a_slow_foreground_command_moves_to_the_background() {
     assert_eq!(reported.reason, JobReason::Exited);
     assert_eq!(reported.exit_code, Some(3));
     let output = reported.output.clone().expect("存了输出");
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let text = String::from_utf8(blobs.get(&output).expect("blob 在")).expect("是 UTF-8");
     assert_eq!(text, "before\nafter\n", "挪过去以前读到的接上以后的");
     until_idle(&home).await;
@@ -138,7 +138,7 @@ async fn a_long_output_before_the_move_is_cut_in_the_middle() {
         panic!("记了一条结束：{log:#?}")
     };
     let output = reported.output.clone().expect("存了输出");
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let text = String::from_utf8(blobs.get(&output).expect("blob 在")).expect("是 UTF-8");
     assert!(text.starts_with("1\n2\n3\n"), "开头在");
     assert!(

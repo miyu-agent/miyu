@@ -18,7 +18,7 @@ use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展。
 fn served_core(home: &Home) -> Arc<Core> {
-    home.write("system/config.toml", BINDINGS);
+    home.write("config.toml", BINDINGS);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -28,7 +28,7 @@ fn served_core(home: &Home) -> Arc<Core> {
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         &alice(),
@@ -109,7 +109,7 @@ async fn a_bridge_asks_who_a_platform_id_is_bound_to() {
         .await;
     assert_eq!(reason(&refused), Some("needs_approval"), "{refused}");
     assert_eq!(
-        std::fs::read_to_string(home.root.system().join("config.toml")).expect("读得出"),
+        std::fs::read_to_string(home.root.path().join("config.toml")).expect("读得出"),
         BINDINGS,
         "只读"
     );

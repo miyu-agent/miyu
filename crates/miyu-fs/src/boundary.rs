@@ -238,7 +238,7 @@ impl Boundary {
         Zone::Outside
     }
 
-    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：`<数据根>/home/<账号>/kb/<库>/` 下面的。拒绝时照它换一句，
+    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：`<数据根>/kb/<库>/` 下面的。拒绝时照它换一句，
     /// 指她去用知识库的工具。
     #[must_use]
     pub fn knowledge(&self, path: &Path) -> bool {
@@ -252,8 +252,7 @@ impl Boundary {
         let parts: Vec<Component<'_>> = inside.components().collect();
         matches!(
             parts.as_slice(),
-            [Component::Normal(home), Component::Normal(_), Component::Normal(kb), Component::Normal(_), Component::Normal(_), ..]
-                if *home == "home" && *kb == "kb"
+            [Component::Normal(kb), Component::Normal(_), Component::Normal(_), ..] if *kb == "kb"
         )
     }
 

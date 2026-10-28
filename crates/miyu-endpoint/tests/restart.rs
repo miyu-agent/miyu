@@ -73,10 +73,6 @@ async fn the_same_create_after_a_restart_is_the_same_session() {
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
     assert_eq!(client.create("create-once", "~").await, first);
-    assert_eq!(
-        home.root.sessions(&alice()).expect("列得出").len(),
-        1,
-        "只造了一个"
-    );
+    assert_eq!(home.root.sessions().expect("列得出").len(), 1, "只造了一个");
     assert_ne!(client.create("create-other", "~").await, first);
 }

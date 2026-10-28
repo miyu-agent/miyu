@@ -24,7 +24,7 @@ fn config(server: &Server) -> String {
 }
 
 async fn connected(home: &Home, server: &Server) -> Client {
-    home.write("system/config.toml", &config(server));
+    home.write("config.toml", &config(server));
     let mut client = Client::connect(routed(home, &[], data(profiles(json!({})))));
     client.hello().await;
     client

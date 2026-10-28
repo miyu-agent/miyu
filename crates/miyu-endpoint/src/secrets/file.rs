@@ -18,7 +18,7 @@ use miyu_store::secrets;
 pub(crate) struct SecretsFile {
     /// 在哪：真的路径。
     pub(crate) path: PathBuf,
-    /// 给人、给协议看的写法：`system/secrets.toml`。
+    /// 给人、给协议看的写法：`secrets.toml`。
     pub(crate) shown: String,
     /// 版本；文件还没有的是空的。不交给头：它是整份密钥的哈希。
     pub(crate) version: Option<String>,

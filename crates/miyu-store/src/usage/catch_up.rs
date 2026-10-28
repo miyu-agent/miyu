@@ -90,7 +90,7 @@ impl UsageIndex {
         let mut problems = Vec::new();
         for account in accounts {
             self.catch_up_journal(account, &mut problems)?;
-            for (id, dir) in session_dirs(&self.root, account)? {
+            for (id, dir) in session_dirs(&self.root)? {
                 self.catch_up_dir(&id, &dir, &mut problems)?;
             }
         }
@@ -102,13 +102,9 @@ impl UsageIndex {
     /// # Errors
     ///
     /// 读写库出错。
-    pub fn catch_up_session(
-        &self,
-        account: &AccountId,
-        id: &SessionId,
-    ) -> Result<Vec<Problem>, UsageError> {
+    pub fn catch_up_session(&self, id: &SessionId) -> Result<Vec<Problem>, UsageError> {
         let mut problems = Vec::new();
-        let dir = self.root.session_dir(account, id);
+        let dir = self.root.session_dir(id);
         self.catch_up_dir(id, &dir, &mut problems)?;
         Ok(problems)
     }
@@ -135,7 +131,7 @@ impl UsageIndex {
             kind: kind(ONESHOT)?,
             body,
         };
-        let path = self.root.account_dir(owner).join(journal::FILE);
+        let path = self.root.path().join(journal::FILE);
         let seq = journal::append(&path, entry)?;
         let row = Spent::one_shot(owner, seq.get(), at, call);
         if let Some(db) = self.lock().as_ref() {
@@ -151,7 +147,7 @@ impl UsageIndex {
         problems: &mut Vec<Problem>,
     ) -> Result<(), UsageError> {
         let source = journal_source(account.as_str());
-        let path = self.root.account_dir(account).join(journal::FILE);
+        let path = self.root.path().join(journal::FILE);
         let marked = match self.lock().as_ref() {
             Some(db) => marked(db, &source)?,
             None => return Ok(()),
@@ -415,19 +411,16 @@ fn kind(name: &str) -> Result<EventKind, UsageError> {
 }
 
 /// 账号 `account` 的会话和回收处里的会话：编号和目录。名字不合会话编号写法的不算。
-fn session_dirs(
-    root: &DataRoot,
-    account: &AccountId,
-) -> Result<Vec<(SessionId, std::path::PathBuf)>, UsageError> {
+fn session_dirs(root: &DataRoot) -> Result<Vec<(SessionId, std::path::PathBuf)>, UsageError> {
     let mut dirs: Vec<_> = root
-        .sessions(account)?
+        .sessions()?
         .into_iter()
         .map(|id| {
-            let dir = root.session_dir(account, &id);
+            let dir = root.session_dir(&id);
             (id, dir)
         })
         .collect();
-    let trash = root.trashed_sessions(account);
+    let trash = root.trashed_sessions();
     match std::fs::read_dir(&trash) {
         Ok(entries) => {
             for entry in entries {

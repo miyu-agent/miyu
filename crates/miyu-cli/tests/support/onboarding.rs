@@ -183,7 +183,7 @@ impl Home {
     pub fn onboarding(config: &str, env: &[(&str, &str)], extra: Value) -> Home {
         let (dir, root) = temp_root();
         if !config.is_empty() {
-            let file = root.path().join("system").join("config.toml");
+            let file = root.path().join("config.toml");
             std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了目录");
             std::fs::write(&file, config).expect("写得进");
         }
@@ -261,11 +261,11 @@ impl Home {
 
     /// 系统配置现在的字。
     pub fn system_config(&self) -> String {
-        std::fs::read_to_string(self.root.path().join("system/config.toml")).unwrap_or_default()
+        std::fs::read_to_string(self.root.path().join("config.toml")).unwrap_or_default()
     }
 
     /// 密钥文件现在的字。
     pub fn secrets(&self) -> String {
-        std::fs::read_to_string(self.root.path().join("system/secrets.toml")).unwrap_or_default()
+        std::fs::read_to_string(self.root.path().join("secrets.toml")).unwrap_or_default()
     }
 }

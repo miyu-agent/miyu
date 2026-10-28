@@ -19,7 +19,6 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use miyu_fs::{Boundary, Places, Zone, resolve, tilde};
-use miyu_kernel::id::AccountId;
 use miyu_store::root::DataRoot;
 
 use crate::Core;
@@ -85,10 +84,9 @@ fn default_length() -> u64 {
     miyu_fs::MAX_LENGTH
 }
 
-/// 读、存要的几样：数据根、管理员、系统的家目录。
+/// 读、存要的几样：数据根、系统的家目录。
 struct Place {
     root: DataRoot,
-    admin: AccountId,
     home: Option<PathBuf>,
 }
 
@@ -266,7 +264,7 @@ fn item_json(dir: bool, full: &Path, path: &str, marks: &[usize]) -> Value {
 /// 边界表：这个账号的工作区、数据根、这台机器的临时目录和系统目录（`fs.md` 第一节）。
 fn boundary_of(place: &Place) -> Boundary {
     let places = Places::here(
-        place.root.workspace(&place.admin),
+        place.root.workspace(),
         place.root.path().to_path_buf(),
         place.home.as_deref(),
     );
@@ -296,7 +294,6 @@ fn require_dir(
 fn place(core: &Core) -> Place {
     Place {
         root: core.root.clone(),
-        admin: core.admin.clone(),
         home: core.home.clone(),
     }
 }

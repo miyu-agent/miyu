@@ -1,5 +1,4 @@
-//! 脚本的状态目录（施工 X-44、X-44 补，`docs/blueprint/skills.md`「脚本」第 3 条）：照会话属主、来处、工具名分，场所会话另照
-//! 场所分；写进去的下一次还在；会话外面的调用不给；建不成的照常跑。Python 的，三个平台都跑。从 `script.rs` 分出来（行数）。
+//! 脚本的状态目录（施工 X-44、X-44 补，`docs/blueprint/skills.md`「脚本」第 3 条）：照来处、工具名分，场所会话另照场所分；写进去的下一次还在；会话外面的调用不给；建不成的照常跑。Python 的，三个平台都跑。从 `script.rs` 分出来（行数）。
 
 use serde_json::json;
 
@@ -11,52 +10,38 @@ use crate::support::Site;
 /// 印出状态目录、在里面数一次跑了几回的脚本（施工 X-44）：没给的印 `unset`。
 const COUNT: &[u8] = b"#!/usr/bin/env python3\n# Description: Count.\nimport os, pathlib\nfolder = os.environ.get('MIYU_SCRIPT_STATE_DIR')\nif folder is None:\n    print('unset')\nelse:\n    mark = pathlib.Path(folder) / 'n'\n    n = int(mark.read_text()) + 1 if mark.exists() else 1\n    mark.write_text(str(n))\n    print(n, folder)\n";
 
-/// 状态目录（施工 X-44）：照会话属主、来处、工具名在数据根的 `state/scripts/` 下面建好交给 `MIYU_SCRIPT_STATE_DIR`，写进去的
-/// 下一次还在；换一个属主、换一个来处都是另一格；会话外面的调用（没有属主）不给。Python 的，三个平台都跑。
+/// 状态目录（施工 X-44）：照来处、工具名在数据根的 `state/scripts/` 下面建好交给 `MIYU_SCRIPT_STATE_DIR`，写进去的下一次还在；
+/// 换一个来处是另一格；会话外面的调用不给。Python 的，三个平台都跑。
 #[tokio::test]
-async fn a_script_keeps_its_state_per_owner_and_source() {
+async fn a_script_keeps_its_state_per_source() {
     let site = Site::new();
     site.file("scripts/count.py", COUNT);
-    let state = |owner: &str, source: &str| {
-        let folder = site
-            .0
-            .join("data/state/scripts")
-            .join(owner)
-            .join(source)
-            .join("count");
+    let state = |source: &str| {
+        let folder = site.0.join("data/state/scripts").join(source).join("count");
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let first = site.script_by("scripts/count.py", "~home", "alice").await;
     assert!(!first.error, "{}", text(&first));
-    assert_eq!(
-        printed(&first),
-        format!("1 {}", state("alice", "~home").display())
-    );
+    assert_eq!(printed(&first), format!("1 {}", state("~home").display()));
     let again = site.script_by("scripts/count.py", "~home", "alice").await;
     assert_eq!(
         printed(&again),
-        format!("2 {}", state("alice", "~home").display()),
+        format!("2 {}", state("~home").display()),
         "下一次还在"
-    );
-    let bob = site.script_by("scripts/count.py", "~home", "bob").await;
-    assert_eq!(
-        printed(&bob),
-        format!("1 {}", state("bob", "~home").display()),
-        "另一个属主另一格"
     );
     let kit = site.script_by("scripts/count.py", "kit", "alice").await;
     assert_eq!(
         printed(&kit),
-        format!("1 {}", state("alice", "kit").display()),
+        format!("1 {}", state("kit").display()),
         "另一个来处另一格"
     );
     let outside = site.script("scripts/count.py", json!({})).await;
-    assert_eq!(printed(&outside), "unset", "没有属主的不给");
+    assert_eq!(printed(&outside), "unset", "会话外面的不给");
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = std::fs::metadata(state("alice", "~home"))
+        let mode = std::fs::metadata(state("~home"))
             .expect("在")
             .permissions()
             .mode();
@@ -75,8 +60,7 @@ async fn a_script_runs_without_state_when_the_folder_cannot_be_made() {
     assert_eq!(text(&done), "unset\n");
 }
 
-/// 场所会话的状态目录照场所分（施工 X-44 补）：两个群各一格；同一个群再调（新会话）还是那一格、写的还在；本机的会话照旧是账号
-/// 那一层。
+/// 场所会话的状态目录照场所分（施工 X-44 补）：两个群各一格；同一个群再调（新会话）还是那一格、写的还在；本机的会话不分场所。
 #[tokio::test]
 async fn a_venue_keeps_its_own_state_across_sessions() {
     let site = Site::new();
@@ -91,7 +75,7 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
         .script_at("scripts/count.py", "kit", "bridge", one)
         .await;
     assert!(!first.error, "{}", text(&first));
-    let group1 = state("bridge/@qq_3agroup_3a1/kit/count");
+    let group1 = state("@qq_3agroup_3a1/kit/count");
     assert_eq!(printed(&first), format!("1 {}", group1.display()));
     let again = site
         .script_at("scripts/count.py", "kit", "bridge", one)
@@ -104,7 +88,7 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
     let other = site
         .script_at("scripts/count.py", "kit", "bridge", Some("qq:group:2"))
         .await;
-    let group2 = state("bridge/@qq_3agroup_3a2/kit/count");
+    let group2 = state("@qq_3agroup_3a2/kit/count");
     assert_eq!(
         printed(&other),
         format!("1 {}", group2.display()),
@@ -115,7 +99,7 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
         .await;
     assert_eq!(
         printed(&local),
-        format!("1 {}", state("alice/kit/count").display()),
+        format!("1 {}", state("kit/count").display()),
         "本机的照旧"
     );
 }
@@ -123,31 +107,26 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
 /// 印出缓存目录的脚本（施工 Y-11 上）。
 const CACHED: &[u8] = b"#!/usr/bin/env python3\n# Description: Cached.\nimport os\nprint(os.environ.get('MIYU_SCRIPT_CACHE_DIR', 'unset'))\n";
 
-/// 缓存目录（施工 Y-11 上）：在家目录的 `cache/<来处>/<工具名>/`，建好交真实位置；场所会话多一层场所；会话外面的调用（没有属主）
-/// 照旧在系统临时目录下。
+/// 缓存目录（施工 Y-11 上）：在数据根的 `cache/<来处>/<工具名>/`，建好交真实位置；场所会话多一层场所；会话外面的调用照旧在系统
+/// 临时目录下。
 #[tokio::test]
-async fn a_script_s_cache_is_in_the_owner_s_home() {
+async fn a_script_s_cache_is_in_the_data_root() {
     let site = Site::new();
     site.file("scripts/cached.py", CACHED);
     let home = |relative: &str| {
-        let folder = site.0.join("data/home").join(relative);
+        let folder = site.0.join("data/cache").join(relative);
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let local = site.script_by("scripts/cached.py", "kit", "alice").await;
     assert!(!local.error, "{}", text(&local));
-    assert_eq!(
-        printed(&local),
-        home("alice/cache/kit/cached").display().to_string()
-    );
+    assert_eq!(printed(&local), home("kit/cached").display().to_string());
     let group = site
         .script_at("scripts/cached.py", "kit", "bridge", Some("qq:group:1"))
         .await;
     assert_eq!(
         printed(&group),
-        home("bridge/cache/@qq_3agroup_3a1/kit/cached")
-            .display()
-            .to_string()
+        home("@qq_3agroup_3a1/kit/cached").display().to_string()
     );
     let outside = site.script("scripts/cached.py", json!({})).await;
     let data = std::fs::canonicalize(site.0.join("data")).expect("在");
@@ -175,7 +154,7 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
     let wanted: Vec<String> = ["pictures", "videos", "documents", "downloads"]
         .iter()
         .map(|name| {
-            let folder = site.0.join("data/home/alice").join(name);
+            let folder = site.0.join("data").join(name);
             std::fs::canonicalize(folder)
                 .expect("建好了")
                 .display()
@@ -188,10 +167,6 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
         .script_at("scripts/homed.py", "kit", "bridge", Some("qq:group:1"))
         .await;
     assert_eq!(lines(&group), unset, "场所会话不给");
-    assert!(
-        !site.0.join("data/home/bridge/pictures").exists(),
-        "也不替它建"
-    );
     let unknown = site
         .script_at("scripts/homed.py", "kit", "alice", None)
         .await;

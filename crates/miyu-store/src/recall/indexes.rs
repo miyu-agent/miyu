@@ -1,5 +1,5 @@
 //! 回合库的登记（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条第 4、7 款）：一个账号、一个人格一份，
-//! `home/<账号>/index/recall/turns-<人格>.db`。开过的留着、一直开着：一个库一个进程只开一个连接（`docs/designs/07-存储.md`
+//! `index/recall/turns-<人格>.db`。开过的留着、一直开着：一个库一个进程只开一个连接（`docs/designs/07-存储.md`
 //! 第六节）。
 
 use std::collections::BTreeMap;
@@ -81,7 +81,7 @@ impl RecallIndexes {
     ///
     /// 列不出目录；有一份写不进（其余的照样拿掉，报最后一个错）。
     pub fn forget_session(&self, account: &AccountId, session: &SessionId) -> Result<(), DbError> {
-        let personas = self.personas(account)?;
+        let personas = self.personas()?;
         let source = session.to_string();
         let mut failed = None;
         let tomb = format!("{source}/");
@@ -100,9 +100,9 @@ impl RecallIndexes {
     /// # Errors
     ///
     /// 列不出目录（不在的当一个都没有）。
-    pub fn personas(&self, account: &AccountId) -> Result<Vec<String>, DbError> {
+    pub fn personas(&self) -> Result<Vec<String>, DbError> {
         let mut personas = Vec::new();
-        match fs::read_dir(recall_dir(&self.root, account)) {
+        match fs::read_dir(recall_dir(&self.root)) {
             Ok(entries) => {
                 for entry in entries {
                     let name = entry?.file_name();
@@ -130,13 +130,9 @@ impl RecallIndexes {
     ///
     /// # Errors
     ///
-    /// 回合库读不了；读不了数据根的 `home/`。
+    /// 回合库读不了。
     pub fn alive(&self, room: &Room, source: &Source) -> Result<bool, DbError> {
-        let account = match room {
-            Room::Persona { account, .. } | Room::Session { account, .. } => account,
-        };
-        let here = self.root.session_dir(account, &source.session).is_dir();
-        if !here && self.root.owner_of(&source.session)?.is_none() {
+        if !self.root.session_dir(&source.session).is_dir() {
             return Ok(false);
         }
         let (index, _) = self.turns(room);

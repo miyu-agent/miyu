@@ -153,7 +153,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
     );
     // 两个会话都在：出处活着，挑掉的只因为清了。
     for session in [&cleared_one, &other] {
-        std::fs::create_dir_all(home.root.session_dir(&alice_account(), session)).expect("建得了");
+        std::fs::create_dir_all(home.root.session_dir(session)).expect("建得了");
     }
     let from = |session: &SessionId| {
         MemoryEvent::Saved(Saved {

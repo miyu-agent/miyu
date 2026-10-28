@@ -337,8 +337,8 @@ fn manifests_of(core: &Arc<Core>) -> settings::Manifests {
 }
 
 /// 读两层清单（施工 9-1 上），再标出这一份核心没编进来的内置包（施工 F-2）。
-fn load_packages(resources: &ResourceRoot, root: &DataRoot, owner: &AccountId) -> Vec<Found> {
-    let mut found = miyu_endpoint::packages::load(resources, root, owner);
+fn load_packages(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
+    let mut found = miyu_endpoint::packages::load(resources, root);
     miyu_endpoint::packages::compiled(&mut found, &built_in());
     found
 }
@@ -384,7 +384,7 @@ async fn run(
     let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.state().join("logs");
     let (generated, words) = (root.clone(), resources.clone());
-    let queries = packages::register(&resources, &root, &owner);
+    let queries = packages::register(&resources, &root);
     #[cfg(feature = "net")]
     let searching = kit.clone();
     let builtins = builtin_tools_in(&resources, &env, kit);
@@ -462,7 +462,7 @@ async fn run(
     );
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
-    let purging = trash::purge(trashed, owner);
+    let purging = trash::purge(trashed);
     // 清一次每个账号的缓存（施工 Y-11 上）：同回收处，走之前等它清完。
     let sweeping = cache::sweep(cached);
     let (fixed, configured) = (options.idle, Arc::clone(&core));

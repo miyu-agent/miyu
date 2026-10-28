@@ -10,7 +10,7 @@ use miyu_kernel::session::Command;
 use miyu_log::{LevelFilter, Memory};
 use miyu_session::Stopped;
 use miyu_session::testkit::{Play, Script};
-use support::{Home, alice_account, ask, say, until_turn_ends, watch};
+use support::{Home, ask, say, until_turn_ends, watch};
 
 #[tokio::test]
 async fn a_log_that_cannot_be_read_back_stops_the_session() {
@@ -39,7 +39,7 @@ async fn a_log_that_cannot_be_read_back_stops_the_session() {
         .expect("会话在跑");
     until_turn_ends(&mut pushes).await;
     // 日志中间坏了一行：字节数不变，会话照旧往后写，读回时读不出来。
-    let dir = home.root.session_dir(&alice_account(), handle.id());
+    let dir = home.root.session_dir(handle.id());
     let segment = dir.join("000000000001.jsonl");
     let text = std::fs::read_to_string(&segment).expect("读得出");
     let second = text.lines().nth(1).expect("有第二行");

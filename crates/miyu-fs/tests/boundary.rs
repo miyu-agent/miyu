@@ -52,11 +52,11 @@ fn nobody_touches_the_data_root_even_inside_the_temp_dir() {
 fn a_workspace_moved_into_the_data_root_is_still_a_workspace() {
     let site = Site::new();
     let boundary = Boundary::new(&Places {
-        workspace: site.at("data/home/admin/workspace"),
+        workspace: site.at("data/workspace"),
         ..site.places()
     });
     assert_eq!(
-        boundary.zone(&site.real("data/home/admin/workspace/w.txt")),
+        boundary.zone(&site.real("data/workspace/w.txt")),
         Zone::Writable
     );
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
@@ -111,7 +111,7 @@ fn the_data_root_wins_over_an_added_dir() {
     });
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
     assert_eq!(
-        boundary.zone(&site.real("data/home/admin/workspace/w.txt")),
+        boundary.zone(&site.real("data/workspace/w.txt")),
         Zone::Forbidden
     );
 }
@@ -149,20 +149,14 @@ fn temp_is_writable_system_and_toolchains_read_only_the_rest_outside() {
 fn a_shelf_in_the_data_root_is_its_own_zone() {
     let site = Site::new();
     let boundary = Boundary::new(&Places {
-        shelves: vec![site.at("data/home/admin/skills/notes"), site.at("nowhere")],
+        shelves: vec![site.at("data/skills/notes"), site.at("nowhere")],
         ..site.places()
     });
-    let skill = site.real("data/home/admin/skills/notes/SKILL.md");
+    let skill = site.real("data/skills/notes/SKILL.md");
     assert_eq!(boundary.zone(&skill), Zone::Shelf);
-    assert_eq!(
-        boundary.zone(&site.real("data/home/admin/skills/notes")),
-        Zone::Shelf
-    );
+    assert_eq!(boundary.zone(&site.real("data/skills/notes")), Zone::Shelf);
     // 旁边的照旧谁都不能碰。
-    assert_eq!(
-        boundary.zone(&site.real("data/home/admin/skills")),
-        Zone::Forbidden
-    );
+    assert_eq!(boundary.zone(&site.real("data/skills")), Zone::Forbidden);
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
 }
 
@@ -398,14 +392,14 @@ fn a_workspace_holding_the_data_root_and_private_dirs_keeps_them() {
     let boundary = Boundary::new(&Places {
         workspace: site.scratch.0.clone(),
         private: vec![site.at("home/.ssh")],
-        shelves: vec![site.at("data/home/admin/skills/notes")],
+        shelves: vec![site.at("data/skills/notes")],
         ..site.places()
     });
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
     assert_eq!(boundary.zone(&site.real("data")), Zone::Forbidden);
     assert_eq!(boundary.zone(&site.real("home/.ssh/id")), Zone::Private);
     assert_eq!(
-        boundary.zone(&site.real("data/home/admin/skills/notes/SKILL.md")),
+        boundary.zone(&site.real("data/skills/notes/SKILL.md")),
         Zone::Shelf
     );
     assert_eq!(boundary.zone(&site.real("home/notes.txt")), Zone::Writable);
@@ -431,35 +425,29 @@ fn a_workspace_holding_the_data_root_and_private_dirs_keeps_them() {
 fn the_own_dirs_in_the_data_root_are_writable_even_before_they_exist() {
     let site = Site::new();
     let boundary = Boundary::new(&Places {
-        own: vec![site.at("data/home/admin/pictures")],
+        own: vec![site.at("data/pictures")],
         ..site.places()
     });
     let data = std::fs::canonicalize(site.at("data")).expect("在");
     assert_eq!(
-        boundary.zone(
-            &data
-                .join("home")
-                .join("admin")
-                .join("pictures")
-                .join("cat.png")
-        ),
+        boundary.zone(&data.join("pictures").join("cat.png")),
         Zone::Writable
     );
     assert_eq!(boundary.zone(&site.real("data/run/token")), Zone::Forbidden);
-    assert!(!boundary.blocks_descent(&data.join("home")), "通得到它");
+    assert!(!boundary.blocks_descent(&data), "通得到它");
     assert!(boundary.blocks_descent(&data.join("run")));
 }
 
-/// 数据根里知识库的文档（施工 K-3 补）：`home/<账号>/kb/<库>/` 下面的才算；库目录本身、别的账号目录、数据根以外的都不算。
+/// 数据根里知识库的文档（施工 K-3 补）：`kb/<库>/` 下面的才算；库目录本身、数据根别处、数据根以外的都不算。
 #[test]
 fn a_knowledge_base_document_is_told_apart_inside_the_data_root() {
     let site = Site::new();
     let boundary = site.boundary();
-    let doc = site.real("data").join("home/alice/kb/notes/todo.md");
+    let doc = site.real("data").join("kb/notes/todo.md");
     assert!(boundary.knowledge(&doc));
-    assert!(boundary.knowledge(&site.real("data").join("home/alice/kb/notes/sub/a.md")));
-    assert!(!boundary.knowledge(&site.real("data").join("home/alice/kb/notes")));
-    assert!(!boundary.knowledge(&site.real("data").join("home/alice/settings.toml")));
+    assert!(boundary.knowledge(&site.real("data").join("kb/notes/sub/a.md")));
+    assert!(!boundary.knowledge(&site.real("data").join("kb/notes")));
+    assert!(!boundary.knowledge(&site.real("data").join("settings.toml")));
     assert!(!boundary.knowledge(&site.real("data").join("state/kb/notes/a.md")));
     assert!(!boundary.knowledge(&site.real("work").join("kb/notes/a.md")));
 }

@@ -83,7 +83,7 @@ async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
         real(&home.home.join(".claude")),
     ];
     assert_eq!(sandboxed.spec.hidden, ssh_claude, "根目录太宽：照藏");
-    let workspace = home.root.workspace(&alice_account());
+    let workspace = home.root.workspace();
     assert!(
         sandboxed.spec.write[0].starts_with(real(&workspace)),
         "能写的是会话的默认工作区：{:?}",

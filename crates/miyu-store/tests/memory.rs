@@ -75,11 +75,7 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
         id(3)
     );
     drop((log, logs));
-    assert!(
-        root.account_dir(&admin())
-            .join("modules/memory/engineer")
-            .is_dir()
-    );
+    assert!(root.path().join("modules/memory/engineer").is_dir());
 
     let logs = MemoryLogs::new(&root);
     let log = logs
@@ -119,7 +115,7 @@ fn a_torn_last_line_is_cut_off() {
         .expect("记得下");
     drop(logs);
     let segment = root
-        .account_dir(&admin())
+        .path()
         .join("modules/memory/engineer/000000000001.jsonl");
     let mut bytes = fs::read(&segment).expect("在");
     bytes.extend_from_slice(br#"{"seq":2,"at":"2026-10"#);
@@ -194,7 +190,7 @@ fn a_missing_or_lagging_memory_index_is_filled_from_the_log() {
     log.append(at(2), tool(), None, &saved("喜欢吃火锅"))
         .expect("记得下");
     drop((log, logs));
-    let index = root.index(&admin()).join("recall/memory-engineer.db");
+    let index = root.index().join("recall/memory-engineer.db");
     for suffix in ["", "-wal", "-shm"] {
         let mut name = index.clone().into_os_string();
         name.push(suffix);
@@ -274,7 +270,7 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     drop((log, logs));
     // 外壳是好的、记忆的 body 读不懂的一行：底账跳过它、说出来，别的照常。
     let segment = root
-        .account_dir(&admin())
+        .path()
         .join("modules/memory/engineer/000000000001.jsonl");
     let mut bytes = fs::read(&segment).expect("在");
     bytes.extend_from_slice(
@@ -326,7 +322,7 @@ fn measure_a_thousand_memories() {
             .map(|entry| entry.expect("读得出").metadata().expect("在").len())
             .sum()
     };
-    let logged = size(root.account_dir(&admin()).join("modules/memory/engineer"));
+    let logged = size(root.path().join("modules/memory/engineer"));
     let started = std::time::Instant::now();
     let logs = MemoryLogs::new(&root);
     let (log, _) = logs
@@ -359,7 +355,7 @@ fn a_session_room_lives_in_the_session_directory_apart_from_the_persona() {
         .0
         .put(&format!("{session}/3"), "只在这个会话里聊过", at(1))
         .expect("放得进");
-    let dir = root.session_dir(&admin(), &session).join("memory");
+    let dir = root.session_dir(&session).join("memory");
     assert!(
         dir.join("log/000000000001.jsonl").is_file(),
         "记忆日志在会话目录里"
@@ -415,7 +411,7 @@ fn cleared_memories_leave_the_memory_index_and_stay_out_when_it_is_rebuilt() {
         .expect("记得下");
     drop((log, logs));
 
-    let index = root.index(&admin()).join("recall/memory-engineer.db");
+    let index = root.index().join("recall/memory-engineer.db");
     for suffix in ["", "-wal", "-shm"] {
         let mut name = index.clone().into_os_string();
         name.push(suffix);

@@ -137,7 +137,7 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
         assert_eq!(words(&request.messages[0]), batch);
     }
 
-    let dir = root.session_dir(&admin, &session);
+    let dir = root.session_dir(&session);
     let events = read_events(&dir).expect("日志读得到");
     let Body::SessionCreated(created) = &events[0].body else {
         panic!("第一条是 session.created");
@@ -267,7 +267,7 @@ async fn closing_keeps_only_the_newest_of_the_room() {
         engineer.push(port.open(spec(&admin)).await.expect("开得成"));
     }
     let other = port.open(spec_of(&admin, "other")).await.expect("开得成");
-    let exists = |session: &SessionId| root.session_dir(&admin, session).exists();
+    let exists = |session: &SessionId| root.session_dir(session).exists();
 
     assert_eq!(port.close(engineer[2].clone(), 2, None).await, Ok(1));
     assert!(!exists(&engineer[0]), "最旧的删了");
@@ -319,7 +319,7 @@ async fn closing_with_a_result_records_it_and_lists_it() {
     assert_eq!(port.close(stopped.clone(), 5, Some(halted)).await, Ok(0));
     assert_eq!(port.close(bare.clone(), 5, None).await, Ok(0));
 
-    let events = read_events(&root.session_dir(&admin, &done)).expect("读得出");
+    let events = read_events(&root.session_dir(&done)).expect("读得出");
     let last = events.last().expect("有事件");
     assert!(
         matches!(&last.body, Body::DreamEnded(ended) if *ended == result),

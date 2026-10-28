@@ -33,10 +33,7 @@ fn say(words: &str) -> Command {
 #[tokio::test]
 async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
     let (root, dir) = temp_root("delete");
-    miyu_session::testkit::install_sample_persona(
-        &root,
-        &AccountId::parse("alice").expect("合写法"),
-    );
+    miyu_session::testkit::install_sample_persona(&root);
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");
@@ -99,7 +96,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
     }
     assert_eq!(script.requests().len(), 3, "父会话、子会话都停在请求上");
-    let child: SessionId = read_events(&root.session_dir(&admin_account, &created.id))
+    let child: SessionId = read_events(&root.session_dir(&created.id))
         .expect("读得回来")
         .iter()
         .find_map(|event| match &event.body {
@@ -148,10 +145,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         "父会话记下它停了，它就删得掉（叫醒过它：{woke}）"
     );
     assert!(!woke, "父会话记下它停了以后，它已经不在表里");
-    assert!(
-        !root.session_dir(&admin_account, &child).exists(),
-        "子会话挪进了回收处"
-    );
+    assert!(!root.session_dir(&child).exists(), "子会话挪进了回收处");
     // 删不掉就留在临时目录里，不影响测试：Windows 上核心开着会话列表的索引（施工 3-8 七补），它的文件删不掉。
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录留着：{error}");

@@ -65,8 +65,7 @@ async fn created_of(
     core: &Core,
     session: &SessionId,
 ) -> Option<miyu_kernel::event::SessionCreated> {
-    let owner = core.sessions.owner(core, session).await?;
-    let dir = core.root.session_dir(&owner, session);
+    let dir = core.root.session_dir(session);
     let first = tokio::task::spawn_blocking(move || miyu_store::log::first_event(&dir))
         .await
         .ok()?
@@ -245,7 +244,7 @@ async fn view(
     let language = shaken.now(core).language;
     let resources = core.resources.clone();
     let skills = crate::view::Titles::of(core, &owner);
-    let blobs = miyu_store::blob::Blobs::new(core.root.blobs(&owner));
+    let blobs = miyu_store::blob::Blobs::new(core.root.blobs());
     let (mut page, mut projector) = tokio::task::spawn_blocking(move || {
         crate::view::texts(&resources, language, &skills)
             .map(|texts| crate::view::newest(&events, texts, blobs))

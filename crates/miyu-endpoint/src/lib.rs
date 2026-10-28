@@ -260,7 +260,7 @@ impl Core {
         let mut config = Config::defaults(&root, &admin, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
-        let found = packages::load(&resources, &root, &admin);
+        let found = packages::load(&resources, &root);
         let usage = Arc::new(usage::open(&root));
         model_data.keep_ledger(Arc::clone(&usage));
         // 常驻的摘要那一块的字（施工 R-4 上）：读不出来的（安装坏了）这个核心不交摘要，别的照常。
@@ -272,7 +272,7 @@ impl Core {
         // 人格记忆装没装（施工 R-10）：照这时读到的清单；交进来另一份的照那一份（[`Core::with_packages`]）。
         memory.set_installed(packages::is_installed(&found, MEMORY));
         // 抽取（施工 R-6 上）：照一次性入口发；字、key 的写法读不出来的，这个核心不抽。
-        if let Some(extraction) = memory::extraction(&*models, &resources, &root, &admin) {
+        if let Some(extraction) = memory::extraction(&*models, &resources, &root) {
             memory.give_extraction(extraction);
         }
         let (knowledge, kb_progress) = knowledge::of_core(&root, home.clone(), &resources, &found);
@@ -423,12 +423,12 @@ impl Core {
         self
     }
 
-    /// 账号 `owner` 的那一份沙盒的缓存。
-    pub(crate) fn sandbox_cache_of(&self, owner: &AccountId) -> Option<SandboxCache> {
+    /// 沙盒的缓存。
+    pub(crate) fn sandbox_cache_of(&self) -> Option<SandboxCache> {
         self.sandbox_cache
             .as_ref()
             .map(|(root, cargo_home)| SandboxCache {
-                dir: root.join(owner.as_str()),
+                dir: root.clone(),
                 cargo_home: cargo_home.clone(),
             })
     }
@@ -443,7 +443,7 @@ impl Core {
         Arc::clone(
             indexes
                 .entry(owner.clone())
-                .or_insert_with(|| Arc::new(crate::list::open_index(&self.root, owner))),
+                .or_insert_with(|| Arc::new(crate::list::open_index(&self.root))),
         )
     }
 

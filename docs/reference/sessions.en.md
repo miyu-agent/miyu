@@ -63,7 +63,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `images` | boolean, default `true` | Whether you can display images |
 | `titles` | boolean, default `true` | Whether the session gets automatic titles: with `false` it never does; renaming by hand still works |
 | `project` | string | Create it in this project ([Projects](projects.en.md)): `persona` and `preset` default to the project's, and a `session.meta_changed` follows (`events` is `[1, 2]`) |
-| `default_workspace` | The session's default workspace, an absolute path: a main session has its own `…/home/<account>/workspace/<session id>/`; children and forks use their main session's. When `cwd` equals it, it can be shown as "default workspace" |
+| `default_workspace` | The session's default workspace, an absolute path: a main session has its own `…/workspace/<session id>/`; children and forks use their main session's. When `cwd` equals it, it can be shown as "default workspace" |
 
 **Response**
 

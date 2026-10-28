@@ -27,9 +27,8 @@ use crate::list::forget;
 pub(super) fn sweep_later(core: &Arc<Core>, owner: AccountId, parent: SessionId) {
     let core = Arc::clone(core);
     tokio::spawn(async move {
-        let (root, account, id) = (core.root.clone(), owner.clone(), parent.clone());
-        let orphans = match tokio::task::spawn_blocking(move || orphans(&root, &account, &id)).await
-        {
+        let (root, id) = (core.root.clone(), parent.clone());
+        let orphans = match tokio::task::spawn_blocking(move || orphans(&root, &id)).await {
             Ok(orphans) => orphans,
             Err(error) => {
                 tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "orphan sweep panicked");
@@ -67,7 +66,7 @@ impl Open {
         let index = core.index_for(&account);
         let moved = tokio::task::spawn_blocking(move || {
             for orphan in orphans {
-                match trash::discard(&root, &account, &orphan, at) {
+                match trash::discard(&root, &orphan, at) {
                     Ok(()) => {
                         forget(&index, &orphan);
                         tracing::info!(target: "miyu::endpoint", session = orphan.as_str(), parent = parent.as_str(), "orphan subagent removed");
@@ -86,8 +85,8 @@ impl Open {
 }
 
 /// 在阻塞线程里认：`parent` 派到一半的空子会话，连同它们派的，最深的在前。父会话的日志读不出来、会话列不出来的，当没有。
-fn orphans(root: &DataRoot, account: &AccountId, parent: &SessionId) -> Vec<SessionId> {
-    let Ok(events) = read_events(&root.session_dir(account, parent)) else {
+fn orphans(root: &DataRoot, parent: &SessionId) -> Vec<SessionId> {
+    let Ok(events) = read_events(&root.session_dir(parent)) else {
         return Vec::new();
     };
     let mut calls = BTreeSet::new();
@@ -117,16 +116,16 @@ fn orphans(root: &DataRoot, account: &AccountId, parent: &SessionId) -> Vec<Sess
     if calls.is_subset(&started_calls) {
         return Vec::new();
     }
-    let Ok(ids) = root.sessions(account) else {
+    let Ok(ids) = root.sessions() else {
         return Vec::new();
     };
     let mut found = Vec::new();
     for id in ids.into_iter().filter(|id| !started.contains(id)) {
-        let child_of_parent = first_event(&root.session_dir(account, &id)).is_ok_and(|event| {
+        let child_of_parent = first_event(&root.session_dir(&id)).is_ok_and(|event| {
             matches!(&event.body, Body::SessionCreated(created) if created.parent.as_ref() == Some(parent))
         });
         if child_of_parent {
-            let below = descendants(root, account, &id, false).unwrap_or_default();
+            let below = descendants(root, &id, false).unwrap_or_default();
             found.extend(below.into_iter().rev());
             found.push(id);
         }

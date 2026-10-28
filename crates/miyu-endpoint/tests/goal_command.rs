@@ -242,7 +242,7 @@ async fn without_goals_it_is_refused_and_says_why() {
     // 预设关了长期目标的：带上预设的名字。
     let home = Home::new();
     home.write(
-        "home/alice/presets/nogoal.toml",
+        "presets/nogoal.toml",
         "[preset]\nname = \"不带目标\"\n\n[features]\ngoal = false\n",
     );
     let mut client = Client::connect(configured_core(&home, &script, goal_tools()));

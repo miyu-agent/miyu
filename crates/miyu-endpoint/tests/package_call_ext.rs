@@ -60,7 +60,7 @@ async fn an_extension_calls_only_what_another_exports() {
         ]),
         &[],
     );
-    let manifest = home.root.path().join("system/packages/memes/package.toml");
+    let manifest = home.root.path().join("packages/memes/package.toml");
     let written = read(&manifest);
     std::fs::write(
         &manifest,

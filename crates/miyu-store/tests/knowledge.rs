@@ -11,7 +11,7 @@ use miyu_store::root::DataRoot;
 use crate::support::*;
 
 fn kb(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.account_dir(&admin()).join("kb").join(id);
+    let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     dir
 }
@@ -188,7 +188,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
             Err(KnowledgeError::UnknownBase)
         ));
     }
-    assert_eq!(knowledge.ids(&admin()).expect("列得出"), ["a", "b"]);
+    assert_eq!(knowledge.ids().expect("列得出"), ["a", "b"]);
     let hit = &found[0];
     assert_eq!(hit.heading, "");
     assert!(hit.text.contains("团子的事"));
@@ -202,28 +202,18 @@ fn a_document_is_read_page_by_page() {
     let long = "字".repeat(20_000);
     write(&notes, "long.md", &long);
     write(&notes, "short.txt", "");
-    std::fs::write(
-        root.account_dir(&admin()).join("kb").join("secret.md"),
-        "库外面的",
-    )
-    .expect("写得进");
+    std::fs::write(root.path().join("kb").join("secret.md"), "库外面的").expect("写得进");
     let knowledge = Knowledge::new(&root);
-    let first = knowledge
-        .read(&admin(), "notes", "long.md", 1)
-        .expect("读得出");
+    let first = knowledge.read("notes", "long.md", 1).expect("读得出");
     assert_eq!(first.pages, 2);
     assert!(first.text.len() <= 32 * 1024);
-    let second = knowledge
-        .read(&admin(), "notes", "long.md", 2)
-        .expect("读得出");
+    let second = knowledge.read("notes", "long.md", 2).expect("读得出");
     assert_eq!(
         format!("{}{}", first.text, second.text),
         long,
         "截在字的边界上，一个字都不丢"
     );
-    let empty = knowledge
-        .read(&admin(), "notes", "short.txt", 1)
-        .expect("读得出");
+    let empty = knowledge.read("notes", "short.txt", 1).expect("读得出");
     assert_eq!((empty.text.as_str(), empty.pages), ("", 1));
     for bad in [
         "../secret.md",
@@ -234,22 +224,22 @@ fn a_document_is_read_page_by_page() {
     ] {
         assert!(
             matches!(
-                knowledge.read(&admin(), "notes", bad, 1),
+                knowledge.read("notes", bad, 1),
                 Err(KnowledgeError::UnknownDocument)
             ),
             "{bad}"
         );
     }
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "long.md", 3),
+        knowledge.read("notes", "long.md", 3),
         Err(KnowledgeError::BadPage)
     ));
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "long.md", 0),
+        knowledge.read("notes", "long.md", 0),
         Err(KnowledgeError::BadPage)
     ));
     assert!(matches!(
-        knowledge.read(&admin(), "nope", "long.md", 1),
+        knowledge.read("nope", "long.md", 1),
         Err(KnowledgeError::UnknownBase)
     ));
     let _ = SystemTime::now() + Duration::from_secs(1);

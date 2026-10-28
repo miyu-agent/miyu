@@ -454,14 +454,14 @@ pub(crate) async fn delete(
         return Err(Refusal::BAD_PARAMS);
     }
     let personas = personas(core, account);
-    let (root, account, at) = (core.root.clone(), account.clone(), now());
+    let (root, at) = (core.root.clone(), now());
     let id = params.persona;
     tokio::task::spawn_blocking(move || {
         let dir = personas.home_dir(&id);
         if !dir.is_dir() {
             return Err(Refusal::NOTHING_TO_DELETE);
         }
-        if let Err(error) = trash::personas::discard(&root, &account, &dir, &id, at) {
+        if let Err(error) = trash::personas::discard(&root, &dir, &id, at) {
             tracing::warn!(target: TARGET, kind = ?error.kind(), "persona not deleted");
             return Err(Refusal::INTERNAL);
         }

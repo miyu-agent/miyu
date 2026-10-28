@@ -31,11 +31,8 @@ async fn put(client: &mut Client, home: &Home, name: &str, bytes: &[u8]) -> Valu
 
 /// 会话 `session` 的附件目录里的 `name`（施工 3-9 六补）：交回块里该记的路径，和那份文件的内容。
 fn kept(home: &Home, session: &str, name: &str) -> (SourcePath, Vec<u8>) {
-    let dir = miyu_store::attachments::dir(
-        &home.root,
-        &alice(),
-        &SessionId::parse(session).expect("会话编号"),
-    );
+    let dir =
+        miyu_store::attachments::dir(&home.root, &SessionId::parse(session).expect("会话编号"));
     let path = std::fs::canonicalize(dir.join(name)).expect("落成了文件");
     let bytes = std::fs::read(&path).expect("读得了");
     (
@@ -137,11 +134,8 @@ async fn an_attachment_with_a_local_path_is_not_copied() {
         Some(original.to_string_lossy().as_ref()),
         "头交了本机路径的照原样，不拷（施工 3-9 六补）"
     );
-    let dir = miyu_store::attachments::dir(
-        &home.root,
-        &alice(),
-        &SessionId::parse(&session).expect("会话编号"),
-    );
+    let dir =
+        miyu_store::attachments::dir(&home.root, &SessionId::parse(&session).expect("会话编号"));
     assert!(!dir.exists(), "没建附件目录");
 }
 

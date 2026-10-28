@@ -10,10 +10,7 @@ use crate::support::*;
 
 /// 临时数据根里管理员的一个检索库的位置。
 fn place(scratch: &Scratch) -> PathBuf {
-    root_in(scratch)
-        .index(&admin())
-        .join("recall")
-        .join("test.db")
+    root_in(scratch).index().join("recall").join("test.db")
 }
 
 fn seq(n: u64) -> Seq {

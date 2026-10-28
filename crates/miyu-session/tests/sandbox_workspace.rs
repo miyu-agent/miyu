@@ -1,5 +1,5 @@
 //! 工作目录和工作区分开（施工 5-14，`docs/designs/11-权限与沙盒.md` 第四节）：工作目录太宽（根目录；施工 5-14 改起家目录只有
-//! Windows 上还太宽）的会话，命令照旧从那里起，能写的是这个会话的默认工作区 `home/<账号>/workspace/<会话>/`，用到时建好；
+//! Windows 上还太宽）的会话，命令照旧从那里起，能写的是这个会话的默认工作区 `workspace/<会话>/`，用到时建好；
 //! 子会话、子会话的子会话用主会话的那一个，`session.created` 记下 `workspace_from`；载入以后权限策略照样只让写那里。Linux、
 //! macOS 上在家目录里开的，家目录就是工作区（施工 5-14 改）。场地的假家目录是 `home/`。
 
@@ -24,7 +24,7 @@ fn real(path: &Path) -> PathBuf {
 
 /// 会话 `session` 的默认工作区。
 fn own(home: &Home, session: &SessionId) -> PathBuf {
-    home.root.session_workspace(&alice_account(), session)
+    home.root.session_workspace(session)
 }
 
 /// 哪个平台都太宽的工作目录：根目录。

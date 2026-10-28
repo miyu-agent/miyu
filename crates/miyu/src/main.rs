@@ -96,7 +96,7 @@ fn main() -> ExitCode {
         Some(first) if first != "help" && builtins.iter().any(|name| name == first) => Vec::new(),
         _ => {
             let names: Vec<&str> = builtins.iter().map(String::as_str).collect();
-            miyu_cli::packages::installed(&miyu_core::admin(), &names)
+            miyu_cli::packages::installed(&names)
         }
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
@@ -235,7 +235,7 @@ fn main() -> ExitCode {
         Some(Command::Service(args)) => miyu_cli::service(args),
         // 不带子命令、在终端里：打开界面的设置页（施工 9-3，原来的 8-24）；界面不认设置页的照旧印帮助。
         Some(Command::Config(args)) if args.command.is_none() && terminal() => {
-            match miyu_cli::head::open(Some("config"), &miyu_core::admin(), core) {
+            match miyu_cli::head::open(Some("config"), core) {
                 miyu_cli::head::Opened::Ran(code) => ExitCode::from(code),
                 miyu_cli::head::Opened::NoPage => miyu_cli::config(args, core),
             }
@@ -248,12 +248,12 @@ fn main() -> ExitCode {
         Some(Command::Schedule(args)) => miyu_cli::schedule(args, core),
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
-        Some(Command::Web(args)) => miyu_cli::web(args, &miyu_core::admin()),
+        Some(Command::Web(args)) => miyu_cli::web(args),
         Some(Command::Core { idle_seconds }) => miyu_core::main(miyu_core::Options {
             idle: idle_seconds.map(Duration::from_secs),
         }),
         // 不带子命令（施工 9-3）：在终端里打开 `ui.head` 指的界面；不在终端里（被脚本调、接管道）印帮助、退出码 2。
-        None if terminal() => match miyu_cli::head::open(None, &miyu_core::admin(), core) {
+        None if terminal() => match miyu_cli::head::open(None, core) {
             miyu_cli::head::Opened::Ran(code) => ExitCode::from(code),
             miyu_cli::head::Opened::NoPage => ExitCode::from(USAGE),
         },

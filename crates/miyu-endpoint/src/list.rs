@@ -56,18 +56,10 @@ pub(crate) async fn list(
             && dream.is_none_or(|dream| dream == row.dream.is_some())
     };
     let scanned = tokio::task::spawn_blocking(move || {
-        let mut listed = scan(
-            &root,
-            &account,
-            Some(&index),
-            &busy,
-            pick,
-            limit,
-            &Stop::default(),
-        )?;
+        let mut listed = scan(&root, Some(&index), &busy, pick, limit, &Stop::default())?;
         tokens::fill(&mut listed, &index);
         context::fill(&mut listed, &window);
-        defaults::fill(&mut listed, &index, &root, &account);
+        defaults::fill(&mut listed, &index, &root);
         for one in &mut listed {
             one.waiting = waiting.contains(&one.id);
         }
@@ -238,7 +230,6 @@ impl Listed {
 /// 读不了放会话的目录。
 pub(crate) fn scan(
     root: &DataRoot,
-    account: &AccountId,
     index: Option<&SessionIndex>,
     busy: &BTreeSet<SessionId>,
     pick: impl Fn(&Row) -> bool,
@@ -258,11 +249,11 @@ pub(crate) fn scan(
         None => Default::default(),
     };
     let mut found = Vec::new();
-    for id in root.sessions(account)? {
+    for id in root.sessions()? {
         if stop.stopped() || limit.is_some_and(|limit| found.len() >= limit) {
             break;
         }
-        let dir = root.session_dir(account, &id);
+        let dir = root.session_dir(&id);
         let row = match rows.remove(&id) {
             // 属主、父会话、是不是一次性的只在 `session.created` 里，不会变：照旧的那一行挑。
             Some(row) if !pick(&row) => continue,
@@ -283,12 +274,11 @@ pub(crate) fn scan(
 /// [`scan`] 里一个会话的算法一样；`busy` 是它这时忙不忙。会话目录没了（删了、挪进回收处）、没有日志、第一条读不出来的交回空。
 pub(crate) fn one(
     root: &DataRoot,
-    account: &AccountId,
     index: &SessionIndex,
     id: &SessionId,
     busy: bool,
 ) -> Option<Listed> {
-    let dir = root.session_dir(account, id);
+    let dir = root.session_dir(id);
     if !dir.is_dir() {
         return None;
     }
@@ -373,8 +363,8 @@ fn put(index: Option<&SessionIndex>, row: &Row, was: Option<&Mark>) {
 
 /// 打开账号 `account` 的会话列表的索引（施工 3-8 七补）：核心起来时开一次，一直开着。新建的记一行 `INFO`；读不了、坏了、
 /// 版本不对，删掉换了一份空的，记一行 `WARN`，列会话时照日志补；删了重建也打不开的记一行 `WARN`，每次列会话都整份读。
-pub(crate) fn open_index(root: &DataRoot, account: &AccountId) -> SessionIndex {
-    let (index, opened) = SessionIndex::open(&root.index(account).join(FILE));
+pub(crate) fn open_index(root: &DataRoot) -> SessionIndex {
+    let (index, opened) = SessionIndex::open(&root.index().join(FILE));
     match opened {
         Opened::Kept => {}
         Opened::Created => tracing::info!(target: "miyu::endpoint", "session index created"),

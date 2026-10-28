@@ -183,16 +183,16 @@ async fn work(
 async fn entry(core: &Core, owner: &AccountId, session: &SessionId) -> Option<Value> {
     let busy = core.sessions.busy_ids().await.contains(session);
     let waiting = core.sessions.waiting_ids().await.contains(session);
-    let (root, owner, index) = (core.root.clone(), owner.clone(), core.index_for(owner));
+    let (root, index) = (core.root.clone(), core.index_for(owner));
     let session = session.clone();
     let window = crate::list::windows(core);
     // 场所会话不推（施工 O-3）：它不在本机的头上。
     tokio::task::spawn_blocking(move || {
-        let mut listed = one(&root, &owner, &index, &session, busy)
+        let mut listed = one(&root, &index, &session, busy)
             .filter(|listed| listed.venue == crate::list::LOCAL)?;
         crate::list::tokens::fill(std::slice::from_mut(&mut listed), &index);
         crate::list::context::fill(std::slice::from_mut(&mut listed), &window);
-        crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root, &owner);
+        crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root);
         listed.waiting = waiting;
         Some(listed.to_json())
     })

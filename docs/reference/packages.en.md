@@ -27,7 +27,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 
 **Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
-**Two layers**: built-in (installed with Miyu) and installed (`system/packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
+**Two layers**: built-in (installed with Miyu) and installed (`packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
 
 ## `package.list`
 
@@ -194,7 +194,7 @@ To keep up to date, subscribe to the `extensions` stream.
 
 ## `mcp.list`, `mcp.restart`, `mcp.set`, `mcp.remove`
 
-MCP servers in the system config (`[mcp.<name>]` in `system/config.toml`). Editing the system config by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
+MCP servers in the system config (`[mcp.<name>]` in `config.toml`). Editing the system config by hand or through `mcp.set` and `mcp.remove` takes effect at once: new servers start, changed ones restart, removed ones stop.
 
 **`mcp.list`**: no params. Response `{"servers": [...]}`: `name`, `command` (a URL server has `url` instead), `venues`, `state`, `failures`, `pid` while running (none for a URL server), `retry_in` while waiting, `reason` and `stderr` when stopped, and `covers` (packages whose same-named server it covers). When its tools are known it also has `tools`: the server's tool names in the tool catalog right now (`mcp__<server>__<tool>`), whether listed by the running server or registered from the catalog cache; a server that declares resources also has `mcp__<server>__list_resources` and `mcp__<server>__read_resource`; left out while unknown (never started, no cache). Tools the server listed this time but that were not registered come as `skipped: [{"tool", "why"}]` (`{"prompt", "why"}` for a prompt), sorted by name: `tool` is the server's own name for it (empty when it had none), `why` is `name` (no name), `parameters` (the parameters schema is not an object) or `name_taken` (it clashed after shortening to 64 characters, or another tool already has the name); left out when everything was registered or when the tools only came from the catalog cache and have not been listed yet. `miyu check` reports them as `mcp_tool_skipped`. `on` is the server's global switch (`features.mcp-<server>`, see `feature.set`), `true` when unset. A server logged in through the browser (a token from `mcp.login` is stored) has `logged_in: true`; one that never logged in, or after `mcp.logout`, leaves it out (step X-42 下再补). Heads use it to show "Log out" instead of "Log in"; only whether a token is stored is told, never the token. For editing, what was written comes back too: `env` (each value text, or `{"secret": …}`, `{"env": …}`; left out when none) and `timeout_ms` (only when not the default), plus `bearer` and `headers` for a URL server (written like `env`). These come back as written (they are plain text in the system config anyway): heads mask them on display and show them in full only in the edit box; values worth hiding should be secret references; `command` is the program and its arguments, split into `command` and `args` when sent back to `mcp.set`; change `need_load` with `tool.set_loading`.
 
@@ -246,7 +246,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 |---|---|
 | `name` | Skill name |
 | `display_name`, `summary` | Name and one-line summary for people, picked by the connection's language (falling back to English, Chinese, Japanese in that order); left out when none is written |
-| `from` | Where it comes from: `home` (placed by the admin, `home/admin/skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed), `agents` (from the shared `~/.agents/skills/`, which other clients such as Codex also read) |
+| `from` | Where it comes from: `home` (placed by the admin, `skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed), `agents` (from the shared `~/.agents/skills/`, which other clients such as Codex also read) |
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
 | `on` | Global switch (`features.skill-<name>`, see `feature.set`); `true` when unset |
@@ -254,7 +254,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 
 ## `skill.remove`
 
-**Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills the admin placed (`from` is `home`; the whole `home/admin/skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
+**Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills the admin placed (`from` is `home`; the whole `skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
 
 **Errors**: no names or repeated names: `bad_params`. No such skill: `unknown_skill`; one that comes with a package: `skill_from_package`; one in the shared `~/.agents/skills/`: `skill_shared` (all three with `data.name`; if any name fails, nothing is deleted). Could not move to the trash: `trash_failed`.
 
@@ -266,7 +266,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 |---|---|
 | `tool` | Tool name |
 | `display_name`, `description` | Name and one-line description for people (the script head's `Display name`, `显示名称`, `描述`), picked by the connection's language as in `skill.list`; left out when none is written |
-| `from`, `package` | As in `skill.list`; `home` is placed by the admin (`home/admin/scripts/`) |
+| `from`, `package` | As in `skill.list`; `home` is placed by the admin (`scripts/`) |
 | `path` | Where the script file is, written as in `skill.list` |
 | `timeout` | Seconds one call waits |
 | `on` | Global switch (`features.script-<tool>`); `true` when unset |
@@ -323,7 +323,7 @@ Run a slash command: the head passes along exactly what the person typed; the co
 | `/clear-memory` (`/reset-memory`) | Clear what this session remembered |
 | `/goal` family | Show, set, pause, resume, edit, clear the standing goal |
 
-Anything else is looked up, in order, among your own command templates (`home/admin/commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
+Anything else is looked up, in order, among your own command templates (`commands/<name>.md`), commands extensions declare (the core forwards them, `command.call`), and templates in packages. A template expands into a message sent as if the person said it: the response's `events` is that message and `said` is empty.
 
 A name of the form `<server>:<prompt>` (exactly one `:`) is an MCP server's prompt: the core fetches it with `prompts/get`, splitting the words that follow on whitespace (a pair of English double quotes makes one word, without the quotes) and matching them to the prompt's declared arguments in order, the last argument taking the rest. The text and images that come back are sent as one message from this person, as with a template. Only in local sessions; it is switched with the server's feature `mcp-<server>`.
 

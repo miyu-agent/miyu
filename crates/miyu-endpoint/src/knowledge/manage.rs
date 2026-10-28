@@ -72,8 +72,8 @@ pub(super) async fn call(
     Some(match method {
         "kb.create" | "kb.update" | "kb.mount" => named(knowledge, account, method, params).await,
         "kb.delete" | "kb.reindex" => whole(core, knowledge, account, method, params).await,
-        "kb.add" => document(core, knowledge, account, params).await,
-        "kb.remove" => remove(core, knowledge, account, params).await,
+        "kb.add" => document(core, knowledge, params).await,
+        "kb.remove" => remove(core, knowledge, params).await,
         _ => return None,
     })
 }
@@ -137,7 +137,6 @@ async fn whole(
 async fn document(
     core: &Core,
     knowledge: Arc<Knowledge>,
-    account: AccountId,
     params: &Value,
 ) -> Result<Value, Refusal> {
     let document: Document = read(params)?;
@@ -146,32 +145,18 @@ async fn document(
     }
     let blob = document.blob.as_str();
     let blob = ContentHash::parse(blob).map_err(|_| Refusal::BAD_PARAMS)?;
-    let blobs = Blobs::new(core.root.blobs(&account));
+    let blobs = Blobs::new(core.root.blobs());
     let bytes = tokio::task::spawn_blocking(move || crate::attach::read_blob(&blobs, &blob))
         .await
         .map_err(|_| Refusal::INTERNAL)??;
-    blocking(move || {
-        knowledge.add(
-            &account,
-            &document.kb,
-            &document.path,
-            &bytes,
-            document.replace,
-        )
-    })
-    .await?;
+    blocking(move || knowledge.add(&document.kb, &document.path, &bytes, document.replace)).await?;
     Ok(json!({}))
 }
 
 /// 删（施工 W-14 起收文件夹、收几样）：`path` 的回 `{"trash": "<回收站里的位置>"}`，同以前删一篇；`paths` 的回
 /// `{"trash": [...]}`，照先后。先全查一遍，有一样不在就一样都不删。写法不对、两样都写或都没写、几样重了或者一样在另一样
 /// 里面：`bad_params`。
-async fn remove(
-    core: &Core,
-    knowledge: Arc<Knowledge>,
-    account: AccountId,
-    params: &Value,
-) -> Result<Value, Refusal> {
+async fn remove(core: &Core, knowledge: Arc<Knowledge>, params: &Value) -> Result<Value, Refusal> {
     let Removal { kb, path, paths } = read(params)?;
     let (single, paths) = match (path, paths) {
         (Some(path), None) => (true, vec![path]),
@@ -182,8 +167,7 @@ async fn remove(
         return Err(Refusal::BAD_PARAMS);
     }
     let home = core.home.clone();
-    let trash =
-        blocking(move || knowledge.trash_all(&account, &kb, &paths, home.as_deref())).await?;
+    let trash = blocking(move || knowledge.trash_all(&kb, &paths, home.as_deref())).await?;
     Ok(match single {
         true => json!({ "trash": trash.first() }),
         false => json!({ "trash": trash }),

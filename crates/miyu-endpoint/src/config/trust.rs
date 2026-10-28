@@ -1,4 +1,4 @@
-//! 项目配置的信任（`docs/blueprint/config.md`「怎么走」第三条第 2、3 条，G3）：读 `home/<账号>/trust.toml`，照仓库在哪、
+//! 项目配置的信任（`docs/blueprint/config.md`「怎么走」第三条第 2、3 条，G3）：读 `trust.toml`，照仓库在哪、
 //! 内容的版本认一份项目配置信不信任（施工 8-2）；记下一个回答（[`recorded`]，`config.trust` 用，施工 8-3）。
 //!
 //! 一个仓库一条 `[[project]]`：`path` 仓库在哪（`.miyu` 所在的那一层，家目录下的写成 `~/…`），`version` 答的是哪一份，

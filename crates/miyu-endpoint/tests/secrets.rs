@@ -15,8 +15,8 @@ const FAKE: &str = "sk-FAKE-KEY-FOR-TESTS-0001";
 const FAKE_2: &str = "sk-FAKE-KEY-FOR-TESTS-0002";
 
 /// 密钥文件、系统日志在数据根里的位置。
-const SECRETS: &str = "system/secrets.toml";
-const JOURNAL: &str = "system/journal.jsonl";
+const SECRETS: &str = "secrets.toml";
+const JOURNAL: &str = "journal.jsonl";
 
 /// 中文的开头注释。
 const HEADER: &str = "# Miyu 的密钥：只经 Miyu 写入、替换、删除。不要把这份文件贴给别人。\n";
@@ -203,7 +203,7 @@ async fn bad_params_are_refused_and_nothing_is_written() {
 async fn the_list_has_names_whether_set_and_who_uses_them() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers]\ndemo = { secret = \"deepseek\" }\nother = { secret = \"deepseek\" }\n",
     );
     let mut client = client(&home, &[]).await;
@@ -227,7 +227,7 @@ async fn the_list_has_names_whether_set_and_who_uses_them() {
 async fn missing_references_warn_until_set_and_env_is_the_cores() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers]\ndemo = { secret = \"deepseek\" }\nother = { env = \"MISSING_KEY\" }\n",
     );
     let mut client = client(&home, &[("PRESENT_KEY", FAKE)]).await;
@@ -265,7 +265,7 @@ async fn missing_references_warn_until_set_and_env_is_the_cores() {
         got["result"]["problems"][0]["message"],
         "providers.demo 引用的密钥 deepseek 还没设。"
     );
-    assert_eq!(got["result"]["problems"][0]["file"], "system/config.toml");
+    assert_eq!(got["result"]["problems"][0]["file"], "config.toml");
     assert_eq!(
         got["result"]["files"]["secrets"],
         json!({"file": SECRETS}),
@@ -370,7 +370,7 @@ async fn a_hand_edit_before_a_set_is_recorded_first_and_kept() {
 #[tokio::test]
 async fn hand_edits_are_watched() {
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let core = home.core_configured(&Script::new([]), None, &[]);
     let _watching = core.watch_config().expect("监视得了");
     let mut client = Client::connect(core);

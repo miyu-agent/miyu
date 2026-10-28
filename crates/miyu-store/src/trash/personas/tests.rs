@@ -9,10 +9,6 @@ use crate::test_support::Scratch;
 
 const WEEK: Duration = Duration::from_secs(7 * 24 * 3600);
 
-fn alice() -> AccountId {
-    AccountId::parse("alice").unwrap()
-}
-
 fn root_in(scratch: &Scratch) -> DataRoot {
     let root = DataRoot::locate(&Env {
         platform: Platform::current(),
@@ -35,7 +31,7 @@ fn at(millis: i64) -> Timestamp {
 
 /// 家目录里建一个人格目录，写一份人设，交回目录。
 fn persona(root: &DataRoot, id: &str) -> std::path::PathBuf {
-    let dir = root.account_dir(&alice()).join("personas").join(id);
+    let dir = root.path().join("personas").join(id);
     fs::create_dir_all(dir.join("prompts")).unwrap();
     fs::write(dir.join("prompts/persona.md"), "be kind\n").unwrap();
     dir
@@ -46,10 +42,10 @@ fn a_persona_moves_whole_and_twice_is_twice() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     let first = persona(&root, "mine");
-    discard(&root, &alice(), &first, "mine", at(0)).unwrap();
+    discard(&root, &first, "mine", at(0)).unwrap();
     assert!(!first.exists(), "原处没了");
     let trashed = root
-        .trashed_personas(&alice())
+        .trashed_personas()
         .join(format!("mine.{}", at(0).unix_millis()));
     assert_eq!(
         fs::read_to_string(trashed.join("prompts/persona.md")).unwrap(),
@@ -60,16 +56,11 @@ fn a_persona_moves_whole_and_twice_is_twice() {
         format!("{}\n", at(0))
     );
     let second = persona(&root, "mine");
-    discard(&root, &alice(), &second, "mine", at(5)).unwrap();
-    assert_eq!(
-        fs::read_dir(root.trashed_personas(&alice()))
-            .unwrap()
-            .count(),
-        2
-    );
-    let gone = root.account_dir(&alice()).join("personas").join("nobody");
+    discard(&root, &second, "mine", at(5)).unwrap();
+    assert_eq!(fs::read_dir(root.trashed_personas()).unwrap().count(), 2);
+    let gone = root.path().join("personas").join("nobody");
     assert!(
-        discard(&root, &alice(), &gone, "nobody", at(9)).is_err(),
+        discard(&root, &gone, "nobody", at(9)).is_err(),
         "不在的报错"
     );
 }
@@ -78,21 +69,17 @@ fn a_persona_moves_whole_and_twice_is_twice() {
 fn purging_removes_only_the_expired() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
-    assert_eq!(
-        purge(&root, &alice(), at(0), WEEK).unwrap().removed,
-        0,
-        "没有回收处"
-    );
+    assert_eq!(purge(&root, at(0), WEEK).unwrap().removed, 0, "没有回收处");
     let old = persona(&root, "old");
-    discard(&root, &alice(), &old, "old", at(0)).unwrap();
+    discard(&root, &old, "old", at(0)).unwrap();
     let fresh = persona(&root, "fresh");
-    discard(&root, &alice(), &fresh, "fresh", at(1000)).unwrap();
-    let broken = root.trashed_personas(&alice()).join("broken.1");
+    discard(&root, &fresh, "fresh", at(1000)).unwrap();
+    let broken = root.trashed_personas().join("broken.1");
     fs::create_dir_all(&broken).unwrap();
     let week = i64::try_from(WEEK.as_millis()).unwrap();
-    let purged = purge(&root, &alice(), at(week), WEEK).unwrap();
+    let purged = purge(&root, at(week), WEEK).unwrap();
     assert_eq!(purged.removed, 1, "正好满的删");
-    let left: Vec<String> = fs::read_dir(root.trashed_personas(&alice()))
+    let left: Vec<String> = fs::read_dir(root.trashed_personas())
         .unwrap()
         .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
         .collect::<std::collections::BTreeSet<_>>()

@@ -29,7 +29,7 @@ fn how_long_listing_two_hundred_fifty_sessions_takes() {
     let site = Site::new(&[]);
     let mut bytes = 0;
     for n in 0..SESSIONS {
-        let dir = site.1.session_dir(&alice(), &id(n));
+        let dir = site.1.session_dir(&id(n));
         fs::create_dir_all(&dir).expect("建得了");
         let mut text = format!("{CREATED}\n");
         for seq in 2..=EVENTS {
@@ -39,12 +39,11 @@ fn how_long_listing_two_hundred_fifty_sessions_takes() {
         bytes += text.len();
         fs::write(dir.join("000000000001.jsonl"), text).expect("写得进");
     }
-    let (index, _) = SessionIndex::open(&site.1.index(&alice()).join(FILE));
+    let (index, _) = SessionIndex::open(&site.1.index().join(FILE));
     let once = |index: Option<&SessionIndex>| {
         let started = Instant::now();
         let listed = scan(
             &site.1,
-            &alice(),
             index,
             &BTreeSet::new(),
             |_| true,
@@ -64,10 +63,7 @@ fn how_long_listing_two_hundred_fifty_sessions_takes() {
         println!("照索引读第 {k} 次：{:.1} 毫秒", once(Some(&index)));
     }
     for n in 0..10 {
-        let path = site
-            .1
-            .session_dir(&alice(), &id(n))
-            .join("000000000001.jsonl");
+        let path = site.1.session_dir(&id(n)).join("000000000001.jsonl");
         let mut text = fs::read_to_string(&path).expect("读得了");
         for seq in EVENTS + 1..=EVENTS + 5 {
             text.push_str(&line(seq));

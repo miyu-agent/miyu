@@ -30,16 +30,10 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value 
     let scripts: Vec<Script> = match *account == core.admin {
         true => core.scripts().to_vec(),
         false => {
-            let (packages, root, account) = (
-                core.packages_of(account),
-                core.root.clone(),
-                account.clone(),
-            );
-            tokio::task::spawn_blocking(move || {
-                miyu_store::scripts::find(&packages, &root, &account).0
-            })
-            .await
-            .unwrap_or_default()
+            let (packages, root) = (core.packages_of(account), core.root.clone());
+            tokio::task::spawn_blocking(move || miyu_store::scripts::find(&packages, &root).0)
+                .await
+                .unwrap_or_default()
         }
     };
     let listed: Vec<Value> = scripts
@@ -62,6 +56,6 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value 
             one
         })
         .collect();
-    let dir = miyu_store::scripts::own_dir(&core.root, account);
+    let dir = miyu_store::scripts::own_dir(&core.root);
     json!({ "scripts": listed, "dir": shown(&dir, core.home.as_deref()) })
 }

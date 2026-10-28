@@ -1,6 +1,6 @@
 //! 工作目录（施工 4-3 下，`11-权限与沙盒.md` 第四节；施工 5-14 起工作目录和工作区分开）：头报来的是 `~`、系统的家目录、
 //! 根目录、包含数据根的，照样是工作目录、回应带 `wide`（能写的工作区由会话退回它的默认工作区）；落在数据根里的、读不出家目录
-//! 的 `~`，退回这个会话的默认工作区 `home/<账号>/workspace/<会话>/`；账号的工作区本身（网页不选目录时交的）造会话时也换成
+//! 的 `~`，退回这个会话的默认工作区 `workspace/<会话>/`；账号的工作区本身（网页不选目录时交的）造会话时也换成
 //! 它；项目目录照旧。造会话、说话的回应说会话实际在哪个目录里（施工 4-5 下）。施工 9-7 上起换工作区的是 `session.set_workspace`；说话带的 `cwd` 9-7 再补起
 //! 先换过去（`workspace_send.rs`）。
 
@@ -76,7 +76,7 @@ async fn seen(home: &Home, outside: &Outside, cwd: &str) -> (String, String) {
 /// 会话 `session` 的默认工作区。
 fn own_of(home: &Home, session: &str) -> PathBuf {
     let id = miyu_kernel::id::SessionId::parse(session).expect("会话编号");
-    home.root.session_workspace(&alice(), &id)
+    home.root.session_workspace(&id)
 }
 
 /// 环境事实里那一格。
@@ -146,7 +146,7 @@ async fn a_project_directory_stays_and_the_account_workspace_becomes_the_session
     let (_, text) = seen(&home, &outside, &project.to_string_lossy()).await;
     assert!(text.contains(&cwd_fact(&project)), "{text}");
     // 账号的工作区本身（网页不选目录时交的）：换成这个会话自己的那一个，建好（施工 5-14）。
-    let own = home.root.workspace(&alice());
+    let own = home.root.workspace();
     std::fs::create_dir_all(&own).expect("建得了");
     let (session, text) = seen(&home, &outside, &own.to_string_lossy()).await;
     let mine = own_of(&home, &session);
@@ -269,7 +269,7 @@ async fn the_replies_say_where_the_session_works() {
 async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
     let home = Home::new();
     let outside = Outside::new();
-    home.write("system/config.toml", crate::support::venues::BINDINGS);
+    home.write("config.toml", crate::support::venues::BINDINGS);
     let items = [
         miyu_endpoint::settings::PermissionSettings::ITEMS,
         miyu_endpoint::settings::EXTERNAL_BINDINGS,
@@ -337,7 +337,7 @@ async fn the_account_workspace_means_the_session_s_own_and_replies_say_which_it_
         "{listed}"
     );
     // 网页的「默认工作区」交账号的工作区本身：换成会话自己的那一个，建好。
-    let account = home.root.workspace(&alice()).to_string_lossy().into_owned();
+    let account = home.root.workspace().to_string_lossy().into_owned();
     let reply = client
         .call(
             "w1",

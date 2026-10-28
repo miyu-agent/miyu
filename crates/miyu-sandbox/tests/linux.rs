@@ -101,7 +101,7 @@ fn hidden_paths_cannot_be_read_or_written_but_their_names_show() {
 fn a_writable_path_inside_a_hidden_one_stays_writable() {
     let _serial = serial();
     let data = Dir::new();
-    let workspace = data.path().join("home/admin/workspace");
+    let workspace = data.path().join("workspace");
     std::fs::create_dir_all(&workspace).expect("建得了目录");
     let token = data.file("token", b"secret\n");
     let spec = spec(&[&workspace], &[data.path()]);
@@ -128,7 +128,7 @@ fn a_revealed_path_inside_a_hidden_one_is_read_only() {
     let work = Dir::new();
     let data = Dir::new();
     let token = data.file("token", b"secret\n");
-    let skill = data.path().join("home/admin/skills/notes");
+    let skill = data.path().join("skills/notes");
     std::fs::create_dir_all(&skill).expect("建得了目录");
     let file = skill.join("SKILL.md");
     std::fs::write(&file, b"steps\n").expect("写得进");

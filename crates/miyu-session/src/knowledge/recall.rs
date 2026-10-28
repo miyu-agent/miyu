@@ -167,7 +167,7 @@ impl Shelves {
         for id in self.bases()? {
             if !self
                 .knowledge
-                .auto(&self.account, &id)
+                .auto(&id)
                 .map_err(|error| error.to_string())?
             {
                 continue;

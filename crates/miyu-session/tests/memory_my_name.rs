@@ -140,7 +140,7 @@ fn tool() -> By {
 /// 一个群会话：qq:2 以「小林」说了一句、那时她在群里叫「米羽」；qq:3888 的群名片也叫「米羽」。交回第 2 轮。
 fn group_source(home: &Home) -> Source {
     let session = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let line = |seq: u64, id: &str, name: &str, my_name: &str, text: &str| {
         Event::from_line(&format!(

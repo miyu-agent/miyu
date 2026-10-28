@@ -13,7 +13,6 @@ struct Places {
     scratch: Scratch,
     root: DataRoot,
     resources: ResourceRoot,
-    admin: AccountId,
 }
 
 impl Places {
@@ -36,7 +35,6 @@ impl Places {
         Places {
             resources: ResourceRoot::at(scratch.path().join("res")),
             root: DataRoot::locate(&env).unwrap(),
-            admin: AccountId::parse("admin").unwrap(),
             scratch,
         }
     }
@@ -48,8 +46,8 @@ impl Places {
     }
 
     fn found(&self) -> (Vec<Skill>, Vec<Skipped>) {
-        let packages = Packages::new(&self.resources, &self.root, &self.admin).read();
-        find(&packages, &self.root, &self.admin)
+        let packages = Packages::new(&self.resources, &self.root).read();
+        find(&packages, &self.root)
     }
 }
 
@@ -73,19 +71,10 @@ fn skills_come_from_installed_packages_and_the_home_folder() {
         "res/packages/tools/skills/shared/SKILL.md",
         &skill("shared", "From the package."),
     );
-    places.write(
-        "data/home/admin/skills/shared/SKILL.md",
-        &skill("shared", "My own."),
-    );
-    places.write(
-        "data/home/admin/skills/notes/SKILL.md",
-        &skill("notes", "Mine."),
-    );
-    places.write(
-        "data/home/admin/skills/.hidden/SKILL.md",
-        &skill(".hidden", "No."),
-    );
-    places.write("data/home/admin/skills/empty/README.md", "没有 SKILL.md");
+    places.write("data/skills/shared/SKILL.md", &skill("shared", "My own."));
+    places.write("data/skills/notes/SKILL.md", &skill("notes", "Mine."));
+    places.write("data/skills/.hidden/SKILL.md", &skill(".hidden", "No."));
+    places.write("data/skills/empty/README.md", "没有 SKILL.md");
     // 读坏了的清单：它带的技能不算。
     places.write("res/packages/broken/package.toml", "[package\n");
     places.write(
@@ -113,8 +102,8 @@ fn skills_come_from_installed_packages_and_the_home_folder() {
         "照名字排，同名的自己放的赢"
     );
     let notes = &skills[1];
-    assert!(notes.file.ends_with("home/admin/skills/notes/SKILL.md"));
-    assert!(notes.dir.ends_with("home/admin/skills/notes"));
+    assert!(notes.file.ends_with("skills/notes/SKILL.md"));
+    assert!(notes.dir.ends_with("skills/notes"));
     assert_eq!(skipped.len(), 1, "撞名的那一个：{skipped:?}");
     assert!(
         skipped[0]
@@ -124,10 +113,7 @@ fn skills_come_from_installed_packages_and_the_home_folder() {
     assert!(skipped[0].why.contains("already provided by "));
     // 被谁盖住（施工 X-13 中）：自己放的那一份 `SKILL.md`。
     let by = skipped[0].by.as_ref().expect("同名的记了被谁盖住");
-    assert!(
-        by.ends_with("data/home/admin/skills/shared/SKILL.md"),
-        "{by:?}"
-    );
+    assert!(by.ends_with("data/skills/shared/SKILL.md"), "{by:?}");
 }
 
 /// 两个包撞了名，出厂的先于家目录（施工 F-8 六补，设计 31 定了的 J）：核心升级后出厂的新带了同名的，编号排在前的家目录
@@ -140,37 +126,27 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
         "res/packages/z-tools/skills/pdf/SKILL.md",
         &skill("pdf", "Shipped."),
     );
-    places.write("data/system/packages/a-kit/package.toml", &package("a-kit"));
+    places.write("data/packages/a-kit/package.toml", &package("a-kit"));
     places.write(
-        "data/system/packages/a-kit/skills/pdf/SKILL.md",
+        "data/packages/a-kit/skills/pdf/SKILL.md",
         &skill("pdf", "Installed."),
     );
     let (skills, skipped) = places.found();
     assert_eq!(skills.len(), 1);
     assert_eq!(skills[0].package.as_deref(), Some("z-tools"));
     assert_eq!(skipped.len(), 1, "{skipped:?}");
-    assert!(
-        skipped[0]
-            .path
-            .ends_with("system/packages/a-kit/skills/pdf")
-    );
+    assert!(skipped[0].path.ends_with("packages/a-kit/skills/pdf"));
 }
 
 #[test]
 fn a_wrong_head_is_skipped_and_said_why() {
     let places = Places::new();
     // 没有说明的读不成（施工 PT-2 上：名字和文件夹不同名的照收，见下）。
-    places.write(
-        "data/home/admin/skills/bad/SKILL.md",
-        "---\nname: bad\n---\n正文\n",
-    );
-    places.write(
-        "data/home/admin/skills/good/SKILL.md",
-        &skill("good", "Fine."),
-    );
+    places.write("data/skills/bad/SKILL.md", "---\nname: bad\n---\n正文\n");
+    places.write("data/skills/good/SKILL.md", &skill("good", "Fine."));
     // 名字和文件夹不同名的照收、照写的名字用、带一条警告（施工 PT-2 上）。
     places.write(
-        "data/home/admin/skills/zip-main/SKILL.md",
+        "data/skills/zip-main/SKILL.md",
         &skill("zip", "Unpacked from a zip."),
     );
     let (skills, skipped) = places.found();
@@ -215,19 +191,19 @@ fn a_package_folder_says_which_skills_it_carries() {
     );
 }
 
-/// 技能文件夹是链接（施工 X-37）：照它指到的真实位置记，链接本身另记（删的时候只删它）；指到 `system/` 的跳过、带真实位置；
+/// 技能文件夹是链接（施工 X-37）：照它指到的真实位置记，链接本身另记（删的时候只删它）；指到数据根里别处的跳过、带真实位置；
 /// 开头写错的照它在 `skills/` 里的位置报。
 #[test]
 fn a_linked_skill_folder_is_found_where_it_really_is() {
     let places = Places::new();
     places.write("elsewhere/notes/SKILL.md", &skill("notes", "Take notes."));
-    places.write("data/system/keys/SKILL.md", &skill("keys", "Not mine."));
+    places.write("data/keys/SKILL.md", &skill("keys", "Not mine."));
     places.write("elsewhere/bad/SKILL.md", "---\nname: bad\n---\n正文\n");
-    let skills_dir = places.root.account_dir(&places.admin).join("skills");
+    let skills_dir = places.root.path().join("skills");
     fs::create_dir_all(&skills_dir).unwrap();
     let (notes, keys) = (skills_dir.join("notes"), skills_dir.join("keys"));
     if !(link(&places.scratch.path().join("elsewhere/notes"), &notes)
-        && link(&places.scratch.path().join("data/system/keys"), &keys)
+        && link(&places.scratch.path().join("data/keys"), &keys)
         && link(
             &places.scratch.path().join("elsewhere/bad"),
             &skills_dir.join("bad"),
@@ -249,7 +225,7 @@ fn a_linked_skill_folder_is_found_where_it_really_is() {
         (skipped[0].path.clone(), skipped[0].outside.clone()),
         (
             keys,
-            fs::canonicalize(places.scratch.path().join("data/system/keys")).ok()
+            fs::canonicalize(places.scratch.path().join("data/keys")).ok()
         )
     );
     assert_eq!(skipped[1].path, skills_dir.join("bad").join("SKILL.md"));
@@ -265,10 +241,7 @@ fn the_shared_agents_folder_comes_after_miyu_s_own() {
         "res/packages/tools/skills/pdf/SKILL.md",
         &skill("pdf", "From the package."),
     );
-    places.write(
-        "data/home/admin/skills/mine/SKILL.md",
-        &skill("mine", "My own."),
-    );
+    places.write("data/skills/mine/SKILL.md", &skill("mine", "My own."));
     places.write("me/.agents/skills/mine/SKILL.md", &skill("mine", "Shared."));
     places.write("me/.agents/skills/pdf/SKILL.md", &skill("pdf", "Shared."));
     places.write(

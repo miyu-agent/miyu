@@ -20,7 +20,7 @@ fn alice() -> AccountId {
 /// 和核心。
 fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
     let (root, dir) = temp_root(name);
-    install_sample_persona(&root, &alice());
+    install_sample_persona(&root);
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");

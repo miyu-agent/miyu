@@ -143,10 +143,7 @@ impl Shelves {
     ///
     /// 知识库的目录、人格的文件读不了：为什么。
     pub(crate) fn bases(&self) -> Result<Vec<String>, String> {
-        let ids = self
-            .knowledge
-            .ids(&self.account)
-            .map_err(|error| error.to_string())?;
+        let ids = self.knowledge.ids().map_err(|error| error.to_string())?;
         Ok(match self.narrowing()? {
             Some(listed) => {
                 let mut kept: Vec<String> = Vec::new();
@@ -180,7 +177,7 @@ impl Shelves {
                 .map(|id| {
                     let (name, description) = self
                         .knowledge
-                        .title(&self.account, &id)
+                        .title(&id)
                         .map_err(|error| error.to_string())?;
                     Ok(Listed {
                         id,
@@ -373,7 +370,7 @@ fn read(shelves: &Shelves, kb: String, path: String, page: usize) -> Result<KbPa
     if !bases.contains(&kb) {
         return Err(KbRefused::NoBase(kb));
     }
-    match shelves.knowledge.read(&shelves.account, &kb, &path, page) {
+    match shelves.knowledge.read(&kb, &path, page) {
         Ok(found) => Ok(KbPage {
             text: found.text,
             page: found.page,

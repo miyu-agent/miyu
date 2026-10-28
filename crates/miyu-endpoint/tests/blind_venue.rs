@@ -42,7 +42,7 @@ fn face(home: &Home, session: &str) -> (Vec<String>, Vec<String>, Vec<String>) {
         })
         .next_back()
         .expect("有快照");
-    let bytes = miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+    let bytes = miyu_store::blob::Blobs::new(home.root.blobs())
         .get(&policy)
         .expect("快照在 blob 里");
     let snapshot = miyu_policy::Snapshot::from_bytes(&bytes).expect("读得懂");
@@ -96,7 +96,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
             &capabilities,
         );
         if *needs {
-            let manifest = format!("system/packages/{id}/package.toml");
+            let manifest = format!("packages/{id}/package.toml");
             let text = read(&home.root.path().join(&manifest));
             home.write(
                 &manifest,
@@ -119,10 +119,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
         lines(path, 4).await;
     }
 
-    home.write(
-        "home/alice/presets/p.toml",
-        "[preset]\nname = { en = \"P\" }\n",
-    );
+    home.write("presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let seeing = client.create("c1", "~").await;
@@ -175,7 +172,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
     home.write(
-        "home/alice/presets/p.toml",
+        "presets/p.toml",
         "[preset]\nname = { en = \"P\" }\nunlisted = \"on\"\n",
     );
     client.say("s3", &blind, "三").await;

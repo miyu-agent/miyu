@@ -71,7 +71,6 @@ async fn a_lane_remembers_like_its_main_session_and_its_turns_go_under_its_own_n
     let lane = new_id(now());
     miyu_session::fork(Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: parent.id(),
         id: lane.clone(),
         cause: CommandId::parse("f1").expect("合写法"),
@@ -176,7 +175,6 @@ async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionI
     let lane = new_id(now());
     miyu_session::fork(Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: parent.id(),
         id: lane.clone(),
         cause: CommandId::parse("f1").expect("合写法"),
@@ -223,10 +221,7 @@ async fn a_rebuilt_index_fills_a_lane_from_its_base_too() {
     // 回合库重建以后补齐旧会话（`memory.md` 第一条第 9 款）：支线照载入时一样读底子，那一段带着底子里那句人话。
     let home = Home::new();
     let lane = heard_then_answered_in_a_lane(&home).await;
-    let path = home
-        .root
-        .index(&alice_account())
-        .join("recall/turns-engineer.db");
+    let path = home.root.index().join("recall/turns-engineer.db");
     std::fs::write(&path, "这不是一个库").expect("写得进");
     let memory = miyu_session::Memory::new(&home.root, None);
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);

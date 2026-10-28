@@ -32,11 +32,7 @@ fn words(request: &Request) -> String {
 #[tokio::test]
 async fn a_used_skill_comes_back_after_the_files_fill_their_slots() {
     let home = Home::new();
-    let dir = home
-        .root
-        .account_dir(&alice_account())
-        .join("skills")
-        .join("notes");
+    let dir = home.root.path().join("skills").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     let body = "---\nname: notes\ndescription: Take notes.\n---\n照这样记。\n";
     std::fs::write(dir.join("SKILL.md"), body).expect("写得进");

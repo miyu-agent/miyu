@@ -6,7 +6,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use tokio::sync::mpsc;
 
-use crate::support::{AccountIdOf, Asked, Home, plan, within};
+use crate::support::{Asked, Home, plan, within};
 use miyu_cli::{Format, Plan, Target};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::{Play, Script};
@@ -33,8 +33,7 @@ async fn a_new_oneshot_session_answers_and_shows_the_usage() {
     assert_eq!(err, "想一想\n\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n");
     let sessions = home.sessions();
     assert_eq!(sessions.len(), 1);
-    let created =
-        first_event(&home.root.session_dir(&AccountIdOf::admin(), &sessions[0])).expect("读得到");
+    let created = first_event(&home.root.session_dir(&sessions[0])).expect("读得到");
     assert!(
         matches!(created.body, Body::SessionCreated(created) if created.oneshot),
         "miyu ask 开的是一次性的"
@@ -111,8 +110,7 @@ async fn model_makes_a_new_session_with_it_and_switches_a_continued_one() {
     let Asked { code, err, .. } = home.ask(&first).await;
     assert_eq!(code, 0, "{err}");
     let session = home.sessions()[0].clone();
-    let created =
-        first_event(&home.root.session_dir(&AccountIdOf::admin(), &session)).expect("读得到");
+    let created = first_event(&home.root.session_dir(&session)).expect("读得到");
     assert!(
         matches!(&created.body, Body::SessionCreated(created) if created.model.as_deref() == Some("b/n")),
         "新开的照它造：{created:?}"
@@ -150,12 +148,12 @@ async fn no_memory_makes_an_off_session() {
     // 记忆要人格才生效（施工 P-4 上）：默认人格设成出厂的软件工程师。
     let home = Home::configured(Arc::new(script), "[persona]\ndefault = \"engineer\"\n");
     let snapshot = |home: &Home, session: &miyu_kernel::id::SessionId| -> String {
-        let dir = home.root.session_dir(&AccountIdOf::admin(), session);
+        let dir = home.root.session_dir(session);
         let created = first_event(&dir).expect("读得到");
         let Body::SessionCreated(created) = &created.body else {
             panic!("第 1 条应该是造会话");
         };
-        let bytes = miyu_store::blob::Blobs::new(home.root.blobs(&AccountIdOf::admin()))
+        let bytes = miyu_store::blob::Blobs::new(home.root.blobs())
             .get(&created.policy)
             .expect("快照在 blob 里");
         String::from_utf8(bytes).expect("是字")

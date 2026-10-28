@@ -54,7 +54,7 @@ fn the_first_start_creates_the_owner_once() {
     let made = ensure(&root, Some("Shorin"), now()).expect("建得了");
     assert_eq!(made.as_str(), "shorin");
     assert_eq!(owner(&root), Some(made.clone()));
-    let read = accounts::read(&root.system().join(accounts::FILE)).expect("读得了");
+    let read = accounts::read(&root.path().join(accounts::FILE)).expect("读得了");
     let row = read.accounts.of("shorin").expect("在");
     assert!(row.password.is_empty(), "不设访问密码");
     assert_eq!(

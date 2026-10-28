@@ -21,7 +21,7 @@ fn admin(username: &str, password: &str) -> Account {
 #[test]
 fn a_missing_file_has_no_accounts_and_a_written_one_reads_back() {
     let temp = Scratch::new();
-    let path = temp.path().join("system").join(FILE);
+    let path = temp.path().join(FILE);
     let empty = read(&path).expect("没有的是空的");
     assert!(empty.accounts.accounts.is_empty());
     assert_eq!(empty.version, None);
@@ -114,7 +114,7 @@ fn passwords_hash_with_argon2id_and_verify() {
 #[test]
 fn a_member_keeps_when_it_was_created_and_whether_it_is_disabled() {
     let temp = Scratch::new();
-    let path = temp.path().join("system").join(FILE);
+    let path = temp.path().join(FILE);
     let mut member = admin("alice", "correct horse");
     member.id = "alice".to_string();
     member.created = Some(Timestamp::parse("2026-10-22T01:00:00.000Z").expect("合写法"));

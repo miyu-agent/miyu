@@ -9,7 +9,7 @@ use miyu_store::knowledge::{Knowledge, KnowledgeError};
 use crate::support::*;
 
 fn base(root: &miyu_store::root::DataRoot, kb: &str) -> PathBuf {
-    root.account_dir(&admin()).join("kb").join(kb)
+    root.path().join("kb").join(kb)
 }
 
 #[test]
@@ -18,10 +18,10 @@ fn a_base_is_created_with_what_it_is_for() {
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
     knowledge
-        .create(&admin(), "recipes", Some("家常菜的做法 \"和\" 用量"))
+        .create("recipes", Some("家常菜的做法 \"和\" 用量"))
         .expect("建得了");
     assert_eq!(
-        knowledge.title(&admin(), "recipes").expect("有了"),
+        knowledge.title("recipes").expect("有了"),
         (
             "recipes".to_string(),
             "家常菜的做法 \"和\" 用量".to_string()
@@ -29,20 +29,20 @@ fn a_base_is_created_with_what_it_is_for() {
         "说明照写进 kb.toml，名字没写照编号"
     );
     knowledge
-        .create(&admin(), "recipes", Some("换一句"))
+        .create("recipes", Some("换一句"))
         .expect("已经有的照样成");
     assert_eq!(
-        knowledge.title(&admin(), "recipes").expect("有").1,
+        knowledge.title("recipes").expect("有").1,
         "家常菜的做法 \"和\" 用量",
         "已经有的不动"
     );
-    knowledge.create(&admin(), "plain", None).expect("建得了");
+    knowledge.create("plain", None).expect("建得了");
     assert!(
         !base(&root, "plain").join("kb.toml").exists(),
         "没说明的不写 kb.toml"
     );
     assert!(matches!(
-        knowledge.create(&admin(), "Bad Name", None),
+        knowledge.create("Bad Name", None),
         Err(KnowledgeError::UnknownBase)
     ));
 }
@@ -52,29 +52,23 @@ fn saving_appending_and_editing_say_before_and_after() {
     let scratch = Scratch::new("kb-save");
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
-    knowledge.create(&admin(), "notes", None).expect("建得了");
+    knowledge.create("notes", None).expect("建得了");
 
     let saved = knowledge
-        .save(&admin(), "notes", "grammar/te.md", "て形", false)
+        .save("notes", "grammar/te.md", "て形", false)
         .expect("写得进");
     let file = base(&root, "notes").join("grammar").join("te.md");
     assert_eq!(saved.path, file, "上级目录没有的建");
     assert_eq!(saved.before, None);
     assert_eq!(saved.after, "て形\n".as_bytes(), "末尾补一个换行");
     assert!(matches!(
-        knowledge.save(&admin(), "notes", "grammar/te.md", "又一份", false),
+        knowledge.save("notes", "grammar/te.md", "又一份", false),
         Err(KnowledgeError::Exists)
     ));
 
     std::fs::write(&file, "て形").expect("写得进");
     let appended = knowledge
-        .save(
-            &admin(),
-            "notes",
-            "grammar/te.md",
-            "食べる → 食べて\n",
-            true,
-        )
+        .save("notes", "grammar/te.md", "食べる → 食べて\n", true)
         .expect("写得进");
     assert_eq!(appended.before.as_deref(), Some("て形".as_bytes()));
     assert_eq!(
@@ -83,25 +77,25 @@ fn saving_appending_and_editing_say_before_and_after() {
         "原来末尾没换行的先补一个"
     );
     let fresh = knowledge
-        .save(&admin(), "notes", "new.txt", "一行", true)
+        .save("notes", "new.txt", "一行", true)
         .expect("没有的追加就是新建");
     assert_eq!(fresh.before, None);
 
     let edited = knowledge
-        .edit(&admin(), "notes", "grammar/te.md", "食べて", "たべて")
+        .edit("notes", "grammar/te.md", "食べて", "たべて")
         .expect("改得了");
     assert_eq!(edited.after, "て形\n食べる → たべて\n".as_bytes());
     assert!(matches!(
-        knowledge.edit(&admin(), "notes", "grammar/te.md", "没有这句", "x"),
+        knowledge.edit("notes", "grammar/te.md", "没有这句", "x"),
         Err(KnowledgeError::NoMatch)
     ));
     std::fs::write(&file, "猫 猫\n").expect("写得进");
     assert!(matches!(
-        knowledge.edit(&admin(), "notes", "grammar/te.md", "猫", "狗"),
+        knowledge.edit("notes", "grammar/te.md", "猫", "狗"),
         Err(KnowledgeError::Ambiguous(2))
     ));
     assert!(matches!(
-        knowledge.edit(&admin(), "notes", "nope.md", "a", "b"),
+        knowledge.edit("notes", "nope.md", "a", "b"),
         Err(KnowledgeError::UnknownDocument)
     ));
 }
@@ -111,7 +105,7 @@ fn wrong_paths_and_too_much_are_refused() {
     let scratch = Scratch::new("kb-refuse");
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
-    knowledge.create(&admin(), "notes", None).expect("建得了");
+    knowledge.create("notes", None).expect("建得了");
     for path in [
         "../out.md",
         "a/../../out.md",
@@ -123,19 +117,19 @@ fn wrong_paths_and_too_much_are_refused() {
     ] {
         assert!(
             matches!(
-                knowledge.save(&admin(), "notes", path, "字", false),
+                knowledge.save("notes", path, "字", false),
                 Err(KnowledgeError::UnknownDocument)
             ),
             "{path:?}"
         );
     }
     assert!(matches!(
-        knowledge.save(&admin(), "nope", "a.md", "字", false),
+        knowledge.save("nope", "a.md", "字", false),
         Err(KnowledgeError::UnknownBase)
     ));
     let big = "字".repeat(4 * 1024 * 1024 / 3 + 1);
     assert!(matches!(
-        knowledge.save(&admin(), "notes", "big.md", &big, false),
+        knowledge.save("notes", "big.md", &big, false),
         Err(KnowledgeError::TooLarge)
     ));
     assert!(
@@ -149,13 +143,13 @@ fn a_document_goes_to_the_trash() {
     let scratch = Scratch::new("kb-trash");
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
-    knowledge.create(&admin(), "notes", None).expect("建得了");
+    knowledge.create("notes", None).expect("建得了");
     knowledge
-        .save(&admin(), "notes", "old.md", "过时了", false)
+        .save("notes", "old.md", "过时了", false)
         .expect("写得进");
     let home = scratch.0.join("home");
     std::fs::create_dir_all(&home).expect("建得了");
-    match knowledge.trash(&admin(), "notes", "old.md", Some(&home)) {
+    match knowledge.trash("notes", "old.md", Some(&home)) {
         Ok((path, trash)) => {
             assert_eq!(path, base(&root, "notes").join("old.md"));
             assert!(!path.exists(), "挪走了");
@@ -168,7 +162,7 @@ fn a_document_goes_to_the_trash() {
         Err(other) => panic!("{other}"),
     }
     assert!(matches!(
-        knowledge.trash(&admin(), "notes", "gone.md", Some(&home)),
+        knowledge.trash("notes", "gone.md", Some(&home)),
         Err(KnowledgeError::UnknownDocument)
     ));
 }
@@ -194,13 +188,13 @@ fn a_data_root_reached_through_a_link_is_written_where_it_really_is() {
     })
     .expect("测试里做得到");
     root.prepare().expect("测试里做得到");
-    root.prepare_home(&admin()).expect("测试里做得到");
+    root.prepare_workspace().expect("测试里做得到");
     let knowledge = Knowledge::new(&root);
     knowledge
-        .create(&admin(), "notes", Some("笔记"))
+        .create("notes", Some("笔记"))
         .expect("建得了，说明写得进");
     let saved = knowledge
-        .save(&admin(), "notes", "a.md", "字", false)
+        .save("notes", "a.md", "字", false)
         .expect("写得进");
     assert!(
         saved
@@ -209,7 +203,5 @@ fn a_data_root_reached_through_a_link_is_written_where_it_really_is() {
         "{}",
         saved.path.display()
     );
-    knowledge
-        .edit(&admin(), "notes", "a.md", "字", "改")
-        .expect("改得了");
+    knowledge.edit("notes", "a.md", "字", "改").expect("改得了");
 }

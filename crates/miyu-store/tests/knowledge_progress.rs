@@ -47,7 +47,7 @@ fn filled(scratch: &Scratch, recorder: &Arc<Recorder>) -> Knowledge {
         auto: None,
     };
     knowledge.found(&admin(), "notes", none).expect("建得了");
-    let dir = root.account_dir(&admin()).join("kb/notes");
+    let dir = root.path().join("kb/notes");
     for name in ["a.md", "b.md", "c.md"] {
         std::fs::write(dir.join(name), format!("# {name}\n猫\n")).expect("写得进");
     }
@@ -111,7 +111,7 @@ fn an_unchanged_skipped_document_is_not_read_again() {
     let scratch = Scratch::new("kb-progress-skipped");
     let recorder = Arc::new(Recorder::default());
     let knowledge = filled(&scratch, &recorder);
-    let dir = root_in(&scratch).account_dir(&admin()).join("kb/notes");
+    let dir = root_in(&scratch).path().join("kb/notes");
     std::fs::write(dir.join("latin1.txt"), [b'c', b'a', 0xe9, b'\n']).expect("写得进");
     let (_, skipped) = knowledge.list(&admin()).expect("列得出");
     assert_eq!(skipped.len(), 1, "{skipped:?}");

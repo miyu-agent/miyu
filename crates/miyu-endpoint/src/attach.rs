@@ -164,7 +164,7 @@ pub(crate) async fn blocks(
     }
     let place = place(core, account);
     blocking(move || {
-        let blobs = Blobs::new(place.root.blobs(&place.account));
+        let blobs = Blobs::new(place.root.blobs());
         wanted
             .into_iter()
             .map(|(blob, name, given, path)| block(&blobs, blob, name, given, path))
@@ -211,25 +211,24 @@ pub(crate) async fn get(
         return Err(Refusal::BAD_PARAMS);
     }
     let hash = ContentHash::parse(&params.blob).map_err(|_| Refusal::BAD_PARAMS)?;
-    let account = match &params.session {
-        Some(session) => reach::owner(core, (caller, package.is_some()), session, &hash).await?,
+    match &params.session {
+        Some(session) => reach::check(core, (caller, package.is_some()), session, &hash).await?,
         None if package.is_some_and(|package| !core.blob_grants.holds(package, &hash)) => {
             return Err(Refusal::UNKNOWN_BLOB);
         }
-        None => core.admin.clone(),
-    };
+        None => {}
+    }
     let root = core.root.clone();
-    blocking(move || get_blocking(&root, &account, &hash, params.offset, params.length)).await
+    blocking(move || get_blocking(&root, &hash, params.offset, params.length)).await
 }
 
 fn get_blocking(
     root: &DataRoot,
-    account: &AccountId,
     hash: &ContentHash,
     offset: u64,
     length: u64,
 ) -> Result<Value, Refusal> {
-    let blobs = Blobs::new(root.blobs(account));
+    let blobs = Blobs::new(root.blobs());
     let (data, size) = blobs
         .read_range(hash, offset, length)
         .map_err(|error| match error {
@@ -299,7 +298,7 @@ fn put_blocking(
     // 超了上限的图存之前缩到上限以内（施工 I-S），缩不了的照旧太大。
     let fitted = fit(bytes, given).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)?;
     let found = fitted.kind;
-    let blob = Blobs::new(place.root.blobs(&place.account))
+    let blob = Blobs::new(place.root.blobs())
         .put(&fitted.bytes)
         .map_err(|error| {
             tracing::warn!(target: TARGET, error = %error, "attachment not stored");
@@ -342,7 +341,7 @@ fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
     let real = resolve(Path::new("/"), place.home.as_deref(), path)
         .map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;
     let places = Places::here(
-        place.root.workspace(&place.account),
+        place.root.workspace(),
         place.root.path().to_path_buf(),
         place.home.as_deref(),
     );

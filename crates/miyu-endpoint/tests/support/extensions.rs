@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use miyu_endpoint::Core;
 use miyu_endpoint::extensions::Timing;
 use miyu_kernel::event::Body;
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::testkit::Script;
 use miyu_store::log::read_events;
 use miyu_tool::Catalog;
@@ -87,7 +87,7 @@ pub fn install_asking(
         }
     };
     home.write(
-        &format!("system/packages/{id}/package.toml"),
+        &format!("packages/{id}/package.toml"),
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Echo\", zh = \"回声\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"E\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\n{asking}",
             args.join(", ")
@@ -105,9 +105,9 @@ pub const BRIDGE: [&str; 5] = [
 ];
 
 /// 记下包 `id` 批过了 `capabilities`（施工 X-30：装上的包声明了能力的，批过才拉起）：施工 SU-2 中起记在开关文件
-/// `system/extensions.json` 的 `approved` 里。
+/// `extensions.json` 的 `approved` 里。
 pub fn approve(home: &Home, id: &str, capabilities: &[&str]) {
-    let system = home.root.system();
+    let system = home.root.path().to_path_buf();
     std::fs::create_dir_all(&system).expect("建得了");
     let path = system.join("extensions.json");
     let mut switches: Value = std::fs::read_to_string(&path)
@@ -165,7 +165,7 @@ pub fn core_with_script(home: &Home, timing: Timing, script: &Script) -> Arc<Cor
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(super::default_resources());
     let alice = miyu_kernel::id::AccountId::parse("alice").expect("账号合写法");
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root, &alice);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
     let packaged = miyu_endpoint::packages::settle(&mut found, &core_items);
     let items = core_items.into_iter().chain(packaged).collect();
     let config = miyu_endpoint::config::Config::load(
@@ -260,7 +260,7 @@ pub fn install_serving(
         ""
     };
     home.write(
-        &format!("system/packages/{id}/package.toml"),
+        &format!("packages/{id}/package.toml"),
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\ncapabilities = {BRIDGE:?}\n{connection}",
             args.join(", ")
@@ -270,9 +270,9 @@ pub fn install_serving(
 }
 
 /// 会话 `session` 在账号 `account` 名下的目录。
-pub fn dir(home: &Home, account: &AccountId, session: &str) -> std::path::PathBuf {
+pub fn dir(home: &Home, session: &str) -> std::path::PathBuf {
     home.root
-        .session_dir(account, &SessionId::parse(session).expect("会话编号合写法"))
+        .session_dir(&SessionId::parse(session).expect("会话编号合写法"))
 }
 
 /// 等到 `dir` 里的日志结束了 `n` 轮。

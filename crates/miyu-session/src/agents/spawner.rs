@@ -98,7 +98,7 @@ impl AgentPort for Spawner {
                 child: Some(session.clone()),
             };
             // 子会话读得到交代带的附件（施工 3-9 六补）：落进它自己的附件目录。
-            let blocks = kept_for(&agents.root, &agents.owner, &session, &self.blobs, blocks)
+            let blocks = kept_for(&agents.root, &session, &self.blobs, blocks)
                 .await
                 .map_err(|error| {
                     tracing::warn!(target: TARGET, job = job_text.as_str(), error = error.as_str(), "subagent attachments not kept");

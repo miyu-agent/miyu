@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use crate::support::{Client, Home, TOKEN, alice};
+use crate::support::{Client, Home, TOKEN};
 use miyu_kernel::event::Body;
 use miyu_kernel::tool::Access;
 use miyu_policy::Snapshot;
@@ -25,7 +25,7 @@ async fn a_session_made_over_the_protocol_gets_the_cores_tools() {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     let snapshot = Snapshot::from_bytes(&bytes).expect("读得懂");
@@ -97,7 +97,7 @@ async fn sessions_get_the_cores_sandbox_when_made_and_loaded() {
 /// 沙盒的缓存照属主交给会话（施工 5-4 下）：执行命令的调用带的环境变量指到 `<缓存>/<属主>` 里，那一处能写；换一份核心
 /// 像重启过，载入的会话照样带。
 #[tokio::test]
-async fn sessions_get_their_owners_sandbox_cache() {
+async fn sessions_get_the_sandbox_cache() {
     let home = Home::new();
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = || Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
@@ -117,7 +117,7 @@ async fn sessions_get_their_owners_sandbox_cache() {
     client.hello_without_input().await;
     client.say("c3", &session, "hi").await;
     home.until_turns(&session, 2).await;
-    let mine = std::fs::canonicalize(cache.join(alice().as_str())).expect("建了属主的那一份");
+    let mine = std::fs::canonicalize(&cache).expect("建了");
     let calls = run.calls();
     assert_eq!(calls.len(), 2, "造的、载入的各跑一次");
     for call in &calls {

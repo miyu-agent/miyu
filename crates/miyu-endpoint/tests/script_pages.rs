@@ -13,7 +13,7 @@ use crate::support::*;
 
 /// 个人设置的字。
 fn settings(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("system/config.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
 }
 
 /// 拒绝的原因码。
@@ -60,24 +60,21 @@ fn names(face: &[(String, String)]) -> Vec<&str> {
 /// 写好三个脚本：家目录里的 `weather`（全量、等 5 秒）、`plain`（什么给人看的都没写、先加载），装的包 `kit` 带的 `dice`；
 /// 个人设置的语言是 `language`。
 fn written(home: &Home, language: &str) {
-    home.write(
-        "system/config.toml",
-        &format!("[ui]\nlanguage = \"{language}\"\n"),
-    );
+    home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
     let weather = echo("weather").replace(
         "# 显示名称：回声\n",
         "# Display name: Echo\n# 显示名称：回声\n# Timeout: 5\n",
     );
-    home.write("home/alice/scripts/weather.py", &weather);
+    home.write("scripts/weather.py", &weather);
     home.write(
-        "home/alice/scripts/plain.py",
+        "scripts/plain.py",
         "#!/usr/bin/env python3\n# Description: Plain.\nprint('plain')\n",
     );
     home.write(
-        "system/packages/kit/package.toml",
+        "packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
-    home.write("system/packages/kit/scripts/dice.py", &echo("dice"));
+    home.write("packages/kit/scripts/dice.py", &echo("dice"));
 }
 
 #[tokio::test]
@@ -104,7 +101,7 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
             .as_str()
             .unwrap_or_default()
             .replace('\\', "/");
-        assert!(path.ends_with("home/alice/scripts/weather.py"), "{path}");
+        assert!(path.ends_with("scripts/weather.py"), "{path}");
         let mut rest = weather.clone();
         rest.as_object_mut().expect("是一张表").remove("path");
         assert_eq!(
@@ -142,11 +139,11 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
 async fn set_loading_is_accepted_and_changes_nothing() {
     let home = Home::new();
     home.write(
-        "home/alice/scripts/weather.py",
+        "scripts/weather.py",
         &echo("weather").replace("# Need load: no\n", "# Need load: yes\n"),
     );
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[ui]\nlanguage = \"zh\"\n\n[mcp.github]\ncommand = [\"miyu-absent-mcp-server\"]\n",
     );
     let script = Script::new([Play::Says("一。")]);
@@ -214,13 +211,13 @@ async fn set_loading_is_accepted_and_changes_nothing() {
 #[tokio::test]
 async fn a_global_switch_rules_where_the_preset_says_nothing() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     home.write(
-        "home/alice/skills/notes/SKILL.md",
+        "skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\n\nBody.\n",
     );
     home.write(
-        "home/alice/presets/keep.toml",
+        "presets/keep.toml",
         "[preset]\nname = { en = \"Keep\" }\nunlisted = \"on\"\n\n[features]\nscript-weather = true\n",
     );
     let says = ["一。", "二。", "三。", "四。", "五。"];
@@ -356,9 +353,9 @@ async fn a_global_switch_rules_where_the_preset_says_nothing() {
 #[tokio::test]
 async fn a_global_switch_leaves_an_off_preset_alone() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     home.write(
-        "home/alice/presets/bare.toml",
+        "presets/bare.toml",
         "[preset]\nname = { en = \"Bare\" }\nunlisted = \"off\"\n",
     );
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
@@ -415,7 +412,7 @@ async fn a_global_switch_leaves_an_off_preset_alone() {
 async fn badly_written_changes_are_refused_and_nothing_is_written() {
     let home = Home::new();
     let before = "[ui]\nlanguage = \"zh\"\n";
-    home.write("system/config.toml", before);
+    home.write("config.toml", before);
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let long = "a".repeat(129);

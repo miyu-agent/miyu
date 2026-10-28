@@ -254,12 +254,12 @@ impl Home {
 
     /// 管理员的会话，从新到旧。
     pub fn sessions(&self) -> Vec<SessionId> {
-        self.root.sessions(&AccountIdOf::admin()).expect("列得出")
+        self.root.sessions().expect("列得出")
     }
 
     /// 会话 `session` 的日志，只读：会话可能正在写，载入用的 `SessionLog::open` 会截掉正在写的那半行（施工 3-9 下在 macOS 的 CI 上撞到过：会话目录刚建、第一段还没有，它报没有这个会话）。还没写出第一条的当是空的。
     pub fn log(&self, session: &SessionId) -> Vec<Event> {
-        read_events(&self.root.session_dir(&AccountIdOf::admin(), session)).unwrap_or_default()
+        read_events(&self.root.session_dir(session)).unwrap_or_default()
     }
 
     /// `miyu ask` 开的那一个一次性会话：子会话不是一次性的（施工 7-9）。等它造出来，最多六十秒。
@@ -370,7 +370,7 @@ fn temp_root() -> (PathBuf, DataRoot) {
     .expect("MIYU_HOME 是绝对路径");
     root.prepare().expect("临时目录里建得了骨架");
     // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
-    miyu_session::testkit::install_sample_persona(&root, &AccountIdOf::admin());
+    miyu_session::testkit::install_sample_persona(&root);
     (dir, root)
 }
 

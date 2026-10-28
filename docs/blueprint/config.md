@@ -585,7 +585,7 @@ miyu_config::settings! {
 样本 `docs/designs/samples/journal/config.changed.jsonl`（一行，文件里 `seq` 从 1 数起；`endpoint` 的 `config/journal/tests.rs` 照它逐字节比）：
 
 ```json
-{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"person","account":"admin"},"cause":"config-9f2c4e1a7b3d5f60-1","body":{"layer":"system","file":"system/config.toml","via":"set","changes":[{"key":"ui.language","old":"en","new":"zh"}]}}
+{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"person","account":"admin"},"cause":"config-9f2c4e1a7b3d5f60-1","body":{"layer":"system","file":"config.toml","via":"set","changes":[{"key":"ui.language","old":"en","new":"zh"}]}}
 ```
 
 - `body` 的格照这个先后：`layer`、`file`、`via`（`set`、`edit`、`file`）、`changes`。
@@ -860,7 +860,7 @@ miyu_config::settings! {
 
 ```text
 $ miyu check
-~/.miyu/home/admin/settings.toml:7:1 警告：没有 ui.langauge 这一项。是不是想写 ui.language？这一行先不管，原样留着。
+~/.miyu/settings.toml:7:1 警告：没有 ui.langauge 这一项。是不是想写 ui.language？这一行先不管，原样留着。
 ~/.miyu/system/config.toml:2:9 错误：log.level 只能是 error、warn、info、debug、trace 或 off，写的是 "verbose"。改成其中一个，例如 log.level = "info"。暂用 "info"（默认值）。
 ~/src/app/.miyu/config.toml:3:19 错误：项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。
 2 处错误，1 处警告
@@ -870,7 +870,7 @@ $ miyu check
 
 ```text
 $ miyu check
-~/.miyu/home/admin/settings.toml:7:1 warning: There is no ui.langauge. Did you mean ui.language? The line is ignored and kept as it is.
+~/.miyu/settings.toml:7:1 warning: There is no ui.langauge. Did you mean ui.language? The line is ignored and kept as it is.
 ~/.miyu/system/config.toml:2:9 error: log.level must be error, warn, info, debug, trace or off, not "verbose". Write one of them, e.g. log.level = "info". Using "info" (the default) for now.
 ~/src/app/.miyu/config.toml:3:19 error: A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it does not count.
 2 errors, 1 warning
@@ -879,12 +879,12 @@ $ miyu check
 另外几种（中文、英文各一句，照原样）：
 
 ```text
-~/.miyu/home/admin/settings.toml:4:12 错误：TOML 写法不对：invalid basic string。这份文件先照上一次读进来的用着。
-~/.miyu/home/admin/settings.toml:4:12 error: Not valid TOML: invalid basic string. Using what was read from this file last time.
-~/.miyu/home/admin/settings.toml:9:9 错误：log.level 只能写在系统配置里，写在个人设置里不算。挪到系统配置里去。
-~/.miyu/home/admin/settings.toml:9:9 error: log.level belongs in the system config. It does not count in personal settings. Move it to the system config.
-~/.miyu/home/admin/settings.toml:5:19 错误：permission.start_read_only 要写 true 或 false，写的是 "yes"。改成 permission.start_read_only = true。暂用 false（默认值）。
-~/.miyu/home/admin/settings.toml:5:19 error: permission.start_read_only needs true or false, not "yes". Write permission.start_read_only = true. Using false (the default) for now.
+~/.miyu/settings.toml:4:12 错误：TOML 写法不对：invalid basic string。这份文件先照上一次读进来的用着。
+~/.miyu/settings.toml:4:12 error: Not valid TOML: invalid basic string. Using what was read from this file last time.
+~/.miyu/settings.toml:9:9 错误：log.level 只能写在系统配置里，写在个人设置里不算。挪到系统配置里去。
+~/.miyu/settings.toml:9:9 error: log.level belongs in the system config. It does not count in personal settings. Move it to the system config.
+~/.miyu/settings.toml:5:19 错误：permission.start_read_only 要写 true 或 false，写的是 "yes"。改成 permission.start_read_only = true。暂用 false（默认值）。
+~/.miyu/settings.toml:5:19 error: permission.start_read_only needs true or false, not "yes". Write permission.start_read_only = true. Using false (the default) for now.
 ```
 
 `TOML 写法不对：` 后面是 `toml_edit` 报的为什么，英文原话，不翻。
@@ -894,7 +894,7 @@ $ miyu check
 ```text
 $ miyu config explain ui.language
 界面语言（ui.language）：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。当场生效。
-  "zh"    个人设置  ~/.miyu/home/admin/settings.toml:3  ← 生效
+  "zh"    个人设置  ~/.miyu/settings.toml:3  ← 生效
   "en"    系统配置  ~/.miyu/system/config.toml:5
   "auto"  默认值
 ```
@@ -902,7 +902,7 @@ $ miyu config explain ui.language
 ```text
 $ miyu config explain ui.language
 Interface language (ui.language): The language terminals, the web page and the command line use for you. auto follows the terminal or browser. Takes effect immediately.
-  "zh"    personal settings  ~/.miyu/home/admin/settings.toml:3  ← in effect
+  "zh"    personal settings  ~/.miyu/settings.toml:3  ← in effect
   "en"    system config      ~/.miyu/system/config.toml:5
   "auto"  default
 ```
@@ -943,7 +943,7 @@ ui.startup = "new"
 
 ```text
 $ miyu config edit
-~/.miyu/home/admin/settings.toml:3:13 错误：ui.language 只能是 auto、zh、en 或 ja，写的是 "cn"。改成其中一个，例如 ui.language = "auto"。暂用 "auto"（默认值）。
+~/.miyu/settings.toml:3:13 错误：ui.language 只能是 auto、zh、en 或 ja，写的是 "cn"。改成其中一个，例如 ui.language = "auto"。暂用 "auto"（默认值）。
 有 1 处错误，还没存。回车接着改，输入 q 放弃：
 ```
 
@@ -1002,7 +1002,7 @@ $ miyu provider logout bigmodel-2
 
 ```toml
 # Miyu 的全部配置项和默认值。这份是生成的，改它没有用。
-# 系统配置写在 system/config.toml。
+# 配置写在数据根的 config.toml。
 
 [clicall.mcp]
 # 脚本里能调这个 MCP 服务的工具：开着的话，这个服务的工具在 miyu call 里都能调；关着的只能直接调。单件工具另写了的照那一件的。

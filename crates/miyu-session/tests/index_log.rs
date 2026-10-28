@@ -43,7 +43,7 @@ async fn a_failed_index_update_leaves_the_session_running() {
             .all(|line| !line.contains("session index"))
     );
 
-    let path = home.root.index(&alice_account()).join(FILE);
+    let path = home.root.index().join(FILE);
     rusqlite::Connection::open(path)
         .expect("打得开")
         .execute_batch("DROP TABLE sessions")

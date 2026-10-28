@@ -55,7 +55,7 @@ async fn a_package_writes_reads_and_returns_its_session_state() {
         ]),
         &["tools", "widgets", "sessions.drive"],
     );
-    let manifest = home.root.path().join("system/packages/todo/package.toml");
+    let manifest = home.root.path().join("packages/todo/package.toml");
     let mut text = std::fs::read_to_string(&manifest).expect("读得了");
     text.push_str("\n[[widget]]\nid = \"todos\"\nplace = \"sidebar\"\ntitle = { en = \"Todos\" }\nscope = \"session\"\nstate = true\n\n[[widget]]\nid = \"plain\"\nplace = \"sidebar\"\ntitle = { en = \"Plain\" }\nscope = \"session\"\n");
     std::fs::write(&manifest, text).expect("写得进");

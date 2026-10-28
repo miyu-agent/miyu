@@ -10,7 +10,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use crate::fake::Fake;
 use crate::measure::{FORGETFUL, SETTLE, Said, open, say, subscribe};
@@ -133,9 +133,8 @@ pub async fn large(sandbox: &Sandbox, fake: &mut Fake, plan: Plan) -> Result<Lar
 
 /// 会话的目录。
 fn directory(sandbox: &Sandbox, session: &str) -> Result<PathBuf, String> {
-    let admin = AccountId::parse("admin").map_err(|e| format!("账号名写坏了：{e}"))?;
     let session = SessionId::parse(session).map_err(|e| format!("会话编号写坏了：{e}"))?;
-    Ok(sandbox.root.session_dir(&admin, &session))
+    Ok(sandbox.root.session_dir(&session))
 }
 
 /// 日志里有几条事件。

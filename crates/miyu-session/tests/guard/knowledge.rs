@@ -6,13 +6,7 @@ use super::*;
 #[tokio::test]
 async fn a_knowledge_base_document_is_refused_with_the_kb_tools_named() {
     let home = Home::outside_temp();
-    let doc = home
-        .root
-        .path()
-        .join("home")
-        .join("alice")
-        .join("kb")
-        .join("notes");
+    let doc = home.root.path().join("kb").join("notes");
     std::fs::create_dir_all(&doc).expect("建得了");
     let doc = doc.join("todo.md");
     std::fs::write(&doc, "x").expect("写得进");

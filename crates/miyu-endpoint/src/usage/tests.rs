@@ -82,7 +82,7 @@ fn amounts_lead_with_the_configured_currency() {
     let (root, dir) = crate::test_support::temp_root("usage-currency");
     let alice = AccountId::parse("alice").expect("合写法");
     let bob = AccountId::parse("bob").expect("合写法");
-    let settings = root.path().join("system").join("config.toml");
+    let settings = root.path().join("config.toml");
     std::fs::create_dir_all(settings.parent().expect("有上一层")).expect("建得出");
     std::fs::write(&settings, "[usage]\ncurrency = \"CNY\"\n").expect("写得进");
     let config = crate::config::Config::load(

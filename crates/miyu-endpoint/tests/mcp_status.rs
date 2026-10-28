@@ -164,11 +164,11 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
     let home = Home::new();
     bundle(&home, "probe", "probe", &[]);
     home.write(
-        "home/alice/presets/nomcp.toml",
+        "presets/nomcp.toml",
         "[preset]\nname = { en = \"No MCP\" }\n\n[features]\nmcp-probe = false\n",
     );
     home.write(
-        "home/alice/presets/noecho.toml",
+        "presets/noecho.toml",
         "[preset]\nname = { en = \"No echo\" }\n\n[tools]\nmcp__probe__echo = false\n",
     );
     let script = Script::new([Play::Says("一。"), Play::Says("二。"), Play::Says("三。")]);
@@ -248,11 +248,11 @@ async fn a_preset_turns_a_service_off_whole_or_one_tool_at_a_time() {
 async fn on_windows_a_cmd_wrapper_starts_the_service() {
     let home = Home::new();
     home.write(
-        "system/packages/wrapped/package.toml",
+        "packages/wrapped/package.toml",
         "[package]\nname = { en = \"wrapped\" }\n\n[[mcp]]\nname = \"wrapped\"\ncommand = [\"probe\"]\n",
     );
     home.write(
-        "system/packages/wrapped/bin/probe.cmd",
+        "packages/wrapped/bin/probe.cmd",
         &format!("@\"{SERVER}\" %*\r\n"),
     );
     let core = core(&home, quick());

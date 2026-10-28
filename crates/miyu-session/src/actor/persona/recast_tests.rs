@@ -18,7 +18,7 @@ fn look_wanting(refresh: &Refresh, wanted: Wanted) -> Seen {
 #[test]
 fn a_wanted_preset_refilters_the_face_and_keeps_memory() {
     let (_scratch, root, refresh) = setup("recast-preset", "");
-    let dir = root.path().join("home/alice/presets");
+    let dir = root.path().join("presets");
     std::fs::write(dir.join("q.toml"), "[tools]\nshell = false\n").expect("写得进");
     let wanted = Wanted {
         persona: None,
@@ -76,7 +76,7 @@ fn a_wanted_persona_rebuilds_the_snapshot_and_asks_to_move_memory() {
 #[test]
 fn a_persona_with_the_same_words_still_swaps() {
     let (_scratch, root, refresh) = setup("recast-twin", "");
-    let dir = root.path().join("home/alice/personas/twin/prompts");
+    let dir = root.path().join("personas/twin/prompts");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("persona.md"), "You are Miyu.\n").expect("写得进");
     let wanted = Wanted {

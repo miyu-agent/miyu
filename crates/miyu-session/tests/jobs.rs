@@ -73,14 +73,12 @@ async fn a_background_command_ends_on_its_own_and_wakes_her() {
     assert_eq!(event.cause, Some(id("cmd-1")), "那一轮的 cause");
     assert_eq!(event.turn, None, "回报不带回合编号");
     let output = reported.output.clone().expect("存了输出");
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let text = String::from_utf8(blobs.get(&output).expect("blob 在")).expect("是 UTF-8");
     assert_eq!(text, "hello\n");
     assert_eq!(reported.chars, Some(6));
-    let file = miyu_store::jobs::output_path(
-        &home.root.session_dir(&alice_account(), handle.id()),
-        &JobId::new(1).unwrap(),
-    );
+    let file =
+        miyu_store::jobs::output_path(&home.root.session_dir(handle.id()), &JobId::new(1).unwrap());
     assert_eq!(
         std::fs::read_to_string(file).expect("输出文件在"),
         "hello\n"
@@ -149,7 +147,7 @@ async fn a_planned_stop_records_restarted_before_it_kills() {
     talk(&handle, "cmd-1", "放一个").await;
     // 输出是另一头读的：等它写进文件再停，不然机器忙时停下那一刻还没读到，数出来是 0（2026-10-12 记忆的会话跑门禁撞上过）。
     let file = miyu_store::jobs::output_path(
-        &home.root.session_dir(&alice_account(), handle.id()),
+        &home.root.session_dir(handle.id()),
         &JobId::parse(&last_started(&home.log(handle.id()))).expect("合写法"),
     );
     within("输出写进文件", async {
@@ -160,7 +158,7 @@ async fn a_planned_stop_records_restarted_before_it_kills() {
     .await;
     let seen_at_kill = Arc::new(Mutex::new(None));
     let (root, seen) = (
-        home.root.session_dir(&alice_account(), handle.id()),
+        home.root.session_dir(handle.id()),
         Arc::clone(&seen_at_kill),
     );
     held.on_kill(move || {
@@ -268,7 +266,7 @@ async fn a_background_command_stays_in_the_sandbox() {
     let [(_, reported)] = reports(&log)[..] else {
         panic!("记了一条结束：{log:#?}")
     };
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     let output = blobs
         .get(reported.output.as_ref().expect("存了输出"))
         .expect("blob 在");
@@ -342,7 +340,7 @@ async fn a_grandchild_numbers_its_background_commands_in_three_parts() {
         "{result:?}"
     );
     let file = miyu_store::jobs::output_path(
-        &home.root.session_dir(&alice_account(), handle.id()),
+        &home.root.session_dir(handle.id()),
         &JobId::parse("j2.1.1").unwrap(),
     );
     assert!(file.ends_with("jobs/j2.1.1.out"), "{}", file.display());
@@ -388,10 +386,7 @@ async fn an_old_child_log_that_numbered_from_j1_still_loads() {
     stop(&handle).await;
     drop(handle);
     until_idle(&home).await;
-    let segment = home
-        .root
-        .session_dir(&alice_account(), &session)
-        .join("000000000001.jsonl");
+    let segment = home.root.session_dir(&session).join("000000000001.jsonl");
     let text = std::fs::read_to_string(&segment).expect("读得了第一段");
     assert!(text.contains(r#""job":"j2.1""#), "改之前是 j2.1");
     std::fs::write(

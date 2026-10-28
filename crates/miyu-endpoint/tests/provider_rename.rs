@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use crate::support::providers::{core, data, profiles};
 use crate::support::*;
 
-const SYSTEM: &str = "system/config.toml";
+const SYSTEM: &str = "config.toml";
 
 fn read(home: &Home, relative: &str) -> String {
     std::fs::read_to_string(home.root.path().join(relative)).unwrap_or_default()

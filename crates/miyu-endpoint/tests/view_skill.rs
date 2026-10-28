@@ -15,11 +15,10 @@ use crate::support::*;
 async fn the_step_that_read_a_skill_carries_its_name_for_people() {
     let home = Home::new();
     home.write(
-        "home/alice/skills/notes/SKILL.md",
+        "skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\nmetadata:\n  display_name: Notes\n  display_name_zh: 笔记\n---\n照这样记。\n",
     );
-    let file = std::fs::canonicalize(home.root.path().join("home/alice/skills/notes/SKILL.md"))
-        .expect("在");
+    let file = std::fs::canonicalize(home.root.path().join("skills/notes/SKILL.md")).expect("在");
     let args = json!({"file_path": file}).to_string();
     let script = Script::new([Play::calls(&[("read", &args)]), Play::Says("读了。")]);
     let tools = Catalog::new(miyu_basesystem::tools(&default_resources()).expect("出厂的工具"))
@@ -58,7 +57,7 @@ async fn the_step_that_read_a_skill_carries_its_name_for_people() {
         json!({"en": "Notes", "zh": "笔记"}),
         "{recorded}"
     );
-    std::fs::remove_dir_all(home.root.path().join("home/alice/skills/notes")).expect("删得掉");
+    std::fs::remove_dir_all(home.root.path().join("skills/notes")).expect("删得掉");
     let again = client
         .call("p2", "view.page", json!({"session": session, "view": true}))
         .await;

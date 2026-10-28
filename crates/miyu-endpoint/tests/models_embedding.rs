@@ -9,7 +9,7 @@ use crate::support::*;
 async fn embedding_models_are_marked_in_the_list() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"https://dev.example.invalid/v1\"\n\n\
          [providers.dev.models.\"text-embedding-3-small\"]\nwindow = 8192\n\n\
          [providers.dev.models.\"BAAI/bge-m3\"]\nwindow = 8192\n\n\
@@ -75,7 +75,7 @@ async fn a_catalog_family_marks_it_too() {
     );
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"https://dev.example.invalid/v1\"\ncatalog = \"devcat\"\n",
     );
     let mut client = Client::connect(providers::core(&home, &[], std::sync::Arc::new(data)));

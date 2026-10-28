@@ -11,7 +11,6 @@ use miyu_config::{Item, Words};
 use miyu_kernel::id::AccountId;
 use miyu_policy::features::{Feature, Features};
 use miyu_store::human::Human;
-use miyu_store::packages::migrate::{self, ToSystem};
 use miyu_store::packages::{Found, Issue, Packages};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
@@ -69,38 +68,16 @@ const TARGET: &str = "miyu::packages";
 
 /// 这个核心的两层清单。
 pub(crate) fn packages(core: &Core) -> Packages {
-    Packages::new(&core.resources, &core.root, &core.admin)
+    Packages::new(&core.resources, &core.root)
 }
 
-/// 核心起来时读一次：写错的、撞了的各记一行 `WARN package invalid`，读不了的 `WARN package unreadable`。读之前把家目录里
-/// 以前的写法挪成新的（施工 F-8 上），挪了的记一行 `INFO package moved`，挪不了的 `WARN package not moved`；写了 `kind` 的
-/// 改成照表认的（施工 F-8 上补），`INFO package rewritten`、`WARN package not rewritten`。再之前把系统那一层从机主家目录挪到
-/// `system/packages/`（施工 U23 上上，`to_system`）。
-pub fn load(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Vec<Found> {
-    to_system(root, admin);
-    let packages = Packages::new(resources, root, admin);
-    if let Some(home) = packages.home_dir() {
-        for moved in migrate::old_layout(home) {
-            match &moved.result {
-                Ok(()) => {
-                    tracing::info!(target: TARGET, package = moved.id.as_str(), "package moved");
-                }
-                Err(why) => {
-                    tracing::warn!(target: TARGET, package = moved.id.as_str(), why = ?why, "package not moved");
-                }
-            }
-        }
-        for rewritten in migrate::old_kind(home) {
-            match &rewritten.result {
-                Ok(()) => {
-                    tracing::info!(target: TARGET, package = rewritten.id.as_str(), "package rewritten");
-                }
-                Err(why) => {
-                    tracing::warn!(target: TARGET, package = rewritten.id.as_str(), why = ?why, "package not rewritten");
-                }
-            }
-        }
+/// 核心起来时读一次：写错的、撞了的各记一行 `WARN package invalid`，读不了的 `WARN package unreadable`。装包的目录没有的先建
+/// 好（施工 U23 下上）。
+pub fn load(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
+    if let Err(error) = std::fs::create_dir_all(root.packages()) {
+        tracing::warn!(target: TARGET, error = %error, "packages not created");
     }
+    let packages = Packages::new(resources, root);
     let found = packages.read();
     // 本地库（施工 F-8 中上）：以前装的、还没记的补一份。
     local::backfill(&packages, &found);
@@ -116,26 +93,6 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Vec
         }
     }
     found
-}
-
-/// 系统那一层从机主 `admin` 家目录挪到 `system/packages/`（施工 U23 上上）：挪了记 `INFO packages moved to system`；两边都有的
-/// 旧的不动、照新位置用，记 `WARN packages left in home`；挪不动的照旧位置读这一次（[`Packages::new`]），记
-/// `WARN packages not moved to system`。没什么要挪的建好 `system/packages/`（施工 U23 下上）：机主自己那一层就是旧位置，
-/// 不建的话他装进自己那层的第一个包会让旧位置被当成系统那一层。
-fn to_system(root: &DataRoot, admin: &AccountId) {
-    let old = migrate::old_system_layer(root, admin);
-    match migrate::to_system_layer(&old, &root.system_packages()) {
-        ToSystem::Nothing => {
-            if let Err(error) = std::fs::create_dir_all(root.system_packages()) {
-                tracing::warn!(target: TARGET, error = %error, "system packages not created");
-            }
-        }
-        ToSystem::Moved => tracing::info!(target: TARGET, "packages moved to system"),
-        ToSystem::Both => tracing::warn!(target: TARGET, "packages left in home"),
-        ToSystem::Failed(error) => {
-            tracing::warn!(target: TARGET, error = %error, "packages not moved to system");
-        }
-    }
 }
 
 /// `package.list`：核心这时认的（起来时读的，装卸以后当场换，施工 F-5 上），照编号排；卸掉的出厂的接在后面，带

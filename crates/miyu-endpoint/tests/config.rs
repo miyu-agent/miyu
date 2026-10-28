@@ -46,7 +46,7 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
             "没有错误不写"
         );
     }
-    home.write("system/config.toml", "[ui]\nlanguage = \"en\"\n");
+    home.write("config.toml", "[ui]\nlanguage = \"en\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     let reply = hello(&mut client, Some("zh-CN")).await;
     assert_eq!(reply["result"]["language"], "en", "定了的照定的");
@@ -55,7 +55,7 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
         refused["error"]["message"], "Method not found.",
         "拒绝的话也照它"
     );
-    home.write("system/config.toml", "[ui]\nlanguage = \"ja\"\n");
+    home.write("config.toml", "[ui]\nlanguage = \"ja\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     assert_eq!(
         hello(&mut client, Some("zh-CN")).await["result"]["language"],
@@ -72,7 +72,7 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
 async fn hello_counts_errors_but_not_warnings() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[log]\nlevel = \"verbose\"\n\n[ui]\nlangauge = \"zh\"\nlanguage = 3\n",
     );
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
@@ -212,17 +212,17 @@ async fn unknown_keys_are_refused_with_the_nearest_ones() {
 async fn get_says_every_value_and_where_it_came_from() {
     let home = Home::new();
     let system = "#:schema ../state/config/config.schema.json\n\n[log]\nlevel = \"debug\"\n\n[ui]\nlanguage = \"zh\"\n";
-    home.write("system/config.toml", system);
+    home.write("config.toml", system);
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, Some("zh-CN")).await;
     let reply = client.call("c1", "config.get", json!({})).await;
     assert_eq!(
         reply["result"]["items"],
         json!({
-            "log.level": {"origin": {"file": "system/config.toml", "layer": "system", "line": 4}, "value": "debug"},
+            "log.level": {"origin": {"file": "config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},
             "permission.level": {"origin": {"layer": "default"}, "value": "workspace"},
-            "ui.language": {"origin": {"file": "system/config.toml", "layer": "system", "line": 7}, "value": "zh"},
+            "ui.language": {"origin": {"file": "config.toml", "layer": "system", "line": 7}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
             "ui.head": {"origin": {"layer": "default"}, "value": "tui"},
             "ui.welcomed": {"origin": {"layer": "default"}, "value": false},
@@ -231,8 +231,8 @@ async fn get_says_every_value_and_where_it_came_from() {
     assert_eq!(
         reply["result"]["files"],
         json!({
-            "secrets": {"file": "system/secrets.toml"},
-            "system": {"file": "system/config.toml", "version": version(system.as_bytes())},
+            "secrets": {"file": "secrets.toml"},
+            "system": {"file": "config.toml", "version": version(system.as_bytes())},
         })
     );
     assert_eq!(reply["result"]["problems"], json!([]));
@@ -247,10 +247,10 @@ async fn get_says_every_value_and_where_it_came_from() {
         one["result"]["items"],
         json!({"ui.language": {
             "layers": [
-                {"origin": {"file": "system/config.toml", "layer": "system", "line": 7}, "used": true, "value": "zh"},
+                {"origin": {"file": "config.toml", "layer": "system", "line": 7}, "used": true, "value": "zh"},
                 {"origin": {"layer": "default"}, "used": false, "value": "auto"},
             ],
-            "origin": {"file": "system/config.toml", "layer": "system", "line": 7},
+            "origin": {"file": "config.toml", "layer": "system", "line": 7},
             "value": "zh",
         }})
     );
@@ -259,7 +259,7 @@ async fn get_says_every_value_and_where_it_came_from() {
 #[tokio::test]
 async fn missing_files_have_no_version_and_the_environment_wins() {
     let home = Home::new();
-    home.write("system/config.toml", "log.level = \"info\"\n");
+    home.write("config.toml", "log.level = \"info\"\n");
     let core = home.core_configured(&script(), None, &[("MIYU_LOG", "trace")]);
     let mut client = Client::connect(core);
     hello(&mut client, None).await;
@@ -282,7 +282,7 @@ async fn missing_files_have_no_version_and_the_environment_wins() {
 async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[log]\nlevel = \"verbose\"\n[ui]\nlanguage = \"zh\"\n\n\nlangauge = \"zh\"\n[permission]\nstart_read_only = \"yes\"\n",
     );
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
@@ -299,12 +299,12 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
     assert_eq!(
         reply["result"]["problems"],
         json!([
-            {"code":"not_an_option","column":9,"expected":"error、warn、info、debug、trace 或 off","file":"system/config.toml","got":"\"verbose\"","key":"log.level","level":"error","line":2,
+            {"code":"not_an_option","column":9,"expected":"error、warn、info、debug、trace 或 off","file":"config.toml","got":"\"verbose\"","key":"log.level","level":"error","line":2,
              "message":"log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
              "using":{"from":"default","value":"info"}},
-            {"code":"unknown_key","column":1,"file":"system/config.toml","got":"\"zh\"","key":"ui.langauge","level":"warning","line":7,
+            {"code":"unknown_key","column":1,"file":"config.toml","got":"\"zh\"","key":"ui.langauge","level":"warning","line":7,
              "message":"没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。","suggest":"ui.language"},
-            {"code":"wrong_type","column":19,"expected":"true 或 false","file":"system/config.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
+            {"code":"wrong_type","column":19,"expected":"true 或 false","file":"config.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
              "message":"permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
              "using":{"from":"default","value":false}},
         ])
@@ -314,7 +314,7 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
 #[tokio::test]
 async fn a_file_that_cannot_be_read_is_used_as_nothing() {
     let home = Home::new();
-    home.write("system/config.toml", "[ui]\nlanguage = \"zh\n");
+    home.write("config.toml", "[ui]\nlanguage = \"zh\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let reply = client.call("c1", "config.get", json!({})).await;
@@ -336,7 +336,7 @@ async fn a_file_that_cannot_be_read_is_used_as_nothing() {
 #[tokio::test]
 async fn check_looks_at_a_text_without_using_it() {
     let home = Home::new();
-    home.write("system/config.toml", "permission.start_read_only = true\n");
+    home.write("config.toml", "permission.start_read_only = true\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, Some("en")).await;
     let check = |id: &'static str, layer: &'static str, text: &'static str| json!({"id": id, "layer": layer, "text": text});
@@ -416,10 +416,7 @@ async fn a_session_starts_read_only_when_the_setting_says_so() {
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let plain = client.create("c1", &cwd).await;
-    home.write(
-        "system/config.toml",
-        "[permission]\nstart_read_only = true\n",
-    );
+    home.write("config.toml", "[permission]\nstart_read_only = true\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let strict = client.create("c2", &cwd).await;
@@ -439,7 +436,7 @@ async fn a_session_opens_at_the_configured_level() {
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let plain = client.create("c1", &cwd).await;
-    home.write("system/config.toml", "[permission]\nlevel = \"full\"\n");
+    home.write("config.toml", "[permission]\nlevel = \"full\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let open = client.create("c2", &cwd).await;

@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use miyu_kernel::event::{Body, Event, SessionCreated};
-use miyu_kernel::id::{AccountId, CommandId, ContentHash, SessionId};
+use miyu_kernel::id::{CommandId, ContentHash, SessionId};
 use miyu_kernel::session::{Loader, Policy, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
@@ -46,7 +46,7 @@ pub(super) enum Loaded {
     Whole(Vec<Event>),
 }
 
-/// 照会话日志目录 `dir` 读、接着重放：会话 `id`，快照从 `store` 取，分叉出来的从数据根 `parents` 里账号 `owner` 的父会话
+/// 照会话日志目录 `dir` 读、接着重放：会话 `id`，快照从 `store` 取，分叉出来的从数据根 `parents` 里的父会话
 /// 读底子。
 ///
 /// # Errors
@@ -56,7 +56,7 @@ pub(super) fn read(
     dir: &Path,
     id: &SessionId,
     store: &Blobs,
-    (parents, owner): (&DataRoot, &AccountId),
+    parents: &DataRoot,
 ) -> Result<Read, LoadError> {
     let mut started: Option<Started> = None;
     let mut failed = None;
@@ -65,7 +65,7 @@ pub(super) fn read(
     let opened = SessionLog::open_each(dir, SEGMENT_LIMIT, |events| {
         if started.is_none() {
             let at = Instant::now();
-            match start(&events, id, store, (parents, owner)) {
+            match start(&events, id, store, parents) {
                 Ok(start) => {
                     if let Some(base) = &start.base {
                         scan.base(base);
@@ -142,7 +142,7 @@ fn start(
     first: &[Event],
     id: &SessionId,
     store: &Blobs,
-    (parents, owner): (&DataRoot, &AccountId),
+    parents: &DataRoot,
 ) -> Result<Started, LoadError> {
     let created = match first.first() {
         Some(Event {
@@ -156,7 +156,7 @@ fn start(
     let base = match &created.0.forked {
         Some(forked) => {
             let parent_log =
-                read_events(&parents.session_dir(owner, &forked.from)).map_err(LoadError::Log)?;
+                read_events(&parents.session_dir(&forked.from)).map_err(LoadError::Log)?;
             let base: Vec<Event> = parent_log
                 .into_iter()
                 .take_while(|event| event.seq <= forked.upto)

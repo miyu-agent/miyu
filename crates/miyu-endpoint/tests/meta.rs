@@ -393,10 +393,7 @@ async fn a_log_broken_later_is_listed_as_far_as_it_reads() {
         .await;
     let created_at = home.log(&session)[0].at;
     let id = miyu_kernel::id::SessionId::parse(&session).expect("合写法");
-    let segment = home
-        .root
-        .session_dir(&alice(), &id)
-        .join("000000000001.jsonl");
+    let segment = home.root.session_dir(&id).join("000000000001.jsonl");
     let mut log = std::fs::read_to_string(&segment).expect("读得了");
     log.push_str("not an event\n");
     std::fs::write(&segment, log).expect("写得了");

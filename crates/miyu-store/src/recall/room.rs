@@ -88,8 +88,8 @@ impl Room {
     /// 回合库在哪。
     pub(crate) fn turns(&self, root: &DataRoot) -> PathBuf {
         match self {
-            Room::Persona { account, persona } => {
-                recall_dir(root, account).join(format!("{TURNS_PREFIX}{persona}{DB}"))
+            Room::Persona { persona, .. } => {
+                recall_dir(root).join(format!("{TURNS_PREFIX}{persona}{DB}"))
             }
             Room::Session { .. } => self.session_dir(root).join(format!("turns{DB}")),
         }
@@ -98,9 +98,7 @@ impl Room {
     /// 记忆库在哪。
     pub(crate) fn memories(&self, root: &DataRoot) -> PathBuf {
         match self {
-            Room::Persona { account, persona } => {
-                recall_dir(root, account).join(format!("memory-{persona}{DB}"))
-            }
+            Room::Persona { persona, .. } => recall_dir(root).join(format!("memory-{persona}{DB}")),
             Room::Session { .. } => self.session_dir(root).join(format!("memory{DB}")),
         }
     }
@@ -108,11 +106,9 @@ impl Room {
     /// 记忆日志在哪。
     pub(crate) fn log(&self, root: &DataRoot) -> PathBuf {
         match self {
-            Room::Persona { account, persona } => root
-                .account_dir(account)
-                .join("modules")
-                .join("memory")
-                .join(persona),
+            Room::Persona { persona, .. } => {
+                root.path().join("modules").join("memory").join(persona)
+            }
             Room::Session { .. } => self.session_dir(root).join("log"),
         }
     }
@@ -120,13 +116,13 @@ impl Room {
     /// 会话那一间的目录。
     fn session_dir(&self, root: &DataRoot) -> PathBuf {
         match self {
-            Room::Session { account, session } => root.session_dir(account, session).join("memory"),
-            Room::Persona { account, .. } => root.account_dir(account),
+            Room::Session { session, .. } => root.session_dir(session).join("memory"),
+            Room::Persona { .. } => root.path().to_path_buf(),
         }
     }
 }
 
 /// 一个账号放跟着人格的那几间检索库的目录。
-pub(crate) fn recall_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
-    root.index(account).join("recall")
+pub(crate) fn recall_dir(root: &DataRoot) -> PathBuf {
+    root.index().join("recall")
 }

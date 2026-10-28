@@ -56,7 +56,7 @@ impl Knowledge {
         kb: &str,
         fields: BaseFields<'_>,
     ) -> Result<Base, KnowledgeError> {
-        let dir = self.vacant(account, kb)?;
+        let dir = self.vacant(kb)?;
         std::fs::create_dir_all(&dir).map_err(io)?;
         about(&dir, fields.values())?;
         self.counted(account, kb, None)
@@ -73,7 +73,7 @@ impl Knowledge {
         kb: &str,
         fields: BaseFields<'_>,
     ) -> Result<Base, KnowledgeError> {
-        match self.place(account, kb)? {
+        match self.place(kb)? {
             Place::Own(dir) => about(&dir, fields.values())?,
             // 包里的（施工 K-8）：名字、说明照包；自动想起的开关记在账号自己那边。
             Place::Package { package, .. } => {
@@ -81,7 +81,7 @@ impl Knowledge {
                     return Err(KnowledgeError::Packaged);
                 }
                 if let Some(auto) = fields.auto {
-                    self.switch(account, &package, kb, auto)?;
+                    self.switch(&package, kb, auto)?;
                 }
             }
         }
@@ -100,7 +100,7 @@ impl Knowledge {
         folder: &str,
         fields: BaseFields<'_>,
     ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
-        let dir = self.vacant(account, kb)?;
+        let dir = self.vacant(kb)?;
         self.mounted(folder)
             .map_err(KnowledgeError::FolderUnavailable)?;
         std::fs::create_dir_all(&dir).map_err(io)?;
@@ -118,13 +118,12 @@ impl Knowledge {
     /// 已经有了（[`KnowledgeError::Exists`]）；写不进。
     pub fn add(
         &self,
-        account: &AccountId,
         kb: &str,
         path: &str,
         bytes: &[u8],
         replace: bool,
     ) -> Result<(), KnowledgeError> {
-        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
+        let dir = std::fs::canonicalize(self.writable_dir(kb)?).map_err(io)?;
         let file = target(&dir, path).ok_or(KnowledgeError::UnknownDocument)?;
         if existing(&file)?.is_some() && !replace {
             return Err(KnowledgeError::Exists);
@@ -147,7 +146,7 @@ impl Knowledge {
         kb: &str,
         home: Option<&Path>,
     ) -> Result<String, KnowledgeError> {
-        let Place::Own(dir) = self.place(account, kb)? else {
+        let Place::Own(dir) = self.place(kb)? else {
             return Err(KnowledgeError::Packaged);
         };
         let dir = std::fs::canonicalize(dir).map_err(io)?;
@@ -172,7 +171,7 @@ impl Knowledge {
         account: &AccountId,
         kb: &str,
     ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
-        self.dir(account, kb)?;
+        self.dir(kb)?;
         {
             let shelf = self.shelf(account, kb);
             let _only_one = shelf
@@ -190,13 +189,13 @@ impl Knowledge {
     }
 
     /// 要建的库 `kb` 的目录：编号合写法、还没有。
-    fn vacant(&self, account: &AccountId, kb: &str) -> Result<PathBuf, KnowledgeError> {
+    fn vacant(&self, kb: &str) -> Result<PathBuf, KnowledgeError> {
         if !valid(kb) {
             return Err(KnowledgeError::UnknownBase);
         }
-        let dir = self.top(account).join(kb);
+        let dir = self.top().join(kb);
         // 包里同编号的看得见，也算已经有了（施工 K-8）：不另建一个盖住它。
-        match dir.exists() || self.place(account, kb).is_ok() {
+        match dir.exists() || self.place(kb).is_ok() {
             true => Err(KnowledgeError::BaseExists),
             false => Ok(dir),
         }

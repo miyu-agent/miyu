@@ -5,7 +5,7 @@
 use std::path::Path;
 
 use miyu_kernel::block::{Block, File, Image, Text};
-use miyu_kernel::id::{AccountId, SessionId, SourcePath};
+use miyu_kernel::id::{SessionId, SourcePath};
 use miyu_store::attachments;
 use miyu_store::blob::Blobs;
 use miyu_store::root::DataRoot;
@@ -62,7 +62,6 @@ pub(crate) async fn blocks(
 /// 交回系统说的：整句不发。
 pub(crate) async fn kept_for(
     root: &DataRoot,
-    owner: &AccountId,
     session: &SessionId,
     blobs: &Blobs,
     blocks: Vec<Block>,
@@ -71,7 +70,7 @@ pub(crate) async fn kept_for(
     if !blocks.iter().any(|block| foreign(block, &inside)) {
         return Ok(blocks);
     }
-    let dir = attachments::dir(root, owner, session);
+    let dir = attachments::dir(root, session);
     let blobs = blobs.clone();
     blocking(move || {
         blocks

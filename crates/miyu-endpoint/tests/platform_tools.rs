@@ -5,7 +5,6 @@
 use serde_json::{Value, json};
 
 use miyu_kernel::event::Body;
-use miyu_kernel::id::AccountId;
 use miyu_kernel::origin::By;
 use miyu_policy::Snapshot;
 use miyu_session::testkit::{Play, Script};
@@ -27,11 +26,11 @@ fn tools() -> Value {
 }
 
 /// 账号 `account` 名下会话 `reply` 的工具面上的工具名，照名字排。
-fn face(home: &Home, account: &AccountId, reply: &Value) -> Vec<String> {
+fn face(home: &Home, reply: &Value) -> Vec<String> {
     let session = reply["result"]["session"]
         .as_str()
         .unwrap_or_else(|| panic!("{reply}"));
-    let mut names: Vec<String> = snapshot(home, account, &dir(home, account, session))
+    let mut names: Vec<String> = snapshot(home, &dir(home, session))
         .tools
         .into_iter()
         .map(|tool| tool.name)
@@ -42,11 +41,11 @@ fn face(home: &Home, account: &AccountId, reply: &Value) -> Vec<String> {
 }
 
 /// 账号 `account` 名下会话 `reply` 现在的快照（最后一次换上的，没换过的是造会话时的）：工具面上那几件、没开的功能。
-fn latest(home: &Home, account: &AccountId, reply: &Value) -> (Vec<String>, Vec<String>) {
+fn latest(home: &Home, reply: &Value) -> (Vec<String>, Vec<String>) {
     let session = reply["result"]["session"]
         .as_str()
         .unwrap_or_else(|| panic!("{reply}"));
-    let policy = read_events(&dir(home, account, session))
+    let policy = read_events(&dir(home, session))
         .expect("读得了")
         .into_iter()
         .filter_map(|event| match event.body {
@@ -56,7 +55,7 @@ fn latest(home: &Home, account: &AccountId, reply: &Value) -> (Vec<String>, Vec<
         })
         .next_back()
         .expect("有快照");
-    let bytes = Blobs::new(home.root.blobs(account))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&policy)
         .expect("快照在 blob 里");
     let snapshot = Snapshot::from_bytes(&bytes).expect("读得懂");
@@ -100,30 +99,25 @@ async fn a_platform_s_tools_are_only_given_in_its_own_venues() {
         "always",
         true,
     );
-    let manifest = home
-        .root
-        .system_packages()
-        .join("bridge")
-        .join("package.toml");
+    let manifest = home.root.packages().join("bridge").join("package.toml");
     let text = read(&manifest).replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
     std::fs::write(&manifest, text).expect("写得进");
     let config = format!("{BINDINGS}\"tg:777\" = \"alice\"\n");
     let core = served_core_with(&home, &Script::new([Play::Says("在。")]), &config);
     let got = replies(&path, 10).await;
-    let bridge = alice();
     assert_eq!(got[1]["result"]["tools"], 4, "{got:?}");
     assert_eq!(
-        face(&home, &bridge, &got[2]),
+        face(&home, &got[2]),
         ["note", "qqnote", "tg_send"],
         "tg 的群"
     );
     assert_eq!(
-        face(&home, &bridge, &got[3]),
+        face(&home, &got[3]),
         ["note", "qq_send", "qqnote"],
         "qq 的群"
     );
     assert_eq!(
-        face(&home, &bridge, &got[4]),
+        face(&home, &got[4]),
         ["note", "qq_send", "qqnote", "tg_send"],
         "本机的会话都给"
     );
@@ -184,15 +178,11 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         "always",
         true,
     );
-    let manifest = home
-        .root
-        .system_packages()
-        .join("bridge")
-        .join("package.toml");
+    let manifest = home.root.packages().join("bridge").join("package.toml");
     let text = read(&manifest).replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
     std::fs::write(&manifest, text).expect("写得进");
     home.write(
-        "home/alice/presets/off.toml",
+        "presets/off.toml",
         "[preset]\nname = { en = \"Off\" }\n\n[software]\nbridge = false\n\n[tools]\nnote = false\n",
     );
     let core = served_core_with(
@@ -201,14 +191,13 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         BINDINGS,
     );
     let got = replies(&path, 6).await;
-    let bridge = alice();
     assert_eq!(
-        face(&home, &bridge, &got[2]),
+        face(&home, &got[2]),
         ["note", "qqnote", "tg_send"],
         "自己平台的群：预设关了照给，单件关了也照给"
     );
     let session = got[2]["result"]["session"].as_str().expect("有编号");
-    let off = snapshot(&home, &bridge, &dir(&home, &bridge, session))
+    let off = snapshot(&home, &dir(&home, session))
         .preset
         .map(|pin| pin.off)
         .unwrap_or_default();
@@ -216,8 +205,8 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         !off.contains(&"bridge".to_string()),
         "不算进没开的：{off:?}"
     );
-    until_turns_in(&dir(&home, &bridge, session), 1).await;
-    let said: Vec<By> = read_events(&dir(&home, &bridge, session))
+    until_turns_in(&dir(&home, session), 1).await;
+    let said: Vec<By> = read_events(&dir(&home, session))
         .expect("读得了")
         .into_iter()
         .filter(|event| matches!(event.body, Body::MessageUser(_)))
@@ -228,16 +217,13 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
             .all(|by| matches!(by, By::External(external) if external.account.is_none())),
         "平台桥的群里不认机主自己写的号：{said:?}"
     );
-    let (tools, off) = latest(&home, &bridge, &got[2]);
+    let (tools, off) = latest(&home, &got[2]);
     assert_eq!(
         tools,
         ["note", "qqnote", "tg_send"],
         "说过一轮（回合开始换过快照）照旧：{off:?}"
     );
     assert!(!off.contains(&"bridge".to_string()), "{off:?}");
-    assert!(
-        face(&home, &bridge, &got[5]).is_empty(),
-        "本机的会话照预设：{got:?}"
-    );
+    assert!(face(&home, &got[5]).is_empty(), "本机的会话照预设：{got:?}");
     core.stop_extensions().await;
 }

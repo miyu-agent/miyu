@@ -1,6 +1,6 @@
 # Projects: `project.*`
 
-A project groups sessions (like Projects in ChatGPT or the Claude web app): a name, a color, and the defaults for new sessions (working directory, persona, preset), plus extra instructions and a messaging switch. Each account has its own, stored in `home/<account>/projects.json`. It is not the project config of a code repository (`.miyu/config.toml`, `untrusted_project` in replies). Design: `docs/designs/38-项目.md`. Chinese version: [projects.md](projects.md).
+A project groups sessions (like Projects in ChatGPT or the Claude web app): a name, a color, and the defaults for new sessions (working directory, persona, preset), plus extra instructions and a messaging switch. Each account has its own, stored in `projects.json`. It is not the project config of a code repository (`.miyu/config.toml`, `untrusted_project` in replies). Design: `docs/designs/38-项目.md`. Chinese version: [projects.md](projects.md).
 
 | Method | What it does |
 |---|---|

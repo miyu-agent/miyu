@@ -161,10 +161,8 @@ async fn blob_get_bad_params() {
 #[tokio::test]
 async fn fs_read_rejects_the_data_root_and_lets_the_workspace_through() {
     let home = Home::new();
-    home.root
-        .prepare_home(&alice())
-        .expect("建得了家目录、工作区");
-    let workspace = std::fs::canonicalize(home.root.workspace(&alice())).expect("工作区在");
+    home.root.prepare_workspace().expect("建得了家目录、工作区");
+    let workspace = std::fs::canonicalize(home.root.workspace()).expect("工作区在");
     let mut client = client(&home).await;
 
     let content = b"hello workspace".to_vec();

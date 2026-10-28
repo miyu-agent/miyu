@@ -137,12 +137,11 @@ impl SessionPort for Table {
     fn peek(&self, session: SessionId) -> Pending<'_, Result<Peek, String>> {
         Box::pin(async move {
             let core = self.core()?;
-            let owner = core
-                .sessions
+            core.sessions
                 .owner(&core, &session)
                 .await
                 .ok_or_else(|| format!("session {session} not found"))?;
-            let dir = core.root.session_dir(&owner, &session);
+            let dir = core.root.session_dir(&session);
             let events = tokio::task::spawn_blocking(move || read_events(&dir))
                 .await
                 .map_err(|error| error.to_string())?
@@ -166,9 +165,9 @@ impl SessionPort for Table {
             // 设计 41 DS7）：那是记忆模块的过程，不是她和人的对话。
             let main =
                 |row: &Row| row.parent.is_none() && crate::list::local(row) && row.dream.is_none();
-            let projects = root.account_dir(&owner).join(miyu_store::projects::FILE);
+            let projects = root.path().join(miyu_store::projects::FILE);
             let (listed, projects) = tokio::task::spawn_blocking(move || {
-                let listed = scan(&root, &owner, Some(&*index), &busy, main, None, &stop);
+                let listed = scan(&root, Some(&*index), &busy, main, None, &stop);
                 // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，人人互相看得到（照以前的样子）。
                 let projects = miyu_store::projects::read(&projects)
                     .map(|read| read.projects)
@@ -204,13 +203,8 @@ impl SessionPort for Table {
     fn read_log(&self, session: SessionId) -> Pending<'_, Result<Log, String>> {
         Box::pin(async move {
             let core = self.core()?;
-            // 照属主的家目录（施工 O-4 上）；哪个账号下都没有的照管理员的算目录，读的时候说没有。
-            let owner = core
-                .sessions
-                .owner(&core, &session)
-                .await
-                .unwrap_or_else(|| core.admin.clone());
-            let dir = core.root.session_dir(&owner, &session);
+            // 读的时候没有的说没有。
+            let dir = core.root.session_dir(&session);
             Ok(Log::new(Dir(dir)))
         })
     }

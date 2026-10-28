@@ -293,10 +293,10 @@ impl Schedules {
         if let Some(found) = tables.get(account) {
             return found.clone().ok_or(ScheduleError::Unusable);
         }
-        if !create && !table::path(&self.root, account).exists() {
+        if !create && !table::path(&self.root).exists() {
             return Err(ScheduleError::Unknown);
         }
-        let (opened, how) = Table::open(&self.root, account);
+        let (opened, how) = Table::open(&self.root);
         said(account, &how, (&self.notices, self.now()));
         let opened = opened.map(Arc::new);
         tables.insert(account.clone(), opened.clone());
@@ -315,12 +315,11 @@ impl Schedules {
             .collect()
     }
 
-    /// 核心起来时：数据根里有唤醒表的账号都开上，已经过了的跳过（错过的不补），照现在算下一次。
-    pub(crate) fn recall(&self) {
-        let accounts = self.root.accounts().unwrap_or_default();
-        for account in accounts
-            .iter()
-            .filter(|account| table::path(&self.root, account).exists())
+    /// 核心起来时：主人 `owner` 有唤醒表的开上，已经过了的跳过（错过的不补），照现在算下一次。
+    pub(crate) fn recall(&self, owner: &AccountId) {
+        for account in [owner]
+            .into_iter()
+            .filter(|_| table::path(&self.root).exists())
         {
             let Ok(table) = self.table(account, false) else {
                 continue;

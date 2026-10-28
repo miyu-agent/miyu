@@ -82,7 +82,7 @@ fn names(reply: &Value) -> Vec<(String, Value)> {
 async fn a_written_name_then_the_catalog_then_the_id() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.deepseek]\nlocal = false\n\n\
          [providers.relay]\nname = \"  我的中转 \"\ndriver = \"openai-chat\"\nbase_url = \"https://relay.example.invalid/v1\"\n\n\
          [providers.plain]\ndriver = \"openai-chat\"\nbase_url = \"https://plain.example.invalid/v1\"\n\n\
@@ -102,7 +102,7 @@ async fn a_written_name_then_the_catalog_then_the_id() {
             ),
             (
                 "broken".to_string(),
-                json!({"value": "坏了的那家", "from": "config", "file": "system/config.toml", "line": 19, "layer": "system", "key": key("broken")})
+                json!({"value": "坏了的那家", "from": "config", "file": "config.toml", "line": 19, "layer": "system", "key": key("broken")})
             ),
             (
                 "deepseek".to_string(),
@@ -114,7 +114,7 @@ async fn a_written_name_then_the_catalog_then_the_id() {
             ),
             (
                 "relay".to_string(),
-                json!({"value": "我的中转", "from": "config", "file": "system/config.toml", "line": 5, "layer": "system", "key": key("relay")})
+                json!({"value": "我的中转", "from": "config", "file": "config.toml", "line": 5, "layer": "system", "key": key("relay")})
             ),
         ],
         "{reply}"
@@ -128,10 +128,7 @@ async fn a_written_name_then_the_catalog_then_the_id() {
 #[tokio::test]
 async fn a_name_set_now_shows_at_once_and_stays_in_bounds() {
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        "[providers.deepseek]\nlocal = false\n",
-    );
+    home.write("config.toml", "[providers.deepseek]\nlocal = false\n");
     let mut client = Client::connect(core(&home));
     client.hello().await;
     let set = client

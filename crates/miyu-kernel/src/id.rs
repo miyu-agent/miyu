@@ -101,7 +101,7 @@ text_id!(
 );
 
 text_id!(
-    /// 账号：相当于 Linux 的登录名，会出现在路径 `home/<账号>/` 里。给人看的名字另起。
+    /// 账号：相当于 Linux 的登录名，会出现在路径 数据根 里。给人看的名字另起。
     AccountId,
     "account",
     check_name
@@ -161,7 +161,7 @@ impl fmt::Debug for Hasher {
 }
 
 text_id!(
-    /// 模块：清单里的 `id`。会出现在路径 `home/<账号>/modules/<模块>/` 里，所以规则和账号一样。
+    /// 模块：清单里的 `id`。会出现在路径 `modules/<模块>/` 里，所以规则和账号一样。
     ModuleId,
     "module",
     check_name

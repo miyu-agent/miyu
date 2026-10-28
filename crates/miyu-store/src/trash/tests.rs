@@ -10,10 +10,6 @@ use crate::test_support::Scratch;
 /// 留 7 天。
 const WEEK: Duration = Duration::from_secs(7 * 24 * 3600);
 
-fn alice() -> AccountId {
-    AccountId::parse("alice").unwrap()
-}
-
 /// 临时目录下的 `data`，当数据根，建好了骨架。
 fn root_in(scratch: &Scratch) -> DataRoot {
     let root = DataRoot::locate(&Env {
@@ -48,7 +44,7 @@ fn at(millis: i64) -> Timestamp {
 
 /// 在原处造一个会话目录：一段日志、一份后台命令的输出。
 fn made(root: &DataRoot, session: &SessionId) -> std::path::PathBuf {
-    let dir = root.session_dir(&alice(), session);
+    let dir = root.session_dir(session);
     fs::create_dir_all(dir.join("jobs")).unwrap();
     fs::write(dir.join("000000000001.jsonl"), b"{\"seq\":1}\n").unwrap();
     fs::write(dir.join("jobs").join("j1.out"), b"ok\n").unwrap();
@@ -57,7 +53,7 @@ fn made(root: &DataRoot, session: &SessionId) -> std::path::PathBuf {
 
 /// 回收处里放一个会话，删的时刻写成 `text`。
 fn trashed(root: &DataRoot, session: &SessionId, text: &str) -> std::path::PathBuf {
-    let dir = root.trashed_sessions(&alice()).join(session.as_str());
+    let dir = root.trashed_sessions().join(session.as_str());
     fs::create_dir_all(&dir).unwrap();
     fs::write(dir.join(DELETED_AT), text).unwrap();
     dir
@@ -70,9 +66,9 @@ fn a_discarded_session_moves_whole_and_says_when() {
     let (gone, kept) = (session(1), session(2));
     let from = made(&root, &gone);
     made(&root, &kept);
-    discard(&root, &alice(), &gone, at(0)).unwrap();
+    discard(&root, &gone, at(0)).unwrap();
     assert!(!from.exists(), "原处没了");
-    let to = root.trashed_sessions(&alice()).join(gone.as_str());
+    let to = root.trashed_sessions().join(gone.as_str());
     assert_eq!(
         fs::read(to.join("000000000001.jsonl")).unwrap(),
         b"{\"seq\":1}\n"
@@ -82,14 +78,11 @@ fn a_discarded_session_moves_whole_and_says_when() {
         fs::read_to_string(to.join(DELETED_AT)).unwrap(),
         "2026-09-30T12:00:00.000Z\n"
     );
-    assert_eq!(root.sessions(&alice()).unwrap(), [kept], "列会话只剩另一个");
+    assert_eq!(root.sessions().unwrap(), [kept], "列会话只剩另一个");
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        for dir in [
-            root.trashed_sessions(&alice()),
-            root.account_dir(&alice()).join("trash"),
-        ] {
+        for dir in [root.trashed_sessions(), root.path().join("trash")] {
             let mode = fs::metadata(&dir).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o700, "{}", dir.display());
         }
@@ -100,9 +93,9 @@ fn a_discarded_session_moves_whole_and_says_when() {
 fn a_missing_session_is_an_error_and_nothing_is_written() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
-    let error = discard(&root, &alice(), &session(1), at(0)).unwrap_err();
+    let error = discard(&root, &session(1), at(0)).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::NotFound);
-    assert!(!root.trashed_sessions(&alice()).exists());
+    assert!(!root.trashed_sessions().exists());
 }
 
 #[test]
@@ -115,13 +108,13 @@ fn a_purge_removes_what_has_been_there_long_enough() {
     let young = trashed(&root, &session(3), &format!("{}\n", at(1 - week)));
     let future = trashed(&root, &session(4), "2026-10-30T12:00:00.000Z\n");
     let unreadable = trashed(&root, &session(5), "last tuesday\n");
-    let missing = root.trashed_sessions(&alice()).join(session(6).as_str());
+    let missing = root.trashed_sessions().join(session(6).as_str());
     fs::create_dir_all(&missing).unwrap();
-    let stranger = root.trashed_sessions(&alice()).join("notes");
+    let stranger = root.trashed_sessions().join("notes");
     fs::create_dir_all(&stranger).unwrap();
     fs::write(stranger.join(DELETED_AT), "2020-01-01T00:00:00.000Z\n").unwrap();
 
-    let purged = purge(&root, &alice(), at(0), WEEK).unwrap();
+    let purged = purge(&root, at(0), WEEK).unwrap();
     assert_eq!(purged.removed, 2);
     assert!(!old.exists(), "满了七天");
     assert!(!exact.exists(), "正好满七天");
@@ -145,6 +138,6 @@ fn a_purge_removes_what_has_been_there_long_enough() {
 fn nothing_to_purge_without_a_trash() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
-    let purged = purge(&root, &alice(), at(0), WEEK).unwrap();
+    let purged = purge(&root, at(0), WEEK).unwrap();
     assert_eq!((purged.removed, purged.failed.len()), (0, 0));
 }

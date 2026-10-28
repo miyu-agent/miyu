@@ -30,7 +30,7 @@ const TARGET: &str = "miyu::endpoint";
 /// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
 /// 谁调都是主人那一份）。
 pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
-    Presets::new(&core.resources, &core.root, &core.admin)
+    Presets::new(&core.resources, &core.root)
         .with_packages(&crate::packages::folders(core, account))
         .with_groups(crate::packages::groups(&core.system_packages()))
 }
@@ -67,7 +67,7 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
     // 扩展这时交的功能（施工 IM-6）每回合开始取一次：拿着核心的弱引用，会话活在核心里面。
     let (weak, whose) = (std::sync::Arc::downgrade(core), owner.clone());
     // 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
-    let (weak_written, written_by) = (std::sync::Arc::downgrade(core), owner.clone());
+    let weak_written = std::sync::Arc::downgrade(core);
     // 文件改动的版本（施工 OV-1 下）：盯上他那一层，会话回合开始比号。
     core.watch_edits(owner);
     let (weak_edits, edited_by) = (std::sync::Arc::downgrade(core), owner.clone());
@@ -92,7 +92,7 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
             move || {
                 weak_written
                     .upgrade()
-                    .map(|core| std::sync::Arc::new(overrides::of(&core, &written_by).merged))
+                    .map(|core| std::sync::Arc::new(overrides::of(&core).merged))
                     .unwrap_or_default()
             },
         ))),
@@ -281,15 +281,10 @@ pub(super) struct Carried {
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
 pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
-    let (packages, root, admin) = (
-        core.packages_of(account),
-        core.root.clone(),
-        account.clone(),
-    );
-    let skills =
-        tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &admin).0)
-            .await
-            .unwrap_or_default();
+    let (packages, root) = (core.packages_of(account), core.root.clone());
+    let skills = tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root).0)
+        .await
+        .unwrap_or_default();
     Carried {
         account: account.clone(),
         skills,

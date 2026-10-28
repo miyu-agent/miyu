@@ -120,11 +120,11 @@ async fn a_package_brings_personas_and_presets_and_leaves_your_edits_behind() {
 async fn a_package_preset_named_like_a_shipped_one_is_covered() {
     let home = Home::new();
     home.write(
-        "system/packages/kitty/package.toml",
+        "packages/kitty/package.toml",
         "[package]\nname = { en = \"Kitty\" }\n",
     );
     home.write(
-        "system/packages/kitty/presets/full.toml",
+        "packages/kitty/presets/full.toml",
         "[preset]\nname = \"Not full\"\n",
     );
     let mut client = connected(&home).await;
@@ -141,10 +141,7 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
         .collect();
     assert_eq!(problems.len(), 1, "{reply}");
     assert_eq!(problems[0]["kind"], "preset");
-    assert_eq!(
-        problems[0]["file"],
-        "system/packages/kitty/presets/full.toml"
-    );
+    assert_eq!(problems[0]["file"], "packages/kitty/presets/full.toml");
     assert_eq!(problems[0]["level"], "warning");
 }
 
@@ -154,7 +151,7 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
 async fn persona_and_preset_ids_are_checked_before_installing() {
     let home = Home::new();
     home.write(
-        "home/alice/personas/dog/persona.toml",
+        "personas/dog/persona.toml",
         "[persona]\nname = \"My dog\"\n",
     );
     let mut client = connected(&home).await;
@@ -263,7 +260,7 @@ async fn edits_left_by_an_uninstalled_package_are_noted_and_it_can_come_back() {
     let checked = client.call("k1", "check", json!({})).await;
     let noted = left(&checked);
     assert_eq!(noted.len(), 1, "{checked}");
-    assert_eq!(noted[0]["file"], "home/alice/personas/cat");
+    assert_eq!(noted[0]["file"], "personas/cat");
     assert_eq!(noted[0]["level"], "warning");
     assert_eq!(
         noted[0]["message"],

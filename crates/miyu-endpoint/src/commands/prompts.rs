@@ -191,7 +191,7 @@ pub(super) async fn run(
     if let Some(tail) = tail {
         blocks.push(Block::Text(Text { text: tail }));
     }
-    let blobs = Blobs::new(core.root.blobs(handle.owner()));
+    let blobs = Blobs::new(core.root.blobs());
     let images = tokio::task::spawn_blocking(move || stored(&blobs, pictures))
         .await
         .map_err(|_| Refusal::INTERNAL)??;

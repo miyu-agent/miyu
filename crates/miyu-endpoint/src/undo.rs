@@ -24,14 +24,8 @@ mod jobs;
 
 /// 撤销、恢复被接受了：回应是它产生的事件的序号 `events`、会话的工作目录 `cwd`，和给人看的几样。
 pub(crate) async fn reply(core: &Core, session: &SessionId, cwd: &str, events: Vec<u64>) -> Value {
-    // 照属主的家目录读日志和 blob（施工 O-4 上）；回应时会话还在表里，找不到的照管理员（不会走到）。
-    let owner = core
-        .sessions
-        .owner(core, session)
-        .await
-        .unwrap_or_else(|| core.admin.clone());
     let sources = Sources {
-        log: core.root.session_dir(&owner, session),
+        log: core.root.session_dir(session),
     };
     let seqs = events.clone();
     let cwd = cwd.to_string();

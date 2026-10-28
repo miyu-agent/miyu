@@ -193,13 +193,7 @@ fn the_skeleton_is_built_and_building_it_again_is_fine() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    let dirs = [
-        root.path().to_path_buf(),
-        root.system(),
-        root.homes(),
-        root.state(),
-        root.run(),
-    ];
+    let dirs = [root.state(), root.run()];
     for dir in &dirs {
         assert!(dir.is_dir(), "{} 应该建好了", dir.display());
     }
@@ -234,59 +228,19 @@ fn two_at_once_both_build_the_skeleton() {
 }
 
 #[test]
-fn a_home_is_built_once() {
+fn the_workspace_is_built_once() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    let admin = AccountId::parse("admin").unwrap();
-    root.prepare_home(&admin).unwrap();
-    assert!(root.account_dir(&admin).is_dir());
-    root.prepare_home(&admin).unwrap();
+    root.prepare_workspace().unwrap();
+    assert!(root.workspace().is_dir());
+    root.prepare_workspace().unwrap();
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(root.account_dir(&admin))
-            .unwrap()
-            .permissions()
-            .mode();
+        let mode = fs::metadata(root.workspace()).unwrap().permissions().mode();
         assert_eq!(mode & 0o777, 0o700);
     }
-}
-
-/// 会话是哪个账号的（施工 O-4 上）：照哪个账号的家目录下有它；不合账号写法的目录不算；两个都有的照账号名的先后取第一个。
-#[test]
-fn the_owner_of_a_session_is_the_account_holding_it() {
-    let scratch = Scratch::new();
-    let root = root_in(&scratch);
-    let session = SessionId::parse("0192f3a0-0000-7000-8000-000000000001").unwrap();
-    assert_eq!(root.owner_of(&session).unwrap(), None, "连 home/ 都还没有");
-    root.prepare().unwrap();
-    let (admin, onebot) = (
-        AccountId::parse("admin").unwrap(),
-        AccountId::parse("onebot").unwrap(),
-    );
-    fs::create_dir_all(root.account_dir(&admin)).unwrap();
-    assert_eq!(root.owner_of(&session).unwrap(), None);
-    fs::create_dir_all(root.session_dir(&onebot, &session)).unwrap();
-    assert_eq!(root.owner_of(&session).unwrap(), Some(onebot.clone()));
-    fs::create_dir_all(
-        root.homes()
-            .join("Not An Account")
-            .join("sessions")
-            .join(session.as_str()),
-    )
-    .unwrap();
-    assert_eq!(
-        root.owner_of(&session).unwrap(),
-        Some(onebot),
-        "不合写法的不算"
-    );
-    fs::create_dir_all(root.session_dir(&admin, &session)).unwrap();
-    assert_eq!(
-        root.owner_of(&session).unwrap(),
-        Some(admin),
-        "两个都有的取名字在前的"
-    );
 }
 
 #[test]
@@ -294,24 +248,18 @@ fn sessions_are_listed_newest_first() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    let admin = AccountId::parse("admin").unwrap();
-    assert!(root.sessions(&admin).unwrap().is_empty(), "还没有会话");
+    assert!(root.sessions().unwrap().is_empty(), "还没有会话");
     let ids = [
         "0192f3a0-0000-7000-8000-000000000001",
         "0192f3a0-0000-7000-8000-000000000003",
         "0192f3a0-0000-7000-8000-000000000002",
     ];
     for id in ids {
-        fs::create_dir_all(root.session_dir(&admin, &SessionId::parse(id).unwrap())).unwrap();
+        fs::create_dir_all(root.session_dir(&SessionId::parse(id).unwrap())).unwrap();
     }
-    fs::create_dir_all(
-        root.account_dir(&admin)
-            .join("sessions")
-            .join("not-a-session"),
-    )
-    .unwrap();
+    fs::create_dir_all(root.path().join("sessions").join("not-a-session")).unwrap();
     let listed: Vec<String> = root
-        .sessions(&admin)
+        .sessions()
         .unwrap()
         .iter()
         .map(|id| id.as_str().to_string())
@@ -326,7 +274,11 @@ fn new_directories_are_only_for_me() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    for dir in [root.path().to_path_buf(), root.system(), root.run()] {
+    for dir in [
+        root.path().to_path_buf(),
+        root.path().to_path_buf(),
+        root.run(),
+    ] {
         let mode = fs::metadata(&dir).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o700, "{}", dir.display());
     }
@@ -343,7 +295,7 @@ fn existing_directories_keep_their_permissions() {
     root.prepare().unwrap();
     let mode = |dir: &Path| fs::metadata(dir).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode(root.path()), 0o755, "人自己建的，权限不改");
-    assert_eq!(mode(&root.homes()), 0o700, "新建的照样 0700");
+    assert_eq!(mode(&root.state()), 0o700, "新建的照样 0700");
 }
 
 /// 这个目录里现在有哪些东西：相对的路径和文件内容，照名字排。
@@ -379,7 +331,7 @@ fn a_new_root_gets_the_marker() {
         root.prepare().unwrap();
         assert_eq!(
             fs::read_to_string(root.path().join(".miyu-root")).unwrap(),
-            "This directory is a Miyu data root (layout 1).\n"
+            "This directory is a Miyu data root (layout 2).\n"
         );
         assert!(root.run().is_dir());
         // 有标记的照常用。
@@ -444,10 +396,9 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
         ..env(Platform::Linux)
     };
     let root = DataRoot::locate(&env).unwrap();
-    let alice = AccountId::parse("alice").unwrap();
-    let home = root.account_dir(&alice);
+    let home = root.path().to_path_buf();
     assert_eq!(
-        root.user_dirs(&alice),
+        root.user_dirs(),
         [
             ("pictures", home.join("pictures")),
             ("videos", home.join("videos")),
@@ -455,11 +406,11 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
             ("downloads", home.join("downloads")),
         ]
     );
-    assert_eq!(root.cache(&alice), home.join("cache"));
+    assert_eq!(root.cache(), home.join("cache"));
     assert!(!home.join("pictures").exists(), "不建");
     // 只有数据根路径的一方（施工 Y-11 下）拼出来的是同一个位置（施工 Y-11 补修：只留一处布局）。
-    for (name, dir) in root.user_dirs(&alice) {
-        assert_eq!(user_dir(root.path(), &alice, name), dir, "{name}");
+    for (name, dir) in root.user_dirs() {
+        assert_eq!(user_dir(root.path(), name), dir, "{name}");
     }
 }
 

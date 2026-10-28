@@ -19,7 +19,7 @@ use crate::config_file::WriteError;
 use crate::private_json;
 pub use crate::private_json::BadFile;
 
-/// 文件名：在 `system/` 里。
+/// 文件名：在数据根下。
 pub const FILE: &str = "accounts.json";
 
 /// 现在的写法。

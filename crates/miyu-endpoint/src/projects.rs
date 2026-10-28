@@ -38,7 +38,7 @@ pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, R
     let account = &core.admin;
     match request.method.as_str() {
         "project.list" => {
-            let read = read(core, account).await?;
+            let read = read(core).await?;
             Ok(json!({"projects": read.projects.projects}))
         }
         "project.create" => create(core, account, params(request)?).await,
@@ -122,7 +122,7 @@ async fn update(
             return Err(Refusal::bad_field(field));
         }
     }
-    let current = read(core, account).await?;
+    let current = read(core).await?;
     let mut project = current
         .projects
         .find(&params.project)
@@ -153,7 +153,7 @@ async fn delete(
     params: DeleteParams,
 ) -> Result<Value, Refusal> {
     let id = params.project;
-    sessions::find(core, account, &id).await?;
+    sessions::find(core, &id).await?;
     let moved = sessions::move_out(core, account, request, &id).await?;
     change(core, account, &id, |projects| {
         projects
@@ -236,13 +236,13 @@ async fn known(core: &Core, account: &AccountId, project: &Project) -> Result<()
 }
 
 /// 这个账号的项目文件。
-fn file(core: &Core, account: &AccountId) -> PathBuf {
-    core.root.account_dir(account).join(projects::FILE)
+fn file(core: &Core) -> PathBuf {
+    core.root.path().join(projects::FILE)
 }
 
 /// 读这个账号的项目：读不成的记一行、内部出错（不替人改坏了的文件）。
-async fn read(core: &Core, account: &AccountId) -> Result<projects::Read, Refusal> {
-    let path = file(core, account);
+async fn read(core: &Core) -> Result<projects::Read, Refusal> {
+    let path = file(core);
     let read = tokio::task::spawn_blocking(move || projects::read(&path)).await;
     match read {
         Ok(Ok(read)) => Ok(read),
@@ -262,9 +262,9 @@ async fn change(
     edit: impl FnOnce(&mut Projects) -> Result<(), Refusal> + Send,
 ) -> Result<(), Refusal> {
     let _turn = core.projects.lock().await;
-    let mut current = read(core, account).await?;
+    let mut current = read(core).await?;
     edit(&mut current.projects)?;
-    let path = file(core, account);
+    let path = file(core);
     let written = tokio::task::spawn_blocking(move || {
         projects::write(&path, &current.projects, current.version.as_deref())
     })
@@ -283,14 +283,14 @@ async fn change(
 }
 
 /// 订阅 `projects` 的回应：这个账号这一刻的整张表。
-pub(crate) async fn listed(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
-    let read = read(core, account).await?;
+pub(crate) async fn listed(core: &Core) -> Result<Value, Refusal> {
+    let read = read(core).await?;
     Ok(json!({"projects": read.projects.projects}))
 }
 
 /// 推送里的一项：这个账号的项目 `id` 这一刻的样子；没有了的是删了。读不成的没有（不推）。
-pub(crate) fn item(core: &Core, account: &AccountId, id: &str) -> Option<Value> {
-    let read = projects::read(&file(core, account)).ok()?;
+pub(crate) fn item(core: &Core, id: &str) -> Option<Value> {
+    let read = projects::read(&file(core)).ok()?;
     Some(match read.projects.find(id) {
         Some(project) => json!({"project": project}),
         None => json!({"project": id, "deleted": true}),

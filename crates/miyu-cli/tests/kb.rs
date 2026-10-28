@@ -198,14 +198,8 @@ async fn the_auto_switch_from_the_shell() {
     let home = Home::new(Arc::new(Script::new([])));
     let cwd = home.outside();
     let toml = |kb: &str| {
-        std::fs::read_to_string(
-            home.root
-                .account_dir(&crate::support::AccountIdOf::admin())
-                .join("kb")
-                .join(kb)
-                .join("kb.toml"),
-        )
-        .expect("读得了")
+        std::fs::read_to_string(home.root.path().join("kb").join(kb).join("kb.toml"))
+            .expect("读得了")
     };
     let made = run(&home, &cwd, &["new", "world", "--name", "雾港", "--auto"]).await;
     assert_eq!(made.code, 0, "{}", made.err);

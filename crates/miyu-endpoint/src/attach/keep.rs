@@ -24,8 +24,8 @@ pub(crate) async fn keep(
         return Ok(());
     }
     let place = place(core, owner);
-    let dir = attachments::dir(&place.root, owner, session);
-    let blobs = Blobs::new(place.root.blobs(owner));
+    let dir = attachments::dir(&place.root, session);
+    let blobs = Blobs::new(place.root.blobs());
     let taken = std::mem::take(blocks);
     *blocks = blocking(move || {
         taken

@@ -14,7 +14,7 @@ use crate::support::embedding;
 use crate::support::*;
 
 fn shelf(home: &Home) {
-    let dir = home.root.account_dir(&alice()).join("kb");
+    let dir = home.root.path().join("kb");
     let notes = dir.join("notes");
     std::fs::create_dir_all(&notes).expect("建得了");
     std::fs::write(
@@ -170,7 +170,7 @@ async fn kb_search_finds_by_meaning_once_the_vectors_are_filled() {
     // 也找得到。
     let server = miyu_http::testkit::Server::start(vec![embedding::vector(); 40]).await;
     let home = Home::new();
-    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    let dir = home.root.path().join("kb").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("cat.md"), "团子的饭是鸡胸肉\n").expect("写得进");
     let mut client = Client::connect(embedding::remote(&home, &server));
@@ -216,7 +216,7 @@ async fn her_kb_search_finds_by_meaning_and_still_does_after_a_restart() {
     // 施工 K-2：核心把算向量的交给造的会话（搜完补上向量）和载入的会话（问句照意思找）。
     let server = miyu_http::testkit::Server::start(vec![embedding::vector(); 40]).await;
     let home = Home::new();
-    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    let dir = home.root.path().join("kb").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("cat.md"), "团子的饭是鸡胸肉\n").expect("写得进");
     let script = Script::new([searching("猫吃什么"), searching("猫吃什么")].concat());
@@ -267,7 +267,7 @@ async fn a_mounted_folder_follows_the_home_and_an_unplugged_one_is_skipped() {
     let notes = home.work.join("notes");
     std::fs::create_dir_all(&notes).expect("建得了");
     std::fs::write(notes.join("cat.md"), "团子是橘猫\n").expect("写得进");
-    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    let dir = home.root.path().join("kb").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), "mount = \"~/notes\"\n").expect("写得进");
     let core = home.core_full(
@@ -298,7 +298,7 @@ async fn a_pdf_hit_says_its_page_and_reads_by_page() {
     // 施工 K-5：PDF 的那一块多一格 `page`，别的不写；`kb.read` 读 PDF 是它的第几页，`pages` 是 PDF 的页数。
     let home = Home::new();
     shelf(&home);
-    let dir = home.root.account_dir(&alice()).join("kb").join("notes");
+    let dir = home.root.path().join("kb").join("notes");
     let pdf = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../miyu-extract/tests/fixtures/cat.pdf");
     std::fs::copy(pdf, dir.join("cat.pdf")).expect("拷得了");

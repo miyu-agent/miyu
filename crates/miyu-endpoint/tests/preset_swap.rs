@@ -30,7 +30,7 @@ fn configured(home: &Home, script: &Script) -> Arc<Core> {
 
 /// 家目录里的预设 `p`。
 fn preset(home: &Home, text: &str) {
-    home.write("home/alice/presets/p.toml", text);
+    home.write("presets/p.toml", text);
 }
 
 /// 日志里内核记的换快照那几条。

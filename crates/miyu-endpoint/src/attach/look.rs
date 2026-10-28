@@ -24,8 +24,8 @@ pub(crate) async fn images(
     let place = place(core, account);
     let own = own.clone();
     blocking(move || {
-        let blobs = Blobs::new(place.root.blobs(&place.account));
-        let mine = (own != place.account).then(|| Blobs::new(place.root.blobs(&own)));
+        let blobs = Blobs::new(place.root.blobs());
+        let mine = (own != place.account).then(|| Blobs::new(place.root.blobs()));
         hashes
             .into_iter()
             .map(|blob| {
@@ -69,7 +69,7 @@ pub(crate) async fn picture(
 ) -> Result<(Vec<u8>, Option<(MediaType, u32, u32)>), Refusal> {
     let place = place(core, account);
     blocking(move || {
-        let bytes = read_blob(&Blobs::new(place.root.blobs(&place.account)), &blob)?;
+        let bytes = read_blob(&Blobs::new(place.root.blobs()), &blob)?;
         let image = match kind(&bytes, None) {
             Ok(Kind::Image {
                 media_type,

@@ -21,15 +21,11 @@ use crate::scripts::{Missed, Why};
 
 /// 几条警告：`kind` 是 `script`、`skill`、`slash`、`persona`、`preset`。
 pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
-    let (packages, root, admin) = (
-        core.system_packages(),
-        core.root.clone(),
-        core.admin.clone(),
-    );
+    let (packages, root) = (core.system_packages(), core.root.clone());
     let found = tokio::task::spawn_blocking(move || {
-        let scripts = miyu_store::scripts::find(&packages, &root, &admin);
-        let skills = miyu_store::skills::find(&packages, &root, &admin);
-        let slash = miyu_store::slash::find(&packages, &root, &admin);
+        let scripts = miyu_store::scripts::find(&packages, &root);
+        let skills = miyu_store::skills::find(&packages, &root);
+        let slash = miyu_store::slash::find(&packages, &root);
         let states = miyu_store::scripts::states(root.path());
         (scripts, skills, slash, states)
     })

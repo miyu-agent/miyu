@@ -18,19 +18,19 @@ use crate::support::*;
 /// 在 alice 家目录里放两个技能：`notes` 写了给人看的名字、说明，`plain` 没写。交回 `notes` 的 `SKILL.md` 的路径。
 fn put(home: &Home) -> String {
     home.write(
-        "home/alice/skills/notes/SKILL.md",
+        "skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\nmetadata:\n  display_name: 笔记\n  summary: 照格式记笔记\n---\n照这样记。\n",
     );
     home.write(
-        "home/alice/skills/plain/SKILL.md",
+        "skills/plain/SKILL.md",
         "---\nname: plain\ndescription: Plain one.\n---\n正文\n",
     );
     home.write(
-        "home/alice/presets/lean.toml",
+        "presets/lean.toml",
         "[preset]\nname = { en = \"Lean\" }\nunlisted = \"on\"\n\n[features]\nskill-notes = false\n",
     );
     home.root
-        .account_dir(&alice())
+        .path()
         .join("skills")
         .join("notes")
         .join("SKILL.md")
@@ -171,7 +171,7 @@ async fn turning_a_skill_on_mid_session_brings_it_in_the_next_turn() {
     client.say("s1", &session, "hi").await;
     home.until_turns(&session, 1).await;
     home.write(
-        "home/alice/presets/lean.toml",
+        "presets/lean.toml",
         "[preset]\nname = { en = \"Lean\" }\nunlisted = \"on\"\n",
     );
     client.say("s2", &session, "again").await;

@@ -119,7 +119,7 @@ async fn a_refused_remember_says_exactly_why() {
     let home = Home::new();
     // 出厂的两个预设都开着记忆（施工 P-15）：另写一个没开的。
     home.write(
-        "home/alice/presets/quiet.toml",
+        "presets/quiet.toml",
         "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\n",
     );
     let script = Script::new([]);

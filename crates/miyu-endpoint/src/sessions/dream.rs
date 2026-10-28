@@ -50,7 +50,7 @@ impl Sessions {
         let owner = spec.owner;
         let shelf = core.tools.clone();
         let workspace = "~".to_string();
-        let resources = crate::presets::overrides::resources(core, &owner);
+        let resources = crate::presets::overrides::resources(core);
         let handle = create(Create {
             root: &core.root,
             resources: &resources,
@@ -62,7 +62,7 @@ impl Sessions {
             memory_account: core.admin.clone(),
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,
-            sandbox_cache: core.sandbox_cache_of(&owner),
+            sandbox_cache: core.sandbox_cache_of(),
             index: Some(core.index_for(&owner)),
             usage: core.ledger(),
             knowledge: None,

@@ -5,12 +5,12 @@
 //! - `MIYU_DEV_BASE_URL`（地址，必设）、`MIYU_DEV_MODEL`（模型名，必设）、`MIYU_DEV_WINDOW`（窗口，可以不设）。这三个名字只在
 //!   这里，程序里没有了。地址、key 都不进仓库，也不进造出来的配置文件：本机端点地址和 key 一样，只放在拉起核心的命令的
 //!   环境变量里（施工 8-6b）。
-//! - 先建骨架（照核心的写法，`store.md`「认得出自己的数据根才动它」），再写 `system/config.toml`：一家 `dev`
+//! - 先建骨架（照核心的写法，`store.md`「认得出自己的数据根才动它」），再写 `config.toml`：一家 `dev`
 //!   （`openai-chat`，`catalog = "deepseek"` 照 DeepSeek 的档案配开关，地址照 `{ env = "MIYU_DEV_BASE_URL" }` 取、key
 //!   照 `{ env = "MIYU_DEV_API_KEY" }` 取），`models.chat = "dev/<模型>"`，设了窗口的写进这个模型的 `window`。地址本身
 //!   只在这个进程里读一下校验写法（`Vars::read`），从不落盘：造出来的文件、`config.get`、`model.list` 都只看得到
 //!   `{ env = "MIYU_DEV_BASE_URL" }` 这几个字。
-//! - 已经有 `system/config.toml` 的不盖：人改过的配置不替人扔掉（「施工时定的」8-6）。
+//! - 已经有 `config.toml` 的不盖：人改过的配置不替人扔掉（「施工时定的」8-6）。
 //!
 //! 这个文件也被 `crates/miyu/tests/dev_home.rs` 原样编进去（`#[path]`），测试都在那里：测的就是这里造的数据根，核心认得出、
 //! 照它连得上假服务器。
@@ -79,7 +79,7 @@ impl Vars {
         })
     }
 
-    /// 写进 `system/config.toml` 的字：地址、key 都是环境变量的引用，地址本身不写进去（施工 8-6b）。
+    /// 写进 `config.toml` 的字：地址、key 都是环境变量的引用，地址本身不写进去（施工 8-6b）。
     pub fn config(&self) -> String {
         let model = quoted(&self.model);
         let mut text = format!(
@@ -127,7 +127,7 @@ pub fn make(dir: &Path, vars: &Vars) -> Result<PathBuf, String> {
     })
     .map_err(|error| error.to_string())?;
     root.prepare().map_err(|error| error.to_string())?;
-    let path = root.system().join("config.toml");
+    let path = root.path().join("config.toml");
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)

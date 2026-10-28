@@ -4,8 +4,6 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
-
 use super::catch_up::about;
 use super::place::Place;
 use super::{Knowledge, KnowledgeError};
@@ -33,12 +31,8 @@ impl Documents {
 impl Knowledge {
     /// 库 `id` 的文档在哪。`kb.toml` 读不出来的照没写（同 [`Knowledge::list`] 带的 `error`）；包里的就在包里那个目录（不认
     /// `mount`，施工 K-8）。
-    pub(super) fn documents(
-        &self,
-        account: &AccountId,
-        id: &str,
-    ) -> Result<Documents, KnowledgeError> {
-        let dir = match self.place(account, id)? {
+    pub(super) fn documents(&self, id: &str) -> Result<Documents, KnowledgeError> {
+        let dir = match self.place(id)? {
             Place::Package { dir, .. } => return Ok(Documents::Package(dir)),
             Place::Own(dir) => dir,
         };
@@ -50,12 +44,8 @@ impl Knowledge {
     }
 
     /// 写得进的库 `id` 的目录：挂进来的 [`KnowledgeError::ReadOnly`]，包里的 [`KnowledgeError::Packaged`]（施工 K-8）。
-    pub(super) fn writable_dir(
-        &self,
-        account: &AccountId,
-        id: &str,
-    ) -> Result<PathBuf, KnowledgeError> {
-        match self.documents(account, id)? {
+    pub(super) fn writable_dir(&self, id: &str) -> Result<PathBuf, KnowledgeError> {
+        match self.documents(id)? {
             Documents::Own(dir) => Ok(dir),
             Documents::Mounted(_) => Err(KnowledgeError::ReadOnly),
             Documents::Package(_) => Err(KnowledgeError::Packaged),

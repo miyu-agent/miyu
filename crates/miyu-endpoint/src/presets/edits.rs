@@ -116,7 +116,7 @@ impl Core {
         if !state.watched.insert(owner.clone()) {
             return;
         }
-        let layer = self.root.account_dir(owner);
+        let layer = self.root.path().to_path_buf();
         for tree in TREES {
             let dir = layer.join(tree);
             if let Err(error) = std::fs::create_dir_all(&dir) {

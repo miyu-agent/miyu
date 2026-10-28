@@ -93,7 +93,7 @@ fn snapshot(home: &Home, session: &SessionId) -> Snapshot {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话：{:?}", log[0]);
     };
-    let bytes = Blobs::new(home.root.blobs(&alice_account()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂")
@@ -103,7 +103,7 @@ fn snapshot(home: &Home, session: &SessionId) -> Snapshot {
 async fn private_turns(messages: Vec<Command>) -> (Home, SessionId, Vec<Request>) {
     let home = Home::new();
     // 图片块引用的 blob 放进属主名下（内容是假的，请求里只看块的字节）。
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     for name in ["msg-801-1", "msg-805-1"] {
         blobs.put(name.as_bytes()).expect("存得下");
     }

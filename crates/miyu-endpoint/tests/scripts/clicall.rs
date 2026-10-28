@@ -12,7 +12,7 @@ fn clicall(home: &Home, session: &str) -> Vec<(String, bool)> {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     let snapshot = Snapshot::from_bytes(&bytes).expect("读得懂");
@@ -26,13 +26,13 @@ fn clicall(home: &Home, session: &str) -> Vec<(String, bool)> {
 #[tokio::test]
 async fn scripts_are_callable_only_when_they_or_the_settings_say_yes() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     home.write(
-        "home/alice/scripts/lookup.py",
+        "scripts/lookup.py",
         &echo("lookup").replace("# Need load: no\n", "# Need load: no\n# Clicall: yes\n"),
     );
     home.write(
-        "home/alice/scripts/secret.py",
+        "scripts/secret.py",
         &echo("secret").replace("# Need load: no\n", "# Need load: no\n# Clicall: no\n"),
     );
     let script = Script::new([Play::Says("好。"), Play::Says("好。")]);

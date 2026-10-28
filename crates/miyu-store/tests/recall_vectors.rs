@@ -12,10 +12,7 @@ use crate::support::*;
 const MODEL: &str = "local:tiny";
 
 fn place(scratch: &Scratch) -> PathBuf {
-    root_in(scratch)
-        .index(&admin())
-        .join("recall")
-        .join("test.db")
+    root_in(scratch).index().join("recall").join("test.db")
 }
 
 /// 一个放了三条的库。

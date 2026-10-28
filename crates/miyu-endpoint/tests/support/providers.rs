@@ -87,7 +87,7 @@ pub fn routed_serving(home: &Home, data: Arc<ModelData>) -> Arc<Core> {
         idle: Duration::from_secs(60),
     };
     let resources = ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let found = miyu_endpoint::packages::load(&resources, &home.root);
     let core = Arc::new(
         Arc::into_inner(assembled(home, &[], data, Arc::new(routes)))
             .expect("刚造的，只有这一份")

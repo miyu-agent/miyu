@@ -102,7 +102,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
         ]),
         &[],
     );
-    let manifest = home.root.path().join("system/packages/memes/package.toml");
+    let manifest = home.root.path().join("packages/memes/package.toml");
     let written = read(&manifest);
     std::fs::write(
         &manifest,
@@ -175,7 +175,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
     // 包不再各有一个账号（施工 SU-4 中）：扩展存的和主人共用一个存处，包之间只靠上面的放行管；人的连接读自己的存处，都读得到。
     let own_hash_id = miyu_kernel::id::ContentHash::parse(&own_hash).expect("合写法");
     assert!(
-        miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+        miyu_store::blob::Blobs::new(home.root.blobs())
             .path(&own_hash_id)
             .is_file(),
         "存在主人名下"

@@ -54,8 +54,7 @@ async fn a_core_without_a_model_says_so() {
         "没有可用的模型：还没配。运行 miyu setup。\n"
     );
     // 施工 8-11：说话之前先看有没有模型，不在终端里的不造会话（会话目录里一个都没有）。
-    let admin = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
-    assert_eq!(home.root.sessions(&admin).expect("读得了"), Vec::new());
+    assert_eq!(home.root.sessions().expect("读得了"), Vec::new());
     drop(held);
     home.until_stopped().await;
 }

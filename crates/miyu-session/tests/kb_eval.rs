@@ -114,7 +114,7 @@ fn the_kb_eval_set_is_well_formed() {
 /// 测评集的世界观放进 alice 的库 `world`，照文件补好（一段一块）。
 fn world(sections: &BTreeMap<String, String>) -> Home {
     let home = Home::new();
-    let world = home.root.account_dir(&alice_account()).join("kb/world");
+    let world = home.root.path().join("kb/world");
     std::fs::create_dir_all(&world).expect("建得了");
     for entry in std::fs::read_dir(fixtures().join("world")).expect("读得了") {
         let path = entry.expect("读得了").path();

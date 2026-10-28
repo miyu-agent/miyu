@@ -63,7 +63,7 @@ impl MessagePort for Messenger {
             })?;
             let agents = &self.agents;
             // 收的那个会话读得到（施工 3-9 六补）：落进它自己的附件目录。
-            let blocks = kept_for(&agents.root, &agents.owner, &session, &self.blobs, blocks)
+            let blocks = kept_for(&agents.root, &session, &self.blobs, blocks)
                 .await
                 .map_err(|error| {
                     tracing::warn!(target: TARGET, to = label.as_str(), error = error.as_str(), "message attachments not kept");

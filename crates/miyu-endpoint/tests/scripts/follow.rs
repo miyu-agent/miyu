@@ -32,11 +32,8 @@ async fn a_script_put_in_or_taken_out_of_the_home_folder_is_followed_at_once() {
     let core = core(&home, &script);
     assert!(core.scripts().is_empty(), "起来时家目录里还没有");
     let _watching = core.watch_scripts().expect("看得了");
-    assert!(
-        home.root.path().join("home/alice/scripts").is_dir(),
-        "没有的先建上"
-    );
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    assert!(home.root.path().join("scripts").is_dir(), "没有的先建上");
+    home.write("scripts/weather.py", &echo("weather"));
     until_scripts(&core, &["weather"]).await;
     let mut client = Client::connect(Arc::clone(&core));
     client.hello_without_input().await;
@@ -56,7 +53,7 @@ async fn a_script_put_in_or_taken_out_of_the_home_folder_is_followed_at_once() {
         .collect();
     assert_eq!(tools, ["read", "weather"], "新放的进了工具面");
 
-    std::fs::remove_file(home.root.path().join("home/alice/scripts/weather.py")).expect("删得掉");
+    std::fs::remove_file(home.root.path().join("scripts/weather.py")).expect("删得掉");
     until_scripts(&core, &[]).await;
     client.say("c2", &session, "再来").await;
     home.until_turns(&session, 2).await;

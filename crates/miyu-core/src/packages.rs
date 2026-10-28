@@ -8,7 +8,6 @@
 //! 款）。和可选软件包无关，放在这里是因为两件事都是「核心起来时做一次的登记、收拾」。
 
 use miyu_endpoint::queries::Queries;
-use miyu_kernel::id::AccountId;
 use miyu_store::blob::Blobs;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
@@ -16,12 +15,12 @@ use miyu_store::root::DataRoot;
 /// 照编进来的包往一张新的查询表里登记，交给 [`miyu_endpoint::Core::with_queries`]。每一行记着属于哪个包：包这时没装的，
 /// 端点当没有这个方法（施工 F-5 中，设计 30 第九节：装卸当场生效，这里只登记一次）。`root`、`admin`：`net` 抓到的卡片的图
 /// 存进这个账号的 blob（现在连上来的都是管理员，`net.md`「起草时定的」第 9 条）。
-pub fn register(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Queries {
+pub fn register(resources: &ResourceRoot, root: &DataRoot) -> Queries {
     let queries = Queries::new();
     #[cfg(feature = "mermaid")]
     let queries = mermaid::register(resources, queries);
     #[cfg(feature = "net")]
-    let queries = net::register(resources, Blobs::new(root.blobs(admin)), queries);
+    let queries = net::register(resources, Blobs::new(root.blobs()), queries);
     #[cfg(not(feature = "net"))]
     let _ = (root, admin);
     #[cfg(not(any(feature = "mermaid", feature = "net")))]
@@ -29,26 +28,16 @@ pub fn register(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) ->
     queries
 }
 
-/// 核心起来时清掉每个账号的 `blobs/tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工
-/// W-5；上传存在连接的账号名下，施工 Y-2中下）。在能接连接之前做：新开的上传不会被这一步误删（崩溃留下的名字和现造的
-/// 编号撞不上，但晚了做就是在和真实流量抢时间，没必要）。
+/// 核心起来时清掉 `blobs/tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工 W-5）。在能接连接之前做：新开的上传
+/// 不会被这一步误删（崩溃留下的名字和现造的编号撞不上，但晚了做就是在和真实流量抢时间，没必要）。
 pub fn clear_uploads(root: &DataRoot) {
-    let accounts = match root.accounts() {
-        Ok(accounts) => accounts,
+    match Blobs::new(root.blobs()).clear_uploads() {
+        Ok(0) => {}
+        Ok(removed) => {
+            tracing::info!(target: crate::TARGET, removed, "upload tmp cleared");
+        }
         Err(error) => {
             tracing::warn!(target: crate::TARGET, error = %error, "upload tmp not cleared");
-            return;
-        }
-    };
-    for account in accounts {
-        match Blobs::new(root.blobs(&account)).clear_uploads() {
-            Ok(0) => {}
-            Ok(removed) => {
-                tracing::info!(target: crate::TARGET, account = account.as_str(), removed, "upload tmp cleared");
-            }
-            Err(error) => {
-                tracing::warn!(target: crate::TARGET, account = account.as_str(), error = %error, "upload tmp not cleared");
-            }
         }
     }
 }

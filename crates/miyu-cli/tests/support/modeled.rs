@@ -33,7 +33,7 @@ impl Home {
     /// 起一个核心：系统配置是 `config`，请求模型照 `models`。
     pub fn configured(models: Arc<dyn Models>, config: &str) -> Home {
         let (dir, root) = temp_root();
-        let file = root.path().join("system").join("config.toml");
+        let file = root.path().join("config.toml");
         std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了目录");
         std::fs::write(&file, config).expect("写得进");
         let opened = miyu_ipc::open(&root, &dirs()).expect("起得来");

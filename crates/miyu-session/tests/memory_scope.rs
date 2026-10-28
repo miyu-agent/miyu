@@ -62,7 +62,7 @@ fn snapshot(home: &Home, session: &SessionId) -> Snapshot {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话：{:?}", log[0]);
     };
-    let bytes = Blobs::new(home.root.blobs(&alice_account()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂")
@@ -129,7 +129,7 @@ async fn a_session_scope_lives_in_its_own_directory() {
     assert_eq!(log.book(|book| book.all().count()), 1, "记在会话那一间");
     let (shared, _) = home.logs.open(&persona()).expect("开得了");
     assert_eq!(shared.book(|book| book.all().count()), 0);
-    let dir = home.root.session_dir(&alice_account(), &id).join("memory");
+    let dir = home.root.session_dir(&id).join("memory");
     assert!(
         dir.join("log").is_dir() && dir.join("turns.db").is_file(),
         "{dir:?}"
@@ -212,8 +212,6 @@ async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place()
         Some("local"),
         "照这个场所记"
     );
-    let (own, _) = home.logs.open(&persona()).expect("开得了");
-    assert_eq!(own.book(|book| book.all().count()), 0, "属主那一间没有");
     assert_eq!(
         found(&home, &Room::persona(&admin, "engineer"), "喝茶").len(),
         1

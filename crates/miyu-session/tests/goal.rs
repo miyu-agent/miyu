@@ -25,7 +25,7 @@ async fn a_loaded_session_knows_its_goal() {
     let session = handle.id().clone();
     // 停下，日志空出来。
     stop(&handle).await;
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let (mut log, _) = SessionLog::open(&dir, SEGMENT_LIMIT).expect("打得开");
     let next = log.next_seq().get();
     let line = |seq: u64, kind: &str, body: &str| {

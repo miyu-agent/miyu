@@ -41,7 +41,7 @@ pub struct Handle {
     venue: VenueId,
     /// 会话的属主（施工 O-4 上）：日志、blob、回收处在它的家目录下。造好以后不变。
     owner: AccountId,
-    /// 这个会话的默认工作区（施工 5-14 中）：`home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。
+    /// 这个会话的默认工作区（施工 5-14 中）：`workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。
     workspace: PathBuf,
     inbox: mpsc::UnboundedSender<Message>,
     /// 有没有在跑的回合：actor 每送完一批输入就写一次（施工 3-9 上）。
@@ -230,7 +230,7 @@ impl Handle {
         &self.id
     }
 
-    /// 会话的属主（施工 O-4 上）：日志、blob、回收处在 `home/<它>/` 下。
+    /// 会话的属主（施工 O-4 上）：日志、blob、回收处在 数据根 下。
     pub fn owner(&self) -> &AccountId {
         &self.owner
     }

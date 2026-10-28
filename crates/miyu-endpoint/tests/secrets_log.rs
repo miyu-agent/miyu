@@ -18,8 +18,8 @@ use support::*;
 const FAKE: &str = "sk-FAKE-KEY-FOR-TESTS-0001";
 const FAKE_2: &str = "sk-FAKE-KEY-FOR-TESTS-0002";
 
-const SECRETS: &str = "system/secrets.toml";
-const JOURNAL: &str = "system/journal.jsonl";
+const SECRETS: &str = "secrets.toml";
+const JOURNAL: &str = "journal.jsonl";
 
 #[tokio::test]
 async fn the_runtime_log_has_names_and_never_a_key() {
@@ -33,7 +33,7 @@ async fn the_runtime_log_has_names_and_never_a_key() {
     let has = |what: &str| memory.lines().iter().any(|line| line.contains(what));
 
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     home.write(SECRETS, &format!("start = \"{FAKE}\"\n"));
     #[cfg(unix)]
     {
@@ -43,7 +43,7 @@ async fn the_runtime_log_has_names_and_never_a_key() {
     }
     let server = miyu_mcp::testkit::http::HttpServer::start(false).await;
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[mcp.remote]\nurl = \"{}\"\nbearer = {{ secret = \"deepseek\" }}\n",
             server.url
@@ -52,7 +52,7 @@ async fn the_runtime_log_has_names_and_never_a_key() {
     let core = home.core_configured(&Script::new([]), None, &[]);
     if cfg!(unix) {
         assert!(
-            has("WARN  config   secrets readable by others file=system/secrets.toml"),
+            has("WARN  config   secrets readable by others file=secrets.toml"),
             "{:?}",
             memory.lines()
         );

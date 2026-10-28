@@ -43,13 +43,13 @@ async fn set(client: &mut Client, persona: &str, avatar: Value) -> Value {
 fn base(home: &Home, picture: &[u8]) {
     crate::support::packaged::samples(home);
     home.write(
-        "system/packages/samples/personas/base/persona.toml",
+        "packages/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n",
     );
     let path = home
         .root
         .path()
-        .join("system/packages/samples/personas/base/avatar.png");
+        .join("packages/samples/personas/base/avatar.png");
     std::fs::write(path, picture).expect("写得进");
 }
 
@@ -76,12 +76,7 @@ async fn an_avatar_is_set_read_and_unset_back_to_the_layer_below() {
         .unwrap_or_else(|| panic!("{changed}"))
         .to_string();
     assert_ne!(version, lower_version, "换上了家目录那一层的");
-    assert!(
-        home.root
-            .path()
-            .join("home/alice/personas/base/avatar.png")
-            .is_file()
-    );
+    assert!(home.root.path().join("personas/base/avatar.png").is_file());
     let read = client
         .call("a", "persona.avatar", json!({"persona": "base"}))
         .await;
@@ -127,13 +122,7 @@ async fn an_avatar_is_set_read_and_unset_back_to_the_layer_below() {
     )
     .await;
     assert_eq!(unset["result"]["avatar"], json!(lower_version), "{unset}");
-    assert!(
-        !home
-            .root
-            .path()
-            .join("home/alice/personas/base/avatar.png")
-            .exists()
-    );
+    assert!(!home.root.path().join("personas/base/avatar.png").exists());
 }
 
 #[tokio::test]
@@ -207,7 +196,7 @@ async fn wrong_avatars_are_refused_and_nothing_is_written() {
         (json!(2000), json!(1024))
     );
     assert!(
-        !home.root.path().join("home/alice/personas/base").exists(),
+        !home.root.path().join("personas/base").exists(),
         "什么都没写"
     );
     let unknown = client

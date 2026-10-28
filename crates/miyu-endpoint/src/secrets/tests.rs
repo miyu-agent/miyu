@@ -48,7 +48,7 @@ fn a_secret_change_is_written_like_the_sample() {
     let file = scratch.0.join("journal.jsonl");
     journal::record(
         &file,
-        "system/journal.jsonl",
+        "journal.jsonl",
         Timestamp::parse("2026-10-01T08:01:00.000Z").unwrap(),
         By::Person(Person::new(AccountId::parse("admin").unwrap())),
         Some(&CommandId::parse("secret-9f2c4e1a7b3d5f60-1").unwrap()),
@@ -72,7 +72,7 @@ fn changes_between_two_files_are_by_name() {
     let path = scratch.0.join("secrets.toml");
     let read = |text: &str| {
         std::fs::write(&path, text).unwrap();
-        SecretsFile::read(&path, "system/secrets.toml")
+        SecretsFile::read(&path, "secrets.toml")
     };
     let old = read("kept = \"sk-FAKE-1\"\nswapped = \"sk-FAKE-2\"\ngone = \"sk-FAKE-3\"\n");
     let new = read("kept = \"sk-FAKE-1\"\nswapped = \"sk-FAKE-9\"\nadded = \"sk-FAKE-4\"\n");

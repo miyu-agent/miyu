@@ -17,10 +17,8 @@ fn aged(dir: &std::path::Path, days: u32, now: SystemTime) {
         .expect("改得了时刻");
 }
 
-/// 有会话索引的账号照它删没了的场所；没有索引的只照时间。
-#[test]
-fn the_start_sweep_prunes_every_account_and_trusts_only_a_readable_index() {
-    let scratch = tempfile_dir();
+/// 数据根 `scratch/data`。
+fn root_in(scratch: &std::path::Path) -> DataRoot {
     let env = miyu_store::env::Env {
         platform: miyu_store::env::Platform::current(),
         miyu_home: Some(scratch.join("data").into_os_string()),
@@ -30,29 +28,40 @@ fn the_start_sweep_prunes_every_account_and_trusts_only_a_readable_index() {
         miyu_resources: None,
         exe: None,
     };
-    let root = DataRoot::locate(&env).expect("找得到");
+    DataRoot::locate(&env).expect("找得到")
+}
+
+/// 有会话索引的照它删没了的场所：索引是空的（一个会话都没有），群 1 那一层是新的也整层删；老的照时间删。
+#[test]
+fn the_start_sweep_trusts_a_readable_index() {
+    let scratch = tempfile_dir();
+    let root = root_in(&scratch);
     let now = SystemTime::now();
-    let (bridge, alice) = (
-        AccountId::parse("bridge").expect("合写法"),
-        AccountId::parse("alice").expect("合写法"),
-    );
-    // bridge 有索引（空的：一个会话都没有），群 1 那一层是新的也整层删。
-    fs::create_dir_all(root.index(&bridge)).expect("建得了");
-    let (index, _) = SessionIndex::open(&root.index(&bridge).join(FILE));
+    fs::create_dir_all(root.index()).expect("建得了");
+    let (index, _) = SessionIndex::open(&root.index().join(FILE));
     drop(index);
-    aged(&root.cache(&bridge).join("@qq_3agroup_3a1/kit/x"), 1, now);
-    aged(&root.cache(&bridge).join("kit/old"), 31, now);
-    // alice 没有索引：场所那一层照时间，新的留着。
-    aged(&root.cache(&alice).join("@qq_3agroup_3a1/kit/x"), 1, now);
-    aged(&root.cache(&alice).join("kit/old"), 31, now);
-    let (removed, failed) = sweep_now(&root, now);
-    assert_eq!((removed, failed), (3, 0));
-    assert!(!root.cache(&bridge).join("@qq_3agroup_3a1").exists());
+    aged(&root.cache().join("@qq_3agroup_3a1/kit/x"), 1, now);
+    aged(&root.cache().join("kit/old"), 31, now);
+    assert_eq!(sweep_now(&root, now), (2, 0));
+    assert!(!root.cache().join("@qq_3agroup_3a1").exists());
+    assert!(!root.cache().join("kit/old").exists());
+    fs::remove_dir_all(scratch).expect("删得掉");
+}
+
+/// 没有索引的只照时间：场所那一层新的留着（不知道的不删）。
+#[test]
+fn without_an_index_only_age_counts() {
+    let scratch = tempfile_dir();
+    let root = root_in(&scratch);
+    let now = SystemTime::now();
+    aged(&root.cache().join("@qq_3agroup_3a1/kit/x"), 1, now);
+    aged(&root.cache().join("kit/old"), 31, now);
+    assert_eq!(sweep_now(&root, now), (1, 0));
     assert!(
-        root.cache(&alice).join("@qq_3agroup_3a1/kit/x").exists(),
+        root.cache().join("@qq_3agroup_3a1/kit/x").exists(),
         "不知道的不删"
     );
-    assert!(!root.cache(&alice).join("kit/old").exists());
+    assert!(!root.cache().join("kit/old").exists());
     fs::remove_dir_all(scratch).expect("删得掉");
 }
 

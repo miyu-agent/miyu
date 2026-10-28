@@ -65,13 +65,13 @@ use crate::secrets::SecretsFile;
 pub(crate) const TARGET: &str = "miyu::config";
 
 /// 系统配置在数据根里的位置。
-const SYSTEM: [&str; 2] = ["system", "config.toml"];
+const SYSTEM: &str = "config.toml";
 
 /// 密钥文件在数据根里的位置（施工 8-5）。
-const SECRETS: [&str; 2] = ["system", miyu_store::secrets::FILE];
+const SECRETS: &str = miyu_store::secrets::FILE;
 
 /// 核心新建系统配置时第一行指向的 Schema，相对这份文件（第五条第 2 条第 6 款）。
-const SYSTEM_SCHEMA: &str = "../state/config/config.schema.json";
+const SYSTEM_SCHEMA: &str = "state/config/config.schema.json";
 
 /// 手里的配置。
 #[derive(Debug, Clone)]
@@ -90,7 +90,7 @@ pub struct Config {
     pub(crate) system: File,
     /// 信任的记录。
     trust: Vec<trust::Record>,
-    /// 密钥文件（施工 8-5）：`system/secrets.toml`，只有这一份（施工 SU-3 上）。
+    /// 密钥文件（施工 8-5）：`secrets.toml`，只有这一份（施工 SU-3 上）。
     pub(crate) secrets: SecretsFile,
     /// 几份核心自己写的文件在哪（施工 8-3）。
     pub(crate) places: Places,
@@ -102,48 +102,37 @@ pub struct Config {
 
 /// 系统配置在哪、给人看的写法（相对数据根）。
 fn system_at(root: &DataRoot) -> (PathBuf, String) {
-    (
-        SYSTEM
-            .iter()
-            .fold(root.path().to_path_buf(), |p, s| p.join(s)),
-        SYSTEM.join("/"),
-    )
+    (root.path().join(SYSTEM), SYSTEM.to_string())
 }
 
-/// 密钥文件在哪：`system/secrets.toml`。
+/// 密钥文件在哪：`secrets.toml`。
 fn secrets_path(root: &DataRoot) -> PathBuf {
-    SECRETS
-        .iter()
-        .fold(root.path().to_path_buf(), |p, s| p.join(s))
+    root.path().join(SECRETS)
 }
 
-/// 核心自己写的几份文件在哪：信任的记录、系统日志、账号日志（施工 8-3）。
+/// 核心自己写的几份文件在哪：信任的记录、日志（施工 8-3；施工 SU-5 上起系统日志、账号日志并成一份）。
 #[derive(Debug, Clone)]
 pub(crate) struct Places {
     /// 账号：日志里记是谁改的。
     pub(crate) account: AccountId,
-    /// `home/<账号>/trust.toml`。
+    /// `trust.toml`。
     trust: PathBuf,
-    /// 系统日志 `system/journal.jsonl`。
-    pub(crate) system_journal: PathBuf,
-    /// 账号日志 `home/<账号>/journal.jsonl`。
-    account_journal: PathBuf,
+    /// 日志 `journal.jsonl`。
+    pub(crate) journal: PathBuf,
 }
 
 impl Places {
     fn of(root: &DataRoot, account: &AccountId) -> Places {
-        let home = root.account_dir(account);
         Places {
             account: account.clone(),
-            trust: home.join(trust::FILE),
-            system_journal: root.system().join(miyu_store::journal::FILE),
-            account_journal: home.join(miyu_store::journal::FILE),
+            trust: root.path().join(trust::FILE),
+            journal: root.path().join(miyu_store::journal::FILE),
         }
     }
 
     /// 给人看的写法：相对数据根。
     fn shown(&self, file: &str) -> String {
-        format!("home/{}/{file}", self.account.as_str())
+        file.to_string()
     }
 }
 
@@ -182,11 +171,11 @@ impl Config {
             .collect();
         let (path, shown) = system_at(root);
         let system = File::read(&items, Layer::System, path, shown);
-        let trust_path = root.account_dir(account).join(trust::FILE);
+        let trust_path = root.path().join(trust::FILE);
         let trust = trust::read(&trust_path).unwrap_or_else(|error| {
             tracing::warn!(
                 target: TARGET,
-                file = %format!("home/{}/{}", account.as_str(), trust::FILE),
+                file = %trust::FILE,
                 error = %error,
                 "trust not read"
             );
@@ -196,7 +185,7 @@ impl Config {
         if errors + warnings > 0 {
             tracing::warn!(target: TARGET, file = %system.shown, errors, warnings, "config problems");
         }
-        let secrets = SecretsFile::read(&secrets_path(root), &SECRETS.join("/"));
+        let secrets = SecretsFile::read(&secrets_path(root), SECRETS);
         crate::secrets::told(&secrets);
         let mut config = Config::assemble(root, account, home, items, env, system, trust);
         config.environment = environment;
@@ -238,7 +227,7 @@ impl Config {
             system,
             trust,
             environment: Environment::of(&[]),
-            secrets: SecretsFile::nothing(&secrets_path(root), &SECRETS.join("/")),
+            secrets: SecretsFile::nothing(&secrets_path(root), SECRETS),
             places: Places::of(root, account),
             resolved: Resolved::default(),
             models: None,

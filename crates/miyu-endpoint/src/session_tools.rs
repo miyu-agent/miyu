@@ -102,7 +102,7 @@ pub(crate) async fn new_session(
         confined: false,
     };
     let id = new_id(now());
-    let (_, own) = roots(core, account);
+    let (_, own) = roots(core);
     let (workspace, _) = opening_cwd(core, &who, &own.to_string_lossy(), &id);
     let command = miyu_kernel::id::CommandId::parse("session-tools-preview")
         .map_err(|_| Refusal::INTERNAL)?;

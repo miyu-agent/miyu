@@ -19,7 +19,7 @@ fn relay(program: &str, extra: &str, tables: &str) -> String {
 /// 一个程序一定不在的扩展：带一个功能、一项配置。演「程序不在」的样子（出厂的包里没有扩展，接入QQ 施工 S-6 下搬出了核心仓库）。
 fn ghost(home: &Home) {
     home.write(
-        "system/packages/ghost/package.toml",
+        "packages/ghost/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ghost\" }\n\n[command]\nname = \"ghost\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"G\" }\n\n[process]\n\n[features.haunt]\nname = { en = \"Haunt\" }\n\n[settings.port]\ntype = \"int\"\nlayers = [\"system\"]\nname = { en = \"Port\" }\n",
     );
 }
@@ -27,7 +27,7 @@ fn ghost(home: &Home) {
 /// 一个程序一定不在的界面（施工 S-5：两个界面的清单不在核心仓库里了）：认 `config` 这一页，带一项配置。
 fn screen(home: &Home) {
     home.write(
-        "system/packages/screen/package.toml",
+        "packages/screen/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Screen\" }\n\n[command]\nname = \"screen\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"S\" }\n\n[ui]\nopens = [\"config\"]\n\n[settings.icons]\ntype = \"option\"\nchoices = [\"nerd\", \"plain\"]\ndefault = \"plain\"\nname = { en = \"Icons\" }\n",
     );
 }
@@ -54,17 +54,17 @@ async fn the_list_says_status_switch_icon_and_page() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "system/packages/relay/package.toml",
+        "packages/relay/package.toml",
         &relay(
             &program.name(),
             "icon = \"radio\"",
             "\n[page]\ndir = \"page\"\n",
         ),
     );
-    home.write("system/packages/relay/page/index.html", "<p>relay</p>");
+    home.write("packages/relay/page/index.html", "<p>relay</p>");
     // 写了后台页、目录里没有 index.html 的不带 `page`。
     home.write(
-        "system/packages/bare/package.toml",
+        "packages/bare/package.toml",
         &relay(&program.name(), "", "\n[page]\ndir = \"page\"\n")
             .replace("name = \"relay\"", "name = \"bare\""),
     );
@@ -116,7 +116,7 @@ async fn the_switch_starts_and_stops_an_extension() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "system/packages/relay/package.toml",
+        "packages/relay/package.toml",
         &relay(&program.name(), "", ""),
     );
     let core = core(&home, quick());
@@ -236,7 +236,7 @@ async fn a_page_without_an_entry_is_a_warning() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "system/packages/relay/package.toml",
+        "packages/relay/package.toml",
         &relay(&program.name(), "", "\n[page]\ndir = \"page\"\n"),
     );
     let mut client = Client::connect(core(&home, quick()));
@@ -255,14 +255,14 @@ async fn a_page_without_an_entry_is_a_warning() {
         pages(&reply),
         [json!({
             "kind": "package",
-            "file": "system/packages/relay/package.toml",
+            "file": "packages/relay/package.toml",
             "code": "page_missing",
             "level": "warning",
             "message": "page 里没有 index.html",
         })],
         "{reply}"
     );
-    home.write("system/packages/relay/page/index.html", "<p>relay</p>");
+    home.write("packages/relay/page/index.html", "<p>relay</p>");
     let reply = client.call("c2", "check", json!({})).await;
     assert!(pages(&reply).is_empty(), "{reply}");
 }

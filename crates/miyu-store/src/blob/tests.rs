@@ -4,8 +4,6 @@
 
 use std::time::Duration;
 
-use miyu_kernel::id::AccountId;
-
 use super::*;
 use crate::env::{Env, Platform};
 use crate::root::DataRoot;
@@ -164,7 +162,7 @@ fn a_blob_that_does_not_match_its_name_is_reported() {
 }
 
 #[test]
-fn each_account_keeps_its_own() {
+fn the_same_content_is_kept_once() {
     let scratch = Scratch::new();
     let root = DataRoot::locate(&Env {
         platform: Platform::current(),
@@ -176,25 +174,12 @@ fn each_account_keeps_its_own() {
         exe: None,
     })
     .unwrap();
-    let alice = AccountId::parse("alice").unwrap();
-    let bob = AccountId::parse("bob").unwrap();
-    assert_eq!(
-        root.blobs(&alice),
-        scratch
-            .path()
-            .join("data")
-            .join("home")
-            .join("alice")
-            .join("blobs")
-    );
-    // 同一份内容，两个账号各存一份（S5：不跨账号去重）。
-    let alices = Blobs::new(root.blobs(&alice));
-    let bobs = Blobs::new(root.blobs(&bob));
-    let hash = alices.put(b"same picture").unwrap();
-    assert_eq!(bobs.put(b"same picture").unwrap(), hash);
-    assert_ne!(alices.path(&hash), bobs.path(&hash));
-    assert!(alices.path(&hash).is_file());
-    assert!(bobs.path(&hash).is_file());
+    assert_eq!(root.blobs(), scratch.path().join("data").join("blobs"));
+    // 同一份内容存两次是同一个 blob（施工 SU-5 上：只有主人一个存处）。
+    let blobs = Blobs::new(root.blobs());
+    let hash = blobs.put(b"same picture").unwrap();
+    assert_eq!(blobs.put(b"same picture").unwrap(), hash);
+    assert!(blobs.path(&hash).is_file());
 }
 
 #[test]

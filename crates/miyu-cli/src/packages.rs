@@ -19,7 +19,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use miyu_config::phrases::Phrases;
-use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
 use miyu_store::packages::{Launch, Packages, locate};
 use miyu_store::resources::ResourceRoot;
@@ -51,11 +50,11 @@ pub struct Added {
 
 /// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排，一个包加几个的照写的先后（施工 F-13）。写错的、子命令名被先读到的占了的（`command_taken`）不算；
 /// 名字是内置子命令 `builtins` 里的也不算：内置的优先。数据根、资源目录找不到的当没有。
-pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
+pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
         return Vec::new();
     };
-    let places = Packages::new(&resources, &root, admin);
+    let places = Packages::new(&resources, &root);
     places
         .read()
         .into_iter()
@@ -80,8 +79,8 @@ pub fn added(env: &Env, admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
 }
 
 /// 同 [`added`]，照这个进程的环境找数据根、资源目录。
-pub fn installed(admin: &AccountId, builtins: &[&str]) -> Vec<Added> {
-    added(&Env::current(), admin, builtins)
+pub fn installed(builtins: &[&str]) -> Vec<Added> {
+    added(&Env::current(), builtins)
 }
 
 /// `miyu -h` 多的那一节：没有的是空的。名字照帮助页命令那一列对齐，说明照界面语言挑（挑法同 `package.list`）。

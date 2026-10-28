@@ -135,7 +135,6 @@ async fn a_fork_at_the_depth_limit_starts_no_subagent() {
     );
     let again = miyu_session::fork(Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: &child,
         id: new_id(now()),
         cause: CommandId::parse("f1").expect("合写法"),

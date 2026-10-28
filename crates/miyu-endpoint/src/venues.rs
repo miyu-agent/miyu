@@ -216,7 +216,7 @@ async fn find(
 ) -> Result<Option<miyu_kernel::id::SessionId>, Refusal> {
     let venue = venue.as_str().to_string();
     for listed in mains(core, &core.admin, move |row| row.venue == venue, None).await? {
-        if crate::sessions::confined_of(core, &core.admin, &listed.id).await == confined {
+        if crate::sessions::confined_of(core, &listed.id).await == confined {
             return Ok(Some(listed.id));
         }
     }
@@ -233,12 +233,10 @@ async fn mains(
 ) -> Result<Vec<Listed>, Refusal> {
     let root = core.root.clone();
     let index = core.index_for(owner);
-    let owner = owner.clone();
     let found = tokio::task::spawn_blocking(move || {
         let pick = |row: &Row| row.parent.is_none() && pick(row);
         scan(
             &root,
-            &owner,
             Some(&*index),
             &Default::default(),
             pick,

@@ -20,11 +20,11 @@ fn the_owner_s_own_scripts_are_listed_for_the_owner_and_the_bridge() {
         std::fs::write(path, text).expect("写得进");
     };
     write(
-        "system/packages/courier/package.toml",
+        "packages/courier/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Courier\" }\n\n[command]\nname = \"courier\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"C\" }\n\n[process]\nsystem_account = true\n",
     );
     write(
-        "home/alice/scripts/weather.py",
+        "scripts/weather.py",
         "#!/usr/bin/env python3\n# Description: Weather.\nprint('sunny')\n",
     );
     let core = Core::new(

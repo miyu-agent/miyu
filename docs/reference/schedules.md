@@ -1,6 +1,6 @@
 # 定时任务：`schedule.*`
 
-到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一个账号一张唤醒表，存在 `home/<账号>/state/schedules.db`，核心重启不丢；核心停着时错过的不补。设计见 `docs/designs/45-定时和循环.md`，怎么走见 `docs/blueprint/schedules.md`。英文版：[schedules.en.md](schedules.en.md)。
+到点把一句话交给一个会话跑一轮：每天早上 8 点的早报、每小时看一眼服务器。一个账号一张唤醒表，存在 `state/schedules.db`，核心重启不丢；核心停着时错过的不补。设计见 `docs/designs/45-定时和循环.md`，怎么走见 `docs/blueprint/schedules.md`。英文版：[schedules.en.md](schedules.en.md)。
 
 | 方法 | 做什么 |
 |---|---|

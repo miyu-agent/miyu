@@ -31,9 +31,9 @@ fn facts_of(held: &Held, source: &str, id: &str, model: &str) -> (Facts, Found) 
     facts(&resolved, &knowledge, &provider, model)
 }
 
-/// 手写的写成系统配置。
-fn file(layer: Layer) -> String {
-    format!("{}/config.toml", layer.as_str())
+/// 手写的写成配置文件（施工 SU-5 上：只有数据根下那一份）。
+fn file(_layer: Layer) -> String {
+    "config.toml".to_string()
 }
 
 const DEEPSEEK: &str = "[providers.deepseek]\nlocal = false\n";
@@ -82,7 +82,7 @@ fn each_fact_is_looked_up_on_its_own() {
     assert_eq!(facts.window.value, Some(60_000));
     assert_eq!(
         facts.window.source.json(&file),
-        json!({"from": "config", "file": "system/config.toml", "line": 5, "layer": "system"})
+        json!({"from": "config", "file": "config.toml", "line": 5, "layer": "system"})
             .as_object()
             .cloned()
             .expect("对象")
@@ -119,7 +119,7 @@ fn reasoning_levels_follow_the_profile_and_the_default_must_be_one_of_them() {
     assert_eq!(facts.effort.value.as_deref(), Some("off"));
     assert_eq!(
         Json::Object(facts.effort.source.json(&file)),
-        json!({"from": "config", "file": "system/config.toml", "line": 5, "layer": "system"})
+        json!({"from": "config", "file": "config.toml", "line": 5, "layer": "system"})
     );
     let (facts, _) = facts_of(&held(), written, "deepseek", "deepseek-flash");
     assert_eq!(
@@ -185,7 +185,7 @@ fn facts_json_says_which_config_layer_a_value_came_from() {
     assert_eq!(facts.window.value, Some(60_000));
     assert_eq!(
         Json::Object(facts.window.source.json(&file)),
-        json!({"from": "config", "file": "system/config.toml", "line": 5, "layer": "system"})
+        json!({"from": "config", "file": "config.toml", "line": 5, "layer": "system"})
     );
 }
 

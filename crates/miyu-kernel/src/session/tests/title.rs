@@ -215,7 +215,7 @@ fn the_title_request_keeps_its_cost() {
         currency: "CNY".to_string(),
         price: Prices::default(),
         multiplier: Real::new(0.5),
-        source: "config:system/config.toml:3".to_string(),
+        source: "config:config.toml:3".to_string(),
         above: None,
     };
     let done = session.handle(Input::AsideEnded {

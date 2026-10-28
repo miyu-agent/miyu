@@ -165,7 +165,7 @@ fn episode(home: &Home, by: By, text: &str, people: &[&str], source: Option<Sour
 /// 群里的一个会话：qq:2 以群名片「小林」说了一句（第 2 轮）。交回那一轮。
 fn group_source(home: &Home) -> Source {
     let session = SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let said = Event::from_line(
         r#"{"seq":1,"at":"2026-10-22T03:00:00.000Z","kind":"message.user","by":{"kind":"external","venue":"qq:group:5","id":"qq:2"},"body":{"blocks":[{"type":"text","text":"我把你 P 成猪了"}],"venue":{"msg":"9","name":"小林"}}}"#,
@@ -250,7 +250,7 @@ async fn a_dream_cards_the_people_an_episode_involves() {
 /// 群里的一个会话：qq:2 以「小林」、qq:5 以「老周」各说了一句（第 2 轮）。交回那一轮。
 fn two_speaking(home: &Home) -> Source {
     let session = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let lines = [
         r#"{"seq":1,"at":"2026-10-22T03:00:00.000Z","kind":"message.user","by":{"kind":"external","venue":"qq:group:5","id":"qq:2"},"body":{"blocks":[{"type":"text","text":"帮我看看老周说的那个框架"}],"venue":{"msg":"9","name":"小林"}}}"#,
@@ -333,7 +333,7 @@ async fn names_of_two_people_in_one_episode_do_not_cross() {
 /// 群里的一个会话：`id` 照先后用 `names` 里的名字各说一句。交回最后一轮。
 fn renamed(home: &Home, session: &str, id: &str, names: &[&str]) -> Source {
     let session = SessionId::parse(session).expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let said: Vec<Event> = names
         .iter()

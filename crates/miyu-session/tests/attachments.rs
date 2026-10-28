@@ -16,11 +16,8 @@ use crate::support::*;
 
 /// 会话 `session` 的附件目录里放一份 `name`，交回她照抄的路径（Windows 上反斜杠换成 `/`）。
 fn put(home: &Home, session: &str, name: &str) -> String {
-    let dir = miyu_store::attachments::dir(
-        &home.root,
-        &alice_account(),
-        &SessionId::parse(session).expect("会话编号"),
-    );
+    let dir =
+        miyu_store::attachments::dir(&home.root, &SessionId::parse(session).expect("会话编号"));
     let path = miyu_store::attachments::keep(&dir, name, "text/plain", b"x").expect("存得下");
     let path = path.to_string_lossy().into_owned();
     if cfg!(windows) {

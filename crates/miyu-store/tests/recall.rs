@@ -11,10 +11,7 @@ use crate::support::*;
 
 /// 临时数据根里管理员的一个检索库的位置。
 fn place(scratch: &Scratch) -> PathBuf {
-    root_in(scratch)
-        .index(&admin())
-        .join("recall")
-        .join("test.db")
+    root_in(scratch).index().join("recall").join("test.db")
 }
 
 fn keys(hits: &[Hit]) -> Vec<&str> {
@@ -253,7 +250,7 @@ fn turn_indexes_are_one_per_account_and_persona_and_forgetting_a_session_reaches
     assert!(opened.is_none(), "开过的不再开：{opened:?}");
     assert!(std::sync::Arc::ptr_eq(&engineer, &again));
     assert!(
-        root.index(&admin())
+        root.index()
             .join("recall")
             .join("turns-engineer.db")
             .is_file()
@@ -392,7 +389,7 @@ fn a_source_is_alive_unless_its_turn_or_its_session_is_buried() {
         turn: TurnId::new(seq(n)),
     };
     // 活着的会话的目录在（施工 R-3 三补：出处活不活照会话的目录在不在）。
-    std::fs::create_dir_all(root.session_dir(&admin(), &session)).unwrap();
+    std::fs::create_dir_all(root.session_dir(&session)).unwrap();
     let (turns, _) = indexes.turns(&Room::persona(&admin(), "engineer"));
     turns
         .apply(
@@ -446,18 +443,17 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
         session: session.clone(),
         turn: TurnId::new(seq(3)),
     };
-    let live = root.session_dir(&admin(), &deleted);
+    let live = root.session_dir(&deleted);
     std::fs::create_dir_all(&live).unwrap();
     // 记忆归管理员、会话在别的账号（系统账号）名下的：照样认得出目录在。
-    let bot = miyu_kernel::id::AccountId::parse("bot").unwrap();
-    std::fs::create_dir_all(root.session_dir(&bot, &theirs)).unwrap();
+    std::fs::create_dir_all(root.session_dir(&theirs)).unwrap();
     assert!(indexes.alive(&room, &at(&deleted)).unwrap());
     assert!(
         indexes.alive(&room, &at(&theirs)).unwrap(),
         "别的账号名下的会话"
     );
     // 删会话：目录挪进回收处，埋墓碑。
-    let trashed = root.trashed_sessions(&admin()).join(deleted.as_str());
+    let trashed = root.trashed_sessions().join(deleted.as_str());
     std::fs::create_dir_all(trashed.parent().unwrap()).unwrap();
     std::fs::rename(&live, &trashed).unwrap();
     indexes.forget_session(&admin(), &deleted).unwrap();

@@ -118,9 +118,9 @@ pub(crate) fn feature<'a>(reply: &'a Value, id: &str) -> Option<&'a Value> {
 #[tokio::test]
 async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     // 撞了基础系统的 `read`：不登记。
-    home.write("home/alice/scripts/read.py", &echo("read"));
+    home.write("scripts/read.py", &echo("read"));
     let script = Script::new([
         Play::calls(&[("weather", r#"{"say":"晴"}"#)]),
         Play::Says("好。"),
@@ -178,9 +178,9 @@ async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
 #[tokio::test]
 async fn each_script_is_a_feature_the_preset_switches() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     home.write(
-        "home/alice/presets/lean.toml",
+        "presets/lean.toml",
         "[preset]\nname = { en = \"Lean\" }\nunlisted = \"on\"\n\n[features]\nscript-weather = false\n",
     );
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
@@ -238,7 +238,7 @@ async fn a_package_with_scripts_registers_them_when_installed() {
     .expect("写得进");
     std::fs::write(folder.join("scripts/bangumi.py"), echo("bangumi")).expect("写得进");
     home.write(
-        "home/alice/presets/nokit.toml",
+        "presets/nokit.toml",
         "[preset]\nname = { en = \"No kit\" }\nunlisted = \"on\"\n\n[software]\nkit = false\n",
     );
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
@@ -393,9 +393,9 @@ async fn a_package_with_only_skills_and_scripts_installs_without_a_switch() {
 #[tokio::test]
 async fn check_says_which_file_covers_a_packaged_script_or_skill() {
     let home = Home::new();
-    home.write("home/alice/scripts/dice.py", &echo("dice"));
+    home.write("scripts/dice.py", &echo("dice"));
     home.write(
-        "home/alice/skills/notes/SKILL.md",
+        "skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Mine.\n---\nbody\n",
     );
     let folder = home.work.join("kit");
@@ -432,12 +432,9 @@ async fn check_says_which_file_covers_a_packaged_script_or_skill() {
     let (code, file, message) = &problems[0];
     assert_eq!(code, "script_covered");
     assert!(file.ends_with("kit/scripts/dice.py"), "{file}");
-    assert!(message.contains("home/alice/scripts/dice.py"), "{message}");
+    assert!(message.contains("scripts/dice.py"), "{message}");
     let (code, file, message) = &problems[1];
     assert_eq!(code, "skill_covered");
     assert!(file.ends_with("kit/skills/notes"), "{file}");
-    assert!(
-        message.contains("home/alice/skills/notes/SKILL.md"),
-        "{message}"
-    );
+    assert!(message.contains("skills/notes/SKILL.md"), "{message}");
 }

@@ -9,7 +9,7 @@
 use std::time::Duration;
 
 use crate::support::routing::{configs, hellos, routes};
-use crate::support::{Home, alice_account, ask, until_turn_ends, watch};
+use crate::support::{Home, ask, until_turn_ends, watch};
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Image, Text};
 use miyu_kernel::event::{Body, ImageDescribed};
@@ -31,7 +31,7 @@ fn config(first: &Server, second: &Server, m_inputs: &str, extra: &str) -> Strin
 
 /// 存进属主 blob 的一张「图」：四个字节 miyu，base64 是 bWl5dQ==。
 fn stored(home: &Home) -> ContentHash {
-    Blobs::new(home.root.blobs(&alice_account()))
+    Blobs::new(home.root.blobs())
         .put(b"miyu")
         .expect("存得进去")
 }
@@ -259,12 +259,8 @@ async fn describing_is_billed_to_the_session_owner() {
     let handle = home.create(&routes).await;
     let blob = stored(&home);
     show(&handle, "cmd-1", "看看", &blob).await;
-    let journal = std::fs::read_to_string(
-        home.root
-            .account_dir(&alice_account())
-            .join(miyu_store::journal::FILE),
-    )
-    .expect("有账号日志");
+    let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
+        .expect("有账号日志");
     assert_eq!(
         journal.matches(r#""kind":"usage.oneshot""#).count(),
         1,

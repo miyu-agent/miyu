@@ -99,7 +99,7 @@ async fn a_small_file_read_before_the_cut_comes_back_and_survives_a_reload() {
     assert_eq!(compacted.restored.len(), 1, "{compacted:?}");
     assert!(compacted.restored[0].path.ends_with("a.txt"));
     assert_eq!(compacted.restored[0].blob, ContentHash::of(b"alpha\n"));
-    let blobs = Blobs::new(home.root.blobs(&alice_account()));
+    let blobs = Blobs::new(home.root.blobs());
     assert_eq!(
         blobs
             .get(&ContentHash::of(b"alpha\n"))

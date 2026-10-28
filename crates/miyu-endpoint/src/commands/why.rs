@@ -74,7 +74,7 @@ pub(super) async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::
     let owner = handle.owner().clone();
     let (root, index) = (core.root.clone(), core.index_for(&owner));
     let id = handle.id().clone();
-    tokio::task::spawn_blocking(move || crate::list::one(&root, &owner, &index, &id, false))
+    tokio::task::spawn_blocking(move || crate::list::one(&root, &index, &id, false))
         .await
         .ok()?
 }

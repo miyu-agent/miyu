@@ -49,7 +49,6 @@ pub(crate) async fn fork(
     let child = new_id(at);
     let upto = miyu_session::fork(Fork {
         root: &core.root,
-        owner: &owner,
         parent: &parent,
         id: child.clone(),
         cause,

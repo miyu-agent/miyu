@@ -29,8 +29,7 @@ impl Places {
             exe: None,
         };
         let root = DataRoot::locate(&env).unwrap();
-        let admin = AccountId::parse("admin").unwrap();
-        let packages = Packages::new(&resources, &root, &admin);
+        let packages = Packages::new(&resources, &root);
         Places { scratch, packages }
     }
 
@@ -38,7 +37,7 @@ impl Places {
     fn write(&self, layer: Layer, file: &str, text: &str) {
         let base = match layer {
             Layer::Shipped => "res/packages",
-            Layer::Home => "data/system/packages",
+            Layer::Home => "data/packages",
         };
         let path = self.scratch.path().join(base).join(file);
         fs::create_dir_all(path.parent().unwrap()).unwrap();

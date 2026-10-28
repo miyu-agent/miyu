@@ -2,7 +2,7 @@
 //! 说明、参数（`miyu_policy::script`）。从两处找：
 //!
 //! - 装了的软件包（清单读成了的）的 `scripts/<文件>`；
-//! - 本机自己放的 `home/<账号>/scripts/<文件>`。
+//! - 本机自己放的 `scripts/<文件>`。
 //!
 //! 同一个工具名的自己放的赢；两个包撞了，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补），
 //! 后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、不是字的、
@@ -12,7 +12,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_policy::script::{self, ScriptHead};
 
 use crate::links::{self, Fence, Kind};
@@ -34,9 +34,9 @@ pub struct Script {
     pub package: Option<String>,
 }
 
-/// 账号 `account` 自己放脚本的文件夹：`home/<账号>/scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
-pub fn own_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
-    root.account_dir(account).join("scripts")
+/// 账号 `account` 自己放脚本的文件夹：`scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
+pub fn own_dir(root: &DataRoot) -> PathBuf {
+    root.path().join("scripts")
 }
 
 /// 脚本的状态目录都在数据根 `data_root` 的这下面（施工 X-44）：`state/scripts/`。卸包、`miyu check` 照它找。
@@ -99,16 +99,15 @@ fn hex(digit: u8) -> Option<u8> {
 }
 
 /// 账号 `account` 在场所 `venue` 跑来处是 `source`（包的编号，家目录里放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的
-/// 状态目录（施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：本机的会话、没说场所的是 `state/scripts/<账号>/<来处>/<工具名>/`；场所会话
-/// 多一层场所（施工 X-44 补）：`state/scripts/<账号>/@<场所>/<来处>/<工具名>/`。场所写不成目录名的没有。不建：跑之前脚本工具建。
+/// 状态目录（施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：本机的会话、没说场所的是 `state/scripts/<来处>/<工具名>/`；场所会话多一层
+/// 场所（施工 X-44 补）：`state/scripts/@<场所>/<来处>/<工具名>/`（施工 SU-5 上拿掉了账号那一层）。场所写不成目录名的没有。不建：跑之前脚本工具建。
 pub fn state_dir(
     data_root: &Path,
-    account: &AccountId,
     venue: Option<&VenueId>,
     source: &str,
     tool: &str,
 ) -> Option<PathBuf> {
-    let mut dir = state_root(data_root).join(account.as_str());
+    let mut dir = state_root(data_root);
     if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
         dir.push(venue_dir(venue)?);
     }
@@ -116,20 +115,16 @@ pub fn state_dir(
 }
 
 /// 账号 `account` 在场所 `venue` 跑来处是 `source`、工具名是 `tool` 的脚本时给它的缓存目录（施工 Y-11 上，
-/// `MIYU_SCRIPT_CACHE_DIR`）：`home/<账号>/cache/<来处>/<工具名>/`，场所会话多一层场所（同 [`state_dir`]）。场所写不成目录名的
+/// `MIYU_SCRIPT_CACHE_DIR`）：`cache/<来处>/<工具名>/`，场所会话多一层场所（同 [`state_dir`]）。场所写不成目录名的
 /// 没有。不建：跑之前脚本工具建。
 pub fn cache_dir(
     data_root: &Path,
-    account: &AccountId,
     venue: Option<&VenueId>,
     source: &str,
     tool: &str,
 ) -> Option<PathBuf> {
     // 同 `DataRoot::cache`：调的一方手里只有数据根的路径。
-    let mut dir = data_root
-        .join("home")
-        .join(account.as_str())
-        .join(crate::root::CACHE);
+    let mut dir = data_root.join(crate::root::CACHE);
     if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
         dir.push(venue_dir(venue)?);
     }
@@ -147,7 +142,7 @@ pub struct State {
     pub path: PathBuf,
 }
 
-/// 数据根 `data_root` 里所有账号的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
+/// 数据根 `data_root` 里所有的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
 pub fn states(data_root: &Path) -> Vec<State> {
     let mut found = Vec::new();
     for from in sources(data_root) {
@@ -161,16 +156,14 @@ pub fn states(data_root: &Path) -> Vec<State> {
     found
 }
 
-/// 每个账号下放来处的那几层：账号那一层，加它下面每个场所那一层（施工 X-44 补）。
+/// 放来处的那几层：`state/scripts/` 本身，加它下面每个场所那一层（施工 X-44 补；施工 SU-5 上拿掉了账号那一层）。
 fn places(data_root: &Path) -> Vec<PathBuf> {
-    let mut places = Vec::new();
-    for account in folders(&state_root(data_root)) {
-        let venues = folders(&account)
-            .into_iter()
-            .filter(|dir| name(dir).as_deref().and_then(venue_of).is_some());
-        places.extend(venues);
-        places.push(account);
-    }
+    let root = state_root(data_root);
+    let mut places: Vec<PathBuf> = folders(&root)
+        .into_iter()
+        .filter(|dir| name(dir).as_deref().and_then(venue_of).is_some())
+        .collect();
+    places.push(root);
     places
 }
 
@@ -217,14 +210,10 @@ pub fn forget_states(data_root: &Path, source: &str) -> std::io::Result<()> {
 }
 
 /// 找脚本：数据根 `root` 里账号 `account` 自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的。照工具名排。
-pub fn find(
-    packages: &[Found],
-    root: &DataRoot,
-    account: &AccountId,
-) -> (Vec<Script>, Vec<Skipped>) {
+pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Script>, Vec<Skipped>) {
     let mut scripts: Vec<Script> = Vec::new();
     let mut skipped = Vec::new();
-    let own = own_dir(root, account);
+    let own = own_dir(root);
     // 自己放的盖过包里的：先到的赢。
     let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
@@ -235,7 +224,7 @@ pub fn find(
             .into_iter()
             .map(|found| (found.files_dir().join("scripts"), Some(found.id.clone()))),
     );
-    let fence = Fence::of(root, account);
+    let fence = Fence::of(root);
     for (place, package) in places {
         let (entries, unlisted) = links::list(&place, Kind::File, &fence, |_| true);
         skipped.extend(unlisted);

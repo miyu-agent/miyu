@@ -28,7 +28,7 @@ async fn dream_stop_stops_the_rooms_dream_from_anywhere() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[models]\nchat = \"a/m\"\n",
             server.base_url
@@ -124,7 +124,7 @@ async fn dream_stop_reaches_a_dream_asked_from_a_session() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[models]\nchat = \"a/m\"\n",
             server.base_url

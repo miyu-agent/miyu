@@ -51,7 +51,7 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
         SessionId::parse(answer["session"].as_str().expect("回应带会话")).expect("合写法");
     assert_eq!(answer["summary"], json!(true), "{answer}");
 
-    let events = read_events(&root.session_dir(&admin, &session)).expect("日志读得到");
+    let events = read_events(&root.session_dir(&session)).expect("日志读得到");
     let Body::SessionCreated(created) = &events[0].body else {
         panic!("第一条是 session.created");
     };

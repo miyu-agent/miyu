@@ -1,6 +1,6 @@
 # 项目：`project.*`
 
-项目是会话的一个分组（像 ChatGPT、Claude 网页的 Projects）：名称、颜色、新建会话的默认工作目录、人格、预设、附加提示词、留言开关。一个账号自己的一份，存在 `home/<账号>/projects.json`。和代码仓库里的项目配置（`.miyu/config.toml`、回应里的 `untrusted_project`）不是一回事。设计见 `docs/designs/38-项目.md`。英文版：[projects.en.md](projects.en.md)。
+项目是会话的一个分组（像 ChatGPT、Claude 网页的 Projects）：名称、颜色、新建会话的默认工作目录、人格、预设、附加提示词、留言开关。一个账号自己的一份，存在 `projects.json`。和代码仓库里的项目配置（`.miyu/config.toml`、回应里的 `untrusted_project`）不是一回事。设计见 `docs/designs/38-项目.md`。英文版：[projects.en.md](projects.en.md)。
 
 | 方法 | 做什么 |
 |---|---|

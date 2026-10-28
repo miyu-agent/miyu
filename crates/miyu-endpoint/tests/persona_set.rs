@@ -16,12 +16,7 @@ async fn connected(home: &Home) -> Client {
 
 /// 家目录里人格 `id` 的一份，没有的是空的。
 fn mine(home: &Home, id: &str, file: &str) -> Option<String> {
-    std::fs::read_to_string(
-        home.root
-            .path()
-            .join(format!("home/alice/personas/{id}/{file}")),
-    )
-    .ok()
+    std::fs::read_to_string(home.root.path().join(format!("personas/{id}/{file}"))).ok()
 }
 
 /// 样本人格在下面那一层（装着的样本包里，施工 SU-3 下），连上照数据根读包的核心。
@@ -118,7 +113,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
         let path = home
             .root
             .path()
-            .join("home/alice/personas/persona-1/prompts/reminders.md");
+            .join("personas/persona-1/prompts/reminders.md");
         std::fs::metadata(path).expect("在").ino()
     };
     let same = set(
@@ -134,7 +129,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
         let path = home
             .root
             .path()
-            .join("home/alice/personas/persona-1/prompts/reminders.md");
+            .join("personas/persona-1/prompts/reminders.md");
         assert_eq!(std::fs::metadata(path).expect("在").ino(), before, "没重写");
     }
 
@@ -304,7 +299,7 @@ async fn mistakes_write_nothing_and_say_why_in_the_peer_language() {
         assert_eq!(data["line"].as_u64(), line.map(|line: u64| line), "{reply}");
     }
     assert!(
-        !home.root.path().join("home/alice/personas/mine").exists(),
+        !home.root.path().join("personas/mine").exists(),
         "什么都没写"
     );
     for (n, params) in [
@@ -372,7 +367,7 @@ async fn deleting_moves_your_layer_into_the_trash() {
         .call("d1", "persona.delete", json!({"persona": id}))
         .await;
     assert_eq!(gone["result"], json!({"remains": false}), "{gone}");
-    let trash = home.root.path().join("home/alice/trash/personas");
+    let trash = home.root.path().join("trash/personas");
     let trashed: Vec<String> = std::fs::read_dir(&trash)
         .expect("回收处建了")
         .map(|entry| {
@@ -427,7 +422,7 @@ async fn deleting_moves_your_layer_into_the_trash() {
 #[tokio::test]
 async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
     let home = Home::new();
-    let dir = home.root.path().join("home/alice/personas");
+    let dir = home.root.path().join("personas");
     std::fs::create_dir_all(dir.join("old")).unwrap();
     std::fs::write(
         dir.join("old/persona.toml"),

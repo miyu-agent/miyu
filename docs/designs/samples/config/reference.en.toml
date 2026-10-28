@@ -1,5 +1,5 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
-# Write the system config in system/config.toml.
+# Write the config in config.toml in the data root.
 
 [clicall.mcp]
 # Callable from scripts: this MCP server's tools: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.

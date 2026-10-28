@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, CallId, CommandId, Seq, SessionId};
+use miyu_kernel::id::{CallId, CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Action, LoadError as Broken, Session, fork_plan, fork_plan_at};
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -28,8 +28,6 @@ use crate::store::{Indexed, Store};
 pub struct Fork<'a> {
     /// 数据根。
     pub root: &'a DataRoot,
-    /// 父会话的属主：子会话照它。
-    pub owner: &'a AccountId,
     /// 父会话。
     pub parent: &'a SessionId,
     /// 子会话的编号。
@@ -102,7 +100,6 @@ impl std::error::Error for ForkError {}
 pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
     let Fork {
         root,
-        owner,
         parent,
         id,
         cause,
@@ -112,9 +109,9 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         seal_after,
         within,
     } = setup;
-    let parent_dir = root.session_dir(owner, parent);
-    let child_dir = root.session_dir(owner, &id);
-    let blobs = Blobs::new(root.blobs(owner));
+    let parent_dir = root.session_dir(parent);
+    let child_dir = root.session_dir(&id);
+    let blobs = Blobs::new(root.blobs());
     let parent = parent.clone();
     blocking(move || {
         let events = read_events(&parent_dir).map_err(ForkError::Log)?;

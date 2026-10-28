@@ -1,6 +1,6 @@
 //! 扩展进程（施工 9-4 上，`docs/blueprint/extensions.md`）：核心拉起 `kind = "process"` 的包，经标准输入输出说同一套协议。
 //!
-//! 一个包一格：看管它的任务、任务报上来的状态。开关存在 `system/extensions.json`，没写的照清单的 `start`（`always` 的开着）。
+//! 一个包一格：看管它的任务、任务报上来的状态。开关存在 `extensions.json`，没写的照清单的 `start`（`always` 的开着）。
 //! 核心起来时照开关拉起开着的（[`Core::start_extensions`]），停的时候一起请它们退出（[`Core::stop_extensions`]）；有开着、没停下的，
 //! 核心不算空闲。开、关、重启经协议（`methods.rs`），一件件办。看管一个包怎么拉起、退避、停下在 `supervise.rs`，标准错误的文件
 //! 在 `stderr.rs`。
@@ -366,7 +366,7 @@ fn on(switches: &Switches, id: &str, manifest: &Manifest) -> bool {
 
 /// 开关的文件在哪。
 fn switches_path(core: &Core) -> PathBuf {
-    core.root.system().join(file::FILE)
+    core.root.path().join(file::FILE)
 }
 
 /// 读开关：读不成的当没有，记一行 `WARN`；交回它的版本（写回时用），读不成的也交回整份字节的版本，好盖掉它。

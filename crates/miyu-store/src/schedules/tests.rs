@@ -45,7 +45,7 @@ fn every_minute(next: i64) -> NewSchedule {
 }
 
 fn opened(root: &DataRoot) -> Schedules {
-    let (table, opened) = Schedules::open(root, &alice());
+    let (table, opened) = Schedules::open(root);
     assert!(
         matches!(opened, Opened::Created | Opened::Kept),
         "{opened:?}"
@@ -139,17 +139,15 @@ fn a_reopened_table_reads_back_the_same() {
         let table = opened(&root);
         table.add(every_minute(2_000), at(1_000)).unwrap()
     };
-    let (table, opened) = Schedules::open(&root, &alice());
+    let (table, opened) = Schedules::open(&root);
     assert!(matches!(opened, Opened::Kept), "{opened:?}");
     let table = table.unwrap();
     assert_eq!(table.list().unwrap(), [written]);
-    assert_eq!(table.path(), path(&root, &alice()));
+    assert_eq!(table.path(), path(&root));
     assert!(
-        table.path().ends_with(
-            std::path::Path::new("alice")
-                .join("state")
-                .join("schedules.db")
-        )
+        table
+            .path()
+            .ends_with(std::path::Path::new("state").join("schedules.db"))
     );
 }
 
@@ -157,14 +155,14 @@ fn a_reopened_table_reads_back_the_same() {
 fn a_broken_table_is_set_aside_and_a_newer_one_left_alone() {
     let scratch = Scratch::new();
     let root = root(&scratch);
-    let file = path(&root, &alice());
+    let file = path(&root);
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(
         &file,
         "not a database at all, but long enough to be read as one",
     )
     .unwrap();
-    let (table, opened) = Schedules::open(&root, &alice());
+    let (table, opened) = Schedules::open(&root);
     let Opened::SetAside { kept, .. } = opened else {
         panic!("{opened:?}");
     };
@@ -177,8 +175,7 @@ fn a_broken_table_is_set_aside_and_a_newer_one_left_alone() {
     assert_eq!(table.list().unwrap(), []);
     drop(table);
 
-    let other = AccountId::parse("bob").unwrap();
-    let file = path(&root, &other);
+    let file = path(&root);
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     {
         let db = Connection::open(&file).unwrap();
@@ -186,7 +183,7 @@ fn a_broken_table_is_set_aside_and_a_newer_one_left_alone() {
             .unwrap();
     }
     let before = fs::read(&file).unwrap();
-    let (table, opened) = Schedules::open(&root, &other);
+    let (table, opened) = Schedules::open(&root);
     assert!(matches!(opened, Opened::Newer(99)), "{opened:?}");
     assert!(table.is_none(), "这一回不用");
     assert_eq!(fs::read(&file).unwrap(), before, "没动它");

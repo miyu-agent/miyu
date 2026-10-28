@@ -9,7 +9,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::mpsc;
 
 use crate::support::outside::Outside;
-use crate::support::{AccountIdOf, Asked, Bare, Home, ask_at, dirs, plan, shipped_tools};
+use crate::support::{Asked, Bare, Home, ask_at, dirs, plan, shipped_tools};
 use miyu_cli::{Format, Plan, Target};
 use miyu_ipc::Listener;
 use miyu_session::testkit::{Play, Script};
@@ -117,7 +117,7 @@ async fn a_directory_too_wide_is_said_first_and_once() {
         .await;
     assert_eq!(code, 0, "{err}");
     // 这个核心读不出家目录：`~` 说不清在哪，退回这个会话自己的默认工作区（施工 5-14），账号的工作区下面只有它一个。
-    let workspace = home.root.workspace(&AccountIdOf::admin());
+    let workspace = home.root.workspace();
     let own: Vec<_> = std::fs::read_dir(&workspace)
         .expect("读得了")
         .map(|entry| entry.expect("读得了").path())

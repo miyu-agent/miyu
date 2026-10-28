@@ -13,7 +13,7 @@ const FAKE: &str = "sk-FAKE-KEY-FOR-TESTS-0001";
 #[test]
 fn a_missing_file_is_nothing_and_a_written_one_reads_back() {
     let temp = Scratch::new();
-    let path = temp.path().join("system").join(FILE);
+    let path = temp.path().join(FILE);
     assert!(read(&path).unwrap().is_none());
     let content = format!("deepseek = \"{FAKE}\"\n");
     write(&path, content.as_bytes(), None).unwrap();

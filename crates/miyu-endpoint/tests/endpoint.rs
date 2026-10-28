@@ -4,7 +4,7 @@
 use serde_json::json;
 use tokio::io::AsyncWriteExt;
 
-use crate::support::{Client, Home, alice, reason, until};
+use crate::support::{Client, Home, reason, until};
 use miyu_kernel::event::Body;
 use miyu_policy::Snapshot;
 use miyu_session::testkit::{Play, Script};
@@ -319,7 +319,7 @@ async fn a_head_that_cannot_take_input_makes_unattended_sessions() {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     let snapshot = Snapshot::from_bytes(&bytes).expect("读得懂");

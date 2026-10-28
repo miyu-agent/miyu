@@ -28,7 +28,7 @@ fn names(reply: &Value) -> Vec<String> {
 async fn access_lets_anyone_in_or_turns_a_command_off() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "{BINDINGS}\n[commands.clear]\naccess = \"anyone\"\n\n[commands.stop]\naccess = \"off\"\n\n[commands.workspace]\naccess = \"anyone\"\n\n[commands.todo]\naccess = \"admin\"\n"
         ),

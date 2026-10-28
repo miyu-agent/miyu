@@ -18,7 +18,7 @@ use crate::support::*;
 async fn each_grant_is_checked_against_the_catalog() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[sandbox.tools]\nlight = \"~home\"\nlamp = \"~home\"\nshell = \"basesystem\"\ngone = \"~home\"\nlinked = \"~home\"\n",
     );
     let fake = |name: &str| Fake::new(name, Access::Execute, Act::Echo) as Arc<dyn Tool>;
@@ -73,7 +73,7 @@ async fn each_grant_is_checked_against_the_catalog() {
     );
     assert!(problems.iter().all(|problem| problem["level"] == "warning"
         && problem["kind"] == "config"
-        && problem["file"] == "system/config.toml"));
+        && problem["file"] == "config.toml"));
     let linked = problems[2]["message"].as_str().unwrap_or_default();
     assert!(linked.contains("elsewhere.py"), "印出它的位置：{linked}");
     let moved = problems[1]["message"].as_str().unwrap_or_default();
@@ -89,7 +89,7 @@ async fn each_grant_is_checked_against_the_catalog() {
 #[tokio::test]
 async fn a_scripts_folder_that_links_out_is_not_granted() {
     let home = Home::new();
-    home.write("system/config.toml", "[sandbox.tools]\nrun = \"~home\"\n");
+    home.write("config.toml", "[sandbox.tools]\nrun = \"~home\"\n");
     let real = home.work.join("scripts");
     std::fs::create_dir_all(&real).expect("建得了");
     std::fs::write(real.join("run.py"), "x").expect("写得进");

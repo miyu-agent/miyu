@@ -89,11 +89,7 @@ async fn a_broken_table_is_told_when_it_is_replaced() {
     let core = core_with(&home, &Script::new([]), &hand);
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    let table = home
-        .root
-        .account_dir(&alice())
-        .join("state")
-        .join("schedules.db");
+    let table = home.root.path().join("state").join("schedules.db");
     std::fs::create_dir_all(table.parent().expect("有上级")).expect("建得了");
     std::fs::write(&table, "not a database").expect("写得进");
     let subscribed = client

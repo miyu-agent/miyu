@@ -7,7 +7,6 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::template::Template;
 use miyu_policy::ToolEntry;
 use miyu_policy::preset::PresetFile;
@@ -26,8 +25,8 @@ const READ: &str = "read";
 
 /// 找属主 `owner` 用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里他自己放的。跳过的一个记一行，只写哪一种
 /// （同名被盖住的、链接指到外面的、别的），路径、原因里有人起的名字，不写（施工 LG-1 上）。
-pub(crate) fn find(installed: &[Found], root: &DataRoot, owner: &AccountId) -> Vec<Skill> {
-    let (found, skipped) = skills::find(installed, root, owner);
+pub(crate) fn find(installed: &[Found], root: &DataRoot) -> Vec<Skill> {
+    let (found, skipped) = skills::find(installed, root);
     for one in &skipped {
         let kind = match (&one.by, &one.outside) {
             (Some(_), _) => "covered",

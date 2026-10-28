@@ -53,7 +53,7 @@ fn group_assembler(scratch: &Scratch) -> Arc<dyn Assembler + Send + Sync> {
     };
     let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
     root.prepare().expect("临时目录里建得了骨架");
-    let prompts = root.path().join("home/alice/personas/miyu/prompts");
+    let prompts = root.path().join("personas/miyu/prompts");
     std::fs::create_dir_all(&prompts).expect("建得了人格目录");
     std::fs::write(prompts.join("persona.md"), "你是 Miyu。").expect("写得进");
     let alice = AccountId::parse("alice").expect("账号合写法");

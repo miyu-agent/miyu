@@ -16,8 +16,8 @@ use crate::refusal::Refusal;
 use crate::wire::Request;
 
 /// `account` 的项目 `id`：没有的 `unknown_project`。
-pub(crate) async fn find(core: &Core, account: &AccountId, id: &str) -> Result<Project, Refusal> {
-    let read = super::read(core, account).await?;
+pub(crate) async fn find(core: &Core, id: &str) -> Result<Project, Refusal> {
+    let read = super::read(core).await?;
     read.projects
         .find(id)
         .cloned()
@@ -27,12 +27,11 @@ pub(crate) async fn find(core: &Core, account: &AccountId, id: &str) -> Result<P
 /// 会话 `session` 能不能进项目：只有本机的主会话能（场所会话、子代理、分叉出来的不能：分叉出来的也有父会话），别的是 `data.field` 为 `project`
 /// 的参数不对。会话没有、读不了第一条的照会话没有。
 pub(crate) async fn may_join(core: &Core, session: &SessionId) -> Result<(), Refusal> {
-    let owner = core
-        .sessions
+    core.sessions
         .owner(core, session)
         .await
         .ok_or(Refusal::NOT_FOUND)?;
-    let dir = core.root.session_dir(&owner, session);
+    let dir = core.root.session_dir(session);
     let first = tokio::task::spawn_blocking(move || miyu_store::log::first_event(&dir))
         .await
         .map_err(|_| Refusal::INTERNAL)?
@@ -88,7 +87,6 @@ async fn members(core: &Core, account: &AccountId, id: &str) -> Result<Vec<Sessi
     let scanned = tokio::task::spawn_blocking(move || {
         scan(
             &root,
-            &account,
             Some(&*index),
             &Default::default(),
             |row| row.venue == LOCAL && row.project.as_deref() == Some(id.as_str()),

@@ -81,8 +81,8 @@ fn facts(price: Option<Price>, source: Source, multiplier: f64) -> Facts {
 
 fn file(layer: Layer) -> String {
     match layer {
-        Layer::System => "system/config.toml".to_string(),
-        _ => "home/admin/settings.toml".to_string(),
+        Layer::System => "config.toml".to_string(),
+        _ => "settings.toml".to_string(),
     }
 }
 
@@ -200,7 +200,7 @@ fn the_currency_follows_the_price_and_the_multiplier_applies() {
         &file,
     )
     .unwrap();
-    assert_eq!(tariff.source, "config:system/config.toml:12");
+    assert_eq!(tariff.source, "config:config.toml:12");
     let cost = tariff.cost(&usage(1000, 0, 0, 100)).unwrap();
     assert_eq!(cost.currency, "CNY");
     assert_eq!(cost.multiplier, Real::new(0.5));
@@ -217,7 +217,7 @@ fn the_currency_follows_the_price_and_the_multiplier_applies() {
         Tariff::of(&facts(price, another, 1.0), &file)
             .unwrap()
             .source,
-        "config:system/config.toml:3"
+        "config:config.toml:3"
     );
 }
 

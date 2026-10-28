@@ -101,7 +101,7 @@ fn the_home_directory_itself_is_not_looked_at() {
 fn nothing_inside_the_data_root_is_searched() {
     let home = Scratch::new();
     let root = home.config("data");
-    let inside = home.dir("data/home/admin/workspace");
+    let inside = home.dir("data/workspace");
     assert_eq!(find(&inside, Some(&home.0), &root), None);
 }
 

@@ -31,10 +31,10 @@ pub(super) async fn start(
         Err(reason) => return failed("owner", reason),
     };
     let said = false;
-    if let Err(error) = root.prepare_home(&owner) {
+    if let Err(error) = root.prepare_workspace() {
         return failed("home", error.to_string());
     }
-    let mut found = load_packages(&resources, &root, &owner);
+    let mut found = load_packages(&resources, &root);
     let packaged = settings::Packaged::of(&mut found);
     let config = settings::read(&root, &owner, env.home.as_deref(), &packaged);
     settings::log_level(&config, level, log);

@@ -56,7 +56,7 @@ fn line(seq: u64, kind: &str, turn: Option<u64>, by: &str, body: &str) -> Event 
 fn what_was_laid_from_the_log_is_not_seen_again() {
     let (_scratch, root) = root("again");
     let session = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5ec9").expect("编号写对了");
-    let dir = root.session_dir(&AccountId::parse("admin").expect("账号写对了"), &session);
+    let dir = root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let said = line(
         1,
@@ -113,8 +113,8 @@ fn nothing_is_opened_until_the_lane_is_started() {
     let (scratch, root) = root("later");
     let session = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5eca").expect("编号写对了");
     let account = AccountId::parse("admin").expect("账号写对了");
-    let mut log = SessionLog::create(&root.session_dir(&account, &session), SEGMENT_LIMIT)
-        .expect("建得了日志");
+    let mut log =
+        SessionLog::create(&root.session_dir(&session), SEGMENT_LIMIT).expect("建得了日志");
     log.append(&[
         line(
             1,
@@ -245,8 +245,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     };
 
     let small = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5ecb").expect("编号写对了");
-    let mut log =
-        SessionLog::create(&root.session_dir(&account, &small), SEGMENT_LIMIT).expect("建得了日志");
+    let mut log = SessionLog::create(&root.session_dir(&small), SEGMENT_LIMIT).expect("建得了日志");
     log.append(&turn(1, "我养了一只猫")).expect("写得进");
     let lane = lanes
         .open(opening(&small, &log))
@@ -263,8 +262,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
 
     // 后台先去接一个大会话：照日志整份铺，要一会儿。
     let big = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5ecc").expect("编号写对了");
-    let mut other =
-        SessionLog::create(&root.session_dir(&account, &big), SEGMENT_LIMIT).expect("建得了日志");
+    let mut other = SessionLog::create(&root.session_dir(&big), SEGMENT_LIMIT).expect("建得了日志");
     let lines: Vec<Event> = (0..4000u64)
         .flat_map(|n| turn(1 + n * 4, &format!("第 {n} 件事：周末去爬山，带上水和伞")))
         .collect();

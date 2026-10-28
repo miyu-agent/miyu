@@ -36,20 +36,20 @@ pub(super) async fn embedding(core: &Core) -> Option<Value> {
                 })
                 .collect::<Vec<Value>>()
         };
-        let memories = rooms(memory.logs.personas(&admin).unwrap_or_default(), &|room| {
+        let memories = rooms(memory.logs.personas().unwrap_or_default(), &|room| {
             count(memory.logs.open(room).ok()?.0.index())
         });
-        let turns = rooms(memory.turns.personas(&admin).unwrap_or_default(), &|room| {
+        let turns = rooms(memory.turns.personas().unwrap_or_default(), &|room| {
             count(&memory.turns.turns(room).0)
         });
         let bases: Vec<Value> = knowledge
-            .ids(&admin)
+            .ids()
             .unwrap_or_default()
             .into_iter()
             .filter_map(|id| {
                 let (have, total) = count(&knowledge.index_of(&admin, &id))?;
                 let name = knowledge
-                    .title(&admin, &id)
+                    .title(&id)
                     .map_or_else(|_| id.clone(), |(name, _)| name);
                 Some(json!({"id": id, "name": name, "have": have, "total": total}))
             })

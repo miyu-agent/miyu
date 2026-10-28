@@ -23,7 +23,6 @@ use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::{EPISODE, Entry, PERSON};
 use miyu_store::log::read_events;
-use miyu_store::recall::Room;
 
 use crate::TARGET;
 use crate::memory::Keeper;
@@ -219,18 +218,10 @@ impl Keeper {
         })
     }
 
-    /// 会话 `session` 的目录：先看这一间的账号名下，没有再找别的账号（系统账号的会话、记忆归管理员，同出处活不活的判法）。
+    /// 会话 `session` 的目录；不在的没有。
     fn session_dir(&self, session: &SessionId) -> Option<std::path::PathBuf> {
-        let account = match self.room() {
-            Room::Persona { account, .. } | Room::Session { account, .. } => account,
-        };
-        let root = &self.memory.root;
-        let here = root.session_dir(account, session);
-        if here.is_dir() {
-            return Some(here);
-        }
-        let owner = root.owner_of(session).ok().flatten()?;
-        Some(root.session_dir(&owner, session))
+        let here = self.memory.root.session_dir(session);
+        here.is_dir().then_some(here)
     }
 }
 

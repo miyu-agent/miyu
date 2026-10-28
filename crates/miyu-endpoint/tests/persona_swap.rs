@@ -18,7 +18,7 @@ use crate::support::*;
 
 /// 管理员（测试里是 alice）家目录里 Miyu 的一个文件。
 fn mine(home: &Home, file: &str, text: &str) {
-    home.write(&format!("home/alice/personas/miyu/{file}"), text);
+    home.write(&format!("personas/miyu/{file}"), text);
 }
 
 fn configured(home: &Home, script: &Script) -> Arc<Core> {

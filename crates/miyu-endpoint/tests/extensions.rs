@@ -63,7 +63,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
     );
     assert_eq!(stderr(&home, "echo"), "hello from echo\n", "标准错误进日志");
     assert_eq!(
-        read(&home.root.system().join("extensions.json")),
+        read(&home.root.path().join("extensions.json")),
         "{\"version\":1,\"on\":{\"echo\":true}}\n"
     );
 
@@ -71,7 +71,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
     assert_eq!(disabled["result"]["state"], "off", "{disabled}");
     assert_eq!(disabled["result"]["on"], false);
     assert_eq!(
-        read(&home.root.system().join("extensions.json")),
+        read(&home.root.path().join("extensions.json")),
         "{\"version\":1,\"on\":{\"echo\":false}}\n"
     );
 }
@@ -114,12 +114,7 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
         lines[3],
         format!(
             "MIYU_PACKAGE_DIR={}",
-            home.root
-                .path()
-                .join("system")
-                .join("packages")
-                .join("echo")
-                .display()
+            home.root.path().join("packages").join("echo").display()
         )
     );
     let state =
@@ -361,14 +356,14 @@ async fn what_cannot_start_says_why_and_wrong_packages_are_refused() {
         &[],
     );
     home.write(
-        "system/packages/future/package.toml",
+        "packages/future/package.toml",
         &format!(
             "[package]\nprotocol = [2, 3]\nname = {{ en = \"F\" }}\n\n[command]\nname = \"future\"\nprogram = \"{}\"\nabout = {{ en = \"F\" }}\n\n[process]\n",
             program.name()
         ),
     );
     home.write(
-        "system/packages/face/package.toml",
+        "packages/face/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Face\" }\n\n[ui]\n",
     );
     let core = core(&home, quick());

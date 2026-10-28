@@ -99,7 +99,7 @@ impl SessionPort for Table {
         let root = self.root.clone();
         Box::pin(async move {
             let root = root.ok_or_else(|| "no data root in this fake".to_string())?;
-            let dir = root.session_dir(&alice_account(), &session);
+            let dir = root.session_dir(&session);
             Ok(Log::new(LogDir(dir)))
         })
     }

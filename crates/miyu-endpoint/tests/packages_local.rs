@@ -76,7 +76,7 @@ async fn an_installed_package_is_recorded_listed_and_forgotten() {
     assert_eq!(files["result"]["files"][1]["path"], "package.toml");
     assert_eq!(
         PathBuf::from(files["result"]["dir"].as_str().unwrap_or_default()),
-        home.root.path().join("system/packages/xtool"),
+        home.root.path().join("packages/xtool"),
         "包目录是绝对路径：{files}"
     );
     // 升级：换成新的那一份。
@@ -129,7 +129,7 @@ async fn a_shipped_package_is_counted_from_its_files() {
 #[tokio::test]
 async fn an_older_install_is_recorded_when_the_core_reads_its_packages() {
     let home = Home::new();
-    home.write("system/packages/xtool/package.toml", &manifest("0.9"));
+    home.write("packages/xtool/package.toml", &manifest("0.9"));
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let info = call(&mut client, "package.info", json!({"package": "xtool"})).await;
@@ -147,14 +147,14 @@ async fn a_path_names_the_package_that_owns_it() {
     client.hello().await;
     let folder = source(&home, "1.0", &[("bin/data.txt", "hi")]);
     call(&mut client, "package.install", json!({"path": folder})).await;
-    let inside = home.root.path().join("system/packages/xtool/bin/data.txt");
+    let inside = home.root.path().join("packages/xtool/bin/data.txt");
     let owns = call(&mut client, "package.owns", json!({"path": inside})).await;
     assert_eq!(
         owns["result"],
         json!({"package": "xtool", "layer": "home", "path": "bin/data.txt", "recorded": true}),
         "{owns}"
     );
-    let later = home.root.path().join("system/packages/xtool/cache.db");
+    let later = home.root.path().join("packages/xtool/cache.db");
     std::fs::write(&later, "x").expect("写得进");
     let owns = call(&mut client, "package.owns", json!({"path": later})).await;
     assert_eq!(
@@ -190,7 +190,7 @@ async fn changed_and_missing_files_are_found() {
         json!([{"package": "xtool", "modified": [], "missing": [], "extra": []}]),
         "{clean}"
     );
-    let dir = home.root.path().join("system/packages/xtool");
+    let dir = home.root.path().join("packages/xtool");
     std::fs::write(dir.join("bin/data.txt"), "changed").expect("写得进");
     std::fs::remove_file(dir.join("bin/gone.txt")).expect("删得掉");
     std::fs::write(dir.join("new.txt"), "x").expect("写得进");
@@ -207,7 +207,7 @@ async fn changed_and_missing_files_are_found() {
         .as_array()
         .expect("有")
         .iter()
-        .filter(|problem| problem["file"] == "system/packages/xtool/package.toml")
+        .filter(|problem| problem["file"] == "packages/xtool/package.toml")
         .filter_map(|problem| problem["code"].as_str())
         .collect();
     assert_eq!(codes, ["files_modified", "files_missing"], "{checked}");

@@ -56,7 +56,7 @@ fn a_config_change_is_written_like_the_sample() {
     let scratch = Scratch::new("config");
     let body = ConfigChanged {
         layer: "system",
-        file: "system/config.toml",
+        file: "config.toml",
         via: "set",
         changes: vec![KeyChange {
             key: "ui.language".to_string(),
@@ -66,7 +66,7 @@ fn a_config_change_is_written_like_the_sample() {
     };
     record(
         &scratch.file(),
-        "system/journal.jsonl",
+        "journal.jsonl",
         Timestamp::parse("2026-10-01T08:00:00.000Z").unwrap(),
         admin(),
         Some(&CommandId::parse("config-9f2c4e1a7b3d5f60-1").unwrap()),
@@ -90,7 +90,7 @@ fn a_trust_answer_is_written_like_the_sample() {
     };
     record(
         &scratch.file(),
-        "home/admin/journal.jsonl",
+        "journal.jsonl",
         Timestamp::parse("2026-10-01T08:02:00.000Z").unwrap(),
         admin(),
         Some(&CommandId::parse("config-9f2c4e1a7b3d5f60-2").unwrap()),
@@ -131,7 +131,7 @@ fn a_hand_edit_is_written_by_the_kernel_without_a_cause() {
     let scratch = Scratch::new("hand");
     let body = ConfigChanged {
         layer: "system",
-        file: "system/config.toml",
+        file: "config.toml",
         via: "file",
         changes: vec![KeyChange {
             key: "log.level".to_string(),
@@ -142,7 +142,7 @@ fn a_hand_edit_is_written_by_the_kernel_without_a_cause() {
     let at = Timestamp::parse("2026-10-01T08:00:00.000Z").unwrap();
     record(
         &scratch.file(),
-        "system/journal.jsonl",
+        "journal.jsonl",
         at,
         By::Kernel,
         None,
@@ -157,7 +157,7 @@ fn a_hand_edit_is_written_by_the_kernel_without_a_cause() {
     };
     record(
         &scratch.file(),
-        "system/journal.jsonl",
+        "journal.jsonl",
         at,
         By::Kernel,
         None,
@@ -167,7 +167,7 @@ fn a_hand_edit_is_written_by_the_kernel_without_a_cause() {
     assert_eq!(
         std::fs::read_to_string(scratch.file()).unwrap(),
         concat!(
-            r#"{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"kernel"},"body":{"layer":"system","file":"system/config.toml","via":"file","changes":[{"key":"log.level","new":"debug"}]}}"#,
+            r#"{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"kernel"},"body":{"layer":"system","file":"config.toml","via":"file","changes":[{"key":"log.level","new":"debug"}]}}"#,
             "\n",
             r#"{"seq":2,"at":"2026-10-01T08:00:00.000Z","kind":"trust.changed","by":{"kind":"kernel"},"body":{"path":"~/src/app","version":"sha256:…","trusted":false,"via":"file"}}"#,
             "\n",

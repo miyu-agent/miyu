@@ -21,15 +21,7 @@ pub(super) async fn prune(core: &Arc<Core>, session: &SessionId, keep: usize) ->
     let (root, index) = (core.root.clone(), core.index_for(&owner));
     let listed = tokio::task::spawn_blocking(move || {
         let dreams = |row: &miyu_store::index::Row| row.dream.is_some();
-        scan(
-            &root,
-            &owner,
-            Some(&*index),
-            &busy,
-            dreams,
-            None,
-            &Stop::default(),
-        )
+        scan(&root, Some(&*index), &busy, dreams, None, &Stop::default())
     })
     .await;
     let listed = match listed {

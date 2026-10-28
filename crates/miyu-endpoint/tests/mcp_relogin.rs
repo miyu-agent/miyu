@@ -31,7 +31,7 @@ async fn logged_in(
     script: &Script,
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut client, kept) = running_with(home, script).await;
@@ -103,7 +103,7 @@ async fn a_token_about_to_expire_is_renewed_before_the_call_without_a_restart() 
     assert_eq!(called_with(&server), ["Bearer access-2"]);
     assert_eq!(auth.refreshes().len(), 1, "续了一次");
     assert_eq!(shakes(&server), before, "续期写回密钥不重起服务");
-    let secrets = std::fs::read_to_string(home.root.system().join("secrets.toml")).expect("在");
+    let secrets = std::fs::read_to_string(home.root.path().join("secrets.toml")).expect("在");
     assert!(secrets.contains("access-2"), "续到的存回去了");
 }
 
@@ -182,7 +182,7 @@ async fn a_call_in_flight_outlives_a_refresh_and_a_person_s_change_still_restart
     assert_eq!(auth.refreshes().len(), 1);
     assert_eq!(shakes(&server), before, "没重起");
     // 人自己改了那一份：照旧重起。
-    let secrets = std::fs::read_to_string(home.root.system().join("secrets.toml")).expect("在");
+    let secrets = std::fs::read_to_string(home.root.path().join("secrets.toml")).expect("在");
     let stored: Value = secret_value(&secrets, "mcp-oauth-notes");
     let mut edited = stored.clone();
     edited["scope"] = json!("files:read");
@@ -230,7 +230,7 @@ async fn logging_out_forgets_the_login() {
         .await;
     assert_eq!(out["result"], json!({}), "{out}");
     let secrets =
-        std::fs::read_to_string(home.root.system().join("secrets.toml")).unwrap_or_default();
+        std::fs::read_to_string(home.root.path().join("secrets.toml")).unwrap_or_default();
     assert!(!secrets.contains("mcp-oauth-notes"), "{secrets}");
     let out = until_listed(&mut client, "notes", |one| one["reason"] == "needs_login").await;
     assert_eq!(out.get("logged_in"), None, "登出了就不带：{out}");
@@ -247,7 +247,7 @@ async fn a_pasted_callback_is_checked_like_the_local_one() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (_core, mut client, _kept) = running_with(&home, &Script::new([])).await;
@@ -324,7 +324,7 @@ async fn a_remote_person_logs_in_by_pasting_the_callback_back_and_logs_out() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut local, _kept) = running_with(&home, &Script::new([])).await;

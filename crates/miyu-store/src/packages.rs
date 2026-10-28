@@ -1,21 +1,19 @@
 //! 软件包清单在哪、两层怎么认（施工 9-1 上，`docs/blueprint/packages.md`「在哪」）：一个文件夹就是一个包（施工 F-8 上，设计
 //! `31-软件包.md` 第二节），出厂的放资源目录的 `packages/<编号>/package.toml`，管理员自己装的放
-//! `home/<管理员>/packages/<编号>/package.toml`，包的文件都在这个文件夹里。一个包只有一份清单，不像人格那样一层层
+//! `packages/<编号>/package.toml`，包的文件都在这个文件夹里。一个包只有一份清单，不像人格那样一层层
 //! 叠：同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照
 //! 编号，后读到的那一份报 `command_taken`。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_config::package`。
 //!
 //! 包自己在这台机器上的状态放 `<数据根>/state/packages/<编号>/`，包自己建、自己用（[`Packages::state_dir`]）。
 //!
 //! 装、卸（施工 F-5 上）：只动家目录那一层（`install.rs`）。卸掉的出厂的包在家目录记一笔 `<编号>.removed`，读的时候不算装了
-//! （[`Packages::read`]），另外照样读得出来（[`Packages::read_removed`]），好让头给人装回来。家目录里以前的写法
-//! （`<编号>.toml` 加同名目录）由 `migrate.rs` 挪成新的（施工 F-8 上）。
+//! （[`Packages::read`]），另外照样读得出来（[`Packages::read_removed`]），好让头给人装回来。
 
 use std::collections::BTreeMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use miyu_config::package::{self, Code, Manifest, Problem};
-use miyu_kernel::id::AccountId;
 
 use crate::resources::ResourceRoot;
 use crate::root::DataRoot;
@@ -28,7 +26,6 @@ pub mod install;
 mod launch;
 pub mod leftovers;
 pub mod local;
-pub mod migrate;
 
 pub use launch::{Launch, first_line, launcher};
 
@@ -43,7 +40,7 @@ pub const BIN: &str = "bin";
 pub enum Layer {
     /// 随发行附带的，只读。
     Shipped,
-    /// 系统那一层：管理员装的（施工 U23 上上起在 `system/packages/`，协议上照旧叫 `home`）。
+    /// 系统那一层：管理员装的（施工 U23 上上起在 `packages/`，协议上照旧叫 `home`）。
     Home,
 }
 
@@ -72,7 +69,7 @@ pub struct Found {
 
 impl Found {
     /// 包自己的文件放在哪个目录（施工 R-5 三补，`packages.md`「在哪」）：包文件夹本身，清单就在里面，例如
-    /// `home/<管理员>/packages/embed/package.toml` 的是 `home/<管理员>/packages/embed/`（施工 F-8 上）。两层都是这样。
+    /// `packages/embed/package.toml` 的是 `packages/embed/`（施工 F-8 上）。两层都是这样。
     pub fn files_dir(&self) -> PathBuf {
         self.path
             .parent()
@@ -114,13 +111,13 @@ pub struct Packages {
 }
 
 impl Packages {
-    /// 照资源目录 `resources`、数据根 `root`、管理员 `admin` 定两层的位置：出厂的、系统那一层装上的（`system/packages/`，施工
-    /// U23 上上；以前在机主家目录，协议上这一层照旧叫 `home`）。旧位置没挪成的照旧位置读（[`migrate::system_layer`]）。
-    pub fn new(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Packages {
+    /// 照资源目录 `resources`、数据根 `root` 定两层的位置：出厂的、装上的（`packages/`，施工 SU-5 上；协议上这一层照旧叫
+    /// `home`）。
+    pub fn new(resources: &ResourceRoot, root: &DataRoot) -> Packages {
         Packages {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("packages")),
-                (Layer::Home, migrate::system_layer(root, admin)),
+                (Layer::Home, root.packages()),
             ],
             state: root.state().join("packages"),
         }

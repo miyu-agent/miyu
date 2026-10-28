@@ -17,7 +17,7 @@ fn face(script: &Script, n: usize) -> Vec<(String, String)> {
 async fn a_script_is_sent_whole_even_when_it_asks_to_load_on_demand() {
     let home = Home::new();
     home.write(
-        "home/alice/scripts/weather.py",
+        "scripts/weather.py",
         &echo("weather").replace("# Need load: no\n", "# Need load: yes\n"),
     );
     let script = Script::new([Play::Says("好。")]);

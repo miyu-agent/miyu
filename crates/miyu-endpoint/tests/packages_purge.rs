@@ -25,9 +25,9 @@ fn read(home: &Home, relative: &str) -> String {
 #[tokio::test]
 async fn removing_a_package_forgets_its_settings_and_state() {
     let home = Home::new();
-    home.write("system/packages/xcfg/package.toml", XCFG);
+    home.write("packages/xcfg/package.toml", XCFG);
     home.write(
-        "system/config.toml",
+        "config.toml",
         "# 留着\nlog.level = \"debug\"\n\n[xcfg]\nport = 9000\n",
     );
     let mut client = Client::connect(packaged::core(&home));
@@ -39,16 +39,16 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     std::fs::write(state.join("data"), "x").expect("写得进");
     // 它的脚本在各账号下的状态目录一起删，家目录里的脚本的、别的包的不动（施工 X-44）。
     for script in [
-        "alice/xcfg/live",
-        "xbot/xcfg/watch",
-        "alice/~home/dice",
-        "alice/kit/x",
+        "xcfg/live",
+        "@qq_3agroup_3a1/xcfg/watch",
+        "~home/dice",
+        "kit/x",
     ] {
         home.write(&format!("state/scripts/{script}/data"), "x");
     }
     let removed = call(&mut client, "package.remove", json!({"package": "xcfg"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
-    let system = read(&home, "system/config.toml");
+    let system = read(&home, "config.toml");
     assert!(
         !system.contains("port") && !system.contains("[xcfg]"),
         "系统配置里那一项删了，空了的表头也删了：{system}"
@@ -59,10 +59,8 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     );
     assert!(!state.exists(), "状态目录删了");
     let scripts = home.root.path().join("state/scripts");
-    assert!(!scripts.join("alice/xcfg").exists() && !scripts.join("xbot/xcfg").exists());
-    assert!(
-        scripts.join("alice/~home/dice/data").exists() && scripts.join("alice/kit/x/data").exists()
-    );
+    assert!(!scripts.join("xcfg").exists() && !scripts.join("@qq_3agroup_3a1/xcfg").exists());
+    assert!(scripts.join("~home/dice/data").exists() && scripts.join("kit/x/data").exists());
 }
 
 #[tokio::test]
@@ -70,7 +68,7 @@ async fn removing_a_shipped_package_forgets_its_settings_too() {
     // 出厂的扩展用测试自己放的夹具（施工 S-6 下：接入QQ 搬出了核心仓库）。
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[courier]\nlisten = 9999\n\n[log]\nlevel = \"debug\"\n",
     );
     let resources = shipped::resources(&home);
@@ -80,7 +78,7 @@ async fn removing_a_shipped_package_forgets_its_settings_too() {
     std::fs::create_dir_all(&state).expect("建得了");
     let removed = call(&mut client, "package.remove", json!({"package": "courier"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
-    let system = read(&home, "system/config.toml");
+    let system = read(&home, "config.toml");
     assert!(!system.contains("listen"), "{system}");
     assert!(system.contains("level = \"debug\""), "{system}");
     assert!(!state.exists());
@@ -102,7 +100,7 @@ async fn removing_an_extension_forgets_its_switch_and_approvals() {
     let source = home.work.join("again").join("echo");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::copy(
-        home.root.path().join("system/packages/echo/package.toml"),
+        home.root.path().join("packages/echo/package.toml"),
         source.join("package.toml"),
     )
     .expect("拷得了");
@@ -117,7 +115,7 @@ async fn removing_an_extension_forgets_its_switch_and_approvals() {
     .await;
     assert_eq!(on["result"]["on"], true, "{on}");
     until_state(&mut client, "echo", |one| one["state"] == "running").await;
-    let switches = || read(&home, "system/extensions.json");
+    let switches = || read(&home, "extensions.json");
     assert!(switches().contains("echo"), "{}", switches());
     // 批过的能力记在开关文件里（施工 SU-2 中）。
     assert!(

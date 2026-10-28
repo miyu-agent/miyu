@@ -188,7 +188,12 @@ async fn a_new_session_s_folder_is_checked_when_added() {
         .join("no-such-folder")
         .to_string_lossy()
         .into_owned();
-    let elsewhere = home.root.system().to_string_lossy().into_owned();
+    let elsewhere = home
+        .root
+        .path()
+        .to_path_buf()
+        .to_string_lossy()
+        .into_owned();
     let fine = home.work.to_string_lossy().into_owned();
     for (cwd, wanted) in [(missing, "cwd"), (elsewhere, "cwd")] {
         let (id, params) = add("n1", cwd.clone());

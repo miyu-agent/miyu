@@ -121,7 +121,7 @@ fn a_rebuilt_memory_index_has_the_latest_keywords() {
         .expect("记得下")
         .id;
     drop((log, logs));
-    let index = root.index(&admin()).join("recall/memory-engineer.db");
+    let index = root.index().join("recall/memory-engineer.db");
     for suffix in ["", "-wal", "-shm"] {
         let mut name = index.clone().into_os_string();
         name.push(suffix);
@@ -161,7 +161,7 @@ fn a_tagging_the_memory_index_has_not_seen_is_filled_in() {
     drop((log, logs));
     // 日志里多一行换关键词的、记忆库还没照到它（像写完日志、没来得及写记忆库就停了）。
     let segment = root
-        .account_dir(&admin())
+        .path()
         .join("modules/memory/engineer/000000000001.jsonl");
     let line = miyu_recall::to_event(
         miyu_kernel::id::Seq::new(2).expect("从 1 起"),

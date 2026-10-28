@@ -100,17 +100,11 @@ impl Open {
     }
 }
 
-/// 磁盘上会话 `id` 是哪个账号的（施工 O-4 上，`DataRoot::owner_of`）：在阻塞线程里看；读不了 `home/` 的当没有，记一行 `WARN`。
+/// 磁盘上有会话 `id` 的是主人（施工 SU-5 上：数据根只有一层）：在阻塞线程里看目录在不在；没有的没有。
 pub(super) async fn stored_owner(core: &Core, id: &SessionId) -> Option<AccountId> {
     let (root, id) = (core.root.clone(), id.clone());
-    match tokio::task::spawn_blocking(move || root.owner_of(&id)).await {
-        Ok(Ok(owner)) => owner,
-        Ok(Err(error)) => {
-            tracing::warn!(target: "miyu::endpoint", error = %error, "homes unreadable");
-            None
-        }
-        Err(_) => None,
-    }
+    let there = tokio::task::spawn_blocking(move || root.session_dir(&id).is_dir()).await;
+    matches!(there, Ok(true)).then(|| core.admin.clone())
 }
 
 /// 造好的会话：编号，和它实际在哪个目录里干活（施工 4-5 下）；这个目录的项目配置还没问过信不信任的，它在哪（施工 8-2）。
@@ -275,7 +269,7 @@ impl Sessions {
             None => None,
         };
         let presets_of = presets::places(core, &child.owner);
-        let resources = presets::overrides::resources(core, &child.owner);
+        let resources = presets::overrides::resources(core);
         let handle = create(Create {
             root: &core.root,
             resources: &resources,
@@ -290,7 +284,7 @@ impl Sessions {
             memory_account: core.admin.clone(),
             memory_scope: MemoryScope::Off,
             venue: child.venue,
-            sandbox_cache: core.sandbox_cache_of(&child.owner),
+            sandbox_cache: core.sandbox_cache_of(),
             index: Some(core.index_for(&child.owner)),
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
@@ -390,33 +384,21 @@ pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
 }
 
-/// 核心重启以后补回去重的编号（施工 4-9 再补三上）：每个账号的会话合起来最新的 [`REMEMBERED`] 个（施工 BUG-1：以前只读机主的，
-/// 成员、系统账号的会话重启以后认不出重发），`session.created` 的 `cause` 就是造会话的命令编号，属主是会话所在的账号。读不了的
-/// 跳过。在阻塞线程里读，交回的照从旧到新。
+/// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
+/// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号，属主是主人。读不了的跳过。在阻塞线程里读，交回的照从旧
+/// 到新。
 async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
-    let root = core.root.clone();
+    let (root, owner) = (core.root.clone(), core.admin.clone());
     tokio::task::spawn_blocking(move || {
-        let mut ids: Vec<(SessionId, AccountId)> = root
-            .accounts()
+        let mut found: Vec<(Made, SessionId)> = root
+            .sessions()
             .unwrap_or_default()
             .into_iter()
-            .flat_map(|account| {
-                root.sessions(&account)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .take(REMEMBERED)
-                    .map(move |id| (id, account.clone()))
-            })
-            .collect();
-        // 会话编号是 UUIDv7：照编号倒着排就是从新到旧。
-        ids.sort_by(|(a, _), (b, _)| b.as_str().cmp(a.as_str()));
-        let mut found: Vec<(Made, SessionId)> = ids
-            .into_iter()
             .take(REMEMBERED)
-            .filter_map(|(id, account)| {
-                let event = first_event(&root.session_dir(&account, &id)).ok()?;
+            .filter_map(|id| {
+                let event = first_event(&root.session_dir(&id)).ok()?;
                 match (&event.body, event.cause) {
-                    (Body::SessionCreated(_), Some(cause)) => Some(((account, cause), id)),
+                    (Body::SessionCreated(_), Some(cause)) => Some(((owner.clone(), cause), id)),
                     _ => None,
                 }
             })

@@ -6,7 +6,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use crate::durable::{create_dir, create_temp, sync_dir, temp_name};
 use crate::root::DataRoot;
@@ -30,9 +30,9 @@ const RESERVED: [&str; 22] = [
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
-/// 会话 `session` 的附件目录：`home/<账号>/sessions/<会话>/attachments/`。
-pub fn dir(root: &DataRoot, account: &AccountId, session: &SessionId) -> PathBuf {
-    root.session_dir(account, session).join("attachments")
+/// 会话 `session` 的附件目录：`sessions/<会话>/attachments/`。
+pub fn dir(root: &DataRoot, session: &SessionId) -> PathBuf {
+    root.session_dir(session).join("attachments")
 }
 
 /// 把 `bytes` 存进附件目录 `dir`，交回文件的真实位置。名字照 `name`（[`clean`]），没有扩展名的照媒体类型 `media_type`

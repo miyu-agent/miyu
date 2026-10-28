@@ -31,7 +31,7 @@ fn tariff() -> Tariff {
             "USD",
         ),
         multiplier: 1.0,
-        source: "config:system/config.toml:7".to_string(),
+        source: "config:config.toml:7".to_string(),
     }
 }
 

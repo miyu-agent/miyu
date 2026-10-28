@@ -44,7 +44,7 @@ async fn a_package_brings_its_own_program() {
         "always",
         &steps(&[&step, "hello", "serve"]),
     );
-    let written = home.root.path().join(format!("system/packages/{id}"));
+    let written = home.root.path().join(format!("packages/{id}"));
     let source = home.work.join(id);
     std::fs::rename(&written, &source).expect("挪得动");
     bring(&source.join("bin"), &program);
@@ -103,7 +103,7 @@ async fn a_busy_program_starts_once_it_is_let_go() {
     let id = "xbusy";
     let program = own_name("busy");
     install(&home, id, &program, "always", &steps(&["hello", "serve"]));
-    let bin = home.root.path().join(format!("system/packages/{id}/bin"));
+    let bin = home.root.path().join(format!("packages/{id}/bin"));
     std::fs::create_dir_all(&bin).expect("建得了");
     let target = bin.join(&program);
     std::fs::copy(BUILT, &target).expect("拷得了");
@@ -142,7 +142,7 @@ async fn a_package_program_can_be_a_script() {
         "always",
         &steps(&[&step, "hello", "serve"]),
     );
-    let bin = home.root.path().join(format!("system/packages/{id}/bin"));
+    let bin = home.root.path().join(format!("packages/{id}/bin"));
     std::fs::create_dir_all(&bin).expect("建得了");
     write_script(&bin.join(&program), &format!("#!{BUILT}\n"));
 
@@ -165,7 +165,7 @@ async fn a_script_whose_interpreter_is_missing_says_why() {
     let id = "xnointerp";
     let program = own_name("nointerp");
     install(&home, id, &program, "always", &steps(&["hello", "serve"]));
-    let bin = home.root.path().join(format!("system/packages/{id}/bin"));
+    let bin = home.root.path().join(format!("packages/{id}/bin"));
     std::fs::create_dir_all(&bin).expect("建得了");
     let gone = home.work.join("no-such-interpreter");
     write_script(&bin.join(&program), &format!("#!{}\n", gone.display()));

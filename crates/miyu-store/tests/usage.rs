@@ -15,7 +15,7 @@ use crate::support::*;
 /// 一个主会话：三次请求（一次带美元的金额、一次带人民币的、一次没金额），中间一次没发出去的、一条人说的。
 fn spoken(root: &miyu_store::root::DataRoot, index: &UsageIndex) -> SessionLog {
     let id = session(1);
-    let mut log = write_log(&root.session_dir(&admin(), &id), &[]);
+    let mut log = write_log(&root.session_dir(&id), &[]);
     let events = [
         created(at(0), None),
         said(2, at(1)),
@@ -127,7 +127,7 @@ fn what_was_never_written_is_caught_up_from_the_log() {
     // 一个从没写过的会话（核心以前造的）：整份读进来。
     let old = session(2);
     write_log(
-        &root.session_dir(&admin(), &old),
+        &root.session_dir(&old),
         &[
             created(at(10), None),
             called(2, at(11), "deepseek-flash", Some([1, 1, 1, 1]), "", ""),
@@ -194,7 +194,7 @@ fn sessions_in_the_trash_still_count() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     drop(spoken(&root, &index));
-    miyu_store::trash::discard(&root, &admin(), &session(1), at(60)).unwrap();
+    miyu_store::trash::discard(&root, &session(1), at(60)).unwrap();
     drop(index);
     forget(&root);
     let (rebuilt, _) = UsageIndex::open(&root);
@@ -208,7 +208,7 @@ fn groups_split_by_model_purpose_and_session_and_a_tree_takes_the_children() {
     let (index, _) = UsageIndex::open(&root);
     drop(spoken(&root, &index));
     let (parent, child) = (session(1), session(3));
-    let mut log = write_log(&root.session_dir(&admin(), &child), &[]);
+    let mut log = write_log(&root.session_dir(&child), &[]);
     land(
         &index,
         &mut log,
@@ -284,7 +284,7 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
         ..call.clone()
     };
     index.one_shot(&admin(), at(32), &judged).unwrap();
-    let journal = fs::read_to_string(root.account_dir(&admin()).join(journal::FILE)).unwrap();
+    let journal = fs::read_to_string(root.path().join(journal::FILE)).unwrap();
     assert_eq!(journal.lines().count(), 3);
     assert!(journal.contains(r#""kind":"usage.oneshot""#), "{journal}");
     let by_purpose = |index: &UsageIndex| {
@@ -338,7 +338,7 @@ fn a_later_segment_is_caught_up_too() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     let id = session(5);
-    let dir = root.session_dir(&admin(), &id);
+    let dir = root.session_dir(&id);
     let mut log = SessionLog::create(&dir, 1).unwrap();
     log.append(&[created(at(0), None)]).unwrap();
     log.append(&[called(
@@ -421,7 +421,7 @@ fn use_sorts_rows_into_main_compaction_subagent_and_helpers() {
         ],
     );
     let child = session(3);
-    let mut child_log = write_log(&root.session_dir(&admin(), &child), &[]);
+    let mut child_log = write_log(&root.session_dir(&child), &[]);
     land(
         &index,
         &mut child_log,

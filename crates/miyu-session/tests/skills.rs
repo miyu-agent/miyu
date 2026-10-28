@@ -40,7 +40,7 @@ impl Kit {
 
 /// alice 家目录里的一处。
 fn mine(home: &Home, path: &str) -> PathBuf {
-    home.root.account_dir(&alice_account()).join(path)
+    home.root.path().join(path)
 }
 
 /// 在 alice 家目录里放技能 `notes`、旁边放一份不给碰的；交回 `SKILL.md` 列出来的路径（Windows 上反斜杠换成了 `/`，她照抄

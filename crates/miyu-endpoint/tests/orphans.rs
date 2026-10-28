@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::support::deleting::{
     Router, agent, base_tools, in_place, started_child, tools_before_the_rename, trashed,
 };
-use crate::support::{Client, Home, alice, until};
+use crate::support::{Client, Home, until};
 use miyu_kernel::event::Body;
 use miyu_kernel::id::SessionId;
 use miyu_session::testkit::{Play, Script};
@@ -49,7 +49,7 @@ async fn dispatched(home: &Home, router: &Router, tools: Catalog) -> (String, Se
 /// 结果：一次派了两个、只记下了第一个的样子。
 fn crash_before_the_job_was_recorded(home: &Home, session: &str, kept: usize) {
     let id = SessionId::parse(session).expect("合写法");
-    let dir = home.root.session_dir(&alice(), &id);
+    let dir = home.root.session_dir(&id);
     let segment = std::fs::read_dir(&dir)
         .expect("读得了")
         .map(|entry| entry.expect("读得了").path())

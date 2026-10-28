@@ -724,7 +724,7 @@
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",
     "config/reference-header": "Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。",
-    "config/reference-where": "システム設定は system/config.toml に書きます。",
+    "config/reference-where": "設定はデータルートの config.toml に書きます。",
     "config/reference-item": "{name}：{description}",
     "config/facts": "書ける値：{values}。{layers}にだけ書けます。{applies}。",
     "config/schema-description": "{description}{facts}",

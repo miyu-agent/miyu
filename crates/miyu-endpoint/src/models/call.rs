@@ -166,7 +166,7 @@ pub(crate) async fn call(
     };
     let source: Arc<dyn ConfigSource> = config;
     let turn = Arc::new(Turn::new(resolved, source));
-    let blobs = Blobs::new(core.root.blobs(account));
+    let blobs = Blobs::new(core.root.blobs());
     let ask = Ask {
         model,
         purpose: params.purpose,

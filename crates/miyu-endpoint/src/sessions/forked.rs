@@ -38,7 +38,6 @@ impl Sessions {
             });
             miyu_session::fork(Fork {
                 root: &core.root,
-                owner: &owner,
                 parent: &lineage.parent,
                 id: id.clone(),
                 cause: command,

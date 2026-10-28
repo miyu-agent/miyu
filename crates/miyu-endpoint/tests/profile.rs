@@ -10,7 +10,6 @@ use serde_json::{Value, json};
 
 use miyu_endpoint::Core;
 use miyu_kernel::event::Body;
-use miyu_kernel::id::AccountId;
 use miyu_policy::Snapshot;
 use miyu_session::testkit::Script;
 use miyu_store::blob::Blobs;
@@ -32,7 +31,7 @@ fn snapshot(home: &Home, session: &str) -> Snapshot {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂")
@@ -55,7 +54,7 @@ async fn a_written_profile_joins_the_system_of_new_sessions() {
     let plain = snapshot(&home, &open(&home, "c1").await);
     assert_eq!(plain.profile, None, "没写的没有");
     assert!(!plain.system.contains("<user>"), "{}", plain.system);
-    home.write("system/config.toml", PROFILE);
+    home.write("config.toml", PROFILE);
     let with = snapshot(&home, &open(&home, "c2").await);
     let block = BLOCK;
     assert_eq!(with.profile.as_deref(), Some(block));
@@ -75,7 +74,7 @@ async fn a_written_profile_joins_the_system_of_new_sessions() {
 async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("{PROFILE}preferred_reply_language = \"简体中文\"\n"),
     );
     let both = snapshot(&home, &open(&home, "c1").await);
@@ -87,7 +86,7 @@ async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
         "接在更多描述后面（施工 P-9 补）"
     );
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[profile]\npreferred_reply_language = \"日本語\"\n",
     );
     let alone = snapshot(&home, &open(&home, "c2").await);
@@ -100,7 +99,7 @@ async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
 
 /// 照对应表、「关于你」、读好的清单起来的核心，拉起开着的扩展（桥）。
 fn served_core(home: &Home) -> Arc<Core> {
-    home.write("system/config.toml", &format!("{BINDINGS}\n{PROFILE}"));
+    home.write("config.toml", &format!("{BINDINGS}\n{PROFILE}"));
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -111,7 +110,7 @@ fn served_core(home: &Home) -> Arc<Core> {
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         &alice(),
@@ -149,9 +148,9 @@ async fn replies(path: &Path, n: usize) -> Vec<Value> {
 }
 
 /// 账号 `owner` 名下的会话 `session` 的快照里「关于你」那一块。
-fn profile_of(home: &Home, owner: &AccountId, session: &Value) -> Option<String> {
+fn profile_of(home: &Home, session: &Value) -> Option<String> {
     let session = session["session"].as_str().expect("有编号");
-    crate::support::venues::snapshot(home, owner, &dir(home, owner, session)).profile
+    crate::support::venues::snapshot(home, &dir(home, session)).profile
 }
 
 #[tokio::test]
@@ -176,19 +175,14 @@ async fn venue_sessions_carry_it_only_for_the_admin_where_the_bridge_asks() {
     );
     let _core = served_core(&home);
     let got = replies(&path, 4).await;
-    let bot = alice();
     assert_eq!(
-        profile_of(&home, &alice(), &got[1]["result"]).as_deref(),
+        profile_of(&home, &got[1]["result"]).as_deref(),
         Some(BLOCK),
         "管理员本人的私聊、桥说要的：{got:?}"
     );
+    assert_eq!(profile_of(&home, &got[2]["result"]), None, "桥没说要的");
     assert_eq!(
-        profile_of(&home, &alice(), &got[2]["result"]),
-        None,
-        "桥没说要的"
-    );
-    assert_eq!(
-        profile_of(&home, &bot, &got[3]["result"]),
+        profile_of(&home, &got[3]["result"]),
         None,
         "群归系统账号：说要也不带"
     );

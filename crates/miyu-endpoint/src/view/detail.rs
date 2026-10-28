@@ -100,7 +100,7 @@ async fn call_detail(
         };
     };
     let output = output(&result.blocks);
-    let blobs = Blobs::new(core.root.blobs(&owner));
+    let blobs = Blobs::new(core.root.blobs());
     let files = tokio::task::spawn_blocking(move || {
         result
             .effects

@@ -17,7 +17,7 @@ fn scope(home: &Home, session: &str) -> MemoryScope {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂").memory_scope()
@@ -67,7 +67,7 @@ async fn session_create_records_the_scope_and_refuses_a_wrong_one() {
 async fn without_it_the_persona_file_decides() {
     let home = Home::new();
     home.write(
-        "home/alice/personas/engineer/persona.toml",
+        "personas/engineer/persona.toml",
         "[memory]\nscope = \"session\"\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));

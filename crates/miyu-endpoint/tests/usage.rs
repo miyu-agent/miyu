@@ -34,7 +34,7 @@ fn asked(model: &str, purpose: &str) -> Value {
 async fn one_shot_calls_count_by_purpose_and_land_in_the_account_journal() {
     let server = Server::start(vec![said("a"), said("b"), said("c")]).await;
     let home = Home::new();
-    home.write("system/config.toml", &config(&server, ""));
+    home.write("config.toml", &config(&server, ""));
     let mut client = Client::connect(routed(&home, &[], data(profiles(json!({})))));
     client.hello().await;
     for (id, model, purpose) in [
@@ -64,15 +64,15 @@ async fn one_shot_calls_count_by_purpose_and_land_in_the_account_journal() {
         ]),
         "{reply}"
     );
-    let journal = std::fs::read_to_string(home.root.account_dir(&alice()).join(journal::FILE))
-        .expect("有账号日志");
+    let journal =
+        std::fs::read_to_string(home.root.path().join(journal::FILE)).expect("有账号日志");
     assert_eq!(
         journal.matches(r#""kind":"usage.oneshot""#).count(),
         3,
         "{journal}"
     );
     assert!(
-        journal.contains(r#""cost":{"amount":0.000018,"currency":"CNY","price":{"input":1,"output":2},"multiplier":1,"source":"config:system/config.toml:"#),
+        journal.contains(r#""cost":{"amount":0.000018,"currency":"CNY","price":{"input":1,"output":2},"multiplier":1,"source":"config:config.toml:"#),
         "{journal}"
     );
 }
@@ -129,7 +129,7 @@ async fn currencies(usage: &str) -> Vec<String> {
     let server = Server::start(vec![said("a"), said("b")]).await;
     let home = Home::new();
     let extra = format!("\n[providers.a.models.u.price]\ninput = 1.0\noutput = 1.0\n{usage}");
-    home.write("system/config.toml", &(config(&server, "") + &extra));
+    home.write("config.toml", &(config(&server, "") + &extra));
     let mut client = Client::connect(routed(&home, &[], data(profiles(json!({})))));
     client.hello().await;
     for (id, model) in [("c1", "a/m"), ("c2", "a/u")] {

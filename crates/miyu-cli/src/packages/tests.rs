@@ -12,7 +12,7 @@ fn added(name: &str, program: &str) -> Added {
             ("en".to_string(), "Open the terminal interface".to_string()),
             ("zh".to_string(), "打开终端界面".to_string()),
         ]),
-        manifest: PathBuf::from("/data/system/packages/tui/package.toml"),
+        manifest: PathBuf::from("/data/packages/tui/package.toml"),
         resources: PathBuf::from("/usr/share/miyu"),
         state: PathBuf::from("/data/state/packages/tui"),
     }
@@ -56,12 +56,12 @@ fn a_missing_program_is_named_with_its_manifest() {
         (
             &["tui", "--x"][..],
             Language::English,
-            "miyu-no-such-program-anywhere not found: /data/system/packages/tui/package.toml says miyu tui runs it",
+            "miyu-no-such-program-anywhere not found: /data/packages/tui/package.toml says miyu tui runs it",
         ),
         (
             &["help", "tui"][..],
             Language::Chinese,
-            "没找到 miyu-no-such-program-anywhere：清单 /data/system/packages/tui/package.toml 说 miyu tui 由它跑",
+            "没找到 miyu-no-such-program-anywhere：清单 /data/packages/tui/package.toml 说 miyu tui 由它跑",
         ),
     ] {
         let mut err = Vec::new();
@@ -102,7 +102,7 @@ fn the_help_page_gets_a_section_after_the_commands() {
 /// `crates/miyu/tests/packages.rs` 照真二进制走一遍（Unix）。
 #[test]
 fn the_program_gets_its_package_folder() {
-    let dir = Path::new("/data/system/packages/tui");
+    let dir = Path::new("/data/packages/tui");
     let state = Path::new("/data/state/packages/tui");
     let resources = Path::new("/usr/share/miyu");
     let command = command(

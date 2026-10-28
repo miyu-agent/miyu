@@ -11,7 +11,7 @@ use crate::support::*;
 
 /// 管理员的库 `id`，`kb.toml` 写 `toml`。
 fn base(root: &DataRoot, id: &str, toml: &str) -> PathBuf {
-    let dir = root.account_dir(&admin()).join("kb").join(id);
+    let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), toml).expect("写得进");
     dir
@@ -73,12 +73,10 @@ fn a_mounted_folder_is_searched_and_read_and_the_base_dir_holds_only_kb_toml() {
         "库目录里的、以点开头的目录里的不算"
     );
     assert_eq!(found(&knowledge, "阿黄")[0].1, "sub/b.txt");
-    let page = knowledge
-        .read(&admin(), "notes", "a.md", 1)
-        .expect("读得到");
+    let page = knowledge.read("notes", "a.md", 1).expect("读得到");
     assert_eq!(page.text, "# 猫\n\n团子是橘猫。\n");
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "own.md", 1),
+        knowledge.read("notes", "own.md", 1),
         Err(KnowledgeError::UnknownDocument)
     ));
     // 在原处改了，下一次搜就照新的。
@@ -127,7 +125,7 @@ fn an_unavailable_mount_keeps_its_index_and_is_skipped() {
         .expect("只搜它也不算出错");
     assert!(alone.0.is_empty());
     assert!(matches!(
-        knowledge.read(&admin(), "notes", "a.md", 1),
+        knowledge.read("notes", "a.md", 1),
         Err(KnowledgeError::UnknownDocument)
     ));
     std::fs::rename(&away, &notes).expect("挪得回");
@@ -149,19 +147,19 @@ fn writing_to_a_mounted_base_is_refused_and_changes_nothing() {
     let dir = base(&root, "notes", &mount(&notes));
     let knowledge = Knowledge::new(&root);
     assert!(matches!(
-        knowledge.save(&admin(), "notes", "new.md", "x", false),
+        knowledge.save("notes", "new.md", "x", false),
         Err(KnowledgeError::ReadOnly)
     ));
     assert!(matches!(
-        knowledge.save(&admin(), "notes", "a.md", "x", true),
+        knowledge.save("notes", "a.md", "x", true),
         Err(KnowledgeError::ReadOnly)
     ));
     assert!(matches!(
-        knowledge.edit(&admin(), "notes", "a.md", "团子", "小橘"),
+        knowledge.edit("notes", "a.md", "团子", "小橘"),
         Err(KnowledgeError::ReadOnly)
     ));
     assert!(matches!(
-        knowledge.trash(&admin(), "notes", "a.md", Some(&scratch.0)),
+        knowledge.trash("notes", "a.md", Some(&scratch.0)),
         Err(KnowledgeError::ReadOnly)
     ));
     assert_eq!(

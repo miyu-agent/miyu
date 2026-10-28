@@ -144,7 +144,6 @@ mod models_retire;
 mod models_temperature;
 mod note;
 mod orphans;
-mod owner;
 mod package_check;
 mod package_depends;
 mod package_feeds;

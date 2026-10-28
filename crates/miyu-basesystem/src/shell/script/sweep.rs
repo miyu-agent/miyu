@@ -14,15 +14,12 @@ const EVERY: Duration = Duration::from_secs(60);
 /// 每个缓存目录上一次清的时刻。
 static LAST: Mutex<BTreeMap<PathBuf, Instant>> = Mutex::new(BTreeMap::new());
 
-/// 调用 `call` 跑完了：会话属主的缓存目录离上一次清满了 [`EVERY`] 的，在阻塞线程里清一次。没有属主、数据根的什么都不做。
+/// 调用 `call` 跑完了：缓存目录离上一次清满了 [`EVERY`] 的，在阻塞线程里清一次。没有属主、数据根的什么都不做。
 pub(super) fn after(call: &Call) {
-    let (Some(root), Some(ids)) = (call.data_root.as_deref(), call.ids.as_ref()) else {
+    let (Some(root), true) = (call.data_root.as_deref(), call.ids.is_some()) else {
         return;
     };
-    let cache = root
-        .join("home")
-        .join(ids.owner.as_str())
-        .join(miyu_store::root::CACHE);
+    let cache = root.join(miyu_store::root::CACHE);
     {
         let mut last = LAST.lock().unwrap_or_else(PoisonError::into_inner);
         if last.get(&cache).is_some_and(|at| at.elapsed() < EVERY) {

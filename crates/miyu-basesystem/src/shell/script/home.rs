@@ -29,13 +29,12 @@ pub(super) fn wanted(call: &Call) -> Vec<(&'static str, PathBuf)> {
         .caller
         .as_ref()
         .is_some_and(|caller| caller.venue.as_str() == LOCAL);
-    let (Some(root), Some(ids), true) = (call.data_root.as_deref(), call.ids.as_ref(), local)
-    else {
+    let (Some(root), true, true) = (call.data_root.as_deref(), call.ids.is_some(), local) else {
         return Vec::new();
     };
     USER_DIRS
         .iter()
-        .filter_map(|name| Some((var(name)?, user_dir(root, &ids.owner, name))))
+        .filter_map(|name| Some((var(name)?, user_dir(root, name))))
         .collect()
 }
 

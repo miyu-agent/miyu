@@ -17,7 +17,7 @@
 
 清单里每一格怎么写见 [清单](manifest.md)。用 Python、Rust 写扩展的，有现成的开发包（[用开发包写](extensions.md#用开发包写)）。
 
-**不想做成包的**：技能、脚本、命令模板直接放进 `~/.miyu/home/admin/skills/`、`scripts/`、`commands/`，MCP 服务写进个人设置，一样能用，只是不归包管理。
+**不想做成包的**：技能、脚本、命令模板直接放进 `~/.miyu/skills/`、`scripts/`、`commands/`，MCP 服务写进配置，一样能用，只是不归包管理。
 
 ## 一个包长什么样
 

@@ -9,10 +9,7 @@ use crate::support::*;
 #[tokio::test]
 async fn only_the_named_models_are_listed() {
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        &config("https://relay.example.invalid/v1"),
-    );
+    home.write("config.toml", &config("https://relay.example.invalid/v1"));
     let reply = list(
         &home,
         &[],

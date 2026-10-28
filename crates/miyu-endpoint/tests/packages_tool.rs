@@ -100,7 +100,7 @@ async fn a_session_looks_at_packages_through_the_core() {
         (json!("pane"), json!("2"), Value::Null)
     );
     assert!(
-        !home.root.path().join("system/packages/pane").exists(),
+        !home.root.path().join("packages/pane").exists(),
         "看一眼不装"
     );
     drop(client);
@@ -162,7 +162,7 @@ async fn a_script_cannot_reach_packages_with_miyu_call() {
 async fn miyu_pkg_works_where_scripts_cannot_call_tools() {
     let home = Home::new();
     home.write(
-        "home/alice/presets/pkg.toml",
+        "presets/pkg.toml",
         "[preset]\nname = { en = \"Pkg\" }\nunlisted = \"off\"\n\n[software]\nshell = true\npackages = true\n",
     );
     let script = Script::new([

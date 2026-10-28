@@ -17,14 +17,14 @@ use crate::support::*;
 
 /// 读 `system/accounts.json`。
 fn accounts_of(home: &Home) -> accounts::Accounts {
-    accounts::read(&home.root.system().join(accounts::FILE))
+    accounts::read(&home.root.path().join(accounts::FILE))
         .expect("读得了")
         .accounts
 }
 
 /// 读主人的 `logins.json`。
 fn logins_of(home: &Home) -> logins::Logins {
-    logins::read(&home.root.account_dir(&alice()).join(logins::FILE))
+    logins::read(&home.root.path().join(logins::FILE))
         .expect("读得了")
         .logins
 }
@@ -224,7 +224,7 @@ async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
         assert!(is_closed(&mut stranger).await);
     }
     // 过期了的不认：照文件写一个已经过期的。
-    let path = home.root.account_dir(&alice()).join(logins::FILE);
+    let path = home.root.path().join(logins::FILE);
     let read = logins::read(&path).expect("读得了");
     let mut written = read.logins.clone();
     let expired = "1".repeat(64);
@@ -350,7 +350,7 @@ async fn only_one_kind_of_credential_is_accepted() {
 #[tokio::test]
 async fn broken_files_read_as_empty() {
     let home = Home::new();
-    home.write("system/accounts.json", "not json");
+    home.write("accounts.json", "not json");
     let core = home.core(&Script::new([]));
     let issued = setup_code(&core).await;
     assert_eq!(issued["first"], true, "坏了的当没设过：{issued}");
@@ -359,7 +359,7 @@ async fn broken_files_read_as_empty() {
     assert_eq!(why(&refused), "password_not_set", "{refused}");
     let token = set_up(&core, "correct horse").await;
     assert_eq!(accounts_of(&home).accounts.len(), 1, "坏的那份换成了好的");
-    home.write("home/alice/logins.json", "{");
+    home.write("logins.json", "{");
     let mut stale = Client::connect(Arc::clone(&core));
     let refused = hello_with(&mut stale, json!({"login": token})).await;
     assert_eq!(why(&refused), "bad_login", "{refused}");
@@ -434,8 +434,7 @@ async fn an_owner_row_without_a_password_is_not_a_password() {
     };
     let mut written = accounts::Accounts::default();
     written.put(row);
-    std::fs::create_dir_all(home.root.system()).expect("建得了");
-    accounts::write(&home.root.system().join(accounts::FILE), &written, None).expect("写得进");
+    accounts::write(&home.root.path().join(accounts::FILE), &written, None).expect("写得进");
     let core = home.core(&Script::new([]));
     assert_eq!(setup_code(&core).await["first"], true, "还没设过");
     let mut bare = remote(&core, "192.168.1.30").await;

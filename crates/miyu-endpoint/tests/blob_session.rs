@@ -21,7 +21,7 @@ use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `bridge_venues.rs`）。
 pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
-    home.write("system/config.toml", BINDINGS);
+    home.write("config.toml", BINDINGS);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -31,7 +31,7 @@ pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root, &alice());
+    let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         &alice(),
@@ -51,7 +51,7 @@ pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
 
 /// 装好的包 `bot` 是接 QQ 的桥（`[connection] platform`）。
 pub(crate) fn on_qq(home: &Home) {
-    let manifest = home.root.path().join("system/packages/bot/package.toml");
+    let manifest = home.root.path().join("packages/bot/package.toml");
     let text = std::fs::read_to_string(&manifest).expect("装好了");
     if text.contains("[connection]") {
         return;
@@ -183,7 +183,7 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
     // 桥传的存在主人名下（施工 SU-4 中），群会话也归主人。
     let hash = ContentHash::parse(&g).expect("合写法");
     assert!(
-        miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+        miyu_store::blob::Blobs::new(home.root.blobs())
             .path(&hash)
             .is_file()
     );

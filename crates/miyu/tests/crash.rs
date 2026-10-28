@@ -126,7 +126,7 @@ fn start(home: &Home, server: &Server) -> Child {
         "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\ncatalog = \"deepseek\"\nkey = {{ env = \"MIYU_TEST_KEY\" }}\n\n[models]\nchat = \"dev/deepseek-chat\"\n",
         server.base_url
     );
-    std::fs::write(home.root.path().join("system").join("config.toml"), config).expect("写得进");
+    std::fs::write(home.root.path().join("config.toml"), config).expect("写得进");
     let mut core = home
         .core()
         .env("MIYU_TEST_KEY", "test")

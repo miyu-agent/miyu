@@ -15,7 +15,7 @@
 //!
 //! 写不成的：`internal_error`，记一条 `WARN config not written`，一个字节不动。
 //!
-//! 只有一份（施工 SU-3 上：每人自己的那一份拿掉了）：`system/secrets.toml`。核心自己替 MCP 服务存、清的登录令牌也在这里。
+//! 只有一份（施工 SU-3 上：每人自己的那一份拿掉了）：`secrets.toml`。核心自己替 MCP 服务存、清的登录令牌也在这里。
 
 mod file;
 
@@ -348,8 +348,8 @@ fn record(
 ) {
     let body = SecretChanged { name, action, via };
     journal::record(
-        &config.places.system_journal,
-        &format!("system/{}", miyu_store::journal::FILE),
+        &config.places.journal,
+        miyu_store::journal::FILE,
         crate::sessions::now(),
         by,
         cause,

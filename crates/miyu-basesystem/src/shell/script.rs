@@ -166,11 +166,10 @@ impl Script {
     /// 这一次的状态目录（施工 X-44）：照会话属主、来处、工具名建好（Unix 上 0700），交真实位置。没有属主、数据根的，建不成的
     /// 没有（建不成的记一行 `WARN`）。
     fn state(&self, call: &Call) -> Option<PathBuf> {
-        let (root, ids) = (call.data_root.as_deref()?, call.ids.as_ref()?);
+        let root = call.data_root.as_deref().filter(|_| call.ids.is_some())?;
         // 场所会话照场所分（施工 X-44 补）：几个群都归系统账号，不分的话 A 群读得到 B 群的。
         let venue = call.caller.as_ref().map(|caller| &caller.venue);
-        let Some(dir) =
-            miyu_store::scripts::state_dir(root, &ids.owner, venue, &self.source, &self.spec.name)
+        let Some(dir) = miyu_store::scripts::state_dir(root, venue, &self.source, &self.spec.name)
         else {
             tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = "venue too long", "script state not prepared");
             return None;
@@ -185,15 +184,9 @@ impl Script {
         let home = call
             .data_root
             .as_deref()
-            .zip(call.ids.as_ref())
-            .and_then(|(root, ids)| {
-                miyu_store::scripts::cache_dir(
-                    root,
-                    &ids.owner,
-                    venue,
-                    &self.source,
-                    &self.spec.name,
-                )
+            .filter(|_| call.ids.is_some())
+            .and_then(|root| {
+                miyu_store::scripts::cache_dir(root, venue, &self.source, &self.spec.name)
             });
         home.and_then(|dir| self.prepared(&dir, Kept::Cache))
             .unwrap_or_else(|| {

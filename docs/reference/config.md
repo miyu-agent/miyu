@@ -21,7 +21,7 @@
 
 ## 配置的三层
 
-配置从下往上叠：出厂默认值 → 系统配置（`system/config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `system/secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
+配置从下往上叠：出厂默认值 → 系统配置（`config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
 
 **问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。
 
@@ -69,7 +69,7 @@
 | `problems` | 这几份文件现在的全部问题 |
 
 ```json
-{"files":{"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"system/config.toml","layer":"system","line":3},"value":"zh"}},"problems":[]}
+{"files":{"secrets":{"file":"secrets.toml"},"system":{"file":"config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"config.toml","layer":"system","line":3},"value":"zh"}},"problems":[]}
 ```
 
 **出错**：`unknown_config_key`。
@@ -91,7 +91,7 @@
 
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"zh"}]}}
-← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"zh","origin":{"file":"system/config.toml","layer":"system","line":3},"value":"zh"}},"version":"sha256:…"}}
+← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"zh","origin":{"file":"config.toml","layer":"system","line":3},"value":"zh"}},"version":"sha256:…"}}
 ```
 
 几项一起查、一起写：有一项不对整条不收。写盘、推 `config.changed` 以后才回应。
@@ -129,7 +129,7 @@
 
 存的是去掉前后空白的值。`secret.list` 从不交出值：列设了的和配置里引用了、还没设的，`used_by` 是引用它的配置键。
 
-密钥只有一份：`system/secrets.toml`。
+密钥只有一份：`secrets.toml`。
 
 **出错**：`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
 

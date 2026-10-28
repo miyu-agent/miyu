@@ -149,16 +149,8 @@ async fn read_only_still_refuses_a_write_into_an_added_dir() {
 async fn a_write_into_the_owner_s_pictures_runs_without_asking() {
     let home = Home::outside_temp();
     let kit = Kit::new();
-    let pictures = home
-        .root
-        .account_dir(&alice_account())
-        .join("pictures")
-        .join("cat.png");
-    let elsewhere = home
-        .root
-        .account_dir(&alice_account())
-        .join("index")
-        .join("x.txt");
+    let pictures = home.root.path().join("pictures").join("cat.png");
+    let elsewhere = home.root.path().join("index").join("x.txt");
     let script = Script::new([
         one("edit", &pictures.to_string_lossy()),
         Play::Says("好。"),

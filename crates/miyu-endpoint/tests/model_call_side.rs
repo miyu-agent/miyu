@@ -16,7 +16,7 @@ use miyu_http::testkit::Server;
 fn install_bot(home: &Home, program: &str, steps: &[String]) {
     let args: Vec<String> = steps.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(
-        "system/packages/bot/package.toml",
+        "packages/bot/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bot\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[[side]]\nid = \"judge\"\ntier = \"lite\"\nname = {{ en = \"Reply judge\", zh = \"判断要不要回\" }}\nsummary = {{ en = \"Decides whether to reply.\", zh = \"群里有人说话时判断要不要回\" }}\n\n[[side]]\nid = \"deep\"\ntier = \"flagship\"\nname = {{ en = \"Deep\" }}\nsummary = {{ en = \"Thinks hard.\" }}\n",
             args.join(", ")
@@ -24,7 +24,7 @@ fn install_bot(home: &Home, program: &str, steps: &[String]) {
     );
     approve(home, "bot", &BRIDGE);
     home.write(
-        "system/packages/other/package.toml",
+        "packages/other/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Other\" }}\n\n[command]\nname = \"other\"\nprogram = \"{program}\"\nabout = {{ en = \"O\" }}\n\n[process]\nstart = \"manual\"\n\n[[side]]\nid = \"theirs\"\ntier = \"lite\"\nname = {{ en = \"Theirs\" }}\nsummary = {{ en = \"Not yours.\" }}\n"
         ),
@@ -65,7 +65,7 @@ async fn a_registered_side_request_takes_its_tier_pool_and_nothing_else_passes()
     let server = Server::start(vec![said("yes")]).await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &config(&server, "[pools.lite]\nmodels = [\"a/lite-m\"]\n"),
     );
     let program = Program::new();
@@ -150,7 +150,7 @@ async fn a_registered_side_request_takes_its_tier_pool_and_nothing_else_passes()
 async fn an_empty_tier_pool_falls_to_the_session_model_or_models_chat() {
     let server = Server::start(vec![said("one"), said("two")]).await;
     let home = Home::new();
-    home.write("system/config.toml", &config(&server, ""));
+    home.write("config.toml", &config(&server, ""));
     let program = Program::new();
     let (path, step) = record(&home, "bot");
     let script = steps(&[

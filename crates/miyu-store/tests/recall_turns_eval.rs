@@ -40,10 +40,7 @@ fn measure_the_turns_floor() {
     let input: Input =
         serde_json::from_str(&std::fs::read_to_string(input).expect("读得到")).expect("合写法");
     let scratch = Scratch::new("turns-eval");
-    let place = root_in(&scratch)
-        .index(&admin())
-        .join("recall")
-        .join("turns.db");
+    let place = root_in(&scratch).index().join("recall").join("turns.db");
     let (index, _) = RecallIndex::open(&place);
     for turn in &input.turns {
         index.put(&turn.id, &turn.text, at(1)).expect("放得进");

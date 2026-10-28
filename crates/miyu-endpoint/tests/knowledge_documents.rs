@@ -25,7 +25,7 @@ async fn client(home: &Home) -> Client {
 #[tokio::test]
 async fn documents_are_listed_with_what_could_not_be_read() {
     let home = Home::new();
-    let notes = home.root.account_dir(&alice()).join("kb").join("notes");
+    let notes = home.root.path().join("kb").join("notes");
     std::fs::create_dir_all(notes.join("sub")).expect("建得了");
     std::fs::write(notes.join("a.md"), "# 猫\n团子\n").expect("写得进");
     std::fs::write(notes.join("sub/b.txt"), [0xff, 0xfe]).expect("写得进");

@@ -13,10 +13,10 @@ use miyu_recall::redact::KeyShapes;
 use miyu_session::{ExtractTexts, Extraction, MergeTexts, TagTexts};
 use miyu_store::blob::Blobs;
 
+use super::Home;
 use super::calling::entry;
 use super::meaning::persona;
 use super::routing::{configs_with, routes};
-use super::{Home, alice_account};
 
 /// 候选写到第几轮。
 pub const TURNS: u64 = 80;
@@ -124,7 +124,7 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
         texts: ExtractTexts::load(&resources).expect("读得到"),
         shapes,
         ask: entry(&routes(serde_json::json!({}), Duration::from_secs(300))),
-        blobs: Blobs::new(home.root.blobs(&alice_account())),
+        blobs: Blobs::new(home.root.blobs()),
         idle: Some(Duration::from_secs(3600)),
         max_wait: None,
         merge: MergeTexts::load(&resources).expect("读得到"),
@@ -165,7 +165,7 @@ fn organizer_with(
         texts: ExtractTexts::load(&resources).expect("读得到"),
         shapes,
         ask: entry(&routes(serde_json::json!({}), Duration::from_secs(60))),
-        blobs: Blobs::new(home.root.blobs(&alice_account())),
+        blobs: Blobs::new(home.root.blobs()),
         idle: Some(idle),
         max_wait,
         merge: MergeTexts::load(&resources).expect("读得到"),

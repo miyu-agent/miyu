@@ -113,16 +113,13 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
 
 mod accounts;
 
-/// 记忆、知识库算向量照系统配置和密钥文件（SU-3 上起只有这一份）：谁的那一间都取得到同一把 key，用量还记在那一间的账号名下。
+/// 记忆、知识库算向量照配置和密钥文件（SU-3 上起只有这一份）。
 #[test]
 fn vectors_use_the_system_config_and_keys() {
     use miyu_config::secret::Reference;
     let (root, _dir) = temp_root("using");
     let alice = AccountId::parse("alice").expect("合写法");
-    let bob = AccountId::parse("bob").expect("合写法");
-    let system = root.path().join("system");
-    std::fs::create_dir_all(&system).expect("建得出");
-    std::fs::write(system.join("secrets.toml"), "shared = \"sk-FAKE-A\"\n").expect("写得进");
+    std::fs::write(root.path().join("secrets.toml"), "shared = \"sk-FAKE-A\"\n").expect("写得进");
     let core = Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
@@ -140,9 +137,6 @@ fn vectors_use_the_system_config_and_keys() {
         crate::config::Environment::of(&[]),
     ));
     let key = |name: &str| Reference::Secret(name.to_string());
-    let his = super::using_as(&core, &bob);
-    assert_eq!(his.owner, bob);
-    assert!(his.config.secret(&key("shared")).is_some());
     let mine = super::using_as(&core, &alice);
     assert!(mine.config.secret(&key("shared")).is_some());
     assert!(mine.config.secret(&key("missing")).is_none());

@@ -263,7 +263,7 @@ async fn an_unreadable_log_refuses_only_when_there_is_something_to_replay() {
     let mut client = Client::connect(home.core(&script));
     let (session, log) = one_turn(&home, &mut client).await;
     let id = miyu_kernel::id::SessionId::parse(&session).expect("合写法");
-    let segment = std::fs::read_dir(home.root.session_dir(&crate::support::alice(), &id))
+    let segment = std::fs::read_dir(home.root.session_dir(&id))
         .expect("会话目录在")
         .map(|entry| entry.expect("读得了").path())
         .filter(|path| path.extension().is_some_and(|ext| ext == "jsonl"))

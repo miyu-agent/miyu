@@ -6,7 +6,7 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use serde_json::Value;
 
-use miyu_kernel::id::{AccountId, ContentHash};
+use miyu_kernel::id::ContentHash;
 use miyu_session::testkit::{Play, Script};
 use miyu_store::blob::Blobs;
 
@@ -16,9 +16,9 @@ use crate::support::extensions::*;
 use crate::support::*;
 
 /// 这个账号名下有没有这个 blob。
-fn holds(home: &Home, account: &AccountId, blob: &str) -> bool {
+fn holds(home: &Home, blob: &str) -> bool {
     let hash = ContentHash::parse(blob).expect("合写法");
-    Blobs::new(home.root.blobs(account)).path(&hash).is_file()
+    Blobs::new(home.root.blobs()).path(&hash).is_file()
 }
 
 /// 回应没有出错。
@@ -74,17 +74,7 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
     let read = replies(&path, 9).await;
     assert_eq!(read[1]["result"]["blob"], p.as_str(), "{read:?}");
     assert_eq!(read[4]["result"]["blob"], u.as_str(), "{read:?}");
-    assert!(
-        holds(&home, &alice(), &p) && holds(&home, &alice(), &u),
-        "存在主人名下"
-    );
-    assert!(
-        !home
-            .root
-            .account_dir(&AccountId::parse("bot").expect("合写法"))
-            .exists(),
-        "包不再有自己的家目录"
-    );
+    assert!(holds(&home, &p) && holds(&home, &u), "存在主人名下");
     assert_eq!(
         got(&read[5]),
         Ok(chunked.to_vec()),
@@ -102,7 +92,7 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
         read[7]
     );
     assert!(fine(&read[8]), "发进主人的私聊：{:?}", read[8]);
-    assert!(holds(&home, &alice(), &p), "发出去的拷进了属主名下");
+    assert!(holds(&home, &p), "发出去的拷进了属主名下");
 }
 
 /// 替主人干活的扩展（不是平台桥，施工 BUG-2，onebot 偷表情包时撞上）：`blob.put` 存在主人名下（施工 SU-4 中），`model.call` 带
@@ -116,17 +106,12 @@ async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     let p = ContentHash::of(&picture).as_str().to_string();
     let elsewhere = png(5, 5);
     let owners = png(4, 4);
-    let o = Blobs::new(home.root.blobs(&alice()))
+    let o = Blobs::new(home.root.blobs())
         .put(&owners)
         .expect("存得进")
         .as_str()
         .to_string();
-    let carol = AccountId::parse("carol").expect("合写法");
-    let e = Blobs::new(home.root.blobs(&carol))
-        .put(&elsewhere)
-        .expect("存得进")
-        .as_str()
-        .to_string();
+    let e = ContentHash::of(&elsewhere).as_str().to_string();
     install_serving(
         &home,
         "helper",
@@ -155,7 +140,7 @@ async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     let script = Script::new([]);
     let _core = served_core(&home, &script);
     let read = replies(&path, 5).await;
-    assert!(holds(&home, &alice(), &p), "存在主人名下：{read:?}");
+    assert!(holds(&home, &p), "存在主人名下：{read:?}");
     // 这个核心没配模型：图先找到了，才轮到找模型。
     assert_eq!(
         read[2]["error"]["data"]["reason"], "no_model",
@@ -164,7 +149,7 @@ async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     );
     assert_eq!(
         read[3]["error"]["data"]["reason"], "unknown_attachment",
-        "别人名下的图照旧找不到：{:?}",
+        "没存过的图照旧找不到：{:?}",
         read[3]
     );
     assert_eq!(

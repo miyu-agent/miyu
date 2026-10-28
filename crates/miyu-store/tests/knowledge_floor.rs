@@ -11,7 +11,7 @@ use miyu_store::root::DataRoot;
 use crate::support::*;
 
 fn kb(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.account_dir(&admin()).join("kb").join(id);
+    let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     dir
 }

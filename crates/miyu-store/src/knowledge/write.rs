@@ -8,8 +8,6 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
-
 use super::catch_up::BIGGEST;
 use super::extract::Kind;
 use super::read::target;
@@ -33,20 +31,15 @@ impl Knowledge {
     /// # Errors
     ///
     /// 编号不合写法（[`KnowledgeError::UnknownBase`]）；建不了、写不进。
-    pub fn create(
-        &self,
-        account: &AccountId,
-        kb: &str,
-        about: Option<&str>,
-    ) -> Result<(), KnowledgeError> {
+    pub fn create(&self, kb: &str, about: Option<&str>) -> Result<(), KnowledgeError> {
         if !valid(kb) {
             return Err(KnowledgeError::UnknownBase);
         }
         // 看得见的（连包里的，施工 K-8）当已经有了：写到包里的库照样拒，不另建一个盖住它。
-        if self.place(account, kb).is_ok() {
+        if self.place(kb).is_ok() {
             return Ok(());
         }
-        let dir = self.top(account).join(kb);
+        let dir = self.top().join(kb);
         std::fs::create_dir_all(&dir).map_err(io)?;
         let dir = std::fs::canonicalize(&dir).map_err(io)?;
         if let Some(about) = about.map(str::trim).filter(|about| !about.is_empty()) {
@@ -72,13 +65,12 @@ impl Knowledge {
     /// 写完超过 4 MiB；读不了、写不进。
     pub fn save(
         &self,
-        account: &AccountId,
         kb: &str,
         path: &str,
         text: &str,
         append: bool,
     ) -> Result<Written, KnowledgeError> {
-        let file = self.target(account, kb, path)?;
+        let file = self.target(kb, path)?;
         Knowledge::writable(path)?;
         let before = existing(&file)?;
         if before.is_some() && !append {
@@ -103,13 +95,12 @@ impl Knowledge {
     /// 写完超过 4 MiB；写不进。
     pub fn edit(
         &self,
-        account: &AccountId,
         kb: &str,
         path: &str,
         old: &str,
         new: &str,
     ) -> Result<Written, KnowledgeError> {
-        let file = self.target(account, kb, path)?;
+        let file = self.target(kb, path)?;
         Knowledge::writable(path)?;
         let before = existing(&file)?.ok_or(KnowledgeError::UnknownDocument)?;
         let text = std::str::from_utf8(&before)
@@ -131,12 +122,11 @@ impl Knowledge {
     /// 没有这个库、这一篇；挪不进回收站（没有能放的、挪了找不到、挪不动）。
     pub fn trash(
         &self,
-        account: &AccountId,
         kb: &str,
         path: &str,
         home: Option<&Path>,
     ) -> Result<(PathBuf, String), KnowledgeError> {
-        let file = self.target(account, kb, path)?;
+        let file = self.target(kb, path)?;
         existing(&file)?.ok_or(KnowledgeError::UnknownDocument)?;
         let location = miyu_fs::trash::put(&file, home).map_err(trash_refused)?;
         Ok((file, location))
@@ -150,12 +140,11 @@ impl Knowledge {
     /// 没有这个库、库是挂进来的（只读）；有一样不在、不是文档也不是文件夹；挪不进回收站（挪到一半挪不动的，前面的已经挪了）。
     pub fn trash_all(
         &self,
-        account: &AccountId,
         kb: &str,
         paths: &[String],
         home: Option<&Path>,
     ) -> Result<Vec<String>, KnowledgeError> {
-        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
+        let dir = std::fs::canonicalize(self.writable_dir(kb)?).map_err(io)?;
         let entries = paths
             .iter()
             .map(|path| entry(&dir, path))
@@ -202,8 +191,8 @@ impl Knowledge {
     }
 
     /// 库 `kb` 里 `path` 照写法该在哪：库得在、不是挂进来的（施工 K-4，只读），路径照读的那一套，库的目录照真实的位置。
-    fn target(&self, account: &AccountId, kb: &str, path: &str) -> Result<PathBuf, KnowledgeError> {
-        let dir = std::fs::canonicalize(self.writable_dir(account, kb)?).map_err(io)?;
+    fn target(&self, kb: &str, path: &str) -> Result<PathBuf, KnowledgeError> {
+        let dir = std::fs::canonicalize(self.writable_dir(kb)?).map_err(io)?;
         target(&dir, path).ok_or(KnowledgeError::UnknownDocument)
     }
 }

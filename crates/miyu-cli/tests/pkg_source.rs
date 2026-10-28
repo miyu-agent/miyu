@@ -52,7 +52,7 @@ fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
         Catalog::default(),
         Availability::Usable(PathBuf::from("miyu-sandbox")),
         move |core, root| {
-            let path = root.path().join("system/config.toml");
+            let path = root.path().join("config.toml");
             std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
             std::fs::write(
                 &path,

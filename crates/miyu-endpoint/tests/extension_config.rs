@@ -77,14 +77,11 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
     let program = Program::new();
     let (path, keep) = record(&home, "echo");
     home.write(
-        "system/packages/echo/package.toml",
+        "packages/echo/package.toml",
         &manifest(&program.name(), &steps(&[&keep, "hello", "listen"])),
     );
-    home.write(
-        "system/config.toml",
-        "[echo]\ntoken = { secret = \"echo\" }\n",
-    );
-    home.write("system/secrets.toml", "echo = \"s3cret\"\n");
+    home.write("config.toml", "[echo]\ntoken = { secret = \"echo\" }\n");
+    home.write("secrets.toml", "echo = \"s3cret\"\n");
     let core = core_with_settings(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     let mine = client.hello().await;
@@ -188,7 +185,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
     plan.extend(asks.iter().map(String::as_str));
     plan.push("listen");
     home.write(
-        "system/packages/echo/package.toml",
+        "packages/echo/package.toml",
         &manifest(&program.name(), &steps(&plan)),
     );
     let core = core_with_settings(&home, quick());
@@ -219,7 +216,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
             "{refused}"
         );
     }
-    let journal = read(&home.root.path().join("system/journal.jsonl"));
+    let journal = read(&home.root.path().join("journal.jsonl"));
     let changed = journal
         .lines()
         .find(|line| line.contains("echo.port"))
@@ -229,7 +226,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
         "留痕记成这个包：{changed}"
     );
     assert!(
-        !read(&home.root.path().join("system/config.toml")).contains("deepseek"),
+        !read(&home.root.path().join("config.toml")).contains("deepseek"),
         "引用一个都没写进去"
     );
     core.stop_extensions().await;

@@ -22,18 +22,17 @@ pub(super) async fn checked(
     if persona.is_none() && preset.is_none() {
         return Ok(None);
     }
-    // 照会话的属主找（施工 Y-2 中上）。
-    let owner = core
-        .sessions
+    // 会话要在（施工 Y-2 中上）。
+    core.sessions
         .owner(core, session)
         .await
         .ok_or(Refusal::NOT_FOUND)?;
     if let Some(Some(id)) = persona {
-        crate::personas::resolve(core, &owner, Some(Some(id))).await?;
+        crate::personas::resolve(core, &core.admin, Some(Some(id))).await?;
     }
     // 空的是换成无工具（施工 P-16 下）：不用找。
     if let Some(id) = preset.filter(|id| !id.is_empty()) {
-        crate::presets::resolve(core, &owner, Some(id)).await?;
+        crate::presets::resolve(core, &core.admin, Some(id)).await?;
     }
     if subagent(core, session).await? {
         let field = if persona.is_some() {
@@ -51,12 +50,11 @@ pub(super) async fn checked(
 
 /// 会话 `session` 是不是派出去的子代理：有父会话、不是分叉出来的。会话没有、读不了第一条的照会话没有。
 async fn subagent(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
-    let owner = core
-        .sessions
+    core.sessions
         .owner(core, session)
         .await
         .ok_or(Refusal::NOT_FOUND)?;
-    let dir = core.root.session_dir(&owner, session);
+    let dir = core.root.session_dir(session);
     let first = tokio::task::spawn_blocking(move || miyu_store::log::first_event(&dir))
         .await
         .map_err(|_| Refusal::INTERNAL)?

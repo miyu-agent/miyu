@@ -1,5 +1,5 @@
 //! 会话列表的索引（施工 3-8 七补，`docs/designs/07-存储.md` 第六节、S3；`docs/blueprint/store/index.md`）：一个账号一份
-//! SQLite，`home/<账号>/index/sessions.db`，一个会话一行（[`Row`]）。它是派生的：日志才是真相，索引随时可以删掉照日志重建，
+//! SQLite，`index/sessions.db`，一个会话一行（[`Row`]）。它是派生的：日志才是真相，索引随时可以删掉照日志重建，
 //! 结构变了也是删掉重建，不写迁移（07 第六节）。
 //!
 //! 每一行记着照到日志的哪里（[`Mark`]）。会话写日志时一批批往上盖（[`SessionIndex::advance`]），只盖照到的正好是这一批之前

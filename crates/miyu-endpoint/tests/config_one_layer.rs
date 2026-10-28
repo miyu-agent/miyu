@@ -12,7 +12,7 @@ use miyu_session::testkit::{Play, Script};
 use crate::support::*;
 
 /// 系统配置在数据根里的位置。
-const CONFIG: &str = "system/config.toml";
+const CONFIG: &str = "config.toml";
 
 fn read(home: &Home, relative: &str) -> Option<String> {
     std::fs::read_to_string(home.root.path().join(relative)).ok()
@@ -51,7 +51,7 @@ async fn the_layer_can_be_left_out_and_personal_is_gone() {
 #[tokio::test]
 async fn a_hand_edited_secret_reaches_the_next_turn() {
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let script = Script::new([Play::Says("好。"), Play::Says("好。")]);
     let core = home.core_configured(&script, None, &[]);
     let _watching = core.watch_config().expect("监视得了");
@@ -64,7 +64,7 @@ async fn a_hand_edited_secret_reaches_the_next_turn() {
     let key = Reference::Secret("hand".to_string());
     assert!(script.configs()[0].secret(&key).is_none(), "还没写");
 
-    home.write("system/secrets.toml", "hand = \"sk-FAKE-HAND\"\n");
+    home.write("secrets.toml", "hand = \"sk-FAKE-HAND\"\n");
     let mut n = 0;
     loop {
         n += 1;

@@ -66,8 +66,8 @@ fn a_problem_line_starts_with_path_line_and_column() {
     );
     let english = json!({"level":"error","line":2,"column":9,"message":"Not valid TOML."});
     assert_eq!(
-        problem("~/.miyu/system/config.toml", &english, Language::English).paint(false),
-        "~/.miyu/system/config.toml:2:9 error: Not valid TOML.\n"
+        problem("~/.miyu/config.toml", &english, Language::English).paint(false),
+        "~/.miyu/config.toml:2:9 error: Not valid TOML.\n"
     );
     let whole = json!({"level":"error","message":"这份文件超过 1 MiB，不读。"});
     assert_eq!(
@@ -105,10 +105,10 @@ fn the_total_leaves_out_what_there_is_none_of() {
 fn language_item() -> (serde_json::Value, serde_json::Value) {
     let item = json!({
         "layers": [
-            {"origin": {"file": "system/config.toml", "layer": "system", "line": 5}, "used": true, "value": "zh"},
+            {"origin": {"file": "config.toml", "layer": "system", "line": 5}, "used": true, "value": "zh"},
             {"origin": {"layer": "default"}, "used": false, "value": "auto"},
         ],
-        "origin": {"file": "system/config.toml", "layer": "system", "line": 5},
+        "origin": {"file": "config.toml", "layer": "system", "line": 5},
         "value": "zh",
     });
     let said = |name: &str, description: &str| json!({"applies": "now", "description": description, "key": "ui.language", "name": name});
@@ -127,7 +127,7 @@ fn explain_lines_up_the_layers_like_the_blueprint() {
         .map(|line| line.paint(false))
         .collect();
     // 路径照平台的分隔符写（`~/…` 在 Windows 上是 `~\…`），别的一字不差。
-    let system = places().shown("system/config.toml");
+    let system = places().shown("config.toml");
     assert_eq!(
         lines.concat(),
         format!(
@@ -182,8 +182,8 @@ fn explain_marks_the_environment_and_what_does_not_count() {
 fn files_are_found_and_shown_with_a_tilde() {
     let places = places();
     assert_eq!(
-        places.absolute("system/config.toml"),
-        home().join(".miyu").join("system").join("config.toml")
+        places.absolute("config.toml"),
+        home().join(".miyu").join("config.toml")
     );
     assert_eq!(
         places.absolute("~/src/app/.miyu/config.toml"),
@@ -200,10 +200,10 @@ fn files_are_found_and_shown_with_a_tilde() {
         "绝对路径照原样"
     );
     assert_eq!(
-        places.shown("system/config.toml"),
+        places.shown("config.toml"),
         format!(
             "~{}",
-            ["", ".miyu", "system", "config.toml"].join(std::path::MAIN_SEPARATOR_STR)
+            ["", ".miyu", "config.toml"].join(std::path::MAIN_SEPARATOR_STR)
         )
     );
     assert_eq!(columns("系统配置"), 8);

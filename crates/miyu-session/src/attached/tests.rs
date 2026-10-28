@@ -130,15 +130,14 @@ fn root_in(scratch: &Scratch) -> DataRoot {
 async fn attachments_from_another_session_land_in_the_receiving_one() {
     let scratch = Scratch::new("kept");
     let root = root_in(&scratch);
-    let owner = AccountId::parse("admin").unwrap();
     let (sender, receiver) = (
         SessionId::parse("01890000-0000-7000-8000-000000000001").unwrap(),
         SessionId::parse("01890000-0000-7000-8000-000000000002").unwrap(),
     );
-    let blobs = Blobs::new(root.blobs(&owner));
+    let blobs = Blobs::new(root.blobs());
     // 发话那个会话的附件目录里的一张图（落在数据根里），一份本机别处的文件，一张没有路径的图。
     let theirs = attachments::keep(
-        &attachments::dir(&root, &owner, &sender),
+        &attachments::dir(&root, &sender),
         "截图.png",
         "image/png",
         b"png",
@@ -183,10 +182,8 @@ async fn attachments_from_another_session_land_in_the_receiving_one() {
     )
     .await
     .unwrap();
-    let kept = kept_for(&root, &owner, &receiver, &blobs, blocks)
-        .await
-        .unwrap();
-    let mine = std::fs::canonicalize(attachments::dir(&root, &owner, &receiver)).unwrap();
+    let kept = kept_for(&root, &receiver, &blobs, blocks).await.unwrap();
+    let mine = std::fs::canonicalize(attachments::dir(&root, &receiver)).unwrap();
     let path_of = |block: &Block| match block {
         Block::Image(image) => image.path.as_ref().unwrap().as_str().to_string(),
         Block::File(file) => file.path.as_ref().unwrap().as_str().to_string(),

@@ -37,24 +37,19 @@ async fn set(client: &mut Client, params: Value) -> Value {
 fn base(home: &Home, background: &[u8]) {
     crate::support::packaged::samples(home);
     home.write(
-        "system/packages/samples/personas/base/persona.toml",
+        "packages/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n\n[appearance]\nseed = \"#112233\"\n",
     );
     let path = home
         .root
         .path()
-        .join("system/packages/samples/personas/base/background.png");
+        .join("packages/samples/personas/base/background.png");
     std::fs::write(path, background).expect("写得进");
 }
 
 /// 家目录那一层的 `persona.toml`。
 fn mine(home: &Home) -> Option<String> {
-    std::fs::read_to_string(
-        home.root
-            .path()
-            .join("home/alice/personas/base/persona.toml"),
-    )
-    .ok()
+    std::fs::read_to_string(home.root.path().join("personas/base/persona.toml")).ok()
 }
 
 #[tokio::test]
@@ -167,7 +162,7 @@ async fn a_background_is_set_read_and_unset_back_to_the_layer_below() {
     assert!(
         home.root
             .path()
-            .join("home/alice/personas/base/background.png")
+            .join("personas/base/background.png")
             .is_file()
     );
     let read = client
@@ -242,7 +237,7 @@ async fn wrong_backgrounds_are_refused_and_nothing_is_written() {
         }
     }
     assert!(
-        !home.root.path().join("home/alice/personas/base").exists(),
+        !home.root.path().join("personas/base").exists(),
         "图不合规矩，一起改的主题色也没写"
     );
     let none = client

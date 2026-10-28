@@ -74,7 +74,7 @@ pub fn core_holding(
             .join(", ")
     };
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[packages]\nsource = \"{source}\"\nmirrors = [{}]\nhold = [{}]\n",
             quoted(mirrors),

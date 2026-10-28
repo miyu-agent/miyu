@@ -59,7 +59,7 @@ fn person(home: &Home, by: By, who: &str, text: &str, source: Option<Source>) {
 /// 群里的一个会话：qq:2 以群名片「小林」说了一句（第 2 轮）。交回那一轮。
 fn group_source(home: &Home) -> Source {
     let session = SessionId::parse("0192f3a0-2222-7abc-8def-001122334455").expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let said = Event::from_line(
         r#"{"seq":1,"at":"2026-10-22T03:00:00.000Z","kind":"message.user","by":{"kind":"external","venue":"qq:group:5","id":"qq:2"},"body":{"blocks":[{"type":"text","text":"我喜欢拍照"}],"venue":{"msg":"9","name":"小林"}}}"#,
@@ -148,7 +148,7 @@ async fn a_dream_writes_a_card_for_the_people_in_the_batch() {
 /// 群里的另一个会话：qq:3 先以「大周」、后以「小周」说话（施工 E-1 修二；照字排是「大周」在前，照最近用的是「小周」）。交回那一轮。
 fn renamed_source(home: &Home) -> Source {
     let session = SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").expect("合写法");
-    let dir = home.root.session_dir(&alice_account(), &session);
+    let dir = home.root.session_dir(&session);
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了日志");
     let line = |seq: u32, at: &str, name: &str, text: &str| {
         Event::from_line(&format!(

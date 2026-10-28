@@ -66,7 +66,7 @@ async fn a_package_brings_a_read_only_base_whose_switch_is_yours() {
         .await;
     assert_eq!(off["result"]["auto"], false, "{off}");
     assert_eq!(off["result"]["package"], "world-pack");
-    let mine = home.root.path().join("home/alice/kb.toml");
+    let mine = home.root.path().join("kb.toml");
     assert!(
         std::fs::read_to_string(&mine)
             .expect("记下了")
@@ -82,7 +82,7 @@ async fn a_package_brings_a_read_only_base_whose_switch_is_yours() {
         !home
             .root
             .path()
-            .join("home/alice/index/kb/packages/world-pack")
+            .join("index/kb/packages/world-pack")
             .exists(),
         "索引跟着删"
     );
@@ -100,18 +100,18 @@ async fn the_core_starts_with_the_packages_it_accepted() {
     // 不收（`settings_taken`），它带的库也不在。
     let home = Home::new();
     home.write(
-        "system/packages/world-pack/package.toml",
+        "packages/world-pack/package.toml",
         "[package]\nname = { en = \"World\" }\n",
     );
     home.write(
-        "system/packages/world-pack/kb/world/people.md",
+        "packages/world-pack/kb/world/people.md",
         "# 人物\n\n## 艾琳\n\n守灯人。\n",
     );
     home.write(
-        "system/packages/ui/package.toml",
+        "packages/ui/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ui\" }\n\n[settings.port]\ntype = \"int\"\ndefault = 1\nlayers = [\"system\"]\nname = { en = \"Port\" }\n\n[ui]\n",
     );
-    home.write("system/packages/ui/kb/rules/a.md", "# 规矩\n");
+    home.write("packages/ui/kb/rules/a.md", "# 规矩\n");
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
     let listed = bases(&mut client).await;
@@ -151,10 +151,10 @@ async fn a_shipped_package_base_wins_over_a_home_one_whatever_the_ids() {
     .expect("写得进");
     std::fs::write(shipped.join("kb/lore/a.md"), "# 出厂的\n").expect("写得进");
     home.write(
-        "system/packages/a-lore/package.toml",
+        "packages/a-lore/package.toml",
         "[package]\nname = { en = \"Mine\" }\n",
     );
-    home.write("system/packages/a-lore/kb/lore/b.md", "# 装的\n");
+    home.write("packages/a-lore/kb/lore/b.md", "# 装的\n");
     let mut client = Client::connect(home.core_with_resources(&Script::new([]), resources));
     client.hello().await;
     let listed = bases(&mut client).await;

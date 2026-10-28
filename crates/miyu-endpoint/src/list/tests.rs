@@ -76,7 +76,7 @@ impl Site {
         .expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("建得了骨架");
         for (id, lines) in logs {
-            let session = root.session_dir(&alice(), &SessionId::parse(id).expect("合写法"));
+            let session = root.session_dir(&SessionId::parse(id).expect("合写法"));
             std::fs::create_dir_all(&session).expect("建得了");
             let text: String = lines.iter().map(|line| format!("{line}\n")).collect();
             std::fs::write(session.join("000000000001.jsonl"), text).expect("写得进");
@@ -95,10 +95,6 @@ impl Drop for Site {
     }
 }
 
-pub(super) fn alice() -> AccountId {
-    AccountId::parse("alice").expect("合写法")
-}
-
 /// 很早以前的日志：`session.created` 不带 `cwd`，也没开过带 `cwd` 的回合。
 pub(super) const OLD: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"c1","body":{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false}}}"#;
 
@@ -109,16 +105,7 @@ pub(super) const B: &str = "0192f3a0-2222-7abc-8def-5566778899aa";
 fn a_log_with_no_working_directory_says_tilde_and_busy_comes_from_the_table() {
     let site = Site::new(&[(A, &[OLD]), (B, &[CREATED])]);
     let busy = BTreeSet::from([SessionId::parse(B).expect("合写法")]);
-    let listed = scan(
-        &site.1,
-        &alice(),
-        None,
-        &busy,
-        |_| true,
-        None,
-        &Stop::default(),
-    )
-    .expect("读得了");
+    let listed = scan(&site.1, None, &busy, |_| true, None, &Stop::default()).expect("读得了");
     let got: Vec<(&str, &str, bool)> = listed
         .iter()
         .map(|one| (one.id.as_str(), one.cwd.as_str(), one.busy))
@@ -135,16 +122,7 @@ fn a_raised_flag_stops_before_the_next_session() {
     let site = Site::new(&[(A, &[OLD]), (B, &[CREATED])]);
     let stop = Stop::default();
     stop.raise();
-    let listed = scan(
-        &site.1,
-        &alice(),
-        None,
-        &BTreeSet::new(),
-        |_| true,
-        None,
-        &stop,
-    )
-    .expect("读得了");
+    let listed = scan(&site.1, None, &BTreeSet::new(), |_| true, None, &stop).expect("读得了");
     assert!(listed.is_empty(), "一个都不读");
 }
 

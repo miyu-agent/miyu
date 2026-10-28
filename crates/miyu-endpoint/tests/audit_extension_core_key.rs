@@ -45,7 +45,7 @@ async fn a_package_named_like_a_core_module_cannot_set_core_settings() {
     );
     let plan: Vec<&str> = vec![&keep, "hello", &ask, "listen"];
     home.write(
-        "system/packages/ui/package.toml",
+        "packages/ui/package.toml",
         &manifest(&program.name(), &steps(&plan)),
     );
     let core = core_with_settings(&home, quick());
@@ -67,7 +67,7 @@ async fn a_package_named_like_a_core_module_cannot_set_core_settings() {
         assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     };
-    let config = read(&home.root.path().join("system/config.toml"));
+    let config = read(&home.root.path().join("config.toml"));
     core.stop_extensions().await;
     assert_eq!(
         answer["error"]["data"]["reason"], "local_only",

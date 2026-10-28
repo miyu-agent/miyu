@@ -83,10 +83,7 @@ async fn an_installed_extension_starts_and_a_removed_one_stops() {
             "err:stopped",
         ]),
     );
-    let written = home
-        .root
-        .path()
-        .join("system/packages/xbridge/package.toml");
+    let written = home.root.path().join("packages/xbridge/package.toml");
     let source = home.work.join("xbridge");
     std::fs::rename(written.parent().expect("在包目录里"), &source).expect("挪得动");
     let script = Script::new([
@@ -151,7 +148,7 @@ async fn an_upgraded_extension_restarts() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "xup");
-    let written = home.root.path().join("system/packages/xup/package.toml");
+    let written = home.root.path().join("packages/xup/package.toml");
     let source = home.work.join("xup");
     install(
         &home,
@@ -176,7 +173,7 @@ async fn an_upgraded_extension_restarts() {
     let running = until_state(&mut client, "xup", |entry| entry["state"] == "running").await;
     install(&home, "xoff", &program.name(), "manual", &steps(&["serve"]));
     let other = home.work.join("xoff");
-    std::fs::rename(home.root.path().join("system/packages/xoff"), &other).expect("挪得动");
+    std::fs::rename(home.root.path().join("packages/xoff"), &other).expect("挪得动");
     let reply = client
         .call("i0", "package.install", json!({"path": other}))
         .await;
@@ -207,7 +204,7 @@ async fn a_removed_extension_stops_before_its_files_go() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "xgone");
-    let written = home.root.path().join("system/packages/xgone/package.toml");
+    let written = home.root.path().join("packages/xgone/package.toml");
     let check = format!("exists:{}", written.display());
     install(
         &home,
@@ -264,7 +261,7 @@ async fn a_failed_upgrade_or_removal_brings_the_extension_back() {
     client.hello().await;
     until_state(&mut client, "xstay", |entry| entry["state"] == "running").await;
     lines(&path, 2).await;
-    let dir = home.root.path().join("system/packages");
+    let dir = home.root.path().join("packages");
     let source = home.work.join("xstay");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::copy(dir.join("xstay/package.toml"), source.join("package.toml")).expect("拷得了");

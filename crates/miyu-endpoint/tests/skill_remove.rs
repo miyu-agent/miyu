@@ -14,17 +14,14 @@ fn skill(name: &str) -> String {
 
 /// 家目录里的 `notes`、盖住出厂同名的 `package-creator`，管理员装的包 `kit` 带的 `kit-notes`；连上（系统的家目录当是数据根）。
 async fn connected(home: &Home) -> Client {
-    home.write("home/alice/skills/notes/SKILL.md", &skill("notes"));
+    home.write("skills/notes/SKILL.md", &skill("notes"));
+    home.write("skills/package-creator/SKILL.md", &skill("package-creator"));
     home.write(
-        "home/alice/skills/package-creator/SKILL.md",
-        &skill("package-creator"),
-    );
-    home.write(
-        "system/packages/kit/package.toml",
+        "packages/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
     home.write(
-        "system/packages/kit/skills/kit-notes/SKILL.md",
+        "packages/kit/skills/kit-notes/SKILL.md",
         &skill("kit-notes"),
     );
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);
@@ -67,10 +64,7 @@ async fn what_cannot_be_removed_is_refused_and_nothing_is_removed() {
         }
     }
     assert!(
-        home.root
-            .path()
-            .join("home/alice/skills/notes/SKILL.md")
-            .is_file(),
+        home.root.path().join("skills/notes/SKILL.md").is_file(),
         "有一个不行就一个都不删"
     );
 }
@@ -98,7 +92,7 @@ async fn own_skills_go_to_the_trash_and_what_they_covered_shows_again() {
         .as_array()
         .unwrap_or_else(|| panic!("{reply}"));
     assert_eq!(trash.len(), 2, "{reply}");
-    assert!(!home.root.path().join("home/alice/skills/notes").exists());
+    assert!(!home.root.path().join("skills/notes").exists());
     assert_eq!(from(&mut client, "notes").await, None);
     assert_eq!(
         from(&mut client, "package-creator").await,
@@ -120,7 +114,7 @@ async fn a_linked_folder_is_followed_but_only_the_link_is_removed() {
     let inside = home.root.path().join("elsewhere/hidden");
     std::fs::create_dir_all(&inside).expect("建得了");
     std::fs::write(inside.join("SKILL.md"), skill("hidden")).expect("写得进");
-    let skills = home.root.path().join("home/alice/skills");
+    let skills = home.root.path().join("skills");
     std::fs::create_dir_all(&skills).expect("建得了");
     std::os::unix::fs::symlink(&outside, skills.join("linked")).expect("建得了链接");
     std::os::unix::fs::symlink(&inside, skills.join("hidden")).expect("建得了链接");

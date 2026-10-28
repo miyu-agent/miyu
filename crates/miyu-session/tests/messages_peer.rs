@@ -305,7 +305,7 @@ async fn attachments_are_stored_and_ride_after_the_words() {
         Some(real),
         "带上真实的位置"
     );
-    let blobs = miyu_store::blob::Blobs::new(home.root.blobs(&crate::support::alice_account()));
+    let blobs = miyu_store::blob::Blobs::new(home.root.blobs());
     assert_eq!(blobs.get(&image.blob).unwrap(), png, "存进属主的 blob");
     assert_eq!(blobs.get(&file.blob).unwrap(), b"# Plan\n");
 }
@@ -329,9 +329,8 @@ async fn her_own_attachment_lands_in_the_receiving_session() {
         .await;
     one_turn(&home, &handle, 1).await;
     crate::support::stop(&handle).await;
-    let owner = crate::support::alice_account();
     let mine = miyu_store::attachments::keep(
-        &miyu_store::attachments::dir(&home.root, &owner, handle.id()),
+        &miyu_store::attachments::dir(&home.root, handle.id()),
         "notes.txt",
         "text/plain",
         b"x",
@@ -362,7 +361,6 @@ async fn her_own_attachment_lands_in_the_receiving_session() {
     };
     let theirs = std::fs::canonicalize(miyu_store::attachments::dir(
         &home.root,
-        &owner,
         &SessionId::parse(OTHER).expect("编号"),
     ))
     .expect("收的会话的附件目录建了");

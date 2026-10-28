@@ -232,7 +232,6 @@ async fn a_branch_of_a_confined_session_is_confined_too() {
     let child = miyu_session::new_id(now());
     miyu_session::fork(miyu_session::Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: handle.id(),
         id: child.clone(),
         cause: miyu_kernel::id::CommandId::parse("f1").expect("合写法"),

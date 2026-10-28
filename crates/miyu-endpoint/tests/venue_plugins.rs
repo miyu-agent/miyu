@@ -54,7 +54,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
     ]);
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(
-        "system/packages/bot/package.toml",
+        "packages/bot/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
             program.name(),
@@ -80,7 +80,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
     );
     assert_eq!(got[5]["error"]["data"]["reason"], "bad_params", "{got:?}");
     assert_eq!(got[5]["error"]["data"]["field"], "on", "{got:?}");
-    let groups = dir(&home, &alice(), &session);
+    let groups = dir(&home, &session);
     until_turns_in(&groups, 1).await;
     std::fs::write(&first_done, "").expect("写得进");
     let got = replies(&path, 9).await;

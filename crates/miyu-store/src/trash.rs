@@ -1,5 +1,5 @@
 //! 回收处（施工 3-8 三补，`docs/blueprint/store.md` 第 12 条）：删掉的会话，整个会话目录挪进
-//! `home/<账号>/trash/sessions/<会话编号>/`，里面多一个 `deleted_at`，写着删的时刻；核心起来时清一次，满了留的时限的
+//! `trash/sessions/<会话编号>/`，里面多一个 `deleted_at`，写着删的时刻；核心起来时清一次，满了留的时限的
 //! 真删（2026-09-30 项目主人定：删了的进回收处，留 7 天）。
 //!
 //! 真删之前先留底（施工 8-15，`07-存储.md` 第六节）：照它的日志算好用量的合计，往账号日志 `journal.jsonl` 追加一条
@@ -14,7 +14,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use miyu_kernel::id::{AccountId, EventKind, SessionId};
+use miyu_kernel::id::{EventKind, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
@@ -36,14 +36,9 @@ pub const DELETED_AT: &str = "deleted_at";
 /// # Errors
 ///
 /// 会话目录不在；写不了 `deleted_at`；建不了回收处；改不了名（回收处里已经有同名的也算）；同步不了。
-pub fn discard(
-    root: &DataRoot,
-    account: &AccountId,
-    session: &SessionId,
-    at: Timestamp,
-) -> io::Result<()> {
-    let from = root.session_dir(account, session);
-    let trash = root.trashed_sessions(account);
+pub fn discard(root: &DataRoot, session: &SessionId, at: Timestamp) -> io::Result<()> {
+    let from = root.session_dir(session);
+    let trash = root.trashed_sessions();
     let mut stamp = File::create(from.join(DELETED_AT))?;
     stamp.write_all(format!("{at}\n").as_bytes())?;
     stamp.sync_all()?;
@@ -73,14 +68,9 @@ pub struct Purged {
 /// # Errors
 ///
 /// 回收处读不了。
-pub fn purge(
-    root: &DataRoot,
-    account: &AccountId,
-    now: Timestamp,
-    keep: Duration,
-) -> io::Result<Purged> {
+pub fn purge(root: &DataRoot, now: Timestamp, keep: Duration) -> io::Result<Purged> {
     let mut purged = Purged::default();
-    let entries = match fs::read_dir(root.trashed_sessions(account)) {
+    let entries = match fs::read_dir(root.trashed_sessions()) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(purged),
         Err(error) => return Err(error),
@@ -106,7 +96,7 @@ pub fn purge(
         if now.unix_millis().saturating_sub(deleted.unix_millis()) < keep {
             continue;
         }
-        if let Err(why) = keep_usage(root, account, &session, &dir, now) {
+        if let Err(why) = keep_usage(root, &session, &dir, now) {
             purged.failed.push((session, why));
             continue;
         }
@@ -121,7 +111,6 @@ pub fn purge(
 /// 真删会话 `session`（目录在 `dir`）之前，照它的日志算好用量的合计，追加进账号 `account` 的日志。一次请求都没有的不写。
 fn keep_usage(
     root: &DataRoot,
-    account: &AccountId,
     session: &SessionId,
     dir: &Path,
     now: Timestamp,
@@ -140,7 +129,7 @@ fn keep_usage(
         kind: EventKind::parse(usage::PURGED).map_err(|error| error.to_string())?,
         body,
     };
-    journal::append(&root.account_dir(account).join(journal::FILE), entry)
+    journal::append(&root.path().join(journal::FILE), entry)
         .map(|_| ())
         .map_err(|error| error.to_string())
 }

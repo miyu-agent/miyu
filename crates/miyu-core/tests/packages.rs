@@ -23,7 +23,6 @@ use std::time::Duration;
 
 use crate::support::{Head, Home, resources, within};
 use miyu_endpoint::queries::Queries;
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::blob::Blobs;
 use serde_json::json;
@@ -53,12 +52,12 @@ async fn running_core(
 #[tokio::test]
 async fn a_query_of_a_package_not_installed_is_unknown_method() {
     let home = Home::new();
-    let mine = home.root.system_packages();
+    let mine = home.root.packages();
     std::fs::create_dir_all(&mine).expect("建得了");
     for removed in ["mermaid.removed", "net.removed"] {
         std::fs::write(mine.join(removed), "").expect("写得进");
     }
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     let reply = head
         .call(
@@ -87,7 +86,7 @@ async fn a_query_of_a_package_not_installed_is_unknown_method() {
 #[tokio::test]
 async fn memory_removed_before_start_says_not_installed() {
     let home = Home::new();
-    let mine = home.root.system_packages();
+    let mine = home.root.packages();
     std::fs::create_dir_all(&mine).expect("建得了");
     std::fs::write(mine.join("memory.removed"), "").expect("写得进");
     let (running, mut head) = running_core(&home, Queries::new()).await;
@@ -123,7 +122,7 @@ async fn an_unregistered_method_is_unknown_method() {
 #[tokio::test]
 async fn link_preview_is_registered_and_answers_without_the_network() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     for (url, why) in [
         ("not a url", "not_a_url"),
@@ -208,7 +207,7 @@ async fn a_background_query_stops_when_its_connection_goes() {
 #[tokio::test]
 async fn the_real_core_draws_a_flowchart_and_a_sequence_diagram() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     for (name, source) in [
         (
@@ -244,7 +243,7 @@ async fn the_real_core_draws_a_flowchart_and_a_sequence_diagram() {
 #[tokio::test]
 async fn an_empty_source_is_bad_params() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     let reply = head
         .call("q1", "mermaid.render", json!({"source": "   "}))
@@ -257,7 +256,7 @@ async fn an_empty_source_is_bad_params() {
 #[tokio::test]
 async fn a_source_over_the_limit_is_mermaid_too_long() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     // 真的 style.json 里 max_source 是 65536（64 KiB）。
     let source = "x".repeat(65537);
@@ -272,7 +271,7 @@ async fn a_source_over_the_limit_is_mermaid_too_long() {
 #[tokio::test]
 async fn an_unparseable_source_is_mermaid_failed_with_the_library_detail() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     let reply = head
         .call(
@@ -293,7 +292,7 @@ async fn an_unparseable_source_is_mermaid_failed_with_the_library_detail() {
 #[tokio::test]
 async fn the_same_source_twice_gets_the_same_svg() {
     let home = Home::new();
-    let queries = miyu_core::packages::register(&resources(), &home.root, &miyu_core::admin());
+    let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
     let params = json!({"source": "flowchart TD\nA-->B"});
     let first = head.call("q1", "mermaid.render", params.clone()).await;
@@ -309,14 +308,13 @@ async fn the_same_source_twice_gets_the_same_svg() {
 #[tokio::test]
 async fn startup_clears_leftover_upload_temp_files_but_leaves_blobs_alone() {
     let home = Home::new();
-    let admin = miyu_core::admin();
-    let blobs = Blobs::new(home.root.blobs(&admin));
+    let blobs = Blobs::new(home.root.blobs());
     // 崩了、被杀留下的分块上传暂存。
     blobs.create_upload("leftover").unwrap();
     // 一份真的 blob，不该被这一步碰到。
     let kept = blobs.put(b"kept across a restart").unwrap();
     // 别的账号的上传存在它自己名下（施工 Y-2中下）：它留下的也清。
-    let other = Blobs::new(home.root.blobs(&AccountId::parse("bob").unwrap()));
+    let other = Blobs::new(home.root.blobs());
     other.create_upload("theirs").unwrap();
     miyu_core::packages::clear_uploads(&home.root);
     assert!(
@@ -335,5 +333,5 @@ async fn clearing_uploads_is_fine_when_the_account_never_stored_anything() {
     let home = Home::new();
     // 这个账号的 blobs/ 目录都还没建过：起来时清暂存不该因为「没有」就出错、也不该把它建出来。
     miyu_core::packages::clear_uploads(&home.root);
-    assert!(!home.root.blobs(&miyu_core::admin()).exists());
+    assert!(!home.root.blobs().exists());
 }

@@ -37,7 +37,7 @@ async fn created_rebuilt_and_found_broken_are_logged() {
     );
 
     let home = Home::new();
-    let path = home.root.index(&alice()).join(FILE);
+    let path = home.root.index().join(FILE);
     std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
     std::fs::write(&path, vec![b'x'; 4096]).expect("写得进");
     let mut client = Client::connect(home.core(&Script::new([])));

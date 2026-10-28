@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use super::Opening;
 
@@ -53,10 +53,10 @@ pub(crate) struct Picked {
 
 /// 照 `cwd` 挑工作目录（`11-权限与沙盒.md` 第四节「工作目录和工作区分开」，施工 5-14）：人在哪就是哪，太宽的照用、标上
 /// `wide`（2026-10-20 项目主人定，原来头自己带上的太宽照旧退回、人明着选的才照用）。落在数据根里、又不在属主的工作区
-/// `home/<账号>/workspace/` 里的，`~` 本身读不出家目录的，退回这个会话的默认工作区 `fallback`（建好）。换不成真实位置的照原样：
+/// `workspace/` 里的，`~` 本身读不出家目录的，退回这个会话的默认工作区 `fallback`（建好）。换不成真实位置的照原样：
 /// 说不清它宽不宽，用到时工具自己报错。
-pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -> Picked {
-    let fallback = || prepared(core, owner, fallback);
+pub(crate) fn pick(core: &Core, cwd: &str, fallback: &Path) -> Picked {
+    let fallback = || prepared(core, fallback);
     let home = crate::workspace::home(core);
     let Ok(real) = miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd) else {
         // `~` 本身读不出家目录的：说不清在哪，退回。
@@ -69,7 +69,7 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
             },
         };
     };
-    let (data_root, own) = roots(core, owner);
+    let (data_root, own) = roots(core);
     if miyu_fs::within(&real, &data_root) && !miyu_fs::within(&real, &own) {
         return fallback();
     }
@@ -81,8 +81,8 @@ pub(crate) fn pick(core: &Core, owner: &AccountId, cwd: &str, fallback: &Path) -
 }
 
 /// 真实位置 `real` 的工作目录太不太宽（施工 9-7 补；`workspace.rs` 查过人明着要换去的以后照它说 `wide`）。
-pub(crate) fn wide(core: &Core, owner: &AccountId, real: &Path) -> bool {
-    let (data_root, own) = roots(core, owner);
+pub(crate) fn wide(core: &Core, real: &Path) -> bool {
+    let (data_root, own) = roots(core);
     miyu_fs::too_wide(
         real,
         crate::workspace::home(core).as_deref(),
@@ -93,10 +93,10 @@ pub(crate) fn wide(core: &Core, owner: &AccountId, real: &Path) -> bool {
 
 /// 退回这个会话的默认工作区 `dir`：建好（建家目录时就建了账号的工作区，会话的那一个用到才建；建不了的照样退回，用到时工具
 /// 自己报错），交回它。
-fn prepared(core: &Core, owner: &AccountId, dir: &Path) -> Picked {
+fn prepared(core: &Core, dir: &Path) -> Picked {
     if let Err(error) = core
         .root
-        .prepare_home(owner)
+        .prepare_workspace()
         .and_then(|()| std::fs::create_dir_all(dir))
     {
         tracing::warn!(target: "miyu::endpoint", kind = ?error.kind(), "workspace not prepared");
@@ -113,44 +113,39 @@ fn prepared(core: &Core, owner: &AccountId, dir: &Path) -> Picked {
 /// 外部身份只碰得到自己的工作区。
 /// 交回工作目录和太不太宽。只在造会话时这样认：以前的会话记着的照旧。
 pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId) -> (String, bool) {
-    let fallback = core.root.session_workspace(&who.owner, id);
-    let picked = match account_workspace(core, &who.owner, cwd) {
-        true => prepared(core, &who.owner, &fallback),
-        false => pick(core, &who.owner, cwd, &fallback),
+    let fallback = core.root.session_workspace(id);
+    let picked = match account_workspace(core, cwd) {
+        true => prepared(core, &fallback),
+        false => pick(core, cwd, &fallback),
     };
     match picked.broad && who.venue.is_some() {
-        true => (prepared(core, &who.owner, &fallback).cwd, false),
+        true => (prepared(core, &fallback).cwd, false),
         false => (picked.cwd, picked.wide),
     }
 }
 
 /// 人明着要换去账号的工作区本身（网页的「默认工作区」交的就是它，握手的 `host.workspace`）：换成这个会话自己的默认工作区
 /// `default`，建好（施工 5-14 中）。别的交回空。
-pub(crate) fn to_default(
-    core: &Core,
-    owner: &AccountId,
-    cwd: &str,
-    default: &Path,
-) -> Option<Picked> {
-    account_workspace(core, owner, cwd).then(|| prepared(core, owner, default))
+pub(crate) fn to_default(core: &Core, cwd: &str, default: &Path) -> Option<Picked> {
+    account_workspace(core, cwd).then(|| prepared(core, default))
 }
 
 /// 工作目录是不是账号的工作区本身。
-fn account_workspace(core: &Core, owner: &AccountId, cwd: &str) -> bool {
+fn account_workspace(core: &Core, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
-    let (_, own) = roots(core, owner);
+    let (_, own) = roots(core);
     miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd).is_ok_and(|real| real == own)
 }
 
 /// 数据根、属主的工作区，都换成真实的位置：和人交来的路径同一个换法（`miyu_fs::resolve`：还不存在的照最近的、已经存在的
 /// 上级目录算），两边才比得上（施工 5-14 中修：macOS 的 `/var` 是链接、Windows 有短名，原来不存在的照原样，对不上）。
 /// 换不成的照原样。
-pub(crate) fn roots(core: &Core, owner: &AccountId) -> (PathBuf, PathBuf) {
+pub(crate) fn roots(core: &Core) -> (PathBuf, PathBuf) {
     let real = |path: PathBuf| {
         miyu_fs::resolve(Path::new("/"), None, &path.to_string_lossy()).unwrap_or(path)
     };
     (
         real(core.root.path().to_path_buf()),
-        real(core.root.workspace(owner)),
+        real(core.root.workspace()),
     )
 }

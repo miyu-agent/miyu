@@ -239,7 +239,7 @@ async fn a_picture_from_a_tool_becomes_an_image_block_with_its_blob_stored() {
         }),
     ];
     assert_eq!(results[0].blocks, expected);
-    let stored = Blobs::new(home.root.blobs(&alice_account()));
+    let stored = Blobs::new(home.root.blobs());
     assert_eq!(stored.get(&hash).unwrap(), b"fake png bytes");
     let requests = script.requests();
     let heard = requests[1]

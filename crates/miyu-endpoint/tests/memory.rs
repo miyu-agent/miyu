@@ -56,11 +56,7 @@ async fn a_turn_said_through_the_core_is_indexed_and_goes_with_the_session() {
         "删会话拿掉"
     );
     // 上面那一次搜等过回合索引的后台写完：库早建好了，这时另开只读的连接看墓碑。
-    let path = home
-        .root
-        .index(&alice())
-        .join("recall")
-        .join("turns-engineer.db");
+    let path = home.root.index().join("recall").join("turns-engineer.db");
     let db =
         rusqlite::Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
             .expect("回合库在");

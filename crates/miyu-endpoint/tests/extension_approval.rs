@@ -24,7 +24,7 @@ fn refused(reply: &Value) -> Option<&str> {
 
 /// 开关的文件。
 fn switches(home: &Home) -> String {
-    read(&home.root.system().join("extensions.json"))
+    read(&home.root.path().join("extensions.json"))
 }
 
 #[tokio::test]
@@ -84,10 +84,7 @@ async fn an_installed_extension_asks_for_its_capabilities_when_enabled() {
         "{\"version\":1,\"on\":{\"echo\":true},\"approved\":{\"echo\":[\"events.read\",\"network\"]}}\n",
         "批了就是记进开关文件（施工 SU-2 中）"
     );
-    assert!(
-        !home.root.system().join("groups.json").exists(),
-        "没有组表了"
-    );
+    assert!(!home.root.path().join("groups.json").exists(), "没有组表了");
     let disabled = call(&mut client, "extension.disable", "echo").await;
     assert_eq!(disabled["result"]["state"], "off");
     let again = enable(&mut client, "echo", None).await;
@@ -231,7 +228,7 @@ async fn an_approval_in_the_switches_file_counts() {
         &["network"],
     );
     home.write(
-        "system/extensions.json",
+        "extensions.json",
         "{\"version\":1,\"on\":{\"auto\":true},\"approved\":{\"auto\":[\"network\"]}}\n",
     );
     let core = core(&home, quick());

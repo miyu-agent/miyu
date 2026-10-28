@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use miyu_endpoint::Core;
 use miyu_kernel::event::Body;
-use miyu_kernel::id::AccountId;
 use miyu_policy::Snapshot;
 use miyu_session::testkit::Script;
 use miyu_store::blob::Blobs;
@@ -20,7 +19,7 @@ pub const BINDINGS: &str = "[external.bindings]\n\"qq:10001\" = \"admin\"\n";
 
 /// 照对应表起来、工具目录是 `tools` 的核心：先把对应表写进系统配置。
 pub fn bound_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {
-    home.write("system/config.toml", BINDINGS);
+    home.write("config.toml", BINDINGS);
     configured_core(home, script, tools)
 }
 
@@ -53,12 +52,12 @@ pub fn configured_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core
 }
 
 /// 账号 `account` 名下、目录在 `dir` 的会话的策略快照。
-pub fn snapshot(home: &Home, account: &AccountId, dir: &Path) -> Snapshot {
+pub fn snapshot(home: &Home, dir: &Path) -> Snapshot {
     let log = read_events(dir).expect("读得了");
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第一条是 session.created");
     };
-    let bytes = Blobs::new(home.root.blobs(account))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂")

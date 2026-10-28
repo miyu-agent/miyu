@@ -35,15 +35,15 @@ impl Open {
         // 照日志里最后一次记下的工作目录，都没有才退回 `~`（施工 4-9 再补三上）；加进来的目录照最后一次记下的（施工 5-10
         // 上）。施工 9-7 上起换工作区的事件也算。记下的是当时挑好的：太宽的照用（施工 9-7 补、5-14），落在数据根里的退回这个
         // 会话的默认工作区；什么都没记下的照 `~` 判。施工 V-2 三补起载入读日志时顺手认，不另读一遍。
-        let (picking, owner_of) = (Arc::clone(core), owner.clone());
-        let fallback = core.root.session_workspace(&owner, id);
+        let picking = Arc::clone(core);
+        let fallback = core.root.session_workspace(id);
         let pick = Box::new(move |last: Option<&str>| {
-            super::pick(&picking, &owner_of, last.unwrap_or(NO_CWD), &fallback).cwd
+            super::pick(&picking, last.unwrap_or(NO_CWD), &fallback).cwd
         });
         // 关没关在沙盒里照日志第一条（施工 SU-4 中），软件包的端口照它裁（施工 SU-4 下）。
-        let confined = super::confined_of(core, &owner, id).await;
+        let confined = super::confined_of(core, id).await;
         // 属主写的提示词覆盖（施工 OV-1 中）。
-        let resources = crate::presets::overrides::resources(core, &owner);
+        let resources = crate::presets::overrides::resources(core);
         let loaded = load_placed(Load {
             root: &core.root,
             personas: crate::personas::personas(core, &owner),
@@ -58,7 +58,7 @@ impl Open {
             tools: core.tools.clone(),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
-            sandbox_cache: core.sandbox_cache_of(&owner),
+            sandbox_cache: core.sandbox_cache_of(),
             sessions: Some(spawn::port(core)),
             packages: Some(crate::packages::port::port(core, &owner, confined)),
             schedules: Some(crate::schedules::port::port(core, &owner)),

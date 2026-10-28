@@ -80,7 +80,7 @@ async fn a_configured_provider_that_lists_works_without_a_request() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.deepseek]\nbase_url = \"{}\"\nkey = {{ env = \"DEEPSEEK_API_KEY\" }}\n",
             server.base_url
@@ -109,7 +109,7 @@ async fn a_configured_provider_that_lists_works_without_a_request() {
 
     let listed = Server::start(vec![listing(&["deepseek-flash", "deepseek-v4-pro"])]).await;
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[providers.deepseek]\nbase_url = \"{}\"\n", listed.base_url),
     );
     let reply = test(
@@ -137,7 +137,7 @@ async fn a_model_not_in_the_list_is_tried_with_one_request() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.deepseek]\nbase_url = \"{}\"\nkey = {{ env = \"DEEPSEEK_API_KEY\" }}\n",
             server.base_url
@@ -183,7 +183,7 @@ async fn the_probe_takes_the_configured_temperature_of_the_model() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.deepseek]\nbase_url = \"{}\"\n\n[providers.deepseek.models.\"deepseek-flash\"]\ntemperature = 0.6\n",
             server.base_url
@@ -255,7 +255,7 @@ async fn a_provider_that_cannot_list_asks_for_a_model_then_tries_it() {
     );
     assert!(shared.list_fetched("deepseek").is_none(), "候选不存列表");
     assert!(
-        !home.root.path().join("system/secrets.toml").exists(),
+        !home.root.path().join("secrets.toml").exists(),
         "也不存 key"
     );
 }
@@ -284,7 +284,7 @@ async fn a_candidate_is_never_kept_in_the_lists() {
 async fn a_failed_request_says_class_status_and_message() {
     let server = Server::start(vec![Reply::error(404, &[], "no such path"), unauthorized()]).await;
     let home = Home::new();
-    home.write("system/secrets.toml", &format!("mine = \"{FAKE}\"\n"));
+    home.write("secrets.toml", &format!("mine = \"{FAKE}\"\n"));
     let reply = test(
         &home,
         &[],
@@ -356,7 +356,7 @@ async fn an_unauthorized_listing_stops_there() {
 async fn what_cannot_be_worked_out_is_the_config_stage() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.deepseek]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n\n[providers.gone]\nbase_url = \"http://127.0.0.1:9/v1\"\nkey = { secret = \"gone-key\" }\n\n[providers.far]\nbase_url = { env = \"FAR_URL\" }\n",
     );
     let reply = test(&home, &[], fresh(), json!({"candidate": {}})).await;
@@ -399,7 +399,7 @@ async fn what_cannot_be_worked_out_is_the_config_stage() {
 async fn wrong_params_and_unknown_providers_are_refused() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.deepseek]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n",
     );
     for params in [
@@ -435,7 +435,7 @@ async fn the_probe_speaks_through_the_model_driver_with_the_profile_headers() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!(
             "[providers.opencode-go]\nbase_url = \"{0}\"\nkey = {{ env = \"GO_KEY\" }}\n\n[providers.opencode]\nbase_url = \"{0}\"\nkey = {{ env = \"GO_KEY\" }}\n",
             server.base_url

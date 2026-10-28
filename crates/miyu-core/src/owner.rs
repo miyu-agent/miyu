@@ -14,7 +14,7 @@ const FALLBACK: &str = "me";
 
 /// 主人：账号文件里标了 `owner` 的那一个。没有这个文件、读不了、还没建的没有（读不了的记一行）。
 pub fn owner(root: &DataRoot) -> Option<AccountId> {
-    let path = root.system().join(accounts::FILE);
+    let path = root.path().join(accounts::FILE);
     let read = accounts::read(&path)
         .inspect_err(|error| tracing::warn!(target: TARGET, error = %error, "accounts not read"))
         .ok()?;
@@ -39,8 +39,8 @@ pub fn ensure(root: &DataRoot, user: Option<&str>, now: Timestamp) -> Result<Acc
         .and_then(|name| AccountId::parse(&name).ok())
         .or_else(|| AccountId::parse(FALLBACK).ok())
         .ok_or_else(|| "no usable owner name".to_string())?;
-    let path = root.system().join(accounts::FILE);
-    std::fs::create_dir_all(root.system()).map_err(|error| error.to_string())?;
+    let path = root.path().join(accounts::FILE);
+    std::fs::create_dir_all(root.path()).map_err(|error| error.to_string())?;
     let read = accounts::read(&path).ok();
     let mut written = read
         .as_ref()

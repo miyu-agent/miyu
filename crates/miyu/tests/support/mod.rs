@@ -60,7 +60,7 @@ impl Home {
 
     /// 系统配置写成 `text`：核心起来之前写。
     pub fn system_config(&self, text: &str) {
-        let file = self.root.path().join("system").join("config.toml");
+        let file = self.root.path().join("config.toml");
         std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了目录");
         std::fs::write(file, text).expect("写得进");
     }
@@ -265,5 +265,5 @@ pub fn owner(root: &DataRoot) {
         disabled: false,
         owner: true,
     });
-    accounts::write(&root.system().join(accounts::FILE), &written, None).expect("写得进");
+    accounts::write(&root.path().join(accounts::FILE), &written, None).expect("写得进");
 }

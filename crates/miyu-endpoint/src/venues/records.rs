@@ -49,13 +49,12 @@ pub(crate) async fn records(core: &Core, params: RecordsParams) -> Result<Value,
         Some(_) => return Err(Refusal::BAD_PARAMS),
     };
     let window = miyu_assemble::group::Window { count, grow };
-    let owner = core
-        .sessions
+    core.sessions
         .owner(core, &session)
         .await
         .ok_or(Refusal::NOT_FOUND)?;
-    let dir = core.root.session_dir(&owner, &session);
-    let blobs = Blobs::new(core.root.blobs(&owner));
+    let dir = core.root.session_dir(&session);
+    let blobs = Blobs::new(core.root.blobs());
     let resources = core.resources.clone();
     let offset = crate::sessions::offset().minutes();
     let rendered = tokio::task::spawn_blocking(move || {

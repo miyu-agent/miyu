@@ -9,9 +9,9 @@ use crate::provider::provider;
 use crate::settings::ModelSettings;
 use crate::test_support::{Held, items, resolved};
 
-/// 手写的写成系统配置。
-fn file(layer: Layer) -> String {
-    format!("{}/config.toml", layer.as_str())
+/// 手写的写成配置文件（施工 SU-5 上：只有数据根下那一份）。
+fn file(_layer: Layer) -> String {
+    "config.toml".to_string()
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn the_default_temperature_counts_only_where_the_model_can_take_it() {
     assert_eq!(facts.temperature.value, Some(0.7));
     assert_eq!(
         Json::Object(facts.temperature.source.json(&file)),
-        json!({"from": "config", "file": "system/config.toml", "line": 5, "layer": "system"})
+        json!({"from": "config", "file": "config.toml", "line": 5, "layer": "system"})
     );
     assert_eq!(facts.takes_temperature.value, Some(true));
     let facts = at("openai", "gpt-5", "0.2");

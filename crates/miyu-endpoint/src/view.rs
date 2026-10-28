@@ -74,7 +74,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
         true => Some((
             (core.resources.clone(), Titles::of(core, &owner)),
             peer.language,
-            Blobs::new(core.root.blobs(&owner)),
+            Blobs::new(core.root.blobs()),
         )),
         false => None,
     };
@@ -126,8 +126,6 @@ pub(crate) fn texts(
 pub(crate) struct Titles {
     packages: Arc<Vec<Found>>,
     root: DataRoot,
-    /// 会话属主（施工 U23 上下：原来一律是管理员，成员自己的技能没有显示名）。
-    owner: AccountId,
     tools: BTreeMap<String, BTreeMap<String, String>>,
     /// 工具目录里这一刻的工具自己说的标题后面跟哪个参数（施工 9-8 十一补，网页报的：扩展登记的 `subject` 没进标题）。
     subjects: BTreeMap<String, String>,
@@ -161,7 +159,6 @@ impl Titles {
             packages_of,
             packages: core.packages_of(owner),
             root: core.root.clone(),
-            owner: owner.clone(),
             tools,
             subjects,
         }
@@ -169,7 +166,7 @@ impl Titles {
 
     /// 技能的名字到给人看的名字，照语言 `language` 挑，没写的照名字。碰磁盘。
     fn skills(&self, language: &str) -> BTreeMap<String, String> {
-        miyu_store::skills::find(&self.packages, &self.root, &self.owner)
+        miyu_store::skills::find(&self.packages, &self.root)
             .0
             .into_iter()
             .map(|skill| {
@@ -237,7 +234,7 @@ async fn events_of(core: &Core, session: &SessionId) -> Result<(AccountId, Vec<E
         .owner(core, session)
         .await
         .ok_or(Refusal::NOT_FOUND)?;
-    let dir = core.root.session_dir(&owner, session);
+    let dir = core.root.session_dir(session);
     let read = tokio::task::spawn_blocking(move || read_events(&dir))
         .await
         .map_err(|_| Refusal::INTERNAL)?;

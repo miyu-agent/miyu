@@ -102,8 +102,7 @@ fn varied() -> Site {
 }
 
 fn dir(site: &Site, id: &str) -> PathBuf {
-    site.1
-        .session_dir(&alice(), &SessionId::parse(id).expect("合写法"))
+    site.1.session_dir(&SessionId::parse(id).expect("合写法"))
 }
 
 fn write(site: &Site, id: &str, segment: &str, text: &str) {
@@ -120,23 +119,14 @@ fn append(site: &Site, id: &str, segment: &str, text: &str) {
 }
 
 fn index_path(site: &Site) -> PathBuf {
-    site.1.index(&alice()).join(FILE)
+    site.1.index().join(FILE)
 }
 
 /// 列一次，写成 `session.list` 的回应那样；`oneshot` 只要一次性的。B 当忙着。
 fn listing(site: &Site, index: Option<&SessionIndex>, oneshot: bool) -> Value {
     let busy = BTreeSet::from([SessionId::parse(B).expect("合写法")]);
     let pick = |row: &Row| !oneshot || row.oneshot;
-    let listed = scan(
-        &site.1,
-        &alice(),
-        index,
-        &busy,
-        pick,
-        None,
-        &Stop::default(),
-    )
-    .expect("读得了");
+    let listed = scan(&site.1, index, &busy, pick, None, &Stop::default()).expect("读得了");
     Value::Array(listed.iter().map(Listed::to_json).collect())
 }
 
@@ -293,7 +283,7 @@ fn a_missing_broken_or_old_index_is_rebuilt_from_the_logs() {
         let site = varied();
         broken(&site);
         let whole = listing(&site, None, false);
-        let index = open_index(&site.1, &alice());
+        let index = open_index(&site.1);
         assert!(
             index.rows().expect("读得了").is_empty(),
             "{said}：换了一份空的"
@@ -312,7 +302,7 @@ fn a_missing_broken_or_old_index_is_rebuilt_from_the_logs() {
 #[test]
 fn an_index_found_broken_while_listing_is_rebuilt() {
     let site = varied();
-    let index = open_index(&site.1, &alice());
+    let index = open_index(&site.1);
     let whole = listing(&site, Some(&index), false);
     rusqlite::Connection::open(index_path(&site))
         .expect("打得开")

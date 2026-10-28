@@ -30,9 +30,7 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
     let system_home = home.work.join("system-home");
     std::fs::create_dir_all(&system_home).expect("建得了目录");
     // 工作区照真核心起来时的样子先建好（`core.md`：管理员的工作区核心起来时就建好了）。
-    home.root
-        .prepare_home(&alice())
-        .expect("建得了家目录、工作区");
+    home.root.prepare_workspace().expect("建得了家目录、工作区");
     let mut client = Client::connect(home.core_at_home(&Script::new([]), system_home.clone()));
     let reply = client.hello().await;
 
@@ -49,7 +47,7 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
     );
 
     let workspace = host["workspace"].as_str().expect("workspace 是字符串");
-    let expected = std::fs::canonicalize(home.root.workspace(&alice())).expect("在");
+    let expected = std::fs::canonicalize(home.root.workspace()).expect("在");
     assert_eq!(workspace, expected.display().to_string(), "{reply}");
 }
 
@@ -62,7 +60,7 @@ async fn host_workspace_is_given_as_is_and_not_created_when_nobody_has_used_the_
     let mut client = Client::connect(home.core(&Script::new([])));
     let reply = client.hello().await;
 
-    let raw = home.root.workspace(&alice());
+    let raw = home.root.workspace();
     assert_eq!(
         reply["result"]["host"]["workspace"],
         json!(raw.display().to_string()),
@@ -95,8 +93,7 @@ async fn host_workspace_resolves_a_symlink_to_its_real_position() {
     let home = Home::new();
     let real = home.work.join("actual-workspace");
     std::fs::create_dir_all(&real).expect("建得了目录");
-    std::fs::create_dir_all(home.root.account_dir(&alice())).expect("建得了账号目录");
-    symlink(&real, home.root.workspace(&alice())).expect("建得了符号链接");
+    symlink(&real, home.root.workspace()).expect("建得了符号链接");
 
     let mut client = Client::connect(home.core(&Script::new([])));
     let hello = client.hello().await;

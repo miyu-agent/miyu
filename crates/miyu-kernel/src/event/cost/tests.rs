@@ -20,7 +20,7 @@ fn the_drawing_round_trips() {
 #[test]
 fn a_tiered_price_says_which_tier() {
     round_trip::<Cost>(
-        r#"{"amount":1.5,"currency":"CNY","price":{"input":4,"output":16},"multiplier":0.5,"source":"config:system/config.toml:12","above":200000}"#,
+        r#"{"amount":1.5,"currency":"CNY","price":{"input":4,"output":16},"multiplier":0.5,"source":"config:config.toml:12","above":200000}"#,
     );
 }
 

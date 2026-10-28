@@ -118,16 +118,7 @@ pub(super) fn record(
     cause: Option<&miyu_kernel::id::CommandId>,
     changes: &[Difference],
 ) {
-    let (journal, journal_shown) = match layer {
-        Layer::System => (
-            &config.places.system_journal,
-            format!("system/{}", miyu_store::journal::FILE),
-        ),
-        _ => (
-            &config.places.account_journal,
-            config.places.shown(miyu_store::journal::FILE),
-        ),
-    };
+    let (journal, journal_shown) = (&config.places.journal, miyu_store::journal::FILE);
     let body = ConfigChanged {
         layer: layer.as_str(),
         file: &config.file().shown,
@@ -143,7 +134,7 @@ pub(super) fn record(
     };
     journal::record(
         journal,
-        &journal_shown,
+        journal_shown,
         crate::sessions::now(),
         by,
         cause,
@@ -186,7 +177,7 @@ fn observe_trust(core: &Core, config: &mut Config) {
             via: Some(Via::File.as_str()),
         };
         journal::record(
-            &config.places.account_journal,
+            &config.places.journal,
             &config.places.shown(miyu_store::journal::FILE),
             crate::sessions::now(),
             By::Kernel,

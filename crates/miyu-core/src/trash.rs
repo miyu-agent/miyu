@@ -6,7 +6,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tokio::task::JoinHandle;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::root::DataRoot;
 use miyu_store::trash;
@@ -17,10 +16,10 @@ use crate::TARGET;
 pub(crate) const KEEP: Duration = Duration::from_secs(7 * 24 * 3600);
 
 /// 在阻塞线程里清一次账号 `account` 的回收处，照现在的钟。交回等它清完的那一头。
-pub(crate) fn purge(root: DataRoot, account: AccountId) -> JoinHandle<()> {
+pub(crate) fn purge(root: DataRoot) -> JoinHandle<()> {
     tokio::task::spawn_blocking(move || {
         let now = now();
-        match trash::purge(&root, &account, now, KEEP) {
+        match trash::purge(&root, now, KEEP) {
             Ok(purged) => {
                 if purged.removed > 0 {
                     tracing::info!(target: TARGET, removed = purged.removed, "trash purged");
@@ -31,7 +30,7 @@ pub(crate) fn purge(root: DataRoot, account: AccountId) -> JoinHandle<()> {
             }
             Err(error) => tracing::warn!(target: TARGET, error = %error, "trash not read"),
         }
-        match trash::personas::purge(&root, &account, now, KEEP) {
+        match trash::personas::purge(&root, now, KEEP) {
             Ok(purged) => {
                 if purged.removed > 0 {
                     tracing::info!(target: TARGET, removed = purged.removed, "persona trash purged");

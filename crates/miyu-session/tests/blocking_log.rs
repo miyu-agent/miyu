@@ -49,7 +49,7 @@ async fn a_line_from_the_thread_that_stores_effects_carries_the_session() {
     };
     let handle = home.create_as(&script, &base_system(), opening).await;
     // 放 blob 的目录换成一个文件：改后的内容存不进去（哈希照样算出来交回，这一轮照常走完）。
-    let blobs = home.root.blobs(&alice_account());
+    let blobs = home.root.blobs();
     std::fs::rename(&blobs, blobs.with_extension("moved")).expect("挪得开");
     std::fs::write(&blobs, b"").expect("写得进");
     let mut pushes = watch(&handle).await;

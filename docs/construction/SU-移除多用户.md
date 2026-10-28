@@ -227,3 +227,26 @@
 4. 搜索端口的「替谁搜」（`SearchPort::query` 的 `owner`、`Using.owner`，每人一份的包用的）删掉。
 5. 握手记下的 `Shaken.whose`、`now_as`、`now_whose` 删掉：连接都替主人干活，`Peer.admin` 对连接恒真；会话的软件包端口照会话关不关给（关着的不替主人本人，装不了、列的时候裁掉只给主人的那几格；原来照属主是不是主人，SU-4 中以后群会话的属主也是主人，跟着补上）。
 6. 怎么验：整套测试照改；手写变异 6 个（`~/.cache/miyu-remake/SU4c-mut`）逮住 4 个；造会话、载入时把关不关交给软件包端口的那两处测具里走不到：`packages` 只经 `shell` 里的 `miyu pkg` 调，关着的会话只在沙盒能用时才跑得了命令，测具没有沙盒；端口自己照关不关拒、裁有单元测试守着（`packages/port/tests.rs`）。本机门禁。
+
+### 二十三、SU-5：数据根一层（设计）
+
+**定了的**（主会话 10-28，技术题）：
+
+1. 布局照第五节：`system/` 和 `home/<账号>/` 两层摊平到数据根一层。原来 `system/` 下的（`config.toml`、`secrets.toml`、`extensions.json`、`packages/`、`journal.jsonl`、`trust.toml`、`access.json`、`logins.json`）和主人家目录下的（`personas/`、`presets/`、`skills/`、`commands/`、`scripts/`、`prompts/`、`tools/`、`sessions/`、`trash/`、`index/`、`blobs/`、`workspace/`、`kb/`、`kb.toml`、照 XDG 的几处）都直接在数据根下；`state/`、`run/` 照旧。家目录里的 `state/schedules.db` 挪到 `state/schedules.db`（同一个 `state/`）。包的状态照旧在 `state/packages/<包>/`（第五节写的 `data/<包>/` 不改名：只是换个地方，搬家多一件事，没有收益）。
+2. 代码：`DataRoot` 的路径方法拿掉账号参数（`account_dir`、`system`、`homes`、`prepare_home`、`accounts`、`owner_of` 这些两层的才有的拿掉），调用处跟着收；更上层还带着账号的参数 SU-6 收。产品里不认旧布局，也不自己挪：以前挪旧写法的（`packages/migrate.rs` 的旧清单写法、旧的系统层位置）一起拿掉。
+3. 搬家：`cargo xtask su-migrate <数据根>`（xtask 不随发行带出去）。只认旧布局（有 `system/` 或 `home/`），先查核心没在跑（`run/` 的锁），整份拷一份备份到数据根旁边，再在原地搬；每一项搬完核数（文件数、会话数、blob 数、赞助账本行数），对不上的停下、什么都不删、报告。做的事：
+   - 个人设置并进系统配置，同键个人的赢；个人密钥并进系统密钥，同名个人的赢；配置里引用密钥的 `@system:`、`@personal:` 前缀去掉。
+   - `system/groups.json` 里批过的 `ext.<能力>` 并进 `extensions.json`（SU-2 中以前的旧数据才有）。
+   - `system/` 下残留的人格、预设、技能、脚本、提示词、工具说明并进主人那一份，同名主人的赢，输的那一份挪进备份不删。
+   - 主人个人设置里的 `external.me` 写进 `[external.bindings]`，值写 `owner`。
+   - 包账号的家目录（`home/<包>/`）里的会话、回收处、blob、定时任务并进主人那一份（会话编号是 UUIDv7 不会撞，blob 照内容哈希去重）；会话索引、回合库、检索库是派生的，删掉让核心重建。
+   - 主人家目录整个上提到数据根，`system/` 的上提，`home/`、`system/` 删掉（备份里有）。
+4. 分步：SU-5 上 代码改布局（测试的数据根跟着变）；SU-5 下 搬家工具，拿主人部署的副本（去掉密钥、不连模型）实跑核数。真搬由 onebot 会话在项目主人定的时间做。
+
+### 二十四、SU-5 上：数据根一层（做了什么）
+
+1. 布局照第二十三节：`system/`、`home/<账号>/` 摊平到数据根一层；系统日志、账号日志并成一份 `journal.jsonl`；脚本的状态目录、缓存目录拿掉账号那一层（`state/scripts/<来处>/…`、`cache/<来处>/…`）；唤醒表在 `state/schedules.db`；人格的记忆日志在 `modules/memory/<人格>/`（第五节写的 `memory/` 不改名，同包状态那一条的理由）。新数据根的标记写 `layout 2`。
+2. `DataRoot` 的路径方法拿掉账号参数，`account_dir`、`system`、`homes`、`prepare_home`、`accounts`、`owner_of` 拿掉；跟着用不上的账号参数、字段（`Fork.owner`、`Confines::of` 的账号、`reach::owner` 改成只查读不读得到，等等）一路删掉。剩下更上层带着的账号参数 SU-6 收。
+3. 产品里不认旧布局：`packages/migrate.rs`（旧清单写法、旧系统层位置）、用不上的 `invites` 模块一起拿掉；照路径形状判的两处跟着改：高危规则的「在工作区里」（`<数据根>/workspace/`），文件边界的「知识库文档」（`kb/<库>/`）。
+4. 给人看的字、示例文件、参考文档、作者文档里的位置跟着改；蓝图里的旧位置、「主人家目录」「系统区」这类说法 SU-6 改写。
+5. 怎么验：整套测试照新布局改（只有多账号才有意义的几条删了：每账号各一份、系统区不读、会话挪到别人家目录、旧写法挪过来）；手写变异 7 个（`~/.cache/miyu-remake/SU5a-mut`）逮住 5 个，2 个等价：找会话目录、合并认人时读出处，目录不在的提前判掉，拿掉只是后面读的时候多一行 `WARN` 或照样回不存在。本机门禁。

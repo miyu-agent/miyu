@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::session::Session;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_models::price::ordered;
@@ -29,21 +29,14 @@ pub(crate) struct Ledger {
     pub(crate) index: Arc<UsageIndex>,
     /// 这个会话。
     pub(crate) session: SessionId,
-    /// 它的属主：补的时候照它找日志。
-    pub(crate) owner: AccountId,
 }
 
 impl Ledger {
     /// 用量汇总 `usage` 里属主 `owner` 的会话 `id`（施工 8-15）：`session_usage` 的端口照它造。没开汇总的没有。
-    pub(crate) fn of(
-        usage: Option<&Arc<UsageIndex>>,
-        id: &SessionId,
-        owner: &AccountId,
-    ) -> Option<Ledger> {
+    pub(crate) fn of(usage: Option<&Arc<UsageIndex>>, id: &SessionId) -> Option<Ledger> {
         usage.map(|index| Ledger {
             index: Arc::clone(index),
             session: id.clone(),
-            owner: owner.clone(),
         })
     }
 }
@@ -124,7 +117,7 @@ impl Ledger {
     fn spent(&self, first: &str, at: Timestamp) -> Result<Spent, String> {
         let problems = self
             .index
-            .catch_up_session(&self.owner, &self.session)
+            .catch_up_session(&self.session)
             .map_err(|error| error.to_string())?;
         for problem in problems {
             tracing::warn!(target: TARGET, session = problem.source.as_str(), error = problem.error.as_str(), "usage not indexed");

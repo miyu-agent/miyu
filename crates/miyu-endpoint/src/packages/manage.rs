@@ -28,7 +28,7 @@ impl Core {
     pub(crate) fn reload_packages(&self) {
         // 列表里变了的推出去（施工 F-8 三补）：前后各照英文算一份比。
         let before = super::changes::snapshot(self);
-        let mut found = load(&self.resources, &self.root, &self.admin);
+        let mut found = load(&self.resources, &self.root);
         if let Some(built_in) = &self.built_in {
             compiled(&mut found, built_in);
         }

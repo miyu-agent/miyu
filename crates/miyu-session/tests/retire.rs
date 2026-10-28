@@ -208,7 +208,6 @@ async fn a_sealed_branch_retires_without_waiting_to_be_idle_long_enough() {
     let child = new_id(now());
     miyu_session::fork(Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: parent.id(),
         id: child.clone(),
         cause: CommandId::parse("f1").expect("合写法"),

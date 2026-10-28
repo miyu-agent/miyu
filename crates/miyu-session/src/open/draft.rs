@@ -45,15 +45,13 @@ pub(super) async fn draft(
     let watch = setup.installed.clone().map(|installed| skills::Watch {
         installed,
         root: setup.root.clone(),
-        owner: setup.owner.clone(),
     });
     let (found, shelves, names) = match setup.installed.clone() {
         Some(installed) => {
-            let (root, owner) = (setup.root.clone(), setup.owner.clone());
+            let root = setup.root.clone();
             let file = preset.map(|chosen| chosen.file.clone());
             blocking(move || {
-                let found =
-                    skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
+                let found = skills::opened(skills::find(&installed(), &root), file.as_ref());
                 let shelves = skills::shelves(&found);
                 let names = skills::names(&found);
                 (found, shelves, names)
@@ -163,7 +161,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         owner: setup.owner.clone(),
         config: std::sync::Arc::clone(config.current()),
         texts,
-        blobs: Blobs::new(setup.root.blobs(&setup.owner)),
+        blobs: Blobs::new(setup.root.blobs()),
         reference: reference.clone(),
         sent: None,
     });

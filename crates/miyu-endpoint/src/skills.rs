@@ -38,13 +38,9 @@ pub(crate) use remove::remove;
 ///
 /// 找的线程崩了：内部出错；这种语言的字表读不出来。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
-    let (packages, root, admin) = (
-        core.packages_of(account),
-        core.root.clone(),
-        account.clone(),
-    );
+    let (packages, root) = (core.packages_of(account), core.root.clone());
     let found = tokio::task::spawn_blocking(move || {
-        let found = miyu_store::skills::find(&packages, &root, &admin).0;
+        let found = miyu_store::skills::find(&packages, &root).0;
         (found, packages)
     })
     .await
@@ -74,7 +70,7 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result
             one
         })
         .collect();
-    let dir = miyu_store::skills::own_dir(&core.root, account);
+    let dir = miyu_store::skills::own_dir(&core.root);
     Ok(json!({ "skills": skills, "dir": shown(&dir, core.home.as_deref()) }))
 }
 

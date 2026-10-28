@@ -18,11 +18,11 @@ use miyu_store::watch::Watch;
 use crate::support::*;
 
 /// 系统配置在数据根里的位置。
-const SYSTEM: &str = "system/config.toml";
+const SYSTEM: &str = "config.toml";
 
 /// 照磁盘上的配置起来、开始监视的核心：alice 的家目录建好（监视要看它）。
 fn watched(home: &Home, script: &Script) -> (Arc<Core>, Watch) {
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let core = home.core_configured(script, None, &[]);
     let watching = core.watch_config().expect("监视得了");
     (core, watching)
@@ -104,7 +104,7 @@ async fn a_hand_edit_is_pushed_and_logged() {
         }),
         "手改的不带 by"
     );
-    let logged = journal(&home, "system/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(logged.len(), 1, "{logged:?}");
     assert_eq!(logged[0]["by"], json!({"kind": "kernel"}));
     assert!(logged[0].get("cause").is_none(), "手改的没有 cause");
@@ -142,7 +142,7 @@ async fn the_cores_own_write_is_pushed_once_and_before_the_reply() {
     let next = pushed(&mut client).await;
     assert_eq!(next["layer"], "system", "自己写的不重推：{next}");
     assert_eq!(next["via"], "file");
-    let vias: Vec<Value> = journal(&home, "system/journal.jsonl")
+    let vias: Vec<Value> = journal(&home, "journal.jsonl")
         .iter()
         .map(|line| line["body"]["via"].clone())
         .collect();
@@ -209,7 +209,7 @@ async fn a_comment_only_edit_is_not_pushed_and_a_deleted_file_empties_its_layer(
         }),
         "删掉的推了"
     );
-    assert_eq!(journal(&home, "system/journal.jsonl").len(), 2);
+    assert_eq!(journal(&home, "journal.jsonl").len(), 2);
 }
 
 #[tokio::test]
@@ -340,7 +340,7 @@ async fn a_hand_edited_trust_record_is_logged_and_used() {
         serde_json::to_string(&cwd).expect("写得成"),
         version(project.as_bytes())
     );
-    std::fs::write(home.root.path().join("home/alice/trust.toml"), record).expect("写得进");
+    std::fs::write(home.root.path().join("trust.toml"), record).expect("写得进");
     let get = json!({"keys": ["permission.start_read_only"], "cwd": cwd});
     let mut n = 0;
     loop {
@@ -358,7 +358,7 @@ async fn a_hand_edited_trust_record_is_logged_and_used() {
         assert!(n < 1000, "十秒内认了手改的信任：{got}");
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    let logged = journal(&home, "home/alice/journal.jsonl");
+    let logged = journal(&home, "journal.jsonl");
     assert_eq!(logged.len(), 1, "{logged:?}");
     assert_eq!(logged[0]["kind"], "trust.changed");
     assert_eq!(logged[0]["by"], json!({"kind": "kernel"}));
@@ -436,7 +436,7 @@ async fn every_turn_takes_the_config_of_that_moment() {
 #[tokio::test]
 async fn the_same_bytes_are_left_alone() {
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     home.write(SYSTEM, "[ui]\nlanguage = \"en\"\n");
     let core = home.core_configured(&Script::new([]), None, &[]);
     let mut now = core.config_now();

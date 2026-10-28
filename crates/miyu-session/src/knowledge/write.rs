@@ -16,18 +16,12 @@ pub(super) fn save(shelves: &Shelves, save: KbSave) -> Result<KbWritten, KbRefus
         creatable(shelves, &save.kb, &save.path)?;
         shelves
             .knowledge
-            .create(&shelves.account, &save.kb, save.about.as_deref())
+            .create(&save.kb, save.about.as_deref())
             .map_err(|error| refused(error, save.kb.clone(), save.path.clone()))?;
     }
     let written = shelves
         .knowledge
-        .save(
-            &shelves.account,
-            &save.kb,
-            &save.path,
-            &save.text,
-            save.append,
-        )
+        .save(&save.kb, &save.path, &save.text, save.append)
         .map_err(|error| refused(error, save.kb, save.path))?;
     Ok(KbWritten {
         path: written.path,
@@ -48,7 +42,7 @@ pub(super) fn edit(
     visible(shelves, &kb)?;
     let written = shelves
         .knowledge
-        .edit(&shelves.account, &kb, &path, old, new)
+        .edit(&kb, &path, old, new)
         .map_err(|error| refused(error, kb, path))?;
     Ok(KbWritten {
         path: written.path,
@@ -63,7 +57,7 @@ pub(super) fn delete(shelves: &Shelves, kb: String, path: String) -> Result<KbTr
     visible(shelves, &kb)?;
     let (file, trash) = shelves
         .knowledge
-        .trash(&shelves.account, &kb, &path, shelves.home.as_deref())
+        .trash(&kb, &path, shelves.home.as_deref())
         .map_err(|error| refused(error, kb, path))?;
     Ok(KbTrashed { path: file, trash })
 }

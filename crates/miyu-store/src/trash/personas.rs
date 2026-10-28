@@ -1,5 +1,5 @@
 //! 删掉的人格（施工 P-3 下，`docs/blueprint/personas.md`「改」）：家目录里的人格目录整个挪进
-//! `home/<账号>/trash/personas/<编号>.<删的时刻，毫秒>/`，里面多一个 `deleted_at`（同会话的写法）；核心起来时和会话一起清，
+//! `trash/personas/<编号>.<删的时刻，毫秒>/`，里面多一个 `deleted_at`（同会话的写法）；核心起来时和会话一起清，
 //! 删了满时限的真删（同会话，7 天）。同一个编号删几次各是各的。挪是一次改名：要么挪了、要么没挪。
 
 use std::fs::{self, File};
@@ -7,7 +7,6 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::time::Duration;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 
 use super::{DELETED_AT, deleted_at};
@@ -20,14 +19,8 @@ use crate::root::DataRoot;
 /// # Errors
 ///
 /// 目录不在；写不了 `deleted_at`；建不了回收处；改不了名；同步不了。
-pub fn discard(
-    root: &DataRoot,
-    account: &AccountId,
-    from: &Path,
-    id: &str,
-    at: Timestamp,
-) -> io::Result<()> {
-    let trash = root.trashed_personas(account);
+pub fn discard(root: &DataRoot, from: &Path, id: &str, at: Timestamp) -> io::Result<()> {
+    let trash = root.trashed_personas();
     let mut stamp = File::create(from.join(DELETED_AT))?;
     stamp.write_all(format!("{at}\n").as_bytes())?;
     stamp.sync_all()?;
@@ -55,14 +48,9 @@ pub struct Purged {
 /// # Errors
 ///
 /// 回收处读不了。
-pub fn purge(
-    root: &DataRoot,
-    account: &AccountId,
-    now: Timestamp,
-    keep: Duration,
-) -> io::Result<Purged> {
+pub fn purge(root: &DataRoot, now: Timestamp, keep: Duration) -> io::Result<Purged> {
     let mut purged = Purged::default();
-    let entries = match fs::read_dir(root.trashed_personas(account)) {
+    let entries = match fs::read_dir(root.trashed_personas()) {
         Ok(entries) => entries,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(purged),
         Err(error) => return Err(error),

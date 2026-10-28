@@ -33,10 +33,10 @@ async fn logging_in_never_writes_a_token_a_code_or_a_verifier() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let core = configured(&home, &Script::new([]));
     let _watching = core.watch_config().expect("监视得了");
     core.start_extensions();
@@ -107,7 +107,7 @@ async fn logging_in_never_writes_a_token_a_code_or_a_verifier() {
         );
     }
     let journal =
-        std::fs::read_to_string(home.root.path().join("system/journal.jsonl")).unwrap_or_default();
+        std::fs::read_to_string(home.root.path().join("journal.jsonl")).unwrap_or_default();
     for secret in &secrets {
         assert!(!journal.contains(secret.as_str()), "系统日志里有 {secret}");
     }

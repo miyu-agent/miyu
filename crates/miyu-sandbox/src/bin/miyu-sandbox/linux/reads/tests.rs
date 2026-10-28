@@ -12,7 +12,7 @@ impl Tree {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir =
             std::env::temp_dir().join(format!("miyu-sandbox-reads-{}-{n}", std::process::id()));
-        fs::create_dir_all(dir.join("data/home/admin/workspace")).expect("建得了目录");
+        fs::create_dir_all(dir.join("data/workspace")).expect("建得了目录");
         fs::create_dir_all(dir.join("other")).expect("建得了目录");
         fs::write(dir.join("note.txt"), b"note").expect("写得进");
         fs::write(dir.join("data/token"), b"secret").expect("写得进");

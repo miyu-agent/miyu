@@ -16,7 +16,7 @@ use miyu_log::{LevelFilter, Memory};
 use miyu_session::Handle;
 use miyu_store::blob::Blobs;
 use support::routing::{configs, hellos, routes};
-use support::{Home, alice_account, ask, stop, until_turn_ends, watch};
+use support::{Home, ask, stop, until_turn_ends, watch};
 
 /// 只发一张图，等这一轮说完。
 async fn show(handle: &Handle, blob: &ContentHash) {
@@ -58,7 +58,7 @@ async fn a_failed_description_writes_a_line_and_a_good_one_does_not() {
     };
     let routes = routes(serde_json::json!({}), Duration::from_secs(60));
     let mut home = Home::new();
-    let blob = Blobs::new(home.root.blobs(&alice_account()))
+    let blob = Blobs::new(home.root.blobs())
         .put(b"miyu")
         .expect("存得进去");
     home.configs = configs(&source(""), &[]);

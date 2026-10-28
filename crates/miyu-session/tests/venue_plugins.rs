@@ -53,7 +53,7 @@ fn created(home: &Home, handle: &Handle) -> Snapshot {
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话：{:?}", log[0]);
     };
-    let bytes = Blobs::new(home.root.blobs(&alice_account()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&created.policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂")

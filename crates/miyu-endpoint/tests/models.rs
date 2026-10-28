@@ -110,10 +110,7 @@ pub(super) fn model<'a>(provider: &'a Value, name: &str) -> &'a Value {
 #[tokio::test]
 async fn the_list_has_providers_models_facts_and_states() {
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        &config("https://relay.example.invalid/v1"),
-    );
+    home.write("config.toml", &config("https://relay.example.invalid/v1"));
     let reply = list(&home, &[("DEEPSEEK_API_KEY", "sk-1")], data(), json!({})).await;
     let result = &reply["result"];
     assert!(result.is_object(), "{reply}");
@@ -208,7 +205,7 @@ async fn the_list_has_providers_models_facts_and_states() {
     assert_eq!(sonnet["state"], "no_key");
     assert_eq!(
         sonnet["facts"]["window"],
-        json!({"value": 100_000, "from": "config", "file": "system/config.toml", "line": 12, "layer": "system"})
+        json!({"value": 100_000, "from": "config", "file": "config.toml", "line": 12, "layer": "system"})
     );
     assert_eq!(sonnet["facts"]["price"]["from"], "catalog");
     assert_eq!(
@@ -218,7 +215,7 @@ async fn the_list_has_providers_models_facts_and_states() {
     assert_eq!(sonnet["facts"]["price"]["layer"], 3);
     assert_eq!(
         sonnet["facts"]["multiplier"],
-        json!({"value": 0.5, "from": "config", "file": "system/config.toml", "line": 8, "layer": "system"})
+        json!({"value": 0.5, "from": "config", "file": "config.toml", "line": 8, "layer": "system"})
     );
     // 手写指定的条目不存在：标出来，不借目录。
     let x = model(newapi, "x");
@@ -232,10 +229,7 @@ async fn the_list_has_providers_models_facts_and_states() {
 #[tokio::test]
 async fn one_provider_or_an_unknown_one() {
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        &config("https://relay.example.invalid/v1"),
-    );
+    home.write("config.toml", &config("https://relay.example.invalid/v1"));
     let reply = list(
         &home,
         &[],
@@ -265,7 +259,7 @@ async fn the_provider_list_is_fetched_now_or_in_the_background() {
     let reply = || Reply::stream(vec![Piece::Bytes(page.as_bytes().to_vec())]);
     let server = Server::start(vec![reply(), reply()]).await;
     let home = Home::new();
-    home.write("system/config.toml", &config(&server.base_url));
+    home.write("config.toml", &config(&server.base_url));
     let env = [("NEWAPI_KEY", "sk-relay")];
     let shared = data();
     let answer = list(
@@ -323,7 +317,7 @@ async fn the_provider_list_is_fetched_now_or_in_the_background() {
 async fn an_env_based_address_never_leaves_model_list_or_config_get() {
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.relay]\ndriver = \"openai-chat\"\nbase_url = { env = \"RELAY_URL\" }\n\n[models]\nchat = \"relay/m\"\n",
     );
     let secret_address = "https://secret-relay.example.invalid/v1";
@@ -367,7 +361,7 @@ async fn fetching_the_provider_list_resolves_an_env_based_address() {
     .await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         "[providers.relay]\ndriver = \"openai-chat\"\nbase_url = { env = \"RELAY_URL\" }\n\n[models]\nchat = \"relay/m\"\n",
     );
     let reply = list(
@@ -395,10 +389,7 @@ async fn cooling_shows_on_models_and_the_key() {
     use miyu_models::cooldown::Candidate;
 
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        &config("https://relay.example.invalid/v1"),
-    );
+    home.write("config.toml", &config("https://relay.example.invalid/v1"));
     let data = data();
     let now = wall_now();
     let fail = |model: &str, class: ErrorClass| {

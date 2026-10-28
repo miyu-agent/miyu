@@ -110,10 +110,10 @@ impl Home {
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
         // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
-        miyu_session::testkit::install_sample_persona(&root, &alice_account());
+        miyu_session::testkit::install_sample_persona(&root);
         let home = scratch.0.join("home");
         std::fs::create_dir_all(&home).expect("建得了假的家");
-        let (index, _) = SessionIndex::open(&root.index(&alice_account()).join(FILE));
+        let (index, _) = SessionIndex::open(&root.index().join(FILE));
         let (usage, _) = UsageIndex::open(&root);
         let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
         let memory = Memory::new(
@@ -361,13 +361,13 @@ impl Home {
 
     /// 磁盘上会话 `session` 的日志，照先后。
     pub fn log(&self, session: &SessionId) -> Vec<Event> {
-        let dir = self.root.session_dir(&alice_account(), session);
+        let dir = self.root.session_dir(session);
         read_events(&dir).expect("日志读得出")
     }
 
     /// 会话 `session` 日志的只读入口，照它磁盘上真实的目录（施工 C-4：`history` 读别的会话时会话表交出的）。
     pub fn read_log(&self, session: &SessionId) -> Log {
-        Log::new(LogDir(self.root.session_dir(&alice_account(), session)))
+        Log::new(LogDir(self.root.session_dir(session)))
     }
 }
 

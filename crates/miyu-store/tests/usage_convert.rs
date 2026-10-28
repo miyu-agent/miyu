@@ -38,7 +38,7 @@ impl RateSource for Rates {
 /// 一个主会话：10 月 1 日美元 0.25、人民币 1.5，10 月 2 日美元 1。
 fn spent(root: &miyu_store::root::DataRoot, index: &UsageIndex) {
     let id = session(1);
-    let mut log = write_log(&root.session_dir(&admin(), &id), &[]);
+    let mut log = write_log(&root.session_dir(&id), &[]);
     let events = [
         created(at(0), None),
         called(2, at(2), "m", Some([1, 0, 0, 1]), &cost("0.25", "USD"), ""),
@@ -100,7 +100,7 @@ fn bench_conversion_with_cached_rates() {
     let (index, _) = UsageIndex::open(&root);
     index.rates().install(Arc::new(Rates));
     let id = session(1);
-    let mut log = write_log(&root.session_dir(&admin(), &id), &[]);
+    let mut log = write_log(&root.session_dir(&id), &[]);
     let mut events = vec![created(at(0), None)];
     for n in 0..5000u64 {
         let minutes = i64::try_from(n).expect("放得下") * 8;

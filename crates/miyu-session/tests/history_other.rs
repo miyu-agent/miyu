@@ -66,7 +66,7 @@ impl SessionPort for Table {
 
     /// 只算出会话 `session` 的真实目录（施工 C-4），和生产里的会话表一样不读盘、不载入它。
     fn read_log(&self, session: SessionId) -> Pending<'_, Result<Log, String>> {
-        let dir = self.root.session_dir(&alice_account(), &session);
+        let dir = self.root.session_dir(&session);
         Box::pin(async move { Ok(Log::new(LogDir(dir))) })
     }
 

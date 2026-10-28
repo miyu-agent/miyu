@@ -120,8 +120,7 @@ pub(crate) fn home(core: &Core) -> Option<PathBuf> {
 /// 属主（施工 O-4 下）。人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。账号的工作区本身换成会话 `handle` 自己的默认
 /// 工作区（施工 5-14 中：网页的「默认工作区」交的是它）。
 pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked, Refusal> {
-    let owner = handle.owner();
-    if let Some(picked) = to_default(core, owner, cwd, handle.default_workspace()) {
+    if let Some(picked) = to_default(core, cwd, handle.default_workspace()) {
         return Ok(picked);
     }
     let home = home(core);
@@ -131,13 +130,13 @@ pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked,
     if !meta.is_dir() {
         return Err(Refusal::NOT_A_DIRECTORY);
     }
-    let (data_root, own) = roots(core, owner);
+    let (data_root, own) = roots(core);
     if real.starts_with(&data_root) && !real.starts_with(&own) {
         return Err(Refusal::PATH_FORBIDDEN);
     }
     Ok(Picked {
         cwd: cwd.to_string(),
-        wide: wide(core, owner, &real),
+        wide: wide(core, &real),
         broad: miyu_fs::broad(&real, home.as_deref(), &data_root, &own),
     })
 }

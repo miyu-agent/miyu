@@ -2,7 +2,7 @@
 //! 里面一份 `SKILL.md`（开头照公开的 Agent Skills 格式，`miyu_policy::skill`）。从两处找：
 //!
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；
-//! - 本机自己放的 `home/<账号>/skills/<名字>/SKILL.md`；
+//! - 本机自己放的 `skills/<名字>/SKILL.md`；
 //! - 别家共用的 `~/.agents/skills/<名字>/SKILL.md`（施工 PT-2 中，agentskills.io 的约定：Codex、opencode 这些装的技能放这里）。
 //!
 //! 同名的自己放的赢、别家共用的排最后；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
@@ -12,7 +12,6 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::skill::{self, SkillHead};
 
 use crate::links::{self, Fence, Kind};
@@ -65,20 +64,16 @@ impl Skipped {
     }
 }
 
-/// 账号 `account` 自己放技能的文件夹：`home/<账号>/skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
-pub fn own_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
-    root.account_dir(account).join("skills")
+/// 账号 `account` 自己放技能的文件夹：`skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
+pub fn own_dir(root: &DataRoot) -> PathBuf {
+    root.path().join("skills")
 }
 
 /// 找技能：数据根 `root` 里账号 `account` 自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的。照名字排。
-pub fn find(
-    packages: &[Found],
-    root: &DataRoot,
-    account: &AccountId,
-) -> (Vec<Skill>, Vec<Skipped>) {
+pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Skill>, Vec<Skipped>) {
     let mut skills: Vec<Skill> = Vec::new();
     let mut skipped = Vec::new();
-    let own = own_dir(root, account);
+    let own = own_dir(root);
     // 自己放的盖过包里的，包里的盖过别家共用目录里的：先到的赢。
     let mut places: Vec<(PathBuf, Option<String>, bool)> = vec![(own, None, false)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
@@ -96,7 +91,7 @@ pub fn find(
         root.shared_skills()
             .map(|dir| (dir.to_path_buf(), None, true)),
     );
-    let fence = Fence::of(root, account);
+    let fence = Fence::of(root);
     for (place, package, shared) in places {
         let (entries, unlisted) = links::list(&place, Kind::Dir, &fence, |_| true);
         skipped.extend(unlisted);

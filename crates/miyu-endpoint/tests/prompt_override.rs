@@ -1,4 +1,4 @@
-//! 提示词的同名覆盖（施工 OV-1 中）：`home/<账号>/prompts/<路径>` 压着出厂的（施工 SU-3 下：系统区那一层拿掉），开会话拼 system
+//! 提示词的同名覆盖（施工 OV-1 中）：`prompts/<路径>` 压着出厂的（施工 SU-3 下：系统区那一层拿掉），开会话拼 system
 //! 时照它；占位不对、不是英文的照出厂的，`check` 报。
 
 use serde_json::json;
@@ -20,7 +20,7 @@ fn system(home: &Home, session: &str) -> String {
             _ => None,
         })
         .expect("有快照");
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂").system
@@ -30,13 +30,10 @@ fn system(home: &Home, session: &str) -> String {
 async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
     let home = Home::new();
     home.write(
-        "home/alice/prompts/core/local-paths-rule.txt",
+        "prompts/core/local-paths-rule.txt",
         "Always write absolute paths for local files.\n",
     );
-    home.write(
-        "home/alice/prompts/core/agent-version.txt",
-        "No placeholder here.\n",
-    );
+    home.write("prompts/core/agent-version.txt", "No placeholder here.\n");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let session = client.create("c1", "~").await;
@@ -79,7 +76,7 @@ pub(crate) fn latest_system(home: &Home, session: &str) -> String {
         })
         .next_back()
         .expect("有快照");
-    let bytes = Blobs::new(home.root.blobs(&alice()))
+    let bytes = Blobs::new(home.root.blobs())
         .get(&policy)
         .expect("快照在 blob 里");
     Snapshot::from_bytes(&bytes).expect("读得懂").system
@@ -89,10 +86,7 @@ pub(crate) fn latest_system(home: &Home, session: &str) -> String {
 #[tokio::test]
 async fn a_loaded_session_rebuilds_with_the_owner_s_overrides() {
     let home = Home::new();
-    home.write(
-        "home/alice/presets/p.toml",
-        "[preset]\nname = { en = \"P\" }\n",
-    );
+    home.write("presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
     let session = {
         let mut client = Client::connect(home.core(&Script::new([])));
         client.hello().await;
@@ -102,13 +96,10 @@ async fn a_loaded_session_rebuilds_with_the_owner_s_overrides() {
     };
     assert!(!latest_system(&home, &session).contains("Mine about local paths."));
     home.write(
-        "home/alice/prompts/core/local-paths-rule.txt",
+        "prompts/core/local-paths-rule.txt",
         "Mine about local paths.\n",
     );
-    home.write(
-        "home/alice/presets/p.toml",
-        "[preset]\nname = { en = \"P2\" }\n",
-    );
+    home.write("presets/p.toml", "[preset]\nname = { en = \"P2\" }\n");
     let mut client =
         Client::connect(home.core(&Script::new([miyu_session::testkit::Play::Says("嗯。")])));
     client.hello().await;

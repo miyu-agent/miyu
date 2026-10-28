@@ -88,18 +88,9 @@ fn requests(home: &Home, session: &str) -> Vec<Value> {
         .collect()
 }
 
-/// 装进了系统那一层（施工 SU-1：会话属主是主人，装的就是全机的）；主人自己那一层一直不动。
+/// 装进了数据根的 `packages/`（施工 SU-5 上：只有这一层）。
 fn installed(home: &Home, id: &str) -> bool {
-    assert!(
-        !home
-            .root
-            .path()
-            .join("home/alice/packages")
-            .join(id)
-            .exists(),
-        "自己那一层不动"
-    );
-    home.root.path().join("system/packages").join(id).exists()
+    home.root.path().join("packages").join(id).exists()
 }
 
 #[tokio::test]
@@ -199,11 +190,11 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
 async fn a_name_clash_tells_her_what_and_where() {
     let home = Home::new();
     home.write(
-        "system/packages/zkit/package.toml",
+        "packages/zkit/package.toml",
         "[package]\nname = { en = \"Z\" }\n",
     );
     home.write(
-        "system/packages/zkit/skills/notes/SKILL.md",
+        "packages/zkit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let folder = kit(&home, "akit");

@@ -93,7 +93,7 @@ async fn configuring(client: &mut Client, id: &str, params: Value) -> (Vec<Value
 #[tokio::test]
 async fn session_configure_refuses_an_effort_parameter() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -114,7 +114,7 @@ async fn session_configure_refuses_an_effort_parameter() {
 #[tokio::test]
 async fn session_configure_requires_a_model() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -141,7 +141,7 @@ async fn session_configure_requires_a_model() {
 #[tokio::test]
 async fn subscribe_says_which_config_layer_the_next_effort_comes_from() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, true));
     client.hello().await;
     for (n, model, wanted) in [
@@ -173,7 +173,7 @@ async fn subscribe_says_which_config_layer_the_next_effort_comes_from() {
 #[tokio::test]
 async fn model_list_shows_the_default_effort_and_its_full_config_key() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let reply = client.call("l", "model.list", json!({})).await;
@@ -195,7 +195,7 @@ async fn model_list_shows_the_default_effort_and_its_full_config_key() {
     assert_eq!(
         facts("m")["effort"],
         json!({
-            "value": "low", "from": "config", "file": "system/config.toml", "line": line,
+            "value": "low", "from": "config", "file": "config.toml", "line": line,
             "layer": "system", "key": "providers.a.models.m.effort",
         })
     );
@@ -216,7 +216,7 @@ async fn the_key_quotes_a_model_name_with_dots() {
     let home = Home::new();
     let config = "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"https://dev.invalid\"\n\n\
         [providers.dev.models.\"deepseek-v4.1-flash\"]\nreasoning = [\"low\", \"high\"]\n";
-    home.write("system/config.toml", config);
+    home.write("config.toml", config);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let reply = client.call("l", "model.list", json!({})).await;
@@ -236,7 +236,7 @@ async fn the_key_quotes_a_model_name_with_dots() {
 #[tokio::test]
 async fn a_default_effort_the_model_does_not_have_is_reported() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     let hello = client.hello().await;
     assert_eq!(hello["result"]["config_errors"], 1, "{hello}");

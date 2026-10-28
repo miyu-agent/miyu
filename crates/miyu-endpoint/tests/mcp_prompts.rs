@@ -214,7 +214,7 @@ async fn a_prompt_that_never_answers_is_unavailable() {
 async fn a_preset_turning_the_service_off_turns_its_prompts_off() {
     let home = Home::new();
     home.write(
-        "home/alice/presets/quiet.toml",
+        "presets/quiet.toml",
         "[preset]\nname = \"安静\"\n\n[features]\nmcp-probe = false\n",
     );
     let (core, mut client) = running(&home, &Script::new([])).await;

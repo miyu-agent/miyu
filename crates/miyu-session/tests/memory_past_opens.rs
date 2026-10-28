@@ -88,7 +88,6 @@ async fn a_lane_found_in_another_session_has_no_id() {
     let lane = new_id(now());
     miyu_session::fork(Fork {
         root: &home.root,
-        owner: &alice_account(),
         parent: parent.id(),
         id: lane.clone(),
         cause: CommandId::parse("f1").expect("合写法"),

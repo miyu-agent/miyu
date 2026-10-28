@@ -78,18 +78,12 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
     };
     said(&home, venue, "群里说的团子").await;
     // 一个读不了的会话：目录在、日志是坏的。跳过它，别的照补（最后造的：会话照新的在前列，它排在最前，读到它不该停下）。
-    let broken = home
-        .root
-        .session_dir(&alice_account(), &miyu_session::new_id(now()));
+    let broken = home.root.session_dir(&miyu_session::new_id(now()));
     std::fs::create_dir_all(&broken).expect("建得了");
     std::fs::write(broken.join("000000000001.jsonl"), "不是事件\n也不是\n").expect("写得进");
 
     assert!(
-        !home
-            .root
-            .index(&alice_account())
-            .join("recall/turns-engineer.db")
-            .exists(),
+        !home.root.index().join("recall/turns-engineer.db").exists(),
         "以前的版本造的会话：回合库还没有"
     );
     let memory = Memory::new(&home.root, None);
@@ -130,10 +124,7 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
 async fn a_rebuilt_persona_index_is_filled_too() {
     let home = Home::new();
     let cat = said(&home, Lines::default(), "我养了一只猫").await;
-    let path = home
-        .root
-        .index(&alice_account())
-        .join("recall/turns-engineer.db");
+    let path = home.root.index().join("recall/turns-engineer.db");
     std::fs::create_dir_all(path.parent().expect("有上一级")).expect("建得了");
     std::fs::write(&path, "这不是一个库").expect("写得进");
     let memory = Memory::new(&home.root, None);

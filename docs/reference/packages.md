@@ -27,7 +27,7 @@
 
 **谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
-**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `system/packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
+**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
 
 ## `package.list`
 
@@ -194,7 +194,7 @@
 
 ## `mcp.list`、`mcp.restart`、`mcp.set`、`mcp.remove`
 
-系统配置（`system/config.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改系统配置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
+系统配置（`config.toml` 的 `[mcp.<名字>]`）里的 MCP 服务。手改系统配置、用 `mcp.set`、`mcp.remove` 改，都当场生效：新写的起，改了的停下再起，删掉的停下。
 
 **`mcp.list`**：没有参数。回应 `{"servers": [...]}`：`name`、`command`（网址的服务没有这一格，是 `url`）、`venues`、`state`、`failures`，在跑的 `pid`（网址的服务没有），在等的 `retry_in`，停下的 `reason`、`stderr`，盖住了哪些包里同名服务的 `covers`。知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名（`mcp__<服务名>__<工具名>`），起好列完的、照目录缓存先登记的都算；声明了资源的另有 `mcp__<服务名>__list_resources`、`mcp__<服务名>__read_resource` 两件（施工 X-41）；还不知道的（没起过、没缓存）没有这一格。这一次列出来却没登记的带 `skipped: [{"tool", "why"}]`（提示词是 `{"prompt", "why"}`），照原名排：`tool` 是服务那边的原名（没写名字的是空的），`why` 是 `name`（没写名字）、`parameters`（参数格式不是对象）、`name_taken`（截到 64 个字以后撞了，或者别的工具已经叫这个）；都登记上了的、照目录缓存先登记还没列过的没有这一格，`miyu check` 照它报 `mcp_tool_skipped`。`on` 是这个服务的全局开关（`features.mcp-<服务名>`，见 `feature.set`），没写的是 `true`。浏览器登录过的（存着 `mcp.login` 换来的令牌）带 `logged_in: true`，没登录的、`mcp.logout` 以后的没有这一格（施工 X-42 下再补）：头照它把「登录」换成「登出」；只看存没存着，令牌不经协议交出去。编辑时要先填上原来写的：`env`（值是字，或者 `{"secret": …}`、`{"env": …}`；没写的没有这一格）、`timeout_ms`（不是默认的才带），网址的服务另有 `bearer`、`headers`（写法同 `env`）。这几格的字照原样给（本来就明文写在系统配置里），头显示时遮住，编辑框里再给全；要藏的值该写成密钥的引用；`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`，`need_load` 改用 `tool.set_loading`。
 
@@ -246,7 +246,7 @@
 |---|---|
 | `name` | 技能名 |
 | `display_name`、`summary` | 给人看的名字、一句说明，照连接的语言挑（这种语言没写的照英文、中文、日文的先后）；都没写的没有这一格 |
-| `from` | 从哪来：`home`（管理员自己放的，`home/admin/skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（别家共用的 `~/.agents/skills/` 里的，Codex 这些别的客户端也认这个目录） |
+| `from` | 从哪来：`home`（管理员自己放的，`skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（别家共用的 `~/.agents/skills/` 里的，Codex 这些别的客户端也认这个目录） |
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
 | `on` | 全局开关（`features.skill-<名字>`，见 `feature.set`）：没写的是 `true` |
@@ -254,7 +254,7 @@
 
 ## `skill.remove`
 
-**参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删管理员自己放的（`from` 是 `home`，`home/admin/skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
+**参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删管理员自己放的（`from` 是 `home`，`skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
 
 **出错**：没写名字、名字重复：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`；别家共用目录里的：`skill_shared`（三种都带 `data.name`，几个名字里有一个不行就一个都不删）。挪不进回收站：`trash_failed`。
 
@@ -266,7 +266,7 @@
 |---|---|
 | `tool` | 工具名 |
 | `display_name`、`description` | 给人看的名字、一句说明（脚本开头的 `Display name`、`显示名称`、`描述`），照连接的语言挑，挑法同 `skill.list`；都没写的没有这一格 |
-| `from`、`package` | 同 `skill.list`：`home` 是管理员自己放的（`home/admin/scripts/`） |
+| `from`、`package` | 同 `skill.list`：`home` 是管理员自己放的（`scripts/`） |
 | `path` | 脚本文件在哪，写法同 `skill.list` |
 | `timeout` | 一次等多少秒 |
 | `on` | 全局开关（`features.script-<工具名>`）：没写的是 `true` |
@@ -323,7 +323,7 @@
 | `/clear-memory`（`/reset-memory`） | 清掉这个会话记下的记忆 |
 | `/goal` 系列 | 看、设、停、继续、改、清掉长期目标 |
 
-不是这些的，依次照这几处找：自己放的命令模板（`home/admin/commands/<名字>.md`）、扩展声明的命令（核心转给扩展，`command.call`）、包带的命令模板。模板展开成一句话，当这个人说的发出去：回应的 `events` 是那一句，`said` 是空的。
+不是这些的，依次照这几处找：自己放的命令模板（`commands/<名字>.md`）、扩展声明的命令（核心转给扩展，`command.call`）、包带的命令模板。模板展开成一句话，当这个人说的发出去：回应的 `events` 是那一句，`said` 是空的。
 
 名字是 `<服务名>:<提示词名>`（恰好一个 `:`）的是 MCP 服务的提示词：核心照 `prompts/get` 去取，人跟的字照空白切开（成对的英文双引号中间算一个，引号去掉）、照提示词声明的参数先后对上，最后一个参数拿剩下的整段；取回来的字、图并成这个人说的一句发出去，同模板。只在本机的会话里认，跟着服务的功能 `mcp-<服务名>` 开关。
 

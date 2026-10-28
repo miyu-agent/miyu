@@ -1,5 +1,5 @@
 //! 监视记的运行日志（施工 8-4，`docs/blueprint/config.md`「出错」）：手改被看到的记 `INFO config changed`（`via=file`，
-//! 只有键名）；监视起不来记 `WARN config watch unavailable`，退回轮询，照旧看得到手改（Linux 上拿掉家目录让 inotify
+//! 只有键名）；监视起不来记 `WARN config watch unavailable`，退回轮询，照旧看得到手改（Linux 上让数据根读不了，inotify
 //! 拒绝）。
 //!
 //! 全局装一个写进内存的订阅者：监视在它自己的线程上。全局的一个进程只能装一次，所以这个文件单独一个测试程序，只有一个测试。
@@ -22,7 +22,7 @@ async fn edit_and_wait(home: &Home, core: &Arc<miyu_endpoint::Core>) {
     client
         .call("s1", "subscribe", json!({"stream": "config"}))
         .await;
-    home.write("system/config.toml", "[log]\nlevel = \"debug\"\n");
+    home.write("config.toml", "[log]\nlevel = \"debug\"\n");
     let next = client.next().await.expect("推了");
     assert_eq!(next["params"]["via"], "file", "{next}");
 }
@@ -39,7 +39,6 @@ async fn a_hand_edit_and_an_unavailable_watch_are_logged() {
     let has = |what: &str| memory.lines().iter().any(|line| line.contains(what));
 
     let home = Home::new();
-    home.root.prepare_home(&alice()).expect("建得了家目录");
     let core = home.core_configured(&Script::new([]), None, &[]);
     let watching = core.watch_config().expect("监视得了");
     assert_eq!(watching.unavailable(), None);
@@ -52,13 +51,16 @@ async fn a_hand_edit_and_an_unavailable_watch_are_logged() {
     assert!(!has("config watch unavailable"), "{:?}", memory.lines());
 
     if cfg!(target_os = "linux") {
+        use std::os::unix::fs::PermissionsExt;
         let home = Home::new();
-        // 没有家目录（会话列表的索引用到时才开，施工 Y-12 中上：核心起来不替谁建它）：看不了它，inotify 拒绝。测试的数据根
-        // 先装了样本人格（施工 SU-3 下装进家目录），这里拿掉。
-        std::fs::remove_dir_all(home.root.account_dir(&alice())).expect("删得掉");
         let core = home.core_configured(&Script::new([]), None, &[]);
-        assert!(!home.root.account_dir(&alice()).exists());
-        let watching = core.watch_config().expect("退回轮询，照样监视");
+        // 数据根读不了（施工 SU-5 上：原来拿掉家目录，现在配置都在数据根下）：inotify 拒绝。
+        let root = home.root.path();
+        let mode = |bits| std::fs::Permissions::from_mode(bits);
+        std::fs::set_permissions(root, mode(0o000)).expect("改得了");
+        let watching = core.watch_config();
+        std::fs::set_permissions(root, mode(0o700)).expect("改得回来");
+        let watching = watching.expect("退回轮询，照样监视");
         assert!(watching.unavailable().is_some());
         assert!(
             has("WARN  config   config watch unavailable error="),

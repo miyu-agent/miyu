@@ -53,7 +53,7 @@ impl Knowledge {
 
     /// 照文件补库 `id`，交回补完的样子（[`Caught`]）。
     pub(super) fn caught(&self, account: &AccountId, id: &str) -> Result<Caught, KnowledgeError> {
-        let dir = self.documents(account, id)?.usable()?;
+        let dir = self.documents(id)?.usable()?;
         let shelf = self.shelf(account, id);
         let _only_one = shelf
             .catching_up
@@ -181,9 +181,9 @@ impl Knowledge {
         id: &str,
         unavailable: Option<String>,
     ) -> Result<Base, KnowledgeError> {
-        let place = self.place(account, id)?;
+        let place = self.place(id)?;
         let (about, error) = about(place.dir());
-        let switched = self.switched(account, id, &place);
+        let switched = self.switched(id, &place);
         let shelf = self.shelf(account, id);
         let keys = shelf.index.keys()?;
         Ok(Base {

@@ -76,7 +76,7 @@ fn memory_stays_as_it_was_when_the_session_was_made() {
 #[test]
 fn roleplay_turned_on_brings_the_reminder_back() {
     let (_scratch, root, refresh) = setup("preset-roleplay", "[software]\nroleplay = false\n");
-    let prompts = root.path().join("home/alice/personas/miyu/prompts");
+    let prompts = root.path().join("personas/miyu/prompts");
     std::fs::write(prompts.join("reminders.md"), "Stay soft.\n").expect("写得进");
     write_preset(&root, "");
     let Seen::Swapped(snapshot, ..) = look_now(&refresh) else {

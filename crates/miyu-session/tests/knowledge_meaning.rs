@@ -73,8 +73,8 @@ fn search(query: &str) -> Play {
 }
 
 /// `account` 的知识库 `notes` 里放一篇。
-fn put(home: &Home, account: &AccountId, text: &str) {
-    let dir = home.root.account_dir(account).join("kb/notes");
+fn put(home: &Home, text: &str) {
+    let dir = home.root.path().join("kb/notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("cat.md"), text).expect("写得进");
 }
@@ -96,7 +96,7 @@ async fn a_chunk_is_found_by_meaning_once_its_vectors_are_filled() {
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
-    put(&home, &alice_account(), "团子的饭是鸡胸肉\n");
+    put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([
         search("猫吃什么"),
         Play::Says("没找到。"),
@@ -136,7 +136,7 @@ async fn keywords_still_find_it_the_first_time() {
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
-    put(&home, &alice_account(), "团子的饭是鸡胸肉\n");
+    put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([search("鸡胸肉"), Play::Says("找到了。")]);
     let handle = home
         .create_full(
@@ -156,7 +156,7 @@ async fn off_means_keywords_only_and_nobody_is_asked() {
     let mut home = Home::new();
     remote(&mut home, &server);
     home.configs = crate::support::routing::configs("[models]\nembedding = \"off\"\n", &[]);
-    put(&home, &alice_account(), "团子的饭是鸡胸肉\n");
+    put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([
         search("猫吃什么"),
         Play::Says("没找到。"),
@@ -191,7 +191,7 @@ async fn a_failing_remote_still_finds_by_keywords() {
     let server = Server::start(vec![down; 20]).await;
     let mut home = Home::new();
     remote(&mut home, &server);
-    put(&home, &alice_account(), "团子的饭是鸡胸肉\n");
+    put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([search("鸡胸肉"), Play::Says("找到了。")]);
     let handle = home
         .create_full(
@@ -207,16 +207,12 @@ async fn a_failing_remote_still_finds_by_keywords() {
 }
 
 /// 账号 `account` 的账号日志里记了几笔用量。
-fn billed(home: &Home, account: &AccountId) -> usize {
-    std::fs::read_to_string(
-        home.root
-            .account_dir(account)
-            .join(miyu_store::journal::FILE),
-    )
-    .unwrap_or_default()
-    .lines()
-    .filter(|line| line.contains(r#""kind":"usage.oneshot""#))
-    .count()
+fn billed(home: &Home) -> usize {
+    std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
+        .unwrap_or_default()
+        .lines()
+        .filter(|line| line.contains(r#""kind":"usage.oneshot""#))
+        .count()
 }
 
 #[tokio::test]
@@ -226,7 +222,7 @@ async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
     let mut home = Home::new();
     remote(&mut home, &server);
     let admin = AccountId::parse("admin").expect("合写法");
-    put(&home, &admin, "团子的饭是鸡胸肉\n");
+    put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([
         search("猫吃什么"),
         Play::Says("没找到。"),
@@ -244,6 +240,5 @@ async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
     filled(&home, &admin).await;
     let second = last_result(&chat(&home, &handle, 2, "再找找").await);
     assert!(second.contains("团子的饭是鸡胸肉"), "{second}");
-    assert!(billed(&home, &alice_account()) > 0, "记在属主名下");
-    assert_eq!(billed(&home, &admin), 0);
+    assert!(billed(&home) > 0, "记在主人名下");
 }

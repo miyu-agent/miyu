@@ -11,7 +11,6 @@ use std::process::ExitCode;
 
 use clap::Args;
 
-use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
 use miyu_store::packages::{Packages, locate};
 use miyu_store::resources::ResourceRoot;
@@ -66,9 +65,9 @@ impl Web {
 }
 
 /// 跑一次 `miyu web`：照管理员 `admin` 那两层的清单找网页软件。
-pub fn web(args: Web, admin: &AccountId) -> ExitCode {
+pub fn web(args: Web) -> ExitCode {
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
-    let (program, dir) = program(&Env::current(), admin);
+    let (program, dir) = program(&Env::current());
     ExitCode::from(web_on(
         &args,
         &main,
@@ -80,12 +79,12 @@ pub fn web(args: Web, admin: &AccountId) -> ExitCode {
 }
 
 /// 网页软件的程序名和包文件夹：两层清单里子命令是 `web` 的那一份的（施工 9-3）；没有的照出厂的 [`PROGRAM`]，包文件夹是空的。
-fn program(env: &Env, admin: &AccountId) -> (String, PathBuf) {
+fn program(env: &Env) -> (String, PathBuf) {
     let fallback = || (PROGRAM.to_string(), PathBuf::new());
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
         return fallback();
     };
-    Packages::new(&resources, &root, admin)
+    Packages::new(&resources, &root)
         .read()
         .into_iter()
         .find_map(|found| {

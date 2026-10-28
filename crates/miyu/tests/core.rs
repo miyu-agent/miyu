@@ -28,7 +28,7 @@ async fn a_head_starts_the_core_and_talks_to_it() {
     assert_eq!(count(&log, "starting"), 1, "{log}");
     assert_eq!(count(&log, "stopped reason=idle"), 1, "空闲了自己走：{log}");
     assert!(
-        home.root.account_dir(&miyu_core::admin()).is_dir(),
+        home.root.path().to_path_buf().is_dir(),
         "建好了 admin 的家目录"
     );
 }
@@ -287,7 +287,7 @@ async fn the_core_does_not_hold_the_heads_directory() {
 #[tokio::test]
 async fn the_core_empties_week_old_sessions_from_the_trash_when_it_starts() {
     let home = Home::new();
-    let trash = home.root.trashed_sessions(&miyu_core::admin());
+    let trash = home.root.trashed_sessions();
     let (old, young) = (
         trash.join("01900000-0000-7000-8000-000000000001"),
         trash.join("01900000-0000-7000-8000-000000000002"),

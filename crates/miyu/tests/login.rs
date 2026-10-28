@@ -1,5 +1,5 @@
 //! 真核心上的 `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「守着它的」）：管道进来的 key 存进
-//! `system/secrets.toml`，`list` 两种格式里没有 key，`provider logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
+//! `secrets.toml`，`list` 两种格式里没有 key，`provider logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
 //! `--format` 不在 `list` 上、SU-3 起没有 `--system`、老写法 `miyu login` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
 //! 系统日志、屏幕上都搜不到 key。
 
@@ -111,7 +111,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
             "· 换掉了 deepseek 的 key\n".to_string()
         )
     );
-    let secrets = root.join("system").join("secrets.toml");
+    let secrets = root.join("secrets.toml");
     let written = std::fs::read_to_string(&secrets).expect("写了");
     assert!(
         written.ends_with(&format!("deepseek = \"{FAKE_2}\"\n")),
@@ -191,7 +191,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         "照 trace 记：{log}"
     );
     assert!(!log.contains("FAKE"), "运行日志里有 key：{log}");
-    let journal = std::fs::read_to_string(root.join("system").join("journal.jsonl")).expect("记了");
+    let journal = std::fs::read_to_string(root.join("journal.jsonl")).expect("记了");
     assert_eq!(journal.lines().count(), 3, "{journal}");
     assert!(!journal.contains("FAKE"), "{journal}");
 }
@@ -247,7 +247,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
             .await
             .expect("没 panic");
     assert_eq!(started.status.code(), Some(0), "{started:?}");
-    assert!(root.join("system").join("secrets.toml").exists());
+    assert!(root.join("secrets.toml").exists());
     home.kill_core().await;
     for (lang, language) in [("zh_CN.UTF-8", Language::Chinese), ("C", Language::English)] {
         for args in [
@@ -270,7 +270,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
 async fn config_check_reports_a_bad_secrets_file_without_its_values() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    let secrets = root.join("system").join("secrets.toml");
+    let secrets = root.join("secrets.toml");
     std::fs::write(
         &secrets,
         format!("ok = \"{FAKE}\"\nDeepSeek = \"{FAKE_2}\"\n"),

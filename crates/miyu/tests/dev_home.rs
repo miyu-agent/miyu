@@ -141,7 +141,7 @@ fn an_existing_config_or_a_foreign_directory_is_left_alone() {
     let home = Home::new();
     let vars = read(&[(BASE_URL, "https://a.invalid"), (MODEL, "m")]).expect("读得出");
     let path = make(home.root.path(), &vars).expect("造得出");
-    assert_eq!(path, home.root.system().join("config.toml"));
+    assert_eq!(path, home.root.path().join("config.toml"));
     let error = make(home.root.path(), &vars).expect_err("不盖");
     assert!(error.contains("已经有了"), "{error}");
     let foreign = home.dir.join("foreign");

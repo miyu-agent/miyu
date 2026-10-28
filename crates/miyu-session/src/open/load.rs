@@ -95,17 +95,17 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     } = setup;
     let span = actor::span(&id);
     let loading = Instant::now();
-    let dir = root.session_dir(&owner, &id);
+    let dir = root.session_dir(&id);
     // 会话日志的目录只交给主人本人的会话（施工 E-M，U25）：关不关照日志里记的（施工 SU-4 中），读完第一条才知道。
     let owner_log = dir.clone();
     let log_dir = LogDir(dir.clone());
-    let blobs = Blobs::new(root.blobs(&owner));
+    let blobs = Blobs::new(root.blobs());
     let store = blobs.clone();
     let (watching, shipped, stored) = (personas.clone(), resources.clone(), blobs.clone());
     let (table, jobs_dir) = (Arc::clone(jobs), dir.clone());
     let (owner_of, id_of) = (owner.clone(), id.clone());
     let place_resources = shipped.clone();
-    let (parents, parent_owner) = (root.clone(), owner.clone());
+    let parents = root.clone();
     let (
         log,
         (loaded, base, scan),
@@ -129,7 +129,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             loaded,
             scan,
             snapshotted,
-        } = stream::read(&dir, &id_of, &store, (&parents, &parent_owner))?;
+        } = stream::read(&dir, &id_of, &store, &parents)?;
         let read = began.elapsed().saturating_sub(snapshotted);
         let snapshotting = Instant::now();
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
@@ -237,7 +237,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         .any(|tool| tool.name == miyu_tool::SCHEDULE_WAKEUP);
     // 默认工作区用哪个会话的（施工 5-14）：照 `session.created` 记的，没记的用自己的。
     let default_workspace =
-        DefaultWorkspace::new(root, &owner, created.workspace_from.as_ref().unwrap_or(&id));
+        DefaultWorkspace::new(root, created.workspace_from.as_ref().unwrap_or(&id));
     let agents = sessions.map(|port| {
         Arc::new(Agents {
             port,
@@ -322,11 +322,10 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let watch = installed.clone().map(|installed| skills::Watch {
         installed,
         root: root.clone(),
-        owner: owner.clone(),
     });
     let (shelves_open, skill_names) = match installed {
         Some(installed) => {
-            let (root, owner) = (root.clone(), owner.clone());
+            let root = root.clone();
             let wanted = snapshot.preset.as_ref().map(|pin| pin.id.clone());
             let places = presets.clone();
             let values = config.current().resolved.values();
@@ -339,8 +338,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 let file = wanted
                     .zip(places)
                     .and_then(|(id, places)| places.file(&id, (images, site.as_str()), looked));
-                let found =
-                    skills::opened(skills::find(&installed(), &root, &owner), file.as_ref());
+                let found = skills::opened(skills::find(&installed(), &root), file.as_ref());
                 (skills::shelves(&found), skills::names(&found))
             })
             .await
@@ -355,9 +353,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, (&owner, &id), shipped.path())
+    .for_session(root, &id, shipped.path())
     .with_workplace(default_workspace.clone());
-    let ledger = crate::usage::Ledger::of(usage.as_ref(), &id, &owner);
+    let ledger = crate::usage::Ledger::of(usage.as_ref(), &id);
     // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
         Some(knowledge) => Some(
@@ -411,7 +409,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             memory: calls,
             knowledge: shelves.clone(),
             shelves: shelves_open,
-            attachments: miyu_store::attachments::dir(root, &owner, &id),
+            attachments: miyu_store::attachments::dir(root, &id),
             workplace: Some(default_workspace.clone()),
             names: skill_names,
             packages,
@@ -453,7 +451,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         knowledge: shelves,
         skills: watch,
         images,
-        projects: root.account_dir(&owner).join(miyu_store::projects::FILE),
+        projects: root.path().join(miyu_store::projects::FILE),
         room: room.clone(),
         plugins,
         frozen: fork_child,

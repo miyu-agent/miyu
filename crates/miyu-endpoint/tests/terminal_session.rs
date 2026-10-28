@@ -102,8 +102,8 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
     // 不在原处删索引：头一个核心还开着它，Windows 上删不掉开着的文件（CI run 39320472077）。
     let id = miyu_kernel::id::SessionId::parse(&session).expect("编号");
     let later = Home::new();
-    let from = home.root.session_dir(&alice(), &id);
-    let to = later.root.session_dir(&alice(), &id);
+    let from = home.root.session_dir(&id);
+    let to = later.root.session_dir(&id);
     std::fs::create_dir_all(&to).expect("建得了目录");
     for entry in std::fs::read_dir(&from).expect("有目录").flatten() {
         let path = entry.path();
@@ -112,11 +112,11 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
             std::fs::write(to.join(entry.file_name()), regex_lite_at(&text)).expect("写得进");
         }
     }
-    let pointer = home.root.account_dir(&alice()).join("terminal.json");
+    let pointer = home.root.path().join("terminal.json");
     // 指针上指过去的时刻也挪到那时（施工 8-33 三补）。
     let written = std::fs::read_to_string(&pointer).expect("记下了指针");
     std::fs::write(
-        later.root.account_dir(&alice()).join("terminal.json"),
+        later.root.path().join("terminal.json"),
         regex_lite_at(&written),
     )
     .expect("写得进");

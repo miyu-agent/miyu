@@ -76,7 +76,7 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
         Server::start(vec![said("好。")]).await,
     );
     let home = Home::new();
-    home.write("system/config.toml", &system(&first, &second));
+    home.write("config.toml", &system(&first, &second));
     let core = routed(&home, &[], data(profiles(json!({}))));
     core.start_retirement();
     let mut watcher = watching(&core).await;
@@ -93,7 +93,7 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
     assert_eq!(next["method"], "config.changed", "{next}");
     assert_eq!(next["params"]["by"], json!({"kind": "kernel"}), "{next}");
     assert_eq!(next["params"]["layer"], "system", "{next}");
-    let system = read(&home, "system/config.toml");
+    let system = read(&home, "config.toml");
     assert!(system.contains("[pools.p]\nmodels = [\"b/m\"]"), "{system}");
     assert!(
         system.contains("[pools.q]\nmodels = [\"b/m\"]"),
@@ -119,7 +119,7 @@ async fn a_member_still_listed_stays() {
         Server::start(Vec::new()).await,
     );
     let home = Home::new();
-    home.write("system/config.toml", &system(&first, &second));
+    home.write("config.toml", &system(&first, &second));
     let core = routed(&home, &[], data(profiles(json!({}))));
     core.start_retirement();
     let mut client = Client::connect(core.clone());
@@ -133,7 +133,7 @@ async fn a_member_still_listed_stays() {
     }
     // 拉到了、确认完了也不写：再等一会儿看配置没变。
     tokio::time::sleep(Duration::from_millis(300)).await;
-    let system = read(&home, "system/config.toml");
+    let system = read(&home, "config.toml");
     assert!(system.contains("models = [\"a/m\", \"b/m\"]"), "{system}");
 }
 

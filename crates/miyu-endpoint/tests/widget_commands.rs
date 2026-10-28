@@ -30,7 +30,7 @@ fn items(reply: &Value, name: &str) -> Vec<Value> {
 #[tokio::test]
 async fn the_menu_lists_a_page_command_with_where_it_opens() {
     let home = Home::new();
-    home.write("system/packages/wx/package.toml", WX);
+    home.write("packages/wx/package.toml", WX);
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let all = client.call("c1", "command.catalog", json!({})).await;
@@ -53,7 +53,7 @@ async fn the_menu_lists_a_page_command_with_where_it_opens() {
 #[tokio::test]
 async fn typing_it_only_tells_the_head_to_open_the_page() {
     let home = Home::new();
-    home.write("system/packages/wx/package.toml", WX);
+    home.write("packages/wx/package.toml", WX);
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let session = client.create("c1", "~").await;
@@ -76,8 +76,8 @@ async fn typing_it_only_tells_the_head_to_open_the_page() {
 #[tokio::test]
 async fn ones_own_template_covers_it() {
     let home = Home::new();
-    home.write("system/packages/wx/package.toml", WX);
-    home.write("home/alice/commands/week.md", "Summarize my week.\n");
+    home.write("packages/wx/package.toml", WX);
+    home.write("commands/week.md", "Summarize my week.\n");
     let script = Script::new([Play::Says("好。")]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
@@ -104,7 +104,7 @@ async fn ones_own_template_covers_it() {
 async fn a_switched_off_extension_or_a_venue_does_not_know_it() {
     let home = Home::new();
     home.write(
-        "system/packages/wx/package.toml",
+        "packages/wx/package.toml",
         &WX.replace("start = \"always\"", "start = \"manual\""),
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -122,7 +122,7 @@ async fn a_switched_off_extension_or_a_venue_does_not_know_it() {
     assert_eq!(reason(&reply), Some("unknown_command"), "{reply}");
 
     let home = Home::new();
-    home.write("system/packages/wx/package.toml", WX);
+    home.write("packages/wx/package.toml", WX);
     let mut client = Client::connect(bound_core(&home, &Script::new([]), Catalog::default()));
     client.hello().await;
     let made = client

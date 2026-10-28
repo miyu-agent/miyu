@@ -193,13 +193,13 @@ async fn outside_the_working_directory_paths_are_absolute_and_the_data_root_is_s
 async fn a_workspace_inside_the_data_root_is_searched_all_the_way_down() {
     let site = Site::new();
     // 账号自己的工作区就在数据根里：照样往下走，和权限策略的先后一样；数据根别的地方照样不进。
-    site.file("data/home/admin/workspace/src/deep/a.rs", b"");
-    site.file("data/home/admin/workspace/b.rs", b"");
+    site.file("data/workspace/src/deep/a.rs", b"");
+    site.file("data/workspace/b.rs", b"");
     site.file("data/state/c.rs", b"");
-    site.aged("data/home/admin/workspace/b.rs", 100);
+    site.aged("data/workspace/b.rs", 100);
     assert_eq!(
         site.call_in(
-            "data/home/admin/workspace",
+            "data/workspace",
             "glob",
             serde_json::json!({"pattern": "*.rs"})
         )
@@ -209,7 +209,7 @@ async fn a_workspace_inside_the_data_root_is_searched_all_the_way_down() {
     let root = site.0.join("data").to_string_lossy().into_owned();
     let (error, text) = site
         .call_in(
-            "data/home/admin/workspace",
+            "data/workspace",
             "glob",
             serde_json::json!({"pattern": "*.rs", "path": root}),
         )

@@ -227,7 +227,7 @@ async fn a_stop_signal_records_background_commands_as_restarted_then_kills_them(
         miyu_kernel::id::SessionId::parse(&session).expect("合写法"),
     );
     held.on_kill(move || {
-        let dir = log_root.session_dir(&miyu_core::admin(), &id);
+        let dir = log_root.session_dir(&id);
         let log = miyu_store::log::read_events(&dir).unwrap_or_default();
         *seen.lock().expect("没 panic") = log.iter().any(|event| {
             matches!(&event.body, Body::JobReported(reported) if reported.reason == JobReason::Restarted)
@@ -307,7 +307,7 @@ fn the_idle_limit_comes_from_the_system_config_in_minutes() {
     let limit = |written: Option<&str>| {
         let home = Home::new();
         if let Some(text) = written {
-            let system = home.root.system();
+            let system = home.root.path().to_path_buf();
             std::fs::create_dir_all(&system).expect("建得了");
             std::fs::write(system.join("config.toml"), text).expect("写得进");
         }

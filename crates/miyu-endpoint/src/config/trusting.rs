@@ -123,7 +123,7 @@ fn done(config: &Config, cause: &CommandId, answer: &Answer<'_>) {
     };
     let by = By::Person(Person::new(config.places.account.clone()));
     journal::record(
-        &config.places.account_journal,
+        &config.places.journal,
         &config.places.shown(miyu_store::journal::FILE),
         crate::sessions::now(),
         by,

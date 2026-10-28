@@ -56,7 +56,7 @@ fn trust(yes: bool, no: bool) -> ConfigCommand {
 
 /// 系统配置在哪。
 fn config_file(home: &Home) -> PathBuf {
-    home.root.path().join("system").join("config.toml")
+    home.root.path().join("config.toml")
 }
 
 /// 系统配置旁边还有没有编辑时的副本。
@@ -239,7 +239,10 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
                             .to_string_lossy()
                             .into_owned()
                     })
-                    .filter(|name| !["packages", "personas"].contains(&name.as_str()))
+                    .filter(|name| {
+                        !["packages", "personas", "run", "state", ".miyu-root"]
+                            .contains(&name.as_str())
+                    })
                     .collect()
             })
             .unwrap_or_default();

@@ -1,4 +1,4 @@
-· 目录太宽（~），这次在 ~/.miyu/home/admin/workspace 里干活
+· 目录太宽（~），这次在 ~/.miyu/workspace 里干活
 
 先读一下笔记。
 

@@ -11,7 +11,6 @@ use crate::test_support::{Scratch, link};
 struct Site {
     scratch: Scratch,
     root: DataRoot,
-    admin: AccountId,
 }
 
 impl Site {
@@ -29,7 +28,6 @@ impl Site {
         };
         Site {
             root: DataRoot::locate(&env).unwrap(),
-            admin: AccountId::parse("admin").unwrap(),
             scratch,
         }
     }
@@ -53,7 +51,7 @@ impl Site {
     }
 
     fn fence(&self) -> Fence {
-        Fence::of(&self.root, &self.admin)
+        Fence::of(&self.root)
     }
 }
 
@@ -68,8 +66,8 @@ fn real(path: &Path) -> PathBuf {
 #[test]
 fn a_link_counts_as_what_it_points_to() {
     let site = Site::new();
-    let place = site.dir("data/home/admin/scripts");
-    site.file("data/home/admin/scripts/plain.py");
+    let place = site.dir("data/scripts");
+    site.file("data/scripts/plain.py");
     let file = site.file("elsewhere/tool.py");
     let dir = site.dir("elsewhere/notes");
     if !(link(&file, &place.join("tool.py")) && link(&dir, &place.join("notes"))) {
@@ -92,7 +90,7 @@ fn a_link_counts_as_what_it_points_to() {
 #[test]
 fn a_broken_or_looping_link_is_skipped_and_said_why() {
     let site = Site::new();
-    let place = site.dir("data/home/admin/skills");
+    let place = site.dir("data/skills");
     let (broken, looping) = (place.join("gone"), place.join("self"));
     if !(link(&site.at("nowhere"), &broken) && link(&looping, &looping)) {
         return;
@@ -121,10 +119,10 @@ fn a_broken_or_looping_link_is_skipped_and_said_why() {
 #[test]
 fn inside_the_data_root_only_this_accounts_own_folders_count() {
     let site = Site::new();
-    let place = site.dir("data/home/admin/scripts");
-    let own = site.file("data/home/admin/packages/kit/scripts/run.py");
-    let system = site.file("data/system/packages/kit/scripts/sys.py");
-    let secret = site.file("data/system/secrets.toml");
+    let place = site.dir("data/scripts");
+    let own = site.file("data/packages/kit/scripts/run.py");
+    let system = site.file("data/packages/kit/scripts/sys.py");
+    let secret = site.file("data/secrets.toml");
     let theirs = site.file("data/home/bob/scripts/theirs.py");
     let free = site.file("elsewhere/free.py");
     for (target, name) in [
@@ -165,9 +163,9 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
 fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
     let site = Site::new();
     site.dir("data/home/admin");
-    let token = site.file("data/system/keys/token");
-    let place = site.at("data/home/admin/scripts");
-    if !link(&site.at("data/system/keys"), &place) {
+    let token = site.file("data/keys/token");
+    let place = site.at("data/scripts");
+    if !link(&site.at("data/keys"), &place) {
         return;
     }
     let (found, skipped) = list(&place, Kind::File, &site.fence(), |_| true);
@@ -179,9 +177,9 @@ fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
 #[test]
 fn only_wanted_names_are_looked_at() {
     let site = Site::new();
-    let place = site.dir("data/home/admin/commands");
-    site.file("data/home/admin/commands/notes.md");
-    site.file("data/home/admin/commands/readme.txt");
+    let place = site.dir("data/commands");
+    site.file("data/commands/notes.md");
+    site.file("data/commands/readme.txt");
     if !link(&site.at("nowhere"), &place.join("gone.txt")) {
         return;
     }

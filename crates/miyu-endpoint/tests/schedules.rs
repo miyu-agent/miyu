@@ -229,7 +229,7 @@ async fn her_own_ones_follow_the_session_s_preset_and_people_s_do_not() {
     let hand = Hand::at(START);
     // 施工 J-2 起有了 `schedule` 包、在基础系统组里：会话用的预设单独关掉它，她建的不跑。
     home.write(
-        "home/alice/presets/quiet.toml",
+        "presets/quiet.toml",
         "[preset]\nname = { en = \"Quiet\" }\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nschedule = false\n",
     );
     let (core, mut client, _) = started(&home, &script, &hand).await;

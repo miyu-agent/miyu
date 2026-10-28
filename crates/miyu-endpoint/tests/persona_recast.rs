@@ -86,10 +86,7 @@ async fn recast(client: &mut Client, id: &str, session: &str, persona: Value) ->
 #[tokio::test]
 async fn a_session_switches_persona_after_a_compaction() {
     let home = Home::new();
-    home.write(
-        "home/alice/personas/miyu/prompts/persona.md",
-        "You are Miyu.\n",
-    );
+    home.write("personas/miyu/prompts/persona.md", "You are Miyu.\n");
     let script = Script::new([
         Play::Says("好。"),
         Play::Says("<analysis>a</analysis>\n<summary>\nThe user said hi.\n</summary>"),

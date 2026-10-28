@@ -18,8 +18,8 @@ pub(super) fn unsandboxed(core: &Core, words: &Human) -> Vec<Value> {
     let resolved = core.config_now().borrow().resolved().clone();
     let table = Unsandboxed::of(&resolved.values());
     let catalog = core.tools();
-    let confines = Confines::of(&core.root, (&core.admin, true), core.resources.path());
-    let file = shown(core, &core.root.system().join("config.toml"));
+    let confines = Confines::of(&core.root, true, core.resources.path());
+    let file = shown(core, &core.root.path().join("config.toml"));
     let warn = |code: &str, fields: &[(&str, &str)]| {
         let message =
             Words::sentence(words, &format!("package-problems/{code}"), fields).unwrap_or_default();

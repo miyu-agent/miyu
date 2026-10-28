@@ -64,7 +64,7 @@ impl Sandbox {
         let config = format!(
             "[providers.perf]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_PERF_KEY\" }}\n\n[providers.perf.models.perf-model]\nwindow = {WINDOW}\n\n[models]\nchat = \"perf/perf-model\"\n"
         );
-        std::fs::write(root.system().join("config.toml"), config)
+        std::fs::write(root.path().join("config.toml"), config)
             .map_err(|e| format!("系统配置写不进：{e}"))?;
         Ok(Sandbox {
             root,
@@ -201,6 +201,6 @@ fn owner(root: &DataRoot) -> Result<(), String> {
         disabled: false,
         owner: true,
     });
-    accounts::write(&root.system().join(accounts::FILE), &written, None)
+    accounts::write(&root.path().join(accounts::FILE), &written, None)
         .map_err(|e| format!("机主写不进：{e}"))
 }

@@ -155,7 +155,7 @@ fn start(home: &Home, server: &Server) -> Child {
         "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\ncatalog = \"deepseek\"\nkey = {{ env = \"MIYU_TEST_KEY\" }}\n\n[models]\nchat = \"dev/deepseek-chat\"\n",
         server.base_url
     );
-    std::fs::write(home.root.path().join("system").join("config.toml"), config).expect("写得进");
+    std::fs::write(home.root.path().join("config.toml"), config).expect("写得进");
     let mut core = home
         .core()
         .env("MIYU_TEST_KEY", "test")
@@ -184,12 +184,11 @@ pub(super) fn read(work: &Path, name: &str) -> String {
 
 /// 会话日志里的事件，照先后。
 pub(super) fn log(home: &Home, session: &str) -> Vec<Value> {
-    let dir = home.root.path().join("home");
     let mut events = Vec::new();
-    for owner in std::fs::read_dir(&dir).expect("有家目录").flatten() {
-        let sessions = owner.path().join("sessions").join(session);
+    {
+        let sessions = home.root.path().join("sessions").join(session);
         let Ok(segments) = std::fs::read_dir(&sessions) else {
-            continue;
+            return events;
         };
         let mut files: Vec<_> = segments
             .flatten()

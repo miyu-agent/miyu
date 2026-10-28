@@ -61,7 +61,7 @@ async fn a_locked_table_backs_off_instead_of_spinning() {
             },
         )
         .expect("建得了");
-    let file = miyu_store::schedules::path(&home.root, &alice());
+    let file = miyu_store::schedules::path(&home.root);
     let lock = rusqlite::Connection::open(&file).expect("开得了");
     lock.execute_batch("BEGIN EXCLUSIVE").expect("锁得住");
 

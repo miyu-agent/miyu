@@ -73,15 +73,15 @@ async fn an_extension_reads_the_content_other_packages_carry_for_it() {
     all.push("serve".to_string());
     let all: Vec<&str> = all.iter().map(String::as_str).collect();
     install(&home, "memes", &program.name(), "always", &steps(&all));
-    home.write("system/packages/pack/package.toml", PACK);
-    home.write("system/packages/pack/stickers/index.json", "{\"n\": 1}");
-    home.write("system/packages/pack/secret.txt", "nope");
-    home.write("system/packages/other/package.toml", OTHER);
-    home.write("system/packages/other/x/a", "a");
+    home.write("packages/pack/package.toml", PACK);
+    home.write("packages/pack/stickers/index.json", "{\"n\": 1}");
+    home.write("packages/pack/secret.txt", "nope");
+    home.write("packages/other/package.toml", OTHER);
+    home.write("packages/other/x/a", "a");
     #[cfg(unix)]
     std::os::unix::fs::symlink(
-        home.root.path().join("system/packages/pack"),
-        home.root.path().join("system/packages/pack/stickers/up"),
+        home.root.path().join("packages/pack"),
+        home.root.path().join("packages/pack/stickers/up"),
     )
     .expect("建得了链接");
     let core = core(&home, quick());

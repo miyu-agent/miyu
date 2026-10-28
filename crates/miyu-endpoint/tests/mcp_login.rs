@@ -24,7 +24,7 @@ pub(crate) async fn running_with(
     home: &Home,
     script: &Script,
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
-    home.root.prepare_home(&alice()).expect("建得了家目录");
+    home.root.prepare_workspace().expect("建得了家目录");
     let core = configured(home, script);
     let watching = core.watch_config().expect("监视得了");
     core.start_extensions();
@@ -40,7 +40,7 @@ async fn waiting_for_login(
     server: &HttpServer,
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut client, kept) = running(home).await;
@@ -103,7 +103,7 @@ async fn a_server_wanting_a_login_connects_after_the_person_agrees() {
             .any(|request| request.header("authorization") == Some("Bearer access-1")),
         "连的时候带上换来的令牌"
     );
-    let secrets = home.root.system().join("secrets.toml");
+    let secrets = home.root.path().join("secrets.toml");
     let written = std::fs::read_to_string(&secrets).expect("密钥文件在");
     assert!(written.contains("mcp-oauth-notes"), "{written}");
     #[cfg(unix)]
@@ -160,8 +160,8 @@ async fn a_second_login_binds_the_same_port_and_removing_the_server_clears_it() 
     assert_eq!(auth.registrations(), 1, "同一个客户端，不重新注册");
     let (status, _) = browse(&second).await;
     assert_eq!(status, 200, "要精确端口的授权服务器也认");
-    home.write("system/config.toml", "");
-    let secrets = home.root.system().join("secrets.toml");
+    home.write("config.toml", "");
+    let secrets = home.root.path().join("secrets.toml");
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
     while std::fs::read_to_string(&secrets)
         .unwrap_or_default()
@@ -181,7 +181,7 @@ async fn only_a_listed_url_server_without_its_own_token_logs_in() {
     let server = HttpServer::start(false).await;
     let home = Home::new();
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nbearer = \"t0k\"\n", server.url),
     );
     let (_core, mut client, _kept) = running(&home).await;

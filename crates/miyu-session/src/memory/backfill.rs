@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::thread::JoinHandle;
 
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_policy::Snapshot;
 use miyu_policy::memory::MemoryScope;
 use miyu_store::blob::Blobs;
@@ -64,21 +64,21 @@ impl Backfills {
 /// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。运行日志里
 /// 这一间写种类和短号 `room_id`（施工 LG-1 下）。
 pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room, room_id: &str) {
-    let Room::Persona { account, persona } = room else {
+    let Room::Persona { persona, .. } = room else {
         return;
     };
     let room_kind = room.kind();
-    let sessions = match root.sessions(account) {
+    let sessions = match root.sessions() {
         Ok(sessions) => sessions,
         Err(error) => {
             tracing::warn!(target: TARGET, room_kind, room_id, error = %error, "memory index not backfilled");
             return;
         }
     };
-    let blobs = Blobs::new(root.blobs(account));
+    let blobs = Blobs::new(root.blobs());
     let mut filled = 0;
     for session in sessions {
-        match one(recall, root, &blobs, room, account, persona, &session) {
+        match one(recall, root, &blobs, room, persona, &session) {
             Ok(true) => filled += 1,
             Ok(false) => {}
             Err(why) => {
@@ -95,12 +95,10 @@ fn one(
     root: &DataRoot,
     blobs: &Blobs,
     room: &Room,
-    account: &AccountId,
     persona: &str,
     session: &SessionId,
 ) -> Result<bool, String> {
-    let events =
-        read_events(&root.session_dir(account, session)).map_err(|error| error.to_string())?;
+    let events = read_events(&root.session_dir(session)).map_err(|error| error.to_string())?;
     let Some(Event {
         body: Body::SessionCreated(created),
         ..
@@ -119,7 +117,7 @@ fn one(
     }
     // 分叉出来的支线照载入时一样读底子（施工 R-13 三补）：父会话到分叉点为止的，认得那里还没回的人话。
     let base = match &created.forked {
-        Some(forked) => read_events(&root.session_dir(account, &forked.from))
+        Some(forked) => read_events(&root.session_dir(&forked.from))
             .map_err(|error| error.to_string())?
             .into_iter()
             .take_while(|event| event.seq <= forked.upto)

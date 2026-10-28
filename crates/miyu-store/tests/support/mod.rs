@@ -57,7 +57,7 @@ pub fn root_at(dir: &Path) -> DataRoot {
     })
     .expect("测试里做得到");
     root.prepare().expect("测试里做得到");
-    root.prepare_home(&admin()).expect("测试里做得到");
+    root.prepare_workspace().expect("测试里做得到");
     root
 }
 

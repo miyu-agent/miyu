@@ -6,13 +6,10 @@ use super::*;
 #[tokio::test]
 async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
-    home.write("home/alice/scripts/read.py", &echo("read"));
-    home.write("home/alice/scripts/broken.py", "#!/bin/sh\necho hi\n");
-    home.write(
-        "home/alice/skills/notes/SKILL.md",
-        "---\nname: notes\n---\nbody\n",
-    );
+    home.write("scripts/weather.py", &echo("weather"));
+    home.write("scripts/read.py", &echo("read"));
+    home.write("scripts/broken.py", "#!/bin/sh\necho hi\n");
+    home.write("skills/notes/SKILL.md", "---\nname: notes\n---\nbody\n");
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -36,9 +33,9 @@ async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     assert_eq!(
         problems,
         [
-            row("script", "home/alice/scripts/broken.py", "script_skipped"),
-            row("script", "home/alice/scripts/read.py", "script_clashed"),
-            row("skill", "home/alice/skills/notes/SKILL.md", "skill_skipped"),
+            row("script", "scripts/broken.py", "script_skipped"),
+            row("script", "scripts/read.py", "script_clashed"),
+            row("skill", "skills/notes/SKILL.md", "skill_skipped"),
         ],
         "{reply}"
     );
@@ -53,26 +50,26 @@ async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     assert!(messages[2].contains("description"), "{reply}");
 }
 
-/// 链接（施工 X-37）：指到数据根里不认的地方（`system/`）的脚本、技能、斜杠模板各报 `*_link_outside`，说指到了哪一片；断了的
+/// 链接（施工 X-37）：指到数据根里不认的地方的脚本、技能、斜杠模板各报 `*_link_outside`，说指到了哪一片；断了的
 /// 照跳过报。Unix 上（Windows 上建链接要权限，找法的测试在 `miyu-store` 里三个平台都跑）。
 #[cfg(unix)]
 #[tokio::test]
 async fn check_reports_links_out_of_the_accounts_folders() {
     let home = Home::new();
     home.write(
-        "system/keys/SKILL.md",
+        "keys/SKILL.md",
         "---\nname: keys\ndescription: Not mine.\n---\n",
     );
-    home.write("system/token.txt", "secret\n");
+    home.write("token.txt", "secret\n");
     let link = |target: &str, at: &str| {
         let at = home.root.path().join(at);
         std::fs::create_dir_all(at.parent().expect("有上级")).expect("建得了");
         std::os::unix::fs::symlink(home.root.path().join(target), at).expect("建得了链接");
     };
-    link("system/token.txt", "home/alice/scripts/token.py");
-    link("nowhere.py", "home/alice/scripts/gone.py");
-    link("system/keys", "home/alice/skills/keys");
-    link("system/token.txt", "home/alice/commands/token.md");
+    link("token.txt", "scripts/token.py");
+    link("nowhere.py", "scripts/gone.py");
+    link("keys", "skills/keys");
+    link("token.txt", "commands/token.md");
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -92,27 +89,15 @@ async fn check_reports_links_out_of_the_accounts_folders() {
     assert_eq!(
         codes,
         [
-            ("script", "home/alice/scripts/gone.py", "script_skipped"),
-            (
-                "script",
-                "home/alice/scripts/token.py",
-                "script_link_outside"
-            ),
-            ("skill", "home/alice/skills/keys", "skill_link_outside"),
-            (
-                "slash",
-                "home/alice/commands/token.md",
-                "slash_link_outside"
-            ),
+            ("script", "scripts/gone.py", "script_skipped"),
+            ("script", "scripts/token.py", "script_link_outside"),
+            ("skill", "skills/keys", "skill_link_outside"),
+            ("slash", "commands/token.md", "slash_link_outside"),
         ],
         "{reply}"
     );
     assert!(problems[0].3.contains("broken link"), "{reply}");
-    for (n, part) in [
-        (1, "system/token.txt"),
-        (2, "system/keys"),
-        (3, "system/token.txt"),
-    ] {
+    for (n, part) in [(1, "token.txt"), (2, "keys"), (3, "token.txt")] {
         assert!(problems[n].3.contains(part), "说指到了哪一片：{reply}");
     }
 }
@@ -122,9 +107,9 @@ async fn check_reports_links_out_of_the_accounts_folders() {
 #[tokio::test]
 async fn check_reports_state_left_by_scripts_that_are_gone() {
     let home = Home::new();
-    home.write("home/alice/scripts/weather.py", &echo("weather"));
+    home.write("scripts/weather.py", &echo("weather"));
     for kept in ["~home/weather", "~home/gone", "kit/live", "kit/weather"] {
-        home.write(&format!("state/scripts/alice/{kept}/data"), "x");
+        home.write(&format!("state/scripts/{kept}/data"), "x");
     }
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
@@ -140,10 +125,10 @@ async fn check_reports_state_left_by_scripts_that_are_gone() {
         })
         .collect();
     assert_eq!(left.len(), 3, "{reply}");
-    assert_eq!(left[0].0, "state/scripts/alice/kit/live");
+    assert_eq!(left[0].0, "state/scripts/kit/live");
     assert!(left[0].1.contains("kit/live"), "{reply}");
-    assert_eq!(left[1].0, "state/scripts/alice/kit/weather");
-    assert_eq!(left[2].0, "state/scripts/alice/~home/gone");
+    assert_eq!(left[1].0, "state/scripts/kit/weather");
+    assert_eq!(left[2].0, "state/scripts/~home/gone");
 }
 
 /// 没登记上的脚本分三种（施工 X-46）：撞了别的工具名字的 `script_clashed`，造不成工具的 `script_not_made`（带为什么），核心
@@ -151,10 +136,10 @@ async fn check_reports_state_left_by_scripts_that_are_gone() {
 #[tokio::test]
 async fn unregistered_scripts_say_why() {
     let home = Home::new();
-    home.write("home/alice/scripts/read.py", &echo("read"));
-    home.write(&format!("home/alice/scripts/{UNMADE}.py"), &echo(UNMADE));
+    home.write("scripts/read.py", &echo("read"));
+    home.write(&format!("scripts/{UNMADE}.py"), &echo(UNMADE));
     let core = core(&home, &Script::new([]));
-    home.write("home/alice/scripts/later.py", &echo("later"));
+    home.write("scripts/later.py", &echo("later"));
     let mut client = Client::connect(core);
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -174,11 +159,11 @@ async fn unregistered_scripts_say_why() {
             .map(|(_, code, message)| (code.as_str(), message.as_str()))
             .unwrap_or_else(|| panic!("{file} 没报：{reply}"))
     };
-    assert_eq!(code("home/alice/scripts/read.py").0, "script_clashed");
-    let (unmade, why) = code(&format!("home/alice/scripts/{UNMADE}.py"));
+    assert_eq!(code("scripts/read.py").0, "script_clashed");
+    let (unmade, why) = code(&format!("scripts/{UNMADE}.py"));
     assert_eq!(unmade, "script_not_made");
     assert!(why.contains(&format!("Cannot make {UNMADE}.")), "{why}");
-    let (later, said) = code("home/alice/scripts/later.py");
+    let (later, said) = code("scripts/later.py");
     assert_eq!(later, "script_not_loaded");
     assert!(said.contains("later"), "{said}");
     assert_eq!(problems.len(), 3, "{reply}");

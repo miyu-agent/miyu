@@ -3,12 +3,10 @@
 //! 做法）；断了的、绕回自己的跳过，说为什么。
 //!
 //! 真实位置落在数据根里的，只认这个账号家目录的 `scripts`、`skills`、`commands`、`packages` 下面（[`Fence`]）：她读得到
-//! 技能、沙盒放开脚本都照真实的位置，不收窄的话一个链接就能把 `system/` 下的本机令牌、密钥文件拉进来。落在别处的跳过，
+//! 技能、沙盒放开脚本都照真实的位置，不收窄的话一个链接就能把数据根下的本机令牌、密钥文件拉进来。落在别处的跳过，
 //! 带上真实的位置（`miyu check` 照它说指到了哪一片）。不是链接、所在的目录是链接的同样照真实的位置查。
 
 use std::path::{Path, PathBuf};
-
-use miyu_kernel::id::AccountId;
 
 use crate::root::DataRoot;
 use crate::skills::Skipped;
@@ -43,11 +41,10 @@ pub(crate) struct Fence {
 }
 
 impl Fence {
-    /// 数据根 `root` 里账号 `account` 的：家目录自己放东西的几处（[`DataRoot::own_places`]），加装上的包那一处（施工 U23 上上，
-    /// [`DataRoot::real_system_packages`]；系统区放技能、脚本的两处施工 SU-3 下拿掉）。
-    pub(crate) fn of(root: &DataRoot, account: &AccountId) -> Fence {
-        let mut own = root.own_places(account);
-        own.push(root.real_system_packages());
+    /// 数据根 `root` 里自己放东西的几处（[`DataRoot::own_places`]），加装上的包那一处（施工 U23 上上，[`DataRoot::real_packages`]）。
+    pub(crate) fn of(root: &DataRoot) -> Fence {
+        let mut own = root.own_places();
+        own.push(root.real_packages());
         Fence {
             own,
             root: Some(real(root.path())),

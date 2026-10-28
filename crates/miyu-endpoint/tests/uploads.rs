@@ -110,7 +110,7 @@ fn upload_id(reply: &Value) -> String {
 
 /// `tmp/` 里几个文件。
 fn tmp_count(home: &Home) -> usize {
-    fs::read_dir(home.root.blobs(&alice()).join("tmp"))
+    fs::read_dir(home.root.blobs().join("tmp"))
         .map(|entries| entries.count())
         .unwrap_or(0)
 }
@@ -152,7 +152,7 @@ async fn a_chunked_upload_matches_blob_put_for_the_same_content() {
         json!({"blob": blob.as_str(), "height": 480, "kind": "image", "media_type": "image/png", "name": "shot.png", "width": 640}),
         "{reply}"
     );
-    let stored = Blobs::new(home.root.blobs(&alice()));
+    let stored = Blobs::new(home.root.blobs());
     assert_eq!(stored.get(&blob).unwrap(), picture);
     assert_eq!(tmp_count(&home), 0, "暂存改名走了");
 }
@@ -167,7 +167,7 @@ async fn closing_onto_content_already_there_discards_the_temp_file() {
     let close_reply = chunked_put(&mut client, "again.bin", None, &content).await;
     assert_eq!(close_reply["result"]["blob"], json!(blob), "{close_reply}");
     assert_eq!(tmp_count(&home), 0, "暂存删掉了");
-    let stored = Blobs::new(home.root.blobs(&alice()));
+    let stored = Blobs::new(home.root.blobs());
     let fan = stored.path(&ContentHash::of(&content));
     assert_eq!(
         fs::read_dir(fan.parent().unwrap()).unwrap().count(),
@@ -208,7 +208,7 @@ async fn closing_before_everything_arrived_is_refused_and_more_can_still_be_writ
     let blob = ContentHash::of(b"abcdefgh");
     assert_eq!(done["result"]["blob"], json!(blob.as_str()));
     // 两块真的接在一起落了盘，不是光报对了哈希：第二块真的写在第一块后面，不是从头盖过去的。
-    let stored = Blobs::new(home.root.blobs(&alice()));
+    let stored = Blobs::new(home.root.blobs());
     assert_eq!(stored.get(&blob).unwrap(), b"abcdefgh");
 }
 
@@ -352,11 +352,11 @@ async fn an_oversized_image_is_refused_like_blob_put_and_leaves_no_temp_file() {
 #[tokio::test]
 async fn clear_uploads_removes_leftover_temp_files_without_touching_others() {
     let home = Home::new();
-    let blobs = Blobs::new(home.root.blobs(&alice()));
+    let blobs = Blobs::new(home.root.blobs());
     blobs.create_upload("leftover1").unwrap();
     blobs.create_upload("leftover2").unwrap();
     // `blob.put` 自己崩了留下的那种（数字加连字符）：clear_uploads 不该碰它。
-    let tmp = home.root.blobs(&alice()).join("tmp");
+    let tmp = home.root.blobs().join("tmp");
     fs::write(tmp.join("4242-0"), b"half a put").unwrap();
     let removed = blobs.clear_uploads().unwrap();
     assert_eq!(removed, 2);

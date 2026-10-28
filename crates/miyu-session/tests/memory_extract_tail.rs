@@ -39,10 +39,7 @@ async fn extracted_times(server: &Server, count: usize) -> Vec<String> {
 
 /// 弄坏日志里带着 `words` 的那一行：长短不变，读不懂了。整份读从此读不出来，从后面一处读起的照样读得出。
 fn break_line(home: &Home, session: &SessionId, words: &str) {
-    let path = home
-        .root
-        .session_dir(&alice_account(), session)
-        .join("000000000001.jsonl");
+    let path = home.root.session_dir(session).join("000000000001.jsonl");
     let text = std::fs::read_to_string(&path).expect("读得到日志");
     let at = text.find(words).expect("说过这句");
     let start = text[..at].rfind('\n').map_or(0, |at| at + 1);

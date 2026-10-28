@@ -125,7 +125,7 @@ pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
         .iter()
         .map(|one| one.id.clone())
         .collect();
-    let dirs = [(Layer::Home, core.root.account_dir(&core.admin))];
+    let dirs = [(Layer::Home, core.root.path().to_path_buf())];
     let found = tokio::task::spawn_blocking(move || {
         let left = Leftovers::read(&state);
         // 一笔：哪一样、编号、包、那一份改动在哪；包又装着了的、改动删掉了的不算。

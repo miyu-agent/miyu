@@ -19,7 +19,7 @@ fn fields<'a>(name: Option<&'a str>, description: Option<&'a str>) -> BaseFields
 }
 
 fn top(root: &DataRoot) -> PathBuf {
-    root.account_dir(&admin()).join("kb")
+    root.path().join("kb")
 }
 
 /// 一块盘上没有能放的回收站的机器（临时目录那块盘）：照实报了算过，交回没挪成。
@@ -150,22 +150,22 @@ fn adding_documents_of_any_kind_and_replacing_only_when_asked() {
         .found(&admin(), "notes", fields(None, None))
         .expect("建得了");
     knowledge
-        .add(&admin(), "notes", "docs/a.md", "团子\n".as_bytes(), false)
+        .add("notes", "docs/a.md", "团子\n".as_bytes(), false)
         .expect("加得了");
     let pdf = b"%PDF-1.4 not really";
     knowledge
-        .add(&admin(), "notes", "cat.pdf", pdf, false)
+        .add("notes", "cat.pdf", pdf, false)
         .expect("PDF 也加得了");
     assert_eq!(
         std::fs::read(top(&root).join("notes/cat.pdf")).expect("在"),
         pdf
     );
     assert!(matches!(
-        knowledge.add(&admin(), "notes", "docs/a.md", b"x", false),
+        knowledge.add("notes", "docs/a.md", b"x", false),
         Err(KnowledgeError::Exists)
     ));
     knowledge
-        .add(&admin(), "notes", "docs/a.md", "小橘\n".as_bytes(), true)
+        .add("notes", "docs/a.md", "小橘\n".as_bytes(), true)
         .expect("说换的换");
     assert_eq!(
         std::fs::read_to_string(top(&root).join("notes/docs/a.md")).expect("在"),
@@ -174,7 +174,7 @@ fn adding_documents_of_any_kind_and_replacing_only_when_asked() {
     for path in ["../x.md", "a.exe", ".hidden/a.md"] {
         assert!(
             matches!(
-                knowledge.add(&admin(), "notes", path, b"x", false),
+                knowledge.add("notes", path, b"x", false),
                 Err(KnowledgeError::UnknownDocument)
             ),
             "{path}"
@@ -191,7 +191,7 @@ fn adding_documents_of_any_kind_and_replacing_only_when_asked() {
         )
         .expect("挂得上");
     assert!(matches!(
-        knowledge.add(&admin(), "mounted", "a.md", b"x", false),
+        knowledge.add("mounted", "a.md", b"x", false),
         Err(KnowledgeError::ReadOnly)
     ));
     assert!(
@@ -210,10 +210,10 @@ fn deleting_a_base_moves_it_to_the_trash_and_leaves_a_mounted_folder_alone() {
         .found(&admin(), "notes", fields(None, None))
         .expect("建得了");
     knowledge
-        .add(&admin(), "notes", "a.md", "团子\n".as_bytes(), false)
+        .add("notes", "a.md", "团子\n".as_bytes(), false)
         .expect("加得了");
     knowledge.list(&admin()).expect("补得了");
-    let index = root.index(&admin()).join("kb/notes.db");
+    let index = root.index().join("kb/notes.db");
     assert!(index.exists());
     if trashed(knowledge.delete(&admin(), "notes", Some(&home))).is_some() {
         assert!(!top(&root).join("notes").exists(), "整个目录挪走了");
@@ -224,7 +224,7 @@ fn deleting_a_base_moves_it_to_the_trash_and_leaves_a_mounted_folder_alone() {
             .found(&admin(), "notes", fields(None, None))
             .expect("建得了");
         knowledge
-            .add(&admin(), "notes", "b.md", "阿黄\n".as_bytes(), false)
+            .add("notes", "b.md", "阿黄\n".as_bytes(), false)
             .expect("加得了");
         let found = knowledge
             .search(&admin(), "阿黄", None, 5, None)
@@ -266,7 +266,7 @@ fn reindexing_rebuilds_from_the_files_and_drops_the_vectors() {
         .found(&admin(), "notes", fields(None, None))
         .expect("建得了");
     knowledge
-        .add(&admin(), "notes", "a.md", "团子\n".as_bytes(), false)
+        .add("notes", "a.md", "团子\n".as_bytes(), false)
         .expect("加得了");
     knowledge.list(&admin()).expect("补得了");
     let index = knowledge.index_of(&admin(), "notes");
@@ -332,7 +332,6 @@ fn every_section_of_a_base_is_listed_with_its_heading() {
         .expect("建得了");
     knowledge
         .add(
-            &admin(),
             "world",
             "people.md",
             "# 人物\n\n## 艾琳\n\n守灯人。\n\n## 巴德\n\n老船长。\n".as_bytes(),

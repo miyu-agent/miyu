@@ -253,7 +253,7 @@ async fn the_servers_own_tool_of_that_name_wins() {
 async fn a_preset_turning_the_service_off_drops_both() {
     let home = Home::new();
     home.write(
-        "home/alice/presets/quiet.toml",
+        "presets/quiet.toml",
         "[preset]\nname = \"安静\"\n\n[features]\nmcp-probe = false\n",
     );
     bundle(&home, "probe", "probe", &["resources"]);

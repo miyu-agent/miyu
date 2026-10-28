@@ -1,6 +1,6 @@
 //! 找斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`「找、盖住、开关」）：两处找 `<名字>.md`：
 //!
-//! - 本机自己放的 `home/<账号>/commands/`；
+//! - 本机自己放的 `commands/`；
 //! - 装了的软件包（清单读成了的）的 `commands/`，出厂的先于家目录、同一层照编号（同技能，`skills.rs`）。
 //!
 //! 同名的先找到的赢：自己放的盖住包里的，后来的跳过、记下被谁盖住。名字不合写法的、开头写错的、读不了的跳过，交回给调的
@@ -9,7 +9,6 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::slash::{self, Template};
 
 use crate::links::{self, Fence, Kind};
@@ -34,13 +33,8 @@ pub struct Command {
 }
 
 /// 找命令模板：装了的软件包 `packages` 里的，加数据根 `root` 里账号 `account` 自己放的。照名字排。
-pub fn find(
-    packages: &[Found],
-    root: &DataRoot,
-    account: &AccountId,
-) -> (Vec<Command>, Vec<Skipped>) {
-    let mut places: Vec<(PathBuf, Option<String>)> =
-        vec![(root.account_dir(account).join("commands"), None)];
+pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Command>, Vec<Skipped>) {
+    let mut places: Vec<(PathBuf, Option<String>)> = vec![(root.path().join("commands"), None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
     installed.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
     places.extend(
@@ -50,7 +44,7 @@ pub fn find(
     );
     let mut commands: Vec<Command> = Vec::new();
     let mut skipped = Vec::new();
-    let fence = Fence::of(root, account);
+    let fence = Fence::of(root);
     for (place, package) in places {
         let (files, unlisted) = files(&place, &fence);
         skipped.extend(unlisted);

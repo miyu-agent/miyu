@@ -87,7 +87,7 @@ async fn listed(client: &mut Client, id: &str) -> Option<Value> {
 
 /// 管理员家目录那一层里的这个包。
 fn placed(home: &Home, id: &str) -> bool {
-    home.root.path().join("system/packages").join(id).exists()
+    home.root.path().join("packages").join(id).exists()
 }
 
 #[tokio::test]
@@ -186,7 +186,7 @@ async fn scripts_mcp_services_and_knowledge_bases_count_too() {
 #[tokio::test]
 async fn upgrading_itself_or_shadowing_ones_own_is_not_a_conflict() {
     let home = Home::new();
-    home.write("home/alice/skills/notes/SKILL.md", &skill("notes"));
+    home.write("skills/notes/SKILL.md", &skill("notes"));
     let mut client = connected(&home).await;
     let kit = source(
         &home,

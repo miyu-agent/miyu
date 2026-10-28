@@ -97,11 +97,11 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
 async fn a_package_outside_needing_the_group_stops_its_removal() {
     let home = Home::new();
     home.write(
-        "system/packages/kit/package.toml",
+        "packages/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n\n[depends]\npackages = [\"shell\"]\n",
     );
     home.write(
-        "system/packages/kit/skills/notes/SKILL.md",
+        "packages/kit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let core = packaged::core(&home);

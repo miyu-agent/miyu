@@ -75,7 +75,7 @@ async fn the_last_ask_or_the_given_session_is_the_one_renamed() {
         renamed.stdout.is_empty() && renamed.stderr.is_empty(),
         "{renamed:?}"
     );
-    let sessions = home.root.path().join("home/admin/sessions");
+    let sessions = home.root.path().join("sessions");
     let session = std::fs::read_dir(&sessions)
         .expect("有会话目录")
         .next()

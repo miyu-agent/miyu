@@ -11,46 +11,36 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use crate::durable::{create_dir, create_dir_anywhere, sync_dir};
 use crate::env::{Env, Platform};
 
-/// 账号家目录里自己放东西的几处（[`DataRoot::own_places`]）。
+/// 自己放东西的几处（[`DataRoot::own_places`]）。
 const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
 
-/// 家目录里照 XDG 用户目录给这个人的几处（施工 Y-11 上）：她替人做出来、拿到的东西放这里，用到的时候才建。名字照 XDG 的英文，
-/// 界面上照语言显示。
+/// 照 XDG 用户目录给主人的几处（施工 Y-11 上）：她替人做出来、拿到的东西放这里，用到的时候才建。名字照 XDG 的英文，界面上照
+/// 语言显示。
 pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"];
 
-/// 数据根 `data_root` 里账号 `account` 照 XDG 的那一处 `name`（[`USER_DIRS`] 里的一个）：`home/<账号>/<name>/`（施工 Y-11 下）。调的
-/// 一方手里只有数据根的路径时用它（调扩展的工具、脚本工具），和 [`DataRoot::user_dirs`] 同一个位置。不建。
-pub fn user_dir(data_root: &Path, account: &AccountId, name: &str) -> PathBuf {
-    account_home(data_root, account).join(name)
+/// 数据根 `data_root` 里照 XDG 的那一处 `name`（[`USER_DIRS`] 里的一个）：`<name>/`（施工 Y-11 下；施工 SU-5 上起直接在数据根
+/// 下）。调的一方手里只有数据根的路径时用它（调扩展的工具、脚本工具），和 [`DataRoot::user_dirs`] 同一个位置。不建。
+pub fn user_dir(data_root: &Path, name: &str) -> PathBuf {
+    data_root.join(name)
 }
 
-/// 放各个账号家目录的地方，数据根下面的名字。
-const HOMES: &str = "home";
-
-/// 数据根 `data_root` 里账号 `account` 的家目录：`home/<账号>/`。家目录的布局只写在这里（施工 Y-11 补修）：[`DataRoot::account_dir`]
-/// 和只有数据根路径的 [`user_dir`] 都照它。
-fn account_home(data_root: &Path, account: &AccountId) -> PathBuf {
-    data_root.join(HOMES).join(account.as_str())
-}
-
-/// 家目录里的缓存（施工 Y-11 上）：`home/<账号>/cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
+/// 缓存（施工 Y-11 上）：`cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
 pub const CACHE: &str = "cache";
 
-/// 第一次用时建的四个顶层目录：系统区、家目录、状态区、运行时（`07-存储.md` 第二节）。
-/// 别的用到时再建。
-const SKELETON: [&str; 4] = ["system", HOMES, "state", "run"];
+/// 第一次用时建的两个顶层目录：状态区、运行时（`07-存储.md` 第二节；施工 SU-5 上起没有系统区、家目录两层）。别的用到时再建。
+const SKELETON: [&str; 2] = ["state", "run"];
 
 /// 标记文件：它在，这个目录才是 Miyu 的数据根（`07-存储.md` 第二节「认得出自己的数据根才动它」）。装沙盒时也照它
 /// 认给的数据根（`docs/blueprint/sandbox/windows.md`，施工 5-8）。
 pub const MARKER: &str = ".miyu-root";
 
 /// 标记文件里写的一行：给翻到它的人看。现在只认文件在不在。
-const MARKER_TEXT: &str = "This directory is a Miyu data root (layout 1).\n";
+const MARKER_TEXT: &str = "This directory is a Miyu data root (layout 2).\n";
 
 /// 找不到数据根、缓存目录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -122,97 +112,73 @@ impl DataRoot {
         &self.path
     }
 
-    /// 系统区：管理员维护，对成员只读。
-    pub fn system(&self) -> PathBuf {
-        self.path.join("system")
+    /// 装上的软件包：`packages/`（施工 SU-5 上：原来 `packages/`）。
+    pub fn packages(&self) -> PathBuf {
+        self.path.join("packages")
     }
 
-    /// 系统那一层装上的软件包（施工 U23 上上，设计 06 U23「系统装」）：`system/packages/`。以前在机主家目录的 `packages/`，核心
-    /// 起来时挪一次（`packages::migrate::to_system_layer`）。
-    pub fn system_packages(&self) -> PathBuf {
-        self.system().join("packages")
+    /// 自己放脚本、技能、命令模板、装包的几处（`scripts`、`skills`、`commands`、`packages`）的真实位置（施工 X-37、X-37 补）：
+    /// 找的时候认链接指到这几处下面的，管理员放行出沙盒的文件得落在这几处下面。照数据根的真实位置接上，不一处处换成真实位置：
+    /// `skills/` 本身是指到别处的链接时，换了就把别处当成自己的地方了。数据根本身是链接的（macOS 的临时目录在 `/var` 下面）照样
+    /// 对。碰磁盘。
+    pub fn own_places(&self) -> Vec<PathBuf> {
+        let base = self.real();
+        OWN_PLACES.iter().map(|dir| base.join(dir)).collect()
     }
 
-    /// 放各个账号家目录的地方：`home/`。
-    pub fn homes(&self) -> PathBuf {
-        self.path.join(HOMES)
+    /// 装上的包（[`DataRoot::packages`]）的真实位置（施工 U23 上上）：主人装的，放行出沙盒的文件落在这下面的也算管得住（同出厂
+    /// 的包）。碰磁盘。
+    pub fn real_packages(&self) -> PathBuf {
+        self.real().join("packages")
     }
 
-    /// 一个账号的家目录：`home/<账号>/`，这个人产生的一切都在里面。
-    pub fn account_dir(&self, account: &AccountId) -> PathBuf {
-        account_home(&self.path, account)
+    /// 数据根的真实位置（还没有的照原样）。碰磁盘。
+    fn real(&self) -> PathBuf {
+        std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone())
     }
 
-    /// 账号 `account` 自己放脚本、技能、命令模板、装包的几处（`scripts`、`skills`、`commands`、`packages`）的真实位置（施工
-    /// X-37、X-37 补）：找的时候认链接指到这几处下面的，管理员放行出沙盒的文件得落在这几处下面。照数据根的真实位置接上家目录的
-    /// 相对路径，不一处处换成真实位置：家目录的 `skills/` 本身是指到 `system/` 的链接时，换了就把 `system/` 当成自己的地方了。
-    /// 数据根本身是链接的（macOS 的临时目录在 `/var` 下面）照样对。碰磁盘。
-    pub fn own_places(&self, account: &AccountId) -> Vec<PathBuf> {
-        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
-        let account_dir = self.account_dir(account);
-        let home = base.join(account_dir.strip_prefix(&self.path).unwrap_or(&account_dir));
-        OWN_PLACES.iter().map(|dir| home.join(dir)).collect()
-    }
-
-    /// 系统那一层装上的包（[`DataRoot::system_packages`]）的真实位置（施工 U23 上上）：管理员装的，放行出沙盒的文件落在这下面的
-    /// 也算管理员管得住（同出厂的包）。碰磁盘。
-    pub fn real_system_packages(&self) -> PathBuf {
-        self.real_system().join("packages")
-    }
-
-    /// 系统区的真实位置：数据根的真实位置接上 `system`（还没有的也对）。碰磁盘。
-    fn real_system(&self) -> PathBuf {
-        let base = std::fs::canonicalize(&self.path).unwrap_or_else(|_| self.path.clone());
-        let system = self.system();
-        base.join(system.strip_prefix(&self.path).unwrap_or(&system))
-    }
-
-    /// 建一个账号的家目录和里面的工作区，已经有的不动：核心起来时给管理员建（施工 3-9 上；工作区施工 4-3 下）。
-    /// Unix 上新建的权限 0700。
+    /// 建工作区，已经有的不动：核心起来时建（施工 3-9 上；工作区施工 4-3 下）。Unix 上新建的权限 0700。
     ///
     /// # Errors
     ///
     /// 建不了；该是目录的地方是个文件。
-    pub fn prepare_home(&self, account: &AccountId) -> io::Result<()> {
-        create_dir(&self.account_dir(account))?;
-        create_dir(&self.workspace(account))
+    pub fn prepare_workspace(&self) -> io::Result<()> {
+        create_dir(&self.workspace())
     }
 
-    /// 账号 `account` 的 [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。
-    pub fn user_dirs(&self, account: &AccountId) -> Vec<(&'static str, PathBuf)> {
+    /// [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。
+    pub fn user_dirs(&self) -> Vec<(&'static str, PathBuf)> {
         USER_DIRS
             .iter()
-            .map(|name| (*name, user_dir(&self.path, account, name)))
+            .map(|name| (*name, user_dir(&self.path, name)))
             .collect()
     }
 
-    /// 账号 `account` 的缓存：`home/<账号>/cache/`。不建。
-    pub fn cache(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join(CACHE)
+    /// 缓存：`cache/`。不建。
+    pub fn cache(&self) -> PathBuf {
+        self.path.join(CACHE)
     }
 
-    /// 一个账号的工作区：`home/<账号>/workspace/`（`07-存储.md` 第二节）。头报来的工作目录太宽时退回这里
-    /// （`11-权限与沙盒.md` 第四节，施工 4-3 下）。
-    pub fn workspace(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join("workspace")
+    /// 工作区：`workspace/`（`07-存储.md` 第二节）。头报来的工作目录太宽时退回这里（`11-权限与沙盒.md` 第四节，施工 4-3 下）。
+    pub fn workspace(&self) -> PathBuf {
+        self.path.join("workspace")
     }
 
-    /// 一个会话的默认工作区：`home/<账号>/workspace/<会话编号>/`（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话
-    /// 一个」）。网页不选目录的、工作目录太宽的照它；子会话、分叉出来的用父会话、来源会话的那一个（`session.created` 的
-    /// `workspace_from`）。不在这里建：用到的一方自己建。
-    pub fn session_workspace(&self, account: &AccountId, session: &SessionId) -> PathBuf {
-        self.workspace(account).join(session.as_str())
+    /// 一个会话的默认工作区：`workspace/<会话编号>/`（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话一个」）。网页不选
+    /// 目录的、工作目录太宽的照它；子会话、分叉出来的用父会话、来源会话的那一个（`session.created` 的 `workspace_from`）。不在这里
+    /// 建：用到的一方自己建。
+    pub fn session_workspace(&self, session: &SessionId) -> PathBuf {
+        self.workspace().join(session.as_str())
     }
 
-    /// 一个账号有哪些会话，从新到旧：会话编号是 UUIDv7，照编号倒着排就是照造的先后倒着（施工 3-9 下）。
-    /// 不合会话编号写法的目录不算；还没有会话的是空的。
+    /// 有哪些会话，从新到旧：会话编号是 UUIDv7，照编号倒着排就是照造的先后倒着（施工 3-9 下）。不合会话编号写法的目录不算；还
+    /// 没有会话的是空的。
     ///
     /// # Errors
     ///
     /// 读不了目录。
-    pub fn sessions(&self, account: &AccountId) -> io::Result<Vec<SessionId>> {
-        let dir = self.account_dir(account).join("sessions");
-        let entries = match fs::read_dir(&dir) {
+    pub fn sessions(&self) -> io::Result<Vec<SessionId>> {
+        let entries = match fs::read_dir(self.path.join("sessions")) {
             Ok(entries) => entries,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error),
@@ -228,69 +194,29 @@ impl DataRoot {
         Ok(sessions)
     }
 
-    /// 会话 `session` 是哪个账号的（施工 O-4 上）：`home/<账号>/sessions/<会话编号>/` 在的那个账号。不合账号写法的目录不算；
-    /// 会话编号是 UUIDv7，不会两个账号各有一个，真有的照账号名的先后取第一个。都没有的没有。
-    ///
-    /// # Errors
-    ///
-    /// 读不了 `home/`。
-    pub fn owner_of(&self, session: &SessionId) -> io::Result<Option<AccountId>> {
-        Ok(self
-            .accounts()?
-            .into_iter()
-            .find(|account| self.session_dir(account, session).is_dir()))
+    /// 一个会话的目录：`sessions/<会话编号>/`（`07-存储.md` 第三节）。
+    pub fn session_dir(&self, session: &SessionId) -> PathBuf {
+        self.path.join("sessions").join(session.as_str())
     }
 
-    /// `home/` 下的账号，照账号名排；不合账号写法的目录不算，`home/` 不在的是空的（施工 K-8：卸包时每个账号里清一遍）。
-    ///
-    /// # Errors
-    ///
-    /// 读不了 `home/`。
-    pub fn accounts(&self) -> io::Result<Vec<AccountId>> {
-        let entries = match fs::read_dir(self.homes()) {
-            Ok(entries) => entries,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-            Err(error) => return Err(error),
-        };
-        let mut accounts = Vec::new();
-        for entry in entries {
-            let name = entry?.file_name();
-            if let Some(account) = name.to_str().and_then(|name| AccountId::parse(name).ok()) {
-                accounts.push(account);
-            }
-        }
-        accounts.sort_by(|a, b| a.as_str().cmp(b.as_str()));
-        Ok(accounts)
+    /// 删掉的会话放在哪：回收处 `trash/sessions/`，一个会话一个目录，名字是会话编号（施工 3-8 三补，[`crate::trash`]）。
+    pub fn trashed_sessions(&self) -> PathBuf {
+        self.path.join("trash").join("sessions")
     }
 
-    /// 一个会话的目录：`home/<账号>/sessions/<会话编号>/`（`07-存储.md` 第三节）。
-    pub fn session_dir(&self, account: &AccountId, session: &SessionId) -> PathBuf {
-        self.account_dir(account)
-            .join("sessions")
-            .join(session.as_str())
+    /// 删掉的人格：`trash/personas/`（施工 P-3 下，`crate::trash::personas`）。
+    pub fn trashed_personas(&self) -> PathBuf {
+        self.path.join("trash").join("personas")
     }
 
-    /// 一个账号删掉的会话放在哪：回收处 `home/<账号>/trash/sessions/`，一个会话一个目录，名字是会话编号（施工 3-8 三补，
-    /// [`crate::trash`]）。
-    pub fn trashed_sessions(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join("trash").join("sessions")
+    /// blob：`blobs/`（`07-存储.md` 第五节）。
+    pub fn blobs(&self) -> PathBuf {
+        self.path.join("blobs")
     }
 
-    /// 一个账号删掉的人格：`home/<账号>/trash/personas/`（施工 P-3 下，`crate::trash::personas`）。
-    pub fn trashed_personas(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join("trash").join("personas")
-    }
-
-    /// 一个账号的 blob：`home/<账号>/blobs/`（`07-存储.md` 第五节）。按账号分开存，不跨账号
-    /// 去重（S5）。
-    pub fn blobs(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join("blobs")
-    }
-
-    /// 一个账号的派生数据：`home/<账号>/index/`（`07-存储.md` 第六节）。会话列表的索引放在这里（施工 3-8 七补，
-    /// [`crate::index`]）。
-    pub fn index(&self, account: &AccountId) -> PathBuf {
-        self.account_dir(account).join("index")
+    /// 派生数据：`index/`（`07-存储.md` 第六节）。会话列表的索引放在这里（施工 3-8 七补，[`crate::index`]）。
+    pub fn index(&self) -> PathBuf {
+        self.path.join("index")
     }
 
     /// 状态区：派生的全局索引、用量总表、运行日志。
@@ -304,7 +230,7 @@ impl DataRoot {
     }
 
     /// 建骨架：先认标记。目录不存在、是空的，先写下标记；有标记的照常；不是空的又没有标记的，
-    /// 认不出是 Miyu 的数据根，里面什么都不建。然后四个顶层目录，缺的才建，建两次也不出错。
+    /// 认不出是 Miyu 的数据根，里面什么都不建。然后两个顶层目录，缺的才建，建两次也不出错。
     ///
     /// 两个进程同时第一次用这个数据根（两个头同时拉起核心），也都成（施工 3-9 上）：别处刚写下的
     /// 标记也算。

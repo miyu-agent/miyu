@@ -107,11 +107,7 @@ async fn a_package_base_is_searched_and_recalled_but_not_written() {
     );
     assert!(!base.join("a.md").exists());
     assert!(
-        !home
-            .root
-            .account_dir(&alice_account())
-            .join("kb/world")
-            .exists(),
+        !home.root.path().join("kb/world").exists(),
         "不另建一个盖住它"
     );
 }

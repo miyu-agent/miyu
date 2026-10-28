@@ -30,7 +30,7 @@ async fn tools_left_out_are_listed_and_checked() {
     bundle(&home, "odd", "odd", &["odd"]);
     bundle(&home, "kit", "kit", &[]);
     home.write(
-        "system/config.toml",
+        "config.toml",
         &format!("[mcp.probe]\ncommand = ['{SERVER}', 'odd']\ntimeout_ms = 1000\n"),
     );
     let core = configured(&home, &Script::new([]));
@@ -78,12 +78,12 @@ async fn tools_left_out_are_listed_and_checked() {
     said.sort();
     assert_eq!(said.len(), 2, "一个服务一条：{checked}");
     assert_eq!(
-        said[0].0, "system/config.toml",
+        said[0].0, "config.toml",
         "个人设置里的报在个人设置上：{said:?}"
     );
     assert!(said[0].1.contains("probe: "), "{said:?}");
     assert_eq!(
-        said[1].0, "system/packages/odd/package.toml",
+        said[1].0, "packages/odd/package.toml",
         "包带的报在清单上：{said:?}"
     );
     assert!(said[1].1.contains("odd: "), "{said:?}");

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use miyu_kernel::event::ContextInjected;
 use miyu_kernel::facts::Present;
-use miyu_kernel::id::{AccountId, ContentHash, FactKind, ModuleId};
+use miyu_kernel::id::{ContentHash, FactKind, ModuleId};
 use miyu_kernel::session::Injection;
 use miyu_policy::ToolEntry;
 use miyu_policy::preset::PresetFile;
@@ -26,8 +26,6 @@ pub(crate) struct Watch {
     pub(crate) installed: Installed,
     /// 数据根。
     pub(crate) root: DataRoot,
-    /// 会话的属主：照他家目录里的找。
-    pub(crate) owner: AccountId,
 }
 
 /// 这一刻找到的：放开只读的文件夹（真实的位置）、它们给人看的名字（施工 9-8 五补）、列出来的那一块（工具面上没有 `read`
@@ -50,7 +48,7 @@ impl Watch {
         face: &[ToolEntry],
         preset: Option<&PresetFile>,
     ) -> Result<Looked, SourceError> {
-        let found = opened(find(&(self.installed)(), &self.root, &self.owner), preset);
+        let found = opened(find(&(self.installed)(), &self.root), preset);
         Ok(Looked {
             shelves: shelves(&found),
             names: super::names(&found),

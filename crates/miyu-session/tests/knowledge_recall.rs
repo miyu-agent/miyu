@@ -71,7 +71,7 @@ fn recalled(log: &[Event]) -> Vec<ContextInjected> {
 /// alice 的库 `world`：`kb.toml` 写 `toml`，一篇人物；先照文件补好索引。头一回补在慢的机器上（Windows 的 CI）会把挂接点拖过
 /// 300 毫秒，那一轮照规矩不交；这里测的是挑和交，不是头一回补要多久。
 fn world(home: &Home, toml: &str, people: &str) {
-    let dir = home.root.account_dir(&alice_account()).join("kb/world");
+    let dir = home.root.path().join("kb/world");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), toml).expect("写得进");
     std::fs::write(dir.join("people.md"), people).expect("写得进");
@@ -104,10 +104,7 @@ async fn a_named_section_comes_once_and_plain_chat_brings_nothing() {
     let log = chat(&home, &handle, 3, "今天好累啊").await;
     assert_eq!(recalled(&log).len(), 2, "平常的话不带");
     // 原处加了一段：下一轮照文件补，提到它就带。
-    let file = home
-        .root
-        .account_dir(&alice_account())
-        .join("kb/world/people.md");
+    let file = home.root.path().join("kb/world/people.md");
     std::fs::write(&file, format!("{PEOPLE}\n## 老莫\n\n开杂货铺。\n")).expect("写得进");
     let log = chat(&home, &handle, 4, "去老莫那儿买点东西").await;
     let blocks = recalled(&log);

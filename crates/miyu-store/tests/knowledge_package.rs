@@ -20,7 +20,7 @@ fn package(scratch: &Scratch, pkg: &str, id: &str, toml: &str) -> PathBuf {
 }
 
 fn own(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.account_dir(&admin()).join("kb").join(id);
+    let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("notes.md"), "自己的笔记。\n").expect("写得进");
     dir
@@ -68,17 +68,15 @@ fn a_package_base_is_listed_searched_and_read() {
         .search(&admin(), "守灯人", None, 5, None)
         .expect("搜得了");
     assert_eq!(hits[0].kb, "world");
-    let page = knowledge
-        .read(&admin(), "world", "people.md", 1)
-        .expect("读得了");
+    let page = knowledge.read("world", "people.md", 1).expect("读得了");
     assert!(page.text.contains("守灯人"));
     assert!(
-        root.index(&admin())
+        root.index()
             .join("kb/packages/world-pack/world.db")
             .is_file(),
         "索引在包那一格"
     );
-    assert!(knowledge.auto(&admin(), "world").expect("在"));
+    assert!(knowledge.auto("world").expect("在"));
 }
 
 #[test]
@@ -94,17 +92,9 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
             "{result:?}"
         );
     };
-    read_only(knowledge.add(&admin(), "world", "a.md", b"x\n", false));
-    read_only(
-        knowledge
-            .save(&admin(), "world", "a.md", "x", false)
-            .map(|_| ()),
-    );
-    read_only(
-        knowledge
-            .trash(&admin(), "world", "people.md", None)
-            .map(|_| ()),
-    );
+    read_only(knowledge.add("world", "a.md", b"x\n", false));
+    read_only(knowledge.save("world", "a.md", "x", false).map(|_| ()));
+    read_only(knowledge.trash("world", "people.md", None).map(|_| ()));
     read_only(knowledge.delete(&admin(), "world", None).map(|_| ()));
     read_only(
         knowledge
@@ -112,10 +102,10 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
             .map(|_| ()),
     );
     knowledge
-        .create(&admin(), "world", Some("她要建"))
+        .create("world", Some("她要建"))
         .expect("看得见的当已经有了");
     assert!(
-        !root.account_dir(&admin()).join("kb/world").exists(),
+        !root.path().join("kb/world").exists(),
         "她写到包里的库不另建一个盖住它"
     );
 
@@ -123,8 +113,8 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
         .rename(&admin(), "world", fields(Some(false), None))
         .expect("开关改得了");
     assert!(!off.auto);
-    assert!(!knowledge.auto(&admin(), "world").expect("在"));
-    let mine = std::fs::read_to_string(root.account_dir(&admin()).join("kb.toml")).expect("记下了");
+    assert!(!knowledge.auto("world").expect("在"));
+    let mine = std::fs::read_to_string(root.path().join("kb.toml")).expect("记下了");
     assert!(mine.contains("\"world-pack/world\" = false"), "{mine}");
     assert_eq!(
         std::fs::read_to_string(pack.join("kb/world/kb.toml")).expect("在"),
@@ -134,7 +124,7 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
     knowledge
         .rename(&admin(), "world", fields(Some(true), None))
         .expect("开得回来");
-    assert!(knowledge.auto(&admin(), "world").expect("在"));
+    assert!(knowledge.auto("world").expect("在"));
     knowledge
         .reindex(&admin(), "world")
         .expect("索引是我们的，重建得了");
@@ -160,7 +150,7 @@ fn your_own_base_wins_and_the_first_package_wins() {
             ("world".to_string(), None, false),
         ]
     );
-    assert_eq!(knowledge.title(&admin(), "lore").expect("在").0, "甲");
+    assert_eq!(knowledge.title("lore").expect("在").0, "甲");
     assert!(matches!(
         knowledge.found(&admin(), "lore", fields(None, None)),
         Err(KnowledgeError::BaseExists)
@@ -180,7 +170,7 @@ fn the_package_given_first_wins_whatever_its_id() {
         listed(&knowledge),
         [("lore".to_string(), Some("z-shipped".to_string()), false)]
     );
-    assert_eq!(knowledge.title(&admin(), "lore").expect("在").0, "出厂的");
+    assert_eq!(knowledge.title("lore").expect("在").0, "出厂的");
 }
 
 #[test]
@@ -194,19 +184,15 @@ fn removing_a_package_takes_its_bases_index_and_switches() {
     knowledge
         .rename(&admin(), "world", fields(Some(false), None))
         .expect("开关改得了");
-    let index = root.index(&admin()).join("kb/packages/world-pack");
+    let index = root.index().join("kb/packages/world-pack");
     assert!(index.is_dir());
 
     assert!(knowledge.follow_packages(Vec::new()).is_empty(), "都清得掉");
     assert_eq!(listed(&knowledge), [("notes".to_string(), None, false)]);
     assert!(!index.exists(), "索引跟着删");
-    let mine =
-        std::fs::read_to_string(root.account_dir(&admin()).join("kb.toml")).unwrap_or_default();
+    let mine = std::fs::read_to_string(root.path().join("kb.toml")).unwrap_or_default();
     assert!(!mine.contains("world-pack"), "开关跟着删：{mine}");
-    assert!(
-        root.index(&admin()).join("kb/notes.db").is_file(),
-        "自己的不碍事"
-    );
+    assert!(root.index().join("kb/notes.db").is_file(), "自己的不碍事");
 }
 
 #[test]
@@ -244,8 +230,8 @@ fn switches_are_written_where_the_data_root_really_is() {
     knowledge
         .rename(&admin(), "world", fields(Some(false), None))
         .expect("开关改得了");
-    assert!(!knowledge.auto(&admin(), "world").expect("在"));
-    let mine = root.account_dir(&admin()).join("kb.toml");
+    assert!(!knowledge.auto("world").expect("在"));
+    let mine = root.path().join("kb.toml");
     assert!(
         std::fs::read_to_string(&mine)
             .expect("记下了")

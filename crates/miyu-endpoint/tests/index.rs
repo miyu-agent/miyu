@@ -11,7 +11,7 @@ use crate::support::*;
 
 /// 索引里会话 `session` 那一行：另开一个连接读。
 fn row(home: &Home, session: &str) -> Option<Row> {
-    let (index, _) = SessionIndex::open(&home.root.index(&alice()).join(FILE));
+    let (index, _) = SessionIndex::open(&home.root.index().join(FILE));
     let id = SessionId::parse(session).expect("合写法");
     index.rows().expect("读得了").remove(&id)
 }
@@ -45,10 +45,7 @@ async fn the_row_follows_what_the_session_writes_and_goes_with_it() {
     assert_eq!(got.owner, alice());
     assert_eq!(got.created, log[0].at);
     assert_eq!(got.last_active, log.last().expect("有事件").at);
-    let segment = home
-        .root
-        .session_dir(&alice(), &got.id)
-        .join("000000000001.jsonl");
+    let segment = home.root.session_dir(&got.id).join("000000000001.jsonl");
     let bytes = std::fs::metadata(segment).expect("在").len();
     assert_eq!(
         (got.mark.segment, got.mark.bytes),

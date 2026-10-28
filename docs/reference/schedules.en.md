@@ -1,6 +1,6 @@
 # Schedules: `schedule.*`
 
-At a set time, hand one line to a session and let it run a turn: a morning briefing at 8, a look at the server every hour. Each account has one table, `home/<account>/state/schedules.db`, so schedules survive a core restart; times missed while the core was down are skipped, not made up. Design: `docs/designs/45-定时和循环.md`; how it runs: `docs/blueprint/schedules.md`. 中文版：[schedules.md](schedules.md).
+At a set time, hand one line to a session and let it run a turn: a morning briefing at 8, a look at the server every hour. Each account has one table, `state/schedules.db`, so schedules survive a core restart; times missed while the core was down are skipped, not made up. Design: `docs/designs/45-定时和循环.md`; how it runs: `docs/blueprint/schedules.md`. 中文版：[schedules.md](schedules.md).
 
 | Method | Does |
 |---|---|

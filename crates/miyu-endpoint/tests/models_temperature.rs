@@ -113,7 +113,7 @@ fn problems(reply: &Value) -> Vec<(String, String, String)> {
 #[tokio::test]
 async fn model_list_shows_the_default_temperature_its_key_and_whether_the_model_takes_one() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home));
     client.hello().await;
     let reply = client.call("l", "model.list", json!({})).await;
@@ -126,7 +126,7 @@ async fn model_list_shows_the_default_temperature_its_key_and_whether_the_model_
     assert_eq!(
         deepseek["temperature"],
         json!({
-            "value": 0.7, "from": "config", "file": "system/config.toml", "line": line,
+            "value": 0.7, "from": "config", "file": "config.toml", "line": line,
             "layer": "system", "key": "providers.deepseek.models.deepseek-flash.temperature",
         })
     );
@@ -149,7 +149,7 @@ async fn model_list_shows_the_default_temperature_its_key_and_whether_the_model_
 #[tokio::test]
 async fn a_temperature_the_model_cannot_use_is_reported() {
     let home = Home::new();
-    home.write("system/config.toml", CONFIG);
+    home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home));
     let hello = client.hello().await;
     assert_eq!(hello["result"]["config_errors"], 2, "{hello}");
@@ -193,10 +193,7 @@ async fn a_temperature_the_model_cannot_use_is_reported() {
 #[tokio::test]
 async fn a_temperature_set_applies_next_turn_and_stays_in_bounds() {
     let home = Home::new();
-    home.write(
-        "system/config.toml",
-        "[providers.deepseek]\nlocal = false\n",
-    );
+    home.write("config.toml", "[providers.deepseek]\nlocal = false\n");
     let mut client = Client::connect(core(&home));
     client.hello().await;
     let key = "providers.deepseek.models.deepseek-flash.temperature";

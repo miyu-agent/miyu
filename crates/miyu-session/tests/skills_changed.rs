@@ -16,11 +16,7 @@ use crate::support::*;
 
 /// 在 alice 家目录里放技能 `name`；交回 `SKILL.md` 的路径（列出来的写法：Windows 上反斜杠换成 `/`）。
 fn put(home: &Home, name: &str) -> String {
-    let dir = home
-        .root
-        .account_dir(&alice_account())
-        .join("skills")
-        .join(name);
+    let dir = home.root.path().join("skills").join(name);
     std::fs::create_dir_all(&dir).expect("建得了");
     let file = dir.join("SKILL.md");
     std::fs::write(
@@ -67,7 +63,7 @@ async fn a_skill_added_mid_session_comes_in_the_tail_once_and_opens_its_folder()
     let catalog = Catalog::new([Arc::clone(&read) as Arc<dyn Tool>]).expect("合写法");
     let added = home
         .root
-        .account_dir(&alice_account())
+        .path()
         .join("skills")
         .join("pdf")
         .join("SKILL.md")
@@ -112,8 +108,7 @@ async fn when_every_skill_is_gone_the_tail_says_so() {
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
     let handle = home.create_with(&script, &catalog).await;
     turn(&handle, "cmd-1").await;
-    std::fs::remove_dir_all(home.root.account_dir(&alice_account()).join("skills"))
-        .expect("删得了");
+    std::fs::remove_dir_all(home.root.path().join("skills")).expect("删得了");
     turn(&handle, "cmd-2").await;
     let second = words(&script.requests()[1].1);
     assert!(

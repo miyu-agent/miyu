@@ -9,7 +9,6 @@ use std::time::Duration;
 use serde_json::json;
 
 use miyu_kernel::event::Body;
-use miyu_kernel::id::AccountId;
 use miyu_kernel::origin::By;
 use miyu_session::testkit::{Play, Script};
 use miyu_store::log::read_events;
@@ -18,10 +17,6 @@ use crate::support::extensions::*;
 use crate::support::served::{replies, served_core};
 use crate::support::venues::snapshot;
 use crate::support::*;
-
-fn bot() -> AccountId {
-    AccountId::parse("bot").expect("合写法")
-}
 
 #[tokio::test]
 async fn the_bridge_opens_groups_under_the_owner_confined() {
@@ -76,19 +71,15 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     );
     assert!(got[3].get("error").is_none(), "{got:?}");
     assert!(got[4].get("error").is_none(), "{got:?}");
-    let groups = dir(&home, &alice(), &session);
+    let groups = dir(&home, &session);
     let created = read_events(&groups).expect("目录在主人的家目录下");
     let Body::SessionCreated(created) = &created[0].body else {
         panic!("第一条是 session.created");
     };
     assert_eq!(created.owner, alice(), "群也在主人名下（施工 SU-4 中）");
     assert!(created.confined, "群关起来");
-    assert!(
-        !home.root.account_dir(&bot()).exists(),
-        "包不再有自己的家目录"
-    );
     let id = miyu_kernel::id::SessionId::parse(&session).expect("会话编号");
-    let mine = home.root.session_workspace(&alice(), &id);
+    let mine = home.root.session_workspace(&id);
     assert_eq!(
         created.cwd.as_deref().map(Path::new),
         Some(mine.as_path()),
@@ -98,7 +89,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     // 群会话（施工 O-13 中）：快照钉下时区、system 接上格式说明。
     let note =
         std::fs::read_to_string(default_resources().join("core/venues/group.txt")).expect("读得到");
-    let made = snapshot(&home, &alice(), &groups);
+    let made = snapshot(&home, &groups);
     assert!(made.group.is_some(), "群会话钉下时区");
     assert!(made.system.contains(note.trim_end()));
     // 对应表认出的主人在群里说的照旧是外部身份带账号，不是本人（`as` 照关不关比，施工 SU-4 中）。
@@ -115,7 +106,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
 
     until_turns_in(&groups, 1).await;
     // 会话落盘时就写：索引在主人的家目录下；用量记在主人名下（查之前，不靠 `usage.query` 补）。
-    let index = home.root.index(&alice()).join("sessions.db");
+    let index = home.root.index().join("sessions.db");
     until_counted(
         &index,
         "SELECT count(*) FROM sessions WHERE id = ?1 AND owner = 'alice'",
@@ -144,18 +135,13 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
 
     // 记忆归主人。群里的回合进主人那一间的回合库，记下它在哪个场所（施工 R-13 下，`memory.md`
     // 第一条第 1 款）；看删群会话时是不是照记忆归谁去埋墓碑。
-    let turns = |account: &AccountId| {
-        home.root
-            .index(account)
-            .join("recall")
-            .join("turns-engineer.db")
-    };
+    let turns = || home.root.index().join("recall").join("turns-engineer.db");
     // 回合库在后台建（施工 V-9）：等它出现，最多六十秒（机器忙时慢，只在出错时等满）。
     let built = tokio::time::Instant::now() + Duration::from_secs(60);
-    while !turns(&alice()).exists() && tokio::time::Instant::now() < built {
+    while !turns().exists() && tokio::time::Instant::now() < built {
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
-    assert!(turns(&alice()).exists(), "群里的回合进主人的回合库");
+    assert!(turns().exists(), "群里的回合进主人的回合库");
     // 人的头碰不到关着的群会话（施工 Y-2 上；SU-4 中起照关不关，不照属主）。
     let reply = client.subscribe("g1", &session).await;
     assert_eq!(reason(&reply), Some("session_not_found"), "{reply}");
@@ -164,11 +150,9 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     std::fs::write(&checked, "").expect("写得进");
     let got = replies(&path, 8).await;
     assert_eq!(got[5]["result"], json!({}), "桥删得掉它自己的群：{got:?}");
-    let db = rusqlite::Connection::open_with_flags(
-        turns(&alice()),
-        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-    )
-    .expect("回合库在");
+    let db =
+        rusqlite::Connection::open_with_flags(turns(), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .expect("回合库在");
     let buried: i64 = db
         .query_row(
             "SELECT count(*) FROM buried WHERE key = ?1",
@@ -191,12 +175,12 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
 
     let private = &got[6]["result"];
     let mine = private["session"].as_str().expect("有编号").to_string();
-    let first = read_events(&dir(&home, &alice(), &mine)).expect("在主人名下");
+    let first = read_events(&dir(&home, &mine)).expect("在主人名下");
     let Body::SessionCreated(opened) = &first[0].body else {
         panic!("第一条是 session.created");
     };
     assert!(!opened.confined, "对应表里的主人的私聊不关：{got:?}");
-    let made = snapshot(&home, &alice(), &dir(&home, &alice(), &mine));
+    let made = snapshot(&home, &dir(&home, &mine));
     assert_eq!(made.group, None, "私聊不是群会话");
     assert!(!made.system.contains(note.trim_end()));
     assert!(
@@ -277,7 +261,7 @@ async fn an_extension_writes_only_its_own_ext_events() {
         .as_str()
         .expect("有编号")
         .to_string();
-    let decided = read_events(&dir(&home, &alice(), &session))
+    let decided = read_events(&dir(&home, &session))
         .expect("读得了")
         .into_iter()
         .find(|event| event.body.kind() == "ext.bot.chat.decided")

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::support::routing::cut_after;
-use crate::support::{Home, alice_account, ask, say, until_turn_ends, watch, within};
+use crate::support::{Home, ask, say, until_turn_ends, watch, within};
 use miyu_drivers::Inputs;
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_kernel::block::{Block, Image, Text};
@@ -306,7 +306,7 @@ async fn an_image_goes_out_as_its_bytes() {
     let routes = models(&mut home, &server, images, false);
     let handle = home.create(&routes).await;
     // 属主的 blob 里存着这张「图」：四个字节 miyu，base64 是 bWl5dQ==。
-    let blob = Blobs::new(home.root.blobs(&alice_account()))
+    let blob = Blobs::new(home.root.blobs())
         .put(b"miyu")
         .expect("存得进去");
     let mut pushes = watch(&handle).await;

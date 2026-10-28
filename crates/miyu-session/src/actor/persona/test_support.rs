@@ -50,7 +50,7 @@ pub(super) fn scratch_root(name: &str, persona: &str) -> (Scratch, DataRoot) {
 
 /// 写 Miyu 的一份字。
 pub(super) fn write(root: &DataRoot, file: &str, text: &str) {
-    let dir = root.path().join("home/alice/personas/miyu/prompts");
+    let dir = root.path().join("personas/miyu/prompts");
     std::fs::create_dir_all(&dir).expect("建得了人格目录");
     std::fs::write(dir.join(file), text).expect("写得进");
 }
@@ -100,7 +100,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
     let alice = AccountId::parse("alice").expect("账号合写法");
     let resources = ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"));
     let personas = Personas::new(&resources, &root, &alice);
-    let presets = Presets::new(&resources, &root, &alice);
+    let presets = Presets::new(&resources, &root);
     let found = presets.find("p").expect("找得到预设");
     let chosen = Chosen::new(found.id, found.file, &installed());
     let venue = VenueId::parse("local").expect("场所合写法");
@@ -149,7 +149,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
     let refresh = Refresh {
         personas,
         resources,
-        blobs: Blobs::new(root.blobs(&alice)),
+        blobs: Blobs::new(root.blobs()),
         snapshot,
         child: false,
         presets: Some(PresetPlaces {
@@ -176,7 +176,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
 }
 
 pub(super) fn write_preset(root: &DataRoot, text: &str) {
-    let dir = root.path().join("home/alice/presets");
+    let dir = root.path().join("presets");
     std::fs::create_dir_all(&dir).expect("建得了预设目录");
     std::fs::write(dir.join("p.toml"), text).expect("写得进");
 }

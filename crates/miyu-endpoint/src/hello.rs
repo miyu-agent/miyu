@@ -317,14 +317,14 @@ fn host(core: &Core, account: &AccountId) -> Value {
     let mut host = json!({
         "home": core.home.as_deref().map(|home| home.display().to_string()),
         "platform": std::env::consts::OS,
-        "workspace": shown(core.root.workspace(account)),
+        "workspace": shown(core.root.workspace()),
     });
     // 照 XDG 的那几处（施工 Y-11 上）：只给管理员（`06-多用户与身份.md` U25：普通用户看不到运行它的那台电脑，真实路径就是那台
     // 电脑的东西）；远程的连整个 `host` 都不给（`connection/reach.rs`）。
     if *account == core.admin {
         let dirs: serde_json::Map<String, Value> = core
             .root
-            .user_dirs(account)
+            .user_dirs()
             .into_iter()
             .map(|(name, dir)| (name.to_string(), json!(shown(dir))))
             .collect();

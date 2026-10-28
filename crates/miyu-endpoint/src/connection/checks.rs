@@ -57,7 +57,7 @@ async fn others_session(core: &Arc<Core>, caller: &Caller, request: &Request) ->
         Some(handle) => handle.owner().clone(),
         None => core.sessions.owner(core, &id).await?,
     };
-    let (venue, confined) = crate::sessions::placed(core, &owner, &id).await?;
+    let (venue, confined) = crate::sessions::placed(core, &id).await?;
     let reachable = match crate::venues::bridge(core, caller) {
         Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
         None => owner == core.admin && (venue.as_str() == LOCAL || !confined),

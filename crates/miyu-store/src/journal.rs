@@ -22,7 +22,7 @@ use miyu_kernel::time::Timestamp;
 
 use crate::durable::{create_dir, sync_dir};
 
-/// 文件名：系统的在 `system/` 里，账号的在 `home/<账号>/` 里。
+/// 文件名：在数据根下。
 pub const FILE: &str = "journal.jsonl";
 
 /// 要记的一条：什么时候、谁、哪个命令引起的、什么种类、内容。

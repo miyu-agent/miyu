@@ -47,7 +47,7 @@ async fn started_with(
     all.extend_from_slice(extra);
     all.push("serve");
     home.write(
-        "system/packages/wx/package.toml",
+        "packages/wx/package.toml",
         &manifest(&program.name(), &steps(&all)),
     );
     let core = Arc::new(
