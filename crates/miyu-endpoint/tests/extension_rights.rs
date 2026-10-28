@@ -63,7 +63,7 @@ fn install(
     path
 }
 
-/// 起核心：`approved` 是各包批过的能力（施工 Y-5 下上起记进组表）。
+/// 起核心：`approved` 是各包批过的能力（施工 SU-2 中起记在开关文件里）。
 fn core(home: &Home, script: &Script, approved: Value) -> Arc<miyu_endpoint::Core> {
     for (id, capabilities) in approved.as_object().expect("包到能力") {
         let names: Vec<&str> = capabilities

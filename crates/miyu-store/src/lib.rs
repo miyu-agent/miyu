@@ -30,7 +30,6 @@ mod durable;
 pub mod env;
 pub mod extensions;
 pub mod generated;
-pub mod groups;
 pub mod human;
 pub mod index;
 pub mod invites;

@@ -112,3 +112,10 @@
 2. 握手回应多 `password_set`（布尔）。
 3. 主人对应表 `external.bindings`：写了非空值的身份就是主人，值不再查是哪个账号（头照旧写 `admin`）；`venue.binding`、`venue.session`、桥列会话都照它（`venues::owners_ids`）。SU-3 改成只列身份。
 4. 怎么验：新的 `tests/login_device.rs` 两条（设备令牌改密码：不带、带错、带对、别的设备断开、旧令牌不认、新令牌认得、同一个来源错 5 次先拒；票换来的设备第一次设不用带、握手照实写设没设）；场所的测试夹具把对应表的值写成 `admin`；桥碰得到哪些会话补一条单测（`venues/sessions/tests.rs`：主人的碰得到，别的桥名下的、对应表里没有这个平台的、本机的碰不到）。手写变异 5 个，头一轮活了「属主得是主人」那一个，补了单测以后全杀；本机门禁。
+
+### 十二、SU-2 中：批过的扩展能力挪回开关文件
+
+1. 组表 `system/groups.json`（`miyu_store::groups`、端点 `login::read_groups`、`change_groups`）整个删掉：SU-1 拿掉管理员组以后它只剩扩展能力的 `ext.<能力>` 组。
+2. 批过的能力记在开关文件 `system/extensions.json` 的 `approved`（包的编号到能力，照名字排；一样都没批的不写）：`extension.enable` 批的时候在开关那把锁里读好、记下这时声明的全部、和开关一起写回（`approval::approve` 改成直接改要写回的那一份）；卸包时开没开、批过的一起删（`approval::forget`，一次写）。出厂的照旧算全批过、不记。
+3. 9-4 下上的开关文件本来就是这一格的写法，以前写下的 `approved` 照样认（Y-5 下上起读的时候扔掉）。主人部署的组表里的 `ext.*` 由 SU-5 的搬家脚本挪进来。
+4. 怎么验：`tests/extension_approval.rs` 批了以后开关文件写着 `approved`、没有组表，升级多了的只问多的、记的是这时声明的全部；开关文件里记着批过的，起来直接拉起；`tests/packages_purge.rs` 卸了开没开、批过的一起清掉；`miyu-store` 开关文件读写的单测换成 `approved`。手写变异 5 个全杀；本机门禁。

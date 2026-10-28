@@ -9,7 +9,7 @@ use serde::Serialize;
 use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::config_file::{self, WriteError};
-use miyu_store::{accounts, groups, logins};
+use miyu_store::{accounts, logins};
 
 use super::{TARGET, by, login_expires, random_hex};
 use crate::Core;
@@ -59,32 +59,6 @@ pub(super) fn put_password(core: &Core, hashed: String, now: Timestamp) -> Resul
     accounts::write(&path, &accounts, read.version.as_deref())
         .map_err(|error| not_written("accounts not written", &error))?;
     Ok(first)
-}
-
-/// 读 `system/groups.json`（施工 Y-12 中下）：坏了的当空的，记一行 `WARN groups not read`。
-pub(crate) fn read_groups(core: &Core) -> groups::Read {
-    let path = core.root.system().join(groups::FILE);
-    groups::read(&path).unwrap_or_else(|error| {
-        tracing::warn!(target: TARGET, error = %error, "groups not read");
-        groups::Read {
-            groups: groups::Groups::default(),
-            version: current(&path),
-        }
-    })
-}
-
-/// 改 `system/groups.json`：读出来交给 `change` 改，改好了写回。`change` 交回的错照原样往上报，什么都不写。
-pub(super) fn change_groups<T>(
-    core: &Core,
-    change: impl FnOnce(&mut groups::Groups) -> Result<T, Refusal>,
-) -> Result<T, Refusal> {
-    let read = read_groups(core);
-    let mut groups = read.groups;
-    let out = change(&mut groups)?;
-    let path = core.root.system().join(groups::FILE);
-    groups::write(&path, &groups, read.version.as_deref())
-        .map_err(|error| not_written("groups not written", &error))?;
-    Ok(out)
 }
 
 /// 造一个设备令牌，记进主人的 `logins.json`：交回令牌、它的哈希、过期的时刻。

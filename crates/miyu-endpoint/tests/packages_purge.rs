@@ -122,21 +122,19 @@ async fn removing_an_extension_forgets_its_switch_and_approvals() {
     until_state(&mut client, "echo", |one| one["state"] == "running").await;
     let switches = || read(&home, "system/extensions.json");
     assert!(switches().contains("echo"), "{}", switches());
-    // 批过的能力在组表里（施工 Y-5 下上）。
-    let groups = || read(&home, "system/groups.json");
+    // 批过的能力记在开关文件里（施工 SU-2 中）。
     assert!(
-        groups().contains("\"ext.network\":[\"echo\"]"),
+        switches().contains("\"approved\":{\"echo\":[\"network\"]}"),
         "{}",
-        groups()
+        switches()
     );
 
     let removed = call(&mut client, "package.remove", json!({"package": "echo"})).await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
-    assert!(!switches().contains("echo"), "开没开清掉：{}", switches());
     assert!(
-        !groups().contains("echo"),
-        "批过的能力的组一起移出：{}",
-        groups()
+        !switches().contains("echo"),
+        "开没开、批过的一起清掉：{}",
+        switches()
     );
     let back = call(
         &mut client,

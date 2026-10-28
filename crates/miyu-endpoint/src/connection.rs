@@ -135,7 +135,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         account,
         package: package.clone(),
     };
-    // 它手里有哪些能力（施工 X-30；Y-5 下上起照组表）：批、升级都会重新拉起，一个连接算一次就够。
+    // 它手里有哪些能力（施工 X-30；SU-2 中起照开关文件里批过的）：批、升级都会重新拉起，一个连接算一次就够。
     let declared = package
         .as_deref()
         .map_or_else(Vec::new, |package| rights::declared(&core, package));

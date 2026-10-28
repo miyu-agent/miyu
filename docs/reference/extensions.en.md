@@ -70,7 +70,7 @@ A connection the core didn't start gets `not_an_extension` from `port.claim` and
 
 ## Capabilities
 
-The manifest's `[process] capabilities` declares what it needs. Packages the admin installed need a person's approval (`extension.enable` with `approve`); built-in ones count as approved. A package with unapproved capabilities isn't started. Approvals live in the group table `system/groups.json` as `ext.<capability>` groups with the package's account as a member, and are removed when the package is removed; after a core upgrade, capabilities approved before have to be approved again.
+The manifest's `[process] capabilities` declares what it needs. Packages you installed need your approval (`extension.enable` with `approve`); built-in ones count as approved. A package with unapproved capabilities isn't started. Approvals live in the switches file `system/extensions.json` under `approved` (package id to capabilities), and are removed when the package is removed.
 
 | Capability | Allows |
 |---|---|

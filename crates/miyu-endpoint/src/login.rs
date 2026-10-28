@@ -15,7 +15,6 @@
 
 pub(crate) mod avatar;
 mod files;
-pub(crate) use files::read_groups;
 pub(crate) mod ticket;
 
 use std::collections::BTreeMap;
@@ -383,15 +382,6 @@ fn login_expires(now: Timestamp) -> Timestamp {
 /// 记进系统日志的人：账号 `account`。
 fn by(account: &AccountId) -> By {
     By::Person(Person::new(account.clone()))
-}
-
-/// 在凭据文件那把锁里改组表（施工 Y-5 下上）：扩展审批改 `ext.<能力>` 组，一件件来。
-pub(crate) async fn change_groups<T>(
-    core: &Core,
-    change: impl FnOnce(&mut miyu_store::groups::Groups) -> Result<T, Refusal>,
-) -> Result<T, Refusal> {
-    let _queue = core.identity.files.lock().await;
-    files::change_groups(core, change)
 }
 
 /// `account` 是不是主人（施工 SU-1：只有一个人，以前的「管理员」就是他）。包的账号不是。

@@ -81,7 +81,7 @@ pub(crate) async fn turn_on(
     }
     let _one_at_a_time = core.extensions.ops.lock().await;
     let (mut switches, version) = read_switches(core);
-    approval::approve(core, id, manifest, approve).await?;
+    approval::approve(core, (id, manifest), approve, &mut switches)?;
     switches.on.insert(id.to_string(), true);
     write(core, id, &switches, version.as_deref())?;
     let cached = crate::provide::restore(core, id);

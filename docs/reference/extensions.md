@@ -70,7 +70,7 @@
 
 ## 能力
 
-清单 `[process] capabilities` 声明要什么。管理员自己装的包要人批（`extension.enable` 带 `approve`）；出厂的算批过。还有没批的不拉起。批过的记在组表 `system/groups.json` 的 `ext.<能力>` 组里（包的账号是成员），卸包时移出；换核心以后以前批过的要重新批一次。
+清单 `[process] capabilities` 声明要什么。自己装的包要人批（`extension.enable` 带 `approve`）；出厂的算批过。还有没批的不拉起。批过的记在开关文件 `system/extensions.json` 的 `approved` 里（包的编号到能力），卸包时删掉。
 
 | 能力 | 能做什么 |
 |---|---|

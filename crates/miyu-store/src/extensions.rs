@@ -1,5 +1,5 @@
 //! 扩展的开关 `system/extensions.json`（`docs/blueprint/extensions.md`「对外的样子」，施工 9-4 上）：哪几个 `process` 包开着，
-//! 批过哪些扩展能力（施工 9-4 下上）。
+//! 每个包批过哪些扩展能力（施工 9-4 下上；Y-5 下上挪去组表，SU-2 中挪回来）。
 //! 没写的照清单的 `start`，由用它的一方定；这里只存人明着开、关过的。放在 `system/`、不放 `state/`：`state/` 是派生的、
 //! 能删掉重建，开关是人做的决定。读写照只给自己看的 JSON 小文件的规矩。
 
@@ -29,21 +29,10 @@ pub struct Switches {
     pub version: u32,
     /// 包的编号到开没开：人明着开、关过的才有。
     pub on: BTreeMap<String, bool>,
-    /// 以前记批过的扩展能力的那一格（施工 9-4 下上）：Y-5 下上起批过的能力记在组表 `groups.json` 的 `ext.<能力>` 组里，这一格
-    /// 读的时候认得、直接扔掉，写回时不写（整份读不进的话开关会一起丢）。换核心以后要重新批一次。等不再有带它的文件（0.1.0
-    /// 以后）就删掉。
-    #[serde(default, rename = "approved", skip_serializing)]
-    pub retired: Retired,
-}
-
-/// 扔掉的一格：什么都认、什么都不留。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Retired;
-
-impl<'de> Deserialize<'de> for Retired {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Retired, D::Error> {
-        serde::de::IgnoredAny::deserialize(deserializer).map(|_| Retired)
-    }
+    /// 包的编号到批过的扩展能力（能力的写法，例如 `events.read`），照名字排、不重；一样都没批的包不写，一个都没有的不写这一格。
+    /// 出厂的包本来就被信任，不记在这里。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub approved: BTreeMap<String, Vec<String>>,
 }
 
 impl Default for Switches {
@@ -51,7 +40,7 @@ impl Default for Switches {
         Switches {
             version: VERSION,
             on: BTreeMap::new(),
-            retired: Retired,
+            approved: BTreeMap::new(),
         }
     }
 }
