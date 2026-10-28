@@ -94,6 +94,7 @@ pub use open::{
     OfferedFeatures, PresetPlaces, ToolOverrides, Within, Workplace, create, fork, load,
     load_placed, preview, preview_context,
 };
+pub use path_text::path_text;
 pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{

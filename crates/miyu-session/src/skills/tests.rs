@@ -31,6 +31,8 @@ fn skill(name: &str, description: &str) -> Skill {
             description: description.to_string(),
             display_name: std::collections::BTreeMap::new(),
             summary: std::collections::BTreeMap::new(),
+            model_invocable: true,
+            user_invocable: true,
             warnings: Vec::new(),
         },
         file: dir.join("SKILL.md"),
@@ -69,6 +71,25 @@ fn each_skill_is_one_line_with_its_file() {
     assert_eq!(
         shelves(&skills),
         [skills[0].dir.clone(), skills[1].dir.clone()]
+    );
+}
+
+/// 只许人点名用的（`disable-model-invocation`，施工 PT-2 下）不列：她自己不该挑它；文件夹照旧放开只读，人点名用了以后她读得到
+/// 技能里写到的别的文件。全是这种的整块不放。
+#[test]
+fn skills_only_a_person_may_invoke_are_not_listed() {
+    let mut manual = skill("release", "Cut a release.");
+    manual.head.model_invocable = false;
+    let skills = [skill("notes", "Take notes."), manual];
+    let block = listing(&resources(), &[tool(READ)], &skills)
+        .expect("读得出")
+        .expect("有一个列得出");
+    assert!(block.contains("- notes: "), "{block}");
+    assert!(!block.contains("release"), "{block}");
+    assert_eq!(shelves(&skills).len(), 2);
+    assert_eq!(
+        listing(&resources(), &[tool(READ)], &skills[1..]).expect("读得出"),
+        None
     );
 }
 

@@ -6,6 +6,9 @@
 //! - `metadata` 里的 `display_name`、`summary`：给人看的名字、一句说明（双槽：给模型的和给人的分开）；`_zh`、`_ja` 结尾的是那两种
 //!   语言的（施工 X-13 下）。
 //!
+//! - `disable-model-invocation`、`user-invocable`：谁能用（施工 PT-2 下，Claude Code 定的两格）：前者 `true` 的只能人点名用，
+//!   后者 `false` 的只能她自己用；不是是非的照默认（都能）。
+//!
 //! 别的格子（`license`、`compatibility`、`allowed-tools`……）照格式认、不用。纯逻辑：进来的是文件夹的名字和文件里的字，出去的是
 //! 读好的样子（带几条警告），或者哪里不对。
 //!
@@ -53,6 +56,10 @@ pub struct SkillHead {
     pub display_name: BTreeMap<String, String>,
     /// 给人看的一句说明，照语言：`summary`、`summary_zh`、`summary_ja`，同上。
     pub summary: BTreeMap<String, String>,
+    /// 她自己能不能用（施工 PT-2 下）：`disable-model-invocation: true` 的不能，不列进 system，只能人点名用。
+    pub model_invocable: bool,
+    /// 人能不能点名用（施工 PT-2 下）：`user-invocable: false` 的不能，不进命令菜单，`/名字` 认不出。
+    pub user_invocable: bool,
     /// 照收了、但不合格式的地方（施工 PT-2 上）：`miyu check`、`skill.list` 报给人看。
     pub warnings: Vec<SkillWarning>,
 }
@@ -187,8 +194,19 @@ pub fn read(dir: &str, text: &str) -> Result<SkillHead, SkillProblem> {
         description: description.chars().take(DESCRIPTION_CHARS).collect(),
         display_name: phrases(metadata, "display_name"),
         summary: phrases(metadata, "summary"),
+        model_invocable: doc["disable-model-invocation"].as_bool() != Some(true),
+        user_invocable: doc["user-invocable"].as_bool() != Some(false),
         warnings,
     })
+}
+
+/// `SKILL.md` 的字 `text` 的正文（施工 PT-2 下，人点名用技能时整段给她）：开头 `---` 包着的那一段和它后面的空行去掉；没有
+/// 开头的整份都是正文。
+pub fn body(text: &str) -> &str {
+    match split(text) {
+        Some((_, rest)) => rest.trim_start_matches(['\r', '\n']),
+        None => text.strip_prefix('\u{feff}').unwrap_or(text),
+    }
 }
 
 /// 照写的名字 `written`、文件夹的名字 `dir` 定技能叫什么（施工 PT-2 上）：写的合写法照它（和文件夹不同名的记警告）；没写、
@@ -276,6 +294,11 @@ fn phrases(metadata: &Yaml, key: &str) -> BTreeMap<String, String> {
 
 /// 开头 `---` 和下一个 `---` 之间的字；没有的没有。文件开头的 BOM 不算，行尾的 `\r` 不算。
 fn front_matter(text: &str) -> Option<&str> {
+    split(text).map(|(front, _)| front)
+}
+
+/// 开头 `---` 和下一个 `---` 之间的字，和收尾那一行 `---` 后面的全部；没有开头的没有。文件开头的 BOM 不算。
+fn split(text: &str) -> Option<(&str, &str)> {
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let mut lines = text.split_inclusive('\n');
     let first = lines.next()?;
@@ -286,7 +309,7 @@ fn front_matter(text: &str) -> Option<&str> {
     let mut end = start;
     for line in lines {
         if line.trim_end() == "---" {
-            return text.get(start..end);
+            return Some((text.get(start..end)?, text.get(end + line.len()..)?));
         }
         end += line.len();
     }

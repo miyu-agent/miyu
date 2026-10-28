@@ -321,6 +321,7 @@ mod looping;
 mod pages;
 mod prompts;
 mod registry;
+mod skills;
 mod templates;
 #[cfg(test)]
 mod tests;

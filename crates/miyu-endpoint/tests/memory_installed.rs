@@ -29,6 +29,8 @@ fn names(reply: &Value) -> Vec<String> {
         .as_array()
         .expect("有")
         .iter()
+        // 技能那一类（施工 PT-2 下，出厂的 `authoring` 包带两个）不算：这里看的是命令。
+        .filter(|command| command.get("skill").is_none())
         .filter_map(|command| command["name"].as_str().map(str::to_string))
         .collect()
 }

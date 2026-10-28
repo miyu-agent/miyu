@@ -723,6 +723,7 @@
     "package-problems/slash_link_outside": "这个命令模板是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
     "package-problems/slash_covered": "和 {detail} 同名，被它盖住了，这一份不用",
     "package-problems/slash_builtin": "和 Miyu 自带的 /{detail} 同名，这一份不用",
+    "package-problems/skill_command_clash": "和命令 /{detail} 同名，敲 /{detail} 用的是命令，不是这个技能",
     "config/reference-header": "Miyu 的全部配置项和默认值。这份是生成的，改它没有用。",
     "config/reference-where": "配置写在数据根的 config.toml。",
     "config/reference-item": "{name}：{description}",

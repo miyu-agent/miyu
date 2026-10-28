@@ -5975,6 +5975,45 @@ Project instructions stop here at {limit} bytes. Read the files for the rest.
 No skills are available now.
 ```
 
+### 人说的那一句（`message.user`），技能正文前面
+
+#### `core/skills/invoked-open.txt`
+
+- 什么时候加进来：人敲 `/技能名` 点名用一个技能的那一次（施工 PT-2 下）；不常驻
+- token：28（2026-10-29 照 tiktoken `o200k_base` 量，接在 `hi` 和一个换行后面、带行尾换行；字段按 `pdf-processing`、数据根里 `SKILL.md` 的绝对路径填，路径占大半）
+- 为什么加：人点名用技能时框架把去掉开头的正文直接给她（agentskills.io 接入指南的「用户点名」）：标签说清这是哪个技能、文件在哪，正文里写到的别的文件她照这个路径找（`skills.md`「人点名用」）
+- 指纹：`49ad2316`
+
+```text
+<skill name="{name}" path="{path}">
+```
+
+### 同上，技能正文后面
+
+#### `core/skills/invoked-close.txt`
+
+- 什么时候加进来：同上
+- token：3（同法量）
+- 为什么加：同上：正文到这里为止，后面是人写的参数
+- 指纹：`8705c127`
+
+```text
+</skill>
+```
+
+### 同上，外壳后面一行
+
+#### `core/skills/invoked-arguments.txt`
+
+- 什么时候加进来：同上，人在名字后面写了字的（没写的不带）
+- token：11（同法量，参数按 `extract the tables from report.pdf` 填；外壳头尾加这一行整块 42，加正文本身）
+- 为什么加：人点名时跟的那几个字：照 Claude Code 的写法单独一行给她，和正文分开
+- 指纹：`1d1187d5`
+
+```text
+ARGUMENTS: {arguments}
+```
+
 ### 说明列进 system 第 4 块技能那一段（一行）；正文是她读的工具结果
 
 #### `packages/authoring/skills/skill-creator/SKILL.md`

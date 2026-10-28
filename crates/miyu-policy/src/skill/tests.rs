@@ -20,6 +20,8 @@ fn the_public_format_reads() {
             description: "Extract PDF text, fill forms. Use when handling PDFs.".to_string(),
             display_name: BTreeMap::from([("en".to_string(), "PDF 处理".to_string())]),
             summary: BTreeMap::from([("en".to_string(), "读 PDF、填表".to_string())]),
+            model_invocable: true,
+            user_invocable: true,
             warnings: Vec::new(),
         })
     );
@@ -237,4 +239,38 @@ fn small_slips_are_kept_with_warnings() {
         ),
         ("skill_name_mismatch", "pdf".to_string())
     );
+}
+
+/// 谁能用（施工 PT-2 下，Claude Code 定的两格，接入指南提了前一个）：`disable-model-invocation: true` 的不给模型自己用，只能
+/// 人点名；`user-invocable: false` 的不给人点名。没写的、不是是非的照默认（都能）。
+#[test]
+fn who_may_invoke_a_skill_reads_from_two_flags() {
+    let head =
+        |front: &str| read("a", &skill(&format!("name: a\ndescription: A.\n{front}"))).unwrap();
+    let plain = head("");
+    assert!(plain.model_invocable && plain.user_invocable);
+    let manual = head("disable-model-invocation: true\n");
+    assert!(!manual.model_invocable && manual.user_invocable);
+    let background = head("user-invocable: false\n");
+    assert!(background.model_invocable && !background.user_invocable);
+    let odd = head("disable-model-invocation: \"yes\"\nuser-invocable: 0\n");
+    assert!(
+        odd.model_invocable && odd.user_invocable,
+        "不是是非的照默认"
+    );
+}
+
+/// 正文（施工 PT-2 下，人点名用技能时整段给她）：去掉开头 `---` 包着的那一段和它后面的空行；没有开头的整份都是正文。
+#[test]
+fn the_body_is_what_follows_the_front_matter() {
+    assert_eq!(
+        body("---\nname: a\n---\n\n# 正文\n\nDo it.\n"),
+        "# 正文\n\nDo it.\n"
+    );
+    assert_eq!(
+        body("\u{feff}---\r\nname: a\r\n---\r\nDo it.\r\n"),
+        "Do it.\r\n"
+    );
+    assert_eq!(body("# 只有正文\n"), "# 只有正文\n");
+    assert_eq!(body("---\nname: a\n"), "---\nname: a\n", "没收尾的不算开头");
 }

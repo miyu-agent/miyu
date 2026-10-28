@@ -11,11 +11,20 @@ use crate::support::memories::with_persona;
 use crate::support::venues::bound_core;
 use crate::support::*;
 
-/// 列出来的名字，照先后。
-fn names(reply: &Value) -> Vec<String> {
+/// 列出来的命令，照先后；技能那一类（`"skill": true`，出厂的 `authoring` 包带两个，施工 PT-2 下）不算，`skill_invoke.rs` 另测。
+fn commands(reply: &Value) -> Vec<Value> {
     reply["result"]["commands"]
         .as_array()
         .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|command| command.get("skill").is_none())
+        .cloned()
+        .collect()
+}
+
+/// 列出来的命令的名字，照先后（技能不算，同 [`commands`]）。
+fn names(reply: &Value) -> Vec<String> {
+    commands(reply)
         .iter()
         .map(|command| command["name"].as_str().unwrap_or_default().to_string())
         .collect()
@@ -29,7 +38,7 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
     client.hello().await;
     let reply = client.call("c1", "command.catalog", json!({})).await;
     assert_eq!(
-        reply["result"]["commands"],
+        json!(commands(&reply)),
         json!([
             {"name": "clear", "aliases": ["reset"], "summary": "清空上下文"},
             {"name": "clear-memory", "aliases": ["reset-memory"], "summary": "清掉这个会话的记忆"},

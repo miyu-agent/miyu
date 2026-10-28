@@ -727,6 +727,7 @@
     "package-problems/slash_link_outside": "This command template is a link to {detail} inside the data root, outside this account's own folders; skipped",
     "package-problems/slash_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_builtin": "Same name as Miyu's built-in /{detail}; this one is not used",
+    "package-problems/skill_command_clash": "Same name as the command /{detail}; typing /{detail} runs the command, not this skill",
     "config/reference-header": "Every Miyu setting and its default. This file is generated. Editing it has no effect.",
     "config/reference-where": "Write the config in config.toml in the data root.",
     "config/reference-item": "{name}: {description}",

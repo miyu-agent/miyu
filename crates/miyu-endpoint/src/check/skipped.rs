@@ -6,7 +6,7 @@
 //! 同名、用不上的 `slash_builtin`。链接指到数据根里不认的地方的（施工 X-37）：`script_link_outside`、`skill_link_outside`、
 //! `slash_link_outside`，说指到了哪一片。有脚本状态目录、这一刻登记上的脚本里却没有它的（施工 X-44）：`script_state_left`，带
 //! 这个目录，人自己删。照收了、但不合格式的技能（施工 PT-2 上）：一种警告一条，码照 `miyu_policy::skill::SkillWarning::code`
-//! （`skill_name_mismatch` 这些）。
+//! （`skill_name_mismatch` 这些）。能点名用的技能和命令同名的（施工 PT-2 下）：`skill_command_clash`，敲 `/名字` 用的是命令。
 
 use std::path::Path;
 
@@ -111,6 +111,37 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             .iter()
             .map(|warning| warn("skill", warning.code(), &skill.file, &warning.detail()))
     }));
+    // 能点名用的技能和命令同名（施工 PT-2 下）：敲 `/名字` 用的是命令，这个技能只有她自己用得上。
+    let declared: Vec<String> = core
+        .system_packages()
+        .iter()
+        .filter_map(|found| found.read.as_ref().ok())
+        .flat_map(|manifest| {
+            manifest
+                .slash_names()
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    problems.extend(
+        found_skills
+            .iter()
+            .filter(|skill| skill.head.user_invocable)
+            .filter(|skill| {
+                let name = skill.head.name.as_str();
+                core.commands.find_present(core, name).is_some()
+                    || slash.iter().any(|template| template.name == name)
+                    || declared.iter().any(|one| one == name)
+            })
+            .map(|skill| {
+                warn(
+                    "skill",
+                    "skill_command_clash",
+                    &skill.file,
+                    &skill.head.name,
+                )
+            }),
+    );
     problems.extend(skipped_slash.iter().map(|skipped| one("slash", skipped)));
     problems.extend(
         slash

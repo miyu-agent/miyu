@@ -234,6 +234,7 @@ mod session_tools;
 mod session_waiting;
 mod sessions;
 mod sessions_changed;
+mod skill_invoke;
 mod skill_list;
 mod skill_remove;
 mod skills;

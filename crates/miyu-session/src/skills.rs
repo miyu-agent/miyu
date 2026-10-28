@@ -56,7 +56,7 @@ pub(crate) fn opened(found: Vec<Skill>, preset: Option<&PresetFile>) -> Vec<Skil
 }
 
 /// 她的 system 里列出来的那一块（`skills.md`「技能」第 2 条）：头一行，一个技能一行（名字、说明、`SKILL.md` 的路径），字从
-/// 资源目录的 `core/skills/` 读，三格照模板转义。工具面 `face` 上没有 `read` 的、一个技能都没有的没有这一块。
+/// 资源目录的 `core/skills/` 读，三格照模板转义。工具面 `face` 上没有 `read` 的、一个技能都没有的没有这一块；只许人点名用的（施工 PT-2 下）不列。
 ///
 /// # Errors
 ///
@@ -66,6 +66,11 @@ pub(crate) fn listing(
     face: &[ToolEntry],
     skills: &[Skill],
 ) -> Result<Option<String>, SourceError> {
+    // 只许人点名用的不列（施工 PT-2 下，`disable-model-invocation`）：她自己不该挑它。
+    let skills: Vec<&Skill> = skills
+        .iter()
+        .filter(|skill| skill.head.model_invocable)
+        .collect();
     if skills.is_empty() || !face.iter().any(|tool| tool.name == READ) {
         return Ok(None);
     }

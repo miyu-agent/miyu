@@ -470,7 +470,7 @@ pub use goal::GoalRounds;
 pub use mcp_tools::ToolText;
 pub use overlay::PROMPTS;
 pub use project_docs::ProjectDocTexts;
-pub use skills::SkillTexts;
+pub use skills::{InvokedTexts, SkillTexts};
 
 #[cfg(test)]
 mod tests;

@@ -35,3 +35,30 @@ impl ResourceRoot {
         })
     }
 }
+
+/// 人点名用一个技能（`/名字`，施工 PT-2 下）时套在正文外面的字（[`ResourceRoot::invoked_texts`]），都在 `core/skills/` 下。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InvokedTexts {
+    /// 外壳头（`invoked-open.txt`）：字段 `name`、`path`。
+    pub open: String,
+    /// 外壳尾（`invoked-close.txt`）。
+    pub close: String,
+    /// 人跟在名字后面写的（`invoked-arguments.txt`）：字段 `arguments`；没写的不带这一行。
+    pub arguments: String,
+}
+
+impl ResourceRoot {
+    /// 人点名用技能时的外壳（施工 PT-2 下，`26-提示词.md` 第十节）：点名的那一次读，不常驻。
+    ///
+    /// # Errors
+    ///
+    /// 读不了其中一份，写明是哪一份。
+    pub fn invoked_texts(&self) -> Result<InvokedTexts, SourceError> {
+        let read = |name: &str| self.read(&["core", "skills", name]);
+        Ok(InvokedTexts {
+            open: read("invoked-open.txt")?,
+            close: read("invoked-close.txt")?,
+            arguments: read("invoked-arguments.txt")?,
+        })
+    }
+}

@@ -723,6 +723,7 @@
     "package-problems/slash_link_outside": "このコマンドテンプレートはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",
+    "package-problems/skill_command_clash": "コマンド /{detail} と同じ名前のため、/{detail} ではコマンドが実行され、このスキルは使われません",
     "config/reference-header": "Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。",
     "config/reference-where": "設定はデータルートの config.toml に書きます。",
     "config/reference-item": "{name}：{description}",

@@ -347,7 +347,7 @@
 
 **参数**：`session`（可不写）：写了只列这个连接在这个会话里打了不会被拒的；不写的列全部，跟着包的命令（`/loop`、`/goal`、`/todo`）照你的默认预设筛，默认预设没开那个包的不列。
 
-**回应**：`{"commands": [{"name", "aliases", "summary", "argument"?, "usage"?, "opens"?}…]}`，照名字排。在跑的 MCP 服务的提示词也在里面：名字 `<服务名>:<提示词名>`，`summary` 是服务写的 `title`（没有的照 `description`，不分语言），`argument` 照声明的参数拼（必填的 `<名字>`、可选的 `[名字]`）。`argument` 是名字后面跟什么的提示，`usage` 是有几种写法的命令一行一种（`{"form", "summary"}`），`opens` 是打开整页的命令。`summary`、`argument` 照连接的语言。
+**回应**：`{"commands": [{"name", "aliases", "summary", "argument"?, "usage"?, "opens"?, "skill"?}…]}`，照名字排。技能也在里面（`"skill": true`）：敲 `/技能名 参数` 把那个技能的正文和参数当你说的一句发给她；`user-invocable: false` 的、和命令同名的不列。在跑的 MCP 服务的提示词也在里面：名字 `<服务名>:<提示词名>`，`summary` 是服务写的 `title`（没有的照 `description`，不分语言），`argument` 照声明的参数拼（必填的 `<名字>`、可选的 `[名字]`）。`argument` 是名字后面跟什么的提示，`usage` 是有几种写法的命令一行一种（`{"form", "summary"}`），`opens` 是打开整页的命令。`summary`、`argument` 照连接的语言。
 
 头自己的命令（`/help` 这种）头自己拼进菜单。
 
@@ -357,6 +357,6 @@
 
 **回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
 
-不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板；MCP 服务列出来却没登记上的工具、提示词；`sandbox.tools` 放行的工具没有了、来处对不上、是链接的，放行了 `shell` 的；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`）。
+不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板，和命令同名、点名用不上的技能（`skill_command_clash`）；MCP 服务列出来却没登记上的工具、提示词；`sandbox.tools` 放行的工具没有了、来处对不上、是链接的，放行了 `shell` 的；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`）。
 
 **出错**：`unknown_file`：`file` 不是 Miyu 读的那几种。
