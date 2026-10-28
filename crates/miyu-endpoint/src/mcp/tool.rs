@@ -2,7 +2,7 @@
 //! 服务不在的（起着、退避着、停下了）、等着时进程退出了的说暂时不可用；到了时限没回的丢掉这次调用（客户端发取消），说没在
 //! N 秒内答完；被掐掉的（人停了这一轮）同样丢掉、发取消。服务回 JSON-RPC 的错照它的原话交；写法不对、要补信息的照工具出了
 //! 内部错误说。回来的内容换块在 `content.rs`。同一个服务列资源、读资源那两件（施工 X-41）也是它，发的是 `resources/*`
-//! （`resources.rs`），别的照同一套说。
+//! （`resources.rs`），别的照同一套说。调工具带进度令牌，服务推的进度照脚本的进度行（`miyu-progress: `）推给头（施工 PT-1 下）。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -130,7 +130,7 @@ impl Tool for McpTool {
             .collect()
     }
 
-    fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
+    fn run(&self, call: Call, progress: Progress) -> Running<'_> {
         Box::pin(async move {
             // 目录过期的叫看管的任务再列一次（施工 X-3 下，`ttlMs`）：这一次照旧调。
             self.shared.touch();
@@ -141,7 +141,13 @@ impl Tool for McpTool {
             // 到点、被掐掉，这个调用的 future 都被丢掉：客户端那一刻发 `notifications/cancelled`。
             let asked = async {
                 match &self.what {
-                    What::Tool(original) => client.call(original, arguments).await,
+                    // 服务推的进度照脚本工具的进度行推给头（施工 PT-1 下，同 X-45 的 `miyu-progress: `）。
+                    What::Tool(original) => {
+                        let report = |step: miyu_mcp::Progress| {
+                            progress.push(format!("miyu-progress: {}\n", step.said()));
+                        };
+                        client.call_reporting(original, arguments, report).await
+                    }
                     What::ListResources => super::resources::list(&client, &arguments).await,
                     What::ReadResource => super::resources::read(&client, &arguments).await,
                 }

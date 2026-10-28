@@ -6,6 +6,9 @@ use std::sync::atomic::Ordering;
 
 use serde_json::{Value, json};
 
+use tokio::io::AsyncWriteExt;
+use tokio::net::TcpStream;
+
 use super::{Received, State};
 
 /// 新时代的答法（施工 X-32 补，施工 PT-1 上照规范 2026-07-28 的「Server Validation」查全）：`_meta` 里的版本要和
@@ -115,4 +118,29 @@ fn decoded(value: &str) -> String {
             || value.to_string(),
             |bytes| String::from_utf8_lossy(&bytes).into_owned(),
         )
+}
+
+/// `steps` 分两次写（施工 PT-1 下）：SSE 回应头和一条进度（带了进度令牌的才有）先写出去，隔一秒再写结果，写完关连接（没有
+/// `Content-Length`，读到关为止）。
+pub(super) async fn steps(mut stream: TcpStream, request: &Received) {
+    let id = &request.body["id"];
+    let head = "HTTP/1.1 200 X\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n";
+    let mut first = head.to_string();
+    if let Some(token) = request.body["params"]["_meta"].get("progressToken") {
+        let progress = json!({"jsonrpc": "2.0", "method": "notifications/progress",
+            "params": {"progressToken": token, "progress": 1, "total": 2, "message": "half"}});
+        first.push_str(&format!("event: message\ndata: {progress}\n\n"));
+    }
+    if stream.write_all(first.as_bytes()).await.is_err() || stream.flush().await.is_err() {
+        return;
+    }
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    let answer = json!({"jsonrpc": "2.0", "id": id, "result": {"resultType": "complete",
+        "content": [{"type": "text", "text": "stepped"}]}});
+    let written = stream
+        .write_all(format!("event: message\ndata: {answer}\n\n").as_bytes())
+        .await;
+    if written.is_err() || stream.shutdown().await.is_err() {
+        // 客户端先走了：这一次不用再答。
+    }
 }

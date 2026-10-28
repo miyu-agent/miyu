@@ -18,6 +18,7 @@ use tokio::io::{AsyncWriteExt, BufReader, DuplexStream, ReadHalf, WriteHalf};
 
 use crate::wire::{self, Read};
 
+mod calls;
 pub mod http;
 pub mod oauth;
 mod resources;
@@ -37,6 +38,17 @@ pub enum Kind {
     LegacySilent,
     /// 旧时代：收到 `server/discover` 就退出。
     LegacyDies,
+}
+
+/// 新时代的订阅（施工 PT-1 下）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Listen {
+    /// 不声明 `listChanged`：客户端不开订阅。
+    Off,
+    /// 声明工具的 `listChanged`；`subscriptions/listen` 来了先回确认，再马上推一条工具变了（带订阅编号），之后不回。
+    On,
+    /// 声明了，但 `subscriptions/listen` 回「没有这个方法」。
+    Refused,
 }
 
 /// 剧本。
@@ -64,6 +76,8 @@ pub struct Script {
     pub resources: Vec<Value>,
     /// `resources/templates/list` 列的，原样（施工 X-41）。
     pub resource_templates: Vec<Value>,
+    /// 新时代的订阅（施工 PT-1 下）。
+    pub listen: Listen,
 }
 
 impl Script {
@@ -81,6 +95,7 @@ impl Script {
             change_prompts_after_list: false,
             resources: Vec::new(),
             resource_templates: Vec::new(),
+            listen: Listen::Off,
         }
     }
 
@@ -272,6 +287,16 @@ impl Stage {
         match method {
             "tools/list" => Some(self.list(script, &id, &params)),
             "tools/call" => self.call(script, &id, &params),
+            "subscriptions/listen" if modern && script.listen == Listen::On => {
+                let tagged = json!({"io.modelcontextprotocol/subscriptionId": id});
+                Some(vec![
+                    wire::notice(
+                        "notifications/subscriptions/acknowledged",
+                        json!({"notifications": params["notifications"], "_meta": tagged}),
+                    ),
+                    wire::notice("notifications/tools/list_changed", json!({"_meta": tagged})),
+                ])
+            }
             "prompts/list" if !script.prompts.is_empty() => {
                 Some(self.prompts(script, &id, &params))
             }
@@ -371,50 +396,15 @@ impl Stage {
         }
         out
     }
-
-    fn call(&mut self, script: &Script, id: &Value, params: &Value) -> Option<Vec<Vec<u8>>> {
-        let said = params["arguments"]["text"].as_str().unwrap_or_default();
-        let result = match params["name"].as_str().unwrap_or_default() {
-            "echo" => text(said),
-            "picture" => json!({"content": [
-                {"type": "image", "data": "aGk=", "mimeType": "image/png"},
-                {"type": "text", "text": "a picture"},
-            ]}),
-            "fail" => json!({"content": [{"type": "text", "text": "broke"}], "isError": true}),
-            "structured" => json!({"content": [], "structuredContent": {"answer": 42}}),
-            "slow" => return Some(Vec::new()),
-            "pinged" => {
-                self.asking = Some(id.clone());
-                return Some(vec![wire::request_raw("p1", "ping")]);
-            }
-            "ask" => {
-                self.asking = Some(id.clone());
-                return Some(vec![wire::request_raw("s1", "sampling/createMessage")]);
-            }
-            "input" => json!({"resultType": "input_required", "inputRequests": {}}),
-            // 多轮请求（施工 PT-1 中）：头一回叫重发、带回 `round-2` 才答；`nagging` 一直叫重发。都不在工具表里。
-            "busy" if params["requestState"] == "round-2" => text("done after retry"),
-            "busy" => json!({"resultType": "input_required", "requestState": "round-2"}),
-            "nagging" => json!({"resultType": "input_required", "requestState": "again"}),
-            // 同 `busy`，叫重发时带一张空的 `inputRequests`：空的当没要东西。
-            "busy-empty" if params["requestState"] == "round-2" => text("done after retry"),
-            "busy-empty" => {
-                json!({"resultType": "input_required", "inputRequests": {}, "requestState": "round-2"})
-            }
-            "elicit" => json!({"resultType": "input_required", "requestState": "x",
-                "inputRequests": {"name": {"method": "elicitation/create", "params": {"message": "who?"}}}}),
-            "die" => return None,
-            _ => return Some(vec![wire::answer(id, Err((-32602, "Unknown tool")))]),
-        };
-        Some(vec![complete(script, id, result)])
-    }
 }
 
 /// 声明的本事：工具，带了提示词的另有 `prompts`（施工 X-39），带了资源的另有 `resources`（施工 X-41）。
 fn capabilities(script: &Script) -> Value {
-    let mut capabilities = json!({"tools": {"listChanged": true}});
+    // 施工 PT-1 下：只有开了订阅的剧本声明 `listChanged`，别的剧本新时代的客户端不开订阅、收到的照旧。
+    let listens = script.listen != Listen::Off;
+    let mut capabilities = json!({"tools": {"listChanged": listens}});
     if !script.prompts.is_empty() {
-        capabilities["prompts"] = json!({"listChanged": true});
+        capabilities["prompts"] = json!({"listChanged": listens});
     }
     if resources::offered(script) {
         capabilities["resources"] = json!({});

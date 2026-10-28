@@ -3,7 +3,8 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::{Expired, Log, events, header_value, open, rpc_error, standard_headers};
+use super::answer::{Stream, events};
+use super::{Expired, Log, header_value, open, rpc_error, standard_headers};
 use crate::testkit::http::HttpServer;
 use crate::{Client, Era, Failed, Hello, Waits};
 
@@ -439,4 +440,60 @@ async fn a_dropped_call_hangs_up_its_request() {
             .any(|request| request.body["method"] == "notifications/cancelled");
         assert_eq!(told, !modern, "新版不发通知、老版照发（modern={modern}）");
     }
+}
+
+#[test]
+fn a_stream_hands_over_each_event_once_it_is_whole() {
+    let mut stream = Stream::default();
+    assert!(
+        stream.push(b"data: {\"a\"").expect("没超").is_empty(),
+        "没凑齐的不交"
+    );
+    assert_eq!(stream.push(b":1}\n").expect("没超"), Vec::<String>::new());
+    assert_eq!(
+        stream
+            .push(b"\ndata: {\"b\":2}\r\n\r\ndata: {\"c\"")
+            .expect("没超"),
+        ["{\"a\":1}", "{\"b\":2}"],
+        "空行跨块、\\r\\n 都认，一块里几个照先后"
+    );
+    assert_eq!(stream.push(b":3}").expect("没超"), Vec::<String>::new());
+    assert_eq!(stream.finish(), ["{\"c\":3}"], "最后没以空行收尾的也算");
+    let mut split = Stream::default();
+    assert!(split.push(b"data: {\"d\":4}\n").expect("没超").is_empty());
+    assert_eq!(
+        split.push(b"\n").expect("没超"),
+        ["{\"d\":4}"],
+        "空行只在跨块处的也认"
+    );
+    let mut long = Stream::default();
+    assert!(
+        long.push(&vec![b'x'; crate::wire::LINE_LIMIT + 1]).is_err(),
+        "一个事件太长的当回错"
+    );
+}
+
+/// SSE 边读边交（施工 PT-1 下）：服务先推一条进度、隔一秒才答，进度在答复之前就到了。
+#[tokio::test]
+async fn progress_on_a_stream_arrives_before_the_answer() {
+    let server = HttpServer::modern(true).await;
+    let (log, _) = log();
+    let client = connect(&server, log).await.0.expect("连得上");
+    let began = tokio::time::Instant::now();
+    let seen = Arc::new(Mutex::new(None));
+    let kept = Arc::clone(&seen);
+    let called = client
+        .call_reporting("steps", json!({}), move |progress| {
+            *kept.lock().unwrap() = Some((began.elapsed(), progress.said()));
+        })
+        .await
+        .expect("答得上");
+    let answered = began.elapsed();
+    assert_eq!(called.content.len(), 1, "{called:?}");
+    let (at, said) = seen.lock().unwrap().clone().expect("收到了进度");
+    assert_eq!(said, "1/2 half");
+    assert!(
+        answered.saturating_sub(at) >= Duration::from_millis(500),
+        "进度先到：进度 {at:?}，答复 {answered:?}"
+    );
 }

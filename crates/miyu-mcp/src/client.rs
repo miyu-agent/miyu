@@ -3,8 +3,14 @@
 //! 认时代照 MCP 2026-07-28 版的 stdio 办法：先发 `server/discover`，答得上（`DiscoverResult`，或者说版本不对的
 //! `-32022`）的是新时代，每个请求在 `_meta` 里带版本、自己是谁、本事；答了别的错、限定时间里没答的是旧时代，退回
 //! `initialize` 握手。MCP 规范留给规范自己用的错误码（`-32099` 到 `-32020`）算新时代的错：照它报，不退回。
+//!
+//! 新时代的服务在本事里声明了工具、提示词 `listChanged` 的，连上以后在后台开一条 `subscriptions/listen`（施工 PT-1 下）：
+//! 只订它声明了的那几种，推来的「变了」照旧数进 [`Client::changes`]；订阅结束了、断了的退避着重开，服务不认这个方法的不再开，
+//! 丢下客户端就停。
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -15,15 +21,14 @@ use tokio::sync::watch;
 use crate::content::{Called, Content, Listed, Tool};
 use crate::error::Failed;
 use crate::link::Link;
+use crate::progress::Progress;
 use crate::prompt::{Message, Prompt, Prompts};
 use crate::resource::{self, Page, RESOURCE_FIELDS, TEMPLATE_FIELDS};
-use crate::{LEGACY, MODERN};
 
-/// 版本不对（新时代的 `UnsupportedProtocolVersionError`）。
-const UNSUPPORTED_VERSION: i64 = -32022;
+mod era;
+mod listen;
 
-/// MCP 规范留给自己用的错误码：落在这里的是新时代的服务。
-const MODERN_ERRORS: std::ops::RangeInclusive<i64> = -32099..=-32020;
+use listen::listen;
 
 /// 翻页最多翻几页：服务一直给下一页的，到这里停。
 const MOST_PAGES: usize = 1000;
@@ -74,7 +79,7 @@ impl Default for Waits {
 
 /// 一个说得上话的 MCP 服务。
 pub struct Client {
-    link: Link,
+    link: Arc<Link>,
     era: Era,
     hello: Hello,
     waits: Waits,
@@ -83,6 +88,20 @@ pub struct Client {
     prompts: bool,
     /// 服务声明了资源（施工 X-41）。
     resources: bool,
+    /// 新时代的服务声明了哪几种「变了」（施工 PT-1 下）：`subscriptions/listen` 的 `notifications`，一种都没有的不开。
+    listens: Option<Value>,
+    /// 后台开着的订阅，丢下客户端就停。
+    listening: Option<tokio::task::JoinHandle<()>>,
+    /// 下一个进度令牌的编号。
+    tokens: AtomicU64,
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        if let Some(listening) = self.listening.take() {
+            listening.abort();
+        }
+    }
 }
 
 impl Client {
@@ -105,17 +124,24 @@ impl Client {
         W: AsyncWrite + Unpin + Send + 'static,
     {
         let mut client = Client {
-            link: Link::start(reader, writer),
+            link: Arc::new(Link::start(reader, writer)),
             era: Era::Legacy(String::new()),
             hello,
             waits,
             instructions: None,
             prompts: false,
             resources: false,
+            listens: None,
+            listening: None,
+            tokens: AtomicU64::new(1),
         };
         let legacy_first = matches!(known, Some(Era::Legacy(_)));
         if !legacy_first || client.shake().await.is_err() {
             client.discover().await?;
+        }
+        if let (Era::Modern(version), Some(wanted)) = (&client.era, &client.listens) {
+            let params = json!({"notifications": wanted, "_meta": client.meta(version)});
+            client.listening = Some(tokio::spawn(listen(Arc::clone(&client.link), params)));
         }
         Ok(client)
     }
@@ -319,6 +345,44 @@ impl Client {
         Ok(Called::read(&result))
     }
 
+    /// 同 [`Client::call`]，另带一个进度令牌，服务推来的进度一条条交给 `report`（施工 PT-1 下）。服务不推的就不交。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Client::call`]。
+    pub async fn call_reporting(
+        &self,
+        name: &str,
+        arguments: Value,
+        report: impl Fn(Progress),
+    ) -> Result<Called, Failed> {
+        let token = json!(format!("p{}", self.tokens.fetch_add(1, Ordering::Relaxed)));
+        let (mut updates, _following) = self.link.follow(&token);
+        let mut params = Map::new();
+        params.insert("name".to_string(), Value::String(name.to_string()));
+        params.insert("arguments".to_string(), arguments);
+        params.insert("_meta".to_string(), json!({"progressToken": token}));
+        let asked = self.ask("tools/call", params, None);
+        tokio::pin!(asked);
+        let tell = |update: &Value| {
+            if let Some(progress) = Progress::read(update) {
+                report(progress);
+            }
+        };
+        loop {
+            tokio::select! {
+                result = &mut asked => {
+                    // 读的一头照先后交：回应到了的时候，这次的进度都已经在通道里了，先交完再回。
+                    while let Ok(update) = updates.try_recv() {
+                        tell(&update);
+                    }
+                    return result.map(|result| Called::read(&result));
+                }
+                Some(update) = updates.recv() => tell(&update),
+            }
+        }
+    }
+
     /// 服务说工具变了几次：变了就再列一次。
     pub fn changes(&self) -> watch::Receiver<u64> {
         self.link.changes()
@@ -341,7 +405,11 @@ impl Client {
         wait: Option<Duration>,
     ) -> Result<Value, Failed> {
         if let Era::Modern(version) = &self.era {
-            params.insert("_meta".to_string(), self.meta(version));
+            // 调的一方已经写了的（进度令牌）留着，并上版本、自己是谁、本事。
+            let meta = params.entry("_meta").or_insert_with(|| json!({}));
+            if let (Some(meta), Value::Object(ours)) = (meta.as_object_mut(), self.meta(version)) {
+                meta.extend(ours);
+            }
         }
         for _ in 0..=MOST_RETRIES {
             let result = self
@@ -382,99 +450,4 @@ impl Client {
             "io.modelcontextprotocol/clientCapabilities": {},
         })
     }
-
-    /// 探：`server/discover`。新时代的照它列的挑版本；版本不对的照错里列的挑；别的错、没答的退回握手。
-    async fn discover(&mut self) -> Result<(), Failed> {
-        let mut version = MODERN[0].to_string();
-        for _ in 0..2 {
-            let params = json!({"_meta": self.meta(&version)});
-            let probed = self
-                .link
-                .ask("server/discover", params, Some(self.waits.probe), false)
-                .await;
-            let offered = match probed {
-                Ok(result) => {
-                    self.instructions = text(&result, "instructions");
-                    self.prompts = offers_prompts(&result);
-                    self.resources = offers_resources(&result);
-                    versions(result.get("supportedVersions"))
-                }
-                Err(Failed::Rpc { code, data, .. }) if code == UNSUPPORTED_VERSION => {
-                    versions(data.as_ref().and_then(|data| data.get("supported")))
-                }
-                Err(Failed::Rpc { code, .. }) if !MODERN_ERRORS.contains(&code) => {
-                    return self.shake().await;
-                }
-                Err(Failed::TimedOut | Failed::Malformed(_)) => return self.shake().await,
-                Err(other) => return Err(other),
-            };
-            let Some(common) = MODERN
-                .iter()
-                .find(|ours| offered.iter().any(|theirs| theirs == *ours))
-            else {
-                return Err(Failed::NoCommonVersion(offered));
-            };
-            if *common == version {
-                self.era = Era::Modern(version);
-                return Ok(());
-            }
-            version = (*common).to_string();
-        }
-        Err(Failed::Malformed(
-            "server/discover kept changing its versions".to_string(),
-        ))
-    }
-
-    /// 旧时代的握手：报我们认得的最新一版，服务答的那一版我们认得就照它说，再发 `notifications/initialized`。
-    async fn shake(&mut self) -> Result<(), Failed> {
-        let params = json!({
-            "protocolVersion": LEGACY[0],
-            "capabilities": {},
-            "clientInfo": {"name": self.hello.name, "version": self.hello.version},
-        });
-        let result = self
-            .link
-            .ask("initialize", params, Some(self.waits.answer), false)
-            .await?;
-        let Some(version) = text(&result, "protocolVersion") else {
-            return Err(Failed::Malformed(
-                "initialize without protocolVersion".to_string(),
-            ));
-        };
-        if !LEGACY.contains(&version.as_str()) {
-            return Err(Failed::NoCommonVersion(vec![version]));
-        }
-        self.instructions = text(&result, "instructions");
-        self.prompts = offers_prompts(&result);
-        self.resources = offers_resources(&result);
-        self.link.tell("notifications/initialized", json!({}));
-        self.era = Era::Legacy(version);
-        Ok(())
-    }
-}
-
-/// 一格字，没有的、不是字的没有。
-fn text(value: &Value, key: &str) -> Option<String> {
-    value.get(key).and_then(Value::as_str).map(str::to_string)
-}
-
-/// 回应的本事里有没有 `prompts`（施工 X-39）：是一张表就算。
-fn offers_prompts(result: &Value) -> bool {
-    result["capabilities"]["prompts"].is_object()
-}
-
-/// 回应的本事里有没有 `resources`（施工 X-41）：是一张表就算。
-fn offers_resources(result: &Value) -> bool {
-    result["capabilities"]["resources"].is_object()
-}
-
-/// 一串版本：不是数组的当空的，不是字的不算。
-fn versions(value: Option<&Value>) -> Vec<String> {
-    value
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-        .map(str::to_string)
-        .collect()
 }
