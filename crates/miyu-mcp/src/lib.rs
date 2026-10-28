@@ -17,6 +17,7 @@ mod error;
 pub mod http;
 mod link;
 pub mod oauth;
+mod progress;
 mod prompt;
 mod resource;
 #[cfg(any(test, feature = "testkit"))]
@@ -26,6 +27,7 @@ mod wire;
 pub use client::{Client, Era, Hello, Waits};
 pub use content::{Annotations, Called, Content, Listed, Tool, Unread};
 pub use error::Failed;
+pub use progress::Progress;
 pub use prompt::{Argument, Message, Prompt, Prompts, Role};
 pub use resource::{Page, RESOURCE_FIELDS, TEMPLATE_FIELDS};
 

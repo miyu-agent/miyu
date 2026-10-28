@@ -17,6 +17,7 @@
 //!   `-32002`；
 //! - `no-tools`：列工具时一件都不列（施工 X-41：只开放资源的服务）；
 //! - `clash`：多列一件自己的 `read_resource`，回 `the server's own`（施工 X-41：同名的服务赢）；
+//! - `steps`：多列一件 `steps`（施工 PT-1 下）：请求带了进度令牌的先推一条进度（`1/2`、`half`），隔 300 毫秒再回 `stepped`；
 //! - `odd`：列的时候多几件登记不上的（施工 X-37）：没写参数格式的 `loose`、参数格式不是对象的 `stringly`、截到 64 个字以后
 //!   撞名的 `long-x…x-one`、`long-x…x-two`（60 个 `x`），和一件没写名字的；
 //! - `exit-if:<路径>`：这个路径在就一起来以退出码 3 退出（演缓存登记以后服务起不来）；
@@ -64,6 +65,7 @@ fn main() {
     let mut resources = false;
     let mut no_tools = false;
     let mut clash = false;
+    let mut steps = false;
     for arg in std::env::args().skip(1) {
         if arg == "legacy" {
             legacy = true;
@@ -86,6 +88,8 @@ fn main() {
             no_tools = true;
         } else if arg == "clash" {
             clash = true;
+        } else if arg == "steps" {
+            steps = true;
         } else if let Some(text) = arg.strip_prefix("instructions:") {
             instructions = Some(text.to_string());
         } else if let Some(path) = arg.strip_prefix("instructions-file:") {
@@ -138,6 +142,9 @@ fn main() {
                 if clash {
                     names.push("read_resource");
                 }
+                if steps {
+                    names.push("steps");
+                }
                 if (changed || ttl.is_some()) && lists > 1 {
                     names.push("later");
                 }
@@ -150,6 +157,16 @@ fn main() {
                     result["ttlMs"] = json!(ttl);
                 }
                 Ok(result)
+            }
+            "tools/call" if steps && message["params"]["name"] == "steps" => {
+                if let Some(token) = message["params"]["_meta"].get("progressToken") {
+                    let notice = json!({"jsonrpc": "2.0", "method": "notifications/progress",
+                        "params": {"progressToken": token, "progress": 1, "total": 2, "message": "half"}});
+                    writeln!(out, "{notice}").expect("写得出去");
+                    out.flush().expect("写得出去");
+                }
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                Ok(json!({"content": [{"type": "text", "text": "stepped"}]}))
             }
             "tools/call" => match call(&message["params"]) {
                 Some(result) => result,

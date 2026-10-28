@@ -258,6 +258,15 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .push(request.clone());
+    // 分两次写的那件（施工 PT-1 下）：先推进度、隔一秒再答，客户端得边读边交才拿得到进度在先。
+    if state.modern
+        && state.sse
+        && request.body["method"] == "tools/call"
+        && request.body["params"]["name"] == "steps"
+    {
+        modern::steps(reader.into_inner(), &request).await;
+        return;
+    }
     let (status, extra, text) = reply(&state, &request);
     let slow = state.slow.load(Ordering::Relaxed);
     if slow > 0 && request.body["method"] == "tools/call" {

@@ -1,7 +1,8 @@
 //! 一条连接（施工 X-1）：写的一头一个任务、读的一头一个任务，请求照编号等回应。读到头、读到太长的一行、写不进去，这条连接就
 //! 断了：在等的都收到 [`Failed::Closed`]，之后发的当场收到。
 //!
-//! 服务反过来的请求在读的那个任务里当场回：`ping` 回空的，别的回「没有这个方法」（`-32601`）。工具变了的通知数一次。
+//! 服务反过来的请求在读的那个任务里当场回：`ping` 回空的，别的回「没有这个方法」（`-32601`）。工具变了的通知数一次。进度通知
+//! （`notifications/progress`，施工 PT-1 中下）照 `progressToken` 交给跟着它的那一头（[`Link::follow`]），没人跟的丢掉。
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -35,11 +36,13 @@ struct Shared {
     closed: watch::Sender<bool>,
 }
 
-/// 在等回应的请求。
+/// 在等回应的请求，和跟着进度的。
 #[derive(Default)]
 struct Waiting {
     open: bool,
     asked: BTreeMap<u64, oneshot::Sender<Result<Value, Value>>>,
+    /// 进度令牌（JSON 原文）到收进度通知的一头（施工 PT-1 下）。
+    following: BTreeMap<String, mpsc::UnboundedSender<Value>>,
 }
 
 impl Link {
@@ -53,7 +56,7 @@ impl Link {
         let shared = Arc::new(Shared {
             waiting: Mutex::new(Waiting {
                 open: true,
-                asked: BTreeMap::new(),
+                ..Waiting::default()
             }),
             changes: watch::channel(0).0,
             closed: watch::channel(false).0,
@@ -116,6 +119,14 @@ impl Link {
         }
     }
 
+    /// 跟着进度令牌 `token` 的进度通知（施工 PT-1 下）：交回收通知参数的一头；丢掉 [`Following`] 就不跟了。
+    pub(crate) fn follow(&self, token: &Value) -> (mpsc::UnboundedReceiver<Value>, Following<'_>) {
+        let (sender, updates) = mpsc::unbounded_channel();
+        let key = token.to_string();
+        self.shared.lock().following.insert(key.clone(), sender);
+        (updates, Following { link: self, key })
+    }
+
     /// 服务说工具变了几次。
     pub(crate) fn changes(&self) -> watch::Receiver<u64> {
         self.shared.changes.subscribe()
@@ -127,6 +138,18 @@ impl Link {
         if closed.wait_for(|closed| *closed).await.is_err() {
             tracing::debug!(target: TARGET, "close flag dropped");
         }
+    }
+}
+
+/// 跟着一个进度令牌：丢掉就不跟了。
+pub(crate) struct Following<'a> {
+    link: &'a Link,
+    key: String,
+}
+
+impl Drop for Following<'_> {
+    fn drop(&mut self) {
+        self.link.shared.lock().following.remove(&self.key);
     }
 }
 
@@ -238,10 +261,19 @@ async fn read<R: AsyncRead + Unpin>(
                     break;
                 }
             }
-            Incoming::Notice(method, _) => match method.as_str() {
-                // 工具、提示词（施工 X-39）变了数同一个：变了就都再列一次。
+            Incoming::Notice(method, params) => match method.as_str() {
+                // 工具、提示词（施工 X-39）变了数同一个：变了就都再列一次。新版服务经 `subscriptions/listen` 推的一样（施工 PT-1 下）。
                 "notifications/tools/list_changed" | "notifications/prompts/list_changed" => {
                     shared.changes.send_modify(|count| *count += 1);
+                }
+                "notifications/progress" => {
+                    let key = params.get("progressToken").map(Value::to_string);
+                    let follower = key.and_then(|key| shared.lock().following.get(&key).cloned());
+                    if let Some(follower) = follower
+                        && follower.send(params).is_err()
+                    {
+                        tracing::debug!(target: TARGET, "progress arrived after the caller left");
+                    }
                 }
                 _ => tracing::trace!(target: TARGET, method = method.as_str(), "MCP notice"),
             },

@@ -11,8 +11,9 @@
 //!   剔掉、往日志写一行；合的记下镜像哪几个参数，调这件工具时带上 `Mcp-Param-<名>`。
 //! - 取消（施工 PT-1 中）：客户端发 `notifications/cancelled` 时，停掉那个请求还在路上的 POST（连接跟着断，新版规范里断开回应流
 //!   就是取消）；老版本的服务（握过手的）另把这条通知照旧发过去，新版的不发。
-//! - 回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去；`202` 的（通知、回应）什么都不写。整段读完再写：一次
-//!   调用的回应本来就要等它说完，不另开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错。
+//! - 回来的是 SSE 的边读边写回去（施工 PT-1 下，`http/answer.rs`）：凑齐一个事件就写，进度、订阅推来的通知当场到。
+//! - 回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去；`202` 的（通知、回应）什么都不写。JSON 的整段读完再写，
+//!   一段至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错；SSE 的边读边写，一个事件的上限同它。
 //! - 对方回错的（4xx、5xx、连不上）：有编号的请求回一条 JSON-RPC 错误，客户端照常了结这次请求；往 `log` 写一行。日志里不写网址：
 //!   有的服务把密钥放在网址的查询串里。回应体本身是一条 JSON-RPC 错误的（新版服务的 `400` 都这样：版本不认 `-32022`、请求头
 //!   不对 `-32020`，施工 PT-1 上）原样交回、编号换成这次请求的，探时代的那一头才认得出是新版的服务；不是的才合成一条。
@@ -22,7 +23,8 @@
 //!   `401` 的、续不成的记下挑战、关掉这一对读写，看管的一头停在 `needs_login`。回 `403`、`error="insufficient_scope"` 的同样记下、
 //!   关掉（规范的 step-up）。写了 `bearer`、`headers` 的服务没有凭据，照旧：回错只了结那一次请求。
 //! - 会话过期（带着会话编号回 `404`）：关掉这一对读写，客户端当服务断了，看管的那一头退避着重连、从认时代重来。
-//! - 服务主动推的只在 SSE 回应里收得到，不另开 GET 那条长连接（工具变了靠新时代的 `ttlMs`、重连时重列）。
+//! - 服务主动推的只在 SSE 回应里收得到，不另开 GET 那条长连接：新时代的「变了」走客户端开的 `subscriptions/listen`，它的回应就是
+//!   一条一直开着的 SSE（施工 PT-1 下）；老时代的照旧靠 `ttlMs` 和重连时重列。
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -41,7 +43,7 @@ mod answer;
 mod headers;
 mod params;
 
-use answer::{body, events, rpc_error};
+use answer::{Stream, body, rpc_error};
 use headers::{header_value, standard_headers};
 
 /// 内存管道的缓冲：够放几条大的回应，放不下的写的一头等着读。
@@ -202,7 +204,8 @@ async fn relay(ours: DuplexStream, remote: Arc<Remote>) {
                     let id = message.as_ref().and_then(|message| message.get("id")).map(Value::to_string);
                     let (remote, answers) = (Arc::clone(&remote), answers.clone());
                     let task = sending.spawn(async move {
-                        if answers.send(remote.post(&line).await).is_err() {
+                        let last = remote.post(&line, &answers).await;
+                        if answers.send(last).is_err() {
                             // 写的一头已经停了。
                         }
                     });
@@ -224,8 +227,8 @@ async fn relay(ours: DuplexStream, remote: Arc<Remote>) {
 }
 
 impl Remote {
-    /// 发一行，交回要写回去的。
-    async fn post(&self, line: &str) -> Answered {
+    /// 发一行，交回要写回去的；SSE 回应边读边写的，读的时候一段段先经 `answers` 写回去，交回最后剩下的（施工 PT-1 下）。
+    async fn post(&self, line: &str, answers: &mpsc::UnboundedSender<Answered>) -> Answered {
         let message = serde_json::from_str::<Value>(line).ok();
         let id = message
             .as_ref()
@@ -316,6 +319,12 @@ impl Remote {
             .get("content-type")
             .and_then(|value| value.to_str().ok())
             .is_some_and(|kind| kind.starts_with("text/event-stream"));
+        let listing = message
+            .as_ref()
+            .is_some_and(|message| message["method"] == "tools/list");
+        if sse && (200..300).contains(&status) {
+            return self.stream(response, (id, listing), answers).await;
+        }
         let body = match body(response).await {
             Ok(body) => body,
             Err(why) => return self.failed(id, &why),
@@ -333,21 +342,55 @@ impl Remote {
                 ),
             );
         }
-        let messages = if sse {
-            events(&body)
-        } else {
-            body.trim().lines().map(str::to_string).collect()
-        };
+        // 走到这里的是 JSON：SSE 的成功回应上面边读边拆了。
+        let messages = body.trim().lines().map(str::to_string).collect();
+        Answered::Lines(self.handled(messages, listing))
+    }
+
+    /// 边读边拆一段 SSE 回应（施工 PT-1 下）：凑齐的事件经 `answers` 马上写回去，交回读完以后剩下的。读断了、太长的照对方回错
+    /// （`id` 是这次请求的编号）；`listing` 的照列工具那样查。
+    async fn stream(
+        &self,
+        mut response: miyu_http::Response,
+        (id, listing): (Option<Value>, bool),
+        answers: &mpsc::UnboundedSender<Answered>,
+    ) -> Answered {
+        let mut stream = Stream::default();
+        loop {
+            let chunk = match response.chunk().await {
+                Ok(Some(chunk)) => chunk,
+                Ok(None) => break,
+                Err(error) => {
+                    let why = format!("the answer broke off: {}", error.without_url());
+                    return self.failed(id, &why);
+                }
+            };
+            match stream.push(&chunk) {
+                Ok(events) if events.is_empty() => {}
+                Ok(events) => {
+                    if answers
+                        .send(Answered::Lines(self.handled(events, listing)))
+                        .is_err()
+                    {
+                        // 写的一头已经停了。
+                        return Answered::Lines(Vec::new());
+                    }
+                }
+                Err(why) => return self.failed(id, &why),
+            }
+        }
+        Answered::Lines(self.handled(stream.finish(), listing))
+    }
+
+    /// 回来的几条：握手的记下版本，列工具的照规范查（[`Remote::screen`]）。
+    fn handled(&self, messages: Vec<String>, listing: bool) -> Vec<String> {
         for message in &messages {
             self.notice_version(message);
         }
-        let listing = message
-            .as_ref()
-            .is_some_and(|message| message["method"] == "tools/list");
         if listing {
-            return Answered::Lines(messages.iter().map(|line| self.screen(line)).collect());
+            return messages.iter().map(|line| self.screen(line)).collect();
         }
-        Answered::Lines(messages)
+        messages
     }
 
     /// 发一次 POST：带上会话编号、协议版本、规范的标准请求头（`sent`）、清单写的请求头，有令牌 `token` 的带 `Authorization`。连不上
@@ -395,52 +438,6 @@ impl Remote {
             ]),
             None => Answered::Lines(Vec::new()),
         }
-    }
-
-    /// 调工具的请求 `message` 要带的 `Mcp-Param-<名>`：照列工具时记下的那件工具的标记取值（施工 PT-1 中）。别的请求没有。
-    fn param_headers(&self, message: &Value) -> Vec<(String, String)> {
-        if message["method"] != "tools/call" {
-            return Vec::new();
-        }
-        let name = message["params"]["name"].as_str().unwrap_or_default();
-        let known = self.params.lock().unwrap_or_else(PoisonError::into_inner);
-        known.get(name).map_or_else(Vec::new, |marked| {
-            params::headers(marked, &message["params"]["arguments"])
-        })
-    }
-
-    /// 列工具的一条回应 `line`：照规范查每件工具的 `x-mcp-header`，不合的剔掉、往日志写一行；合的记下镜像哪几个参数（施工 PT-1 中）。
-    /// 一件都没剔的原样交回。
-    fn screen(&self, line: &str) -> String {
-        let Ok(mut message) = serde_json::from_str::<Value>(line) else {
-            return line.to_string();
-        };
-        let Some(tools) = message["result"]["tools"].as_array_mut() else {
-            return line.to_string();
-        };
-        let mut known = self.params.lock().unwrap_or_else(PoisonError::into_inner);
-        let before = tools.len();
-        tools.retain(|tool| {
-            let name = tool["name"].as_str().unwrap_or_default();
-            match params::of(&tool["inputSchema"]) {
-                Ok(marked) => {
-                    if marked.is_empty() {
-                        known.remove(name);
-                    } else {
-                        known.insert(name.to_string(), marked);
-                    }
-                    true
-                }
-                Err(why) => {
-                    (self.log)(format!("WARN tool {name} left out: {why}"));
-                    false
-                }
-            }
-        });
-        if tools.len() == before {
-            return line.to_string();
-        }
-        message.to_string()
     }
 
     /// 握手的回应里有协议版本的记下，以后每个请求带上它（Streamable HTTP 要求）。

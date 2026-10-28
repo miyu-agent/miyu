@@ -8,6 +8,8 @@
 //!   同 `Mcp-Name`（[`super::header_value`]）。
 //! - stdio 的服务规范许不理这个标记，只在网址的服务这里做。
 
+use std::sync::PoisonError;
+
 use serde_json::{Map, Value};
 
 /// 标记的键名。
@@ -150,6 +152,54 @@ fn integer(number: &serde_json::Number) -> Option<String> {
     // 双精度能准确表示的整数范围（规范要的「JavaScript 安全整数」）。
     const SAFE: f64 = 9_007_199_254_740_991.0;
     (float.fract() == 0.0 && float.abs() <= SAFE).then(|| format!("{float:.0}"))
+}
+
+impl super::Remote {
+    /// 调工具的请求 `message` 要带的 `Mcp-Param-<名>`：照列工具时记下的那件工具的标记取值（施工 PT-1 中）。别的请求没有。
+    pub(super) fn param_headers(&self, message: &Value) -> Vec<(String, String)> {
+        if message["method"] != "tools/call" {
+            return Vec::new();
+        }
+        let name = message["params"]["name"].as_str().unwrap_or_default();
+        let known = self.params.lock().unwrap_or_else(PoisonError::into_inner);
+        known.get(name).map_or_else(Vec::new, |marked| {
+            headers(marked, &message["params"]["arguments"])
+        })
+    }
+
+    /// 列工具的一条回应 `line`：照规范查每件工具的 `x-mcp-header`，不合的剔掉、往日志写一行；合的记下镜像哪几个参数（施工 PT-1 中）。
+    /// 一件都没剔的原样交回。
+    pub(super) fn screen(&self, line: &str) -> String {
+        let Ok(mut message) = serde_json::from_str::<Value>(line) else {
+            return line.to_string();
+        };
+        let Some(tools) = message["result"]["tools"].as_array_mut() else {
+            return line.to_string();
+        };
+        let mut known = self.params.lock().unwrap_or_else(PoisonError::into_inner);
+        let before = tools.len();
+        tools.retain(|tool| {
+            let name = tool["name"].as_str().unwrap_or_default();
+            match of(&tool["inputSchema"]) {
+                Ok(marked) => {
+                    if marked.is_empty() {
+                        known.remove(name);
+                    } else {
+                        known.insert(name.to_string(), marked);
+                    }
+                    true
+                }
+                Err(why) => {
+                    (self.log)(format!("WARN tool {name} left out: {why}"));
+                    false
+                }
+            }
+        });
+        if tools.len() == before {
+            return line.to_string();
+        }
+        message.to_string()
+    }
 }
 
 #[cfg(test)]

@@ -101,6 +101,7 @@ mod mcp_cache;
 mod mcp_edit;
 mod mcp_instructions;
 mod mcp_login;
+mod mcp_progress;
 mod mcp_prompts;
 mod mcp_relogin;
 mod mcp_resources;
