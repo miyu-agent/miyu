@@ -250,6 +250,7 @@
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
 | `on` | 全局开关（`features.skill-<名字>`，见 `feature.set`）：没写的是 `true` |
+| `warnings` | 照收了、但不合格式的地方：`[{"code", "message"}]`，`code` 是 `skill_name_mismatch`（名字和文件夹不同名，照写的名字用）、`skill_name_from_folder`（名字没写或写错，照文件夹的名字用）、`skill_yaml_lenient`（开头不合 YAML，照宽松读法读成）、`skill_description_cut`（说明超过 1024 个字被截了）、`skill_compatibility`、`skill_metadata`（这两格写得不合格式）之一，`message` 照连接的语言；`miyu check` 报同样的码。没有的不带这一格 |
 
 ## `skill.remove`
 

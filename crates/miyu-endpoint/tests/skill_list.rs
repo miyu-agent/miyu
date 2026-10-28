@@ -144,3 +144,52 @@ async fn names_follow_the_connection_language() {
     );
     assert_eq!(named(&chinese, "kit-notes")["display_name"], "Kit notes");
 }
+
+/// 照收了、但不合格式的技能（施工 PT-2 上）：`skill.list` 那一项带 `warnings`，码同 `miyu check`，话照连接的语言；没警告的不带。
+/// `miyu check` 报同样的码。
+#[tokio::test]
+async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
+    let home = Home::new();
+    home.write(
+        "home/alice/skills/pdf-main/SKILL.md",
+        "---\nname: pdf\ndescription: Use this skill when: the user mentions PDFs.\n---\nBody.\n",
+    );
+    home.write("home/alice/skills/notes/SKILL.md", &skill("notes", &[]));
+    let skills = listed(&home, "zh").await;
+    let pdf = named(&skills, "pdf");
+    let codes: Vec<&str> = pdf["warnings"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{pdf}"))
+        .iter()
+        .filter_map(|warning| warning["code"].as_str())
+        .collect();
+    assert_eq!(
+        codes,
+        ["skill_yaml_lenient", "skill_name_mismatch"],
+        "{pdf}"
+    );
+    assert!(
+        pdf["warnings"][1]["message"]
+            .as_str()
+            .is_some_and(|said| said.contains("照写的名字 pdf 用")),
+        "照连接的语言：{pdf}"
+    );
+    assert!(named(&skills, "notes").get("warnings").is_none());
+
+    let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let checked = client.call("c", "check", json!({})).await;
+    let found: Vec<&str> = checked["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{checked}"))
+        .iter()
+        .filter(|problem| problem["kind"] == "skill")
+        .filter_map(|problem| problem["code"].as_str())
+        .collect();
+    assert_eq!(
+        found,
+        ["skill_yaml_lenient", "skill_name_mismatch"],
+        "{checked}"
+    );
+}

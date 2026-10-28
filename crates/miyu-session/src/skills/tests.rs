@@ -31,6 +31,7 @@ fn skill(name: &str, description: &str) -> Skill {
             description: description.to_string(),
             display_name: std::collections::BTreeMap::new(),
             summary: std::collections::BTreeMap::new(),
+            warnings: Vec::new(),
         },
         file: dir.join("SKILL.md"),
         dir,

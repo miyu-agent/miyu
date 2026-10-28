@@ -154,22 +154,32 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
 #[test]
 fn a_wrong_head_is_skipped_and_said_why() {
     let places = Places::new();
+    // 没有说明的读不成（施工 PT-2 上：名字和文件夹不同名的照收，见下）。
     places.write(
         "data/home/admin/skills/bad/SKILL.md",
-        &skill("other", "Name is not the folder."),
+        "---\nname: bad\n---\n正文\n",
     );
     places.write(
         "data/home/admin/skills/good/SKILL.md",
         &skill("good", "Fine."),
     );
+    // 名字和文件夹不同名的照收、照写的名字用、带一条警告（施工 PT-2 上）。
+    places.write(
+        "data/home/admin/skills/zip-main/SKILL.md",
+        &skill("zip", "Unpacked from a zip."),
+    );
     let (skills, skipped) = places.found();
-    assert_eq!(skills.len(), 1);
+    assert_eq!(
+        skills
+            .iter()
+            .map(|skill| (skill.head.name.as_str(), skill.head.warnings.len()))
+            .collect::<Vec<_>>(),
+        [("good", 0), ("zip", 1)]
+    );
+    assert!(skills[1].dir.ends_with("skills/zip-main"));
     assert_eq!(skipped.len(), 1);
     assert!(skipped[0].path.ends_with("skills/bad/SKILL.md"));
-    assert_eq!(
-        skipped[0].why,
-        "name \"other\" does not match its folder \"bad\""
-    );
+    assert_eq!(skipped[0].why, "description is missing or empty");
 }
 
 #[test]
@@ -185,7 +195,7 @@ fn a_package_folder_says_which_skills_it_carries() {
     let places = Places::new();
     places.write("kit/skills/notes/SKILL.md", &skill("notes", "Take notes."));
     places.write("kit/skills/alpha/SKILL.md", &skill("alpha", "First."));
-    places.write("kit/skills/bad/SKILL.md", &skill("other", "Wrong name."));
+    places.write("kit/skills/bad/SKILL.md", "---\nname: bad\n---\n正文\n");
     places.write("kit/skills/empty/README.md", "nothing");
     let dir = places.scratch.path().join("kit");
     let (names, skipped) = carried(&dir);
@@ -193,10 +203,7 @@ fn a_package_folder_says_which_skills_it_carries() {
     // 读不成的另交回为什么（施工 X-13 补）。
     assert_eq!(skipped.len(), 1, "{skipped:?}");
     assert!(skipped[0].path.ends_with("kit/skills/bad/SKILL.md"));
-    assert_eq!(
-        skipped[0].why,
-        "name \"other\" does not match its folder \"bad\""
-    );
+    assert_eq!(skipped[0].why, "description is missing or empty");
     assert_eq!(
         carried(&places.scratch.path().join("nothing")),
         (Vec::new(), Vec::new())
@@ -210,7 +217,7 @@ fn a_linked_skill_folder_is_found_where_it_really_is() {
     let places = Places::new();
     places.write("elsewhere/notes/SKILL.md", &skill("notes", "Take notes."));
     places.write("data/system/keys/SKILL.md", &skill("keys", "Not mine."));
-    places.write("elsewhere/bad/SKILL.md", &skill("other", "Wrong name."));
+    places.write("elsewhere/bad/SKILL.md", "---\nname: bad\n---\n正文\n");
     let skills_dir = places.root.account_dir(&places.admin).join("skills");
     fs::create_dir_all(&skills_dir).unwrap();
     let (notes, keys) = (skills_dir.join("notes"), skills_dir.join("keys"));

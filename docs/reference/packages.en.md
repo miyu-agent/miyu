@@ -250,6 +250,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
 | `on` | Global switch (`features.skill-<name>`, see `feature.set`); `true` when unset |
+| `warnings` | Slips the skill was accepted with: `[{"code", "message"}]`; `code` is one of `skill_name_mismatch` (the name differs from the folder; the written name is used), `skill_name_from_folder` (the name is missing or invalid; the folder name is used), `skill_yaml_lenient` (the front matter is not valid YAML and was read leniently), `skill_description_cut` (the description is over 1024 characters and was cut), `skill_compatibility`, `skill_metadata` (those fields are not in the format); `message` is in the connection's language; `miyu check` reports the same codes. Left out when there are none |
 
 ## `skill.remove`
 

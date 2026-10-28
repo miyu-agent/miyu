@@ -218,3 +218,46 @@ async fn a_goal_is_set_once_the_change_is_let_through() {
         .await;
     assert_eq!(reason(&kept), "ok", "{kept}");
 }
+
+/// 改技能不问（施工 PT-2 上，原来是误报）：技能那一块钉在快照里、中途变了走尾巴注入，system 不变、前缀缓存不断，问人「前缀要
+/// 变了」是假的。改了自己的技能以后下一句照常说，两轮的 system 一字不差。
+#[tokio::test]
+async fn an_edited_skill_does_not_ask_because_the_prefix_stays() {
+    let home = Home::new();
+    const SKILL: &str = "home/alice/skills/notes/SKILL.md";
+    home.write(
+        SKILL,
+        "---\nname: notes\ndescription: Take notes.\n---\nWrite them down.\n",
+    );
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let core = home.core_with_tools(&script, goal_tools(), TOKEN);
+    let mut asking = Client::connect(Arc::clone(&core));
+    hello_asking(&mut asking).await;
+    let session = asking.create("c1", "~").await;
+    let first = asking.say("s1", &session, "在吗").await;
+    assert_eq!(reason(&first), "ok", "{first}");
+    home.until_turns(&session, 1).await;
+    let before = latest_system(&home, &session);
+
+    let version = core.edits_version(&alice());
+    home.write(
+        SKILL,
+        "---\nname: notes\ndescription: Take notes, short ones.\n---\nWrite them down.\n",
+    );
+    // 给盯着的那一头一秒：原来这里号会变（技能那棵树在盯），现在不盯了，号照旧。
+    for _ in 0..100 {
+        if core.edits_version(&alice()) > version {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert_eq!(core.edits_version(&alice()), version, "技能不算前缀的改动");
+    let second = asking.say("s2", &session, "好").await;
+    assert_eq!(reason(&second), "ok", "改技能不问：{second}");
+    home.until_turns(&session, 2).await;
+    assert_eq!(
+        latest_system(&home, &session),
+        before,
+        "system 一字不差：前缀缓存不断"
+    );
+}

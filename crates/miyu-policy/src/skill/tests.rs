@@ -20,6 +20,7 @@ fn the_public_format_reads() {
             description: "Extract PDF text, fill forms. Use when handling PDFs.".to_string(),
             display_name: BTreeMap::from([("en".to_string(), "PDF 处理".to_string())]),
             summary: BTreeMap::from([("en".to_string(), "读 PDF、填表".to_string())]),
+            warnings: Vec::new(),
         })
     );
 }
@@ -52,6 +53,7 @@ fn long_descriptions_are_cut_to_the_format_limit() {
     let long = "字".repeat(DESCRIPTION_CHARS + 10);
     let head = read("a", &skill(&format!("name: a\ndescription: {long}\n"))).expect("读得出");
     assert_eq!(head.description.chars().count(), DESCRIPTION_CHARS);
+    assert_eq!(head.warnings, [SkillWarning::DescriptionCut], "截了要说");
     assert_eq!(
         (head.display_name, head.summary),
         (BTreeMap::new(), BTreeMap::new())
@@ -67,9 +69,10 @@ fn wrong_ones_say_what_is_wrong() {
             "---\nname: a\n".to_string(),
             SkillProblem::NoFrontmatter,
         ),
-        ("a", skill("description: Hi.\n"), SkillProblem::NoName),
+        // 名字没写、写错的照文件夹的名字用（施工 PT-2 上）：文件夹的名字也不合的才不收。
+        ("A B", skill("description: Hi.\n"), SkillProblem::NoName),
         (
-            "a",
+            "A B",
             skill("name: [a]\ndescription: Hi.\n"),
             SkillProblem::NoName,
         ),
@@ -87,14 +90,6 @@ fn wrong_ones_say_what_is_wrong() {
             "a--b",
             skill("name: a--b\ndescription: Hi.\n"),
             SkillProblem::BadName("a--b".to_string()),
-        ),
-        (
-            "b",
-            skill("name: a\ndescription: Hi.\n"),
-            SkillProblem::NameMismatch {
-                name: "a".to_string(),
-                dir: "b".to_string(),
-            },
         ),
         ("a", skill("name: a\n"), SkillProblem::NoDescription),
         (
@@ -140,5 +135,106 @@ fn names_for_people_come_in_each_language() {
     assert_eq!(
         head.summary,
         BTreeMap::from([("zh".to_string(), "照包的样子写".to_string())])
+    );
+}
+
+/// 宽松地读（施工 PT-2 上，agentskills.io 接入指南「Lenient validation」）：别家写的技能常见的小毛病照收、记警告。
+#[test]
+fn small_slips_are_kept_with_warnings() {
+    let mismatched = read("pdf-main", &skill("name: pdf\ndescription: Hi.\n")).expect("照收");
+    assert_eq!(mismatched.name, "pdf", "照写的名字用");
+    assert_eq!(
+        mismatched.warnings,
+        [SkillWarning::NameMismatch {
+            name: "pdf".to_string(),
+            dir: "pdf-main".to_string()
+        }]
+    );
+    for (front, written) in [
+        ("description: Hi.\n", None),
+        ("name: PDF\ndescription: Hi.\n", Some("PDF")),
+        ("name: [a]\ndescription: Hi.\n", None),
+    ] {
+        let head = read("a", &skill(front)).expect("照收");
+        assert_eq!(head.name, "a", "照文件夹的名字用：{front}");
+        assert_eq!(
+            head.warnings,
+            [SkillWarning::NameFromFolder {
+                written: written.map(str::to_string),
+                dir: "a".to_string()
+            }],
+            "{front}"
+        );
+    }
+    let colon = read(
+        "a",
+        &skill("name: a\ndescription: Use this skill when: the user says \"PDF\" or a\\b\nlicense: MIT\n"),
+    )
+    .expect("宽松重读读得成");
+    assert_eq!(
+        colon.description, "Use this skill when: the user says \"PDF\" or a\\b",
+        "整句原样"
+    );
+    assert_eq!(colon.warnings, [SkillWarning::LenientYaml]);
+    // 只有读不懂的那几行改：同一段里已经加了引号的照原样读，不再套一层。
+    let mixed = read(
+        "a",
+        &skill("name: a\ndescription: \"Say: hi\"\nlicense: MIT: or Apache\n"),
+    )
+    .expect("宽松重读读得成");
+    assert_eq!(
+        (mixed.description.as_str(), mixed.warnings.as_slice()),
+        ("Say: hi", [SkillWarning::LenientYaml].as_slice())
+    );
+    // 说明的上限照格式：正好 1024 个字不说，多一个就说。
+    for (count, cut) in [(DESCRIPTION_CHARS, false), (DESCRIPTION_CHARS + 1, true)] {
+        let head = read(
+            "a",
+            &skill(&format!("name: a\ndescription: {}\n", "x".repeat(count))),
+        )
+        .expect("读得成");
+        assert_eq!(
+            head.warnings.contains(&SkillWarning::DescriptionCut),
+            cut,
+            "{count}"
+        );
+    }
+    let odd = read(
+        "a",
+        &skill(&format!(
+            "name: a\ndescription: Hi.\ncompatibility: {}\nmetadata:\n  version: 1.0\n",
+            "x".repeat(COMPATIBILITY_CHARS + 1)
+        )),
+    )
+    .expect("照收");
+    assert_eq!(
+        odd.warnings,
+        [SkillWarning::Compatibility, SkillWarning::Metadata]
+    );
+    let fine = read(
+        "a",
+        &skill(
+            "name: a\ndescription: Hi.\ncompatibility: Needs git\nmetadata:\n  version: \"1.0\"\n",
+        ),
+    )
+    .expect("照收");
+    assert!(fine.warnings.is_empty(), "{:?}", fine.warnings);
+    let not_text =
+        read("a", &skill("name: a\ndescription: Hi.\ncompatibility: 3\n")).expect("照收");
+    assert_eq!(not_text.warnings, [SkillWarning::Compatibility]);
+    assert_eq!(
+        (
+            SkillWarning::NameMismatch {
+                name: "pdf".to_string(),
+                dir: "x".to_string()
+            }
+            .code(),
+            SkillWarning::NameMismatch {
+                name: "pdf".to_string(),
+                dir: "x".to_string()
+            }
+            .detail()
+        ),
+        ("skill_name_mismatch", "pdf".to_string())
     );
 }

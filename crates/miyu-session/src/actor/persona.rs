@@ -112,7 +112,7 @@ impl Actor {
         // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。人中途换的人格、预设（施工 P-13）。
         let project = self.session.project().map(str::to_string);
         let wanted = Wanted::of(&self.session, &refresh.snapshot, refresh.child);
-        // 属主的覆盖、人格、预设、技能那几棵树改过的（施工 OV-1 下）：只比号，变了照现在的文件重拼。
+        // 属主的覆盖、人格、预设那几棵树改过的（施工 OV-1 下）：只比号，变了照现在的文件重拼。
         let edits = refresh.presets.as_ref().map_or(0, PresetPlaces::edits);
         let prefix = Arc::clone(&refresh.prefix);
         let edited = edits > prefix.seen();

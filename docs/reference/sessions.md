@@ -144,7 +144,7 @@
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。
 3. 附件先查再找会话：附件的 blob 要在、照内容再认一遍（见 [附件](blob.md)）。
 
-**前缀要变**（握手 `caps.prefix_ask: true` 的头才有）：属主的工具说明、提示词覆盖、人格、预设、技能目录里的文件改了，下一轮的请求前缀会变、缓存失效。会话空着时开新一轮（`session.send`、`session.redo`、开轮的 `command.run`）不带 `prefix` 的，回 `prefix_changing`，`data.files` 是改了的文件（照数据根写的相对路径，最多 20 个），多的在 `data.more`。给人弹「直接发送」「压缩上下文并发送」「取消」，选了再带 `"prefix": "keep"` 或 `"compact"` 发一次。`compact` 先压缩再说，压不了的回压缩的拒绝（例如 `nothing_to_compact`），这句没发。放行过的这一批不再问。
+**前缀要变**（握手 `caps.prefix_ask: true` 的头才有）：属主的工具说明、提示词覆盖、人格、预设目录里的文件改了（技能不算：会话中途技能变了走消息尾巴，前缀不变），下一轮的请求前缀会变、缓存失效。会话空着时开新一轮（`session.send`、`session.redo`、开轮的 `command.run`）不带 `prefix` 的，回 `prefix_changing`，`data.files` 是改了的文件（照数据根写的相对路径，最多 20 个），多的在 `data.more`。给人弹「直接发送」「压缩上下文并发送」「取消」，选了再带 `"prefix": "keep"` 或 `"compact"` 发一次。`compact` 先压缩再说，压不了的回压缩的拒绝（例如 `nothing_to_compact`），这句没发。放行过的这一批不再问。
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"看看这张图","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}

@@ -1,5 +1,6 @@
 //! 文件改动的版本（施工 OV-1 下，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：盯每个账号两层（系统区、他的
-//! 家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`、`skills/`，往下递归；变一下记一条：第几下、谁的（系统区的是大家的）、
+//! 家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`，往下递归（`skills/` 施工 PT-2 上拿掉了：技能那一块钉在快照里，
+//! 中途变了走尾巴注入，system 不变、前缀不变，问人是误报）；变一下记一条：第几下、谁的（系统区的是大家的）、
 //! 照数据根写的相对路径。会话回合开始只比号（`miyu_session::prefix`），发送前照它问人「前缀要变了」（`prefix_changing`）。
 //!
 //! - 只在内存里：核心重启从零数，会话也从零记，不会误判。
@@ -17,7 +18,7 @@ use miyu_store::watch::{Watch, watch_tree};
 use crate::Core;
 
 /// 盯的几棵树，在每一层下面的名字。
-const TREES: [&str; 5] = ["tools", "prompts", "personas", "presets", "skills"];
+const TREES: [&str; 4] = ["tools", "prompts", "personas", "presets"];
 
 /// 留几条改动。
 const KEPT: usize = 64;

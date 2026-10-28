@@ -5,7 +5,8 @@
 //! 和核心还没读到（`script_not_loaded`，施工 X-46）。斜杠命令模板同样报（施工 X-14 上补，`slash.md`）：`slash_skipped`、`slash_covered`，和核心内置的
 //! 同名、用不上的 `slash_builtin`。链接指到数据根里不认的地方的（施工 X-37）：`script_link_outside`、`skill_link_outside`、
 //! `slash_link_outside`，说指到了哪一片。有脚本状态目录、这一刻登记上的脚本里却没有它的（施工 X-44）：`script_state_left`，带
-//! 这个目录，人自己删。
+//! 这个目录，人自己删。照收了、但不合格式的技能（施工 PT-2 上）：一种警告一条，码照 `miyu_policy::skill::SkillWarning::code`
+//! （`skill_name_mismatch` 这些）。
 
 use std::path::Path;
 
@@ -27,13 +28,18 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
     );
     let found = tokio::task::spawn_blocking(move || {
         let scripts = miyu_store::scripts::find(&packages, &root, &admin);
-        let skills = miyu_store::skills::find(&packages, &root, &admin).1;
+        let skills = miyu_store::skills::find(&packages, &root, &admin);
         let slash = miyu_store::slash::find(&packages, &root, &admin);
         let states = miyu_store::scripts::states(root.path());
         (scripts, skills, slash, states)
     })
     .await;
-    let Ok(((scripts, skipped_scripts), skipped_skills, (slash, skipped_slash), states)) = found
+    let Ok((
+        (scripts, skipped_scripts),
+        (found_skills, skipped_skills),
+        (slash, skipped_slash),
+        states,
+    )) = found
     else {
         return Vec::new();
     };
@@ -102,6 +108,13 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             }),
     );
     problems.extend(skipped_skills.iter().map(|skipped| one("skill", skipped)));
+    problems.extend(found_skills.iter().flat_map(|skill| {
+        skill
+            .head
+            .warnings
+            .iter()
+            .map(|warning| warn("skill", warning.code(), &skill.file, &warning.detail()))
+    }));
     problems.extend(skipped_slash.iter().map(|skipped| one("slash", skipped)));
     problems.extend(
         slash

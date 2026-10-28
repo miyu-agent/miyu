@@ -7,7 +7,9 @@
 //!   不带；
 //! - `from`：`home`（管理员自己放的）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）；随包来的另带 `package` 编号；
 //! - `path`：`SKILL.md` 在哪，给人看的写法（家目录下的写成 `~/…`）；
-//! - `on`：技能、脚本、MCP 三页的全局开关这时开不开（施工 X-27，`features.skill-<名字>`），没写的算开。
+//! - `on`：技能、脚本、MCP 三页的全局开关这时开不开（施工 X-27，`features.skill-<名字>`），没写的算开；
+//! - `warnings`：照收了、但不合格式的地方（施工 PT-2 上），一条 `{"code", "message"}`：码同 `miyu check`，`message` 照连接的语言
+//!   从字表挑（给人看的，不是给作者看的英文）。没有的不带。
 //!
 //! 碰磁盘，在阻塞线程里找。
 
@@ -33,7 +35,7 @@ pub(crate) use remove::remove;
 ///
 /// # Errors
 ///
-/// 找的线程崩了：内部出错。
+/// 找的线程崩了：内部出错；这种语言的字表读不出来。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
     let (packages, root, admin) = (
         core.packages_of(account),
@@ -48,11 +50,26 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result
     .map_err(|_| Refusal::INTERNAL)?;
     let (found, packages) = found;
     let switches = crate::presets::switches(core, account);
+    let words = crate::config::methods::words(core, peer.language)?;
     let skills: Vec<Value> = found
         .iter()
         .map(|skill| {
             let mut one = one(core, &packages, skill, peer.language);
             one["on"] = json!(on(&switches, &feature_id(&skill.head.name)));
+            if !skill.head.warnings.is_empty() {
+                let warnings: Vec<Value> = skill
+                    .head
+                    .warnings
+                    .iter()
+                    .map(|warning| {
+                        let message =
+                            crate::packages::sentence(&words, warning.code(), &warning.detail())
+                                .unwrap_or_default();
+                        json!({"code": warning.code(), "message": message})
+                    })
+                    .collect();
+                one["warnings"] = json!(warnings);
+            }
             one
         })
         .collect();

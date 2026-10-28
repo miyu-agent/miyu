@@ -151,8 +151,8 @@ metadata:
 
 | Field | Notes |
 |---|---|
-| `name` | Lowercase letters, digits, `-`; same as the folder name |
-| `description` | For the model: English, what it is and when to use it; may include a few trigger words people actually say in other languages. Quote it (an unquoted "colon space" inside won't parse) |
+| `name` | Lowercase letters, digits, `-`; same as the folder name (a different name is used as written, a missing or invalid one falls back to the folder name; `miyu check` warns about each) |
+| `description` | For the model: English, what it is and when to use it; may include a few trigger words people actually say in other languages. Quote it (an unquoted "colon space" inside is not valid YAML: Miyu reads it again as plain text and warns, other tools may not read it at all); at most 1024 characters, the rest is cut |
 | `metadata` `display_name`, `summary` | Name and one line for people (English); Chinese and Japanese in `display_name_zh`, `summary_zh`, `display_name_ja`, `summary_ja` |
 
 The AI normally sees only the name, the description and the path of `SKILL.md`, and reads the body when it's useful. It can read other files in the folder (references, bundled scripts) but not change them; bundled scripts aren't tools, so the body says how to run them.
