@@ -442,7 +442,7 @@ fn names_are_read_from_the_log() {
 }
 
 /// 抽取的指令写着这几条（施工 E-1 修四，主人旧主群的真数据实测查出）：名字里的说明不是说的事、关于某个认识的人的事不记成
-/// `reference`、她自己的事记 `episode`、不记琐事、发生过的事交回涉及谁。
+/// `reference`、她自己的事记 `episode`、不记琐事、发生过的事交回涉及谁；群里的人顺口说起自己的事也记（施工 E-7）。
 #[test]
 fn the_instruction_keeps_names_hers_and_trivia_apart() {
     let instruction = instruction();
@@ -452,6 +452,8 @@ fn the_instruction_keeps_names_hers_and_trivia_apart() {
         "Facts about you are episode, never user or person.",
         "Do not keep trivia",
         r#"An episode also has "people": the names of those involved, not you or your owner."#,
+        // 施工 E-7：群里的人顺口说起自己的事也记成 person（主人旧主群真数据：只照原来的指令，每段约 1 条 person）。
+        "In a group, what people mention about themselves in passing",
     ] {
         assert!(instruction.contains(said), "指令里该有：{said}");
     }
