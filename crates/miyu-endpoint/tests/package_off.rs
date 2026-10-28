@@ -58,6 +58,14 @@ async fn a_package_switched_off_is_gone() {
         "system/packages/kit/skills/kit-notes/SKILL.md",
         "---\nname: kit-notes\ndescription: Take notes.\n---\n\nBody.\n",
     );
+    home.write(
+        "system/packages/kit2/package.toml",
+        "[package]\nname = { en = \"Kit 2\" }\n",
+    );
+    home.write(
+        "system/packages/kit2/skills/kit2-notes/SKILL.md",
+        "---\nname: kit2-notes\ndescription: Take other notes.\n---\n\nBody.\n",
+    );
     let script = Arc::new(Script::new([Play::Says("一。"), Play::Says("二。")]));
     let core = core(&home, &script);
     let mut alice = Client::connect(Arc::clone(&core));
@@ -85,6 +93,18 @@ async fn a_package_switched_off_is_gone() {
     assert!(
         !names(&skills["result"]["skills"]).contains(&"kit-notes".to_string()),
         "技能列表不列：{skills}"
+    );
+    assert!(
+        names(&skills["result"]["skills"]).contains(&"kit2-notes".to_string()),
+        "没关的照列：{skills}"
+    );
+    // 再关一个：关了的换了，看得到的那一份当场重造。
+    let reply = set(&mut alice, 4, "personal", "packages.kit2.off", true).await;
+    assert!(reply["result"].is_object(), "{reply}");
+    let skills = alice.call("k2", "skill.list", json!({})).await;
+    assert!(
+        !names(&skills["result"]["skills"]).contains(&"kit2-notes".to_string()),
+        "再关的也不列：{skills}"
     );
     let preset = alice
         .call("p", "preset.get", json!({"preset": "full"}))

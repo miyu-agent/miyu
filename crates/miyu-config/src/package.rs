@@ -123,9 +123,6 @@ pub struct Manifest {
     pub author: Option<String>,
     /// 上游：这个包的源码仓库，`https://` 开头（施工 F-12，`[package] upstream`）：没写的没有。
     pub upstream: Option<String>,
-    /// 默认成员也能用（施工 IM-1 上，`[package] members`）：系统装上时照它，管理员在系统那一层改了的照他写的。只认出厂、系统
-    /// 那一层的清单。没写的是不能。
-    pub members: bool,
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -477,7 +474,6 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         targets: head.targets,
         author: head.credits.author,
         upstream: head.credits.upstream,
-        members: head.members,
     })
 }
 

@@ -1,5 +1,5 @@
 //! 扩展的开关 `system/extensions.json`（`docs/blueprint/extensions.md`「对外的样子」，施工 9-4 上）：哪几个 `process` 包开着，
-//! 批过哪些扩展能力（施工 9-4 下上），哪几个成员也能用（施工 IM-1 上）。
+//! 批过哪些扩展能力（施工 9-4 下上）。
 //! 没写的照清单的 `start`，由用它的一方定；这里只存人明着开、关过的。放在 `system/`、不放 `state/`：`state/` 是派生的、
 //! 能删掉重建，开关是人做的决定。读写照只给自己看的 JSON 小文件的规矩。
 
@@ -29,10 +29,6 @@ pub struct Switches {
     pub version: u32,
     /// 包的编号到开没开：人明着开、关过的才有。
     pub on: BTreeMap<String, bool>,
-    /// 包的编号到成员能不能用（施工 IM-1 上）：管理员明着改过的才有，没写的照清单的 `[package] members`。不是扩展的包（带 MCP
-    /// 服务的 `bundle`）也记在这里。一个都没有的不写。
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub members: BTreeMap<String, bool>,
     /// 以前记批过的扩展能力的那一格（施工 9-4 下上）：Y-5 下上起批过的能力记在组表 `groups.json` 的 `ext.<能力>` 组里，这一格
     /// 读的时候认得、直接扔掉，写回时不写（整份读不进的话开关会一起丢）。换核心以后要重新批一次。等不再有带它的文件（0.1.0
     /// 以后）就删掉。
@@ -55,7 +51,6 @@ impl Default for Switches {
         Switches {
             version: VERSION,
             on: BTreeMap::new(),
-            members: BTreeMap::new(),
             retired: Retired,
         }
     }

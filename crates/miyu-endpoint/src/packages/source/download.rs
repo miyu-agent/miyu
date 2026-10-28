@@ -14,12 +14,11 @@ use miyu_source::index::File;
 /// 两块字节之间最多等多久：大文件不设总时限，卡住的才算不成。
 const STALL: Duration = Duration::from_secs(60);
 
-/// 一个包文件要下的：名字、索引里那一份、镜像（结尾带 `/`），和要不要照地址闸只连公网（个人层的源，施工 U23 下下）。
+/// 一个包文件要下的：名字、索引里那一份、镜像（结尾带 `/`）。
 pub(super) struct Wanted<'a> {
     pub(super) name: &'a str,
     pub(super) file: &'a File,
     pub(super) mirrors: &'a [String],
-    pub(super) guarded: Option<&'a miyu_http::Guarded>,
 }
 
 /// 缓存目录：`state/packages/.cache/`。
@@ -52,7 +51,7 @@ pub(super) async fn fetch(
     let mut reasons: Vec<String> = Vec::new();
     for url in urls {
         let partial = cache.join(format!(".{}.part", wanted.name));
-        match one((&url, wanted.guarded), &partial, wanted.file, report).await {
+        match one(&url, &partial, wanted.file, report).await {
             Ok(()) => {
                 std::fs::rename(&partial, &target).map_err(|error| error.to_string())?;
                 return Ok(target);
@@ -70,28 +69,23 @@ pub(super) async fn fetch(
     Err(reasons.join("; "))
 }
 
-/// 从 `url` 下到 `partial`：大小、哈希都对上才算成。`guarded` 的照地址闸只连公网，跳转每一跳过闸。
+/// 从 `url` 下到 `partial`：大小、哈希都对上才算成。
 async fn one(
-    (url, guarded): (&str, Option<&miyu_http::Guarded>),
+    url: &str,
     partial: &Path,
     file: &File,
     report: &(dyn Fn(u64, u64) + Sync),
 ) -> Result<(), String> {
-    let mut response = match guarded {
-        Some(guarded) => guarded.open(url, STALL).await?,
-        None => {
-            let proxy = if miyu_http::is_loopback_url(url) {
-                Proxy::Off
-            } else {
-                Proxy::FromEnvironment
-            };
-            let client = miyu_http::fetcher(proxy).map_err(|error| error.to_string())?;
-            tokio::time::timeout(STALL, client.get(url).send())
-                .await
-                .map_err(|_| "timed out".to_string())?
-                .map_err(|error| error.without_url().to_string())?
-        }
+    let proxy = if miyu_http::is_loopback_url(url) {
+        Proxy::Off
+    } else {
+        Proxy::FromEnvironment
     };
+    let client = miyu_http::fetcher(proxy).map_err(|error| error.to_string())?;
+    let mut response = tokio::time::timeout(STALL, client.get(url).send())
+        .await
+        .map_err(|_| "timed out".to_string())?
+        .map_err(|error| error.without_url().to_string())?;
     if !response.status().is_success() {
         return Err(format!("HTTP {}", response.status().as_u16()));
     }

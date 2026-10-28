@@ -8,7 +8,6 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`package.info`, `package.files`, `package.owns`, `package.check`](#packageinfo-packagefiles-packageowns-packagecheck) | A package's info and files; which package owns a path; whether installed files changed |
 | [`package.install`, `package.remove`](#packageinstall-packageremove) | Install, remove |
 | [`package.enable`, `package.disable`, `package.restart`](#packageenable-packagedisable-packagerestart) | Turn on, turn off, restart |
-| [`package.members`](#packagemembers) | Whether members may use it |
 | [`package.sync`](#packagesync) | Fetch the index from the package source |
 | [`package.search`](#packagesearch) | Search the package source |
 | [`package.clean`](#packageclean) | Delete downloaded package files |
@@ -26,9 +25,9 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | [`command.catalog`](#commandcatalog) | List the slash commands that can be used |
 | [`check`](#check) | Check config, personas, presets and packages for mistakes |
 
-**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.members`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
+**Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
-**Two layers**: built-in (installed with Miyu) and installed by the admin (`system/packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
+**Two layers**: built-in (installed with Miyu) and installed (`system/packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
 
 ## `package.list`
 
@@ -47,10 +46,8 @@ Manage packages, extension processes and the MCP servers in personal settings; l
 | `groups` | The groups it is in (only shipped built-in packages have them; `basesystem` is the base system); absent when none |
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
-| `members` | With a process (an extension, or one that brings MCP servers): whether members may use it. Admins only |
-| `available` | Only in a member's list: `false` for a package with a process that isn't open to them (not in the admin group, and the package isn't ticked for members); absent when open. Heads show "not opened by the admin" from it |
-| `page` | Has a package page; for members only the ones they can open (per-account and marked usable by members, construction IM-1 lower-middle 1 follow-up), which heads list under package pages |
-| `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `on` and `skipped` as in `mcp.list`. In a member's list each server has only `name` and `state` (`reason` when stopped) |
+| `page` | Has a package page, which heads list under package pages |
+| `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `on` and `skipped` as in `mcp.list`. An extension not acting for the owner (a platform bridge acting for outsiders in a venue) gets only `name` and `state` (`reason` when stopped) for each server, and none of `state`, `pages_dir`, `command`, `commands`, `process`, `worker`, `check`, `problem`, `line` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
 | `contents` | Which packages it carries content for (the ids under `[content.<package>]` in its manifest); absent when none |
@@ -62,7 +59,7 @@ Broken, conflicting or unreadable ones have only `package`, `layer`, `code`, `pr
 
 | Method | Params | Response |
 |---|---|---|
-| `package.logo` | `package`, `from`? | `{"package", "logo", "media_type", "data"}`: the package's own logo; `logo` is its version (the first 16 hex digits of the content's SHA-256, as in `package.list`), `data` is base64, `media_type` is `image/png` or `image/webp`; all three are `null` when the manifest has no logo or it breaks the rules (missing, not PNG / WebP, over 256 KiB, wider or taller than 512). Members can call it too. Add `from` (a package source's name, as in the `source` of a `package.search` row) to read the logo of a package in that source, installed or not; an unknown source gives `unknown_source`, a package missing from the index `unknown_package`, a failed download `download_failed` |
+| `package.logo` | `package`, `from`? | `{"package", "logo", "media_type", "data"}`: the package's own logo; `logo` is its version (the first 16 hex digits of the content's SHA-256, as in `package.list`), `data` is base64, `media_type` is `image/png` or `image/webp`; all three are `null` when the manifest has no logo or it breaks the rules (missing, not PNG / WebP, over 256 KiB, wider or taller than 512). Add `from` (a package source's name, as in the `source` of a `package.search` row) to read the logo of a package in that source, installed or not; an unknown source gives `unknown_source`, a package missing from the index `unknown_package`, a failed download `download_failed` |
 | `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`: where it came from (as in `package.list`), file count, bytes, author, upstream, install time, the local path it was installed from |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`; `path` is relative to `dir` |
 | `package.owns` | `path` (absolute) | `{"package", "layer", "path", "recorded"}`; `{"package": null}` when no package owns it |
@@ -93,7 +90,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `path_unreadable` | The folder can't be read |
 | `package_invalid` | The manifest is wrong, `data.problem`, `data.line`; for a package that needs a newer Miyu, `data.problem` is `needs_newer_miyu` |
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command |
-| `not_permitted` | A member who isn't an admin installing, upgrading, removing or restoring a package, or enabling an extension: for now members can't do any of these (later, packages without a process will install into their own home and only affect them); the `package` tool in a session goes by the session's owner, and listing, looking and searching still work |
+| `not_permitted` | The `package` tool in a session that isn't the owner's (one acting for outsiders in a venue) installing, upgrading, removing or restoring a package, or enabling an extension; listing, looking and searching still work |
 | `package_exists` | Same id as a built-in package |
 | `package_file_bad` | The package file can't be unpacked |
 | `download_failed` | Installing from the package source, the file couldn't be downloaded anywhere (a size or hash mismatch counts); `data.why` lists each place's reason |
@@ -101,7 +98,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `depends_missing` | A dependency isn't installed, `data.missing` |
 | `package_depended` | Another installed package depends on it, `data.by` |
 | `unknown_package` | Not installed, or never removed |
-| `unknown_source` | The source named in `from` doesn't exist (not added, misspelt, or in someone else's personal settings) |
+| `unknown_source` | The source named in `from` doesn't exist (not added, or misspelt) |
 
 ## `package.sync`
 
@@ -109,7 +106,7 @@ Fetch the index from the package source. Param `force` (optional): `true` fetche
 
 Response `{"generated", "fetched", "packages", "stale"?}`: when the index was generated and fetched (RFC 3339), and how many packages it lists; `stale` (the last place's reason, in English) means nothing could be fetched this time and the local copy is used.
 
-Other package sources: `packages.sources.<name>` in the configuration with a `url` and a `key` (a base64 Ed25519 public key). Those in the system configuration are for everyone, those in personal settings only for that person. They're fetched after the official one, each verified against its own key; the response adds `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`, with `{"source", "error"}` for one that couldn't be fetched. Sources in personal settings are only reached at public addresses.
+Other package sources: `packages.sources.<name>` in the configuration with a `url` and a `key` (a base64 Ed25519 public key). Both the system configuration and settings count (the system configuration wins on a shared name). They're fetched after the official one, each verified against its own key; the response adds `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`, with `{"source", "error"}` for one that couldn't be fetched.
 
 **Errors**
 
@@ -156,21 +153,13 @@ Upgrade from the package source. Only packages installed from the source are tou
 | `package_depended` | Turning off one another package depends on |
 | `package_off`, `not_restartable` | `restart` on one that's off; nothing to restart |
 
-## `package.members`
-
-**Params**: `package`, `on` (boolean). **Response**: an item as in `package.list`. Admins only, in admin mode.
-
-A package that runs a process (an extension, or one that brings MCP servers) is usable only by the admin group by default. `on: true` lets members use it; `false` takes it back. Until an admin sets it, the manifest's `[package] members` decides. Members' sessions follow it from their next turn.
-
-**Errors**: `unknown_package` for no such package; `not_switchable` for one without a process, or a removed one.
-
 ## `package.file`, `package.call`
 
 **`package.file`**: params `package`, `path` (relative, inside its page folder), `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages, mascot model files and theme files are read this way.
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
 
-Per-account packages (`[process] scope = "account"`): the call goes to the caller's own copy (for a page, the person viewing it; for an extension, the person it acts for). If that copy isn't running the core starts it for them and forwards once it has registered its methods, waiting up to 60 seconds. Members (people who aren't admins) can only use `package.file` and `package.call` on per-account packages they may use (marked usable by members); single-copy packages and unmarked ones get `not_permitted` (construction IM-1 lower-middle).
+Per-account packages (`[process] scope = "account"`): the call goes to the caller's own copy (for a page, the person viewing it; for an extension, the person it acts for). If that copy isn't running the core starts it for them and forwards once it has registered its methods, waiting up to 60 seconds.
 
 Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
 
@@ -180,7 +169,6 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 |---|---|
 | `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file |
 | `program_not_running` | The program isn't connected; a per-account copy couldn't be started or didn't register its methods within 60 seconds |
-| `not_permitted` | A member reaching a single-copy package, or one not marked usable by members |
 | `unregistered` | The program didn't register that method, `data.method` |
 | `method_failed` | The program answered with an error, `data.message`, `data.code` |
 | `method_timeout` | No answer in time |

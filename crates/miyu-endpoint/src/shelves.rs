@@ -9,11 +9,10 @@
 //! `scripts/` 的监视挂在架子上（`Shelf::over_keeping`），他的会话都卸了、没人拿着架子了，监视跟着放掉，人多了句柄不攒着（施工
 //! U23 中下补）；再开会话时现造一个。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use miyu_kernel::id::AccountId;
-use miyu_store::packages::Layer;
 use miyu_store::scripts::{HOME_PACKAGE, Script};
 use miyu_store::watch::{Watch, watch_dir};
 use miyu_tool::{Catalog, Compose, Shelf, Tool, WeakShelf};
@@ -144,19 +143,14 @@ impl Core {
         }
     }
 
-    /// 找 `account` 那一层（他找得到的、不归包的，和他自己那一层包带的），照内置包端口造成工具；造不成的记一行 `WARN`，没设端口
+    /// 找 `account` 那一层（他找得到的、不归包的），照内置包端口造成工具；造不成的记一行 `WARN`，没设端口
     /// 的（测试里造的核心）只记下找到的。碰磁盘。
     fn own_layer(&self, account: &AccountId) -> OwnLayer {
         let packages = self.packages_of(account);
-        let own: BTreeSet<&str> = packages
-            .iter()
-            .filter(|one| one.layer == Layer::User)
-            .map(|one| one.id.as_str())
-            .collect();
         let (found, _) = miyu_store::scripts::find(&packages, &self.root, account);
         let mine: Vec<Script> = found
             .into_iter()
-            .filter(|script| script.package.as_deref().is_none_or(|id| own.contains(id)))
+            .filter(|script| script.package.is_none())
             .collect();
         let Some(builtins) = &self.builtins else {
             return (mine, Vec::new());

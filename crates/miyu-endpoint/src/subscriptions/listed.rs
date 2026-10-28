@@ -113,10 +113,8 @@ impl Listed {
                     json!({"jsonrpc": "2.0", "method": "mcp.changed", "params": {"name": name, "server": server}})
                 }
                 None => {
-                    // 某个人自己那一层的（施工 U23 下上）只推给他；推的那一项照握手时替谁干活的那个人看得到的算。
-                    let whose = shaken.whose();
-                    let id = crate::packages::changes::whose(id, whose)?;
-                    let entry = crate::packages::entry(core, id, shaken.now_whose(core), whose);
+                    let entry =
+                        crate::packages::entry(core, id, shaken.now_whose(core), shaken.whose());
                     json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
                 }
             },

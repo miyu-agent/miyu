@@ -115,7 +115,6 @@ pub(crate) async fn call(
     params: CallParams,
 ) -> Result<Value, Refusal> {
     let from = caller.package.as_deref();
-    super::opened_to(core, caller, &params.package)?;
     let packages = core.system_packages();
     let manifest = |id: &str| {
         packages

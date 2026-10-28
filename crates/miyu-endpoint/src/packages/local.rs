@@ -1,7 +1,6 @@
 //! 本地库接到装卸上（施工 F-8 中上，设计 `31-软件包.md` 第四节，`miyu_store::packages::local`）：家目录里装成、升级成的记一份
 //! （每个文件的路径、SHA-256、字节数），卸掉的删掉那一份；核心起来时给以前装的、还没记的补上（照现在的文件算）。
-//! `package.info`、`package.files` 照它答；出厂的不进本地库，照现在的文件现算。账号自己那一层装的记在他那层的 `.local` 里（施工
-//! U23 下上，[`root_of`]）。
+//! `package.info`、`package.files` 照它答；出厂的不进本地库，照现在的文件现算。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -9,7 +8,6 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_store::packages::local::{self, Desc, Entry};
 use miyu_store::packages::{Found, Layer, Packages};
 
@@ -31,22 +29,7 @@ pub(super) fn record(
     let home = places
         .home_dir()
         .ok_or_else(|| std::io::Error::other("no home layer"))?;
-    record_at(home, &places.local_root(), id, version, source)
-}
-
-/// 同 [`record`]：包在 `layer` 这一层的目录里，记进本地库 `root`（施工 U23 下上：自己那一层的记在他那层）。
-///
-/// # Errors
-///
-/// 包目录读不了、本地库写不进。
-pub(super) fn record_at(
-    layer: &Path,
-    root: &Path,
-    id: &str,
-    version: Option<String>,
-    source: &str,
-) -> std::io::Result<()> {
-    let files = local::scan(&layer.join(id))?;
+    let files = local::scan(&home.join(id))?;
     let desc = Desc {
         id: id.to_string(),
         version,
@@ -56,7 +39,7 @@ pub(super) fn record_at(
         origin: None,
         feed: None,
     };
-    local::write(root, &desc, &files)
+    local::write(&places.local_root(), &desc, &files)
 }
 
 /// 包 `id` 是从软件源装的：本地库 `root` 里那一份记上来源仓库 `origin`（施工 G-4 上）和软件源的名字 `feed`（施工 U23 下下，
@@ -71,14 +54,6 @@ pub(super) fn set_origin(
     desc.origin = Some(origin.to_string());
     desc.feed = feed.map(str::to_string);
     local::write(root, &desc, &files)
-}
-
-/// 包 `found` 记在哪个本地库：账号自己那一层的在他那层的 `.local`（施工 U23 下上），别的在 `places` 的。
-pub(crate) fn root_of(found: &Found, places: &Packages) -> PathBuf {
-    match (found.layer, found.files_dir().parent()) {
-        (Layer::User, Some(layer)) => layer.join(".local"),
-        _ => places.local_root(),
-    }
 }
 
 /// 核心起来时：家目录里读成了、还没记的包补一份，各记一行 `INFO package recorded`；补不成的 `WARN package not recorded`。
@@ -117,17 +92,9 @@ pub(super) struct Looked {
     pub(super) files: Vec<Entry>,
 }
 
-/// 一个包这时的记录：装进来的照本地库（没记的现算），出厂的现算。`whose` 是照谁看得到的找（施工 U23 下上：他自己那一层的
-/// 盖过系统的），没有的照系统那一份。
-pub(super) async fn entry(
-    core: &Arc<Core>,
-    whose: Option<&AccountId>,
-    id: &str,
-) -> Result<Looked, Refusal> {
-    let now = match whose {
-        Some(account) => core.packages_seen(account),
-        None => core.system_packages(),
-    };
+/// 一个包这时的记录：装进来的照本地库（没记的现算），出厂的现算。
+pub(super) async fn entry(core: &Arc<Core>, id: &str) -> Result<Looked, Refusal> {
+    let now = core.system_packages();
     let found: &Found = now
         .iter()
         .find(|one| one.id == id)
@@ -138,7 +105,7 @@ pub(super) async fn entry(
         .ok()
         .and_then(|manifest| manifest.version.clone());
     let places = packages(core);
-    let (folder, root, layer) = (found.files_dir(), root_of(found, &places), found.layer);
+    let (folder, root, layer) = (found.files_dir(), places.local_root(), found.layer);
     let target = id.to_string();
     let dir = folder.clone();
     let read = tokio::task::spawn_blocking(move || {
@@ -165,11 +132,11 @@ pub(super) async fn entry(
     })
 }
 
-/// `package.info {package}`：编号、哪一层、版本、装的时刻和从哪装的（本地库里记了的才有）、几个文件、多少字节。照 `whose`
-/// 看得到的找（施工 U23 下上）；不是管理员的（`admin` 是假的）不给从哪装的：那是这台电脑上的路径。
+/// `package.info {package}`：编号、哪一层、版本、装的时刻和从哪装的（本地库里记了的才有）、几个文件、多少字节。不替主人干活的
+/// （`admin` 是假的）不给从哪装的：那是这台电脑上的路径。
 pub(crate) async fn info(
     core: &Arc<Core>,
-    (whose, admin): (&AccountId, bool),
+    admin: bool,
     params: InfoParams,
 ) -> Result<Value, Refusal> {
     let Looked {
@@ -178,7 +145,7 @@ pub(crate) async fn info(
         desc,
         files,
         ..
-    } = entry(core, Some(whose), &params.package).await?;
+    } = entry(core, &params.package).await?;
     let mut answer = json!({
         "package": params.package,
         "layer": layer.as_str(),
@@ -193,7 +160,7 @@ pub(crate) async fn info(
         answer["version"] = json!(version);
     }
     // 作者、上游、从哪来（施工 F-12）：同 `package.list` 的那几格。
-    let now = core.packages_seen(whose);
+    let now = core.system_packages();
     if let Some(found) = now.iter().find(|one| one.id == params.package) {
         let places = packages(core);
         answer["from"] = json!(super::fill::from(found, &places).as_str());
@@ -219,12 +186,8 @@ pub(crate) async fn info(
 
 /// `package.files {package}`：包目录 `dir`（绝对路径，施工 F-8 下：命令行照 pacman 印绝对路径），每个文件的 `path`（相对
 /// 包目录，`/` 分开）、`sha256`、`size`，照路径排。
-pub(crate) async fn files(
-    core: &Arc<Core>,
-    whose: &AccountId,
-    params: InfoParams,
-) -> Result<Value, Refusal> {
-    let looked = entry(core, Some(whose), &params.package).await?;
+pub(crate) async fn files(core: &Arc<Core>, params: InfoParams) -> Result<Value, Refusal> {
+    let looked = entry(core, &params.package).await?;
     let files: Vec<Value> = looked
         .files
         .iter()

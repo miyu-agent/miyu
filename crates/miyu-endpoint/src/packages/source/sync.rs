@@ -5,8 +5,8 @@
 //! - 不设定时器：用到软件源的时候（`package.sync`，之后的搜、装、升级）本机那份超过 24 小时才去拿，`force` 的不管时候。
 //! - 一处不成试下一处；全不成的照旧用本机那份，带上最后一处的原因（`stale`）；本机也没有的拒 `source_unreachable`。
 //! - 本机存的那份每次读都再验一遍签名：数据根里的文件谁都可能改。
-//! - 几个源各拿各的（施工 U23 下下，[`super::feeds`]）：每个源照它自己的地址、公钥、目录，个人层的照地址闸只连公网（[`guarded`]）。
-//!   `package.sync` 拿官方的，加系统配置里的、调的人个人设置里的；别的源拿不成不耽误官方那一份。
+//! - 几个源各拿各的（施工 U23 下下，[`super::feeds`]）：每个源照它自己的地址、公钥、目录。`package.sync` 拿官方的，加配置里
+//!   加的；别的源拿不成不耽误官方那一份。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -18,7 +18,6 @@ use serde_json::{Value, json};
 
 use miyu_config::Address;
 use miyu_http::{Get, Got, Proxy};
-use miyu_kernel::id::AccountId;
 use miyu_source::index::{Index, may_replace};
 use miyu_source::sign::{self, PublicKey};
 
@@ -43,20 +42,16 @@ const MOST_SIGNATURE: usize = 64 << 10;
 /// 一次拿最多多久。
 const WAIT: Duration = Duration::from_secs(60);
 
-/// 认哪几把公钥：编进来的官方公钥（[`sign::OFFICIAL`]），测试换成自己的。测试另能给个人层软件源的地址闸开口子（`testkit`）。
+/// 认哪几把公钥：编进来的官方公钥（[`sign::OFFICIAL`]），测试换成自己的。
 #[derive(Debug, Clone)]
 pub(crate) struct Trust {
     pub(crate) keys: Vec<PublicKey>,
-    #[cfg(feature = "testkit")]
-    testing: Option<miyu_http::guard::Testing>,
 }
 
 impl Default for Trust {
     fn default() -> Trust {
         Trust {
             keys: sign::official(),
-            #[cfg(feature = "testkit")]
-            testing: None,
         }
     }
 }
@@ -68,24 +63,6 @@ impl Core {
         self.trust.keys = keys;
         self
     }
-
-    /// 同一份家底，个人层软件源的地址闸照 `testing`（施工 U23 下下）：回环当公网，本机的假软件源连得上。只在测试里有。
-    #[cfg(feature = "testkit")]
-    #[must_use]
-    pub fn with_source_guard(mut self, testing: miyu_http::guard::Testing) -> Core {
-        self.trust.testing = Some(testing);
-        self
-    }
-}
-
-/// 替成员连个人层软件源的那一道闸（施工 U23 下下）：平时照环境变量的代理、闸没有口子；测试照给的口子。
-pub(crate) fn guarded(core: &Core) -> miyu_http::Guarded {
-    #[cfg(feature = "testkit")]
-    if let Some(testing) = &core.trust.testing {
-        return miyu_http::Guarded::testing(testing.clone());
-    }
-    let _ = core;
-    miyu_http::Guarded::from_env()
 }
 
 /// 拿到的索引。
@@ -105,7 +82,7 @@ pub(crate) struct Synced {
 ///
 /// 同 [`sync_feed`]。
 pub(crate) async fn sync(core: &Arc<Core>, force: bool) -> Result<Synced, Refusal> {
-    sync_feed(core, &super::feeds::official(core), force).await
+    sync_feed(&super::feeds::official(core), force).await
 }
 
 /// 拿源 `feed` 的索引：本机那份不到 24 小时的（`force` 的不算）直接用；不然照先后去拿。
@@ -113,11 +90,7 @@ pub(crate) async fn sync(core: &Arc<Core>, force: bool) -> Result<Synced, Refusa
 /// # Errors
 ///
 /// 全不成、本机也没有：`source_unreachable`（`data.why` 是最后一处的原因）。
-pub(crate) async fn sync_feed(
-    core: &Arc<Core>,
-    feed: &Feed,
-    force: bool,
-) -> Result<Synced, Refusal> {
+pub(crate) async fn sync_feed(feed: &Feed, force: bool) -> Result<Synced, Refusal> {
     let dir = feed.dir.clone();
     let keys = feed.keys.clone();
     let place = dir.clone();
@@ -137,9 +110,8 @@ pub(crate) async fn sync_feed(
         });
     }
     let mut last = "no source configured".to_string();
-    let guarded = feed.guarded().then(|| guarded(core));
     for base in &feed.bases {
-        match fetch(base, &feed.keys, guarded.as_ref()).await {
+        match fetch(base, &feed.keys).await {
             Ok((index, bytes, signature)) => {
                 if let Some((kept, _)) = &kept
                     && !may_replace(kept, &index)
@@ -195,19 +167,14 @@ pub(crate) struct SyncParams {
     force: bool,
 }
 
-/// `package.sync`：拿官方的索引，回 `{"generated", "fetched", "packages", "stale"?}`；配置里还有别的源的（施工 U23 下下：系统配置
-/// 里的、`account` 个人设置里的）另带 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有
+/// `package.sync`：拿官方的索引，回 `{"generated", "fetched", "packages", "stale"?}`；配置里还有别的源的（施工 U23 下下）另带 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有
 /// 的那一项是 `{"source", "error"}`，不耽误别的。
-pub(crate) async fn method(
-    core: &Arc<Core>,
-    account: &AccountId,
-    params: SyncParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn method(core: &Arc<Core>, params: SyncParams) -> Result<Value, Refusal> {
     let synced = sync(core, params.force).await?;
     let mut answer = shown(&synced);
     let mut others = Vec::new();
-    for feed in super::feeds::feeds(core, Some(account)).iter().skip(1) {
-        let mut row = match sync_feed(core, feed, params.force).await {
+    for feed in super::feeds::feeds(core).iter().skip(1) {
+        let mut row = match sync_feed(feed, params.force).await {
             Ok(synced) => shown(&synced),
             Err(refusal) => json!({"error": refusal.reason}),
         };
@@ -263,23 +230,8 @@ pub(super) fn resolved<'a>(addresses: impl Iterator<Item = &'a Address>) -> Vec<
         .collect()
 }
 
-/// 从 `base` 拿索引和签名、验过、读成：交回读好的索引和收到的两份字节。`guarded` 的照地址闸只连公网（个人层的源）。
-async fn fetch(
-    base: &str,
-    keys: &[PublicKey],
-    guarded: Option<&miyu_http::Guarded>,
-) -> Result<(Index, Vec<u8>, Vec<u8>), String> {
-    if let Some(guarded) = guarded {
-        let bytes = guarded
-            .get(&format!("{base}{INDEX}"), MOST_INDEX, WAIT)
-            .await?;
-        let signature = guarded
-            .get(&format!("{base}{SIGNATURE}"), MOST_SIGNATURE, WAIT)
-            .await?;
-        sign::verify(&bytes, &signature, keys).map_err(|error| error.to_string())?;
-        let index = Index::parse(&bytes).map_err(|error| error.to_string())?;
-        return Ok((index, bytes, signature));
-    }
+/// 从 `base` 拿索引和签名、验过、读成：交回读好的索引和收到的两份字节。
+async fn fetch(base: &str, keys: &[PublicKey]) -> Result<(Index, Vec<u8>, Vec<u8>), String> {
     let proxy = if miyu_http::is_loopback_url(base) {
         Proxy::Off
     } else {

@@ -32,12 +32,10 @@ pub(crate) mod logo;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
-mod mine;
 pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
-pub(crate) mod scope;
 mod services;
 pub(crate) mod source;
 pub(crate) mod status;
@@ -141,12 +139,11 @@ fn to_system(root: &DataRoot, admin: &AccountId) {
 }
 
 /// `package.list`：核心这时认的（起来时读的，装卸以后当场换，施工 F-5 上），照编号排；卸掉的出厂的接在后面，带
-/// `removed: true`（施工 F-5 上），好让头给人装回来。照 `account` 看得到的列（施工 U23 下上：他自己那一层的带 `layer: "user"`，
-/// 盖过系统的同编号那一份）。
+/// `removed: true`（施工 F-5 上），好让头给人装回来。
 pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
-    let seen = core.packages_seen(account);
+    let seen = core.system_packages();
     let mut items: Vec<Value> = seen
         .iter()
         .map(|found| {
@@ -177,27 +174,19 @@ pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value
             }),
     );
     if !peer.admin {
-        // 没对成员开放的（施工 U23-R修三）：头照它写「管理员没开放」、把他自己的开关灰掉。
-        let barred = core.barred_from_members();
         for item in &mut items {
-            if item["package"]
-                .as_str()
-                .is_some_and(|id| barred.iter().any(|one| one == id))
-            {
-                item["available"] = json!(false);
-            }
-            for_members(core, item);
+            for_others(item);
         }
     }
     Ok(json!({ "packages": items, "groups": group::listed(core, peer.language) }))
 }
 
-/// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）、`account` 看得到的（施工 U23 下上，同 [`list`]）；
+/// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）；
 /// 装着的、卸掉了的出厂的都有，都不是的没有。
 pub(crate) fn entry(core: &Core, id: &str, peer: Peer, account: &AccountId) -> Option<Value> {
     let words = words(core, peer.language).ok()?;
     let places = packages(core);
-    let seen = core.packages_seen(account);
+    let seen = core.system_packages();
     let mut item = match seen.iter().find(|found| found.id == id) {
         Some(found) => listed(
             core,
@@ -220,19 +209,17 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer, account: &AccountId) -> O
             )
         }
     };
-    // 同 [`list`]：不是管理员的裁掉只给管理员的那几格（施工 U23-R修二）。
+    // 同 [`list`]：不替主人干活的裁掉只给主人的那几格（施工 U23-R修二）。
     if !peer.admin {
-        for_members(core, &mut item);
+        for_others(&mut item);
     }
     Some(item)
 }
 
-/// 只给管理员的那几格（施工 U23-R，U23 末上、末下：成员在软件包页照包开关）：这台机器上的路径（`state`、`pages_dir`）、程序
-/// 和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法（可能带环境变量、请求头）、读坏了的原话
-/// （`problem`、`line`）。别的照给：不是管理员组的账号也有扩展（接入QQ 的 `im`）照 `export`、`connection` 这些找挂在自己身上的
-/// 包（施工 U23-R修，U23-R 起照白名单删掉了它们）。
-const ADMINS_ONLY: &[&str] = &[
-    "members",
+/// 只给主人的那几格（施工 U23-R）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、
+/// `worker`、`check`）、MCP 服务的写法（可能带环境变量、请求头）、读坏了的原话（`problem`、`line`）。不替主人干活的连接（场所里
+/// 替外人的平台桥）只拿到别的：它照 `export`、`connection` 这些找挂在自己身上的包。
+const OWNER_ONLY: &[&str] = &[
     "state",
     "pages_dir",
     "command",
@@ -244,18 +231,11 @@ const ADMINS_ONLY: &[&str] = &[
     "line",
 ];
 
-/// 把一项里 [`ADMINS_ONLY`] 那几格去掉。带的 MCP 服务只留名字、状态、停下的原因（施工 U23-R修三：头照它认得出带服务的包、照实写
-/// 状态），怎么起（命令、网址、环境变量、请求头、标准错误）只给管理员。后台页他打不开的去掉 `page`（施工 IM-1 中下一补：头照它
-/// 列「软件后台」，同 [`crate::backstage::members_open`]）。
-fn for_members(core: &Core, item: &mut Value) {
-    let shut = item["package"]
-        .as_str()
-        .is_some_and(|id| !crate::backstage::members_open(core, id));
+/// 把一项里 [`OWNER_ONLY`] 那几格去掉。带的 MCP 服务只留名字、状态、停下的原因（施工 U23-R修三），怎么起（命令、网址、环境变量、
+/// 请求头、标准错误）只给主人。
+fn for_others(item: &mut Value) {
     if let Some(fields) = item.as_object_mut() {
-        fields.retain(|key, _| !ADMINS_ONLY.contains(&key.as_str()));
-        if shut {
-            fields.remove("page");
-        }
+        fields.retain(|key, _| !OWNER_ONLY.contains(&key.as_str()));
         if let Some(Value::Array(servers)) = fields.get_mut("mcp") {
             for server in servers.iter_mut() {
                 if let Some(server) = server.as_object_mut() {

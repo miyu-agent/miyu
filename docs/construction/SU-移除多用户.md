@@ -23,7 +23,7 @@
 | 管理员模式 | 请求外壳的 `"scope": "system"`、`caps.scope`、`admin_mode_required`；命令行 `--system` |
 | 组 | `system/groups.json` 的管理员组；能力组 `ext.<能力>` 换成 `extensions.json`（包 → 批过的能力） |
 | 包的账号 | 带程序的包不再是一个账号（包编号和用户名互相占位、包的家目录）；包的数据放 `data/<包>/`，身份照旧是包 |
-| 每人一份 | 配置、密钥（系统一层 + 个人一层 → 一份）；用量按人；记忆按账号分层（Y-7）；人格、预设、技能、脚本、提示词和工具说明覆盖的「系统 + 自己」两层 → 「你的 + 出厂」；软件包系统层 + 个人层、个人的软件源、对自己关掉某个包；扩展 `[process] scope = "account"`（每人一份的扩展进程、`copies`）；成员自己的平台号；每人一份的场所会话（IM-2）；会话索引、项目、定时任务的按账号分；定时任务每账号 200 条 → 全机 200 条 |
+| 每人一份 | 配置、密钥（系统一层 + 个人一层 → 一份）；用量按人；记忆按账号分层（Y-7）；人格、预设、技能、脚本、提示词和工具说明覆盖的「系统 + 自己」两层 → 「你的 + 出厂」；软件包系统层 + 个人层、个人的软件源（关掉某个包留着：出厂的卸不掉，照它关，项目主人 10-24 要的）；扩展 `[process] scope = "account"`（每人一份的扩展进程、`copies`）；成员自己的平台号；每人一份的场所会话（IM-2）；会话索引、项目、定时任务的按账号分；定时任务每账号 200 条 → 全机 200 条 |
 | 成员的限制 | 成员沙盒、成员上网闸、成员只装不带程序的包、「成员也能用」开关 |
 | 存储布局 | `system/` + `home/<账号>/` 两层 → 数据根一层（第五节） |
 | OOBE | 注册机主账号；admin 只当系统、不能登录这一套 |
@@ -55,9 +55,11 @@
 | 步 | 内容 | 头、im 要跟着切 |
 |---|---|---|
 | SU-1 | 管理员模式、成员闸、账号管理、邀请、管理员组拿掉；新登录（第四节）；OOBE 不建账号 | 两个头：登录、OOBE、账号页、管理员模式 |
-| SU-2 | 包和扩展：包的账号、能力组 → `extensions.json`、软件包两层、个人软件源、每人一份的扩展、`package.members`、「成员也能用」 | 两个头：软件包页、扩展页；im：每人一份 |
+| SU-2 上 | 软件包每人自己那一层、个人软件源、`package.members` 和「成员也能用」、`miyu pkg --system` | 两个头：软件包页（`members`、`available`、`layer: "user"` 没了） |
+| SU-2 中 | 批过的扩展能力从组表 `groups.json` 的 `ext.<能力>` 挪进 `extensions.json`，组表删掉 | 无（形状不变） |
+| SU-2 下 | 每人一份的扩展（`[process] scope = "account"`、按人拉起的那一份） | 两个头：扩展页；im：每人一份 |
 | SU-3 | 配置、密钥、用量、记忆、项目、定时、平台号、头像改成一份 | 两个头：设置页的层；im：平台号 |
-| SU-4 | 场所会话归包、IM-2 拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
+| SU-4 | 场所会话归包、IM-2 拿掉；包的账号（带程序的包是一个账号、包编号和用户名互相占位、包的家目录）跟着场所会话一起拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
 | SU-5 | 存储布局一层；搬家脚本 | 无（头不碰路径） |
 | SU-6 | 剩下的账号参数收尾、蓝图和设计（06 标作废）、作者文档；量占用 | 无 |
 
@@ -82,4 +84,22 @@
 2. 端点 `login.rs`：一次性码只给本机令牌、只能设访问密码、设好换设备令牌、写在主人那一行；设备令牌连上的改不了密码；本机令牌改密码以后以前的设备断开；还没设的密码登录、远程空凭据回 `password_not_set`，设了以后空凭据 `bad_token`；同一个来源错 5 次先拒、别的来源和本机各算各的；主人那一行密码是空的照样算没设。交接票、头像、软件包工具（主人装进系统那一层、装回出厂的、打开扩展先问再开）各一组。
 3. 总程序的测试：交接票、密码登录（`connect_password` 只带密码）、拉起核心。
 4. 手写变异 11 个全杀；「主人那一行密码是空的」头一轮活了，补了照真机第一次起来写好的那一行才杀掉。
+5. 本机门禁全过。
+
+### 九、SU-2 上：做了什么
+
+1. 软件包只剩出厂的、装上的两层：`miyu_store::packages` 去掉 `Layer::User`、`of_account`、`read_over` 和盖过系统那一份的 `overrides.rs`；端点删掉 `packages/scope.rs`（`Scope`）、`mine.rs`、`Core::packages_seen`，`package.list`、`info`、`files`、`logo`、`search`、升级都照 `Core::system_packages`。
+2. `Core::packages_of(账号)` 是全部去掉关了的（`packages/own.rs` 的 `Visible`，一格缓存，全部或关了的换了当场重造）；包的账号照全部。关掉某个包（`packages.<编号>.off`）留着。
+3. 谁能装：协议上 `package.install`、`remove`、`upgrade` 只给人（`connection/rights.rs`），人就是主人；会话里的 `package` 工具照属主，不是主人的（场所里替外人的会话）装、卸、升级、开扩展、看一眼要装的一律 `not_permitted`（`Port::managing`）。
+4. 软件源：系统配置、主人设置里加的都认（同名的认系统配置的），索引都在 `state/packages/.sources/<名字>/`；替成员只连公网的那道闸（`Feed::guarded`、`Trust.testing`、`Core::with_source_guard`、下载的 `Wanted.guarded`）删掉。
+5. 「成员也能用」：清单的 `[package] members`、开关文件的 `members`、`package.members`、`Core::members_may`、`barred_from_members`、列表的 `members`、`available` 一起删；后台页 `package.file`、`package.call` 的成员闸（`backstage::opened_to`）删掉；扩展的能力不再和「替谁干活」的那个人取交集（`extensions::held`）。不替主人干活的连接（平台桥）拿到的列表照旧裁掉路径、程序、MCP 写法（`for_others`）。
+6. `miyu pkg --system` 删掉（没有管理员模式以后它什么都不做）。
+7. 方法清单删掉 `package.members`；参考 `packages` 中英两份、蓝图 `protocol.md`、`packages.md`、`extensions.md`、`package-pages.md`、`tools/package.md`、`cli/pkg.md` 跟着改。
+
+### 十、SU-2 上：怎么验
+
+1. 会话端口：属主不是主人的会话看一眼、装、卸、升级、开扩展一件一件拒 `not_permitted`，什么都没装；列得出；主人的会话看得了（`packages/port/tests.rs`）。
+2. 软件源（`tests/package_feeds.rs`，照单人重写）：主人设置里加的源搜得到、`package.sync` 列着、装进装上的那一层、本地库记源名；源删了升级时进 `gone`、再装 `unknown_source`；和系统配置同名的那一条不用。
+3. 软件包列表不再带 `members`（`tests/packages.rs`）；关掉某个包照旧，再关一个当场跟着换（`package_off`）。
+4. 手写变异 9 个：头一轮活了 5 个，补了 4 处测试（再关一个包、技能列表当场换；不替主人干活的会话列表里没有 `state`、`package.info` 没有 `source`；重装时已经装着的依赖不再装）以后全杀。剩下的一个是等价的：包的账号的设置那一层没人写，`packages_off` 对它先交空的和照读的一样（SU-4 连包的账号一起拿掉）。
 5. 本机门禁全过。

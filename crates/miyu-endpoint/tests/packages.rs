@@ -203,7 +203,6 @@ args = ["serve"]
                 "depends": {"packages": ["xembed"]},
                 "status": "program_missing",
                 "enabled": false,
-                "members": false,
             }),
             json!({
                 "package": "xembed",

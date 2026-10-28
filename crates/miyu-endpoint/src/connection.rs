@@ -136,9 +136,9 @@ async fn read_all<R: AsyncRead + Unpin>(
         package: package.clone(),
     };
     // 它手里有哪些能力（施工 X-30；Y-5 下上起照组表）：批、升级都会重新拉起，一个连接算一次就够。
-    let declared = package.as_deref().map_or_else(Vec::new, |package| {
-        rights::declared(&core, package, caller.serving.as_ref())
-    });
+    let declared = package
+        .as_deref()
+        .map_or_else(Vec::new, |package| rights::declared(&core, package));
     let mut handing: Option<Handing> = None;
     let mut reader = BufReader::new(read);
     let mut shaken: Option<Shaken> = None;

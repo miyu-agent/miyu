@@ -8,7 +8,6 @@ use serde_json::{Value, json};
 
 use miyu_config::package::{Capability, Manifest};
 use miyu_config::words::Words;
-use miyu_kernel::id::AccountId;
 use miyu_store::groups::Groups;
 use miyu_store::packages::Layer;
 
@@ -56,10 +55,7 @@ pub(super) fn unapproved(core: &Core, id: &str, manifest: &Manifest) -> Vec<Capa
 }
 
 /// 包 `package` 的连接调方法时手里有的能力（施工 Y-5 下上，`connection/rights.rs` 照它挡）：组表批过的（出厂的是声明的全部）。
-/// 它替人干活的（`serving`，设计 06 U17），那个人自己也得有这项权限，取交集：人这一侧照「是不是管理员」（机主恒是），不是的
-/// 照包勾没勾「成员也能用」（施工 IM-1 中）：勾了的照批过的，没勾的一样都没有。他能碰的只有他自己的东西，由各个方法照替谁干活
-/// 的那个人挡。
-pub(crate) fn held(core: &Core, package: &str, serving: Option<&AccountId>) -> Vec<Capability> {
+pub(crate) fn held(core: &Core, package: &str) -> Vec<Capability> {
     let packages = core.system_packages();
     let Some(manifest) = packages
         .iter()
@@ -68,11 +64,6 @@ pub(crate) fn held(core: &Core, package: &str, serving: Option<&AccountId>) -> V
     else {
         return Vec::new();
     };
-    if serving.is_some_and(|person| {
-        !crate::login::is_owner(core, person) && !core.members_may(package, manifest)
-    }) {
-        return Vec::new();
-    }
     holds(
         core,
         package,

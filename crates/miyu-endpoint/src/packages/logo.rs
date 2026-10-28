@@ -14,7 +14,6 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use miyu_config::package::{LOGO_MAX_BYTES, LOGO_MAX_SIDE, Manifest};
-use miyu_kernel::id::AccountId;
 use miyu_store::packages::Found;
 
 use crate::Core;
@@ -84,16 +83,12 @@ pub(crate) struct LogoParams {
     from: Option<String>,
 }
 
-/// `package.logo {"package"}`：`account` 看得到的装着的包的图标，回 `{"package", "logo", "media_type", "data"}`（`data` 是
+/// `package.logo {"package"}`：装着的包的图标，回 `{"package", "logo", "media_type", "data"}`（`data` 是
 /// base64，`logo` 是版本）；没写、不合规矩的三格都是 `null`。没装的 `unknown_package`。写了 `from` 的读那个软件源索引里的
 /// （[`super::source::logo::of`]）。
-pub(crate) async fn method(
-    core: &Arc<Core>,
-    account: &AccountId,
-    params: LogoParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn method(core: &Arc<Core>, params: LogoParams) -> Result<Value, Refusal> {
     if let Some(from) = &params.from {
-        let got = super::source::logo::of(core, account, (&params.package, from)).await?;
+        let got = super::source::logo::of(core, (&params.package, from)).await?;
         return Ok(answer(
             &params.package,
             got.map(|(bytes, media_type, version)| Logo {
@@ -103,7 +98,7 @@ pub(crate) async fn method(
             }),
         ));
     }
-    let seen = core.packages_seen(account);
+    let seen = core.system_packages();
     let found = seen
         .iter()
         .find(|one| one.id == params.package)

@@ -46,68 +46,32 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
         "{text}"
     );
 
-    let installed = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "./xpkg", "--yes", "--system"],
-    )
-    .await;
+    let installed = run(&root, &cwd, zh, &["pkg", "install", "./xpkg", "--yes"]).await;
     assert_eq!(stdout(&installed), "装好了：xpkg\n", "{installed:?}");
     let text = stdout(&run(&root, &cwd, zh, &["pkg", "list"]).await);
     assert!(
         line(&text, "xpkg").is_some_and(|line| line.ends_with("测试包")),
         "{text}"
     );
-    let removed = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "remove", "xpkg", "--yes", "--system"],
-    )
-    .await;
+    let removed = run(&root, &cwd, zh, &["pkg", "remove", "xpkg", "--yes"]).await;
     assert_eq!(stdout(&removed), "卸掉了：xpkg\n", "{removed:?}");
     assert!(line(&stdout(&run(&root, &cwd, zh, &["pkg"]).await), "xpkg").is_none());
 
     // 出厂的：卸掉的照样列、标「已卸载」，照编号装回来。
-    run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "remove", "net", "--yes", "--system"],
-    )
-    .await;
+    run(&root, &cwd, zh, &["pkg", "remove", "net", "--yes"]).await;
     let text = stdout(&run(&root, &cwd, zh, &["pkg"]).await);
     assert!(
         line(&text, "net").is_some_and(|line| line.ends_with("（已卸载）")),
         "{text}"
     );
-    let back = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "net", "--yes", "--system"],
-    )
-    .await;
+    let back = run(&root, &cwd, zh, &["pkg", "install", "net", "--yes"]).await;
     assert_eq!(stdout(&back), "装好了：net\n", "{back:?}");
 
     // 施工 BS-1 上中起没有必需的包；卸没有的照旧拒。
-    let unknown = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "remove", "nope", "--yes", "--system"],
-    )
-    .await;
+    let unknown = run(&root, &cwd, zh, &["pkg", "remove", "nope", "--yes"]).await;
     assert_eq!(unknown.status.code(), Some(1));
     assert_eq!(stderr(&unknown), "软件包不存在。\n");
-    let bad = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "bad/", "--yes", "--system"],
-    )
-    .await;
+    let bad = run(&root, &cwd, zh, &["pkg", "install", "bad/", "--yes"]).await;
     assert_eq!(bad.status.code(), Some(1));
     assert!(stderr(&bad).starts_with("装不上："), "{}", stderr(&bad));
 
@@ -138,13 +102,7 @@ async fn pkg_tells_about_installed_files_through_a_real_core() {
     std::fs::write(cwd.join("xpkg/bin/data.txt"), "1").expect("写得进");
     let zh = "zh_CN.UTF-8";
 
-    let installed = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "-U", "./xpkg", "--yes", "--system"],
-    )
-    .await;
+    let installed = run(&root, &cwd, zh, &["pkg", "-U", "./xpkg", "--yes"]).await;
     assert_eq!(
         stdout(&installed),
         "装好了：xpkg\n",
@@ -214,13 +172,7 @@ async fn pkg_shows_what_it_will_do_and_asks_first() {
     let zh = "zh_CN.UTF-8";
     let asked = "\n继续安装？[Y/n] ";
 
-    let no = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./xpkg", "--system"],
-        "n\n",
-    )
-    .await;
+    let no = answering(&root, &cwd, &["pkg", "install", "./xpkg"], "n\n").await;
     let shown = stdout(&no);
     assert!(
         shown.starts_with("将安装 xpkg\n包含：扩展程序、命令 miyu xpkg\n大小：")
@@ -236,26 +188,20 @@ async fn pkg_shows_what_it_will_do_and_asks_first() {
         "答了不就没装"
     );
 
-    let yes = answering(&root, &cwd, &["pkg", "install", "./xpkg", "--system"], "\n").await;
+    let yes = answering(&root, &cwd, &["pkg", "install", "./xpkg"], "\n").await;
     assert!(
         stdout(&yes).ends_with(&format!("{asked}装好了：xpkg\n")),
         "{yes:?}"
     );
 
-    let closed = run(&root, &cwd, zh, &["pkg", "remove", "xpkg", "--system"]).await;
+    let closed = run(&root, &cwd, zh, &["pkg", "remove", "xpkg"]).await;
     assert_eq!(closed.status.code(), Some(1));
     assert!(
         stdout(&closed).starts_with("将卸载 xpkg\n大小："),
         "{closed:?}"
     );
     assert_eq!(stderr(&closed), "已取消：没有确认（不问用 --yes）\n");
-    let gone = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "-R", "xpkg", "--noconfirm", "--system"],
-    )
-    .await;
+    let gone = run(&root, &cwd, zh, &["pkg", "-R", "xpkg", "--noconfirm"]).await;
     assert_eq!(
         stdout(&gone),
         "卸掉了：xpkg\n",
@@ -305,13 +251,7 @@ async fn pkg_offers_to_turn_on_what_it_installed() {
     let zh = "zh_CN.UTF-8";
     let open = "\n现在打开？[Y/n] ";
 
-    let no = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./tools", "--system"],
-        "\nn\n",
-    )
-    .await;
+    let no = answering(&root, &cwd, &["pkg", "install", "./tools"], "\nn\n").await;
     assert_eq!(no.status.code(), Some(0), "照样算装好了：{no:?}");
     assert!(
         stdout(&no).ends_with(&format!(
@@ -319,60 +259,30 @@ async fn pkg_offers_to_turn_on_what_it_installed() {
         )),
         "{no:?}"
     );
-    let closed = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./tools", "--system"],
-        "\n",
-    )
-    .await;
+    let closed = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n").await;
     assert!(
         stdout(&closed).ends_with(&format!(
             "装好了：tools\n{open}\n没有打开：以后在「软件包」页里打开\n"
         )),
         "没得答的不打开：{closed:?}"
     );
-    let yes = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./tools", "--system"],
-        "\n\n",
-    )
-    .await;
+    let yes = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n\n").await;
     assert!(
         stdout(&yes).ends_with(&format!("装好了：tools\n{open}打开了：tools\n")),
         "{yes:?}"
     );
-    let again = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./tools", "--system"],
-        "\n",
-    )
-    .await;
+    let again = answering(&root, &cwd, &["pkg", "install", "./tools"], "\n").await;
     assert!(
         stdout(&again).ends_with("装好了：tools\n"),
         "开着的不再问：{again:?}"
     );
-    let quiet = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "./fresh", "--yes", "--system"],
-    )
-    .await;
+    let quiet = run(&root, &cwd, zh, &["pkg", "install", "./fresh", "--yes"]).await;
     assert_eq!(
         stdout(&quiet),
         "装好了：fresh\n打开了：fresh\n",
         "--yes 当是：{quiet:?}"
     );
-    let missing = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "./xpkg", "--yes", "--system"],
-    )
-    .await;
+    let missing = run(&root, &cwd, zh, &["pkg", "install", "./xpkg", "--yes"]).await;
     assert_eq!(
         (missing.status.code(), stdout(&missing)),
         (Some(0), "装好了：xpkg\n".to_string()),
@@ -406,13 +316,7 @@ async fn pkg_approves_what_the_extension_asks_for_when_turning_it_on() {
     let program = dir.join("bin/miyu-xcap");
     std::fs::write(&program, "#!/bin/sh\nsleep 30\n").expect("写得进");
     std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).expect("改得了权限");
-    let installed = answering(
-        &root,
-        &cwd,
-        &["pkg", "install", "./xcap", "--system"],
-        "\n\n",
-    )
-    .await;
+    let installed = answering(&root, &cwd, &["pkg", "install", "./xcap"], "\n\n").await;
     let text = stdout(&installed);
     assert!(text.contains("\n需要："), "先列出要的能力：{text}");
     assert!(

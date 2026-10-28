@@ -197,7 +197,7 @@ pub(crate) fn from(found: &Found, places: &Packages) -> From {
     if found.layer == Layer::Shipped {
         return From::Shipped;
     }
-    match miyu_store::packages::local::origin(&super::local::root_of(found, places), &found.id) {
+    match miyu_store::packages::local::origin(&places.local_root(), &found.id) {
         Some(_) => From::Official,
         None => From::Local,
     }

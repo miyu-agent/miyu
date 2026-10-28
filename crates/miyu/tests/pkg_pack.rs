@@ -69,7 +69,7 @@ async fn pkg_packs_a_folder_that_installs_again() {
         &root,
         &cwd,
         zh,
-        &["pkg", "install", "xpkg-1.0.miyu", "--yes", "--system"],
+        &["pkg", "install", "xpkg-1.0.miyu", "--yes"],
     )
     .await;
     assert_eq!(stdout(&installed), "装好了：xpkg\n", "{installed:?}");

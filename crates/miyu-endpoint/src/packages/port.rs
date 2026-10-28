@@ -1,7 +1,7 @@
 //! 软件包的端口（施工 F-10 上，`miyu_tool::PackagesPort`）：`packages` 这件工具经它看、在软件源里搜（施工 G-6），`package` 经它
 //! 装、卸、从软件源装、升级（施工 F-10 下、G-6，
-//! 同 `package.install`、`package.remove`，不查连接是不是本机的：权限策略照会话的级别问过人了）。属主是主人的装进、卸出系统那
-//! 一层（施工 SU-1），别的照属主自己那一层（`scope.rs`）。照协议那几样回应算（`package.list`、
+//! 同 `package.install`、`package.remove`，不查连接是不是本机的：权限策略照会话的级别问过人了）。只有属主是主人的会话装得了、
+//! 卸得了（施工 SU-1、SU-2 上），别的会话（场所里替外人的）只能看。照协议那几样回应算（`package.list`、
 //! `package.info`、`package.install` 带 `preview` 的），名字、说明、写错的那一句照英文：她看的字是英文。拿着核心的弱引用：
 //! 会话活在核心里面，拿强的会绕成环。
 
@@ -14,7 +14,6 @@ use miyu_kernel::id::AccountId;
 use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use super::local::InfoParams;
-use super::scope::Scope;
 use super::source;
 use super::source::fetch::SourceParams;
 use super::source::search::SearchParams;
@@ -53,19 +52,9 @@ impl Port {
 }
 
 impl Port {
-    /// 改哪一层：属主是主人的照系统那一层（施工 SU-1：没有管理员模式了，主人装的就是全机的）；包自己的账号照它自己那一层。
-    fn scope(&self, core: &Core) -> Scope {
-        match crate::login::is_owner(core, &self.owner) {
-            true => Scope::System,
-            false => Scope::Own(self.owner.clone()),
-        }
-    }
-
-    /// 只有系统那一层做得了的（开扩展、装回出厂的、整组）：主人照做，别的 `not_permitted`。
-    fn system_only(&self, core: &Core) -> Result<(), PackageRefusal> {
-        self.scope(core)
-            .system_only(self.peer(core).admin)
-            .map_err(refused)
+    /// 装、卸、升级、开扩展：属主是主人的照做，别的 `not_permitted`。
+    fn managing(&self, core: &Core) -> Result<(), PackageRefusal> {
+        super::may_manage::may_manage(self.peer(core).admin).map_err(refused)
     }
 
     /// 照英文说（名字、说明、清单哪里不对），是不是管理员照会话的属主算（施工 Y-5 下下）。
@@ -129,8 +118,7 @@ impl PackagesPort for Port {
             let core = self.core()?;
             let params: InfoParams = serde_json::from_value(json!({ "package": package }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            let whose = (&self.owner, self.peer(&core).admin);
-            let mut info = super::local::info(&core, whose, params)
+            let mut info = super::local::info(&core, self.peer(&core).admin, params)
                 .await
                 .map_err(refused)?;
             if let Some(entry) = super::entry(&core, &package, self.peer(&core), &self.owner) {
@@ -147,9 +135,8 @@ impl PackagesPort for Port {
     fn inspect(&self, path: PathBuf) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let peer = self.peer(&core);
-            super::mine::reachable(&core, peer.admin, &self.owner, &path).map_err(refused)?;
-            super::preview::installing(&core, peer, &self.scope(&core), &path)
+            self.managing(&core)?;
+            super::preview::installing(&core, self.peer(&core), &path)
                 .await
                 .map_err(refused)
         })
@@ -160,7 +147,8 @@ impl PackagesPort for Port {
             let core = self.core()?;
             let params = serde_json::from_value(json!({ "path": path }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            let entry = super::asked::install(&core, self.peer(&core), &self.scope(&core), params)
+            self.managing(&core)?;
+            let entry = super::asked::install(&core, self.peer(&core), params)
                 .await
                 .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
@@ -173,7 +161,7 @@ impl PackagesPort for Port {
     fn enabling(&self, package: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            self.system_only(&core)?;
+            self.managing(&core)?;
             super::preview::enabling(&core, self.peer(&core), &package).map_err(refused)
         })
     }
@@ -181,7 +169,7 @@ impl PackagesPort for Port {
     fn enable(&self, package: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            self.system_only(&core)?;
+            self.managing(&core)?;
             let (manifest, _) = super::switch::switchable(&core, &package).map_err(refused)?;
             // 要的能力一并批：问人的那一次就是批（工作区一级），完全放开的照级别直接做。
             let approve: Vec<Value> = crate::extensions::described(&core, &manifest, "en")
@@ -209,8 +197,7 @@ impl PackagesPort for Port {
     fn search(&self, query: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let whose = (self.peer(&core), &self.owner);
-            let found = source::search::search(&core, whose, SearchParams::of(query))
+            let found = source::search::search(&core, self.peer(&core), SearchParams::of(query))
                 .await
                 .map_err(refused)?;
             Ok(found["packages"].clone())
@@ -220,10 +207,8 @@ impl PackagesPort for Port {
     fn fetching(&self, package: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            // 卸掉的出厂包、组名（施工 BS-1 中下修）：看一眼装回来的那一份，不走软件源；只有系统那一层做得了。
-            if back(&core, &package).is_some() {
-                self.system_only(&core)?;
-            }
+            // 卸掉的出厂包、组名（施工 BS-1 中下修）：看一眼装回来的那一份，不走软件源。
+            self.managing(&core)?;
             match back(&core, &package) {
                 Some(Back::Group) => {
                     let params = super::group::GroupParams::of(&package, true);
@@ -240,7 +225,7 @@ impl PackagesPort for Port {
             }
             source::fetch::install(
                 &core,
-                (self.peer(&core), &self.scope(&core)),
+                self.peer(&core),
                 None,
                 SourceParams::looking(&package),
             )
@@ -252,11 +237,8 @@ impl PackagesPort for Port {
     fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            // 卸掉的出厂包、组名（施工 BS-1 中下修）：装回来，不走软件源；装回一个的照旧在会话用的预设里打开。只有系统那一层
-            // 做得了。
-            if back(&core, &package).is_some() {
-                self.system_only(&core)?;
-            }
+            // 卸掉的出厂包、组名（施工 BS-1 中下修）：装回来，不走软件源；装回一个的照旧在会话用的预设里打开。
+            self.managing(&core)?;
             match back(&core, &package) {
                 Some(Back::Group) => {
                     let params = super::group::GroupParams::of(&package, false);
@@ -279,10 +261,10 @@ impl PackagesPort for Port {
                 }
                 None => {}
             }
-            let whose = (self.peer(&core), &self.scope(&core));
-            let entry = source::fetch::install(&core, whose, None, SourceParams::of(&package))
-                .await
-                .map_err(refused)?;
+            let entry =
+                source::fetch::install(&core, self.peer(&core), None, SourceParams::of(&package))
+                    .await
+                    .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
                 open_in(&core, (&self.owner, self.peer(&core)), &preset, package).await;
             }
@@ -293,8 +275,8 @@ impl PackagesPort for Port {
     fn upgrading(&self, only: Option<String>) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let whose = (self.peer(&core), &self.scope(&core));
-            source::upgrade::upgrade(&core, whose, None, UpgradeParams::of(only, true))
+            self.managing(&core)?;
+            source::upgrade::upgrade(&core, self.peer(&core), None, UpgradeParams::of(only, true))
                 .await
                 .map_err(refused)
         })
@@ -303,10 +285,15 @@ impl PackagesPort for Port {
     fn upgrade(&self, only: Option<String>) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let whose = (self.peer(&core), &self.scope(&core));
-            source::upgrade::upgrade(&core, whose, None, UpgradeParams::of(only, false))
-                .await
-                .map_err(refused)
+            self.managing(&core)?;
+            source::upgrade::upgrade(
+                &core,
+                self.peer(&core),
+                None,
+                UpgradeParams::of(only, false),
+            )
+            .await
+            .map_err(refused)
         })
     }
 }
@@ -356,11 +343,10 @@ impl Port {
         preview: bool,
     ) -> Result<Value, PackageRefusal> {
         let core = self.core()?;
+        self.managing(&core)?;
         let params = serde_json::from_value(json!({ "package": package, "preview": preview }))
             .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-        super::asked::remove(&core, self.peer(&core), &self.scope(&core), params)
-            .await
-            .map_err(refused)
+        super::asked::remove(&core, params).await.map_err(refused)
     }
 }
 

@@ -145,6 +145,10 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
         call_collecting(&mut client, "package.install", json!({"package": "app"})).await;
     assert_eq!(again["result"]["package"], "app", "{again}");
     assert_eq!(server.received().len(), 4, "没再下");
+    assert!(
+        again["result"].get("with").is_none(),
+        "装着的依赖不再装：{again}"
+    );
 
     // 清缓存：装着那一版的留下，别的删掉。
     std::fs::write(

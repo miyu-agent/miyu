@@ -10,14 +10,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 use miyu_config::package::{LOGO_MAX_BYTES, LOGO_MAX_SIDE};
-use miyu_kernel::id::AccountId;
 use miyu_source::index::{File, Index, Logo};
 
 use super::download::{self, Wanted};
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 源 `from` 里编号 `id` 的包自带的图标：字节和媒体类型；索引里这个包没有图标、图标不合规矩的没有。`account` 看得到哪几个源。
+/// 源 `from` 里编号 `id` 的包自带的图标：字节和媒体类型；索引里这个包没有图标、图标不合规矩的没有。
 ///
 /// # Errors
 ///
@@ -25,14 +24,13 @@ use crate::refusal::Refusal;
 /// `download_failed`。
 pub(crate) async fn of(
     core: &Arc<Core>,
-    account: &AccountId,
     (id, from): (&str, &str),
 ) -> Result<Option<(Vec<u8>, &'static str, String)>, Refusal> {
-    let feed = super::feeds::feeds(core, Some(account))
+    let feed = super::feeds::feeds(core)
         .into_iter()
         .find(|feed| feed.name == from)
         .ok_or(Refusal::UNKNOWN_SOURCE)?;
-    let synced = super::sync::sync_feed(core, &feed, false).await?;
+    let synced = super::sync::sync_feed(&feed, false).await?;
     let entry = synced.index.entry(id).ok_or(Refusal::UNKNOWN_PACKAGE)?;
     let Some(logo) = entry
         .logo
@@ -43,7 +41,6 @@ pub(crate) async fn of(
     };
     let cache = feed.dir.join("logos");
     let name = logo.path.trim_start_matches("logos/").to_string();
-    let guarded = feed.guarded().then(|| super::sync::guarded(core));
     let mut reasons = Vec::new();
     let mut got = None;
     for base in &feed.bases {
@@ -57,7 +54,6 @@ pub(crate) async fn of(
             name: &name,
             file: &file,
             mirrors: &[],
-            guarded: guarded.as_ref(),
         };
         match download::fetch(&cache, &wanted, &|_, _| {}).await {
             Ok(path) => {

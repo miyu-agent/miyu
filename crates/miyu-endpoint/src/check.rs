@@ -92,7 +92,7 @@ pub(crate) async fn check(
                 .map_err(|_| Refusal::INTERNAL)?;
             problems.extend(checked.iter().map(|one| preset_problem(core, &words, one)));
             problems.extend(
-                check_packages((core, account), &words, None)
+                check_packages(core, &words, None)
                     .await?
                     .unwrap_or_default(),
             );
@@ -140,8 +140,7 @@ pub(crate) async fn check(
                 problems.extend(check_config(core, &words, &file)?);
             } else if real(&secrets_path) == path {
                 problems.extend(secrets);
-            } else if let Some(found) = check_packages((core, account), &words, Some(&path)).await?
-            {
+            } else if let Some(found) = check_packages(core, &words, Some(&path)).await? {
                 problems.extend(found);
             } else if let Some(found) = check_preset(core, &words, &path).await? {
                 problems.extend(found);
@@ -243,14 +242,14 @@ fn unreadable(words: &Human, shown: &str, kind: &str, error: &ReadError) -> Valu
     json!({"kind": kind, "file": shown, "code": code, "level": "error", "message": message.unwrap_or_default()})
 }
 
-/// 软件包清单（施工 9-1 上，`packages.md`）：照磁盘读两层。`wanted` 没写的交回全部的问题；写了的，它是某一层 `packages/`
+/// 软件包清单（施工 9-1 上，`packages.md`）：照磁盘读两层（出厂的、装上的）。`wanted` 没写的交回全部的问题；写了的，它是某一层 `packages/`
 /// 下的 `<编号>/package.toml` 才交回这一份的（还没有的报读不了），不是的交回没有（施工 F-8 上：一个文件夹一个包）。
 async fn check_packages(
-    (core, account): (&Core, &AccountId),
+    core: &Core,
     words: &Human,
     wanted: Option<&Path>,
 ) -> Result<Option<Vec<Value>>, Refusal> {
-    let places = crate::packages::scope::places_of(core, account);
+    let places = crate::packages::packages(core);
     if let Some(path) = wanted {
         let folder = path
             .parent()

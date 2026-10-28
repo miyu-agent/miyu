@@ -206,8 +206,8 @@ pub struct Core {
     plugins: miyu_session::VenuePlugins,
     /// 软件包清单（施工 9-1 上，`packages.rs`）：起来时读一次；装、卸以后当场换成重读的一份（施工 F-5 上）。
     packages: std::sync::RwLock<Arc<Vec<miyu_store::packages::Found>>>,
-    /// 每人一份装着的包（施工 U23 上下，`packages/own.rs`）：系统那一份接上他自己那一层，用到时造、装卸以后清掉。
-    own_packages: packages::own::Own,
+    /// 去掉关了的包的那一份（`packages/own.rs`）：用到时造、装卸以后清掉。
+    visible_packages: packages::own::Visible,
     /// 每人一个工具目录架子（施工 U23 中中，`shelves.rs`）：别人的叠在 `tools` 上、拿掉机主私人的 `~home`。
     shelves: shelves::Shelves,
     /// 登记上的脚本（施工 X-12 中，`scripts.rs`）。
@@ -323,7 +323,7 @@ impl Core {
             venues: tokio::sync::Mutex::new(()),
             plugins: miyu_session::VenuePlugins::default(),
             packages: std::sync::RwLock::new(Arc::new(found)),
-            own_packages: packages::own::Own::default(),
+            visible_packages: packages::own::Visible::default(),
             shelves: shelves::Shelves::default(),
             scripts: scripts::Scripts::default(),
             built_in: None,

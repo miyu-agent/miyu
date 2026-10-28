@@ -25,21 +25,6 @@ fn a_missing_file_has_no_switches_and_a_written_one_reads_back() {
     );
 }
 
-/// 成员能不能用（施工 IM-1 上）：改过的写进 `members`、读回来一样；一个都没有的不写这一格（上面那一份）。
-#[test]
-fn members_switches_are_written_only_when_set() {
-    let temp = Scratch::new();
-    let path = temp.path().join("system").join(FILE);
-    let mut switches = Switches::default();
-    switches.members.insert("im".to_string(), false);
-    write(&path, &switches, None).expect("写得进");
-    assert_eq!(
-        fs::read_to_string(&path).expect("在"),
-        "{\"version\":1,\"on\":{},\"members\":{\"im\":false}}\n"
-    );
-    assert_eq!(read(&path).expect("读得回").switches, switches);
-}
-
 /// 批过的能力挪进组表以后（施工 Y-5 下上）：以前的文件里的 `approved` 认得、扔掉，开关照旧；写回时不再写这一格。
 #[test]
 fn an_old_approved_field_is_read_and_dropped() {

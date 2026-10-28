@@ -50,9 +50,6 @@ pub struct Pkg {
     /// 装、卸之前不问（施工 F-8 下补）；`--noconfirm` 是 pacman 的写法。
     #[arg(long, visible_alias = "noconfirm", global = true)]
     pub yes: bool,
-    /// 以管理员身份（施工 Y-12 下下）：装、卸、升级、开关、清缓存、同步改的都是全机的软件包。
-    #[arg(long, global = true)]
-    pub system: bool,
 }
 
 /// `miyu pkg` 的子命令。

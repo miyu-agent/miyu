@@ -46,7 +46,7 @@ impl Core {
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
         // 每人那几份照新的系统那一份重造（施工 U23 上下）：用到时再造。
-        self.own_packages.forget();
+        self.visible_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
         if let Some(items) = items {
@@ -194,8 +194,6 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
                 id
             }),
             Layer::Shipped => install::mark_removed(&home, &id).map(|()| id),
-            // 卸的是系统那一份里的（施工 U23 上下）：自己那一层的不在里面，卸自己那层的等 U23 下。
-            Layer::User => Err(std::io::Error::other("a package in an account's own layer")),
         };
         if removed.is_ok() {
             left.keep();

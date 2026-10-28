@@ -1,5 +1,4 @@
-//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）：属主是成员的，打开写进他自己那一层的同名覆盖，机主的不碰。会话里装包
-//! 一律装进属主自己那一层（施工 U23 下上）：不带程序的装得上，系统那一层的事拒。
+//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）；属主不是主人的会话装不了包（施工 SU-2 上）。
 
 use std::sync::Arc;
 
@@ -53,11 +52,10 @@ async fn opening_in_a_preset_writes_the_owner_s_own_layer() {
     }
 }
 
-/// 会话端口上改系统那一层的每一件（施工 Y-5 下下；U23 下上起装、卸进属主自己那一层）：开扩展、带程序的包、属主家目录以外的路径，
-/// 属主是成员的拒 `not_permitted`、是机主的拒 `admin_mode_required`，一件一件挡（工具先看一眼再做，只挡看一眼的话直接调做的那一件
-/// 就漏了）；不带程序的装进他自己那一层、卸得掉，只读的照旧给。
+/// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下，SU-2 上起没有自己那一层）：属主不是主人的会话（场所里替外人的）一件一件拒
+/// `not_permitted`（工具先看一眼再做，只挡看一眼的话直接调做的那一件就漏了），什么都不动；只读的照旧给。
 #[tokio::test]
-async fn a_port_installs_into_the_owner_s_own_layer_and_refuses_system_things() {
+async fn a_session_not_the_owner_s_cannot_change_packages() {
     let (root, dir) = temp_root("port-member");
     let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
@@ -69,80 +67,72 @@ async fn a_port_installs_into_the_owner_s_own_layer_and_refuses_system_things() 
         alice.clone(),
         "token".to_string(),
     ));
-    let bob = AccountId::parse("bob").expect("合写法");
-    let port = |owner: &AccountId| Port {
+    let outsider = Port {
         core: Arc::downgrade(&core),
-        owner: owner.clone(),
+        owner: AccountId::parse("bridge").expect("合写法"),
     };
-    let put = |folder: &std::path::Path, text: &str| {
-        std::fs::create_dir_all(folder).expect("建得了");
-        std::fs::write(folder.join("package.toml"), text).expect("写得了");
-    };
-    let mine = root.account_dir(&bob).join("workspace/kit");
-    put(&mine, "[package]\nname = { en = \"Kit\" }\n");
-    let tool = root.account_dir(&bob).join("workspace/tool");
-    put(
-        &tool,
-        "[package]\nname = { en = \"Tool\" }\nprotocol = [1, 1]\n\n[command]\nname = \"tool\"\nprogram = \"miyu-tool\"\nabout = { en = \"Open tool\" }\n\n[ui]\n",
-    );
-    let outside = dir.join("kit");
-    put(&outside, "[package]\nname = { en = \"Kit\" }\n");
+    let kit = dir.join("kit");
+    std::fs::create_dir_all(&kit).expect("建得了");
+    std::fs::write(
+        kit.join("package.toml"),
+        "[package]\nname = { en = \"Kit\" }\n",
+    )
+    .expect("写得了");
     let reason =
         |got: Result<serde_json::Value, PackageRefusal>| got.err().map(|refusal| refusal.reason);
-    let member = port(&bob);
     let refused = [
+        ("inspect", reason(outsider.inspect(kit.clone()).await)),
+        ("install", reason(outsider.install(kit.clone(), None).await)),
         (
-            "inspect elsewhere",
-            reason(member.inspect(outside.clone()).await),
+            "enabling",
+            reason(outsider.enabling("ext".to_string()).await),
+        ),
+        ("enable", reason(outsider.enable("ext".to_string()).await)),
+        (
+            "removing",
+            reason(outsider.removing("kit".to_string()).await),
+        ),
+        ("remove", reason(outsider.remove("kit".to_string()).await)),
+        (
+            "fetching",
+            reason(outsider.fetching("kit".to_string()).await),
         ),
         (
-            "install elsewhere",
-            reason(member.install(outside.clone(), None).await),
+            "fetch",
+            reason(outsider.fetch("kit".to_string(), None).await),
         ),
-        (
-            "inspect a program",
-            reason(member.inspect(tool.clone()).await),
-        ),
-        (
-            "install a program",
-            reason(member.install(tool.clone(), None).await),
-        ),
-        ("enabling", reason(member.enabling("ext".to_string()).await)),
-        ("enable", reason(member.enable("ext".to_string()).await)),
+        ("upgrading", reason(outsider.upgrading(None).await)),
+        ("upgrade", reason(outsider.upgrade(None).await)),
     ];
     for (what, got) in refused {
         assert_eq!(got.as_deref(), Some("not_permitted"), "{what}");
     }
-    // 主人的装进系统那一层（施工 SU-1，`tests/package_tool.rs` 守着）。
-    assert!(member.inspect(mine.clone()).await.is_ok(), "看一眼他自己的");
-    let installed = member.install(mine, None).await.expect("装进他自己那一层");
-    assert_eq!(installed["layer"], "user");
-    assert!(
-        root.account_dir(&bob)
-            .join("packages/kit/package.toml")
-            .is_file()
-    );
-    assert!(
-        !root.system_packages().join("kit").exists(),
-        "系统那一层不动"
-    );
-    assert!(
-        reason(
-            port(&AccountId::parse("carol").expect("合写法"))
-                .remove("kit".to_string())
-                .await
-        )
-        .as_deref()
-            == Some("unknown_package"),
-        "别人看不到"
-    );
-    assert!(member.removing("kit".to_string()).await.is_ok());
-    assert!(member.remove("kit".to_string()).await.is_ok());
-    assert!(
-        !root.account_dir(&bob).join("packages/kit").exists(),
-        "卸掉了"
-    );
-    assert!(member.list().await.is_ok(), "列得出");
+    assert!(!root.system_packages().join("kit").exists(), "什么都没装");
+    assert!(outsider.list().await.is_ok(), "列得出");
+    let owner = Port {
+        core: Arc::downgrade(&core),
+        owner: alice,
+    };
+    assert!(owner.inspect(kit.clone()).await.is_ok(), "主人的会话看得了");
+    owner
+        .install(kit.clone(), None)
+        .await
+        .expect("主人的会话装得上");
+    // 这台机器上的路径只给主人：不是主人的会话列表里没有 `state`、`package.info` 里没有从哪装的。
+    let state = |listed: serde_json::Value| {
+        listed
+            .as_array()
+            .expect("是一串")
+            .iter()
+            .find(|one| one["package"] == "kit")
+            .map(|one| one.get("state").is_some())
+    };
+    assert_eq!(state(owner.list().await.expect("列得出")), Some(true));
+    assert_eq!(state(outsider.list().await.expect("列得出")), Some(false));
+    let mine = owner.info("kit".to_string()).await.expect("看得了");
+    assert!(mine.get("source").is_some(), "{mine}");
+    let theirs = outsider.info("kit".to_string()).await.expect("看得了");
+    assert!(theirs.get("source").is_none(), "{theirs}");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

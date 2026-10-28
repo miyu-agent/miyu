@@ -17,7 +17,6 @@ pub(super) struct Head {
     pub(super) needs: Vec<Need>,
     pub(super) targets: Vec<super::Target>,
     pub(super) credits: super::credits::Credits,
-    pub(super) members: bool,
 }
 
 /// 照原文算行号。
@@ -118,7 +117,6 @@ impl Reader<'_> {
         let needs = self.needs(table)?;
         let targets = self.targets(table)?;
         let credits = super::credits::read(self, table)?;
-        let members = self.flag(table, "package", "members")?;
         Ok(Head {
             version,
             protocol,
@@ -130,7 +128,6 @@ impl Reader<'_> {
             needs,
             targets,
             credits,
-            members,
         })
     }
 

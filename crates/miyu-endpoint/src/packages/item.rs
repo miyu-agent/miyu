@@ -8,7 +8,7 @@ use miyu_kernel::id::AccountId;
 use miyu_store::human::Human;
 use miyu_store::packages::{Found, Issue, Packages};
 
-use super::{depends, fill, local, mismatch, sentence, services, status};
+use super::{depends, fill, mismatch, sentence, services, status};
 use crate::Core;
 
 /// 一项。`removed` 是卸掉了的出厂的包（带 `removed: true`）。依赖缺没缺照 `installed`（看的人看得到的那些）认，每人一份的扩展的
@@ -49,14 +49,10 @@ pub(super) fn listed(
             if status::page(found, manifest) {
                 item["page"] = json!(true);
             }
-            // 成员也能用（施工 IM-1 上）：带进程的才有这一格，只给管理员。
-            if status::runs(manifest) {
-                item["members"] = json!(core.members_may(&found.id, manifest));
-            }
             item["state"] = json!(places.state_dir(&found.id).to_string_lossy());
             // 装的时刻（施工 PG-1：预设页照装的先后排）：本地库只记装进家目录的，出厂的没有。
             if let Some(at) =
-                miyu_store::packages::local::installed(&local::root_of(found, places), &found.id)
+                miyu_store::packages::local::installed(&places.local_root(), &found.id)
             {
                 item["installed_at"] = json!(at);
             }

@@ -109,12 +109,11 @@ fn a_process_package_reads_its_start_check_and_settings() {
         }),
         "都不写：没有参数、等开关、不要能力"
     );
-    assert!(!manifest.members, "没写的成员不能用");
 }
 
-/// 每人一份（施工 IM-1 上）：`scope` 认 `system`、`account`，`account` 不能和系统账号一起写；`[package] members` 是布尔。
+/// 每人一份（施工 IM-1 上）：`scope` 认 `system`、`account`，`account` 不能和系统账号一起写。
 #[test]
-fn a_process_package_can_run_one_per_account_and_let_members_in() {
+fn a_process_package_can_run_one_per_account() {
     let each = BRIDGE.replace(
         "start = \"manual\"\n",
         "start = \"manual\"\nscope = \"account\"\n",
@@ -140,11 +139,6 @@ fn a_process_package_can_run_one_per_account_and_let_members_in() {
         Code::BadScope,
         "按人的不能有系统账号"
     );
-    let members = BRIDGE.replacen("[package]\n", "[package]\nmembers = true\n", 1);
-    assert_ne!(members, BRIDGE, "锚点对得上");
-    assert!(read(&members).unwrap().members);
-    let bad = BRIDGE.replacen("[package]\n", "[package]\nmembers = \"yes\"\n", 1);
-    assert_eq!(read(&bad).unwrap_err().code, Code::NotBool);
 }
 
 #[test]

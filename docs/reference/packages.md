@@ -8,7 +8,6 @@
 | [`package.info`、`package.files`、`package.owns`、`package.check`](#packageinfopackagefilespackageownspackagecheck) | 一个包的信息、文件；一个路径归哪个包；装好的文件改没改 |
 | [`package.install`、`package.remove`](#packageinstallpackageremove) | 装、卸 |
 | [`package.enable`、`package.disable`、`package.restart`](#packageenablepackagedisablepackagerestart) | 开、关、重启 |
-| [`package.members`](#packagemembers) | 成员能不能用 |
 | [`package.sync`](#packagesync) | 从软件源拿索引 |
 | [`package.search`](#packagesearch) | 在软件源里搜 |
 | [`package.clean`](#packageclean) | 清下载过的包文件 |
@@ -26,9 +25,9 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.members`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
-**两层**：出厂的（随 Miyu 装的）、管理员装的（数据根的 `system/packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
+**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `system/packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
 
 ## `package.list`
 
@@ -47,10 +46,8 @@
 | `groups` | 在哪几个组里（只有出厂的内置包有，`basesystem` 是基础系统）；不在组里的没有 |
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
-| `members` | 带进程的（扩展、带 MCP 服务的）：成员能不能用。只给管理员 |
-| `available` | 只在成员拿到的列表里：带进程、没对他开放的包写 `false`（不在管理员组、包没勾「成员也能用」），开放了的不写。头照它写「管理员没开放」 |
-| `page` | 有后台页的；成员拿到的只有他打得开的才带（每人一份、勾了「成员也能用」的，施工 IM-1 中下一补），头照它列「软件后台」 |
-| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。成员拿到的每个服务只有 `name`、`state`（停下的带 `reason`） |
+| `page` | 有后台页的，头照它列「软件后台」 |
+| `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。不替主人干活的扩展（场所里替外人的平台桥）拿到的每个服务只有 `name`、`state`（停下的带 `reason`），也没有 `state`、`pages_dir`、`command`、`commands`、`process`、`worker`、`check`、`problem`、`line` |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
 | `contents` | 给哪几个包带了内容（清单里 `[content.<包>]` 的编号）；没带的没有这一格 |
@@ -62,7 +59,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。成员也调得了。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行（施工 F-18 下）；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
+| `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行（施工 F-18 下）；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
 | `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`：从哪来（同 `package.list`）、几个文件、多少字节、作者、上游、装的时刻、装的时候的本机路径 |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
@@ -93,7 +90,7 @@
 | `path_unreadable` | 读不了那个文件夹 |
 | `package_invalid` | 清单写错了，`data.problem`、`data.line`；要更新的 Miyu 才能用的，`data.problem` 是 `needs_newer_miyu` |
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令 |
-| `not_permitted` | 不是管理员的成员装、升级、卸、装回包，启用扩展：这一版成员都不行（不带进程的包以后能装进他自己的家目录、只对自己生效）；会话里的 `package` 工具照会话的属主算，列、看、搜照旧给 |
+| `not_permitted` | 会话里的 `package` 工具：会话不是主人的（场所里替外人的）装、升级、卸、装回包，启用扩展；列、看、搜照旧给 |
 | `package_exists` | 和出厂的同编号 |
 | `package_file_bad` | 包文件解不开 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
@@ -101,7 +98,7 @@
 | `depends_missing` | 依赖的包没装，`data.missing` |
 | `package_depended` | 别的装着的包依赖它，`data.by` |
 | `unknown_package` | 没装的、没卸过的 |
-| `unknown_source` | `from` 写的软件源没有（没加、写错了，或者是别人个人设置里的） |
+| `unknown_source` | `from` 写的软件源没有（没加、写错了） |
 
 ## `package.sync`
 
@@ -109,7 +106,7 @@
 
 回应 `{"generated", "fetched", "packages", "stale"?}`：索引生成的时刻、拿到的时刻（都是 RFC 3339）、几个包；这一次一处都没拿成、用的是本机那份的带 `stale`（最后一处的原因，英文）。
 
-别的软件源（施工 U23 下下）：配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的，系统配置里的大家都用，个人设置里的只给自己。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。个人设置里加的源只连公网地址。
+别的软件源（施工 U23 下下）：配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的，系统配置、设置里的都算（同名的认系统配置的）。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。
 
 **出错**
 
@@ -156,21 +153,13 @@
 | `package_depended` | 关一个别的包依赖的 |
 | `package_off`、`not_restartable` | `restart` 一个关着的；没有能重启的进程、服务 |
 
-## `package.members`
-
-**参数**：`package`、`on`（布尔）。**回应**：同 `package.list` 的一项。只给管理员，要进入管理员模式。
-
-带进程的包（扩展、带 MCP 服务的）默认只有管理员组的人能用。`on: true` 让成员也能用；`false` 收回。没改过的照清单的 `[package] members`。成员的会话下一轮起照它有没有这个包。
-
-**出错**：没有的包 `unknown_package`；不带进程的、卸掉了的 `not_switchable`。
-
 ## `package.file`、`package.call`
 
 **`package.file`**：参数 `package`、`path`（后台页目录里的相对路径）、`offset`。回应 `{"data", "size", "eof"}`，一次最多 512 KiB。网页的后台页、吉祥物的模型文件照它读。
 
 **`package.call`**：参数 `package`、`method`、`params`（可不写）。核心把它转给那个包的程序（`method.call`），程序回什么交回什么。在后台答。界面块上的按钮、整页的表单保存都走它。
 
-每人一份的包（`[process] scope = "account"`）：谁调就转给谁那一份（页面是看页面的那个人，扩展调的是它替的那个人）；那一份没在跑的，核心替他拉起，等它登记了方法再转，最多等 60 秒。成员（不是管理员的人）只碰得到他能用的每人一份的包（勾了「成员也能用」）的 `package.file`、`package.call`，整台机器一份的、没勾的回 `not_permitted`（施工 IM-1 中下）。
+每人一份的包（`[process] scope = "account"`）：谁调就转给谁那一份（页面是看页面的那个人，扩展调的是它替的那个人）；那一份没在跑的，核心替他拉起，等它登记了方法再转，最多等 60 秒。
 
 扩展也能调 `package.call`：要在清单里声明能力 `packages.call`，只调得到对方清单 `[export]` 里列的方法；转过去带 `from`（调的包的编号）。对方回应里出现的、它自己存的 blob，调用方之后也读得到（见 [附件](blob.md#blobget)）。
 
@@ -180,7 +169,6 @@
 |---|---|
 | `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件 |
 | `program_not_running` | 程序没连着；每人一份的拉不起来、60 秒没登记方法 |
-| `not_permitted` | 成员碰整台机器一份的、没勾「成员也能用」的包 |
 | `unregistered` | 程序没登记这个方法，`data.method` |
 | `method_failed` | 程序回了错，`data.message`、`data.code` |
 | `method_timeout` | 到时限没回 |

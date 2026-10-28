@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-use super::scope::Scope;
 use crate::Core;
 use crate::hello::{Caller, Peer};
 use crate::methods::params;
@@ -24,48 +23,29 @@ pub(crate) async fn call(
     match request.method.as_str() {
         "package.list" => super::list(core, peer, caller.acting_for()),
         // 从软件源装（施工 G-4 上、下）：带 `source` 的，只写 `package`、又不是卸掉的出厂包的；要往发起的连接推下载进度。装、卸、
-        // 升级进哪一层照请求在不在管理员模式里（施工 U23 下上，`scope.rs`）。
+        // 升级只给人（`connection/rights.rs`），人就是主人（施工 SU-2 上）。
         "package.install" if super::source::fetch::wanted(core, &request.params) => {
-            let scope = Scope::of(peer, caller, request);
             let reverse = Some(&caller.reverse);
-            super::source::fetch::install(core, (peer, &scope), reverse, params(request)?).await
+            super::source::fetch::install(core, peer, reverse, params(request)?).await
         }
-        // 写组名的（施工 BS-1 下中）：整组装回、卸掉，只有系统那一层。
+        // 写组名的（施工 BS-1 下中）：整组装回、卸掉。
         "package.install" | "package.remove" if super::group::named(core, &request.params) => {
-            Scope::of(peer, caller, request).system_only(peer.admin)?;
             super::group::call(core, peer, &request.method, params(request)?).await
         }
-        "package.install" => {
-            let scope = Scope::of(peer, caller, request);
-            super::asked::install(core, peer, &scope, params(request)?).await
-        }
-        "package.remove" => {
-            let scope = Scope::of(peer, caller, request);
-            super::asked::remove(core, peer, &scope, params(request)?).await
-        }
-        "package.info" => {
-            let whose = (caller.acting_for(), peer.admin);
-            super::local::info(core, whose, params(request)?).await
-        }
-        "package.files" => super::local::files(core, caller.acting_for(), params(request)?).await,
-        "package.logo" => super::logo::method(core, caller.acting_for(), params(request)?).await,
+        "package.install" => super::asked::install(core, peer, params(request)?).await,
+        "package.remove" => super::asked::remove(core, params(request)?).await,
+        "package.info" => super::local::info(core, peer.admin, params(request)?).await,
+        "package.files" => super::local::files(core, params(request)?).await,
+        "package.logo" => super::logo::method(core, params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,
         "package.check" => super::verify::check(core, params(request)?).await,
-        "package.sync" => {
-            super::source::sync::method(core, caller.acting_for(), params(request)?).await
-        }
-        "package.search" => {
-            let whose = (peer, caller.acting_for());
-            super::source::search::search(core, whose, params(request)?).await
-        }
+        "package.sync" => super::source::sync::method(core, params(request)?).await,
+        "package.search" => super::source::search::search(core, peer, params(request)?).await,
         "package.clean" => super::source::clean::clean(core).await,
-        "package.upgrades" => {
-            super::source::upgrade::upgrades(core, &Scope::of(peer, caller, request)).await
-        }
+        "package.upgrades" => super::source::upgrade::upgrades(core).await,
         "package.upgrade" => {
-            let scope = Scope::of(peer, caller, request);
             let reverse = Some(&caller.reverse);
-            super::source::upgrade::upgrade(core, (peer, &scope), reverse, params(request)?).await
+            super::source::upgrade::upgrade(core, peer, reverse, params(request)?).await
         }
         "package.enable" => {
             super::switch::enable(core, (peer, caller.acting_for()), params(request)?).await
@@ -76,10 +56,7 @@ pub(crate) async fn call(
         "package.restart" => {
             super::switch::restart(core, (peer, caller.acting_for()), params(request)?).await
         }
-        "package.members" => {
-            super::switch::members(core, (peer, caller.acting_for()), params(request)?).await
-        }
-        "package.file" => crate::backstage::read(core, caller, params(request)?).await,
+        "package.file" => crate::backstage::read(core, params(request)?).await,
         "package.emit" => crate::backstage::emit(core, caller, params(request)?),
         "package.methods" => crate::backstage::register(core, caller, params(request)?),
         "widget.set" => crate::widgets::set::set(core, caller, params(request)?),

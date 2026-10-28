@@ -10,7 +10,6 @@ use serde_json::Value;
 
 use miyu_source::archive::{self, EXTENSION};
 
-use super::scope::Scope;
 use super::{TARGET, packages};
 use crate::Core;
 use crate::hello::Peer;
@@ -21,12 +20,11 @@ pub(super) fn is_package_file(path: &Path) -> bool {
     path.extension().and_then(|extension| extension.to_str()) == Some(EXTENSION)
 }
 
-/// 装包文件 `path` 进 `scope` 那一层（`preview` 是只看一眼）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
+/// 装包文件 `path`（`preview` 是只看一眼）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
 /// 的 `package_file_bad`；之后同装包文件夹。
 pub(super) async fn install(
     core: &Arc<Core>,
     peer: Peer,
-    scope: &Scope,
     path: &Path,
     preview: bool,
 ) -> Result<Value, Refusal> {
@@ -43,16 +41,11 @@ pub(super) async fn install(
         .map_err(|_| Refusal::INTERNAL);
     let answer = match unpacked {
         Ok(Ok(unpacked)) if preview => {
-            super::preview::installing(core, peer, scope, &unpacked.folder).await
+            super::preview::installing(core, peer, &unpacked.folder).await
         }
-        Ok(Ok(unpacked)) => match scope {
-            Scope::System => {
-                super::manage::from_path(core, peer, &unpacked.folder, Some(path)).await
-            }
-            Scope::Own(account) => {
-                super::mine::from_path(core, peer, account, &unpacked.folder, Some(path)).await
-            }
-        },
+        Ok(Ok(unpacked)) => {
+            super::manage::from_path(core, peer, &unpacked.folder, Some(path)).await
+        }
         Ok(Err(error)) => {
             tracing::info!(target: TARGET, error = %error, "package file not unpacked");
             Err(Refusal::PACKAGE_FILE_BAD)

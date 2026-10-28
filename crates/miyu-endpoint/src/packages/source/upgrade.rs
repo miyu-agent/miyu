@@ -5,8 +5,7 @@
 //!   `packages.hold` 里的跳过；软件源里没有了的、被拉黑的照用，报一句（第 5 条，装着的人自己定卸不卸）。
 //! - 换就是照从软件源装那一条重装这一个（[`super::fetch`]）：缺的新依赖一起装，设置、状态、开关都留着；新版多要的能力照旧
 //!   要人批了才开（扩展的批准记在 `system/extensions.json`，核心照它起）。
-//! - 盘点、换哪一层照 [`Scope`]（施工 U23 下上）：系统那一层的只看系统那一份，自己那一层的只看他自己装的（记在他那层的本地库）。
-//! - 照装的时候记的软件源找（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了的、这一层用不了的进 `gone`，
+//! - 照装的时候记的软件源找（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了的、用不了的进 `gone`，
 //!   不换到别的源上同名的包（换源就是换信任的对象）；升也照那个源装。
 
 use std::collections::BTreeMap;
@@ -17,7 +16,7 @@ use serde_json::{Value, json};
 
 use miyu_source::index::Index;
 
-use super::super::scope::Scope;
+use super::super::packages;
 use super::feeds::OFFICIAL;
 use super::fetch::{self, SourceParams};
 use crate::Core;
@@ -75,11 +74,11 @@ impl UpgradeParams {
     }
 }
 
-/// `package.upgrades`：`scope` 那一层的，回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
-pub(crate) async fn upgrades(core: &Arc<Core>, scope: &Scope) -> Result<Value, Refusal> {
+/// `package.upgrades`：回 `{"upgrades", "moved", "gone", "blocked", "held", "generated", "stale"?}`。
+pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
-    let indexes = indexes(core, scope, &synced.index).await;
-    let (survey, _) = survey_core(core, scope, &indexes).await?;
+    let indexes = indexes(core, &synced.index).await;
+    let (survey, _) = survey_core(core, &indexes).await?;
     let mut answer = shown(&survey);
     answer["generated"] = json!(synced.index.generated);
     if let Some(stale) = synced.stale {
@@ -92,13 +91,13 @@ pub(crate) async fn upgrades(core: &Arc<Core>, scope: &Scope) -> Result<Value, R
 /// `[{"package", "from", "to"}]`）。
 pub(crate) async fn upgrade(
     core: &Arc<Core>,
-    (peer, scope): (Peer, &Scope),
+    peer: Peer,
     caller: Option<&Reverse>,
     params: UpgradeParams,
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
-    let indexes = indexes(core, scope, &synced.index).await;
-    let (survey, feeds) = survey_core(core, scope, &indexes).await?;
+    let indexes = indexes(core, &synced.index).await;
+    let (survey, feeds) = survey_core(core, &indexes).await?;
     let feed_of = |id: &str| feeds.get(id).cloned().flatten();
     let wanted: Vec<&(String, Option<String>, String)> = survey
         .upgrades
@@ -131,48 +130,37 @@ pub(crate) async fn upgrade(
             Some(feed) => SourceParams::from(id, &feed),
             None => SourceParams::of(id),
         };
-        fetch::install(core, (peer, scope), caller, params).await?;
+        fetch::install(core, peer, caller, params).await?;
     }
     Ok(json!({"upgraded": rows}))
 }
 
-/// `scope` 那一层用得上的几个源的索引（施工 U23 下下）：官方的是拿好的 `official`，别的照配置拿，拿不成的跳过（它装的包进
-/// `gone`）。
-async fn indexes(core: &Arc<Core>, scope: &Scope, official: &Index) -> Indexes {
-    let account = match scope {
-        Scope::System => None,
-        Scope::Own(account) => Some(account),
-    };
+/// 用得上的几个源的索引（施工 U23 下下）：官方的是拿好的 `official`，别的照配置拿，拿不成的跳过（它装的包进 `gone`）。
+async fn indexes(core: &Arc<Core>, official: &Index) -> Indexes {
     let mut found = Indexes::new();
     found.insert(OFFICIAL.to_string(), official.clone());
-    for feed in super::feeds::feeds(core, account).iter().skip(1) {
-        if let Ok(synced) = super::sync::sync_feed(core, feed, false).await {
+    for feed in super::feeds::feeds(core).iter().skip(1) {
+        if let Ok(synced) = super::sync::sync_feed(feed, false).await {
             found.insert(feed.name.clone(), synced.index);
         }
     }
     found
 }
 
-/// 照 `scope` 那一层装着的包、那一层的本地库、配置盘点：自己那一层的只算他自己装的。另交回每个包是从哪个源装的（官方的没有）。
+/// 照装着的包、本地库、配置盘点。另交回每个包是从哪个源装的（官方的没有）。
 async fn survey_core(
     core: &Arc<Core>,
-    scope: &Scope,
     indexes: &Indexes,
 ) -> Result<(Survey, BTreeMap<String, Option<String>>), Refusal> {
-    let mine = |found: &&miyu_store::packages::Found| match scope {
-        Scope::System => true,
-        Scope::Own(_) => found.layer == miyu_store::packages::Layer::User,
-    };
-    let found: Vec<(String, Option<String>)> = scope
-        .installed(core)
+    let found: Vec<(String, Option<String>)> = core
+        .system_packages()
         .iter()
-        .filter(mine)
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());
             (found.id.clone(), version)
         })
         .collect();
-    let root = scope.local_root(core);
+    let root = packages(core).local_root();
     let installed = tokio::task::spawn_blocking(move || {
         found
             .into_iter()

@@ -16,25 +16,14 @@ async fn the_base_system_is_removed_and_restored_by_its_group_name() {
     std::fs::create_dir_all(&cwd).expect("建得了目录");
     let zh = "zh_CN.UTF-8";
 
-    let nothing = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "basesystem", "--system"],
-    )
-    .await;
+    let nothing = run(&root, &cwd, zh, &["pkg", "install", "basesystem"]).await;
     assert_eq!(
         stdout(&nothing),
         "basesystem 里没有要动的包\n",
         "{nothing:?}"
     );
 
-    let command = crate::support::cli::command(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "remove", "basesystem", "--system"],
-    );
+    let command = crate::support::cli::command(&root, &cwd, zh, &["pkg", "remove", "basesystem"]);
     let dir = cwd.clone();
     let removed = tokio::task::spawn_blocking(move || run_starting(&dir, command, "\n"))
         .await
@@ -47,13 +36,7 @@ async fn the_base_system_is_removed_and_restored_by_its_group_name() {
     assert!(shown.contains("\n卸掉了：shell\n"), "{shown}");
     assert_eq!(removed.status.code(), Some(0), "{removed:?}");
 
-    let back = run(
-        &root,
-        &cwd,
-        zh,
-        &["pkg", "install", "basesystem", "--yes", "--system"],
-    )
-    .await;
+    let back = run(&root, &cwd, zh, &["pkg", "install", "basesystem", "--yes"]).await;
     let shown = stdout(&back);
     assert!(shown.contains("装好了：shell\n"), "{back:?}");
     assert!(!shown.contains("将装回"), "--yes 不问：{shown}");

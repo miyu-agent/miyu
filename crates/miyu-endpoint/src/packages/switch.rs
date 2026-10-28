@@ -17,7 +17,6 @@ use super::{listed, manage, packages};
 use crate::Core;
 use crate::config::methods::words;
 use crate::extensions::methods::{restart_process, turn_off, turn_on};
-use crate::extensions::{read_switches, write_switches};
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
@@ -28,14 +27,6 @@ pub(crate) struct EnableParams {
     package: String,
     #[serde(default)]
     approve: Option<Vec<String>>,
-}
-
-/// `package.members` 的参数（施工 IM-1 上）。
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct MembersParams {
-    package: String,
-    on: bool,
 }
 
 /// `package.disable`、`package.restart` 的参数。
@@ -171,25 +162,6 @@ pub(crate) async fn restart(
     }
     core.restart_services(id, &manifest).await;
     item(core, (peer, whose), id)
-}
-
-/// `package.members`（施工 IM-1 上）：系统装的带进程的包成员能不能用，记在系统那一层的开关里，盖过清单的 `[package] members`。
-/// 不带进程的、卸掉了的 `not_switchable`。下一轮起成员的会话照它有没有这个包。
-pub(crate) async fn members(
-    core: &Arc<Core>,
-    (peer, whose): (Peer, &AccountId),
-    params: MembersParams,
-) -> Result<Value, Refusal> {
-    let (manifest, _, _, removed) = find(core, &params.package)?;
-    if removed || !crate::packages::status::runs(&manifest) {
-        return Err(Refusal::NOT_SWITCHABLE);
-    }
-    let _one_at_a_time = core.extensions.one_at_a_time().await;
-    let (mut switches, version) = read_switches(core);
-    switches.members.insert(params.package.clone(), params.on);
-    write_switches(core, &params.package, &switches, version.as_deref())?;
-    core.extensions.notify(&params.package);
-    item(core, (peer, whose), &params.package)
 }
 
 /// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）：每人一份的扩展的状态照 `whose` 那一份（施工

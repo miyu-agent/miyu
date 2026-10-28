@@ -6,7 +6,6 @@
 //! - 看一眼只照索引说要装哪几个、要下多大，不下载。
 //! - 真装：一次只装一件（`core.packaging`）；一个一个下（[`super::download`]，进度推 `package.progress` 给发起的连接），再照
 //!   装包文件那一条装（[`super::super::archive`]），本地库记上来源仓库。下不成的 `download_failed`（`data.why` 是每一处的原因），前面装好的留着。
-//! - 装进哪一层照 [`Scope`]（施工 U23 下上）：自己那一层的，要装的（连同补的依赖）照索引看带程序的，不下载就拒（[`Scope::system_only`]）。
 
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -20,7 +19,6 @@ use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
 use miyu_store::packages::Packages;
 
-use super::super::scope::Scope;
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use super::feeds::{Feed, Tier};
@@ -107,50 +105,40 @@ struct Step<'a> {
     name: String,
 }
 
-/// 从软件源装 `params.source` 进 `scope` 那一层。
+/// 从软件源装 `params.source`。
 pub(crate) async fn install(
     core: &Arc<Core>,
-    (peer, scope): (Peer, &Scope),
+    peer: Peer,
     caller: Option<&Reverse>,
     params: SourceParams,
 ) -> Result<Value, Refusal> {
     if !miyu_store::personas::valid(&params.source) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let indexes = chosen(core, scope, &params).await?;
-    let seen = scope.installed(core);
+    let indexes = chosen(core, &params).await?;
+    let seen = core.system_packages();
     let installed: BTreeSet<String> = seen.iter().map(|found| found.id.clone()).collect();
     let steps = plan(&indexes, &params.source, &installed)?;
-    if steps.iter().any(|step| runs_program(step.entry)) {
-        scope.system_only(peer.admin)?;
-    }
     if params.preview {
         return Ok(preview(&steps, &seen));
     }
     let _one_at_a_time = core.packaging.lock().await;
-    let shared = download::cache_dir(packages(core).state_root());
-    let guarded = super::sync::guarded(core);
+    let cache = download::cache_dir(packages(core).state_root());
     let mut answer = Value::Null;
     let mut with = Vec::new();
     for step in &steps {
         let report = progress(caller, &step.entry.id);
-        // 个人层的源下进它自己的目录，照地址闸只连公网；官方的、系统层的进共用的缓存（施工 U23 下下）。
-        let (cache, guard) = match step.feed.guarded() {
-            true => (step.feed.dir.join("files"), Some(&guarded)),
-            false => (shared.clone(), None),
-        };
         let wanted = Wanted {
             name: &step.name,
             file: step.file,
             mirrors: step.feed.mirrors(),
-            guarded: guard,
         };
         let file = download::fetch(&cache, &wanted, &report)
             .await
             .map_err(Refusal::download_failed)?;
-        answer = super::super::archive::install(core, peer, scope, &file, false).await?;
+        answer = super::super::archive::install(core, peer, &file, false).await?;
         let (record, id, origin) = (
-            scope.local_root(core),
+            packages(core).local_root(),
             step.entry.id.clone(),
             step.entry.origin.clone(),
         );
@@ -176,19 +164,11 @@ pub(crate) async fn install(
 /// 装要用的几个源的索引（施工 U23 下下）：挑中的那个在前，依赖在它里面找不到的再照官方的找。
 type Indexes = Vec<(Feed, Index)>;
 
-/// 挑从哪个源装：写了 `from` 的只看那一个，没写的照先后（官方的、系统配置加的、`scope` 自己那一层的人加的）找第一个有这个
-/// 编号的。系统那一层的（管理员模式里）不认个人层的源。官方的拿不成、别的源也没有的照官方的拒；`from` 写的源没有的
+/// 挑从哪个源装：写了 `from` 的只看那一个，没写的照先后（官方的、配置里加的）找第一个有这个编号的。官方的拿不成、别的源也没有
+/// 的照官方的拒；`from` 写的源没有的
 /// `unknown_source`；都没有的 `unknown_package`。别的源拿不成的跳过，记一行。
-async fn chosen(
-    core: &Arc<Core>,
-    scope: &Scope,
-    params: &SourceParams,
-) -> Result<Indexes, Refusal> {
-    let account = match scope {
-        Scope::System => None,
-        Scope::Own(account) => Some(account),
-    };
-    let feeds = super::feeds::feeds(core, account);
+async fn chosen(core: &Arc<Core>, params: &SourceParams) -> Result<Indexes, Refusal> {
+    let feeds = super::feeds::feeds(core);
     let wanted: Vec<&Feed> = feeds
         .iter()
         .filter(|feed| params.from.as_deref().is_none_or(|name| feed.name == name))
@@ -198,12 +178,12 @@ async fn chosen(
     }
     let mut failed = None;
     for feed in wanted {
-        match super::sync::sync_feed(core, feed, false).await {
+        match super::sync::sync_feed(feed, false).await {
             Ok(synced) if synced.index.entry(&params.source).is_some() => {
                 let mut indexes = vec![(feed.clone(), synced.index)];
                 if feed.tier != Tier::Official {
                     let official = super::feeds::official(core);
-                    if let Ok(synced) = super::sync::sync_feed(core, &official, false).await {
+                    if let Ok(synced) = super::sync::sync_feed(&official, false).await {
                         indexes.push((official, synced.index));
                     }
                 }
@@ -295,20 +275,6 @@ pub(super) fn pick(entry: &Entry) -> Option<&File> {
         .iter()
         .find(|file| file.target.is_some() && file.target.as_deref() == here)
         .or_else(|| entry.files.iter().find(|file| file.target.is_none()))
-}
-
-/// 索引里的这一条带程序（同 `miyu_store::packages::runs_program`，施工 U23 下上）：种类是界面、扩展、内置、小程序的，带了子命令、
-/// MCP 服务的。以前生成的、没写种类的照带的认。
-fn runs_program(entry: &Entry) -> bool {
-    matches!(
-        entry.kind.as_deref(),
-        Some("ui" | "process" | "builtin" | "worker")
-    ) || ["command", "mcp"].iter().any(|kind| {
-        entry
-            .provides
-            .get(*kind)
-            .is_some_and(|names| !names.is_empty())
-    })
 }
 
 /// 看一眼：要装的那个、一起装的依赖、要下多大；换下哪一份照装进的那一层看得到的 `now` 认。

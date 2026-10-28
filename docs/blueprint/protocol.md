@@ -200,7 +200,6 @@
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
 | `package.restart` | 重启扩展的进程和它带的 MCP 服务、`bundle` 带的服务（施工 X-4，`package-pages.md`「开关」） |
-| `package.members` | 带进程的包成员能不能用（施工 IM-1 上，`package-pages.md`「开关」） |
 | `mcp.list`、`mcp.restart` | 管理员个人设置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「个人设置里的一张表」） |
 | `mcp.set`、`mcp.remove` | 管理员个人设置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
 | `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
@@ -752,11 +751,11 @@
 
 **`package.list`**（施工 9-1 上，`packages.md`「协议」）
 
-不带参数。回应 `{"packages": [...]}`：核心手里这时的两层清单（出厂的、系统那一层装的），接上「替谁干活」那个人自己那一层（施工 U23 下上：`layer: "user"`，同编号的盖过系统那一份，系统那一份带程序的不盖、他那份报 `duplicate`），照编号排。每一项的格子见 `packages.md` 的表：读成了的有 `kind`、`protocol`、`name`、`state`，写了的有 `version`、`summary`、`command`、`opens`、`pages_dir`、`process`、`check`；施工 F-1 起，必需的有 `required`，内置包、扩展包有 `features`（没写的照包算一个），写了的有 `connection`、`depends`、`recommends`、`worker`，`kind` 多 `builtin`、`worker`；施工 F-7 起 `kind` 多 `mascot`（吉祥物包），这一种没有 `protocol`、多 `mascot: {"model"}`（`packages.md`「吉祥物包」）；`theme`（主题包，施工 F-16），同样没有 `protocol`、多 `theme: {"file"}`（`packages.md`「主题包」）；施工 F-8 上补起清单不写种类，`kind` 照带的表推出来，形状不变，带程序的包多带了吉祥物的照程序那一种、另有 `mascot`；施工 X-2 起 `kind` 多 `bundle`（不带程序、带 MCP 服务的包，不说协议），带 MCP 服务的（扩展包、`bundle`）多 `mcp: [{"name", "command", "venues", "state", "failures", …}]`（施工 X-4 起每一格同 `extension.status` 的一项带这个服务这时的状态：`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；状态变了推 `package.changed`；施工 F-9 补起被管理员个人设置里同名的服务盖住的那一格带 `covered: true`，`state` 照旧是 `off`，服务全被盖住的包那一项也带 `covered: true`），`features` 里每个服务一个 `mcp-<服务名>`（`packages.md`「MCP 服务」）；写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言）和有的话 `line`；协议版本对不上的照样带全，多 `code: "protocol_mismatch"` 和 `problem`。名字、说明照连接的语言挑。经 `package.install`、`package.remove` 装卸的当场换（施工 F-5）；手改了磁盘上的清单的要重启核心才认。施工 F-6 上起每一项多 `icon`（写了的）、`page`（有后台页的）、`status`、`enabled`（有开关的），见 `package-pages.md`；施工 F-18 上起写了图标、合规矩的多 `logo`（图标的版本，图用 `package.logo` 读）。
+不带参数。回应 `{"packages": [...]}`：核心手里这时的两层清单（出厂的、装上的），照编号排。每一项的格子见 `packages.md` 的表：读成了的有 `kind`、`protocol`、`name`、`state`，写了的有 `version`、`summary`、`command`、`opens`、`pages_dir`、`process`、`check`；施工 F-1 起，必需的有 `required`，内置包、扩展包有 `features`（没写的照包算一个），写了的有 `connection`、`depends`、`recommends`、`worker`，`kind` 多 `builtin`、`worker`；施工 F-7 起 `kind` 多 `mascot`（吉祥物包），这一种没有 `protocol`、多 `mascot: {"model"}`（`packages.md`「吉祥物包」）；`theme`（主题包，施工 F-16），同样没有 `protocol`、多 `theme: {"file"}`（`packages.md`「主题包」）；施工 F-8 上补起清单不写种类，`kind` 照带的表推出来，形状不变，带程序的包多带了吉祥物的照程序那一种、另有 `mascot`；施工 X-2 起 `kind` 多 `bundle`（不带程序、带 MCP 服务的包，不说协议），带 MCP 服务的（扩展包、`bundle`）多 `mcp: [{"name", "command", "venues", "state", "failures", …}]`（施工 X-4 起每一格同 `extension.status` 的一项带这个服务这时的状态：`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；状态变了推 `package.changed`；施工 F-9 补起被管理员个人设置里同名的服务盖住的那一格带 `covered: true`，`state` 照旧是 `off`，服务全被盖住的包那一项也带 `covered: true`），`features` 里每个服务一个 `mcp-<服务名>`（`packages.md`「MCP 服务」）；写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言）和有的话 `line`；协议版本对不上的照样带全，多 `code: "protocol_mismatch"` 和 `problem`。名字、说明照连接的语言挑。经 `package.install`、`package.remove` 装卸的当场换（施工 F-5）；手改了磁盘上的清单的要重启核心才认。施工 F-6 上起每一项多 `icon`（写了的）、`page`（有后台页的）、`status`、`enabled`（有开关的），见 `package-pages.md`；施工 F-18 上起写了图标、合规矩的多 `logo`（图标的版本，图用 `package.logo` 读）。
 
 回应顶上多一格 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表 `resources/packages/groups.toml` 里的每个组 `{"id", "name", "summary"?}`，名字、说明照连接的语言挑；每一项多一格 `groups`（清单写的组，只有出厂的内置包有），头照它把组里的包收在一起。
 
-成员（不是管理员组的人）调得了 `package.list`（施工 U23-R：软件包页照包开关他自己的；施工 U23 下上起还调得了 `package.install`、`remove`、`upgrade`、`upgrades`、`search`、`sync`、`info`，装卸只碰他自己那一层，`package.info` 不给 `source`：那是这台电脑上的路径），每一项去掉只给管理员的那几格（施工 U23-R修起照黑名单：U23-R 照白名单删，把扩展要的 `export`、`connection` 也删了，接入QQ 的 `im` 账号不在管理员组、找不到挂在自己身上的包）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）只给管理员。他对自己关没关一个包照他的配置读（`config.get`），列表里不写。软件包的流（`subscribe {"stream": "packages"}`）成员订不了：那里还推 MCP 服务。
+不替主人干活的扩展（场所里替外人的平台桥）拿到的每一项去掉只给主人的那几格（施工 U23-R修起照黑名单，SU-2 上起只剩这一种）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）；`package.info` 也不给它 `source`：那是这台电脑上的路径。关没关一个包照配置读（`config.get`），列表里不写。
 
 **`package.info`、`package.files`**（施工 F-8 中上，`packages.md`「本地库」）：参数都是 `{"package"}`，多写的格 `bad_params`，没装的（或者卸掉了的出厂包）`unknown_package`。
 
@@ -769,12 +768,12 @@
 
 写组名（施工 BS-1 下中，设计 44 第三节第 2 条，照 pacman）：`package` 是组表里的组、又不是哪个出厂包的编号的，`package.install` 把组里卸掉了的出厂包一个个装回来，回 `{"group", "packages": [<列表那一项>…]}`；`package.remove` 把组里装着的一个个卸掉（组里互相依赖的先卸依赖别人的），回 `{"group", "removed": [<编号>…]}`，组外装着的包依赖组里的整个拒 `package_depended`、什么都不卸。带 `preview` 的回 `{"group", "packages": [<编号>…]}`：这一次会装回、会卸掉的那几个，一个都没有的是空的。
 
-- `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装进哪一层照管理员模式（施工 U23 下上）：在管理员模式里的装进系统那一层；不在的装进替谁干活那个人自己那一层，只收不带程序的包（界面、扩展、内置、小程序，写了子命令、`[process]`、`[worker]`、MCP 服务的都算带程序），带的管理员拒 `admin_mode_required`、成员拒 `not_permitted`；成员从本机路径装的只能是他自己家目录里的，别的 `not_permitted`。同一个编号这一层已经有的换成新的。回应同 `package.list` 的一项。
+- `package.install {"path"}`：`path` 是本机一个包目录的绝对路径（文件夹名就是编号，里面有 `package.toml`），写成包目录里那份 `package.toml` 的路径也认（施工 F-8 上）；整个文件夹拷进去。也可以是一个包文件（`.miyu`，施工 G-1，设计 `37-软件源.md` 第二节）的绝对路径：解进数据根里点开头的暂存处再照包目录装，本地库记的来源（`package.info` 的 `source`）是那个文件，暂存处用完就删；看一眼也认。装、卸、升级只有替主人干活的连接做得了（施工 SU-2 上），别的 `not_permitted`。同一个编号已经装上的换成新的。回应同 `package.list` 的一项。
 - `package.install {"package"}`：编号是出厂包的，把卸掉的装回来（没卸的 `unknown_package`）；不是出厂包的照软件源装，同下一条 `{"source"}`（施工 G-4 下：装只有一个动词，核心判断走哪条路）。回应同 `package.list` 的一项。
-- `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。装进哪一层同 `{"path"}`（施工 U23 下上）：装进自己那一层的，要装的连同补的依赖照索引的 `kind`、`provides` 看有带程序的，不下载就拒；缺的依赖照他看得到的算（系统装的、他自己装的都算有）。从哪个软件源（施工 U23 下下）：写了 `from` 的（源的名字、`official`）只照那一个，这一层用不了的 `unknown_source`；不写的照先后找第一个有这个编号的（官方、系统配置加的、自己那一层的人个人设置里加的；管理员模式里不认个人层的源）。依赖先在同一个源里找，找不到的照官方的。别的源的包文件照索引写的地址下（没有镜像），个人层的照地址闸只连公网、下进它自己的目录；本地库的 `desc` 另记源名 `feed`（官方的不记），看一眼的回应多 `source`。
+- `package.install {"source"}`（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：从软件源装索引里编号是 `source` 的包。先照 `package.sync` 不带 `force` 那样拿索引；缺的依赖（`[depends]` 里装着的包里没有的）从索引里一起装，先装依赖（深度优先，成环的停得下）；每个包挑本机能用的文件（写了本机这一种系统的先，不分系统的其次）。一个一个下：照镜像的 `<镜像>files/<文件名>`、索引写的地址的先后，边下边算 SHA-256，超过索引写的大小就停，大小、哈希都对上才算成；下好的放 `state/packages/.cache/<文件名>`，缓存里已有、哈希对得上的不再下。下的时候往发起的这个连接推 `package.progress {"package", "done", "total"}`（开始、结束各一次，中间最多 200 毫秒一次）。下好了照装包文件那一条装，本地库的 `desc` 多记来源仓库 `origin`。回应同 `package.list` 的一项，一起装了依赖的多 `with`（依赖的编号，照装的先后）。一次只装一件（同别的装卸）。从哪个软件源（施工 U23 下下）：写了 `from` 的（源的名字、`official`）只照那一个，没有的 `unknown_source`；不写的照先后找第一个有这个编号的（官方、系统配置加的、设置里加的）。依赖先在同一个源里找，找不到的照官方的。别的源的包文件照索引写的地址下（没有镜像）；本地库的 `desc` 另记源名 `feed`（官方的不记），看一眼的回应多 `source`。
   - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "origin", "capabilities", "provides", "download", "with", "replaces"?}`：`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version"}]`，同编号已经装着的带 `replaces: {"version"}`。
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
-- `package.remove {"package"}`：系统那一层的删掉；出厂的记一笔。不在管理员模式里的只卸他自己那一层的（施工 U23 下上），卸系统装的、出厂的照上一条拒。回应 `{"package", "removed": true}`。
+- `package.remove {"package"}`：装上的删掉；出厂的记一笔。回应 `{"package", "removed": true}`。
 - 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置、个人设置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
 - 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；编号和人占着的名字撞了的 `package_id_taken`（施工 Y-5 中下：用户名、`admin`、`users`；升级同一个包不算）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；没装的、没卸过的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 删了）。扩展自己调回 `local_only`。
 
@@ -784,7 +783,7 @@
 - 照系统配置的 `packages.mirrors`、`packages.source` 的先后试（写 `{ env = … }` 的照核心的环境取，取不到的跳过；都补上结尾的 `/`），每一处拿 `index.json`、`index.json.sig`（各有大小上限），照编进来的官方公钥验签（测试换成自己的钥匙，`Core::with_source_keys`），读不成、签名不对、比本机那份旧（`generated` 早）的都算这一处不成，试下一处。本机地址不走代理。
 - 拿成了的照收到的字节存进 `state/packages/.sync/`（`index.json`、`index.json.sig`，另写拿到的时刻 `fetched`；先写临时文件再换过去）。本机存的那份每次读都再验一遍签名，验不过的当没有。
 - 回应 `{"generated", "fetched", "packages", "stale"?}`：一处都没拿成、用的是本机那份的带 `stale`，是最后一处的原因（英文原话，带地址）。
-- 别的软件源（施工 U23 下下，设计 37 第五节，配置 `packages.sources.<名字>` 的 `url`、`key`）：官方的拿完，再拿系统配置里加的、调的人个人设置里加的，各照各的公钥验、存在各自的目录（系统层的 `state/packages/.sources/<名字>/`，个人层的 `home/<账号>/state/packages/sources/<名字>/`）。个人层的源照替成员上网的那道闸只连公网（`miyu-http` 的 `guarded.rs`，同 `net.md`「怎么走」第 3 到 5 条）。回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有的那一项是 `{"source", "error": "source_unreachable"}`，不耽误官方那一份；配置里没有别的源的不带这一格。
+- 别的软件源（施工 U23 下下，设计 37 第五节，配置 `packages.sources.<名字>` 的 `url`、`key`）：官方的拿完，再拿系统配置、设置里加的（同名的认系统配置的），各照各的公钥验、存在各自的目录 `state/packages/.sources/<名字>/`。回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成、本机也没有的那一项是 `{"source", "error": "source_unreachable"}`，不耽误官方那一份；配置里没有别的源的不带这一格。
 - 拒绝：参数不对 `bad_params`；官方的一处都没拿成、本机也没有 `source_unreachable`（`data.why` 是最后一处的原因）。扩展调回 `local_only`。
 
 **`package.search`**（施工 G-3 下，设计 `37-软件源.md` 第四节第 3 条）
@@ -800,10 +799,10 @@
 
 **`package.upgrades`、`package.upgrade`**（施工 G-5，设计 `37-软件源.md` 第四节第 6、7 条，照 pacman 的 `-Su`）
 
-- 照装的时候的软件源比（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了、这一层用不了的进 `gone`，不换到别的源上同名的包；升照那个源装。
-- 只碰从软件源装的：本地库 `desc` 记了来源仓库 `origin` 的；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。先照 `package.sync` 不带 `force` 那样拿索引。盘点、升哪一层照管理员模式（施工 U23 下上）：在管理员模式里的是系统那一层，不在的只看他自己那一层装的（本地库记在他那层的 `.local`）。
+- 照装的时候的软件源比（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了的进 `gone`，不换到别的源上同名的包；升照那个源装。
+- 只碰从软件源装的：本地库 `desc` 记了来源仓库 `origin` 的；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。先照 `package.sync` 不带 `force` 那样拿索引。
 - `package.upgrades`（没有参数）盘点：被拉黑的（编号或来源仓库对上）进 `blocked`；索引里没有了的进 `gone`；来源仓库和装的时候不一样的进 `moved`，不升；版本和索引的一样的不动；系统配置 `packages.hold` 里的进 `held`；别的进 `upgrades`。回应 `{"upgrades": [{"package", "from", "to"}], "moved": [{"package", "was", "now"}], "gone": [...], "blocked": [{"package", "reason"}], "held": [...], "generated", "stale"?}`。版本不比大小：索引的那一版和装着的不一样就升，作者撤回新版也跟着回去。
-- `package.upgrade {"packages"?, "preview"?}`：升 `upgrades` 里的（写了 `packages` 的只升列着的）；看一眼回 `{"upgrades", "download"}`（要下多少字节），真升回 `{"upgraded": [{"package", "from", "to"}]}`。升一个就是照 `package.install {"source"}` 重装它（缺的新依赖一起装，下载进度照推）：设置、状态、开关都留着；新版多要的能力照旧要人批了才开。没有能升的回空的列表。只给人；成员也调得了，只升他自己那一层的（施工 U23 下上）。
+- `package.upgrade {"packages"?, "preview"?}`：升 `upgrades` 里的（写了 `packages` 的只升列着的）；看一眼回 `{"upgrades", "download"}`（要下多少字节），真升回 `{"upgraded": [{"package", "from", "to"}]}`。升一个就是照 `package.install {"source"}` 重装它（缺的新依赖一起装，下载进度照推）：设置、状态、开关都留着；新版多要的能力照旧要人批了才开。没有能升的回空的列表。只给人。
 
 **`package.enable`、`package.disable`**（施工 F-6 上，`package-pages.md`「开关」）
 
@@ -816,13 +815,6 @@
 - 参数 `{"package"}`。回应同 `package.list` 的一项。
 - 扩展：同 `extension.restart`，再重启它带的 MCP 服务；`bundle`：重启它带的服务。请它们退出、等它们退出，再起，连续失败从零数；服务的工具留在目录里，起好、列完照新的换。
 - 拒绝：没有的 `unknown_package`；关着的（卸掉了的出厂包也算）`package_off`；内置包、界面、小程序、吉祥物包没有能重启的，`not_restartable`；扩展要的能力还有没批的照 `extension.restart` 回 `needs_approval`。扩展自己调回 `local_only`。
-
-**`package.members`**（施工 IM-1 上，`package-pages.md`「开关」，设计 06 第八再又补第 2 条）
-
-- 参数 `{"package", "on"}`。回应同 `package.list` 的一项。只给管理员组，改系统那一层，要进入管理员模式；扩展调回 `local_only`。
-- 记在 `system/extensions.json` 的 `members`，盖过清单的 `[package] members`。不在管理员组的人，成员用不了的包当他自己关了（同个人设置的 `packages.<编号>.off`）：新会话、开着的会话下一轮都没有它。
-- `package.list` 里带进程的那一项多 `members`（照这一格算好的，只给管理员）。
-- 拒绝：没有的 `unknown_package`；不带进程的、卸掉了的 `not_switchable`。
 
 **`package.file`、`package.methods`、`package.call`**（施工 F-6 中，`package-pages.md`）
 
@@ -1377,7 +1369,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
 | `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了，或者是别人个人设置里的、管理员模式里的个人层源（施工 U23 下下） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
-| `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号（装进自己那一层的是要盖的系统那一份带程序，施工 U23 下上）；编号和人占着的名字撞了（施工 Y-5 中下） |
+| `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号；编号和人占着的名字撞了（施工 Y-5 中下） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
 | `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：管理员个人设置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |

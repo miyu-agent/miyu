@@ -29,10 +29,8 @@ mod launch;
 pub mod leftovers;
 pub mod local;
 pub mod migrate;
-mod overrides;
 
 pub use launch::{Launch, first_line, launcher};
-pub use overrides::runs_program;
 
 /// 清单在包文件夹里的名字（施工 F-8 上）。
 pub const MANIFEST: &str = "package.toml";
@@ -47,8 +45,6 @@ pub enum Layer {
     Shipped,
     /// 系统那一层：管理员装的（施工 U23 上上起在 `system/packages/`，协议上照旧叫 `home`）。
     Home,
-    /// 这个账号自己装的（施工 U23 上下，设计 06 U23「每人自己装」）：`home/<账号>/packages/`，只对他自己生效。
-    User,
 }
 
 impl Layer {
@@ -57,7 +53,6 @@ impl Layer {
         match self {
             Layer::Shipped => "shipped",
             Layer::Home => "home",
-            Layer::User => "user",
         }
     }
 }
@@ -99,7 +94,7 @@ pub enum Issue {
     Unreadable(io::Error),
 }
 
-/// 拷一份（施工 U23 上下：每人一份装着的包照系统那一份接上他自己那一层）：读不了的照种类和原话另造一个，别的照抄。
+/// 拷一份：读不了的照种类和原话另造一个，别的照抄。
 impl Clone for Issue {
     fn clone(&self) -> Issue {
         match self {
@@ -134,41 +129,6 @@ impl Packages {
         }
     }
 
-    /// 账号 `account` 看得到的三层（施工 U23 上下）：[`Packages::new`] 的两层，加他自己装的那一层 `home/<账号>/packages/`
-    /// （[`Layer::User`]）。他那一层和系统那一层是同一个目录的（挪不成那一次，[`migrate::system_layer`]）不另读。装、卸照旧只动
-    /// 系统那一层（[`Packages::home_dir`]）。
-    pub fn of_account(
-        resources: &ResourceRoot,
-        root: &DataRoot,
-        admin: &AccountId,
-        account: &AccountId,
-    ) -> Packages {
-        let mut packages = Packages::new(resources, root, admin);
-        let own = root.account_dir(account).join("packages");
-        if packages.home_dir() != Some(own.as_path()) {
-            packages.dirs.push((Layer::User, own));
-        }
-        packages
-    }
-
-    /// 系统那一份 `system`（核心手里核对过的，[`Packages::read`] 读的）接上账号自己那一层（[`Packages::of_account`]），照
-    /// [`Packages::read`] 的规矩认撞没撞：他那一层读在最后，同编号的盖过系统那一份（施工 U23 下上，带程序的不盖），子命令名、
-    /// 功能编号撞了的报在他那份上（先到先得）。没有他那一层的交回系统那一份。
-    pub fn read_over(&self, system: &[Found]) -> Vec<Found> {
-        let mut found = system.to_vec();
-        found.extend(
-            self.dirs
-                .iter()
-                .filter(|(layer, _)| *layer == Layer::User)
-                .flat_map(|(layer, dir)| {
-                    files(dir)
-                        .into_iter()
-                        .map(move |(id, path)| read_one(*layer, id, path))
-                }),
-        );
-        self.checked(found)
-    }
-
     /// 只有出厂那一层（施工 9-1 下）：生成配置的样本照出厂带的包，和数据根无关。状态目录没有意义，是空的。
     pub fn shipped(resources: &ResourceRoot) -> Packages {
         Packages {
@@ -200,7 +160,6 @@ impl Packages {
     /// 照编号排（同一个编号先读的层在前），认撞没撞（[`Packages::read`]）。
     fn checked(&self, mut found: Vec<Found>) -> Vec<Found> {
         found.sort_by(|one, other| (&one.id, one.layer).cmp(&(&other.id, other.layer)));
-        overrides::overridden(&mut found);
         duplicates(&mut found);
         taken(&mut found);
         features_taken(&mut found);
@@ -469,7 +428,5 @@ fn accounts_taken(found: &mut [Found], admin: &AccountId) {
     }
 }
 
-#[cfg(test)]
-mod own_tests;
 #[cfg(test)]
 mod tests;

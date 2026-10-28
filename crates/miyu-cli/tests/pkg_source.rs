@@ -78,11 +78,6 @@ async fn pkg(home: &Home, words: &[&str]) -> (u8, String, String) {
 
 /// 同 [`pkg`]，问的那一句照 `input` 答。
 async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String, String) {
-    pkg_with(home, words, input, true).await
-}
-
-/// 同 [`pkg_answering`]，`system` 是写不写 `--system`（施工 Y-12 下下）。
-async fn pkg_with(home: &Home, words: &[&str], input: &[u8], system: bool) -> (u8, String, String) {
     #[derive(Parser)]
     struct Line {
         #[command(subcommand)]
@@ -94,10 +89,6 @@ async fn pkg_with(home: &Home, words: &[&str], input: &[u8], system: bool) -> (u
     }
     let mut all = vec!["miyu", "pkg"];
     all.extend(words);
-    // 装、升级、同步改的是全机的软件包（施工 Y-12 下下）。
-    if system {
-        all.push("--system");
-    }
     let Top::Pkg(args) = Line::try_parse_from(all).expect("读得懂").command;
     let plan = miyu_cli::PkgPlan {
         args,

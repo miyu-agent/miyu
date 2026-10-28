@@ -128,7 +128,7 @@ fn dependencies_fall_back_to_the_official_source() {
     let any = [None];
     let indexes = vec![
         (
-            feed("friends", Tier::Personal),
+            feed("friends", Tier::Added),
             index(vec![
                 entry("app", &["lib", "base"], &any),
                 entry("lib", &[], &any),

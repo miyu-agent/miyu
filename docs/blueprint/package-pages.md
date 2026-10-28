@@ -46,7 +46,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. 收录（`miyu-index build`）从包文件里取出清单写的图标：在包目录里、开头是 PNG / WebP、不超过 256 KiB 的才收，写进输出目录的 `logos/<SHA-256>.png`（或 `.webp`），和 `index.json` 一起发；索引那一条多 `logo: {"path", "sha256", "size"}`（`path` 相对软件源的地址）、`icon`（清单的 Lucide 名）。不合的这一条不带 `logo`、记一笔，包照收。
 2. `package.search` 每一行多 `icon`、`logo`（图标的版本，同 `package.list` 那一格）：索引里有的才写。搜索不带图，头要图照 `source` 那一格调 `package.logo {"package", "from"}`。
-3. 核心读：照那个源的地址先后（官方的先镜像）下 `<地址><path>`，大小、哈希都对上才收，先写临时文件、对上了才改名；存在那个源自己的目录 `logos/` 下，下一次哈希对得上的不再下，存下一张以后目录里索引已经不提的删掉。个人层的源照地址闸只连公网（同下包文件）。
+3. 核心读：照那个源的地址先后（官方的先镜像）下 `<地址><path>`，大小、哈希都对上才收，先写临时文件、对上了才改名；存在那个源自己的目录 `logos/` 下，下一次哈希对得上的不再下，存下一张以后目录里索引已经不提的删掉。
 4. 别人的软件源写的索引不全信：`path` 不是正好 `logos/<sha256>.png`、`.webp` 的（出了 `logos/`、带 `..`、带查询串），`size` 超过 256 KiB 的当没有图标，搜索不带、读回 `null`、不去下。下来的再照装着的包那一套认（PNG / WebP、每边不超过 512），不合的同样当没有。
 
 `status`：
@@ -81,8 +81,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`（施工 BS-1 上中起没有必需的包）。
-3. 「成员也能用」（施工 IM-1 上）：带进程的包（扩展、带 MCP 服务的 `bundle`）列表那一项多 `members`，管理员用 `package.members {package, on}` 改；没改过的照清单 `[package] members`。成员的会话照它有没有这个包，判法同个人设置里关掉的包（`packages/off.rs`）。
-4. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
+3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
 
 ### `config.schema` 里包的配置项
 
@@ -121,7 +120,6 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
    - 每人一份的包（施工 IM-1 中下）：转给调的那个人那一份（人调的是他自己，扩展调的是它替的那个人，`Instance::serving`）；那一份还没登记方法的，替他拉起，等到登记了再转（`Provided::wait`，最多 60 秒，登记方法时 `nudge` 叫醒），没等到的 `program_not_running`。答的那一份的账号是那个人，转 blob 照它拷。
-   - 成员（施工 IM-1 中下，`backstage::opened_to`）：`package.file`、`package.call` 只碰得到他能用的每人一份的包（勾了「成员也能用」），那一份就是他自己的；整台机器一份的、没勾的回 `not_permitted`。管理员、扩展不查这一道。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
 4. **推给页面**（施工 IM-1 中下二，im 设计 07 第 4.6 节第 3 样，形状 2026-10-27 主会话定）：扩展的状态变了，不让页面轮询，推过去。
    - 扩展发 `package.emit {"event", "data"?}`：推给它替的那个账号；`event` 写法同方法名，`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；不是扩展的连接 `not_an_extension`。回 `{}`，没人订着也是。

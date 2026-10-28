@@ -11,7 +11,6 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_source::index::{Entry, Index};
 
 use super::feeds::OFFICIAL;
@@ -36,17 +35,16 @@ impl SearchParams {
     }
 }
 
-/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。装没装照 `account` 看得到的（施工 U23 下上）。照先后搜官方的、
-/// 系统配置加的、他自己加的源（施工 U23 下下），每一行带 `source`（源的名字）；别的源里的 `official` 一律是假的，同编号的各列各的。
+/// `package.search`：回 `{"packages": [...], "generated", "stale"?}`。照先后搜官方的、配置里加的源（施工 U23 下下），每一行带 `source`（源的名字）；别的源里的 `official` 一律是假的，同编号的各列各的。
 /// `generated`、`stale` 照官方的；别的源拿不成的跳过，记一行。
 pub(crate) async fn search(
     core: &Arc<Core>,
-    (peer, account): (Peer, &AccountId),
+    peer: Peer,
     params: SearchParams,
 ) -> Result<Value, Refusal> {
     let synced = super::sync::sync(core, false).await?;
     let installed: BTreeMap<String, Option<String>> = core
-        .packages_seen(account)
+        .system_packages()
         .iter()
         .map(|found| {
             let version = found.read.as_ref().ok().and_then(|m| m.version.clone());
@@ -59,8 +57,8 @@ pub(crate) async fn search(
         .map(str::to_lowercase)
         .collect();
     let mut rows = matching((OFFICIAL, &synced.index), &installed, &words, peer.language);
-    for feed in super::feeds::feeds(core, Some(account)).iter().skip(1) {
-        match super::sync::sync_feed(core, feed, false).await {
+    for feed in super::feeds::feeds(core).iter().skip(1) {
+        match super::sync::sync_feed(feed, false).await {
             Ok(other) => rows.extend(matching(
                 (&feed.name, &other.index),
                 &installed,
