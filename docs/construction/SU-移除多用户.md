@@ -59,7 +59,7 @@
 | SU-2 中 | 批过的扩展能力从组表 `groups.json` 的 `ext.<能力>` 挪进 `extensions.json`，组表删掉 | 无（形状不变） |
 | SU-2 下 | 每人一份的扩展（`[process] scope = "account"`、按人拉起的那一份） | 两个头：扩展页；im：每人一份 |
 | SU-3 上 | 配置只剩一层：系统配置和个人设置并成一份（`personal` 层拿掉），每人一份的配置（`config/people.rs`）拿掉；密钥只剩一份（`secret.*` 不再有 `layer`；原排在 SU-3 中，同 PL-1 的共用那份缠在一起，并进来一步做） | 两个头：设置页、`/model` 的两份、密钥页；命令行 |
-| SU-3 下 | 人格、预设、技能、脚本、提示词和工具说明的覆盖「系统 + 自己」两层并成一层；每人一个工具架子；`external.me` 并进主人对应表；用量、项目、定时任务的按账号 | 两个头；im：平台号 |
+| SU-3 下 | 人格、预设、技能、脚本、提示词和工具说明的覆盖「系统 + 自己」两层并成一层；每人一个工具架子；`external.me` 并进主人对应表（用量、项目、定时任务按账号存放挪到 SU-5，跟存储布局一起改） | 两个头；im：平台号 |
 | SU-3 末 | 记忆按账号分层（Y-7）并成一份（等 shorin-49 的 E-5 补合了再做，免得撞） | 两个头：记忆页 |
 | SU-4 | 场所会话归包（IM-2 已随 SU-2 下拿掉）；包的账号（带程序的包是一个账号、包编号和用户名互相占位、包的家目录）跟着场所会话一起拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
 | SU-5 | 存储布局一层；搬家脚本 | 无（头不碰路径） |
@@ -152,3 +152,23 @@
 6. 给人看的字、样本：三种语言里「个人设置」的说法拿掉（参考文件开头、软件源说明、包清单 `layers` 的报错、第一次引导那一项）；系统配置里 MCP 服务的读法改名 `configured_mcp`；生成的样本重出、`settings.schema.*.json` 删掉，蓝图的样本块跟着换；`miyu config`、`provider`、`mcp`、`check` 的帮助页去掉 `--system` 和个人设置。
 7. 怎么验：测试里两层叠的照一层改写（配置合并、供应商、思考强度、温度、命令行的写进哪一层的话、第一次设置写进系统配置）；只剩一层就没意义的删掉（两份供应商 `provider_copies`、个人设置盖系统配置的几条、和系统配置同名的软件源）；新加 `config.set` 不写 `layer` 写进系统配置、写 `personal` 参数不对；手写变异见 `~/.cache/miyu-remake/SU3a-mut`；本机门禁。
 8. 搬家脚本（SU-5）要做的：个人设置并进系统配置（同名的个人设置赢）、个人密钥并进系统那一份、`@system` 引用改写。
+
+### 十六、SU-3 下：你的东西只放一处（设计）
+
+**定了的**（主会话 10-28，技术题）：
+
+1. 人格、预设、技能、脚本、斜杠命令模板、提示词覆盖、工具说明覆盖：读的时候只认「出厂的 → 包带的 → 你的」，你的就是主人家目录 `home/<主人>/…`（写一直写在这里）。系统区的 `system/personas`、`system/presets`、`system/skills`、`system/scripts`、`system/prompts`、`system/tools` 不再读；主人部署里那几处的东西由搬家脚本并进家目录（同名的家目录那份赢；`persona.toml`、预设照原来叠的规矩逐项合）。SU-5 再整体挪到数据根。
+2. 跟着拿掉：`layers::Layer::System`；人格的 `system`、`keeper` 和取「谁的家目录」的那一圈（`scope.rs`）；每人一个工具架子（`shelves.rs`、`machine_side`）；改动监视看系统区的那一半；文件围栏（`Fence`）和卸包剩下的检查里系统区那几处。
+3. 协议不变：技能、脚本的 `from` 原来系统区的也写 `home`；人格、预设的 `remove`（`delete`、`restore`）照旧。
+4. `external.me` 并进 `external.bindings`（样子 10-28 和 im 对过了，im 设置页只填号、写 `owner`）：只留对应表，键是平台身份，值不空就算主人本人；搬家脚本把 `external.me` 的每一项写成一条、值 `owner`。
+5. 用量、项目、定时任务、知识库、会话这些按账号存放的，是存储布局，挪到 SU-5 一起改。
+
+
+### 十七、SU-3 下：你的东西只放一处（做了什么）
+
+1. 存储：`layers::Layer` 拿掉 `System`；人格、预设只叠出厂的、包带的、主人家目录的；技能、脚本只找主人家目录的和包带的（`skills::system_dir`、`scripts::system_dir`、`DataRoot::system_places` 拿掉）；列目录的围栏只认家目录几处和装上的包那一处。
+2. 端点：工具说明、提示词的同名覆盖只读主人家目录（`ToolOverride::over` 两份叠的那一步拿掉）；改动监视只盯家目录；卸包剩下的检查只看家目录；`scope.rs`、每人一个工具架子（`shelves.rs`）、`machine_side` 拿掉，会话一律拿核心那一个工具目录。
+3. `external.me` 拿掉，并进主人对应表 `external.bindings`（im 10-28 确认：设置页只填号、写 `owner`）；三种语言里那一项的字改成「我的平台账号」。
+4. 协议不变：技能、脚本的 `from`、人格、预设的 `remove` 照旧。
+5. 测试：样本人格装进主人家目录（`install_sample_persona` 多一个主人的参数）；要「下面一层」的测试改用装着的样本包（端点测试的 `packaged::samples`、`sample_persona_below`）；只剩一个人就没意义的（成员的架子、乙家目录里的人格、系统区盖出厂的）删掉，新加「系统区不再读」一条。手写变异见 `~/.cache/miyu-remake/SU3b-mut`（6 个，5 个逮住；把系统区的技能目录加回去那一个逮不住：列目录的围栏本来就不认系统区，加回去也读不到，等价）。
+6. 搬家脚本（SU-5）要做的：`system/personas`、`system/presets`、`system/skills`、`system/scripts`、`system/prompts`、`system/tools` 并进主人家目录（同名的家目录那份赢，`persona.toml`、预设逐项合）；`external.me` 的每一项写进 `external.bindings`、值 `owner`。

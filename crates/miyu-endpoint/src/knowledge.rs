@@ -151,7 +151,7 @@ pub(crate) async fn call(
     method: &str,
     params: &Value,
 ) -> Result<Value, Refusal> {
-    let account = crate::scope::scope(core, caller).user;
+    let account = core.memory_owner(caller);
     if let Some(managed) = manage::call(core, &account, method, params).await {
         return managed;
     }

@@ -52,7 +52,6 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/personas",
             Layer::Package => "pkgs/a/personas",
-            Layer::System => "data/system/personas",
             Layer::Home => "data/home/admin/personas",
         };
         let path = self.scratch.path().join(base).join(id).join(file);
@@ -83,20 +82,15 @@ fn the_layers_stack_file_by_file_and_key_by_key() {
         "user: a\nassistant: b\n",
     );
     places.write(
-        Layer::System,
+        Layer::Home,
         "miyu",
         "persona.toml",
-        "[persona]\nsummary = { en = \"System.\" }\n",
+        "[persona]\nsummary = { en = \"Mine.\" }\n",
     );
     places.write(Layer::Home, "miyu", "prompts/persona.md", "my persona\n");
-    places.write(
-        Layer::System,
-        "miyu",
-        "prompts/reminders.md",
-        "Stay soft.\n",
-    );
+    places.write(Layer::Home, "miyu", "prompts/reminders.md", "Stay soft.\n");
     let found = places.personas.find("miyu").unwrap();
-    assert_eq!(found.layers, [Layer::Shipped, Layer::System, Layer::Home]);
+    assert_eq!(found.layers, [Layer::Shipped, Layer::Home]);
     assert_eq!(
         found.file.name.as_ref().and_then(|name| name.pick("zh")),
         Some("美羽"),
@@ -108,7 +102,7 @@ fn the_layers_stack_file_by_file_and_key_by_key() {
             .summary
             .as_ref()
             .and_then(|summary| summary.pick("en")),
-        Some("System.")
+        Some("Mine.")
     );
     assert_eq!(found.texts.persona, "my persona\n", "人设同名替换，原样");
     assert_eq!(found.persona_from, Some(Layer::Home));
@@ -118,7 +112,7 @@ fn the_layers_stack_file_by_file_and_key_by_key() {
         found.texts.reminders, "Stay soft.\n",
         "角色扮演提示照层叠，原样"
     );
-    assert_eq!(found.reminders_from, Some(Layer::System));
+    assert_eq!(found.reminders_from, Some(Layer::Home));
     assert_eq!(found.home, Some(AccountId::parse("admin").unwrap()));
 }
 
@@ -133,12 +127,6 @@ fn a_persona_only_in_the_shipped_layer_lives_in_no_home() {
     assert_eq!(
         (found.texts.reminders.as_str(), found.reminders_from),
         ("", None)
-    );
-    places.write(Layer::System, "shared", "prompts/persona.md", "y\n");
-    assert_eq!(
-        places.personas.find("shared").unwrap().home,
-        None,
-        "系统区的也不住在谁家"
     );
     // 家目录里只有一个空目录，也算住在那里。
     fs::create_dir_all(places.scratch.path().join("data/home/admin/personas/bare")).unwrap();
@@ -189,11 +177,11 @@ fn a_wrong_file_says_which_layer_and_line() {
         error.to_string(),
         "home prompts/examples.md:2: user and assistant must take turns"
     );
-    places.write(Layer::System, "other", "persona.toml", "[voice]\n");
+    places.write(Layer::Home, "other", "persona.toml", "[voice]\n");
     let error = places.personas.find("other").unwrap_err();
     assert_eq!(
         error.to_string(),
-        "system persona.toml:1: unknown table [voice]"
+        "home persona.toml:1: unknown table [voice]"
     );
 }
 
@@ -204,7 +192,7 @@ fn ids_come_from_every_layer_once_in_order() {
     places.write(Layer::Shipped, "engineer", "prompts/persona.md", "x\n");
     places.write(Layer::Home, "miyu", "prompts/persona.md", "y\n");
     places.write(Layer::Home, "engineer", "persona.toml", "");
-    places.write(Layer::System, "Bad Name", "persona.toml", "");
+    places.write(Layer::Home, "Bad Name", "persona.toml", "");
     fs::write(
         places.scratch.path().join("data/home/admin/personas/loose"),
         "x",
@@ -247,7 +235,7 @@ fn every_layer_is_checked_on_its_own() {
     places.write(Layer::Shipped, "miyu", "persona.toml", "[voice]\n");
     places.write(Layer::Home, "miyu", "persona.toml", "[persona]\n");
     places.write(Layer::Home, "miyu", "prompts/examples.md", "user: a\n");
-    places.write(Layer::System, "fine", "prompts/persona.md", "x\n");
+    places.write(Layer::Home, "fine", "prompts/persona.md", "x\n");
     let found = places.personas.check();
     let seen: Vec<(Layer, String, &'static str)> = found
         .iter()
@@ -304,11 +292,19 @@ fn every_layer_is_checked_on_its_own() {
     let missing = places
         .scratch
         .path()
-        .join("data/system/personas/fine/persona.toml");
+        .join("data/home/admin/personas/fine/persona.toml");
     let checked = places.personas.check_file(&missing).expect("是人格的文件");
     assert!(
         matches!(checked[0].issue, Issue::Unreadable(_)),
         "写了文件的，没有就是读不了"
+    );
+    let system = places
+        .scratch
+        .path()
+        .join("data/system/personas/fine/persona.toml");
+    assert!(
+        places.personas.check_file(&system).is_none(),
+        "系统区不再是人格的一层（施工 SU-3 下）"
     );
     // 经链接传的路径照样认得（macOS 的 `/var` 是链接，CI 撞见过）。
     #[cfg(unix)]
@@ -367,7 +363,7 @@ fn nothing_ships_with_the_core() {
     }
 }
 
-/// 包带的那一层在出厂的和系统区的中间（施工 P-11 上，设计 31 第十节第 2 条）：系统区、家目录写了同名的就是改它。
+/// 包带的那一层在出厂的和家目录的中间（施工 P-11 上，设计 31 第十节第 2 条）：家目录写了同名的就是改它。
 #[test]
 fn a_package_persona_sits_between_shipped_and_system() {
     let places = Places::new();
@@ -384,16 +380,16 @@ fn a_package_persona_sits_between_shipped_and_system() {
         "package persona\n",
     );
     places.write(
-        Layer::System,
+        Layer::Home,
         "cat",
         "persona.toml",
-        "[persona]\nsummary = \"System.\"\n",
+        "[persona]\nsummary = \"Mine.\"\n",
     );
     places.write(Layer::Home, "cat", "prompts/persona.md", "my cat\n");
     let found = places.personas.find("cat").unwrap();
-    assert_eq!(found.layers, [Layer::Package, Layer::System, Layer::Home]);
+    assert_eq!(found.layers, [Layer::Package, Layer::Home]);
     assert_eq!(found.file.name.unwrap().pick("en"), Some("Cat"));
-    assert_eq!(found.file.summary.unwrap().pick("en"), Some("System."));
+    assert_eq!(found.file.summary.unwrap().pick("en"), Some("Mine."));
     assert_eq!(found.texts.persona, "my cat\n");
     assert_eq!(found.persona_from, Some(Layer::Home));
     assert_eq!(found.home, Some(AccountId::parse("admin").unwrap()));

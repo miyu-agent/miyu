@@ -39,7 +39,6 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/presets",
             Layer::Package => "pkgs/a/presets",
-            Layer::System => "data/system/presets",
             Layer::Home => "data/home/admin/presets",
         };
         self.scratch.path().join(base)
@@ -60,21 +59,16 @@ fn the_layers_stack_field_by_field() {
     let places = Places::new();
     places.write(Layer::Shipped, "dev.toml", DEV);
     places.write(
-        Layer::System,
-        "dev.toml",
-        "[preset]\nname = { zh = \"大家的开发\" }\n",
-    );
-    places.write(
         Layer::Home,
         "dev.toml",
-        "[preset]\nunlisted = \"on\"\n\n[software]\nnet = false\n\n[tools]\nshell = false\n",
+        "[preset]\nname = { zh = \"我的开发\" }\nunlisted = \"on\"\n\n[software]\nnet = false\n\n[tools]\nshell = false\n",
     );
     let found = places.presets.find("dev").unwrap();
     assert_eq!(found.id, "dev");
-    assert_eq!(found.layers, [Layer::Shipped, Layer::System, Layer::Home]);
+    assert_eq!(found.layers, [Layer::Shipped, Layer::Home]);
     assert_eq!(
         found.file.name.as_ref().and_then(|name| name.pick("en")),
-        Some("大家的开发"),
+        Some("我的开发"),
         "写了名字的一层整格换掉（施工 P-3 补）"
     );
     assert_eq!(found.file.unlisted(), Unlisted::On);
@@ -107,7 +101,7 @@ fn missing_bad_and_broken_ones_say_why() {
     }
     places.write(Layer::Shipped, "dev.toml", DEV);
     places.write(
-        Layer::System,
+        Layer::Home,
         "dev.toml",
         "[preset]\n\nunlisted = \"maybe\"\n",
     );
@@ -117,12 +111,12 @@ fn missing_bad_and_broken_ones_say_why() {
     };
     assert_eq!(
         (*layer, problem.code, problem.line),
-        (Layer::System, Code::BadUnlisted, Some(3))
+        (Layer::Home, Code::BadUnlisted, Some(3))
     );
     assert_eq!(id, "dev");
     assert_eq!(
         error.to_string(),
-        "system dev.toml:3: preset.unlisted must be on or off"
+        "home dev.toml:3: preset.unlisted must be on or off"
     );
     places.write(Layer::Home, "x.toml", "[preset\n");
     let error = places.presets.find("x").unwrap_err();
@@ -138,7 +132,7 @@ fn ids_are_files_named_by_a_valid_id_sorted_and_unique() {
     places.write(Layer::Home, "zed.toml", "");
     places.write(Layer::Home, "Bad.toml", "");
     places.write(Layer::Home, "notes.txt", "");
-    fs::create_dir_all(places.dir(Layer::System).join("dir.toml")).unwrap();
+    fs::create_dir_all(places.dir(Layer::Home).join("dir.toml")).unwrap();
     assert_eq!(places.presets.ids(), ["dev", "full", "zed"]);
     assert!(
         matches!(places.presets.find("dir"), Err(PresetError::NotFound(_))),
@@ -149,8 +143,7 @@ fn ids_are_files_named_by_a_valid_id_sorted_and_unique() {
 #[test]
 fn check_reads_every_layer_and_knows_its_files() {
     let places = Places::new();
-    places.write(Layer::Shipped, "dev.toml", DEV);
-    places.write(Layer::System, "dev.toml", "[preset]\nunlisted = 1\n");
+    places.write(Layer::Shipped, "dev.toml", "[preset]\nunlisted = 1\n");
     places.write(Layer::Home, "dev.toml", "[colors]\n");
     places.write(Layer::Home, "fine.toml", "");
     let checked = places.presets.check();
@@ -164,15 +157,15 @@ fn check_reads_every_layer_and_knows_its_files() {
     assert_eq!(
         seen,
         [
-            (Layer::System, Code::BadUnlisted),
+            (Layer::Shipped, Code::BadUnlisted),
             (Layer::Home, Code::UnknownTable)
         ],
         "上面一层盖住了照样报"
     );
-    let file = places.dir(Layer::System).join("dev.toml");
+    let file = places.dir(Layer::Shipped).join("dev.toml");
     let one = places.presets.check_file(&file).expect("是预设");
     assert_eq!(one.len(), 1);
-    assert_eq!(one[0].layer, Layer::System);
+    assert_eq!(one[0].layer, Layer::Shipped);
     let fine = places.dir(Layer::Home).join("fine.toml");
     assert!(places.presets.check_file(&fine).expect("是预设").is_empty());
     let missing = places.dir(Layer::Home).join("gone.toml");
@@ -340,7 +333,7 @@ fn every_problem_code_is_said_in_three_languages() {
     }
 }
 
-/// 包带的预设在出厂的和系统区的中间，一个编号只认一份（施工 P-11 上，设计 31 第十节第 2、7 条）。
+/// 包带的预设在出厂的和家目录的中间，一个编号只认一份（施工 P-11 上，设计 31 第十节第 2、7 条）。
 #[test]
 fn a_package_preset_sits_between_shipped_and_system() {
     let places = Places::new();

@@ -43,11 +43,11 @@ pub(crate) struct Fence {
 }
 
 impl Fence {
-    /// 数据根 `root` 里账号 `account` 的：家目录自己放东西的几处（[`DataRoot::own_places`]），加系统区放技能、脚本、包的三处（施工
-    /// Y-2 中上，[`DataRoot::system_places`]：所有账号都读得到）。
+    /// 数据根 `root` 里账号 `account` 的：家目录自己放东西的几处（[`DataRoot::own_places`]），加装上的包那一处（施工 U23 上上，
+    /// [`DataRoot::real_system_packages`]；系统区放技能、脚本的两处施工 SU-3 下拿掉）。
     pub(crate) fn of(root: &DataRoot, account: &AccountId) -> Fence {
         let mut own = root.own_places(account);
-        own.extend(root.system_places());
+        own.push(root.real_system_packages());
         Fence {
             own,
             root: Some(real(root.path())),

@@ -26,13 +26,8 @@ prepare = true
 # Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.
 idle_exit = 0
 
-[external]
-# My platform accounts: Which platform identities are you, for example qq:10001. Only counts on the chat platforms you connect yourself.
-# Allowed: a list of text of at most 128 characters. Only in the system config. Takes effect immediately.
-# me =
-
 [external.bindings]
-# Terminal admin's platform accounts: Which platform identity is which local account. The key is the platform identity (for example qq:10001), the value is the local account. In private chats that identity is that account itself.
+# My platform accounts: Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect immediately.
 # "<external>" =
 

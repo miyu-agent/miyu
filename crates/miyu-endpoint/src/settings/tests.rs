@@ -31,12 +31,14 @@ fn a_chosen_language_wins_over_the_system() {
     assert_eq!(chosen("en").language_for(Some("ja_JP.UTF-8")), "en");
 }
 
-/// 自己的平台身份（施工 BD-1）在起来时就认的那几项里，写在系统配置（施工 SU-3 上：个人设置并进来了）。
+/// 主人的平台账号在起来时就认的那几项里，写在系统配置；`external.me` 并进来了（施工 SU-3 下）。
 #[test]
-fn own_platform_numbers_are_a_setting_known_from_the_start() {
-    let item = super::core_items()
-        .into_iter()
-        .find(|item| item.key == "external.me")
+fn owner_platform_numbers_are_a_setting_known_from_the_start() {
+    let items = super::core_items();
+    let item = items
+        .iter()
+        .find(|item| item.key == "external.bindings.<external>")
         .expect("在");
     assert_eq!(item.layers, [miyu_config::Layer::System]);
+    assert!(items.iter().all(|item| item.key != "external.me"));
 }

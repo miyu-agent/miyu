@@ -33,7 +33,10 @@ fn say(words: &str) -> Command {
 #[tokio::test]
 async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
     let (root, dir) = temp_root("delete");
-    miyu_session::testkit::install_sample_persona(&root);
+    miyu_session::testkit::install_sample_persona(
+        &root,
+        &AccountId::parse("alice").expect("合写法"),
+    );
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");

@@ -7,10 +7,9 @@ use serde_json::{Value, json};
 
 use crate::attach::png;
 use crate::support::*;
-use miyu_session::testkit::Script;
 
 async fn connected(home: &Home) -> Client {
-    let mut client = Client::connect(home.core(&Script::new([])));
+    let mut client = Client::connect(crate::support::packaged::core(home));
     client.hello().await;
     client
 }
@@ -34,13 +33,17 @@ async fn set(client: &mut Client, params: Value) -> Value {
     client.call("s", "persona.set", params).await
 }
 
-/// 系统区里的一个人格 `base`：主题色 `#112233`，一张背景图。
+/// 下面那一层（装着的样本包，施工 SU-3 下）里的一个人格 `base`：主题色 `#112233`，一张背景图。
 fn base(home: &Home, background: &[u8]) {
+    crate::support::packaged::samples(home);
     home.write(
-        "system/personas/base/persona.toml",
+        "system/packages/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n\n[appearance]\nseed = \"#112233\"\n",
     );
-    let path = home.root.path().join("system/personas/base/background.png");
+    let path = home
+        .root
+        .path()
+        .join("system/packages/samples/personas/base/background.png");
     std::fs::write(path, background).expect("写得进");
 }
 

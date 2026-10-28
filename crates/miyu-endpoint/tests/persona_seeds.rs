@@ -37,16 +37,16 @@ async fn the_avatar_gives_its_seeds_and_a_new_avatar_new_ones() {
     let home = Home::new();
     let red = picture(48, [200, 30, 40, 255], [30, 60, 210, 255]);
     home.write(
-        "system/personas/base/persona.toml",
+        "home/alice/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n",
     );
     std::fs::write(
-        home.root.path().join("system/personas/base/avatar.png"),
+        home.root.path().join("home/alice/personas/base/avatar.png"),
         &red,
     )
     .expect("写得进");
     home.write(
-        "system/personas/bare/persona.toml",
+        "home/alice/personas/bare/persona.toml",
         "[persona]\nname = \"空\"\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -111,13 +111,13 @@ async fn the_avatar_gives_its_seeds_and_a_new_avatar_new_ones() {
 async fn an_avatar_that_does_not_decode_has_no_seeds() {
     let home = Home::new();
     home.write(
-        "system/personas/base/persona.toml",
+        "home/alice/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n",
     );
     // 头只有 PNG 的开头：版本照样有，解不开，候选是 null。
     let head = crate::attach::png(32, 32);
     std::fs::write(
-        home.root.path().join("system/personas/base/avatar.png"),
+        home.root.path().join("home/alice/personas/base/avatar.png"),
         &head,
     )
     .expect("写得进");

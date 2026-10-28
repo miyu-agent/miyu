@@ -19,7 +19,6 @@ use crate::refusal::Refusal;
 use crate::sessions::Opening;
 
 mod bridge;
-mod me;
 mod message;
 mod plugins;
 mod records;
@@ -265,11 +264,7 @@ pub(crate) fn speaker(
     params: AsParams,
 ) -> Result<By, Refusal> {
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
-    // 属主自己写的号是他本人（施工 BD-1）；别的照主人的表。
-    let account = match me::claims(core, owner, &id) {
-        true => Some(owner.clone()),
-        false => bound(core, &id),
-    };
+    let account = bound(core, &id);
     if account.as_ref() == Some(owner) {
         let mut person = Person::new(owner.clone());
         person.via = Some(id);

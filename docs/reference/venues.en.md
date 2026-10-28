@@ -18,13 +18,11 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 
-**Your own numbers** (construction BD-1): write `external.me = ["qq:12345"]` in settings to say those identities are you: what they say in venue sessions under you is recorded as you. Sessions under a platform bridge ignore it. (SU-3 merges this with the owner bindings.)
-
-**Owner bindings**: the system setting `[external.bindings]`: every platform identity written there is the owner (there is only one owner, so any value counts; an empty one doesn't):
+**Owner bindings**: the system setting `[external.bindings]`: every platform identity written there is the owner (there is only one owner, so any value counts; an empty one doesn't; since SU-3 the old `external.me` is folded in here):
 
 ```toml
 [external.bindings]
-"qq:10001" = "admin"
+"qq:10001" = "owner"
 ```
 
 In a private chat this identity is the owner in person; in a group it's the owner.

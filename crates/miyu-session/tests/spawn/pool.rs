@@ -311,7 +311,7 @@ async fn only_personas_turned_on_for_subagents_are_offered() {
         }
     };
     let cat = (
-        "system/personas/cat/persona.toml",
+        "home/alice/personas/cat/persona.toml",
         "[persona]\nname = \"Cat\"\n",
     );
     let offered = parameters(&[cat]).await;

@@ -274,11 +274,12 @@ async fn personas_are_listed_and_read() {
         "prompts/examples.md",
         "user: a\nassistant: b\nuser: c\nassistant: d\n",
     );
+    // 样本也在家目录（施工 SU-3 下）：改它的 `persona.toml` 是整份换，名字照写上。
     mine(
         &home,
         "engineer",
         "persona.toml",
-        "[persona]\nsummary = { zh = \"我的工程师\" }\n",
+        "[persona]\nname = { zh = \"软件工程师\", en = \"Software Engineer\" }\nsummary = { zh = \"我的工程师\" }\nsubagent = true\n",
     );
     mine(&home, "broken", "persona.toml", "[voice]\n");
     mine(&home, "miyu", "prompts/reminders.md", "Stay soft.\n");

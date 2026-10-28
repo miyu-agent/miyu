@@ -46,7 +46,6 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
         "home/alice/personas/miyu/prompts/examples.md",
         "user: a\nuser: b\n",
     );
-    home.write("system/personas/miyu/prompts/examples.md", "user: a\n");
     let reply = client.call("k1", "check", json!({})).await;
     let problems = reply["result"]["problems"]
         .as_array()
@@ -99,13 +98,6 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
             ),
             (
                 "persona".into(),
-                "system/personas/miyu/prompts/examples.md".into(),
-                "last_line".into(),
-                "error".into(),
-                Some(1)
-            ),
-            (
-                "persona".into(),
                 "home/alice/personas/miyu/persona.toml".into(),
                 "unknown_table".into(),
                 "error".into(),
@@ -121,7 +113,7 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
         ],
         "{reply}"
     );
-    let unknown_table = &problems[4]["message"];
+    let unknown_table = &problems[3]["message"];
     assert_eq!(
         unknown_table,
         "不认识的表 [voice]：persona.toml 里只能有 [persona]、[memory]、[appearance]",

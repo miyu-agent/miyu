@@ -134,7 +134,6 @@ pub(crate) fn source(
     if let Some(service) = miyu_tool::mcp_service(name) {
         return (json!({"kind": "mcp", "id": service, "name": service}), None);
     }
-    // 照会话属主看得到的（施工 U23 中下：成员的是他自己那一层的，和机主的同名也照他的）。
     let scripts = core.scripts_for(owner);
     if let Some(script) = scripts.iter().find(|script| script.head.name == name) {
         let shown = pick(&script.head.display_name, language).unwrap_or_else(|| name.to_string());
@@ -145,7 +144,8 @@ pub(crate) fn source(
         );
     }
     let package = core
-        .catalog_of(owner)
+        .tools
+        .current()
         .package_of(name)
         .map_or_else(|| name.to_string(), str::to_string);
     let (kind, shown) = package_of(core, language, &package);

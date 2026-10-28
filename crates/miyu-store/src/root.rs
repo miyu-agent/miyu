@@ -141,18 +141,6 @@ impl DataRoot {
         OWN_PLACES.iter().map(|dir| home.join(dir)).collect()
     }
 
-    /// 系统区放技能、脚本、装上的包的三处（`system/skills`、`system/scripts`，施工 Y-2 中上；`system/packages`，施工 U23 上上）
-    /// 的真实位置：找的时候所有账号都认链接指到这几处下面的（列目录的围栏）。不算进 [`DataRoot::own_places`]：管理员放行出沙盒的
-    /// 文件得落在自己的地方（装上的包另算，[`DataRoot::real_system_packages`]）。同 `own_places` 照数据根的真实位置接上相对路径。
-    /// 碰磁盘。
-    pub fn system_places(&self) -> Vec<PathBuf> {
-        let system = self.real_system();
-        ["skills", "scripts", "packages"]
-            .iter()
-            .map(|dir| system.join(dir))
-            .collect()
-    }
-
     /// 系统那一层装上的包（[`DataRoot::system_packages`]）的真实位置（施工 U23 上上）：管理员装的，放行出沙盒的文件落在这下面的
     /// 也算管理员管得住（同出厂的包）。碰磁盘。
     pub fn real_system_packages(&self) -> PathBuf {

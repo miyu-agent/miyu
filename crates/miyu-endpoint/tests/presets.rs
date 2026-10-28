@@ -308,14 +308,10 @@ async fn a_session_made_without_titles_says_so() {
 #[tokio::test]
 async fn presets_are_listed_and_read_by_layer() {
     let home = Home::new();
-    home.write(
-        "system/presets/dev.toml",
-        "[preset]\nname = { zh = \"大家的开发\" }\n\n[tools]\ntrash = false\n",
-    );
     mine(
         &home,
         "dev",
-        "[software]\nmemory = true\n\n[features]\nkb = true\n",
+        "[preset]\nname = { zh = \"我的开发\" }\n\n[software]\nmemory = true\n\n[features]\nkb = true\n\n[tools]\ntrash = false\n",
     );
     mine(&home, "broken", "[colors]\n");
     let mut client = connected(configured(&home, &Script::new([]))).await;
@@ -324,7 +320,7 @@ async fn presets_are_listed_and_read_by_layer() {
         listed["result"]["presets"],
         json!([
             {"preset": "broken", "problem": "不认识的表 [colors]：预设文件里只能有 [preset]、[features]、[software]、[tools]", "line": 1},
-            {"preset": "dev", "name": "大家的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box"},
+            {"preset": "dev", "name": "我的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box"},
             {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes"},
             {"preset": "minimal", "name": "极简开发", "summary": "只提供Shell和读写文件的工具，最小化工具集以最大程度发挥 AI 原有的能力。", "icon": "square-terminal"},
             {"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off"},
@@ -335,7 +331,7 @@ async fn presets_are_listed_and_read_by_layer() {
         .call("g1", "preset.get", json!({"preset": "dev"}))
         .await;
     let got = &got["result"];
-    assert_eq!(got["name"], "大家的开发", "照连接的语言挑一句");
+    assert_eq!(got["name"], "我的开发", "照连接的语言挑一句");
     assert!(got.get("layers").is_none(), "来自哪几层不给（施工 P-3 补）");
     assert!(
         got.get("default_persona").is_none(),

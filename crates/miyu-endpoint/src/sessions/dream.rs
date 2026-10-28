@@ -48,7 +48,7 @@ impl Sessions {
             DreamRoom::Session(session) => (None, Some(session)),
         };
         let owner = spec.owner;
-        let shelf = core.shelf_of(&owner);
+        let shelf = core.tools.clone();
         let workspace = "~".to_string();
         let resources = crate::presets::overrides::resources(core, &owner);
         let handle = create(Create {

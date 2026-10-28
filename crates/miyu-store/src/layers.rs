@@ -1,5 +1,5 @@
-//! 人格、预设共用的四层（`docs/blueprint/personas.md`、`presets.md`，`16-人格与预设.md` 第四节，设计 `31-软件包.md` 第十节）：出厂的、
-//! 软件包带的（施工 P-11 上）、系统区的、管理员家目录里的，同名的后面的叠在前面的上面。这里只有层本身、包那一层认哪一份
+//! 人格、预设共用的三层（`docs/blueprint/personas.md`、`presets.md`，`16-人格与预设.md` 第四节，设计 `31-软件包.md` 第十节）：出厂的、
+//! 软件包带的（施工 P-11 上）、主人家目录里的（施工 SU-3 下：系统区那一层拿掉），同名的后面的叠在前面的上面。这里只有层本身、包那一层认哪一份
 //! （`covered`）和两样读盘的小事，各自怎么叠在 `personas`、`presets`。
 
 use std::io;
@@ -12,9 +12,7 @@ pub enum Layer {
     Shipped,
     /// 装着的软件包带的（施工 P-11 上）：包文件夹里的 `personas/`、`presets/`，一个包一处，只读，卸包就没了。
     Package,
-    /// 系统区，管理员给大家的。
-    System,
-    /// 管理员自己的家目录。
+    /// 主人的家目录。
     Home,
 }
 
@@ -24,7 +22,6 @@ impl Layer {
         match self {
             Layer::Shipped => "shipped",
             Layer::Package => "package",
-            Layer::System => "system",
             Layer::Home => "home",
         }
     }

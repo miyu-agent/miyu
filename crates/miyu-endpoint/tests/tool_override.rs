@@ -1,4 +1,4 @@
-//! 工具说明的同名覆盖（施工 OV-1 上）：系统区、自己家目录两层 `tools/<工具>.toml`，自己的压着系统的、一格一格压，开会话的
+//! 工具说明的同名覆盖（施工 OV-1 上）：主人家目录的 `tools/<工具>.toml`（施工 SU-3 下：系统区那一层拿掉），写了的格换上，开会话的
 //! 工具面照它；写坏了的照出厂的，`check` 报；没写覆盖的工具字节不变。
 
 use std::sync::Arc;
@@ -38,7 +38,7 @@ fn parameters(entry: &ToolEntry) -> Value {
 }
 
 #[tokio::test]
-async fn overrides_change_the_face_layer_by_layer_and_bad_ones_are_reported() {
+async fn overrides_change_the_face_and_bad_ones_are_reported() {
     let home = Home::new();
     let program = Program::new();
     let (log, record_step) = record(&home, "each");
@@ -60,10 +60,6 @@ async fn overrides_change_the_face_layer_by_layer_and_bad_ones_are_reported() {
         ]),
     );
     home.write(
-        "system/tools/echo.toml",
-        "description = \"System text.\"\n[parameters.text]\ndescription = \"System param.\"\n",
-    );
-    home.write(
         "home/alice/tools/echo.toml",
         "[parameters.text]\ndescription = \"My param.\"\n",
     );
@@ -83,11 +79,11 @@ async fn overrides_change_the_face_layer_by_layer_and_bad_ones_are_reported() {
     let session = client.create("c1", "~").await;
 
     let echo = tool(&home, &session, "echo");
-    assert_eq!(echo.description, "System text.", "自己的没写的照系统的");
+    assert_eq!(echo.description, "Shipped text.", "没写的照出厂的");
     assert_eq!(
         parameters(&echo)["properties"]["text"]["description"],
         "My param.",
-        "自己的压着系统的"
+        "写了的换上"
     );
     for shipped in ["broken", "missing"] {
         let entry = tool(&home, &session, shipped);

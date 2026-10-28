@@ -1,4 +1,4 @@
-//! 包带的人格、预设（施工 P-11 下，设计 `31-软件包.md` 第十节第 4、6 条）：装之前和几层里有的比；卸了以后系统区、家目录里
+//! 包带的人格、预设（施工 P-11 下，设计 `31-软件包.md` 第十节第 4、6 条）：装之前和几层里有的比；卸了以后家目录里
 //! 同名的改动留着，记一笔是哪个包留下的（`miyu_store::packages::leftovers`），重装时不算撞，`miyu check` 提示。
 
 use std::path::{Path, PathBuf};
@@ -13,7 +13,7 @@ use miyu_store::packages::leftovers::Leftovers;
 use super::packages;
 use crate::Core;
 
-/// 装包 `id` 之前比的几层（`conflicts` 的 `layers`）：人格、预设的编号在出厂、系统区、家目录里有的那几层。不算的：这个包以前
+/// 装包 `id` 之前比的几层（`conflicts` 的 `layers`）：人格、预设的编号在出厂、家目录里有的那几层。不算的：这个包以前
 /// 卸掉时留下的改动（重装它，它接着叠在下面）；升级时装着的这一份已经带着的（同 F-8 六补「升级不和自己比」，改动就是改它的）。
 /// 碰磁盘，调的一方放在阻塞线程里调它交回的那一个。
 pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer> + Send + 'static {
@@ -46,7 +46,7 @@ pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer>
     }
 }
 
-/// 卸包 `id`（文件夹 `dir`）时要记的：它带的人格、预设里系统区、家目录还有改动的。交回的那一个碰磁盘，在包目录删掉之前调，
+/// 卸包 `id`（文件夹 `dir`）时要记的：它带的人格、预设里家目录还有改动的。交回的那一个碰磁盘，在包目录删掉之前调，
 /// 卸成了再 [`Left::keep`]。
 pub(super) fn noting(core: &Core, id: &str, dir: &Path) -> impl FnOnce() -> Left + Send + 'static {
     let (personas, presets) = (
@@ -56,11 +56,7 @@ pub(super) fn noting(core: &Core, id: &str, dir: &Path) -> impl FnOnce() -> Left
     let state = packages(core).state_root().to_path_buf();
     let (id, dir) = (id.to_string(), dir.to_path_buf());
     move || {
-        let edited = |layers: Vec<Layer>| {
-            layers
-                .iter()
-                .any(|layer| matches!(layer, Layer::System | Layer::Home))
-        };
+        let edited = |layers: Vec<Layer>| layers.iter().any(|layer| matches!(layer, Layer::Home));
         let personas = miyu_store::personas::carried(&dir)
             .into_iter()
             .filter(|one| edited(personas.layers_with(one)))
@@ -116,8 +112,8 @@ pub(super) fn back(core: &Core, id: &str) -> impl FnOnce() + Send + 'static {
     }
 }
 
-/// `miyu check` 的提示（施工 P-11 下）：记着的、包没装着、系统区或家目录里还有的人格、预设，一条一个，`persona_left`、
-/// `preset_left`，`file` 是那一份改动在哪（家目录的先于系统区）。
+/// `miyu check` 的提示（施工 P-11 下）：记着的、包没装着、家目录里还有的人格、预设，一条一个，`persona_left`、
+/// `preset_left`，`file` 是那一份改动在哪（主人家目录里）。
 pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
     let (personas, presets) = (
         crate::personas::personas(core, &core.admin),
@@ -129,10 +125,7 @@ pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
         .iter()
         .map(|one| one.id.clone())
         .collect();
-    let dirs = [
-        (Layer::Home, core.root.account_dir(&core.admin)),
-        (Layer::System, core.root.system()),
-    ];
+    let dirs = [(Layer::Home, core.root.account_dir(&core.admin))];
     let found = tokio::task::spawn_blocking(move || {
         let left = Leftovers::read(&state);
         // 一笔：哪一样、编号、包、那一份改动在哪；包又装着了的、改动删掉了的不算。

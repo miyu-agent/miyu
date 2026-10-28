@@ -26,18 +26,17 @@ use picture::Picture;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 账号 `account` 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、系统区、它自己的家目录（施工 Y-2 中上，`scope.rs`；
-/// 原来一律是管理员的家目录）。系统账号没有自己的一层，记忆归管理员（施工 O-4 下）。
+/// 账号 `account` 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
+/// 谁调都是主人那一份）。系统账号的会话记忆归主人（施工 O-4 下）。
 pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
-    let scope = crate::scope::scope(core, account);
-    Personas::new(&core.resources, &core.root, &scope.user)
+    Personas::new(&core.resources, &core.root, &core.admin)
         .with_packages(&crate::packages::folders(core, account))
         .with_system_accounts(core.system_accounts())
         .with_keeper(core.admin.clone())
 }
 
 /// 找新会话的人格（施工 P-4 上，2026-10-08 项目主人：「人格允许为空」）：`wanted` 写了编号的是它，写了 `null` 的
-/// （`Some(None)`）明着无人格；不写的照这时的 `persona.default`（个人设置压着系统配置），都没写的是无人格。明着写了没有的
+/// （`Some(None)`）明着无人格；不写的照这时的 `persona.default`（系统配置），都没写的是无人格。明着写了没有的
 /// 拒绝；默认人格指着没有的当没设、记一行 `WARN`：配置是以前写的，人格可能后来删了。在阻塞线程里读盘。
 pub(crate) async fn resolve(
     core: &Core,

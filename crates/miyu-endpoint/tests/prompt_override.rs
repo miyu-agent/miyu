@@ -1,5 +1,5 @@
-//! 提示词的同名覆盖（施工 OV-1 中）：`home/<账号>/prompts/<路径>` 压着 `system/prompts/<路径>` 压着出厂的，开会话拼 system 时
-//! 照它；占位不对、不是英文的照下一层，`check` 报。
+//! 提示词的同名覆盖（施工 OV-1 中）：`home/<账号>/prompts/<路径>` 压着出厂的（施工 SU-3 下：系统区那一层拿掉），开会话拼 system
+//! 时照它；占位不对、不是英文的照出厂的，`check` 报。
 
 use serde_json::json;
 
@@ -30,14 +30,6 @@ fn system(home: &Home, session: &str) -> String {
 async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
     let home = Home::new();
     home.write(
-        "system/prompts/core/agent-version.txt",
-        "Running on miyu-agent {version}.\n",
-    );
-    home.write(
-        "system/prompts/core/local-paths-rule.txt",
-        "System rule for local paths.\n",
-    );
-    home.write(
         "home/alice/prompts/core/local-paths-rule.txt",
         "Always write absolute paths for local files.\n",
     );
@@ -50,8 +42,8 @@ async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
     let session = client.create("c1", "~").await;
     let text = system(&home, &session);
     assert!(
-        text.contains("Running on miyu-agent "),
-        "自己的占位不对，照系统的：{text}"
+        text.contains("You run in miyu-agent "),
+        "自己的占位不对，照出厂的：{text}"
     );
     assert!(!text.contains("No placeholder here."), "{text}");
     assert!(
@@ -61,10 +53,6 @@ async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
     assert!(
         !text.contains("When a reply links or embeds"),
         "出厂的被盖掉了：{text}"
-    );
-    assert!(
-        !text.contains("System rule for local paths."),
-        "自己的压着系统的：{text}"
     );
 
     let checked = client.call("k1", "check", json!({})).await;

@@ -132,7 +132,7 @@ fn checked(
         .collect();
     let installed = crate::scripts::features(core, account);
     let taken = |id: &str| installed.iter().any(|feature| feature.id == id) && !mine.contains(id);
-    let catalog = core.catalog_of(account);
+    let catalog = core.tools.current();
     let own = |tool: &str| catalog.package_of(tool) == Some(package);
     let mut seen = BTreeSet::new();
     let mut offers = Vec::with_capacity(offered.len());

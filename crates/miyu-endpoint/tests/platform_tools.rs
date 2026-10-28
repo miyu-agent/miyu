@@ -192,11 +192,9 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
     let text = read(&manifest) + "\n[connection]\nplatform = [\"qq\", \"tg\"]\n";
     std::fs::write(&manifest, text).expect("写得进");
     home.write(
-        "system/presets/off.toml",
+        "home/alice/presets/off.toml",
         "[preset]\nname = { en = \"Off\" }\n\n[software]\nbridge = false\n\n[tools]\nnote = false\n",
     );
-    // 机主自己的号写在个人设置里（施工 BD-1）：平台桥名下的会话不认，照旧是外部身份。
-    home.write("system/config.toml", "[external]\nme = [\"tg:5\"]\n");
     let core = served_core_with(
         &home,
         &Script::new([Play::Says("一。"), Play::Says("二。")]),

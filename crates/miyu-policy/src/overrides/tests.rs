@@ -1,4 +1,4 @@
-//! 工具说明的同名覆盖（施工 OV-1 上）：读、叠、换进工具面；写坏了的说为什么。
+//! 工具说明的同名覆盖（施工 OV-1 上）：读、换进工具面；写坏了的说为什么。
 
 use super::*;
 use miyu_kernel::raw::RawJson;
@@ -23,21 +23,13 @@ fn entry() -> ToolEntry {
 fn an_override_replaces_only_what_it_writes() {
     let mine = ToolOverride::parse("[parameters.path]\ndescription = \"Absolute path only.\"\n")
         .expect("读得懂");
-    let system = ToolOverride::parse(
-        "description = \"Read a text file.\"\n[parameters.path]\ndescription = \"Any path.\"\n",
-    )
-    .expect("读得懂");
-    let merged = mine.over(system);
     let mut tool = entry();
-    merged.apply(&mut tool).expect("换得进");
-    assert_eq!(
-        tool.description, "Read a text file.",
-        "自己的没写的照系统的"
-    );
+    mine.apply(&mut tool).expect("换得进");
+    assert_eq!(tool.description, "Read a file.", "没写的照出厂的");
     let schema: serde_json::Value = serde_json::from_str(tool.parameters.get()).unwrap();
     assert_eq!(
         schema["properties"]["path"]["description"], "Absolute path only.",
-        "自己的压着系统的"
+        "写了的换上"
     );
     assert_eq!(
         schema["properties"]["limit"],
@@ -90,11 +82,4 @@ fn bad_files_say_why() {
             .expect_err("太长")
             .contains("too long")
     );
-}
-
-#[test]
-fn the_upper_layer_s_description_wins() {
-    let mine = ToolOverride::parse("description = \"Mine.\"\n").expect("读得懂");
-    let system = ToolOverride::parse("description = \"System.\"\n").expect("读得懂");
-    assert_eq!(mine.over(system).description.as_deref(), Some("Mine."));
 }

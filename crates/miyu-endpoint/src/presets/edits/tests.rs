@@ -1,4 +1,4 @@
-//! 文件改动的版本（施工 OV-1 下）：账号的号是他那一层和系统区的最后一下；改了的文件照先后、不重，只给他和系统区的；多的说还有几个。
+//! 文件改动的版本（施工 OV-1 下）：号是家目录的最后一下；改了的文件照先后、不重；多的说还有几个。
 
 use super::*;
 
@@ -7,40 +7,32 @@ fn account(name: &str) -> AccountId {
 }
 
 #[test]
-fn versions_and_changed_files_follow_the_layers() {
+fn versions_and_changed_files_are_counted() {
     let edits = Edits::default();
-    let (alice, bob) = (account("alice"), account("bob"));
+    let alice = account("alice");
     assert_eq!(edits.version(&alice), 0);
-    edits.record(
-        Some(alice.clone()),
-        "home/alice/prompts/core/a.txt".to_string(),
-    );
-    edits.record(Some(bob.clone()), "home/bob/tools/read.toml".to_string());
-    edits.record(None, "system/presets/full.toml".to_string());
-    edits.record(
-        Some(alice.clone()),
-        "home/alice/prompts/core/a.txt".to_string(),
-    );
-    assert_eq!(edits.version(&alice), 4);
-    assert_eq!(edits.version(&bob), 3, "系统区的那一下也算");
+    edits.record(alice.clone(), "home/alice/prompts/core/a.txt".to_string());
+    edits.record(alice.clone(), "home/alice/presets/full.toml".to_string());
+    edits.record(alice.clone(), "home/alice/prompts/core/a.txt".to_string());
+    assert_eq!(edits.version(&alice), 3);
     assert_eq!(
         edits.since(&alice, 0, 20),
         (
             vec![
                 "home/alice/prompts/core/a.txt".to_string(),
-                "system/presets/full.toml".to_string()
+                "home/alice/presets/full.toml".to_string()
             ],
             0
         ),
-        "不重、不带别人的"
+        "不重"
     );
     assert_eq!(
-        edits.since(&alice, 3, 20).0,
+        edits.since(&alice, 2, 20).0,
         ["home/alice/prompts/core/a.txt"]
     );
     assert_eq!(
-        edits.since(&bob, 0, 1),
-        (vec!["home/bob/tools/read.toml".to_string()], 1),
+        edits.since(&alice, 0, 1),
+        (vec!["home/alice/prompts/core/a.txt".to_string()], 1),
         "多的说还有几个"
     );
 }
@@ -50,7 +42,7 @@ fn old_changes_out_of_the_table_still_count() {
     let edits = Edits::default();
     let alice = account("alice");
     for n in 0..(KEPT + 5) {
-        edits.record(Some(alice.clone()), format!("home/alice/tools/t{n}.toml"));
+        edits.record(alice.clone(), format!("home/alice/tools/t{n}.toml"));
     }
     let (files, more) = edits.since(&alice, 0, 100);
     assert_eq!(files.len(), KEPT);

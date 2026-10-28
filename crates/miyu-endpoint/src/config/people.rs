@@ -25,12 +25,6 @@ impl Mine<'_> {
 }
 
 impl Core {
-    /// `account` 在主人这一侧（施工 U23 中上）：主人本人，或者包的账号（平台桥、替主人干活的扩展，施工 Y-5 中：场所会话归
-    /// 它们，是主人配的）。看得到主人私人的脚本和 MCP 服务。
-    pub(crate) fn machine_side(&self, account: &AccountId) -> bool {
-        *account == self.admin || self.package_accounts().contains(account)
-    }
-
     /// 配置：只有一份（施工 SU-3 上）。
     pub(crate) fn mine(&self, _account: &AccountId) -> Mine<'_> {
         Mine(self)

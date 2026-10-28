@@ -226,7 +226,10 @@ async fn a_narrowed_persona_writes_only_its_own_and_makes_none() {
         std::fs::create_dir_all(&dir).expect("建得了");
         std::fs::write(dir.join("a.md"), "字\n").expect("写得进");
     }
-    let persona = home.root.system().join("personas/engineer/persona.toml");
+    let persona = home
+        .root
+        .account_dir(&alice_account())
+        .join("personas/engineer/persona.toml");
     std::fs::write(persona, "[knowledge]\nbases = [\"notes\"]\n").expect("写得进");
     let script = Script::new([
         call(
@@ -266,7 +269,10 @@ async fn a_persona_narrowed_to_nothing_it_can_read_gets_no_save_either() {
     let dir = kb(&home).join("secret");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("a.md"), "字\n").expect("写得进");
-    let persona = home.root.system().join("personas/engineer/persona.toml");
+    let persona = home
+        .root
+        .account_dir(&alice_account())
+        .join("personas/engineer/persona.toml");
     std::fs::write(&persona, "[knowledge]\nbases = []\n").expect("写得进");
     let script = Script::new([Play::Says("好。"), Play::Says("嗯。"), Play::Says("哦。")]);
     let handle = session(&home, &script).await;

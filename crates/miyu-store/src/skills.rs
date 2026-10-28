@@ -67,12 +67,7 @@ pub fn own_dir(root: &DataRoot, account: &AccountId) -> PathBuf {
     root.account_dir(account).join("skills")
 }
 
-/// 系统区放技能的文件夹：`system/skills/`（施工 Y-2 中上：所有账号都读得到，排在自己放的后面、软件包前面；写它等管理员模式）。
-pub fn system_dir(root: &DataRoot) -> PathBuf {
-    root.system().join("skills")
-}
-
-/// 找技能：数据根 `root` 里账号 `account` 自己放的、系统区的（施工 Y-2 中上），加装了的软件包 `packages` 里的。照名字排。
+/// 找技能：数据根 `root` 里账号 `account` 自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的。照名字排。
 pub fn find(
     packages: &[Found],
     root: &DataRoot,
@@ -81,8 +76,8 @@ pub fn find(
     let mut skills: Vec<Skill> = Vec::new();
     let mut skipped = Vec::new();
     let own = own_dir(root, account);
-    // 自己放的盖过系统区的（施工 Y-2 中上，同包的 U23）：先到的赢。
-    let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None), (system_dir(root), None)];
+    // 自己放的盖过包里的：先到的赢。
+    let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
     // 出厂的先于家目录，同一层照编号（施工 F-8 六补）：核心升级后出厂的新带了同名的，出厂的赢（设计 31 定了的 J）。
     installed.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));

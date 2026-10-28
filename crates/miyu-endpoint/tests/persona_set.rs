@@ -24,6 +24,14 @@ fn mine(home: &Home, id: &str, file: &str) -> Option<String> {
     .ok()
 }
 
+/// 样本人格在下面那一层（装着的样本包里，施工 SU-3 下），连上照数据根读包的核心。
+async fn below(home: &Home) -> Client {
+    crate::support::packaged::sample_persona_below(home);
+    let mut client = Client::connect(crate::support::packaged::core(home));
+    client.hello().await;
+    client
+}
+
 async fn set(client: &mut Client, id: &str, params: Value) -> Value {
     client.call(id, "persona.set", params).await
 }
@@ -161,7 +169,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
 #[tokio::test]
 async fn read_gives_the_text_and_your_version_which_guards_saving() {
     let home = Home::new();
-    let mut client = connected(&home).await;
+    let mut client = below(&home).await;
     let shipped = read(&mut client, "r1", "engineer", "persona").await;
     assert_eq!(
         shipped,
@@ -222,7 +230,7 @@ async fn read_gives_the_text_and_your_version_which_guards_saving() {
 #[tokio::test]
 async fn unsetting_goes_back_to_the_lower_layer() {
     let home = Home::new();
-    let mut client = connected(&home).await;
+    let mut client = below(&home).await;
     set(
         &mut client,
         "s1",
@@ -342,7 +350,7 @@ async fn mistakes_write_nothing_and_say_why_in_the_peer_language() {
 #[tokio::test]
 async fn deleting_moves_your_layer_into_the_trash() {
     let home = Home::new();
-    let mut client = connected(&home).await;
+    let mut client = below(&home).await;
     let made = set(
         &mut client,
         "s1",

@@ -27,16 +27,15 @@ pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、系统区、它自己的家目录（施工 Y-2 中上，
-/// `scope.rs`；原来一律是管理员的家目录）。
+/// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
+/// 谁调都是主人那一份）。
 pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
-    let scope = crate::scope::scope(core, account);
-    Presets::new(&core.resources, &core.root, &scope.user)
+    Presets::new(&core.resources, &core.root, &core.admin)
         .with_packages(&crate::packages::folders(core, account))
         .with_groups(crate::packages::groups(&core.system_packages()))
 }
 
-/// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（个人设置压着系统配置，都没写的是出厂的 `full`）。指着没有
+/// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（系统配置，都没写的是出厂的 `full`）。指着没有
 /// 的不悄悄换成别的（Y12）。在阻塞线程里读盘。
 pub(crate) async fn resolve(
     core: &Core,

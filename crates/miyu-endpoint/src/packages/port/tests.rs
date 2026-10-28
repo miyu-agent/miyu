@@ -10,13 +10,11 @@ use miyu_tool::Catalog;
 use super::*;
 use crate::test_support::{resources, temp_root};
 
+/// 写进主人家目录里的同名覆盖（施工 SU-3 下：预设只有主人那一份）。
 #[tokio::test]
-async fn opening_in_a_preset_writes_the_owner_s_own_layer() {
+async fn opening_in_a_preset_writes_the_owner_s_override() {
     let (root, dir) = temp_root("open-in");
-    let (alice, bob) = (
-        AccountId::parse("alice").expect("合写法"),
-        AccountId::parse("bob").expect("合写法"),
-    );
+    let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
@@ -28,24 +26,13 @@ async fn opening_in_a_preset_writes_the_owner_s_own_layer() {
     ));
     let port = Port {
         core: Arc::downgrade(&core),
-        owner: bob.clone(),
+        owner: alice.clone(),
     };
     // 出厂的 `dev` 不开没列出来的软件：打开要写进同名覆盖。
-    open_in(&core, (&bob, port.peer(&core)), "dev", "kit").await;
-    let preset = |account: &AccountId| {
-        std::fs::read_to_string(root.account_dir(account).join("presets/dev.toml"))
-            .unwrap_or_default()
-    };
-    assert!(
-        preset(&bob).contains("kit = true"),
-        "写进属主那一层：{}",
-        preset(&bob)
-    );
-    assert!(
-        !preset(&alice).contains("kit"),
-        "机主的不碰：{}",
-        preset(&alice)
-    );
+    open_in(&core, (&alice, port.peer(&core)), "dev", "kit").await;
+    let preset = std::fs::read_to_string(root.account_dir(&alice).join("presets/dev.toml"))
+        .unwrap_or_default();
+    assert!(preset.contains("kit = true"), "写进主人那一份：{preset}");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

@@ -1,5 +1,4 @@
-//! 各管各的（施工 Y-2 中上，设计 06 八又补「每人一个独立的 Miyu，共用的只有系统」）：两个账号直接调底层找的那几样，甲自己放的
-//! 乙读不到；系统区的两人都读得到；同名的甲自己的盖过系统区的。人格、预设、技能、脚本、知识库各一条。
+//! 直接调底层找的那几样只认主人家目录（施工 SU-3 下：系统区那一层拿掉）；知识库、系统账号的记忆照旧各一条（SU-3 末、SU-5 再收）。
 
 use std::fs;
 use std::path::Path;
@@ -33,160 +32,48 @@ fn resources(scratch: &Scratch) -> ResourceRoot {
     ResourceRoot::at(dir)
 }
 
+/// 施工 SU-3 下：系统区放人格、预设、技能、脚本的四处不再读，只认主人家目录里的。
 #[test]
-fn personas_are_ones_own_plus_the_system_area() {
-    let scratch = Scratch::new("scope-personas");
+fn only_the_owner_s_home_is_read_not_the_system_area() {
+    let scratch = Scratch::new("scope-one-layer");
     let root = root_in(&scratch);
     let res = resources(&scratch);
-    let persona =
-        |dir: &Path, id: &str, text: &str| put(&dir.join(id).join("prompts/persona.md"), text);
-    persona(
-        &root.account_dir(&alice()).join("personas"),
-        "mine",
-        "alice's\n",
-    );
-    persona(&root.system().join("personas"), "shared", "system's\n");
-    persona(&root.system().join("personas"), "same", "system's\n");
-    persona(
-        &root.account_dir(&alice()).join("personas"),
-        "same",
-        "alice's\n",
-    );
-    let of = |who: &AccountId| Personas::new(&res, &root, who);
-    assert_eq!(
-        of(&alice()).find("mine").expect("在").texts.persona,
-        "alice's\n"
-    );
-    assert!(of(&bob()).find("mine").is_err(), "甲自己的乙读不到");
-    assert_eq!(
-        of(&bob()).find("shared").expect("在").texts.persona,
-        "system's\n"
-    );
-    assert_eq!(
-        of(&alice()).find("same").expect("在").texts.persona,
-        "alice's\n",
-        "自己的盖过系统区的"
-    );
-    assert_eq!(
-        of(&bob()).find("same").expect("在").texts.persona,
-        "system's\n"
-    );
-}
-
-#[test]
-fn presets_are_ones_own_plus_the_system_area() {
-    let scratch = Scratch::new("scope-presets");
-    let root = root_in(&scratch);
-    let res = resources(&scratch);
-    put(&root.account_dir(&alice()).join("presets/mine.toml"), "");
-    put(&root.system().join("presets/shared.toml"), "");
-    let of = |who: &AccountId| Presets::new(&res, &root, who);
-    assert!(of(&alice()).find("mine").is_ok());
-    assert!(of(&bob()).find("mine").is_err(), "甲自己的乙读不到");
-    assert!(of(&bob()).find("shared").is_ok(), "系统区的两人都读得到");
-    assert!(of(&alice()).find("shared").is_ok());
-}
-
-#[test]
-fn skills_are_ones_own_then_the_system_area() {
-    let scratch = Scratch::new("scope-skills");
-    let root = root_in(&scratch);
-    let skill = |dir: &Path, name: &str, description: &str| {
+    let home = root.account_dir(&alice());
+    let system = root.system();
+    for base in [&home, &system] {
+        let name = if *base == home { "mine" } else { "shared" };
         put(
-            &dir.join(name).join("SKILL.md"),
-            &format!("---\nname: {name}\ndescription: {description}\n---\nbody\n"),
+            &base.join("personas").join(name).join("prompts/persona.md"),
+            "x\n",
         );
-    };
-    skill(
-        &miyu_store::skills::own_dir(&root, &alice()),
-        "mine",
-        "Alice's.",
-    );
-    skill(
-        &miyu_store::skills::system_dir(&root),
-        "shared",
-        "System's.",
-    );
-    skill(&miyu_store::skills::system_dir(&root), "same", "System's.");
-    skill(
-        &miyu_store::skills::own_dir(&root, &alice()),
-        "same",
-        "Alice's.",
-    );
-    let of = |who: &AccountId| {
-        miyu_store::skills::find(&[], &root, who)
-            .0
-            .into_iter()
-            .map(|skill| (skill.head.name, skill.head.description))
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(
-        of(&alice()),
-        [
-            ("mine".to_string(), "Alice's.".to_string()),
-            ("same".to_string(), "Alice's.".to_string()),
-            ("shared".to_string(), "System's.".to_string()),
-        ],
-        "自己的盖过系统区同名的"
-    );
-    assert_eq!(
-        of(&bob()),
-        [
-            ("same".to_string(), "System's.".to_string()),
-            ("shared".to_string(), "System's.".to_string()),
-        ],
-        "乙只读得到系统区的"
-    );
-}
-
-#[test]
-fn scripts_are_ones_own_then_the_system_area() {
-    let scratch = Scratch::new("scope-scripts");
-    let root = root_in(&scratch);
-    let script = |dir: &Path, name: &str, description: &str| {
+        put(&base.join("presets").join(format!("{name}.toml")), "");
         put(
-            &dir.join(format!("{name}.sh")),
-            &format!("#!/bin/sh\n# Description: {description}\necho hi\n"),
+            &base.join("skills").join(name).join("SKILL.md"),
+            &format!("---\nname: {name}\ndescription: D.\n---\nbody\n"),
         );
-    };
-    script(
-        &miyu_store::scripts::own_dir(&root, &alice()),
-        "mine",
-        "Alice's.",
-    );
-    script(
-        &miyu_store::scripts::system_dir(&root),
-        "shared",
-        "System's.",
-    );
-    script(&miyu_store::scripts::system_dir(&root), "same", "System's.");
-    script(
-        &miyu_store::scripts::own_dir(&root, &alice()),
-        "same",
-        "Alice's.",
-    );
-    let of = |who: &AccountId| {
-        miyu_store::scripts::find(&[], &root, who)
-            .0
-            .into_iter()
-            .map(|script| (script.head.name, script.head.description))
-            .collect::<Vec<_>>()
-    };
-    assert_eq!(
-        of(&alice()),
-        [
-            ("mine".to_string(), "Alice's.".to_string()),
-            ("same".to_string(), "Alice's.".to_string()),
-            ("shared".to_string(), "System's.".to_string()),
-        ]
-    );
-    assert_eq!(
-        of(&bob()),
-        [
-            ("same".to_string(), "System's.".to_string()),
-            ("shared".to_string(), "System's.".to_string()),
-        ]
-    );
+        put(
+            &base.join("scripts").join(format!("{name}.sh")),
+            "#!/bin/sh\n# Description: D.\necho hi\n",
+        );
+    }
+    let personas = Personas::new(&res, &root, &alice());
+    assert!(personas.find("mine").is_ok());
+    assert!(personas.find("shared").is_err(), "系统区的人格不读");
+    let presets = Presets::new(&res, &root, &alice());
+    assert!(presets.find("mine").is_ok());
+    assert!(presets.find("shared").is_err(), "系统区的预设不读");
+    let skills: Vec<String> = miyu_store::skills::find(&[], &root, &alice())
+        .0
+        .into_iter()
+        .map(|skill| skill.head.name)
+        .collect();
+    assert_eq!(skills, ["mine"], "系统区的技能不读");
+    let scripts: Vec<String> = miyu_store::scripts::find(&[], &root, &alice())
+        .0
+        .into_iter()
+        .map(|script| script.head.name)
+        .collect();
+    assert_eq!(scripts, ["mine"], "系统区的脚本不读");
 }
 
 #[test]

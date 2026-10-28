@@ -1,6 +1,6 @@
 //! 人格在哪、几层怎么叠（施工 P-1 上，`docs/blueprint/personas.md`，`16-人格与预设.md` 第四节）：出厂的
 //! `<资源目录>/personas/<编号>/`、装着的软件包带的 `<包文件夹>/personas/<编号>/`（施工 P-11 上，一个编号只认一份，
-//! `layers::covered`）、系统区 `system/personas/<编号>/`、管理员家目录 `home/<管理员>/personas/<编号>/`，同名的后面
+//! `layers::covered`）、主人家目录 `home/<主人>/personas/<编号>/`（施工 SU-3 下：系统区那一层拿掉），同名的后面
 //! 的叠在前面的上面：`persona.toml` 逐项盖，`prompts/` 里的文件同名替换、没写的沿用。读法同配置文件：只有本人写自己的
 //! 家目录，顺着链接读。文件怎么读成样子在 `miyu_policy::persona`。
 
@@ -124,7 +124,6 @@ impl Personas {
         Personas {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("personas")),
-                (Layer::System, root.system().join("personas")),
                 (Layer::Home, root.account_dir(admin).join("personas")),
             ],
             admin: admin.clone(),

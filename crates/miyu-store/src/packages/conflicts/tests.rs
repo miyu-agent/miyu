@@ -274,7 +274,7 @@ fn personas_and_presets_conflict_with_packages_and_layers() {
         ],
     );
     let layers = |kind: Kind, name: &str| match (kind, name) {
-        (Kind::Persona, "dog") => vec![Place::System, Place::Home],
+        (Kind::Persona, "dog") => vec![Place::Home],
         (Kind::Preset, "work") => vec![Place::Shipped],
         _ => Vec::new(),
     };
@@ -288,7 +288,6 @@ fn personas_and_presets_conflict_with_packages_and_layers() {
         found,
         [
             ("persona", "cat".to_string(), "kit".to_string()),
-            ("persona", "dog".to_string(), "system".to_string()),
             ("persona", "dog".to_string(), "home".to_string()),
             ("preset", "cozy".to_string(), "kit".to_string()),
             ("preset", "work".to_string(), "shipped".to_string()),

@@ -182,8 +182,16 @@ impl Core {
             on: Arc::new(made),
             missed: Arc::new(missed),
         };
-        // 各人那一层跟着重找（施工 U23 中下：装卸包会让他那一层的包变）。
-        self.refresh_own_shelves();
+    }
+
+    /// `account` 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：核心登记的全部，关了的包带的不算（施工 U23 末上）。
+    pub(crate) fn scripts_for(&self, account: &AccountId) -> Vec<Script> {
+        let off = self.packages_off(account);
+        self.scripts()
+            .iter()
+            .filter(|script| !off.contains(package(script)))
+            .cloned()
+            .collect()
     }
 }
 
@@ -193,12 +201,8 @@ pub(crate) fn package(script: &Script) -> &str {
 }
 
 /// 交给属主是 `owner` 的会话的功能：装了的，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的
-/// 工具名；个人设置里的 MCP 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到
+/// 工具名；系统配置里的 MCP 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到
 /// 工具：那个服务不起，目录里没有挂在那个包下的工具。
-///
-/// 挂在 [`HOME_PACKAGE`] 下的（机主家目录里放的脚本、个人设置里的 MCP 服务）是机主私人的（施工 U23 中上）：只给机主这一侧的
-/// 会话（[`Core::machine_side`]：机主的、包的账号的，场所会话是机主配的）；别人的会话不列它们，列他自己那一层的（施工 U23 中下，
-/// [`Core::scripts_for`]：他的工具目录架子里机主的 `~home` 已经拿掉、放进了他的）。
 pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     // 照他看得到的包（施工 U23 末上：关了的不在）。
     let packaged = crate::packages::features(&core.packages_of(owner));
@@ -206,12 +210,6 @@ pub(crate) fn features(core: &Core, owner: &AccountId) -> Features {
     let connections = packaged.connections().clone();
     let mut list: Vec<Feature> = packaged.iter().cloned().collect();
     list.extend(core.scripts_for(owner).iter().map(script_feature));
-    if !core.machine_side(owner) {
-        return Features::new(list)
-            .needing_images(images)
-            .connecting(connections)
-            .offering(core.extensions.offers.features_of(owner));
-    }
     list.extend(core.home_mcp.now().iter().map(|server| Feature {
         id: server.feature_id(),
         package: HOME_PACKAGE.to_string(),

@@ -1,8 +1,9 @@
 //! 测试用的人格样本（施工 P-4 下：出厂不带人格）：`docs/designs/samples/personas/engineer/`，原来出厂的软件工程师。要人格的
-//! 测试把它装进数据根的系统区那一层，照旧用编号 `engineer`；系统区的人格记忆归会话的属主，和原来出厂的一样。
+//! 测试把它装进主人的家目录（施工 SU-3 下：系统区那一层拿掉），照旧用编号 `engineer`。
 
 use std::path::{Path, PathBuf};
 
+use miyu_kernel::id::AccountId;
 use miyu_policy::PersonaTexts;
 use miyu_store::root::DataRoot;
 
@@ -28,15 +29,18 @@ pub fn sample_persona_texts() -> PersonaTexts {
     }
 }
 
-/// 把样本装进数据根 `root` 的系统区那一层：`system/personas/engineer/`。
+/// 把样本装进数据根 `root` 里主人 `owner` 的家目录：`home/<主人>/personas/engineer/`。
 ///
 /// # Panics
 ///
 /// 写不进临时数据根。
-pub fn install_sample_persona(root: &DataRoot) {
+pub fn install_sample_persona(root: &DataRoot, owner: &AccountId) {
     copy(
         &sample_persona_dir(),
-        &root.system().join("personas").join(SAMPLE_PERSONA),
+        &root
+            .account_dir(owner)
+            .join("personas")
+            .join(SAMPLE_PERSONA),
     );
 }
 

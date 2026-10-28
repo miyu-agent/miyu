@@ -1,5 +1,5 @@
-//! 工具说明的同名覆盖（施工 OV-1 上，设计 00 第五节「可自定义」、`25-工具加载.md` W7）：`<层>/tools/<工具>.toml` 只写改了的项，
-//! 自己的压着系统的，都没写的照出厂。纯逻辑：读成一份、两份叠起来、换进工具面上的那一件；文件在哪由存储那一层找。
+//! 工具说明的同名覆盖（施工 OV-1 上，设计 00 第五节「可自定义」、`25-工具加载.md` W7）：`tools/<工具>.toml` 只写改了的项，没写的
+//! 照出厂。纯逻辑：读成一份、换进工具面上的那一件；文件在哪由存储那一层找（施工 SU-3 下起只有主人家目录一处，不再两份叠）。
 //!
 //! ```toml
 //! description = "Read a file. ..."
@@ -58,14 +58,6 @@ impl ToolOverride {
             }
         }
         Ok(read)
-    }
-
-    /// 叠在 `lower` 上面：写了的格盖掉，参数一个个盖。
-    #[must_use]
-    pub fn over(self, mut lower: ToolOverride) -> ToolOverride {
-        lower.description = self.description.or(lower.description);
-        lower.parameters.extend(self.parameters);
-        lower
     }
 
     /// 换进工具面上的 `entry`：参数说明改进参数格式里那个参数的 `description`。参数格式里没有这个参数的交回为什么，`entry`

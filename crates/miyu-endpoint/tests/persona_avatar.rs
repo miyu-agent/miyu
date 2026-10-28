@@ -7,10 +7,9 @@ use serde_json::{Value, json};
 
 use crate::attach::png;
 use crate::support::*;
-use miyu_session::testkit::Script;
 
 async fn connected(home: &Home) -> Client {
-    let mut client = Client::connect(home.core(&Script::new([])));
+    let mut client = Client::connect(crate::support::packaged::core(home));
     client.hello().await;
     client
 }
@@ -40,13 +39,17 @@ async fn set(client: &mut Client, persona: &str, avatar: Value) -> Value {
         .await
 }
 
-/// 系统区里的一个人格 `base`，带一张头像。
+/// 下面那一层（装着的样本包，施工 SU-3 下）里的一个人格 `base`，带一张头像。
 fn base(home: &Home, picture: &[u8]) {
+    crate::support::packaged::samples(home);
     home.write(
-        "system/personas/base/persona.toml",
+        "system/packages/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n",
     );
-    let path = home.root.path().join("system/personas/base/avatar.png");
+    let path = home
+        .root
+        .path()
+        .join("system/packages/samples/personas/base/avatar.png");
     std::fs::write(path, picture).expect("写得进");
 }
 

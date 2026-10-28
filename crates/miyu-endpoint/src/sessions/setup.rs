@@ -105,7 +105,7 @@ impl Setup {
             command: self.command.clone(),
             by: super::owner_by(core, &who.owner),
             models: &*core.models,
-            tools: core.shelf_of(&who.owner),
+            tools: core.tools.clone(),
             home: core.home.as_deref(),
             sandbox: core.sandbox.helper(),
             sandbox_cache: core.sandbox_cache_of(&who.owner),

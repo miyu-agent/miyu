@@ -401,12 +401,8 @@
         "description": "Without a stated reset time, the pause doubles each time in a row up to this."
       },
       "external.bindings.<external>": {
-        "name": "Terminal admin's platform accounts",
-        "description": "Which platform identity is which local account. The key is the platform identity (for example qq:10001), the value is the local account. In private chats that identity is that account itself."
-      },
-      "external.me": {
         "name": "My platform accounts",
-        "description": "Which platform identities are you, for example qq:10001. Only counts on the chat platforms you connect yourself."
+        "description": "Which platform identities are you. The key is the platform identity (for example qq:10001), the value is owner. In private chats that identity is you."
       }
     },
     "pages": {

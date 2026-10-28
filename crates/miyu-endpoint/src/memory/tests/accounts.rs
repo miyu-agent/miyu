@@ -30,10 +30,10 @@ fn bob() -> AccountId {
     AccountId::parse("bob").expect("合写法")
 }
 
-/// 机主是 alice 的核心，照 `script` 答；装了样本人格（系统区，谁都用得到）、整理会话。
+/// 机主是 alice 的核心，照 `script` 答；装了样本人格（主人家目录）、整理会话。
 fn core(name: &str, script: &Script) -> Arc<Core> {
     let (root, _) = temp_root(name);
-    install_sample_persona(&root);
+    install_sample_persona(&root, &alice());
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");
@@ -287,28 +287,6 @@ async fn memory_calls_find_the_room_of_whom_they_act_for() {
     assert_eq!(cards(bob(), "k1").await, 1);
     assert_eq!(cards(alice(), "k2").await, 0, "甲看不到乙的人卡");
 
-    // 只在乙的家目录里的人格：照乙看得到的几层找，甲找不到。
-    let own = core.root.account_dir(&bob()).join("personas").join("mine");
-    copy(&miyu_session::testkit::sample_persona_dir(), &own);
-    call(
-        &core,
-        &bob(),
-        "r4",
-        "memory.remember",
-        json!({"persona": "mine", "class": "user", "text": "乙的人格记得这个"}),
-    )
-    .await;
-    let id = CommandId::parse("l4").expect("合写法");
-    let refused = super::super::call(
-        &core,
-        &alice(),
-        "memory.list",
-        &id,
-        &json!({"persona": "mine"}),
-    )
-    .await;
-    assert!(refused.is_err(), "甲看不到乙家目录里的人格");
-
     // 记下的是替谁干活的那个人。
     let keeper = miyu_session::Keeper::new(
         &core.memory,
@@ -318,19 +296,6 @@ async fn memory_calls_find_the_room_of_whom_they_act_for() {
     let followed = keeper.follow(Some(0), 64).expect("跟得上");
     let by = &followed.filled.first().expect("有一条").by;
     assert_eq!(*by, By::Person(Person::new(bob())));
-}
-
-/// 整个目录照样复制一份。
-fn copy(from: &std::path::Path, to: &std::path::Path) {
-    std::fs::create_dir_all(to).expect("建得了");
-    for entry in std::fs::read_dir(from).expect("读得了样本").flatten() {
-        let target = to.join(entry.file_name());
-        if entry.path().is_dir() {
-            copy(&entry.path(), &target);
-        } else {
-            std::fs::copy(entry.path(), &target).expect("拷得了");
-        }
-    }
 }
 
 /// 经协议记一个认识的人、`who` 是她自己的名字（施工 E-1 修）：照人格找那一间时记下她叫什么，这一条记成关于她自己的事。
