@@ -14,7 +14,7 @@ use std::sync::Arc;
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId};
 use miyu_store::index::SessionIndex;
-use miyu_store::log::{SessionLog, read_events, read_segments};
+use miyu_store::log::{Mark, SessionLog, read_events, read_segments};
 use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::ReadLog;
 
@@ -75,6 +75,11 @@ pub(crate) trait Store: Send + 'static {
         None
     }
 
+    /// 日志这时照到哪（施工 E-5 补）：写完一批再拿，抽取从这里接着读。不在磁盘上的（测试里）没有。
+    fn mark(&self) -> Option<Mark> {
+        None
+    }
+
     /// 换了人格，记忆挪了一间（施工 P-13）：照底子、自己的日志重接回合索引，交回新的记忆的端口。没有回合索引的照整份
     /// 日志接，接上的回合索引不留。
     fn rewire(&mut self, connect: Rewire) -> Result<Option<Calls>, String> {
@@ -126,6 +131,10 @@ impl Store for SessionLog {
     }
     fn dir(&self) -> Option<PathBuf> {
         Some(SessionLog::dir(self).to_path_buf())
+    }
+
+    fn mark(&self) -> Option<Mark> {
+        Some(SessionLog::mark(self))
     }
 }
 
@@ -242,6 +251,10 @@ impl Store for Indexed {
 
     fn dir(&self) -> Option<PathBuf> {
         Store::dir(&self.log)
+    }
+
+    fn mark(&self) -> Option<Mark> {
+        Some(self.log.mark())
     }
 
     /// 读不了日志的回合索引一并放掉：不往原来那一间接着记。

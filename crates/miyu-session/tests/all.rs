@@ -65,6 +65,7 @@ mod memory_extract;
 mod memory_extract_busy;
 mod memory_extract_dropped;
 mod memory_extract_more;
+mod memory_extract_tail;
 mod memory_extract_undone;
 mod memory_filling;
 mod memory_follow;

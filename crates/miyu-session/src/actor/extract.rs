@@ -14,7 +14,6 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::event::Event;
 use miyu_kernel::id::Seq;
 use tracing::Instrument;
 
@@ -23,7 +22,10 @@ use tokio::sync::oneshot;
 use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
-use crate::memory::{Dreamed, Extractor, Hush, Job, NotDreamed, called, ended_only};
+use crate::memory::{
+    Dreamed, Extractor, Hush, Job, Landings, NotDreamed, Read, ReadFrom, called, ended_only,
+    read_extract,
+};
 use crate::port::Back;
 use crate::settings::MemorySettings;
 use planned::{Planning, planned};
@@ -161,16 +163,10 @@ impl Actor {
             return put_down(extractor);
         }
         let floor = calls.floor();
+        let landings = extractor.landings();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
-            let read = keeper
-                .extracted(&session)
-                .map_err(|refused| format!("{refused:?}"))
-                .and_then(|after| {
-                    let events =
-                        miyu_store::log::read_events(&dir).map_err(|error| error.to_string())?;
-                    Ok((after.unwrap_or(Seq::FIRST).max(floor), events))
-                });
+            let read = read_after(&keeper, &session, &dir, floor, &landings);
             answer_back(
                 &backs,
                 Back::ExtractRead {
@@ -184,16 +180,12 @@ impl Actor {
 
     /// 读回来了：还是那个闹钟、还闲着的，渲染这一段、定怎么办、派出去。不等闲的那一次（`forced`，施工 E-5）不看闲不闲，只
     /// 取到读的那一刻结束了的最后一轮：正在跑的那一轮留给下次。
-    pub(super) fn extract_read(
-        &self,
-        generation: u64,
-        forced: bool,
-        read: Result<(Seq, Vec<Event>), String>,
-    ) {
+    pub(super) fn extract_read(&self, generation: u64, forced: bool, read: Result<Read, String>) {
         let Some((calls, offset)) = self.tools.memory() else {
             return;
         };
         let (keeper, session, owner, extractor) = calls.extracting();
+        let read = read.map(|read| seeded(extractor, read));
         let Some(extraction) = keeper.extraction() else {
             return match forced {
                 true => extractor.unforce(),
@@ -210,7 +202,7 @@ impl Actor {
             }
             return;
         }
-        let (after, mut events) = match read {
+        let mut read = match read {
             Ok(read) => read,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory extraction failed");
@@ -219,8 +211,9 @@ impl Actor {
             }
         };
         if forced {
-            ended_only(&mut events);
+            ended_only(&mut read.events);
         }
+        let after = read.after;
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
         let min_turns = usize::try_from(settings.extract_turns).unwrap_or(1);
@@ -256,8 +249,7 @@ impl Actor {
         let (runtime, span) = (tokio::runtime::Handle::current(), tracing::Span::current());
         tokio::task::spawn_blocking(move || {
             let plan = planned(
-                events,
-                after,
+                read,
                 &Planning {
                     assembler: assembler.as_ref(),
                     budget,
@@ -293,16 +285,10 @@ impl Actor {
         };
         let generation = extractor.arm();
         let floor = calls.floor();
+        let landings = extractor.landings();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
-            let read = keeper
-                .extracted(&session)
-                .map_err(|refused| format!("{refused:?}"))
-                .and_then(|after| {
-                    let events =
-                        miyu_store::log::read_events(&dir).map_err(|error| error.to_string())?;
-                    Ok((after.unwrap_or(Seq::FIRST).max(floor), events))
-                });
+            let read = read_after(&keeper, &session, &dir, floor, &landings);
             answer_back(
                 &backs,
                 Back::DreamRead {
@@ -319,7 +305,7 @@ impl Actor {
     pub(super) fn dream_read(
         &self,
         generation: u64,
-        read: Result<(Seq, Vec<Event>), String>,
+        read: Result<Read, String>,
         reply: oneshot::Sender<Result<Dreamed, NotDreamed>>,
         hush: Hush,
     ) {
@@ -327,6 +313,7 @@ impl Actor {
             return answer(reply, Err(NotDreamed::Off));
         };
         let (keeper, session, owner, extractor) = calls.extracting();
+        let read = read.map(|read| seeded(extractor, read));
         let config = Arc::clone(self.config.current());
         let extraction = keeper.extraction();
         let read = match (read, extraction) {
@@ -341,7 +328,7 @@ impl Actor {
             }
             _ => None,
         };
-        let Some(((after, events), extraction)) = read else {
+        let Some((read, extraction)) = read else {
             extractor.disarm(generation);
             let (keeper, owner) = (keeper.clone(), owner.clone());
             let dreaming = async move { keeper.dream_until(config, owner, offset, hush).await };
@@ -351,9 +338,9 @@ impl Actor {
         let name = self.owner_name(&config);
         let (budget, limit) = self.voicing();
         let assembler = self.session.assembler();
+        let after = read.after;
         let plan = planned(
-            events,
-            after,
+            read,
             &Planning {
                 assembler: assembler.as_ref(),
                 budget,
@@ -380,6 +367,33 @@ impl Actor {
         };
         tokio::spawn(job.run(plan).in_current_span());
     }
+}
+
+/// 在阻塞线程里读这一段（施工 E-5 补）：上次抽到哪（不早于 `floor`），从 `landings` 里最后一处在它以前的读起，没有的整份读；
+/// 还接不上的（`landings` 交回的第二样）整份读时顺手认出末尾那一处。
+fn read_after(
+    keeper: &crate::memory::Keeper,
+    session: &miyu_kernel::id::SessionId,
+    dir: &std::path::Path,
+    floor: Seq,
+    landings: &Landings,
+) -> Result<Read, String> {
+    let after = keeper
+        .extracted(session)
+        .map_err(|refused| format!("{refused:?}"))?
+        .unwrap_or(Seq::FIRST)
+        .max(floor);
+    read_extract(dir, after, landings)
+}
+
+/// 读回来的是整份、认出了末尾那一处的：交给抽取状态接上（施工 E-5 补），拼的时候照整份拼。
+fn seeded(extractor: &Extractor, mut read: Read) -> Read {
+    if let ReadFrom::Start(landed) = &mut read.from
+        && let Some(landed) = landed.take()
+    {
+        extractor.seed(landed);
+    }
+    read
 }
 
 mod planned;

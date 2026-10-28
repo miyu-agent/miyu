@@ -9,6 +9,8 @@ use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 
+use super::prefix::Prefix;
+
 /// 人这边的一句是谁说的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Voice {
@@ -43,28 +45,29 @@ impl Voices {
     /// 照这一段的事件 `events` 认：人（主人）说的写 `Owner`，平台上的人写他在场所里的名字、没有的写平台编号；`group` 是群
     /// 会话的群聊近况预算，群会话里人说的都原样放。
     pub(crate) fn of(events: &[Event], group: Option<usize>) -> Voices {
-        let mut names = BTreeMap::from([(OWNER.to_string(), None)]);
-        for event in events {
-            let Body::MessageUser(message) = &event.body else {
-                continue;
-            };
-            let name = message.venue.as_ref().and_then(|venue| venue.name.clone());
-            match &event.by {
-                By::External(external) => {
-                    let id = external.id.as_str().to_string();
-                    if let Some(name) = name {
-                        names.insert(name, Some(id.clone()));
-                    }
-                    names.insert(id.clone(), Some(id));
-                }
-                By::Person(_) => {
-                    if let Some(name) = name {
-                        names.insert(name, None);
-                    }
-                }
-                _ => {}
-            }
-        }
+        Voices::continued(None, events, group)
+    }
+
+    /// 同 [`Voices::of`]，只是 `events` 接在 `before`（读起的那一处以前的日志里认出来的，施工 E-5 补）后面：名字、她被叫过的
+    /// 名字、群名照它接着认，和整份一起认的一样。
+    pub(crate) fn continued(
+        before: Option<&Prefix>,
+        events: &[Event],
+        group: Option<usize>,
+    ) -> Voices {
+        let mut names = before.map_or_else(owner_only, |before| before.names.as_ref().clone());
+        learn(events, |name, id| {
+            names.insert(name, id);
+        });
+        let mut me = before
+            .map(|before| before.me.as_ref().clone())
+            .unwrap_or_default();
+        me.extend(crate::memory::her::called_in(events));
+        let mut places: Vec<(Seq, String)> = before
+            .and_then(|before| before.place.clone())
+            .into_iter()
+            .collect();
+        places.extend(crate::memory::keeper::places(events));
         let said = events
             .iter()
             .filter_map(|event| {
@@ -91,8 +94,39 @@ impl Voices {
             budget: group,
             limit: None,
             names,
-            me: crate::memory::her::called_in(events),
-            places: crate::memory::keeper::places(events),
+            me,
+            places,
+        }
+    }
+}
+
+/// 只有主人那一行的名字表：一句都没认过的起点。
+pub(crate) fn owner_only() -> BTreeMap<String, Option<String>> {
+    BTreeMap::from([(OWNER.to_string(), None)])
+}
+
+/// 照 `events` 里的人话认名字，一条条交给 `put`（名字、对着的平台编号），照先后：平台上的人的名字、平台编号对着他的平台编号，
+/// 主人在场所里的名字对着没有。后交的盖掉先交的。
+pub(crate) fn learn(events: &[Event], mut put: impl FnMut(String, Option<String>)) {
+    for event in events {
+        let Body::MessageUser(message) = &event.body else {
+            continue;
+        };
+        let name = message.venue.as_ref().and_then(|venue| venue.name.clone());
+        match &event.by {
+            By::External(external) => {
+                let id = external.id.as_str().to_string();
+                if let Some(name) = name {
+                    put(name, Some(id.clone()));
+                }
+                put(id.clone(), Some(id));
+            }
+            By::Person(_) => {
+                if let Some(name) = name {
+                    put(name, None);
+                }
+            }
+            _ => {}
         }
     }
 }

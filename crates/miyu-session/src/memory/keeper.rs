@@ -154,6 +154,11 @@ impl Keeper {
         self.memory.extraction().cloned()
     }
 
+    /// 核心交过抽取要的几样没有（施工 E-5 补）：同 [`Keeper::extraction`]，不拷。
+    pub(crate) fn extracts(&self) -> bool {
+        self.memory.extraction().is_some()
+    }
+
     /// 人格记忆这时装着没有（施工 R-10）：没装的开着的会话不交摘要、不抽。
     pub(crate) fn installed(&self) -> bool {
         self.memory.installed()

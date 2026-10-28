@@ -126,13 +126,18 @@ impl Actor {
                 };
                 let seen = (reseen && result.is_ok())
                     .then(|| store.events().map(|all| effects::seen_in(&all)));
-                (store, result, seen)
+                let mark = store.mark();
+                (store, result, seen, mark)
             })
         })
         .await;
         match written {
-            Ok((store, Ok(handle), seen)) => {
+            Ok((store, Ok(handle), seen, mark)) => {
                 self.store = Some(store);
+                // 抽取记一处读起的位置（施工 E-5 补）：这一批里有回合结束的。
+                if let (Some((memory, _)), Some(mark)) = (self.tools.memory(), mark) {
+                    memory.landed(mark);
+                }
                 self.written(upto, sync, handle);
                 match seen {
                     Some(Ok(seen)) => self.tools.see(seen),
@@ -146,7 +151,7 @@ impl Actor {
                     upto,
                 }))
             }
-            Ok((_, Err(error), _)) => {
+            Ok((_, Err(error), _, _)) => {
                 tracing::warn!(target: TARGET, kind = ?error.kind(), "write failed, stopped");
                 Err(Stop)
             }

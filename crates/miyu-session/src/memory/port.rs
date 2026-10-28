@@ -104,6 +104,13 @@ impl Calls {
     pub(crate) fn heard(&self, events: &[miyu_kernel::event::Event]) {
         self.keeper.hear(events);
         self.extractor.note_ended(events);
+        // 抽取只读上次以后那一截要的（施工 E-5 补）：接着折进来。
+        self.extractor.note_prefix(events, self.keeper.extracts());
+    }
+
+    /// 会话那一批落完了，日志照到 `mark`（施工 E-5 补）：抽取记一处读起的位置。
+    pub(crate) fn landed(&self, mark: miyu_store::log::Mark) {
+        self.extractor.landed(mark);
     }
 
     /// 记忆放在哪一间：交给 [`crate::Handle`]，协议照它找这个会话的记忆（施工 R-3 补）。

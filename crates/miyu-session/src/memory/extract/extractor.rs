@@ -7,6 +7,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::time::Timestamp;
 
 use super::TRIES;
+use super::prefix::{Landed, Landings, Marks};
 
 /// 一个会话的抽取：闹钟是第几个、有没有一次在路上、同一段失败了几次；叫停这个会话叫的整理的那一头（施工 R-22）；上次开始抽
 /// 以后结束了几轮、最早那一轮什么时候结束的，有没有一次不等闲的在等着（施工 E-5）。
@@ -14,6 +15,8 @@ use super::TRIES;
 pub(crate) struct Extractor {
     state: Mutex<State>,
     pub(crate) hushes: crate::memory::merge::Hushes,
+    /// 会话日志折到哪、记下的几处（施工 E-5 补，`prefix.rs`）：抽的时候从上次抽到的那一条以前最后一处读起。
+    marks: Mutex<Marks>,
 }
 
 #[derive(Debug, Default)]
@@ -66,6 +69,30 @@ impl Extractor {
     pub(crate) fn pending(&self) -> bool {
         let state = self.state();
         state.armed || state.running || state.forcing
+    }
+
+    fn marks(&self) -> std::sync::MutexGuard<'_, Marks> {
+        self.marks.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// 会话要落这一批 `events`（施工 E-5 补）：接着折进来；还接不上的、这个会话抽（`keep`）的，记下这一批等接上。
+    pub(crate) fn note_prefix(&self, events: &[Event], keep: bool) {
+        self.marks().heard(events, keep);
+    }
+
+    /// 那一批落完了，日志照到 `mark`（施工 E-5 补）：里面有回合结束的记一处。
+    pub(crate) fn landed(&self, mark: miyu_store::log::Mark) {
+        self.marks().landed(mark);
+    }
+
+    /// 记下的几处、还要不要整份读一次接上（施工 E-5 补）：抽的时候交给读的那个阻塞线程。
+    pub(crate) fn landings(&self) -> Landings {
+        self.marks().landings()
+    }
+
+    /// 整份读回来、认出了末尾那一处（施工 E-5 补）：接上。
+    pub(crate) fn seed(&self, landed: Landed) {
+        self.marks().seed(landed);
     }
 
     /// 落了盘的这一批 `events`（施工 E-5）：数结束了的回合，记下最早那一轮结束的时刻。

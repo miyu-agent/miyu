@@ -3,12 +3,10 @@
 //! 一万多条事件拼一遍要几毫秒，原来在 actor 上同步做，下一轮的回合开头排在后面）；现在就整理那一路照旧在 actor 上调。
 
 use miyu_kernel::assemble::Assembler;
-use miyu_kernel::event::Event;
 use miyu_kernel::history::History;
-use miyu_kernel::id::Seq;
 use miyu_kernel::time::UtcOffset;
 
-use crate::memory::{ExtractTexts, Voices, plan, remembered_since};
+use crate::memory::{ExtractTexts, Read, ReadFrom, Voices, plan, remembered_since};
 
 /// 定怎么抽要的几样（都在 actor 上拿好，交进来的是这一刻的）。
 pub(crate) struct Planning<'a> {
@@ -25,15 +23,25 @@ pub(crate) struct Planning<'a> {
     pub(crate) name: Option<&'a str>,
 }
 
-/// `events` 里第 `after` 条以后的那一段怎么抽。
-pub(crate) fn planned(events: Vec<Event>, after: Seq, how: &Planning<'_>) -> crate::memory::Plan {
+/// 读回来的 `read` 里上次抽到的那一条以后的那一段怎么抽。从一处读起的（施工 E-5 补）接着那一处以前认出来的认名字，和整份读
+/// 的拼出来一个字节不差。
+pub(crate) fn planned(read: Read, how: &Planning<'_>) -> crate::memory::Plan {
+    let Read {
+        after,
+        events,
+        from,
+    } = read;
+    let before = match &from {
+        ReadFrom::Mark(landed) => Some(&landed.prefix),
+        ReadFrom::Start(_) => None,
+    };
     let mut history = History::whole();
     for event in events {
         history.append(event);
     }
     let spoken = how.assembler.spoken(&history, after);
     let remembered = remembered_since(&history, after);
-    let mut voices = Voices::of(history.events(), how.budget);
+    let mut voices = Voices::continued(before, history.events(), how.budget);
     voices.limit = how.limit;
     plan(
         &spoken,
@@ -45,3 +53,6 @@ pub(crate) fn planned(events: Vec<Event>, after: Seq, how: &Planning<'_>) -> cra
         how.name,
     )
 }
+
+#[cfg(test)]
+mod tests;
