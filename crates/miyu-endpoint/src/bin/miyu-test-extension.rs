@@ -7,6 +7,8 @@
 //! - `err:<字>`：往标准错误写一行；
 //! - `env:<名字>`：记下一行 `<名字>=<这个环境变量的值>`，没有的值是空的（施工 O-18）；
 //! - `exists:<路径>`：记下一行 `exists:true` 或 `exists:false`，这时这个路径在不在（施工 F-5 补：卸包先停再删）；
+//! - `ids:<前缀>`：之后发的请求编号写成 `<前缀><第几步>`，不写的是 `s`（施工 SU-4 中：同一个数据根上几次拉起的请求编号不撞，
+//!   核心照属主加命令编号认重发的）；
 //! - `hello`：发握手（不带凭据），读一行回应记下；
 //! - `call:<方法>`：发一条不带参数的请求，读一行回应记下；
 //! - `ask:<方法>:<JSON 参数>`：发一条带参数的请求，读一行回应记下；参数里的 `{session}` 换成最近一条带 `"session"` 的回应里
@@ -53,6 +55,8 @@ fn main() {
     let mut sent = String::new();
     // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
     let mut give = String::new();
+    // 请求编号的前缀。
+    let mut ids = String::from("s");
     let args: Vec<String> = std::env::args().skip(1).collect();
     let script = usize::from(
         args.first()
@@ -78,14 +82,16 @@ fn main() {
         } else if let Some(path) = step.strip_prefix("exists:") {
             let there = std::path::Path::new(path).exists();
             keep(&mut record, &format!("exists:{there}"));
+        } else if let Some(prefix) = step.strip_prefix("ids:") {
+            ids = prefix.to_string();
         } else if step == "hello" {
             send(&format!(
-                r#"{{"jsonrpc":"2.0","id":"s{n}","method":"hello","params":{{"protocol":[1,1],"head":{{"kind":"test-extension","version":"0"}}}}}}"#
+                r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"hello","params":{{"protocol":[1,1],"head":{{"kind":"test-extension","version":"0"}}}}}}"#
             ));
             keep(&mut record, &read(&mut input));
         } else if let Some(method) = step.strip_prefix("call:") {
             send(&format!(
-                r#"{{"jsonrpc":"2.0","id":"s{n}","method":"{method}","params":{{}}}}"#
+                r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"{method}","params":{{}}}}"#
             ));
             keep(&mut record, &read(&mut input));
         } else if let Some(rest) = step.strip_prefix("ask:") {
@@ -94,7 +100,7 @@ fn main() {
                 .replace("{session}", &session)
                 .replace("{upload}", &upload);
             send(&format!(
-                r#"{{"jsonrpc":"2.0","id":"s{n}","method":"{method}","params":{params}}}"#
+                r#"{{"jsonrpc":"2.0","id":"{ids}{n}","method":"{method}","params":{params}}}"#
             ));
             let mut reply = read(&mut input);
             while reply.contains(r#""method":"widget.watch""#) || reply.contains(r#""id":"w-"#) {

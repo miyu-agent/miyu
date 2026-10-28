@@ -145,12 +145,6 @@ impl Refusal {
         reason: "unknown_call",
         data: None,
     };
-    /// 场所会话的属主该是系统账号，还没有（施工 O-3；系统账号随 O-4）。
-    pub(crate) const NO_SYSTEM_ACCOUNT: Refusal = Refusal {
-        code: REFUSED,
-        reason: "no_system_account",
-        data: None,
-    };
     /// 场所会话只收代表外部的人说的话（施工 O-3，`venues.md`）：本机的头不能直接说话。
     pub(crate) const VENUE_SESSION: Refusal = Refusal {
         code: REFUSED,

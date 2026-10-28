@@ -1,12 +1,12 @@
 # 场所：通讯平台上的会话
 
-场所是会话发生的地方：本机（`local`），或者通讯平台上的一个私聊、一个群。接入通讯平台的桥（例如接入QQ）是一个扩展，声明了系统账号：群会话归这个系统账号，主人的私聊归主人。这一页列桥要用的方法。英文版：[venues.en.md](venues.en.md)。
+场所是会话发生的地方：本机（`local`），或者通讯平台上的一个私聊、一个群。接入通讯平台的桥（例如接入QQ）是一个扩展，清单 `[connection] platform` 写着它接的平台。场所会话都归主人：私聊的对方在主人对应表里的（主人本人）照本机会话待，群和陌生人的私聊关在沙盒里。这一页列桥要用的方法。英文版：[venues.en.md](venues.en.md)。
 
 | 方法 | 做什么 |
 |---|---|
 | [`venue.session`](#venuesession) | 找回或者造一个场所的主线会话 |
 | [`venue.sessions`](#venuesessions) | 列出这个桥的全部场所会话 |
-| [`venue.binding`](#venuebinding) | 问一个平台身份对着哪个本机账号 |
+| [`venue.binding`](#venuebinding) | 问一个平台身份是不是主人 |
 | [`venue.plugins`](#venueplugins) | 说一个场所开着哪些场所插件 |
 | [`session.send` 的 `as`、`venue`](#sessionsend-的-asvenue) | 代表平台上的人说话 |
 | [`session.respond`](#sessionrespond) | 照旁听记下的几条开一轮 |
@@ -14,7 +14,7 @@
 | [`venue.records`](#venuerecords) | 判官看的群聊记录 |
 | [`events.append` 的 `venue.*`](#eventsappend-的-venue) | 记撤回、记她发出去的话 |
 
-**谁能调**：`venue.session`、`venue.sessions`、`venue.binding`、`venue.plugins` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
+**谁能调**：`venue.sessions`、`venue.binding`、`venue.plugins` 和关进沙盒的 `venue.session`（群、陌生人的私聊）只给平台桥（核心拉起的、清单写了 `[connection] platform`、批了 `act_for_external` 的扩展），别的回 `needs_approval`（`data.capabilities` 是 `["act_for_external"]`）。主人本人的私聊主人这边的连接也开得了。桥只碰得到它接的平台的场所会话（场所编号的平台前缀）。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
 
 **场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
 
@@ -46,19 +46,19 @@
 
 造的时候用的几格，找回的不看。
 
-**回应**：`{"session", "created", "account"}`：会话编号、是不是新造的、属主。私聊的对方在对应表里的，属主是那个本机账号；别的归桥的系统账号（`account` 是桥自己的账号，就是陌生人的私聊）。
+**回应**：`{"session", "created"}`：会话编号、是不是新造的。照「场所加关不关沙盒」找：私聊的对方后来写进了对应表，原来关着的那一个不接着用，另开一个不关的。
 
 场所会话没有人能确认：要确认的一律拒绝。同一个 `id` 再发交回同一个。
 
-**出错**：`no_system_account`；`unknown_persona`、`unknown_preset`、`preset_invalid`；`bad_params`。
+**出错**：`needs_approval`；`unknown_persona`、`unknown_preset`、`preset_invalid`；`bad_params`。
 
 ## `venue.sessions`
 
-**参数**：没有。**回应**：`{"sessions": [{"session", "venue"}…]}`，从新到旧。列的是：归这个系统账号的场所会话，和对应表里这个平台的身份对着的主人的私聊（照清单 `[connection] platform` 认平台，能写几个）。一个场所只列最新的那一个。桥起来时照它订阅。
+**参数**：没有。**回应**：`{"sessions": [{"session", "venue"}…]}`，从新到旧。列的是这个桥接的平台的场所会话（照清单 `[connection] platform` 认平台，能写几个），桥自己开的本机会话不列。一个场所只列最新的那一个。桥起来时照它订阅。
 
 ## `venue.binding`
 
-**参数**：`id`：平台身份。**回应**：`{"account": <本机账号>}`，不在对应表里的是 `null`。照这一刻的配置答。桥挡「只给主人」的动作时用：动谁之前先认目标。
+**参数**：`id`：平台身份。**回应**：`{"owner": true|false}`：是不是主人（在主人对应表里）。照这一刻的配置答。桥挡「只给主人」的动作时用：动谁之前先认目标。
 
 ## `venue.plugins`
 

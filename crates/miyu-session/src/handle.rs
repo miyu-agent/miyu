@@ -66,6 +66,8 @@ pub struct Handle {
     loops: bool,
     /// 文件改动的版本，和 actor 共用（施工 OV-1 下，[`crate::prefix::Prefix`]）。
     prefix: Arc<crate::prefix::Prefix>,
+    /// 关起来的会话（施工 SU-4 中）：群、陌生人的私聊。造会话、载入时定下，之后不变。
+    confined: bool,
 }
 
 /// 发给 actor 的。
@@ -199,14 +201,8 @@ impl Handle {
             goals: false,
             loops: false,
             prefix: Arc::default(),
+            confined: false,
         }
-    }
-
-    /// 带上这个会话的记忆的那一间（施工 R-3 补）。
-    #[must_use]
-    pub(crate) fn with_memory(mut self, memory: crate::memory::RoomCell) -> Handle {
-        self.memory = memory;
-        self
     }
 
     /// 这个会话的记忆这时放在哪一间（施工 R-3 补，`memory.md`「协议」；中途换了人格的跟着换，施工 P-13）：范围 `off` 的没有。

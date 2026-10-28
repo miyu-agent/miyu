@@ -141,7 +141,7 @@ impl Content {
 }
 
 /// 一份清单带了什么：编号、版本（写了的）、程序（`ui`、`process`、`worker`、`builtin`，只带吉祥物的没有）、子命令名、后台页、
-/// 吉祥物、接哪个平台、系统账号、几个配置项、技能、脚本、读不成的技能和脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
+/// 吉祥物、接哪个平台、几个配置项、技能、脚本、读不成的技能和脚本（`content`）、声明的能力（照连接的语言说，`extension.status` 那一格的
 /// 样子）。没有的不写。
 fn carries(
     core: &Core,
@@ -195,13 +195,6 @@ fn carries(
         if connection.platforms.len() > 1 {
             answer.insert("platforms".into(), json!(connection.platforms));
         }
-    }
-    if manifest
-        .process
-        .as_ref()
-        .is_some_and(|process| process.system_account)
-    {
-        answer.insert("system_account".into(), json!(true));
     }
     if !manifest.settings.is_empty() {
         answer.insert("settings".into(), json!(manifest.settings.len()));

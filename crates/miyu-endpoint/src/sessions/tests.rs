@@ -54,6 +54,7 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
         model: None,
         preset: None,
         images: true,
+        confined: false,
     };
     let refused = core.sessions.spawn(&core, child).await;
     assert_eq!(refused, Err("the parent session is gone".to_string()));
@@ -96,6 +97,7 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
         images: true,
         titles: true,
         origin: None,
+        confined: false,
     };
     let cwd = dir.to_string_lossy().into_owned();
     let command = CommandId::parse("c1").expect("合写法");

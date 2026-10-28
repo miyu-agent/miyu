@@ -99,6 +99,7 @@ pub(crate) async fn new_session(
         images: true,
         titles: true,
         origin: None,
+        confined: false,
     };
     let id = new_id(now());
     let (_, own) = roots(core, account);

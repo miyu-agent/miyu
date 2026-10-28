@@ -10,7 +10,7 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
     let shown = json!({
         "package": "pudding", "version": "1.2.0", "replaces": {"version": "1.1.0"},
         "program": "process", "command": "pudding", "page": true, "mascot": true,
-        "connection": "qq", "system_account": true, "settings": 2,
+        "connection": "qq", "settings": 2,
         "capabilities": [{"id": "network", "name": "联网", "summary": null},
                          {"id": "fs.read", "name": "读文件", "summary": null}],
         "files": 3, "size": 1536,
@@ -19,7 +19,7 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         plan(&shown, Doing::Install, &Language::Chinese),
         [
             "将安装 pudding 1.2.0（替换 1.1.0）",
-            "包含：扩展程序、命令 miyu pudding、后台页、吉祥物、接入 qq、系统账号、2 项设置",
+            "包含：扩展程序、命令 miyu pudding、后台页、吉祥物、接入 qq、2 项设置",
             "需要：联网、读文件",
             "大小：1.5 KiB，3 个文件",
         ]

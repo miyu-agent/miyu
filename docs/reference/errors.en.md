@@ -26,7 +26,6 @@ Chinese version: [errors.md](errors.md).
 | `local_machine_only` | -32010 | Only on the machine running the core: a remote connection, or another person on this machine, called something that reads local files or takes local paths (Y-1 下, [Connection](connection.en.md) "Local machine only") |
 | `not_a_provider`, `not_an_extension` | -32010 | A method only for extensions the core launched, called by another connection |
 | `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, or the method it called needs one its manifest doesn't declare, `data.capabilities` |
-| `no_system_account` | -32010 | A method only for system account connections |
 
 ## Connecting and logging in
 
@@ -114,7 +113,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_package` | No such package | |
 | `package_invalid` | The manifest is wrong | `problem`, `line` |
-| `package_conflict`, `package_exists`, `package_id_taken` | A name it brings clashes; same id as a built-in; id already taken by an account | |
+| `package_conflict`, `package_exists` | A name it brings clashes; same id as a built-in | |
 | `package_file_bad`, `wrong_target` | The package file can't be unpacked; the manifest lists `targets` and this system isn't one of them | |
 | `download_failed`, `source_unreachable` | Installing from a source: the package file couldn't be downloaded from anywhere; no source could be reached and there is no local index | `why` |
 | `depends_missing`, `package_depended` | A dependency is missing; another package depends on it | `missing`, `by` |

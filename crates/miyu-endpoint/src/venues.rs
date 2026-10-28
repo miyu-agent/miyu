@@ -1,6 +1,6 @@
 //! 场所会话与外部身份（施工 O-3，`docs/blueprint/venues.md`）：主人对应表 `external.bindings` 怎么查，扩展经 `venue.binding`
 //! 问一个平台身份对着谁（施工 O-31 前）；`venue.session` 找回或者造
-//! 一个场所的主线会话，`venue.sessions` 列出系统账号名下的（施工 O-32 前，`sessions`）；`session.send` 的 `as` 记成谁。核心不认识 QQ：场所编号不解读，是不是私聊、对方是谁，桥照实报。
+//! 一个场所的主线会话，`venue.sessions` 列出平台桥那个平台的（施工 O-32 前，`sessions`）；`session.send` 的 `as` 记成谁。核心不认识 QQ：场所编号不解读，是不是私聊、对方是谁，桥照实报。
 
 use std::sync::Arc;
 
@@ -24,7 +24,7 @@ mod plugins;
 mod records;
 mod sessions;
 pub(crate) use bridge::bridge;
-pub(crate) use sessions::{Owners, bridged, owners, platforms_of_package};
+pub(crate) use sessions::platforms_of_package;
 
 pub(crate) use message::{VenueMessageParams, platform_id};
 pub(crate) use plugins::plugins;
@@ -129,24 +129,23 @@ pub(crate) struct BindingParams {
     id: String,
 }
 
-/// `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台身份 `id` 在主人对应表里的是主人的账号，没写的是 `null`。只给
-/// 系统账号的连接（核心拉起的、声明了系统账号的包的扩展）：提供者照它挡在场所里做的事（`providers.md`「在场所里做的事」），别的
-/// 连接回 `no_system_account`。只读。
+/// `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台身份 `id` 在主人对应表里是不是主人本人，回 `{"owner": true|false}`
+/// （施工 SU-4 中：原来回账号）。只给平台桥：提供者照它挡在场所里做的事（`providers.md`「在场所里做的事」），别的连接照没批
+/// `act_for_external` 拒。只读。
 pub(crate) fn binding(
     core: &Core,
     caller: &Caller,
     params: BindingParams,
 ) -> Result<Value, Refusal> {
-    bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
+    bridge(core, caller).ok_or_else(bridge::refused)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
-    let account = bound(core, &id);
-    Ok(json!({"account": account.as_ref().map(AccountId::as_str)}))
+    Ok(json!({"owner": bound(core, &id).is_some()}))
 }
 
-/// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」）。属主：私聊、对方在对应表里的是那个本机
-/// 账号；别的归系统账号：连接 `caller` 是系统账号的（核心拉起的、声明了系统账号的包的扩展）归它，别的连接回
-/// `no_system_account`（施工 O-4 下）。照「场所加属主」找：
-/// 属主的主会话里场所是它的、最新的那一个。回应带属主 `account`。
+/// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」）。会话都在主人名下（施工 SU-4 中）；
+/// 私聊、对方在对应表里的是主人本人，不关，主人这边的连接也开得了；别的（群、陌生人的私聊）关起来、只有平台桥开，记进
+/// `session.created` 的 `confined`。照「场所加关不关」
+/// 找：主人的主会话里场所是它的、关不关一样的最新的那一个（对应表后来加了主人的号，原来关着的那个不接着用，另开一个）。
 pub(crate) async fn session(
     core: &Arc<Core>,
     caller: &Caller,
@@ -166,18 +165,16 @@ pub(crate) async fn session(
         (Kind::Group, Some(recent @ 1..=RECENT_MOST)) => Some(recent),
         _ => return Err(Refusal::bad_field("recent")),
     };
-    let owner = match (
-        bridge(core, caller),
-        peer.as_ref().and_then(|peer| bound(core, peer)),
-    ) {
-        (_, Some(account)) => account,
-        (Some(bridge), None) => bridge.account().clone(),
-        (None, None) => return Err(Refusal::NO_SYSTEM_ACCOUNT),
-    };
+    let confined = peer.as_ref().and_then(|peer| bound(core, peer)).is_none();
+    // 主人本人的私聊（对应表认出来的）主人这边的连接也开得了（同原来）；群、陌生人的私聊只有平台桥开。
+    if confined {
+        bridge(core, caller).ok_or_else(bridge::refused)?;
+    }
+    let owner = core.admin.clone();
     // 同一个场所同时来两次：一个找、一个造，排着来，免得造出两个主线会话。
     let _one_at_a_time = core.venues.lock().await;
-    if let Some(found) = find(core, &owner, &venue).await? {
-        return Ok(json!({"session": found.as_str(), "created": false, "account": owner.as_str()}));
+    if let Some(found) = find(core, &venue, confined).await? {
+        return Ok(json!({"session": found.as_str(), "created": false}));
     }
     let who = Opening {
         owner: owner.clone(),
@@ -192,6 +189,7 @@ pub(crate) async fn session(
         images: params.images,
         titles: params.titles,
         origin: None,
+        confined,
     };
     let cwd = params
         .cwd
@@ -207,18 +205,22 @@ pub(crate) async fn session(
             who,
         )
         .await?;
-    Ok(json!({"session": created.id.as_str(), "created": true, "account": owner.as_str()}))
+    Ok(json!({"session": created.id.as_str(), "created": true}))
 }
 
-/// 属主 `owner` 的主会话里，场所是 `venue` 的最新的那一个。
+/// 主人的主会话里，场所是 `venue`、关不关是 `confined` 的最新的那一个。
 async fn find(
     core: &Arc<Core>,
-    owner: &AccountId,
     venue: &VenueId,
+    confined: bool,
 ) -> Result<Option<miyu_kernel::id::SessionId>, Refusal> {
     let venue = venue.as_str().to_string();
-    let found = mains(core, owner, move |row| row.venue == venue, Some(1)).await?;
-    Ok(found.into_iter().next().map(|listed| listed.id))
+    for listed in mains(core, &core.admin, move |row| row.venue == venue, None).await? {
+        if crate::sessions::confined_of(core, &core.admin, &listed.id).await == confined {
+            return Ok(Some(listed.id));
+        }
+    }
+    Ok(None)
 }
 
 /// 属主 `owner` 的主会话（不是子会话）里合 `pick` 的，从新到旧，最多 `limit` 个：照会话列表的索引找，和 `session.list` 同一个
@@ -255,17 +257,18 @@ async fn mains(
     }
 }
 
-/// `session.send` 的 `as` 记成谁（`venues.md`「`session.send` 的 `as`」）：场所 `venue` 的会话，属主是 `owner`。对应表里对着属主
-/// 的号是本人（带 `via`）；别的是外部身份，对应表里有的另记账号。
+/// `session.send` 的 `as` 记成谁（`venues.md`「`session.send` 的 `as`」）：场所会话 `handle`。没关起来的（主人本人的私聊）里对应表
+/// 认出的号是本人（带 `via`）；关起来的（群、陌生人的私聊，施工 SU-4 中起也在主人名下）里照旧是外部身份，对应表里有的另记账号：
+/// 主人在群里说话不当本人，不给主人才有的那些。
 pub(crate) fn speaker(
     core: &Core,
-    venue: &VenueId,
-    owner: &AccountId,
+    handle: &miyu_session::Handle,
     params: AsParams,
 ) -> Result<By, Refusal> {
+    let (venue, owner) = (handle.venue(), handle.owner());
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
     let account = bound(core, &id);
-    if account.as_ref() == Some(owner) {
+    if !handle.confined() && account.as_ref() == Some(owner) {
         let mut person = Person::new(owner.clone());
         person.via = Some(id);
         return Ok(By::Person(person));

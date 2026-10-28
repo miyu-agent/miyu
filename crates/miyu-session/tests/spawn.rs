@@ -321,6 +321,7 @@ async fn the_child_copies_the_parent_and_gets_the_task_from_it() {
             model: None,
             preset: Some("dev".to_string()),
             images: true,
+            confined: false,
         }
     );
     // 交代原样、作为父会话发来的话送进子会话，开它的第一轮。
@@ -424,6 +425,22 @@ async fn numbers_go_on_after_a_failure_and_a_reload() {
         Some("dev"),
         "载入以后照 session.created 里的预设（施工 P-2 上）"
     );
+}
+
+/// 关在沙盒里的会话（群、陌生人的私聊）派的子会话照旧关着（施工 SU-4 中：属主都是主人，不能再照属主算）。
+#[tokio::test]
+async fn a_confined_session_s_child_is_confined_too() {
+    let table = Arc::new(Table::default());
+    let lines = Lines {
+        confined: true,
+        ..Lines::default()
+    };
+    let (_, results) = first_request(lines, &table).await;
+    let [child] = table
+        .made()
+        .try_into()
+        .unwrap_or_else(|_| panic!("造了一个子会话：{results:?}"));
+    assert!(child.confined);
 }
 
 #[tokio::test]

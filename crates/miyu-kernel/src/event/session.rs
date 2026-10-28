@@ -74,6 +74,10 @@ pub struct SessionCreated {
     /// 改得了。起的不写，以前的日志没有这一格，照起读。
     #[serde(default = "titled", skip_serializing_if = "Clone::clone")]
     pub titles: bool,
+    /// 外部身份的会话（施工 SU-4 中：场所会话都在主人名下以后，关不关照这一格认）：群、陌生人的私聊关起来，只碰得到自己的
+    /// 工作区。不关的不写；以前的日志没有这一格，照属主读：属主不是主人的（平台桥名下的）是关起来的。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub confined: bool,
 }
 
 /// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`，会话那一间写 `session`，两样有一样。

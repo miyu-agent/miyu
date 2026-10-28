@@ -186,7 +186,7 @@ fn speaker(
         (true, None) => Ok(person.cloned().unwrap_or_else(|| admin(core))),
         (true, Some(_)) => Err(Refusal::BAD_PARAMS),
         (false, None) => Err(Refusal::VENUE_SESSION),
-        (false, Some(speaking)) => venues::speaker(core, handle.venue(), handle.owner(), speaking),
+        (false, Some(speaking)) => venues::speaker(core, handle, speaking),
     }
 }
 

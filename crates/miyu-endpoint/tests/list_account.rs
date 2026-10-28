@@ -1,5 +1,5 @@
-//! 会话列表照连接的账号（施工 Y-12 上，`protocol.md` 的 `session.list`、「会话列表的推送」）：以前一律列管理员的，声明了系统账号
-//! 的桥列会话、订阅会话列表拿到的是管理员的本机会话。现在各列各的：桥只看得到它自己的，管理员看不到桥的。
+//! 会话列表（`protocol.md` 的 `session.list`、「会话列表的推送」）：施工 Y-12 上起照连接的账号各列各的；施工 SU-4 中起包不再各有
+//! 一个账号，桥开的会话也归主人，桥和主人列出来的是同一份。
 
 use serde_json::json;
 
@@ -10,7 +10,7 @@ use crate::support::extensions::*;
 use crate::support::*;
 
 #[tokio::test]
-async fn each_account_lists_only_its_own_sessions() {
+async fn the_bridge_and_the_owner_list_the_same_sessions() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bot");
@@ -49,21 +49,19 @@ async fn each_account_lists_only_its_own_sessions() {
             .filter_map(|item| item["session"].as_str().map(str::to_string))
             .collect()
     };
-    assert_eq!(
-        listed(&read[2]),
-        std::slice::from_ref(&theirs),
-        "桥列的只有它自己的"
-    );
-    assert_eq!(
-        listed(&read[3]),
-        std::slice::from_ref(&theirs),
-        "桥订阅的列表也是"
-    );
+    let both = |mut got: Vec<String>| {
+        got.sort();
+        got
+    };
+    let mut expected = vec![mine, theirs];
+    expected.sort();
+    assert_eq!(both(listed(&read[2])), expected, "桥列的是主人的全部");
+    assert_eq!(both(listed(&read[3])), expected, "桥订阅的列表也是");
     let reply = client.call("l1", "session.list", json!({})).await;
-    assert_eq!(listed(&reply), [mine], "管理员看不到桥的");
+    assert_eq!(both(listed(&reply)), expected, "主人看得到桥开的");
 }
 
-/// 订阅着会话列表的桥自己开了会话，收得到那一项的推送（施工 Y-12 上）：那一项照属主（桥）的索引算，不照管理员的。
+/// 订阅着会话列表的桥自己开了会话，收得到那一项的推送（施工 Y-12 上）。
 #[tokio::test]
 async fn a_new_session_is_pushed_to_its_owner() {
     let home = Home::new();

@@ -27,11 +27,10 @@ use picture::Picture;
 const TARGET: &str = "miyu::endpoint";
 
 /// 账号 `account` 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
-/// 谁调都是主人那一份）。系统账号的会话记忆归主人（施工 O-4 下）。
+/// 谁调都是主人那一份）。
 pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
     Personas::new(&core.resources, &core.root, &core.admin)
         .with_packages(&crate::packages::folders(core, account))
-        .with_system_accounts(core.system_accounts())
         .with_keeper(core.admin.clone())
 }
 

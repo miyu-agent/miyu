@@ -1,5 +1,5 @@
 //! 场所会话与外部身份（施工 O-3，`docs/blueprint/venues.md`）：主人对应表认出私聊里的本人；`venue.session` 造、找回（核心重启
-//! 以后照样）、参数不对、该归系统账号的回 `no_system_account`；`as` 记成本人（带 `via`）或者外部身份（带 `account`、`role`）；
+//! 以后照样）、参数不对、不是平台桥的回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）；`as` 记成本人（带 `via`）或者外部身份（带 `account`、`role`）；
 //! 本机的会话不收 `as`，场所会话只收带 `as` 的；场所会话不进 `session.list`、会话列表的推送；同一个命令编号再发只生效一次。
 
 use std::time::Duration;
@@ -63,7 +63,7 @@ async fn the_owners_private_chat_is_found_again_and_kept_off_the_local_list() {
     let again = venue(&mut client, "v2", private("qq:10001")).await;
     assert_eq!(
         again["result"],
-        json!({"session": session, "created": false, "account": "alice"})
+        json!({"session": session, "created": false})
     );
     let listed = client.call("l1", "session.list", json!({})).await;
     assert_eq!(
@@ -77,7 +77,7 @@ async fn the_owners_private_chat_is_found_again_and_kept_off_the_local_list() {
     let again = venue(&mut client, "v3", private("qq:10001")).await;
     assert_eq!(
         again["result"],
-        json!({"session": session, "created": false, "account": "alice"})
+        json!({"session": session, "created": false})
     );
 }
 
@@ -95,7 +95,7 @@ async fn venues_that_need_a_system_account_and_bad_params_are_refused() {
     .enumerate()
     {
         let reply = venue(&mut client, &format!("n{n}"), params).await;
-        assert_eq!(reason(&reply), Some("no_system_account"), "{reply}");
+        assert_eq!(reason(&reply), Some("needs_approval"), "{reply}");
     }
     for (n, params) in [
         json!({"venue": "qq:private:1", "kind": "private"}),

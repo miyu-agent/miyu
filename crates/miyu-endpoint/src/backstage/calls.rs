@@ -151,8 +151,7 @@ pub(crate) async fn call(
         Ok(Ok(Ok(result))) => {
             if let Some(from) = from {
                 let passed = core.blob_grants.pass(&params.package, from, &result);
-                let answered = core.account_of(Some(&params.package));
-                hand_over(core, (answered, caller.account.clone()), passed).await;
+                hand_over(core, (core.admin.clone(), caller.account.clone()), passed).await;
             }
             Ok(result)
         }

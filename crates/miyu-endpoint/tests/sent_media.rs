@@ -100,23 +100,11 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
     core.stop_extensions().await;
 }
 
-/// 声明了系统账号的包（施工 Y-2中下）：它传的图在它自己名下，交回来的照它名下拷进会话属主名下，不照管理员的找。
+/// 包的工具交回一张它存的图（施工 SU-4 中：包不再各有一个账号，存的和主人共用一个存处）：会话里记下发了，图就在主人名下。
 #[tokio::test]
-async fn a_system_accounts_image_is_handed_over_from_its_own_blobs() {
-    handed_over_from_its_own_blobs(true).await;
-}
-
-/// 没声明系统账号的包（施工 Y-5 中上）：也是自己的账号，图一样从它名下拷进会话属主（机主）名下。
-#[tokio::test]
-async fn a_plain_packages_image_is_handed_over_from_its_own_blobs() {
-    handed_over_from_its_own_blobs(false).await;
-}
-
-/// 包 `memes`（`system_account` 照参数）的工具交回一张存在它自己名下的图：握手是它自己的账号，图拷进会话属主名下。
-async fn handed_over_from_its_own_blobs(system_account: bool) {
+async fn a_packages_image_is_in_the_owner_s_blobs() {
     let home = Home::new();
-    let memes = miyu_kernel::id::AccountId::parse("memes").expect("合写法");
-    let blob = Blobs::new(home.root.blobs(&memes))
+    let blob = Blobs::new(home.root.blobs(&alice()))
         .put(b"\x89PNG fake sticker")
         .expect("存得进");
     let program = Program::new();
@@ -134,11 +122,6 @@ async fn handed_over_from_its_own_blobs(system_account: bool) {
             "serve",
         ]),
     );
-    let manifest = home.root.path().join("system/packages/memes/package.toml");
-    let text = std::fs::read_to_string(&manifest).expect("装好了");
-    if system_account {
-        std::fs::write(&manifest, format!("{text}system_account = true\n")).expect("写得进");
-    }
     let script = Script::new([Play::calls(&[("sticker", "{}")]), Play::Says("好。")])
         .titles([Play::Says("测试")]);
     let core = crate::blob_session::served_core(&home, &script);
@@ -165,7 +148,7 @@ async fn handed_over_from_its_own_blobs(system_account: bool) {
     assert_eq!(sent.len(), 1, "{sent:?}");
     assert!(
         Blobs::new(home.root.blobs(&alice())).path(&blob).is_file(),
-        "从它名下拷进了属主名下"
+        "在主人名下"
     );
     core.stop_extensions().await;
 }

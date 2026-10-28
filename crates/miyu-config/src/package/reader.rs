@@ -204,28 +204,11 @@ impl Reader<'_> {
                 }
             },
         };
-        let system_account = self.flag(table, "process", "system_account")?;
         Ok(Process {
             args: self.texts(table, "process", "args")?,
             start,
             capabilities: self.capabilities(table)?,
-            system_account,
         })
-    }
-
-    /// 表 `table`（叫 `name`）里一格 `key`：`true`、`false`，没写的是假。
-    fn flag(&self, table: &dyn TableLike, name: &str, key: &str) -> Result<bool, Problem> {
-        match table.get(key) {
-            None => Ok(false),
-            Some(item) => item.as_bool().ok_or_else(|| {
-                self.problem(
-                    Some(item),
-                    Code::NotBool,
-                    &format!("{name}.{key}"),
-                    format!("{name}.{key} must be true or false"),
-                )
-            }),
-        }
     }
 
     /// `[process] capabilities`（施工 9-4 下上）：字的列表，每个都是认识的能力名、不重复；照表的先后排好。

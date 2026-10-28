@@ -163,6 +163,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             // 分叉出来的是普通会话，不算整理会话（施工 D-1 上）。
             dream: None,
             origin: None,
+            // 关着的会话分叉出来的照旧关着（施工 SU-4 中）。
+            confined: created.confined,
             forked: Some(Forked {
                 from: parent,
                 upto: plan.upto,

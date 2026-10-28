@@ -1,9 +1,28 @@
-//! 会话认不认几条跟着包走的命令（施工 X-8 下的 `/goal`、施工 J-2 的 `/loop`）：造会话、载入时照工具面定下，中途换了预设下次
-//! 载入照新的。
+//! 造会话、载入时定下的几样：会话认不认几条跟着包走的命令（施工 X-8 下的 `/goal`、施工 J-2 的 `/loop`，照工具面定下，中途换了
+//! 预设下次载入照新的），关没关起来，记忆的那一间。
 
 use super::Handle;
 
 impl Handle {
+    /// 带上这个会话的记忆的那一间（施工 R-3 补）。
+    #[must_use]
+    pub(crate) fn with_memory(mut self, memory: crate::memory::RoomCell) -> Handle {
+        self.memory = memory;
+        self
+    }
+
+    /// 带上这个会话关没关起来（施工 SU-4 中）。
+    #[must_use]
+    pub(crate) fn with_confined(mut self, confined: bool) -> Handle {
+        self.confined = confined;
+        self
+    }
+
+    /// 这个会话关没关起来（施工 SU-4 中）：群、陌生人的私聊是；本机的、主人本人的私聊不是。
+    pub fn confined(&self) -> bool {
+        self.confined
+    }
+
     /// 带上这个会话有没有长期目标（施工 X-8 下）。
     #[must_use]
     pub(crate) fn with_goals(mut self, goals: bool) -> Handle {

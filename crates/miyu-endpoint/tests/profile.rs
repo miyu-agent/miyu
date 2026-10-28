@@ -176,7 +176,7 @@ async fn venue_sessions_carry_it_only_for_the_admin_where_the_bridge_asks() {
     );
     let _core = served_core(&home);
     let got = replies(&path, 4).await;
-    let bot = AccountId::parse("bot").expect("合写法");
+    let bot = alice();
     assert_eq!(
         profile_of(&home, &alice(), &got[1]["result"]).as_deref(),
         Some(BLOCK),

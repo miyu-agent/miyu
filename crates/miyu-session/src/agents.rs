@@ -103,6 +103,8 @@ pub(crate) struct Agents {
     pub(crate) preset: Option<String>,
     /// 场所显示得了图片吗（施工 X-25）：子会话照抄。
     pub(crate) images: bool,
+    /// 关起来的会话（施工 SU-4 中）：子会话照抄，场所会话派的子代理也关着。
+    pub(crate) confined: bool,
     /// 派子代理能选的人格（施工 P-2 补）：同 `pools`，快照里 `subagent` 的 `persona` 的 `enum`（[`Agents::personas_in`]）。
     pub(crate) personas: Vec<String>,
     /// 资源目录（施工 A-F 中）：派 fork 子代理时读占位那一句、交代前面的外壳。

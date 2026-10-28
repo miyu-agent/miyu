@@ -236,6 +236,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             pools,
             preset: preset.clone(),
             images,
+            confined: place.1.is_some(),
             personas: agents_personas,
             resources: shipped.clone(),
             forked: false,
@@ -254,6 +255,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         titles,
         dream,
         origin,
+        confined: shut_in,
         ..snapshot.session_created(owner.clone(), venue.clone(), permission)
     };
     let (mut session, first) = Session::create(
@@ -401,6 +403,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)
                 .with_memory(room)
                 .with_goals(on_face)
+                .with_confined(confined)
                 .with_loops(loops)
                 .with_waiting(on_person)
                 .with_prefix(prefix))

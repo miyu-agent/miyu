@@ -51,7 +51,7 @@ impl Language {
         word.to_string()
     }
 
-    /// 带的另几样：子命令、后台页、吉祥物、接的平台、系统账号、几个配置项、MCP 服务（施工 X-2）、技能、脚本（施工 X-13 上）、
+    /// 带的另几样：子命令、后台页、吉祥物、接的平台、几个配置项、MCP 服务（施工 X-2）、技能、脚本（施工 X-13 上）、
     /// 斜杠命令模板（施工 X-14 上补）。
     pub(crate) fn carried(&self, what: Carried<'_>) -> String {
         match (self, what) {
@@ -60,7 +60,6 @@ impl Language {
             (Language::Chinese, Carried::Mascot) => "吉祥物".to_string(),
             (Language::Chinese, Carried::Theme) => "主题".to_string(),
             (Language::Chinese, Carried::Connection(platform)) => format!("接入 {platform}"),
-            (Language::Chinese, Carried::SystemAccount) => "系统账号".to_string(),
             (Language::Chinese, Carried::Settings(n)) => format!("{n} 项设置"),
             (Language::Chinese, Carried::Mcp(name)) => format!("MCP 服务 {name}"),
             (Language::Chinese, Carried::Skill(name)) => format!("技能 {name}"),
@@ -73,7 +72,6 @@ impl Language {
             (Language::English, Carried::Mascot) => "mascot".to_string(),
             (Language::English, Carried::Theme) => "theme".to_string(),
             (Language::English, Carried::Connection(platform)) => format!("{platform} connection"),
-            (Language::English, Carried::SystemAccount) => "system account".to_string(),
             (Language::English, Carried::Settings(1)) => "1 setting".to_string(),
             (Language::English, Carried::Settings(n)) => format!("{n} settings"),
             (Language::English, Carried::Mcp(name)) => format!("MCP server {name}"),
@@ -205,7 +203,6 @@ pub(crate) enum Carried<'a> {
     /// 终端的主题（施工 F-16）。
     Theme,
     Connection(&'a str),
-    SystemAccount,
     Settings(u64),
     /// 带的 MCP 服务（施工 X-2）：装上以后会在这台机器上跑它的命令。
     Mcp(&'a str),

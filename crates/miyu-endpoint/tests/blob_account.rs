@@ -1,6 +1,6 @@
-//! 附件照连接的账号存取（施工 Y-2中下，`protocol.md` 的 `blob.put`、`blob.open`、`blob.get`、`model.call`）：以前一律存进、读自
-//! 管理员名下，声明了系统账号的桥传的也在管理员那里。现在桥传的（一次传、分块传）都在它自己名下，管理员名下没有；不带
-//! `session` 的 `blob.get`、`model.call` 的图照它自己名下找；它往主人的私聊里发的附件拷一份进主人名下，她照属主读。
+//! 附件照连接的账号存取（施工 Y-2中下，`protocol.md` 的 `blob.put`、`blob.open`、`blob.get`、`model.call`；施工 SU-4 中起包不再
+//! 各有一个账号，扩展传的和主人共用一个存处）：桥传的（一次传、分块传）都在主人名下；不带 `session` 的 `blob.get`、`model.call` 的
+//! 图照连接的账号（主人）找；它往主人的私聊里发的附件她照属主读。
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
@@ -72,15 +72,19 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
     let script = Script::new([Play::Says("嗯。")]);
     let _core = served_core(&home, &script);
     let read = replies(&path, 9).await;
-    let bot = AccountId::parse("bot").expect("合写法");
-
     assert_eq!(read[1]["result"]["blob"], p.as_str(), "{read:?}");
     assert_eq!(read[4]["result"]["blob"], u.as_str(), "{read:?}");
     assert!(
-        holds(&home, &bot, &p) && holds(&home, &bot, &u),
-        "存在桥名下"
+        holds(&home, &alice(), &p) && holds(&home, &alice(), &u),
+        "存在主人名下"
     );
-    assert!(!holds(&home, &alice(), &u), "管理员名下没有");
+    assert!(
+        !home
+            .root
+            .account_dir(&AccountId::parse("bot").expect("合写法"))
+            .exists(),
+        "包不再有自己的家目录"
+    );
     assert_eq!(
         got(&read[5]),
         Ok(chunked.to_vec()),
@@ -92,13 +96,17 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
         "看图照自己名下找：{:?}",
         read[6]
     );
-    assert_eq!(read[7]["result"]["account"], "alice", "主人的私聊归管理员");
+    assert!(
+        read[7]["result"]["session"].is_string(),
+        "主人的私聊：{:?}",
+        read[7]
+    );
     assert!(fine(&read[8]), "发进主人的私聊：{:?}", read[8]);
     assert!(holds(&home, &alice(), &p), "发出去的拷进了属主名下");
 }
 
-/// 替机主干活的扩展（不是平台桥，施工 BUG-2，onebot 偷表情包时撞上）：`blob.put` 存在扩展自己名下，`model.call` 带这张图
-/// 先照连接自己的账号找、找得到，拷一份进替谁干活的那个人（机主）名下好发；只在别的账号名下的图照旧 `unknown_attachment`。
+/// 替主人干活的扩展（不是平台桥，施工 BUG-2，onebot 偷表情包时撞上）：`blob.put` 存在主人名下（施工 SU-4 中），`model.call` 带
+/// 这张图找得到；只在别的账号名下的图照旧 `unknown_attachment`。
 #[tokio::test]
 async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     let home = Home::new();
@@ -147,15 +155,13 @@ async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     let script = Script::new([]);
     let _core = served_core(&home, &script);
     let read = replies(&path, 5).await;
-    let helper = AccountId::parse("helper").expect("合写法");
-    assert!(holds(&home, &helper, &p), "存在扩展自己名下：{read:?}");
+    assert!(holds(&home, &alice(), &p), "存在主人名下：{read:?}");
     // 这个核心没配模型：图先找到了，才轮到找模型。
     assert_eq!(
         read[2]["error"]["data"]["reason"], "no_model",
         "自己存的图找得到：{:?}",
         read[2]
     );
-    assert!(holds(&home, &alice(), &p), "拷进了替谁干活的那个人名下");
     assert_eq!(
         read[3]["error"]["data"]["reason"], "unknown_attachment",
         "别人名下的图照旧找不到：{:?}",

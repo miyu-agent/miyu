@@ -243,20 +243,26 @@ pub async fn call(client: &mut Client, method: &str, id: &str) -> Value {
     client.call("c", method, json!({"package": id})).await
 }
 
-/// 包 `id` 的清单：程序 `program`、参数 `args`，`start`、`system_account` 照写；照桥声明 [`BRIDGE`] 那几项能力、算批过（施工 X-30）。
+/// 包 `id` 的清单：程序 `program`、参数 `args`，`start` 照写；`bridge` 的是接 QQ 的平台桥（`[connection] platform = "qq"`，施工
+/// SU-4 中起平台桥照它认）；照桥声明 [`BRIDGE`] 那几项能力、算批过（施工 X-30）。
 pub fn install_serving(
     home: &Home,
     id: &str,
     program: &str,
     args: &[String],
     start: &str,
-    system_account: bool,
+    bridge: bool,
 ) {
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
+    let connection = if bridge {
+        "\n[connection]\nplatform = \"qq\"\n"
+    } else {
+        ""
+    };
     home.write(
         &format!("system/packages/{id}/package.toml"),
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\nsystem_account = {system_account}\ncapabilities = {BRIDGE:?}\n",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\ncapabilities = {BRIDGE:?}\n{connection}",
             args.join(", ")
         ),
     );

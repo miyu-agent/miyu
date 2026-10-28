@@ -76,6 +76,7 @@ impl AgentPort for Spawner {
                 model: self.inherit.model(pool),
                 preset: agents.preset.clone(),
                 images: agents.images,
+                confined: agents.confined,
             };
             // 带的附件接在交代后面（施工 C-9）：先存好，存不下的不造子会话。
             let blocks = blocks(&self.blobs, &prompt, attached).await.map_err(|error| {

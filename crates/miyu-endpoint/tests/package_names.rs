@@ -1,5 +1,4 @@
-//! 包编号和主人的账号名互相占位（施工 Y-5 中下；施工 SU-1 起只剩主人）：每个带进程的包是自己的账号，账号名就是包的编号，包不能
-//! 装成主人的名字（`package_id_taken`）。同一个包再装一次（升级）照常。
+//! 包的编号不再占账号名（施工 SU-4 中：包不再各有一个账号）：和主人的账号同名的包照常装得上；同一个包再装一次（升级）照常。
 
 use serde_json::json;
 
@@ -22,18 +21,18 @@ fn folder(home: &Home, id: &str) -> String {
 }
 
 #[tokio::test]
-async fn a_package_cannot_take_the_owner_s_name_but_upgrades_itself() {
+async fn a_package_named_like_the_owner_installs_and_upgrades_itself() {
     let home = Home::new();
     let core = home.core(&miyu_session::testkit::Script::new([]));
     let mut owner = local(&core).await;
-    let refused = owner
+    let named = owner
         .call(
             "p1",
             "package.install",
             json!({"path": folder(&home, "alice")}),
         )
         .await;
-    assert_eq!(why(&refused), "package_id_taken", "{refused}");
+    assert!(named.get("error").is_none(), "和主人同名的照装：{named}");
     for id in ["p2", "p3"] {
         let installed = owner
             .call(id, "package.install", json!({"path": folder(&home, "kit")}))

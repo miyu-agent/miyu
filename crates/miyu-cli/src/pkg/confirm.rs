@@ -118,7 +118,7 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
     rows
 }
 
-/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、系统账号、MCP 服务、技能、脚本、几项设置（卸的时候设置算在「一并
+/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、MCP 服务、技能、脚本、几项设置（卸的时候设置算在「一并
 /// 删除」里）。
 fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let mut items = Vec::new();
@@ -140,9 +140,6 @@ fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     }
     if let Some(platform) = preview["connection"].as_str() {
         carried(Carried::Connection(platform));
-    }
-    if preview["system_account"] == true {
-        carried(Carried::SystemAccount);
     }
     for name in strings(&preview["mcp"]) {
         carried(Carried::Mcp(name));

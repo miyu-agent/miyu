@@ -237,27 +237,25 @@ pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Re
 
 /// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照连接的账号名下（施工
 /// Y-2中下），写了的照
-/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接的账号（身份），`serving` 是它替谁干活（施工 Y-5 中上），
-/// `package` 是扩展的包（人的连接没有）。扩展不写
+/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接（扩展的带着包，人的连接没有）。扩展不写
 /// `session` 的只读得到它拿得到的（施工 W-6 三补，[`Grants`]）。没有这个 blob、读不到：`unknown_blob`；`length` 超过
 /// [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
 pub(crate) async fn get(
     core: &Core,
-    (caller, serving, package): (&AccountId, &AccountId, Option<&str>),
+    caller: &crate::hello::Caller,
     params: GetParams,
 ) -> Result<Value, Refusal> {
+    let package = caller.package.as_deref();
     if params.length > miyu_fs::MAX_LENGTH {
         return Err(Refusal::BAD_PARAMS);
     }
     let hash = ContentHash::parse(&params.blob).map_err(|_| Refusal::BAD_PARAMS)?;
     let account = match &params.session {
-        Some(session) => {
-            reach::owner(core, (caller, serving, package.is_some()), session, &hash).await?
-        }
+        Some(session) => reach::owner(core, (caller, package.is_some()), session, &hash).await?,
         None if package.is_some_and(|package| !core.blob_grants.holds(package, &hash)) => {
             return Err(Refusal::UNKNOWN_BLOB);
         }
-        None => caller.clone(),
+        None => caller.account.clone(),
     };
     let root = core.root.clone();
     blocking(move || get_blocking(&root, &account, &hash, params.offset, params.length)).await

@@ -172,25 +172,18 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
         "答的包写进回应、自己拿不到的照样读不到"
     );
 
-    // 每个带进程的包是自己的账号（施工 Y-5 中上）：memes 存的在它自己名下，转给桥的拷进了桥的名下；人的连接不写 `session` 的
-    // 照自己名下读，包自己存的没交给人，读不到；人自己存的照旧读得到。
-    let blobs = |account: &str| {
-        let account = miyu_kernel::id::AccountId::parse(account).expect("合写法");
-        miyu_store::blob::Blobs::new(home.root.blobs(&account))
-    };
+    // 包不再各有一个账号（施工 SU-4 中）：扩展存的和主人共用一个存处，包之间只靠上面的放行管；人的连接读自己的存处，都读得到。
     let own_hash_id = miyu_kernel::id::ContentHash::parse(&own_hash).expect("合写法");
     assert!(
-        blobs("memes").path(&own_hash_id).is_file(),
-        "存在 memes 名下"
-    );
-    assert!(
-        blobs("bridge").path(&own_hash_id).is_file(),
-        "转过去的拷进了桥的名下"
+        miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+            .path(&own_hash_id)
+            .is_file(),
+        "存在主人名下"
     );
     let reply = client
         .call("g1", "blob.get", json!({"blob": own_hash}))
         .await;
-    assert_eq!(got(&reply), Err("unknown_blob".to_string()), "{reply}");
+    assert_eq!(got(&reply), Ok(own.to_vec()), "{reply}");
     let reply = client
         .call("g2", "blob.get", json!({"blob": secret_hash}))
         .await;

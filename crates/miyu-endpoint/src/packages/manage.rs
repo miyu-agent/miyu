@@ -367,10 +367,6 @@ pub(super) async fn clear_of_conflicts(
 ) -> Result<(), Refusal> {
     super::may_manage::may_manage(peer.admin)?;
     let installed = core.system_packages();
-    // 包的编号就是它的账号名（施工 Y-5 中下）：和主人的名字撞了不装；升级（已经装着的同一个）不算。
-    if !installed.iter().any(|one| one.id == id) && id == core.admin.as_str() {
-        return Err(Refusal::PACKAGE_ID_TAKEN);
-    }
     // 依赖的包没装的装不上（施工 F-11）：升级时它自己那一份不算。软件源做好以后再定要不要自动装。
     let others: Vec<&Found> = installed.iter().filter(|one| one.id != id).collect();
     let missing = super::depends::missing(&others, &manifest);

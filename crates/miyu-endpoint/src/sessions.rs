@@ -26,6 +26,7 @@ use crate::presets;
 use crate::refusal::Refusal;
 use crate::spawn;
 
+mod confined;
 mod delete;
 mod dream;
 mod forked;
@@ -38,6 +39,7 @@ pub(crate) mod prefix;
 mod setup;
 pub(crate) mod state;
 
+pub(crate) use confined::{confined, confined_of, placed};
 pub(crate) use opening::Opening;
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
 pub(crate) use setup::Setup;
@@ -129,7 +131,7 @@ pub(crate) struct Found {
 }
 
 impl Sessions {
-    /// 造一个会话：属主照 `who.owner`（施工 O-4 下：连接是谁，场所会话照对应表、系统账号定的）；有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
+    /// 造一个会话：属主照 `who.owner`（施工 SU-4 中起都是主人）；有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
     /// 没写的照默认预设，施工 P-2 上，`presets.rs`），再找人格：`persona` 照 [`personas::resolve`]，预设不再参与（施工 P-4
     /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个属主同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找；
     /// 别的账号碰巧用了同一个编号的照造新的（施工 BUG-1：以前只比编号，交回了别人的会话）。
@@ -319,7 +321,7 @@ impl Sessions {
             no_tools: false,
             presets: Some(presets_of),
             group: None,
-            confined: confined(core, &child.owner),
+            confined: child.confined || confined(core, &child.owner),
             images: child.images,
             titles: true,
             dream: None,
@@ -384,18 +386,10 @@ pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
 }
 
-/// 属主是 `owner` 的会话关不关起来（施工 5-12；SU-4 上起都照这一处算）：平台桥名下的（群、陌生人的私聊）关起来，主人本人的不关。
-pub(crate) fn confined(core: &Core, owner: &AccountId) -> bool {
-    *owner != core.admin
-}
-
-/// 账号 `owner` 名下的会话里，核心替他做的事记成谁（施工 Y-2 下下上）：系统账号（平台桥）的照旧记成管理员，人记他自己。
-pub(crate) fn owner_by(core: &Core, owner: &AccountId) -> By {
-    if core.is_system(owner) {
-        admin(core)
-    } else {
-        By::Person(Person::new(owner.clone()))
-    }
+/// 账号 `owner` 名下的会话里，核心替他做的事记成谁（施工 Y-2 下下上）：主人（施工 SU-4 中起只有主人；以前的日志里平台桥名下的
+/// 会话也记成主人）。
+pub(crate) fn owner_by(core: &Core, _owner: &AccountId) -> By {
+    admin(core)
 }
 
 /// 照连接记成谁（施工 Y-2 下下上）：人记他自己（成员发的命令记在成员名下）；核心拉起的扩展照替谁干活的记（[`owner_by`]）：

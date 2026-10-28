@@ -229,45 +229,6 @@ async fn unknown_packages_cannot_be_removed() {
     assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
 }
 
-/// 升级撞了：撤回新的，原来那一份照旧（施工 F-5 上）。
-#[tokio::test]
-async fn a_failed_upgrade_keeps_the_old_one() {
-    let home = Home::new();
-    // 编号和机主同名的包，装是装不上的（施工 Y-5 中下，`package_id_taken`）；这里要的是「早就装着、升级才撞」：旧的直接放进家目录
-    // 那一层，再起核心。
-    std::fs::create_dir_all(mine(&home, "alice")).expect("建得了");
-    std::fs::write(mine(&home, "alice/package.toml"), manifest("旧的", "alice")).expect("写得进");
-    std::fs::write(mine(&home, "alice/v.txt"), "1").expect("写得进");
-    let mut client = connected(&home).await;
-    let packages = list(&mut client).await;
-    assert_eq!(find(&packages, "alice").expect("装着")["name"], "旧的");
-    source(&home, "alice", &manifest("新的", "alice"));
-    std::fs::write(home.work.join("alice/v.txt"), "2").expect("写得进");
-    // 拷进去重读以后才认得出来的：声明了系统账号，编号却是管理员的账号（`account_taken`）。撤回，原来的放回去。撞名的装之前
-    // 就拦了（施工 F-8 六补）。
-    let path = source(
-        &home,
-        "alice",
-        &format!("{}system_account = true\n", manifest("新的", "alice")),
-    );
-    let reply = client
-        .call("i2", "package.install", json!({"path": path}))
-        .await;
-    assert_eq!(reason(&reply), Some("package_invalid"), "{reply}");
-    let packages = list(&mut client).await;
-    assert_eq!(find(&packages, "alice").expect("还在")["name"], "旧的");
-    assert_eq!(
-        std::fs::read_to_string(mine(&home, "alice/v.txt")).expect("还在"),
-        "1",
-        "原来的文件放回去"
-    );
-    assert!(
-        leftovers(&home).is_empty(),
-        "不留暂存、备份：{:?}",
-        leftovers(&home)
-    );
-}
-
 /// 家目录那一层里点开头的：暂存、备份。
 fn leftovers(home: &Home) -> Vec<String> {
     std::fs::read_dir(home.root.path().join("system/packages"))

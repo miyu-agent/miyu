@@ -168,38 +168,20 @@ fn served(command: &str) -> String {
     ui(command).replace("\n[ui]\n", "\n[process]\nsystem_account = true\n")
 }
 
-/// 系统账号（施工 O-4 下）：读成了的、声明了的包各一个，账号名是编号；编号是管理员的那一份报 `account_taken`、整份不收。
+/// 包不再各有一个账号（施工 SU-4 中）：清单里还写着 `system_account` 的照不认识的键，整份不收；编号和主人的账号一样的也照收。
 #[test]
-fn a_package_declaring_a_system_account_gets_one_named_after_it() {
+fn a_package_still_declaring_a_system_account_is_refused() {
     let places = Places::new();
     places.write(Layer::Shipped, "onebot/package.toml", &served("onebot"));
-    places.write(Layer::Home, "admin/package.toml", &served("boss"));
-    places.write(Layer::Home, "tui/package.toml", &ui("tui"));
-    places.write(
-        Layer::Home,
-        "zz/package.toml",
-        "[package]\n\n[ui]\n\n[process]\n",
-    );
+    places.write(Layer::Home, "admin/package.toml", &ui("admin"));
     let found = places.packages.read();
     assert_eq!(
         brief(&found),
         [
-            ("admin".to_string(), Layer::Home, Some(Code::AccountTaken)),
-            ("onebot".to_string(), Layer::Shipped, None),
-            ("tui".to_string(), Layer::Home, None),
-            ("zz".to_string(), Layer::Home, Some(Code::TwoPrograms)),
+            ("admin".to_string(), Layer::Home, None),
+            ("onebot".to_string(), Layer::Shipped, Some(Code::UnknownKey)),
         ]
     );
-    assert_eq!(
-        system_accounts(&found),
-        [AccountId::parse("onebot").unwrap()],
-        "没声明的、写错的不算"
-    );
-    let Err(Issue::Wrong(problem)) = &found[0].read else {
-        panic!("撞了管理员");
-    };
-    assert_eq!(problem.detail, "admin");
-    assert_eq!(problem.line, None);
 }
 
 /// 一份内置包的清单，带一个功能 `feature`，写在第 6 行。

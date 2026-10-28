@@ -142,12 +142,8 @@ pub(crate) fn language_of(config: &Config, system: &'static str) -> &'static str
 /// 这个连接是谁（施工 O-4 下、O-13 上）：账号，和核心拉起的扩展是哪个包（本机的头没有）。
 #[derive(Debug, Clone)]
 pub(crate) struct Caller {
-    /// 这个连接是谁（身份，施工 Y-5 上）：声明了系统账号的包的扩展是那个系统账号，别的是管理员。凭据、吊销、成员闸、
-    /// 上传和附件「谁交的」照它；资源归谁、会话属主照 [`Caller::acting_for`]。
+    /// 这个连接是谁：一律是主人（施工 SU-4 中：包不再各有一个账号；平台桥照 `package` 认）。
     pub(crate) account: AccountId,
-    /// 替谁干活，和身份不是同一个的才有（施工 Y-5 中上）：没声明系统账号的包替机主。核心拉起的连接不登录、不换账号，所以这一格
-    /// 不会和 `account` 对不上。
-    pub(crate) serving: Option<AccountId>,
     /// 核心拉起的扩展是哪个包：`events.append` 的 `ext.<包>.` 照它查、记成这个模块写的。
     pub(crate) package: Option<String>,
     /// 核心往这个连接发请求的一头（施工 O-2 上）：`provide` 照它记下这个包由谁提供。
@@ -155,10 +151,9 @@ pub(crate) struct Caller {
 }
 
 impl Caller {
-    /// 这个连接替谁干活（施工 Y-5 上，设计 06 U16、U17）：人格、预设、知识库、技能、脚本、场所、终端会话、用量、造会话的
-    /// 属主、项目、订阅都照它。没声明系统账号的包替机主（施工 Y-5 中上），别的和身份是同一个。
+    /// 这个连接替谁干活：主人（施工 SU-4 中起同 `account`；用它的那几十处 SU-4 下收）。
     pub(crate) fn acting_for(&self) -> &AccountId {
-        self.serving.as_ref().unwrap_or(&self.account)
+        &self.account
     }
 }
 
@@ -178,7 +173,7 @@ pub(crate) struct Peer {
 }
 
 /// 握手：交回这个连接记下的、它是怎么认出来的（施工 W-8）和回应。拒绝的，交回拒绝和要不要断开。`spawned` 的是核心亲手拉起的
-/// 扩展（施工 9-4 上）：不看凭据，写了的也不看。`account` 是这个连接是谁（施工 O-4 下：声明了系统账号的包的扩展是它）。`source` 是
+/// 扩展（施工 9-4 上）：不看凭据，写了的也不看。`account` 是这个连接是谁（施工 SU-4 中起都是主人）。`source` 是
 /// 网页软件转来的远程连接的来源地址（`connection.remote`，本机的没有）：密码登录照它限流。
 pub(crate) async fn hello(
     core: &Arc<Core>,
@@ -379,6 +374,3 @@ pub(crate) fn same(given: &str, expected: &str) -> bool {
             .fold(0u8, |differ, (a, b)| differ | (a ^ b))
             == 0
 }
-
-#[cfg(test)]
-mod tests;

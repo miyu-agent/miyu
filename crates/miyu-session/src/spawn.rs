@@ -156,6 +156,8 @@ pub struct Child {
     pub preset: Option<String>,
     /// 场所显示得了图片吗（施工 X-25）：父会话的。
     pub images: bool,
+    /// 关起来的会话（施工 SU-4 中）：父会话的，场所会话派的子代理也关着。
+    pub confined: bool,
 }
 
 /// 造一个 fork 子代理要的（施工 A-F 中）：属主、场所、权限、快照、模型、人格都照父会话落了盘的日志，只交这几样。

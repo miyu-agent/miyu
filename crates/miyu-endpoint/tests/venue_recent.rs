@@ -1,5 +1,5 @@
 //! `venue.session` 的 `recent`（施工 O-13 再补，接入通讯平台要的）：只给群、1 到 1000 条，写错的 `bad_params` 带 `data.field`
-//! 是 `recent`；写对了的照常往下走（这里的连接不是系统账号，造群会话回 `no_system_account`）。
+//! 是 `recent`；写对了的照常往下走（这里的连接不是平台桥，造群会话回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起））。
 
 use serde_json::{Value, json};
 
@@ -39,7 +39,7 @@ async fn recent_is_for_groups_and_within_range() {
         ),
         (
             json!({"venue": "qq:group:1", "kind": "group", "recent": 1000}),
-            ("no_system_account", ""),
+            ("needs_approval", ""),
         ),
     ] {
         let reply = client.call("v", "venue.session", params.clone()).await;

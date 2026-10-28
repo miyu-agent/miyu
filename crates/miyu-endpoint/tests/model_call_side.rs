@@ -18,7 +18,7 @@ fn install_bot(home: &Home, program: &str, steps: &[String]) {
     home.write(
         "system/packages/bot/package.toml",
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bot\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\nsystem_account = false\ncapabilities = {BRIDGE:?}\n\n[[side]]\nid = \"judge\"\ntier = \"lite\"\nname = {{ en = \"Reply judge\", zh = \"判断要不要回\" }}\nsummary = {{ en = \"Decides whether to reply.\", zh = \"群里有人说话时判断要不要回\" }}\n\n[[side]]\nid = \"deep\"\ntier = \"flagship\"\nname = {{ en = \"Deep\" }}\nsummary = {{ en = \"Thinks hard.\" }}\n",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bot\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[[side]]\nid = \"judge\"\ntier = \"lite\"\nname = {{ en = \"Reply judge\", zh = \"判断要不要回\" }}\nsummary = {{ en = \"Decides whether to reply.\", zh = \"群里有人说话时判断要不要回\" }}\n\n[[side]]\nid = \"deep\"\ntier = \"flagship\"\nname = {{ en = \"Deep\" }}\nsummary = {{ en = \"Thinks hard.\" }}\n",
             args.join(", ")
         ),
     );

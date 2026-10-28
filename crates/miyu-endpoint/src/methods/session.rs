@@ -44,6 +44,7 @@ pub(super) async fn create(
         images: params.images,
         titles: params.titles,
         origin: None,
+        confined: false,
     };
     let created = core
         .sessions
@@ -136,7 +137,7 @@ pub(super) async fn send(
         (true, Some(_)) => return Err(Refusal::BAD_PARAMS),
         (false, None) => return Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => {
-            by = venues::speaker(core, found.handle.venue(), found.handle.owner(), speaking)?;
+            by = venues::speaker(core, &found.handle, speaking)?;
         }
     }
     // 先换目录再说（施工 9-7 再补）：这一句开的那一轮照新目录跑。

@@ -114,6 +114,7 @@ pub(crate) async fn get(
         titles: true,
         // 终端集成开的（施工 8-33 四补）：会话列表照它分得出来。
         origin: Some("terminal".to_string()),
+        confined: false,
     };
     let cwd = params.cwd.unwrap_or_else(|| "~".to_string());
     let persona = settings.persona.as_deref().map(Some);

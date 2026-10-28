@@ -52,7 +52,7 @@ impl Setup {
             ProfileSettings::from(&resolved.values()),
             who.venue.as_ref(),
             who.profile,
-            who.owner == core.admin,
+            !(who.confined || super::confined(core, &who.owner)),
         );
         // 空的编号是明着无工具（施工 P-16 下，`presets::opening`）：不找预设。
         let preset = match who.preset.as_deref() {
@@ -131,7 +131,7 @@ impl Setup {
             no_tools: who.preset.as_deref() == Some(""),
             presets: Some(presets::places(core, &who.owner)),
             group: who.group,
-            confined: super::confined(core, &who.owner),
+            confined: who.confined || super::confined(core, &who.owner),
             images: who.images,
             titles: who.titles,
             dream: None,

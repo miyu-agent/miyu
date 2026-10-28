@@ -150,8 +150,7 @@ pub struct Core {
     /// 会话表。
     sessions: Sessions,
     /// 各个账号的会话列表的索引（施工 3-8 七补）：在它们自己的家目录下，开了一直开着；会话落盘时更新、删会话时删行、列会话时读。
-    /// 系统账号的拉起扩展前开（施工 O-4 下，`system_accounts::prepare`；装上新的跟着开，卸掉的留着、装回来接着用，施工 F-5 下）；
-    /// 别人的（机主的也是，施工 Y-12 中上：设置那一段的核心不该替还没有的人建家目录）用到时才开（施工 Y-12 上）。
+    /// 用到时才开（施工 Y-12 上；施工 Y-12 中上：设置那一段的核心不该替还没有的人建家目录）。
     indexes: std::sync::Mutex<std::collections::BTreeMap<AccountId, Arc<SessionIndex>>>,
     /// 用量汇总（施工 8-15，`state/usage.db`）：起来时开一次，一直开着；会话落盘时写、一次性入口记账（交给模型资料）、
     /// `usage.query` 和 `session_usage` 查之前补。

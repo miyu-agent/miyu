@@ -50,10 +50,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "这个技能随软件包提供，不能删除。",
             "This skill comes with a package and cannot be deleted.",
         ),
-        "package_id_taken" => (
-            "编号和已有的账号重名，无法安装。",
-            "Id is already taken by an account, cannot install.",
-        ),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",
@@ -108,7 +104,6 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),
         "session_not_found" => ("会话不存在。", "Session not found."),
         "unknown_call" => ("调用不存在。", "Call not found."),
-        "no_system_account" => ("需要系统账号。", "System account required."),
         "venue_session" => (
             "平台会话不能直接发消息。",
             "Cannot send messages directly to a platform session.",

@@ -11,7 +11,7 @@ use miyu_session::settings::ProfileSettings;
 /// 造会话时要记下的几样：有没有人能确认，是不是一次性的，用哪个模型。
 #[derive(Debug, Clone)]
 pub(crate) struct Opening {
-    /// 属主（施工 O-4 下）：`session.create` 的是连接是谁，`venue.session` 的照对应表、系统账号定。
+    /// 属主：主人（施工 SU-4 中起场所会话也是）。
     pub(crate) owner: AccountId,
     /// 有没有人能确认：头握手时报的。
     pub(crate) attended: bool,
@@ -37,6 +37,8 @@ pub(crate) struct Opening {
     pub(crate) titles: bool,
     /// 从哪开的（施工 8-33 四补）：`session.terminal` 开的是 `terminal`，别的没有。
     pub(crate) origin: Option<String>,
+    /// 关起来（施工 SU-4 中）：`venue.session` 开的群、陌生人的私聊；记进 `session.created`。别的不关。
+    pub(crate) confined: bool,
 }
 
 /// 新会话开局的级别（施工 8-32）：本机开的照 `permission.level`，场所会话照旧从工作区开局（外部身份另有限制）。
@@ -47,8 +49,8 @@ pub(super) fn opening_level(permission: &PermissionSettings, venue: Option<&Venu
     }
 }
 
-/// 「关于你」（施工 P-9）：配置里只有管理员的个人设置，属主是管理员本人、又是本机开的或者桥说要的（`asked`，
-/// `venue.session` 的 `profile`）才带；别的一律空的（子代理、别人的会话、群聊都不带）。
+/// 「关于你」（施工 P-9）：主人本人的会话（`admin`：没关起来的，施工 SU-4 中）、又是本机开的或者桥说要的（`asked`，
+/// `venue.session` 的 `profile`）才带；别的一律空的（子代理、群聊、陌生人的私聊都不带）。
 pub(super) fn profile_for(
     settings: ProfileSettings,
     venue: Option<&VenueId>,

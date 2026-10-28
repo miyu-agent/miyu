@@ -43,12 +43,6 @@ impl Refusal {
         reason: "wrong_target",
         data: None,
     };
-    /// 包的编号和人占着的名字撞了（施工 Y-5 中下）：用户名、`admin`、`users`；包的编号就是它的账号名。
-    pub(crate) const PACKAGE_ID_TAKEN: Refusal = Refusal {
-        code: REFUSED,
-        reason: "package_id_taken",
-        data: None,
-    };
     /// 包的程序不在 `miyu` 旁边（施工 F-6 上）：当没装，开不了。
     pub(crate) const PROGRAM_MISSING: Refusal = Refusal {
         code: REFUSED,

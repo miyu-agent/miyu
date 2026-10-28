@@ -105,12 +105,12 @@ async fn a_platform_s_tools_are_only_given_in_its_own_venues() {
         .system_packages()
         .join("bridge")
         .join("package.toml");
-    let text = read(&manifest) + "\n[connection]\nplatform = [\"qq\", \"tg\"]\n";
+    let text = read(&manifest).replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
     std::fs::write(&manifest, text).expect("写得进");
     let config = format!("{BINDINGS}\"tg:777\" = \"alice\"\n");
     let core = served_core_with(&home, &Script::new([Play::Says("在。")]), &config);
     let got = replies(&path, 10).await;
-    let bridge = AccountId::parse("bridge").expect("合写法");
+    let bridge = alice();
     assert_eq!(got[1]["result"]["tools"], 4, "{got:?}");
     assert_eq!(
         face(&home, &bridge, &got[2]),
@@ -130,7 +130,7 @@ async fn a_platform_s_tools_are_only_given_in_its_own_venues() {
     // 两个平台的场所都是它的，别的平台的不是。
     assert_eq!(got[5]["result"], json!({}), "{got:?}");
     assert_eq!(got[6]["error"]["data"]["field"], "venue", "{got:?}");
-    assert_eq!(got[7]["result"]["account"], "alice", "{got:?}");
+    assert!(got[7]["result"]["session"].is_string(), "{got:?}");
     assert!(
         got[8].get("error").is_none(),
         "桥碰得到主人 tg 的私聊：{got:?}"
@@ -189,7 +189,7 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         .system_packages()
         .join("bridge")
         .join("package.toml");
-    let text = read(&manifest) + "\n[connection]\nplatform = [\"qq\", \"tg\"]\n";
+    let text = read(&manifest).replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
     std::fs::write(&manifest, text).expect("写得进");
     home.write(
         "home/alice/presets/off.toml",
@@ -201,7 +201,7 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         BINDINGS,
     );
     let got = replies(&path, 6).await;
-    let bridge = AccountId::parse("bridge").expect("合写法");
+    let bridge = alice();
     assert_eq!(
         face(&home, &bridge, &got[2]),
         ["note", "qqnote", "tg_send"],

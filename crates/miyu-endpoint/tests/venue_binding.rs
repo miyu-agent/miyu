@@ -1,6 +1,6 @@
-//! `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：核心拉起的、以系统账号连进来的扩展问一个平台身份在主人对应表里
-//! 对着谁：写了的回主人的账号（施工 SU-1 补：值是什么都算主人），没写的回 `null`；身份写错的（空的）、多写格的、一次问几个的 `bad_params`；本机的头（不是系统
-//! 账号）回 `no_system_account`。只读：对应表照旧。
+//! `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台桥问一个平台身份是不是主人本人：写了的回 `{"owner": true}`（施工
+//! SU-1 补：值是什么都算主人；施工 SU-4 中起不再回账号），没写的回 `false`；身份写错的（空的）、多写格的、一次问几个的
+//! `bad_params`；本机的头（不是平台桥）回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）。只读：对应表照旧。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -91,9 +91,9 @@ async fn a_bridge_asks_who_a_platform_id_is_bound_to() {
     let core = served_core(&home);
     let got = replies(&path, 7).await;
     assert!(got[0].get("result").is_some(), "握手成了：{got:?}");
-    assert_eq!(got[1]["result"], json!({"account": "alice"}), "{got:?}");
-    assert_eq!(got[2]["result"], json!({"account": null}), "没写的");
-    assert_eq!(got[3]["result"], json!({"account": null}), "没写的");
+    assert_eq!(got[1]["result"], json!({"owner": true}), "{got:?}");
+    assert_eq!(got[2]["result"], json!({"owner": false}), "没写的");
+    assert_eq!(got[3]["result"], json!({"owner": false}), "没写的");
     for refused in &got[4..7] {
         assert_eq!(
             refused["error"]["data"]["reason"], "bad_params",
@@ -101,13 +101,13 @@ async fn a_bridge_asks_who_a_platform_id_is_bound_to() {
         );
     }
 
-    // 本机的头不是系统账号。
+    // 本机的头不是平台桥。
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let refused = client
         .call("b1", "venue.binding", json!({"id": "qq:10001"}))
         .await;
-    assert_eq!(reason(&refused), Some("no_system_account"), "{refused}");
+    assert_eq!(reason(&refused), Some("needs_approval"), "{refused}");
     assert_eq!(
         std::fs::read_to_string(home.root.system().join("config.toml")).expect("读得出"),
         BINDINGS,

@@ -241,8 +241,6 @@ impl Core {
     /// 照开关拉起开着的扩展（施工 9-4 上）：核心起来、开始接连接之前调一次。要在 tokio 的运行时里调。要的能力还有没批的
     /// 不拉起，记成停下（`needs_approval`，施工 9-4 下上）。拉起以前照登记缓存先登记它的工具（施工 O-2 中）。
     pub fn start_extensions(self: &Arc<Self>) {
-        // 扩展以系统账号的身份连进来：先建它们的家目录（施工 O-4 下）。
-        crate::system_accounts::prepare(self);
         // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
         self.follow_scripts();
         // 个人设置里的 MCP 服务（施工 F-9 下）：起包里带的以前先定下谁盖住谁。
@@ -290,13 +288,11 @@ impl Core {
     /// 以后的那一份，删不成的再换回来（施工 F-5 补）。
     /// - 卸掉的停下，它登记的工具拿掉、记下随包卸掉了：用过它的会话照旧留着、调到时报已卸载。
     /// - 新装上的照开关拉起；升级了的（清单变了）先停下，再照开关拉起。
-    /// - 系统账号照核心这时的清单先建好家目录。
     pub(crate) async fn follow_packages(
         self: &Arc<Self>,
         old: &Processes<'_>,
         new: &Processes<'_>,
     ) {
-        crate::system_accounts::prepare(self);
         for id in old.keys().filter(|id| !new.contains_key(*id)) {
             self.extensions.halt(id).await;
             // 它带的 MCP 服务也停下（施工 X-3 下）；工具和它自己的一起记成随包卸掉。

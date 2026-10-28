@@ -1,8 +1,7 @@
-//! `venue.sessions`（施工 O-32 前，`venues.md`「列场所会话」）：核心拉起的、以系统账号连进来的扩展（清单写着 `[connection]
-//! platform = "qq"`）列出它名下的场所会话和终端管理员在这个平台的私聊，每个场所一个：删了的不列；同一个场所有几个的（从回收处
-//! 拿回来的旧的）只列最新的；这个场所最新的会话在别的账号名下的（私聊的对方后来写进了对应表，属主换了）不列；别的平台的、对应表
-//! 里已经没有这个平台的身份对着管理员的、系统账号自己造的本机会话不列。多写格的 `bad_params`；本机的头（不是系统账号）回
-//! `no_system_account`。同一个数据根上换一份核心，就像重启过。
+//! `venue.sessions`（施工 O-32 前，`venues.md`「列场所会话」）：核心拉起的平台桥（清单写着 `[connection] platform = "qq"`）列出
+//! 它接的平台的场所会话，每个场所一个（施工 SU-4 中起场所会话都归主人）：删了的不列；同一个场所有几个的（从回收处拿回来的旧的、
+//! 私聊的对方后来写进了对应表另开的）只列最新的；别的平台的、桥自己造的本机会话不列。多写格的 `bad_params`；本机的头（不是桥）
+//! 回 `needs_approval`（没批 `act_for_external`）。同一个数据根上换一份核心，就像重启过。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -11,7 +10,6 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use miyu_endpoint::Core;
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_tool::Catalog;
 
@@ -76,18 +74,13 @@ fn made(reply: &Value) -> String {
         .to_string()
 }
 
-/// 系统账号。
-fn bot() -> AccountId {
-    AccountId::parse("bot").expect("合写法")
-}
-
-/// 系统账号 `bot` 的清单：程序 `program` 照 `args` 一步步做，开着就拉起，接 `qq`。
+/// 平台桥 `bot` 的清单：程序 `program` 照 `args` 一步步做，开着就拉起，接 `qq`。
 fn install_bridge(home: &Home, program: &str, args: &[String]) {
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(
         "system/packages/bot/package.toml",
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\nsystem_account = true\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
             args.join(", ")
         ),
     );
@@ -104,7 +97,9 @@ async fn phase(
     n: usize,
 ) -> Vec<Value> {
     let (path, step) = record(home, name);
-    let all: Vec<String> = [step.as_str(), "hello"]
+    // 每份核心的请求编号各带前缀：会话都归主人，核心照「属主加命令编号」认重发的，编号撞了会交回上一份造的。
+    let ids = format!("ids:{name}-");
+    let all: Vec<String> = [step.as_str(), &ids, "hello"]
         .iter()
         .chain(steps)
         .chain(&["wait"])
@@ -115,11 +110,11 @@ async fn phase(
     let got = replies(&path, n).await;
     assert!(got[0].get("result").is_some(), "握手成了：{got:?}");
     if name == "first" {
-        // 本机的头不是系统账号。
+        // 本机的头不是桥。
         let mut client = Client::connect(Arc::clone(&core));
         client.hello().await;
         let refused = client.call("l1", "venue.sessions", json!({})).await;
-        assert_eq!(reason(&refused), Some("no_system_account"), "{refused}");
+        assert_eq!(reason(&refused), Some("needs_approval"), "{refused}");
     }
     core.stop_extensions().await;
     core.stop_sessions().await;
@@ -147,7 +142,7 @@ fn listed(pairs: &[(&str, &str)]) -> Value {
 }
 
 #[tokio::test]
-async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
+async fn a_bridge_lists_the_venue_sessions_of_its_platform() {
     let home = Home::new();
     let program = Program::new();
     let config = format!("{BINDINGS}\"tg:30001\" = \"alice\"\n");
@@ -158,7 +153,7 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         &config,
         &[
             &open("qq:group:1"),
-            // 群会话归它：删也是它删（施工 Y-2 上起人的头碰不到场所会话，项目主人 10-23 定删放在平台的后台）。
+            // 删群会话是桥删（施工 Y-2 上起人的头碰不到场所会话，项目主人 10-23 定删放在平台的后台）。
             r#"ask:session.delete:{"session":"{session}"}"#,
             &open("qq:group:1"),
             &open("qq:group:2"),
@@ -173,12 +168,11 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
     )
     .await;
     let deleted = made(&got[1]);
-    assert_eq!(got[2]["result"], json!({}), "桥删得掉它自己的群：{got:?}");
+    assert_eq!(got[2]["result"], json!({}), "桥删得掉它的平台的群：{got:?}");
     assert_eq!(got[3]["result"]["created"], true, "删了的找不回来，另造");
     let (first, second, stranger, admins) =
         (made(&got[3]), made(&got[4]), made(&got[5]), made(&got[6]));
-    assert_eq!(got[6]["result"]["account"], "alice", "终端管理员的私聊归他");
-    assert_eq!(got[7]["result"]["account"], "alice", "别的平台的私聊也归他");
+    made(&got[7]);
     made(&got[8]);
     assert_eq!(
         got[9]["result"],
@@ -188,16 +182,16 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
             (&second, "qq:group:2"),
             (&first, "qq:group:1"),
         ]),
-        "从新到旧；终端管理员这个平台的私聊列；删了的、别的平台的、系统账号自己造的本机会话不列：{got:?}"
+        "从新到旧；删了的、别的平台的、桥自己造的本机会话不列：{got:?}"
     );
     assert_eq!(reason(&got[10]), Some("bad_params"), "{}", got[10]);
 
-    // 删了的那一个从回收处拿回来：同一个群有两个，只列新的。陌生人后来写进了对应表、私聊又来了一句：这个私聊最新的会话归管理员，
-    // 列那一个，系统账号名下旧的不列。
-    let trashed = home.root.trashed_sessions(&bot()).join(&deleted);
+    // 删了的那一个从回收处拿回来：同一个群有两个，只列新的。陌生人后来写进了对应表、私聊又来了一句：他成了主人本人，另开一个
+    // 不关沙盒的，列那一个，关着的旧的不列。
+    let trashed = home.root.trashed_sessions(&alice()).join(&deleted);
     let restored = home
         .root
-        .account_dir(&bot())
+        .account_dir(&alice())
         .join("sessions")
         .join(&deleted);
     std::fs::remove_file(trashed.join(miyu_store::trash::DELETED_AT)).expect("删得掉");
@@ -212,7 +206,6 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         3,
     )
     .await;
-    assert_eq!(got[1]["result"]["account"], "alice", "属主换了：{got:?}");
     let moved = made(&got[1]);
     assert_ne!(moved, stranger, "另造了一个");
     assert_eq!(
@@ -226,8 +219,7 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
         "{got:?}"
     );
 
-    // 对应表里没有这个平台的身份了：管理员名下的私聊不列；那个陌生人系统账号名下的旧会话也不列（这个场所最新的归管理员），
-    // 等他再来一句由 `venue.session` 找。
+    // 对应表里没有这个平台的身份了：场所会话照旧是这个平台的，照旧列（谁关沙盒等对方再来一句由 `venue.session` 照对应表算）。
     let got = phase(
         &home,
         &program,
@@ -239,7 +231,12 @@ async fn a_bridge_lists_the_venue_sessions_it_owns_and_its_admins_chats() {
     .await;
     assert_eq!(
         got[1]["result"],
-        listed(&[(&second, "qq:group:2"), (&first, "qq:group:1")]),
+        listed(&[
+            (&moved, "qq:private:20001"),
+            (&admins, "qq:private:10001"),
+            (&second, "qq:group:2"),
+            (&first, "qq:group:1"),
+        ]),
         "{got:?}"
     );
 }

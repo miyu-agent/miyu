@@ -159,7 +159,7 @@
 |---|---|
 | `session.create` | 造会话 |
 | `venue.session` | 找回或者造一个通讯平台场所的主线会话：收到一条消息时找它（施工 O-3，`venues.md`） |
-| `venue.sessions` | 列出系统账号名下的场所会话和终端管理员在这个平台的私聊，一个场所一个：桥起来时照它订阅（施工 O-32 前，`venues.md`「列场所会话」） |
+| `venue.sessions` | 列出桥接的平台的场所会话，一个场所一个：桥起来时照它订阅（施工 O-32 前，`venues.md`「列场所会话」） |
 | `venue.plugins` | `{venue, on}`：说这个场所开着哪些场所插件，整份替换，回应 `{}`；只管自己平台的场所（施工 O-60，`venues.md`「场所插件」） |
 | `session.respond` | 照已经旁听记下的几条开一轮，带几块事实（施工 O-14 上，`venues.md`「照记下的几条开一轮」） |
 | `session.fork` | 从一个主会话分叉出子会话：历史引用它到分叉点为止的有效历史，前缀和它逐字节一样（施工 C-8 上，`session/fork.md`） |
@@ -167,7 +167,7 @@
 | `system.append` | 声明了 `context.system` 的扩展往 system 尾部放一段（施工 X-20，`extensions.md`「放在 system 尾部的」）：`{content, session?}`，`content` 是原文（1 到 4000 个字）或 `null`（去掉这一层），不写 `session` 的管全部会话、写了的只管那一个、优先；回应 `{}`。不是核心拉起的扩展 `not_a_provider`，没声明的 `needs_approval`（`data.capabilities` 是 `["context.system"]`），写法不对的 `bad_params` |
 | `content.list`、`content.read` | 核心拉起的扩展读别的包给它带的内容（施工 X-22，`packages.md`「给别的包带的内容」）：`content.list {}` 回 `{"packages": [{"package", "version"?}]}`，照编号排；`content.read {package, path, offset?}` 分块读那个包 `[content.<它>] dir` 目录里的一份，回应同 `package.file`。不要能力；别的连接 `not_a_provider`，没有这个包、没给它带的 `unknown_package`，路径空的、写错的 `bad_params`，没有这一份、经链接指出目录的 `not_found`。核心每重读一次清单，给它带内容的包前后有一个就推 `content.changed`（`{}`），它再列一遍 |
 | `provide` | 核心拉起的扩展登记它提供的工具（施工 O-2 上，`providers.md`）；核心照登记反向调用 `tool.call`，超时、打断时发通知 `tool.cancel`（施工 O-2 下）；人敲了扩展声明的斜杠命令，核心反向调用 `command.call`（施工 X-14 下，`command.run` 第 14 条）；声明了 `context.inject` 的，回合开始核心反向调用 `user.append`（施工 X-16，X-16 补改名，`extensions.md`「回合开始的挂接点」） |
-| `venue.binding` | 问一个平台身份在主人对应表里对着哪个本机账号，只给系统账号的连接（施工 O-31 前，`venues.md`「问对应表」） |
+| `venue.binding` | 问一个平台身份是不是主人（在主人对应表里），只给平台桥（施工 O-31 前，SU-4 中改，`venues.md`「问对应表」） |
 | `venue.records` | 判官看的群聊记录：要判的那一条和它之前的几条，一行一条，和她看到的同一个写法（施工 O-24，`venues.md`「判官看的群聊记录」） |
 | `events.append` | 往会话里记一条不带回合编号的事件：扩展自己的 `ext.*`、场所的 `venue.recalled`、`venue.delivered`（施工 O-13 上，`venues.md`） |
 | `session.list` | 列出会话 |
@@ -303,7 +303,7 @@
 | `dream` | 布尔，可以不写 | 整理会话（施工 D-1 下，设计 41 DS7）：`true` 只要它们，`false` 不要它们，不写都列 |
 | `limit` | 非负整数，可以不写 | 最多几个；不写是全部，`0` 是一个都不要 |
 
-只列属主是这个连接的账号的本机会话（施工 Y-12 上；以前一律列管理员的，声明了系统账号的桥列出来的也是管理员的）。
+只列本机会话（施工 Y-12 上起照连接的账号列；施工 SU-4 中起只有主人一个账号，桥列出来的也是主人的）。
 
 回应：`{"sessions":[{"busy":true,"cwd":"<工作目录>","last_active":"<时刻>","oneshot":<布尔>,"parent":<编号或 null>,"pinned":true,"session":"<编号>","title":"<标题>"}, …]}`。没有标题、说过话的多一格 `preview`：第一句话的第一行，最多 50 个字（命令模板展开成的那一句照人敲的那一行，施工 X-14 上；只在空会话里 `/goal` 开的照目标原文的第一行，施工 X-8 补修：第一句是续轮消息，以前露出 `<goal_round>` 标签），有标题就不带（施工 9-5，网页的侧边栏照它显示没起名的会话，`store/index.md`「一行记什么」）。`parent` 是子会话的父会话，主会话写 `null`（施工 7-5，`agents.md`）。在等人确认、回答的（这一步有调用在等确认、在问人，或者命令里脚本调的工具在等确认，口径同视图流会话状态的 `state: waiting`）多一格 `waiting: true`，不等的不写；会话列表的推送里那一项一样，变了照 `busy` 那样推（施工 SL-1，终端侧边栏照它画黄色「?」）。fork 子代理的会话多一格 `forked: true`（施工 A-F 补，`agents.md`「一补、fork 子代理」），头照它换图标；别的不写，字节不变。`default_workspace` 是这个会话的默认工作区（施工 5-14 中）：主会话是它自己的 `<数据根>/home/<账号>/workspace/<会话编号>/`，子会话、分叉出来的顺着 `parent` 一路追到主会话的那一个（同 `session.created` 的 `workspace_from`），绝对路径；头拿 `cwd` 和它比，一样的写「默认工作区」（`list/defaults.rs`）。`title`、`pinned` 照日志里的 `session.meta_changed` 算（施工 3-8 三补）：有标题的才写 `title`，置顶的才写 `pinned`（写 `true`），没有的不写；标题是人起的（最后一条写了标题的 `session.meta_changed` 的 `by` 是人，去掉标题的不算）再写 `named`（写 `true`，施工 3-8 八补：终端只把人用 `/rename` 起的标题写进输入框的边框，切过去时改名那一条常在 `view.page` 的页外）。`cwd`、`last_active` 总有，`busy` 忙的才写（写 `true`）（施工 C-3，`cross-session.md`）。`persona` 是会话用哪个人格（施工 P-1 下，`session.created` 的那一格），`preset` 是用哪个预设（施工 P-2 上，同样照 `session.created`），以前的日志没有的不写。整理会话（施工 D-1 下，设计 41）多 `kind: "dream"` 和 `dream`（`session.created` 的那一格原样：`persona`、`session`、`manual`、`from`；跑完了的再多 `result`，最后一条 `dream.ended` 的 `body` 原样，施工 DR-1），别的会话不写；她的 `sessions` 工具不列它们。会话列表的推送 `sessions.changed` 的一项同样带这些： 终端集成开的会话多一格 `origin: "terminal"`（施工 8-33 四补，`session.created` 的 `origin`），别的没有。
 
@@ -373,7 +373,7 @@
    1. 开头是四种图之一（PNG、JPEG、GIF、WebP）、量得出宽高的：图片，媒体类型照认出的，`media_type` 写了也不算。超过 5 MiB、哪一边超过 8000 像素的存之前缩到上限以内（施工 I-S，同 `read`），回应的宽高、媒体类型照缩完的；缩不了的（解不开、缩到最小还超）`attachment_too_big`，正好在线上的收。分块上传的照同样缩，缩过的照缩完的内容另存、编号照它，原来的暂存文件作废。认法和上限和 `read` 读图片是同一份代码（`crates/miyu-tool/src/picture.rs`，`tools/read.md`「读图片」）：图跟着对话每次都发，被供应商拒掉的图会让这个会话以后的请求都失败。
    2. 别的都是文件。开头是 `%PDF-` 的，媒体类型是 `application/pdf`，`media_type` 写了也不算。
    3. 别的：`media_type` 写了的照写的，只是写成 `application/pdf`、`image/…` 的不算（驱动照它们把内容当 PDF、当图发，内容不是，供应商会拒）；没写、不算的，整份是 UTF-8、没有 NUL 字节的是 `text/plain`（和驱动认文本文件是同一条，`drivers/openai-chat.md` 第 9 条），别的 `application/octet-stream`。扩展名不认：头知道得更准的（例如浏览器给的类型）自己写 `media_type`（施工 3-9 三补定：扩展名的表是一份写死的名单，驱动给模型看的只有文件名和内容，用不上它）。
-5. 存成这个连接的账号的 blob（`store.md` 第九条；施工 Y-2 中下起照连接的账号，以前一律存进管理员名下，声明了系统账号的桥传的也是），落了盘才回应；同一份内容再传，还是那一个 blob。存不下来：`internal_error`，记一条运行日志。
+5. 存成主人的 blob（`store.md` 第九条；施工 SU-4 中起包不再各有一个账号，扩展传的和主人共用一个存处），落了盘才回应；同一份内容再传，还是那一个 blob。存不下来：`internal_error`，记一条运行日志。
 6. 不碰会话，没有命令编号的去重：内容一样，存几次都是同一个。传了没发的留在 blob 里，随存储的回收那一步清。
 
 **`blob.open`、`blob.write`、`blob.close`**（施工 W-5，`web-module.md`「六、分块上传」）：分块传一个附件，最后存成 blob，回应和 `blob.put` 一样。
@@ -450,7 +450,7 @@
 | `blob` | 字符串，必写 | 内容哈希 |
 | `offset` | 非负整数，不写是 0 | 从第几个字节起读 |
 | `length` | 非负整数，不写是 512 KiB（524288） | 最多读几个字节，最多 512 KiB；写 0 只问大小 |
-| `session` | 字符串，可以不写 | 照这个会话的属主找（施工 W-6 补）：群会话归接入QQ 的系统账号，`show` 存的 blob 在它名下 |
+| `session` | 字符串，可以不写 | 照这个会话引用过的找（施工 W-6 补） |
 
 回应 `{"data": <这一段的 base64>, "size": <一共几个字节>}`。
 
@@ -459,7 +459,7 @@
 ```
 
 1. 不写 `session` 的照连接的账号名下给（施工 Y-2 中下，以前照管理员）：没有这个 blob，`unknown_blob`。扩展的连接（核心拉起的包）不写 `session` 的只读得到它拿得到的（施工 W-6 三补）：它自己 `blob.put`、分块上传存的，它经 `package.call` 调别的包、回应里出现的哈希里答的那个包自己拿得到的（只转答的包拿得到的：不然一个包把别处看来的哈希写进回应，就替调它的包开了门）；别的一律 `unknown_blob`。记在核心的内存里，核心重起从空的开始（再存一次就有了：同样的内容是同一个哈希），包卸了它那一份扔掉。人的连接照旧。
-   写了 `session` 的照那个会话的属主名下给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：会话的属主（施工 Y-2 上起管理员不再越过属主，U2）；别的系统账号只读得到它的平台的场所会话（同 `venue.sessions` 列给它的：会话归它，或者归对应表里这个平台的身份对着的管理员）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读管理员私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接照账号放行的那一条（属主）不放它（施工 W-6 三补）：没声明系统账号的包的扩展就是管理员，以前写上管理员随便一个会话就读得到管理员名下任何一个 blob；现在它要的 blob 也得是那个会话结构里引用过的。
+   写了 `session` 的照那个会话的属主名下给（施工 W-6 补，2026-10-17 接入QQ 的会话要的）：会话编号不合写法 `bad_params`。谁读得到：人的连接读得到本机会话、不关沙盒的场所会话（主人本人的私聊）的；平台桥只读得到它的平台的场所会话（同 `venue.sessions` 列给它的，施工 SU-4 中起照场所编号的平台前缀，不再照属主）里引用过的 blob，引用照结构认：消息、工具结果的图片块、文件块，工具结果效果 `file.shown` 的 `blob`，她经工具发出去的图（`tool.result` 的 `sent`，施工 W-6 再补，接入QQ 发表情包要读管理员私聊里的），不在正文里搜（桥能以外部身份往主人的私聊里发字，照原文搜就能写一句带哈希的话读走主人别的 blob）。不合的一律 `unknown_blob`，不说是哪一样不对。扩展的连接照账号放行的那一条不放它（施工 W-6 三补）：扩展的连接就是主人，以前写上主人随便一个会话就读得到主人名下任何一个 blob；现在它要的 blob 也得是那个会话结构里引用过的。
 2. 从 `offset` 起读 `length` 个字节，读到结尾就停；`offset` 过了结尾的，`data` 是空的。`size` 是打开那一刻的大小。`length` 写 0 只回 `size`，`data` 是空的。`length` 超过 512 KiB：`bad_params`。
 3. 不重新核对整份内容的哈希：核对在核心自己用整份内容的时候（`store.md` 第十条）。
 4. 在阻塞线程里读。
@@ -776,7 +776,7 @@
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
 - `package.remove {"package"}`：装上的删掉；出厂的记一笔。回应 `{"package", "removed": true}`。
 - 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
-- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；编号和人占着的名字撞了的 `package_id_taken`（施工 Y-5 中下：用户名、`admin`、`users`；升级同一个包不算）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；没装的、没卸过的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 删了）。扩展自己调回 `local_only`。
+- 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；没装的、没卸过的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 删了）。扩展自己调回 `local_only`。
 
 **`package.sync`**（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条、第五节）
 
@@ -1285,7 +1285,7 @@
 1. 凭据决定的闸（施工 W-8、Y-1 上）：一次性码连上的只能设密码，邀请码连上的只能注册，成员暂时只能管自己的账号（拆在 Y-2 下）。
 2. 本机才能用的（施工 Y-1 下）：远程、本机另一个人连上的当场拒。
 3. 扩展照它声明的能力挡（施工 X-30，`extensions.md`「谁能调」）。
-4. **会话只给属主**（施工 Y-2 上）：参数里写了 `session` 的，那个会话的属主不是这个连接的账号，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。管理员也不越过属主（`06-多用户与身份.md` U2）。场所会话的属主是平台包的系统账号，人的头碰不到（2026-10-23 项目主人定场所会话只读、只在平台的后台看），例外是桥替平台上的主人送话的私聊（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`。
+4. **会话只给属主**（施工 Y-2 上）：参数里写了 `session` 的，那个会话的属主不是这个连接的账号，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。管理员也不越过属主（`06-多用户与身份.md` U2）。施工 SU-4 中起只有主人一个账号，这一道只挡关在沙盒里的场所会话：人的头碰不到（2026-10-23 项目主人定场所会话只读、只在平台的后台看），只有接这个平台的桥碰得到；主人本人的私聊不关（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`。
 5. 连接从接上起就算连着，握没握手都算，断开才不算；没握手的最多连 10 秒（握手第 7 条）。
 
 **先见结果，后见回应**
@@ -1370,7 +1370,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
 | `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了（施工 U23 下下） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
-| `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号；编号和人占着的名字撞了（施工 Y-5 中下） |
+| `package_invalid`、`package_conflict`、`package_exists` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号（`package_id_taken` 施工 SU-4 中拿掉） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
 | `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：系统配置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
@@ -1382,7 +1382,6 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `needs_approval` | -32010 | `extension.enable`、`extension.restart`：要的能力还有没批的，`data.capabilities` 是那几个（施工 9-4 下上，`extensions.md`「能力」） |
 | `session_not_found` | -32010 | 没有这个会话，删了的也是 |
 | `unknown_call` | -32010 | `view.detail` 的会话日志里没有这次调用的结果：编号对不上，或者还没回（施工 9-6 三补）；没有替代到这个序号的压缩（施工 9-8 中） |
-| `no_system_account` | -32010 | 场所会话的属主该是系统账号，这个连接不是（施工 O-3；O-4 下起核心拉起的、清单声明了系统账号的包的扩展是，别的连接还回它）；`venue.binding`、`venue.sessions`、`venue.plugins` 只给系统账号的连接，别的也回它（施工 O-31 前、O-32 前、O-60） |
 | `venue_session` | -32010 | 场所会话只收代表外部的人说的话：不带 `as` 的 `session.send`（施工 O-3）、`command.run`（施工 O-6）；`command.catalog` 只收本机的会话（施工 O-6 补） |
 | `unknown_command` | -32010 | `command.run` 认不出这个命令（施工 O-6） |
 | `command_not_allowed` | -32010 | `command.run`：场所里既不是主人、也不是管理的人（施工 O-6） |
@@ -1545,7 +1544,6 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_directory` | 不是目录。 | Not a directory. |
 | `unknown_package` | 软件包不存在。 | Package not found. |
 | `package_exists` | 编号与内置软件包重复。 | Id conflicts with a built-in package. |
-| `package_id_taken` | 编号和已有的账号重名，无法安装。 | Id is already taken by an account, cannot install. |
 | `package_invalid` | 清单有误，无法安装。 | Invalid manifest, cannot install. |
 | `package_conflict` | 名称已被占用，无法安装。 | Names already in use, cannot install. |
 | `program_missing` | 程序未安装。 | Program not installed. |
@@ -1570,7 +1568,6 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `needs_approval` | 扩展权限未批准。 | Extension permissions not approved. |
 | `session_not_found` | 会话不存在。 | Session not found. |
 | `unknown_call` | 调用不存在。 | Call not found. |
-| `no_system_account` | 需要系统账号。 | System account required. |
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
 | `command_not_allowed` | 仅终端管理员和群管理员可用。 | Terminal and group admins only. |
@@ -1709,7 +1706,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`（是管理员）：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
-| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下） | 声明了系统账号的桥一次传、分块传的都存在它名下，管理员名下没有；不写 `session` 的 `blob.get`、`model.call` 的图照它自己名下找；替机主干活的扩展（不是平台桥）`blob.put` 存在自己名下，`model.call` 带这张图找得到、拷进机主名下，只在别的账号名下的图照旧 `unknown_attachment`（施工 BUG-2）；它往主人的私聊里发的附件拷进主人名下；声明了系统账号的包工具交回的图从它名下拷；核心起来时别的账号留下的分块暂存也清 |
+| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都存在主人名下，包没有自己的家目录；不写 `session` 的 `blob.get`、`model.call` 的图照主人名下找；替主人干活的扩展 `blob.put` 存在主人名下，`model.call` 带这张图找得到，只在别的账号名下的图照旧 `unknown_attachment`（施工 BUG-2）；包工具交回的图在主人名下；核心起来时别的账号留下的分块暂存也清 |
 | `crates/miyu-endpoint/tests/list_account.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 会话列表照连接的账号：桥列会话、订阅会话列表只有它自己的，管理员列不到桥的；会话列表的推送只转属主是这个连接的账号的 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
 | `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |

@@ -30,7 +30,6 @@ about = { en = "Hello extension", zh = "打招呼扩展" }
 args = ["serve"]                                    # 核心拉起时带的参数
 start = "manual"                                    # manual：开关打开才拉起（默认）；always：核心起来就拉起
 capabilities = ["tools", "widgets"]                 # 要的能力，见下面「能力」
-system_account = false                              # 是不是聊天平台的桥（只有桥才要），默认不是
 
 [check]
 args = ["check"]                                    # miyu check 时跑 <程序> check
@@ -99,8 +98,6 @@ place = "status"
 | `args` | 核心拉起时带的参数 |
 | `start` | `manual`：开关打开才拉起（默认）；`always`：核心起来就拉起 |
 | `capabilities` | 要的能力，见下 |
-| `system_account` | 带进程的包都有自己的账号，账号名就是包的编号，你上传的东西存在它名下，平时替装 Miyu 的人干活。`true`：这是接聊天平台的桥，替平台上的人干活，群会话归这个账号 |
-| `scope` | `system`（默认）：起一份，用包自己的账号跑。`account`：每个用它的人一份，以那个人的身份跑，数据在他自己的家目录里，别人（包括管理员）看不到；用到时才起。不能和 `system_account = true` 一起写 |
 
 **能力**：只认这十七个。管理员自己装的包，打开时要人批；升级以后多要的，只问多的那几个。**照实声明**：没声明的，调对应的方法回 `needs_approval`。
 

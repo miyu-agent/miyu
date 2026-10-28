@@ -96,8 +96,8 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let span = actor::span(&id);
     let loading = Instant::now();
     let dir = root.session_dir(&owner, &id);
-    // 会话日志的目录只交给主人本人的会话（施工 E-M，U25）。
-    let session_log = (!shut_in).then(|| dir.clone());
+    // 会话日志的目录只交给主人本人的会话（施工 E-M，U25）：关不关照日志里记的（施工 SU-4 中），读完第一条才知道。
+    let owner_log = dir.clone();
     let log_dir = LogDir(dir.clone());
     let blobs = Blobs::new(root.blobs(&owner));
     let store = blobs.clone();
@@ -135,7 +135,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
         let run = snapshot.run_texts().map_err(LoadError::Policy)?;
         let guard = snapshot.guard_texts().map_err(LoadError::Policy)?;
-        let place = place(&created.venue, &place_resources, shut_in).map_err(LoadError::Shipped)?;
+        // 关不关（施工 SU-4 中）：日志里记了的照它；以前的日志没记，照造它的一方交的（属主不是主人的关起来）。
+        let shut = shut_in || created.confined;
+        let place = place(&created.venue, &place_resources, shut).map_err(LoadError::Shipped)?;
         // 能选的池照快照读回（施工 8-8 补）：造会话时拼的那一份，不重拼。
         let pools = Agents::pools_in(&snapshot.tools);
         // 快照里的范围已经照预设、有没有人格算过（施工 P-2 中、P-4 上），这里只再管子会话；分叉出来的支线照父会话的
@@ -251,6 +253,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             pools,
             preset: created.preset.clone(),
             images,
+            confined: place.1.is_some(),
             personas: agents_personas,
             resources: resources.clone(),
             forked: fork_child,
@@ -389,7 +392,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             owner: owner.clone(),
             confined,
             venue: venue.clone(),
-            session_log,
+            session_log: (!confined).then_some(owner_log),
             catalog: tools.clone(),
             lettering,
             home: home.map(Path::to_path_buf),
@@ -481,6 +484,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
         .with_memory(room)
         .with_goals(on_face)
+        .with_confined(confined)
         .with_loops(loops)
         .with_waiting(on_person)
         .with_prefix(prefix);

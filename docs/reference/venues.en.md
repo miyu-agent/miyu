@@ -1,12 +1,12 @@
 # Venues: sessions on chat platforms
 
-A venue is where a session happens: this machine (`local`), or a private chat or group on a chat platform. A chat platform bridge (such as the QQ bridge) is an extension that declares a system account: group sessions belong to that system account, and the owner's private chats belong to the owner. This page lists the methods bridges use. Chinese version: [venues.md](venues.md).
+A venue is where a session happens: this machine (`local`), or a private chat or group on a chat platform. A chat platform bridge (such as the QQ bridge) is an extension whose manifest lists its platforms in `[connection] platform`. Venue sessions all belong to the owner: a private chat whose peer is in the owner bindings (the owner in person) runs like a local session, while groups and strangers' private chats are confined to the sandbox. This page lists the methods bridges use. Chinese version: [venues.md](venues.md).
 
 | Method | What it does |
 |---|---|
 | [`venue.session`](#venuesession) | Find or create a venue's main session |
 | [`venue.sessions`](#venuesessions) | List all of this bridge's venue sessions |
-| [`venue.binding`](#venuebinding) | Ask which local account a platform identity belongs to |
+| [`venue.binding`](#venuebinding) | Ask whether a platform identity is the owner |
 | [`venue.plugins`](#venueplugins) | Say which venue plugins a venue has on |
 | [`as` and `venue` in `session.send`](#as-and-venue-in-sessionsend) | Speak for a person on the platform |
 | [`session.respond`](#sessionrespond) | Start a turn from messages recorded while listening |
@@ -14,7 +14,7 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 | [`venue.records`](#venuerecords) | Group chat records for the judge |
 | [`venue.*` in `events.append`](#venue-in-eventsappend) | Record recalls and messages she delivered |
 
-**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
+**Who can call**: `venue.sessions`, `venue.binding`, `venue.plugins` and a confined `venue.session` (groups, strangers' private chats) are for platform bridges (extensions started by the core whose manifest has `[connection] platform` and that were granted `act_for_external`); others get `needs_approval` (`data.capabilities` is `["act_for_external"]`). The owner's own private chat can also be opened from the owner's connections. A bridge reaches only the venue sessions of its own platforms (by the venue id's platform prefix). Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 
@@ -46,19 +46,19 @@ In a private chat this identity is the owner in person; in a group it's the owne
 
 The creation fields are ignored when an existing session is found.
 
-**Response**: `{"session", "created", "account"}`: session id, whether it was just created, the owner. If the private chat's peer is in the bindings, the owner is that local account; otherwise the bridge's system account (an `account` equal to the bridge's own means a stranger's private chat).
+**Response**: `{"session", "created"}`: session id, whether it was just created. Sessions are found by venue plus whether they are confined: when a private chat's peer is added to the bindings later, the old confined session is not reused, and a new unconfined one is opened.
 
 Nobody can approve anything in venue sessions: everything needing approval is refused. The same `id` sent again returns the same session.
 
-**Errors**: `no_system_account`; `unknown_persona`, `unknown_preset`, `preset_invalid`; `bad_params`.
+**Errors**: `needs_approval`; `unknown_persona`, `unknown_preset`, `preset_invalid`; `bad_params`.
 
 ## `venue.sessions`
 
-**Params**: none. **Response**: `{"sessions": [{"session", "venue"}…]}`, newest first: the venue sessions owned by this system account, and the owner's private chats with this platform's identities in the bindings (the platforms are read from the manifest's `[connection] platform`, which may list several). Only the newest session per venue. Bridges subscribe to these on start.
+**Params**: none. **Response**: `{"sessions": [{"session", "venue"}…]}`, newest first: the venue sessions of the platforms this bridge serves (read from the manifest's `[connection] platform`, which may list several); local sessions the bridge opened itself are not listed. Only the newest session per venue. Bridges subscribe to these on start.
 
 ## `venue.binding`
 
-**Params**: `id`: a platform identity. **Response**: `{"account": <local account>}`, `null` when not bound. Answered from the config at that moment. Bridges use it when guarding owner-only actions: check the target before acting on it.
+**Params**: `id`: a platform identity. **Response**: `{"owner": true|false}`: whether it is the owner (in the owner bindings). Answered from the config at that moment. Bridges use it when guarding owner-only actions: check the target before acting on it.
 
 ## `venue.plugins`
 

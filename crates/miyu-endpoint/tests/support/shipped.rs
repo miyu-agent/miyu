@@ -16,7 +16,7 @@ use super::{Home, TOKEN, alice, default_resources};
 pub const ID: &str = "courier";
 
 /// 夹具扩展的清单：带子命令、手动开、要六样能力、声明系统账号、一项只能写系统配置的配置项 `courier.listen`。程序一定不在。
-pub const COURIER: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Courier\", zh = \"信使\" }\n\n[command]\nname = \"courier\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"Courier\" }\n\n[process]\nargs = [\"serve\"]\nstart = \"manual\"\ncapabilities = [\"tools\", \"sessions.drive\", \"act_for_external\", \"events.read\", \"events.write\", \"network\"]\nsystem_account = true\n\n[settings.listen]\ntype = \"int\"\nmin = 1024\nmax = 65535\ndefault = 8301\nlayers = [\"system\"]\napplies = \"now\"\nname = { en = \"Port\" }\n";
+pub const COURIER: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Courier\", zh = \"信使\" }\n\n[command]\nname = \"courier\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"Courier\" }\n\n[process]\nargs = [\"serve\"]\nstart = \"manual\"\ncapabilities = [\"tools\", \"sessions.drive\", \"act_for_external\", \"events.read\", \"events.write\", \"network\"]\n\n[settings.listen]\ntype = \"int\"\nmin = 1024\nmax = 65535\ndefault = 8301\nlayers = [\"system\"]\napplies = \"now\"\nname = { en = \"Port\" }\n";
 
 /// 拷一份源码树的资源目录到 `home.work` 下，出厂那一层多一个 [`COURIER`]，交回这份资源目录。
 pub fn resources(home: &Home) -> PathBuf {

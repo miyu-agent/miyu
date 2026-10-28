@@ -67,8 +67,6 @@ pub enum Code {
     SettingsTaken,
     /// `[process] capabilities` 里有不认识的、重复的名字（施工 9-4 下上）。
     BadCapability,
-    /// 声明了系统账号，编号和一个人的账号撞了（施工 O-4 下，`miyu-store` 认）。
-    AccountTaken,
     /// 功能的编号写法不对（施工 F-1）。
     BadFeature,
     /// 功能下的工具名写法不对、同一个包里列了两次（施工 F-1）。
@@ -157,7 +155,6 @@ impl Code {
             Code::NotBool => "not_bool",
             Code::SettingsTaken => "settings_taken",
             Code::BadCapability => "bad_capability",
-            Code::AccountTaken => "account_taken",
             Code::BadFeature => "bad_feature",
             Code::BadTool => "bad_tool",
             Code::BadPlatform => "bad_platform",
@@ -187,7 +184,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 56] = [
+    pub const ALL: [Code; 55] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -220,7 +217,6 @@ impl Code {
         Code::NotBool,
         Code::SettingsTaken,
         Code::BadCapability,
-        Code::AccountTaken,
         Code::BadFeature,
         Code::BadTool,
         Code::BadPlatform,

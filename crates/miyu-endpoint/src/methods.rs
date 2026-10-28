@@ -355,18 +355,9 @@ pub(crate) fn call<'a>(
         "blob.close" => answer(move || async move {
             uploads::close(core, (uploads, caller.package.as_deref()), params(request)?).await
         }),
-        "blob.get" => answer(move || async move {
-            attach::get(
-                core,
-                (
-                    &caller.account,
-                    caller.acting_for(),
-                    caller.package.as_deref(),
-                ),
-                params(request)?,
-            )
-            .await
-        }),
+        "blob.get" => {
+            answer(move || async move { attach::get(core, caller, params(request)?).await })
+        }
         "session.configure" => answer(move || session::configure(core, caller, request)),
         "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
         "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),

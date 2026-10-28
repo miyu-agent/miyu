@@ -22,25 +22,25 @@
 | `crates/miyu-kernel/src/origin.rs` | `Person` 多 `via`（私聊里经哪个平台身份认出来的本人）；`External` 多 `account`（对应表里对着的本机账号）、`role`（桥报的场所里的身份） |
 | `crates/miyu-store/src/index.rs`、`index/row.rs` | 索引一行多 `venue`，版本 3 |
 | `crates/miyu-endpoint/src/venues.rs` | `venue.session`：照场所加属主找回或者造；`as` 怎么认、记成谁（照会话的属主比，施工 O-4 下）；`venue.binding`：问一个平台身份在对应表里对着谁（施工 O-31 前） |
-| `crates/miyu-endpoint/src/venues/sessions.rs`（施工 O-32 前） | `venue.sessions`：列出系统账号名下的场所会话和终端管理员在这个平台的私聊，每个场所一个 |
+| `crates/miyu-endpoint/src/venues/sessions.rs`（施工 O-32 前） | `venue.sessions`：列出桥接的平台的场所会话，每个场所一个 |
 | `crates/miyu-endpoint/src/venues/plugins.rs`（施工 O-60） | `venue.plugins`：桥说一个场所开着哪些场所插件，整份替换，只管自己平台的场所 |
 | `crates/miyu-session/src/plugins.rs`（施工 O-60） | `VenuePlugins`：每个场所开着的场所插件（内存里），工具面、快照怎么照它筛，回合里调到刚关掉的怎么判 |
-| `crates/miyu-session/tests/venue_plugins.rs`、`crates/miyu-endpoint/tests/venue_plugins.rs`（施工 O-60） | 没说过的不给、开了下一轮给、关了下一轮没有、这一轮里刚关掉的再调回暂时不可用；没写 `plugin` 的照旧；本机会话不看；`plugin` 写错的 `bad_tool`；别的平台的、名字写错的 `bad_params`；本机的头 `no_system_account` |
+| `crates/miyu-session/tests/venue_plugins.rs`、`crates/miyu-endpoint/tests/venue_plugins.rs`（施工 O-60） | 没说过的不给、开了下一轮给、关了下一轮没有、这一轮里刚关掉的再调回暂时不可用；没写 `plugin` 的照旧；本机会话不看；`plugin` 写错的 `bad_tool`；别的平台的、名字写错的 `bad_params`；本机的头 `needs_approval` |
 | `crates/miyu-endpoint/src/venues/message.rs`、`crates/miyu-kernel/src/event/venue.rs` | `session.send` 的 `venue` 怎么查、记成什么（施工 O-13 上）；合并转发 `forwards` 的写法和上限（施工 O-34） |
 | `crates/miyu-endpoint/src/appending.rs` | `events.append`：种类、大小、格怎么查，记成谁（施工 O-13 上） |
-| `crates/miyu-endpoint/tests/venue_binding.rs`（施工 O-31 前） | `venue.binding`：系统账号的扩展问对着管理员的、没写的、对着不存在的账号的；写错的、多写格的、一次问几个的 `bad_params`；本机的头 `no_system_account`；只读 |
+| `crates/miyu-endpoint/tests/venue_binding.rs`（施工 O-31 前） | `venue.binding`：桥问是主人的、没写的；写错的、多写格的、一次问几个的 `bad_params`；本机的头 `needs_approval`；只读 |
 | `crates/miyu-endpoint/tests/venue_me.rs`、`src/settings/tests.rs`、`tests/platform_tools.rs` 平台桥那一段（施工 BD-1） | 成员写了 `external.me` 以后，他那一份问对应表认得出他、他群里这个号是他本人（带 `via`）；机主那一份不认他写的号；平台桥的群里不认机主写的；这一项在起来时就认、只有个人那一层 |
 | `crates/miyu-endpoint/tests/platform_tools.rs`、`crates/miyu-config/src/package/links/tests.rs`（施工 IM-3） | 清单写两个平台：`tg:` 的群工具面有 `tg_send` 没有 `qq_send`、`qq:` 的群反过来，本机的会话都有；`qqnote`（没下划线）、`note` 哪里都给；两个平台的场所都能 `venue.plugins`，别的平台的 `bad_params`；主人第二个平台的私聊归主人、桥碰得到、列得出；软件包列表另带 `platforms`。列表空的、重复的、写法不对的、不是字的 `bad_platform` |
-| `crates/miyu-endpoint/tests/venue_sessions.rs`（施工 O-32 前） | `venue.sessions`（两、三份核心先后起在同一个数据根上）：列得出、从新到旧；终端管理员这个平台的私聊列得出；删了的、别的平台的、系统账号自己造的本机会话不列；从回收处拿回来的旧的、属主换过的旧的不列；对应表里没有这个平台的身份了，管理员名下的不列；多写格的 `bad_params`；本机的头 `no_system_account` |
+| `crates/miyu-endpoint/tests/venue_sessions.rs`（施工 O-32 前） | `venue.sessions`（两、三份核心先后起在同一个数据根上）：列得出、从新到旧；删了的、别的平台的、桥自己造的本机会话不列；从回收处拿回来的旧的、对方写进对应表另开以后关着的旧的不列；对应表里删掉了照列；多写格的 `bad_params`；本机的头 `needs_approval`（施工 SU-4 中改） |
 | `crates/miyu-endpoint/src/venues/records.rs` | `venue.records`：照会话日志和快照里的时区渲染判官看的记录（施工 O-24） |
 | `crates/miyu-endpoint/tests/venue_judge.rs` | `venue.records` 的写法、写错的、没有的会话（施工 O-24） |
 | `crates/miyu-endpoint/src/responding.rs` | `session.respond`：参数怎么查，交给内核的 `Respond`（施工 O-14 上）；`session.note`：交给内核的 `Note`，事实的查法两边共用（施工 O-14 补） |
 | `crates/miyu-endpoint/tests/respond.rs` | 照旁听的几条开一轮、`triggers` 排好去重、事实接在后面；写错的什么都不记；`not_ambient`、`already_answered` 带上是哪几条；同一个编号再发只算一次（施工 O-14 上） |
 | `crates/miyu-endpoint/tests/note.rs` | 空闲时记下、不带回合编号、不开回合，下一轮的请求里排在触发前面；正在跑一轮时带回合编号；空的、太多的、写错的什么都不记；同一个编号再发只算一次（施工 O-14 补） |
-| `crates/miyu-endpoint/tests/venue_records.rs` | `venue` 原样记下、旁听的不开回合、写错的什么都不记；`events.append` 收的三类、回应带序号、不带回合编号，拒的几种；扩展只能写自己的包那一段（`system_account.rs`）（施工 O-13 上）；带的东西的 `size` 原样记，负的、小数、字、多写 `duration` 的拒（施工 O-33） |
+| `crates/miyu-endpoint/tests/venue_records.rs` | `venue` 原样记下、旁听的不开回合、写错的什么都不记；`events.append` 收的三类、回应带序号、不带回合编号，拒的几种；扩展只能写自己的包那一段（`bridge_venues.rs`）（施工 O-13 上）；带的东西的 `size` 原样记，负的、小数、字、多写 `duration` 的拒（施工 O-33） |
 | `crates/miyu-endpoint/tests/venue_forwards.rs`（施工 O-34） | `venue.forwards` 原样记下，只有转发、正文空的照旧 `empty_message`、什么都不记；套 4 层、一个转发 101 条、正文超过 4096 字节、名字超长或带换行或空白、空列表、`more` 写 0 或负的、空的 `nodes`、多写格、带的东西写错的 `bad_params`、不带 `data.limit`；整条消息 101 条、名字和正文超过 16 KiB 的 `bad_params`、`data.limit` 说是哪一样，正好 100 条、正好 16 KiB 的收；都什么都不记 |
 | `crates/miyu-endpoint/tests/venue_shown.rs`（施工 O-35） | `venue.media` 的 `shown` 是真的原样记、假的不写；带的东西全是交了原图的、正文空、没有附件的 `empty_message`；转发里写了 `shown`、写的不是真假的 `bad_params`；都什么都不记 |
-| `crates/miyu-endpoint/src/system_accounts.rs` | 系统账号（施工 O-4 下，`packages.md`「`[process]`」）：这次起来认的有哪些、连接是谁、记忆照谁算；起来时建它们的家目录 |
+| `crates/miyu-endpoint/src/venues/bridge.rs`（施工 SU-4 中） | 平台桥照包认：核心拉起的、清单写了 `[connection] platform` 的；它接的平台 |
 | `crates/miyu-endpoint/src/list.rs` | 列会话、推会话列表时跳过场所会话 |
 
 ### 对外的样子
@@ -60,20 +60,17 @@
 - 键是平台身份，照短名字的写法（1 到 128 字节，没有控制字符），裸着写不下的照 TOML 加引号。一个号只能对一个账号（TOML 的键本来就不能重），一个账号可以对几个号。
 - 值是本机账号。写了没有的账号（现在只有管理员）：配置照常读进来，认的时候当没写，记一行运行日志 `binding to an unknown account ignored`。
 
-**问对应表**（施工 O-31 前，2026-10-10 核心定；通讯平台的桥挡在场所里做的事要的，`providers.md`「在场所里做的事」）：`venue.binding {"id": <平台身份>}`，回应 `{"account": <本机账号>}`，不在对应表里的、对着不存在的账号的（同上，当没写）是 `{"account": null}`。
+**问对应表**（施工 O-31 前，2026-10-10 核心定；通讯平台的桥挡在场所里做的事要的，`providers.md`「在场所里做的事」）：`venue.binding {"id": <平台身份>}`，回应 `{"owner": <布尔>}`：这个号在主人对应表里（是主人）的是真（施工 SU-4 中：原来回对着的账号，一个人用以后只剩是不是主人）。
 
 1. 一次只问一个号；只读，对应表照旧。照这时的配置答（对应表改了，下一次问照新的）。
-2. 只给系统账号的连接（核心拉起的、清单声明了系统账号的包的扩展，同 `venue.session` 第 1 条）；别的连接回 `no_system_account`。
+2. 只给平台桥（核心拉起的、清单写了 `[connection] platform` 的包的扩展，`venues/bridge.rs`）；别的连接照没批 `act_for_external` 回 `needs_approval`（施工 SU-4 中，原来的 `no_system_account` 拿掉）。
 3. `id` 写错的（不合短名字的写法，例如空的）、多写格的、少写的回 `bad_params`。
 
-**列场所会话**（施工 O-32 前，2026-10-11 和通讯平台的会话对过形状：桥起来就订阅，不等每个场所来一条消息才找；终端管理员的私聊同一天核心审时定的）：`venue.sessions {}`，回应 `{"sessions": [{"session": <编号>, "venue": <场所>}, …]}`，从新到旧（照会话编号，就是照造的先后）。只给这两格。
+**列场所会话**（施工 O-32 前，2026-10-11 和通讯平台的会话对过形状：桥起来就订阅，不等每个场所来一条消息才找）：`venue.sessions {}`，回应 `{"sessions": [{"session": <编号>, "venue": <场所>}, …]}`，从新到旧（照会话编号，就是照造的先后）。只给这两格。
 
-1. 每个场所只看最新的那一个主会话（场所不是 `local` 的；照核心认的账号名下各自的看，删了的不算），属主是下面两种的列：
-   - 这个连接的系统账号：就是 `venue.session` 照「场所加属主」找回的那一个。
-   - 场所编号的平台前缀（第一个 `:` 前面那一段）在这个包清单 `[connection] platform` 里（施工 IM-3 起能写几个），属主是对应表里这个平台的身份（键的前缀同样写法）对着的本机账号（现在只有管理员）：终端管理员在这个平台的私聊。平台只认前缀，不算解读场所编号；清单没写 `[connection]` 的只列自己名下的。对应表里的账号现在只认管理员（`core.admin`），对着别的账号的不算：多用户以后再看这里。
-2. 别的不列：属主换过、旧的留在系统账号名下的（私聊的对方后来写进对应表、再来一句造在主人名下，这个场所最新的是主人那一个，列它）；别的平台的；对应表里已经没有这个平台的身份对着那个账号的。对方写进对应表、还没来过一句的，主人名下还没有，系统账号名下旧的照列。写进又删掉的：这个场所最新的在主人名下，主人又没有这个平台的身份对着了，两个都不列；`venue.session` 这时找回的是系统账号名下旧的那一个，等那个私聊来一句再找（核心认不出私聊的对方是谁，只照属主和前缀）。
-3. 不分页：一个系统账号名下的场所是它进过的群和私聊，桥起来时一次要全。
-4. 只给系统账号的连接，别的连接回 `no_system_account`（同 `venue.binding`）。多写格的回 `bad_params`。只读。
+1. 主人的主会话里，每个场所只看最新的那一个（场所不是 `local` 的，删了的不算）；场所编号的平台前缀（第一个 `:` 前面那一段）在这个包清单 `[connection] platform` 里（施工 IM-3 起能写几个）的列。平台只认前缀，不算解读场所编号。施工 SU-4 中起场所会话都在主人名下，不再照属主分：对方后来写进对应表、另开了不关沙盒的那一个，这个场所最新的就是它；对应表里删掉了也照列（谁关沙盒等对方再来一句由 `venue.session` 照对应表算）。
+2. 不分页：一个平台的场所是桥进过的群和私聊，桥起来时一次要全。
+3. 只给平台桥，别的连接回 `needs_approval`（同 `venue.binding`）。多写格的回 `bad_params`。只读。
 
 **`venue.session`**（命令）：找回或者造一个场所的主线会话。
 
@@ -89,20 +86,14 @@
 | `images` | 布尔，不写是 `true` | 这个场所显示得了图片吗（施工 X-25）：语音这类显示不了的写 `false`，清单写了 `needs = ["images"]` 的包在这个会话里整包当没开（工具不进工具面、回合开始不问、`system.append` 那一段不拼，也不列进「装了没开」那一行，`presets.md`「怎么走」）；记进 `session.created`，造的时候定、以后不变，子会话照父会话的。QQ 不写。找回的不看 |
 | `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43）：机器人的会话这类不要标题的写 `false`，记进 `session.created`，这个会话从此不自动起标题（`kernel/session.md`「起标题」），人手改照旧改得了。找回的不看 |
 
-回应：`{"session": <编号>, "created": <布尔>, "account": <属主>}`（`account` 施工 O-4 下加：桥照它认陌生人的私聊，属主是桥自己的系统账号的就是陌生人）。
+回应：`{"session": <编号>, "created": <布尔>}`（施工 SU-4 中拿掉了 `account`：会话都归主人，桥要认陌生人照 `venue.binding`）。
 
-1. 先定属主：`private`、`peer` 在对应表里的，是那个本机账号；别的归系统账号：连接是系统账号的（核心拉起的、清单声明了系统账号的包的扩展，`packages.md`、`extensions.md`）归它，别的连接回 `no_system_account`（施工 O-4 下）。
-2. 照「场所加属主」找：属主的会话里，`session.created` 的场所是它的，最新的那一个；删了的不算。对应表改了、属主变了的，找不到就另造：旧的留在原来的属主名下（2026-10-07 项目主人定）。
-3. 找不到就造：场所照写，没人能确认（`attended` 是假：要确认的一律拒绝，工具面没有 `ask_user`），工作目录照 `cwd`，没写的、太宽的是属主的默认工作区（系统账号的是 `home/<它>/workspace/`）。2026-10-08 定的「多收可选的 `workspace`」就是这一格，不另加。
-   - 归系统账号的会话：目录在它的家目录下，会话列表的索引、用量记在它名下（`usage.query` 照 `account` 分开看），本机的头的会话列表照旧不列；记忆归管理员（`personas.md`「怎么走」第 5 条）；带附件发话的，附件拷一份进它的 blob（连接上传的存在连接的账号名下，施工 Y-2 中下；桥自己传、自己发进它的群的不用拷）。
-4. 同一个命令编号再发：交回上一次的那一个（和 `session.create` 一样）。
+1. 先定关不关（施工 SU-4 中，设计见 `docs/construction/SU-移除多用户.md` 第十八节）：`private`、`peer` 在主人对应表里的是主人本人，不关，主人这边的连接（本机的头）也开得了；别的（群、陌生人的私聊）关进沙盒，只有平台桥开得了，别的连接回 `needs_approval`。关不关记进 `session.created` 的 `confined`，载入时照它和属主算，不另存。
+2. 照「场所加关不关」找：主人的主会话里，`session.created` 的场所是它的、关不关一样的最新的那一个；删了的不算。对应表改了、关不关变了的，找不到就另造：旧的留着（2026-10-07 项目主人定）。
+3. 找不到就造：属主是主人，场所照写，没人能确认（`attended` 是假：要确认的一律拒绝，工具面没有 `ask_user`），工作目录照 `cwd`，没写的、太宽的是主人的默认工作区。2026-10-08 定的「多收可选的 `workspace`」就是这一格，不另加。会话列表的索引、用量、记忆都在主人名下；本机的头的会话列表照旧不列场所会话。
+4. 同一个命令编号再发：交回上一次的那一个（和 `session.create` 一样）。去重照「主人加命令编号」，不分连接：桥照「平台、登录的账号、消息编号、平台给的时刻」拼编号，不和头的撞。
 
-**自己的平台身份**（施工 BD-1，项目主人 10-27 定，`venues/me.rs`）：每个人在个人设置里写 `external.me = ["qq:12345", "tg:7890123456"]`，说这几个号是他（一格列表，接入通讯平台的会话 f4 提的；只有个人设置那一层，`config.md`）。
-
-1. 只能指自己：没有写别的账号的格；只有本人改得了（个人设置本来就只有他能写）；号不查写法、不查在不在，填错算他自己的。头照连接的平台拼前缀，写法同主人对应表。
-2. 只在他名下的场所会话里认：他名下的会话里这个号说的话（`as`）记成他本人（带 `via`）。（SU-2 下起没有每人一份的包；SU-3 和主人对应表并成一份。）
-3. 主人的系统对应表照旧。
-4. 平台桥（系统账号）名下的会话不认任何人的这张表：平台桥的配置是机主那一份，认了会把机主写的号记成平台桥本人。
+**主人对应表认本人**（施工 BD-1 起的 `external.me` 施工 SU-3 下并进了 `[external.bindings]`）：只在不关沙盒的会话里认，这个号说的话（`as`）记成主人本人（带 `via`）；关着的会话（群、陌生人的私聊）里主人说的是外部身份带 `account`（`venues/speaker`）。
 
 **平台包不过预设**（施工 IM-4）：接平台的包在自己平台的场所会话里整包开着，预设关不掉它（`presets.md`「接平台的包在自己平台的场所会话里」）。平台自己的开关（场所插件 `venue.plugins`、平台后台的功能开关）照旧管。
 
@@ -121,7 +112,7 @@
 
 - 主人不靠 `role` 认：照对应表认，记在 `account`、`via` 里。`role` 没有 `owner` 这一种，以后也不加：桥报的身份只能降权。
 
-1. 只给场所会话：本机的会话写了 `as` 是参数不对。反过来，场所会话只收带 `as` 的：不带的回 `venue_session`（「这是通讯平台的场所会话，本机的头不能直接说话」）。主人定了群会话在终端里看不到、也不能打字（`18-通讯平台.md` 第十一节、Q16），只在列表里不列，拿着编号照样发话就是一条后门。桥发的每一句都带 `as`（主人的私聊也带，`external` 是主人的号），不挡桥。施工 Y-2 上起人的头连订阅都碰不到群会话（属主是系统账号，统一查属主，见下面「不在本机的头上」）。
+1. 只给场所会话：本机的会话写了 `as` 是参数不对。反过来，场所会话只收带 `as` 的：不带的回 `venue_session`（「这是通讯平台的场所会话，本机的头不能直接说话」）。主人定了群会话在终端里看不到、也不能打字（`18-通讯平台.md` 第十一节、Q16），只在列表里不列，拿着编号照样发话就是一条后门。桥发的每一句都带 `as`（主人的私聊也带，`external` 是主人的号），不挡桥。施工 Y-2 上起人的头连订阅都碰不到群会话（关在沙盒里的，见下面「不在本机的头上」）。
 2. 记成谁（`message.user` 的 `by`）：
    - 私聊、这个号在对应表里、对应的账号就是会话的属主：本人，`{"kind":"person","account":"admin","via":"qq:10001"}`。
    - 别的：外部身份，`{"kind":"external","venue":<会话的场所>,"id":"qq:10001","role":"member"}`；这个号在对应表里的（群里的主人），另记 `account`：写的时候就记下，以后对应表改了，以前谁说的不跟着变（记忆照它认主人，`17-记忆.md` L16）。
@@ -184,7 +175,7 @@
 2. 桥说哪些开着：`venue.plugins {"venue": <场所>, "on": [<名字>, …]}`，回应 `{}`。整份替换，空的（或不写 `on`）是全不给。只在核心的内存里记，不落盘：桥连上以后对每个场所发一次。
 3. 下一个回合开始照它重筛工具面，开、关都破一次前缀缓存。快照的 `plugin_tools` 记下给了的那几件（`policy.md`）。
 4. 这一轮里刚关掉的，模型再调回「暂时不可用」（`unavailable`），工具不跑；下一轮工具面上已经没有它，再调是内核的「不在工具面上」。
-5. 只给系统账号的连接（桥），别的回 `no_system_account`。场所编号的平台前缀要在这个包清单 `[connection] platform` 里（施工 IM-3 起能写几个），别的平台的、清单没写平台的回 `bad_params`（`field` 是 `venue`）；名字写法不对的 `bad_params`（`field` 是 `on`）；场所编号写错的、多写格的 `bad_params`。
+5. 只给平台桥，别的回 `needs_approval`（施工 SU-4 中）。场所编号的平台前缀要在这个包清单 `[connection] platform` 里（施工 IM-3 起能写几个），别的平台的、清单没写平台的回 `bad_params`（`field` 是 `venue`）；名字写法不对的 `bad_params`（`field` 是 `on`）；场所编号写错的、多写格的 `bad_params`。
 
 **斜杠命令**（施工 O-6，`protocol.md` 的 `command.run`）：桥把人打的原文连同 `as` 交过来，核心认、判谁能用、执行，回执那一句也由核心照语言写好，桥原样发出去。
 
@@ -192,7 +183,7 @@
 2. 谁能用：私聊里对应表认出的本人、群里对应表里有的外部身份（带 `account` 的）、`role` 是 `manager` 的；别人 `command_not_allowed`。本机的会话本来就是本人。`/workspace` 动的是沙盒能写的地方，只有本人（私聊里认出的、群里带 `account` 的）能用，管理的人 `owner_only`。
 3. 执行了的记一条 `command.ran`（原文、正名），聊天记录看得到谁在什么时候清过、停过；被拒的什么都不记。命令编号照 `session.send` 的拼法，同一个只生效一次。
 
-**不在本机的头上**：`session.list`、`subscribe` 的 `sessions`、推送 `sessions.changed`、她的 `sessions` 工具、`history` 读别的会话，都跳过场所不是本机的会话（场所是 `local` 的才算本机的）。施工 Y-2 上起（2026-10-23 项目主人定：场所会话只读、不从头上交互，看、删放在平台自己的后台）拿编号也碰不到：带 `session` 的方法办之前统一查属主（`protocol.md`「会话只给属主」），场所会话的属主是平台包的系统账号，人的头订阅、发话、删都回 `session_not_found`；只有那个包自己的连接（桥）碰得到，另加它替平台上的主人送话的那个私聊（属主是对应表里绑着的本机账号，照 `venue.session` 归属主的同一张表放行）。删场所会话归桥（`session.delete` 对扩展要 `sessions.drive`），平台的后台照它给管理员删。
+**不在本机的头上**：`session.list`、`subscribe` 的 `sessions`、推送 `sessions.changed`、她的 `sessions` 工具、`history` 读别的会话，都跳过场所不是本机的会话（场所是 `local` 的才算本机的）。施工 Y-2 上起（2026-10-23 项目主人定：场所会话只读、不从头上交互，看、删放在平台自己的后台）拿编号也碰不到：带 `session` 的方法办之前统一查属主（`protocol.md`「会话只给属主」），关在沙盒里的场所会话（群、陌生人的私聊），人的头订阅、发话、删都回 `session_not_found`，只有接这个平台的桥碰得到；主人本人的私聊不关，头和桥都碰得到（施工 SU-4 中：原来照属主是不是系统账号，`connection/checks.rs`）。删场所会话归桥（`session.delete` 对扩展要 `sessions.drive`），平台的后台照它给管理员删。
 
 ### 起草时定的
 
@@ -202,4 +193,4 @@
 - 场所会话不收不带 `as` 的话：回专门的原因码 `venue_session`，不混在参数不对里，头看得出是哪一种拒绝（2026-10-07 通讯平台的会话提、主会话定）。
 - `role` 记进 `by`：由桥担保，和平台身份同一个担保。
 - 斜杠命令单开一个方法 `command.run`，不混在 `session.send` 里：头不用自己认命令，认不出的核心回 `unknown_command`，桥照原话回人（2026-10-07 项目主人定单开一步）。清空的命令叫 `/clear`、别名 `/reset`；`/stop` 是全停，排着的留在历史里不回（同一天项目主人定）。
-- 群、陌生人私聊的会话归系统账号（施工 O-4 下，2026-10-09 主会话）：连接是谁照核心拉起的是哪个包认，不看头报的；没有系统账号的连接照旧 `no_system_account`。`as` 认本人照会话的属主比（原来照管理员比）：群归了系统账号以后，主人在群里说的是外部身份带 `account`，不是本人。回应带 `account`：桥照它认陌生人，不用自己再查对应表（通讯平台的会话要的）。
+- 群、陌生人私聊的会话归系统账号（施工 O-4 下，2026-10-09 主会话）：连接是谁照核心拉起的是哪个包认，不看头报的；没有系统账号的连接照旧 `no_system_account`。`as` 认本人照会话的属主比（原来照管理员比）：群归了系统账号以后，主人在群里说的是外部身份带 `account`，不是本人。回应带 `account`：桥照它认陌生人，不用自己再查对应表（通讯平台的会话要的）。施工 SU-4 中（移除多用户）：包不再各有一个账号，场所会话都归主人，「归系统账号」换成「关不关沙盒」（照对应表认对方是不是主人），桥照包认、`no_system_account` 换成 `needs_approval`，回应的 `account` 拿掉、`venue.binding` 只回是不是主人。

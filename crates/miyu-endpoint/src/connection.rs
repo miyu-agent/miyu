@@ -119,14 +119,12 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
     let instance = spawned.as_ref().map(|(_, instance)| instance.clone());
     let package = instance.as_ref().map(|instance| instance.package.clone());
-    // 这个连接是谁（施工 O-4 下、Y-5 中上）：核心拉起的带进程的包是它自己的账号，别的是管理员；没声明系统账号的包替机主干活。
+    // 这个连接是谁：都是主人（施工 SU-4 中起包不再各有一个账号），是哪个包另记在 `package`。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
-    let account = core.account_of(package.as_deref());
     let caller = Caller {
         reverse: reverse.clone(),
-        serving: core.serving(&account),
-        account,
+        account: core.admin.clone(),
         package: package.clone(),
     };
     // 它手里有哪些能力（施工 X-30；SU-2 中起照开关文件里批过的）：批、升级都会重新拉起，一个连接算一次就够。
@@ -214,8 +212,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         // 办之前过的几道：凭据、本机才能用的、扩展的能力、会话只给属主（施工 Y-2 上，`checks.rs`）。
         let who = checks::Who {
             via: via.as_ref(),
-            account: &caller.account,
-            acting_for: caller.acting_for(),
+            caller: &caller,
             reach: &reach,
             declared: &declared,
         };

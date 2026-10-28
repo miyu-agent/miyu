@@ -1,23 +1,18 @@
 //! `venue.plugins`（施工 O-60，`venues.md`「场所插件」）：桥 `provide` 的工具写了 `plugin` 的，场所会话里桥没说开的不给，
 //! 说开了下一轮给；同一个包里没写的照旧。`plugin` 写法不对的 `bad_tool`（`problem` 是 `plugin`）；别的平台的场所
-//! `bad_params`（`field` 是 `venue`），名字写法不对的 `bad_params`（`field` 是 `on`）；本机的头（不是系统账号）回
-//! `no_system_account`。
+//! `bad_params`（`field` 是 `venue`），名字写法不对的 `bad_params`（`field` 是 `on`）；本机的头（不是桥）回
+//! `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）。
 
 use std::sync::Arc;
 
 use serde_json::json;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::request::Request;
 use miyu_session::testkit::{Play, Script};
 
 use crate::support::extensions::*;
 use crate::support::served::{replies, served_core};
 use crate::support::*;
-
-fn bot() -> AccountId {
-    AccountId::parse("bot").expect("合写法")
-}
 
 fn names(request: &Request) -> Vec<String> {
     request.tools.iter().map(|tool| tool.name.clone()).collect()
@@ -61,7 +56,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
     home.write(
         "system/packages/bot/package.toml",
         &format!(
-            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\nsystem_account = true\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
             program.name(),
             args.join(", ")
         ),
@@ -85,7 +80,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
     );
     assert_eq!(got[5]["error"]["data"]["reason"], "bad_params", "{got:?}");
     assert_eq!(got[5]["error"]["data"]["field"], "on", "{got:?}");
-    let groups = dir(&home, &bot(), &session);
+    let groups = dir(&home, &alice(), &session);
     until_turns_in(&groups, 1).await;
     std::fs::write(&first_done, "").expect("写得进");
     let got = replies(&path, 9).await;
@@ -104,7 +99,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
         "说开了下一轮给：{second:?}"
     );
 
-    // 本机的头不是系统账号。
+    // 本机的头不是桥。
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let refused = client
@@ -114,7 +109,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
             json!({"venue": "qq:group:1", "on": []}),
         )
         .await;
-    assert_eq!(reason(&refused), Some("no_system_account"), "{refused}");
+    assert_eq!(reason(&refused), Some("needs_approval"), "{refused}");
     core.stop_extensions().await;
     core.stop_sessions().await;
 }

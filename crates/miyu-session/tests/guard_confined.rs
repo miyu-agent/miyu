@@ -188,7 +188,8 @@ async fn the_admins_own_chat_and_local_sessions_are_not_confined() {
     }
 }
 
-/// 关起来的会话载入以后照样关着（施工 Y-2 下上）。
+/// 关起来的会话载入以后照样关着（施工 Y-2 下上）：照日志第一条记的 `confined`，载入的一方交的是「不关」也一样（施工 SU-4 中：
+/// 端点载入时不再照属主算出关着）。
 #[tokio::test]
 async fn a_confined_session_stays_confined_after_loading() {
     let home = Home::new();
@@ -211,11 +212,41 @@ async fn a_confined_session_stays_confined_after_loading() {
                 cwd: at(&home, "work"),
                 ..environment()
             }),
-            (None, false),
+            (None, true),
         )
         .await;
     let mut pushes = watch(&loaded).await;
     ask(&loaded, "cmd-2", say("再来")).await.expect("会话在跑");
     until_turn_ends(&mut pushes).await;
     assert!(kit.read.calls().is_empty(), "载入以后边界以外的读照样拒");
+}
+
+/// 关起来的会话分叉出来的照旧关着（施工 SU-4 中）：桥分叉群会话，分支记下 `confined`，载入时照它关。
+#[tokio::test]
+async fn a_branch_of_a_confined_session_is_confined_too() {
+    let home = Home::new();
+    let kit = Kit::new();
+    let script = Script::new([Play::Says("好。")]);
+    let handle = session(&home, &script, &kit, "qq:group:1", false).await;
+    turn(&home, &handle).await;
+    let child = miyu_session::new_id(now());
+    miyu_session::fork(miyu_session::Fork {
+        root: &home.root,
+        owner: &alice_account(),
+        parent: handle.id(),
+        id: child.clone(),
+        cause: miyu_kernel::id::CommandId::parse("f1").expect("合写法"),
+        by: alice(),
+        at: now(),
+        index: None,
+        seal_after: None,
+        within: None,
+    })
+    .await
+    .expect("分叉得了");
+    let first = home.log(&child).into_iter().next().expect("有第一条");
+    let Body::SessionCreated(created) = first.body else {
+        panic!("第一条是 session.created：{first:?}");
+    };
+    assert!(created.confined);
 }

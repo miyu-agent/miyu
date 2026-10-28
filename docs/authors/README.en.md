@@ -35,7 +35,7 @@ hello/
     └── index.html        # a package page
 ```
 
-1. **Id** (the folder name): starts with a lowercase letter; only lowercase letters, digits, `-`, `_`; at most 64 characters. It can't clash with packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `tui`, `web` and so on), and shouldn't clash with other people's extensions (installing the same id again is an upgrade and replaces theirs). Package ids and usernames share one set of names (a package with a process uses its id as its account name), so a package whose id matches an existing account won't install (`package_id_taken`).
+1. **Id** (the folder name): starts with a lowercase letter; only lowercase letters, digits, `-`, `_`; at most 64 characters. It can't clash with packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `tui`, `web` and so on), and shouldn't clash with other people's extensions (installing the same id again is an upgrade and replaces theirs).
 2. **Names it brings must not clash either**: tools, skills, MCP servers and slash commands that clash with an installed package won't install. Prefixing names with the package id helps.
 3. **Don't write into the package folder after installing**: every file's hash is recorded at install time, and later additions show up in `miyu pkg check`. Write runtime state into the state directory `MIYU_PACKAGE_STATE` names.
 

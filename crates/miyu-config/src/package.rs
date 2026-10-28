@@ -198,9 +198,6 @@ pub struct Process {
     pub start: Start,
     /// 要哪些扩展能力（施工 9-4 下上）：照 [`Capability::ALL`] 的先后，不重复；没写的是空的。
     pub capabilities: Vec<Capability>,
-    /// 有没有自己的系统账号（施工 O-4 下，`06-多用户与身份.md` U14）：有的，账号名就是包的编号，核心起来时建它，拉起的扩展
-    /// 以它的身份连进来。没写的是没有。
-    pub system_account: bool,
 }
 
 /// 什么时候拉起。

@@ -2,7 +2,7 @@
 //! 整份替换，空的是全不给。核心在内存里记（[`miyu_session::VenuePlugins`]），那个场所的会话下一个回合开始照它重筛工具面；
 //! 这一轮里刚关掉的再调回「暂时不可用」。核心、桥刚重启、桥还没说过的场所一件都不给：桥连上以后对每个场所发一次。
 //!
-//! 只给系统账号（桥）和每人一份的包的那一份（施工 IM-2），只管它自己平台的场所：场所编号的平台前缀要是它包清单 `[connection] platform` 写的（同 `venue.sessions`）。
+//! 只给平台桥，只管它自己平台的场所：场所编号的平台前缀要是它包清单 `[connection] platform` 写的（同 `venue.sessions`）。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -33,10 +33,10 @@ pub(crate) fn plugins(
     caller: &Caller,
     params: PluginsParams,
 ) -> Result<Value, Refusal> {
-    let bridge = super::bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
+    let bridge = super::bridge(core, caller).ok_or_else(super::bridge::refused)?;
     let venue = VenueId::parse(&params.venue).map_err(|_| Refusal::BAD_PARAMS)?;
     // 只管自己平台的场所：桥清单没写平台的一个都管不了。
-    if !bridge.owners(core).platform_is(venue.as_str()) {
+    if !bridge.platforms(core).holds(venue.as_str()) {
         return Err(Refusal::bad_field("venue"));
     }
     if !params.on.iter().all(|name| plugin_name(name)) {

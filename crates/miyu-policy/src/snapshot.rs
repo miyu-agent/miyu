@@ -241,6 +241,7 @@ impl Snapshot {
             titles: true,
             dream: None,
             origin: None,
+            confined: false,
         }
     }
 

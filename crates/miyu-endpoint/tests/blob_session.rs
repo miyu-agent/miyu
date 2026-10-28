@@ -1,5 +1,5 @@
-//! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话的属主找。桥（声明了系统账号、接 QQ
-//! 的扩展）读得到群会话里（归它）和主人私聊里（归管理员）引用过的 blob；只在正文里写着哈希的、没引用过的读不到，回
+//! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话找。桥（接 QQ 的扩展）读得到群会话里
+//! 和主人私聊里引用过的 blob；只在正文里写着哈希的、没引用过的读不到，回
 //! `unknown_blob`（以前一律照管理员找，群里的读不到）。管理员的连接照会话的属主读；会话编号不合写法的 `bad_params`。
 
 use std::path::Path;
@@ -19,7 +19,7 @@ use crate::support::extensions::*;
 use crate::support::venues::BINDINGS;
 use crate::support::*;
 
-/// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `system_account.rs`）。
+/// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `bridge_venues.rs`）。
 pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
     home.write("system/config.toml", BINDINGS);
     let items = [
@@ -53,6 +53,9 @@ pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
 pub(crate) fn on_qq(home: &Home) {
     let manifest = home.root.path().join("system/packages/bot/package.toml");
     let text = std::fs::read_to_string(&manifest).expect("装好了");
+    if text.contains("[connection]") {
+        return;
+    }
     std::fs::write(
         &manifest,
         format!("{text}\n[connection]\nplatform = \"qq\"\n"),
@@ -177,10 +180,10 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         .to_string();
     let sent = replies(&path, 4).await;
     assert!(sent[3].get("error").is_none(), "桥发进它的群：{sent:?}");
-    // 桥自己传的存在它名下（施工 Y-2中下），管理员名下没有：读得到就是照会话的属主（bot）读的。
+    // 桥传的存在主人名下（施工 SU-4 中），群会话也归主人。
     let hash = ContentHash::parse(&g).expect("合写法");
     assert!(
-        !miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
+        miyu_store::blob::Blobs::new(home.root.blobs(&alice()))
             .path(&hash)
             .is_file()
     );
@@ -189,7 +192,7 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
     assert_eq!(
         got(&read[4]),
         Ok(group_pic.to_vec()),
-        "群会话归它，引用过的读得到"
+        "群会话里引用过的读得到"
     );
     assert_eq!(
         got(&read[5]),
@@ -201,7 +204,6 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         .as_str()
         .unwrap_or_else(|| panic!("{read:?}"))
         .to_string();
-    assert_eq!(read[6]["result"]["account"], "alice", "主人的私聊归管理员");
     send(&mut client, "s2", &private, "qq:10001", &p, &s).await;
     std::fs::write(&private_ready, "").expect("写得进");
     let read = replies(&path, 10).await;

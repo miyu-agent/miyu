@@ -111,8 +111,6 @@ impl Clone for Issue {
 pub struct Packages {
     dirs: Vec<(Layer, PathBuf)>,
     state: PathBuf,
-    /// 管理员（施工 O-4 下）：声明了系统账号、编号和它一样的包不收。只有出厂那一层的没有。
-    admin: Option<AccountId>,
 }
 
 impl Packages {
@@ -125,7 +123,6 @@ impl Packages {
                 (Layer::Home, migrate::system_layer(root, admin)),
             ],
             state: root.state().join("packages"),
-            admin: Some(admin.clone()),
         }
     }
 
@@ -134,7 +131,6 @@ impl Packages {
         Packages {
             dirs: vec![(Layer::Shipped, resources.path().join("packages"))],
             state: PathBuf::new(),
-            admin: None,
         }
     }
 
@@ -163,9 +159,6 @@ impl Packages {
         duplicates(&mut found);
         taken(&mut found);
         features_taken(&mut found);
-        if let Some(admin) = &self.admin {
-            accounts_taken(&mut found, admin);
-        }
         found
     }
 
@@ -223,40 +216,6 @@ impl Packages {
     pub fn state_root(&self) -> &Path {
         &self.state
     }
-}
-
-/// 读成了的清单里声明了系统账号的那些包的账号（施工 O-4 下）：账号名就是包的编号，照编号排。
-pub fn system_accounts(found: &[Found]) -> Vec<AccountId> {
-    found
-        .iter()
-        .filter(|found| declares_account(found))
-        .filter_map(|found| AccountId::parse(&found.id).ok())
-        .collect()
-}
-
-/// 带进程的包各自的账号（施工 Y-5 中上，设计 06 U16）：读成了、有 `[process]` 的，账号名就是包的编号。声明了系统账号的（平台桥，
-/// [`system_accounts`]）在里面。
-pub fn package_accounts(found: &[Found]) -> Vec<AccountId> {
-    found
-        .iter()
-        .filter(|found| {
-            found
-                .read
-                .as_ref()
-                .is_ok_and(|manifest| manifest.process.is_some())
-        })
-        .filter_map(|found| AccountId::parse(&found.id).ok())
-        .collect()
-}
-
-/// 读成了、声明了系统账号。
-fn declares_account(found: &Found) -> bool {
-    found.read.as_ref().is_ok_and(|manifest| {
-        manifest
-            .process
-            .as_ref()
-            .is_some_and(|process| process.system_account)
-    })
 }
 
 /// 怎么起包里的程序 `program`（施工 9-2，`packages.md`「转交」）：先找包文件夹 `dir` 里的 `bin/`（施工 F-8 上再补：别人做的包
@@ -411,20 +370,6 @@ fn read_one(layer: Layer, id: String, path: PathBuf) -> Found {
         id,
         layer,
         path,
-    }
-}
-
-/// 声明了系统账号、编号和管理员的账号一样的：报 `account_taken`，整份不收（施工 O-4 下）。
-fn accounts_taken(found: &mut [Found], admin: &AccountId) {
-    for one in found.iter_mut() {
-        if declares_account(one) && one.id == admin.as_str() {
-            one.read = Err(Issue::Wrong(Problem {
-                line: None,
-                code: Code::AccountTaken,
-                message: format!("system account {} is already a person's account", one.id),
-                detail: one.id.clone(),
-            }));
-        }
     }
 }
 

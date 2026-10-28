@@ -176,6 +176,7 @@ async fn opened(
         images: true,
         titles: true,
         origin: None,
+        confined: false,
     };
     match core
         .sessions

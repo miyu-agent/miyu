@@ -302,7 +302,7 @@ async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
 }
 
 /// 调扩展的工具时交会话属主的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
-/// 只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里，图存到属主（桥的系统账号）家里她就碰不到了，几个群还共用
+/// 只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里，图存到主人家里她就碰不到了，几个群还共用
 /// 一处；不知道在哪个场所的也不给。
 #[tokio::test]
 async fn a_call_carries_where_the_owner_s_pictures_go() {

@@ -78,7 +78,7 @@
 | `package.remove` | `package` | `{"package", "removed": true}` |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们） | `{"group", "removed": [<编号>…]}` |
 
-都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`system_account`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
+都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（有没有状态目录）。
 
 装、卸当场生效：带进程的照开关拉起、停下，它的工具进出工具目录，开着的会话下一轮换上。
 
