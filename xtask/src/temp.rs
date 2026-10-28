@@ -26,26 +26,62 @@ pub fn fresh() -> std::io::Result<PathBuf> {
     Ok(dir)
 }
 
-/// 跑完以后：`dir` 里剩下的照前缀数，一种一行；然后整个删掉（删不掉的另报一行）。
+/// 一种剩下的举例时列几个文件。
+const SHOWN: usize = 5;
+
+/// 跑完以后：`dir` 里剩下的照前缀数，一种一行，带名字排最前的那一个里面有什么（施工 TMP-1 补：门禁满载时偶尔剩一个，
+/// 删完就看不到了，不说里面有什么查不出是谁写的）；然后整个删掉（删不掉的另报一行）。
 pub fn left(dir: &Path) -> Vec<String> {
-    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut counts: BTreeMap<String, (usize, String)> = BTreeMap::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
             if KEPT.iter().any(|kept| name.starts_with(kept)) {
                 continue;
             }
-            *counts.entry(prefix(&name)).or_default() += 1;
+            let (count, first) = counts.entry(prefix(&name)).or_insert((0, name.clone()));
+            *count += 1;
+            if name < *first {
+                *first = name;
+            }
         }
     }
     let mut problems: Vec<String> = counts
         .into_iter()
-        .map(|(prefix, count)| format!("测试留下了 {count} 个 {prefix}*：夹具没清干净"))
+        .map(|(prefix, (count, first))| {
+            let mut inside = Vec::new();
+            files(&dir.join(&first), Path::new(""), &mut inside);
+            let shown = match inside.len() {
+                0 if !dir.join(&first).is_dir() => "是个文件".to_string(),
+                0 => "空的".to_string(),
+                n if n > SHOWN => format!("{} 等 {n} 个", inside[..SHOWN].join("、")),
+                _ => inside.join("、"),
+            };
+            format!("测试留下了 {count} 个 {prefix}*：夹具没清干净（{first} 里：{shown}）")
+        })
         .collect();
     if let Err(error) = std::fs::remove_dir_all(dir) {
         problems.push(format!("{} 删不掉：{error}", dir.display()));
     }
     problems
+}
+
+/// `dir` 下面每一层的文件（空的目录也算一项），照 `rest` 拼、照名字排；不是目录的当一个文件。
+fn files(dir: &Path, rest: &Path, found: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        if !rest.as_os_str().is_empty() {
+            found.push(rest.to_string_lossy().replace('\\', "/"));
+        }
+        return;
+    };
+    let mut entries: Vec<_> = entries.flatten().collect();
+    entries.sort_by_key(std::fs::DirEntry::file_name);
+    if entries.is_empty() && !rest.as_os_str().is_empty() {
+        found.push(format!("{}/", rest.to_string_lossy().replace('\\', "/")));
+    }
+    for entry in entries {
+        files(&entry.path(), &rest.join(entry.file_name()), found);
+    }
 }
 
 /// 名字的前缀：去掉第一段数字（进程号、时刻、序号这些）开头的那一段以后的。没有数字段的照原样。
@@ -93,10 +129,22 @@ mod tests {
             "miyu-scripts",
             "miyu-session-3-4",
             "miyu-session-5-6",
+            "miyu-main-7-8",
         ] {
             std::fs::create_dir_all(dir.join(name)).expect("建得了目录");
         }
-        assert_eq!(left(&dir), ["测试留下了 2 个 miyu-session-*：夹具没清干净"]);
+        let recall = dir.join("miyu-session-3-4/home/alice/index/recall");
+        std::fs::create_dir_all(&recall).expect("建得了目录");
+        std::fs::write(recall.join("turns-_none.db"), "").expect("写得进");
+        std::fs::create_dir_all(dir.join("miyu-session-3-4/state")).expect("建得了目录");
+        assert_eq!(
+            left(&dir),
+            [
+                "测试留下了 1 个 miyu-main-*：夹具没清干净（miyu-main-7-8 里：空的）",
+                "测试留下了 2 个 miyu-session-*：夹具没清干净（miyu-session-3-4 里：\
+                 home/alice/index/recall/turns-_none.db、state/）",
+            ]
+        );
         assert!(!dir.exists());
     }
 }
