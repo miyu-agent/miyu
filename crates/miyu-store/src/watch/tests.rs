@@ -318,16 +318,21 @@ fn a_watched_tree_hands_over_the_file_that_changed() {
     let (_temp, dir) = scratch();
     let table = Table::of_tree(&dir);
     let modify = EventKind::Modify(ModifyKind::Any);
-    let deep = dir.join("core").join("facts").join("env.txt");
+    // 系统报的是真实的位置（macOS 的 `/var` 是链接，Windows 的临时目录可能是短名）：交出去的照调的一方给的拼。
+    let real = dir.canonicalize().unwrap();
+    let deep = Path::new("core").join("facts").join("env.txt");
     assert_eq!(
-        table.touched(&event(modify, &deep)),
-        std::slice::from_ref(&deep)
+        table.touched(&event(modify, &real.join(&deep))),
+        [dir.join(&deep)]
     );
-    for path in [dir.join(".git").join("x"), dir.join("core").join(".x.swp")] {
+    for path in [
+        real.join(".git").join("x"),
+        real.join("core").join(".x.swp"),
+    ] {
         assert!(table.touched(&event(modify, &path)).is_empty(), "{path:?}");
     }
     assert!(
-        table.touched(&event(modify, &dir)).is_empty(),
+        table.touched(&event(modify, &real)).is_empty(),
         "目录自己不算"
     );
 }
@@ -340,5 +345,13 @@ fn a_file_deep_in_a_watched_tree_is_seen() {
     let (on_change, received) = collect();
     let _watching = watch_tree(&dir, on_change).unwrap();
     fs::write(deep.join("env.txt"), "Mine.\n").unwrap();
-    assert_eq!(received.recv_timeout(WAIT).unwrap(), deep.join("env.txt"));
+    // 有的系统先报一下建过的目录（macOS 的 FSEvents）：等到那个文件为止。
+    let wanted = deep.join("env.txt");
+    let deadline = std::time::Instant::now() + WAIT;
+    loop {
+        let left = deadline.saturating_duration_since(std::time::Instant::now());
+        if received.recv_timeout(left).expect("等得到那个文件") == wanted {
+            break;
+        }
+    }
 }
