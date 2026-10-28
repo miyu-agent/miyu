@@ -76,7 +76,7 @@ impl Calls {
         venue: &miyu_kernel::id::VenueId,
         (source, own): (super::Source, Vec<miyu_kernel::event::Event>),
     ) -> (Option<super::TurnLane>, Option<Calls>) {
-        let account = personas.memory_account(&self.owner);
+        let account = self.owner.clone();
         // 是不是主会话照日志第一条（施工 E-6）：读回的整份从 `session.created` 起。
         let main = match own.first().map(|event| &event.body) {
             Some(miyu_kernel::event::Body::SessionCreated(created)) => created.parent.is_none(),

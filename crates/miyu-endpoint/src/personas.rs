@@ -31,7 +31,6 @@ const TARGET: &str = "miyu::endpoint";
 pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
     Personas::new(&core.resources, &core.root, &core.admin)
         .with_packages(&crate::packages::folders(core, account))
-        .with_keeper(core.admin.clone())
 }
 
 /// 找新会话的人格（施工 P-4 上，2026-10-08 项目主人：「人格允许为空」）：`wanted` 写了编号的是它，写了 `null` 的

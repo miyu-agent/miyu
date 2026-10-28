@@ -85,7 +85,7 @@ pub(crate) fn recorder(core: &Core, caller: &Caller) -> Result<By, Refusal> {
         Some(package) => By::Module(Module {
             id: ModuleId::parse(package).map_err(|_| Refusal::INTERNAL)?,
         }),
-        None => crate::sessions::person(core, caller),
+        None => crate::sessions::admin(core),
     })
 }
 

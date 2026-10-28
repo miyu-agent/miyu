@@ -193,8 +193,7 @@ impl Search {
             .as_deref()
             .filter(|id| extension::is_extension(id));
         if let (Some(picked), Some(port)) = (picked, self.extensions.get()) {
-            let asking = (picked, using.owner.as_ref());
-            match ready.ask_extension(port.as_ref(), asking, query).await {
+            match ready.ask_extension(port.as_ref(), picked, query).await {
                 Some(Ok(found)) => return Ok(found),
                 Some(Err(Missed::Failed(why))) => last = Some(why),
                 Some(Err(_)) | None => {}

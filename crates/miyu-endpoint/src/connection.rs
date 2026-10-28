@@ -124,7 +124,6 @@ async fn read_all<R: AsyncRead + Unpin>(
     let reverse = Peer::new(out.clone());
     let caller = Caller {
         reverse: reverse.clone(),
-        account: core.admin.clone(),
         package: package.clone(),
     };
     // 它手里有哪些能力（施工 X-30；SU-2 中起照开关文件里批过的）：批、升级都会重新拉起，一个连接算一次就够。
@@ -185,9 +184,7 @@ async fn read_all<R: AsyncRead + Unpin>(
             Ok(Read::Closed) | Err(_) => break,
         };
         // 每说一句都照这时的 `ui.language` 重算这个连接的语言（施工 8-4）。
-        let peer = shaken
-            .as_ref()
-            .map(|shaken| shaken.now_as(&core, caller.acting_for()));
+        let peer = shaken.as_ref().map(|shaken| shaken.now(&core));
         let locale = peer.map_or(Locale::En, |peer| peer.locale);
         let request = match wire::parse(&line) {
             Incoming::Request(request) => request,
@@ -257,7 +254,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                     &core,
                     request.params.clone(),
                     (from_core, reach.source()),
-                    &caller.account,
+                    &core.admin,
                 )
                 .await
                 {
@@ -288,14 +285,9 @@ async fn read_all<R: AsyncRead + Unpin>(
             }
             (_, None) => (wire::error(id(), Refusal::HELLO_FIRST, locale), None, false),
             ("subscribe", Some(peer)) => {
-                let (result, target) = streams::subscribe(
-                    &core,
-                    &mut subscriptions,
-                    &request,
-                    (shaken.clone(), &caller),
-                    &out,
-                )
-                .await;
+                let (result, target) =
+                    streams::subscribe(&core, &mut subscriptions, &request, shaken.clone(), &out)
+                        .await;
                 (answer(&request, result, peer.locale), target, false)
             }
             (name, Some(_)) if name.starts_with("login.") => {

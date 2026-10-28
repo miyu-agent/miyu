@@ -102,7 +102,7 @@ impl Listed {
                 json!({"jsonrpc": "2.0", "method": "schedules.changed", "params": params})
             }
             Listed::Extensions => {
-                let entry = crate::extensions::entry(core, id, shaken.now_whose(core))?;
+                let entry = crate::extensions::entry(core, id, shaken.now(core))?;
                 json!({"jsonrpc": "2.0", "method": "extension.changed", "params": {"entry": entry}})
             }
             // 个人设置里的 MCP 服务（施工 F-9 补）：推 `mcp.changed`，删掉了的 `server` 是 `null`。
@@ -112,7 +112,7 @@ impl Listed {
                     json!({"jsonrpc": "2.0", "method": "mcp.changed", "params": {"name": name, "server": server}})
                 }
                 None => {
-                    let entry = crate::packages::entry(core, id, shaken.now_whose(core));
+                    let entry = crate::packages::entry(core, id, shaken.now(core));
                     json!({"jsonrpc": "2.0", "method": "package.changed", "params": {"entry": entry, "package": id}})
                 }
             },
@@ -240,8 +240,8 @@ impl Subscriptions {
         ));
         match listed {
             // 照订的人是不是管理员裁格子（施工 U23-R修二：原来的 `now` 恒当不是，管理员拿到的也是成员那一份）。
-            Listed::Packages => crate::packages::list(core, shaken.now_whose(core)),
-            _ => Ok(crate::extensions::status(core, shaken.now_whose(core))),
+            Listed::Packages => crate::packages::list(core, shaken.now(core)),
+            _ => Ok(crate::extensions::status(core, shaken.now(core))),
         }
     }
 

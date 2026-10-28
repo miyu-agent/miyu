@@ -75,21 +75,12 @@ pub(crate) struct QueryParams {
     offset: Option<String>,
 }
 
-/// `usage.query`：见模块的说明。不是管理员的人只算自己名下的（施工 Y-2 下下上）。
-pub(crate) async fn query(
-    core: &Arc<Core>,
-    caller: &crate::hello::Caller,
-    params: QueryParams,
-) -> Result<Value, Refusal> {
-    let mut query = read(params, crate::sessions::offset)?;
-    let whose = caller.acting_for();
-    if !crate::login::is_owner(core, whose) {
-        query.account = Some(whose.as_str().to_string());
-    }
-    let currency = currency(core, whose);
+/// `usage.query`：见模块的说明。
+pub(crate) async fn query(core: &Arc<Core>, params: QueryParams) -> Result<Value, Refusal> {
+    let query = read(params, crate::sessions::offset)?;
+    let currency = currency(core, &core.admin);
     let usage = Arc::clone(&core.usage);
-    // 系统账号、成员的算进总数，照 `account` 能分开看（施工 O-4 下、Y-2 下下中下）。
-    let accounts = core.usage_accounts();
+    let accounts = vec![core.admin.clone()];
     let group = query.group.clone();
     let wanted = currency.clone();
     let found = tokio::task::spawn_blocking(move || {
@@ -249,7 +240,7 @@ fn converted_value(converted: Converted) -> Value {
 /// 记一行、只有它自己。
 pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
     let usage = Arc::clone(&core.usage);
-    let accounts = core.usage_accounts();
+    let accounts = vec![core.admin.clone()];
     let root = session.as_str().to_string();
     let found = tokio::task::spawn_blocking(move || {
         for problem in usage.catch_up(&accounts)? {
@@ -273,7 +264,7 @@ pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
 
 pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
     let usage = Arc::clone(&core.usage);
-    let accounts = core.usage_accounts();
+    let accounts = vec![core.admin.clone()];
     let query = Query {
         from: None,
         until: None,

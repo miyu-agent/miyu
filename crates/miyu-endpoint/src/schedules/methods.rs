@@ -26,7 +26,7 @@ pub(crate) async fn call(
     caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
-    let account = caller.acting_for();
+    let account = &core.admin;
     let package = caller.package.as_deref();
     let schedules = core.schedules();
     match request.method.as_str() {

@@ -8,8 +8,6 @@ use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
 
-use miyu_kernel::id::AccountId;
-
 use super::{Found, Hit, Missed, Query, Ready, tidy};
 use crate::TARGET;
 
@@ -33,11 +31,10 @@ pub enum Unanswered {
 
 /// 问扩展的端口：核心起来以后装进 [`super::Search::attach`]。
 pub trait SearchPort: Send + Sync {
-    /// `asked` 是（`source`，`owner`）：替 `owner` 问来源 `source`（`<包>/<编号>`）搜 `query`，要 `want` 条：每人一份的包问他那一份（施工 IM-1 中下三），
-    /// 没有 `owner` 的问那一份。
+    /// 问来源 `source`（`<包>/<编号>`）搜 `query`，要 `want` 条。
     fn query<'a>(
         &'a self,
-        asked: (&'a str, Option<&'a AccountId>),
+        source: &'a str,
         query: &'a Query,
         want: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Answered, Unanswered>> + Send + 'a>>;
@@ -53,37 +50,35 @@ impl Ready {
     pub(super) async fn ask_extension(
         &self,
         port: &dyn SearchPort,
-        (source, owner): (&str, Option<&AccountId>),
+        source: &str,
         query: &Query,
     ) -> Option<Result<Found, Missed>> {
         if self.cooling(source).is_some() {
             return None;
         }
-        Some(
-            match port.query((source, owner), query, self.rules.results).await {
-                Ok(answered) => {
-                    self.cooldown().succeeded(source);
-                    let hits = tidy(
-                        answered.hits,
-                        query,
-                        self.rules.results,
-                        self.rules.excerpt_chars,
-                    );
-                    Ok(Found {
-                        source: answered.name,
-                        hits,
-                    })
-                }
-                Err(Unanswered::Limited) => {
-                    self.cooldown().limited(source, Instant::now());
-                    tracing::warn!(target: TARGET, source, "web search source limited");
-                    Err(Missed::Failed(format!("{source} is rate limited")))
-                }
-                Err(Unanswered::Failed(why)) => {
-                    tracing::warn!(target: TARGET, source, why = why.as_str(), "web search source failed");
-                    Err(Missed::Failed(format!("{source}: {why}")))
-                }
-            },
-        )
+        Some(match port.query(source, query, self.rules.results).await {
+            Ok(answered) => {
+                self.cooldown().succeeded(source);
+                let hits = tidy(
+                    answered.hits,
+                    query,
+                    self.rules.results,
+                    self.rules.excerpt_chars,
+                );
+                Ok(Found {
+                    source: answered.name,
+                    hits,
+                })
+            }
+            Err(Unanswered::Limited) => {
+                self.cooldown().limited(source, Instant::now());
+                tracing::warn!(target: TARGET, source, "web search source limited");
+                Err(Missed::Failed(format!("{source} is rate limited")))
+            }
+            Err(Unanswered::Failed(why)) => {
+                tracing::warn!(target: TARGET, source, why = why.as_str(), "web search source failed");
+                Err(Missed::Failed(format!("{source}: {why}")))
+            }
+        })
     }
 }

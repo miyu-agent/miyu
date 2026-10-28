@@ -99,21 +99,3 @@ fn a_knowledge_base_belongs_to_whoever_made_it() {
     assert_eq!(ids(&alice()), ["notes"]);
     assert!(ids(&bob()).is_empty(), "甲建的库乙看不到");
 }
-
-/// 家目录那一层是别的账号的时候，系统账号的会话的记忆照旧归管理员（施工 Y-2 中上，`with_keeper`），不归那个家目录的主人。
-#[test]
-fn a_system_account_s_memory_still_goes_to_the_keeper() {
-    let scratch = Scratch::new("scope-keeper");
-    let root = root_in(&scratch);
-    let res = resources(&scratch);
-    let robot = AccountId::parse("robot").expect("合写法");
-    let personas = Personas::new(&res, &root, &alice())
-        .with_system_accounts(vec![robot.clone()])
-        .with_keeper(admin());
-    assert_eq!(
-        personas.memory_account(&robot),
-        admin(),
-        "系统账号的归管理员"
-    );
-    assert_eq!(personas.memory_account(&bob()), bob(), "别的照属主");
-}

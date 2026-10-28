@@ -1,4 +1,5 @@
-//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）；属主不是主人的会话装不了包（施工 SU-2 上）。
+//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）；关在沙盒里的会话装不了包（施工 SU-2 上；施工 SU-4 下起照关不关，
+//! 不照属主）。
 
 use std::sync::Arc;
 
@@ -27,9 +28,10 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     let port = Port {
         core: Arc::downgrade(&core),
         owner: alice.clone(),
+        confined: false,
     };
     // 出厂的 `dev` 不开没列出来的软件：打开要写进同名覆盖。
-    open_in(&core, (&alice, port.peer(&core)), "dev", "kit").await;
+    open_in(&core, (&alice, port.peer()), "dev", "kit").await;
     let preset = std::fs::read_to_string(root.account_dir(&alice).join("presets/dev.toml"))
         .unwrap_or_default();
     assert!(preset.contains("kit = true"), "写进主人那一份：{preset}");
@@ -39,10 +41,10 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     }
 }
 
-/// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下，SU-2 上起没有自己那一层）：属主不是主人的会话（场所里替外人的）一件一件拒
+/// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下，SU-2 上起没有自己那一层）：关在沙盒里的会话（群、陌生人的私聊，属主也是主人）一件一件拒
 /// `not_permitted`（工具先看一眼再做，只挡看一眼的话直接调做的那一件就漏了），什么都不动；只读的照旧给。
 #[tokio::test]
-async fn a_session_not_the_owner_s_cannot_change_packages() {
+async fn a_confined_session_cannot_change_packages() {
     let (root, dir) = temp_root("port-member");
     let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
@@ -56,7 +58,8 @@ async fn a_session_not_the_owner_s_cannot_change_packages() {
     ));
     let outsider = Port {
         core: Arc::downgrade(&core),
-        owner: AccountId::parse("bridge").expect("合写法"),
+        owner: alice.clone(),
+        confined: true,
     };
     let kit = dir.join("kit");
     std::fs::create_dir_all(&kit).expect("建得了");
@@ -99,6 +102,7 @@ async fn a_session_not_the_owner_s_cannot_change_packages() {
     let owner = Port {
         core: Arc::downgrade(&core),
         owner: alice,
+        confined: false,
     };
     assert!(owner.inspect(kit.clone()).await.is_ok(), "主人的会话看得了");
     owner

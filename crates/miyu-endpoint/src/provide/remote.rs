@@ -35,11 +35,10 @@ pub(super) struct Texts {
     pub(super) timed_out: String,
 }
 
-/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根和提供者的账号，`blob.put` 存在连接的账号名下（施工 Y-2中下）。
+/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根（施工 SU-4 下起和主人共用一个存处）。
 #[derive(Clone)]
 pub(crate) struct Stores {
     pub(crate) root: DataRoot,
-    pub(crate) provider: AccountId,
     /// 包声明的状态块（施工 TW-1）：工具结果带的 `state` 照它查。
     pub(crate) declared: Arc<crate::sessions::state::Declared>,
 }
@@ -223,22 +222,23 @@ impl RemoteTool {
         }
     }
 
-    /// 交回的图、文件引用的 blob 拷一份进会话的属主 `owner` 名下（施工 O-2 三补）。没有引用的、不知道是哪个会话的（测试里的
-    /// 假调用）原样交回；拷不成的记一行，照暂时不可用。
+    /// 交回的图、文件引用的 blob 要在会话的属主 `owner` 名下（施工 O-2 三补；施工 SU-4 下起扩展和主人共用一个存处，不用再拷）。
+    /// 没有引用的、不知道是哪个会话的（测试里的假调用）原样交回；不在的记一行，照暂时不可用。
     async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
         let hashes = referenced(&done);
         let Some(owner) = owner.filter(|_| !hashes.is_empty()) else {
             return done;
         };
-        let stores = self.stores.clone();
-        let copied = tokio::task::spawn_blocking(move || {
-            crate::attach::copy_over(&stores.root, &stores.provider, &owner, &hashes)
+        let root = self.stores.root.clone();
+        let there = tokio::task::spawn_blocking(move || {
+            let blobs = miyu_store::blob::Blobs::new(root.blobs(&owner));
+            hashes.iter().all(|hash| blobs.path(hash).is_file())
         })
         .await;
-        match copied {
-            Ok(Ok(())) => done,
-            Ok(Err(_)) | Err(_) => {
-                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), "tool blobs not handed over");
+        match there {
+            Ok(true) => done,
+            Ok(false) | Err(_) => {
+                tracing::warn!(target: "miyu::endpoint", tool = self.spec.name.as_str(), "tool blobs not found");
                 self.unavailable()
             }
         }

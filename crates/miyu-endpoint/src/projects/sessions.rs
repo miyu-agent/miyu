@@ -65,7 +65,7 @@ pub(crate) async fn move_out(
             pinned: None,
             project: Some(String::new()),
         };
-        let by = crate::sessions::owner_by(core, account);
+        let by = crate::sessions::admin(core);
         if found
             .handle
             .command(command_id.clone(), by, command)

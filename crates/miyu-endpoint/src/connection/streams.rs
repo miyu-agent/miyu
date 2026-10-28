@@ -11,7 +11,7 @@ use miyu_kernel::id::{AccountId, SessionId};
 use miyu_session::Handle;
 
 use crate::Core;
-use crate::hello::{Caller, Shaken};
+use crate::hello::Shaken;
 use crate::refusal::Refusal;
 use crate::subscriptions::{MemoryAt, Subscriptions, Target, View};
 use crate::view::status::Fixed;
@@ -83,7 +83,7 @@ pub(super) async fn subscribe(
     core: &Arc<Core>,
     subscriptions: &mut Subscriptions,
     request: &Request,
-    (shaken, caller): (Option<Shaken>, &Caller),
+    shaken: Option<Shaken>,
     out: &mpsc::Sender<String>,
 ) -> (Result<Value, Refusal>, Option<Target>) {
     let session_reply = |done: Result<(Value, Option<SessionId>), Refusal>| match done {
@@ -93,16 +93,15 @@ pub(super) async fn subscribe(
     match (stream_of(request), shaken) {
         (Ok(Stream::Config), shook) => {
             let system = shook.as_ref().map_or("en", Shaken::system);
-            subscriptions.add_config((core, caller.acting_for()), system, out);
+            subscriptions.add_config((core, &core.admin), system, out);
             (Ok(json!({})), None)
         }
-        (Ok(Stream::Sessions), _) => match subscriptions
-            .add_sessions((core, caller.acting_for()), out)
-            .await
-        {
-            Ok(result) => (Ok(result), Some(Target::Sessions)),
-            Err(refusal) => (Err(refusal), None),
-        },
+        (Ok(Stream::Sessions), _) => {
+            match subscriptions.add_sessions((core, &core.admin), out).await {
+                Ok(result) => (Ok(result), Some(Target::Sessions)),
+                Err(refusal) => (Err(refusal), None),
+            }
+        }
         (Ok(Stream::Extensions), Some(shook)) => {
             let listed = subscriptions.add_listed(core, false, shook, out);
             (listed, Some(Target::Extensions))
@@ -112,21 +111,21 @@ pub(super) async fn subscribe(
             (listed, Some(Target::Packages))
         }
         (Ok(Stream::Projects), Some(shook)) => {
-            let account = caller.acting_for().clone();
+            let account = core.admin.clone();
             let listed = subscriptions.add_projects(core, account, shook, out).await;
             (listed, Some(Target::Projects))
         }
         (Ok(Stream::Schedules), Some(shook)) => {
-            let account = caller.acting_for().clone();
+            let account = core.admin.clone();
             let listed = subscriptions.add_schedules(core, account, shook, out);
             (listed, Some(Target::Schedules))
         }
         (Ok(Stream::Knowledge), Some(shook)) => {
-            let reply = subscriptions.add_kb(core, caller.acting_for().clone(), shook, out);
+            let reply = subscriptions.add_kb(core, core.admin.clone(), shook, out);
             (Ok(reply), Some(Target::Knowledge))
         }
         (Ok(Stream::Notices), Some(shook)) => {
-            let reply = subscriptions.add_notices(core, caller.acting_for().clone(), shook, out);
+            let reply = subscriptions.add_notices(core, core.admin.clone(), shook, out);
             (Ok(reply), Some(Target::Notices))
         }
         (Ok(Stream::Package(package)), Some(shook)) => {
@@ -137,7 +136,7 @@ pub(super) async fn subscribe(
             {
                 return (Err(Refusal::UNKNOWN_PACKAGE), None);
             }
-            let whose = (caller.acting_for().clone(), package.clone());
+            let whose = (core.admin.clone(), package.clone());
             let reply = subscriptions.add_package_events(core, whose, shook, out);
             (Ok(reply), Some(Target::PackageEvents(package)))
         }
@@ -152,7 +151,7 @@ pub(super) async fn subscribe(
             (Ok(reply), Some(Target::Widgets))
         }
         (Ok(Stream::Memory(at)), _) => {
-            match memory((core, caller.acting_for()), subscriptions, request, at, out).await {
+            match memory((core, &core.admin), subscriptions, request, at, out).await {
                 Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
                 Err(refusal) => (Err(refusal), None),
             }

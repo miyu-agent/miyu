@@ -69,7 +69,7 @@ pub(crate) fn set_loading(params: &LoadingParams) -> Result<Value, Refusal> {
 /// 不是技能、脚本、MCP 服务的功能编号，写不进键（照 `<name>`）的 `bad_params`；别的同 `config.set`。
 pub(crate) fn set_feature(
     core: &Core,
-    (caller, peer): (&crate::hello::Caller, Peer),
+    peer: Peer,
     cause: &CommandId,
     params: FeatureParams,
 ) -> Result<Value, Refusal> {
@@ -77,17 +77,17 @@ pub(crate) fn set_feature(
         return Err(Refusal::BAD_PARAMS);
     }
     let real = key::fill(miyu_session::switches::FEATURE, &[&params.feature]);
-    written(core, (caller, peer), cause, real, params.on)
+    written(core, peer, cause, real, params.on)
 }
 
 /// 照 `config.set` 改个人设置里的一项 `real`：`value` 是 `None` 的删掉。
 fn written(
     core: &Core,
-    (caller, peer): (&crate::hello::Caller, Peer),
+    peer: Peer,
     cause: &CommandId,
     real: String,
     value: Option<bool>,
 ) -> Result<Value, Refusal> {
-    set(core, (caller, peer), cause, SetParams::switch(real, value))?;
+    set(core, peer, cause, SetParams::switch(real, value))?;
     Ok(json!({}))
 }

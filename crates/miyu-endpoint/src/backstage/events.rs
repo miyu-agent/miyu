@@ -61,7 +61,7 @@ pub(crate) fn emit(
     }
     let line = json!({"jsonrpc": "2.0", "method": "package.event",
         "params": {"package": package, "event": params.event, "data": data}});
-    let account = caller.acting_for();
+    let account = &core.admin;
     if core
         .backstage
         .events

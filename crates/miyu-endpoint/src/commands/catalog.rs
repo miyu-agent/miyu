@@ -43,7 +43,7 @@ pub(crate) struct CatalogParams {
 /// `command.catalog`：交回 `{"commands": [{name, aliases, summary, argument?}]}`，照名字排。
 pub(crate) async fn catalog(
     core: &Arc<Core>,
-    (caller, peer): (&crate::hello::Caller, &Peer),
+    peer: &Peer,
     params: CatalogParams,
 ) -> Result<Value, Refusal> {
     // 包没装的命令不列（施工 BS-1 下下）。
@@ -56,7 +56,7 @@ pub(crate) async fn catalog(
         // 不写会话的（施工 CC-1）：跟着包的命令照替谁干活的人的默认预设筛，开会话的话那个包没开的不列（`/loop`、`/goal` 在
         // 会话里照工具面上有没有那件工具认，没开的敲了是 `unknown_command`）。
         None => {
-            let owner = caller.acting_for();
+            let owner = &core.admin;
             let default = crate::presets::default_of(core, owner);
             let listed = all
                 .filter(|slash| {
@@ -74,7 +74,7 @@ pub(crate) async fn catalog(
             if handle.venue().as_str() != LOCAL {
                 return Err(Refusal::VENUE_SESSION);
             }
-            let by = crate::sessions::person(core, caller);
+            let by = crate::sessions::admin(core);
             let listed = all
                 .filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
                 .collect();
@@ -96,10 +96,9 @@ pub(crate) async fn catalog(
         }
     };
     // 照会话属主（不写会话的照替谁干活的人）：他关了的包声明的命令、整页、提示词都不列（施工 U23 末下）。
-    let owner = handle.as_ref().map_or_else(
-        || caller.acting_for().clone(),
-        |handle| handle.owner().clone(),
-    );
+    let owner = handle
+        .as_ref()
+        .map_or_else(|| core.admin.clone(), |handle| handle.owner().clone());
     let off = core.packages_off(&owner);
     let declared: Vec<Declared> = declared
         .into_iter()

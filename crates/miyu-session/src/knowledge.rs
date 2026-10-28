@@ -98,7 +98,7 @@ impl Shelves {
 
     /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 收窄（查的账号照旧是属主的，施工 Y-7）。碰磁盘，在阻塞线程里调。
     pub(crate) fn recast(&self, persona: Option<String>) -> Shelves {
-        let account = self.personas.memory_account(&self.owner);
+        let account = self.owner.clone();
         Shelves {
             knowledge: Arc::clone(&self.knowledge),
             account,
@@ -114,7 +114,7 @@ impl Shelves {
     /// 载入的会话的知识库：记忆的账号照属主算（`Personas::memory_account`，施工 Y-7），人格照它收窄（碰磁盘，在阻塞线程里）。
     pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
         blocking(move || {
-            let account = shelving.personas.memory_account(&shelving.owner);
+            let account = shelving.owner.clone();
             Arc::new(Shelves::new(shelving, account))
         })
         .await

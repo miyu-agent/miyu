@@ -25,7 +25,7 @@ pub(super) struct Extensions(pub(super) Weak<Core>);
 impl SearchPort for Extensions {
     fn query<'a>(
         &'a self,
-        (source, _owner): (&'a str, Option<&'a miyu_kernel::id::AccountId>),
+        source: &'a str,
         asked: &'a Query,
         want: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Answered, Unanswered>> + Send + 'a>> {

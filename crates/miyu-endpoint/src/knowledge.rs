@@ -12,7 +12,6 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_recall::associate::Thresholds;
 use miyu_store::knowledge::{Base, Document, Hit, Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::layers::valid;
@@ -143,15 +142,9 @@ struct Read {
     page: Option<usize>,
 }
 
-/// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。照连接的账号 `caller` 读写它
-/// 自己的库（施工 Y-2 中上，`scope.rs`）。
-pub(crate) async fn call(
-    core: &Arc<Core>,
-    caller: &AccountId,
-    method: &str,
-    params: &Value,
-) -> Result<Value, Refusal> {
-    let account = core.memory_owner(caller);
+/// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。读写主人的库。
+pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Result<Value, Refusal> {
+    let account = core.admin.clone();
     if let Some(managed) = manage::call(core, &account, method, params).await {
         return managed;
     }

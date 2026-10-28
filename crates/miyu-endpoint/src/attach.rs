@@ -173,22 +173,6 @@ pub(crate) async fn blocks(
     .await
 }
 
-/// 附件存在连接的账号 `from` 名下，她照会话的属主 `owner` 读（施工 O-4 下）：不是一个账号的，把块里的 blob 拷一份
-/// 进属主的，属主那里已经有的不再拷。读不了、存不下的记一行、`internal_error`。
-pub(crate) async fn hand_over(
-    core: &Core,
-    (from, owner): (&AccountId, &AccountId),
-    blocks: &[Block],
-) -> Result<(), Refusal> {
-    let hashes = blobs_of(blocks);
-    if owner == from || hashes.is_empty() {
-        return Ok(());
-    }
-    let place = place(core, from);
-    let owner = owner.clone();
-    blocking(move || copy_over(&place.root, &place.account, &owner, &hashes)).await
-}
-
 /// 块里引用的 blob：图片、文件的，照先后。
 pub(crate) fn blobs_of(blocks: &[Block]) -> Vec<ContentHash> {
     blocks
@@ -199,29 +183,6 @@ pub(crate) fn blobs_of(blocks: &[Block]) -> Vec<ContentHash> {
             _ => None,
         })
         .collect()
-}
-
-/// 把 `hashes` 从账号 `from` 名下拷进 `owner` 名下（施工 O-4 下；扩展工具交回的图也走它，施工 O-2 三补）：属主那里已经有的
-/// 不再拷，所以属主就是 `from` 的只看在不在。`from` 名下也没有的 `unknown_attachment`；读不了、存不下的记一行、`internal_error`。
-pub(crate) fn copy_over(
-    root: &DataRoot,
-    from: &AccountId,
-    owner: &AccountId,
-    hashes: &[ContentHash],
-) -> Result<(), Refusal> {
-    let from = Blobs::new(root.blobs(from));
-    let to = Blobs::new(root.blobs(owner));
-    for hash in hashes {
-        if to.path(hash).is_file() {
-            continue;
-        }
-        let bytes = read_blob(&from, hash)?;
-        to.put(&bytes).map_err(|error| {
-            tracing::warn!(target: TARGET, blob = hash.as_str(), error = %error, "attachment not handed over");
-            Refusal::INTERNAL
-        })?;
-    }
-    Ok(())
 }
 
 /// 取一个 blob：没有的 `unknown_attachment`，读不了的记一行、`internal_error`。
@@ -255,7 +216,7 @@ pub(crate) async fn get(
         None if package.is_some_and(|package| !core.blob_grants.holds(package, &hash)) => {
             return Err(Refusal::UNKNOWN_BLOB);
         }
-        None => caller.account.clone(),
+        None => core.admin.clone(),
     };
     let root = core.root.clone();
     blocking(move || get_blocking(&root, &account, &hash, params.offset, params.length)).await

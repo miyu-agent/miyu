@@ -84,7 +84,7 @@ struct Caps {
     prefix_ask: bool,
 }
 
-/// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入，替谁干活。
+/// 握手时记下的：头报的系统语言照 `auto` 算出的那一种，能不能让人输入。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Shaken {
     /// `ui.language` 是 `auto` 时用哪一种：头报的 `locale` 照 [`UiSettings::language_for`] 算的。
@@ -93,39 +93,24 @@ pub(crate) struct Shaken {
     input: bool,
     /// 会问人「前缀要变了」（施工 OV-1 下）。
     prefix_ask: bool,
-    /// 握手时替谁干活：给人看的字照他那一份配置的 `ui.language`（施工 Y-2 下下末，以前一律照机主的）。
-    whose: AccountId,
 }
 
 impl Shaken {
-    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。只拿语言、不装包的地方用它，`admin` 是假的；处理请求用 [`Shaken::now_as`]。
+    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。连接都替主人干活（施工 SU-4 下），`admin` 是真的。
     pub(crate) fn now(&self, core: &Core) -> Peer {
-        let language = language_of(&core.mine(&self.whose).config(), self.system);
+        let language = language_of(&core.mine(&core.admin).config(), self.system);
         Peer {
             locale: Locale::of(Some(language)),
             language,
             input: self.input,
-            admin: false,
+            admin: true,
             prefix_ask: self.prefix_ask,
-        }
-    }
-
-    /// 同 [`Shaken::now`]，`admin` 照这一刻替 `acting_for` 干活的是不是主人算（施工 SU-1：包的账号不是）。
-    pub(crate) fn now_as(&self, core: &Core, acting_for: &AccountId) -> Peer {
-        Peer {
-            admin: crate::login::is_owner(core, acting_for),
-            ..self.now(core)
         }
     }
 
     /// `ui.language` 是 `auto` 时用哪一种。
     pub(crate) fn system(&self) -> &'static str {
         self.system
-    }
-
-    /// 这一刻的这个连接，`admin` 照握手时替谁干活的那个人算（施工 U23-R修二：订列表的回应、推送照它裁格子）。
-    pub(crate) fn now_whose(&self, core: &Core) -> Peer {
-        self.now_as(core, &self.whose)
     }
 }
 
@@ -142,19 +127,10 @@ pub(crate) fn language_of(config: &Config, system: &'static str) -> &'static str
 /// 这个连接是谁（施工 O-4 下、O-13 上）：账号，和核心拉起的扩展是哪个包（本机的头没有）。
 #[derive(Debug, Clone)]
 pub(crate) struct Caller {
-    /// 这个连接是谁：一律是主人（施工 SU-4 中：包不再各有一个账号；平台桥照 `package` 认）。
-    pub(crate) account: AccountId,
     /// 核心拉起的扩展是哪个包：`events.append` 的 `ext.<包>.` 照它查、记成这个模块写的。
     pub(crate) package: Option<String>,
     /// 核心往这个连接发请求的一头（施工 O-2 上）：`provide` 照它记下这个包由谁提供。
     pub(crate) reverse: crate::reverse::Peer,
-}
-
-impl Caller {
-    /// 这个连接替谁干活：主人（施工 SU-4 中起同 `account`；用它的那几十处 SU-4 下收）。
-    pub(crate) fn acting_for(&self) -> &AccountId {
-        &self.account
-    }
 }
 
 /// 这一刻的这个连接。
@@ -166,7 +142,8 @@ pub(crate) struct Peer {
     pub(crate) language: &'static str,
     /// 能让人输入：它造的会话有人确认。
     pub(crate) input: bool,
-    /// 这一刻替主人干活（施工 SU-1：以前的「管理员」）：包自己的账号（平台的桥）不是，改不了全机的东西。
+    /// 这一刻替主人本人干活（施工 SU-1：以前的「管理员」）：连接都是；会话里经端口调的，关在沙盒里的会话（群、陌生人的私聊）
+    /// 不是（施工 SU-4 下，`packages/port.rs`），改不了全机的东西、看不到这台机器上的路径。
     pub(crate) admin: bool,
     /// 握手时声明了会问人「前缀要变了」（施工 OV-1 下）。
     pub(crate) prefix_ask: bool,
@@ -217,7 +194,6 @@ pub(crate) async fn hello(
         system: system(params.locale.as_deref()),
         input: params.caps.input,
         prefix_ask: params.caps.prefix_ask,
-        whose: account.clone(),
     };
     let language = shaken.now(core).language;
     let mut result = json!({

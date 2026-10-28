@@ -36,26 +36,23 @@ impl Grants {
             .is_some_and(|held| held.contains(hash))
     }
 
-    /// 包 `from` 答 `to` 的回应 `answer`：里面哪个字符串是 `from` 拿得到的哈希，`to` 也拿得到。交回转过去的那几个：两个包
-    /// 各是自己的账号（施工 Y-5 中上），调的一方照它把 blob 拷进 `to` 名下。
-    pub(crate) fn pass(&self, from: &str, to: &str, answer: &Value) -> Vec<ContentHash> {
+    /// 包 `from` 答 `to` 的回应 `answer`：里面哪个字符串是 `from` 拿得到的哈希，`to` 也拿得到（施工 SU-4 下起存处只有一个，
+    /// 只记许可、不用拷）。
+    pub(crate) fn pass(&self, from: &str, to: &str, answer: &Value) {
         let mut found = Vec::new();
         hashes(answer, &mut found);
         if found.is_empty() {
-            return Vec::new();
+            return;
         }
         let mut held = self.lock();
-        let passed: Vec<ContentHash> = match held.get(from) {
-            Some(own) => found
-                .into_iter()
-                .filter(|hash| own.contains(hash))
-                .collect(),
-            None => return Vec::new(),
+        let Some(own) = held.get(from) else {
+            return;
         };
-        held.entry(to.to_string())
-            .or_default()
-            .extend(passed.iter().cloned());
-        passed
+        let passed: Vec<ContentHash> = found
+            .into_iter()
+            .filter(|hash| own.contains(hash))
+            .collect();
+        held.entry(to.to_string()).or_default().extend(passed);
     }
 
     /// 包 `package` 卸了：它的一份扔掉。

@@ -186,7 +186,7 @@ pub(crate) async fn set(
         package: package.to_string(),
         state,
     };
-    let by = crate::sessions::person(core, caller);
+    let by = crate::sessions::admin(core);
     match found
         .handle
         .command(id.clone(), by, Command::SetState(written))

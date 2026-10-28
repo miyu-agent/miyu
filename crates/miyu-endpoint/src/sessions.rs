@@ -287,7 +287,7 @@ impl Sessions {
                 .unwrap_or_default(),
             profile: Profile::default(),
             personas: personas::personas(core, &child.owner),
-            memory_account: core.memory_owner(&child.owner),
+            memory_account: core.admin.clone(),
             memory_scope: MemoryScope::Off,
             venue: child.venue,
             sandbox_cache: core.sandbox_cache_of(&child.owner),
@@ -312,7 +312,11 @@ impl Sessions {
             sandbox: core.sandbox.helper(),
             lineage: Some(child.lineage),
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core, &child.owner)),
+            packages: Some(crate::packages::port::port(
+                core,
+                &child.owner,
+                child.confined,
+            )),
             schedules: Some(crate::schedules::port::port(core, &child.owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
@@ -381,24 +385,9 @@ impl Sessions {
     }
 }
 
-/// 管理员：本机连上来的都是他（`06-多用户与身份.md` 第二节）。
+/// 主人：连上来的、核心替谁做事都记成他（施工 SU-4 下：原来照连接、照属主分）。
 pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
-}
-
-/// 账号 `owner` 名下的会话里，核心替他做的事记成谁（施工 Y-2 下下上）：主人（施工 SU-4 中起只有主人；以前的日志里平台桥名下的
-/// 会话也记成主人）。
-pub(crate) fn owner_by(core: &Core, _owner: &AccountId) -> By {
-    admin(core)
-}
-
-/// 照连接记成谁（施工 Y-2 下下上）：人记他自己（成员发的命令记在成员名下）；核心拉起的扩展照替谁干活的记（[`owner_by`]）：
-/// 平台桥、替机主的照旧记成管理员，每人一份的包的那一份记成替谁跑的那个人（施工 IM-2）。机主自己连上来的和以前一字不差。
-pub(crate) fn person(core: &Core, caller: &crate::hello::Caller) -> By {
-    match caller.package {
-        Some(_) => owner_by(core, caller.acting_for()),
-        None => By::Person(Person::new(caller.account.clone())),
-    }
 }
 
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：每个账号的会话合起来最新的 [`REMEMBERED`] 个（施工 BUG-1：以前只读机主的，

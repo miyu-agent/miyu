@@ -14,18 +14,17 @@ use miyu_net::{Answered, Found, Hit, Missed, Query, Search, SearchPort, Unanswer
 
 use crate::support::{Reply, Site, resources};
 
-/// 假的端口：照 `answer` 答，数着被问了几次、问的是哪个来源、替谁问的。
+/// 假的端口：照 `answer` 答，数着被问了几次、问的是哪个来源。
 struct Port {
     asked: AtomicUsize,
     sources: Mutex<Vec<String>>,
-    owners: Mutex<Vec<Option<String>>>,
     answer: Result<Answered, Unanswered>,
 }
 
 impl SearchPort for Port {
     fn query<'a>(
         &'a self,
-        (source, owner): (&'a str, Option<&'a miyu_kernel::id::AccountId>),
+        source: &'a str,
         _query: &'a Query,
         _want: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Answered, Unanswered>> + Send + 'a>> {
@@ -34,10 +33,6 @@ impl SearchPort for Port {
             .lock()
             .expect("锁没坏")
             .push(source.to_string());
-        self.owners
-            .lock()
-            .expect("锁没坏")
-            .push(owner.map(|owner| owner.as_str().to_string()));
         let answer = self.answer.clone();
         Box::pin(async move { answer })
     }
@@ -47,7 +42,6 @@ fn port(answer: Result<Answered, Unanswered>) -> Arc<Port> {
     Arc::new(Port {
         asked: AtomicUsize::new(0),
         sources: Mutex::new(Vec::new()),
-        owners: Mutex::new(Vec::new()),
         answer,
     })
 }
@@ -175,9 +169,9 @@ impl miyu_tool::SettingsPort for Picked {
     }
 }
 
-/// 她在 bob 的会话里用 `web_search`：问扩展的来源时带上 bob（施工 IM-1 中下三：每人一份的包问他那一份）。
+/// 她在会话里用 `web_search`：挑了的扩展来源经端口问（施工 N-5；施工 SU-4 下起不再带替谁问）。
 #[tokio::test]
-async fn the_tool_asks_the_extension_for_the_session_s_owner() {
+async fn the_tool_asks_the_picked_extension_source() {
     let (_site, search) = shipped().await;
     let port = port(found_by("Finder"));
     search.attach(port.clone());
@@ -212,7 +206,7 @@ async fn the_tool_asks_the_extension_for_the_session_s_owner() {
     .expect("一分钟内搜完");
     assert!(!done.error, "搜得到");
     assert_eq!(
-        *port.owners.lock().expect("锁没坏"),
-        [Some("bob".to_string())]
+        *port.sources.lock().expect("锁没坏"),
+        ["finder/web".to_string()]
     );
 }

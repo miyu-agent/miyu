@@ -40,6 +40,8 @@ impl Open {
         let pick = Box::new(move |last: Option<&str>| {
             super::pick(&picking, &owner_of, last.unwrap_or(NO_CWD), &fallback).cwd
         });
+        // 关没关在沙盒里照日志第一条（施工 SU-4 中），软件包的端口照它裁（施工 SU-4 下）。
+        let confined = super::confined_of(core, &owner, id).await;
         // 属主写的提示词覆盖（施工 OV-1 中）。
         let resources = crate::presets::overrides::resources(core, &owner);
         let loaded = load_placed(Load {
@@ -58,7 +60,7 @@ impl Open {
             sandbox: core.sandbox.helper(),
             sandbox_cache: core.sandbox_cache_of(&owner),
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core, &owner)),
+            packages: Some(crate::packages::port::port(core, &owner, confined)),
             schedules: Some(crate::schedules::port::port(core, &owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,

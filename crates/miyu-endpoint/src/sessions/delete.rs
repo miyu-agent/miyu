@@ -68,7 +68,7 @@ impl Sessions {
             .retain(|(_, session)| session != id && !family.contains(session));
         let (root, account, at) = (core.root.clone(), owner, now());
         // 回合库照记忆归谁找：系统账号的会话记在管理员名下（施工 O-4 下）。
-        let remembered = core.memory_owner(&account);
+        let remembered = core.admin.clone();
         let index = core.index_for(&account);
         let (memory, recall) = (Arc::clone(&core.memory), Arc::clone(&core.memory.turns));
         let order: Vec<SessionId> = family.into_iter().rev().chain([id.clone()]).collect();

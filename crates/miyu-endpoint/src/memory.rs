@@ -3,8 +3,7 @@
 //! 读参数、写回应。现在就整理（`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`，搜以前的对话（`memory.turns`，
 //! 施工 R-12 下）在 `memory/turns.rs`。
 //!
-//! - 哪一间（施工 Y-7，设计 06 U21：记忆跟着用户走）：照这个连接替谁干活（`Caller::acting_for`）的账号找，人的连接是他自己，
-//!   替机主干活的扩展是机主，平台桥照 [`Core::memory_owner`] 归机主。`persona` 是这个账号、这个人格那一间（人格照这个账号看得到
+//! - 哪一间（施工 Y-7；施工 SU-4 下起只有主人一个账号）：主人的。`persona` 是这个人格那一间（人格照这个账号看得到
 //!   的几层找）；`session` 是那个会话用的那一间（照会话交出来的 [`Handle::memory_room`]，会话只给属主，`connection/checks.rs`）；
 //!   都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，施工 P-12）；`persona` 写 `_none`（[`NO_PERSONA`]）的是这个账号
 //!   无人格那一间（施工 R-12 再补：网页的记忆页没有会话可借）。
@@ -273,15 +272,14 @@ fn person(who: &AccountId) -> By {
     By::Person(Person::new(who.clone()))
 }
 
-/// 替 `who` 干活，照参数找哪一间，听众是他（施工 Y-7）：人格那一间、无人格那一间的账号照 [`Core::memory_owner`]（平台桥的归
-/// 机主），人格照 `who` 看得到的几层找。
+/// 替 `who` 干活，照参数找哪一间，听众是他（施工 Y-7）：人格那一间、无人格那一间都在主人名下，人格照 `who` 看得到的几层找。
 async fn find(core: &Arc<Core>, who: &AccountId, at: Where) -> Result<Keeper, Refusal> {
     let hearer = person(who);
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
         (Some(persona), None, None) if persona == NO_PERSONA => {
             // 无人格那一间（施工 R-12 再补）：记忆账号是替谁干活的那个账号，同无人格的会话照属主。
-            let room = Room::persona(&core.memory_owner(who), NO_PERSONA);
+            let room = Room::persona(&core.admin, NO_PERSONA);
             Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
         (persona, None, None) => {
@@ -289,7 +287,7 @@ async fn find(core: &Arc<Core>, who: &AccountId, at: Where) -> Result<Keeper, Re
             let found = personas::resolve(core, who, persona.as_deref().map(Some))
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
-            let room = Room::persona(&core.memory_owner(who), &found.id);
+            let room = Room::persona(&core.admin, &found.id);
             // 这一间里她叫什么（施工 E-1 修）：经协议记的、现在就整理的也不把她当认识的人。
             let memory = memory(core)?;
             memory.name_her(&room, found.file.name.as_ref());

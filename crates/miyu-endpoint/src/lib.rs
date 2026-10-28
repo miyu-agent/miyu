@@ -76,7 +76,6 @@ pub mod settings;
 mod skills;
 mod spawn;
 mod subscriptions;
-mod system_accounts;
 mod terminal;
 #[cfg(test)]
 mod test_support;

@@ -100,11 +100,8 @@ pub(crate) fn release(core: &Core, caller: &Caller, params: PortParams) -> Resul
     Ok(json!({}))
 }
 
-/// `port.list`：只给管理员，别人 `not_permitted`。
-pub(crate) fn list(core: &Core, caller: &Caller) -> Result<Value, Refusal> {
-    if !crate::login::is_owner(core, caller.acting_for()) {
-        return Err(Refusal::NOT_PERMITTED);
-    }
+/// `port.list`：哪些包占着哪几个端口。
+pub(crate) fn list(core: &Core) -> Result<Value, Refusal> {
     let ports: Vec<Value> = core
         .extensions
         .ports

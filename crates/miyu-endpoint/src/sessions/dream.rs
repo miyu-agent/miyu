@@ -59,7 +59,7 @@ impl Sessions {
             persona_texts: Default::default(),
             profile: Profile::default(),
             personas: personas::personas(core, &owner),
-            memory_account: core.memory_owner(&owner),
+            memory_account: core.admin.clone(),
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,
             sandbox_cache: core.sandbox_cache_of(&owner),

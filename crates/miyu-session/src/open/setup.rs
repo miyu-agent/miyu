@@ -252,8 +252,7 @@ pub struct Load<'a> {
     pub root: &'a DataRoot,
     /// 会话的属主。
     pub owner: AccountId,
-    /// 人格的几层（施工 P-1 上）：读出快照里的人格以后，照 [`Personas::memory_account`] 算记忆归哪个账号；回合开始时照它
-    /// 看人格的文件改了没有（施工 P-1 再补）。
+    /// 人格的几层（施工 P-1 上）：回合开始时照它看人格的文件改了没有（施工 P-1 再补）。
     pub personas: Personas,
     /// 资源目录（施工 P-1 再补）：人格的文件改了，照它重拼快照。
     pub resources: &'a ResourceRoot,

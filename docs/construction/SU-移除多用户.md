@@ -218,3 +218,12 @@
 6. 测具：测试扩展多一步 `ids:<前缀>`（同一个数据根上几次拉起的请求编号不撞：会话都归主人，核心照「主人 + 命令编号」认重发）。
 7. 怎么验：端点、会话的测试照新规矩改（包账号的几条删掉或改成主人名下），新加人的头碰不到关着的群、碰得到主人私聊、桥碰不到本机会话、载入照日志关、分叉和子会话照父会话关。手写变异见 `~/.cache/miyu-remake/SU4b-mut`（18 个：逮住 17 个；1 个等价：子会话在端点那一处照父会话关，子代理只在本机会话里派得出、本机会话不关，走不到，会话那一侧另有测试守着）；`Platforms::holds` 里多余的「不是本机」判断变异证明等价，删了。本机门禁。
 8. 补（推完以后自查出来的两处，原来照属主是不是主人分、场所会话归主人以后失效）：关着的会话装不了包（权限闸照访问类别 `install` 拒，原来靠端点软件包端口照属主拒）；记忆「谁在听」照关不关（`Listener::of`，原来照属主是不是记忆账号，群里记下的会成主人在场）。各加测试，手写变异 3 个全逮住（`~/.cache/miyu-remake/SU4b2-mut`）。搜到以前的对话给不给编号核过不受影响：群会话没有读别的会话的端口，工具照它不给，加了一条测试守着。
+
+### 二十二、SU-4 下：只剩主人一个的参数收掉（做了什么）
+
+1. 连接上的账号拿掉：`Caller::acting_for`、`Caller.account` 删掉，用到的地方直接是主人（`core.admin`）；跟着用不上的二十来处 `caller` 参数一路删掉；恒成立、恒不成立的「是不是主人」判断（`login::is_owner`、`port.list` 只给管理员、完全放开只给管理员、`usage.query` 只算自己的）删掉。
+2. `system_accounts.rs`（`accounts`、`usage_accounts`、`memory_owner`）、`sessions::owner_by`、`sessions::person`、`Personas` 的 `with_system_accounts`、`with_keeper`、`memory_account` 删掉：都只剩主人一个答案。
+3. 账号之间拷 blob 的 `attach::hand_over`、`copy_over`、后台调用的 `hand_over` 删掉（存处只有一个）；工具交回的图原来顺带查「在不在」，留下这一查（`provide/remote.rs` 的 `handed`）；`blob_grants.pass` 只记许可。
+4. 搜索端口的「替谁搜」（`SearchPort::query` 的 `owner`、`Using.owner`，每人一份的包用的）删掉。
+5. 握手记下的 `Shaken.whose`、`now_as`、`now_whose` 删掉：连接都替主人干活，`Peer.admin` 对连接恒真；会话的软件包端口照会话关不关给（关着的不替主人本人，装不了、列的时候裁掉只给主人的那几格；原来照属主是不是主人，SU-4 中以后群会话的属主也是主人，跟着补上）。
+6. 怎么验：整套测试照改；手写变异 6 个（`~/.cache/miyu-remake/SU4c-mut`）逮住 4 个；造会话、载入时把关不关交给软件包端口的那两处测具里走不到：`packages` 只经 `shell` 里的 `miyu pkg` 调，关着的会话只在沙盒能用时才跑得了命令，测具没有沙盒；端口自己照关不关拒、裁有单元测试守着（`packages/port/tests.rs`）。本机门禁。

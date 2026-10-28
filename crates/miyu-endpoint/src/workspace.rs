@@ -40,7 +40,6 @@ pub(crate) struct SetParams {
 /// 用的工作目录、现在加进来的目录。
 pub(crate) async fn set(
     core: &Arc<Core>,
-    caller: &crate::hello::Caller,
     request: &Request,
     params: SetParams,
 ) -> Result<Value, Refusal> {
@@ -65,7 +64,7 @@ pub(crate) async fn set(
         cwd: cwd.clone(),
         dirs: params.dirs.clone(),
     };
-    command_to(core, caller, request, &session, &found.handle, command).await?;
+    command_to(core, request, &session, &found.handle, command).await?;
     let dirs = core
         .sessions
         .moved(&session, cwd.clone(), params.dirs)
@@ -83,7 +82,6 @@ pub(crate) async fn set(
 /// 太宽没有。和 9-7 上拿掉的头每句话报的目录不是一回事：那是头自己的目录，这是人在 shell 里 `cd` 过去的。
 pub(crate) async fn follow(
     core: &Arc<Core>,
-    caller: &crate::hello::Caller,
     request: &Request,
     session: &SessionId,
     found: &mut Found,
@@ -105,7 +103,7 @@ pub(crate) async fn follow(
         method: request.method.clone(),
         params: Value::Null,
     };
-    command_to(core, caller, &moving, session, &found.handle, command).await?;
+    command_to(core, &moving, session, &found.handle, command).await?;
     core.sessions.moved(session, picked.cwd.clone(), None).await;
     found.cwd = picked.cwd;
     Ok(picked.wide)

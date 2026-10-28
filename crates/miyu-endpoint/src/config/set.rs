@@ -123,15 +123,14 @@ struct Wanted {
     expect: Option<Option<Json>>,
 }
 
-/// `config.set`：改好了交回改了的几项和新的版本。`cause` 是这条命令的编号，记进日志。改的人是这个连接的账号，改的是他那一份
-/// （施工 Y-2 下下中上）；系统配置只有管理员改得了。
+/// `config.set`：改好了交回改了的几项和新的版本。`cause` 是这条命令的编号，记进日志。改的人是主人。
 pub(crate) fn set(
     core: &Core,
-    (caller, peer): (&crate::hello::Caller, Peer),
+    peer: Peer,
     cause: &CommandId,
     params: SetParams,
 ) -> Result<Json, Refusal> {
-    let by = By::Person(Person::new(caller.acting_for().clone()));
+    let by = By::Person(Person::new(core.admin.clone()));
     set_in(core, peer, cause, params, by)
 }
 

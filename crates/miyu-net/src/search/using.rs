@@ -3,8 +3,6 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::id::AccountId;
-
 /// 这一次用得上的。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Using {
@@ -14,8 +12,6 @@ pub struct Using {
     pub keys: BTreeMap<String, String>,
     /// SearXNG 实例的地址。
     pub address: Option<String>,
-    /// 替谁搜（施工 IM-1 中下三）：扩展的来源是每人一份的，问他那一份。没有的（测试里的假调用）问那一份。
-    pub owner: Option<AccountId>,
 }
 
 impl Using {

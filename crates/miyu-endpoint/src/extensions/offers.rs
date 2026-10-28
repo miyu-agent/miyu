@@ -98,7 +98,7 @@ impl Words {
 /// `feature.offer`：见模块说明，回 `{}`。不是核心拉起的扩展的连接 `not_an_extension`。
 pub(crate) fn offer(core: &Core, caller: &Caller, params: OfferParams) -> Result<Value, Refusal> {
     let package = caller.package.as_deref().ok_or(Refusal::NOT_AN_EXTENSION)?;
-    let account = caller.acting_for().clone();
+    let account = core.admin.clone();
     let offers = checked(core, (package, &account), params.features)?;
     let count = offers.len();
     let key = (package.to_string(), account);

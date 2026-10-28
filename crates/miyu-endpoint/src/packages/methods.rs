@@ -62,14 +62,12 @@ pub(crate) async fn call(
         "mcp.logout" => crate::mcp::login::logout(core, peer, &request.id, params(request)?),
         "mcp.set" => crate::mcp::editing::set(core, peer, &request.id, params(request)?),
         "mcp.remove" => crate::mcp::editing::remove(core, peer, &request.id, params(request)?),
-        "skill.list" => crate::skills::list(core, caller.acting_for(), peer).await,
-        "skill.remove" => crate::skills::remove(core, caller.acting_for(), params(request)?).await,
-        "script.list" => Ok(crate::scripts::list::list(core, caller.acting_for(), peer).await),
+        "skill.list" => crate::skills::list(core, &core.admin, peer).await,
+        "skill.remove" => crate::skills::remove(core, &core.admin, params(request)?).await,
+        "script.list" => Ok(crate::scripts::list::list(core, &core.admin, peer).await),
         "tool.set_loading" => crate::toggles::set_loading(&params(request)?),
         "feature.offer" => crate::extensions::offer(core, caller, params(request)?),
-        "feature.set" => {
-            crate::toggles::set_feature(core, (caller, peer), &request.id, params(request)?)
-        }
+        "feature.set" => crate::toggles::set_feature(core, peer, &request.id, params(request)?),
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }

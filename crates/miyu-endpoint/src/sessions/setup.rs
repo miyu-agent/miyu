@@ -91,7 +91,7 @@ impl Setup {
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),
             profile: self.profile.clone(),
             personas: personas::personas(core, &who.owner),
-            memory_account: core.memory_owner(&who.owner),
+            memory_account: core.admin.clone(),
             memory_scope: who
                 .memory
                 .or(persona.and_then(|found| found.file.memory))
@@ -103,7 +103,7 @@ impl Setup {
             oneshot: who.oneshot,
             environment: environment(self.workspace.clone(), self.dirs.clone()),
             command: self.command.clone(),
-            by: super::owner_by(core, &who.owner),
+            by: super::admin(core),
             models: &*core.models,
             tools: core.tools.clone(),
             home: core.home.as_deref(),
@@ -111,7 +111,11 @@ impl Setup {
             sandbox_cache: core.sandbox_cache_of(&who.owner),
             lineage: None,
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core, &who.owner)),
+            packages: Some(crate::packages::port::port(
+                core,
+                &who.owner,
+                who.confined || super::confined(core, &who.owner),
+            )),
             schedules: Some(crate::schedules::port::port(core, &who.owner)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,

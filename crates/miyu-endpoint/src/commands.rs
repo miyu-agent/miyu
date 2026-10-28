@@ -116,11 +116,11 @@ impl Said {
 /// （[`templates::run`]）。
 pub(crate) async fn run(
     core: &Arc<Core>,
-    (caller, peer): (&crate::hello::Caller, &Peer),
+    peer: &Peer,
     id: &CommandId,
     mut params: RunParams,
 ) -> Result<Value, Refusal> {
-    params.person = Some(crate::sessions::person(core, caller));
+    params.person = Some(crate::sessions::admin(core));
     let (name, rest) = split(&params.text)?;
     if params
         .cwd

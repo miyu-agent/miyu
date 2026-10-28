@@ -112,10 +112,6 @@ pub struct Personas {
     dirs: Vec<(Layer, PathBuf)>,
     /// 家目录那一层是谁的。
     admin: AccountId,
-    /// 系统账号（施工 O-4 下）：属主是它们的会话，记忆归管理员。
-    system: Vec<AccountId>,
-    /// 系统账号的会话的记忆归谁（施工 Y-2 中上：家目录那一层不一定是管理员的了，管理员另记）。
-    keeper: Option<AccountId>,
 }
 
 impl Personas {
@@ -127,23 +123,7 @@ impl Personas {
                 (Layer::Home, root.account_dir(admin).join("personas")),
             ],
             admin: admin.clone(),
-            system: Vec::new(),
-            keeper: None,
         }
-    }
-
-    /// 同一份，认 `system` 是系统账号（施工 O-4 下）：[`Personas::memory_account`] 照它把系统账号的会话的记忆归给管理员。
-    #[must_use]
-    pub fn with_system_accounts(mut self, system: Vec<AccountId>) -> Personas {
-        self.system = system;
-        self
-    }
-
-    /// 同一份，系统账号的会话的记忆归 `keeper`（施工 Y-2 中上：管理员；家目录那一层是别的账号时照它，不照家目录的主人）。
-    #[must_use]
-    pub fn with_keeper(mut self, keeper: AccountId) -> Personas {
-        self.keeper = Some(keeper);
-        self
     }
 
     /// 同一份，插上软件包那一层（施工 P-11 上）：`packages` 是装着的包的文件夹，出厂的包在前、同一层照编号；读的时候看各自的
@@ -304,16 +284,6 @@ impl Personas {
                 .then_some((at, dir))
         })?;
         Some(inside(&dir.join(id), relative))
-    }
-
-    /// 属主是 `owner` 的会话，记忆归哪个账号（`personas.md`「怎么走」第 5 条）：一律归会话的属主，用哪个人格、人格住在谁家都
-    /// 不管（施工 Y-7，设计 06 U21：记忆跟着用户走，用别人分享的人格记在用的人那里）；属主是系统账号的归管理员（施工 O-4 下）。
-    /// 造会话、载入、换人格都照它。
-    pub fn memory_account(&self, owner: &AccountId) -> AccountId {
-        match self.system.contains(owner) {
-            true => self.keeper.clone().unwrap_or_else(|| self.admin.clone()),
-            false => owner.clone(),
-        }
     }
 
     /// 几层里所有人格的编号，照编号排好，不重复。目录名不合写法的不算；读不了的一层当没有。

@@ -12,8 +12,8 @@ use super::{TARGET, blocking, place, read_blob};
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 把 `blocks` 里没有路径的图片、文件存进会话 `session`（属主 `owner`）的附件目录，路径填回块里。blob 照属主读：调用前
-/// 先 [`super::hand_over`]。读不了、存不下的记一行、`internal_error`。
+/// 把 `blocks` 里没有路径的图片、文件存进会话 `session`（属主 `owner`）的附件目录，路径填回块里。blob 照属主读（施工 SU-4 下起
+/// 只有主人一个存处）。读不了、存不下的记一行、`internal_error`。
 pub(crate) async fn keep(
     core: &Core,
     owner: &AccountId,

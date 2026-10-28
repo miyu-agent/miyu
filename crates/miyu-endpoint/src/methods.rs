@@ -68,17 +68,17 @@ pub(crate) fn call<'a>(
     uploads: &'a mut Uploads,
 ) -> Answer<'a> {
     match request.method.as_str() {
-        "session.create" => answer(move || session::create(core, peer, caller, request)),
+        "session.create" => answer(move || session::create(core, peer, request)),
         "check" => answer(move || async move {
-            crate::check::check(core, (peer, caller.acting_for()), params(request)?).await
+            crate::check::check(core, (peer, &core.admin), params(request)?).await
         }),
         "persona.list" => {
-            answer(move || async move { personas::list(core, caller.acting_for(), peer).await })
+            answer(move || async move { personas::list(core, &core.admin, peer).await })
         }
         "persona.avatar" => answer(move || async move {
             personas::picture::read(
                 core,
-                caller.acting_for(),
+                &core.admin,
                 personas::picture::Picture::Avatar,
                 params(request)?,
             )
@@ -87,7 +87,7 @@ pub(crate) fn call<'a>(
         "persona.background" => answer(move || async move {
             personas::picture::read(
                 core,
-                caller.acting_for(),
+                &core.admin,
                 personas::picture::Picture::Background,
                 params(request)?,
             )
@@ -105,7 +105,7 @@ pub(crate) fn call<'a>(
             })
         }
         "project.list" | "project.create" | "project.update" | "project.delete" => {
-            answer(move || async move { crate::projects::call(core, caller, request).await })
+            answer(move || async move { crate::projects::call(core, request).await })
         }
         name if name.starts_with("schedule.") => {
             answer(
@@ -145,40 +145,40 @@ pub(crate) fn call<'a>(
         "port.release" => answer(move || async move {
             crate::extensions::release_port(core, caller, params(request)?)
         }),
-        "port.list" => answer(move || async move { crate::extensions::list_ports(core, caller) }),
-        "persona.get" => answer(move || async move {
-            personas::get(core, caller.acting_for(), peer, params(request)?).await
-        }),
-        "persona.set" => answer(move || async move {
-            personas::write::set(core, caller.acting_for(), peer, params(request)?).await
-        }),
-        "persona.read" => answer(move || async move {
-            personas::write::read_prompt(core, caller.acting_for(), peer, params(request)?).await
-        }),
-        "persona.delete" => answer(move || async move {
-            personas::write::delete(core, caller.acting_for(), params(request)?).await
-        }),
-        "preset.list" => {
+        "port.list" => answer(move || async move { crate::extensions::list_ports(core) }),
+        "persona.get" => {
             answer(
-                move || async move { crate::presets::list(core, caller.acting_for(), peer).await },
+                move || async move { personas::get(core, &core.admin, peer, params(request)?).await },
             )
         }
+        "persona.set" => answer(move || async move {
+            personas::write::set(core, &core.admin, peer, params(request)?).await
+        }),
+        "persona.read" => answer(move || async move {
+            personas::write::read_prompt(core, &core.admin, peer, params(request)?).await
+        }),
+        "persona.delete" => answer(move || async move {
+            personas::write::delete(core, &core.admin, params(request)?).await
+        }),
+        "preset.list" => {
+            answer(move || async move { crate::presets::list(core, &core.admin, peer).await })
+        }
         "preset.get" => answer(move || async move {
-            crate::presets::get(core, caller.acting_for(), peer, params(request)?).await
+            crate::presets::get(core, &core.admin, peer, params(request)?).await
         }),
         "preset.set" => answer(move || async move {
-            crate::presets::write::set(core, caller.acting_for(), peer, params(request)?).await
+            crate::presets::write::set(core, &core.admin, peer, params(request)?).await
         }),
         "preset.delete" => answer(move || async move {
-            crate::presets::write::delete(core, caller.acting_for(), params(request)?).await
+            crate::presets::write::delete(core, &core.admin, params(request)?).await
         }),
-        kb if kb.starts_with("kb.") => answer(move || async move {
-            crate::knowledge::call(core, caller.acting_for(), kb, &request.params).await
-        }),
+        kb if kb.starts_with("kb.") => {
+            answer(move || async move { crate::knowledge::call(core, kb, &request.params).await })
+        }
         method if memory::METHODS.contains(&method) => answer(move || async move {
             memory::call(
                 core,
-                caller.acting_for(),
+                &core.admin,
                 &request.method,
                 &request.id,
                 &request.params,
@@ -189,7 +189,7 @@ pub(crate) fn call<'a>(
             let params: ListParams = params(request)?;
             let sessions = list::list(
                 core,
-                caller.acting_for(),
+                &core.admin,
                 params.oneshot,
                 params.dream,
                 params.limit,
@@ -245,24 +245,24 @@ pub(crate) fn call<'a>(
             venues::sessions(core, caller, params).await
         }),
         "session.send" => answer(move || session::send(core, (caller, peer), request)),
-        "session.interrupt" => answer(move || session::interrupt(core, caller, request)),
-        "session.withdraw" => answer(move || session::withdraw(core, caller, request)),
-        "session.revert" => answer(move || session::revert(core, caller, request)),
-        "session.unrevert" => answer(move || session::unrevert(core, caller, request)),
+        "session.interrupt" => answer(move || session::interrupt(core, request)),
+        "session.withdraw" => answer(move || session::withdraw(core, request)),
+        "session.revert" => answer(move || session::revert(core, request)),
+        "session.unrevert" => answer(move || session::unrevert(core, request)),
         "command.run" => answer(move || async move {
-            commands::run(core, (caller, &peer), &request.id, params(request)?).await
+            commands::run(core, &peer, &request.id, params(request)?).await
         }),
-        "command.catalog" => answer(move || async move {
-            commands::catalog(core, (caller, &peer), params(request)?).await
-        }),
-        "session.redo" => answer(move || session::redo(core, (caller, peer), request)),
-        "session.compact" => answer(move || session::compact(core, caller, request)),
-        "session.set_permission_level" => {
-            answer(move || session::set_permission_level(core, caller, request))
+        "command.catalog" => {
+            answer(move || async move { commands::catalog(core, &peer, params(request)?).await })
         }
-        "session.answer" => answer(move || session::answer_question(core, caller, request)),
-        "session.clear" => answer(move || session::clear(core, caller, request)),
-        "session.recap" => answer(move || session::recap(core, caller, request)),
+        "session.redo" => answer(move || session::redo(core, peer, request)),
+        "session.compact" => answer(move || session::compact(core, request)),
+        "session.set_permission_level" => {
+            answer(move || session::set_permission_level(core, request))
+        }
+        "session.answer" => answer(move || session::answer_question(core, request)),
+        "session.clear" => answer(move || session::clear(core, request)),
+        "session.recap" => answer(move || session::recap(core, request)),
         // 包的会话状态（施工 TW-1）：只给扩展。
         "session.set_state" => answer(move || async move {
             crate::sessions::state::set(core, caller, &request.id, params(request)?).await
@@ -271,13 +271,13 @@ pub(crate) fn call<'a>(
             crate::sessions::state::get(core, caller, params(request)?).await
         }),
         "session.tools" => answer(move || async move {
-            crate::session_tools::tools(core, peer, caller.acting_for(), params(request)?).await
+            crate::session_tools::tools(core, peer, &core.admin, params(request)?).await
         }),
         "session.usage_parts" => answer(move || async move {
             crate::session_context::usage_parts(core, peer, params(request)?).await
         }),
         "session.context" => answer(move || async move {
-            crate::session_context::context(core, peer, caller.acting_for(), params(request)?).await
+            crate::session_context::context(core, peer, &core.admin, params(request)?).await
         }),
         "job.output" => {
             answer(move || async move { job_output::read(core, params(request)?).await })
@@ -286,13 +286,13 @@ pub(crate) fn call<'a>(
             answer(move || async move { human::get(core, peer, params(request)?).await })
         }
         "config.schema" => answer(move || async move {
-            config::methods::schema(core, (caller.acting_for(), peer), params(request)?)
+            config::methods::schema(core, (&core.admin, peer), params(request)?)
         }),
         "config.get" => answer(move || async move {
-            config::methods::get(core, (caller.acting_for(), peer), params(request)?)
+            config::methods::get(core, (&core.admin, peer), params(request)?)
         }),
         "config.check" => answer(move || async move {
-            config::checking::check(core, (caller.acting_for(), peer), params(request)?)
+            config::checking::check(core, (&core.admin, peer), params(request)?)
         }),
         "config.set" => answer(move || async move {
             let params = params(request)?;
@@ -308,16 +308,11 @@ pub(crate) fn call<'a>(
                         (package, by),
                     )
                 }
-                None => config::set::set(core, (caller, peer), &request.id, params),
+                None => config::set::set(core, peer, &request.id, params),
             }
         }),
         "config.trust" => answer(move || async move {
-            config::trusting::trust(
-                core,
-                (caller.acting_for(), peer),
-                &request.id,
-                params(request)?,
-            )
+            config::trusting::trust(core, (&core.admin, peer), &request.id, params(request)?)
         }),
         "secret.set" => {
             answer(move || async move { secrets::set(core, peer, request, params(request)?) })
@@ -327,7 +322,7 @@ pub(crate) fn call<'a>(
         }
         "secret.list" => answer(move || async move { Ok(secrets::list(core)) }),
         "model.list" => answer(move || async move {
-            models::list(core, (caller.acting_for(), peer.language), params(request)?).await
+            models::list(core, (&core.admin, peer.language), params(request)?).await
         }),
         "provider.detect" => answer(move || async move { providers::detect(core).await }),
         "provider.catalog" => {
@@ -337,17 +332,17 @@ pub(crate) fn call<'a>(
             providers::rename(core, peer, &request.id, params(request)?).await
         }),
         "provider.test" => answer(move || async move {
-            providers::test(core, (caller.acting_for(), peer), params(request)?).await
+            providers::test(core, (&core.admin, peer), params(request)?).await
         }),
         "usage.query" => {
-            answer(move || async move { crate::usage::query(core, caller, params(request)?).await })
+            answer(move || async move { crate::usage::query(core, params(request)?).await })
         }
         "blob.put" => answer(move || async move {
-            let by = (&caller.account, caller.package.as_deref());
+            let by = (&core.admin, caller.package.as_deref());
             attach::put(core, by, params(request)?).await
         }),
         "blob.open" => answer(move || async move {
-            uploads::open(core, (uploads, &caller.account), params(request)?).await
+            uploads::open(core, (uploads, &core.admin), params(request)?).await
         }),
         "blob.write" => {
             answer(move || async move { uploads::write(uploads, params(request)?).await })
@@ -358,22 +353,24 @@ pub(crate) fn call<'a>(
         "blob.get" => {
             answer(move || async move { attach::get(core, caller, params(request)?).await })
         }
-        "session.configure" => answer(move || session::configure(core, caller, request)),
+        "session.configure" => answer(move || session::configure(core, request)),
         "fs.list" => answer(move || async move { files::list(core, params(request)?).await }),
         "fs.find" => answer(move || async move { files::find(core, params(request)?).await }),
         "fs.realpath" => {
             answer(move || async move { files::realpath(core, params(request)?).await })
         }
         "fs.read" => answer(move || async move { files::read(core, params(request)?).await }),
-        "session.set_workspace" => answer(move || async move {
-            crate::workspace::set(core, caller, request, params(request)?).await
-        }),
-        "session.set_meta" => answer(move || session::set_meta(core, caller, request)),
+        "session.set_workspace" => {
+            answer(
+                move || async move { crate::workspace::set(core, request, params(request)?).await },
+            )
+        }
+        "session.set_meta" => answer(move || session::set_meta(core, request)),
         "session.terminal" => answer(move || async move {
-            crate::terminal::get(core, peer, caller.acting_for(), request, params(request)?).await
+            crate::terminal::get(core, peer, &core.admin, request, params(request)?).await
         }),
         "session.set_terminal" => answer(move || async move {
-            crate::terminal::set(core, caller.acting_for(), params(request)?).await
+            crate::terminal::set(core, &core.admin, params(request)?).await
         }),
         "session.delete" => answer(move || session::delete(core, request)),
         other => answer(move || async move {
@@ -402,17 +399,16 @@ where
     Box::pin(make())
 }
 
-/// 把命令交给会话 `session`（把手是 `handle`），记成连接 `caller` 那个人发的（[`crate::sessions::person`]，施工 Y-2 下下上），
+/// 把命令交给会话 `session`（把手是 `handle`），记成主人发的，
 /// 等它的回应：接受的交回它产生的事件的序号。会话停了的从表里拿掉。
 pub(crate) async fn command_to(
     core: &Core,
-    caller: &Caller,
     request: &Request,
     session: &SessionId,
     handle: &Handle,
     command: Command,
 ) -> Result<Vec<u64>, Refusal> {
-    let by = crate::sessions::person(core, caller);
+    let by = crate::sessions::admin(core);
     command_by(core, request, session, handle, by, command).await
 }
 

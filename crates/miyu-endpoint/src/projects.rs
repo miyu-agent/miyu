@@ -16,7 +16,6 @@ use miyu_kernel::id::AccountId;
 use miyu_store::projects::{self, Project, Projects};
 
 use crate::Core;
-use crate::hello::Caller;
 use crate::methods::params;
 use crate::refusal::Refusal;
 use crate::wire::Request;
@@ -35,12 +34,8 @@ const CLEARABLE: [&str; 6] = [
 ];
 
 /// 答一条 `project.*`；不认识的 `unknown_method`。
-pub(crate) async fn call(
-    core: &Arc<Core>,
-    caller: &Caller,
-    request: &Request,
-) -> Result<Value, Refusal> {
-    let account = caller.acting_for();
+pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
+    let account = &core.admin;
     match request.method.as_str() {
         "project.list" => {
             let read = read(core, account).await?;

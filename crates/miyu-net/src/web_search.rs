@@ -177,12 +177,11 @@ impl Tool for WebSearch {
             };
             // 设置里挑的来源（施工 N-2 下）：这一轮冻结的配置；没带的（测试里的假调用）照出厂的顺序。
             // 这一轮的配置（施工 N-2 下、N-3 上）：挑的来源、配的 key、SearXNG 的地址；没带的（测试里的假调用）照出厂的顺序。
-            let mut using = call
+            let using = call
                 .settings
                 .as_deref()
                 .map(crate::settings::using)
                 .unwrap_or_default();
-            using.owner = call.ids.as_ref().map(|ids| ids.owner.clone());
             match self.search.search(&query, &using).await {
                 Ok(found) => self.found(&query.text, found),
                 Err(missed) => self.missed(&missed),

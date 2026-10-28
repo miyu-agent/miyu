@@ -383,8 +383,3 @@ fn login_expires(now: Timestamp) -> Timestamp {
 fn by(account: &AccountId) -> By {
     By::Person(Person::new(account.clone()))
 }
-
-/// `account` 是不是主人（施工 SU-1：只有一个人，以前的「管理员」就是他）。包的账号不是。
-pub(crate) fn is_owner(core: &Core, account: &AccountId) -> bool {
-    *account == core.admin
-}

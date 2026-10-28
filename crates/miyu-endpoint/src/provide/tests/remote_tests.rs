@@ -205,40 +205,32 @@ async fn answered_with(stores: Stores, owner: &str, blocks: Vec<Block>) -> miyu_
     running.await.unwrap()
 }
 
-/// 扩展传进管理员名下的图（施工 O-2 三补）：交回给系统账号的会话时拷一份进它名下，块原样不动。
+/// 扩展传进主人名下的图（施工 O-2 三补；施工 SU-4 下起和主人共用一个存处）：交回时块原样不动。
 #[tokio::test]
-async fn an_answered_image_is_handed_over_to_the_sessions_owner() {
+async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
     let (place, dir) = stores();
-    let admin = miyu_store::blob::Blobs::new(place.root.blobs(&place.provider));
-    let blob = admin.put(b"not really a png").expect("存得进");
-    let owner = AccountId::parse("onebot").expect("合写法");
-    let theirs = miyu_store::blob::Blobs::new(place.root.blobs(&owner));
-    assert!(!theirs.path(&blob).is_file());
-    let done = answered_with(place, "onebot", vec![image(blob.clone())]).await;
+    let admin = AccountId::parse("admin").expect("合写法");
+    let blob = miyu_store::blob::Blobs::new(place.root.blobs(&admin))
+        .put(b"not really a png")
+        .expect("存得进");
+    let done = answered_with(place, "admin", vec![image(blob.clone())]).await;
     assert!(!done.error, "{:?}", done.blocks);
-    assert_eq!(done.blocks, [image(blob.clone())]);
-    assert!(theirs.path(&blob).is_file(), "拷进了属主名下");
+    assert_eq!(done.blocks, [image(blob)]);
     drop(dir);
 }
 
-/// 提供者名下也没有的 blob：照暂时不可用，不把读不到的图交给她；属主就是提供者的也查在不在。
+/// 主人名下没有的 blob：照暂时不可用，不把读不到的图交给她。
 #[tokio::test]
 async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
-    let (elsewhere, first) = stores();
-    let missing = miyu_store::blob::Blobs::new(elsewhere.root.blobs(&elsewhere.provider))
-        .put(b"x")
-        .expect("存得进");
-    for owner in ["onebot", "admin"] {
-        let (place, dir) = stores();
-        let done = answered_with(place, owner, vec![image(missing.clone())]).await;
-        assert!(done.error, "{owner}");
-        assert_eq!(
-            text(&done),
-            "The tool \"send_group\" is not available right now.\n"
-        );
-        drop(dir);
-    }
-    drop(first);
+    let (place, dir) = stores();
+    let missing = miyu_kernel::id::ContentHash::of(b"x");
+    let done = answered_with(place, "admin", vec![image(missing)]).await;
+    assert!(done.error);
+    assert_eq!(
+        text(&done),
+        "The tool \"send_group\" is not available right now.\n"
+    );
+    drop(dir);
 }
 
 /// 拷进会话属主名下的 blob（施工 W-11 补）：图片块、发出去的图、`images` 形状里的图都算；别的形状、读不成的不算。

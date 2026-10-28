@@ -191,7 +191,6 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
                 texts.clone(),
                 Stores {
                     root: core.root.clone(),
-                    provider: core.admin.clone(),
                     declared: Arc::clone(&declared),
                 },
             )
