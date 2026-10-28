@@ -35,7 +35,12 @@ struct State {
     first_ended: Option<Timestamp>,
     /// 一次不等闲的（施工 E-5）上了、还没开始：新一轮开始不撤它。
     forcing: bool,
+    /// 连着失败了几次（施工 E-5 补）：不等闲的那一路要攒的轮数照它翻倍，成了一次清零。
+    failing: u32,
 }
+
+/// 连着失败时要攒的轮数最多翻几次倍：再多也只靠等满的时间。
+const DOUBLINGS: u32 = 16;
 
 impl Extractor {
     fn state(&self) -> std::sync::MutexGuard<'_, State> {
@@ -107,7 +112,8 @@ impl Extractor {
     }
 
     /// 该不等闲就抽了（施工 E-5，`memory.md` 第六条第 1 款）：没有一次在路上、没有一次不等闲的在等着，上次开始抽以后结束了
-    /// 至少 `max_turns` 轮，或者最早那一轮结束到 `now` 已经满 `max_wait`。
+    /// 至少 `max_turns` 轮，或者最早那一轮结束到 `now` 已经满 `max_wait`。连着失败的（施工 E-5 补）每失败一次要攒的轮数翻一倍
+    /// （20、40、80……），等满的时间不变：坏着的模型不再每 20 轮整份读一遍日志、发一次请求。
     pub(crate) fn overdue(
         &self,
         now: Timestamp,
@@ -122,7 +128,8 @@ impl Extractor {
             let ms = now.unix_millis().saturating_sub(first.unix_millis());
             u128::try_from(ms).is_ok_and(|ms| ms >= max_wait.as_millis())
         });
-        state.ended >= max_turns || waited
+        let needed = max_turns.saturating_mul(1 << state.failing.min(DOUBLINGS));
+        state.ended >= needed || waited
     }
 
     /// 上一次不等闲的（施工 E-5）：交回上没上成（有一次在路上、已经有一次在等着的不上）。新一轮开始不撤它。
@@ -183,14 +190,17 @@ impl Extractor {
         self.state().running = false;
     }
 
-    /// 这一次走完了：成了的清掉失败的次数；没成的交回从第 `after` 条起这是第几次。
+    /// 这一次走完了：成了的清掉失败的次数；没成的交回从第 `after` 条起这是第几次。连着失败了几次另数（不管是不是同一段，施工
+    /// E-5 补），成了一次清零。
     pub(super) fn finish(&self, after: Seq, ok: bool) -> u32 {
         let mut state = self.state();
         state.running = false;
         if ok {
             state.failures = None;
+            state.failing = 0;
             return 0;
         }
+        state.failing = state.failing.saturating_add(1);
         let tries = match state.failures {
             Some((from, tries)) if from == after => tries + 1,
             _ => 1,

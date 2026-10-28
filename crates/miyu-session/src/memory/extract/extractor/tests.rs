@@ -208,3 +208,42 @@ fn a_forced_read_stops_at_the_last_ended_turn() {
     ended_only(&mut none);
     assert!(none.is_empty());
 }
+
+/// 连着失败（施工 E-5 补）：不等闲的那一路每失败一次要攒的轮数翻一倍，等满的时间照旧；成了一次复位。
+#[test]
+fn failing_doubles_the_turns_a_busy_session_waits_for() {
+    let hour = std::time::Duration::from_secs(3600);
+    let at = |text: &str| Timestamp::parse(text).expect("合写法");
+    let extractor = Extractor::default();
+    let turns = |n: u64| {
+        let events: Vec<_> = (0..n)
+            .map(|k| ended(10 + k, "2026-10-27T08:00:00.000Z"))
+            .collect();
+        extractor.note_ended(&events);
+    };
+    let fail = || {
+        assert!(extractor.force() && extractor.start_forced());
+        extractor.finish(seq(1), false);
+    };
+    let early = at("2026-10-27T08:10:00.000Z");
+    turns(3);
+    assert!(extractor.overdue(early, 3, hour), "头一次攒满三轮");
+    fail();
+    turns(5);
+    assert!(!extractor.overdue(early, 3, hour), "失败一次：要六轮");
+    turns(1);
+    assert!(extractor.overdue(early, 3, hour));
+    fail();
+    turns(11);
+    assert!(!extractor.overdue(early, 3, hour), "失败两次：要十二轮");
+    assert!(
+        extractor.overdue(at("2026-10-27T09:00:00.000Z"), 3, hour),
+        "等满的时间不翻倍"
+    );
+    turns(1);
+    assert!(extractor.overdue(early, 3, hour));
+    assert!(extractor.force() && extractor.start_forced());
+    extractor.finish(seq(1), true);
+    turns(3);
+    assert!(extractor.overdue(early, 3, hour), "成了一次复位：又是三轮");
+}
