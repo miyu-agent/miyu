@@ -25,7 +25,7 @@ fn names(list: &Value) -> Vec<String> {
         .collect()
 }
 
-/// 把个人设置里的 `key` 写成 `value`。
+/// 把系统配置里的 `key` 写成 `value`。
 async fn set(client: &mut Client, n: u8, layer: &str, key: &str, value: bool) -> Value {
     client
         .call(
@@ -77,7 +77,7 @@ async fn a_package_switched_off_is_gone() {
     assert!(sent(&script, 0).contains(&"dice".to_string()), "关之前有");
     assert!(face(&mut alice).await.contains(&"dice".to_string()));
 
-    let reply = set(&mut alice, 1, "personal", "packages.kit.off", true).await;
+    let reply = set(&mut alice, 1, "system", "packages.kit.off", true).await;
     assert!(reply["result"].is_object(), "{reply}");
     alice.say("s2", &session, "二").await;
     home.until_turns(&session, 2).await;
@@ -99,7 +99,7 @@ async fn a_package_switched_off_is_gone() {
         "没关的照列：{skills}"
     );
     // 再关一个：关了的换了，看得到的那一份当场重造。
-    let reply = set(&mut alice, 4, "personal", "packages.kit2.off", true).await;
+    let reply = set(&mut alice, 4, "system", "packages.kit2.off", true).await;
     assert!(reply["result"].is_object(), "{reply}");
     let skills = alice.call("k2", "skill.list", json!({})).await;
     assert!(
@@ -117,11 +117,9 @@ async fn a_package_switched_off_is_gone() {
             .any(|one| one["id"] == "script-dice" || one["id"] == "kit"),
         "预设页不列：{preset}"
     );
-    // 施工 BS-1 上中起没有必需的包：原来基础系统的 trash 也关得掉；系统配置里写不进。
-    let trash = set(&mut alice, 2, "personal", "packages.trash.off", true).await;
+    // 施工 BS-1 上中起没有必需的包：原来基础系统的 trash 也关得掉。
+    let trash = set(&mut alice, 2, "system", "packages.trash.off", true).await;
     assert!(trash["result"].is_object(), "{trash}");
-    let system = set(&mut alice, 3, "system", "packages.kit.off", true).await;
-    assert!(system["error"].is_object(), "系统层写不进：{system}");
 
     // 设置页：每个包那一组有这一项（测试的核心照重读清单那一次拼包的项：装一个别的包）。
     let folder = home.work.join("other");
@@ -158,11 +156,11 @@ async fn a_package_switched_off_is_gone() {
     );
 }
 
-/// 原来基础系统的包对自己关掉（施工 BS-1 上中起没有必需的包）：手改个人设置写成关着的，工具就没了，别的包照旧。
+/// 原来基础系统的包关掉（施工 BS-1 上中起没有必需的包）：手改系统配置写成关着的，工具就没了，别的包照旧。
 #[tokio::test]
 async fn a_former_basesystem_package_written_off_by_hand_is_off() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", "[packages.read]\noff = true\n");
+    home.write("system/config.toml", "[packages.read]\noff = true\n");
     let script = Arc::new(Script::new([]));
     let core = core(&home, &script);
     let mut alice = Client::connect(Arc::clone(&core));

@@ -16,7 +16,7 @@ miyu_config::settings! {
                 "auto", "exa", "parallel", "firecrawl", "anysearch", "you", "deepseek", "tavily", "brave",
                 "searxng", "duckduckgo", "bing"
             ],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net", package: "net", control: select },
         },
@@ -29,7 +29,7 @@ miyu_config::settings! {
         /// `{ secret = … }` 或 `{ env = … }`。
         key: Option<Reference> = none {
             kind: secret,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
@@ -42,7 +42,7 @@ miyu_config::settings! {
         /// `{ secret = … }` 或 `{ env = … }`。
         key: Option<Reference> = none {
             kind: secret,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
@@ -55,7 +55,7 @@ miyu_config::settings! {
         /// `{ secret = … }` 或 `{ env = … }`。
         key: Option<Reference> = none {
             kind: secret,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
@@ -68,7 +68,7 @@ miyu_config::settings! {
         /// `{ secret = … }` 或 `{ env = … }`。
         key: Option<Reference> = none {
             kind: secret,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },
@@ -81,7 +81,7 @@ miyu_config::settings! {
         /// 例如 `http://127.0.0.1:8888`。
         url: Option<Address> = none {
             kind: url,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "net_keys", package: "net", control: text },
         },

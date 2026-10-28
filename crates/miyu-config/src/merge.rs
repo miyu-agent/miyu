@@ -1,7 +1,7 @@
 //! 分层合出最终值和来源（`docs/blueprint/config.md`「最终值和来源」、「怎么走」第二条第 5 条、第三条第 4 条，G2、G3，
 //! 施工 8-2）。
 //!
-//! 从下往上，上面的盖掉下面的：默认值、系统配置、个人设置、项目配置，最后是环境变量（只对带 `env` 的项）。
+//! 从下往上，上面的盖掉下面的：默认值、系统配置、项目配置，最后是环境变量（只对带 `env` 的项）。
 //!
 //! - 项目配置信任过才算；算了也只认收紧的：和下面几层合出来的比，宽的不算、报 `not_tightening`，一样的收下。还没问过
 //!   的报一条 `untrusted_project`（警告），选了不信任的不报。
@@ -34,7 +34,7 @@ pub enum Origin {
 }
 
 impl Origin {
-    /// 协议上 `layer` 的写法：`default`、`system`、`personal`、`project`、`env`。
+    /// 协议上 `layer` 的写法：`default`、`system`、`project`、`env`。
     pub fn layer_name(&self) -> &'static str {
         match self {
             Origin::Default => "default",
@@ -60,8 +60,6 @@ pub enum Trust {
 pub struct Layers<'a> {
     /// 系统配置。
     pub system: Option<&'a Parsed>,
-    /// 个人设置。
-    pub personal: Option<&'a Parsed>,
     /// 项目配置，和它信不信任。
     pub project: Option<(&'a Parsed, Trust)>,
 }
@@ -72,9 +70,6 @@ pub struct Resolved {
     entries: BTreeMap<String, (Value, Origin)>,
     /// 合的时候发现的问题：项目配置的 `not_tightening`、`untrusted_project`。
     pub problems: Vec<Problem>,
-    /// 只有系统配置写了的供应商，`<编号>@system` 到 `<编号>`（施工 PL-1 修，`system_copy::unfold`）：最终值里的引用已经换过，
-    /// 查文件里写的引用在不在时照它认。
-    pub aliases: BTreeMap<String, String>,
     /// 读不懂、当没设的环境变量：名字和原值。
     pub ignored_env: Vec<(&'static str, String)>,
 }
@@ -91,7 +86,6 @@ impl Resolved {
         for (key, (value, _)) in &self.entries {
             values.set(key, value.clone());
         }
-        values.set_aliases(self.aliases.clone());
         values
     }
 
@@ -154,18 +148,12 @@ pub fn merge(items: &[Item], layers: &Layers, env: &dyn Fn(&str) -> Option<Strin
             resolved.entries.insert(key, top);
         }
     }
-    system_copy::add(items, layers, env, &mut resolved);
-    system_copy::unfold(items, layers, &mut resolved);
     resolved
 }
 
 /// 要合的每一个真的键和它是清单里的哪一项：写死的键一项一个；键里有人起的名字的，哪一层写了哪个就是哪个（施工 8-6）。
 fn concrete<'a>(items: &'a [Item], layers: &Layers) -> Vec<(&'a Item, String)> {
-    let files = [
-        layers.system,
-        layers.personal,
-        layers.project.map(|(parsed, _)| parsed),
-    ];
+    let files = [layers.system, layers.project.map(|(parsed, _)| parsed)];
     let mut keys = Vec::new();
     for item in items {
         if !item.is_pattern() {
@@ -191,10 +179,7 @@ pub fn below(item: &Item, key: &str, layers: &Layers, layer: Layer) -> Option<(V
         .default
         .clone()
         .map(|default| (default, Origin::Default));
-    let files = [
-        (Layer::System, layers.system),
-        (Layer::Personal, layers.personal),
-    ];
+    let files = [(Layer::System, layers.system)];
     for (at, parsed) in files {
         if at >= layer {
             break;
@@ -237,7 +222,6 @@ pub fn explain(item: &Item, key: &str, layers: &Layers, resolved: &Resolved) -> 
     }
     let files = [
         (Layer::Project, layers.project.map(|(parsed, _)| parsed)),
-        (Layer::Personal, layers.personal),
         (Layer::System, layers.system),
     ];
     for (layer, parsed) in files {
@@ -276,8 +260,6 @@ pub fn explain(item: &Item, key: &str, layers: &Layers, resolved: &Resolved) -> 
     }
     written
 }
-
-mod system_copy;
 
 #[cfg(test)]
 mod tests;

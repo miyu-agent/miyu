@@ -2,12 +2,11 @@
 //! （[`miyu_session::Retirement`]），系统配置、个人设置里写着它的池（`pools.<名字>.models`）都拿掉它，经写配置的那一条路写
 //! （手改保护、推 `config.changed`、记日志），改的人记成内核。删空了的池留着。直接写在 `models.chat` 的不动。
 
-use std::collections::BTreeMap;
 use std::sync::{Arc, Weak};
 
 use serde_json::{Value as Json, json};
 
-use miyu_config::{Layer, Value};
+use miyu_config::Value;
 use miyu_kernel::id::CommandId;
 use miyu_kernel::origin::By;
 use miyu_session::Retirement;
@@ -45,36 +44,31 @@ impl Retirement for Retiring {
     }
 }
 
-/// 从两层里写着 `reference` 的池拿掉它：一层一次写。
+/// 从系统配置里写着 `reference` 的池拿掉它：一次写。
 fn retire(core: &Core, reference: &str) {
-    let mut by_layer: BTreeMap<&'static str, Vec<Json>> = BTreeMap::new();
+    let mut changes: Vec<Json> = Vec::new();
     let mut pools = Vec::new();
     {
         let config = core.config();
-        for (layer, name) in [(Layer::System, "system"), (Layer::Personal, "personal")] {
-            for (key, entry) in &config.file(layer).parsed.entries {
-                let Value::List(members) = &entry.value else {
-                    continue;
-                };
-                if entry.item != MEMBERS
-                    || !members.iter().any(|member| text(member) == Some(reference))
-                {
-                    continue;
-                }
-                let kept: Vec<&str> = members
-                    .iter()
-                    .filter_map(text)
-                    .filter(|member| *member != reference)
-                    .collect();
-                by_layer
-                    .entry(name)
-                    .or_default()
-                    .push(json!({"key": key, "value": kept}));
-                pools.push(key.clone());
+        for (key, entry) in &config.file().parsed.entries {
+            let Value::List(members) = &entry.value else {
+                continue;
+            };
+            if entry.item != MEMBERS
+                || !members.iter().any(|member| text(member) == Some(reference))
+            {
+                continue;
             }
+            let kept: Vec<&str> = members
+                .iter()
+                .filter_map(text)
+                .filter(|member| *member != reference)
+                .collect();
+            changes.push(json!({"key": key, "value": kept}));
+            pools.push(key.clone());
         }
     }
-    if by_layer.is_empty() {
+    if changes.is_empty() {
         return;
     }
     tracing::info!(target: TARGET, model = reference, pools = pools.join(",").as_str(), "model retired");
@@ -86,18 +80,15 @@ fn retire(core: &Core, reference: &str) {
         admin: false,
         prefix_ask: false,
     };
-    for (layer, changes) in by_layer {
-        let written =
-            serde_json::from_value::<SetParams>(json!({"layer": layer, "changes": changes}))
-                .map_err(|_| crate::refusal::Refusal::INTERNAL)
-                .and_then(|params| {
-                    let cause = CommandId::parse(&format!("retire:{reference}"))
-                        .map_err(|_| crate::refusal::Refusal::INTERNAL)?;
-                    set_by(core, peer, &cause, params, By::Kernel)
-                });
-        if let Err(refusal) = written {
-            tracing::warn!(target: TARGET, model = reference, layer, reason = refusal.reason, "model not retired");
-        }
+    let written = serde_json::from_value::<SetParams>(json!({"changes": changes}))
+        .map_err(|_| crate::refusal::Refusal::INTERNAL)
+        .and_then(|params| {
+            let cause = CommandId::parse(&format!("retire:{reference}"))
+                .map_err(|_| crate::refusal::Refusal::INTERNAL)?;
+            set_by(core, peer, &cause, params, By::Kernel)
+        });
+    if let Err(refusal) = written {
+        tracing::warn!(target: TARGET, model = reference, reason = refusal.reason, "model not retired");
     }
 }
 

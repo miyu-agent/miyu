@@ -6,21 +6,21 @@ use std::borrow::Cow;
 use crate::item::{Item, Kind, Layer, Tighten};
 use crate::merge::Origin;
 use crate::problem::{At, Code, Problem, Severity, Told, Using, got, nearest, tell};
-use crate::test_support::{Fake, item, system_only, words};
+use crate::test_support::{Fake, item, words};
 use crate::value::Value;
 
 fn items() -> Vec<Item> {
     vec![
         item("ui.language", &["auto", "zh", "en", "ja"], "auto"),
-        system_only(item(
+        item(
             "log.level",
             &["error", "warn", "info", "debug", "trace", "off"],
             "info",
-        )),
+        ),
         Item {
             kind: Kind::Bool,
             default: Some(Value::Bool(false)),
-            layers: &[Layer::System, Layer::Personal, Layer::Project],
+            layers: &[Layer::System, Layer::Project],
             tighten: Some(Tighten::TrueOnly),
             ..item("permission.start_read_only", &[], "")
         },
@@ -103,7 +103,7 @@ fn only_unknown_keys_and_untrusted_projects_are_warnings() {
 fn an_unknown_key_suggests_and_keeps_the_line() {
     let mut problem = Problem::item(
         Code::UnknownKey,
-        Layer::Personal,
+        Layer::System,
         "ui.langauge",
         at(7, 1),
         "\"en\"",
@@ -161,7 +161,7 @@ fn a_bad_option_lists_the_options_and_says_what_is_used() {
 fn a_bad_switch_expects_true_or_false_and_offers_the_other_one() {
     let problem = Problem::item(
         Code::WrongType,
-        Layer::Personal,
+        Layer::System,
         "permission.start_read_only",
         at(5, 19),
         "\"yes\"",
@@ -186,7 +186,7 @@ fn a_bad_switch_expects_true_or_false_and_offers_the_other_one() {
 
 #[test]
 fn a_group_written_as_a_value_expects_a_table() {
-    let problem = Problem::item(Code::WrongType, Layer::Personal, "ui", at(1, 6), "\"zh\"");
+    let problem = Problem::item(Code::WrongType, Layer::System, "ui", at(1, 6), "\"zh\"");
     let told = said(&problem, Some(&Using::Nothing));
     assert_eq!(told.expected.as_deref(), Some("一张表"));
     assert_eq!(
@@ -199,7 +199,7 @@ fn a_group_written_as_a_value_expects_a_table() {
 fn the_wrong_layer_says_where_to_move_it() {
     let problem = Problem::item(
         Code::WrongLayer,
-        Layer::Personal,
+        Layer::Project,
         "log.level",
         at(9, 9),
         "\"debug\"",
@@ -207,7 +207,7 @@ fn the_wrong_layer_says_where_to_move_it() {
     let using = Using::Value(text("info"), Origin::Default);
     assert_eq!(
         said(&problem, Some(&using)).message,
-        "log.level 只能写在系统配置里，写在个人设置里不算。挪到系统配置里去。"
+        "log.level 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。"
     );
     let project = Problem::item(
         Code::WrongLayer,
@@ -218,7 +218,7 @@ fn the_wrong_layer_says_where_to_move_it() {
     );
     assert_eq!(
         said(&project, None).message,
-        "ui.language 只能写在系统配置或个人设置里，写在项目配置里不算。挪到系统配置或个人设置里去。"
+        "ui.language 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。"
     );
 }
 
@@ -244,7 +244,7 @@ fn whole_file_problems_say_what_the_file_is_used_as() {
         at: Some(at(4, 12)),
         ..Problem::file(
             Code::Syntax,
-            Layer::Personal,
+            Layer::System,
             Some("invalid basic string".to_string()),
         )
     };
@@ -291,7 +291,7 @@ fn english_joins_with_a_space_and_a_full_stop() {
     }
     let mut problem = Problem::item(
         Code::UnknownKey,
-        Layer::Personal,
+        Layer::System,
         "ui.langauge",
         at(7, 1),
         "1",
@@ -309,7 +309,7 @@ fn english_joins_with_a_space_and_a_full_stop() {
 fn a_missing_sentence_is_named() {
     let mut fake = words(&items());
     fake.sentences.remove("config/kept");
-    let problem = Problem::item(Code::UnknownKey, Layer::Personal, "x.y", at(1, 1), "1");
+    let problem = Problem::item(Code::UnknownKey, Layer::System, "x.y", at(1, 1), "1");
     let missing = tell(&problem, &items(), None, &fake).expect_err("缺字");
     assert_eq!(missing.to_string(), "no words for config/kept");
 }

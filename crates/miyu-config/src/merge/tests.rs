@@ -8,7 +8,7 @@ use crate::item::{Item, Kind, Layer, Tighten};
 use crate::merge::{Layers, Origin, Trust, Written, below, explain, merge};
 use crate::parse::{Parsed, parse};
 use crate::problem::Code;
-use crate::test_support::{item, system_only};
+use crate::test_support::item;
 use crate::value::Value;
 
 fn items() -> Vec<Item> {
@@ -16,12 +16,12 @@ fn items() -> Vec<Item> {
         item("ui.language", &["auto", "zh", "en"], "auto"),
         Item {
             env: Some("MIYU_LOG"),
-            ..system_only(item("log.level", &["info", "debug"], "info"))
+            ..item("log.level", &["info", "debug"], "info")
         },
         Item {
             kind: Kind::Bool,
             default: Some(Value::Bool(false)),
-            layers: &[Layer::System, Layer::Personal, Layer::Project],
+            layers: &[Layer::System, Layer::Project],
             tighten: Some(Tighten::TrueOnly),
             ..item("permission.start_read_only", &[], "")
         },
@@ -46,21 +46,19 @@ fn no_env(_: &str) -> Option<String> {
 }
 
 #[test]
-fn the_upper_layer_wins_and_says_where_it_came_from() {
+fn a_written_value_wins_and_says_where_it_came_from() {
     let system = read(
         Layer::System,
-        "[ui]\nlanguage = \"en\"\n[log]\nlevel = \"debug\"\n",
+        "[ui]\nlanguage = \"zh\"\n[log]\nlevel = \"debug\"\n",
     );
-    let personal = read(Layer::Personal, "\n\n[ui]\nlanguage = \"zh\"\n");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         project: None,
     };
     let resolved = merge(&items(), &layers, &no_env);
     assert_eq!(
         resolved.get("ui.language"),
-        Some((&text("zh"), &line(Layer::Personal, 4)))
+        Some((&text("zh"), &line(Layer::System, 2)))
     );
     assert_eq!(
         resolved.get("log.level"),
@@ -120,32 +118,31 @@ fn an_environment_variable_wins_when_understood() {
 }
 
 #[test]
-fn a_broken_item_falls_back_to_the_layers_below_and_the_rest_stays() {
-    let system = read(Layer::System, "ui.language = \"en\"\n");
-    let personal = read(
-        Layer::Personal,
+fn a_broken_item_falls_back_to_the_default_and_the_rest_stays() {
+    let system = read(
+        Layer::System,
         "ui.language = \"cn\"\npermission.start_read_only = true\n",
     );
-    assert_eq!(personal.problems.len(), 1);
+    assert_eq!(system.problems.len(), 1);
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         project: None,
     };
     let resolved = merge(&items(), &layers, &no_env);
     assert_eq!(
         resolved.get("ui.language"),
-        Some((&text("en"), &line(Layer::System, 1)))
+        Some((&text("auto"), &Origin::Default))
     );
     assert_eq!(
         resolved.get("permission.start_read_only"),
-        Some((&Value::Bool(true), &line(Layer::Personal, 2))),
+        Some((&Value::Bool(true), &line(Layer::System, 2))),
         "别的照常"
     );
     let item = &items()[0];
     assert_eq!(
-        below(item, item.key, &layers, Layer::Personal),
-        Some((text("en"), line(Layer::System, 1)))
+        below(item, item.key, &layers, Layer::Project),
+        Some((text("auto"), Origin::Default)),
+        "写坏了的不算"
     );
     assert_eq!(
         below(item, item.key, &layers, Layer::System),
@@ -178,7 +175,6 @@ fn a_trusted_project_only_tightens() {
     let layers = Layers {
         system: Some(&system_on),
         project: Some((&off, Trust::Trusted)),
-        ..Layers::default()
     };
     let resolved = merge(&items(), &layers, &no_env);
     assert_eq!(
@@ -255,8 +251,7 @@ fn a_project_cannot_write_what_it_may_not() {
 
 #[test]
 fn every_layer_is_listed_top_down() {
-    let system = read(Layer::System, "\n\n\n\n[ui]\nlanguage = \"en\"\n");
-    let personal = read(Layer::Personal, "\n\n[ui]\nlanguage = \"zh\"\n");
+    let system = read(Layer::System, "\n\n\n\n[ui]\nlanguage = \"zh\"\n");
     let project = read(
         Layer::Project,
         "ui.language = \"en\"\npermission.start_read_only = false\n",
@@ -264,7 +259,6 @@ fn every_layer_is_listed_top_down() {
     let system_on = read(Layer::System, "permission.start_read_only = true\n");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         project: Some((&project, Trust::Trusted)),
     };
     let resolved = merge(&items(), &layers, &no_env);
@@ -279,14 +273,12 @@ fn every_layer_is_listed_top_down() {
         listed,
         [
             row(line(Layer::Project, 1), "en", false, Some(Code::WrongLayer)),
-            row(line(Layer::Personal, 4), "zh", true, None),
-            row(line(Layer::System, 6), "en", false, None),
+            row(line(Layer::System, 6), "zh", true, None),
             row(Origin::Default, "auto", false, None),
         ]
     );
     let layers = Layers {
         system: Some(&system_on),
-        personal: None,
         project: Some((&project, Trust::Trusted)),
     };
     let resolved = merge(&items(), &layers, &no_env);

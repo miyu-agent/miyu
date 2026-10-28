@@ -233,7 +233,7 @@ pub fn configured(values: &Values) -> Vec<String> {
 /// key 的名字：引用的写法 `secret:<名字>`、`env:<变量>`。`model.list` 的 `ref` 用它（施工 8-9 起；8-25 从 `keys` 挪来）。
 pub fn key_name(reference: &KeyRef) -> String {
     match reference {
-        KeyRef::Secret(name) | KeyRef::SystemSecret(name) => format!("secret:{name}"),
+        KeyRef::Secret(name) => format!("secret:{name}"),
         KeyRef::Env(name) => format!("env:{name}"),
     }
 }
@@ -244,18 +244,11 @@ pub fn key_name(reference: &KeyRef) -> String {
 ///
 /// 配置里没有这一家；推不出地址（推不出驱动的用 [`DEFAULT_DRIVER`]，施工 8-26）；驱动还没有。
 pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<Provider, NoModel> {
-    // 只有系统配置写了的那一家，`<编号>@system` 就是它（施工 PL-1 修）。
-    let id = values.alias(id).unwrap_or(id);
     if !configured(values).iter().any(|name| name == id) {
         return Err(NoModel(format!("no provider {id:?}")));
     }
     let settings = ProviderSettings::at(values, &[id]);
-    // 共用那份（`<编号>@system`，施工 PL-1）照原编号对档案、对目录，配置照它自己的那份读（施工 PL-1 修）。
-    let known = miyu_config::key::of_system_copy(id).unwrap_or(id);
-    let catalog = settings
-        .catalog
-        .clone()
-        .unwrap_or_else(|| known.to_string());
+    let catalog = settings.catalog.clone().unwrap_or_else(|| id.to_string());
     let profile = knowledge
         .profiles
         .providers
@@ -271,7 +264,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
     let recognized = knowledge.catalog.and_then(|loaded| {
         recognize(
             &loaded.catalog,
-            known,
+            id,
             written_text,
             settings.catalog.as_deref(),
         )

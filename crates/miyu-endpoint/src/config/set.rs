@@ -42,8 +42,9 @@ pub(super) const TRIES: usize = 3;
 /// `config.set` 的参数。
 #[derive(Debug, Deserialize)]
 pub(crate) struct SetParams {
-    /// 改哪一层。项目配置只手改，不收。
-    pub(super) layer: WriteLayer,
+    /// 改哪一层：只有系统配置（施工 SU-3 上），可以不写。项目配置只手改，不收；以前的 `personal` 不认。
+    #[serde(default, rename = "layer")]
+    pub(super) _layer: Option<WriteLayer>,
     /// 改几项。
     #[serde(default)]
     pub(super) changes: Option<Vec<ChangeParam>>,
@@ -56,9 +57,9 @@ pub(crate) struct SetParams {
 }
 
 impl SetParams {
-    /// 改个人设置里的一项（施工 X-27 的 `tool.set_loading`、`feature.set`）：真的键 `key` 改成开关 `value`，`None` 是从个人
-    /// 设置里删掉。
-    pub(crate) fn personal(key: String, value: Option<bool>) -> SetParams {
+    /// 改配置里的一个开关（施工 X-27 的 `tool.set_loading`、`feature.set`）：真的键 `key` 改成开关 `value`，`None` 是从
+    /// 配置里删掉。
+    pub(crate) fn switch(key: String, value: Option<bool>) -> SetParams {
         let change = ChangeParam {
             key,
             value: value.map(Json::Bool),
@@ -67,7 +68,7 @@ impl SetParams {
             expect: None,
         };
         SetParams {
-            layer: WriteLayer::Personal,
+            _layer: None,
             changes: Some(vec![change]),
             text: None,
             version: None,
@@ -75,12 +76,11 @@ impl SetParams {
     }
 }
 
-/// 能改的两层。
+/// 能改的一层（施工 SU-3 上：个人设置并进系统配置了）。
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(super) enum WriteLayer {
     System,
-    Personal,
 }
 
 /// `changes` 的一项。
@@ -131,20 +131,11 @@ pub(crate) fn set(
     cause: &CommandId,
     params: SetParams,
 ) -> Result<Json, Refusal> {
-    let account = caller.acting_for();
-    if matches!(params.layer, WriteLayer::System) && !crate::login::is_owner(core, account) {
-        return Err(Refusal::NOT_PERMITTED);
-    }
-    let by = By::Person(Person::new(account.clone()));
-    // 系统配置大家共用一份：照机主那一份写，写好了照它发给别人那几份（施工 Y-12 下：管理员组里别的人改的也是这一份）。
-    let whose = match params.layer {
-        WriteLayer::System => &core.admin,
-        WriteLayer::Personal => account,
-    };
-    set_in(core, &core.mine(whose), peer, cause, params, by)
+    let by = By::Person(Person::new(caller.acting_for().clone()));
+    set_in(core, peer, cause, params, by)
 }
 
-/// 同 [`set`]，改机主那一份，改的人是 `by`：核心自己改的（施工 8-23：下架的模型移出池）记成内核。
+/// 同 [`set`]，改的人是 `by`：核心自己改的（施工 8-23：下架的模型移出池）记成内核。
 pub(crate) fn set_by(
     core: &Core,
     peer: Peer,
@@ -152,24 +143,20 @@ pub(crate) fn set_by(
     params: SetParams,
     by: By,
 ) -> Result<Json, Refusal> {
-    set_in(core, &core.mine(&core.admin), peer, cause, params, by)
+    set_in(core, peer, cause, params, by)
 }
 
-/// 改 `mine` 那一份（施工 Y-2 下下中上），改的人是 `by`。
+/// 改系统配置，改的人是 `by`。
 fn set_in(
     core: &Core,
-    mine: &super::people::Mine<'_>,
     peer: Peer,
     cause: &CommandId,
     params: SetParams,
     by: By,
 ) -> Result<Json, Refusal> {
     let words = words(core, peer.language)?;
-    let layer = match params.layer {
-        WriteLayer::System => Layer::System,
-        WriteLayer::Personal => Layer::Personal,
-    };
-    let mut config = mine.config();
+    let layer = Layer::System;
+    let mut config = core.config();
     let plan = plan(&config, layer, params, &words, core.home.as_deref())?;
     let via = match &plan {
         Plan::Changes(_) => Via::Set,
@@ -177,7 +164,7 @@ fn set_in(
     };
     for _ in 0..TRIES {
         observe(core, &mut config, layer);
-        let file = config.file(layer);
+        let file = config.file();
         let Some(text) = edited(&config, file, &plan, &words)? else {
             return Ok(json!({"keys": {}, "version": file.version}));
         };
@@ -207,7 +194,7 @@ fn set_in(
     }
     observe(core, &mut config, layer);
     Err(Refusal::config_conflict_version(
-        config.file(layer).version.clone(),
+        config.file().version.clone(),
     ))
 }
 
@@ -393,7 +380,7 @@ fn changed(
     }
     let start = match file.version {
         Some(_) => file.text.clone(),
-        None => edit::new_file(Config::schema(file.layer)),
+        None => edit::new_file(Config::schema()),
     };
     let mut text = start.clone();
     for want in wanted {
@@ -434,14 +421,14 @@ pub(super) fn done(
     (via, by): (Via, By),
     cause: Option<&CommandId>,
 ) -> Json {
-    let old = config.file(layer).clone();
+    let old = config.file().clone();
     let new = File::written(config.items(), &old, written);
     let version = new.version.clone();
     let changes = differences(&old, &new);
     config.replace(new);
     record(config, layer, via, by.clone(), cause, &changes);
     let keys: Vec<String> = changes.iter().map(|(key, _, _)| key.clone()).collect();
-    let listed = push::keys(config, layer, &keys);
+    let listed = push::keys(config, &keys);
     crate::config::people::publish(
         core,
         config,

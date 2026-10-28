@@ -11,14 +11,14 @@ crate::settings! {
         /// 主对话的。
         chat: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "uses", control: text },
         },
         /// 另一个引用：指着池。
         side: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "uses", control: text },
         },
@@ -31,7 +31,7 @@ crate::settings! {
         /// 成员。
         models: Option<Vec<String>> = none {
             kind: models,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "pools", control: list },
         },

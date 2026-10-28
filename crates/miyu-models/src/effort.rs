@@ -1,5 +1,5 @@
 //! 思考强度（`docs/blueprint/models.md`「怎么走」第十一条，施工 8-18；8-18（补）去掉了会话那一层，只剩配置的默认）：
-//! 每个模型的一项配置，系统配置兜底、个人设置压在上面。
+//! 每个模型的一项配置，写在系统配置里。
 //!
 //! - 档位名（[`normalize`]、[`levels`]、[`offered`]）：照目录原样，`none`、`disabled` 读成 `off`；目录有开关、这一家的档案
 //!   写了开关的，多一档 `off`（放在最前面），只有开关的是 `off`、`on`。档案没写开关的，目录的开关不算：驱动说不出来。
@@ -67,11 +67,7 @@ pub fn in_use(effort: &Fact<Option<String>>) -> Option<EffortInUse> {
             layer: Layer::System,
             ..
         } => EffortSource::System,
-        Source::Config {
-            layer: Layer::Personal,
-            ..
-        } => EffortSource::Personal,
-        // 这一项清单里只许系统、个人两层（`config.md`「配置清单」），项目配置写了不算数：不会走到这里。
+        // 这一项清单里只许系统那一层（`config.md`「配置清单」），项目配置写了不算数：不会走到这里。
         Source::Config {
             layer: Layer::Project,
             ..

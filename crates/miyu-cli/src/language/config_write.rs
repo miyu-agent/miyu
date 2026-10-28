@@ -4,16 +4,14 @@
 use super::Language;
 
 impl Language {
-    /// 一层在句子里的叫法：`system`、`personal`、`project`、`env`，别的是默认值。英文带冠词，`capital` 的句首大写。
+    /// 一层在句子里的叫法：`system`、`project`、`env`，别的是默认值。英文带冠词，`capital` 的句首大写。
     fn layer_in(&self, layer: &str, capital: bool) -> String {
         let said = match (self, layer) {
             (Language::Chinese, "system") => "系统配置",
-            (Language::Chinese, "personal") => "个人设置",
             (Language::Chinese, "project") => "项目配置",
             (Language::Chinese, "env") => "环境变量",
             (Language::Chinese, _) => "默认值",
             (Language::English, "system") => "the system config",
-            (Language::English, "personal") => "personal settings",
             (Language::English, "project") => "the project config",
             (Language::English, "env") => "the environment",
             (Language::English, _) => "the default",
@@ -54,15 +52,9 @@ impl Language {
             Language::Chinese => format!(
                 "· {key} = {value} 写进了{layer}，{says}里写着 {effective}，用的还是 {effective}"
             ),
-            Language::English => {
-                let verb = match above {
-                    "personal" => "say",
-                    _ => "says",
-                };
-                format!(
-                    "· {key} = {value} saved to {layer}, but {says} {verb} {effective}, so {effective} stays in use"
-                )
-            }
+            Language::English => format!(
+                "· {key} = {value} saved to {layer}, but {says} says {effective}, so {effective} stays in use"
+            ),
         }
     }
 

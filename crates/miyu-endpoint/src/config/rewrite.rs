@@ -55,13 +55,13 @@ pub(crate) fn rewrite(
     let by = By::Person(Person::new(config.places.account.clone()));
     for _ in 0..TRIES {
         observe(core, &mut config, layer);
-        let file = config.file(layer);
+        let file = config.file();
         if file.broken.is_some() {
             return Err(broken(&config, file, &words)?);
         }
         let start = match file.version {
             Some(_) => file.text.clone(),
-            None => edit::new_file(Config::schema(layer)),
+            None => edit::new_file(Config::schema()),
         };
         let text = match edit(&start) {
             Ok(Some(text)) if text != start => text,
@@ -96,6 +96,6 @@ pub(crate) fn rewrite(
     }
     observe(core, &mut config, layer);
     Err(Refusal::config_conflict_version(
-        config.file(layer).version.clone(),
+        config.file().version.clone(),
     ))
 }

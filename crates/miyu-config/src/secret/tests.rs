@@ -248,9 +248,9 @@ fn new_lines_go_before_a_table_and_keep_crlf() {
 fn missing_secrets_and_variables_are_warnings() {
     let items = items();
     let text = "[providers]\ndemo = { secret = \"deepseek\" }\nother = { env = \"DEMO_KEY\" }\n";
-    let parsed = parse(&items, Layer::Personal, text).expect("写对了");
+    let parsed = parse(&items, Layer::System, text).expect("写对了");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
-    let nothing = missing(&items, &parsed, Layer::Personal, &|_| false, &|_| false);
+    let nothing = missing(&items, &parsed, Layer::System, &|_| false, &|_| false);
     let seen: Vec<(Code, Option<&str>, Option<&str>)> = nothing
         .iter()
         .map(|problem| {
@@ -295,7 +295,7 @@ fn missing_secrets_and_variables_are_warnings() {
     let all_set = missing(
         &items,
         &parsed,
-        Layer::Personal,
+        Layer::System,
         &|name| name == "deepseek",
         &|name| name == "DEMO_KEY",
     );

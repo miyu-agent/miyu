@@ -25,12 +25,11 @@ pub(crate) struct CheckParams {
     text: String,
 }
 
-/// 能查的三层。
+/// 能查的两层。
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum LayerParam {
     System,
-    Personal,
     Project,
 }
 
@@ -38,7 +37,6 @@ impl LayerParam {
     fn layer(self) -> Layer {
         match self {
             LayerParam::System => Layer::System,
-            LayerParam::Personal => Layer::Personal,
             LayerParam::Project => Layer::Project,
         }
     }

@@ -6,18 +6,18 @@ use std::borrow::Cow;
 use crate::item::{Item, Kind, Layer, Tighten};
 use crate::parse::{Entry, parse};
 use crate::problem::{At, Code, Problem};
-use crate::test_support::{item, system_only};
+use crate::test_support::item;
 use crate::value::Value;
 
-/// 手写的清单：一个选项（系统、个人），一个只能放系统配置的选项，一个三层都能放的开关。
+/// 手写的清单：两个只能放系统配置的选项，一个系统、项目两层都能放的开关。
 fn items() -> Vec<Item> {
     vec![
         item("ui.language", &["auto", "zh", "en"], "auto"),
-        system_only(item("log.level", &["info", "debug"], "info")),
+        item("log.level", &["info", "debug"], "info"),
         Item {
             kind: Kind::Bool,
             default: Some(Value::Bool(false)),
-            layers: &[Layer::System, Layer::Personal, Layer::Project],
+            layers: &[Layer::System, Layer::Project],
             tighten: Some(Tighten::TrueOnly),
             ..item("permission.start_read_only", &[], "")
         },
@@ -35,9 +35,9 @@ fn text(text: &str) -> Value {
 /// 一条问题看的几样：原因码、键、位置、收到的。
 type Seen = (Code, Option<String>, Option<At>, Option<String>);
 
-/// 当成个人设置读，问题只看原因码、键、位置、收到的。
+/// 当成系统配置读，问题只看原因码、键、位置、收到的。
 fn problems(source: &str) -> Vec<Seen> {
-    parse(&items(), Layer::Personal, source)
+    parse(&items(), Layer::System, source)
         .expect("写法对")
         .problems
         .into_iter()
@@ -58,7 +58,7 @@ fn one(
 fn good_entries_remember_their_line() {
     let parsed = parse(
         &items(),
-        Layer::Personal,
+        Layer::System,
         "# 注释\n\n[ui]\nlanguage = \"zh\" # 行尾\n\n[permission]\nstart_read_only = true\n",
     )
     .expect("写法对");
@@ -85,7 +85,7 @@ fn good_entries_remember_their_line() {
 fn dotted_keys_and_inline_tables_are_the_same_items() {
     let parsed = parse(
         &items(),
-        Layer::Personal,
+        Layer::System,
         "ui.language = \"en\"\npermission = { start_read_only = true }\n",
     )
     .expect("写法对");
@@ -98,7 +98,7 @@ fn dotted_keys_and_inline_tables_are_the_same_items() {
 #[test]
 fn retired_keys_are_read_quietly() {
     let source = "[ui]\nlanguage = \"zh\"\n\n[loading.tools]\nweather = false\n\n[loading.mcp]\ngithub = true\n\n[providers.relay.compat]\nstrict_tools = true\n\n[loading]\ntool = 1\n";
-    let parsed = parse(&items(), Layer::Personal, source).expect("写法对");
+    let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert_eq!(parsed.entries.len(), 1, "只有写对的那一项进最终值");
     let keys: Vec<_> = parsed
         .problems
@@ -116,7 +116,7 @@ fn retired_keys_are_read_quietly() {
 fn an_unknown_key_warns_and_suggests_the_nearest() {
     // 不认识的一张表往里走，每一项照整个键报；空的不认识的表没什么可报。
     let source = "[ui]\nlanguage = \"zh\"\nlangauge = \"en\"\n\n[weird]\nthing = 1\n[empty]\nuii.language = 1\n";
-    let parsed = parse(&items(), Layer::Personal, source).expect("写法对");
+    let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert_eq!(parsed.entries.len(), 1, "写对的照收");
     let found: Vec<_> = parsed
         .problems
@@ -165,7 +165,7 @@ fn a_wrong_type_drops_only_that_item() {
             "\"yes\""
         )]
     );
-    let parsed = parse(&items(), Layer::Personal, "ui.language = 3\n").expect("写法对");
+    let parsed = parse(&items(), Layer::System, "ui.language = 3\n").expect("写法对");
     assert!(parsed.entries.is_empty());
     assert_eq!(parsed.problems[0].code, Code::WrongType, "选项写成数");
 }
@@ -201,7 +201,7 @@ fn an_option_must_be_listed_and_is_case_sensitive() {
 
 #[test]
 fn a_key_in_the_wrong_layer_does_not_count_but_is_remembered() {
-    let parsed = parse(&items(), Layer::Personal, "[log]\nlevel = \"debug\"\n").expect("写法对");
+    let parsed = parse(&items(), Layer::Project, "[log]\nlevel = \"debug\"\n").expect("写法对");
     assert_eq!(
         parsed
             .problems
@@ -224,8 +224,7 @@ fn a_key_in_the_wrong_layer_does_not_count_but_is_remembered() {
 
 #[test]
 fn bad_toml_is_one_syntax_problem_with_only_the_reason() {
-    let problem =
-        parse(&items(), Layer::Personal, "[ui]\nlanguage = \"zh\n").expect_err("写法不对");
+    let problem = parse(&items(), Layer::System, "[ui]\nlanguage = \"zh\n").expect_err("写法不对");
     assert_eq!(problem.code, Code::Syntax);
     assert_eq!(
         problem.at,
@@ -263,14 +262,14 @@ fn got_is_cut_at_eighty_characters() {
 fn a_bom_and_crlf_do_not_move_lines_or_columns() {
     let parsed = parse(
         &items(),
-        Layer::Personal,
+        Layer::System,
         "\u{FEFF}[ui]\r\nlanguage = \"zh\"\r\n[permission]\r\nstart_read_only = 1\r\n",
     )
     .expect("写法对");
     assert_eq!(parsed.entries["ui.language"].line, 2);
     assert_eq!(parsed.entries["ui.language"].at, at(2, 12));
     assert_eq!(parsed.problems[0].at, Some(at(4, 19)));
-    let first = parse(&items(), Layer::Personal, "\u{FEFF}ui.language = 3\n").expect("写法对");
+    let first = parse(&items(), Layer::System, "\u{FEFF}ui.language = 3\n").expect("写法对");
     assert_eq!(
         first.problems[0].at,
         Some(at(1, 15)),
@@ -284,7 +283,7 @@ fn columns_count_characters_not_bytes() {
         problems("# 中文注释\n\"界面\" = 1\nui.language = \"中\" \n")[0].2,
         Some(at(2, 1))
     );
-    let parsed = parse(&items(), Layer::Personal, "ui = { \"界\" = 1, x = 1 }\n").expect("写法对");
+    let parsed = parse(&items(), Layer::System, "ui = { \"界\" = 1, x = 1 }\n").expect("写法对");
     assert_eq!(
         parsed
             .problems
@@ -301,7 +300,7 @@ fn columns_count_characters_not_bytes() {
 
 #[test]
 fn a_misspelt_group_still_finds_the_nearest_key() {
-    let parsed = parse(&items(), Layer::Personal, "uii.language = \"zh\"\n").expect("写法对");
+    let parsed = parse(&items(), Layer::System, "uii.language = \"zh\"\n").expect("写法对");
     assert_eq!(
         parsed
             .problems
@@ -313,14 +312,19 @@ fn a_misspelt_group_still_finds_the_nearest_key() {
 }
 
 #[test]
-fn the_mcp_table_of_personal_settings_is_skipped_elsewhere_unknown() {
-    // 个人设置里的 `[mcp.<名字>]` 不在清单里，另读（施工 F-9 上）：跳过、不报；系统配置里写了照不认识的报。
+fn the_mcp_table_of_the_system_config_is_skipped_elsewhere_unknown() {
+    // 系统配置里的 `[mcp.<名字>]` 不在清单里，另读（施工 F-9 上，SU-3 上起）：跳过、不报；项目配置里写了照不认识的报。
     let source =
         "[ui]\nlanguage = \"zh\"\n\n[mcp.fetch]\ncommand = [\"uvx\", \"mcp-server-fetch\"]\n";
-    let parsed = parse(&items(), Layer::Personal, source).expect("写法对");
+    let parsed = parse(&items(), Layer::System, source).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     assert_eq!(parsed.entries.len(), 1);
-    let parsed = parse(&items(), Layer::System, source).expect("写法对");
+    let parsed = parse(
+        &items(),
+        Layer::Project,
+        "[mcp.fetch]\ncommand = [\"uvx\", \"mcp-server-fetch\"]\n",
+    )
+    .expect("写法对");
     let keys: Vec<Option<&str>> = parsed
         .problems
         .iter()

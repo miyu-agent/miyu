@@ -133,54 +133,34 @@ fn reasoning_levels_follow_the_profile_and_the_default_must_be_one_of_them() {
     assert_eq!(facts.effort.value.as_deref(), Some("turbo"));
 }
 
-/// 两层都合出来的最终值：系统配置 `system`，个人设置 `personal`，没写的那一层传空字。
-fn two_layers(system: &str, personal: &str) -> Resolved {
+/// 系统配置 `system` 合出来的最终值（施工 SU-3 上：只剩这一层）。
+fn one_layer(system: &str) -> Resolved {
     let item_list = items();
     let system = parse(&item_list, Layer::System, system).expect("写法对");
-    let personal = parse(&item_list, Layer::Personal, personal).expect("写法对");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         ..Layers::default()
     };
     merge(&item_list, &layers, &|_| None)
 }
 
-/// 照两层配置查 `deepseek-flash` 的默认思考强度：值和来源。
-fn effort_of(held: &Held, system: &str, personal: &str) -> (Option<String>, Source) {
-    let resolved = two_layers(system, personal);
+/// 照配置查 `deepseek-flash` 的默认思考强度：值和来源。
+fn effort_of(held: &Held, system: &str) -> (Option<String>, Source) {
+    let resolved = one_layer(system);
     let knowledge = held.knowledge();
     let provider = provider(&resolved.values(), &knowledge, "deepseek").expect("配了");
     let (facts, _) = facts(&resolved, &knowledge, &provider, "deepseek-flash");
     (facts.effort.value, facts.effort.source)
 }
 
-/// 配置两层都写、只写一层、都不写：默认的思考强度（施工 8-18（补）去掉会话那一层以后，只剩配置的两层，个人设置压着
-/// 系统配置，和别的字段一样，「怎么走」第十一条第 2 条）。
+/// 写了、没写：默认的思考强度（施工 8-18（补）去掉会话那一层；SU-3 上起配置只剩系统那一层，「怎么走」第十一条第 2 条）。
 #[test]
-fn effort_default_is_personal_over_system_or_whichever_is_written() {
+fn effort_default_is_whatever_the_config_writes() {
     let held = held();
-    let level = |layer: &str| {
-        format!("[providers.deepseek.models.\"deepseek-flash\"]\neffort = \"{layer}\"\n")
-    };
-    let system = format!("{DEEPSEEK}\n{}", level("low"));
-
-    let (value, source) = effort_of(&held, &system, &level("high"));
-    assert_eq!(
-        value.as_deref(),
-        Some("high"),
-        "两层都写：个人设置压着系统配置"
-    );
-    assert!(matches!(
-        source,
-        Source::Config {
-            layer: Layer::Personal,
-            ..
-        }
-    ));
-
-    let (value, source) = effort_of(&held, &system, "");
-    assert_eq!(value.as_deref(), Some("low"), "只写了系统配置");
+    let system =
+        format!("{DEEPSEEK}\n[providers.deepseek.models.\"deepseek-flash\"]\neffort = \"low\"\n");
+    let (value, source) = effort_of(&held, &system);
+    assert_eq!(value.as_deref(), Some("low"), "写了");
     assert!(matches!(
         source,
         Source::Config {
@@ -188,54 +168,28 @@ fn effort_default_is_personal_over_system_or_whichever_is_written() {
             ..
         }
     ));
-
-    let (value, source) = effort_of(&held, DEEPSEEK, &level("high"));
-    assert_eq!(value.as_deref(), Some("high"), "只写了个人设置");
-    assert!(matches!(
-        source,
-        Source::Config {
-            layer: Layer::Personal,
-            ..
-        }
-    ));
-
-    let (value, source) = effort_of(&held, DEEPSEEK, "");
-    assert_eq!(value, None, "都不写：没有默认");
+    let (value, source) = effort_of(&held, DEEPSEEK);
+    assert_eq!(value, None, "不写：没有默认");
     assert_eq!(source, Source::Default);
 }
 
-/// 来源是配置的，`layer` 格说是哪一层：系统配置 `system`，个人设置 `personal`，两层都写时跟着真的来源走（个人设置压着
-/// 系统配置，施工 8-7（补），照 `config.get` 说的来源一样写法）。
+/// 来源是配置的，`layer` 格说是哪一层（施工 8-7（补），照 `config.get` 说的来源一样写法）：只剩系统配置。
 #[test]
 fn facts_json_says_which_config_layer_a_value_came_from() {
     let held = held();
     let system = "[providers.deepseek]\nlocal = false\n\n[providers.deepseek.models.\"deepseek-flash\"]\nwindow = 60000\n";
-    let personal = "[providers.deepseek.models.\"deepseek-flash\"]\nwindow = 70000\n";
-
-    let window_of = |system: &str, personal: &str| {
-        let resolved = two_layers(system, personal);
-        let knowledge = held.knowledge();
-        let provider = provider(&resolved.values(), &knowledge, "deepseek").expect("配了");
-        let (facts, _) = facts(&resolved, &knowledge, &provider, "deepseek-flash");
-        facts.window
-    };
-
-    let both = window_of(system, personal);
-    assert_eq!(both.value, Some(70_000), "两层都写：个人设置压着系统配置");
+    let resolved = one_layer(system);
+    let knowledge = held.knowledge();
+    let provider = provider(&resolved.values(), &knowledge, "deepseek").expect("配了");
+    let (facts, _) = facts(&resolved, &knowledge, &provider, "deepseek-flash");
+    assert_eq!(facts.window.value, Some(60_000));
     assert_eq!(
-        Json::Object(both.source.json(&file)),
-        json!({"from": "config", "file": "personal/config.toml", "line": 2, "layer": "personal"})
-    );
-
-    let system_only = window_of(system, "");
-    assert_eq!(system_only.value, Some(60_000), "只写了系统配置");
-    assert_eq!(
-        Json::Object(system_only.source.json(&file)),
+        Json::Object(facts.window.source.json(&file)),
         json!({"from": "config", "file": "system/config.toml", "line": 5, "layer": "system"})
     );
 }
 
-/// 别的来源不带 `layer`：学来的、供应商列表、本机的、驱动默认都没有这一格，只有手写的配置区分系统、个人两层。
+/// 别的来源不带 `layer`：学来的、供应商列表、本机的、驱动默认都没有这一格，只有手写的配置带。
 #[test]
 fn non_config_sources_carry_no_layer_field() {
     let sources = [

@@ -31,7 +31,7 @@ async fn every_step_skipped_asks_nothing() {
         "一句不问"
     );
     assert_eq!(server.received().len(), 1, "写的那个在列表里，不发请求");
-    let config = home.personal_settings();
+    let config = home.system_config();
     assert!(config.contains("key = { env = \"MY_KEY\" }"), "{config}");
     assert!(
         config.contains("chat = \"deepseek/deepseek-v4-pro\""),
@@ -58,7 +58,7 @@ async fn outside_a_terminal_the_key_comes_from_the_pipe_and_the_model_is_the_rec
     assert_eq!((typist.lines, typist.hidden, typist.all), (0, 0, 1));
     assert!(home.secrets().contains(&format!("deepseek = \"{FAKE}\"")));
     assert!(
-        home.personal_settings()
+        home.system_config()
             .contains("chat = \"deepseek/deepseek-flash\"")
     );
     assert!(!asked.screen.contains("FAKE"), "{}", asked.screen);
@@ -75,7 +75,7 @@ async fn a_found_key_is_used_for_the_named_provider() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(typist.all, 0, "不读管道");
     assert!(
-        home.personal_settings()
+        home.system_config()
             .contains("key = { env = \"DEEPSEEK_API_KEY\" }")
     );
     assert_eq!(home.secrets(), "");
@@ -128,5 +128,5 @@ async fn outside_a_terminal_a_failed_try_is_1_and_nothing_is_written() {
         asked.screen
     );
     assert_eq!(home.secrets(), "", "试不通的 key 不存");
-    assert_eq!(home.personal_settings(), "");
+    assert_eq!(home.system_config(), "");
 }

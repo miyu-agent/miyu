@@ -62,7 +62,7 @@ async fn a_bundled_service_shows_its_switch_and_follows_changes() {
 
 /// 个人设置的字。
 fn settings(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("home/alice/settings.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.path().join("system/config.toml")).unwrap_or_default()
 }
 
 #[tokio::test]

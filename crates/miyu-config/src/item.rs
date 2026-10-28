@@ -2,7 +2,7 @@
 //!
 //! 一项有这几格：键、类型、默认值、能放在哪几层、哪个环境变量压过它、什么时候生效、界面提示。名字和说明
 //! 给人看，跟着界面语言，不在这里，住在资源目录里（[`crate::words`]）。各格的取值照「不为以后写代码」一样一样加：
-//! 哪一步第一次有一项用到它，哪一步加（类型有选项、开关，层有系统、个人、项目，收紧只有「只能打开」，生效有当场、
+//! 哪一步第一次有一项用到它，哪一步加（类型有选项、开关，层有系统、项目，收紧只有「只能打开」，生效有当场、
 //! 以后开的会话、头下次启动，控件有下拉、开关；开关、项目、收紧、以后开的会话随 8-2 的 `permission.start_read_only`，
 //! 头下次启动随 8-3 的 `tui.startup`（8-28 改名 `ui.startup`）；密钥随 8-5；整数、网址、名字、引用、密钥的列表，下一个回合，一行字、数、列表，
 //! 没有默认值的项和键里人起的名字那一段随 8-6 的供应商、`models.chat`）。
@@ -49,20 +49,17 @@ impl Item {
 /// 一层配置：一个值从哪来（`14-配置.md` 第三节）。照从下往上的先后排：上面的盖掉下面的。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Layer {
-    /// 系统配置 `system/config.toml`：管理员写。
+    /// 系统配置 `system/config.toml`：主人写（施工 SU-3 上起个人设置并进来，只剩这一层）。
     System,
-    /// 个人设置 `home/<账号>/settings.toml`：本人写。
-    Personal,
     /// 项目配置：仓库里的 `.miyu/config.toml`，信任过才算，只认收紧的（施工 8-2）。
     Project,
 }
 
 impl Layer {
-    /// 协议上、资源里的写法：`system`、`personal`、`project`。
+    /// 协议上、资源里的写法：`system`、`project`。
     pub fn as_str(self) -> &'static str {
         match self {
             Layer::System => "system",
-            Layer::Personal => "personal",
             Layer::Project => "project",
         }
     }

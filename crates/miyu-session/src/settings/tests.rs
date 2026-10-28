@@ -9,7 +9,7 @@ fn preparing_is_on_by_default_and_applies_next_turn() {
     assert!(defaults.prepare);
     let item = &CompactionSettings::ITEMS[0];
     assert_eq!(item.key, "compaction.prepare");
-    assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
+    assert_eq!(item.layers, &[Layer::System]);
     assert_eq!(item.applies, Applies::NextTurn);
 }
 
@@ -20,7 +20,7 @@ fn background_commands_run_half_an_hour_by_default() {
     assert_eq!(defaults.max_running, Duration::from_secs(30 * 60));
     let item = &JobSettings::ITEMS[0];
     assert_eq!(item.key, "jobs.max_running");
-    assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
+    assert_eq!(item.layers, &[Layer::System]);
     assert_eq!(item.applies, Applies::NextTurn);
     assert_eq!(
         item.kind,
@@ -52,7 +52,7 @@ fn a_busy_session_is_extracted_after_twenty_turns_or_an_hour() {
         }
     );
     for item in [turns, wait] {
-        assert_eq!(item.layers, &[Layer::System, Layer::Personal]);
+        assert_eq!(item.layers, &[Layer::System]);
         assert_eq!(item.applies, Applies::NextTurn);
     }
 }

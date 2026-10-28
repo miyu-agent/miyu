@@ -10,10 +10,9 @@ use std::time::{Duration, SystemTime};
 use crate::support::{Home, count, hello, within};
 use miyu_ipc::connect_or_start;
 
-/// 生成的三份，和它们中文、英文的样本。
-const FILES: [(&str, &str); 3] = [
+/// 生成的两份，和它们中文、英文的样本。
+const FILES: [(&str, &str); 2] = [
     ("config.schema.json", "config.schema.{}.json"),
-    ("settings.schema.json", "settings.schema.{}.json"),
     ("reference.toml", "reference.{}.toml"),
 ];
 

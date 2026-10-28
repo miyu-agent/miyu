@@ -103,7 +103,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
     std::fs::create_dir_all(bare.join("core/human")).expect("建得了目录");
     std::fs::write(bare.join("core/human/en.json"), r#"{"said":{}}"#).expect("写得进");
     let lines = generated(&root, &ResourceRoot::at(&bare), None);
-    assert_eq!(lines.len(), 3, "{lines:?}");
+    assert_eq!(lines.len(), FILES.len(), "{lines:?}");
     for (line, name) in lines.iter().zip(FILES) {
         assert!(
             line.contains(" WARN  config   config schema not written "),
@@ -119,7 +119,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
     // 读不懂的字：也是每一份一条，原因是哪一份读不懂。
     std::fs::write(bare.join("core/human/en.json"), "{").expect("写得进");
     let lines = generated(&root, &ResourceRoot::at(&bare), None);
-    assert_eq!(lines.len(), 3, "{lines:?}");
+    assert_eq!(lines.len(), FILES.len(), "{lines:?}");
     assert!(
         lines.iter().all(|line| line.contains("en.json")),
         "{lines:?}"

@@ -23,7 +23,7 @@
 ///         /// 用哪一种。
 ///         flavor: String = "plain" {
 ///             kind: option ["plain", "fancy"],
-///             layers: [System, Personal],
+///             layers: [System],
 ///             env: "EXAMPLE_FLAVOR",
 ///             applies: now,
 ///             ui: { page: "general", group: "display", common: true, control: select },
@@ -68,7 +68,7 @@
 ///         /// 用哪一种。
 ///         flavor: String {
 ///             kind: option ["plain", "fancy"],
-///             layers: [System, Personal],
+///             layers: [System],
 ///             env: "EXAMPLE_FLAVOR",
 ///             applies: now,
 ///             ui: { page: "general", group: "display", common: true, control: select },
@@ -86,7 +86,7 @@
 ///         /// 用哪一种。
 ///         flavor: String = "plain" {
 ///             kind: option ["plain"],
-///             layers: [System, Personal],
+///             layers: [System],
 ///             env: "EXAMPLE_FLAVOR",
 ///             applies: now,
 ///             ui: { page: "general", group: "display", common: true, control: select },

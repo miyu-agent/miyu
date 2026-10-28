@@ -308,8 +308,6 @@ fn quoted(text: &str) -> String {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Values {
     map: BTreeMap<String, Value>,
-    /// `<编号>@system` 到 `<编号>`（施工 PL-1 修，[`crate::merge::Resolved::aliases`]）。
-    aliases: BTreeMap<String, String>,
 }
 
 impl Values {
@@ -321,7 +319,6 @@ impl Values {
                 .filter(|item| !item.is_pattern())
                 .filter_map(|item| Some((item.key.to_string(), item.default.clone()?)))
                 .collect(),
-            aliases: BTreeMap::new(),
         }
     }
 
@@ -338,16 +335,6 @@ impl Values {
     /// 键 `key` 的值换成 `value`。
     pub fn set(&mut self, key: &str, value: Value) {
         self.map.insert(key.to_string(), value);
-    }
-
-    /// 供应商编号 `id` 是别名的（只有系统配置写了的那一家写成 `<编号>@system`，施工 PL-1 修）：它本身的编号。
-    pub fn alias(&self, id: &str) -> Option<&str> {
-        self.aliases.get(id).map(String::as_str)
-    }
-
-    /// 记下别名（[`crate::merge::Resolved::values`] 用）。
-    pub(crate) fn set_aliases(&mut self, aliases: BTreeMap<String, String>) {
-        self.aliases = aliases;
     }
 }
 

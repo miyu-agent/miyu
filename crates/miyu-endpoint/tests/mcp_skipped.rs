@@ -30,7 +30,7 @@ async fn tools_left_out_are_listed_and_checked() {
     bundle(&home, "odd", "odd", &["odd"]);
     bundle(&home, "kit", "kit", &[]);
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.probe]\ncommand = ['{SERVER}', 'odd']\ntimeout_ms = 1000\n"),
     );
     let core = configured(&home, &Script::new([]));
@@ -78,7 +78,7 @@ async fn tools_left_out_are_listed_and_checked() {
     said.sort();
     assert_eq!(said.len(), 2, "一个服务一条：{checked}");
     assert_eq!(
-        said[0].0, "home/alice/settings.toml",
+        said[0].0, "system/config.toml",
         "个人设置里的报在个人设置上：{said:?}"
     );
     assert!(said[0].1.contains("probe: "), "{said:?}");

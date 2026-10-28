@@ -1,6 +1,6 @@
 //! 真核心上的 `miyu provider login`、`list`、`logout`（施工 8-5，`docs/blueprint/config.md`「守着它的」）：管道进来的 key 存进
 //! `system/secrets.toml`，`list` 两种格式里没有 key，`provider logout` 删掉、没设过的退出码 1；名字写错、不写名字又不在终端里、
-//! `--format` 不在 `list` 上、`--system` 不在 `list` 上、老写法 `miyu login` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
+//! `--format` 不在 `list` 上、SU-3 起没有 `--system`、老写法 `miyu login` 退出码 2；核心没在跑的拉起来（施工 8-6）；帮助页两种语言。整份运行日志（`trace`）、
 //! 系统日志、屏幕上都搜不到 key。
 
 use std::io::Write;
@@ -84,7 +84,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let saved = run(
         &root,
         "C",
-        &["provider", "login", "deepseek", "--system"],
+        &["provider", "login", "deepseek"],
         &format!("{FAKE}\n"),
     )
     .await;
@@ -99,7 +99,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let replaced = run(
         &root,
         "zh_CN.UTF-8",
-        &["provider", "login", "deepseek", "--system"],
+        &["provider", "login", "deepseek"],
         FAKE_2,
     )
     .await;
@@ -123,13 +123,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         let mode = std::fs::metadata(&secrets).unwrap().permissions().mode();
         assert_eq!(mode & 0o777, 0o600);
     }
-    let empty = run(
-        &root,
-        "C",
-        &["provider", "login", "other", "--system"],
-        "  \n",
-    )
-    .await;
+    let empty = run(&root, "C", &["provider", "login", "other"], "  \n").await;
     assert_eq!(
         seen(&empty),
         (Some(1), String::new(), "No key was given\n".to_string())
@@ -144,16 +138,10 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let json: serde_json::Value = serde_json::from_slice(&json.stdout).expect("是 JSON");
     assert_eq!(
         json,
-        serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "layer": "system", "used_by": []}]})
+        serde_json::json!({"secrets": [{"name": "deepseek", "set": true, "used_by": []}]})
     );
 
-    let out = run(
-        &root,
-        "C",
-        &["provider", "logout", "deepseek", "--system"],
-        "",
-    )
-    .await;
+    let out = run(&root, "C", &["provider", "logout", "deepseek"], "").await;
     assert_eq!(
         seen(&out),
         (
@@ -165,7 +153,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let again = run(
         &root,
         "zh_CN.UTF-8",
-        &["provider", "logout", "deepseek", "--system"],
+        &["provider", "logout", "deepseek"],
         "",
     )
     .await;
@@ -229,8 +217,14 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     );
     let format = run(&root, "C", &["provider", "login", "--format", "json"], "").await;
     assert_eq!(format.status.code(), Some(2), "--format 只给 list");
-    let system = run(&root, "C", &["provider", "list", "--system"], "").await;
-    assert_eq!(system.status.code(), Some(2), "--system 只给 login、logout");
+    let system = run(
+        &root,
+        "C",
+        &["provider", "login", "deepseek", "--system"],
+        FAKE,
+    )
+    .await;
+    assert_eq!(system.status.code(), Some(2), "SU-3 起没有 --system");
     // 老写法不留：`miyu login`、`miyu logout` 现在是不认识的子命令（`login` 留给登录账号）。
     for old in [&["login", "deepseek"][..], &["logout", "deepseek"][..]] {
         let gone = run(&root, "C", old, FAKE).await;
@@ -239,7 +233,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     // 核心没在跑的拉起来（施工 8-6 起一律拉起，原来没设 DEEPSEEK_API_KEY 的退出码 5）。
     let mut command = Command::new(MIYU);
     command
-        .args(["provider", "login", "deepseek", "--system"])
+        .args(["provider", "login", "deepseek"])
         .env("MIYU_HOME", &root)
         .envs(crate::support::offline(&root))
         .env("MIYU_RESOURCES", crate::support::resources())

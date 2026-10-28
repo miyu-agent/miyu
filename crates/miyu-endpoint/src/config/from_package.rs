@@ -5,7 +5,7 @@ use serde_json::Value as Json;
 use miyu_kernel::id::CommandId;
 use miyu_kernel::origin::By;
 
-use super::set::{ChangeParam, SetParams, WriteLayer, set_by};
+use super::set::{ChangeParam, SetParams, set_by};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -34,8 +34,7 @@ pub(crate) fn set_from_package(
                 .as_deref()
                 .is_some_and(|input| input.trim_start().starts_with('{'))
     };
-    let allowed = matches!(params.layer, WriteLayer::System)
-        && params.text.is_none()
+    let allowed = params.text.is_none()
         && params
             .changes
             .as_ref()

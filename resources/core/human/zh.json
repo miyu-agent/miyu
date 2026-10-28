@@ -89,7 +89,7 @@
       },
       "ui.welcomed": {
         "name": "第一次引导走过了",
-        "description": "这个账号已经走完第一次引导，终端、网页不再打开引导。"
+        "description": "已经走完第一次引导，终端、网页不再打开引导。"
       },
       "persona.default": {
         "name": "默认人格",
@@ -358,7 +358,7 @@
       "packages.source": {"name": "软件源地址", "description": "从这里查、下载软件包。默认是官方的软件源；换了地址，那边的内容也得是官方签过名的。"},
       "packages.mirrors": {"name": "镜像", "description": "官方的软件源连不上或者慢的时候，先照先后试这几个地址。内容照样验签名、比哈希，镜像改不了。"},
       "packages.hold": {"name": "不升级的包", "description": "升级时跳过这几个包（写编号），照旧用装着的那一版。"},
-      "packages.sources.<id>.url": {"name": "别的软件源的地址", "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；系统配置里的大家都用，个人设置里的只给自己。"},
+      "packages.sources.<id>.url": {"name": "别的软件源的地址", "description": "放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；写在系统配置里。"},
       "packages.sources.<id>.key": {"name": "别的软件源的公钥", "description": "签它的索引的 Ed25519 公钥（base64）。索引照它验，验不过的不收。"},
       "models.catalog.url": {
         "name": "目录的地址",
@@ -649,7 +649,7 @@
     "package-problems/bad_default": "{detail} 不合这一项的类型，或者不在选项里；密钥、密钥的列表不能写默认值",
     "package-problems/bad_choices": "{detail} 要列至少两个不重复的字",
     "package-problems/bad_range": "{detail} 要写整数，最小不大于最大",
-    "package-problems/bad_layers": "{detail} 只能列 system、personal 里的一个或两个",
+    "package-problems/bad_layers": "{detail} 只能写 system",
     "package-problems/bad_applies": "{detail} 只能是 now、new_session、next_turn 或 program_start",
     "package-problems/not_bool": "{detail} 只能是 true 或 false",
     "package-problems/settings_taken": "包的编号 {detail} 和核心自己的配置撞了，它的配置项一项都不收：换一个编号",
@@ -729,12 +729,11 @@
     "package-problems/slash_covered": "和 {detail} 同名，被它盖住了，这一份不用",
     "package-problems/slash_builtin": "和 Miyu 自带的 /{detail} 同名，这一份不用",
     "config/reference-header": "Miyu 的全部配置项和默认值。这份是生成的，改它没有用。",
-    "config/reference-where": "系统配置写在 system/config.toml，个人设置写在 home/<账号>/settings.toml。",
+    "config/reference-where": "系统配置写在 system/config.toml。",
     "config/reference-item": "{name}：{description}",
     "config/facts": "能写：{values}。只能写在{layers}里。{applies}。",
     "config/schema-description": "{description}{facts}",
     "config/layer/system": "系统配置",
-    "config/layer/personal": "个人设置",
     "config/applies/now": "立即生效",
     "config/option-needs-key": "要 key",
     "config/option-needs-address": "要地址",
@@ -778,7 +777,6 @@
     "config/readonly-bad-path": "{got} 写法不对：要写成 ~/…、绝对路径，或者工作区里的相对路径（不能有 ..）",
     "config/readonly-too-broad": "{got} 是家目录或它的上级，不能整个保护：家目录里改什么都要先问",
     "config/source-reserved": "official 是官方软件源的名字，别的源不能用",
-    "config/source-shadowed": "系统配置里已经有叫 {name} 的软件源，个人设置里这一条不用",
     "config/source-incomplete": "软件源 {name} 要同时写 url 和 key 才能用",
     "config/source-key": "软件源 {name} 的 key 读不成：要写 base64 的 Ed25519 公钥",
     "config/fix-example": "改成其中一个，例如 {example}",

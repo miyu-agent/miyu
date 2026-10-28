@@ -43,7 +43,7 @@ async fn the_runtime_log_has_names_and_never_a_key() {
     }
     let server = miyu_mcp::testkit::http::HttpServer::start(false).await;
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!(
             "[mcp.remote]\nurl = \"{}\"\nbearer = {{ secret = \"deepseek\" }}\n",
             server.url

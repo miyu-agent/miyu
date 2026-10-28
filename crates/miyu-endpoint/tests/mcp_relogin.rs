@@ -31,7 +31,7 @@ async fn logged_in(
     script: &Script,
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut client, kept) = running_with(home, script).await;
@@ -247,7 +247,7 @@ async fn a_pasted_callback_is_checked_like_the_local_one() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (_core, mut client, _kept) = running_with(&home, &Script::new([])).await;
@@ -324,7 +324,7 @@ async fn a_remote_person_logs_in_by_pasting_the_callback_back_and_logs_out() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut local, _kept) = running_with(&home, &Script::new([])).await;

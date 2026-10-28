@@ -5,14 +5,13 @@
 命令：
   get [键…]      印出最终的值，只写一个键时只印值
   set <键> <值>  改一项
-  unset <键>     从这一层删掉一项，回到下面一层的值
+  unset <键>     从系统配置里删掉一项，回到默认值
   edit           用编辑器打开，存盘时先检查
   explain <键>   这一项每一层写的什么、哪一个生效
   path           印出配置文件在哪
   trust          看这里的项目配置会改什么，信任或者不信任它
 
 选项：
-      --system            系统配置，不写是个人设置（set、unset、edit、path）
       --project           当前目录的项目配置（edit、path）
       --format text|json  get、explain：json 给脚本
       --yes               trust：信任，不问

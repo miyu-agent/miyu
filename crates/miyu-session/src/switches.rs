@@ -18,7 +18,7 @@ pub const ITEMS: &[Item] = &[Item {
     key: FEATURE,
     kind: Kind::Bool,
     default: None,
-    layers: &[Layer::System, Layer::Personal],
+    layers: &[Layer::System],
     tighten: None,
     env: None,
     applies: Applies::NextTurn,

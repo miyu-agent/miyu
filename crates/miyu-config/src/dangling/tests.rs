@@ -14,11 +14,11 @@ crate::settings! {
         /// 主对话的。
         chat: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "uses", control: text },
         },
-        /// 只能写在系统配置里的一个引用：写在个人设置里不算，也就不查。
+        /// 只能写在系统配置里的一个引用：写在项目配置里不算，也就不查。
         fixed: Option<String> = none {
             kind: reference,
             layers: [System],
@@ -34,7 +34,7 @@ crate::settings! {
         /// 成员。
         models: Option<Vec<String>> = none {
             kind: models,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "pools", control: list },
         },
@@ -109,10 +109,10 @@ fn what_is_there_and_what_does_not_count_is_not_reported() {
     );
     assert_eq!(fine, Vec::new());
     // 写在不能写的那一层：报 `wrong_layer`，不算数，也就不查它指的东西。
-    let parsed = parse(&items(), Layer::Personal, "[uses]\nfixed = \"b/m\"\n").expect("写法对");
+    let parsed = parse(&items(), Layer::Project, "[uses]\nfixed = \"b/m\"\n").expect("写法对");
     assert_eq!(parsed.problems.len(), 1, "{:?}", parsed.problems);
     assert_eq!(
-        found(Layer::Personal, "[uses]\nfixed = \"b/m\"\n"),
+        found(Layer::Project, "[uses]\nfixed = \"b/m\"\n"),
         Vec::new()
     );
 }
@@ -176,7 +176,7 @@ crate::settings! {
         /// 算向量的。
         picked: Option<String> = none {
             kind: model_or ["local", "off"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "uses", control: text },
         },

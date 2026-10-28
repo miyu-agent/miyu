@@ -21,7 +21,7 @@
 
 ## 配置的三层
 
-配置从下往上叠：出厂默认值 → 系统配置（`system/config.toml`）→ 个人设置（`home/<账号>/settings.toml`）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `system/secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
+配置从下往上叠：出厂默认值 → 系统配置（`system/config.toml`，你的设置都写在这里）→ 项目配置（仓库里的 `.miyu/config.toml`，要信任过才算、只能收紧）。每一项能写在哪几层写在清单里（`layers`）。密钥另放 `system/secrets.toml`，配置里写 `{ secret = "<名字>" }` 引用它，或者写 `{ env = "<环境变量>" }`。
 
 **问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。
 
@@ -40,7 +40,7 @@
 | `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里；`sandbox.readonly.remove` 同理，勾着的照旧受保护）；没有的勾着的是值里的 |
 | `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型 |
 | `default` | 默认值 |
-| `layers` | 能写在哪几层：`system`、`personal`、`project` |
+| `layers` | 能写在哪几层：`system`、`project` |
 | `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
 | `name`、`description` | 给人看的名字、说明，照连接的语言 |
 | `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件 |
@@ -65,11 +65,11 @@
 | 名字 | 说明 |
 |---|---|
 | `items` | 键 → `{value, origin}`：最终值和来源（`origin` 有 `layer`、`file`、`line`）。`all` 的多 `layers`：从上往下每一层 `{origin, value, used}`，没生效的带 `problem` |
-| `files` | 每一层的文件：`system`、`personal`、`project`（`file`、`version`；项目的多 `trusted`：`true`、`false` 或 `null` 还没问过），`secrets`（只有 `file`） |
+| `files` | 每一层的文件：`system`、`project`（`file`、`version`；项目的多 `trusted`：`true`、`false` 或 `null` 还没问过），`secrets`（只有 `file`） |
 | `problems` | 这几份文件现在的全部问题 |
 
 ```json
-{"files":{"personal":{"file":"home/admin/settings.toml","version":"sha256:…"},"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":null}},"items":{"ui.language":{"origin":{"file":"home/admin/settings.toml","layer":"personal","line":3},"value":"zh"}},"problems":[]}
+{"files":{"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"system/config.toml","layer":"system","line":3},"value":"zh"}},"problems":[]}
 ```
 
 **出错**：`unknown_config_key`。
@@ -80,7 +80,7 @@
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
-| `layer` | `system` 或 `personal`，必写 | 改哪一层 |
+| `layer` | `system`，可以不写 | 改哪一层：只有系统配置（写 `personal` 的 `bad_params`） |
 | `changes` | 数组 | 改几项，每项见下 |
 | `text` | 字符串 | 整份换成这段字 |
 | `version` | 字符串或 `null` | 写了 `text` 的必写：你读到的这份文件的版本，`null` 是那时还没有这份文件 |
@@ -90,8 +90,8 @@
 **回应**：`{"keys", "version"}`。`keys` 是变了的每一项：`value`（这一层现在的值，删掉的不写）、`effective`、`origin`（算上别的层以后的最终值、来源）、`applies`。一项都没变的 `keys` 是空的，什么都不写。
 
 ```json
-→ {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"layer":"personal","changes":[{"key":"ui.language","value":"zh"}]}}
-← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"zh","origin":{"file":"home/admin/settings.toml","layer":"personal","line":3},"value":"zh"}},"version":"sha256:…"}}
+→ {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"zh"}]}}
+← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"zh","origin":{"file":"system/config.toml","layer":"system","line":3},"value":"zh"}},"version":"sha256:…"}}
 ```
 
 几项一起查、一起写：有一项不对整条不收。写盘、推 `config.changed` 以后才回应。
@@ -109,7 +109,7 @@
 
 ## `config.check`
 
-**参数**：`layer`（`system`、`personal`、`project`，必写）、`text`（必写）。**回应**：`{"problems": [...]}`，没问题是空数组；问题不带 `file`。
+**参数**：`layer`（`system`、`project`，必写）、`text`（必写）。**回应**：`{"problems": [...]}`，没问题是空数组；问题不带 `file`。
 
 ## `config.trust`
 
@@ -123,15 +123,15 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `secret.set` | `name`、`value`（都必写）、`layer` | `{"replaced": <原来有没有>}` |
-| `secret.delete` | `name`、`layer` | `{}` |
-| `secret.list` | 没有 | `{"secrets": [{"name", "set", "layer", "used_by"}…]}` |
+| `secret.set` | `name`、`value`（都必写） | `{"replaced": <原来有没有>}` |
+| `secret.delete` | `name` | `{}` |
+| `secret.list` | 没有 | `{"secrets": [{"name", "set", "used_by"}…]}` |
 
 存的是去掉前后空白的值。`secret.list` 从不交出值：列设了的和配置里引用了、还没设的，`used_by` 是引用它的配置键。
 
-密钥有两份：`system` 是大家共用的 `system/secrets.toml`，只有管理员写得了；`personal` 是这个人自己的 `home/<账号>/secrets.toml`，只给他自己的配置用。`layer` 不写的，管理员是 `system`，成员是 `personal`。引用 `{ secret = 名字 }` 先找自己的再找系统的。`secret.list` 列他用得上的两份，`layer` 是 `personal`、`system`，没设的是 `null`。
+密钥只有一份：`system/secrets.toml`。
 
-**出错**：`not_permitted`（不是管理员写系统那一份）；`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
+**出错**：`bad_params`（名字不合写法；值是空的、有控制字符、超过 16 KiB）；`unknown_secret`（删的没有）；`config_file_broken`（密钥文件读不进来）；`local_only`（扩展调了改的两个）。
 
 ## `model.list`
 
@@ -141,7 +141,7 @@
 
 | 名字 | 说明 |
 |---|---|
-| `providers` | 配好的供应商，照编号排。每家：`id`、`layer`（`personal`：个人设置里配的，自用；`system`：只有系统配置里配的，共用）、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
+| `providers` | 配好的供应商，照编号排。每家：`id`、`name`（`{value, from, key}`）、`driver`、`base_url`、`key`（`{ref, set, state}`，从不交值）、`catalog`（对上了目录里哪一家）、`logo`（`{svg, tint}` 或 `null`）、`models`；用不了的另带 `problem` |
 | `models` 里每个 | `model`、`ref`、`listed`（从哪几处列出：`config`、`provider`、`catalog`）、`facts`（窗口、最大输出、输入种类、能不能用工具、思考、价格、名字……每格 `value` 和来源）、`state`（`ok`、`cooling` 带 `until`/`class`、`no_key`），能出向量的带 `embedding: true` |
 | `pools` | 每个池：`name`、`strategy`、`models`、`usable`、`subagent`、`description`、`fixed`（`lite`、`normal`、`flagship` 三个固定池是 `true`：永远在，配置里没写也列出来，不能删、不能改名，`subagent` 默认 `true`） |
 | `side` | 旁路请求（不在对话里的那些模型请求）的登记，每条：`id`（`core/title` 起标题、`memory/organize` 整理记忆）、`tier`（要哪一档：`lite`、`normal`、`flagship`）、`name`、`summary`（照连接的语言）、`resolved`（这一刻会落到哪：档位池有成员的是池名，空的是 `session`，用会话的模型）。池里全在冷却、都出错了的，也退到会话的模型。扩展在清单 `[[side]]` 里登记的也在这里，`id` 是 `<包>/<编号>`，名字、说明照它清单里写的 |
@@ -201,7 +201,7 @@
 |---|---|---|
 | `purpose` | 字符串，必写 | 用途，1 到 32 个小写字母、数字、`-`，例如 `vision` |
 | `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希：先照这个连接自己的账号找（`blob.put` 存在那里），找不到再照它替谁干活的那个人找；都没有的 `unknown_attachment` |
-| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat`。同一家系统配置、个人设置都配了的，`<编号>/<模型>` 是自用那份，`<编号>@system/<模型>` 是共用那份（用共用的 key） |
+| `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
 | `use` | `chat` 或 `vision` | 不知道人配了哪个模型时用：照 `models.chat` 或 `models.vision`；和 `model` 至多写一个 |
 | `side` | 字符串 | 扩展的旁路请求：写自己包里清单 `[[side]]` 登记的编号（不带包名）。照登记的档位从同名的池（`lite`、`normal`、`flagship`）取；池是空的、池里全在冷却或者都出错了，用会话的模型。和 `model`、`use` 不能同写；人的连接、没登记的编号 `bad_params` |
 | `session` | 会话编号 | 只跟着 `side`：用不上档位池时照这个会话这一刻的模型；不写的照 `models.chat`。不是自己的会话 `session_not_found` |

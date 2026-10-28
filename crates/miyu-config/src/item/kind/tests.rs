@@ -16,14 +16,14 @@ crate::settings! {
         /// 倍率。
         rate: Option<Number> = none {
             kind: float [0, 1000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 币种。
         code: Option<String> = none {
             kind: text [3],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
@@ -37,14 +37,14 @@ crate::settings! {
         /// 能收的。
         inputs: Option<Vec<String>> = none {
             kind: options ["text", "image"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: list },
         },
         /// 开没开：没写和写了 `false` 分得开。
         local: Option<bool> = none {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: toggle },
         },

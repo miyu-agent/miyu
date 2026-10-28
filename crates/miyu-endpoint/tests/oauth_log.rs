@@ -33,7 +33,7 @@ async fn logging_in_never_writes_a_token_a_code_or_a_verifier() {
     server.protect(&auth.issuer, "access-1");
     let home = Home::new();
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     home.root.prepare_home(&alice()).expect("建得了家目录");

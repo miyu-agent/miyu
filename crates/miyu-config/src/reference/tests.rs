@@ -2,7 +2,7 @@
 //! 了哪一句。和出厂的清单、资源生成的样本逐字节比，在 `miyu-core/tests/settings.rs`：这里拿不到上层的清单。
 
 use crate::reference::render;
-use crate::test_support::{item, system_only, words};
+use crate::test_support::{item, words};
 use crate::words::Missing;
 
 const EXPECTED: &str = "# 头一行。
@@ -10,7 +10,7 @@ const EXPECTED: &str = "# 头一行。
 
 [a]
 # a.a 的名字：a.a 的说明。
-# 能写：p 或 q。只能写在系统配置或个人设置里。立即生效。
+# 能写：p 或 q。只能写在系统配置里。立即生效。
 a = \"p\"
 
 # a.d 的名字：a.d 的说明。
@@ -19,12 +19,12 @@ d = \"on\"
 
 [a.b]
 # a.b.c 的名字：a.b.c 的说明。
-# 能写：x\" 或 \"y\"。只能写在系统配置或个人设置里。立即生效。
+# 能写：x\" 或 \"y\"。只能写在系统配置里。立即生效。
 c = \"x\\\"\"
 
 [z]
 # z.a 的名字：z.a 的说明。
-# 能写：m 或 n。只能写在系统配置或个人设置里。立即生效。
+# 能写：m 或 n。只能写在系统配置里。立即生效。
 a = \"m\"
 ";
 
@@ -34,7 +34,7 @@ fn tables_and_items_go_in_order_with_two_comment_lines_each() {
     let items = [
         item("z.a", &["m", "n"], "m"),
         item("a.b.c", &["x\"", "\"y\""], "x\""),
-        system_only(item("a.d", &["on", "off"], "on")),
+        item("a.d", &["on", "off"], "on"),
         item("a.a", &["p", "q"], "p"),
     ];
     assert_eq!(render(&items, &words(&items)).as_deref(), Ok(EXPECTED));

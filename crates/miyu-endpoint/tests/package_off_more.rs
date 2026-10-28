@@ -27,7 +27,7 @@ async fn set(client: &mut Client, n: u8, key: &str, value: bool) -> Value {
         .call(
             &format!("config-9f2c4e1a7b3d5f61-{n}"),
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": key, "value": value}]}),
+            json!({"layer": "system", "changes": [{"key": key, "value": value}]}),
         )
         .await
 }
@@ -104,7 +104,7 @@ async fn a_switched_off_package_s_settings_are_not_shown_but_its_switch_is() {
     let home = Home::new();
     home.write(
         "system/packages/kit/package.toml",
-        "[package]\nprotocol = [1, 1]\nname = { en = \"Kit\" }\n\n[ui]\n\n[settings.mode]\ntype = \"text\"\ndefault = \"x\"\nlayers = [\"personal\"]\nname = { en = \"Mode\" }\n",
+        "[package]\nprotocol = [1, 1]\nname = { en = \"Kit\" }\n\n[ui]\n\n[settings.mode]\ntype = \"text\"\ndefault = \"x\"\nlayers = [\"system\"]\nname = { en = \"Mode\" }\n",
     );
     let core = crate::scripts::core(&home, &Script::new([]));
     let mut client = Client::connect(Arc::clone(&core));

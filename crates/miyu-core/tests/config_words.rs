@@ -26,7 +26,7 @@ fn samples() -> Vec<(Problem, Option<Using>)> {
     let text = |text: &'static str| Value::Text(std::borrow::Cow::Borrowed(text));
     let mut unknown = Problem::item(
         Code::UnknownKey,
-        Layer::Personal,
+        Layer::System,
         "ui.langauge",
         at(7, 1),
         "\"zh\"",
@@ -44,7 +44,7 @@ fn samples() -> Vec<(Problem, Option<Using>)> {
         at: Some(at(4, 12)),
         ..Problem::file(
             Code::Syntax,
-            Layer::Personal,
+            Layer::System,
             Some("invalid basic string".to_string()),
         )
     };
@@ -65,7 +65,7 @@ fn samples() -> Vec<(Problem, Option<Using>)> {
         (
             Problem::item(
                 Code::WrongLayer,
-                Layer::Personal,
+                Layer::Project,
                 "log.level",
                 at(9, 9),
                 "\"debug\"",
@@ -75,7 +75,7 @@ fn samples() -> Vec<(Problem, Option<Using>)> {
         (
             Problem::item(
                 Code::WrongType,
-                Layer::Personal,
+                Layer::System,
                 "permission.start_read_only",
                 at(5, 19),
                 "\"yes\"",
@@ -106,7 +106,7 @@ fn chinese_says_what_the_blueprint_shows() {
             "log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
             "项目配置只能让限制更严。permission.start_read_only 现在是 true，这里写的 false 更宽，不算。",
             "TOML 写法不对：invalid basic string。暂用上次的有效配置。",
-            "log.level 只能写在系统配置里，写在个人设置里不算。挪到系统配置里去。",
+            "log.level 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。",
             "permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
         ]
     );
@@ -121,7 +121,7 @@ fn english_says_what_the_blueprint_shows() {
             "log.level must be error, warn, info, debug, trace or off, not \"verbose\". Write one of them, e.g. log.level = \"info\". Using \"info\" (the default) for now.",
             "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it does not count.",
             "Not valid TOML: invalid basic string. Using the last valid config.",
-            "log.level belongs in the system config. It does not count in personal settings. Move it to the system config.",
+            "log.level belongs in the system config. It does not count in a project config. Move it to the system config.",
             "permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now.",
         ]
     );
@@ -142,11 +142,11 @@ fn every_code_is_said_in_every_language() {
         ));
     }
     all.push((
-        Problem::item(Code::WrongType, Layer::Personal, "ui", at(1, 1), "1"),
+        Problem::item(Code::WrongType, Layer::System, "ui", at(1, 1), "1"),
         None,
     ));
     all.push((
-        Problem::item(Code::UnknownKey, Layer::Personal, "zzz.zzz", at(1, 1), "1"),
+        Problem::item(Code::UnknownKey, Layer::System, "zzz.zzz", at(1, 1), "1"),
         None,
     ));
     // 施工 8-5：引用取不到的两种，密钥文件里写错的两种。

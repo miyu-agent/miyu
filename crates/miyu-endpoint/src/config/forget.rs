@@ -20,11 +20,11 @@ pub(crate) fn forget(core: &Core, keys: &[String]) {
         return;
     }
     let by = By::Person(Person::new(core.config().places.account.clone()));
-    for layer in [Layer::System, Layer::Personal] {
+    for layer in [Layer::System] {
         let mut config = core.config();
         for _ in 0..TRIES {
             observe(core, &mut config, layer);
-            let file = config.file(layer);
+            let file = config.file();
             if file.version.is_none() {
                 break;
             }
@@ -65,11 +65,11 @@ pub(crate) fn forget(core: &Core, keys: &[String]) {
 /// `keys` 里系统配置或者个人设置写了的那几个，照 `keys` 的先后（施工 F-8 下补：卸之前看一眼，说要一并删掉几项）。
 pub(crate) fn present(core: &Core, keys: &[String]) -> Vec<String> {
     let mut config = core.config();
-    let texts: Vec<String> = [Layer::System, Layer::Personal]
+    let texts: Vec<String> = [Layer::System]
         .into_iter()
         .map(|layer| {
             observe(core, &mut config, layer);
-            config.file(layer).text.clone()
+            config.file().text.clone()
         })
         .collect();
     keys.iter()

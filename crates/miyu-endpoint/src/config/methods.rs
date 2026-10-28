@@ -221,7 +221,6 @@ pub(crate) fn get(
     });
     let shown = |layer: Layer| match layer {
         Layer::System => Some(config.system.shown.clone()),
-        Layer::Personal => Some(config.personal.shown.clone()),
         Layer::Project => project.as_ref().map(|project| project.file.shown.clone()),
     };
     let wanted = selected_in(config, &resolved, params.keys.as_deref(), &words)?;
@@ -255,11 +254,10 @@ pub(crate) fn get(
         listed.insert(key, Value::Object(entry));
     }
     let mut problems = Vec::new();
-    for file in [&config.system, &config.personal] {
-        let missing = config.missing(&file.parsed, file.layer);
-        for problem in file.problems().chain(&missing) {
-            problems.push(said(config, &layers, problem, Some(file), &words)?);
-        }
+    let file = &config.system;
+    let missing = config.missing(&file.parsed, file.layer);
+    for problem in file.problems().chain(&missing) {
+        problems.push(said(config, &layers, problem, Some(file), &words)?);
     }
     let secrets = &config.secrets;
     for problem in secrets.problems() {
@@ -284,12 +282,11 @@ pub(crate) fn get(
 /// 不交出去）。
 fn files(config: &Config, project: Option<&Project>) -> Value {
     let mut files = Map::new();
-    for file in [&config.system, &config.personal] {
-        files.insert(
-            file.layer.as_str().to_string(),
-            json!({"file": file.shown, "version": file.version}),
-        );
-    }
+    let file = &config.system;
+    files.insert(
+        file.layer.as_str().to_string(),
+        json!({"file": file.shown, "version": file.version}),
+    );
     files.insert("secrets".to_string(), json!({"file": config.secrets.shown}));
     if let Some(project) = project {
         let trusted = match project.trust {
@@ -404,7 +401,7 @@ pub(super) fn selected<'a>(
             None => {
                 let problem = Problem {
                     code: Code::UnknownKey,
-                    layer: Layer::Personal,
+                    layer: Layer::System,
                     at: None,
                     key: Some(key.clone()),
                     got: None,

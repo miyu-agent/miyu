@@ -177,13 +177,6 @@ pub(crate) struct Peer {
     pub(crate) prefix_ask: bool,
 }
 
-impl Peer {
-    /// 这一个请求能不能改全机的东西（施工 SU-1：没有管理员模式了，主人的请求都算）。
-    pub(crate) fn admin_mode(self, _request: &crate::wire::Request) -> bool {
-        self.admin
-    }
-}
-
 /// 握手：交回这个连接记下的、它是怎么认出来的（施工 W-8）和回应。拒绝的，交回拒绝和要不要断开。`spawned` 的是核心亲手拉起的
 /// 扩展（施工 9-4 上）：不看凭据，写了的也不看。`account` 是这个连接是谁（施工 O-4 下：声明了系统账号的包的扩展是它）。`source` 是
 /// 网页软件转来的远程连接的来源地址（`connection.remote`，本机的没有）：密码登录照它限流。

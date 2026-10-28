@@ -24,7 +24,7 @@ const fn item(key: &'static str, group: &'static str) -> Item {
         key,
         kind: Kind::Bool,
         default: None,
-        layers: &[Layer::System, Layer::Personal],
+        layers: &[Layer::System],
         tighten: None,
         env: None,
         applies: Applies::NextTurn,

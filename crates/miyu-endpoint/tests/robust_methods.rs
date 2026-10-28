@@ -201,7 +201,7 @@ fn variants(session: &str, work: &str) -> Vec<Value> {
         }),
         json!({"session": session, "value": nested(100), "data": nested(100), "changes": [{"key": "ui.language", "value": nested(100)}], "layer": "system"}),
         json!({"layer": "system", "text": "[[[[\n=\u{0}", "version": null}),
-        json!({"layer": "personal", "changes": [{"key": "", "value": null}, {"key": "ui.language", "input": "\"\u{0}"}]}),
+        json!({"layer": "system", "changes": [{"key": "", "value": null}, {"key": "ui.language", "input": "\"\u{0}"}]}),
         json!({"cwd": work, "path": work, "dirs": [work, "", "\u{0}"], "session": session}),
     ]
 }

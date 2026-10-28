@@ -29,7 +29,7 @@ fn secret_item(key: &'static str) -> Item {
         default: Some(ConfigValue::Secret(Reference::Env(
             "EXAMPLE_KEY".to_string(),
         ))),
-        layers: &[Layer::System, Layer::Personal],
+        layers: &[Layer::System],
         tighten: None,
         env: None,
         applies: Applies::NewSession,
@@ -204,11 +204,7 @@ async fn the_list_has_names_whether_set_and_who_uses_them() {
     let home = Home::new();
     home.write(
         "system/config.toml",
-        "[providers]\ndemo = { secret = \"deepseek\" }\nother = { secret = \"bigmodel-2\" }\n",
-    );
-    home.write(
-        "home/alice/settings.toml",
-        "[providers]\nother = { secret = \"deepseek\" }\n",
+        "[providers]\ndemo = { secret = \"deepseek\" }\nother = { secret = \"deepseek\" }\n",
     );
     let mut client = client(&home, &[]).await;
     set(&mut client, "secret-1", "zeta", FAKE).await;
@@ -216,10 +212,10 @@ async fn the_list_has_names_whether_set_and_who_uses_them() {
     assert_eq!(
         listed["result"],
         json!({"secrets": [
-            {"name": "deepseek", "set": false, "layer": null, "used_by": ["providers.demo", "providers.other"]},
-            {"name": "zeta", "set": true, "layer": "system", "used_by": []},
+            {"name": "deepseek", "set": false, "used_by": ["providers.demo", "providers.other"]},
+            {"name": "zeta", "set": true, "used_by": []},
         ]}),
-        "照最终值找引用：个人设置盖掉的不算"
+        "照最终值找引用"
     );
     set(&mut client, "secret-2", "deepseek", FAKE_2).await;
     let listed = client.call("list-2", "secret.list", json!({})).await;
@@ -280,7 +276,7 @@ async fn missing_references_warn_until_set_and_env_is_the_cores() {
         .call(
             "check-1",
             "config.check",
-            json!({"layer": "personal", "text": "[providers]\ndemo = { secret = \"deepseek\" }\nother = { env = \"PRESENT_KEY\" }\n"}),
+            json!({"layer": "system", "text": "[providers]\ndemo = { secret = \"deepseek\" }\nother = { env = \"PRESENT_KEY\" }\n"}),
         )
         .await;
     assert_eq!(
@@ -322,7 +318,7 @@ async fn a_broken_secrets_file_counts_as_errors_and_blocks_writes() {
     let listed = client.call("list-1", "secret.list", json!({})).await;
     assert_eq!(
         listed["result"],
-        json!({"secrets": [{"name": "ok", "set": true, "layer": "system", "used_by": []}]})
+        json!({"secrets": [{"name": "ok", "set": true, "used_by": []}]})
     );
 
     home.write(SECRETS, &format!("deepseek = \"{FAKE}\n"));

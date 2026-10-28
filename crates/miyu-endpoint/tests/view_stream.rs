@@ -175,7 +175,7 @@ async fn a_new_language_draws_the_next_entries() {
         .call(
             "g1",
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "ui.language", "value": "en"}]}),
+            json!({"layer": "system", "changes": [{"key": "ui.language", "value": "en"}]}),
         )
         .await;
     assert!(set.get("result").is_some(), "{set}");

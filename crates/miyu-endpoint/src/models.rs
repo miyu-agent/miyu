@@ -166,14 +166,11 @@ pub(crate) async fn list(
     }
     let now = crate::sessions::now();
     let names = embedding_names(core);
-    let mine = personal_providers(core, account);
     let providers: Vec<Value> = chosen
         .iter()
         .map(|id| {
             let models = only.as_ref().and_then(|only| only.get(id));
-            let mut entry = entry::provider(&data, &snapshot, id, now, &names, models);
-            entry["layer"] = json!(layer_of(id, &mine));
-            entry
+            entry::provider(&data, &snapshot, id, now, &names, models)
         })
         .collect();
     let catalog = data.catalog().map_or(
@@ -296,9 +293,9 @@ pub(crate) fn snapshot(core: &Core, account: &miyu_kernel::id::AccountId) -> Sna
     let config = mine.config();
     let resolved = config.resolved().clone();
     let values = resolved.values();
-    let files = [Layer::System, Layer::Personal]
+    let files = [Layer::System]
         .into_iter()
-        .map(|layer| (layer, config.file(layer).shown.clone()))
+        .map(|layer| (layer, config.file().shown.clone()))
         .collect();
     let secrets = miyu_config::key::names(values.keys(), "providers.<id>", &[])
         .iter()
@@ -375,24 +372,4 @@ pub(crate) fn empty_data() -> Arc<ModelData> {
     );
     data.loaded(None, miyu_session::Observed::default());
     Arc::new(data)
-}
-
-/// 这个人的个人设置里写了的供应商编号（施工 PL-1）。
-fn personal_providers(core: &Core, account: &miyu_kernel::id::AccountId) -> Vec<String> {
-    let mine = core.mine(account);
-    let config = mine.config();
-    miyu_config::key::names(
-        config.personal.parsed.entries.keys().map(String::as_str),
-        "providers.<id>",
-        &[],
-    )
-}
-
-/// 一家供应商在哪一层（施工 PL-1，`model.list` 的 `layer`）：个人设置写了的是 `personal`（自用；两层都写了的那一份逐格盖过
-/// 系统配置），只有系统配置写的、系统那一份的原样（`<编号>@system`）是 `system`（共用）。
-fn layer_of(id: &str, personal: &[String]) -> &'static str {
-    match miyu_config::key::of_system_copy(id).is_none() && personal.iter().any(|mine| mine == id) {
-        true => "personal",
-        false => "system",
-    }
 }

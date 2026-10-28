@@ -63,9 +63,6 @@ pub struct Login {
     /// 存哪一个；不写的在终端里选。
     #[arg(value_name = "NAME")]
     pub name: Option<String>,
-    /// 存进大家共用的那一份，以管理员身份（施工 Y-12 下下）；不写存自己的。
-    #[arg(long)]
-    pub system: bool,
 }
 
 /// `miyu provider list` 的参数。
@@ -82,34 +79,26 @@ pub struct Logout {
     /// 删哪一个；不写的在终端里从设过的里面选。
     #[arg(value_name = "NAME")]
     pub name: Option<String>,
-    /// 从大家共用的那一份删，以管理员身份（施工 Y-12 下下）；不写删自己的。
-    #[arg(long)]
-    pub system: bool,
 }
 
-/// 这一次做什么，在不在管理员模式里（施工 Y-12 下下）。
+/// 这一次做什么。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyArgs {
     /// 做什么。
     pub command: KeyCommand,
-    /// 写了 `--system`。
-    pub system: bool,
 }
 
 impl From<Provider> for KeyArgs {
     fn from(provider: Provider) -> KeyArgs {
         match provider.command {
-            ProviderCommand::Login(Login { name, system }) => KeyArgs {
+            ProviderCommand::Login(Login { name }) => KeyArgs {
                 command: KeyCommand::Login(name),
-                system,
             },
             ProviderCommand::List(ProviderList { format }) => KeyArgs {
                 command: KeyCommand::List(format),
-                system: false,
             },
-            ProviderCommand::Logout(Logout { name, system }) => KeyArgs {
+            ProviderCommand::Logout(Logout { name }) => KeyArgs {
                 command: KeyCommand::Logout(name),
-                system,
             },
         }
     }
@@ -137,8 +126,6 @@ pub struct LoginPlan {
     pub color: bool,
     /// 标准错误上的灰字上不上色。
     pub gray: bool,
-    /// 在管理员模式里存、删大家共用的那一份（`--system`，施工 Y-12 下下）。
-    pub system: bool,
 }
 
 /// 跑一次 `miyu provider` 下面的一个命令，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
@@ -157,7 +144,7 @@ pub fn login(args: KeyArgs, start: impl FnOnce() -> Command) -> ExitCode {
 }
 
 /// 在运行时里：先查参数，找数据根、连上核心，照命令办。
-async fn run(KeyArgs { command, system }: KeyArgs, start: impl FnOnce() -> Command) -> u8 {
+async fn run(KeyArgs { command }: KeyArgs, start: impl FnOnce() -> Command) -> u8 {
     let language = language::current();
     let mut console = crate::config::Terminal::current();
     if let Some(code) = early(&command, language, &console, &mut io::stderr()) {
@@ -184,7 +171,6 @@ async fn run(KeyArgs { command, system }: KeyArgs, start: impl FnOnce() -> Comma
         language,
         color: shown::colored(io::stdout().is_terminal(), no_color.as_deref()),
         gray: shown::colored(io::stderr().is_terminal(), no_color.as_deref()),
-        system,
     };
     login_on(
         connection,

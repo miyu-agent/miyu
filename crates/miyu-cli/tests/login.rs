@@ -99,23 +99,13 @@ fn home() -> Home {
     Home::new(Arc::new(Script::new([])))
 }
 
-/// 办一次，屏幕上没有 key：以管理员身份存进大家共用的那一份（`--system`）。
+/// 办一次，屏幕上没有 key。
 async fn run(home: &Home, language: Language, command: KeyCommand, console: &mut Fake) -> Asked {
-    run_as(home, (language, command, true), console).await
-}
-
-/// 同 [`run`]，`system` 是写不写 `--system`（施工 Y-12 下下）。
-async fn run_as(
-    home: &Home,
-    (language, command, system): (Language, KeyCommand, bool),
-    console: &mut Fake,
-) -> Asked {
     let plan = LoginPlan {
         command,
         language,
         color: false,
         gray: false,
-        system,
     };
     let asked = home.login(&plan, console).await;
     for key in [FAKE, FAKE_2, "sk-FAKE"] {
@@ -401,8 +391,8 @@ async fn the_list_never_shows_a_key() {
     assert_eq!(
         listed,
         serde_json::json!({"secrets": [
-            {"name": "bigmodel-2", "set": true, "layer": "system", "used_by": []},
-            {"name": "deepseek", "set": true, "layer": "system", "used_by": []},
+            {"name": "bigmodel-2", "set": true, "used_by": []},
+            {"name": "deepseek", "set": true, "used_by": []},
         ]})
     );
 }

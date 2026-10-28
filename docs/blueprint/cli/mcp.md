@@ -1,5 +1,7 @@
 ## `miyu mcp`
 
+> **施工 SU-3 上（2026-10-28）**：个人设置那一层、`--system` 选项拿掉了，配置、密钥只有系统那一份。下文讲个人设置、`--system` 的地方作废，以帮助页和参考 `docs/reference/config.md` 为准；正文 SU-6 统一改。
+
 ### 是什么
 
 `miyu mcp login <服务>`：登录一个只认浏览器授权的网址 MCP 服务（施工 X-42 上，`mcp.md`「怎么走」第八条）；`miyu mcp logout <服务>`：登出（施工 X-42 下）。只是协议的客户端：调 `mcp.login`、`mcp.login_finish`、`mcp.logout`，令牌由核心换、存、续，命令行一个字也不经手。

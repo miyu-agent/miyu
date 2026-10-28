@@ -1,5 +1,5 @@
-//! 管理员个人设置里的 MCP 服务（施工 F-9 下，`docs/blueprint/mcp.md`「个人设置里的一张表」第 4 到 7 条）：挂在 `~home` 下，
-//! 写进去就算开着，盖住包里同名的（包里那个不起、它的功能不算）。核心起来时和包里带的一起起；配置服务换上新的一份（个人设置
+//! 系统配置里的 MCP 服务（施工 F-9 下，`docs/blueprint/mcp.md`「系统配置里的一张表」第 4 到 7 条）：挂在 `~home` 下，
+//! 写进去就算开着，盖住包里同名的（包里那个不起、它的功能不算）。核心起来时和包里带的一起起；配置服务换上新的一份（系统配置
 //! 手改了被看到）时照新写的换：新写的起，删掉的停下、工具出目录、包里被它盖住的照包的开关起回来，改了的停下再起。密钥变了的，
 //! 引用它的服务停下再起（施工 X-32 补，`secrets.rs`）。
 
@@ -8,13 +8,13 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use tokio::task::JoinHandle;
 
-use miyu_config::package::{McpServer, PackageKind, Reach, personal_mcp};
+use miyu_config::package::{McpServer, PackageKind, Reach, configured_mcp};
 use miyu_store::scripts::HOME_PACKAGE;
 
 use super::TARGET;
 use crate::Core;
 
-/// 这一刻照着起的服务，照个人设置里写的先后。
+/// 这一刻照着起的服务，照系统配置里写的先后。
 #[derive(Default)]
 pub(crate) struct HomeMcp(Mutex<Arc<Vec<McpServer>>>);
 
@@ -24,7 +24,7 @@ impl HomeMcp {
         Arc::clone(&self.0.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
-    /// 叫 `service` 的服务写在个人设置里：包里同名的被它盖住。
+    /// 叫 `service` 的服务写在系统配置里：包里同名的被它盖住。
     pub(crate) fn covers(&self, service: &str) -> bool {
         self.now().iter().any(|server| server.name == service)
     }
@@ -39,13 +39,13 @@ impl HomeMcp {
 }
 
 impl Core {
-    /// 照手里的个人设置定下有哪几个服务（核心起来时，起包里带的以前：先定下谁盖住谁）。
+    /// 照手里的系统配置定下有哪几个服务（核心起来时，起包里带的以前：先定下谁盖住谁）。
     pub(crate) fn note_home_mcp(&self) {
-        let text = self.config().personal.text.clone();
+        let text = self.config().system.text.clone();
         self.home_mcp.replace(read(&text));
     }
 
-    /// 起个人设置里的服务：在跑、在等的不动。
+    /// 起系统配置里的服务：在跑、在等的不动。
     pub(crate) fn start_home_mcp(self: &Arc<Self>) {
         let dir = home_dir(self);
         for server in self.home_mcp.now().iter() {
@@ -54,7 +54,7 @@ impl Core {
         }
     }
 
-    /// 跟着配置换：配置服务每换上一份新的，照个人设置的字换上，只动变了的；密钥变了的，引用它的服务停下再起（施工 X-32 补）。
+    /// 跟着配置换：配置服务每换上一份新的，照系统配置的字换上，只动变了的；密钥变了的，引用它的服务停下再起（施工 X-32 补）。
     /// 开始时先照手里的这一份对一遍：起来和开始跟着之间的手改也认得。核心没了就停。
     pub fn follow_home_mcp(self: &Arc<Self>) -> JoinHandle<()> {
         let mut config = self.config_now();
@@ -64,7 +64,7 @@ impl Core {
             loop {
                 let (text, prints) = {
                     let now = config.borrow_and_update();
-                    (now.personal.text.clone(), super::secrets::prints(&now))
+                    (now.system.text.clone(), super::secrets::prints(&now))
                 };
                 let Some(alive) = core.upgrade() else {
                     break;
@@ -135,14 +135,14 @@ impl Core {
         tracing::info!(target: TARGET, servers = new.len(), "mcp settings followed");
     }
 
-    /// 重启个人设置里的服务 `name`（施工 F-9 补，`mcp.restart`）：停下、再起，连续失败从零数；工具留在目录里，起好列完照
+    /// 重启系统配置里的服务 `name`（施工 F-9 补，`mcp.restart`）：停下、再起，连续失败从零数；工具留在目录里，起好列完照
     /// 新的换。
     pub(crate) async fn restart_home_mcp(self: &Arc<Self>, name: &str) {
         self.mcp.stop_one(self, HOME_PACKAGE, name).await;
         self.start_home_mcp();
     }
 
-    /// 个人设置里删掉了 `service`：包里带同名服务的，开着（`bundle` 照开关，扩展照它在跑）的起回来。
+    /// 系统配置里删掉了 `service`：包里带同名服务的，开着（`bundle` 照开关，扩展照它在跑）的起回来。
     fn uncover(self: &Arc<Self>, service: &str) {
         for found in self.system_packages().iter() {
             let Ok(manifest) = &found.read else {
@@ -162,21 +162,21 @@ impl Core {
     }
 }
 
-/// 读个人设置的字 `text` 里的服务：写错的各记一行 `WARN mcp settings problem`，不收。
+/// 读系统配置的字 `text` 里的服务：写错的各记一行 `WARN mcp settings problem`，不收。
 fn read(text: &str) -> Vec<McpServer> {
-    let (servers, problems) = personal_mcp(text);
+    let (servers, problems) = configured_mcp(text);
     for problem in &problems {
         tracing::warn!(target: TARGET, line = problem.line, code = problem.code.as_str(), detail = problem.detail.as_str(), "mcp settings problem");
     }
     servers
 }
 
-/// 个人设置里的服务 `service` 的状态变了，报给订阅着的连接的那个键：`~home/<服务名>`（施工 F-9 补）。
+/// 系统配置里的服务 `service` 的状态变了，报给订阅着的连接的那个键：`~home/<服务名>`（施工 F-9 补）。
 pub(super) fn changed(service: &str) -> String {
     format!("{HOME_PACKAGE}/{service}")
 }
 
-/// 推送的键 `key` 是个人设置里哪个服务的；不是的没有。
+/// 推送的键 `key` 是系统配置里哪个服务的；不是的没有。
 pub(crate) fn server_of(key: &str) -> Option<&str> {
     key.strip_prefix(HOME_PACKAGE)?.strip_prefix('/')
 }

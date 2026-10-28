@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use miyu_config::package::personal_mcp;
+use miyu_config::package::configured_mcp;
 
 use super::{changed, uses};
 
@@ -32,7 +32,7 @@ fn set_deleted_and_changed_values_count() {
 
 #[test]
 fn a_server_uses_the_secrets_it_references() {
-    let (servers, problems) = personal_mcp(
+    let (servers, problems) = configured_mcp(
         "[mcp.remote]\nurl = \"https://mcp.example.com/mcp\"\nbearer = { secret = \"t\" }\nheaders = { X-Key = { secret = \"k\" } }\n\n[mcp.local]\ncommand = [\"x\"]\nenv = { A = { secret = \"a\" }, B = { env = \"t\" }, C = \"t\" }\n",
     );
     assert!(problems.is_empty(), "{problems:?}");

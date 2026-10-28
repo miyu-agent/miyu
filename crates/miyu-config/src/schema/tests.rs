@@ -1,9 +1,9 @@
 //! JSON Schema 的样子：只有能放进这一层的项，键照段分成一层层的表，格照字母先后，两格缩进，最后一个换行；缺字报
 //! 缺了哪一句。和出厂的清单、资源生成的样本逐字节比，在 `miyu-core/tests/settings.rs`：这里拿不到上层的清单。
 
-use crate::item::Layer;
+use crate::item::{Item, Layer};
 use crate::schema::render;
-use crate::test_support::{item, system_only, words};
+use crate::test_support::{item, words};
 use crate::words::Missing;
 
 const SYSTEM: &str = r#"{
@@ -15,7 +15,7 @@ const SYSTEM: &str = r#"{
           "properties": {
             "c": {
               "default": "x",
-              "description": "a.b.c 的说明。能写：x 或 y。只能写在系统配置或个人设置里。立即生效。",
+              "description": "a.b.c 的说明。能写：x 或 y。只能写在系统配置或项目配置里。立即生效。",
               "enum": [
                 "x",
                 "y"
@@ -44,7 +44,7 @@ const SYSTEM: &str = r#"{
 }
 "#;
 
-const PERSONAL: &str = r#"{
+const PROJECT: &str = r#"{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "a": {
@@ -53,7 +53,7 @@ const PERSONAL: &str = r#"{
           "properties": {
             "c": {
               "default": "x",
-              "description": "a.b.c 的说明。能写：x 或 y。只能写在系统配置或个人设置里。立即生效。",
+              "description": "a.b.c 的说明。能写：x 或 y。只能写在系统配置或项目配置里。立即生效。",
               "enum": [
                 "x",
                 "y"
@@ -75,22 +75,25 @@ const PERSONAL: &str = r#"{
 #[test]
 fn each_layer_gets_its_own_items_as_nested_tables() {
     let items = [
-        system_only(item("a.d", &["on", "off"], "on")),
-        item("a.b.c", &["x", "y"], "x"),
+        item("a.d", &["on", "off"], "on"),
+        Item {
+            layers: &[Layer::System, Layer::Project],
+            ..item("a.b.c", &["x", "y"], "x")
+        },
     ];
     let words = words(&items);
     assert_eq!(render(&items, Layer::System, &words).as_deref(), Ok(SYSTEM));
     assert_eq!(
-        render(&items, Layer::Personal, &words).as_deref(),
-        Ok(PERSONAL)
+        render(&items, Layer::Project, &words).as_deref(),
+        Ok(PROJECT)
     );
 }
 
 #[test]
 fn a_layer_with_nothing_is_an_empty_object() {
-    let items = [system_only(item("a.d", &["on", "off"], "on"))];
+    let items = [item("a.d", &["on", "off"], "on")];
     assert_eq!(
-        render(&items, Layer::Personal, &words(&items)).as_deref(),
+        render(&items, Layer::Project, &words(&items)).as_deref(),
         Ok(
             "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"properties\": {},\n  \"type\": \"object\"\n}\n"
         )
@@ -126,7 +129,7 @@ fn a_switch_is_a_boolean_without_an_enum() {
         ..item("permission.start_read_only", &[], "")
     };
     let items = [switch];
-    let schema = render(&items, Layer::Personal, &words(&items)).expect("字齐全");
+    let schema = render(&items, Layer::System, &words(&items)).expect("字齐全");
     let json: serde_json::Value = serde_json::from_str(&schema).expect("是 JSON");
     let leaf = &json["properties"]["permission"]["properties"]["start_read_only"];
     assert_eq!(leaf["type"], "boolean");

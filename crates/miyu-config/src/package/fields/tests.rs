@@ -88,7 +88,7 @@ fn every_capability_is_in_the_authors_docs() {
     assert!(missing.is_empty(), "{}", missing.join("\n"));
 }
 
-/// 一个 MCP 服务的每一格都写进了中英两份 `mcp`（施工 X-48）：清单的 `[[mcp]]`、个人设置里的服务同一套格（[`MCP`]），作者照
+/// 一个 MCP 服务的每一格都写进了中英两份 `mcp`（施工 X-48）：清单的 `[[mcp]]`、系统配置里的服务同一套格（[`MCP`]），作者照
 /// `mcp.md` 写，那里少一格就报红。
 #[test]
 fn every_mcp_field_is_in_the_mcp_docs() {

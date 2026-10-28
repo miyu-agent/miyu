@@ -1,7 +1,7 @@
 //! 头改个人设置里的 MCP 服务（施工 X-26，`docs/blueprint/mcp.md`「个人设置里的一张表」第 2 条：头要做编辑页的另给方法）：
 //! `mcp.set` 加上或者整条换掉一张 `[mcp.<名字>]`，`mcp.remove` 删掉一张。只给本机的人用。
 //!
-//! 写之前照读服务表的规矩查这一张（[`personal_mcp`]：名字的写法、命令不空、给哪种会话、时限……），写法照 `config.set`
+//! 写之前照读服务表的规矩查这一张（[`configured_mcp`]：名字的写法、命令不空、给哪种会话、时限……），写法照 `config.set`
 //! 的（`config/rewrite.rs`：带版本，不覆盖同时的手改）。写成了，正在跑的服务照「个人设置变了」那条路换（`home.rs` 的
 //! `follow_home_mcp`）：新写的起，改了的停下再起，删掉的停下、包里被它盖住的起回来。
 //!
@@ -11,7 +11,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use miyu_config::Layer;
-use miyu_config::package::{Problem, personal_mcp};
+use miyu_config::package::{Problem, configured_mcp};
 use miyu_kernel::id::CommandId;
 use miyu_store::human::Human;
 
@@ -99,11 +99,11 @@ pub(crate) fn set(
         clicall: params.clicall,
     };
     let block = written::block(&entry).ok_or(Refusal::BAD_PARAMS)?;
-    if let Some(problem) = personal_mcp(&block).1.first() {
+    if let Some(problem) = configured_mcp(&block).1.first() {
         return Err(invalid(&words, problem));
     }
     let carried = !super::home::carrying(core, &name).is_empty();
-    rewrite(core, peer, cause, Layer::Personal, |text| {
+    rewrite(core, peer, cause, Layer::System, |text| {
         match written::has(text, &name) {
             None => return Err(Unwritten::Blocked),
             Some(false) if carried => return Err(Refusal::SERVER_FROM_PACKAGE.into()),
@@ -124,11 +124,11 @@ pub(crate) fn set(
     Ok(json!({ "name": name }))
 }
 
-/// `mcp.remove`：从个人设置里删掉这一张，回应 `{}`。
+/// `mcp.remove`：从系统配置里删掉这一张，回应 `{}`。
 ///
 /// # Errors
 ///
-/// 个人设置里没写这个名字的 `unknown_server`；个人设置读不进来、`mcp` 写成了放不下的样子的 `config_file_broken`；别的同
+/// 系统配置里没写这个名字的 `unknown_server`；系统配置读不进来、`mcp` 写成了放不下的样子的 `config_file_broken`；别的同
 /// `config.set`。
 pub(crate) fn remove(
     core: &Core,
@@ -141,7 +141,7 @@ pub(crate) fn remove(
         core,
         peer,
         cause,
-        Layer::Personal,
+        Layer::System,
         |text| match written::has(text, &name) {
             None => Err(Unwritten::Blocked),
             Some(false) => Err(Refusal::UNKNOWN_SERVER.into()),

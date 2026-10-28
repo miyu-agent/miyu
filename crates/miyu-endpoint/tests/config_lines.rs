@@ -25,7 +25,7 @@ async fn the_about_text_keeps_its_line_breaks() {
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "profile.about", "value": "喜欢猫\n写 Rust"}]}),
+        json!({"layer": "system", "changes": [{"key": "profile.about", "value": "喜欢猫\n写 Rust"}]}),
     )
     .await;
     assert_eq!(
@@ -35,7 +35,7 @@ async fn the_about_text_keeps_its_line_breaks() {
     let reply = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [{"key": "profile.name", "value": "小\n林"}]}),
+        json!({"layer": "system", "changes": [{"key": "profile.name", "value": "小\n林"}]}),
     )
     .await;
     assert!(reply.get("error").is_some(), "称呼还是一行：{reply}");

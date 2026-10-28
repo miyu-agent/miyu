@@ -122,12 +122,12 @@ Chinese version: [errors.md](errors.md).
 | `not_restartable`, `package_off` | Nothing to restart; it's off | |
 | `extension_off` | Restarting an extension that's off | |
 | `port_taken` | Another extension has claimed the port (`port.claim`); it doesn't say which | |
-| `unknown_server` | No such MCP server in personal settings | |
+| `unknown_server` | No such MCP server in the system config | |
 | `oauth_unregistered`, `oauth_failed` | `mcp.login`: no client and no dynamic registration; the login can't go through (`mcp.login_finish`: the pasted address doesn't match) | `why` |
 | `not_logged_in` | `mcp.logout`: this server was never logged in | |
 | `not_waiting` | `mcp.login_finish`: no login is waiting for this server | |
 | `mcp_invalid` | The server sent to `mcp.set` is badly written | `problem` |
-| `server_from_package` | `mcp.set`: personal settings have no server by that name and a package brings one | |
+| `server_from_package` | `mcp.set`: the system config has no server by that name and a package brings one | |
 | `unknown_skill` | `skill.remove`: no such skill | `name` |
 | `skill_from_package` | `skill.remove`: a skill that comes with a package cannot be deleted | `name` |
 | `no_page`, `not_found` | No package page; no such file | |

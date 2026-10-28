@@ -193,8 +193,7 @@ fn name(snapshot: &Snapshot, id: &str, catalog: Option<&str>) -> Value {
         });
     let mut name = written.unwrap_or_else(|| match catalog {
         Some(name) => json!({"value": name, "from": "catalog"}),
-        // 共用那份照原编号叫（施工 PL-1 修）：哪一份由 `layer` 说。
-        None => json!({"value": miyu_config::key::of_system_copy(id).unwrap_or(id), "from": "id"}),
+        None => json!({"value": id, "from": "id"}),
     });
     name["key"] = json!(key);
     name

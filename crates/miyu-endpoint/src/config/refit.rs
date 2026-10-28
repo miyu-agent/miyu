@@ -13,16 +13,12 @@ use super::{Config, TARGET};
 use crate::Core;
 
 impl Config {
-    /// 换上清单 `items`：两层照手里的字重新认，最终值跟着重算。交回换以前的两层。带 `env` 的只有核心自己的项（`log.level`），
-    /// 换了清单也还在：起来时取的环境变量照旧。
-    fn refit(&mut self, items: Vec<Item>) -> [File; 2] {
+    /// 换上清单 `items`：系统配置照手里的字重新认，最终值跟着重算。交回换以前的那一份。带 `env` 的只有核心自己的项
+    /// （`log.level`），换了清单也还在：起来时取的环境变量照旧。
+    fn refit(&mut self, items: Vec<Item>) -> [File; 1] {
         self.items = items;
         let system = self.system.refit(&self.items);
-        let personal = self.personal.refit(&self.items);
-        let old = [
-            std::mem::replace(&mut self.system, system),
-            std::mem::replace(&mut self.personal, personal),
-        ];
+        let old = [std::mem::replace(&mut self.system, system)];
         self.resolved = self.merged(None);
         old
     }
@@ -37,7 +33,7 @@ pub(crate) fn refit(core: &Core, items: Vec<Item>) {
     let old = config.refit(items);
     let mut pushed = false;
     for old in &old {
-        let new = config.file(old.layer);
+        let new = config.file();
         let changes = differences(old, new);
         if changes.is_empty() && old.problems().eq(new.problems()) {
             continue;

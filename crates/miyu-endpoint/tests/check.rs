@@ -37,8 +37,10 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
     home.write("system/secrets.toml", "DeepSeek = \"sk-x\"\n");
     let mut client = connected(&home).await;
     // 核心起来以后才改的：照磁盘上现在的查。
-    home.write("system/config.toml", "[ui]\nlanguage = \"klingon\"\n");
-    home.write("home/alice/settings.toml", "x.y = 1\n");
+    home.write(
+        "system/config.toml",
+        "x.y = 1\n[ui]\nlanguage = \"klingon\"\n",
+    );
     home.write("home/alice/personas/miyu/persona.toml", "[voice]\n");
     home.write(
         "home/alice/personas/miyu/prompts/examples.md",
@@ -50,7 +52,7 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
         .as_array()
         .cloned()
         .unwrap_or_default();
-    // 写了 `cwd` 的连它的项目配置一起查，排在个人设置后面。
+    // 写了 `cwd` 的连它的项目配置一起查，排在系统配置后面。
     let project = home.work.join(".miyu").join("config.toml");
     std::fs::create_dir_all(project.parent().unwrap()).unwrap();
     std::fs::write(&project, "[ui]\nlanguage = \"zh\"\n").unwrap();
@@ -77,16 +79,16 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
             (
                 "config".into(),
                 "system/config.toml".into(),
-                "not_an_option".into(),
-                "error".into(),
-                Some(2)
-            ),
-            (
-                "config".into(),
-                "home/alice/settings.toml".into(),
                 "unknown_key".into(),
                 "warning".into(),
                 Some(1)
+            ),
+            (
+                "config".into(),
+                "system/config.toml".into(),
+                "not_an_option".into(),
+                "error".into(),
+                Some(3)
             ),
             (
                 "secrets".into(),
@@ -131,29 +133,21 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
 async fn one_file_is_checked_by_where_it_is() {
     let home = Home::new();
     let mut client = connected(&home).await;
-    home.write(
-        "home/alice/settings.toml",
-        "[external.bindings]\n\"qq:1\" = \"alice\"\n",
-    );
     home.write("home/alice/personas/miyu/prompts/examples.md", "user: a\n");
     home.write("system/config.toml", "[ui]\nlanguage = \"klingon\"\n");
     let root = home.root.path();
     let path = |relative: &str| root.join(relative).to_string_lossy().into_owned();
-    let personal = client
-        .call(
-            "k1",
-            "check",
-            json!({"file": path("home/alice/settings.toml")}),
-        )
+    let system = client
+        .call("k1", "check", json!({"file": path("system/config.toml")}))
         .await;
-    let seen: Vec<_> = personal["result"]["problems"]
+    let seen: Vec<_> = system["result"]["problems"]
         .as_array()
         .unwrap()
         .iter()
         .map(brief)
         .collect();
-    assert_eq!(seen.len(), 1, "只查那一份：{personal}");
-    assert_eq!(seen[0].2, "wrong_layer", "{personal}");
+    assert_eq!(seen.len(), 1, "只查那一份：{system}");
+    assert_eq!(seen[0].2, "not_an_option", "{system}");
     let examples = client
         .call(
             "k2",

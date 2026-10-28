@@ -53,7 +53,7 @@ fn created(home: &Home, session: &str) -> miyu_kernel::event::SessionCreated {
 }
 
 #[tokio::test]
-async fn without_a_preset_the_default_is_used_personal_over_system() {
+async fn without_a_preset_the_default_is_used() {
     let home = Home::new();
     mine(&home, "mine", "[preset]\nunlisted = \"off\"\n");
     let script = Script::new([]);
@@ -64,8 +64,8 @@ async fn without_a_preset_the_default_is_used_personal_over_system() {
     home.write("system/config.toml", "[preset]\ndefault = \"dev\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let second = made(&create(&mut client, "c2", json!({"cwd": "~"})).await);
-    // 个人设置写了 mine，压着系统配置。
-    home.write("home/alice/settings.toml", "[preset]\ndefault = \"mine\"\n");
+    // 系统配置改成 mine。
+    home.write("system/config.toml", "[preset]\ndefault = \"mine\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let third = made(&create(&mut client, "c3", json!({"cwd": "~"})).await);
     // 指定的压着默认。

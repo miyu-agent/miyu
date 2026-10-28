@@ -19,7 +19,7 @@ use super::TARGET;
 /// `config.changed` 的 `body`：哪一层、哪个文件、怎么改的、这一层真变了的那几项。
 #[derive(Debug, Serialize)]
 pub(super) struct ConfigChanged<'a> {
-    /// `system`、`personal`。
+    /// `system`（SU-3 上起只有这一层）。
     pub(super) layer: &'a str,
     /// 给人看的写法，相对数据根。
     pub(super) file: &'a str,

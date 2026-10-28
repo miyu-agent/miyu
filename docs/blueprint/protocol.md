@@ -134,9 +134,9 @@
 | `protocol` | 选定的主版本：`1`，核心只支持这一个 |
 | `core` | `{"version": <核心的版本号>}` |
 | `host` | `{"home": <系统的家目录>, "platform": "linux" 或 "macos" 或 "windows", "workspace": <默认工作区>, "dirs": <照 XDG 的几处>}`（施工 W-3，`web-module.md`「四、路径」）：`home` 是核心起来时拿到的系统的家目录，照原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是默认工作区，换成真实的位置（核心起来时就建好了，握手不另外建）。远程的连接整个没有，扩展的没有 `dirs` |
-| `language` | `zh`、`en`、`ja` 之一：这个连接给人看的字用哪种（施工 8-2，`config.md` 第二条第 8 条）。`ui.language` 的最终值（默认值、系统配置、个人设置）定了的就是它，`auto` 的照 `locale`。`ui.language` 改了，连接下一句就照新的说，不用再握手（施工 8-4）：回应里这一格只是握手那一刻的。核心拒绝时的话只有中文、英文，`ja` 的照英文；配置的名字、说明、报错的话有日文 |
+| `language` | `zh`、`en`、`ja` 之一：这个连接给人看的字用哪种（施工 8-2，`config.md` 第二条第 8 条）。`ui.language` 的最终值（默认值、系统配置）定了的就是它，`auto` 的照 `locale`。`ui.language` 改了，连接下一句就照新的说，不用再握手（施工 8-4）：回应里这一格只是握手那一刻的。核心拒绝时的话只有中文、英文，`ja` 的照英文；配置的名字、说明、报错的话有日文 |
 | `view` | 视图投影的版本，现在是 `1`（施工 9-8 中，`view.md`「握手」）：有它的核心能在 `view.page` 交条目；没有的是旧核心，头照旧照事件自己算。条目的格只加不改，改了已有的格才加一 |
-| `config_errors` | 系统配置、个人设置、密钥文件（施工 8-5）里现在有几处错误（不算警告，施工 8-2）。没有的不写 |
+| `config_errors` | 系统配置、密钥文件（施工 8-5）里现在有几处错误（不算警告，施工 8-2）。没有的不写 |
 | `config` | 只有核心拉起的扩展的连接有（施工 9-4 下下，`extensions.md`「配置」）：这个包自己的配置项的最终值，密钥是真值；之后变了推 `extension.config`（`{"keys": {键: 新值或 null}}`） |
 | `setup` | `true`：用一次性码连上的，只能设访问密码（施工 W-8）。别的不写 |
 | `password_set` | 设过访问密码没有（施工 SU-1 补）：头照它决定「允许局域网访问」开不开得了 |
@@ -201,8 +201,8 @@
 | `package.owns`、`package.check` | 一个路径归哪个包；装好的文件改了、少了、多了（施工 F-8 中下，`packages.md`「本地库」） |
 | `package.enable`、`package.disable` | 软件包列表上的开关：照种类开关扩展的进程、`bundle` 带的 MCP 服务（施工 X-3 上），或者卸掉、装回来出厂的内置包（施工 F-6 上，`package-pages.md`「开关」） |
 | `package.restart` | 重启扩展的进程和它带的 MCP 服务、`bundle` 带的服务（施工 X-4，`package-pages.md`「开关」） |
-| `mcp.list`、`mcp.restart` | 管理员个人设置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「个人设置里的一张表」） |
-| `mcp.set`、`mcp.remove` | 管理员个人设置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
+| `mcp.list`、`mcp.restart` | 系统配置里的 MCP 服务：这时的状态、重启一个（施工 F-9 补，下面「`mcp.*`」，`mcp.md`「系统配置里的一张表」） |
+| `mcp.set`、`mcp.remove` | 系统配置里加上或整条换掉、删掉一个 MCP 服务（施工 X-26，下面「`mcp.*`」） |
 | `skill.list` | 列出核心这一刻用得上的技能：名字、给人看的名字和说明、从哪来、`SKILL.md` 在哪（施工 X-26，`skills.md`「技能」）；全局开关 `on`（施工 X-27） |
 | `skill.remove` | 删管理员自己放的技能，几个一起，整个文件夹挪进回收站；随包来的不能删（施工 W-13，网页的技能页） |
 | `script.list` | 列出登记上的脚本：工具名、给人看的名字和说明、从哪来、文件在哪、时限、全局开关（施工 X-27，`skills.md`「脚本」） |
@@ -241,7 +241,7 @@
 | `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）；列表带选项的可以带 `ticks: "unlisted"`：勾着的是不在值里的，头照它反着画（施工 5-15 再补） |
 | `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
 | `config.check` | 把一段字当成一层的配置查，不生效（施工 8-2） |
-| `config.set` | 在系统配置或个人设置里改一项或几项、恢复默认，或者整份换掉；只动那几项，落了盘、记了日志才回应（施工 8-3）；扩展进程调回 `local_only`（施工 T-9），只有系统配置里自己包编号开头、不是密钥、不写成引用的几项能逐项改，留痕记成这个包（施工 T-9 补，`config.md`「协议」） |
+| `config.set` | 在系统配置里改一项或几项、恢复默认，或者整份换掉；只动那几项，落了盘、记了日志才回应（施工 8-3）；扩展进程调回 `local_only`（施工 T-9），只有系统配置里自己包编号开头、不是密钥、不写成引用的几项能逐项改，留痕记成这个包（施工 T-9 补，`config.md`「协议」） |
 | `config.trust` | 信任、不信任一份项目配置，带人看过的那一份的版本（施工 8-3）；扩展进程调回 `local_only`（施工 T-9） |
 | `secret.set` | 写入或者换掉一个密钥（`name`、`value`），落了盘、记了日志才回应 `{"replaced"}`（施工 8-5，`config.md`「协议」）；扩展进程调回 `local_only`（施工 T-9） |
 | `secret.delete` | 删掉一个密钥（`name`），回应 `{}`（施工 8-5）；扩展进程调回 `local_only`（施工 T-9） |
@@ -680,9 +680,9 @@
 | `cwd` | 字符串，可以不写 | 头现在的工作目录：照它找项目配置，相对的 `file` 照它接 |
 | `file` | 字符串，可以不写 | 只查这一份 |
 
-回应 `{"problems": [...]}`（不写 `file` 的另带 `embedding`，第 5 条），一处一格：`kind`（`config`、`secrets`、`persona`、`preset`（施工 P-2 上）、`package`（施工 9-1 上）、`script`、`skill`（施工 X-12 下）、`mcp`（个人设置里的 MCP 服务写错了、盖住了包里同名的，施工 F-9 上））、`file`（照 `config.get` 的写法：数据根里的相对数据根，项目配置 `~/…`，出厂的人格写真的路径）、`code`、`level`（`error`、`warning`）、`message`（照这个连接的语言，带改法）；有行列的带 `line`、`column`（人格的只有 `line`），配置的另带 `key`、`got`、`suggest`、`using`，和 `config.get` 的问题一样。
+回应 `{"problems": [...]}`（不写 `file` 的另带 `embedding`，第 5 条），一处一格：`kind`（`config`、`secrets`、`persona`、`preset`（施工 P-2 上）、`package`（施工 9-1 上）、`script`、`skill`（施工 X-12 下）、`mcp`（系统配置里的 MCP 服务写错了、盖住了包里同名的，施工 F-9 上））、`file`（照 `config.get` 的写法：数据根里的相对数据根，项目配置 `~/…`，出厂的人格写真的路径）、`code`、`level`（`error`、`warning`）、`message`（照这个连接的语言，带改法）；有行列的带 `line`、`column`（人格的只有 `line`），配置的另带 `key`、`got`、`suggest`、`using`，和 `config.get` 的问题一样。
 
-1. 不写 `file`：系统配置、管理员的个人设置、`cwd` 的项目配置（没写 `cwd` 的不查）照磁盘上现在的字查（还没有的跳过，读不了的报 `unreadable`、`too_big`、`not_utf8`）；密钥文件照核心手里的问题（字是密钥，不另读）；三层里每个人格的 `persona.toml`、`prompts/examples.md`、每一份预设（施工 P-2 上）各层各查各的，上面一层盖住了照样报；软件包清单（施工 9-1 上）；有 `[check]` 的包自己的检查（施工 9-2，`packages.md`「怎么走」第 6 条：核心照起来时读到的清单跑包里的程序，收它一行一个的问题；跑坏了、程序没找到、印了看不懂的行各报一条警告 `check_failed`、`check_unavailable`、`check_output`）。照这个先后：配置、密钥、人格（层、路径）、预设（层、路径）、清单、包自己的检查（包的编号）。
+1. 不写 `file`：系统配置、`cwd` 的项目配置（没写 `cwd` 的不查）照磁盘上现在的字查（还没有的跳过，读不了的报 `unreadable`、`too_big`、`not_utf8`）；密钥文件照核心手里的问题（字是密钥，不另读）；三层里每个人格的 `persona.toml`、`prompts/examples.md`、每一份预设（施工 P-2 上）各层各查各的，上面一层盖住了照样报；软件包清单（施工 9-1 上）；有 `[check]` 的包自己的检查（施工 9-2，`packages.md`「怎么走」第 6 条：核心照起来时读到的清单跑包里的程序，收它一行一个的问题；跑坏了、程序没找到、印了看不懂的行各报一条警告 `check_failed`、`check_unavailable`、`check_output`）。照这个先后：配置、密钥、人格（层、路径）、预设（层、路径）、清单、包自己的检查（包的编号）。
 2. 写了 `file`：照它的真实位置认是哪一种、只查那一份；某个目录下的 `.miyu/config.toml` 当项目配置查（不在 `cwd` 下面也行）；人格目录里写了文件、某一层 `presets/` 下的 `<编号>.toml`（施工 P-2 上），文件还没有的报 `unreadable`。认不出的：`unknown_file`。
 3. 人格的代码：`syntax`、`unknown_table`、`not_a_table`、`unknown_key`、`not_phrases`、`unknown_language`、`empty_phrase`、`first_line`、`take_turns`、`last_line`、`empty_line`；给人看的那一句在 `core/human/<语言>.json` 的 `persona-problems/<code>`，照 `detail`（表名、键、`persona.<格>.<语言>`，读不成 TOML 的是它的原话）填。
 4. 预设的代码（施工 P-2 上）：`syntax`、`unknown_table`、`not_a_table`、`unknown_key`、`not_phrases`、`unknown_language`、`empty_phrase`、`bad_persona`、`bad_unlisted`、`bad_software`、`not_bool`、`bad_tool`、`not_false`；给人看的那一句在 `preset-problems/<code>`，照 `detail`（表名、`<表>.<键>`、`preset.<格>.<语言>`）填。
@@ -752,7 +752,7 @@
 
 **`package.list`**（施工 9-1 上，`packages.md`「协议」）
 
-不带参数。回应 `{"packages": [...]}`：核心手里这时的两层清单（出厂的、装上的），照编号排。每一项的格子见 `packages.md` 的表：读成了的有 `kind`、`protocol`、`name`、`state`，写了的有 `version`、`summary`、`command`、`opens`、`pages_dir`、`process`、`check`；施工 F-1 起，必需的有 `required`，内置包、扩展包有 `features`（没写的照包算一个），写了的有 `connection`、`depends`、`recommends`、`worker`，`kind` 多 `builtin`、`worker`；施工 F-7 起 `kind` 多 `mascot`（吉祥物包），这一种没有 `protocol`、多 `mascot: {"model"}`（`packages.md`「吉祥物包」）；`theme`（主题包，施工 F-16），同样没有 `protocol`、多 `theme: {"file"}`（`packages.md`「主题包」）；施工 F-8 上补起清单不写种类，`kind` 照带的表推出来，形状不变，带程序的包多带了吉祥物的照程序那一种、另有 `mascot`；施工 X-2 起 `kind` 多 `bundle`（不带程序、带 MCP 服务的包，不说协议），带 MCP 服务的（扩展包、`bundle`）多 `mcp: [{"name", "command", "venues", "state", "failures", …}]`（施工 X-4 起每一格同 `extension.status` 的一项带这个服务这时的状态：`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；状态变了推 `package.changed`；施工 F-9 补起被管理员个人设置里同名的服务盖住的那一格带 `covered: true`，`state` 照旧是 `off`，服务全被盖住的包那一项也带 `covered: true`），`features` 里每个服务一个 `mcp-<服务名>`（`packages.md`「MCP 服务」）；写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言）和有的话 `line`；协议版本对不上的照样带全，多 `code: "protocol_mismatch"` 和 `problem`。名字、说明照连接的语言挑。经 `package.install`、`package.remove` 装卸的当场换（施工 F-5）；手改了磁盘上的清单的要重启核心才认。施工 F-6 上起每一项多 `icon`（写了的）、`page`（有后台页的）、`status`、`enabled`（有开关的），见 `package-pages.md`；施工 F-18 上起写了图标、合规矩的多 `logo`（图标的版本，图用 `package.logo` 读）。
+不带参数。回应 `{"packages": [...]}`：核心手里这时的两层清单（出厂的、装上的），照编号排。每一项的格子见 `packages.md` 的表：读成了的有 `kind`、`protocol`、`name`、`state`，写了的有 `version`、`summary`、`command`、`opens`、`pages_dir`、`process`、`check`；施工 F-1 起，必需的有 `required`，内置包、扩展包有 `features`（没写的照包算一个），写了的有 `connection`、`depends`、`recommends`、`worker`，`kind` 多 `builtin`、`worker`；施工 F-7 起 `kind` 多 `mascot`（吉祥物包），这一种没有 `protocol`、多 `mascot: {"model"}`（`packages.md`「吉祥物包」）；`theme`（主题包，施工 F-16），同样没有 `protocol`、多 `theme: {"file"}`（`packages.md`「主题包」）；施工 F-8 上补起清单不写种类，`kind` 照带的表推出来，形状不变，带程序的包多带了吉祥物的照程序那一种、另有 `mascot`；施工 X-2 起 `kind` 多 `bundle`（不带程序、带 MCP 服务的包，不说协议），带 MCP 服务的（扩展包、`bundle`）多 `mcp: [{"name", "command", "venues", "state", "failures", …}]`（施工 X-4 起每一格同 `extension.status` 的一项带这个服务这时的状态：`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；状态变了推 `package.changed`；施工 F-9 补起被系统配置里同名的服务盖住的那一格带 `covered: true`，`state` 照旧是 `off`，服务全被盖住的包那一项也带 `covered: true`），`features` 里每个服务一个 `mcp-<服务名>`（`packages.md`「MCP 服务」）；写错的、撞了的、读不了的只有 `package`、`layer`、`code`、`problem`（照连接的语言）和有的话 `line`；协议版本对不上的照样带全，多 `code: "protocol_mismatch"` 和 `problem`。名字、说明照连接的语言挑。经 `package.install`、`package.remove` 装卸的当场换（施工 F-5）；手改了磁盘上的清单的要重启核心才认。施工 F-6 上起每一项多 `icon`（写了的）、`page`（有后台页的）、`status`、`enabled`（有开关的），见 `package-pages.md`；施工 F-18 上起写了图标、合规矩的多 `logo`（图标的版本，图用 `package.logo` 读）。
 
 回应顶上多一格 `groups`（施工 BS-1 下，设计 44 第三节第 2 条）：出厂组表 `resources/packages/groups.toml` 里的每个组 `{"id", "name", "summary"?}`，名字、说明照连接的语言挑；每一项多一格 `groups`（清单写的组，只有出厂的内置包有），头照它把组里的包收在一起。
 
@@ -775,7 +775,7 @@
   - 看一眼（`preview: true`）只照索引说，不下载：`{"package", "version", "official", "origin", "capabilities", "provides", "download", "with", "replaces"?}`：`download` 是要下的字节数（连依赖），`with` 是一起装的依赖 `[{"package", "version"}]`，同编号已经装着的带 `replaces: {"version"}`。
   - 拒绝：编号不合写法的 `bad_params`；索引里没有的 `unknown_package`；索引里也找不到的依赖 `depends_missing`（`data.missing`）；没有本机能用的文件 `wrong_target`；哪一处都没下成 `download_failed`（`data.why` 是每一处的原因，英文，照先后用 `; ` 接起来；前面已经装好的依赖留着）；拿不到索引的同 `package.sync`；装的时候的拒绝同装包文件。
 - `package.remove {"package"}`：装上的删掉；出厂的记一笔。回应 `{"package", "removed": true}`。
-- 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置、个人设置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
+- 带 `preview: true` 的只看一眼、什么都不动（施工 F-8 下补，`packages.md`「装卸」第 8 条）：拒绝照真做的那一样。`package.install` 回 `package`、写了的 `version`，同编号已经装了的 `replaces: {"version"}`（原来没写版本的是 `null`），装回出厂的 `restores: true`；带了什么：`program`（`ui`、`process`、`worker`、`builtin`，只带吉祥物的、`bundle` 没有）、`mcp`（带的 MCP 服务的名字，施工 X-2）、`command`（子命令名）、`page`、`mascot`、`theme`、`connection`（平台名）、`system_account`、`settings`（几项）、`capabilities`（同 `extension.status` 那一格）；从路径装的另有 `files`（几个文件）、`size`（字节）。没有的不写。`package.remove` 回 `package`、`layer`、写了的 `version`，家目录里的 `files`、`size`；`settings` 是系统配置里写了的这个包的键（要一并删掉的），`state` 是有没有状态目录。
 - 拒绝：参数不对、两个都写、路径不是绝对的 `.toml` 的 `bad_params`；读不了的 `path_unreadable`；写错的、拷进去以后读坏了的 `package_invalid`（`data.problem` 照连接的语言说一句，知道第几行的带 `data.line`，什么都不留）；编号和人占着的名字撞了的 `package_id_taken`（施工 Y-5 中下：用户名、`admin`、`users`；升级同一个包不算）；带的名字和装着的别的包撞了的 `package_conflict`（施工 F-8 六补，`packages.md`「冲突」：`data.conflicts` 一处一条 `{"kind", "name", "package"}`，`kind` 是 `persona`、`preset`（施工 P-11 下：人格、预设还和出厂、系统区、家目录里有的比，撞了那一层的这一条不写 `package`、写 `layer`：`shipped`、`system`、`home`）、`command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补），什么都不动；看一眼、装回出厂的也查）；和出厂的同编号的 `package_exists`；包文件解不开的（不是 zstd 压的 tar、有链接、路径跑到外面、不止一个最上层文件夹、太大）`package_file_bad`（施工 G-1）；清单写了 `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1，包目录、包文件一样）；没装的、没卸过的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 删了）。扩展自己调回 `local_only`。
 
 **`package.sync`**（施工 G-3 上，设计 `37-软件源.md` 第四节第 1、2 条、第五节）
@@ -1230,17 +1230,17 @@
 2. 之后推 `package.changed`：`{"package": <编号>, "entry": <一项>}`，头照编号整项替换；列表里没有了的（家目录里装的卸掉了）`entry` 是 `null`。卸掉的出厂包照旧列着，`entry` 带 `removed: true`。
 3. 什么时候推：核心重读清单的前后（装、升级、卸、装回、关掉出厂的内置包，哪个连接、命令行做的都算），照英文各算一份每个包在列表里的样子，多了的、少了的、变了的各推一条（`packages/changes.rs`）；扩展的开关、状态变了，列表里那一项的 `status`、`enabled` 跟着变，也推（和 `extension.changed` 同一个时候）。推的是这一刻照这个连接的语言算的整项，重复了、晚到的都对。
 4. 读得太慢、掉了队：推 `resync`（`{"stream": "packages"}`），这个订阅停了，头重新订阅。
-5. 管理员个人设置里的 MCP 服务（施工 F-9 补）：状态变了、个人设置里加了、删了，推 `mcp.changed`：`{"name": <服务名>, "server": <一项>}`，一项同 `mcp.list` 的一项，删掉了的 `server` 是 `null`。它们不是包，不推 `package.changed`。盖住、放开了包里同名服务的，那个包的 `package.changed` 照推（`covered` 变了）。
+5. 系统配置里的 MCP 服务（施工 F-9 补）：状态变了、系统配置里加了、删了，推 `mcp.changed`：`{"name": <服务名>, "server": <一项>}`，一项同 `mcp.list` 的一项，删掉了的 `server` 是 `null`。它们不是包，不推 `package.changed`。盖住、放开了包里同名服务的，那个包的 `package.changed` 照推（`covered` 变了）。
 
-**`mcp.*`**（施工 F-9 补，管理员个人设置里的 MCP 服务，`mcp.md`「个人设置里的一张表」；只给本机的人用，扩展调回 `local_only`）
+**`mcp.*`**（施工 F-9 补，系统配置里的 MCP 服务，`mcp.md`「系统配置里的一张表」；只给本机的人用，扩展调回 `local_only`）
 
-- `mcp.list`：不带参数。回应 `{"servers": [...]}`，照个人设置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在个人设置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
-- `mcp.restart {"name"}`：停下、再起，连续失败从零数，工具留在目录里、起好列完照新的换（同 `package.restart`）。回应是那一项。个人设置里没有这个名字的 `unknown_server`。
-- `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "need_load"?, "clicall"?}`（`need_load` 退役，照旧收、不看；施工 X-26，网页设置页要的编辑页）：在个人设置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。个人设置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。个人设置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「个人设置手改了」那条路换（`mcp.md`「个人设置里的一张表」第 6 条），状态变了推 `mcp.changed`。
+- `mcp.list`：不带参数。回应 `{"servers": [...]}`，照系统配置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在系统配置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
+- `mcp.restart {"name"}`：停下、再起，连续失败从零数，工具留在目录里、起好列完照新的换（同 `package.restart`）。回应是那一项。系统配置里没有这个名字的 `unknown_server`。
+- `mcp.set {"name", "command", "args"?, "env"?, "venues"?, "timeout_ms"?, "need_load"?, "clicall"?}`（`need_load` 退役，照旧收、不看；施工 X-26，网页设置页要的编辑页）：在系统配置里加上一张 `[mcp.<名字>]`，或者整条换掉同名的那一张；`command` 是程序，`args` 接在后面，写成 TOML 的 `command` 数组；`env` 的值是字，或者 `{"secret": …}`、`{"env": …}`；没交的格子不写（照读服务表时的默认），只有 `clicall` 没交的照原来写的 `clicall = false` 留着（施工 M-2：网页的编辑页还不认这一格）。写之前照读服务表的规矩查这一张（名字的写法、命令不空、给哪种会话、时限），写错的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对，同装包时清单写错的说法）；写法照 `config.set`（拿着配置服务的锁先重读、带版本替换、撞上手改从头再来，写成了记日志、推 `config.changed`，`keys` 是空的）。系统配置里没写这个名字、有包带着同名服务的 `server_from_package`：随包来的不经它改。新写的一张接在文件末尾；换掉的放在原来表头的位置，连同它的子表一起换，别的字节不动。系统配置读不进来、`mcp` 写成了值、行内表、`[[mcp]]` 的 `config_file_broken`。回应 `{"name"}`，服务随后照「系统配置手改了」那条路换（`mcp.md`「系统配置里的一张表」第 6 条），状态变了推 `mcp.changed`。
 - `script.list {}`（施工 X-27，`skills.md`「脚本」；人、扩展都能调）：回应 `{"scripts": [...], "dir"}`（`dir` 是管理员自己放脚本的文件夹 `home/<管理员>/scripts/`，还没建的也照写、家目录下的写成 `~/…`，网页「打开目录」用，施工 X-27 补；`skill.list` 同样多 `dir`，是 `home/<管理员>/skills/`），登记上的脚本照工具名排，一项 `{"tool", "display_name"?, "description"?, "from", "package"?, "path", "timeout", "on"}`：`display_name`、`description` 是脚本开头给人看的一槽，照连接的语言挑（同 `skill.list`）；`from`、`package`、`path` 同 `skill.list`；`timeout` 是秒；`on` 是全局开关 `features.script-<工具名>`，没写的是 `true`。`skill.list` 每项同样多 `on`（`features.skill-<名字>`）。
-- `tool.set_loading {"tool"?, "server"?, "need_load": true|false|null}`（施工 X-27）：施工 FL-1 起退役（工具一律全量）：协议 1 冻结了它，照旧收、照旧查参数（`tool`、`server` 正好一个、名字照占位，少了 `need_load` 的 `bad_params`），回应 `{}`，个人设置一个字不写。只给人。
-- `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写管理员个人设置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`），回应 `{}`；写不进键的、少了 `on` 的 `bad_params`，别的同 `config.set`。只给人。
-- `mcp.remove {"name"}`（施工 X-26）：从个人设置里删掉这一张（连同子表、后面的空行；在文件末尾的连前面的空行），回应 `{}`；没写这个名字的 `unknown_server`。
+- `tool.set_loading {"tool"?, "server"?, "need_load": true|false|null}`（施工 X-27）：施工 FL-1 起退役（工具一律全量）：协议 1 冻结了它，照旧收、照旧查参数（`tool`、`server` 正好一个、名字照占位，少了 `need_load` 的 `bad_params`），回应 `{}`，系统配置一个字不写。只给人。
+- `feature.set {"feature", "on": true|false|null}`（施工 X-27）：写系统配置的 `features.<功能编号>`，`null` 删掉；只收 `skill-`、`script-`、`mcp-` 开头的，别的 `bad_params`。写法照 `config.set` 改一项（带版本、撞上手改从头再来、推 `config.changed`），回应 `{}`；写不进键的、少了 `on` 的 `bad_params`，别的同 `config.set`。只给人。
+- `mcp.remove {"name"}`（施工 X-26）：从系统配置里删掉这一张（连同子表、后面的空行；在文件末尾的连前面的空行），回应 `{}`；没写这个名字的 `unknown_server`。
 
 **记忆日志的推送**（施工 R-12 上，`memory.md`「协议」；2026-10-11 项目主人定：给什么核心定、照仿 Linux 的原则给，一切皆文件、日志式，怎么画是头的事）
 
@@ -1263,7 +1263,7 @@
 | `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
 | `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：这个账号的一个任务建了、停了、续了、删了、到点交过了 |
 | `notice` | `{"kind", "at", …}`：`schedule.ran {schedule, session, ok}`、`schedules.reset {}`（施工 J-3 中，`schedules.md` 第七节） | 订阅着 `notices` 的：这个账号的每次新开会话的定时那一轮结束了、唤醒表坏了换了一份空的 |
-| `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置、个人设置每变一次 |
+| `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置每变一次 |
 | `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |
 | `memory.dreaming` | `{"upto": <这一批，同它的 merging>, "kind": "revised", "id", "text"}`；`{"upto", "kind": "retired", "id", "retire": "outdated" \| "repeat" \| "worthless", "kept"?, "why"}`；`{"upto", "kind": "summary", "chars", "done"}`；都加订阅时写的 `persona` 或 `session`（施工 R-21） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 7 条，整理时她每写完一条（摘要每多 20 个字、写完）一条 |
 
@@ -1368,13 +1368,13 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_file` | -32010 | `check` 写的文件不是 Miyu 读的那几种（施工 8-30） |
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
-| `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了，或者是别人个人设置里的、管理员模式里的个人层源（施工 U23 下下） |
+| `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了（施工 U23 下下） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
 | `package_invalid`、`package_conflict`、`package_exists`、`package_id_taken` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号；编号和人占着的名字撞了（施工 Y-5 中下） |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |
 | `not_restartable`、`package_off` | -32010 | `package.restart`：包没有能重启的进程、服务（内置包、界面、小程序、吉祥物包）；包关着，卸掉了的出厂包也算（施工 X-4） |
-| `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：管理员个人设置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
-| `mcp_invalid`、`server_from_package` | -32010 | `mcp.set`：交来的服务写错了，`data.problem`；个人设置里没写这个名字、有包带着同名服务（施工 X-26） |
+| `unknown_server` | -32010 | `mcp.restart`、`mcp.remove`：系统配置里没有这个名字的 MCP 服务（施工 F-9 补、X-26） |
+| `mcp_invalid`、`server_from_package` | -32010 | `mcp.set`：交来的服务写错了，`data.problem`；系统配置里没写这个名字、有包带着同名服务（施工 X-26） |
 | `no_page`、`not_found`、`program_not_running`、`unregistered`、`method_failed`、`method_timeout` | -32010 | `package.file`：没有后台页；后台页里没有这份文件。`package.call`：程序没连着；没登记这个方法（`data.method`）；程序回了错（`data.message`、`data.code`）；到时限没回（施工 F-6 中，`package-pages.md`） |
 | `unknown_widget`、`bad_widget_content` | -32010 | `widget.set`、`widget.clear`：块不在这个包的清单里（`data.widget`）；内容写法不对（`data.path`、`data.problem`）（施工 X-15 中，`widgets.md`） |
 | `avatar_not_image`、`avatar_too_big` | -32010 | `persona.set` 的 `avatar`：不是 PNG、JPEG、WebP；超过 1 MiB 或 1024 像素，`data` 带量到的和上限（施工 P-5，`personas.md`「头像」） |
@@ -1554,7 +1554,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_switchable` | 不能启用或停用。 | Cannot be enabled or disabled. |
 | `not_restartable` | 不能重启。 | Cannot be restarted. |
 | `package_off` | 软件包已停用。 | Package disabled. |
-| `unknown_server` | 个人设置里没有这个 MCP 服务。 | No such MCP server in the personal settings. |
+| `unknown_server` | 系统配置里没有这个 MCP 服务。 | No such MCP server in the system config. |
 | `no_page` | 没有后台页。 | No admin page. |
 | `not_found` | 文件不存在。 | File not found. |
 | `program_not_running` | 程序未运行。 | Program not running. |
@@ -1660,10 +1660,10 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/replay_race.rs`（施工 3-8 六补） | 掉了队的头带上最后看到的序号重新订阅，看到的和补的合起来就是日志；真核心：另一个头一句接一句地说、会话一直在追加，中途几个头先后从头订阅，每个头补的和推的合起来都和日志一字不差 |
 | `crates/miyu-endpoint/tests/restart.rs` | 核心重启以后：不带 `cwd` 载入的会话照最后一轮的工作目录、没开过回合的照造会话时的；重发的造会话交回原来那一个；两个账号用同一个编号各造各的、成员的重发重启以后也认得（施工 BUG-1） |
 | `crates/miyu-endpoint/tests/check.rs`（施工 8-30） | `check`：不写文件的照磁盘上现在的字查配置、照核心手里的查密钥、人格每一层各查各的，先后、代码、级别、行对，给人看的那一句照连接的语言；写了文件的照位置认、只查那一份，项目配置照 `.miyu/config.toml` 认、相对的照 `cwd` 接，还没有的人格文件读不了，认不出的 `unknown_file`，多写格的参数不对 |
-| `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 家目录里的人格进 system、示范对话排在前面；不写人格照默认、个人设置压着系统配置、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |
+| `crates/miyu-endpoint/tests/personas.rs`（施工 P-1 上） | 家目录里的人格进 system、示范对话排在前面；不写人格照默认、都没设的无人格；没有的、编号不对的、写错的拒绝，默认人格指着没有的当没设（施工 P-4 上）；`null` 明着无人格、不写进会话列表和订阅回应；`venue.session` 带人格造、找回时不看；`persona.list`、`persona.get` |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补） | 不写编号新建、核心起 `persona-1`、`persona-2`，一次带名字、人设、一对一对的示范对话、角色扮演提示，写成文件的写法、空行去掉，开会话用得上，一样的字不再写，只删不写的新建参数不对；读原文和版本、不给来处，出厂的没改过 `remove` 是空的、改过是 `restore`，旧版本存撞上什么都不写，空的字是这一段空的；删提示词回到下面的、删没有的不出错；写错的示范对话、`memory.scope`、写不回原样的 `pairs` 什么都不写、带照连接语言的 `message` 和行；参数不对的十种、读的两种、没有的人格；删了挪进回收处、整个目录、读不到了，盖在出厂上的回到出厂、本来没有的、编号不对的 |
 | `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补） | 不写编号新建、核心起 `preset-1`、`preset-2`，别的照旧全开，`remove` 是 `delete`，开会话用得上，只删不写的新建参数不对；改出厂的只写改了的项、`remove` 是 `restore`，没改过的是空的；注释、顺序照原样，以前的语言表换成一句字；删一项回到下面的；`expect` 对不上的两种、对得上的照写；写错的值、不认识的键、空的名字、默认人格写法不对的整条不收、什么都不写、带照连接语言的 `message`；参数不对的九种；删你那一层回到下面的、只有你那一层的就没了、本来没有的、编号不对的；一样的值不写 |
-| `crates/miyu-endpoint/tests/presets.rs`（施工 P-2 上） | 不写预设照默认、个人设置压着系统配置、指定的压着默认；人格照「指定、预设的默认人格、`persona.default`」；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
+| `crates/miyu-endpoint/tests/presets.rs`（施工 P-2 上） | 不写预设照默认、指定的压着默认；人格照「指定、预设的默认人格、`persona.default`」；没有的、编号不对的、写错的拒绝、什么都不造，默认预设指着没有的也拒；会话列表、`subscribe` 写 `preset`，以前的日志不写；`venue.session` 带预设造、找回时不看；`preset.list`、`preset.get`；`check` 查预设 |
 | `crates/miyu-endpoint/tests/edges.rs` | 不握手的到时断开、握手了的不受管；数组的 `params` 参数不对；握手被拒照它报的语言说；人格目录不存在是 `unknown_persona`、目录在而读不了是 `internal_error` |
 | `crates/miyu-endpoint/tests/list.rs` | 从新到旧、只要一次性的、`limit`、参数不对、空的；每一项带 `cwd`、合写法的 `last_active`，闲着的不写 `busy`（施工 C-3） |
 | `crates/miyu-endpoint/src/list/tests/indexed.rs`、`tests/index.rs`、`tests/index_log.rs`（施工 3-8 七补） | 读索引的和整份读的一字不差；补上、重读、重建；索引那一行跟着会话走、删会话删行；几行运行日志（`store/index.md`「守着它的」） |

@@ -52,7 +52,7 @@ async fn opened(client: &mut Client, home: &Home, id: &str, preset: &str) -> Sna
 #[tokio::test]
 async fn switching_the_package_off_is_byte_for_byte_like_turning_all_eight_off() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", PROFILE);
+    home.write("system/config.toml", PROFILE);
     home.write(
         "home/alice/presets/noenv.toml",
         &preset(&miyu_policy::shown::ALL),

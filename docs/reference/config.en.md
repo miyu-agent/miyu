@@ -21,7 +21,7 @@ Chinese version: [config.md](config.md).
 
 ## The layers
 
-Settings stack from the bottom up: built-in defaults → system config (`system/config.toml`) → personal settings (`home/<account>/settings.toml`) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `system/secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
+Settings stack from the bottom up: built-in defaults → system config (`system/config.toml`, where all your settings go) → project config (`.miyu/config.toml` in a repository; only counts once trusted, and can only tighten). Which layers a setting may be written in is in the settings list (`layers`). Secrets live in `system/secrets.toml`; a setting refers to one with `{ secret = "<name>" }`, or to an environment variable with `{ env = "<variable>" }`.
 
 **Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted.
 
@@ -40,7 +40,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 | `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value; likewise `sandbox.readonly.remove`, where ticked stays protected); without it, ticked ones are those in the value |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type |
 | `default` | Default value |
-| `layers` | Where it may be written: `system`, `personal`, `project` |
+| `layers` | Where it may be written: `system`, `project` |
 | `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
 | `name`, `description` | Display name and description, in the connection's language |
 | `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control |
@@ -65,11 +65,11 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 | Name | Notes |
 |---|---|
 | `items` | key → `{value, origin}`: final value and where it comes from (`origin` has `layer`, `file`, `line`). With `all`, also `layers`: each layer top-down `{origin, value, used}`; layers not in effect carry `problem` |
-| `files` | Each layer's file: `system`, `personal`, `project` (`file`, `version`; the project also has `trusted`: `true`, `false` or `null` not asked yet), `secrets` (only `file`) |
+| `files` | Each layer's file: `system`, `project` (`file`, `version`; the project also has `trusted`: `true`, `false` or `null` not asked yet), `secrets` (only `file`) |
 | `problems` | All current problems in these files |
 
 ```json
-{"files":{"personal":{"file":"home/admin/settings.toml","version":"sha256:…"},"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":null}},"items":{"ui.language":{"origin":{"file":"home/admin/settings.toml","layer":"personal","line":3},"value":"en"}},"problems":[]}
+{"files":{"secrets":{"file":"system/secrets.toml"},"system":{"file":"system/config.toml","version":"sha256:…"}},"items":{"ui.language":{"origin":{"file":"system/config.toml","layer":"system","line":3},"value":"en"}},"problems":[]}
 ```
 
 **Errors**: `unknown_config_key`.
@@ -80,7 +80,7 @@ Settings stack from the bottom up: built-in defaults → system config (`system/
 
 | Name | Type | Notes |
 |---|---|---|
-| `layer` | `system` or `personal`, required | Which layer |
+| `layer` | `system`, optional | Which layer: only the system config (`personal` gets `bad_params`) |
 | `changes` | array | Change some settings, see below |
 | `text` | string | Replace the whole file with this text |
 | `version` | string or `null` | Required with `text`: the version of the file you read; `null` means it didn't exist then |
@@ -90,8 +90,8 @@ Give exactly one of `changes` and `text`. Each change: `key` (required); one of 
 **Response**: `{"keys", "version"}`. `keys` has each setting that changed: `value` (now in this layer; omitted when removed), `effective`, `origin` (final value and source counting the other layers), `applies`. If nothing changed, `keys` is empty and nothing is written.
 
 ```json
-→ {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"layer":"personal","changes":[{"key":"ui.language","value":"en"}]}}
-← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"en","origin":{"file":"home/admin/settings.toml","layer":"personal","line":3},"value":"en"}},"version":"sha256:…"}}
+→ {"jsonrpc":"2.0","id":"s1","method":"config.set","params":{"changes":[{"key":"ui.language","value":"en"}]}}
+← {"id":"s1","jsonrpc":"2.0","result":{"keys":{"ui.language":{"applies":"now","effective":"en","origin":{"file":"system/config.toml","layer":"system","line":3},"value":"en"}},"version":"sha256:…"}}
 ```
 
 All changes are checked and written together: one bad item refuses the whole request. The response comes after the file is written and `config.changed` is pushed.
@@ -109,7 +109,7 @@ All changes are checked and written together: one bad item refuses the whole req
 
 ## `config.check`
 
-**Params**: `layer` (`system`, `personal`, `project`, required), `text` (required). **Response**: `{"problems": [...]}`, empty when fine; problems carry no `file`.
+**Params**: `layer` (`system`, `project`, required), `text` (required). **Response**: `{"problems": [...]}`, empty when fine; problems carry no `file`.
 
 ## `config.trust`
 
@@ -123,15 +123,15 @@ All changes are checked and written together: one bad item refuses the whole req
 
 | Method | Params | Response |
 |---|---|---|
-| `secret.set` | `name`, `value` (both required), `layer` | `{"replaced": <whether it existed>}` |
-| `secret.delete` | `name`, `layer` | `{}` |
-| `secret.list` | none | `{"secrets": [{"name", "set", "layer", "used_by"}…]}` |
+| `secret.set` | `name`, `value` (both required) | `{"replaced": <whether it existed>}` |
+| `secret.delete` | `name` | `{}` |
+| `secret.list` | none | `{"secrets": [{"name", "set", "used_by"}…]}` |
 
 The value is stored with surrounding whitespace removed. `secret.list` never returns values: it lists secrets that are set and those referenced by config but not set; `used_by` is the setting keys that refer to each.
 
-There are two shelves. `system` is the shared `system/secrets.toml`, and only admins can write it. `personal` is the person's own `home/<account>/secrets.toml`, used only by their own config. Without `layer`, admins write `system` and members write `personal`. A `{ secret = name }` reference looks in the person's own shelf first, then the system one. `secret.list` lists both shelves the person can use; `layer` is `personal`, `system`, or `null` when not set.
+There is one secrets file: `system/secrets.toml`.
 
-**Errors**: `not_permitted` (a non-admin writing the system shelf); `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
+**Errors**: `bad_params` (malformed name; value empty, with control characters, or over 16 KiB); `unknown_secret` (deleting one that doesn't exist); `config_file_broken` (the secrets file can't be read); `local_only` (an extension calling the write ones).
 
 ## `model.list`
 
@@ -141,7 +141,7 @@ There are two shelves. `system` is the shared `system/secrets.toml`, and only ad
 
 | Name | Notes |
 |---|---|
-| `providers` | Configured providers by id. Each: `id`, `layer` (`personal`: configured in the person's own settings; `system`: only in the system settings, shared), `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
+| `providers` | Configured providers by id. Each: `id`, `name` (`{value, from, key}`), `driver`, `base_url`, `key` (`{ref, set, state}`, never the value), `catalog` (which catalog entry it matched), `logo` (`{svg, tint}` or `null`), `models`; unusable ones also have `problem` |
 | each of `models` | `model`, `ref`, `listed` (where it was listed: `config`, `provider`, `catalog`), `facts` (window, max output, input kinds, tools, reasoning, price, name… each with `value` and source), `state` (`ok`, `cooling` with `until`/`class`, `no_key`); embedding models have `embedding: true` |
 | `pools` | Each pool: `name`, `strategy`, `models`, `usable`, `subagent`, `description`, `fixed` (`true` for the three fixed pools `lite`, `normal` and `flagship`: they always exist and are listed even when the configuration does not mention them, cannot be deleted or renamed, and default to `subagent = true`) |
 | `side` | Side requests (model requests outside the conversation), one entry each: `id` (`core/title` for titles, `memory/organize` for memory organizing), `tier` (which tier it asks for: `lite`, `normal` or `flagship`), `name` and `summary` (in the connection's language), and `resolved` (where it would go right now: the pool name when that tier's pool has members, `session` when it is empty and the session's model is used). When every member of the pool is cooling down or has failed, the request also falls back to the session's model. Side requests extensions register in their manifest's `[[side]]` are listed here too, with `id` as `<package>/<id>` and the name and summary from their manifest |
@@ -201,7 +201,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 |---|---|---|
 | `purpose` | string, required | What it's for: 1 to 32 lowercase letters, digits, `-`, e.g. `vision` |
 | `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes: looked up first under this connection's own account, where `blob.put` stores them, then under the account it works for; missing from both gives `unknown_attachment`) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat`. When the same provider is configured in both the system and the personal settings, `<id>/<model>` is the person's own copy and `<id>@system/<model>` is the shared one (with the shared key) |
+| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
 | `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
 | `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or failed, the session's model is used. Can't be combined with `model` or `use`; from a person's connection, or with an unregistered id, it's `bad_params` |
 | `session` | session id | Only with `side`: when the tier's pool can't be used, follow this session's current model; without it, `models.chat`. Someone else's session is `session_not_found` |

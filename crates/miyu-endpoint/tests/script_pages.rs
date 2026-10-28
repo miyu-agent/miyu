@@ -13,7 +13,7 @@ use crate::support::*;
 
 /// 个人设置的字。
 fn settings(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("home/alice/settings.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.path().join("system/config.toml")).unwrap_or_default()
 }
 
 /// 拒绝的原因码。
@@ -61,7 +61,7 @@ fn names(face: &[(String, String)]) -> Vec<&str> {
 /// 个人设置的语言是 `language`。
 fn written(home: &Home, language: &str) {
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[ui]\nlanguage = \"{language}\"\n"),
     );
     let weather = echo("weather").replace(
@@ -146,7 +146,7 @@ async fn set_loading_is_accepted_and_changes_nothing() {
         &echo("weather").replace("# Need load: no\n", "# Need load: yes\n"),
     );
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         "[ui]\nlanguage = \"zh\"\n\n[mcp.github]\ncommand = [\"miyu-absent-mcp-server\"]\n",
     );
     let script = Script::new([Play::Says("一。")]);
@@ -415,7 +415,7 @@ async fn a_global_switch_leaves_an_off_preset_alone() {
 async fn badly_written_changes_are_refused_and_nothing_is_written() {
     let home = Home::new();
     let before = "[ui]\nlanguage = \"zh\"\n";
-    home.write("home/alice/settings.toml", before);
+    home.write("system/config.toml", before);
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let long = "a".repeat(129);

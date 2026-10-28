@@ -30,7 +30,6 @@ fn resolved(level: &str) -> Resolved {
     let parsed = parse(items, Layer::System, &text).expect("读得懂");
     let layers = Layers {
         system: Some(&parsed),
-        personal: None,
         project: None,
     };
     merge(items, &layers, &|_| None)

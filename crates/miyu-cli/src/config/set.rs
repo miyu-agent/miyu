@@ -1,5 +1,5 @@
-//! `miyu config set <键> <值>`、`unset <键>`（`config.md` 第十条第 4、5 条，施工 8-3）：`config.set`，`layer` 照 `--system` 是
-//! `system`，不写是 `personal`；不带 `expect`（后写的算，第五条第 11 条）。
+//! `miyu config set <键> <值>`、`unset <键>`（`config.md` 第十条第 4、5 条，施工 8-3）：`config.set`，`layer` 是 `system`；
+//! 不带 `expect`（后写的算，第五条第 11 条）。
 //!
 //! - `set` 把人敲的值原样交给核心（`input`），由它照这一项的类型读。成了：标准错误上印一行灰字，写进了哪一层、什么时候
 //!   生效；上面一层压着的说用的还是哪一层写的。这一层本来就是的说没改。
@@ -14,9 +14,9 @@ use crate::exit;
 use crate::shown::{Line, write};
 
 /// `set`：改一项，交回退出码。
-pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str, system: bool) -> u8 {
+pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str) -> u8 {
     let language = talk.plan.language;
-    let layer = layer(system);
+    let layer = LAYER;
     let params = json!({"layer": layer, "changes": [{"key": key, "input": value}]});
     let result = match talk.ask("config.set", params).await {
         Ok(result) => result,
@@ -50,9 +50,9 @@ pub(super) async fn set(talk: &mut Talk<'_>, key: &str, value: &str, system: boo
 }
 
 /// `unset`：从这一层删掉一项，交回退出码。
-pub(super) async fn unset(talk: &mut Talk<'_>, key: &str, system: bool) -> u8 {
+pub(super) async fn unset(talk: &mut Talk<'_>, key: &str) -> u8 {
     let language = talk.plan.language;
-    let layer = layer(system);
+    let layer = LAYER;
     let params = json!({"layer": layer, "changes": [{"key": key, "unset": true}]});
     let result = match talk.ask("config.set", params).await {
         Ok(result) => result,
@@ -71,13 +71,8 @@ pub(super) async fn unset(talk: &mut Talk<'_>, key: &str, system: bool) -> u8 {
     exit::OK
 }
 
-/// 改哪一层。
-fn layer(system: bool) -> &'static str {
-    match system {
-        true => "system",
-        false => "personal",
-    }
-}
+/// 改哪一层：只有系统配置（施工 SU-3 上）。
+const LAYER: &str = "system";
 
 /// `config.get` 带 `all` 的一项里 `layer` 那一层写的值；没有的照最终值。
 fn written(item: &Value, layer: &str) -> Value {

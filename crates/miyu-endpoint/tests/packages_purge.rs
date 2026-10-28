@@ -1,4 +1,4 @@
-//! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，系统配置、个人设置
+//! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，系统配置
 //! 里它的几项删掉，别的项、注释不动；状态目录整个删掉。家目录里装的、出厂的都一样。开关的文件里它开没开、批过的能力也清掉
 //! （施工 F-8 五补）：装回来从头开、从头批。
 
@@ -11,8 +11,8 @@ use miyu_session::testkit::Script;
 use crate::support::extensions::{Program, install_asking, quick, status, steps, until_state};
 use crate::support::*;
 
-/// 一份带配置项的界面包：`xcfg.port` 两层都能写。
-const XCFG: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Cfg\" }\n\n[ui]\n\n[settings.port]\ntype = \"int\"\ndefault = 8400\nlayers = [\"system\", \"personal\"]\nname = { en = \"Port\" }\n";
+/// 一份带配置项的界面包：`xcfg.port` 写在系统配置里。
+const XCFG: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Cfg\" }\n\n[ui]\n\n[settings.port]\ntype = \"int\"\ndefault = 8400\nlayers = [\"system\"]\nname = { en = \"Port\" }\n";
 
 async fn call(client: &mut Client, method: &str, params: Value) -> Value {
     client.call("c", method, params).await
@@ -30,11 +30,10 @@ async fn removing_a_package_forgets_its_settings_and_state() {
         "system/config.toml",
         "# 留着\nlog.level = \"debug\"\n\n[xcfg]\nport = 9000\n",
     );
-    home.write("home/alice/settings.toml", "[xcfg]\nport = 9001\n");
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
     let got = call(&mut client, "config.get", json!({"keys": ["xcfg.port"]})).await;
-    assert_eq!(got["result"]["items"]["xcfg.port"]["value"], 9001, "{got}");
+    assert_eq!(got["result"]["items"]["xcfg.port"]["value"], 9000, "{got}");
     let state = home.root.path().join("state/packages/xcfg");
     std::fs::create_dir_all(&state).expect("建得了");
     std::fs::write(state.join("data"), "x").expect("写得进");
@@ -58,8 +57,6 @@ async fn removing_a_package_forgets_its_settings_and_state() {
         system.contains("# 留着") && system.contains("log.level = \"debug\""),
         "别的不动：{system}"
     );
-    let personal = read(&home, "home/alice/settings.toml");
-    assert!(!personal.contains("port"), "个人设置里的也删了：{personal}");
     assert!(!state.exists(), "状态目录删了");
     let scripts = home.root.path().join("state/scripts");
     assert!(!scripts.join("alice/xcfg").exists() && !scripts.join("xbot/xcfg").exists());

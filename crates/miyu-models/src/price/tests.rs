@@ -208,16 +208,16 @@ fn the_currency_follows_the_price_and_the_multiplier_applies() {
         cost.amount,
         Real::new((1000.0 * 2.0 + 100.0 * 8.0) / 1e6 * 0.5)
     );
-    let personal = Source::Config {
-        layer: Layer::Personal,
+    let another = Source::Config {
+        layer: Layer::System,
         line: 3,
     };
     let price = Some(Price::of(Rates::default(), "USD"));
     assert_eq!(
-        Tariff::of(&facts(price, personal, 1.0), &file)
+        Tariff::of(&facts(price, another, 1.0), &file)
             .unwrap()
             .source,
-        "config:home/admin/settings.toml:3"
+        "config:system/config.toml:3"
     );
 }
 

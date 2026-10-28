@@ -150,13 +150,11 @@ async fn package_settings_have_final_values_and_wrong_ones_are_checked() {
             "{wrong}：{checked}"
         );
     }
-    home.write("home/alice/settings.toml", "[clock]\nport = 9000\n");
+    let project = home.work.join(".miyu").join("config.toml");
+    std::fs::create_dir_all(project.parent().expect("有上一层")).expect("建得了");
+    std::fs::write(&project, "[clock]\nport = 9000\n").expect("写得进");
     let checked = client
-        .call(
-            "c2",
-            "check",
-            json!({"file": home.root.path().join("home/alice/settings.toml").to_string_lossy()}),
-        )
+        .call("c2", "check", json!({"file": project.to_string_lossy()}))
         .await;
     assert_eq!(
         checked["result"]["problems"][0]["code"], "wrong_layer",

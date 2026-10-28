@@ -81,9 +81,6 @@ pub enum ConfigCommand {
     },
     /// 印出配置文件在哪。
     Path {
-        /// 系统配置。
-        #[arg(long, conflicts_with = "project")]
-        system: bool,
         /// 当前目录的项目配置。
         #[arg(long)]
         project: bool,
@@ -94,26 +91,17 @@ pub enum ConfigCommand {
         key: String,
         /// 改成什么，照这一项的类型读。
         value: String,
-        /// 改系统配置；不写改个人设置。
-        #[arg(long, conflicts_with = "project")]
-        system: bool,
         /// 项目配置只能手改：写了是参数不对，说一句怎么改。
         #[arg(long)]
         project: bool,
     },
-    /// 从这一层删掉一项（施工 8-3）。
+    /// 从配置里删掉一项（施工 8-3）。
     Unset {
         /// 哪一项。
         key: String,
-        /// 从系统配置删；不写从个人设置删。
-        #[arg(long)]
-        system: bool,
     },
     /// 用编辑器打开，存盘时先检查（施工 8-3）。
     Edit {
-        /// 系统配置。
-        #[arg(long, conflicts_with = "project")]
-        system: bool,
         /// 当前目录的项目配置。
         #[arg(long)]
         project: bool,
@@ -132,21 +120,18 @@ pub enum ConfigCommand {
 /// 只改、只开哪一份（`edit`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Only {
-    /// 个人设置。
-    All,
-    /// 系统配置。
+    /// 系统配置（施工 SU-3 上：个人设置并进来了）。
     System,
     /// 项目配置。
     Project,
 }
 
 impl Only {
-    /// 照两个选项：`--system`、`--project` 最多写一个（clap 拦着）。
-    pub(super) fn of(system: bool, project: bool) -> Only {
-        match (system, project) {
-            (true, _) => Only::System,
-            (_, true) => Only::Project,
-            _ => Only::All,
+    /// 照 `--project`。
+    pub(super) fn of(project: bool) -> Only {
+        match project {
+            true => Only::Project,
+            false => Only::System,
         }
     }
 }
@@ -301,17 +286,13 @@ pub async fn config_on(
         ConfigCommand::Explain { key, format } => {
             explain(&mut talk, &tidy(key), *format, out).await
         }
-        ConfigCommand::Path { system, project } => path(&mut talk, *system, *project, out).await,
+        ConfigCommand::Path { project } => path(&mut talk, *project, out).await,
         ConfigCommand::Check { file, format } => {
             check::check(&mut talk, file.as_deref(), *format, out).await
         }
-        ConfigCommand::Set {
-            key, value, system, ..
-        } => set::set(&mut talk, &tidy(key), value, *system).await,
-        ConfigCommand::Unset { key, system } => set::unset(&mut talk, &tidy(key), *system).await,
-        ConfigCommand::Edit { system, project } => {
-            edit::edit(&mut talk, Only::of(*system, *project), console).await
-        }
+        ConfigCommand::Set { key, value, .. } => set::set(&mut talk, &tidy(key), value).await,
+        ConfigCommand::Unset { key } => set::unset(&mut talk, &tidy(key)).await,
+        ConfigCommand::Edit { project } => edit::edit(&mut talk, Only::of(*project), console).await,
         ConfigCommand::Trust { yes, no } => {
             let answer = match (yes, no) {
                 (true, _) => Some(true),
@@ -453,7 +434,7 @@ async fn explain(talk: &mut Talk<'_>, key: &str, format: Format, out: &mut dyn W
 
 /// `path`：这一层的文件在哪，绝对路径，一行，文件还没有也印。`--project` 没找到的印仓库的根下的
 /// `.miyu/config.toml`，标准错误上说一句还没有这个文件。
-async fn path(talk: &mut Talk<'_>, system: bool, project: bool, out: &mut dyn Write) -> u8 {
+async fn path(talk: &mut Talk<'_>, project: bool, out: &mut dyn Write) -> u8 {
     let params = match project {
         true => json!({"cwd": talk.cwd()}),
         false => json!({}),
@@ -463,10 +444,9 @@ async fn path(talk: &mut Talk<'_>, system: bool, project: bool, out: &mut dyn Wr
         Err(code) => return code,
     };
     let places = paths::Places::of(talk.plan);
-    let layer = match (system, project) {
-        (true, _) => "system",
-        (_, true) => "project",
-        _ => "personal",
+    let layer = match project {
+        true => "project",
+        false => "system",
     };
     match result["files"][layer]["file"].as_str() {
         Some(file) => say(out, &places.absolute(file).to_string_lossy()),

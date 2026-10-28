@@ -38,8 +38,8 @@ pub use features::Feature;
 pub use links::{Connection, Worker};
 pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE};
 pub use mcp::{
-    EnvValue, McpServer, Reach, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT, personal as personal_mcp,
-    venues_fit,
+    EnvValue, McpServer, Reach, TIMEOUT_DEFAULT as MCP_TIMEOUT_DEFAULT,
+    configured as configured_mcp, venues_fit,
 };
 pub use need::Need;
 pub use search::{SEARCH_SOURCE, SearchSource};

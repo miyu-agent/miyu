@@ -46,7 +46,7 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
             "没有错误不写"
         );
     }
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"en\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"en\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     let reply = hello(&mut client, Some("zh-CN")).await;
     assert_eq!(reply["result"]["language"], "en", "定了的照定的");
@@ -55,7 +55,7 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
         refused["error"]["message"], "Method not found.",
         "拒绝的话也照它"
     );
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"ja\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"ja\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     assert_eq!(
         hello(&mut client, Some("zh-CN")).await["result"]["language"],
@@ -71,10 +71,9 @@ async fn hello_says_the_language_by_the_setting_or_the_system() {
 #[tokio::test]
 async fn hello_counts_errors_but_not_warnings() {
     let home = Home::new();
-    home.write("system/config.toml", "[log]\nlevel = \"verbose\"\n");
     home.write(
-        "home/alice/settings.toml",
-        "[ui]\nlangauge = \"zh\"\nlanguage = 3\n",
+        "system/config.toml",
+        "[log]\nlevel = \"verbose\"\n\n[ui]\nlangauge = \"zh\"\nlanguage = 3\n",
     );
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     assert_eq!(hello(&mut client, None).await["result"]["config_errors"], 2);
@@ -118,7 +117,7 @@ async fn the_schema_lists_the_items_in_the_language_of_the_connection() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"groups":[{"id":"display","name":"显示","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system","personal"],"name":"界面语言","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
+        json!({"groups":[{"id":"display","name":"显示","page":"general"}],"items":[{"applies":"now","common":true,"control":"select","default":"auto","description":"终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。","group":"display","key":"ui.language","layers":["system"],"name":"界面语言","options":[{"name":"跟随系统","value":"auto"},{"name":"中文","value":"zh"},{"name":"English","value":"en"},{"name":"日本語","value":"ja"}],"page":"general","type":"option"}],"pages":[{"id":"general","name":"通用"}]}),
         "和图纸的例子一字不差"
     );
     let all = client.call("c2", "config.schema", json!({})).await;
@@ -212,9 +211,8 @@ async fn unknown_keys_are_refused_with_the_nearest_ones() {
 #[tokio::test]
 async fn get_says_every_value_and_where_it_came_from() {
     let home = Home::new();
-    let system = "#:schema ../state/config/config.schema.json\n\n[log]\nlevel = \"debug\"\n\n[ui]\nlanguage = \"en\"\n";
+    let system = "#:schema ../state/config/config.schema.json\n\n[log]\nlevel = \"debug\"\n\n[ui]\nlanguage = \"zh\"\n";
     home.write("system/config.toml", system);
-    home.write("home/alice/settings.toml", "\n\n[ui]\nlanguage = \"zh\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, Some("zh-CN")).await;
     let reply = client.call("c1", "config.get", json!({})).await;
@@ -224,7 +222,7 @@ async fn get_says_every_value_and_where_it_came_from() {
             "log.level": {"origin": {"file": "system/config.toml", "layer": "system", "line": 4}, "value": "debug"},
             "permission.start_read_only": {"origin": {"layer": "default"}, "value": false},
             "permission.level": {"origin": {"layer": "default"}, "value": "workspace"},
-            "ui.language": {"origin": {"file": "home/alice/settings.toml", "layer": "personal", "line": 4}, "value": "zh"},
+            "ui.language": {"origin": {"file": "system/config.toml", "layer": "system", "line": 7}, "value": "zh"},
             "ui.startup": {"origin": {"layer": "default"}, "value": "new"},
             "ui.head": {"origin": {"layer": "default"}, "value": "tui"},
             "ui.welcomed": {"origin": {"layer": "default"}, "value": false},
@@ -233,7 +231,6 @@ async fn get_says_every_value_and_where_it_came_from() {
     assert_eq!(
         reply["result"]["files"],
         json!({
-            "personal": {"file": "home/alice/settings.toml", "version": version(b"\n\n[ui]\nlanguage = \"zh\"\n")},
             "secrets": {"file": "system/secrets.toml"},
             "system": {"file": "system/config.toml", "version": version(system.as_bytes())},
         })
@@ -250,11 +247,10 @@ async fn get_says_every_value_and_where_it_came_from() {
         one["result"]["items"],
         json!({"ui.language": {
             "layers": [
-                {"origin": {"file": "home/alice/settings.toml", "layer": "personal", "line": 4}, "used": true, "value": "zh"},
-                {"origin": {"file": "system/config.toml", "layer": "system", "line": 7}, "used": false, "value": "en"},
+                {"origin": {"file": "system/config.toml", "layer": "system", "line": 7}, "used": true, "value": "zh"},
                 {"origin": {"layer": "default"}, "used": false, "value": "auto"},
             ],
-            "origin": {"file": "home/alice/settings.toml", "layer": "personal", "line": 4},
+            "origin": {"file": "system/config.toml", "layer": "system", "line": 7},
             "value": "zh",
         }})
     );
@@ -274,7 +270,7 @@ async fn missing_files_have_no_version_and_the_environment_wins() {
             json!({"keys": ["log.level"], "all": true}),
         )
         .await;
-    assert_eq!(reply["result"]["files"]["personal"]["version"], Value::Null);
+    assert_eq!(reply["result"]["files"]["secrets"]["version"], Value::Null);
     let level = &reply["result"]["items"]["log.level"];
     assert_eq!(level["origin"], json!({"layer": "env", "name": "MIYU_LOG"}));
     assert_eq!(level["value"], "trace");
@@ -285,10 +281,9 @@ async fn missing_files_have_no_version_and_the_environment_wins() {
 #[tokio::test]
 async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
     let home = Home::new();
-    home.write("system/config.toml", "[log]\nlevel = \"verbose\"\n");
     home.write(
-        "home/alice/settings.toml",
-        "[ui]\nlanguage = \"zh\"\n\n\n\n\nlangauge = \"zh\"\n[permission]\nstart_read_only = \"yes\"\n",
+        "system/config.toml",
+        "[log]\nlevel = \"verbose\"\n[ui]\nlanguage = \"zh\"\n\n\nlangauge = \"zh\"\n[permission]\nstart_read_only = \"yes\"\n",
     );
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, Some("zh-CN")).await;
@@ -307,9 +302,9 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
             {"code":"not_an_option","column":9,"expected":"error、warn、info、debug、trace 或 off","file":"system/config.toml","got":"\"verbose\"","key":"log.level","level":"error","line":2,
              "message":"log.level 只能是 error、warn、info、debug、trace 或 off，写的是 \"verbose\"。改成其中一个，例如 log.level = \"info\"。暂用 \"info\"（默认值）。",
              "using":{"from":"default","value":"info"}},
-            {"code":"unknown_key","column":1,"file":"home/alice/settings.toml","got":"\"zh\"","key":"ui.langauge","level":"warning","line":7,
+            {"code":"unknown_key","column":1,"file":"system/config.toml","got":"\"zh\"","key":"ui.langauge","level":"warning","line":7,
              "message":"没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。","suggest":"ui.language"},
-            {"code":"wrong_type","column":19,"expected":"true 或 false","file":"home/alice/settings.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
+            {"code":"wrong_type","column":19,"expected":"true 或 false","file":"system/config.toml","got":"\"yes\"","key":"permission.start_read_only","level":"error","line":9,
              "message":"permission.start_read_only 要写 true 或 false，写的是 \"yes\"。改成 permission.start_read_only = true。暂用 false（默认值）。",
              "using":{"from":"default","value":false}},
         ])
@@ -319,12 +314,11 @@ async fn a_broken_item_is_dropped_and_reported_with_what_is_used() {
 #[tokio::test]
 async fn a_file_that_cannot_be_read_is_used_as_nothing() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\n");
-    home.write("system/config.toml", "ui.language = \"en\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"zh\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let reply = client.call("c1", "config.get", json!({})).await;
-    assert_eq!(reply["result"]["items"]["ui.language"]["value"], "en");
+    assert_eq!(reply["result"]["items"]["ui.language"]["value"], "auto");
     let problem = &reply["result"]["problems"][0];
     assert_eq!(problem["code"], "syntax");
     assert_eq!(problem["using"], json!({"from": "nothing"}));
@@ -349,9 +343,9 @@ async fn check_looks_at_a_text_without_using_it() {
     let mut asked = Vec::new();
     for params in [
         check("c1", "system", "[log]\nlevel = \"verbose\"\n"),
-        check("c2", "personal", "[log]\nlevel = \"debug\"\n"),
+        check("c2", "project", "[log]\nlevel = \"debug\"\n"),
         check("c3", "project", "[permission]\nstart_read_only = false\n"),
-        check("c4", "personal", "ui.language = \"zh\"\n"),
+        check("c4", "system", "ui.language = \"zh\"\n"),
     ] {
         let id = params["id"].as_str().expect("有编号").to_string();
         let reply = client
@@ -383,7 +377,7 @@ async fn check_looks_at_a_text_without_using_it() {
                 "log.level must be error, warn, info, debug, trace or off, not \"verbose\". Write one of them, e.g. log.level = \"info\". Using \"info\" (the default) for now."
             ]),
             json!([
-                "log.level belongs in the system config. It does not count in personal settings. Move it to the system config."
+                "log.level belongs in the system config. It does not count in a project config. Move it to the system config."
             ]),
             json!([
                 "A project config can only make limits stricter. permission.start_read_only is true, and false here is looser, so it does not count."
@@ -423,7 +417,7 @@ async fn a_session_starts_read_only_when_the_setting_says_so() {
     hello(&mut client, None).await;
     let plain = client.create("c1", &cwd).await;
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         "[permission]\nstart_read_only = true\n",
     );
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
@@ -434,10 +428,10 @@ async fn a_session_starts_read_only_when_the_setting_says_so() {
         other => panic!("第一条是 session.created：{other:?}"),
     };
     assert!(!read_only(&plain), "默认不是");
-    assert!(read_only(&strict), "个人设置打开了");
+    assert!(read_only(&strict), "系统配置打开了");
 }
 
-/// 新会话开局的级别照 `permission.level`（施工 8-32）：默认是工作区，个人设置写了 `full` 的从完全放开开局。
+/// 新会话开局的级别照 `permission.level`（施工 8-32）：默认是工作区，系统配置写了 `full` 的从完全放开开局。
 #[tokio::test]
 async fn a_session_opens_at_the_configured_level() {
     let home = Home::new();
@@ -445,10 +439,7 @@ async fn a_session_opens_at_the_configured_level() {
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let plain = client.create("c1", &cwd).await;
-    home.write(
-        "home/alice/settings.toml",
-        "[permission]\nlevel = \"full\"\n",
-    );
+    home.write("system/config.toml", "[permission]\nlevel = \"full\"\n");
     let mut client = Client::connect(home.core_configured(&script(), None, &[]));
     hello(&mut client, None).await;
     let open = client.create("c2", &cwd).await;
@@ -457,7 +448,7 @@ async fn a_session_opens_at_the_configured_level() {
         other => panic!("第一条是 session.created：{other:?}"),
     };
     assert_eq!(level(&plain), Level::Workspace, "默认是工作区");
-    assert_eq!(level(&open), Level::Full, "个人设置写了 full");
+    assert_eq!(level(&open), Level::Full, "系统配置写了 full");
 }
 
 /// 「新会话」组（终端转来，主人验收时提的）：默认人格、默认预设、开局只读三项放在通用页的 `new_session` 组里，组名照连接的语言。

@@ -88,11 +88,6 @@ fn written(
     real: String,
     value: Option<bool>,
 ) -> Result<Value, Refusal> {
-    set(
-        core,
-        (caller, peer),
-        cause,
-        SetParams::personal(real, value),
-    )?;
+    set(core, (caller, peer), cause, SetParams::switch(real, value))?;
     Ok(json!({}))
 }

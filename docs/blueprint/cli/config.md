@@ -1,5 +1,7 @@
 ## `miyu config`
 
+> **施工 SU-3 上（2026-10-28）**：个人设置那一层、`--system` 选项拿掉了，配置、密钥只有系统那一份。下文讲个人设置、`--system` 的地方作废，以帮助页和参考 `docs/reference/config.md` 为准；正文 SU-6 统一改。
+
 ### 是什么
 
 看配置、改配置、信任项目配置的命令：最终值和它从哪来、每一层写的什么、有没有写错、文件在哪（施工 8-2）；改一项、删一项、用编辑器改、信不信任这里的项目配置（施工 8-3）。它只是协议的客户端（`22-命令行.md` O5）：连上核心，问 `config.get`、`config.schema`、`config.check`、`config.set`、`config.trust`，照回应印。
@@ -63,14 +65,13 @@
 命令：
   get [键…]      印出最终的值，只写一个键时只印值
   set <键> <值>  改一项
-  unset <键>     从这一层删掉一项，回到下面一层的值
+  unset <键>     从系统配置里删掉一项，回到默认值
   edit           用编辑器打开，存盘时先检查
   explain <键>   这一项每一层写的什么、哪一个生效
   path           印出配置文件在哪
   trust          看这里的项目配置会改什么，信任或者不信任它
 
 选项：
-      --system            系统配置，不写是个人设置（set、unset、edit、path）
       --project           当前目录的项目配置（edit、path）
       --format text|json  get、explain：json 给脚本
       --yes               trust：信任，不问
@@ -88,7 +89,7 @@ See and change settings, and trust a project config.
 Commands:
   get [key…]           Print the values in effect, or just the value of one key
   set <key> <value>    Change one setting
-  unset <key>          Remove one from this layer, back to the one below
+  unset <key>          Remove one from the system config, back to the default
   edit                 Open in an editor, checked before it is saved
   explain <key>        What each layer says and which one wins
   path                 Print where the file is
@@ -96,8 +97,6 @@ Commands:
                        it or not
 
 Options:
-      --system            The system config, instead of personal settings
-                          (set, unset, edit, path)
       --project           The project config here (edit, path)
       --format text|json  For get, explain: json for scripts
       --yes               For trust: trust it, without asking

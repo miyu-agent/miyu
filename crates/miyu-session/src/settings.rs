@@ -21,7 +21,7 @@ miyu_config::settings! {
         /// 有 `show` 的才带。
         system_hint: bool = true {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "packages", group: "show", package: "show", control: toggle },
         },
@@ -34,7 +34,7 @@ miyu_config::settings! {
         /// 提前压好：用量快到压缩线时在后台先把旧的那一段压好，到线直接换上，不用停下来等摘要。关了照到线再压。
         prepare: bool = true {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "advanced", group: "compaction", control: toggle },
         },
@@ -48,7 +48,7 @@ miyu_config::settings! {
         /// 三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标成不画。
         strength: String = "auto" {
             kind: option ["auto", "weak"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "privacy", group: "sandbox", control: select },
         },
@@ -64,7 +64,7 @@ miyu_config::settings! {
         /// 后台命令最多跑多久，到了整组停掉（照 Claude Code：默认 30 分钟，最多 2 小时）。
         max_running: Duration = "30m" {
             kind: duration [60, 7200],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "general", group: "sessions", control: text },
         },
@@ -77,49 +77,49 @@ miyu_config::settings! {
         /// 会话闲了多久才抽新的一段：短于常见的缓存寿命。
         extract_idle: Duration = "30m" {
             kind: duration [60, 3600],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 上次抽到以后至少有几轮她答了话才抽。
         extract_turns: i64 = 2 {
             kind: int [1, 100],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
         /// 一直不闲的会话（施工 E-5）：上次抽以后结束了这么多轮就不等闲、在后台抽。
         extract_max_turns: i64 = 20 {
             kind: int [2, 500],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
         /// 一直不闲的会话（施工 E-5）：最早没抽的那一轮结束了这么久就不等闲、在后台抽。
         extract_max_wait: Duration = "1h" {
             kind: duration [600, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 离上次合并至少多久才再合（施工 R-7 上）。
         merge_every: Duration = "24h" {
             kind: duration [3600, 2592000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: text },
         },
         /// 上次合并以后至少抽过几个会话才再合（施工 R-7 上）。
         merge_sessions: i64 = 5 {
             kind: int [1, 100],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
         /// 每一间留最近几趟整理会话（施工 D-1 下，设计 41 DS9）：一趟跑完删多的，`0` 是跑完就删。
         dream_keep: i64 = 20 {
             kind: int [0, 1000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "memory", package: "memory", control: number },
         },
@@ -135,21 +135,21 @@ miyu_config::settings! {
         /// 在字表里（`suggestions`）。
         preferred_reply_language: Option<String> = none {
             kind: text [64],
-            layers: [Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "user", group: "profile", common: true, control: combo },
         },
         /// AI 怎么称呼你。
         name: Option<String> = none {
             kind: text [64],
-            layers: [Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "user", group: "profile", common: true, control: text },
         },
         /// 更多描述：可以空。
         about: Option<String> = none {
             kind: lines [2000],
-            layers: [Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "user", group: "profile", control: textarea },
         },

@@ -1,14 +1,14 @@
 # Every Miyu setting and its default. This file is generated. Editing it has no effect.
-# Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.
+# Write the system config in system/config.toml.
 
 [clicall.mcp]
 # Callable from scripts: this MCP server's tools: When on, all of this server's tools can be called with miyu call; when off, only directly. A tool with its own setting follows that one.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # "<id>" =
 
 [clicall.tools]
 # Callable from scripts: When on, the AI can also call this tool with miyu call inside a command, and the result goes to the script; when off, it can only be called directly. Unset follows how it was registered (MCP servers and script tools are callable, among built-in tools only search, fetching pages, memory search and the knowledge base tools are, extension tools are not). Tools that write or send messages stay uncallable even when on.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # "<name>" =
 
 [commands."<id>"]
@@ -18,7 +18,7 @@
 
 [compaction]
 # Prepare compaction early: When the context is nearly full, the older part is summarized in the background, so the switch happens without a wait when compaction is due. Off means compacting only once the limit is reached, as before.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 prepare = true
 
 [core]
@@ -28,7 +28,7 @@ idle_exit = 0
 
 [external]
 # My platform accounts: Which platform identities are you, for example qq:10001. Only counts on the chat platforms you connect yourself.
-# Allowed: a list of text of at most 128 characters. Only in personal settings. Takes effect immediately.
+# Allowed: a list of text of at most 128 characters. Only in the system config. Takes effect immediately.
 # me =
 
 [external.bindings]
@@ -38,12 +38,12 @@ idle_exit = 0
 
 [features]
 # Turn this skill, script or MCP server on: Presets that turn on what they don't list follow this switch for the skill, script or MCP server, except where a preset turns it on or off itself. Presets that leave unlisted features off ignore it.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # "<name>" =
 
 [jobs]
 # Longest background command: A command the AI runs in the background is stopped after this long, and the AI is told. At most 2 hours.
-# Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a length of time from 1m to 2h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
 max_running = "30m"
 
 [log]
@@ -53,93 +53,93 @@ level = "info"
 
 [memory]
 # Consolidation runs to keep: Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends.
-# Allowed: a whole number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 0 to 1000. Only in the system config. Takes effect next turn.
 dream_keep = 20
 
 # Wait before organizing memories: Once the conversation has been quiet this long, the AI turns what is worth keeping from the new part into memories.
-# Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a length of time from 1m to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
 extract_idle = "30m"
 
 # Turns before organizing a busy chat: When a chat never goes quiet, the AI organizes in the background once this many turns have passed since the last time, without waiting for a pause.
-# Allowed: a whole number from 2 to 500. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 2 to 500. Only in the system config. Takes effect next turn.
 extract_max_turns = 20
 
 # Longest wait in a busy chat: When a chat never goes quiet, the AI organizes in the background once the earliest unorganized turn is this old, without waiting for a pause.
-# Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a length of time from 10m to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
 extract_max_wait = "1h"
 
 # Turns before organizing: The AI organizes only after at least this many turns since the last time.
-# Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 1 to 100. Only in the system config. Takes effect next turn.
 extract_turns = 2
 
 # How often to consolidate memories: After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you.
-# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect next turn.
 merge_every = "24h"
 
 # Chats before consolidating: Consolidate only after memories have been taken from at least this many chats since the last time.
-# Allowed: a whole number from 1 to 100. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 1 to 100. Only in the system config. Takes effect next turn.
 merge_sessions = 5
 
 [models]
 # Chat model: The model new sessions use, written as provider/model, for example deepseek/deepseek-flash, or @pool.
-# Allowed: <provider>/<model> or @<pool>. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: <provider>/<model> or @<pool>. Only in the system config. Applies to new sessions.
 # chat =
 
 # Semantic model: Improves search quality for memories, knowledge bases and more.
-# Allowed: local, off or <provider>/<model>. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: local, off or <provider>/<model>. Only in the system config. Takes effect next turn.
 # embedding =
 
 # Vision model: Looks at images for the chat model when it cannot. Written like the chat model.
-# Allowed: <provider>/<model> or @<pool>. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: <provider>/<model> or @<pool>. Only in the system config. Takes effect next turn.
 # vision =
 
 [models.catalog]
 # Update every: Fetch again once the cached catalog is this old.
-# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1h to 720h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 every = "24h"
 
 # Update the catalog: Fetch a newer model catalog from models.dev in the background. Off uses only the bundled and already fetched ones.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: true or false. Only in the system config. Takes effect immediately.
 update = true
 
 # Catalog address: Where to fetch the model catalog from.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
 url = "https://models.dev/api.json"
 
 [models.cooldown.auth]
 # Auth failure pause: How long a pool model rests the first time it fails to authenticate. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 base = "10m"
 
 # Auth failure pause cap: The auth failure pause stops doubling here.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 max = "2h"
 
 [models.cooldown.quota]
 # Out-of-quota pause: How long a pool model rests the first time it runs out of quota or credit and the provider doesn't say when it comes back. When it does say, that time is used, up to a day.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 base = "30m"
 
 # Out-of-quota pause cap: Without a stated reset time, the pause doubles each time in a row up to this.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 max = "30m"
 
 [models.cooldown.rate_limited]
 # Rate limit cooldown: How long an endpoint rests the first time it is rate limited. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 base = "30s"
 
 # Rate limit cooldown cap: The rate limit cooldown stops doubling here, even when the provider asks for longer.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 max = "10m"
 
 [models.cooldown.retryable]
 # Error cooldown: How long an endpoint rests the first time it cannot be reached or fails on its side. It doubles each time in a row.
-# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 1h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 base = "10s"
 
 # Error cooldown cap: The cooldown for these errors stops doubling here.
-# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a length of time from 1s to 24h, written like 30s, 10m or 1h. Only in the system config. Takes effect immediately.
 max = "5m"
 
 [net]
@@ -149,32 +149,32 @@ max = "5m"
 
 [net.search]
 # Search provider: Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel, which then receive the address.
-# Allowed: auto, exa, parallel, firecrawl, anysearch, you, deepseek, tavily, brave, searxng, duckduckgo or bing. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: auto, exa, parallel, firecrawl, anysearch, you, deepseek, tavily, brave, searxng, duckduckgo or bing. Only in the system config. Takes effect next turn.
 source = "auto"
 
 [net.search.brave]
 # Brave Search: Needed when Brave is the search provider.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
 # key =
 
 [net.search.deepseek]
 # DeepSeek: Needed when DeepSeek is the search provider; if unset, the key of your DeepSeek model provider is used. Charged per search.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
 # key =
 
 [net.search.exa]
 # Exa: With a key, searches use your own Exa quota; without one, the free quota.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
 # key =
 
 [net.search.searxng]
 # SearXNG address: Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search provider.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
 # url =
 
 [net.search.tavily]
 # Tavily: Needed when Tavily is the search provider.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
 # key =
 
 [packages]
@@ -192,342 +192,342 @@ source = "https://miyu-agent.github.io/packages/"
 
 [packages."<id>"]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.ask_user]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.authoring]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.clicall]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.edit]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.env]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.glob]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.goal]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.grep]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.history]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.jobs]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.knowledge]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.loop]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.memory]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.mermaid]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.net]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.packages]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.project-docs]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.read]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.roleplay]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.schedule]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.session_usage]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.sessions]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.shell]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.show]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.sources."<id>"]
 # Other source key: The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken.
-# Allowed: text of at most 64 characters. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.
 # key =
 
-# Other source address: The folder holding its index. Together with a key it makes a source you trust; in the system configuration it's for everyone, in personal settings only for you.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect immediately.
+# Other source address: The folder holding its index. Together with a key it makes a source you trust. It goes in the system config.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect immediately.
 # url =
 
 [packages.subagent]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.todowrite]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.trash]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [packages.write]
 # Turn this package off for me: Only for you: your sessions get none of this package's tools, skills, commands or the text it adds to the conversation, and the settings and preset pages leave it out. Others keep it.
-# Allowed: true or false. Only in personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # off =
 
 [permission]
 # Permission level for new sessions: The default permission mode new sessions start in. Changes apply to sessions opened afterwards.
-# Allowed: workspace or full. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: workspace or full. Only in the system config. Applies to new sessions.
 level = "workspace"
 
 # Start new sessions read-only: When on, new sessions begin read-only. The AI can look around and plan, and you turn read-only off when files should change. A project config can only turn it on.
-# Allowed: true or false. Only in the system config, personal settings or a project config. Applies to new sessions.
+# Allowed: true or false. Only in the system config or a project config. Applies to new sessions.
 start_read_only = false
 
 [persona]
 # Default persona: The persona new sessions use. When unset, new sessions have no persona: no character prompt, and a memory of their own.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
 # default =
 
 [pools."<id>"]
 # Description for the model: One line the AI sees after the pool name when it starts a subagent. Write it in English.
-# Allowed: one line of English, at most 60 characters. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: one line of English, at most 60 characters. Only in the system config. Applies to new sessions.
 # description =
 
 # Pool members: A group of models, each written as provider/model.
-# Allowed: a list of <provider>/<model>. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of <provider>/<model>. Only in the system config. Takes effect next turn.
 # models =
 
 # Pool strategy: Keep a session on one member, take the next member for every request, or start from the first member every time (a main model with backups used only on errors). Left out, a pool whose members are all billed per request rotates and the others pin.
-# Allowed: pin, rotate or ordered. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: pin, rotate or ordered. Only in the system config. Takes effect next turn.
 # strategy =
 
 # Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: true or false. Only in the system config. Applies to new sessions.
 subagent = false
 
 [pools.flagship]
 # Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: true or false. Only in the system config. Applies to new sessions.
 subagent = true
 
 [pools.lite]
 # Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: true or false. Only in the system config. Applies to new sessions.
 subagent = true
 
 [pools.normal]
 # Subagents can pick it: When on, the AI can pick this pool for a subagent in new sessions. It is listed only once it has members.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: true or false. Only in the system config. Applies to new sessions.
 subagent = true
 
 [preset]
 # Default preset: The preset new sessions use.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
 default = "full"
 
 [profile]
 # More about you: Anything you want the AI to know about you; can be left empty. Not included in group chats on messaging platforms.
-# Allowed: text of at most 2000 characters; line breaks allowed. Only in personal settings. Applies to new sessions.
+# Allowed: text of at most 2000 characters; line breaks allowed. Only in the system config. Applies to new sessions.
 # about =
 
 # What the AI calls you: How the AI addresses you, such as your name or a nickname.
-# Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
+# Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.
 # name =
 
 # What language should the AI reply in: The language the AI replies in by default. You can ask it to switch at any time.
-# Allowed: text of at most 64 characters. Only in personal settings. Applies to new sessions.
+# Allowed: text of at most 64 characters. Only in the system config. Applies to new sessions.
 # preferred_reply_language =
 
 [providers."<id>"]
 # Address: The address of this provider's API; the driver adds the path. Known providers can leave it out.
-# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: an address starting with http:// or https:// or { env = "…" }. Only in the system config. Takes effect next turn.
 # base_url =
 
 # Cache class: How this provider bills its cache. For now it only decides how a pool without a strategy splits. Left out, it follows the driver.
-# Allowed: contract, best_effort or per_request. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: contract, best_effort or per_request. Only in the system config. Takes effect next turn.
 # cache =
 
 # Catalog provider: Which provider in the model data this one is, for example deepseek for a relay that only forwards DeepSeek.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect next turn.
 # catalog =
 
 # Driver: How to talk to this provider. Known providers can leave it out.
-# Allowed: openai-chat, anthropic or openai-responses. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: openai-chat, anthropic or openai-responses. Only in the system config. Takes effect next turn.
 # driver =
 
 # Key: Write { secret = "name" } (saved with miyu provider login) or { env = "VARIABLE" }. One per provider; to use several quotas together, set up several providers and put them in a pool. Without one, no auth header is sent.
-# Allowed: { secret = "…" } or { env = "…" }. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: { secret = "…" } or { env = "…" }. Only in the system config. Takes effect next turn.
 # key =
 
 # Local service: A model service on this machine, counted as free. Left out, it follows the address: on this machine means yes.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # local =
 
 # Display name: The name people see. The id is only for referring to models; without one, the model data's name for this provider is used, then the id.
-# Allowed: text of at most 64 characters. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: text of at most 64 characters. Only in the system config. Takes effect immediately.
 # name =
 
 # Price multiplier: Prices of this provider are multiplied by it. 1 if left out. A multiplier on the model wins.
-# Allowed: a number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
 # price_multiplier =
 
 [providers."<id>".models."<model>"]
 # Catalog entry: Which models.dev entry to use: <provider>/<model>. Left out, it is found by name.
-# Allowed: text of at most 256 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: text of at most 256 characters. Only in the system config. Takes effect next turn.
 # catalog =
 
 # Default reasoning effort: The reasoning effort this model uses by default: one of its levels, for example high, or off where thinking can be turned off. Left out, the provider decides.
-# Allowed: text of at most 32 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: text of at most 32 characters. Only in the system config. Takes effect next turn.
 # effort =
 
 # Inputs: What this model can read: text, images, PDF, audio, video.
-# Allowed: a list of text, image, pdf, audio or video. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text, image, pdf, audio or video. Only in the system config. Takes effect next turn.
 # inputs =
 
 # Max output: How many tokens this model can write at most in one reply.
-# Allowed: a whole number from 1 to 100000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.
 # max_output =
 
 # Price multiplier: Prices of this model are multiplied by it, over the one on the provider.
-# Allowed: a number from 0 to 1000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000. Only in the system config. Takes effect next turn.
 # price_multiplier =
 
 # Reasoning levels: Which reasoning levels this model offers.
-# Allowed: a list of text of at most 32 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 32 characters. Only in the system config. Takes effect next turn.
 # reasoning =
 
 # Default temperature: The temperature this model uses by default, from 0 to 2; higher gives looser answers. Left out, the provider decides. Not sent to models that do not take one.
-# Allowed: a number from 0 to 2. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 2. Only in the system config. Takes effect next turn.
 # temperature =
 
 # Tool calls: Whether this model can call tools.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 # tools =
 
 # Context window: The context window of this model, in tokens.
-# Allowed: a whole number from 1 to 100000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a whole number from 1 to 100000000. Only in the system config. Takes effect next turn.
 # window =
 
 [providers."<id>".models."<model>".price]
 # Cache read price: Price per million tokens read from the cache.
-# Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # cache_read =
 
 # Cache write price: Price per million tokens written to the cache.
-# Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # cache_write =
 
 # Currency: Currency of the price, three capital letters such as USD or CNY. USD if left out.
-# Allowed: text of at most 3 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: text of at most 3 characters. Only in the system config. Takes effect next turn.
 # currency =
 
 # Input price: Price per million input tokens. A written price is used whole.
-# Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # input =
 
 # Output price: Price per million output tokens.
-# Allowed: a number from 0 to 1000000. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a number from 0 to 1000000. Only in the system config. Takes effect next turn.
 # output =
 
 [sandbox]
 # Sandbox strength: Auto uses BubbleWrap by default and falls back to Landlock when it isn't installed or can't run.
-# Allowed: auto or weak. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: auto or weak. Only in the system config. Takes effect next turn.
 strength = "auto"
 
 [sandbox.private]
 # Added private folders: Folders commands can't read or write and file tools ask about first.
-# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # add =
 
 # Private folders: When off, neither the default nor the added private folders are hidden and file tools stop asking; Miyu's own data stays hidden.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 enabled = true
 
 # Default private folders: Folders hidden out of the box. The ones kept stay private; for the ones taken out, commands can read them and file tools stop asking. Restoring the default brings them all back.
-# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # remove =
 
 [sandbox.readonly]
 # Added protected paths: Files and folders file tools ask about before changing; reading is unaffected. Write ~/…, an absolute path, or a path inside the workspace such as .vscode (any level counts).
-# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # add =
 
 # Protected paths: When off, neither the default nor the added protected paths apply, and file tools stop asking before changing them; Miyu's own data stays protected.
-# Allowed: true or false. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: true or false. Only in the system config. Takes effect next turn.
 enabled = true
 
 # Default protected paths: Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back.
-# Allowed: a list of text of at most 4096 characters. Only in the system config or personal settings. Takes effect next turn.
+# Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.
 # remove =
 
 [sandbox.tools]
@@ -537,40 +537,40 @@ enabled = true
 
 [show]
 # Remind the AI to use Show: Has the AI hand over images, web pages, documents, video and audio it makes or fetches with Show, so you see them right away instead of just a path.
-# Allowed: true or false. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: true or false. Only in the system config. Applies to new sessions.
 system_hint = true
 
 [terminal]
 # New session after idle: After this many minutes without a message, the next one starts a new shell integration session; the old one is kept. 0 never starts a new one.
-# Allowed: a whole number from 0 to 525600. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: a whole number from 0 to 525600. Only in the system config. Takes effect immediately.
 idle_new_after = 180
 
 # Shell integration session persona: The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
 # persona =
 
 # Shell integration session preset: The preset for a new shell integration session. Unset follows the default preset.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Applies to new sessions.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
 # preset =
 
 [ui]
 # Default interface: The interface plain miyu opens.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config or personal settings. Takes effect after restart.
+# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect after restart.
 head = "tui"
 
 # Interface language: The language terminals, the web page and the command line use for you. auto follows the terminal or browser.
-# Allowed: auto, zh, en or ja. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: auto, zh, en or ja. Only in the system config. Takes effect immediately.
 language = "auto"
 
 # On start, open: Whether a terminal interface or the web page opens a new session or picks up the most recent one.
-# Allowed: new or recent. Only in the system config or personal settings. Takes effect after restart.
+# Allowed: new or recent. Only in the system config. Takes effect after restart.
 startup = "new"
 
-# First-run guide done: This account has finished the first-run guide; the terminal and web pages no longer open it.
-# Allowed: true or false. Only in personal settings. Takes effect immediately.
+# First-run guide done: The first-run guide is done; the terminal and web pages no longer open it.
+# Allowed: true or false. Only in the system config. Takes effect immediately.
 welcomed = false
 
 [usage]
 # Currency shown first: Amounts are added up per currency, never converted. This one is listed first, the others by code. Three capital letters such as USD or CNY.
-# Allowed: text of at most 3 characters. Only in the system config or personal settings. Takes effect immediately.
+# Allowed: text of at most 3 characters. Only in the system config. Takes effect immediately.
 currency = "USD"

@@ -14,7 +14,7 @@ miyu_config::settings! {
         /// 界面语言：`auto` 跟着系统，或者定成 `zh`、`en`、`ja`。
         language: String = "auto" {
             kind: option ["auto", "zh", "en", "ja"],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "general", group: "display", common: true, control: select },
         },
@@ -23,7 +23,7 @@ miyu_config::settings! {
         /// `config.get` 读、起来时读一次，核心不管它。
         startup: String = "new" {
             kind: option ["new", "recent"],
-            layers: [System, Personal],
+            layers: [System],
             applies: head_start,
             ui: { page: "general", group: "display", control: select },
         },
@@ -31,7 +31,7 @@ miyu_config::settings! {
         /// `config.get` 读，照清单找这个包的程序。
         head: String = "tui" {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: head_start,
             ui: { page: "general", group: "display", control: text },
         },
@@ -39,7 +39,7 @@ miyu_config::settings! {
         /// 头走完引导写 `true`，以后不再进，缺什么去配置页补。设置页不画。核心不读它。
         welcomed: bool = false {
             kind: bool,
-            layers: [Personal],
+            layers: [System],
             applies: now,
             ui: { page: "general", group: "display", control: toggle, hidden: true },
         },
@@ -53,7 +53,7 @@ miyu_config::settings! {
         /// 无人格（施工 P-4 上）；指着没有的人格的当没设。
         default: Option<String> = none {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "general", group: "new_session", control: text },
         },
@@ -67,7 +67,7 @@ miyu_config::settings! {
         /// （Y12）。
         default: String = "full" {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "general", group: "new_session", control: text },
         },
@@ -81,21 +81,21 @@ miyu_config::settings! {
         /// 新开的终端会话用哪个人格：人格目录的编号。没设的跟随 `persona.default`。只管新开的，在用的不换。
         persona: Option<String> = none {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "general", group: "terminal", control: text },
         },
         /// 新开的终端会话用哪个预设：预设文件的编号。没设的跟随 `preset.default`。
         preset: Option<String> = none {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "general", group: "terminal", control: text },
         },
         /// 上一次说话以后闲置超过多少分钟，下一句开一个新的终端会话；0 是不换。默认 3 小时（2026-10-20 项目主人定：一般 3 个小时缓存已经没了；原来 12 小时）。
         idle_new_after: i64 = 180 {
             kind: int [0, 525600],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "general", group: "terminal", control: number },
         },
@@ -108,7 +108,7 @@ miyu_config::settings! {
         /// 新会话一开局就是只读：她只能查、写计划。项目配置只能把它打开。
         start_read_only: bool = false {
             kind: bool,
-            layers: [System, Personal, Project],
+            layers: [System, Project],
             tighten: true_only,
             applies: new_session,
             ui: { page: "general", group: "new_session", control: toggle },
@@ -117,7 +117,7 @@ miyu_config::settings! {
         /// 引导里「沙盒」那一步写它，开是 `workspace`（2026-10-13 项目主人定：默认开）。只管本机的会话：场所会话照旧从工作区开局。
         level: String = "workspace" {
             kind: option ["workspace", "full"],
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "privacy", group: "permission", control: select },
         },
@@ -204,7 +204,7 @@ const fn source_feed(key: &'static str, kind: miyu_config::Kind) -> miyu_config:
         key,
         kind,
         default: None,
-        layers: &[miyu_config::Layer::System, miyu_config::Layer::Personal],
+        layers: &[miyu_config::Layer::System],
         tighten: None,
         env: None,
         applies: miyu_config::Applies::Now,
@@ -244,7 +244,7 @@ pub const EXTERNAL_ME: &[miyu_config::Item] = &[miyu_config::Item {
     key: "external.me",
     kind: miyu_config::Kind::List(&miyu_config::Kind::Text { max: 128 }),
     default: None,
-    layers: &[miyu_config::Layer::Personal],
+    layers: &[miyu_config::Layer::System],
     tighten: None,
     env: None,
     applies: miyu_config::Applies::Now,

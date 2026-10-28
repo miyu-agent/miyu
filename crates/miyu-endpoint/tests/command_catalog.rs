@@ -65,10 +65,7 @@ async fn without_a_session_every_command_is_listed_in_the_connections_language()
 #[tokio::test]
 async fn without_a_session_package_commands_follow_the_default_preset() {
     let home = Home::new();
-    home.write(
-        "home/alice/settings.toml",
-        "[preset]\ndefault = \"minimal\"\n",
-    );
+    home.write("system/config.toml", "[preset]\ndefault = \"minimal\"\n");
     let core = crate::support::venues::configured_core(&home, &Script::new([]), Catalog::default());
     let mut client = Client::connect(core);
     client.hello().await;

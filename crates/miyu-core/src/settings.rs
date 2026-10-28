@@ -199,24 +199,18 @@ pub fn items() -> Vec<Item> {
         .collect()
 }
 
-/// 生成的三份的文件名，和 [`render`] 交回的先后一样：系统配置的 Schema、个人设置的 Schema、参考文件。
-pub const FILES: [&str; 3] = [
-    "config.schema.json",
-    "settings.schema.json",
-    "reference.toml",
-];
+/// 生成的两份的文件名，和 [`render`] 交回的先后一样：系统配置的 Schema、参考文件（施工 SU-3 上：个人设置那一份拿掉了）。
+pub const FILES: [&str; 2] = ["config.schema.json", "reference.toml"];
 
-/// 照清单 `items`、字 `words` 生成的三份，先后照 [`FILES`]。系统配置的 Schema 只有能放进系统配置的项，个人设置的
-/// 同理，参考文件是全部。
-pub fn render(items: &[Item], words: &dyn Words) -> [Result<String, Missing>; 3] {
+/// 照清单 `items`、字 `words` 生成的两份，先后照 [`FILES`]。系统配置的 Schema 只有能放进系统配置的项，参考文件是全部。
+pub fn render(items: &[Item], words: &dyn Words) -> [Result<String, Missing>; 2] {
     [
         schema::render(items, Layer::System, words),
-        schema::render(items, Layer::Personal, words),
         reference::render(items, words),
     ]
 }
 
-/// 核心起来时读配置（第二条第 1 条）：系统配置、管理员 `admin` 的个人设置、信任的记录、密钥文件（施工 8-5），照登记的
+/// 核心起来时读配置（第二条第 1 条）：系统配置、主人 `admin` 的信任的记录、密钥文件（施工 8-5），照登记的
 /// 全部清单认，带 `env` 的项、`{ env = … }` 照进程的环境变量。`home` 是系统的家目录。读不进来不影响起不起得来：有问题的每份记一条 `WARN`。
 pub fn read(
     root: &DataRoot,

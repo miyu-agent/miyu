@@ -17,7 +17,7 @@ Pushes are notifications the core sends on its own: `{"jsonrpc": "2.0", "method"
 | `notice` | `notices` | `{"kind", "at", …}`: a notice for people (construction J-3 middle); heads show a system notification by `kind`. `schedule.ran`: `{"schedule", "session", "ok"}`, a new-session schedule's run has ended; `ok` means it finished (errors and interruptions are `false`); schedules running in an existing session send none. `schedules.reset`: this account's schedule table broke, was set aside, and an empty one replaced it, so its schedules are gone. Not stored: connections not subscribed miss it |
 | `kb.indexing` | `kb` | `{"kb", "done", "total"}`: one of this account's knowledge bases is building its index; `done` of the `total` documents to rebuild are done. The first is 0, the last is always sent, at most one every 0.1 s in between |
 | `kb.indexed` | `kb` | `{"kb"}`: the build finished; read that base again with `kb.list` |
-| `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in personal settings; `server` is `null` when removed |
+| `mcp.changed` | `packages` | `{"name", "server"}`: one MCP server in the system config; `server` is `null` when removed |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`: one widget replaced whole; `null` when turned off or removed |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`: a new line in one memory's log |
 | `memory.dreaming` | `memory` | `{"upto", "kind", …, "persona"? | "session"?}`: while organizing, a revision or removal she just finished writing, or how far the summary is; not logged, not replayed (see [`memory.dream`](memory.en.md#memorydream)) |

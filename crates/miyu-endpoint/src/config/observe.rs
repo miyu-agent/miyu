@@ -61,40 +61,28 @@ impl Core {
         if path == config.places.trust {
             observe_trust(self, &mut config);
         } else if path == config.secrets.path {
-            crate::secrets::observe(self, &mut config, crate::secrets::Shelf::System);
-        } else if path == config.own_secrets.path {
-            crate::secrets::observe(self, &mut config, crate::secrets::Shelf::Personal);
-        } else if let Some(layer) = config.layer_at(path) {
-            observe(self, &mut config, layer);
+            crate::secrets::observe(self, &mut config);
+        } else if path == config.system.path {
+            observe(self, &mut config, Layer::System);
         }
     }
 }
 
 impl Config {
-    /// 要监视的几份：系统配置、个人设置、信任的记录、密钥文件（施工 8-5）。
+    /// 要监视的几份：系统配置、信任的记录、密钥文件（施工 8-5）。
     fn watched(&self) -> Vec<PathBuf> {
         vec![
             self.system.path.clone(),
-            self.personal.path.clone(),
             self.places.trust.clone(),
             self.secrets.path.clone(),
-            self.own_secrets.path.clone(),
         ]
-    }
-
-    /// `path` 是哪一层的文件。
-    fn layer_at(&self, path: &Path) -> Option<Layer> {
-        [&self.system, &self.personal]
-            .into_iter()
-            .find(|file| file.path == path)
-            .map(|file| file.layer)
     }
 }
 
 /// 重读能改的一层 `layer`（第七条第 3 条）：和手里的是同一份的，什么都不做；不一样的换上（读不进来的照上一次读好的用），
 /// 这一层变了的项、问题有了变化的，记日志、推送。
 pub(super) fn observe(core: &Core, config: &mut Config, layer: Layer) {
-    let old = config.file(layer);
+    let old = config.file();
     let fresh = File::read(config.items(), layer, old.path.clone(), old.shown.clone()).keeping(old);
     if fresh.same_as(old) {
         return;
@@ -142,7 +130,7 @@ pub(super) fn record(
     };
     let body = ConfigChanged {
         layer: layer.as_str(),
-        file: &config.file(layer).shown,
+        file: &config.file().shown,
         via: via.as_str(),
         changes: changes
             .iter()

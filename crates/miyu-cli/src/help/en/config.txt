@@ -5,7 +5,7 @@ See and change settings, and trust a project config.
 Commands:
   get [key…]           Print the values in effect, or just the value of one key
   set <key> <value>    Change one setting
-  unset <key>          Remove one from this layer, back to the one below
+  unset <key>          Remove one from the system config, back to the default
   edit                 Open in an editor, checked before it is saved
   explain <key>        What each layer says and which one wins
   path                 Print where the file is
@@ -13,8 +13,6 @@ Commands:
                        it or not
 
 Options:
-      --system            The system config, instead of personal settings
-                          (set, unset, edit, path)
       --project           The project config here (edit, path)
       --format text|json  For get, explain: json for scripts
       --yes               For trust: trust it, without asking

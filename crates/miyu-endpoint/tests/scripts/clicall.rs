@@ -56,7 +56,7 @@ async fn scripts_are_callable_only_when_they_or_the_settings_say_yes() {
         .call(
             "s1",
             "config.set",
-            json!({"layer": "personal", "changes": [
+            json!({"layer": "system", "changes": [
                 {"key": "clicall.tools.weather", "value": true},
                 {"key": "clicall.tools.lookup", "value": false},
                 {"key": "clicall.tools.read", "value": true},

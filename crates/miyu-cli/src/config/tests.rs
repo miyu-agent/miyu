@@ -105,11 +105,10 @@ fn the_total_leaves_out_what_there_is_none_of() {
 fn language_item() -> (serde_json::Value, serde_json::Value) {
     let item = json!({
         "layers": [
-            {"origin": {"file": "home/admin/settings.toml", "layer": "personal", "line": 3}, "used": true, "value": "zh"},
-            {"origin": {"file": "system/config.toml", "layer": "system", "line": 5}, "used": false, "value": "en"},
+            {"origin": {"file": "system/config.toml", "layer": "system", "line": 5}, "used": true, "value": "zh"},
             {"origin": {"layer": "default"}, "used": false, "value": "auto"},
         ],
-        "origin": {"file": "home/admin/settings.toml", "layer": "personal", "line": 3},
+        "origin": {"file": "system/config.toml", "layer": "system", "line": 5},
         "value": "zh",
     });
     let said = |name: &str, description: &str| json!({"applies": "now", "description": description, "key": "ui.language", "name": name});
@@ -128,16 +127,12 @@ fn explain_lines_up_the_layers_like_the_blueprint() {
         .map(|line| line.paint(false))
         .collect();
     // 路径照平台的分隔符写（`~/…` 在 Windows 上是 `~\…`），别的一字不差。
-    let (personal, system) = (
-        places().shown("home/admin/settings.toml"),
-        places().shown("system/config.toml"),
-    );
+    let system = places().shown("system/config.toml");
     assert_eq!(
         lines.concat(),
         format!(
             "界面语言（ui.language）：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。立即生效。\n\
-             \x20 \"zh\"    个人设置  {personal}:3  ← 生效\n\
-             \x20 \"en\"    系统配置  {system}:5\n\
+             \x20 \"zh\"    系统配置  {system}:5  ← 生效\n\
              \x20 \"auto\"  默认值\n"
         )
     );
@@ -151,8 +146,7 @@ fn explain_lines_up_the_layers_like_the_blueprint() {
         lines.concat(),
         format!(
             "Interface language (ui.language): The language terminals, the web page and the command line use for you. auto follows the terminal or browser. Takes effect immediately.\n\
-             \x20 \"zh\"    personal settings  {personal}:3  ← in effect\n\
-             \x20 \"en\"    system config      {system}:5\n\
+             \x20 \"zh\"    system config  {system}:5  ← in effect\n\
              \x20 \"auto\"  default\n"
         )
     );
@@ -206,13 +200,13 @@ fn files_are_found_and_shown_with_a_tilde() {
         "绝对路径照原样"
     );
     assert_eq!(
-        places.shown("home/admin/settings.toml"),
+        places.shown("system/config.toml"),
         format!(
             "~{}",
-            ["", ".miyu", "home", "admin", "settings.toml"].join(std::path::MAIN_SEPARATOR_STR)
+            ["", ".miyu", "system", "config.toml"].join(std::path::MAIN_SEPARATOR_STR)
         )
     );
-    assert_eq!(columns("个人设置"), 8);
+    assert_eq!(columns("系统配置"), 8);
 }
 
 #[test]
@@ -241,12 +235,12 @@ fn a_missing_project_config_belongs_at_the_repository_root() {
 fn set_and_unset_lines_match_the_blueprint() {
     let (zh, en) = (Language::Chinese, Language::English);
     assert_eq!(
-        zh.saved("ui.language", "\"zh\"", "personal", "now"),
-        "· ui.language = \"zh\" 写进了个人设置，立即生效"
+        zh.saved("ui.language", "\"zh\"", "system", "now"),
+        "· ui.language = \"zh\" 写进了系统配置，立即生效"
     );
     assert_eq!(
-        en.saved("ui.language", "\"zh\"", "personal", "now"),
-        "· ui.language = \"zh\" saved to personal settings, takes effect immediately"
+        en.saved("ui.language", "\"zh\"", "system", "now"),
+        "· ui.language = \"zh\" saved to the system config, takes effect immediately"
     );
     assert_eq!(
         en.saved(
@@ -258,16 +252,12 @@ fn set_and_unset_lines_match_the_blueprint() {
         "· permission.start_read_only = true saved to the system config, applies to new sessions"
     );
     assert_eq!(
-        zh.saved("ui.startup", "\"recent\"", "personal", "head_start"),
-        "· ui.startup = \"recent\" 写进了个人设置，重启后生效"
+        zh.saved("ui.startup", "\"recent\"", "system", "head_start"),
+        "· ui.startup = \"recent\" 写进了系统配置，重启后生效"
     );
     assert_eq!(
-        zh.saved_below("ui.language", "\"en\"", "system", "personal", "\"zh\""),
-        "· ui.language = \"en\" 写进了系统配置，个人设置里写着 \"zh\"，用的还是 \"zh\""
-    );
-    assert_eq!(
-        en.saved_below("ui.language", "\"en\"", "system", "personal", "\"zh\""),
-        "· ui.language = \"en\" saved to the system config, but personal settings say \"zh\", so \"zh\" stays in use"
+        zh.saved_below("log.level", "\"info\"", "system", "env", "\"debug\""),
+        "· log.level = \"info\" 写进了系统配置，环境变量里写着 \"debug\"，用的还是 \"debug\""
     );
     assert_eq!(
         en.saved_below("log.level", "\"info\"", "system", "env", "\"debug\""),
@@ -276,20 +266,16 @@ fn set_and_unset_lines_match_the_blueprint() {
     assert_eq!(zh.already("\"zh\""), "· 本来就是 \"zh\"，没改");
     assert_eq!(en.already("\"zh\""), "· Already \"zh\", nothing changed");
     assert_eq!(
-        zh.removed("ui.language", "personal", "\"en\"", "system"),
-        "· 从个人设置里删掉了 ui.language，现在是 \"en\"（系统配置）"
+        zh.removed("ui.language", "system", "\"auto\"", "default"),
+        "· 从系统配置里删掉了 ui.language，现在是 \"auto\"（默认值）"
     );
     assert_eq!(
-        en.removed("ui.language", "personal", "\"en\"", "system"),
-        "· Removed ui.language from personal settings. It is now \"en\" (system config)"
+        en.removed("ui.language", "system", "\"auto\"", "default"),
+        "· Removed ui.language from the system config. It is now \"auto\" (default)"
     );
     assert_eq!(
-        zh.not_there("ui.language", "personal"),
-        "· 个人设置里本来就没写 ui.language"
-    );
-    assert_eq!(
-        en.not_there("ui.language", "personal"),
-        "· Personal settings did not have ui.language"
+        zh.not_there("ui.language", "system"),
+        "· 系统配置里本来就没写 ui.language"
     );
     assert_eq!(
         en.not_there("log.level", "system"),
@@ -403,12 +389,12 @@ fn every_applies_value_is_said_like_the_blueprint() {
     ];
     for (applies, chinese, english) in said {
         assert_eq!(
-            zh.saved(key, "4096", "personal", applies),
-            format!("· {key} = 4096 写进了个人设置，{chinese}")
+            zh.saved(key, "4096", "system", applies),
+            format!("· {key} = 4096 写进了系统配置，{chinese}")
         );
         assert_eq!(
-            en.saved(key, "4096", "personal", applies),
-            format!("· {key} = 4096 saved to personal settings, {english}")
+            en.saved(key, "4096", "system", applies),
+            format!("· {key} = 4096 saved to the system config, {english}")
         );
         assert_eq!(zh.edit_saved(&[applies]), format!("· 存好了，{chinese}"));
         assert_eq!(
@@ -428,12 +414,12 @@ fn every_applies_value_is_said_like_the_blueprint() {
     }
     // 认不出的（核心比命令行新）：不说什么时候生效，不瞎说「当场」。
     assert_eq!(
-        zh.saved(key, "4096", "personal", "someday"),
-        format!("· {key} = 4096 写进了个人设置")
+        zh.saved(key, "4096", "system", "someday"),
+        format!("· {key} = 4096 写进了系统配置")
     );
     assert_eq!(
-        en.saved(key, "4096", "personal", "someday"),
-        format!("· {key} = 4096 saved to personal settings")
+        en.saved(key, "4096", "system", "someday"),
+        format!("· {key} = 4096 saved to the system config")
     );
     assert_eq!(zh.edit_saved(&["someday"]), "· 存好了");
     assert_eq!(

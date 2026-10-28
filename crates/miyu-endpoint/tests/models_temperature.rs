@@ -204,14 +204,14 @@ async fn a_temperature_set_applies_next_turn_and_stays_in_bounds() {
         .call(
             "config-9f2c4e1a7b3d5f60-1",
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": key, "value": 0.4}]}),
+            json!({"layer": "system", "changes": [{"key": key, "value": 0.4}]}),
         )
         .await;
     assert_eq!(set["result"]["keys"][key]["applies"], "next_turn", "{set}");
     let reply = client.call("l", "model.list", json!({})).await;
     let deepseek = facts(&reply, "deepseek", "deepseek-flash");
     assert_eq!(deepseek["temperature"]["value"], 0.4, "{reply}");
-    assert_eq!(deepseek["temperature"]["layer"], "personal");
+    assert_eq!(deepseek["temperature"]["layer"], "system");
     for (n, value) in [json!(2.5), json!(-0.1), json!("hot")]
         .into_iter()
         .enumerate()
@@ -220,7 +220,7 @@ async fn a_temperature_set_applies_next_turn_and_stays_in_bounds() {
             .call(
                 &format!("config-9f2c4e1a7b3d5f60-{}", n + 2),
                 "config.set",
-                json!({"layer": "personal", "changes": [{"key": key, "value": value}]}),
+                json!({"layer": "system", "changes": [{"key": key, "value": value}]}),
             )
             .await;
         assert!(refused.get("error").is_some(), "{value}：{refused}");

@@ -63,7 +63,7 @@ async fn add_source(client: &mut Client, name: &str, url: &str, key: &str) {
         .call(
             "s",
             "config.set",
-            json!({"layer": "personal", "changes": [
+            json!({"layer": "system", "changes": [
                 {"key": format!("packages.sources.{name}.url"), "value": url},
                 {"key": format!("packages.sources.{name}.key"), "value": key},
             ]}),
@@ -161,7 +161,7 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
         .call(
             "r",
             "config.set",
-            json!({"layer": "personal", "changes": [
+            json!({"layer": "system", "changes": [
                 {"key": "packages.sources.friends.url", "unset": true},
                 {"key": "packages.sources.friends.key", "unset": true},
             ]}),
@@ -178,50 +178,4 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
         )
         .await;
     assert_eq!(reason(&again), Some("unknown_source"), "{again}");
-}
-
-#[tokio::test]
-async fn a_source_in_settings_named_like_a_system_one_is_not_used() {
-    let home = Home::new();
-    let (official_secret, official_public) = pair();
-    let official = official_with("base", &official_secret).await;
-    let (shared_secret, shared_public) = pair();
-    let entry = |id: &str| {
-        json!({"id": id, "version": "1.0", "name": {"en": id}, "origin": format!("github.com/x/{id}"),
-               "files": [{"url": "https://example.invalid/x.miyu", "sha256": "ab", "size": 1}]})
-    };
-    let system = Server::start(serving(&signed_entries(
-        "2026-10-28T03:00:00Z",
-        &[entry("kit-a")],
-        &shared_secret,
-    )))
-    .await;
-    let (other_secret, other_public) = pair();
-    let personal = Server::start(serving(&signed_entries(
-        "2026-10-28T03:00:00Z",
-        &[entry("kit-b")],
-        &other_secret,
-    )))
-    .await;
-    let extra = format!(
-        "\n[packages.sources.shared]\nurl = \"{}/\"\nkey = \"{shared_public}\"\n",
-        system.base_url
-    );
-    let keys = vec![PublicKey::from_base64(&official_public).expect("读得成")];
-    let core = core_with(&home, (&format!("{}/", official.base_url), &extra), keys);
-    let mut owner = Client::connect(Arc::clone(&core));
-    owner.hello().await;
-    add_source(
-        &mut owner,
-        "shared",
-        &format!("{}/", personal.base_url),
-        &other_public,
-    )
-    .await;
-    assert_eq!(
-        found(&mut owner, "kit").await,
-        [("kit-a".to_string(), "shared".to_string(), false)],
-        "照系统配置那一条"
-    );
-    assert!(personal.received().is_empty(), "设置里那一条不用");
 }

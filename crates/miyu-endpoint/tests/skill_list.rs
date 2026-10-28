@@ -43,7 +43,7 @@ fn written(home: &Home) {
 /// 照个人设置的语言 `language` 起一份核心（系统的家目录当是数据根），列一次。
 async fn listed(home: &Home, language: &str) -> Vec<Value> {
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[ui]\nlanguage = \"{language}\"\n"),
     );
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);

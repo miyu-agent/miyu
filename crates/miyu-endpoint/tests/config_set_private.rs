@@ -8,7 +8,7 @@ use miyu_session::testkit::Script;
 use crate::support::*;
 
 /// 个人设置的文件，照数据根算。
-const PERSONAL: &str = "home/alice/settings.toml";
+const PERSONAL: &str = "system/config.toml";
 
 async fn set(client: &mut Client, id: &str, params: Value) -> Value {
     client.call(id, "config.set", params).await
@@ -30,7 +30,7 @@ async fn a_private_dir_as_wide_as_home_is_refused() {
     let refused = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.private.add", "value": ["~/notes", "~/"]},
         ]}),
     )
@@ -43,7 +43,7 @@ async fn a_private_dir_as_wide_as_home_is_refused() {
     let fine = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.private.add", "value": ["~/notes"]},
         ]}),
     )
@@ -53,7 +53,7 @@ async fn a_private_dir_as_wide_as_home_is_refused() {
     let wrong = set(
         &mut client,
         "c3",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.private.add", "value": ["relative/dir"]},
         ]}),
     )
@@ -122,7 +122,7 @@ async fn readonly_paths_take_workspace_ones_and_refuse_home() {
     let fine = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.readonly.add", "value": ["Makefile", "~/bin"]},
         ]}),
     )
@@ -131,7 +131,7 @@ async fn readonly_paths_take_workspace_ones_and_refuse_home() {
     let refused = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.readonly.add", "value": ["Makefile", "~"]},
         ]}),
     )
@@ -143,7 +143,7 @@ async fn readonly_paths_take_workspace_ones_and_refuse_home() {
     let wrong = set(
         &mut client,
         "c3",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "sandbox.readonly.add", "value": ["../out"]},
         ]}),
     )

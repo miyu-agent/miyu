@@ -1,5 +1,5 @@
-//! 个人设置里的 MCP 服务（施工 F-9 上，`docs/blueprint/mcp.md`「个人设置里的一张表」）：一个服务一张 `[mcp.<名字>]`，名字
-//! 照清单的写法，格子同清单的 `[[mcp]]`、不写 `name`。不进配置清单：读个人设置的那一边跳过这一张表（`crate::parse`）。
+//! 系统配置里的 MCP 服务（施工 F-9 上，`docs/blueprint/mcp.md`「个人设置里的一张表」，SU-3 上起挪进系统配置）：一个服务一张 `[mcp.<名字>]`，名字
+//! 照清单的写法，格子同清单的 `[[mcp]]`、不写 `name`。不进配置清单：读系统配置的那一边跳过这一张表（`crate::parse`）。
 //! 写错了的那一个不收、记一条问题，别的照收（G8）。
 
 use toml_edit::{Document, Item};
@@ -8,8 +8,8 @@ use super::super::reader::{Reader, line_of};
 use super::super::{Code, Problem};
 use super::{FIELDS, McpServer, NAME_CHARS, bad, fields, valid_name};
 
-/// 个人设置的字 `text` 里的服务，照写的先后，和写错了的几处。整份不是 TOML 的一个都没有、也不另报：配置那一边报 `syntax`。
-pub fn personal(text: &str) -> (Vec<McpServer>, Vec<Problem>) {
+/// 系统配置的字 `text` 里的服务，照写的先后，和写错了的几处。整份不是 TOML 的一个都没有、也不另报：配置那一边报 `syntax`。
+pub fn configured(text: &str) -> (Vec<McpServer>, Vec<Problem>) {
     let Ok(document) = Document::parse(text) else {
         return (Vec::new(), Vec::new());
     };

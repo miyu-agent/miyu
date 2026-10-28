@@ -160,30 +160,28 @@ async fn each_member_of_a_rotating_pool_uses_its_own_config_default() {
     assert!(b.iter().all(|level| level == "max"), "{b:?}");
 }
 
-/// 系统配置 `system`、个人设置 `personal` 两层合出来的最终值，当成一份不变的配置源。
-fn two_layers(system: &str, personal: &str) -> Arc<dyn ConfigSource> {
+/// 系统配置 `system` 合出来的最终值，当成一份不变的配置源（施工 SU-3 上：只剩这一层）。
+fn one_layer(system: &str) -> Arc<dyn ConfigSource> {
     let item_list = items();
     let system = parse(&item_list, Layer::System, system).expect("写法对");
-    let personal = parse(&item_list, Layer::Personal, personal).expect("写法对");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         ..Layers::default()
     };
     let resolved: Resolved = merge(&item_list, &layers, &|_| None);
     Arc::clone(&*fixed_with(resolved, Vec::new()).borrow())
 }
 
-/// 个人设置压着系统配置：造好时系统配置的 `low` 生效，`from` 是 `system`；改了个人设置下一轮生效，`from` 换成 `personal`
-/// （施工 8-18（补），「怎么走」第十一条第 2、4、7 条）。
+/// 配置改了下一轮生效：造好时的 `low` 生效，改成 `high` 以后下一轮才换（施工 8-18（补），「怎么走」第十一条第 2、4、7 条；
+/// SU-3 上起只剩系统配置这一层，`from` 恒是 `system`）。
 #[tokio::test]
-async fn a_personal_setting_overrides_the_system_default_on_the_next_turn() {
+async fn a_changed_setting_applies_on_the_next_turn() {
     let (first, second) = (
         Server::start(hellos(12)).await,
         Server::start(hellos(12)).await,
     );
     let system = config(&first, &second, A_LEVELS);
-    let (switching, receiving) = channel::channel(two_layers(&system, ""));
+    let (switching, receiving) = channel::channel(one_layer(&system));
     let mut home = Home::new();
     home.configs = receiving;
     let routes = routes(serde_json::json!({}), Duration::from_secs(60));
@@ -196,26 +194,27 @@ async fn a_personal_setting_overrides_the_system_default_on_the_next_turn() {
         "先是系统配置"
     );
     assert!(changed.is_empty(), "造好就看得到的，不用再推一次");
-    // 个人设置写了 high：这一轮还没生效。
-    let personal = "[providers.a.models.m]\neffort = \"high\"\n";
-    switching.send_replace(two_layers(&system, personal));
+    // 改成 high：这一轮还没生效。
+    let changed_config = system.replace("effort = \"low\"", "effort = \"high\"");
+    assert_ne!(changed_config, system, "锚点对得上");
+    switching.send_replace(one_layer(&changed_config));
     assert_eq!(
         handle.next().effort,
         used("low", EffortSource::System),
         "下一个回合开始才生效"
     );
     let changed = turn(&handle, "cmd-2").await;
-    assert_eq!(changed[0].effort, used("high", EffortSource::Personal));
+    assert_eq!(changed[0].effort, used("high", EffortSource::System));
     assert_eq!(
         changed[0].why,
         ChangeWhy::Turn,
         "回合开始重新解析完，强度变了也推"
     );
-    assert_eq!(handle.next().effort, used("high", EffortSource::Personal));
+    assert_eq!(handle.next().effort, used("high", EffortSource::System));
     assert_eq!(
         sent(&first).last().map(String::as_str),
         Some("high"),
-        "个人设置压着系统配置"
+        "改了的生效"
     );
 }
 

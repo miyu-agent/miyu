@@ -82,7 +82,7 @@ pub(super) const MASCOT: &[&str] = &["model"];
 /// `[theme]`。
 pub(super) const THEME: &[&str] = &["file"];
 
-/// 一个 MCP 服务除了名字的几格：清单的 `[[mcp]]`、个人设置里的服务都是这几格。
+/// 一个 MCP 服务除了名字的几格：清单的 `[[mcp]]`、系统配置里的服务都是这几格。
 pub(super) const MCP_SERVER: [&str; 9] = [
     "command",
     "env",

@@ -18,7 +18,7 @@ use crate::value::Value;
 /// 每一项的 `package` 把它们画在那个软件的信息页上。
 pub const PAGE: &str = "packages";
 
-/// 每个人把某个包对自己整个关掉的那一项的样子（施工 U23 末上，`miyu_session::packages_off`）：中间一段是包的编号。
+/// 把某个包整个关掉的那一项的样子（施工 U23 末上，`miyu_session::packages_off`）：中间一段是包的编号。
 pub const OFF: &str = "packages.<id>.off";
 
 /// 文字不写 `max` 的，最多几个字符。
@@ -33,7 +33,7 @@ pub struct Setting {
     pub kind: SettingKind,
     /// 默认值；没写的没有。
     pub default: Option<Value>,
-    /// 能写在哪几层：系统配置、个人设置。
+    /// 能写在哪几层：只有系统配置（SU-3 上起）。
     pub layers: Vec<Layer>,
     /// 什么时候生效；不写是这个程序下次启动时（[`Applies::HeadStart`]）。
     pub applies: Applies,
@@ -174,7 +174,7 @@ fn one(
         Some(item) => Some(default(reader, at, &kind, item)?),
     };
     let layers = match fields.get("layers") {
-        None => vec![Layer::System, Layer::Personal],
+        None => vec![Layer::System],
         Some(item) => layers(reader, at, item)?,
     };
     let applies = match fields.get("applies") {
@@ -404,14 +404,14 @@ fn fits(kind: &SettingKind, value: &toml_edit::Value) -> Option<Value> {
     }
 }
 
-/// `layers`：`system`、`personal` 里的一个或两个，不重复。
+/// `layers`：只认 `system`（施工 SU-3 上：个人设置那一层拿掉了）。
 fn layers(reader: &Reader<'_>, at: &str, item: &Node) -> Result<Vec<Layer>, Problem> {
     let bad = || {
         reader.problem(
             Some(item),
             Code::BadLayers,
             &format!("{at}.layers"),
-            format!("{at}.layers must list system, personal or both"),
+            format!("{at}.layers must list system"),
         )
     };
     let array = item.as_array().ok_or_else(bad)?;
@@ -419,7 +419,6 @@ fn layers(reader: &Reader<'_>, at: &str, item: &Node) -> Result<Vec<Layer>, Prob
     for value in array {
         let layer = match value.as_str() {
             Some("system") => Layer::System,
-            Some("personal") => Layer::Personal,
             _ => return Err(bad()),
         };
         if layers.contains(&layer) {

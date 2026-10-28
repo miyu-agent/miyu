@@ -234,28 +234,3 @@ fn a_reference_resolves_to_a_model_or_a_pool_this_turn() {
         "no model configured: set models.chat"
     );
 }
-
-/// 只有系统配置写了的那一家（施工 PL-1 修）：`<编号>@system` 记成它本身；两层都写了的照旧记共用那份；只有个人设置写了的认不出。
-#[test]
-fn a_shared_reference_to_a_system_only_provider_is_recorded_as_itself() {
-    let alone = crate::test_support::resolved_two(
-        "[providers.relay]\nlocal = false\n",
-        "[models]\nchat = \"relay@system/m\"\n",
-    )
-    .values();
-    assert_eq!(record(&alone, "relay@system/m"), Ok("relay/m".to_string()));
-    let both = crate::test_support::resolved_two(
-        "[providers.relay]\nlocal = false\n",
-        "[providers.relay]\nlocal = true\n",
-    )
-    .values();
-    assert_eq!(
-        record(&both, "relay@system/m"),
-        Ok("relay@system/m".to_string())
-    );
-    let mine = crate::test_support::resolved_two("", "[providers.relay]\nlocal = false\n").values();
-    assert!(
-        record(&mine, "relay@system/m").is_err(),
-        "个人那一家没有共用的别名"
-    );
-}

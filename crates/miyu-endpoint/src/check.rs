@@ -171,7 +171,7 @@ fn config_files(
     cwd: Option<&Path>,
 ) -> Result<(Vec<ConfigFile>, PathBuf, Vec<Value>), Refusal> {
     let config = core.config();
-    let mut files: Vec<ConfigFile> = [&config.system, &config.personal]
+    let mut files: Vec<ConfigFile> = [&config.system]
         .into_iter()
         .map(|file| ConfigFile {
             layer: file.layer,
@@ -211,9 +211,9 @@ fn check_config(core: &Core, words: &Human, file: &ConfigFile) -> Result<Vec<Val
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");
     }
-    // 个人设置里的 MCP 服务另读（施工 F-9 上）：只认管理员的，这一份就是。
-    if file.layer == Layer::Personal {
-        problems.extend(mcp::personal(core, words, &file.shown, &text));
+    // 系统配置里的 MCP 服务另读（施工 F-9 上；SU-3 上起从个人设置挪过来）。
+    if file.layer == Layer::System {
+        problems.extend(mcp::configured(core, words, &file.shown, &text));
     }
     Ok(problems)
 }

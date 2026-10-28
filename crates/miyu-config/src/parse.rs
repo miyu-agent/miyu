@@ -9,7 +9,7 @@
 //! - 这一层不能写的：`wrong_layer`；值写得对的照样记下来（不算），`miyu config explain` 列得出它。
 //! - 键里人起的名字那一段（施工 8-6）：照清单里的样子认（[`crate::key`]），写法不对的那一段报一条 `bad_format`，底下的
 //!   都不收。真的键照 [`crate::key::join`] 的写法记。
-//! - 个人设置里的 `[mcp.<名字>]`（施工 F-9 上）不在清单里，跳过、不报：它由 [`crate::package::personal_mcp`] 读。
+//! - 系统配置里的 `[mcp.<名字>]`（施工 F-9 上；SU-3 上起从个人设置挪进系统配置）不在清单里，跳过、不报：它由 [`crate::package::configured_mcp`] 读。
 //!
 //! 开头的 UTF-8 BOM 去掉再解析（读文件的一方已经去掉了，这里再去一次不碍事），行、列照去掉以后的字算。
 
@@ -26,7 +26,7 @@ use crate::value::{Number, Value};
 /// 开头的 UTF-8 BOM。
 const BOM: char = '\u{FEFF}';
 
-/// 个人设置里 MCP 服务的那一张表：不在清单里，另读（施工 F-9 上）。
+/// 系统配置里 MCP 服务的那一张表：不在清单里，另读（施工 F-9 上）。
 const MCP: &str = "mcp";
 
 /// 读好的一份：写对了的项，和发现的问题。
@@ -124,7 +124,7 @@ impl Reader<'_> {
 
     /// 一格：清单里的一项、一组键，或者不认识的。键是一段段的 `path`，在 `key_at`。
     fn node(&mut self, path: &[String], key: &Key, key_at: At, node: &Node) {
-        if self.layer == Layer::Personal && path == [MCP] {
+        if self.layer == Layer::System && path == [MCP] {
             return;
         }
         let inner = |table: &dyn toml_edit::TableLike| table.is_dotted().then_some(key_at);

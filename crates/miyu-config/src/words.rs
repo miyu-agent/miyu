@@ -162,7 +162,7 @@ pub(crate) fn item<'a>(words: &'a dyn Words, key: &str) -> Result<&'a ItemWords,
 }
 
 /// 几个里的一个：「a、b 或 c」。一个的就是它，两个用 `or` 那一句接，三个以上前面的用 `config/list` 接。`or` 是
-/// `config/or-values`（写成代码的值：中文「或」两边空一格，「trace 或 off」）或者 `config/or`（字：「系统配置或个人设置」）。
+/// `config/or-values`（写成代码的值：中文「或」两边空一格，「trace 或 off」）或者 `config/or`（字：「系统配置或项目配置」）。
 pub(crate) fn one_of(words: &dyn Words, parts: &[&str], or: &str) -> Result<String, Missing> {
     let Some((last, rest)) = parts.split_last() else {
         return Ok(String::new());

@@ -112,9 +112,6 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
     let home = Home::new();
     let program = crate::support::extensions::Program::new();
     home.write("system/config.toml", "xcfg.port = 9000\n");
-    home.root.prepare_home(&alice()).expect("建得了家目录");
-    // 只能放系统配置的项写进了个人设置：装上以后这一层认得的项没变，问题变了（不认识换成放错了层），照样推。
-    home.write("home/alice/settings.toml", "xcfg.port = 1\n");
     let core = served(&home);
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
@@ -136,8 +133,7 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
     let path = source(&home, "xcfg", &program.name());
     let (pushes, reply) = ask(&mut client, "i1", "package.install", json!({"path": path})).await;
     assert_eq!(reply["result"]["package"], "xcfg", "{reply}");
-    let pushed = changed(&mut client, pushes, 2).await;
-    let (system, personal) = (&pushed[0], &pushed[1]);
+    let system = &changed(&mut client, pushes, 1).await[0];
     assert_eq!(system["via"], "package", "{system}");
     assert_eq!(system["layer"], "system", "{system}");
     assert!(system.get("by").is_none(), "{system}");
@@ -147,10 +143,6 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
         "最终值重算了：{system}"
     );
     assert_eq!(system["problems"], json!([]), "不再报不认识：{system}");
-    assert_eq!(personal["via"], "package", "{personal}");
-    assert_eq!(personal["layer"], "personal", "{personal}");
-    assert_eq!(personal["keys"], json!({}), "{personal}");
-    assert_ne!(personal["problems"][0]["code"], "unknown_key", "{personal}");
     let (_, got) = ask(
         &mut client,
         "g1",
@@ -185,7 +177,7 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
         &mut client,
         "set1",
         "config.set",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "en"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "en"}]}),
     )
     .await;
     assert!(reply.get("error").is_none(), "{reply}");
@@ -200,18 +192,12 @@ async fn an_installed_packages_settings_are_known_at_once_and_forgotten_once_rem
     )
     .await;
     assert_eq!(reply["result"]["removed"], true, "{reply}");
-    let pushed = changed(&mut client, pushes, 2).await;
-    let push = &pushed[0];
+    let push = &changed(&mut client, pushes, 1).await[0];
     assert_eq!(push["via"], "package", "{push}");
     assert_eq!(push["layer"], "system", "{push}");
     assert_eq!(
         push["problems"][0]["code"], "unknown_key",
         "卸掉又报不认识：{push}"
-    );
-    assert_eq!(
-        pushed[1]["problems"][0]["code"], "unknown_key",
-        "{}",
-        pushed[1]
     );
     let (_, after) = ask(
         &mut client,

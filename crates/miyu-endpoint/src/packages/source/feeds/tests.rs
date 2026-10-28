@@ -31,42 +31,17 @@ fn bad_sources_are_reported_and_good_ones_are_not() {
     );
     let system = parsed(Layer::System, &text);
     assert_eq!(
-        said(&problems(&system, Layer::System, None)),
+        said(&problems(&system, Layer::System)),
         [
             (Code::SourceIncomplete, "half".to_string()),
             (Code::SourceReserved, "official".to_string()),
             (Code::SourceKey, "wrong".to_string()),
         ]
     );
-    let first = &problems(&system, Layer::System, None)[0];
+    let first = &problems(&system, Layer::System)[0];
     assert_eq!(
         first.key.as_deref(),
         Some("packages.sources.half.url"),
         "指到写它的那一项"
-    );
-}
-
-#[test]
-fn a_personal_source_named_like_a_system_one_is_reported() {
-    let system = parsed(
-        Layer::System,
-        &format!("[packages.sources.shared]\nurl = \"https://a.example/\"\nkey = \"{KEY}\"\n"),
-    );
-    let personal = parsed(
-        Layer::Personal,
-        &format!(
-            "[packages.sources.shared]\nurl = \"https://b.example/\"\nkey = \"{KEY}\"\n\n\
-             [packages.sources.mine]\nurl = \"https://c.example/\"\nkey = \"{KEY}\"\n"
-        ),
-    );
-    let found = problems(&personal, Layer::Personal, Some(&system));
-    assert_eq!(said(&found), [(Code::SourceShadowed, "shared".to_string())]);
-    assert_eq!(
-        found[0].code.severity(),
-        miyu_config::problem::Severity::Warning
-    );
-    assert!(
-        problems(&system, Layer::System, Some(&system)).is_empty(),
-        "系统配置自己不和自己比"
     );
 }

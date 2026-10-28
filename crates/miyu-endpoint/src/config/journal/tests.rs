@@ -51,8 +51,8 @@ fn admin() -> By {
 fn a_config_change_is_written_like_the_sample() {
     let scratch = Scratch::new("config");
     let body = ConfigChanged {
-        layer: "personal",
-        file: "home/admin/settings.toml",
+        layer: "system",
+        file: "system/config.toml",
         via: "set",
         changes: vec![KeyChange {
             key: "ui.language".to_string(),
@@ -62,7 +62,7 @@ fn a_config_change_is_written_like_the_sample() {
     };
     record(
         &scratch.file(),
-        "home/admin/journal.jsonl",
+        "system/journal.jsonl",
         Timestamp::parse("2026-10-01T08:00:00.000Z").unwrap(),
         admin(),
         Some(&CommandId::parse("config-9f2c4e1a7b3d5f60-1").unwrap()),

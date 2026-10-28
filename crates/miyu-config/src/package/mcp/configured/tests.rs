@@ -1,4 +1,4 @@
-//! 个人设置里的 `[mcp.<名字>]`（施工 F-9 上）：格子同清单、名字是表名；写错的那一个不收、报在它那一行，别的照收；没有这张表、
+//! 系统配置里的 `[mcp.<名字>]`（施工 F-9 上）：格子同清单、名字是表名；写错的那一个不收、报在它那一行，别的照收；没有这张表、
 //! 整份不是 TOML 的什么都没有。
 
 use super::super::super::Code;
@@ -24,7 +24,7 @@ command = ["uvx", "mcp-server-fetch"]
 
 #[test]
 fn every_table_under_mcp_is_one_server_named_by_its_key() {
-    let (servers, problems) = personal(SETTINGS);
+    let (servers, problems) = configured(SETTINGS);
     assert!(problems.is_empty(), "{problems:?}");
     assert_eq!(servers.len(), 2);
     let github = &servers[0];
@@ -57,7 +57,7 @@ fn every_table_under_mcp_is_one_server_named_by_its_key() {
 #[test]
 fn the_dotted_and_inline_ways_of_writing_read_the_same() {
     let text = "mcp.fetch.command = [\"uvx\", \"mcp-server-fetch\"]\nmcp.time = { command = [\"uvx\", \"mcp-server-time\"] }\n";
-    let (servers, problems) = personal(text);
+    let (servers, problems) = configured(text);
     assert!(problems.is_empty(), "{problems:?}");
     let names: Vec<&str> = servers.iter().map(|server| server.name.as_str()).collect();
     assert_eq!(names, ["fetch", "time"]);
@@ -83,7 +83,7 @@ name = "extra"
 command = ["x"]
 timeout_ms = 10
 "#;
-    let (servers, problems) = personal(text);
+    let (servers, problems) = configured(text);
     let names: Vec<&str> = servers.iter().map(|server| server.name.as_str()).collect();
     assert_eq!(names, ["good"], "写错的那几个不收，别的照收");
     let found: Vec<(Option<usize>, Code, &str)> = problems
@@ -103,12 +103,12 @@ timeout_ms = 10
 
 #[test]
 fn mcp_written_as_a_value_is_one_problem() {
-    let (servers, problems) = personal("mcp = \"github\"\n");
+    let (servers, problems) = configured("mcp = \"github\"\n");
     assert!(servers.is_empty());
     assert_eq!(problems.len(), 1);
     assert_eq!(problems[0].code, Code::BadMcp);
     assert_eq!(problems[0].line, Some(1));
-    let (servers, problems) = personal("[mcp]\ngithub = \"npx\"\n");
+    let (servers, problems) = configured("[mcp]\ngithub = \"npx\"\n");
     assert!(servers.is_empty());
     assert_eq!(problems[0].detail, "mcp.github");
 }
@@ -116,15 +116,15 @@ fn mcp_written_as_a_value_is_one_problem() {
 #[test]
 fn nothing_to_read_is_nothing() {
     assert_eq!(
-        personal("[ui]\nlanguage = \"zh\"\n"),
+        configured("[ui]\nlanguage = \"zh\"\n"),
         (Vec::new(), Vec::new())
     );
-    assert_eq!(personal(""), (Vec::new(), Vec::new()));
+    assert_eq!(configured(""), (Vec::new(), Vec::new()));
     assert_eq!(
-        personal("[mcp.x\n"),
+        configured("[mcp.x\n"),
         (Vec::new(), Vec::new()),
         "整份读不成的由配置那一边报"
     );
     let bom = format!("\u{FEFF}{SETTINGS}");
-    assert_eq!(personal(&bom).0.len(), 2, "开头的 BOM 不碍事");
+    assert_eq!(configured(&bom).0.len(), 2, "开头的 BOM 不碍事");
 }

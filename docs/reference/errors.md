@@ -122,12 +122,12 @@
 | `not_restartable`、`package_off` | 没有能重启的；关着 | |
 | `extension_off` | 重启一个关着的扩展 | |
 | `port_taken` | 扩展登记的端口别的扩展登记着（`port.claim`）；不说是谁 | |
-| `unknown_server` | 个人设置里没有这个 MCP 服务 | |
+| `unknown_server` | 系统配置里没有这个 MCP 服务 | |
 | `oauth_unregistered`、`oauth_failed` | `mcp.login`：没有客户端、授权服务器又不认动态注册；登录走不下去（`mcp.login_finish`：贴回来的对不上） | `why` |
 | `not_logged_in` | `mcp.logout`：这个服务没登录过 | |
 | `not_waiting` | `mcp.login_finish`：这个服务没有在等的登录 | |
 | `mcp_invalid` | `mcp.set` 交来的服务写错了 | `problem` |
-| `server_from_package` | `mcp.set`：个人设置里没写这个名字，有包带着同名服务 | |
+| `server_from_package` | `mcp.set`：系统配置里没写这个名字，有包带着同名服务 | |
 | `unknown_skill` | `skill.remove`：没有这个技能 | `name` |
 | `skill_from_package` | `skill.remove`：随包来的技能不能删 | `name` |
 | `no_page`、`not_found` | 没有后台页；没有这份文件 | |

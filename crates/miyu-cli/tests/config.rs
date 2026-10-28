@@ -32,11 +32,10 @@ async fn run(home: &Home, cwd: &Path, command: ConfigCommand, console: &mut Fake
     home.config(&plan, console).await
 }
 
-fn set(key: &str, value: &str, system: bool) -> ConfigCommand {
+fn set(key: &str, value: &str) -> ConfigCommand {
     ConfigCommand::Set {
         key: key.to_string(),
         value: value.to_string(),
-        system,
         project: false,
     }
 }
@@ -44,33 +43,25 @@ fn set(key: &str, value: &str, system: bool) -> ConfigCommand {
 fn unset(key: &str) -> ConfigCommand {
     ConfigCommand::Unset {
         key: key.to_string(),
-        system: false,
     }
 }
 
 fn edit(project: bool) -> ConfigCommand {
-    ConfigCommand::Edit {
-        system: false,
-        project,
-    }
+    ConfigCommand::Edit { project }
 }
 
 fn trust(yes: bool, no: bool) -> ConfigCommand {
     ConfigCommand::Trust { yes, no }
 }
 
-/// 管理员的个人设置在哪。
-fn personal(home: &Home) -> PathBuf {
-    home.root
-        .path()
-        .join("home")
-        .join("admin")
-        .join("settings.toml")
+/// 系统配置在哪。
+fn config_file(home: &Home) -> PathBuf {
+    home.root.path().join("system").join("config.toml")
 }
 
-/// 家目录里还有没有编辑时的副本。
+/// 系统配置旁边还有没有编辑时的副本。
 fn copies_left(home: &Home) -> Vec<String> {
-    std::fs::read_dir(home.root.path().join("home").join("admin"))
+    std::fs::read_dir(home.root.path().join("system"))
         .map(|entries| {
             entries
                 .map(|entry| {
@@ -93,40 +84,37 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
     let mut none = Fake::default();
     let cases = [
         (
-            set("ui.language", "zh", false),
+            set("ui.language", "zh"),
             0,
-            "· ui.language = \"zh\" 写进了个人设置，立即生效\n",
+            "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
+        ),
+        (set("ui.language", "\"zh\""), 0, "· 本来就是 \"zh\"，没改\n"),
+        (
+            set("permission.start_read_only", "true"),
+            0,
+            "· permission.start_read_only = true 写进了系统配置，新会话生效\n",
         ),
         (
-            set("ui.language", "\"zh\"", false),
+            set("ui.language", "en"),
             0,
-            "· 本来就是 \"zh\"，没改\n",
+            "· ui.language = \"en\" 写进了系统配置，立即生效\n",
         ),
-        (
-            set("ui.language", "en", true),
-            0,
-            "· ui.language = \"en\" 写进了系统配置，个人设置里写着 \"zh\"，用的还是 \"zh\"\n",
-        ),
-        (
-            set("permission.start_read_only", "true", false),
-            0,
-            "· permission.start_read_only = true 写进了个人设置，新会话生效\n",
-        ),
+        // 定了英文：握手以后照英文说。
         (
             unset("ui.language"),
             0,
-            "· 从个人设置里删掉了 ui.language，现在是 \"en\"（系统配置）\n",
+            "· Removed ui.language from the system config. It is now \"auto\" (default)\n",
         ),
-        // 系统配置定了英文：握手以后照英文说。
+        // 删掉以后跟着系统语言（中文）。
         (
             unset("ui.language"),
             0,
-            "· Personal settings did not have ui.language\n",
+            "· 系统配置里本来就没写 ui.language\n",
         ),
         (
-            set("ui.language", "zh", true),
+            set("ui.language", "zh"),
             0,
-            "· ui.language = \"zh\" saved to the system config, takes effect immediately\n",
+            "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
         ),
     ];
     for (command, code, said) in cases {
@@ -138,19 +126,18 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
         );
         assert_eq!(asked.out, "");
     }
-    let wrong = run(&home, &cwd, set("ui.language", "cn", false), &mut none).await;
+    let wrong = run(&home, &cwd, set("ui.language", "cn"), &mut none).await;
     assert_eq!(wrong.code, 1);
     assert_eq!(
         wrong.err,
         "ui.language 只能是 auto、zh、en 或 ja，写的是 cn。改成其中一个，例如 ui.language = \"auto\"。\n"
     );
-    let unknown = run(&home, &cwd, set("ui.langauge", "zh", false), &mut none).await;
+    let unknown = run(&home, &cwd, set("ui.langauge", "zh"), &mut none).await;
     assert_eq!(unknown.code, 1);
     assert!(unknown.err.contains("ui.language"), "{}", unknown.err);
     let project = ConfigCommand::Set {
         key: "permission.start_read_only".to_string(),
         value: "true".to_string(),
-        system: false,
         project: true,
     };
     let refused = run(&home, &cwd, project, &mut none).await;
@@ -164,13 +151,13 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
 async fn edit_asks_again_until_it_checks_out_and_keeps_what_was_typed() {
     let home = home();
     let cwd = std::env::temp_dir();
-    std::fs::create_dir_all(personal(&home).parent().expect("有上一级")).expect("建得了");
-    std::fs::write(personal(&home), "[ui]\nlanguage = \"zh\"\n").expect("写得进");
+    std::fs::create_dir_all(config_file(&home).parent().expect("有上一级")).expect("建得了");
+    std::fs::write(config_file(&home), "[ui]\nlanguage = \"zh\"\n").expect("写得进");
     let wrong = "[ui]\nlanguage = \"cn\"\n";
     let fixed = "# 改好了\n[ui]\nlanguage = \"ja\"\nlangauge = 1\n";
     let mut console = at_terminal(&[""], vec![Edit::Write(wrong), Edit::Write(fixed)]);
     let asked = run(&home, &cwd, edit(false), &mut console).await;
-    let shown = personal(&home).to_string_lossy().into_owned();
+    let shown = config_file(&home).to_string_lossy().into_owned();
     assert_eq!(
         asked.err,
         format!(
@@ -182,7 +169,7 @@ async fn edit_asks_again_until_it_checks_out_and_keeps_what_was_typed() {
     );
     assert_eq!(asked.code, 0);
     assert_eq!(
-        std::fs::read_to_string(personal(&home)).expect("在"),
+        std::fs::read_to_string(config_file(&home)).expect("在"),
         fixed,
         "只有警告的照样存"
     );
@@ -195,14 +182,18 @@ async fn edit_asks_again_until_it_checks_out_and_keeps_what_was_typed() {
         (first, wrong),
         "回车再打开，改的还在"
     );
-    assert_eq!(first.parent(), personal(&home).parent(), "副本在原文件旁边");
+    assert_eq!(
+        first.parent(),
+        config_file(&home).parent(),
+        "副本在原文件旁边"
+    );
     let name = first
         .file_name()
         .expect("有名字")
         .to_string_lossy()
         .into_owned();
     assert!(
-        name.starts_with(".settings.toml.edit-") && name.ends_with(".toml"),
+        name.starts_with(".config.toml.edit-") && name.ends_with(".toml"),
         "{name}"
     );
     assert_eq!(copies_left(&home), Vec::<String>::new(), "存好了删掉副本");
@@ -235,9 +226,9 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
         let asked = run(&home, &cwd, edit(false), &mut console).await;
         assert_eq!(asked.code, code, "{}", asked.err);
         assert!(asked.err.ends_with(ends), "{}", asked.err);
-        assert!(!personal(&home).exists(), "文件没动");
-        // 核心起来时会在账号目录下建会话列表的索引（施工 3-8 七补），那一份不算编辑留下的。
-        let account = personal(&home).parent().expect("有上一级").to_path_buf();
+        assert!(!config_file(&home).exists(), "文件没动");
+        // 系统配置旁边核心自己的东西（人格目录这些）不算编辑留下的。
+        let account = config_file(&home).parent().expect("有上一级").to_path_buf();
         let left: Vec<String> = std::fs::read_dir(&account)
             .map(|entries| {
                 entries
@@ -248,7 +239,7 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
                             .to_string_lossy()
                             .into_owned()
                     })
-                    .filter(|name| name != "index")
+                    .filter(|name| !["packages", "personas"].contains(&name.as_str()))
                     .collect()
             })
             .unwrap_or_default();
@@ -267,11 +258,11 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
 async fn edit_keeps_the_copy_when_the_file_changed_meanwhile() {
     let home = home();
     let cwd = std::env::temp_dir();
-    std::fs::create_dir_all(personal(&home).parent().expect("有上一级")).expect("建得了");
-    std::fs::write(personal(&home), "[ui]\nlanguage = \"zh\"\n").expect("写得进");
+    std::fs::create_dir_all(config_file(&home).parent().expect("有上一级")).expect("建得了");
+    std::fs::write(config_file(&home), "[ui]\nlanguage = \"zh\"\n").expect("写得进");
     let mine = "[ui]\nlanguage = \"ja\"\n";
     let theirs = "[ui]\nlanguage = \"zh\"\n# 别处改的\n";
-    let mut console = at_terminal(&[], vec![Edit::Meanwhile(personal(&home), theirs, mine)]);
+    let mut console = at_terminal(&[], vec![Edit::Meanwhile(config_file(&home), theirs, mine)]);
     let asked = run(&home, &cwd, edit(false), &mut console).await;
     let copy = &console.opened[0].0;
     assert_eq!(asked.code, 1);
@@ -283,7 +274,7 @@ async fn edit_keeps_the_copy_when_the_file_changed_meanwhile() {
         )
     );
     assert_eq!(
-        std::fs::read_to_string(personal(&home)).expect("在"),
+        std::fs::read_to_string(config_file(&home)).expect("在"),
         theirs
     );
     assert_eq!(std::fs::read_to_string(copy).expect("副本留着"), mine);
@@ -323,9 +314,7 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
     let edited = run(&home, &cwd, edit(true), &mut console).await;
     assert_eq!(edited.code, 0, "{}", edited.err);
     assert!(
-        edited
-            .err
-            .contains("ui.language 只能写在系统配置或个人设置里"),
+        edited.err.contains("ui.language 只能写在系统配置里"),
         "{}",
         edited.err
     );
@@ -411,7 +400,7 @@ async fn trust_lists_problems_and_refuses_a_version_that_changed_while_looking()
         asked.out,
         format!(
             "{0} 会改这几项：\n  permission.start_read_only = true  新会话开局只读\n\
-             {0}:4:12 错误：ui.language 只能写在系统配置或个人设置里，写在项目配置里不算。挪到系统配置或个人设置里去。\n",
+             {0}:4:12 错误：ui.language 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。\n",
             shown(&file)
         ),
         "不能写的那一项不列，照报错一行印在后面"

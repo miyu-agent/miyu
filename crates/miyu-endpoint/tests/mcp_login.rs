@@ -40,7 +40,7 @@ async fn waiting_for_login(
     server: &HttpServer,
 ) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nneed_load = false\n", server.url),
     );
     let (core, mut client, kept) = running(home).await;
@@ -160,7 +160,7 @@ async fn a_second_login_binds_the_same_port_and_removing_the_server_clears_it() 
     assert_eq!(auth.registrations(), 1, "同一个客户端，不重新注册");
     let (status, _) = browse(&second).await;
     assert_eq!(status, 200, "要精确端口的授权服务器也认");
-    home.write("home/alice/settings.toml", "");
+    home.write("system/config.toml", "");
     let secrets = home.root.system().join("secrets.toml");
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
     while std::fs::read_to_string(&secrets)
@@ -181,7 +181,7 @@ async fn only_a_listed_url_server_without_its_own_token_logs_in() {
     let server = HttpServer::start(false).await;
     let home = Home::new();
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[mcp.notes]\nurl = \"{}\"\nbearer = \"t0k\"\n", server.url),
     );
     let (_core, mut client, _kept) = running(&home).await;

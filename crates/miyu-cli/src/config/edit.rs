@@ -239,12 +239,11 @@ fn applies(keys: &Value) -> Vec<String> {
     found
 }
 
-/// 改哪一层：`--system` 系统配置，`--project` 项目配置，都不写的个人设置。
+/// 改哪一层：`--project` 项目配置，不写的系统配置。
 fn layer(only: Only) -> &'static str {
     match only {
         Only::System => "system",
         Only::Project => "project",
-        Only::All => "personal",
     }
 }
 

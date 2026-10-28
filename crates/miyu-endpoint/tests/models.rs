@@ -131,7 +131,7 @@ async fn the_list_has_providers_models_facts_and_states() {
     // 推不出来的一家：说清为什么，没有模型。
     assert_eq!(
         providers[0],
-        json!({"id": "broken", "layer": "system", "name": {"value": "broken", "from": "id", "key": "providers.broken.name"},
+        json!({"id": "broken", "name": {"value": "broken", "from": "id", "key": "providers.broken.name"},
                "driver": null, "base_url": null, "models": [], "logo": null,
                "problem": "provider \"broken\" needs base_url: it matches nothing in the catalog"})
     );
@@ -227,31 +227,6 @@ async fn the_list_has_providers_models_facts_and_states() {
         x["facts"]["window"],
         json!({"value": null, "from": "default"})
     );
-}
-
-/// `model.list` 的 `facts` 里，来源是配置的一格带 `layer`：系统配置写的 `system`，个人设置写的 `personal`，两层都写时跟着
-/// 真的来源走（个人设置压着系统配置，施工 8-7（补））。
-#[tokio::test]
-async fn model_list_facts_say_which_config_layer_won() {
-    let home = Home::new();
-    home.write(
-        "system/config.toml",
-        &config("https://relay.example.invalid/v1"),
-    );
-    home.write(
-        "home/alice/settings.toml",
-        "[providers.newapi.models.\"claude-sonnet-4-5\"]\nwindow = 222222\n",
-    );
-    let reply = list(&home, &[], data(), json!({"provider": "newapi"})).await;
-    let newapi = &reply["result"]["providers"][0];
-    let sonnet = model(newapi, "claude-sonnet-4-5");
-    assert_eq!(
-        sonnet["facts"]["window"],
-        json!({"value": 222_222, "from": "config", "file": "home/alice/settings.toml", "line": 2, "layer": "personal"}),
-        "个人设置压着系统配置，layer 跟着换"
-    );
-    // 只写了系统配置的那一格（倍率）还是 system。
-    assert_eq!(sonnet["facts"]["multiplier"]["layer"], "system");
 }
 
 #[tokio::test]

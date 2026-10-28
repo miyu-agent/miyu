@@ -33,7 +33,7 @@ const fn item(
         key,
         kind: Kind::Bool,
         default: None,
-        layers: &[Layer::Personal],
+        layers: &[Layer::System],
         tighten: None,
         env: None,
         applies: Applies::NextTurn,

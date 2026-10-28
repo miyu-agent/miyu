@@ -14,28 +14,28 @@ crate::settings! {
         /// 驱动。
         driver: Option<String> = none {
             kind: option ["a", "b"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: select },
         },
         /// 地址，可能是写死的，也可能是一个环境变量的引用（施工 8-6b）。
         base_url: Option<Address> = none {
             kind: url,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
         /// 几个 key。
         keys: Vec<Reference> = [] {
             kind: secrets,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: list },
         },
         /// 对应的一家。
         catalog: Option<String> = none {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
@@ -48,7 +48,7 @@ crate::settings! {
         /// 窗口。
         window: Option<i64> = none {
             kind: int [1, 1000],
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "providers", control: number },
         },
@@ -61,7 +61,7 @@ crate::settings! {
         /// 主对话。
         chat: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "uses", control: text },
         },
@@ -165,16 +165,13 @@ fn a_badly_named_table_is_one_problem_and_nothing_under_it_counts() {
 
 #[test]
 fn layers_merge_per_real_key_and_no_default_means_absent() {
-    let system = parse(&items(), Layer::System, GOOD).expect("写法对");
-    let personal = parse(
-        &items(),
-        Layer::Personal,
-        "[shops.dev]\nbase_url = \"https://mine.invalid\"\n[shops.other]\ndriver = \"b\"\n",
-    )
-    .expect("写法对");
+    let written = format!(
+        "{}\n[shops.other]\ndriver = \"b\"\n",
+        GOOD.replace("https://relay.example.invalid/v1", "https://mine.invalid")
+    );
+    let system = parse(&items(), Layer::System, &written).expect("写法对");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         project: None,
     };
     let resolved = merge(&items(), &layers, &|_| None);
@@ -183,8 +180,8 @@ fn layers_merge_per_real_key_and_no_default_means_absent() {
         Some((
             &text("https://mine.invalid"),
             &Origin::File {
-                layer: Layer::Personal,
-                line: 2
+                layer: Layer::System,
+                line: 3
             }
         ))
     );

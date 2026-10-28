@@ -84,7 +84,7 @@ impl Changed {
     /// 要用的字缺了：内部出错（已经记了 `WARN`）。
     pub(crate) fn line(&self, words: &Human) -> Result<String, Refusal> {
         let config = &*self.config;
-        let file = config.file(self.layer);
+        let file = config.file();
         let layers = config.layers(None);
         let mut problems = Vec::new();
         let missing = config.missing(&file.parsed, self.layer);
@@ -96,7 +96,7 @@ impl Changed {
             method: "config.changed",
             params: Params {
                 by: self.by.as_ref(),
-                keys: keys(config, self.layer, &self.keys),
+                keys: keys(config, &self.keys),
                 layer: self.layer.as_str(),
                 problems,
                 version: file.version.as_deref(),
@@ -107,11 +107,11 @@ impl Changed {
     }
 }
 
-/// 这一层变了的几项写成协议上的样子（`config.set` 的回应、推送共用）：什么时候生效、最终值和来源（不算项目配置）、这一层
+/// 系统配置里变了的几项写成协议上的样子（`config.set` 的回应、推送共用）：什么时候生效、最终值和来源（不算项目配置）、
 /// 现在写的值（删掉的不写）。
-pub(super) fn keys(config: &Config, layer: Layer, changed: &[String]) -> Map<String, Value> {
-    let shown = |at: Layer| Some(config.file(at).shown.clone());
-    let file = config.file(layer);
+pub(super) fn keys(config: &Config, changed: &[String]) -> Map<String, Value> {
+    let shown = |_: Layer| Some(config.file().shown.clone());
+    let file = config.file();
     let mut listed = Map::new();
     for key in changed {
         let Some(item) = miyu_config::key::item_of(config.items(), key) else {

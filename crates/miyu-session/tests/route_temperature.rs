@@ -109,29 +109,27 @@ async fn each_member_of_a_rotating_pool_uses_its_own_config_default() {
     assert!(b.iter().all(|value| *value == 1.4), "{b:?}");
 }
 
-/// 系统配置 `system`、个人设置 `personal` 两层合出来的最终值，当成一份不变的配置源。
-fn two_layers(system: &str, personal: &str) -> Arc<dyn ConfigSource> {
+/// 系统配置 `system` 合出来的最终值，当成一份不变的配置源（施工 SU-3 上：只剩这一层）。
+fn one_layer(system: &str) -> Arc<dyn ConfigSource> {
     let item_list = items();
     let system = parse(&item_list, Layer::System, system).expect("写法对");
-    let personal = parse(&item_list, Layer::Personal, personal).expect("写法对");
     let layers = Layers {
         system: Some(&system),
-        personal: Some(&personal),
         ..Layers::default()
     };
     let resolved: Resolved = merge(&item_list, &layers, &|_| None);
     Arc::clone(&*fixed_with(resolved, Vec::new()).borrow())
 }
 
-/// 个人设置压着系统配置：改了个人设置下一轮生效（`next_turn`）。
+/// 配置改了下一轮生效（`next_turn`；SU-3 上起只剩系统配置这一层）。
 #[tokio::test]
-async fn a_personal_setting_overrides_the_system_default_on_the_next_turn() {
+async fn a_changed_setting_applies_on_the_next_turn() {
     let (first, second) = (
         Server::start(hellos(12)).await,
         Server::start(hellos(12)).await,
     );
     let system = config(&first, &second, "");
-    let (switching, receiving) = channel::channel(two_layers(&system, ""));
+    let (switching, receiving) = channel::channel(one_layer(&system));
     let mut home = Home::new();
     home.configs = receiving;
     let routes = routes(serde_json::json!({}), Duration::from_secs(60));
@@ -142,14 +140,13 @@ async fn a_personal_setting_overrides_the_system_default_on_the_next_turn() {
         Some(&Value::from(0.7)),
         "先是系统配置"
     );
-    switching.send_replace(two_layers(
-        &system,
-        "[providers.a.models.m]\ntemperature = 0\n",
-    ));
+    let changed_config = system.replace("temperature = 0.7", "temperature = 0");
+    assert_ne!(changed_config, system, "锚点对得上");
+    switching.send_replace(one_layer(&changed_config));
     turn(&handle, "cmd-2").await;
     assert_eq!(
         sent(&first).last(),
         Some(&Value::from(0)),
-        "个人设置压着系统配置，0 也是写了的"
+        "改成 0 也是写了的"
     );
 }

@@ -89,7 +89,7 @@
       },
       "ui.welcomed": {
         "name": "First-run guide done",
-        "description": "This account has finished the first-run guide; the terminal and web pages no longer open it."
+        "description": "The first-run guide is done; the terminal and web pages no longer open it."
       },
       "persona.default": {
         "name": "Default persona",
@@ -358,7 +358,7 @@
       "packages.source": {"name": "Package source address", "description": "Where to look up and download packages. The official source by default; any other address must serve content signed by the official key."},
       "packages.mirrors": {"name": "Mirrors", "description": "Tried in order before the source when it is slow or unreachable. Content is still checked against the signature and hashes, so a mirror can't change it."},
       "packages.hold": {"name": "Held packages", "description": "Packages (by id) skipped when upgrading; the installed version stays."},
-      "packages.sources.<id>.url": {"name": "Other source address", "description": "The folder holding its index. Together with a key it makes a source you trust; in the system configuration it's for everyone, in personal settings only for you."},
+      "packages.sources.<id>.url": {"name": "Other source address", "description": "The folder holding its index. Together with a key it makes a source you trust. It goes in the system config."},
       "packages.sources.<id>.key": {"name": "Other source key", "description": "The Ed25519 public key (base64) its index is signed with. An index that doesn't verify isn't taken."},
       "models.catalog.url": {
         "name": "Catalog address",
@@ -653,7 +653,7 @@
     "package-problems/bad_default": "{detail} does not fit the setting's type or is not one of its choices; a secret, or a list of secrets, has no default",
     "package-problems/bad_choices": "{detail} must list at least two different texts",
     "package-problems/bad_range": "{detail} must be integers, the lowest not above the highest",
-    "package-problems/bad_layers": "{detail} must list system, personal or both",
+    "package-problems/bad_layers": "{detail} must list system",
     "package-problems/bad_applies": "{detail} must be now, new_session, next_turn or program_start",
     "package-problems/not_bool": "{detail} must be true or false",
     "package-problems/settings_taken": "The package id {detail} is also a core settings section, so none of its settings count; give it another id",
@@ -733,12 +733,11 @@
     "package-problems/slash_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_builtin": "Same name as Miyu's built-in /{detail}; this one is not used",
     "config/reference-header": "Every Miyu setting and its default. This file is generated. Editing it has no effect.",
-    "config/reference-where": "Write the system config in system/config.toml and personal settings in home/<account>/settings.toml.",
+    "config/reference-where": "Write the system config in system/config.toml.",
     "config/reference-item": "{name}: {description}",
     "config/facts": "Allowed: {values}. Only in {layers}. {applies}.",
     "config/schema-description": "{description} {facts}",
     "config/layer/system": "the system config",
-    "config/layer/personal": "personal settings",
     "config/applies/now": "Takes effect immediately",
     "config/option-needs-key": "Needs a key",
     "config/option-needs-address": "Needs an address",
@@ -782,7 +781,6 @@
     "config/readonly-bad-path": "{got} isn't written right: use ~/…, an absolute path, or a path inside the workspace (without ..)",
     "config/readonly-too-broad": "{got} is your home folder or above it, so it can't be protected as a whole: every change in your home folder would need asking first",
     "config/source-reserved": "official is the name of the official package source; other sources can't use it",
-    "config/source-shadowed": "the system configuration already has a package source named {name}, so this one isn't used",
     "config/source-incomplete": "package source {name} needs both url and key",
     "config/source-key": "the key of package source {name} isn't readable: write a base64 Ed25519 public key",
     "config/fix-example": "Write one of them, e.g. {example}",

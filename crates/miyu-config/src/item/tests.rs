@@ -12,7 +12,7 @@ crate::settings! {
         /// 第一项：常用，能放两层。
         first: String = "b" {
             kind: option ["a", "b"],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "general", group: "display", common: true, control: select },
         },
@@ -33,7 +33,7 @@ crate::settings! {
         /// 一个开关。
         start_read_only: bool = false {
             kind: bool,
-            layers: [System, Personal, Project],
+            layers: [System, Project],
             tighten: true_only,
             applies: new_session,
             ui: { page: "permissions", group: "sessions", control: toggle },
@@ -47,7 +47,7 @@ crate::settings! {
         /// 启动时开哪个。
         startup: String = "new" {
             kind: option ["new", "recent"],
-            layers: [System, Personal],
+            layers: [System],
             applies: head_start,
             ui: { page: "interface", group: "tui", control: select },
         },
@@ -68,7 +68,7 @@ fn a_switch_is_declared_with_how_a_project_tightens_it() {
             key: "switch.start_read_only",
             kind: Kind::Bool,
             default: Some(Value::Bool(false)),
-            layers: &[Layer::System, Layer::Personal, Layer::Project],
+            layers: &[Layer::System, Layer::Project],
             tighten: Some(Tighten::TrueOnly),
             env: None,
             applies: Applies::NewSession,
@@ -127,7 +127,7 @@ fn the_items_follow_the_fields_in_order() {
                 key: "sample.first",
                 kind: Kind::Option(&["a", "b"]),
                 default: Some(Value::Text(Cow::Borrowed("b"))),
-                layers: &[Layer::System, Layer::Personal],
+                layers: &[Layer::System],
                 tighten: None,
                 env: None,
                 applies: Applies::Now,
@@ -204,7 +204,6 @@ fn an_option_accepts_only_the_listed_ones_with_case() {
 #[test]
 fn layers_and_timings_are_written_as_on_the_wire() {
     assert_eq!(Layer::System.as_str(), "system");
-    assert_eq!(Layer::Personal.as_str(), "personal");
     assert_eq!(Layer::Project.as_str(), "project");
     assert_eq!(Applies::Now.as_str(), "now");
     assert_eq!(Applies::NewSession.as_str(), "new_session");

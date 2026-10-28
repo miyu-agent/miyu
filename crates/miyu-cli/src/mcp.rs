@@ -37,9 +37,6 @@ pub struct Mcp {
     /// 子命令。
     #[command(subcommand)]
     pub command: McpCommand,
-    /// 以管理员身份（施工 Y-12 下下）：MCP 服务是全机的，登录、登出都要。
-    #[arg(long, global = true)]
-    pub system: bool,
 }
 
 /// `miyu mcp` 的子命令。

@@ -18,9 +18,9 @@ use toml_edit::{Document, Item as Node, Table};
 
 use miyu_config::Value;
 use miyu_config::key::join;
-use miyu_config::package::{McpServer, personal_mcp};
+use miyu_config::package::{McpServer, configured_mcp};
 
-/// 要写的一个服务：几格照协议交来的，还没查过写法（查法照读服务表的，[`personal_mcp`]）。
+/// 要写的一个服务：几格照协议交来的，还没查过写法（查法照读服务表的，[`configured_mcp`]）。
 #[derive(Clone)]
 pub(super) struct Entry {
     /// 服务名：表名。
@@ -120,7 +120,7 @@ fn literal(value: &Json) -> Option<String> {
 /// 字 `text` 里服务 `name` 写了脚本里不能调（`clicall = false`，施工 M-2）：网页的编辑页还不认这一格，`mcp.set` 没交它的
 /// 时候照原来写的留着，编辑一次别的格不会把它丢了。
 pub(super) fn kept_clicall(text: &str, name: &str) -> Option<bool> {
-    let (servers, _) = personal_mcp(text);
+    let (servers, _) = configured_mcp(text);
     servers
         .into_iter()
         .find(|server| server.name == name && !server.clicall)
@@ -164,7 +164,7 @@ pub(super) fn put(text: &str, name: &str, block: &str) -> Option<String> {
         Some(at) => format!("{}{block}{}", &cut[..at], &cut[at..]),
         None => appended(&cut, &block, nl),
     };
-    let (servers, _) = personal_mcp(&edited);
+    let (servers, _) = configured_mcp(&edited);
     let written = servers.into_iter().find(|server| server.name == name)?;
     (Document::parse(edited.as_str()).is_ok() && same(&written, &wanted)).then_some(edited)
 }
@@ -189,7 +189,7 @@ pub(super) fn remove(text: &str, name: &str) -> Option<String> {
 
 /// 一张表的字里读出来的那一个服务；写错了、不是正好一个的是空的。
 fn only(block: &str) -> Option<McpServer> {
-    let (mut servers, problems) = personal_mcp(block);
+    let (mut servers, problems) = configured_mcp(block);
     (problems.is_empty() && servers.len() == 1).then(|| servers.remove(0))
 }
 

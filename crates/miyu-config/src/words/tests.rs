@@ -1,7 +1,7 @@
 //! 资源里的字和清单对不对得上；几个里的一个怎么连；一项说明后面那几句。
 
-use crate::item::Item;
-use crate::test_support::{item, said, system_only, words};
+use crate::item::{Item, Layer};
+use crate::test_support::{item, said, words};
 use crate::words::{ConfigWords, Missing, check, facts, one_of};
 
 fn items() -> Vec<Item> {
@@ -129,7 +129,7 @@ fn one_of_joins_like_the_command_line_does() {
 
 #[test]
 fn facts_say_values_layers_and_timing() {
-    let level = system_only(item("log.level", &["error", "warn", "info"], "info"));
+    let level = item("log.level", &["error", "warn", "info"], "info");
     let language = item("ui.language", &["auto", "zh"], "auto");
     let words = words(&[]);
     assert_eq!(
@@ -138,17 +138,21 @@ fn facts_say_values_layers_and_timing() {
     );
     assert_eq!(
         facts(&words, &language).as_deref(),
-        Ok("能写：auto 或 zh。只能写在系统配置或个人设置里。立即生效。")
+        Ok("能写：auto 或 zh。只能写在系统配置里。立即生效。")
     );
 }
 
 #[test]
 fn missing_sentences_are_named() {
-    let level = item("log.level", &["error", "warn", "info"], "info");
+    // 两层才用得上「或」：系统、项目。
+    let level = Item {
+        layers: &[Layer::System, Layer::Project],
+        ..item("log.level", &["error", "warn", "info"], "info")
+    };
     for key in [
         "config/list",
         "config/or-values",
-        "config/layer/personal",
+        "config/layer/system",
         "config/or",
         "config/applies/now",
         "config/facts",

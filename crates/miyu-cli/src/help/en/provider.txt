@@ -14,6 +14,4 @@ logout: Delete a provider's key. Without a name, pick one of those that are set.
 
 Options:
       --format text|json  Output of list: json for scripts
-      --system            login, logout: change everyone's, as an admin; omit
-                          for your own
   -h, --help              Print help

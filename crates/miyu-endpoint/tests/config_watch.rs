@@ -17,8 +17,7 @@ use miyu_store::watch::Watch;
 
 use crate::support::*;
 
-/// 个人设置、系统配置在数据根里的位置。
-const PERSONAL: &str = "home/alice/settings.toml";
+/// 系统配置在数据根里的位置。
 const SYSTEM: &str = "system/config.toml";
 
 /// 照磁盘上的配置起来、开始监视的核心：alice 的家目录建好（监视要看它）。
@@ -55,8 +54,8 @@ async fn pushed(client: &mut Client) -> Value {
     next["params"].clone()
 }
 
-/// 一直问 `config.get`，直到个人设置的版本是 `text` 的（监视看到了、换上了），交回这中间推来的。
-async fn until_personal(client: &mut Client, text: &str) -> Vec<Value> {
+/// 一直问 `config.get`，直到系统配置的版本是 `text` 的（监视看到了、换上了），交回这中间推来的。
+async fn until_system(client: &mut Client, text: &str) -> Vec<Value> {
     let wanted = json!(version(text.as_bytes()));
     let mut pushes = Vec::new();
     for n in 0..1000 {
@@ -65,7 +64,7 @@ async fn until_personal(client: &mut Client, text: &str) -> Vec<Value> {
         client.line(&request.to_string()).await;
         let (before, reply) = client.until_reply(&id).await;
         pushes.extend(before);
-        if reply["result"]["files"]["personal"]["version"] == wanted {
+        if reply["result"]["files"]["system"]["version"] == wanted {
             return pushes;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -88,30 +87,30 @@ async fn a_hand_edit_is_pushed_and_logged() {
     let (core, _watching) = watched(&home, &Script::new([]));
     let mut client = subscribed(&core).await;
     let text = "[ui]\nlanguage = \"en\"\n";
-    save(&home, PERSONAL, text);
+    save(&home, SYSTEM, text);
     assert_eq!(
         pushed(&mut client).await,
         json!({
             "keys": {"ui.language": {
                 "applies": "now",
                 "effective": "en",
-                "origin": {"file": PERSONAL, "layer": "personal", "line": 2},
+                "origin": {"file": SYSTEM, "layer": "system", "line": 2},
                 "value": "en",
             }},
-            "layer": "personal",
+            "layer": "system",
             "problems": [],
             "version": version(text.as_bytes()),
             "via": "file",
         }),
         "手改的不带 by"
     );
-    let logged = journal(&home, "home/alice/journal.jsonl");
+    let logged = journal(&home, "system/journal.jsonl");
     assert_eq!(logged.len(), 1, "{logged:?}");
     assert_eq!(logged[0]["by"], json!({"kind": "kernel"}));
     assert!(logged[0].get("cause").is_none(), "手改的没有 cause");
     assert_eq!(
         logged[0]["body"],
-        json!({"layer": "personal", "file": PERSONAL, "via": "file",
+        json!({"layer": "system", "file": SYSTEM, "via": "file",
                "changes": [{"key": "ui.language", "new": "en"}]})
     );
     let got = client
@@ -129,7 +128,7 @@ async fn the_cores_own_write_is_pushed_once_and_before_the_reply() {
     let (core, _watching) = watched(&home, &Script::new([]));
     let mut client = subscribed(&core).await;
     let request = json!({"jsonrpc": "2.0", "id": "c1", "method": "config.set",
-        "params": {"layer": "personal", "changes": [{"key": "ui.language", "input": "en"}]}});
+        "params": {"layer": "system", "changes": [{"key": "ui.language", "input": "en"}]}});
     client.line(&request.to_string()).await;
     let (before, reply) = client.until_reply("c1").await;
     assert_eq!(before.len(), 1, "先见推送、后见回应：{before:?}");
@@ -143,11 +142,11 @@ async fn the_cores_own_write_is_pushed_once_and_before_the_reply() {
     let next = pushed(&mut client).await;
     assert_eq!(next["layer"], "system", "自己写的不重推：{next}");
     assert_eq!(next["via"], "file");
-    assert_eq!(
-        journal(&home, "home/alice/journal.jsonl").len(),
-        1,
-        "只记了 set 那一条"
-    );
+    let vias: Vec<Value> = journal(&home, "system/journal.jsonl")
+        .iter()
+        .map(|line| line["body"]["via"].clone())
+        .collect();
+    assert_eq!(vias, [json!("set"), json!("file")], "set 那一条只记一次");
 }
 
 #[tokio::test]
@@ -155,15 +154,15 @@ async fn a_broken_file_pushes_its_problems_and_keeps_the_last_good_values() {
     let home = Home::new();
     let (core, _watching) = watched(&home, &Script::new([]));
     let mut client = subscribed(&core).await;
-    save(&home, PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"en\"\n");
     pushed(&mut client).await;
-    save(&home, PERSONAL, "[ui]\nlanguage = \"en\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"en\n");
     let broken = pushed(&mut client).await;
     assert_eq!(broken["keys"], json!({}), "项照上一次读好的，没变");
     let problems = broken["problems"].as_array().expect("是数组");
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert_eq!(problems[0]["code"], "syntax");
-    assert_eq!(problems[0]["file"], PERSONAL);
+    assert_eq!(problems[0]["file"], SYSTEM);
     assert_eq!(problems[0]["using"], json!({"from": "last_good"}));
     let got = client
         .call("g1", "config.get", json!({"keys": ["ui.language"]}))
@@ -173,7 +172,7 @@ async fn a_broken_file_pushes_its_problems_and_keeps_the_last_good_values() {
         got["result"]["problems"][0]["using"],
         json!({"from": "last_good"})
     );
-    save(&home, PERSONAL, "[ui]\nlanguage = \"en\"\n# 好了\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"en\"\n# 好了\n");
     let fixed = pushed(&mut client).await;
     assert_eq!(fixed["keys"], json!({}));
     assert_eq!(fixed["problems"], json!([]), "改好了推一条空的，头收起报错");
@@ -184,16 +183,16 @@ async fn a_comment_only_edit_is_not_pushed_and_a_deleted_file_empties_its_layer(
     let home = Home::new();
     let (core, _watching) = watched(&home, &Script::new([]));
     let mut client = subscribed(&core).await;
-    save(&home, PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"en\"\n");
     pushed(&mut client).await;
     let comment = "# 只加一行注释\n[ui]\nlanguage = \"en\"\n";
-    save(&home, PERSONAL, comment);
+    save(&home, SYSTEM, comment);
     assert_eq!(
-        until_personal(&mut client, comment).await,
+        until_system(&mut client, comment).await,
         Vec::<Value>::new(),
         "只动注释的不推"
     );
-    std::fs::remove_file(home.root.path().join(PERSONAL)).expect("删得掉");
+    std::fs::remove_file(home.root.path().join(SYSTEM)).expect("删得掉");
     let deleted = pushed(&mut client).await;
     assert_eq!(
         deleted,
@@ -203,14 +202,14 @@ async fn a_comment_only_edit_is_not_pushed_and_a_deleted_file_empties_its_layer(
                 "effective": "auto",
                 "origin": {"layer": "default"},
             }},
-            "layer": "personal",
+            "layer": "system",
             "problems": [],
             "version": null,
             "via": "file",
         }),
         "删掉的推了"
     );
-    assert_eq!(journal(&home, "home/alice/journal.jsonl").len(), 2);
+    assert_eq!(journal(&home, "system/journal.jsonl").len(), 2);
 }
 
 #[tokio::test]
@@ -237,9 +236,9 @@ async fn subscribing_takes_no_session_and_unsubscribing_stops_the_pushes() {
         .await;
     assert_eq!(reply["result"], json!({}));
     let text = "[ui]\nlanguage = \"en\"\n";
-    save(&home, PERSONAL, text);
+    save(&home, SYSTEM, text);
     assert_eq!(
-        until_personal(&mut client, text).await,
+        until_system(&mut client, text).await,
         Vec::<Value>::new(),
         "取消了订阅，不推"
     );
@@ -247,7 +246,7 @@ async fn subscribing_takes_no_session_and_unsubscribing_stops_the_pushes() {
         .call("s2", "subscribe", json!({"stream": "config"}))
         .await;
     assert_eq!(reply["result"], json!({}));
-    save(&home, PERSONAL, "[ui]\nlanguage = \"zh\"\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"zh\"\n");
     let again = pushed(&mut client).await;
     assert_eq!(
         again["keys"]["ui.language"]["value"], "zh",
@@ -279,7 +278,7 @@ async fn a_slow_reader_gets_a_resync_and_every_reply() {
             .call(
                 &format!("o{n}"),
                 "config.set",
-                json!({"layer": "personal", "changes": [{"key": "ui.language", "input": language}]}),
+                json!({"layer": "system", "changes": [{"key": "ui.language", "input": language}]}),
             )
             .await;
         assert!(reply["result"].is_object(), "{reply}");
@@ -309,7 +308,7 @@ async fn a_changed_language_is_spoken_on_the_next_request() {
     let unknown = json!({"keys": ["ui.langauge"]});
     let before = client.call("g1", "config.get", unknown.clone()).await;
     assert_eq!(before["error"]["message"], "配置项不存在。", "{before}");
-    save(&home, PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    save(&home, SYSTEM, "[ui]\nlanguage = \"en\"\n");
     pushed(&mut client).await;
     let after = client.call("g2", "config.get", unknown).await;
     assert_eq!(
@@ -408,7 +407,7 @@ async fn every_turn_takes_the_config_of_that_moment() {
     // 内容变了，信任跟着失效：下一轮不算。
     std::fs::write(&config, format!("# 改过\n{project}")).expect("写得进");
     turn(&home, &mut client, &session, 2).await;
-    let set = json!({"layer": "personal", "changes": [{"key": "permission.start_read_only", "input": "true"}]});
+    let set = json!({"layer": "system", "changes": [{"key": "permission.start_read_only", "input": "true"}]});
     let reply = client.call("p1", "config.set", set).await;
     assert!(reply["result"].is_object(), "{reply}");
     turn(&home, &mut client, &session, 3).await;
@@ -428,7 +427,7 @@ async fn every_turn_takes_the_config_of_that_moment() {
         [
             (json!(true), json!("project")),
             (json!(false), json!("default")),
-            (json!(true), json!("personal")),
+            (json!(true), json!("system")),
         ]
     );
 }
@@ -438,14 +437,14 @@ async fn every_turn_takes_the_config_of_that_moment() {
 async fn the_same_bytes_are_left_alone() {
     let home = Home::new();
     home.root.prepare_home(&alice()).expect("建得了家目录");
-    home.write(PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    home.write(SYSTEM, "[ui]\nlanguage = \"en\"\n");
     let core = home.core_configured(&Script::new([]), None, &[]);
     let mut now = core.config_now();
     now.borrow_and_update();
-    let path = home.root.path().join(PERSONAL);
+    let path = home.root.path().join(SYSTEM);
     core.config_file_changed(&path);
     assert!(!now.has_changed().expect("还在"), "一样的不换");
-    home.write(PERSONAL, "# 注释\n[ui]\nlanguage = \"en\"\n");
+    home.write(SYSTEM, "# 注释\n[ui]\nlanguage = \"en\"\n");
     core.config_file_changed(&path);
     assert!(
         now.has_changed().expect("还在"),

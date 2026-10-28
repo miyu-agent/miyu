@@ -116,7 +116,7 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
         .call(
             "c1",
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "ui.language", "value": "en"}]}),
+            json!({"layer": "system", "changes": [{"key": "ui.language", "value": "en"}]}),
         )
         .await;
     assert!(not_mine.get("error").is_none(), "{not_mine}");
@@ -160,7 +160,7 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
 }
 
 /// 扩展改自己的配置（施工 T-9 补，接入QQ 的会话 2026-10-17 要的、项目主人定）：核心拉起的扩展只能改系统配置里、键以自己的
-/// 包编号开头的几项，逐项改；改了留痕记成这个包。密钥类的项、写成引用的值、个人设置、别的包的键、整份换的照旧 `local_only`：
+/// 包编号开头的几项，逐项改；改了留痕记成这个包。密钥类的项、写成引用的值、别的包的键、整份换的照旧 `local_only`：
 /// 握手时它拿到的密钥是真值，能改自己的密钥引用就能指到别人的 key 再读回去。
 #[tokio::test]
 async fn an_extension_sets_only_its_own_plain_settings() {
@@ -179,10 +179,6 @@ async fn an_extension_sets_only_its_own_plain_settings() {
         set(json!([{"key": "echo.note", "value": {"env": "DEEPSEEK_API_KEY"}}])),
         set(json!([{"key": "echo.note", "input": "{ env = \"DEEPSEEK_API_KEY\" }"}])),
         set(json!([{"key": "ui.language", "value": "en"}])),
-        format!(
-            "ask:config.set:{}",
-            json!({"layer": "personal", "changes": [{"key": "echo.port", "value": 9001}]})
-        ),
         format!(
             "ask:config.set:{}",
             json!({"layer": "system", "text": "[echo]\nport = 1\n", "version": null})
@@ -205,8 +201,8 @@ async fn an_extension_sets_only_its_own_plain_settings() {
             .into_iter()
             .filter(|line| line.get("result").is_some() || line.get("error").is_some())
             .collect();
-        // 握手一条，七次 config.set 七条。
-        if answers.len() >= 8 {
+        // 握手一条，六次 config.set 六条。
+        if answers.len() >= 7 {
             break answers;
         }
         assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
@@ -217,7 +213,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
         "自己的项照改：{}",
         answers[1]
     );
-    for refused in &answers[2..8] {
+    for refused in &answers[2..7] {
         assert_eq!(
             refused["error"]["data"]["reason"], "local_only",
             "{refused}"

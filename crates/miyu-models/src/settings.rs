@@ -24,14 +24,14 @@ miyu_config::settings! {
         /// （`model.list` 的 `name`）。只给界面看，不进请求，当场生效。
         name: Option<String> = none {
             kind: text [64],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "providers", control: text },
         },
         /// 怎么说话。不写照档案推；推不出来的这一家用不了。
         driver: Option<String> = none {
             kind: option ["openai-chat", "anthropic", "openai-responses"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: select },
         },
@@ -39,7 +39,7 @@ miyu_config::settings! {
         /// 8-6b）：本机端点地址和 key 一样，只想放在拉起核心的环境变量里，不进任何文件。
         base_url: Option<Address> = none {
             kind: url,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
@@ -47,28 +47,28 @@ miyu_config::settings! {
         /// 放进池里。不写的不带认证头。
         key: Option<Reference> = none {
             kind: secret,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
         /// 手写指定这一家对应目录里的哪一家：照它找档案、认目录（`models.md`「怎么走」第二条第 4 条第 2 层）。
         catalog: Option<String> = none {
             kind: name,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
         /// 倍率：价格照它乘，模型上写的盖过它（第二条第 11 条，施工 8-7）。不写是 1。
         price_multiplier: Option<Number> = none {
             kind: float [0, 1000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 本机的模型服务：价格当 0（第二条第 12 条，施工 8-7）。不写的照地址：在本机的是。
         local: Option<bool> = none {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: toggle },
         },
@@ -76,7 +76,7 @@ miyu_config::settings! {
         /// （`per_request`）轮换，别的钉住（[`crate::pools`]）。不写照驱动的默认，没有哪种驱动默认按次计费。
         cache: Option<String> = none {
             kind: option ["contract", "best_effort", "per_request"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: select },
         },
@@ -90,42 +90,42 @@ miyu_config::settings! {
         /// 上下文窗口，单位 token。
         window: Option<i64> = none {
             kind: int [1, 100000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 手写指定照目录里的哪一个：`<目录里的供应商>/<目录里的模型>`（第二条第 4 条第 1 层，施工 8-7）。
         catalog: Option<String> = none {
             kind: text [256],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
         /// 最大输出，单位 token（施工 8-7）。
         max_output: Option<i64> = none {
             kind: int [1, 100000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 能收哪些输入（施工 8-7；音频、视频施工 8-27，2026-10-07 项目主人定：只是声明能收，驱动照旧不发）。
         inputs: Option<Vec<String>> = none {
             kind: options ["text", "image", "pdf", "audio", "video"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: list },
         },
         /// 能不能调工具（施工 8-7）：只给 `model.list` 看。
         tools: Option<bool> = none {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: toggle },
         },
         /// 思考强度有哪几档（施工 8-7）：盖过目录的；`none`、`disabled` 读成 `off`（施工 8-18，[`crate::effort`]）。
         reasoning: Option<Vec<String>> = none {
             kind: texts [32],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: list },
         },
@@ -133,7 +133,7 @@ miyu_config::settings! {
         /// 默认。不在这时的档位里的照没写，配置报 `unknown_effort`（[`crate::effort::unknown`]）。
         effort: Option<String> = none {
             kind: text [32],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
@@ -141,14 +141,14 @@ miyu_config::settings! {
         /// （目录说不收温度、超过驱动的上限）照没写，配置报 `unusable_temperature`（[`crate::temperature::unusable`]）。
         temperature: Option<Number> = none {
             kind: float [0, 2],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 倍率：盖过供应商上写的（施工 8-7）。
         price_multiplier: Option<Number> = none {
             kind: float [0, 1000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
@@ -161,35 +161,35 @@ miyu_config::settings! {
         /// 输入。
         input: Option<Number> = none {
             kind: float [0, 1000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 输出。
         output: Option<Number> = none {
             kind: float [0, 1000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 读缓存。
         cache_read: Option<Number> = none {
             kind: float [0, 1000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 写缓存。
         cache_write: Option<Number> = none {
             kind: float [0, 1000000],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: number },
         },
         /// 币种：ISO 4217 的三个字母。不写是 `USD`。
         currency: Option<String> = none {
             kind: text [3],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "providers", control: text },
         },
@@ -202,7 +202,7 @@ miyu_config::settings! {
         /// 显示用的币种：汇总里几种币种的先后，它排最前，别的照币种代码的字母先后（[`crate::price::ordered`]）。不换算。
         currency: String = "USD" {
             kind: text [3],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "general", group: "display", control: text },
         },
@@ -215,7 +215,7 @@ miyu_config::settings! {
         /// 后台去拉新的。关掉只用安装包带的和缓存里已有的。环境变量 `MIYU_CATALOG_UPDATE` 压过（离线的机器、测试拉起的核心）。
         update: bool = true {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             env: "MIYU_CATALOG_UPDATE",
             applies: now,
             ui: { page: "models", group: "catalog", control: toggle },
@@ -223,14 +223,14 @@ miyu_config::settings! {
         /// 从哪拉。也能写 `{ env = … }`（施工 8-8：网址类型整体认引用，8-6b 留下的这一项以前读成空的），照核心的环境取。
         url: Address = "https://models.dev/api.json" {
             kind: url,
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "catalog", control: text },
         },
         /// 缓存旧过这么久才拉。
         every: Duration = "24h" {
             kind: duration [3600, 2592000],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "catalog", control: text },
         },
@@ -243,14 +243,14 @@ miyu_config::settings! {
         /// 新会话默认用的模型：`<供应商>/<模型>` 或 `@<池>`。没配的请求都是 `no_model`。
         chat: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "uses", common: true, control: text },
         },
         /// 替看不了图的模型看图的模型（施工 8-8 只读进来、`model.list` 列出来；替看图随 8-17）。
         vision: Option<String> = none {
             kind: reference,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "uses", control: text },
         },
@@ -259,7 +259,7 @@ miyu_config::settings! {
         /// 向量要和存下的同一个模型比）。不写的照 `local`。
         embedding: Option<String> = none {
             kind: model_or ["local", "off"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "uses", control: text },
         },
@@ -274,7 +274,7 @@ miyu_config::settings! {
         /// 没有的池解析不出。
         models: Option<Vec<String>> = none {
             kind: models,
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "pools", control: list },
         },
@@ -282,7 +282,7 @@ miyu_config::settings! {
         /// 排起，主力加备用，施工 Q-4 上）。不写的照成员的缓存类别定。
         strategy: Option<String> = none {
             kind: option ["pin", "rotate", "ordered"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "pools", control: select },
         },
@@ -290,14 +290,14 @@ miyu_config::settings! {
         /// （[`crate::pools::offered`]）。会话开局时拼进工具面，整个会话不变：新会话生效。
         subagent: bool = false {
             kind: bool,
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "pools", control: toggle },
         },
         /// 给模型看的一句（施工 8-8 补）：`subagent` 的参数里接在池名后面。一行英文，CJK 的字占一半以上的不收。
         description: Option<String> = none {
             kind: english [60],
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "pools", control: text },
         },
@@ -319,7 +319,7 @@ const fn fixed_subagent(key: &'static str) -> miyu_config::Item {
         key,
         kind: miyu_config::Kind::Bool,
         default: Some(miyu_config::Value::Bool(true)),
-        layers: &[miyu_config::Layer::System, miyu_config::Layer::Personal],
+        layers: &[miyu_config::Layer::System],
         tighten: None,
         env: None,
         applies: miyu_config::Applies::NewSession,
@@ -341,14 +341,14 @@ miyu_config::settings! {
         /// 第一次冷却多久。
         base: Duration = "30s" {
             kind: duration [1, 3600],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
         /// 最多冷却多久。
         max: Duration = "10m" {
             kind: duration [1, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
@@ -361,14 +361,14 @@ miyu_config::settings! {
         /// 第一次冷却多久。
         base: Duration = "10s" {
             kind: duration [1, 3600],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
         /// 最多冷却多久。
         max: Duration = "5m" {
             kind: duration [1, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
@@ -382,14 +382,14 @@ miyu_config::settings! {
         /// 供应商没说什么时候重置时，第一次冷却多久。
         base: Duration = "30m" {
             kind: duration [1, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
         /// 供应商没说什么时候重置时，最多冷却多久。
         max: Duration = "30m" {
             kind: duration [1, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
@@ -402,14 +402,14 @@ miyu_config::settings! {
         /// 第一次冷却多久。
         base: Duration = "10m" {
             kind: duration [1, 3600],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },
         /// 最多冷却多久。
         max: Duration = "2h" {
             kind: duration [1, 86400],
-            layers: [System, Personal],
+            layers: [System],
             applies: now,
             ui: { page: "models", group: "cooldown", control: text },
         },

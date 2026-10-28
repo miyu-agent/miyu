@@ -42,9 +42,6 @@ pub enum Reference {
     Secret(String),
     /// `{ env = "<变量>" }`：照核心起来时的环境取。
     Env(String),
-    /// 只从系统那一份密钥文件里取的 `{ secret = "<名字>" }`（施工 PL-1）：两层都配了同一家供应商时，系统那一份的原样
-    /// （`<编号>@system`，[`crate::key::system_copy`]）引用的 key。只在合出来的最终值里有，文件里写不出。
-    SystemSecret(String),
 }
 
 impl Reference {
@@ -71,7 +68,7 @@ impl Reference {
     /// 哪一种（`secret`、`env`）、名字（施工 X-27 补起 `mcp.list` 照它把引用交给头）。
     pub fn parts(&self) -> (&'static str, &str) {
         match self {
-            Reference::Secret(name) | Reference::SystemSecret(name) => ("secret", name),
+            Reference::Secret(name) => ("secret", name),
             Reference::Env(name) => ("env", name),
         }
     }
@@ -264,9 +261,7 @@ pub fn missing(
         };
         for reference in references {
             let (code, name) = match reference {
-                Reference::Secret(name) | Reference::SystemSecret(name) if !secret(name) => {
-                    (Code::UnknownSecret, name)
-                }
+                Reference::Secret(name) if !secret(name) => (Code::UnknownSecret, name),
                 Reference::Env(name) if !env(name) => (Code::EnvNotSet, name),
                 _ => continue,
             };

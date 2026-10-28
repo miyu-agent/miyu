@@ -320,16 +320,12 @@ pub(crate) fn call<'a>(
             )
         }),
         "secret.set" => {
-            answer(
-                move || async move { secrets::set(core, (caller, peer), request, params(request)?) },
-            )
+            answer(move || async move { secrets::set(core, peer, request, params(request)?) })
         }
-        "secret.delete" => answer(move || async move {
-            secrets::delete(core, (caller, peer), request, params(request)?)
-        }),
-        "secret.list" => {
-            answer(move || async move { Ok(secrets::list(core, caller.acting_for())) })
+        "secret.delete" => {
+            answer(move || async move { secrets::delete(core, peer, request, params(request)?) })
         }
+        "secret.list" => answer(move || async move { Ok(secrets::list(core)) }),
         "model.list" => answer(move || async move {
             models::list(core, (caller.acting_for(), peer.language), params(request)?).await
         }),

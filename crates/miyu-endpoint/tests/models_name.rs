@@ -138,7 +138,7 @@ async fn a_name_set_now_shows_at_once_and_stays_in_bounds() {
         .call(
             "config-9f2c4e1a7b3d5f60-1",
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "providers.deepseek.name", "input": "深度求索"}]}),
+            json!({"layer": "system", "changes": [{"key": "providers.deepseek.name", "input": "深度求索"}]}),
         )
         .await;
     assert_eq!(
@@ -149,15 +149,15 @@ async fn a_name_set_now_shows_at_once_and_stays_in_bounds() {
     assert_eq!(
         names(&reply)[0].1["value"],
         "深度求索",
-        "个人设置当场盖过目录：{reply}"
+        "系统配置当场盖过目录：{reply}"
     );
-    assert_eq!(names(&reply)[0].1["layer"], "personal");
+    assert_eq!(names(&reply)[0].1["layer"], "system");
     // 超过 64 个字符的照清单拒。
     let long = client
         .call(
             "config-9f2c4e1a7b3d5f60-2",
             "config.set",
-            json!({"layer": "personal", "changes": [{"key": "providers.deepseek.name", "input": "名".repeat(65)}]}),
+            json!({"layer": "system", "changes": [{"key": "providers.deepseek.name", "input": "名".repeat(65)}]}),
         )
         .await;
     assert!(long.get("error").is_some(), "{long}");

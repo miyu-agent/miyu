@@ -58,7 +58,9 @@
 | SU-2 上 | 软件包每人自己那一层、个人软件源、`package.members` 和「成员也能用」、`miyu pkg --system` | 两个头：软件包页（`members`、`available`、`layer: "user"` 没了） |
 | SU-2 中 | 批过的扩展能力从组表 `groups.json` 的 `ext.<能力>` 挪进 `extensions.json`，组表删掉 | 无（形状不变） |
 | SU-2 下 | 每人一份的扩展（`[process] scope = "account"`、按人拉起的那一份） | 两个头：扩展页；im：每人一份 |
-| SU-3 | 配置、密钥、用量、记忆、项目、定时、平台号、头像改成一份 | 两个头：设置页的层；im：平台号 |
+| SU-3 上 | 配置只剩一层：系统配置和个人设置并成一份（`personal` 层拿掉），每人一份的配置（`config/people.rs`）拿掉；密钥只剩一份（`secret.*` 不再有 `layer`；原排在 SU-3 中，同 PL-1 的共用那份缠在一起，并进来一步做） | 两个头：设置页、`/model` 的两份、密钥页；命令行 |
+| SU-3 下 | 人格、预设、技能、脚本、提示词和工具说明的覆盖「系统 + 自己」两层并成一层；每人一个工具架子；`external.me` 并进主人对应表；用量、项目、定时任务的按账号 | 两个头；im：平台号 |
+| SU-3 末 | 记忆按账号分层（Y-7）并成一份（等 shorin-49 的 E-5 补合了再做，免得撞） | 两个头：记忆页 |
 | SU-4 | 场所会话归包（IM-2 已随 SU-2 下拿掉）；包的账号（带程序的包是一个账号、包编号和用户名互相占位、包的家目录）跟着场所会话一起拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
 | SU-5 | 存储布局一层；搬家脚本 | 无（头不碰路径） |
 | SU-6 | 剩下的账号参数收尾、蓝图和设计（06 标作废）、作者文档；量占用 | 无 |
@@ -128,3 +130,25 @@
 4. 握手交的配置、提供者表、后台页的 `package.call`、挂接点、搜索来源、声明的斜杠命令、到点推给扩展、界面块（`Key.account`、`Item.owner`）都照包找那一份，不再照（包，账号）。
 5. 场所：每人一份的那一份在场所里替人做事（IM-2，`Bridge::Personal`）拿掉，`Bridge` 只剩平台桥；主人对应表在哪都认（`binds_for` 删掉）。`external.me`（BD-1）照旧，SU-3 和主人对应表并成一份。
 6. 怎么验：编译、clippy 过；端点、存储、配置、core 的测试；清单测试改成 `scope` 照不认识的键报；反向调用、界面块的单测去掉每人一份的那几条。参考 `extensions`、`packages`、`venues`、`schedules` 中英两份，蓝图 `extensions.md`、`providers.md`、`package-pages.md`、`widgets.md`、`venues.md`、`schedules.md`，方法清单。手写变异 5 个杀 4 个，活的那个是等价的：推给扩展时跳过已经断了的连接，不跳过的话发也发不出去，照样记 `skipped`。本机门禁。
+
+### 十四、SU-3：设置只剩一份（设计）
+
+**定了的**（主会话 10-28，技术题）：
+
+1. 配置层只剩出厂默认值 → 系统配置 → 项目配置（信任过、只收紧）。`personal` 层（`home/<主人>/settings.toml`）拿掉：每一项原来能写个人层的都改成写系统层（清单 `layers` 里 `personal` 换成 `system`），只能写个人层的那几项（`packages.<编号>.off`、`external.me` 这些）也一样。文件照旧是 `system/config.toml`，SU-5 挪到数据根。主人部署的个人设置由搬家脚本并进系统配置（个人设置里写了的盖过系统配置的同名项，同以前叠的先后）。
+2. 协议：层的名字只剩 `system`、`project`。`config.get` 的 `files` 没有 `personal`；`config.set` 的 `layer` 可以不写（就是 `system`），写 `personal` 的 `bad_params`；`config.check` 的 `layer` 是 `system`、`project`；`config.schema` 每一项的 `layers` 里没有 `personal`；`provider.list` 每家没有 `layer`；`/model` 这类「用户 / 系统」两份的地方只剩一份。
+3. 密钥只剩 `system/secrets.toml`：`secret.set`、`secret.delete` 不收 `layer`，`secret.list` 每项没有 `layer`。
+4. 命令行的 `--system`（`miyu config`、`miyu provider login/logout`、`miyu mcp`、`miyu kb` 这些）一起拿掉：只有一份，不用选。
+5. 人格、预设、技能、脚本、提示词和工具说明的覆盖：系统区（`system/…`）和主人家目录（`home/<主人>/…`）两层并成「你的」一层，同名的照旧盖出厂的、包带的；SU-3 下定放哪一处（SU-5 统一挪到数据根）。
+6. 不在产品里做兼容：开发用的数据根里个人设置写的东西换了核心以后不生效，照搬家脚本手动并。
+
+### 十五、SU-3 上：配置、密钥只剩一份（做了什么）
+
+1. `miyu_config::Layer::Personal` 拿掉，清单 `layers` 里的 `personal` 换成 `system`（包清单 `[settings]` 的 `layers` 只认 `system`）；合并（`merge::Layers`）只剩系统配置、项目配置；生成的 Schema 只剩 `config.schema.json`（`settings.schema.json` 不再生成）。
+2. PL-1 的「两层都配了的供应商另合一份共用的 `<编号>@system`」整套拿掉：`merge/system_copy.rs`、`key::system_copy`、`Reference::SystemSecret`、`Values::alias`、`model.list` 每家的 `layer`。主人部署里写成 `<编号>@system/<模型>` 的引用由搬家脚本改成 `<编号>/<模型>`。
+3. 端点：`Config` 只有系统配置一份文件、一份密钥文件（`personal`、`own_secrets` 拿掉）；每人一份的配置（`config/people.rs` 的 `People`、`of_member`、`spread`）拿掉，`Core::mine` 只是交回核心手里那一份（还带着账号参数的调用处 SU-6 收掉）；MCP 服务从个人设置挪到系统配置的 `[mcp.<名字>]`；软件源的「和系统配置同名」（`SourceShadowed`）拿掉。
+4. 协议：`config.set` 的 `layer` 可以不写，只认 `system`；`config.check` 的 `layer` 是 `system`、`project`；`config.get` 的 `files` 没有 `personal`；`secret.set`、`secret.delete` 不再有 `layer`（带了也不看）、`secret.list` 每项没有 `layer`；`model.changed` 的 `effort.from` 只有 `system`。
+5. 命令行：`miyu config path/set/unset/edit`、`miyu provider login/logout`、`miyu mcp` 的 `--system` 拿掉；第一次设置写系统配置。
+6. 给人看的字、样本：三种语言里「个人设置」的说法拿掉（参考文件开头、软件源说明、包清单 `layers` 的报错、第一次引导那一项）；系统配置里 MCP 服务的读法改名 `configured_mcp`；生成的样本重出、`settings.schema.*.json` 删掉，蓝图的样本块跟着换；`miyu config`、`provider`、`mcp`、`check` 的帮助页去掉 `--system` 和个人设置。
+7. 怎么验：测试里两层叠的照一层改写（配置合并、供应商、思考强度、温度、命令行的写进哪一层的话、第一次设置写进系统配置）；只剩一层就没意义的删掉（两份供应商 `provider_copies`、个人设置盖系统配置的几条、和系统配置同名的软件源）；新加 `config.set` 不写 `layer` 写进系统配置、写 `personal` 参数不对；手写变异见 `~/.cache/miyu-remake/SU3a-mut`；本机门禁。
+8. 搬家脚本（SU-5）要做的：个人设置并进系统配置（同名的个人设置赢）、个人密钥并进系统那一份、`@system` 引用改写。

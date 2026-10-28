@@ -86,7 +86,7 @@ fn a_written_server_is_replaced_in_place_with_its_subtables() {
         put,
         "[ui]\nlanguage = \"zh\"\n\n# 抓网页\n[mcp.fetch]\ncommand = [\"new\"]\n\n[mcp.time]\ncommand = [\"time\"]\n"
     );
-    let (servers, problems) = personal_mcp(&put);
+    let (servers, problems) = configured_mcp(&put);
     assert!(problems.is_empty(), "{problems:?}");
     assert_eq!(
         servers

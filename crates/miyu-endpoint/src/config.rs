@@ -67,15 +67,11 @@ pub(crate) const TARGET: &str = "miyu::config";
 /// 系统配置在数据根里的位置。
 const SYSTEM: [&str; 2] = ["system", "config.toml"];
 
-/// 个人设置的文件名：在账号的家目录里。
-const PERSONAL: &str = "settings.toml";
-
 /// 密钥文件在数据根里的位置（施工 8-5）。
 const SECRETS: [&str; 2] = ["system", miyu_store::secrets::FILE];
 
-/// 核心新建系统配置、个人设置时第一行指向的 Schema，相对这份文件（第五条第 2 条第 6 款）。
+/// 核心新建系统配置时第一行指向的 Schema，相对这份文件（第五条第 2 条第 6 款）。
 const SYSTEM_SCHEMA: &str = "../state/config/config.schema.json";
-const PERSONAL_SCHEMA: &str = "../../state/config/settings.schema.json";
 
 /// 手里的配置。
 #[derive(Debug, Clone)]
@@ -90,16 +86,12 @@ pub struct Config {
     env: BTreeMap<&'static str, String>,
     /// 核心的环境：`{ env = … }` 照它取（施工 8-5）。
     environment: Environment,
-    /// 系统配置。
+    /// 系统配置（施工 SU-3 上起只有这一层能改：个人设置并进来了）。
     pub(crate) system: File,
-    /// 管理员的个人设置。
-    pub(crate) personal: File,
     /// 信任的记录。
     trust: Vec<trust::Record>,
-    /// 密钥文件（施工 8-5）：系统那一份 `system/secrets.toml`，大家共用（施工 Y-2 下下中中起）。
+    /// 密钥文件（施工 8-5）：`system/secrets.toml`，只有这一份（施工 SU-3 上）。
     pub(crate) secrets: SecretsFile,
-    /// 这个人自己的密钥文件 `home/<账号>/secrets.toml`（施工 Y-2 下下中中）：只给他自己的配置用，按名字找时先找它。
-    pub(crate) own_secrets: SecretsFile,
     /// 几份核心自己写的文件在哪（施工 8-3）。
     pub(crate) places: Places,
     /// 不算项目配置的最终值。
@@ -108,26 +100,13 @@ pub struct Config {
     models: Option<Arc<ModelData>>,
 }
 
-/// 能改的两层的文件：哪一层、在哪、给人看的写法（数据根里的写成相对数据根的）。
-fn layers(root: &DataRoot, account: &AccountId) -> [(Layer, PathBuf, String); 2] {
-    let system = SYSTEM
-        .iter()
-        .fold(root.path().to_path_buf(), |p, s| p.join(s));
-    [
-        (Layer::System, system, SYSTEM.join("/")),
-        (
-            Layer::Personal,
-            root.account_dir(account).join(PERSONAL),
-            format!("home/{}/{PERSONAL}", account.as_str()),
-        ),
-    ]
-}
-
-/// 这个人自己的密钥文件在哪、给人看的写法：`home/<账号>/secrets.toml`（施工 Y-2 下下中中）。
-fn own_secrets_at(root: &DataRoot, account: &AccountId) -> (PathBuf, String) {
+/// 系统配置在哪、给人看的写法（相对数据根）。
+fn system_at(root: &DataRoot) -> (PathBuf, String) {
     (
-        root.account_dir(account).join(miyu_store::secrets::FILE),
-        format!("home/{}/{}", account.as_str(), miyu_store::secrets::FILE),
+        SYSTEM
+            .iter()
+            .fold(root.path().to_path_buf(), |p, s| p.join(s)),
+        SYSTEM.join("/"),
     )
 }
 
@@ -187,7 +166,7 @@ impl Project {
 }
 
 impl Config {
-    /// 起来时读：数据根 `root` 里的系统配置、账号 `account` 的个人设置、信任的记录和密钥文件（施工 8-5），照清单 `items`
+    /// 起来时读：数据根 `root` 里的系统配置、主人 `account` 的信任的记录和密钥文件（施工 8-5），照清单 `items`
     /// 认，带 `env` 的项照 `environment` 读环境变量（只读这一次），`{ env = … }` 也照它。`home` 是系统的家目录。
     pub fn load(
         root: &DataRoot,
@@ -201,8 +180,8 @@ impl Config {
             .filter_map(|item| item.env)
             .filter_map(|name| environment.get(name).map(|value| (name, value)))
             .collect();
-        let [system, personal] = layers(root, account)
-            .map(|(layer, path, shown)| File::read(&items, layer, path, shown));
+        let (path, shown) = system_at(root);
+        let system = File::read(&items, Layer::System, path, shown);
         let trust_path = root.account_dir(account).join(trust::FILE);
         let trust = trust::read(&trust_path).unwrap_or_else(|error| {
             tracing::warn!(
@@ -213,48 +192,41 @@ impl Config {
             );
             Vec::new()
         });
-        for file in [&system, &personal] {
-            let (errors, warnings) = file.counts();
-            if errors + warnings > 0 {
-                tracing::warn!(target: TARGET, file = %file.shown, errors, warnings, "config problems");
-            }
+        let (errors, warnings) = system.counts();
+        if errors + warnings > 0 {
+            tracing::warn!(target: TARGET, file = %system.shown, errors, warnings, "config problems");
         }
         let secrets = SecretsFile::read(&secrets_path(root), &SECRETS.join("/"));
         crate::secrets::told(&secrets);
-        let (own, shown) = own_secrets_at(root, account);
-        let own_secrets = SecretsFile::read(&own, &shown);
-        crate::secrets::told(&own_secrets);
-        let mut config =
-            Config::assemble(root, account, home, items, env, [system, personal], trust);
+        let mut config = Config::assemble(root, account, home, items, env, system, trust);
         config.environment = environment;
         config.secrets = secrets;
-        config.own_secrets = own_secrets;
         config
     }
 
     /// 什么都没读：全是默认值（核心不给配置的时候，例如协议端点的测试）。
     pub fn defaults(root: &DataRoot, account: &AccountId, items: Vec<Item>) -> Config {
-        let files =
-            layers(root, account).map(|(layer, path, shown)| File::nothing(layer, &path, &shown));
+        let (path, shown) = system_at(root);
+        let system = File::nothing(Layer::System, &path, &shown);
         Config::assemble(
             root,
             account,
             None,
             items,
             BTreeMap::new(),
-            files,
+            system,
             Vec::new(),
         )
     }
 
-    /// 起来时读的、默认的两条路共用：`files` 是系统配置、个人设置。
+    /// 起来时读的、默认的两条路共用。
     fn assemble(
         root: &DataRoot,
         account: &AccountId,
         home: Option<&Path>,
         items: Vec<Item>,
         env: BTreeMap<&'static str, String>,
-        [system, personal]: [File; 2],
+        system: File,
         trust: Vec<trust::Record>,
     ) -> Config {
         let real = |path: &Path| std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
@@ -264,14 +236,9 @@ impl Config {
             items,
             env,
             system,
-            personal,
             trust,
             environment: Environment::of(&[]),
             secrets: SecretsFile::nothing(&secrets_path(root), &SECRETS.join("/")),
-            own_secrets: {
-                let (own, shown) = own_secrets_at(root, account);
-                SecretsFile::nothing(&own, &shown)
-            },
             places: Places::of(root, account),
             resolved: Resolved::default(),
             models: None,
@@ -295,19 +262,15 @@ impl Config {
         &self.resolved
     }
 
-    /// 系统配置、个人设置、密钥文件（施工 8-5）里现在有几处错误（不算警告）：握手的 `config_errors`。引用的供应商、池没有的
+    /// 系统配置、密钥文件（施工 8-5）里现在有几处错误（不算警告）：握手的 `config_errors`。引用的供应商、池没有的
     /// （施工 8-8，`Config::missing` 里的 `bad_reference`）也算。
     pub fn errors(&self) -> usize {
-        let dangling = [&self.system, &self.personal]
+        let dangling = self
+            .missing(&self.system.parsed, self.system.layer)
             .into_iter()
-            .flat_map(|file| self.missing(&file.parsed, file.layer))
             .filter(|problem| problem.severity() == miyu_config::problem::Severity::Error)
             .count();
-        self.system.counts().0
-            + self.personal.counts().0
-            + self.secrets.errors()
-            + self.own_secrets.errors()
-            + dangling
+        self.system.counts().0 + self.secrets.errors() + dangling
     }
 
     /// 一份配置文件读进来以后另查的：引用的密钥、环境变量取不到的（施工 8-5，`unknown_secret`、`env_not_set`，警告）；引用、
@@ -332,7 +295,6 @@ impl Config {
         let mut layers = self.layers(None);
         match layer {
             Layer::System => layers.system = Some(parsed),
-            Layer::Personal => layers.personal = Some(parsed),
             Layer::Project => layers.project = Some((parsed, Trust::Trusted)),
         }
         let merged = merge(&self.items, &layers, &|name| self.env.get(name).cloned());
@@ -351,7 +313,7 @@ impl Config {
             &self.items,
             parsed,
             layer,
-            &|name| self.own_secrets.has(name) || self.secrets.has(name),
+            &|name| self.secrets.has(name),
             &|name| self.environment.has(name),
         );
         let (providers, pools) = (
@@ -362,16 +324,11 @@ impl Config {
             &self.items,
             parsed,
             layer,
-            // 只有系统配置写了的那一家写成 `<编号>@system` 的也算（施工 PL-1 修）。
-            &|name| providers.iter().any(|id| id == name) || resolved.aliases.contains_key(name),
+            &|name| providers.iter().any(|id| id == name),
             &|name| pools.iter().any(|pool| pool == name),
         ));
-        // 别的软件源（施工 U23 下下）：叫 `official` 的、写了一半的、公钥读不成的，个人设置里和系统配置同名的。
-        found.extend(crate::packages::source::feeds::problems(
-            parsed,
-            layer,
-            Some(&self.system.parsed),
-        ));
+        // 别的软件源（施工 U23 下下）：叫 `official` 的、写了一半的、公钥读不成的。
+        found.extend(crate::packages::source::feeds::problems(parsed, layer));
         if let Some(data) = &self.models {
             found.extend(effort::unknown(data, parsed, layer, resolved));
             found.extend(effort::unusable_temperature(data, parsed, layer, resolved));
@@ -384,23 +341,14 @@ impl Config {
         self.environment.has(name)
     }
 
-    /// 照引用取一个密钥（施工 8-6，路由取 key）：`{ secret }` 照手里的两份密钥文件，`{ env }` 照核心的环境。没设的、设成空的、
+    /// 照引用取一个密钥（施工 8-6，路由取 key）：`{ secret }` 照密钥文件，`{ env }` 照核心的环境。没设的、设成空的、
     /// 有控制字符、太长的是空的。
     pub fn secret(
         &self,
         reference: &miyu_config::secret::Reference,
     ) -> Option<miyu_config::secret::Secret> {
         match reference {
-            // 先找自己的，再找系统那一份（施工 Y-2 下下中中）。
-            miyu_config::secret::Reference::Secret(name) => self
-                .own_secrets
-                .stored
-                .entries
-                .get(name)
-                .or_else(|| self.secrets.stored.entries.get(name))
-                .cloned(),
-            // 系统那一份供应商的原样只用系统那一份密钥（施工 PL-1）：自己存了同名的也不顶掉它。
-            miyu_config::secret::Reference::SystemSecret(name) => {
+            miyu_config::secret::Reference::Secret(name) => {
                 self.secrets.stored.entries.get(name).cloned()
             }
             miyu_config::secret::Reference::Env(name) => self
@@ -436,43 +384,33 @@ impl Config {
         self.project(dir).and_then(|project| project.untrusted())
     }
 
-    /// 合一次：默认值、系统配置、个人设置，再加上 `project`（有的话），最后是环境变量。
+    /// 合一次：默认值、系统配置，再加上 `project`（有的话），最后是环境变量。
     fn merged(&self, project: Option<&Project>) -> Resolved {
         merge(&self.items, &self.layers(project), &|name| {
             self.env.get(name).cloned()
         })
     }
 
-    /// 能改的一层的那一份文件（系统配置、个人设置；项目配置核心不写，照个人设置给）。
-    pub(crate) fn file(&self, layer: Layer) -> &File {
-        match layer {
-            Layer::System => &self.system,
-            _ => &self.personal,
-        }
+    /// 能改的那一份文件：系统配置（项目配置核心不写）。
+    pub(crate) fn file(&self) -> &File {
+        &self.system
     }
 
-    /// 换上一份新的文件（写成了、重读了），最终值跟着重算。
+    /// 换上一份新的系统配置（写成了、重读了），最终值跟着重算。
     pub(crate) fn replace(&mut self, file: File) {
-        match file.layer {
-            Layer::System => self.system = file,
-            _ => self.personal = file,
-        }
+        self.system = file;
         self.resolved = self.merged(None);
     }
 
-    /// 新建这一层的文件时第一行指向的 Schema。
-    pub(crate) fn schema(layer: Layer) -> &'static str {
-        match layer {
-            Layer::System => SYSTEM_SCHEMA,
-            _ => PERSONAL_SCHEMA,
-        }
+    /// 新建系统配置时第一行指向的 Schema。
+    pub(crate) fn schema() -> &'static str {
+        SYSTEM_SCHEMA
     }
 
     /// 要合的几层。
     pub(crate) fn layers<'a>(&'a self, project: Option<&'a Project>) -> Layers<'a> {
         Layers {
             system: Some(&self.system.parsed),
-            personal: Some(&self.personal.parsed),
             project: project.map(|project| (&project.file.parsed, project.trust)),
         }
     }

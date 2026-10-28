@@ -9,8 +9,8 @@ use miyu_store::config_file::version;
 
 use crate::support::*;
 
-/// 个人设置在数据根里的位置。
-const PERSONAL: &str = "home/alice/settings.toml";
+/// 系统配置在数据根里的位置。
+const CONFIG: &str = "system/config.toml";
 
 /// 连上一个照磁盘上的配置起来的核心，握过手。
 async fn client(home: &Home) -> Client {
@@ -44,24 +44,24 @@ async fn a_new_file_is_made_with_the_schema_line_and_the_change_is_logged() {
     let reply = set(
         &mut client,
         "config-9f2c4e1a7b3d5f60-1",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "zh"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "zh"}]}),
     )
     .await;
-    let text = "#:schema ../../state/config/settings.schema.json\n\n[ui]\nlanguage = \"zh\"\n";
-    assert_eq!(read(&home, PERSONAL).as_deref(), Some(text));
+    let text = "#:schema ../state/config/config.schema.json\n\n[ui]\nlanguage = \"zh\"\n";
+    assert_eq!(read(&home, CONFIG).as_deref(), Some(text));
     assert_eq!(
         reply["result"],
         json!({
             "keys": {"ui.language": {
                 "applies": "now",
                 "effective": "zh",
-                "origin": {"file": PERSONAL, "layer": "personal", "line": 4},
+                "origin": {"file": CONFIG, "layer": "system", "line": 4},
                 "value": "zh",
             }},
             "version": version(text.as_bytes()),
         })
     );
-    let logged = journal(&home, "home/alice/journal.jsonl");
+    let logged = journal(&home, "system/journal.jsonl");
     assert_eq!(logged.len(), 1);
     assert_eq!(logged[0]["seq"], 1);
     assert_eq!(logged[0]["kind"], "config.changed");
@@ -72,7 +72,7 @@ async fn a_new_file_is_made_with_the_schema_line_and_the_change_is_logged() {
     assert_eq!(logged[0]["cause"], "config-9f2c4e1a7b3d5f60-1");
     assert_eq!(
         logged[0]["body"],
-        json!({"layer": "personal", "file": PERSONAL, "via": "set",
+        json!({"layer": "system", "file": CONFIG, "via": "set",
                "changes": [{"key": "ui.language", "new": "zh"}]})
     );
     let mut fresh = Client::connect(home.core_configured(&Script::new([]), None, &[]));
@@ -115,18 +115,17 @@ async fn only_that_item_changes_and_the_system_config_goes_to_the_system_log() {
         json!([{"key": "log.level", "old": "info", "new": "debug"}, {"key": "ui.language", "old": "en"}]),
         "一次一条，照键名排"
     );
-    assert!(read(&home, "home/alice/journal.jsonl").is_none());
 }
 
 #[tokio::test]
 async fn nothing_changes_when_it_already_is() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"zh\"\n");
+    home.write(CONFIG, "[ui]\nlanguage = \"zh\"\n");
     let mut client = client(&home).await;
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "ui.language", "input": "\"zh\""},
             {"key": "permission.start_read_only", "unset": true},
         ]}),
@@ -136,12 +135,11 @@ async fn nothing_changes_when_it_already_is() {
         reply["result"],
         json!({"keys": {}, "version": version(b"[ui]\nlanguage = \"zh\"\n")})
     );
-    assert!(
-        read(&home, "home/alice/journal.jsonl").is_none(),
-        "没写就不记"
-    );
+    assert!(read(&home, "system/journal.jsonl").is_none(), "没写就不记");
+    let home = Home::new();
+    let mut fresh = self::client(&home).await;
     let reply = set(
-        &mut client,
+        &mut fresh,
         "c2",
         json!({"layer": "system", "changes": [{"key": "ui.language", "unset": true}]}),
     )
@@ -159,31 +157,31 @@ async fn malformed_requests_are_bad_params() {
     let mut client = client(&home).await;
     let change = json!({"key": "ui.language", "input": "zh"});
     for params in [
-        json!({"layer": "personal"}),
-        json!({"layer": "personal", "changes": []}),
-        json!({"layer": "personal", "changes": [change], "text": ""}),
+        json!({"layer": "system"}),
+        json!({"layer": "system", "changes": []}),
+        json!({"layer": "system", "changes": [change], "text": ""}),
         json!({"layer": "project", "changes": [change]}),
-        json!({"layer": "personal", "text": "[ui]\n"}),
-        json!({"layer": "personal", "changes": [{"key": "ui.language"}]}),
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "zh", "value": "zh"}]}),
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "unset": false}]}),
-        json!({"layer": "personal", "changes": [change, change]}),
+        json!({"layer": "system", "text": "[ui]\n"}),
+        json!({"layer": "system", "changes": [{"key": "ui.language"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "zh", "value": "zh"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "unset": false}]}),
+        json!({"layer": "system", "changes": [change, change]}),
     ] {
         let reply = set(&mut client, "c1", params.clone()).await;
         assert_eq!(reason(&reply), Some("bad_params"), "{params}");
     }
-    assert!(read(&home, PERSONAL).is_none());
+    assert!(read(&home, CONFIG).is_none());
 }
 
 #[tokio::test]
 async fn one_bad_item_stops_them_all() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"zh\"\n");
+    home.write(CONFIG, "[ui]\nlanguage = \"zh\"\n");
     let mut client = client(&home).await;
     let unknown = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "ui.langauge", "input": "zh"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.langauge", "input": "zh"}]}),
     )
     .await;
     assert_eq!(reason(&unknown), Some("unknown_config_key"));
@@ -194,7 +192,7 @@ async fn one_bad_item_stops_them_all() {
     let invalid = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "ui.language", "input": "en"},
             {"key": "permission.start_read_only", "input": "yes"},
             {"key": "log.level", "value": "debug"},
@@ -210,14 +208,14 @@ async fn one_bad_item_stops_them_all() {
         .iter()
         .map(|p| p["code"].as_str().unwrap())
         .collect();
-    assert_eq!(codes, ["wrong_type", "wrong_layer"]);
+    assert_eq!(codes, ["wrong_type"]);
     assert_eq!(
         problems[0]["message"],
         "permission.start_read_only 要写 true 或 false，写的是 yes。改成 permission.start_read_only = true。"
     );
     assert!(problems[0].get("line").is_none() && problems[0].get("file").is_none());
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some("[ui]\nlanguage = \"zh\"\n"),
         "一项都没收"
     );
@@ -230,7 +228,7 @@ async fn a_value_not_in_the_options_is_refused() {
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "value": "cn"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "value": "cn"}]}),
     )
     .await;
     assert_eq!(reason(&reply), Some("config_invalid"));
@@ -244,28 +242,28 @@ async fn a_value_not_in_the_options_is_refused() {
 #[tokio::test]
 async fn a_file_that_cannot_be_read_cannot_have_one_item_changed() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui\nlanguage = \"en\"\n");
+    home.write(CONFIG, "[ui\nlanguage = \"en\"\n");
     let mut client = client(&home).await;
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "zh"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "zh"}]}),
     )
     .await;
     assert_eq!(reason(&reply), Some("config_file_broken"));
     let problem = &reply["error"]["data"]["problems"][0];
     assert_eq!(
         (problem["code"].clone(), problem["file"].clone()),
-        (json!("syntax"), json!(PERSONAL))
+        (json!("syntax"), json!(CONFIG))
     );
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some("[ui\nlanguage = \"en\"\n")
     );
     let whole = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "text": "[ui]\nlanguage = \"zh\"\n",
+        json!({"layer": "system", "text": "[ui]\nlanguage = \"zh\"\n",
                "version": version(b"[ui\nlanguage = \"en\"\n")}),
     )
     .await;
@@ -274,7 +272,7 @@ async fn a_file_that_cannot_be_read_cannot_have_one_item_changed() {
         "整份换的不管读不读得进来：{whole}"
     );
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some("[ui]\nlanguage = \"zh\"\n")
     );
 }
@@ -282,12 +280,12 @@ async fn a_file_that_cannot_be_read_cannot_have_one_item_changed() {
 #[tokio::test]
 async fn expect_guards_against_a_change_made_elsewhere() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    home.write(CONFIG, "[ui]\nlanguage = \"en\"\n");
     let mut client = client(&home).await;
     let stale = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "ui.language", "value": "zh", "expect": {"value": "ja"}},
         ]}),
     )
@@ -297,7 +295,7 @@ async fn expect_guards_against_a_change_made_elsewhere() {
     let unwritten = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "ui.language", "value": "zh", "expect": {"value": "en"}},
             {"key": "permission.start_read_only", "value": true, "expect": {"value": false}},
         ]}),
@@ -309,13 +307,13 @@ async fn expect_guards_against_a_change_made_elsewhere() {
         "没写的是 {{}}"
     );
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some("[ui]\nlanguage = \"en\"\n")
     );
     let fine = set(
         &mut client,
         "c3",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": "ui.language", "value": "zh", "expect": {"value": "en"}},
             {"key": "permission.start_read_only", "value": true, "expect": {}},
         ]}),
@@ -330,7 +328,7 @@ async fn expect_guards_against_a_change_made_elsewhere() {
 async fn expect_on_a_float_compares_the_number() {
     let home = Home::new();
     home.write(
-        PERSONAL,
+        CONFIG,
         "[providers.dev.models.m-1.price]\ninput = 1.0\noutput = 2.5\n",
     );
     // 价格那几项在模型的清单里：这一条另外登记上。
@@ -346,7 +344,7 @@ async fn expect_on_a_float_compares_the_number() {
     let stale = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": key("output"), "unset": true, "expect": {"value": 2}},
         ]}),
     )
@@ -355,7 +353,7 @@ async fn expect_on_a_float_compares_the_number() {
     let fine = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": key("input"), "unset": true, "expect": {"value": 1}},
             {"key": key("output"), "value": 3, "expect": {"value": 2.5}},
         ]}),
@@ -365,7 +363,7 @@ async fn expect_on_a_float_compares_the_number() {
     let again = set(
         &mut client,
         "c3",
-        json!({"layer": "personal", "changes": [
+        json!({"layer": "system", "changes": [
             {"key": key("output"), "value": 4, "expect": {"value": 3.0}},
         ]}),
     )
@@ -379,12 +377,12 @@ async fn expect_on_a_float_compares_the_number() {
 #[tokio::test]
 async fn a_whole_new_text_needs_the_version_it_was_read_at_and_no_errors() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    home.write(CONFIG, "[ui]\nlanguage = \"en\"\n");
     let mut client = client(&home).await;
     let stale = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "text": "[ui]\nlanguage = \"zh\"\n", "version": null}),
+        json!({"layer": "system", "text": "[ui]\nlanguage = \"zh\"\n", "version": null}),
     )
     .await;
     assert_eq!(reason(&stale), Some("config_conflict"));
@@ -395,7 +393,7 @@ async fn a_whole_new_text_needs_the_version_it_was_read_at_and_no_errors() {
     let wrong = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "text": "[ui]\nlanguage = \"cn\"\n",
+        json!({"layer": "system", "text": "[ui]\nlanguage = \"cn\"\n",
                "version": version(b"[ui]\nlanguage = \"en\"\n")}),
     )
     .await;
@@ -405,42 +403,42 @@ async fn a_whole_new_text_needs_the_version_it_was_read_at_and_no_errors() {
     let saved = set(
         &mut client,
         "edit-1",
-        json!({"layer": "personal", "text": warned, "version": version(b"[ui]\nlanguage = \"en\"\n")}),
+        json!({"layer": "system", "text": warned, "version": version(b"[ui]\nlanguage = \"en\"\n")}),
     )
     .await;
     assert_eq!(
         saved["result"]["keys"]["ui.language"]["value"], "zh",
         "只有警告的照样存"
     );
-    assert_eq!(read(&home, PERSONAL).as_deref(), Some(warned));
-    let logged = journal(&home, "home/alice/journal.jsonl");
+    assert_eq!(read(&home, CONFIG).as_deref(), Some(warned));
+    let logged = journal(&home, "system/journal.jsonl");
     assert_eq!(logged[0]["body"]["via"], "edit");
 }
 
 #[tokio::test]
 async fn a_hand_edit_is_read_again_before_the_change() {
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"en\"\n");
+    home.write(CONFIG, "[ui]\nlanguage = \"en\"\n");
     let mut client = client(&home).await;
     // 核心起来以后有人手改：核心手里的还是原来那一份。
     let hand = "\u{FEFF}# 手改的\r\n[ui]\r\nlanguage = \"ja\"\r\n";
-    home.write(PERSONAL, hand);
+    home.write(CONFIG, hand);
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "permission.start_read_only", "input": "true"}]}),
+        json!({"layer": "system", "changes": [{"key": "permission.start_read_only", "input": "true"}]}),
     )
     .await;
     assert!(reply["result"].is_object(), "{reply}");
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some(
             "\u{FEFF}# 手改的\r\n[ui]\r\nlanguage = \"ja\"\r\n\r\n[permission]\r\nstart_read_only = true\r\n"
         ),
         "在新的字上改，BOM、换行照原文件"
     );
     // 手改的先当手改记一条（`via: file`，施工 8-4），这一次改的只记它自己的那一项。
-    let logged = journal(&home, "home/alice/journal.jsonl");
+    let logged = journal(&home, "system/journal.jsonl");
     assert_eq!(logged.len(), 2, "{logged:?}");
     assert_eq!(logged[0]["body"]["via"], "file");
     assert_eq!(
@@ -459,20 +457,21 @@ async fn a_hand_edit_is_read_again_before_the_change() {
 async fn a_write_that_fails_changes_nothing() {
     use std::os::unix::fs::PermissionsExt;
     let home = Home::new();
-    home.write(PERSONAL, "[ui]\nlanguage = \"en\"\n");
-    let dir = home.root.path().join("home").join("alice");
+    home.write(CONFIG, "[ui]\nlanguage = \"en\"\n");
+    let dir = home.root.path().join("system");
+    std::fs::create_dir_all(dir.join("personas")).expect("建得了");
     std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).expect("改得了");
     let mut client = client(&home).await;
     let reply = set(
         &mut client,
         "c1",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "zh"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "zh"}]}),
     )
     .await;
     std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).expect("改得了");
     assert_eq!(reason(&reply), Some("internal_error"), "{reply}");
     assert_eq!(
-        read(&home, PERSONAL).as_deref(),
+        read(&home, CONFIG).as_deref(),
         Some("[ui]\nlanguage = \"en\"\n")
     );
     let names: Vec<String> = std::fs::read_dir(&dir)
@@ -485,11 +484,15 @@ async fn a_write_that_fails_changes_nothing() {
                 .into_owned()
         })
         .collect();
-    assert_eq!(names, ["settings.toml"], "没留下临时文件、没记日志");
+    assert_eq!(
+        names,
+        ["config.toml", "personas"],
+        "没留下临时文件、没记日志"
+    );
     let again = set(
         &mut client,
         "c2",
-        json!({"layer": "personal", "changes": [{"key": "ui.language", "input": "en"}]}),
+        json!({"layer": "system", "changes": [{"key": "ui.language", "input": "en"}]}),
     )
     .await;
     assert_eq!(again["result"]["keys"], json!({}), "手里的还是原来那一份");

@@ -17,7 +17,7 @@
 | `notice` | `notices` | `{"kind", "at", …}`：给人的通知（施工 J-3 中），头照 `kind` 弹系统通知。`schedule.ran`：`{"schedule", "session", "ok"}`，每次新开会话的定时，开出来的那一轮结束了，`ok` 是答完了（出错、被打断的是 `false`），跑在已有会话上的不推。`schedules.reset`：这个账号的唤醒表坏了，改名留着、换了一份空的，原来的定时都没了。不存盘，没订着的收不到 |
 | `kb.indexing` | `kb` | `{"kb", "done", "total"}`：这个账号的一个知识库在建索引，要重建的 `total` 篇里做完了 `done` 篇；开头是 0，最后一篇照推，中间至多 0.1 秒一次（施工 W-15） |
 | `kb.indexed` | `kb` | `{"kb"}`：建好了；那个库这一刻的样子照 `kb.list` 重读 |
-| `mcp.changed` | `packages` | `{"name", "server"}`：个人设置里的一个 MCP 服务，删了的 `server` 是 `null` |
+| `mcp.changed` | `packages` | `{"name", "server"}`：系统配置里的一个 MCP 服务，删了的 `server` 是 `null` |
 | `widget.changed` | `widgets` | `{"package", "id", "widget"}`：一块界面块整个换掉，关掉、卸掉的是 `null` |
 | `memory.event` | `memory` | `{"event", "persona"? | "session"?}`：一间记忆的日志里新的一行 |
 | `memory.dreaming` | `memory` | `{"upto", "kind", …, "persona"? | "session"?}`：整理时她刚写完的一条改的、作废的，或者摘要写到第几个字；不落盘、不补（见 [`memory.dream`](memory.md#memorydream)） |

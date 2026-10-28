@@ -1,5 +1,7 @@
 ## `miyu provider`
 
+> **施工 SU-3 上（2026-10-28）**：个人设置那一层、`--system` 选项拿掉了，配置、密钥只有系统那一份。下文讲个人设置、`--system` 的地方作废，以帮助页和参考 `docs/reference/config.md` 为准；正文 SU-6 统一改。
+
 ### 是什么
 
 管密钥的命令（施工 8-5，2026-10-01 项目主人定，照 opencode 的 `auth login`、`auth list`、`auth logout`）：存一个供应商的 key、列出哪几个设了、删掉一个。原来叫 `miyu login`、`miyu logout`、`miyu login --list`，施工 Y-13 上挪到 `miyu provider` 下面（项目主人定）：`miyu login`、`miyu logout` 留给登录账号（`06-多用户与身份.md`），老写法不留兼容，现在是不认识的子命令。它们只是协议的客户端（`22-命令行.md` O5）：连上核心，问 `secret.list`、`secret.set`、`secret.delete`，照回应印。
@@ -71,8 +73,6 @@ logout：删掉一个供应商的 key。不写名字的，从设了的里面选�
 
 选项：
       --format text|json  list 的输出：json 给脚本
-      --system            login、logout：存、删大家共用的那一份，以管理员身份；
-                          不写是自己的
   -h, --help              印帮助
 ```
 
@@ -95,8 +95,6 @@ logout: Delete a provider's key. Without a name, pick one of those that are set.
 
 Options:
       --format text|json  Output of list: json for scripts
-      --system            login, logout: change everyone's, as an admin; omit
-                          for your own
   -h, --help              Print help
 ```
 

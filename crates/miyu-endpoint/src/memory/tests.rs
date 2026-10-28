@@ -113,22 +113,16 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
 
 mod accounts;
 
-/// 记忆、知识库算向量照这个人那一份配置（施工 Y-2 下下中下）：bob 的那一路取得到他自己的 key、取不到机主自己的，用量记在他
-/// 名下；机主的照机主那一份。
+/// 记忆、知识库算向量照系统配置和密钥文件（SU-3 上起只有这一份）：谁的那一间都取得到同一把 key，用量还记在那一间的账号名下。
 #[test]
-fn vectors_use_the_owners_own_settings_and_keys() {
+fn vectors_use_the_system_config_and_keys() {
     use miyu_config::secret::Reference;
     let (root, _) = temp_root("using");
     let alice = AccountId::parse("alice").expect("合写法");
     let bob = AccountId::parse("bob").expect("合写法");
-    for (account, line) in [
-        (&alice, "private = \"sk-FAKE-A\"\n"),
-        (&bob, "his = \"sk-FAKE-B\"\n"),
-    ] {
-        let dir = root.account_dir(account);
-        std::fs::create_dir_all(&dir).expect("建得出");
-        std::fs::write(dir.join("secrets.toml"), line).expect("写得进");
-    }
+    let system = root.path().join("system");
+    std::fs::create_dir_all(&system).expect("建得出");
+    std::fs::write(system.join("secrets.toml"), "shared = \"sk-FAKE-A\"\n").expect("写得进");
     let core = Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
@@ -148,12 +142,8 @@ fn vectors_use_the_owners_own_settings_and_keys() {
     let key = |name: &str| Reference::Secret(name.to_string());
     let his = super::using_as(&core, &bob);
     assert_eq!(his.owner, bob);
-    assert!(his.config.secret(&key("his")).is_some());
-    assert!(
-        his.config.secret(&key("private")).is_none(),
-        "机主自己的 key 他用不上"
-    );
+    assert!(his.config.secret(&key("shared")).is_some());
     let mine = super::using_as(&core, &alice);
-    assert!(mine.config.secret(&key("private")).is_some());
-    assert!(mine.config.secret(&key("his")).is_none());
+    assert!(mine.config.secret(&key("shared")).is_some());
+    assert!(mine.config.secret(&key("missing")).is_none());
 }

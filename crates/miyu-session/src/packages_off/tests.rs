@@ -20,7 +20,7 @@ fn each_package_has_its_own_switch_in_its_group() {
         (kit.ui.page, kit.ui.group, kit.ui.package, kit.ui.hidden),
         ("packages", "kit", Some("kit"), false)
     );
-    assert_eq!(kit.layers, [Layer::Personal], "只写个人层");
+    assert_eq!(kit.layers, [Layer::System], "只写个人层");
     assert!(ITEMS[0].ui.hidden, "带占位的不上设置页");
     let items = [ITEMS[0].clone(), kit];
     assert_eq!(

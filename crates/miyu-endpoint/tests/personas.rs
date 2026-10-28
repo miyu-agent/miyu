@@ -153,7 +153,7 @@ async fn a_persona_with_a_reminder_gets_it_after_the_message_and_the_style_lock(
 }
 
 #[tokio::test]
-async fn without_a_persona_the_default_is_used_personal_over_system() {
+async fn without_a_persona_the_default_is_used() {
     let home = Home::new();
     mine(&home, "miyu", "prompts/persona.md", "You are Miyu.\n");
     mine(&home, "kiki", "prompts/persona.md", "You are Kiki.\n");
@@ -169,11 +169,8 @@ async fn without_a_persona_the_default_is_used_personal_over_system() {
     let second = client.create("c2", "~").await;
     client.say("s2", &second, "hi").await;
     home.until_turns(&second, 1).await;
-    // 个人设置写了 kiki，压着系统配置。
-    home.write(
-        "home/alice/settings.toml",
-        "[persona]\ndefault = \"kiki\"\n",
-    );
+    // 系统配置改成 kiki。
+    home.write("system/config.toml", "[persona]\ndefault = \"kiki\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let third = client.create("c3", "~").await;
     client.say("s3", &third, "hi").await;

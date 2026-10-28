@@ -336,7 +336,7 @@ fn a_package_list_setting_is_a_system_list_of_identities() {
         "空表照收"
     );
     assert_eq!(
-        codes(Layer::Personal, "[relay]\nwhitelist = [\"qq:20017\"]\n"),
+        codes(Layer::Project, "[relay]\nwhitelist = [\"qq:20017\"]\n"),
         [Code::WrongLayer],
         "只能写在系统配置"
     );

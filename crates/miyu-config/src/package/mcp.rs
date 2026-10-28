@@ -1,11 +1,11 @@
 //! 包带的 MCP 服务（施工 X-2，`docs/blueprint/mcp.md`「对外的样子」）：`[[mcp]]` 一段一个，读成 [`McpServer`]。一个服务要么是本机
 //! 拉起的一条命令，要么是一个网址（施工 X-32 上，Streamable HTTP），见 [`Reach`]。只查写法；
 //! 怎么起、怎么登记工具在核心那一边（X-3）。一个服务一个功能（[`McpServer::feature_id`]），编号全局不重，两个包撞了照功能
-//! 编号撞了报（`miyu-store` 的 `feature_taken`）。个人设置里的 `[mcp.<名字>]` 照同样的格子读（施工 F-9 上，`personal.rs`）。
+//! 编号撞了报（`miyu-store` 的 `feature_taken`）。系统配置里的 `[mcp.<名字>]` 照同样的格子读（施工 F-9 上，`configured.rs`）。
 
-mod personal;
+mod configured;
 
-pub use personal::personal;
+pub use configured::configured;
 
 use toml_edit::{Item, Value};
 
@@ -41,7 +41,7 @@ pub struct McpServer {
     pub timeout_ms: u64,
     /// 这个服务的工具脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：没写的能，`false`、`"no"` 不能；`"yes"`、`"no"` 大小写
     /// 不论。
-    /// 个人设置的 `clicall.mcp.<服务名>`、`clicall.tools.<工具名>` 盖过它。
+    /// 系统配置的 `clicall.mcp.<服务名>`、`clicall.tools.<工具名>` 盖过它。
     pub clicall: bool,
     /// 这一段写在第几行。
     pub line: Option<usize>,
@@ -139,7 +139,7 @@ fn one(
     fields(table, name, line)
 }
 
-/// 一个服务除了名字的几格（清单的一段、个人设置的一张表都是这几格）：清单格式的真相源在 `fields`（施工 Y-5 末上）。
+/// 一个服务除了名字的几格（清单的一段、系统配置的一张表都是这几格）：清单格式的真相源在 `fields`（施工 Y-5 末上）。
 use super::fields::MCP_SERVER as FIELDS;
 
 /// 叫 `name` 的服务的几格，表是 `table`，写在第 `line` 行。

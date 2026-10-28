@@ -171,17 +171,13 @@ fn every_wrong_list_says_what() {
 #[test]
 fn layers_applies_and_hidden_read() {
     let one = setting(
-        "[settings.idle_seconds]\ntype = \"int\"\nlayers = [\"system\", \"personal\"]\napplies = \"now\"\nhidden = true\nname = { en = \"Idle\" }\n",
+        "[settings.idle_seconds]\ntype = \"int\"\nlayers = [\"system\"]\napplies = \"now\"\nhidden = true\nname = { en = \"Idle\" }\n",
     );
-    assert_eq!(one.layers, [Layer::System, Layer::Personal]);
+    assert_eq!(one.layers, [Layer::System]);
     assert_eq!(one.applies, Applies::Now);
     assert!(one.hidden);
     let both = setting("[settings.x]\ntype = \"bool\"\nname = { en = \"X\" }\n");
-    assert_eq!(
-        both.layers,
-        [Layer::System, Layer::Personal],
-        "不写是两层都能写"
-    );
+    assert_eq!(both.layers, [Layer::System], "不写是系统配置");
     for (applies, expected) in [
         ("new_session", Applies::NewSession),
         ("next_turn", Applies::NextTurn),
@@ -242,6 +238,11 @@ fn every_wrong_setting_says_what() {
     assert_eq!(
         wrong(&x("type = \"bool\"\nlayers = [\"project\"]")),
         Code::BadLayers
+    );
+    assert_eq!(
+        wrong(&x("type = \"bool\"\nlayers = [\"personal\"]")),
+        Code::BadLayers,
+        "SU-3 上起没有个人设置"
     );
     assert_eq!(wrong(&x("type = \"bool\"\nlayers = []")), Code::BadLayers);
     assert_eq!(

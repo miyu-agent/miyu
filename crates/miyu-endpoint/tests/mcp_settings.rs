@@ -63,7 +63,7 @@ fn row(
 async fn check_reports_wrong_servers_and_covered_package_servers() {
     let home = Home::new();
     home.write("system/packages/kit/package.toml", KIT);
-    home.write("home/alice/settings.toml", SETTINGS);
+    home.write("system/config.toml", SETTINGS);
     let mut client = connected(&home).await;
     let reply = client.call("k1", "check", json!({})).await;
     let problems = reply["result"]["problems"]
@@ -74,7 +74,7 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
     assert_eq!(
         found,
         [
-            row("home/alice/settings.toml", "bad_mcp", "error", 7),
+            row("system/config.toml", "bad_mcp", "error", 7),
             row(
                 "system/packages/kit/package.toml",
                 "mcp_covered",
@@ -86,11 +86,11 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
     );
     let covered = problems[1]["message"].as_str().unwrap_or_default();
     assert!(
-        covered.contains("home/alice/settings.toml [mcp.github]"),
+        covered.contains("system/config.toml [mcp.github]"),
         "说被谁盖住：{covered}"
     );
     // 只查个人设置这一份：照样报，盖住了的也报。
-    let path = home.root.path().join("home/alice/settings.toml");
+    let path = home.root.path().join("system/config.toml");
     let one = client
         .call("k2", "check", json!({"file": path.to_string_lossy()}))
         .await;
@@ -106,7 +106,7 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
 #[tokio::test]
 async fn the_mcp_table_does_not_disturb_the_rest_of_the_settings() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", SETTINGS);
+    home.write("system/config.toml", SETTINGS);
     let mut client = connected(&home).await;
     let reply = client
         .call("k1", "config.get", json!({"keys": ["ui.language"]}))
@@ -160,7 +160,7 @@ async fn a_server_in_the_settings_runs_and_covers_the_package_one() {
     let (theirs, record) = recording(&home, "package");
     bundle(&home, "kit", "probe", &[&record]);
     let (ours, record) = recording(&home, "settings");
-    home.write("home/alice/settings.toml", &mine(&record));
+    home.write("system/config.toml", &mine(&record));
     let script = Script::new([
         Play::calls(&[("mcp__probe__env", r#"{"text":"MIYU_MCP_PROBE"}"#)]),
         Play::Says("好。"),
@@ -208,7 +208,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
     home.root.prepare_home(&alice()).expect("建得了家目录");
     let (theirs, record) = recording(&home, "package");
     bundle(&home, "kit", "probe", &[&record]);
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
     let calls = || Play::calls(&[("mcp__probe__env", r#"{"text":"MIYU_MCP_PROBE"}"#)]);
     let script = Script::new([
         calls(),
@@ -238,7 +238,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
     // 写进个人设置：包里同名的停下，个人设置里的起来。
     let (ours, record) = recording(&home, "settings");
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("[ui]\nlanguage = \"zh\"\n\n{}", mine(&record)),
     );
     until_exists(&ours).await;
@@ -248,7 +248,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
     // 改了：停下、照新写的再起。
     let (changed, record) = recording(&home, "changed");
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!(
             "[ui]\nlanguage = \"zh\"\n\n{}",
             mine(&record).replace("\"mine\"", "\"again\"")
@@ -260,7 +260,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
 
     // 删掉：个人设置里的停下，包里的照开关起回来。
     std::fs::remove_file(&theirs).expect("删得掉");
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
     until_exists(&theirs).await;
     until_line(&theirs, "tools/list").await;
     assert_eq!(env_answer(&home, &mut client, &session, 4).await, "set");
@@ -315,12 +315,12 @@ async fn a_running_extension_gets_its_service_back_when_the_settings_let_go() {
     let (theirs, record) = recording(&home, "relay");
     relay(&home, &program, "always", &record);
     let (ours, mine) = recording(&home, "settings");
-    home.write("home/alice/settings.toml", &ours_xsvc(&mine));
+    home.write("system/config.toml", &ours_xsvc(&mine));
     let (core, _watching, _follow, mut client) = following(&home).await;
     until_state(&mut client, "relay", |one| one["state"] == "running").await;
     until_line(&ours, "tools/list").await;
     assert!(!theirs.exists(), "扩展在跑，它带的同名服务照样被盖住");
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
     until_line(&ours, "eof").await;
     until_line(&theirs, "tools/list").await;
     core.stop_extensions().await;
@@ -333,10 +333,10 @@ async fn an_extension_switched_off_stays_off_when_the_settings_let_go() {
     let (theirs, record) = recording(&home, "relay");
     relay(&home, &program, "manual", &record);
     let (ours, mine) = recording(&home, "settings");
-    home.write("home/alice/settings.toml", &ours_xsvc(&mine));
+    home.write("system/config.toml", &ours_xsvc(&mine));
     let (core, _watching, _follow, _client) = following(&home).await;
     until_line(&ours, "tools/list").await;
-    home.write("home/alice/settings.toml", "[ui]\nlanguage = \"zh\"\n");
+    home.write("system/config.toml", "[ui]\nlanguage = \"zh\"\n");
     until_line(&ours, "eof").await;
     // 放开以后不该起：等一会儿，扩展没开，它带的服务照样不在。
     tokio::time::sleep(Duration::from_millis(500)).await;

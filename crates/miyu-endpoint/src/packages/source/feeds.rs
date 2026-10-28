@@ -1,9 +1,9 @@
 //! 几个软件源（施工 U23 下下，设计 `37-软件源.md` 第五节「别人的软件源」）：官方那一个（`packages.source`、镜像、编进来的
-//! 公钥），加上配置里 `packages.sources.<名字>` 写了地址和公钥的（系统配置、主人的设置两层都认，SU-3 并成一份）。加了就是信任它：
+//! 公钥），加上配置里 `packages.sources.<名字>` 写了地址和公钥的。加了就是信任它：
 //! 索引照它自己那把公钥验，验不过的不收。
 //!
-//! - 名字 `official` 留给官方那一个，谁都不许叫它；设置里和系统配置同名的那一条不认。不认的在配置检查里报（[`problems`]，原因码
-//!   `SourceReserved`、`SourceShadowed`）；只写了一半的、公钥读不成的也报，那个源不用。
+//! - 名字 `official` 留给官方那一个，谁都不许叫它，在配置检查里报（[`problems`]，原因码 `SourceReserved`）；只写了一半的、
+//!   公钥读不成的也报，那个源不用。
 //! - 每个源一份索引：官方的照旧在 `state/packages/.sync/`，别的在 `state/packages/.sources/<名字>/`。
 
 use std::collections::BTreeMap;
@@ -67,22 +67,15 @@ pub(crate) fn official(core: &Core) -> Feed {
     }
 }
 
-/// 用得上的源，照先后：官方的、系统配置加的、主人设置加的（照名字排）。写错的、不认的跳过。
+/// 用得上的源，照先后：官方的、配置里加的（照名字排）。写错的、不认的跳过。
 pub(crate) fn feeds(core: &Core) -> Vec<Feed> {
-    let system = written(&core.config().file(Layer::System).parsed);
+    let system = written(&core.config().file().parsed);
     let mut all = vec![official(core)];
     let state = packages(core).state_root().join(".sources");
     all.extend(
         system
             .iter()
             .filter(|(name, _)| name.as_str() != OFFICIAL)
-            .filter_map(|(name, one)| feed(name, one, state.join(name))),
-    );
-    let personal = written(&core.mine(&core.admin).config().file(Layer::Personal).parsed);
-    all.extend(
-        personal
-            .iter()
-            .filter(|(name, _)| name.as_str() != OFFICIAL && !system.contains_key(*name))
             .filter_map(|(name, one)| feed(name, one, state.join(name))),
     );
     all
@@ -133,18 +126,12 @@ fn feed(name: &str, one: &Written, dir: PathBuf) -> Option<Feed> {
 }
 
 /// 配置检查报的（施工 U23 下下，`Config::missing` 接上）：`layer` 这一层读好的 `parsed` 里写的源，叫 `official` 的、只写了一半的、
-/// 公钥读不成的；个人设置里和系统配置（`system`）同名的。问题指到那个源写的第一行。
-pub(crate) fn problems(parsed: &Parsed, layer: Layer, system: Option<&Parsed>) -> Vec<Problem> {
-    let system = system.filter(|_| layer == Layer::Personal).map(written);
+/// 公钥读不成的。问题指到那个源写的第一行。
+pub(crate) fn problems(parsed: &Parsed, layer: Layer) -> Vec<Problem> {
     let mut found = Vec::new();
     for (name, one) in written(parsed) {
         let code = if name == OFFICIAL {
             Code::SourceReserved
-        } else if system
-            .as_ref()
-            .is_some_and(|system| system.contains_key(&name))
-        {
-            Code::SourceShadowed
         } else if one.url.is_none() || one.key.is_none() {
             Code::SourceIncomplete
         } else if one

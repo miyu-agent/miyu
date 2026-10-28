@@ -90,7 +90,7 @@ async fn opened(home: &Home, params: Value) -> (String, Request) {
 #[tokio::test]
 async fn the_old_no_tools_session_still_carries_the_eight() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", PROFILE);
+    home.write("system/config.toml", PROFILE);
     let cwd = home.work.to_string_lossy().into_owned();
     let (session, request) =
         opened(&home, json!({"cwd": cwd, "persona": null, "preset": null})).await;
@@ -117,7 +117,7 @@ async fn the_old_no_tools_session_still_carries_the_eight() {
 #[tokio::test]
 async fn nothing_on_carries_none_of_the_eight() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", PROFILE);
+    home.write("system/config.toml", PROFILE);
     let cwd = home.work.to_string_lossy().into_owned();
     let (session, request) = opened(
         &home,
@@ -152,7 +152,7 @@ async fn measure_the_no_tools_session() {
         return;
     };
     let home = Home::new();
-    home.write("home/alice/settings.toml", PROFILE);
+    home.write("system/config.toml", PROFILE);
     let cwd = home.work.to_string_lossy().into_owned();
     let (_, request) = opened(&home, json!({"cwd": cwd, "persona": null, "preset": null})).await;
     let messages: Vec<String> = request

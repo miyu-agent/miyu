@@ -96,16 +96,14 @@ impl Language {
         })
     }
 
-    /// 一层的名字（`explain`）：`default`、`system`、`personal`、`project`、`env`。
+    /// 一层的名字（`explain`）：`default`、`system`、`project`、`env`。
     pub(crate) fn layer_name(&self, layer: &str) -> &'static str {
         match (self, layer) {
             (Language::Chinese, "system") => "系统配置",
-            (Language::Chinese, "personal") => "个人设置",
             (Language::Chinese, "project") => "项目配置",
             (Language::Chinese, "env") => "环境变量",
             (Language::Chinese, _) => "默认值",
             (Language::English, "system") => "system config",
-            (Language::English, "personal") => "personal settings",
             (Language::English, "project") => "project config",
             (Language::English, "env") => "environment",
             (Language::English, _) => "default",

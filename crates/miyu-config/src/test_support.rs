@@ -38,7 +38,7 @@ pub(crate) fn item(
         key,
         kind: Kind::Option(options),
         default: Some(Value::Text(Cow::Borrowed(default))),
-        layers: &[Layer::System, Layer::Personal],
+        layers: &[Layer::System],
         tighten: None,
         env: None,
         applies: Applies::Now,
@@ -53,15 +53,7 @@ pub(crate) fn item(
     }
 }
 
-/// 只能放在系统配置里的一项。
-pub(crate) fn system_only(item: Item) -> Item {
-    Item {
-        layers: &[Layer::System],
-        ..item
-    }
-}
-
-/// 类型是密钥的一项（施工 8-5）：默认照环境变量 `EXAMPLE_KEY` 取，能放进系统配置、个人设置。
+/// 类型是密钥的一项（施工 8-5）：默认照环境变量 `EXAMPLE_KEY` 取，能放进系统配置。
 pub(crate) fn secret_item(key: &'static str) -> Item {
     Item {
         kind: Kind::Secret,
@@ -97,7 +89,6 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ),
         ("config/schema-description", "{description}{facts}"),
         ("config/layer/system", "系统配置"),
-        ("config/layer/personal", "个人设置"),
         ("config/applies/now", "立即生效"),
         ("config/or", "{rest}或{last}"),
         ("config/or-values", "{rest} 或 {last}"),

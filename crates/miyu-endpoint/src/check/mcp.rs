@@ -12,8 +12,8 @@ use crate::Core;
 use crate::packages::sentence;
 
 /// 个人设置的字 `text`（给人看的写法 `file`）里 MCP 服务的问题。`kind` 都是 `mcp`。
-pub(super) fn personal(core: &Core, words: &Human, file: &str, text: &str) -> Vec<Value> {
-    let (servers, wrong) = miyu_config::package::personal_mcp(text);
+pub(super) fn configured(core: &Core, words: &Human, file: &str, text: &str) -> Vec<Value> {
+    let (servers, wrong) = miyu_config::package::configured_mcp(text);
     let mut problems: Vec<Value> = wrong
         .iter()
         .map(|problem| {
@@ -68,7 +68,7 @@ pub(super) fn skipped(core: &Core, words: &Human) -> Vec<Value> {
             json!({"kind": "mcp", "file": file, "code": "mcp_tool_skipped", "level": "warning", "message": message}),
         )
     };
-    let mine = core.config().personal.shown.clone();
+    let mine = core.config().system.shown.clone();
     let mut problems: Vec<Value> = core
         .home_mcp
         .now()

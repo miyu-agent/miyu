@@ -151,10 +151,9 @@ pub fn tell(
                 &[("got", got)],
             )?);
         }
-        Code::SourceReserved | Code::SourceShadowed | Code::SourceIncomplete | Code::SourceKey => {
+        Code::SourceReserved | Code::SourceIncomplete | Code::SourceKey => {
             let said = match problem.code {
                 Code::SourceReserved => "config/source-reserved",
-                Code::SourceShadowed => "config/source-shadowed",
                 Code::SourceIncomplete => "config/source-incomplete",
                 _ => "config/source-key",
             };
@@ -297,7 +296,7 @@ fn out_of_range(
     Ok(((expected, said), String::new()))
 }
 
-/// 几层的名字连成「系统配置或个人设置」。
+/// 几层的名字连成「系统配置或项目配置」。
 fn layer_names(layers: &[crate::item::Layer], words: &dyn Words) -> Result<String, Missing> {
     let mut names = Vec::new();
     for layer in layers {

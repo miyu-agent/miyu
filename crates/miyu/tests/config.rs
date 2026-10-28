@@ -1,4 +1,4 @@
-//! 真核心带着配置起来（施工 8-2，`docs/blueprint/config.md`「守着它的」）：`log.level` 照系统配置换、运行日志记从哪来、
+//! 真核心带着配置起来（施工 8-2，`docs/blueprint/config.md`「守着它的」，SU-3 起只有系统配置一层）：`log.level` 照系统配置换、运行日志记从哪来、
 //! 有问题的文件记一条；`miyu config get`、`explain` 印出的来源对，`check`、`path` 照样子印，握手以后照 `ui.language`
 //! 说话；`miyu ask` 起头说配置有错、项目配置没信任（施工 8-3）；帮助页跟着界面语言；参数不对退出码 2；核心没在跑
 //! 的拉起来（施工 8-6）。改、信任（施工 8-3）：`set`、`unset`、`trust` 经真核心写进文件，`edit` 不在终端里、`set --project` 连核心以前就拦下。
@@ -15,8 +15,8 @@ use miyu_ipc::connect_or_start;
 /// 系统配置：日志记到 debug，界面英文，开局只读写错了（一处错误）。
 const SYSTEM: &str = "[log]\nlevel = \"debug\"\n\n[ui]\nlanguage = \"en\"\n\n[permission]\nstart_read_only = \"yes\"\n";
 
-/// 个人设置：界面中文（第 3 行），一个拼错的键（警告）。
-const PERSONAL: &str = "\n[ui]\nlanguage = \"zh\"\nlangauge = \"ja\"\n";
+/// 系统配置的另一份：界面中文（第 5 行），一个拼错的键（警告），开局只读写错了（错误）。
+const CHINESE: &str = "[log]\nlevel = \"debug\"\n\n[ui]\nlanguage = \"zh\"\nlangauge = \"ja\"\n\n[permission]\nstart_read_only = \"yes\"\n";
 
 /// 写一份配置文件，目录没有的建上。
 fn write(path: &Path, text: &str) {
@@ -25,13 +25,12 @@ fn write(path: &Path, text: &str) {
 }
 
 #[tokio::test]
-async fn a_core_with_three_layers_says_where_each_value_came_from() {
+async fn a_core_with_a_config_says_where_each_value_came_from() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    write(&root.join("system").join("config.toml"), SYSTEM);
-    let personal = root.join("home").join("admin").join("settings.toml");
-    write(&personal, PERSONAL);
-    // 核心那边的系统语言是英文：生成的文件还是照个人设置写的中文。
+    let system = root.join("system").join("config.toml");
+    write(&system, CHINESE);
+    // 核心那边的系统语言是英文：生成的文件还是照系统配置写的中文。
     let english = || {
         let mut core = home.core();
         core.env("LANG", "C")
@@ -47,13 +46,8 @@ async fn a_core_with_three_layers_says_where_each_value_came_from() {
     assert_eq!(
         count(
             &log,
-            "config problems file=system/config.toml errors=1 warnings=0"
+            "config problems file=system/config.toml errors=1 warnings=1"
         ),
-        1,
-        "{log}"
-    );
-    assert_eq!(
-        count(&log, "home/admin/settings.toml errors=0 warnings=1"),
         1,
         "{log}"
     );
@@ -84,22 +78,18 @@ async fn a_core_with_three_layers_says_where_each_value_came_from() {
         serde_json::json!({"file": "system/config.toml", "layer": "system", "line": 2})
     );
 
-    // 个人设置定了中文：LANG 是英文也说中文。
+    // 系统配置定了中文：LANG 是英文也说中文。
     let explained = run(&root, &cwd, "C", &["config", "explain", "ui.language"]).await;
     assert_eq!(explained.status.code(), Some(0), "{explained:?}");
     let text = stdout(&explained);
     let lines: Vec<&str> = text.lines().collect();
     assert!(lines[0].starts_with("界面语言（ui.language）："), "{text}");
     assert!(
-        lines[1].starts_with("  \"zh\"    个人设置  ")
-            && lines[1].ends_with("settings.toml:3  ← 生效"),
+        lines[1].starts_with("  \"zh\"    系统配置  ")
+            && lines[1].ends_with("config.toml:5  ← 生效"),
         "{text}"
     );
-    assert!(
-        lines[2].starts_with("  \"en\"    系统配置  ") && lines[2].ends_with("config.toml:5"),
-        "{text}"
-    );
-    assert_eq!(lines[3], "  \"auto\"  默认值");
+    assert_eq!(lines[2], "  \"auto\"  默认值");
 
     let unknown = run(&root, &cwd, "C", &["config", "get", "ui.langauge"]).await;
     assert_eq!(unknown.status.code(), Some(1));
@@ -114,18 +104,13 @@ async fn a_core_with_three_layers_says_where_each_value_came_from() {
         "{}",
         home.core_log()
     );
-    // 生成的参考文件照管理员的 `ui.language`（个人设置写的中文）。
+    // 生成的参考文件照系统配置的 `ui.language`（中文）。
     let reference =
         std::fs::read_to_string(root.join("state").join("config").join("reference.toml"))
             .expect("生成了");
     assert!(reference.contains("界面语言"), "{reference}");
     let path = run(&root, &cwd, "C", &["config", "path"]).await;
-    assert_eq!(PathBuf::from(stdout(&path).trim_end()), personal);
-    let system = run(&root, &cwd, "C", &["config", "path", "--system"]).await;
-    assert_eq!(
-        PathBuf::from(stdout(&system).trim_end()),
-        root.join("system").join("config.toml")
-    );
+    assert_eq!(PathBuf::from(stdout(&path).trim_end()), system);
     drop(held);
 }
 
@@ -133,10 +118,9 @@ async fn a_core_with_three_layers_says_where_each_value_came_from() {
 async fn check_reports_each_problem_on_a_line_and_the_total() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    write(&root.join("system").join("config.toml"), SYSTEM);
     write(
-        &root.join("home").join("admin").join("settings.toml"),
-        "ui.language = \"en\"\nx.y = 1\n",
+        &root.join("system").join("config.toml"),
+        &format!("x.y = 1\n{SYSTEM}"),
     );
     let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
         .await
@@ -148,11 +132,11 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines.len(), 4, "{text}");
     assert!(
-        lines[0].ends_with("config.toml:8:19 error: permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now."),
-        "个人设置定了英文：{text}"
+        lines[0].ends_with("config.toml:1:1 warning: There is no x.y. Line ignored."),
+        "系统配置定了英文：{text}"
     );
     assert!(
-        lines[1].ends_with("settings.toml:2:1 warning: There is no x.y. Line ignored."),
+        lines[1].ends_with("config.toml:9:19 error: permission.start_read_only needs true or false, not \"yes\". Write permission.start_read_only = true. Using false (the default) for now."),
         "{text}"
     );
     assert_eq!(lines[2], "1 error, 1 warning");
@@ -168,20 +152,13 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     let one = run(&root, &cwd, "C", &["check", &system.to_string_lossy()]).await;
     assert_eq!(one.status.code(), Some(1));
     assert!(stdout(&one).contains(":1:13 error: log.level must be error, warn, info, debug, trace or off, not \"verbose\"."), "{one:?}");
-    let settings = root.join("home").join("admin").join("settings.toml");
-    write(&settings, "log.level = \"info\"\n");
-    let personal = run(&root, &cwd, "C", &["check", &settings.to_string_lossy()]).await;
-    assert!(
-        stdout(&personal).contains("log.level belongs in the system config."),
-        "照个人设置查：{personal:?}"
-    );
     // 干净的一份照旧写英文：改成别的语言，后面查人格那一句印成哪种语言，就看核心有没有赶在前面重读（Windows CI 撞见过）。
-    write(&settings, "ui.language = \"en\"\n");
+    write(&system, "ui.language = \"en\"\n");
     let clean = run(
         &root,
         &cwd,
         "C",
-        &["check", "--format", "json", &settings.to_string_lossy()],
+        &["check", "--format", "json", &system.to_string_lossy()],
     )
     .await;
     assert_eq!(
@@ -347,31 +324,22 @@ async fn set_unset_and_trust_go_through_a_real_core() {
     assert_eq!(set.status.code(), Some(0), "{set:?}");
     assert_eq!(
         stderr(&set),
-        "· ui.language = \"zh\" 写进了个人设置，立即生效\n",
+        "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
         "不是终端，灰字不上色"
     );
-    let personal = root.join("home").join("admin").join("settings.toml");
-    assert_eq!(
-        std::fs::read_to_string(&personal).expect("写了"),
-        "#:schema ../../state/config/settings.schema.json\n\n[ui]\nlanguage = \"zh\"\n"
+    let system = root.join("system").join("config.toml");
+    assert!(
+        std::fs::read_to_string(&system)
+            .expect("写了")
+            .ends_with("[ui]\nlanguage = \"zh\"\n"),
+        "{system:?}"
     );
     let log = home.core_log();
     assert_eq!(
-        count(
-            &log,
-            "config changed layer=personal via=set keys=ui.language"
-        ),
+        count(&log, "config changed layer=system via=set keys=ui.language"),
         1,
         "{log}"
     );
-    let system = run(
-        &root,
-        &cwd,
-        "C",
-        &["config", "set", "--system", "log.level", "debug"],
-    )
-    .await;
-    assert_eq!(system.status.code(), Some(0), "{system:?}");
     assert!(
         root.join("system").join("journal.jsonl").exists(),
         "系统配置的进系统日志"
@@ -381,9 +349,9 @@ async fn set_unset_and_trust_go_through_a_real_core() {
         (unset.status.code(), stderr(&unset)),
         (
             Some(0),
-            "· 从个人设置里删掉了 ui.language，现在是 \"auto\"（默认值）\n".to_string()
+            "· 从系统配置里删掉了 ui.language，现在是 \"auto\"（默认值）\n".to_string()
         ),
-        "握手时个人设置还是中文"
+        "握手时系统配置还是中文"
     );
 
     let repo = std::env::temp_dir().join(format!("miyu-config-trust-{}", std::process::id()));

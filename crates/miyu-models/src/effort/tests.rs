@@ -87,19 +87,6 @@ fn in_use_reports_which_config_layer_set_it() {
         }),
     );
     assert_eq!(
-        in_use(&fact(
-            Some("low"),
-            Source::Config {
-                layer: Layer::Personal,
-                line: 1
-            }
-        )),
-        Some(EffortInUse {
-            level: "low".to_string(),
-            from: EffortSource::Personal,
-        }),
-    );
-    assert_eq!(
         in_use(&fact(None, Source::Default)),
         None,
         "没写就不带，不管来源"

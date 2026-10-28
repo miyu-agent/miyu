@@ -53,11 +53,9 @@ pub(crate) async fn rename(
         return Err(Refusal::PROVIDER_EXISTS);
     }
     let items = core.config().items().to_vec();
-    for layer in [Layer::Personal, Layer::System] {
-        rewrite(core, peer, cause, layer, |text| {
-            renamed(&items, layer, text, &from, &to)
-        })?;
-    }
+    rewrite(core, peer, cause, Layer::System, |text| {
+        renamed(&items, Layer::System, text, &from, &to)
+    })?;
     let data = Arc::clone(&core.model_data);
     tokio::task::spawn_blocking(move || data.rename_provider(&from, &to))
         .await

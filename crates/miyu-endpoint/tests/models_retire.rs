@@ -1,5 +1,5 @@
 //! 下架的模型移出池（施工 8-23，`docs/construction/8-23-下架的模型移出池（要补）.md`）：真路由、两台假服务器。`model.call`
-//! 照池发，池里的第一家回 404、当场拉的列表里没有它：系统配置、个人设置里写着它的池都拿掉它，推 `config.changed`（`by` 是
+//! 照池发，池里的第一家回 404、当场拉的列表里没有它：系统配置里写着它的池都拿掉它，推一次 `config.changed`（`by` 是
 //! 核心自己）；删空了的池留着，`model.list` 里 `usable` 是假；直接写在 `models.chat` 的不动。列表里还有它的不删。
 
 use std::time::Duration;
@@ -30,17 +30,16 @@ fn listing(models: &[&str]) -> Reply {
     )])
 }
 
-/// 系统配置：两家 `a`、`b`，钉住的池 `p` 是 `a/m`、`b/m`，池 `q` 只有 `b/m`；`models.chat` 直接写 `a/m`。
+/// 系统配置：两家 `a`、`b`，钉住的池 `p` 是 `a/m`、`b/m`，池 `q` 只有 `b/m`，池 `solo` 只有 `a/m`；`models.chat` 直接写
+/// `a/m`。
 fn system(first: &Server, second: &Server) -> String {
     format!(
         "[providers.a]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n[providers.b]\ndriver = \"openai-chat\"\nbase_url = \"{}\"\n\n\
-         [pools.p]\nmodels = [\"a/m\", \"b/m\"]\nstrategy = \"pin\"\n\n[pools.q]\nmodels = [\"b/m\"]\n\n[models]\nchat = \"a/m\"\n",
+         [pools.p]\nmodels = [\"a/m\", \"b/m\"]\nstrategy = \"pin\"\n\n[pools.q]\nmodels = [\"b/m\"]\n\n[pools.solo]\nmodels = [\"a/m\"]\n\n\
+         [models]\nchat = \"a/m\"\n",
         first.base_url, second.base_url
     )
 }
-
-/// 个人设置：池 `solo` 只有 `a/m`。
-const PERSONAL: &str = "[pools.solo]\nmodels = [\"a/m\"]\n";
 
 /// 连上、握手、订阅配置的推送。
 async fn watching(core: &std::sync::Arc<miyu_endpoint::Core>) -> Client {
@@ -78,7 +77,6 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
     );
     let home = Home::new();
     home.write("system/config.toml", &system(&first, &second));
-    home.write("home/alice/settings.toml", PERSONAL);
     let core = routed(&home, &[], data(profiles(json!({}))));
     core.start_retirement();
     let mut watcher = watching(&core).await;
@@ -91,20 +89,10 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
         "这一次照旧出错：{reply}"
     );
 
-    let mut layers = Vec::new();
-    for _ in 0..2 {
-        let next = watcher.next().await.expect("推了");
-        assert_eq!(next["method"], "config.changed", "{next}");
-        assert_eq!(next["params"]["by"], json!({"kind": "kernel"}), "{next}");
-        layers.push(
-            next["params"]["layer"]
-                .as_str()
-                .unwrap_or_default()
-                .to_string(),
-        );
-    }
-    layers.sort();
-    assert_eq!(layers, ["personal", "system"], "两层里写着它的都拿掉");
+    let next = watcher.next().await.expect("推了");
+    assert_eq!(next["method"], "config.changed", "{next}");
+    assert_eq!(next["params"]["by"], json!({"kind": "kernel"}), "{next}");
+    assert_eq!(next["params"]["layer"], "system", "{next}");
     let system = read(&home, "system/config.toml");
     assert!(system.contains("[pools.p]\nmodels = [\"b/m\"]"), "{system}");
     assert!(
@@ -115,10 +103,9 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
         system.contains("chat = \"a/m\""),
         "直接写着的不动：{system}"
     );
-    let personal = read(&home, "home/alice/settings.toml");
     assert!(
-        personal.contains("models = []"),
-        "删空了的池留着：{personal}"
+        system.contains("[pools.solo]\nmodels = []"),
+        "删空了的池留着：{system}"
     );
     assert_eq!(pool(&mut client, "solo").await["usable"], false);
     assert_eq!(pool(&mut client, "p").await["usable"], true);

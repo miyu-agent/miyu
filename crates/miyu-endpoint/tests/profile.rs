@@ -20,7 +20,7 @@ use crate::support::extensions::*;
 use crate::support::venues::BINDINGS;
 use crate::support::*;
 
-/// 写进 alice 个人设置的两项。
+/// 写进系统配置的两项。
 const PROFILE: &str = "[profile]\nname = \"小林\"\nabout = \"写 Rust 的独立开发者\"\n";
 
 /// 拼出来的那一块。
@@ -55,7 +55,7 @@ async fn a_written_profile_joins_the_system_of_new_sessions() {
     let plain = snapshot(&home, &open(&home, "c1").await);
     assert_eq!(plain.profile, None, "没写的没有");
     assert!(!plain.system.contains("<user>"), "{}", plain.system);
-    home.write("home/alice/settings.toml", PROFILE);
+    home.write("system/config.toml", PROFILE);
     let with = snapshot(&home, &open(&home, "c2").await);
     let block = BLOCK;
     assert_eq!(with.profile.as_deref(), Some(block));
@@ -75,7 +75,7 @@ async fn a_written_profile_joins_the_system_of_new_sessions() {
 async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
     let home = Home::new();
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         &format!("{PROFILE}preferred_reply_language = \"简体中文\"\n"),
     );
     let both = snapshot(&home, &open(&home, "c1").await);
@@ -87,7 +87,7 @@ async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
         "接在更多描述后面（施工 P-9 补）"
     );
     home.write(
-        "home/alice/settings.toml",
+        "system/config.toml",
         "[profile]\npreferred_reply_language = \"日本語\"\n",
     );
     let alone = snapshot(&home, &open(&home, "c2").await);
@@ -98,9 +98,9 @@ async fn a_reply_language_is_one_more_line_and_alone_still_joins() {
     );
 }
 
-/// 照对应表、读好的清单起来的核心，拉起开着的扩展（桥）。
+/// 照对应表、「关于你」、读好的清单起来的核心，拉起开着的扩展（桥）。
 fn served_core(home: &Home) -> Arc<Core> {
-    home.write("system/config.toml", BINDINGS);
+    home.write("system/config.toml", &format!("{BINDINGS}\n{PROFILE}"));
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -157,7 +157,6 @@ fn profile_of(home: &Home, owner: &AccountId, session: &Value) -> Option<String>
 #[tokio::test]
 async fn venue_sessions_carry_it_only_for_the_admin_where_the_bridge_asks() {
     let home = Home::new();
-    home.write("home/alice/settings.toml", PROFILE);
     let program = Program::new();
     let (path, step) = record(&home, "bot");
     install_serving(

@@ -15,7 +15,7 @@ crate::settings! {
         /// 给模型看的一句。
         line: Option<String> = none {
             kind: english [12],
-            layers: [System, Personal],
+            layers: [System],
             applies: new_session,
             ui: { page: "models", group: "pools", control: text },
         },

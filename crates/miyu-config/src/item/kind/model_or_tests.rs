@@ -15,7 +15,7 @@ crate::settings! {
         /// 算向量的模型。
         embedding: Option<String> = none {
             kind: model_or ["local", "off"],
-            layers: [System, Personal],
+            layers: [System],
             applies: next_turn,
             ui: { page: "models", group: "uses", control: text },
         },

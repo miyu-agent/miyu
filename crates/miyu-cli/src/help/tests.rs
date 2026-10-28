@@ -232,7 +232,7 @@ fn each_page_lists_exactly_the_options_there_are() {
             "{language:?} schedule"
         );
         // `provider` 那一页（施工 8-5，Y-13 上并成一页）：`provider`、`login`、`list`、`logout` 印的都是它。名字是位置参数，不算
-        // 选项；选项分在子命令上（`--system` 在 `login`、`logout`，`--format` 在 `list`），页上列的是它们加起来的。
+        // 选项；选项分在子命令上（`--format` 在 `list`），页上列的是它们加起来的。
         let provider = Provider::augment_args(Command::new("provider"));
         let mut expected = real(&provider, id);
         let subs: Vec<_> = provider.get_subcommands().cloned().collect();

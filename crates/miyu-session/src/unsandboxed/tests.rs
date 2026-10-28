@@ -174,12 +174,12 @@ fn a_quoted_tool_name_is_read() {
     );
 }
 
-/// 只认系统配置：写在个人设置里的读的时候就报出来，不进这一轮的值。
+/// 只认系统配置：写在项目配置里的读的时候就报出来，不进这一轮的值。
 #[test]
-fn personal_settings_cannot_grant() {
+fn a_project_config_cannot_grant() {
     let source = "[sandbox.tools]\nlight = \"~home\"\n";
-    let personal = miyu_config::parse::parse(ITEMS, Layer::Personal, source).expect("写法对");
-    assert!(!personal.problems.is_empty(), "个人设置里不收");
+    let project = miyu_config::parse::parse(ITEMS, Layer::Project, source).expect("写法对");
+    assert!(!project.problems.is_empty(), "项目配置里不收");
     let system = miyu_config::parse::parse(ITEMS, Layer::System, source).expect("写法对");
     assert!(system.problems.is_empty(), "{:?}", system.problems);
 }

@@ -89,7 +89,7 @@
       },
       "ui.welcomed": {
         "name": "初回ガイド完了",
-        "description": "このアカウントは初回ガイドを終えています。ターミナルと Web ではもうガイドを開きません。"
+        "description": "初回ガイドは終わっています。ターミナルと Web ではもうガイドを開きません。"
       },
       "persona.default": {
         "name": "既定のペルソナ",
@@ -358,7 +358,7 @@
       "packages.source": {"name": "ソフトウェアソースのアドレス", "description": "ここでパッケージを検索・ダウンロードします。既定は公式のソースです。別のアドレスでも公式の署名がある内容が必要です。"},
       "packages.mirrors": {"name": "ミラー", "description": "公式のソースにつながらない・遅いとき、先に順番に試します。内容は署名とハッシュで確かめるので、ミラーが書き換えることはできません。"},
       "packages.hold": {"name": "更新しないパッケージ", "description": "更新のときに飛ばすパッケージ（ID）。入っている版をそのまま使います。"},
-      "packages.sources.<id>.url": {"name": "ほかのソフトウェアソースのアドレス", "description": "インデックスを置いたフォルダー。公開鍵と一緒に書くとソースになり、信頼したことになります。システム設定のものは全員、個人設定のものは自分だけが使います。"},
+      "packages.sources.<id>.url": {"name": "ほかのソフトウェアソースのアドレス", "description": "インデックスを置いたフォルダー。公開鍵と一緒に書くとソースになり、信頼したことになります。システム設定に書きます。"},
       "packages.sources.<id>.key": {"name": "ほかのソフトウェアソースの公開鍵", "description": "インデックスに署名した Ed25519 公開鍵（base64）。検証できないインデックスは受け取りません。"},
       "models.catalog.url": {
         "name": "カタログのアドレス",
@@ -649,7 +649,7 @@
     "package-problems/bad_default": "{detail} が型に合わないか、選択肢にありません。シークレットとシークレットのリストには既定値を書けません",
     "package-problems/bad_choices": "{detail} は重複しない文字列を二つ以上並べてください",
     "package-problems/bad_range": "{detail} は整数で、最小が最大を超えないように書いてください",
-    "package-problems/bad_layers": "{detail} は system、personal のどちらかまたは両方です",
+    "package-problems/bad_layers": "{detail} は system だけを書きます",
     "package-problems/bad_applies": "{detail} は now、new_session、next_turn、program_start のどれかです",
     "package-problems/not_bool": "{detail} は true か false です",
     "package-problems/settings_taken": "パッケージ ID {detail} がコアの設定と重なるため、その設定項目は一つも使いません。別の ID にしてください",
@@ -729,12 +729,11 @@
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",
     "config/reference-header": "Miyu のすべての設定項目と既定値です。このファイルは生成されたもので、編集しても効果はありません。",
-    "config/reference-where": "システム設定は system/config.toml に、個人設定は home/<アカウント>/settings.toml に書きます。",
+    "config/reference-where": "システム設定は system/config.toml に書きます。",
     "config/reference-item": "{name}：{description}",
     "config/facts": "書ける値：{values}。{layers}にだけ書けます。{applies}。",
     "config/schema-description": "{description}{facts}",
     "config/layer/system": "システム設定",
-    "config/layer/personal": "個人設定",
     "config/applies/now": "すぐに反映",
     "config/option-needs-key": "キーが必要",
     "config/option-needs-address": "アドレスが必要",
@@ -778,7 +777,6 @@
     "config/readonly-bad-path": "{got} の書き方が違います。~/…、絶対パス、またはワークスペース内の相対パス（.. なし）で書いてください",
     "config/readonly-too-broad": "{got} はホームフォルダかその上位なので、まるごと保護できません。ホームフォルダ内の変更がすべて確認待ちになります",
     "config/source-reserved": "official は公式ソフトウェアソースの名前なので、ほかのソースには使えません",
-    "config/source-shadowed": "システム設定に {name} という名前のソフトウェアソースがすでにあるため、個人設定のこの項目は使われません",
     "config/source-incomplete": "ソフトウェアソース {name} には url と key の両方が必要です",
     "config/source-key": "ソフトウェアソース {name} の key を読めません。base64 の Ed25519 公開鍵を書いてください",
     "config/fix-example": "どれかに直してください。例：{example}",

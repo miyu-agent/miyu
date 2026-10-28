@@ -13,6 +13,4 @@ logout：删掉一个供应商的 key。不写名字的，从设了的里面选�
 
 选项：
       --format text|json  list 的输出：json 给脚本
-      --system            login、logout：存、删大家共用的那一份，以管理员身份；
-                          不写是自己的
   -h, --help              印帮助

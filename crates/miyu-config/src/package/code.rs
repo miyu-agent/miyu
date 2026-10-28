@@ -57,7 +57,7 @@ pub enum Code {
     BadChoices,
     /// `min`、`max` 不是整数、最小大于最大。
     BadRange,
-    /// `layers` 不是 `system`、`personal` 里的一两个。
+    /// `layers` 不是只写着 `system`。
     BadLayers,
     /// `applies` 不认识。
     BadApplies,
