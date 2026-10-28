@@ -283,9 +283,13 @@ impl Table {
         }
         let mut touched: Vec<PathBuf> = Vec::new();
         for path in &event.paths {
-            // 往下递归看的（[`Table::of_tree`]）：在它下面、路上没有点开头的那一段的，交出去的是这个文件。
+            // 往下递归看的（[`Table::of_tree`]）：在它下面、路上没有点开头的那一段的，交出去的是这个文件。还在的目录不算：里面的
+            // 文件变了自己会报，目录本身的时间、属性变了（Windows 读写里面的文件时会单独报一下）不是内容变了。
             for target in self.targets.iter().filter(|target| target.tree) {
                 let real_path = real(path);
+                if real_path.is_dir() {
+                    continue;
+                }
                 let under = path
                     .strip_prefix(&target.dir)
                     .ok()

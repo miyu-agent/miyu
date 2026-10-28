@@ -335,6 +335,18 @@ fn a_watched_tree_hands_over_the_file_that_changed() {
         table.touched(&event(modify, &real)).is_empty(),
         "目录自己不算"
     );
+    // 还在的目录变了不算（Windows 会单独报一下目录的时间变了）；删掉了的照算。
+    fs::create_dir_all(real.join("personas").join("engineer")).unwrap();
+    let persona = real.join("personas").join("engineer");
+    assert!(table.touched(&event(modify, &persona)).is_empty());
+    fs::remove_dir_all(&persona).unwrap();
+    assert_eq!(
+        table.touched(&event(
+            EventKind::Remove(notify::event::RemoveKind::Folder),
+            &persona
+        )),
+        [dir.join("personas").join("engineer")]
+    );
 }
 
 #[test]
