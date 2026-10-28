@@ -1,4 +1,4 @@
-//! 调工具：几种内容照原样读回来；工具自己说出错了不算出错；不认识的工具是服务的错；要补信息的不支持；服务反过来问的回
+//! 调工具：几种内容照原样读回来；工具自己说出错了不算出错；不认识的工具是服务的错；要补信息的不支持，只带 requestState 的照着重发；服务反过来问的回
 //! 「没有这个方法」再接着答；等不及丢掉的发取消；服务退出了是断了。
 
 use std::time::Duration;
@@ -55,6 +55,59 @@ async fn asking_for_more_input_is_not_supported() {
         client.call("input", json!({})).await,
         Err(Failed::InputRequired)
     );
+    assert_eq!(
+        client.call("elicit", json!({})).await,
+        Err(Failed::InputRequired),
+        "要补东西的照旧不支持，带着 requestState 也一样"
+    );
+}
+
+/// 只带 `requestState` 的 `input_required`（施工 PT-1 中，规范 2026-07-28「Multi Round-Trip Requests」）：换个编号、原样带回
+/// `requestState` 再发一遍；一直叫重发的到上限停，说清楚。
+#[tokio::test]
+async fn a_request_state_alone_is_sent_back_with_the_same_request() {
+    let (client, fake) = connected(Script::modern()).await;
+    let called = client
+        .call("busy", json!({"text": "x"}))
+        .await
+        .expect("重发以后答完");
+    assert_eq!(
+        called.content,
+        [Content::Text("done after retry".to_string())]
+    );
+    let sent: Vec<_> = fake
+        .received()
+        .into_iter()
+        .filter(|message| message["params"]["name"] == "busy")
+        .collect();
+    assert_eq!(sent.len(), 2, "{sent:?}");
+    assert_ne!(sent[0]["id"], sent[1]["id"], "重发换编号");
+    assert!(sent[0]["params"].get("requestState").is_none());
+    assert_eq!(sent[1]["params"]["requestState"], "round-2", "原样带回");
+    assert_eq!(
+        sent[1]["params"]["arguments"],
+        json!({"text": "x"}),
+        "原请求照旧"
+    );
+    let empty = client
+        .call("busy-empty", json!({}))
+        .await
+        .expect("空的 inputRequests 当没要东西");
+    assert_eq!(
+        empty.content,
+        [Content::Text("done after retry".to_string())]
+    );
+    let nagged = client.call("nagging", json!({})).await;
+    assert!(
+        matches!(&nagged, Err(Failed::Malformed(why)) if why.contains("kept asking")),
+        "{nagged:?}"
+    );
+    let rounds = fake
+        .received()
+        .into_iter()
+        .filter(|message| message["params"]["name"] == "nagging")
+        .count();
+    assert_eq!(rounds, 9, "头一回加重发 8 回");
 }
 
 #[tokio::test]

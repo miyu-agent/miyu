@@ -328,8 +328,8 @@ fn standard_headers_name_the_method_and_what_it_acts_on() {
     assert_eq!(
         standard_headers(&read),
         [
-            ("Mcp-Method", "resources/read".to_string()),
-            ("Mcp-Name", "file:///a b".to_string())
+            ("Mcp-Method".to_string(), "resources/read".to_string()),
+            ("Mcp-Name".to_string(), "file:///a b".to_string())
         ]
     );
     let prompt =
@@ -338,7 +338,7 @@ fn standard_headers_name_the_method_and_what_it_acts_on() {
     let list = json!({"jsonrpc": "2.0", "id": 3, "method": "tools/list", "params": {}});
     assert_eq!(
         standard_headers(&list),
-        [("Mcp-Method", "tools/list".to_string())]
+        [("Mcp-Method".to_string(), "tools/list".to_string())]
     );
     let answer = json!({"jsonrpc": "2.0", "id": 4, "result": {}});
     assert!(standard_headers(&answer).is_empty(), "回应没有方法名");
@@ -364,4 +364,79 @@ fn only_a_json_rpc_error_body_is_handed_back_as_it_is() {
         rpc_error(r#"{"jsonrpc":"2.0","id":7,"result":{}}"#, false, Some(&id)).is_none(),
         "不是错误的不算"
     );
+}
+
+/// 工具参数镜像成请求头（施工 PT-1 中）：标记不合规矩的工具从列表里剔掉、日志里说为什么；合的调用时带上 `Mcp-Param-<名>`，
+/// 非 ASCII 的照规范编码，假服务照规范查对得上才答。
+#[tokio::test]
+async fn marked_parameters_go_into_headers_and_broken_marks_drop_the_tool() {
+    for sse in [false, true] {
+        let server = HttpServer::modern(sse).await;
+        server.header_tools();
+        let (log, lines) = log();
+        let client = connect(&server, log).await.0.expect("连得上");
+        let listed = client.tools().await.expect("列得出");
+        let names: Vec<&str> = listed.tools.iter().map(|tool| tool.name.as_str()).collect();
+        assert_eq!(names, ["echo", "region"], "标记写在 items 里的剔掉");
+        assert!(
+            logged(&lines, "WARN tool broken left out"),
+            "{:?}",
+            lines.lock().unwrap()
+        );
+        let called = client
+            .call("region", json!({"region": "华东"}))
+            .await
+            .expect("请求头对得上才答");
+        assert_eq!(called.content.len(), 1, "{called:?}");
+        let call = server
+            .received()
+            .into_iter()
+            .find(|request| request.body["params"]["name"] == "region")
+            .expect("调过");
+        assert_eq!(
+            call.header("mcp-param-region"),
+            Some(header_value("华东").as_str())
+        );
+    }
+}
+
+/// 等到 `server` 记下有人中途断开，最多等 5 秒。
+async fn hung_up(server: &HttpServer) -> bool {
+    for _ in 0..250 {
+        if server.hung_up() > 0 {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    false
+}
+
+/// 取消就是断开（施工 PT-1 中，规范 2026-07-28「Cancellation」）：客户端丢掉一次调用，转接停掉那个 POST，服务那边看到连接断了；
+/// 新版的不另发 `notifications/cancelled`，握过手的老服务照旧发。
+#[tokio::test]
+async fn a_dropped_call_hangs_up_its_request() {
+    for modern in [true, false] {
+        let server = if modern {
+            HttpServer::modern(false).await
+        } else {
+            HttpServer::start(false).await
+        };
+        server.slow(30_000);
+        let (log, _) = log();
+        let client = connect(&server, log).await.0.expect("连得上");
+        let gave_up = tokio::time::timeout(
+            Duration::from_millis(300),
+            client.call("echo", json!({"text": "hi"})),
+        )
+        .await;
+        assert!(gave_up.is_err(), "等不及丢掉");
+        assert!(hung_up(&server).await, "服务看到断开（modern={modern}）");
+        // 老服务的通知是另一个 POST，给它一点时间到。
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        let told = server
+            .received()
+            .iter()
+            .any(|request| request.body["method"] == "notifications/cancelled");
+        assert_eq!(told, !modern, "新版不发通知、老版照发（modern={modern}）");
+    }
 }

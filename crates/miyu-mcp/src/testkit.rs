@@ -392,6 +392,17 @@ impl Stage {
                 return Some(vec![wire::request_raw("s1", "sampling/createMessage")]);
             }
             "input" => json!({"resultType": "input_required", "inputRequests": {}}),
+            // 多轮请求（施工 PT-1 中）：头一回叫重发、带回 `round-2` 才答；`nagging` 一直叫重发。都不在工具表里。
+            "busy" if params["requestState"] == "round-2" => text("done after retry"),
+            "busy" => json!({"resultType": "input_required", "requestState": "round-2"}),
+            "nagging" => json!({"resultType": "input_required", "requestState": "again"}),
+            // 同 `busy`，叫重发时带一张空的 `inputRequests`：空的当没要东西。
+            "busy-empty" if params["requestState"] == "round-2" => text("done after retry"),
+            "busy-empty" => {
+                json!({"resultType": "input_required", "inputRequests": {}, "requestState": "round-2"})
+            }
+            "elicit" => json!({"resultType": "input_required", "requestState": "x",
+                "inputRequests": {"name": {"method": "elicitation/create", "params": {"message": "who?"}}}}),
             "die" => return None,
             _ => return Some(vec![wire::answer(id, Err((-32602, "Unknown tool")))]),
         };
