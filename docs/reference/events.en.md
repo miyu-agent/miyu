@@ -50,6 +50,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `peer.idle` | A session being waited on went idle, or can't be waited on |
 | `image.described` | A description of an image (seen by the vision model for a model that can't see images) |
 | `todos.cleared` | The to-do list was cleared |
+| `package.state` | A package's program set its state in this session (`{"package", "state"}`, see [Extensions](extensions.en.md)) |
 | `goal.set`, `goal.changed`, `goal.paused`, `goal.resumed`, `goal.ended` | A standing goal was set, changed, paused, resumed, ended |
 | `dream.ended` | A memory consolidation run finished: how many memories it added, revised and retired, whether it wrote the summary, whether it was stopped |
 | `venue.recalled`, `venue.delivered` | Someone recalled a message on the platform; her message reached the platform |
@@ -70,5 +71,6 @@ Not recorded, no `seq`, only pushed to heads subscribed at that moment, never re
 | `model.changed` | The model or limits for the next requests changed: `why` is `failover` or `turn` |
 | `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done |
 | `todos.changed` | The whole current to-do list |
+| `package.state_changed` | What heads see of a package's state in this session changed: `{"package", "state": {"widgets"?}}`; a cleared one has `state` `{}` |
 | `compactable.changed` | Whether there is anything to compact changed: `{"compactable": <bool>}`, same as `compactable` in the subscribe reply (whether `session.compact` would answer `nothing_to_compact`) |
 | `goal.changed` | The whole standing goal right now |

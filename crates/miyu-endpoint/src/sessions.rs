@@ -36,6 +36,7 @@ mod orphans;
 mod places;
 pub(crate) mod prefix;
 mod setup;
+pub(crate) mod state;
 
 pub(crate) use opening::Opening;
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};

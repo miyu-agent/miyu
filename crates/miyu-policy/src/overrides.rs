@@ -108,8 +108,13 @@ fn parameter(name: &str, item: &Item) -> Result<String, String> {
     Ok(description)
 }
 
-/// 给模型看的字的规矩：不是空的，最多 `most` 个字，除了换行没有控制字符，CJK 的字不到一半。
-fn model_text(text: &str, most: usize) -> Result<(), &'static str> {
+/// 给模型看的字的规矩：不是空的，最多 `most` 个字，除了换行没有控制字符，CJK 的字不到一半。包的会话状态的 `note` 也照它查
+/// （施工 TW-1）。
+///
+/// # Errors
+///
+/// 不合的交回哪一条。
+pub fn model_text(text: &str, most: usize) -> Result<(), &'static str> {
     let count = text.chars().count();
     if text.trim().is_empty() {
         return Err("is empty");

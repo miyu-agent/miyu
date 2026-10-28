@@ -167,6 +167,8 @@ impl InputKind {
                 Command::Compact { .. } => InputKind::Compact,
                 Command::Clear => InputKind::Clear,
                 Command::ClearTodos => InputKind::ClearTodos,
+                // 随机测试不造（施工 TW-1）：同清待办，不开回合、记一条。
+                Command::SetState(_) => InputKind::ClearTodos,
                 Command::Report(_) => InputKind::Report,
                 Command::PeerIdle { .. } => InputKind::PeerIdle,
                 Command::Recap => InputKind::Recap,

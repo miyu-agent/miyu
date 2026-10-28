@@ -195,6 +195,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     let listed = listed(core, package);
     let per = crate::extensions::scoped(core, package);
     let platforms = crate::venues::platforms_of_package(core, package);
+    let declared = Arc::new(crate::sessions::state::Declared::of(core, package));
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
     for tool in tools {
         // `mcp__` 开头的名字留给 MCP 服务（施工 X-3 上）：包自己登记的用了，预设会把它归到服务的功能上。
@@ -218,6 +219,7 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
                     root: core.root.clone(),
                     provider: core.account_of(Some(package)),
                     per_account: per,
+                    declared: Arc::clone(&declared),
                 },
             )
             .for_platform(&platforms),

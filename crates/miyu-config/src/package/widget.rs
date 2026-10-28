@@ -58,6 +58,8 @@ pub struct Widget {
     pub per_session: bool,
     /// 打开这一整页的斜杠命令名（只给整页）。
     pub command: Option<String>,
+    /// 内容来自包在会话里的状态（施工 TW-1，设计 46）：只给跟着会话的块。
+    pub state: bool,
     /// 这一段写在第几行。
     pub line: Option<usize>,
 }
@@ -190,12 +192,31 @@ pub(super) fn read(reader: &Reader<'_>, node: &Item) -> Result<Vec<Widget>, Prob
                 ));
             }
         };
+        let state = match table.get("state").map(Item::as_bool) {
+            None | Some(Some(false)) => false,
+            Some(Some(true)) if per_session => true,
+            Some(Some(true)) => {
+                return Err(bad(
+                    line,
+                    &format!("{at}.state"),
+                    format!("{at}.state = true is only for widgets with scope = \"session\""),
+                ));
+            }
+            Some(None) => {
+                return Err(bad(
+                    line,
+                    &format!("{at}.state"),
+                    format!("{at}.state must be true or false"),
+                ));
+            }
+        };
         widgets.push(Widget {
             id,
             place,
             title,
             per_session,
             command,
+            state,
             line,
         });
     }

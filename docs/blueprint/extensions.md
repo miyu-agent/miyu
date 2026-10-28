@@ -89,7 +89,7 @@
 |---|---|---|
 | 只给人 | `local_only` | `session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`；`account.*`、`login.ticket`；`preset.set`、`preset.delete`、`persona.set`、`persona.delete`；`package.install`、`remove`、`enable`、`disable`、`restart`、`sync`、`search`、`clean`、`upgrades`、`upgrade`、`file`；`extension.*`、`mcp.*`、`project.*`；`skill.remove`、`tool.set_loading`、`feature.set`；`config.trust`、`secret.set`、`secret.delete`；`subscribe` 的 `projects` 流；核心发出去的（`tool.call`、`view.*` 这些），扩展调了没意义 |
 | `session.delete`（施工 Y-2 上） | 要 `sessions.drive` | 只删得掉自己名下的（属主照「会话只给属主」那一道查）：平台的桥删它的场所会话，它的后台照这条给管理员删（2026-10-23 项目主人定） |
-| 要 `sessions.drive` | `needs_approval` | `session.create`、`send`（不带 `as`）、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`（不带 `as`）、`job.stop` |
+| 要 `sessions.drive` | `needs_approval` | `session.create`、`send`（不带 `as`）、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`（不带 `as`）、`job.stop`，包的会话状态 `session.set_state`、`session.state`（施工 TW-1） |
 | 要 `events.read` | 同上 | `subscribe` 的 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`、`job.output` |
 | 要 `events.write` | 同上 | `events.append`（`ext.<包>.*`） |
 | 要 `act_for_external` | 同上 | 带 `as` 的 `session.send`、`command.run`，`session.note`，`venue.*`，`events.append` 的 `venue.*` |

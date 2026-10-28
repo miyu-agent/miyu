@@ -144,6 +144,8 @@
 
 **`todos.cleared`**：人清掉了待办（施工 D-3 再补，`/todo clear`，`protocol.md` 的 `command.run` 第 14 条，`kernel/session.md`「待办」）。`body` 是空对象 `{}`。`by` 是说命令的人，`cause` 是那个命令的编号；回合进行中记的带上那一轮，撤掉那一轮清单跟着回来。有效历史从这一条起当前的清单是空的；不进她的上下文（渲染时不出）。没有待办时不记（内核拒 `nothing_to_clear`）。
 
+**`package.state`**：包的程序直接换上了它在这个会话里的一份状态（施工 TW-1，设计 `46-包的会话状态.md`，`kernel/session.md`「包的会话状态」）。`body` 是 `{"package", "state"}`：`state` 是 `{"widgets"?, "note"?, "data"?}`，三格都没有的是清掉；内核不解读里面的格，写法由协议端点查过（`session.set_state`）。`by` 照扩展替谁干活记（`sessions::person`），`cause` 是那个请求的编号；回合进行中记的带上那一轮，撤掉那一轮就退回更早的一份。不进她的上下文（渲染时不出）。
+
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|
 | `text` | 字符串 | 必有 | 人打的原文，例如 `/reset` |
@@ -323,12 +325,13 @@
 | `job.messaged` | `job`，必有 | 给这个任务编号的子代理留了言（施工 7-7，`agents.md` 第六条）：`send_message` 那次调用报一条，它欠一份回报。对得上这个会话派的一个子代理，由账本查 |
 | `peer.watch` | `session`，必有 | 订了别的会话的「空了告诉我」（施工 C-1，`cross-session.md`「效果 peer.watch」）：被等的会话的整个编号。`send_message` 写 `notify_when_idle` 的那次调用报一条（施工 C-6），这就是订的记录，账本照它算在等哪几个会话、从这条结果的时刻算起；不是这个会话自己，由账本查 |
 | `todo.written` | `todos`，必有：照先后的每一项 `{"content": 一句话, "status": "pending"、"in_progress"、"completed"}`，不认识的状态原样留着 | `todowrite` 换上的整份待办（施工 D-3，`tools/todowrite.md`）：全部做完、清空的是空列表。`done`，可以没有（施工 D-3 补）：因为全部做完而清空的，清空前那一份，写法同 `todos`；空的不写。有效历史另记一张表，当前的清单是最近一份没撤掉的（`kernel/session.md`「待办」）；不发给模型 |
+| `package.state` | `package`，必有；`state`，可以没有（没有的当 `{}`） | 扩展的工具结果带的包的会话状态（施工 TW-1）：写法同事件 `package.state` 的 `body`。有效历史照每个包最近一份没撤掉的算（`history/states.rs`），交给头、压缩时把 `note` 写进检查点 |
 | `file.shown` | `path`、`blob`、`name`、`media_type`、`size`，必有；`title`、`language`、`width`、`height`，可以没有 | `show` 给人看了一个文件（施工 D-5，`tools/show.md`）：内容存成了 blob，头照这几格选怎么显示，同一个 `path` 再来一条换掉那一张；不发给模型，内核不读 |
 
 - 改前改后的内容：小的由执行器照原文写进 `before_text`、`after_text`，别的存成 blob；效果里都有它们的哈希（`session/tools.md` 第 2 条）。
 - 缺了 `kind`、认识的种类缺了必有的格、哈希或者任务编号不合写法的，读不进来。
 - 不认识的种类，例如第三方的工具报来的，整块原样留着，内核不解读。
-- 她看过的文件照效果记（`session/actor.md`）。施工 U-1 起撤销不再照效果改回文件。`job.started`、`job.messaged`、`peer.watch`、`todo.written`、`file.shown` 不改回什么，撤销时也不算改过文件。
+- 她看过的文件照效果记（`session/actor.md`）。施工 U-1 起撤销不再照效果改回文件。`job.started`、`job.messaged`、`peer.watch`、`todo.written`、`package.state`、`file.shown` 不改回什么，撤销时也不算改过文件。
 - `job.started` 的编号整份日志里不重复，撤掉的回合里的也算，由账本查（`kernel/history.md`）。
 
 **`tool.approval_requested`**：请人确认一次调用。

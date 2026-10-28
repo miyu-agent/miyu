@@ -326,6 +326,42 @@ fn a_checkpoint_that_counts_again_gets_its_reread_files_recalled() {
     assert_eq!(stage.recalls().len(), 3);
 }
 
+/// 包写给检查点的那几段原样带上（施工 TW-1，设计 46）：照包的编号接在取回指路后面，没以换行结尾的补一个，没写 `note` 的不带。
+#[test]
+fn package_notes_follow_the_retrieve_line_in_package_order() {
+    use crate::event::{PackageState, State};
+    let state = |package: &str, note: Option<&str>| PackageState {
+        package: package.to_string(),
+        state: State {
+            note: note.map(str::to_string),
+            data: Some(crate::raw::RawJson::of(&serde_json::json!({"n": 1})).expect("写得出")),
+            ..State::default()
+        },
+    };
+    let mut stage = rebuilding_with(0, 30, false);
+    stage.model([
+        Line::calls("记一下。", &[("write", "{}")]),
+        Line::says("好。").reports(5_000),
+    ]);
+    stage.tools([Play::States(vec![
+        state("zeta", Some("Zeta notes.\n")),
+        state("alpha", Some("Alpha notes.")),
+        state("mute", None),
+    ])]);
+    stage.say("开工");
+    stage.limits(Some(120), None);
+    stage.model([Line::says("S1"), Line::says("嗯。")]);
+    stage.say("接着来");
+    let compacted = compacted(&stage);
+    assert_eq!(
+        compacted.notes,
+        format!(
+            "<retrieve {}/>\nAlpha notes.\nZeta notes.\n",
+            compacted.upto
+        )
+    );
+}
+
 /// 当前的待办原样带上（施工 D-3，`compaction.md` 第八条）：第一轮她写了一份，第二轮一开头就压，检查点里代码写的几段在取回
 /// 指路后面多一段待办，一项一行；模板没有的（以前造的快照）不写。
 #[test]

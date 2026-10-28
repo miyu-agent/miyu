@@ -50,6 +50,7 @@
 | `peer.idle` | 等的那个会话空下来了，或者等不到了 |
 | `image.described` | 一张图的转述（看不了图的模型由看图的模型替它看过） |
 | `todos.cleared` | 待办清空了 |
+| `package.state` | 包的程序直接换上了它在这个会话里的一份状态（`{"package", "state"}`，见 [扩展](extensions.md)） |
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标设下、改了、停了、继续、结束 |
 | `dream.ended` | 一趟整理记忆跑完了：新记、改了、作废了几条，有没有写摘要，是不是叫停的 |
 | `venue.recalled`、`venue.delivered` | 平台上有人撤回了一条；她的话发到了平台上 |
@@ -70,5 +71,6 @@
 | `model.changed` | 会话接下来请求的模型、限额变了：`why` 是 `failover` 或 `turn` |
 | `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了 |
 | `todos.changed` | 当前的待办整份 |
+| `package.state_changed` | 一个包在这个会话里给头看的状态变了：`{"package", "state": {"widgets"?}}`，清掉了的 `state` 是 `{}` |
 | `compactable.changed` | 有没有能压的变了：`{"compactable": <布尔>}`，同订阅回应的 `compactable`（`session.compact` 会不会回 `nothing_to_compact`） |
 | `goal.changed` | 长期目标现在的整份 |

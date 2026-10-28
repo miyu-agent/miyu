@@ -120,7 +120,7 @@ pub(super) const SIDE: &[&str] = &["id", "tier", "name", "summary"];
 pub(super) const SEARCH: &[&str] = &["id", "name"];
 
 /// `[[widget]]`。
-pub(super) const WIDGET: &[&str] = &["id", "place", "title", "scope", "command"];
+pub(super) const WIDGET: &[&str] = &["id", "place", "title", "scope", "command", "state"];
 
 /// `[export]`。
 pub(super) const EXPORT: &[&str] = &["methods"];

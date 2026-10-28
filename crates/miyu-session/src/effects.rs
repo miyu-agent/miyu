@@ -53,6 +53,8 @@ pub(crate) fn store(blobs: &Blobs, effects: Vec<miyu_tool::Effect>) -> Vec<Effec
             miyu_tool::Effect::JobMessaged(messaged) => Effect::JobMessaged(messaged),
             miyu_tool::Effect::PeerWatch(watch) => Effect::PeerWatch(watch),
             miyu_tool::Effect::TodoWritten(written) => Effect::TodoWritten(written),
+            // 包的会话状态（施工 TW-1）照原样：协议端点查过写法。
+            miyu_tool::Effect::PackageState(state) => Effect::PackageState(state),
             // 给人看的文件（施工 D-5）：内容存成 blob。
             miyu_tool::Effect::Shown(shown) => Effect::FileShown(FileShown {
                 path: text(&shown.path),
@@ -125,6 +127,7 @@ pub(crate) fn saw(seen: &mut Seen, effects: &[Effect]) {
             | Effect::JobMessaged(_)
             | Effect::PeerWatch(_)
             | Effect::TodoWritten(_)
+            | Effect::PackageState(_)
             | Effect::FileShown(_)
             | Effect::Unknown(_) => {}
         }

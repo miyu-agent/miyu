@@ -235,6 +235,7 @@ A block of your own content in the terminal and web UIs; `capabilities` must inc
 | `title` | Required for sidebar and page |
 | `scope` | `global` (default); `session` follows the session, one per session; sidebar only |
 | `command` | Pages only: typing this slash command opens the page |
+| `state` | `true`: this widget's content comes from your package's state in the session (a tool result's `state` or `session.set_state`, see [Extensions](../reference/extensions.en.md)), and stays there even when your program is not running; only for `scope = "session"` widgets |
 
 Your program pushes the content; see [Writing an extension](extensions.en.md).
 

@@ -120,6 +120,7 @@ fn stores() -> (Stores, std::path::PathBuf) {
             root,
             provider,
             per_account: false,
+            declared: Default::default(),
         },
         dir,
     )

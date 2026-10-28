@@ -38,7 +38,8 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 
 1. 一个包最多 16 块。`title` 写法同 `[package] name`（语言到字的表）。
 2. 写错了报 `bad_widget`，报在那一段，`detail` 是哪一格（例如 `widget.today.place`）：编号写法不对、重了，位置不认，侧边栏、整页没写标题，`scope` 不认、`session` 写在侧边栏以外，`command` 写法不对、写在整页以外、和这个包的 `[[slash]]` 或别的整页重了，超过 16 块（`detail` 是 `widget`），没在 `[process] capabilities` 里写 `widgets`（`detail` 是 `widget`，报在第一段）。
-3. `command` 和斜杠命令一个名字空间（`slash.md`「认」第 2 条）：装包查冲突（`packages.md`「冲突」的 `slash`），和内置的同名报 `slash_builtin`。
+3. `state = true`（施工 TW-1，设计 46）：这一块的内容来自包在会话里的状态（`kernel/session.md`「包的会话状态」），工具结果带的、`session.set_state` 写的都算；只给 `scope = "session"` 的块，写在别处、不是布尔的报 `bad_widget`（`widget.<块>.state`）。头那一边照状态出内容是施工 TW-1 中上。
+4. `command` 和斜杠命令一个名字空间（`slash.md`「认」第 2 条）：装包查冲突（`packages.md`「冲突」的 `slash`），和内置的同名报 `slash_builtin`。
 
 **扩展能力** `widgets`：在界面上显示它自己的内容。和别的扩展能力一样，开的时候人批（`extensions.md`「能力」）；名字、一句说明在内核那份 `human` 的 `extensions/capabilities/widgets`、`…/summary`。
 

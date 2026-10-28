@@ -4,7 +4,8 @@
 //! 认识的六种读成对应的类型；不认识的（第三方的工具报来的）整块原样留着，内核不解读。`job.started` 是派出去一个
 //! 任务的记录（施工 7-1，`agents.md`）：派它的那次调用本身就在历史里，不另记事件。`job.messaged` 是给子代理留了言的
 //! 记录（施工 7-7）：它欠一份回报。`peer.watch` 是订了「空了告诉我」的记录（施工 C-1，`cross-session.md`）：账本照它算在
-//! 等哪几个会话。`todo.written` 是 `todowrite` 换上的整份待办（施工 D-3）：有效历史照它算当前的清单。
+//! 等哪几个会话。`todo.written` 是 `todowrite` 换上的整份待办（施工 D-3）：有效历史照它算当前的清单。`package.state` 是
+//! 工具结果带上的包的会话状态（施工 TW-1）：有效历史照每个包最近一份算。
 
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -40,6 +41,9 @@ pub enum Effect {
     /// 给人看了一个文件（施工 D-5，`docs/blueprint/tools/show.md`）。
     #[serde(rename = "file.shown")]
     FileShown(FileShown),
+    /// 工具结果顺手带上的包的会话状态（施工 TW-1，设计 46）。
+    #[serde(rename = "package.state")]
+    PackageState(crate::event::PackageState),
     /// 不认识的种类：整块原样留着，写出去还是原样。
     #[serde(untagged)]
     Unknown(RawJson),
@@ -221,6 +225,7 @@ impl<'de> Deserialize<'de> for Effect {
                     "peer.watch" => raw::parse(json).map(Effect::PeerWatch),
                     "todo.written" => raw::parse(json).map(Effect::TodoWritten),
                     "file.shown" => raw::parse(json).map(Effect::FileShown),
+                    "package.state" => raw::parse(json).map(Effect::PackageState),
                     _ => return None,
                 })
             },

@@ -11,6 +11,7 @@
 //!   施工 6-3 下）；另一个会话过了起压线、在后台提前压的那一次发出去了（`compaction.started`，施工 6-11 再补），到线时
 //!   换上了它（带 `prepared`，施工 6-11 上）；
 //! - 65 号回合里换上了一份待办以后推的 `todos.changed`（施工 D-3）。
+//! - 65 号回合里待办的包换上了一份状态、后来清掉推的 `package.state_changed`（施工 TW-1）。
 //!
 //! 瞬时事件内核只推不读，所以样本在代码里照着造，不从文件读回来。
 
@@ -20,11 +21,13 @@ use std::path::PathBuf;
 use miyu_kernel::accumulate::{Accumulator, Delta, Kind};
 use miyu_kernel::event::{
     Body, ChangeWhy, CompactTrigger, CompactionDone, CompactionProgress, CompactionStarted,
-    EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta, NestedStarted, Piece,
-    Retry, Status, Todo, TodoStatus, TodosChanged, ToolProgress, Transient, TransientBody, Usage,
+    EffortInUse, EffortSource, ErrorClass, Event, ModelChanged, ModelDelta, NestedStarted,
+    PackageStateChanged, Piece, Retry, State, Status, Todo, TodoStatus, TodosChanged, ToolProgress,
+    Transient, TransientBody, Usage,
 };
 use miyu_kernel::id::{CallId, CommandId, ModelName, NestedId, ProviderId, Seq, TurnId};
 use miyu_kernel::origin::{By, Model, Tool};
+use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::ContextLimits;
 use miyu_kernel::time::Timestamp;
 
@@ -387,6 +390,42 @@ fn the_todos_changed_sample_is_written_exactly() {
     };
     assert_eq!(
         lines("transient/todos.changed.jsonl"),
+        [changed.to_line(), cleared.to_line()]
+    );
+}
+
+/// 包的会话状态变了（施工 TW-1）：一份给头看的（两块界面块的内容，一块换了标题），清掉了的没有。
+#[test]
+fn the_package_state_changed_sample_is_written_exactly() {
+    let raw = |value: serde_json::Value| RawJson::of(&value).expect("写得出");
+    let changed = Transient {
+        at: Timestamp::parse("2026-10-28T09:12:00.000Z").expect("样本的时刻合写法"),
+        turn: Some(TurnId::new(Seq::new(65).expect("65 是合法的序号"))),
+        by: By::Kernel,
+        cause: None,
+        body: TransientBody::PackageStateChanged(PackageStateChanged {
+            package: "todowrite".to_string(),
+            state: State {
+                widgets: Some(raw(serde_json::json!({
+                    "list": {"content": [{"type": "list", "items": [
+                        {"title": "读代码", "state": "done"},
+                        {"title": "写测试", "state": "doing"},
+                    ]}], "title": {"en": "Todos 1/2", "zh": "待办 1/2"}},
+                    "count": {"content": [{"type": "text", "text": "1/2"}]},
+                }))),
+                ..State::default()
+            },
+        }),
+    };
+    let cleared = Transient {
+        body: TransientBody::PackageStateChanged(PackageStateChanged {
+            package: "todowrite".to_string(),
+            state: State::default(),
+        }),
+        ..changed.clone()
+    };
+    assert_eq!(
+        lines("transient/package.state_changed.jsonl"),
         [changed.to_line(), cleared.to_line()]
     );
 }

@@ -133,7 +133,7 @@
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
 
-**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?}}`：
+**回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?}}`：
 
 | 名字 | 说明 |
 |---|---|
@@ -143,6 +143,7 @@
 | `sent` | 她「发出去」的图，至多 4 张：`[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`。不给模型看；头画在正文里，聊天平台照它发 |
 | `detail` | 给头看的结构化结果，照下面三种通用形状写一种；不给模型看。形状不对的、`error` 是真的，核心丢掉这一格、结果照常 |
 | `data` | 给脚本的结构化结果，任意 JSON：AI 在命令里用 `miyu call` 调到的（`clicall`），印成一行 JSON 交给脚本；不给模型看，不记进 `tool.result`。`error` 是真的不交 |
+| `state` | 你这个包在这个会话里的一份状态，写法见下面「`session.set_state`、`session.state`」：核心照会话记最新一份，撤销、清空上下文跟着走。写坏了整份丢掉、结果照常；`null` 当没写，清掉写 `{}`；`error` 是真的不收 |
 
 `detail` 的三种形状（整份写成 JSON 至多 64 KiB）：
 
@@ -159,6 +160,25 @@
 **`tool.cancel`**（核心 → 扩展，通知）：`{"session", "call_id"}`。超时、被打断、核心要关时发：收到了就放下那次调用。
 
 谁能叫、能动谁是提供工具的一方自己的事：照 `by`、`owner` 挡，挡下的照结果回一句、`error` 写真。
+
+## `session.set_state`、`session.state`
+
+包在一个会话里的一份状态（设计 46）：你画在界面块上的、压缩时给模型留的、你自己的数据。要 `sessions.drive` 能力；只读写你这个包的、你替的那个人的会话。
+
+```json
+{"widgets": {"todos": {"content": [<界面块的内容>], "title"?: <标题>}}, "note": "Todo list:\n- [ ] ...", "data": {...}}
+```
+
+| 格 | 说明 |
+|---|---|
+| `widgets` | 块的编号到 `{"content", "title"?}`：块要是你清单里写了 `state = true` 的（只给 `scope = "session"` 的块），内容写法同 `widget.set`、照那一块的位置查。头照它画，你的程序没在跑也一样 |
+| `note` | 压缩时原样写进检查点、给模型看的一段英文（最多 2000 个字，CJK 不过半，除了换行没有控制字符）。平常的回合不发给模型 |
+| `data` | 你自己的数据，任意 JSON，写出来最多 16 KiB：核心只存，`session.state` 原样还给你 |
+
+- 三格都可以不写；`{}`、`null` 是清掉。写坏了的整份不收：`widgets` 里的内容不对回 `bad_widget_content`（`path` 从 `widgets.<块>` 写起），别的回 `bad_params`，`field` 是哪一格（例如 `state.widgets.other`：块不是你声明成状态块的）。
+- **`session.set_state {"session", "state"}`**：换上一份，回合进行中、空闲时都收，不开回合，落了盘回 `{}`。回合进行中写的跟着那一轮：撤掉那一轮就退回更早的一份。
+- **`session.state {"session"}`**：回 `{"state": {...} | null}`，你这个包当前的那一份（含 `note`、`data`）。
+- 清空上下文（`/clear`）清掉所有包的；平常的压缩不动。
 
 ## `package.methods`、`method.call`
 

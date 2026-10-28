@@ -1,0 +1,2 @@
+{"at":"2026-10-28T09:12:00.000Z","kind":"package.state_changed","turn":65,"by":{"kind":"kernel"},"body":{"package":"todowrite","state":{"widgets":{"count":{"content":[{"text":"1/2","type":"text"}]},"list":{"content":[{"items":[{"state":"done","title":"读代码"},{"state":"doing","title":"写测试"}],"type":"list"}],"title":{"en":"Todos 1/2","zh":"待办 1/2"}}}}}}
+{"at":"2026-10-28T09:12:00.000Z","kind":"package.state_changed","turn":65,"by":{"kind":"kernel"},"body":{"package":"todowrite","state":{}}}

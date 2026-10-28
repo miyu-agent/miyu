@@ -140,6 +140,8 @@ impl Session {
         if let Some(todos) = &notes.todos {
             head.push_str(&todo_list(todos, self.history.todos().unwrap_or_default()));
         }
+        // 包的会话状态（施工 TW-1，设计 46）：每个包写的那一段原文照包的编号接上，不另加字；没写的什么都没有。
+        head.push_str(&package_notes(&self.history.package_states()));
         // 摘要请求截短过的：摘要没看到的那一段，从检查点后面第一条到截到的那一条（施工 6-6 中）。写在最后，估算照算。
         let uncovered = cut
             .zip(notes.uncovered.as_ref())
@@ -319,6 +321,18 @@ fn todo_list(head: &Template, todos: &[crate::event::Todo]) -> String {
             todo.status.as_str(),
             todo.content
         ));
+    }
+    text
+}
+
+/// 包写给检查点的那几段：照包的编号，一段一段原样接上，没以换行结尾的补一个。
+fn package_notes(states: &BTreeMap<String, crate::event::State>) -> String {
+    let mut text = String::new();
+    for note in states.values().filter_map(|state| state.note.as_deref()) {
+        text.push_str(note);
+        if !note.ends_with('\n') {
+            text.push('\n');
+        }
     }
     text
 }

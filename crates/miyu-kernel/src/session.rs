@@ -55,6 +55,7 @@ mod send;
 mod shorten;
 mod sight;
 mod spans;
+mod states;
 mod step;
 mod summary;
 mod supersede;
@@ -168,6 +169,8 @@ pub struct Session {
     told_todos: Vec<crate::event::Todo>,
     /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。
     told_done: Vec<crate::event::Todo>,
+    /// 上次告诉头的包的状态（施工 TW-1，`states.rs`）：变了才推 `package.state_changed`。只在内存里。
+    told_states: states::Told,
     /// 嵌套调用（施工 M-1，`nested.rs`）：只在内存里，载入以后没有。
     nested: nested::Nested,
 }
@@ -437,6 +440,7 @@ impl Session {
             Command::Compact { instructions } => self.compact(id, at, instructions),
             Command::Clear => self.clear(id, at),
             Command::ClearTodos => self.clear_todos(id, by, at),
+            Command::SetState(written) => self.set_package_state(id, by, at, written),
             Command::Recap => self.recap(id),
             Command::Report(reported) => self.report(id, by, at, reported),
             Command::PeerIdle { status } => self.peer_idle(id, by, at, status),
@@ -458,6 +462,7 @@ impl Session {
         let mut actions = vec![Action::Push(pushed)];
         actions.extend(self.answer_nested(upto));
         actions.extend(self.todos_changed(at));
+        actions.extend(self.states_changed(at));
         for (id, events, outcome) in std::mem::take(&mut self.waiting) {
             if self.is_stored(&events) {
                 actions.push(Action::Reply { id, outcome });

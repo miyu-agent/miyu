@@ -3,7 +3,7 @@
 //! 答，`model.changed` 照它推，两边说的是同一份。施工 D-3 起还有当前的待办：内核推 `todos.changed` 时跟着换，`subscribe` 照它
 //! 回 `todos`。
 
-use miyu_kernel::event::{EffortInUse, Todo};
+use miyu_kernel::event::{EffortInUse, State, Todo};
 use miyu_kernel::origin::Model;
 use miyu_kernel::session::ContextLimits;
 
@@ -23,6 +23,8 @@ pub struct Shown {
     pub todos: Vec<Todo>,
     /// 因为全部做完而清空的：清空前那一份（施工 9-8 九补，`todos.changed` 的 `done`）。清单不是空的、载入以后的是空的。
     pub todos_done: Vec<Todo>,
+    /// 每个包当前的状态（施工 TW-1，设计 46）：造会话、载入时照内核的，落了盘推出去的事件动了状态时照内核的换。
+    pub states: std::collections::BTreeMap<String, State>,
     /// 这个会话累计的（施工 9-6 上）：造会话时是空的，载入时照整份日志算，之后每落一批盘加上这一批。
     pub tally: Tally,
     /// 长期目标现在的样子（施工 X-6）：喂法同 `tally`。
@@ -33,12 +35,17 @@ pub struct Shown {
 
 impl Shown {
     /// 造会话、载入时的一份：累计的是空的，载入的由 actor 另照日志算（施工 9-6 上）。
-    pub(crate) fn new(limits: ContextLimits, next: Next, todos: Vec<Todo>) -> Shown {
+    pub(crate) fn new(
+        limits: ContextLimits,
+        next: Next,
+        (todos, states): (Vec<Todo>, std::collections::BTreeMap<String, State>),
+    ) -> Shown {
         Shown {
             limits,
             next,
             todos,
             todos_done: Vec::new(),
+            states,
             tally: Tally::default(),
             goals: Goals::default(),
             compactable: None,

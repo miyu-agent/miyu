@@ -50,6 +50,8 @@ pub enum TransientBody {
     ModelChanged(Box<ModelChanged>),
     /// `todos.changed`：当前的待办变了（施工 D-3，`docs/blueprint/kernel/session.md`「待办」）：写了、撤销、恢复。
     TodosChanged(TodosChanged),
+    /// `package.state_changed`：一个包在这个会话里的状态变了（施工 TW-1，设计 46）：写了、清了、撤销、恢复、清空上下文。
+    PackageStateChanged(PackageStateChanged),
     /// `tool.nested_started`：脚本里的一次 `miyu call` 过了链、派去跑了（施工 M-1）。
     NestedStarted(NestedStarted),
     /// `compactable.changed`：有没有能压的变了（施工 W-12 补，终端要的）。会话 actor 每落一批盘重算，变了推；内核不推。
@@ -163,6 +165,15 @@ pub struct TodosChanged {
     pub done: Vec<crate::event::Todo>,
 }
 
+/// `package.state_changed` 的 `body`（施工 TW-1）：哪个包、给头看的那一格（`widgets`）；清掉了的没有。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct PackageStateChanged {
+    /// 哪个包。
+    pub package: String,
+    /// 这一刻的状态里给头看的那一格。
+    pub state: crate::event::State,
+}
+
 /// `compaction.progress` 的 `body`：摘要请求收到了多少字，估计要写多少字，头照它画进度（`compaction.md`
 /// 第三条第 8 条）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -263,6 +274,7 @@ impl TransientBody {
             TransientBody::CompactionDone(_) => "compaction.done",
             TransientBody::ModelChanged(_) => "model.changed",
             TransientBody::TodosChanged(_) => "todos.changed",
+            TransientBody::PackageStateChanged(_) => "package.state_changed",
             TransientBody::CompactableChanged(_) => "compactable.changed",
         }
     }
@@ -318,6 +330,7 @@ impl Serialize for TransientBody {
             TransientBody::CompactionDone(done) => done.serialize(s),
             TransientBody::ModelChanged(changed) => changed.serialize(s),
             TransientBody::TodosChanged(changed) => changed.serialize(s),
+            TransientBody::PackageStateChanged(changed) => changed.serialize(s),
             TransientBody::CompactableChanged(changed) => changed.serialize(s),
         }
     }

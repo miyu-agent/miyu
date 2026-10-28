@@ -140,6 +140,9 @@ pub enum Command {
     /// `/todo clear`：清掉待办（施工 D-3 再补，`docs/blueprint/kernel/session.md`「待办」）。回合进行中照收；没有待办的拒绝，
     /// `nothing_to_clear`。收下的记一条 `todos.cleared`，落了盘回应。
     ClearTodos,
+    /// `session.set_state`：包的程序直接换上它在这个会话里的一份状态（施工 TW-1，设计 46）。回合进行中、空闲时都收，不开回合；
+    /// 记一条 `package.state`（回合进行中的带上这个回合），落了盘回应。
+    SetState(crate::event::PackageState),
     /// `session.recap`：要一句回顾（施工 3-8 四补，`docs/blueprint/kernel/session.md`「回顾」）。有回合在进行时照收，照这一刻
     /// 落了盘的有效历史；不开回合、不进她的上下文。
     Recap,

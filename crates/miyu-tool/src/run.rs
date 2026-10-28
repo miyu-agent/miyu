@@ -223,6 +223,8 @@ pub enum Effect {
     PeerWatch(PeerWatch),
     /// 换上了一整份待办（施工 D-3）：`todowrite` 报，执行器原样换成内核的 `todo.written`。
     TodoWritten(TodoWritten),
+    /// 包的会话状态（施工 TW-1，设计 46）：扩展的工具结果带的，协议端点查过写法，执行器原样换成内核的 `package.state`。
+    PackageState(miyu_kernel::event::PackageState),
     /// 给人看了一个文件（施工 D-5）：带着内容，执行器存成 blob，换成内核的 `file.shown`。
     Shown(ShownFile),
 }

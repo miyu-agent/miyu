@@ -147,6 +147,8 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             | Body::CommandRan(_)
             // 人清掉待办只动头看的清单（施工 D-3 再补）。
             | Body::TodosCleared(_)
+            // 包的程序直接写的状态只给头和检查点（施工 TW-1）。
+            | Body::PackageState(_)
             // 图的转述经请求的 `described` 进请求，驱动把图的位置换成它（施工 8-17）。
             | Body::ImageDescribed(_)
             | Body::TurnReverted(_)
@@ -450,6 +452,7 @@ pub(crate) fn continues(ordered: &[&Event]) -> bool {
                 | Body::WorkspaceChanged(_)
                 | Body::CommandRan(_)
                 | Body::TodosCleared(_)
+                | Body::PackageState(_)
                 | Body::ImageDescribed(_)
                 | Body::ToolNested(_)
         )

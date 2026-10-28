@@ -27,6 +27,7 @@
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
+//! - `session:<路径>`：等到这个文件有了字，把它当之后 `{session}` 换成的会话编号（施工 TW-1：测试造了会话再告诉它）；
 //! - `hang`：不管标准输入，一直睡；
 //! - `exit:<数>`：以这个退出码退出；
 //! - `retire`：问 `process.retire`，记下回应，核心答应了的等工作目录里的 `linger` 没了，以退出码 0 退出（施工 IM-1 下）；
@@ -206,6 +207,15 @@ fn main() {
                     send(&answer);
                 }
             }
+        } else if let Some(path) = step.strip_prefix("session:") {
+            loop {
+                let text = std::fs::read_to_string(path).unwrap_or_default();
+                if !text.trim().is_empty() {
+                    text.trim().clone_into(&mut session);
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
         } else if let Some(path) = step.strip_prefix("pause:") {
             while !std::path::Path::new(path).exists() {
                 std::thread::sleep(Duration::from_millis(10));
@@ -309,6 +319,13 @@ fn served(id: &str, tool: &str, sent: &str) -> Option<String> {
         // 给脚本的结构化结果（施工 X-33）：照收、交给嵌套调用；出错时带的，核心不交。
         "data" => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"found data"}}],"data":{{"items":[{{"n":1}}],"empty":[]}}}}}}"#
+        ),
+        // 包的会话状态（施工 TW-1）：照包声明的块查，合的记下；写了没声明的块的整份丢掉、结果照常。
+        "state" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"noted"}}],"state":{{"widgets":{{"todos":{{"content":[{{"type":"text","text":"from the tool"}}]}}}},"note":"Noted by the tool."}}}}}}"#
+        ),
+        "bad_state" => format!(
+            r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"noted badly"}}],"state":{{"widgets":{{"elsewhere":{{"content":[]}}}}}}}}}}"#
         ),
         "data_error" => format!(
             r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"failed"}}],"error":true,"data":{{"items":[]}}}}}}"#

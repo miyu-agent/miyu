@@ -253,6 +253,17 @@ impl Actor {
         }
     }
 
+    /// 落了盘推出去的事件动了包的状态（施工 TW-1）：照内核的换，`session.state`、界面块照它答。
+    pub(super) fn show_states(&self, events: &[miyu_kernel::event::Event]) {
+        if events.iter().any(miyu_kernel::history::touches_states) {
+            let states = self.session.package_states();
+            self.shown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .states = states;
+        }
+    }
+
     /// 给头看的那一份，这一刻的。
     fn shown_now(&self) -> Shown {
         self.shown

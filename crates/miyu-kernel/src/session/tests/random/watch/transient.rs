@@ -46,6 +46,10 @@ impl Watch {
             TransientBody::TodosChanged(_) => {
                 panic!("种子 {seed}：没写过待办，却推了 todos.changed")
             }
+            // 随机测试里也没有包写状态（施工 TW-1）。
+            TransientBody::PackageStateChanged(_) => {
+                panic!("种子 {seed}：没写过包的状态，却推了 package.state_changed")
+            }
         }
     }
 }

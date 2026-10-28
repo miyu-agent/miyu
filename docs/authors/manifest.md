@@ -235,6 +235,7 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 | `title` | 侧边栏、整页必写 |
 | `scope` | `global`（默认）；`session` 跟着会话、一个会话一份，只给侧边栏 |
 | `command` | 只给整页：打了这个斜杠命令就打开这一页 |
+| `state` | `true`：这一块的内容来自你这个包在会话里的状态（工具结果的 `state`、`session.set_state`，见 [扩展](../reference/extensions.md)），你的程序没在跑也照样有；只给 `scope = "session"` 的块 |
 
 内容由你的程序推，见 [写扩展](extensions.md)。
 

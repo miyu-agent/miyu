@@ -133,7 +133,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
 
-**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?}}`:
+**Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?}}`:
 
 | Name | Notes |
 |---|---|
@@ -143,6 +143,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `sent` | Images she "sends", at most 4: `[{"blob", "media_type", "width", "height", "name"?, "alt"?, "sticker"?}]`. Not shown to the model; heads draw them in the reply and chat platforms send them |
 | `detail` | A structured result for heads, in one of the three common shapes below; not shown to the model. If the shape is wrong or `error` is true, the core drops this field and keeps the rest of the result |
 | `data` | A structured result for scripts, any JSON: when the AI calls the tool with `miyu call` inside a command (`clicall`), the script gets it as one line of JSON. Not shown to the model, not kept in `tool.result`. Not passed on when `error` is true |
+| `state` | Your package's state in this session, written as in **`session.set_state`, `session.state`** below: the core keeps the latest one per session, and undo and clearing the context follow it. A bad one is dropped whole and the result goes on; `null` means not written, `{}` clears; ignored when `error` is true |
 
 The three shapes of `detail` (at most 64 KiB as JSON):
 
@@ -159,6 +160,25 @@ A JSON-RPC error or a malformed answer counts as a failed call. With no answer b
 **`tool.cancel`** (core → extension, notification): `{"session", "call_id"}`. Sent on timeout, interruption, or when the core is shutting down: drop that call.
 
 Who may ask for what, and who may be acted on, is the providing side's job: check `by` and `owner`, and when refusing, say so in the result with `error` set.
+
+## `session.set_state`, `session.state`
+
+A package's state in one session (design 46): what you draw in widgets, what you leave the model at compaction, and your own data. Needs the `sessions.drive` capability; you only read and write your own package's state in sessions of the person you act for.
+
+```json
+{"widgets": {"todos": {"content": [<widget content>], "title"?: <title>}}, "note": "Todo list:\n- [ ] ...", "data": {...}}
+```
+
+| Field | Meaning |
+|---|---|
+| `widgets` | Widget id to `{"content", "title"?}`: the widget must be one your manifest marks `state = true` (only `scope = "session"` widgets). Content is written as for `widget.set` and checked against that widget's place. Heads draw it, whether or not your program is running |
+| `note` | English text written verbatim into the checkpoint at compaction for the model (at most 2000 characters, under half CJK, no control characters except newlines). Not sent on ordinary turns |
+| `data` | Your own data, any JSON up to 16 KiB as written: the core only stores it and `session.state` hands it back |
+
+- All three are optional; `{}` or `null` clears. A bad state is refused whole: bad widget content gives `bad_widget_content` (the `path` starts at `widgets.<id>`), anything else `bad_params` with `field` (for example `state.widgets.other`: a widget you did not declare as a state widget).
+- **`session.set_state {"session", "state"}`**: replaces your state, during a turn or between turns, without starting a turn; answers `{}` once on disk. Written during a turn, it belongs to that turn: undoing the turn goes back to the earlier one.
+- **`session.state {"session"}`**: answers `{"state": {...} | null}`, your package's current state (with `note` and `data`).
+- Clearing the context (`/clear`) clears every package's state; ordinary compaction does not.
 
 ## `package.methods`, `method.call`
 

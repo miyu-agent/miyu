@@ -54,4 +54,14 @@ impl Handle {
     pub fn waiting(&self) -> bool {
         self.waiting.load(std::sync::atomic::Ordering::Acquire)
     }
+
+    /// 包 `package` 当前的状态（施工 TW-1）：没写过、清掉了的没有。落了盘推出去以后的。
+    pub fn package_state(&self, package: &str) -> Option<miyu_kernel::event::State> {
+        self.shown
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .states
+            .get(package)
+            .cloned()
+    }
 }

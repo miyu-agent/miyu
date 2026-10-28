@@ -165,7 +165,7 @@ impl Actor {
         let shown = Arc::new(Mutex::new(Shown::new(
             session.context_limits(),
             Next::of(&*model),
-            session.todos(),
+            (session.todos(), session.package_states()),
         )));
         Actor {
             session,
@@ -332,6 +332,7 @@ impl Actor {
                 None
             }
             Action::Push(events) => {
+                self.show_states(&events);
                 self.push(Pushed::Events(events));
                 None
             }

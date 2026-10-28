@@ -13,10 +13,12 @@ use crate::event::{Body, Event};
 use crate::id::{ContentHash, JobId, Seq, SessionId, TurnId};
 
 mod jobs;
+mod states;
 mod todos;
 mod undo;
 
 pub use jobs::Dispatched;
+pub use states::touches as touches_states;
 pub(crate) use todos::clears;
 
 /// 一个会话的有效历史：最近一次压缩的检查点，加上它之后还有效的事件。
@@ -39,6 +41,8 @@ pub struct History {
     jobs: jobs::Jobs,
     /// 写过的待办（施工 D-3，`history/todos.rs`）：压缩不丢，撤销、恢复跟着标。
     todos: todos::Todos,
+    /// 包写过的状态（施工 TW-1，`history/states.rs`）：压缩不丢，撤销、恢复跟着标。
+    states: states::States,
     /// 这个会话自己的编号（施工 O-13 下）：内核造会话、载入、撤销后重建时设上，组装器照它认出别的线替她发进群里的话。
     /// 测试里自己拼的、`history` 读的没有。
     own: Option<SessionId>,
@@ -119,11 +123,17 @@ impl History {
     pub fn note(&mut self, event: &Event) {
         self.jobs.note(event);
         self.todos.note(event);
+        self.states.note(event);
     }
 
     /// 当前的待办（施工 D-3）：最近一份没撤掉的 `todo.written`，压缩换掉了那一条也在。没写过的没有；清空了的是空的。
     pub fn todos(&self) -> Option<&[crate::event::Todo]> {
         self.todos.current()
+    }
+
+    /// 每个包当前的状态（施工 TW-1）：最近一份没撤掉的，压缩换掉了那一条也在；清掉了的不在。
+    pub fn package_states(&self) -> std::collections::BTreeMap<String, crate::event::State> {
+        self.states.current()
     }
 
     /// 最近一次写是因为全部做完而清空的：做完的那一份（施工 D-3 补）。别的是空的。
@@ -136,6 +146,7 @@ impl History {
     pub fn jobs_from(&mut self, before: &History) {
         self.jobs = before.jobs.clone();
         self.todos = before.todos.clone();
+        self.states = before.states.clone();
     }
 
     /// 最近一次压缩的检查点；没压缩过就没有。
@@ -170,6 +181,7 @@ impl History {
             recalled: self.recalled.clone(),
             jobs: self.jobs.clone(),
             todos: self.todos.clone(),
+            states: self.states.clone(),
             own: self.own.clone(),
             forked_from: self.forked_from.clone(),
         }
@@ -191,6 +203,7 @@ impl History {
             recalled: self.recalled.clone(),
             jobs: self.jobs.clone(),
             todos: self.todos.clone(),
+            states: self.states.clone(),
             own: self.own.clone(),
             forked_from: self.forked_from.clone(),
         }
@@ -292,6 +305,7 @@ impl History {
     pub fn append(&mut self, mut event: Event) {
         self.jobs.note(&event);
         self.todos.note(&event);
+        self.states.note(&event);
         if !self.whole {
             forget_texts(&mut event);
         }

@@ -43,6 +43,8 @@ pub(crate) struct Stores {
     pub(crate) provider: AccountId,
     /// 包是每人一份的：调用转给会话的属主那一份（[`Provided::reach`]）。
     pub(crate) per_account: bool,
+    /// 包声明的状态块（施工 TW-1）：工具结果带的 `state` 照它查。
+    pub(crate) declared: Arc<crate::sessions::state::Declared>,
 }
 
 /// 提供者的一件工具。
@@ -80,6 +82,10 @@ struct Answer {
     /// 给脚本的结构化结果（施工 X-33，`providers.md`）：任意 JSON，照收、交进 [`Done::data`]，出错的不交；不另截断。
     #[serde(default)]
     data: Option<Value>,
+    /// 包在这个会话里的状态（施工 TW-1，设计 46）：照包声明的块查（`sessions/state.rs`），读不成的丢掉、记一行。`null` 当没写，
+    /// 清掉写 `{}`。出错的不收。
+    #[serde(default)]
+    state: Option<Value>,
 }
 
 /// 一次至多发几张图。
@@ -160,6 +166,12 @@ impl RemoteTool {
                         .filter(|_| !answer.error)
                         .and_then(|detail| self.shaped(&detail)),
                     data: answer.data.filter(|_| !answer.error),
+                    effects: answer
+                        .state
+                        .filter(|_| !answer.error)
+                        .and_then(|state| self.state(&state))
+                        .into_iter()
+                        .collect(),
                     error: answer.error,
                     blocks: answer.blocks,
                     end_turn: answer.end_turn && !answer.error,
@@ -184,6 +196,22 @@ impl RemoteTool {
                     .map_or_else(|| error.to_string(), str::to_string),
             ),
             Err(Gone) => self.unavailable(),
+        }
+    }
+
+    /// 照包声明的块读扩展交的 `state`：读不成的不要，记一行。
+    fn state(&self, value: &Value) -> Option<miyu_tool::Effect> {
+        match crate::sessions::state::read(&self.stores.declared, value) {
+            Ok(state) => Some(miyu_tool::Effect::PackageState(
+                miyu_kernel::event::PackageState {
+                    package: self.package.clone(),
+                    state,
+                },
+            )),
+            Err(bad) => {
+                tracing::warn!(target: "miyu::endpoint", package = self.package.as_str(), why = bad.why().as_str(), "package state dropped");
+                None
+            }
         }
     }
 

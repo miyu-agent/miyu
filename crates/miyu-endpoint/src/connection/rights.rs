@@ -67,6 +67,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         // 定时任务（施工 J-1 下）：只碰自己账号的唤醒表。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
         "schedule.add" | "schedule.list" | "schedule.cancel" | "schedule.pause"
         | "schedule.resume" => Needs(SessionsDrive),
+        // 包在会话里的状态（施工 TW-1）：只读写自己这个包的。
+        "session.set_state" | "session.state" => Needs(SessionsDrive),
         // 读会话里的东西。
         "session.list"
         | "session.recap"

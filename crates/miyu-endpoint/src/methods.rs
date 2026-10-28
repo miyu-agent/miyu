@@ -270,6 +270,13 @@ pub(crate) fn call<'a>(
         "session.answer" => answer(move || session::answer_question(core, caller, request)),
         "session.clear" => answer(move || session::clear(core, caller, request)),
         "session.recap" => answer(move || session::recap(core, caller, request)),
+        // 包的会话状态（施工 TW-1）：只给扩展。
+        "session.set_state" => answer(move || async move {
+            crate::sessions::state::set(core, caller, &request.id, params(request)?).await
+        }),
+        "session.state" => answer(move || async move {
+            crate::sessions::state::get(core, caller, params(request)?).await
+        }),
         "session.tools" => answer(move || async move {
             crate::session_tools::tools(core, peer, caller.acting_for(), params(request)?).await
         }),

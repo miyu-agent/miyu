@@ -56,6 +56,7 @@ fn an_extension_declares_its_widgets_with_every_field() {
         Some("天气")
     );
     assert!(today.per_session);
+    assert!(!today.state, "不写的不来自会话状态");
     assert_eq!(today.command, None);
     assert_eq!(today.line, Some(13));
     let temp = &manifest.widgets[1];
@@ -113,6 +114,15 @@ fn each_mistake_is_bad_widget_on_its_table() {
         (
             "[[widget]]\nid = \"today\"\nplace = \"page\"\ntitle = { en = \"x\" }\ncommand = \"Today\"\n",
             "widget.today.command",
+        ),
+        // 内容来自会话状态的只给跟着会话的块（施工 TW-1）。
+        (
+            "[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = { en = \"x\" }\nstate = true\n",
+            "widget.today.state",
+        ),
+        (
+            "[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = { en = \"x\" }\nscope = \"session\"\nstate = \"yes\"\n",
+            "widget.today.state",
         ),
     ];
     for (widget, detail) in cases {
@@ -193,4 +203,14 @@ fn only_an_extension_may_declare_widgets() {
     );
     let not_tables = EXTENSION.replace("[[widget]]\nid = \"temp\"", "[widget]\nid = \"temp\"");
     assert!(read(&not_tables).is_err(), "写成一张表的不认");
+}
+
+/// 跟着会话的块可以写 `state = true`（施工 TW-1）：内容来自包在会话里的状态。
+#[test]
+fn a_session_widget_may_take_its_content_from_the_session_state() {
+    let text = with_first(
+        "[[widget]]\nid = \"today\"\nplace = \"sidebar\"\ntitle = { en = \"x\" }\nscope = \"session\"\nstate = true\n",
+    );
+    let manifest = read(&text).expect("合写法");
+    assert!(manifest.widgets[0].state);
 }

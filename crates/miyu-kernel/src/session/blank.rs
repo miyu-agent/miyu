@@ -53,6 +53,7 @@ impl Session {
             busy: crate::waits::Busy::default(),
             told_todos: Vec::new(),
             told_done: Vec::new(),
+            told_states: Default::default(),
             nested: super::nested::Nested::default(),
         }
     }

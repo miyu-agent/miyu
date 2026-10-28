@@ -276,6 +276,13 @@ impl Stage {
                 }
                 vec![done]
             }
+            Play::States(states) => {
+                let mut done = self.done(call_id, false, "Updated.");
+                if let Input::ToolDone { effects, .. } = &mut done {
+                    effects.extend(states.into_iter().map(Effect::PackageState));
+                }
+                vec![done]
+            }
         }
     }
 
