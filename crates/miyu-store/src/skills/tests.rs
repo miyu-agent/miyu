@@ -18,11 +18,16 @@ struct Places {
 
 impl Places {
     fn new() -> Places {
+        Places::at_home(false)
+    }
+
+    /// 家目录在临时目录的 `me/`（施工 PT-2 中：别家共用的技能目录照它找）；`false` 的没有家目录，和别的测试一样。
+    fn at_home(home: bool) -> Places {
         let scratch = Scratch::new();
         let env = Env {
             platform: Platform::current(),
             miyu_home: Some(scratch.path().join("data").into_os_string()),
-            home: None,
+            home: home.then(|| scratch.path().join("me")),
             xdg_cache_home: None,
             local_app_data: None,
             miyu_resources: None,
@@ -248,4 +253,63 @@ fn a_linked_skill_folder_is_found_where_it_really_is() {
         )
     );
     assert_eq!(skipped[1].path, skills_dir.join("bad").join("SKILL.md"));
+}
+
+/// 别家共用的技能目录（施工 PT-2 中，agentskills.io 的约定）：家目录下 `.agents/skills/` 里的也认，标着别家共用的；排在 Miyu
+/// 自己的（自己放的、包里的）后面，同名的 Miyu 自己的赢，共用目录那一份记下被谁盖住。找数据根时没有家目录的不找。
+#[test]
+fn the_shared_agents_folder_comes_after_miyu_s_own() {
+    let places = Places::at_home(true);
+    places.write("res/packages/tools/package.toml", &package("tools"));
+    places.write(
+        "res/packages/tools/skills/pdf/SKILL.md",
+        &skill("pdf", "From the package."),
+    );
+    places.write(
+        "data/home/admin/skills/mine/SKILL.md",
+        &skill("mine", "My own."),
+    );
+    places.write("me/.agents/skills/mine/SKILL.md", &skill("mine", "Shared."));
+    places.write("me/.agents/skills/pdf/SKILL.md", &skill("pdf", "Shared."));
+    places.write(
+        "me/.agents/skills/notes/SKILL.md",
+        &skill("notes", "Shared."),
+    );
+    let (skills, skipped) = places.found();
+    let brief: Vec<(&str, &str, bool)> = skills
+        .iter()
+        .map(|found| {
+            (
+                found.head.name.as_str(),
+                found.head.description.as_str(),
+                found.shared,
+            )
+        })
+        .collect();
+    assert_eq!(
+        brief,
+        [
+            ("mine", "My own.", false),
+            ("notes", "Shared.", true),
+            ("pdf", "From the package.", false),
+        ]
+    );
+    assert!(skills[1].file.ends_with("me/.agents/skills/notes/SKILL.md"));
+    assert_eq!(skills[1].package, None);
+    let mut covered: Vec<&Path> = skipped.iter().map(|one| one.path.as_path()).collect();
+    covered.sort();
+    assert_eq!(covered.len(), 2, "{skipped:?}");
+    assert!(
+        covered
+            .iter()
+            .all(|path| path.starts_with(places.scratch.path().join("me/.agents/skills")))
+    );
+    assert!(skipped.iter().all(|one| one.by.is_some()), "记下被谁盖住");
+
+    let without = Places::new();
+    without.write(
+        "me/.agents/skills/notes/SKILL.md",
+        &skill("notes", "Shared."),
+    );
+    assert!(without.found().0.is_empty(), "没有家目录的不找");
 }

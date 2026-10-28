@@ -50,6 +50,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "这个技能随软件包提供，不能删除。",
             "This skill comes with a package and cannot be deleted.",
         ),
+        "skill_shared" => (
+            "这个技能在 ~/.agents/skills 里，别的应用也在用，请到那里删除。",
+            "This skill is in ~/.agents/skills, shared with other apps; delete it there.",
+        ),
         "package_exists" => (
             "编号与内置软件包重复。",
             "Id conflicts with a built-in package.",

@@ -100,6 +100,10 @@ impl Refusal {
     pub(crate) fn skill_from_package(name: &str) -> Refusal {
         Refusal::with("skill_from_package", "name", serde_json::json!(name))
     }
+    /// 别家共用目录（`~/.agents/skills/`）里的技能不删（施工 PT-2 中，`skill.remove`）：`data.name`。
+    pub(crate) fn skill_shared(name: &str) -> Refusal {
+        Refusal::with("skill_shared", "name", serde_json::json!(name))
+    }
     /// 重启关着的包（施工 X-4，`package.restart`）。
     pub(crate) const PACKAGE_OFF: Refusal = Refusal {
         code: REFUSED,

@@ -193,3 +193,30 @@ async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
         "{checked}"
     );
 }
+
+/// 别家共用的技能目录（施工 PT-2 中）：`~/.agents/skills/` 里的也列出来，`from` 是 `agents`、不带包；同名的照 Miyu 自己的。
+#[tokio::test]
+async fn skills_in_the_shared_agents_folder_say_where_they_come_from() {
+    let home = Home::new().with_shared_skills();
+    home.write("home/alice/skills/notes/SKILL.md", &skill("notes", &[]));
+    for name in ["notes", "pdf"] {
+        let file = home
+            .work
+            .join("me/.agents/skills")
+            .join(name)
+            .join("SKILL.md");
+        std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
+        std::fs::write(&file, skill(name, &[])).expect("写得进");
+    }
+    let skills = listed(&home, "en").await;
+    let pdf = named(&skills, "pdf");
+    assert_eq!(pdf["from"], "agents", "{pdf}");
+    assert!(pdf.get("package").is_none(), "{pdf}");
+    assert!(
+        pdf["path"].as_str().is_some_and(|path| path
+            .replace('\\', "/")
+            .ends_with("me/.agents/skills/pdf/SKILL.md")),
+        "{pdf}"
+    );
+    assert_eq!(named(&skills, "notes")["from"], "home", "同名的照自己放的");
+}

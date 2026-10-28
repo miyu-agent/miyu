@@ -82,6 +82,9 @@ impl std::error::Error for RootError {}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataRoot {
     path: PathBuf,
+    /// 别家共用的技能目录（施工 PT-2 中）：找数据根时的家目录下 `.agents/skills/`，没有家目录的没有。不在数据根里，跟着数据根
+    /// 走是因为找技能的几处手上都只有数据根。
+    shared_skills: Option<PathBuf>,
 }
 
 impl DataRoot {
@@ -95,13 +98,23 @@ impl DataRoot {
         if let Some(miyu_home) = set(&env.miyu_home) {
             let path = env.expand(miyu_home).ok_or(RootError::NoHome)?;
             return match path.is_absolute() {
-                true => Ok(DataRoot { path }),
+                true => Ok(DataRoot {
+                    path,
+                    shared_skills: shared_skills(env),
+                }),
                 false => Err(RootError::RelativeMiyuHome(path)),
             };
         }
         Ok(DataRoot {
             path: home(env)?.join(".miyu"),
+            shared_skills: shared_skills(env),
         })
+    }
+
+    /// 别家共用的技能目录：家目录下 `.agents/skills/`（施工 PT-2 中，agentskills.io 的约定，Codex、opencode 这些也认）。找数据根
+    /// 时没有家目录的（测试）没有。
+    pub fn shared_skills(&self) -> Option<&Path> {
+        self.shared_skills.as_deref()
     }
 
     /// 数据根本身。
@@ -408,6 +421,13 @@ fn absolute(value: &Option<OsString>) -> Option<PathBuf> {
 }
 
 /// 家目录，要是绝对路径。
+/// 家目录下 `.agents/skills/`；没有家目录、不是绝对路径的没有。
+fn shared_skills(env: &Env) -> Option<PathBuf> {
+    home(env)
+        .ok()
+        .map(|home| home.join(".agents").join("skills"))
+}
+
 fn home(env: &Env) -> Result<&Path, RootError> {
     env.home
         .as_deref()

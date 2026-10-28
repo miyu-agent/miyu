@@ -5,7 +5,8 @@
 //!
 //! - `name`；`display_name`、`summary` 照连接的语言挑（同 `package.list`，这种语言没写的照英文、中文、日文的先后），一种都没写的
 //!   不带；
-//! - `from`：`home`（管理员自己放的）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）；随包来的另带 `package` 编号；
+//! - `from`：`home`（管理员自己放的）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（别家共用的
+//!   `~/.agents/skills/` 里的，施工 PT-2 中）；随包来的另带 `package` 编号；
 //! - `path`：`SKILL.md` 在哪，给人看的写法（家目录下的写成 `~/…`）；
 //! - `on`：技能、脚本、MCP 三页的全局开关这时开不开（施工 X-27，`features.skill-<名字>`），没写的算开；
 //! - `warnings`：照收了、但不合格式的地方（施工 PT-2 上），一条 `{"code", "message"}`：码同 `miyu check`，`message` 照连接的语言
@@ -83,7 +84,10 @@ fn one(core: &Core, packages: &[Found], skill: &Skill, language: &str) -> Value 
         "name": skill.head.name,
         "path": shown(&skill.file, core.home.as_deref()),
     });
-    from(&mut one, packages, skill.package.as_deref());
+    match skill.shared {
+        true => one["from"] = json!("agents"),
+        false => from(&mut one, packages, skill.package.as_deref()),
+    }
     if let Some(name) = pick(&skill.head.display_name, language) {
         one["display_name"] = json!(name);
     }

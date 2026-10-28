@@ -2,9 +2,10 @@
 //! 里面一份 `SKILL.md`（开头照公开的 Agent Skills 格式，`miyu_policy::skill`）。从两处找：
 //!
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；
-//! - 本机自己放的 `home/<账号>/skills/<名字>/SKILL.md`。
+//! - 本机自己放的 `home/<账号>/skills/<名字>/SKILL.md`；
+//! - 别家共用的 `~/.agents/skills/<名字>/SKILL.md`（施工 PT-2 中，agentskills.io 的约定：Codex、opencode 这些装的技能放这里）。
 //!
-//! 同名的自己放的赢；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
+//! 同名的自己放的赢、别家共用的排最后；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
 //! 撞得上的只剩核心升级后出厂的新带了同名的）；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
 //! 跳过，交回给调的一方记（[`Skipped`]）。技能文件夹可以是链接（施工 X-37，`links.rs`）：照它指到的真实位置记。
 //! 碰磁盘，调的一方放在阻塞线程里。
@@ -31,8 +32,10 @@ pub struct Skill {
     /// 技能的文件夹：开着的单独放开只读（`session/guard.md`）。是链接的照它指到的真实位置（施工 X-37）：沙盒只放开那一个
     /// 文件夹，她照真实的位置读得到。
     pub dir: PathBuf,
-    /// 哪个软件包带的；自己放的没有。
+    /// 哪个软件包带的；自己放的、别家共用目录里的没有。
     pub package: Option<String>,
+    /// 别家共用的技能目录（`~/.agents/skills/`，施工 PT-2 中）里的：Miyu 不删它，别的客户端也在用。
+    pub shared: bool,
     /// 技能文件夹是链接的（施工 X-37）：链接本身的位置（删的时候只删它，不碰指到的文件夹）。不是的没有。
     pub link: Option<PathBuf>,
 }
@@ -76,18 +79,25 @@ pub fn find(
     let mut skills: Vec<Skill> = Vec::new();
     let mut skipped = Vec::new();
     let own = own_dir(root, account);
-    // 自己放的盖过包里的：先到的赢。
-    let mut places: Vec<(PathBuf, Option<String>)> = vec![(own, None)];
+    // 自己放的盖过包里的，包里的盖过别家共用目录里的：先到的赢。
+    let mut places: Vec<(PathBuf, Option<String>, bool)> = vec![(own, None, false)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
     // 出厂的先于家目录，同一层照编号（施工 F-8 六补）：核心升级后出厂的新带了同名的，出厂的赢（设计 31 定了的 J）。
     installed.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
+    places.extend(installed.into_iter().map(|found| {
+        (
+            found.files_dir().join("skills"),
+            Some(found.id.clone()),
+            false,
+        )
+    }));
+    // 别家共用的排最后（施工 PT-2 中）：同名的照 Miyu 自己的，被盖住的照旧记下。
     places.extend(
-        installed
-            .into_iter()
-            .map(|found| (found.files_dir().join("skills"), Some(found.id.clone()))),
+        root.shared_skills()
+            .map(|dir| (dir.to_path_buf(), None, true)),
     );
     let fence = Fence::of(root, account);
-    for (place, package) in places {
+    for (place, package, shared) in places {
         let (entries, unlisted) = links::list(&place, Kind::Dir, &fence, |_| true);
         skipped.extend(unlisted);
         for entry in entries {
@@ -119,6 +129,7 @@ pub fn find(
                         file,
                         dir,
                         package: package.clone(),
+                        shared,
                         link,
                     }),
                 },

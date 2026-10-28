@@ -795,6 +795,7 @@ flowchart LR
 | OV-1 补 | 覆盖放进新建的子文件夹也问「前缀要变」 | 系统的递归监视报了新文件夹才去看它，建好就写进去的覆盖漏了，下一句照常说、前缀悄悄变了。往下递归看的报新建、挪进来的目录时，把里面已经有的文件都交出去。施工单见 `OV-1补-新建的子文件夹也看得到.md` |
 | TMP-1 | 测试的临时目录自己清 | 本机 `/tmp` 攒了十二万个测试留下的目录、顶满配额。数据根被删了，后台写的不再一层层把它建回来（`durable::create_dir` 只在有 `.miyu-root` 的地方建，别的 crate 用 `root::create_inside`、`generated::write_inside`；机器的缓存目录照旧哪里都建）；各 crate 的夹具连旁边的目录一起删、删的时候重试、等核心走了再删。门禁跑测试时临时目录指到一个新的空目录，跑完剩下的报在「临时目录」一项（一次全量 565 个 → 0）。施工单见 `TMP-1-测试临时目录自己清.md` |
 | TMP-1 补 | 门禁说清剩下了什么 | 门禁满载时「临时目录」偶尔剩一个、单跑复现不了，删完看不到里面是什么。每种剩下的带头一个里面的文件（最多五个）；夹具删不掉时多等（一秒拉到五秒）。施工单见 `TMP-1补-门禁说清剩下了什么.md` |
+| PT-2 中 | 认别家共用目录里的技能 | 别的客户端（Codex、opencode 这些）照 agentskills.io 的约定装进 `~/.agents/skills/` 的技能，Miyu 也认：排在自己放的、包带的后面，同名的照 Miyu 自己的；`skill.list` 的 `from` 是 `agents`，`skill.remove` 拒 `skill_shared`（别的客户端也在用）。施工单见 `PT-2中-认别家目录的技能.md` |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |
 | 8-33 | 终端会话 | `session.terminal`、`session.set_terminal`，`terminal.*` 三项设置。施工单见 `8-33-终端会话.md` |

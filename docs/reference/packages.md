@@ -246,7 +246,7 @@
 |---|---|
 | `name` | 技能名 |
 | `display_name`、`summary` | 给人看的名字、一句说明，照连接的语言挑（这种语言没写的照英文、中文、日文的先后）；都没写的没有这一格 |
-| `from` | 从哪来：`home`（管理员自己放的，`home/admin/skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的） |
+| `from` | 从哪来：`home`（管理员自己放的，`home/admin/skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（别家共用的 `~/.agents/skills/` 里的，Codex 这些别的客户端也认这个目录） |
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
 | `on` | 全局开关（`features.skill-<名字>`，见 `feature.set`）：没写的是 `true` |
@@ -256,7 +256,7 @@
 
 **参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删管理员自己放的（`from` 是 `home`，`home/admin/skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
 
-**出错**：没写名字、名字重复：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`（两种都带 `data.name`，几个名字里有一个不行就一个都不删）。挪不进回收站：`trash_failed`。
+**出错**：没写名字、名字重复：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`；别家共用目录里的：`skill_shared`（三种都带 `data.name`，几个名字里有一个不行就一个都不删）。挪不进回收站：`trash_failed`。
 
 ## `script.list`
 

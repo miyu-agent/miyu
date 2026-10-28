@@ -246,7 +246,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 |---|---|
 | `name` | Skill name |
 | `display_name`, `summary` | Name and one-line summary for people, picked by the connection's language (falling back to English, Chinese, Japanese in that order); left out when none is written |
-| `from` | Where it comes from: `home` (placed by the admin, `home/admin/skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed) |
+| `from` | Where it comes from: `home` (placed by the admin, `home/admin/skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed), `agents` (from the shared `~/.agents/skills/`, which other clients such as Codex also read) |
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
 | `on` | Global switch (`features.skill-<name>`, see `feature.set`); `true` when unset |
@@ -256,7 +256,7 @@ After logging in (build X-42 part two): when the token is about to expire or the
 
 **Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills the admin placed (`from` is `home`; the whole `home/admin/skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
 
-**Errors**: no names or repeated names: `bad_params`. No such skill: `unknown_skill`; one that comes with a package: `skill_from_package` (both with `data.name`; if any name fails, nothing is deleted). Could not move to the trash: `trash_failed`.
+**Errors**: no names or repeated names: `bad_params`. No such skill: `unknown_skill`; one that comes with a package: `skill_from_package`; one in the shared `~/.agents/skills/`: `skill_shared` (all three with `data.name`; if any name fails, nothing is deleted). Could not move to the trash: `trash_failed`.
 
 ## `script.list`
 

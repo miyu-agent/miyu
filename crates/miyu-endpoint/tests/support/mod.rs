@@ -103,6 +103,22 @@ impl Home {
         Home { dir, root, work }
     }
 
+    /// 数据根照「家目录是工作目录下的 `me/`」重新找一次（施工 PT-2 中）：别家共用的技能目录在 `me/.agents/skills/`。别的测试
+    /// 没有家目录，碰不到本机真的 `~/.agents/skills/`。造核心之前调。
+    pub fn with_shared_skills(mut self) -> Home {
+        let env = Env {
+            platform: Platform::current(),
+            miyu_home: Some(self.dir.clone().into_os_string()),
+            home: Some(self.work.join("me")),
+            xdg_cache_home: None,
+            local_app_data: None,
+            miyu_resources: None,
+            exe: None,
+        };
+        self.root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
+        self
+    }
+
     /// 一份核心：管理员 alice，请求模型照 `script` 回。同一个数据根上造第二份，就像核心重启过。
     pub fn core(&self, script: &Script) -> Arc<Core> {
         self.core_with(script, TOKEN)

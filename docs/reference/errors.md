@@ -129,6 +129,7 @@
 | `server_from_package` | `mcp.set`：系统配置里没写这个名字，有包带着同名服务 | |
 | `unknown_skill` | `skill.remove`：没有这个技能 | `name` |
 | `skill_from_package` | `skill.remove`：随包来的技能不能删 | `name` |
+| `skill_shared` | `skill.remove`：别家共用的 `~/.agents/skills/` 里的技能不经 Miyu 删，别的客户端也在用 | `name` |
 | `no_page`、`not_found` | 没有后台页；没有这份文件 | |
 | `program_not_running`、`unregistered`、`method_failed`、`method_timeout` | `package.call`：程序没连着；没登记；回了错；没回 | `method`、`message`、`code` |
 | `not_exported` | 扩展调了对方没导出的方法 | `method` |
