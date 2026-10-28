@@ -261,3 +261,29 @@ async fn an_edited_skill_does_not_ask_because_the_prefix_stays() {
         "system 一字不差：前缀缓存不断"
     );
 }
+
+/// 覆盖放进新建的子文件夹也问（施工 OV-1 补）：`prompts/core/` 原来没有，建好就写进去；原来盯着的那一头报了新文件夹才去看它，
+/// 写进去的那一下赶在前头漏了，下一句照常说、前缀悄悄变了。
+#[tokio::test]
+async fn an_override_in_a_new_folder_is_asked_too() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
+    let core = home.core_with_tools(&script, goal_tools(), TOKEN);
+    let mut asking = Client::connect(Arc::clone(&core));
+    hello_asking(&mut asking).await;
+    let session = asking.create("c1", "~").await;
+    let first = asking.say("s1", &session, "在吗").await;
+    assert_eq!(reason(&first), "ok", "{first}");
+    home.until_turns(&session, 1).await;
+    assert!(!home.root.path().join("home/alice/prompts/core").exists());
+
+    edit(&home, &core, "Mine about local paths.\n").await;
+    let refused = asking.say("s2", &session, "好").await;
+    assert_eq!(reason(&refused), "prefix_changing", "{refused}");
+    assert!(
+        refused["error"]["data"]["files"]
+            .as_array()
+            .is_some_and(|files| files.contains(&json!(RULE))),
+        "{refused}"
+    );
+}

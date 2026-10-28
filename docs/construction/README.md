@@ -792,6 +792,7 @@ flowchart LR
 | PT-1 中 | 取消真断开、多轮请求照规范重发、参数请求头 | MCP 规范 2026-07-28 的 P1：网址的服务上取消一次请求就停掉那个 POST（新版不另发通知，老版照发）；`input_required` 只带 `requestState` 的换编号原样带回重发，至多 8 回；工具参数标了 `x-mcp-header` 的照规范查、不合的整件剔掉，合的调用时带 `Mcp-Param-<名>`。施工单见 `PT-1中-取消重发和参数请求头.md` |
 | PT-1 下 | MCP 工具的进度、新版服务的订阅、SSE 边读边交 | MCP 规范 2026-07-28 的 P2 前半：调工具带进度令牌，服务推的进度照脚本进度行推给头、视图流里看得到；新版服务声明了 `listChanged` 的开 `subscriptions/listen`，工具、提示词变了当场重列，断了退避重开；网址的服务回 SSE 边读边交。施工单见 `PT-1下-进度和订阅.md` |
 | PT-2 上 | 宽松地读技能，改技能不再误问「前缀要变」 | 照 agentskills.io 接入指南：名字和文件夹不同名的照写的名字用、名字没写或写错的照文件夹的名字用、YAML 没加引号带冒号的宽松重读、说明超长截掉、`compatibility` `metadata` 写错的，都照收、记警告（六个码），`miyu check` 一种一条、`skill.list` 每项带 `warnings`（话照连接的语言）；只有真读不成的才跳过。改动监视拿掉 `skills/`：技能那一块钉在快照里，原来改技能会误问 `prefix_changing`。施工单见 `PT-2上-宽松读技能.md` |
+| OV-1 补 | 覆盖放进新建的子文件夹也问「前缀要变」 | 系统的递归监视报了新文件夹才去看它，建好就写进去的覆盖漏了，下一句照常说、前缀悄悄变了。往下递归看的报新建、挪进来的目录时，把里面已经有的文件都交出去。施工单见 `OV-1补-新建的子文件夹也看得到.md` |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |
 | 8-33 | 终端会话 | `session.terminal`、`session.set_terminal`，`terminal.*` 三项设置。施工单见 `8-33-终端会话.md` |

@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
-use notify::event::{AccessKind, AccessMode};
+use notify::event::{AccessKind, AccessMode, ModifyKind};
 use notify::{Event, EventKind, PollWatcher, RecommendedWatcher, RecursiveMode, Watcher};
 
 /// 一份文件这么久没有新的变动了，才交出去（第七条第 3 条）。
@@ -284,25 +284,36 @@ impl Table {
         let mut touched: Vec<PathBuf> = Vec::new();
         for path in &event.paths {
             // 往下递归看的（[`Table::of_tree`]）：在它下面、路上没有点开头的那一段的，交出去的是这个文件。还在的目录不算：里面的
-            // 文件变了自己会报，目录本身的时间、属性变了（Windows 读写里面的文件时会单独报一下）不是内容变了。
+            // 文件变了自己会报，目录本身的时间、属性变了（Windows 读写里面的文件时会单独报一下）不是内容变了。新建、挪进来的
+            // 目录例外（施工 OV-1 补）：系统的递归监视报了它才去看它，在那之前写进去的报不出来，里面已经有的文件都交出去。
+            let arrived = matches!(
+                event.kind,
+                EventKind::Create(_) | EventKind::Modify(ModifyKind::Name(_))
+            );
             for target in self.targets.iter().filter(|target| target.tree) {
                 let real_path = real(path);
-                if real_path.is_dir() {
-                    continue;
-                }
                 let under = path
                     .strip_prefix(&target.dir)
                     .ok()
                     .or_else(|| real_path.strip_prefix(&target.dir).ok());
-                if let Some(rest) = under
-                    && !rest.as_os_str().is_empty()
-                    && !rest
-                        .components()
-                        .any(|part| part.as_os_str().to_string_lossy().starts_with('.'))
-                {
-                    let file = target.file.join(rest);
-                    if !touched.contains(&file) {
-                        touched.push(file);
+                let Some(rest) = under else {
+                    continue;
+                };
+                let found = match real_path.is_dir() {
+                    true if arrived => files_in(&real_path, rest),
+                    true => continue,
+                    false => vec![rest.to_path_buf()],
+                };
+                for rest in found {
+                    if !rest.as_os_str().is_empty()
+                        && !rest
+                            .components()
+                            .any(|part| part.as_os_str().to_string_lossy().starts_with('.'))
+                    {
+                        let file = target.file.join(rest);
+                        if !touched.contains(&file) {
+                            touched.push(file);
+                        }
                     }
                 }
             }
@@ -324,6 +335,26 @@ impl Table {
         }
         touched
     }
+}
+
+/// 目录 `dir` 下面每一层的文件，照 `rest`（它在树里的位置）拼；点开头的不往下看，链接到的目录不跟进去，读不了的跳过。
+fn files_in(dir: &Path, rest: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return files;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        if name.to_string_lossy().starts_with('.') {
+            continue;
+        }
+        match entry.file_type() {
+            Ok(kind) if kind.is_dir() => files.extend(files_in(&entry.path(), &rest.join(&name))),
+            Ok(_) => files.push(rest.join(&name)),
+            Err(_) => {}
+        }
+    }
+    files
 }
 
 /// 真实的位置；换不成的（没有、读不了）照原样。

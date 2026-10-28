@@ -367,3 +367,42 @@ fn a_file_deep_in_a_watched_tree_is_seen() {
         }
     }
 }
+
+/// 新建、挪进来的子文件夹（施工 OV-1 补）：系统的递归监视等报了新文件夹才去看它，刚建好就写进去的文件赶在前头，报不出来；
+/// 报新文件夹时把里面已经有的文件都交出去。还在的目录别的变动照旧不算。
+#[test]
+fn a_new_folder_in_a_watched_tree_hands_over_what_is_already_in_it() {
+    let (_temp, dir) = scratch();
+    let table = Table::of_tree(&dir);
+    let real = dir.canonicalize().unwrap();
+    let core = real.join("prompts").join("core");
+    fs::create_dir_all(core.join("facts")).unwrap();
+    fs::write(core.join("local-paths-rule.txt"), "Mine.\n").unwrap();
+    fs::write(core.join("facts").join("env.txt"), "Mine.\n").unwrap();
+    fs::write(core.join(".rule.swp"), "").unwrap();
+    let mut wanted = vec![
+        dir.join("prompts")
+            .join("core")
+            .join("facts")
+            .join("env.txt"),
+        dir.join("prompts")
+            .join("core")
+            .join("local-paths-rule.txt"),
+    ];
+    wanted.sort();
+    for kind in [
+        EventKind::Create(CreateKind::Folder),
+        EventKind::Create(CreateKind::Any),
+        EventKind::Modify(ModifyKind::Name(RenameMode::To)),
+    ] {
+        let mut touched = table.touched(&event(kind, &real.join("prompts")));
+        touched.sort();
+        assert_eq!(touched, wanted, "{kind:?}");
+    }
+    assert!(
+        table
+            .touched(&event(EventKind::Modify(ModifyKind::Any), &core))
+            .is_empty(),
+        "还在的目录别的变动不算"
+    );
+}

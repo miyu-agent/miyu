@@ -346,7 +346,7 @@
 7. 带 `from` 的这一句是别处来的，内核照「别的 harness 发来的话」收（`kernel/session.md`，和子代理的留言一样）：她闲着开一轮，`turn.started` 的 `cause` 是这一条的 `id`；正忙的，下一步看到；不带回合编号，打断时不撤回，不作废在等本人答的题。`urgent` 不看。附件照收，和本人附的一样。
 8. 只有 `session.send` 收 `from`：`session.create`、`session.redo` 写了也不理（「请求」最后一条）。会话照旧是本人造的；重做的撤销记成发重做的人，重发的只有人说的话（`by` 照原来的），别的 harness 发来的话开的那一轮重做不了（`session.redo` 第 3 条）。
 9. 前缀要变了先问人（施工 OV-1 下，项目主人 10-26 定的交互，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：
-   - 核心盯每个账号两层（系统区、家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`，往下递归（`skills/` 不盯，施工 PT-2 上：技能那一块钉在快照里，中途变了走尾巴注入、前缀不变，原来盯它是误报，`tests/prefix_ask.rs` 的 `an_edited_skill_does_not_ask_because_the_prefix_stays` 守着），变一下属主的号加一（系统区的算大家的），只在内存里。会话记着最后一次拼快照时看到的号，回合开始比号，变了照现在的文件重拼，字节不一样的换（`session.policy_changed`）。
+   - 核心盯每个账号两层（系统区、家目录）的 `tools/`、`prompts/`、`personas/`、`presets/`，往下递归，新建、挪进来的子文件夹里已经有的文件都算（施工 OV-1 补，`prefix_ask.rs` 的 `an_override_in_a_new_folder_is_asked_too` 守着；`skills/` 不盯，施工 PT-2 上：技能那一块钉在快照里，中途变了走尾巴注入、前缀不变，原来盯它是误报，`tests/prefix_ask.rs` 的 `an_edited_skill_does_not_ask_because_the_prefix_stays` 守着），变一下属主的号加一（系统区的算大家的），只在内存里。会话记着最后一次拼快照时看到的号，回合开始比号，变了照现在的文件重拼，字节不一样的换（`session.policy_changed`）。
    - 只问握手 `caps.prefix_ask: true` 的头。开新一轮的三个入口：`session.send`、`session.redo`、开轮的 `command.run`（模板、MCP 提示词、`/goal` 设定和继续）。会话空着、是本机会话、属主的号比会话照着拼过的和人放行过的都新的，不带 `prefix` 就拒 `prefix_changing`，`data.files` 是这以后改了的文件（照数据根写的相对路径，先后、不重，最多 20 个；多的、太早挪出表的数进 `data.more`）。
    - `"keep"`：放行到这个号，照常说。`"compact"`：先手动压缩（同 `session.compact`，不带要求），开了才放行再说这一句，这一句排在压缩那一轮后面；压不了的回压缩自己的拒绝（`nothing_to_compact` 等），这句不发，不退回直接发。
    - 放行照会话记，之后有新的改动再问。正在跑一轮时说的、场所会话、回合开始不换快照的会话（fork 子代理、整理记忆）、定时和 `/loop`、长期目标自己续的轮不问；没声明的头照旧直接发，下一轮换上。
