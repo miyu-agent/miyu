@@ -4,10 +4,14 @@
 //! - 客户端写出的每一行 POST 到网址，几条同时在路上的各发各的；`Accept` 两种都要，带上服务给过的 `Mcp-Session-Id`、协议版本
 //!   （`MCP-Protocol-Version`），和清单写的请求头。版本先照这一条自己 `_meta` 里写的（新时代，施工 X-32 补：GitHub 的远程服务
 //!   没有它就回 `400`），没写的照握手认出来的（老时代），握手那一次还没有，不带。
+//! - 规范要的标准请求头（施工 PT-1 上，规范 2026-07-28「Standard Request Headers」）：每个请求带 `Mcp-Method`，`tools/call`、
+//!   `resources/read`、`prompts/get` 另带 `Mcp-Name`（`params.name` 或 `params.uri`）；不是可见 ASCII、首尾有空白、长得像编码
+//!   记号的照 `=?base64?…?=` 编。新版服务缺了这两个回 `400`；老服务不认这两个头，照样带着无害，不分时代。
 //! - 回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去；`202` 的（通知、回应）什么都不写。整段读完再写：一次
 //!   调用的回应本来就要等它说完，不另开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的当对方回错。
 //! - 对方回错的（4xx、5xx、连不上）：有编号的请求回一条 JSON-RPC 错误，客户端照常了结这次请求；往 `log` 写一行。日志里不写网址：
-//!   有的服务把密钥放在网址的查询串里。
+//!   有的服务把密钥放在网址的查询串里。回应体本身是一条 JSON-RPC 错误的（新版服务的 `400` 都这样：版本不认 `-32022`、请求头
+//!   不对 `-32020`，施工 PT-1 上）原样交回、编号换成这次请求的，探时代的那一头才认得出是新版的服务；不是的才合成一条。
 //! - 要登录（回 `401`，施工 X-42 上）：`WWW-Authenticate` 的原文记下来（[`Opened::challenged`]），看管的一头照它判要不要登录；
 //!   回给客户端的照对方回错一样。
 //! - 登录来的服务（施工 X-42 下，[`Credentials`]）：每个请求现场问一次令牌；回 `401` 的续一次、照新令牌把这一次请求重发一遍，再
@@ -217,8 +221,13 @@ impl Remote {
             Some(credentials) => credentials.token().await,
             None => None,
         };
-        let sent = (session.as_deref(), version.as_deref());
-        let mut response = match self.send(line, sent, token.as_deref()).await {
+        let standard = message.as_ref().map(standard_headers).unwrap_or_default();
+        let sent = Sent {
+            session: session.as_deref(),
+            version: version.as_deref(),
+            standard: &standard,
+        };
+        let mut response = match self.send(line, &sent, token.as_deref()).await {
             Ok(response) => response,
             Err(why) => return self.failed(id, &why),
         };
@@ -227,7 +236,7 @@ impl Remote {
             && let (Some(credentials), Some(rejected)) = (&self.credentials, &token)
             && let Some(renewed) = credentials.renew(rejected).await
         {
-            response = match self.send(line, sent, Some(&renewed)).await {
+            response = match self.send(line, &sent, Some(&renewed)).await {
                 Ok(response) => response,
                 Err(why) => return self.failed(id, &why),
             };
@@ -279,6 +288,10 @@ impl Remote {
             Err(why) => return self.failed(id, &why),
         };
         if !(200..300).contains(&status) {
+            if let Some(error) = rpc_error(&body, sse, id.as_ref()) {
+                (self.log)(format!("HTTP {status}: {}", error.1));
+                return Answered::Lines(error.0.into_iter().collect());
+            }
             return self.failed(
                 id,
                 &format!(
@@ -298,11 +311,12 @@ impl Remote {
         Answered::Lines(messages)
     }
 
-    /// 发一次 POST：带上会话编号、协议版本（`sent`）、清单写的请求头，有令牌 `token` 的带 `Authorization`。连不上的交回原因。
+    /// 发一次 POST：带上会话编号、协议版本、规范的标准请求头（`sent`）、清单写的请求头，有令牌 `token` 的带 `Authorization`。连不上
+    /// 的交回原因。
     async fn send(
         &self,
         line: &str,
-        (session, version): (Option<&str>, Option<&str>),
+        sent: &Sent<'_>,
         token: Option<&str>,
     ) -> Result<miyu_http::Response, String> {
         let mut request = self
@@ -311,11 +325,14 @@ impl Remote {
             .header("Accept", "application/json, text/event-stream")
             .header("Content-Type", "application/json")
             .body(line.to_string());
-        if let Some(session) = session {
+        if let Some(session) = sent.session {
             request = request.header("Mcp-Session-Id", session);
         }
-        if let Some(version) = version {
+        if let Some(version) = sent.version {
             request = request.header("MCP-Protocol-Version", version);
+        }
+        for (name, value) in sent.standard {
+            request = request.header(*name, value);
         }
         for (name, value) in &self.headers {
             request = request.header(name, value);
@@ -354,6 +371,76 @@ impl Remote {
             *self.version.lock().unwrap_or_else(PoisonError::into_inner) = Some(version);
         }
     }
+}
+
+/// 一次 POST 除了正文要带的：服务给过的会话编号、协议版本、规范的标准请求头（[`standard_headers`]）。
+struct Sent<'a> {
+    session: Option<&'a str>,
+    version: Option<&'a str>,
+    standard: &'a [(&'static str, String)],
+}
+
+/// 照规范镜像进请求头的（施工 PT-1 上）：有方法名的带 `Mcp-Method`；`tools/call`、`prompts/get` 带 `Mcp-Name: <params.name>`，
+/// `resources/read` 带 `Mcp-Name: <params.uri>`。
+fn standard_headers(message: &Value) -> Vec<(&'static str, String)> {
+    let Some(method) = message["method"].as_str() else {
+        return Vec::new();
+    };
+    let mut headers = vec![("Mcp-Method", header_value(method))];
+    let named = match method {
+        "tools/call" | "prompts/get" => message["params"]["name"].as_str(),
+        "resources/read" => message["params"]["uri"].as_str(),
+        _ => None,
+    };
+    if let Some(name) = named {
+        headers.push(("Mcp-Name", header_value(name)));
+    }
+    headers
+}
+
+/// 一个值写进请求头（规范「Value Encoding」）：全是可见 ASCII、空格、制表符，首尾没有空白，又不像 `=?base64?…?=` 记号的照原样；
+/// 别的照 UTF-8 编成 base64，包上 `=?base64?`、`?=`。
+fn header_value(text: &str) -> String {
+    use base64::Engine;
+    let safe = text.chars().all(|c| c == '\t' || (' '..='~').contains(&c));
+    let padded = text.starts_with([' ', '\t']) || text.ends_with([' ', '\t']);
+    let looks_encoded = text.starts_with("=?base64?") && text.ends_with("?=");
+    if safe && !padded && !looks_encoded {
+        return text.to_string();
+    }
+    format!(
+        "=?base64?{}?=",
+        base64::engine::general_purpose::STANDARD.encode(text.as_bytes())
+    )
+}
+
+/// 回错的回应体 `body`（`sse` 的照事件拆，拆不出的照整段读：有的服务出错时类型还写着 SSE、正文却是 JSON）是一条 JSON-RPC 错误的：编号换成这次请求的 `id`，交回要写回去的那一行（通知没有编号，
+/// 什么都不写）和记日志的一句（码和原话）。不是的没有。
+fn rpc_error(body: &str, sse: bool, id: Option<&Value>) -> Option<(Option<String>, String)> {
+    let text = sse
+        .then(|| events(body).into_iter().next())
+        .flatten()
+        .unwrap_or_else(|| body.trim().to_string());
+    let mut message: Value = serde_json::from_str(&text).ok()?;
+    let code = message["error"]["code"].as_i64()?;
+    let said = format!(
+        "{code} {}",
+        message["error"]["message"]
+            .as_str()
+            .unwrap_or_default()
+            .chars()
+            .take(200)
+            .collect::<String>()
+    );
+    let line = id.map(|id| {
+        message["jsonrpc"] = json!("2.0");
+        message["id"] = id.clone();
+        if let Some(object) = message.as_object_mut() {
+            object.remove("result");
+        }
+        message.to_string()
+    });
+    Some((line, said))
 }
 
 /// 读完一段回应：读断了的、超过 [`LINE_LIMIT`] 的交回原因（再长的一条客户端也收不下，不往内存里一直读）。

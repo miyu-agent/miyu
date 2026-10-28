@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use serde_json::json;
 
-use super::{Expired, Log, events, open};
+use super::{Expired, Log, events, header_value, open, rpc_error, standard_headers};
 use crate::testkit::http::HttpServer;
 use crate::{Client, Era, Failed, Hello, Waits};
 
@@ -213,7 +213,19 @@ async fn a_modern_url_server_gets_the_version_header_on_every_request() {
             let meta =
                 request.body["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].as_str();
             assert_eq!(request.header("mcp-protocol-version"), meta, "{request:?}");
+            // 规范的标准请求头（施工 PT-1 上）：假服务照规范查，缺了、对不上的回 `400`。
+            assert_eq!(
+                request.header("mcp-method"),
+                request.body["method"].as_str(),
+                "{request:?}"
+            );
         }
+        let call = server
+            .received()
+            .into_iter()
+            .find(|request| request.body["method"] == "tools/call")
+            .expect("调过");
+        assert_eq!(call.header("mcp-name"), Some("echo"));
         assert!(
             !logged(&lines, "HTTP 400"),
             "没有被拒的：{:?}",
@@ -249,3 +261,107 @@ async fn a_401_keeps_its_challenge() {
 }
 
 mod credentials;
+
+/// 只认别的版本的新版服务（施工 PT-1 上）：`400` 回来的 `-32022` 原样交回，探时代的认出是新版、没有共同的版本就说清楚，不退回老
+/// 握手（规范：认得出的新版错误不许退回 `initialize`）。
+#[tokio::test]
+async fn a_modern_server_with_other_versions_is_not_mistaken_for_an_old_one() {
+    let server = HttpServer::modern(false).await;
+    server.support(&["2099-01-01"]);
+    let (log, lines) = log();
+    let failed = connect(&server, log).await.0.err().expect("连不上");
+    assert!(
+        matches!(&failed, Failed::NoCommonVersion(offered) if offered == &["2099-01-01".to_string()]),
+        "{failed:?}"
+    );
+    assert!(
+        server
+            .received()
+            .iter()
+            .all(|request| request.body["method"] != "initialize"),
+        "不退回握手"
+    );
+    assert!(
+        logged(&lines, "HTTP 400: -32022"),
+        "{:?}",
+        lines.lock().unwrap()
+    );
+}
+
+/// 老服务对 `server/discover` 回 `400`、回应体是一条没有编号的老错误（官方 TypeScript SDK 的老服务没会话就这样，施工 PT-1 上）：
+/// 原样交回、编号换成这次的，认不出是新版的错，退回握手照常用。
+#[tokio::test]
+async fn an_old_server_refusing_discover_with_400_falls_back_to_the_handshake() {
+    let server = HttpServer::start(true).await;
+    server.discover_400();
+    let (log, lines) = log();
+    let client = connect(&server, log).await.0.expect("连得上");
+    assert_eq!(client.era(), &Era::Legacy("2025-06-18".to_string()));
+    assert!(
+        logged(&lines, "HTTP 400: -32000 Bad Request"),
+        "{:?}",
+        lines.lock().unwrap()
+    );
+    let called = client
+        .call("echo", json!({"text": "hi"}))
+        .await
+        .expect("调得到");
+    assert_eq!(called.content.len(), 1);
+}
+
+#[test]
+fn header_values_follow_the_spec_encoding() {
+    for (plain, sent) in [
+        ("us-west1", "us-west1"),
+        ("Hello, 世界", "=?base64?SGVsbG8sIOS4lueVjA==?="),
+        (" padded ", "=?base64?IHBhZGRlZCA=?="),
+        ("line1\nline2", "=?base64?bGluZTEKbGluZTI=?="),
+        ("=?base64?literal?=", "=?base64?PT9iYXNlNjQ/bGl0ZXJhbD89?="),
+    ] {
+        assert_eq!(header_value(plain), sent, "{plain:?}");
+    }
+}
+
+#[test]
+fn standard_headers_name_the_method_and_what_it_acts_on() {
+    let read = json!({"jsonrpc": "2.0", "id": 1, "method": "resources/read", "params": {"uri": "file:///a b"}});
+    assert_eq!(
+        standard_headers(&read),
+        [
+            ("Mcp-Method", "resources/read".to_string()),
+            ("Mcp-Name", "file:///a b".to_string())
+        ]
+    );
+    let prompt =
+        json!({"jsonrpc": "2.0", "id": 2, "method": "prompts/get", "params": {"name": "总结"}});
+    assert_eq!(standard_headers(&prompt)[1].1, header_value("总结"));
+    let list = json!({"jsonrpc": "2.0", "id": 3, "method": "tools/list", "params": {}});
+    assert_eq!(
+        standard_headers(&list),
+        [("Mcp-Method", "tools/list".to_string())]
+    );
+    let answer = json!({"jsonrpc": "2.0", "id": 4, "result": {}});
+    assert!(standard_headers(&answer).is_empty(), "回应没有方法名");
+}
+
+#[test]
+fn only_a_json_rpc_error_body_is_handed_back_as_it_is() {
+    let id = json!(7);
+    let body = r#"{"jsonrpc":"2.0","id":null,"error":{"code":-32020,"message":"Header mismatch"}}"#;
+    let (line, said) = rpc_error(body, false, Some(&id)).expect("是错误");
+    let line: serde_json::Value = serde_json::from_str(&line.expect("有编号的写回")).expect("JSON");
+    assert_eq!(line["id"], 7, "编号换成这次的");
+    assert_eq!(line["error"]["code"], -32020);
+    assert_eq!(said, "-32020 Header mismatch");
+    let sse = format!("event: message\ndata: {body}\n\n");
+    assert!(rpc_error(&sse, true, Some(&id)).is_some(), "SSE 的照事件拆");
+    assert!(
+        rpc_error(body, false, None).expect("是错误").0.is_none(),
+        "通知不写回"
+    );
+    assert!(rpc_error("Bad Gateway", false, Some(&id)).is_none());
+    assert!(
+        rpc_error(r#"{"jsonrpc":"2.0","id":7,"result":{}}"#, false, Some(&id)).is_none(),
+        "不是错误的不算"
+    );
+}

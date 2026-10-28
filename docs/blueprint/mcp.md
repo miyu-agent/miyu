@@ -2,7 +2,7 @@
 
 ### 是什么
 
-MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP 适配器把它接进来：照清单或个人设置拉起服务的进程，经标准输入输出说 MCP，问它有哪些工具，登记进核心的工具目录；她调到其中一件，适配器转成 MCP 的 `tools/call`，把回来的内容换成结果块。MCP 只是兼容入口：挂接点、命令、事件这些 Miyu 的本事，MCP 服务都没有，要的写成扩展（`05-内核接口.md` I1）。
+MCP 服务提供工具（`05-内核接口.md` 第四节），也可以带提示词、资源和给模型的说明（`instructions`，施工 X-39、X-41 接了，见「怎么走」第三条第 5 条、第六条、第七条）。核心里的 MCP 适配器把它接进来：照清单或个人设置拉起服务的进程，经标准输入输出说 MCP，问它有哪些工具，登记进核心的工具目录；她调到其中一件，适配器转成 MCP 的 `tools/call`，把回来的内容换成结果块。MCP 只是兼容入口：挂接点、命令、事件这些 Miyu 的本事，MCP 服务都没有，要的写成扩展（`05-内核接口.md` I1）。
 
 已经定了的（不在这里重定）：
 
@@ -55,7 +55,7 @@ MCP 服务只提供工具（`05-内核接口.md` 第四节）。核心里的 MCP
 
 ```toml
 [[mcp]]
-name = "github"                                   # 服务名：小写字母、数字、-，1 到 32 个字符
+name = "github"                                   # 服务名：小写字母开头，小写字母、数字、-，至多 32 个字符
 command = ["npx", "-y", "@modelcontextprotocol/server-github"]
 env = { GITHUB_TOKEN = { secret = "github" } }    # 可以不写；值照配置的写法，能引用密钥
 venues = ["local"]                                # 可以不写，不写是只给本机的会话
@@ -69,7 +69,7 @@ timeout_ms = 600000                               # 可以不写：一次调用�
 name = "github"
 url = "https://api.githubcopilot.com/mcp/"        # https:// 开头；http:// 只给本机地址（连的时候认，第五条）
 bearer = { secret = "github" }                    # 可以不写：发成 Authorization: Bearer <值>，写法同 env 的值
-headers = { X-Team = "core" }                     # 可以不写：别的请求头，写法同上；Authorization、Mcp-Session-Id、MCP-Protocol-Version 不收
+headers = { X-Team = "core" }                     # 可以不写：别的请求头，写法同上；Authorization、Mcp-Session-Id、MCP-Protocol-Version、Mcp-Method、Mcp-Name 不收
 ```
 
 `env` 只跟着 `command`，`bearer`、`headers` 只跟着 `url`，混着写、两个都没写的报 `bad_mcp`。`venues`、`timeout_ms`、`clicall` 照旧；`need_load` 退役（施工 FL-1），写了的照旧认得、不读。
@@ -140,8 +140,8 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 **五、网址的服务怎么说话**（施工 X-32 上，`crates/miyu-mcp/src/http.rs`）
 
-1. **转接**：一对内存管道，一头交给客户端（`Client::connect` 照常认时代、列、调、取消），另一头由转接读：客户端写出的每一行 POST 到 `url`，几条同时在路上的各发各的；`Accept: application/json, text/event-stream`，带上服务给过的 `Mcp-Session-Id`、协议版本（`MCP-Protocol-Version`：先照这一条自己 `_meta` 里写的，新时代的每个请求都写，施工 X-32 补，GitHub 的远程服务没有它回 `400`；没写的照握手回应里认出来的，握手那一次还没有，不带），和清单写的请求头（令牌已经换成 `Authorization: Bearer …`）。回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去，`202` 的什么都不写；整段读完再写，不开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的不往下读，当对方回错（第 2 条）。
-2. **对方回错**（4xx、5xx、连不上、读到一半断了）：有编号的请求回一条 JSON-RPC 错误（`-32000`，原话是 `HTTP <状态>: <正文的头 200 个字>`），客户端照常了结；往这个服务的日志（`state/logs/mcp-<服务名>.stderr`，同进程的标准错误那一份）写一行。握手时 401、403 的连不上，照进程起不来那样退避、连续 5 次停下，软件包列表上照旧给日志的最后几行。
+1. **转接**：一对内存管道，一头交给客户端（`Client::connect` 照常认时代、列、调、取消），另一头由转接读：客户端写出的每一行 POST 到 `url`，几条同时在路上的各发各的；`Accept: application/json, text/event-stream`，带上服务给过的 `Mcp-Session-Id`、协议版本（`MCP-Protocol-Version`：先照这一条自己 `_meta` 里写的，新时代的每个请求都写，施工 X-32 补，GitHub 的远程服务没有它回 `400`；没写的照握手回应里认出来的，握手那一次还没有，不带）、规范 2026-07-28 的标准请求头（施工 PT-1 上：每个请求 `Mcp-Method: <方法名>`，`tools/call`、`prompts/get` 另带 `Mcp-Name: <params.name>`，`resources/read` 带 `Mcp-Name: <params.uri>`；不是可见 ASCII、首尾有空白、本身长得像 `=?base64?…?=` 的照 UTF-8 编成 `=?base64?<base64>?=`。新版服务缺了要回 `400`；老服务不认这两个头，照样带着，不分时代），和清单写的请求头（令牌已经换成 `Authorization: Bearer …`；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version`、`Mcp-Method`、`Mcp-Name` 清单里不许写）。回来的是 JSON 的照一行写回去，是 SSE 的照 `data:` 一条一条写回去，`202` 的什么都不写；整段读完再写，不开流式读。一段回应至多读 64 MiB（同管道一行的上限，施工 X-32 下），再长的不往下读，当对方回错（第 2 条）。
+2. **对方回错**（4xx、5xx、连不上、读到一半断了）：回应体本身是一条 JSON-RPC 错误的（新版服务的 `400` 都这样：版本不认 `-32022`、请求头不对 `-32020`；老服务没会话时也常这样回）原样交回、编号换成这次请求的（施工 PT-1 上：原来一律换成 `-32000`，探时代的认不出新版服务的错，退回老握手，只认新版的服务整个连不上）；回应头写着 SSE 的先照事件拆，拆不出的照整段读。不是的，有编号的请求回一条 JSON-RPC 错误（`-32000`，原话是 `HTTP <状态>: <正文的头 200 个字>`）。客户端照常了结；往这个服务的日志（`state/logs/mcp-<服务名>.stderr`，同进程的标准错误那一份）写一行（`HTTP <状态>: <码> <原话的头 200 个字>`，或上面那句）。握手时回 `401`、`403` 的：自己写了令牌（`bearer`、`headers` 里的 `Authorization`）的连不上，照进程起不来那样退避、连续 5 次停下，软件包列表上照旧给日志的最后几行；没写令牌、回了 `WWW-Authenticate: Bearer` 的停在 `needs_login`（第八条）。
 3. **会话过期**（带着会话编号回 `404`）：关掉这一对读写，交出一个「是过期断的」标记（`Opened::expired`）。看管的那一头：服务已经跑起来过（握了手、列完工具）的，这一次不算失败、不退避，马上重连、从认时代重来，「连续 5 次停下」不数它（主会话审时提）；还没跑起来就过期的照一次失败算，一直回 `404` 的服务不会原地打转。
 4. **不另开 GET 的长连接**：服务主动推的只在 SSE 回应里收得到；工具变了靠新时代的 `ttlMs`、重连时重列。
 5. **`http://` 只给本机地址**（`miyu_http::is_loopback_url`）：别的机器的不连，令牌一个字节都不发出去，日志里写 `http:// is only for this machine, use https://`，记成停下 `cannot_start`。日志里一律不写网址：有的服务把密钥放在网址的查询串里。本机地址不走代理，别的照环境变量（同下载软件包）。
@@ -244,13 +244,13 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 ### 待定（施工 X-42：网址的服务的 OAuth）
 
-第 1、2（本机回调）、3、4、7 题施工 X-42 上照推荐做了，第 5、6、8 题和第 2 题的手贴施工 X-42 下做了，见「怎么走」第八条；下面留着的是头（第 9 题）和 CIMD 的，做过的几题留着原来的推荐当来由。照 MCP 规范 2026-07-28 的「Authorization」（OAuth 2.1、RFC 9728 受保护资源元数据、RFC 8414 / OIDC 发现、RFC 8707 `resource`、RFC 9207 `iss`、PKCE）。每一题附推荐，主会话审过、要项目主人定的问项目主人。
+第 1、2（本机回调）、3、4、7 题施工 X-42 上照推荐做了（第 3 题只做了动态注册：预先注册的 `oauth` 那一格没做，2026-10-28 主会话定暂缓，同 CIMD 一起等项目主人；回调地址照真实端口写，见「怎么走」第八条第 3 条），第 5、6、8 题和第 2 题的手贴施工 X-42 下做了，见「怎么走」第八条；下面留着的是头（第 9 题）和 CIMD 的，做过的几题留着原来的推荐当来由。照 MCP 规范 2026-07-28 的「Authorization」（OAuth 2.1、RFC 9728 受保护资源元数据、RFC 8414 / OIDC 发现、RFC 8707 `resource`、RFC 9207 `iss`、PKCE）。每一题附推荐，主会话审过、要项目主人定的问项目主人。
 
 1. **怎么知道要登录**。推荐：网址的服务回 `401`、`WWW-Authenticate: Bearer`，这张表又没写 `bearer`、也没在 `headers` 里写 `Authorization` 的，照规范找受保护资源元数据：先用头里的 `resource_metadata`，没有的依次试 `/.well-known/oauth-protected-resource/<服务网址的路径>`、`/.well-known/oauth-protected-resource`。找到了的，服务记成新的一种状态 `needs_login`：不重连、不算失败次数，`mcp.list`、软件包列表写出来，推 `mcp.changed`。写了 `bearer` 的照旧当令牌不对，回 401 就停（人写了令牌就是不走 OAuth）。
 2. **登录从哪发起、回调谁收**。推荐：核心收。新方法 `mcp.login {service}`（只给人）：核心做发现、注册，起一个只听 `127.0.0.1` 的随机端口等回调，回 `{url}`（授权页）。头打开浏览器：命令行 `miyu mcp login <服务>` 用系统的打开命令，打不开的印出网址叫人自己点。核心最多等 10 分钟，收到回调就换令牌、存、重连服务、推 `mcp.changed`。浏览器不在核心那台机器上的（网页从别的机器连进来）回调到不了：授权完浏览器跳到打不开的 `http://127.0.0.1:…` 那一页，把地址栏整段贴回来（`mcp.login_finish {service, url}`）。
 3. **客户端注册**。推荐照规范的先后：
    - 个人设置这张表写了 `oauth = { client_id = "…", client_secret = { secret = "…" } }` 的照用（预先注册，`client_secret` 可以不写）；
-   - 授权服务器有 `registration_endpoint` 的动态注册（RFC 7591）：`application_type: "native"`、`token_endpoint_auth_method: "none"`、`grant_types` 带 `refresh_token`、`redirect_uris` 写 `http://127.0.0.1/callback`；拿到的照授权服务器的 `issuer` 记，授权服务器换了重新注册；
+   - 授权服务器有 `registration_endpoint` 的动态注册（RFC 7591）：`application_type: "native"`、`token_endpoint_auth_method: "none"`、`grant_types` 带 `refresh_token`、`redirect_uris` 写 `http://127.0.0.1:<真端口>/callback`（做的时候改成带端口：授权服务器多半要回调地址逐字对上）；拿到的照授权服务器的 `issuer` 记，授权服务器换了重新注册；
    - 都没有的，`mcp.login` 回 `oauth_unregistered`，说请人去服务那边注册、把 `client_id` 写进这张表。
    - 规范更推荐的「客户端元数据文档」（CIMD：一个固定的 https 网址放 Miyu 的客户端信息）**这一步不做**：要先定网址、开项目的 GitHub Pages，是对外发布的事，项目主人定了再单开一步。规范把动态注册标成了旧办法，但现在的服务多半还认它。
 4. **令牌存哪**。推荐：存进密钥文件（`system/secrets.toml`，0600，同 `miyu provider login` 存的），名字 `mcp-oauth-<服务名>`，值是一段 JSON：`access_token`、`refresh_token`、`expires_at`、`scope`、`issuer`、`client_id`、`client_secret`（动态注册给了的）。服务表里不用写引用，核心照名字找。日志、事件、协议的回应里都不出现令牌、授权码、`code_verifier`；`secret.list` 照旧只列名字，扩展读不到值。
@@ -281,5 +281,5 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 
 1. **MCP 服务不进沙盒**：照 Claude Code、opencode，服务多半要联网、要读写自己的数据，关起来大半用不了。靠「人装的才有」「默认只给本机会话」「没标只读的每次调用都问人、可以批这一件以后都行」守着。
 2. **工具名带前缀**：`mcp__<服务名>__<工具名>`，模型一看就知道是外接的。
-3. **服务给模型的 `instructions` 先不放进去**：第三方的字会常驻 system；等实测哪个常用服务离了它用不好再加，加的时候放在那个服务的工具组里、跟着开关走。
+3. **服务给模型的 `instructions` 先不放进去**（施工 X-39 推翻，2026-10-21 项目主人定重开：放进 system 尾部、跟着工具面走，见「怎么走」第三条第 5 条）：原来的考虑是第三方的字会常驻 system，等实测哪个常用服务离了它用不好再加。
 4. **群聊、私聊的会话默认不能用**：清单或个人设置里写了 `venues` 的才能。

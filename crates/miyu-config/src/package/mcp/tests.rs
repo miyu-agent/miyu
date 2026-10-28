@@ -161,6 +161,14 @@ fn every_mistake_is_bad_mcp_at_its_server() {
             "name = \"g\"\nurl = \"https://a\"\nheaders = { mcp-session-id = \"b\" }",
             "mcp.g.headers",
         ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nheaders = { Mcp-Method = \"b\" }",
+            "mcp.g.headers",
+        ),
+        (
+            "name = \"g\"\nurl = \"https://a\"\nheaders = { mcp-name = \"b\" }",
+            "mcp.g.headers",
+        ),
         ("name = \"g\"\ncommand = []", "mcp.g.command"),
         ("name = \"g\"\ncommand = [\"\"]", "mcp.g.command"),
         ("name = \"g\"\ncommand = \"npx\"", "mcp.g.command"),

@@ -226,7 +226,7 @@
 | `env` | 对象 | 环境变量：值是字，或者 `{"secret": …}`、`{"env": …}`；跟着 `command` |
 | `url` | 字符串 | 网址的服务：`https://` 开头，本机的可以是 `http://`；和 `command` 写一个 |
 | `bearer` | 字或对象 | 令牌，发成 `Authorization: Bearer <值>`；写法同 `env` 的值；跟着 `url` |
-| `headers` | 对象 | 别的请求头，值的写法同 `env` 的；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version` 留给核心；跟着 `url` |
+| `headers` | 对象 | 别的请求头，值的写法同 `env` 的；`Authorization`、`Mcp-Session-Id`、`MCP-Protocol-Version`、`Mcp-Method`、`Mcp-Name` 留给核心；跟着 `url` |
 | `venues` | 字符串数组 | 给哪种会话：`local`、`private`、`group`；不写是只给本机的会话 |
 | `timeout_ms` | 整数 | 一次调用等多久，1000 到 3600000；不写是 600000 |
 | `need_load` | 布尔 | 退役（施工 FL-1，工具一律全量）：照旧收，不看、不写进服务表 |

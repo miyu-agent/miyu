@@ -226,7 +226,7 @@ MCP servers in the admin's personal settings (`[mcp.<name>]` in `home/admin/sett
 | `env` | object | Environment variables: each value is text, or `{"secret": …}`, `{"env": …}`; goes with `command` |
 | `url` | string | A server at a URL: starts with `https://`, or `http://` for this machine; write either this or `command` |
 | `bearer` | text or object | A token, sent as `Authorization: Bearer <value>`; written like an `env` value; goes with `url` |
-| `headers` | object | Other request headers, values written like `env` values; `Authorization`, `Mcp-Session-Id` and `MCP-Protocol-Version` are the core's; goes with `url` |
+| `headers` | object | Other request headers, values written like `env` values; `Authorization`, `Mcp-Session-Id`, `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` are the core's; goes with `url` |
 | `venues` | array of strings | Which sessions get it: `local`, `private`, `group`; local sessions only when left out |
 | `timeout_ms` | integer | How long one call may take, 1000 to 3600000; 600000 when left out |
 | `need_load` | boolean | Retired (construction FL-1, tools are always sent whole): still accepted, ignored and not written to the server table |

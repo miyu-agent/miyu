@@ -267,12 +267,19 @@ fn valid_variable(name: &str) -> bool {
     !name.is_empty() && !name.contains(['=', '\0'])
 }
 
-/// 请求头的名字：字母、数字、`-`，不是空的；`Authorization` 归 `bearer`，`Mcp-Session-Id`、`MCP-Protocol-Version` 归核心。
+/// 请求头的名字：字母、数字、`-`，不是空的；`Authorization` 归 `bearer`，`Mcp-Session-Id`、`MCP-Protocol-Version`、`Mcp-Method`、
+/// `Mcp-Name`（施工 PT-1 上，规范的标准请求头）归核心。
 fn valid_header(name: &str) -> bool {
     !name.is_empty()
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
-        && !["authorization", "mcp-session-id", "mcp-protocol-version"]
-            .contains(&name.to_ascii_lowercase().as_str())
+        && ![
+            "authorization",
+            "mcp-session-id",
+            "mcp-protocol-version",
+            "mcp-method",
+            "mcp-name",
+        ]
+        .contains(&name.to_ascii_lowercase().as_str())
 }
 
 /// 一格开关 `key`：`true`、`false`，或者 `"yes"`、`"no"`（大小写不论）；没写的开。
