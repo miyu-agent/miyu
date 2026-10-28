@@ -11,14 +11,33 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::Path;
 
-use crate::durable::{create_dir, create_temp, discard, sync_dir, temp_name};
+use crate::durable::{create_dir, create_dir_anywhere, create_temp, discard, sync_dir, temp_name};
 
-/// 把 `path` 写成 `content`：一样的不写，交回 `false`；写了交回 `true`。没有的目录建上。
+/// 把 `path` 写成 `content`：一样的不写，交回 `false`；写了交回 `true`。没有的目录建上，哪里都建（缓存目录、头自己的文件）；
+/// 写进数据根的用 [`write_inside`]。
 ///
 /// # Errors
 ///
 /// 建不了目录（例如该是目录的地方是个文件）；写不进、同步不了、改不了名。
 pub fn write(path: &Path, content: &[u8]) -> io::Result<bool> {
+    write_with(path, content, create_dir_anywhere)
+}
+
+/// 同 [`write()`]，写的是数据根里的（施工 TMP-1）：没有的目录只在数据根里建，数据根被删了的不建回来。
+///
+/// # Errors
+///
+/// 往上找不到数据根的标记（`NotFound`）；别的同 [`write()`]。
+pub fn write_inside(path: &Path, content: &[u8]) -> io::Result<bool> {
+    write_with(path, content, create_dir)
+}
+
+/// 照 `create` 建目录地写。
+fn write_with(
+    path: &Path,
+    content: &[u8],
+    create: fn(&Path) -> io::Result<()>,
+) -> io::Result<bool> {
     if fs::read(path).is_ok_and(|old| old == content) {
         return Ok(false);
     }
@@ -28,7 +47,7 @@ pub fn write(path: &Path, content: &[u8]) -> io::Result<bool> {
             format!("{} is not a file in a directory", path.display()),
         ));
     };
-    create_dir(dir)?;
+    create(dir)?;
     let name = name.to_string_lossy();
     let (temp, file) = create_temp(dir, || temp_name(&name))?;
     let stored = store(file, content, &temp, path, dir);

@@ -112,7 +112,7 @@ fn texts() -> Texts {
 }
 
 /// 扩展传上来的 blob 放在一个临时数据根里，提供者的账号是 `admin`（施工 O-2 三补）。交回目录，测完删。
-fn stores() -> (Stores, std::path::PathBuf) {
+fn stores() -> (Stores, crate::test_support::TempDir) {
     let (root, dir) = crate::test_support::temp_root("provide");
     let provider = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
     (

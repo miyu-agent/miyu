@@ -45,7 +45,7 @@ fn mark(bytes: u64, next: u64) -> Mark {
 }
 
 fn open(scratch: &Scratch) -> (SessionIndex, Opened) {
-    SessionIndex::open(&scratch.path().join("index").join(FILE))
+    SessionIndex::open(&scratch.rooted().join("index").join(FILE))
 }
 
 fn row(index: &SessionIndex) -> Option<Row> {
@@ -64,7 +64,7 @@ fn a_new_index_is_created_empty_and_kept_next_time() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(scratch.path().join("index"))
+        let mode = fs::metadata(scratch.rooted().join("index"))
             .unwrap()
             .permissions()
             .mode();
@@ -198,7 +198,7 @@ fn a_removed_row_is_gone_and_removing_nothing_is_fine() {
 #[test]
 fn garbage_is_deleted_and_rebuilt_empty() {
     let scratch = Scratch::new();
-    let path = scratch.path().join("index").join(FILE);
+    let path = scratch.rooted().join("index").join(FILE);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(&path, vec![b'x'; 4096]).unwrap();
     let (index, opened) = SessionIndex::open(&path);
@@ -218,7 +218,7 @@ fn another_version_is_deleted_and_rebuilt_empty() {
         .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
         .unwrap();
     drop(index);
-    let path = scratch.path().join("index").join(FILE);
+    let path = scratch.rooted().join("index").join(FILE);
     Connection::open(&path)
         .unwrap()
         .pragma_update(None, "user_version", VERSION + 1)
@@ -238,7 +238,7 @@ fn an_unreadable_row_is_an_error_and_reset_empties_the_index() {
     index
         .advance(&id(), &mark(0, 1), &[created()], &mark(100, 2))
         .unwrap();
-    let path = scratch.path().join("index").join(FILE);
+    let path = scratch.rooted().join("index").join(FILE);
     Connection::open(&path)
         .unwrap()
         .execute("UPDATE sessions SET owner = 'Not An Account'", [])

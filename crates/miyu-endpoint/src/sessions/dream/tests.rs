@@ -17,11 +17,11 @@ use miyu_tool::Catalog;
 
 use super::memory_module;
 use crate::Core;
-use crate::test_support::{resources, temp_root};
+use crate::test_support::{TempDir, resources, temp_root};
 
-/// 照剧本 `script` 起来的核心，整理会话接上了；交回核心、数据根的目录、管理员。
-fn core(script: &Script) -> (Arc<Core>, miyu_store::root::DataRoot, AccountId) {
-    let (root, _) = temp_root("dream");
+/// 照剧本 `script` 起来的核心，整理会话接上了；交回数据根的目录（丢掉时删掉，放在前头：核心先丢）、核心、数据根、管理员。
+fn core(script: &Script) -> (TempDir, Arc<Core>, miyu_store::root::DataRoot, AccountId) {
+    let (root, dir) = temp_root("dream");
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");
@@ -37,7 +37,7 @@ fn core(script: &Script) -> (Arc<Core>, miyu_store::root::DataRoot, AccountId) {
     ));
     assert!(core.give_dream_sessions(), "头一次接得上");
     assert!(!core.give_dream_sessions(), "接过的不再换");
-    (core, root, admin)
+    (dir, core, root, admin)
 }
 
 /// 开一趟人格那一间、人叫的。
@@ -82,7 +82,7 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
         Play::Says("第二批的回答"),
         Play::Says("第三批的回答"),
     ]);
-    let (core, root, admin) = core(&script);
+    let (_dir, core, root, admin) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
     let first = port
@@ -169,7 +169,7 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
 #[tokio::test]
 async fn stopping_interrupts_the_batch() {
     let script = Script::new([Play::Holds]);
-    let (core, _root, admin) = core(&script);
+    let (_dir, core, _root, admin) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
     let running = {
@@ -201,7 +201,7 @@ async fn the_answer_streams_to_the_watch_without_the_thinking() {
         thinking: "先想想",
         text: "回答的原文",
     }]);
-    let (core, _root, admin) = core(&script);
+    let (_dir, core, _root, admin) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
     let mut heard = String::new();
@@ -224,7 +224,7 @@ async fn the_answer_streams_to_the_watch_without_the_thinking() {
 
 #[tokio::test]
 async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
-    let (core, _root, admin) = core(&Script::new([]));
+    let (_dir, core, _root, admin) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let session = port.open(spec(&admin)).await.expect("开得成");
     let all = crate::list::list(&core, &admin, false, None, None)
@@ -260,7 +260,7 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
 
 #[tokio::test]
 async fn closing_keeps_only_the_newest_of_the_room() {
-    let (core, root, admin) = core(&Script::new([]));
+    let (_dir, core, root, admin) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let mut engineer = Vec::new();
     for _ in 0..3 {
@@ -295,7 +295,7 @@ async fn listed(core: &Arc<Core>, admin: &AccountId, session: &SessionId) -> ser
 
 #[tokio::test]
 async fn closing_with_a_result_records_it_and_lists_it() {
-    let (core, root, admin) = core(&Script::new([]));
+    let (_dir, core, root, admin) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let done = port.open(spec(&admin)).await.expect("开得成");
     let stopped = port.open(spec(&admin)).await.expect("开得成");

@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::durable::{create_dir, create_temp_with, discard, sync_dir, temp_name};
+use crate::durable::{create_dir_anywhere, create_temp_with, discard, sync_dir, temp_name};
 
 /// 一份配置文件最多多大：1 MiB。
 pub const LIMIT: u64 = 1024 * 1024;
@@ -210,7 +210,8 @@ pub(crate) fn write_with(
             format!("{} is not a file in a directory", target.display()),
         )));
     };
-    create_dir(dir)?;
+    // 配置文件在人指定的位置（项目目录里的也算），不只在数据根里（施工 TMP-1）。
+    create_dir_anywhere(dir)?;
     let name = name.to_string_lossy();
     let (temp, file) = create_temp_with(dir, || temp_name(&name), mode.bits(&target))?;
     let written = replace(file, content, &temp, &target, read, mode, before_rename);

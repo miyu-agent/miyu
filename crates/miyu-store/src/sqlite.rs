@@ -6,6 +6,8 @@
 //! - 日志模式 WAL、`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏，丢了的照日志补。
 //! - 一个库一个进程只开一个连接，一直开着：打开再关上同一个库文件会丢掉 SQLite 在这个进程里的文件锁（07 第六节，旧版
 //!   把库弄坏过）。删的时候连同 `-wal`、`-shm` 三个一起删。
+//! - 库所在的目录还没有、要建的，只在数据根里建（`durable::create_dir`，施工 TMP-1）：数据根被删了的不建回来，这一回用不了，
+//!   错误里带着那个目录。所有的库都在数据根里。
 
 use std::fmt;
 use std::fs;
@@ -128,3 +130,6 @@ impl From<io::Error> for DbError {
         DbError::Io(error)
     }
 }
+
+#[cfg(test)]
+mod tests;

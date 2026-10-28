@@ -103,7 +103,7 @@ pub(super) fn write(
     let path = path(core, &server.name);
     let written = serde_json::to_vec_pretty(&cached)
         .map_err(std::io::Error::other)
-        .and_then(|bytes| generated::write(&path, &bytes));
+        .and_then(|bytes| generated::write_inside(&path, &bytes));
     if let Err(error) = written {
         tracing::warn!(target: TARGET, service = server.name.as_str(), file = %path.display(), error = %error, "mcp tools not cached");
     }

@@ -23,7 +23,7 @@ fn path(core: &Core, package: &str) -> PathBuf {
 /// 记下包 `package` 这一次登记的原文 `kept`（`provide` 的参数）。
 pub(super) fn write(core: &Core, package: &str, kept: &[u8]) {
     let path = path(core, package);
-    if let Err(error) = generated::write(&path, kept) {
+    if let Err(error) = generated::write_inside(&path, kept) {
         tracing::warn!(target: TARGET, package, file = %path.display(), error = %error, "provided tools not cached");
     }
 }

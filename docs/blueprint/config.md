@@ -32,7 +32,7 @@
 | `crates/miyu-config/src/rename.rs` | 供应商改名（8-34，`models.md`「怎么走」第十六条）：换 `[providers.<from>]` 的表名，找出指着它的引用、模型的列表 | 8-34 |
 | `crates/miyu-config/src/secret.rs` | 密钥（8-5）：名字的写法（`valid_name`）；配置里的引用 `Reference`（`{ secret = … }`、`{ env = … }`，TOML、JSON、人敲的三种读法）；取出来的密钥 `Secret`（`Debug` 只印 `Secret(…)`）；密钥文件的字怎么读（`parse_file`）、怎么改一行（`set_in`、`unset_in`，经 `edit::apply`，它 8-5 起认只有一段的键）；引用取不到的报警告（`missing`） | 8-5 |
 | `crates/miyu-store/src/config_file.rs` | 读配置文件：没有的是空的、上限、开头的 BOM、UTF-8、版本（8-2），记下有没有 BOM（8-3）。写（`write`）：顺着链接、先写临时文件再替换、同步、替换前再读一次、Windows 上重试（8-3）。临时文件的名字和生成的文件共用 `durable.rs` 的 `temp_name` | 8-2、8-3 |
-| `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：和磁盘上的逐字节比，一样的不写，不一样的先写临时文件再替换 | 8-1 |
+| `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：和磁盘上的逐字节比，一样的不写，不一样的先写临时文件再替换；`state/config/` 照 `write_inside` 写，数据根被删了的不建回来（`store.md`「怎么走」第四条） | 8-1、TMP-1 |
 | `crates/miyu-store/src/human.rs` | 给人看的字多一格 `config`，读好的字照 `Words` 交给配置清单 | 8-1 |
 | `crates/miyu-store/src/journal.rs` | 系统日志、账号日志 `journal.jsonl`：每追加一条都重新打开、截半行、读最后一行接着数 `seq`、追加、同步 | 8-3 |
 | `crates/miyu-store/src/watch.rs` | 监视几份文件所在的目录（`notify`），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒没有新的变动了才交出去；系统的监视起不来的退回轮询，交回原因。往下递归看的（`watch_tree`，OV-1 下）交变了的那个文件；新建、挪进来的目录交里面已经有的每一个文件（OV-1 补：系统的递归监视报了新目录才去看它，在那之前写进去的报不出来） | 8-4、OV-1 |

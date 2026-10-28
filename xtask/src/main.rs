@@ -1,5 +1,7 @@
 //! 门禁程序，和开发用的几样小工具（`cargo xtask dev-home`：造一个带配置的数据根，施工 8-6；`cargo xtask perf`：编好量尺
-//! 跑一遍，施工 V-1）。`cargo xtask check` 依次跑格式、clippy、文档、三道门禁、许可证和测试，最后打一张结果表。
+//! 跑一遍，施工 V-1）。`cargo xtask check` 依次跑格式、clippy、文档、三道门禁、许可证和测试，最后打一张结果表；测试跑在一个
+//! 新的空临时目录里，跑完剩下的东西报在「临时目录」一项（施工 TMP-1，`temp.rs`）；这一项只在 Linux 上拦，macOS、Windows
+//! 照数、照删、只报（主会话 2026-10-28 认了，原因见 `temp::ENFORCED`）。
 //!
 //! 三道门禁都照图纸查：`docs/designs/01-架构.md` 第九节「代码的分层」。「文档」那一项还查登记簿：
 //! 给模型看的字和 `docs/designs/26-提示词.md` 第十节一一对上（施工 3-5 再补）；「给模型看的字」那一页和资源、登记簿
@@ -23,6 +25,7 @@ mod reference;
 mod rights;
 mod samples;
 mod size;
+mod temp;
 mod test_targets;
 
 use std::path::{Path, PathBuf};
@@ -183,20 +186,51 @@ fn check() -> ExitCode {
         &[],
         true,
     );
+    let mut temp = Outcome {
+        name: "临时目录",
+        problems: Vec::new(),
+    };
     if tests.problems.is_empty() {
+        // 测试的临时目录指到一个新的空目录（施工 TMP-1）：跑完数剩下的、整个删掉。
+        let dir = match temp::fresh() {
+            Ok(dir) => Some(dir),
+            Err(error) => {
+                temp.problems.push(format!("建不了测试的临时目录：{error}"));
+                None
+            }
+        };
+        let shown = dir
+            .as_ref()
+            .map(|dir| dir.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let env: Vec<(&str, &str)> = match &dir {
+            Some(_) => vec![("TMPDIR", &shown), ("TMP", &shown), ("TEMP", &shown)],
+            None => Vec::new(),
+        };
         tests = cargo_step(
             &cargo,
             &root,
             "测试",
             // 一条红不停（主会话 2026-10-26）：照旧跑完后面的 crate，别让一处盖掉别处的红。
             &["test", "--workspace", "--quiet", "--no-fail-fast"],
-            &[],
+            &env,
             false,
         );
+        if let Some(dir) = &dir {
+            let left = temp::left(dir);
+            match temp::ENFORCED {
+                true => temp.problems.extend(left),
+                // 只在 Linux 上拦（施工 TMP-1）：见 `temp::ENFORCED`。别的平台照数、照删，只报出来。
+                false => left
+                    .iter()
+                    .for_each(|line| println!("临时目录（这个平台不拦）：{line}")),
+            }
+        }
     }
     println!("\n── 测试：每个测试文件都进了测试程序（autotests = false 的 crate）──");
     tests.problems.extend(test_crates(&cargo, &root));
     outcomes.push(tests);
+    outcomes.push(temp);
     report(&outcomes)
 }
 

@@ -16,6 +16,8 @@ impl Scratch {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("miyu-pictures-{}-{n}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
+        // blob、任务输出只在数据根里建目录（施工 TMP-1）：写上标记。
+        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
         Scratch(dir)
     }
 }

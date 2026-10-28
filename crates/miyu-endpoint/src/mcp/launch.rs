@@ -210,12 +210,12 @@ pub(super) async fn spawn(plan: &Plan) -> io::Result<Child> {
     }
 }
 
-/// 起一次：工作目录没有的建，标准错误接到它的文件上，核心丢下它时杀掉。
+/// 起一次：工作目录没有的建（只在数据根里建，施工 TMP-1），标准错误接到它的文件上，核心丢下它时杀掉。
 fn spawn_once(plan: &Plan) -> io::Result<Child> {
     let How::Spawn { program, args, env } = &plan.how else {
         return Err(io::Error::other("a URL server has no process"));
     };
-    std::fs::create_dir_all(&plan.dir)?;
+    miyu_store::root::create_inside(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
     let mut command = std::process::Command::new(program);
     command

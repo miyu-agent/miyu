@@ -21,6 +21,8 @@ impl Scratch {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("miyu-jobs-{}-{n}", std::process::id()));
         std::fs::create_dir_all(dir.join("session")).unwrap();
+        // blob、任务输出只在数据根里建目录（施工 TMP-1）：写上标记。
+        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
         Scratch(dir)
     }
 
@@ -34,12 +36,9 @@ impl Scratch {
 }
 
 impl Drop for Scratch {
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "删不掉就留在临时目录里，不影响测试"
-    )]
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        // 删到一半撞上后台写入（任务的输出）的过一会儿再删（施工 TMP-1）。
+        miyu_store::testkit::remove_tree(&self.0);
     }
 }
 

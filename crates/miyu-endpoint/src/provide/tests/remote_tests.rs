@@ -205,13 +205,6 @@ async fn answered_with(stores: Stores, owner: &str, blocks: Vec<Block>) -> miyu_
     running.await.unwrap()
 }
 
-/// 测完删掉临时的数据根；删不掉就留在临时目录里，不影响测试。
-fn forget(dir: std::path::PathBuf) {
-    if std::fs::remove_dir_all(dir).is_err() {
-        // 留着。
-    }
-}
-
 /// 扩展传进管理员名下的图（施工 O-2 三补）：交回给系统账号的会话时拷一份进它名下，块原样不动。
 #[tokio::test]
 async fn an_answered_image_is_handed_over_to_the_sessions_owner() {
@@ -225,7 +218,7 @@ async fn an_answered_image_is_handed_over_to_the_sessions_owner() {
     assert!(!done.error, "{:?}", done.blocks);
     assert_eq!(done.blocks, [image(blob.clone())]);
     assert!(theirs.path(&blob).is_file(), "拷进了属主名下");
-    forget(dir);
+    drop(dir);
 }
 
 /// 提供者名下也没有的 blob：照暂时不可用，不把读不到的图交给她；属主就是提供者的也查在不在。
@@ -243,9 +236,9 @@ async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
             text(&done),
             "The tool \"send_group\" is not available right now.\n"
         );
-        forget(dir);
+        drop(dir);
     }
-    forget(first);
+    drop(first);
 }
 
 /// 拷进会话属主名下的 blob（施工 W-11 补）：图片块、发出去的图、`images` 形状里的图都算；别的形状、读不成的不算。

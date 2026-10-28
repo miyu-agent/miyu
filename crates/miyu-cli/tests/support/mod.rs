@@ -333,9 +333,19 @@ impl Drop for Home {
     )]
     fn drop(&mut self) {
         self.running.abort();
-        let _ = std::fs::remove_dir_all(&self.dir);
+        // 删到一半撞上后台写入的过一会儿再删（施工 TMP-1）。
+        miyu_store::testkit::remove_tree(&self.dir);
         let _ = std::fs::remove_dir_all(beside(&self.dir));
+        // 沙盒在数据根旁边建的临时目录（`<数据根>-sandbox-tmp`，施工 TMP-1）。
+        let _ = std::fs::remove_dir_all(sandbox_temp(&self.dir));
     }
+}
+
+/// 沙盒在数据根 `dir` 旁边建的临时目录（`miyu-session` 的 `sandbox.rs` 照这个名字建）。
+fn sandbox_temp(dir: &Path) -> PathBuf {
+    let mut name = dir.as_os_str().to_owned();
+    name.push("-sandbox-tmp");
+    PathBuf::from(name)
 }
 
 /// 数据根 `dir` 旁边、这一个 Home 自己的目录：`<数据根>-outside`。

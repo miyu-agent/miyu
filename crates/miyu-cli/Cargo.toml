@@ -48,6 +48,8 @@ miyu-pipe = { path = "../miyu-pipe" }
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Console"] }
 
 [dev-dependencies]
+# 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
+miyu-store = { path = "../miyu-store", features = ["testkit"] }
 # 打包时缩图标的测试造 PNG（施工 F-18 上）：工作区里本来就有的那一份。
 image = { version = "0.25", default-features = false, features = ["png"] }
 # 测试贴 key 的真实现：守卫本身的单元测试要一对真的伪终端（施工 8-5 补）。

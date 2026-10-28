@@ -63,3 +63,5 @@ pub mod watch;
 
 #[cfg(test)]
 mod test_support;
+#[cfg(any(test, feature = "testkit"))]
+pub mod testkit;

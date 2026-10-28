@@ -10,7 +10,7 @@ use crate::test_support::Scratch;
 fn root(scratch: &Scratch) -> DataRoot {
     let env = Env {
         platform: Platform::current(),
-        miyu_home: Some(scratch.path().join("data").into_os_string()),
+        miyu_home: Some(scratch.rooted().join("data").into_os_string()),
         home: None,
         xdg_cache_home: None,
         local_app_data: None,

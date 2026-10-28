@@ -9,13 +9,13 @@ use crate::test_support::Scratch;
 
 #[test]
 fn a_missing_file_is_an_empty_layer() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     assert!(matches!(read(&temp.path().join("config.toml")), Ok(None)));
 }
 
 #[test]
 fn the_bom_is_dropped_but_counted_in_the_version() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "\u{FEFF}a = 1\r\n").unwrap();
@@ -32,7 +32,7 @@ fn the_bom_is_dropped_but_counted_in_the_version() {
 
 #[test]
 fn a_file_over_one_mebibyte_is_not_read() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, vec![b'#'; usize::try_from(LIMIT).unwrap()]).unwrap();
@@ -43,7 +43,7 @@ fn a_file_over_one_mebibyte_is_not_read() {
 
 #[test]
 fn bytes_that_are_not_utf8_are_refused() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, b"a = \"\xff\"\n").unwrap();
@@ -52,7 +52,7 @@ fn bytes_that_are_not_utf8_are_refused() {
 
 #[test]
 fn a_directory_is_unreadable() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     let path = temp.path().join("config.toml");
     fs::create_dir_all(&path).unwrap();
     assert!(matches!(read(&path), Err(ReadError::Unreadable(_))));
@@ -61,7 +61,7 @@ fn a_directory_is_unreadable() {
 #[cfg(unix)]
 #[test]
 fn a_link_is_followed_even_outside() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     let elsewhere = temp.path().join("elsewhere");
     fs::create_dir_all(&elsewhere).unwrap();
     fs::write(elsewhere.join("real.toml"), "a = 1\n").unwrap();
@@ -84,7 +84,7 @@ fn leftovers(dir: &Path, keep: &[&str]) -> Vec<String> {
 
 #[test]
 fn a_new_file_is_written_and_its_directory_made() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     let path = temp.path().join("home").join("admin").join("settings.toml");
     write(&path, b"a = 1\n", None).unwrap();
     assert_eq!(fs::read(&path).unwrap(), b"a = 1\n");
@@ -96,7 +96,7 @@ fn a_new_file_is_written_and_its_directory_made() {
 
 #[test]
 fn a_file_changed_since_it_was_read_is_not_written_over() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();
@@ -123,7 +123,7 @@ fn a_file_changed_since_it_was_read_is_not_written_over() {
 
 #[test]
 fn a_hand_edit_just_before_the_rename_wins_and_nothing_is_left_behind() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();
@@ -155,7 +155,7 @@ fn a_hand_edit_just_before_the_rename_wins_and_nothing_is_left_behind() {
 
 #[test]
 fn a_crash_before_the_rename_leaves_the_file_as_it_was() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();
@@ -182,7 +182,7 @@ fn the_bom_goes_back_on_and_is_remembered() {
 #[test]
 fn the_permission_bits_stay() {
     use std::os::unix::fs::PermissionsExt;
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();
@@ -197,7 +197,7 @@ fn the_permission_bits_stay() {
 #[cfg(unix)]
 #[test]
 fn links_are_followed_and_left_alone() {
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     let dotfiles = temp.path().join("dotfiles");
     let system = temp.path().join("system");
     fs::create_dir_all(&dotfiles).unwrap();
@@ -248,7 +248,7 @@ fn links_are_followed_and_left_alone() {
 #[test]
 fn a_file_held_open_by_another_program_is_retried() {
     use std::os::windows::fs::OpenOptionsExt;
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();
@@ -308,7 +308,7 @@ fn caught(dir: &std::path::Path, marker: &str, mut write: impl FnMut()) -> u32 {
 #[test]
 fn the_temporary_file_is_never_more_open_than_the_original() {
     use std::os::unix::fs::PermissionsExt;
-    let temp = Scratch::new();
+    let temp = Scratch::bare();
     fs::create_dir_all(temp.path()).unwrap();
     let path = temp.path().join("config.toml");
     fs::write(&path, "a = 1\n").unwrap();

@@ -14,6 +14,9 @@ impl Scratch {
     fn new(name: &str) -> Scratch {
         let dir = std::env::temp_dir().join(format!("miyu-recall-{name}-{}", std::process::id()));
         std::fs::remove_dir_all(&dir).unwrap_or(());
+        // 开库只在数据根里建目录（施工 TMP-1）：写上标记。
+        std::fs::create_dir_all(&dir).expect("建得了");
+        std::fs::write(dir.join(crate::root::MARKER), "").expect("写得进");
         Scratch(dir)
     }
 }

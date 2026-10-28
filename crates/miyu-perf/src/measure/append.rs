@@ -21,8 +21,13 @@ pub fn append(from: &Path, scratch: &Path, count: usize) -> Result<Vec<f64>, Str
         std::fs::remove_dir_all(scratch)
             .map_err(|e| format!("删不掉旧的 {}：{e}", scratch.display()))?;
     }
-    let mut log = SessionLog::create(scratch, SEGMENT_LIMIT)
+    // 会话日志只在数据根里建目录（施工 TMP-1）：临时的那一格写上标记，日志放在下面一层。
+    std::fs::create_dir_all(scratch)
+        .and_then(|()| std::fs::write(scratch.join(miyu_store::root::MARKER), ""))
         .map_err(|e| format!("建不了 {}：{e}", scratch.display()))?;
+    let session = scratch.join("session");
+    let mut log = SessionLog::create(&session, SEGMENT_LIMIT)
+        .map_err(|e| format!("建不了 {}：{e}", session.display()))?;
     let mut took = Vec::with_capacity(count);
     for event in events.iter().take(count) {
         let began = Instant::now();

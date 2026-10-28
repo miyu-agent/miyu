@@ -13,7 +13,7 @@ use crate::test_support::{resources, temp_root};
 
 #[test]
 fn the_core_gives_recall_its_texts_when_it_starts() {
-    let (root, _) = temp_root("recall");
+    let (root, _dir) = temp_root("recall");
     let resources = ResourceRoot::at(resources());
     let core = Core::new(
         root,
@@ -117,7 +117,7 @@ mod accounts;
 #[test]
 fn vectors_use_the_system_config_and_keys() {
     use miyu_config::secret::Reference;
-    let (root, _) = temp_root("using");
+    let (root, _dir) = temp_root("using");
     let alice = AccountId::parse("alice").expect("合写法");
     let bob = AccountId::parse("bob").expect("合写法");
     let system = root.path().join("system");

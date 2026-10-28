@@ -21,11 +21,15 @@ fn sample(name: &str) -> String {
 struct Scratch(PathBuf);
 
 impl Scratch {
+    /// 建好、写上数据根的标记：日志、密钥文件只在数据根里建目录（施工 TMP-1）。
     fn new(name: &str) -> Scratch {
-        Scratch(std::env::temp_dir().join(format!(
+        let dir = std::env::temp_dir().join(format!(
             "miyu-endpoint-journal-{name}-{}",
             std::process::id()
-        )))
+        ));
+        std::fs::create_dir_all(&dir).expect("建得了临时目录");
+        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
+        Scratch(dir)
     }
 
     fn file(&self) -> PathBuf {

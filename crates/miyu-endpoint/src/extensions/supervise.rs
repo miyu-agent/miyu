@@ -272,9 +272,9 @@ async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
     }
 }
 
-/// 拉起：工作目录（包的状态目录）没有的建，标准错误接到它的文件上，核心丢下它时杀掉。
+/// 拉起：工作目录（包的状态目录）没有的建（只在数据根里建，施工 TMP-1），标准错误接到它的文件上，核心丢下它时杀掉。
 fn spawn(plan: &Plan) -> io::Result<Child> {
-    std::fs::create_dir_all(&plan.dir)?;
+    miyu_store::root::create_inside(&plan.dir)?;
     let state = std::fs::canonicalize(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
     let mut command = plan.launch.command();

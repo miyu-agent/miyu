@@ -31,7 +31,7 @@ fn seeds_of(bytes: &[u8]) -> Option<Vec<String>> {
 
 #[test]
 fn a_picture_is_looked_at_once_and_remembered_on_disk() {
-    let (_, dir) = temp_root("glance-once");
+    let (_root, dir) = temp_root("glance-once");
     let state = dir.join("state");
     let path = dir.join("avatar.png");
     let red = picture(48);
@@ -65,7 +65,7 @@ fn a_picture_is_looked_at_once_and_remembered_on_disk() {
 
 #[test]
 fn seeds_asked_later_are_picked_then() {
-    let (_, dir) = temp_root("glance-later");
+    let (_root, dir) = temp_root("glance-later");
     let state = dir.join("state");
     let path = dir.join("background.png");
     let red = picture(48);
@@ -83,7 +83,7 @@ fn seeds_asked_later_are_picked_then() {
 
 #[test]
 fn a_picture_of_the_same_size_is_known_by_its_modified_time() {
-    let (_, dir) = temp_root("glance-same-size");
+    let (_root, dir) = temp_root("glance-same-size");
     let state = dir.join("state");
     let path = dir.join("avatar.png");
     std::fs::write(&path, b"aaaa").expect("写得进");

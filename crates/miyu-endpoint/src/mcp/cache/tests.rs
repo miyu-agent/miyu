@@ -153,4 +153,5 @@ fn an_older_cache_without_instructions_still_reads() {
     assert_eq!(remembered.instructions, None);
     assert!(!remembered.resources, "以前的缓存照没声明资源（施工 X-41）");
     assert_eq!(remembered.tools.len(), 1);
+    std::fs::remove_dir_all(&dir).unwrap();
 }

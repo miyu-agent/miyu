@@ -305,7 +305,7 @@ impl ModelData {
         let path = name
             .split('/')
             .fold(dir.clone(), |path, part| path.join(part));
-        if let Err(error) = miyu_store::generated::write(&path, text.as_bytes()) {
+        if let Err(error) = miyu_store::generated::write_inside(&path, text.as_bytes()) {
             tracing::warn!(target: TARGET, file = name, error = %error, "model data not written");
         }
     }

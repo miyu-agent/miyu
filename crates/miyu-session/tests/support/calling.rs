@@ -50,6 +50,9 @@ pub fn asking(model: Option<&str>, purpose: &str, text: &str) -> Ask {
 /// 一个空的 blob 目录：拿着 `Scratch` 的时候在。
 pub fn blobs() -> (Scratch, Blobs) {
     let scratch = Scratch::new();
+    // blob 只在数据根里建目录（施工 TMP-1）：写上标记。
+    std::fs::create_dir_all(&scratch.0).expect("建得了临时目录");
+    std::fs::write(scratch.0.join(miyu_store::root::MARKER), "").expect("写得进标记");
     let blobs = Blobs::new(scratch.0.join("blobs"));
     (scratch, blobs)
 }

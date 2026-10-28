@@ -24,10 +24,10 @@ pub(super) fn path(core: &Core, id: &str) -> PathBuf {
     core.root.state().join("logs").join(format!("{id}.stderr"))
 }
 
-/// 打开 `path` 接标准错误：目录没有的建，太大的先挪成 `.old`，追加。
+/// 打开 `path` 接标准错误：目录没有的建（只在数据根里建，数据根没了的不建回来，施工 TMP-1），太大的先挪成 `.old`，追加。
 pub(crate) fn open(path: &Path) -> io::Result<File> {
     if let Some(dir) = path.parent() {
-        fs::create_dir_all(dir)?;
+        miyu_store::root::create_inside(dir)?;
     }
     if fs::metadata(path).is_ok_and(|meta| meta.len() > LARGEST) {
         let mut old = path.as_os_str().to_owned();

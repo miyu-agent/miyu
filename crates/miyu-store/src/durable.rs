@@ -2,6 +2,11 @@
 //! 每一层都同步它的上一层。新建文件、新建目录、改名以后，上一层不同步，断电以后这一项可能没了。
 //! 先写临时文件再改名的，临时文件怎么建、叫什么、用不上了怎么删（blob、生成的文件、配置文件共用，施工 8-1 从 `blob.rs`
 //! 挪来，名字施工 8-3 从 `generated.rs` 挪来）。
+//!
+//! 数据根里的东西只在数据根还在的时候建（施工 TMP-1，2026-10-28 主会话定）：要建的目录往上找不到数据根的标记
+//! （[`crate::root::MARKER`]）的不建、报错（[`create_dir`]）。数据根被删了（测试的夹具删掉以后后台还在写、人删了还开着的核心的
+//! 数据根），不再被后台写的那一下连上级目录一起建回来。建数据根本身、写人指定位置的配置文件用不认标记的
+//! [`create_dir_anywhere`]。
 
 use std::fs::{self, File, OpenOptions};
 use std::io;
@@ -11,7 +16,37 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// 临时文件的名字最多换几次：撞上的都是崩溃留下的，换几次总能换开。
 const TEMP_TRIES: u32 = 64;
 
-/// 建目录，连同缺的上层。新建的每一层都同步它的上一层，建目录这件事本身才算落盘；已经有的不动。
+/// 在数据根里建目录，连同缺的上层（同 [`create_dir_anywhere`]）：已经有的不动；要建的，往上（连它自己）找得到数据根的
+/// 标记才建。
+///
+/// # Errors
+///
+/// 往上找不到数据根的标记（`NotFound`，说的是哪个目录）；别的同 [`create_dir_anywhere`]。
+pub(crate) fn create_dir(dir: &Path) -> io::Result<()> {
+    if dir.is_dir() {
+        return Ok(());
+    }
+    if !in_data_root(dir) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!(
+                "{} is not inside a Miyu data root (no {} above it), not creating it",
+                dir.display(),
+                crate::root::MARKER
+            ),
+        ));
+    }
+    create_dir_anywhere(dir)
+}
+
+/// `dir` 往上（连它自己）有一层有数据根的标记。
+fn in_data_root(dir: &Path) -> bool {
+    dir.ancestors()
+        .any(|above| fs::symlink_metadata(above.join(crate::root::MARKER)).is_ok())
+}
+
+/// 建目录，连同缺的上层，不管在不在数据根里（建数据根本身、写人指定位置的配置文件）。新建的每一层都同步它的上一层，建
+/// 目录这件事本身才算落盘；已经有的不动。
 ///
 /// Unix 上新建的权限 0700，只有本人能进；已经有的不改：数据根可能是人自己建、自己设的，权限
 /// 不对由 `miyu doctor` 报告（`22-命令行.md` 第五节）。Windows 上靠用户目录本身的访问控制。
@@ -19,13 +54,13 @@ const TEMP_TRIES: u32 = 64;
 /// # Errors
 ///
 /// 建不了；该是目录的地方是个文件；同步不了。
-pub(crate) fn create_dir(dir: &Path) -> io::Result<()> {
+pub(crate) fn create_dir_anywhere(dir: &Path) -> io::Result<()> {
     if dir.is_dir() {
         return Ok(());
     }
     let parent = dir.parent().filter(|parent| !parent.as_os_str().is_empty());
     if let Some(parent) = parent {
-        create_dir(parent)?;
+        create_dir_anywhere(parent)?;
     }
     #[cfg(unix)]
     let created = {

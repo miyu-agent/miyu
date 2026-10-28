@@ -9,12 +9,13 @@ use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
 use crate::Core;
-use crate::test_support::{resources, temp_root};
+use crate::test_support::{TempDir, resources, temp_root};
 
-fn core() -> Arc<Core> {
-    let (root, _) = temp_root("listing");
+/// 交回数据根的目录（丢掉时删掉，放在前头：核心先丢）和核心。
+fn core() -> (TempDir, Arc<Core>) {
+    let (root, dir) = temp_root("listing");
     let resources = resources();
-    Arc::new(Core::new(
+    let core = Arc::new(Core::new(
         root,
         ResourceRoot::at(&resources),
         Arc::new(Script::new([])),
@@ -22,7 +23,8 @@ fn core() -> Arc<Core> {
         None,
         AccountId::parse("admin").expect("合写法"),
         "token".to_string(),
-    ))
+    ));
+    (dir, core)
 }
 
 fn session(n: u8) -> SessionId {
@@ -31,7 +33,7 @@ fn session(n: u8) -> SessionId {
 
 #[tokio::test]
 async fn the_list_covers_what_came_before_it() {
-    let core = core();
+    let (_dir, core) = core();
     let mut pushes = core.listing.subscribe();
     core.listing.removed(&core, session(1), core.admin.clone());
     core.listing.removed(&core, session(2), core.admin.clone());

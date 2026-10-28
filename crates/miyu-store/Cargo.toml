@@ -41,6 +41,10 @@ getrandom = { version = "0.4", features = ["std"] }
 # 本机是 Windows 10 还是 11（施工 2-7 再补）：内部版本号、是不是服务器版。微软的 windows-rs，MIT 或 Apache-2.0，不用自己写 unsafe。
 windows-version = "0.1.7"
 
+[features]
+# 别的 crate 的测试用的（施工 TMP-1）：删测试的临时目录，删到一半撞上后台写入的过一会儿再删（`src/testkit.rs`）。
+testkit = []
+
 [dev-dependencies]
 # 测试里拿执行器替身跑一段真会话，写进日志、读回来、载入（施工 3-2）。
 miyu-kernel = { path = "../miyu-kernel", features = ["testkit"] }

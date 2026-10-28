@@ -6,12 +6,12 @@ use crate::test_support::Scratch;
 
 #[test]
 fn missing_levels_are_made_one_by_one() {
-    let scratch = Scratch::new();
+    let scratch = Scratch::bare();
     let deep = scratch.path().join("a").join("b").join("c");
-    create_dir(&deep).unwrap();
+    create_dir_anywhere(&deep).unwrap();
     assert!(deep.is_dir());
     // 建两次也不出错。
-    create_dir(&deep).unwrap();
+    create_dir_anywhere(&deep).unwrap();
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

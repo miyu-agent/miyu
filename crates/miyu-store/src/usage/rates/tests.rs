@@ -86,7 +86,7 @@ fn wanted(pairs: &[(Day, &str)]) -> BTreeSet<(Day, String)> {
 fn a_missing_rate_is_fetched_once_and_then_read_from_the_cache() {
     let dir = crate::test_support::Scratch::new();
     let source = Fake::new(&[("CNY", 7.0), ("EUR", 0.9)], Duration::ZERO);
-    let book = book(dir.path(), Some(Arc::clone(&source)));
+    let book = book(dir.rooted(), Some(Arc::clone(&source)));
     let asked = wanted(&[(99, "CNY"), (99, "EUR"), (99, "USD")]);
     let got = book.rates(&asked, NOW, WAIT);
     assert_eq!(
@@ -107,7 +107,7 @@ fn a_missing_rate_is_fetched_once_and_then_read_from_the_cache() {
     assert_eq!(again, got);
     assert_eq!(source.asked().len(), 1, "缓存命中不再取");
     // 重开一份（重启核心）也读得到。
-    let reopened = self::book(dir.path(), Some(Arc::clone(&source)));
+    let reopened = self::book(dir.rooted(), Some(Arc::clone(&source)));
     assert_eq!(reopened.rates(&asked, NOW, WAIT), got);
     assert_eq!(source.asked().len(), 1);
 }
@@ -116,7 +116,7 @@ fn a_missing_rate_is_fetched_once_and_then_read_from_the_cache() {
 fn the_same_gap_asked_at_once_is_fetched_once() {
     let dir = crate::test_support::Scratch::new();
     let source = Fake::new(&[("CNY", 7.0)], Duration::from_millis(200));
-    let book = book(dir.path(), Some(Arc::clone(&source)));
+    let book = book(dir.rooted(), Some(Arc::clone(&source)));
     let asked = wanted(&[(99, "CNY")]);
     let threads: Vec<_> = (0..3)
         .map(|_| {
@@ -138,7 +138,7 @@ fn the_same_gap_asked_at_once_is_fetched_once() {
 fn a_late_rate_is_missed_this_time_and_kept_for_next_time() {
     let dir = crate::test_support::Scratch::new();
     let source = Fake::new(&[("CNY", 7.0)], Duration::from_millis(300));
-    let book = book(dir.path(), Some(Arc::clone(&source)));
+    let book = book(dir.rooted(), Some(Arc::clone(&source)));
     let asked = wanted(&[(99, "CNY")]);
     assert!(
         book.rates(&asked, NOW, Duration::from_millis(20))
@@ -159,7 +159,7 @@ fn a_late_rate_is_missed_this_time_and_kept_for_next_time() {
 fn a_stale_provisional_rate_is_used_and_fetched_again_behind() {
     let dir = crate::test_support::Scratch::new();
     let source = Fake::new(&[("CNY", 7.5)], Duration::from_millis(100));
-    let book = book(dir.path(), Some(Arc::clone(&source)));
+    let book = book(dir.rooted(), Some(Arc::clone(&source)));
     // 第 100 天早上取的当天的：暂定。
     let morning = 100 * DAY_MS + 3_600_000;
     book.cache.put(
@@ -201,7 +201,7 @@ fn a_stale_provisional_rate_is_used_and_fetched_again_behind() {
 fn an_unknown_currency_is_remembered_and_not_asked_again_while_fresh() {
     let dir = crate::test_support::Scratch::new();
     let source = Fake::new(&[], Duration::ZERO);
-    let book = book(dir.path(), Some(Arc::clone(&source)));
+    let book = book(dir.rooted(), Some(Arc::clone(&source)));
     let asked = wanted(&[(100, "XYZ")]);
     assert!(book.rates(&asked, NOW, WAIT).is_empty());
     assert!(book.rates(&asked, NOW + 60_000, WAIT).is_empty());
@@ -211,17 +211,17 @@ fn an_unknown_currency_is_remembered_and_not_asked_again_while_fresh() {
 #[test]
 fn without_a_source_only_the_cache_is_read() {
     let dir = crate::test_support::Scratch::new();
-    let book = book(dir.path(), None);
+    let book = book(dir.rooted(), None);
     assert!(book.rates(&wanted(&[(99, "CNY")]), NOW, WAIT).is_empty());
 }
 
 #[test]
 fn a_broken_cache_is_rebuilt() {
     let dir = crate::test_support::Scratch::new();
-    std::fs::create_dir_all(dir.path()).unwrap();
-    std::fs::write(dir.path().join(FILE), b"not a database").unwrap();
+    std::fs::create_dir_all(dir.rooted()).unwrap();
+    std::fs::write(dir.rooted().join(FILE), b"not a database").unwrap();
     let source = Fake::new(&[("CNY", 7.0)], Duration::ZERO);
-    let book = book(dir.path(), Some(source));
+    let book = book(dir.rooted(), Some(source));
     assert_eq!(
         book.rates(&wanted(&[(99, "CNY")]), NOW, WAIT).len(),
         1,

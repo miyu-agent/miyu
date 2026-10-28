@@ -15,9 +15,9 @@
 | `crates/miyu-store/src/accounts.rs`、`logins.rs`、`private_json.rs` | 网页登录的凭据 `system/accounts.json`（argon2id，`m=19456`、`t=2`、`p=1`）、登录令牌的哈希 `home/<账号>/logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
 | `crates/miyu-store/src/secrets.rs` | 密钥文件 `system/secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
 | `crates/miyu-store/src/journal.rs` | 系统日志、账号日志 `journal.jsonl`（施工 8-3，`config.md`「系统日志、账号日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
-| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；账号的目录；缓存目录在哪 |
+| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；账号的目录；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1） |
 | `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用） |
-| `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条） |
+| `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条）。`write` 哪里都建目录（机器的缓存目录、头自己的文件）；写进数据根的用 `write_inside`，目录照第四条建（施工 TMP-1） |
 | `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15） |
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6） |
@@ -29,7 +29,7 @@
 | `crates/miyu-store/src/index.rs`、`index/` | 会话列表的索引（`store/index.md`，施工 3-8 七补） |
 | `crates/miyu-store/src/usage.rs`、`usage/` | 用量汇总 `state/usage.db`（施工 8-15，`models.md`「怎么走」第九条第 4、5 条） |
 | `crates/miyu-store/src/recall/salt.rs` | 运行日志里写记忆的一间：数据根的盐 `state/log-salt`（读、没有就造）、照盐算的短号（施工 LG-1 下，`log.md`「怎么走」第 7 条第 6 款） |
-| `crates/miyu-store/src/sqlite.rs` | 派生数据的 SQLite 库怎么开、坏了怎么删掉重建（施工 8-15 从 `index.rs` 挪出来，索引和用量汇总共用） |
+| `crates/miyu-store/src/sqlite.rs` | 派生数据的 SQLite 库怎么开、坏了怎么删掉重建（施工 8-15 从 `index.rs` 挪出来，索引和用量汇总共用）；库所在的目录照第四条建，数据根没了的开不成（施工 TMP-1） |
 
 ### 对外的样子
 
@@ -149,10 +149,11 @@
 **4. 建目录、同步**（`durable.rs`，这一页新建的目录都走它）
 
 1. 已经是目录的，不动。
-2. 缺的上级先一层层建。
-3. Unix 上新建的是 0700。同一刻别处建好了的，算成。
-4. 新建的每一层，都同步它的上一层：建目录这件事本身才算落盘。
-5. 同步目录：Unix 上打开目录、`sync_all`；Windows 上什么都不做。
+2. 不在数据根里的不建（施工 TMP-1）：往上找，没有一层的顶上有 `.miyu-root` 的，报 `NotFound`：`<目录> is not inside a Miyu data root (no .miyu-root above it), not creating it`。数据根被人删了（测试的夹具清掉了临时目录、人删了 `~/.miyu`），后台还在写的库、日志、blob 不再一层层把它建回来：原来一次测试在临时目录里留下五百多个目录。别的 crate 在数据根里写东西建目录的，用 `root::create_inside`，同一个规矩。不在数据根里的不查：建数据根本身（`prepare`）、配置文件（项目目录里的 `.miyu/`）、测这一条本身的测试（`create_dir_anywhere`，crate 里自己用），生成的文件的 `generated::write`（模型目录的缓存在机器的缓存目录里，头也拿它写自己的文件；写进数据根的配置清单、MCP 和扩展登记的缓存、`state/models/` 用 `write_inside`）。
+3. 缺的上级先一层层建。
+4. Unix 上新建的是 0700。同一刻别处建好了的，算成。
+5. 新建的每一层，都同步它的上一层：建目录这件事本身才算落盘。
+6. 同步目录：Unix 上打开目录、`sync_all`；Windows 上什么都不做。
 
 **5. 会话日志：新建、追加**
 
@@ -273,6 +274,9 @@
 |---|---|
 | `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；账号的家目录建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-root`；只有隐藏文件也不算空；进程的环境找得到 |
 | `crates/miyu-store/src/durable/tests.rs` | 一层层建、都是 0700、建两次不出错；挡路的文件报错 |
+| `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1） |
+| `crates/miyu-store/src/root/tests.rs` | 施工 TMP-1 加：`create_inside` 数据根里照建，删了的报错、不建回来 |
+| `crates/miyu-store/src/generated/tests.rs` | 施工 TMP-1 加：`write` 在数据根外照建（缓存目录），`write_inside` 数据根删了的报错、不建回来 |
 | `crates/miyu-store/src/log/tests.rs`、`log/tests/real.rs`、`log/tests/marked.rs` | 写了读得回，每行 `\n`、没有 `\r`；满了换段、一批不拆；截半行；中间一行坏了、序号接不上、段名对不上、不是最后一段有半行，都只报不修；空的最后一段接着写、名字不对报坏了；没有会话；第一段已有的不覆盖；只读第一条不动日志；只读地读跳过半行、一个字节不写；造到一半的会话没有第一条；序号接不上的一批不写；真会话写进去、读回来载入得了（`real.rs`，施工 1-13 再补挪出来）；从记下的位置读起（`marked.rs`，施工 3-8 七补，`store/index.md`） |
 | `crates/miyu-store/src/blob/tests.rs` | 存了取得回、`tmp/` 是空的；放在前两位下、文件名没有冒号；同一份只存一个、刷修改时间；崩在改名前只留临时文件；撞名换名；改名时目标已经有了算成；读出来不对报错、不删；两个账号各存各的；分块暂存：两块写完照 `put` 一样收齐、已经有的删暂存；编号撞了拒绝；扔掉一个的暂存文件；核心起来时清 `upload-*`，不碰 `put` 自己的临时文件、不碰 `tmp/` 还没建过的账号（施工 W-5）；读一段：读到结尾就停、过了结尾是空的、`length` 写 0 只问大小；没有这个 blob（施工 W-6）；blob 被换成链接的不交出链接指的内容、数据根路上有链接的照旧读得到（施工 SEC-3） |
 | `crates/miyu-store/src/trash/tests.rs`（施工 3-8 三补） | 挪进回收处的整个目录一个字节不变、多一个 `deleted_at`，原处没了，列会话只剩别的；Unix 上 `trash/`、`trash/sessions/` 是 0700；会话不在的报找不到、回收处都没建；清：满 7 天的、正好满的删，差一毫秒的、删的时刻比现在晚的留，`deleted_at` 写法不对、没有的留并报出来，名字不合写法的不看；没有回收处什么都不做。时钟用测试的 |

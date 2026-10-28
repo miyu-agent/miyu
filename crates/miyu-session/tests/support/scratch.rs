@@ -29,12 +29,9 @@ impl Scratch {
 }
 
 impl Drop for Scratch {
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "删不掉就留在临时目录里，不影响测试"
-    )]
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        // 删到一半撞上后台写入的过一会儿再删（施工 TMP-1）。
+        miyu_store::testkit::remove_tree(&self.0);
     }
 }
 

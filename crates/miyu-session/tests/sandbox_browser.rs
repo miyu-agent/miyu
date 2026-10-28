@@ -68,7 +68,15 @@ async fn chromium_in_the_sandbox_needs_its_config_dir_moved_and_is_told_so() {
     let home = Home::outside_temp();
     let work = home.scratch.0.join("work");
     std::fs::create_dir_all(home.home.join(".config/chromium/Crash Reports")).expect("建得了目录");
-    let at_home = format!("export HOME='{}'; ", home.home.display());
+    // `mktemp -d` 和 chromium 自己的临时文件都照 `TMPDIR` 建：给一个跟着测试删的临时目录（施工 TMP-1）。不放进 `work`：
+    // `target/tmp` 下面太深，chromium 的单例套接字路径超长就崩。
+    let temp = Scratch::new();
+    std::fs::create_dir_all(&temp.0).expect("建得了临时目录");
+    let at_home = format!(
+        "export HOME='{}'; export TMPDIR='{}'; ",
+        home.home.display(),
+        temp.0.display()
+    );
     let flags = format!(
         "--headless --no-sandbox --user-data-dir=$(mktemp -d) --screenshot=out.png '{PAGE}'"
     );

@@ -15,6 +15,9 @@ impl Scratch {
             std::process::id()
         ));
         drop(fs::remove_dir_all(&dir));
+        // 标准错误的文件只在数据根里建目录（施工 TMP-1）：写上标记。
+        fs::create_dir_all(&dir).expect("建得了临时目录");
+        fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
         Scratch(dir)
     }
 

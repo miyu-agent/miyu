@@ -20,7 +20,7 @@ use miyu_tool::Catalog;
 
 use crate::Core;
 use crate::sessions::Opening;
-use crate::test_support::{resources, temp_root};
+use crate::test_support::{TempDir, resources, temp_root};
 
 fn alice() -> AccountId {
     AccountId::parse("alice").expect("合写法")
@@ -30,9 +30,10 @@ fn bob() -> AccountId {
     AccountId::parse("bob").expect("合写法")
 }
 
-/// 机主是 alice 的核心，照 `script` 答；装了样本人格（主人家目录）、整理会话。
-fn core(name: &str, script: &Script) -> Arc<Core> {
-    let (root, _) = temp_root(name);
+/// 机主是 alice 的核心，照 `script` 答；装了样本人格（主人家目录）、整理会话。交回数据根的目录（丢掉时删掉，放在前头：核心先丢）
+/// 和核心。
+fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
+    let (root, dir) = temp_root(name);
     install_sample_persona(&root, &alice());
     let resources = resources();
     let tools =
@@ -47,7 +48,7 @@ fn core(name: &str, script: &Script) -> Arc<Core> {
         "token".to_string(),
     ));
     assert!(core.give_dream_sessions());
-    core
+    (dir, core)
 }
 
 /// 照账号 `who` 调一条 `memory.*`。
@@ -152,7 +153,7 @@ async fn a_member_s_session_remembers_dreams_and_recalls_in_his_own_room() {
         Play::Says("嗯"),
     ])
     .once(Vec::<&str>::new());
-    let core = core("accounts-member", &script);
+    let (_dir, core) = core("accounts-member", &script);
     let mine = open(&core, &bob(), "o1").await;
     let found = core.sessions.get(&core, &mine).await.expect("在跑");
     assert_eq!(
@@ -216,7 +217,7 @@ async fn a_member_s_session_remembers_dreams_and_recalls_in_his_own_room() {
 
 #[tokio::test]
 async fn memory_calls_find_the_room_of_whom_they_act_for() {
-    let core = core("accounts-calls", &Script::new([]).once(Vec::<&str>::new()));
+    let (_dir, core) = core("accounts-calls", &Script::new([]).once(Vec::<&str>::new()));
     for (who, text, id) in [
         (alice(), "甲养了一只猫", "r1"),
         (bob(), "乙养了一只狗", "r2"),
@@ -301,7 +302,7 @@ async fn memory_calls_find_the_room_of_whom_they_act_for() {
 /// 经协议记一个认识的人、`who` 是她自己的名字（施工 E-1 修）：照人格找那一间时记下她叫什么，这一条记成关于她自己的事。
 #[tokio::test]
 async fn remembering_her_as_a_person_by_protocol_keeps_it_as_an_episode() {
-    let core = core("self-person", &Script::new([]).once(Vec::<&str>::new()));
+    let (_dir, core) = core("self-person", &Script::new([]).once(Vec::<&str>::new()));
     call(
         &core,
         &alice(),

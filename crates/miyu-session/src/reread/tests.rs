@@ -15,6 +15,8 @@ impl Scratch {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir = std::env::temp_dir().join(format!("miyu-reread-{}-{n}", std::process::id()));
         std::fs::create_dir_all(dir.join("blobs")).expect("建得了");
+        // blob、任务输出只在数据根里建目录（施工 TMP-1）：写上标记。
+        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
         // 换成真实的位置：交给重读的是效果里的路径，都是真实的位置；macOS 的临时目录在 `/var` 这条链接下面，安全打开
         // 不走任何一层链接。
         Scratch(std::fs::canonicalize(dir).expect("在"))

@@ -284,7 +284,8 @@ pub fn generate(
     let dir = root.state().join(DIR);
     for (name, text) in FILES.into_iter().zip(texts) {
         let written = text.and_then(|text| {
-            generated::write(&dir.join(name), text.as_bytes()).map_err(|error| error.to_string())
+            generated::write_inside(&dir.join(name), text.as_bytes())
+                .map_err(|error| error.to_string())
         });
         if let Err(error) = written {
             tracing::warn!(

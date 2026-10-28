@@ -62,6 +62,8 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let dir = std::env::temp_dir().join(format!("miyu-store-jobs-mode-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
+        // 任务目录只在数据根里建（施工 TMP-1）。
+        std::fs::write(dir.join(crate::root::MARKER), "").unwrap();
         drop(create_output(&dir, &JobId::new(1).unwrap()).unwrap());
         let mode = std::fs::metadata(dir.join("jobs"))
             .unwrap()

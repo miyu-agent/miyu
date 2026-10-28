@@ -24,7 +24,7 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
     // 一次性入口排了零个回答：走一次性入口的会没有模型可用，测得出走的是整理会话。
     let script =
         Script::new([Play::Says(r#"{"summary": "用户养了一只猫。"}"#)]).once(Vec::<&str>::new());
-    let (root, _) = temp_root("dream-session");
+    let (root, _dir) = temp_root("dream-session");
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");

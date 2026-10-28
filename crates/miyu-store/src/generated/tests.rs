@@ -20,7 +20,7 @@ fn others(dir: &Path, name: &str) -> Vec<String> {
     fs::read_dir(dir)
         .unwrap()
         .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-        .filter(|entry| entry != name)
+        .filter(|entry| entry != name && entry != crate::root::MARKER)
         .collect()
 }
 
@@ -87,4 +87,25 @@ fn temp_names_hide_and_never_repeat() {
     assert!(one.starts_with(".reference.toml."), "{one}");
     assert!(one.ends_with(".tmp"), "{one}");
     assert_ne!(one, two);
+}
+
+/// 写哪里（施工 TMP-1）：`write` 哪里都建目录（模型目录的缓存在机器的缓存目录里，不在数据根里）；`write_inside` 只在数据根里
+/// 建，数据根删了的不建回来。
+#[test]
+fn only_writes_into_the_data_root_refuse_a_missing_root() {
+    let outside = Scratch::bare();
+    let cache = outside
+        .path()
+        .join("miyu")
+        .join("models")
+        .join("catalog.json");
+    assert!(write(&cache, b"{}").unwrap(), "缓存目录照建");
+    let gone = Scratch::bare();
+    let inside = gone.path().join("state").join("config").join("a.json");
+    let error = write_inside(&inside, b"{}").unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    assert!(!gone.path().exists(), "不建回来");
+    let root = Scratch::new();
+    let inside = root.path().join("state").join("config").join("a.json");
+    assert!(write_inside(&inside, b"{}").unwrap());
 }

@@ -18,9 +18,12 @@ impl Scratch {
     fn new() -> Scratch {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        Scratch(
-            std::env::temp_dir().join(format!("miyu-store-snapshot-{}-{n}", std::process::id())),
-        )
+        let dir =
+            std::env::temp_dir().join(format!("miyu-store-snapshot-{}-{n}", std::process::id()));
+        // blob 只在数据根里建目录（施工 TMP-1）：写上标记。
+        std::fs::create_dir_all(&dir).expect("建得了");
+        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进");
+        Scratch(dir)
     }
 }
 

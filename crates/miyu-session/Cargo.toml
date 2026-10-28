@@ -57,6 +57,8 @@ uuid = { version = "1", features = ["v7"] }
 testkit = []
 
 [dev-dependencies]
+# 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
+miyu-store = { path = "../miyu-store", features = ["testkit"] }
 # 测试用的假工具（施工 4-2）。
 miyu-tool = { path = "../miyu-tool", features = ["testkit"] }
 # 测试里用真的基础系统（施工 4-4 上）。

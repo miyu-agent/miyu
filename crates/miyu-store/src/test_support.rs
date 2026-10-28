@@ -8,25 +8,35 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub(crate) struct Scratch(PathBuf);
 
 impl Scratch {
+    /// 建好、写上数据根的标记（施工 TMP-1）：数据根里的东西只在数据根里建目录，测试在里面写日志、blob、库都照真的来。
     pub(crate) fn new() -> Scratch {
+        let scratch = Scratch::bare();
+        fs::create_dir_all(&scratch.0).expect("建得了临时目录");
+        fs::write(scratch.0.join(crate::root::MARKER), "").expect("写得进标记");
+        scratch
+    }
+
+    /// 还没建、没有标记的（测试数据根本身怎么建、没有数据根的地方建不建）。
+    pub(crate) fn bare() -> Scratch {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         Scratch(std::env::temp_dir().join(format!("miyu-store-test-{}-{n}", std::process::id())))
     }
 
-    /// 这个临时目录的路径（还没建）。
+    /// 这个临时目录的路径。
     pub(crate) fn path(&self) -> &Path {
+        &self.0
+    }
+
+    /// 同 [`Scratch::path`]（施工 TMP-1 时开库的测试用过它，那时临时目录还没标记）。
+    pub(crate) fn rooted(&self) -> &Path {
         &self.0
     }
 }
 
 impl Drop for Scratch {
-    #[expect(
-        clippy::let_underscore_must_use,
-        reason = "删不掉就留在临时目录里，不影响测试"
-    )]
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
+        crate::testkit::remove_tree(&self.0);
     }
 }
 

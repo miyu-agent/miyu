@@ -131,7 +131,33 @@ impl Drop for Home {
         reason = "删不掉就留在临时目录里，不影响测试"
     )]
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        // 先等拉起的核心走（最多十秒，门禁满载时核心走得慢，施工 TMP-1）：它还活着的时候删了，它后台写的（缓存目录里的模型
+        // 目录摘要，测试把缓存目录指在数据根里，见 [`offline`]）又一层层建回来。没拉起过的当场拿得到锁。
+        for _ in 0..500 {
+            if !matches!(Lock::acquire(&self.root), Err(miyu_ipc::OpenError::Running)) {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        // 删到一半撞上后台写入的过一会儿再删（施工 TMP-1）。
+        miyu_store::testkit::remove_tree(&self.dir);
+        // 测试在旁边照 `with_extension` 建的（`<数据根>.pack-alone` 这些）、沙盒的 `<数据根>-sandbox-tmp`，一起删（施工 TMP-1）。
+        let (Some(parent), Some(name)) = (self.dir.parent(), self.dir.file_name()) else {
+            return;
+        };
+        let name = name.to_string_lossy();
+        let Ok(entries) = std::fs::read_dir(parent) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let other = entry.file_name().to_string_lossy().into_owned();
+            let beside = other
+                .strip_prefix(name.as_ref())
+                .is_some_and(|rest| rest.starts_with('.') || rest == "-sandbox-tmp");
+            if beside {
+                let _ = std::fs::remove_dir_all(entry.path());
+            }
+        }
     }
 }
 

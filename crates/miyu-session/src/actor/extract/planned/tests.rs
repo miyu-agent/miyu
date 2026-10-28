@@ -23,7 +23,7 @@ struct Scratch(PathBuf);
 
 impl Drop for Scratch {
     fn drop(&mut self) {
-        drop(std::fs::remove_dir_all(&self.0));
+        miyu_store::testkit::remove_tree(&self.0);
     }
 }
 
@@ -31,6 +31,8 @@ fn scratch(name: &str) -> Scratch {
     let dir = std::env::temp_dir().join(format!("miyu-e5b-{name}-{}", std::process::id()));
     drop(std::fs::remove_dir_all(&dir));
     std::fs::create_dir_all(&dir).expect("建得了临时目录");
+    // 会话日志只在数据根里建目录（施工 TMP-1）：写上标记。
+    std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
     Scratch(dir)
 }
 

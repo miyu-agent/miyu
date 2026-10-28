@@ -300,8 +300,13 @@ impl Drop for Home {
         reason = "删不掉就留在临时目录里，不影响测试"
     )]
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.dir);
+        // 删到一半撞上后台写入的过一会儿再删（施工 TMP-1）。
+        miyu_store::testkit::remove_tree(&self.dir);
         let _ = std::fs::remove_dir_all(&self.work);
+        // 沙盒在数据根旁边建的临时目录（`<数据根>-sandbox-tmp`，`miyu-session` 的 `sandbox.rs` 照这个名字建，施工 TMP-1）。
+        let mut temp = self.dir.as_os_str().to_owned();
+        temp.push("-sandbox-tmp");
+        let _ = std::fs::remove_dir_all(PathBuf::from(temp));
     }
 }
 

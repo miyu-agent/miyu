@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 
 use miyu_kernel::id::{AccountId, SessionId};
 
-use crate::durable::{create_dir, sync_dir};
+use crate::durable::{create_dir, create_dir_anywhere, sync_dir};
 use crate::env::{Env, Platform};
 
 /// 账号家目录里自己放东西的几处（[`DataRoot::own_places`]）。
@@ -303,7 +303,8 @@ impl DataRoot {
     ///
     /// 认不出是 Miyu 的数据根；建不了目录、写不了标记，或者该是目录的地方是个文件。
     pub fn prepare(&self) -> Result<(), PrepareError> {
-        create_dir(&self.path)?;
+        // 数据根本身还没有标记：照不认标记的建（施工 TMP-1）。
+        create_dir_anywhere(&self.path)?;
         let marker = self.path.join(MARKER);
         if fs::symlink_metadata(&marker).is_err() {
             if fs::read_dir(&self.path)?.next().is_some() {
@@ -334,6 +335,16 @@ impl DataRoot {
         }
         Ok(())
     }
+}
+
+/// 在数据根里建目录，连同缺的上层（施工 TMP-1）：已经有的不动；要建的，往上找得到数据根的标记（[`MARKER`]）才建。别的 crate
+/// 往数据根里写文件（缓存、生成的说明）先照它建目录：数据根被删了，后台写的那一下不把它建回来。
+///
+/// # Errors
+///
+/// 往上找不到数据根的标记（`NotFound`，说的是哪个目录）；建不了；该是目录的地方是个文件；同步不了。
+pub fn create_inside(dir: &Path) -> io::Result<()> {
+    crate::durable::create_dir(dir)
 }
 
 /// 建骨架建不成。

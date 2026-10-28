@@ -793,6 +793,7 @@ flowchart LR
 | PT-1 下 | MCP 工具的进度、新版服务的订阅、SSE 边读边交 | MCP 规范 2026-07-28 的 P2 前半：调工具带进度令牌，服务推的进度照脚本进度行推给头、视图流里看得到；新版服务声明了 `listChanged` 的开 `subscriptions/listen`，工具、提示词变了当场重列，断了退避重开；网址的服务回 SSE 边读边交。施工单见 `PT-1下-进度和订阅.md` |
 | PT-2 上 | 宽松地读技能，改技能不再误问「前缀要变」 | 照 agentskills.io 接入指南：名字和文件夹不同名的照写的名字用、名字没写或写错的照文件夹的名字用、YAML 没加引号带冒号的宽松重读、说明超长截掉、`compatibility` `metadata` 写错的，都照收、记警告（六个码），`miyu check` 一种一条、`skill.list` 每项带 `warnings`（话照连接的语言）；只有真读不成的才跳过。改动监视拿掉 `skills/`：技能那一块钉在快照里，原来改技能会误问 `prefix_changing`。施工单见 `PT-2上-宽松读技能.md` |
 | OV-1 补 | 覆盖放进新建的子文件夹也问「前缀要变」 | 系统的递归监视报了新文件夹才去看它，建好就写进去的覆盖漏了，下一句照常说、前缀悄悄变了。往下递归看的报新建、挪进来的目录时，把里面已经有的文件都交出去。施工单见 `OV-1补-新建的子文件夹也看得到.md` |
+| TMP-1 | 测试的临时目录自己清 | 本机 `/tmp` 攒了十二万个测试留下的目录、顶满配额。数据根被删了，后台写的不再一层层把它建回来（`durable::create_dir` 只在有 `.miyu-root` 的地方建，别的 crate 用 `root::create_inside`、`generated::write_inside`；机器的缓存目录照旧哪里都建）；各 crate 的夹具连旁边的目录一起删、删的时候重试、等核心走了再删。门禁跑测试时临时目录指到一个新的空目录，跑完剩下的报在「临时目录」一项（一次全量 565 个 → 0）。施工单见 `TMP-1-测试临时目录自己清.md` |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |
 | 8-33 | 终端会话 | `session.terminal`、`session.set_terminal`，`terminal.*` 三项设置。施工单见 `8-33-终端会话.md` |

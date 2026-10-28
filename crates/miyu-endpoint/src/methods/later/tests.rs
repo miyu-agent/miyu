@@ -15,7 +15,7 @@ use crate::wire::Request;
 
 #[test]
 fn stopping_a_job_is_answered_in_the_background() {
-    let (root, _) = temp_root("later");
+    let (root, _dir) = temp_root("later");
     let core = Core::new(
         root,
         ResourceRoot::at(resources()),

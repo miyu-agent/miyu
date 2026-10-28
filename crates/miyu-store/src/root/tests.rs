@@ -462,3 +462,16 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
         assert_eq!(user_dir(root.path(), &alice, name), dir, "{name}");
     }
 }
+
+/// 别的 crate 在数据根里建目录（施工 TMP-1）：数据根里照建；数据根删了的报错、不建回来。
+#[test]
+fn create_inside_does_not_bring_a_deleted_root_back() {
+    let root = Scratch::new();
+    let logs = root.path().join("state").join("logs");
+    create_inside(&logs).unwrap();
+    assert!(logs.is_dir());
+    let gone = Scratch::bare();
+    let error = create_inside(&gone.path().join("state").join("logs")).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert!(!gone.path().exists());
+}
