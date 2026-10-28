@@ -409,4 +409,11 @@ async fn a_dream_lists_the_names_each_person_used() {
         line.contains("extra words in a nickname (a joke, a note, a claim like \"not X\") are part of the name, never a fact about them."),
         "指令写明名片里多出来的话是名字的一部分：{line}"
     );
+    // 施工 E-2 修：记忆少的人卡原来常以「你对他了解不多」「你们只有这些交集」收尾（真数据 117 张里 10 张）。
+    assert!(
+        line.contains(
+            "never pad, nor end on a remark about how little you know of them or share with them."
+        ),
+        "指令写明不以知道得少、交集少的话收尾：{line}"
+    );
 }
