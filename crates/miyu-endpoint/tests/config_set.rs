@@ -474,7 +474,7 @@ async fn a_write_that_fails_changes_nothing() {
         read(&home, CONFIG).as_deref(),
         Some("[ui]\nlanguage = \"en\"\n")
     );
-    let names: Vec<String> = std::fs::read_dir(&dir)
+    let mut names: Vec<String> = std::fs::read_dir(&dir)
         .expect("读得了")
         .map(|entry| {
             entry
@@ -484,6 +484,8 @@ async fn a_write_that_fails_changes_nothing() {
                 .into_owned()
         })
         .collect();
+    // 列目录的先后各平台不一样（macOS 不照名字排）。
+    names.sort();
     assert_eq!(
         names,
         ["config.toml", "personas"],
