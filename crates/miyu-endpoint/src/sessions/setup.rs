@@ -131,7 +131,7 @@ impl Setup {
             no_tools: who.preset.as_deref() == Some(""),
             presets: Some(presets::places(core, &who.owner)),
             group: who.group,
-            owner_is_admin: who.owner == core.admin,
+            confined: super::confined(core, &who.owner),
             images: who.images,
             titles: who.titles,
             dream: None,

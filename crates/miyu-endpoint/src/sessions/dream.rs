@@ -71,7 +71,7 @@ impl Sessions {
             plugins: core.plugins.clone(),
             memory: None,
             configs: core.configs_of(&owner),
-            owner_is_admin: owner == core.admin,
+            confined: super::confined(core, &owner),
             owner,
             permission: Permission {
                 level: Level::Workspace,

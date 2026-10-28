@@ -206,7 +206,7 @@ impl Tools {
                     helper,
                     kit.home.clone(),
                     kit.data_root.clone(),
-                    (kit.sandbox_cache, kit.confined.clone()),
+                    (kit.sandbox_cache, kit.confined),
                 )
                 .with_shelves(kit.shelves.clone())
                 .with_attachments(kit.attachments.clone())
@@ -244,7 +244,7 @@ impl Tools {
             checked: BTreeMap::new(),
             venue: kit.venue.clone(),
             plugins: kit.plugins,
-            callers: caller::Callers::new(kit.venue, kit.admin, kit.session_log),
+            callers: caller::Callers::new(kit.venue, kit.session_log),
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             docs: docs::Docs::default(),

@@ -110,7 +110,7 @@ async fn a_session_whose_owner_is_not_an_admin_gets_no_log_dir() {
     let note = Fake::new("note", Access::Read, Act::Echo);
     let script = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);
     let lines = Lines {
-        owner_is_admin: false,
+        confined: true,
         ..Lines::default()
     };
     let handle = home

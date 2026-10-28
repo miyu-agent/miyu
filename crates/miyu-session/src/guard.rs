@@ -47,7 +47,7 @@ pub(crate) use levels::{Effective, effective};
 use levels::{Mark, mark};
 
 use asking::{Asked, ask, granted, hazardous, real_dir};
-pub(crate) use confined::{Confined, Own, Reach};
+pub(crate) use confined::Confined;
 use untargeted::{beyond, described, in_venue, untargeted};
 
 /// 权限策略：一个会话一份。
@@ -141,15 +141,16 @@ impl Guard {
     }
 
     /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），管理员管得住的地方（[`Confines`]：
-    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`，属主是机主的（`machine_owner`）加系统那一层装上的包），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
+    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`，没关起来的会话加系统那一层装上的包；关起来的只有资源目录，施工
+    /// SU-4 上照 [`Guard::new`] 交的关不关算，不另传），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
     #[must_use]
     pub(crate) fn for_session(
         mut self,
         root: &DataRoot,
-        (owner, id, machine_owner): (&AccountId, &SessionId, bool),
+        (owner, id): (&AccountId, &SessionId),
         resources: &Path,
     ) -> Guard {
-        self.confines = Confines::of(root, (owner, machine_owner), resources);
+        self.confines = Confines::of(root, (owner, self.confined.is_none()), resources);
         // 会话属主自己的几处（施工 Y-11 上，家目录里照 XDG 的 pictures 这些）：边界表照工作区算，只给文件工具。成员的会话另算
         // 上他的工作区（施工 Y-2 下①）：他报的工作目录不在里面时，数据根照旧禁着，他自己的工作区不能跟着被禁。
         self.places.own = root
@@ -157,13 +158,6 @@ impl Guard {
             .into_iter()
             .map(|(_, dir)| dir)
             .collect();
-        if self
-            .confined
-            .as_ref()
-            .is_some_and(|confined| confined.own().is_some())
-        {
-            self.places.own.push(root.workspace(owner));
-        }
         self.with_attachments(miyu_store::attachments::dir(root, owner, id))
     }
 
@@ -245,14 +239,6 @@ impl Guard {
         (verdict, checked)
     }
 
-    /// 成员的会话（施工 Y-2 下①）：工作目录 `cwd` 不在他自己的几处里。场所会话的不看。
-    fn astray(&self, confined: &Confined, cwd: &str) -> bool {
-        confined.own().is_some_and(|own| {
-            resolve(Path::new(cwd), self.home.as_deref(), cwd)
-                .map_or(true, |real| !own.holds(&real))
-        })
-    }
-
     /// 同 [`Guard::judge`]，换成的真实位置记进 `checked`。
     fn verdict(
         &self,
@@ -270,23 +256,17 @@ impl Guard {
         let access = tool.spec().access.clone();
         // 在场所里做的事不报路径、不在沙盒外跑：只看会话在不在场所里（施工 O-31 前）。也给本机用的（`venues` 有 `local`，
         // 施工 O-31 补：接入QQ 的「主动发消息」本机的会话里也叫她发），本机的会话里照对外发消息判：本机的会话就是管理员本人。
-        // 成员的本机会话不是管理员本人（施工 Y-2 下①）：不替他对外发。
         let local_venue = access == Access::Venue
             && matches!(self.place, Place::Local(_))
-            && tool.venues().is_some_and(|venues| venues.local)
-            && !self
-                .confined
-                .as_ref()
-                .is_some_and(|confined| confined.own().is_some());
+            && tool.venues().is_some_and(|venues| venues.local);
         if access == Access::Venue && !local_venue {
             return in_venue(&self.place);
         }
         // 只碰得到自己工作区的会话：命令只在把读也关进工作区的沙盒里跑（施工 5-12 下），关不住读的平台、沙盒用不了的
-        // 机器上一律拒；成员的会话工作目录不在他自己的几处里的也拒（施工 Y-2 下①）；系统服务的 Unix 套接字管不住的机器上
-        // 也拒（施工 MB-1，[`miyu_sandbox::confines_others`]）。
+        // 机器上一律拒；系统服务的 Unix 套接字管不住的机器上也拒（施工 MB-1，[`miyu_sandbox::confines_others`]）。
         if let Some(confined) = &self.confined
             && access == Access::Execute
-            && (!(self.sandboxed && miyu_sandbox::confines_others()) || self.astray(confined, &cwd))
+            && !(self.sandboxed && miyu_sandbox::confines_others())
         {
             return deny(confined.no_commands());
         }

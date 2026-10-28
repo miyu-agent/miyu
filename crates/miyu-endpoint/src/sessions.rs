@@ -272,7 +272,6 @@ impl Sessions {
             )),
             None => None,
         };
-        let owner_is_admin = child.owner == core.admin;
         let presets_of = presets::places(core, &child.owner);
         let resources = presets::overrides::resources(core, &child.owner);
         let handle = create(Create {
@@ -320,7 +319,7 @@ impl Sessions {
             no_tools: false,
             presets: Some(presets_of),
             group: None,
-            owner_is_admin,
+            confined: confined(core, &child.owner),
             images: child.images,
             titles: true,
             dream: None,
@@ -383,6 +382,11 @@ impl Sessions {
 /// 管理员：本机连上来的都是他（`06-多用户与身份.md` 第二节）。
 pub(crate) fn admin(core: &Core) -> By {
     By::Person(Person::new(core.admin.clone()))
+}
+
+/// 属主是 `owner` 的会话关不关起来（施工 5-12；SU-4 上起都照这一处算）：平台桥名下的（群、陌生人的私聊）关起来，主人本人的不关。
+pub(crate) fn confined(core: &Core, owner: &AccountId) -> bool {
+    *owner != core.admin
 }
 
 /// 账号 `owner` 名下的会话里，核心替他做的事记成谁（施工 Y-2 下下上）：系统账号（平台桥）的照旧记成管理员，人记他自己。

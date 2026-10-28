@@ -1,4 +1,4 @@
-//! 成员和场所会话的沙盒（施工 MB-1，2026-10-24 项目主人定：成员能跑命令，只在他自己的沙盒里）：真的经助手跑 `shell`。
+//! 场所会话的沙盒（施工 MB-1；SU-4 上起没有成员了，只剩群、陌生人的私聊这些外部身份的会话）：真的经助手跑 `shell`。
 //! 读得到自己的工作区和程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）；读不到别的成员的家目录、数据根、
 //! 跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；要出沙盒的拒、不问人，拒的话里没有核心那边的绝对
 //! 路径。关不住读的平台（Windows）上不跑，回 `no-commands`。没有收紧手段的机器到此为止。
@@ -15,8 +15,6 @@ use crate::support::*;
 /// 哪种关起来的会话。
 #[derive(Debug, Clone, Copy)]
 enum Kind {
-    /// 成员的本机会话：工作目录是他自己的工作区。
-    Member,
     /// 群会话：工作目录是场所的工作区（场地里的 `work/`）。
     Group,
 }
@@ -56,11 +54,10 @@ async fn shell_as(
     };
     let lines = Lines {
         venue: match kind {
-            Kind::Member => VenueId::parse("local"),
             Kind::Group => VenueId::parse("qq:group:1"),
         }
         .expect("场所合写法"),
-        owner_is_admin: false,
+        confined: true,
         ..Lines::default()
     };
     let handle = home.create_full(&script, &tools, opening, lines).await;
@@ -111,7 +108,6 @@ async fn run(home: &Home, kind: Kind, cwd: &Path, command: &str) -> ToolResult {
 /// 场地：这种会话的工作目录，里面放好 `own.txt`；别的成员的家目录、数据根、跑核心的用户的家目录、别处各放一份要藏住的。
 fn site(home: &Home, kind: Kind) -> (PathBuf, Vec<PathBuf>) {
     let cwd = match kind {
-        Kind::Member => home.root.workspace(&alice_account()),
         Kind::Group => home.scratch.0.join("work"),
     };
     std::fs::create_dir_all(&cwd).expect("建得了工作目录");
@@ -135,7 +131,7 @@ fn site(home: &Home, kind: Kind) -> (PathBuf, Vec<PathBuf>) {
 async fn a_confined_command_reads_only_its_own_places_and_what_programs_need() {
     let helper = miyu_sandbox::testkit::built_helper();
     let probe = miyu_sandbox::probe(&helper, std::time::Duration::from_secs(60)).expect("探得了");
-    for kind in [Kind::Member, Kind::Group] {
+    for kind in [Kind::Group] {
         let home = Home::outside_temp();
         let (cwd, hidden) = site(&home, kind);
         if !miyu_sandbox::CONFINES_READS {
@@ -192,7 +188,7 @@ async fn a_confined_command_reads_only_its_own_places_and_what_programs_need() {
 
 #[tokio::test]
 async fn going_outside_the_sandbox_is_refused_without_asking_or_naming_core_paths() {
-    for kind in [Kind::Member, Kind::Group] {
+    for kind in [Kind::Group] {
         let home = Home::outside_temp();
         let (cwd, _) = site(&home, kind);
         let result = shell(

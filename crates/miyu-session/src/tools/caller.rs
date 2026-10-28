@@ -12,21 +12,19 @@ use miyu_tool::{Caller, InUse};
 
 use crate::agents::LOCAL;
 
-/// 一个会话的：它的场所，属主是不是管理员，最近开始的那一轮和那一轮开口的是不是主人，现在的模型，日志的目录。
+/// 一个会话的：它的场所，最近开始的那一轮和那一轮开口的是不是主人，现在的模型，日志的目录。
 pub(crate) struct Callers {
     venue: VenueId,
-    admin: bool,
     round: Option<(TurnId, bool)>,
     model: Option<InUse>,
     log: Option<PathBuf>,
 }
 
 impl Callers {
-    /// 场所是 `venue` 的会话：还没有开始的一轮，还没解析过模型。`admin`：会话的属主是管理员；`log`：交出去的日志目录。
-    pub(crate) fn new(venue: VenueId, admin: bool, log: Option<PathBuf>) -> Callers {
+    /// 场所是 `venue` 的会话：还没有开始的一轮，还没解析过模型。`log`：交出去的日志目录。
+    pub(crate) fn new(venue: VenueId, log: Option<PathBuf>) -> Callers {
         Callers {
             venue,
-            admin,
             round: None,
             model: None,
             log,
@@ -38,10 +36,10 @@ impl Callers {
         self.round = Some((turn, owner(speakers)));
     }
 
-    /// 派在 `turn` 这一轮的调用的事实：本机的会话属主是管理员的是主人（施工 MB-2：成员自己的本机会话不是）；场所会话照
+    /// 派在 `turn` 这一轮的调用的事实：本机的会话是主人（施工 SU-4 上：没有成员了，本机的会话都是主人本人的）；场所会话照
     /// 记下的那一轮，不是这一轮的、没记下的不是。
     pub(crate) fn of(&self, turn: Option<TurnId>) -> Caller {
-        let owner = (self.venue.as_str() == LOCAL && self.admin)
+        let owner = self.venue.as_str() == LOCAL
             || matches!(self.round, Some((round, true)) if Some(round) == turn);
         Caller {
             venue: self.venue.clone(),

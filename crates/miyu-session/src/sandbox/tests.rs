@@ -15,7 +15,7 @@ fn a_data_root_that_is_also_a_private_dir_is_hidden_once() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, None),
+        (None, false),
     );
     let read_only = Permission {
         level: Level::Workspace,
@@ -43,7 +43,7 @@ fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, None),
+        (None, false),
     );
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
     let write = [std::fs::canonicalize(&home).expect("在")];
@@ -85,7 +85,7 @@ fn the_turn_private_dirs_are_what_gets_hidden() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, None),
+        (None, false),
     );
     sandbox.set_private(vec![home.join("diary")]);
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
@@ -104,7 +104,7 @@ fn weak_strength_turns_mounts_off() {
         PathBuf::from("miyu-sandbox"),
         None,
         PathBuf::from("data"),
-        (None, None),
+        (None, false),
     );
     assert!(sandbox.mount(true));
     assert!(!sandbox.mount(false));
@@ -123,7 +123,7 @@ fn a_weak_turn_writes_no_mount_into_the_spec() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".miyu"),
-        (None, None),
+        (None, false),
     );
     let workspace = Permission {
         level: Level::Workspace,
@@ -161,7 +161,7 @@ fn a_hidden_dir_inside_another_is_left_to_the_outer_one() {
         PathBuf::from("miyu-sandbox"),
         Some(home.clone()),
         home.join(".cache/miyu"),
-        (None, None),
+        (None, false),
     );
     sandbox.set_private(
         [".config/gh", ".ssh", ".cache", ".config", ".ssh"]
@@ -204,7 +204,7 @@ fn a_command_runs_when_a_private_dir_holds_the_data_root() {
         helper,
         Some(home.clone()),
         home.join(".cache/miyu"),
-        (None, None),
+        (None, false),
     );
     sandbox.set_private(vec![home.join(".cache")]);
     let workspace = Permission {
@@ -239,64 +239,4 @@ fn a_command_runs_when_a_private_dir_holds_the_data_root() {
         "ran\nhidden\n",
         "{out:?}"
     );
-}
-
-/// 成员的会话（施工 Y-2 下①）：命令的沙盒只放开他自己的几处里已经在的（工作区，建过的图片那几处），不看报的工作目录、加进来的
-/// 目录；工作目录不在他自己的几处里的写不成沙盒（权限策略先拒了，这是第二道）。
-#[test]
-fn a_members_command_reaches_only_their_own_places() {
-    use miyu_store::env::{Env, Platform};
-    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-own-{}", std::process::id()));
-    let env = Env {
-        platform: Platform::current(),
-        miyu_home: Some(scratch.join("data").into_os_string()),
-        home: None,
-        xdg_cache_home: None,
-        local_app_data: None,
-        miyu_resources: None,
-        exe: None,
-    };
-    let root = miyu_store::root::DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
-    let alice = miyu_kernel::id::AccountId::parse("alice").expect("合写法");
-    let workspace = root.workspace(&alice);
-    let pictures = root.account_dir(&alice).join("pictures");
-    for dir in [&workspace, &pictures, &scratch.join("elsewhere")] {
-        std::fs::create_dir_all(dir).expect("建得了目录");
-    }
-    let own = crate::guard::Own::of(&root, &alice);
-    let sandbox = Sandbox::new(
-        PathBuf::from("miyu-sandbox"),
-        None,
-        root.path().to_path_buf(),
-        (None, Some(crate::guard::Reach::Own(own))),
-    );
-    let level = Permission {
-        level: Level::Workspace,
-        read_only: false,
-    };
-    let elsewhere = scratch.join("elsewhere").to_string_lossy().into_owned();
-    let sandboxed = sandbox
-        .for_call(
-            &level,
-            &workspace.to_string_lossy(),
-            std::slice::from_ref(&elsewhere),
-            &[],
-        )
-        .expect("写得成")
-        .expect("进沙盒");
-    let real = |dir: &Path| std::fs::canonicalize(dir).expect("在");
-    assert_eq!(
-        sandboxed.spec.write,
-        [
-            real(&workspace),
-            real(&pictures),
-            real(&workspace).join(".tmp")
-        ],
-        "只有他自己的几处，加进来的目录不算"
-    );
-    assert!(
-        sandbox.for_call(&level, &elsewhere, &[], &[]).is_err(),
-        "工作目录在外面的不给沙盒"
-    );
-    std::fs::remove_dir_all(&scratch).expect("删得掉");
 }

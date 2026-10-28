@@ -23,7 +23,7 @@ use crate::blocking::blocking;
 use crate::clock::Clock;
 use crate::config::Turning;
 use crate::default_workspace::DefaultWorkspace;
-use crate::guard::{Confined, Guard, Own};
+use crate::guard::Guard;
 use crate::handle::{Handle, Ids};
 use crate::job_ids::JobIds;
 use crate::jobs::Roster;
@@ -135,7 +135,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         no_tools,
         presets,
         group: _,
-        owner_is_admin,
+        confined: shut_in,
         images,
         titles,
         dream,
@@ -163,8 +163,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let child = lineage.is_some();
     let count = parts.face.len();
     let dir = root.session_dir(&owner, &id);
-    // 会话日志的目录只交给属主是管理员的会话（施工 E-M，U25）。
-    let session_log = owner_is_admin.then(|| dir.clone());
+    // 会话日志的目录只交给主人本人的会话（施工 E-M，U25）。
+    let session_log = (!shut_in).then(|| dir.clone());
     let abandoned = dir.clone();
     let log_dir = LogDir(dir.clone());
     let offset = environment.offset;
@@ -176,8 +176,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let place_venue = venue.clone();
     // 那一间里她叫什么照人格的名字记（施工 E-1 修）。
     let persona_book = personas.clone();
-    // 属主不是管理员的关起来，成员的本机会话只到他自己的几处（施工 Y-2 下①）。
-    let place_own = (!owner_is_admin).then(|| (root.clone(), owner.clone()));
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
         let mut snapshot = build(&resources, parts).map_err(CreateError::Persona)?;
         snapshot.no_tools = no_tools;
@@ -185,8 +183,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         let texts = snapshot.driver_texts().map_err(CreateError::Policy)?;
         let run = snapshot.run_texts().map_err(CreateError::Policy)?;
         let guard = snapshot.guard_texts().map_err(CreateError::Policy)?;
-        let own = place_own.map(|(root, owner)| Own::of(&root, &owner));
-        let place = place(&place_venue, &place_resources, own).map_err(CreateError::Shipped)?;
+        let place = place(&place_venue, &place_resources, shut_in).map_err(CreateError::Shipped)?;
         store.put(&snapshot.to_bytes()).map_err(CreateError::Disk)?;
         let log = SessionLog::create(&dir, SEGMENT_LIMIT).map_err(CreateError::Disk)?;
         let turns = connect(
@@ -289,7 +286,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let (inbox, mailbox) = mpsc::unbounded_channel();
     let lettering = Arc::new(Lettering::new(run, guard));
     // 外部身份的会话（施工 5-12）：权限策略、命令的沙盒都照它。
-    let confined = place.1.as_ref().map(Confined::reach);
+    let confined = place.1.is_some();
     let guard = Guard::new(
         tools.clone(),
         root.path().to_path_buf(),
@@ -298,7 +295,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         (sandbox.is_some(), place.0, place.1),
     )
     .with_shelves(shelves_open.clone())
-    .for_session(root, (&owner, &id, owner_is_admin), shipped.path())
+    .for_session(root, (&owner, &id), shipped.path())
     .with_workplace(workplace.clone());
     let who = Who {
         owner: owner.clone(),
@@ -322,7 +319,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             owner: owner.clone(),
             confined,
             venue: venue.clone(),
-            admin: owner_is_admin,
             session_log,
             catalog: tools.clone(),
             lettering,

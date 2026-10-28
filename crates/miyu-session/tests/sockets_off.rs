@@ -15,18 +15,14 @@ use miyu_kernel::tool::Access;
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::testkit::{Act, Fake};
 use miyu_tool::{Catalog, Tool};
-use support::{Home, Lines, Opening, alice_account, ask, say, until_turn_ends, watch};
+use support::{Home, Lines, Opening, ask, say, until_turn_ends, watch};
 
 /// 在 `venue` 的会话里调一次执行命令的假工具，交回它跑了几次、结果的说法。
 async fn once(venue: &str, owner_is_admin: bool) -> (usize, Option<String>) {
     let home = Home::new();
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
-    let cwd = if venue == "local" && !owner_is_admin {
-        home.root.workspace(&alice_account())
-    } else {
-        home.scratch.0.join("work")
-    };
+    let cwd = home.scratch.0.join("work");
     std::fs::create_dir_all(&cwd).expect("建得了工作目录");
     let opening = Opening {
         permission: Permission {
@@ -41,7 +37,7 @@ async fn once(venue: &str, owner_is_admin: bool) -> (usize, Option<String>) {
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        owner_is_admin,
+        confined: !owner_is_admin,
         ..Lines::default()
     };
     let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);
@@ -65,7 +61,7 @@ async fn without_socket_confinement_others_run_no_command() {
         return;
     }
     miyu_sandbox::set_confines_sockets(false);
-    for (venue, admin) in [("qq:group:1", false), ("local", false)] {
+    for (venue, admin) in [("qq:group:1", false)] {
         let (runs, said) = once(venue, admin).await;
         assert_eq!(
             (runs, said.as_deref()),
@@ -76,7 +72,7 @@ async fn without_socket_confinement_others_run_no_command() {
     let (runs, _) = once("local", true).await;
     assert_eq!(runs, 1, "管理员本人的会话照跑");
     miyu_sandbox::set_confines_sockets(true);
-    for (venue, admin) in [("qq:group:1", false), ("local", false)] {
+    for (venue, admin) in [("qq:group:1", false)] {
         assert_eq!(once(venue, admin).await.0, 1, "{venue}：管得住以后照跑");
     }
 }

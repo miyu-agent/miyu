@@ -185,3 +185,25 @@ fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
         miyu_policy::Profile::default()
     );
 }
+
+/// 关不关起来照一处算（施工 SU-4 上）：主人本人的会话不关，平台桥名下的（群、陌生人的私聊）关起来。
+#[test]
+fn only_sessions_not_under_the_owner_are_confined() {
+    let (root, dir) = temp_root("confined");
+    let admin = AccountId::parse("alice").expect("合写法");
+    let core = Core::new(
+        root,
+        ResourceRoot::at(resources()),
+        Arc::new(Script::new([])),
+        Catalog::default(),
+        None,
+        admin.clone(),
+        "token".to_string(),
+    );
+    assert!(!super::confined(&core, &admin));
+    let bridge = AccountId::parse("bridge").expect("合写法");
+    assert!(super::confined(&core, &bridge));
+    if let Err(error) = std::fs::remove_dir_all(&dir) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}

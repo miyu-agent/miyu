@@ -17,7 +17,7 @@ fn turn(seq: u64) -> TurnId {
 }
 
 fn callers(venue: &str) -> Callers {
-    Callers::new(VenueId::parse(venue).expect("合写法"), true, None)
+    Callers::new(VenueId::parse(venue).expect("合写法"), None)
 }
 
 #[test]
@@ -46,17 +46,6 @@ fn another_round_or_none_recorded_is_not_the_owners() {
     assert!(!group.of(None).owner, "不在哪一轮的");
 }
 
-/// 本机的会话只有属主是管理员才算机器主人（施工 MB-2，设计 06 U25）：成员自己的本机会话不是，脚本拿到的、她替他上网
-/// 照的都是这一条。
-#[test]
-fn a_members_local_session_is_not_the_owners() {
-    let member = Callers::new(VenueId::parse("local").expect("合写法"), false, None);
-    assert!(!member.of(None).owner);
-    let mut member = Callers::new(VenueId::parse("local").expect("合写法"), false, None);
-    member.start(turn(5), &[]);
-    assert!(!member.of(Some(turn(5))).owner);
-}
-
 #[test]
 fn a_local_session_is_always_the_owners() {
     let local = callers("local");
@@ -70,11 +59,7 @@ fn a_local_session_is_always_the_owners() {
 #[test]
 fn a_call_carries_the_model_in_use_and_the_log_dir() {
     let log = std::path::PathBuf::from("/data/home/alice/sessions/s");
-    let mut callers = Callers::new(
-        VenueId::parse("local").expect("合写法"),
-        true,
-        Some(log.clone()),
-    );
+    let mut callers = Callers::new(VenueId::parse("local").expect("合写法"), Some(log.clone()));
     assert_eq!(callers.of(None).model, None, "还没解析过模型");
     assert_eq!(callers.of(None).log, Some(log));
     let in_use = InUse {

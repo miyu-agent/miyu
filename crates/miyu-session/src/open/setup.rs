@@ -215,9 +215,9 @@ pub struct Create<'a> {
     /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有。有的 system 接上群聊的格式说明，快照钉下这时的
     /// 时区和群聊近况最多带几条，群里的人说的渲染成一行一条。
     pub group: Option<GroupSettings>,
-    /// 属主是不是管理员（施工 5-12）：场所会话、属主不是管理员的（群会话、陌生人和成员的私聊）只碰得到自己的工作区
-    /// （`11-权限与沙盒.md` 第三节「外部身份」）。
-    pub owner_is_admin: bool,
+    /// 外部身份的会话（施工 5-12，SU-4 上起照场所认、不照属主）：群会话、陌生人的私聊只碰得到自己的工作区，会话日志、
+    /// 放行出沙盒、对外发消息这些只给主人本人的也没有（`11-权限与沙盒.md` 第三节「外部身份」）。
+    pub confined: bool,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::situated`]），记进 `session.created`。
     pub images: bool,
     /// 自动起标题吗（施工 O-43）：假的记进 `session.created`，这个会话从此不自动起标题。
@@ -302,8 +302,8 @@ pub struct Load<'a> {
     pub memory: Option<Arc<crate::Memory>>,
     /// 同 [`Create::presets`]。
     pub presets: Option<PresetPlaces>,
-    /// 同 [`Create::owner_is_admin`]。
-    pub owner_is_admin: bool,
+    /// 同 [`Create::confined`]。
+    pub confined: bool,
 }
 
 /// 照场所定预设（[`Chosen::situated`]）：显示不了图片的会话里要图的包整包扣下（施工 X-25），接这个场所平台的包整包开着（施工

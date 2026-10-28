@@ -1,6 +1,6 @@
 //! 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」）：场所会话、属主不是管理员的，文件类工具只放行
 //! 工作区里的，外面的（连读）一律拒，写给她的是出厂的那一句，说法 `core/permissions/outside-workspace`；命令一律拒（沙盒把读
-//! 也关进工作区以后再放开）。管理员本人的场所会话、本机的会话照旧；成员的本机会话只到他自己的几处（施工 Y-2 下①）。场地不在
+//! 也关进工作区以后再放开）。管理员本人的场所会话、本机的会话照旧（成员的本机会话那一种 SU-4 上拿掉了）。场地不在
 //! 系统的临时目录里：工作区 `work/`。
 
 use std::path::Path;
@@ -81,7 +81,7 @@ async fn session(
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        owner_is_admin,
+        confined: !owner_is_admin,
         ..Lines::default()
     };
     home.create_full(script, &kit.catalog(), opening, lines)
@@ -188,121 +188,9 @@ async fn the_admins_own_chat_and_local_sessions_are_not_confined() {
     }
 }
 
-/// 成员（属主不是管理员）的本机会话（施工 Y-2 下①）：只到他自己的几处（工作区、家目录里照 XDG 的那几处），会话的工作目录
-/// 在外面也不算他的，读写都拒；命令一律拒（这里没有沙盒）。
+/// 关起来的会话载入以后照样关着（施工 Y-2 下上）。
 #[tokio::test]
-async fn a_members_local_session_only_reaches_their_own_places() {
-    let home = Home::new();
-    let kit = Kit::new();
-    let alice = alice_account();
-    let workspace = home.root.workspace(&alice);
-    std::fs::create_dir_all(&workspace).expect("建得了工作区");
-    let own = workspace.join("notes.md").to_string_lossy().into_owned();
-    let pictures = home
-        .root
-        .account_dir(&alice)
-        .join("pictures/cat.png")
-        .to_string_lossy()
-        .into_owned();
-    // 会话的工作目录是 `work/`（他报的），不在他自己的几处里。
-    let reported = at(&home, "work/notes.md");
-    let script = Script::new([
-        one("read", &own),
-        one("write", &pictures),
-        one("read", &reported),
-        one("write", &at(&home, "elsewhere/secret.txt")),
-        Play::calls(&[("shell", "{\"command\": \"ls\"}")]),
-        Play::Says("好。"),
-    ]);
-    let handle = session(&home, &script, &kit, "local", false).await;
-    let log = turn(&home, &handle).await;
-    let statuses: Vec<ToolStatus> = results(&log)
-        .iter()
-        .map(|result| result.status.clone())
-        .collect();
-    assert_eq!(
-        statuses,
-        [
-            ToolStatus::Ok,
-            ToolStatus::Ok,
-            ToolStatus::Denied,
-            ToolStatus::Denied,
-            ToolStatus::Denied
-        ],
-        "{log:#?}"
-    );
-    assert_eq!(kit.read.calls().len(), 1, "工作区里的读放行");
-    assert_eq!(kit.write.calls().len(), 1, "家目录里的图片那一处能写");
-    assert!(kit.shell.calls().is_empty(), "命令拒");
-    assert_eq!(
-        results(&log)[2]
-            .human
-            .as_ref()
-            .map(|said| said.key.as_str()),
-        Some("core/permissions/outside-workspace"),
-        "报的工作目录不算他的"
-    );
-}
-
-/// 成员的本机会话、沙盒能用又关得住读的机器上（施工 Y-2 下①）：工作目录在他的工作区里的命令放行（进沙盒），在外面（他报的）
-/// 的拒。关不住读的平台一律拒。
-#[tokio::test]
-async fn a_members_command_runs_only_from_their_own_places() {
-    let alice = alice_account();
-    for (inside, runs) in [(true, miyu_sandbox::CONFINES_READS), (false, false)] {
-        let home = Home::new();
-        let kit = Kit::new();
-        let workspace = home.root.workspace(&alice);
-        std::fs::create_dir_all(&workspace).expect("建得了工作区");
-        std::fs::create_dir_all(home.scratch.0.join("work")).expect("建得了别处");
-        let cwd = match inside {
-            true => workspace.to_string_lossy().into_owned(),
-            false => at(&home, "work"),
-        };
-        let opening = Opening {
-            permission: Permission {
-                level: Level::Workspace,
-                read_only: false,
-            },
-            attended: false,
-            cwd,
-            dirs: Vec::new(),
-            sandbox: Some(std::path::PathBuf::from("miyu-sandbox")),
-            sandbox_cache: None,
-        };
-        let lines = Lines {
-            owner_is_admin: false,
-            ..Lines::default()
-        };
-        let script = Script::new([
-            Play::calls(&[("shell", "{\"command\": \"ls\"}")]),
-            Play::Says("好。"),
-        ]);
-        let handle = home
-            .create_full(&script, &kit.catalog(), opening, lines)
-            .await;
-        let log = turn(&home, &handle).await;
-        assert_eq!(
-            kit.shell.calls().len(),
-            usize::from(runs),
-            "工作目录在他的工作区里：{inside}：{log:#?}"
-        );
-        if !runs {
-            assert_eq!(
-                results(&log)[0]
-                    .human
-                    .as_ref()
-                    .map(|said| said.key.as_str()),
-                Some("core/permissions/no-commands"),
-                "权限策略拒的，不是写不成沙盒：{log:#?}"
-            );
-        }
-    }
-}
-
-/// 成员的本机会话载入以后照样关着（施工 Y-2 下上）。
-#[tokio::test]
-async fn a_members_session_stays_confined_after_loading() {
+async fn a_confined_session_stays_confined_after_loading() {
     let home = Home::new();
     let kit = Kit::new();
     let outside = at(&home, "elsewhere/secret.txt");

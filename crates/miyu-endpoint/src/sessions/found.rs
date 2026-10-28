@@ -70,7 +70,7 @@ impl Open {
             plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
             presets: Some(crate::presets::places(core, &owner)),
-            owner_is_admin: owner == core.admin,
+            confined: super::confined(core, &owner),
             configs: core.configs_of(&owner),
         })
         .await;

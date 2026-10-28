@@ -15,7 +15,7 @@ use miyu_kernel::event::Permission;
 use miyu_sandbox::{Sandboxed, Spec};
 
 use super::{Sandbox, real};
-use crate::guard::{Effective, Reach, effective};
+use crate::guard::{Effective, effective};
 
 /// 关起来的会话读得到的程序目录（施工 MB-1，2026-10-24 项目主人定：只留程序跑起来必需的系统目录）：放程序和库的几处，整个只读。
 /// 不给整个 `/etc`、`/opt`：`/etc` 只给 [`ETC`] 那几样。
@@ -101,14 +101,13 @@ fn system_reads() -> Vec<PathBuf> {
 }
 
 impl Sandbox {
-    /// 关起来的会话一次调用的沙盒：关到 `reach`。
+    /// 关起来的会话一次调用的沙盒：关到这一轮的工作区、加进来的目录。
     ///
     /// # Errors
     ///
-    /// 工作区里的 `.tmp` 建不成；成员的会话工作目录不在他自己的几处里（权限策略先拒了，到不了这里）。
+    /// 工作区里的 `.tmp` 建不成。
     pub(super) fn confined_call(
         &self,
-        reach: &Reach,
         permission: &Permission,
         (cwd, dirs): (&str, &[String]),
     ) -> io::Result<Sandboxed> {
@@ -117,16 +116,12 @@ impl Sandbox {
             |dir: &str| resolve(Path::new(dir), home, dir).unwrap_or_else(|_| PathBuf::from(dir));
         let cwd = place(cwd);
         let temp = cwd.join(".tmp");
-        let mut own: Vec<PathBuf> = match reach {
-            Reach::Workspace => std::iter::once(cwd)
-                .chain(dirs.iter().map(|dir| place(dir)))
-                .collect(),
-            Reach::Own(own) if own.holds(&cwd) => own.existing(),
-            Reach::Own(_) => return Err(io::Error::other("working directory outside own places")),
-        };
+        let mut own: Vec<PathBuf> = std::iter::once(cwd)
+            .chain(dirs.iter().map(|dir| place(dir)))
+            .collect();
         std::fs::create_dir_all(&temp)?;
         // 家目录照这一轮的工作目录（施工 MB-1）：不给跑核心的那个用户的家目录，那里读不到（git 这类读 `~/.gitconfig` 的在
-        // macOS 上被拒就起不来），名字也透出机主（SEC-2）。成员的是他的工作区，场所会话的是场所的工作区。
+        // macOS 上被拒就起不来），名字也透出机主（SEC-2）。场所会话的是场所的工作区。
         let home_dir = own.first().cloned().unwrap_or_else(|| temp.clone());
         own.push(temp.clone());
         let mut read = system_reads();

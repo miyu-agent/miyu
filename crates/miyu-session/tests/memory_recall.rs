@@ -246,7 +246,7 @@ async fn in_the_owners_own_private_chat_too() {
 async fn in_a_group_what_was_remembered_elsewhere_too() {
     let lines = Lines {
         venue: VenueId::parse("qq:group:5550").expect("合写法"),
-        owner_is_admin: true,
+        confined: false,
         ..Lines::default()
     };
     assert!(

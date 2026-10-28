@@ -41,7 +41,7 @@ async fn confined(level: Level) -> (Home, PathBuf, Vec<Option<Arc<Sandboxed>>>) 
     };
     let lines = Lines {
         venue: VenueId::parse("qq:group:1").expect("场所合写法"),
-        owner_is_admin: false,
+        confined: true,
         ..Lines::default()
     };
     let handle = home.create_full(&script, &tools, opening, lines).await;

@@ -223,7 +223,7 @@ impl Home {
             group: lines.group.then_some(miyu_session::GroupSettings {
                 recent: lines.recent,
             }),
-            owner_is_admin: lines.owner_is_admin,
+            confined: lines.confined,
             images: lines.images,
             titles: true,
             dream: None,
@@ -349,7 +349,7 @@ impl Home {
             plugins: self.plugins.clone(),
             memory: Some(self.memory()),
             presets: None,
-            owner_is_admin,
+            confined: !owner_is_admin,
         });
         within("载入", loaded).await.expect("载入得了会话")
     }

@@ -89,7 +89,7 @@ async fn session(
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        owner_is_admin,
+        confined: !owner_is_admin,
         ..Lines::default()
     };
     home.create_full(script, &kit.catalog(), opening, lines)

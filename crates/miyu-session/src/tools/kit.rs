@@ -20,14 +20,12 @@ pub(crate) struct ToolKit {
     pub(crate) session: SessionId,
     /// 会话的属主（施工 O-2 三补）：每次调用带上，提供者的工具交回的图照它拷进属主名下。
     pub(crate) owner: AccountId,
-    /// 关起来的会话（施工 5-12 下、Y-2 下①）：命令的沙盒读写都只限工作区，成员的只到他自己的几处。
-    pub(crate) confined: Option<crate::guard::Reach>,
+    /// 关起来的会话（施工 5-12 下）：命令的沙盒读写都只限工作区。
+    pub(crate) confined: bool,
     /// 会话的场所（施工 X-43）：每次调用带上，交给脚本（`MIYU_CALLER_VENUE`）。
     /// 每个场所开着的场所插件（施工 O-60）：派调用时这一刻没开的当目录里没有。
     pub(crate) plugins: crate::VenuePlugins,
     pub(crate) venue: VenueId,
-    /// 会话的属主是管理员（施工 MB-2）：本机的会话只有这样开口的才算机器主人（[`miyu_tool::Caller`]）。
-    pub(crate) admin: bool,
     /// 会话日志的目录（施工 E-M）：属主是管理员的才交给命令（`MIYU_SESSION_LOG`），别人的 `None`。
     pub(crate) session_log: Option<PathBuf>,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。

@@ -168,37 +168,3 @@ async fn a_venue_action_meant_for_local_too_goes_by_outbound_on_this_machine() {
         );
     }
 }
-
-/// 成员（属主不是管理员）的本机会话不是管理员本人（施工 Y-2 下①）：给本机也用的对外发消息照「不在场所里」拒，完全放开也一样。
-#[tokio::test]
-async fn a_venue_action_does_not_run_in_a_members_local_session() {
-    let venues = miyu_tool::Venues {
-        local: true,
-        private: true,
-        group: true,
-    };
-    let home = Home::new();
-    let tool = Fake::in_venues("qq_send", Access::Venue, venues, Act::Echo);
-    let catalog = Catalog::new([Arc::clone(&tool) as Arc<dyn Tool>]).expect("合写法");
-    let opening = Opening {
-        permission: Permission {
-            level: Level::Full,
-            read_only: false,
-        },
-        attended: false,
-        ..Opening::default()
-    };
-    let lines = Lines {
-        owner_is_admin: false,
-        ..Lines::default()
-    };
-    let script = Script::new([Play::calls(&[("qq_send", "{}")]), Play::Says("好。")]);
-    let handle = home.create_full(&script, &catalog, opening, lines).await;
-    let log = turn(&home, &handle).await;
-    assert!(tool.calls().is_empty(), "{log:#?}");
-    let said = log.iter().find_map(|event| match &event.body {
-        Body::ToolResult(result) => result.human.as_ref().map(|said| said.key.clone()),
-        _ => None,
-    });
-    assert_eq!(said.as_deref(), Some("core/permissions/not-in-venue"));
-}
