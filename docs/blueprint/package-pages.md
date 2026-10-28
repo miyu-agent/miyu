@@ -53,8 +53,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. `program_missing`：要程序的包（扩展、界面、小程序），程序不在包文件夹的 `bin/`、也不在 `miyu` 旁边（找法同 `packages.md`「转交」，施工 F-8 上再补）。
 2. `off`：关着。扩展、带了服务的 `bundle` 的开关关着；出厂的包卸掉了（`removed: true`）。
-3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。`bundle` 照它带的 MCP 服务合起来算（施工 X-3 上）：有停下的 `stopped`，都在跑的 `running`，别的 `starting`；每个服务的状态、停下的原因随 X-4 给头。每人一份的扩展（`[process] scope = "account"`，施工 IM-1 中）照列出来的那个连接替谁干活的那个人自己那一份算（施工 U23 下上：照系统那一份恒是关着，网页报的），开关开着、他那一份还没起过的是 `ready`。
-4. `ready`：别的。内置包装着，小程序、界面的程序在；只带技能、脚本的 `bundle`（施工 X-13 上，没有开关，技能、脚本照预设开关）；每人一份的扩展开着、看的人那一份还没起过（用到时才起）。
+3. `running`、`starting`、`stopped`：扩展照 `extension.status` 的 `state`，`waiting` 算 `starting`。停下的原因照旧在 `extension.status`。`bundle` 照它带的 MCP 服务合起来算（施工 X-3 上）：有停下的 `stopped`，都在跑的 `running`，别的 `starting`；每个服务的状态、停下的原因随 X-4 给头。
+4. `ready`：别的。内置包装着，小程序、界面的程序在；只带技能、脚本的 `bundle`（施工 X-13 上，没有开关，技能、脚本照预设开关）。
 
 头照它写「运行中」「启动中」「已停止」「已停用」「已启用」「程序未安装」。
 
@@ -111,7 +111,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 1. **登记**：扩展连上以后发 `package.methods {"methods": [{"name", "timeout_ms"?}]}`。
    - `name`：小写字母开头，小写字母、数字、`_`、`.`、`-`，1 到 64 个；同一次里不重复；`timeout_ms` 同工具的，1000 到 600000，不写是 30000。
-   - 换掉这一份上一次登记的（施工 IM-1 中下起照（包，账号）记：每人一份的包，各人那一份各登记各的）；不用另批能力：只有管理员的头、能用这个包的成员在这个软件自己的页上调得到。
+   - 换掉这一份上一次登记的；不用另批能力：只有人的头在这个软件自己的页上调得到。
    - 不缓存：连接断了、扩展停了就没有了，调到的回 `program_not_running`。
    - 不是核心拉起的扩展的连接调它，`not_an_extension`。名字写法不对、重复、时限不在范围里的 `bad_params`，什么都不换。回应 `{"methods": 个数}`。
 2. **调**：头发 `package.call {"package", "method", "params"?}`：出示本机令牌、登录令牌的连接（人）调得到登记的全部。施工 X-18 起扩展也能调别的软件（「软件之间互相调」）：要声明 `packages.call`、人批过（没声明的 `needs_approval`），只调得到对方清单 `[export] methods` 里的（别的 `not_exported`，`data.method` 是哪一个）。
@@ -119,7 +119,6 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 核心发反向请求 `{"jsonrpc":"2.0","id":"core-<n>","method":"method.call","params":{"method","params","from"?}}` 给扩展，等它回，回什么交回什么（`result` 原样）。扩展调的带 `from`：调的那个包的编号，核心照连接填、调的一方写不了；人调的不带（施工 X-18）。
    - 扩展回了错：`method_failed`，`data.message` 是它说的那一句，`data.code` 是它的错误码（没有的不写）。到了 `timeout_ms` 没回：`method_timeout`，核心不再等，扩展晚回的扔掉。等着时连接断了：`program_not_running`。
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
-   - 每人一份的包（施工 IM-1 中下）：转给调的那个人那一份（人调的是他自己，扩展调的是它替的那个人，`Instance::serving`）；那一份还没登记方法的，替他拉起，等到登记了再转（`Provided::wait`，最多 60 秒，登记方法时 `nudge` 叫醒），没等到的 `program_not_running`。答的那一份的账号是那个人，转 blob 照它拷。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
 4. **推给页面**（施工 IM-1 中下二，im 设计 07 第 4.6 节第 3 样，形状 2026-10-27 主会话定）：扩展的状态变了，不让页面轮询，推过去。
    - 扩展发 `package.emit {"event", "data"?}`：推给它替的那个账号；`event` 写法同方法名，`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；不是扩展的连接 `not_an_extension`。回 `{}`，没人订着也是。

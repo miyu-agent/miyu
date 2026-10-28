@@ -97,30 +97,6 @@ async fn a_notification_has_no_id_and_is_not_sent_after_closing() {
     assert!(lines.try_recv().is_err());
 }
 
-/// 扩展说要退了（施工 IM-1 下）：有在等回应的不答应；回完了答应，以后的请求、通知都不发，找连接的当它断了。
-#[tokio::test]
-async fn retiring_waits_for_answers_and_then_nothing_more_goes_out() {
-    let (out, mut lines) = mpsc::channel(8);
-    let peer = Peer::new(out);
-    let asking = {
-        let peer = peer.clone();
-        tokio::spawn(async move { peer.call("tool.call", json!({})).await })
-    };
-    lines.recv().await.expect("发出去了");
-    assert!(!peer.retire(), "还有一条在等回应");
-    assert!(!peer.closed());
-    peer.answer(Response {
-        id: "core-1".to_string(),
-        outcome: Ok(json!({})),
-    });
-    assert_eq!(asking.await.unwrap(), Ok(Ok(json!({}))));
-    assert!(peer.retire(), "回完了");
-    assert!(peer.closed(), "找连接的跳过它");
-    assert_eq!(peer.call("tool.call", json!({})).await, Err(Gone));
-    assert!(!peer.notify("schedule.fired", json!({})));
-    assert!(lines.try_recv().is_err(), "什么都没再发");
-}
-
 /// 连接整个被丢下（写的那一头没了，施工 IM-5）：没调过 `close` 也算断了。
 #[tokio::test]
 async fn a_dropped_connection_counts_as_closed() {

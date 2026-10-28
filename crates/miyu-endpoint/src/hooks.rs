@@ -12,7 +12,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::Capability;
-use miyu_kernel::id::{AccountId, FactKind, ModuleId, SessionId};
+use miyu_kernel::id::{FactKind, ModuleId};
 use miyu_tool::{HooksPort, Inject, Injecting, TurnAsk};
 
 use crate::Core;
@@ -50,11 +50,7 @@ impl HooksPort for Hooks {
             let Some(core) = self.0.upgrade() else {
                 return Vec::new();
             };
-            let owner = match SessionId::parse(&ask.session) {
-                Ok(session) => core.sessions.owner(&core, &session).await,
-                Err(_) => None,
-            };
-            let asked = asked(&core, &ask.tools, owner.as_ref());
+            let asked = asked(&core, &ask.tools);
             if asked.is_empty() {
                 return Vec::new();
             }
@@ -83,9 +79,8 @@ impl HooksPort for Hooks {
     }
 }
 
-/// 要问的扩展，照包的编号排：声明了 `context.inject`、在跑、登记过工具，而且这一刻的工具面上有它的工具。每人一份的问 `owner`
-/// 那一份；不知道属主的只问一份的。
-fn asked(core: &Core, tools: &[String], owner: Option<&AccountId>) -> Vec<(String, Peer)> {
+/// 要问的扩展，照包的编号排：声明了 `context.inject`、在跑、登记过工具，而且这一刻的工具面上有它的工具。
+fn asked(core: &Core, tools: &[String]) -> Vec<(String, Peer)> {
     let catalog = core.tools();
     let mut asked: Vec<(String, Peer)> = core
         .system_packages()
@@ -102,13 +97,7 @@ fn asked(core: &Core, tools: &[String], owner: Option<&AccountId>) -> Vec<(Strin
                 .iter()
                 .any(|tool| catalog.package_of(tool) == Some(found.id.as_str()))
         })
-        .filter_map(|found| {
-            let instance = match owner {
-                Some(owner) => crate::extensions::Instance::serving(core, &found.id, owner),
-                None => crate::extensions::Instance::system(&found.id),
-            };
-            Some((found.id.clone(), core.provided.peer_of(&instance)?))
-        })
+        .filter_map(|found| Some((found.id.clone(), core.provided.peer(&found.id)?)))
         .collect();
     asked.sort_by(|a, b| a.0.cmp(&b.0));
     asked.dedup_by(|a, b| a.0 == b.0);

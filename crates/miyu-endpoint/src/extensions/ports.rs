@@ -82,7 +82,7 @@ pub(crate) struct PortParams {
 
 /// `port.claim`：见模块说明。端口是 0 的 `bad_params`，不是核心拉起的扩展的连接 `not_an_extension`。
 pub(crate) fn claim(core: &Core, caller: &Caller, params: PortParams) -> Result<Value, Refusal> {
-    let instance = instance(core, caller, params.port)?;
+    let instance = instance(caller, params.port)?;
     match core
         .extensions
         .ports
@@ -95,7 +95,7 @@ pub(crate) fn claim(core: &Core, caller: &Caller, params: PortParams) -> Result<
 
 /// `port.release`：见模块说明。
 pub(crate) fn release(core: &Core, caller: &Caller, params: PortParams) -> Result<Value, Refusal> {
-    instance(core, caller, params.port)?;
+    instance(caller, params.port)?;
     core.extensions.ports.release(params.port, &caller.reverse);
     Ok(json!({}))
 }
@@ -110,22 +110,16 @@ pub(crate) fn list(core: &Core, caller: &Caller) -> Result<Value, Refusal> {
         .ports
         .held()
         .into_iter()
-        .map(|(port, instance)| {
-            let mut one = json!({"port": port, "package": instance.package});
-            if let Some(account) = instance.account {
-                one["account"] = json!(account.as_str());
-            }
-            one
-        })
+        .map(|(port, instance)| json!({"port": port, "package": instance.package}))
         .collect();
     Ok(json!({"ports": ports}))
 }
 
 /// 连接是哪一份：不是核心拉起的扩展的 `not_an_extension`；端口是 0 的 `bad_params`。
-fn instance(core: &Core, caller: &Caller, port: u16) -> Result<Instance, Refusal> {
+fn instance(caller: &Caller, port: u16) -> Result<Instance, Refusal> {
     let package = caller.package.as_deref().ok_or(Refusal::NOT_AN_EXTENSION)?;
     if port == 0 {
         return Err(Refusal::bad_field("port"));
     }
-    Ok(Instance::serving(core, package, caller.acting_for()))
+    Ok(Instance::of(package))
 }

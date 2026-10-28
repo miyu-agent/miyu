@@ -123,12 +123,6 @@ impl Shaken {
         self.system
     }
 
-    /// 握手时替谁干活的那个人（施工 IM-1 中下四：扩展的状态里每人一份的包照他那一份报；施工 U23 下上：软件包列表照他看得到的
-    /// 推）。
-    pub(crate) fn whose(&self) -> &AccountId {
-        &self.whose
-    }
-
     /// 这一刻的这个连接，`admin` 照握手时替谁干活的那个人算（施工 U23-R修二：订列表的回应、推送照它裁格子）。
     pub(crate) fn now_whose(&self, core: &Core) -> Peer {
         self.now_as(core, &self.whose)

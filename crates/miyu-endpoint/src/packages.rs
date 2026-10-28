@@ -140,38 +140,20 @@ fn to_system(root: &DataRoot, admin: &AccountId) {
 
 /// `package.list`：核心这时认的（起来时读的，装卸以后当场换，施工 F-5 上），照编号排；卸掉的出厂的接在后面，带
 /// `removed: true`（施工 F-5 上），好让头给人装回来。
-pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value, Refusal> {
+pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
     let seen = core.system_packages();
     let mut items: Vec<Value> = seen
         .iter()
-        .map(|found| {
-            listed(
-                core,
-                found,
-                (&places, &seen, Some(account)),
-                &words,
-                peer.language,
-                false,
-            )
-        })
+        .map(|found| listed(core, found, (&places, &seen), &words, peer.language, false))
         .collect();
     items.extend(
         places
             .read_removed()
             .iter()
             .filter(|found| !seen.iter().any(|one| one.id == found.id))
-            .map(|found| {
-                listed(
-                    core,
-                    found,
-                    (&places, &seen, Some(account)),
-                    &words,
-                    peer.language,
-                    true,
-                )
-            }),
+            .map(|found| listed(core, found, (&places, &seen), &words, peer.language, true)),
     );
     if !peer.admin {
         for item in &mut items {
@@ -183,30 +165,16 @@ pub(crate) fn list(core: &Core, peer: Peer, account: &AccountId) -> Result<Value
 
 /// 列表里包 `id` 那一项，照 `peer` 的语言（施工 F-8 三补：推送照它算）；
 /// 装着的、卸掉了的出厂的都有，都不是的没有。
-pub(crate) fn entry(core: &Core, id: &str, peer: Peer, account: &AccountId) -> Option<Value> {
+pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
     let words = words(core, peer.language).ok()?;
     let places = packages(core);
     let seen = core.system_packages();
     let mut item = match seen.iter().find(|found| found.id == id) {
-        Some(found) => listed(
-            core,
-            found,
-            (&places, &seen, Some(account)),
-            &words,
-            peer.language,
-            false,
-        ),
+        Some(found) => listed(core, found, (&places, &seen), &words, peer.language, false),
         None => {
             let removed = places.read_removed();
             let found = removed.iter().find(|found| found.id == id)?;
-            listed(
-                core,
-                found,
-                (&places, &seen, Some(account)),
-                &words,
-                peer.language,
-                true,
-            )
+            listed(core, found, (&places, &seen), &words, peer.language, true)
         }
     };
     // 同 [`list`]：不替主人干活的裁掉只给主人的那几格（施工 U23-R修二）。

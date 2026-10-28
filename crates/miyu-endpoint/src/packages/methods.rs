@@ -21,7 +21,7 @@ pub(crate) async fn call(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "package.list" => super::list(core, peer, caller.acting_for()),
+        "package.list" => super::list(core, peer),
         // 从软件源装（施工 G-4 上、下）：带 `source` 的，只写 `package`、又不是卸掉的出厂包的；要往发起的连接推下载进度。装、卸、
         // 升级只给人（`connection/rights.rs`），人就是主人（施工 SU-2 上）。
         "package.install" if super::source::fetch::wanted(core, &request.params) => {
@@ -47,15 +47,9 @@ pub(crate) async fn call(
             let reverse = Some(&caller.reverse);
             super::source::upgrade::upgrade(core, peer, reverse, params(request)?).await
         }
-        "package.enable" => {
-            super::switch::enable(core, (peer, caller.acting_for()), params(request)?).await
-        }
-        "package.disable" => {
-            super::switch::disable(core, (peer, caller.acting_for()), params(request)?).await
-        }
-        "package.restart" => {
-            super::switch::restart(core, (peer, caller.acting_for()), params(request)?).await
-        }
+        "package.enable" => super::switch::enable(core, peer, params(request)?).await,
+        "package.disable" => super::switch::disable(core, peer, params(request)?).await,
+        "package.restart" => super::switch::restart(core, peer, params(request)?).await,
         "package.file" => crate::backstage::read(core, params(request)?).await,
         "package.emit" => crate::backstage::emit(core, caller, params(request)?),
         "package.methods" => crate::backstage::register(core, caller, params(request)?),

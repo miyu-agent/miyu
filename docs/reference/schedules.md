@@ -67,4 +67,4 @@
 | `prompt` | 建的时候写的，原样交回（写法扩展自己定，例如 JSON） |
 | `missed` | 核心停着时错过了几次，最多数到 1000；错过的不补，只报个数。没错过的不写 |
 
-那一份没在跑的：每人一份的包（`[process] scope = "account"`）照用到时拉起，等它连上最多 60 秒；只有一份的不拉起。推不到的记 `skipped:package_unavailable`，一次的照常删、周期的等下一次。
+包没连着的不拉起，推不到的记 `skipped:package_unavailable`，一次的照常删、周期的等下一次。

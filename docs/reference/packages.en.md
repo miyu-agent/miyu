@@ -159,8 +159,6 @@ Upgrade from the package source. Only packages installed from the source are tou
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
 
-Per-account packages (`[process] scope = "account"`): the call goes to the caller's own copy (for a page, the person viewing it; for an extension, the person it acts for). If that copy isn't running the core starts it for them and forwards once it has registered its methods, waiting up to 60 seconds.
-
 Extensions can call `package.call` too: they must declare the `packages.call` capability and can only call methods listed in the other package's `[export]`; the forwarded call carries `from` (the caller's package id). Blobs the answering package stored that appear in its response become readable by the caller (see [Attachments](blob.en.md#blobget)).
 
 **Errors**
@@ -168,7 +166,7 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `data.reason` | When |
 |---|---|
 | `no_page`, `not_found` | `package.file`: no package page; no such file, outside the folder, not a regular file |
-| `program_not_running` | The program isn't connected; a per-account copy couldn't be started or didn't register its methods within 60 seconds |
+| `program_not_running` | The program isn't connected |
 | `unregistered` | The program didn't register that method, `data.method` |
 | `method_failed` | The program answered with an error, `data.message`, `data.code` |
 | `method_timeout` | No answer in time |
@@ -187,10 +185,8 @@ Extensions can call `package.call` too: they must declare the `packages.call` ca
 | `failures` | Consecutive failures |
 | `pid` | Process id while running |
 | `retry_in` | While waiting: milliseconds until the next start |
-| `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`, `retired` for one that exited after `process.retire`, `needs_login` for a URL server that needs a browser login…), the last lines of stderr |
+| `reason`, `stderr` | When stopped: why (`failed_repeatedly`, `config_error`, `needs_approval`, `needs_login` for a URL server that needs a browser login…), the last lines of stderr |
 | `capabilities`, `unapproved` | Declared capabilities `[{id, name, summary}]`, those not yet approved |
-| `scope` | `"account"` for per-account packages (`[process] scope = "account"`), absent otherwise. Then the `state` fields are the viewer's own copy: `off` if they haven't used it yet, since it starts on demand; that isn't switched off (see `on`) (construction IM-1 lower-middle 4) |
-| `copies` | Only for admins, on per-account packages: every copy started so far, `[{account, state, failures, pid?, retry_in?, reason?, stderr?}]`, by account. Turning the package off or restarting it stops every copy |
 
 To keep up to date, subscribe to the `extensions` stream.
 

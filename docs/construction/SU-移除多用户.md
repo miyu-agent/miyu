@@ -59,7 +59,7 @@
 | SU-2 中 | 批过的扩展能力从组表 `groups.json` 的 `ext.<能力>` 挪进 `extensions.json`，组表删掉 | 无（形状不变） |
 | SU-2 下 | 每人一份的扩展（`[process] scope = "account"`、按人拉起的那一份） | 两个头：扩展页；im：每人一份 |
 | SU-3 | 配置、密钥、用量、记忆、项目、定时、平台号、头像改成一份 | 两个头：设置页的层；im：平台号 |
-| SU-4 | 场所会话归包、IM-2 拿掉；包的账号（带程序的包是一个账号、包编号和用户名互相占位、包的家目录）跟着场所会话一起拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
+| SU-4 | 场所会话归包（IM-2 已随 SU-2 下拿掉）；包的账号（带程序的包是一个账号、包编号和用户名互相占位、包的家目录）跟着场所会话一起拿掉；成员沙盒、成员上网闸收成只管场所会话 | im |
 | SU-5 | 存储布局一层；搬家脚本 | 无（头不碰路径） |
 | SU-6 | 剩下的账号参数收尾、蓝图和设计（06 标作废）、作者文档；量占用 | 无 |
 
@@ -119,3 +119,12 @@
 2. 批过的能力记在开关文件 `system/extensions.json` 的 `approved`（包的编号到能力，照名字排；一样都没批的不写）：`extension.enable` 批的时候在开关那把锁里读好、记下这时声明的全部、和开关一起写回（`approval::approve` 改成直接改要写回的那一份）；卸包时开没开、批过的一起删（`approval::forget`，一次写）。出厂的照旧算全批过、不记。
 3. 9-4 下上的开关文件本来就是这一格的写法，以前写下的 `approved` 照样认（Y-5 下上起读的时候扔掉）。主人部署的组表里的 `ext.*` 由 SU-5 的搬家脚本挪进来。
 4. 怎么验：`tests/extension_approval.rs` 批了以后开关文件写着 `approved`、没有组表，升级多了的只问多的、记的是这时声明的全部；开关文件里记着批过的，起来直接拉起；`tests/packages_purge.rs` 卸了开没开、批过的一起清掉；`miyu-store` 开关文件读写的单测换成 `approved`。手写变异 5 个全杀；本机门禁。
+
+### 十三、SU-2 下：一个包只有一份进程
+
+1. 清单的 `[process] scope` 拿掉（`miyu_config::package::Scope`、`bad_scope` 和它的三种语言的话）：写了的照不认识的键报 `unknown_key`。已知的包（im、赞助）都没写。
+2. 端点的扩展进程只认包（`extensions::Instance` 只剩 `package`）：每人一份的（`per_account`、`scoped`、`Core::start_for`、用到时拉起的 `provide/reach.rs`、`Provided::wait`、`copies_of`）删掉；扩展起来照开关一律拉起（`Core::launch`）。`extension.status` 不再有 `scope`、`copies`，`package.list` 的 `process` 不再有 `scope`；`port.list` 不再有 `account`。
+3. `process.retire`、`process.keep` 和它们背后的 `retired` 状态、`system/kept.json`（`miyu_store::kept`）删掉：只给每人一份的那一份用，没有包调它们。方法清单跟着删。测试扩展的 `retire`、`if:` 两步删掉。
+4. 握手交的配置、提供者表、后台页的 `package.call`、挂接点、搜索来源、声明的斜杠命令、到点推给扩展、界面块（`Key.account`、`Item.owner`）都照包找那一份，不再照（包，账号）。
+5. 场所：每人一份的那一份在场所里替人做事（IM-2，`Bridge::Personal`）拿掉，`Bridge` 只剩平台桥；主人对应表在哪都认（`binds_for` 删掉）。`external.me`（BD-1）照旧，SU-3 和主人对应表并成一份。
+6. 怎么验：编译、clippy 过；端点、存储、配置、core 的测试；清单测试改成 `scope` 照不认识的键报；反向调用、界面块的单测去掉每人一份的那几条。参考 `extensions`、`packages`、`venues`、`schedules` 中英两份，蓝图 `extensions.md`、`providers.md`、`package-pages.md`、`widgets.md`、`venues.md`、`schedules.md`，方法清单。手写变异 5 个杀 4 个，活的那个是等价的：推给扩展时跳过已经断了的连接，不跳过的话发也发不出去，照样记 `skipped`。本机门禁。

@@ -1,10 +1,6 @@
-//! 一份扩展进程是谁（施工 IM-1 中）：哪个包，替谁跑。一份的（`[process] scope = "system"`，默认）没有账号，用包自己的账号跑，
-//! 和以前一样；每人一份的（`scope = "account"`）带上那个人，以他的身份连进来，数据放在他自己的家目录里。
+//! 一份扩展进程是谁（施工 IM-1 中；SU-2 下起每个包只有一份）：哪个包。
 
 use std::path::PathBuf;
-
-use miyu_config::package::{Manifest, Scope};
-use miyu_kernel::id::AccountId;
 
 use crate::Core;
 
@@ -13,62 +9,23 @@ use crate::Core;
 pub(crate) struct Instance {
     /// 包的编号。
     pub(crate) package: String,
-    /// 每人一份的那个人；一份的没有。
-    pub(crate) account: Option<AccountId>,
 }
 
 impl Instance {
-    /// 包 `package` 的那一份（一份的）。
-    pub(crate) fn system(package: &str) -> Instance {
+    /// 包 `package` 的那一份。
+    pub(crate) fn of(package: &str) -> Instance {
         Instance {
             package: package.to_string(),
-            account: None,
         }
     }
 
-    /// 替 `account` 找包 `package` 的哪一份（施工 IM-1 中）：每人一份的是他那一份，别的是那一份。
-    pub(crate) fn serving(core: &Core, package: &str, account: &AccountId) -> Instance {
-        Instance {
-            package: package.to_string(),
-            account: scoped(core, package).then(|| account.clone()),
-        }
-    }
-
-    /// 运行日志、标准错误的文件名里写的：一份的是包的编号，每人一份的是 `<编号>.<账号>`（账号的写法里没有点）。
+    /// 运行日志、标准错误的文件名里写的：包的编号。
     pub(crate) fn label(&self) -> String {
-        match &self.account {
-            None => self.package.clone(),
-            Some(account) => format!("{}.{}", self.package, account.as_str()),
-        }
+        self.package.clone()
     }
 
-    /// 放状态的目录：一份的是 `<数据根>/state/packages/<编号>/`，每人一份的是 `home/<账号>/state/packages/<编号>/`。不建。
+    /// 放状态的目录：`<数据根>/state/packages/<编号>/`。不建。
     pub(crate) fn state_dir(&self, core: &Core) -> PathBuf {
-        match &self.account {
-            None => crate::packages::packages(core).state_dir(&self.package),
-            Some(account) => core
-                .root
-                .account_dir(account)
-                .join("state")
-                .join("packages")
-                .join(&self.package),
-        }
+        crate::packages::packages(core).state_dir(&self.package)
     }
-}
-
-/// 清单说每人一份。
-pub(crate) fn per_account(manifest: &Manifest) -> bool {
-    manifest
-        .process
-        .as_ref()
-        .is_some_and(|process| process.scope == Scope::Account)
-}
-
-/// 装着的包 `package` 是不是每人一份的（施工 IM-1 中）：读不成的、没装的不是。
-pub(crate) fn scoped(core: &Core, package: &str) -> bool {
-    core.system_packages()
-        .iter()
-        .find(|found| found.id == package)
-        .and_then(|found| found.read.as_ref().ok())
-        .is_some_and(per_account)
 }

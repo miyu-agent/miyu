@@ -37,8 +37,6 @@ pub enum Code {
     BadProgram,
     /// `start` 不是 `manual`、`always`。
     BadStart,
-    /// `[process] scope` 不是 `system`、`account`，或者 `account` 和 `system_account` 一起写了（施工 IM-1 上）。
-    BadScope,
     /// `opens` 里的页名写法不对。
     BadPage,
     /// `pages_dir` 不是资源目录里的相对目录。
@@ -144,7 +142,6 @@ impl Code {
             Code::BadCommandName => "bad_command_name",
             Code::BadProgram => "bad_program",
             Code::BadStart => "bad_start",
-            Code::BadScope => "bad_scope",
             Code::BadPage => "bad_page",
             Code::BadPagesDir => "bad_pages_dir",
             Code::Duplicate => "duplicate",
@@ -190,7 +187,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 57] = [
+    pub const ALL: [Code; 56] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -208,7 +205,6 @@ impl Code {
         Code::BadCommandName,
         Code::BadProgram,
         Code::BadStart,
-        Code::BadScope,
         Code::BadPage,
         Code::BadPagesDir,
         Code::Duplicate,

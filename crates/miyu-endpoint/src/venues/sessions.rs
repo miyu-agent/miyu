@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::id::{AccountId, SessionId};
 
-use super::{Bridge, mains};
+use super::mains;
 use crate::Core;
 use crate::hello::Caller;
 use crate::list::LOCAL;
@@ -39,10 +39,7 @@ pub(crate) async fn sessions(
     let caller = bridge.account();
     let owners = bridge.owners(core);
     // 场所 → 最新的会话和它的属主：场所会话的属主只会是管理员（对应表里的）或者系统账号，核心认的账号都看；每人一份的只看他自己。
-    let accounts = match bridge {
-        Bridge::System(_) => core.accounts(),
-        Bridge::Personal { .. } => vec![caller.clone()],
-    };
+    let accounts = core.accounts();
     let mut newest: BTreeMap<String, (SessionId, AccountId)> = BTreeMap::new();
     for account in accounts {
         for listed in mains(core, &account, |row| row.venue != LOCAL, None).await? {
@@ -76,8 +73,6 @@ pub(crate) struct Owners {
     platforms: BTreeSet<String>,
     /// 对应表里这几个平台的身份对着的本机账号：（平台，账号）。
     bound: BTreeSet<(String, AccountId)>,
-    /// 每人一份的那一份的（施工 IM-2）：他自己名下的也照平台筛。
-    personal: bool,
 }
 
 /// 照这时的清单、配置算 [`Owners`]。
@@ -90,11 +85,7 @@ pub(crate) fn owners(core: &Core, caller: &AccountId) -> Owners {
             Some((platform.to_string(), core.admin.clone()))
         })
         .collect();
-    Owners {
-        platforms,
-        bound,
-        personal: false,
-    }
+    Owners { platforms, bound }
 }
 
 /// 包 `package` 清单 `[connection] platform` 写的平台（施工 IM-3 起能写几个）；没写的、读不成的是空的。
@@ -109,22 +100,10 @@ pub(crate) fn platforms_of_package(core: &Core, package: &str) -> BTreeSet<Strin
 }
 
 impl Owners {
-    /// 每人一份的包 `package` 的那一份（施工 IM-2）：平台照它的清单，不列别人名下的。
-    pub(crate) fn of_package(core: &Core, package: &str) -> Owners {
-        Owners {
-            platforms: platforms_of_package(core, package),
-            bound: BTreeSet::new(),
-            personal: true,
-        }
-    }
-
-    /// `venue.sessions` 列不列场所 `venue` 最新的、属主是 `owner` 的会话，调用的是 `caller` 名下：他自己名下的列（施工 IM-2：
-    /// 他名下的不全是这个包的，包写了平台的只列这几个平台的；平台桥照旧都列），别人名下的照 [`Owners::take`]。
+    /// `venue.sessions` 列不列场所 `venue` 最新的、属主是 `owner` 的会话，调用的是 `caller` 名下：它自己名下的列，别人名下的照
+    /// [`Owners::take`]。
     fn lists(&self, venue: &str, owner: &AccountId, caller: &AccountId) -> bool {
-        if owner != caller {
-            return self.take(venue, owner);
-        }
-        !self.personal || self.platforms.is_empty() || self.platform_is(venue)
+        owner == caller || self.take(venue, owner)
     }
 
     /// 场所 `venue` 是不是这个桥的平台的（施工 O-60；施工 IM-3 起是不是其中一个）：平台前缀在它包清单 `[connection] platform`

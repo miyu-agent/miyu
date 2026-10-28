@@ -35,14 +35,11 @@ pub(super) struct Texts {
     pub(super) timed_out: String,
 }
 
-/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根和提供者的账号，`blob.put` 存在连接的账号名下（施工 Y-2中下）。每人一份的
-/// 包（施工 IM-1 中）连进来就是会话的属主，blob 本来就在他名下，不用拷。
+/// 扩展传上来的 blob 在哪（施工 O-2 三补）：数据根和提供者的账号，`blob.put` 存在连接的账号名下（施工 Y-2中下）。
 #[derive(Clone)]
 pub(crate) struct Stores {
     pub(crate) root: DataRoot,
     pub(crate) provider: AccountId,
-    /// 包是每人一份的：调用转给会话的属主那一份（[`Provided::reach`]）。
-    pub(crate) per_account: bool,
     /// 包声明的状态块（施工 TW-1）：工具结果带的 `state` 照它查。
     pub(crate) declared: Arc<crate::sessions::state::Declared>,
 }
@@ -230,7 +227,7 @@ impl RemoteTool {
     /// 假调用）原样交回；拷不成的记一行，照暂时不可用。
     async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
         let hashes = referenced(&done);
-        let Some(owner) = owner.filter(|_| !hashes.is_empty() && !self.stores.per_account) else {
+        let Some(owner) = owner.filter(|_| !hashes.is_empty()) else {
             return done;
         };
         let stores = self.stores.clone();
@@ -272,13 +269,7 @@ impl Tool for RemoteTool {
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         Box::pin(async move {
             let ids = call.ids.as_ref();
-            let peer = match (self.stores.per_account, ids) {
-                (true, Some(ids)) => self.provided.reach(&self.package, &ids.owner).await,
-                // 每人一份的不知道是谁的调用（测试里的假调用）：没有能转的。
-                (true, None) => None,
-                (false, _) => self.provided.peer(&self.package),
-            };
-            let Some(peer) = peer else {
+            let Some(peer) = self.provided.peer(&self.package) else {
                 return self.unavailable();
             };
             let args: Value = serde_json::from_str(&call.args).unwrap_or_else(|_| json!({}));

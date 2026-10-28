@@ -35,7 +35,6 @@ pub mod index;
 pub mod invites;
 pub mod jobs;
 pub mod journal;
-pub mod kept;
 pub mod knowledge;
 pub mod layers;
 mod links;

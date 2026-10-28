@@ -10,7 +10,6 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use miyu_config::package::{Manifest, PackageKind};
-use miyu_kernel::id::AccountId;
 use miyu_store::packages::Layer;
 
 use super::{listed, manage, packages};
@@ -99,7 +98,7 @@ fn switch(manifest: &Manifest, layer: Layer) -> Result<Switch, Refusal> {
 /// `package.enable`。卸掉了的出厂包先装回来；扩展再照 `approve` 打开。
 pub(crate) async fn enable(
     core: &Arc<Core>,
-    (peer, whose): (Peer, &AccountId),
+    peer: Peer,
     params: EnableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, layer, dir, removed) = find(core, &params.package)?;
@@ -117,13 +116,13 @@ pub(crate) async fn enable(
         Switch::Bundle => crate::mcp::turn_on(core, &params.package, &manifest).await?,
         Switch::Shipped => {}
     }
-    item(core, (peer, whose), &params.package)
+    item(core, peer, &params.package)
 }
 
 /// `package.disable`。扩展关掉进程；出厂的内置包卸掉。
 pub(crate) async fn disable(
     core: &Arc<Core>,
-    (peer, whose): (Peer, &AccountId),
+    peer: Peer,
     params: DisableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, layer, _, removed) = find(core, &params.package)?;
@@ -139,14 +138,14 @@ pub(crate) async fn disable(
             Switch::Bundle => crate::mcp::turn_off(core, &params.package, &manifest).await?,
         }
     }
-    item(core, (peer, whose), &params.package)
+    item(core, peer, &params.package)
 }
 
 /// `package.restart`（施工 X-4）：扩展同 `extension.restart`（关着的、要批的能力还有没批的照它拒），再重启它带的 MCP 服务；
 /// `bundle` 重启它带的服务。关着的 `package_off`；别的种类没有能重启的，`not_restartable`。
 pub(crate) async fn restart(
     core: &Arc<Core>,
-    (peer, whose): (Peer, &AccountId),
+    peer: Peer,
     params: DisableParams,
 ) -> Result<Value, Refusal> {
     let (manifest, _, _, removed) = find(core, &params.package)?;
@@ -161,12 +160,11 @@ pub(crate) async fn restart(
         restart_process(core, peer, id).await?;
     }
     core.restart_services(id, &manifest).await;
-    item(core, (peer, whose), id)
+    item(core, peer, id)
 }
 
-/// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）：每人一份的扩展的状态照 `whose` 那一份（施工
-/// U23 下上）。
-fn item(core: &Core, (peer, whose): (Peer, &AccountId), id: &str) -> Result<Value, Refusal> {
+/// 包 `id` 这时在 `package.list` 里的那一项（卸掉了的出厂包带 `removed: true`）。
+fn item(core: &Core, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let places = packages(core);
     let system = core.system_packages();
@@ -174,7 +172,7 @@ fn item(core: &Core, (peer, whose): (Peer, &AccountId), id: &str) -> Result<Valu
         return Ok(listed(
             core,
             found,
-            (&places, &system, Some(whose)),
+            (&places, &system),
             &words,
             peer.language,
             false,
@@ -188,7 +186,7 @@ fn item(core: &Core, (peer, whose): (Peer, &AccountId), id: &str) -> Result<Valu
     Ok(listed(
         core,
         found,
-        (&places, &system, Some(whose)),
+        (&places, &system),
         &words,
         peer.language,
         true,

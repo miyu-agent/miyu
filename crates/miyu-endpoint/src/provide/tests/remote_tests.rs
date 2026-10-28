@@ -22,7 +22,7 @@ fn remote_with(timeout: Duration, stores: Stores) -> (RemoteTool, Peer, mpsc::Re
     let provided = Arc::new(Provided::default());
     let (out, lines) = mpsc::channel(8);
     let peer = Peer::new(out);
-    provided.register(Instance::system("onebot"), peer.clone());
+    provided.register(Instance::of("onebot"), peer.clone());
     let mut checked = checked(tool("read", json!(["local"]))).expect("合写法");
     checked.timeout = timeout;
     let remote = RemoteTool::new(checked, "onebot", provided, texts(), stores);

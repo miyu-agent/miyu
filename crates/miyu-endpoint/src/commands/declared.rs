@@ -68,11 +68,9 @@ pub(super) async fn run(
 ) -> Result<Value, Refusal> {
     let name = declared.command.name.as_str();
     let noted = CommandId::parse(&format!("{id}/ran")).map_err(|_| Refusal::BAD_PARAMS)?;
-    // 每人一份的包转给会话属主那一份，没在跑的照用到时拉起（施工 IM-1 中下三）。
     let connection = core
         .provided
-        .ready(core, &declared.package, handle.owner())
-        .await
+        .peer(&declared.package)
         .ok_or(Refusal::COMMAND_UNAVAILABLE)?;
     let asked = json!({
         "command": name,

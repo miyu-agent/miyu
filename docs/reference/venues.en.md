@@ -14,11 +14,11 @@ A venue is where a session happens: this machine (`local`), or a private chat or
 | [`venue.records`](#venuerecords) | Group chat records for the judge |
 | [`venue.*` in `events.append`](#venue-in-eventsappend) | Record recalls and messages she delivered |
 
-**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections (extensions of packages that declare a system account) and per-account copies of a package (`[process] scope = "account"`); others get `no_system_account`. For a per-account copy, venue sessions always belong to the person it runs for (even a private chat whose peer is in the owner's binding table); the owner's binding table only counts in the owner's own copy, so a member's copy gets `null` from `venue.binding` and `as` in sessions under the member is an external identity without an account; `venue.sessions` lists only that person's sessions on the package's platform. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
+**Who can call**: `venue.session`, `venue.sessions`, `venue.binding` and `venue.plugins` are for system account connections (extensions of packages that declare a system account); others get `no_system_account`. Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*` and recording `venue.*` events all require the `act_for_external` capability.
 
 **Venue ids**: short names the bridge chooses (1 to 128 bytes, no control characters), e.g. `qq:private:10001`, `qq:group:123456`. The core doesn't interpret them beyond the platform prefix before the first `:`.
 
-**Your own numbers** (construction BD-1): anyone can write `external.me = ["qq:12345"]` in their personal settings to say those identities are them. They only count in venue sessions under that person: their per-account copy gets them back from `venue.binding`, and what that identity says in their groups is recorded as them. Sessions under a platform bridge ignore it.
+**Your own numbers** (construction BD-1): write `external.me = ["qq:12345"]` in settings to say those identities are you: what they say in venue sessions under you is recorded as you. Sessions under a platform bridge ignore it. (SU-3 merges this with the owner bindings.)
 
 **Owner bindings**: the system setting `[external.bindings]`: every platform identity written there is the owner (there is only one owner, so any value counts; an empty one doesn't):
 

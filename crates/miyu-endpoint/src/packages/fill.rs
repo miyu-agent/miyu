@@ -43,10 +43,6 @@ pub(crate) fn fill(item: &mut Value, id: &str, manifest: &Manifest, language: &s
     }
     if let Some(process) = &manifest.process {
         item["process"] = json!({"args": process.args, "start": process.start.as_str()});
-        // 每人一份的（施工 IM-1 上）多 `scope`；一份的不写，字节不变。
-        if process.scope == miyu_config::package::Scope::Account {
-            item["process"]["scope"] = json!(process.scope.as_str());
-        }
     }
     if let Some(ui) = &manifest.ui {
         item["opens"] = json!(ui.opens);

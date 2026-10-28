@@ -7,22 +7,19 @@
 
 mod approval;
 pub(crate) mod config;
-mod demand;
 mod instance;
 pub(crate) mod methods;
 mod offers;
 mod ports;
-mod retire;
 mod state;
 pub(crate) mod stderr;
 mod supervise;
 
 pub(crate) use approval::{described, forget as forget_switch, held};
-pub(crate) use instance::{Instance, per_account, scoped};
+pub(crate) use instance::Instance;
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
 pub(crate) use offers::offer;
 pub(crate) use ports::{claim as claim_port, list as list_ports, release as release_port};
-pub(crate) use retire::{keep, retire};
 pub(crate) use state::{Cell, Reason, State, Status};
 pub use supervise::Timing;
 pub(crate) use supervise::backoff;
@@ -67,8 +64,6 @@ pub(crate) struct Extensions {
     timing: Timing,
     /// 谁变了（施工 9-4 补）。
     changed: broadcast::Sender<String>,
-    /// 改常驻名单 `system/kept.json` 一件件办（施工 IM-1 下）。
-    kept: Mutex<()>,
     /// 扩展登记的端口（施工 IM-5，`ports.rs`）。
     ports: ports::Ports,
     /// 扩展按账号交的预设功能（施工 IM-6，`offers.rs`）。
@@ -87,7 +82,6 @@ impl Extensions {
             ops: tokio::sync::Mutex::new(()),
             timing,
             changed: broadcast::channel(CHANGES).0,
-            kept: Mutex::new(()),
             ports: ports::Ports::default(),
             offers: offers::Offers::default(),
         }
@@ -116,7 +110,7 @@ impl Extensions {
 
     /// 包 `id` 那一份（一份的）这时的状态：没拉起过的关着。
     pub(crate) fn status(&self, id: &str) -> Status {
-        self.status_of(&Instance::system(id))
+        self.status_of(&Instance::of(id))
     }
 
     /// `instance` 这时的状态：没拉起过的关着。
@@ -128,15 +122,6 @@ impl Extensions {
             },
             |slot| slot.status.get(),
         )
-    }
-
-    /// 包 `id` 每人一份的那几份（施工 IM-1 中下四）：拉起过的，照账号排，带这时的状态。
-    pub(crate) fn copies_of(&self, id: &str) -> Vec<(miyu_kernel::id::AccountId, Status)> {
-        self.slots()
-            .iter()
-            .filter(|(instance, _)| instance.package == id)
-            .filter_map(|(instance, slot)| Some((instance.account.clone()?, slot.status.get())))
-            .collect()
     }
 
     /// 有在干活、或者等着再干的。
@@ -160,7 +145,6 @@ impl Extensions {
                     failures: 0,
                 }),
                 changed: self.changed.clone(),
-                retiring: std::sync::atomic::AtomicBool::new(false),
             }),
             task: None,
         })
@@ -169,7 +153,7 @@ impl Extensions {
     /// 开着、不拉起的包 `id`（施工 9-4 下上：要的能力还有没批的）：一份的那一格记成停下，`reason` 照交的。
     fn hold(&self, id: &str, reason: Reason) {
         let mut slots = self.slots();
-        self.slot(&mut slots, &Instance::system(id))
+        self.slot(&mut slots, &Instance::of(id))
             .status
             .set(State::Stopped(reason), 0);
     }
@@ -257,8 +241,6 @@ impl Core {
     /// 照开关拉起开着的扩展（施工 9-4 上）：核心起来、开始接连接之前调一次。要在 tokio 的运行时里调。要的能力还有没批的
     /// 不拉起，记成停下（`needs_approval`，施工 9-4 下上）。拉起以前照登记缓存先登记它的工具（施工 O-2 中）。
     pub fn start_extensions(self: &Arc<Self>) {
-        // 每人一份的用到时拉起（施工 IM-1 中）：提供者表接上核心。
-        self.provided.attach(self);
         // 扩展以系统账号的身份连进来：先建它们的家目录（施工 O-4 下）。
         crate::system_accounts::prepare(self);
         // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
@@ -290,8 +272,8 @@ impl Core {
         }
         match approval::unapproved(self, id, manifest).is_empty() {
             true => {
-                let cached = crate::provide::restore(self, id);
-                self.launch_or_wait(id, manifest, cached);
+                crate::provide::restore(self, id);
+                self.launch(id, manifest);
                 // 它带的 MCP 服务跟着起（施工 X-3 下）。
                 self.start_services(id, manifest);
             }
@@ -299,21 +281,9 @@ impl Core {
         }
     }
 
-    /// 拉起包 `id`（照缓存登记上了工具的是 `cached`）。每人一份的用到时才起（施工 IM-1 中）：她调到它的工具时替那个人拉起；
-    /// 还没有登记缓存的（头一回装上）先替机主起一份，把工具登记上，不然谁都调不到它。说了要常驻的人的那一份跟着起（施工 IM-1 下）。
-    pub(crate) fn launch_or_wait(self: &Arc<Self>, id: &str, manifest: &Manifest, cached: bool) {
-        if !per_account(manifest) {
-            self.extensions
-                .launch(self, &Instance::system(id), manifest);
-            return;
-        }
-        if !cached {
-            self.start_for(&Instance {
-                package: id.to_string(),
-                account: Some(self.admin.clone()),
-            });
-        }
-        self.start_kept(id);
+    /// 拉起包 `id` 那一份。
+    pub(crate) fn launch(self: &Arc<Self>, id: &str, manifest: &Manifest) {
+        self.extensions.launch(self, &Instance::of(id), manifest);
     }
 
     /// 装卸时照清单从 `before` 换到 `now` 跟着拉起、停下扩展（施工 F-5 下，设计 30 第九节）。卸包是删文件以前先换到去掉它

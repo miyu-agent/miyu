@@ -159,8 +159,6 @@
 
 **`package.call`**：参数 `package`、`method`、`params`（可不写）。核心把它转给那个包的程序（`method.call`），程序回什么交回什么。在后台答。界面块上的按钮、整页的表单保存都走它。
 
-每人一份的包（`[process] scope = "account"`）：谁调就转给谁那一份（页面是看页面的那个人，扩展调的是它替的那个人）；那一份没在跑的，核心替他拉起，等它登记了方法再转，最多等 60 秒。
-
 扩展也能调 `package.call`：要在清单里声明能力 `packages.call`，只调得到对方清单 `[export]` 里列的方法；转过去带 `from`（调的包的编号）。对方回应里出现的、它自己存的 blob，调用方之后也读得到（见 [附件](blob.md#blobget)）。
 
 **出错**
@@ -168,7 +166,7 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `no_page`、`not_found` | `package.file`：没有后台页；没有这份文件、跑出目录、不是普通文件 |
-| `program_not_running` | 程序没连着；每人一份的拉不起来、60 秒没登记方法 |
+| `program_not_running` | 程序没连着 |
 | `unregistered` | 程序没登记这个方法，`data.method` |
 | `method_failed` | 程序回了错，`data.message`、`data.code` |
 | `method_timeout` | 到时限没回 |
@@ -187,10 +185,8 @@
 | `failures` | 连续失败几次 |
 | `pid` | 在跑的进程号 |
 | `retry_in` | 在等的：多少毫秒以后再拉起 |
-| `reason`、`stderr` | 停下的：为什么（`failed_repeatedly`、`config_error`、`needs_approval`、网址的服务要浏览器登录的 `needs_login`、问过 `process.retire` 自己退的 `retired`……）、标准错误的最后几行 |
+| `reason`、`stderr` | 停下的：为什么（`failed_repeatedly`、`config_error`、`needs_approval`、网址的服务要浏览器登录的 `needs_login`……）、标准错误的最后几行 |
 | `capabilities`、`unapproved` | 声明的能力 `[{id, name, summary}]`、还没批的 |
-| `scope` | 每人一份的包（`[process] scope = "account"`）是 `"account"`，别的没有这一格。这时 `state` 这几格是看的人自己那一份的：他还没用过的是 `off`，用到时才起，不是关着（开关看 `on`）（施工 IM-1 中下四） |
-| `copies` | 管理员看每人一份的包才有：拉起过的每一份 `[{account, state, failures, pid?, retry_in?, reason?, stderr?}]`，照账号排。关掉、重启这个包，每一份都停 |
 
 要一直跟着最新的，订阅 `extensions` 流。
 

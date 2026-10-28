@@ -67,4 +67,4 @@ Core → extension, a notification (construction J-4): a schedule an extension a
 | `prompt` | What was written when it was added, handed back as is (the extension picks the format, e.g. JSON) |
 | `missed` | How many runs were missed while the core was stopped, counting up to 1000; missed runs are not made up, only counted. Absent when none |
 
-If that process is not running: a per-account package (`[process] scope = "account"`) is started on demand, waiting up to 60 seconds for it to connect; a single-process package is not started. When it cannot be reached the run is recorded as `skipped:package_unavailable`; a one-off is removed as usual, a recurring one waits for its next time.
+If the package isn't connected it isn't started. When it cannot be reached the run is recorded as `skipped:package_unavailable`; a one-off is removed as usual, a recurring one waits for its next time.

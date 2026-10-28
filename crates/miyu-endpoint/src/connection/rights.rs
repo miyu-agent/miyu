@@ -102,7 +102,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "package.emit" | "package.files" | "package.info" | "package.list" | "package.logo" | "package.methods"
         | "package.owns" | "persona.avatar" | "persona.background" | "persona.get"
         | "feature.offer" | "persona.list" | "persona.read" | "port.claim" | "port.release" | "preset.get"
-        | "preset.list" | "process.keep" | "process.retire" | "provider.catalog"
+        | "preset.list" | "provider.catalog"
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
         }

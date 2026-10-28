@@ -108,7 +108,7 @@ impl PackagesPort for Port {
     fn list(&self) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let listed = super::list(&core, self.peer(&core), &self.owner).map_err(refused)?;
+            let listed = super::list(&core, self.peer(&core)).map_err(refused)?;
             Ok(listed["packages"].clone())
         })
     }
@@ -121,7 +121,7 @@ impl PackagesPort for Port {
             let mut info = super::local::info(&core, self.peer(&core).admin, params)
                 .await
                 .map_err(refused)?;
-            if let Some(entry) = super::entry(&core, &package, self.peer(&core), &self.owner) {
+            if let Some(entry) = super::entry(&core, &package, self.peer(&core)) {
                 for key in ["name", "summary", "kind"] {
                     if let Some(value) = entry.get(key) {
                         info[key] = value.clone();
@@ -180,7 +180,7 @@ impl PackagesPort for Port {
                 .collect();
             let params = serde_json::from_value(json!({ "package": package, "approve": approve }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            super::switch::enable(&core, (self.peer(&core), &self.owner), params)
+            super::switch::enable(&core, self.peer(&core), params)
                 .await
                 .map_err(refused)
         })

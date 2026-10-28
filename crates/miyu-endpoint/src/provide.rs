@@ -3,7 +3,6 @@
 //! 「暂时不可用」。登记缓存在磁盘上，核心起来、开扩展时先照缓存登记；关掉扩展，它的工具出目录（施工 O-2 中，[`cache`]）。
 
 mod cache;
-mod reach;
 mod remote;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -27,24 +26,19 @@ use crate::reverse::Peer;
 use remote::referenced;
 use remote::{RemoteTool, Stores, Texts};
 
-/// 哪一份进程现在由哪个连接提供（施工 IM-1 中起按（包，账号）记）。
+/// 哪个包的进程现在由哪个连接提供。
 #[derive(Default)]
 pub(crate) struct Provided {
     peers: Mutex<HashMap<Instance, Peer>>,
     /// 握手成了的那几份的连接（施工 J-4）：不管登没登记工具，推通知（`schedule.fired`）照它找。工具调用照旧只认登记了工具的
     /// （[`Provided::peers`]），握了手还没登记的不转过去。
     linked: Mutex<HashMap<Instance, Peer>>,
-    /// 每登记、每握手一次加一：等每人一份的那一份连上来的照它醒（[`reach`]）。
-    arrived: tokio::sync::watch::Sender<u64>,
-    /// 核心：用到时替人拉起每人一份的那一份（施工 IM-1 中）。核心起来时接上（[`Provided::attach`]），没接的（测试里自己造的）
-    /// 不拉起。
-    core: std::sync::OnceLock<std::sync::Weak<Core>>,
 }
 
 impl Provided {
     /// 现在提供包 `package` 那一份（一份的）的连接；没有的是没有。
     pub(crate) fn peer(&self, package: &str) -> Option<Peer> {
-        self.peer_of(&Instance::system(package))
+        self.peer_of(&Instance::of(package))
     }
 
     /// 现在提供 `instance` 的连接；没有的是没有。
@@ -56,47 +50,30 @@ impl Provided {
             .cloned()
     }
 
-    /// 记下 `instance` 由 `peer` 提供，换掉以前的；等着它的醒过来。
+    /// 记下 `instance` 由 `peer` 提供，换掉以前的。
     fn register(&self, instance: Instance, peer: Peer) {
         self.peers
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .insert(instance, peer);
-        self.arrived
-            .send_modify(|count| *count = count.wrapping_add(1));
     }
 
-    /// 记下 `instance` 握手成了、连接是 `peer`（施工 J-4），换掉以前的；等着它的醒过来。
+    /// 记下 `instance` 握手成了、连接是 `peer`（施工 J-4），换掉以前的。
     pub(crate) fn link(&self, instance: Instance, peer: Peer) {
         self.linked
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .insert(instance, peer);
-        self.arrived
-            .send_modify(|count| *count = count.wrapping_add(1));
     }
 
-    /// 有一份登记了什么（施工 IM-1 中下：后台页的方法）：等着的醒过来再找一遍。
-    pub(crate) fn nudge(&self) {
-        self.arrived
-            .send_modify(|count| *count = count.wrapping_add(1));
-    }
-
-    /// `instance` 握了手、还连着的连接。
-    fn linked_of(&self, instance: &Instance) -> Option<Peer> {
+    /// 包 `package` 握了手、还连着的连接（施工 J-4：到点推给建它的扩展），不用登记工具；没连着的没有（它归开机、扩展管理拉起）。
+    pub(crate) fn linked(&self, package: &str) -> Option<Peer> {
         self.linked
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .get(instance)
+            .get(&Instance::of(package))
             .filter(|peer| !peer.closed())
             .cloned()
-    }
-
-    /// 接上核心：之后每人一份的用到时拉起。接过的不再换。
-    pub(crate) fn attach(&self, core: &Arc<Core>) {
-        if self.core.set(Arc::downgrade(core)).is_err() {
-            // 接过了：同一个核心。
-        }
     }
 }
 
@@ -169,10 +146,8 @@ pub(crate) async fn provide(
     };
     let kept = serde_json::to_vec(&params).map_err(|_| Refusal::INTERNAL)?;
     let count = register(core, package, params.tools)?;
-    core.provided.register(
-        Instance::serving(core, package, caller.acting_for()),
-        caller.reverse.clone(),
-    );
+    core.provided
+        .register(Instance::of(package), caller.reverse.clone());
     cache::write(core, package, &kept);
     tracing::info!(target: "miyu::endpoint", package, tools = count, "provided");
     Ok(json!({ "tools": count }))
@@ -193,7 +168,6 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
     };
     let count = tools.len();
     let listed = listed(core, package);
-    let per = crate::extensions::scoped(core, package);
     let platforms = crate::venues::platforms_of_package(core, package);
     let declared = Arc::new(crate::sessions::state::Declared::of(core, package));
     let mut built: Vec<Arc<dyn Tool>> = Vec::with_capacity(count);
@@ -218,7 +192,6 @@ fn register(core: &Core, package: &str, tools: Vec<ToolParams>) -> Result<usize,
                 Stores {
                     root: core.root.clone(),
                     provider: core.account_of(Some(package)),
-                    per_account: per,
                     declared: Arc::clone(&declared),
                 },
             )

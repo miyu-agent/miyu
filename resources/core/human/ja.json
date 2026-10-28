@@ -638,7 +638,6 @@
     "package-problems/bad_command_name": "{detail} は小文字で始め、小文字・数字・- だけを使ってください",
     "package-problems/bad_program": "{detail} はパスを含まないプログラム名だけを書いてください",
     "package-problems/bad_start": "{detail} は manual か always です",
-    "package-problems/bad_scope": "{detail} は system か account です（account は system_account と一緒に書けません）",
     "package-problems/bad_page": "{detail} のページ名は小文字・数字・-・_ だけです",
     "package-problems/bad_pages_dir": "{detail} はリソースディレクトリ内の相対ディレクトリで、.. や先頭の / は使えません",
     "package-problems/duplicate": "同梱のパッケージにもう {detail} があります。こちらは数えません",

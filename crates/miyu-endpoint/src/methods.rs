@@ -119,9 +119,7 @@ pub(crate) fn call<'a>(
             answer(move || async move { crate::view::detail(core, peer, params(request)?).await })
         }
         "extension.status" => {
-            answer(
-                move || async move { Ok(crate::extensions::status(core, peer, caller.acting_for())) },
-            )
+            answer(move || async move { Ok(crate::extensions::status(core, peer)) })
         }
         "extension.enable" => {
             answer(
@@ -137,11 +135,6 @@ pub(crate) fn call<'a>(
             answer(
                 move || async move { crate::extensions::restart(core, peer, params(request)?).await },
             )
-        }
-        // 扩展自己退、常驻（施工 IM-1 下）。
-        "process.retire" => answer(move || async move { crate::extensions::retire(core, caller) }),
-        "process.keep" => {
-            answer(move || async move { crate::extensions::keep(core, caller, params(request)?) })
         }
         // 端口登记（施工 IM-5）。
         "port.claim" => {

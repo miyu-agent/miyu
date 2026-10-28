@@ -5,8 +5,6 @@ use serde_json::{Value, json};
 
 use miyu_config::package::{Manifest, Widget, WidgetPlace};
 
-use miyu_kernel::id::AccountId;
-
 use super::Key;
 use crate::Core;
 use crate::extensions::State;
@@ -22,8 +20,6 @@ pub(super) struct Item {
     name: miyu_config::phrases::Phrases,
     /// 包的图标。
     icon: Option<String>,
-    /// 每人一份的包（施工 IM-1 中下五）：看的那个人，内容、运行状态照他那一份；一份的包没有。
-    pub(super) owner: Option<AccountId>,
 }
 
 impl Item {
@@ -37,24 +33,21 @@ impl Item {
                 .per_session
                 .then(|| session.map(str::to_string))
                 .flatten(),
-            account: self.owner.clone(),
         }
     }
 }
 
-/// 这一刻 `viewer` 的头看得到的块：装着、开着的扩展声明的；只要包 `only` 的就写上它。每人一份的包的块是他那一份的
-/// （施工 IM-1 中下五）。
-pub(super) fn declared(core: &Core, only: Option<&str>, viewer: &AccountId) -> Vec<Item> {
+/// 这一刻头看得到的块：装着、开着的扩展声明的；只要包 `only` 的就写上它。
+pub(super) fn declared(core: &Core, only: Option<&str>) -> Vec<Item> {
     let packages = core.system_packages();
     crate::extensions::processes(&packages)
         .filter(|(id, _)| only.is_none_or(|only| only == *id))
         .filter(|(id, manifest)| crate::extensions::switched_on(core, id, manifest))
-        .flat_map(|(id, manifest)| items(id, manifest, viewer))
+        .flat_map(|(id, manifest)| items(id, manifest))
         .collect()
 }
 
-fn items(id: &str, manifest: &Manifest, viewer: &AccountId) -> Vec<Item> {
-    let owner = crate::extensions::per_account(manifest).then(|| viewer.clone());
+fn items(id: &str, manifest: &Manifest) -> Vec<Item> {
     manifest
         .widgets
         .iter()
@@ -63,7 +56,6 @@ fn items(id: &str, manifest: &Manifest, viewer: &AccountId) -> Vec<Item> {
             widget: widget.clone(),
             name: manifest.name.clone(),
             icon: manifest.icon.clone(),
-            owner: owner.clone(),
         })
         .collect()
 }
@@ -78,12 +70,8 @@ pub(super) fn one(
 ) -> Value {
     let widget = &item.widget;
     let shown = core.widgets.get(&item.key(session));
-    let instance = crate::extensions::Instance {
-        package: item.package.clone(),
-        account: item.owner.clone(),
-    };
     let running = matches!(
-        core.extensions.status_of(&instance).state,
+        core.extensions.status(&item.package).state,
         State::Running { .. }
     );
     let mut one = json!({

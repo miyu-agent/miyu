@@ -74,7 +74,7 @@
 4. 一项：`{"id","when","prompt","target","by","recurring","paused","loop"?,"next"?,"last"?: {"at","result","session"?},"created"}`。
 5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。建、停、续、删、改下一次、到点交过都推（`schedules/changes.rs`，一条是「账号、换行、编号」，同项目的）；只推自己账号的。
 6. 谁能调：人，成员也能（`connection/gate/members.rs`）；扩展要批过 `sessions.drive`（施工 J-4，`connection/rights.rs`），建的 `by` 记成包，只看得到、改得了自己建的（`methods.rs` 的 `mine`、`own`），别的编号一样 `unknown_schedule`。`schedules` 流只给人，扩展回 `local_only`。
-7. 推给扩展（施工 J-4，形状主会话 2026-10-27 和 onebot 定）：`target` 多一种 `{"package": {}}`，只有扩展能写（人写回 `bad_params`），不带 `loop`。到点不进会话：`fire.rs` 的 `pushed` 照 `by` 的包找那个包替这个账号的那一份（`Provided::toward`：每人一份的照用到时拉起、等它连上，只有一份的只认连着的），推通知 `schedule.fired {"id","at","prompt","missed"?}`，结果记 `sent`，推不到的记 `skipped:package_unavailable`。`missed` 是核心停着时错过的次数：起来跳过时（`run::skip`、`next::missed`，最多数到 1000）累加进表里 `target` 那一格，推过就清零。扩展握手成了另记一份连着的（`Provided` 的 `linked`），推通知照它找，不登记工具的扩展也推得到；工具调用照旧只认登记了工具的。
+7. 推给扩展（施工 J-4，形状主会话 2026-10-27 和 onebot 定）：`target` 多一种 `{"package": {}}`，只有扩展能写（人写回 `bad_params`），不带 `loop`。到点不进会话：`fire.rs` 的 `pushed` 照 `by` 的包找那个包连着的连接（`Provided::linked`，不替它拉起），推通知 `schedule.fired {"id","at","prompt","missed"?}`，结果记 `sent`，推不到的记 `skipped:package_unavailable`。`missed` 是核心停着时错过的次数：起来跳过时（`run::skip`、`next::missed`，最多数到 1000）累加进表里 `target` 那一格，推过就清零。扩展握手成了另记一份连着的（`Provided` 的 `linked`），推通知照它找，不登记工具的扩展也推得到；工具调用照旧只认登记了工具的。
 
 ### 六、标签
 

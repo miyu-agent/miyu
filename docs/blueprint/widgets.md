@@ -139,7 +139,6 @@ command = "weather"                       # 只给 page：斜杠命令名，写�
 3. **清**：程序停了，它的块内容全清，推 `running: false`；关掉、卸掉、清单里去掉了的块推 `null`；升级以后清单变了的照新的推。
 4. **限速**：给每个连接、每一块记上次推的时间，不到 250 毫秒的等到点再推最新的那一份；空闲时什么都不推。
 5. **日志**：内容不进运行日志、不进事件。拒了的写法记一行 `WARN widget content rejected package=… widget=… problem=…`。
-6. **每人一份的包**（`[process] scope = "account"`，施工 IM-1 中下五）：块照（包，账号）记（`Key.account`）。程序推的记成它替的那个人那一份的；头看到的、算谁在看、`running` 都照订的那个人那一份；`widget.watch`、`widget.unwatch` 只发给那个人那一份；程序停了只清它那一份的。头订阅不替谁拉起：那一份没在跑的 `running: false`，它起来握了手再补 `widget.watch`。一份的包照旧不分账号。
 
 ### 出错
 

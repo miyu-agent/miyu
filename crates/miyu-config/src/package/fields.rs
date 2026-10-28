@@ -30,7 +30,7 @@ pub(super) const PACKAGE: &[&str] = &[
 pub(super) const COMMAND: &[&str] = &["name", "program", "about", "args"];
 
 /// `[process]`。
-pub(super) const PROCESS: &[&str] = &["args", "start", "capabilities", "system_account", "scope"];
+pub(super) const PROCESS: &[&str] = &["args", "start", "capabilities", "system_account"];
 
 /// `[ui]`：界面包。
 pub(super) const UI: &[&str] = &["opens", "pages_dir"];

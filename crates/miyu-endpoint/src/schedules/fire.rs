@@ -61,7 +61,7 @@ pub(super) async fn deliver(
         }),
     });
     let session = match &schedule.target {
-        Target::Package { missed } => return pushed(core, account, schedule, due, *missed).await,
+        Target::Package { missed } => return pushed(core, schedule, due, *missed).await,
         Target::Session { session } => session.clone(),
         Target::New {
             persona,
@@ -130,19 +130,13 @@ pub(super) async fn deliver(
     }
 }
 
-/// 推给建它的扩展（施工 J-4）：`schedule.fired` 交给那个包替这个账号的那一份，没在跑的照用到时拉起（每人一份的）。推不到的记
-/// `skipped:package_unavailable`，一次性的照常删、周期的等下一次。
-async fn pushed(
-    core: &Arc<Core>,
-    account: &AccountId,
-    schedule: &Schedule,
-    due: Timestamp,
-    missed: u32,
-) -> Delivered {
+/// 推给建它的扩展（施工 J-4）：`schedule.fired` 交给那个包，它没连着的记 `skipped:package_unavailable`，一次性的照常删、周期的
+/// 等下一次。
+async fn pushed(core: &Arc<Core>, schedule: &Schedule, due: Timestamp, missed: u32) -> Delivered {
     let Creator::Package { package } = &schedule.by else {
         return Delivered::skipped("package_unavailable", None, false);
     };
-    let Some(peer) = core.provided.toward(core, package, account).await else {
+    let Some(peer) = core.provided.linked(package) else {
         return Delivered::skipped("package_unavailable", None, false);
     };
     let mut fired = serde_json::json!({"id": schedule.id, "at": due, "prompt": schedule.prompt});

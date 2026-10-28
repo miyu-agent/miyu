@@ -122,16 +122,10 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 这个连接是谁（施工 O-4 下、Y-5 中上）：核心拉起的带进程的包是它自己的账号，别的是管理员；没声明系统账号的包替机主干活。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
-    // 每人一份的那一份（施工 IM-1 中）是那个人自己，替他干活：能力照他取交集（`extensions::held`）。
-    let mine = instance
-        .as_ref()
-        .and_then(|instance| instance.account.clone());
-    let account = mine
-        .clone()
-        .unwrap_or_else(|| core.account_of(package.as_deref()));
+    let account = core.account_of(package.as_deref());
     let caller = Caller {
         reverse: reverse.clone(),
-        serving: mine.or_else(|| core.serving(&account)),
+        serving: core.serving(&account),
         account,
         package: package.clone(),
     };

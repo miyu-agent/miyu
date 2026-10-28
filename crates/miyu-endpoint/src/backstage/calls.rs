@@ -87,7 +87,7 @@ pub(crate) fn register(
         methods.insert(method.name, Duration::from_millis(timeout));
     }
     let count = methods.len();
-    let instance = Instance::serving(core, package, caller.acting_for());
+    let instance = Instance::of(package);
     let label = instance.label();
     core.backstage
         .table
@@ -100,8 +100,6 @@ pub(crate) fn register(
                 methods,
             },
         );
-    // 等着这一份登记方法的（用到时拉起的）醒过来。
-    core.provided.nudge();
     tracing::info!(target: "miyu::endpoint", package = label, methods = count, "page methods registered");
     Ok(json!({ "methods": count }))
 }
@@ -129,17 +127,11 @@ pub(crate) async fn call(
     if from.is_some() && !target.export.contains(&params.method) {
         return Err(Refusal::not_exported(&params.method));
     }
-    let instance = Instance::serving(core, &params.package, caller.acting_for());
-    let found = |instance: &Instance| core.backstage.peer_of(instance);
-    let peer = match (found(&instance), &instance.account) {
-        (Some(peer), _) => peer,
-        (None, Some(_)) => core
-            .provided
-            .wait(&instance, found)
-            .await
-            .ok_or(Refusal::NOT_RUNNING)?,
-        (None, None) => return Err(Refusal::NOT_RUNNING),
-    };
+    let instance = Instance::of(&params.package);
+    let peer = core
+        .backstage
+        .peer_of(&instance)
+        .ok_or(Refusal::NOT_RUNNING)?;
     let timeout = core
         .backstage
         .table
@@ -159,10 +151,7 @@ pub(crate) async fn call(
         Ok(Ok(Ok(result))) => {
             if let Some(from) = from {
                 let passed = core.blob_grants.pass(&params.package, from, &result);
-                let answered = instance
-                    .account
-                    .clone()
-                    .unwrap_or_else(|| core.account_of(Some(&params.package)));
+                let answered = core.account_of(Some(&params.package));
                 hand_over(core, (answered, caller.account.clone()), passed).await;
             }
             Ok(result)

@@ -116,8 +116,6 @@ preset.delete
 preset.get
 preset.list
 preset.set
-process.keep
-process.retire
 project.create
 project.delete
 project.list

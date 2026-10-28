@@ -2,7 +2,7 @@
 
 use toml_edit::{Item, TableLike};
 
-use super::{Capability, Code, Command, Need, PackageKind, Pages, Problem, Process, Scope, Start};
+use super::{Capability, Code, Command, Need, PackageKind, Pages, Problem, Process, Start};
 use crate::phrases::{self, PhraseError, Phrases};
 
 /// `[package]` 读出来的几格。
@@ -205,36 +205,11 @@ impl Reader<'_> {
             },
         };
         let system_account = self.flag(table, "process", "system_account")?;
-        let scope = match table.get("scope") {
-            None => Scope::System,
-            Some(item) => match item.as_str() {
-                Some("system") => Scope::System,
-                Some("account") if !system_account => Scope::Account,
-                Some("account") => {
-                    return Err(self.problem(
-                        Some(item),
-                        Code::BadScope,
-                        "process.scope",
-                        "process.scope = \"account\" cannot go with process.system_account"
-                            .to_string(),
-                    ));
-                }
-                _ => {
-                    return Err(self.problem(
-                        Some(item),
-                        Code::BadScope,
-                        "process.scope",
-                        "process.scope must be system or account".to_string(),
-                    ));
-                }
-            },
-        };
         Ok(Process {
             args: self.texts(table, "process", "args")?,
             start,
             capabilities: self.capabilities(table)?,
             system_account,
-            scope,
         })
     }
 

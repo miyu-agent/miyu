@@ -14,11 +14,11 @@
 | [`venue.records`](#venuerecords) | 判官看的群聊记录 |
 | [`events.append` 的 `venue.*`](#eventsappend-的-venue) | 记撤回、记她发出去的话 |
 
-**谁能调**：`venue.session`、`venue.sessions`、`venue.binding`、`venue.plugins` 只给系统账号的连接（声明了系统账号的包的扩展）和每人一份的包（`[process] scope = "account"`）的那一份，别的回 `no_system_account`。每人一份的那一份：场所会话一律归它替的那个人（私聊的对方在主人对应表里也一样）；主人对应表只在主人自己那一份里认，成员那一份问 `venue.binding` 是 `null`、他名下的会话里 `as` 记成外部身份不带账号；`venue.sessions` 只列他名下这个包的平台的。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
+**谁能调**：`venue.session`、`venue.sessions`、`venue.binding`、`venue.plugins` 只给系统账号的连接（声明了系统账号的包的扩展），别的回 `no_system_account`。代表平台上的人说话（带 `as` 的 `session.send`、`command.run`）、`session.note`、`venue.*`、记 `venue.*` 事件都要能力 `act_for_external`。
 
 **场所编号**：桥自己定的短名字（1 到 128 字节，没有控制字符），例如 `qq:private:10001`、`qq:group:123456`。核心不解读，只认第一个 `:` 前面的平台前缀。
 
-**自己的号**（施工 BD-1）：每个人在个人设置里写 `external.me = ["qq:12345"]`，说这几个号是他自己。只在他名下的场所会话里认：他那一份每人一份的包问 `venue.binding` 回他本人，他群里这个号说的话记成他本人。平台桥名下的会话不认。
+**自己的号**（施工 BD-1）：设置里写 `external.me = ["qq:12345"]`，说这几个号是你自己：你名下的场所会话里这个号说的话记成你本人。平台桥名下的会话不认。（SU-3 和主人对应表并成一份。）
 
 **主人对应表**：系统配置 `[external.bindings]`，写了的平台身份就是主人（只有一个主人，值写什么都算，空的不算）：
 

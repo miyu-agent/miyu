@@ -19,15 +19,14 @@ pub enum Asked {
     Failed(String),
 }
 
-/// 替 `owner` 问来源 `source`（`<包>/<编号>`），参数 `params`，等 `timeout`：交回清单里写的名字（照 `en`、`zh`、`ja` 挑）和
-/// 回应。每人一份的包问他那一份，没在跑的照用到时拉起（施工 IM-1 中下三）；没有 `owner` 的问那一份。
+/// 问来源 `source`（`<包>/<编号>`），参数 `params`，等 `timeout`：交回清单里写的名字（照 `en`、`zh`、`ja` 挑）和回应。
 ///
 /// # Errors
 ///
 /// 见 [`Asked`]。
 pub async fn query(
     core: &Core,
-    (source, owner): (&str, Option<&miyu_kernel::id::AccountId>),
+    source: &str,
     params: Value,
     timeout: Duration,
 ) -> Result<(String, Value), Asked> {
@@ -45,11 +44,10 @@ pub async fn query(
         .iter()
         .find_map(|language| declared.name.get(*language).cloned())
         .unwrap_or_else(|| source.to_string());
-    let peer = match owner {
-        Some(owner) => core.provided.ready(core, package, owner).await,
-        None => core.provided.peer(package),
-    }
-    .ok_or_else(|| Asked::Failed(format!("{package} is not running")))?;
+    let peer = core
+        .provided
+        .peer(package)
+        .ok_or_else(|| Asked::Failed(format!("{package} is not running")))?;
     match tokio::time::timeout(timeout, peer.call("search.query", params)).await {
         Err(_) => Err(Asked::Failed("no answer in time".to_string())),
         Ok(Err(_)) => Err(Asked::Failed(format!("{package} went away"))),

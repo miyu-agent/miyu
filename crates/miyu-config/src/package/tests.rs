@@ -84,7 +84,6 @@ fn a_process_package_reads_its_start_check_and_settings() {
             start: Start::Manual,
             capabilities: Vec::new(),
             system_account: false,
-            scope: Scope::System,
         })
     );
     assert_eq!(
@@ -105,40 +104,20 @@ fn a_process_package_reads_its_start_check_and_settings() {
             start: Start::Manual,
             capabilities: Vec::new(),
             system_account: false,
-            scope: Scope::System,
         }),
         "都不写：没有参数、等开关、不要能力"
     );
 }
 
-/// 每人一份（施工 IM-1 上）：`scope` 认 `system`、`account`，`account` 不能和系统账号一起写。
+/// 每人一份的扩展拿掉了（施工 SU-2 下）：`[process] scope` 不认，同别的没有的键。
 #[test]
-fn a_process_package_can_run_one_per_account() {
+fn a_process_scope_is_no_longer_a_key() {
     let each = BRIDGE.replace(
         "start = \"manual\"\n",
         "start = \"manual\"\nscope = \"account\"\n",
     );
     assert_ne!(each, BRIDGE, "锚点对得上");
-    assert_eq!(read(&each).unwrap().process.unwrap().scope, Scope::Account);
-    let system = BRIDGE.replace(
-        "start = \"manual\"\n",
-        "start = \"manual\"\nscope = \"system\"\n",
-    );
-    assert_eq!(read(&system).unwrap().process.unwrap().scope, Scope::System);
-    let odd = BRIDGE.replace(
-        "start = \"manual\"\n",
-        "start = \"manual\"\nscope = \"user\"\n",
-    );
-    assert_eq!(read(&odd).unwrap_err().code, Code::BadScope);
-    let both = BRIDGE.replace(
-        "start = \"manual\"\n",
-        "start = \"manual\"\nscope = \"account\"\nsystem_account = true\n",
-    );
-    assert_eq!(
-        read(&both).unwrap_err().code,
-        Code::BadScope,
-        "按人的不能有系统账号"
-    );
+    assert_eq!(read(&each).unwrap_err().code, Code::UnknownKey);
 }
 
 #[test]

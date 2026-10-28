@@ -15,8 +15,6 @@ use std::sync::{Mutex, PoisonError};
 use serde_json::Value;
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
-
 use crate::extensions::Instance;
 
 /// 一块：哪个包的哪一块，跟着会话的带会话的编号。
@@ -28,14 +26,12 @@ pub(crate) struct Key {
     pub(crate) widget: String,
     /// 跟着会话的：哪个会话。
     pub(crate) session: Option<String>,
-    /// 每人一份的包（施工 IM-1 中下五）：哪个人那一份的块；一份的包没有。
-    pub(crate) account: Option<AccountId>,
 }
 
 impl Key {
-    /// 这一块归 `instance` 那一份：包对得上，每人一份的人也对得上。
+    /// 这一块归 `instance` 那一份：包对得上。
     pub(crate) fn of(&self, instance: &Instance) -> bool {
-        self.package == instance.package && self.account == instance.account
+        self.package == instance.package
     }
 }
 

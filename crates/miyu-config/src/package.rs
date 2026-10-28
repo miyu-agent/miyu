@@ -201,28 +201,6 @@ pub struct Process {
     /// 有没有自己的系统账号（施工 O-4 下，`06-多用户与身份.md` U14）：有的，账号名就是包的编号，核心起来时建它，拉起的扩展
     /// 以它的身份连进来。没写的是没有。
     pub system_account: bool,
-    /// 一份还是每人一份（施工 IM-1 上，接入通讯平台设计 06 第 4.6 节第 1 样）：没写的是一份。
-    pub scope: Scope,
-}
-
-/// 带进程的包起几份（施工 IM-1 上）。
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum Scope {
-    /// 一份，用包自己的账号跑（默认）。
-    #[default]
-    System,
-    /// 每个用它的账号一份，以那个人的身份跑，数据放在他自己的家目录里。不能和 `system_account` 一起写。
-    Account,
-}
-
-impl Scope {
-    /// 清单、协议上的写法。
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Scope::System => "system",
-            Scope::Account => "account",
-        }
-    }
 }
 
 /// 什么时候拉起。

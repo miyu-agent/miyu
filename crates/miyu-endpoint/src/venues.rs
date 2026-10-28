@@ -24,7 +24,7 @@ mod message;
 mod plugins;
 mod records;
 mod sessions;
-pub(crate) use bridge::{Bridge, binds_for, bridge};
+pub(crate) use bridge::bridge;
 pub(crate) use sessions::{Owners, bridged, owners, platforms_of_package};
 
 pub(crate) use message::{VenueMessageParams, platform_id};
@@ -130,28 +130,23 @@ pub(crate) struct BindingParams {
     id: String,
 }
 
-/// `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台身份 `id` 在主人对应表里对着的本机账号，没写的、对着不存在的
-/// 账号的是 `null`。只给系统账号的连接（核心拉起的、声明了系统账号的包的扩展）和每人一份的包的那一份（施工 IM-2）：提供者照它挡
-/// 在场所里做的事（`providers.md`「在场所里做的事」），别的连接回 `no_system_account`。主人对应表只在主人自己那一份里认，成员那
-/// 一份的一律 `null`（他自己的对应表随 BD-1）。只读。
+/// `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台身份 `id` 在主人对应表里的是主人的账号，没写的是 `null`。只给
+/// 系统账号的连接（核心拉起的、声明了系统账号的包的扩展）：提供者照它挡在场所里做的事（`providers.md`「在场所里做的事」），别的
+/// 连接回 `no_system_account`。只读。
 pub(crate) fn binding(
     core: &Core,
     caller: &Caller,
     params: BindingParams,
 ) -> Result<Value, Refusal> {
-    let bridge = bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
+    bridge(core, caller).ok_or(Refusal::NO_SYSTEM_ACCOUNT)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
-    // 他那一份先认他自己写的（施工 BD-1），再照主人的表（只在主人那一份里认）。
-    let account = match &bridge {
-        Bridge::Personal { account, .. } if me::claims(core, account, &id) => Some(account.clone()),
-        _ => bound(core, &id).filter(|_| bridge.binds(core)),
-    };
+    let account = bound(core, &id);
     Ok(json!({"account": account.as_ref().map(AccountId::as_str)}))
 }
 
 /// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」）。属主：私聊、对方在对应表里的是那个本机
 /// 账号；别的归系统账号：连接 `caller` 是系统账号的（核心拉起的、声明了系统账号的包的扩展）归它，别的连接回
-/// `no_system_account`（施工 O-4 下）。每人一份的包的那一份（施工 IM-2）一律归替谁跑的那个人，不看对应表。照「场所加属主」找：
+/// `no_system_account`（施工 O-4 下）。照「场所加属主」找：
 /// 属主的主会话里场所是它的、最新的那一个。回应带属主 `account`。
 pub(crate) async fn session(
     core: &Arc<Core>,
@@ -176,9 +171,8 @@ pub(crate) async fn session(
         bridge(core, caller),
         peer.as_ref().and_then(|peer| bound(core, peer)),
     ) {
-        (Some(Bridge::Personal { account, .. }), _) => account,
         (_, Some(account)) => account,
-        (Some(Bridge::System(account)), None) => account,
+        (Some(bridge), None) => bridge.account().clone(),
         (None, None) => return Err(Refusal::NO_SYSTEM_ACCOUNT),
     };
     // 同一个场所同时来两次：一个找、一个造，排着来，免得造出两个主线会话。
@@ -263,8 +257,7 @@ async fn mains(
 }
 
 /// `session.send` 的 `as` 记成谁（`venues.md`「`session.send` 的 `as`」）：场所 `venue` 的会话，属主是 `owner`。对应表里对着属主
-/// 的号是本人（带 `via`）；别的是外部身份，对应表里有的另记账号。主人对应表只在主人、平台桥名下的会话里认（施工 IM-2，
-/// [`binds_for`]）：成员名下的一律外部身份、不记账号。
+/// 的号是本人（带 `via`）；别的是外部身份，对应表里有的另记账号。
 pub(crate) fn speaker(
     core: &Core,
     venue: &VenueId,
@@ -272,10 +265,10 @@ pub(crate) fn speaker(
     params: AsParams,
 ) -> Result<By, Refusal> {
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
-    // 属主自己写的号是他本人（施工 BD-1）；别的照主人的表（只在主人、平台桥名下认）。
+    // 属主自己写的号是他本人（施工 BD-1）；别的照主人的表。
     let account = match me::claims(core, owner, &id) {
         true => Some(owner.clone()),
-        false => bound(core, &id).filter(|_| binds_for(core, owner)),
+        false => bound(core, &id),
     };
     if account.as_ref() == Some(owner) {
         let mut person = Person::new(owner.clone());
