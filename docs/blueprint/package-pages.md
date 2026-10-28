@@ -22,7 +22,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 上限：不超过 256 KiB，宽高都不超过 512 像素（`miyu_config::package::LOGO_MAX_BYTES`、`LOGO_MAX_SIDE`），不求正方形（头照自己的框裁）。
    - 谁压：`miyu pkg pack` 打包时查，超了的在打进包的那一份上缩（PNG 照 PNG、WebP 编无损 WebP，透明照留），源文件不动，印一句（`cli/pkg.md`）；不在、不是 PNG / WebP、缩不下去的打包失败。
    - 核心只查、不解码不缩（看开头的字节认格式、只看文件头量宽高，同人格的头像，`packages/logo.rs`）：不在（照真实路径，出了包目录的也算不在）、不是 PNG / WebP、超了上限的当没有图标，包照装，`miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`。本地开发目录同一个上限。
-   - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里没装的包的图标随 F-18 下进索引。
+   - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
 3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，管理员装的是家目录的 `packages/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
 
@@ -39,6 +39,15 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 ### `package.logo`（施工 F-18 上）
 
 `package.logo {"package"}`：读一个装着的包自带的图标，回应 `{"package", "logo", "media_type", "data"}`：`logo` 是版本（同列表那一格），`media_type` 是 `image/png` 或 `image/webp`，`data` 是 base64；清单没写、不合规矩的三格都是 `null`。照连接替谁干活的那个人看得到的找（他自己那一层的盖过系统的），没装的 `unknown_package`。成员调得了（同 `package.list`），扩展照能力表能调。不复用 `package.file`：它只读后台页目录里的，没有后台页的包回 `no_page`。形状同 `persona.avatar`。
+
+写了 `from`（施工 F-18 下，同 `package.install` 的 `from`：`official` 或配置里起的源名）的读那个软件源索引里的，装没装都行，见下一节。不认识的源 `unknown_source`，索引里没有的编号 `unknown_package`，哪一处都没下成的 `download_failed`。
+
+### 软件源里的图标（施工 F-18 下）
+
+1. 收录（`miyu-index build`）从包文件里取出清单写的图标：在包目录里、开头是 PNG / WebP、不超过 256 KiB 的才收，写进输出目录的 `logos/<SHA-256>.png`（或 `.webp`），和 `index.json` 一起发；索引那一条多 `logo: {"path", "sha256", "size"}`（`path` 相对软件源的地址）、`icon`（清单的 Lucide 名）。不合的这一条不带 `logo`、记一笔，包照收。
+2. `package.search` 每一行多 `icon`、`logo`（图标的版本，同 `package.list` 那一格）：索引里有的才写。搜索不带图，头要图照 `source` 那一格调 `package.logo {"package", "from"}`。
+3. 核心读：照那个源的地址先后（官方的先镜像）下 `<地址><path>`，大小、哈希都对上才收，先写临时文件、对上了才改名；存在那个源自己的目录 `logos/` 下，下一次哈希对得上的不再下，存下一张以后目录里索引已经不提的删掉。个人层的源照地址闸只连公网（同下包文件）。
+4. 别人的软件源写的索引不全信：`path` 不是正好 `logos/<sha256>.png`、`.webp` 的（出了 `logos/`、带 `..`、带查询串），`size` 超过 256 KiB 的当没有图标，搜索不带、读回 `null`、不去下。下来的再照装着的包那一套认（PNG / WebP、每边不超过 512），不合的同样当没有。
 
 `status`：
 

@@ -52,6 +52,12 @@ pub struct Entry {
     /// 以后多了的照样原样。以前生成的索引没有这一格。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
+    /// Lucide 的图标名（施工 F-18 下）：清单 `[package] icon` 的原样；没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    /// 包自带的图标（施工 F-18 下）：放在软件源的哪、哈希、大小；没写、不合规矩的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub logo: Option<Logo>,
     /// 带了哪几样：种类（`features`、`skills`、`personas` 这些）到名字。
     #[serde(default)]
     pub provides: BTreeMap<String, Vec<String>>,
@@ -77,6 +83,42 @@ pub struct File {
     pub sha256: String,
     /// 多少字节。
     pub size: u64,
+}
+
+/// 索引里一个包自带的图标（施工 F-18 下）：收录时从包文件里取出来，和索引放在一处发。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Logo {
+    /// 相对软件源地址的位置：`logos/<SHA-256>.png`、`.webp`（[`Logo::path_for`]）。
+    pub path: String,
+    /// SHA-256，小写十六进制。
+    pub sha256: String,
+    /// 多少字节。
+    pub size: u64,
+}
+
+impl Logo {
+    /// 内容的 SHA-256 `sha256`、扩展名 `extension`（`png`、`webp`）的图标放在哪。
+    pub fn path_for(sha256: &str, extension: &str) -> String {
+        format!("logos/{sha256}.{extension}")
+    }
+
+    /// 图标的版本：SHA-256 的前 16 位，同装着的包（`package.list` 的 `logo`）。
+    pub fn version(&self) -> &str {
+        self.sha256.get(..16).unwrap_or(&self.sha256)
+    }
+
+    /// 写法对不对：哈希是 64 位小写十六进制，位置正好是 [`Logo::path_for`] 照它算出来的那样。别人的软件源写的索引不全信：
+    /// 位置写成别的（出了 `logos/`、带 `..`、带查询串）的客户端不去下。
+    pub fn well_formed(&self) -> bool {
+        self.sha256.len() == 64
+            && self
+                .sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            && ["png", "webp"]
+                .iter()
+                .any(|extension| self.path == Logo::path_for(&self.sha256, extension))
+    }
 }
 
 /// 拉黑的一条：编号或者来源仓库，和一句理由。

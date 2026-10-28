@@ -62,7 +62,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `package.logo` | `package` | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。成员也调得了 |
+| `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。成员也调得了。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行（施工 F-18 下）；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
 | `package.info` | `package` | `{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?}`：从哪来（同 `package.list`）、几个文件、多少字节、作者、上游、装的时刻、装的时候的本机路径 |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
@@ -121,7 +121,7 @@
 
 在软件源里搜（施工 G-3 下）。参数 `query`（可以不写）：几个词，空白分开，都得出现在编号、名字、说明（哪种语言都算）里，不分大小写；不写、空的列出全部。先照 `package.sync` 拿索引（本机那份不到 24 小时的直接用）。
 
-回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`，没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包的编号，没有的是空数组（施工 G-10：软件市场照种类筛）；`kind` 是包的种类，照清单 `[package] kind` 的原样（`process`、`ui`、`theme`、`mascot`、`bundle`……，以后多了的照样原样），以前生成的索引没有这一格（施工 G-11）；`source` 是哪个软件源的（`official` 或配置里起的名字，施工 U23 下下），别的源里的 `official` 一律是 `false`。出错同 `package.sync`。
+回应 `{"packages": [...], "generated", "stale"?}`，每一项 `{"package", "version", "name", "summary", "official", "installed", "blocked", "contents", "provides", "depends", "kind"?, "icon"?, "logo"?}`：名字、说明照连接的语言挑（没有的照英文、中文、日文），没有的 `null`；`installed` 是装着的版本（装着、没写版本的是空的字），没装的 `null`；`official` 是不是项目主人自己的仓库；`blocked` 是被拉黑的理由，没有的 `null`；`contents` 是给哪几个包带了内容（同 `package.list`），没带的是空数组；`provides` 是带了哪几样：种类到名字，种类有 `command`（子命令）、`features`（功能）、`mcp`（MCP 服务）、`slash`（斜杠命令）、`content`（带了内容的包）、`skills`、`scripts`、`personas`、`presets`，没带的种类不写，什么都没带的是 `{}`；`depends` 是依赖的包的编号，没有的是空数组（施工 G-10：软件市场照种类筛）；`kind` 是包的种类，照清单 `[package] kind` 的原样（`process`、`ui`、`theme`、`mascot`、`bundle`……，以后多了的照样原样），以前生成的索引没有这一格（施工 G-11）；`source` 是哪个软件源的（`official` 或配置里起的名字，施工 U23 下下），别的源里的 `official` 一律是 `false`；`icon` 是 Lucide 图标名，`logo` 是包自带图标的版本（同 `package.list`，图用 `package.logo` 带 `from` 读），索引里有的才有（施工 F-18 下）。出错同 `package.sync`。
 
 ## `package.clean`
 

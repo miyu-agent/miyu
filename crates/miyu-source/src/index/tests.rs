@@ -77,3 +77,29 @@ fn an_older_index_does_not_replace_a_newer_one() {
     assert!(may_replace(&broken, &kept), "本机那份坏了的照换");
     assert!(!may_replace(&kept, &broken));
 }
+
+#[test]
+fn a_logo_is_only_fetched_from_where_its_hash_says() {
+    let sha = "0123456789abcdef".repeat(4);
+    let logo = |path: String, sha256: &str| Logo {
+        path,
+        sha256: sha256.to_string(),
+        size: 1,
+    };
+    let good = logo(Logo::path_for(&sha, "png"), &sha);
+    assert!(good.well_formed());
+    assert_eq!(good.version(), "0123456789abcdef");
+    assert!(logo(Logo::path_for(&sha, "webp"), &sha).well_formed());
+    for (path, sha256) in [
+        (Logo::path_for(&sha, "gif"), sha.clone()),
+        (format!("../{}", Logo::path_for(&sha, "png")), sha.clone()),
+        (format!("{}?x", Logo::path_for(&sha, "png")), sha.clone()),
+        (
+            Logo::path_for(&sha.to_uppercase(), "png"),
+            sha.to_uppercase(),
+        ),
+        (Logo::path_for("ab", "png"), "ab".to_string()),
+    ] {
+        assert!(!logo(path.clone(), &sha256).well_formed(), "{path}");
+    }
+}

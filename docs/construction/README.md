@@ -784,6 +784,7 @@ flowchart LR
 | PERF-3 | 发行版照体积优化 | 「核心空闲、连着一个头」一周从 26.3 涨到 29.5 MB、没有台阶，跟着程序长；拆开是碰到的代码页（缺页时顺带映射 64 KiB，零散的代码成片算进去）。release 改 `opt-level = "s"`：连着头 28.7 → 25.2 MB、空闲 23.9 → 21.9 MB，时间项都在预算里，吃 CPU 的几条路慢 1% 到 13%。重定位打包要 glibc 2.36，不做。施工单见 `PERF-3-发行版照体积优化.md` |
 | PERF-4 | 记忆抽取挪出会话 | 「开着记忆的投影」隔 21 轮冒一对 7～16 ms 的尖：一直在忙的会话 20 轮一次「不等闲」抽取，读回来在会话 actor 上同步拼一万多条事件的历史、渲染、定怎么办，占住 actor。组装器改成共享的（`Session::assembler`），这一段整个挪进阻塞线程，行为不变。本机 4 核过 5 ms 的 64 → 13 轮、最长 14.1 → 6.9 ms。施工单见 `PERF-4-记忆抽取挪出会话.md` |
 | F-18 上 | 软件包自带图标 | 清单 `[package] logo`（包目录里一张 PNG / WebP，不超过 256 KiB、每边 512，写法不对的 `bad_logo`）；核心只查不解码，不合的当没有、包照装、`miyu check` 报警告；`package.list` 带图标版本（SHA-256 前 16 位），新方法 `package.logo` 读图（成员也读得到）；`miyu pkg pack` 超了的照原格式缩进包、目录里原图不动。施工单见 `F-18上-软件包图标.md` |
+| F-18 下 | 软件源带图标 | 索引条目多 `icon`、`logo: {path, sha256, size}`；收录从包文件里取图标写进 `logos/<哈希>.png`，随索引发；`package.search` 每行多 `icon`、图标版本；`package.logo` 多 `from` 读软件源里的（照源的地址下、哈希对上才收、按源缓存、个人层过地址闸）。施工单见 `F-18下-软件源带图标.md` |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |
 | 8-33 | 终端会话 | `session.terminal`、`session.set_terminal`，`terminal.*` 三项设置。施工单见 `8-33-终端会话.md` |

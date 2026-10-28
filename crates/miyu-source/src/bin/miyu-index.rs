@@ -6,7 +6,7 @@
 //!   `MIYU_INDEX_KEY` 读，没有的读 `--key` 那个文件；写 `<index.json>.sig`。
 //! - `miyu-index verify <index.json> [--public <base64>]…`：照旁边的签名文件验；不写 `--public` 的照编进来的官方公钥。
 //! - `miyu-index build <规则目录> <输出目录>`（施工 G-2 下）：照规则目录里的四份 TOML 收一趟，写 `<输出目录>/index.json`（没签名，
-//!   之后跑 `sign`），新占的编号写回 `names.toml`，一行一件事印出这一趟收了什么、跳过了什么。GitHub 的令牌照环境变量
+//!   之后跑 `sign`），新占的编号写回 `names.toml`，包自带的图标写进 `<输出目录>/logos/`（施工 F-18 下，随索引一起发），一行一件事印出这一趟收了什么、跳过了什么。GitHub 的令牌照环境变量
 //!   `GITHUB_TOKEN`，只发给 API 的 `/repos/` 下面；API 的地址默认 `https://api.github.com`，环境变量 `MIYU_INDEX_API` 能换（测试用）。
 //!
 //! 成了退出码 0，不成 1（原因印在标准错误上），参数不对 2。
@@ -185,6 +185,14 @@ fn build(rules_dir: &Path, out: &Path) -> Result<String, String> {
         let names = rules_dir.join("names.toml");
         std::fs::write(&names, collect::rules::names_text(&collected.names))
             .map_err(|error| format!("{}: {error}", names.display()))?;
+    }
+    for (path, bytes) in &collected.logos {
+        let file = out.join(path);
+        if let Some(parent) = file.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| format!("{}: {error}", parent.display()))?;
+        }
+        std::fs::write(&file, bytes).map_err(|error| format!("{}: {error}", file.display()))?;
     }
     let mut said = collected.notes;
     said.push(format!(
