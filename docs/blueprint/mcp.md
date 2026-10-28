@@ -21,7 +21,7 @@ MCP 服务提供工具（`05-内核接口.md` 第四节），也可以带提示�
 | `crates/miyu-mcp/src/link.rs` | 一条连接：写、读两个任务，请求照编号等回应；没等到就不等了的发取消；服务反过来的请求当场回（施工 X-1） |
 | `crates/miyu-mcp/src/wire.rs` | 一行一条的 JSON-RPC：读一行（最长 64 MiB）、认成回应、请求、通知（施工 X-1） |
 | `crates/miyu-mcp/src/content.rs` | 列出来的工具（名字、说明、参数、注解、原文）、调用回来的几种内容（施工 X-1） |
-| `crates/miyu-mcp/src/http.rs`、`src/testkit/http.rs` | 网址的服务（施工 X-32 上，「网址的服务怎么说话」）：把一行一条接到 Streamable HTTP 上，交回一对读写给客户端；测试用的假网址服务照请求答（`miyu-http` 的假服务器照剧本回、答不了带编号的请求，所以另写一份） |
+| `crates/miyu-mcp/src/http.rs`、`src/http/headers.rs`、`src/http/answer.rs`、`src/http/params.rs`、`src/testkit/http.rs`、`src/testkit/http/modern.rs` | 网址的服务（施工 X-32 上，「网址的服务怎么说话」；标准请求头施工 PT-1 上，参数请求头、取消施工 PT-1 中）：把一行一条接到 Streamable HTTP 上，交回一对读写给客户端；测试用的假网址服务照请求答（`miyu-http` 的假服务器照剧本回、答不了带编号的请求，所以另写一份） |
 | `crates/miyu-mcp/src/testkit.rs` | 测试用的假服务（`testkit` 开关）：在进程里经内存管道照剧本演两个时代、不好好说话的几种（施工 X-1） |
 
 | `crates/miyu-config/src/package/mcp.rs` | 清单的 `[[mcp]]`：名字、命令、环境变量、给哪种会话、时限（施工 X-2） |
@@ -111,7 +111,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 3. 回来别的错、5 秒没回：旧时代，发 `initialize`（版本 `2025-11-25`，本事是空的），服务答的版本在我们认得的里面（`2025-11-25`、`2025-06-18`、`2025-03-26`、`2024-11-05`）就照它说，再发 `notifications/initialized`；都不认得的这个服务起不来，原话记下来。
 4. 认出来的时代跟着这个服务的配置一起缓存（命令、环境变量没变就还当它是那个时代），下次起来直接照它说；照它说不通了再从第 1 条重认。
 
-两个时代在工具上差得不多：都是 `tools/list`（带 `cursor` 翻页）、`tools/call`、`notifications/cancelled`。旧时代的结果没有 `resultType`，当是 `complete`。新时代的 `input_required`（要客户端补信息再问一次）、旧时代服务反过来向客户端要东西（`sampling/createMessage`、`roots/list`、`elicitation/create`）都不支持：前者当这次调用出错，后者回「没有这个方法」（`-32601`）。这几样规范自己也在弃用（roots、sampling、logging，2026-07-28 版）。
+两个时代在工具上差得不多：都是 `tools/list`（带 `cursor` 翻页）、`tools/call`、`notifications/cancelled`。旧时代的结果没有 `resultType`，当是 `complete`。新时代的 `input_required`（多轮请求）：只带 `requestState`、不要客户端补东西的（规范的例子是服务忙时分流），换个编号把原请求连同原样的 `requestState` 再发一遍，至多 8 回，还叫重发的当写法不对（施工 PT-1 中）；要客户端补东西的（`inputRequests` 不空）不支持，当这次调用出错。只有 `tools/call`、`prompts/get`、`resources/read` 许这样回，别的方法回了当写法不对。旧时代服务反过来向客户端要东西（`sampling/createMessage`、`roots/list`、`elicitation/create`）回「没有这个方法」（`-32601`）。这几样规范自己也在弃用（roots、sampling、logging，2026-07-28 版）。
 
 **二、进程**（网址的服务没有进程，见第五条）
 
@@ -146,6 +146,8 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 4. **不另开 GET 的长连接**：服务主动推的只在 SSE 回应里收得到；工具变了靠新时代的 `ttlMs`、重连时重列。
 5. **`http://` 只给本机地址**（`miyu_http::is_loopback_url`）：别的机器的不连，令牌一个字节都不发出去，日志里写 `http:// is only for this machine, use https://`，记成停下 `cannot_start`。日志里一律不写网址：有的服务把密钥放在网址的查询串里。本机地址不走代理，别的照环境变量（同下载软件包）。
 6. **状态**：没有进程号（`State::Running`、`Starting` 的 `pid` 是空的），`mcp.list`、软件包列表上不带 `pid`；带 `url`，不带 `command`。
+7. **工具参数镜像成请求头**（施工 PT-1 中，规范 2026-07-28「Custom Headers from Tool Parameters」，`src/http/params.rs`）：列工具的回应经过转接时，照规范查每件工具 `inputSchema` 里的 `x-mcp-header`：名字不空、只用 HTTP 头名许的字，同一份格式里不分大小写不重名，只标在 `string`、`integer`、`boolean` 的参数上，这个参数从根上只经一串 `properties` 到得了（经 `items`、`anyOf`、`$defs` 这些的不算；`default`、`examples` 这几格里的键不当标记）。有一处不合的整件工具从列表里剔掉，服务的日志写一行 `WARN tool <名> left out: <为什么>`。合的记下镜像哪几个参数：调这件工具时照路径取值，字照原样、整数写成十进制（模型交来 `42.0` 也算）、真假写成 `true`、`false`，编码同 `Mcp-Name`，带 `Mcp-Param-<名>`；没有值、是 `null`、带小数的不带。规范说服务因为这个头回 `-32020` 时客户端「应」重列再试一次，没做：重连、`ttlMs` 过期都会重列。stdio 的服务不管这个标记（规范许）。
+8. **取消就是断开**（施工 PT-1 中，规范 2026-07-28「Cancellation」）：转接照编号记着每个还在路上的请求；客户端发 `notifications/cancelled`（等不及丢掉、人停了这一轮）时停掉那个 POST，连接跟着断，新版服务照规范把断开当取消。握过手的老服务另把这条通知照旧 POST 过去（老规范里断开不算取消），新版的不发。
 
 **六、提示词**（施工 X-39，2026-10-21 项目主人定重开，`slash.md`「是什么」第三种）
 
@@ -197,7 +199,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-mcp/src/content/tests.rs` | 工具照写法读、注解；没名字、参数不是对象的不收，分得出是哪一种（施工 X-37）；几种内容照类型读，缺格子的原样留着 |
 | `crates/miyu-mcp/tests/era.rs` | 新时代答探、之后带 `_meta`；没有共同版本的照它列的报；规范的错照报不退回；旧时代回错、不回的退到握手，认得的旧版本照说、不认得的报；探的时候退出是断了；缓存说旧时代的不探，握不成再探；说明两个时代都留着 |
 | `crates/miyu-mcp/tests/tools.rs` | 翻页列全、照先后；写法不对的那一项不收、说是哪一项；`ttlMs`；工具变了数一次 |
-| `crates/miyu-mcp/tests/calls.rs` | 几种内容原样回来；工具自己出错不算出错、不认识的工具是服务的错；要补信息的不支持；服务反过来问的回 `-32601` 接着答，`ping` 回空的；等不及丢掉的发取消、连接照常；服务退出是断了；丢下客户端就关了服务的输入（施工 X-3 上） |
+| `crates/miyu-mcp/tests/calls.rs` | 几种内容原样回来；工具自己出错不算出错、不认识的工具是服务的错；要补信息的不支持、只带 `requestState` 的换编号原样带回重发、一直叫重发的到 8 回停（施工 PT-1 中）；服务反过来问的回 `-32601` 接着答，`ping` 回空的；等不及丢掉的发取消、连接照常；服务退出是断了；丢下客户端就关了服务的输入（施工 X-3 上） |
 | `crates/miyu-endpoint/tests/mcp.rs` | 真起 `miyu-test-mcp`：开了起、会话里调得到，几种结果、服务回的错、写法不对、超时（发了取消）各自交回，新旧两个时代都通；关了工具出目录、标准输入关了它自己退出；核心重启照开关起；一直起不来的试 5 次停下、标准错误留着；调用中途退出说暂时不可用、重启后又能调；工具变了再列、换上；包自己登记的不许占 `mcp__` 的名字（施工 X-3 上） |
 | `crates/miyu-endpoint/tests/view_tool_names.rs`（施工 9-8 六补） | 服务给了 `title` 的工具调的那一刻记进结果（记在 `en` 下），没给的不记；视图的标题照它、没给的照工具名；服务关掉以后再翻照旧 |
 | `crates/miyu-endpoint/src/mcp/*/tests.rs` | 名字照写法换、截断；说明截断；访问类别只认 `readOnlyHint: true`；给哪种会话；结果换块的每一种、截断、只有结构化的；程序照绝对路径、包目录、`bin/`、`PATH` 找（施工 X-3 上） |
@@ -214,7 +216,7 @@ MCP 在 2026-07-28 版去掉了 `initialize` 握手，每个请求在 `_meta` �
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `set_loading_is_accepted_and_changes_nothing`（施工 X-27、FL-1） | `tool.set_loading` 照旧收、什么都不写；`mcp.list` 不带 `need_load`，`on` 照 `features.mcp-<服务名>` |
 | `crates/miyu-endpoint/tests/page_extras.rs`（施工 X-27 补） | 软件包列表上包带的服务带 `on`，改了跟着变；`mcp.list` 带回原来写的 `env`、`timeout_ms`，照它存回去个人设置一个字不变，没写的不带 |
 | `crates/miyu-endpoint/tests/mcp_edit.rs`、`src/mcp/written/tests.rs` | 头改个人设置里的服务（施工 X-26）：`mcp.set` 加上、整条换掉，别的字不动、正在跑的照新写的换；写错的、随包来的拒、什么都不写；`mcp.remove` 删掉、没有的拒；`mcp.list` 起好列完的、照缓存登记的带 `tools`，不知道的不带；表写成点号、行内表、子表的照样换、删，`mcp` 写成放不下的样子的不改；网址的服务（施工 X-32 下，`tests/mcp_url.rs`）经 `mcp.set` 写进去、连上，`mcp.list` 照写的交回 `url`、`bearer`、`headers`，原样交回一字不变；混写的、留给核心的头拒 `mcp_invalid`，有参数没程序的拒 `bad_params` |
-| `crates/miyu-mcp/src/http/tests.rs`、`crates/miyu-endpoint/tests/mcp_url.rs`（施工 X-32 上） | SSE 拆成一条条；经网址认时代（不认 `server/discover` 的退回握手）、列、调，JSON、SSE 两种回法都通，令牌和请求头每次都带、握手以后带会话编号和版本；401 连不上、日志里一行；连上以后回 500 的那一次马上拿到带原话的错；新时代的假服务（照 GitHub，`_meta` 的版本和头对不上回 `400`）认成新时代、列、调都通，每个请求的头和 `_meta` 一样，老时代的握手那一次不带版本头（施工 X-32 补）；回应超过 64 MiB 的那一次拿到「太长」的错、不往下读，连接照旧能用（施工 X-32 下）；会话过期连接断开、标记亮着。真核心：个人设置里写 `url` 的服务连上、`mcp.list` 带 `url` 不带 `pid`、会话里调得到；`http://` 别的机器的停下 `cannot_start`、日志说清；连着过期三次，每次照样回到 `running`、`failures` 一直是 0、重连了三次。缓存照网址和请求头的名字认、换了令牌照旧（`src/mcp/cache/tests.rs`）。清单：网址、令牌、请求头的写法，和命令混写、写错的报 `bad_mcp`（`miyu-config` 的 `package/mcp/tests.rs`） |
+| `crates/miyu-mcp/src/http/tests.rs`、`crates/miyu-endpoint/tests/mcp_url.rs`（施工 X-32 上） | SSE 拆成一条条；经网址认时代（不认 `server/discover` 的退回握手）、列、调，JSON、SSE 两种回法都通，令牌和请求头每次都带、握手以后带会话编号和版本；401 连不上、日志里一行；连上以后回 500 的那一次马上拿到带原话的错；新时代的假服务（照 GitHub，`_meta` 的版本和头对不上回 `400`）认成新时代、列、调都通，每个请求的头和 `_meta` 一样，老时代的握手那一次不带版本头（施工 X-32 补）；回应超过 64 MiB 的那一次拿到「太长」的错、不往下读，连接照旧能用（施工 X-32 下）；会话过期连接断开、标记亮着。真核心：个人设置里写 `url` 的服务连上、`mcp.list` 带 `url` 不带 `pid`、会话里调得到；`http://` 别的机器的停下 `cannot_start`、日志说清；连着过期三次，每次照样回到 `running`、`failures` 一直是 0、重连了三次。缓存照网址和请求头的名字认、换了令牌照旧（`src/mcp/cache/tests.rs`）。清单：网址、令牌、请求头的写法，和命令混写、写错的报 `bad_mcp`（`miyu-config` 的 `package/mcp/tests.rs`）。照规范查请求头的新版假服务连得上、每个请求带 `Mcp-Method`、调工具带 `Mcp-Name`；只认别的版本的不退回老握手；老服务对探回 `400` 照旧退回；值的编码照规范的例子；只有 JSON-RPC 错误的回应体原样交回（施工 PT-1 上）。标记不合规矩的工具剔掉、日志说为什么，合的带 `Mcp-Param-<名>`、假服务查对得上才答；标记的查法和取值（`src/http/params/tests.rs`）；丢掉的调用服务看到断开，新版不发取消通知、老版照发（施工 PT-1 中） |
 | `crates/miyu-endpoint/src/mcp/secrets/tests.rs`、`tests/mcp_url.rs` 的 `a_server_follows_the_secret_it_uses`、`tests/secrets_log.rs`（施工 X-32 补） | 密钥变了重起谁：新存的、删掉的、改了值的都算；引用照 `env`、`bearer`、`headers` 的 `{ secret = … }` 认。真核心：先配服务、没存令牌的连不上，`secret.set` 存进去以后自己连上、失败从零数；换了值的照新令牌重连；删了的停下重连；没引用的只握一次手；包没开的一个请求都收不到。运行日志有 `mcp restarted … secret=<名字>`，整份搜不到 key |
 | `crates/miyu-endpoint/tests/mcp_status.rs` | 软件包列表上每个服务一格的状态：起不来的停下带原因、失败几次、标准错误，推送里也是；`package.restart` 把停下的拉回来、失败从零数，在跑的换个进程、工具照常；关着的、没有能重启的、没有的拒；预设整个关掉、单件关掉照常换工具面、写进「装了没开」那一行，`preset.get` 列出服务的工具（施工 X-4） |
 

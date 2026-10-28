@@ -28,6 +28,12 @@ const MODERN_ERRORS: std::ops::RangeInclusive<i64> = -32099..=-32020;
 /// 翻页最多翻几页：服务一直给下一页的，到这里停。
 const MOST_PAGES: usize = 1000;
 
+/// 只带 `requestState` 的 `input_required` 最多照着重发几回（施工 PT-1 中）：服务一直叫重发的，到这里停。
+const MOST_RETRIES: usize = 8;
+
+/// 规范许回 `input_required` 的几个方法（2026-07-28「Multi Round-Trip Requests」）：别的方法回了当写法不对。
+const MAY_ASK_INPUT: [&str; 3] = ["tools/call", "prompts/get", "resources/read"];
+
 /// 说哪个时代、哪一版。缓存照它写：下次起来照它直接说。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "era", content = "version", rename_all = "snake_case")]
@@ -324,6 +330,10 @@ impl Client {
     }
 
     /// 照认出来的时代发一个请求：新时代的参数里带 `_meta`、结果要是完整的。
+    ///
+    /// 新时代的服务回 `input_required`（多轮请求，施工 PT-1 中）：只带 `requestState`、不要客户端补东西的（规范的例子是服务忙时
+    /// 分流），换个编号把原请求连同原样的 `requestState` 再发一遍，至多 [`MOST_RETRIES`] 回；要补东西的（`inputRequests` 不空）
+    /// 照旧报 [`Failed::InputRequired`]：我们没声明能补的本事，守规矩的服务不该这样回。只有 [`MAY_ASK_INPUT`] 那几个方法许这样回。
     async fn ask(
         &self,
         method: &str,
@@ -333,15 +343,35 @@ impl Client {
         if let Era::Modern(version) = &self.era {
             params.insert("_meta".to_string(), self.meta(version));
         }
-        let result = self
-            .link
-            .ask(method, Value::Object(params), wait, true)
-            .await?;
-        match result.get("resultType").and_then(Value::as_str) {
-            None | Some("complete") => Ok(result),
-            Some("input_required") => Err(Failed::InputRequired),
-            Some(other) => Err(Failed::Malformed(format!("unknown resultType {other}"))),
+        for _ in 0..=MOST_RETRIES {
+            let result = self
+                .link
+                .ask(method, Value::Object(params.clone()), wait, true)
+                .await?;
+            match result.get("resultType").and_then(Value::as_str) {
+                None | Some("complete") => return Ok(result),
+                Some("input_required") if MAY_ASK_INPUT.contains(&method) => {
+                    let wants_input = result
+                        .get("inputRequests")
+                        .and_then(Value::as_object)
+                        .is_some_and(|asked| !asked.is_empty());
+                    match result.get("requestState").and_then(Value::as_str) {
+                        Some(state) if !wants_input => {
+                            params.insert("requestState".to_string(), json!(state));
+                        }
+                        _ => return Err(Failed::InputRequired),
+                    }
+                }
+                Some(other) => {
+                    return Err(Failed::Malformed(format!(
+                        "{method} answered with resultType {other}"
+                    )));
+                }
+            }
         }
+        Err(Failed::Malformed(format!(
+            "{method} kept asking to be sent again"
+        )))
     }
 
     /// 新时代每个请求带的 `_meta`。

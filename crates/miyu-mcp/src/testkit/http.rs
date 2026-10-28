@@ -17,6 +17,8 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 
+mod modern;
+
 /// 收到的一个请求：方法、路径（施工 X-42 上）、头（名字小写）和正文。
 #[derive(Debug, Clone)]
 pub struct Received {
@@ -69,6 +71,10 @@ struct State {
     /// 老时代的对 `server/discover` 回 `400`、回应体是一条没有编号的 JSON-RPC 错误（施工 PT-1 上：官方 TypeScript SDK 的老服务没
     /// 会话就这样回）。
     discover_400: AtomicBool,
+    /// 新时代的多列两件带 `x-mcp-header` 的工具（施工 PT-1 中）：`region` 合规矩，`broken` 把标记写在 `items` 里。
+    header_tools: AtomicBool,
+    /// 慢的调用答之前客户端先断开了几次（施工 PT-1 中：取消就是断开）。
+    hung_up: std::sync::atomic::AtomicUsize,
 }
 
 impl HttpServer {
@@ -108,6 +114,8 @@ impl HttpServer {
             slow: std::sync::atomic::AtomicU64::new(0),
             supported: Mutex::new(crate::MODERN.iter().map(|v| (*v).to_string()).collect()),
             discover_400: AtomicBool::new(false),
+            header_tools: AtomicBool::new(false),
+            hung_up: std::sync::atomic::AtomicUsize::new(0),
         });
         let serving = Arc::clone(&state);
         let task = tokio::spawn(async move {
@@ -186,6 +194,17 @@ impl HttpServer {
         self.state.discover_400.store(true, Ordering::Relaxed);
     }
 
+    /// 新时代的多列两件带 `x-mcp-header` 的工具（施工 PT-1 中）：`region` 的 `region` 参数标 `Region`，调它要带对
+    /// `Mcp-Param-Region`，不然回 `400` 和 `-32020`；`broken` 的标记写在 `items` 里，不合规矩。
+    pub fn header_tools(&self) {
+        self.state.header_tools.store(true, Ordering::Relaxed);
+    }
+
+    /// 慢的调用答之前客户端先断开了几次（施工 PT-1 中）。
+    pub fn hung_up(&self) -> usize {
+        self.state.hung_up.load(Ordering::Relaxed)
+    }
+
     /// 下一个调工具的请求回一段比管道一行的上限还长一个字节的正文（施工 X-32 下），之后照常。握手以后的通知可能晚到，不算。
     pub fn oversize(&self) {
         self.state.oversize.store(true, Ordering::Relaxed);
@@ -242,7 +261,17 @@ async fn answer(stream: TcpStream, state: Arc<State>) {
     let (status, extra, text) = reply(&state, &request);
     let slow = state.slow.load(Ordering::Relaxed);
     if slow > 0 && request.body["method"] == "tools/call" {
-        tokio::time::sleep(std::time::Duration::from_millis(slow)).await;
+        // 等的时候客户端断开了的记一次、不答（施工 PT-1 中：取消就是断开）。
+        let mut byte = [0_u8; 1];
+        tokio::select! {
+            () = tokio::time::sleep(std::time::Duration::from_millis(slow)) => {}
+            read = reader.read(&mut byte) => {
+                if matches!(read, Ok(0) | Err(_)) {
+                    state.hung_up.fetch_add(1, Ordering::Relaxed);
+                    return;
+                }
+            }
+        }
     }
     let kind = if state.sse {
         "text/event-stream"
@@ -328,7 +357,7 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
         return (202, String::new(), String::new());
     };
     if state.modern {
-        return modern(state, request, id);
+        return modern::reply(state, request, id);
     }
     if message["method"] == "server/discover" && state.discover_400.load(Ordering::Relaxed) {
         let refused = json!({"jsonrpc": "2.0", "id": null, "error": {"code": -32000,
@@ -369,95 +398,4 @@ fn reply(state: &State, request: &Received) -> (u16, String, String) {
         answer.to_string()
     };
     (200, extra, text)
-}
-
-/// 新时代的答法（施工 X-32 补，施工 PT-1 上照规范 2026-07-28 的「Server Validation」查全）：`_meta` 里的版本要和
-/// `MCP-Protocol-Version` 头一样，`Mcp-Method` 要和方法名一样，`tools/call`、`resources/read`、`prompts/get` 的 `Mcp-Name`（解开
-/// `=?base64?…?=` 以后）要和名字、网址一样，缺了、对不上的回 `400` 和 `-32020`；版本不认的回 `400` 和 `-32022`、列出认的几版；
-/// 认 `server/discover`、`tools/list`、`tools/call`，结果带 `resultType`；别的方法（`initialize` 也是）回 `404` 和「没有这个方法」。
-fn modern(state: &State, request: &Received, id: &Value) -> (u16, String, String) {
-    let message = &request.body;
-    let asked = message["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"].as_str();
-    let refuse = |code: i64, said: &str, data: Option<Value>| {
-        let mut error = json!({"code": code, "message": said});
-        if let Some(data) = data {
-            error["data"] = data;
-        }
-        let refused = json!({"jsonrpc": "2.0", "id": id, "error": error});
-        (400, String::new(), refused.to_string())
-    };
-    if asked.is_some() && request.header("mcp-protocol-version") != asked {
-        return refuse(
-            -32020,
-            "Mcp-Protocol-Version header is required for requests carrying \"io.modelcontextprotocol/protocolVersion\"",
-            None,
-        );
-    }
-    let method = message["method"].as_str().unwrap_or_default();
-    if asked.is_some() && request.header("mcp-method") != Some(method) {
-        return refuse(-32020, "Header mismatch: Mcp-Method", None);
-    }
-    let named = match method {
-        "tools/call" | "prompts/get" => message["params"]["name"].as_str(),
-        "resources/read" => message["params"]["uri"].as_str(),
-        _ => None,
-    };
-    if asked.is_some()
-        && let Some(named) = named
-        && request.header("mcp-name").map(decoded).as_deref() != Some(named)
-    {
-        return refuse(-32020, "Header mismatch: Mcp-Name", None);
-    }
-    let supported = state
-        .supported
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .clone();
-    if let Some(asked) = asked
-        && !supported.iter().any(|version| version == asked)
-    {
-        return refuse(
-            -32022,
-            "Unsupported protocol version",
-            Some(json!({"supported": supported, "requested": asked})),
-        );
-    }
-    let result = match message["method"].as_str() {
-        Some("server/discover") => {
-            json!({"resultType": "complete", "supportedVersions": supported,
-            "capabilities": {"tools": {}}, "_meta": {"io.modelcontextprotocol/serverInfo": {"name": "fake", "version": "1"}}})
-        }
-        Some("tools/list") => {
-            json!({"resultType": "complete", "tools": [{"name": "echo", "description": "Say it back.",
-            "inputSchema": {"type": "object", "properties": {"text": {"type": "string"}}}}]})
-        }
-        Some("tools/call") if message["params"]["name"] == "echo" => {
-            json!({"resultType": "complete",
-            "content": [{"type": "text", "text": message["params"]["arguments"]["text"]}]})
-        }
-        _ => {
-            let missing = json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32601, "message": "method not found"}});
-            return (404, String::new(), missing.to_string());
-        }
-    };
-    let answer = json!({"jsonrpc": "2.0", "id": id, "result": result});
-    let text = if state.sse {
-        format!("event: message\ndata: {answer}\n\n")
-    } else {
-        answer.to_string()
-    };
-    (200, String::new(), text)
-}
-
-/// 请求头的值照规范解开：`=?base64?…?=` 的解 base64，别的原样。
-fn decoded(value: &str) -> String {
-    use base64::Engine;
-    value
-        .strip_prefix("=?base64?")
-        .and_then(|rest| rest.strip_suffix("?="))
-        .and_then(|inner| base64::engine::general_purpose::STANDARD.decode(inner).ok())
-        .map_or_else(
-            || value.to_string(),
-            |bytes| String::from_utf8_lossy(&bytes).into_owned(),
-        )
 }

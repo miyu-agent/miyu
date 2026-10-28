@@ -786,6 +786,7 @@ flowchart LR
 | F-18 上 | 软件包自带图标 | 清单 `[package] logo`（包目录里一张 PNG / WebP，不超过 256 KiB、每边 512，写法不对的 `bad_logo`）；核心只查不解码，不合的当没有、包照装、`miyu check` 报警告；`package.list` 带图标版本（SHA-256 前 16 位），新方法 `package.logo` 读图（成员也读得到）；`miyu pkg pack` 超了的照原格式缩进包、目录里原图不动。施工单见 `F-18上-软件包图标.md` |
 | F-18 下 | 软件源带图标 | 索引条目多 `icon`、`logo: {path, sha256, size}`；收录从包文件里取图标写进 `logos/<哈希>.png`，随索引发；`package.search` 每行多 `icon`、图标版本；`package.logo` 多 `from` 读软件源里的（照源的地址下、哈希对上才收、按源缓存、个人层过地址闸）。施工单见 `F-18下-软件源带图标.md` |
 | PT-1 上 | 网址的 MCP 服务带标准请求头 | MCP 规范 2026-07-28 的 P0：Streamable HTTP 每个请求带 `Mcp-Method`，`tools/call`、`resources/read`、`prompts/get` 另带 `Mcp-Name`（照规范编码）；服务回 4xx、5xx 时回应体是 JSON-RPC 错误的原样交回，探时代认得出新版服务，只认新版的网址服务连得上了；这两个头不许在 `headers` 里写。施工单见 `PT-1上-网址服务的标准请求头.md` |
+| PT-1 中 | 取消真断开、多轮请求照规范重发、参数请求头 | MCP 规范 2026-07-28 的 P1：网址的服务上取消一次请求就停掉那个 POST（新版不另发通知，老版照发）；`input_required` 只带 `requestState` 的换编号原样带回重发，至多 8 回；工具参数标了 `x-mcp-header` 的照规范查、不合的整件剔掉，合的调用时带 `Mcp-Param-<名>`。施工单见 `PT-1中-取消重发和参数请求头.md` |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |
 | 8-33 | 终端会话 | `session.terminal`、`session.set_terminal`，`terminal.*` 三项设置。施工单见 `8-33-终端会话.md` |

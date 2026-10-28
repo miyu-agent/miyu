@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>917</b><span>/ 945 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>918</b><span>/ 946 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">SU-1</b><span>最近一步（SU-1 只有一个主人）</span></li>
+    <li><b class="mono">PT-1中</b><span>最近一步（PT-1 中 取消真断开、多轮请求重发、参数请求头）</span></li>
   </ul>
 </header>
 
@@ -1312,6 +1312,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sF18a"><span class="n">F-18 上</span>软件包自带图标<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sF18b"><span class="n">F-18 下</span>软件源带图标<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPT1a"><span class="n">PT-1 上</span>网址的 MCP 服务带标准请求头<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPT1b"><span class="n">PT-1 中</span>取消真断开、多轮请求重发、参数请求头<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sEMa"><span class="n">E-M 上</span>她知道自己是什么模型<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sEMb"><span class="n">E-M 下</span>等人不算用时<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPOFF"><span class="n">P-OFF</span>去掉装了没开那一行<span class="st">✓</span></a></li>
@@ -47755,6 +47756,61 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>图纸 <code>docs/blueprint/mcp.md</code>「怎么走」第五条，差距报告 PT-1，施工单 <code>docs/construction/PT-1上-网址服务的标准请求头.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPT1b" aria-labelledby="h-sPT1b">
+  <div class="sheet-head"><h2 id="h-sPT1b"><span class="no">PT-1 中</span>取消真断开、多轮请求重发、参数请求头</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">新版 MCP 服务正常用就会碰到的三处：取消时那个 POST 还在路上、只带 requestState 的回应被当出错、标了 x-mcp-header 的参数没镜像成请求头。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">取消真断开、多轮请求重发、参数请求头</span><span class="dir-note">PT-1 中</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>取消时停掉那个 POST，连接跟着断</li>
+              <li>老服务照旧发取消通知，新版不发</li>
+              <li>只带 requestState 的换编号原样重发</li>
+              <li>至多重发 8 回</li>
+              <li>照规范查 x-mcp-header，不合的工具剔掉</li>
+              <li>调工具带 Mcp-Param-&lt;名&gt;</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">取消</span><span class="rl">新版断开就是取消；老版另发通知</span></div>
+          <div class="tile new"><span class="nm">多轮</span><span class="rl">只带 requestState 的才重发，要补东西的不支持</span></div>
+          <div class="tile new"><span class="nm">标记</span><span class="rl">只经 properties 到得了的基本类型参数</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PT-1 中</dd></div>
+        <div><dt>名称</dt><dd>取消真断开、多轮请求重发、参数请求头</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">PT-1中</dd></div>
+        <div><dt>验收</dt><dd>新测试、手写变异；本地门禁、Windows 版 clippy；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>丢掉的调用服务看到断开</span></li>
+        <li><span class="ok">✓</span><span>重发换编号、带回原样的 requestState</span></li>
+        <li><span class="ok">✓</span><span>不合规矩的工具剔掉，合的带请求头</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/mcp.md</code>「怎么走」第二条、第五条第 7、8 条，施工单 <code>docs/construction/PT-1中-取消重发和参数请求头.md</code>。</li>
       </ul>
     </div>
   </div>

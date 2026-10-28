@@ -24,7 +24,8 @@ pub enum Failed {
     Malformed(String),
     /// 两边没有共同的版本：服务列的那几个（旧时代是它握手时答的那一个）。
     NoCommonVersion(Vec<String>),
-    /// 新时代的服务要客户端补信息再问一次（`input_required`）：不支持。
+    /// 新时代的服务要客户端补信息再问一次（`input_required` 带了 `inputRequests`，或者什么都没带）：不支持。只带 `requestState`
+    /// 的客户端自己重发，不报这个（施工 PT-1 中）。
     InputRequired,
 }
 
