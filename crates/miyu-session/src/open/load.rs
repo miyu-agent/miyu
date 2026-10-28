@@ -154,7 +154,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             &owner_of,
             (persona, &personas),
             (&id_of, created.parent.is_none()),
-            &created.venue,
+            (&created.venue, shut),
             (
                 memory::Laid::Read(&laid),
                 memory::Source::of(&log, base.clone()),

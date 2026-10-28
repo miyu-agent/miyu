@@ -250,3 +250,41 @@ async fn a_branch_of_a_confined_session_is_confined_too() {
     };
     assert!(created.confined);
 }
+
+/// 关起来的会话装不了包（施工 SU-4 中：原来端点的软件包端口照属主不是主人拒，场所会话都归主人以后照关不关在闸上拒）：完全放开
+/// 的也一样，回出厂的那一句。不关的会话完全放开照常放行。
+#[tokio::test]
+async fn a_confined_session_installs_no_package() {
+    for (venue, confined) in [("qq:group:1", true), ("local", false)] {
+        let home = Home::new();
+        let package = Fake::new("package", Access::Install, Act::Echo);
+        let catalog = Catalog::new([Arc::clone(&package) as Arc<dyn Tool>]).expect("合写法");
+        let script = Script::new([one("package", "/x"), Play::Says("好。")]);
+        let opening = Opening {
+            permission: Permission {
+                level: Level::Full,
+                read_only: false,
+            },
+            attended: false,
+            cwd: at(&home, "work"),
+            dirs: Vec::new(),
+            sandbox: None,
+            sandbox_cache: None,
+        };
+        std::fs::create_dir_all(home.scratch.0.join("work")).expect("建得了工作区");
+        let lines = Lines {
+            venue: VenueId::parse(venue).expect("场所合写法"),
+            confined,
+            ..Lines::default()
+        };
+        let handle = home.create_full(&script, &catalog, opening, lines).await;
+        let log = turn(&home, &handle).await;
+        match confined {
+            true => {
+                assert!(package.calls().is_empty(), "关着的拒");
+                assert_eq!(text(&results(&log)[0]), shipped("no-commands.txt"));
+            }
+            false => assert_eq!(package.calls().len(), 1, "不关的完全放开照常装"),
+        }
+    }
+}

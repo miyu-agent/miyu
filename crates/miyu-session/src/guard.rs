@@ -313,9 +313,10 @@ impl Guard {
         );
         // 管理员放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
         let granted = self.admin_granted(name, &call.cwd, dirs, grants);
-        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）。
+        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）；装包、
+        // 卸包也一样（施工 SU-4 中：原来照会话的属主不是主人拒，场所会话都归主人以后照关不关）。
         if let Some(confined) = &self.confined
-            && (tool.outside_sandbox(&call) || granted)
+            && (tool.outside_sandbox(&call) || granted || access == Access::Install)
         {
             return deny(confined.no_commands());
         }

@@ -193,7 +193,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             &owner_of,
             (name.as_deref().unwrap_or(NO_PERSONA), &persona_book),
             (&id_of, !child),
-            &venue_of,
+            (&venue_of, place.1.is_some()),
             (memory::Laid::Empty, memory::Source::of(&log, None)),
         );
         Ok((snapshot, policy, texts, run, (guard, place), log, turns))

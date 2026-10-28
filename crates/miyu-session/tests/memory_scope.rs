@@ -184,15 +184,17 @@ async fn a_child_is_off_whatever_it_was_given() {
     assert!(snapshot(&home, main.id()).memory.is_some(), "新造的写明");
 }
 
-/// 记忆放在记忆账号的那一间（施工 R-3 下）；属主不是记忆归的那个账号的，照这个场所记（施工 R-13 上，`Listener`）。
+/// 记忆放在记忆账号的那一间（施工 R-3 下）；关在沙盒里的会话照这个场所记（施工 R-13 上，`Listener`；施工 SU-4 中起照关不关，
+/// 不照属主是不是记忆账号）。
 #[tokio::test]
-async fn the_room_follows_the_memory_account_and_a_stranger_owner_is_a_place() {
+async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place() {
     let home = Home::new();
     let admin = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
     let remember = Play::calls(&[("remember", r#"{"class":"user","text":"用户爱喝茶"}"#)]);
     let script = Script::new([remember, Play::Says("记住了。")]);
     let lines = Lines {
         memory_account: admin.clone(),
+        confined: true,
         ..Lines::default()
     };
     let handle = session(&home, &script, lines).await;

@@ -37,7 +37,7 @@ pub(crate) struct Calls {
 }
 
 impl Calls {
-    /// 会话 `session`（属主 `owner`）的记忆，放在 `room` 那一间，`listener` 在听（施工 R-13 上：照属主和记忆账号定，
+    /// 会话 `session`（属主 `owner`）的记忆，放在 `room` 那一间，`listener` 在听（施工 R-13 上；施工 SU-4 中起照关不关定，
     /// [`Listener::of`]）。
     pub(crate) fn new(
         memory: &Arc<Memory>,
@@ -89,7 +89,7 @@ impl Calls {
             &self.owner,
             (persona, personas),
             (&self.session, main),
-            venue,
+            (venue, self.keeper.heard_in_a_place()),
             (super::Laid::Given(own), source),
         )
     }

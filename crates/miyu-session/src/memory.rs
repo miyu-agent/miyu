@@ -225,7 +225,7 @@ impl Memory {
 /// （[`Calls`]）。范围是 `off` 的（子会话、`--no-memory`）不接，核心没交记忆的（测试里自己造的）没有。在阻塞线程里调。
 ///
 /// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在记忆账号 `account` 的那一间，只在这个会话里的在会话自己的目录
-/// 里（属主 `owner` 的）。听众照属主，不照记忆账号：出厂人格的记忆归属主，系统账号开的会话归管理员，听的人还是属主。
+/// 里（属主 `owner` 的）。听众照关不关（`confined`，施工 SU-4 中）：关在沙盒里的是那个场所，别的是属主。
 ///
 /// 跟着人格的、中途换过人格的（施工 P-13，`recast.rs`）：换过来以前的几轮当底子，抽取从换的那一条以后抽。
 ///
@@ -245,7 +245,7 @@ pub(crate) fn connect(
     owner: &AccountId,
     (persona, personas): (&str, &Personas),
     (session, main): (&SessionId, bool),
-    venue: &VenueId,
+    (venue, confined): (&VenueId, bool),
     (laid, source): (Laid<'_>, Source),
 ) -> (Option<TurnLane>, Option<Calls>) {
     let room = match scope {
@@ -282,7 +282,7 @@ pub(crate) fn connect(
         laid: laid.sent(),
         source,
     });
-    let listener = Listener::of(account, owner, venue);
+    let listener = Listener::of(confined, owner, venue);
     let calls = Calls::new(memory, room, listener, owner, session).since(floor);
     calls.extracting().0.called(here);
     (lane, Some(calls))

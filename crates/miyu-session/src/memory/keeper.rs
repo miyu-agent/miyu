@@ -70,6 +70,11 @@ pub struct Filter {
 }
 
 impl Keeper {
+    /// 听的是不是一个场所（关在沙盒里的会话，施工 SU-4 中）：换人格时照它接着听。
+    pub(crate) fn heard_in_a_place(&self) -> bool {
+        matches!(self.listener, Listener::Place(_))
+    }
+
     /// 记忆 `memory` 里的 `room` 那一间，这次是 `listener` 在听。
     pub fn new(memory: &Arc<Memory>, room: Room, listener: Listener) -> Keeper {
         Keeper {

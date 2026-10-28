@@ -19,9 +19,9 @@ use crate::support::extracting::*;
 use crate::support::meaning::{catalog, chat};
 use crate::support::*;
 
-/// 记忆归的那个账号：会话的属主是 alice（夹具定的），记忆归 admin 的会话就是「属主不是记忆归的那个账号」的场所会话。
+/// 记忆归的那个账号：就是会话的属主 alice（施工 SU-4 中起场所会话也归主人，群里谁在听只照关不关）。
 fn admin() -> AccountId {
-    AccountId::parse("admin").expect("合写法")
+    AccountId::parse("alice").expect("合写法")
 }
 
 fn room() -> Room {
@@ -81,18 +81,18 @@ fn stamp() -> Stamp {
 }
 
 #[test]
-fn whoever_the_memory_belongs_to_is_the_owner_and_anyone_else_is_a_place() {
+fn a_confined_session_is_a_place_and_anything_else_is_the_owner() {
     let local = VenueId::parse("local").expect("合写法");
-    assert_eq!(Listener::of(&admin(), &admin(), &local), owner());
+    assert_eq!(Listener::of(false, &admin(), &local), owner());
     assert_eq!(
-        Listener::of(&admin(), &admin(), &place(1)),
+        Listener::of(false, &admin(), &place(1)),
         owner(),
         "主人自己的私聊"
     );
-    let onebot = AccountId::parse("onebot").expect("合写法");
     assert_eq!(
-        Listener::of(&admin(), &onebot, &place(1)),
-        Listener::Place(place(1))
+        Listener::of(true, &admin(), &place(1)),
+        Listener::Place(place(1)),
+        "群、陌生人的私聊（施工 SU-4 中：属主也是主人）"
     );
 }
 
@@ -181,6 +181,7 @@ async fn a_place_gets_the_digest_and_every_line() {
     let lines = Lines {
         venue: place(1),
         memory_account: admin(),
+        confined: true,
         ..Lines::default()
     };
     let handle = home
@@ -213,6 +214,7 @@ async fn a_merge_started_in_a_place_sees_everything() {
     let lines = Lines {
         venue: place(1),
         memory_account: admin(),
+        confined: true,
         ..Lines::default()
     };
     let handle = home
@@ -263,6 +265,7 @@ async fn in_a_group_what_she_extracts_says_who_spoke_and_stays_in_that_group() {
         venue: place(1),
         group: true,
         memory_account: admin(),
+        confined: true,
         ..Lines::default()
     };
     let handle = home
@@ -329,6 +332,7 @@ async fn past_turns_from_any_place_are_found_anywhere() {
             venue: place(n),
             group: true,
             memory_account: admin(),
+            confined: true,
             ..Lines::default()
         };
         let handle = home
@@ -382,6 +386,7 @@ async fn in_a_group_everything_dropped_follows_the_slice() {
         venue: place(1),
         group: true,
         memory_account: admin(),
+        confined: true,
         ..Lines::default()
     };
     let handle = home
@@ -437,6 +442,7 @@ async fn a_counted_group_extracts_only_that_many_lines_per_round() {
         group: true,
         recent: Some(1),
         memory_account: admin(),
+        confined: true,
         ..Lines::default()
     };
     let handle = home

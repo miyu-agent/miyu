@@ -8,20 +8,20 @@ use miyu_kernel::origin::{By, Person};
 /// 这一次谁在听。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Listener {
-    /// 主人：会话的属主就是记忆归的那个账号（本机的会话、主人自己的私聊、人经协议碰记忆）。里面是记下时写进听众的那个人。
+    /// 主人：没关在沙盒里的会话（本机的会话、主人自己的私聊、人经协议碰记忆）。里面是记下时写进听众的那个人。
     Owner(By),
-    /// 一个场所：属主不是记忆归的那个账号的场所会话（系统账号的群、别人的私聊）。核心不认群还是私聊，场所就是场所。
+    /// 一个场所：关在沙盒里的场所会话（群、别人的私聊）。核心不认群还是私聊，场所就是场所。
     Place(VenueId),
 }
 
 impl Listener {
-    /// 照会话定：属主 `owner` 就是记忆账号 `account` 的，是主人；不是的，是会话所在的场所 `venue`。
+    /// 照会话定：关在沙盒里的（`confined`）是会话所在的场所 `venue`；别的是主人 `owner`（施工 SU-4 中：原来照属主是不是记忆
+    /// 账号，场所会话都归主人以后只能照关不关）。
     #[must_use]
-    pub fn of(account: &AccountId, owner: &AccountId, venue: &VenueId) -> Listener {
-        if owner == account {
-            Listener::Owner(By::Person(Person::new(owner.clone())))
-        } else {
-            Listener::Place(venue.clone())
+    pub fn of(confined: bool, owner: &AccountId, venue: &VenueId) -> Listener {
+        match confined {
+            true => Listener::Place(venue.clone()),
+            false => Listener::Owner(By::Person(Person::new(owner.clone()))),
         }
     }
 

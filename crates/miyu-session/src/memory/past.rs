@@ -111,8 +111,8 @@ fn replaced(turn: &str, after: Option<Seq>) -> bool {
 }
 
 /// 属主是 `asker` 的会话打不打得开这一段的会话（施工 E-6）：同 `history` 认编号的那一批（`SessionsPort::list`：属主一样的主
-/// 会话）。回合库记着从哪来的照它判；没记过的（接上回合索引以前的库、还没载入过的会话）照场所判：场所会话的属主是桥的系统
-/// 账号，打不开，本机的当是自己的主会话（原来的样子）。
+/// 会话）。回合库记着从哪来的照它判；没记过的（接上回合索引以前的库、还没载入过的会话）照场所判：场所会话打不开，本机的当是
+/// 自己的主会话（原来的样子）。问的会话自己读不了别的会话的（群），工具照旧不给编号（`miyu-memory` 的 `search.rs`）。
 fn opens(asker: &AccountId, origin: Option<&Origin>, venue: &Option<VenueId>) -> bool {
     match origin {
         Some(origin) => origin.main && origin.owner == asker.as_str(),

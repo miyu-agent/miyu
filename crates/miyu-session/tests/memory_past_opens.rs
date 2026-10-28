@@ -244,3 +244,34 @@ async fn whether_she_can_open_it_follows_the_owner_and_main() {
         "bob 打不开 alice 的"
     );
 }
+
+/// 关在沙盒里的群会话搜到主人本机会话里的一段，不给编号（施工 SU-4 中核过：场所会话也归主人、属主一样，群里没有读别的会话
+/// 的端口，工具照它不给）。
+#[tokio::test]
+async fn a_confined_group_gets_no_id_for_the_owner_s_chat() {
+    let home = Home::new();
+    let tools = catalog(&home);
+    let mine = home
+        .create_with(&Script::new([Play::Says("好。")]), &tools)
+        .await;
+    chat(&mine, "c1", "我在学日语").await;
+    stop(&mine).await;
+    home.memory.settle();
+    let search = Script::new([
+        Play::calls(&[("memory_search", r#"{"query":"日语"}"#)]),
+        Play::Says("找到了。"),
+    ]);
+    let lines = Lines {
+        venue: VenueId::parse("qq:group:1").expect("合写法"),
+        confined: true,
+        ..Lines::default()
+    };
+    let group = home
+        .create_full(&search, &tools, Opening::default(), lines)
+        .await;
+    chat(&group, "c2", "她以前说过日语的事吗").await;
+    let result = last_result(&home.log(group.id()));
+    assert!(result.contains("我在学日语"), "搜得到：{result}");
+    assert!(!result.contains(mine.id().short()), "不给编号：{result}");
+    stop(&group).await;
+}
