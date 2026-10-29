@@ -164,14 +164,6 @@ impl Language {
         }
     }
 
-    /// 还有几个没列。
-    pub(crate) fn more_models(&self, count: usize) -> String {
-        match self {
-            Language::Chinese => format!("还有 {count} 个，敲名字也行。"),
-            Language::English => format!("{count} more; you can type a name."),
-        }
-    }
-
     /// 问模型。
     pub(crate) fn pick_model(&self) -> &'static str {
         match self {
@@ -289,8 +281,8 @@ impl Language {
     /// 取不到模型列表（2026-10-08 项目主人定的说法）。
     pub(crate) fn no_model_list(&self) -> &'static str {
         match self {
-            Language::Chinese => "未获取到模型列表",
-            Language::English => "Could not get the model list",
+            Language::Chinese => "无法获取模型列表，目录里也没有这一家的模型",
+            Language::English => "cannot get the model list, and the catalog has no models for it",
         }
     }
 

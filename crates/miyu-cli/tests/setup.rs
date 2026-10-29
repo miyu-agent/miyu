@@ -391,3 +391,29 @@ async fn a_chat_model_already_written_is_replaced() {
     );
     assert!(!written.contains("magpie/old-model"), "{written}");
 }
+
+/// 列出来的模型全列（施工 ST-2，项目主人 10-29 在虚拟机里接 OpenCode Go：只列 20 个、说「还有 17 个」）：第 25 个也有编号，选得上。
+#[tokio::test]
+async fn every_listed_model_gets_a_number() {
+    let names: Vec<String> = (1..=25).map(|at| format!("model-{at:02}")).collect();
+    let listed: Vec<&str> = names.iter().map(String::as_str).collect();
+    let server = Server::start(vec![listing(&listed)]).await;
+    let home = Home::onboarding("", &[("DEEPSEEK_API_KEY", FAKE)], deepseek_at(&server));
+    let mut typist = Typist::at_terminal(&["3", "25"], &[]);
+    let asked = home
+        .setup(&plan(Setup::default(), &["DEEPSEEK_API_KEY"]), &mut typist)
+        .await;
+    assert_eq!(asked.code, 0, "{}", asked.screen);
+    let last = asked
+        .screen
+        .lines()
+        .find_map(|line| line.strip_prefix("  25  "))
+        .unwrap_or_else(|| panic!("第 25 个有编号：{}", asked.screen));
+    assert!(!asked.screen.contains("还有"), "{}", asked.screen);
+    let wanted = format!("chat = \"deepseek/{}\"", last.trim());
+    assert!(
+        home.system_config().contains(&wanted),
+        "{wanted}：{}",
+        home.system_config()
+    );
+}

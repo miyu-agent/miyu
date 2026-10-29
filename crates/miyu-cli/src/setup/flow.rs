@@ -1,5 +1,5 @@
 //! `miyu setup` 一步步怎么走（`docs/blueprint/cli/setup.md`「怎么走」第 3 到 11 条，施工 8-11、8-11 再补、8-11 五补）：选一家
-//! （`choose.rs`，自定义的在 `custom.rs`），拿 key，试；核心说要模型名的（`need_model`）印「未获取到模型列表」、让人填模型名
+//! （`choose.rs`，自定义的在 `custom.rs`），拿 key，试；核心说要模型名的（`need_model`）印「无法获取模型列表」和原因（施工 ST-2）、让人填模型名
 //! 再试；试不通的在终端里问「仍然保存？」，不存的回到上一步；贴的 key 试通了、或者人说仍然保存了才存，选模型（`model.rs`），
 //! 写配置。
 //!
@@ -17,6 +17,7 @@ use super::pick::config_id;
 use crate::config::Console;
 use crate::diagnostic::{self, Problem};
 use crate::exit;
+use crate::language::Language;
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{Line, say, write};
@@ -178,7 +179,24 @@ impl<'a> Flow<'a> {
                 }
                 if tested["need_model"] == json!(true) && model.is_none() && self.console.terminal()
                 {
-                    say(self.err, language.no_model_list());
+                    // 为什么要填（施工 ST-2）：列不到的那一句原话接在后面，再问模型名。
+                    let error = &tested["error"];
+                    let why = [error["class"].as_str(), error["message"].as_str()]
+                        .into_iter()
+                        .flatten()
+                        .filter(|part| !part.trim().is_empty())
+                        .collect::<Vec<_>>()
+                        .join(": ");
+                    let problem = match (why.is_empty(), language) {
+                        (true, _) => Problem::new(language.no_model_list()),
+                        (false, Language::Chinese) => {
+                            Problem::new(format!("{}：{why}", language.no_model_list()))
+                        }
+                        (false, Language::English) => {
+                            Problem::new(format!("{}: {why}", language.no_model_list()))
+                        }
+                    };
+                    diagnostic::warning(self.err, language, &problem);
                     match self
                         .ask(language.model_name())
                         .map(|line| line.trim().to_string())

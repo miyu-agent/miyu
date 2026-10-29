@@ -1,7 +1,7 @@
 //! `miyu setup` 的自定义一家、取不到模型列表（施工 8-11 再补，`docs/blueprint/cli/setup.md`「怎么走」第 4、7 条）：依次问
 //! base URL、接口协议、key（可以空）；配置里的编号照主机名起、撞了往后加，试通了问一句，直接回车用它、也能自己起（施工
 //! 8-11 六补）；空 key 的不存、不写密钥。列不出模型的印
-//! 「未获取到模型列表」、问模型名，拿它发一句再试（施工 8-11 五补：列得出的不发请求），通了不再列、不再问。三个平台一样跑。
+//! 「无法获取模型列表」和原因、问模型名，拿它发一句再试（施工 8-11 五补：列得出的不发请求），通了不再列、不再问。三个平台一样跑。
 
 use serde_json::json;
 
@@ -121,7 +121,7 @@ async fn without_a_model_list_the_model_name_is_asked_and_tried() {
     assert_eq!(
         after,
         "正在测试 127.1…\n\
-         未获取到模型列表\n\
+         miyu: 警告：无法获取模型列表，目录里也没有这一家的模型：other: HTTP 404: not found\n\
          模型名：正在测试 127.1…\n\
          已连通：测试 my-model，N 毫秒收到第一个字\n\
          ID（回车使用 local）：已设置 models.chat = local/my-model\n"
@@ -147,7 +147,7 @@ async fn an_empty_model_name_or_url_is_not_picked_and_writes_nothing() {
     assert!(
         asked
             .screen
-            .ends_with("未获取到模型列表\n模型名：miyu: 未选择\n"),
+            .ends_with("没有这一家的模型：other: HTTP 404: not found\n模型名：miyu: 未选择\n"),
         "{}",
         asked.screen
     );

@@ -1,12 +1,10 @@
 //! 选主对话的模型（`docs/blueprint/cli/setup.md`「怎么走」第 9 条，施工 8-11）：试的那一个（推荐的）排第一，别的照列出的
-//! 先后；最多列 [`SHOWN`] 个，多的敲名字。不在终端里的不问，用推荐的。
+//! 先后，全部列出来（施工 ST-2：项目主人 10-29 在虚拟机里接 OpenCode Go，列 20 个、说「还有 17 个」，要的是全列）；也能敲名字。
+//! 不在终端里的不问，用推荐的。
 
 use super::flow::{Flow, Tried};
 use super::pick::{Row, Typed, numbered, typed};
 use crate::shown::{say, write};
-
-/// 最多列几个模型。
-const SHOWN: usize = 20;
 
 impl Flow<'_> {
     /// 照 `tried` 选一个，交回模型名。
@@ -25,8 +23,7 @@ impl Flow<'_> {
                     .filter(|model| *model != tried.model),
             )
             .collect();
-        let shown = &ordered[..ordered.len().min(SHOWN)];
-        let rows: Vec<Row> = shown
+        let rows: Vec<Row> = ordered
             .iter()
             .enumerate()
             .map(|(at, model)| {
@@ -38,12 +35,9 @@ impl Flow<'_> {
         for line in numbered(&rows, None) {
             write(self.err, &line.paint(self.plan.gray));
         }
-        if ordered.len() > shown.len() {
-            say(self.err, &language.more_models(ordered.len() - shown.len()));
-        }
         loop {
-            match typed(self.ask(language.pick_model()), shown.len()) {
-                Typed::Picked(at) => return Ok(shown[at].to_string()),
+            match typed(self.ask(language.pick_model()), ordered.len()) {
+                Typed::Picked(at) => return Ok(ordered[at].to_string()),
                 Typed::Empty => return Ok(tried.model.clone()),
                 Typed::End => return self.not_picked(),
                 Typed::Zero => say(self.err, &language.not_listed("0")),
