@@ -66,7 +66,7 @@ async fn one_success_resets_the_wait() {
     let server = Server::start(replies).await;
     let mut home = Home::new();
     organizer_busy(&mut home, &server, "extract_max_turns = 2\n", None);
-    let script = Script::new((0..16).map(|_| Play::Says("好。")));
+    let script = Script::new((0..LAST).map(|_| Play::Says("好。")));
     let handle = home
         .create_full(
             &script,
@@ -80,11 +80,31 @@ async fn one_success_resets_the_wait() {
     }
     // 第 2、6 轮各出错一次，第 14 轮那一次成了。
     extracted_times(&server, 3).await;
-    tokio::time::sleep(Duration::from_millis(300)).await;
-    chat(&home, &handle, 15, "第15句").await;
-    chat(&home, &handle, 16, "第16句").await;
-    extracted_times(&server, 4).await;
-    stop(&handle).await;
+    // 成了的那一次补完关键词、向量才算走完，慢的机器上要好一会儿：照轮数判，不照时间。复位了的话走完以后再结束一轮就抽
+    // （走着的时候结束的几轮也算）；没复位的要攒满八轮，到第 22 轮。
+    for n in 15..=LAST {
+        chat(&home, &handle, n, &format!("第{n}句")).await;
+        if n >= 16 && extracted_within(&server, 4, Duration::from_secs(2)).await {
+            stop(&handle).await;
+            return;
+        }
+    }
+    panic!("到第 {LAST} 轮还没抽第 4 次：失败的次数没复位");
+}
+
+/// [`one_success_resets_the_wait`] 最多聊到第几轮：复位了的抽得到，没复位的还不到第 22 轮。
+const LAST: usize = 20;
+
+/// 等抽取的请求到 `count` 个，最多等 `wait`：交回等到没有。
+async fn extracted_within(server: &Server, count: usize, wait: Duration) -> bool {
+    let until = tokio::time::Instant::now() + wait;
+    while tokio::time::Instant::now() < until {
+        if extractions(server) >= count {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    extractions(server) >= count
 }
 
 /// 闲了的那一路照旧：出错以后闲够了就再试，不跟着翻倍。
