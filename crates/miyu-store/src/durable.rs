@@ -17,16 +17,19 @@ use std::sync::atomic::{AtomicU64, Ordering};
 const TEMP_TRIES: u32 = 64;
 
 /// 在数据根里建目录，连同缺的上层（同 [`create_dir_anywhere`]）：已经有的不动；要建的，往上（连它自己）找得到数据根的
-/// 标记才建。
+/// 标记才建，只建标记那一层下面的，数据根本身不建。
+///
+/// 找到标记和建之间数据根被删掉了的（测试的夹具删了数据根，后台开库的这一下正好夹在中间），不连数据根一起建回来，报
+/// `NotFound`（施工 TMP-1 再补：门禁「临时目录」偶尔剩一个只有 `index/recall/turns-_none.db` 的数据根）。
 ///
 /// # Errors
 ///
-/// 往上找不到数据根的标记（`NotFound`，说的是哪个目录）；别的同 [`create_dir_anywhere`]。
+/// 往上找不到数据根的标记、数据根已经不在了（`NotFound`，说的是哪个目录）；别的同 [`create_dir_anywhere`]。
 pub(crate) fn create_dir(dir: &Path) -> io::Result<()> {
     if dir.is_dir() {
         return Ok(());
     }
-    if !in_data_root(dir) {
+    let Some(root) = data_root_of(dir) else {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
             format!(
@@ -35,14 +38,36 @@ pub(crate) fn create_dir(dir: &Path) -> io::Result<()> {
                 crate::root::MARKER
             ),
         ));
-    }
-    create_dir_anywhere(dir)
+    };
+    create_below(root, dir)
 }
 
-/// `dir` 往上（连它自己）有一层有数据根的标记。
-fn in_data_root(dir: &Path) -> bool {
+/// `dir` 往上（连它自己）头一个有数据根标记的那一层。
+fn data_root_of(dir: &Path) -> Option<&Path> {
     dir.ancestors()
-        .any(|above| fs::symlink_metadata(above.join(crate::root::MARKER)).is_ok())
+        .find(|above| fs::symlink_metadata(above.join(crate::root::MARKER)).is_ok())
+}
+
+/// 建数据根 `root` 下面缺的几层，一直到 `dir`；`root` 本身不建，不在了的报 `NotFound`。
+fn create_below(root: &Path, dir: &Path) -> io::Result<()> {
+    if dir == root {
+        if root.is_dir() {
+            return Ok(());
+        }
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!(
+                "the Miyu data root {} is gone, not creating it again",
+                root.display()
+            ),
+        ));
+    }
+    if dir.is_dir() {
+        return Ok(());
+    }
+    let parent = dir.parent().unwrap_or(root);
+    create_below(root, parent)?;
+    make_one(dir, Some(parent))
 }
 
 /// 建目录，连同缺的上层，不管在不在数据根里（建数据根本身、写人指定位置的配置文件）。新建的每一层都同步它的上一层，建
@@ -62,6 +87,11 @@ pub(crate) fn create_dir_anywhere(dir: &Path) -> io::Result<()> {
     if let Some(parent) = parent {
         create_dir_anywhere(parent)?;
     }
+    make_one(dir, parent)
+}
+
+/// 上一层 `parent` 已经有了，建 `dir` 这一层（Unix 上 0700），同步上一层；同一时刻别处建好的也算。
+fn make_one(dir: &Path, parent: Option<&Path>) -> io::Result<()> {
     #[cfg(unix)]
     let created = {
         use std::os::unix::fs::DirBuilderExt;
