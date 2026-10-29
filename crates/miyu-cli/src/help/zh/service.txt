@@ -6,7 +6,7 @@
 命令：
   enable   安装并启用服务
   disable  停用并删除服务
-  status   显示服务是否安装、是否启用
+  status   显示服务的安装和启用状态
 
 服务运行当前的 miyu，设置了 MIYU_HOME 时一并带上。系统级服务（专用用户、
 /var/lib/miyu）请按仓库中的 packaging/README.md 手动安装。

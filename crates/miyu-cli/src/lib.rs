@@ -52,6 +52,8 @@ mod schedule;
 mod service;
 mod setup;
 mod shown;
+#[cfg(test)]
+mod text_rules;
 mod undo;
 mod web;
 

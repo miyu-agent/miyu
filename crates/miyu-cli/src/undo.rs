@@ -65,10 +65,7 @@ pub fn undo(args: Undo, direction: Direction, start: impl FnOnce() -> Command) -
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, direction, start)))
 }

@@ -229,10 +229,7 @@ pub fn ask(args: Ask, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start, language)))
 }
