@@ -57,10 +57,18 @@ pub struct Places {
     pub program: Option<PathBuf>,
 }
 
+/// 测试里让读目录先睡一会儿再读（施工 TMP-3）：像门禁满载时那样慢，看核心放锁之前等不等还在读的那一次。
+#[cfg(test)]
+pub(crate) static SLOW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// 读目录：挑新的、坏的退回另一份，读完记 `INFO catalog loaded`，坏了的记 `WARN catalog unreadable`，都读不了再记
 /// `WARN catalog empty`。一个模型坏了的记一行 `DEBUG`。挑中的那一份有整理好的就读它，`catalog loaded` 多一格
 /// `digest=true`；没有的解完另起线程整理一份（施工 V-5 中），核心放锁之前等它写完（施工 TMP-1 补2）。在阻塞线程里调。
 pub fn load(places: &Places) -> Option<Loaded> {
+    #[cfg(test)]
+    if SLOW.load(std::sync::atomic::Ordering::Relaxed) {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+    }
     let mut candidates = vec![(CatalogSource::Snapshot, places.snapshot.clone())];
     if let Some(cache) = &places.cache {
         candidates.push((CatalogSource::Cache, cache.clone()));
@@ -102,7 +110,12 @@ pub fn load(places: &Places) -> Option<Loaded> {
                 loaded(&catalog, source, &fetched, started, false);
                 // 写盘的线程登记下来，核心放锁之前等它写完（施工 TMP-1 补2，`crate::pending`）。
                 if let (Some(cache), Some(of)) = (&places.cache, of)
-                    && let Some(writing) = digest::keep(cache.clone(), of, catalog.clone())
+                    && let Some(writing) = digest::keep(
+                        cache.clone(),
+                        of,
+                        catalog.clone(),
+                        crate::pending::working(),
+                    )
                 {
                     crate::pending::hold(writing);
                 }

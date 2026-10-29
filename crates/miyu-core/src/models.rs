@@ -101,9 +101,15 @@ pub fn read_early(snapshot: PathBuf, cache: Option<PathBuf>, program: Option<Pat
         program,
     };
     let reading = places.clone();
+    // 核心放锁之前等它读完（施工 TMP-3）：读完才起写盘的线程、登记，没读完就放锁的会把删掉的数据根建回来。
+    let held = crate::pending::working();
     let thread = std::thread::Builder::new()
         .name("catalog".to_string())
-        .spawn(move || catalog::load(&reading));
+        .spawn(move || {
+            let loaded = catalog::load(&reading);
+            drop(held);
+            loaded
+        });
     if let Err(error) = &thread {
         tracing::warn!(target: TARGET, error = %error, "catalog thread not started");
     }
@@ -128,6 +134,7 @@ impl Early {
     /// 等它读完；线程没起来的现在读，读的线程 panic 了的当没读到。在阻塞线程里调。
     fn finish(self) -> Option<Loaded> {
         let Some(thread) = self.thread else {
+            let _held = crate::pending::working();
             return catalog::load(&self.places);
         };
         thread.join().unwrap_or_else(|_| {

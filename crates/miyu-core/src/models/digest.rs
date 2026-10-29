@@ -49,11 +49,17 @@ pub fn recall(cache: &Path, of: &str) -> Option<Catalog> {
 }
 
 /// 另起一个线程把 `catalog` 整理好写进缓存目录 `cache`，指纹是 `of`：先写到旁边、再换过去。写不成的记一行 `DEBUG`，下次
-/// 照原文解。交回那个线程（起不来的没有），测试等它写完。
-pub fn keep(cache: PathBuf, of: String, catalog: Catalog) -> Option<std::thread::JoinHandle<()>> {
+/// 照原文解。交回那个线程（起不来的没有），测试等它写完。`working` 拿到写完才放，核心放锁之前等它（施工 TMP-3）。
+pub(crate) fn keep(
+    cache: PathBuf,
+    of: String,
+    catalog: Catalog,
+    working: crate::pending::Working,
+) -> Option<std::thread::JoinHandle<()>> {
     std::thread::Builder::new()
         .name("catalog-digest".to_string())
         .spawn(move || {
+            let _working = working;
             #[cfg(test)]
             if SLOW.load(std::sync::atomic::Ordering::Relaxed) {
                 std::thread::sleep(std::time::Duration::from_millis(300));

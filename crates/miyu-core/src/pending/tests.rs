@@ -54,3 +54,32 @@ fn finish_waits_for_every_write_held() {
     assert!(file.is_file());
     std::fs::remove_dir_all(dir).expect("删得掉");
 }
+
+/// 核心起来就另起线程读目录（`read_early`），读完才起写盘的线程、登记。核心在它读完以前就停下的：放锁时登记里还是空的，
+/// 夹具删了数据根，它读完又把缓存目录建回来（施工 TMP-3，main b47ecacb3 的门禁）。
+#[test]
+fn finish_waits_for_a_catalog_read_still_going() {
+    crate::models::catalog::SLOW.store(true, Ordering::Relaxed);
+    // 快照在资源目录里，留着；缓存目录在数据根里，夹具删的是它。
+    let (resources, home) = (scratch(), scratch());
+    let catalog = r#"{"p": {"id": "p", "models": {"m": {"limit": {"context": 1000}}}}}"#;
+    std::fs::write(resources.join("snapshot").join(FILE), catalog).expect("写得进");
+    let early = crate::models::read_early(
+        resources.join("snapshot"),
+        Some(home.join("cache")),
+        std::env::current_exe().ok(),
+    );
+    finish();
+    std::fs::remove_dir_all(&home).expect("删得掉");
+    drop(early);
+    std::thread::sleep(std::time::Duration::from_millis(1500));
+    let left = home.join("cache").join(digest::FILE);
+    let found = left.is_file();
+    drop(std::fs::remove_dir_all(&home));
+    std::fs::remove_dir_all(&resources).expect("删得掉");
+    assert!(
+        !found,
+        "放锁以后没人再写：删掉的数据根里又出现了 {}",
+        left.display()
+    );
+}

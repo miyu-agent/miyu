@@ -1,14 +1,43 @@
 //! 核心放锁之前要等完的后台写盘（施工 TMP-1 补2）：数据根里的东西只许拿着锁（`run/core.lock`）的那一份核心写。另起线程写的
 //! （缓存目录里整理好的模型目录，[`crate::models::digest`]）在这里登记；核心走之前（正常停下、起不来）先等它们写完，再放锁。
 //! 原来不等：锁放了它还在写，下一份核心起来、测试删数据根时撞上它，删掉的目录又被它一层层建回来。
+//!
+//! 写盘的线程是读目录的线程读完才起的（施工 TMP-3）：读目录的线程起来之前拿一个 [`Working`]，写盘的线程也拿一个、写完才放；
+//! [`finish`] 等它们都放了。原来只等登记了的：核心起来不久就停下的，放锁时目录还没读完、登记里是空的，读完照样把删掉的数据根
+//! 建回来（main b47ecacb3 的门禁）。照计数等，不照谁取走了登记：两处同时等的，各自都等到全部写完。
 
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Condvar, Mutex, PoisonError};
 use std::thread::JoinHandle;
 
 use crate::TARGET;
 
 /// 登记了、还没等过的写盘线程。整个进程一份：起它们的地方（读目录的线程）手上没有核心。
 static WRITES: Mutex<Vec<JoinHandle<()>>> = Mutex::new(Vec::new());
+
+/// 还在读目录、还在写盘的有几个（施工 TMP-3）。
+static WORKING: Mutex<usize> = Mutex::new(0);
+
+/// [`WORKING`] 减到 0 时叫醒等着的 [`finish`]。
+static IDLE: Condvar = Condvar::new();
+
+/// 一件还没做完的（施工 TMP-3）：读目录的、写盘的线程起来之前拿，交给那个线程，做完放；[`finish`] 等它们都放了。
+pub(crate) struct Working(());
+
+/// 开始一件：在起线程之前拿，免得线程还没跑起来就被当成做完了。
+pub(crate) fn working() -> Working {
+    *WORKING.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+    Working(())
+}
+
+impl Drop for Working {
+    fn drop(&mut self) {
+        let mut working = WORKING.lock().unwrap_or_else(PoisonError::into_inner);
+        *working = working.saturating_sub(1);
+        if *working == 0 {
+            IDLE.notify_all();
+        }
+    }
+}
 
 /// 登记一个写盘线程 `writing`：核心走之前等它（[`finish`]）。
 pub(crate) fn hold(writing: JoinHandle<()>) {
@@ -18,8 +47,14 @@ pub(crate) fn hold(writing: JoinHandle<()>) {
         .push(writing);
 }
 
-/// 等登记了的写盘线程都写完（放锁之前调）；panic 了的记一行。会阻塞，在异步代码里放进阻塞线程。
+/// 等还在读、还在写的都做完（施工 TMP-3），再等登记了的写盘线程（放锁之前调）；panic 了的记一行。会阻塞，在异步代码里放进
+/// 阻塞线程。
 pub(crate) fn finish() {
+    let mut working = WORKING.lock().unwrap_or_else(PoisonError::into_inner);
+    while *working > 0 {
+        working = IDLE.wait(working).unwrap_or_else(PoisonError::into_inner);
+    }
+    drop(working);
     let writes = std::mem::take(&mut *WRITES.lock().unwrap_or_else(PoisonError::into_inner));
     for writing in writes {
         if writing.join().is_err() {
