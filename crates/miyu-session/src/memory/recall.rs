@@ -159,8 +159,14 @@ impl Keeper {
         let near = self.vectors()?.query(using, &said).await?;
         let threshold = texts.thresholds.of(&near.model)?;
         let (seen, brought) = seen(present);
-        let keeper = self.clone();
-        let found = match blocking(move || keeper.close(&said, &near)).await {
+        // 读的时候登记着（施工 TMP-1 补3，`reads.rs`）：回合开始限时过了不等它，核心停下时等。
+        let (keeper, reading) = (self.clone(), self.reading());
+        let found = match blocking(move || {
+            reading.pace();
+            keeper.close(&said, &near)
+        })
+        .await
+        {
             Ok(found) => found,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory recall not read");

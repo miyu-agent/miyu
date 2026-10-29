@@ -111,24 +111,33 @@ impl Calls {
         self.keeper.room()
     }
 
-    /// 回合开始要不要交常驻的摘要、交什么（施工 R-4 上，`summary.rs`）：日期照会话的时区 `offset`，在阻塞线程里读。
+    /// 回合开始要不要交常驻的摘要、交什么（施工 R-4 上，`summary.rs`）：日期照会话的时区 `offset`，在阻塞线程里读，读的时候
+    /// 登记着（施工 TMP-1 补3，`reads.rs`）。
     pub(crate) async fn summary(
         &self,
         offset: UtcOffset,
         present: Vec<Present>,
     ) -> Option<Injection> {
-        let keeper = self.keeper.clone();
-        blocking(move || keeper.summary(offset, &present)).await
+        let (keeper, reading) = (self.keeper.clone(), self.keeper.reading());
+        blocking(move || {
+            reading.pace();
+            keeper.summary(offset, &present)
+        })
+        .await
     }
 
-    /// 这一轮带谁的人卡（施工 E-1 补，`known.rs`）：照这一轮开口的人 `speakers`，在阻塞线程里读。
+    /// 这一轮带谁的人卡（施工 E-1 补，`known.rs`）：照这一轮开口的人 `speakers`，在阻塞线程里读，读的时候登记着（同上）。
     pub(crate) async fn card(
         &self,
         speakers: Vec<miyu_kernel::facts::Speaker>,
         present: Vec<Present>,
     ) -> Option<Injection> {
-        let keeper = self.keeper.clone();
-        blocking(move || keeper.card(&speakers, &present)).await
+        let (keeper, reading) = (self.keeper.clone(), self.keeper.reading());
+        blocking(move || {
+            reading.pace();
+            keeper.card(&speakers, &present)
+        })
+        .await
     }
 
     /// 这一轮联想带什么（施工 R-8，`recall.rs`）：场所会话里也联想，挑法照谁在听（施工 R-13 下）；`said` 是这一轮人说的话，照意思找照这一轮的配置 `config`

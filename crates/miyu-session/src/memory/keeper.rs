@@ -368,6 +368,11 @@ impl Keeper {
             && self.alive(entry)
     }
 
+    /// 回合开始问记忆的一次读开始了（施工 TMP-1 补3）：登记下来，带到阻塞线程那边，读完放下。
+    pub(super) fn reading(&self) -> super::reads::Reading {
+        self.memory.reads.begin()
+    }
+
     /// 这一间的记忆日志；这一回第一次开的记一行派生的情形。
     pub(super) fn log(&self) -> Result<Arc<MemoryLog>, Refused> {
         let (log, report) = self

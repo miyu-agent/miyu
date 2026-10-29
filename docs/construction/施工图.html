@@ -1395,6 +1395,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sTMP1"><span class="n">TMP-1</span>测试的临时目录自己清<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sTMP1b"><span class="n">TMP-1 补</span>门禁说清剩下了什么<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sTMP1c"><span class="n">TMP-1 补2</span>核心放锁之前等后台写完<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sTMP1d"><span class="n">TMP-1 补3</span>核心停下等记忆的读写做完<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSU3b"><span class="n">SU-3 下</span>你的东西只放一处<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSU4a"><span class="n">SU-4 上</span>关不关起来照一处算<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSU4b"><span class="n">SU-4 中</span>包不再各有一个账号<span class="st">✓</span></a></li>
@@ -51918,6 +51919,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>图纸 <code>docs/blueprint/core.md</code>「怎么走」第 14 步、「停下」第 6 条，<code>docs/blueprint/models.md</code>「怎么走」第二条；施工单 <code>docs/construction/TMP-1补2-核心放锁前等后台写完.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sTMP1d" aria-labelledby="h-sTMP1d">
+  <div class="sheet-head"><h2 id="h-sTMP1d"><span class="no">TMP-1 补3</span>核心停下等记忆的读写做完</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">回合开始问记忆的读限时过了会话不等，核心停了它还在建记忆日志、开库，删掉的数据根剩下几样。现在这几次读登记下来，核心停下时连回合索引的后台、补齐一起等完。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心停下</span><span class="dir-note">TMP-1 补3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>回合开始问记忆的读登记下来</li>
+              <li>停会话、空闲退出都等它们读完</li>
+              <li>再等回合索引的后台和补齐，然后收尾放锁</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">限时</span><span class="rl">会话不等，核心停下要等</span></div>
+          <div class="tile new"><span class="nm">夹具</span><span class="rl">不补「删完再看」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">TMP-1 补3</dd></div>
+        <div><dt>名称</dt><dd>核心停下等记忆的读写做完</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-29</dd></div>
+        <div><dt>提交</dt><dd class="mono">TMP-1补3</dd></div>
+        <div><dt>验收</dt><dd>新测试（修前红）；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>收到停的信号，交回时慢过限时的那次读已经读完</span></li>
+        <li><span class="ok">✓</span><span>空闲退出的也等</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/core.md</code>「停下」第 4、6 条，<code>docs/blueprint/memory.md</code> 第三条第 4 款；施工单 <code>docs/construction/TMP-1补3-核心停下等记忆读写完.md</code>。</li>
       </ul>
     </div>
   </div>

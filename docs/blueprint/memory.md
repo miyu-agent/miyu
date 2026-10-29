@@ -30,6 +30,7 @@
 | `crates/miyu-store/src/recall/indexes.rs` | 回合库的登记：照房间开回合库、留着；删会话时拿掉人格那几间里它的（会话那一间跟着目录走） | R-2 上 |
 | `crates/miyu-session/src/memory.rs` | 执行器：会话写日志时顺手更新回合索引、载入时补上（R-2 上）；`Memory::new` 登记第一次开回合库时记日志、补齐（R-2 下）；以后后台抽取、合并 | R-2 起 |
 | `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到） | V-9、R-32 |
+| `crates/miyu-session/src/memory/reads.rs` | 回合开始问记忆的那几次读（常驻那一块、人卡、联想）登记着，读完放下；`Memory::finish` 先等它们读完、再走 `Memory::settle`，核心停下、放锁以前调（第三条第 4 款，`core.md`「停下」第 6 条） | TMP-1 补3 |
 | `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
 | `crates/miyu-session/src/memory/known.rs` | 认出来（第三条第 8 款）：和她说话的是谁、这一段带过没有、拼那一块；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 和常驻那一块并着问，排在它后面、联想前面 | E-1 补 |
@@ -214,7 +215,7 @@
 
    合计照旧不超过 3000 字节，超了截新记的那几行，最后一行说还有几条；之后什么都没记的只有摘要一行。`refs` 是列出来的那几条，摘要那一行不算一条。摘要不算了的（第七条第 8 款）照上面只列条目。2026-10-10 照开发端点量：同样的事，摘要模式的一块 121 token，只列条目 201。
 3. **上限**：整块不超过 3000 字节（`memory/summary.rs` 的 `LIMIT`）。起点是约 1000 token；中文为主的一块照字节/4 折算会少算，2026-10-08 在开发端点量过 4000 字节 1298 token、3000 字节 964 token，所以取 3000。超了截在一条的边界上，最后一行写还有几条：`…and 12 more; memory_search finds them.`。
-4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。记忆这一个挂接点有摘要、联想两件（第四条第 6 款）；知识库的自动想起（施工 K-6 下，`knowledge.md` 第九条）和它并着问、照模块编号排；声明了 `context.inject` 的扩展也并着问（施工 X-16，`extensions.md`「回合开始的挂接点」），它交的排在触发那句话后面（X-16 补）。
+4. **时限**：挂接点限时 300 毫秒（起点，`actor/model.rs` 的 `HOOKS`）。过了当这一轮没交，记一行 `DEBUG turn start hook timed out module=memory part=summary`；那次读在阻塞线程里照样读完，交回的丢掉；下一轮 `present` 里还没有，再问。读的时候登记着（施工 TMP-1 补3，`memory/reads.rs`；人卡、联想也是）：头一回读一间还要建记忆日志、开库，核心停下时等它读完（`Memory::finish`，`core.md`「停下」第 6 条），原来停下以后它还在碰数据根，测试删数据根时撞上（CI 上撞见过）。记忆这一个挂接点有摘要、联想两件（第四条第 6 款）；知识库的自动想起（施工 K-6 下，`knowledge.md` 第九条）和它并着问、照模块编号排；声明了 `context.inject` 的扩展也并着问（施工 X-16，`extensions.md`「回合开始的挂接点」），它交的排在触发那句话后面（X-16 补）。
 5. **读字**：外壳和截了的那一句（`resources/software/memory/summary/` 的 `open.txt`、`close.txt`、`more.txt`，登记簿）核心起来时照 `miyu_tool::load` 读好，交给 `Memory`（`SummaryTexts`）。读不出来的（安装坏了）这个核心不交摘要，记一行 `WARN memory summary texts unreadable error=…`；列记忆出错的那一轮不交，记一行 `WARN memory summary not read error=…`。
 6. 整理改了摘要，跑着的会话不跟：压缩以后、新会话才换（R-7）。
 7. **内核的接口**（R-4 上，2026-10-08 和核心的主会话定）：
@@ -368,6 +369,7 @@
 | `crates/miyu-endpoint/tests/memory_used.rs`（R-4 下） | 第八条第 4 款，真核心：没用过的 `used` 是 0、`used_at` 是 `null`；常驻那一块带过以后是 1，时刻是那一块的；`memory.search` 也带 |
 | `crates/miyu-recall/src/memory/tests/merged.rs` 的 `a_summary_stops_counting_once_what_it_covered_is_changed_or_cleared`（R-7 下） | 第七条第 8 款：作废了、改了合进去的一条，清空了一个会话的、整间的，摘要不算、下次从头来；新的一份又算；之后才记的、作废之后才记的不碍事；合并那一次的改、作废记在摘要前面不碍事 |
 | `crates/miyu-recall/src/merge/tests.rs`、`memory/tests/merged.rs`（R-7 上） | 第七条第 3、4 款：前后多的话不管、没写的列表是空的、空的摘要当没写；不是交进去的编号、空的或超长的正文、空的 `why`、编号写错、写了两次的丢掉，正好 120 字收；又改又作废的照作废；摘要截在句子边界上、一句都放不下照字截、英文句号也算；读不成的整次失败；两种事件读写得回、没失败的不写 `failed`；底账照最后一份摘要、最后一次合并，那以后抽过几个会话（同一个算一个）重新数，摘要、记号不是记忆；一条记得它改的是哪一条 |
+| `crates/miyu-session/src/memory/reads/tests.rs`（TMP-1 补3） | 第三条第 4 款：等的时候登记着的都读完了才交回，没有登记着的当场交回；核心停下真等它们的在 `crates/miyu-core/tests/serve.rs`（`core.md`「守着它的」） |
 | `crates/miyu-session/src/memory/extract/tests.rs`（R-6 上） | 第六条第 3、4 款：请求的字逐字节对；还没答的那一句不算；轮数不够的等；调过 `remember`、`forget` 的跳过；放不下的分几次、一轮自己就放不下的截了中间也抽；闹钟作废、在路上的只有一个、读不成的放下不算失败、同一段失败三次才放过、换一段重新数 |
 | `crates/miyu-recall/src/extract/tests.rs`、`redact/tests.rs`、`memory/tests.rs` 的一条（R-6 上） | 第六条第 5、7 款：前后多的话和代码块不管、零条、不合的丢掉别的照收、正好 120 字收、读不成的整次失败；密钥的原文和常见写法遮掉，太短的原文、不够长的尾巴、不是前缀开头的不遮，写法写错说是哪一格；`ext.memory.extracted` 读写对得上、跳过的原因写成小写、底账照最大的 `upto` 记 |
 | `crates/miyu-store/tests/memory_extracted.rs`（R-6 上） | 第六条第 2 款：抽到哪照会话记最大的、重开还在、不是一条记忆 |
@@ -454,6 +456,7 @@
 | R-12 下 | 搜以前的对话（查回合索引）；恢复作废的（追加 `ext.memory.restored`） |
 | R-8 | 联想：人开的一轮照意思找、过门槛的带上，宁可不带（第四条，2026-10-10 项目主人定要「严」、没有照意思那一路的不联想）；内核的 `RunTurnStartHooks` 多 `said` |
 | R-9 | 记忆验收：真模型，缓存命中和每轮的 token |
+| TMP-1 补3 | 回合开始问记忆、限时过了不等的读登记着，核心停下时连回合索引的后台、补齐一起等完（第三条第 4 款） |
 
 ### 起草时定的
 

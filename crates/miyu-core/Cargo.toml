@@ -74,6 +74,8 @@ roxmltree = "0.20"
 miyu-drivers = { path = "../miyu-drivers", features = ["testkit"] }
 # 测试里的假服务器：后台更新目录（施工 8-7），CI 不连外网。
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
+# 测试里拿核心的记忆，让它的读慢下来（施工 TMP-1 补3）。
+miyu-endpoint = { path = "../miyu-endpoint", features = ["testkit"] }
 # 测试里请求模型照剧本回。
 miyu-session = { path = "../miyu-session", features = ["testkit"] }
 # 测试里的假工具：把假的后台命令交给任务表（施工 7-3）。

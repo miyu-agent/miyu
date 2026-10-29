@@ -24,8 +24,9 @@ doc = false
 
 [features]
 # 测试用的口子（施工 U23 下下）：个人层软件源的地址闸照给的 `miyu_http::guard::Testing` 走（回环当公网），本机的假软件源连得上。
-# 只在测试里打开：这个包自己的测试经 dev-dependencies 里那一行打开，生产的构建里没有这段代码。
-testkit = ["miyu-http/testkit"]
+# 只在测试里打开：这个包自己的测试经 dev-dependencies 里那一行打开，生产的构建里没有这段代码。施工 TMP-1 补3 起还交出核心的
+# 记忆（`Core::memory`），上层的测试照它让记忆的读慢下来。
+testkit = ["miyu-http/testkit", "miyu-session/testkit"]
 
 [dependencies]
 # 时区：核心所在的机器现在的偏移，写进会话的环境。

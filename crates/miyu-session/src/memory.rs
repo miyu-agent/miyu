@@ -19,6 +19,7 @@ mod merge;
 mod owner;
 mod past;
 mod port;
+mod reads;
 mod recall;
 mod recast;
 mod restore;
@@ -97,6 +98,8 @@ pub struct Memory {
     lanes: lane::Lanes,
     /// 补齐旧会话的后台线程（施工 R-2 下）：[`Memory::settle`] 也等它们。
     backfills: Arc<backfill::Backfills>,
+    /// 回合开始问记忆的那几次读（施工 TMP-1 补3）：限时过了会话不等，核心停下时等（[`Memory::finish`]）。
+    reads: Arc<reads::Reads>,
     /// 整理的时候她正在写什么（施工 R-21）：一个核心一路广播。
     dreams: dreaming::Dreams,
     /// 整理会话（施工 D-1 上）：核心起来时装上会话表（[`Memory::give_dream_sessions`]），没装的照旧走一次性入口。
@@ -148,6 +151,7 @@ impl Memory {
             merges: merge::Merges::default(),
             lanes: lane::Lanes::default(),
             backfills,
+            reads: Arc::default(),
             dreams: dreaming::Dreams::default(),
             selves: her::Selves::default(),
         })
@@ -167,6 +171,19 @@ impl Memory {
     pub fn settle(&self) {
         self.lanes.settle();
         self.backfills.settle();
+    }
+
+    /// 核心停下时（施工 TMP-1 补3）：先等回合开始问记忆、会话没等完的那几次读读完，再等回合索引的后台和补齐（[`Memory::settle`]）。
+    /// 读在前：联想头一回开回合库会起补齐。交回以后，这一份记忆不再在后台碰数据根。在阻塞线程里调。
+    pub fn finish(&self) {
+        self.reads.settle();
+        self.settle();
+    }
+
+    /// 测试里让回合开始问记忆的读每次先慢 `by`（施工 TMP-1 补3）：比会话等的限时长，就是会话不等、照样读完的那一种。
+    #[cfg(feature = "testkit")]
+    pub fn slow_reads(&self, by: std::time::Duration) {
+        self.reads.slow(by);
     }
 
     /// 接上照意思找的那一路（施工 R-5 下）：核心起来、找好小程序和缓存目录以后接一次；接过的再接不算，交回 `false`。
