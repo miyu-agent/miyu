@@ -68,6 +68,7 @@ pub enum Code {
     /// 私密目录写了家目录本身或它的上级（施工 5-15 下）：藏了它什么命令都跑不了，不收。
     PrivateTooBroad,
     /// 私密目录的写法不对（施工 5-15 下补）：不是 `~/…`、也不是绝对路径。协议上写 `bad_format`，说的话单给一句，说该怎么写。
+    /// 别的技能目录（`skills.external.dirs`，施工 PT-2 外）写法同它，也报这一种。
     PrivatePath,
     /// 去掉的不是这台机器出厂的私密目录（施工 5-15 下补）。协议上写 `not_an_option`，说的话单给一句。
     PrivateNotShipped,

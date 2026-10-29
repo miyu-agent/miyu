@@ -41,8 +41,9 @@ pub(crate) async fn remove(
     // 只删调用者自己放的（施工 Y-2 中上）：系统区的、包里的照「随包来的」拒。
     let (packages, root) = (core.packages_of(account), core.root.clone());
     let home = core.home.clone();
+    let external = super::external(core);
     tokio::task::spawn_blocking(move || {
-        let found = miyu_store::skills::find(&packages, &root).0;
+        let found = miyu_store::skills::find(&packages, &root, &external).0;
         let own = std::fs::canonicalize(miyu_store::skills::own_dir(&root)).ok();
         let folders = names
             .iter()
@@ -54,8 +55,8 @@ pub(crate) async fn remove(
                 if skill.package.is_some() {
                     return Err(Refusal::skill_from_package(name));
                 }
-                // 别家共用目录里的不删（施工 PT-2 中）：别的客户端也在用。
-                if skill.shared {
+                // 别的目录里的不删（施工 PT-2 中、PT-2 外）：别的客户端也在用。
+                if skill.external.is_some() {
                     return Err(Refusal::skill_shared(name));
                 }
                 match &skill.link {

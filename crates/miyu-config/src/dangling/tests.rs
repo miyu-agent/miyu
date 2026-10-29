@@ -163,7 +163,7 @@ fn a_model_takes_only_a_provider_and_a_model() {
         "池的成员写了池"
     );
     let mut values = Values::default();
-    values.set("pools.free.models", Value::List(vec![text("a/x")]));
+    values.set("pools.free.models", Value::List(vec![text("a/x")].into()));
     assert_eq!(
         Pools::at(&values, &["free"]).models,
         Some(vec!["a/x".to_string()])

@@ -126,6 +126,8 @@ pub(crate) fn texts(
 pub(crate) struct Titles {
     packages: Arc<Vec<Found>>,
     root: DataRoot,
+    /// 配置开着的别的目录（施工 PT-2 外）。
+    external: Vec<miyu_store::skills::External>,
     tools: BTreeMap<String, BTreeMap<String, String>>,
     /// 工具目录里这一刻的工具自己说的标题后面跟哪个参数（施工 9-8 十一补，网页报的：扩展登记的 `subject` 没进标题）。
     subjects: BTreeMap<String, String>,
@@ -159,6 +161,7 @@ impl Titles {
             packages_of,
             packages: core.packages_of(owner),
             root: core.root.clone(),
+            external: crate::skills::external(core),
             tools,
             subjects,
         }
@@ -166,7 +169,7 @@ impl Titles {
 
     /// 技能的名字到给人看的名字，照语言 `language` 挑，没写的照名字。碰磁盘。
     fn skills(&self, language: &str) -> BTreeMap<String, String> {
-        miyu_store::skills::find(&self.packages, &self.root)
+        miyu_store::skills::find(&self.packages, &self.root, &self.external)
             .0
             .into_iter()
             .map(|skill| {

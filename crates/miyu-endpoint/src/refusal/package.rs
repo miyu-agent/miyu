@@ -100,7 +100,7 @@ impl Refusal {
     pub(crate) fn skill_from_package(name: &str) -> Refusal {
         Refusal::with("skill_from_package", "name", serde_json::json!(name))
     }
-    /// 别家共用目录（`~/.agents/skills/`）里的技能不删（施工 PT-2 中，`skill.remove`）：`data.name`。
+    /// 别的目录（`skills.external.dirs`，施工 PT-2 中、PT-2 外）里的技能不删（`skill.remove`）：`data.name`。
     pub(crate) fn skill_shared(name: &str) -> Refusal {
         Refusal::with("skill_shared", "name", serde_json::json!(name))
     }

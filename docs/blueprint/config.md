@@ -287,6 +287,8 @@ miyu_config::settings! {
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统、个人 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统、个人 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
 | `show.system_hint` | 开关 | `true` | 系统、个人 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统），设置页在「软件包」那一页、展示那一组 |
+| `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
+| `skills.external.dirs` | 文字的列表，一个最多 4096 个字符：`~`、`~/…` 或绝对路径 | `["~/.agents/skills"]`（静态列表的出厂值：`Value::List` 借代码里写的切片，同 `Value::Text`，PT-2 外） | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外：照先后读，同名的先列的赢。相对路径 `config.set`、`miyu check`、`config.check` 都报 `bad_format`（下面「问题」那张表）；读不到的静默跳过 |
 | `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统、个人 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
 | `net.search.exa.key` | 密钥 | 没有：照 Exa 的免费额度 | 系统、个人 | 不能写 | `next_turn` | N-3 上（设计 36 第二节第 1 条）：配了的 Exa 走自己的额度（接在 MCP 地址后面 `exaApiKey`）。下面几项都是「软件包」页「API Key 和地址」组（`net_keys`，终端转来项目主人 2026-10-19 定：和「搜索服务供应商」分开画） |
 | `net.search.deepseek.key` | 密钥 | 没有：照用模型那边 DeepSeek 供应商的 key（地址里有 `api.deepseek.com`，或者 `catalog` 是 `deepseek`），也没有的 DeepSeek 不试 | 系统、个人 | 不能写 | `next_turn` | N-3 上：DeepSeek 排在没配置时的顺序最后，有 key 才用；按次收费 |
@@ -389,7 +391,7 @@ miyu_config::settings! {
 | `private_too_broad` | 错误 | `sandbox.private.add` 写了家目录本身（`~`、`~/` 都算）或它的上级（`got` 是那一个）：藏了它什么命令都跑不了。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-15 下 |
 | `readonly_too_broad` | 错误 | `sandbox.readonly.add` 写了家目录本身或它的上级（`got` 是那一个）：家目录里改什么都要先问。只在 `config.set` 改几项时查，手改文件写了的照不写算 | 5-17 下 |
 | `out_of_range` | 错误 | 数不在范围里，字太长 | 8-6（整数） |
-| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`sandbox.readonly.add` 的一项不是 `~/…`、绝对路径、不带 `..` 的相对路径（单给一句，5-17 下） | 8-6（网址、名字、引用、键里的名字） |
+| `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`sandbox.readonly.add` 的一项不是 `~/…`、绝对路径、不带 `..` 的相对路径（单给一句，5-17 下）；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（同私密目录那一句，PT-2 外）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
 | `unusable_temperature` | 错误 | 模型的 `temperature` 这个模型用不了：目录说它不收温度（`temperature: false`），或者超过它真走的驱动的上限（`anthropic` 是 1，`name` 是上限）。照 `unknown_effort` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。目录读完以前、那一家用不了的不查（`models.md`「怎么走」第十四条） | 8-22 |
@@ -1538,6 +1540,15 @@ enabled = true
 # 能写：true 或 false。只能写在系统配置里。新会话生效。
 system_hint = true
 
+[skills.external]
+# 其他技能目录：「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。
+# 能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。
+dirs = ["~/.agents/skills"]
+
+# 读取其他目录的 Skills：开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+enabled = false
+
 [terminal]
 # 闲置多久开新会话：上一次说话以后闲置超过这么多分钟，下一句开一个新的终端集成会话，旧会话保留。0 表示不开新的。
 # 能写：0 到 525600 之间的整数。只能写在系统配置里。立即生效。
@@ -1650,6 +1661,9 @@ currency = "USD"
 | `sandbox.readonly.enabled` 名字（5-17 下上补） | 受保护的路径 | Protected paths | 保護パス |
 | `sandbox.readonly.add` 名字（5-17 下） | 加的受保护路径 | Added protected paths | 追加した保護パス |
 | `sandbox.readonly.remove` 名字（5-17 下） | 默认受保护路径 | Default protected paths | 既定の保護パス |
+| `skills.external.enabled` 名字（PT-2 外） | 读取其他目录的 Skills | Read skills from other folders | ほかのフォルダのスキルを読む |
+| `skills.external.dirs` 名字（PT-2 外） | 其他技能目录 | Other skill folders | ほかのスキルフォルダ |
+| 组 `skills`（PT-2 外） | 技能 | Skills | スキル |
 | `sandbox.strength` 名字（5-16 下） | 沙盒强度 | Sandbox strength | サンドボックスの強さ |
 | 选项 | `auto` 自动、`weak` 弱沙盒 | Automatic、Weak | 自動、弱い |
 | `ui.startup` 名字（8-3，8-28 改名） | 启动时打开 | On start, open | 起動時に開く |

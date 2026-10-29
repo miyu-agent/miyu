@@ -22,8 +22,9 @@ pub enum Value {
     Secret(Reference),
     /// 整数（施工 8-6）。
     Int(i64),
-    /// 列表（施工 8-6）：每一个照元素的类型。
-    List(Vec<Value>),
+    /// 列表（施工 8-6）：每一个照元素的类型。同 [`Value::Text`]，清单里不可变的出厂默认值借着写在代码里的切片（施工 PT-2 外：
+    /// `skills.external.dirs` 出厂带一项），读进来的自己拿着；别的项要非空的出厂列表也照它写。
+    List(Cow<'static, [Value]>),
     /// 小数（施工 8-7）。
     Float(Number),
 }

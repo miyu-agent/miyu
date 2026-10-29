@@ -155,7 +155,7 @@ fn value_of(json: &Json, lists: bool) -> Option<Value> {
             .iter()
             .map(plain::from_json)
             .collect::<Option<Vec<_>>>()
-            .map(Value::List),
+            .map(|values| Value::List(values.into())),
         other => plain::from_json(other),
     }
 }

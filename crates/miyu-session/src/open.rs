@@ -73,7 +73,10 @@ pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
 /// [`create`] 干活的那一段。
 async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
-    let mut opened = face::open(&setup, &config.current().resolved.values()).await;
+    let values = config.current().resolved.values();
+    let mut opened = face::open(&setup, &values).await;
+    // 别的目录里的技能照这时的配置（施工 PT-2 外）：关着的不碰。
+    let external = miyu_store::skills::external::of(&values, setup.home);
     let taken = (
         std::mem::take(&mut opened.face),
         std::mem::take(&mut opened.listed),
@@ -83,7 +86,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         shelves: shelves_open,
         names: skill_names,
         watch,
-    } = draft::draft(&setup, &opened, taken).await?;
+    } = draft::draft(&setup, &opened, taken, external).await?;
     // 给了的场所插件工具记进快照（施工 O-60）。
     parts.plugin_tools = std::mem::take(&mut opened.plugin_tools);
     let face::Opened {

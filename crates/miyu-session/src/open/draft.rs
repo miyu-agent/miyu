@@ -35,23 +35,26 @@ pub(super) async fn draft(
     setup: &Create<'_>,
     opened: &Opened,
     (face, listed): (Vec<miyu_policy::ToolEntry>, Vec<crate::knowledge::Listed>),
+    external: Vec<miyu_store::skills::External>,
 ) -> Result<Drafted, CreateError> {
     // 装了的功能（施工 F-3 上）：没交预设几层的（测试里造的）当都装着。
     let features = setup.presets.as_ref().map(|places| &places.features);
     let roleplay = features.is_none_or(|features| features.installed(ROLEPLAY));
     let preset = opened.preset.as_ref();
-    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），只要预设开着的（施工 X-11 上）：列进 system，文件夹放开
-    // 只读。
+    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），配置开着时加别的目录 `external`（施工 PT-2 外），只要预设
+    // 开着的（施工 X-11 上）：列进 system，文件夹放开只读。
     let watch = setup.installed.clone().map(|installed| skills::Watch {
         installed,
         root: setup.root.clone(),
+        home: setup.home.map(std::path::Path::to_path_buf),
     });
     let (found, shelves, names) = match setup.installed.clone() {
         Some(installed) => {
             let root = setup.root.clone();
             let file = preset.map(|chosen| chosen.file.clone());
             blocking(move || {
-                let found = skills::opened(skills::find(&installed(), &root), file.as_ref());
+                let found = skills::find(&installed(), &root, &external);
+                let found = skills::opened(found, file.as_ref());
                 let shelves = skills::shelves(&found);
                 let names = skills::names(&found);
                 (found, shelves, names)
@@ -142,7 +145,8 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         std::mem::take(&mut opened.face),
         std::mem::take(&mut opened.listed),
     );
-    let drafted = draft(&setup, &opened, taken).await?;
+    let external = miyu_store::skills::external::of(&values, setup.home);
+    let drafted = draft(&setup, &opened, taken, external).await?;
     let resources = setup.resources.clone();
     let no_tools = setup.no_tools;
     let (snapshot, layout, policy, texts) = blocking(move || {

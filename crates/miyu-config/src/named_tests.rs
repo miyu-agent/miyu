@@ -124,10 +124,13 @@ fn named_items_are_read_under_their_real_keys() {
     );
     assert_eq!(
         parsed.entries["shops.dev.keys"].value,
-        Value::List(vec![
-            Value::Secret(Reference::Secret("dev".to_string())),
-            Value::Secret(Reference::Env("DEV_KEY".to_string())),
-        ])
+        Value::List(
+            vec![
+                Value::Secret(Reference::Secret("dev".to_string())),
+                Value::Secret(Reference::Env("DEV_KEY".to_string())),
+            ]
+            .into()
+        )
     );
 }
 

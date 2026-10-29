@@ -151,7 +151,9 @@ fn the_registered_list_is_well_formed() {
             "packages.sources.<id>.url",
             "packages.sources.<id>.key",
             "core.idle_exit",
-            "log.level"
+            "log.level",
+            "skills.external.enabled",
+            "skills.external.dirs"
         ],
         "照登记的先后"
     );
@@ -324,10 +326,13 @@ fn a_package_list_setting_is_a_system_list_of_identities() {
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     assert_eq!(
         parsed.entries["relay.whitelist"].value,
-        Value::List(vec![
-            Value::Text("qq:20017".into()),
-            Value::Text("qq:10002".into())
-        ])
+        Value::List(
+            vec![
+                Value::Text("qq:20017".into()),
+                Value::Text("qq:10002".into())
+            ]
+            .into()
+        )
     );
     assert_eq!(
         codes(Layer::System, "[relay]\nwhitelist = []\n"),

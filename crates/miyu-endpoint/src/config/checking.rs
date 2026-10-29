@@ -70,7 +70,13 @@ pub(crate) fn check_text(
     };
     let mut layers = config.layers(None);
     let missing = config.missing_if(&parsed, layer);
-    let mut found: Vec<&Problem> = parsed.problems.iter().chain(&missing).collect();
+    let external = super::private::external_dirs(&parsed, layer);
+    let mut found: Vec<&Problem> = parsed
+        .problems
+        .iter()
+        .chain(&missing)
+        .chain(&external)
+        .collect();
     let tightening;
     if layer == Layer::Project {
         layers.project = Some((&parsed, Trust::Trusted));

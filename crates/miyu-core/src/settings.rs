@@ -42,7 +42,7 @@ const TARGET: &str = "miyu::config";
 /// 后面（施工 8-8；「挡位」8-8 补去掉了），「冷却」排在「目录」后面（施工 8-9）；高级那一页先「压缩」再「运行日志」（施工
 /// 6-11 上）。施工 O-8 到 O-20 最后还有通讯平台的桥的几项（`OnebotSettings`）：O-20 挪进桥自己的清单 `[settings]`
 /// （`docs/blueprint/onebot.md` 第一条「软件包清单」），在「软件包」那一页。
-const MODULES: [&[Item]; 42] = [
+const MODULES: [&[Item]; 43] = [
     UiSettings::ITEMS,
     PersonaSettings::ITEMS,
     PresetSettings::ITEMS,
@@ -87,6 +87,8 @@ const MODULES: [&[Item]; 42] = [
     SOURCE_FEEDS,
     crate::serve::CoreSettings::ITEMS,
     LogSettings::ITEMS,
+    // 读别的目录里的技能（施工 PT-2 外）：「高级」那一页最后一组。
+    miyu_store::skills::external::ITEMS,
 ];
 
 /// 联网这个内置包的几组（施工 N-2 下、N-3 上、MB-2）：「搜索来源」，要 key 的几家的 key、SearXNG 的地址，内部域名。cargo 开关 `net`

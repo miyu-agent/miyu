@@ -322,6 +322,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let watch = installed.clone().map(|installed| skills::Watch {
         installed,
         root: root.clone(),
+        home: home.map(Path::to_path_buf),
     });
     let (shelves_open, skill_names) = match installed {
         Some(installed) => {
@@ -333,12 +334,15 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 crate::switches::of(&values),
                 crate::packages_off::of(&values),
             );
+            // 别的目录照这时的配置（施工 PT-2 外）：关着的不碰。
+            let external = miyu_store::skills::external::of(&values, home);
             let site = venue.clone();
             blocking(move || {
                 let file = wanted
                     .zip(places)
                     .and_then(|(id, places)| places.file(&id, (images, site.as_str()), looked));
-                let found = skills::opened(skills::find(&installed(), &root), file.as_ref());
+                let found = skills::find(&installed(), &root, &external);
+                let found = skills::opened(found, file.as_ref());
                 (skills::shelves(&found), skills::names(&found))
             })
             .await

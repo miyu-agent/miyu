@@ -130,7 +130,7 @@ lights = "smart-home"     # 包带的，写包的编号
 
 ## 技能
 
-照公开的 Agent Skills 格式（Claude Code、Codex 这些都认），网上现成的技能放进来就能用。别的客户端装进 `~/.agents/skills/` 的技能 Miyu 也认，排在自己放的、包带的后面，同名的照 Miyu 自己的；那里的不经 Miyu 删。`skills/<名字>/SKILL.md`：
+照公开的 Agent Skills 格式（Claude Code、Codex 这些都认），网上现成的技能放进来就能用。设置里打开「读取其他目录的 Skills」（`skills.external.enabled`），别的客户端装进 `~/.agents/skills/` 的技能 Miyu 也认（目录表 `skills.external.dirs` 能增删），排在自己放的、包带的后面，同名的照 Miyu 自己的；那里的不经 Miyu 删。`skills/<名字>/SKILL.md`：
 
 ```markdown
 ---

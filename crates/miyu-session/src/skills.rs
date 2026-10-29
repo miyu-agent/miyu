@@ -14,7 +14,7 @@ use miyu_policy::skill::feature_id;
 use miyu_store::packages::Found;
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_store::root::DataRoot;
-use miyu_store::skills::{self, Skill};
+use miyu_store::skills::{self, External, Skill};
 use miyu_tool::load::say;
 
 use crate::TARGET;
@@ -23,10 +23,14 @@ use crate::path_text::path_text;
 /// 读技能用的那件工具（基本系统的 `read`）：工具面上没有它的，列出来她也读不了，不列。
 const READ: &str = "read";
 
-/// 找属主 `owner` 用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里他自己放的。跳过的一个记一行，只写哪一种
-/// （同名被盖住的、链接指到外面的、别的），路径、原因里有人起的名字，不写（施工 LG-1 上）。
-pub(crate) fn find(installed: &[Found], root: &DataRoot) -> Vec<Skill> {
-    let (found, skipped) = skills::find(installed, root);
+/// 找属主 `owner` 用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里他自己放的，加配置开着时别的目录 `external`
+/// 里的（施工 PT-2 外）。跳过的一个记一行，只写哪一种（同名被盖住的、链接指到外面的、别的），路径、原因里有人起的名字，不写
+/// （施工 LG-1 上）；别的目录读不了的静默跳过，记一行 debug。
+pub(crate) fn find(installed: &[Found], root: &DataRoot, external: &[External]) -> Vec<Skill> {
+    for one in external.iter().filter(|one| !one.dir.is_dir()) {
+        tracing::debug!(target: TARGET, chars = one.text.chars().count(), "external skills folder not read");
+    }
+    let (found, skipped) = skills::find(installed, root, external);
     for one in &skipped {
         let kind = match (&one.by, &one.outside) {
             (Some(_), _) => "covered",

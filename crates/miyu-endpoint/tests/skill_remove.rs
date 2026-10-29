@@ -145,14 +145,15 @@ async fn a_linked_folder_is_followed_but_only_the_link_is_removed() {
     assert_eq!(from(&mut client, "linked").await, None);
 }
 
-/// 别家共用目录里的不删（施工 PT-2 中）：Codex 这些别的客户端也在用，拒 `skill_shared`、带名字，文件还在。
+/// 别的目录里的不删（施工 PT-2 中、PT-2 外）：Codex 这些别的客户端也在用，拒 `skill_shared`、带名字，文件还在。
 #[tokio::test]
-async fn a_skill_in_the_shared_agents_folder_is_not_removed() {
-    let home = Home::new().with_shared_skills();
-    let shared = home.work.join("me/.agents/skills/pdf/SKILL.md");
-    std::fs::create_dir_all(shared.parent().expect("有上一级")).expect("建得了");
-    std::fs::write(&shared, skill("pdf")).expect("写得进");
-    let mut client = connected(&home).await;
+async fn a_skill_in_another_folder_is_not_removed() {
+    let home = Home::new();
+    home.write("config.toml", "[skills.external]\nenabled = true\n");
+    home.write_elsewhere(".agents/skills", "pdf", "Shared.");
+    let shared = home.me().join(".agents/skills/pdf/SKILL.md");
+    let mut client = Client::connect(home.core_elsewhere(&Script::new([]), Default::default()));
+    client.hello().await;
     assert_eq!(from(&mut client, "pdf").await, Some(json!("agents")));
     let reply = client
         .call("r", "skill.remove", json!({"names": ["pdf"]}))

@@ -17,16 +17,11 @@ struct Places {
 
 impl Places {
     fn new() -> Places {
-        Places::at_home(false)
-    }
-
-    /// 家目录在临时目录的 `me/`（施工 PT-2 中：别家共用的技能目录照它找）；`false` 的没有家目录，和别的测试一样。
-    fn at_home(home: bool) -> Places {
         let scratch = Scratch::new();
         let env = Env {
             platform: Platform::current(),
             miyu_home: Some(scratch.path().join("data").into_os_string()),
-            home: home.then(|| scratch.path().join("me")),
+            home: None,
             xdg_cache_home: None,
             local_app_data: None,
             miyu_resources: None,
@@ -46,8 +41,20 @@ impl Places {
     }
 
     fn found(&self) -> (Vec<Skill>, Vec<Skipped>) {
+        self.found_with(&[])
+    }
+
+    /// 同 [`Places::found`]，另读临时目录里的这几个别的目录（施工 PT-2 外），照先后。
+    fn found_with(&self, external: &[&str]) -> (Vec<Skill>, Vec<Skipped>) {
         let packages = Packages::new(&self.resources, &self.root).read();
-        find(&packages, &self.root)
+        let external: Vec<External> = external
+            .iter()
+            .map(|text| External {
+                text: (*text).to_string(),
+                dir: self.scratch.path().join(text),
+            })
+            .collect();
+        find(&packages, &self.root, &external)
     }
 }
 
@@ -231,58 +238,51 @@ fn a_linked_skill_folder_is_found_where_it_really_is() {
     assert_eq!(skipped[1].path, skills_dir.join("bad").join("SKILL.md"));
 }
 
-/// 别家共用的技能目录（施工 PT-2 中，agentskills.io 的约定）：家目录下 `.agents/skills/` 里的也认，标着别家共用的；排在 Miyu
-/// 自己的（自己放的、包里的）后面，同名的 Miyu 自己的赢，共用目录那一份记下被谁盖住。找数据根时没有家目录的不找。
+/// 别的目录（施工 PT-2 中、PT-2 外）：排在 Miyu 自己的（自己放的、包里的）后面，几个之间照先后；同名的先到的赢，别的目录里
+/// 被压掉的不记；标着配置里写的那个目录。没交的不碰，没有的目录不算。
 #[test]
-fn the_shared_agents_folder_comes_after_miyu_s_own() {
-    let places = Places::at_home(true);
+fn external_folders_come_after_miyu_s_own_in_their_order() {
+    let places = Places::new();
     places.write("res/packages/tools/package.toml", &package("tools"));
     places.write(
         "res/packages/tools/skills/pdf/SKILL.md",
         &skill("pdf", "From the package."),
     );
     places.write("data/skills/mine/SKILL.md", &skill("mine", "My own."));
-    places.write("me/.agents/skills/mine/SKILL.md", &skill("mine", "Shared."));
-    places.write("me/.agents/skills/pdf/SKILL.md", &skill("pdf", "Shared."));
-    places.write(
-        "me/.agents/skills/notes/SKILL.md",
-        &skill("notes", "Shared."),
-    );
-    let (skills, skipped) = places.found();
-    let brief: Vec<(&str, &str, bool)> = skills
+    places.write("first/mine/SKILL.md", &skill("mine", "First."));
+    places.write("first/pdf/SKILL.md", &skill("pdf", "First."));
+    places.write("first/notes/SKILL.md", &skill("notes", "First."));
+    places.write("second/notes/SKILL.md", &skill("notes", "Second."));
+    places.write("second/todo/SKILL.md", &skill("todo", "Second."));
+    let (skills, skipped) = places.found_with(&["missing", "first", "second"]);
+    let brief: Vec<(&str, &str, Option<&str>)> = skills
         .iter()
         .map(|found| {
             (
                 found.head.name.as_str(),
                 found.head.description.as_str(),
-                found.shared,
+                found.external.as_deref(),
             )
         })
         .collect();
     assert_eq!(
         brief,
         [
-            ("mine", "My own.", false),
-            ("notes", "Shared.", true),
-            ("pdf", "From the package.", false),
+            ("mine", "My own.", None),
+            ("notes", "First.", Some("first")),
+            ("pdf", "From the package.", None),
+            ("todo", "Second.", Some("second")),
         ]
     );
-    assert!(skills[1].file.ends_with("me/.agents/skills/notes/SKILL.md"));
+    assert!(skills[1].file.ends_with("first/notes/SKILL.md"));
     assert_eq!(skills[1].package, None);
-    let mut covered: Vec<&Path> = skipped.iter().map(|one| one.path.as_path()).collect();
-    covered.sort();
-    assert_eq!(covered.len(), 2, "{skipped:?}");
-    assert!(
-        covered
-            .iter()
-            .all(|path| path.starts_with(places.scratch.path().join("me/.agents/skills")))
-    );
-    assert!(skipped.iter().all(|one| one.by.is_some()), "记下被谁盖住");
+    assert!(skipped.is_empty(), "别的目录里被压掉的不记：{skipped:?}");
 
-    let without = Places::new();
-    without.write(
-        "me/.agents/skills/notes/SKILL.md",
-        &skill("notes", "Shared."),
-    );
-    assert!(without.found().0.is_empty(), "没有家目录的不找");
+    let names: Vec<String> = places
+        .found()
+        .0
+        .into_iter()
+        .map(|one| one.head.name)
+        .collect();
+    assert_eq!(names, ["mine", "pdf"], "没交的不碰");
 }

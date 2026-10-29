@@ -18,8 +18,8 @@ fn the_setting_adds_and_removes() {
         Readonly::shipped(Some(home))
     );
     let mut values = Values::default();
-    values.set(ADD, Value::List(vec![text("Makefile")]));
-    values.set(REMOVE, Value::List(vec![text(".vscode")]));
+    values.set(ADD, Value::List(vec![text("Makefile")].into()));
+    values.set(REMOVE, Value::List(vec![text(".vscode")].into()));
     let got = list(&values, Some(home));
     assert!(got.inside.contains(&vec!["Makefile".to_string()]));
     assert!(!got.inside.contains(&vec![".vscode".to_string()]));
@@ -33,7 +33,7 @@ fn the_setting_adds_and_removes() {
 fn the_switch_turns_them_all_off() {
     let home = Path::new("/home/alice");
     let mut values = Values::default();
-    values.set(ADD, Value::List(vec![text("Makefile")]));
+    values.set(ADD, Value::List(vec![text("Makefile")].into()));
     values.set(ENABLED, Value::Bool(true));
     assert!(
         list(&values, Some(home))

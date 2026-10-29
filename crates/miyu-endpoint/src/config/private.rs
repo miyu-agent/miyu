@@ -2,12 +2,15 @@
 //! 目录要写成 `~/…` 或绝对路径；家目录本身和它的上级不收（藏了它什么命令都跑不了，2026-10-20 项目主人定），说清原因。
 //! `sandbox.private.remove` 只收这台机器的出厂清单，`config.schema` 照它给选项（施工 5-15 下补：清单里登记成文字的列表，生成的
 //! 文件哪个系统都一样）。受保护的路径（只禁写，施工 5-17 下）同一个办法：`sandbox.readonly.add` 多收工作区里的相对路径（不带
-//! `..`），家目录和它的上级不收；`sandbox.readonly.remove` 只收出厂清单。类型照旧由清单查。
+//! `..`），家目录和它的上级不收；`sandbox.readonly.remove` 只收出厂清单。类型照旧由清单查。别的技能目录
+//! （`skills.external.dirs`，施工 PT-2 外）同私密目录的写法，家目录本身也收；`miyu check`、`config.check` 也查它（[`external_dirs`]）。
 
 use std::path::Path;
 
 use miyu_config::Value;
-use miyu_config::problem::Code;
+use miyu_config::problem::{Code, Problem};
+use miyu_config::{Layer, parse::Parsed};
+use miyu_store::skills::external;
 
 /// 这一项 `key` 写成 `value` 时的问题：哪一种、写错的是哪一个（照原样）。不是这几项、没问题的没有。家目录不知道（`home`）
 /// 的只查写法。
@@ -36,9 +39,28 @@ pub(super) fn problem(key: &str, value: &Value, home: Option<&Path>) -> Option<(
         texts.iter().find_map(|text| private_added(text, home))
     } else if key == miyu_tool::readonly::ADD {
         texts.iter().find_map(|text| readonly_added(text, home))
+    } else if key == external::DIRS {
+        texts
+            .iter()
+            .find(|text| !external::well_written(text))
+            .map(|text| (Code::PrivatePath, (*text).to_string()))
     } else {
         None
     }
+}
+
+/// 当成 `layer` 那一层读成的 `parsed` 里别的技能目录写错了的（施工 PT-2 外）：手改的文件在 `miyu check`、`config.check` 时就报，
+/// 不等读的时候（读的时候认不了的静默跳过）。私密目录那几项照旧只在 `config.set` 时查。
+pub(super) fn external_dirs(parsed: &Parsed, layer: Layer) -> Vec<Problem> {
+    parsed
+        .entries
+        .iter()
+        .filter(|(key, _)| key.as_str() == external::DIRS)
+        .filter_map(|(key, entry)| {
+            let (code, got) = problem(key, &entry.value, None)?;
+            Some(Problem::item(code, layer, key, entry.at, &got))
+        })
+        .collect()
 }
 
 /// 人加的一个私密目录 `text` 的问题：不是 `~/…`、绝对路径的写法不对；家目录本身和它的上级太宽。

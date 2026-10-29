@@ -282,9 +282,12 @@ pub(super) struct Carried {
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
 pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
     let (packages, root) = (core.packages_of(account), core.root.clone());
-    let skills = tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root).0)
-        .await
-        .unwrap_or_default();
+    let external = crate::skills::external(core);
+    let skills = tokio::task::spawn_blocking(move || {
+        miyu_store::skills::find(&packages, &root, &external).0
+    })
+    .await
+    .unwrap_or_default();
     Carried {
         account: account.clone(),
         skills,

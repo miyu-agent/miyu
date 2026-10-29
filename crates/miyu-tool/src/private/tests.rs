@@ -17,8 +17,11 @@ fn the_setting_adds_and_removes() {
     let quiet = |_: &str| None;
     assert_eq!(dirs_in(&none, home, &quiet), miyu_fs::private_dirs(home));
     let mut values = Values::default();
-    values.set(ADD, Value::List(vec![text("~/diary")]));
-    values.set(REMOVE, Value::List(vec![text(miyu_fs::SHIPPED_PRIVATE[0])]));
+    values.set(ADD, Value::List(vec![text("~/diary")].into()));
+    values.set(
+        REMOVE,
+        Value::List(vec![text(miyu_fs::SHIPPED_PRIVATE[0])].into()),
+    );
     let got = dirs_in(&values, home, &quiet);
     assert!(got.contains(&home.join("diary")));
     assert!(!got.contains(&home.join(".ssh")));
@@ -30,7 +33,7 @@ fn the_switch_turns_them_all_off() {
     let home = Path::new("/home/alice");
     let quiet = |_: &str| None;
     let mut values = Values::default();
-    values.set(ADD, Value::List(vec![text("~/diary")]));
+    values.set(ADD, Value::List(vec![text("~/diary")].into()));
     values.set(ENABLED, Value::Bool(false));
     assert!(dirs_in(&values, home, &quiet).is_empty());
     values.set(ENABLED, Value::Bool(true));

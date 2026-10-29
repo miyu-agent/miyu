@@ -256,11 +256,11 @@ macro_rules! __settings_default {
         ::core::option::Option::None
     };
     (secrets, []) => {
-        ::core::option::Option::Some($crate::Value::List(::std::vec::Vec::new()))
+        ::core::option::Option::Some($crate::Value::List(::std::borrow::Cow::Borrowed(&[])))
     };
     // 网址的列表默认空（施工 G-3 上：`packages.mirrors`）。
     (urls, []) => {
-        ::core::option::Option::Some($crate::Value::List(::std::vec::Vec::new()))
+        ::core::option::Option::Some($crate::Value::List(::std::borrow::Cow::Borrowed(&[])))
     };
     (option, $default:literal) => {
         ::core::option::Option::Some($crate::Value::Text(::std::borrow::Cow::Borrowed($default)))

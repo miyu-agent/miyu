@@ -290,7 +290,7 @@ pub fn read(kind: Kind, value: &TomlValue) -> Option<Value> {
             .iter()
             .map(|value| read(*inner, value))
             .collect::<Option<Vec<_>>>()
-            .map(Value::List),
+            .map(|values| Value::List(values.into())),
         _ => None,
     }
 }

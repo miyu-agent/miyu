@@ -396,7 +396,7 @@ fn fits(kind: &SettingKind, value: &toml_edit::Value) -> Option<Value> {
             .iter()
             .map(|value| fits(element, value))
             .collect::<Option<Vec<_>>>()
-            .map(Value::List),
+            .map(|values| Value::List(values.into())),
         plain => {
             let kind = plain.plain()?;
             parse::read(kind, value).filter(|value| kind.accepts(value))

@@ -138,7 +138,7 @@ pub fn from_json(kind: Kind, value: &serde_json::Value) -> Option<Value> {
             .iter()
             .map(|value| from_json(*inner, value))
             .collect::<Option<Vec<_>>>()
-            .map(Value::List),
+            .map(|values| Value::List(values.into())),
         _ => None,
     }
 }

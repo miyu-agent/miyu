@@ -77,7 +77,7 @@ pub fn retargeted(items: &[Item], parsed: &Parsed, from: &str, to: &str) -> Vec<
                         other => other.clone(),
                     })
                     .collect();
-                changed.then_some(Value::List(values))
+                changed.then_some(Value::List(values.into()))
             }
             _ => None,
         };

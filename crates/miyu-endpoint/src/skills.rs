@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 use miyu_policy::skill::feature_id;
 use miyu_session::switches::on;
 use miyu_store::packages::{Found, Layer};
-use miyu_store::skills::Skill;
+use miyu_store::skills::{External, Skill};
 
 use crate::Core;
 use crate::config::project::shown;
@@ -30,6 +30,11 @@ use crate::hello::Peer;
 use crate::personas::pick;
 use crate::refusal::Refusal;
 pub(crate) use remove::remove;
+
+/// 这一刻配置开着的别的目录（施工 PT-2 外）：关着的是空的，找技能不碰它们。找技能的几处都照它交给 `miyu_store::skills::find`。
+pub(crate) fn external(core: &Core) -> Vec<External> {
+    miyu_store::skills::external::of(&core.config().resolved().values(), core.home.as_deref())
+}
 
 /// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是调用者 `account` 自己放技能的文件夹（施工 X-27 补；施工 Y-2 中上
 /// 起照连接的账号：自己的、系统区的、包里的，原来是管理员的）。
@@ -39,8 +44,9 @@ pub(crate) use remove::remove;
 /// 找的线程崩了：内部出错；这种语言的字表读不出来。
 pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
     let (packages, root) = (core.packages_of(account), core.root.clone());
+    let external = external(core);
     let found = tokio::task::spawn_blocking(move || {
-        let found = miyu_store::skills::find(&packages, &root).0;
+        let found = miyu_store::skills::find(&packages, &root, &external).0;
         (found, packages)
     })
     .await
@@ -80,9 +86,13 @@ fn one(core: &Core, packages: &[Found], skill: &Skill, language: &str) -> Value 
         "name": skill.head.name,
         "path": shown(&skill.file, core.home.as_deref()),
     });
-    match skill.shared {
-        true => one["from"] = json!("agents"),
-        false => from(&mut one, packages, skill.package.as_deref()),
+    // 别的目录里的（施工 PT-2 中、PT-2 外）：`from` 照协议 1 冻结前定的 `agents`，另带配置里写的那个目录。
+    match &skill.external {
+        Some(dir) => {
+            one["from"] = json!("agents");
+            one["dir"] = json!(dir);
+        }
+        None => from(&mut one, packages, skill.package.as_deref()),
     }
     if let Some(name) = pick(&skill.head.display_name, language) {
         one["display_name"] = json!(name);

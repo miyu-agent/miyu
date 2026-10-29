@@ -1,6 +1,6 @@
 ## 施工单 PT-2 中：认别家共用目录里的技能
 
-状态：写好了（2026-10-28）。主会话 2026-10-28 派：PT-2 差距报告（Agent Skills 接入对照）的 A1，SU-3 下（技能只认主人家目录和包带的）合了以后做。只做 `~/.agents/skills/`；报告里待问主人的三件（`~/.claude/skills/`、项目目录里的技能、`allowed-tools`）不做。`miyu-session` 的 `open`、`miyu-endpoint` 的 venues、connection/checks、attach/reach、sessions 不碰（SU-4 中在改）。图纸 `docs/blueprint/skills.md`。
+状态：写好了（2026-10-28）；PT-2 外（2026-10-29）改成配置项「读取其他目录的 Skills」，出厂关，见 `PT-2外-别的目录的技能可配置.md`。主会话 2026-10-28 派：PT-2 差距报告（Agent Skills 接入对照）的 A1，SU-3 下（技能只认主人家目录和包带的）合了以后做。只做 `~/.agents/skills/`；报告里待问主人的三件（`~/.claude/skills/`、项目目录里的技能、`allowed-tools`）不做。`miyu-session` 的 `open`、`miyu-endpoint` 的 venues、connection/checks、attach/reach、sessions 不碰（SU-4 中在改）。图纸 `docs/blueprint/skills.md`。
 
 ### 目的
 

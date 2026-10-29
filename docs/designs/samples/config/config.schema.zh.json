@@ -977,6 +977,35 @@
       },
       "type": "object"
     },
+    "skills": {
+      "properties": {
+        "external": {
+          "properties": {
+            "dirs": {
+              "default": [
+                "~/.agents/skills"
+              ],
+              "description": "「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。能写：最多 4096 个字的文字 的列表。只能写在系统配置里。下一轮生效。",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "其他技能目录",
+              "type": "array"
+            },
+            "enabled": {
+              "default": false,
+              "description": "开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。能写：true 或 false。只能写在系统配置里。下一轮生效。",
+              "title": "读取其他目录的 Skills",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "terminal": {
       "properties": {
         "idle_new_after": {

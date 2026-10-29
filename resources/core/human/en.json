@@ -153,6 +153,14 @@
         "name": "Default protected paths",
         "description": "Protected out of the box: .git/hooks, editor and agent settings in the workspace, shell startup files in your home folder, and so on. The ones kept stay protected; for the ones taken out, file tools stop asking. Restoring the default brings them all back."
       },
+      "skills.external.enabled": {
+        "name": "Read skills from other folders",
+        "description": "When on, skills in \"Other skill folders\" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these."
+      },
+      "skills.external.dirs": {
+        "name": "Other skill folders",
+        "description": "Folders read while \"Read skills from other folders\" is on, in order; on a name clash the earlier one wins. Write ~/… or an absolute path."
+      },
       "permission.level": {
         "name": "Permission level for new sessions",
         "description": "The default permission mode new sessions start in. Changes apply to sessions opened afterwards.",
@@ -425,6 +433,7 @@
       "memory": "Memory",
       "core": "Core",
       "log": "Runtime log",
+      "skills": "Skills",
       "sessions": "Sessions",
       "clicall": "Calling tools from scripts",
       "features": "Feature switches",

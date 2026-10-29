@@ -4,6 +4,7 @@
 
 use std::path::PathBuf;
 
+use miyu_config::Values;
 use miyu_kernel::event::ContextInjected;
 use miyu_kernel::facts::Present;
 use miyu_kernel::id::{ContentHash, FactKind, ModuleId};
@@ -12,6 +13,7 @@ use miyu_policy::ToolEntry;
 use miyu_policy::preset::PresetFile;
 use miyu_store::resources::{ResourceRoot, SourceError};
 use miyu_store::root::DataRoot;
+use miyu_store::skills::{External, external};
 
 use super::{find, listing, opened, shelves};
 use crate::open::Installed;
@@ -26,6 +28,8 @@ pub(crate) struct Watch {
     pub(crate) installed: Installed,
     /// 数据根。
     pub(crate) root: DataRoot,
+    /// 家目录（施工 PT-2 外：别的目录的 `~` 照它拼）；不知道的没有。
+    pub(crate) home: Option<PathBuf>,
 }
 
 /// 这一刻找到的：放开只读的文件夹（真实的位置）、它们给人看的名字（施工 9-8 五补）、列出来的那一块（工具面上没有 `read`
@@ -37,7 +41,12 @@ pub(crate) struct Looked {
 }
 
 impl Watch {
-    /// 照会话现在的预设 `preset`、工具面 `face` 找一遍。碰磁盘，在阻塞线程里调。
+    /// 这一轮配置 `values` 里开着的别的目录（施工 PT-2 外）：关着的是空的。不碰磁盘。
+    pub(crate) fn external(&self, values: &Values) -> Vec<External> {
+        external::of(values, self.home.as_deref())
+    }
+
+    /// 照会话现在的预设 `preset`、工具面 `face`、别的目录 `external` 找一遍。碰磁盘，在阻塞线程里调。
     ///
     /// # Errors
     ///
@@ -47,8 +56,9 @@ impl Watch {
         resources: &ResourceRoot,
         face: &[ToolEntry],
         preset: Option<&PresetFile>,
+        external: &[External],
     ) -> Result<Looked, SourceError> {
-        let found = opened(find(&(self.installed)(), &self.root), preset);
+        let found = opened(find(&(self.installed)(), &self.root, external), preset);
         Ok(Looked {
             shelves: shelves(&found),
             names: super::names(&found),

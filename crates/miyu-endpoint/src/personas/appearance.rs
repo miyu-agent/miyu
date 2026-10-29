@@ -95,10 +95,9 @@ pub(super) fn backdrop(backdrop: Backdrop, wanted: &mut Vec<Wanted>) -> Result<(
                 let (Some(x), Some(y)) = (x, y) else {
                     return Err(Refusal::BAD_PARAMS);
                 };
-                Some(Value::List(vec![
-                    Value::Int(i64::from(x)),
-                    Value::Int(i64::from(y)),
-                ]))
+                Some(Value::List(
+                    vec![Value::Int(i64::from(x)), Value::Int(i64::from(y))].into(),
+                ))
             }
             NumberParams::Unset { unset: true } => None,
             NumberParams::Unset { unset: false } => return Err(Refusal::BAD_PARAMS),

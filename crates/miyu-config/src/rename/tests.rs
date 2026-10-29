@@ -113,12 +113,15 @@ fn references_to_the_old_name_are_retargeted() {
         vec![
             (
                 "pools.free.models".to_string(),
-                Value::List(vec![
-                    text("new/x"),
-                    text("oldish/y"),
-                    text("b/z"),
-                    text("new/a/b")
-                ])
+                Value::List(
+                    vec![
+                        text("new/x"),
+                        text("oldish/y"),
+                        text("b/z"),
+                        text("new/a/b")
+                    ]
+                    .into()
+                )
             ),
             ("uses.chat".to_string(), text("new/m")),
         ]

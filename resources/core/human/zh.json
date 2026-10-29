@@ -153,6 +153,14 @@
         "name": "默认受保护路径",
         "description": "出厂就受保护的：工作区里的 .git/hooks、编辑器和 agent 的配置，家目录下的 shell 启动文件这些。留着的照旧，去掉的文件工具不再问。恢复默认就全部回来。"
       },
+      "skills.external.enabled": {
+        "name": "读取其他目录的 Skills",
+        "description": "开着时，「其他技能目录」里的技能也能用：Codex、opencode 这些别的应用装的技能常放在 ~/.agents/skills。同名的照 Miyu 自己的；这些技能 Miyu 不删。"
+      },
+      "skills.external.dirs": {
+        "name": "其他技能目录",
+        "description": "「读取其他目录的 Skills」开着时读的目录，照先后，同名的先列的赢。写成 ~/… 或绝对路径。"
+      },
       "permission.level": {
         "name": "新会话的权限级别",
         "description": "调整新会话开启时的默认权限模式，修改后开新会话生效。",
@@ -425,6 +433,7 @@
       "memory": "记忆",
       "core": "核心",
       "log": "运行日志",
+      "skills": "技能",
       "sessions": "会话",
       "clicall": "脚本调工具",
       "features": "功能开关",

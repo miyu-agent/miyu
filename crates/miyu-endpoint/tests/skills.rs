@@ -83,3 +83,80 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
         "{reveals:?}"
     );
 }
+
+/// 请求里说的话：每一条消息里的字接起来（施工 PT-2 外：看尾巴上交的技能列表）。
+fn words(request: &miyu_kernel::request::Request) -> String {
+    use miyu_kernel::block::Block;
+    use miyu_kernel::request::Message;
+    request
+        .messages
+        .iter()
+        .flat_map(|message| match message {
+            Message::User { blocks }
+            | Message::Assistant { blocks }
+            | Message::Tool { blocks, .. } => blocks.iter(),
+        })
+        .filter_map(|block| match block {
+            Block::Text(text) => Some(text.text.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// 别的技能目录（施工 PT-2 外）：关着的（出厂）一个都不碰，家目录下放着 `~/.agents/skills` 的，造的会话发出去的 system、工具和
+/// 没放时逐字节一样（消息里有会话编号，两个会话本来就不一样）；会话中途开了的，下一轮照技能本来的规矩在尾巴上交一份新列表，system、工具都不动；开着造的会话列进 system。
+#[tokio::test]
+async fn other_skill_folders_turned_off_leave_the_request_as_it_was() {
+    let home = Home::new();
+    let read = Fake::new("read", Access::Read, Act::Echo);
+    let tools = || Catalog::new([Arc::clone(&read) as Arc<dyn Tool>]).expect("合写法");
+    let work = home.work.to_string_lossy().into_owned();
+    let listed = "- elsewhere: Shared.";
+
+    let before = Script::new([Play::Says("好。")]);
+    let mut client = Client::connect(home.core_elsewhere(&before, tools()));
+    client.hello_without_input().await;
+    let session = client.create("b1", &work).await;
+    client.say("b2", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+
+    home.write_elsewhere(".agents/skills", "elsewhere", "Shared.");
+    let off = Script::new([Play::Says("好。"), Play::Says("好。")]);
+    let mut client = Client::connect(home.core_elsewhere(&off, tools()));
+    client.hello_without_input().await;
+    let session = client.create("o1", &work).await;
+    client.say("o2", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    let (before, first) = (&before.requests()[0].1, &off.requests()[0].1);
+    assert_eq!(first.system, before.system, "关着的 system 逐字节一样");
+    assert_eq!(first.tools, before.tools);
+    assert!(!first.system.contains(listed));
+
+    let set = client
+        .call(
+            "o3",
+            "config.set",
+            serde_json::json!({"layer": "system", "changes": [
+                {"key": "skills.external.enabled", "value": true},
+            ]}),
+        )
+        .await;
+    assert!(set.get("error").is_none(), "{set}");
+    client.say("o4", &session, "again").await;
+    home.until_turns(&session, 2).await;
+    let second = &off.requests()[1].1;
+    assert_eq!(second.system, first.system, "中途开的 system 不动");
+    assert_eq!(second.tools, first.tools, "工具不动");
+    let said = words(second);
+    assert_eq!(said.matches("<skills-changed>").count(), 1, "{said}");
+    assert!(said.contains(listed), "{said}");
+
+    let on = Script::new([Play::Says("好。")]);
+    let mut client = Client::connect(home.core_elsewhere(&on, tools()));
+    client.hello_without_input().await;
+    let session = client.create("n1", &work).await;
+    client.say("n2", &session, "hi").await;
+    home.until_turns(&session, 1).await;
+    let system = &on.requests()[0].1.system;
+    assert!(system.contains(listed), "开着造的列进 system：{system}");
+}

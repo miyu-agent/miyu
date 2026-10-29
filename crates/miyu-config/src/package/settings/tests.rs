@@ -93,22 +93,22 @@ fn a_list_reads_its_element_and_checks_the_default_one_by_one() {
         (
             "element = \"text\"\ndefault = [\"qq:1\", \"qq:2\"]",
             list(SettingKind::Text { max: 200 }),
-            Some(Value::List(vec![text("qq:1"), text("qq:2")])),
+            Some(Value::List(vec![text("qq:1"), text("qq:2")].into())),
         ),
         (
             "element = \"int\"\nmin = 1\nmax = 9\ndefault = [1, 9]",
             list(SettingKind::Int { min: 1, max: 9 }),
-            Some(Value::List(vec![Value::Int(1), Value::Int(9)])),
+            Some(Value::List(vec![Value::Int(1), Value::Int(9)].into())),
         ),
         (
             "element = \"option\"\nchoices = [\"a\", \"b\"]\ndefault = [\"b\"]",
             list(SettingKind::Option(vec!["a".to_string(), "b".to_string()])),
-            Some(Value::List(vec![text("b")])),
+            Some(Value::List(vec![text("b")].into())),
         ),
         (
             "element = \"text\"\nmax = 8\ndefault = []",
             list(SettingKind::Text { max: 8 }),
-            Some(Value::List(Vec::new())),
+            Some(Value::List(Vec::new().into())),
         ),
         ("element = \"bool\"", list(SettingKind::Bool), None),
         ("element = \"name\"", list(SettingKind::Name), None),

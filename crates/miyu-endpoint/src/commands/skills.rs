@@ -31,7 +31,8 @@ use crate::refusal::Refusal;
 /// 账号 `owner` 能点名用的技能（`user-invocable` 不是 `false` 的），照名字排。
 pub(super) async fn found(core: &Core, owner: &AccountId) -> Vec<Skill> {
     let (packages, root) = (core.packages_of(owner), core.root.clone());
-    tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root).0)
+    let external = crate::skills::external(core);
+    tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &external).0)
         .await
         .unwrap_or_default()
         .into_iter()

@@ -191,29 +191,61 @@ async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
     );
 }
 
-/// 别家共用的技能目录（施工 PT-2 中）：`~/.agents/skills/` 里的也列出来，`from` 是 `agents`、不带包；同名的照 Miyu 自己的。
+/// 别的目录里的技能（施工 PT-2 中、PT-2 外）：配置关着的（出厂）不列；开着的照目录表的先后列出来，`from` 是 `agents`、`dir` 是
+/// 配置里写的目录，不带包；同名的照 Miyu 自己的，别的目录之间先列的赢。
 #[tokio::test]
-async fn skills_in_the_shared_agents_folder_say_where_they_come_from() {
-    let home = Home::new().with_shared_skills();
+async fn skills_in_other_folders_are_listed_only_when_turned_on() {
+    let home = Home::new();
     home.write("skills/notes/SKILL.md", &skill("notes", &[]));
-    for name in ["notes", "pdf"] {
-        let file = home
-            .work
-            .join("me/.agents/skills")
-            .join(name)
-            .join("SKILL.md");
-        std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
-        std::fs::write(&file, skill(name, &[])).expect("写得进");
-    }
-    let skills = listed(&home, "en").await;
+    home.write_elsewhere(".agents/skills", "notes", "Elsewhere.");
+    home.write_elsewhere(".agents/skills", "pdf", "Shared.");
+    home.write_elsewhere("first", "pdf", "First.");
+    home.write_elsewhere("first", "todo", "First.");
+    let list = || async {
+        let mut client = Client::connect(home.core_elsewhere(&Script::new([]), Default::default()));
+        client.hello().await;
+        let reply = client.call("s", "skill.list", json!({})).await;
+        reply["result"]["skills"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{reply}"))
+            .clone()
+    };
+    let names = |skills: &[Value]| -> Vec<String> {
+        skills
+            .iter()
+            .filter(|one| one["from"] != "shipped")
+            .map(|one| one["name"].as_str().unwrap_or_default().to_string())
+            .collect()
+    };
+    assert_eq!(names(&list().await), ["notes"], "出厂关着");
+
+    home.write("config.toml", "[skills.external]\nenabled = true\n");
+    let skills = list().await;
+    assert_eq!(
+        names(&skills),
+        ["notes", "pdf"],
+        "出厂的目录表：~/.agents/skills"
+    );
     let pdf = named(&skills, "pdf");
     assert_eq!(pdf["from"], "agents", "{pdf}");
+    assert_eq!(pdf["dir"], "~/.agents/skills", "{pdf}");
     assert!(pdf.get("package").is_none(), "{pdf}");
     assert!(
         pdf["path"].as_str().is_some_and(|path| path
             .replace('\\', "/")
-            .ends_with("me/.agents/skills/pdf/SKILL.md")),
+            .ends_with(".agents/skills/pdf/SKILL.md")),
         "{pdf}"
     );
-    assert_eq!(named(&skills, "notes")["from"], "home", "同名的照自己放的");
+    let notes = named(&skills, "notes");
+    assert_eq!(notes["from"], "home", "同名的照自己放的");
+    assert!(notes.get("dir").is_none(), "{notes}");
+
+    home.write(
+        "config.toml",
+        "[skills.external]\nenabled = true\ndirs = [\"~/first\", \"~/.agents/skills\", \"relative\"]\n",
+    );
+    let skills = list().await;
+    assert_eq!(names(&skills), ["notes", "pdf", "todo"]);
+    assert_eq!(named(&skills, "pdf")["dir"], "~/first", "先列的目录赢");
+    assert_eq!(named(&skills, "todo")["dir"], "~/first");
 }

@@ -1,11 +1,12 @@
 //! 找技能（施工 X-10 上，`docs/blueprint/skills.md`「是什么」第 2 条，设计 `31-软件包.md` 第五节）：一个技能是一个文件夹，
-//! 里面一份 `SKILL.md`（开头照公开的 Agent Skills 格式，`miyu_policy::skill`）。从两处找：
+//! 里面一份 `SKILL.md`（开头照公开的 Agent Skills 格式，`miyu_policy::skill`）。从三处找：
 //!
 //! - 装了的软件包（清单读成了的）的 `skills/<名字>/SKILL.md`，两层都算（出厂的在资源目录，自己装的在家目录）；
 //! - 本机自己放的 `skills/<名字>/SKILL.md`；
-//! - 别家共用的 `~/.agents/skills/<名字>/SKILL.md`（施工 PT-2 中，agentskills.io 的约定：Codex、opencode 这些装的技能放这里）。
+//! - 配置开着时别的目录里的 `<名字>/SKILL.md`（施工 PT-2 中、PT-2 外，[`external`]：出厂一项 `~/.agents/skills`），照目录表的先后。
 //!
-//! 同名的自己放的赢、别家共用的排最后；两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
+//! 同名的自己放的赢，其次包里的，别的目录排最后、几个之间照表里的先后；别的目录里被压掉的不记（别的客户端的技能，不算 Miyu
+//! 这边写错了）。两个包撞了名字，出厂的先于家目录、同一层照包的编号留前一个（装的时候撞了的装不上，施工 F-8 六补；
 //! 撞得上的只剩核心升级后出厂的新带了同名的）；后来的跳过、记下被谁盖住（施工 X-13 中）。读不了的、开头写错的
 //! 跳过，交回给调的一方记（[`Skipped`]）。技能文件夹可以是链接（施工 X-37，`links.rs`）：照它指到的真实位置记。
 //! 碰磁盘，调的一方放在阻塞线程里。
@@ -17,6 +18,10 @@ use miyu_policy::skill::{self, SkillHead};
 use crate::links::{self, Fence, Kind};
 use crate::packages::Found;
 use crate::root::DataRoot;
+
+pub mod external;
+
+pub use external::External;
 
 /// 技能文件的名字。
 const FILE: &str = "SKILL.md";
@@ -31,10 +36,10 @@ pub struct Skill {
     /// 技能的文件夹：开着的单独放开只读（`session/guard.md`）。是链接的照它指到的真实位置（施工 X-37）：沙盒只放开那一个
     /// 文件夹，她照真实的位置读得到。
     pub dir: PathBuf,
-    /// 哪个软件包带的；自己放的、别家共用目录里的没有。
+    /// 哪个软件包带的；自己放的、别的目录里的没有。
     pub package: Option<String>,
-    /// 别家共用的技能目录（`~/.agents/skills/`，施工 PT-2 中）里的：Miyu 不删它，别的客户端也在用。
-    pub shared: bool,
+    /// 别的目录（施工 PT-2 中、PT-2 外，[`external`]）里的：配置里写的那个目录的原文。Miyu 不删它，别的客户端也在用。
+    pub external: Option<String>,
     /// 技能文件夹是链接的（施工 X-37）：链接本身的位置（删的时候只删它，不碰指到的文件夹）。不是的没有。
     pub link: Option<PathBuf>,
 }
@@ -69,13 +74,18 @@ pub fn own_dir(root: &DataRoot) -> PathBuf {
     root.path().join("skills")
 }
 
-/// 找技能：数据根 `root` 里账号 `account` 自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的。照名字排。
-pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Skill>, Vec<Skipped>) {
+/// 找技能：数据根 `root` 里自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的，加别的目录 `external`
+/// 里的（施工 PT-2 外：配置关着的交空的，一个都不碰）。照名字排。
+pub fn find(
+    packages: &[Found],
+    root: &DataRoot,
+    external: &[External],
+) -> (Vec<Skill>, Vec<Skipped>) {
     let mut skills: Vec<Skill> = Vec::new();
     let mut skipped = Vec::new();
     let own = own_dir(root);
-    // 自己放的盖过包里的，包里的盖过别家共用目录里的：先到的赢。
-    let mut places: Vec<(PathBuf, Option<String>, bool)> = vec![(own, None, false)];
+    // 自己放的盖过包里的，包里的盖过别的目录里的：先到的赢。
+    let mut places: Vec<(PathBuf, Option<String>, Option<&str>)> = vec![(own, None, None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();
     // 出厂的先于家目录，同一层照编号（施工 F-8 六补）：核心升级后出厂的新带了同名的，出厂的赢（设计 31 定了的 J）。
     installed.sort_by(|a, b| (a.layer, &a.id).cmp(&(b.layer, &b.id)));
@@ -83,16 +93,17 @@ pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Skill>, Vec<Skipped>) {
         (
             found.files_dir().join("skills"),
             Some(found.id.clone()),
-            false,
+            None,
         )
     }));
-    // 别家共用的排最后（施工 PT-2 中）：同名的照 Miyu 自己的，被盖住的照旧记下。
+    // 别的目录排最后，照表里的先后（施工 PT-2 外）。
     places.extend(
-        root.shared_skills()
-            .map(|dir| (dir.to_path_buf(), None, true)),
+        external
+            .iter()
+            .map(|one| (one.dir.clone(), None, Some(one.text.as_str()))),
     );
     let fence = Fence::of(root);
-    for (place, package, shared) in places {
+    for (place, package, from) in places {
         let (entries, unlisted) = links::list(&place, Kind::Dir, &fence, |_| true);
         skipped.extend(unlisted);
         for entry in entries {
@@ -108,6 +119,8 @@ pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Skill>, Vec<Skipped>) {
             };
             match head {
                 Ok(head) => match skills.iter().find(|found| found.head.name == head.name) {
+                    // 别的目录里被压掉的不记（施工 PT-2 外）。
+                    Some(_) if from.is_some() => {}
                     Some(winner) => skipped.push(Skipped {
                         by: Some(winner.file.clone()),
                         ..Skipped::new(
@@ -124,7 +137,7 @@ pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Skill>, Vec<Skipped>) {
                         file,
                         dir,
                         package: package.clone(),
-                        shared,
+                        external: from.map(str::to_string),
                         link,
                     }),
                 },

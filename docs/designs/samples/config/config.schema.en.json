@@ -977,6 +977,35 @@
       },
       "type": "object"
     },
+    "skills": {
+      "properties": {
+        "external": {
+          "properties": {
+            "dirs": {
+              "default": [
+                "~/.agents/skills"
+              ],
+              "description": "Folders read while \"Read skills from other folders\" is on, in order; on a name clash the earlier one wins. Write ~/… or an absolute path. Allowed: a list of text of at most 4096 characters. Only in the system config. Takes effect next turn.",
+              "items": {
+                "maxLength": 4096,
+                "minLength": 1,
+                "type": "string"
+              },
+              "title": "Other skill folders",
+              "type": "array"
+            },
+            "enabled": {
+              "default": false,
+              "description": "When on, skills in \"Other skill folders\" can be used too: apps like Codex and opencode often install theirs in ~/.agents/skills. Miyu's own skills win on a name clash, and Miyu never deletes these. Allowed: true or false. Only in the system config. Takes effect next turn.",
+              "title": "Read skills from other folders",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "terminal": {
       "properties": {
         "idle_new_after": {

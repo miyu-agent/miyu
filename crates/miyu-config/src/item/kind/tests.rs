@@ -148,7 +148,7 @@ fn the_macro_declares_the_new_kinds_and_reads_them() {
     values.set("fresh.every", text("10m"));
     values.set(
         "fresh.inputs",
-        Value::List(vec![text("text"), text("image")]),
+        Value::List(vec![text("text"), text("image")].into()),
     );
     values.set("fresh.local", Value::Bool(false));
     let fresh = Fresh::from(&values);

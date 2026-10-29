@@ -798,6 +798,7 @@ flowchart LR
 | TMP-1 补2 | 核心放锁之前等后台写完 | 核心空闲退出、放了锁，读模型目录时另起线程写的整理好的一份还在写，测试删了数据根它又建回来，门禁「临时目录」剩一个。写盘的线程登记下来，停下以后清回收处、清缓存、等后台写盘都在放锁之前做完（`serve_then`）；起不来的走之前也先等。施工单见 `TMP-1补2-核心放锁前等后台写完.md` |
 | PT-2 中 | 认别家共用目录里的技能 | 别的客户端（Codex、opencode 这些）照 agentskills.io 的约定装进 `~/.agents/skills/` 的技能，Miyu 也认：排在自己放的、包带的后面，同名的照 Miyu 自己的；`skill.list` 的 `from` 是 `agents`，`skill.remove` 拒 `skill_shared`（别的客户端也在用）。施工单见 `PT-2中-认别家目录的技能.md` |
 | PT-2 下 | 人点名用技能 | 人在输入框敲 `/技能名 参数`：命令都没有这个名字时照技能认，读 `SKILL.md`、去掉开头、套 `<skill name=… path=…>` 外壳和 `ARGUMENTS:` 一行当人说的那句发出去；`command.catalog` 列能点名的技能（`"skill": true`）。认 `disable-model-invocation`（不列给她）、`user-invocable: false`（人点不了）；`miyu check` 报和命令撞名的技能。施工单见 `PT-2下-点名用技能.md` |
+| PT-2 外 | 别的目录里的技能改成可配置 | 项目主人改主意：`~/.agents/skills/` 不无条件读，改成配置项「读取其他目录的 Skills」：总开关 `skills.external.enabled`（出厂关）、目录表 `skills.external.dirs`（出厂 `~/.agents/skills`，能增删），只写在 Miyu 的配置里，下一轮生效；关着的一个都不碰，请求逐字节不变；相对路径 `config.set`、`miyu check` 都报；`skill.list` 的 `from` 照旧 `agents`（冻结），另带 `dir`。出厂的非空列表：`Value::List` 借静态切片。施工单见 `PT-2外-别的目录的技能可配置.md` |
 | PT-2 末 | ~~技能列表的总预算~~（撤） | 撤：和项目主人 2026-10-12 定的「多大都收」冲突（施工 X-12 下撤过一次预算）；主会话 2026-10-29 定了不做。点名用的技能压缩后重读回来另开 PT-2 补，排在 SU 之后，范围见 `PT-2下-点名用技能.md`「不在这一步」 |
 | F-13 | 一个包加几个命令 | `[[command]]`、`args`：`miyu shellhook` 转交成 `miyu-tui shellhook`。施工单见 `F-13-一个包加几个命令.md` |
 | 9-7 再补 | 说话带工作目录 | `session.send` 的 `cwd`：变了才记一条 `session.workspace_changed`。施工单见 `9-7-说话带工作目录（再补）.md` |

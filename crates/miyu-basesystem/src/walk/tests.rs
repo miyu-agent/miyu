@@ -95,7 +95,7 @@ fn a_private_dir_added_in_the_settings_is_kept_out() {
     let mut values = Values::default();
     values.set(
         miyu_tool::private::ADD,
-        Value::List(vec![Value::Text(Cow::Borrowed("~/diary"))]),
+        Value::List(vec![Value::Text(Cow::Borrowed("~/diary"))].into()),
     );
     std::fs::create_dir_all(dir.0.join("work")).expect("建得了目录");
     let mut call = miyu_tool::testkit::call("{}");

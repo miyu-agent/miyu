@@ -38,7 +38,7 @@ fn skill(name: &str, description: &str) -> Skill {
         file: dir.join("SKILL.md"),
         dir,
         package: None,
-        shared: false,
+        external: None,
         link: None,
     }
 }

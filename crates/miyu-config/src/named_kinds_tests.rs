@@ -180,7 +180,7 @@ fn a_named_key_is_set_and_unset_with_quotes_where_needed() {
     assert_eq!(set, "[shops.dev.models.\"v4.1\"]\nwindow = 8\n");
     let again = edit::apply(&set, Change::Set(window, &Value::Int(9))).expect("原地换");
     assert_eq!(again, "[shops.dev.models.\"v4.1\"]\nwindow = 9\n");
-    let keys = Value::List(vec![Value::Secret(Reference::Secret("a".to_string()))]);
+    let keys = Value::List(vec![Value::Secret(Reference::Secret("a".to_string()))].into());
     let both = edit::apply(&again, Change::Set("shops.dev.keys", &keys)).expect("放得进去");
     assert_eq!(
         both,
@@ -196,9 +196,9 @@ fn a_named_key_is_set_and_unset_with_quotes_where_needed() {
     assert_eq!(gone, "[shops.dev]\nkeys = [{ secret = \"a\" }]\n");
     assert_eq!(
         edit::input(Kind::List(&Kind::Secret), r#"[{ env = "K" }]"#),
-        Some(Value::List(vec![Value::Secret(Reference::Env(
-            "K".to_string()
-        ))]))
+        Some(Value::List(
+            vec![Value::Secret(Reference::Env("K".to_string()))].into()
+        ))
     );
     assert_eq!(
         edit::input(Kind::Int { min: 1, max: 9 }, "3"),

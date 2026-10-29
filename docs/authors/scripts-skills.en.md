@@ -130,7 +130,7 @@ lights = "smart-home"     # from a package: the package's id
 
 ## Skills
 
-The public Agent Skills format (Claude Code, Codex and others read it too), so existing skills from the web just work. Skills other clients install into `~/.agents/skills/` are picked up too, after your own and those from packages; on a name clash Miyu's own wins, and Miyu does not delete anything there. `skills/<name>/SKILL.md`:
+The public Agent Skills format (Claude Code, Codex and others read it too), so existing skills from the web just work. Turn on "Read skills from other folders" (`skills.external.enabled`) and skills other clients install into `~/.agents/skills/` are picked up too (the folder list `skills.external.dirs` can be edited), after your own and those from packages; on a name clash Miyu's own wins, and Miyu does not delete anything there. `skills/<name>/SKILL.md`:
 
 ```markdown
 ---

@@ -28,8 +28,11 @@ impl Actor {
         let asking = self.persona.as_ref().and_then(|refresh| {
             let watch = refresh.skills.clone()?;
             let wanted = refresh.snapshot.preset.as_ref().map(|pin| pin.id.clone());
+            // 别的目录照这一轮的配置（施工 PT-2 外）：关着的不碰。
+            let external = watch.external(values);
             Some((
                 watch,
+                external,
                 refresh.resources.clone(),
                 refresh.snapshot.tools.clone(),
                 refresh.snapshot.skills.clone(),
@@ -41,13 +44,13 @@ impl Actor {
         // 这个人关了的包（施工 U23 末上）：它带的技能下一个回合就不列。
         let off = crate::packages_off::of(values);
         async move {
-            let (watch, resources, face, pinned, preset) = asking?;
+            let (watch, external, resources, face, pinned, preset) = asking?;
             let looked = blocking(move || {
                 let file = preset.and_then(|(id, places)| {
                     let found = places.presets.find(&id).ok()?;
                     Some(found.file.following(switches).switching_off(off))
                 });
-                let looked = watch.look(&resources, &face, file.as_ref())?;
+                let looked = watch.look(&resources, &face, file.as_ref(), &external)?;
                 let tail = skills::tail(
                     &resources,
                     looked.listing.as_deref(),
