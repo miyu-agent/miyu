@@ -96,9 +96,14 @@ impl MemoryLines {
         let Some(venue) = venue else {
             return String::new();
         };
-        let mut parts = venue.as_str().splitn(3, ':');
-        let platform = platform(parts.next().unwrap_or_default());
-        let kind = parts.next();
+        // 照右边认（施工 O-63）：号里没有 `:`，最后一段是号、倒数第二段是种类，第一段是平台，中间多出来的（机器人账号，
+        // `qq:<机器人>:group:<群号>`）不看。只有两段的照旧看第二段。
+        let parts: Vec<&str> = venue.as_str().split(':').collect();
+        let platform = platform(parts.first().copied().unwrap_or_default());
+        let kind = match parts.len() {
+            0..=2 => parts.get(1).copied(),
+            n => parts.get(n - 2).copied(),
+        };
         let raw = |template: &Template, fields: &[(&str, &str)]| {
             let fields: BTreeMap<&str, &str> = fields.iter().copied().collect();
             template

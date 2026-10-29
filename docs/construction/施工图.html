@@ -850,6 +850,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sO-43"><span class="n">O-43</span>造会话时说不自动起标题<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sO-60"><span class="n">O-60</span>场所插件<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sO-61"><span class="n">O-61</span>合并转发里的图取得到<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sO-63"><span class="n">O-63</span>记忆认新的场所编号<span class="st">✓</span></a></li>
         <li><a class="step done" href="#stest-pid"><span class="n">test-pid 补</span>测试认新桥不靠进程号<span class="st">✓</span></a></li>
         <li><a class="step done" href="#stest-ext3"><span class="n">test-ext 三补</span>测试扩展整行写<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sipc-busy"><span class="n">ipc 补</span>Windows 上管道忙多等一会<span class="st">✓</span></a></li>
@@ -43733,6 +43734,56 @@ section class="sheet" id="sC-9" aria-labelledby="h-sC9">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/O-60-场所插件.md</code>，蓝图 venues「场所插件」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sO-63" aria-labelledby="h-sO63">
+  <div class="sheet-head"><h2 id="h-sO63"><span class="no">O-63</span>记忆认新的场所编号</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">场所编号中间多了一段机器人账号，记忆列出来「在哪说的」照右边认，群和私聊照旧分得清。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">memory/lines.rs</span><span class="dir-note">O-63</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>最后一段是号，倒数第二段是种类</li>
+              <li>中间多出来的机器人账号不看</li>
+              <li>旧写法一个字不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">场所编号</span><span class="rl">种类照右边认</span></div>
+          <div class="tile new"><span class="nm">旧数据</span><span class="rl">仓库外的工具搬</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">O-63</dd></div>
+        <div><dt>名称</dt><dd>记忆认新的场所编号</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">O-63</dd></div>
+        <div><dt>验收</dt><dd>新测试（修前红）；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>新写法的群、私聊照旧写对</span></li>
+        <li><span class="ok">✓</span><span>机器人账号叫 group 的私聊不认成群</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/memory.md</code>「工具」；施工单 <code>docs/construction/O-63-记忆认新场所编号.md</code>。</li>
       </ul>
     </div>
   </div>
