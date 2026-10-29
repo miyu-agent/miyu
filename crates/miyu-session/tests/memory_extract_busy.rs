@@ -99,12 +99,14 @@ async fn a_busy_session_is_extracted_once_the_earliest_turn_has_waited_enough() 
     organizer_busy(
         &mut home,
         &server,
-        "extract_max_turns = 500\n",
+        // 一轮也抽（默认要攒两轮）：等之前只聊一轮。
+        "extract_max_turns = 500\nextract_turns = 1\n",
         Some(Duration::from_millis(400)),
     );
-    // 第三轮一直停着：不等闲的那一次取到读的那一刻结束了的轮，第三轮要是很快答完（CI 慢的时候读在它结束以后），带上它也对，
-    // 只是这条测试就看不出「第三轮留给下次」了（施工 E-5 修：Windows、macOS 上偶发红过）。
-    let script = Script::new([Play::Says("好。"), Play::Says("好。"), Play::Holds]);
+    // 第二轮一直停着：不等闲的那一次取到读的那一刻结束了的轮，第二轮要是很快答完（CI 慢的时候读在它结束以后），带上它也对，
+    // 只是这条测试就看不出「第二轮留给下次」了（施工 E-5 修：Windows、macOS 上偶发红过）。等之前只聊一轮：原来聊两轮，机器慢的
+    // 时候两轮之间就过了 400 毫秒，第二轮结束那一批已经等够、抽了，「没有新的一批不看」偶发红（Windows CI、本机单核压测）。
+    let script = Script::new([Play::Says("好。"), Play::Holds]);
     let handle = home
         .create_full(
             &script,
@@ -114,29 +116,24 @@ async fn a_busy_session_is_extracted_once_the_earliest_turn_has_waited_enough() 
         )
         .await;
     chat(&home, &handle, 1, "第一句").await;
-    chat(&home, &handle, 2, "第二句").await;
     assert!(extractions(&server).is_empty(), "还没等够");
     tokio::time::sleep(Duration::from_millis(600)).await;
     assert!(extractions(&server).is_empty(), "没有新的一批不看");
     let said = Command::Send {
         blocks: vec![Block::Text(Text {
-            text: "第三句".to_string(),
+            text: "第二句".to_string(),
         })],
         urgent: false,
         venue: None,
     };
     handle
-        .command(id("cmd-3"), alice(), said)
+        .command(id("cmd-2"), alice(), said)
         .await
         .expect("会话在跑");
     let found = extracted_times(&server, 1).await;
-    // 第三轮开始的那一批看出等够了：抽到那时结束了的前两轮，第三轮还在跑、留给下次。
-    assert!(
-        found[0].contains("第一句") && found[0].contains("第二句"),
-        "{}",
-        found[0]
-    );
-    assert!(!found[0].contains("第三句"), "{}", found[0]);
+    // 第二轮开始的那一批看出等够了：抽到那时结束了的第一轮，第二轮还在跑、留给下次。
+    assert!(found[0].contains("第一句"), "{}", found[0]);
+    assert!(!found[0].contains("第二句"), "{}", found[0]);
     stop(&handle).await;
 }
 
