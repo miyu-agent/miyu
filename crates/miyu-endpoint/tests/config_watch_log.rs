@@ -50,7 +50,8 @@ async fn a_hand_edit_and_an_unavailable_watch_are_logged() {
     );
     assert!(!has("config watch unavailable"), "{:?}", memory.lines());
 
-    if cfg!(target_os = "linux") {
+    #[cfg(target_os = "linux")]
+    {
         use std::os::unix::fs::PermissionsExt;
         let home = Home::new();
         let core = home.core_configured(&Script::new([]), None, &[]);

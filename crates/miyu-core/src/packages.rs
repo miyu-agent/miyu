@@ -22,7 +22,7 @@ pub fn register(resources: &ResourceRoot, root: &DataRoot) -> Queries {
     #[cfg(feature = "net")]
     let queries = net::register(resources, Blobs::new(root.blobs()), queries);
     #[cfg(not(feature = "net"))]
-    let _ = (root, admin);
+    let _ = root;
     #[cfg(not(any(feature = "mermaid", feature = "net")))]
     let _ = resources;
     queries

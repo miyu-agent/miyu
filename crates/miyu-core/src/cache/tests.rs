@@ -67,8 +67,11 @@ fn without_an_index_only_age_counts() {
 
 /// 一个新的空目录。
 fn tempfile_dir() -> std::path::PathBuf {
+    // 同一个测试程序里几个测试并着跑：时刻在 macOS 上只精确到微秒，另加一个数，名字不撞。
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!(
-        "miyu-core-cache-{}-{}",
+        "miyu-core-cache-{}-{n}-{}",
         std::process::id(),
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
