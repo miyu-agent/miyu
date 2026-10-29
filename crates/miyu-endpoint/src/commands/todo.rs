@@ -21,7 +21,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 /// 写待办的那个包。
-const TODOWRITE: &str = "todowrite";
+const TODOWRITE: &str = "miyu-base-todowrite";
 
 /// 登记 `/todo`。
 pub(super) fn register(commands: &mut Commands) {
@@ -36,7 +36,7 @@ impl Slash for TodoCommand {
         "todo"
     }
 
-    /// 跟着 `todowrite` 包（施工 BS-1 下下，设计 44 第三节第 3 条）：待办是它写的，没装的就没有这条。
+    /// 跟着 `miyu-base-todowrite` 包（施工 BS-1 下下，设计 44 第三节第 3 条）：待办是它写的，没装的就没有这条。
     fn package(&self) -> Option<&'static str> {
         Some(TODOWRITE)
     }

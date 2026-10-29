@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心去抓别人家网页的地方。做成可选的软件包 `net`：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。三件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`）、`web_search`（施工 N-2 上，`tools/web_search.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站、抖音、TikTok）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
+核心去抓别人家网页的地方。做成可选的软件包 `miyu-base-net`（施工 PN-3 以前叫 `net`）：crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。三件事：她的工具 `web_fetch`（施工 N-1，`tools/web_fetch.md`）、`web_search`（施工 N-2 上，`tools/web_search.md`），和 `link.preview`，头给一个网址，核心抓下那一页的标题、简介、图，交回一张卡片。认得的几个站（B 站、YouTube、MediaWiki 站、抖音、TikTok）照各自的办法取，卡片多出是什么（视频、文章）、视频多长、作者是谁；人机验证、挡爬虫的页面不出卡片（W-7 再补）。`web_fetch` 用同一份抓取和地址闸，规矩文件里另有一段 `document`（设计 10 第四节、设计 36）。没编进来的核心里没有这块代码，`link.preview` 回 `unknown_method`，头照原样留着链接。
 
 地址闸是安全边界：网址是模型写的、别人发来的，核心照它去连，等于把 SSRF 的靶子摆在核心上。闸只有这一份，网页软件不另做图片代理（`web-module.md`「起草时定的」第 14 条）。
 
@@ -170,7 +170,7 @@
 
 规矩照网页演示的桥（proto/web-demo 分支 `web-demo/bridge/src/link_preview/`），桥照的是旧版。和桥不一样的地方照这一页：代理（第 5 条）、图存成 blob（第 8 条）、在后台答（第 11 条）。
 
-1. 可选软件包 `net`：抓取和地址闸在 crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。核心起来时经 `crates/miyu-core/src/packages.rs` 往查询表里登记 `link.preview`；没编进来的回 `unknown_method`。第一次调才读 `link_preview.json`，读不懂的记一条 `WARN not ready`，回 `internal_error`，这个核心的生命周期里不再试（照 `mermaid.md` 第 2 条）。
+1. 可选软件包 `miyu-base-net`：抓取和地址闸在 crate `miyu-net`，经 `miyu-core` 的 cargo 开关 `net` 编进来，发行版默认打开。核心起来时经 `crates/miyu-core/src/packages.rs` 往查询表里登记 `link.preview`；没编进来的回 `unknown_method`。第一次调才读 `link_preview.json`，读不懂的记一条 `WARN not ready`，回 `internal_error`，这个核心的生命周期里不再试（照 `mermaid.md` 第 2 条）。
 2. 地址：去掉前后空白读成网址，读不成 `not_a_url`；不是 `http`、`https` 的 `unsupported_scheme`。这两种不抓、不记。
 3. 地址闸，每一跳都过：
    1. 样子：只认 `http`、`https`；不带用户名、密码；`localhost`、`*.localhost`、`*.local` 不去（末尾带点的也算）；主机写的就是 IP 的照第 3 层判（`127.1`、`0x7f000001`、`2130706433` 这些写法读网址时已经规整成 `127.0.0.1`）。

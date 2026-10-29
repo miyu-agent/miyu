@@ -69,7 +69,7 @@ Read fresh every time, so resource changes during development need no restart. A
 
 ## `link.preview`
 
-Only when the networking package (`net`) is compiled in; otherwise `unknown_method`. Answered in the background.
+Only when the networking package (`miyu-base-net`) is compiled in; otherwise `unknown_method`. Answered in the background.
 
 **Params**: `url`.
 

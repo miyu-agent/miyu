@@ -12,6 +12,12 @@ use miyu_store::blob::Blobs;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
+/// 画 mermaid 这个内置包的编号（施工 PN-3，设计 48 第一节第 2 条）：cargo 开关 `mermaid` 关着时也认得它（[`crate::built_in`]）。
+pub const MERMAID: &str = "miyu-base-mermaid";
+
+/// 联网这个内置包的编号（施工 PN-3）：同 `miyu_net::PACKAGE`，cargo 开关 `net` 关着时那个 crate 不在，这里另记一份，测试守着两份一样。
+pub const NET: &str = "miyu-base-net";
+
 /// 照编进来的包往一张新的查询表里登记，交给 [`miyu_endpoint::Core::with_queries`]。每一行记着属于哪个包：包这时没装的，
 /// 端点当没有这个方法（施工 F-5 中，设计 30 第九节：装卸当场生效，这里只登记一次）。`root`：`net` 抓到的卡片的图
 /// 存进数据根的 blob（`net.md`「起草时定的」第 9 条）。
@@ -69,7 +75,7 @@ mod mermaid {
     pub(super) fn register(resources: &ResourceRoot, queries: Queries) -> Queries {
         let mermaid = Arc::new(Mermaid::new(resources.path()));
         queries.register_for(
-            "mermaid",
+            super::MERMAID,
             "mermaid.render",
             move |_core: Arc<Core>, params: Value| {
                 let mermaid = Arc::clone(&mermaid);

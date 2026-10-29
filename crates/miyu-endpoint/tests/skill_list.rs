@@ -97,7 +97,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
 
     let shipped = named(&skills, "skill-creator");
     assert_eq!(shipped["from"], "shipped", "{shipped}");
-    assert_eq!(shipped["package"], "authoring", "{shipped}");
+    assert_eq!(shipped["package"], "miyu-base-authoring", "{shipped}");
     assert_eq!(
         shipped["display_name"], "Write a skill",
         "没写日文的照英文：{shipped}"
@@ -105,7 +105,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
     assert!(
         shipped["path"].as_str().is_some_and(|path| path
             .replace('\\', "/")
-            .ends_with("authoring/skills/skill-creator/SKILL.md")),
+            .ends_with("miyu-base-authoring/skills/skill-creator/SKILL.md")),
         "{shipped}"
     );
 

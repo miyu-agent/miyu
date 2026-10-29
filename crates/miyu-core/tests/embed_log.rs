@@ -12,7 +12,7 @@ const MEMORY: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Persona memo
 
 fn memory(dir: &Path) -> Found {
     Found {
-        id: "memory".to_string(),
+        id: miyu_memory::PACKAGE.to_string(),
         layer: Layer::Home,
         path: dir.join("memory.toml"),
         read: miyu_config::package::read(MEMORY).map_err(Issue::Wrong),

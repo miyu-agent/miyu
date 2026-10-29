@@ -5,4 +5,25 @@
 name = { en = "Base system", zh = "基础系统", ja = "基本システム" }
 summary = { en = "Read and edit files, run commands, look up earlier talk", zh = "读写文件、跑命令、查以前说过的话", ja = "ファイルの読み書き、コマンドの実行、前の話の検索" }
 # 组里的包照用途的先后（施工 PG-1：预设页照它排），同施工 BS-1 上中拆包时的先后；谁在组里照旧由包的清单写。
-order = ["read", "write", "edit", "glob", "grep", "trash", "shell", "jobs", "subagent", "ask_user", "todowrite", "history", "session_usage", "sessions", "packages", "show", "project-docs", "clicall", "schedule", "loop"]
+order = [
+    "miyu-base-read",
+    "miyu-base-write",
+    "miyu-base-edit",
+    "miyu-base-glob",
+    "miyu-base-grep",
+    "miyu-base-trash",
+    "miyu-base-shell",
+    "miyu-base-jobs",
+    "miyu-base-subagent",
+    "miyu-base-ask-user",
+    "miyu-base-todowrite",
+    "miyu-base-history",
+    "miyu-base-session-usage",
+    "miyu-base-sessions",
+    "miyu-base-packages",
+    "miyu-base-show",
+    "miyu-base-project-docs",
+    "miyu-base-clicall",
+    "miyu-base-schedule",
+    "miyu-base-loop",
+]

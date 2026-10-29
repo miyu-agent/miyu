@@ -102,7 +102,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use miyu_policy::preset::MEMORY;
 use miyu_sandbox::{Availability, Unusable};
 use miyu_session::{Jobs, Memory, ModelData, Models, SandboxCache, SummaryTexts};
 use miyu_store::index::SessionIndex;
@@ -265,7 +264,7 @@ impl Core {
         let memory = Memory::new(&root, summary);
         memory::give_recall(&memory, &resources);
         // 人格记忆装没装（施工 R-10）：照这时读到的清单；交进来另一份的照那一份（[`Core::with_packages`]）。
-        memory.set_installed(packages::is_installed(&found, MEMORY));
+        memory.set_installed(packages::is_installed(&found, memory::PACKAGE));
         // 抽取（施工 R-6 上）：照一次性入口发；字、key 的写法读不出来的，这个核心不抽。
         if let Some(extraction) = memory::extraction(&*models, &resources, &root) {
             memory.give_extraction(extraction);

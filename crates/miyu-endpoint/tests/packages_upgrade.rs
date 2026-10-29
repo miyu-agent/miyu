@@ -130,7 +130,7 @@ async fn an_installed_package_is_upgraded_and_local_ones_are_left_alone() {
     };
     assert_eq!(item("app")["from"], "official");
     assert_eq!(item("local")["from"], "local");
-    let shipped = item("shell");
+    let shipped = item("miyu-base-shell");
     assert_eq!(
         (&shipped["from"], &shipped["author"], &shipped["upstream"]),
         (
@@ -141,7 +141,7 @@ async fn an_installed_package_is_upgraded_and_local_ones_are_left_alone() {
         "{shipped}"
     );
     let info = client
-        .call("b", "package.info", json!({"package": "shell"}))
+        .call("b", "package.info", json!({"package": "miyu-base-shell"}))
         .await;
     assert_eq!(
         (

@@ -118,7 +118,14 @@ async fn a_package_switched_off_is_gone() {
         "预设页不列：{preset}"
     );
     // 施工 BS-1 上中起没有必需的包：原来基础系统的 trash 也关得掉。
-    let trash = set(&mut alice, 2, "system", "packages.trash.off", true).await;
+    let trash = set(
+        &mut alice,
+        2,
+        "system",
+        "packages.miyu-base-trash.off",
+        true,
+    )
+    .await;
     assert!(trash["result"].is_object(), "{trash}");
 
     // 设置页：每个包那一组有这一项（测试的核心照重读清单那一次拼包的项：装一个别的包）。
@@ -151,7 +158,7 @@ async fn a_package_switched_off_is_gone() {
         .collect();
     assert!(keys.contains(&"packages.kit.off"), "{keys:?}");
     assert!(
-        keys.contains(&"packages.shell.off"),
+        keys.contains(&"packages.miyu-base-shell.off"),
         "原来基础系统的包也有：{keys:?}"
     );
 }

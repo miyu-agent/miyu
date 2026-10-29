@@ -1,0 +1,18 @@
+# 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+prefix = "grep"
+protocol = [1, 1]
+groups = ["basesystem"]
+name = { en = "Search contents", zh = "搜内容", ja = "内容を検索" }
+summary = { en = "Search file contents with patterns", zh = "照样子搜文件里的内容", ja = "パターンでファイルの中身を検索します" }
+
+# 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
+[features.grep]
+name = { en = "Search contents", zh = "搜内容", ja = "内容を検索" }
+summary = { en = "Search file contents with patterns", zh = "照样子搜文件里的内容", ja = "パターンでファイルの中身を検索します" }
+tools = ["grep"]
+
+[builtin]

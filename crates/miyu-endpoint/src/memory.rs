@@ -59,6 +59,10 @@ impl Core {
     }
 }
 
+/// 人格记忆这个内置包的编号（同 `miyu_memory::PACKAGE`；端点不依赖软件包的 crate）：装没装、`/remember` 这几条跟着它。功能编号
+/// 另是 `miyu_policy::preset::MEMORY`，施工 PN-3 起两个不同（设计 48 第三节）。
+pub(crate) const PACKAGE: &str = "miyu-base-memory";
+
 /// `memory.list` 不写 `limit` 时给几条。
 const LIST: usize = 50;
 /// `memory.search` 不写 `limit` 时给几条。

@@ -21,7 +21,7 @@ use crate::document::{Miss, Pages};
 use crate::search::Search;
 
 /// 这个包的编号；资源目录另是 [`SOFTWARE`]（施工 PN-2）。
-pub const PACKAGE: &str = "net";
+pub const PACKAGE: &str = "miyu-base-net";
 
 /// 资源目录 `resources/software/net` 的名字，也是给人看的字的键 `software/net/…` 的那一段（施工 PN-2）：日志里存着，和包编号
 /// 分开，包改名不跟着变。

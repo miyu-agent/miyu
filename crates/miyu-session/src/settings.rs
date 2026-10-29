@@ -7,14 +7,14 @@
 //! 合并的两项（施工 R-7 上，第七条）：多久合一次、攒几个会话；抽取记下以后照那一轮的配置读。
 //! 「AI 怎么认识你」的两项（施工 P-9 端点声明，R-6 再修挪到这里，同一份）：造会话时端点照它拼「关于你」；抽取、合并照这一轮的
 //! 配置读称呼，写人。
-//! 核心替人格记忆这个内置包声明（施工 F-4，设计 `30-插件框架.md` 第七节）：挂在「软件包」那一页、`memory` 那一组；包没装的照样
+//! 核心替人格记忆这个内置包声明（施工 F-4，设计 `30-插件框架.md` 第七节）：挂在「软件包」那一页、`miyu-base-memory` 那一组（组的编号是包编号，施工 PN-3）；包没装的照样
 //! 认，设置页不画（`miyu-core` 的 `settings::Packaged`）。
 //! 展示的一项（施工 D-5 补二）：system 里带不带 show 的那一句，同样核心替基础系统声明，造会话时读。
 
 use std::time::Duration;
 
 miyu_config::settings! {
-    /// 展示（施工 D-5 补二，项目主人 2026-10-24 定）：核心替基础系统声明，挂在「软件包」那一页、`basesystem` 那一组。造会话时
+    /// 展示（施工 D-5 补二，项目主人 2026-10-24 定）：核心替包 `miyu-base-show` 声明，挂在「软件包」那一页、那个包的一组（施工 PN-3）。造会话时
     /// 读一次钉进快照（`miyu_policy::Snapshot::no_show_hint`），新会话生效：会话中途改了 system 不变，前缀稳定。
     pub struct ShowSettings in "show" {
         /// system 里带 show 的那一句（`show/system.txt`）：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看。工具面上
@@ -23,7 +23,7 @@ miyu_config::settings! {
             kind: bool,
             layers: [System],
             applies: new_session,
-            ui: { page: "packages", group: "show", package: "show", control: toggle },
+            ui: { page: "packages", group: "miyu-base-show", package: "miyu-base-show", control: toggle },
         },
     }
 }
@@ -79,49 +79,49 @@ miyu_config::settings! {
             kind: duration [60, 3600],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: text },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: text },
         },
         /// 上次抽到以后至少有几轮她答了话才抽。
         extract_turns: i64 = 2 {
             kind: int [1, 100],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: number },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: number },
         },
         /// 一直不闲的会话（施工 E-5）：上次抽以后结束了这么多轮就不等闲、在后台抽。
         extract_max_turns: i64 = 20 {
             kind: int [2, 500],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: number },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: number },
         },
         /// 一直不闲的会话（施工 E-5）：最早没抽的那一轮结束了这么久就不等闲、在后台抽。
         extract_max_wait: Duration = "1h" {
             kind: duration [600, 86400],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: text },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: text },
         },
         /// 离上次合并至少多久才再合（施工 R-7 上）。
         merge_every: Duration = "24h" {
             kind: duration [3600, 2592000],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: text },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: text },
         },
         /// 上次合并以后至少抽过几个会话才再合（施工 R-7 上）。
         merge_sessions: i64 = 5 {
             kind: int [1, 100],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: number },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: number },
         },
         /// 每一间留最近几趟整理会话（施工 D-1 下，设计 41 DS9）：一趟跑完删多的，`0` 是跑完就删。
         dream_keep: i64 = 20 {
             kind: int [0, 1000],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "memory", package: "memory", control: number },
+            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: number },
         },
     }
 }

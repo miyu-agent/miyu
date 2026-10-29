@@ -208,14 +208,14 @@ fn the_shipped_presets_read_cleanly() {
             .map(String::as_str)
             .collect::<Vec<_>>(),
         [
-            "authoring",
             "basesystem",
-            "env",
-            "goal",
-            "loop",
-            "memory",
-            "net",
-            "schedule"
+            "miyu-base-authoring",
+            "miyu-base-env",
+            "miyu-base-goal",
+            "miyu-base-loop",
+            "miyu-base-memory",
+            "miyu-base-net",
+            "miyu-base-schedule"
         ]
     );
     let minimal = presets.find("minimal").unwrap();
@@ -228,7 +228,12 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
-        ["edit", "read", "shell", "write"]
+        [
+            "miyu-base-edit",
+            "miyu-base-read",
+            "miyu-base-shell",
+            "miyu-base-write"
+        ]
     );
     assert_eq!(
         minimal

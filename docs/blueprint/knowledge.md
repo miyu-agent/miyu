@@ -41,7 +41,7 @@
 | `crates/miyu-policy/src/compose.rs`（`Snapshot::with_knowledge`）、`snapshot.rs`（`knowledge`） | 那一块拼进 system 第 4 块、记进快照（K-1 补） | K-1 补 |
 | `crates/miyu-session/src/agents.rs`（`Holds`）、`actor/persona.rs` | 工具面照查不查得到给两件；回合开始照这一刻再判，变了换快照（第六条） | K-1 下 |
 | `crates/miyu-policy/src/persona/tables.rs` | `persona.toml` 的 `[knowledge] bases`（`personas.md`） | K-1 下 |
-| `resources/packages/knowledge/package.toml`、`resources/software/knowledge/` | 内置包的清单（没写功能，整个包算一个，编号 `knowledge`）；两件工具的说明、给她看的几句（进登记簿）、给人看的字 | K-1 下 |
+| `resources/packages/miyu-base-knowledge/package.toml`、`resources/software/knowledge/` | 内置包的清单（没写功能，整个包算一个，编号 `knowledge`）；两件工具的说明、给她看的几句（进登记簿）、给人看的字 | K-1 下 |
 
 ### 对外的样子
 
@@ -110,7 +110,7 @@
 - 出错：`unknown_kb`（没有这个库）、`unknown_document`（库里没有这个文档：不是文档的、不在库里的、`..` 跑出去的都算）、`bad_params`（`query` 空白、`limit` 出范围、编号不合写法、`page` 是 0 或超过 `pages`）。
 - 管理的出错（K-7 上，「怎么走」第八条）：`kb_exists`（要建、要挂的库已经有了）、`document_exists`（要加的已经有了，没写 `replace`）、`kb_read_only`（往挂进来的库里加、删）、`kb_packaged`（改软件包带来的库的名字、说明，加、删文档，删它，K-8）、`folder_unavailable`（要挂的目录不在、读不了、不是绝对路径也不是 `~/` 开头，`data.message` 一句英文）、`trash_failed`（挪不进回收站，`data.message`）、`unknown_attachment`（`blob` 不在，同 `session.send`）；`bad_params`：编号、路径不合写法（`kb.add`、`kb.remove` 的路径照「文档」的写法，什么格式都行）、`kb.update` 两格都没写、`kb.mount` 没写 `folder` 或别的写了 `folder`、`kb.add` 没写 `blob` 或别的写了 `blob`、`replace`、多写了不认识的格。
 
-**她的工具**（K-1 下、K-3，19 N4、N14）：知识库这个内置包（`knowledge`，出厂装着；预设照功能开关：全部功能开、常规开发关）带五件；查的两件访问类别 `read`，写的三件 `write`（只读级别下不能用）。
+**她的工具**（K-1 下、K-3，19 N4、N14）：知识库这个内置包（`miyu-base-knowledge`，功能编号 `knowledge`，出厂装着；预设照功能开关：全部功能开、常规开发关）带五件；查的两件访问类别 `read`，写的三件 `write`（只读级别下不能用）。
 
 | 工具 | 做什么 | 参数 |
 |---|---|---|

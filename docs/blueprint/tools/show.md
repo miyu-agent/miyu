@@ -18,7 +18,7 @@
 | `resources/software/basesystem/show/*.txt`、`common/*.txt` | 输出里给她看的几句 |
 | `resources/software/basesystem/show/system.txt`、`crates/miyu-policy/src/compose.rs` | system 里的那一句（施工 D-5 补二，`Snapshot::with_show`） |
 | `crates/miyu-session/src/settings.rs` | 那一句的开关 `show.system_hint`（`ShowSettings`，造会话时在 `open/face.rs` 读） |
-| `resources/packages/basesystem/package.toml` | 功能「展示」（`show`） |
+| `resources/packages/miyu-base-show/package.toml` | 功能「展示」（`show`） |
 
 ### 对外的样子
 

@@ -69,7 +69,7 @@
 
 ## `link.preview`
 
-编进了联网包（`net`）才有，没有的回 `unknown_method`。在后台答。
+编进了联网包（`miyu-base-net`）才有，没有的回 `unknown_method`。在后台答。
 
 **参数**：`url`。
 

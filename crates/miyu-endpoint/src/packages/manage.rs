@@ -9,7 +9,6 @@ use std::sync::Arc;
 use serde_json::{Value, json};
 
 use miyu_config::package;
-use miyu_policy::preset::MEMORY;
 use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
 use miyu_store::packages::{Found, Issue, Layer, Packages};
@@ -64,7 +63,7 @@ impl Core {
     async fn switch_packages(self: &Arc<Self>, before: &[&Found], now: &[&Found]) {
         let memory = now
             .iter()
-            .any(|one| super::is_installed(std::slice::from_ref(*one), MEMORY));
+            .any(|one| super::is_installed(std::slice::from_ref(*one), crate::memory::PACKAGE));
         self.memory.set_installed(memory);
         self.follow_packages(&processes_of(before), &processes_of(now))
             .await;

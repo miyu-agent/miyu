@@ -430,7 +430,7 @@
       "display": "显示",
       "new_session": "新会话",
       "compaction": "压缩",
-      "memory": "记忆",
+      "miyu-base-memory": "记忆",
       "core": "核心",
       "log": "运行日志",
       "skills": "技能",
@@ -445,7 +445,7 @@
       "catalog": "模型目录",
       "cooldown": "冷却",
       "external": "平台账号",
-      "net": "联网搜索",
+      "miyu-base-net": "联网搜索",
       "net_keys": "API Key 和地址",
       "source": "软件源"
     }

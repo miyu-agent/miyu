@@ -1,0 +1,18 @@
+# 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+prefix = "todowrite"
+protocol = [1, 1]
+groups = ["basesystem"]
+name = { en = "To-do list", zh = "待办清单", ja = "ToDo リスト" }
+summary = { en = "Keep a to-do list for the task at hand", zh = "给手上的活列一张待办", ja = "今の作業の ToDo リストを付けます" }
+
+# 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
+[features.todowrite]
+name = { en = "To-do list", zh = "待办清单", ja = "ToDo リスト" }
+summary = { en = "Keep a to-do list for the task at hand", zh = "给手上的活列一张待办", ja = "今の作業の ToDo リストを付けます" }
+tools = ["todowrite"]
+
+[builtin]

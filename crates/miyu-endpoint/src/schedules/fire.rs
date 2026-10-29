@@ -19,9 +19,9 @@ use crate::Core;
 use crate::sessions::Opening;
 
 /// 定时任务的包：她用 `cron_create` 建的看它（施工 J-2 建清单）。
-const SCHEDULE_PACKAGE: &str = "schedule";
+const SCHEDULE_PACKAGE: &str = "miyu-base-schedule";
 /// 循环的包：`/loop`、`schedule_wakeup` 建的看它。
-const LOOP_PACKAGE: &str = "loop";
+const LOOP_PACKAGE: &str = "miyu-base-loop";
 
 /// 交的结果。
 pub(super) struct Delivered {

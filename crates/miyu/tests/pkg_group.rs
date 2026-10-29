@@ -30,15 +30,15 @@ async fn the_base_system_is_removed_and_restored_by_its_group_name() {
         .expect("没 panic");
     let shown = stdout(&removed);
     assert!(
-        shown.starts_with("将卸载 basesystem\n包含：") && shown.contains("shell"),
+        shown.starts_with("将卸载 basesystem\n包含：") && shown.contains("miyu-base-shell"),
         "{shown}"
     );
-    assert!(shown.contains("\n已卸载 shell\n"), "{shown}");
+    assert!(shown.contains("\n已卸载 miyu-base-shell\n"), "{shown}");
     assert_eq!(removed.status.code(), Some(0), "{removed:?}");
 
     let back = run(&root, &cwd, zh, &["pkg", "install", "basesystem", "--yes"]).await;
     let shown = stdout(&back);
-    assert!(shown.contains("已安装 shell\n"), "{back:?}");
+    assert!(shown.contains("已安装 miyu-base-shell\n"), "{back:?}");
     assert!(!shown.contains("将装回"), "--yes 不问：{shown}");
     drop(held);
     if let Err(error) = std::fs::remove_dir_all(&cwd) {

@@ -18,7 +18,7 @@ miyu_config::settings! {
             ],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net", package: "net", control: select },
+            ui: { page: "packages", group: "miyu-base-net", package: "miyu-base-net", control: select },
         },
     }
 }
@@ -31,7 +31,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", package: "net", control: text },
+            ui: { page: "packages", group: "net_keys", package: "miyu-base-net", control: text },
         },
     }
 }
@@ -44,7 +44,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", package: "net", control: text },
+            ui: { page: "packages", group: "net_keys", package: "miyu-base-net", control: text },
         },
     }
 }
@@ -57,7 +57,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", package: "net", control: text },
+            ui: { page: "packages", group: "net_keys", package: "miyu-base-net", control: text },
         },
     }
 }
@@ -70,7 +70,7 @@ miyu_config::settings! {
             kind: secret,
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", package: "net", control: text },
+            ui: { page: "packages", group: "net_keys", package: "miyu-base-net", control: text },
         },
     }
 }
@@ -83,7 +83,7 @@ miyu_config::settings! {
             kind: url,
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net_keys", package: "net", control: text },
+            ui: { page: "packages", group: "net_keys", package: "miyu-base-net", control: text },
         },
     }
 }
@@ -96,7 +96,7 @@ miyu_config::settings! {
             kind: texts [253],
             layers: [System],
             applies: next_turn,
-            ui: { page: "packages", group: "net", package: "net", control: list },
+            ui: { page: "packages", group: "miyu-base-net", package: "miyu-base-net", control: list },
         },
     }
 }

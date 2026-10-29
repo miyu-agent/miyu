@@ -80,6 +80,32 @@ fn world(home: &Home, toml: &str, people: &str) {
 
 const PEOPLE: &str = "# 人物\n\n## 艾琳\n\n守灯人，十九岁。\n\n## 巴德\n\n老船长，缺了一根小指。\n";
 
+/// 预设 `quiet` 关了知识库这个功能（`[features]`），放进数据根；会话照装着的功能认工具归哪个功能：功能 `knowledge` 在包
+/// `miyu-base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
+fn knowledge_off(home: &Home) -> Lines {
+    let text = "[features]\nknowledge = false\n";
+    let dir = home.root.path().join("presets");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("quiet.toml"), text).expect("写得进");
+    let features = miyu_policy::features::Features::new(vec![miyu_policy::features::Feature {
+        id: miyu_policy::preset::KNOWLEDGE.to_string(),
+        package: miyu_knowledge::PACKAGE.to_string(),
+        tools: Vec::new(),
+        service: None,
+        script: None,
+    }]);
+    let off = miyu_policy::preset::read(text).expect("合写法");
+    Lines {
+        preset: Some(miyu_policy::preset::Chosen::new(
+            "quiet".to_string(),
+            off,
+            &features,
+        )),
+        features: Some(features),
+        ..Lines::default()
+    }
+}
+
 #[tokio::test]
 async fn a_named_section_comes_once_and_plain_chat_brings_nothing() {
     let home = Home::new();
@@ -147,16 +173,7 @@ async fn off_bases_and_a_preset_without_knowledge_bring_nothing() {
     assert!(recalled(&log).is_empty(), "没开 auto 的不带");
 
     world(&home, "auto = true\n", PEOPLE);
-    let off = miyu_policy::preset::read("[features]\nknowledge = false\n").expect("合写法");
-    let lines = Lines {
-        preset: Some(miyu_policy::preset::Chosen::new(
-            "quiet".to_string(),
-            off,
-            &miyu_policy::features::Features::default(),
-        )),
-        ..Lines::default()
-    };
-    let handle = session(&home, 1, lines).await;
+    let handle = session(&home, 1, knowledge_off(&home)).await;
     let log = chat(&home, &handle, 1, "艾琳今天去哪了").await;
     assert!(recalled(&log).is_empty(), "预设关了知识库的不带");
 }

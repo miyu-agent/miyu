@@ -430,7 +430,7 @@
       "display": "表示",
       "new_session": "新しいセッション",
       "compaction": "圧縮",
-      "memory": "記憶",
+      "miyu-base-memory": "記憶",
       "core": "コア",
       "log": "実行ログ",
       "skills": "スキル",
@@ -445,7 +445,7 @@
       "catalog": "モデルカタログ",
       "cooldown": "クールダウン",
       "external": "プラットフォームのアカウント",
-      "net": "ウェブ検索",
+      "miyu-base-net": "ウェブ検索",
       "net_keys": "API キーとアドレス",
       "source": "ソフトウェアソース"
     }

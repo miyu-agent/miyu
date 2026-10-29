@@ -10,10 +10,10 @@ icon = "square-terminal"
 unlisted = "off"
 
 [software]
-read = true
-write = true
-edit = true
-shell = true
+miyu-base-read = true
+miyu-base-write = true
+miyu-base-edit = true
+miyu-base-shell = true
 
 [features]
 # 环境那几块（施工 C-11；施工 ENV-1 起在内置包 env 里，编号不变）：极简开发照旧全开，和拆开以前一样；「用户身份」是原来的「关于你」，

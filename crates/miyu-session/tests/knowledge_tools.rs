@@ -112,6 +112,32 @@ fn narrow(home: &Home, bases: &str) {
     std::fs::write(file, format!("[knowledge]\nbases = {bases}\n")).expect("写得进");
 }
 
+/// 预设 `quiet` 关了知识库这个功能（`[features]`），放进数据根；会话照装着的功能认工具归哪个功能：功能 `knowledge` 在包
+/// `miyu-base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
+fn knowledge_off(home: &Home) -> Lines {
+    let text = "[features]\nknowledge = false\n";
+    let dir = home.root.path().join("presets");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    std::fs::write(dir.join("quiet.toml"), text).expect("写得进");
+    let features = miyu_policy::features::Features::new(vec![miyu_policy::features::Feature {
+        id: miyu_policy::preset::KNOWLEDGE.to_string(),
+        package: miyu_knowledge::PACKAGE.to_string(),
+        tools: Vec::new(),
+        service: None,
+        script: None,
+    }]);
+    let off = miyu_policy::preset::read(text).expect("合写法");
+    Lines {
+        preset: Some(miyu_policy::preset::Chosen::new(
+            "quiet".to_string(),
+            off,
+            &features,
+        )),
+        features: Some(features),
+        ..Lines::default()
+    }
+}
+
 #[tokio::test]
 async fn the_two_come_with_the_first_base_and_go_with_the_last() {
     let home = Home::new();
@@ -196,7 +222,6 @@ async fn she_finds_and_reads_only_what_her_persona_lists() {
 async fn groups_have_them_too_and_a_preset_can_turn_them_off() {
     let home = Home::new();
     put(&home, "notes", "cat.md", "团子是橘猫。\n");
-    let off = miyu_policy::preset::read("[features]\nknowledge = false\n").expect("合写法");
     for (lines, has) in [
         (
             Lines {
@@ -206,17 +231,7 @@ async fn groups_have_them_too_and_a_preset_can_turn_them_off() {
             },
             true,
         ),
-        (
-            Lines {
-                preset: Some(miyu_policy::preset::Chosen::new(
-                    "quiet".to_string(),
-                    off.clone(),
-                    &miyu_policy::features::Features::default(),
-                )),
-                ..Lines::default()
-            },
-            false,
-        ),
+        (knowledge_off(&home), false),
     ] {
         let script = Script::new([Play::Says("好。")]);
         let handle = session(&home, &script, lines).await;
@@ -289,17 +304,8 @@ async fn no_bases_or_a_preset_off_means_no_list_and_narrowing_lists_only_hers() 
 
     put(&home, "notes", "a.md", "字\n");
     put(&home, "secret", "a.md", "字\n");
-    let off = miyu_policy::preset::read("[features]\nknowledge = false\n").expect("合写法");
     let script = Script::new([Play::Says("好。")]);
-    let lines = Lines {
-        preset: Some(miyu_policy::preset::Chosen::new(
-            "quiet".to_string(),
-            off,
-            &miyu_policy::features::Features::default(),
-        )),
-        ..Lines::default()
-    };
-    let quiet = session(&home, &script, lines).await;
+    let quiet = session(&home, &script, knowledge_off(&home)).await;
     chat(&home, &quiet, 1, "在吗").await;
     assert!(
         !script.requests()[0].1.system.contains("Knowledge bases"),
@@ -341,16 +347,19 @@ async fn the_list_sits_before_the_preset_line_and_needs_the_two_tools() {
     put(&home, "notes", "a.md", "字\n");
     // 预设关了记忆：system 末尾是那一行，列出来的那一块在它前面（26 第四节第 4、5 块）。
     let features = miyu_policy::features::Features::new(
-        ["memory", "knowledge"]
-            .into_iter()
-            .map(|id| miyu_policy::features::Feature {
-                id: id.to_string(),
-                package: id.to_string(),
-                tools: Vec::new(),
-                service: None,
-                script: None,
-            })
-            .collect(),
+        [
+            (miyu_policy::preset::MEMORY, "miyu-base-memory"),
+            (miyu_policy::preset::KNOWLEDGE, miyu_knowledge::PACKAGE),
+        ]
+        .into_iter()
+        .map(|(id, package)| miyu_policy::features::Feature {
+            id: id.to_string(),
+            package: package.to_string(),
+            tools: Vec::new(),
+            service: None,
+            script: None,
+        })
+        .collect(),
     );
     let file = miyu_policy::preset::read("[features]\nmemory = false\n").expect("合写法");
     let script = Script::new([Play::Says("好。")]);

@@ -103,14 +103,24 @@ async fn a_shipped_package_is_counted_from_its_files() {
     let home = Home::new();
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
-    let info = call(&mut client, "package.info", json!({"package": "mermaid"})).await;
+    let info = call(
+        &mut client,
+        "package.info",
+        json!({"package": "miyu-base-mermaid"}),
+    )
+    .await;
     assert_eq!(info["result"]["layer"], "shipped", "{info}");
     assert!(
         info["result"].get("installed").is_none(),
         "出厂的不进本地库"
     );
-    assert!(!recorded(&home, "mermaid").exists());
-    let files = call(&mut client, "package.files", json!({"package": "mermaid"})).await;
+    assert!(!recorded(&home, "miyu-base-mermaid").exists());
+    let files = call(
+        &mut client,
+        "package.files",
+        json!({"package": "miyu-base-mermaid"}),
+    )
+    .await;
     assert!(
         files["result"]["files"]
             .as_array()
@@ -120,7 +130,7 @@ async fn a_shipped_package_is_counted_from_its_files() {
     let bad = call(
         &mut client,
         "package.info",
-        json!({"package": "mermaid", "x": 1}),
+        json!({"package": "miyu-base-mermaid", "x": 1}),
     )
     .await;
     assert_eq!(reason(&bad), Some("bad_params"));

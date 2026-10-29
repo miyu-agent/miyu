@@ -24,7 +24,11 @@ async fn todo_goes_with_its_package_and_the_core_ones_stay() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     let removed = client
-        .call("r", "package.remove", json!({"package": "todowrite"}))
+        .call(
+            "r",
+            "package.remove",
+            json!({"package": "miyu-base-todowrite"}),
+        )
         .await;
     assert!(removed["result"].is_object(), "{removed}");
 

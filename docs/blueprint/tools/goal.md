@@ -16,7 +16,7 @@
 | `resources/software/goal/tools/goal.json` | 说明和参数格式 |
 | `resources/software/goal/goal/*.txt`、`common/*.txt` | 结果里给她看的几句，两段收尾 |
 | `resources/software/goal/human/{zh,en,ja}.json` | 显示名、结果那一句 |
-| `resources/packages/goal/package.toml` | 软件包的清单：名字、说明，没写功能，整个包算一个功能 `goal` |
+| `resources/packages/miyu-base-goal/package.toml` | 软件包的清单：名字、说明，没写功能，整个包算一个功能 `goal` |
 
 ### 对外的样子
 

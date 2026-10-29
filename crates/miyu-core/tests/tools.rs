@@ -3,6 +3,10 @@
 
 use std::path::Path;
 
+use miyu_core::packages::NET;
+use miyu_goal::PACKAGE as GOAL;
+use miyu_knowledge::PACKAGE as KNOWLEDGE;
+use miyu_memory::PACKAGE as MEMORY;
 use miyu_store::packages::{Found, Packages};
 use miyu_store::resources::ResourceRoot;
 
@@ -83,7 +87,7 @@ fn the_catalog_has_the_base_system() {
 fn a_builtin_without_its_manifest_brings_no_tools() {
     let resources = shipped_resources();
     let names_without = |without: &[&str]| names(&installed(&resources, without));
-    let without_memory = names_without(&["memory"]);
+    let without_memory = names_without(&[MEMORY]);
     assert!(without_memory.contains(&"read".to_string()));
     for tool in ["remember", "forget", "memory_search"] {
         assert!(
@@ -92,10 +96,10 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         );
     }
     assert!(
-        !names_without(&["goal"]).contains(&"goal".to_string()),
+        !names_without(&[GOAL]).contains(&"goal".to_string()),
         "没装长期目标，没有 goal"
     );
-    let without_knowledge = names_without(&["knowledge"]);
+    let without_knowledge = names_without(&[KNOWLEDGE]);
     for tool in ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"] {
         assert!(
             !without_knowledge.contains(&tool.to_string()),
@@ -103,47 +107,47 @@ fn a_builtin_without_its_manifest_brings_no_tools() {
         );
     }
     assert!(
-        !names_without(&["net"])
+        !names_without(&[NET])
             .iter()
             .any(|name| name.starts_with("web_")),
         "没装联网，没有 web_fetch、web_search"
     );
     // 施工 BS-1 上中起基础系统是一个组：卸掉组里的全部包，才一件都没有；只卸 shell 的只少它。
     let mut without: Vec<&str> = group();
-    without.extend(["knowledge", "net"]);
+    without.extend([KNOWLEDGE, NET]);
     assert_eq!(
         names_without(&without),
         ["forget", "goal", "memory_search", "remember"],
         "没装基础系统组、知识库、联网，只有记忆的三件和长期目标的一件"
     );
-    let without_shell = names_without(&["shell"]);
+    let without_shell = names_without(&["miyu-base-shell"]);
     assert!(
         !without_shell.contains(&"shell".to_string()),
         "没装 shell 包，没有 shell"
     );
     assert!(without_shell.contains(&"read".to_string()), "别的包照旧");
-    let without_sessions = names_without(&["sessions"]);
+    let without_sessions = names_without(&["miyu-base-sessions"]);
     assert!(
         !without_sessions.contains(&"send_message".to_string())
             && !without_sessions.contains(&"sessions".to_string()),
         "sessions 包带着 send_message 一起没"
     );
     let mut only_knowledge: Vec<&str> = group();
-    only_knowledge.extend(["memory", "goal", "net"]);
+    only_knowledge.extend([MEMORY, GOAL, NET]);
     assert_eq!(
         names_without(&only_knowledge),
         ["kb_delete", "kb_edit", "kb_read", "kb_save", "kb_search"],
         "只装知识库（施工 K-1 下、K-3），只有它的五件"
     );
     let mut only_net: Vec<&str> = group();
-    only_net.extend(["memory", "goal", "knowledge"]);
+    only_net.extend([MEMORY, GOAL, KNOWLEDGE]);
     assert_eq!(
         names_without(&only_net),
         ["web_fetch", "web_search"],
         "只装联网（施工 N-1、N-2 上），只有它的两件"
     );
     let mut none: Vec<&str> = group();
-    none.extend(["memory", "goal", "knowledge", "net"]);
+    none.extend([MEMORY, GOAL, KNOWLEDGE, NET]);
     assert!(names_without(&none).is_empty());
 }
 
@@ -153,7 +157,7 @@ fn a_broken_manifest_does_not_count_as_installed() {
     let resources = shipped_resources();
     let mut found = installed(&resources, &[]);
     for one in &mut found {
-        if one.id == "memory" {
+        if one.id == MEMORY {
             one.read = Err(miyu_store::packages::Issue::Unreadable(
                 std::io::Error::other("坏了"),
             ));
@@ -223,6 +227,32 @@ fn every_shipped_tool_belongs_to_a_feature() {
     assert_eq!(owner("remember"), Some("memory"));
 }
 
+/// 基础系统「工具 → 包」的对照（施工 PN-3：包改名成 `miyu-base-*` 以后不再是工具名等于包编号）：每件工具归的包，就是出厂清单里
+/// `[features] tools` 列着它的那一个；不是基础系统的照组名。联网包的编号核心另记的一份和 `miyu-net` 的一样。
+#[test]
+fn base_system_tools_go_to_the_package_whose_manifest_lists_them() {
+    let found = installed(&shipped_resources(), &[]);
+    for (tool, package) in miyu_basesystem::TOOLS {
+        let listing: Vec<&str> = found
+            .iter()
+            .filter(|one| {
+                one.read.as_ref().is_ok_and(|manifest| {
+                    manifest
+                        .features_of(&one.id)
+                        .iter()
+                        .any(|feature| feature.tools.iter().any(|name| name == tool))
+                })
+            })
+            .map(|one| one.id.as_str())
+            .collect();
+        assert_eq!(listing, [package], "{tool}");
+        assert_eq!(miyu_basesystem::package_of(tool), package, "{tool}");
+        assert!(miyu_basesystem::PACKAGES.contains(&package), "{tool}");
+    }
+    assert_eq!(miyu_basesystem::package_of("nope"), miyu_basesystem::GROUP);
+    assert_eq!(NET, miyu_net::PACKAGE);
+}
+
 /// 交给端点的内置包工具的端口（施工 F-5 中）：照清单交回的和起来时登记的一样，没装的包不在里面。
 #[test]
 fn the_builtin_port_gives_what_startup_registers() {
@@ -236,9 +266,9 @@ fn the_builtin_port_gives_what_startup_registers() {
     from_port.sort();
     assert_eq!(from_port, names(&installed(&resources, &[])));
     let without = port
-        .tools(&installed(&resources, &["memory"]))
+        .tools(&installed(&resources, &[MEMORY]))
         .expect("拼得出");
-    assert!(without.iter().all(|(id, _)| id != "memory"));
+    assert!(without.iter().all(|(id, _)| id != MEMORY));
 }
 
 /// 同一个端口交的整份配置清单（施工 F-5 补）：和起来时读配置用的一样；人格记忆没装的，它那几项照样在、设置页不画。
@@ -260,7 +290,7 @@ fn the_builtin_port_gives_the_settings_startup_reads() {
         !hidden(&all).iter().any(|key| key.starts_with("memory.")),
         "装着的画"
     );
-    let without = port.settings(&mut installed(&resources, &["memory"]));
+    let without = port.settings(&mut installed(&resources, &[MEMORY]));
     // 每个装着的包那一项关包的开关（施工 U23 末上）跟着装没装：不算进「照样认」的那几项。
     let off = |items: &[miyu_config::Item]| -> Vec<&str> {
         items
@@ -275,11 +305,11 @@ fn the_builtin_port_gives_the_settings_startup_reads() {
         "没装的照样认"
     );
     assert!(
-        off(&all).contains(&"packages.memory.off"),
+        off(&all).contains(&"packages.miyu-base-memory.off"),
         "装着的有它那一项开关"
     );
     assert!(
-        !off(&without).contains(&"packages.memory.off"),
+        !off(&without).contains(&"packages.miyu-base-memory.off"),
         "没装的没有"
     );
     assert!(

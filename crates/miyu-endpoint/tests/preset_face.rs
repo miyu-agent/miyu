@@ -24,10 +24,10 @@ fn catalog() -> Catalog {
     let fake = |name: &str| -> Arc<dyn Tool> { Fake::new(name, Access::Read, Act::Echo) };
     Catalog::in_packages([
         // 施工 BS-1 上中起一件一个包。
-        ("read", vec![fake("read")]),
-        ("shell", vec![fake("shell")]),
+        ("miyu-base-read", vec![fake("read")]),
+        ("miyu-base-shell", vec![fake("shell")]),
         (
-            "memory",
+            "miyu-base-memory",
             vec![fake("remember"), fake("forget"), fake("memory_search")],
         ),
     ])
@@ -122,7 +122,7 @@ async fn software_without_tools_is_pinned_off_but_left_out_of_the_line() {
     );
     home.write(
         "presets/lean.toml",
-        "[preset]\nname = { en = \"Lean\" }\n\n[software]\nquiet = false\nmemory = false\n",
+        "[preset]\nname = { en = \"Lean\" }\n\n[software]\nquiet = false\nmiyu-base-memory = false\n",
     );
     let (session, request) = first_request(
         &home,
@@ -168,7 +168,7 @@ async fn roleplay_off_drops_the_reminder_and_the_style_lock_and_the_line_comes_b
     home.write("personas/miyu/prompts/reminders.md", "Stay soft.\n");
     home.write(
         "presets/quiet.toml",
-        "[preset]\nname = { en = \"Quiet\" }\n\n[software]\nmemory = false\n",
+        "[preset]\nname = { en = \"Quiet\" }\n\n[software]\nmiyu-base-memory = false\n",
     );
     let lock = std::fs::read_to_string(default_resources().join("core/style-lock.txt"))
         .expect("读得出风格锁");
@@ -394,7 +394,7 @@ async fn memory_not_installed_is_off_and_not_named() {
     let home = Home::new();
     let (session, request) = first_request_without(
         &home,
-        &["memory"],
+        &["miyu-base-memory"],
         json!({"cwd": "~", "persona": "engineer", "preset": "full"}),
     )
     .await;
@@ -408,7 +408,12 @@ async fn memory_not_installed_is_off_and_not_named() {
 #[tokio::test]
 async fn memory_not_in_the_given_list_says_not_installed() {
     let home = Home::new();
-    let mut client = connected(configured_with(&home, &Script::new([]), &["memory"])).await;
+    let mut client = connected(configured_with(
+        &home,
+        &Script::new([]),
+        &["miyu-base-memory"],
+    ))
+    .await;
     let reply = client.call("m1", "memory.list", json!({})).await;
     assert_eq!(reason(&reply), Some("memory_not_installed"), "{reply}");
 }
@@ -423,7 +428,7 @@ async fn reminders_not_installed_drop_the_reminder_and_the_lock() {
         .expect("读得出风格锁");
     let (session, request) = first_request_without(
         &home,
-        &["roleplay"],
+        &["miyu-base-roleplay"],
         json!({"cwd": "~", "persona": "miyu", "preset": "full"}),
     )
     .await;

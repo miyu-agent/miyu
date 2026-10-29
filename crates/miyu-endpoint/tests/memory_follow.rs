@@ -359,7 +359,11 @@ async fn refusals() {
         .await;
     assert_eq!(reason(&reply), Some("memory_unavailable"), "{reply}");
     let removed = client
-        .call("p1", "package.remove", json!({"package": "memory"}))
+        .call(
+            "p1",
+            "package.remove",
+            json!({"package": "miyu-base-memory"}),
+        )
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let reply = client

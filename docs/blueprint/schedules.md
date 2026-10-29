@@ -45,7 +45,7 @@
 4. **跑在已有的会话**：交一条 `Send`，`by` 是 `{"kind":"schedule","schedule":"t3","loop"?:"fixed"|"dynamic"}`（`kernel/ids.md`「谁」）。照「别处来的话」的规矩收（`kernel/session.md`「定时交进来的话」）：闲着开一轮，正在跑一轮的排在这一轮后面。`last_result` 照交的那一刻会话忙不忙记 `queued` 或 `ran`。命令编号 `schedule/<任务>/<这一次的毫秒>/say`：核心重启后再交一遍，会话认得是重发。
 5. **每次新开**：照建时定下的人格、预设、工作目录开一个会话（命令编号 `…/open`），没人在场（要问人的照规矩拒），再照第 3 条交。`last_session` 记开出来的那个。开不成的记 `skipped:not_opened`。跑完给人推 `notice {"kind": "schedule.ran"}`（施工 J-3 中，第七节）。
 6. **会话没了**：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
-7. **她建的照预设**（项目主人 2026-10-26 定）：`by` 是 `model` 的，到点时看那个会话现在的预设，关了建它的那个包的这一次不跑，记 `skipped:preset_off`，下一次照算。定时任务看 `schedule` 包，循环（`loop` 是 `fixed`、`dynamic`）看 `loop` 包；包的功能里装着、没被关掉的有一个就算开（`presets::package_on`）。没装的包算关；没有预设的老会话都开着；无工具（空的编号）算关。人建的、包建的不看预设。
+7. **她建的照预设**（项目主人 2026-10-26 定）：`by` 是 `model` 的，到点时看那个会话现在的预设，关了建它的那个包的这一次不跑，记 `skipped:preset_off`，下一次照算。定时任务看 `miyu-base-schedule` 包，循环（`loop` 是 `fixed`、`dynamic`）看 `miyu-base-loop` 包（施工 PN-3 起的包编号）；包的功能里装着、没被关掉的有一个就算开（`presets::package_on`）。没装的包算关；没有预设的老会话都开着；无工具（空的编号）算关。人建的、包建的不看预设。
 8. 每一次记 `INFO schedule fired`，带任务编号、结果；不记那句话。
 
 ### 四、核心的入口

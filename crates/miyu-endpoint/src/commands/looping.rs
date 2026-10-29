@@ -22,7 +22,7 @@ use crate::refusal::Refusal;
 use crate::schedules::{Creator, Loop, Target, Wanted, When};
 
 /// 循环这个包的编号（同 `miyu_schedule::LOOP`；端点不依赖软件包的 crate）。
-pub(super) const LOOP_PACKAGE: &str = "loop";
+pub(super) const LOOP_PACKAGE: &str = "miyu-base-loop";
 
 /// 登记 `/loop`。
 pub(super) fn register(commands: &mut Commands) {

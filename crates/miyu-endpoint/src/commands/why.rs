@@ -14,8 +14,11 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
-/// 长期目标这个包、功能的编号（同 `miyu_goal::PACKAGE`；端点不依赖软件包的 crate）。
-pub(super) const GOAL_PACKAGE: &str = "goal";
+/// 长期目标这个功能的编号：预设的 `[features]` 照它（施工 PN-3 起和包编号分开，设计 48 第三节第 1 条）。
+const GOAL_FEATURE: &str = "goal";
+
+/// 长期目标这个包的编号（同 `miyu_goal::PACKAGE`；端点不依赖软件包的 crate）：`/goal` 跟着它装没装。
+pub(super) const GOAL_PACKAGE: &str = "miyu-base-goal";
 
 /// 提示词缺了必填的参数：几个名字照这门语言的 `commands/joiner` 连起来。
 pub(super) fn missing_arguments(missing: Vec<String>) -> Said {
@@ -62,7 +65,7 @@ async fn goal(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
         core,
         peer,
         listed.preset?,
-        GOAL_PACKAGE,
+        GOAL_FEATURE,
         "commands/unavailable/goal-preset-off",
     )
     .await

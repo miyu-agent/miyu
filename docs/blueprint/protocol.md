@@ -255,8 +255,8 @@
 | `model.embed` | 照配置的 `models.embedding`（本机的内置模型、远程那一家）算一批字的向量（施工 X-17，给扩展按意思搜）：`{texts}`，1 到 64 条、每条 1 到 8000 个字；回应 `{model, vectors}`，`model` 是模型编号（`local:<id>`、`<供应商>/<模型>`，换了模型的向量不能和以前的比），`vectors` 照先后、归一化过的。一条一条算，每条至多等 30 秒，有一条算不出整批不交。远程的用量照记。不另设能力（同 `model.call`）。拒绝：写法不对的 `bad_params`；关着、要本机的却没装的 `embedding_off`；算不出、等不到的 `embedding_failed` |
 | `usage.query` | 查用量和金额：照人、场所、模型、天、会话、用途分组，金额照币种各加各的；先补再查（施工 8-15，`models.md`「协议」、「怎么走」第九条） |
 | `human.get` | 给人看的字：工具的样子、说法的模板原文，照这个连接的语言；不带 `config`（施工 W-1） |
-| `mermaid.render` | mermaid 源码画成 SVG。编进了 `mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
-| `link.preview` | 一个链接的卡片：标题、简介、图（存成 blob）。编进了 `net` 包才有，没编进来回 `unknown_method`；在后台答（施工 W-7，`net.md`） |
+| `mermaid.render` | mermaid 源码画成 SVG。编进了 `miyu-base-mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
+| `link.preview` | 一个链接的卡片：标题、简介、图（存成 blob）。编进了 `miyu-base-net` 包才有，没编进来回 `unknown_method`；在后台答（施工 W-7，`net.md`） |
 | `subscribe`、`unsubscribe` | 订阅、取消订阅会话的事件流；配置、会话列表、扩展的状态的推送 |
 | `view.page` | 历史按页读：从末尾一页页往前，页的边界落在回合之间（施工 9-6 下）；写了 `view: true` 的交视图投影的条目（施工 9-8 中） |
 | `view.detail` | 一次调用的完整差异和结果原文（施工 9-6 三补、9-8 中）；一次压缩的摘要原文（施工 9-8 中） |
@@ -982,7 +982,7 @@
 
 回应 `{"marks": {"label": <色>, "line": <色>, "text": <色>}, "svg": <SVG 的字>}`：SVG 里字、线、连线标签垫底用的三种记号色，头照它们换成自己的颜色。详细的怎么走、出错、缓存、懒初始化都在 `mermaid.md`，这一页只列进方法表、出错表（照 `config.md` 的先例）。
 
-1. 编进了 `mermaid` 包才有（核心起来时经 `crates/miyu-core/src/packages.rs` 往查询表 `crates/miyu-endpoint/src/queries.rs` 里登记）；没编进来的回 `unknown_method`，和没有这个方法一样。
+1. 编进了 `miyu-base-mermaid` 包才有（核心起来时经 `crates/miyu-core/src/packages.rs` 往查询表 `crates/miyu-endpoint/src/queries.rs` 里登记）；没编进来的回 `unknown_method`，和没有这个方法一样。
 2. 查询，不改会话：不推送。
 
 **`link.preview`**（施工 W-7，`net.md`）
@@ -993,7 +993,7 @@
 
 回应二选一：`{"card": {"author", "description", "duration", "icon", "image", "kind", "site", "title", "url"}}`，`icon`、`image` 是 `{"blob": <内容哈希>, "media_type": <类型>}` 或者 `null`，`kind` 是 `video`、`article`、`page` 之一，`duration`（秒）、`author` 没有的不写（W-7 再补）；`{"card": null, "why": <原因>}`，`why` 是 `not_a_url`、`unsupported_scheme`、`no_preview`、`unreachable` 之一。做不出卡片不是拒绝。地址闸、代理、记多久都在 `net.md`，这一页只列进方法表、出错表（照 `mermaid.render` 的先例）。
 
-1. 编进了 `net` 包才有，登记的路子同 `mermaid.render`；没编进来的回 `unknown_method`。
+1. 编进了 `miyu-base-net` 包才有，登记的路子同 `mermaid.render`；没编进来的回 `unknown_method`。
 2. 在后台答：这个连接上后面的请求不等它，回应照 `id` 对上（「一个连接」第 1 条的例外）。不碰会话，不推送。
 3. 卡片的图是存处里的 blob，头照 `blob.get` 读。
 

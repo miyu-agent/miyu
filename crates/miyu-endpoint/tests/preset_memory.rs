@@ -11,7 +11,7 @@ use crate::support::*;
 use miyu_session::testkit::Script;
 
 /// 和常规开发一样、只是不开记忆（出厂的两个都开着，施工 P-15）。
-const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nnet = true\ngoal = true\nauthoring = true\n";
+const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nmiyu-base-net = true\nmiyu-base-goal = true\nmiyu-base-authoring = true\n";
 
 #[tokio::test]
 async fn a_preset_without_memory_drops_it() {

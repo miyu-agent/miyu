@@ -90,43 +90,62 @@ pub fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     ])
 }
 
-/// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`project-docs`、`clicall` 没有工具。
+/// 基础系统拆成的内置包（施工 BS-1 上中，设计 44 第三节第 1 条）：编号照清单的先后，`miyu-base-project-docs`、`miyu-base-clicall`
+/// 没有工具。施工 PN-3 起是 `miyu-base-*`（设计 48 第一节第 2 条），和工具名不再相同，工具归哪个包照 [`TOOLS`]。
 pub const PACKAGES: [&str; 18] = [
-    "read",
-    "write",
-    "edit",
-    "glob",
-    "grep",
-    "trash",
-    "shell",
-    "jobs",
-    "subagent",
-    "ask_user",
-    "todowrite",
-    "history",
-    "session_usage",
-    "sessions",
-    "packages",
-    "show",
-    "project-docs",
-    "clicall",
+    "miyu-base-read",
+    "miyu-base-write",
+    "miyu-base-edit",
+    "miyu-base-glob",
+    "miyu-base-grep",
+    "miyu-base-trash",
+    "miyu-base-shell",
+    "miyu-base-jobs",
+    "miyu-base-subagent",
+    "miyu-base-ask-user",
+    "miyu-base-todowrite",
+    "miyu-base-history",
+    "miyu-base-session-usage",
+    "miyu-base-sessions",
+    "miyu-base-packages",
+    "miyu-base-show",
+    "miyu-base-project-docs",
+    "miyu-base-clicall",
 ];
 
 /// 基础系统的组名（施工 BS-1 上中）：上面这些包的清单都写着它，出厂的组表 `resources/packages/groups.toml` 里有它。
 pub const GROUP: &str = "basesystem";
 
-/// 一件工具归哪个包（施工 BS-1 上中）：`sessions`、`send_message` 一个包，`packages`、`package` 一个包，别的一件一个包、编号同
-/// 工具名。不是基础系统的工具照 `basesystem` 算（[`grouped`] 给测试的假工具用）。
+/// 基础系统的每件工具归哪个包（施工 PN-3）：`sessions`、`send_message` 一个包，`packages`、`package` 一个包，别的一件一个包。
+/// 和各包清单的 `[features] tools` 一致，出厂资源的测试守着。
+pub const TOOLS: [(&str, &str); 18] = [
+    ("read", "miyu-base-read"),
+    ("write", "miyu-base-write"),
+    ("edit", "miyu-base-edit"),
+    ("glob", "miyu-base-glob"),
+    ("grep", "miyu-base-grep"),
+    ("trash", "miyu-base-trash"),
+    ("shell", "miyu-base-shell"),
+    ("jobs", "miyu-base-jobs"),
+    ("subagent", "miyu-base-subagent"),
+    ("ask_user", "miyu-base-ask-user"),
+    ("todowrite", "miyu-base-todowrite"),
+    ("history", "miyu-base-history"),
+    ("session_usage", "miyu-base-session-usage"),
+    ("sessions", "miyu-base-sessions"),
+    ("send_message", "miyu-base-sessions"),
+    ("packages", "miyu-base-packages"),
+    ("package", "miyu-base-packages"),
+    ("show", "miyu-base-show"),
+];
+
+/// 一件工具归哪个包（施工 BS-1 上中，施工 PN-3 起照 [`TOOLS`]）。不是基础系统的工具照 `basesystem` 算（[`grouped`] 给测试的假
+/// 工具用）。
 pub fn package_of(tool: &str) -> &'static str {
-    match tool {
-        "send_message" => "sessions",
-        "package" => "packages",
-        other => PACKAGES
-            .iter()
-            .copied()
-            .find(|id| *id == other)
-            .unwrap_or("basesystem"),
-    }
+    TOOLS
+        .iter()
+        .find(|(name, _)| *name == tool)
+        .map_or(GROUP, |(_, package)| package)
 }
 
 /// 包的编号和它的几件工具，照 [`PACKAGES`] 的先后（施工 BS-1 上中）。

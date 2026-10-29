@@ -3905,10 +3905,10 @@ in a {platform} private chat
 on {platform}
 ```
 
-#### `packages/authoring/skills/package-creator/SKILL.md`
+#### `packages/miyu-base-authoring/skills/package-creator/SKILL.md`
 
 - 什么时候加进来：同上，`skill-package-creator`
-- token：那一行 68；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10）
+- token：那一行 68（施工 PN-3 路径同上多 10 个字符，没重量）；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10）
 - 为什么加：同上：脚本的开头怎么写、参数和输出、沙盒，MCP 服务的写法，检查和装
 - 指纹：`156f0a32`
 
@@ -6016,10 +6016,10 @@ ARGUMENTS: {arguments}
 
 ### 说明列进 system 第 4 块技能那一段（一行）；正文是她读的工具结果
 
-#### `packages/authoring/skills/skill-creator/SKILL.md`
+#### `packages/miyu-base-authoring/skills/skill-creator/SKILL.md`
 
-- 什么时候加进来：出厂包 `authoring` 装着、预设开着 `skill-skill-creator`、工具面上有 `read` 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
-- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5）
+- 什么时候加进来：出厂包 `miyu-base-authoring`（施工 PN-3 以前叫 `authoring`）装着、预设开着 `skill-skill-creator`、工具面上有 `read` 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
+- token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算；施工 PN-3 包目录改名 `miyu-base-authoring`，路径多 10 个字符，估计多 3 左右，没重量）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5）
 - 为什么加：出厂带两个技能（`skills.md`「定了的」第 5 条）：她自己写技能照包的样子写在工作区、`packages` 检查、`package` 装（设计 31 第六节第 2 条）；说明加引号那一条是 F-10 下上真模型写技能时撞上的
 - 指纹：`e158a45e`
 

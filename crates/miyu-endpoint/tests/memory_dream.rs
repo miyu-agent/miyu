@@ -139,7 +139,11 @@ async fn without_the_package_there_is_no_dream() {
     let mut client = connected(&home, &server).await;
     remember(&mut client, "c1", "用户养了一只猫").await;
     let removed = client
-        .call("r1", "package.remove", json!({"package": "memory"}))
+        .call(
+            "r1",
+            "package.remove",
+            json!({"package": "miyu-base-memory"}),
+        )
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let reply = client

@@ -266,7 +266,7 @@ impl Core {
     /// K-8，只换不清：没收的包不是卸了）。
     pub(crate) fn adopt_packages(&self, packages: &[Found]) {
         self.memory
-            .set_installed(is_installed(packages, miyu_policy::preset::MEMORY));
+            .set_installed(is_installed(packages, crate::memory::PACKAGE));
         self.knowledge
             .use_packages(crate::knowledge::carried(packages));
     }

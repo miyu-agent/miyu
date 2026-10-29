@@ -23,7 +23,7 @@ struct Params {
 pub(super) fn register(resources: &ResourceRoot, blobs: Blobs, queries: Queries) -> Queries {
     let links = Arc::new(LinkPreview::new(resources.path(), blobs));
     queries.register_background_for(
-        "net",
+        miyu_net::PACKAGE,
         "link.preview",
         move |_core: Arc<Core>, params: Value| {
             let links = Arc::clone(&links);

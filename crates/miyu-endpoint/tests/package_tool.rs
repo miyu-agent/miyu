@@ -218,7 +218,7 @@ async fn a_name_clash_tells_her_what_and_where() {
 async fn bringing_back_a_shipped_package_or_a_group_works() {
     let home = Home::new();
     let commands: Vec<(&str, &str)> = vec![
-        ("package", r#"{"install":"mermaid"}"#),
+        ("package", r#"{"install":"miyu-base-mermaid"}"#),
         ("package", r#"{"install":"basesystem"}"#),
     ];
     let plays = vec![
@@ -228,7 +228,7 @@ async fn bringing_back_a_shipped_package_or_a_group_works() {
     let core = Arc::new(home.core_full(&Script::new(plays), pkg::catalog(), None, TOKEN));
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
-    for id in ["mermaid", "trash"] {
+    for id in ["miyu-base-mermaid", "miyu-base-trash"] {
         let removed = client
             .call("r", "package.remove", json!({"package": id}))
             .await;

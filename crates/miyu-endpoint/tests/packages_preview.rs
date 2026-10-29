@@ -95,7 +95,7 @@ async fn installing_shows_what_comes_and_changes_nothing() {
         refused["error"]["data"]["reason"], "package_invalid",
         "和真装一样拒：{refused}"
     );
-    let shipped = folder(&home, "mermaid", &pane("1"));
+    let shipped = folder(&home, "miyu-base-mermaid", &pane("1"));
     let refused = preview(&mut client, &shipped).await;
     assert_eq!(
         refused["error"]["data"]["reason"], "package_exists",
@@ -137,11 +137,11 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     let shipped = call(
         &mut client,
         "package.remove",
-        json!({"package": "net", "preview": true}),
+        json!({"package": "miyu-base-net", "preview": true}),
     )
     .await;
     assert!(
-        shipped["result"].get("files").is_none(),
+        shipped["result"].is_object() && shipped["result"].get("files").is_none(),
         "出厂的不删文件：{shipped}"
     );
 }
@@ -149,13 +149,13 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
 #[tokio::test]
 async fn restoring_a_shipped_package_shows_it() {
     let home = Home::new();
-    home.write("packages/net.removed", "");
+    home.write("packages/miyu-base-net.removed", "");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let shown = call(
         &mut client,
         "package.install",
-        json!({"package": "net", "preview": true}),
+        json!({"package": "miyu-base-net", "preview": true}),
     )
     .await;
     assert_eq!(
@@ -166,12 +166,12 @@ async fn restoring_a_shipped_package_shows_it() {
         (json!(true), json!("builtin")),
         "{shown}"
     );
-    let removed = home.root.path().join("packages/net.removed");
+    let removed = home.root.path().join("packages/miyu-base-net.removed");
     assert!(removed.exists(), "什么都不动");
     let unknown = call(
         &mut client,
         "package.install",
-        json!({"package": "memory", "preview": true}),
+        json!({"package": "miyu-base-memory", "preview": true}),
     )
     .await;
     assert_eq!(

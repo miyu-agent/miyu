@@ -3,7 +3,7 @@
 ### 是什么
 
 mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看到的是同一份 SVG，画图的内存只在核心里。做成可选的
-软件包 `mermaid`：crate `miyu-mermaid`，经 `miyu-core` 的 cargo 开关 `mermaid` 编进来，发行版默认打开。没编
+软件包 `miyu-base-mermaid`（施工 PN-3 以前叫 `mermaid`）：crate `miyu-mermaid`，经 `miyu-core` 的 cargo 开关 `mermaid` 编进来，发行版默认打开。没编
 进来的核心里没有这块代码，`mermaid.render` 回 `unknown_method`，头照代码块显示源码。第一次调才初始化（读
 `style.json`、探一次系统的字体库），之后一直留着，直到核心退出。
 

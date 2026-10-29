@@ -39,7 +39,7 @@ pub const MACHINE: &str = "env-machine";
 pub const PROFILE: &str = "env-profile";
 
 /// 这几个功能所在的内置包（施工 ENV-1）：不是必需的，整包关掉就是哪一块都不注入。
-pub const PACKAGE: &str = "env";
+pub const PACKAGE: &str = "miyu-base-env";
 
 /// 这几个功能，照上面表里的先后。
 pub const ALL: [&str; 8] = [

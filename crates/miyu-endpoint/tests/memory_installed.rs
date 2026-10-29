@@ -11,16 +11,24 @@ use crate::support::*;
 
 async fn remove(client: &mut Client) {
     let reply = client
-        .call("r1", "package.remove", json!({"package": "memory"}))
+        .call(
+            "r1",
+            "package.remove",
+            json!({"package": "miyu-base-memory"}),
+        )
         .await;
     assert_eq!(reply["result"]["removed"], true, "{reply}");
 }
 
 async fn restore(client: &mut Client) {
     let reply = client
-        .call("i1", "package.install", json!({"package": "memory"}))
+        .call(
+            "i1",
+            "package.install",
+            json!({"package": "miyu-base-memory"}),
+        )
         .await;
-    assert_eq!(reply["result"]["package"], "memory", "{reply}");
+    assert_eq!(reply["result"]["package"], "miyu-base-memory", "{reply}");
 }
 
 /// 命令表里列出来的名字。

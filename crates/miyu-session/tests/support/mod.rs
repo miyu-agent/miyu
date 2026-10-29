@@ -213,7 +213,13 @@ impl Home {
             memory: lines.indexed.then(|| self.memory()),
             preset: lines.preset,
             no_tools: false,
-            presets: None,
+            presets: lines.features.map(|features| miyu_session::PresetPlaces {
+                presets: miyu_store::presets::Presets::new(&self.resources, &self.root),
+                features,
+                offers: None,
+                overrides: None,
+                edits: None,
+            }),
             group: lines.group.then_some(miyu_session::GroupSettings {
                 recent: lines.recent,
             }),

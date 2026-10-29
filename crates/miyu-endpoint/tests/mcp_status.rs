@@ -140,7 +140,7 @@ async fn restarting_an_off_or_unrestartable_package_is_refused() {
     client.hello().await;
     for (package, wanted) in [
         ("probe", "package_off"),
-        ("memory", "not_restartable"),
+        ("miyu-base-memory", "not_restartable"),
         ("nope", "unknown_package"),
     ] {
         let reply = client

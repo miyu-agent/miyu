@@ -79,7 +79,7 @@ fn an_installed_embed_worker_recommended_by_memory_is_set_up_from_its_package() 
     let setup = setup(
         &env,
         &[
-            found(&packages, "memory", MEMORY),
+            found(&packages, miyu_memory::PACKAGE, MEMORY),
             found(&packages, "embed", EMBED),
         ],
     )
@@ -101,26 +101,29 @@ fn anything_missing_gives_no_setup() {
     let packages = root.join("packages");
     let env = env_with_program(root);
     for (what, list) in [
-        ("没装 embed", vec![found(&packages, "memory", MEMORY)]),
+        (
+            "没装 embed",
+            vec![found(&packages, miyu_memory::PACKAGE, MEMORY)],
+        ),
         ("人格记忆没装", vec![found(&packages, "embed", EMBED)]),
         (
             "人格记忆没推荐",
             vec![
-                found(&packages, "memory", PLAIN_MEMORY),
+                found(&packages, miyu_memory::PACKAGE, PLAIN_MEMORY),
                 found(&packages, "embed", EMBED),
             ],
         ),
         (
             "embed 不是小程序",
             vec![
-                found(&packages, "memory", MEMORY),
+                found(&packages, miyu_memory::PACKAGE, MEMORY),
                 found(&packages, "embed", NOT_A_WORKER),
             ],
         ),
         (
             "embed 写坏了",
             vec![
-                found(&packages, "memory", MEMORY),
+                found(&packages, miyu_memory::PACKAGE, MEMORY),
                 found(&packages, "embed", "[package]\n"),
             ],
         ),
@@ -139,7 +142,7 @@ fn without_the_program_next_to_miyu_the_setup_says_so() {
     let setup = setup(
         &env,
         &[
-            found(&packages, "memory", MEMORY),
+            found(&packages, miyu_memory::PACKAGE, MEMORY),
             found(&packages, "embed", EMBED),
         ],
     )
@@ -155,13 +158,13 @@ fn find_matches_setup_and_says_what_is_missing() {
     let root = &scratch.0;
     let packages = root.join("packages");
     let env = env_with_program(root);
-    let memory = found(&packages, "memory", MEMORY);
-    let plain = found(&packages, "memory", PLAIN_MEMORY);
+    let memory = found(&packages, miyu_memory::PACKAGE, MEMORY);
+    let plain = found(&packages, miyu_memory::PACKAGE, PLAIN_MEMORY);
     let embed = found(&packages, "embed", EMBED);
     let started = setup(
         &env,
         &[
-            found(&packages, "memory", MEMORY),
+            found(&packages, miyu_memory::PACKAGE, MEMORY),
             found(&packages, "embed", EMBED),
         ],
     );

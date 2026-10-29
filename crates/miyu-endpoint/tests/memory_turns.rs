@@ -121,7 +121,11 @@ async fn wrong_searches_are_refused() {
         .await;
     assert_eq!(reason(&reply), Some("unknown_persona"), "{reply}");
     let removed = client
-        .call("p1", "package.remove", json!({"package": "memory"}))
+        .call(
+            "p1",
+            "package.remove",
+            json!({"package": "miyu-base-memory"}),
+        )
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     let reply = client

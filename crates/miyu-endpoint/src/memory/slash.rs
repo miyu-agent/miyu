@@ -9,6 +9,7 @@ use std::sync::Arc;
 use miyu_kernel::origin::By;
 use miyu_session::Handle;
 
+use super::PACKAGE;
 use crate::Core;
 use crate::commands::{Call, Commands, Ran, Running, Said, Slash};
 use crate::refusal::Refusal;
@@ -27,9 +28,6 @@ fn remembering(core: &Core, handle: &Handle) -> Result<(), Refusal> {
         false => Err(Refusal::MEMORY_UNAVAILABLE),
     }
 }
-
-/// 人格记忆这个包的编号（同 `miyu_memory::PACKAGE`；端点不依赖软件包的 crate）。
-const PACKAGE: &str = "memory";
 
 /// `/remember <话>`。
 struct Remember;

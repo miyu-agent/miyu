@@ -17,7 +17,7 @@ use miyu_tool::Tool;
 use miyu_tool::load::LoadError;
 
 /// 这个软件包的编号：预设里开关它的那个键；资源目录另是 [`SOFTWARE`]（施工 PN-2）。
-pub const PACKAGE: &str = "goal";
+pub const PACKAGE: &str = "miyu-base-goal";
 
 /// 资源目录 `resources/software/goal` 的名字，也是给人看的字的键 `software/goal/…` 的那一段（施工 PN-2）：日志里存着，
 /// 和包编号 [`PACKAGE`] 分开，包改名不跟着变。

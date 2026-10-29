@@ -396,14 +396,14 @@ fn builtin_package_settings_follow_their_package() {
     for item in owned {
         assert_eq!(
             (item.ui.page, item.ui.group, item.ui.package),
-            ("packages", "memory", Some("memory")),
+            ("packages", "miyu-base-memory", Some("miyu-base-memory")),
             "{}",
             item.key
         );
         assert!(!item.ui.hidden, "{}", item.key);
     }
     let mut found = Packages::shipped(&ResourceRoot::at(repository().join("resources"))).read();
-    found.retain(|one| one.id != "memory");
+    found.retain(|one| one.id != "miyu-base-memory");
     let absent = Packaged::as_released(&mut found).all();
     let memory: Vec<_> = absent
         .iter()
@@ -433,10 +433,13 @@ fn core_items_on_the_packages_page_say_which_package() {
         if item.ui.page != "packages" {
             continue;
         }
+        // 键照前缀、包照编号（施工 PN-3）：出厂包改名成 `miyu-base-*`，键不跟着变。
         let wanted = if item.key.starts_with("net.") {
-            Some("net")
+            Some("miyu-base-net")
         } else if item.key.starts_with("memory.") {
-            Some("memory")
+            Some("miyu-base-memory")
+        } else if item.key.starts_with("show.") {
+            Some("miyu-base-show")
         } else if item.key.starts_with("basesystem.") {
             Some("basesystem")
         } else if let Some(id) = item

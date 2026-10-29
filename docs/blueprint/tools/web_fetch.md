@@ -2,7 +2,7 @@
 
 ### 是什么
 
-联网包（`net`）的工具（施工 N-1，设计 `36-联网搜索.md` 第一节第 3、4 条）：抓一个网址，直接把正文交给她。网页换成 Markdown，纯文字、JSON、XML 照原样；太长的分页，同一个地址十分钟内翻页不重抓。图、PDF、压缩包这些说一句读不了。地址闸、代理、跳转和链接卡片是同一套（`net.md`）。
+联网包（`miyu-base-net`）的工具（施工 N-1，设计 `36-联网搜索.md` 第一节第 3、4 条）：抓一个网址，直接把正文交给她。网页换成 Markdown，纯文字、JSON、XML 照原样；太长的分页，同一个地址十分钟内翻页不重抓。图、PDF、压缩包这些说一句读不了。地址闸、代理、跳转和链接卡片是同一套（`net.md`）。
 
 ### 在哪
 
@@ -19,7 +19,7 @@
 | `resources/software/net/web_fetch/*.txt` | 输出里给她看的几句 |
 | `resources/software/net/human/{zh,en,ja}.json` | 显示名、结果那一句 |
 | `resources/software/net/link_preview.json` 的 `document` | 时限、上限、`Accept`、一页几个字、记多久、记几份 |
-| `resources/packages/net/package.toml` | 功能 `web-fetch`（「抓取网页」） |
+| `resources/packages/miyu-base-net/package.toml` | 功能 `web-fetch`（「抓取网页」） |
 
 ### 对外的样子
 

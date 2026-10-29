@@ -81,7 +81,11 @@ async fn switching_the_package_off_is_byte_for_byte_like_turning_all_eight_off()
     assert_ne!(all_off.system, noprofile.system, "环境那几行也不拼");
 
     let disabled = client
-        .call("d", "package.disable", json!({"package": "env"}))
+        .call(
+            "d",
+            "package.disable",
+            json!({"package": miyu_policy::shown::PACKAGE}),
+        )
         .await;
     assert!(disabled["result"].is_object(), "{disabled}");
     let gone = opened(&mut client, &home, "c4", "full").await;
@@ -120,16 +124,24 @@ async fn preset_get_says_which_package_each_feature_is_in() {
         .call("g1", "preset.get", json!({"preset": "full"}))
         .await;
     for id in miyu_policy::shown::ALL {
-        assert_eq!(package_of(&got, id), Some("env"), "{id}");
+        assert_eq!(
+            package_of(&got, id),
+            Some(miyu_policy::shown::PACKAGE),
+            "{id}"
+        );
     }
     assert_eq!(
         package_of(&got, "read"),
-        Some("read"),
+        Some("miyu-base-read"),
         "施工 BS-1 上中起一件一个包"
     );
 
     client
-        .call("d", "package.disable", json!({"package": "env"}))
+        .call(
+            "d",
+            "package.disable",
+            json!({"package": miyu_policy::shown::PACKAGE}),
+        )
         .await;
     let got = client
         .call("g2", "preset.get", json!({"preset": "noenv"}))

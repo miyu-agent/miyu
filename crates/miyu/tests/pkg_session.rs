@@ -14,8 +14,8 @@ async fn miyu_pkg_in_a_session_goes_through_the_channel() {
     std::fs::create_dir_all(&work).expect("建得了");
     let mut script = enter(&work);
     script.push_str(&miyu("list", "pkg list"));
-    script.push_str(&miyu("info", "pkg info shell"));
-    script.push_str(&miyu("files", "pkg files shell"));
+    script.push_str(&miyu("info", "pkg info miyu-base-shell"));
+    script.push_str(&miyu("files", "pkg files miyu-base-shell"));
     script.push_str(finish());
     let args = json!({"command": script, "description": "看看装了什么"});
     let (mut core, session, _server) = run(&home, &work, &args).await;
@@ -25,13 +25,13 @@ async fn miyu_pkg_in_a_session_goes_through_the_channel() {
     assert!(
         read(&work, "list.out")
             .lines()
-            .any(|line| line.starts_with("shell: Commands.")),
+            .any(|line| line.starts_with("miyu-base-shell: Commands.")),
         "列出来的是 packages 那一件的字：{}",
         read(&work, "list.out")
     );
     assert_eq!(read(&work, "info.code"), "0", "{}", read(&work, "info.err"));
     let info: Value = serde_json::from_str(&read(&work, "info.out")).expect("一行 JSON");
-    assert_eq!(info["package"], "shell", "{info}");
+    assert_eq!(info["package"], "miyu-base-shell", "{info}");
     assert_eq!(read(&work, "files.code"), "2");
     assert_eq!(
         read(&work, "files.err"),

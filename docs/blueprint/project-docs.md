@@ -11,7 +11,7 @@
 | `crates/miyu-session/src/tools/docs.rs` | 子目录的（施工 P-14 下）：回合开始定下这一轮找不找（`Look`），工具结果送回来时补没交过的（`Docs::tell`），压缩、撤销、恢复清掉重来 |
 | `crates/miyu-store/src/resources/project_docs.rs` | 读 `core/project-docs/` 下的四份字 |
 | `resources/core/project-docs/*.txt` | 给她看的字，登记在 `26-提示词.md` 第十节 |
-| `resources/packages/basesystem/package.toml` | 功能 `project-docs`「项目指令」：没有工具，预设能开关 |
+| `resources/packages/miyu-base-project-docs/package.toml` | 功能 `project-docs`「项目指令」：没有工具，预设能开关 |
 
 ## 怎么走
 

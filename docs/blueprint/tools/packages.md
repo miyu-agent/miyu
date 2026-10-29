@@ -19,7 +19,7 @@
 | `crates/miyu-session/src/open/setup.rs`、`open.rs`、`open/load.rs`、`tools/kit.rs`、`tools.rs` | 造会话、载入时交进来的端口，原样带进每一次调用（`Call::packages`） |
 | `resources/software/basesystem/tools/packages.json` | 说明和参数格式 |
 | `resources/software/basesystem/packages/*.txt` | 输出里给她看的几句 |
-| `resources/packages/basesystem/package.toml` | 功能「软件包」（`packages`），预设能关 |
+| `resources/packages/miyu-base-packages/package.toml` | 功能「软件包」（`packages`），预设能关 |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名、结果那一句 |
 
 ### 在软件源里搜（施工 G-6，设计 `37-软件源.md` 第四节第 9 条）

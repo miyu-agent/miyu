@@ -81,10 +81,9 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 ### 样子
 
 ```text
-basesystem  基础系统
-memory      人格记忆
-mermaid     画 mermaid 图（已卸载）
-net         联网
+miyu-base-memory   人格记忆
+miyu-base-mermaid  画 mermaid 图（已卸载）
+miyu-base-net      联网搜索
 ```
 
 `miyu pkg info pudding`、`miyu pkg -Ql pudding`、`miyu pkg -Qk`（施工 F-8 下）：

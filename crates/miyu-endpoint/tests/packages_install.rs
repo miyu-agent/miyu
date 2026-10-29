@@ -148,7 +148,7 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
             .is_some_and(|said| said.contains("[ui], [process]")),
         "{reply}"
     );
-    let shipped = source(&home, "mermaid", &manifest("图", "xmermaid"));
+    let shipped = source(&home, "miyu-base-mermaid", &manifest("图", "xmermaid"));
     let reply = client
         .call("i2", "package.install", json!({"path": shipped}))
         .await;
@@ -163,7 +163,7 @@ async fn a_wrong_or_clashing_manifest_installs_nothing() {
         reply["error"]["data"]["conflicts"],
         json!([{"kind": "command", "name": "courier", "package": "courier"}])
     );
-    for left in ["xbad", "mermaid", "xclash"] {
+    for left in ["xbad", "miyu-base-mermaid", "xclash"] {
         assert!(!mine(&home, left).exists(), "{left} 不留");
     }
     assert!(find(&list(&mut client).await, "xclash").is_none());
@@ -183,12 +183,19 @@ async fn a_shipped_package_is_removed_by_a_note_and_comes_back() {
     let home = Home::new();
     let mut client = connected(&home).await;
     let reply = client
-        .call("r1", "package.remove", json!({"package": "roleplay"}))
+        .call(
+            "r1",
+            "package.remove",
+            json!({"package": "miyu-base-roleplay"}),
+        )
         .await;
     assert_eq!(reply["result"]["removed"], true, "{reply}");
-    assert!(mine(&home, "roleplay.removed").is_file(), "家目录记一笔");
+    assert!(
+        mine(&home, "miyu-base-roleplay.removed").is_file(),
+        "家目录记一笔"
+    );
     let packages = list(&mut client).await;
-    let roleplay = find(&packages, "roleplay").expect("照样列");
+    let roleplay = find(&packages, "miyu-base-roleplay").expect("照样列");
     assert_eq!(roleplay["removed"], true);
     assert_eq!(roleplay["layer"], "shipped");
     assert_eq!(
@@ -197,19 +204,27 @@ async fn a_shipped_package_is_removed_by_a_note_and_comes_back() {
         "卸掉的不算装了"
     );
     let reply = client
-        .call("i1", "package.install", json!({"package": "roleplay"}))
+        .call(
+            "i1",
+            "package.install",
+            json!({"package": "miyu-base-roleplay"}),
+        )
         .await;
-    assert_eq!(reply["result"]["package"], "roleplay", "{reply}");
-    assert!(!mine(&home, "roleplay.removed").exists());
+    assert_eq!(reply["result"]["package"], "miyu-base-roleplay", "{reply}");
+    assert!(!mine(&home, "miyu-base-roleplay.removed").exists());
     assert!(
-        find(&list(&mut client).await, "roleplay")
+        find(&list(&mut client).await, "miyu-base-roleplay")
             .expect("回来了")
             .get("removed")
             .is_none()
     );
     assert_eq!(feature_installed(&mut client, "roleplay").await, Some(true));
     let reply = client
-        .call("i2", "package.install", json!({"package": "roleplay"}))
+        .call(
+            "i2",
+            "package.install",
+            json!({"package": "miyu-base-roleplay"}),
+        )
         .await;
     assert_eq!(reason(&reply), Some("unknown_package"), "没卸的装不回来");
 }

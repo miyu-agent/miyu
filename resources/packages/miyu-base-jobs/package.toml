@@ -1,0 +1,18 @@
+# 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+prefix = "jobs"
+protocol = [1, 1]
+groups = ["basesystem"]
+name = { en = "Background", zh = "后台运行", ja = "バックグラウンド実行" }
+summary = { en = "Commands and subagents run in the background and report back; off means everything waits in the foreground", zh = "命令、子代理放到后台跑，跑完回报；关了就都在前台等", ja = "コマンドやサブエージェントをバックグラウンドで動かし、終わったら知らせます。オフにすると全部前で待ちます" }
+
+# 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
+[features.jobs]
+name = { en = "Background", zh = "后台运行", ja = "バックグラウンド実行" }
+summary = { en = "Commands and subagents run in the background and report back; off means everything waits in the foreground", zh = "命令、子代理放到后台跑，跑完回报；关了就都在前台等", ja = "コマンドやサブエージェントをバックグラウンドで動かし、終わったら知らせます。オフにすると全部前で待ちます" }
+tools = ["jobs"]
+
+[builtin]

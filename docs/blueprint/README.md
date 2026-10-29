@@ -85,10 +85,10 @@
 | `web-ui.md` | 网页软件 `miyu-web`：起停、端口（8300）、页面、WebSocket 照转、`miyu web`（施工 W-9，从 `web-module.md` 搬出来独立成页）；媒体地址随 W-10 |
 | `webserve.md` | 只听本机的网页端口共用的底子 `miyu-webserve`：给页面文件、核对 Host 和 Origin、`/ws` 原样转给核心；网页软件用，从 `miyu-web` 搬来的搬家表（施工 O-16）；照终端的样子连核心的 `open` 施工 S-1 挪进 `miyu-client` |
 | `client.md` | 给界面用的门面 `miyu-client`：连核心、找数据根、协议里的类型、给人看的字、读自己的清单、运行日志，`open`（施工 S-1，设计 32 第二节） |
-| `mermaid.md` | mermaid 源码画成 SVG：可选软件包 `mermaid`、crate `miyu-mermaid`、`mermaid.render`，懒初始化、缓存、三种记号色（施工 W-4，2026-10-02 从 `web-module.md` 搬出来独立成页） |
+| `mermaid.md` | mermaid 源码画成 SVG：可选软件包 `miyu-base-mermaid`、crate `miyu-mermaid`、`mermaid.render`，懒初始化、缓存、三种记号色（施工 W-4，2026-10-02 从 `web-module.md` 搬出来独立成页） |
 | `onebot.md` | 通讯平台的桥：搬走了（施工 S-6 下），在 `miyu-agent/miyu-onebot` 的 `docs/blueprint/` 下 |
 | `chat.md` | 群聊内核：搬走了（施工 S-6 下），在 `miyu-agent/miyu-onebot` 的 `docs/blueprint/` 下 |
-| `net.md` | 链接卡片：可选软件包 `net`、crate `miyu-net`、`link.preview`，地址闸、钉地址、代理、跳转、元数据、图存成 blob、在后台答（施工 W-7，2026-10-02 从 `web-module.md` 搬出来独立成页） |
+| `net.md` | 链接卡片：可选软件包 `miyu-base-net`、crate `miyu-net`、`link.preview`，地址闸、钉地址、代理、跳转、元数据、图存成 blob、在后台答（施工 W-7，2026-10-02 从 `web-module.md` 搬出来独立成页） |
 | `recall.md` | 检索的底子：中文两字切分加 FTS5、向量、两路合并、embedding（`miyu-embed`、`models.embedding`）：图纸，2026-10-07 起草，R 线照它施工 |
 | `memory.md` | 记忆：回合索引、记下的四类、记忆日志、常驻摘要、联想、抽取、合并、听众、缓存和 token 的账：图纸，2026-10-07 起草，R 线照它施工 |
 | `knowledge.md` | 知识库：目录和 `kb.toml`、切块、索引照文件补、搜、读、`kb.*`：图纸，2026-10-12 起草，K 线照它施工 |

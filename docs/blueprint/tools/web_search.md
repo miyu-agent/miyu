@@ -2,7 +2,7 @@
 
 ### 是什么
 
-联网包（`net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，有 key 的 DeepSeek 兜在最后，被限额的进冷却、到点回来；设置里挑了一家的先用它（N-2 下）；Tavily、Brave、自己搭的 SearXNG 挑了才用（N-3 上）。最后是免 key 的网页抓取兜底（DuckDuckGo、Bing 的结果页，N-3 下）。扩展能在清单里声明自己是一个来源，选了才用（N-5）。
+联网包（`miyu-base-net`）的工具（施工 N-2 上，设计 `36-联网搜索.md` 第一节第 2 条、第二节）：搜网页，交回几条标题、网址、日期、摘录。没配置时照出厂的顺序一家家试几家免 key 的来源，有 key 的 DeepSeek 兜在最后，被限额的进冷却、到点回来；设置里挑了一家的先用它（N-2 下）；Tavily、Brave、自己搭的 SearXNG 挑了才用（N-3 上）。最后是免 key 的网页抓取兜底（DuckDuckGo、Bing 的结果页，N-3 下）。扩展能在清单里声明自己是一个来源，选了才用（N-5）。
 
 ### 在哪
 
@@ -25,7 +25,7 @@
 | `resources/software/net/tools/web_search.json` | 说明和参数格式 |
 | `resources/software/net/web_search/*.txt` | 输出里给她看的几句 |
 | `resources/software/net/human/{zh,en,ja}.json` | 显示名「网络搜索」、结果那一句 |
-| `resources/packages/net/package.toml` | 功能 `web-search` |
+| `resources/packages/miyu-base-net/package.toml` | 功能 `web-search` |
 
 ### 对外的样子
 

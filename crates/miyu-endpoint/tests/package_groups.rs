@@ -97,10 +97,18 @@ async fn the_list_says_which_group_each_package_is_in() {
         .collect();
     assert_eq!(
         packages[..7],
-        ["read", "write", "edit", "glob", "grep", "trash", "shell"],
+        [
+            "miyu-base-read",
+            "miyu-base-write",
+            "miyu-base-edit",
+            "miyu-base-glob",
+            "miyu-base-grep",
+            "miyu-base-trash",
+            "miyu-base-shell"
+        ],
         "照用途的先后：{packages:?}"
     );
-    assert!(!packages.contains(&"memory"), "不在组里的不列");
+    assert!(!packages.contains(&"miyu-base-memory"), "不在组里的不列");
     let groups_of = |id: &str| -> Value {
         result["packages"]
             .as_array()
@@ -108,8 +116,8 @@ async fn the_list_says_which_group_each_package_is_in() {
             .map(|item| item["groups"].clone())
             .unwrap_or_else(|| panic!("有 {id}：{listed}"))
     };
-    assert_eq!(groups_of("shell"), json!(["basesystem"]));
-    assert_eq!(groups_of("memory"), Value::Null, "不在组里的不写");
+    assert_eq!(groups_of("miyu-base-shell"), json!(["basesystem"]));
+    assert_eq!(groups_of("miyu-base-memory"), Value::Null, "不在组里的不写");
 }
 
 /// 装的时刻（施工 PG-1，预设页照装的先后排）：装上的包带 `installed_at`，出厂的不写。
@@ -146,7 +154,9 @@ async fn installed_packages_say_when_they_were_installed() {
         "装上的带时刻：{listed}"
     );
     assert!(
-        item(&listed, "shell").get("installed_at").is_none(),
+        item(&listed, "miyu-base-shell")
+            .get("installed_at")
+            .is_none(),
         "出厂的不写"
     );
 }

@@ -52,6 +52,8 @@ pub struct Lines {
     pub profile: miyu_policy::Profile,
     /// 会话编号（施工 5-14：命令里要写会话的默认工作区）：默认照这一刻新编一个。
     pub id: Option<SessionId>,
+    /// 装了的功能（施工 PN-3）：交了的照它认工具归哪个功能，预设的几层照数据根和资源目录找，和核心里一样；默认不交，工具照包认。
+    pub features: Option<miyu_policy::features::Features>,
 }
 
 impl Default for Lines {
@@ -73,6 +75,7 @@ impl Default for Lines {
             images: true,
             profile: miyu_policy::Profile::default(),
             id: None,
+            features: None,
         }
     }
 }

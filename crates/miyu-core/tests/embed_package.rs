@@ -10,7 +10,7 @@ fn memory_recommends_the_embed_package_that_is_not_shipped() {
     let memory = resources()
         .path()
         .join("packages")
-        .join("memory")
+        .join(miyu_memory::PACKAGE)
         .join("package.toml");
     let memory = read(&std::fs::read_to_string(&memory).expect("出厂有")).expect("写法对");
     assert_eq!(memory.recommends, ["embed"]);

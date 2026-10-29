@@ -261,7 +261,7 @@ miyu_config::settings! {
 | `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
 | `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
-| `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统），设置页在「软件包」那一页、展示那一组 |
+| `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `miyu-base-show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统；施工 PN-3 起包改了长编号，键照旧是 `show.*`），设置页在「软件包」那一页、展示那一组（组的编号是包编号 `miyu-base-show`） |
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
 | `skills.external.dirs` | 文字的列表，一个最多 4096 个字符：`~`、`~/…` 或绝对路径 | `["~/.agents/skills"]`（静态列表的出厂值：`Value::List` 借代码里写的切片，同 `Value::Text`，PT-2 外） | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外：照先后读，同名的先列的赢。相对路径 `config.set`、`miyu check`、`config.check` 都报 `bad_format`（下面「问题」那张表）；读不到的静默跳过 |
 | `net.search.source` | 选项 `auto`、`exa`、`parallel`、`firecrawl`、`anysearch`、`you`、`deepseek`、`tavily`、`brave`、`searxng`、`duckduckgo`、`bing`（N-3 上加四个、N-3 下加网页抓取的两个） | `auto`，照出厂的顺序 | 系统 | 不能写 | `next_turn` | N-2 下（设计 36 第三节第 1 条、`tools/web_search.md`）：搜索服务供应商，挑了的先用、用不了照出厂的顺序兜底；`web_search` 照调用带来的这一轮的配置读（`miyu_tool::SettingsPort`）。核心替联网这个内置包声明（`miyu-net` 的 `settings.rs`），包没装的设置页不画；设置页在「软件包」那一页、「联网搜索」那一组 |
@@ -1159,122 +1159,142 @@ source = "https://miyu-agent.github.io/packages/"
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.ask_user]
+[packages.miyu-base-ask-user]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.authoring]
+[packages.miyu-base-authoring]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.clicall]
+[packages.miyu-base-clicall]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.edit]
+[packages.miyu-base-edit]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.env]
+[packages.miyu-base-env]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.glob]
+[packages.miyu-base-glob]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.goal]
+[packages.miyu-base-goal]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.grep]
+[packages.miyu-base-grep]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.history]
+[packages.miyu-base-history]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.jobs]
+[packages.miyu-base-jobs]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.knowledge]
+[packages.miyu-base-knowledge]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.loop]
+[packages.miyu-base-loop]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.memory]
+[packages.miyu-base-memory]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.mermaid]
+[packages.miyu-base-mermaid]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.net]
+[packages.miyu-base-net]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.packages]
+[packages.miyu-base-packages]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.project-docs]
+[packages.miyu-base-project-docs]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.read]
+[packages.miyu-base-read]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.roleplay]
+[packages.miyu-base-roleplay]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.schedule]
+[packages.miyu-base-schedule]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.session_usage]
+[packages.miyu-base-session-usage]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.sessions]
+[packages.miyu-base-sessions]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.shell]
+[packages.miyu-base-shell]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
 
-[packages.show]
+[packages.miyu-base-show]
+# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+# off =
+
+[packages.miyu-base-subagent]
+# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+# off =
+
+[packages.miyu-base-todowrite]
+# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+# off =
+
+[packages.miyu-base-trash]
+# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
+# 能写：true 或 false。只能写在系统配置里。下一轮生效。
+# off =
+
+[packages.miyu-base-write]
 # 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
 # 能写：true 或 false。只能写在系统配置里。下一轮生效。
 # off =
@@ -1287,26 +1307,6 @@ source = "https://miyu-agent.github.io/packages/"
 # 别的软件源的地址：放索引的那一层目录。和公钥一起写才算一个源，加了就是信任它；写在系统配置里。
 # 能写：http:// 或 https:// 开头的网址 或 { env = "…" }。只能写在系统配置里。立即生效。
 # url =
-
-[packages.subagent]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.todowrite]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.trash]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
-
-[packages.write]
-# 把这个包关掉：只对你自己：你的会话里没有这个包的工具、技能、命令和它往对话里加的话，设置页、预设页也不列它；别人照旧。
-# 能写：true 或 false。只能写在系统配置里。下一轮生效。
-# off =
 
 [permission]
 # 新会话的权限级别：调整新会话开启时的默认权限模式，修改后开新会话生效。
@@ -1716,7 +1716,9 @@ currency = "USD"
 | 组 `pools`（`models`，8-8） | 池 | Pools | プール |
 | 组 `providers`（`models`） | 供应商 | Providers | プロバイダー |
 | 组 `log`（`advanced`） | 运行日志 | Runtime log | 実行ログ |
-| 组 `memory`（`advanced`，R-6 上） | 记忆 | Memory | 記憶 |
+| 组 `miyu-base-memory`（`packages`，R-6 上；施工 PN-3 起组的编号是包编号，原来是 `memory`；包装着的照清单的名字） | 记忆 | Memory | 記憶 |
+| 组 `miyu-base-net`（`packages`，施工 N-2 下；施工 PN-3 起是包编号，原来是 `net`） | 联网搜索 | Web search | ウェブ検索 |
+| 组 `net_keys`（`packages`，施工 N-2 下） | API Key 和地址 | API keys and addresses | API キーとアドレス |
 
 **生成的文件要的几句**（`core/human/<语言>.json` 的 `said`，编号前面加 `core/`，8-1）。日文照中文写，用词照终端界面的日文（施工 4-5 补），句子里用全角的「：」：
 
