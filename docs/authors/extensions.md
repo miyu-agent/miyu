@@ -145,7 +145,7 @@ core.close()
 ## 被拉起
 
 - 程序是 `bin/` 下那一个，参数是 `[process] args`。
-- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PACKAGE_DIR`（你这个包的文件夹：包里带的文件照它找，别自己拼路径）、`MIYU_PACKAGE_STATE`（你这个包的状态目录，已经建好）。人在终端敲 `miyu <你的命令>` 时也设 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE`。
+- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PACKAGE_DIR`（你这个包的文件夹：包里带的文件照它找，别自己拼路径）、`MIYU_PACKAGE_STATE`（你这个包的状态目录，已经建好）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置：要拉起核心的跑 `$MIYU_PROGRAM core`，别照自己旁边找，装进数据根的包旁边没有主程序）。人在终端敲 `miyu <你的命令>` 时也设 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE`。
 - 你的数据库、缓存放在 `MIYU_PACKAGE_STATE` 指的目录里，卸载时一起删。一律照这个变量找，别靠工作目录（被拉起时工作目录也是它，可人敲命令时工作目录是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
 - 这个变量只给扩展本身和人敲的命令用：她在沙盒里跑的脚本读不到状态目录（它在数据根里，沙盒整个藏着）。
 - 标准错误接到 `~/.miyu/state/logs/<编号>.stderr`，出了问题先看它。

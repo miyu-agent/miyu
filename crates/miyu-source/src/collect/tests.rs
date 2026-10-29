@@ -2,11 +2,11 @@
 //! 混了两个包、没有包文件、拿不到；社区来源记一笔；四份规则读得成、写错的报哪个文件。
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use super::*;
 use crate::index::Blocked;
-use crate::test_support::{Scratch, put};
+use crate::test_support::{Scratch, package, put};
 
 const API: &str = "https://api.example.invalid";
 
@@ -48,39 +48,6 @@ impl Net {
                 .expect("写得成"),
         );
     }
-}
-
-/// 打一个包：编号 `id`、版本 `version`，`more` 接在 `[package]` 里；带一个技能、一个人格。交回字节。
-fn package(
-    root: &Path,
-    id: &str,
-    version: &str,
-    more: &str,
-    target: Option<Target>,
-) -> (String, Vec<u8>) {
-    let folder = root
-        .join("src")
-        .join(format!(
-            "{id}-{version}-{}",
-            target.map_or("any", Target::as_str)
-        ))
-        .join(id);
-    put(
-        &folder,
-        "package.toml",
-        format!(
-            "[package]\nversion = \"{version}\"\nname = {{ en = \"{id}\", zh = \"包\" }}\n{more}"
-        )
-        .as_bytes(),
-    );
-    put(&folder, "skills/sweet/SKILL.md", b"---\nname: sweet\n---\n");
-    put(&folder, "skills/draft/README.md", b"not a skill yet");
-    put(&folder, "personas/cat/persona.toml", b"[persona]\n");
-    let name = archive::file_name(id, version, target);
-    let out = root.join("out").join(&name);
-    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
-    archive::pack(&folder, id, &out).expect("打得成");
-    (name, std::fs::read(&out).expect("在"))
 }
 
 fn rules(official: &[&str]) -> Rules {

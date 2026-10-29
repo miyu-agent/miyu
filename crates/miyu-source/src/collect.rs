@@ -8,6 +8,7 @@
 //!   一起发；条目记位置、哈希、大小。在包目录外、不是 PNG / WebP、超过 [`LOGO_MAX_BYTES`] 的不收图标、记一笔，包照收。
 //! - 社区那种来源（`kind = "topic"`）现在读得懂、不收，记一笔（第三节第 5 条：写法先备好）。
 
+mod folder;
 pub mod rules;
 
 use std::collections::BTreeMap;
@@ -20,6 +21,7 @@ use miyu_config::package::{self, LOGO_MAX_BYTES, Manifest, Target};
 
 use crate::archive;
 use crate::index::{Entry, File, Index, Logo, VERSION};
+pub use folder::from_folder;
 pub use rules::{Rules, Source};
 
 /// 一个包文件最多多大。
@@ -172,63 +174,89 @@ fn one_repo(
         .iter()
         .filter(|asset| asset.name.ends_with(&format!(".{}", archive::EXTENSION)))
         .collect();
-    let mut entry: Option<Entry> = None;
-    let mut logo: Option<Vec<u8>> = None;
-    let mut note = None;
+    let mut gathered: Option<Gathered> = None;
     let mut files: Vec<File> = Vec::new();
     for (n, asset) in assets.iter().enumerate() {
         let bytes = fetch.get(&asset.browser_download_url, MOST_FILE)?;
-        let dir = place.join(n.to_string());
-        std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
-        let file = dir.join("package.miyu");
-        std::fs::write(&file, &bytes).map_err(|error| error.to_string())?;
-        let unpacked = archive::unpack(&file, &dir.join("unpacked"))
-            .map_err(|error| format!("{}: {error}", asset.name))?;
-        let text = std::fs::read_to_string(unpacked.folder.join("package.toml"))
-            .map_err(|_| format!("{}: no package.toml", asset.name))?;
-        let manifest =
-            package::read(&text).map_err(|problem| format!("{}: {problem}", asset.name))?;
-        let version = manifest
-            .version
-            .clone()
-            .ok_or_else(|| format!("{}: no version", asset.name))?;
-        let target = target_of(&asset.name, &unpacked.id, &version, &manifest.targets)?;
-        let mut this = entry_of(
-            &unpacked.id,
-            &version,
-            &manifest,
-            &unpacked.folder,
-            origin,
-            official,
-        );
-        match &entry {
-            None => {
-                match logo_of(&manifest, &unpacked.folder) {
-                    Ok(Some((at, bytes))) => {
-                        this.logo = Some(at);
-                        logo = Some(bytes);
-                    }
-                    Ok(None) => {}
-                    Err(why) => note = Some(format!("logo left out, {why}")),
-                }
-                entry = Some(this);
-            }
-            Some(first) if first.id != this.id || first.version != this.version => {
+        let read = read_package(
+            &asset.name,
+            &asset.browser_download_url,
+            &bytes,
+            &place.join(n.to_string()),
+            (origin, official),
+        )?;
+        match &gathered {
+            None => gathered = Some(read.gathered),
+            Some(first)
+                if first.entry.id != read.gathered.entry.id
+                    || first.entry.version != read.gathered.entry.version =>
+            {
                 return Err("files of different packages in one release".to_string());
             }
             Some(_) => {}
         }
-        files.push(File {
-            target,
-            url: asset.browser_download_url.clone(),
-            sha256: hex(&Sha256::digest(&bytes)),
-            size: bytes.len() as u64,
-        });
+        files.push(read.file);
     }
-    let mut entry = entry.ok_or("no package file in the latest release")?;
+    let mut gathered = gathered.ok_or("no package file in the latest release")?;
     files.sort_by(|a, b| a.target.cmp(&b.target));
-    entry.files = files;
-    Ok(Gathered { entry, logo, note })
+    gathered.entry.files = files;
+    Ok(gathered)
+}
+
+/// 一个包文件读成的：这一条（还没有文件）、它的图标、要记的一笔，和它作为一个文件的那一格。
+struct Read {
+    gathered: Gathered,
+    file: File,
+}
+
+/// 读一个包文件（名字 `name`，下载地址 `url`，字节 `bytes`）：在 `dir` 里解开，照 Miyu 自己那一套读清单，写成一条和一格文件。
+/// `source` 是来源（`origin`）和是不是官方的。文件名要和清单对得上，读不成的交回为什么（英文）。
+fn read_package(
+    name: &str,
+    url: &str,
+    bytes: &[u8],
+    dir: &Path,
+    (origin, official): (&str, bool),
+) -> Result<Read, String> {
+    std::fs::create_dir_all(dir).map_err(|error| error.to_string())?;
+    let file = dir.join("package.miyu");
+    std::fs::write(&file, bytes).map_err(|error| error.to_string())?;
+    let unpacked = archive::unpack(&file, &dir.join("unpacked"))
+        .map_err(|error| format!("{name}: {error}"))?;
+    let text = std::fs::read_to_string(unpacked.folder.join("package.toml"))
+        .map_err(|_| format!("{name}: no package.toml"))?;
+    let manifest = package::read(&text).map_err(|problem| format!("{name}: {problem}"))?;
+    let version = manifest
+        .version
+        .clone()
+        .ok_or_else(|| format!("{name}: no version"))?;
+    let target = target_of(name, &unpacked.id, &version, &manifest.targets)?;
+    let mut entry = entry_of(
+        &unpacked.id,
+        &version,
+        &manifest,
+        &unpacked.folder,
+        origin,
+        official,
+    );
+    let (mut logo, mut note) = (None, None);
+    match logo_of(&manifest, &unpacked.folder) {
+        Ok(Some((at, bytes))) => {
+            entry.logo = Some(at);
+            logo = Some(bytes);
+        }
+        Ok(None) => {}
+        Err(why) => note = Some(format!("logo left out, {why}")),
+    }
+    Ok(Read {
+        gathered: Gathered { entry, logo, note },
+        file: File {
+            target,
+            url: url.to_string(),
+            sha256: hex(&Sha256::digest(bytes)),
+            size: bytes.len() as u64,
+        },
+    })
 }
 
 /// 包自带的图标：清单写了的照包目录里的真实位置读，认 PNG、WebP 开头的字节，不超过 [`LOGO_MAX_BYTES`]。没写的没有；不合的

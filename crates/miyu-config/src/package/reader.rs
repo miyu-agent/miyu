@@ -276,7 +276,8 @@ impl Reader<'_> {
                             Some(item),
                             Code::BadPagesDir,
                             "ui.pages_dir",
-                            "ui.pages_dir must be a relative directory inside the resource directory".to_string(),
+                            "ui.pages_dir must be a relative directory inside the package folder"
+                                .to_string(),
                         )
                     })?,
             ),

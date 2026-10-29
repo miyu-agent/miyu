@@ -110,6 +110,11 @@ fn a_package_command_is_told_its_package_folder() {
     let state =
         std::fs::canonicalize(home.root.path().join("state/packages/own")).expect("跑之前建好了");
     assert_eq!(text(&printed.stdout), format!("{}\n", state.display()));
+    // 主程序的真实位置（施工 G-15）：装进数据根的包程序旁边没有主程序，要拉起核心的照它找。
+    let printed = miyu(&home, "C", &["own", "MIYU_PROGRAM"]);
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    let main = std::fs::canonicalize(MIYU).expect("主程序在");
+    assert_eq!(text(&printed.stdout), format!("{}\n", main.display()));
 }
 
 #[test]

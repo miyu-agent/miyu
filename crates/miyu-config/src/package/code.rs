@@ -39,7 +39,7 @@ pub enum Code {
     BadStart,
     /// `opens` 里的页名写法不对。
     BadPage,
-    /// `pages_dir` 不是资源目录里的相对目录。
+    /// `pages_dir` 不是包文件夹里的相对目录（施工 G-15 起相对包文件夹）。
     BadPagesDir,
     /// 两层里同一个编号：数据根那一份（`miyu-store` 认）。
     Duplicate,

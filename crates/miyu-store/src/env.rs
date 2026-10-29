@@ -59,6 +59,10 @@ pub struct Env {
     pub exe: Option<PathBuf>,
 }
 
+/// 交给包的程序的环境变量：主程序 `miyu` 的真实位置（施工 G-15）。装进数据根的包，程序在包的 `bin/` 里，旁边没有主程序；
+/// 要拉起核心的（网页软件）照它跑 `<它> core`。命令行转交子命令、核心拉起扩展时都设成自己的 [`Env::exe`]。
+pub const PROGRAM: &str = "MIYU_PROGRAM";
+
 impl Env {
     /// 从进程里读一次。
     pub fn current() -> Env {

@@ -278,6 +278,10 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
     let state = std::fs::canonicalize(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
     let mut command = plan.launch.command();
+    // 主程序的真实位置（施工 G-15）：核心就是 `miyu core`，扩展要拉起核心、跑 `miyu` 的子命令照它找。
+    if let Some(program) = miyu_store::env::Env::current().exe {
+        command.env(miyu_store::env::PROGRAM, program);
+    }
     // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
     // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；状态目录的真实位置照
     // `MIYU_PACKAGE_STATE` 给，工作目录照旧也是它（施工 F-15，2026-10-20 项目主人定：作者说明改成以变量为准）。

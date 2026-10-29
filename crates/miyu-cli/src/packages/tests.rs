@@ -125,6 +125,10 @@ fn the_program_gets_its_package_folder() {
         ["/pkg/bin/miyu-tui", "--x"]
     );
     let envs: Vec<_> = command.get_envs().collect();
+    // 主程序的真实位置（施工 G-15）：这里跑的是测试程序。
+    let program = std::env::current_exe()
+        .and_then(std::fs::canonicalize)
+        .expect("测试程序在");
     assert_eq!(
         envs,
         [
@@ -137,11 +141,15 @@ fn the_program_gets_its_package_folder() {
                 Some(state.as_os_str())
             ),
             (
+                std::ffi::OsStr::new("MIYU_PROGRAM"),
+                Some(program.as_os_str())
+            ),
+            (
                 std::ffi::OsStr::new("MIYU_RESOURCES"),
                 Some(resources.as_os_str())
             ),
         ],
-        "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）"
+        "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）；主程序在哪也交（施工 G-15）"
     );
 }
 

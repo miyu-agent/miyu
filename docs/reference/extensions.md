@@ -24,7 +24,7 @@
 ## 拉起
 
 - **程序**：先找包文件夹的 `bin/`，再找 `miyu` 旁边，不走 `PATH`；参数是清单的 `[process] args`。
-- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PACKAGE_DIR`（这个包的文件夹）、`MIYU_PACKAGE_STATE`（这个包的状态目录，已经建好）。
+- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PACKAGE_DIR`（这个包的文件夹）、`MIYU_PACKAGE_STATE`（这个包的状态目录，已经建好）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置，施工 G-15）。
 - **工作目录**：这个包放状态的目录 `state/packages/<编号>/`。
 - **标准错误**：追加到 `state/logs/<编号>.stderr`，超过 1 MiB 的先挪成 `.old`。
 - **握手**：照常发 `hello`，不出示凭据。回应的 `config` 是它自己的配置项的最终值（密钥是真值）。

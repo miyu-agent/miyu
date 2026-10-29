@@ -8,6 +8,9 @@
 //! - `miyu-index build <规则目录> <输出目录>`（施工 G-2 下）：照规则目录里的四份 TOML 收一趟，写 `<输出目录>/index.json`（没签名，
 //!   之后跑 `sign`），新占的编号写回 `names.toml`，包自带的图标写进 `<输出目录>/logos/`（施工 F-18 下，随索引一起发），一行一件事印出这一趟收了什么、跳过了什么。GitHub 的令牌照环境变量
 //!   `GITHUB_TOKEN`，只发给 API 的 `/repos/` 下面；API 的地址默认 `https://api.github.com`，环境变量 `MIYU_INDEX_API` 能换（测试用）。
+//! - `miyu-index folder <包文件夹> <输出目录> --url <源的地址>`（施工 G-13，自建的软件源）：把一个文件夹里的 `.miyu` 收成索引，包文件拷到
+//!   `<输出目录>/files/`，写 `<输出目录>/index.json`（没签名，之后跑 `sign`）和图标。整个输出目录照原样放到 `<源的地址>` 下面
+//!   （任何静态的网页服务都行），用的人在配置里加 `packages.sources.<名字>`，写这个地址和签名的公钥。
 //!
 //! 成了退出码 0，不成 1（原因印在标准错误上），参数不对 2。
 
@@ -24,13 +27,19 @@ use miyu_source::sign::{self, PublicKey};
 /// 环境变量：私钥（Actions 的密钥）。
 const KEY_VAR: &str = "MIYU_INDEX_KEY";
 
-const USAGE: &str = "usage: miyu-index build <rules-dir> <out-dir>\n       miyu-index keygen <secret-file>\n       miyu-index sign <index.json> [--key <secret-file>]\n       miyu-index verify <index.json> [--public <base64>]...";
+const USAGE: &str = "usage: miyu-index build <rules-dir> <out-dir>\n       miyu-index folder <package-dir> <out-dir> --url <source-url>\n       miyu-index keygen <secret-file>\n       miyu-index sign <index.json> [--key <secret-file>]\n       miyu-index verify <index.json> [--public <base64>]...";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let done = match args.first().map(String::as_str) {
         Some("build") => match &args[1..] {
             [rules, out] => build(Path::new(rules), Path::new(out)),
+            _ => return usage(),
+        },
+        Some("folder") => match &args[1..] {
+            [folder, out, flag, url] if flag == "--url" => {
+                build_folder(Path::new(folder), Path::new(out), url)
+            }
             _ => return usage(),
         },
         Some("keygen") => match &args[1..] {
@@ -169,23 +178,53 @@ fn build(rules_dir: &Path, out: &Path) -> Result<String, String> {
     let net = Net::new(&api, std::env::var("GITHUB_TOKEN").ok())?;
     let scratch = out.join(".collect");
     std::fs::create_dir_all(&scratch).map_err(|error| format!("{}: {error}", scratch.display()))?;
-    let generated = jiff::Timestamp::now()
-        .round(jiff::Unit::Second)
-        .map_err(|error| error.to_string())?
-        .to_string();
+    let generated = now()?;
     let collected = collect::collect(&rules, &net, &api, &scratch, &generated);
     if let Err(error) = std::fs::remove_dir_all(&scratch) {
         eprintln!("{}: {error}", scratch.display());
     }
-    let text = serde_json::to_string_pretty(&collected.index).map_err(|error| error.to_string())?;
-    let index = out.join("index.json");
-    std::fs::write(&index, format!("{text}\n"))
-        .map_err(|error| format!("{}: {error}", index.display()))?;
     if collected.names != rules.names {
         let names = rules_dir.join("names.toml");
         std::fs::write(&names, collect::rules::names_text(&collected.names))
             .map_err(|error| format!("{}: {error}", names.display()))?;
     }
+    write_out(out, collected)
+}
+
+/// 从一个文件夹收（施工 G-13）：收成索引，收了的包文件拷进 `<out>/files/`。
+fn build_folder(folder: &Path, out: &Path, url: &str) -> Result<String, String> {
+    let scratch = out.join(".collect");
+    std::fs::create_dir_all(&scratch).map_err(|error| format!("{}: {error}", scratch.display()))?;
+    let collected = collect::from_folder(folder, url, &scratch, &now()?)?;
+    if let Err(error) = std::fs::remove_dir_all(&scratch) {
+        eprintln!("{}: {error}", scratch.display());
+    }
+    let files = out.join("files");
+    std::fs::create_dir_all(&files).map_err(|error| format!("{}: {error}", files.display()))?;
+    for entry in &collected.index.packages {
+        for file in &entry.files {
+            let name = file.url.rsplit('/').next().unwrap_or_default();
+            std::fs::copy(folder.join(name), files.join(name))
+                .map_err(|error| format!("{name}: {error}"))?;
+        }
+    }
+    write_out(out, collected)
+}
+
+/// 这一刻，照秒取整：写进索引的 `generated`。
+fn now() -> Result<String, String> {
+    Ok(jiff::Timestamp::now()
+        .round(jiff::Unit::Second)
+        .map_err(|error| error.to_string())?
+        .to_string())
+}
+
+/// 写 `<out>/index.json` 和图标，交回这一趟收了什么。
+fn write_out(out: &Path, collected: collect::Collected) -> Result<String, String> {
+    let text = serde_json::to_string_pretty(&collected.index).map_err(|error| error.to_string())?;
+    let index = out.join("index.json");
+    std::fs::write(&index, format!("{text}\n"))
+        .map_err(|error| format!("{}: {error}", index.display()))?;
     for (path, bytes) in &collected.logos {
         let file = out.join(path);
         if let Some(parent) = file.parent() {

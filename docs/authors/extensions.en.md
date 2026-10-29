@@ -145,7 +145,7 @@ Slash commands, methods, pushes, the Rust example and the full example package a
 ## Being started
 
 - The program is the one in `bin/`; its arguments are `[process] args`.
-- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PACKAGE_DIR` (your package folder: find files you bring from here; don't build paths yourself) and `MIYU_PACKAGE_STATE` (your package's state directory, already created). `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set when a person runs `miyu <your command>` in a terminal.
+- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PACKAGE_DIR` (your package folder: find files you bring from here; don't build paths yourself) and `MIYU_PACKAGE_STATE` (your package's state directory, already created), `MIYU_PROGRAM` (the real path of the main `miyu` program: to start the core run `$MIYU_PROGRAM core`; don't look beside your own binary, a package installed into the data root has no main program next to it). `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set when a person runs `miyu <your command>` in a terminal.
 - Put your database and caches in the directory `MIYU_PACKAGE_STATE` names; it is removed on uninstall. Always find it through this variable: not through the working directory (it is the state directory when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
 - Only your program and the commands people run get this variable: scripts she runs in the sandbox can't read the state directory (it is inside the data root, which the sandbox hides).
 - Stderr goes to `~/.miyu/state/logs/<id>.stderr`; look there first when something goes wrong.

@@ -3,6 +3,10 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use miyu_config::package::Target;
+
+use crate::archive;
+
 /// 一个临时目录。
 pub(crate) struct Scratch(PathBuf);
 
@@ -35,4 +39,37 @@ pub(crate) fn put(root: &Path, relative: &str, bytes: &[u8]) {
     let path = root.join(relative);
     std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
     std::fs::write(path, bytes).expect("写得进");
+}
+
+/// 打一个包：编号 `id`、版本 `version`，`more` 接在 `[package]` 里；带一个技能、一个人格。交回字节。
+pub(crate) fn package(
+    root: &Path,
+    id: &str,
+    version: &str,
+    more: &str,
+    target: Option<Target>,
+) -> (String, Vec<u8>) {
+    let folder = root
+        .join("src")
+        .join(format!(
+            "{id}-{version}-{}",
+            target.map_or("any", Target::as_str)
+        ))
+        .join(id);
+    put(
+        &folder,
+        "package.toml",
+        format!(
+            "[package]\nversion = \"{version}\"\nname = {{ en = \"{id}\", zh = \"包\" }}\n{more}"
+        )
+        .as_bytes(),
+    );
+    put(&folder, "skills/sweet/SKILL.md", b"---\nname: sweet\n---\n");
+    put(&folder, "skills/draft/README.md", b"not a skill yet");
+    put(&folder, "personas/cat/persona.toml", b"[persona]\n");
+    let name = archive::file_name(id, version, target);
+    let out = root.join("out").join(&name);
+    std::fs::create_dir_all(out.parent().expect("有上一层")).expect("建得了");
+    archive::pack(&folder, id, &out).expect("打得成");
+    (name, std::fs::read(&out).expect("在"))
 }

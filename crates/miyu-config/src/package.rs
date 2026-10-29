@@ -224,7 +224,7 @@ impl Start {
 pub struct Pages {
     /// 认的页（`--page`）。
     pub opens: Vec<String>,
-    /// 页面文件的目录，相对资源目录；没有的没有。
+    /// 页面文件的目录，相对包文件夹（施工 G-15：包能装进数据根，原来相对资源目录的说法不成立）；没有的没有。
     pub pages_dir: Option<String>,
 }
 

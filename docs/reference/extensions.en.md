@@ -24,7 +24,7 @@ Other methods go through one table: those for people only (answering for the per
 ## Launch
 
 - **Program**: looked up in the package folder's `bin/` first, then next to `miyu`, never on `PATH`; arguments are the manifest's `[process] args`.
-- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder), `MIYU_PACKAGE_STATE` (this package's state directory, already created).
+- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder), `MIYU_PACKAGE_STATE` (this package's state directory, already created), `MIYU_PROGRAM` (the real path of the main `miyu` program, G-15).
 - **Working directory**: the package's state directory `state/packages/<id>/`.
 - **Stderr**: appended to `state/logs/<id>.stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values).
