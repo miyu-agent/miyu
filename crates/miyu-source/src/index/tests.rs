@@ -103,3 +103,26 @@ fn a_logo_is_only_fetched_from_where_its_hash_says() {
         assert!(!logo(path.clone(), &sha256).well_formed(), "{path}");
     }
 }
+
+#[test]
+fn the_four_added_fields_write_and_read_back_and_an_older_index_leaves_them_empty() {
+    let old = Index::parse(SAMPLE.as_bytes()).expect("读得成");
+    let embed = old.entry("embed").expect("有");
+    assert!(embed.recommends.is_empty() && embed.author.is_none());
+    assert!(embed.upstream.is_none() && embed.installed.is_none());
+    let json = serde_json::to_string(&old).expect("写得成");
+    for key in ["recommends", "author", "upstream", "installed"] {
+        assert!(!json.contains(key), "{key} 空的不写，老索引原样写出去");
+    }
+
+    let mut fresh = old.clone();
+    let entry = &mut fresh.packages[0];
+    entry.recommends = vec!["memes".to_string(), "voice".to_string()];
+    entry.author = Some("Ann".to_string());
+    entry.upstream = Some("https://example.invalid/ann/embed".to_string());
+    entry.installed = Some(123_456);
+    let json = serde_json::to_vec(&fresh).expect("写得成");
+    assert_eq!(Index::parse(&json).expect("读得回"), fresh);
+    let text = String::from_utf8(json).expect("UTF-8");
+    assert!(text.contains("\"installed\":123456") && text.contains("\"recommends\""));
+}

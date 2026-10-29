@@ -104,3 +104,34 @@ fn a_missing_folder_says_so() {
     let work = scratch.path().join("work");
     assert!(from_folder(&missing, URL, &work, "2026-10-29T13:00:00Z").is_err());
 }
+
+#[test]
+fn files_of_several_targets_keep_the_biggest_installed_size() {
+    let scratch = Scratch::new();
+    let folder = scratch.path().join("incoming");
+    let small = "targets = [\"linux-x86_64\", \"macos-aarch64\"]\n";
+    let big = format!("{small}summary = {{ en = \"{}\" }}\n", "x".repeat(300));
+    for (more, target) in [
+        (small, Target::MacosAarch64),
+        (big.as_str(), Target::LinuxX86_64),
+    ] {
+        drop_in(
+            &folder,
+            package(scratch.path(), "tui", "0.0.1", more, Some(target)),
+        );
+    }
+    let got = from_folder(
+        &folder,
+        URL,
+        &scratch.path().join("work"),
+        "2026-10-20T03:00:00Z",
+    )
+    .expect("读得了");
+    assert_eq!(got.index.packages.len(), 1, "{:?}", got.notes);
+    let entry = &got.index.packages[0];
+    let installed = entry.installed.expect("算了");
+    assert!(
+        installed > 345,
+        "取大的那份：固定三个文件 45 字节加 300 字节的说明"
+    );
+}

@@ -67,6 +67,19 @@ pub struct Entry {
     /// 依赖的包的编号。
     #[serde(default)]
     pub depends: Vec<String>,
+    /// 推荐的包的编号（施工 IN-1）：清单 `[recommends]` 的原样，照写的先后。没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub recommends: Vec<String>,
+    /// 作者（施工 IN-1）：清单 `[package] author` 的原样；没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    /// 上游（施工 IN-1）：清单 `[package] upstream` 的原样；没写的、以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub upstream: Option<String>,
+    /// 装好以后占多少字节（施工 IN-1）：包文件解开以后所有普通文件的字节数之和；一个包有几份文件（分系统的）时取最大的那一份。
+    /// 以前生成的索引没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub installed: Option<u64>,
     /// 包文件：不分系统的一份，或者一种系统一份。
     pub files: Vec<File>,
 }

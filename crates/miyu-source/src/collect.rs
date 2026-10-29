@@ -185,6 +185,7 @@ fn one_repo(
             &place.join(n.to_string()),
             (origin, official),
         )?;
+        let installed = read.gathered.entry.installed;
         match &gathered {
             None => gathered = Some(read.gathered),
             Some(first)
@@ -194,6 +195,9 @@ fn one_repo(
                 return Err("files of different packages in one release".to_string());
             }
             Some(_) => {}
+        }
+        if let Some(first) = &mut gathered {
+            first.entry.installed = first.entry.installed.max(installed);
         }
         files.push(read.file);
     }
@@ -239,6 +243,7 @@ fn read_package(
         origin,
         official,
     );
+    entry.installed = Some(unpacked.bytes);
     let (mut logo, mut note) = (None, None);
     match logo_of(&manifest, &unpacked.folder) {
         Ok(Some((at, bytes))) => {
@@ -338,6 +343,10 @@ fn entry_of(
             .flat_map(|process| process.capabilities.iter().map(|c| c.as_str().to_string()))
             .collect(),
         depends: manifest.depends.clone(),
+        recommends: manifest.recommends.clone(),
+        author: manifest.author.clone(),
+        upstream: manifest.upstream.clone(),
+        installed: None,
         files: Vec::new(),
     }
 }

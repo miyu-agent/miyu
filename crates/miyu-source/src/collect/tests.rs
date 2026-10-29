@@ -381,3 +381,114 @@ fn a_logo_is_taken_out_of_the_package_and_a_bad_one_is_left_out() {
         got.notes
     );
 }
+
+/// 包文件解开以后磁盘上所有普通文件的字节数之和：不走 `Unpacked::bytes`，自己遍历。
+fn size_on_disk(scratch: &Scratch, name: &str, bytes: &[u8]) -> u64 {
+    let file = scratch.path().join(format!("measure-{name}"));
+    std::fs::write(&file, bytes).expect("写得进");
+    let unpacked =
+        archive::unpack(&file, &scratch.path().join(format!("measured-{name}"))).expect("解得开");
+    let mut total = 0;
+    let mut pending = vec![unpacked.folder];
+    while let Some(dir) = pending.pop() {
+        for entry in std::fs::read_dir(&dir).expect("读得了").flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                pending.push(path);
+            } else {
+                total += entry.metadata().expect("有").len();
+            }
+        }
+    }
+    total
+}
+
+#[test]
+fn recommends_author_upstream_and_installed_size_come_from_the_package() {
+    let scratch = Scratch::new();
+    let mut net = Net::default();
+    let more = "author = \"Ann\"\nupstream = \"https://example.invalid/ann/stickers\"\n\n[recommends]\npackages = [\"zeta\", \"alpha\"]\n";
+    let (name, bytes) = package(scratch.path(), "stickers", "1.0.0", more, None);
+    let expected = size_on_disk(&scratch, &name, &bytes);
+    net.release("miyu-agent/miyu-stickers", &[(name, bytes)]);
+    let got = collect(
+        &rules(&["miyu-agent/miyu-stickers"]),
+        &net,
+        API,
+        &scratch_dir(&scratch),
+        "2026-10-20T03:00:00Z",
+    );
+    assert_eq!(got.index.packages.len(), 1, "{:?}", got.notes);
+    let entry = &got.index.packages[0];
+    assert_eq!(entry.recommends, ["zeta", "alpha"], "照写的先后");
+    assert_eq!(entry.author.as_deref(), Some("Ann"));
+    assert_eq!(
+        entry.upstream.as_deref(),
+        Some("https://example.invalid/ann/stickers")
+    );
+    assert!(expected > 45, "夹具里三个固定文件就有 45 字节");
+    assert_eq!(entry.installed, Some(expected), "解开以后的字节数之和");
+    let json = serde_json::to_string(&got.index).expect("写得成");
+    assert_eq!(Index::parse(json.as_bytes()).expect("读得回"), got.index);
+}
+
+#[test]
+fn a_package_without_them_leaves_the_three_empty_and_out_of_the_json() {
+    let scratch = Scratch::new();
+    let mut net = Net::default();
+    let (name, bytes) = package(scratch.path(), "plain", "1.0.0", "", None);
+    net.release("miyu-agent/miyu-plain", &[(name, bytes)]);
+    let got = collect(
+        &rules(&["miyu-agent/miyu-plain"]),
+        &net,
+        API,
+        &scratch_dir(&scratch),
+        "2026-10-20T03:00:00Z",
+    );
+    let entry = &got.index.packages[0];
+    assert!(entry.recommends.is_empty() && entry.author.is_none() && entry.upstream.is_none());
+    assert!(entry.installed.is_some(), "大小总是算的");
+    let json = serde_json::to_string(&got.index).expect("写得成");
+    for key in ["recommends", "author", "upstream"] {
+        assert!(!json.contains(key), "{key} 没有就不写");
+    }
+}
+
+#[test]
+fn with_several_targets_the_biggest_installed_size_is_kept_in_either_order() {
+    let scratch = Scratch::new();
+    let small = "targets = [\"linux-x86_64\", \"macos-aarch64\"]\n";
+    let big = format!("{small}summary = {{ en = \"{}\" }}\n", "x".repeat(300));
+    let mac = package(
+        scratch.path(),
+        "onebot",
+        "0.2.0",
+        small,
+        Some(Target::MacosAarch64),
+    );
+    let linux = package(
+        scratch.path(),
+        "onebot",
+        "0.2.0",
+        &big,
+        Some(Target::LinuxX86_64),
+    );
+    let (small_size, big_size) = (
+        size_on_disk(&scratch, &mac.0, &mac.1),
+        size_on_disk(&scratch, &linux.0, &linux.1),
+    );
+    assert!(big_size > small_size);
+    for files in [[mac.clone(), linux.clone()], [linux, mac]] {
+        let mut net = Net::default();
+        net.release("miyu-agent/miyu-onebot", &files);
+        let got = collect(
+            &rules(&["miyu-agent/miyu-onebot"]),
+            &net,
+            API,
+            &scratch_dir(&scratch),
+            "2026-10-20T03:00:00Z",
+        );
+        assert_eq!(got.index.packages.len(), 1, "{:?}", got.notes);
+        assert_eq!(got.index.packages[0].installed, Some(big_size));
+    }
+}

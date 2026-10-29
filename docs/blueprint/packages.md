@@ -288,6 +288,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 3. **卸**：别的装着的包依赖它的拒绝 `package_depended`，`data.by` 是依赖它的那几个，照编号（照 pacman）；`package.disable` 关出厂的内置包也走这里。
 4. **装着的缺了依赖**（手删了文件、出厂的被卸了、升级以后多依赖了一个）：扩展不拉起（核心起来时、装卸以后照新的清单拉起的那一批都不算它）；`package.list` 的 `status` 是 `depends_missing`、多一格 `missing`；`miyu check` 报 `depends_missing`（错误，说缺谁）。
 5. `package.list` 的每一项另带 `export`（写了 `[export]` 的方法名）：接入QQ 这类扩展照它找挂在自己身上的附加包，不用另外登记。
+6. **软件源索引里的四格**（施工 IN-1，设计 `49-装包照pacman.md` 第三节第 1 条）：软件源 `index.json` 的每个包多 `recommends`（清单 `[recommends]` 的编号，照写的先后）、`author`、`upstream`（清单 `[package]` 的原样）、`installed`（包文件解开以后所有普通文件的字节数之和；分系统有几份文件的取最大的那份）。收录（`miyu-index`）读清单、解包时算出；没有的不写（`recommends` 空、其余三格 `None` 都不出现在 JSON 里）。以前生成的索引没有这四格，照旧读得进来，读成空；旧的头读新索引时不认识的格子照略过。签名、`index.json` 的写法不变。
 
 ### 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节）
 

@@ -72,7 +72,10 @@ pub fn from_folder(
                     first.entry.version
                 ));
             }
-            Some(first) => first.entry.files.push(read.file),
+            Some(first) => {
+                first.entry.installed = first.entry.installed.max(read.gathered.entry.installed);
+                first.entry.files.push(read.file);
+            }
         }
     }
     let mut logos = BTreeMap::new();

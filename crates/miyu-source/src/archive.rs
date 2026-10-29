@@ -88,6 +88,8 @@ pub struct Unpacked {
     pub id: String,
     /// 解开的包文件夹。
     pub folder: PathBuf,
+    /// 解开以后所有普通文件的字节数之和（施工 IN-1，索引的 `installed`）。
+    pub bytes: u64,
 }
 
 /// 包文件的名字：`<编号>-<版本>.miyu`，只能装在几种系统上的一种一个文件，名字后面带系统（`<编号>-<版本>-<系统>.miyu`）。
@@ -363,6 +365,7 @@ fn unpack_within(
     Ok(Unpacked {
         folder: into.join(&id),
         id,
+        bytes,
     })
 }
 
