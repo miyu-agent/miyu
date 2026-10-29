@@ -21,6 +21,8 @@ use miyu_store::layers::valid;
 use miyu_store::root::DataRoot;
 
 use crate::ask::{Format, exit};
+use crate::diagnostic;
+use crate::diagnostic::Problem;
 use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
@@ -157,21 +159,21 @@ async fn run(args: Kb, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = KbPlan {
         args,
@@ -359,7 +361,7 @@ async fn read(
                     &language.kb_no_page(page, first["pages"].as_u64().unwrap_or(1)),
                 );
             } else {
-                say(err, &refusal(&error, language));
+                diagnostic::error(err, *language, &refusal(&error, language));
             }
             Err(exit::ERROR)
         }
@@ -400,7 +402,7 @@ async fn ask(
 }
 
 /// 核心拒了说的那一句：原话；挂不上的目录、挪不进回收站的接上它给的为什么。
-fn refusal(error: &Value, language: &Language) -> String {
+fn refusal(error: &Value, language: &Language) -> Problem {
     let said = error["message"].as_str().unwrap_or_default();
     match error["data"]["message"].as_str() {
         Some(why) => language.refused_because(said, why),
@@ -435,12 +437,6 @@ fn absolute(cwd: &Path, path: &Path) -> String {
         true => text.into_owned(),
         false => cwd.join(path).to_string_lossy().into_owned(),
     }
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]

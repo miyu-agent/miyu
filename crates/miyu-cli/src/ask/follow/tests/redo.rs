@@ -181,7 +181,7 @@ fn a_refused_redo_says_what_the_core_said() {
         "error": {"code": -32010, "message": "无法重做。", "data": {"reason": "not_redoable"}}});
     let Fed { step, err, .. } = feed_redo(&printing(Language::Chinese), false, &[refused]);
     assert_eq!(step, Step::Done(exit::ERROR));
-    assert!(err.contains("无法重做。"), "{err}");
+    assert!(err.contains("miyu: 无法重做\n"), "{err}");
 }
 
 #[test]

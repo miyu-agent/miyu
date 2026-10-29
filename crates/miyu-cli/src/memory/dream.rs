@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
 use super::refused;
+use crate::diagnostic;
 use crate::exit;
 use crate::language::Language;
 use crate::language::Organized;
@@ -42,7 +43,7 @@ pub(super) async fn dream(
         tokio::select! {
             message = rpc.next() => {
                 let Some(message) = message else {
-                    say(err, &language.disconnected());
+                    diagnostic::error(err, *language, &language.disconnected());
                     return Err(exit::ERROR);
                 };
                 // 推送、叫停的那一条的回应（没在整理的：正好合完了）都不用管，照原来那一条说。
@@ -50,7 +51,7 @@ pub(super) async fn dream(
                     continue;
                 }
                 if let Some(error) = message.get("error") {
-                    say(err, &refused(error, language));
+                    diagnostic::error(err, *language, &refused(error, language));
                     return Err(exit::ERROR);
                 }
                 let took_ms = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);

@@ -86,7 +86,7 @@ async fn a_failed_recap_or_no_session_says_so() {
     let recapped = recap(&home, &recapping(None, Language::Chinese)).await;
     assert_eq!(recapped.code, 1);
     assert!(
-        recapped.err.contains("还没有 miyu ask 开过的会话"),
+        recapped.err.contains("miyu: 没有可继续的 miyu ask 会话"),
         "{}",
         recapped.err
     );
@@ -94,5 +94,5 @@ async fn a_failed_recap_or_no_session_says_so() {
     let recapped = recap(&home, &recapping(None, Language::Chinese)).await;
     assert_eq!(recapped.code, 1);
     assert_eq!(recapped.out, "");
-    assert_eq!(recapped.err, "生成回顾失败。\n");
+    assert_eq!(recapped.err, "miyu: 生成回顾失败\n");
 }

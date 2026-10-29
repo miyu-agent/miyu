@@ -227,7 +227,7 @@ fn a_request_that_would_not_fit_while_paused_ends_the_turn_with_the_class() {
     let Fed { screen, step, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::ERROR));
     assert!(
-        screen.ends_with(&format!("出错了：自动压缩已暂停：{message}\n")),
+        screen.ends_with(&format!("miyu: 自动压缩已暂停：{message}\n")),
         "{screen:?}"
     );
 }

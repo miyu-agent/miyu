@@ -30,6 +30,7 @@ mod ask;
 mod call;
 mod compact;
 mod config;
+mod diagnostic;
 pub mod head;
 pub mod help;
 mod kb;

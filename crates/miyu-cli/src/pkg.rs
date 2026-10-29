@@ -31,6 +31,7 @@ use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::ask::Format;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -190,7 +191,7 @@ pub fn pkg(args: Pkg, start: impl FnOnce() -> Command) -> ExitCode {
 async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
     let cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Some(PkgCommand::Pack {
         folder,
@@ -217,17 +218,17 @@ async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = PkgPlan {
         args,
@@ -463,27 +464,21 @@ fn print(result: &Value, plan: &PkgPlan, out: &mut dyn Write) -> Result<(), u8> 
 
 /// 被拒绝时说的那一句：清单装不上的照 `data` 说哪里不对、第几行（核心的原话是给程序看的，说的是去 `data` 里看）；和装着的包
 /// 冲突的一处一行（施工 F-8 六补）；别的照核心的原话。
-fn refused(error: &Value, language: &Language) -> String {
+fn refused(error: &Value, language: &Language) -> Problem {
     let data = &error["data"];
     match (data["reason"].as_str(), data["problem"].as_str()) {
         (Some("package_invalid"), Some(problem)) => {
-            language.cannot_install(problem, data["line"].as_u64())
+            Problem::new(language.cannot_install(problem, data["line"].as_u64()))
         }
-        (Some("package_conflict"), _) => {
-            language.conflicting(data["conflicts"].as_array().map_or(&[], Vec::as_slice))
-        }
+        (Some("package_conflict"), _) => Problem::new(
+            language.conflicting(data["conflicts"].as_array().map_or(&[], Vec::as_slice)),
+        ),
         _ => language.refused(error["message"].as_str().unwrap_or_default()),
     }
 }
 
 fn package_of(result: &Value) -> &str {
     result["package"].as_str().unwrap_or_default()
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]

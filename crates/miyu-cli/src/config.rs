@@ -35,6 +35,7 @@ use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::ask::Format;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -217,17 +218,17 @@ async fn run(args: Config, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = ConfigPlan {
         command,
@@ -354,11 +355,11 @@ impl Talk<'_> {
                 Some(error) => Ok(Reply::Refused(error.clone())),
             },
             Ok(None) => {
-                say(self.err, &language.disconnected());
+                diagnostic::error(self.err, language, &language.disconnected());
                 Err(exit::ERROR)
             }
             Err(error) => {
-                say(self.err, &error.to_string());
+                diagnostic::error(self.err, language, &Problem::new(error.to_string()));
                 Err(exit::ERROR)
             }
         }
@@ -456,12 +457,6 @@ async fn path(talk: &mut Talk<'_>, project: bool, out: &mut dyn Write) -> u8 {
         }
     }
     exit::OK
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 /// 人敲的键照核心的写法规整（施工 8-3 补，`cli/config.md`「怎么走」第 8 条）：照 `miyu_config::key` 拆开再拼回去，多余的

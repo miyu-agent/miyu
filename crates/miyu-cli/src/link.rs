@@ -5,10 +5,10 @@ use std::io::Write;
 
 use serde_json::{Value, json};
 
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::Language;
 use crate::rpc::Rpc;
-use crate::shown::say;
 
 /// 握手：协议的版本、是哪个头、界面语言（核心的拒绝照它说）、有没有人能当场回答、本机令牌。交回核心的回应：里面有这台
 /// 机器的沙盒能不能用（施工 5-4 下）。
@@ -68,7 +68,7 @@ pub(crate) async fn latest_oneshot(
     match result["sessions"][0]["session"].as_str() {
         Some(session) => Ok(session.to_string()),
         None => {
-            say(err, &language.no_oneshot());
+            diagnostic::error(err, *language, &language.no_oneshot());
             Err(exit::ERROR)
         }
     }
@@ -104,12 +104,12 @@ pub(crate) async fn request_saying(
     params: Value,
     language: &Language,
     err: &mut dyn Write,
-    refused: impl FnOnce(&Value) -> String,
+    refused: impl FnOnce(&Value) -> Problem,
 ) -> Result<Value, u8> {
     match answer(rpc, method, params, language, err).await? {
         Ok(result) => Ok(result),
         Err(error) => {
-            say(err, &refused(&error));
+            diagnostic::error(err, *language, &refused(&error));
             Err(exit::ERROR)
         }
     }
@@ -134,11 +134,11 @@ pub(crate) async fn answer(
             Some(error) => Err(error.clone()),
         }),
         Ok(None) => {
-            say(err, &language.disconnected());
+            diagnostic::error(err, *language, &language.disconnected());
             Err(exit::ERROR)
         }
         Err(error) => {
-            say(err, &error.to_string());
+            diagnostic::error(err, *language, &Problem::new(error.to_string()));
             Err(exit::ERROR)
         }
     }

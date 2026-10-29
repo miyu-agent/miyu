@@ -292,8 +292,8 @@ fn core() -> std::process::Command {
     core
 }
 
-/// 参数不对：帮助、版本照常印在标准输出上，退出码 0；别的在标准错误上说一句（不认识的子命令照 22 第二节的话说），
-/// 退出码 2。
+/// 参数不对：帮助、版本照常印在标准输出上，退出码 0；别的在标准错误上照设计 47 说（`miyu: ` 打头，能照着改的另起
+/// `hint:`），退出码 2。
 #[expect(
     clippy::let_underscore_must_use,
     reason = "帮助印不出来，也没有别处可说了"
@@ -305,7 +305,9 @@ fn refused(error: clap::Error, language: Language) -> ExitCode {
             ExitCode::SUCCESS
         }
         _ => {
-            eprintln!("{}", misuse(&error, language));
+            for line in misuse(&error, language) {
+                eprintln!("{line}");
+            }
             ExitCode::from(USAGE)
         }
     }

@@ -74,7 +74,7 @@ async fn the_last_ask_is_compacted_with_what_was_asked() {
     // 刚压过，没有新内容：照核心的话说，退出码 1。
     let again = home.compact(&compacting(None, None)).await;
     assert_eq!(again.code, 1);
-    assert_eq!(again.err, "没有可压缩的内容。\n");
+    assert_eq!(again.err, "miyu: 没有可压缩的内容\n");
 }
 
 #[tokio::test]
@@ -83,7 +83,7 @@ async fn without_a_session_it_says_so() {
     let compacted = home.compact(&compacting(None, None)).await;
     assert_eq!(compacted.code, 1);
     assert!(
-        compacted.err.contains("还没有 miyu ask 开过的会话"),
+        compacted.err.contains("miyu: 没有可继续的 miyu ask 会话"),
         "{}",
         compacted.err
     );

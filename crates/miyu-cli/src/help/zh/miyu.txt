@@ -1,49 +1,47 @@
 用法：miyu <命令> [选项]
 
 命令：
-  ask <要说的话>        说一句话，打印 AI 的回答
-  undo、rewind          撤掉最后一轮
-  restore               发下一句之前，恢复最近一次撤销
-  redo [话]             撤掉最后一轮，重新做；写了话的换成这句
-  compact [要求]        把上下文压缩成摘要，可以附上要求
-  recap                 一句话回顾：在做什么、做完了什么、卡在哪
-  rename <标题>         给会话起名
-  memory [命令]         看 AI 记了你什么，搜、记、改、忘、清空
-  kb [命令]             管知识库：列、搜、读、建、加、删、挂目录
-  schedule [命令]       定时任务：列、建、删、停、续
-  pkg [命令]            看装了哪些软件包，装、卸
-  mcp login <服务>      登录要浏览器授权的网址 MCP 服务
-  mcp logout <服务>     登出网址 MCP 服务
-  config <命令>         看配置、改配置、信任项目配置
-  check [文件]          查手写的文件有没有写错：配置、密钥、人格、预设、清单
-  provider <命令>       存、列、删供应商的 key：login、list、logout
-  setup                 接上第一个模型：选一家、贴 key，试通了写进配置
+  ask <消息>            发送消息并打印回复
+  undo                  撤销上一轮（别名：rewind）
+  restore               恢复上一次撤销的内容
+  redo [消息]           重做上一轮，可换成新消息
+  compact [要点]        压缩上下文
+  recap                 总结当前会话
+  rename <标题>         重命名会话
+  memory <命令>         管理记忆
+  kb <命令>             管理知识库
+  schedule <命令>       管理定时任务
+  pkg <命令>            管理软件包
+  mcp <命令>            登录或登出 MCP 服务
+  config <命令>         查看和修改设置
+  check [文件]          检查配置文件
+  provider <命令>       管理供应商密钥
+  setup                 配置模型供应商
   web                   打开网页界面
-  service <命令>        让核心开机、登录就起：enable、disable、status
-  sandbox setup|remove  装好、撤掉沙盒用户（Windows，要管理员权限）
+  service <命令>        管理后台服务
+  sandbox <命令>        配置或移除沙盒用户（Windows）
 
 ask 的选项：
-  -c, --continue          接着上一次 miyu ask 开的会话说
-  -s, --session <编号>    接着这个会话说
-      --format text|json  text 给人看（默认），json 给脚本
-      --add-dir <目录>    多放行一个目录，AI 能读能写，可以写好几次
-      --file <文件>       附上一个文件，图片、PDF、文本都行，可以写好几次
-      --timeout <时长>    最多等多久，到了就不等了：30s、10m、1h
-      --from <名字>       别的 harness 用：写上它的名字，例如 claude-code
-      --model <模型>      用这个模型说；接着的会话以后都用它
-      --no-memory         不召回、也不记；只管新开的会话
+  -c, --continue          继续上一次 miyu ask 的会话
+  -s, --session <编号>    继续指定的会话
+      --format text|json  输出格式（默认 text）
+      --add-dir <目录>    允许读写另一个目录，可重复
+      --file <文件>       附加文件（图片、PDF、文本），可重复
+      --timeout <时长>    最长等待时间，例如 30s、10m、1h
+      --from <名字>       调用方 harness 的名字，例如 claude-code
+      --model <模型>      指定模型，继续的会话沿用
+      --no-memory         不召回也不保存记忆（仅新会话）
 
 undo、restore、redo、compact、recap、rename 的选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
 
-每次 miyu ask 都新开一个会话；-c、undo、restore、redo、compact、
-recap、rename 管的是上一次开的那个。
+每次 miyu ask 都新建会话；-c 和上面这些命令默认作用于最近一次的会话。
 
 例子：
   miyu ask "这个项目是做什么的"
-  miyu ask -c "那测试怎么跑"
+  miyu ask -c "测试怎么跑"
   miyu undo
-  miyu compact 重点保留数据库设计的讨论
+  miyu compact 保留数据库设计的讨论
 
-  -h, --help     印帮助
-  -V, --version  印版本
+  -h, --help     显示帮助
+  -V, --version  显示版本

@@ -51,7 +51,7 @@ async fn a_core_without_a_model_says_so() {
     assert_eq!(output.status.code(), Some(5), "{output:?}");
     assert_eq!(
         without_the_sandbox_line(&String::from_utf8_lossy(&output.stderr)),
-        "没有可用的模型：还没配。运行 miyu setup。\n"
+        "miyu: 未配置模型\n提示：运行 'miyu setup' 添加模型\n"
     );
     // 施工 8-11：说话之前先看有没有模型，不在终端里的不造会话（会话目录里一个都没有）。
     assert_eq!(home.root.sessions().expect("读得了"), Vec::new());

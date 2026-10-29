@@ -149,7 +149,7 @@ async fn update_fetches_the_index_and_says_how_many() {
     let install = pkg(&home, &["-S", "embed", "--yes"]).await;
     assert_eq!(
         (install.0, install.2.as_str()),
-        (1, "软件包不存在。\n"),
+        (1, "miyu: 软件包不存在\n"),
         "-S <编号> 从软件源装，索引里没有的照核心的原话"
     );
     let stale = pkg(&home, &["-Sy"]).await;
@@ -170,7 +170,7 @@ async fn update_with_no_source_and_no_index_is_refused() {
     let home = home(&server.base_url, trusted);
     let refused = pkg(&home, &["update"]).await;
     assert_eq!(refused.0, 1, "{refused:?}");
-    assert_eq!(refused.2, "软件源连不上。\n");
+    assert_eq!(refused.2, "miyu: 软件源连不上\n");
 }
 
 #[tokio::test]

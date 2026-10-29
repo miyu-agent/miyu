@@ -1,23 +1,33 @@
-//! 参数写错时说的那一句（施工 4-11，`docs/blueprint/cli/main.md`「参数写错时」）：照 clap 报的错分几种，每种
-//! 一句，跟着界面语言，不带 clap 的用法和提示。主程序把它印在标准错误上，退出码 2。
+//! 参数写错时说的话（施工 4-11，`docs/blueprint/cli/main.md`「参数写错时」，设计 47）：照 clap 报的错分几种，每种
+//! `miyu: ` 打头一行、能照着改的另起 `hint:`，跟着界面语言，不带 clap 的用法和提示。主程序把它印在标准错误上，退出码 2。
 
 use clap::error::{ContextKind, ContextValue, ErrorKind};
 
 use miyu_store::human::clean;
 
+use crate::diagnostic::{Level, Problem};
 use crate::help::{self, Page, page_named};
 use crate::language::Language;
 
-/// clap 报的错说成一句话。帮助、版本不是错，主程序自己印，不走这里。
-pub fn misuse(error: &clap::Error, language: Language) -> String {
+/// clap 报的错说成几行（设计 47）：`miyu: ` 打头的一行，能照着改的写在 `hint:` 里。帮助、版本不是错，主程序自己印，不走这里。
+pub fn misuse(error: &clap::Error, language: Language) -> Vec<String> {
+    problem(error, language).lines(language, Level::Error)
+}
+
+fn problem(error: &clap::Error, language: Language) -> Problem {
     let chinese = language == Language::Chinese;
     let arg = clean(&first(error, ContextKind::InvalidArg));
+    let value = clean(&first(error, ContextKind::InvalidValue));
     match error.kind() {
         ErrorKind::InvalidSubcommand => {
             let name = clean(&first(error, ContextKind::InvalidSubcommand));
             match (nested(error), chinese) {
-                (Some(command), true) => format!("{command} 没有 {name} 这个子命令"),
-                (Some(command), false) => format!("{command} has no {name} command"),
+                (Some(command), true) => Problem::new(format!("'{command}' 没有子命令 '{name}'"))
+                    .hint(format!("运行 '{command} --help' 查看可用命令")),
+                (Some(command), false) => {
+                    Problem::new(format!("unknown command '{name}' for '{command}'"))
+                        .hint(format!("see '{command} --help'"))
+                }
                 (None, _) => language.no_such_command(&name),
             }
         }
@@ -26,14 +36,16 @@ pub fn misuse(error: &clap::Error, language: Language) -> String {
             let command = clean(&first(error, ContextKind::InvalidSubcommand));
             let valid = all(error, ContextKind::ValidSubcommand);
             match chinese {
-                true => format!("{command} 后面要写：{}", listed(&valid, "、", " 或 ")),
-                false => format!("{command} needs one of: {}", listed(&valid, ", ", " or ")),
+                true => Problem::new(format!("'{command}' 需要子命令"))
+                    .hint(format!("可用的有：{}", listed(&valid, "、", " 或 "))),
+                false => Problem::new(format!("'{command}' requires a subcommand"))
+                    .hint(format!("one of: {}", listed(&valid, ", ", " or "))),
             }
         }
         // 成对的选项少了一个（`--owner-home`、`--owner-sid`，只给提升过的自己用）：照它的名字说。
         ErrorKind::MissingRequiredArgument if arg.starts_with('-') => match chinese {
-            true => format!("少了 {}", option(&arg)),
-            false => format!("Missing {}", option(&arg)),
+            true => Problem::new(format!("缺少选项 '{}'", option(&arg))),
+            false => Problem::new(format!("missing option '{}'", option(&arg))),
         },
         // 嵌着的子命令少了必写的（施工 K-7 修，`miyu kb read notes`）：照这个命令的帮助页说它怎么写，同 `ask` 那一句。帮助页上
         // 找不到的说到它是哪个命令为止。
@@ -48,68 +60,66 @@ pub fn misuse(error: &clap::Error, language: Language) -> String {
                     format!("miyu {} {synopsis}", words[1])
                 });
             match chinese {
-                true => format!("少了参数：{written}"),
-                false => format!("Missing arguments: {written}"),
+                true => Problem::new("缺少参数").hint(format!("用法：{written}")),
+                false => Problem::new("missing arguments").hint(format!("usage: {written}")),
             }
         }
         // 最外面那一层必写的只有 `ask` 的要说的话：测试查着，多了一个，这里要跟着改。
         ErrorKind::MissingRequiredArgument => match chinese {
-            true => "少了要说的话：miyu ask \"…\"".to_string(),
-            false => "Missing what to say: miyu ask \"…\"".to_string(),
+            true => Problem::new("缺少消息").hint("用法：miyu ask \"<消息>\""),
+            false => Problem::new("missing message").hint("usage: miyu ask \"<message>\""),
         },
         ErrorKind::UnknownArgument => match (chinese, arg.starts_with('-')) {
-            (true, true) => format!("没有 {arg} 这个选项"),
-            (true, false) => format!("多了参数：{arg}"),
-            (false, true) => format!("No such option: {arg}"),
-            (false, false) => format!("Unexpected argument: {arg}"),
+            (true, true) => Problem::new(format!("无法识别的选项 '{arg}'")),
+            (true, false) => Problem::new(format!("多余的参数 '{arg}'")),
+            (false, true) => Problem::new(format!("unrecognized option '{arg}'")),
+            (false, false) => Problem::new(format!("unexpected argument '{arg}'")),
         },
         ErrorKind::ArgumentConflict => {
             let prior = clean(&first(error, ContextKind::PriorArg));
             let (one, other) = (option(&arg), option(&prior));
             match chinese {
-                true => format!("{one} 和 {other} 只能写一个"),
-                false => format!("{one} and {other} can't be used together"),
+                true => Problem::new(format!("'{one}' 不能和 '{other}' 同时使用")),
+                false => Problem::new(format!("'{one}' cannot be used with '{other}'")),
             }
         }
-        ErrorKind::InvalidValue if first(error, ContextKind::InvalidValue).is_empty() => {
-            match chinese {
-                true => format!("{} 后面少了值", option(&arg)),
-                false => format!("{} needs a value", option(&arg)),
-            }
-        }
+        ErrorKind::InvalidValue if value.is_empty() => match chinese {
+            true => Problem::new(format!("选项 '{}' 需要一个值", option(&arg))),
+            false => Problem::new(format!("option '{}' requires a value", option(&arg))),
+        },
         // `--add-dir` 后面不是一个已经有的目录（施工 5-10 上）。
-        ErrorKind::ValueValidation if option(&arg) == "--add-dir" => {
-            let value = clean(&first(error, ContextKind::InvalidValue));
-            match chinese {
-                true => format!("--add-dir 后面要写一个已经有的目录：{value}"),
-                false => format!("--add-dir needs an existing directory: {value}"),
-            }
-        }
+        ErrorKind::ValueValidation if option(&arg) == "--add-dir" => match chinese {
+            true => Problem::new(format!("'--add-dir' 的值无效：'{value}' 不是已有的目录")),
+            false => Problem::new(format!(
+                "invalid value for '--add-dir': '{value}' is not an existing directory"
+            )),
+        },
         // `--timeout` 后面不是一个时长（施工 7-9）。
-        ErrorKind::ValueValidation if option(&arg) == "--timeout" => {
-            let value = clean(&first(error, ContextKind::InvalidValue));
-            match chinese {
-                true => format!("--timeout 后面要写一个时长，例如 30s、10m、1h：{value}"),
-                false => format!("--timeout needs a duration such as 30s, 10m or 1h: {value}"),
-            }
-        }
+        ErrorKind::ValueValidation if option(&arg) == "--timeout" => match chinese {
+            true => Problem::new(format!("'--timeout' 的值无效：'{value}'"))
+                .hint("写成 30s、10m、1h 这样的时长"),
+            false => Problem::new(format!("invalid value for '--timeout': '{value}'"))
+                .hint("use a duration such as 30s, 10m or 1h"),
+        },
         // `--from` 后面是空的、只有空白（施工 7-10）。
         ErrorKind::ValueValidation if option(&arg) == "--from" => match chinese {
-            true => "--from 后面要写别的 harness 的名字".to_string(),
-            false => "--from needs the name of the other harness".to_string(),
+            true => Problem::new("选项 '--from' 需要另一个 harness 的名字"),
+            false => Problem::new("option '--from' requires the name of the other harness"),
         },
         ErrorKind::InvalidValue if !all(error, ContextKind::ValidValue).is_empty() => {
             let valid = all(error, ContextKind::ValidValue);
             match chinese {
-                true => format!("{} 只能是 {}", option(&arg), listed(&valid, "、", " 或 ")),
-                false => format!("{} must be {}", option(&arg), listed(&valid, ", ", " or ")),
+                true => Problem::new(format!("'{}' 的值无效：'{value}'", option(&arg)))
+                    .hint(format!("可选的值：{}", listed(&valid, "、", " 或 "))),
+                false => Problem::new(format!("invalid value '{value}' for '{}'", option(&arg)))
+                    .hint(format!("possible values: {}", listed(&valid, ", ", " or "))),
             }
         }
         _ => {
             let said = clean(clap_said(error).trim_start_matches("error: "));
             match chinese {
-                true => format!("参数不对：{said}"),
-                false => format!("Bad arguments: {said}"),
+                true => Problem::new(format!("参数错误：{said}")),
+                false => Problem::new(said),
             }
         }
     }

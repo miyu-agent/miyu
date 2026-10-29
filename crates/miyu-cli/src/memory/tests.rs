@@ -5,6 +5,7 @@ use serde_json::json;
 use miyu_kernel::time::UtcOffset;
 
 use super::shown::{cards, listed};
+use crate::diagnostic::Problem;
 use crate::language::{Language, Organized};
 
 fn memory(id: &str, at: &str, text: &str, retired: Option<&str>) -> serde_json::Value {
@@ -157,7 +158,7 @@ fn a_failed_dream_says_why() {
     });
     assert_eq!(
         super::refused(&failed, &Language::Chinese),
-        "整理记忆失败：model request failed: HTTP 401"
+        Problem::new("整理记忆失败：model request failed: HTTP 401")
     );
     let failed = json!({
         "message": "Memory organization failed.",
@@ -165,9 +166,12 @@ fn a_failed_dream_says_why() {
     });
     assert_eq!(
         super::refused(&failed, &Language::English),
-        "Memory organization failed: reply was not JSON"
+        Problem::new("memory organization failed: reply was not JSON")
     );
     let plain =
         json!({"message": "记忆不可用。", "data": {"reason": "memory_unavailable", "why": "off"}});
-    assert_eq!(super::refused(&plain, &Language::Chinese), "记忆不可用。");
+    assert_eq!(
+        super::refused(&plain, &Language::Chinese),
+        Problem::new("记忆不可用")
+    );
 }

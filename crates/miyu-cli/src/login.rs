@@ -28,6 +28,7 @@ use miyu_store::root::DataRoot;
 
 use crate::ask::Format;
 use crate::config::Console;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -153,17 +154,17 @@ async fn run(KeyArgs { command }: KeyArgs, start: impl FnOnce() -> Command) -> u
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let no_color = std::env::var_os("NO_COLOR");
     let plan = LoginPlan {
@@ -263,11 +264,16 @@ impl Keys<'_> {
                 )),
             }),
             Ok(None) => {
-                say(self.err, &self.plan.language.disconnected());
+                let language = self.plan.language;
+                diagnostic::error(self.err, language, &language.disconnected());
                 Err(exit::ERROR)
             }
             Err(error) => {
-                say(self.err, &error.to_string());
+                diagnostic::error(
+                    self.err,
+                    self.plan.language,
+                    &Problem::new(error.to_string()),
+                );
                 Err(exit::ERROR)
             }
         }
@@ -421,10 +427,4 @@ impl Keys<'_> {
             }
         }
     }
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }

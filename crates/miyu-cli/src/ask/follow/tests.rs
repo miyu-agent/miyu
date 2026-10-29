@@ -305,7 +305,7 @@ fn no_model_is_5_and_other_errors_are_1() {
     );
     assert_eq!(step, Step::Done(exit::NO_MODEL));
     assert_eq!(out, "");
-    assert_eq!(err, "没有可用的模型：还没配。运行 miyu setup。\n");
+    assert_eq!(err, "miyu: 未配置模型\n提示：运行 'miyu setup' 添加模型\n");
     // 没发出去的认证失败不再当没有模型（施工 8-6 以前没有 key 是这样报的）。
     let Fed { step, .. } = feed(&plan, false, &failing(Value::Null, "auth", "denied"));
     assert_eq!(step, Step::Done(exit::ERROR));
@@ -315,7 +315,7 @@ fn no_model_is_5_and_other_errors_are_1() {
         &failing(json!("deepseek"), "auth", "HTTP 401: bad key"),
     );
     assert_eq!(step, Step::Done(exit::ERROR));
-    assert_eq!(err, "出错了：认证失败：HTTP 401: bad key\n");
+    assert_eq!(err, "miyu: 认证失败：HTTP 401: bad key\n");
     let plan = super::super::Plan {
         format: Format::Json,
         ..plan
@@ -348,7 +348,7 @@ fn cooling_is_5_too() {
     assert_eq!(step, Step::Done(exit::NO_MODEL));
     assert_eq!(
         err,
-        "出错了：模型冷却中：all candidates cooling: a/m key 1 rate_limited until 2026-10-01T08:12:30.000Z\n"
+        "miyu: 模型冷却中：all candidates cooling: a/m key 1 rate_limited until 2026-10-01T08:12:30.000Z\n"
     );
 }
 
@@ -380,10 +380,10 @@ fn how_a_turn_ends_decides_the_exit_code() {
     let plan = plan(Format::Text, Language::Chinese);
     let Fed { step, err, .. } = feed(&plan, false, &a_turn("interrupted"));
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
-    assert!(err.ends_with("打断了\n"), "{err}");
+    assert!(err.ends_with("miyu: 已中断\n"), "{err}");
     let Fed { step, err, .. } = feed(&plan, false, &a_turn("restarted"));
     assert_eq!(step, Step::Done(exit::ERROR));
-    assert!(err.ends_with("这一轮没走完：restarted\n"), "{err}");
+    assert!(err.ends_with("miyu: 本轮未完成：restarted\n"), "{err}");
 }
 
 #[test]
@@ -398,7 +398,7 @@ fn thinking_cut_short_still_ends_its_line() {
     let Fed { step, screen, .. } = feed(&plan, false, &messages);
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
     assert_eq!(
-        screen, "想一\n\n打断了\n",
+        screen, "想一\n\nmiyu: 已中断\n",
         "只想了没答：思考那一行收了尾，这一段后面空一行"
     );
 }
@@ -409,7 +409,7 @@ fn a_refused_message_says_why_and_a_lagging_one_resubscribes() {
     let refused = json!({"jsonrpc": "2.0", "id": "ask-4", "error": {"code": -32010, "message": "会话不存在。"}});
     let Fed { step, err, .. } = feed(&plan, false, &[refused]);
     assert_eq!(step, Step::Done(exit::ERROR));
-    assert_eq!(err, "会话不存在。\n");
+    assert_eq!(err, "miyu: 会话不存在\n");
     let resync = json!({"jsonrpc": "2.0", "method": "resync", "params": {"session": "s1", "stream": "events"}});
     let Fed { step, .. } = feed(&plan, false, &[resync]);
     assert_eq!(step, Step::Resubscribe);

@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use miyu_store::packages::Layer;
 
 use super::*;
+use crate::diagnostic::Level;
 
 /// 一份界面包的清单：子命令跑 `program`，认 `opens` 那几页。
 fn ui(id: &str, program: &str, opens: &[&str]) -> Found {
@@ -103,11 +104,21 @@ fn a_missing_head_lists_the_installed_ones() {
         "只有清单、程序不在的不算装了"
     );
     assert_eq!(
-        unavailable("nope", None, &installed(&found, &main), Language::Chinese),
-        "没装 nope 这个界面（ui.head 指着它）。装上它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面：web、gui。"
+        unavailable("nope", None, &installed(&found, &main), Language::Chinese)
+            .lines(Language::Chinese, Level::Error),
+        [
+            "miyu: 界面 'nope' 没有安装",
+            "提示：用 'miyu pkg install nope' 安装",
+            "提示：或者换成已安装的界面（web、gui）：miyu config set ui.head <编号>",
+        ]
     );
-    assert!(
-        unavailable("nope", None, &[], Language::English).contains("no interface is installed yet")
+    assert_eq!(
+        unavailable("tui", None, &[], Language::English).lines(Language::English, Level::Error),
+        [
+            "miyu: no user interface installed",
+            "hint: install one with 'miyu pkg install tui'",
+            "hint: or chat without one: miyu ask \"<message>\"",
+        ]
     );
     std::fs::remove_dir_all(&dir).expect("删得掉");
 }
@@ -116,12 +127,22 @@ fn a_missing_head_lists_the_installed_ones() {
 fn a_head_whose_program_is_missing_says_so() {
     let installed = ["web".to_string()];
     assert_eq!(
-        unavailable("tui", Some("miyu-tui"), &installed, Language::Chinese),
-        "没找到 tui 这个界面的程序 miyu-tui（ui.head 指着它）。重装它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面：web。"
+        unavailable("tui", Some("miyu-tui"), &installed, Language::Chinese)
+            .lines(Language::Chinese, Level::Error),
+        [
+            "miyu: 界面 'tui' 的程序 'miyu-tui' 找不到",
+            "提示：用 'miyu pkg install tui' 重新安装",
+            "提示：或者换成已安装的界面（web）：miyu config set ui.head <编号>",
+        ]
     );
     assert_eq!(
-        unavailable("tui", Some("miyu-tui"), &installed, Language::English),
-        "The tui interface's program miyu-tui was not found (ui.head names it). Reinstall its package, or switch with miyu config set ui.head <id> to one that is installed: web."
+        unavailable("tui", Some("miyu-tui"), &installed, Language::English)
+            .lines(Language::English, Level::Error),
+        [
+            "miyu: program 'miyu-tui' of user interface 'tui' not found",
+            "hint: reinstall it with 'miyu pkg install tui'",
+            "hint: or switch to an installed one (web): miyu config set ui.head <id>",
+        ]
     );
 }
 

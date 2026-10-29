@@ -6,6 +6,7 @@ use serde_json::json;
 
 use super::{Follow, Format, Screen, Step, steps};
 use crate::ask::exit;
+use crate::diagnostic;
 use crate::shown::{GRAY, Line, RESET, say, write};
 
 /// 为什么不等了（施工 7-9）。
@@ -100,7 +101,7 @@ impl Follow<'_> {
         };
         self.close(note.is_some(), screen);
         if let Some(note) = note {
-            say(screen.err, &note);
+            diagnostic::error(screen.err, self.plan.language, &note);
         }
         code
     }

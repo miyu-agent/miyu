@@ -93,13 +93,13 @@ async fn nothing_to_redo_says_what_the_core_said() {
     // 一个会话都没有。
     let redone = home.redo(&redoing(None, None)).await;
     assert_eq!(redone.code, 1);
-    assert_eq!(redone.err, "还没有 miyu ask 开过的会话\n");
+    assert_eq!(redone.err, "miyu: 没有可继续的 miyu ask 会话\n");
     // 指定的会话一轮都没有：照核心的话说。
     let session = home.create_plain().await;
     let redone = home.redo(&redoing(Some(&session), None)).await;
     assert_eq!(redone.code, 1);
     assert_eq!(redone.out, "");
-    assert_eq!(redone.err, "无法重做。\n");
+    assert_eq!(redone.err, "miyu: 无法重做\n");
 }
 
 #[tokio::test]

@@ -224,7 +224,7 @@ fn a_failed_compaction_says_why_and_exits_one() {
     assert_eq!(step, Step::Done(exit::ERROR));
     assert_eq!(
         err,
-        "· 压缩失败：摘要提取失败\n出错了：摘要提取失败：no summary in the reply\n"
+        "· 压缩失败：摘要提取失败\nmiyu: 摘要提取失败：no summary in the reply\n"
     );
 }
 
@@ -243,7 +243,7 @@ fn without_a_model_it_exits_five() {
     );
     assert_eq!(step, Step::Done(exit::NO_MODEL));
     assert!(
-        err.ends_with("没有可用的模型：还没配。运行 miyu setup。\n"),
+        err.ends_with("miyu: 未配置模型\n提示：运行 'miyu setup' 添加模型\n"),
         "{err}"
     );
 }
@@ -260,7 +260,7 @@ fn an_interrupted_compaction_exits_three() {
         &a_compaction(vec![cut], "interrupted"),
     );
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
-    assert!(err.ends_with("\n打断了\n"), "{err:?}");
+    assert!(err.ends_with("\nmiyu: 已中断\n"), "{err:?}");
 }
 
 #[test]
@@ -270,7 +270,7 @@ fn a_refusal_is_said_as_the_core_says_it() {
         "message": "没有可压缩的内容。"}});
     let Fed { step, err, .. } = feed(Language::Chinese, false, &[refused]);
     assert_eq!(step, Step::Done(exit::ERROR));
-    assert_eq!(err, "没有可压缩的内容。\n");
+    assert_eq!(err, "miyu: 没有可压缩的内容\n");
 }
 
 #[test]

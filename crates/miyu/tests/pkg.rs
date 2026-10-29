@@ -70,10 +70,14 @@ async fn pkg_lists_installs_and_removes_through_a_real_core() {
     // 施工 BS-1 上中起没有必需的包；卸没有的照旧拒。
     let unknown = run(&root, &cwd, zh, &["pkg", "remove", "nope", "--yes"]).await;
     assert_eq!(unknown.status.code(), Some(1));
-    assert_eq!(stderr(&unknown), "软件包不存在。\n");
+    assert_eq!(stderr(&unknown), "miyu: 软件包不存在\n");
     let bad = run(&root, &cwd, zh, &["pkg", "install", "bad/", "--yes"]).await;
     assert_eq!(bad.status.code(), Some(1));
-    assert!(stderr(&bad).starts_with("装不上："), "{}", stderr(&bad));
+    assert!(
+        stderr(&bad).starts_with("miyu: 装不上："),
+        "{}",
+        stderr(&bad)
+    );
 
     let json = run(&root, &cwd, zh, &["pkg", "--format", "json"]).await;
     let packages: Value = serde_json::from_str(&stdout(&json)).expect("是 JSON");

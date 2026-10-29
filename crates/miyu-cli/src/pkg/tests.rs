@@ -3,6 +3,7 @@
 use serde_json::json;
 
 use super::{Pkg, PkgCommand, installing, refused, shown};
+use crate::diagnostic::Problem;
 use crate::language::Language;
 
 #[test]
@@ -102,10 +103,14 @@ fn a_conflict_says_cannot_install_and_one_line_each() {
     });
     assert_eq!(
         refused(&error, &Language::Chinese),
-        "装不上：名字已经有了\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中\n斜杠命令 review 已在 kit 中\n人格 dog 已在 你的数据根 中"
+        Problem::new(
+            "装不上：名字已经有了\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中\n斜杠命令 review 已在 kit 中\n人格 dog 已在 你的数据根 中"
+        )
     );
     assert_eq!(
         refused(&error, &Language::English),
-        "Cannot install: names already in use\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc\nslash command review exists in kit\npersona dog exists in your data root"
+        Problem::new(
+            "Cannot install: names already in use\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc\nslash command review exists in kit\npersona dog exists in your data root"
+        )
     );
 }

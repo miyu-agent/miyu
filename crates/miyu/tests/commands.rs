@@ -28,7 +28,7 @@ fn an_unknown_command_is_refused_and_never_sent() {
     let said = String::from_utf8_lossy(&output.stderr);
     assert_eq!(
         said.trim_end(),
-        "没有 hello 这个子命令。想和 AI 对话，用 miyu ask \"…\""
+        "miyu: 未知命令 'hello'\n提示：运行 'miyu --help' 查看可用命令"
     );
     assert!(output.stdout.is_empty());
     assert!(!home.root.run().join("socket").exists(), "没拉起核心");
@@ -38,7 +38,7 @@ fn an_unknown_command_is_refused_and_never_sent() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(
         String::from_utf8_lossy(&output.stderr).trim_end(),
-        "There is no hello command. To talk to the AI, use miyu ask \"…\""
+        "miyu: unknown command 'hello'\nhint: see 'miyu --help'"
     );
 }
 
@@ -79,33 +79,41 @@ fn the_help_is_the_page_and_the_version_says_miyu() {
 }
 
 #[test]
-fn a_mistake_is_one_sentence_and_exit_code_2() {
+fn a_mistake_is_one_error_with_hints_and_exit_code_2() {
     let home = Home::new();
     let cases: [(&[&str], &str, &str); 6] = [
-        (&["ask"], "zh_CN.UTF-8", "少了要说的话：miyu ask \"…\""),
+        (
+            &["ask"],
+            "zh_CN.UTF-8",
+            "miyu: 缺少消息\n提示：用法：miyu ask \"<消息>\"",
+        ),
         // 嵌着的子命令少了必写的照帮助页说怎么写（施工 K-7 修）。
         (
             &["kb", "read", "notes"],
             "zh_CN.UTF-8",
-            "少了参数：miyu kb read <库> <文档>",
+            "miyu: 缺少参数\n提示：用法：miyu kb read <库> <文档>",
         ),
         (
             &["memory", "edit", "m5"],
             "C",
-            "Missing arguments: miyu memory edit <id> [<text>]",
+            "miyu: missing arguments\nhint: usage: miyu memory edit <id> [<text>]",
         ),
         (
             &["ask", "--format", "xml", "hi"],
             "C",
-            "--format must be text or json",
+            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text or json",
         ),
         // 短写的 `-s`、`-c` 就是 `--session`、`--continue`。
         (
             &["ask", "-s", "x", "-c", "hi"],
             "zh_CN.UTF-8",
-            "--session 和 --continue 只能写一个",
+            "miyu: '--session' 不能和 '--continue' 同时使用",
         ),
-        (&["undo", "-s"], "zh_CN.UTF-8", "--session 后面少了值"),
+        (
+            &["undo", "-s"],
+            "zh_CN.UTF-8",
+            "miyu: 选项 '--session' 需要一个值",
+        ),
     ];
     for (args, lang, said) in cases {
         let output = miyu(&home, lang, args);
@@ -159,23 +167,23 @@ fn elsewhere_the_sandbox_needs_no_setup() {
 }
 
 #[test]
-fn a_sandbox_mistake_is_one_sentence_and_exit_code_2() {
+fn a_sandbox_mistake_is_one_error_with_hints_and_exit_code_2() {
     let home = Home::new();
     let cases: [(&[&str], &str, &str); 3] = [
         (
             &["sandbox"],
             "zh_CN.UTF-8",
-            "miyu sandbox 后面要写：setup 或 remove",
+            "miyu: 'miyu sandbox' 需要子命令\n提示：可用的有：setup 或 remove",
         ),
         (
             &["sandbox", "frob"],
             "C",
-            "miyu sandbox has no frob command",
+            "miyu: unknown command 'frob' for 'miyu sandbox'\nhint: see 'miyu sandbox --help'",
         ),
         (
             &["sandbox", "setup", "--owner-sid", "S-1-5-21-1-2"],
             "C",
-            "Missing --owner-home",
+            "miyu: missing option '--owner-home'",
         ),
     ];
     for (args, lang, said) in cases {
@@ -240,7 +248,7 @@ fn the_program_calls_itself_miyu_whatever_its_file_is_called() {
     assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
-        "miyu sandbox needs one of: setup or remove\n"
+        "miyu: 'miyu sandbox' requires a subcommand\nhint: one of: setup or remove\n"
     );
 }
 

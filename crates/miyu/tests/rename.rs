@@ -101,7 +101,7 @@ async fn the_last_ask_or_the_given_session_is_the_one_renamed() {
         assert_eq!(renamed.status.code(), Some(1), "{flag}：{renamed:?}");
         assert_eq!(
             String::from_utf8_lossy(&renamed.stderr),
-            "会话不存在。\n",
+            "miyu: 会话不存在\n",
             "{flag}"
         );
     }

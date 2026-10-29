@@ -107,7 +107,10 @@ async fn building_a_base_from_the_shell() {
         added.err
     );
     let again = run(&home, &cwd, &["add", "notes", "cat.md", "--to", "pets"]).await;
-    assert_eq!((again.code, again.err.as_str()), (1, "这一篇已经有了。\n"));
+    assert_eq!(
+        (again.code, again.err.as_str()),
+        (1, "miyu: 这一篇已经有了\n")
+    );
     std::fs::write(cwd.join("cat.md"), "# 猫\n\n团子改名叫小橘。\n").expect("写得进");
     let replaced = run(
         &home,
@@ -149,7 +152,7 @@ async fn building_a_base_from_the_shell() {
     let unknown = run(&home, &cwd, &["read", "nope", "a.md"]).await;
     assert_eq!(
         (unknown.code, unknown.err.as_str()),
-        (1, "知识库不存在。\n")
+        (1, "miyu: 知识库不存在\n")
     );
 }
 
@@ -169,11 +172,15 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     );
     let gone = run(&home, &cwd, &["mount", "gone", "nowhere"]).await;
     assert_eq!(gone.code, 1);
-    assert!(gone.err.starts_with("这个目录挂不上："), "{}", gone.err);
+    assert!(
+        gone.err.starts_with("miyu: 这个目录挂不上："),
+        "{}",
+        gone.err
+    );
     let refused = run(&home, &cwd, &["remove", "mine", "a.md"]).await;
     assert_eq!(
         (refused.code, refused.err.as_str()),
-        (1, "挂进来的知识库是只读的。\n")
+        (1, "miyu: 挂进来的知识库是只读的\n")
     );
     let deleted = run(&home, &cwd, &["delete", "mine"]).await;
     match deleted.code {
@@ -269,7 +276,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
     let missing = run(&home, &cwd, &["read", "notes", "dog.md", "--page", "2"]).await;
     assert_eq!(
         (missing.code, missing.err.as_str()),
-        (1, "文档不存在。\n"),
+        (1, "miyu: 文档不存在\n"),
         "别的错照原话"
     );
 }
@@ -349,7 +356,7 @@ async fn a_base_from_a_package_from_the_shell() {
     let renamed = run(&home, &cwd, &["edit", "world", "--name", "新名字"]).await;
     assert_eq!(
         (renamed.code, renamed.err.as_str()),
-        (1, "随软件包来的知识库是只读的，只能开关自动想起。\n")
+        (1, "miyu: 随软件包来的知识库是只读的，只能开关自动想起\n")
     );
 }
 

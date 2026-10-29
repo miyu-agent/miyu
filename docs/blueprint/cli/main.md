@@ -10,7 +10,8 @@
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令；换上帮助页；参数不对时交给 `misuse`；拉起核心用的命令 |
 | `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,schedule,sandbox,config,provider,setup,web}.txt` | 帮助页：一种语言十五页（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
-| `crates/miyu-cli/src/misuse.rs` | 参数写错时说的那一句，不认识的子命令也在这里（施工 4-11）；少了子命令、嵌着的子命令写错、成对的选项少了一个（施工 5-8） |
+| `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；少了子命令、嵌着的子命令写错、成对的选项少了一个（施工 5-8） |
+| `crates/miyu-cli/src/diagnostic.rs` | 报错、警告、提示的写法（设计 47，施工 CL-2 上）：`miyu: ` 打头、警告多 `warning:`（「警告：」）、建议另起一行 `hint:`（「提示：」）；别处交来的原话去掉句末句号、开头大写词改小写；命令行往标准错误上报错都经它 |
 | `crates/miyu-cli/src/lib.rs` | 命令行的头对外的几样：`Ask`、`ask`、`talk`、`Format`、`Plan`、`Screen`、`Target`、`exit`，`Undo`、`undo`、`undo_on`、`Direction`、`UndoPlan`，`Compact`、`compact`（施工 6-8），`Recap`、`recap`、`recap_on`、`RecapPlan`（施工 3-8 四补），`Rename`、`rename`、`rename_on`、`RenamePlan`（施工 3-8 五补），`Memory`、`MemoryCommand`、`MemoryClear`、`memory`、`memory_on`、`MemoryPlan`（施工 R-3 再补），`Pkg`、`PkgCommand`、`PkgPlan`、`pkg`、`pkg_on`（施工 T-3），`Kb`、`KbCommand`、`KbPlan`、`kb`、`kb_on`（施工 K-7 下），`Schedule`、`ScheduleCommand`、`ScheduleAdd`、`SchedulePlan`、`schedule`、`schedule_on`、`interval`、`moment`（施工 J-3 下），`Redo`、`redo`、`redo_on`、`RedoPlan`（施工 4-7 再补），`Setup`、`setup`、`setup_on`、`SetupPlan`、`HeadEnv`、`model_ready_on`（施工 8-11），`Sandbox`、`sandbox`，`Web`、`web`、`web_on`（施工 W-9），`help`、`misuse`、`language` |
 | `crates/miyu-cli/src/language.rs` | 界面语言；这一页和 `miyu ask` 给人看的字 |
 | `crates/miyu-cli/src/language/undo.rs` | `miyu undo`、`miyu restore` 给人看的字（`cli/undo.md`） |
@@ -64,10 +65,10 @@
    3. 别的照下面走。
 1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。
 2. 解析参数，不对的：
-   1. 不认识的子命令：标准错误上说「没有 <名字> 这个子命令。想和 AI 对话，用 miyu ask "…"」，退出码 2。不连核心，不拉起，什么都不发。
+   1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。
    2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0。
-   3. 别的：标准错误上说一句（下面「参数写错时」），退出码 2。
-3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上说没装哪一个、装了的界面有哪几个、`miyu config set ui.head <编号>` 换一个（一个都没装的说先用 `miyu ask`），退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：说这个界面的程序叫什么、不在 `miyu` 旁边，后半句同上，退出码 1。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。
+   3. 别的：标准错误上报错（下面「参数写错时」），退出码 2。
+3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上报没装哪一个，提示用 `miyu pkg install <编号>` 装；装了别的界面的再提示一行换成哪几个（`miyu config set ui.head <编号>`），一个都没装的提示不用界面也能 `miyu ask`，退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：报这个界面的程序找不到，提示重新安装，后一行同上，退出码 1（设计 47，施工 CL-2 上）。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。
    - `config` 不写它的子命令（原来的 8-24）：在终端里、`ui.head` 那个界面的清单 `[ui] opens` 里有 `config` 的，同上拉起它、带 `--page config`；没有这一页的、不在终端里的，把 `config` 的帮助页印在标准输出上，退出码 2。
    - `web`：照清单找网页软件（`web-ui.md`「怎么走」第二条）。
 4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`、`pkg`、`kb`、`schedule`、`config`、`provider`、`setup`、`mcp`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/schedule.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/mcp.md`），连同拉起核心用的命令。
@@ -83,52 +84,50 @@
 用法：miyu <命令> [选项]
 
 命令：
-  ask <要说的话>        说一句话，打印 AI 的回答
-  undo、rewind          撤掉最后一轮
-  restore               发下一句之前，恢复最近一次撤销
-  redo [话]             撤掉最后一轮，重新做；写了话的换成这句
-  compact [要求]        把上下文压缩成摘要，可以附上要求
-  recap                 一句话回顾：在做什么、做完了什么、卡在哪
-  rename <标题>         给会话起名
-  memory [命令]         看 AI 记了你什么，搜、记、改、忘、清空
-  kb [命令]             管知识库：列、搜、读、建、加、删、挂目录
-  schedule [命令]       定时任务：列、建、删、停、续
-  pkg [命令]            看装了哪些软件包，装、卸
-  mcp login <服务>      登录要浏览器授权的网址 MCP 服务
-  mcp logout <服务>     登出网址 MCP 服务
-  config <命令>         看配置、改配置、信任项目配置
-  check [文件]          查手写的文件有没有写错：配置、密钥、人格、预设、清单
-  provider <命令>       存、列、删供应商的 key：login、list、logout
-  setup                 接上第一个模型：选一家、贴 key，试通了写进配置
+  ask <消息>            发送消息并打印回复
+  undo                  撤销上一轮（别名：rewind）
+  restore               恢复上一次撤销的内容
+  redo [消息]           重做上一轮，可换成新消息
+  compact [要点]        压缩上下文
+  recap                 总结当前会话
+  rename <标题>         重命名会话
+  memory <命令>         管理记忆
+  kb <命令>             管理知识库
+  schedule <命令>       管理定时任务
+  pkg <命令>            管理软件包
+  mcp <命令>            登录或登出 MCP 服务
+  config <命令>         查看和修改设置
+  check [文件]          检查配置文件
+  provider <命令>       管理供应商密钥
+  setup                 配置模型供应商
   web                   打开网页界面
-  service <命令>        让核心开机、登录就起：enable、disable、status
-  sandbox setup|remove  装好、撤掉沙盒用户（Windows，要管理员权限）
+  service <命令>        管理后台服务
+  sandbox <命令>        配置或移除沙盒用户（Windows）
 
 ask 的选项：
-  -c, --continue          接着上一次 miyu ask 开的会话说
-  -s, --session <编号>    接着这个会话说
-      --format text|json  text 给人看（默认），json 给脚本
-      --add-dir <目录>    多放行一个目录，AI 能读能写，可以写好几次
-      --file <文件>       附上一个文件，图片、PDF、文本都行，可以写好几次
-      --timeout <时长>    最多等多久，到了就不等了：30s、10m、1h
-      --from <名字>       别的 harness 用：写上它的名字，例如 claude-code
-      --model <模型>      用这个模型说；接着的会话以后都用它
-      --no-memory         不召回、也不记；只管新开的会话
+  -c, --continue          继续上一次 miyu ask 的会话
+  -s, --session <编号>    继续指定的会话
+      --format text|json  输出格式（默认 text）
+      --add-dir <目录>    允许读写另一个目录，可重复
+      --file <文件>       附加文件（图片、PDF、文本），可重复
+      --timeout <时长>    最长等待时间，例如 30s、10m、1h
+      --from <名字>       调用方 harness 的名字，例如 claude-code
+      --model <模型>      指定模型，继续的会话沿用
+      --no-memory         不召回也不保存记忆（仅新会话）
 
 undo、restore、redo、compact、recap、rename 的选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
 
-每次 miyu ask 都新开一个会话；-c、undo、restore、redo、compact、
-recap、rename 管的是上一次开的那个。
+每次 miyu ask 都新建会话；-c 和上面这些命令默认作用于最近一次的会话。
 
 例子：
   miyu ask "这个项目是做什么的"
-  miyu ask -c "那测试怎么跑"
+  miyu ask -c "测试怎么跑"
   miyu undo
-  miyu compact 重点保留数据库设计的讨论
+  miyu compact 保留数据库设计的讨论
 
-  -h, --help     印帮助
-  -V, --version  印版本
+  -h, --help     显示帮助
+  -V, --version  显示版本
 ```
 
 样本 `crates/miyu-cli/src/help/en/miyu.txt`（帮助页，英文）：
@@ -137,43 +136,42 @@ recap、rename 管的是上一次开的那个。
 Usage: miyu <command> [options]
 
 Commands:
-  ask <words>           Say something and print the AI's answer
-  undo, rewind          Undo the last turn
-  restore               Bring back what the latest undo took
-  redo [words]          Redo the last turn, or redo it with new words
-  compact [words]       Compact the context into a summary
-  recap                 Recap the session: goal, progress, blockers
-  rename <title>        Give the session a title
-  memory [command]      What the AI remembers: search, add, edit, forget, clear
-  kb [command]          Knowledge bases: list, search, read, add, remove, mount
-  schedule [command]    Schedules: list, add, remove, pause, resume
-  pkg [command]         See installed packages; install, remove
-  mcp login <server>    Log in to a URL MCP server needing a browser login
-  mcp logout <server>   Log out of a URL MCP server
-  config <command>      See and change settings, trust a project config
-  check [file]          Check config, secrets, personas, presets and packages
-  provider <command>    Provider keys: login, list, logout
-  setup                 Connect the first model: pick a provider and try it
-  web                   Open the web UI
-  service <command>     Start the core at boot or login: enable, disable, status
-  sandbox setup|remove  Set up or remove the sandbox user (Windows, needs admin)
+  ask <message>         Send a message and print the reply
+  undo                  Undo the last turn (alias: rewind)
+  restore               Restore what the last undo removed
+  redo [message]        Redo the last turn, optionally with a new message
+  compact [focus]       Compact the context
+  recap                 Summarize the session
+  rename <title>        Rename the session
+  memory <command>      Manage memories
+  kb <command>          Manage knowledge bases
+  schedule <command>    Manage scheduled jobs
+  pkg <command>         Manage packages
+  mcp <command>         Log in to or out of MCP servers
+  config <command>      View and change settings
+  check [file]          Check configuration files for errors
+  provider <command>    Manage provider keys
+  setup                 Set up a model provider
+  web                   Open the web interface
+  service <command>     Manage the background service
+  sandbox <command>     Set up or remove the sandbox user (Windows)
 
-ask options:
-  -c, --continue          Go on in the session the last miyu ask opened
-  -s, --session <id>      Go on in this session
-      --format text|json  text for people (default), json for scripts
-      --add-dir <dir>     The AI may read and write it too; repeatable
-      --file <file>       Attach a file: image, PDF, text…; repeatable
-      --timeout <time>    Stop waiting after this long: 30s, 10m, 1h
-      --from <name>       For another harness: its name, e.g. claude-code
+Options for ask:
+  -c, --continue          Continue the last miyu ask session
+  -s, --session <id>      Continue the given session
+      --format text|json  Output format (default: text)
+      --add-dir <dir>     Allow access to another directory; repeatable
+      --file <file>       Attach a file (image, PDF, text); repeatable
+      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>       Name of the calling harness, e.g. claude-code
       --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or remember; new sessions only
+      --no-memory         Don't recall or save memories (new sessions only)
 
-undo, restore, redo, compact, recap, rename options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+Options for undo, restore, redo, compact, recap and rename:
+  -s, --session <id>  Session to use (default: the last miyu ask session)
 
-Each miyu ask opens a new session; -c, undo, restore, redo, compact,
-recap and rename use the last one.
+Each miyu ask starts a new session; -c and the commands above default to
+the most recent one.
 
 Examples:
   miyu ask "what is this project"
@@ -185,24 +183,24 @@ Examples:
   -V, --version  Print version
 ```
 
-**参数写错时**：标准错误上只说一句，退出码 2。照 clap 报的错分：
+**参数写错时**：标准错误上照设计 47 报错：`miyu: ` 打头一行，能照着改的另起 `hint:`（「提示：」），退出码 2（施工 CL-2 上）。照 clap 报的错分：
 
 | clap 报的 | 中文 | 英文 |
 |---|---|---|
-| 缺了必写的：最外面那一层只有 `ask` 的要说的话是必写的 | `少了要说的话：miyu ask "…"` | `Missing what to say: miyu ask "…"` |
-| 嵌着的子命令缺了必写的（`miyu kb read notes`、`miyu memory edit m5`，施工 K-7 修：原来一律说成 `ask` 的那一句） | `少了参数：miyu <命令> <帮助页上这个子命令那一行的写法>`，例如 `少了参数：miyu kb read <库> <文档>`；帮助页上没有那一行的说到命令为止 | `Missing arguments: miyu kb read <kb> <document>` |
-| 成对的选项少了一个：只给提升过的自己用的 `--owner-home`、`--owner-sid`（`sandbox/windows.md`） | `少了 <选项>` | `Missing <选项>` |
-| 少了子命令：`miyu sandbox` 后面没写 | `<命令> 后面要写：<子命令> 或 <子命令>` | `<命令> needs one of: <子命令> or <子命令>` |
-| 嵌着的子命令写错：`miyu sandbox frob` | `<命令> 没有 <名字> 这个子命令` | `<命令> has no <名字> command` |
-| 不认识的参数，`-` 开头 | `没有 <参数> 这个选项` | `No such option: <参数>` |
-| 不认识的参数，别的 | `多了参数：<参数>` | `Unexpected argument: <参数>` |
-| 两个选项不能一起写 | `<选项> 和 <选项> 只能写一个` | `<选项> and <选项> can't be used together` |
-| 选项后面没写值 | `<选项> 后面少了值` | `<选项> needs a value` |
-| 值不认识 | `<选项> 只能是 <值> 或 <值>` | `<选项> must be <值> or <值>` |
-| `--add-dir` 后面不是一个已经有的目录（施工 5-10 上） | `--add-dir 后面要写一个已经有的目录：<值>` | `--add-dir needs an existing directory: <值>` |
-| `--timeout` 后面不是一个时长（施工 7-9，写法见 `cli/ask.md`） | `--timeout 后面要写一个时长，例如 30s、10m、1h：<值>` | `--timeout needs a duration such as 30s, 10m or 1h: <值>` |
-| `--from` 后面是空的、只有空白（施工 7-10，`cli/ask.md`） | `--from 后面要写别的 harness 的名字` | `--from needs the name of the other harness` |
-| 别的 | `参数不对：<clap 的原话>` | `Bad arguments: <clap 的原话>` |
+| 缺了必写的：最外面那一层只有 `ask` 的要说的话是必写的 | `miyu: 缺少消息`，`提示：用法：miyu ask "<消息>"` | `miyu: missing message`，`hint: usage: miyu ask "<message>"` |
+| 嵌着的子命令缺了必写的（`miyu kb read notes`、`miyu memory edit m5`，施工 K-7 修） | `miyu: 缺少参数`，`提示：用法：miyu <命令> <帮助页上这个子命令那一行的写法>`，例如 `miyu kb read <库> <文档>`；帮助页上没有那一行的说到命令为止 | `miyu: missing arguments`，`hint: usage: miyu kb read <kb> <document>` |
+| 成对的选项少了一个：只给提升过的自己用的 `--owner-home`、`--owner-sid`（`sandbox/windows.md`） | `miyu: 缺少选项 '<选项>'` | `miyu: missing option '<选项>'` |
+| 少了子命令：`miyu sandbox` 后面没写 | `miyu: '<命令>' 需要子命令`，`提示：可用的有：<子命令> 或 <子命令>` | `miyu: '<命令>' requires a subcommand`，`hint: one of: <子命令> or <子命令>` |
+| 嵌着的子命令写错：`miyu sandbox frob` | `miyu: '<命令>' 没有子命令 '<名字>'`，`提示：运行 '<命令> --help' 查看可用命令` | `miyu: unknown command '<名字>' for '<命令>'`，`hint: see '<命令> --help'` |
+| 不认识的参数，`-` 开头 | `miyu: 无法识别的选项 '<参数>'` | `miyu: unrecognized option '<参数>'` |
+| 不认识的参数，别的 | `miyu: 多余的参数 '<参数>'` | `miyu: unexpected argument '<参数>'` |
+| 两个选项不能一起写 | `miyu: '<选项>' 不能和 '<选项>' 同时使用` | `miyu: '<选项>' cannot be used with '<选项>'` |
+| 选项后面没写值 | `miyu: 选项 '<选项>' 需要一个值` | `miyu: option '<选项>' requires a value` |
+| 值不认识 | `miyu: '<选项>' 的值无效：'<值>'`，`提示：可选的值：<值> 或 <值>` | `miyu: invalid value '<值>' for '<选项>'`，`hint: possible values: <值> or <值>` |
+| `--add-dir` 后面不是一个已经有的目录（施工 5-10 上） | `miyu: '--add-dir' 的值无效：'<值>' 不是已有的目录` | `miyu: invalid value for '--add-dir': '<值>' is not an existing directory` |
+| `--timeout` 后面不是一个时长（施工 7-9，写法见 `cli/ask.md`） | `miyu: '--timeout' 的值无效：'<值>'`，`提示：写成 30s、10m、1h 这样的时长` | `miyu: invalid value for '--timeout': '<值>'`，`hint: use a duration such as 30s, 10m or 1h` |
+| `--from` 后面是空的、只有空白（施工 7-10，`cli/ask.md`） | `miyu: 选项 '--from' 需要另一个 harness 的名字` | `miyu: option '--from' requires the name of the other harness` |
+| 别的 | `miyu: 参数错误：<clap 的原话>` | `miyu: <clap 的原话>` |
 
 - `<参数>` 照敲的原样；`<选项>` 照 clap 报的，是长的写法，去掉后面的值名（`--session <SESSION>` 写成 `--session`）。
 - 少了子命令时，`<命令>` 是 clap 报的那一层的全名（`miyu sandbox`），`<子命令>` 是它报的能写的几个，不列 `help`（`sandbox` 关掉了 `help` 子命令）。
@@ -232,11 +230,13 @@ Examples:
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 不认识的子命令 | 没有 <名字> 这个子命令。想和 AI 对话，用 miyu ask "…" | There is no <name> command. To talk to the AI, use miyu ask "…" |
-| 只敲了 `miyu` | 终端界面还没做好。想和 AI 对话，用 miyu ask "…" | The terminal interface is not ready yet. To talk to the AI, use miyu ask "…" |
+| 不认识的子命令 | `miyu: 未知命令 '<名字>'`，`提示：运行 'miyu --help' 查看可用命令` | `miyu: unknown command '<name>'`，`hint: see 'miyu --help'` |
+| 没配模型 | `miyu: 未配置模型`，`提示：运行 'miyu setup' 添加模型` | `miyu: no model configured`，`hint: run 'miyu setup' to add one` |
+| 出错了（模型、核心） | `miyu: <哪一类>：<原话>` | `miyu: <kind>: <message>` |
+| 核心拒绝了 | `miyu: <核心的原话，去掉句号>` | `miyu: <core's words, without the full stop>` |
 
-- 引号是半角的 `"`，中间是省略号 `…`。
-- 帮助页、参数写错时的那一句，见上面「怎么走」。
+- 写法照设计 47：程序名打头，中文、英文都不带句号，建议另起一行。
+- 帮助页、参数写错时的话，见上面「怎么走」。
 
 ### 守着它的
 

@@ -309,7 +309,10 @@ async fn ask_without_a_model_goes_through_setup_first_at_a_terminal() {
     let mut piped = Typist::piping("");
     let (ready, asked) = home.ready(&plan(Setup::default(), &[]), &mut piped).await;
     assert_eq!(ready, Err(5));
-    assert_eq!(asked.err, "没有可用的模型：还没配。运行 miyu setup。\n");
+    assert_eq!(
+        asked.err,
+        "miyu: 未配置模型\n提示：运行 'miyu setup' 添加模型\n"
+    );
     assert_eq!(home.sessions().len(), 0, "不造会话");
 
     let mut typist = Typist::at_terminal(&["3", ""], &[]);

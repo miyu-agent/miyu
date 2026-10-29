@@ -1,43 +1,42 @@
 Usage: miyu <command> [options]
 
 Commands:
-  ask <words>           Say something and print the AI's answer
-  undo, rewind          Undo the last turn
-  restore               Bring back what the latest undo took
-  redo [words]          Redo the last turn, or redo it with new words
-  compact [words]       Compact the context into a summary
-  recap                 Recap the session: goal, progress, blockers
-  rename <title>        Give the session a title
-  memory [command]      What the AI remembers: search, add, edit, forget, clear
-  kb [command]          Knowledge bases: list, search, read, add, remove, mount
-  schedule [command]    Schedules: list, add, remove, pause, resume
-  pkg [command]         See installed packages; install, remove
-  mcp login <server>    Log in to a URL MCP server needing a browser login
-  mcp logout <server>   Log out of a URL MCP server
-  config <command>      See and change settings, trust a project config
-  check [file]          Check config, secrets, personas, presets and packages
-  provider <command>    Provider keys: login, list, logout
-  setup                 Connect the first model: pick a provider and try it
-  web                   Open the web UI
-  service <command>     Start the core at boot or login: enable, disable, status
-  sandbox setup|remove  Set up or remove the sandbox user (Windows, needs admin)
+  ask <message>         Send a message and print the reply
+  undo                  Undo the last turn (alias: rewind)
+  restore               Restore what the last undo removed
+  redo [message]        Redo the last turn, optionally with a new message
+  compact [focus]       Compact the context
+  recap                 Summarize the session
+  rename <title>        Rename the session
+  memory <command>      Manage memories
+  kb <command>          Manage knowledge bases
+  schedule <command>    Manage scheduled jobs
+  pkg <command>         Manage packages
+  mcp <command>         Log in to or out of MCP servers
+  config <command>      View and change settings
+  check [file]          Check configuration files for errors
+  provider <command>    Manage provider keys
+  setup                 Set up a model provider
+  web                   Open the web interface
+  service <command>     Manage the background service
+  sandbox <command>     Set up or remove the sandbox user (Windows)
 
-ask options:
-  -c, --continue          Go on in the session the last miyu ask opened
-  -s, --session <id>      Go on in this session
-      --format text|json  text for people (default), json for scripts
-      --add-dir <dir>     The AI may read and write it too; repeatable
-      --file <file>       Attach a file: image, PDF, text…; repeatable
-      --timeout <time>    Stop waiting after this long: 30s, 10m, 1h
-      --from <name>       For another harness: its name, e.g. claude-code
+Options for ask:
+  -c, --continue          Continue the last miyu ask session
+  -s, --session <id>      Continue the given session
+      --format text|json  Output format (default: text)
+      --add-dir <dir>     Allow access to another directory; repeatable
+      --file <file>       Attach a file (image, PDF, text); repeatable
+      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>       Name of the calling harness, e.g. claude-code
       --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or remember; new sessions only
+      --no-memory         Don't recall or save memories (new sessions only)
 
-undo, restore, redo, compact, recap, rename options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+Options for undo, restore, redo, compact, recap and rename:
+  -s, --session <id>  Session to use (default: the last miyu ask session)
 
-Each miyu ask opens a new session; -c, undo, restore, redo, compact,
-recap and rename use the last one.
+Each miyu ask starts a new session; -c and the commands above default to
+the most recent one.
 
 Examples:
   miyu ask "what is this project"

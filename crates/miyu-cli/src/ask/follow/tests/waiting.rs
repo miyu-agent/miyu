@@ -328,7 +328,7 @@ fn an_interrupted_turn_ends_the_wait() {
     let (step, screen, _) = waiting(&plan, false, &messages, |_, _| None);
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
     assert!(
-        screen.ends_with("· 输入 100 · 命中缓存 40（40%）· 输出 10\n打断了\n"),
+        screen.ends_with("· 输入 100 · 命中缓存 40（40%）· 输出 10\nmiyu: 已中断\n"),
         "{screen}"
     );
 }

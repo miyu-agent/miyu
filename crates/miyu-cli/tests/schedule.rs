@@ -212,7 +212,7 @@ async fn refusals_say_what_was_wrong() {
     .await;
     assert_eq!(
         (short.code, short.err.as_str()),
-        (1, "参数错误：间隔至少 60 秒\n")
+        (1, "miyu: 参数错误：间隔至少 60 秒\n")
     );
     let past = run(
         &home,
@@ -222,7 +222,7 @@ async fn refusals_say_what_was_wrong() {
     .await;
     assert_eq!(
         (past.code, past.err.as_str()),
-        (1, "参数错误：那个时刻已经过了\n")
+        (1, "miyu: 参数错误：那个时刻已经过了\n")
     );
     let zone = run(
         &home,
@@ -232,7 +232,7 @@ async fn refusals_say_what_was_wrong() {
     .await;
     assert_eq!(
         (zone.code, zone.err.as_str()),
-        (1, "参数错误：不认识这个时区\n")
+        (1, "miyu: 参数错误：不认识这个时区\n")
     );
     let missing = run(&home, &cwd, &["rm", "t99"]).await;
     assert_eq!(missing.code, 1);

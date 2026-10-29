@@ -81,7 +81,7 @@ async fn continue_with_nothing_to_go_on_says_so() {
     let Asked { code, out, err, .. } = home.ask(&continuing).await;
     assert_eq!(code, 1);
     assert_eq!(out, "");
-    assert_eq!(err, "还没有 miyu ask 开过的会话\n");
+    assert_eq!(err, "miyu: 没有可继续的 miyu ask 会话\n");
 }
 
 #[tokio::test]
@@ -181,7 +181,7 @@ async fn without_a_model_it_is_exit_code_5() {
     let Asked { code, out, err, .. } = home.ask(&plan("在吗")).await;
     assert_eq!(code, 5, "{err}");
     assert_eq!(out, "");
-    assert_eq!(err, "没有可用的模型：还没配。运行 miyu setup。\n");
+    assert_eq!(err, "miyu: 未配置模型\n提示：运行 'miyu setup' 添加模型\n");
 }
 
 #[tokio::test]
@@ -199,7 +199,7 @@ async fn ctrl_c_once_interrupts_the_turn_and_waits_for_it() {
     };
     let (Asked { code, err, .. }, ()) = tokio::join!(asking, pressing);
     assert_eq!(code, 3, "{err}");
-    assert!(err.ends_with("打断了\n"), "{err}");
+    assert!(err.ends_with("miyu: 已中断\n"), "{err}");
     let session = home.sessions()[0].clone();
     let ended = home
         .log(&session)
@@ -232,7 +232,7 @@ async fn ctrl_c_twice_leaves_at_once() {
     let (Asked { code, err, .. }, ()) =
         within("按两下就走", async { tokio::join!(asking, pressing) }).await;
     assert_eq!(code, 3, "{err}");
-    assert!(err.ends_with("打断了\n"), "{err}");
+    assert!(err.ends_with("miyu: 已中断\n"), "{err}");
 }
 
 /// 核心握手时说沙盒用不了：最先说一句原因和怎么修，只说一次（施工 5-4 下）。

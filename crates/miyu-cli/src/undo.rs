@@ -19,11 +19,12 @@ use miyu_ipc::{Connection, connect_or_start};
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
+use crate::diagnostic;
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
-use crate::shown::{self, say, write};
+use crate::shown::{self, write};
 
 /// `miyu undo`、`miyu restore` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
 #[derive(Debug, Clone, Args)]
@@ -77,17 +78,17 @@ async fn run(args: Undo, direction: Direction, start: impl FnOnce() -> Command) 
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let mut out = io::stdout();
     let plan = UndoPlan {
@@ -139,12 +140,6 @@ pub async fn undo_on(
         }
         Err(code) => code,
     }
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]

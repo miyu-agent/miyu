@@ -26,6 +26,7 @@ use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::config::Console;
+use crate::diagnostic;
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -127,17 +128,17 @@ async fn run(args: Setup, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     setup_on(connection, &token, &plan, &mut console, &mut io::stderr()).await
 }
@@ -188,7 +189,7 @@ pub async fn model_ready_on(
         return Ok(());
     }
     if !console.terminal() {
-        say(err, &language.no_model());
+        diagnostic::error(err, language, &language.no_model());
         return Err(exit::NO_MODEL);
     }
     say(err, language.setup_first());
@@ -210,10 +211,4 @@ fn early(plan: &SetupPlan, console: &dyn Console, err: &mut dyn Write) -> Option
         return Some(MISUSE);
     }
     None
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }

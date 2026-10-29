@@ -82,7 +82,7 @@ async fn the_last_ask_or_the_given_session_is_the_one_redone() {
     );
     assert_eq!(
         lines.last(),
-        Some(&"没有可用的模型：还没配。运行 miyu setup。"),
+        Some(&"提示：运行 'miyu setup' 添加模型"),
         "{said}"
     );
     // `-s`、`--session` 重做的是写的那个：写一个不在的，照核心说的。
@@ -92,7 +92,7 @@ async fn the_last_ask_or_the_given_session_is_the_one_redone() {
         assert_eq!(redone.status.code(), Some(1), "{flag}：{redone:?}");
         assert_eq!(
             String::from_utf8_lossy(&redone.stderr),
-            "会话不存在。\n",
+            "miyu: 会话不存在\n",
             "{flag}"
         );
     }

@@ -7,7 +7,7 @@
 mod tests;
 
 use std::ffi::OsString;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -20,6 +20,7 @@ use miyu_store::packages::{Found, Launch, Packages};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
+use crate::diagnostic::{self, Problem};
 use crate::language::{self, Language};
 use crate::link;
 use crate::packages;
@@ -42,8 +43,10 @@ pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
     {
         Ok(runtime) => runtime,
         Err(error) => {
-            say(&error.to_string());
-            return Opened::Ran(1);
+            return Opened::Ran(diagnostic::failed(
+                language::current(),
+                &Problem::new(error.to_string()),
+            ));
         }
     };
     let env = Env::current();
@@ -51,9 +54,10 @@ pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
     drop(runtime);
     let (head, language) = match asked {
         Ok(asked) => asked,
-        Err(reason) => {
-            say(&reason);
-            return Opened::Ran(1);
+        // 握手被拒：核心的原话已经印过了。
+        Err(None) => return Opened::Ran(1),
+        Err(Some(problem)) => {
+            return Opened::Ran(diagnostic::failed(language::current(), &problem));
         }
     };
     let found = match (DataRoot::locate(&env), ResourceRoot::locate(&env)) {
@@ -69,47 +73,50 @@ pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
         }
         Plan::NoPage => Opened::NoPage,
         Plan::Missing => {
-            say(&unavailable(
-                &head,
-                None,
-                &installed(&found, &main),
+            diagnostic::error(
+                &mut io::stderr(),
                 language,
-            ));
+                &unavailable(&head, None, &installed(&found, &main), language),
+            );
             Opened::Ran(1)
         }
         Plan::NoProgram(program) => {
-            say(&unavailable(
-                &head,
-                Some(&program),
-                &installed(&found, &main),
+            diagnostic::error(
+                &mut io::stderr(),
                 language,
-            ));
+                &unavailable(&head, Some(&program), &installed(&found, &main), language),
+            );
             Opened::Ran(1)
         }
     }
 }
 
-/// 连上核心，问 `ui.head`；交回它和这个连接说的语言。连不上、被拒、核心没答的交回原因。
-async fn head(env: &Env, start: impl FnOnce() -> Command) -> Result<(String, Language), String> {
-    let root = DataRoot::locate(env).map_err(|error| error.to_string())?;
-    root.prepare().map_err(|error| error.to_string())?;
+/// 连上核心，问 `ui.head`；交回它和这个连接说的语言。连不上、被拒、核心没答的交回原因；握手被拒的是空的（核心的原话
+/// 已经印过了）。
+async fn head(
+    env: &Env,
+    start: impl FnOnce() -> Command,
+) -> Result<(String, Language), Option<Problem>> {
+    let failed = |error: &dyn std::fmt::Display| Some(Problem::new(error.to_string()));
+    let root = DataRoot::locate(env).map_err(|error| failed(&error))?;
+    root.prepare().map_err(|error| failed(&error))?;
     let (connection, token) = connect_or_start(&root, start)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| failed(&error))?;
     let mut rpc = Rpc::new(connection, "head");
     let asked = language::current();
     let hello = link::hello(&mut rpc, &token, &asked, false, &mut io::stderr())
         .await
-        .map_err(|_| String::new())?;
+        .map_err(|_| None)?;
     let language = link::spoken(&hello, asked);
     let reply = rpc
         .call("config.get", json!({"keys": ["ui.head"]}))
         .await
-        .map_err(|error| error.to_string())?
-        .ok_or_else(|| language.disconnected())?;
+        .map_err(|error| failed(&error))?
+        .ok_or_else(|| Some(language.disconnected()))?;
     let head = reply["result"]["items"]["ui.head"]["value"]
         .as_str()
-        .ok_or_else(|| reply.to_string())?;
+        .ok_or_else(|| Some(Problem::new(reply.to_string())))?;
     Ok((head.to_string(), language))
 }
 
@@ -178,52 +185,43 @@ fn installed(found: &[Found], main: &Path) -> Vec<String> {
         .collect()
 }
 
-/// 打不开 `head`：为什么（没有这个界面；有清单、程序 `program` 没找到），怎么办，装了的有哪几个。
+/// 打不开 `head`（设计 47）：没有这个界面（`program` 是空的）、有清单程序没找到；装了的有哪几个。
 fn unavailable(
     head: &str,
     program: Option<&str>,
     installed: &[String],
     language: Language,
-) -> String {
-    let (why, fix) = match (language, program) {
-        (Language::Chinese, None) => (
-            format!("没装 {head} 这个界面（ui.head 指着它）。"),
-            "装上它的软件包",
-        ),
-        (Language::Chinese, Some(program)) => (
-            format!("没找到 {head} 这个界面的程序 {program}（ui.head 指着它）。"),
-            "重装它的软件包",
-        ),
-        (Language::English, None) => (
-            format!("The {head} interface is not installed (ui.head names it). "),
-            "Install its package",
-        ),
-        (Language::English, Some(program)) => (
-            format!("The {head} interface's program {program} was not found (ui.head names it). "),
-            "Reinstall its package",
-        ),
+) -> Problem {
+    let chinese = language == Language::Chinese;
+    let problem = match (program, installed.is_empty(), chinese) {
+        (Some(program), _, true) => {
+            Problem::new(format!("界面 '{head}' 的程序 '{program}' 找不到"))
+                .hint(format!("用 'miyu pkg install {head}' 重新安装"))
+        }
+        (Some(program), _, false) => Problem::new(format!(
+            "program '{program}' of user interface '{head}' not found"
+        ))
+        .hint(format!("reinstall it with 'miyu pkg install {head}'")),
+        (None, true, true) => {
+            Problem::new("没有安装界面").hint(format!("用 'miyu pkg install {head}' 安装"))
+        }
+        (None, true, false) => Problem::new("no user interface installed")
+            .hint(format!("install one with 'miyu pkg install {head}'")),
+        (None, false, true) => Problem::new(format!("界面 '{head}' 没有安装"))
+            .hint(format!("用 'miyu pkg install {head}' 安装")),
+        (None, false, false) => Problem::new(format!("user interface '{head}' is not installed"))
+            .hint(format!("install it with 'miyu pkg install {head}'")),
     };
-    let next = match (language, installed.is_empty()) {
-        (Language::Chinese, true) => format!(
-            "{fix}，或者 miyu config set ui.head <编号> 换成装了的界面；现在一个界面都没装，可以先用 miyu ask \"…\" 和 AI 对话。"
-        ),
-        (Language::Chinese, false) => format!(
-            "{fix}，或者 miyu config set ui.head <编号> 换成装了的界面：{}。",
+    match (installed.is_empty(), chinese) {
+        (true, true) => problem.hint("不用界面也可以：miyu ask \"<消息>\""),
+        (true, false) => problem.hint("or chat without one: miyu ask \"<message>\""),
+        (false, true) => problem.hint(format!(
+            "或者换成已安装的界面（{}）：miyu config set ui.head <编号>",
             installed.join("、")
-        ),
-        (Language::English, true) => format!(
-            "{fix}, or switch with miyu config set ui.head <id>; no interface is installed yet, so talk to the AI with miyu ask \"…\" for now."
-        ),
-        (Language::English, false) => format!(
-            "{fix}, or switch with miyu config set ui.head <id> to one that is installed: {}.",
+        )),
+        (false, false) => problem.hint(format!(
+            "or switch to an installed one ({}): miyu config set ui.head <id>",
             installed.join(", ")
-        ),
-    };
-    format!("{why}{next}")
-}
-
-fn say(text: &str) {
-    if !text.is_empty() && writeln!(io::stderr(), "{text}").is_err() {
-        // 标准错误关了：没有别处可说。
+        )),
     }
 }

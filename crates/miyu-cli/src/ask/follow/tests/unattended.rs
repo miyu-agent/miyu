@@ -78,7 +78,7 @@ fn an_interrupted_turn_keeps_its_code_and_still_says_it_first() {
     let Fed { step, err, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
     assert!(
-        err.ends_with("· 1 步没做：要你确认，miyu ask 里确认不了\n打断了\n"),
+        err.ends_with("· 1 步没做：要你确认，miyu ask 里确认不了\nmiyu: 已中断\n"),
         "{err}"
     );
 }

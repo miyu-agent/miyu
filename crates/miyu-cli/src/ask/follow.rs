@@ -30,7 +30,8 @@ use serde_json::{Value, json};
 use super::steps::{self, Drawn, Steps};
 use super::usage::Sum;
 use super::{Format, Plan, Screen, exit};
-use crate::shown::{GRAY, Line, RESET, say, write};
+use crate::diagnostic;
+use crate::shown::{GRAY, Line, RESET, write};
 use crate::undo::{Direction, UndoPlan, redo_lines};
 
 pub(crate) use ending::Leaving;
@@ -201,7 +202,11 @@ impl<'p> Follow<'p> {
             self.replied = true;
             if let Some(error) = message.get("error") {
                 let reason = error["message"].as_str().unwrap_or_default();
-                say(screen.err, &self.plan.language.refused(reason));
+                diagnostic::error(
+                    screen.err,
+                    self.plan.language,
+                    &self.plan.language.refused(reason),
+                );
                 return Step::Done(exit::ERROR);
             }
             if let Some(held) = self.redo.take() {

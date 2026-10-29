@@ -46,6 +46,7 @@ use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
 use crate::config::Terminal;
+use crate::diagnostic;
 use crate::language::{self, Language};
 use crate::setup::{HeadEnv, Setup, SetupPlan, model_ready_on};
 use crate::shown;
@@ -241,17 +242,17 @@ async fn run(args: Ask, start: impl FnOnce() -> Command, language: Language) -> 
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (mut connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = plan(args, &env, language);
     if plan.model.is_none() {
@@ -273,7 +274,7 @@ async fn run(args: Ask, start: impl FnOnce() -> Command, language: Language) -> 
         }
         connection = match miyu_ipc::connect(&root).await {
             Ok((connection, _)) => connection,
-            Err(error) => return failed(&error.to_string()),
+            Err(error) => return diagnostic::fail(error.to_string()),
         };
     }
     let presses = presses();
@@ -350,12 +351,6 @@ pub(crate) fn presses() -> mpsc::Receiver<()> {
         }
     });
     presses
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    eprintln!("{reason}");
-    exit::ERROR
 }
 
 #[cfg(test)]

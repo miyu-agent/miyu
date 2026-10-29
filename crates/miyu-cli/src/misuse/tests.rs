@@ -17,12 +17,12 @@ fn miyu() -> Command {
         .subcommand(Kb::augment_args(Command::new("kb")))
 }
 
-/// 敲 `miyu <args>`：clap 报的错说成的那一句。
+/// 敲 `miyu <args>`：clap 报的错说成的那几行，连成一段。
 fn said(args: &[&str], language: Language) -> String {
     let error = miyu()
         .try_get_matches_from(std::iter::once("miyu").chain(args.iter().copied()))
         .expect_err("这样敲是错的");
-    misuse(&error, language)
+    misuse(&error, language).join("\n")
 }
 
 #[test]
@@ -30,48 +30,48 @@ fn each_kind_of_mistake_has_one_sentence() {
     let cases: [(&[&str], &str, &str); 9] = [
         (
             &["ask"],
-            "少了要说的话：miyu ask \"…\"",
-            "Missing what to say: miyu ask \"…\"",
+            "miyu: 缺少消息\n提示：用法：miyu ask \"<消息>\"",
+            "miyu: missing message\nhint: usage: miyu ask \"<message>\"",
         ),
         (
             &["ask", "--bogus", "hi"],
-            "没有 --bogus 这个选项",
-            "No such option: --bogus",
+            "miyu: 无法识别的选项 '--bogus'",
+            "miyu: unrecognized option '--bogus'",
         ),
         (
             &["ask", "-x", "hi"],
-            "没有 -x 这个选项",
-            "No such option: -x",
+            "miyu: 无法识别的选项 '-x'",
+            "miyu: unrecognized option '-x'",
         ),
         (
             &["--bogus"],
-            "没有 --bogus 这个选项",
-            "No such option: --bogus",
+            "miyu: 无法识别的选项 '--bogus'",
+            "miyu: unrecognized option '--bogus'",
         ),
         (
             &["undo", "extra"],
-            "多了参数：extra",
-            "Unexpected argument: extra",
+            "miyu: 多余的参数 'extra'",
+            "miyu: unexpected argument 'extra'",
         ),
         (
             &["ask", "-s", "x", "-c", "hi"],
-            "--session 和 --continue 只能写一个",
-            "--session and --continue can't be used together",
+            "miyu: '--session' 不能和 '--continue' 同时使用",
+            "miyu: '--session' cannot be used with '--continue'",
         ),
         (
             &["undo", "--session"],
-            "--session 后面少了值",
-            "--session needs a value",
+            "miyu: 选项 '--session' 需要一个值",
+            "miyu: option '--session' requires a value",
         ),
         (
             &["ask", "--format"],
-            "--format 后面少了值",
-            "--format needs a value",
+            "miyu: 选项 '--format' 需要一个值",
+            "miyu: option '--format' requires a value",
         ),
         (
             &["ask", "--format", "xml", "hi"],
-            "--format 只能是 text 或 json",
-            "--format must be text or json",
+            "miyu: '--format' 的值无效：'xml'\n提示：可选的值：text 或 json",
+            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text or json",
         ),
     ];
     for (args, chinese, english) in cases {
@@ -81,7 +81,7 @@ fn each_kind_of_mistake_has_one_sentence() {
     // 不认识的子命令照 22 第二节的那一句。
     assert_eq!(
         said(&["hello"], Language::Chinese),
-        "没有 hello 这个子命令。想和 AI 对话，用 miyu ask \"…\""
+        "miyu: 未知命令 'hello'\n提示：运行 'miyu --help' 查看可用命令"
     );
 }
 
@@ -89,11 +89,11 @@ fn each_kind_of_mistake_has_one_sentence() {
 fn anything_else_says_what_clap_said_on_its_first_line() {
     assert_eq!(
         said(&["ask", "--continue=yes", "hi"], Language::Chinese),
-        "参数不对：unexpected value 'yes' for '--continue' found; no more were expected"
+        "miyu: 参数错误：unexpected value 'yes' for '--continue' found; no more were expected"
     );
     assert_eq!(
         said(&["ask", "--continue=yes", "hi"], Language::English),
-        "Bad arguments: unexpected value 'yes' for '--continue' found; no more were expected"
+        "miyu: unexpected value 'yes' for '--continue' found; no more were expected"
     );
 }
 
@@ -101,11 +101,11 @@ fn anything_else_says_what_clap_said_on_its_first_line() {
 fn control_characters_typed_in_are_replaced() {
     assert_eq!(
         said(&["ask", "--bo\x1b[2Jgus", "hi"], Language::Chinese),
-        "没有 --bo\u{FFFD}[2Jgus 这个选项"
+        "miyu: 无法识别的选项 '--bo\u{FFFD}[2Jgus'"
     );
     assert_eq!(
         said(&["undo", "a\x07b"], Language::English),
-        "Unexpected argument: a\u{FFFD}b"
+        "miyu: unexpected argument 'a\u{FFFD}b'"
     );
 }
 
@@ -141,23 +141,23 @@ fn nested_commands_have_their_own_sentences() {
     let cases: [(&[&str], &str, &str); 4] = [
         (
             &["sandbox"],
-            "miyu sandbox 后面要写：setup 或 remove",
-            "miyu sandbox needs one of: setup or remove",
+            "miyu: 'miyu sandbox' 需要子命令\n提示：可用的有：setup 或 remove",
+            "miyu: 'miyu sandbox' requires a subcommand\nhint: one of: setup or remove",
         ),
         (
             &["sandbox", "frob"],
-            "miyu sandbox 没有 frob 这个子命令",
-            "miyu sandbox has no frob command",
+            "miyu: 'miyu sandbox' 没有子命令 'frob'\n提示：运行 'miyu sandbox --help' 查看可用命令",
+            "miyu: unknown command 'frob' for 'miyu sandbox'\nhint: see 'miyu sandbox --help'",
         ),
         (
             &["sandbox", "setup", "--owner-home", "/x"],
-            "少了 --owner-sid",
-            "Missing --owner-sid",
+            "miyu: 缺少选项 '--owner-sid'",
+            "miyu: missing option '--owner-sid'",
         ),
         (
             &["sandbox", "remove", "extra"],
-            "多了参数：extra",
-            "Unexpected argument: extra",
+            "miyu: 多余的参数 'extra'",
+            "miyu: unexpected argument 'extra'",
         ),
     ];
     for (args, chinese, english) in cases {
@@ -167,7 +167,7 @@ fn nested_commands_have_their_own_sentences() {
     // 最外面那一层写错的，照旧那一句。
     assert_eq!(
         said(&["sandboxx"], Language::English),
-        "There is no sandboxx command. To talk to the AI, use miyu ask \"…\""
+        "miyu: unknown command 'sandboxx'\nhint: see 'miyu --help'"
     );
 }
 
@@ -177,11 +177,11 @@ fn an_added_dir_that_is_not_there_has_its_sentence() {
     let args = ["ask", "--add-dir", "no-such-dir-for-miyu-cli-tests", "hi"];
     assert_eq!(
         said(&args, Language::Chinese),
-        "--add-dir 后面要写一个已经有的目录：no-such-dir-for-miyu-cli-tests"
+        "miyu: '--add-dir' 的值无效：'no-such-dir-for-miyu-cli-tests' 不是已有的目录"
     );
     assert_eq!(
         said(&args, Language::English),
-        "--add-dir needs an existing directory: no-such-dir-for-miyu-cli-tests"
+        "miyu: invalid value for '--add-dir': 'no-such-dir-for-miyu-cli-tests' is not an existing directory"
     );
 }
 
@@ -191,11 +191,11 @@ fn a_timeout_that_is_not_a_duration_has_its_sentence() {
     let args = ["ask", "--timeout", "5min", "hi"];
     assert_eq!(
         said(&args, Language::Chinese),
-        "--timeout 后面要写一个时长，例如 30s、10m、1h：5min"
+        "miyu: '--timeout' 的值无效：'5min'\n提示：写成 30s、10m、1h 这样的时长"
     );
     assert_eq!(
         said(&args, Language::English),
-        "--timeout needs a duration such as 30s, 10m or 1h: 5min"
+        "miyu: invalid value for '--timeout': '5min'\nhint: use a duration such as 30s, 10m or 1h"
     );
 }
 
@@ -206,16 +206,16 @@ fn a_blank_from_has_its_sentence() {
         let args = ["ask", "--from", value, "hi"];
         assert_eq!(
             said(&args, Language::Chinese),
-            "--from 后面要写别的 harness 的名字"
+            "miyu: 选项 '--from' 需要另一个 harness 的名字"
         );
         assert_eq!(
             said(&args, Language::English),
-            "--from needs the name of the other harness"
+            "miyu: option '--from' requires the name of the other harness"
         );
     }
     assert_eq!(
         said(&["ask", "hi", "--from"], Language::Chinese),
-        "--from 后面少了值"
+        "miyu: 选项 '--from' 需要一个值"
     );
 }
 
@@ -226,18 +226,18 @@ fn a_missing_word_of_a_nested_command_shows_how_it_is_written() {
     let cases: [(&[&str], &str, &str); 3] = [
         (
             &["kb", "read", "notes"],
-            "少了参数：miyu kb read <库> <文档>",
-            "Missing arguments: miyu kb read <kb> <document>",
+            "miyu: 缺少参数\n提示：用法：miyu kb read <库> <文档>",
+            "miyu: missing arguments\nhint: usage: miyu kb read <kb> <document>",
         ),
         (
             &["memory", "forget"],
-            "少了参数：miyu memory forget <编号>",
-            "Missing arguments: miyu memory forget <id>",
+            "miyu: 缺少参数\n提示：用法：miyu memory forget <编号>",
+            "miyu: missing arguments\nhint: usage: miyu memory forget <id>",
         ),
         (
             &["kb", "search"],
-            "少了参数：miyu kb search <词>",
-            "Missing arguments: miyu kb search <words>",
+            "miyu: 缺少参数\n提示：用法：miyu kb search <词>",
+            "miyu: missing arguments\nhint: usage: miyu kb search <words>",
         ),
     ];
     for (args, chinese, english) in cases {

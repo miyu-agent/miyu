@@ -195,16 +195,19 @@ async fn list_add_search_edit_and_forget() {
 
     let again = run(&home, &["edit", "m1", "再改一次"]).await;
     assert_eq!(again.code, 1);
-    assert_eq!(again.err, "记忆已失效。\n", "照核心的原话");
+    assert_eq!(again.err, "miyu: 记忆已失效\n", "照核心的原话");
     let long = "长".repeat(121);
     let too_long = run(&home, &["add", &long]).await;
     assert_eq!(too_long.code, 1);
     assert_eq!(
-        too_long.err, "太长了：这一条 121 个字，一条最多 120 个字。\n",
+        too_long.err, "miyu: 太长了：这一条 121 个字，一条最多 120 个字\n",
         "照 data 说清楚，不说「在 data 里」"
     );
     let unknown = run(&home, &["forget", "m99"]).await;
-    assert_eq!((unknown.code, unknown.err.as_str()), (1, "记忆不存在。\n"));
+    assert_eq!(
+        (unknown.code, unknown.err.as_str()),
+        (1, "miyu: 记忆不存在\n")
+    );
 }
 
 #[tokio::test]
@@ -213,7 +216,7 @@ async fn clearing_one_session_or_everything() {
     let none = run(&home, &["clear", "session"]).await;
     assert_eq!(none.code, 1);
     assert_eq!(
-        none.err, "还没有 miyu ask 开过的会话\n",
+        none.err, "miyu: 没有可继续的 miyu ask 会话\n",
         "不写会话、又没有 miyu ask 开过的"
     );
 

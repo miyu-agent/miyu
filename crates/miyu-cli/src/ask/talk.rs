@@ -9,10 +9,10 @@ use miyu_ipc::Connection;
 
 use super::follow::{Follow, Leaving, Step};
 use super::{Plan, Screen, Target, exit};
+use crate::diagnostic;
 use crate::language::Language;
 use crate::link;
 use crate::rpc::Rpc;
-use crate::shown::say;
 
 /// 握手、找会话、订阅、发，跟着那一轮边收边打，交回退出码。`presses` 是一次次的 Ctrl+C：第一次打断这一轮
 /// （排着的退回），等它收尾；第二次不等了。她派了子代理的，等它们都报回来、被叫醒的几轮也结束（施工 7-9）：等的时候按
@@ -81,7 +81,11 @@ pub async fn talk(
     let sent = match rpc.send("session.send", send).await {
         Ok(sent) => sent,
         Err(error) => {
-            say(screen.err, &error.to_string());
+            diagnostic::error(
+                screen.err,
+                plan.language,
+                &diagnostic::Problem::new(error.to_string()),
+            );
             return exit::ERROR;
         }
     };
@@ -147,7 +151,7 @@ pub(crate) async fn follow_turn(
         tokio::select! {
             message = rpc.next() => {
                 let Some(message) = message else {
-                    say(screen.err, &language.disconnected());
+                    diagnostic::error(screen.err, **language, &language.disconnected());
                     return exit::ERROR;
                 };
                 match follow.take(&message, screen) {
@@ -155,7 +159,7 @@ pub(crate) async fn follow_turn(
                     Step::Done(code) => return code,
                     Step::Resubscribe => {
                         if rpc.send("subscribe", (*subscribe).clone()).await.is_err() {
-                            say(screen.err, &language.disconnected());
+                            diagnostic::error(screen.err, **language, &language.disconnected());
                             return exit::ERROR;
                         }
                     }
@@ -167,12 +171,12 @@ pub(crate) async fn follow_turn(
                     return follow.leave(Leaving::Pressed, screen);
                 }
                 if interrupting {
-                    say(screen.err, &language.interrupted());
+                    diagnostic::error(screen.err, **language, &language.interrupted());
                     return exit::INTERRUPTED;
                 }
                 interrupting = true;
                 if rpc.send("session.interrupt", interrupt.clone()).await.is_err() {
-                    say(screen.err, &language.disconnected());
+                    diagnostic::error(screen.err, **language, &language.disconnected());
                     return exit::ERROR;
                 }
             }
@@ -183,7 +187,7 @@ pub(crate) async fn follow_turn(
                     && follow.interrupts()
                     && rpc.send("session.interrupt", interrupt.clone()).await.is_err()
                 {
-                    say(screen.err, &language.disconnected());
+                    diagnostic::error(screen.err, **language, &language.disconnected());
                     return exit::ERROR;
                 }
                 return follow.leave(Leaving::TimedOut, screen);

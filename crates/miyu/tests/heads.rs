@@ -191,7 +191,7 @@ async fn a_missing_head_names_the_installed_ones() {
     assert_eq!(
         said(&plain).trim_end(),
         format!(
-            "没装 nope 这个界面（ui.head 指着它）。装上它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面：{installed}。"
+            "miyu: 界面 'nope' 没有安装\n提示：用 'miyu pkg install nope' 安装\n提示：或者换成已安装的界面（{installed}）：miyu config set ui.head <编号>"
         )
     );
     assert_eq!(head.seen(), None);
@@ -206,9 +206,7 @@ async fn without_the_terminal_package_the_default_head_is_not_installed() {
     let plain = miyu(&home, &[]);
     assert_eq!(plain.status.code(), Some(1), "{}", said(&plain));
     assert!(
-        said(&plain).starts_with(
-            "没装 tui 这个界面（ui.head 指着它）。装上它的软件包，或者 miyu config set ui.head <编号> 换成装了的界面"
-        ),
+        said(&plain).starts_with("miyu: 没有安装界面\n提示：用 'miyu pkg install tui' 安装"),
         "{}",
         said(&plain)
     );

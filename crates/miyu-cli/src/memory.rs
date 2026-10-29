@@ -20,6 +20,7 @@ use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::ask::Format;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -149,17 +150,17 @@ async fn run(args: Memory, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = MemoryPlan {
         args,
@@ -325,7 +326,7 @@ fn print_cards(result: &Value, plan: &MemoryPlan, out: &mut dyn Write) -> Result
 
 /// 被拒绝时说的那一句：太长的照 `data` 说这一条几个字、一条最多几个（核心的原话是给程序看的，说的是去 `data` 里看）；核心
 /// 给了为什么的（`data.message`：整理记忆没成，施工 R-7 修，验收手册待定 10）原话后面接上它；别的照核心的原话。
-fn refused(error: &Value, language: &Language) -> String {
+fn refused(error: &Value, language: &Language) -> Problem {
     let data = &error["data"];
     let said = error["message"].as_str().unwrap_or_default();
     match (
@@ -334,7 +335,9 @@ fn refused(error: &Value, language: &Language) -> String {
         data["limit"].as_u64(),
         data["message"].as_str(),
     ) {
-        (Some("memory_too_long"), Some(chars), Some(limit), _) => language.too_long(chars, limit),
+        (Some("memory_too_long"), Some(chars), Some(limit), _) => {
+            Problem::new(language.too_long(chars, limit))
+        }
         (_, _, _, Some(why)) => language.refused_because(said, why),
         _ => language.refused(said),
     }
@@ -361,12 +364,6 @@ fn merge(params: &mut Value, extra: Value) {
 
 fn id_of(result: &Value) -> &str {
     result["id"].as_str().unwrap_or_default()
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]

@@ -19,6 +19,7 @@ use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
+use crate::diagnostic;
 use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
@@ -77,14 +78,14 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let (connection, token) = match connect_or_start(&root, start).await {
         Ok(connected) => connected,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     let mut rpc = Rpc::new(connection, "mcp");
     let err = &mut io::stderr();
@@ -230,12 +231,6 @@ fn opener(url: &str) -> (&'static str, Vec<String>) {
     } else {
         ("xdg-open", vec![url.to_string()])
     }
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]

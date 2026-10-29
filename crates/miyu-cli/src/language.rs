@@ -3,6 +3,7 @@
 //! 语言的那一步挪进资源文件（`00-设计理念.md` 第六节）。
 
 use crate::ask::usage_line;
+use crate::diagnostic::Problem;
 
 mod agents;
 mod config;
@@ -143,42 +144,43 @@ impl Language {
         }
     }
 
-    /// 没有这个子命令。
-    pub fn no_such_command(&self, name: &str) -> String {
+    /// 没有这个子命令（设计 47）。
+    pub(crate) fn no_such_command(&self, name: &str) -> Problem {
         match self {
-            Language::Chinese => format!("没有 {name} 这个子命令。想和 AI 对话，用 miyu ask \"…\""),
+            Language::Chinese => {
+                Problem::new(format!("未知命令 '{name}'")).hint("运行 'miyu --help' 查看可用命令")
+            }
             Language::English => {
-                format!("There is no {name} command. To talk to the AI, use miyu ask \"…\"")
+                Problem::new(format!("unknown command '{name}'")).hint("see 'miyu --help'")
             }
         }
     }
 
     /// 没有可用的模型（施工 8-6；施工 8-11 起指向 `miyu setup`，`models.md`「给人看的字」）。
-    pub fn no_model(&self) -> String {
+    pub(crate) fn no_model(&self) -> Problem {
         match self {
-            Language::Chinese => "没有可用的模型：还没配。运行 miyu setup。".to_string(),
+            Language::Chinese => Problem::new("未配置模型").hint("运行 'miyu setup' 添加模型"),
             Language::English => {
-                "No model is available: none is set up. Run miyu setup.".to_string()
+                Problem::new("no model configured").hint("run 'miyu setup' to add one")
             }
         }
     }
 
     /// `--continue` 找不到可以接着说的会话。
-    pub fn no_oneshot(&self) -> String {
+    pub(crate) fn no_oneshot(&self) -> Problem {
         match self {
-            Language::Chinese => "还没有 miyu ask 开过的会话".to_string(),
-            Language::English => "No session opened by miyu ask yet".to_string(),
+            Language::Chinese => Problem::new("没有可继续的 miyu ask 会话"),
+            Language::English => Problem::new("no session from 'miyu ask' to continue"),
         }
     }
 
     /// 出错了：哪一类，原话。
-    pub fn failed(&self, class: &str, message: &str) -> String {
+    pub(crate) fn failed(&self, class: &str, message: &str) -> Problem {
         let (kind, said) = (self.class(class), message.trim());
         match (self, said.is_empty()) {
-            (Language::Chinese, true) => format!("出错了：{kind}"),
-            (Language::Chinese, false) => format!("出错了：{kind}：{said}"),
-            (Language::English, true) => format!("Error: {kind}"),
-            (Language::English, false) => format!("Error: {kind}: {said}"),
+            (_, true) => Problem::new(kind),
+            (Language::Chinese, false) => Problem::new(format!("{kind}：{said}")),
+            (Language::English, false) => Problem::new(format!("{kind}: {said}")),
         }
     }
 
@@ -212,49 +214,50 @@ impl Language {
     }
 
     /// 被打断了。
-    pub fn interrupted(&self) -> String {
+    pub(crate) fn interrupted(&self) -> Problem {
         match self {
-            Language::Chinese => "打断了".to_string(),
-            Language::English => "Interrupted".to_string(),
+            Language::Chinese => Problem::new("已中断"),
+            Language::English => Problem::new("interrupted"),
         }
     }
 
     /// 这一轮没走完：步数用完、核心崩了或者重启了。
-    pub fn unfinished(&self, reason: &str) -> String {
+    pub(crate) fn unfinished(&self, reason: &str) -> Problem {
         match self {
-            Language::Chinese => format!("这一轮没走完：{reason}"),
-            Language::English => format!("The turn did not finish: {reason}"),
+            Language::Chinese => Problem::new(format!("本轮未完成：{reason}")),
+            Language::English => Problem::new(format!("turn did not finish: {reason}")),
         }
     }
 
     /// 核心断开了。
-    pub fn disconnected(&self) -> String {
+    pub(crate) fn disconnected(&self) -> Problem {
         match self {
-            Language::Chinese => "核心断开了".to_string(),
-            Language::English => "The core went away".to_string(),
+            Language::Chinese => Problem::new("与核心的连接已断开"),
+            Language::English => Problem::new("lost connection to the core"),
         }
     }
 
     /// 附件传不上（施工 3-9 三补）：哪个文件，核心照握手时报的语言说的原因。
-    pub(crate) fn not_attached(&self, file: &str, reason: &str) -> String {
+    pub(crate) fn not_attached(&self, file: &str, reason: &str) -> Problem {
+        let reason = reason.trim_end_matches(['。', '.']);
         match self {
-            Language::Chinese => format!("附不上 {file}：{reason}"),
-            Language::English => format!("Cannot attach {file}: {reason}"),
+            Language::Chinese => Problem::new(format!("无法附加 {file}：{reason}")),
+            Language::English => Problem::new(format!("cannot attach {file}: {reason}")),
         }
     }
 
-    /// 核心拒绝了：它的原话已经照握手时报的语言说了。
-    pub fn refused(&self, reason: &str) -> String {
-        reason.to_string()
+    /// 核心拒绝了：它的原话已经照握手时报的语言说了，照报错的规矩收拾（设计 47）。
+    pub(crate) fn refused(&self, reason: &str) -> Problem {
+        Problem::new(reason)
     }
 
     /// 核心拒了，原话 `said` 后面接上它给的为什么 `why`（`data.message`：知识库挂不上的目录、挪不进回收站，整理记忆没成，
     /// 施工 K-7 下、R-7 修）。为什么是核心给的英文一句，照原样接。
-    pub(crate) fn refused_because(&self, said: &str, why: &str) -> String {
+    pub(crate) fn refused_because(&self, said: &str, why: &str) -> Problem {
         let said = said.trim_end_matches(['。', '.']);
         match self {
-            Language::Chinese => format!("{said}：{why}"),
-            Language::English => format!("{said}: {why}"),
+            Language::Chinese => Problem::new(format!("{said}：{why}")),
+            Language::English => Problem::new(format!("{said}: {why}")),
         }
     }
 

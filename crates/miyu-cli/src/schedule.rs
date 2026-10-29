@@ -20,6 +20,7 @@ use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::ask::{Format, exit};
+use crate::diagnostic;
 use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
@@ -138,21 +139,21 @@ async fn run(args: Schedule, start: impl FnOnce() -> Command) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed(&error.to_string());
+        return diagnostic::fail(error.to_string());
     }
     let cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
-        Err(error) => return failed(&error.to_string()),
+        Err(error) => return diagnostic::fail(error.to_string()),
     };
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return failed(&reason),
+        Err(reason) => return diagnostic::fail(&reason),
     };
     let plan = SchedulePlan {
         args,
@@ -328,12 +329,6 @@ fn real(cwd: &Path, path: &Path) -> String {
         .unwrap_or(joined)
         .to_string_lossy()
         .into_owned()
-}
-
-/// 连上核心之前就出错了：原因写在标准错误上。
-fn failed(reason: &str) -> u8 {
-    say(&mut io::stderr(), reason);
-    exit::ERROR
 }
 
 #[cfg(test)]
