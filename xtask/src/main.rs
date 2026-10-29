@@ -133,6 +133,24 @@ fn check() -> ExitCode {
             &[],
             true,
         ),
+        // 不开可选软件包的核心（im 照它编）：`net` 下才有的代码别处还在用，只有关掉才编得出错来（施工 SU-5 下）。
+        cargo_step(
+            &cargo,
+            &root,
+            "clippy（核心不开可选包）",
+            &[
+                "clippy",
+                "-p",
+                "miyu-core",
+                "--no-default-features",
+                "--quiet",
+                "--",
+                "-D",
+                "warnings",
+            ],
+            &[],
+            true,
+        ),
         // 注释里的链接断了、写法坏了，生成文档时才看得出来，所以警告也当错。
         // 私有的也要生成：只生成公开的，私有代码注释里的断链查不出来。
         cargo_step(

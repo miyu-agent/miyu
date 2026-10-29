@@ -250,6 +250,13 @@ impl OneShot {
         ask: Ask,
         watch: &mut (dyn FnMut(Watched<'_>) + Send),
     ) -> Result<Answer, Unanswered> {
+        #[cfg_attr(
+            not(any(test, feature = "testkit")),
+            expect(
+                clippy::infallible_destructuring_match,
+                reason = "正式构建没有剧本那一支，测试构建有"
+            )
+        )]
         let routes = match &self.answering {
             Answering::Routes(routes) => routes,
             #[cfg(any(test, feature = "testkit"))]
