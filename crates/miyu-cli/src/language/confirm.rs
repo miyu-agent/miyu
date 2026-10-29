@@ -133,14 +133,6 @@ impl Language {
         }
     }
 
-    /// 装之前：正在下载多大。
-    pub(crate) fn downloading(&self, size: &str) -> String {
-        match self {
-            Language::Chinese => format!("正在下载 {size}"),
-            Language::English => format!("downloading {size}"),
-        }
-    }
-
     /// 一并删除的配置项：写了的那几个键。
     pub(crate) fn deleted_settings(&self, keys: &str) -> String {
         match self {

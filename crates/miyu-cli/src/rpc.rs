@@ -80,6 +80,27 @@ impl Rpc {
         Ok(None)
     }
 
+    /// 同 [`Rpc::call`]，只是等回应时来的推送当场交给 `pushed`，不留着（施工 IN-3：装包的进度边推边印）。
+    ///
+    /// # Errors
+    ///
+    /// 写不出去。
+    pub(crate) async fn call_watching(
+        &mut self,
+        method: &str,
+        params: Value,
+        pushed: &mut dyn FnMut(&Value),
+    ) -> io::Result<Option<Value>> {
+        let id = self.send(method, params).await?;
+        while let Some(message) = self.incoming.recv().await {
+            if message["id"] == json!(id) {
+                return Ok(Some(message));
+            }
+            pushed(&message);
+        }
+        Ok(None)
+    }
+
     /// 下一条回应或推送，先交留着的。核心断开了是 `None`。
     pub(crate) async fn next(&mut self) -> Option<Value> {
         match self.held.pop_front() {

@@ -1878,6 +1878,7 @@ dependencies = [
  "miyu-http",
  "miyu-ipc",
  "miyu-kernel",
+ "miyu-source",
  "miyu-store",
  "rustix",
  "serde_json",

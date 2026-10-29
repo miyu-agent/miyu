@@ -2,6 +2,7 @@
 //! 报错交 [`Problem`]，由 `diagnostic` 加 `miyu: `，建议另起一行）。
 
 mod info;
+mod install;
 mod pack;
 mod source;
 

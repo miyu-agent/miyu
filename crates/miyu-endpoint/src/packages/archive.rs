@@ -14,6 +14,7 @@ use super::{TARGET, packages};
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
+use crate::reverse::Peer as Reverse;
 
 /// `path` 是不是一个包文件：后缀是 `.miyu`。
 pub(super) fn is_package_file(path: &Path) -> bool {
@@ -21,12 +22,13 @@ pub(super) fn is_package_file(path: &Path) -> bool {
 }
 
 /// 装包文件 `path`（`preview` 是只看一眼）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
-/// 的 `package_file_bad`；之后同装包文件夹。
+/// 的 `package_file_bad`；之后同装包文件夹（进度推给 `caller`，从软件源装的自己推、不传）。
 pub(super) async fn install(
     core: &Arc<Core>,
     peer: Peer,
     path: &Path,
     preview: bool,
+    caller: Option<&Reverse>,
 ) -> Result<Value, Refusal> {
     if !path.is_absolute() {
         return Err(Refusal::BAD_PARAMS);
@@ -44,7 +46,7 @@ pub(super) async fn install(
             super::preview::installing(core, peer, &unpacked.folder).await
         }
         Ok(Ok(unpacked)) => {
-            super::manage::from_path(core, peer, &unpacked.folder, Some(path)).await
+            super::manage::from_path(core, (peer, caller), &unpacked.folder, Some(path)).await
         }
         Ok(Err(error)) => {
             tracing::info!(target: TARGET, error = %error, "package file not unpacked");

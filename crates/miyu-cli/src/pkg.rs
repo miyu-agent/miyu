@@ -11,10 +11,12 @@ mod info;
 mod install;
 mod open;
 mod pack;
+mod progress;
 mod query;
 mod session;
 mod shown;
 mod source;
+mod summary;
 mod upgrade;
 
 /// 多少字节写成给人看的（`miyu kb list <库>` 也用，施工 K-10）。
@@ -178,6 +180,8 @@ pub struct PkgPlan {
     pub language: Language,
     /// 现在的工作目录：`install` 写的相对路径照它换成绝对的（核心只收绝对的）。
     pub cwd: std::path::PathBuf,
+    /// 标准错误是终端的：多宽（装包的进度条照它画，施工 IN-3）；不是终端的没有，只印行。
+    pub terminal: Option<usize>,
 }
 
 /// 跑一次 `miyu pkg`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
@@ -239,6 +243,7 @@ async fn run(args: Pkg, start: impl FnOnce() -> Command) -> u8 {
         args,
         language: language::current(),
         cwd,
+        terminal: progress::terminal(),
     };
     pkg_on(
         connection,

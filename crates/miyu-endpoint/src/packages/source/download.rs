@@ -119,6 +119,23 @@ async fn one(
     Ok(())
 }
 
+/// 核对下好的 `path`（施工 IN-3，装之前）：SHA-256 照签过名的索引那一份对。在阻塞线程里读。
+///
+/// # Errors
+///
+/// 读不了、对不上：原因（英文）。
+pub(super) async fn verify(path: &Path, file: &File) -> Result<(), String> {
+    let (path, wanted) = (path.to_path_buf(), file.sha256.clone());
+    let found = tokio::task::spawn_blocking(move || sha256_of(&path))
+        .await
+        .map_err(|error| error.to_string())?;
+    match found {
+        Some(found) if found == wanted => Ok(()),
+        Some(_) => Err("the SHA-256 does not match the index".to_string()),
+        None => Err("the downloaded file cannot be read".to_string()),
+    }
+}
+
 /// 文件的 SHA-256；读不了的没有。
 fn sha256_of(path: &Path) -> Option<String> {
     use std::io::Read;

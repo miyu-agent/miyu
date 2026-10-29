@@ -128,7 +128,35 @@ pub(crate) async fn answer(
     language: &Language,
     err: &mut dyn Write,
 ) -> Result<Result<Value, Value>, u8> {
-    match rpc.call(method, params).await {
+    let reply = rpc.call(method, params).await;
+    replied(reply, language, err)
+}
+
+/// 同 [`answer`]，只是等回应时来的推送当场交给 `pushed`，连同标准错误一起（施工 IN-3：装包的进度印在标准错误上）。
+///
+/// # Errors
+///
+/// 核心断开、写不出去。
+pub(crate) async fn answer_watching(
+    rpc: &mut Rpc,
+    (method, params): (&str, Value),
+    language: &Language,
+    err: &mut dyn Write,
+    pushed: &mut dyn FnMut(&Value, &mut dyn Write),
+) -> Result<Result<Value, Value>, u8> {
+    let reply = rpc
+        .call_watching(method, params, &mut |message| pushed(message, &mut *err))
+        .await;
+    replied(reply, language, err)
+}
+
+/// 回应拆成做成的、被拒绝的；核心断开、写不出去的说清楚，交回退出码。
+fn replied(
+    reply: std::io::Result<Option<Value>>,
+    language: &Language,
+    err: &mut dyn Write,
+) -> Result<Result<Value, Value>, u8> {
+    match reply {
         Ok(Some(reply)) => Ok(match reply.get("error") {
             None => Ok(reply["result"].clone()),
             Some(error) => Err(error.clone()),

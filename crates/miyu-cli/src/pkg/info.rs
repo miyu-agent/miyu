@@ -96,6 +96,12 @@ pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<
         ));
         rows.push((InfoKey::InstallDate, installed(info, offset, language)));
     }
+    aligned(rows, language)
+}
+
+/// 几行「键 : 值」（装之前那一份也照它印，施工 IN-3）：没有值的行不印，键照最宽的那个按显示宽度补齐（中文一个字两格），冒号前后
+/// 各空一格。
+pub(super) fn aligned(rows: Vec<(InfoKey, Option<String>)>, language: &Language) -> Vec<String> {
     let rows: Vec<(&str, String)> = rows
         .into_iter()
         .filter_map(|(key, value)| Some((language.info_key(key), value?)))
@@ -149,7 +155,7 @@ fn provides(info: &Value, remote: bool, language: &Language) -> Option<String> {
 }
 
 /// 「需要的能力」：照核心给的名字，同装之前那一份。
-fn capabilities(info: &Value, language: &Language) -> Option<String> {
+pub(super) fn capabilities(info: &Value, language: &Language) -> Option<String> {
     let names: Vec<&str> = info["capabilities"]
         .as_array()
         .into_iter()

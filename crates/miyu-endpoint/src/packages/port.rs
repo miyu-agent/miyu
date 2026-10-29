@@ -145,7 +145,7 @@ impl PackagesPort for Port {
             let params = serde_json::from_value(json!({ "path": path }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
             self.managing()?;
-            let entry = super::asked::install(&core, self.peer(), params)
+            let entry = super::asked::install(&core, self.peer(), None, params)
                 .await
                 .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {

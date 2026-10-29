@@ -10,7 +10,7 @@
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`：一层配置变了，`keys` 同 `config.set` 的回应，`via` 是 `set`、`edit`、`file`（手改的）、`package`（装卸包以后） |
 | `extension.changed` | `extensions` | `{"entry"}`：一个扩展的状态，同 `extension.status` 的一项 |
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |
-| `package.progress` | 不用订阅：只推给发起 `package.install {"source"}` 的那个连接 | `{"package", "done", "total"}`：从软件源下包文件下了多少字节、一共多少（开始、结束各一次，中间最多 200 毫秒一次） |
+| `package.progress` | 不用订阅：只推给发起 `package.install`（真装）的那个连接 | `{"package", "stage", "index", "count", "done"?, "total"?}`：`stage` 是 `download`（带 `done`、`total`，从软件源下包文件下了多少字节、一共多少，开始、结束各一次，中间最多 200 毫秒一次）、`verify`（核对之前）、`install`（装之前）；`index`、`count` 是第几个、一共几个。从包文件夹、包文件装的只有 `verify`、`install` 各一次。老的核心只推 `{"package", "done", "total"}`，没写 `stage` 的当 `download`（施工 IN-3） |
 | `projects.changed` | `projects` | `{"project": <一项>}`：一个项目整个换掉（同 `project.list` 的一项）；删了的 `{"project": <编号>, "deleted": true}` |
 | `schedules.changed` | `schedules` | `{"id", "entry": <一项>}`：一个定时任务整个换掉（同 `schedule.list` 的一项，到点交过的也推）；删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下） |
 | `package.event` | `package` | `{"package", "event", "data"}`：包经 `package.emit` 推给人的（施工 IM-1 中下二），写法由包自己定。不存盘，没订着的收不到；掉了队推 `resync {"stream": "package", "package"}` |

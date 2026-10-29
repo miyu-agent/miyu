@@ -109,7 +109,9 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
         .collect();
     let ends: Vec<(String, u64)> = progress
         .iter()
-        .filter(|p| p["params"]["done"] == p["params"]["total"])
+        .filter(|p| {
+            p["params"]["stage"] == "download" && p["params"]["done"] == p["params"]["total"]
+        })
         .map(|p| {
             (
                 p["params"]["package"]

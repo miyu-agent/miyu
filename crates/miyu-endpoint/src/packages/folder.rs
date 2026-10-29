@@ -33,17 +33,8 @@ pub(super) fn read(
     peer: Peer,
     path: &Path,
 ) -> Result<(PathBuf, String, package::Manifest), Refusal> {
-    let folder = match path.file_name().and_then(|name| name.to_str()) {
-        Some(MANIFEST) => path.parent().ok_or(Refusal::BAD_PARAMS)?,
-        _ => path,
-    };
-    let id = folder
-        .file_name()
-        .and_then(|name| name.to_str())
-        .filter(|id| miyu_store::personas::valid(id))
-        .map(str::to_string)
-        .filter(|_| folder.is_absolute())
-        .ok_or(Refusal::BAD_PARAMS)?;
+    let folder = folder_of(path).ok_or(Refusal::BAD_PARAMS)?;
+    let id = id_of(path).ok_or(Refusal::BAD_PARAMS)?;
     let text =
         std::fs::read_to_string(folder.join(MANIFEST)).map_err(|_| Refusal::PATH_UNREADABLE)?;
     let words = words(core, peer.language)?;
@@ -54,6 +45,25 @@ pub(super) fn read(
         return Err(Refusal::WRONG_TARGET);
     }
     Ok((folder.to_path_buf(), id, manifest))
+}
+
+/// 包文件夹：写成里面的 `package.toml` 的取它的上一层。
+fn folder_of(path: &Path) -> Option<&Path> {
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some(MANIFEST) => path.parent(),
+        _ => Some(path),
+    }
+}
+
+/// 从 `path` 装的编号：包文件夹的名字，合写法、是绝对路径的才有（施工 IN-3：核对之前就推进度，照它说是哪个包）。
+pub(super) fn id_of(path: &Path) -> Option<String> {
+    let folder = folder_of(path)?;
+    folder
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|id| miyu_store::personas::valid(id))
+        .map(str::to_string)
+        .filter(|_| folder.is_absolute())
 }
 
 /// 清单写的 `targets` 里有没有 `here`：没写的哪种都行；本机不在那四种里的，写了就不行。

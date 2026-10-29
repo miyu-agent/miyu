@@ -14,12 +14,14 @@ use miyu_store::packages::install::{self, Placed};
 use miyu_store::packages::{Found, Issue, Layer, Packages};
 
 use super::folder::source;
+use super::progress::{self, At, Stage};
 use super::{TARGET, compiled, listed, load, packages, sentence, settle};
 use crate::Core;
 use crate::config::methods::words;
 use crate::extensions::processes_of;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
+use crate::reverse::Peer as Reverse;
 
 impl Core {
     /// 照两层重读软件包清单，标没编进来的内置包、认配置项撞没撞，当场换掉核心手里的那一份（施工 F-5 上）。整份配置清单照
@@ -232,15 +234,20 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
 }
 
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、
-/// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。
+/// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。查清单、冲突之前
+/// 推一次核对，拷进去之前推一次安装（施工 IN-3，推给 `caller`，只有一个包：第 1 个、一共 1 个）。
 pub(super) async fn from_path(
     core: &Arc<Core>,
-    peer: Peer,
+    (peer, caller): (Peer, Option<&Reverse>),
     path: &Path,
     file: Option<&Path>,
 ) -> Result<Value, Refusal> {
+    if let Some(id) = super::folder::id_of(path) {
+        progress::stage(caller, &id, Stage::Verify, At::ONLY);
+    }
     let (folder, id, manifest) = source(core, peer, path)?;
     clear_of_conflicts((core, peer), &id, manifest, folder.clone()).await?;
+    progress::stage(caller, &id, Stage::Install, At::ONLY);
     let words = words(core, peer.language)?;
     let places = packages(core);
     let home = home(core)?;

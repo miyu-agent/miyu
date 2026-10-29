@@ -10,6 +10,7 @@ use serde_json::Value;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
+use crate::reverse::Peer as Reverse;
 
 /// `package.install` 的参数：从一份清单装（`path`），或者把卸掉的出厂的包装回来（`package`），二者写一个。
 #[derive(Debug, Deserialize)]
@@ -34,10 +35,12 @@ pub(crate) struct RemoveParams {
     preview: bool,
 }
 
-/// `package.install`。
+/// `package.install`。从包文件、包文件夹真装的，核对、装之前各推一次 `package.progress` 给发起的连接 `caller`（施工 IN-3）；
+/// 她的工具经端口装的没有连接。
 pub(crate) async fn install(
     core: &Arc<Core>,
     peer: Peer,
+    caller: Option<&Reverse>,
     params: InstallParams,
 ) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
@@ -45,9 +48,9 @@ pub(crate) async fn install(
         (Some(path), None, preview) => {
             let path = Path::new(&path);
             match (super::archive::is_package_file(path), preview) {
-                (true, _) => super::archive::install(core, peer, path, preview).await,
+                (true, _) => super::archive::install(core, peer, path, preview, caller).await,
                 (false, true) => super::preview::installing(core, peer, path).await,
-                (false, false) => super::manage::from_path(core, peer, path, None).await,
+                (false, false) => super::manage::from_path(core, (peer, caller), path, None).await,
             }
         }
         (None, Some(id), preview) => match preview {

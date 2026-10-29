@@ -31,6 +31,8 @@ miyu-client = { path = "../miyu-client" }
 miyu-http = { path = "../miyu-http", features = ["testkit"] }
 # 测试里写回收处的 `deleted_at`：事件的时刻写法（施工 3-8 三补）。
 miyu-kernel = { path = "../miyu-kernel" }
+# 测试里假的软件源：打包文件、签索引（施工 IN-3：装包的进度条在真的伪终端里走一遍）。
+miyu-source = { path = "../miyu-source" }
 # 测试里的数据根。
 # 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
 miyu-store = { path = "../miyu-store", features = ["testkit"] }

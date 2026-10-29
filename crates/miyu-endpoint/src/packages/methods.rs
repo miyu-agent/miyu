@@ -32,7 +32,10 @@ pub(crate) async fn call(
         "package.install" | "package.remove" if super::group::named(core, &request.params) => {
             super::group::call(core, peer, &request.method, params(request)?).await
         }
-        "package.install" => super::asked::install(core, peer, params(request)?).await,
+        "package.install" => {
+            let reverse = Some(&caller.reverse);
+            super::asked::install(core, peer, reverse, params(request)?).await
+        }
         "package.remove" => super::asked::remove(core, params(request)?).await,
         "package.info" => super::info::info(core, peer, params(request)?).await,
         "package.files" => super::local::files(core, params(request)?).await,

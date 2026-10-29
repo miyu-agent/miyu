@@ -40,7 +40,7 @@ fn home(source: &str, keys: Vec<PublicKey>) -> Home {
 }
 
 /// 同 [`home`]，另配一个镜像（空的不配）。
-fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
+pub(crate) fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
     let mirrors = if mirror.is_empty() {
         String::new()
     } else {
@@ -84,6 +84,17 @@ async fn pkg(home: &Home, words: &[&str]) -> (u8, String, String) {
 
 /// 同 [`pkg`]，问的那一句照 `input` 答。
 async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String, String) {
+    let (code, tape) = pkg_speaking(home, words, input, Language::Chinese).await;
+    (code, tape.text(|err| !err), tape.text(|err| err))
+}
+
+/// 同 [`pkg_answering`]，照 `language` 说，交回退出码和录下的两路（施工 IN-3：标准输出、标准错误交错着看）。
+pub(crate) async fn pkg_speaking(
+    home: &Home,
+    words: &[&str],
+    input: &[u8],
+    language: Language,
+) -> (u8, Tape) {
     #[derive(Parser)]
     struct Line {
         #[command(subcommand)]
@@ -98,8 +109,9 @@ async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String
     let Top::Pkg(args) = Line::try_parse_from(all).expect("读得懂").command;
     let plan = miyu_cli::PkgPlan {
         args,
-        language: Language::Chinese,
+        language,
         cwd: home.outside(),
+        terminal: None,
     };
     let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
     let tape = Tape::default();
@@ -116,10 +128,10 @@ async fn pkg_answering(home: &Home, words: &[&str], input: &[u8]) -> (u8, String
         ),
     )
     .await;
-    (code, tape.text(|err| !err), tape.text(|err| err))
+    (code, tape)
 }
 
-fn keys() -> (String, Vec<PublicKey>) {
+pub(crate) fn keys() -> (String, Vec<PublicKey>) {
     let made = sign::generate().expect("生成得了");
     (
         made.secret,
@@ -156,7 +168,7 @@ async fn update_fetches_the_index_and_says_how_many() {
     let install = pkg(&home, &["-S", "embed", "--yes"]).await;
     assert_eq!(
         (install.0, install.2.as_str()),
-        (1, "miyu: 软件包不存在\n"),
+        (1, "正在解析依赖…\n正在检查冲突…\nmiyu: 软件包不存在\n"),
         "-S <编号> 从软件源装，索引里没有的照核心的原话"
     );
     let stale = pkg(&home, &["-Sy"]).await;
@@ -253,7 +265,7 @@ async fn search_prints_one_line_each_and_nothing_found_is_exit_one() {
 }
 
 /// 打一个包：编号、依赖，交回文件名、字节。
-fn package(dir: &std::path::Path, id: &str, depends: &[&str]) -> (String, Vec<u8>) {
+pub(crate) fn package(dir: &std::path::Path, id: &str, depends: &[&str]) -> (String, Vec<u8>) {
     let folder = dir.join("src").join(id);
     std::fs::create_dir_all(&folder).expect("建得了");
     let mut text = format!("[package]\nversion = \"1.0\"\nname = {{ en = \"{id}\" }}\n");
@@ -272,7 +284,7 @@ fn package(dir: &std::path::Path, id: &str, depends: &[&str]) -> (String, Vec<u8
     (name, std::fs::read(&out).expect("在"))
 }
 
-fn entry(id: &str, depends: &[&str], file: &(String, Vec<u8>)) -> serde_json::Value {
+pub(crate) fn entry(id: &str, depends: &[&str], file: &(String, Vec<u8>)) -> serde_json::Value {
     use sha2::Digest;
     let sha: String = sha2::Sha256::digest(&file.1)
         .iter()
@@ -309,20 +321,24 @@ async fn install_from_the_source_shows_the_plan_asks_and_cleans_up_after() {
     assert!(
         declined
             .1
-            .starts_with("将安装 app 1.0\n一起装：lib 1.0\n下载："),
+            .starts_with("软件包 (2)  lib-1.0  app-1.0\n\n下载大小  : "),
         "{declined:?}"
     );
     assert!(
         declined
             .1
-            .contains("来源：github.com/miyu-agent/app（官方）\n"),
+            .ends_with("来源      : 官方，签名已验证\n\n安装 2 个软件包？[Y/n] "),
+        "{declined:?}"
+    );
+    assert_eq!(
+        declined.2, "正在解析依赖…\n正在检查冲突…\n已取消\n",
         "{declined:?}"
     );
     let installed = pkg_answering(&home, &["-S", "app"], b"y\n").await;
     assert_eq!(installed.0, 0, "{installed:?}");
     assert!(
-        installed.1.contains("[Y/n] 正在下载 "),
-        "问完接着说正在下载：{installed:?}"
+        installed.2.contains("正在下载…\n已下载 lib-1.0 "),
+        "问完接着下载，管道里一个包一行：{installed:?}"
     );
     assert!(
         installed.1.ends_with("已安装 lib\n已安装 app 1.0\n"),

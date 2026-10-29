@@ -3,13 +3,14 @@
 //! - 先照 [`super::sync`] 拿索引；编号不在索引里的 `unknown_package`。
 //! - 依赖照 pacman 自动补：缺的依赖从索引里一起装，先装依赖；索引里也没有的 `depends_missing`（`data.missing`）。
 //! - 每个包挑本机能用的那个文件（不分系统的、或者写了本机这一种的），没有的 `wrong_target`。
-//! - 看一眼只照索引说要装哪几个、要下多大，不下载。
-//! - 真装：一次只装一件（`core.packaging`）；一个一个下（[`super::download`]，进度推 `package.progress` 给发起的连接），再照
-//!   装包文件那一条装（[`super::super::archive`]），本地库记上来源仓库。下不成的 `download_failed`（`data.why` 是每一处的原因），前面装好的留着。
+//! - 看一眼只照索引说要装哪几个、要下多大、装好以后多大、推荐的还没装的有哪些（施工 IN-3），不下载。
+//! - 真装：一次只装一件（`core.packaging`）。照 pacman 分三段（施工 IN-3，设计 `49-装包照pacman.md` 第二节）：先一个一个下完
+//!   （[`super::download`]），再一个一个核对 SHA-256，最后一个一个照装包文件那一条装（[`super::super::archive`]），本地库记上
+//!   来源仓库；每段的进度推 `package.progress` 给发起的连接（[`super::super::progress`]）。下不成、核对不过的
+//!   `download_failed`（`data.why` 是每一处的原因），一个都不装；装到一半出错的，前面装好的留着。
 
 use std::collections::BTreeSet;
-use std::sync::{Arc, Mutex, PoisonError};
-use std::time::{Duration, Instant};
+use std::sync::Arc;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -19,6 +20,7 @@ use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
 use miyu_store::packages::Packages;
 
+use super::super::progress::{self, At, Stage};
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use super::feeds::{Feed, Tier};
@@ -27,9 +29,6 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 use crate::reverse::Peer as Reverse;
-
-/// 进度最多多久推一次。
-const EVERY: Duration = Duration::from_millis(200);
 
 /// `package.install` 从软件源装的参数：`source` 写编号；只写 `package` 的、那个编号又不是卸掉的出厂包的也走这里（施工 G-4 下：
 /// 装只有一个动词，核心判断是装回出厂的还是从软件源装）。
@@ -99,10 +98,10 @@ pub(crate) fn wanted(core: &Core, params: &Value) -> bool {
 }
 
 /// 要装的一个：从哪个源、索引里那一条、挑好的文件、文件名。
-struct Step<'a> {
-    feed: &'a Feed,
-    entry: &'a Entry,
-    file: &'a File,
+pub(super) struct Step<'a> {
+    pub(super) feed: &'a Feed,
+    pub(super) entry: &'a Entry,
+    pub(super) file: &'a File,
     name: String,
 }
 
@@ -121,14 +120,19 @@ pub(crate) async fn install(
     let installed: BTreeSet<String> = seen.iter().map(|found| found.id.clone()).collect();
     let steps = plan(&indexes, &params.source, &installed)?;
     if params.preview {
-        return Ok(preview(&steps, &seen));
+        return Ok(super::glance::preview(
+            (core, peer.language),
+            &indexes,
+            &steps,
+            &seen,
+        ));
     }
     let _one_at_a_time = core.packaging.lock().await;
     let cache = download::cache_dir(packages(core).state_root());
-    let mut answer = Value::Null;
-    let mut with = Vec::new();
-    for step in &steps {
-        let report = progress(caller, &step.entry.id);
+    let count = steps.len();
+    let mut files = Vec::with_capacity(count);
+    for (n, step) in steps.iter().enumerate() {
+        let report = progress::downloading(caller, &step.entry.id, At::nth(n, count));
         let wanted = Wanted {
             name: &step.name,
             file: step.file,
@@ -137,7 +141,19 @@ pub(crate) async fn install(
         let file = download::fetch(&cache, &wanted, &report)
             .await
             .map_err(Refusal::download_failed)?;
-        answer = super::super::archive::install(core, peer, &file, false).await?;
+        files.push(file);
+    }
+    for (n, (step, file)) in steps.iter().zip(&files).enumerate() {
+        progress::stage(caller, &step.entry.id, Stage::Verify, At::nth(n, count));
+        download::verify(file, step.file)
+            .await
+            .map_err(Refusal::download_failed)?;
+    }
+    let mut answer = Value::Null;
+    let mut with = Vec::new();
+    for (n, (step, file)) in steps.iter().zip(&files).enumerate() {
+        progress::stage(caller, &step.entry.id, Stage::Install, At::nth(n, count));
+        answer = super::super::archive::install(core, peer, file, false, None).await?;
         let (record, id, origin) = (
             packages(core).local_root(),
             step.entry.id.clone(),
@@ -163,7 +179,7 @@ pub(crate) async fn install(
 }
 
 /// 装要用的几个源的索引（施工 U23 下下）：挑中的那个在前，依赖在它里面找不到的再照官方的找。
-type Indexes = Vec<(Feed, Index)>;
+pub(super) type Indexes = Vec<(Feed, Index)>;
 
 /// 挑从哪个源装（[`found`]），依赖在它里面找不到的再照官方的找：非官方的另带上官方的索引。
 async fn chosen(core: &Arc<Core>, params: &SourceParams) -> Result<Indexes, Refusal> {
@@ -284,59 +300,6 @@ pub(super) fn pick(entry: &Entry) -> Option<&File> {
         .iter()
         .find(|file| file.target.is_some() && file.target.as_deref() == here)
         .or_else(|| entry.files.iter().find(|file| file.target.is_none()))
-}
-
-/// 看一眼：要装的那个、一起装的依赖、要下多大；换下哪一份照装进的那一层看得到的 `now` 认。
-fn preview(steps: &[Step<'_>], now: &[miyu_store::packages::Found]) -> Value {
-    let Some((last, before)) = steps.split_last() else {
-        return Value::Null;
-    };
-    let entry = last.entry;
-    // 和从包文件夹装的看一眼同一个形状（命令行、头照同一套印），带了哪几样照索引摊开；另有下多大、一起装的、来源。
-    let mut answer = json!({
-        "package": entry.id,
-        "version": entry.version,
-        // 别的源里的不算官方（施工 U23 下下）：那一格是它的索引自己写的。
-        "official": entry.official && last.feed.tier == Tier::Official,
-        "source": last.feed.name,
-        "origin": entry.origin,
-        "capabilities": entry.capabilities.iter().map(|name| json!({"name": name})).collect::<Vec<_>>(),
-        "download": steps.iter().map(|step| step.file.size).sum::<u64>(),
-        "with": before.iter().map(|step| json!({"package": step.entry.id, "version": step.entry.version})).collect::<Vec<_>>(),
-    });
-    for (kind, names) in &entry.provides {
-        match kind.as_str() {
-            "command" => answer["command"] = json!(names.first()),
-            "features" => {}
-            _ => answer[kind.as_str()] = json!(names),
-        }
-    }
-    if let Some(old) = now.iter().find(|one| one.id == entry.id) {
-        let version = old.read.as_ref().ok().and_then(|old| old.version.clone());
-        answer["replaces"] = json!({ "version": version });
-    }
-    answer
-}
-
-/// 推进度给发起的连接：开始、结束各一次，中间最多 [`EVERY`] 一次。她的工具经端口装的没有连接，不推（施工 G-6）。
-fn progress<'a>(caller: Option<&'a Reverse>, id: &'a str) -> impl Fn(u64, u64) + Sync + 'a {
-    let last: Mutex<Option<Instant>> = Mutex::new(None);
-    move |done, total| {
-        let Some(caller) = caller else {
-            return;
-        };
-        let mut last = last.lock().unwrap_or_else(PoisonError::into_inner);
-        let due = done == 0 || done == total || last.is_none_or(|at| at.elapsed() >= EVERY);
-        if due {
-            *last = Some(Instant::now());
-            if !caller.notify(
-                "package.progress",
-                json!({"package": id, "done": done, "total": total}),
-            ) {
-                tracing::debug!(target: TARGET, package = id, "package progress not delivered");
-            }
-        }
-    }
 }
 
 #[cfg(test)]

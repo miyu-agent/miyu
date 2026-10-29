@@ -35,6 +35,7 @@ pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;
 pub(crate) mod preview;
+pub(crate) mod progress;
 mod services;
 pub(crate) mod source;
 pub(crate) mod status;

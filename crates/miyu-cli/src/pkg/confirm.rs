@@ -202,5 +202,19 @@ pub(crate) fn asked(
     }
 }
 
+/// 接着问 `question`（不空行，施工 IN-3：同时装推荐的），读一行答：空的、`y`、`yes` 是「是」；别的、标准输入关着的是「否」，
+/// 照样往下做。
+pub(crate) fn agreed((input, out): (&mut dyn BufRead, &mut dyn Write), question: &str) -> bool {
+    write(out, question);
+    let mut answer = String::new();
+    match input.read_line(&mut answer) {
+        Ok(0) | Err(_) => {
+            say(out, "");
+            false
+        }
+        Ok(_) => matches!(answer.trim().to_lowercase().as_str(), "" | "y" | "yes"),
+    }
+}
+
 #[cfg(test)]
 mod tests;

@@ -318,6 +318,7 @@ async fn a_base_from_a_package_from_the_shell() {
             args,
             language: Language::Chinese,
             cwd: cwd.clone(),
+            terminal: None,
         };
         let (connection, token) = miyu_ipc::connect(&home.root).await.expect("连得上");
         let tape = Tape::default();

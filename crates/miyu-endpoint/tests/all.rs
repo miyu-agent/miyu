@@ -178,6 +178,7 @@ mod packages_programs;
 mod packages_purge;
 mod packages_push;
 mod packages_search;
+mod packages_stages;
 mod packages_sync;
 mod packages_tool;
 mod packages_upgrade;

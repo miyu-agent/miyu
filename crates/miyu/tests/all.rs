@@ -27,6 +27,7 @@ mod packages_live;
 mod pkg;
 mod pkg_group;
 mod pkg_pack;
+mod pkg_progress;
 mod pkg_session;
 mod recap;
 mod redo;
