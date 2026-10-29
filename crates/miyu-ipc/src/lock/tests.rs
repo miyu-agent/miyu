@@ -37,3 +37,33 @@ fn the_lock_knows_when_its_file_is_gone() {
     }
     drop(lock);
 }
+
+/// 等核心放锁（施工 CL-4）：拿着的时候等着，放了就醒；没有锁文件的当已经放了；等完新核心照旧拿得到。
+#[test]
+fn waiting_returns_once_the_lock_is_let_go() {
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    wait_released(&root).expect("没有锁文件的当已经放了");
+    let lock = Lock::acquire(&root).expect("拿得到");
+    let (done, finished) = std::sync::mpsc::channel();
+    let waiting = {
+        let root = root.clone();
+        std::thread::spawn(move || {
+            let result = wait_released(&root);
+            done.send(()).expect("等的一头在");
+            result
+        })
+    };
+    assert!(
+        finished
+            .recv_timeout(std::time::Duration::from_millis(200))
+            .is_err(),
+        "拿着的时候不醒"
+    );
+    drop(lock);
+    finished
+        .recv_timeout(std::time::Duration::from_secs(30))
+        .expect("放了就醒");
+    waiting.join().expect("没崩").expect("等成了");
+    Lock::acquire(&root).expect("等完照旧拿得到");
+}

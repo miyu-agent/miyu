@@ -65,6 +65,27 @@ impl Lock {
     }
 }
 
+/// 等这个数据根上的核心放开锁（施工 CL-4，`miyu core stop`）：阻塞地拿一次锁，拿到就放。不轮询，进程一没操作系统就放锁、
+/// 这里就醒。锁文件没有的（从没起过核心）当已经放了。在阻塞线程里调。
+///
+/// # Errors
+///
+/// 打不开锁文件、拿锁出错。
+pub fn wait_released(root: &DataRoot) -> std::io::Result<()> {
+    let file = match OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.run().join(FILE))
+    {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error),
+    };
+    // 拿到就放：这时要起的新核心照旧拿得到。
+    file.lock()?;
+    file.unlock()
+}
+
 impl Held {
     /// 数据根里的锁文件还是拿着的这一个：路径上还有，而且是同一个文件（Unix 上照设备号和 inode）。数据根删了的、删了又建了
     /// 一个新的，不是。读不出来的当不是。碰一次磁盘。

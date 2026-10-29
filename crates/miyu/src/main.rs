@@ -73,13 +73,23 @@ enum Command {
     Setup(miyu_cli::Setup),
     /// 打开网页界面：找主程序旁边的网页软件，参数交给它（施工 W-9）。
     Web(miyu_cli::Web),
-    /// 核心进程：由头拉起，平时不用人敲。
+    /// 核心进程：由头拉起，平时不用人敲。`miyu core stop` 叫在跑的核心停下（施工 CL-4，桌面端的「退出」用）。
     #[command(hide = true)]
     Core {
         /// 空闲多少秒以后退出。
         #[arg(long, hide = true)]
         idle_seconds: Option<u64>,
+        /// 不写的是跑核心；`stop` 叫在跑的停下。
+        #[command(subcommand)]
+        action: Option<CoreAction>,
     },
+}
+
+/// `miyu core` 下面的动作（施工 CL-4）。
+#[derive(Debug, Clone, Copy, Subcommand)]
+enum CoreAction {
+    /// 叫在跑的核心停下，等它退了再回；没在跑的什么都不做。
+    Stop,
 }
 
 fn main() -> ExitCode {
@@ -249,7 +259,11 @@ fn main() -> ExitCode {
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
         Some(Command::Web(args)) => miyu_cli::web(args),
-        Some(Command::Core { idle_seconds }) => miyu_core::main(miyu_core::Options {
+        Some(Command::Core {
+            action: Some(CoreAction::Stop),
+            ..
+        }) => miyu_cli::core_stop(),
+        Some(Command::Core { idle_seconds, .. }) => miyu_core::main(miyu_core::Options {
             idle: idle_seconds.map(Duration::from_secs),
         }),
         // 不带子命令（施工 9-3）：在终端里打开 `ui.head` 指的界面；不在终端里（被脚本调、接管道）印帮助、退出码 2。

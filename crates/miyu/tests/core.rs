@@ -380,3 +380,30 @@ async fn the_core_starts_its_memory_account() {
     assert_eq!(first["why"], "start", "{text}");
     assert!(first["rss"].as_u64().is_some_and(|rss| rss > 0), "{text}");
 }
+
+/// `miyu core stop`（施工 CL-4，桌面端的「退出」）：叫在跑的核心停下，等它真的退了才回，什么都不印；回来时锁已经放了、
+/// 运行日志里记着照请求停的。没在跑的不拉起，什么都不说，退出码 0。
+#[tokio::test]
+async fn core_stop_waits_until_the_core_is_gone_and_never_starts_one() {
+    let home = Home::new();
+    let (connection, _) = within("拉起", connect_or_start(&home.root, || home.core_staying()))
+        .await
+        .expect("拉得起");
+    drop(connection);
+    let cwd = home.root.path().to_path_buf();
+    let stopped = crate::support::cli::run(&cwd, &cwd, "zh_CN.UTF-8", &["core", "stop"]).await;
+    assert_eq!(stopped.status.code(), Some(0), "{stopped:?}");
+    assert_eq!(
+        (stopped.stdout.as_slice(), stopped.stderr.as_slice()),
+        (&b""[..], &b""[..]),
+        "什么都不印"
+    );
+    Lock::acquire(&home.root).expect("回来时核心已经退了");
+    let log = home.core_log();
+    assert_eq!(count(&log, "stopped reason=request"), 1, "{log}");
+
+    let again = crate::support::cli::run(&cwd, &cwd, "zh_CN.UTF-8", &["core", "stop"]).await;
+    assert_eq!(again.status.code(), Some(0), "{again:?}");
+    assert!(again.stderr.is_empty(), "{again:?}");
+    assert_eq!(count(&home.core_log(), "starting"), 1, "没在跑的不拉起");
+}

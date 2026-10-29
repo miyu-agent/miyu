@@ -16,6 +16,7 @@
 | CL-2 下 | 配置那几条：`config`、`check`、`provider`、`setup`、`service`、`sandbox`、`web`、`mcp` |
 | CL-2 补 | `pkg`、`memory`、`kb`、`schedule` |
 | CL-3 | 设计 47 第三节第 10 条的检查进门禁 |
+| CL-4 | `miyu core stop`（桌面端 DT-4 下要的）：连在跑的核心发 `core.stop`，阻塞地拿一次 `run/core.lock` 等它真退了才回；没在跑的不拉起、退出码 0；和 `miyu core` 一样不进帮助 |
 
 ### 蓝图改哪几节
 
