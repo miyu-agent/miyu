@@ -9,7 +9,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{Call, Done, Effect, KB_DELETE, Progress, Running, Spec, Tool};
 
-use crate::PACKAGE;
+use crate::SOFTWARE;
 use crate::texts::{Texts, line, said};
 
 /// `kb_delete`。
@@ -29,7 +29,7 @@ impl Delete {
     /// 照资源目录 `resources` 里的说明造，几句是 `texts`。
     pub(crate) fn load(resources: &Path, texts: Texts) -> Result<Delete, LoadError> {
         Ok(Delete {
-            spec: load::spec(resources, PACKAGE, KB_DELETE, Access::Write)?,
+            spec: load::spec(resources, SOFTWARE, KB_DELETE, Access::Write)?,
             texts,
         })
     }

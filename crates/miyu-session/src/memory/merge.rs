@@ -59,7 +59,7 @@ const TRIES: u32 = 3;
 const PURPOSE: &str = "memory";
 
 /// 记忆这个软件包在资源目录里的名字（和 `extract.rs` 的同一个）。
-const PACKAGE: &str = "memory";
+const SOFTWARE: &str = "memory";
 
 /// 合并给模型看的字（`resources/software/memory/merge/`，登记簿）：指令、现在的摘要、还没有摘要、两块的标题，一条一行照
 /// `memory_search/memory.txt`。
@@ -91,7 +91,7 @@ impl MergeTexts {
     /// 哪一份读不出来、写法不对、要了别的字段。
     pub fn load(resources: &Path) -> Result<MergeTexts, LoadError> {
         let text =
-            |name: &str, fields: &[&str]| load::text(resources, PACKAGE, "merge", name, fields);
+            |name: &str, fields: &[&str]| load::text(resources, SOFTWARE, "merge", name, fields);
         Ok(MergeTexts {
             instruction: text("instruction", &["owner"])?,
             summary: text("summary", &["text"])?,
@@ -102,8 +102,8 @@ impl MergeTexts {
             people: text("people", &["people"])?,
             cards: text("cards", &[])?,
             card: text("card", &["who", "text"])?,
-            lines: MemoryLines::load(resources, PACKAGE)?,
-            unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
+            lines: MemoryLines::load(resources, SOFTWARE)?,
+            unnamed: load::text(resources, SOFTWARE, "common", "owner-unnamed", &[])?,
         })
     }
 }

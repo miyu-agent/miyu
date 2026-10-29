@@ -12,7 +12,7 @@ use miyu_tool::load::{self, LoadError};
 use miyu_tool::{Call, Done, Progress, REMEMBER, Remember as Remembering, Running, Spec, Tool};
 
 use crate::texts::{Texts, line, memory_id, said};
-use crate::{PACKAGE, TEXT_CHARS};
+use crate::{SOFTWARE, TEXT_CHARS};
 
 /// `remember`。
 pub(crate) struct Remember {
@@ -39,7 +39,7 @@ impl Remember {
     /// 照资源目录 `resources` 里的说明造，几句是 `texts`。
     pub(crate) fn load(resources: &Path, texts: Texts) -> Result<Remember, LoadError> {
         Ok(Remember {
-            spec: load::spec(resources, PACKAGE, REMEMBER, Access::Read)?,
+            spec: load::spec(resources, SOFTWARE, REMEMBER, Access::Read)?,
             texts,
         })
     }

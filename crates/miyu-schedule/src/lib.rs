@@ -15,11 +15,18 @@ use std::sync::Arc;
 use miyu_tool::Tool;
 use miyu_tool::load::LoadError;
 
-/// 定时任务这个软件包的编号：资源目录里的名字，也是预设里开关它的那个键。
+/// 定时任务这个软件包的编号：预设里开关它的那个键；资源目录另是 [`SCHEDULE_SOFTWARE`]（施工 PN-2）。
 pub const SCHEDULE: &str = "schedule";
 
-/// 循环这个软件包的编号：同上。
+/// 循环这个软件包的编号：同上，资源目录另是 [`LOOP_SOFTWARE`]。
 pub const LOOP: &str = "loop";
+
+/// 定时任务在资源目录 `resources/software/` 里的名字，也是给人看的字的键 `software/schedule/…` 的那一段（施工 PN-2）：日志里
+/// 存着，和包编号分开，包改名不跟着变。
+pub const SCHEDULE_SOFTWARE: &str = "schedule";
+
+/// 循环在资源目录里的名字：同上。
+pub const LOOP_SOFTWARE: &str = "loop";
 
 /// 定时任务这个包的三件。字从资源目录 `resources` 读。
 ///

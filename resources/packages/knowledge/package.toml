@@ -8,4 +8,9 @@ protocol = [1, 1]
 name = { en = "Knowledge base", zh = "知识库", ja = "ナレッジベース" }
 summary = { en = "Let her look things up in your notes and documents", zh = "让她查你放进来的笔记和文档", ja = "あなたのノートや文書を調べられるようにします" }
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.knowledge]
+name = { en = "Knowledge base", zh = "知识库", ja = "ナレッジベース" }
+summary = { en = "Let her look things up in your notes and documents", zh = "让她查你放进来的笔记和文档", ja = "あなたのノートや文書を調べられるようにします" }
+
 [builtin]

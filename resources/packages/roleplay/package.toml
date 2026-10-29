@@ -8,4 +8,9 @@ protocol = [1, 1]
 name = { en = "Persona reminders", zh = "人设遵循提醒", ja = "ペルソナ遵守リマインド" }
 summary = { en = "Every few turns, show the AI the persona's reminder phrases again so it stays in character", zh = "隔几轮把人设提醒短语再给 AI 看一遍，聊久了也不出戏", ja = "数ターンごとにペルソナのリマインドをもう一度見せて、長く話してもキャラを保ちます" }
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.roleplay]
+name = { en = "Persona reminders", zh = "人设遵循提醒", ja = "ペルソナ遵守リマインド" }
+summary = { en = "Every few turns, show the AI the persona's reminder phrases again so it stays in character", zh = "隔几轮把人设提醒短语再给 AI 看一遍，聊久了也不出戏", ja = "数ターンごとにペルソナのリマインドをもう一度見せて、長く話してもキャラを保ちます" }
+
 [builtin]

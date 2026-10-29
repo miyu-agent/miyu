@@ -68,6 +68,8 @@ pub struct Presets {
     dirs: Vec<(Layer, PathBuf)>,
     /// 包在哪几个组里（施工 BS-1 上中，[`Presets::with_groups`]）：找到的预设带上它。
     groups: BTreeMap<String, Vec<String>>,
+    /// 功能在哪个包里（施工 PN-2，[`Presets::with_homes`]）：找到的预设带上它。
+    homes: BTreeMap<String, String>,
 }
 
 impl Presets {
@@ -79,6 +81,7 @@ impl Presets {
                 (Layer::Home, root.path().join("presets")),
             ],
             groups: BTreeMap::new(),
+            homes: BTreeMap::new(),
         }
     }
 
@@ -95,6 +98,14 @@ impl Presets {
     #[must_use]
     pub fn with_groups(mut self, groups: BTreeMap<String, Vec<String>>) -> Presets {
         self.groups = groups;
+        self
+    }
+
+    /// 功能在哪个包里（施工 PN-2）：功能的编号到包的编号，照装着的清单。找到的预设带上它
+    /// （`miyu_policy::preset::PresetFile::homes`），按功能查开没开时先找它的包。
+    #[must_use]
+    pub fn with_homes(mut self, homes: BTreeMap<String, String>) -> Presets {
+        self.homes = homes;
         self
     }
 
@@ -191,6 +202,7 @@ impl Presets {
             return Err(PresetError::NotFound(id.to_string()));
         }
         found.file.groups = self.groups.clone();
+        found.file.homes = self.homes.clone();
         Ok(found)
     }
 

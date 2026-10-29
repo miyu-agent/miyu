@@ -9,4 +9,9 @@ groups = ["basesystem"]
 name = { en = "Project instructions", zh = "项目指令", ja = "プロジェクトの指示" }
 summary = { en = "Give the AI the repository's AGENTS.md at the start of each turn", zh = "每轮开头把仓库里的 AGENTS.md 交给 AI", ja = "毎ターンの始めにリポジトリの AGENTS.md を AI に渡します" }
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.project-docs]
+name = { en = "Project instructions", zh = "项目指令", ja = "プロジェクトの指示" }
+summary = { en = "Give the AI the repository's AGENTS.md at the start of each turn", zh = "每轮开头把仓库里的 AGENTS.md 交给 AI", ja = "毎ターンの始めにリポジトリの AGENTS.md を AI に渡します" }
+
 [builtin]

@@ -31,6 +31,7 @@ pub(crate) fn presets(core: &Core) -> Presets {
     Presets::new(&core.resources, &core.root)
         .with_packages(&crate::packages::folders(core))
         .with_groups(crate::packages::groups(&core.system_packages()))
+        .with_homes(crate::packages::homes(&core.system_packages()))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（系统配置，都没写的是出厂的 `full`）。指着没有

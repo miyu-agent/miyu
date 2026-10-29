@@ -20,18 +20,20 @@ use miyu_tool::{
     ScheduleAnswer, ScheduleAsk, ScheduleRefused, Scheduled, Spec, Tool,
 };
 
-use crate::SCHEDULE;
+use crate::SCHEDULE_SOFTWARE;
 use crate::texts::{Common, Package, clock, line};
 
 /// 这个包。
-const PACKAGE: Package = Package { id: SCHEDULE };
+const PACKAGE: Package = Package {
+    id: SCHEDULE_SOFTWARE,
+};
 
 /// 三件：共用一份字。
 pub(crate) fn tools(resources: &Path) -> Result<Vec<Arc<dyn Tool>>, LoadError> {
     let texts = Arc::new(Texts::load(resources)?);
     let make = |name: &str, which: Which| -> Result<Arc<dyn Tool>, LoadError> {
         Ok(Arc::new(Cron {
-            spec: load::spec(resources, SCHEDULE, name, Access::Read)?,
+            spec: load::spec(resources, SCHEDULE_SOFTWARE, name, Access::Read)?,
             which,
             texts: Arc::clone(&texts),
         }))

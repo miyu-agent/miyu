@@ -18,7 +18,7 @@ use miyu_tool::load::{self, LoadError, say};
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
 
 use crate::search::{Found, Missed, Query, Search};
-use crate::web_fetch::PACKAGE;
+use crate::web_fetch::SOFTWARE;
 
 /// 工具名。
 pub const WEB_SEARCH: &str = "web_search";
@@ -54,7 +54,7 @@ struct Texts {
 impl Texts {
     fn load(resources: &Path) -> Result<Texts, LoadError> {
         let text =
-            |name: &str, fields: &[&str]| load::text(resources, PACKAGE, WEB_SEARCH, name, fields);
+            |name: &str, fields: &[&str]| load::text(resources, SOFTWARE, WEB_SEARCH, name, fields);
         Ok(Texts {
             hit: text("hit", &["n", "title", "url"])?,
             hit_dated: text("hit-dated", &["n", "title", "url", "date"])?,
@@ -71,7 +71,7 @@ impl WebSearch {
     /// 照资源目录 `resources` 造：说明、几句字从那里读；搜网页的家底是 `search`。
     pub(crate) fn load(resources: &Path, search: Arc<Search>) -> Result<WebSearch, LoadError> {
         Ok(WebSearch {
-            spec: load::spec(resources, PACKAGE, WEB_SEARCH, Access::Read)?,
+            spec: load::spec(resources, SOFTWARE, WEB_SEARCH, Access::Read)?,
             texts: Texts::load(resources)?,
             search,
         })
@@ -217,7 +217,7 @@ fn line(template: &Template, fields: &[(&str, &str)]) -> String {
 /// 给人看的说法：编号是 `software/net/<key>`。
 fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     fields.iter().fold(
-        Said::new(format!("software/{PACKAGE}/{key}")),
+        Said::new(format!("software/{SOFTWARE}/{key}")),
         |said, (name, value)| said.with(name, (*value).to_string()),
     )
 }

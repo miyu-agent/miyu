@@ -84,6 +84,10 @@ pub struct PresetFile {
     /// true`）的，组里的包没单独写就照组的（[`PresetFile::decided`]）。不是文件里写的：找预设时放进来
     /// （`miyu_store::presets::Presets::with_groups`），不进 [`PresetFile::digest`]、不叠层。
     pub groups: BTreeMap<String, Vec<String>>,
+    /// 功能在哪个包里（施工 PN-2，设计 48 第三节第 2 条）：功能的编号到包的编号，照装着的清单。按功能查开没开时先找它的包
+    /// （[`PresetFile::opens`]），不拿功能的编号当包的编号。不是文件里写的：找预设时放进来
+    /// （`miyu_store::presets::Presets::with_homes`），不进 [`PresetFile::digest`]、不叠层。
+    pub homes: BTreeMap<String, String>,
 }
 
 impl PresetFile {
@@ -124,9 +128,11 @@ impl PresetFile {
         self.own.contains(package) || self.decided(feature, package).0
     }
 
-    /// 编号和包一样的功能 `feature` 开不开：人格记忆、人设遵循提醒这种没写功能、整个包算一个的（[`PresetFile::opens_in`]）。
+    /// 功能 `feature` 开不开（[`PresetFile::opens_in`]）：包照 [`PresetFile::homes`] 找（施工 PN-2：包改了编号，功能的编号
+    /// 不变）；没装、找不到的照功能的编号算。
     pub fn opens(&self, feature: &str) -> bool {
-        self.opens_in(feature, feature)
+        let package = self.homes.get(feature).map_or(feature, String::as_str);
+        self.opens_in(feature, package)
     }
 
     /// 包 `package` 里归功能 `feature` 的工具 `tool` 留不留在工具面上：功能开着，这一件也没被 `[tools]` 关掉（走查 C1）。

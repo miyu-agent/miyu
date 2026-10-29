@@ -8,4 +8,9 @@ protocol = [1, 1]
 name = { en = "Long-running goals", zh = "长期目标", ja = "長期目標" }
 summary = { en = "Hand over a long task; the AI keeps working on it round after round", zh = "交代一件要做很久的事，AI 自己一轮轮做下去", ja = "時間のかかる仕事を任せると、AI が自分で一ラウンドずつ進めます" }
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.goal]
+name = { en = "Long-running goals", zh = "长期目标", ja = "長期目標" }
+summary = { en = "Hand over a long task; the AI keeps working on it round after round", zh = "交代一件要做很久的事，AI 自己一轮轮做下去", ja = "時間のかかる仕事を任せると、AI が自分で一ラウンドずつ進めます" }
+
 [builtin]

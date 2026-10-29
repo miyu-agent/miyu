@@ -10,7 +10,7 @@ use miyu_recall::MemoryId;
 use miyu_tool::load::{self, LoadError, say};
 use miyu_tool::{Done, MemoryLines, Refused};
 
-use crate::PACKAGE;
+use crate::SOFTWARE;
 
 /// 读好的几句，三件工具共用一份。
 #[derive(Clone)]
@@ -41,7 +41,7 @@ impl Texts {
     /// 照资源目录 `resources` 读，每一份拿它要的字段试换一次。
     pub(crate) fn load(resources: &Path) -> Result<Texts, LoadError> {
         let text = |tool: &str, name: &str, fields: &[&str]| {
-            load::text(resources, PACKAGE, tool, name, fields)
+            load::text(resources, SOFTWARE, tool, name, fields)
         };
         Ok(Texts(Arc::new(All {
             bad_args: text("common", "bad-args", &["error"])?,
@@ -55,7 +55,7 @@ impl Texts {
             unknown_class: text("remember", "unknown-class", &["class"])?,
             no_who: text("remember", "no-who", &[])?,
             retired: text("forget", "retired", &["id"])?,
-            lines: MemoryLines::load(resources, PACKAGE)?,
+            lines: MemoryLines::load(resources, SOFTWARE)?,
             turn: text("memory_search", "turn", &["date", "session", "text"])?,
             turn_elsewhere: text(
                 "memory_search",
@@ -120,7 +120,7 @@ pub(crate) fn line(template: &Template, fields: &[(&str, &str)]) -> String {
 /// 给人看的说法：编号是 `software/memory/<key>`，带着换进去的字段。
 pub(crate) fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     fields.iter().fold(
-        Said::new(format!("software/{PACKAGE}/{key}")),
+        Said::new(format!("software/{SOFTWARE}/{key}")),
         |said, (name, value)| said.with(name, (*value).to_string()),
     )
 }

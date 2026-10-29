@@ -19,11 +19,11 @@ use miyu_tool::{
     Spec, Tool, WAKEUP_MAX, WAKEUP_MIN,
 };
 
-use crate::LOOP;
+use crate::LOOP_SOFTWARE;
 use crate::texts::{Common, Package, clock};
 
 /// 这个包。
-const PACKAGE: Package = Package { id: LOOP };
+const PACKAGE: Package = Package { id: LOOP_SOFTWARE };
 
 /// `schedule_wakeup`。
 pub(crate) struct Wakeup {
@@ -54,7 +54,7 @@ impl Wakeup {
         let wakeup =
             |name: &str, fields: &[&str]| PACKAGE.text(resources, ("wakeup", name), fields);
         Ok(Wakeup {
-            spec: load::spec(resources, LOOP, SCHEDULE_WAKEUP, Access::Read)?,
+            spec: load::spec(resources, LOOP_SOFTWARE, SCHEDULE_WAKEUP, Access::Read)?,
             common: Common::load(resources, PACKAGE)?,
             set: wakeup("set", &["next"])?,
             stopped: wakeup("stopped", &[])?,

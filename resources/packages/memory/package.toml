@@ -12,4 +12,9 @@ summary = { en = "Remember what you said and recall it later", zh = "记住你�
 [recommends]
 workers = ["embed"]
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.memory]
+name = { en = "Persona memory", zh = "人格记忆", ja = "ペルソナの記憶" }
+summary = { en = "Remember what you said and recall it later", zh = "记住你说过的事，以后想得起来", ja = "話したことを覚えて、あとで思い出します" }
+
 [builtin]

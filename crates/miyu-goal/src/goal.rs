@@ -19,7 +19,7 @@ use miyu_tool::{
     Spec, Tool,
 };
 
-use crate::PACKAGE;
+use crate::SOFTWARE;
 use crate::texts::{Texts, line, said};
 
 /// `goal`。
@@ -48,7 +48,7 @@ impl Goal {
     /// 照资源目录 `resources` 里的字造。
     pub(crate) fn load(resources: &Path) -> Result<Goal, LoadError> {
         Ok(Goal {
-            spec: load::spec(resources, PACKAGE, GOAL, Access::Read)?,
+            spec: load::spec(resources, SOFTWARE, GOAL, Access::Read)?,
             texts: Texts::load(resources)?,
         })
     }

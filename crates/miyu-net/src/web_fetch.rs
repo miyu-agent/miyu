@@ -20,8 +20,12 @@ use miyu_tool::{Call, Done, Progress, Running, Spec, Tool};
 use crate::document::{Miss, Pages};
 use crate::search::Search;
 
-/// 这个包的编号：资源目录里的名字。
+/// 这个包的编号；资源目录另是 [`SOFTWARE`]（施工 PN-2）。
 pub const PACKAGE: &str = "net";
+
+/// 资源目录 `resources/software/net` 的名字，也是给人看的字的键 `software/net/…` 的那一段（施工 PN-2）：日志里存着，和包编号
+/// 分开，包改名不跟着变。
+pub const SOFTWARE: &str = "net";
 
 /// 工具名。
 pub const WEB_FETCH: &str = "web_fetch";
@@ -68,7 +72,7 @@ struct Texts {
 impl Texts {
     fn load(resources: &Path) -> Result<Texts, LoadError> {
         let text =
-            |name: &str, fields: &[&str]| load::text(resources, PACKAGE, WEB_FETCH, name, fields);
+            |name: &str, fields: &[&str]| load::text(resources, SOFTWARE, WEB_FETCH, name, fields);
         Ok(Texts {
             more: text("more", &["page", "pages"])?,
             moved: text("moved", &["url"])?,
@@ -131,7 +135,7 @@ impl WebFetch {
         search: Arc<Search>,
     ) -> Result<WebFetch, LoadError> {
         Ok(WebFetch {
-            spec: load::spec(resources, PACKAGE, WEB_FETCH, Access::Read)?,
+            spec: load::spec(resources, SOFTWARE, WEB_FETCH, Access::Read)?,
             texts: Texts::load(resources)?,
             pages,
             search,
@@ -275,7 +279,7 @@ fn line(template: &Template, fields: &[(&str, &str)]) -> String {
 /// 给人看的说法：编号是 `software/net/<key>`，带着换进去的字段。
 fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     fields.iter().fold(
-        Said::new(format!("software/{PACKAGE}/{key}")),
+        Said::new(format!("software/{SOFTWARE}/{key}")),
         |said, (name, value)| said.with(name, (*value).to_string()),
     )
 }

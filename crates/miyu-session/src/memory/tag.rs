@@ -37,7 +37,7 @@ pub(crate) const BATCH: usize = 20;
 /// 用途：同抽取、合并（`memory`）。
 const PURPOSE: &str = "memory";
 
-const PACKAGE: &str = "memory";
+const SOFTWARE: &str = "memory";
 
 /// 写关键词给模型看的字（`resources/software/memory/tag/`，登记簿）：指令，一条一行照 `memory_search/memory.txt`。
 #[derive(Debug, Clone)]
@@ -54,8 +54,8 @@ impl TagTexts {
     /// 哪一份读不出来、写法不对、要了别的字段。
     pub fn load(resources: &Path) -> Result<TagTexts, LoadError> {
         Ok(TagTexts {
-            instruction: load::text(resources, PACKAGE, "tag", "instruction", &[])?,
-            lines: MemoryLines::load(resources, PACKAGE)?,
+            instruction: load::text(resources, SOFTWARE, "tag", "instruction", &[])?,
+            lines: MemoryLines::load(resources, SOFTWARE)?,
         })
     }
 }

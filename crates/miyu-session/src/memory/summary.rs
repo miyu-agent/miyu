@@ -23,7 +23,7 @@ use super::merge::made_by_merge;
 use super::{Filter, Keeper};
 
 /// 记忆这个软件包在资源目录里的名字（和 `miyu-memory` 的同一个；会话这一层不依赖软件包）。
-const PACKAGE: &str = "memory";
+const SOFTWARE: &str = "memory";
 
 /// 注入那一块的模块和类别：都叫 `memory`。
 const NAME: &str = "memory";
@@ -55,12 +55,12 @@ impl SummaryTexts {
     /// 读不出来；不是合写法的模板，或者要了别的字段。
     pub fn load(resources: &Path) -> Result<SummaryTexts, LoadError> {
         Ok(SummaryTexts {
-            open: load::text(resources, PACKAGE, "summary", "open", &[])?,
-            lines: MemoryLines::load(resources, PACKAGE)?,
-            more: load::text(resources, PACKAGE, "summary", "more", &["count"])?,
-            close: load::text(resources, PACKAGE, "summary", "close", &[])?,
-            digest: load::text(resources, PACKAGE, "summary", "digest", &["text"])?,
-            card: load::text(resources, PACKAGE, "card", "person", &["who", "text"])?,
+            open: load::text(resources, SOFTWARE, "summary", "open", &[])?,
+            lines: MemoryLines::load(resources, SOFTWARE)?,
+            more: load::text(resources, SOFTWARE, "summary", "more", &["count"])?,
+            close: load::text(resources, SOFTWARE, "summary", "close", &[])?,
+            digest: load::text(resources, SOFTWARE, "summary", "digest", &["text"])?,
+            card: load::text(resources, SOFTWARE, "card", "person", &["who", "text"])?,
         })
     }
 }

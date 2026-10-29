@@ -17,7 +17,7 @@ use miyu_tool::{
 };
 
 use crate::texts::{Texts, line, said};
-use crate::{PACKAGE, TURN_CHARS};
+use crate::{SOFTWARE, TURN_CHARS};
 
 /// `memory_search`。
 pub(crate) struct Search {
@@ -37,7 +37,7 @@ impl Search {
     /// 照资源目录 `resources` 里的说明造，几句是 `texts`。
     pub(crate) fn load(resources: &Path, texts: Texts) -> Result<Search, LoadError> {
         Ok(Search {
-            spec: load::spec(resources, PACKAGE, MEMORY_SEARCH, Access::Read)?,
+            spec: load::spec(resources, SOFTWARE, MEMORY_SEARCH, Access::Read)?,
             texts,
         })
     }

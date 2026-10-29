@@ -8,7 +8,7 @@ use miyu_kernel::template::Template;
 use miyu_tool::Done;
 use miyu_tool::load::{self, LoadError, say};
 
-use crate::PACKAGE;
+use crate::SOFTWARE;
 
 /// 读好的几句。
 pub(crate) struct Texts {
@@ -31,7 +31,7 @@ impl Texts {
     /// 照资源目录 `resources` 读，每一份拿它要的字段试换一次。
     pub(crate) fn load(resources: &Path) -> Result<Texts, LoadError> {
         let text = |tool: &str, name: &str, fields: &[&str]| {
-            load::text(resources, PACKAGE, tool, name, fields)
+            load::text(resources, SOFTWARE, tool, name, fields)
         };
         let goal = |name: &str, fields: &[&str]| text("goal", name, fields);
         Ok(Texts {
@@ -79,7 +79,7 @@ pub(crate) fn line(template: &Template, fields: &[(&str, &str)]) -> String {
 /// 给人看的说法：编号是 `software/goal/<key>`，带着换进去的字段。
 pub(crate) fn said(key: &str, fields: &[(&str, &str)]) -> Said {
     fields.iter().fold(
-        Said::new(format!("software/{PACKAGE}/{key}")),
+        Said::new(format!("software/{SOFTWARE}/{key}")),
         |said, (name, value)| said.with(name, (*value).to_string()),
     )
 }

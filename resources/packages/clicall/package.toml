@@ -9,4 +9,9 @@ groups = ["basesystem"]
 name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプトからツール" }
 summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
 
+# 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
+[features.clicall]
+name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプトからツール" }
+summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
+
 [builtin]

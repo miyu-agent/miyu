@@ -284,6 +284,20 @@ pub fn groups(found: &[Found]) -> std::collections::BTreeMap<String, Vec<String>
         .collect()
 }
 
+/// 功能在哪个包里（施工 PN-2）：读成了的清单里每个功能（[`miyu_config::package::Manifest::features_of`]）的编号到包的编号。
+pub fn homes(found: &[Found]) -> std::collections::BTreeMap<String, String> {
+    found
+        .iter()
+        .filter_map(|one| Some((one.id.as_str(), one.read.as_ref().ok()?)))
+        .flat_map(|(id, manifest)| {
+            manifest
+                .features_of(id)
+                .into_iter()
+                .map(move |feature| (feature.id, id.to_string()))
+        })
+        .collect()
+}
+
 /// 内置包 `id` 装了（施工 F-2）：有它读成了的清单，种类是内置。编进来的代码照它起不起。
 pub fn is_installed(found: &[Found], id: &str) -> bool {
     found.iter().any(|one| {
@@ -376,3 +390,6 @@ pub(crate) fn sentence(words: &Human, code: &str, detail: &str) -> Option<String
         &[("detail", detail)],
     )
 }
+
+#[cfg(test)]
+mod tests;

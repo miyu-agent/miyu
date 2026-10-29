@@ -48,7 +48,7 @@ const PURPOSE: &str = "memory";
 const TRIES: u32 = 3;
 
 /// 记忆这个软件包在资源目录里的名字（和 `summary.rs` 的同一个）。
-const PACKAGE: &str = "memory";
+const SOFTWARE: &str = "memory";
 
 /// 这一段以后忘掉的最多列几条（施工 R-6 修）：一个闲置窗口里忘掉的一般只有几条，合并一次作废的多，新的在前够用。
 pub(crate) const DROPPED: usize = 20;
@@ -81,7 +81,7 @@ impl ExtractTexts {
     /// 哪一份读不出来、写法不对、要了别的字段。
     pub fn load(resources: &Path) -> Result<ExtractTexts, LoadError> {
         let text =
-            |name: &str, fields: &[&str]| load::text(resources, PACKAGE, "extract", name, fields);
+            |name: &str, fields: &[&str]| load::text(resources, SOFTWARE, "extract", name, fields);
         Ok(ExtractTexts {
             instruction: text("instruction", &["owner"])?,
             open: text("turn-open", &["turn", "date"])?,
@@ -91,8 +91,8 @@ impl ExtractTexts {
             assistant: text("assistant", &["text"])?,
             excerpted: text("excerpted", &[])?,
             dropped: text("dropped", &[])?,
-            lines: MemoryLines::load(resources, PACKAGE)?,
-            unnamed: load::text(resources, PACKAGE, "common", "owner-unnamed", &[])?,
+            lines: MemoryLines::load(resources, SOFTWARE)?,
+            unnamed: load::text(resources, SOFTWARE, "common", "owner-unnamed", &[])?,
         })
     }
 }
