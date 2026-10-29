@@ -81,6 +81,11 @@ pub struct Media {
     /// `session/send.rs`）。假的不写，以前记的没有，字节不变。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub shown: bool,
+    /// 在合并转发里的编号（施工 O-61，`docs/blueprint/venues.md`「场所的格」）：桥照 `fetch_media` 的数法记的（同一条消息里
+    /// 接着它自己带的东西往下数，照展开的先后，套着的转发也算），核心只照记的写、不自己数，重了是桥的事。只在转发里有，
+    /// 转发外面的写了收的一方拒。没有的不写，以前记的没有，字节不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub index: Option<std::num::NonZeroU32>,
 }
 
 /// 一个合并转发（施工 O-34）：桥放进来的几条，和没放进来的条数。
@@ -100,7 +105,7 @@ pub struct ForwardNode {
     pub name: String,
     /// 那一条的正文，可以是空的（只带了东西的）。不可信，渲染时转义成一行。
     pub text: String,
-    /// 带的东西，写法同 [`VenueMessage::media`]：这一步只写记号，不能用平台工具取。
+    /// 带的东西，写法同 [`VenueMessage::media`]：带了 `index` 的（施工 O-61）记号标那个编号，照它用平台工具取。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub media: Vec<Media>,
     /// 套在这一条里的合并转发，同样的形状。
@@ -150,3 +155,6 @@ pub struct VenueDelivered {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub images: Vec<ContentHash>,
 }
+
+#[cfg(test)]
+mod tests;

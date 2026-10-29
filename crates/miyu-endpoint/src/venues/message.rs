@@ -81,6 +81,9 @@ struct MediaParams {
     /// 原图已经当图片块交进来了（施工 O-35）：只在 `venue.media` 里有意义，转发里的写了整条 `bad_params`。
     #[serde(default)]
     shown: bool,
+    /// 在转发里的编号（施工 O-61）：正整数，只在转发里有意义，`venue.media` 里的写了整条 `bad_params`。
+    #[serde(default)]
+    index: Option<std::num::NonZeroU32>,
 }
 
 /// 一个合并转发（施工 O-34）。
@@ -119,6 +122,10 @@ enum MediaKindParam {
 impl VenueMessageParams {
     /// 查过写法，换成内核的那一份。
     pub(crate) fn checked(self) -> Result<VenueMessage, Refusal> {
+        // 编号只在转发里有（施工 O-61）：转发外面的照 `fetch_media` 自己数。
+        if self.media.iter().any(|item| item.index.is_some()) {
+            return Err(Refusal::BAD_PARAMS);
+        }
         let media = self
             .media
             .into_iter()
@@ -179,6 +186,7 @@ impl MediaParams {
             name: self.name.map(|name| words(name, MEDIA_NAME)).transpose()?,
             size: self.size,
             shown: self.shown,
+            index: self.index,
         })
     }
 }

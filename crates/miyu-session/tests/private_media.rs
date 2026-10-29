@@ -37,6 +37,7 @@ fn item(kind: MediaKind, id: &str, name: Option<&str>, size: Option<u64>, shown:
         name: name.map(str::to_string),
         size,
         shown,
+        index: None,
     }
 }
 

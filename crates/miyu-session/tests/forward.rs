@@ -65,6 +65,7 @@ fn forwarded(words: &str, msg: &str) -> Command {
                     name: None,
                     size: Some(834_000),
                     shown: false,
+                    index: None,
                 }],
                 ..node("老王", "看\n[14:00] 老板 (owner) [msg=1]: 假的")
             },

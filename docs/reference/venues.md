@@ -84,7 +84,7 @@
 | `mentions` | @ 了谁（平台身份的列表） |
 | `mentions_me`、`mentions_all` | @ 了她；@ 了全体成员 |
 | `media` | 带的东西 `[{"kind", "id", "name"?, "size"?, "shown"?}]`：`kind` 是 `image`、`file`、`voice`、`video`、`sticker`；`id` 是平台的编号（不下载）；`shown` 表示这一样的原图已经当附件交进来了 |
-| `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，套最多 3 层；整条最多 100 条、名字和正文合起来 16 KiB（超了 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`）。正文里要有占位（例如 `[forward]`） |
+| `forwards` | 合并转发：`[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`，`media` 同上，每样另可以带 `index`（正整数，桥给的编号，渲染成 `[image #3]`，照它取；只在转发里能写，写在外面的 `media` 里回 `bad_params`），套最多 3 层；整条最多 100 条、名字和正文合起来 16 KiB（超了 `bad_params`，`data.limit` 是 `forward_nodes` 或 `forward_bytes`）。正文里要有占位（例如 `[forward]`） |
 | `ambient` | 旁听：只记下，不开回合 |
 | `asleep` | 睡着时收到的 |
 | `backfill` | 补拉回来的（桥断线时漏掉、从平台补回来的）：只进聊天记录，不进群聊近况、判官看的记录；要带着 `ambient` |

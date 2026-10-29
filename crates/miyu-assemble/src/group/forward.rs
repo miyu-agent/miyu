@@ -4,14 +4,14 @@
 //! 只有一个转发的头一行写 `label`，不止一个的每个写 `numbered`（第几个从 1 数）；下面每条一行 `名字: 正文 [记号]`，套在里面的
 //! 转发接在那一条下面、再缩进一层；`more` 有的最后写一行 `more`。缩进只由这里加，名字、正文、记号里的名字照模板的规矩转义成
 //! 一行：伪造不出不缩进的记录行。不拿正文里 `[forward]` 的个数去对转发的个数（人也打得出这几个字），全部照先后写。带的东西
-//! 不标第几个、语音不接那一句：转发里的取不了（`fetch_media` 认不得转发里的位置）。
+//! 桥记了编号的（施工 O-61）标 `#编号`，照它用 `fetch_media` 取；没记的不标；语音不接那一句。
 
 use std::collections::BTreeMap;
 
 use miyu_kernel::event::Forward;
 use miyu_kernel::template::escape;
 
-use super::markers;
+use super::marker;
 use crate::texts::ForwardTexts;
 
 /// 一层多缩进几格。
@@ -47,7 +47,13 @@ fn push(lines: &mut Vec<String>, forwards: &[Forward], indent: usize, texts: &Fo
             if !text.is_empty() {
                 parts.push(escape(text));
             }
-            parts.extend(markers(&node.media, None));
+            // 编号照桥记的写（施工 O-61），核心不自己数。
+            parts.extend(node.media.iter().map(|item| {
+                let number = item
+                    .index
+                    .and_then(|index| usize::try_from(index.get()).ok());
+                marker(item, number)
+            }));
             let name = escape(&node.name);
             if parts.is_empty() {
                 lines.push(format!("{inner}{name}:"));

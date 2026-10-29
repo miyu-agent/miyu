@@ -84,7 +84,7 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 | `mentions` | Who was @-mentioned (platform identities) |
 | `mentions_me`, `mentions_all` | Mentioned her; mentioned everyone |
 | `media` | What it carries `[{"kind", "id", "name"?, "size"?, "shown"?}]`: `kind` is `image`, `file`, `voice`, `video`, `sticker`; `id` is the platform's id (not downloaded); `shown` means the original was already passed in as an attachment |
-| `forwards` | Merged forwards: `[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`, nested at most 3 deep; at most 100 nodes and 16 KiB of names and text per message (over that, `bad_params` with `data.limit` of `forward_nodes` or `forward_bytes`). The text must contain a placeholder (e.g. `[forward]`) |
+| `forwards` | Merged forwards: `[{"nodes": [{"name", "text", "media"?, "forwards"?}], "more"?}]`; `media` as above, and each item may also carry `index` (a positive integer the bridge assigns, rendered as `[image #3]` and used to fetch it; only allowed inside forwards, in the top-level `media` it is `bad_params`); nested at most 3 deep; at most 100 nodes and 16 KiB of names and text per message (over that, `bad_params` with `data.limit` of `forward_nodes` or `forward_bytes`). The text must contain a placeholder (e.g. `[forward]`) |
 | `ambient` | Listening only: recorded, doesn't start a turn |
 | `asleep` | Received while asleep |
 | `backfill` | Fetched back after the bridge was disconnected: kept in the chat record only, left out of the recent chat and the judge's records; requires `ambient` |

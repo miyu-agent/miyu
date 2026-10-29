@@ -156,7 +156,7 @@ pub(crate) fn markers(media: &[Media], voice: Option<&str>) -> Vec<String> {
 
 /// 带的一样东西的记号：`[image]`；标第几个的 `[image #2]`；有名字、大小的冒号后面逗号隔开，`[file: 名字, 1.2 MB]`。
 /// 名字照模板的规矩转义。
-fn marker(item: &Media, number: Option<usize>) -> String {
+pub(crate) fn marker(item: &Media, number: Option<usize>) -> String {
     let mut head = item.kind.as_str().to_string();
     if let Some(number) = number {
         head.push_str(&format!(" #{number}"));

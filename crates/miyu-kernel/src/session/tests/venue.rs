@@ -18,6 +18,7 @@ fn venue(msg: &str, ambient: bool) -> VenueMessage {
             name: Some("报告.pdf".to_string()),
             size: Some(1_200_000),
             shown: false,
+            index: None,
         }],
         ambient,
         ..VenueMessage::default()

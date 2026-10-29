@@ -260,6 +260,7 @@ mod usage;
 mod usage_convert;
 mod venue_backfill;
 mod venue_binding;
+mod venue_forward_index;
 mod venue_forwards;
 mod venue_judge;
 mod venue_my_name;

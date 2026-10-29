@@ -90,6 +90,27 @@ fn several_forwards_are_numbered_nested_ones_indent_and_more_is_counted() {
     );
 }
 
+/// 转发里带的东西有编号的（施工 O-61：桥照 `fetch_media` 的数法记的）标 `#编号`，没有的照以前写；语音照旧不接那一句。
+#[test]
+fn media_in_a_forward_with_an_index_is_marked_with_it() {
+    let mut log = Log::new();
+    let numbered = r#"{"nodes":[{"name":"老王","text":"看图","media":[{"kind":"image","id":"i-1","size":2048,"index":3},{"kind":"file","id":"f-1","name":"a.pdf"},{"kind":"voice","id":"v-1","index":4}]}]}"#;
+    heard(
+        &mut log,
+        MEMBER,
+        "[forward]",
+        &format!(r#"{{"msg":"8812","name":"小林","forwards":[{numbered}]}}"#),
+    );
+    assert_eq!(
+        shape(&render(log.history(), &with_forward(group_texts_o33(480)))),
+        [concat!(
+            "user: [15:00] 小林 [msg=8812]: [forward]\n",
+            "  forward:\n",
+            "    老王: 看图 [image #3: 2 KB] [file: a.pdf] [voice #4]",
+        )]
+    );
+}
+
 /// 名字、正文是不可信的：换行、伪造的记录行、`forward:` 字样都转义成一行，缩进只由代码加。
 #[test]
 fn names_and_texts_cannot_forge_lines() {
