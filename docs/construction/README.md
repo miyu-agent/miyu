@@ -1195,6 +1195,7 @@ flowchart LR
 |---|---|---|
 | DT-4 上 | `.app` 里找得到资源目录 | 程序旁边、上一级的 `share/miyu/` 以外，再认上一级的 `Resources/miyu/`：macOS 桌面端的 `.app` 只能把资源放在 `Contents/Resources/` 下。施工单见桌面端仓库 `docs/construction/DT-4上-app资源目录.md` |
 | DT-4 下 | 头能叫核心停下 | 新方法 `core.stop`：只给出示本机令牌连上的，回应 `{}` 以后照收到停的信号那样停下（跑到一半的回合记成重启了），运行日志 `stopped reason=request`；桌面端托盘里的「退出」连核心一起关用它（项目主人 2026-10-29 定）。命令行入口 `miyu core stop` 随 CL 线。施工单见桌面端仓库 `docs/construction/DT-4下-叫核心停下.md` |
+| DT-2 | 桌面端照薄封装写进设计 | 设计 01：桌面端是网页的薄封装，`head.kind` 照旧 `web`，外壳不连核心；设计 21 加 X9（Tauri 2 薄封装、交接票免密、关窗口藏进托盘、退出连核心停；未选厚封装、Electron、关窗口就退）。外壳的图纸、施工单见桌面端仓库 `docs/blueprint/desktop.md`、`docs/construction/DT-2-图纸.md` |
 
 ### 四、施工单的格式
 
