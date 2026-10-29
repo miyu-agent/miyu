@@ -29,7 +29,7 @@
 | `heads.toml` | 两个界面（终端 `tui`、网页 `web`）的清单不在核心仓库里，在各自的仓库（`miyu-agent/miyu-tui`、`miyu-agent/miyu-web`）里和编号同名的文件夹 `tui/`、`web/` 下（2026-10-13 起，以前叫 `package/`）；核心仓库只记发版时取哪一份（施工 S-5，设计 `32-仓库拆分.md` 第六节）。发版时清单放进资源目录的 `packages/tui/`、`packages/web/`，程序放在 `miyu` 旁边；核心仓库自己编出来的没带它们 |
 | `resources/packages/onebot/`（搬走了） | 接入QQ 的清单原来在这里（施工 O-18 起）；施工 S-6 下随桥搬进 `miyu-agent/miyu-onebot` 仓库，单独发、自己装，核心的发布包不带它，也不进 `heads.toml`（设计 `32-仓库拆分.md` 第九节） |
 | `resources/packages/<编号>/package.toml`、`resources/packages/groups.toml` | 出厂的内置包的清单（施工 F-2）。基础系统（施工 BS-1 上中起，设计 44）拆成十八个包：`miyu-base-read`、`miyu-base-write`、`miyu-base-edit`、`miyu-base-glob`、`miyu-base-grep`、`miyu-base-trash`、`miyu-base-shell`、`miyu-base-jobs`、`miyu-base-subagent`、`miyu-base-ask-user`、`miyu-base-todowrite`、`miyu-base-history`、`miyu-base-session-usage`、`miyu-base-sessions`（带 `send_message`）、`miyu-base-packages`（带 `package`）、`miyu-base-show`、`miyu-base-project-docs`、`miyu-base-clicall`，每个一个功能、写明带的工具，功能编号是改名前的短名（`read`、`ask_user`、`session_usage`……），清单都写 `groups = ["basesystem"]`；组的名字、说明在 `groups.toml`，还有 `order`：组里的包照用途的先后（施工 PG-1，`package.list` 顶上的 `groups` 照它给 `packages`）。没有哪个包是必需的。注入环境信息（`miyu-base-env`，施工 ENV-1）不是必需的，八个功能：环境那七块加「用户身份」（`presets.md`「环境那几块」）；人格记忆、知识库（施工 K-1 下）、人设遵循提醒各算一个功能；画 mermaid 不带功能，联网两个功能「网络搜索」「抓取网页」（施工 N-2 上、N-1）；人格记忆推荐小程序 `embed`（施工 R-5 三补）。出厂的包施工 PN-3 起都叫 `miyu-base-<名字>`（设计 48），清单写 `prefix = "<改名前的编号>"`，配置键、功能编号、资源目录照旧是短名；基础系统的工具归哪个包照 `miyu_basesystem::TOOLS` 对照，不再靠工具名等于包编号 |
-| `miyu-agent/miyu-embed` 仓库的 `package/embed/` | 「内置语义模型」这个小程序包（施工 R-5 三补，`recall.md` 第四条；S-7 下拆进自己的仓库）：出厂不装，从软件源装（`miyu pkg install embed`） |
+| `miyu-agent/miyu-embed` 仓库的 `package/embed/` | 「内置语义模型」这个小程序包（施工 R-5 三补，`recall.md` 第四条；S-7 下拆进自己的仓库）：出厂不装，从软件源装（`miyu pkg install miyu-embed`，施工 PN-4 起的编号） |
 | `crates/miyu-core/src/lib.rs`、`packages.rs` | 编进来的内置包那张表（`built_in`）；起来时照清单登记工具（`tools`）、查询（`packages::register`）（施工 F-2） |
 
 ### 对外的样子
@@ -108,17 +108,17 @@ summary = { en = "Decides whether to reply in a group.", zh = "群里有人说�
 packages = ["onebot"]            # 以前只写小程序，叫 workers，照样认
 
 [recommends]                     # 推荐的包：缺了照装、照起，少一部分本事
-packages = ["embed"]
+packages = ["miyu-embed"]
 
 [worker]                         # 小程序必写，别的种类不能写
 program = "miyu-embed"           # 程序名，不带路径分隔符
 args = ["serve"]                 # 可以不写
 ```
 
-一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放一个模型、出厂不装；放的模型 2026-10-18 换成 granite-embedding-97m-multilingual-r2，施工 R-5 七补）。人格记忆的清单写 `[recommends] workers = ["embed"]`，核心照它拉：
+一个小程序包的样子：内置语义模型（施工 R-5 三补，`recall.md` 第四条；2026-10-09 项目主人定做成可选的包、只放一个模型、出厂不装；放的模型 2026-10-18 换成 granite-embedding-97m-multilingual-r2，施工 R-5 七补）。人格记忆的清单写 `[recommends] workers = ["miyu-embed"]`，核心照它拉：
 
 ```toml
-# packages/embed/package.toml
+# packages/miyu-embed/package.toml
 [package]
 protocol = [1, 1]
 name = { zh = "内置语义模型", en = "Built-in semantic model", ja = "内蔵の意味モデル" }
@@ -127,7 +127,7 @@ name = { zh = "内置语义模型", en = "Built-in semantic model", ja = "内蔵
 program = "miyu-embed"
 ```
 
-模型清单、模型文件放在包目录 `packages/embed/` 里：`model.toml`（这个小程序认的名字，小程序清单里不另写）、`model_quantized.onnx`、`vocab.txt`。
+模型清单、模型文件放在包目录 `packages/miyu-embed/` 里：`model.toml`（这个小程序认的名字，小程序清单里不另写）、`model_quantized.onnx`、`vocab.txt`。
 
 每种包能写的表（别的写了报 `wrong_kind`）：
 
@@ -254,7 +254,7 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 终端界面照网页的「皮肤」做一层变量化，叫「主题」：框线、记号、修饰、留白、动效一张表，做成专门的一种包，默认主题也是一个包（终端的图纸 `tui.md`「主题」）。格式由终端定，核心只认它在哪，同吉祥物包。
 
 ```toml
-# packages/theme-ascii/package.toml
+# packages/miyu-tui-theme-ascii/package.toml
 [package]
 name = { zh = "纯字符", en = "ASCII" }
 

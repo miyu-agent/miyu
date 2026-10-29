@@ -108,7 +108,7 @@ fn install(home: &Home, id: &str, program: &str, opens: &str) {
     .expect("写得进");
 }
 
-/// 测试的界面用的编号：避开发版时出厂会带的 `tui`、`web`（同编号认出厂的，9-3 补）。系统配置里 `ui.head` 指着它。
+/// 测试的界面用的编号：避开发版时出厂会带的 `miyu-tui`、`miyu-webui`（同编号认出厂的，9-3 补）。系统配置里 `ui.head` 指着它。
 fn pointed(home: &Home) {
     home.system_config("[ui]\nhead = \"probe-head\"\n");
 }
@@ -200,13 +200,13 @@ async fn a_missing_head_names_the_installed_ones() {
 
 #[tokio::test]
 async fn without_the_terminal_package_the_default_head_is_not_installed() {
-    // 出厂的 ui.head 是 tui；核心仓库编出来的没带它的清单（施工 S-5：两个界面的清单在各自的仓库里，发版时照 heads.toml
+    // 出厂的 ui.head 是 miyu-tui；核心仓库编出来的没带它的清单（施工 S-5：两个界面的清单在各自的仓库里，发版时照 heads.toml
     // 放进资源目录），说没装。
     let home = Home::new();
     let plain = miyu(&home, &[]);
     assert_eq!(plain.status.code(), Some(1), "{}", said(&plain));
     assert!(
-        said(&plain).starts_with("miyu: 没有安装界面\n提示：用 'miyu pkg install tui' 安装"),
+        said(&plain).starts_with("miyu: 没有安装界面\n提示：用 'miyu pkg install miyu-tui' 安装"),
         "{}",
         said(&plain)
     );

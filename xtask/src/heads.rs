@@ -1,5 +1,5 @@
 //! `heads.toml`（设计 `32-仓库拆分.md` 第六节，施工 S-5）：两个界面的仓库和取哪一份。发版照它取界面的发布产物，这里只查
-//! 写法：正好 `tui`、`web` 两张表，每张只有 `repo`、`rev`；仓库在 `miyu-agent` 组织下；`rev` 是完整的提交号或者 `v` 开头的
+//! 写法：正好 `miyu-tui`、`miyu-webui` 两张表（施工 PN-4 起照包编号，设计 48），每张只有 `repo`、`rev`；仓库在 `miyu-agent` 组织下；`rev` 是完整的提交号或者 `v` 开头的
 //! 标签。
 
 use std::path::Path;
@@ -10,7 +10,7 @@ use toml_edit::{DocumentMut, Item};
 pub const PATH: &str = "heads.toml";
 
 /// 有哪几个界面，照这个先后。
-const HEADS: [&str; 2] = ["tui", "web"];
+const HEADS: [&str; 2] = ["miyu-tui", "miyu-webui"];
 
 /// 仓库要在这下面。
 const ORG: &str = "https://github.com/miyu-agent/";

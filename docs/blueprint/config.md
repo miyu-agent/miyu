@@ -250,7 +250,7 @@ miyu_config::settings! {
 | `sandbox.strength` | 选项 `auto`、`weak` | `auto` | 系统 | 不能写 | `next_turn` | 5-16 下：沙盒强度。`auto` 有能用的 bubblewrap 就用它，`weak` 只用 Landlock（有挂载也不用）。回合开始照这一轮的配置读。只在 Linux 上起作用：三个系统都登记（生成的文件哪个系统都一样），别的系统上 `config.schema` 标 `hidden`。「隐私与安全」那一页的「沙盒」一组，下拉 |
 | `external.bindings.<external>` | 名字（写什么都算主人，im 写 `owner`） | 没有 | 系统 | 不能写 | `now` | O-3：主人的平台账号（`venues.md`），一个号一行；值是空的当没写。头在平台接入那个软件的信息页上画成「我的平台账号」，只填号码（2026-10-10 项目主人定，`package-pages.md`「平台接入的软件」） |
 | `ui.startup` | 选项 `new`、`recent` | `new`，开一个新会话 | 系统 | 不能写 | `head_start` | 8-3（8-28 从 `tui.startup` 改名） |
-| `ui.head` | 名字（软件包的编号） | `tui` | 系统 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
+| `ui.head` | 名字（软件包的编号） | `miyu-tui` | 系统 | 不能写 | `head_start` | 9-3（`cli/main.md`「怎么走」第 3 条）：直接敲 `miyu`、`miyu config` 时打开哪个界面；主程序每次敲的时候经 `config.get` 读，照清单找这个包的程序。界面提示：通用页的「显示」组，文字 |
 | `ui.welcomed` | 布尔 | `false` | 系统 | 不能写 | `now` | 8-11 四补（2026-10-08 终端、网页两个头要的，`cli/setup.md` 以外的第一次引导）：走完了第一次引导。头走完写 `true`（`config.set`），以后不再进引导，缺什么去配置页补；进不进只看它，不看有没有模型。核心不读它。设置页不画（`hidden`） |
 | `compaction.prepare` | 开关 | `true` | 系统 | 不能写 | `next_turn` | 6-11 上（`compaction.md` 第十五条）：提前压好，会话 actor 回合开始时读、交给内核。设置页在「高级」那一页的「压缩」一组，排在「运行日志」前面 |
 | `jobs.max_running` | 时长，60 秒到 2 小时 | `30m` | 系统 | 不能写 | `next_turn` | 7-12 下（`agents.md`「后台命令」第 7 条，照 Claude Code）：后台命令最多跑多久，派活时照这一轮的配置读。设置页在「通用」那一页的「会话」一组 |
@@ -1529,7 +1529,7 @@ idle_new_after = 180
 [ui]
 # 默认界面：直接敲 miyu 时打开哪个界面。
 # 能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。重启后生效。
-head = "tui"
+head = "miyu-tui"
 
 # 界面语言：终端、网页、命令行给你看的字用哪种话。auto 跟着终端或浏览器的语言。
 # 能写：auto、zh、en 或 ja。只能写在系统配置里。立即生效。

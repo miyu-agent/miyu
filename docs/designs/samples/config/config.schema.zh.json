@@ -1032,7 +1032,7 @@
     "ui": {
       "properties": {
         "head": {
-          "default": "tui",
+          "default": "miyu-tui",
           "description": "直接敲 miyu 时打开哪个界面。能写：小写字母开头的名字，只有小写字母、数字、-、_，最长 64 个字符。只能写在系统配置里。重启后生效。",
           "title": "默认界面",
           "type": "string"

@@ -288,7 +288,7 @@ async fn config_check_reports_a_bad_secrets_file_without_its_values() {
         "{out}"
     );
     assert!(
-        out.ends_with("1 error\nSemantic model: not installed, keyword search only\nhint: install it with 'miyu pkg install embed'\n"),
+        out.ends_with("1 error\nSemantic model: not installed, keyword search only\nhint: install it with 'miyu pkg install miyu-embed'\n"),
         "合计后面是语义模型的状态（施工 R-25）：{out}"
     );
     // 只查密钥文件的：照核心手里的问题，只有它（施工 8-30）。

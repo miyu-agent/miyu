@@ -329,9 +329,9 @@ fn the_builtin_port_sets_up_the_local_model_from_the_list() {
     let read =
         |text: &str| miyu_config::package::read(text).map_err(miyu_store::packages::Issue::Wrong);
     let embed = Found {
-        id: "embed".to_string(),
+        id: "miyu-embed".to_string(),
         layer: miyu_store::packages::Layer::Home,
-        path: std::env::temp_dir().join("embed").join("package.toml"),
+        path: std::env::temp_dir().join("miyu-embed").join("package.toml"),
         read: read(
             "[package]\nprotocol = [1, 1]\nname = { en = \"Model\" }\n\n[worker]\nprogram = \"miyu-embed\"\n",
         ),

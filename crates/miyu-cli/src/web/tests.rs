@@ -47,7 +47,7 @@ fn a_missing_web_ui_says_how_to_install() {
     );
     assert_eq!(
         String::from_utf8(err).expect("UTF-8"),
-        "miyu: 未安装网页界面\n提示：用 'miyu pkg install web' 安装\n"
+        "miyu: 未安装网页界面\n提示：用 'miyu pkg install miyu-webui' 安装\n"
     );
     let mut err = Vec::new();
     assert_eq!(
@@ -63,7 +63,7 @@ fn a_missing_web_ui_says_how_to_install() {
     );
     assert_eq!(
         String::from_utf8(err).expect("UTF-8"),
-        "miyu: no web interface installed\nhint: install it with 'miyu pkg install web'\n"
+        "miyu: no web interface installed\nhint: install it with 'miyu pkg install miyu-webui'\n"
     );
     std::fs::remove_dir_all(&dir).expect("删得掉临时目录");
 }

@@ -40,7 +40,7 @@ def _memory_gb():
 def collect(where, rivals):
     """这一趟的条件；终端界面的提交顺带和 heads.toml 钉的比一比。"""
     heads = tomllib.loads((places.REPO / "heads.toml").read_text())
-    pinned = heads["tui"]["rev"]
+    pinned = heads["miyu-tui"]["rev"]
     tui_rev = _git(where.tui_repo, "rev-parse", "HEAD")
     return {
         "date": datetime.date.today().isoformat(),

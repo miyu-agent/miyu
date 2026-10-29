@@ -560,7 +560,7 @@ idle_new_after = 180
 [ui]
 # Default interface: The interface plain miyu opens.
 # Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Takes effect after restart.
-head = "tui"
+head = "miyu-tui"
 
 # Interface language: The language terminals, the web page and the command line use for you. auto follows the terminal or browser.
 # Allowed: auto, zh, en or ja. Only in the system config. Takes effect immediately.

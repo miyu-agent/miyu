@@ -23,11 +23,11 @@ impl Language {
                 }
                 (_, true) => &[
                     "语义模型：未安装，仅按关键词搜索",
-                    "提示：用 'miyu pkg install embed' 安装",
+                    "提示：用 'miyu pkg install miyu-embed' 安装",
                 ],
                 (_, false) => &[
                     "Semantic model: not installed, keyword search only",
-                    "hint: install it with 'miyu pkg install embed'",
+                    "hint: install it with 'miyu pkg install miyu-embed'",
                 ],
             };
             return lines.iter().map(ToString::to_string).collect();
@@ -117,7 +117,7 @@ mod tests {
             Language::English.embedding(&missing),
             [
                 "Semantic model: not installed, keyword search only",
-                "hint: install it with 'miyu pkg install embed'",
+                "hint: install it with 'miyu pkg install miyu-embed'",
             ]
         );
     }

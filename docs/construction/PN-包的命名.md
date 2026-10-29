@@ -13,7 +13,7 @@
 | PN-1 | 清单的 `[package] prefix`。包声明的设置项的键、发给扩展的配置、扩展从设置页改自己的配置、卸包时删的键、设置项的文字，都照前缀。扩展记事件的 `ext.<x>` 认前缀，不认编号。前缀撞了装的时候拒绝。作者文档、参考文档、蓝图跟着改。还不改任何包的编号 |
 | PN-2 | 功能编号、资源目录和包编号脱钩，还不改编号、行为不变：<br>- 没写 `[features]` 的六个出厂包（clicall、goal、knowledge、memory、project-docs、roleplay）把功能写明，编号照旧；authoring 只带技能，没有包自己的功能；<br>- 按功能查开没开（`PresetFile::opens`）先照 `homes` 找功能所在的包；<br>- 记忆、长期目标、知识库、联网、定时、循环的 `PACKAGE` 一类常量拆成包编号、资源目录（`SOFTWARE`）两个，加载资源、拼日志里存着的字的键只认资源目录。<br>基础系统「工具 → 包」靠工具名等于包编号对上的那一处，和出厂预设的 `[software]` 一起留给 PN-3：改名时换成对照表 |
 | PN-3 | 出厂包改名成 `miyu-base-*`：<br>- 28 个目录改名（`ask_user`、`session_usage` 的下划线换成连字符），清单写 `prefix = "<旧编号>"`；<br>- `miyu_basesystem::PACKAGES` 换新编号，`package_of` 照对照表 `TOOLS`（工具名到包编号）；<br>- 记忆、长期目标、知识库、联网、定时、循环、注入环境信息、人设遵循提醒、画 mermaid 的包编号常量换新编号；端点斜杠命令的所属包、定时任务到点看的包换新编号，长期目标拆成功能编号 `GOAL_FEATURE`、包编号 `GOAL_PACKAGE`；<br>- 端点认人格记忆装没装原来用的是功能编号 `MEMORY`，改照包编号（`memory::PACKAGE`）；<br>- 设置页 `ui.package`、`ui.group`（记忆、联网、展示那几组的组编号是包编号）、`OWNED`、`groups.toml` 的 `order`、出厂预设的 `[software]`、配置样本、蓝图跟着改。<br>撞名的先后：出厂的照旧先于装上的；出厂的包彼此照编号排，加了同一个前缀、`_` 换成 `-` 以后先后不变 |
-| PN-4 | 界面和扩展的编号：<br>- `ui.head` 默认 `miyu-tui`，`heads.toml` 和 xtask 的头表照新编号；<br>- 语义模型 worker 改 `miyu-embed`，记忆包的 `recommends` 一起改；<br>- 合完通知终端、网页、im、embed、表情包各自改清单，官方源认领新编号 |
+| PN-4 | 界面和扩展的编号：<br>- `ui.head` 默认 `miyu-tui`，`heads.toml` 和 xtask 的头表照新编号（`miyu-tui`、`miyu-webui`）；<br>- 语义模型 worker 改 `miyu-embed`，记忆包的 `recommends` 一起改；<br>- 命令行没装时的提示照新编号（`miyu pkg install miyu-webui`、`miyu-embed`，终端界面照 `ui.head`）；<br>- 合完通知终端、网页、im、embed、表情包各自改清单、包文件夹，官方源认领新编号 |
 
 ### 照的图纸
 

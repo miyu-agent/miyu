@@ -13,8 +13,8 @@ use miyu_store::packages::Found;
 
 use crate::TARGET;
 
-/// 内置模型这个小程序包的编号：人格记忆推荐的是它。
-const WORKER: &str = "embed";
+/// 内置模型这个小程序包的编号：人格记忆推荐的是它（施工 PN-4 起叫 `miyu-embed`，设计 48）。
+const WORKER: &str = "miyu-embed";
 
 /// 小程序包目录里模型清单叫什么：内置模型这个小程序和用它的包之间的约定，小程序清单里不另写（2026-10-09 核心的主会话定）。
 const MODEL: &str = "model.toml";

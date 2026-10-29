@@ -9,7 +9,7 @@ use miyu_store::packages::{Found, Layer};
 
 use super::*;
 
-const MEMORY: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Persona memory\" }\n\n[recommends]\nworkers = [\"embed\"]\n\n[builtin]\n";
+const MEMORY: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Persona memory\" }\n\n[recommends]\nworkers = [\"miyu-embed\"]\n\n[builtin]\n";
 const PLAIN_MEMORY: &str =
     "[package]\nprotocol = [1, 1]\nname = { en = \"Persona memory\" }\n\n[builtin]\n";
 const EMBED: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Built-in semantic model\" }\n\n[worker]\nprogram = \"miyu-embed\"\n";
@@ -80,12 +80,15 @@ fn an_installed_embed_worker_recommended_by_memory_is_set_up_from_its_package() 
         &env,
         &[
             found(&packages, miyu_memory::PACKAGE, MEMORY),
-            found(&packages, "embed", EMBED),
+            found(&packages, "miyu-embed", EMBED),
         ],
     )
     .expect("拼得出");
-    assert_eq!(setup.dir, packages.join("embed"));
-    assert_eq!(setup.manifest, packages.join("embed").join("model.toml"));
+    assert_eq!(setup.dir, packages.join("miyu-embed"));
+    assert_eq!(
+        setup.manifest,
+        packages.join("miyu-embed").join("model.toml")
+    );
     let program = setup.program.expect("在主程序旁边").program;
     assert_eq!(
         program.file_stem().and_then(|stem| stem.to_str()),
@@ -105,26 +108,26 @@ fn anything_missing_gives_no_setup() {
             "没装 embed",
             vec![found(&packages, miyu_memory::PACKAGE, MEMORY)],
         ),
-        ("人格记忆没装", vec![found(&packages, "embed", EMBED)]),
+        ("人格记忆没装", vec![found(&packages, "miyu-embed", EMBED)]),
         (
             "人格记忆没推荐",
             vec![
                 found(&packages, miyu_memory::PACKAGE, PLAIN_MEMORY),
-                found(&packages, "embed", EMBED),
+                found(&packages, "miyu-embed", EMBED),
             ],
         ),
         (
             "embed 不是小程序",
             vec![
                 found(&packages, miyu_memory::PACKAGE, MEMORY),
-                found(&packages, "embed", NOT_A_WORKER),
+                found(&packages, "miyu-embed", NOT_A_WORKER),
             ],
         ),
         (
             "embed 写坏了",
             vec![
                 found(&packages, miyu_memory::PACKAGE, MEMORY),
-                found(&packages, "embed", "[package]\n"),
+                found(&packages, "miyu-embed", "[package]\n"),
             ],
         ),
     ] {
@@ -143,7 +146,7 @@ fn without_the_program_next_to_miyu_the_setup_says_so() {
         &env,
         &[
             found(&packages, miyu_memory::PACKAGE, MEMORY),
-            found(&packages, "embed", EMBED),
+            found(&packages, "miyu-embed", EMBED),
         ],
     )
     .expect("包装着就拼");
@@ -160,12 +163,12 @@ fn find_matches_setup_and_says_what_is_missing() {
     let env = env_with_program(root);
     let memory = found(&packages, miyu_memory::PACKAGE, MEMORY);
     let plain = found(&packages, miyu_memory::PACKAGE, PLAIN_MEMORY);
-    let embed = found(&packages, "embed", EMBED);
+    let embed = found(&packages, "miyu-embed", EMBED);
     let started = setup(
         &env,
         &[
             found(&packages, miyu_memory::PACKAGE, MEMORY),
-            found(&packages, "embed", EMBED),
+            found(&packages, "miyu-embed", EMBED),
         ],
     );
     assert_eq!(find(&env, &[&memory, &embed]).ok(), started);

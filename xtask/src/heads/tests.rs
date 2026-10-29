@@ -3,11 +3,11 @@
 use super::*;
 
 const GOOD: &str = r#"
-[tui]
+[miyu-tui]
 repo = "https://github.com/miyu-agent/miyu-tui"
 rev = "960362426789aaea2d34242711cfc6d301e45ca9"
 
-[web]
+[miyu-webui]
 repo = "https://github.com/miyu-agent/miyu-web"
 rev = "v0.0.1"
 "#;
@@ -39,7 +39,7 @@ fn each_mistake_is_named() {
     assert_eq!(problems(&elsewhere).len(), 1);
     let branch = GOOD.replace("v0.0.1", "main");
     assert_eq!(problems(&branch).len(), 1);
-    let missing = GOOD.replace("[web]", "[gui]");
+    let missing = GOOD.replace("[miyu-webui]", "[gui]");
     assert_eq!(
         problems(&missing).len(),
         2,

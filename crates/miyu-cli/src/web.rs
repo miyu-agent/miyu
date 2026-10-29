@@ -139,7 +139,7 @@ pub fn web_on(
 }
 
 /// 网页界面的包编号：没装时照它说怎么装（同没装终端界面的那一句，`head.rs`）。
-const PACKAGE: &str = "web";
+const PACKAGE: &str = "miyu-webui";
 
 /// 没装网页界面：照软件源装。
 fn not_installed(language: Language) -> Problem {

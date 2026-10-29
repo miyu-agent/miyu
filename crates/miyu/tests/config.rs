@@ -60,7 +60,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     assert_eq!(
         stdout(&all),
         // 测试拉起的核心带着 `MIYU_CATALOG_UPDATE=false`（施工 8-7）：环境变量压过的那一项照它。
-        "compaction.prepare = true\ncore.idle_exit = 0\njobs.max_running = \"30m\"\nlog.level = \"debug\"\nmemory.dream_keep = 20\nmemory.extract_idle = \"30m\"\nmemory.extract_max_turns = 20\nmemory.extract_max_wait = \"1h\"\nmemory.extract_turns = 2\nmemory.merge_every = \"24h\"\nmemory.merge_sessions = 5\nmodels.catalog.every = \"24h\"\nmodels.catalog.update = false\nmodels.catalog.url = \"https://models.dev/api.json\"\nmodels.cooldown.auth.base = \"10m\"\nmodels.cooldown.auth.max = \"2h\"\nmodels.cooldown.quota.base = \"30m\"\nmodels.cooldown.quota.max = \"30m\"\nmodels.cooldown.rate_limited.base = \"30s\"\nmodels.cooldown.rate_limited.max = \"10m\"\nmodels.cooldown.retryable.base = \"10s\"\nmodels.cooldown.retryable.max = \"5m\"\nnet.search.source = \"auto\"\npackages.mirrors = []\npackages.source = \"https://miyu-agent.github.io/packages/\"\npermission.level = \"workspace\"\npermission.start_read_only = false\npools.flagship.subagent = true\npools.lite.subagent = true\npools.normal.subagent = true\npreset.default = \"full\"\nsandbox.private.enabled = true\nsandbox.readonly.enabled = true\nsandbox.strength = \"auto\"\nshow.system_hint = true\nskills.external.dirs = [\"~/.agents/skills\"]\nskills.external.enabled = false\nterminal.idle_new_after = 180\nui.head = \"tui\"\nui.language = \"zh\"\nui.startup = \"new\"\nui.welcomed = false\nusage.currency = \"USD\"\n"
+        "compaction.prepare = true\ncore.idle_exit = 0\njobs.max_running = \"30m\"\nlog.level = \"debug\"\nmemory.dream_keep = 20\nmemory.extract_idle = \"30m\"\nmemory.extract_max_turns = 20\nmemory.extract_max_wait = \"1h\"\nmemory.extract_turns = 2\nmemory.merge_every = \"24h\"\nmemory.merge_sessions = 5\nmodels.catalog.every = \"24h\"\nmodels.catalog.update = false\nmodels.catalog.url = \"https://models.dev/api.json\"\nmodels.cooldown.auth.base = \"10m\"\nmodels.cooldown.auth.max = \"2h\"\nmodels.cooldown.quota.base = \"30m\"\nmodels.cooldown.quota.max = \"30m\"\nmodels.cooldown.rate_limited.base = \"30s\"\nmodels.cooldown.rate_limited.max = \"10m\"\nmodels.cooldown.retryable.base = \"10s\"\nmodels.cooldown.retryable.max = \"5m\"\nnet.search.source = \"auto\"\npackages.mirrors = []\npackages.source = \"https://miyu-agent.github.io/packages/\"\npermission.level = \"workspace\"\npermission.start_read_only = false\npools.flagship.subagent = true\npools.lite.subagent = true\npools.normal.subagent = true\npreset.default = \"full\"\nsandbox.private.enabled = true\nsandbox.readonly.enabled = true\nsandbox.strength = \"auto\"\nshow.system_hint = true\nskills.external.dirs = [\"~/.agents/skills\"]\nskills.external.enabled = false\nterminal.idle_new_after = 180\nui.head = \"miyu-tui\"\nui.language = \"zh\"\nui.startup = \"new\"\nui.welcomed = false\nusage.currency = \"USD\"\n"
     );
     let json = run(
         &root,
@@ -138,7 +138,7 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
         lines[3..],
         [
             "Semantic model: not installed, keyword search only",
-            "hint: install it with 'miyu pkg install embed'",
+            "hint: install it with 'miyu pkg install miyu-embed'",
         ],
         "合计后面是语义模型的状态，不算问题（施工 R-25）"
     );
