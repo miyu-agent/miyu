@@ -251,6 +251,8 @@ async fn read_all<R: AsyncRead + Unpin>(
             continue;
         }
         let id = || Value::String(request.id.as_str().to_string());
+        // 头叫核心停下（施工 DT-4 下）：回应写出去以后才叫，头先收到 `{}`。
+        let mut stopping = false;
         let (answer, target, close) = match (request.method.as_str(), peer) {
             ("hello", _) => {
                 match hello(&core, request.params.clone(), (from_core, reach.source())).await {
@@ -302,6 +304,17 @@ async fn read_all<R: AsyncRead + Unpin>(
                     changed.close,
                 )
             }
+            // 同 `account.setup_code`：只给出示本机令牌的，设备令牌、密码、交接票连上的回 `local_only`；远程的在前面就挡了。
+            ("core.stop", Some(_)) => {
+                let result = match via.as_ref().unwrap_or(&Via::Token) {
+                    Via::Token => {
+                        stopping = true;
+                        Ok(json!({}))
+                    }
+                    _ => Err(Refusal::LOCAL_ONLY),
+                };
+                (answer(&request, result, locale), None, false)
+            }
             ("unsubscribe", Some(_)) => {
                 let result = stream_of(&request).map(|stream| {
                     match stream {
@@ -331,6 +344,9 @@ async fn read_all<R: AsyncRead + Unpin>(
         };
         // 握手的回应写出去了，才起推包自己的配置的任务（施工 9-4 下下）：推送不会跑到回应前面。
         let replied = subscriptions.reply(target.as_ref(), answer, &out).await;
+        if replied && stopping {
+            core.activity.ask_to_stop();
+        }
         if let Some(given) = handing.take() {
             subscriptions.add_extension_config(
                 &core,

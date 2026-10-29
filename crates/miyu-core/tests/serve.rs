@@ -191,6 +191,35 @@ async fn a_stop_signal_stops_the_running_sessions_first() {
     );
 }
 
+/// 头叫停（施工 DT-4 下，`core.stop`）：先回应，再和收到停的信号一样先停下在跑的会话，原因是 `request`。
+#[tokio::test]
+async fn a_head_asking_it_to_stop_stops_the_running_sessions_first() {
+    let home = Home::new();
+    let opened = home.open();
+    let core = home.core(Arc::new(Script::new([Play::Holds])), &opened.token);
+    let idle = || Some(Duration::from_secs(600));
+    let running = tokio::spawn(serve(opened.listener, core, idle, std::future::pending()));
+    let mut head = Head::connect(&home.root).await;
+    let session = head.create().await;
+    head.say(&session, "在吗").await;
+    let reply = head.call("s", "core.stop", serde_json::json!({})).await;
+    assert_eq!(reply["result"], serde_json::json!({}), "先回应：{reply}");
+    let stopped = within("叫停以后停下", running).await.expect("没 panic");
+    assert_eq!(stopped, Stopped::Request);
+    let ended = home
+        .log(&session)
+        .into_iter()
+        .find_map(|event| match event.body {
+            Body::TurnEnded(ended) => Some(ended.reason),
+            _ => None,
+        });
+    assert_eq!(
+        ended,
+        Some(EndReason::Restarted),
+        "跑到一半的回合记成重启了"
+    );
+}
+
 /// 测试里回合开始问记忆的每次读慢多久（施工 TMP-1 补3）：比会话等的限时（300 毫秒）长得多，会话不等它，它照样读完。
 const SLOW_READ: Duration = Duration::from_millis(1500);
 

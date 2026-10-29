@@ -21,6 +21,7 @@ config.trust
 content.changed
 content.list
 content.read
+core.stop
 events.append
 extension.changed
 extension.config

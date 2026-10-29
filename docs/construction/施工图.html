@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>946</b><span>/ 976 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>947</b><span>/ 977 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">DT-4上</b><span>最近一步（DT-4 上 .app 里找得到资源目录）</span></li>
+    <li><b class="mono">DT-4下</b><span>最近一步（DT-4 下 头能叫核心停下）</span></li>
   </ul>
 </header>
 
@@ -1424,6 +1424,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sY2dm"><span class="n">Y-2 下下末</span>界面语言照人<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sY7"><span class="n">Y-7</span>记忆按账号分层<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDT4a"><span class="n">DT-4 上</span>.app 里找得到资源目录<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sDT4b"><span class="n">DT-4 下</span>头能叫核心停下<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -53373,6 +53374,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单在桌面端仓库 <code>miyu-agent/miyu-desktop</code> 的 <code>docs/construction/DT-4上-app资源目录.md</code>；蓝图 <code>docs/blueprint/store/resources.md</code>「怎么走」第 1 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sDT4b" aria-labelledby="h-sDT4b">
+  <div class="sheet-head"><h2 id="h-sDT4b"><span class="no">DT-4 下</span>头能叫核心停下</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">桌面端托盘里的「退出」要连核心一起关：多一个方法 core.stop，出示本机令牌的头调了，核心照收到停的信号那样停下。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">头能叫核心停下</span><span class="dir-note">DT-4 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>core.stop：回应 {} 写出去以后端点叫一声，核心的主循环照它停，原因是 request</li>
+              <li>和信号一样先停下在跑的会话：跑到一半的回合记成重启了，扩展一起退出</li>
+              <li>设备令牌、访问密码、交接票连上的回 local_only，远程的回 local_machine_only</li>
+              <li>中英参考、协议的方法表、核心「停下」第 10 条、协议 1 的方法清单</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">托盘「退出」连核心一起关，彻底退出</span><span class="rl">项目主人 2026-10-29</span></div>
+          <div class="tile new"><span class="nm">闸照 account.setup_code；浏览器标签页重连把核心再拉起来，当成可以接受</span><span class="rl">核心的主会话 2026-10-29</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">DT-4 下</dd></div>
+        <div><dt>名称</dt><dd>头能叫核心停下</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">DT-4下</dd></div>
+        <div><dt>验收</dt><dd>本机门禁全过，三台 CI 绿</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>本机令牌调了先收到 {}，核心停下、原因 request，回合记成重启了；改之前是红的</span></li>
+        <li><span class="ok">✓</span><span>设备令牌、远程的被拒，没叫停，核心照旧能用</span></li>
+        <li><span class="ok">✓</span><span>手写变异五个都被逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单在桌面端仓库 <code>miyu-agent/miyu-desktop</code> 的 <code>docs/construction/DT-4下-叫核心停下.md</code>；蓝图 <code>docs/blueprint/core.md</code>「停下」第 10 条、<code>protocol.md</code> 方法表。</li>
       </ul>
     </div>
   </div>

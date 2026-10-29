@@ -107,7 +107,7 @@
 | 远程（`Remote { from }`） | 网页软件替远程的人开的连接：握手之前先写一行通知 `connection.remote {from}`（来自哪个地址），再原样转浏览器的字节 | 拒 |
 
 1. `connection.remote` 只在握手之前收、只能往下标：本机的标成远程，标了就变不回本机；远程的再说一次照旧是第一次说的地址；握手以后说的不理。标了记一行运行日志 `connection marked remote`（不记地址）。
-2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`，`schedule.add` 的 `target.new` 带 `cwd`（施工 J-1 下）。`mcp.login` 远程也能调（施工 X-42 下补，主会话 2026-10-22 定）：回调照旧听核心的 `127.0.0.1`，远程的头在它自己那边打开授权页，跳到打不开的地址以后照 `mcp.login_finish` 贴回来。
+2. 本机才能用的（`reach.rs` 的 `local_machine_only`，照 2026-10-22 的代码盘的；主会话同一天定带本机路径参数的整条拒、只在回应里带本机路径的这一步不动）：`fs.list`、`fs.find`、`fs.realpath`、`fs.read`、`session.terminal`、`session.set_terminal`、`account.setup_code`、`core.stop`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；`session.create`、`session.set_workspace` 带 `cwd` 或非空的 `dirs`，`session.send` 带 `cwd`、非空的 `dirs` 或附件带 `path`，`session.redo` 附件带 `path`，`command.run` 带 `cwd` 或原文是 `/workspace <路径>`，`project.create`、`project.update` 带 `workspace`，`schedule.add` 的 `target.new` 带 `cwd`（施工 J-1 下）。`mcp.login` 远程也能调（施工 X-42 下补，主会话 2026-10-22 定）：回调照旧听核心的 `127.0.0.1`，远程的头在它自己那边打开授权页，跳到打不开的地址以后照 `mcp.login_finish` 贴回来。
 3. 不是本机来的调这些：回 `local_machine_only`（「只能在核心所在的机器上用。」），什么都不做，参数都不看。闸在分发的最前面那一段（`connection.rs`，扩展的能力闸旁边），后台答的（`fs.find` 带 `wait`）、`login.*`、`account.*`、`subscribe` 都过它。
 4. 握手回应：不是本机来的不给 `host`。
 5. 只在回应里带本机路径的（`session.list` 的 `cwd`、`skill.list` 的 `dir`、`config.get` 的 `files` 这些）这一步不动：路径本身不是能力。
@@ -223,6 +223,7 @@
 | `job.output` | 读一条后台命令到这时为止的输出（施工 7-4 补）；带 `after` 只要新长出来的、带 `wait` 等它长了再答（施工 V-6 上） |
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
+| `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
 | `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌；扩展要不了票。详见 `docs/reference/connection.md` |
 | `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
 | `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
@@ -1699,6 +1700,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/attach_send.rs` | `session.send` 带附件（施工 3-9 三补）：照先后接在文字后面，宽高、种类照核心量的，图片块带着 `blob.put` 的名字（施工 3-9 四补），她收到的请求里就是这几块；只有附件也是一句话，`null` 是没有；blob 不在的拒绝、什么都没写、换的工作目录也没送进会话；附件的格不对的七种 |
 | `crates/miyu-endpoint/tests/files.rs` | `fs.list`、`fs.find`（施工 W-2）：真核心上数据根不列不找、默认工作区照样列；开头对、大小写不论、点开头的打了点才列、目录在前、50 条截断、`marks`；模糊找有 `marks`、子目录的 `path` 用 `/`；清单没建完先给一部分、`building`；`fresh` 隔一段时间才重建、不是 `true` 不重建；最多记 4 份、多了丢最久没用的；换不成真实的位置、不是目录的 `path_unreadable`；没写 `cwd` 的 `bad_params`。施工 V-6 上起等清单建完都带 `wait`（一次请求，`building` 一定是 `false`）；`miyu-fs` 的 `find/tests.rs` 守着 `wait` 建完了才醒、建的线程崩了也醒 |
 | `crates/miyu-endpoint/tests/hello.rs`（施工 W-3） | 握手的 `host`：三格总有、`platform` 是这台机器的、`workspace` 换成真实的位置（链接也换成指的地方）、没有系统的家目录 `home` 是 `null`、没人建过工作区就回原样的路径（不替连上来的头造目录）。`fs.realpath`：`~` 照家目录接、`cwd` 可以不写也可以本身是 `~`；相对的没给 `cwd` 的 `bad_params`；往上找最近在的一层、后面几段原样接上；路中间的链接换成指的地方；落在数据根里的照样换，不查边界；一层都不在（没有家目录）`path_unreadable` |
+| `crates/miyu-endpoint/tests/core_stop.rs`（施工 DT-4 下） | `core.stop`：本机令牌连上的回 `{}` 以后叫停；设备令牌连上的 `local_only`、远程的 `local_machine_only`，没叫停、核心照旧能用 |
 | `crates/miyu-endpoint/tests/login.rs`、`login_log.rs`（施工 W-8） | 握手的四种凭据、`account.setup_code`、`account.setup`、`account.logout`、作废了断开、运行日志里没有码、密码、令牌（`web-module.md`「守着它的」）；交接票只给人、换一次、换出的登录令牌认得（W-8 补） |
 | `crates/miyu-store/src/access/tests.rs`（施工 SU-6 上） | 访问密码 `access.json` 读写：没设的是空的、设了验得过 |
 | `crates/miyu-endpoint/tests/login_ticket.rs`（施工 LT-1） | 握手交 `ticket`：连上来、回应带新的登录令牌、换出的认得、同一张只能用一次（再交、再 `login.redeem` 都是 `bad_ticket`，断开）；不认得的票 `bad_ticket`；和本机令牌、密码、登录令牌一起写的 `bad_params`，票没被用掉 |

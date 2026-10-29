@@ -30,6 +30,7 @@ fn local_only_calls(home: &Home) -> Vec<(&'static str, Value)> {
         ("session.terminal", json!({"cwd": dir})),
         ("session.set_terminal", json!({"session": "x"})),
         ("account.setup_code", json!({})),
+        ("core.stop", json!({})),
         ("blob.put", json!({"path": file})),
         ("package.install", json!({"path": dir})),
         ("kb.mount", json!({"kb": "own", "folder": dir})),

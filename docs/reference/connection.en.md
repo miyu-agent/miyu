@@ -8,13 +8,14 @@ Chinese version: [connection.md](connection.md).
 | [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribe to or leave a push stream |
 | [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | Access password: the one-time code for setting it from the web, setting and changing it, revoking devices |
 | [`account.set_avatar`, `account.avatar`](#your-avatar) | Your avatar |
+| [`core.stop`](#corestop) | Ask the core to stop |
 
 ## Connecting
 
 - **Local heads**: the core listens on a local socket only you can reach. Its path is in `run/socket` under the data root (one line, the path as-is) and the local token is in `run/token` (64 lowercase hex digits). Linux and macOS use a Unix domain socket, Windows a named pipe `\\.\pipe\miyu-<fingerprint>`. If no core is running, the head starts `miyu core` itself.
 - **Extensions**: programs the core launches from a package manifest speak the same protocol over stdin and stdout, with no credentials (any given in `hello` are ignored).
 - **Web**: the browser talks to the web app, which connects to the core like a local head. For a connection it opens on behalf of a remote person, the web app first writes the notification `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<address>}}` before the hello, then passes the browser's bytes through: that connection is remote (Y-1 下). It only goes one way: once marked it never becomes local again, and the notification is ignored after the hello.
-- **Local machine only** (Y-1 下): reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
+- **Local machine only** (Y-1 下): reading files on the core's machine, handing over local paths and picking local folders are for local connections only; a remote one gets `local_machine_only` and nothing happens: `fs.*`, `session.terminal`, `session.set_terminal`, `account.setup_code`, `core.stop`; `blob.put` and `package.install` with `path`, `kb.mount` with `folder`, `mcp.set` with `command`, `check` with `file` or `cwd`, `config.trust` and `config.get` with `cwd`; a session's `cwd` and `dirs`, an attachment's `path`, `command.run`'s `cwd` and `/workspace <path>`, a project's `workspace`. A session created without `cwd` works in its own default workspace. Remote connections get no `host` in the hello reply.
 
 ## One message per line
 
@@ -174,6 +175,25 @@ A one-time code works once. Setting or changing the access password revokes ever
 | `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection changing the access password without `old` |
 | `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds (`data.retry_after_ms`) |
 | `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
+
+## `core.stop`
+
+Asks the core to stop (DT-4 下): the desktop app's tray "Quit" uses it to close the core too.
+
+**Who can call**: people, only on a connection made with the local token; a remote one gets `local_machine_only`.
+
+| Method | Params | Result |
+|---|---|---|
+| `core.stop` | none | `{}`: once the reply is out, the core stops as on a stop signal: a turn halfway through is recorded as restarted and carries on next time it loads, running background commands are recorded `restarted` and then killed, extensions exit, and the socket is let go. The run log says `stopped reason=request` |
+
+When the core stops, every connection closes. Whoever connects next (a terminal, a web tab reconnecting) starts the core again as usual.
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `local_only` | An extension called it; a connection not made with the local token (device token, access password, handoff ticket) called it |
+| `local_machine_only` | A remote connection called it |
 
 ## Your avatar
 

@@ -53,6 +53,7 @@ fn people_only_stays_people_only() {
         "session.terminal",
         "session.set_terminal",
         "account.setup_code",
+        "core.stop",
         "login.ticket",
         // 表里没有的。
         "no.such_method",

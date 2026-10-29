@@ -8,13 +8,14 @@
 | [`subscribe`、`unsubscribe`](#subscribeunsubscribe) | 订阅、取消订阅一条推送流 |
 | [`account.setup_code`、`account.setup`、`account.logout`](#accountsetup_codeaccountsetupaccountlogout) | 访问密码：网页第一次设用的一次性码、设和改、作废设备 |
 | [`account.set_avatar`、`account.avatar`](#你的头像) | 你的头像 |
+| [`core.stop`](#corestop) | 叫核心停下 |
 
 ## 怎么连
 
 - **本机的头**：核心在本机的套接字上等连接，只有本人连得上。套接字在哪写在数据根的 `run/socket` 里（一行，路径原样），本机令牌在 `run/token` 里（64 位小写十六进制）。Linux、macOS 是 Unix 域套接字，Windows 是命名管道 `\\.\pipe\miyu-<指纹>`。核心没在跑的，头自己拉起 `miyu core`。
 - **扩展**：核心照软件包清单拉起的程序，经标准输入、标准输出说同一套协议，不用凭据（`hello` 里写了也不看）。
 - **网页**：浏览器连的是网页软件，网页软件再按上面本机的头的办法连核心。替远程的人开的连接，网页软件在握手之前先写一行通知 `{"jsonrpc":"2.0","method":"connection.remote","params":{"from":<来自哪个地址>}}`，再原样转浏览器的字节：这个连接就是远程的（施工 Y-1 下）。只能往下标：标了就变不回本机，握手以后说的不理。
-- **本机才能用的**（施工 Y-1 下）：读核心那台机器的文件、交本机路径、选本机的目录这一类，只给本机的连接，远程的回 `local_machine_only`，什么都不做：`fs.*`、`session.terminal`、`session.set_terminal`、`account.setup_code`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；会话的 `cwd`、`dirs`、附件的 `path`、`command.run` 的 `cwd` 和 `/workspace <路径>`、项目的 `workspace`。会话不写 `cwd` 的用它自己的默认工作区。远程的握手回应不给 `host`。
+- **本机才能用的**（施工 Y-1 下）：读核心那台机器的文件、交本机路径、选本机的目录这一类，只给本机的连接，远程的回 `local_machine_only`，什么都不做：`fs.*`、`session.terminal`、`session.set_terminal`、`account.setup_code`、`core.stop`；带 `path` 的 `blob.put`、`package.install`，带 `folder` 的 `kb.mount`，带 `command` 的 `mcp.set`，带 `file`、`cwd` 的 `check`，带 `cwd` 的 `config.trust`、`config.get`；会话的 `cwd`、`dirs`、附件的 `path`、`command.run` 的 `cwd` 和 `/workspace <路径>`、项目的 `workspace`。会话不写 `cwd` 的用它自己的默认工作区。远程的握手回应不给 `host`。
 
 ## 一行一条
 
@@ -121,6 +122,25 @@
 | `bad_params`（`-32602`） | 参数不对；密码不合要求；设备令牌连上的改访问密码没带 `old` |
 | `bad_password`、`login_throttled` | 设备令牌连上的改访问密码，`old` 不对；这个来源 60 秒内错满 5 次（`data.retry_after_ms`） |
 | `local_only` | 扩展调了；不是本机令牌连上的调了 `account.setup_code` |
+
+## `core.stop`
+
+叫核心停下（施工 DT-4 下）：桌面端托盘里的「退出」连核心一起关用它。
+
+**谁能调**：人，只给出示本机令牌连上的；远程的回 `local_machine_only`。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `core.stop` | 没有 | `{}`：回应写出去以后，核心照收到停的信号那样停下：跑到一半的回合记成「重启了」，下次载入接着干，在跑的后台命令先记 `restarted` 再杀，扩展一起退出，然后放开套接字。运行日志记 `stopped reason=request` |
+
+核心停了，连着的连接都断开。之后谁再连（终端、网页的标签页重连），照旧把核心拉起来。
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `local_only` | 扩展调了；不是本机令牌连上的（设备令牌、访问密码、交接票）调了 |
+| `local_machine_only` | 远程的连接调了 |
 
 ## 你的头像
 

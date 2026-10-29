@@ -45,6 +45,8 @@ pub enum Stopped {
     Signal,
     /// 数据根没了（施工 TMP-2）：锁文件不在了、换成了别的，在跑的会话先有计划地停下了。
     Gone,
+    /// 头叫停的（施工 DT-4 下，`core.stop`）：在跑的会话先有计划地停下了，同收到停的信号。
+    Request,
 }
 
 impl Stopped {
@@ -54,12 +56,13 @@ impl Stopped {
             Stopped::Idle => "idle",
             Stopped::Signal => "signal",
             Stopped::Gone => "gone",
+            Stopped::Request => "request",
         }
     }
 }
 
-/// 接连接，直到空闲够久了（没有连接、也没有在跑的回合，连续 `idle()` 交回的这么久；交回没有的不退），或者 `stop` 来了。`stop`
-/// 来了的，先让在跑的会话有计划地停下：跑到一半的回合记成「重启了」，下次载入接着干。停之前请扩展退出（施工 9-4 上）。
+/// 接连接，直到空闲够久了（没有连接、也没有在跑的回合，连续 `idle()` 交回的这么久；交回没有的不退），或者 `stop` 来了、头叫停了
+/// （`core.stop`，施工 DT-4 下）。这两种都先让在跑的会话有计划地停下：跑到一半的回合记成「重启了」，下次载入接着干。停之前请扩展退出（施工 9-4 上）。
 ///
 /// 连着头的时候不定时看空不空闲（施工 V-6 下）：有连接就不算空闲，等连上、断开、来请求的信号（`Activity`）再算。没有连接
 /// 以后才每隔一会儿（`check`：空闲时限的四分之一）看一次（回合、后台命令、扩展忙完没有，没有统一的信号），看到退出为止。
@@ -89,8 +92,11 @@ pub async fn serve_then(
     // 数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：监听器交出去以前拿好。
     let held = listener.held();
     let running = miyu_endpoint::run(listener, Arc::clone(&core));
-    tokio::pin!(running, stop);
-    let mut changes = core.activity().subscribe();
+    let activity = core.activity();
+    // 头叫停（施工 DT-4 下，`core.stop`）：同收到停的信号，只是原因不一样。
+    let asked = activity.stop_requested();
+    tokio::pin!(running, stop, asked);
+    let mut changes = activity.subscribe();
     let every = idle().map_or(RELOOK, check);
     // 下一次看的时刻：定死了，有动静不往后推（一直有人来连一下就走的，照样到点看）。
     let mut next = tokio::time::Instant::now() + every;
@@ -106,6 +112,10 @@ pub async fn serve_then(
             () = &mut stop => {
                 core.stop_sessions().await;
                 break Stopped::Signal;
+            }
+            () = &mut asked => {
+                core.stop_sessions().await;
+                break Stopped::Request;
             }
             // 有动静了（连上、断开、来请求）：回到上面重新看。信号断不了（核心在它就在），断了也当没动静。
             Ok(()) = changes.changed() => continue,
