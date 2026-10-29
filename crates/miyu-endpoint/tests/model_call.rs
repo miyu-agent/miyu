@@ -111,7 +111,7 @@ async fn params_of_the_wrong_shape_are_bad_params_and_nothing_is_sent() {
 }
 
 #[tokio::test]
-async fn an_image_is_this_accounts_blob_and_goes_out_after_the_words() {
+async fn an_image_is_a_stored_blob_and_goes_out_after_the_words() {
     let server = Server::start(vec![said("A dot.")]).await;
     let home = Home::new();
     let mut client = connected(&home, &config(&server)).await;

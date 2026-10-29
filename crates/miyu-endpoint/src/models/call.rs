@@ -154,7 +154,7 @@ pub(crate) async fn call(
         return Err(Refusal::no_model(NOT_CONFIGURED.to_string()));
     };
     // 照这个连接的人那一份配置（施工 Y-2 下下中下）。
-    let config = core.mine().hub().current().borrow().clone();
+    let config = core.hub.current().borrow().clone();
     let resolved = config.resolved().clone();
     let model = match params.uses {
         Some(Use::Vision) => match UseSettings::from(&resolved.values()).vision {

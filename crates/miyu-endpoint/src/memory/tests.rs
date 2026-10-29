@@ -109,7 +109,7 @@ fn the_dream_receipt_leaves_out_zeros_and_says_how_long_it_took() {
     );
 }
 
-mod accounts;
+mod herself;
 
 /// 记忆、知识库算向量照配置和密钥文件（SU-3 上起只有这一份）。
 #[test]

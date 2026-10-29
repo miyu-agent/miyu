@@ -15,7 +15,7 @@
 | `crates/miyu-endpoint/src/listen.rs` | `run`：在监听器上一个个接连接 |
 | `crates/miyu-endpoint/src/activity.rs` | 数着几个连接（`Connected`）；来请求了的信号 `Activity`：连接每读到一个请求叫一声，核心照它安静下来以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
 | `crates/miyu-endpoint/src/connection.rs` | `serve`：一个连接，读写分开；握手以前拦住；登记成在后台答的查询交给这个连接的一组后台任务，连接断了一起停（施工 W-7）；`subscribe`（回应带会话的限额、接下来请求的模型（施工 8-10）；带 `after` 的先补发，施工 3-8 六补）、`unsubscribe`；订阅哪一个流、订阅会话的事件流在 `connection/streams.rs`（施工 9-4 补挪出来） |
-| `crates/miyu-endpoint/src/connection/reach.rs` | 连接从哪来（`Reach`：本机、本机的另一个人、远程）、握手之前的 `connection.remote`、本机才能用的方法（`local_machine_only`）、远程的握手回应不给 `host`；`serve_with` 照来处开一个连接（施工 Y-1 下） |
+| `crates/miyu-endpoint/src/connection/reach.rs` | 连接从哪来（`Reach`：本机、远程）、握手之前的 `connection.remote`、本机才能用的方法（`local_machine_only`）、远程的握手回应不给 `host`（施工 Y-1 下） |
 | `crates/miyu-endpoint/src/wire.rs` | 读一行、认成请求、回应写成一行 |
 | `crates/miyu-endpoint/src/hello.rs` | 握手 |
 | `crates/miyu-endpoint/src/methods.rs` | 握手以后的方法 |
@@ -104,7 +104,6 @@
 | 来处 | 怎么来 | 本机才能用的方法 |
 |---|---|---|
 | 本机（`Local`） | 主入口（只有核心的主人连得上的本机套接字、命名管道）、核心拉起的扩展 | 能用 |
-| 本机的另一个人（`Public`） | 第二个本机入口（谁都能连；施工 Y-1 下下半） | 拒 |
 | 远程（`Remote { from }`） | 网页软件替远程的人开的连接：握手之前先写一行通知 `connection.remote {from}`（来自哪个地址），再原样转浏览器的字节 | 拒 |
 
 1. `connection.remote` 只在握手之前收、只能往下标：本机的标成远程，标了就变不回本机；远程的再说一次照旧是第一次说的地址；握手以后说的不理。标了记一行运行日志 `connection marked remote`（不记地址）。
@@ -269,7 +268,7 @@
 |---|---|---|
 | `persona` | 字符串或 `null`，可以不写 | 照哪个人格造；写 `null` 的明着无人格，不写的照这时的 `persona.default`（施工 P-1 上，`personas.md`），没设的、指着没有的无人格（施工 P-4 上：预设不再管默认人格，出厂不设默认人格）。无人格的会话 system 里没有人设；记忆照样有，跟着人格的落在无人格那一间（施工 P-12） |
 | `preset` | 字符串，可以不写 | 照哪个预设造（施工 P-2 上，`presets.md`）：不写、写 `null` 的照这时的 `preset.default`，都没写是出厂的 `full`。记进 `session.created` 的 `preset`，以后不改 |
-| `cwd` | 字符串，可以不写 | 头的工作目录，人看到的那种写法，例如 `~/src/miyu`。不写的照这个会话自己的默认工作区（施工 Y-1 下：远程、本机的另一个人连进来的不能写，「本机和远程」） |
+| `cwd` | 字符串，可以不写 | 头的工作目录，人看到的那种写法，例如 `~/src/miyu`。不写的照这个会话自己的默认工作区（施工 Y-1 下：远程连进来的不能写，「本机和远程」） |
 | `oneshot` | 布尔，不写是 `false` | 一次性的：`miyu ask` 开的写 `true`，记进 `session.created` |
 | `chosen` | 布尔，不写是 `false` | `cwd` 是人明着选的（施工 9-7 补）。施工 5-14 起照收不看：太宽的一律照用、回应带 `wide`（「工作目录太宽」） |
 | `images` | 布尔，不写是 `true` | 这个头显示得了图片吗（施工 X-25，同 `venue.session` 的 `images`，`venues.md`）：以后的语音头写 `false`；终端、网页不写（终端在不支持图片的终端里也不写：同一个会话换个地方就看得了） |
@@ -1283,7 +1282,7 @@
 **办之前过的几道**（施工 Y-2 上收到一处，`crates/miyu-endpoint/src/connection/checks.rs`：每一条路都过同一道检查）
 
 1. 凭据决定的闸（施工 W-8、Y-1 上）：一次性码连上的只能设密码（`setup_first`）。
-2. 本机才能用的（施工 Y-1 下）：远程、本机另一个人连上的当场拒。
+2. 本机才能用的（施工 Y-1 下）：远程连上的当场拒。
 3. 扩展照它声明的能力挡（施工 X-30，`extensions.md`「谁能调」）。
 4. **关着的场所会话只给桥**（施工 Y-2 上，SU-4 中改）：参数里写了 `session` 的，那个会话关在沙盒里（群、陌生人的私聊）、这个连接又不是接这个平台的桥的，一律 `session_not_found`，参数都不看（看不到的不露，不回「没有权限」）；没写、写法不对、没有这个会话的照方法自己的说法。人的头碰不到它们（2026-10-23 项目主人定场所会话只读、只在平台的后台看）；主人本人的私聊不关（`venues.md`「不在本机的头上」）。`blob.get` 不走这一道，它照会话找 blob 另有规矩、拒的一律 `unknown_blob`。
 5. 连接从接上起就算连着，握没握手都算，断开才不算；没握手的最多连 10 秒（握手第 7 条）。
@@ -1570,10 +1569,10 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_call` | 调用不存在。 | Call not found. |
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
-| `command_not_allowed` | 仅终端管理员和群管理员可用。 | Terminal and group admins only. |
+| `command_not_allowed` | 仅主人和群管理员可用。 | Owner and group admins only. |
 | `command_unavailable` | 命令暂时不可用。 | Command unavailable for now. |
 | `command_failed` | 命令执行失败。 | Command failed. |
-| `owner_only` | 仅终端管理员可用。 | Terminal admin only. |
+| `owner_only` | 仅主人可用。 | Owner only. |
 | `session_stopped` | 会话已停止，重新发送即可载入。 | Session stopped. Send again to reload. |
 | `session_broken` | 会话已损坏，无法载入。 | Session is corrupted and cannot be loaded. |
 | `empty_message` | 消息为空。 | Empty message. |
@@ -1706,8 +1705,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/ticket_extension.rs`、`src/login/ticket/tests.rs`、`crates/miyu/tests/login_ticket.rs`（施工 W-8 补） | 扩展要票回 `local_only`；一张只换一次、过期的不认、最多 16 张；真核心、真套接字上照登录令牌连（`connect_login`）、要票、换票，登录令牌不认的连不上 |
 | `crates/miyu-endpoint/tests/reads.rs`（施工 W-6） | `blob.get`：读一段、读到结尾就停、`offset` 过了结尾是空的、不写 `offset`、`length` 的默认值、`length` 写 0 只问大小；没有这个 blob `unknown_blob`。`fs.read`：数据根拒、工作区能读、相对的 `bad_params`、`~` 接系统的家目录；没有、目录、（Unix）套接字 `path_unreadable`。两个方法 `length` 超过 512 KiB 都是 `bad_params`；拒绝的中英文 |
 | `crates/miyu-endpoint/tests/blob_grants.rs`、`src/attach/grants/tests.rs`（施工 W-6 三补） | 扩展不写 `session`：自己存的读得到、主人存的读不到、别的包存的没拿到过读不到；经 `package.call` 拿回来、答的包拿得到的读得到，答的包写进回应、自己拿不到的读不到；包卸了从空的开始。扩展写了 `session`：会话引用过的读得到、没引用过的读不到。人的连接照旧 |
-| `crates/miyu-endpoint/tests/blob_account.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都在同一个存处，发出去以后主人那边读得到；替主人干活的扩展 `blob.put` 存的，`model.call` 带这张图找得到（施工 BUG-2）；包工具交回的图在存处里；核心起来时留下的分块暂存清掉 |
-| `crates/miyu-endpoint/tests/list_account.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 桥和主人列出来的本机会话一样；新造的会话推给订阅着的连接 |
+| `crates/miyu-endpoint/tests/blob_bridge.rs`、`sent_media.rs`、`crates/miyu-core/tests/packages.rs`（施工 Y-2 中下，SU-4 中改） | 桥一次传、分块传的都在同一个存处，发出去以后主人那边读得到；替主人干活的扩展 `blob.put` 存的，`model.call` 带这张图找得到（施工 BUG-2）；包工具交回的图在存处里；核心起来时留下的分块暂存清掉 |
+| `crates/miyu-endpoint/tests/list_bridge.rs`、`src/subscriptions/sessions/tests.rs`（施工 Y-12 上） | 桥和主人列出来的本机会话一样；新造的会话推给订阅着的连接 |
 | `crates/miyu-endpoint/tests/from.rs`、`src/from/tests.rs` | `session.send` 带 `from`（施工 7-10）：记成 `harness`、带着名字，不带的、`null` 照旧记成本人；闲着开一轮、`cause` 是这一条，正忙排进这一轮；附件照收；控制字符去掉、截到 128 字节不截断一个字；空的、只有控制字符的、不是字符串的参数不对，什么都没写；`session.create`、`session.redo` 写了不理 |
 | `crates/miyu-tool/src/attachment/tests.rs` | 认附件：量得出的图是图片、头写的不算，量不出的当文件；图片的上限和线上的；PDF 照开头认；别的文件照头写的，写成 PDF、图片的照内容认，文本、空的、二进制、不是 UTF-8 的 |
 | `crates/miyu-endpoint/tests/tools.rs` | 造会话、载入时用核心的工具目录；核心的沙盒造会话、载入时都交给会话，沙盒用不了的核心上执行命令没人能确认就拒（施工 5-4 上） |

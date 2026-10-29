@@ -52,10 +52,10 @@ pub(crate) fn refit(core: &Core, items: Vec<Item>) {
             by: None,
             keys,
         };
-        crate::config::people::publish(core, &config, Some(pushing));
+        crate::config::handout::publish(core, &config, Some(pushing));
         pushed = true;
     }
     if !pushed {
-        crate::config::people::publish(core, &config, None);
+        crate::config::handout::publish(core, &config, None);
     }
 }

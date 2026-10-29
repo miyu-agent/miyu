@@ -16,7 +16,7 @@ fn a_card_round_trips_and_the_book_keeps_the_latest_per_person() {
     let first = to_event(
         seq(1),
         at(1),
-        admin(),
+        owner(),
         &card("qq:10086", "在 Rust 群认识的。", &[]),
     )
     .expect("写得出");
@@ -32,8 +32,8 @@ fn a_card_round_trips_and_the_book_keeps_the_latest_per_person() {
         "在 Rust 群认识的，用 RX 7800 XT。",
         &["GNU/Rust++"],
     );
-    let second = to_event(seq(2), at(2), admin(), &newer).expect("写得出");
-    let other = to_event(seq(3), at(3), admin(), &card("小林", "大学同学。", &[])).expect("写得出");
+    let second = to_event(seq(2), at(2), owner(), &newer).expect("写得出");
+    let other = to_event(seq(3), at(3), owner(), &card("小林", "大学同学。", &[])).expect("写得出");
     let mut book = MemoryBook::default();
     for event in [&first, &second, &other] {
         let back = Event::from_line(&event.to_line()).expect("读得回");
@@ -64,7 +64,7 @@ fn a_retired_card_says_why_and_a_new_one_counts_again() {
         .iter()
         .enumerate()
     {
-        let line = to_event(seq(n as u64 + 1), at(1), admin(), event)
+        let line = to_event(seq(n as u64 + 1), at(1), owner(), event)
             .expect("写得出")
             .to_line();
         book.see(&Event::from_line(&line).expect("读得回"))
@@ -77,7 +77,7 @@ fn a_retired_card_says_why_and_a_new_one_counts_again() {
     let again = to_event(
         seq(3),
         at(2),
-        admin(),
+        owner(),
         &card("qq:10086", "重新认识了。", &[]),
     )
     .expect("写得出");
@@ -91,16 +91,16 @@ fn a_retired_card_says_why_and_a_new_one_counts_again() {
 #[test]
 fn clearing_everything_drops_the_cards_but_clearing_a_session_does_not() {
     let mut book = MemoryBook::default();
-    book.see(&to_event(seq(1), at(1), admin(), &card("小林", "大学同学。", &[])).expect("写得出"))
+    book.see(&to_event(seq(1), at(1), owner(), &card("小林", "大学同学。", &[])).expect("写得出"))
         .expect("读得懂");
     let session = MemoryEvent::Cleared(Cleared {
         session: Some(source(3).session),
     });
-    book.see(&to_event(seq(2), at(2), admin(), &session).expect("写得出"))
+    book.see(&to_event(seq(2), at(2), owner(), &session).expect("写得出"))
         .expect("读得懂");
     assert!(book.card("小林").is_some(), "只清一个会话的不动卡");
     let all = MemoryEvent::Cleared(Cleared { session: None });
-    book.see(&to_event(seq(3), at(3), admin(), &all).expect("写得出"))
+    book.see(&to_event(seq(3), at(3), owner(), &all).expect("写得出"))
         .expect("读得懂");
     assert!(book.card("小林").is_none(), "整间清空一起拿掉");
 }

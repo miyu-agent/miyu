@@ -186,7 +186,7 @@ async fn a_child_is_off_whatever_it_was_given() {
 
 /// 记忆放在人格的那一间（施工 R-3 下）；关在沙盒里的会话照这个场所记（施工 R-13 上，`Listener`；施工 SU-4 中起照关不关）。
 #[tokio::test]
-async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place() {
+async fn the_room_follows_the_persona_and_a_confined_session_is_a_place() {
     let home = Home::new();
     let remember = Play::calls(&[("remember", r#"{"class":"user","text":"用户爱喝茶"}"#)]);
     let script = Script::new([remember, Play::Says("记住了。")]);

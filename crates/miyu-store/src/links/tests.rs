@@ -117,21 +117,13 @@ fn a_broken_or_looping_link_is_skipped_and_said_why() {
 }
 
 #[test]
-fn inside_the_data_root_only_this_accounts_own_folders_count() {
+fn inside_the_data_root_only_the_package_folders_count() {
     let site = Site::new();
     let place = site.dir("data/scripts");
     let own = site.file("data/packages/kit/scripts/run.py");
-    let system = site.file("data/packages/kit/scripts/sys.py");
     let secret = site.file("data/secrets.toml");
-    let theirs = site.file("data/home/bob/scripts/theirs.py");
     let free = site.file("elsewhere/free.py");
-    for (target, name) in [
-        (&own, "own.py"),
-        (&system, "sys.py"),
-        (&secret, "secret.py"),
-        (&theirs, "theirs.py"),
-        (&free, "free.py"),
-    ] {
+    for (target, name) in [(&own, "own.py"), (&secret, "secret.py"), (&free, "free.py")] {
         if !link(target, &place.join(name)) {
             return;
         }
@@ -139,8 +131,8 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
     let (found, skipped) = list(&place, Kind::File, &site.fence(), |_| true);
     assert_eq!(
         names(&found),
-        ["free.py", "own.py", "sys.py"],
-        "数据根外面的、自己的包里的、系统那一层的包里的认（施工 U23 上上）"
+        ["free.py", "own.py"],
+        "数据根外面的、包里的认（施工 U23 上上）"
     );
     let outside: Vec<(PathBuf, Option<PathBuf>)> = skipped
         .iter()
@@ -148,21 +140,17 @@ fn inside_the_data_root_only_this_accounts_own_folders_count() {
         .collect();
     assert_eq!(
         outside,
-        [
-            (place.join("secret.py"), Some(real(&secret))),
-            (place.join("theirs.py"), Some(real(&theirs))),
-        ],
-        "system/、别的账号的不认，带真实位置"
+        [(place.join("secret.py"), Some(real(&secret)))],
+        "数据根别处的不认，带真实位置"
     );
     let (found, skipped) = list(&place, Kind::File, &Fence::anywhere(), |_| true);
-    assert_eq!(found.len(), 5, "不碰数据根的哪里都认：{found:?}");
+    assert_eq!(found.len(), 3, "不碰数据根的哪里都认：{found:?}");
     assert!(skipped.is_empty(), "{skipped:?}");
 }
 
 #[test]
 fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
     let site = Site::new();
-    site.dir("data/home/admin");
     let token = site.file("data/keys/token");
     let place = site.at("data/scripts");
     if !link(&site.at("data/keys"), &place) {

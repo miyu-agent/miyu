@@ -86,7 +86,7 @@ pub use run::{
     Target,
 };
 pub use schedules::{
-    CRON_CREATE, CRON_DELETE, CRON_LIST, PER_ACCOUNT, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
+    CRON_CREATE, CRON_DELETE, CRON_LIST, IN_ALL, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
     ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled, WAKEUP_MAX,
     WAKEUP_MIN,
 };
@@ -94,7 +94,7 @@ pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,
 };
 pub use settings::SettingsPort;
-pub use shelf::{Compose, Edition, Shelf, WeakShelf};
+pub use shelf::{Edition, Shelf};
 pub use stop::Stop;
 pub use todos::TODOWRITE;
 pub use usage::{ContextUse, SESSION_USAGE, Spending, Spent, UsagePort};

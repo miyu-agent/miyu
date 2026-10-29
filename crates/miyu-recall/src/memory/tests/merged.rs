@@ -9,7 +9,7 @@ fn a_summary_and_a_merge_mark_round_trip() {
         text: "用户住在东京。".into(),
         upto: seq(4),
     });
-    let event = to_event(seq(5), at(1), admin(), &summary).expect("写得出");
+    let event = to_event(seq(5), at(1), owner(), &summary).expect("写得出");
     assert!(
         event
             .to_line()
@@ -28,14 +28,14 @@ fn a_summary_and_a_merge_mark_round_trip() {
             failed,
         })
     };
-    let ok = to_event(seq(6), at(1), admin(), &merged(false)).expect("写得出");
+    let ok = to_event(seq(6), at(1), owner(), &merged(false)).expect("写得出");
     assert!(
         ok.to_line()
             .ends_with(r#""body":{"upto":4,"given":3,"revised":1,"retired":1}}"#),
         "没失败的不写 failed：{}",
         ok.to_line()
     );
-    let failed = to_event(seq(7), at(1), admin(), &merged(true)).expect("写得出");
+    let failed = to_event(seq(7), at(1), owner(), &merged(true)).expect("写得出");
     assert!(failed.to_line().ends_with(r#""failed":true}}"#));
     for event in [ok, failed] {
         let back = Event::from_line(&event.to_line()).expect("读得回");
@@ -76,7 +76,7 @@ fn the_book_keeps_the_last_summary_and_merge_and_counts_sessions_since() {
     let mut next = 0;
     let mut see = |book: &mut MemoryBook, event: &MemoryEvent, minutes: i64| {
         next += 1;
-        book.see(&to_event(seq(next), at(minutes), admin(), event).expect("写得出"))
+        book.see(&to_event(seq(next), at(minutes), owner(), event).expect("写得出"))
             .expect("读得懂");
     };
     assert_eq!((book.summary(), book.merged()), (None, None));
@@ -110,14 +110,14 @@ fn an_entry_knows_what_it_replaces() {
     let first = to_event(
         seq(1),
         at(0),
-        admin(),
+        owner(),
         &MemoryEvent::Saved(saved("旧", None)),
     )
     .expect("写得出");
     let second = to_event(
         seq(2),
         at(1),
-        admin(),
+        owner(),
         &MemoryEvent::Saved(saved("新", Some(MemoryId::new(seq(1))))),
     )
     .expect("写得出");
@@ -151,7 +151,7 @@ fn a_summary_stops_counting_once_what_it_covered_is_changed_or_cleared() {
     let replay = |events: &[MemoryEvent]| {
         let mut book = MemoryBook::default();
         for (n, event) in events.iter().enumerate() {
-            let line = to_event(seq(n as u64 + 1), at(0), admin(), event).expect("写得出");
+            let line = to_event(seq(n as u64 + 1), at(0), owner(), event).expect("写得出");
             book.see(&line).expect("读得懂");
         }
         book

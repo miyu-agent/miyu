@@ -114,7 +114,7 @@ fn prepared(core: &Core, dir: &Path) -> Picked {
 /// 交回工作目录和太不太宽。只在造会话时这样认：以前的会话记着的照旧。
 pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId) -> (String, bool) {
     let fallback = core.root.session_workspace(id);
-    let picked = match account_workspace(core, cwd) {
+    let picked = match is_workspace_root(core, cwd) {
         true => prepared(core, &fallback),
         false => pick(core, cwd, &fallback),
     };
@@ -127,11 +127,11 @@ pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId)
 /// 人明着要换去 `workspace/` 本身（网页的「默认工作区」交的就是它，握手的 `host.workspace`）：换成这个会话自己的默认工作区
 /// `default`，建好（施工 5-14 中）。别的交回空。
 pub(crate) fn to_default(core: &Core, cwd: &str, default: &Path) -> Option<Picked> {
-    account_workspace(core, cwd).then(|| prepared(core, default))
+    is_workspace_root(core, cwd).then(|| prepared(core, default))
 }
 
 /// 工作目录是不是 `workspace/` 本身。
-fn account_workspace(core: &Core, cwd: &str) -> bool {
+fn is_workspace_root(core: &Core, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
     let (_, own) = roots(core);
     miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd).is_ok_and(|real| real == own)

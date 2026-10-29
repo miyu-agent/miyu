@@ -56,8 +56,7 @@ pub(crate) fn trust(
         tracing::warn!(target: TARGET, error = "no words for config/trust-header", "config words missing");
         return Err(Refusal::INTERNAL);
     };
-    let mine = core.mine();
-    let mut config = mine.config();
+    let mut config = core.config();
     let Some(project) = config.project(&params.cwd) else {
         return Err(Refusal::NO_PROJECT_CONFIG);
     };
@@ -78,7 +77,7 @@ pub(crate) fn trust(
                 config.trust = records;
                 done(&config, cause, &answer);
                 // 不推，只交给会话：下一个回合照新的信任读项目配置（施工 8-4）。
-                crate::config::people::publish(core, &config, None);
+                crate::config::handout::publish(core, &config, None);
                 return Ok(json!({"file": project.file.shown, "trusted": params.trust}));
             }
             Err(WriteError::Changed) => {}

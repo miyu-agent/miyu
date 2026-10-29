@@ -262,7 +262,7 @@ fn groups_split_by_model_purpose_and_session_and_a_tree_takes_the_children() {
 }
 
 #[test]
-fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
+fn one_shot_calls_go_to_the_journal_and_survive_a_rebuild() {
     let scratch = Scratch::new("usage-oneshot");
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
@@ -319,10 +319,10 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
     drop(index);
     forget(&root);
     let (rebuilt, _) = UsageIndex::open(&root);
-    assert_eq!(by_purpose(&rebuilt), expected, "照账号日志读回来");
+    assert_eq!(by_purpose(&rebuilt), expected, "照日志读回来");
     let mut again = by_venue(&rebuilt);
     again.sort();
-    assert_eq!(again, want, "场所也照账号日志读回来");
+    assert_eq!(again, want, "场所也照日志读回来");
 }
 
 #[test]

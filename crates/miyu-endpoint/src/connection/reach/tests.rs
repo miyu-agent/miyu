@@ -83,9 +83,6 @@ fn a_connection_is_only_ever_marked_down_and_only_before_hello() {
         !reach.heard(&notice(REMOTE, "198.51.100.2"), false),
         "标过的不再改"
     );
-    let mut public = Reach::Public;
-    assert!(public.heard(&notice(REMOTE, "198.51.100.3"), false));
-    assert!(!public.is_local(), "变不回本机");
 }
 
 #[test]

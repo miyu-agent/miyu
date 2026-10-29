@@ -136,7 +136,7 @@ fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
 
 /// 「关于你」（施工 P-9、P-9 补）：没关起来、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。
 #[test]
-fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
+fn the_profile_goes_only_to_unconfined_sessions_here_or_where_the_bridge_asks() {
     let settings = || ProfileSettings {
         name: Some("小林".to_string()),
         about: Some("写 Rust".to_string()),
@@ -157,15 +157,15 @@ fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
         full,
         "桥说要的"
     );
-    for (at, asked, admin) in [
+    for (at, asked, for_owner) in [
         (Some(&venue), false, true),
         (None, false, false),
         (Some(&venue), true, false),
     ] {
         assert_eq!(
-            profile_for(settings(), at, asked, admin),
+            profile_for(settings(), at, asked, for_owner),
             miyu_policy::Profile::default(),
-            "{at:?} {asked} {admin}"
+            "{at:?} {asked} {for_owner}"
         );
     }
     let empty = ProfileSettings {

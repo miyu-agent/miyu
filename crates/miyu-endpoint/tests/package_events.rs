@@ -33,7 +33,7 @@ async fn heard(client: &mut Client) -> bool {
 }
 
 #[tokio::test]
-async fn a_package_pushes_to_its_own_account_s_subscribers() {
+async fn a_package_pushes_to_subscribers() {
     let home = Home::new();
     let program = Program::new();
     let go = home.work.join("go");

@@ -47,7 +47,7 @@ impl Drop for Scratch {
     }
 }
 
-fn admin() -> By {
+fn owner() -> By {
     By::Person(Person::default())
 }
 
@@ -68,7 +68,7 @@ fn a_config_change_is_written_like_the_sample() {
         &scratch.file(),
         "journal.jsonl",
         Timestamp::parse("2026-10-01T08:00:00.000Z").unwrap(),
-        admin(),
+        owner(),
         Some(&CommandId::parse("config-9f2c4e1a7b3d5f60-1").unwrap()),
         "config.changed",
         &body,
@@ -92,7 +92,7 @@ fn a_trust_answer_is_written_like_the_sample() {
         &scratch.file(),
         "journal.jsonl",
         Timestamp::parse("2026-10-01T08:02:00.000Z").unwrap(),
-        admin(),
+        owner(),
         Some(&CommandId::parse("config-9f2c4e1a7b3d5f60-2").unwrap()),
         "trust.changed",
         &body,

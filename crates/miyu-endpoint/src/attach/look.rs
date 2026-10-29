@@ -5,7 +5,7 @@ use miyu_kernel::id::{ContentHash, MediaType};
 use miyu_store::blob::Blobs;
 use miyu_tool::attachment::{Kind, kind};
 
-use super::{TARGET, blocking, place, read_blob};
+use super::{blocking, place, read_blob};
 use crate::Core;
 use crate::refusal::Refusal;
 
@@ -18,20 +18,10 @@ pub(crate) async fn images(core: &Core, hashes: Vec<ContentHash>) -> Result<Vec<
     let place = place(core);
     blocking(move || {
         let blobs = Blobs::new(place.root.blobs());
-        let mine: Option<Blobs> = None;
         hashes
             .into_iter()
             .map(|blob| {
-                let bytes = match mine.as_ref().map(|mine| read_blob(mine, &blob)) {
-                    Some(Ok(bytes)) => {
-                        blobs.put(&bytes).map_err(|error| {
-                            tracing::warn!(target: TARGET, blob = blob.as_str(), error = %error, "attachment not copied");
-                            Refusal::INTERNAL
-                        })?;
-                        bytes
-                    }
-                    _ => read_blob(&blobs, &blob)?,
-                };
+                let bytes = read_blob(&blobs, &blob)?;
                 match kind(&bytes, None).map_err(|_| Refusal::ATTACHMENT_TOO_BIG)? {
                     Kind::Image {
                         media_type,

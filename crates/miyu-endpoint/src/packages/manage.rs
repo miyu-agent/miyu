@@ -365,7 +365,7 @@ pub(super) async fn clear_of_conflicts(
     manifest: package::Manifest,
     dir: PathBuf,
 ) -> Result<(), Refusal> {
-    super::may_manage::may_manage(peer.admin)?;
+    super::may_manage::may_manage(peer.for_owner)?;
     let installed = core.system_packages();
     // 依赖的包没装的装不上（施工 F-11）：升级时它自己那一份不算。软件源做好以后再定要不要自动装。
     let others: Vec<&Found> = installed.iter().filter(|one| one.id != id).collect();

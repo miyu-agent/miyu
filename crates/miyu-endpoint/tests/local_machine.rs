@@ -1,10 +1,9 @@
 //! 本机、远程分开（施工 Y-1 下，U18）：网页软件替远程的人开的连接握手之前说
-//! `connection.remote`，还有第二个本机入口的连接；这两种调本机才能用的方法一律回 `local_machine_only`，什么都不做，
+//! `connection.remote`；这样的连接调本机才能用的方法一律回 `local_machine_only`，什么都不做，
 //! 握手回应不给 `host`；本机的照常。只能往下标：握手以后说的不理。
 
 use serde_json::{Value, json};
 
-use miyu_endpoint::{Reach, serve_with};
 use miyu_session::testkit::Script;
 
 use crate::support::*;
@@ -113,20 +112,6 @@ async fn a_remote_connection_cannot_use_what_only_the_core_machine_has() {
         )
         .await;
     assert_ne!(reason_of(&asked), Some("local_machine_only"), "{asked}");
-}
-
-/// 第二个本机入口来的（本机的另一个人）：同远程，本机才能用的拒、不给 `host`。
-#[tokio::test]
-async fn a_public_connection_is_not_the_core_machine_s_owner() {
-    let home = Home::new();
-    let (near, far) = tokio::io::duplex(64 * 1024);
-    tokio::spawn(serve_with(far, home.core(&Script::new([])), Reach::Public));
-    let mut client = Client::over(near);
-    let shook = client.hello().await;
-    assert!(shook["result"].get("host").is_none(), "{shook}");
-    let dir = home.work.to_string_lossy().into_owned();
-    let reply = client.call("r1", "fs.list", json!({"cwd": dir})).await;
-    assert_eq!(reason_of(&reply), Some("local_machine_only"), "{reply}");
 }
 
 /// 本机的照常；握手以后才说 `connection.remote` 的不理，照旧是本机。

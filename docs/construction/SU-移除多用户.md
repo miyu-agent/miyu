@@ -309,3 +309,33 @@
    - 通查剩下的说法，都是正当用法：系统的家目录 `~`、平台的账号、群成员和管理的人、池的成员、Windows 的管理员、旧版证据、当时的施工记录。
    - 样本块逐字节对过，没动。
    - 本机门禁。
+
+### 二十九、SU-6 下：通查漏的和死代码（做了什么）
+
+1. 删掉的死代码：
+   - `miyu-http` 的 `Guarded`，没有调用方；
+   - 拒绝里只有多用户才会出现的几条（`bad_invite`、`register_first`、`account_disabled`、`username_taken`、`unknown_account`、`member_disabled`、`unknown_invite`）和 `refusal/account.rs`；
+   - `miyu-tool` 书架的叠层（`Over`、`Compose`、`WeakShelf`，原来给每个人叠一层自己的工具）和 `Catalog::without`；
+   - 连接的第二个本机入口 `Reach::Public` 和 `serve_with`，`Reach` 收进 crate 里；
+   - 每人一份配置留下的 `Mine`、`Core::mine()`，`config/people.rs` 改名 `config/handout.rs`；
+   - 命令参数里的 `person`，附件「看一眼」里多余的复制分支；
+   - 只测旧形状的测试：清单写 `system_account` 的、头像参数写 `account` 的、和主人同名的包、别的账号留下的上传暂存、别的账号的链接。
+2. 改名：
+   - `Peer.admin` 改 `for_owner`；
+   - `PER_ACCOUNT` 改 `IN_ALL`，`AccountFull` 改 `AllFull`；
+   - 资源 `cron/account-full.txt` 改 `cron/all-full.txt`，字里不再提账号，登记簿换了指纹；
+   - `admin_granted` 改 `owner_granted`，`account_workspace` 改 `is_workspace_root`；
+   - 测试名、测试文件名、夹具里的账号、管理员也改了。
+3. 给人看的字：
+   - 拒绝的说法改成「仅主人和群管理员可用」「仅主人可用」；
+   - 配置项「谁能用这条命令」「内部域名」「不套沙盒」的说明，样本重出；
+   - 命令帮助去掉 `--system`，`miyu pkg` 的「系统区」「你的家目录」改「你的数据根」；
+   - 参考文档的用量查询、作者文档的「个人设置」。
+4. 看过、留下的：
+   - `packages.<id>.off` 和 `package.disable` 管的不是一回事：前者藏包的内容，哪种包都行；后者关扩展的进程、卸出厂的包。不是多用户留下的重复，两个都留。
+   - `Instance`（一份扩展进程，按包认）留下。
+   - 斜杠命令谁能用的值 `admin` 留下（清单格式，意思是你和群管理员）。
+   - Windows 沙盒安装里的「另一个人的 SID」、管理员提权指的是 Windows 账户，也留下。
+5. 怎么验：
+   - 在代码、资源、蓝图、参考、作者文档里通查 account、admin、member、personal、账号、管理员、成员、个人，剩下的都是正当用法；
+   - 本机门禁。

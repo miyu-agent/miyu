@@ -18,7 +18,7 @@
   "said": {
     "cron/created": "已建 {id}",
     "cron/full": "此会话已有 {limit} 个定时任务",
-    "cron/account-full": "此账号已有 {limit} 个定时任务",
+    "cron/all-full": "已有 {limit} 个定时任务",
     "cron/bad-cron": "cron 写法不对：{error}",
     "cron/not-found": "没有 {id}",
     "cron/deleted": "已删除 {id}",

@@ -133,10 +133,10 @@ pub(super) async fn entry(core: &Arc<Core>, id: &str) -> Result<Looked, Refusal>
 }
 
 /// `package.info {package}`：编号、哪一层、版本、装的时刻和从哪装的（本地库里记了的才有）、几个文件、多少字节。不替主人干活的
-/// （`admin` 是假的）不给从哪装的：那是这台电脑上的路径。
+/// （`for_owner` 是假的）不给从哪装的：那是这台电脑上的路径。
 pub(crate) async fn info(
     core: &Arc<Core>,
-    admin: bool,
+    for_owner: bool,
     params: InfoParams,
 ) -> Result<Value, Refusal> {
     let Looked {
@@ -177,7 +177,7 @@ pub(crate) async fn info(
     }
     if let Some(desc) = desc {
         answer["installed"] = json!(desc.installed);
-        if admin && !desc.source.is_empty() {
+        if for_owner && !desc.source.is_empty() {
             answer["source"] = json!(desc.source);
         }
     }

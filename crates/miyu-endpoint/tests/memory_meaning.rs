@@ -93,7 +93,7 @@ async fn search_finds_by_meaning_once_the_vectors_are_filled() {
 }
 
 #[tokio::test]
-async fn a_remote_model_is_asked_with_the_current_config_and_billed_to_the_admin() {
+async fn a_remote_model_is_asked_with_the_current_config_and_billed_to_the_owner() {
     let reply = Reply {
         status: 200,
         headers: vec![("Content-Type".to_string(), "application/json".to_string())],
@@ -109,8 +109,8 @@ async fn a_remote_model_is_asked_with_the_current_config_and_billed_to_the_admin
     let first = &server.received()[0];
     assert_eq!(first.path, "/v1/embeddings");
     assert_eq!(first.header("authorization"), Some("Bearer sk-emb"));
-    let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
-        .expect("有账号日志");
+    let journal =
+        std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE)).expect("有日志");
     assert!(
         journal.contains(r#""body":{"purpose":"embedding","endpoint":"emb","model":"text-emb","usage":{"uncached":5"#),
         "{journal}"

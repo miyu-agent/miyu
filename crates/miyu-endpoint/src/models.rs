@@ -269,7 +269,7 @@ pub(crate) fn next(next: &Next) -> Option<Value> {
 ///
 /// 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的（`unknown_model`，原话记一行 `DEBUG`）。
 pub(crate) fn record(core: &Core, text: &str) -> Result<String, Refusal> {
-    let values = core.mine().config().resolved().values();
+    let values = core.config().resolved().values();
     miyu_models::reference::record(&values, text).map_err(|NoModel(why)| {
         tracing::debug!(target: "miyu::endpoint", why = %why, "unknown model");
         Refusal::UNKNOWN_MODEL
@@ -280,8 +280,7 @@ pub(crate) fn record(core: &Core, text: &str) -> Result<String, Refusal> {
 /// 用的是同一份，不会各自再问一次核心的环境。`provider.detect`、`provider.test` 也用（施工 8-11）。
 pub(crate) fn snapshot(core: &Core) -> Snapshot {
     // 照这个人那一份（施工 Y-2 下下中中）：他的供应商、他用得上的两份密钥。
-    let mine = core.mine();
-    let config = mine.config();
+    let config = core.config();
     let resolved = config.resolved().clone();
     let values = resolved.values();
     let files = [Layer::System]

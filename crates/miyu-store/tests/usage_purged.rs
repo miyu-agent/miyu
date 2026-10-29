@@ -237,5 +237,5 @@ fn without_a_journal_the_session_is_kept() {
     assert_eq!(purged.removed, 0);
     assert_eq!(purged.failed.len(), 1, "{:?}", purged.failed);
     let kept = root.trashed_sessions().join(session(2).as_str());
-    assert!(kept.join(DELETED_AT).exists(), "写不进账号日志的不删");
+    assert!(kept.join(DELETED_AT).exists(), "写不进日志的不删");
 }

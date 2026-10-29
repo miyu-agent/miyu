@@ -22,7 +22,7 @@ impl Guard {
 
     /// 工具 `name` 主人放行了：照名字和来处认，工具自己报不报都一样。带文件的，文件落在这一次调用（工作目录 `cwd`、加进来的
     /// 目录 `dirs`、放行过的规则 `grants`）写得了的地方的不算（施工 X-37 补，纵深防御：开发时资源目录就是她的工作区）。
-    pub(super) fn admin_granted(
+    pub(super) fn owner_granted(
         &self,
         name: &str,
         cwd: &str,

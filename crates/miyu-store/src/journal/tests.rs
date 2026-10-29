@@ -33,7 +33,7 @@ fn lines(path: &std::path::Path) -> Vec<String> {
 #[test]
 fn entries_are_counted_from_one_and_written_like_events() {
     let temp = Scratch::new();
-    let path = temp.path().join("home").join("admin").join(FILE);
+    let path = temp.path().join("sub").join(FILE);
     assert_eq!(append(&path, entry(1)).unwrap().get(), 1);
     assert_eq!(append(&path, entry(2)).unwrap().get(), 2);
     assert_eq!(

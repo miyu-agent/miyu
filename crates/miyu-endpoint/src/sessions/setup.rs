@@ -44,7 +44,7 @@ impl Setup {
         (workspace, dirs): (String, Vec<String>),
         who: Opening,
     ) -> Result<Setup, Refusal> {
-        let (resolved, _) = core.mine().config().with_project(&workspace);
+        let (resolved, _) = core.config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
         let level = opening_level(&permission, who.venue.as_ref());
         let profile = profile_for(

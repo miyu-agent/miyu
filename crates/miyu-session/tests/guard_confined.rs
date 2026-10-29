@@ -58,14 +58,8 @@ fn one(tool: &str, path: &str) -> Play {
     Play::calls(&[(tool, &serde_json::json!({ "path": path }).to_string())])
 }
 
-/// 场所 `venue` 里、工作区 `work/` 的会话：工作区这一级，没人能确认，`owner_is_admin` 是假的关起来。
-async fn session(
-    home: &Home,
-    script: &Script,
-    kit: &Kit,
-    venue: &str,
-    owner_is_admin: bool,
-) -> Handle {
+/// 场所 `venue` 里、工作区 `work/` 的会话：工作区这一级，没人能确认，`unconfined` 是假的关起来。
+async fn session(home: &Home, script: &Script, kit: &Kit, venue: &str, unconfined: bool) -> Handle {
     std::fs::create_dir_all(home.scratch.0.join("work")).expect("建得了工作区");
     std::fs::create_dir_all(home.scratch.0.join("elsewhere")).expect("建得了别处");
     let opening = Opening {
@@ -81,7 +75,7 @@ async fn session(
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        confined: !owner_is_admin,
+        confined: !unconfined,
         ..Lines::default()
     };
     home.create_full(script, &kit.catalog(), opening, lines)

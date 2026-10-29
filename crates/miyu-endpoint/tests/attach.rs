@@ -172,7 +172,7 @@ async fn too_big_is_refused_and_the_limits_themselves_are_taken() {
 async fn files_in_the_data_root_are_not_given_but_the_workspace_is() {
     let home = Home::new();
     let mut client = client(&home).await;
-    let inside = home.root.path().join("home").join("alice").join("note.txt");
+    let inside = home.root.path().join("state").join("note.txt");
     std::fs::create_dir_all(inside.parent().unwrap()).unwrap();
     std::fs::write(&inside, b"secret").unwrap();
     let reply = put(&mut client, "b1", json!({"path": inside})).await;

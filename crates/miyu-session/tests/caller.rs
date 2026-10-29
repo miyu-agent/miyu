@@ -104,8 +104,8 @@ async fn a_call_knows_where_it_is_and_whether_the_owner_spoke() {
 }
 
 #[tokio::test]
-async fn a_session_whose_owner_is_not_an_admin_gets_no_log_dir() {
-    // 普通用户看不到运行它的那台电脑（施工 E-M，U25）：命令拿不到 `MIYU_SESSION_LOG`。
+async fn a_confined_session_gets_no_log_dir() {
+    // 关起来的会话看不到运行它的那台电脑（施工 E-M，U25）：命令拿不到 `MIYU_SESSION_LOG`。
     let home = Home::new();
     let note = Fake::new("note", Access::Read, Act::Echo);
     let script = Script::new([Play::calls(&[("note", "{}")]), Play::Says("好。")]);

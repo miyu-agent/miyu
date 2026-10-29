@@ -306,7 +306,7 @@ async fn in_a_venue_only_the_owner_and_managers_may_run_commands() {
     )
     .await;
     assert_eq!(reason(&reply), Some("command_not_allowed"), "{reply}");
-    assert_eq!(reply["error"]["message"], "仅终端管理员和群管理员可用。");
+    assert_eq!(reply["error"]["message"], "仅主人和群管理员可用。");
     let member = json!({"external": "qq:20002", "role": "member"});
     let reply = run(
         &mut client,

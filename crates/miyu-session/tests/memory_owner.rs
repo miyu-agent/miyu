@@ -26,11 +26,11 @@ fn called(name: &str) -> String {
     format!("[profile]\nname = \"{name}\"\n")
 }
 
-/// 抽一次、合一次（两轮，攒一个会话就合）：会话的「关于你」写称呼 `profile`，配置里另接 `personal`。交回抽取、合并的请求。
-async fn asked_both(profile: &str, personal: &str) -> (String, String) {
+/// 抽一次、合一次（两轮，攒一个会话就合）：会话的「关于你」写称呼 `profile`，配置里另接 `settings`。交回抽取、合并的请求。
+async fn asked_both(profile: &str, settings: &str) -> (String, String) {
     let server = Server::start(vec![every_turn("记一笔"), stream("{}")]).await;
     let mut home = Home::new();
-    organizer_as(&mut home, &server, "merge_sessions = 1\n", personal);
+    organizer_as(&mut home, &server, "merge_sessions = 1\n", settings);
     let lines = Lines {
         profile: miyu_policy::Profile {
             name: profile.to_string(),

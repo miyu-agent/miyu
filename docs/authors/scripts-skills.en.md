@@ -10,7 +10,7 @@ None of these need a long-running program; one file is enough. Chinese version: 
 
 Where: in a package, under the package folder's `scripts/`, `skills/`, `commands/`, with a manifest of just `[package]`; just for you, straight into `~/.miyu/scripts/`, `skills/`, `commands/` (same names there win). The next session sees them; each script, skill and template is switched separately in presets. Broken ones, and scripts with the same name as another tool, aren't registered, and `miyu check` says which and why; if it says the core hasn't picked a new one up yet, check again shortly.
 
-Links work too, pointing at files or folders elsewhere (say, kept together in a repository of your own): what the link points at counts, and the AI sees the real path; broken links are skipped. Links into other parts of Miyu's data folder (`system/`, other accounts) don't count, and `miyu check` says where they point.
+Links work too, pointing at files or folders elsewhere (say, kept together in a repository of your own): what the link points at counts, and the AI sees the real path; broken links are skipped. Links into other parts of Miyu's data folder (the local token, the secrets file and the like) don't count, and `miyu check` says where they point.
 
 ```text
 dice/

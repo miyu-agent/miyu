@@ -139,7 +139,7 @@ async fn a_too_wide_directory_stays_where_the_person_is() {
 }
 
 #[tokio::test]
-async fn a_project_directory_stays_and_the_account_workspace_becomes_the_session_s() {
+async fn a_project_directory_stays_and_the_workspace_root_becomes_the_session_s() {
     let home = Home::new();
     let outside = Outside::new();
     let project = outside.0.join("proj");
@@ -314,7 +314,7 @@ async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
 }
 
 #[tokio::test]
-async fn the_account_workspace_means_the_session_s_own_and_replies_say_which_it_is() {
+async fn the_workspace_root_means_the_session_s_own_and_replies_say_which_it_is() {
     let home = Home::new();
     let outside = Outside::new();
     let project = outside.0.join("proj").to_string_lossy().into_owned();

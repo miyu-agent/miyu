@@ -82,7 +82,7 @@ async fn the_owners_private_chat_is_found_again_and_kept_off_the_local_list() {
 }
 
 #[tokio::test]
-async fn venues_that_need_a_system_account_and_bad_params_are_refused() {
+async fn venues_from_a_non_bridge_and_bad_params_are_refused() {
     let home = Home::new();
     let script = Script::new([]);
     let mut client = connected(&home, &script).await;

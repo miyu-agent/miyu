@@ -18,7 +18,7 @@ use miyu_tool::{Catalog, Tool};
 use support::{Home, Lines, Opening, ask, say, until_turn_ends, watch};
 
 /// 在 `venue` 的会话里调一次执行命令的假工具，交回它跑了几次、结果的说法。
-async fn once(venue: &str, owner_is_admin: bool) -> (usize, Option<String>) {
+async fn once(venue: &str, unconfined: bool) -> (usize, Option<String>) {
     let home = Home::new();
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = Catalog::new([Arc::clone(&run) as Arc<dyn Tool>]).expect("合写法");
@@ -37,7 +37,7 @@ async fn once(venue: &str, owner_is_admin: bool) -> (usize, Option<String>) {
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        confined: !owner_is_admin,
+        confined: !unconfined,
         ..Lines::default()
     };
     let script = Script::new([Play::calls(&[("run", "{}")]), Play::Says("好。")]);

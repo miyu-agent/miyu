@@ -10,17 +10,13 @@ use crate::Core;
 use crate::test_support::{resources, temp_root};
 
 #[test]
-fn the_owner_s_own_scripts_are_listed_for_the_owner_and_the_bridge() {
-    let (root, dir) = temp_root("home-private");
+fn scripts_in_the_data_root_are_installed() {
+    let (root, dir) = temp_root("scripts");
     let write = |relative: &str, text: &str| {
         let path = root.path().join(relative);
         std::fs::create_dir_all(path.parent().expect("有上级")).expect("建得了");
         std::fs::write(path, text).expect("写得进");
     };
-    write(
-        "packages/courier/package.toml",
-        "[package]\nprotocol = [1, 1]\nname = { en = \"Courier\" }\n\n[command]\nname = \"courier\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"C\" }\n\n[process]\nsystem_account = true\n",
-    );
     write(
         "scripts/weather.py",
         "#!/usr/bin/env python3\n# Description: Weather.\nprint('sunny')\n",

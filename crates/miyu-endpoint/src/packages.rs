@@ -111,7 +111,7 @@ pub(crate) fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
             .filter(|found| !seen.iter().any(|one| one.id == found.id))
             .map(|found| listed(core, found, (&places, &seen), &words, peer.language, true)),
     );
-    if !peer.admin {
+    if !peer.for_owner {
         for item in &mut items {
             for_others(item);
         }
@@ -134,7 +134,7 @@ pub(crate) fn entry(core: &Core, id: &str, peer: Peer) -> Option<Value> {
         }
     };
     // 同 [`list`]：不替主人干活的裁掉只给主人的那几格（施工 U23-R修二）。
-    if !peer.admin {
+    if !peer.for_owner {
         for_others(&mut item);
     }
     Some(item)

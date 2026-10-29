@@ -163,7 +163,7 @@ impl SessionPort for Table {
             let projects = root.path().join(miyu_store::projects::FILE);
             let (listed, projects) = tokio::task::spawn_blocking(move || {
                 let listed = scan(&root, Some(&*index), &busy, main, None, &stop);
-                // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，人人互相看得到（照以前的样子）。
+                // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，会话之间都互相看得到。
                 let projects = miyu_store::projects::read(&projects)
                     .map(|read| read.projects)
                     .unwrap_or_default();

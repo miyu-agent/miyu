@@ -2823,15 +2823,15 @@ Scheduled {id}. Next run: {next}.
 This session already has {limit} jobs. Delete one with cron_delete first.
 ```
 
-#### `software/schedule/cron/account-full.txt`
+#### `software/schedule/cron/all-full.txt`
 
-- 什么时候加进来：已经挂满 200 个定时任务（全机，人建、她建、包建合计，施工 J-3 上；2026-10-28 起不分账号，施工 SU）
+- 什么时候加进来：已经挂满 200 个定时任务（人建、她建、包建合计，施工 J-3 上；施工 SU-6 下改名、去掉「这个账号」）
 - token：约 21（按 o200k 估，`{limit}` 按 `200` 算）
 - 为什么加：熔断性质的安全上限（项目主人 2026-10-27 定）；和「这个会话满了」分开说：她在这个会话里删不掉别处的，叫她转告人删
-- 指纹：`2162016c`
+- 指纹：`497dd17e`
 
 ```text
-This account already has {limit} scheduled jobs, the safety limit. Tell the user to remove some first.
+There are already {limit} scheduled jobs, the safety limit. Tell the user to remove some first.
 ```
 
 #### `software/schedule/cron/bad-cron.txt`

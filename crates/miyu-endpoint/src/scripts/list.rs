@@ -20,7 +20,7 @@ use crate::personas::pick;
 
 /// `script.list`：`{"scripts": [...], "dir"}`；`dir` 是你放脚本的文件夹（施工 X-27 补）。列的是登记进工具目录的那一份。
 pub(crate) async fn list(core: &Core, peer: Peer) -> Value {
-    let values = core.mine().config().resolved().values();
+    let values = core.config().resolved().values();
     let switches = miyu_session::switches::of(&values);
     let packages = core.packages_of();
     // 登记上的脚本照工具名排（`Core::scripts`）。

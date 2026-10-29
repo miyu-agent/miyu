@@ -92,12 +92,12 @@ pub(super) fn observe(core: &Core, config: &mut Config, layer: Layer) {
     config.replace(fresh);
     if changes.is_empty() && !problems_changed {
         // 只动了注释、空行：换上了（版本跟着换），不推、不记。
-        crate::config::people::publish(core, config, None);
+        crate::config::handout::publish(core, config, None);
         return;
     }
     let keys: Vec<String> = changes.iter().map(|(key, _, _)| key.clone()).collect();
     record(config, layer, Via::File, By::Kernel, None, &changes);
-    crate::config::people::publish(
+    crate::config::handout::publish(
         core,
         config,
         Some(Pushing {
@@ -188,7 +188,7 @@ fn observe_trust(core: &Core, config: &mut Config) {
         tracing::info!(target: TARGET, trusted = answer.trusted, "project trust");
     }
     config.trust = fresh;
-    crate::config::people::publish(core, config, None);
+    crate::config::handout::publish(core, config, None);
 }
 
 /// 这一层真变了的几项：键、之前的值、之后的值（没写的是空的），照键名排。只看这一层算数的项。

@@ -99,12 +99,7 @@ pub(super) async fn run(
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
     let handle = found.handle.clone();
-    let by = speaker(
-        core,
-        &handle,
-        params.person.as_ref(),
-        params.as_external.clone(),
-    )?;
+    let by = speaker(core, &handle, params.as_external.clone())?;
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
     let template = found_named(core, name).await;
     let own = matches!(&template, Some(own) if own.package.is_none());

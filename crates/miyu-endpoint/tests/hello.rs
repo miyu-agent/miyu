@@ -55,7 +55,7 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
 /// miyu-cli `edit_leaves_the_file_alone_when_nothing_is_saved` 撞见过：早先握手顺手建了工作区，数据根下
 /// 多出一个不该有的 `workspace`，这个测试守住不再发生）。
 #[tokio::test]
-async fn host_workspace_is_given_as_is_and_not_created_when_nobody_has_used_the_account_yet() {
+async fn host_workspace_is_given_as_is_and_not_created_until_used() {
     let home = Home::new();
     let mut client = Client::connect(home.core(&Script::new([])));
     let reply = client.hello().await;

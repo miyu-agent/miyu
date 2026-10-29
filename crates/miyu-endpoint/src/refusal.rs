@@ -300,7 +300,7 @@ impl Refusal {
         data: None,
     };
     /// 只能在核心所在的机器上用（施工 Y-1 下，`connection/reach.rs`）：读核心那台机器的文件、交本机路径、选本机的目录这一类，
-    /// 远程、本机的另一个人连进来的不给。
+    /// 远程连进来的不给。
     pub(crate) const LOCAL_MACHINE_ONLY: Refusal = Refusal {
         code: REFUSED,
         reason: "local_machine_only",

@@ -3,7 +3,7 @@
 use super::*;
 
 #[test]
-fn only_admins_manage_packages() {
+fn only_work_for_the_owner_manages_packages() {
     assert!(may_manage(true).is_ok());
     assert_eq!(
         may_manage(false).map_err(|refusal| refusal.reason),

@@ -259,8 +259,8 @@ async fn describing_is_billed_to_the_session_owner() {
     let handle = home.create(&routes).await;
     let blob = stored(&home);
     show(&handle, "cmd-1", "看看", &blob).await;
-    let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
-        .expect("有账号日志");
+    let journal =
+        std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE)).expect("有日志");
     assert_eq!(
         journal.matches(r#""kind":"usage.oneshot""#).count(),
         1,

@@ -158,7 +158,7 @@ fn refused(error: ScheduleError) -> ScheduleRefused {
         ScheduleError::Cron(why) => ScheduleRefused::BadCron(why),
         ScheduleError::Unknown => ScheduleRefused::NotFound,
         ScheduleError::NoNext => ScheduleRefused::BadCron("no future time matches".to_string()),
-        ScheduleError::TooMany => ScheduleRefused::AccountFull,
+        ScheduleError::TooMany => ScheduleRefused::AllFull,
         ScheduleError::TooShort
         | ScheduleError::Zone
         | ScheduleError::Unusable

@@ -164,7 +164,7 @@ MCP servers it brings, one per entry; see [MCP servers](mcp.en.md).
 
 | Field | Notes |
 |---|---|
-| `name` | Server name (the table name in personal settings): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
+| `name` | Server name (the table name in the configuration): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
 | `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
 | `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
 | `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |

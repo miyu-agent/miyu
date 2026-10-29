@@ -93,7 +93,7 @@ async fn a_scripts_folder_that_links_out_is_not_granted() {
     let real = home.work.join("scripts");
     std::fs::create_dir_all(&real).expect("建得了");
     std::fs::write(real.join("run.py"), "x").expect("写得进");
-    let own = home.root.path().join("home/alice");
+    let own = home.root.path().to_path_buf();
     std::fs::create_dir_all(&own).expect("建得了");
     std::os::unix::fs::symlink(&real, own.join("scripts")).expect("建得了链接");
     let tool = Fake::with_file(

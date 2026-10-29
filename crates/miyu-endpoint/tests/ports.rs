@@ -35,7 +35,7 @@ fn why(reply: &Value) -> &str {
 }
 
 #[tokio::test]
-async fn ports_are_claimed_once_released_with_the_process_and_listed_for_the_admin() {
+async fn ports_are_claimed_once_released_with_the_process_and_listed() {
     let home = Home::new();
     let (first, second) = (Program::new(), Program::new());
     let (mine, mine_step) = record(&home, "a");

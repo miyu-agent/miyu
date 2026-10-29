@@ -52,10 +52,10 @@ fn a_different_salt_gives_a_different_short_id() {
 }
 
 #[test]
-fn the_short_id_does_not_show_the_account_or_the_persona() {
+fn the_short_id_does_not_show_the_persona() {
     let salt = LogSalt::fresh();
     let id = salt.room_id(&Room::persona("miyu"));
-    assert!(!id.contains("alice") && !id.contains("miyu"));
+    assert!(!id.contains("miyu"));
     assert_eq!(format!("{salt:?}"), "LogSalt(..)");
 }
 

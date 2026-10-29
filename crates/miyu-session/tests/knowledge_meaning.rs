@@ -215,7 +215,7 @@ fn billed(home: &Home) -> usize {
 }
 
 #[tokio::test]
-async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
+async fn the_base_is_filled_and_the_owner_pays() {
     // 查、补的是核心一份的库，远程的花费记进日志（同记忆）。
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
@@ -227,7 +227,7 @@ async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
         search("猫吃什么"),
         Play::Says("找到了。"),
     ]);
-    let lines = Lines { ..Lines::default() };
+    let lines = Lines::default();
     let handle = home
         .create_full(&script, &catalog(&home), Opening::default(), lines)
         .await;

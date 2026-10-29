@@ -47,8 +47,7 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
     let words = words(core, peer.language)?;
     // 他关了的包（施工 U23 末下）：拿配置的锁之前读，那个包的配置项不给他看。
     let off = core.packages_off();
-    let mine = core.mine();
-    let config = &*mine.config();
+    let config = &*core.config();
     let mut items: Vec<&Item> = Vec::new();
     for (item, _) in selected(config, params.keys.as_deref(), &words)? {
         if hidden_by(item, &off) {
@@ -202,8 +201,7 @@ fn config_name(words: &Human, english: Option<&Human>, what: &str, id: &str) -> 
 pub(crate) fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let off = core.packages_off();
-    let mine = core.mine();
-    let config = &*mine.config();
+    let config = &*core.config();
     let project = params.cwd.as_deref().and_then(|cwd| config.project(cwd));
     let layers = config.layers(project.as_ref());
     let resolved = merge(config.items(), &layers, &|name| {

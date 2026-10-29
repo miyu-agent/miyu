@@ -27,8 +27,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_source" => ("没有这个软件源。", "No such package source."),
         "unknown_project" => ("项目不存在。", "Project not found."),
         "unknown_server" => (
-            "个人设置里没有这个 MCP 服务。",
-            "No such MCP server in the personal settings.",
+            "设置里没有这个 MCP 服务。",
+            "No such MCP server in the settings.",
         ),
         "oauth_unregistered" => (
             "这个服务要先在它那边注册客户端。",

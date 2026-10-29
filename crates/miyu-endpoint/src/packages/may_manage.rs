@@ -4,8 +4,8 @@
 use crate::refusal::Refusal;
 
 /// 这一刻是不是替主人干活：不是的 `not_permitted`。
-pub(super) fn may_manage(admin: bool) -> Result<(), Refusal> {
-    match admin {
+pub(super) fn may_manage(for_owner: bool) -> Result<(), Refusal> {
+    match for_owner {
         true => Ok(()),
         false => Err(Refusal::NOT_PERMITTED),
     }

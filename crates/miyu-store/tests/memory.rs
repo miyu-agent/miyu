@@ -197,7 +197,7 @@ fn a_missing_or_lagging_memory_index_is_filled_from_the_log() {
 }
 
 #[test]
-fn personas_and_accounts_have_their_own_logs() {
+fn personas_have_their_own_logs() {
     let scratch = Scratch::new("memory-apart");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);

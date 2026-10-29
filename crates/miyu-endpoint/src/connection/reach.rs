@@ -1,24 +1,17 @@
-//! 连接从哪来（施工 Y-1 下，U18，2026-10-22 项目主人定）：本机、本机的第二个入口、远程。
+//! 连接从哪来（施工 Y-1 下，U18，2026-10-22 项目主人定）：本机、远程。
 //! 读核心那台机器的文件、交本机路径、打开本机文件夹这一类方法只给本机的连接（[`local_machine_only`]），别的回
 //! `local_machine_only`；握手回应不给本机的 `host`。这一版不开网络，先把「本机 = 可信」的假设拆掉。
 
-use std::sync::Arc;
-
 use serde_json::Value;
-use tokio::io::{AsyncRead, AsyncWrite};
 
-use super::serve_from;
-use crate::Core;
 use crate::refusal::Refusal;
 use crate::wire::{Notice, Request};
 
 /// 一个连接从哪来。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Reach {
+pub(crate) enum Reach {
     /// 本机：主入口（只有核心的主人连得上的本机套接字、命名管道）、核心拉起的扩展。
     Local,
-    /// 本机的第二个入口（谁都能连的那一个）：不算本机。
-    Public,
     /// 远程：网页软件替远程的人开的连接，握手之前说了 `connection.remote`；`from` 是它说的来自哪个地址，照原样记。
     Remote {
         /// 来自哪个地址。
@@ -28,7 +21,7 @@ pub enum Reach {
 
 impl Reach {
     /// 是不是本机：本机才能用的方法只给它。
-    pub fn is_local(&self) -> bool {
+    pub(crate) fn is_local(&self) -> bool {
         *self == Reach::Local
     }
 
@@ -36,7 +29,7 @@ impl Reach {
     pub(crate) fn source(&self) -> Option<&str> {
         match self {
             Reach::Remote { from } => Some(from),
-            Reach::Local | Reach::Public => None,
+            Reach::Local => None,
         }
     }
 
@@ -56,15 +49,6 @@ impl Reach {
         *self = Reach::Remote { from };
         true
     }
-}
-
-/// 同 [`super::serve`]，这个连接从 `reach` 来（施工 Y-1 下）：第二个本机入口交 [`Reach::Public`]；测试里造远程的连接也走它。
-#[doc(hidden)]
-pub async fn serve_with<S>(stream: S, core: Arc<Core>, reach: Reach)
-where
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    serve_from(stream, core, None, reach).await;
 }
 
 /// 网页软件标远程的那一句。

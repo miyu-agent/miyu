@@ -129,18 +129,17 @@ pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value
 /// 候选写成 [`Candidate`]，它的 key 先取好：`{value}` 的就是写的（照 `secret.set` 的规矩去掉前后空白，不收的当取不到），
 /// 别的照这一刻的密钥文件、核心的环境。
 fn candidate(core: &Core, written: CandidateParams) -> (Candidate, Option<Secret>) {
-    let mine = core.mine();
     let (key, value) = match written.key {
         None => (None, None),
         Some(KeyParam::Value(value)) => (Some(value_key()), Secret::new(&value).ok()),
         Some(KeyParam::Secret(name)) => {
             let reference = Reference::Secret(name);
-            let value = mine.config().secret(&reference);
+            let value = core.config().secret(&reference);
             (Some(reference), value)
         }
         Some(KeyParam::Env(name)) => {
             let reference = Reference::Env(name);
-            let value = mine.config().secret(&reference);
+            let value = core.config().secret(&reference);
             (Some(reference), value)
         }
     };

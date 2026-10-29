@@ -238,7 +238,7 @@ fn measure_ten_thousand_sentences() {
 }
 
 #[test]
-fn turn_indexes_are_one_per_account_and_persona_and_forgetting_a_session_reaches_all() {
+fn turn_indexes_are_one_per_persona_and_forgetting_a_session_reaches_all() {
     use miyu_kernel::id::SessionId;
     use miyu_store::recall::RecallIndexes;
     let scratch = Scratch::new("recall-indexes");
@@ -438,7 +438,7 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     let indexes = RecallIndexes::new(&root);
     let room = Room::persona("engineer");
     let deleted = SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").unwrap();
-    let theirs = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").unwrap();
+    let other = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").unwrap();
     let at = |session: &SessionId| Source {
         session: session.clone(),
         turn: TurnId::new(seq(3)),
@@ -446,12 +446,9 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     let live = root.session_dir(&deleted);
     std::fs::create_dir_all(&live).unwrap();
     // 另一个会话：目录在，照样认得出。
-    std::fs::create_dir_all(root.session_dir(&theirs)).unwrap();
+    std::fs::create_dir_all(root.session_dir(&other)).unwrap();
     assert!(indexes.alive(&room, &at(&deleted)).unwrap());
-    assert!(
-        indexes.alive(&room, &at(&theirs)).unwrap(),
-        "别的账号名下的会话"
-    );
+    assert!(indexes.alive(&room, &at(&other)).unwrap());
     // 删会话：目录挪进回收处，埋墓碑。
     let trashed = root.trashed_sessions().join(deleted.as_str());
     std::fs::create_dir_all(trashed.parent().unwrap()).unwrap();

@@ -33,7 +33,7 @@ mod reach;
 mod rights;
 mod streams;
 
-pub use reach::{Reach, serve_with};
+use reach::Reach;
 #[cfg(test)]
 mod tests;
 
@@ -61,7 +61,7 @@ pub async fn serve<S>(stream: S, core: Arc<Core>)
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
-    serve_with(stream, core, Reach::Local).await;
+    serve_from(stream, core, None, Reach::Local).await;
 }
 
 /// 同 [`serve`]，对面是核心亲手拉起的扩展（施工 9-4 上）：握手不看凭据，握成了往 `shook` 说一声。

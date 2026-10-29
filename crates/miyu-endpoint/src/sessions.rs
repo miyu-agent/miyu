@@ -65,13 +65,10 @@ struct Open {
     /// 在跑的会话，和它现在的工作目录。
     running: BTreeMap<SessionId, Running>,
     /// 最近造会话的命令编号，和它造出的会话，照从旧到新。
-    created: VecDeque<(Made, SessionId)>,
+    created: VecDeque<(CommandId, SessionId)>,
     /// 这次运行里补回过去重的编号没有：第一次造会话时补一次。
     recalled: bool,
 }
-
-/// 一次造会话认谁：命令编号。
-type Made = CommandId;
 
 #[derive(Debug)]
 struct Running {
@@ -146,7 +143,7 @@ impl Sessions {
             }
         }
         // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
-        let made: Made = command.clone();
+        let made = command.clone();
         let earlier = open
             .created
             .iter()
@@ -155,7 +152,7 @@ impl Sessions {
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-        let (_, project) = core.mine().config().with_project(&workspace);
+        let (_, project) = core.config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
         if let Some(id) = earlier {
             return Ok(Created {
@@ -374,10 +371,10 @@ pub(crate) fn person() -> By {
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
 /// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧
 /// 到新。
-async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
+async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {
     let root = core.root.clone();
     tokio::task::spawn_blocking(move || {
-        let mut found: Vec<(Made, SessionId)> = root
+        let mut found: Vec<(CommandId, SessionId)> = root
             .sessions()
             .unwrap_or_default()
             .into_iter()

@@ -1,8 +1,8 @@
 # MCP servers
 
-Existing MCP (Model Context Protocol) servers plug straight into Miyu: the core starts the server process, speaks MCP over stdin and stdout, and registers the server's tools for the AI. Two ways: in personal settings (just for you, quickest), or as a package (to share). Chinese version: [mcp.md](mcp.md).
+Existing MCP (Model Context Protocol) servers plug straight into Miyu: the core starts the server process, speaks MCP over stdin and stdout, and registers the server's tools for the AI. Two ways: in your configuration (just for you, quickest), or as a package (to share). Chinese version: [mcp.md](mcp.md).
 
-## Quickest: personal settings
+## Quickest: your configuration
 
 Open `~/.miyu/config.toml` (or `miyu config edit`), one table per server:
 
@@ -52,7 +52,7 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 
 | Field | Notes |
 |---|---|
-| `name` | Server name (the table name in personal settings): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
+| `name` | Server name (the table name in the configuration): lowercase letters, digits, `-`, 1 to 32 characters; globally unique |
 | `command` | Command and arguments. The first item is looked up in the package's `bin/`, then next to `miyu`, then on `PATH` (`npx`, `uvx`, `docker` and the like). Write this or `url` |
 | `url` | The server's address: starts with `https://`; `http://` only for servers on this machine (`localhost`, `127.0.0.1`), others aren't connected so the token isn't sent in the clear. Write this or `command` |
 | `bearer` | With `url`: the token, sent as `Authorization: Bearer <value>`; written like an `env` value, please as `{ secret = … }` |
@@ -82,6 +82,6 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 - Both old and new MCP versions are understood. Tools, the server's instructions and its prompts are used; resources, `sampling` and the like aren't.
 - Miyu doesn't install Node or Python for people: for servers started with `npx` or `uvx`, say what must be installed first.
 
-## Same name in personal settings and a package
+## Same name in the configuration and a package
 
-The one in personal settings wins and covers the package's (the Packages page shows this).
+The one in the configuration wins and covers the package's (the Packages page shows this).

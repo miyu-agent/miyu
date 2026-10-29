@@ -226,7 +226,7 @@ fn names_from_the_drawing_round_trip() {
 }
 
 #[test]
-fn module_driver_and_fact_names_follow_the_account_rule() {
+fn module_driver_and_fact_names_follow_the_id_rule() {
     rejected::<ModuleId>(r#""Memory""#, "start with a lowercase letter");
     rejected::<DriverFamily>(r#""openai.chat""#, "only lowercase letters");
     rejected::<ModuleId>(r#""nul""#, "reserved name on Windows");

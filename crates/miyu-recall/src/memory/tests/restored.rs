@@ -4,7 +4,7 @@
 use super::*;
 
 fn see(book: &mut MemoryBook, n: u64, event: MemoryEvent) {
-    let event = to_event(seq(n), at(1), admin(), &event).expect("写得出");
+    let event = to_event(seq(n), at(1), owner(), &event).expect("写得出");
     book.see(&event).expect("读得懂");
 }
 
@@ -27,7 +27,7 @@ fn restored(n: u64) -> MemoryEvent {
 
 #[test]
 fn a_restoration_round_trips() {
-    let event = to_event(seq(5), at(1), admin(), &restored(3)).expect("写得出");
+    let event = to_event(seq(5), at(1), owner(), &restored(3)).expect("写得出");
     assert_eq!(event.body.kind(), "ext.memory.restored");
     assert!(
         event.to_line().ends_with(r#""body":{"id":"m3"}}"#),

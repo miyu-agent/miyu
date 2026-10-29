@@ -54,7 +54,7 @@ impl Port {
 impl Port {
     /// 装、卸、升级、开扩展：属主是主人的照做，别的 `not_permitted`。
     fn managing(&self) -> Result<(), PackageRefusal> {
-        super::may_manage::may_manage(self.peer().admin).map_err(refused)
+        super::may_manage::may_manage(self.peer().for_owner).map_err(refused)
     }
 
     /// 照英文说（名字、说明、清单哪里不对），替不替主人本人照会话关不关算（施工 SU-4 下）。
@@ -63,7 +63,7 @@ impl Port {
             locale: Locale::En,
             language: "en",
             input: false,
-            admin: !self.confined,
+            for_owner: !self.confined,
             prefix_ask: false,
         }
     }
@@ -118,7 +118,7 @@ impl PackagesPort for Port {
             let core = self.core()?;
             let params: InfoParams = serde_json::from_value(json!({ "package": package }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            let mut info = super::local::info(&core, self.peer().admin, params)
+            let mut info = super::local::info(&core, self.peer().for_owner, params)
                 .await
                 .map_err(refused)?;
             if let Some(entry) = super::entry(&core, &package, self.peer()) {

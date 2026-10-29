@@ -142,12 +142,7 @@ pub(super) async fn run(
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let found = core.sessions.get(core, &session).await?;
     let handle = found.handle.clone();
-    let by = speaker(
-        core,
-        &handle,
-        params.person.as_ref(),
-        params.as_external.clone(),
-    )?;
+    let by = speaker(core, &handle, params.as_external.clone())?;
     let Some(entry) = usable(core)
         .into_iter()
         .find(|entry| entry.offered.command == name)

@@ -153,7 +153,7 @@ pub(super) async fn send(
     if wide {
         reply["wide"] = json!(true);
     }
-    let untrusted = core.mine().config().untrusted(&found.cwd);
+    let untrusted = core.config().untrusted(&found.cwd);
     if let Some(file) = untrusted {
         reply["untrusted_project"] = json!(file);
     }

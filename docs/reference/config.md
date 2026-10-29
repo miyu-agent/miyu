@@ -80,7 +80,7 @@
 
 | 名字 | 类型 | 说明 |
 |---|---|---|
-| `layer` | `system`，可以不写 | 改哪一层：只有系统配置（写 `personal` 的 `bad_params`） |
+| `layer` | `system`，可以不写 | 改哪一层：只有系统配置（写别的 `bad_params`） |
 | `changes` | 数组 | 改几项，每项见下 |
 | `text` | 字符串 | 整份换成这段字 |
 | `version` | 字符串或 `null` | 写了 `text` 的必写：你读到的这份文件的版本，`null` 是那时还没有这份文件 |
@@ -243,7 +243,7 @@
 | `session` | 字符串 | 只算这个会话；`tree: true` 连它派的子会话 |
 | `offset` | 时区，例如 `+09:00` | 分天照哪个时区，不写是核心所在机器的 |
 
-**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，原样）、`unpriced`（有用量、算不出金额的次数）、`converted`（换算成 `usage.currency` 的一个数：每一笔照它那天的汇率换，`{"currency","amount"}`；取不到汇率的那几笔在它的 `rest` 里，写法同 `amounts`；一笔都没换成的不写）。人人的会话都记账；不是管理员的只查得到自己名下的。金额照 `usage.currency` 排、换算：查的人自己那一份配置的。用到了 open.er-api.com 的汇率时，回应顶上多 `rates`（来源和链接），界面要注明来源。
+**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，原样）、`unpriced`（有用量、算不出金额的次数）、`converted`（换算成 `usage.currency` 的一个数：每一笔照它那天的汇率换，`{"currency","amount"}`；取不到汇率的那几笔在它的 `rest` 里，写法同 `amounts`；一笔都没换成的不写）。所有会话都记账。金额照配置的 `usage.currency` 排、换算。用到了 open.er-api.com 的汇率时，回应顶上多 `rates`（来源和链接），界面要注明来源。
 
 ```json
 {"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}

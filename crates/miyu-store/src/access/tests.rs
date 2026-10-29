@@ -49,7 +49,7 @@ fn a_broken_file_says_so() {
     for bad in [
         "not json",
         "{\"version\":2}",
-        "{\"version\":1,\"accounts\":[]}",
+        "{\"version\":1,\"extra\":[]}",
         "{\"version\":1,\"password\":1}",
     ] {
         fs::write(&path, bad).expect("写得进");

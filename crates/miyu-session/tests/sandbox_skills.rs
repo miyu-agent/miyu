@@ -32,13 +32,13 @@ fn put(home: &Home) -> PathBuf {
     std::fs::canonicalize(dir).expect("在")
 }
 
-/// 工作区 `work/` 的会话，沙盒能用、助手是 `helper`，场所 `venue`、`owner_is_admin` 是假的关起来：调一次 `tools` 里的
+/// 工作区 `work/` 的会话，沙盒能用、助手是 `helper`，场所 `venue`、`unconfined` 是假的关起来：调一次 `tools` 里的
 /// `call`，交回会话。
 async fn session(
     home: &Home,
     (tools, call): (&Catalog, Play),
     helper: &Path,
-    (venue, owner_is_admin): (&str, bool),
+    (venue, unconfined): (&str, bool),
 ) -> miyu_session::Handle {
     let work = home.scratch.0.join("work");
     std::fs::create_dir_all(&work).expect("建得了工作区");
@@ -56,7 +56,7 @@ async fn session(
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        confined: !owner_is_admin,
+        confined: !unconfined,
         ..Lines::default()
     };
     let handle = home.create_full(&script, tools, opening, lines).await;

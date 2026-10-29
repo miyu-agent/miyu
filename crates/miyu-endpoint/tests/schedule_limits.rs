@@ -116,7 +116,7 @@ fn results(home: &Home, session: &str) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn an_account_holds_at_most_two_hundred() {
+async fn at_most_two_hundred_in_all() {
     let home = Home::new();
     let resources = default_resources();
     let tools = miyu_tool::Catalog::in_packages([(

@@ -44,8 +44,7 @@ impl LayerParam {
 /// `config.check`：把 `text` 当成一层的文件查，不生效。项目配置照「收紧」和另外几层合出来的比，不看信没信任。
 pub(crate) fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let mine = core.mine();
-    let problems = check_text(&mine.config(), &words, params.layer.layer(), &params.text)?;
+    let problems = check_text(&core.config(), &words, params.layer.layer(), &params.text)?;
     Ok(json!({ "problems": problems }))
 }
 

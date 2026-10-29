@@ -172,7 +172,7 @@ program = "miyu-embed"
 
 **关掉某个包**（施工 U23 末上，项目主人 2026-10-24）：设置 `packages.<编号>.off`（扩展进程的总闸照旧是 `package.disable`）。出厂的卸不掉，照它关。设置页「软件包」页每个装着的包那一组底下一个开关（核心给每个包现拼一项，`miyu_session::packages_off::item_for`）；带占位的那一项不上设置页，接住没装的编号，先关后装就是关着的。关了的包从 `packages_of()` 里去掉（技能、人格预设、命令模板、交给会话的「装了的包」、预设页都跟着没有），会话每一轮照活的配置把它并进预设文件（工具面、技能下一个回合就没有，开着的会话也一样，工具面变了断一次缓存）；看得到的脚本也去掉它带的。施工 BS-1 上中起没有必需的包，哪个都关得掉（原来必需的照 `config_invalid` 拒）。带进程的扩展照跑。它往 system 尾部放的那一段（`system.append`）、它带的 MCP 服务的说明、`user.append` 都跟着工具面走（只给工具在这个会话工具面上的包），关了的包工具不在面上，下一个回合就没有（施工 U23 末下核过，有测试守着）；（施工 U23 末下）它声明的斜杠命令、整页命令、它带的服务的提示词菜单里不列、敲了回 `unknown_command`；设置页（`config.schema`、`config.get`）不给看它的配置项，值照旧留在文件里，它的关包开关照给。扩展按会话推的界面块这一版不筛（扩展不知道谁关了它）。
 
-**包的身份**：核心拉起的扩展连进来替主人干活，是哪个包另记在连接上，能力照批过的挡；清单写 `system_account` 的照不认识的键整份不收。清单写了 `[connection] platform` 的是平台桥（`venues/bridge.rs`），场所会话归主人，群和陌生人的私聊关在沙盒里（`venues.md`）。
+**包的身份**：核心拉起的扩展连进来替主人干活，是哪个包另记在连接上，能力照批过的挡。清单写了 `[connection] platform` 的是平台桥（`venues/bridge.rs`），场所会话归主人，群和陌生人的私聊关在沙盒里（`venues.md`）。
 
 **协议**（`protocol.md`）：`package.list`，不带参数，交回 `{"packages": [...]}`，照编号排（同编号出厂的在前）。列表里变了的经订阅 `packages` 推 `package.changed`（施工 F-8 三补，`protocol.md`「软件包列表的推送」，端点的 `packages/changes.rs`、`subscriptions/listed.rs`）。
 
@@ -365,7 +365,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 |---|---|
 | `crates/miyu-config/src/package/tests.rs` | 两份样例（终端界面会话给的草稿、桥那种）每一格读对；最小的清单；每一种写错报对代码和行 |
 | `crates/miyu-config/src/phrases.rs` 的测试 | 语言到一句话的读法、第一处错 |
-| `crates/miyu-store/src/packages/tests.rs` | 两层照编号排、不是 `.toml` 的和编号不合写法的不算；空的；同编号认出厂的；子命令名先到先得、报在那一行；写错的照样列出；状态目录；还写着 `system_account` 的整份不收（施工 SU-4 中）；功能的编号先到先得、照包算的那一个也算（施工 F-1） |
+| `crates/miyu-store/src/packages/tests.rs` | 两层照编号排、不是 `.toml` 的和编号不合写法的不算；空的；同编号认出厂的；子命令名先到先得、报在那一行；写错的照样列出；状态目录；功能的编号先到先得、照包算的那一个也算（施工 F-1） |
 | `crates/miyu-config/src/package/features/tests.rs`（施工 F-1） | 功能照写的先后读对、编号在第几行；没写的照包算一个；空表一个都没有；界面、小程序没有；编号、表、名字、工具的每一种写错；只有内置包、扩展包能写 |
 | `crates/miyu-config/src/package/links/tests.rs`（施工 F-1） | 小程序的程序和参数；依赖、推荐；平台接入；组只给内置包、写法不对和重复的报 `bad_group`、`required` 不认了（施工 BS-1 上中）；每种包只能写自己的表；种类四选一 |
 | `crates/miyu-config/src/package/side/tests.rs`（施工 Q-3） | `[[side]]` 读成编号、档位、名字、说明，全编号是 `<包>/<编号>`，三档都认；编号写错、少了、重了，档位不认识、少了，少了名字、说明报 `bad_side`、`detail` 对；不认识的格、写成一张表的、不是扩展包的照各自的代码 |

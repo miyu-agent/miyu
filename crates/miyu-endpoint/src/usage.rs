@@ -297,7 +297,7 @@ fn empty() -> Total {
 
 /// 金额哪个币种排最前：照这一刻的配置。
 pub(crate) fn currency(core: &Core) -> String {
-    UsageSettings::from(&core.mine().config().resolved().values()).currency
+    UsageSettings::from(&core.config().resolved().values()).currency
 }
 
 /// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照这一刻的配置排、换算（施工 UC-1，常推的

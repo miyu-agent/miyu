@@ -26,7 +26,7 @@ use miyu_kernel::time::Timestamp;
 use miyu_store::root::DataRoot;
 use miyu_store::schedules::{self as table, NewSchedule, Opened, Schedules as Table};
 use miyu_store::sqlite::DbError;
-use miyu_tool::PER_ACCOUNT;
+use miyu_tool::IN_ALL;
 
 pub use clock::{Clock, Sleep, SystemClock};
 pub use miyu_store::schedules::{Creator, Last, Loop, Schedule, Target, When};
@@ -65,7 +65,7 @@ pub enum ScheduleError {
     Unknown,
     /// 交的时区不认识（施工 J-3 上）。
     Zone,
-    /// 挂满了 [`PER_ACCOUNT`] 个（施工 J-3 上）。
+    /// 挂满了 [`IN_ALL`] 个（施工 J-3 上）。
     TooMany,
     /// 唤醒表这一回用不了（坏了又开不了空的、版本比这一版新）。
     Unusable,
@@ -149,7 +149,7 @@ impl Schedules {
             When::At { .. } | When::Every { .. } => {}
         }
         // 熔断性质的安全上限（施工 J-3 上）：人建、她建、包建合计；到了只拒新建。
-        if self.list()?.len() >= PER_ACCOUNT {
+        if self.list()?.len() >= IN_ALL {
             return Err(ScheduleError::TooMany);
         }
         let now = self.now();
@@ -378,7 +378,7 @@ impl std::fmt::Display for ScheduleError {
             ScheduleError::TooShort => write!(f, "shorter than {MIN_EVERY} seconds"),
             ScheduleError::Unknown => f.write_str("unknown schedule"),
             ScheduleError::Zone => f.write_str("unknown time zone"),
-            ScheduleError::TooMany => write!(f, "more than {PER_ACCOUNT} schedules"),
+            ScheduleError::TooMany => write!(f, "more than {IN_ALL} schedules"),
             ScheduleError::Unusable => f.write_str("schedules unusable"),
             ScheduleError::Db(error) => error.fmt(f),
         }

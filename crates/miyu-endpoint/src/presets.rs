@@ -52,7 +52,7 @@ pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, 
 /// 这时的 `preset.default`：配置里没写的是出厂的 `full`（施工 CC-1 从 [`resolve`] 挪出来，不写会话的
 /// 命令菜单照它筛）。
 pub(crate) fn default_of(core: &Core) -> String {
-    PresetSettings::from(&core.mine().config().resolved().values()).default
+    PresetSettings::from(&core.config().resolved().values()).default
 }
 
 /// 交给会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能）：改了预设的
@@ -119,7 +119,7 @@ pub(crate) fn package_on(core: &Core, preset: Option<&str>, package: &str) -> bo
 /// 这时配置里写了的全局开关（施工 X-27，`miyu_session::switches`）：照配置服务最近换上的
 /// 那一份读，不拿配置服务的锁。
 pub(crate) fn switches(core: &Core) -> std::collections::BTreeMap<String, bool> {
-    let now = core.mine().hub().current();
+    let now = core.hub.current();
     miyu_session::switches::of(&now.borrow().resolved().values())
 }
 

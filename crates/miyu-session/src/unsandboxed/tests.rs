@@ -86,7 +86,7 @@ impl Drop for Scratch {
 
 /// 带文件的放行（施工 X-37 补）：几件都放行了、来处都对，只看文件这一刻的真实位置。
 #[test]
-fn a_tool_with_a_file_counts_only_where_the_admin_controls_it() {
+fn a_tool_with_a_file_counts_only_where_the_owner_controls_it() {
     let site = Scratch::new("file");
     let file = |name: &str, path: PathBuf| {
         Fake::with_file(name, Access::Execute, path, Act::Echo) as Arc<dyn Tool>

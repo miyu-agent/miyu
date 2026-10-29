@@ -318,16 +318,6 @@ fn capabilities_are_read_in_the_table_order() {
     assert_eq!(Code::BadCapability.as_str(), "bad_capability");
 }
 
-/// 包不再各有一个账号（施工 SU-4 中）：`[process] system_account` 拿掉了，还写着的照不认识的键，整份不收。
-#[test]
-fn a_system_account_is_no_longer_a_key() {
-    let with = BRIDGE.replace(
-        "start = \"manual\"\n",
-        "start = \"manual\"\nsystem_account = true\n",
-    );
-    assert_eq!(wrong(&with).0, Code::UnknownKey);
-}
-
 #[test]
 fn every_code_has_a_name_and_the_message_is_english() {
     let problem = read("[package]\n\n[ui]\n\n[process]\n").unwrap_err();

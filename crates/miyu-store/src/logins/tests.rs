@@ -76,7 +76,7 @@ fn adding_prunes_expired_and_keeps_at_most_64() {
 #[test]
 fn a_written_file_reads_back_private() {
     let temp = Scratch::new();
-    let path = temp.path().join("home").join("admin").join(FILE);
+    let path = temp.path().join("sub").join(FILE);
     let empty = read(&path).expect("没有的是空的");
     assert!(empty.logins.tokens.is_empty());
     let mut logins = empty.logins;

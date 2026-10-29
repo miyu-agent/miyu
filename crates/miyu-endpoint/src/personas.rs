@@ -40,7 +40,7 @@ pub(crate) async fn resolve(
     let (id, default) = match wanted {
         Some(None) => return Ok(None),
         Some(Some(id)) => (id.to_string(), false),
-        None => match PersonaSettings::from(&core.mine().config().resolved().values()).default {
+        None => match PersonaSettings::from(&core.config().resolved().values()).default {
             Some(id) => (id, true),
             None => return Ok(None),
         },

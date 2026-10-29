@@ -84,7 +84,7 @@ async fn respond_opens_a_turn_on_what_was_overheard() {
         matches!(&fact.body, Body::ContextInjected(injected) if injected.text == "<judge/>\n"),
         "{fact:?}"
     );
-    assert_eq!(fact.by, sessions_admin(), "本机的连接记成管理员");
+    assert_eq!(fact.by, owner(), "本机的连接记成主人");
     // 同一个请求编号再发只算一次，回应一样。
     let again = client
         .call("r1", "session.respond", respond(&session, json!([b, a])))
@@ -138,7 +138,7 @@ async fn bad_requests_record_nothing_and_refusals_name_the_messages() {
     assert_eq!(reply["error"]["data"]["messages"], json!([seqs[0]]));
 }
 
-fn sessions_admin() -> miyu_kernel::origin::By {
+fn owner() -> miyu_kernel::origin::By {
     miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::default())
 }
 

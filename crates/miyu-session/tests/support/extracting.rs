@@ -69,9 +69,9 @@ pub fn organizer_after(home: &mut Home, server: &Server, extra: &str, idle: Dura
     organizer_full(home, server, extra, "", idle);
 }
 
-/// 同 [`organizer`]，配置里另接 `personal`（施工 R-6 再修：称呼）。
-pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, personal: &str) {
-    organizer_full(home, server, extra, personal, Duration::from_millis(100));
+/// 同 [`organizer`]，配置里另接 `settings`（施工 R-6 再修：称呼）。
+pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, settings: &str) {
+    organizer_full(home, server, extra, settings, Duration::from_millis(100));
 }
 
 /// 同 [`organizer`]，闲一小时才抽（等于一直不闲），一直不闲的会话最早那一轮结束 `max_wait` 就不等闲（施工 E-5）。
@@ -100,8 +100,8 @@ pub fn organizer_tagging(home: &mut Home, server: &Server, extra: &str) {
 }
 
 /// 整理记忆的照开发端点（施工 R-16 的量尺）：`MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`、`MIYU_DEV_MODEL` 都设了才接，交回接没接上。
-/// key 只经环境变量交给配置，不写进哪里。`personal` 接在配置后面（称呼）。
-pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
+/// key 只经环境变量交给配置，不写进哪里。`settings` 接在配置后面（称呼）。
+pub fn organizer_dev(home: &mut Home, settings: &str) -> bool {
     let (Ok(base_url), Ok(key), Ok(model)) = (
         std::env::var("MIYU_DEV_BASE_URL"),
         std::env::var("MIYU_DEV_API_KEY"),
@@ -114,7 +114,7 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
     );
     home.configs = configs_with(
         &source,
-        personal,
+        settings,
         &[(Reference::Env("MIYU_DEV_API_KEY".to_string()), key.as_str())],
     );
     let resources = home.resources.path().to_path_buf();
@@ -134,15 +134,15 @@ pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
     true
 }
 
-fn organizer_full(home: &mut Home, server: &Server, extra: &str, personal: &str, idle: Duration) {
-    organizer_with(home, server, extra, personal, (idle, None), false);
+fn organizer_full(home: &mut Home, server: &Server, extra: &str, settings: &str, idle: Duration) {
+    organizer_with(home, server, extra, settings, (idle, None), false);
 }
 
 fn organizer_with(
     home: &mut Home,
     server: &Server,
     extra: &str,
-    personal: &str,
+    settings: &str,
     (idle, max_wait): (Duration, Option<Duration>),
     tagging: bool,
 ) {
@@ -152,7 +152,7 @@ fn organizer_with(
     );
     home.configs = configs_with(
         &source,
-        personal,
+        settings,
         &[(
             Reference::Env("ORG_KEY".to_string()),
             "sk-org-0123456789abcdef",

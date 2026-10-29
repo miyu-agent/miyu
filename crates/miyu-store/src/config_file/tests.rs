@@ -85,7 +85,7 @@ fn leftovers(dir: &Path, keep: &[&str]) -> Vec<String> {
 #[test]
 fn a_new_file_is_written_and_its_directory_made() {
     let temp = Scratch::bare();
-    let path = temp.path().join("home").join("admin").join("settings.toml");
+    let path = temp.path().join("sub").join("settings.toml");
     write(&path, b"a = 1\n", None).unwrap();
     assert_eq!(fs::read(&path).unwrap(), b"a = 1\n");
     assert_eq!(

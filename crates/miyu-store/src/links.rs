@@ -108,7 +108,7 @@ pub(crate) fn list(
         };
         if !fence.admits(&real) {
             let why = format!(
-                "links to {} inside the data root, outside this account's own folders",
+                "links to {} inside the data root, outside the folders you keep things in",
                 real.display()
             );
             skipped.push(Skipped {

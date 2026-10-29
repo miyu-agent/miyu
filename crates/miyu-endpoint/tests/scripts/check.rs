@@ -54,7 +54,7 @@ async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
 /// 照跳过报。Unix 上（Windows 上建链接要权限，找法的测试在 `miyu-store` 里三个平台都跑）。
 #[cfg(unix)]
 #[tokio::test]
-async fn check_reports_links_out_of_the_accounts_folders() {
+async fn check_reports_links_out_of_the_data_root() {
     let home = Home::new();
     home.write(
         "keys/SKILL.md",

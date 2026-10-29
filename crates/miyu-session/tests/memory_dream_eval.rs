@@ -239,7 +239,7 @@ async fn measure_the_dream_eval_set() {
         .ok()
         .and_then(|rounds| rounds.parse().ok())
         .unwrap_or(3);
-    let personal = format!("[profile]\nname = \"{}\"\n", set.owner);
+    let settings = format!("[profile]\nname = \"{}\"\n", set.owner);
     let newer: Vec<&str> = set
         .memory
         .iter()
@@ -251,7 +251,7 @@ async fn measure_the_dream_eval_set() {
         let mut total = Score::default();
         for round in 1..=rounds {
             let mut home = Home::new();
-            if !organizer_dev(&mut home, &personal) {
+            if !organizer_dev(&mut home, &settings) {
                 println!("没设 MIYU_DEV_BASE_URL、MIYU_DEV_API_KEY、MIYU_DEV_MODEL：不量");
                 return;
             }

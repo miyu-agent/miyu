@@ -116,7 +116,7 @@ fn a_working_dir_holding_the_data_root_still_keeps_it_out() {
     let dir = Temp(std::env::temp_dir().join(format!("miyu-walk-home-{}", std::process::id())));
     let home = dir.0.join("home");
     let data = home.join(".miyu");
-    let own = data.join("home").join("admin").join("workspace");
+    let own = data.join("workspace");
     for path in [home.join(".ssh"), data.join("run"), own.clone()] {
         std::fs::create_dir_all(path).expect("建得了目录");
     }

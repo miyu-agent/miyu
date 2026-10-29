@@ -31,7 +31,7 @@ fn asked(model: &str, purpose: &str) -> Value {
 }
 
 #[tokio::test]
-async fn one_shot_calls_count_by_purpose_and_land_in_the_account_journal() {
+async fn one_shot_calls_count_by_purpose_and_land_in_the_journal() {
     let server = Server::start(vec![said("a"), said("b"), said("c")]).await;
     let home = Home::new();
     home.write("config.toml", &config(&server, ""));
@@ -64,8 +64,7 @@ async fn one_shot_calls_count_by_purpose_and_land_in_the_account_journal() {
         ]),
         "{reply}"
     );
-    let journal =
-        std::fs::read_to_string(home.root.path().join(journal::FILE)).expect("有账号日志");
+    let journal = std::fs::read_to_string(home.root.path().join(journal::FILE)).expect("有日志");
     assert_eq!(
         journal.matches(r#""kind":"usage.oneshot""#).count(),
         3,
@@ -95,7 +94,7 @@ fn usd() -> Tariff {
 }
 
 #[tokio::test]
-async fn a_session_counts_under_its_session_venue_and_account() {
+async fn a_session_counts_under_its_session_and_venue() {
     let home = Home::new();
     let script = Script::new([Play::Says("好。"), Play::Says("再见。")]).priced(usd());
     let mut client = Client::connect(scripted(&home, data(profiles(json!({}))), script));

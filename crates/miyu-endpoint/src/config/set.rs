@@ -42,7 +42,7 @@ pub(super) const TRIES: usize = 3;
 /// `config.set` 的参数。
 #[derive(Debug, Deserialize)]
 pub(crate) struct SetParams {
-    /// 改哪一层：只有系统配置（施工 SU-3 上），可以不写。项目配置只手改，不收；以前的 `personal` 不认。
+    /// 改哪一层：只有系统配置（施工 SU-3 上），可以不写。项目配置只手改，不收。
     #[serde(default, rename = "layer")]
     pub(super) _layer: Option<WriteLayer>,
     /// 改几项。
@@ -428,7 +428,7 @@ pub(super) fn done(
     record(config, layer, via, by.clone(), cause, &changes);
     let keys: Vec<String> = changes.iter().map(|(key, _, _)| key.clone()).collect();
     let listed = push::keys(config, &keys);
-    crate::config::people::publish(
+    crate::config::handout::publish(
         core,
         config,
         Some(Pushing {

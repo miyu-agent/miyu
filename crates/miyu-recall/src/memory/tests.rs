@@ -25,7 +25,7 @@ fn at(minutes: i64) -> Timestamp {
     Timestamp::from_unix_millis(start.unix_millis() + minutes * 60_000).expect("合写法")
 }
 
-fn admin() -> By {
+fn owner() -> By {
     serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法")
 }
 
@@ -45,7 +45,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         class: "user".to_string(),
         text: text.to_string(),
         sources: vec![source(3)],
-        audience: vec![admin()],
+        audience: vec![owner()],
         replaces,
         about: None,
         venue: None,
@@ -92,7 +92,7 @@ fn a_retirement_round_trips_and_other_events_are_not_memory() {
         kept: None,
     };
     let event =
-        to_event(seq(8), at(2), admin(), &MemoryEvent::Retired(body.clone())).expect("写得出");
+        to_event(seq(8), at(2), owner(), &MemoryEvent::Retired(body.clone())).expect("写得出");
     assert!(
         event
             .to_line()
@@ -118,7 +118,7 @@ fn an_unknown_class_is_kept_as_it_is() {
     let mut body = saved("喜欢猫", None);
     body.class = "mood".to_string();
     let event =
-        to_event(seq(2), at(0), admin(), &MemoryEvent::Saved(body.clone())).expect("写得出");
+        to_event(seq(2), at(0), owner(), &MemoryEvent::Saved(body.clone())).expect("写得出");
     assert_eq!(
         from_event(&Event::from_line(&event.to_line()).expect("读得回")),
         Some(Ok(MemoryEvent::Saved(body)))
@@ -160,7 +160,7 @@ fn the_book_follows_saves_replacements_and_retirements() {
         to_event(
             seq(4),
             at(3),
-            admin(),
+            owner(),
             &MemoryEvent::Retired(Retired {
                 id: MemoryId::new(seq(2)),
                 why: "不养了".into(),
@@ -178,7 +178,7 @@ fn the_book_follows_saves_replacements_and_retirements() {
         to_event(
             seq(6),
             at(5),
-            admin(),
+            owner(),
             &MemoryEvent::Retired(Retired {
                 id: MemoryId::new(seq(98)),
                 why: "?".into(),
@@ -233,7 +233,7 @@ fn a_clearing_round_trips_with_or_without_a_session() {
         ),
     ] {
         let event =
-            to_event(seq(9), at(1), admin(), &MemoryEvent::Cleared(body.clone())).expect("写得出");
+            to_event(seq(9), at(1), owner(), &MemoryEvent::Cleared(body.clone())).expect("写得出");
         assert_eq!(event.body.kind(), "ext.memory.cleared");
         assert!(event.to_line().ends_with(json), "{}", event.to_line());
         let back = Event::from_line(&event.to_line()).expect("读得回");
@@ -256,7 +256,7 @@ fn clearing_takes_what_came_only_from_the_session_or_everything_before() {
         };
         (
             body.clone(),
-            to_event(seq(n), at(n as i64), admin(), &MemoryEvent::Cleared(body)).expect("写得出"),
+            to_event(seq(n), at(n as i64), owner(), &MemoryEvent::Cleared(body)).expect("写得出"),
         )
     };
     let ids = |list: Vec<MemoryId>| list.iter().map(ToString::to_string).collect::<Vec<_>>();
@@ -304,7 +304,7 @@ fn the_book_remembers_what_each_command_did() {
     let mut save = to_event(
         seq(1),
         at(1),
-        admin(),
+        owner(),
         &MemoryEvent::Saved(saved("一", None)),
     )
     .expect("写得出");
@@ -321,7 +321,7 @@ fn the_book_remembers_what_each_command_did() {
     let mut clear = to_event(
         seq(3),
         at(3),
-        admin(),
+        owner(),
         &MemoryEvent::Cleared(Cleared { session: None }),
     )
     .expect("写得出");
@@ -352,7 +352,7 @@ fn clearing_counts_what_could_be_seen() {
         to_event(
             seq(3),
             at(3),
-            admin(),
+            owner(),
             &MemoryEvent::Cleared(Cleared { session: None }),
         ),
     ] {
@@ -376,7 +376,7 @@ fn an_extraction_mark_round_trips_and_the_book_keeps_the_furthest() {
         })
     };
     let event =
-        to_event(seq(3), at(1), admin(), &mark(9, Some(Skipped::Remembered))).expect("写得出");
+        to_event(seq(3), at(1), owner(), &mark(9, Some(Skipped::Remembered))).expect("写得出");
     assert!(
         event.to_line().ends_with(r#""body":{"session":"0192f3a0-1111-7abc-8def-001122334455","upto":9,"count":2,"skipped":"remembered"}}"#),
         "{}",
@@ -387,7 +387,7 @@ fn an_extraction_mark_round_trips_and_the_book_keeps_the_furthest() {
         from_event(&back),
         Some(Ok(mark(9, Some(Skipped::Remembered))))
     );
-    let plain = to_event(seq(4), at(1), admin(), &mark(5, None)).expect("写得出");
+    let plain = to_event(seq(4), at(1), owner(), &mark(5, None)).expect("写得出");
     assert!(
         plain.to_line().ends_with(r#""count":2}}"#),
         "没跳的不写 skipped"

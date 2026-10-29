@@ -77,7 +77,7 @@ fn retire(core: &Core, reference: &str) {
         language: "en",
         input: false,
         // 改配置，不装包。
-        admin: false,
+        for_owner: false,
         prefix_ask: false,
     };
     let written = serde_json::from_value::<SetParams>(json!({"changes": changes}))

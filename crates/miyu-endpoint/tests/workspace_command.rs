@@ -279,7 +279,7 @@ async fn in_a_venue_only_the_owner_may_move_it() {
     )
     .await;
     assert_eq!(reason(&reply), Some("owner_only"), "{reply}");
-    assert_eq!(reply["error"]["message"], "仅终端管理员可用。");
+    assert_eq!(reply["error"]["message"], "仅主人可用。");
     let owner = json!({"external": "qq:10001"});
     let reply = run(
         &mut client,

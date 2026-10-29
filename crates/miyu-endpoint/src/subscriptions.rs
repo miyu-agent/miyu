@@ -219,7 +219,7 @@ impl Subscriptions {
             return;
         }
         // 订的是这个连接的人那一份（施工 Y-2 下下中上）。
-        let pushes = core.mine().hub().subscribe();
+        let pushes = core.hub.subscribe();
         self.config = Some(ConfigForwarder::start(
             Arc::clone(core),
             pushes,

@@ -18,7 +18,7 @@
   "said": {
     "cron/created": "Scheduled {id}",
     "cron/full": "This session already has {limit} jobs",
-    "cron/account-full": "This account already has {limit} jobs",
+    "cron/all-full": "There are already {limit} jobs",
     "cron/bad-cron": "Invalid cron: {error}",
     "cron/not-found": "No job {id}",
     "cron/deleted": "Deleted {id}",

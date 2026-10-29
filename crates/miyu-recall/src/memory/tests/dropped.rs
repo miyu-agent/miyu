@@ -4,7 +4,7 @@
 use super::*;
 
 fn see(book: &mut MemoryBook, n: u64, when: i64, event: MemoryEvent) {
-    let event = to_event(seq(n), at(when), admin(), &event).expect("写得出");
+    let event = to_event(seq(n), at(when), owner(), &event).expect("写得出");
     book.see(&event).expect("读得懂");
 }
 

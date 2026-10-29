@@ -980,7 +980,7 @@ $ miyu provider logout bigmodel-2
 # "<name>" =
 
 [commands."<id>"]
-# 谁能用这条命令：这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。
+# 谁能用这条命令：这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。
 # 能写：admin、anyone 或 off。只能写在系统配置里。立即生效。
 # access =
 
@@ -1106,7 +1106,7 @@ base = "10s"
 max = "5m"
 
 [net]
-# 内部域名：别人（成员、群里的人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；管理员自己不受影响。写法例如 example-corp.com。
+# 内部域名：别人（群里的人、陌生人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；你自己不受影响。写法例如 example-corp.com。
 # 能写：最多 253 个字的文字 的列表。只能写在系统配置里。下一轮生效。
 # internal_domains =
 
@@ -1494,7 +1494,7 @@ enabled = true
 # remove =
 
 [sandbox.tools]
-# 不套沙盒：这件工具：管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。
+# 不套沙盒：这件工具：放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在你自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。
 # 能写：最多 200 个字的文字。只能写在系统配置里。下一轮生效。
 # "<name>" =
 
@@ -1612,8 +1612,8 @@ currency = "USD"
 | 说明 | AI 默认用哪种语言回复，对话里可以随时让它换。 | The language the AI replies in by default. You can ask it to switch at any time. | AI が既定で返信に使う言語です。会話の中でいつでも切り替えを頼めます。 |
 | 建议值（先后照这种语言） | 简体中文、繁體中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Русский、Tiếng Việt、ไทย、Bahasa Indonesia、العربية | English、简体中文、繁體中文、日本語、한국어，后面同中文 | 日本語、English、简体中文、繁體中文、한국어，后面同中文 |
 | `commands.<id>.access` 名字（O-6 六补） | 谁能用这条命令 | Who can use this command | このコマンドを使える人 |
-| 说明 | 这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。 | Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins. | このスラッシュコマンドを使える人。管理者はターミナルの管理者とグループの管理者、全員はチャットの誰でも、無効は誰も使えません。設定しない場合はコマンド自身の設定、それもなければ管理者です。 |
-| 选项 | `admin` 管理员、`anyone` 所有人、`off` 停用 | Admins、Everyone、Off | 管理者、全員、無効 |
+| 说明 | 这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。 | Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins. | このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。 |
+| 选项 | `admin` 你和群管理员、`anyone` 所有人、`off` 停用 | You and group admins、Everyone、Off | あなたとグループの管理者、全員、無効 |
 | `permission.level` 名字（8-32） | 新会话的权限级别 | Permission level for new sessions | 新しいセッションの権限レベル |
 | 说明 | 调整新会话开启时的默认权限模式，修改后开新会话生效。 | The default permission mode new sessions start in. Changes apply to sessions opened afterwards. | 新しいセッションを開いたときの既定の権限モードです。変更は次に開くセッションから効きます。 |
 | 选项 | `workspace` 工作区（沙盒）、`full` 完全放开（不启用沙盒） | Workspace (sandbox)、Full access (no sandbox) | ワークスペース（サンドボックス）、フルアクセス（サンドボックスなし） |

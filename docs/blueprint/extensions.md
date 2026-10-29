@@ -172,7 +172,7 @@
 | `crates/miyu-endpoint/tests/audit_extension_core_key.rs`（施工 5-19） | 包编号和核心模块同名（`ui`）、没声明配置项的扩展改 `ui.language` 回 `local_only`，系统配置里什么都没写 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
-| `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval`；还写着 `system_account` 的清单整份不收 |
+| `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval` |
 
 ### 起草时定的
 

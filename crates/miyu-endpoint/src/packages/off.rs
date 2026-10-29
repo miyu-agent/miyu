@@ -10,7 +10,7 @@ use crate::Core;
 impl Core {
     /// 关了的包：照配置读（场所会话一样照它）。
     pub(crate) fn packages_off(&self) -> BTreeSet<String> {
-        let values = self.mine().config().resolved().values();
+        let values = self.config().resolved().values();
         miyu_session::packages_off::of(&values)
     }
 }

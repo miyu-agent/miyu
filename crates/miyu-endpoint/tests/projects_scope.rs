@@ -80,7 +80,7 @@ async fn a_closed_project_sees_only_its_own_and_an_open_one_sees_outside() {
         "开了的项目和外面互相看得到：{seen}"
     );
 
-    // 文件里没有了这个项目（手改了）：当不在项目里，和外面的人人互相看得到。
+    // 文件里没有了这个项目（手改了）：当不在项目里，和外面的会话互相看得到。
     let file = home.root.path().join("projects.json");
     std::fs::write(&file, "{\"version\":1,\"projects\":[]}\n").expect("写得进");
     client.say("s3", &inside, "再列一下").await;

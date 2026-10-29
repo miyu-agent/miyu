@@ -1,4 +1,4 @@
-//! 你的头像（施工 AV-1）：换、删，读得回；握手回应带版本；参数里写 `account` 的不认；对照的版本不对的
+//! 你的头像（施工 AV-1）：换、删，读得回；握手回应带版本；对照的版本不对的
 //! `avatar_conflict`；不是图、太大的照人格头像的规矩拒。
 
 use std::sync::Arc;
@@ -35,8 +35,8 @@ fn why(reply: &Value) -> &str {
 async fn the_owner_sets_reads_and_unsets_the_avatar() {
     let home = Home::new();
     let core = home.core(&Script::new([]));
-    let mut bob = Client::connect(Arc::clone(&core));
-    let hello = bob.hello().await;
+    let mut head = Client::connect(Arc::clone(&core));
+    let hello = head.hello().await;
     assert!(
         hello["result"].get("avatar").is_none(),
         "没有的不带：{hello}"
@@ -44,24 +44,18 @@ async fn the_owner_sets_reads_and_unsets_the_avatar() {
 
     // 换上：回版本，读得回原样。
     let picture = png(32, 32);
-    let blob = put(&mut bob, &picture).await;
-    let set = bob
+    let blob = put(&mut head, &picture).await;
+    let set = head
         .call("a1", "account.set_avatar", json!({"blob": blob}))
         .await;
     let version = set["result"]["avatar"]
         .as_str()
         .unwrap_or_else(|| panic!("{set}"))
         .to_string();
-    let read = bob.call("a2", "account.avatar", json!({})).await;
+    let read = head.call("a2", "account.avatar", json!({})).await;
     assert_eq!(read["result"]["avatar"], version.as_str(), "{read}");
     assert_eq!(read["result"]["media_type"], "image/png");
     assert_eq!(read["result"]["data"], STANDARD.encode(&picture));
-
-    // 只有一张：写 `account` 的参数不对。
-    let refused = bob
-        .call("a3", "account.avatar", json!({"account": "alice"}))
-        .await;
-    assert_eq!(why(&refused), "bad_params", "{refused}");
 
     // 再连上：握手带版本。
     let mut again = Client::connect(Arc::clone(&core));
@@ -69,7 +63,7 @@ async fn the_owner_sets_reads_and_unsets_the_avatar() {
     assert_eq!(shook["result"]["avatar"], version.as_str(), "{shook}");
 
     // 对照的版本不对、不是图、太大的拒，什么都不动。
-    let stale = bob
+    let stale = head
         .call(
             "a6",
             "account.set_avatar",
@@ -77,21 +71,21 @@ async fn the_owner_sets_reads_and_unsets_the_avatar() {
         )
         .await;
     assert_eq!(why(&stale), "avatar_conflict", "{stale}");
-    let text = put(&mut bob, b"not a picture").await;
-    let bad = bob
+    let text = put(&mut head, b"not a picture").await;
+    let bad = head
         .call("a7", "account.set_avatar", json!({"blob": text}))
         .await;
     assert_eq!(why(&bad), "avatar_not_image", "{bad}");
-    let huge = put(&mut bob, &png(1100, 10)).await;
-    let big = bob
+    let huge = put(&mut head, &png(1100, 10)).await;
+    let big = head
         .call("a8", "account.set_avatar", json!({"blob": huge}))
         .await;
     assert_eq!(why(&big), "avatar_too_big", "{big}");
-    let read = bob.call("a9", "account.avatar", json!({})).await;
+    let read = head.call("a9", "account.avatar", json!({})).await;
     assert_eq!(read["result"]["avatar"], version.as_str(), "没动：{read}");
 
     // 删掉：没有了。
-    let unset = bob
+    let unset = head
         .call(
             "a10",
             "account.set_avatar",
@@ -99,6 +93,6 @@ async fn the_owner_sets_reads_and_unsets_the_avatar() {
         )
         .await;
     assert_eq!(unset["result"], json!({"avatar": null}), "{unset}");
-    let read = bob.call("a11", "account.avatar", json!({})).await;
+    let read = head.call("a11", "account.avatar", json!({})).await;
     assert_eq!(read["result"], Value::Null, "{read}");
 }

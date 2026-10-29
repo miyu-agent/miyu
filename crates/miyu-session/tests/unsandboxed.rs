@@ -39,19 +39,19 @@ fn asked(log: &[Event]) -> bool {
 }
 
 /// 在场地的 `work/` 里造一个会话，配置是 `config`，工具照 `tools`（`~home` 的包里），沙盒能用；场所是 `venue`、
-/// `owner_is_admin` 是假的关起来，这台机器上的沙盒能不能用照 `sandboxed`。她调一次 `call`，说一句，等这一轮完。
+/// `unconfined` 是假的关起来，这台机器上的沙盒能不能用照 `sandboxed`。她调一次 `call`，说一句，等这一轮完。
 async fn turn(
     home: &mut Home,
     config: &str,
     tools: &[&Arc<Fake>],
     call: Play,
     (level, read_only): (Level, bool),
-    (venue, owner_is_admin): (&str, bool),
+    (venue, unconfined): (&str, bool),
     sandboxed: bool,
 ) -> Vec<Event> {
     let work = home.scratch.0.join("work");
     let level = (level, read_only);
-    let venue = (venue, owner_is_admin);
+    let venue = (venue, unconfined);
     turn_in(
         home,
         &work,
@@ -69,7 +69,7 @@ async fn turn_in(
     work: &std::path::Path,
     (config, tools, call): (&str, &[&Arc<Fake>], Play),
     (level, read_only): (Level, bool),
-    (venue, owner_is_admin): (&str, bool),
+    (venue, unconfined): (&str, bool),
     (sandboxed, attended): (bool, bool),
 ) -> Vec<Event> {
     home.configs = configs(config, &[]);
@@ -84,7 +84,7 @@ async fn turn_in(
     };
     let lines = Lines {
         venue: VenueId::parse(venue).expect("场所合写法"),
-        confined: !owner_is_admin,
+        confined: !unconfined,
         ..Lines::default()
     };
     let catalog = Catalog::in_packages([(

@@ -153,7 +153,7 @@ fn profile_of(home: &Home, session: &Value) -> Option<String> {
 }
 
 #[tokio::test]
-async fn venue_sessions_carry_it_only_for_the_admin_where_the_bridge_asks() {
+async fn venue_sessions_carry_it_only_unconfined_where_the_bridge_asks() {
     let home = Home::new();
     let program = Program::new();
     let (path, step) = record(&home, "bot");

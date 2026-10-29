@@ -4,7 +4,7 @@
 use super::*;
 
 fn line(seq_no: u64, event: &MemoryEvent) -> String {
-    to_event(seq(seq_no), at(1), admin(), event)
+    to_event(seq(seq_no), at(1), owner(), event)
         .expect("写得出")
         .to_line()
 }
@@ -93,7 +93,7 @@ fn the_book_knows_the_batch_that_has_not_ended() {
     let mut next = 0;
     let mut see = |book: &mut MemoryBook, event: MemoryEvent| {
         next += 1;
-        book.see(&to_event(seq(next), at(1), admin(), &event).expect("写得出"))
+        book.see(&to_event(seq(next), at(1), owner(), &event).expect("写得出"))
             .expect("读得懂");
     };
     let merging = |upto| {

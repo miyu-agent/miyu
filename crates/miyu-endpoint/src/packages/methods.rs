@@ -34,7 +34,7 @@ pub(crate) async fn call(
         }
         "package.install" => super::asked::install(core, peer, params(request)?).await,
         "package.remove" => super::asked::remove(core, params(request)?).await,
-        "package.info" => super::local::info(core, peer.admin, params(request)?).await,
+        "package.info" => super::local::info(core, peer.for_owner, params(request)?).await,
         "package.files" => super::local::files(core, params(request)?).await,
         "package.logo" => super::logo::method(core, params(request)?).await,
         "package.owns" => super::verify::owns(core, params(request)?).await,

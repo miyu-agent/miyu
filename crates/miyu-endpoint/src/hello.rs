@@ -94,14 +94,14 @@ pub(crate) struct Shaken {
 }
 
 impl Shaken {
-    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。连接都替主人干活（施工 SU-4 下），`admin` 是真的。
+    /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。连接都替主人干活（施工 SU-4 下），`for_owner` 是真的。
     pub(crate) fn now(&self, core: &Core) -> Peer {
-        let language = language_of(&core.mine().config(), self.system);
+        let language = language_of(&core.config(), self.system);
         Peer {
             locale: Locale::of(Some(language)),
             language,
             input: self.input,
-            admin: true,
+            for_owner: true,
             prefix_ask: self.prefix_ask,
         }
     }
@@ -142,7 +142,7 @@ pub(crate) struct Peer {
     pub(crate) input: bool,
     /// 这一刻替主人本人干活（施工 SU-1：以前的「管理员」）：连接都是；会话里经端口调的，关在沙盒里的会话（群、陌生人的私聊）
     /// 不是（施工 SU-4 下，`packages/port.rs`），改不了全机的东西、看不到这台机器上的路径。
-    pub(crate) admin: bool,
+    pub(crate) for_owner: bool,
     /// 握手时声明了会问人「前缀要变了」（施工 OV-1 下）。
     pub(crate) prefix_ask: bool,
 }

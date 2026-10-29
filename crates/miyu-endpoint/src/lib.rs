@@ -93,7 +93,7 @@ mod workspace;
 
 pub use activity::Activity;
 pub(crate) use activity::Connected;
-pub use connection::{Reach, serve, serve_with};
+pub use connection::serve;
 pub use listen::run;
 
 use std::fmt;

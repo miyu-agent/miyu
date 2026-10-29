@@ -162,27 +162,6 @@ fn every_command_of_a_package_takes_its_name() {
     assert_eq!(problem.line, Some(11), "报在被占的那个子命令名那一行");
 }
 
-/// 一份最小的扩展清单，还写着已经不认的 `system_account`。
-fn served(command: &str) -> String {
-    ui(command).replace("\n[ui]\n", "\n[process]\nsystem_account = true\n")
-}
-
-/// 包不再各有一个账号（施工 SU-4 中）：清单里还写着 `system_account` 的照不认识的键，整份不收。
-#[test]
-fn a_package_still_declaring_a_system_account_is_refused() {
-    let places = Places::new();
-    places.write(Layer::Shipped, "onebot/package.toml", &served("onebot"));
-    places.write(Layer::Home, "admin/package.toml", &ui("admin"));
-    let found = places.packages.read();
-    assert_eq!(
-        brief(&found),
-        [
-            ("admin".to_string(), Layer::Home, None),
-            ("onebot".to_string(), Layer::Shipped, Some(Code::UnknownKey)),
-        ]
-    );
-}
-
 /// 一份内置包的清单，带一个功能 `feature`，写在第 6 行。
 fn builtin(feature: &str) -> String {
     format!(

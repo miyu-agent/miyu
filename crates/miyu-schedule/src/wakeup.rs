@@ -84,7 +84,7 @@ impl Wakeup {
         match refused {
             ScheduleRefused::NoLoop => PACKAGE.error(&self.no_loop, "wakeup/no-loop", &[]),
             ScheduleRefused::Full
-            | ScheduleRefused::AccountFull
+            | ScheduleRefused::AllFull
             | ScheduleRefused::BadCron(_)
             | ScheduleRefused::NotFound
             | ScheduleRefused::Unavailable => self.common.off(),

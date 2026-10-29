@@ -81,7 +81,7 @@ async fn searched(home: &Home, query: &str) -> String {
         )]),
         Play::Says("好。"),
     ]);
-    let lines = Lines { ..Lines::default() };
+    let lines = Lines::default();
     let handle = home
         .create_full(&script, &catalog(home), Opening::default(), lines)
         .await;

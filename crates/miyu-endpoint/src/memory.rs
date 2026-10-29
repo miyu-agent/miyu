@@ -334,7 +334,7 @@ fn room(handle: &Handle) -> Option<Room> {
 
 /// 照意思找的那一路照这时的配置（施工 R-5 下）。
 pub(crate) fn using(core: &Core) -> Using {
-    let config = core.mine().hub().current().borrow().clone();
+    let config = core.hub.current().borrow().clone();
     let resolved = config.resolved().clone();
     let source: Arc<dyn ConfigSource> = config;
     Using {
