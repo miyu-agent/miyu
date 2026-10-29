@@ -120,7 +120,7 @@
 3. 供应商出错的原话：不写，只写分类（`class`）。原话里可能回显请求里的字。
 4. HTTP：只写主机名、字节数、状态码、分类、供应商说要等多久、用时；地址的路径和参数不写。
 5. 这几条靠发日志的地方只交编号、长度、状态：接口上没有写内容的口子。由测试查（「守着它的」）。
-6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。记忆的一间（施工 LG-1 下）不写账号、人格名、会话编号，写种类 `room_kind`（`persona`、`session`）和短号 `room_id`：8 位十六进制，数据根的盐（`state/log-salt`，32 个随机字节，0600，没有就在核心起来时造；读不出、写不成的记一行 `WARN memory log salt not kept`，这次起来另用一份只在内存里的）接上这一间算 SHA-256 取前 4 个字节。同一间每次一样，同机人格名少也一个个试不回去，日志拿到别的机器上对不上；盐不进日志、不进任何回应。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
+6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。记忆的一间（施工 LG-1 下）不写人格名、会话编号，写种类 `room_kind`（`persona`、`session`）和短号 `room_id`：8 位十六进制，数据根的盐（`state/log-salt`，32 个随机字节，0600，没有就在核心起来时造；读不出、写不成的记一行 `WARN memory log salt not kept`，这次起来另用一份只在内存里的）接上这一间算 SHA-256 取前 4 个字节。同一间每次一样，同机人格名少也一个个试不回去，日志拿到别的机器上对不上；盐不进日志、不进任何回应。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
 
 **8. 每一行**
 
@@ -172,7 +172,7 @@
 | `session` | DEBUG | `knowledge recall by meaning timed out` | | 自动想起开始以后 200 毫秒内照意思那一路没等到（本机模型冷启动、那一家回得慢、读段读得慢）：这一轮只走标题名（`knowledge.md` 第九条第 5 款，施工 K-6 下）。带会话编号 |
 | `session` | WARN | `knowledge recall texts unreadable` | `error` | 会话开的时候自动想起的外壳、门槛表（`core/knowledge/recall.toml`）读不出来、写错了：这个会话不自动想起，别的照常（施工 K-6 下） |
 | `endpoint` | WARN | `knowledge search floors unreadable` | `error` | 核心起来时知识库搜的下限表（`core/knowledge/search.toml`）读不出来、写错了：只照意思找到的那一路都照 0.40，别的照常（`knowledge.md` 第四条，施工 K-2 修） |
-| `endpoint` | WARN | `knowledge package not forgotten` | `error` | 卸掉软件包以后，某个账号里它带来的库的索引、自动想起的开关清不掉（`error` 带账号、包和为什么）：照样换上新的清单，装回来照文件重建（`knowledge.md` 第十条，施工 K-8） |
+| `endpoint` | WARN | `knowledge package not forgotten` | `error` | 卸掉软件包以后，它带来的库的索引、自动想起的开关清不掉（`error` 带包和为什么）：照样换上新的清单，装回来照文件重建（`knowledge.md` 第十条，施工 K-8） |
 | `endpoint` | WARN | `memory recall texts unreadable` | `error` | 核心起来时联想的外壳、门槛表（`core/memory/recall.toml`）读不出来、写错了：这个核心不联想，别的照常（施工 R-8） |
 | `session` | INFO | `image not described` | `blob`、`why` | 替看不了图的模型看图没成（`models.md` 第十三条第 7 条，施工 8-17）：没配 `models.vision`、一次性入口没答成、回答是空的。会话的 actor 记，带会话编号；这张图这一轮写占位 |
 | `core` | INFO | `sandbox` | `helper`（助手的路径）、`platform`、`mechanisms`（逗号连起来，空的写 `none`） | 起来时探沙盒的助手，探成了（`sandbox.md`，施工 5-1） |
@@ -198,7 +198,7 @@
 | `endpoint` | WARN | `create failed` | `error` | 造会话失败，人格读不出以外的原因 |
 | `endpoint` | WARN | `load failed` | 带会话编号；`error` | 载入失败，没有这个会话以外的原因 |
 | `endpoint` | DEBUG | `already stopped` | 带会话编号 | 有计划地停下时，会话已经停了 |
-| `endpoint` | WARN | `workspace not prepared` | `kind` | 退回账号的默认工作区时建不了它 |
+| `endpoint` | WARN | `workspace not prepared` | `kind` | 退回默认工作区时建不了它 |
 | `endpoint` | ERROR | `undo report panicked` | `panic`（是不是 panic；原话不写） | 撤销的回应里比改动的任务 panic 了 |
 | `endpoint` | WARN | `undo report not written` | `error` | 撤销的回应里读不了会话日志 |
 | `ipc` | INFO | `listening` | `socket` | 在套接字上等连接 |

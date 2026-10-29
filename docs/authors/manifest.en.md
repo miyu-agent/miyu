@@ -75,7 +75,6 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `summary` | A one-line summary |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
 | `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
-| `members` | `true`: members may use it by default. A package that runs a process (an extension, or one that brings MCP servers) is usable only by the admin group by default; an admin's choice at the system layer wins. Ignored for packages a member installs for themselves. Default `false` |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
 | `logo` | A picture shipped in the package: a relative path inside the package folder, `.png` or `.webp`. At most 256 KiB and 512 pixels a side; `miyu pkg pack` shrinks a bigger one in its own format while packing (the original in the folder stays). A missing, broken or oversized one counts as no logo: the package still installs and `miyu check` warns. Heads draw it first and fall back to `icon` |
 | `needs` | What a place must have for it to be useful: only `images` for now (the whole package is off in sessions that can't show images) |
@@ -99,7 +98,7 @@ Makes it an extension; needs `[command]`.
 | `start` | `manual`: started when switched on (default); `always`: started with the core |
 | `capabilities` | What it needs, see below |
 
-**Capabilities**: only these seventeen. For packages the admin installed, a person approves them when turning it on; after an upgrade, only new ones are asked. **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
+**Capabilities**: only these seventeen. For packages you installed, you approve them when turning it on; after an upgrade, only new ones are asked. **Declare honestly**: calling a method whose capability isn't declared returns `needs_approval`.
 
 | Capability | Allows |
 |---|---|
@@ -185,7 +184,7 @@ Slash commands the extension provides, one per entry; `capabilities` must includ
 | `name` | Command name, written like `[command] name`; a clash with a Miyu built-in command isn't accepted |
 | `summary` | The line shown in the command menu |
 | `argument` | A hint for what follows the name, e.g. `{ en = "<city>", zh = "<城市>" }` |
-| `access` | Who can use it: `admin` (default: the person, the owner and managers in groups), `anyone`, `off` (disabled for now). A person's setting in the system config overrides it |
+| `access` | Who can use it: `admin` (default: the person, the owner and managers in groups), `anyone`, `off` (disabled for now). Your setting in the config overrides it |
 
 When someone types it, the core calls your program with `command.call`; see [Writing an extension](extensions.en.md). For a command that just expands into a message to the AI, use a command template; no program needed (see [Scripts, skills, command templates](scripts-skills.en.md)).
 

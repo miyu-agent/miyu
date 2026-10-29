@@ -91,7 +91,7 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 | `sent` | The time the platform gives, written like an event's `at` (`2026-10-20T04:30:00.000Z`); `history` shows it. The log keeps the order things were recorded in, sequence numbers don't move back |
 | `show_ids` | Whether to show the sender's platform identity when rendering it |
 
-**Recorded as**: the owner recognized in a private chat is `{"kind": "person", "account", "via"}`; anyone else is `{"kind": "external", "venue", "id", "role"}`, plus `account` for the owner in a group.
+**Recorded as**: the owner recognized in a private chat is `{"kind": "person", "via"}`; anyone else is `{"kind": "external", "venue", "id", "role"}`, plus `"owner": true` for the owner in a group.
 
 **Command ids**: bridges build `id` from the platform, the logged-in account, the message id and the platform's timestamp, so reconnect resends and platform resends take effect only once.
 

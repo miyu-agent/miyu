@@ -183,7 +183,7 @@ Being able to list models counts as working, with no request sent; only when lis
 
 ## `provider.rename`
 
-Changes a provider's ID in one go: in both config layers the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
+Changes a provider's ID in one go: in the config the `[providers.<from>]` table (with its subtables and key reference) becomes `<to>`, and every `<from>/<model>` in `models.chat`, `models.vision`, `models.embedding` and pool members becomes `<to>/<model>`. Sessions pinned to the old ID use the new one from their next turn. People only.
 
 **Params**: `from`, `to`. `to` follows the ID rule: starts with a lowercase letter; lowercase letters, digits, `-`, `_`; at most 32.
 
@@ -200,7 +200,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | Name | Type | Notes |
 |---|---|---|
 | `purpose` | string, required | What it's for: 1 to 32 lowercase letters, digits, `-`, e.g. `vision` |
-| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes: looked up first under this connection's own account, where `blob.put` stores them, then under the account it works for; missing from both gives `unknown_attachment`) |
+| `messages` | array, required | `{"role": "system"|"user"|"assistant", "text", "images"?}`. At most one `system`, first only; the last one is `user`; only `user` may carry `images` (blob hashes stored with `blob.put`; a missing one gives `unknown_attachment`) |
 | `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
 | `use` | `chat` or `vision` | When you don't know which model the person configured: follows `models.chat` or `models.vision`; at most one of `model` and `use` |
 | `side` | string | An extension's side request: an id registered in your own package's `[[side]]` (without the package name). A model is taken from the pool named after its tier (`lite`, `normal`, `flagship`); when that pool is empty, or every member is cooling down or failed, the session's model is used. Can't be combined with `model` or `use`; from a person's connection, or with an unregistered id, it's `bad_params` |
@@ -218,7 +218,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 | `data.reason` | When |
 |---|---|
 | `bad_params` (`-32602`) | Malformed params; an image blob that isn't an image; a `side` this extension didn't register |
-| `unknown_attachment` | An image blob this account doesn't have |
+| `unknown_attachment` | No such image blob |
 | `unknown_model` | `model` can't be resolved |
 | `no_model` | No usable model (not configured, key unavailable), `data.message` |
 | `cooling` | Every candidate is cooling down, `data.message`, `data.wait_ms` |
@@ -226,7 +226,7 @@ Call a model once and get the whole answer and usage. Not part of any session an
 
 ## `model.embed`
 
-**Params**: `texts`: 1 to 64 texts, 1 to 8000 characters each. Uses the account's `models.embedding` (the built-in local model or a remote provider).
+**Params**: `texts`: 1 to 64 texts, 1 to 8000 characters each. Uses `models.embedding` (the built-in local model or a remote provider).
 
 **Response**: `{"model", "vectors"}`. `model` is the model id (`local:<id>` or `<provider>/<model>`): vectors from different models can't be compared. `vectors` are in order and normalized.
 

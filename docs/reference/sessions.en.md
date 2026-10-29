@@ -33,7 +33,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions their account can see and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -144,7 +144,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
 3. Attachments are checked before the session is looked up: the blob must exist and is recognized again from its content (see [Attachments](blob.en.md)).
 
-**Prefix changing** (only for heads that sent `caps.prefix_ask: true` in the hello): when files in the owner's tool description and prompt overrides, personas or presets change (skills don't count: a mid-session skill change goes into the end of the messages and leaves the prefix alone), the next request's prefix changes and the cache is lost. Starting a new turn in an idle session (`session.send`, `session.redo`, or a `command.run` that starts a turn) without `prefix` is refused with `prefix_changing`; `data.files` lists the changed files (paths relative to the data root, at most 20) and `data.more` counts the rest. Offer the person "Send", "Compact and send" and "Cancel", then send again with `"prefix": "keep"` or `"compact"`. `compact` compacts first; if it can't, you get the compaction's refusal (for example `nothing_to_compact`) and the message is not sent. A batch that was let through is not asked again.
+**Prefix changing** (only for heads that sent `caps.prefix_ask: true` in the hello): when files in your tool description and prompt overrides, personas or presets change (skills don't count: a mid-session skill change goes into the end of the messages and leaves the prefix alone), the next request's prefix changes and the cache is lost. Starting a new turn in an idle session (`session.send`, `session.redo`, or a `command.run` that starts a turn) without `prefix` is refused with `prefix_changing`; `data.files` lists the changed files (paths relative to the data root, at most 20) and `data.more` counts the rest. Offer the person "Send", "Compact and send" and "Cancel", then send again with `"prefix": "keep"` or `"compact"`. `compact` compacts first; if it can't, you get the compaction's refusal (for example `nothing_to_compact`) and the message is not sent. A batch that was let through is not asked again.
 
 ```json
 → {"jsonrpc":"2.0","id":"m1","method":"session.send","params":{"session":"01a14aca-…","text":"Look at this image","attachments":[{"blob":"sha256:9f86d0…","name":"shot.png","media_type":"image/png"}]}}
@@ -332,7 +332,7 @@ When it's written, every subscribed head first receives `model.called` (`purpose
 
 **Params**: `session`; `cwd`: the new working directory (absolute or starting with `~`); `dirs`: the new extra directories, replacing them all (empty removes all). Give at least one.
 
-A `cwd` that is the account workspace itself (the handshake's `host.workspace`) means going back to this session's own default workspace: it is replaced by it (`default_workspace` in the session list and the subscribe reply).
+A `cwd` that is the workspace folder itself (the handshake's `host.workspace`) means going back to this session's own default workspace: it is replaced by it (`default_workspace` in the session list and the subscribe reply).
 
 **Response**: `{"cwd", "dirs"}`, plus `wide: true` when too wide. A change is pushed as `session.workspace_changed`; this turn keeps the old one, the next starts with the new one.
 
@@ -343,22 +343,22 @@ A `cwd` that is the account workspace itself (the handshake's `host.workspace`) 
 | `bad_params` (`-32602`) | Neither given |
 | `path_unreadable` | The directory doesn't exist or can't be read |
 | `not_a_directory` | It's a file |
-| `path_forbidden` | It's inside Miyu's data directory (except the account's own default workspace) |
+| `path_forbidden` | It's inside Miyu's data directory (except the workspace folder `workspace/`) |
 | `dir_too_wide` | A `dirs` entry is too wide |
 
 ## `session.terminal`, `session.set_terminal`
 
-The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One per account, and one per terminal for calls that carry a `terminal` key (construction T-22); the core decides which one it is and when a new one starts.
+The terminal session: the one long-running session that what you say in the shell goes into (shell integration, design `22-命令行.md` section 7). One, and one per terminal for calls that carry a `terminal` key (construction T-22); the core decides which one it is and when a new one starts.
 
-**`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). `terminal` (optional): which terminal, a key the head makes up, 1 to 128 characters with no control characters (otherwise `bad_params`); with it the pointer is kept per key, without it the account's original pointer is used. `create` (optional, default true): when false, only ask: in cases 2 and 3 below the response is `{"session": null}`, nothing starts and the pointer doesn't move (to show which session a freshly opened terminal is in before anything is said); together with `fresh: true` it's `bad_params`. Response `{"session"}`:
+**`session.terminal`**: param `cwd` (optional): where a new one starts; without it, the default workspace. `fresh` (optional, default false): when true, start a new one as in rule 3 and point at it, whatever is pointed at now (`/new`). `terminal` (optional): which terminal, a key the head makes up, 1 to 128 characters with no control characters (otherwise `bad_params`); with it the pointer is kept per key, without it the original pointer is used. `create` (optional, default true): when false, only ask: in cases 2 and 3 below the response is `{"session": null}`, nothing starts and the pointer doesn't move (to show which session a freshly opened terminal is in before anything is said); together with `fresh: true` it's `bad_params`. Response `{"session"}`:
 
-1. The session pointed at still exists and is this account's own local main session (not a child, venue or one-shot session): it's that one.
+1. The session pointed at still exists and is a local main session (not a child, venue or one-shot session): it's that one.
 2. It has been idle longer than `terminal.idle_new_after` minutes (0 never replaces): a new one starts, the pointer moves, and the response adds `renewed: {"last"}` (when the old one last had an event); the old one is left alone. Being pointed at (`session.set_terminal`, or being started) counts as activity: switching to a session that has been quiet for hours starts the idle time from the switch.
 3. Nothing pointed at yet, or it was deleted or doesn't count: a new one starts and the response adds `created: true`.
 
 A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.default` and `preset.default`). Several connections asking at once (with the same key) get one session. Each key remembers when it was last used; keys unused for 7 days are dropped when a pointer is written, and at most 64 are kept (least recently used go first). A dropped key starts over as if never pointed.
 
-**`session.set_terminal`**: param `session`: point the terminal session at it (what `/sessions` picked). `terminal` (optional): whose pointer to change, as above. Only this account's own local main sessions; anything else is refused with `session_not_found`. Response `{"session"}`.
+**`session.set_terminal`**: param `session`: point the terminal session at it (what `/sessions` picked). `terminal` (optional): whose pointer to change, as above. Only local main sessions; anything else is refused with `session_not_found`. Response `{"session"}`.
 
 ## `session.set_meta`
 

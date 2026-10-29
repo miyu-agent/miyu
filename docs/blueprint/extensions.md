@@ -10,7 +10,7 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-store/src/extensions.rs` | 开关：`system/extensions.json`，照只给自己看的 JSON 小文件的规矩读写 |
+| `crates/miyu-store/src/extensions.rs` | 开关：数据根的 `extensions.json`，照只给自己看的 JSON 小文件的规矩读写 |
 | `crates/miyu-endpoint/src/extensions.rs` | 一张表：每个 `process` 包一个看管的任务；开、关、重启、列状态；核心空闲、退出时问它 |
 | `crates/miyu-endpoint/src/extensions/supervise.rs` | 看管一个包：拉起、交给连接、等它退出、退避、停下 |
 | `crates/miyu-endpoint/src/extensions/stderr.rs` | 标准错误的文件：拉起前太大的挪成 `.old`，状态里给最后几行 |
@@ -25,7 +25,7 @@
 
 ### 对外的样子
 
-**开关的文件** `system/extensions.json`：
+**开关的文件** `extensions.json`（数据根里）：
 
 ```json
 {"version":1,"on":{"echo":true}}
@@ -34,13 +34,13 @@
 没写的照清单的 `start`：`always` 的开着，`manual` 的关着。写了的照写的。读不成的当没有，记一行 `WARN`，照样起来；写的时候盖掉。
 
 
-批过的能力（施工 9-4 下上；Y-5 下上挪去组表 `system/groups.json` 的 `ext.<能力>`，SU-2 中组表拿掉、挪回来）记在同一份的 `approved`：包的编号到它批过的能力，照名字排；一样都没批的包不写：
+批过的能力（施工 9-4 下上，SU-2 中起不另放组表）记在同一份的 `approved`：包的编号到它批过的能力，照名字排；一样都没批的包不写：
 
 ```json
 {"version":1,"on":{"echo":true},"approved":{"echo":["events.read","network"]}}
 ```
 
-**协议**（只有本机连接能调，现在都是管理员）：
+**协议**（只有本机连接能调）：
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
@@ -49,8 +49,8 @@
 | `extension.disable` | `{"package"}` | `<一个>`：关了、记下来、在跑的请它退出 |
 | `extension.restart` | `{"package"}` | `<一个>`：请它退出、重新拉起，连续失败从零数；关着的拒绝 `extension_off`，还有没批的能力拒绝 `needs_approval` |
 | `port.claim`、`port.release` | `{"port"}` | 扩展自己调（施工 IM-5）：登记、放开要听的端口，回 `{}`；别的扩展登记着的 `port_taken`（「怎么走」第 8 条） |
-| `feature.offer` | `{"features"}` | 扩展自己调（施工 IM-6）：替这个人交预设菜单里的功能，回 `{}`（「怎么走」第 9 条） |
-| `port.list` | 无 | 只给管理员（施工 IM-5）：`{"ports": [{"port", "package", "account"?}]}` |
+| `feature.offer` | `{"features"}` | 扩展自己调（施工 IM-6）：交预设菜单里的功能，回 `{}`（「怎么走」第 9 条） |
+| `port.list` | 无 | 只给人（施工 IM-5）：`{"ports": [{"port", "package"}]}` |
 
 一个：
 
@@ -73,17 +73,17 @@
 **能力**（施工 9-4 下上，`05-内核接口.md` 第三节、I5；项目主人 2026-10-08 照推荐定）：
 
 1. 清单 `[process] capabilities` 声明要哪些（`packages.md`；声明斜杠命令 `[[slash]]` 的要 `commands`，施工 X-14 下，`slash.md`），只认那张表里的十七个名字（`crates/miyu-config/src/package/capability.rs` 的 `ALL`；施工 X-15 上加了 `widgets`，`widgets.md`；X-20 加了 `context.system`，X-18 加了 `packages.call`，N-5 加了 `search`，X-30 加了 `memory.write`）：`tools`、`commands`、`widgets`、`context.inject`、`context.system`、`tool.guard`、`tool.rewrite`、`events.read`、`events.write`、`sessions.drive`、`packages.call`、`search`、`act_for_external`、`network`、`fs.read`、`fs.write`、`memory.write`。
-2. 装上的（`system/packages/`，施工 U23 上上）要批：在 `extension.enable` 那一下带上 `approve`。批的时候记下它这时声明的全部（`approved`）；还没批的是「声明的减记着的」，升级以后多了的只问多的；关掉不清批准，卸掉一起删（施工 SU-2 中）。
+2. 装上的（数据根的 `packages/`，施工 U23 上上）要批：在 `extension.enable` 那一下带上 `approve`。批的时候记下它这时声明的全部（`approved`）；还没批的是「声明的减记着的」，升级以后多了的只问多的；关掉不清批准，卸掉一起删（施工 SU-2 中）。
 3. 出厂的（资源目录里随 Miyu 一起装的，通讯平台的桥）算批过的：和编译进核心的模块一样本来就被信任（05 第三节「内置模块」）。
 4. 开着、还有没批的（开关文件里开着的，`start = "always"` 没写开关的）不拉起：`stopped`、`needs_approval`，不拦核心空闲退出；批了就拉起。
 5. 照包手里有的能力挡方法（施工 X-30，下面「谁能调」；照开关文件的 `approved` 算，出厂的算全有），连接起来时算一次，批、升级都会重新拉起。`context.inject` 是挂接点不是方法，照旧在 `hooks.rs` 查。沙盒里跑另做（「还没有的」）。
 
-**谁能调**（施工 X-30，`05-内核接口.md` 第三节、I5，`04-核心协议.md` 第四节；2026-10-20 项目主人定从多用户那一段提前做）：核心拉起的扩展的每一条请求，先照 `connection/rights.rs` 的表判，参数都不看就拒；头的连接不经这里。
+**谁能调**（施工 X-30，`05-内核接口.md` 第三节、I5，`04-核心协议.md` 第四节；2026-10-20 项目主人定）：核心拉起的扩展的每一条请求，先照 `connection/rights.rs` 的表判，参数都不看就拒；头的连接不经这里。
 
 | 种 | 回 | 方法 |
 |---|---|---|
 | 只给人 | `local_only` | `session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`；`account.*`、`login.ticket`；`preset.set`、`preset.delete`、`persona.set`、`persona.delete`；`package.install`、`remove`、`enable`、`disable`、`restart`、`sync`、`search`、`clean`、`upgrades`、`upgrade`、`file`；`extension.*`、`mcp.*`、`project.*`；`skill.remove`、`tool.set_loading`、`feature.set`；`config.trust`、`secret.set`、`secret.delete`；`subscribe` 的 `projects` 流；核心发出去的（`tool.call`、`view.*` 这些），扩展调了没意义 |
-| `session.delete`（施工 Y-2 上） | 要 `sessions.drive` | 只删得掉自己名下的（属主照「会话只给属主」那一道查）：平台的桥删它的场所会话，它的后台照这条给管理员删（2026-10-23 项目主人定） |
+| `session.delete`（施工 Y-2 上） | 要 `sessions.drive` | 只删得掉碰得到的（`connection/checks.rs`）：平台的桥删它那几个平台的场所会话，它的后台照这条给主人删（2026-10-23 项目主人定） |
 | 要 `sessions.drive` | `needs_approval` | `session.create`、`send`（不带 `as`）、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`（不带 `as`）、`job.stop`，包的会话状态 `session.set_state`、`session.state`（施工 TW-1） |
 | 要 `events.read` | 同上 | `subscribe` 的 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`、`job.output` |
 | 要 `events.write` | 同上 | `events.append`（`ext.<包>.*`） |
@@ -96,7 +96,7 @@
 1. 缺能力的 `data.capabilities` 是缺的那一项，同开扩展时没批的那一种回法；`system.append`、`package.call` 原来各自查声明的那几行去掉了，统一在这里查。
 2. 表里没有的方法当只给人：新方法默认不对扩展开。门禁的「文档」一项查代码里分发的每个方法都在表里、表里写的代码里都有（`xtask/src/rights.rs`，照协议参考找方法的那一套，不算核心发出去的推送）。
 3. 扩展的身份是它自己：不带 `as` 的 `session.send` 记成 `harness`、名字是包的编号，它自己写 `from` 回 `bad_params`（`protocol.md` 的 `session.send`）。
-4. 带 `as` 的只看 `act_for_external`。`venue.session` 这些另照旧只给平台桥（施工 SU-4 中：原来只给系统账号的连接，`venues.md`）。
+4. 带 `as` 的只看 `act_for_external`。`venue.session` 这些另照旧只给平台桥（施工 SU-4 中，`venues.md`）。
 5. 记忆、知识库的写一项能力管两样（2026-10-20 项目主人定；原来推荐只给人）。
 
 **推送**（施工 9-4 补，两个头的设置页要的，照会话列表的推送那一路，`protocol.md`「会话列表的推送」）：
@@ -108,7 +108,7 @@
 **配置**（施工 9-4 下下；项目主人 2026-10-08 照推荐定，形状和通讯平台的会话对过）：核心拉起的扩展不自己读系统配置、密钥文件，要的值由核心交给它。只在核心亲手拉起、走标准输入输出的连接上，只给这个包自己的键：`config.md` 第九条「密钥不进协议的回应」的例外。
 
 1. **哪些键**：「包的编号加点」开头的配置项（核心替它声明的、它清单里 `[settings]` 声明的都算；带 `<…>` 的模板键不算）。
-2. **握手**：`hello` 的回应多 `config`：`{"onebot.listen": 8301, "onebot.token": "<真值>", …}`。值是最终值（没写的照默认值，系统配置、个人设置合出来的，不看项目配置），密钥引用（`{ secret }`、`{ env }`）解成真值的字；没设、没默认值、引用取不到的那一键不放。头的连接没有这一格。
+2. **握手**：`hello` 的回应多 `config`：`{"onebot.listen": 8301, "onebot.token": "<真值>", …}`。值是最终值（没写的照默认值，不看项目配置），密钥引用（`{ secret }`、`{ env }`）解成真值的字；没设、没默认值、引用取不到的那一键不放。头的连接没有这一格。
 3. **变了推** `extension.config`：`{"keys": {"onebot.token": "<新真值>"}}`。握手的回应写出去以后，核心盯着配置服务交给核心的那一份（配置文件改了、`secret.set` 换了值、手改了密钥文件，都会换上新的一份），把这个包自己的那份重算一遍，跟上一次交给它的比，变了推，只放变了的键；变成没设、取不到的写 `null`。不用订阅。不叫 `config.changed`：那是头订阅的推送，形状带 `origin`、`applies`（通讯平台的会话提的，主会话定）。
 4. **不留痕**：值不进运行日志、不进事件；运行日志只记 `DEBUG extension config handed package=… keys=<几个>`、`extension config pushed`，不带值。
 
@@ -128,22 +128,22 @@
 
 ### 怎么走
 
-1. **拉起**（施工 F-6 上：程序不在的当没装，`package-pages.md`「程序不在就当没装」：`extension.enable` 拒绝 `program_missing`、什么都不写；开着的在核心起来时不照登记缓存登记工具、记成停下 `not_installed`）：程序照 9-2 的找法（`miyu_store::packages::locate`：先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不走 `PATH`，施工 F-8 上再补；Windows 上都没有 `.exe` 的，照 `bin/<名字>` 第一行的 `#!` 找解释器起，施工 X-34，`packages.md`「转交」），参数是清单的 `[process] args`，环境照核心的，另把 `MIYU_HOME`、`MIYU_RESOURCES` 设成核心手上正在用的数据根、资源目录的路径（施工 O-18：扩展和核心认同一份，不管核心是怎么找到它们的；测试里的核心跑在测试程序里，环境里没有临时的数据根，靠它把扩展指过去），`MIYU_PACKAGE_DIR` 设成这个包的文件夹（施工 S-6 上：清单所在的那一层，出厂的在资源目录、自己装的在家目录；扩展照它读自己包里的文件，不自己拼家目录的布局），工作目录是这个包放状态的目录（`state/packages/<编号>/`，没有的建）。标准输入、输出接管道，交给协议的连接；标准错误直接接到 `state/logs/<编号>.stderr` 上（起不来的，比如 Windows 上解释器没装，起之前往这个文件里写一行原话，施工 X-34：停下的带最后几行照它说）（追加，拉起前超过 1 MiB 的先挪成 `<编号>.stderr.old`）。核心丢下它时杀掉（`kill_on_drop`），兜底。Windows 上不开新的控制台窗口。拉起时系统说程序正被开着写（Linux 的 `ETXTBSY`：装包刚拷进来的程序，拷的那一刻核心起的别的子进程在换成自己的程序以前也攥着写它的句柄），隔 50 毫秒再试，最多 20 次，还不成才算起不来（施工 F-8 上再补）。
-2. **握手**：照头的样子（`hello`），不出示凭据：标准输入输出是核心亲手给的（`Via::Spawned`，写了的凭据不看）。握手的期限照头的。连接就是主人（施工 SU-4 中：原来声明了系统账号的包、Y-5 中上起每个带进程的包是自己的账号，`packages.md`「包不是账号」），握手回应的 `account` 写主人，是哪个包另记在连接上；清单写了 `[connection] platform` 的是平台桥，场所的事只有它办（`venues.md`）。它开的会话、读写的人格、预设、软件包、上传的 blob 都在主人名下，包之间转 blob 照 `blob_grants` 放行。能力批过的才拉起（「能力」）；照能力挡方法随多用户、沙盒那一段。
+1. **拉起**（施工 F-6 上：程序不在的当没装，`package-pages.md`「程序不在就当没装」：`extension.enable` 拒绝 `program_missing`、什么都不写；开着的在核心起来时不照登记缓存登记工具、记成停下 `not_installed`）：程序照 9-2 的找法（`miyu_store::packages::locate`：先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不走 `PATH`，施工 F-8 上再补；Windows 上都没有 `.exe` 的，照 `bin/<名字>` 第一行的 `#!` 找解释器起，施工 X-34，`packages.md`「转交」），参数是清单的 `[process] args`，环境照核心的，另把 `MIYU_HOME`、`MIYU_RESOURCES` 设成核心手上正在用的数据根、资源目录的路径（施工 O-18：扩展和核心认同一份，不管核心是怎么找到它们的；测试里的核心跑在测试程序里，环境里没有临时的数据根，靠它把扩展指过去），`MIYU_PACKAGE_DIR` 设成这个包的文件夹（施工 S-6 上：清单所在的那一层，出厂的在资源目录、自己装的在数据根的 `packages/`；扩展照它读自己包里的文件，不自己拼数据根的布局），工作目录是这个包放状态的目录（`state/packages/<编号>/`，没有的建）。标准输入、输出接管道，交给协议的连接；标准错误直接接到 `state/logs/<编号>.stderr` 上（起不来的，比如 Windows 上解释器没装，起之前往这个文件里写一行原话，施工 X-34：停下的带最后几行照它说）（追加，拉起前超过 1 MiB 的先挪成 `<编号>.stderr.old`）。核心丢下它时杀掉（`kill_on_drop`），兜底。Windows 上不开新的控制台窗口。拉起时系统说程序正被开着写（Linux 的 `ETXTBSY`：装包刚拷进来的程序，拷的那一刻核心起的别的子进程在换成自己的程序以前也攥着写它的句柄），隔 50 毫秒再试，最多 20 次，还不成才算起不来（施工 F-8 上再补）。
+2. **握手**：照头的样子（`hello`），不出示凭据：标准输入输出是核心亲手给的（`Via::Spawned`，写了的凭据不看）。握手的期限照头的。连接替主人干活（施工 SU-4 中），是哪个包另记在连接上；清单写了 `[connection] platform` 的是平台桥，场所的事只有它办（`venues.md`）。它开的会话、读写的人格、预设、软件包、上传的 blob 都在主人名下，包之间转 blob 照 `blob_grants` 放行。能力批过的才拉起（「能力」），方法照能力挡（「谁能调」）。
 3. **开关**：核心写了 `ready` 以后读一次开关的文件，照开关拉起开着的（`Core::start_extensions`）。`enable`、`disable` 先写文件再动进程，写不进的拒绝、不动进程（`internal_error`）；开、关、重启一件件办，两个连接同时开同一个不拉起两个。核心空闲的判断多一条：有要拉起、在跑、在等着再拉起的扩展，不算空闲；停下了的不拦着。
 4. **退出**：核心停的时候、`disable`、`restart` 时关它的标准输入（读到头就是「请退出」，三个平台一样），等 5 秒，没退的杀掉。核心停的时候各个扩展一起等，不一个个排队。
 5. **崩了**：它自己退出（退出码 1 以外的，包括 0）、被信号杀掉、标准输出关了、握手不成，都算一次失败：退避 1、2、4、8、16 秒以后再拉起（最多 60 秒），连续 5 次停下（`failed_repeatedly`）。退出码 1 是「配置错、端口被占」这类重启也没用的：不退避，直接停下（`config_error`）。核心等满了杀掉的不看退出码，照一次失败退避（施工 9-4 修：Windows 上杀掉的进程退出码是 1，原来被当成配置错，第一次就停）。握了手、连着跑满 60 秒的，下一次失败从 1 数。进程活着、连接连着就算活，不另做健康检查。停下的照旧开着：`restart` 再试，核心下次起来也再试。
 6. **日志**：拉起、握了手、退出（退出码或信号）、退避、停下，各记一行运行日志，带包的编号。
-7. **装卸**（施工 F-5 下，`packages.md`「装卸」）：装、装回来做成了以后，照装卸以前、以后两份清单对一遍（`Core::follow_packages`）；卸是先照「去掉这个包以后的清单」对一遍再删文件，删不成的照原来的清单换回来（施工 F-5 补：Windows 上开着的文件删不掉）。卸掉的照「退出」那一条停下，它经提供者登记的工具拿掉、记下随包卸掉了：用过它的会话照旧留着、调到时报「已卸载」；装回来、又登记了的不再算卸掉（施工 F-5 补）。新装上的照开关拉起，和核心起来时一条路（没批的能力照旧记成停下）。清单变了的算升级：先停下再照开关拉起。清单没变的不动。声明了系统账号的照这时的清单先建好账号（`packages.md`「系统账号」）。
+7. **装卸**（施工 F-5 下，`packages.md`「装卸」）：装、装回来做成了以后，照装卸以前、以后两份清单对一遍（`Core::follow_packages`）；卸是先照「去掉这个包以后的清单」对一遍再删文件，删不成的照原来的清单换回来（施工 F-5 补：Windows 上开着的文件删不掉）。卸掉的照「退出」那一条停下，它经提供者登记的工具拿掉、记下随包卸掉了：用过它的会话照旧留着、调到时报「已卸载」；装回来、又登记了的不再算卸掉（施工 F-5 补）。新装上的照开关拉起，和核心起来时一条路（没批的能力照旧记成停下）。清单变了的算升级：先停下再照开关拉起。清单没变的不动。
 8. **端口登记**（施工 IM-5，接入通讯平台设计 06 第 4.6 节第 5 样，`extensions/ports.rs`）：只是一张表，不替扩展听，真正抢端口的是操作系统。表在扩展表里（`Extensions.ports`），只在内存里，核心重启就空了。
-   - `port.claim {"port"}`：记成（这一份、这个连接）。别的还连着的连接登记着的回 `port_taken`，不说是谁；同一个连接再登记照收；`0` 回 `bad_params`（`field` 是 `port`）。
+   - `port.claim {"port"}`：记成这个连接的。别的还连着的连接登记着的回 `port_taken`，不说是谁；同一个连接再登记照收；`0` 回 `bad_params`（`field` 是 `port`）。
    - `port.release {"port"}`：是这个连接登记的拿掉，不是的不动，都回 `{}`。
    - 连接断了算放开：查的时候登记它的连接 `Peer::closed()` 的当没有，列表时顺手拿掉，不另做收尾。`closed()` 施工 IM-5 起写的那一头没了也算：核心停扩展时整个连接被丢下，`reverse.close` 没机会跑。
-   - `port.list`：只给人（权限表），替的不是主人的回 `not_permitted`；照端口排。
-9. **按账号交预设功能**（施工 IM-6，接入通讯平台设计 06 第 4.6 节第 4 样，`extensions/offers.rs`）：`feature.offer {"features": [{"id", "name", "summary"?, "tools"}]}`。设计里叫 `feature.set`，和给人改全局开关的 `feature.set`（施工 X-27）撞名，改叫 `offer`。
-   - 照（包，替谁干活的那个人）记在扩展表里（`Extensions.offers`），只在内存里，整份替换，空的是全撤；进程退了不清，免得她在终端里用不到这些工具、又没东西把扩展拉起来。
-   - 查：`id` 写法同包的编号，不能和这个人装了的功能（`scripts::features`，去掉这个包上一次交的）撞、一份里不能重；工具必须是这个包登记过的（照这个人的工具目录）。不对的 `bad_params`（`field` 是 `features`），什么都不换。
-   - 怎么生效见 `presets.md`「扩展替这个人交的功能」；`preset.get` 照交了的列（名字、说明照连接的语言挑）。
+   - `port.list`：只给人（权限表）；照端口排。
+9. **交预设功能**（施工 IM-6，接入通讯平台设计 06 第 4.6 节第 4 样，`extensions/offers.rs`）：`feature.offer {"features": [{"id", "name", "summary"?, "tools"}]}`。设计里叫 `feature.set`，和给人改全局开关的 `feature.set`（施工 X-27）撞名，改叫 `offer`。
+   - 照包记在扩展表里（`Extensions.offers`），只在内存里，整份替换，空的是全撤；进程退了不清，免得她在终端里用不到这些工具、又没东西把扩展拉起来。
+   - 查：`id` 写法同包的编号，不能和装了的功能（`scripts::features`，去掉这个包上一次交的）撞、一份里不能重；工具必须是这个包登记过的（照核心的工具目录）。不对的 `bad_params`（`field` 是 `features`），什么都不换。
+   - 怎么生效见 `presets.md`「扩展交的功能」；`preset.get` 照交了的列（名字、说明照连接的语言挑）。
    - 只有核心拉起的扩展能调（`Anyone`，别的连接 `not_an_extension`），不另要能力。
 
 ### 出错
@@ -161,28 +161,28 @@
 | `crates/miyu-store/src/extensions/tests.rs` | 没有文件的是空的、写进去读得回来一字不差；坏了的、版本不认识的说是坏了；这一瞬间有人改了的不写 |
 | `crates/miyu-endpoint/src/extensions/supervise/tests.rs` | 退避 1、2、4、8 秒、最多 60 秒、不溢出；连续 5 次停下；退出码 1 直接停下，0、别的、被杀掉的退避；跑满了的这一次从 1 数；核心杀掉的不看退出码（施工 9-4 修） |
 | `crates/miyu-endpoint/src/extensions/stderr/tests.rs` | 追加；太大的挪成 `.old`、盖掉上一份；最后 20 行、最多 4 KiB、截了半截的那一行不要 |
-| `crates/miyu-endpoint/tests/extensions.rs` | 真核心、真进程（测试用的小程序 `miyu-test-extension`，`crates/miyu-endpoint/src/bin/`，三个平台一样，拷在测试程序旁边）：`manual` 的开了才拉起、工作目录、握手不出示凭据、扩展调 `extension.*` 被拒、标准错误进日志、开关的文件；`always` 的不用开、新核心照开关拉起、随核心退出；有开着的核心不空闲；退出码 1 停下带标准错误的最后几行；别的退出连续 5 次停下；不握手也算失败；关了标准输入不退的到时杀掉；`restart` 换一个新进程、关着的拒绝；程序没找到、协议版本对不上、界面包、没有的包、参数不对；拉起的环境里 `MIYU_HOME`、`MIYU_RESOURCES` 是核心的数据根、资源目录（施工 O-18），`MIYU_PACKAGE_DIR` 是这个包的文件夹，自己装的指家目录里的那一份（施工 S-6 上）。夹具（测试用的扩展、装清单、造核心、等状态）在 `tests/support/extensions.rs` |
+| `crates/miyu-endpoint/tests/extensions.rs` | 真核心、真进程（测试用的小程序 `miyu-test-extension`，`crates/miyu-endpoint/src/bin/`，三个平台一样，拷在测试程序旁边）：`manual` 的开了才拉起、工作目录、握手不出示凭据、扩展调 `extension.*` 被拒、标准错误进日志、开关的文件；`always` 的不用开、新核心照开关拉起、随核心退出；有开着的核心不空闲；退出码 1 停下带标准错误的最后几行；别的退出连续 5 次停下；不握手也算失败；关了标准输入不退的到时杀掉；`restart` 换一个新进程、关着的拒绝；程序没找到、协议版本对不上、界面包、没有的包、参数不对；拉起的环境里 `MIYU_HOME`、`MIYU_RESOURCES` 是核心的数据根、资源目录（施工 O-18），`MIYU_PACKAGE_DIR` 是这个包的文件夹，自己装的指数据根里的那一份（施工 S-6 上）。夹具（测试用的扩展、装清单、造核心、等状态）在 `tests/support/extensions.rs` |
 | `crates/miyu-endpoint/tests/feature_offer.rs`、`crates/miyu-policy/src/features/tests.rs`（施工 IM-6） | 交以前工具归包的功能、开着；交了以后归交的功能、预设没列它的关着，开着的会话下一个回合工具面换掉；工具不是自己的、编号撞了包的功能回 `bad_params`；预设菜单列它、归这个包、名字照语言挑，全部功能开着；整份换掉、空的全撤 |
-| `crates/miyu-endpoint/tests/ports.rs`、`src/reverse/tests.rs`（施工 IM-5） | 端口登记：同一个连接登记两次照收，别人登记着的 `port_taken` 不说是谁，放开了的别人能登记，`0` 是 `bad_params`，放别人的不动；管理员看整张表、头的连接登记回 `not_an_extension`；扩展停了它登记的放开、没人接手的也不列；写的那一头没了的连接算断 |
+| `crates/miyu-endpoint/tests/ports.rs`、`src/reverse/tests.rs`（施工 IM-5） | 端口登记：同一个连接登记两次照收，别人登记着的 `port_taken` 不说是谁，放开了的别人能登记，`0` 是 `bad_params`，放别人的不动；人看整张表、头的连接登记回 `not_an_extension`；扩展停了它登记的放开、没人接手的也不列；写的那一头没了的连接算断 |
 | `crates/miyu-endpoint/tests/packages_programs.rs`（施工 F-8 上再补） | 程序在包文件夹的 `bin/` 里、不在测试程序旁边的扩展装上就拉起；程序被开着写的（只在 Linux 上测）不记成起不来，放开以后在跑 |
 | `crates/miyu-endpoint/tests/extension_stream.rs`（施工 9-4 补） | 订阅回整份、名字照语言；开了推到在跑、关了推到关着；带 `after` 和会话的参数不对；取消了不推 |
 | `crates/miyu-endpoint/tests/extension_rights.rs`、`src/connection/tests.rs`、`xtask/src/rights/tests.rs`（施工 X-30） | 真核心拉起只声明 `tools` 的测试扩展：只给人的、表里没有的回 `local_only`，缺能力的回 `needs_approval`、`data.capabilities` 是缺的那一项（参数都不看），读模型目录照常；声明了 `sessions.drive`、`events.read` 的造会话、说话、订阅照常，说的话 `by` 是 `harness`、名字是包编号，带 `from` 回 `bad_params`。表：原来只给人的照旧、新挡的几类、照参数分的（`as`、`venue.*` 事件、空的 `provide`、订阅的流）。门禁只认方法样子的字面量 |
-| `crates/miyu-endpoint/tests/extension_approval.rs`、`crates/miyu-config/src/package/tests.rs`、`crates/miyu-store/src/extensions/tests.rs`（施工 9-4 下上） | 清单的能力照表的先后、不认识的和重复的报 `bad_capability`；开关文件的 `approved` 读写、以前的文件当没批过、没批的不写这一格；管理员装的：不带 `approve` 拒绝 `needs_approval`、只批一部分说剩下的、不是声明的名字 `bad_params`、批了开起来、记下、关了不清；`always` 的没批不拉起、不拦空闲、`restart` 拒绝、批了拉起；升级多了的只问多的；出厂的扩展不用批（施工 S-6 下起照测试自己放的出厂扩展 `courier`）；名字照连接的语言 |
+| `crates/miyu-endpoint/tests/extension_approval.rs`、`crates/miyu-config/src/package/tests.rs`、`crates/miyu-store/src/extensions/tests.rs`（施工 9-4 下上） | 清单的能力照表的先后、不认识的和重复的报 `bad_capability`；开关文件的 `approved` 读写、以前的文件当没批过、没批的不写这一格；装上的：不带 `approve` 拒绝 `needs_approval`、只批一部分说剩下的、不是声明的名字 `bad_params`、批了开起来、记下、关了不清；`always` 的没批不拉起、不拦空闲、`restart` 拒绝、批了拉起；升级多了的只问多的；出厂的扩展不用批（施工 S-6 下起照测试自己放的出厂扩展 `courier`）；名字照连接的语言 |
 | `crates/miyu-endpoint/tests/extension_config.rs`、`src/extensions/config/tests.rs`（施工 9-4 下下） | 握手交自己的键（默认值、密钥真值、没设的不放），头的连接没有；改了自己的项推、`secret.set` 换了值推新真值、去掉了推 `null`、别的项变了不推；只放变了的键 |
 | `crates/miyu-endpoint/tests/audit_extension_core_key.rs`（施工 5-19） | 包编号和核心模块同名（`ui`）、没声明配置项的扩展改 `ui.language` 回 `local_only`，系统配置里什么都没写 |
 | `crates/miyu-endpoint/tests/packages_extensions.rs`（施工 F-5 下） | 真核心装上一个 `always` 的扩展当场拉起、它登记的工具进工具面、调得到；卸掉当场停下、`extension.status` 不列、用过它的会话照旧留着、调到报「已卸载」；升级了的停下再拉起；装别的包时清单没变的进程不换。卸包先停再删（停下时清单还在）；升级成撞了别的包的撤回、原来的重新拉起；换不成、删不成的（Unix 上目录只读）照原来的重新拉起（施工 F-5 补） |
 | `crates/miyu-endpoint/tests/turn_inject.rs`、`src/hooks/tests.rs`（施工 X-16） | 真核心拉起八个测试扩展：声明了、工具面上有的交的两块照包的编号进日志（`by` 是包）、进请求排在人说的话前面；没声明的、工具只在群里的不问；超时、回错误、写法不对、交了四块的当没交、这一轮照常走完；回应的写法（至多 3 块、1 到 4000 字、类别和包的编号合写法、一块不对整份不要） |
-| `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `account`；不是桥的扩展开群会话 `needs_approval`；还写着 `system_account` 的清单整份不收 |
+| `crates/miyu-endpoint/tests/bridge_venues.rs`、`crates/miyu-store/src/packages/tests.rs`（施工 O-4 下，SU-4 中改） | 平台桥开的群会话在主人名下、关在沙盒里、找回同一个；对应表里的主人的私聊不关、本机的头也开得了；群里主人说的记成外部身份带 `owner: true`；不是桥的扩展开群会话 `needs_approval`；还写着 `system_account` 的清单整份不收 |
 
 ### 起草时定的
 
-- 开关放 `system/`、不放 `state/`：`state/` 是派生的、能删掉重建，开关是人做的决定（2026-10-08 主会话）。
+- 开关放数据根顶层、不放 `state/`：`state/` 是派生的、能删掉重建，开关是人做的决定（2026-10-08 主会话）。
 - 退出码 0 也算失败：扩展该常驻，自己退了就是没在干活（2026-10-08 主会话，照施工方案「退出码 1 以外的退避重启」）。
 - 「连续」照跑满 60 秒断开：握了手就从零数的话，一握手就崩的扩展会一直重启下去（2026-10-08 主会话）。
 - 标准错误直接接文件、不经核心转：核心不读它、不拷它，不怕它写得多（2026-10-08 主会话）。
 - 测试用的扩展是端点 crate 里的一个小程序（`miyu-test-extension`），不是 `sh` 脚本：包的程序在 Windows 上找的是 `.exe`，脚本只管得了 Unix（2026-10-08 主会话）。
 - 协议版本对不上的不拉起：说不通的话起了也白起（2026-10-08 主会话）。
-- 拉起时明着设 `MIYU_HOME`、`MIYU_RESOURCES`，值取核心手上的数据根、资源目录，不从核心自己的环境变量转抄；只加这两个，别的环境照旧继承，三个平台一条路（2026-10-08 主会话，施工 O-18 要的：真核心拉起真的桥的测试）。施工 S-6 上多一个 `MIYU_PACKAGE_DIR`：这个包的文件夹由核心挑是哪一层，扩展不自己拼家目录的布局（家目录怎么排是核心的事；2026-10-16 主会话，设计 32 第九节第 2 条）。施工 F-15 再多一个 `MIYU_PACKAGE_STATE`：这个包的状态目录（工作目录那一个）的真实位置，拉起前建好；作者说明改成一律照它找状态目录（2026-10-20 项目主人定：人敲命令时工作目录是人的目录，靠工作目录找不到）。
+- 拉起时明着设 `MIYU_HOME`、`MIYU_RESOURCES`，值取核心手上的数据根、资源目录，不从核心自己的环境变量转抄；只加这两个，别的环境照旧继承，三个平台一条路（2026-10-08 主会话，施工 O-18 要的：真核心拉起真的桥的测试）。施工 S-6 上多一个 `MIYU_PACKAGE_DIR`：这个包的文件夹由核心挑是哪一层，扩展不自己拼数据根的布局（数据根怎么排是核心的事；2026-10-16 主会话，设计 32 第九节第 2 条）。施工 F-15 再多一个 `MIYU_PACKAGE_STATE`：这个包的状态目录（工作目录那一个）的真实位置，拉起前建好；作者说明改成一律照它找状态目录（2026-10-20 项目主人定：人敲命令时工作目录是人的目录，靠工作目录找不到）。
 
 - 装卸时照清单前后对：卸掉的停、新的起、变了的重起、没变的不动（2026-10-09 主会话，施工 F-5 下）。比较整份清单，不另记版本号：清单里哪一格变了，起来的进程都可能不一样（参数、能力、配置项）。卸掉的那一格状态留着、记成关着：装回来从零数，不留着没用的进程。
 

@@ -156,7 +156,7 @@ Stop the organizing a person asked for in this room (R-23), however it was asked
 
 ## `kb.list`, `kb.search`, `kb.read`, `kb.documents`
 
-Knowledge bases belong to the admin account; each is a folder of documents (Markdown, PDF, web pages…) that the core indexes for search. Whether the knowledge base package is installed doesn't matter here: the files are the person's.
+Knowledge bases live under `kb/` in the data root; each is a folder of documents (Markdown, PDF, web pages…) that the core indexes for search. Whether the knowledge base package is installed doesn't matter here: the files are the person's.
 
 | Method | Params | Response |
 |---|---|---|

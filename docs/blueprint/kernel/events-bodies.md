@@ -42,7 +42,6 @@
 
 | 格 | 写法 | 有没有 | 是什么 |
 |---|---|---|---|
-| `owner` | 账号 | 必有 | 会话的属主 |
 | `venue` | 场所 | 必有 | 会话所在的场所。本机开的会话是 `local` |
 | `policy` | 内容哈希 | 必有 | 开始时的策略快照（`policy.md`） |
 | `permission` | 权限 | 必有 | 开始时的权限 |
@@ -59,6 +58,7 @@
 | `dream` | 对象 | 可以没有 | 整理会话（施工 D-1 上，设计 `41-整理会话.md`）：记忆模块为一趟整理开的会话，`{persona?, session?, manual?, from?}`：哪一间（人格那一间写人格的编号，会话那一间写会话编号，有一样）、人叫的（`manual`，后台自己合的不写）、人在哪个会话里叫的（`from`）。快照是裸的（`policy.md`「裸的快照」），主请求的 `model.called` 用途记 `memory`。不是的不写，以前的日志没有这一格 |
 | `origin` | 字 | 可以没有 | 从哪开的（施工 8-33 四补，2026-10-21 项目主人：会话列表里分得出终端集成开的）：`session.terminal` 开的写 `terminal`。照原样存字，以后多了别的来源旧核心照样读得了。别的不写，以前的日志没有这一格 |
 | `forked` | `{from, upto, seal_after?, within?}` | 可以没有 | 分叉出来的（施工 C-8 上，`session/fork.md`）：从哪个会话（`from`）的第几条为止（`upto`，含）分叉，这一条的序号是 `upto` 的下一个；`seal_after`（1 起的整数，施工 C-8 下）是跑完几轮封存，不封存的不写。`within`（施工 A-F 上，`session/fork.md`「fork 子代理」）是分叉点在哪一轮当中：fork 子代理从父会话这一轮派它的那一步分叉，`upto` 是那一步的 `message.assistant`；普通分叉不写。不是分叉出来的不写 |
+| `confined` | 布尔 | 不写是假 | 关起来的会话（施工 SU-4 中）：群、陌生人的私聊，只碰得到自己的工作区（`session/guard.md`）。分叉、子会话照父会话的。不关的不写 |
 
 子会话不写 `oneshot`：`--continue`、`miyu undo` 找「最近一次 `miyu ask` 开的」不会找到它（`agents.md`）。以前的日志没有 `parent`、`depth`、`model` 几格，原样一个字节不变；没有 `model` 的，路由照载入那一刻的 `models.chat`（`models.md`「怎么走」第一条第 7 条）。样本两条都带 `model`（施工 8-8）。
 

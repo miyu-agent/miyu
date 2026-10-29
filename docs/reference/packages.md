@@ -18,7 +18,7 @@
 | [`mcp.login`](#mcplogin) | 网址的 MCP 服务要浏览器登录的：拿授权页 |
 | [`mcp.login_finish`、`mcp.logout`](#mcplogin_finishmcplogout) | 浏览器不在核心那台机器上时把跳到的地址贴回来；登出 |
 | [`skill.list`](#skilllist) | 列出用得上的技能 |
-| [`skill.remove`](#skillremove) | 删管理员自己放的技能 |
+| [`skill.remove`](#skillremove) | 删你自己放的技能 |
 | [`script.list`](#scriptlist) | 列出登记上的脚本 |
 | [`tool.set_loading`、`feature.set`](#toolset_loadingfeatureset) | 退役（照旧收、什么都不改）；改技能、脚本、MCP 服务的全局开关 |
 | [`command.run`](#commandrun) | 执行一条斜杠命令 |
@@ -240,13 +240,13 @@
 
 ## `skill.list`
 
-**参数**：没有。**回应**：`{"skills": [...], "dir"}`（`dir` 是管理员自己放技能的文件夹，还没建的也照写，家目录下的写成 `~/…`），核心这一刻用得上的技能，照 `name` 排；同名的几处都有的，只列核心实际用的那一份（自己放的赢；包之间出厂的先于管理员装的，同一层照编号）。一项：
+**参数**：没有。**回应**：`{"skills": [...], "dir"}`（`dir` 是你自己放技能的文件夹，还没建的也照写，家目录下的写成 `~/…`），核心这一刻用得上的技能，照 `name` 排；同名的几处都有的，只列核心实际用的那一份（自己放的赢；包之间出厂的先于你装的，同一层照编号）。一项：
 
 | 名字 | 说明 |
 |---|---|
 | `name` | 技能名 |
 | `display_name`、`summary` | 给人看的名字、一句说明，照连接的语言挑（这种语言没写的照英文、中文、日文的先后）；都没写的没有这一格 |
-| `from` | 从哪来：`home`（管理员自己放的，`skills/`）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（配置 `skills.external.enabled` 开着时，`skills.external.dirs` 里列的别的目录里的，出厂是 `~/.agents/skills`，Codex 这些别的客户端也认这个目录；关着的不列） |
+| `from` | 从哪来：`home`（你自己放的，`skills/`）、`shipped`（出厂的包带的）、`package`（你装的包带的）、`agents`（配置 `skills.external.enabled` 开着时，`skills.external.dirs` 里列的别的目录里的，出厂是 `~/.agents/skills`，Codex 这些别的客户端也认这个目录；关着的不列） |
 | `dir` | `from` 是 `agents` 的：它在哪个目录，照配置里写的原样（`~` 不展开） |
 | `package` | 随包来的：包的编号 |
 | `path` | `SKILL.md` 在哪：家目录下的写成 `~/…` |
@@ -255,19 +255,19 @@
 
 ## `skill.remove`
 
-**参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删管理员自己放的（`from` 是 `home`，`skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
+**参数**：`names`，技能名的数组，至少一个、不能重复。**回应**：`{"trash": [...]}`，每个技能的文件夹在系统回收站里的位置，照 `names` 的先后。只删你自己放的（`from` 是 `home`，`skills/<文件夹>/` 整个挪进回收站）；它盖住了包里同名的，删了包里的那一份重新列出来。只给人用，扩展进程调了回 `local_only`。
 
 **出错**：没写名字、名字重复：`bad_params`。没有这个技能：`unknown_skill`；随包来的：`skill_from_package`；别的目录里的（`from` 是 `agents`）：`skill_shared`（三种都带 `data.name`，几个名字里有一个不行就一个都不删）。挪不进回收站：`trash_failed`。
 
 ## `script.list`
 
-**参数**：没有。**回应**：`{"scripts": [...], "dir"}`（`dir` 是管理员自己放脚本的文件夹，写法同 `skill.list`），这一刻登记成工具的脚本，照 `tool` 排。一项：
+**参数**：没有。**回应**：`{"scripts": [...], "dir"}`（`dir` 是你自己放脚本的文件夹，写法同 `skill.list`），这一刻登记成工具的脚本，照 `tool` 排。一项：
 
 | 名字 | 说明 |
 |---|---|
 | `tool` | 工具名 |
 | `display_name`、`description` | 给人看的名字、一句说明（脚本开头的 `Display name`、`显示名称`、`描述`），照连接的语言挑，挑法同 `skill.list`；都没写的没有这一格 |
-| `from`、`package` | 同 `skill.list`：`home` 是管理员自己放的（`scripts/`） |
+| `from`、`package` | 同 `skill.list`：`home` 是你自己放的（`scripts/`） |
 | `path` | 脚本文件在哪，写法同 `skill.list` |
 | `timeout` | 一次等多少秒 |
 | `on` | 全局开关（`features.script-<工具名>`）：没写的是 `true` |

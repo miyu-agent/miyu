@@ -29,7 +29,7 @@ Chinese version: [errors.md](errors.md).
 
 ## Connecting and logging in
 
-`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `password_not_set` (no access password yet), `login_throttled` (all close the connection after answering), `setup_first`; `not_permitted` (a package's own account changing machine-wide things); `bad_ticket` when the ticket for `login.redeem` doesn't exist, has expired or was already used. See [Connection](connection.en.md).
+`protocol_mismatch`, `bad_token`, `bad_code`, `bad_login`, `bad_password`, `password_not_set` (no access password yet), `login_throttled` (all close the connection after answering), `setup_first`; `not_permitted` (a confined session installing, removing or upgrading packages through its port); `bad_ticket` when the ticket for `login.redeem` doesn't exist, has expired or was already used. See [Connection](connection.en.md).
 
 ## Sessions
 
@@ -95,7 +95,7 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `unknown_persona`, `unknown_preset` | No such persona or preset | |
 | `persona_invalid`, `preset_invalid` | Its files are wrong | `problem`, `message`, `line` |
-| `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is the account avatar, construction AV-1) | `current` |
+| `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is your avatar, construction AV-1) | `current` |
 | `nothing_to_delete` | You have no layer to delete | |
 | `avatar_not_image`, `avatar_too_big`, `background_not_image`, `background_too_big` | The avatar or background isn't an image, or is too big | measured size and limit |
 
@@ -103,8 +103,8 @@ Chinese version: [errors.md](errors.md).
 
 | `reason` | When | `data` |
 |---|---|---|
-| `unknown_schedule` | This account has no such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume` (construction J-1 lower) | |
-| `too_many_schedules` | This account already has 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add` (construction J-3 upper). Remove some first; existing ones keep running | |
+| `unknown_schedule` | No such schedule: `schedule.cancel`, `schedule.pause`, `schedule.resume` (construction J-1 lower) | |
+| `too_many_schedules` | There are already 200 schedules (added by people, the AI and packages together; a safety limit): `schedule.add` (construction J-3 upper). Remove some first; existing ones keep running | |
 | `unknown_project` | No such project: the project methods, and `project` in `session.create` and `session.set_meta` | |
 
 ## Packages, extensions, commands

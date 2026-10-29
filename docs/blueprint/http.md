@@ -12,7 +12,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 | `crates/miyu-http/src/client.rs` | 客户端：TLS、`User-Agent`、连接超时、代理、关自动解压（W-7 补） |
 | `crates/miyu-http/src/loopback.rs` | 地址是不是回环（施工 8-11 补）：纯逻辑，不碰网络 |
 | `crates/miyu-http/src/guard.rs`、`proxy.rs` | 地址闸、这一跳走不走代理（施工 U23 下下从 `miyu-net` 挪下来，规矩见 `net.md`「怎么走」第 3 到 5 条）：替人上网的几处共用一份 |
-| `crates/miyu-http/src/guarded.rs` | 替成员下东西（施工 U23 下下）：成员自己加的软件源的索引、包文件照它拿。每一跳先过闸再看走不走代理，不走代理的钉住闸解析好的地址（判和连是同一次解析），走代理的照 `net.md` 的规矩交给代理；跳转自己跟、每一跳重新过闸，最多 10 跳。测试的口子照 `guard::Testing`（`testkit`） |
+| `crates/miyu-http/src/guarded.rs` | 只连公网的下载（施工 U23 下下）。每一跳先过闸再看走不走代理，不走代理的钉住闸解析好的地址（判和连是同一次解析），走代理的照 `net.md` 的规矩交给代理；跳转自己跟、每一跳重新过闸，最多 10 跳。测试的口子照 `guard::Testing`（`testkit`） |
 | `crates/miyu-http/src/endpoint.rs` | 端点：地址、key（可以没有，施工 8-6）、另配的头；打印时藏起 key、地址只写主机名；取主机名，日志也用它 |
 | `crates/miyu-http/src/send.rs` | 发一次：头、空闲超时、出错、叫停、运行日志 |
 | `crates/miyu-http/src/get.rs` | 一次 GET（施工 8-7）：拉 models.dev 的目录、拉供应商的模型列表 |

@@ -11,7 +11,7 @@ Local file operations for heads: path completion, finding files, resolving real 
 
 **Who can call**: people; extensions need the `fs.read` capability.
 
-**Boundary**: inside Miyu's data directory (by default `~/.miyu`), only the account's own default workspace can be listed, searched and read; anything else gets `path_forbidden`. `fs.realpath` only reports a location without reading, so it doesn't check the boundary.
+**Boundary**: inside Miyu's data directory (by default `~/.miyu`), only the workspace folder `workspace/` can be listed, searched and read; anything else gets `path_forbidden`. `fs.realpath` only reports a location without reading, so it doesn't check the boundary.
 
 **Paths**: absolute, or starting with `~`, `~/…` (joined to the system home).
 

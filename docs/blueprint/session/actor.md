@@ -53,14 +53,14 @@
 | `Handle` | 一个会话的收件箱，可以复制，几个头一起拿着 |
 | `Pushed`、`Subscription`、`Ended`、`Stopped` | 推送、订阅、订阅断了、会话停了 |
 | `Backlog` | 订阅时要补发的那一截（施工 3-8 六补）：`upto()` 补到哪一条，`read()` 在阻塞线程里读出来（第 6 条） |
-| `Models`、`ForSession`、`ModelPort`、`Reports`、`Cancel`、`Sight` | 请求模型的端口。`ModelPort::describe(请求, 配置, Sight)` 替看不了图的模型看图（施工 8-17，第 7 条第 9 款）：马上返回，在别的任务里发，`Sight` 有 `seen(模型, 转述)`、`unseen(为什么)`；测试的端口当场 `unseen`。`ForSession` 带会话编号、造会话或载入时取的那一份配置（施工 8-6）、驱动的占位、属主的 blob，会话记着的引用、最近一次发给了谁（施工 8-8）；`ModelPort::model()` 交回的是一份（路由的会变，施工 8-6），`reference()` 交回会话这时生效的引用（施工 8-8，测试的端口交造它的会话记着的），`effort()` 交回接下来那个模型真用的思考强度（施工 8-18，照配置的默认算，8-18（补）起；测试的端口没有），`turn()` 照这一轮的配置重新解析（8-18（补）起不再收会话给每个模型记的那一格） |
+| `Models`、`ForSession`、`ModelPort`、`Reports`、`Cancel`、`Sight` | 请求模型的端口。`ModelPort::describe(请求, 配置, Sight)` 替看不了图的模型看图（施工 8-17，第 7 条第 9 款）：马上返回，在别的任务里发，`Sight` 有 `seen(模型, 转述)`、`unseen(为什么)`；测试的端口当场 `unseen`。`ForSession` 带会话编号、造会话或载入时取的那一份配置（施工 8-6）、驱动的占位、blob 存处，会话记着的引用、最近一次发给了谁（施工 8-8）；`ModelPort::model()` 交回的是一份（路由的会变，施工 8-6），`reference()` 交回会话这时生效的引用（施工 8-8，测试的端口交造它的会话记着的），`effort()` 交回接下来那个模型真用的思考强度（施工 8-18，照配置的默认算，8-18（补）起；测试的端口没有），`turn()` 照这一轮的配置重新解析（8-18（补）起不再收会话给每个模型记的那一格） |
 | `SessionPort`、`Child`、`Lineage`、`Pending` | 造子会话、给别的会话发命令的端口（施工 7-5）：会话表实现，造会话、载入时交进来。`create(子会话)`、`command(会话, 编号, 谁, 命令)`，`open(会话)` 叫起一个会话：没在跑的照会话表的规矩载入（施工 7-6） |
 | `Routes`、`IDLE` | 端口的真实现：每个会话的路由，照配置挑供应商、钉 key（施工 8-6，第 8 条）；空闲超时 180 秒，每次请求照它的思考强度放大（施工 8-18） |
-| `OneShot`、`Ask`、`Answer`、`Unanswered` | 模型调用口的一次性入口（施工 8-20，`models.md`「怎么走」第十二条）：`Models::one_shot()` 拿到，`call(配置, 属主的 blob, Ask)` 发一次、交回整段回答或四种出错 |
+| `OneShot`、`Ask`、`Answer`、`Unanswered` | 模型调用口的一次性入口（施工 8-20，`models.md`「怎么走」第十二条）：`Models::one_shot()` 拿到，`call(配置, blob 存处, Ask)` 发一次、交回整段回答或四种出错 |
 | `Jobs` | 执行器的任务表，核心里一张：`Jobs::new()`，`running()` 有没有在跑的后台命令（结束了、记录还没落盘的也算，施工 7-3） |
 | `Unreadable` | 头读不了这个任务的输出：`Unknown` 没有这个任务，`Agent` 是子代理（施工 7-4 补） |
 
-`Create` 的格：数据根 `root`、资源目录 `resources`（随核心附带的字）、会话编号 `id`、人格 `persona`（编号）和叠好的人格的字 `persona_texts`（施工 P-1 上：端点照 `personas.md` 找好交进来，会话不再自己读人格目录）、人格的几层 `personas`（施工 P-1 再补：回合开始时照它看人格的文件改了没有，「换快照」）、记忆归哪个账号 `memory_account`（施工 P-1 上，`personas.md`「怎么走」第 5 条：回合库、记忆日志照它和人格开）、记忆的范围 `memory_scope`（施工 R-3 下，`memory.md`「范围」：记进快照的 `memory`；子会话不管交的是什么都写 `off`）、场所 `venue`、属主 `owner`、开始时的权限 `permission`、有没有人能确认 `attended`、一次性的 `oneshot`、环境 `environment`（时区、工作目录）、造会话的命令编号 `command`、谁发的 `by`、造端口的 `models`、工具目录 `tools`、系统的家目录 `home`（读不出来的是空的）、沙盒的助手 `sandbox`（这台机器上的沙盒能用才有，施工 5-4 上）、沙盒的缓存 `sandbox_cache`（`<缓存目录>/sandbox/<属主>`，核心算不出缓存目录的没有，施工 5-4 下）、父会话和第几层 `lineage`（子会话才有，施工 7-5）、造子会话的端口 `sessions`（会话表交进来的，测试里自己造的没有，施工 7-5）、任务表 `jobs`（核心里那一张，施工 7-3）、属主的会话列表的索引 `index`（会话表交进来的，测试里自己造的可以没有，施工 3-8 七补，`store/index.md`）、核心一份的记忆 `memory`（回合库的登记和记忆日志的登记，施工 R-2 上、R-3 中，`memory.md`）。`Load` 的格：`root`、`owner`、`personas` 和资源目录 `resources`（施工 P-1 再补：回合开始时看人格改了没有、照新的重拼）、`memory_account`（端点照会话的人格和属主同一条规则算，施工 P-1 上）、`id`、在哪干活 `place`（施工 V-2 三补：`Workplace::Given` 给定的环境；`Workplace::Remembered` 给时区和挑法，载入读日志时顺手认出最后一次记下的工作目录、加进来的目录，工作目录交给挑法定）、`models`、`tools`、`home`、`sandbox`、`sandbox_cache`、`sessions`、`jobs`、`index`、`memory`。
+`Create` 的格：数据根 `root`、资源目录 `resources`（随核心附带的字）、会话编号 `id`、人格 `persona`（编号）和叠好的人格的字 `persona_texts`（施工 P-1 上：端点照 `personas.md` 找好交进来，会话不再自己读人格目录）、人格的几层 `personas`（施工 P-1 再补：回合开始时照它看人格的文件改了没有，「换快照」）、记忆的范围 `memory_scope`（施工 R-3 下，`memory.md`「范围」：记进快照的 `memory`；子会话不管交的是什么都写 `off`）、场所 `venue`、开始时的权限 `permission`、有没有人能确认 `attended`、一次性的 `oneshot`、环境 `environment`（时区、工作目录）、造会话的命令编号 `command`、谁发的 `by`、造端口的 `models`、工具目录 `tools`、系统的家目录 `home`（读不出来的是空的）、沙盒的助手 `sandbox`（这台机器上的沙盒能用才有，施工 5-4 上）、沙盒的缓存 `sandbox_cache`（`<缓存目录>/sandbox/`，核心算不出缓存目录的没有，施工 5-4 下）、父会话和第几层 `lineage`（子会话才有，施工 7-5）、造子会话的端口 `sessions`（会话表交进来的，测试里自己造的没有，施工 7-5）、任务表 `jobs`（核心里那一张，施工 7-3）、会话列表的索引 `index`（会话表交进来的，测试里自己造的可以没有，施工 3-8 七补，`store/index.md`）、核心一份的记忆 `memory`（回合库的登记和记忆日志的登记，施工 R-2 上、R-3 中，`memory.md`）。`Load` 的格：`root`、`personas` 和资源目录 `resources`（施工 P-1 再补：回合开始时看人格改了没有、照新的重拼）、`id`、在哪干活 `place`（施工 V-2 三补：`Workplace::Given` 给定的环境；`Workplace::Remembered` 给时区和挑法，载入读日志时顺手认出最后一次记下的工作目录、加进来的目录，工作目录交给挑法定）、`models`、`tools`、`home`、`sandbox`、`sandbox_cache`、`sessions`、`jobs`、`index`、`memory`。
 
 | `Handle` 的方法 | 做什么 |
 |---|---|
@@ -86,7 +86,7 @@
 
 `Pushed` 有两种：`Events`，落了盘的几条事件，照先后；`Transient`，一条瞬时事件，不落盘。`Subscription` 有 `next()`（等下一份）、`try_next()`（不等，没到的是空的）；断了的是 `Ended::Lagged`（掉了队）或 `Ended::Stopped`（会话停了）。拿着一个 `Subscription` 就算一个在看着这个会话的头，放下它（丢掉、连接断了）自己告诉 actor（施工 7-9，第 3 条）。
 
-端口：`Models::port(ForSession)` 给一个会话造端口，`ForSession` 带这个会话的驱动占位（取自策略快照）和属主的 blob。`ModelPort::model()` 交回端点的编号和模型名；`ModelPort::call(seen, 请求, Reports, Cancel)` 马上返回，在别的任务里发。`Reports` 有 `sent(模型, 请求字节的哈希)`、`delta(增量)`、`ended(用量, 出错, 要等多久)`；`Cancel::wait()` 等到被叫停。
+端口：`Models::port(ForSession)` 给一个会话造端口，`ForSession` 带这个会话的驱动占位（取自策略快照）和 blob 存处。`ModelPort::model()` 交回端点的编号和模型名；`ModelPort::call(seen, 请求, Reports, Cancel)` 马上返回，在别的任务里发。`Reports` 有 `sent(模型, 请求字节的哈希)`、`delta(增量)`、`ended(用量, 出错, 要等多久)`；`Cancel::wait()` 等到被叫停。
 
 ### 怎么走
 
@@ -96,10 +96,10 @@
    1. 读出这个人格要用的原文（`store/resources.md`）。
    2. 拼策略快照：人格、有没有人能确认、工具目录里每件工具的名字、说明、参数格式、访问类别，照名字排（`policy.md`）。不在本机、到了深度上限的，工具面里不给 `subagent`；子会话读出场所说明（`core/jobs/subagent-venue.txt`，读不了的算人格读不出来），接在 system 的人设后面（施工 7-5，`session/tools.md`「工具面」）；群会话（`Create::group`）读出格式说明接在同一个位置，快照钉下这时的时区（施工 O-13 中，`policy.md` 的 `with_group`），换人格重拼时照旧快照的时区。
    3. 照快照造内核的策略、驱动的占位、替工具写的两句（`session/tools.md`）、权限策略拒绝时的三句（`session/guard.md`）。
-   4. 快照存成属主的 blob：先落 blob，再写引用它的事件。
+   4. 快照存成 blob：先落 blob，再写引用它的事件。
    5. 建会话目录和空的第一段（`store.md`）。
 2. 造请求模型的端口。时钟从现在起。
-3. `session.created` 写属主、场所、快照的哈希、开始时的权限，`oneshot` 照交进来的，子会话写 `parent`、`depth`（施工 7-5）；交给内核造会话，`cause` 是造会话的命令，连同这个会话自己的编号 `id`：事实 `session` 写它，子会话的是它自己的（施工 1-13 再补）。
+3. `session.created` 写场所、快照的哈希、开始时的权限，关起来的写 `confined`，`oneshot` 照交进来的，子会话写 `parent`、`depth`（施工 7-5）；交给内核造会话，`cause` 是造会话的命令，连同这个会话自己的编号 `id`：事实 `session` 写它，子会话的是它自己的（施工 1-13 再补）。
    马上交给内核这个模型的限额（`Input::Limits`，端口的 `limits()`：窗口、最大输出、一张图怎么算，施工 6-3 上），在别的输入之前；什么动作都不出。接着向内核要一份给头看的限额（`context_limits()`），交回的 `Handle` 和 actor 共用它（施工 6-3 补；施工 8-9 起会变）。
 4. 造权限策略、执行工具的端口（她看过的是空的；任务编号照内核的 `last_job_number()` 往下数，派子代理要照抄的那一份照交进来的，施工 7-5；actor 建它那一份任务表，和派子代理共用这一串编号，施工 7-3）、actor；子会话交回报的那一头（「向上回报」，施工 7-6）；记下造会话的命令在等回应。
 5. 在会话的 span 里记一行 `created`，起 actor。
@@ -111,7 +111,7 @@
    1. 打开会话日志：自检，截掉最后一段末尾那半行（`store.md`）。
    2. 第一条要是 `session.created`；日志是空的、第一条不是它的，报错。
    - 同一遍里认出最后一次记下的工作目录、加进来的目录（施工 V-2 三补，同列会话的认法 `miyu_store::index::cwd`）：`place` 是 `Remembered` 的，读完照它定环境，再开这个会话的配置（`Turning::start` 要工作目录，挪到读完以后）。定下的环境由 `load_placed` 和把手一起交回。
-   3. 照它记的哈希从属主的 blob 里取快照，读懂，造策略、驱动的占位、两句、三句。
+   3. 照它记的哈希从 blob 里取快照，读懂，造策略、驱动的占位、两句、三句。
 2. 时钟从日志里最后一条的时刻起：系统时间比它还早（往回拨过），照它。
 3. 从日志里的效果重建她看过的（`session/tools.md`）；记下最后一条发出去了的 `model.called` 发给了谁（施工 8-8）。
 4. 交给内核载入，连同会话的编号 `id`（施工 1-13 再补）：交回会话，和一串要回的动作。有计划的重启打断了的一轮接着干，崩了的那一轮标成没走完（`kernel/session.md`）。
@@ -212,7 +212,7 @@
 6. 写盘的线程 panic 了：记一行 `panicked, stopped`，会话停下。
 7. 会话列表的索引（施工 3-8 七补，`store/index.md`「怎么走」第 2 条）：这一批落了盘，在同一个阻塞线程里顺手更新这个会话在索引里的那一行：`session.created` 新起一行；别的，那一行照到的正好是这一批之前的，才照这一批盖上最近一次动静、工作目录、标题、置顶，照到这一批之后。更新失败只记一行 `session index not updated`，照样算落了盘，送「落盘了」：索引是派生的，那一行停在原处，下次列会话照日志补上。没有索引的（`Create::index` 是空的）不更新。写盘的阻塞线程带着会话的 span，这一行也有会话编号。
 8. 回合索引（施工 R-2 上，`memory.md`「怎么走」第一条）：用量汇总之后，同一个阻塞线程里把这一批交给会话的 `TurnFeed`，结束了的人开的回合放进这个人格的回合库、撤销的拿掉、恢复的读整份日志放回，连同照到了这一批的最后一条，一个事务；这一批没有要改的不写。失败只记一行 `memory index not updated`，照样算落了盘。只有范围不是 `off`（照快照；以前造的子会话快照里没有范围，照有没有父会话判）、`Create::memory` 不是空的才有；范围是 `session` 的写进会话目录里那一间（施工 R-3 下）。载入时照整份事件铺回状态、补上照到以后的。
-8. 用量汇总（施工 8-15，`models.md`「怎么走」第九条第 4 条）：同一个阻塞线程里接着写这一批里发出去了的请求（`model.called` 带 `endpoint`、`model` 的），属主、场所、父会话照 `session.created`（造会话时照 `Create`，载入时照日志第一条）；记到的位置正好是这一批之前的才挪到这一批之后，这一批从第 1 条起的新起一行。写不进去只记一行 `usage not indexed`，照样算落了盘。没有汇总的（`Create::usage` 是空的）不写。
+8. 用量汇总（施工 8-15，`models.md`「怎么走」第九条第 4 条）：同一个阻塞线程里接着写这一批里发出去了的请求（`model.called` 带 `endpoint`、`model` 的），场所、父会话照 `session.created`（造会话时照 `Create`，载入时照日志第一条）；记到的位置正好是这一批之前的才挪到这一批之后，这一批从第 1 条起的新起一行。写不进去只记一行 `usage not indexed`，照样算落了盘。没有汇总的（`Create::usage` 是空的）不写。
 9. 后台同步（施工 V-19，`actor/durable.rs`）：会碰外面的一批写完，要同步到这一批的最后一条。没有正在做的同步，当场派一次：在阻塞线程里对正在写的那一段的另一个句柄做 `sync_data`（`store.md` 的 `sync_handle`），不占 actor；正在做的，只记下还要同步到哪（几批合成一次），这一次做完接着派。做完在那个阻塞线程里当场放出等到了的回应（账和 actor 共用、加锁，`Syncing`），账上还要再做的接着做，都做完了、或者出了错才报回 actor：放回应不经过 actor，它正等着别的（权限策略在判）时回应照样一落盘就交出去。同步出错和写不进去一样：记一行 `sync failed, stopped`，`kind` 写出错的种类，会话停下（第 9 条）。日志不在磁盘上的（测试里的替身）没有句柄：写的时候照旧同步地做，写完就算同步了。
 10. 回应命令（施工 V-19）：发命令的是外面的（人、桥、别的 harness，`by` 是 `person`、`external`、`harness`、认不出的），接受了、带着事件序号的，最后那一条同步了才交给等着的那一头，没同步的先扣着；扣着时它要等的那一条后面还没排同步的（这一批不是会碰外面的），补派一次。拒绝的、没有事件的、回顾的照旧当场交（回顾那一句不在日志里要等的那几条）。所以回应到了对方手里，断电以后它说的事一定还在；推送、派工具、请求不等它。别的会话、定时（`schedule`）、内核、模块、工具发的，和 actor 自己等的（停子代理的回报、长期目标、造会话），当场交：两头都在这个核心里、同一块盘上，扣着保不住什么，只会打乱会话之间的先后（带话又订的那一边要等回应才记下在等，对方先忙完了就再也等不到；三平台 CI 在 Windows 上撞出来的）。
 11. 会话停下（`stop`、删、核心停）以前，先把写了还没同步的同步完，再交扣着的回应；不论怎么退出（写不进去、panic 展开），扣着的回应都收尾（`actor/durable.rs` 的 `Syncing`）：先尽力同步一次，成了照接受交出去，事件已经写进去、也落了盘；同步出过错的不交，等的那一头收到会话停了。
@@ -255,12 +255,12 @@
 4. key：这一家写了几个，照会话编号钉一个（`miyu_models::keys`：会话编号的 SHA-256 前 8 个字节、大端、对个数取余），取不到值的照写的先后取下一个；一个都取不到也是 `no_model`（`provider "<编号>" has no usable key`）。没写 key 的不带认证头。key 照这一轮的配置取（`{ secret }` 密钥文件、`{ env }` 核心的环境），只在内存里。
    - 出错换 key、换端点（施工 8-9，`models.md`「怎么走」第四条、第五条）：一个候选是一家、一个 key、一个模型，照先后排（出错换过去、成了的 key 在前，池照成员的先后）；取排在最前、没在冷却的，上一次主请求说到一半断了的还发给它，不止一个候选、全在冷却的当场报说完了，分类 `cooling`，没发出去。冷却表核心一份（`ModelData`）。
 5. 一次请求派一个任务，带着会话的 span：HTTP 的几行写在会话编号后面（`log.md`）。任务里：
-   1. 照驱动列的清单，在阻塞线程里从属主的 blob 取编码要的图片、文件。取不出来的（没有、坏了、读不了）不放进去。
+   1. 照驱动列的清单，在阻塞线程里从 blob 取编码要的图片、文件。取不出来的（没有、坏了、读不了）不放进去。
    2. 编码（`drivers/openai-chat.md`，开关照档案）。缺了哪一个 blob：直接报说完了，分类 `other`，原话是 `编码要用的 blob <哈希> 取不出来`。没发出去，不报发出去了；重试也没用。
    3. 经 HTTP 执行器发出去、流式读回来，认证头照驱动（`http.md`）：发出去了，报发出去了（这一家的编号、模型名）；每一段增量，报增量。
    4. 说完、出错：先交给路由记（施工 8-9，`route/ended.rs`：出错的照分类记冷却，还有别的候选的说换了端点；成了的清零、钉住的池钉到它、会话的 key 换成它），再报说完了，带用量，出错的分类和原话，要等多久（供应商说的，换了端点的是别的候选都在冷却时要等多久），换了端点的带 `failover`。
    5. 被叫停：什么都不再报。
-6. **替它看图**（施工 8-17，`route/sight.rs`，`models.md`「怎么走」第十三条）：限额的 `blind` 照模型资料的 `inputs`（`Facts::driver_inputs`），池里有一个认得出的成员看不了图就算看不了（钉住的、轮换的一样；钉住的池出错换了成员、限额跟着换成那个成员的，这一轮剩下的照它，下一轮开始照整个池重算）。`describe` 照这一轮的配置取 `models.vision`：没配的当场 `unseen`（`no vision model configured: set models.vision`）；配了的派一个任务，带着会话的 span，经一次性入口（`OneShot`，用这个路由的 `Routes`、会话属主的 blob）发，用途 `vision`，`max_tokens` 不写。一次性入口没答成的 `unseen`，原话照它的（模型出错的前面带分类）；答成了的正文去掉前后空白，空的 `unseen`（`the vision reply has no text`），不空的 `seen`（真发给的供应商、模型，转述）。
+6. **替它看图**（施工 8-17，`route/sight.rs`，`models.md`「怎么走」第十三条）：限额的 `blind` 照模型资料的 `inputs`（`Facts::driver_inputs`），池里有一个认得出的成员看不了图就算看不了（钉住的、轮换的一样；钉住的池出错换了成员、限额跟着换成那个成员的，这一轮剩下的照它，下一轮开始照整个池重算）。`describe` 照这一轮的配置取 `models.vision`：没配的当场 `unseen`（`no vision model configured: set models.vision`）；配了的派一个任务，带着会话的 span，经一次性入口（`OneShot`，用这个路由的 `Routes`、blob 存处）发，用途 `vision`，`max_tokens` 不写。一次性入口没答成的 `unseen`，原话照它的（模型出错的前面带分类）；答成了的正文去掉前后空白，空的 `unseen`（`the vision reply has no text`），不空的 `seen`（真发给的供应商、模型，转述）。
 
 **9. 停下**
 
@@ -411,7 +411,7 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/route.rs`（施工 8-6） | key 照会话编号挑、重启（停了再载入、换一个路由）还是它；钉着的取不到照写的先后取下一个；没配 `models.chat`、key 一个都取不到、供应商没有、推不出驱动和地址的当场 `no_model`、不发；没写 key 的不带认证头；开着的会话钉着造它时的模型，`models.chat` 改了只影响新会话；钉着的那一家没了，退回这一轮的 `models.chat`、以后钉在它上面；造的时候没配的，配好以后下一轮用上；窗口照配置 |
 | `crates/miyu-session/tests/route_failover.rs`（施工 8-9） | 换端点：429 换到别的 key 当场再来、成了以后一直用它；钉住的池换到下一个成员、成了才钉、推 `model.changed`、`Handle` 的限额跟着换；轮换的池跳过冷却中的成员、不推；说到一半断了还发给原来那一个；只有一个候选的照旧在它上面再来；全在冷却的不发、交 `cooling`、原话列出每个候选；换端点数进 5 次；请求本身有错的不换、不记冷却（`models.md`「守着它的」） |
 | `crates/miyu-session/tests/failover_log.rs`（施工 8-9） | `endpoint cooling`、`failover` 两行带会话编号，key 只写第几个，值不在日志里 |
-| `crates/miyu-session/tests/route_effort.rs`（施工 8-18；8-18（补）去掉会话那一层） | 一次请求照配置的默认、都没有；换模型以后用新模型自己的；轮换的池里每个成员用自己的、不带给头看的；个人设置压着系统配置、下一轮生效，`from` 跟着从 `system` 换成 `personal`；空闲超时照那一档放大（`effort_log.rs` 的 `WARN` 测试随会话那一层删掉了） |
+| `crates/miyu-session/tests/route_effort.rs`（施工 8-18；8-18（补）去掉会话那一层） | 一次请求照配置的默认、都没有；换模型以后用新模型自己的；轮换的池里每个成员用自己的、不带给头看的；配置改了下一轮生效；空闲超时照那一档放大（`effort_log.rs` 的 `WARN` 测试随会话那一层删掉了） |
 | `crates/miyu-session/tests/route_turn.rs`（施工 8-10） | 回合开始重新解析：换了模型的下一轮发给新的、推一条 `model.changed`（`why` 是 `turn`）、`Handle` 的限额和模型跟着换、没再变的不推；钉着的那一家没了退回这一轮的 `models.chat`、内核在那一轮里记下、以后钉在它上面；`models.chat` 也没有的不记、当场 `no_model`；只改了窗口的下一轮用上、也推；换成轮换的池推的没有端点、限额取小的；载入照换过的引用造路由 |
 | `crates/miyu-session/tests/once.rs`、`once_pools.rs`、`once_shared.rs`（施工 8-20） | 一次性入口：模型、`@池`、不写照 `models.chat`；消息照先后发、不带工具、`max_tokens`；带图、模型不收图的不发；四种出错；配置的默认强度；key 照用途钉；429 当场换、最多换 5 次；钉住的池照指针取成员、出错换下一个，轮换的池一次走一个；冷却和会话的路由共用，两个方向（`models.md`「守着它的」）。会话的路由那几份测试拆出底子以后一个不改照旧全过 |
 | `crates/miyu-session/tests/fallback_log.rs`（施工 8-10） | `model fallback` 一行带会话编号，写原来的和退回的 |

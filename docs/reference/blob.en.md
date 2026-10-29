@@ -103,7 +103,7 @@ Read part of a blob.
 
 **Who can call**: people and extensions, with different reach:
 
-- **People**: without `session`, blobs under the admin account; with it, blobs of that session's owner (including group sessions owned by a system account).
+- **People**: without `session`, any blob; with it, the session must be local or your own private chat (confined group chats and strangers' private chats are out of reach, as the sessions themselves are).
 - **Extensions, without `session`**: only blobs it stored itself (`blob.put`, chunked upload), and hashes in responses it got back from calling another package (`package.call`) that the answering package can read itself. After the core restarts, store it again (the same content keeps the same hash).
 - **Extensions, with `session`**: the session must be one it can see, and the blob must be referenced in that session (images and files in messages and tool results, shown files, images she sent); a hash merely written in some text doesn't count.
 

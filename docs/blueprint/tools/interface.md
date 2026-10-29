@@ -40,7 +40,7 @@
 | `description` | 给模型看的说明，英文，原样进 tools 数组 |
 | `parameters` | 参数的 JSON Schema，原样进 tools 数组，一个字节不改（`RawJson`）；必须是 `{"type":"object",…}` |
 | `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
-| `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在个人设置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`、`history`、`sessions`、`session_usage`、`packages`（施工 M-2 补、再补：要读、要查、shell 原本不方便做到的就开）；扩展 `provide` 写 `true` 才开；MCP 服务默认开（`clicall = false` 关）；脚本工具写 `# Clicall: yes` 才开（施工 M-2 三补）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
+| `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在配置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`、`history`、`sessions`、`session_usage`、`packages`（施工 M-2 补、再补：要读、要查、shell 原本不方便做到的就开）；扩展 `provide` 写 `true` 才开；MCP 服务默认开（`clicall = false` 关）；脚本工具写 `# Clicall: yes` 才开（施工 M-2 三补）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
 | `result` | 脚本里调到时交回的结构化结果（`Done.data`）的样子（施工 M-4，设计 `39-脚本调工具.md` 第九节第 3 条）：一行紧凑的字，例如 `{"hits":[{"kb","path","snippet"}]}`。只有交结构化结果的写：内置、软件包的说明文件写 `"result"`（出厂 `web_search`、`memory_search`、`kb_search`、`kb_read`），扩展 `provide` 写；MCP、脚本工具没有。不直接发给模型：换进 `shell` 说明末尾那一段（`tools/shell.md`「脚本调工具」第 10 条）、`miyu call --schema` 的 `Result:` |
 
 **接口** `Tool`（`Send + Sync`）：
@@ -55,7 +55,7 @@
 | `preview(Call)` | 问人之前先看一眼（施工 F-10 下，`tools/package.md`）：权限策略要问人时，执行器带着端口调它；成了的整份放进确认请求的说明 `preview`，不成的不问、照拒绝交给她；默认不看 |
 | `formerly()` | 以前的名字：改过名的工具，改名以前造的会话快照里冻着旧名字，她照旧名字调；默认没有（施工 7-5 再补，`tools/subagent.md`「以前的名字」） |
 | `clicall_section(tools, shapes)` | 说明末尾讲脚本调工具的那一段（施工 M-4，`tools/shell.md`「脚本调工具」第 10 条）：组工具面时，有脚本里能调的工具才照它接上，`tools` 是能调的名单、`shapes` 是结果的样子；跑命令的工具有，默认没有 |
-| `runs_commands()` | 跑命令的工具（施工 BS-1 上，设计 44 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道、说明后面接 `clicall_section`、管理员放行它时 `miyu check` 提醒 `sandbox_shell`。核心照这一条认，不看名字；出厂的 `shell` 是，默认不是 |
+| `runs_commands()` | 跑命令的工具（施工 BS-1 上，设计 44 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道、说明后面接 `clicall_section`、放行它在沙盒外跑时 `miyu check` 提醒 `sandbox_shell`。核心照这一条认，不看名字；出厂的 `shell` 是，默认不是 |
 | `background_parameter()` | 只在会话有后台时才给的参数（施工 BS-1 上）：后台运行关着的会话，组工具面时去掉它。出厂的 `shell` 是 `run_in_background`，默认没有 |
 | `command_only()` | 不上工具面（施工 BS-1 中，设计 44 第三节第 4 条）：不写进 tools 数组，她直接调、`miyu call` 调都当不认识，只给核心自带的命令（会话里的 `miyu pkg`）经通道调（`op: "pkg"`），照常过链、问人。出厂的 `packages`、`package` 是，默认不是 |
 
@@ -76,8 +76,8 @@
 | `agents` | 派子代理的端口（`Arc<dyn AgentPort>`，施工 7-5）：执行器照这一次调用抄好父会话的那几样（`session/tools.md`「派子代理」）。只有 `subagent` 用；没有的（测试里的假调用、没装会话表的核心）是空的，`subagent` 照派不了出错 |
 | `messages` | 留言的端口（`Arc<dyn MessagePort>`，施工 7-7）：执行器照这一次调用抄好这个会话的父会话、它派出去的子代理（`session/tools.md`「父子之间留言」）。只有 `send_message` 用；没有的（测试里的假调用、没装会话表的核心）是空的，`send_message` 照送不到出错 |
 | `jobs` | 任务端口（`Arc<dyn JobPort>`，施工 7-3）：执行器照这一次调用造一个，起它的命令自己退出了，`job.reported` 的 `by` 是这次调用、`cause` 是它所在那一轮的。`shell` 交后台命令，`jobs` 查、停（施工 7-4）；没有的（会话外面的调用，例如测试）是空的，不能放到后台，也查不到任务 |
-| `sessions` | 列会话的端口（`Arc<dyn SessionsPort>`，施工 C-3）：执行器照这一次调用抄好这个会话的编号、属主（`session/tools.md`「1d. 列会话」）。只有本机的主会话有，只有 `sessions` 用；没有的（测试里的假调用、子会话、场所会话、没装会话表的核心）是空的，`sessions` 照没有别的会话答 |
-| `usage` | 查用量的端口（`Arc<dyn UsagePort>`，施工 8-15）：执行器照这一次调用抄好这个会话的编号、属主、派出去那一刻内核算的上下文、这一轮的 `usage.currency`（`tools/session_usage.md`）。只有派的是 `session_usage`、核心开着用量汇总的才有；没有的是空的，`session_usage` 照什么都没花答 |
+| `sessions` | 列会话的端口（`Arc<dyn SessionsPort>`，施工 C-3）：执行器照这一次调用抄好这个会话的编号（`session/tools.md`「1d. 列会话」）。只有本机的主会话有，只有 `sessions` 用；没有的（测试里的假调用、子会话、场所会话、没装会话表的核心）是空的，`sessions` 照没有别的会话答 |
+| `usage` | 查用量的端口（`Arc<dyn UsagePort>`，施工 8-15）：执行器照这一次调用抄好这个会话的编号、派出去那一刻内核算的上下文、这一轮的 `usage.currency`（`tools/session_usage.md`）。只有派的是 `session_usage`、核心开着用量汇总的才有；没有的是空的，`session_usage` 照什么都没花答 |
 | `packages` | 看软件包的端口（`Arc<dyn PackagesPort>`，施工 F-10 上）：协议端点造会话、载入时交进来，执行器原样带进每一次调用（`tools/packages.md`）。只有 `packages` 用；测试里的假调用、核心没交的没有，`packages` 说看不了 |
 | `questions` | 提问的端口（`Arc<dyn QuestionPort>`，施工 D-2）：执行器照这一次调用造，交来的题经它送进内核、回答落了盘送回来（`session/tools.md`「1e. 问人」）。只有能问人的会话有（有人能回答的本机主会话），只有 `ask_user` 用；没有的（测试里的假调用、子会话、`miyu ask` 开的、场所会话）是空的，`ask_user` 照这里没人能回答出错 |
 | `nested` | 脚本调工具的端口（`Arc<dyn NestedPort>`，施工 M-2）：执行器照每一次直接调的 `shell` 造一个，挂在这次调用下面；`shell` 交给通道的那一头（施工 M-3），通道每收一个请求 `call(工具名, 参数原文)` 一次，等内核记过、落了盘答回来（`Nested`：`Settled` 带结局、拒绝的那一句、跑完的字和 `data`、有没有丢掉图，`Refused` 带没收下的原因）。别的工具、嵌套调用里跑的、测试里的假调用没有。嵌套调用里跑的 `Call` 没有 `jobs`、`agents`、`messages`、`sessions`、`usage`、`questions`、`goals`、`packages`、`nested`，有记忆、知识库、设置 |
@@ -119,7 +119,7 @@
 
 **留言的端口** `MessagePort`（`Send + Sync`，施工 7-7）：`send(to, message)` 交回一个 future，对方落了盘就给 `Ok`，没送出去给 `NotSent`：`NoParent` 没有父（主会话）、`NotYours` 不是这个会话派的子代理、`Stopped` 被停掉了、`Undelivered` 送不到（原因执行器记进运行日志）。`to` 是 `Recipient`：`Parent` 父会话，`Child(任务编号)` 自己派的子代理。两个端口比的是不是同一个。`MESSAGE_AGENT` 是那件工具的名字：造会话时照它把 `send_message` 从场所会话的工具面上拿掉（`session/tools.md`「工具面」）。
 
-**列会话的端口** `SessionsPort`（`Send + Sync`，施工 C-3，`tools/sessions.md`）：`this()` 是这个会话自己的编号；`list(旗)` 交回一个 future，给同一个属主的主会话（`MainSession`：编号 `id`、标题 `title`（空的是没有）、工作目录 `cwd`、忙不忙 `busy`、最近一次动静 `last_active`），不含这个会话自己、不排先后，列不出来给英文的一句原因。读下一个会话之前看旗，举起来了交回已经读到的。两个端口比的是不是同一个。`SESSIONS` 是那件工具的名字：造会话时照它把 `sessions` 从子会话、场所会话的工具面上拿掉（`session/tools.md`「工具面」）。
+**列会话的端口** `SessionsPort`（`Send + Sync`，施工 C-3，`tools/sessions.md`）：`this()` 是这个会话自己的编号；`list(旗)` 交回一个 future，给本机的主会话（`MainSession`：编号 `id`、标题 `title`（空的是没有）、工作目录 `cwd`、忙不忙 `busy`、最近一次动静 `last_active`），不含这个会话自己、不排先后，列不出来给英文的一句原因。读下一个会话之前看旗，举起来了交回已经读到的。两个端口比的是不是同一个。`SESSIONS` 是那件工具的名字：造会话时照它把 `sessions` 从子会话、场所会话的工具面上拿掉（`session/tools.md`「工具面」）。
 
 **查用量的端口** `UsagePort`（`Send + Sync`，施工 8-15，`tools/session_usage.md`）：`context()` 是派出去那一刻内核算的上下文（`ContextUse`：用了多少 `used`、窗口 `window`、压缩线 `line`，后两样可以没有），算不了的没有；`spent()` 交回一个 future，给这个会话到这时为止的用量和金额（`Spent`：请求数 `requests`、输入 `input`、其中命中缓存的 `cached`、输出 `output`、照币种排好先后的金额 `amounts`、没价格的次数 `unpriced`），不带子会话，查不了给英文的一句原因。两个端口比的是不是同一个。`SESSION_USAGE` 是那件工具的名字：造会话时照它把 `session_usage` 从场所会话的工具面上拿掉，派出去时照它决定要不要向内核要上下文。`find_session(写的, 一批编号)` 认她写的会话编号：整个编号相同，或者至少 8 位的小写十六进制、编号以它结尾；交回 `Found`：`One(编号)`、`None`、`Many`（`cross-session.md`「对外的样子」会话的短编号；C-4、C-5 照它认）。
 
@@ -151,7 +151,7 @@
    2. 快照里有、核心的目录里没有这件（核心升级拿掉了，老会话照样调）：不派，当场交回出错的结果（下面「执行器替工具写的两句」），没有用时。
    3. 在自己的任务里跑 `run` 交回的 future，记下开始跑的那一刻。
    4. `push` 的每一段，这次调用还在跑的，送回会话，推给头（瞬时的 `tool.progress`），不落盘；叫停了的不理。
-   5. 跑完：效果里改前改后的内容在阻塞线程里存成 blob（这个账号的 `blobs/`，`store.md`），换成哈希；存不下来的（磁盘满了之类）照样算出哈希，写一条运行日志。交回的图片也存成 blob，换成图片块接在 `blocks` 后面；图片存不下来的，当这次调用崩了（第 6 条）：少了字节的图，以后每次请求都发不出去。先照效果记下她看过的，再把 `blocks`、`error`、`human`、`stopped` 原样交给内核，用时是从开始跑到这里的毫秒数。
+   5. 跑完：效果里改前改后的内容在阻塞线程里存成 blob（数据根的 `blobs/`，`store.md`），换成哈希；存不下来的（磁盘满了之类）照样算出哈希，写一条运行日志。交回的图片也存成 blob，换成图片块接在 `blocks` 后面；图片存不下来的，当这次调用崩了（第 6 条）：少了字节的图，以后每次请求都发不出去。先照效果记下她看过的，再把 `blocks`、`error`、`human`、`stopped` 原样交给内核，用时是从开始跑到这里的毫秒数。
    6. 工具 panic（存 blob 那一步 panic 的也算）：交回出错的结果，带用时；会话照常往下走。
 4. 内核把它记成 `tool.result`：`error` 是真的，状态是 `error`，不然是 `ok`；`by` 是那次调用。`blocks` 给模型看，`human`、`effects` 不发给模型。
 5. 一起跑的（内核照访问类别定）：连着的只读调用一起派，各跑各的任务；不是只读的，等它前面的都有了结果才派，它没结果，后面的都等着。
@@ -210,7 +210,7 @@
 
 每一份以一个换行结尾；登记在 `26-提示词.md` 第十节。
 
-**同名覆盖**（施工 OV-1 上，`miyu_policy::overrides`，设计 00 第五节、`25-工具加载.md` W7）：人能改工具说明和参数说明，工具名不能改。两层 `system/tools/<工具>.toml`、`home/<账号>/tools/<工具>.toml`，只认 `description` 和 `[parameters.<名字>] description`，自己的压着系统的、一格一格压，没写的照出厂。给模型看的字照规矩查：非空，说明最多 2000 字、参数说明最多 500 字，除了换行没有控制字符，CJK 不过半；写坏的整份不认、照下一层，`check` 报 `override_bad`。参数说明改进参数格式里那个参数，参数格式里没有的整件不换（照出厂、记一行运行日志）；没写参数说明的参数格式字节不变。只换会话的工具面（`Agents::face`，造会话、回合开始换快照时照属主读），工具目录本身不动：脚本里调、`miyu call --schema` 照旧是出厂的。盯文件、开着的会话下一轮换上、显示名的覆盖在 OV-1 下。
+**同名覆盖**（施工 OV-1 上，`miyu_policy::overrides`，设计 00 第五节、`25-工具加载.md` W7）：人能改工具说明和参数说明，工具名不能改。数据根里的 `tools/<工具>.toml`，只认 `description` 和 `[parameters.<名字>] description`，一格一格压在出厂的上面，没写的照出厂。给模型看的字照规矩查：非空，说明最多 2000 字、参数说明最多 500 字，除了换行没有控制字符，CJK 不过半；写坏的整份不认、照下一层，`check` 报 `override_bad`。参数说明改进参数格式里那个参数，参数格式里没有的整件不换（照出厂、记一行运行日志）；没写参数说明的参数格式字节不变。只换会话的工具面（`Agents::face`，造会话、回合开始换快照时读），工具目录本身不动：脚本里调、`miyu call --schema` 照旧是出厂的。盯文件、开着的会话下一轮换上、显示名的覆盖在 OV-1 下。
 
 **工具面的预算**（`10-自带软件.md` 第九节，施工 4-10）：`resources/software/basesystem/tools/` 下的几份说明（说明和参数）加起来不超过 7600 字节，回车 `\r` 不算。预算是实测加一成：施工 C-3 加了 `sessions` 以后十二件的边际份量合计 1852 个 token、6858 字节（2026-10-01 量，`sessions` 95），约 3.7 字节一个 token，加一成是 2037 个 token；仓库里没有分词器，所以照字节守。加工具、改说明超了，重新量过再改预算。
 
@@ -249,7 +249,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-policy/src/overrides/tests.rs`、`crates/miyu-store/src/overrides/tests.rs`、`crates/miyu-endpoint/tests/tool_override.rs`（施工 OV-1 上） | 只盖写了的格、自己的压着系统的、没写参数说明的字节不变、参数不在的整件不换、写坏的几种说为什么；只认 `<工具名>.toml`；真核心开会话工具面照两层换、写坏的照出厂、`check` 报 |
+| `crates/miyu-policy/src/overrides/tests.rs`、`crates/miyu-store/src/overrides/tests.rs`、`crates/miyu-endpoint/tests/tool_override.rs`（施工 OV-1 上） | 只盖写了的格、没写参数说明的字节不变、参数不在的整件不换、写坏的几种说为什么；只认 `<工具名>.toml`；真核心开会话工具面照覆盖换、写坏的照出厂、`check` 报 |
 | `crates/miyu-tool/src/catalog/tests.rs` | 照名字排、空目录、同名、名字的写法（空的、65 个字节、空格、中文、`.`、`/`；64 个字节的行）、参数格式不是对象、报排在前面的那一件、参数格式一字不差；照以前的名字找得到、以前的名字不进工具面、以前的名字撞名（施工 7-5 再补） |
 | `crates/miyu-policy/src/tools/tests.rs` | 快照里的工具面照名字排、读得回来；没有工具的快照字节不变；两件同名造不出策略；两句带上工具名；两句写坏了说是哪一份 |
 | `crates/miyu-session/tests/tools.rs` | 请求照名字带工具面、载入的老会话照快照发、在这一轮的工作目录里跑、出错的结果、执行中的输出推给头不落盘、两件只读的一起跑、打断丢掉在跑的、目录里没有的、崩了会话照常、会话停了丢掉在跑的 |

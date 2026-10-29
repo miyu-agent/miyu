@@ -1,6 +1,6 @@
 # Personas and presets: `persona.*`, `preset.*`
 
-A persona is "who she is": the character prompt, example dialogue, roleplay reminders, avatar, theme color. A preset is "what she can use": which features are on, which tools are off. Both are files in three stacked layers: built-in, system, and the admin's home; changes are written only to the home layer, and a same-named file there covers the ones below. Chinese version: [personas.md](personas.md).
+A persona is "who she is": the character prompt, example dialogue, roleplay reminders, avatar, theme color. A preset is "what she can use": which features are on, which tools are off. Both are files in stacked layers: built-in, from packages, and yours (`personas/`, `presets/` in the data root); changes are written only to your layer, and a same-named file there covers the ones below. Chinese version: [personas.md](personas.md).
 
 | Method | What it does |
 |---|---|
@@ -85,7 +85,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 
 ## `persona.delete`
 
-**Params**: `persona`. **Response**: `{"remains"}`: `true` when built-in or system layers remain and it goes back to them (shown as "restore defaults"); `false` when the persona is gone. Your home copy moves to the trash for 7 days.
+**Params**: `persona`. **Response**: `{"remains"}`: `true` when built-in or package layers remain and it goes back to them (shown as "restore defaults"); `false` when the persona is gone. Your copy moves to the trash for 7 days.
 
 **Errors**: `nothing_to_delete` (you have no layer); `local_only`.
 

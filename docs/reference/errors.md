@@ -29,7 +29,7 @@
 
 ## 连接与登录
 
-`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`password_not_set`（还没设访问密码）、`login_throttled`（都回完就断开）、`setup_first`；`not_permitted`（包自己的账号改全机的东西）；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
+`protocol_mismatch`、`bad_token`、`bad_code`、`bad_login`、`bad_password`、`password_not_set`（还没设访问密码）、`login_throttled`（都回完就断开）、`setup_first`；`not_permitted`（关在沙盒里的会话经端口装、卸、升级软件包）；`login.redeem` 的票没有、过期了、用过了是 `bad_ticket`。见 [连接](connection.md)。
 
 ## 会话
 
@@ -95,7 +95,7 @@
 |---|---|---|
 | `unknown_persona`、`unknown_preset` | 没有这个人格、预设 | |
 | `persona_invalid`、`preset_invalid` | 文件写错了 | `problem`、`message`、`line` |
-| `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 是账号头像，施工 AV-1） | `current` |
+| `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 是你的头像，施工 AV-1） | `current` |
 | `nothing_to_delete` | 你那一层本来就没有 | |
 | `avatar_not_image`、`avatar_too_big`、`background_not_image`、`background_too_big` | 头像、背景图不是图、太大 | 量到的和上限 |
 
@@ -103,8 +103,8 @@
 
 | `reason` | 什么时候 | `data` |
 |---|---|---|
-| `unknown_schedule` | 这个账号没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`（施工 J-1 下） | |
-| `too_many_schedules` | 这个账号的定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`（施工 J-3 上）。先删几个，已有的照跑 | |
+| `unknown_schedule` | 没有这个定时任务：`schedule.cancel`、`schedule.pause`、`schedule.resume`（施工 J-1 下） | |
+| `too_many_schedules` | 定时任务已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）：`schedule.add`（施工 J-3 上）。先删几个，已有的照跑 | |
 | `unknown_project` | 没有这个项目：项目的方法，`session.create`、`session.set_meta` 写的 `project` | |
 
 ## 软件包、扩展、命令

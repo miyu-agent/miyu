@@ -26,7 +26,7 @@
 | `crates/miyu-store/src/recall.rs` | 一个检索库：开（坏了删掉重建）、放进一条、拿掉一条、照关键词找（R-1）；一批和照到哪一起写、拿掉一个来源（R-2 上） | R-1 |
 | `crates/miyu-store/src/recall/vectors.rs` | 向量表：放、照模型列出缺的、读出来逐条算最像的（第三条第 1、2 款） | R-5 下 |
 | `crates/miyu-store/src/recall/uses.rs` | 用到的表：照记忆分组数次数、取最近一次（`memory.md` 第八条） | R-4 下 |
-| `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款）；每个会话从哪来（属主、是不是主会话，施工 E-6） | R-13 下、E-6 |
+| `crates/miyu-store/src/recall/places.rs` | 场所的表：场所会话在哪个场所，记、列（`memory.md` 第一条第 1 款）；每个会话从哪来（是不是主会话，施工 E-6） | R-13 下、E-6 |
 | `crates/miyu-store/src/recall/stamps.rs` | 指纹表：每个来源一个指纹，整份换掉一个来源、拿掉一个来源、只记指纹不动块（跳过的文档，W-15 再补；`knowledge.md`「怎么走」第三条） | K-1 上 |
 | `crates/miyu-session/src/memory/vectors.rs` | 算问句的向量（限时）、在后台补这一间缺的；照调的一方手里的配置挑本机、远程、关（第三条第 4 到 6 款，R-5 补加远程）；知识库的索引也照它补（`fill_knowledge`，K-2，`knowledge.md` 第四条） | R-5 下 |
 | `crates/miyu-core/src/embed.rs` | 照装了的小程序包拼好 `Embedder` 要的几样（第四条第 1 款；R-5 三补改成照包） | R-5 下 |
@@ -91,7 +91,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 - R-3 上加一张 `buried(key TEXT PRIMARY KEY)`：墓碑，版本加一成 3。
 - 向量表随 R-5 加，版本跟着加一：派生的，删掉重建，不写迁移。
 - R-13 下加一张 `places(source TEXT PRIMARY KEY, venue TEXT)`：回合库里场所会话在哪个场所（`place`、`places`），本机的会话不记；搜以前的对话照它挑（`memory.md` 第一条第 1 款、第九条）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上。
-- E-6 加一张 `origins(source TEXT PRIMARY KEY, owner TEXT NOT NULL, main INTEGER NOT NULL)`：回合库里每个会话的属主、是不是主会话（`session.created` 不带 `parent`），本机的、场所的都记；接上回合索引时记一次（`places.rs` 的 `origin`、`origins`），搜以前的对话照它判她打不打得开那个会话（`memory.md`「工具」）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上，以前的库里没接上过的会话没有这一行（调的一方照场所判）。
+- E-6 加一张 `origins(source TEXT PRIMARY KEY, main INTEGER NOT NULL)`（SU-6 上去掉属主一列）：回合库里每个会话是不是主会话（`session.created` 不带 `parent`），本机的、场所的都记；接上回合索引时记一次（`places.rs` 的 `origin`、`origins`），搜以前的对话照它判她打不打得开那个会话（`memory.md`「工具」）。`forget(来源)` 一起拿掉；同向量表不换版本，开库、重建以后补上，以前的库里没接上过的会话没有这一行（调的一方照场所判）。
 - K-1 上加一张 `stamps(source TEXT PRIMARY KEY, stamp TEXT NOT NULL)`：知识库的索引里每个文档的指纹（`knowledge.md`「对外的样子」索引那一段）。来源和块的键照 `#` 分（`a.md` 是 `a.md.bak` 的前缀也不碍事）；整份换掉、拿掉一个来源照键的范围删（`<来源>#` 到 `<来源>$`，走 `key` 上的索引；K-4 前照 `substr` 比，每个来源扫一遍整张表，3000 篇的知识库头一次补 5 秒上下，改了以后 0.6 秒上下），范围里只删 `#` 后面全是数字的：名字是它加 `#` 开头的另一篇（`a.md#2.md`，块是 `a.md#2.md#0`）也落在范围里，不是它的（鲁棒性 B-6）。同向量表不换版本，开库、重建以后补上。
 - R-4 下加一张 `uses(key TEXT, memory TEXT, at INTEGER, PRIMARY KEY (key, memory))`：回合库里记一条记忆用到过的每一次，键是 `会话/事件的序号`，`at` 是那一条事件的时刻（毫秒）。同向量表不换版本，每次开库、重建以后照 `CREATE TABLE IF NOT EXISTS` 补上（`memory.md` 第八条）。
 
@@ -187,7 +187,7 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 7. **远程**（R-5 补，`embed/remote.rs`；怎么配、怎么取端点、怎么记账 2026-10-09 核心的主会话定）：`models.embedding` 写 `<供应商>/<模型>` 的，一次算一句：
    - 端点：照调的一方手里的配置找那一家，拼地址、key、另配的头（`route/endpoint.rs`，和 `provider.test` 同一段），不走路由、池、冷却；认证头照这一家的驱动写，另配的头照种子 `embedding` 换。客户端照地址挑：落在本机的不走代理，别的照环境变量（`ModelData::fetcher_for`）。这一家没配、地址或 key 取不到、没有客户端的算「用不了」。
    - 发：`POST <地址>/embeddings`，`{"model":"<模型>","input":"<字>"}`，一次最多等 10 秒（问句照旧最多等 1 秒，第三条第 4 款），回应最多 4 MiB。读 `data[0].embedding`、归一化（各家不一定归一化过）。发不出去、回的不是 2xx、超时、读不懂、没有向量、长度是零的算「这一条算不出」。一次一句：补的时候一条一条发，量出来慢了再想批量。
-   - 记账：报了 `usage.prompt_tokens` 的照一次性调用记一笔 `usage.oneshot`（用途 `embedding`、供应商、模型、输入 token，有价格的照这个模型的价格算金额，`models.md`「怎么走」第九条第 4 条），记在调的那个账号名下（她的工具是会话的属主，协议是连上来的管理员）；回的向量用不了的（全是零、没有）也记，那一家照样收了钱；没报的、出错的、读不懂的不记。问句等不到的那一条照样在后台算完、照样记。
+   - 记账：报了 `usage.prompt_tokens` 的照一次性调用记一笔 `usage.oneshot`（用途 `embedding`、供应商、模型、输入 token，有价格的照这个模型的价格算金额，`models.md`「怎么走」第九条第 4 条）；回的向量用不了的（全是零、没有）也记，那一家照样收了钱；没报的、出错的、读不懂的不记。问句等不到的那一条照样在后台算完、照样记。
    - 日志：每一次记一行，目标 `miyu::session`，和一次性入口那一行同一个写法：成了 `INFO model call purpose=embedding provider=… model=… input=… took_ms=…`，没成 `INFO model call failed purpose=embedding provider=… model=… took_ms=… error=…`；原话不带地址、key。
 
 ### 出错
@@ -225,8 +225,8 @@ R-5 补做好的：
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-session/tests/memory_remote.rs` | 第三条第 5、6 款，第四条第 7 款，假服务器当那一家：写了 `<供应商>/<模型>` 的照它算问句、补向量，一个字都不重合的照意思找得到；请求是 `POST /v1/embeddings`，带着认证、模型名、那一句；向量照 `<供应商>/<模型>` 存、归一化过；请求带着档案另配的头（种子是 `embedding`）；报了用量的每一次记一笔 `usage.oneshot`（用途 `embedding`，记在属主名下，读的是 `prompt_tokens`），没报的不记；问句等不到的等 1 秒照关键词找；补的时候出错的跳过，算成一条的重新数，读不懂、全是零、没有向量连着三条，这一回不补了、后面的不发；出错的、读不懂的不记账，全是零的报了用量照记 |
-| `crates/miyu-endpoint/tests/memory_meaning.rs` | 第四条第 7 款：协议照这时的配置发给远程那一家，补齐以后照意思找得到，用量记在管理员名下 |
+| `crates/miyu-session/tests/memory_remote.rs` | 第三条第 5、6 款，第四条第 7 款，假服务器当那一家：写了 `<供应商>/<模型>` 的照它算问句、补向量，一个字都不重合的照意思找得到；请求是 `POST /v1/embeddings`，带着认证、模型名、那一句；向量照 `<供应商>/<模型>` 存、归一化过；请求带着档案另配的头（种子是 `embedding`）；报了用量的每一次记一笔 `usage.oneshot`（用途 `embedding`，读的是 `prompt_tokens`），没报的不记；问句等不到的等 1 秒照关键词找；补的时候出错的跳过，算成一条的重新数，读不懂、全是零、没有向量连着三条，这一回不补了、后面的不发；出错的、读不懂的不记账，全是零的报了用量照记 |
+| `crates/miyu-endpoint/tests/memory_meaning.rs` | 第四条第 7 款：协议照这时的配置发给远程那一家，补齐以后照意思找得到，用量照记 |
 | `crates/miyu-http/tests/post.rs` | 第四条第 7 款的发：带着头和 JSON 的请求体、交回整个响应体；回的不是 2xx 的带状态码和响应体；超过上限的、超时的出错；连不上的原话不带地址、key |
 
 R-5 下做好的：
@@ -263,7 +263,7 @@ R-1 做好的：
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-recall/src/terms/tests.rs` | 第一条：两两切加单字、只有一个字的段、汉字假名连成一段、片假名的中点和标点断开一段、英文数字照 `unicode61`、查询只出两两的、英文转小写、去重、64 个上限、FTS5 的关键字照普通的词、全是标点的是 `None` |
-| `crates/miyu-store/tests/recall.rs` | 第二条（R-3 上加墓碑：一批里埋、揭，埋两次、揭没埋的不碍事；出处活不活：撤销的那一轮、删掉的会话、别的人格的库里没埋；R-3 三补：会话照目录判，回合库删掉重建以后进了回收处的照样死的、恢复的又活了、别的账号名下的会话也认得出）：建、重开、坏了删掉重建、版本不对重建；放进、换掉、拿掉以后搜不到；两个字的词搜得到（trigram 搜不到的那种）、一个字搜得到；中了越多的越靠前，名次从 0 数；中英混着的；只给几条、切不出词的找不到；数据根在临时目录。量尺 `measure_ten_thousand_sentences`（`#[ignore]`） |
+| `crates/miyu-store/tests/recall.rs` | 第二条（R-3 上加墓碑：一批里埋、揭，埋两次、揭没埋的不碍事；出处活不活：撤销的那一轮、删掉的会话、别的人格的库里没埋；R-3 三补：会话照目录判，回合库删掉重建以后进了回收处的照样死的、恢复的又活了）：建、重开、坏了删掉重建、版本不对重建；放进、换掉、拿掉以后搜不到；两个字的词搜得到（trigram 搜不到的那种）、一个字搜得到；中了越多的越靠前，名次从 0 数；中英混着的；只给几条、切不出词的找不到；数据根在临时目录。量尺 `measure_ten_thousand_sentences`（`#[ignore]`） |
 
 ### 出处
 

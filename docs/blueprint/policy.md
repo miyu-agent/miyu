@@ -54,7 +54,7 @@
 | `peers` | 对象 | 别的会话发来的话怎么防刷屏（施工 C-2，`cross-session.md`「对外的样子」）：`burst` 同一个发话方一个窗口里最多几句、`window` 窗口多少秒、`unread` 没听到的最多几句，现在是 5、600、50（数是估的，待 C-7 实测）。排在 `title` 后面。以前造的快照里没有，读成没有、不写：照出厂的数，防刷屏不能因为会话旧就不管。施工 C-6 加两格，排在后面：`watch_hours` 订了多久没等到就作废（小时，出厂 12）、`status_chars` 通知那一行最多几个字（出厂 200）；C-2 时造的快照里没有这两格，读成没有、不写，照出厂的数 |
 | `memory` | 字符串 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`、`session`、`off`，造会话时定（`with_memory`），新造的都写明；排在 `peers` 后面、最后。以前造的快照里没有，读成没有、不写，照 `persona`；认不出的照 `off` |
 
-**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、个人设置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
+**`ToolEntry`**：`name`、`description`、`parameters`（参数的 JSON Schema，原样的 JSON）、`access`（`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前）、`install`（施工 F-10 下），不认识的原样留着），照这个先后；`clicall`（施工 M-2：脚本里能调，来处的默认、配置的 `clicall.*` 算好了写进来；预设关了「脚本调工具」的一律假，施工 M-6）是真的才写，以前造的快照读成假，字节不变（以前的会话里脚本一件都调不了，2026-10-20 项目主人定）。以前造的快照里还可能有 `need_load`（施工 L-1，FL-1 拆了）：读的时候不认，照完整格式发。
 
 **`CoreTexts`**，每一格是 `resources/core/` 下一份文件的原文：
 
@@ -97,7 +97,7 @@
 | `TITLE` | 起标题用的数的出厂值：1024 个 token、50 个字、试 2 次（施工 3-8 五补）：拼快照时写进 `title` |
 | `PEERS` | 防刷屏的数的出厂值：5 句、600 秒、50 句（施工 C-2），12 小时、200 个字（施工 C-6）：拼快照时写进 `peers`，以前造的快照没有的照它 |
 | `to_bytes()`、`hash()`、`from_bytes(字节)` | 规范的字节、内容哈希、读回来 |
-| `session_created(属主, 场所, 权限)` | 造会话那一条的 `body`：`owner`、`venue`、`policy`（这份快照的哈希）、`permission`、`oneshot: false` |
+| `session_created(场所, 权限)` | 造会话那一条的 `body`：`venue`、`policy`（这份快照的哈希）、`permission`、`oneshot: false` |
 | `policy()` | 照快照造出内核的 `Policy` |
 | `driver_texts()` | 驱动的五句占位（`drivers/openai-chat.md`） |
 | `run_texts()` | 执行器替工具写的两句：`unavailable(工具名)`、`crashed(工具名)` |
@@ -136,14 +136,14 @@
 
 1. 照人格读原文；拼快照，带上核心工具目录里每一件的规格（名字、说明、参数格式、访问类别）。人格是 `session.create` 写的，不写是 `engineer`；`attended` 是握手时头报的能不能输入（`protocol.md`）。不能派子代理的会话（不在本机、到了深度上限）不带 `subagent`；子会话带上场所说明（施工 7-5，`session/tools.md`「工具面」）。快照的格式不变：施工 8-8 给 `subagent` 加了参数 `tier`，施工 8-8 补换成 `pool`：`pool` 那一格照造会话时的配置拼好（列哪几个池、每个一行说明，一个都没有的拿掉，`session/tools.md`「工具面」、`tools/subagent.md`「会话开局时拼 `pool`」），快照里存的是拼好的。以前造的照旧，前缀一个字节不变；同一个核心上开着的几个会话，这一格可以不一样。施工 8-15 目录里多了 `session_usage`：新造的本机会话工具面多这一件，群里的没有；以前造的快照没有它，照快照发，前缀一个字节不变。
 2. 先造一遍策略、驱动的占位、执行器的两句、权限策略的三句：哪一样造不出来，会话造不成，什么都不存。
-3. 快照存成属主家目录里的 blob。先落 blob，再写引用它的事件。
+3. 快照存成数据根里的 blob。先落 blob，再写引用它的事件。
 4. 建会话目录和日志，内核记第 1 条 `session.created`：`owner`、`venue`、`policy`（快照的哈希）、`permission`，一次性的再带 `"oneshot":true`。
 5. 以后这个会话的工具面一直照快照发，核心的目录变了也不变。
 
 **载入**（`open.rs` 的 `load`）
 
 1. 打开日志；第 1 条不是 `session.created` 的，载入不了。
-2. 照它的 `policy` 从属主的 blob 里取字节。取的时候核对内容哈希：没有、对不上、读不了，都载入不了。
+2. 照它的 `policy` 从 blob 里取字节。取的时候核对内容哈希：没有、对不上、读不了，都载入不了。
 3. 读回快照，造策略、驱动的占位、执行器的两句、权限策略的三句，交给内核从日志重建。
 4. 工具面照快照；执行时照名字在核心的工具目录里找：快照里有、目录里没有的，结果写 `unavailable` 那一句（`session/tools.md`）。
 
@@ -183,7 +183,7 @@
 {"persona":"engineer","system":"You are a helpful software engineer.","tools":[{"name":"edit","description":"…","parameters":{"type":"object"},"access":"write"},{"name":"read",…}],"core":{"checkpoint_open":"<conversation-checkpoint>\n…","checkpoint_close":…,"turn_ended":{…},"facts":{…},"tool_results":{…},"drivers":{…},"permissions":{…},"compaction":{"summarize_task":"Respond with text only. …"}},"step_limit":null,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"image":2000,"file":2000,"tail":16000}}
 ```
 
-- blob 的位置：`home/<属主>/blobs/<哈希的前两位>/<64 位十六进制>`（`store.md`）。
+- blob 的位置：`blobs/<哈希的前两位>/<64 位十六进制>`（`store.md`）。
 - `session.created` 的样本：`docs/designs/samples/events/session.created.jsonl`。
 - 给模型看的原文见 `kernel/request.md`、`kernel/tools.md`、`drivers/openai-chat.md` 的「样子」，登记在 `26-提示词.md` 第十节。
 
@@ -251,5 +251,5 @@
 - 示范对话：快照里还没有这一格（`03-事件模型.md` E5，`16-人格与预设.md`）。
 - system 还没有的几块：别的场所的说明、软件包的几行、技能与知识库的列表、子代理能选的人格（`26-提示词.md` 第四节）。
 - 没人盯着的场所（例如群聊）的步数上限，随预设定；出厂不设（`02-内核.md` 第六节「工具怎么调、下一步怎么走」第 6 条）。
-- 预设、人格的覆盖链：自己的家目录、系统区、出厂的（`16-人格与预设.md` 第四节）；现在只读资源目录。
+- 预设、人格的覆盖链：你的、包带的、出厂的（`16-人格与预设.md` 第四节）；现在只读资源目录。
 - 会话中途换快照：`session.policy_changed` 带新的 `policy`，下一个回合开始时换（`02-内核.md` K3，`03-事件模型.md` 第三节）。

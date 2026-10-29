@@ -49,7 +49,7 @@
 3. 列出：照 `package.list` 一个一行（`listed.txt`：编号、名字、一句说明）；关着的（`enabled` 是假）`listed-off.txt`，卸掉了的出厂包 `listed-removed.txt`，清单读不了的 `listed-broken.txt`（哪里不对）。没写说明的那一格空着，不留两个空格。说法 `packages/listed`。
 4. 看一个：照原样交回核心那一份 JSON（紧凑，`package.info` 加上列表那一项的 `name`、`summary`、`kind`），一行；没有这个包 `unknown.txt`。说法 `packages/shown`（字段 `package`）。
 5. 看包文件夹：装得上的 `inspected.txt` 一行，下一行接核心看一眼的那一份 JSON（`package.install` 带 `preview` 的回应，`protocol.md`）：JSON 另起一行，模板里换进去的字会转义引号。清单写错的照真装那样拒：`invalid-line.txt`（知道第几行）、`invalid.txt`，哪里不对照英文。说法 `packages/inspected`（字段 `path`）。
-5½. 和装着的包撞了名（`package_conflict`，施工 F-8 六补修，`packages.md`「冲突」）：`conflict.txt` 一行说装不上，下面照 `conflict-line.txt` 一处一行：哪一样（协议的写法 `skill`、`tool`……）、什么名字、在哪个包里；人格、预设撞了出厂、系统区、家目录的，包名那一格写那一层（`shipped`、`system`、`home`，施工 P-11 下）。只给原因代码她改不了自己的包（终端的会话发现）。`package` 装包撞了的也是这几句。说法 `packages/failed`。
+5½. 和装着的包撞了名（`package_conflict`，施工 F-8 六补修，`packages.md`「冲突」）：`conflict.txt` 一行说装不上，下面照 `conflict-line.txt` 一处一行：哪一样（协议的写法 `skill`、`tool`……）、什么名字、在哪个包里；人格、预设撞了出厂的、你的，包名那一格写那一层（`shipped`、`home`，施工 P-11 下）。只给原因代码她改不了自己的包（终端的会话发现）。`package` 装包撞了的也是这几句。说法 `packages/failed`。
 6. 别的拒绝（读不了 `path_unreadable`、和出厂的撞名 `package_exists`、核心正在停 `shutting_down`）：`refused.txt`，看的是什么、原因代码照协议原样。说法 `packages/failed`。
 7. 叫停的旗举起来了：交回「停下了」。
 

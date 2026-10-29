@@ -59,7 +59,7 @@ Redirected to https://example.com/new.        ← 只有跟过跳转的，空一
 2. 读成网址：读不成、不是 `http`/`https` 的，`not-a-url`，不碰网络。
 3. 规矩第一次用时读（`link_preview.json`），读不懂的记一条 `WARN web fetch not ready`，这个核心的生命周期里不再试，每次都回 `not-ready`。
 4. 同一个网址（读成网址以后的写法）在 `keep_seconds`（600）之内抓过的，照记着的那一份分页，不重抓。记满 `keep_entries`（32）份整个清空。一个核心一份，各会话共用；替机器主人抓的、替别人抓的分开记（施工 MB-2，见下一条）。
-   - 替谁抓（施工 MB-2，设计 06 U25 第 2 条「成员上网不碰本机和局域网」，2026-10-22 项目主人定）：这一轮开口的是机器主人（调用的事实 `Caller::owner`：本机的会话属主是管理员，场所会话照这一轮开口的人）的照这一页；别的（成员、群里的人，拿不准的也算）另有两条：系统配置 `net.internal_domains` 里的域名和它的子域名一律不去，先查它再看记着的，每一跳都查（跳过去的也拒）；本机解析不出来、要交给代理的，主机名是一个词的（`nas`）、带内网后缀的（`link_preview.json` 的 `internal_suffixes`：`.local`、`.lan`、`.internal`、`.intranet`、`.corp`、`.home`、`.home.arpa`、`.localdomain`）不交，别的照旧交（被墙的境外站照样抓得到）。这两条拦下的都是 `blocked`，不请别家代抓（内部的网址不发给第三方）。
+   - 替谁抓（施工 MB-2，2026-10-22 项目主人定）：这一轮开口的是主人（调用的事实 `Caller::owner`：本机的会话是，场所会话照这一轮开口的人）的照这一页；别的（群里的人，拿不准的也算）另有两条：系统配置 `net.internal_domains` 里的域名和它的子域名一律不去，先查它再看记着的，每一跳都查（跳过去的也拒）；本机解析不出来、要交给代理的，主机名是一个词的（`nas`）、带内网后缀的（`link_preview.json` 的 `internal_suffixes`：`.local`、`.lan`、`.internal`、`.intranet`、`.corp`、`.home`、`.home.arpa`、`.localdomain`）不交，别的照旧交（被墙的境外站照样抓得到）。这两条拦下的都是 `blocked`，不请别家代抓（内部的网址不发给第三方）。
 5. 抓（`Fetcher::document`）：每一跳过地址闸（`net.md`「地址闸」），不走代理的钉住解析好的地址，自己跟跳转，最多 5 跳；每一跳时限 `timeout_seconds`（20），读到 `max_bytes`（5 MiB）为止，超了截断、记下 `cut`。请求头照 `user_agent`、`accept_language`，`Accept` 照 `document.accept`。
    - 闸拦下的：`blocked`；连不上、超时：`unreachable`；跳太多：`redirects`。
    - 人机验证页（`net.md` 第 13 条那一套认法，不看状态码）：`challenge`。

@@ -27,7 +27,7 @@ Other methods go through one table: those for people only (answering for the per
 - **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder), `MIYU_PACKAGE_STATE` (this package's state directory, already created).
 - **Working directory**: the package's state directory `state/packages/<id>/`.
 - **Stderr**: appended to `state/logs/<id>.stderr`; over 1 MiB it is moved to `.old` first.
-- **Handshake**: send `hello` as usual, without credentials. The response's `account` is its account (the system account if it declares one, otherwise `admin`), and `config` holds the final values of its own settings (secrets as real values).
+- **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
 - **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.
 
@@ -180,7 +180,7 @@ To let other extensions call a method, list it in the manifest's `[export] metho
 
 ## `package.emit`
 
-Extension → core (construction IM-1 lower-middle 2): `{"event", "data"?}` pushes to connections of the account it acts for that subscribed with `subscribe {"stream": "package", "package": <its id>}`; they get `package.event {"package", "event", "data"}`. Pages update from it instead of polling. Response `{}`, also when nobody is subscribed. `event` follows the method-name rules (starts with a lowercase letter; lowercase letters, digits, `_`, `.`, `-`; at most 64), `data` is at most 256 KiB as JSON; otherwise `bad_params`. Other connections get `not_an_extension`. Not stored, not replayed.
+Extension → core (construction IM-1 lower-middle 2): `{"event", "data"?}` pushes to connections that subscribed with `subscribe {"stream": "package", "package": <its id>}`; they get `package.event {"package", "event", "data"}`. Pages update from it instead of polling. Response `{}`, also when nobody is subscribed. `event` follows the method-name rules (starts with a lowercase letter; lowercase letters, digits, `_`, `.`, `-`; at most 64), `data` is at most 256 KiB as JSON; otherwise `bad_params`. Other connections get `not_an_extension`. Not stored, not replayed.
 
 ## `search.query`
 

@@ -18,7 +18,7 @@
 | `crates/miyu-basesystem/src/attach.rs`（施工 C-9） | 读她带的附件：最多 8 个，照 `read` 的规矩过权限链、安全打开、读到上限多一个字节为止，照 `miyu_tool::attachment` 认，交回 `Attached`（名字、真实的位置、内容、种类） |
 | `crates/miyu-tool/src/messages.rs` | 发话的端口 `MessagePort`、发给谁 `Recipient`（多 `Session`）、送到了 `Delivered`（`Sent`/`Held`）、没送出去 `NotSent`，那件工具的名字 `SEND_MESSAGE`、以前的名字 `SEND_MESSAGE_FORMERLY`（`tools/interface.md`） |
 | `crates/miyu-session/src/messages.rs` | 执行器这一头：照内核交的这个会话派出去的子代理认编号，经会话表的端口送过去；送到了再问一句对方是不是没人看着的一次性会话（`SessionPort::held`）；拒绝的原因码译成 `NotSent`（`session/tools.md`「父子之间留言」） |
-| `crates/miyu-session/src/attached.rs`（施工 C-9） | 附件存进属主的 blob，接在那一句字后面造成图片块、文件块；派子代理的在 `agents/spawner.rs` 里先存好再造子会话 |
+| `crates/miyu-session/src/attached.rs`（施工 C-9） | 附件存进 blob，接在那一句字后面造成图片块、文件块；派子代理的在 `agents/spawner.rs` 里先存好再造子会话 |
 | `crates/miyu-session/src/spawn.rs` | 会话表的端口多一个方法 `SessionPort::held`：对方这时是不是没人看着的一次性会话 |
 | `crates/miyu-session/src/handle.rs`、`actor.rs`、`actor/mail.rs` | `Handle` 多 `oneshot()`、`watched()`：和 `busy()` 一样由 actor 的订阅者数算出来、共用一面旗 |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表那一头 `held` 的实现：照会话表里的 `Handle` 看。`watch`（施工 C-6）：找到被等的会话（没载入的先载入），把「谁在等」交给它的 actor |
@@ -26,7 +26,7 @@
 | `crates/miyu-session/src/peers.rs`、`actor/watchers.rs` | 订、计时、再订（等的这一边），名单和发通知（被等的那一边），施工 C-6，`session/tools.md`「订、计时、再订」、`session/actor.md`「被等的名单」 |
 | `crates/miyu-basesystem/src/attach.rs` | 附件（施工 C-9，`subagent` 共用）：要读的路径（`targets`）、照这一轮的工作目录读、照内容认，最多 8 个，读不成、太大的交回那一句 |
 | `crates/miyu-tool/src/attachment.rs` | 一个附件是什么、上限 20 MiB、`Attached`（施工 C-9 从协议端点挪来，`blob.put` 共用） |
-| `crates/miyu-session/src/attached.rs` | 执行器这一头：附件存成属主的 blob，造成图片块、文件块接在字后面（施工 C-9） |
+| `crates/miyu-session/src/attached.rs` | 执行器这一头：附件存成 blob，造成图片块、文件块接在字后面（施工 C-9） |
 | `resources/software/basesystem/attachments/*.txt` | 附件超过 8 个、太大的两句（施工 C-9，`subagent` 共用） |
 | `resources/software/basesystem/tools/send_message.json` | 说明和参数格式 |
 | `resources/software/basesystem/send_message/*.txt` | 输出里给她看的几句 |
@@ -34,7 +34,7 @@
 
 ### 对外的样子
 
-访问类别 `read`，和 `subagent` 一样：发话什么都不改，只读开着也发得出去；一步里给几个会话发话，连着的一起发。不用 `outbound`：那是出了 Miyu、发到通讯平台上的，要问人；这里发的都是她能看到的会话（自己的树、或者同一个属主的别的主会话）。说明照 `26-提示词.md` 附录的草稿，一字不差，「只发对方现在就得知道的」那一句留着（`agents.md` 第六条第 5 条）；不点名 `sessions`：子会话和主会话共用这一份说明，子会话里没有 `sessions`（`26-提示词.md` J4）。
+访问类别 `read`，和 `subagent` 一样：发话什么都不改，只读开着也发得出去；一步里给几个会话发话，连着的一起发。不用 `outbound`：那是出了 Miyu、发到通讯平台上的，要问人；这里发的都是她能看到的会话（自己的树、或者本机的别的主会话）。说明照 `26-提示词.md` 附录的草稿，一字不差，「只发对方现在就得知道的」那一句留着（`agents.md` 第六条第 5 条）；不点名 `sessions`：子会话和主会话共用这一份说明，子会话里没有 `sessions`（`26-提示词.md` J4）。
 
 样本 `resources/software/basesystem/tools/send_message.json`：
 
@@ -71,7 +71,7 @@
 4. 长度：`message` 超过 `peers.message_chars` 的，发出去之前拒，不去送（父子之间的留言也照它）。没写 `message` 的（只订不发）跳过第 4 到 8 款，端口一次都不问。
 5. 这一次调用没有发话的端口（`Call.messages` 是空的：测试里的假调用、没装会话表的核心）：交回送不到。
 6. 附件（施工 C-9）：超过 8 个的拒（`attachments/too-many.txt`）；在阻塞线程里照先后读，路径照这一轮的工作目录换成真实位置，一层链接都不跟地打开，最多读 20 MiB 多一个字节。没有的、是目录的、不是普通文件的、读不了的，照共用的那几句；超过 20 MiB 的、照内容认是图却超过 5 MiB 或者一边超过 8000 像素的，拒（`attachments/too-big.txt`）。有一个不成的整句不发，端口一次都不问。名字是真实位置的最后一段，原来的路径是真实位置。
-7. 交给端口 `send(to, message, attached)`（执行器这一头见 `session/tools.md`「父子之间留言」：附件先存成这个会话属主的 blob，存不下的照送不到）：
+7. 交给端口 `send(to, message, attached)`（执行器这一头见 `session/tools.md`「父子之间留言」：附件先存成 blob，存不下的照送不到）：
    - 发给父，这个会话是主会话：没有父。
    - 发给子代理，编号不在这个会话派出去的子代理里（没派过、派的是后台命令、派它的那一轮撤掉了）：不是她派的。兄弟、孙代理的编号都落在这一种：她只认得自己派的。
    - 是她派的、被停掉了（以 `stopped`、`undone` 报过）：被停掉了。做完了报过的不算停：它的会话还在，留言开它的下一轮，结束时照样回报。

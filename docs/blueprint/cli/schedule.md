@@ -18,7 +18,7 @@
 
 | 子命令 | 做什么 | 发什么 |
 |---|---|---|
-| `list`（不写子命令也是它） | 列出这个账号的 | `schedule.list`，`--session` 只列跑在它上面的 |
+| `list`（不写子命令也是它） | 列出全部 | `schedule.list`，`--session` 只列跑在它上面的 |
 | `add <话>...` | 建一个；几个词用一个空格连起来 | `schedule.add` |
 | `rm <编号>` | 删掉 | `schedule.cancel` |
 | `pause <编号>` | 停 | `schedule.pause` |

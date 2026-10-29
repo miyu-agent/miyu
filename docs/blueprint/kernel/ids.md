@@ -38,9 +38,8 @@
 |---|---|---|---|---|
 | `SessionId` | 会话编号 | 会话编号 | `session id` | `0192f3a0-1111-7abc-8def-001122334455` |
 | `CommandId` | 命令编号，写进每条事件的 `cause` | 短名字 | `command id` | `cmd-7f3a` |
-| `AccountId` | 账号，出现在路径 `home/<账号>/` 里 | 路径里的名字 | `account` | `alice` |
 | `ContentHash` | 内容哈希：blob、策略快照、请求字节都用它 | 内容哈希 | `content hash` | `sha256:e3b0c442…b855` |
-| `ModuleId` | 模块，清单里的 `id`，出现在路径 `home/<账号>/modules/<模块>/` 里 | 路径里的名字 | `module` | `memory` |
+| `ModuleId` | 模块，清单里的 `id`，出现在路径 `modules/<模块>/` 里 | 路径里的名字 | `module` | `memory` |
 | `DriverFamily` | 驱动家族，驱动认领私有数据用 | 路径里的名字 | `driver family` | `openai-chat` |
 | `FactKind` | 事实块的类别 | 路径里的名字 | `fact category` | `env` |
 | `VenueId` | 场所：一个群、一个私聊、桌面语音 | 短名字 | `venue` | `qq:group:123456` |
@@ -114,14 +113,14 @@
 
 | `kind` | 是谁 | 其余几格 | 例子 |
 |---|---|---|---|
-| `person` | 有账号的人 | `account`：账号；`via`，可以没有：通讯平台的私聊里经哪个平台身份认出来的本人（施工 O-3，`venues.md`） | `{"kind":"person","account":"alice"}`、`{"kind":"person","account":"alice","via":"qq:10001"}` |
-| `external` | 通讯平台上的人，没有账号，由桥担保 | `venue`：在哪个场所说的；`id`：平台上的身份；`account`，可以没有：主人对应表里对着的本机账号，写的时候记下（施工 O-3）；`role`，可以没有：桥报的场所里的身份，`manager` 或 `member`，没有 `owner`（施工 O-3） | `{"kind":"external","venue":"qq:group:123456","id":"qq:10086","role":"member"}` |
+| `person` | 主人 | `via`，可以没有：通讯平台的私聊里经哪个平台身份认出来的主人（施工 O-3，`venues.md`） | `{"kind":"person"}`、`{"kind":"person","via":"qq:10001"}` |
+| `external` | 通讯平台上的人，由桥担保 | `venue`：在哪个场所说的；`id`：平台上的身份；`owner`，可以没有：主人对应表认出是主人的写 `true`，写的时候记下，以后对应表改了不跟着变（施工 O-3）；`role`，可以没有：桥报的场所里的身份，`manager` 或 `member`（施工 O-3） | `{"kind":"external","venue":"qq:group:123456","id":"qq:10086","role":"member"}`、`{"kind":"external","venue":"qq:group:123456","id":"qq:10001","owner":true,"role":"manager"}` |
 | `model` | 模型：它的回复，连同里面的工具调用 | `endpoint`：经哪个供应商；`model`：模型 | `{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}` |
 | `tool` | 一次工具调用：执行时引起的 | `call_id`：调用编号 | `{"kind":"tool","call_id":"call_44_1"}` |
 | `module` | 模块，包括扩展 | `id`：模块 | `{"kind":"module","id":"memory"}` |
 | `session` | 另一个会话：照它和这个会话的关系分三种（下面） | `id`：会话编号 | `{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}` |
 | `harness` | 别的 harness：经 `miyu ask --from` 发来的话（`agents.md` 第十一条，施工 7-1） | `name`：它自己报的名字 | `{"kind":"harness","name":"claude-code"}` |
-| `schedule` | 到点的定时任务、循环交进来的话（施工 J-1 上，`schedules.md`） | `schedule`：任务编号；`account`：唤醒表是谁的；`loop`，可以没有：`fixed`、`dynamic`，循环的才写，组装照它挑标签 | `{"kind":"schedule","schedule":"t3","account":"alice"}` |
+| `schedule` | 到点的定时任务、循环交进来的话（施工 J-1 上，`schedules.md`） | `schedule`：任务编号；`loop`，可以没有：`fixed`、`dynamic`，循环的才写，组装照它挑标签 | `{"kind":"schedule","schedule":"t3"}` |
 | `kernel` | 内核自己 | 没有 | `{"kind":"kernel"}` |
 
 `by` 是 `session` 的，照它和这个会话的关系分三种，不另加种类（施工 C-1，`cross-session.md`「谁」）：
@@ -134,7 +133,7 @@
 
 - 关系在日志里都查得到，旧核心照样读得懂。三种内核都认（别的会话发来的话施工 C-2，账本的 `is_peer`、有效历史的 `is_peer` 同一个认法），`peer.idle` 的 `by` 由账本查（`kernel/history.md`）。
 
-几格的写法照上面的类型：`account` 是 `AccountId`，`venue` 是 `VenueId`，`id` 依次是 `ExternalId`、`ModuleId`、`SessionId`，`endpoint` 是 `ProviderId`，`model` 是 `ModelName`，`call_id` 是 `CallId`，`name` 是 `HarnessName`。
+几格的写法照上面的类型：`venue` 是 `VenueId`，`id` 依次是 `ExternalId`、`ModuleId`、`SessionId`，`endpoint` 是 `ProviderId`，`model` 是 `ModelName`，`call_id` 是 `CallId`，`name` 是 `HarnessName`。
 
 `harness` 的 `name` 是对方自己报的，不可信，照 `external` 的做法只管写法：短名字的规则，1 到 128 字节、没有控制字符，读的时候不合的报错。收的那一边（协议的 `from`，施工 7-10，`protocol.md` 的 `session.send` 第 6 条）先去掉控制字符、截到 128 字节以内（不切断一个字），截完是空的不收；给模型看之前照模板的规矩转义（`kernel/request.md`「别的 harness 发来的话」）。
 
@@ -146,7 +145,7 @@
    1. 空的：「不能是空的」。
    2. 超过 128 个字节：「at most 128 bytes」。
    3. 有控制字符（Unicode 的 Cc 类，例如换行、`\u0007`）：「no control characters」。
-2. **路径里的名字**（`AccountId`、`ModuleId`、`DriverFamily`、`FactKind`）：三个平台都能当目录名。
+2. **路径里的名字**（`ModuleId`、`DriverFamily`、`FactKind`）：三个平台都能当目录名。
    1. 空的：「must not be empty」。
    2. 第一个字符不是 `a` 到 `z`（大写、数字、中文都不行）：「must start with a lowercase letter」。
    3. 有 `a-z`、`0-9`、`-`、`_` 以外的字符（空格、大写、点都不行）：「only lowercase letters, digits, - and _」。
@@ -204,11 +203,11 @@
     1. 不是 JSON 对象：serde_json 的原话（`expected a map`）。
     2. 没有 `kind`：「missing field `kind`」。
     3. `kind` 不是字符串：serde_json 的原话（`invalid type`）。
-    4. 认识的七种照那一种读其余几格，缺了、写法不对的照那一格报，例如「missing field `account`」「bad account: …」「bad harness name: …」。`kernel` 不看别的格。
+    4. 认识的七种照那一种读其余几格，缺了、写法不对的照那一格报，例如「missing field `venue`」「bad harness name: …」。`kernel` 不看别的格。
     5. 认识的种类多出来的格不管：读进内存时丢掉，写出去不再有（日志里的原文留着，`kernel/events.md`）。
     6. 不认识的种类：整块原样留着（`By::Unknown`），写出去一字不差，空格、数字的写法都不变。
 20. 写：`kind` 在最前，其余几格照上表的先后；不认识的照原文写。
-21. 这一格取自连接，不取自正文：内核照执行器交进来的记。现在连上核心的只有本机，本机连上来的一律是管理员，`{"kind":"person","account":"admin"}`（`crates/miyu-endpoint/src/sessions.rs` 的 `admin`，`protocol.md`）。代表外部的人说话的（`session.send` 的 `as`，施工 O-3）照 `venues.md` 记成本人带 `via`，或者外部身份。
+21. 这一格取自连接，不取自正文：内核照执行器交进来的记。头上说的一律是主人，`{"kind":"person"}`（`protocol.md`）。代表外部的人说话的（`session.send` 的 `as`，施工 O-3）照 `venues.md` 记成本人带 `via`，或者外部身份。
 
 **用得上 `by` 的地方**：
 
@@ -252,7 +251,7 @@ bad session id: must be 36 characters (got "x")
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-kernel/src/id/tests.rs` | 图纸上的例子读写一字不差（`samples_from_the_drawing_round_trip`、`names_from_the_drawing_round_trip`）；会话编号（`session_id_must_be_lowercase_uuid_text`）；短名字（`command_id_is_short_printable_text`、`short_names_are_opaque_but_bounded`）；路径里的名字（`account_is_like_a_linux_login_name`、`module_driver_and_fact_names_follow_the_account_rule`）；内容哈希的写法和算法（`content_hash_is_sha256_in_lowercase_hex`、`content_hash_of_known_contents`、`hashing_piece_by_piece_is_the_same_as_all_at_once`）；媒体类型、文件名、事件种类各自的规则；序号和回合编号（`seq_starts_at_one`、`turn_id_reads_like_a_seq`）；会话的短编号（`a_short_session_id_is_its_last_eight_characters`，施工 C-1）；调用编号第 9 到 12 条（`call_id_accepts_only_what_the_kernel_writes`）；任务编号第 25、26 条和排序（`job_id_accepts_only_what_the_kernel_writes`、`job_ids_sort_by_number`，施工 7-1；几段的、`under`、`last`，施工 7-1 补）；报错的样子和 80 个字符（`error_says_what_why_and_what_was_read`、`long_text_in_errors_is_cut`） |
+| `crates/miyu-kernel/src/id/tests.rs` | 图纸上的例子读写一字不差（`samples_from_the_drawing_round_trip`、`names_from_the_drawing_round_trip`）；会话编号（`session_id_must_be_lowercase_uuid_text`）；短名字（`command_id_is_short_printable_text`、`short_names_are_opaque_but_bounded`）；路径里的名字（`module_driver_and_fact_names_follow_the_account_rule`）；内容哈希的写法和算法（`content_hash_is_sha256_in_lowercase_hex`、`content_hash_of_known_contents`、`hashing_piece_by_piece_is_the_same_as_all_at_once`）；媒体类型、文件名、事件种类各自的规则；序号和回合编号（`seq_starts_at_one`、`turn_id_reads_like_a_seq`）；会话的短编号（`a_short_session_id_is_its_last_eight_characters`，施工 C-1）；调用编号第 9 到 12 条（`call_id_accepts_only_what_the_kernel_writes`）；任务编号第 25、26 条和排序（`job_id_accepts_only_what_the_kernel_writes`、`job_ids_sort_by_number`，施工 7-1；几段的、`under`、`last`，施工 7-1 补）；报错的样子和 80 个字符（`error_says_what_why_and_what_was_read`、`long_text_in_errors_is_cut`） |
 | `crates/miyu-session/src/clock/tests.rs` 的 `ids_made_together_differ_in_their_short_form`（施工 C-1） | 真造的编号：同一刻连造的几个前 8 位一样，短编号是最后 8 位、各不一样。内核不造编号，所以放在造编号的那一层 |
 | `crates/miyu-kernel/src/time/tests.rs` | 图纸上的例子；几个标准时刻和两头的界（`well_known_moments`、`years_outside_0000_to_9999_are_refused`）；闰年；1600 年到 2400 年一天一天数过去和换算对得上；第 13 到 17 条每种坏写法；时区的写法和范围；第 18 条当地钟点（`the_local_ten_minutes_is_the_wall_clock_to_ten_minutes`；最后十分钟到 24 点 `the_last_ten_minutes_of_a_day_end_at_24`，施工 1-13 补、三补）；七天的写法 |
 | `crates/miyu-kernel/src/origin/tests.rs` | 八种读写一字不差、各读成自己那一种；不认识的一字不差；认识的种类多出来的格不管；第 19 条的几种坏写法；`harness` 的名字照短名字的规则（施工 7-1） |
@@ -263,7 +262,6 @@ bad session id: must be 36 characters (got "x")
 - `03-事件模型.md` 第二节：公共字段、「`by` 的写法」、「编号和时间的写法」、读和写一样严。
 - `02-内核.md` 第四节：纯逻辑内核，不读时钟；第九节不变量 1：序号连续递增。
 - `01-架构.md` 第六节：身份取自连接，正文里自称的不作数。
-- `06-多用户与身份.md` 第二节（账号、外部身份）、第五节（权限按这一步是谁要求的判）。
 - `07-存储.md` 第五节：blob 的文件名是去掉 `sha256:` 的 64 位。
 - `08-上下文投影.md` 第五节「环境和状态的事实怎么写」：时间到十分钟（施工 1-13 三补，原来到小时）、时区写成 `UTC+09:00`。
 - `agents.md`「对外的样子」：任务编号 `j1`、`j2`，`by` 多一种 `harness`（施工 7-1）；子会话派的带上它在父会话里的编号（施工 7-1 补）。
@@ -273,6 +271,5 @@ bad session id: must be 36 characters (got "x")
 
 - 到分钟的当地时间：通讯平台、桌面语音这类场所用（`08-上下文投影.md` 第五节「环境和状态的事实怎么写」的「还没有的」）。
 - `external` 这种 `by` 读得懂，还没有哪里造：通讯平台（`18-通讯平台.md`）做到时才有。`session` 由子会话造（施工 7-5 起），`harness` 由 `session.send` 的 `from` 造（施工 7-10）。
-- 按 `by` 判权限：现在只有本机的管理员，执行前的链不看 `by`（`06-多用户与身份.md` 第五节）。
+- 按 `by` 判权限：执行前的链不看 `by`，关不关起来照会话（`session.created` 的 `confined`）。
 - 短编号撞了放长、照后缀认编号：施工 C-3（`cross-session.md`「会话的短编号」）。
-- 远程连接、成员账号、扩展身份（`06-多用户与身份.md` 第二节）。

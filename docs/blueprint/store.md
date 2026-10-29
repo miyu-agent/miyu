@@ -11,11 +11,11 @@
 | `crates/miyu-store/src/env.rs` | 环境快照：找数据根、资源目录要看的几样，从进程里读一次；系统的语言 `locale`（施工 8-1，都没设的看系统设置 `system_locale`，施工 8-2） |
 | `crates/miyu-store/src/env/os.rs` | 本机是什么系统 `os_name`（施工 2-7 再补）：写进 system 核心的几行 |
 | `crates/miyu-store/src/config_file.rs` | 读配置文件（施工 8-2，`config.md`「怎么走」第二条第 2 条）：没有的是空的，1 MiB 的上限，去掉开头的 BOM（记下有没有），不是 UTF-8 的报错，版本是整份字节的 SHA-256。写（施工 8-3，第五条第 4 到 7 条）：顺着链接写本体、临时文件在本体旁边、带上原来的权限位、替换前再读一次（和调用的一方读的版本不一样的放弃）、Windows 上改名失败歇 20 毫秒再试、最多 5 次 |
-| `crates/miyu-store/src/watch.rs` | 监视几份文件（施工 8-4，`config.md`「怎么走」第七条），或者一整个目录（`watch_dir`，施工 X-12 补：管理员家目录里的脚本，点开头的以外哪个名字变了都算，交出去的是目录）：看它们所在的目录（链接的另看本体所在的目录），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒里没有新的变动了才交出去；系统的监视起不来的退回每 2 秒轮询，交回原因 |
-| `crates/miyu-store/src/accounts.rs`、`logins.rs`、`private_json.rs` | 网页登录的凭据 `system/accounts.json`（argon2id，`m=19456`、`t=2`、`p=1`）、登录令牌的哈希 `home/<账号>/logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
-| `crates/miyu-store/src/secrets.rs` | 密钥文件 `system/secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
-| `crates/miyu-store/src/journal.rs` | 系统日志、账号日志 `journal.jsonl`（施工 8-3，`config.md`「系统日志、账号日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
-| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；账号的目录；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1） |
+| `crates/miyu-store/src/watch.rs` | 监视几份文件（施工 8-4，`config.md`「怎么走」第七条），或者一整个目录（`watch_dir`，施工 X-12 补：数据根里的脚本，点开头的以外哪个名字变了都算，交出去的是目录）：看它们所在的目录（链接的另看本体所在的目录），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒里没有新的变动了才交出去；系统的监视起不来的退回每 2 秒轮询，交回原因 |
+| `crates/miyu-store/src/access.rs`、`logins.rs`、`private_json.rs` | 访问密码 `access.json`（argon2id，`m=19456`、`t=2`、`p=1`）、设备令牌的哈希 `logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
+| `crates/miyu-store/src/secrets.rs` | 密钥文件 `secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
+| `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`（施工 8-3，`config.md`「日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
+| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；数据根里各处的位置；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1） |
 | `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用） |
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条）。`write` 哪里都建目录（机器的缓存目录、头自己的文件）；写进数据根的用 `write_inside`，目录照第四条建（施工 TMP-1） |
 | `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |
@@ -23,8 +23,8 @@
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6） |
 | `crates/miyu-store/src/jobs.rs` | 会话目录下后台命令的输出：`jobs/<编号>.out`（施工 7-3） |
 | `crates/miyu-store/src/attachments.rs` | 会话的附件落成文件：清名字、照字节截、补扩展名、撞名接序号、临时文件改名（施工 3-9 六补，「怎么走」第 13 条） |
-| `crates/miyu-store/src/trash.rs` | 回收处：删掉的会话挪进来、满了时限的真删（施工 3-8 三补）；真删之前往账号日志留用量的底（施工 8-15） |
-| `crates/miyu-store/src/trash/personas.rs` | 删掉的人格：家目录里的人格目录挪进来、满了时限的真删（施工 P-3 下，`personas.md`「改」） |
+| `crates/miyu-store/src/trash.rs` | 回收处：删掉的会话挪进来、满了时限的真删（施工 3-8 三补）；真删之前往日志留用量的底（施工 8-15） |
+| `crates/miyu-store/src/trash/personas.rs` | 删掉的人格：你那一层的人格目录挪进来、满了时限的真删（施工 P-3 下，`personas.md`「改」） |
 | `crates/miyu-store/src/resources.rs`、`human.rs` | 资源目录、给人看的字（`store/resources.md`） |
 | `crates/miyu-store/src/index.rs`、`index/` | 会话列表的索引（`store/index.md`，施工 3-8 七补） |
 | `crates/miyu-store/src/usage.rs`、`usage/` | 用量汇总 `state/usage.db`（施工 8-15，`models.md`「怎么走」第九条第 4、5 条） |
@@ -60,59 +60,63 @@
 | `locate(env)` | 数据根在哪，只找不建 |
 | `prepare()` | 建骨架（「怎么走」第 2 条） |
 | `path()` | 数据根本身 |
-| `system()`、`homes()`、`state()`、`run()` | `system/`、`home/`、`state/`、`run/` |
-| `account_dir(账号)` | `home/<账号>/` |
-| `workspace(账号)` | `home/<账号>/workspace/` |
-| `user_dirs(账号)` | 照 XDG 给这个人的几处（施工 Y-11 上）：`home/<账号>/pictures/`、`videos/`、`documents/`、`downloads/`，用到才建；文件工具照工作区算（边界表的 `own`，不进沙盒的写名单），握手只给管理员 |
-| `cache(账号)` | `home/<账号>/cache/`（施工 Y-11 上）：脚本的缓存照 `<来处>/<工具名>/` 分，30 天没碰的清掉（`miyu_store::cache`） |
-| `prepare_home(账号)` | 建 `home/<账号>/` 和里面的 `workspace/`，已经有的不动 |
-| `sessions(账号)` | 这个账号的会话编号，从新到旧 |
-| `session_dir(账号, 会话)` | `home/<账号>/sessions/<会话编号>/` |
-| `owner_of(会话)` | 会话是哪个账号的：`home/<账号>/sessions/<会话编号>/` 在的那个账号，不合账号写法的目录不算，几个都有的照账号名的先后取第一个（施工 O-4 上） |
-| `trashed_sessions(账号)` | 回收处 `home/<账号>/trash/sessions/`（施工 3-8 三补） |
-| `trashed_personas(账号)` | 删掉的人格 `home/<账号>/trash/personas/`（施工 P-3 下） |
-| `blobs(账号)` | `home/<账号>/blobs/` |
-| `index(账号)` | `home/<账号>/index/`：派生数据，会话列表的索引放在这里（施工 3-8 七补，`store/index.md`） |
+| `state()`、`run()` | `state/`、`run/` |
+| `packages()` | `packages/`：装上的软件包 |
+| `own_places()` | `scripts/`、`skills/`、`commands/`、`packages/` 的真实位置：放行出沙盒的文件得落在这几处下面（施工 X-37） |
+| `workspace()` | `workspace/` |
+| `session_workspace(会话)` | `workspace/<会话编号>/`：会话的默认工作区（施工 5-14） |
+| `prepare_workspace()` | 建 `workspace/`，已经有的不动 |
+| `user_dirs()` | 照 XDG 给你的几处（施工 Y-11 上）：`pictures/`、`videos/`、`documents/`、`downloads/`，用到才建；文件工具照工作区算（边界表的 `own`，不进沙盒的写名单），握手的 `host.dirs` 交出去（远程的连不给） |
+| `cache()` | `cache/`（施工 Y-11 上）：脚本的缓存照 `<来处>/<工具名>/` 分，30 天没碰的清掉（`miyu_store::cache`） |
+| `sessions()` | 会话编号，从新到旧 |
+| `session_dir(会话)` | `sessions/<会话编号>/` |
+| `trashed_sessions()` | 回收处 `trash/sessions/`（施工 3-8 三补） |
+| `trashed_personas()` | 删掉的人格 `trash/personas/`（施工 P-3 下） |
+| `blobs()` | `blobs/` |
+| `index()` | `index/`：派生数据，会话列表的索引放在这里（施工 3-8 七补，`store/index.md`） |
 
-**缓存目录** `cache_root(env)`：只找不建。核心起来时算一次，沙盒的缓存放在它下面的 `sandbox/<账号>/`（施工 5-4 下，`core.md`），后台拉的 models.dev 目录放在 `models/`：`models-dev.json`、`models-dev.meta.json`（带 `ETag`，施工 8-7，`models.md`「文件」）。
+**缓存目录** `cache_root(env)`：只找不建。核心起来时算一次，沙盒的缓存放在它下面的 `sandbox/`（施工 5-4 下，`core.md`），后台拉的 models.dev 目录放在 `models/`：`models-dev.json`、`models-dev.meta.json`（带 `ETag`，施工 8-7，`models.md`「文件」）。
 
 **会话日志** `SessionLog`：`create(目录, 上限)`、`open(目录, 上限)`、`open_each(目录, 上限, 每一块)`（施工 V-15）、`append(一批事件)`、`write(一批事件)`、`sync()`（施工 V-18）、`sync_handle()`（施工 V-19：正在写的那一段的另一个句柄，别的线程对它 `sync_data`，同步的是那一刻以前写进去的；换段以后要再拿）、`next_seq()`、`dir()`、`mark()`（写到哪了：正在写的那一段、它的长度、下一条该是几号，一起叫 `Mark`，施工 3-8 七补）；只读的 `read_events(目录)`、`read_segments(目录, 每一段)`、`read_marked(目录, 从哪里, 每一段)`（施工 3-8 七补）、`first_event(目录)`。一段的上限 `SEGMENT_LIMIT` 是 64 MiB（67,108,864 字节）。
 
 **blob** `Blobs::new(目录)`：`put(内容)` 交回内容哈希，`get(哈希)` 交回内容，`path(哈希)` 交回它放在哪；`put_file(文件, 每一段)` 照文件边读边存，读到的每一段也交给调的那一头（施工 7-12 下，后台命令的输出最多 5 GB，不整份读进内存）。
 
-**回收处**（`trash`，施工 3-8 三补）：`discard(数据根, 账号, 会话, 删的时刻)` 把会话挪进回收处；`purge(数据根, 账号, 现在, 留多久)` 清一次，交回 `Purged { removed, failed }`：真删了几个，留下了、却不是因为没满时限的是哪几个、为什么。回收处里每个会话目录下的 `DELETED_AT`（`deleted_at`）写着删的时刻。
+**回收处**（`trash`，施工 3-8 三补）：`discard(数据根, 会话, 删的时刻)` 把会话挪进回收处；`purge(数据根, 现在, 留多久)` 清一次，交回 `Purged { removed, failed }`：真删了几个，留下了、却不是因为没满时限的是哪几个、为什么。回收处里每个会话目录下的 `DELETED_AT`（`deleted_at`）写着删的时刻。
 
 ### 数据根里有什么
 
 ```text
 <数据根>/
 ├── .miyu-root                          标记，一行字
-├── system/
-│   ├── config.toml                     系统配置（config.md，施工 8-2 读，8-3 写）
-│   ├── secrets.toml                    密钥，Unix 上 0600，只经核心写（config.md，施工 8-5）
-│   ├── accounts.json                   网页登录的用户名、argon2id 的密码哈希，Unix 上 0600，只经核心写（web-module.md，施工 W-8）
-│   ├── journal.jsonl                   系统日志：系统配置、密钥的改动（config.md，施工 8-3、8-5）
-│   └── modules/<包>/                   各包的系统数据：管理员维护，同名替换出厂的（例如 onebot 的违规词表 modules/onebot/moderation.txt，接入QQ 仓库的 onebot.md 第一条，施工 O-21）
-├── home/
-│   └── <账号>/                         核心起来时给 admin 建；退回工作区时缺了再补建
-│       ├── settings.toml               个人设置（config.md，施工 8-2 读，8-3 写）
-│       ├── journal.jsonl               账号日志：个人设置的改动、项目配置的信任（config.md，施工 8-3）
-│       ├── trust.toml                  项目配置的信任（config.md，施工 8-2 读，8-3 写）
-│       ├── workspace/                  账号的工作区；每个会话的默认工作区是它下面的 <会话编号>/（施工 5-14，protocol.md「工作目录太宽」）
-│       ├── sessions/<会话编号>/         会话日志，一段一个文件；attachments/ 是落成文件的附件（施工 3-9 六补）
-│       │   ├── 000000000001.jsonl
-│       │   ├── …
-│       │   └── jobs/<编号>.out          后台命令的输出，例如 jobs/j1.out（施工 7-3）
-│       ├── trash/sessions/<会话编号>/   删掉的会话，整个会话目录挪过来，多一个 deleted_at（施工 3-8 三补）
-│       ├── index/sessions.db            会话列表的索引，派生的；另有 -wal、-shm（施工 3-8 七补，store/index.md）
-│       └── blobs/
-│           ├── tmp/<进程号>-<计数>      存的时候的临时文件
-│           ├── tmp/upload-<编号>        分块上传的暂存文件（protocol.md，施工 W-5）
-│           └── <前两位>/<64 位十六进制>
+├── config.toml                         配置（config.md，施工 8-2 读，8-3 写）
+├── secrets.toml                        密钥，Unix 上 0600，只经核心写（config.md，施工 8-5）
+├── access.json                         访问密码的 argon2id 哈希，Unix 上 0600，只经核心写；设了才有（web-module.md）
+├── logins.json                         设备令牌的哈希，Unix 上 0600（web-module.md，施工 W-8）
+├── journal.jsonl                       日志：配置、密钥的改动、项目配置的信任、删掉的会话的用量（config.md，施工 8-3、8-5）
+├── trust.toml                          项目配置的信任（config.md，施工 8-2 读，8-3 写）
+├── extensions.json                     扩展开没开、批过的能力（extensions.md）
+├── packages/                           装上的软件包（packages.md）
+├── personas/ presets/ skills/ scripts/ commands/ prompts/ tools/   你的，同名的盖出厂的、包带的
+├── workspace/                          工作区；每个会话的默认工作区是它下面的 <会话编号>/（施工 5-14，protocol.md「工作目录太宽」）
+├── sessions/<会话编号>/                 会话日志，一段一个文件；attachments/ 是落成文件的附件（施工 3-9 六补）
+│   ├── 000000000001.jsonl
+│   ├── …
+│   └── jobs/<编号>.out                  后台命令的输出，例如 jobs/j1.out（施工 7-3）
+├── trash/sessions/<会话编号>/           删掉的会话，整个会话目录挪过来，多一个 deleted_at（施工 3-8 三补）
+├── index/sessions.db                    会话列表的索引，派生的；另有 -wal、-shm（施工 3-8 七补，store/index.md）
+├── blobs/
+│   ├── tmp/<进程号>-<计数>              存的时候的临时文件
+│   ├── tmp/upload-<编号>                分块上传的暂存文件（protocol.md，施工 W-5）
+│   └── <前两位>/<64 位十六进制>
+├── kb/<编号>/、kb.toml                  知识库（knowledge.md）
+├── modules/memory/<人格>/               跟着人格的记忆日志（memory.md）
+├── pictures/ videos/ documents/ downloads/ cache/   照 XDG 给你的几处、脚本的缓存，用到才建（施工 Y-11 上）
 ├── state/
 │   ├── logs/core.log、core.log.1 …     运行日志（log.md）
-│   ├── config/                         核心起来时生成：config.schema.json、settings.schema.json、reference.toml（config.md，施工 8-1）
+│   ├── config/                         核心起来时生成：config.schema.json、reference.toml（config.md，施工 8-1）
 │   ├── usage.db、usage.db-wal、usage.db-shm  用量汇总，派生的（models.md 第九条，施工 8-15）
+│   ├── schedules.db                    唤醒表（schedules.md）
+│   ├── packages/<包>/、scripts/<来处>/  包、脚本的状态
 │   └── log-salt                        运行日志里写记忆的一间时的盐，32 个随机字节、0600（log.md，施工 LG-1 下）
 └── run/                                core.lock、spawn.lock、token、socket；没有能用的 XDG_RUNTIME_DIR 的 Linux、macOS 上还有套接字 core.sock（ipc.md）；网页软件的 web.lock、web（地址，web-ui.md，施工 W-9）
 ```
@@ -134,8 +138,8 @@
 2. 看顶层有没有 `.miyu-root`。只看在不在：文件、目录、链接都算。
 3. 没有标记：
    1. 目录里有任何东西（只有一个隐藏文件也算）：再看一眼标记，别处可能刚写下；还没有，报错，一个字节都不动它。
-   2. 目录是空的：只许新建地写标记，内容是 `This directory is a Miyu data root (layout 1).` 加换行；同步这个文件，再同步数据根。别处刚写下了的，也算成。
-4. 四个顶层目录 `system/`、`home/`、`state/`、`run/`，缺的才建。
+   2. 目录是空的：只许新建地写标记，内容是 `This directory is a Miyu data root (layout 2).` 加换行；同步这个文件，再同步数据根。别处刚写下了的，也算成。
+4. 两个顶层目录 `state/`、`run/`，缺的才建；别的用到时再建。
 5. 建两次不出错；两个进程同时第一次用同一个数据根，都成。该是目录的地方是个文件，报错。
 
 **3. 缓存目录**（`cache_root`）：整台机器共用，不跟着 `MIYU_HOME` 变。
@@ -190,7 +194,7 @@
 - `read_marked`（施工 3-8 七补，列会话照索引补时用，`store/index.md`）：同 `read_segments`，只是从 `从哪里` 读起，交回读到了哪里（最后一段、照到的整行末尾、下一条该是几号）。`从哪里` 是空的从头读。和日志对不上的交回空的，一条都不交：记的那一段没了、比记的短了、记的位置前面一个字节不是 `\n`。对得上的照旧自检，只是从中间读起的那一段，报坏了时的行号从记的位置数起，名字和第一条对不对不在那一段查。
 - `first_event`：只读第一段开头那一行，不截、不写，列会话时用。第一段是空的、第一行还没写完：当没有这个会话。第一行读不懂：报坏了（第 1 行）。第一行不是 UTF-8：读写出错。
 
-**8. 列会话**（`DataRoot::sessions`）：`home/<账号>/sessions/` 下名字合会话编号写法的（36 个字符的小写 UUID 写法），照编号的字倒着排：会话编号是 UUIDv7，倒着排就是从新到旧。不合写法的不算，是不是目录不看。目录还没有的，是空的。
+**8. 列会话**（`DataRoot::sessions`）：`sessions/` 下名字合会话编号写法的（36 个字符的小写 UUID 写法），照编号的字倒着排：会话编号是 UUIDv7，倒着排就是从新到旧。不合写法的不算，是不是目录不看。目录还没有的，是空的。
 
 **9. blob：存**（`Blobs::put`）
 
@@ -204,8 +208,8 @@
    5. 同步前两位的目录。
    6. 这几步哪一步出错，删掉临时文件（删不掉就留着），报错。
 4. 返回时它已经落了盘：先落 blob，再写引用它的事件。改名是原子的，最终的名字上不会有写了一半的。
-5. 一个账号一份，不跨账号去重：两个账号存同一份内容，各存一个文件。
-6. 分块暂存（`protocol.md` 的 `blob.open`、`blob.write`、`blob.close`，施工 W-5）：暂存文件也在 `blobs/tmp/`，叫 `upload-<编号>`，和第 3 条第 2 款的临时文件名（数字加连字符）撞不上。一块一块写进暂存文件，收齐了照第 3 条第 3 到 5 款同一个办法改名进位置（哈希是边收边算好的，不用整份重读）；已经有这份内容的，删掉暂存的，还是那一个 blob。核心起来时清一遍这个账号 `blobs/tmp/` 里的 `upload-*`：崩了、被杀留下的（`core.md`「起来的先后」）。
+5. 只有一个存处：人、扩展、会话存同一份内容，都是同一个文件。
+6. 分块暂存（`protocol.md` 的 `blob.open`、`blob.write`、`blob.close`，施工 W-5）：暂存文件也在 `blobs/tmp/`，叫 `upload-<编号>`，和第 3 条第 2 款的临时文件名（数字加连字符）撞不上。一块一块写进暂存文件，收齐了照第 3 条第 3 到 5 款同一个办法改名进位置（哈希是边收边算好的，不用整份重读）；已经有这份内容的，删掉暂存的，还是那一个 blob。核心起来时清一遍 `blobs/tmp/` 里的 `upload-*`：崩了、被杀留下的（`core.md`「起来的先后」）。
 
 **10. blob：取**（`Blobs::get`）：读出来，重新算哈希。没有这个文件：「no blob <哈希>」。算出来和名字对不上：报错，写明是哪一个，不自动修，也不删。
 
@@ -215,20 +219,20 @@
 
 **12. 回收处**（施工 3-8 三补，`trash.rs`；2026-09-30 项目主人定：删了的进回收处，留 7 天再真删）
 
-1. 删会话（`discard`）：会话目录 `home/<账号>/sessions/<会话编号>/` 整个挪进回收处 `home/<账号>/trash/sessions/<会话编号>/`。调的一方先停下这个会话、放开它的文件（Windows 上开着的文件挪不走，`protocol.md` 的 `session.delete`）。载入父会话时收掉的派到一半的空子会话也照这样挪（施工 7-8，`protocol.md`「会话表」第 8 条）。
+1. 删会话（`discard`）：会话目录 `sessions/<会话编号>/` 整个挪进回收处 `trash/sessions/<会话编号>/`。调的一方先停下这个会话、放开它的文件（Windows 上开着的文件挪不走，`protocol.md` 的 `session.delete`）。载入父会话时收掉的派到一半的空子会话也照这样挪（施工 7-8，`protocol.md`「会话表」第 8 条）。
    1. 先在会话目录里只写一个文件 `deleted_at`：删的时刻，事件的时刻写法（`2026-09-30T12:00:00.000Z`），加换行；`sync_all`。会话日志只认 12 位数字的段，写了没来得及挪的不碍着它，会话照旧在原处。
    2. 回收处没有的，照第 4 条建（Unix 上 0700）。
    3. 改名成回收处里的那一个：一次改名，要么挪了、要么没挪。回收处里已经有同名的，改名出错，报错。
    4. 同步两头的上一层：`sessions/`、`trash/sessions/`。
    5. 会话目录不在的：写 `deleted_at` 时就出错（找不到），什么都没建。
-2. 清（`purge`）：核心起来时清一次（`core.md`「起来的先后」第 14 条），只清管理员的。
+2. 清（`purge`）：核心起来时清一次（`core.md`「起来的先后」第 14 条）。
    1. 回收处里名字合会话编号写法的才看，别的不是这里放的。回收处还没有的，什么都不做。
-   2. 读它的 `deleted_at`：现在减去删的时刻，满了留的时限（7 天，`miyu-core` 的 `KEEP`）的，连目录整个删掉；正好满的也删。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好按小时的合计，往这个账号的 `journal.jsonl` 追加一条 `usage.purged`（时刻是现在，`by` 是内核）；一次请求都没有的不写。日志读不了（磁盘出错）、账号日志写不进去的：留着，报出来，下次再清。没满的、删的时刻比现在还晚的（时钟往回拨过）留着。
+   2. 读它的 `deleted_at`：现在减去删的时刻，满了留的时限（7 天，`miyu-core` 的 `KEEP`）的，连目录整个删掉；正好满的也删。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好按小时的合计，往 `journal.jsonl` 追加一条 `usage.purged`（时刻是现在，`by` 是内核）；一次请求都没有的不写。会话日志读不了（磁盘出错）、`journal.jsonl` 写不进去的：留着，报出来，下次再清。没满的、删的时刻比现在还晚的（时钟往回拨过）留着。
    3. `deleted_at` 读不了、写法不对的：留着，报出来（`Purged::failed`）。说不清它删了多久，不猜。
    4. 删不掉的：留着，报出来，下次起来再清。回收处本身读不了：报错。
 3. blob 不动：删会话以后没人引用的 blob 随存储的回收那一步（第五节，「还没有的」）。找回删了的会话以后再做：回收处里的文件留着，挪回去就是。
 
-**谁存、谁取**：造会话时存策略快照，载入时照 `session.created` 的哈希取（`session/actor.md`）；人附的文件，`blob.put` 存成管理员的 blob，`session.send` 造块之前取出来再认一遍（施工 3-9 三补，`protocol.md`）；工具效果里改前改后的内容，大的、不是 UTF-8 的存成 blob，小的照原文写在效果里、不存（施工 V-18，`session/tools.md` 第 2 条），看一次调用的差异、算条目改了几行时取（`protocol.md` 的 `view.detail`）；编码请求时取图片、文件（`session/actor.md`、`drivers/openai-chat.md`；文件每一个都取，施工 3-9 三补）。
+**谁存、谁取**：造会话时存策略快照，载入时照 `session.created` 的哈希取（`session/actor.md`）；人附的文件，`blob.put` 存成 blob，`session.send` 造块之前取出来再认一遍（施工 3-9 三补，`protocol.md`）；工具效果里改前改后的内容，大的、不是 UTF-8 的存成 blob，小的照原文写在效果里、不存（施工 V-18，`session/tools.md` 第 2 条），看一次调用的差异、算条目改了几行时取（`protocol.md` 的 `view.detail`）；编码请求时取图片、文件（`session/actor.md`、`drivers/openai-chat.md`；文件每一个都取，施工 3-9 三补）。
 
 **13. 会话的附件落成文件**（`attachments.rs`，施工 3-9 六补；`keep(目录, 名字, 媒体类型, 字节)`）：剪贴板贴的、截图、远程的头传内容的附件没有本机路径，拷成会话目录 `attachments/` 下的一个文件。
 
@@ -247,7 +251,7 @@
 | | `NoLocalAppData` | `找不到 LOCALAPPDATA，或者它不是绝对路径` |
 | `PrepareError` | `NotOurs` | `<数据根> 里有别的东西，认不出是 Miyu 的数据根（顶层没有 .miyu-root），不动它。设 MIYU_HOME 指到一个空目录` |
 | | `Io` | 系统的原话 |
-| `OpenError` | `Missing` | `no session log`（目录带着账号，不写；施工 LG-1 上） |
+| `OpenError` | `Missing` | `no session log`（目录不写；施工 LG-1 上） |
 | | `Broken` | `<段的文件名> line <行> is broken`：目录、为什么都不写（为什么可能转述那一行的字，施工 LG-1 上）；为什么见下表，留在错误里给要的地方 |
 | | `Io` | 系统的原话 |
 | `BlobError` | `Missing` | `no blob <哈希>` |
@@ -272,13 +276,13 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；账号的家目录建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-root`；只有隐藏文件也不算空；进程的环境找得到 |
+| `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；工作区建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-root`；只有隐藏文件也不算空；进程的环境找得到 |
 | `crates/miyu-store/src/durable/tests.rs` | 一层层建、都是 0700、建两次不出错；挡路的文件报错 |
 | `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1） |
 | `crates/miyu-store/src/root/tests.rs` | 施工 TMP-1 加：`create_inside` 数据根里照建，删了的报错、不建回来 |
 | `crates/miyu-store/src/generated/tests.rs` | 施工 TMP-1 加：`write` 在数据根外照建（缓存目录），`write_inside` 数据根删了的报错、不建回来 |
 | `crates/miyu-store/src/log/tests.rs`、`log/tests/real.rs`、`log/tests/marked.rs` | 写了读得回，每行 `\n`、没有 `\r`；满了换段、一批不拆；截半行；中间一行坏了、序号接不上、段名对不上、不是最后一段有半行，都只报不修；空的最后一段接着写、名字不对报坏了；没有会话；第一段已有的不覆盖；只读第一条不动日志；只读地读跳过半行、一个字节不写；造到一半的会话没有第一条；序号接不上的一批不写；真会话写进去、读回来载入得了（`real.rs`，施工 1-13 再补挪出来）；从记下的位置读起（`marked.rs`，施工 3-8 七补，`store/index.md`） |
-| `crates/miyu-store/src/blob/tests.rs` | 存了取得回、`tmp/` 是空的；放在前两位下、文件名没有冒号；同一份只存一个、刷修改时间；崩在改名前只留临时文件；撞名换名；改名时目标已经有了算成；读出来不对报错、不删；两个账号各存各的；分块暂存：两块写完照 `put` 一样收齐、已经有的删暂存；编号撞了拒绝；扔掉一个的暂存文件；核心起来时清 `upload-*`，不碰 `put` 自己的临时文件、不碰 `tmp/` 还没建过的账号（施工 W-5）；读一段：读到结尾就停、过了结尾是空的、`length` 写 0 只问大小；没有这个 blob（施工 W-6）；blob 被换成链接的不交出链接指的内容、数据根路上有链接的照旧读得到（施工 SEC-3） |
+| `crates/miyu-store/src/blob/tests.rs` | 存了取得回、`tmp/` 是空的；放在前两位下、文件名没有冒号；同一份只存一个、刷修改时间；崩在改名前只留临时文件；撞名换名；改名时目标已经有了算成；读出来不对报错、不删；分块暂存：两块写完照 `put` 一样收齐、已经有的删暂存；编号撞了拒绝；扔掉一个的暂存文件；核心起来时清 `upload-*`，不碰 `put` 自己的临时文件、`tmp/` 还没建过的不出错（施工 W-5）；读一段：读到结尾就停、过了结尾是空的、`length` 写 0 只问大小；没有这个 blob（施工 W-6）；blob 被换成链接的不交出链接指的内容、数据根路上有链接的照旧读得到（施工 SEC-3） |
 | `crates/miyu-store/src/trash/tests.rs`（施工 3-8 三补） | 挪进回收处的整个目录一个字节不变、多一个 `deleted_at`，原处没了，列会话只剩别的；Unix 上 `trash/`、`trash/sessions/` 是 0700；会话不在的报找不到、回收处都没建；清：满 7 天的、正好满的删，差一毫秒的、删的时刻比现在晚的留，`deleted_at` 写法不对、没有的留并报出来，名字不合写法的不看；没有回收处什么都不做。时钟用测试的 |
 | `crates/miyu-store/src/jobs.rs` 的测试（施工 7-3） | 输出放在会话目录的 `jobs/<编号>.out`，几段的编号照原样（`jobs/j2.1.3.out`，施工 7-1 补）；已经有的清空；Unix 上 `jobs/` 是 0700 |
 | `crates/miyu-store/src/attachments/tests.rs`（施工 3-9 六补） | 名字清成各平台都能用的、照字节截在字的边界上、扩展名留着、太长的扩展名整个截、太长的子类型不补（鲁棒性 B-8）；补扩展名；撞名接序号、同一份复用、交回真实位置、临时文件不留；崩溃留下的临时文件不挡这个名字（鲁棒性 B-7）；长中文名存得进 |
@@ -289,7 +293,7 @@
 - `07-存储.md` 第二节：目录布局、默认位置、怎么找、认得出自己的数据根才动它、第一次用时建骨架；S6（数据根放在家目录的 `.miyu` 里）。
 - `07-存储.md` 第三节：一个会话一个目录、段怎么存、一个写者、一批一次写入一次同步。
 - `07-存储.md` 第四节：先落盘后推送、先落 blob、打开日志时自检三件事、各平台的坑（同步目录）。
-- `07-存储.md` 第五节、S5：blob 的路径、写、读的时候核对哈希、不跨账号去重。
+- `07-存储.md` 第五节、S5：blob 的路径、写、读的时候核对哈希。
 - `04-核心协议.md` 第九节 `session.delete`：删会话进回收处、留 7 天（2026-09-30 项目主人定，施工 3-8 三补）。
 - `03-事件模型.md` E4：大内容存成 blob，事件里只放引用。
 - `22-命令行.md` 第六节：权限不对由 `miyu doctor` 报告。
@@ -300,8 +304,8 @@
 - 隐私抹除：重写一段、原子替换（`07-存储.md` 第三节）。
 - 导出一个会话（`07-存储.md` 第三节）。
 - blob 的回收：删会话以后没人引用的删掉（回收处里的会话清掉以后），`tmp/` 里 `blob.put` 自己崩溃留下的那种清掉，都照宽限期（`07-存储.md` 第五节）。分块上传崩溃留下的暂存（`upload-*`）已经做了：核心起来时清一遍，不等宽限期（施工 W-5，第九条第 6 款）。
-- 找回删了的会话；清别的账号的回收处（现在只有管理员）；留多久放进配置（施工 3-8 三补）。
+- 找回删了的会话；留多久放进配置（施工 3-8 三补）。
 - 派生数据：全文搜索、用量汇总的 SQLite（`07-存储.md` 第六节）。会话列表的索引做了（`store/index.md`，施工 3-8 七补）。
-- 数据根里别的文件：放行规则（`07-存储.md` 第九节）。人格在 `system/personas/`、`home/<账号>/personas/`，怎么读、怎么叠见 `personas.md`（施工 P-1 上）；预设在 `system/presets/`、`home/<账号>/presets/`，见 `presets.md`（施工 P-2 上）。成员自己的密钥 `home/<账号>/secrets.toml` 随多用户。
+- 数据根里别的文件：放行规则（`07-存储.md` 第九节）。人格在 `personas/`，怎么读、怎么叠见 `personas.md`（施工 P-1 上）；预设在 `presets/`，见 `presets.md`（施工 P-2 上）。
 - `miyu doctor` 查数据根的权限（`22-命令行.md` 第六节）。
 - 用缓存目录的东西，例如语音的模型文件（`07-存储.md` 第二节）。

@@ -68,7 +68,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 |---|---|
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
-| `avatar` | The version of this account's avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
+| `avatar` | The version of your avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
 | `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the default workspace, and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise, step Y-11). Not given to remote connections (Y-1 下); extensions get no `dirs` |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
@@ -123,11 +123,11 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `sessions` | One item of the session list changed | `{"sessions": [<item>…]}`, all of them |
 | `extensions` | An extension's status changed | `{"extensions": […]}` |
 | `packages` | One item of the package list changed | `{"packages": […]}` |
-| `projects` | One of this account's projects changed | `{"projects": […]}`, all of them |
-| `schedules` | One of this account's schedules changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
+| `projects` | A project changed | `{"projects": […]}`, all of them |
+| `schedules` | A schedule changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
 | `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`; earlier ones are not replayed |
-| `package` | With `package`: what that package pushes to this account (construction IM-1 lower-middle 2); its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
-| `kb` | Index-building progress of this account's knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
+| `package` | With `package`: what that package pushes to people (construction IM-1 lower-middle 2); its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
+| `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 

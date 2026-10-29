@@ -18,7 +18,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | [`mcp.login`](#mcplogin) | A URL MCP server that needs a browser login: get the authorization page |
 | [`mcp.login_finish`, `mcp.logout`](#mcplogin_finish-mcplogout) | Paste back the address the browser landed on when it isn't on the core's machine; log out |
 | [`skill.list`](#skilllist) | List the skills that can be used |
-| [`skill.remove`](#skillremove) | Delete skills the admin placed |
+| [`skill.remove`](#skillremove) | Delete skills you placed yourself |
 | [`script.list`](#scriptlist) | List the registered scripts |
 | [`tool.set_loading`, `feature.set`](#toolset_loading-featureset) | Retired (accepted, changes nothing); change the global switch of a skill, script or MCP server |
 | [`command.run`](#commandrun) | Run a slash command |
@@ -240,13 +240,13 @@ After logging in (build X-42 part two): when the token is about to expire or the
 
 ## `skill.list`
 
-**Params**: none. **Response**: `{"skills": [...], "dir"}` (`dir` is the folder where the admin places skills, given even before it exists, written `~/…` under the home directory), the skills the core can use right now, sorted by `name`; when several places have the same name, only the one the core actually uses is listed (your own wins; among packages, built-in before ones the admin installed, then by id). An item:
+**Params**: none. **Response**: `{"skills": [...], "dir"}` (`dir` is the folder where you place skills, given even before it exists, written `~/…` under the home directory), the skills the core can use right now, sorted by `name`; when several places have the same name, only the one the core actually uses is listed (your own wins; among packages, built-in before ones you installed, then by id). An item:
 
 | Name | Notes |
 |---|---|
 | `name` | Skill name |
 | `display_name`, `summary` | Name and one-line summary for people, picked by the connection's language (falling back to English, Chinese, Japanese in that order); left out when none is written |
-| `from` | Where it comes from: `home` (placed by the admin, `skills/`), `shipped` (from a built-in package), `package` (from a package the admin installed), `agents` (while the setting `skills.external.enabled` is on, from one of the other folders listed in `skills.external.dirs`; by default `~/.agents/skills`, which other clients such as Codex also read; nothing is listed while it is off) |
+| `from` | Where it comes from: `home` (placed by you, `skills/`), `shipped` (from a built-in package), `package` (from a package you installed), `agents` (while the setting `skills.external.enabled` is on, from one of the other folders listed in `skills.external.dirs`; by default `~/.agents/skills`, which other clients such as Codex also read; nothing is listed while it is off) |
 | `dir` | When `from` is `agents`: which folder it is in, exactly as written in the settings (`~` not expanded) |
 | `package` | For skills from a package: the package id |
 | `path` | Where the `SKILL.md` is; paths under the home directory are written `~/…` |
@@ -255,19 +255,19 @@ After logging in (build X-42 part two): when the token is about to expire or the
 
 ## `skill.remove`
 
-**Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills the admin placed (`from` is `home`; the whole `skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
+**Params**: `names`, an array of skill names, at least one, no repeats. **Response**: `{"trash": [...]}`, where each skill's folder now is in the system trash, in the order of `names`. Only skills you placed (`from` is `home`; the whole `skills/<folder>/` goes to the trash); when one covered a package skill of the same name, that one is listed again. People only: an extension process gets `local_only`.
 
 **Errors**: no names or repeated names: `bad_params`. No such skill: `unknown_skill`; one that comes with a package: `skill_from_package`; one in another folder (`from` is `agents`): `skill_shared` (all three with `data.name`; if any name fails, nothing is deleted). Could not move to the trash: `trash_failed`.
 
 ## `script.list`
 
-**Params**: none. **Response**: `{"scripts": [...], "dir"}` (`dir` is the folder where the admin places scripts, written as in `skill.list`), the scripts registered as tools right now, sorted by `tool`. An item:
+**Params**: none. **Response**: `{"scripts": [...], "dir"}` (`dir` is the folder where you place scripts, written as in `skill.list`), the scripts registered as tools right now, sorted by `tool`. An item:
 
 | Name | Notes |
 |---|---|
 | `tool` | Tool name |
 | `display_name`, `description` | Name and one-line description for people (the script head's `Display name`, `显示名称`, `描述`), picked by the connection's language as in `skill.list`; left out when none is written |
-| `from`, `package` | As in `skill.list`; `home` is placed by the admin (`scripts/`) |
+| `from`, `package` | As in `skill.list`; `home` is placed by you (`scripts/`) |
 | `path` | Where the script file is, written as in `skill.list` |
 | `timeout` | Seconds one call waits |
 | `on` | Global switch (`features.script-<tool>`); `true` when unset |

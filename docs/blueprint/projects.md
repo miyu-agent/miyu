@@ -6,14 +6,14 @@
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-store/src/projects.rs` | `home/<账号>/projects.json` 的写法：一项的各格、查写法（名称、说明、颜色、工作目录、附加提示词）、读、照读到的版本写（0600） |
+| `crates/miyu-store/src/projects.rs` | 数据根里 `projects.json` 的写法：一项的各格、查写法（名称、说明、颜色、工作目录、附加提示词）、读、照读到的版本写（0600） |
 | `crates/miyu-endpoint/src/projects.rs` | `project.list`、`create`、`update`、`delete`：排着改（`Core` 的 `projects` 锁）、人格和预设照造会话那一套找、写成了报一声 |
-| `crates/miyu-endpoint/src/projects/changes.rs` | 「哪个账号的哪个项目变了」的广播：一条是「账号、换行、编号」，订阅的连接只认自己账号的 |
+| `crates/miyu-endpoint/src/projects/changes.rs` | 「哪个项目变了」的广播：一条是项目编号，订阅着的连接都推 |
 | `crates/miyu-endpoint/src/projects/sessions.rs` | 会话在项目里（H-2）：项目在不在、这个会话能不能进（本机的主会话：没有父会话）、建好了移进去、删项目时挪出来 |
 | `crates/miyu-kernel/src/session/meta.rs` | 会话现在在哪个项目：`session.meta_changed` 的 `project` 一路盖上去（空的是移出来），`Session::project` 交出来（H-2） |
 | `crates/miyu-store/src/index/row.rs` | 会话列表的索引多一列 `project`（版本 7，H-2） |
 | `crates/miyu-policy/src/project.rs`、`resources/core/project.txt` | 附加提示词那一块（H-3）：模板包一层，接在「关于你」后面，记进快照的 `project` |
-| `crates/miyu-session/src/actor/persona/project.rs` | 回合开始照会话现在在哪个项目，读属主的 `projects.json` 拼这一块；和快照里的不一样这一轮换快照（同扩展放的那几段）；子代理进不了项目、不带，分叉出来的跟着父会话带 |
+| `crates/miyu-session/src/actor/persona/project.rs` | 回合开始照会话现在在哪个项目，读 `projects.json` 拼这一块；和快照里的不一样这一轮换快照（同扩展放的那几段）；子代理进不了项目、不带，分叉出来的跟着父会话带 |
 | `crates/miyu-tool/src/sessions.rs` 的 `reaches`、`crates/miyu-session/src/sessions.rs` | 留言的范围（H-3）：列会话照项目筛，认会话、读、发话都照列出来的那一批 |
 | `crates/miyu-endpoint/src/subscriptions/listed.rs` | `projects` 流：和软件包、扩展的推送共用一个转发任务，回应是整张表，之后推 `projects.changed` |
 
@@ -33,8 +33,7 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-store/src/projects/tests.rs` | 没有的是空的，写了读回来一样，没写的格不写，人格三种状态分得开；改过的不写、版本不对说是坏了；各格的写法；照编号找、改、拿掉 |
-| `crates/miyu-endpoint/tests/projects.rs` | 建、列、改（`unset`、空字符串清掉）、删，编号照造的先后，存在家目录；写错的各格、没有的人格和预设、没有的项目拒、什么都不写；订阅的回应是整张表、之后推变了的整项和删了的、取消了不推 |
-| `crates/miyu-endpoint/src/projects/changes/tests.rs` | 一条只推给自己账号的连接 |
+| `crates/miyu-endpoint/tests/projects.rs` | 建、列、改（`unset`、空字符串清掉）、删，编号照造的先后，存在数据根里；写错的各格、没有的人格和预设、没有的项目拒、什么都不写；订阅的回应是整张表、之后推变了的整项和删了的、取消了不推 |
 | `crates/miyu-endpoint/src/connection/tests.rs` | `project.*` 只给人 |
 | `crates/miyu-endpoint/tests/projects_sessions.rs` | 在项目里建的照项目的人格、预设、日志第二条移进去，明着写的照写的，没有的项目拒；移进、移出、列表带 `project`，没有的项目、空字符串、分叉出来的拒；删项目挪出来、回 `moved` |
 | `crates/miyu-kernel/src/session/tests/meta.rs` | 移进、移出项目记下来，一样的不记，载入照日志算回来 |

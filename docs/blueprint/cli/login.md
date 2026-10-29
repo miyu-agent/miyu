@@ -1,10 +1,8 @@
 ## `miyu provider`
 
-> **施工 SU-3 上（2026-10-28）**：个人设置那一层、`--system` 选项拿掉了，配置、密钥只有系统那一份。下文讲个人设置、`--system` 的地方作废，以帮助页和参考 `docs/reference/config.md` 为准；正文 SU-6 统一改。
-
 ### 是什么
 
-管密钥的命令（施工 8-5，2026-10-01 项目主人定，照 opencode 的 `auth login`、`auth list`、`auth logout`）：存一个供应商的 key、列出哪几个设了、删掉一个。原来叫 `miyu login`、`miyu logout`、`miyu login --list`，施工 Y-13 上挪到 `miyu provider` 下面（项目主人定）：`miyu login`、`miyu logout` 留给登录账号（`06-多用户与身份.md`），老写法不留兼容，现在是不认识的子命令。它们只是协议的客户端（`22-命令行.md` O5）：连上核心，问 `secret.list`、`secret.set`、`secret.delete`，照回应印。
+管密钥的命令（施工 8-5，2026-10-01 项目主人定，照 opencode 的 `auth login`、`auth list`、`auth logout`）：存一个供应商的 key、列出哪几个设了、删掉一个。原来叫 `miyu login`、`miyu logout`、`miyu login --list`，施工 Y-13 上挪到 `miyu provider` 下面（项目主人定），老写法不留兼容，现在是不认识的子命令。它们只是协议的客户端（`22-命令行.md` O5）：连上核心，问 `secret.list`、`secret.set`、`secret.delete`，照回应印。
 
 密钥本身怎么存、配置里怎么引用、协议上的样子在 `config.md`（第九条、「协议」），这一页只写命令行这一头。key 从不写在命令行上（会进 shell 的历史），也从不印出来，前几位也不印。
 
@@ -29,7 +27,7 @@
 | `miyu provider list [--format text\|json]` | 列出哪几个设了、谁在用，不给看 key |
 | `miyu provider logout [名字]` | 删掉一个。不写名字的在终端里从设过的里面选 |
 
-- `--system`（施工 Y-12 下下，`protocol.md`「管理员模式」）：只给 `login`、`logout`，存进、删掉大家共用的那一份，以管理员身份发；不写的存、删自己的（`home/<账号>/secrets.toml`）。
+- 密钥只有一份：数据根里的 `secrets.toml`。
 - `--format` 只给 `list`。`miyu provider` 后面不写子命令：说参数不对、印用法（同 `miyu mcp`）；写了不认识的：说「miyu provider 没有 <名字> 这个子命令」。别的写错：参数不对，退出码 2（`cli/main.md`「参数写错时」）。
 - 用到的环境变量：`MIYU_HOME`、`NO_COLOR`；界面语言照 `cli/main.md`。
 
@@ -104,7 +102,7 @@ Options:
 |---|---|
 | 0 | 成了 |
 | 1 | 核心拒绝了；没收到 key；没选；要删的没设过；`logout` 选的时候一个都没设过；连不上核心、数据根的错 |
-| 2 | 参数不对：名字不合写法（写的、选的时候敲的）；不写名字又不在终端里；`login` 选的时候一个能选的都没有；`--format` 不在 `list` 上、`--system` 在 `list` 上、`miyu provider` 后面没写子命令、老写法 `miyu login`、`miyu logout` |
+| 2 | 参数不对：名字不合写法（写的、选的时候敲的）；不写名字又不在终端里；`login` 选的时候一个能选的都没有；`--format` 不在 `list` 上、`miyu provider` 后面没写子命令、老写法 `miyu login`、`miyu logout` |
 | 130 | 贴 key 时取消了：按了 `Ctrl+C`，或者空行按了 `Ctrl+D`（施工 8-5 补） |
 
 ### 给人看的字
@@ -135,5 +133,4 @@ Options:
 
 - 不写名字时列出目录里的供应商、选了连配置一起写：随 8-11（`models.md`）。
 - 借订阅的登录（Claude Code、Codex）：随借订阅那一步。
-- 成员自己的 key 存到自己的家目录：随多用户。
 - 命令行自己的字的日文：界面语言是 `ja` 时照英文。

@@ -183,7 +183,7 @@
 
 ## `provider.rename`
 
-改一家供应商的编号，一次改完：两层配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
+改一家供应商的编号，一次改完：配置里 `[providers.<from>]` 那张表（连同子表、密钥的引用）换成 `<to>`，`models.chat`、`models.vision`、`models.embedding`、池的成员这些 `<from>/<模型>` 换成 `<to>/<模型>`；钉着旧编号的会话下一轮起照新编号。只给人。
 
 **参数**：`from`、`to`。`to` 照编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 32 个。
 
@@ -200,7 +200,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `purpose` | 字符串，必写 | 用途，1 到 32 个小写字母、数字、`-`，例如 `vision` |
-| `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希：先照这个连接自己的账号找（`blob.put` 存在那里），找不到再照它替谁干活的那个人找；都没有的 `unknown_attachment` |
+| `messages` | 数组，必写 | `{"role": "system"|"user"|"assistant", "text", "images"?}`。`system` 至多一条、只能在最前；最后一条是 `user`；`images` 只有 `user` 能带，是 blob 的哈希（`blob.put` 存的），没有的 `unknown_attachment` |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写照 `models.chat` |
 | `use` | `chat` 或 `vision` | 不知道人配了哪个模型时用：照 `models.chat` 或 `models.vision`；和 `model` 至多写一个 |
 | `side` | 字符串 | 扩展的旁路请求：写自己包里清单 `[[side]]` 登记的编号（不带包名）。照登记的档位从同名的池（`lite`、`normal`、`flagship`）取；池是空的、池里全在冷却或者都出错了，用会话的模型。和 `model`、`use` 不能同写；人的连接、没登记的编号 `bad_params` |
@@ -218,7 +218,7 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `bad_params`（`-32602`） | 参数写法不对；图的 blob 不是图；`side` 不是这个扩展登记过的 |
-| `unknown_attachment` | 图的 blob 这个账号没有 |
+| `unknown_attachment` | 没有这个图的 blob |
 | `unknown_model` | `model` 解析不出 |
 | `no_model` | 没有能用的模型（没配、key 取不到），`data.message` |
 | `cooling` | 候选全在冷却，`data.message`、`data.wait_ms` |
@@ -226,7 +226,7 @@
 
 ## `model.embed`
 
-**参数**：`texts`：1 到 64 条字，每条 1 到 8000 个字。照这个账号的 `models.embedding` 算（本机的内置模型或远程的一家）。
+**参数**：`texts`：1 到 64 条字，每条 1 到 8000 个字。照 `models.embedding` 算（本机的内置模型或远程的一家）。
 
 **回应**：`{"model", "vectors"}`。`model` 是模型编号（`local:<id>` 或 `<供应商>/<模型>`）：换了模型的向量不能和以前的比。`vectors` 照先后，归一化过。
 

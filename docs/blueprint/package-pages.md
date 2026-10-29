@@ -24,7 +24,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 核心只查、不解码不缩（看开头的字节认格式、只看文件头量宽高，同人格的头像，`packages/logo.rs`）：不在（照真实路径，出了包目录的也算不在）、不是 PNG / WebP、超了上限的当没有图标，包照装，`miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`。本地开发目录同一个上限。
    - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
-3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，管理员装的是家目录的 `packages/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
+3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `packages/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
 
 ### `package.list` 每一项多的几格
 
@@ -38,7 +38,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 
 ### `package.logo`（施工 F-18 上）
 
-`package.logo {"package"}`：读一个装着的包自带的图标，回应 `{"package", "logo", "media_type", "data"}`：`logo` 是版本（同列表那一格），`media_type` 是 `image/png` 或 `image/webp`，`data` 是 base64；清单没写、不合规矩的三格都是 `null`。照连接替谁干活的那个人看得到的找（他自己那一层的盖过系统的），没装的 `unknown_package`。成员调得了（同 `package.list`），扩展照能力表能调。不复用 `package.file`：它只读后台页目录里的，没有后台页的包回 `no_page`。形状同 `persona.avatar`。
+`package.logo {"package"}`：读一个装着的包自带的图标，回应 `{"package", "logo", "media_type", "data"}`：`logo` 是版本（同列表那一格），`media_type` 是 `image/png` 或 `image/webp`，`data` 是 base64；清单没写、不合规矩的三格都是 `null`。照装着的找，没装的 `unknown_package`。扩展照能力表能调。不复用 `package.file`：它只读后台页目录里的，没有后台页的包回 `no_page`。形状同 `persona.avatar`。
 
 写了 `from`（施工 F-18 下，同 `package.install` 的 `from`：`official` 或配置里起的源名）的读那个软件源索引里的，装没装都行，见下一节。不认识的源 `unknown_source`，索引里没有的编号 `unknown_package`，哪一处都没下成的 `download_failed`。
 
@@ -75,13 +75,13 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 | 种类 | `enabled` | `package.enable` | `package.disable` | `package.restart`（施工 X-4） |
 |---|---|---|---|---|
 | 扩展 | 开关开着 | 同 `extension.enable`（要批的能力照它的 `approve`、`needs_approval`） | 同 `extension.disable` | 同 `extension.restart`，再重启它带的 MCP 服务 |
-| 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在家目录记一笔） | `not_restartable` |
+| 出厂的内置包（不是必需的） | 没有卸掉 | 同 `package.install {package}`：装回来 | 同 `package.remove {package}`：卸掉（在数据根记一笔） | `not_restartable` |
 | 带了 MCP 服务的 `bundle`（施工 X-3 上） | 开关开着（没写的关着） | 起它带的 MCP 服务 | 停下服务，它们的工具出目录 | 重启它带的服务 |
 | 必需的、界面、小程序、吉祥物包，只带技能、脚本的 `bundle`（施工 X-13 上） | 没有这一格 | `not_switchable` | `not_switchable` | 必需的扩展照扩展办，别的 `not_restartable` |
 
 1. 参数 `{package}`，`package.enable` 另可带 `approve`（同 `extension.enable`）。回应同 `package.list` 的一项。`package.restart` 关着的 `package_off`。
 2. 没有的包 `unknown_package`；程序不在的 `program_missing`（施工 BS-1 上中起没有必需的包）。
-3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；管理员装的包卸掉是删文件，只在信息页给。
+3. 信息页的「卸载」照旧是 `package.remove`：出厂的包卸掉和关掉是一回事，头只给一处（列表的开关）；装上的包卸掉是删文件，只在信息页给。
 
 ### `config.schema` 里包的配置项
 
@@ -121,9 +121,9 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 在后台答：这个连接后面的请求不等它（同 `link.preview`，`methods::answered_later`）。
 3. 扩展这边：收到 `method.call` 照自己的方法表办；不认识的回 JSON-RPC 的 `-32601`（核心交回 `method_failed`）。
 4. **推给页面**（施工 IM-1 中下二，im 设计 07 第 4.6 节第 3 样，形状 2026-10-27 主会话定）：扩展的状态变了，不让页面轮询，推过去。
-   - 扩展发 `package.emit {"event", "data"?}`：推给它替的那个账号；`event` 写法同方法名，`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；不是扩展的连接 `not_an_extension`。回 `{}`，没人订着也是。
-   - 页面（经网页转、或者 im 网页直连）发 `subscribe {"stream": "package", "package"}`：回 `{}`，不补以前的；没装的包 `unknown_package`；一个连接一个包一个，同一个包再订换新的；人、成员都能订，只收自己账号的，扩展订不了（`local_only`）。
-   - 推 `package.event {"package", "event", "data"}`。广播一条是「账号、换行、包、换行、那一行」（`backstage/events.rs`），订阅的转发任务只挑自己账号、自己订的包的（`subscriptions/listed.rs` 的 `Listed::PackageEvents`）。掉了队推 `resync {"stream": "package", "package"}`，这个订阅停下，页面重新订、重新拉一遍。
+   - 扩展发 `package.emit {"event", "data"?}`：推给订了这个包的连接；`event` 写法同方法名，`data` 写成 JSON 最多 256 KiB，不对的 `bad_params`；不是扩展的连接 `not_an_extension`。回 `{}`，没人订着也是。
+   - 页面（经网页转、或者 im 网页直连）发 `subscribe {"stream": "package", "package"}`：回 `{}`，不补以前的；没装的包 `unknown_package`；一个连接一个包一个，同一个包再订换新的；人能订，扩展订不了（`local_only`）。
+   - 推 `package.event {"package", "event", "data"}`。广播一条是「包、换行、那一行」（`backstage/events.rs`），订阅的转发任务只挑自己订的包的（`subscriptions/listed.rs` 的 `Listed::PackageEvents`）。掉了队推 `resync {"stream": "package", "package"}`，这个订阅停下，页面重新订、重新拉一遍。
    - 不存盘：没订着的收不到。
 
 **软件之间互相调**（施工 X-18，设计 `34-表情包.md` 第五节第 3 条）：
@@ -157,11 +157,11 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 4. 推送：`settings.changed {"keys"}`（`config.changed` 里有它的项时）、`theme.changed {"theme", "colors"?}`。
 5. 别的方法回 `-32601`；写法不对的回 `-32600`。网页认的一律照它给框的那个包，框说自己是谁不算数。
 
-### 平台接入的软件：终端管理员的平台账号（2026-10-10 项目主人定）
+### 平台接入的软件：我的平台账号（2026-10-10 项目主人定）
 
-1. 平台接入那个软件（`package.list` 里带 `connection` 的）的信息页上多一项，名字照平台写，接入QQ 的叫「终端管理员的 QQ 号」，只填号码。
-2. 头替人写成配置 `external.bindings.<平台>:<号>`，值是本机账号（`config.set`，`config.md` 的 `external.bindings`）。平台照这一项的 `connection.platform`，不写死 QQ。现在只有管理员一个账号，值写 `admin`，不画账号那一列；多用户以后再加。
-3. 删掉一个号是 `unset` 那一键。系统配置里手写的、别的平台的照样认，信息页只列这个平台的。
+1. 平台接入那个软件（`package.list` 里带 `connection` 的）的信息页上多一项：你在这个平台上的号，名字照平台写（接入QQ 的是 QQ 号），只填号码。
+2. 头替人写成配置 `external.bindings.<平台>:<号>`，值写 `owner`（`config.set`，`config.md` 的 `external.bindings`）。平台照这一项的 `connection.platform`，不写死 QQ。
+3. 删掉一个号是 `unset` 那一键。配置里手写的、别的平台的照样认，信息页只列这个平台的。
 
 ### 终端
 
