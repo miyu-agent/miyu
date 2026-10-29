@@ -147,7 +147,11 @@ async fn building_a_base_from_the_shell() {
     // 有的机器上临时目录那块盘没有能放的回收站：照实报。
     match removed.code {
         0 => assert!(removed.out.starts_with("挪进回收站了："), "{}", removed.out),
-        _ => assert!(removed.err.starts_with("挪不进回收站："), "{}", removed.err),
+        _ => assert!(
+            removed.err.starts_with("miyu: 挪不进回收站："),
+            "{}",
+            removed.err
+        ),
     }
     let unknown = run(&home, &cwd, &["read", "nope", "a.md"]).await;
     assert_eq!(
@@ -189,7 +193,11 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
             "{}",
             deleted.out
         ),
-        _ => assert!(deleted.err.starts_with("挪不进回收站："), "{}", deleted.err),
+        _ => assert!(
+            deleted.err.starts_with("miyu: 挪不进回收站："),
+            "{}",
+            deleted.err
+        ),
     }
     assert_eq!(
         std::fs::read_to_string(notes.join("a.md")).expect("在"),
