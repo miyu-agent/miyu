@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::request::Request;
 use miyu_kernel::session::{Command, Outcome};
@@ -18,12 +18,12 @@ use miyu_tool::{Catalog, Log, MainSession, Stop};
 
 use crate::support::*;
 
-/// 假的会话表：列会话时交回 `listed` 再加上问它的那个会话，记下每次问的属主；读别的会话的日志（施工 C-4）照
+/// 假的会话表：列会话时交回 `listed` 再加上问它的那个会话，数一数问了几次；读别的会话的日志（施工 C-4）照
 /// `root` 上真实的目录读，和生产里一样不载入它。
 struct Table {
     root: Option<DataRoot>,
     listed: Vec<MainSession>,
-    asked: Mutex<Vec<AccountId>>,
+    asked: std::sync::atomic::AtomicUsize,
     this: Mutex<Option<SessionId>>,
 }
 
@@ -33,7 +33,7 @@ impl Default for Table {
         Table {
             root: None,
             listed: Vec::new(),
-            asked: Mutex::new(Vec::new()),
+            asked: std::sync::atomic::AtomicUsize::new(0),
             this: Mutex::new(None),
         }
     }
@@ -71,15 +71,9 @@ impl SessionPort for Table {
         Box::pin(async { Ok(miyu_session::Peek::default()) })
     }
 
-    fn sessions(
-        &self,
-        owner: AccountId,
-        _stop: Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>> {
+    fn sessions(&self, _stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         self.asked
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(owner);
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut listed = self.listed.clone();
         // 会话表交回的含她自己。
         if let Some(this) = self
@@ -227,9 +221,9 @@ async fn it_asks_for_the_owners_sessions_and_leaves_herself_out() {
         "{text}"
     );
     assert_eq!(
-        *table.asked.lock().unwrap_or_else(PoisonError::into_inner),
-        [alice_account()],
-        "照这个会话的属主要"
+        table.asked.load(std::sync::atomic::Ordering::Relaxed),
+        1,
+        "问了一次"
     );
 }
 
@@ -320,12 +314,9 @@ async fn a_child_calling_it_is_told_there_is_no_such_tool() {
         "子会话列不了：{}",
         last_result(&log)
     );
-    assert!(
-        table
-            .asked
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .is_empty(),
+    assert_eq!(
+        table.asked.load(std::sync::atomic::Ordering::Relaxed),
+        0,
         "端口一次都没问"
     );
 }
@@ -352,12 +343,5 @@ async fn a_loaded_main_session_still_lists() {
             id.short()
         )
     );
-    assert_eq!(
-        table
-            .asked
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .len(),
-        1
-    );
+    assert_eq!(table.asked.load(std::sync::atomic::Ordering::Relaxed), 1);
 }

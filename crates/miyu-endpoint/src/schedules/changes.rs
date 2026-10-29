@@ -3,8 +3,6 @@
 
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
-
 use super::Schedules;
 
 /// 广播里最多攒几条没收的：到点的一次交几个，人一次改一个。
@@ -16,20 +14,10 @@ impl Schedules {
         self.changes.subscribe()
     }
 
-    /// 广播 `account` 的任务 `id` 变了。
-    pub(super) fn notify(&self, account: &AccountId, id: &str) {
-        if self
-            .changes
-            .send(format!("{}\n{id}", account.as_str()))
-            .is_err()
-        {
+    /// 广播任务 `id` 变了。
+    pub(super) fn notify(&self, id: &str) {
+        if self.changes.send(id.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }
     }
-}
-
-/// 一条是不是 `account` 的：是的交回任务编号，别的账号的、写法不对的没有。
-pub(crate) fn mine<'a>(changed: &'a str, account: &AccountId) -> Option<&'a str> {
-    let (whose, id) = changed.split_once('\n')?;
-    (whose == account.as_str()).then_some(id)
 }

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, Purpose};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::request::Message;
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{DreamBatch, DreamResult, DreamRoom, DreamSpec, Watched};
@@ -19,36 +19,33 @@ use super::memory_module;
 use crate::Core;
 use crate::test_support::{TempDir, resources, temp_root};
 
-/// 照剧本 `script` 起来的核心，整理会话接上了；交回数据根的目录（丢掉时删掉，放在前头：核心先丢）、核心、数据根、管理员。
-fn core(script: &Script) -> (TempDir, Arc<Core>, miyu_store::root::DataRoot, AccountId) {
+/// 照剧本 `script` 起来的核心，整理会话接上了；交回数据根的目录（丢掉时删掉，放在前头：核心先丢）、核心、数据根。
+fn core(script: &Script) -> (TempDir, Arc<Core>, miyu_store::root::DataRoot) {
     let (root, dir) = temp_root("dream");
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");
-    let admin = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources),
         Arc::new(script.clone()),
         tools,
         None,
-        admin.clone(),
         "token".to_string(),
     ));
     assert!(core.give_dream_sessions(), "头一次接得上");
     assert!(!core.give_dream_sessions(), "接过的不再换");
-    (dir, core, root, admin)
+    (dir, core, root)
 }
 
 /// 开一趟人格那一间、人叫的。
-fn spec(admin: &AccountId) -> DreamSpec {
-    spec_of(admin, "engineer")
+fn spec() -> DreamSpec {
+    spec_of("engineer")
 }
 
 /// 开一趟人格 `persona` 那一间、人叫的。
-fn spec_of(admin: &AccountId, persona: &str) -> DreamSpec {
+fn spec_of(persona: &str) -> DreamSpec {
     DreamSpec {
-        owner: admin.clone(),
         room: DreamRoom::Persona(persona.to_string()),
         manual: true,
         from: None,
@@ -82,9 +79,9 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
         Play::Says("第二批的回答"),
         Play::Says("第三批的回答"),
     ]);
-    let (_dir, core, root, admin) = core(&script);
+    let (_dir, core, root) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
-    let session = port.open(spec(&admin)).await.expect("开得成");
+    let session = port.open(spec()).await.expect("开得成");
     let first = port
         .batch(
             session.clone(),
@@ -169,9 +166,9 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
 #[tokio::test]
 async fn stopping_interrupts_the_batch() {
     let script = Script::new([Play::Holds]);
-    let (_dir, core, _root, admin) = core(&script);
+    let (_dir, core, _root) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
-    let session = port.open(spec(&admin)).await.expect("开得成");
+    let session = port.open(spec()).await.expect("开得成");
     let running = {
         let (port, session) = (port.clone(), session.clone());
         tokio::spawn(async move {
@@ -201,9 +198,9 @@ async fn the_answer_streams_to_the_watch_without_the_thinking() {
         thinking: "先想想",
         text: "回答的原文",
     }]);
-    let (_dir, core, _root, admin) = core(&script);
+    let (_dir, core, _root) = core(&script);
     let port = core.memory.dream_sessions().expect("接上了").clone();
-    let session = port.open(spec(&admin)).await.expect("开得成");
+    let session = port.open(spec()).await.expect("开得成");
     let mut heard = String::new();
     let answered = port
         .batch(
@@ -224,10 +221,10 @@ async fn the_answer_streams_to_the_watch_without_the_thinking() {
 
 #[tokio::test]
 async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
-    let (_dir, core, _root, admin) = core(&Script::new([]));
+    let (_dir, core, _root) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
-    let session = port.open(spec(&admin)).await.expect("开得成");
-    let all = crate::list::list(&core, &admin, false, None, None)
+    let session = port.open(spec()).await.expect("开得成");
+    let all = crate::list::list(&core, false, None, None)
         .await
         .expect("列得出");
     let item = all
@@ -237,11 +234,11 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
     assert_eq!(item["kind"], "dream");
     assert_eq!(item["dream"]["persona"], "engineer");
     assert_eq!(item["dream"]["manual"], true);
-    let only = crate::list::list(&core, &admin, false, Some(true), None)
+    let only = crate::list::list(&core, false, Some(true), None)
         .await
         .expect("列得出");
     assert_eq!(only.len(), 1, "只要整理会话：{only:?}");
-    let none = crate::list::list(&core, &admin, false, Some(false), None)
+    let none = crate::list::list(&core, false, Some(false), None)
         .await
         .expect("列得出");
     assert!(
@@ -249,7 +246,7 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
         "不要整理会话：{none:?}"
     );
     let hers = crate::spawn::port(&core)
-        .sessions(admin.clone(), miyu_tool::Stop::default())
+        .sessions(miyu_tool::Stop::default())
         .await
         .expect("列得出");
     assert!(
@@ -260,13 +257,13 @@ async fn dream_sessions_are_listed_with_their_kind_but_not_to_her() {
 
 #[tokio::test]
 async fn closing_keeps_only_the_newest_of_the_room() {
-    let (_dir, core, root, admin) = core(&Script::new([]));
+    let (_dir, core, root) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
     let mut engineer = Vec::new();
     for _ in 0..3 {
-        engineer.push(port.open(spec(&admin)).await.expect("开得成"));
+        engineer.push(port.open(spec()).await.expect("开得成"));
     }
-    let other = port.open(spec_of(&admin, "other")).await.expect("开得成");
+    let other = port.open(spec_of("other")).await.expect("开得成");
     let exists = |session: &SessionId| root.session_dir(session).exists();
 
     assert_eq!(port.close(engineer[2].clone(), 2, None).await, Ok(1));
@@ -284,8 +281,8 @@ async fn closing_keeps_only_the_newest_of_the_room() {
 }
 
 /// 列表里会话 `session` 那一项。
-async fn listed(core: &Arc<Core>, admin: &AccountId, session: &SessionId) -> serde_json::Value {
-    crate::list::list(core, admin, false, None, None)
+async fn listed(core: &Arc<Core>, session: &SessionId) -> serde_json::Value {
+    crate::list::list(core, false, None, None)
         .await
         .expect("列得出")
         .into_iter()
@@ -295,11 +292,11 @@ async fn listed(core: &Arc<Core>, admin: &AccountId, session: &SessionId) -> ser
 
 #[tokio::test]
 async fn closing_with_a_result_records_it_and_lists_it() {
-    let (_dir, core, root, admin) = core(&Script::new([]));
+    let (_dir, core, root) = core(&Script::new([]));
     let port = core.memory.dream_sessions().expect("接上了").clone();
-    let done = port.open(spec(&admin)).await.expect("开得成");
-    let stopped = port.open(spec(&admin)).await.expect("开得成");
-    let bare = port.open(spec(&admin)).await.expect("开得成");
+    let done = port.open(spec()).await.expect("开得成");
+    let stopped = port.open(spec()).await.expect("开得成");
+    let bare = port.open(spec()).await.expect("开得成");
     let mut pushes = core.listing.subscribe();
     let result = DreamResult {
         given: 3,
@@ -332,15 +329,15 @@ async fn closing_with_a_result_records_it_and_lists_it() {
     );
     assert_eq!(last.turn, None, "不带回合");
 
-    let item = listed(&core, &admin, &done).await;
+    let item = listed(&core, &done).await;
     assert_eq!(
         item["dream"]["result"],
         serde_json::json!({"given": 3, "revised": 1, "retired": 2, "summary": true}),
         "没叫停的不写 stopped：{item}"
     );
-    let item = listed(&core, &admin, &stopped).await;
+    let item = listed(&core, &stopped).await;
     assert_eq!(item["dream"]["result"]["stopped"], true, "{item}");
-    let item = listed(&core, &admin, &bare).await;
+    let item = listed(&core, &bare).await;
     assert!(
         item["dream"].get("result").is_none(),
         "没交结果的不写：{item}"
@@ -348,7 +345,7 @@ async fn closing_with_a_result_records_it_and_lists_it() {
     assert_eq!(item["dream"]["persona"], "engineer");
 
     // 会话列表的推送照它报一声（`sessions.changed`）。
-    let pushed = tokio::time::timeout(std::time::Duration::from_secs(30), async {
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
         loop {
             let change = pushes.recv().await.expect("推送还在");
             if change.line.contains(done.as_str()) && change.line.contains("\"result\"") {
@@ -358,5 +355,4 @@ async fn closing_with_a_result_records_it_and_lists_it() {
     })
     .await
     .expect("推了带结果的那一项");
-    assert_eq!(pushed.owner, admin);
 }

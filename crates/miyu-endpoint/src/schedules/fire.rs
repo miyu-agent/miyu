@@ -9,7 +9,7 @@
 use std::sync::Arc;
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{self, By, ScheduleLoop};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -44,17 +44,11 @@ impl Delivered {
 }
 
 /// 把 `schedule` 的这一次（到点在 `due`）交出去。
-pub(super) async fn deliver(
-    core: &Arc<Core>,
-    account: &AccountId,
-    schedule: &Schedule,
-    due: Timestamp,
-) -> Delivered {
+pub(super) async fn deliver(core: &Arc<Core>, schedule: &Schedule, due: Timestamp) -> Delivered {
     // 同一次的命令编号一样：核心重启后再交一遍，会话认得是重发。
     let base = format!("schedule/{}/{}", schedule.id, due.unix_millis());
     let by = By::Schedule(origin::Schedule {
         schedule: schedule.id.clone(),
-        account: account.clone(),
         looping: schedule.looping.map(|looping| match looping {
             Loop::Fixed => ScheduleLoop::Fixed,
             Loop::Dynamic => ScheduleLoop::Dynamic,
@@ -67,7 +61,7 @@ pub(super) async fn deliver(
             persona,
             preset,
             cwd,
-        } => match opened(core, account, &base, persona.as_deref(), preset, cwd).await {
+        } => match opened(core, &base, persona.as_deref(), preset, cwd).await {
             Some(session) => session,
             None => return Delivered::skipped("not_opened", None, false),
         },
@@ -75,9 +69,6 @@ pub(super) async fn deliver(
     let Ok(found) = core.sessions.get(core, &session).await else {
         return Delivered::skipped("session_gone", Some(session), true);
     };
-    if found.handle.owner() != account {
-        return Delivered::skipped("session_gone", Some(session), true);
-    }
     if let Creator::Model { .. } = schedule.by {
         let package = match schedule.looping {
             None => SCHEDULE_PACKAGE,
@@ -89,7 +80,7 @@ pub(super) async fn deliver(
             .await
             .ok()
             .and_then(|current| current.preset);
-        if !crate::presets::package_on(core, account, preset.as_deref(), package) {
+        if !crate::presets::package_on(core, preset.as_deref(), package) {
             return Delivered::skipped("preset_off", Some(session), false);
         }
     }
@@ -113,8 +104,7 @@ pub(super) async fn deliver(
         Ok(Outcome::Accepted { events }) => {
             if let (Some(pushes), Some(said)) = (watching, events.first().copied()) {
                 let which = (schedule.id.clone(), session.clone());
-                core.schedules()
-                    .watch_ran(account.clone(), which, said, pushes);
+                core.schedules().watch_ran(which, said, pushes);
             }
             Delivered {
                 result: if busy { "queued" } else { "ran" }.to_string(),
@@ -156,7 +146,6 @@ async fn pushed(core: &Arc<Core>, schedule: &Schedule, due: Timestamp, missed: u
 /// 每次新开的：照建时定下的人格、预设、工作目录开一个，没人在场（要问人的照规矩拒）。开不成的记一行、没有。
 async fn opened(
     core: &Arc<Core>,
-    account: &AccountId,
     base: &str,
     persona: Option<&str>,
     preset: &str,
@@ -164,7 +153,6 @@ async fn opened(
 ) -> Option<SessionId> {
     let command = CommandId::parse(&format!("{base}/open")).ok()?;
     let who = Opening {
-        owner: account.clone(),
         attended: false,
         oneshot: false,
         model: None,
@@ -192,7 +180,7 @@ async fn opened(
     {
         Ok(created) => Some(created.id),
         Err(refusal) => {
-            tracing::warn!(target: super::TARGET, account = %account, reason = ?refusal, "schedule session not opened");
+            tracing::warn!(target: super::TARGET, reason = ?refusal, "schedule session not opened");
             None
         }
     }

@@ -1,7 +1,6 @@
 //! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、个人设置、系统配置」找预设、几层叠好；
 //! `preset.list`、`preset.get`。找哪几层、怎么叠在 `miyu_store::presets`。
 
-use miyu_kernel::id::AccountId;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -29,24 +28,20 @@ const TARGET: &str = "miyu::endpoint";
 
 /// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
 /// 谁调都是主人那一份）。
-pub(crate) fn presets(core: &Core, account: &AccountId) -> Presets {
+pub(crate) fn presets(core: &Core) -> Presets {
     Presets::new(&core.resources, &core.root)
-        .with_packages(&crate::packages::folders(core, account))
+        .with_packages(&crate::packages::folders(core))
         .with_groups(crate::packages::groups(&core.system_packages()))
 }
 
 /// 找新会话的预设：指定了的是它，不然照这时的 `preset.default`（系统配置，都没写的是出厂的 `full`）。指着没有
 /// 的不悄悄换成别的（Y12）。在阻塞线程里读盘。
-pub(crate) async fn resolve(
-    core: &Core,
-    account: &AccountId,
-    wanted: Option<&str>,
-) -> Result<Found, Refusal> {
+pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, Refusal> {
     let id = match wanted {
         Some(id) => id.to_string(),
-        None => default_of(core, account),
+        None => default_of(core),
     };
-    let presets = presets(core, account);
+    let presets = presets(core);
     let found = tokio::task::spawn_blocking(move || presets.find(&id)).await;
     match found {
         Ok(Ok(found)) => Ok(found),
@@ -57,36 +52,32 @@ pub(crate) async fn resolve(
 
 /// `account` 这时的 `preset.default`：个人设置压着系统配置，都没写的是出厂的 `full`（施工 CC-1 从 [`resolve`] 挪出来，不写会话的
 /// 命令菜单照它筛）。
-pub(crate) fn default_of(core: &Core, account: &AccountId) -> String {
-    PresetSettings::from(&core.mine(account).config().resolved().values()).default
+pub(crate) fn default_of(core: &Core) -> String {
+    PresetSettings::from(&core.mine().config().resolved().values()).default
 }
 
 /// 交给属主是 `owner` 的会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能；施工 Y-2 中上起照属主）：改了预设的
 /// 文件，开着的会话下一个回合换上。
-pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPlaces {
+pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
     // 扩展这时交的功能（施工 IM-6）每回合开始取一次：拿着核心的弱引用，会话活在核心里面。
-    let (weak, whose) = (std::sync::Arc::downgrade(core), owner.clone());
+    let weak = std::sync::Arc::downgrade(core);
     // 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
     let weak_written = std::sync::Arc::downgrade(core);
     // 文件改动的版本（施工 OV-1 下）：盯上他那一层，会话回合开始比号。
-    core.watch_edits(owner);
-    let (weak_edits, edited_by) = (std::sync::Arc::downgrade(core), owner.clone());
+    core.watch_edits();
+    let weak_edits = std::sync::Arc::downgrade(core);
     PresetPlaces {
-        presets: presets(core, owner),
-        features: crate::scripts::features(core, owner),
+        presets: presets(core),
+        features: crate::scripts::features(core),
         offers: Some(miyu_session::OfferedFeatures(std::sync::Arc::new(
             move || {
                 weak.upgrade()
-                    .map(|core| core.extensions.offers.features_of(&whose))
+                    .map(|core| core.extensions.offers.features_of())
                     .unwrap_or_default()
             },
         ))),
         edits: Some(miyu_session::prefix::EditsVersion(std::sync::Arc::new(
-            move || {
-                weak_edits
-                    .upgrade()
-                    .map_or(0, |core| core.edits.version(&edited_by))
-            },
+            move || weak_edits.upgrade().map_or(0, |core| core.edits.version()),
         ))),
         overrides: Some(miyu_session::ToolOverrides(std::sync::Arc::new(
             move || {
@@ -100,32 +91,27 @@ pub(crate) fn places(core: &std::sync::Arc<Core>, owner: &AccountId) -> PresetPl
 }
 
 /// 找好的预设换成造会话要的：带上这时的全局开关（施工 X-27），算好装了、没开的功能（施工 F-3 上）。
-pub(crate) fn chosen(core: &Core, owner: &AccountId, found: Found) -> Chosen {
-    let features = crate::scripts::features(core, owner);
+pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
+    let features = crate::scripts::features(core);
     // 这个人关了的包扣下（施工 U23 末上）。
     let file = found
         .file
-        .following(switches(core, owner))
-        .switching_off(core.packages_off(owner));
+        .following(switches(core))
+        .switching_off(core.packages_off());
     Chosen::new(found.id, file, &features)
 }
 
 /// 预设 `preset` 在属主 `owner` 这里开没开包 `package`（施工 J-1 上：她建的定时任务到点时照会话现在的预设判）：包的功能里装着、
 /// 没被关掉的有一个就算开。没有预设的（以前的会话）都开着；无工具（空的编号）、找不到的预设、没装的包算关。
-pub(crate) fn package_on(
-    core: &Core,
-    owner: &AccountId,
-    preset: Option<&str>,
-    package: &str,
-) -> bool {
+pub(crate) fn package_on(core: &Core, preset: Option<&str>, package: &str) -> bool {
     let Some(preset) = preset else {
         return true;
     };
-    let Ok(found) = presets(core, owner).find(preset) else {
+    let Ok(found) = presets(core).find(preset) else {
         return false;
     };
-    let chosen = chosen(core, owner, found);
-    crate::scripts::features(core, owner)
+    let chosen = chosen(core, found);
+    crate::scripts::features(core)
         .iter()
         .filter(|feature| feature.package == package)
         .any(|feature| !chosen.off.contains(&feature.id))
@@ -133,11 +119,8 @@ pub(crate) fn package_on(
 
 /// 这时 `account` 的配置里写了的全局开关（施工 X-27，`miyu_session::switches`；施工 Y-2 下下中上起照人）：照配置服务最近换上的
 /// 那一份读，不拿配置服务的锁。
-pub(crate) fn switches(
-    core: &Core,
-    account: &AccountId,
-) -> std::collections::BTreeMap<String, bool> {
-    let now = core.mine(account).hub().current();
+pub(crate) fn switches(core: &Core) -> std::collections::BTreeMap<String, bool> {
+    let now = core.mine().hub().current();
     miyu_session::switches::of(&now.borrow().resolved().values())
 }
 
@@ -189,9 +172,9 @@ fn listed_problem(id: &str, error: &PresetError, words: Option<&Human>) -> Value
 
 /// `preset.list`：几层里所有的预设，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
 /// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。
-pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
+pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let presets = presets(core, account);
+    let presets = presets(core);
     let read = tokio::task::spawn_blocking(move || {
         presets
             .ids()
@@ -252,27 +235,20 @@ pub(crate) struct GetParams {
 /// `preset.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；`unlisted` 是叠好以后的（几层都没写的
 /// 是 `on`）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
 /// 不往外给。
-pub(crate) async fn get(
-    core: &Core,
-    account: &AccountId,
-    peer: Peer,
-    params: GetParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let presets = presets(core, account);
+    let presets = presets(core);
     let found = tokio::task::spawn_blocking(move || presets.find(&params.preset))
         .await
         .map_err(|_| Refusal::INTERNAL)?
         .map_err(|error| told(&error, said.as_ref()))?;
-    let carried = carried(core, account).await;
+    let carried = carried(core).await;
     Ok(describe(core, &found, peer.language, &carried))
 }
 
 /// 一个账号用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能（施工 Y-2 中上起照调用者，原来是
 /// 管理员的）。
 pub(super) struct Carried {
-    /// 谁的（施工 Y-2 下下中上：功能表的全局开关照他）。
-    pub(super) account: AccountId,
     pub(super) skills: Vec<Skill>,
     pub(super) commands: Vec<Template>,
     /// 扩展声明的命令（施工 X-14 下）。
@@ -280,8 +256,8 @@ pub(super) struct Carried {
 }
 
 /// 找 [`Carried`]：碰磁盘，在阻塞线程里找；找不成的当没有。
-pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
-    let (packages, root) = (core.packages_of(account), core.root.clone());
+pub(super) async fn carried(core: &Core) -> Carried {
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let external = crate::skills::external(core);
     let skills = tokio::task::spawn_blocking(move || {
         miyu_store::skills::find(&packages, &root, &external).0
@@ -289,9 +265,8 @@ pub(super) async fn carried(core: &Core, account: &AccountId) -> Carried {
     .await
     .unwrap_or_default();
     Carried {
-        account: account.clone(),
         skills,
-        commands: crate::commands::template_commands(core, account).await,
+        commands: crate::commands::template_commands(core).await,
         declared: crate::commands::declared_commands(core),
     }
 }

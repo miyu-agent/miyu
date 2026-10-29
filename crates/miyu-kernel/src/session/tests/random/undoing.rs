@@ -65,7 +65,7 @@ pub(super) fn some_redo(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opti
     let attachments = (rng.below(5) == 0).then(Vec::new);
     Some(Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(56),
         command: Command::Redo { text, attachments },
     }))

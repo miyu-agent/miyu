@@ -2,7 +2,6 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::AccountId;
 use miyu_session::RecallTexts;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
@@ -21,7 +20,6 @@ fn the_core_gives_recall_its_texts_when_it_starts() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        AccountId::parse("admin").expect("合写法"),
         "token".to_string(),
     );
     let again = RecallTexts::load(&resources).expect("出厂的读得出来");
@@ -118,7 +116,6 @@ mod accounts;
 fn vectors_use_the_system_config_and_keys() {
     use miyu_config::secret::Reference;
     let (root, _dir) = temp_root("using");
-    let alice = AccountId::parse("alice").expect("合写法");
     std::fs::write(root.path().join("secrets.toml"), "shared = \"sk-FAKE-A\"\n").expect("写得进");
     let core = Core::new(
         root.clone(),
@@ -126,18 +123,16 @@ fn vectors_use_the_system_config_and_keys() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        alice.clone(),
         "token".to_string(),
     )
     .with_config(crate::config::Config::load(
         &root,
-        &alice,
         None,
         Vec::new(),
         crate::config::Environment::of(&[]),
     ));
     let key = |name: &str| Reference::Secret(name.to_string());
-    let mine = super::using_as(&core, &alice);
+    let mine = super::using(&core);
     assert!(mine.config.secret(&key("shared")).is_some());
     assert!(mine.config.secret(&key("missing")).is_none());
 }

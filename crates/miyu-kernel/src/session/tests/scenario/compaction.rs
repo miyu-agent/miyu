@@ -74,7 +74,7 @@ fn over_the_line_at_the_start_of_a_turn_she_summarizes_first() {
     let mut expected = opening_then(&FIRST_TURN);
     expected.extend(
         [
-            "9 message.user alice",
+            "9 message.user person",
             "10 turn.started kernel t10",
             "11 model.called:ok kernel t10",
             "12 context.compacted kernel t10",
@@ -342,7 +342,7 @@ fn a_summary_that_calls_a_tool_or_says_nothing_usable_ends_the_turn() {
         assert_eq!(
             tail,
             [
-                "9 message.user alice",
+                "9 message.user person",
                 "10 turn.started kernel t10",
                 "11 model.called:error kernel t10",
                 "12 turn.ended:error kernel t10",
@@ -396,10 +396,10 @@ fn interrupting_the_summary_writes_no_compaction() {
     assert_eq!(
         tail,
         [
-            "9 message.user alice",
+            "9 message.user person",
             "10 turn.started kernel t10",
             "11 model.called:interrupted kernel t10",
-            "12 turn.ended:interrupted alice t10",
+            "12 turn.ended:interrupted person t10",
         ]
     );
 }

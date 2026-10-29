@@ -19,7 +19,7 @@ use std::sync::Mutex;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 
 use crate::root::DataRoot;
@@ -57,10 +57,7 @@ pub struct Schedule {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Creator {
     /// 人：命令行、协议。
-    Person {
-        /// 他的账号。
-        account: AccountId,
-    },
+    Person,
     /// 她：在这个会话里用工具建的（施工 J-2）。
     Model {
         /// 建在哪个会话里。
@@ -180,13 +177,13 @@ pub struct Schedules {
     path: PathBuf,
 }
 
-/// 账号 `account` 的唤醒表在哪。
+/// 唤醒表在哪。
 pub fn path(root: &DataRoot) -> PathBuf {
     root.path().join("state").join("schedules.db")
 }
 
 impl Schedules {
-    /// 打开账号 `account` 的唤醒表，没有就建；交回开着的表（打不开的没有）和是什么情形，调的一方照它记日志。
+    /// 打开唤醒表，没有就建；交回开着的表（打不开的没有）和是什么情形，调的一方照它记日志。
     pub fn open(root: &DataRoot) -> (Option<Schedules>, Opened) {
         let path = path(root);
         let (db, opened) = open::open(&path);

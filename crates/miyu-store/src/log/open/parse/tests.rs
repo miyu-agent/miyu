@@ -7,7 +7,7 @@ use super::{Flow, SPLIT_AT, chunk, cuts, stream};
 /// 第 `seq` 条的一行原文：alice 说的一句（同 `log/tests.rs` 的写法）。
 fn line(seq: u64) -> String {
     format!(
-        r#"{{"seq":{seq},"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"alice"}},"body":{{"blocks":[{{"type":"text","text":"第 {seq} 句"}}]}}}}"#
+        r#"{{"seq":{seq},"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"body":{{"blocks":[{{"type":"text","text":"第 {seq} 句"}}]}}}}"#
     )
 }
 

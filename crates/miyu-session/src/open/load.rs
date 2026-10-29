@@ -67,7 +67,6 @@ pub async fn load_placed(setup: Load<'_>) -> Result<(Handle, Environment), LoadE
 async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let Load {
         root,
-        owner,
         personas,
         resources,
         id,
@@ -91,7 +90,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         plugins,
         memory,
         presets,
-        confined: shut_in,
     } = setup;
     let span = actor::span(&id);
     let loading = Instant::now();
@@ -103,7 +101,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let store = blobs.clone();
     let (watching, shipped, stored) = (personas.clone(), resources.clone(), blobs.clone());
     let (table, jobs_dir) = (Arc::clone(jobs), dir.clone());
-    let (owner_of, id_of) = (owner.clone(), id.clone());
+    let id_of = id.clone();
     let place_resources = shipped.clone();
     let parents = root.clone();
     let (
@@ -136,7 +134,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let run = snapshot.run_texts().map_err(LoadError::Policy)?;
         let guard = snapshot.guard_texts().map_err(LoadError::Policy)?;
         // 关不关（施工 SU-4 中）：日志里记了的照它；以前的日志没记，照造它的一方交的（属主不是主人的关起来）。
-        let shut = shut_in || created.confined;
+        let shut = created.confined;
         let place = place(&created.venue, &place_resources, shut).map_err(LoadError::Shipped)?;
         // 能选的池照快照读回（施工 8-8 补）：造会话时拼的那一份，不重拼。
         let pools = Agents::pools_in(&snapshot.tools);
@@ -150,8 +148,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let turns = connect(
             memory.as_ref(),
             scope,
-            &owner_of,
-            &owner_of,
             (persona, &personas),
             (&id_of, created.parent.is_none()),
             (&created.venue, shut),
@@ -242,7 +238,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         Arc::new(Agents {
             port,
             session: id.clone(),
-            owner: owner.clone(),
             root: root.clone(),
             venue: created.venue,
             depth: tasked.as_ref().map_or(0, |_| created.depth.unwrap_or(0)),
@@ -286,7 +281,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     // 路由照内核从日志算的引用造（施工 8-10）：换过模型的是换过以后的。
     let model = models.port(ForSession {
         id: id.clone(),
-        owner: owner.clone(),
         config: Arc::clone(config.current()),
         texts,
         blobs,
@@ -367,7 +361,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
                 knowledge,
                 persona: snapshot.persona.clone(),
                 personas: watching.clone(),
-                owner: owner.clone(),
                 home: home.map(Path::to_path_buf),
                 vectors,
                 recall: crate::knowledge::recall::texts(&shipped),
@@ -391,7 +384,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         ToolKit {
             plugins: plugins.clone(),
             session: id.clone(),
-            owner: owner.clone(),
             confined,
             venue: venue.clone(),
             session_log: (!confined).then_some(owner_log),
@@ -480,7 +472,6 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let ids = Ids {
         id,
         venue,
-        owner,
         workspace: default_workspace.dir(),
     };
     let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)

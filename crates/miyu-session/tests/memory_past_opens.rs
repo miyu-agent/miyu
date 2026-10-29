@@ -1,13 +1,13 @@
 //! 以前的对话打不开的不给编号（施工 E-6，`docs/blueprint/memory.md`「工具」）：她拿 `memory_search` 搜到的会话编号去 `history`
-//! 读整段，`history` 只认属主一样的主会话（`SessionsPort::list`）。回合库记下每个会话的属主、是不是主会话（`origins`），搜的
-//! 时候照它判：打得开的照旧给编号，分叉出来的支线、别的账号的、场所会话（属主是桥的系统账号）不给编号、写在哪聊的。真会话、
+//! 读整段，`history` 只认本机的主会话（`SessionsPort::list`）。回合库记下每个会话是不是主会话（`origins`）、在哪个场所，搜的
+//! 时候照它判：打得开的照旧给编号，分叉出来的支线、场所会话不给编号、写在哪聊的。真会话、
 //! 真回合库，执行器替身照剧本调工具；名字、群号是编的。
 
 use std::sync::Arc;
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, CommandId, VenueId};
+use miyu_kernel::id::{CommandId, VenueId};
 use miyu_session::testkit::{Play, Script};
 use miyu_session::{Fork, Handle, Keeper, Listener, SessionPort, new_id};
 use miyu_store::recall::{Edit, Origin, Room};
@@ -24,7 +24,7 @@ fn catalog(home: &Home) -> Catalog {
 }
 
 fn room() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 说一句，等这一轮结束。
@@ -79,10 +79,7 @@ async fn a_lane_found_in_another_session_has_no_id() {
             .origins()
             .expect("读得了")
             .get(parent.id().as_str()),
-        Some(&Origin {
-            owner: "alice".into(),
-            main: true,
-        }),
+        Some(&Origin { main: true }),
         "新造的会话头一回写就记下"
     );
     let lane = new_id(now());
@@ -108,18 +105,12 @@ async fn a_lane_found_in_another_session_has_no_id() {
     let origins = index.origins().expect("读得了");
     assert_eq!(
         origins.get(parent.id().as_str()),
-        Some(&Origin {
-            owner: "alice".into(),
-            main: true,
-        }),
+        Some(&Origin { main: true }),
         "主线：属主、主会话"
     );
     assert_eq!(
         origins.get(lane.as_str()),
-        Some(&Origin {
-            owner: "alice".into(),
-            main: false,
-        }),
+        Some(&Origin { main: false }),
         "支线带 parent，不是主会话"
     );
 
@@ -154,10 +145,11 @@ async fn a_lane_found_in_another_session_has_no_id() {
     stop(&asker).await;
 }
 
-/// 照回合库判（不经会话）：属主一样的主会话打得开；别的账号的、场所会话（属主是桥的系统账号）、支线打不开；回合库没记过从哪
-/// 来的（接上回合索引以前的库）照场所判，本机的当打得开、场所的打不开；没有问的人（协议搜的）一律不算打得开。
+/// 照回合库判（不经会话）：本机的主会话打得开；场所会话、支线打不开（施工 SU-6 上：原来靠属主不一样挡住场所会话，属主没了
+/// 照场所挡）；回合库没记过从哪来的（接上回合索引以前的库）照场所判，本机的当打得开、场所的打不开；不是会话里她在搜的（协议
+/// 搜的）一律不算打得开。
 #[tokio::test]
-async fn whether_she_can_open_it_follows_the_owner_and_main() {
+async fn whether_she_can_open_it_follows_main_and_place() {
     let home = Home::new();
     let (index, _) = home.recall.turns(&room());
     let sessions: Vec<_> = (0..6).map(|_| new_id(now())).collect();
@@ -174,13 +166,10 @@ async fn whether_she_can_open_it_follows_the_owner_and_main() {
             )
             .expect("写得进");
     };
-    let origin = |owner: &str, main: bool| Origin {
-        owner: owner.into(),
-        main,
-    };
+    let origin = |main: bool| Origin { main };
     let texts = [
         "日语 自己的主会话",
-        "日语 别人的主会话",
+        "日语 另一个主会话",
         "日语 群里",
         "日语 支线",
         "日语 以前的本机会话",
@@ -191,10 +180,10 @@ async fn whether_she_can_open_it_follows_the_owner_and_main() {
     }
     let set =
         |n: usize, origin: Origin| index.origin(sessions[n].as_str(), &origin).expect("写得进");
-    set(0, origin("alice", true));
-    set(1, origin("bob", true));
-    set(2, origin("im", true));
-    set(3, origin("alice", false));
+    set(0, origin(true));
+    set(1, origin(true));
+    set(2, origin(true));
+    set(3, origin(false));
     index
         .place(sessions[2].as_str(), "qq:group:900001")
         .expect("写得进");
@@ -202,9 +191,9 @@ async fn whether_she_can_open_it_follows_the_owner_and_main() {
         .place(sessions[5].as_str(), "qq:group:900001")
         .expect("写得进");
     let keeper = Keeper::new(&home.memory, room(), Listener::Owner(alice()));
-    let opened = |asker: Option<&AccountId>| {
+    let opened = |asking: bool| {
         let mut found: Vec<(String, bool, Option<VenueId>)> = keeper
-            .turns("日语", 10, (None, asker), None)
+            .turns("日语", 10, (None, asking), None)
             .expect("搜得了")
             .into_iter()
             .map(|turn| (turn.text, turn.opens, turn.venue))
@@ -215,33 +204,20 @@ async fn whether_she_can_open_it_follows_the_owner_and_main() {
     let group = Some(VenueId::parse("qq:group:900001").expect("合写法"));
     let mut expected = vec![
         ("日语 自己的主会话".to_string(), true, None),
-        ("日语 别人的主会话".to_string(), false, None),
+        ("日语 另一个主会话".to_string(), true, None),
         ("日语 群里".to_string(), false, group.clone()),
         ("日语 支线".to_string(), false, None),
         ("日语 以前的本机会话".to_string(), true, None),
         ("日语 以前的群会话".to_string(), false, group.clone()),
     ];
     expected.sort();
-    assert_eq!(opened(Some(&alice_account())), expected);
+    assert_eq!(opened(true), expected);
     let mut nobody: Vec<(String, bool, Option<VenueId>)> = expected
         .into_iter()
         .map(|(text, _, venue)| (text, false, venue))
         .collect();
     nobody.sort();
-    assert_eq!(opened(None), nobody, "没有问的人的一律打不开");
-    let bob = AccountId::parse("bob").expect("合写法");
-    assert!(
-        opened(Some(&bob))
-            .iter()
-            .any(|(text, opens, _)| text == "日语 别人的主会话" && *opens),
-        "bob 打得开他自己的"
-    );
-    assert!(
-        !opened(Some(&bob))
-            .iter()
-            .any(|(text, opens, _)| text == "日语 自己的主会话" && *opens),
-        "bob 打不开 alice 的"
-    );
+    assert_eq!(opened(false), nobody, "不是她在搜的一律打不开");
 }
 
 /// 关在沙盒里的群会话搜到主人本机会话里的一段，不给编号（施工 SU-4 中核过：场所会话也归主人、属主一样，群里没有读别的会话

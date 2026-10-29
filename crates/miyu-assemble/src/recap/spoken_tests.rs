@@ -72,7 +72,7 @@ fn a_reverted_turn_is_left_out_on_both_sides() {
         let mark = log.next() - 1;
         let undone = turn(&mut log, "撤掉的", "好的", true);
         log.push(
-            r#"{"kind":"person","account":"alice"}"#,
+            r#"{"kind":"person"}"#,
             "turn.reverted",
             &format!(r#"{{"turns":[{}]}}"#, undone + 1),
         );

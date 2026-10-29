@@ -65,10 +65,7 @@ async fn a_new_file_is_made_with_the_schema_line_and_the_change_is_logged() {
     assert_eq!(logged.len(), 1);
     assert_eq!(logged[0]["seq"], 1);
     assert_eq!(logged[0]["kind"], "config.changed");
-    assert_eq!(
-        logged[0]["by"],
-        json!({"kind": "person", "account": "alice"})
-    );
+    assert_eq!(logged[0]["by"], json!({"kind": "person"}));
     assert_eq!(logged[0]["cause"], "config-9f2c4e1a7b3d5f60-1");
     assert_eq!(
         logged[0]["body"],

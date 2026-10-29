@@ -43,11 +43,7 @@ fn creating_and_renaming_a_base() {
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
     let base = knowledge
-        .found(
-            &admin(),
-            "notes",
-            fields(Some("笔记"), Some("学日语的 \"笔记\"")),
-        )
+        .found("notes", fields(Some("笔记"), Some("学日语的 \"笔记\"")))
         .expect("建得了");
     assert_eq!(
         (
@@ -58,11 +54,11 @@ fn creating_and_renaming_a_base() {
         ("notes", "笔记", "学日语的 \"笔记\"")
     );
     assert!(matches!(
-        knowledge.found(&admin(), "notes", fields(None, None)),
+        knowledge.found("notes", fields(None, None)),
         Err(KnowledgeError::BaseExists)
     ));
     assert!(matches!(
-        knowledge.found(&admin(), "笔记", fields(None, None)),
+        knowledge.found("笔记", fields(None, None)),
         Err(KnowledgeError::UnknownBase)
     ));
     // 改名字：说明照留；文件里的注释、别的格照原样。
@@ -70,7 +66,7 @@ fn creating_and_renaming_a_base() {
     let text = std::fs::read_to_string(&file).expect("读得出");
     std::fs::write(&file, format!("# 我的注释\n{text}")).expect("写得进");
     let renamed = knowledge
-        .rename(&admin(), "notes", fields(Some("日语"), None))
+        .rename("notes", fields(Some("日语"), None))
         .expect("改得了");
     assert_eq!(
         (renamed.name.as_str(), renamed.description.as_str()),
@@ -83,7 +79,7 @@ fn creating_and_renaming_a_base() {
     );
     // 空字符串是拿掉。
     let cleared = knowledge
-        .rename(&admin(), "notes", fields(None, Some("")))
+        .rename("notes", fields(None, Some("")))
         .expect("改得了");
     assert_eq!(
         (cleared.name.as_str(), cleared.description.as_str()),
@@ -96,7 +92,7 @@ fn creating_and_renaming_a_base() {
         "拿掉的那一格不在文件里"
     );
     assert!(matches!(
-        knowledge.rename(&admin(), "nope", fields(Some("x"), None)),
+        knowledge.rename("nope", fields(Some("x"), None)),
         Err(KnowledgeError::UnknownBase)
     ));
 }
@@ -111,29 +107,29 @@ fn mounting_a_folder_and_a_folder_that_is_not_there() {
     let knowledge = Knowledge::new(&root);
     let folder = notes.display().to_string();
     let (base, _) = knowledge
-        .mount(&admin(), "notes", &folder, fields(Some("笔记"), None))
+        .mount("notes", &folder, fields(Some("笔记"), None))
         .expect("挂得上");
     assert_eq!(
         (base.name.as_str(), base.documents, &base.error),
         ("笔记", 1, &None)
     );
     assert!(matches!(
-        knowledge.mount(&admin(), "notes", &folder, fields(None, None)),
+        knowledge.mount("notes", &folder, fields(None, None)),
         Err(KnowledgeError::BaseExists)
     ));
     let gone = scratch.0.join("gone").display().to_string();
     assert!(matches!(
-        knowledge.mount(&admin(), "other", &gone, fields(None, None)),
+        knowledge.mount("other", &gone, fields(None, None)),
         Err(KnowledgeError::FolderUnavailable(_))
     ));
     assert!(matches!(
-        knowledge.mount(&admin(), "other", "relative", fields(None, None)),
+        knowledge.mount("other", "relative", fields(None, None)),
         Err(KnowledgeError::FolderUnavailable(_))
     ));
     assert!(!top(&root).join("other").exists(), "挂不上的什么都不建");
     // 改名字时 `mount` 照留。
     let renamed = knowledge
-        .rename(&admin(), "notes", fields(None, Some("说明")))
+        .rename("notes", fields(None, Some("说明")))
         .expect("改得了");
     assert_eq!(
         (renamed.documents, renamed.description.as_str()),
@@ -147,7 +143,7 @@ fn adding_documents_of_any_kind_and_replacing_only_when_asked() {
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
     knowledge
-        .found(&admin(), "notes", fields(None, None))
+        .found("notes", fields(None, None))
         .expect("建得了");
     knowledge
         .add("notes", "docs/a.md", "团子\n".as_bytes(), false)
@@ -183,12 +179,7 @@ fn adding_documents_of_any_kind_and_replacing_only_when_asked() {
     let notes = scratch.0.join("mounted");
     std::fs::create_dir_all(&notes).expect("建得了");
     knowledge
-        .mount(
-            &admin(),
-            "mounted",
-            &notes.display().to_string(),
-            fields(None, None),
-        )
+        .mount("mounted", &notes.display().to_string(), fields(None, None))
         .expect("挂得上");
     assert!(matches!(
         knowledge.add("mounted", "a.md", b"x", false),
@@ -207,43 +198,35 @@ fn deleting_a_base_moves_it_to_the_trash_and_leaves_a_mounted_folder_alone() {
     let home = home(&scratch);
     let knowledge = Knowledge::new(&root);
     knowledge
-        .found(&admin(), "notes", fields(None, None))
+        .found("notes", fields(None, None))
         .expect("建得了");
     knowledge
         .add("notes", "a.md", "团子\n".as_bytes(), false)
         .expect("加得了");
-    knowledge.list(&admin()).expect("补得了");
+    knowledge.list().expect("补得了");
     let index = root.index().join("kb/notes.db");
     assert!(index.exists());
-    if trashed(knowledge.delete(&admin(), "notes", Some(&home))).is_some() {
+    if trashed(knowledge.delete("notes", Some(&home))).is_some() {
         assert!(!top(&root).join("notes").exists(), "整个目录挪走了");
         assert!(!index.exists(), "索引删掉");
-        assert!(knowledge.list(&admin()).expect("列得出").0.is_empty());
+        assert!(knowledge.list().expect("列得出").0.is_empty());
         // 同一个编号再建：索引是新开的一份，照样补、照样搜得到。
         knowledge
-            .found(&admin(), "notes", fields(None, None))
+            .found("notes", fields(None, None))
             .expect("建得了");
         knowledge
             .add("notes", "b.md", "阿黄\n".as_bytes(), false)
             .expect("加得了");
-        let found = knowledge
-            .search(&admin(), "阿黄", None, 5, None)
-            .expect("搜得了")
-            .0;
+        let found = knowledge.search("阿黄", None, 5, None).expect("搜得了").0;
         assert_eq!(found.len(), 1, "新建的照样搜得到");
     }
     let notes = scratch.0.join("mine");
     std::fs::create_dir_all(&notes).expect("建得了");
     std::fs::write(notes.join("b.md"), "阿黄\n").expect("写得进");
     knowledge
-        .mount(
-            &admin(),
-            "mine",
-            &notes.display().to_string(),
-            fields(None, None),
-        )
+        .mount("mine", &notes.display().to_string(), fields(None, None))
         .expect("挂得上");
-    if trashed(knowledge.delete(&admin(), "mine", Some(&home))).is_some() {
+    if trashed(knowledge.delete("mine", Some(&home))).is_some() {
         assert!(!top(&root).join("mine").exists(), "登记拿掉");
         assert_eq!(
             std::fs::read_to_string(notes.join("b.md")).expect("在"),
@@ -252,7 +235,7 @@ fn deleting_a_base_moves_it_to_the_trash_and_leaves_a_mounted_folder_alone() {
         );
     }
     assert!(matches!(
-        knowledge.delete(&admin(), "nope", Some(&home)),
+        knowledge.delete("nope", Some(&home)),
         Err(KnowledgeError::UnknownBase)
     ));
 }
@@ -263,26 +246,26 @@ fn reindexing_rebuilds_from_the_files_and_drops_the_vectors() {
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
     knowledge
-        .found(&admin(), "notes", fields(None, None))
+        .found("notes", fields(None, None))
         .expect("建得了");
     knowledge
         .add("notes", "a.md", "团子\n".as_bytes(), false)
         .expect("加得了");
-    knowledge.list(&admin()).expect("补得了");
-    let index = knowledge.index_of(&admin(), "notes");
+    knowledge.list().expect("补得了");
+    let index = knowledge.index_of("notes");
     index
         .put_vector("a.md#0", "m", &[1.0, 0.0])
         .expect("写得进");
-    let (base, _) = knowledge.reindex(&admin(), "notes").expect("重建得了");
+    let (base, _) = knowledge.reindex("notes").expect("重建得了");
     assert_eq!((base.documents, base.chunks), (1, 1));
-    let index = knowledge.index_of(&admin(), "notes");
+    let index = knowledge.index_of("notes");
     assert_eq!(
         index.missing("m", 0, 10).expect("读得了").len(),
         1,
         "向量没了，下一次搜完再补"
     );
     assert!(matches!(
-        knowledge.reindex(&admin(), "nope"),
+        knowledge.reindex("nope"),
         Err(KnowledgeError::UnknownBase)
     ));
 }
@@ -298,7 +281,7 @@ fn auto_recall_is_switched_in_kb_toml() {
         auto: Some(true),
         ..BaseFields::default()
     };
-    let base = knowledge.found(&admin(), "world", on).expect("建得了");
+    let base = knowledge.found("world", on).expect("建得了");
     assert!(base.auto);
     let file = top(&root).join("world/kb.toml");
     assert!(
@@ -310,7 +293,7 @@ fn auto_recall_is_switched_in_kb_toml() {
         auto: Some(false),
         ..BaseFields::default()
     };
-    let base = knowledge.rename(&admin(), "world", off).expect("改得了");
+    let base = knowledge.rename("world", off).expect("改得了");
     assert!(!base.auto);
     assert_eq!(base.name, "世界观");
     assert!(
@@ -318,7 +301,7 @@ fn auto_recall_is_switched_in_kb_toml() {
             .expect("读得出")
             .contains("auto")
     );
-    assert!(!knowledge.list(&admin()).expect("列得出").0[0].auto);
+    assert!(!knowledge.list().expect("列得出").0[0].auto);
 }
 
 #[test]
@@ -328,7 +311,7 @@ fn every_section_of_a_base_is_listed_with_its_heading() {
     let root = root_in(&scratch);
     let knowledge = Knowledge::new(&root);
     knowledge
-        .found(&admin(), "world", BaseFields::default())
+        .found("world", BaseFields::default())
         .expect("建得了");
     knowledge
         .add(
@@ -338,7 +321,7 @@ fn every_section_of_a_base_is_listed_with_its_heading() {
             false,
         )
         .expect("加得了");
-    let (sections, skipped) = knowledge.sections(&admin(), "world").expect("列得出");
+    let (sections, skipped) = knowledge.sections("world").expect("列得出");
     assert!(skipped.is_empty());
     let shown: Vec<(String, String, String)> = sections
         .into_iter()
@@ -360,7 +343,7 @@ fn every_section_of_a_base_is_listed_with_its_heading() {
         ]
     );
     assert!(matches!(
-        knowledge.sections(&admin(), "nope"),
+        knowledge.sections("nope"),
         Err(KnowledgeError::UnknownBase)
     ));
 }

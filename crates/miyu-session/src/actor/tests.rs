@@ -12,7 +12,7 @@ use std::time::Duration;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Event, Level, Permission};
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, ModelName, ProviderId, SessionId, VenueId};
+use miyu_kernel::id::{ModelName, ProviderId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Model, Person};
 use miyu_kernel::request::Request;
 use miyu_kernel::session::Command;
@@ -71,7 +71,7 @@ fn say(text: &str) -> Command {
 }
 
 fn alice() -> By {
-    By::Person(Person::new(AccountId::parse("alice").expect("账号合写法")))
+    By::Person(Person::default())
 }
 
 fn id(text: &str) -> CommandId {
@@ -103,7 +103,6 @@ async fn a_write_that_fails_stops_the_session() {
     );
     let mut clock = Clock::default();
     let created = snapshot.session_created(
-        AccountId::parse("alice").expect("账号合写法"),
         VenueId::parse("local").expect("场所合写法"),
         Permission {
             level: Level::Workspace,
@@ -150,7 +149,6 @@ async fn a_write_that_fails_stops_the_session() {
             plugins: crate::VenuePlugins::default(),
             session: miyu_kernel::id::SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91")
                 .expect("合写法"),
-            owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
             confined: false,
             venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
             session_log: None,
@@ -211,7 +209,6 @@ async fn a_write_that_fails_stops_the_session() {
     let ids = crate::handle::Ids {
         id: session.clone(),
         venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
-        owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
         workspace: std::env::temp_dir().join("miyu-no-workspace"),
     };
     let handle = Handle::new(ids, inbox, busy, false, watched, shown);

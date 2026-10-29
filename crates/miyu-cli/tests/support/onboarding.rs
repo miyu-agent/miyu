@@ -22,7 +22,7 @@ use miyu_session::testkit::Script;
 use miyu_session::{ModelData, Observed};
 use miyu_tool::Catalog as ToolCatalog;
 
-use super::{AccountIdOf, Asked, Home, Tape, dirs, resources, temp_root, within};
+use super::{Asked, Home, Tape, dirs, resources, temp_root, within};
 
 /// 照剧本回的人那一头：敲的几行、贴的几个 key（关掉回显读的）、管道里的。记着读了几次。
 #[derive(Default)]
@@ -188,10 +188,8 @@ impl Home {
             std::fs::write(&file, config).expect("写得进");
         }
         let opened = miyu_ipc::open(&root, &dirs()).expect("起得来");
-        let admin = AccountIdOf::admin();
         let loaded = Config::load(
             &root,
-            &admin,
             None,
             miyu_core::settings::items(),
             Environment::of(env),
@@ -202,7 +200,6 @@ impl Home {
             Arc::new(Script::new([])),
             ToolCatalog::default(),
             None,
-            admin,
             opened.token.clone(),
         )
         .with_sandbox(Availability::Usable(PathBuf::from("miyu-sandbox")))

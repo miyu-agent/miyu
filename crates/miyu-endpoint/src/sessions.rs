@@ -12,7 +12,7 @@ use tokio::sync::Mutex;
 
 use miyu_kernel::event::Body;
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person, Session};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::Profile;
@@ -39,7 +39,7 @@ pub(crate) mod prefix;
 mod setup;
 pub(crate) mod state;
 
-pub(crate) use confined::{confined, confined_of, placed};
+pub(crate) use confined::{confined_of, placed};
 pub(crate) use opening::Opening;
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
 pub(crate) use setup::Setup;
@@ -71,7 +71,7 @@ struct Open {
 }
 
 /// 一次造会话认谁：属主和命令编号。
-type Made = (AccountId, CommandId);
+type Made = CommandId;
 
 #[derive(Debug)]
 struct Running {
@@ -83,28 +83,24 @@ struct Running {
 }
 
 impl Sessions {
-    /// 会话 `id` 是哪个账号的（施工 O-4 上）：照数据根里哪个账号的家目录下有它，在跑的会话的目录也在那里；都没有的没有。
-    /// 不拿表的锁：删会话拿着锁时，父会话经端口读子会话的日志也要问这一句。
-    pub(crate) async fn owner(&self, core: &Core, id: &SessionId) -> Option<AccountId> {
-        stored_owner(core, id).await
+    /// 有没有会话 `id`：在跑的、磁盘上有目录的都算。不拿表的锁：删会话拿着锁时，父会话经端口读子会话的日志也要问这一句。
+    pub(crate) async fn exists(&self, core: &Core, id: &SessionId) -> bool {
+        stored(core, id).await
     }
 }
 
 impl Open {
-    /// 会话 `id` 是哪个账号的，表的锁在调的一方手里：在跑的照它的把手，没在跑的照家目录（[`stored_owner`]）。
-    pub(super) async fn owner(&self, core: &Core, id: &SessionId) -> Option<AccountId> {
-        match self.running.get(id) {
-            Some(running) => Some(running.handle.owner().clone()),
-            None => stored_owner(core, id).await,
-        }
+    /// 有没有会话 `id`，表的锁在调的一方手里：在跑的算，没在跑的照磁盘（[`stored`]）。
+    pub(super) async fn exists(&self, core: &Core, id: &SessionId) -> bool {
+        self.running.contains_key(id) || stored(core, id).await
     }
 }
 
-/// 磁盘上有会话 `id` 的是主人（施工 SU-5 上：数据根只有一层）：在阻塞线程里看目录在不在；没有的没有。
-pub(super) async fn stored_owner(core: &Core, id: &SessionId) -> Option<AccountId> {
+/// 磁盘上有没有会话 `id`：在阻塞线程里看目录在不在。
+pub(super) async fn stored(core: &Core, id: &SessionId) -> bool {
     let (root, id) = (core.root.clone(), id.clone());
     let there = tokio::task::spawn_blocking(move || root.session_dir(&id).is_dir()).await;
-    matches!(there, Ok(true)).then(|| core.admin.clone())
+    matches!(there, Ok(true))
 }
 
 /// 造好的会话：编号，和它实际在哪个目录里干活（施工 4-5 下）；这个目录的项目配置还没问过信不信任的，它在哪（施工 8-2）。
@@ -151,7 +147,7 @@ impl Sessions {
             }
         }
         // 同一个属主同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
-        let made: Made = (who.owner.clone(), command.clone());
+        let made: Made = command.clone();
         let earlier = open
             .created
             .iter()
@@ -160,7 +156,7 @@ impl Sessions {
         let id = earlier.clone().unwrap_or_else(|| new_id(now()));
         let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
         // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-        let (_, project) = core.mine(&who.owner).config().with_project(&workspace);
+        let (_, project) = core.mine().config().with_project(&workspace);
         let untrusted = project.and_then(|project| project.untrusted());
         if let Some(id) = earlier {
             return Ok(Created {
@@ -254,21 +250,20 @@ impl Sessions {
         });
         // 没挑人格的子代理无人格（施工 P-4 上），不照默认人格。
         // 子会话照它的属主找人格、预设（施工 Y-2 中上）。
-        let persona = personas::resolve(core, &child.owner, Some(child.persona.as_deref()))
+        let persona = personas::resolve(core, Some(child.persona.as_deref()))
             .await
             .map_err(|refusal| format!("persona {:?}: {}", child.persona, refusal.reason))?;
         // 子会话照父会话的预设（施工 P-2 中）：照它的编号重新找；找不到、写错了的不造，同人格。
         let preset = match &child.preset {
             Some(id) => Some(presets::chosen(
                 core,
-                &child.owner,
-                presets::resolve(core, &child.owner, Some(id))
+                presets::resolve(core, Some(id))
                     .await
                     .map_err(|refusal| format!("preset {id}: {}", refusal.reason))?,
             )),
             None => None,
         };
-        let presets_of = presets::places(core, &child.owner);
+        let presets_of = presets::places(core);
         let resources = presets::overrides::resources(core);
         let handle = create(Create {
             root: &core.root,
@@ -280,20 +275,18 @@ impl Sessions {
                 .map(|found| found.texts.clone())
                 .unwrap_or_default(),
             profile: Profile::default(),
-            personas: personas::personas(core, &child.owner),
-            memory_account: core.admin.clone(),
+            personas: personas::personas(core),
             memory_scope: MemoryScope::Off,
             venue: child.venue,
             sandbox_cache: core.sandbox_cache_of(),
-            index: Some(core.index_for(&child.owner)),
+            index: Some(core.index()),
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
-            installed: Some(crate::packages::installed(core, &child.owner)),
+            installed: Some(crate::packages::installed(core)),
             plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
-            configs: core.configs_of(&child.owner),
-            owner: child.owner.clone(),
+            configs: core.configs_of(),
             permission: child.permission,
             attended: child.attended,
             oneshot: false,
@@ -306,12 +299,8 @@ impl Sessions {
             sandbox: core.sandbox.helper(),
             lineage: Some(child.lineage),
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(
-                core,
-                &child.owner,
-                child.confined,
-            )),
-            schedules: Some(crate::schedules::port::port(core, &child.owner)),
+            packages: Some(crate::packages::port::port(core, child.confined)),
+            schedules: Some(crate::schedules::port::port(core)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
             model: child.model,
@@ -319,7 +308,7 @@ impl Sessions {
             no_tools: false,
             presets: Some(presets_of),
             group: None,
-            confined: child.confined || confined(core, &child.owner),
+            confined: child.confined,
             images: child.images,
             titles: true,
             dream: None,
@@ -380,15 +369,15 @@ impl Sessions {
 }
 
 /// 主人：连上来的、核心替谁做事都记成他（施工 SU-4 下：原来照连接、照属主分）。
-pub(crate) fn admin(core: &Core) -> By {
-    By::Person(Person::new(core.admin.clone()))
+pub(crate) fn person() -> By {
+    By::Person(Person::default())
 }
 
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
 /// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号，属主是主人。读不了的跳过。在阻塞线程里读，交回的照从旧
 /// 到新。
 async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
-    let (root, owner) = (core.root.clone(), core.admin.clone());
+    let root = core.root.clone();
     tokio::task::spawn_blocking(move || {
         let mut found: Vec<(Made, SessionId)> = root
             .sessions()
@@ -398,7 +387,7 @@ async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
             .filter_map(|id| {
                 let event = first_event(&root.session_dir(&id)).ok()?;
                 match (&event.body, event.cause) {
-                    (Body::SessionCreated(_), Some(cause)) => Some(((owner.clone(), cause), id)),
+                    (Body::SessionCreated(_), Some(cause)) => Some((cause, id)),
                     _ => None,
                 }
             })

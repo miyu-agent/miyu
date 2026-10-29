@@ -2,7 +2,6 @@
 //! 后面；没有字的（以前的快照、这一版还没写字）原样交回；进请求时照 `by` 包。
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::AccountId;
 use miyu_kernel::origin::{By, Schedule, ScheduleLoop};
 
 use super::*;
@@ -17,7 +16,6 @@ fn words(text: &str) -> Block {
 fn task(looping: Option<ScheduleLoop>) -> Schedule {
     Schedule {
         schedule: "t3".to_string(),
-        account: AccountId::parse("alice").unwrap(),
         looping,
     }
 }
@@ -63,7 +61,7 @@ fn the_by_is_what_picks_it() {
     let json = serde_json::to_value(&by).unwrap();
     assert_eq!(
         json,
-        serde_json::json!({"kind": "schedule", "schedule": "t3", "account": "alice", "loop": "dynamic"})
+        serde_json::json!({"kind": "schedule", "schedule": "t3", "loop": "dynamic"})
     );
     let back: By = serde_json::from_value(json).unwrap();
     assert_eq!(back, by, "读得回原样");

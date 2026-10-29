@@ -9,7 +9,7 @@ use std::time::Instant;
 use tokio::sync::oneshot;
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, Seq, SessionId};
+use miyu_kernel::id::{Seq, SessionId};
 use miyu_kernel::request::Message;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::Skipped;
@@ -35,8 +35,6 @@ pub(crate) struct Job {
     pub(crate) extraction: Extraction,
     /// 这一轮的配置：照它取 key、发。
     pub(crate) config: TurnConfig,
-    /// 记在谁的账上：会话的属主。
-    pub(crate) owner: AccountId,
     /// 哪个会话。
     pub(crate) session: SessionId,
     /// 这个会话这一刻的引用（施工 Q-2）：整理记忆的档位池空了、用不了时退到它；没有的照 `models.chat`。
@@ -175,7 +173,6 @@ impl Job {
                 })],
             }],
             max_tokens: None,
-            owner: self.owner.clone(),
             venue: None,
         };
         let answered = self
@@ -247,7 +244,6 @@ impl Job {
             keeper: self.keeper.clone(),
             extraction: self.extraction.clone(),
             config: Arc::clone(&self.config),
-            owner: self.owner.clone(),
             offset: self.offset,
         };
         tagging.run(entries).await;
@@ -258,7 +254,6 @@ impl Job {
         let keeper = self.keeper.clone();
         let using = crate::memory::Using {
             config: Arc::clone(&self.config),
-            owner: self.owner.clone(),
         };
         blocking(move || keeper.fill(&using)).await;
     }
@@ -270,7 +265,6 @@ impl Job {
             keeper: self.keeper.as_owner(),
             extraction: self.extraction.clone(),
             config: Arc::clone(&self.config),
-            owner: self.owner.clone(),
             offset: self.offset,
             hush: self.hush.clone(),
             from: Some(self.session.clone()),

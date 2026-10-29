@@ -31,7 +31,7 @@ fn tool_result() -> Event {
 
 fn said() -> Event {
     event(
-        r#"{"seq":2,"at":"2026-10-24T14:27:25.766Z","kind":"message.user","by":{"kind":"person","account":"shorin"},"cause":"c","body":{"blocks":[{"type":"text","text":"你好"}]}}"#,
+        r#"{"seq":2,"at":"2026-10-24T14:27:25.766Z","kind":"message.user","by":{"kind":"person"},"cause":"c","body":{"blocks":[{"type":"text","text":"你好"}]}}"#,
     )
 }
 

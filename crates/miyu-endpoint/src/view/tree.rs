@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use serde_json::{Value, json};
 
 use miyu_kernel::event::JobKind;
-use miyu_kernel::id::{AccountId, JobId, SessionId};
+use miyu_kernel::id::{JobId, SessionId};
 use miyu_store::usage::Total;
 use miyu_view::JobRow;
 
@@ -108,13 +108,7 @@ async fn walk(core: &Core, session: &SessionId, depth: usize) -> (u64, u64) {
 
 /// 把会话树并进整份状态：子代理任务多 `busy`、`spawned`、`running_deep`、`usage`；整份多 `running_deep`、连子代理一起的
 /// `usage_tree`（自己的 `own` 加上子代理那几支）；金额的币种照会话属主 `owner` 的（施工 Y-2 下下中下）。
-pub(crate) fn merge(
-    core: &Core,
-    owner: &AccountId,
-    status: &mut Value,
-    tree: &Tree,
-    own: Option<Total>,
-) {
+pub(crate) fn merge(core: &Core, status: &mut Value, tree: &Tree, own: Option<Total>) {
     if let Some(jobs) = status.get_mut("jobs").and_then(Value::as_array_mut) {
         for job in jobs {
             let Some(branch) = job
@@ -129,7 +123,7 @@ pub(crate) fn merge(
             job["spawned"] = json!(branch.spawned);
             job["running_deep"] = json!(branch.running_deep);
             if let Some(total) = &branch.total {
-                job["usage"] = usage::total_row(core, owner, total.clone());
+                job["usage"] = usage::total_row(core, total.clone());
             }
         }
     }
@@ -139,6 +133,6 @@ pub(crate) fn merge(
             Some(kids) => usage::plus(own, kids),
             None => own,
         };
-        status["usage_tree"] = usage::total_row(core, owner, all);
+        status["usage_tree"] = usage::total_row(core, all);
     }
 }

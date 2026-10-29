@@ -17,7 +17,7 @@ use std::sync::Arc;
 use miyu_config::Values;
 use miyu_config::phrases::Label;
 use miyu_kernel::event::{Effect, JobKind, JobStarted, Permission};
-use miyu_kernel::id::{AccountId, CallId, CommandId, JobId, SessionId, VenueId};
+use miyu_kernel::id::{CallId, CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Session};
 use miyu_policy::features::Features;
 use miyu_policy::memory::MemoryScope;
@@ -81,8 +81,6 @@ pub(crate) struct Agents {
     pub(crate) port: Arc<dyn SessionPort>,
     /// 这个会话：子会话的父。
     pub(crate) session: SessionId,
-    /// 属主。
-    pub(crate) owner: AccountId,
     /// 数据根（施工 3-9 六补）：带过去的附件落进收的那个会话自己的附件目录。
     pub(crate) root: miyu_store::root::DataRoot,
     /// 场所。

@@ -164,13 +164,11 @@ pub fn core_with_script(home: &Home, timing: Timing, script: &Script) -> Arc<Cor
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(super::default_resources());
-    let alice = miyu_kernel::id::AccountId::parse("alice").expect("账号合写法");
     let mut found = miyu_endpoint::packages::load(&resources, &home.root);
     let packaged = miyu_endpoint::packages::settle(&mut found, &core_items);
     let items = core_items.into_iter().chain(packaged).collect();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice,
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

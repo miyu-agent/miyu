@@ -7,7 +7,6 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::chunk;
 
@@ -42,19 +41,14 @@ pub(super) struct Caught {
 
 impl Knowledge {
     /// 照文件补库 `id`，交回它列出来的样子和跳过的文档。
-    pub(super) fn catch_up(
-        &self,
-        account: &AccountId,
-        id: &str,
-    ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
-        self.caught(account, id)
-            .map(|caught| (caught.base, caught.skipped))
+    pub(super) fn catch_up(&self, id: &str) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
+        self.caught(id).map(|caught| (caught.base, caught.skipped))
     }
 
     /// 照文件补库 `id`，交回补完的样子（[`Caught`]）。
-    pub(super) fn caught(&self, account: &AccountId, id: &str) -> Result<Caught, KnowledgeError> {
+    pub(super) fn caught(&self, id: &str) -> Result<Caught, KnowledgeError> {
         let dir = self.documents(id)?.usable()?;
-        let shelf = self.shelf(account, id);
+        let shelf = self.shelf(id);
         let _only_one = shelf
             .catching_up
             .lock()
@@ -95,7 +89,7 @@ impl Knowledge {
                 None => changed.push(document),
             }
         }
-        let mut progress = Progress::start(self.watcher.as_ref(), account, id, changed.len());
+        let mut progress = Progress::start(self.watcher.as_ref(), id, changed.len());
         for document in changed {
             progress.one();
             let stamp = stamp_of(document);
@@ -124,7 +118,7 @@ impl Knowledge {
             shelf.index.set_meta(INDEXED_AT, &now().to_string())?;
         }
         progress.finish();
-        let mut base = self.counted(account, id, None)?;
+        let mut base = self.counted(id, None)?;
         // 补的锁还拿在这一趟手里：补完了，不算在建。
         base.indexing = false;
         Ok(Caught {
@@ -177,14 +171,13 @@ impl Knowledge {
     /// 没有的照 `kb.toml` 读不读得出。
     pub(super) fn counted(
         &self,
-        account: &AccountId,
         id: &str,
         unavailable: Option<String>,
     ) -> Result<Base, KnowledgeError> {
         let place = self.place(id)?;
         let (about, error) = about(place.dir());
         let switched = self.switched(id, &place);
-        let shelf = self.shelf(account, id);
+        let shelf = self.shelf(id);
         let keys = shelf.index.keys()?;
         Ok(Base {
             id: id.to_string(),

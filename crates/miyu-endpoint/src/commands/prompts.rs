@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use miyu_config::package::Access;
 use miyu_kernel::block::{Block, Image, Text};
 use miyu_kernel::event::TypedCommand;
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::session::Command;
 use miyu_mcp::{Argument, Client};
 use miyu_policy::slash::{next_word, rest_word};
@@ -44,9 +44,9 @@ impl Usable {
 }
 
 /// 这一刻在跑、列过了的服务登记的提示词，`account` 用得上的，照命令名排。
-pub(super) fn usable(core: &Core, account: &AccountId) -> Vec<Usable> {
+pub(super) fn usable(core: &Core) -> Vec<Usable> {
     // 他关了的包带的服务（施工 U23 末下）不列、敲了当没有。
-    let off = core.packages_off(account);
+    let off = core.packages_off();
     let mut usable: Vec<Usable> = core
         .mcp
         .prompts()
@@ -148,7 +148,7 @@ pub(super) async fn run(
         params.person.as_ref(),
         params.as_external.clone(),
     )?;
-    let Some(entry) = usable(core, handle.owner())
+    let Some(entry) = usable(core)
         .into_iter()
         .find(|entry| entry.offered.command == name)
     else {

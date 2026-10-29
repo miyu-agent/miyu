@@ -1,5 +1,5 @@
 //! 用量汇总的一行（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 4 条）：一次请求，或者删掉的会话一个小时里一个
-//! （供应商、模型、用途）的合计。照哪来的写：会话日志里的 `model.called`（[`Spent::called`]）、账号日志里的
+//! （供应商、模型、用途）的合计。照哪来的写：会话日志里的 `model.called`（[`Spent::called`]）、日志里的
 //! `usage.oneshot`（[`Spent::one_shot`]）、`usage.purged` 的一格（[`super::purged`]）。
 //!
 //! - 只记发出去了的：`model.called` 带 `endpoint`、`model` 的。没发出去的不花钱。
@@ -10,17 +10,15 @@ use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 
 use miyu_kernel::event::{Body, Cost, Event, ModelCalled, SessionCreated, Usage};
-use miyu_kernel::id::{AccountId, SessionId, VenueId};
+use miyu_kernel::id::{SessionId, VenueId};
 use miyu_kernel::time::Timestamp;
 
 use super::UsageError;
 use crate::sqlite::integer;
 
-/// 一个会话的属主、场所、父会话：照 `session.created` 的。每一行都记，按人、按场所分组照它。
+/// 一个会话的场所、父会话：照 `session.created` 的。每一行都记，按场所分组照它。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Who {
-    /// 属主。
-    pub owner: AccountId,
     /// 场所。
     pub venue: VenueId,
     /// 父会话；主会话没有。
@@ -31,7 +29,6 @@ impl Who {
     /// 照这个会话的 `session.created`。
     pub fn of(created: &SessionCreated) -> Who {
         Who {
-            owner: created.owner.clone(),
             venue: created.venue.clone(),
             parent: created.parent.clone(),
         }
@@ -46,7 +43,7 @@ impl Who {
     }
 }
 
-/// 一次性调用记进账号日志的那一条的 `body`（`usage.oneshot`）：用途、真发给的供应商和模型、用量、金额，没有的不写。
+/// 一次性调用记进日志的那一条的 `body`（`usage.oneshot`）：用途、真发给的供应商和模型、用量、金额，没有的不写。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OneShotCall {
     /// 用途：`vision`，或者 `model.call` 写的。
@@ -69,14 +66,12 @@ pub struct OneShotCall {
 /// 一行。
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spent {
-    /// 哪一份：会话编号、`journal:<账号>`、`purged:<会话编号>`。
+    /// 哪一份：会话编号、`journal`、`purged:<会话编号>`。
     pub source: String,
-    /// 那一份里的第几：`model.called` 的序号、账号日志那一条的序号、合计的第几格。
+    /// 那一份里的第几：`model.called` 的序号、日志那一条的序号、合计的第几格。
     pub seq: u64,
     /// 什么时候，毫秒：请求记下的时刻；合计是那一小时的开头。
     pub at: i64,
-    /// 属主。
-    pub owner: String,
     /// 场所；一次性调用没有。
     pub venue: Option<String>,
     /// 会话；一次性调用没有。
@@ -111,7 +106,7 @@ pub(crate) const NO_USAGE: Usage = Usage {
 };
 
 impl Spent {
-    /// 会话 `session`（属主等照 `who`）日志里的这一条：是发出去了的 `model.called` 才有。
+    /// 会话 `session`（场所等照 `who`）日志里的这一条：是发出去了的 `model.called` 才有。
     pub fn called(session: &SessionId, who: &Who, event: &Event) -> Option<Spent> {
         let Body::ModelCalled(called) = &event.body else {
             return None;
@@ -123,7 +118,6 @@ impl Spent {
             session.as_str().to_string(),
             event.seq.get(),
             event.at,
-            who.owner.as_str().to_string(),
             (provider.as_str(), model.as_str()),
             (called.usage, called.cost.as_deref()),
         );
@@ -138,13 +132,12 @@ impl Spent {
         Some(spent)
     }
 
-    /// 账号 `owner` 的日志里第 `seq` 条（`at` 记下的）一次性调用。
-    pub fn one_shot(owner: &AccountId, seq: u64, at: Timestamp, call: &OneShotCall) -> Spent {
+    /// 日志 `journal.jsonl` 里第 `seq` 条（`at` 记下的）一次性调用。
+    pub fn one_shot(seq: u64, at: Timestamp, call: &OneShotCall) -> Spent {
         let mut spent = Spent::single(
-            super::journal_source(owner.as_str()),
+            super::JOURNAL.to_string(),
             seq,
             at,
-            owner.as_str().to_string(),
             (call.endpoint.as_str(), call.model.as_str()),
             (call.usage, call.cost.as_ref()),
         );
@@ -158,7 +151,6 @@ impl Spent {
         source: String,
         seq: u64,
         at: Timestamp,
-        owner: String,
         (provider, model): (&str, &str),
         (usage, cost): (Option<Usage>, Option<&Cost>),
     ) -> Spent {
@@ -166,7 +158,6 @@ impl Spent {
             source,
             seq,
             at: at.unix_millis(),
-            owner,
             venue: None,
             session: None,
             parent: None,
@@ -193,9 +184,9 @@ fn purpose(called: &ModelCalled) -> Option<String> {
 /// 写进去，主键（`source`、`seq`）已经有的不写。
 pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> {
     let mut insert = db.prepare_cached(
-        "INSERT OR IGNORE INTO spent (source, seq, at, owner, venue, session, parent, purpose, summary, \
+        "INSERT OR IGNORE INTO spent (source, seq, at, venue, session, parent, purpose, summary, \
          provider, model, requests, unpriced, uncached, cache_read, cache_write, output, amount, currency) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
     )?;
     for row in rows {
         let usage = &row.usage;
@@ -203,7 +194,6 @@ pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> 
             row.source,
             integer(row.seq, "seq")?,
             row.at,
-            row.owner,
             row.venue,
             row.session,
             row.parent,

@@ -58,16 +58,15 @@ pub(crate) async fn catalog(
         // 不写会话的（施工 CC-1）：跟着包的命令照替谁干活的人的默认预设筛，开会话的话那个包没开的不列（`/loop`、`/goal` 在
         // 会话里照工具面上有没有那件工具认，没开的敲了是 `unknown_command`）。
         None => {
-            let owner = &core.admin;
-            let default = crate::presets::default_of(core, owner);
+            let default = crate::presets::default_of(core);
             let listed = all
                 .filter(|slash| {
                     slash.package().is_none_or(|package| {
-                        crate::presets::package_on(core, owner, Some(&default), package)
+                        crate::presets::package_on(core, Some(&default), package)
                     })
                 })
                 .collect();
-            (listed, templates::found(core, owner).await, declared, None)
+            (listed, templates::found(core).await, declared, None)
         }
         Some(text) => {
             let session = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
@@ -76,12 +75,12 @@ pub(crate) async fn catalog(
             if handle.venue().as_str() != LOCAL {
                 return Err(Refusal::VENUE_SESSION);
             }
-            let by = crate::sessions::admin(core);
+            let by = crate::sessions::person();
             let listed = all
                 .filter(|slash| allowed(core, slash.as_ref(), handle, &by).is_ok())
                 .collect();
             let mut opened = Vec::new();
-            for template in templates::found(core, handle.owner()).await {
+            for template in templates::found(core).await {
                 let key = (template.name.as_str(), templates::package(&template));
                 if templates::opened(core, peer, handle, key).await.is_ok() {
                     opened.push(template);
@@ -97,11 +96,8 @@ pub(crate) async fn catalog(
             (listed, opened, usable, Some(handle.clone()))
         }
     };
-    // 照会话属主（不写会话的照替谁干活的人）：他关了的包声明的命令、整页、提示词都不列（施工 U23 末下）。
-    let owner = handle
-        .as_ref()
-        .map_or_else(|| core.admin.clone(), |handle| handle.owner().clone());
-    let off = core.packages_off(&owner);
+    // 关了的包声明的命令、整页、提示词都不列（施工 U23 末下）。
+    let off = core.packages_off();
     let declared: Vec<Declared> = declared
         .into_iter()
         .filter(|one| !off.contains(&one.package))
@@ -150,7 +146,7 @@ pub(crate) async fn catalog(
     );
     // MCP 服务的提示词（施工 X-39）：在跑的服务登记的、这个人用得上的（施工 U23 中上），排在模板后面；写了会话的只列预设开着
     // 这个服务的。
-    for entry in prompts::usable(core, &owner) {
+    for entry in prompts::usable(core) {
         let opened = match &handle {
             None => true,
             Some(handle) => {
@@ -181,7 +177,7 @@ pub(crate) async fn catalog(
             .map(|page| pages::listed(page, peer.language)),
     );
     // 能点名用的技能（施工 PT-2 下）：和命令撞名的不列（`/名字` 照命令跑）；写了会话的只列预设开着的。
-    for skill in skills::found(core, &owner).await {
+    for skill in skills::found(core).await {
         let name = skill.head.name.as_str();
         if core.commands.find_present(core, name).is_some()
             || commands.iter().any(|item| item["name"] == name)

@@ -71,7 +71,7 @@ async fn a_package_base_is_searched_and_recalled_but_not_written() {
         .use_packages(vec![("world-pack".to_string(), pack)]);
     // 先照文件补好索引：头一回补在慢的机器上（Windows 的 CI）会把挂接点拖过 300 毫秒，那一轮照规矩不交（同
     // `knowledge_recall.rs`）；这里测的是包里的库挑得上，不是头一回补要多久。
-    home.knowledge.list(&alice_account()).expect("补得了");
+    home.knowledge.list().expect("补得了");
     let search = serde_json::json!({"query": "守灯人"}).to_string();
     let save = serde_json::json!({"kb": "world", "path": "a.md", "text": "记一笔"}).to_string();
     let script = Script::new([

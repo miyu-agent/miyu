@@ -113,13 +113,7 @@ impl View {
             .current
             .as_ref()
             .map(|current| crate::usage::own(&current.tally));
-        tree::merge(
-            &self.core,
-            self.handle.owner(),
-            &mut status,
-            &self.tree,
-            own,
-        );
+        tree::merge(&self.core, &mut status, &self.tree, own);
         status
     }
 
@@ -168,7 +162,7 @@ impl View {
             return;
         }
         let resources = self.core.resources.clone();
-        let skills = crate::view::Titles::of(&self.core, self.handle.owner());
+        let skills = crate::view::Titles::of(&self.core);
         let loaded =
             tokio::task::spawn_blocking(move || crate::view::texts(&resources, language, &skills))
                 .await;

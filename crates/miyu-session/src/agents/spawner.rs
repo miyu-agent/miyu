@@ -67,7 +67,6 @@ impl AgentPort for Spawner {
                 },
                 command: command_id(parent, &job, ""),
                 persona: persona.map(str::to_string),
-                owner: agents.owner.clone(),
                 venue: agents.venue.clone(),
                 permission: self.permission.clone(),
                 attended: agents.attended,
@@ -170,7 +169,6 @@ impl Spawner {
         let fork = ForkChild {
             lineage: child.lineage,
             command: child.command,
-            owner: child.owner,
             call: self.call,
             placeholder,
         };

@@ -28,7 +28,7 @@ fn at(ms: i64) -> Timestamp {
 /// 人建的、跑在 `session` 上的一个。
 fn on(session: &str, when: When) -> Wanted {
     Wanted {
-        by: Creator::Person { account: alice() },
+        by: Creator::Person,
         when,
         prompt: "看看 CI".to_string(),
         target: Target::Session {
@@ -54,7 +54,7 @@ async fn started(home: &Home, script: &Script, hand: &Arc<Hand>) -> (Arc<Core>, 
 async fn until_recorded(core: &Core, id: &str) -> Schedule {
     let waited = tokio::time::timeout(Duration::from_secs(5), async {
         loop {
-            let schedule = core.schedules().get(&alice(), id).expect("有这一个");
+            let schedule = core.schedules().get(id).expect("有这一个");
             if schedule.last.is_some() {
                 return schedule;
             }
@@ -84,7 +84,7 @@ async fn a_due_schedule_speaks_into_its_session_and_steps_on() {
     let (core, _client, session) = started(&home, &script, &hand).await;
     let added = core
         .schedules()
-        .add(&alice(), on(&session, When::Every { every: 600 }))
+        .add(on(&session, When::Every { every: 600 }))
         .unwrap();
     assert_eq!(added.id, "t1");
     assert_eq!(added.next, Some(at(START + 600_000)));
@@ -98,10 +98,7 @@ async fn a_due_schedule_speaks_into_its_session_and_steps_on() {
     let By::Schedule(by) = &said[0].0 else {
         unreachable!()
     };
-    assert_eq!(
-        (by.schedule.as_str(), &by.account, by.looping),
-        ("t1", &alice(), None)
-    );
+    assert_eq!((by.schedule.as_str(), by.looping), ("t1", None));
     assert!(said[0].1.contains("看看 CI"), "原话原样交：{}", said[0].1);
     let after = until_recorded(&core, "t1").await;
     let last = after.last.unwrap();
@@ -125,26 +122,23 @@ async fn a_new_session_each_time_is_opened_as_chosen_and_a_one_off_goes() {
     let (core, mut client, _) = started(&home, &script, &hand).await;
     let cwd = home.work.to_string_lossy().into_owned();
     core.schedules()
-        .add(
-            &alice(),
-            Wanted {
-                target: Target::New {
-                    persona: None,
-                    preset: "none".to_string(),
-                    cwd,
-                },
-                ..on(
-                    "01a17000-0000-7000-8000-000000000001",
-                    When::At {
-                        at: at(START + 30_000),
-                    },
-                )
+        .add(Wanted {
+            target: Target::New {
+                persona: None,
+                preset: "none".to_string(),
+                cwd,
             },
-        )
+            ..on(
+                "01a17000-0000-7000-8000-000000000001",
+                When::At {
+                    at: at(START + 30_000),
+                },
+            )
+        })
         .unwrap();
     hand.advance(30_000);
     let waited = tokio::time::timeout(Duration::from_secs(5), async {
-        while !core.schedules().list(&alice()).unwrap().is_empty() {
+        while !core.schedules().list().unwrap().is_empty() {
             tokio::time::sleep(Duration::from_millis(5)).await;
         }
     })
@@ -173,25 +167,22 @@ async fn missed_ones_are_skipped_when_the_core_comes_back() {
         let cwd = home.work.to_string_lossy().into_owned();
         let session = client.create("c1", &cwd).await;
         core.schedules()
-            .add(&alice(), on(&session, When::Every { every: 600 }))
+            .add(on(&session, When::Every { every: 600 }))
             .unwrap();
         core.schedules()
-            .add(
-                &alice(),
-                on(
-                    &session,
-                    When::At {
-                        at: at(START + 60_000),
-                    },
-                ),
-            )
+            .add(on(
+                &session,
+                When::At {
+                    at: at(START + 60_000),
+                },
+            ))
             .unwrap();
         session
     };
     hand.advance(3_600_000 + 1);
     let core = core_with(&home, &script, &hand);
     core.start_schedules();
-    let left = core.schedules().list(&alice()).unwrap();
+    let left = core.schedules().list().unwrap();
     assert_eq!(left.len(), 1, "一次的错过了就删：{left:?}");
     assert_eq!(left[0].id, "t1");
     assert_eq!(
@@ -210,7 +201,7 @@ async fn a_gone_session_stops_its_schedule() {
     let hand = Hand::at(START);
     let (core, mut client, session) = started(&home, &script, &hand).await;
     core.schedules()
-        .add(&alice(), on(&session, When::Every { every: 60 }))
+        .add(on(&session, When::Every { every: 60 }))
         .unwrap();
     let deleted = client
         .call("d", "session.delete", json!({"session": session}))
@@ -239,16 +230,13 @@ async fn her_own_ones_follow_the_session_s_preset_and_people_s_do_not() {
         .await;
     let id = SessionId::parse(&session).unwrap();
     core.schedules()
-        .add(
-            &alice(),
-            Wanted {
-                by: Creator::Model { session: id },
-                ..on(&session, When::Every { every: 60 })
-            },
-        )
+        .add(Wanted {
+            by: Creator::Model { session: id },
+            ..on(&session, When::Every { every: 60 })
+        })
         .unwrap();
     core.schedules()
-        .add(&alice(), on(&session, When::Every { every: 120 }))
+        .add(on(&session, When::Every { every: 120 }))
         .unwrap();
     hand.advance(60_000);
     let hers = until_recorded(&core, "t1").await;
@@ -272,19 +260,16 @@ async fn a_dynamic_loop_waits_after_it_speaks_until_she_sets_the_next() {
     let (core, _client, session) = started(&home, &script, &hand).await;
     let added = core
         .schedules()
-        .add(
-            &alice(),
-            Wanted {
-                looping: Some(Loop::Dynamic),
-                first: Some(at(START)),
-                ..on(&session, When::At { at: at(START) })
-            },
-        )
+        .add(Wanted {
+            looping: Some(Loop::Dynamic),
+            first: Some(at(START)),
+            ..on(&session, When::At { at: at(START) })
+        })
         .unwrap();
     home.until_turns(&session, 1).await;
     let after = until_recorded(&core, &added.id).await;
     assert_eq!(after.next, None, "交过以后停着等她定");
-    assert_eq!(core.schedules().list(&alice()).unwrap().len(), 1, "不删");
+    assert_eq!(core.schedules().list().unwrap().len(), 1, "不删");
     let said = scheduled(&home.log(&session));
     let By::Schedule(by) = &said[0].0 else {
         unreachable!()
@@ -292,7 +277,6 @@ async fn a_dynamic_loop_waits_after_it_speaks_until_she_sets_the_next() {
     assert_eq!(by.looping, Some(ScheduleLoop::Dynamic));
     core.schedules()
         .set_next(
-            &alice(),
             &added.id,
             Some(at(START + 300_000)),
             Some("再看看".to_string()),
@@ -322,24 +306,23 @@ async fn bad_ones_are_refused_and_pause_resume_cancel_work() {
         When::At { at: at(START) },
     ] {
         assert!(
-            schedules.add(&alice(), on(&session, when.clone())).is_err(),
+            schedules.add(on(&session, when.clone())).is_err(),
             "{when:?}"
         );
     }
-    assert!(schedules.list(&alice()).unwrap().is_empty(), "什么都没建");
+    assert!(schedules.list().unwrap().is_empty(), "什么都没建");
     let added = schedules
-        .add(&alice(), on(&session, When::Every { every: 600 }))
+        .add(on(&session, When::Every { every: 600 }))
         .unwrap();
-    let paused = schedules.pause(&alice(), &added.id).unwrap();
+    let paused = schedules.pause(&added.id).unwrap();
     assert!(paused.paused && paused.next.is_none());
     hand.advance(1_000_000);
     tokio::time::sleep(Duration::from_millis(50)).await;
     assert!(scheduled(&home.log(&session)).is_empty(), "停着的不跑");
-    let resumed = schedules.resume(&alice(), &added.id).unwrap();
+    let resumed = schedules.resume(&added.id).unwrap();
     assert_eq!(resumed.next, Some(at(START + 1_600_000)), "照现在重算");
-    schedules.cancel(&alice(), &added.id).unwrap();
-    assert!(schedules.get(&alice(), &added.id).is_err());
-    assert!(schedules.cancel(&alice(), &added.id).is_err(), "没有的报错");
-    let bob = miyu_kernel::id::AccountId::parse("bob").unwrap();
-    assert!(schedules.list(&bob).unwrap().is_empty(), "没有表的是空的");
+    schedules.cancel(&added.id).unwrap();
+    assert!(schedules.get(&added.id).is_err());
+    assert!(schedules.cancel(&added.id).is_err(), "没有的报错");
+    assert!(schedules.list().unwrap().is_empty(), "没有表的是空的");
 }

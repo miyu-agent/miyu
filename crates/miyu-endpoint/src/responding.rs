@@ -74,7 +74,7 @@ pub(crate) async fn respond(
         .collect::<Result<Vec<_>, _>>()?;
     let facts = facts(params.facts)?;
     let found = core.sessions.get(core, &session).await?;
-    let by = recorder(core, caller)?;
+    let by = recorder(caller)?;
     let command = Command::Respond { to, facts };
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     Ok(json!({ "events": events }))
@@ -93,7 +93,7 @@ pub(crate) async fn note(
     }
     let facts = facts(params.facts)?;
     let found = core.sessions.get(core, &session).await?;
-    let by = recorder(core, caller)?;
+    let by = recorder(caller)?;
     let command = Command::Note { facts };
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     Ok(json!({ "events": events }))

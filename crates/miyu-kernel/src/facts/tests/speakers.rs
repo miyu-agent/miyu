@@ -47,7 +47,7 @@ fn ids(speakers: &[Speaker]) -> Vec<(&str, bool)> {
 #[test]
 fn a_group_turn_hands_each_speaker_once_latest_last() {
     let owner =
-        r#"{"kind":"external","venue":"qq:group:1","id":"qq:1","account":"admin","role":"member"}"#;
+        r#"{"kind":"external","venue":"qq:group:1","id":"qq:1","owner":true,"role":"member"}"#;
     let history = history(vec![
         said(1, &member("qq:20017")),
         said(2, &member("qq:20018")),
@@ -65,8 +65,8 @@ fn a_group_turn_hands_each_speaker_once_latest_last() {
 
 #[test]
 fn a_private_owner_hands_the_platform_id_and_a_local_head_nothing() {
-    let via = r#"{"kind":"person","account":"admin","via":"qq:1"}"#;
-    let local = r#"{"kind":"person","account":"admin"}"#;
+    let via = r#"{"kind":"person","via":"qq:1"}"#;
+    let local = r#"{"kind":"person"}"#;
     let history = history(vec![
         said(1, via),
         started(2, Some(1), &[]),

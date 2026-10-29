@@ -344,7 +344,7 @@ fn message(n: u64, by: &str, venue: &str) -> miyu_kernel::event::Event {
 
 #[test]
 fn who_spoke_is_read_from_the_log() {
-    let owner = r#"{"kind":"person","account":"admin","via":"qq:1"}"#;
+    let owner = r#"{"kind":"person","via":"qq:1"}"#;
     let named = r#"{"kind":"external","venue":"qq:private:2","id":"qq:2"}"#;
     let other = r#"{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}"#;
     let events = [
@@ -426,7 +426,7 @@ fn the_owner_is_written_by_name_on_one_line() {
 /// 说话的人怎么叫（施工 E-1 上）：名字、平台编号都对着他的平台编号，主人（`Owner`、在群里的名字）对着没有。
 #[test]
 fn names_are_read_from_the_log() {
-    let owner = r#"{"kind":"person","account":"admin","via":"qq:1"}"#;
+    let owner = r#"{"kind":"person","via":"qq:1"}"#;
     let named = r#"{"kind":"external","venue":"qq:group:5","id":"qq:2"}"#;
     let events = [
         message(1, owner, r#","venue":{"msg":"8","name":"阿主"}"#),

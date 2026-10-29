@@ -46,7 +46,7 @@ fn words(text: &str) -> String {
 /// 底子：前 7 条。
 fn opening() -> Vec<Event> {
     let created = format!(
-        r#"{{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{{"level":"workspace","read_only":false}},"parent":"{P}","depth":1}}"#
+        r#"{{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{{"level":"workspace","read_only":false}},"parent":"{P}","depth":1}}"#
     );
     let started = format!(
         r#"{{"call_id":"call_4_1","status":"ok","blocks":[],"effects":[{{"kind":"job.started","job":"j1","what":"agent","title":"t","session":"{A}"}}]}}"#

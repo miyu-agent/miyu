@@ -10,8 +10,8 @@ use serde::Deserialize;
 
 use miyu_session::{Embedder, Turn, Using, Vectors};
 
+use crate::support::Home;
 use crate::support::meaning::{embed_package, model_data, real_package, shipped_model};
-use crate::support::{Home, alice_account};
 
 /// 四种问句。
 const KINDS: [&str; 4] = ["name", "paraphrase", "chat", "none"];
@@ -120,7 +120,7 @@ fn world(sections: &BTreeMap<String, String>) -> Home {
         let path = entry.expect("读得了").path();
         std::fs::copy(&path, world.join(path.file_name().expect("有名字"))).expect("拷得了");
     }
-    let (bases, _) = home.knowledge.list(&alice_account()).expect("补得了");
+    let (bases, _) = home.knowledge.list().expect("补得了");
     assert_eq!(bases[0].chunks, sections.len(), "一段一块");
     home
 }
@@ -135,9 +135,8 @@ async fn real(home: &Home) -> Option<(Arc<Vectors>, Using)> {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
-    let index = home.knowledge.index_of(&alice_account(), "world");
+    let index = home.knowledge.index_of("world");
     vectors.fill_knowledge(&using, "kb alice world".to_string(), Arc::clone(&index));
     for _ in 0..1200 {
         if index.missing(&MODEL, 0, 100).expect("读得了").is_empty() {
@@ -248,7 +247,7 @@ async fn measure_the_kb_eval_set() {
     for query in &set.query {
         let (hits, _) = home
             .knowledge
-            .search(&alice_account(), &query.text, None, 3, None)
+            .search(&query.text, None, 3, None)
             .expect("搜得了");
         keyword.push(
             hits.iter()
@@ -265,7 +264,7 @@ async fn measure_the_kb_eval_set() {
         println!("没设 MIYU_EMBED_PACKAGE：只量了标题名、关键词");
         return;
     };
-    let index = home.knowledge.index_of(&alice_account(), "world");
+    let index = home.knowledge.index_of("world");
     // 每句前 3 块的相似度。
     let mut near: Vec<Vec<(String, f32)>> = Vec::new();
     for query in &set.query {
@@ -354,7 +353,7 @@ async fn measure_the_search_floor() {
         println!("没设 MIYU_EMBED_PACKAGE：量不了");
         return;
     };
-    let index = home.knowledge.index_of(&alice_account(), "world");
+    let index = home.knowledge.index_of("world");
     let mut asked = Vec::new();
     for query in &set.query {
         let words: Vec<String> = index

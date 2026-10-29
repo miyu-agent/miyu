@@ -41,7 +41,6 @@ fn core_at(home: &Home, script: &Script, resources: &Path) -> Arc<Core> {
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),
@@ -55,7 +54,6 @@ fn core_at(home: &Home, script: &Script, resources: &Path) -> Arc<Core> {
             Arc::new(script.clone()),
             tools,
             None,
-            alice(),
             TOKEN.to_string(),
         )
         .with_config(config),

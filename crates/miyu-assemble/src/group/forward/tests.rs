@@ -9,7 +9,7 @@ use crate::render::render;
 use crate::test_support::*;
 
 const MEMBER: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:20017","role":"member"}"#;
-const OWNER: &str = r#"{"kind":"person","account":"alice","via":"qq:10001"}"#;
+const OWNER: &str = r#"{"kind":"person","via":"qq:10001"}"#;
 
 /// 一个转发：几条 `(名字, 正文)`。
 fn forward(nodes: &[(&str, &str)]) -> String {

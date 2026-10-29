@@ -16,7 +16,7 @@ use miyu_session::{EmbedSetup, Handle, ModelData, Observed};
 use miyu_store::recall::Room;
 use miyu_tool::Catalog;
 
-use super::{Home, alice, alice_account, id, now, until_logged, within};
+use super::{Home, alice, id, now, until_logged, within};
 
 /// 空的模型资料（没有档案、没有目录，读完了）：带一个不走代理的客户端，用量记进场地的汇总。
 pub fn model_data(home: &Home) -> Arc<ModelData> {
@@ -29,7 +29,7 @@ pub fn model_data(home: &Home) -> Arc<ModelData> {
 
 /// alice 的软件工程师那一间。
 pub fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 人记一条。

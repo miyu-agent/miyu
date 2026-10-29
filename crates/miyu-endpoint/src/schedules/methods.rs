@@ -10,7 +10,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 
 use super::{Creator, Loop, Schedule, ScheduleError, Target, Wanted, When};
@@ -26,13 +26,12 @@ pub(crate) async fn call(
     caller: &Caller,
     request: &Request,
 ) -> Result<Value, Refusal> {
-    let account = &core.admin;
     let package = caller.package.as_deref();
     let schedules = core.schedules();
     match request.method.as_str() {
         "schedule.add" => {
-            let wanted = wanted(core, account, package, params(request)?).await?;
-            let added = schedules.add(account, wanted).map_err(refusal)?;
+            let wanted = wanted(core, package, params(request)?).await?;
+            let added = schedules.add(wanted).map_err(refusal)?;
             Ok(json!({"schedule": entry(&added)}))
         }
         "schedule.list" => {
@@ -41,7 +40,7 @@ pub(crate) async fn call(
                 .map(|text| SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS))
                 .transpose()?;
             let listed: Vec<Value> = schedules
-                .list(account)
+                .list()
                 .map_err(refusal)?
                 .iter()
                 .filter(|schedule| mine(package, schedule))
@@ -56,20 +55,20 @@ pub(crate) async fn call(
         }
         "schedule.cancel" => {
             let IdParams { id } = params(request)?;
-            own(core, account, package, &id)?;
-            schedules.cancel(account, &id).map_err(refusal)?;
+            own(core, package, &id)?;
+            schedules.cancel(&id).map_err(refusal)?;
             Ok(json!({}))
         }
         "schedule.pause" => {
             let IdParams { id } = params(request)?;
-            own(core, account, package, &id)?;
-            let paused = schedules.pause(account, &id).map_err(refusal)?;
+            own(core, package, &id)?;
+            let paused = schedules.pause(&id).map_err(refusal)?;
             Ok(json!({"schedule": entry(&paused)}))
         }
         "schedule.resume" => {
             let IdParams { id } = params(request)?;
-            own(core, account, package, &id)?;
-            let resumed = schedules.resume(account, &id).map_err(refusal)?;
+            own(core, package, &id)?;
+            let resumed = schedules.resume(&id).map_err(refusal)?;
             Ok(json!({"schedule": entry(&resumed)}))
         }
         _ => Err(Refusal::UNKNOWN_METHOD),
@@ -86,11 +85,11 @@ fn mine(package: Option<&str>, schedule: &Schedule) -> bool {
 }
 
 /// 扩展只改得了自己建的（施工 J-4）：别的、没有的都是 `unknown_schedule`。人的不查。
-fn own(core: &Core, account: &AccountId, package: Option<&str>, id: &str) -> Result<(), Refusal> {
+fn own(core: &Core, package: Option<&str>, id: &str) -> Result<(), Refusal> {
     if package.is_none() {
         return Ok(());
     }
-    let schedule = core.schedules().get(account, id).map_err(refusal)?;
+    let schedule = core.schedules().get(id).map_err(refusal)?;
     if mine(package, &schedule) {
         Ok(())
     } else {
@@ -99,10 +98,10 @@ fn own(core: &Core, account: &AccountId, package: Option<&str>, id: &str) -> Res
 }
 
 /// 订阅 `schedules` 的回应：这个账号这一刻的全部。
-pub(crate) fn listed(core: &Core, account: &AccountId) -> Result<Value, Refusal> {
+pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
     let listed: Vec<Value> = core
         .schedules()
-        .list(account)
+        .list()
         .map_err(refusal)?
         .iter()
         .map(entry)
@@ -111,8 +110,8 @@ pub(crate) fn listed(core: &Core, account: &AccountId) -> Result<Value, Refusal>
 }
 
 /// 推送里的一项：这个账号的任务 `id` 这一刻的样子，没有了的是删了；表读不成的没有（不推）。
-pub(crate) fn changed(core: &Core, account: &AccountId, id: &str) -> Option<Value> {
-    match core.schedules().get(account, id) {
+pub(crate) fn changed(core: &Core, id: &str) -> Option<Value> {
+    match core.schedules().get(id) {
         Ok(schedule) => Some(json!({"id": id, "entry": entry(&schedule)})),
         Err(ScheduleError::Unknown) => Some(json!({"id": id, "removed": true})),
         Err(_) => None,
@@ -183,7 +182,6 @@ pub(crate) struct IdParams {
 /// 照参数拼出要建的：时刻、会话都查过；每次新开的人格、预设照这时的默认定下来。扩展（`package`）建的记成包建的。
 async fn wanted(
     core: &Arc<Core>,
-    account: &AccountId,
     package: Option<&str>,
     params: AddParams,
 ) -> Result<Wanted, Refusal> {
@@ -230,19 +228,19 @@ async fn wanted(
             new: None,
             package: None,
         }) => Target::Session {
-            session: session_of(core, account, &session).await?,
+            session: session_of(core, &session).await?,
         },
         None
         | Some(TargetParams {
             session: None,
             new: None,
             package: None,
-        }) => opened(core, account, NewParams::default()).await?,
+        }) => opened(core, NewParams::default()).await?,
         Some(TargetParams {
             session: None,
             new: Some(new),
             package: None,
-        }) => opened(core, account, new).await?,
+        }) => opened(core, new).await?,
         Some(TargetParams {
             session: None,
             new: None,
@@ -258,9 +256,7 @@ async fn wanted(
         Some(package) => Creator::Package {
             package: package.to_string(),
         },
-        None => Creator::Person {
-            account: account.clone(),
-        },
+        None => Creator::Person,
     };
     Ok(Wanted {
         by,
@@ -272,26 +268,21 @@ async fn wanted(
     })
 }
 
-/// 跑在已有的会话：要有、要是这个账号的。
-async fn session_of(
-    core: &Arc<Core>,
-    account: &AccountId,
-    text: &str,
-) -> Result<SessionId, Refusal> {
+/// 跑在已有的会话：要有。
+async fn session_of(core: &Arc<Core>, text: &str) -> Result<SessionId, Refusal> {
     let session = SessionId::parse(text).map_err(|_| Refusal::bad_schedule("session"))?;
     match core.sessions.get(core, &session).await {
-        Ok(found) if found.handle.owner() == account => Ok(session),
+        Ok(_) => Ok(session),
         _ => Err(Refusal::bad_schedule("session")),
     }
 }
 
 /// 每次新开的：人格、预设照这时的默认定下来（找不到的照开会话的拒绝），工作目录不写的是家目录。
-async fn opened(core: &Arc<Core>, account: &AccountId, new: NewParams) -> Result<Target, Refusal> {
-    let persona =
-        crate::personas::resolve(core, account, new.persona.as_ref().map(Option::as_deref))
-            .await?
-            .map(|found| found.id);
-    let preset = crate::presets::resolve(core, account, new.preset.as_deref())
+async fn opened(core: &Arc<Core>, new: NewParams) -> Result<Target, Refusal> {
+    let persona = crate::personas::resolve(core, new.persona.as_ref().map(Option::as_deref))
+        .await?
+        .map(|found| found.id);
+    let preset = crate::presets::resolve(core, new.preset.as_deref())
         .await?
         .id;
     // 写了的建时就查（施工 J-3 上）：到点开不成的每次只记一句 `not_opened`，人不知道。
@@ -364,7 +355,7 @@ pub(crate) fn entry(schedule: &Schedule) -> Value {
         Target::Package { .. } => json!({"package": {}}),
     };
     let by = match &schedule.by {
-        Creator::Person { account } => json!({"kind": "person", "account": account}),
+        Creator::Person => json!({"kind": "person"}),
         Creator::Model { session } => json!({"kind": "model", "session": session}),
         Creator::Package { package } => json!({"kind": "package", "package": package}),
     };

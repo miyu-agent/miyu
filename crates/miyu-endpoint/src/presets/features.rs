@@ -32,12 +32,9 @@ use crate::personas::pick;
 pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
     let words = words(core, language).ok();
     let catalog = core.tools.current();
-    let found_packages = core.packages_of(&carried.account);
-    let table = crate::scripts::features(core, &carried.account);
-    let file = &found
-        .file
-        .clone()
-        .following(super::switches(core, &carried.account));
+    let found_packages = core.packages_of();
+    let table = crate::scripts::features(core);
+    let file = &found.file.clone().following(super::switches(core));
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
     // 程序不在的扩展当没装（施工 F-6 上）：它的功能照「写了没装」列。
@@ -78,7 +75,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         }
     }
     // 扩展替这个人交的功能（施工 IM-6，`feature.offer`）：归交的那个包，写法同包自己的功能。
-    for offer in core.extensions.offers.of(&carried.account) {
+    for offer in core.extensions.offers.of() {
         let (id, package) = (&offer.feature.id, offer.feature.package.as_str());
         let (on, by) = file.decided(id, package);
         let tools = tools_of(&catalog, &table, (package, id), |name| {
@@ -102,7 +99,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         }
         listed.push(one);
     }
-    let scripts = core.scripts_for(&carried.account);
+    let scripts = core.scripts_for();
     // 脚本各算一个功能（施工 X-12 中）：名字、说明照脚本写给人看的几格挑这个连接的语言，没写名字的照工具名；它自己那件工具
     // 带着同一个名字，开不开照功能和 `[tools]`。
     for script in &scripts {

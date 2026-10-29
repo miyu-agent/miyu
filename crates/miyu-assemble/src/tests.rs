@@ -168,7 +168,7 @@ fn a_slash_command_after_the_notice_still_continues() {
     let mut log = cut_log();
     notice(&mut log);
     log.detached(
-        r#"{"kind":"person","account":"alice"}"#,
+        r#"{"kind":"person"}"#,
         "command.ran",
         r#"{"text":"/stop","command":"stop"}"#,
     );

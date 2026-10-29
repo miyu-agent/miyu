@@ -127,7 +127,6 @@ impl Ledger {
             until: None,
             group: Vec::new(),
             session: Some((self.session.clone(), false)),
-            account: None,
             offset: UtcOffset::UTC,
             daily: true,
         };

@@ -20,7 +20,7 @@ fn stop(jobs: &[u64], undo: &CommandId) -> Action {
     Action::StopJobs {
         undone: true,
         jobs: jobs.iter().map(|&n| job(n)).collect(),
-        by: alice(),
+        by: person(),
         cause: undo.clone(),
     }
 }
@@ -31,12 +31,12 @@ fn undoing_the_turn_stops_what_it_dispatched_and_the_reports_only_record() {
     let undo = s.revert(TurnId::new(seq(3)));
     assert_eq!(s.stopping(), [stop(&[1, 2], &undo)], "子代理、后台命令都停");
     s.child_reports(1, CHILD, ChildReason::Undone, "");
-    s.job_ends(2, JobReason::Undone, alice(), Some(undo.clone()));
+    s.job_ends(2, JobReason::Undone, person(), Some(undo.clone()));
     assert_eq!(s.turns().len(), 1, "undone 的只记下，不叫醒她");
     let reported = &s.log()[s.log().len() - 1];
     assert_eq!(
         (&reported.by, reported.cause.as_ref(), reported.turn),
-        (&alice(), Some(&undo), None),
+        (&person(), Some(&undo), None),
         "后台命令那条 by、cause 照撤销的，不带回合编号"
     );
 }
@@ -89,7 +89,7 @@ fn restoring_the_undo_does_not_restart_them() {
     let mut s = dispatched(stage());
     let undo = s.revert(TurnId::new(seq(3)));
     s.child_reports(1, CHILD, ChildReason::Undone, "");
-    s.job_ends(2, JobReason::Undone, alice(), Some(undo));
+    s.job_ends(2, JobReason::Undone, person(), Some(undo));
     s.unrevert();
     assert_eq!(s.stopping().len(), 1, "恢复不停也不起");
     assert_eq!(s.turns().len(), 1, "恢复了也不开轮：undone 的只记下");

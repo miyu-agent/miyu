@@ -27,7 +27,6 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
-use crate::sessions::admin;
 use crate::settings::CommandSettings;
 use crate::venues::{self, AsParams};
 use crate::wire::Request;
@@ -120,7 +119,7 @@ pub(crate) async fn run(
     id: &CommandId,
     mut params: RunParams,
 ) -> Result<Value, Refusal> {
-    params.person = Some(crate::sessions::admin(core));
+    params.person = Some(crate::sessions::person());
     let (name, rest) = split(&params.text)?;
     if params
         .cwd
@@ -183,7 +182,7 @@ fn speaker(
     speaking: Option<AsParams>,
 ) -> Result<By, Refusal> {
     match (handle.venue().as_str() == LOCAL, speaking) {
-        (true, None) => Ok(person.cloned().unwrap_or_else(|| admin(core))),
+        (true, None) => Ok(person.cloned().unwrap_or_else(crate::sessions::person)),
         (true, Some(_)) => Err(Refusal::BAD_PARAMS),
         (false, None) => Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => venues::speaker(core, handle, speaking),
@@ -245,9 +244,7 @@ async fn turned_off(core: &Core, peer: &Peer, name: &str) -> Refusal {
 fn may_run(by: &By) -> bool {
     match by {
         By::Person(_) => true,
-        By::External(external) => {
-            external.account.is_some() || external.role == Some(Role::Manager)
-        }
+        By::External(external) => external.owner || external.role == Some(Role::Manager),
         _ => false,
     }
 }

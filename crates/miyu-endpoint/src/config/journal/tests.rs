@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, CommandId};
+use miyu_kernel::id::CommandId;
 use miyu_kernel::origin::{By, Person};
 use miyu_kernel::time::Timestamp;
 
@@ -48,7 +48,7 @@ impl Drop for Scratch {
 }
 
 fn admin() -> By {
-    By::Person(Person::new(AccountId::parse("admin").unwrap()))
+    By::Person(Person::default())
 }
 
 #[test]

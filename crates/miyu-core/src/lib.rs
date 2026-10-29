@@ -5,11 +5,11 @@
 //! 1. 找数据根，建骨架；
 //! 2. 拿单实例锁：已经有一个核心在跑的，说一声 `running` 就走；先拿锁再装日志，免得两个核心写同一份；
 //! 3. 装运行日志 `state/logs/core.log`，记一条「起来了」：版本、进程号、数据根、和 UTC 差多少；
-//! 4. 管理员 `admin` 的家目录，没有就建；资源目录；读配置、照 `log.level` 换运行日志的级别，照配置清单生成两份 JSON
+//! 4. 工作区，没有就建；资源目录；读配置、照 `log.level` 换运行日志的级别，照配置清单生成两份 JSON
 //!    Schema 和参考文件（[`settings`]，施工 8-1、8-2）；供应商的档案、认原厂的表，造会话的路由（[`models`]，施工 8-6、8-7）；开始监视配置文件，配置换了当场换级别、重写
 //!    生成的文件（施工 8-4）；
 //! 5. 换本机令牌、在套接字上等连接（施工 3-8 下）；找沙盒的助手、探一次，只记日志（施工 5-1）；照编进来的可选
-//!    软件包往查询表里登记（[`packages::register`]，cargo 开关 `mermaid`、`net`，施工 W-4、W-7），交给 `Core`；清掉管理员
+//!    软件包往查询表里登记（[`packages::register`]，cargo 开关 `mermaid`、`net`，施工 W-4、W-7），交给 `Core`；清掉
 //!    分块上传留下的暂存（[`packages::clear_uploads`]，施工 W-5）；
 //! 6. 往标准输出写一行 `ready`：拉起它的头等着这一行；接着照开关拉起开着的扩展（施工 9-4 上）；在后台更新 models.dev 的
 //!    目录（施工 8-7；读目录、用出来的在第 4 步造好路由就在阻塞线程里开始了，读完再答要它的，施工 V-2 下）；在后台清一次
@@ -24,7 +24,6 @@ pub mod embed;
 mod kit;
 pub mod memlog;
 pub mod models;
-pub mod owner;
 pub mod packages;
 mod pending;
 mod sandbox;
@@ -45,7 +44,6 @@ use std::time::Duration;
 
 use miyu_endpoint::Core;
 use miyu_ipc::{Lock, OpenError, Ready};
-use miyu_kernel::id::AccountId;
 use miyu_store::env::Env;
 use miyu_store::packages::Found;
 use miyu_store::resources::ResourceRoot;
@@ -63,12 +61,6 @@ const WORKERS: usize = 2;
 pub struct Options {
     /// 空闲多久退出：有的盖过系统配置的 `core.idle_exit`（开发、测试用，`miyu core --idle-seconds`）；没有的照配置（施工 Z-1 上）。
     pub idle: Option<Duration>,
-}
-
-/// 系统的账号名 `admin`（`06-多用户与身份.md` U22，施工 Y-12 中上起）：系统、不登录；装 Miyu 的那个人是机主
-/// （[`owner::owner`]），核心照他起。
-pub fn admin() -> AccountId {
-    AccountId::parse("admin").unwrap_or_else(|e| unreachable!("「admin」合账号的写法：{e}"))
 }
 
 /// 跑核心进程，交回退出码。
@@ -359,7 +351,7 @@ async fn run(
     (root, resources, opened): (DataRoot, ResourceRoot, miyu_ipc::Opened),
     options: Options,
     (config, live): (miyu_endpoint::config::Config, Live),
-    (catalog, owner, said): (models::Early, AccountId, bool),
+    catalog: models::Early,
 ) -> ExitCode {
     let routes = match models::prepare(&resources, Some(root.state().join("models"))) {
         Ok(routes) => routes,
@@ -396,7 +388,6 @@ async fn run(
         Arc::new(routes),
         tools,
         env.home,
-        owner.clone(),
         opened.token,
     )
     .with_sandbox(sandbox)
@@ -434,15 +425,12 @@ async fn run(
     models::follow_cooldown(core.config_now(), Arc::clone(&model_data));
     // 监视配置文件（第七条）：拿着它一直到停，丢掉就不看了。
     let _watching = core.watch_config();
-    // 设置那一段已经说过了（施工 Y-12 中上）：拉起它的头那时就连上来了。
-    if !said {
-        say(&Ready::Ready);
-    }
+    say(&Ready::Ready);
     // 照开关拉起开着的扩展（施工 9-4 上）：写了 `ready` 以后，拉起它的头不等它们。
     core.start_extensions();
-    // 个人设置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了个人设置，当场起停。
+    // 配置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了配置，当场起停。
     let _home_mcp = core.follow_home_mcp();
-    // 管理员家目录里的脚本跟着变（施工 X-12 补）：放进去、改了、删了，当场再登记一遍。
+    // 你的脚本跟着变（施工 X-12 补）：放进去、改了、删了，当场再登记一遍。
     let _home_scripts = core.watch_scripts();
     // 池的成员下架了的，路由确认以后从池里拿掉（施工 8-23）。
     core.start_retirement();

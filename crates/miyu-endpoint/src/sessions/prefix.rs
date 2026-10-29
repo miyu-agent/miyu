@@ -47,7 +47,7 @@ pub(crate) async fn ask(
     if !peer.prefix_ask || handle.venue().as_str() != LOCAL || handle.busy() {
         return Ok(());
     }
-    let version = core.edits.version(handle.owner());
+    let version = core.edits.version();
     let prefix = handle.prefix();
     let settled = prefix.seen().max(prefix.allowed());
     if version <= settled {
@@ -55,7 +55,7 @@ pub(crate) async fn ask(
     }
     match choice {
         None => {
-            let (files, more) = core.edits.since(handle.owner(), settled, MOST);
+            let (files, more) = core.edits.since(settled, MOST);
             let mut data = serde_json::Map::new();
             data.insert("files".to_string(), json!(files));
             if more > 0 {

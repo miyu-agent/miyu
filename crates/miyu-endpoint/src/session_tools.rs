@@ -12,7 +12,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::package::PackageKind;
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::new_id;
 
 use crate::Core;
@@ -36,32 +36,25 @@ pub(crate) struct Params {
 }
 
 /// `session.tools`：`{"tools": [...]}`。
-pub(crate) async fn tools(
-    core: &Arc<Core>,
-    peer: Peer,
-    account: &miyu_kernel::id::AccountId,
-    params: Params,
-) -> Result<Value, Refusal> {
-    let (offered, owner) = match params.session {
+pub(crate) async fn tools(core: &Arc<Core>, peer: Peer, params: Params) -> Result<Value, Refusal> {
+    let offered = match params.session {
         Some(_) if params.persona.is_some() || params.preset.is_some() => {
             return Err(Refusal::BAD_PARAMS);
         }
         Some(text) => {
             let id = SessionId::parse(&text).map_err(|_| Refusal::BAD_PARAMS)?;
             let found = core.sessions.get(core, &id).await?;
-            let offered = found.handle.tools().await.map_err(|_| Refusal::INTERNAL)?;
-            (offered, found.handle.owner().clone())
+            found.handle.tools().await.map_err(|_| Refusal::INTERNAL)?
         }
         None => {
             let preset = crate::presets::opening(params.preset)?;
-            let offered = preview(core, peer, account, params.persona, preset).await?;
-            (offered, account.clone())
+            preview(core, peer, params.persona, preset).await?
         }
     };
     let language = peer.language.to_string();
     let tools: Vec<Value> = offered
         .iter()
-        .map(|name| entry(core, (&owner, &language), name))
+        .map(|name| entry(core, &language, name))
         .collect();
     Ok(json!({ "tools": tools }))
 }
@@ -70,11 +63,10 @@ pub(crate) async fn tools(
 async fn preview(
     core: &Arc<Core>,
     peer: Peer,
-    account: &miyu_kernel::id::AccountId,
     persona: Option<Option<String>>,
     preset: Option<String>,
 ) -> Result<Vec<String>, Refusal> {
-    let mut setup = new_session(core, peer, account, persona, preset).await?;
+    let mut setup = new_session(core, peer, persona, preset).await?;
     Ok(miyu_session::preview(setup.create(core)).await)
 }
 
@@ -82,12 +74,10 @@ async fn preview(
 pub(crate) async fn new_session(
     core: &Arc<Core>,
     peer: Peer,
-    account: &miyu_kernel::id::AccountId,
     persona: Option<Option<String>>,
     preset: Option<String>,
 ) -> Result<Setup, Refusal> {
     let who = Opening {
-        owner: account.clone(),
         attended: peer.input,
         oneshot: false,
         model: None,
@@ -117,8 +107,8 @@ pub(crate) async fn new_session(
 }
 
 /// 一件：名字、来处、说明（有的才写）。工具一律全量（施工 FL-1）以后没有只露名字的，`loaded: false` 不再出现。
-fn entry(core: &Core, (owner, language): (&AccountId, &str), name: &str) -> Value {
-    let (source, summary) = source(core, (owner, language), name);
+fn entry(core: &Core, language: &str, name: &str) -> Value {
+    let (source, summary) = source(core, language, name);
     let mut entry = json!({ "name": name, "source": source });
     if let Some(summary) = summary {
         entry["summary"] = json!(summary);
@@ -127,15 +117,11 @@ fn entry(core: &Core, (owner, language): (&AccountId, &str), name: &str) -> Valu
 }
 
 /// 来处，和给人看的一句说明。
-pub(crate) fn source(
-    core: &Core,
-    (owner, language): (&AccountId, &str),
-    name: &str,
-) -> (Value, Option<String>) {
+pub(crate) fn source(core: &Core, language: &str, name: &str) -> (Value, Option<String>) {
     if let Some(service) = miyu_tool::mcp_service(name) {
         return (json!({"kind": "mcp", "id": service, "name": service}), None);
     }
-    let scripts = core.scripts_for(owner);
+    let scripts = core.scripts_for();
     if let Some(script) = scripts.iter().find(|script| script.head.name == name) {
         let shown = pick(&script.head.display_name, language).unwrap_or_else(|| name.to_string());
         let summary = pick(&script.head.summary, language);

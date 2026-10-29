@@ -102,7 +102,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::preset::MEMORY;
 use miyu_sandbox::{Availability, Unusable};
 use miyu_session::{Jobs, Memory, ModelData, Models, SandboxCache, SummaryTexts};
@@ -142,15 +141,12 @@ pub struct Core {
     /// 沙盒的缓存放在哪：`<缓存目录>/sandbox`，各账号一份在它下面；你的 cargo 目录在哪（施工 5-4 下）。算不出缓存目录的
     /// 没有。
     sandbox_cache: Option<(PathBuf, Option<PathBuf>)>,
-    /// 管理员：本机连上来的都是他（`06-多用户与身份.md` 第二节）。
-    admin: AccountId,
     /// 本机令牌：本机连接握手时要出示（`04-核心协议.md` 第四节）。
     token: String,
     /// 会话表。
     sessions: Sessions,
-    /// 各个账号的会话列表的索引（施工 3-8 七补）：在它们自己的家目录下，开了一直开着；会话落盘时更新、删会话时删行、列会话时读。
-    /// 用到时才开（施工 Y-12 上；施工 Y-12 中上：设置那一段的核心不该替还没有的人建家目录）。
-    indexes: std::sync::Mutex<std::collections::BTreeMap<AccountId, Arc<SessionIndex>>>,
+    /// 会话列表的索引（施工 3-8 七补）：开了一直开着；会话落盘时更新、删会话时删行、列会话时读。用到时才开（施工 Y-12 中上）。
+    index: std::sync::OnceLock<Arc<SessionIndex>>,
     /// 用量汇总（施工 8-15，`state/usage.db`）：起来时开一次，一直开着；会话落盘时写、一次性入口记账（交给模型资料）、
     /// `usage.query` 和 `session_usage` 查之前补。
     usage: Arc<UsageIndex>,
@@ -254,10 +250,9 @@ impl Core {
         models: Arc<dyn Models>,
         tools: Catalog,
         home: Option<PathBuf>,
-        admin: AccountId,
         token: String,
     ) -> Core {
-        let mut config = Config::defaults(&root, &admin, settings::core_items());
+        let mut config = Config::defaults(&root, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
         let found = packages::load(&resources, &root);
@@ -281,7 +276,7 @@ impl Core {
             knowledge,
             kb_progress,
             memory,
-            indexes: std::sync::Mutex::default(),
+            index: std::sync::OnceLock::new(),
             usage,
             hub: Hub::new(&config),
             config: std::sync::Mutex::new(config),
@@ -295,7 +290,6 @@ impl Core {
             home,
             sandbox: Availability::Unusable(Unusable::HelperMissing),
             sandbox_cache: None,
-            admin,
             token,
             sessions: Sessions::default(),
             jobs: Arc::new(Jobs::new()),
@@ -433,21 +427,15 @@ impl Core {
             })
     }
 
-    /// 账号 `owner` 的会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：在他自己的家目录下，还没开的这时开
-    /// （施工 Y-12 上：以前只有管理员、系统账号的有，成员的会话不进索引、不进列表）。
-    pub(crate) fn index_for(&self, owner: &AccountId) -> Arc<SessionIndex> {
-        let mut indexes = self
-            .indexes
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+    /// 会话列表的索引，交给造的、载入的会话、列会话时读（施工 3-8 七补）：还没开的这时开。
+    pub(crate) fn index(&self) -> Arc<SessionIndex> {
         Arc::clone(
-            indexes
-                .entry(owner.clone())
-                .or_insert_with(|| Arc::new(crate::list::open_index(&self.root))),
+            self.index
+                .get_or_init(|| Arc::new(crate::list::open_index(&self.root))),
         )
     }
 
-    /// 会话写哪份用量汇总（施工 8-15）：核心一份、行里带属主。施工 Y-2 下下中下起人人的会话都写（以前只有管理员和系统账号的）。
+    /// 会话写哪份用量汇总（施工 8-15）：核心一份。
     pub(crate) fn ledger(&self) -> Option<Arc<UsageIndex>> {
         Some(Arc::clone(&self.usage))
     }
@@ -483,7 +471,6 @@ impl fmt::Debug for Core {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Core")
             .field("root", &self.root)
-            .field("admin", &self.admin)
             .finish_non_exhaustive()
     }
 }

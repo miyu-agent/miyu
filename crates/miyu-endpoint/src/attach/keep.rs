@@ -4,7 +4,7 @@
 //! 头交了路径的（本机文件）不拷：她读原文件，照权限判。
 
 use miyu_kernel::block::Block;
-use miyu_kernel::id::{AccountId, SessionId, SourcePath};
+use miyu_kernel::id::{SessionId, SourcePath};
 use miyu_store::attachments;
 use miyu_store::blob::Blobs;
 
@@ -16,14 +16,13 @@ use crate::refusal::Refusal;
 /// 只有主人一个存处）。读不了、存不下的记一行、`internal_error`。
 pub(crate) async fn keep(
     core: &Core,
-    owner: &AccountId,
     session: &SessionId,
     blocks: &mut Vec<Block>,
 ) -> Result<(), Refusal> {
     if !blocks.iter().any(pathless) {
         return Ok(());
     }
-    let place = place(core, owner);
+    let place = place(core);
     let dir = attachments::dir(&place.root, session);
     let blobs = Blobs::new(place.root.blobs());
     let taken = std::mem::take(blocks);

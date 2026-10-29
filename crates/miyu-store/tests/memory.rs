@@ -24,9 +24,7 @@ fn saved(text: &str) -> MemoryEvent {
             session: SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").expect("合写法"),
             turn: TurnId::new(Seq::new(3).expect("从 1 起")),
         }],
-        audience: vec![
-            serde_json::from_str(r#"{"kind":"person","account":"admin"}"#).expect("合写法"),
-        ],
+        audience: vec![serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法")],
         replaces: None,
         about: None,
         venue: None,
@@ -46,10 +44,7 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
     let scratch = Scratch::new("memory-reopen");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    let log = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了")
-        .0;
+    let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
     assert_eq!(
         log.append(at(1), tool(), None, &saved("用户用 N 卡"))
             .expect("记得下")
@@ -78,10 +73,7 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
     assert!(root.path().join("modules/memory/engineer").is_dir());
 
     let logs = MemoryLogs::new(&root);
-    let log = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了")
-        .0;
+    let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
     let texts: Vec<String> = log.book(|book| book.all().map(|entry| entry.text.clone()).collect());
     assert_eq!(texts, ["用户用 N 卡", "周末喜欢爬山"]);
     assert!(log.book(|book| book.get(id(2)).expect("在").retired.is_some()));
@@ -94,10 +86,7 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
     assert!(
         Arc::ptr_eq(
             &log,
-            &logs
-                .open(&Room::persona(&admin(), "engineer"))
-                .expect("开得了")
-                .0
+            &logs.open(&Room::persona("engineer")).expect("开得了").0
         ),
         "一份一个"
     );
@@ -108,7 +97,7 @@ fn a_torn_last_line_is_cut_off() {
     let scratch = Scratch::new("memory-torn");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    logs.open(&Room::persona(&admin(), "engineer"))
+    logs.open(&Room::persona("engineer"))
         .expect("开得了")
         .0
         .append(at(1), tool(), None, &saved("养了一只猫"))
@@ -122,7 +111,7 @@ fn a_torn_last_line_is_cut_off() {
     fs::write(&segment, bytes).expect("写得进");
     let logs = MemoryLogs::new(&root);
     let log = logs
-        .open(&Room::persona(&admin(), "engineer"))
+        .open(&Room::persona("engineer"))
         .expect("截掉半行照样开")
         .0;
     assert_eq!(
@@ -144,10 +133,7 @@ fn saves_from_several_threads_get_distinct_consecutive_numbers() {
         .map(|t| {
             let logs = Arc::clone(&logs);
             std::thread::spawn(move || {
-                let log = logs
-                    .open(&Room::persona(&admin(), "engineer"))
-                    .expect("开得了")
-                    .0;
+                let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
                 (0..25)
                     .map(|n| {
                         log.append(
@@ -169,10 +155,7 @@ fn saves_from_several_threads_get_distinct_consecutive_numbers() {
         .collect();
     ids.sort();
     assert_eq!(ids, (1..=200).map(id).collect::<Vec<_>>());
-    let log = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了")
-        .0;
+    let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
     assert_eq!(log.book(|book| book.all().count()), 200);
 }
 
@@ -181,10 +164,7 @@ fn a_missing_or_lagging_memory_index_is_filled_from_the_log() {
     let scratch = Scratch::new("memory-index");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    let log = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了")
-        .0;
+    let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
     log.append(at(1), tool(), None, &saved("用户用 N 卡"))
         .expect("记得下");
     log.append(at(2), tool(), None, &saved("喜欢吃火锅"))
@@ -201,15 +181,13 @@ fn a_missing_or_lagging_memory_index_is_filled_from_the_log() {
         }
     }
     let logs = MemoryLogs::new(&root);
-    let (log, report) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (log, report) = logs.open(&Room::persona("engineer")).expect("开得了");
     assert_eq!(report.expect("第一次开交回情形").filled, 2, "整份补");
     assert_eq!(log.search("火锅", 10).expect("搜得了"), [id(2)]);
     assert_eq!(log.search("N卡", 10).expect("搜得了"), [id(1)]);
     drop((log, logs));
     let (_, report) = MemoryLogs::new(&root)
-        .open(&Room::persona(&admin(), "engineer"))
+        .open(&Room::persona("engineer"))
         .expect("开得了");
     assert_eq!(
         report.expect("第一次开交回情形").filled,
@@ -223,15 +201,12 @@ fn personas_and_accounts_have_their_own_logs() {
     let scratch = Scratch::new("memory-apart");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    logs.open(&Room::persona(&admin(), "engineer"))
+    logs.open(&Room::persona("engineer"))
         .expect("开得了")
         .0
         .append(at(1), tool(), None, &saved("写代码用 Rust"))
         .expect("记得下");
-    let miyu = logs
-        .open(&Room::persona(&admin(), "miyu"))
-        .expect("开得了")
-        .0;
+    let miyu = logs.open(&Room::persona("miyu")).expect("开得了").0;
     assert_eq!(
         miyu.append(at(2), tool(), None, &saved("喜欢猫"))
             .expect("记得下")
@@ -248,9 +223,7 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     let scratch = Scratch::new("memory-report");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    let (log, report) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (log, report) = logs.open(&Room::persona("engineer")).expect("开得了");
     let report = report.expect("第一次开交回情形");
     assert!(
         matches!(report.index, Opened::Created),
@@ -259,7 +232,7 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     );
     assert!(report.caught_up.is_none() && report.unreadable.is_empty());
     assert!(
-        logs.open(&Room::persona(&admin(), "engineer"))
+        logs.open(&Room::persona("engineer"))
             .expect("开得了")
             .1
             .is_none(),
@@ -278,9 +251,7 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     );
     fs::write(&segment, bytes).expect("写得进");
     let logs = MemoryLogs::new(&root);
-    let (log, report) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (log, report) = logs.open(&Room::persona("engineer")).expect("开得了");
     let report = report.expect("第一次开交回情形");
     assert_eq!(report.unreadable.len(), 1, "{:?}", report.unreadable);
     assert_eq!(report.unreadable[0].0, Seq::new(2).expect("从 1 起"));
@@ -301,9 +272,7 @@ fn measure_a_thousand_memories() {
     let scratch = Scratch::new("memory-measure");
     let root = root_in(&scratch);
     let logs = MemoryLogs::new(&root);
-    let (log, _) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (log, _) = logs.open(&Room::persona("engineer")).expect("开得了");
     for n in 0..1000 {
         log.append(
             at(n),
@@ -325,9 +294,7 @@ fn measure_a_thousand_memories() {
     let logged = size(root.path().join("modules/memory/engineer"));
     let started = std::time::Instant::now();
     let logs = MemoryLogs::new(&root);
-    let (log, _) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (log, _) = logs.open(&Room::persona("engineer")).expect("开得了");
     let opened = started.elapsed();
     assert_eq!(log.book(|book| book.all().count()), 1000);
     println!("log {} KiB, open {opened:?}", logged / 1024);
@@ -340,7 +307,7 @@ fn a_session_room_lives_in_the_session_directory_apart_from_the_persona() {
     let scratch = Scratch::new("memory-session-room");
     let root = root_in(&scratch);
     let session = SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").expect("合写法");
-    let room = Room::session(&admin(), &session);
+    let room = Room::session(&session);
     let logs = MemoryLogs::new(&root);
     let (log, _) = logs.open(&room).expect("开得了");
     assert_eq!(
@@ -364,23 +331,21 @@ fn a_session_room_lives_in_the_session_directory_apart_from_the_persona() {
         dir.join("turns.db").is_file() && dir.join("memory.db").is_file(),
         "两个库也在"
     );
-    let (persona, _) = logs
-        .open(&Room::persona(&admin(), "engineer"))
-        .expect("开得了");
+    let (persona, _) = logs.open(&Room::persona("engineer")).expect("开得了");
     assert!(
         persona.search("会话", 10).expect("搜得了").is_empty(),
         "人格那一间看不到"
     );
     assert!(
         turns
-            .turns(&Room::persona(&admin(), "engineer"))
+            .turns(&Room::persona("engineer"))
             .0
             .search("聊过", 10)
             .expect("搜得了")
             .is_empty()
     );
     // 删会话照旧只碰人格那几间，会话那一间跟着目录走。
-    turns.forget_session(&admin(), &session).expect("拿得掉");
+    turns.forget_session(&session).expect("拿得掉");
     assert_eq!(turns.turns(&room).0.keys().expect("读得了").len(), 1);
 }
 
@@ -390,7 +355,7 @@ fn a_session_room_lives_in_the_session_directory_apart_from_the_persona() {
 fn cleared_memories_leave_the_memory_index_and_stay_out_when_it_is_rebuilt() {
     let scratch = Scratch::new("memory-cleared");
     let root = root_in(&scratch);
-    let room = Room::persona(&admin(), "engineer");
+    let room = Room::persona("engineer");
     let logs = MemoryLogs::new(&root);
     let log = logs.open(&room).expect("开得了").0;
     log.append(at(1), tool(), None, &saved("用户用 N 卡"))
@@ -436,7 +401,7 @@ fn the_same_command_appends_once_even_after_reopening() {
     use miyu_kernel::id::CommandId;
     let scratch = Scratch::new("memory-cause");
     let root = root_in(&scratch);
-    let room = Room::persona(&admin(), "engineer");
+    let room = Room::persona("engineer");
     let cause = CommandId::parse("c1").expect("合写法");
     let logs = MemoryLogs::new(&root);
     let log = logs.open(&room).expect("开得了").0;

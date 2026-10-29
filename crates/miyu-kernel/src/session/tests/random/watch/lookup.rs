@@ -94,7 +94,7 @@ impl Watch {
             seq: seq(1),
             at: at(0),
             turn: None,
-            by: alice(),
+            by: person(),
             cause: Some(id(0)),
             body: Body::SessionCreated(created),
         }

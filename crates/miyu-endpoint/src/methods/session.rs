@@ -24,14 +24,13 @@ pub(super) async fn create(
     // 解析不出的什么都不造（施工 8-8）。
     let model = params
         .model
-        .map(|text| models::record(core, &core.admin, &text))
+        .map(|text| models::record(core, &text))
         .transpose()?;
     let memory = params
         .memory
         .map(|text| MemoryScope::parse(&text).ok_or(Refusal::BAD_PARAMS))
         .transpose()?;
     let who = Opening {
-        owner: core.admin.clone(),
         attended: peer.input,
         oneshot: params.oneshot,
         model,
@@ -64,7 +63,7 @@ pub(super) async fn create(
         events.extend(
             crate::projects::sessions::join(
                 core,
-                crate::sessions::admin(core),
+                crate::sessions::person(),
                 request,
                 &created.id,
                 project.project,
@@ -100,7 +99,7 @@ pub(super) async fn send(
         (Some(_), Some(_)) => return Err(Refusal::BAD_PARAMS),
         (Some(name), None) => from::harness(name)?,
         (None, Some(package)) => from::harness(package)?,
-        (None, None) => crate::sessions::admin(core),
+        (None, None) => crate::sessions::person(),
     };
     let mut blocks = said(params.text);
     let session = session(&params.session)?;
@@ -118,10 +117,10 @@ pub(super) async fn send(
     }
     // 附件先查，再找会话：不对的，会话里什么都不送（施工 3-9 三补）。头报的 `cwd`、`dirs` 不再换工作区（施工 9-7 上）。
     let attachments = params.attachments.unwrap_or_default();
-    blocks.extend(attach::blocks(core, &core.admin, attachments).await?);
+    blocks.extend(attach::blocks(core, attachments).await?);
     let mut found = core.sessions.get(core, &session).await?;
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
-    attach::keep(core, found.handle.owner(), &session, &mut blocks).await?;
+    attach::keep(core, &session, &mut blocks).await?;
     let command = Command::Send {
         blocks,
         urgent: params.urgent,
@@ -154,10 +153,7 @@ pub(super) async fn send(
     if wide {
         reply["wide"] = json!(true);
     }
-    let untrusted = core
-        .mine(found.handle.owner())
-        .config()
-        .untrusted(&found.cwd);
+    let untrusted = core.mine().config().untrusted(&found.cwd);
     if let Some(file) = untrusted {
         reply["untrusted_project"] = json!(file);
     }
@@ -227,15 +223,15 @@ pub(super) async fn redo(
     let session = session(&params.session)?;
     // 附件照 `session.send` 先查，再找会话。
     let mut attachments = match params.attachments {
-        Some(attachments) => Some(attach::blocks(core, &core.admin, attachments).await?),
+        Some(attachments) => Some(attach::blocks(core, attachments).await?),
         None => None,
     };
     let found = core.sessions.get(core, &session).await?;
     if let Some(blocks) = &mut attachments {
-        attach::keep(core, found.handle.owner(), &session, blocks).await?;
+        attach::keep(core, &session, blocks).await?;
     }
     // 文件改了、前缀要变的，重发之前问人（施工 OV-1 下）。
-    let by = crate::sessions::admin(core);
+    let by = crate::sessions::person();
     crate::sessions::prefix::ask(
         core,
         (peer, &by),
@@ -303,20 +299,19 @@ pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Resu
         } => miyu_kernel::session::Answer::Approval {
             decision,
             reason,
-            attachments: attach::blocks(core, &core.admin, attachments).await?,
+            attachments: attach::blocks(core, attachments).await?,
             nested,
         },
         Wanted::Questions(items) => {
             let mut answers = Vec::with_capacity(items.len());
             for (mut response, attachments) in items {
-                response.attachments = attach::blocks(core, &core.admin, attachments).await?;
+                response.attachments = attach::blocks(core, attachments).await?;
                 answers.push(response);
             }
             miyu_kernel::session::Answer::Questions(answers)
         }
     };
     let found = core.sessions.get(core, &session).await?;
-    let owner = found.handle.owner();
     let lists: Vec<&mut Vec<miyu_kernel::block::Block>> = match &mut answer {
         miyu_kernel::session::Answer::Approval { attachments, .. } => vec![attachments],
         miyu_kernel::session::Answer::Questions(answers) => answers
@@ -325,7 +320,7 @@ pub(super) async fn answer_question(core: &Arc<Core>, request: &Request) -> Resu
             .collect(),
     };
     for blocks in lists {
-        attach::keep(core, owner, &session, blocks).await?;
+        attach::keep(core, &session, blocks).await?;
     }
     let command = Command::Answer { call_id, answer };
     let events = command_to(core, request, &session, &found.handle, command).await?;
@@ -346,7 +341,7 @@ pub(super) async fn recap(core: &Arc<Core>, request: &Request) -> Result<Value, 
     let params: RecapParams = params(request)?;
     let session = session(&params.session)?;
     let found = core.sessions.get(core, &session).await?;
-    let by = crate::sessions::admin(core);
+    let by = crate::sessions::person();
     match outcome(core, request, &session, &found.handle, by, Command::Recap).await? {
         Outcome::Recapped { text, upto, cached } => {
             Ok(json!({"text": text, "upto": upto.get(), "cached": cached}))
@@ -363,7 +358,7 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
     let found = core.sessions.get(core, &session).await?;
     match found
         .handle
-        .stop_job(job, crate::sessions::admin(core), request.id.clone())
+        .stop_job(job, crate::sessions::person(), request.id.clone())
         .await
     {
         Ok(Ok(())) => Ok(json!({})),
@@ -385,7 +380,7 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     let found = core.sessions.get(core, &session).await?;
     // 写 `null` 的回到跟着 `models.chat`：内核记空的（施工 8-10 再补）。
     let model = match text {
-        Some(Some(text)) => Some(models::record(core, found.handle.owner(), text)?),
+        Some(Some(text)) => Some(models::record(core, text)?),
         Some(None) => Some(String::new()),
         None => None,
     };

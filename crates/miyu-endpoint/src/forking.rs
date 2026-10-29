@@ -41,9 +41,8 @@ pub(crate) async fn fork(
     params: ForkParams,
 ) -> Result<Value, Refusal> {
     let parent = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let found = core.sessions.get(core, &parent).await?;
-    let owner = found.handle.owner().clone();
-    let by = recorder(core, caller)?;
+    core.sessions.get(core, &parent).await?;
+    let by = recorder(caller)?;
     let cause = request.id.clone();
     let at = now();
     let child = new_id(at);
@@ -54,7 +53,7 @@ pub(crate) async fn fork(
         cause,
         by,
         at,
-        index: Some(core.index_for(&owner)),
+        index: Some(core.index()),
         seal_after: params.seal_after,
         within: None,
     })

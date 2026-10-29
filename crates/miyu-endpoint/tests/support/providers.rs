@@ -22,7 +22,7 @@ use miyu_session::{ModelData, Models, Observed, Routes};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog as ToolCatalog;
 
-use super::{Home, TOKEN, alice, default_resources};
+use super::{Home, TOKEN, default_resources};
 
 /// 档案：出厂的 `[npm]`、DeepSeek 那一段，加上 `extra` 里的几家（编号 → 档案）。
 pub fn profiles(extra: Value) -> Profiles {
@@ -148,14 +148,13 @@ fn assembled(
         UsageSettings::ITEMS,
     ]
     .concat();
-    let config = Config::load(&home.root, &alice(), None, items, Environment::of(env));
+    let config = Config::load(&home.root, None, items, Environment::of(env));
     let core = Core::new(
         home.root.clone(),
         ResourceRoot::at(default_resources()),
         models,
         ToolCatalog::default(),
         None,
-        alice(),
         TOKEN.to_string(),
     );
     Arc::new(core.with_config(config).with_model_data(data))

@@ -132,11 +132,11 @@ pub(super) fn some_compact(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> O
     Some(compact_now(next_command(next_id), instructions))
 }
 
-/// 编号是 `n` 的命令：alice 要手动压缩。
+/// 编号是 `n` 的命令：主人要手动压缩。
 fn compact_now(n: u64, instructions: Option<String>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Compact { instructions },
     })
@@ -150,7 +150,7 @@ pub(super) fn some_clear_todos(rng: &mut Rng, next_id: &mut u64) -> Option<Input
     let n = next_command(next_id);
     Some(Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::ClearTodos,
     }))
@@ -172,7 +172,7 @@ pub(super) fn some_end_dream(rng: &mut Rng, seed: u64) -> Option<Input> {
     };
     Some(Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::EndDream(ended),
     }))
@@ -188,7 +188,7 @@ pub(super) fn some_clear(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Opt
     let n = next_command(next_id);
     Some(Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Clear,
     }))

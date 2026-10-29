@@ -1,7 +1,6 @@
 //! 一份配置（施工 SU-3 上：每人一份的拿掉了，只有主人这一份）：[`Core::mine`] 照旧交回核心手里那一份，调的地方还带着账号的
 //! 等 SU-6 一起收掉。
 
-use miyu_kernel::id::AccountId;
 use miyu_session::Configs;
 
 use super::Config;
@@ -26,12 +25,12 @@ impl Mine<'_> {
 
 impl Core {
     /// 配置：只有一份（施工 SU-3 上）。
-    pub(crate) fn mine(&self, _account: &AccountId) -> Mine<'_> {
+    pub(crate) fn mine(&self) -> Mine<'_> {
         Mine(self)
     }
 
     /// 会话取配置的那一头：造会话、载入时交给它。
-    pub(crate) fn configs_of(&self, _account: &AccountId) -> Configs {
+    pub(crate) fn configs_of(&self) -> Configs {
         self.hub.configs()
     }
 }

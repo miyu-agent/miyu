@@ -157,8 +157,9 @@ async fn who_speaks_in_a_venue_session() {
         home.until_turns(&session, turns).await;
     }
     let venue = miyu_kernel::id::VenueId::parse("qq:private:10001").expect("合写法");
-    let mut owner = Person::new(alice());
-    owner.via = Some(miyu_kernel::id::ExternalId::parse("qq:10001").expect("合写法"));
+    let owner = Person {
+        via: Some(miyu_kernel::id::ExternalId::parse("qq:10001").expect("合写法")),
+    };
     assert_eq!(
         speakers(&home, &session),
         [
@@ -166,13 +167,13 @@ async fn who_speaks_in_a_venue_session() {
             By::External(External {
                 venue: venue.clone(),
                 id: miyu_kernel::id::ExternalId::parse("qq:20002").expect("合写法"),
-                account: None,
+                owner: false,
                 role: Some(Role::Member),
             }),
             By::External(External {
                 venue,
                 id: miyu_kernel::id::ExternalId::parse("qq:10003").expect("合写法"),
-                account: None,
+                owner: false,
                 role: Some(Role::Manager),
             }),
         ],

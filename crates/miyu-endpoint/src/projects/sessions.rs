@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use miyu_kernel::event::Body;
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::Command;
 use miyu_store::projects::Project;
@@ -27,10 +27,9 @@ pub(crate) async fn find(core: &Core, id: &str) -> Result<Project, Refusal> {
 /// 会话 `session` 能不能进项目：只有本机的主会话能（场所会话、子代理、分叉出来的不能：分叉出来的也有父会话），别的是 `data.field` 为 `project`
 /// 的参数不对。会话没有、读不了第一条的照会话没有。
 pub(crate) async fn may_join(core: &Core, session: &SessionId) -> Result<(), Refusal> {
-    core.sessions
-        .owner(core, session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+    if !core.sessions.exists(core, session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     let dir = core.root.session_dir(session);
     let first = tokio::task::spawn_blocking(move || miyu_store::log::first_event(&dir))
         .await
@@ -50,11 +49,10 @@ pub(crate) async fn may_join(core: &Core, session: &SessionId) -> Result<(), Ref
 /// 几个。命令编号照这条请求的接 `/project`：一个会话里不会撞。
 pub(crate) async fn move_out(
     core: &Arc<Core>,
-    account: &AccountId,
     request: &Request,
     id: &str,
 ) -> Result<usize, Refusal> {
-    let members = members(core, account, id).await?;
+    let members = members(core, id).await?;
     let command_id = CommandId::parse(&format!("{}/project", request.id.as_str()))
         .map_err(|_| Refusal::BAD_PARAMS)?;
     for session in &members {
@@ -64,7 +62,7 @@ pub(crate) async fn move_out(
             pinned: None,
             project: Some(String::new()),
         };
-        let by = crate::sessions::admin(core);
+        let by = crate::sessions::person();
         if found
             .handle
             .command(command_id.clone(), by, command)
@@ -79,10 +77,9 @@ pub(crate) async fn move_out(
 }
 
 /// `account` 在项目 `id` 里的本机会话：照会话列表的那一套扫，照他自己的索引。
-async fn members(core: &Core, account: &AccountId, id: &str) -> Result<Vec<SessionId>, Refusal> {
+async fn members(core: &Core, id: &str) -> Result<Vec<SessionId>, Refusal> {
     let root = core.root.clone();
-    let account = account.clone();
-    let index = core.index_for(&account);
+    let index = core.index();
     let id = id.to_string();
     let scanned = tokio::task::spawn_blocking(move || {
         scan(

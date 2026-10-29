@@ -32,9 +32,7 @@ fn entry(n: u64, text: &str) -> Entry {
         class: "user".into(),
         text: text.into(),
         sources: Vec::new(),
-        audience: vec![By::Person(Person::new(
-            miyu_kernel::id::AccountId::parse("alice").unwrap(),
-        ))],
+        audience: vec![By::Person(Person::default())],
         about: None,
         replaces: None,
         venue: None,

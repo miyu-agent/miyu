@@ -40,7 +40,7 @@ impl SessionsPort for Lister {
             let agents = &self.agents;
             let mut listed = agents
                 .port
-                .sessions(agents.owner.clone(), stop.clone())
+                .sessions(stop.clone())
                 .await
                 .inspect_err(|error| {
                     tracing::warn!(target: TARGET, error = error.as_str(), "sessions not listed");

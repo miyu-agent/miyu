@@ -21,8 +21,8 @@ fn feed(lines: &[&str]) -> Vec<Entry> {
     projector.entries().to_vec()
 }
 
-const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"cmd-0","body":{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#;
-const ASKED: &str = r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"go"}]}}"#;
+const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"cmd-0","body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#;
+const ASKED: &str = r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"go"}]}}"#;
 const STARTED: &str = r#"{"seq":3,"at":"2026-09-25T07:00:01.000Z","kind":"turn.started","turn":3,"by":{"kind":"kernel"},"cause":"cmd-1","body":{"trigger":2}}"#;
 
 #[test]
@@ -31,7 +31,7 @@ fn a_message_is_heard_by_the_request_that_saw_up_to_it() {
         CREATED,
         ASKED,
         STARTED,
-        r#"{"seq":4,"at":"2026-09-25T07:00:02.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-2","body":{"blocks":[{"type":"text","text":"also"}]}}"#,
+        r#"{"seq":4,"at":"2026-09-25T07:00:02.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-2","body":{"blocks":[{"type":"text","text":"also"}]}}"#,
         r#"{"seq":5,"at":"2026-09-25T07:00:03.000Z","kind":"message.assistant","turn":3,"by":{"kind":"model","endpoint":"e","model":"m"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"ok"}],"seen":4}}"#,
     ]);
     let also = json(&entries[1]);
@@ -47,7 +47,7 @@ fn a_message_is_heard_by_the_request_that_saw_up_to_it() {
 fn a_typed_command_shows_the_line_that_was_typed() {
     let entries = feed(&[
         CREATED,
-        r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"Review a.rs carefully."}],"command":{"name":"review","text":"/review a.rs"}}}"#,
+        r#"{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"Review a.rs carefully."}],"command":{"name":"review","text":"/review a.rs"}}}"#,
         STARTED,
     ]);
     let user = json(&entries[0]);

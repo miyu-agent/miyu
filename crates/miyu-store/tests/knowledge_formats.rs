@@ -35,7 +35,7 @@ fn put(dir: &Path, name: &str, from: &str) {
 /// 搜 `query`：哪个文档、第几页、标题路径、字。
 fn found(knowledge: &Knowledge, query: &str) -> Vec<(String, Option<usize>, String, String)> {
     knowledge
-        .search(&admin(), query, None, 10, None)
+        .search(query, None, 10, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -49,7 +49,7 @@ fn a_pdf_is_searched_and_read_page_by_page() {
     let root = root_in(&scratch);
     put(&kb(&root, "notes"), "cat.pdf", "cat.pdf");
     let knowledge = knowledge(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("补得了");
+    let (bases, skipped) = knowledge.list().expect("补得了");
     assert!(skipped.is_empty(), "{skipped:?}");
     assert_eq!((bases[0].documents, bases[0].chunks), (1, 3), "一页一块");
     let cat = found(&knowledge, "橘猫");
@@ -89,7 +89,7 @@ fn a_pdf_without_text_and_a_broken_one_are_skipped() {
     std::fs::write(dir.join("big.pdf"), vec![b' '; 5 * 1024 * 1024]).expect("写得进");
     std::fs::write(dir.join("ok.md"), "团子\n").expect("写得进");
     let knowledge = knowledge(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("一份坏的不碍事");
+    let (bases, skipped) = knowledge.list().expect("一份坏的不碍事");
     assert_eq!(bases[0].documents, 1, "只有 ok.md");
     let mut paths: Vec<&str> = skipped.iter().map(|one| one.path.as_str()).collect();
     paths.sort_unstable();
@@ -178,7 +178,7 @@ fn without_the_extractor_pdfs_and_web_pages_are_skipped() {
     std::fs::write(dir.join("cat.html"), "<p>团子</p>").expect("写得进");
     std::fs::write(dir.join("ok.md"), "团子\n").expect("写得进");
     let knowledge = Knowledge::new(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("照样补得了");
+    let (bases, skipped) = knowledge.list().expect("照样补得了");
     assert_eq!(bases[0].documents, 1);
     assert_eq!(skipped.len(), 2);
     assert!(

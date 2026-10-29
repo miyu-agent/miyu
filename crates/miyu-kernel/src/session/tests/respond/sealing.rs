@@ -28,7 +28,7 @@ fn branch(after: u32) -> Logged {
         child,
         &parent.log,
         id(100),
-        alice(),
+        person(),
         at(30),
         created,
         policy(),

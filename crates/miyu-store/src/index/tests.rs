@@ -20,13 +20,13 @@ fn event(line: &str) -> Event {
 
 fn created() -> Event {
     event(
-        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"c1","body":{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"oneshot":true,"cwd":"~/a","persona":"engineer","preset":"dev"}}"#,
+        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"oneshot":true,"cwd":"~/a","persona":"engineer","preset":"dev"}}"#,
     )
 }
 
 fn renamed(seq: u64, title: &str, pinned: bool) -> Event {
     event(&format!(
-        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person","account":"alice"}},"body":{{"title":"{title}","pinned":{pinned}}}}}"#
+        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person"}},"body":{{"title":"{title}","pinned":{pinned}}}}}"#
     ))
 }
 
@@ -82,7 +82,6 @@ fn batches_are_laid_on_the_row_one_after_another() {
             .unwrap()
     );
     let first = row(&index).unwrap();
-    assert_eq!(first.owner.as_str(), "alice");
     assert!(first.oneshot);
     assert_eq!(first.parent, None);
     assert_eq!(first.cwd.as_deref(), Some("~/a"));
@@ -108,10 +107,10 @@ fn batches_are_laid_on_the_row_one_after_another() {
     assert_eq!(got.mark, mark(300, 4));
     // 只改标题的一条，置顶照旧；只改置顶的，标题照旧。
     let only_title = event(
-        r#"{"seq":4,"at":"2026-09-25T10:00:00.000Z","kind":"session.meta_changed","by":{"kind":"person","account":"alice"},"body":{"title":"改名"}}"#,
+        r#"{"seq":4,"at":"2026-09-25T10:00:00.000Z","kind":"session.meta_changed","by":{"kind":"person"},"body":{"title":"改名"}}"#,
     );
     let only_pin = event(
-        r#"{"seq":5,"at":"2026-09-25T10:01:00.000Z","kind":"session.meta_changed","by":{"kind":"person","account":"alice"},"body":{"pinned":false}}"#,
+        r#"{"seq":5,"at":"2026-09-25T10:01:00.000Z","kind":"session.meta_changed","by":{"kind":"person"},"body":{"pinned":false}}"#,
     );
     index
         .advance(&id(), &mark(300, 4), &[only_title], &mark(400, 5))
@@ -241,7 +240,7 @@ fn an_unreadable_row_is_an_error_and_reset_empties_the_index() {
     let path = scratch.rooted().join("index").join(FILE);
     Connection::open(&path)
         .unwrap()
-        .execute("UPDATE sessions SET owner = 'Not An Account'", [])
+        .execute("UPDATE sessions SET parent = 'not a session'", [])
         .unwrap();
     assert!(matches!(index.rows(), Err(IndexError::Bad(_))));
     index.reset().unwrap();
@@ -250,7 +249,7 @@ fn an_unreadable_row_is_an_error_and_reset_empties_the_index() {
 
 fn said(seq: u64, blocks: &str) -> Event {
     event(&format!(
-        r#"{{"seq":{seq},"at":"2026-09-25T09:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"alice"}},"cause":"c{seq}","body":{{"blocks":{blocks}}}}}"#
+        r#"{{"seq":{seq},"at":"2026-09-25T09:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"cause":"c{seq}","body":{{"blocks":{blocks}}}}}"#
     ))
 }
 
@@ -276,7 +275,7 @@ fn the_preview_is_the_first_line_of_the_first_words() {
 fn a_session_opened_by_a_goal_previews_the_goal() {
     let mut row = Row::new(id(), &created()).unwrap();
     row.see(&event(
-        r#"{"seq":2,"at":"2026-09-25T09:00:00.000Z","kind":"goal.set","by":{"kind":"person","account":"alice"},"cause":"c2","body":{"text":"  把测试修绿\n再写文档"}}"#,
+        r#"{"seq":2,"at":"2026-09-25T09:00:00.000Z","kind":"goal.set","by":{"kind":"person"},"cause":"c2","body":{"text":"  把测试修绿\n再写文档"}}"#,
     ));
     assert_eq!(row.preview, "把测试修绿");
     row.see(&event(
@@ -319,7 +318,7 @@ fn a_title_counts_as_named_only_when_a_person_wrote_it_last() {
 /// 第 `seq` 条：移进项目 `project`（空的是移出来，施工 H-2）。
 fn into_project(seq: u64, project: &str) -> Event {
     event(&format!(
-        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person","account":"alice"}},"body":{{"project":"{project}"}}}}"#
+        r#"{{"seq":{seq},"at":"2026-09-25T08:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person"}},"body":{{"project":"{project}"}}}}"#
     ))
 }
 
@@ -396,7 +395,7 @@ fn a_changed_persona_or_preset_replaces_the_one_from_creation() {
         .unwrap();
     let changed = |seq: u64, body: &str| {
         event(&format!(
-            r#"{{"seq":{seq},"at":"2026-09-25T10:00:00.000Z","kind":"session.policy_changed","by":{{"kind":"person","account":"alice"}},"body":{body}}}"#
+            r#"{{"seq":{seq},"at":"2026-09-25T10:00:00.000Z","kind":"session.policy_changed","by":{{"kind":"person"}},"body":{body}}}"#
         ))
     };
     let batch = [

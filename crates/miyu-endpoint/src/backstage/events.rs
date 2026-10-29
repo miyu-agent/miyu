@@ -8,8 +8,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
-
 use crate::hello::Caller;
 use crate::refusal::Refusal;
 
@@ -61,12 +59,11 @@ pub(crate) fn emit(
     }
     let line = json!({"jsonrpc": "2.0", "method": "package.event",
         "params": {"package": package, "event": params.event, "data": data}});
-    let account = &core.admin;
     if core
         .backstage
         .events
         .0
-        .send(format!("{}\n{package}\n{line}", account.as_str()))
+        .send(format!("{package}\n{line}"))
         .is_err()
     {
         // 没有订着的连接：不用说。
@@ -74,9 +71,8 @@ pub(crate) fn emit(
     Ok(json!({}))
 }
 
-/// 推送 `pushed` 是不是 `account` 的、包 `package` 的：是的交回推送的那一行。
-pub(crate) fn mine<'a>(pushed: &'a str, account: &AccountId, package: &str) -> Option<&'a str> {
-    let (whose, rest) = pushed.split_once('\n')?;
-    let (which, line) = rest.split_once('\n')?;
-    (whose == account.as_str() && which == package).then_some(line)
+/// 推送 `pushed` 是不是包 `package` 的：是的交回推送的那一行。
+pub(crate) fn mine<'a>(pushed: &'a str, package: &str) -> Option<&'a str> {
+    let (which, line) = pushed.split_once('\n')?;
+    (which == package).then_some(line)
 }

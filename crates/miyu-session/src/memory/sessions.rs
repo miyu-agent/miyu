@@ -1,7 +1,7 @@
 //! 整理会话的端口（施工 D-1 上，设计 `41-整理会话.md`）：合并任务经它开一趟整理会话、一批一轮地跑、叫停。会话表实现，核心起来时
 //! 装进来（[`crate::Memory::give_dream_sessions`]）；没装的（测试里没接会话表的核心）照旧走一次性入口。
 
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 
 pub use miyu_kernel::event::DreamEnded as DreamResult;
 
@@ -20,8 +20,6 @@ pub enum DreamRoom {
 /// 开一趟整理会话要的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DreamSpec {
-    /// 那一间的主人（设计 41 第二节第 8 条）：会话的属主。
-    pub owner: AccountId,
     /// 哪一间。
     pub room: DreamRoom,
     /// 人叫的（`/dream`、`memory.dream`、`miyu memory dream`）；后台自己合的是假。

@@ -217,7 +217,7 @@ fn allowing_runs_the_call_once_the_decision_is_stored() {
         assert_eq!(decided.reason, None);
         assert_eq!(
             (events[0].by.clone(), events[0].cause.clone()),
-            (alice(), Some(id(2)))
+            (person(), Some(id(2)))
         );
         assert!(ran(&actions).is_empty(), "决定落了盘才派");
         let actions = session.handle(stored(9));
@@ -249,7 +249,7 @@ fn denying_records_the_decision_and_the_result_and_she_goes_on() {
         );
         assert_eq!(
             result_of(&events[1]),
-            (call(6, 1), ToolStatus::Denied, alice(), text.to_string())
+            (call(6, 1), ToolStatus::Denied, person(), text.to_string())
         );
         assert_eq!(said_of(&events[1]), Some(said));
         assert_eq!(events[1].cause, Some(id(2)));
@@ -424,7 +424,7 @@ fn interrupting_cancels_calls_waiting_for_the_chain_or_for_you() {
             (
                 call_id,
                 ToolStatus::Cancelled,
-                alice(),
+                person(),
                 "cancelled before".to_string()
             )
         );
@@ -456,7 +456,12 @@ fn an_urgent_message_skips_calls_waiting_for_the_chain_or_for_you() {
     for (k, call_id) in [(1, call(6, 1)), (2, call(6, 2))] {
         assert_eq!(
             result_of(&events[k]),
-            (call_id, ToolStatus::Skipped, alice(), "skipped".to_string())
+            (
+                call_id,
+                ToolStatus::Skipped,
+                person(),
+                "skipped".to_string()
+            )
         );
     }
     assert_eq!(

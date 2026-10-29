@@ -30,7 +30,6 @@ fn core_with_upload_idle(home: &Home, idle: Duration) -> Arc<Core> {
             Arc::new(Script::new([])),
             Catalog::default(),
             None,
-            alice(),
             TOKEN.to_string(),
         )
         .with_upload_idle(idle),

@@ -5,7 +5,7 @@
 ## 外壳
 
 ```json
-{"seq": 42, "at": "2026-10-01T06:03:12.345Z", "kind": "message.user", "turn": 41, "by": {"kind": "person", "account": "admin"}, "cause": "m1", "body": {…}}
+{"seq": 42, "at": "2026-10-01T06:03:12.345Z", "kind": "message.user", "turn": 41, "by": {"kind": "person"}, "cause": "m1", "body": {…}}
 ```
 
 | 名字 | 说明 |
@@ -14,7 +14,7 @@
 | `at` | 时刻，UTC，毫秒 |
 | `kind` | 种类，见下表 |
 | `turn` | 属于哪一轮（那一轮 `turn.started` 的序号）；不属于哪一轮的不写 |
-| `by` | 谁：`person`（`account`，平台上认出的本人另带 `via`）、`external`（平台上的人：`venue`、`id`、`role`、`account`?）、`model`、`kernel`、`tool`（`call_id`）、`module`（`id`，例如一个包）、`harness`（`name`）、`session`（别的会话） |
+| `by` | 谁：`person`（主人；平台上认出的另带 `via`）、`external`（平台上的人：`venue`、`id`、`role`，对应表认出是主人的带 `owner: true`）、`model`、`kernel`、`tool`（`call_id`）、`module`（`id`，例如一个包）、`harness`（`name`）、`session`（别的会话） |
 | `cause` | 哪条命令引起的：请求的 `id` |
 | `body` | 这一种自己的格 |
 

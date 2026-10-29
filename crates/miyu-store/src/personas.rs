@@ -9,7 +9,6 @@ use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::PersonaTexts;
 use miyu_policy::persona;
 pub use miyu_policy::persona::{PersonaFile, Phrases, Problem};
@@ -70,8 +69,6 @@ pub struct Found {
     pub examples_from: Option<Layer>,
     /// 角色扮演提示来自哪一层，没有的是没有（施工 P-1 补）。
     pub reminders_from: Option<Layer>,
-    /// 它住在谁的家目录里：有家目录那一层的是那个账号，只有出厂、系统区的没有（记忆归哪个账号不照它，照会话的属主，施工 Y-7）。
-    pub home: Option<AccountId>,
     /// 头像（施工 P-5，`personas.md`「头像」）：有头像的最上面那一层里的那一张；没有的是没有。
     pub avatar: Option<PathBuf>,
     /// 背景图（施工 P-6）：有背景图的最上面那一层里的那一张；没有的是没有。
@@ -106,23 +103,20 @@ impl fmt::Display for PersonaError {
 
 impl std::error::Error for PersonaError {}
 
-/// 人格的几层：出厂、系统区、一个账号的家目录（施工 Y-2 中上起是谁的照调用的一方给，原来一律是管理员的）。
+/// 人格的几层：出厂、软件包、你的（数据根下的 `personas/`）。
 #[derive(Debug, Clone)]
 pub struct Personas {
     dirs: Vec<(Layer, PathBuf)>,
-    /// 家目录那一层是谁的。
-    admin: AccountId,
 }
 
 impl Personas {
-    /// 照资源目录 `resources`、数据根 `root`、家目录那一层的账号 `admin` 定几层的位置。
-    pub fn new(resources: &ResourceRoot, root: &DataRoot, admin: &AccountId) -> Personas {
+    /// 照资源目录 `resources`、数据根 `root` 定几层的位置。
+    pub fn new(resources: &ResourceRoot, root: &DataRoot) -> Personas {
         Personas {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("personas")),
                 (Layer::Home, root.path().join("personas")),
             ],
-            admin: admin.clone(),
         }
     }
 
@@ -176,7 +170,6 @@ impl Personas {
             persona_from: None,
             examples_from: None,
             reminders_from: None,
-            home: None,
             avatar: None,
             background: None,
         };
@@ -203,9 +196,6 @@ impl Personas {
             if let Some(background) = background_in(&dir) {
                 found.background = Some(background);
             }
-            if *layer == Layer::Home {
-                found.home = Some(self.admin.clone());
-            }
             if let Some(text) = text_of(persona::TOML)? {
                 let file = persona::read_toml(&text)
                     .map_err(|problem| PersonaError::Invalid(*layer, problem))?;
@@ -231,10 +221,12 @@ impl Personas {
         Ok(found)
     }
 
-    /// 人格 `id` 住在谁的家目录（有家目录那一层）：只看目录在不在，不读文件。
-    pub fn home_of(&self, id: &str) -> Option<AccountId> {
-        let (_, dir) = self.dirs.iter().find(|(layer, _)| *layer == Layer::Home)?;
-        (valid(id) && dir.join(id).is_dir()).then(|| self.admin.clone())
+    /// 人格 `id` 有你的那一层（数据根下的 `personas/<编号>/`）：只看目录在不在，不读文件。
+    pub fn at_home(&self, id: &str) -> bool {
+        self.dirs
+            .iter()
+            .find(|(layer, _)| *layer == Layer::Home)
+            .is_some_and(|(_, dir)| valid(id) && dir.join(id).is_dir())
     }
 
     /// 家目录那一层里人格 `id` 的目录（施工 P-3 下）：`persona.set` 写进去、`persona.delete` 挪走。编号由调用的一方查过。

@@ -47,7 +47,6 @@ impl Sessions {
             DreamRoom::Persona(persona) => (Some(persona), None),
             DreamRoom::Session(session) => (None, Some(session)),
         };
-        let owner = spec.owner;
         let shelf = core.tools.clone();
         let workspace = "~".to_string();
         let resources = crate::presets::overrides::resources(core);
@@ -58,21 +57,19 @@ impl Sessions {
             persona: None,
             persona_texts: Default::default(),
             profile: Profile::default(),
-            personas: personas::personas(core, &owner),
-            memory_account: core.admin.clone(),
+            personas: personas::personas(core),
             memory_scope: MemoryScope::Off,
             venue: VenueId::parse(crate::list::LOCAL).map_err(|error| error.to_string())?,
             sandbox_cache: core.sandbox_cache_of(),
-            index: Some(core.index_for(&owner)),
+            index: Some(core.index()),
             usage: core.ledger(),
             knowledge: None,
             vectors: None,
             installed: None,
             plugins: core.plugins.clone(),
             memory: None,
-            configs: core.configs_of(&owner),
-            confined: super::confined(core, &owner),
-            owner,
+            configs: core.configs_of(),
+            confined: false,
             permission: Permission {
                 level: Level::Workspace,
                 read_only: true,

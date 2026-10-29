@@ -260,7 +260,6 @@ impl Tools {
             nested: None,
             ids: Some(CallIds {
                 session: self.session.clone(),
-                owner: self.owner.clone(),
                 call: origin,
                 asked: None,
                 preset: self.preset.clone(),

@@ -8,7 +8,7 @@ fn ambient_messages_and_venue_events_stay_out_for_now() {
     let bridge = r#"{"kind":"module","id":"onebot"}"#;
     let mut log = Log::new();
     log.detached(
-        r#"{"kind":"person","account":"alice"}"#,
+        r#"{"kind":"person"}"#,
         "message.user",
         &format!(
             r#"{{"blocks":[{}],"venue":{{"msg":"8810","ambient":true}}}}"#,

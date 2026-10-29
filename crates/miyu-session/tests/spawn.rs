@@ -190,7 +190,6 @@ impl SessionPort for Table {
 
     fn sessions(
         &self,
-        _owner: miyu_kernel::id::AccountId,
         _stop: miyu_tool::Stop,
     ) -> Pending<'_, Result<Vec<miyu_tool::MainSession>, String>> {
         Box::pin(async { Ok(Vec::new()) })
@@ -309,7 +308,6 @@ async fn the_child_copies_the_parent_and_gets_the_task_from_it() {
             },
             command: CommandId::parse(&format!("{parent}/j1")).unwrap(),
             persona: None,
-            owner: alice_account(),
             venue: VenueId::parse("local").unwrap(),
             permission: Permission {
                 level: Level::Full,

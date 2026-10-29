@@ -39,7 +39,7 @@ fn loaded(log: Vec<Event>) -> Session {
 fn recap(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(31),
         command: Command::Recap,
     })

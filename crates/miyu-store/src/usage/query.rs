@@ -25,8 +25,6 @@ const DAY_MS: i64 = 86_400_000;
 /// 照什么分组。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Group {
-    /// 属主。
-    Account,
     /// 场所。
     Venue,
     /// 供应商和模型，写成 `供应商/模型`。
@@ -45,7 +43,6 @@ impl Group {
     /// 协议上的名字。
     pub fn name(self) -> &'static str {
         match self {
-            Group::Account => "account",
             Group::Venue => "venue",
             Group::Model => "model",
             Group::Day => "day",
@@ -58,7 +55,6 @@ impl Group {
     /// 照协议上的名字认；不认识的没有。
     pub fn parse(name: &str) -> Option<Group> {
         [
-            Group::Account,
             Group::Venue,
             Group::Model,
             Group::Day,
@@ -73,7 +69,6 @@ impl Group {
     /// 在 SQL 里怎么算：日子先算成天数，读出来再写成日期。
     fn column(self) -> &'static str {
         match self {
-            Group::Account => "owner",
             Group::Venue => "venue",
             Group::Model => "provider || '/' || model",
             Group::Day => "(at + ?1) / 86400000",
@@ -102,8 +97,6 @@ pub struct Query {
     pub group: Vec<Group>,
     /// 只算这个会话；`true` 的连它派的子会话一起。没有的全算。
     pub session: Option<(SessionId, bool)>,
-    /// 只算这个账号名下的（施工 Y-2 下下上：成员只看得到自己的）；没有的全算。
-    pub account: Option<String>,
     /// 分天照哪个时区。
     pub offset: UtcOffset,
     /// 要换算（施工 UC-1）：另交每一组按 UTC 日子、币种分开的金额（[`Total::daily`]）。
@@ -322,10 +315,6 @@ fn filter(query: &Query, sessions: Option<&BTreeSet<String>>) -> (String, Vec<Va
     if let Some(until) = query.until {
         values.push(Value::Integer(until.unix_millis()));
         parts.push(format!("at < ?{}", values.len()));
-    }
-    if let Some(account) = &query.account {
-        values.push(Value::Text(account.clone()));
-        parts.push(format!("owner = ?{}", values.len()));
     }
     if let Some(sessions) = sessions {
         let mut marks = Vec::new();

@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
 use miyu_kernel::event::{Event, Transient};
-use miyu_kernel::id::{AccountId, CommandId, JobId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, JobId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, ContextLimits, Outcome, Reason};
 use miyu_kernel::time::Timestamp;
@@ -39,8 +39,6 @@ pub struct Handle {
     id: SessionId,
     /// 场所（施工 O-3）：造好以后不变。
     venue: VenueId,
-    /// 会话的属主（施工 O-4 上）：日志、blob、回收处在它的家目录下。造好以后不变。
-    owner: AccountId,
     /// 这个会话的默认工作区（施工 5-14 中）：`workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。
     workspace: PathBuf,
     inbox: mpsc::UnboundedSender<Message>,
@@ -166,7 +164,6 @@ pub(crate) enum Halt {
 pub(crate) struct Ids {
     pub(crate) id: SessionId,
     pub(crate) venue: VenueId,
-    pub(crate) owner: AccountId,
     /// 这个会话的默认工作区（施工 5-14 中）：工作目录太宽时能写的那一个，头照它认「默认工作区」。
     pub(crate) workspace: PathBuf,
 }
@@ -183,13 +180,11 @@ impl Handle {
         let Ids {
             id,
             venue,
-            owner,
             workspace,
         } = ids;
         Handle {
             id,
             venue,
-            owner,
             workspace,
             inbox,
             busy,
@@ -228,11 +223,6 @@ impl Handle {
     /// 会话编号。
     pub fn id(&self) -> &SessionId {
         &self.id
-    }
-
-    /// 会话的属主（施工 O-4 上）：日志、blob、回收处在 数据根 下。
-    pub fn owner(&self) -> &AccountId {
-        &self.owner
     }
 
     /// 这个会话的默认工作区（施工 5-14 中）：头照它认「默认工作区」，`session.set_workspace` 交账号的工作区本身时换成它。

@@ -101,13 +101,6 @@ text_id!(
 );
 
 text_id!(
-    /// 账号：相当于 Linux 的登录名，会出现在路径 数据根 里。给人看的名字另起。
-    AccountId,
-    "account",
-    check_name
-);
-
-text_id!(
     /// 内容哈希：`sha256:` 加 64 位小写十六进制。blob、策略快照、请求字节都用它。
     ContentHash,
     "content hash",

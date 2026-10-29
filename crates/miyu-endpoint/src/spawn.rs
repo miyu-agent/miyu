@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Weak};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_kernel::time::Timestamp;
@@ -137,10 +137,9 @@ impl SessionPort for Table {
     fn peek(&self, session: SessionId) -> Pending<'_, Result<Peek, String>> {
         Box::pin(async move {
             let core = self.core()?;
-            core.sessions
-                .owner(&core, &session)
-                .await
-                .ok_or_else(|| format!("session {session} not found"))?;
+            if !core.sessions.exists(&core, &session).await {
+                return Err(format!("session {session} not found"));
+            }
             let dir = core.root.session_dir(&session);
             let events = tokio::task::spawn_blocking(move || read_events(&dir))
                 .await
@@ -151,16 +150,12 @@ impl SessionPort for Table {
     }
 
     /// 属主是 `owner` 的主会话（施工 C-3）：会话表里这时忙着的先记下，再在阻塞线程里照 `session.list` 的办法读。
-    fn sessions(
-        &self,
-        owner: AccountId,
-        stop: Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>> {
+    fn sessions(&self, stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         Box::pin(async move {
             let core = self.core()?;
             let busy = core.sessions.busy_ids().await;
             let root = core.root.clone();
-            let index = core.index_for(&owner);
+            let index = core.index();
             // 场所会话不列（施工 O-3）：群里、QQ 私聊里的会话不给本机的她看，`history` 也读不到。整理会话不列（施工 D-1 下，
             // 设计 41 DS7）：那是记忆模块的过程，不是她和人的对话。
             let main =

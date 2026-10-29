@@ -2,9 +2,9 @@
 //! `places(source, venue)`，场所会话接上回合索引时记一次，本机的会话不记。只记在哪说的（原来搜以前的对话照它挑，施工 R-29
 //! 起不挑了，`memory.md` 第九条）。删会话时跟着那个来源拿掉（`recall.rs` 的 `forget`），库删了照会话日志补。
 //!
-//! 同一处另有 `origins(source, owner, main)`（施工 E-6）：回合库里每个会话的属主、是不是主会话（`session.created` 不带
-//! `parent`），本机的、场所的都记。搜到以前的对话时照它判她打不打得开那个会话（`history` 只认属主一样的主会话），打不开的
-//! 不给编号。接上回合索引时记一次；以前的库补上这张表，没接上过的会话没有这一行，调的一方照场所判。
+//! 同一处另有 `origins(source, main)`（施工 E-6）：回合库里每个会话是不是主会话（`session.created` 不带 `parent`），本机的、
+//! 场所的都记。搜到以前的对话时照它判她打不打得开那个会话（`history` 只认主会话），打不开的不给编号。施工 SU-6 上去掉了
+//! 属主一列（只有主人一个）。接上回合索引时记一次；以前的库补上这张表，没接上过的会话没有这一行，调的一方照场所判。
 
 use std::collections::BTreeMap;
 
@@ -19,15 +19,12 @@ pub(super) const ADD: &str = "CREATE TABLE IF NOT EXISTS places (
 ) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS origins (
     source TEXT PRIMARY KEY NOT NULL,
-    owner TEXT NOT NULL,
     main INTEGER NOT NULL
 ) WITHOUT ROWID";
 
-/// 回合库里一个会话从哪来（施工 E-6）：属主、是不是主会话。
+/// 回合库里一个会话从哪来（施工 E-6）：是不是主会话。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Origin {
-    /// 属主：账号编号。
-    pub owner: String,
     /// 主会话（`session.created` 不带 `parent`）：分叉出来的支线不是。
     pub main: bool,
 }
@@ -78,8 +75,8 @@ impl RecallIndex {
     pub fn origin(&self, source: &str, origin: &Origin) -> Result<(), DbError> {
         self.write(|tx| {
             tx.execute(
-                "INSERT OR REPLACE INTO origins (source, owner, main) VALUES (?1, ?2, ?3)",
-                params![source, origin.owner, origin.main],
+                "INSERT OR REPLACE INTO origins (source, main) VALUES (?1, ?2)",
+                params![source, origin.main],
             )?;
             Ok(())
         })
@@ -95,15 +92,9 @@ impl RecallIndex {
         let Some(db) = db.as_ref() else {
             return Ok(BTreeMap::new());
         };
-        let mut select = db.prepare("SELECT source, owner, main FROM origins")?;
+        let mut select = db.prepare("SELECT source, main FROM origins")?;
         let rows = select.query_map(params![], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                Origin {
-                    owner: row.get(1)?,
-                    main: row.get(2)?,
-                },
-            ))
+            Ok((row.get::<_, String>(0)?, Origin { main: row.get(1)? }))
         })?;
         let mut origins = BTreeMap::new();
         for row in rows {

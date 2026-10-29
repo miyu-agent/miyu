@@ -4,8 +4,6 @@
 
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
-
 /// 广播里最多攒几条没收的：人一次只改一个项目。
 const CHANGES: usize = 64;
 
@@ -25,19 +23,10 @@ impl Changes {
         self.0.subscribe()
     }
 
-    /// 广播 `account` 的项目 `id` 变了。
-    pub(crate) fn notify(&self, account: &AccountId, id: &str) {
-        if self.0.send(format!("{}\n{id}", account.as_str())).is_err() {
+    /// 广播项目 `id` 变了。
+    pub(crate) fn notify(&self, id: &str) {
+        if self.0.send(id.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }
     }
 }
-
-/// 一条是不是 `account` 的：是的交回项目编号，别的账号的、写法不对的没有。
-pub(crate) fn mine<'a>(changed: &'a str, account: &AccountId) -> Option<&'a str> {
-    let (whose, project) = changed.split_once('\n')?;
-    (whose == account.as_str()).then_some(project)
-}
-
-#[cfg(test)]
-mod tests;

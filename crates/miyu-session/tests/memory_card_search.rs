@@ -4,7 +4,7 @@
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_kernel::session::Command;
 use miyu_recall::{Card, CardRetired, MemoryEvent, PERSON, Saved};
 use miyu_session::Handle;
@@ -22,10 +22,7 @@ fn catalog(home: &Home) -> Catalog {
 }
 
 fn write(home: &Home, event: &MemoryEvent) {
-    let (log, _) = home
-        .logs
-        .open(&Room::persona(&alice_account(), "engineer"))
-        .expect("开得了");
+    let (log, _) = home.logs.open(&Room::persona("engineer")).expect("开得了");
     log.append(now(), alice(), None, event).expect("记得下");
 }
 
@@ -76,7 +73,7 @@ fn known(home: &Home) {
 }
 
 /// 她照剧本搜一次 `query`，交回这次搜的结果。账号是 `account` 的那一间（没有的是 alice）。
-async fn searched(home: &Home, query: &str, account: Option<AccountId>) -> String {
+async fn searched(home: &Home, query: &str) -> String {
     let script = Script::new([
         Play::calls(&[(
             "memory_search",
@@ -84,10 +81,7 @@ async fn searched(home: &Home, query: &str, account: Option<AccountId>) -> Strin
         )]),
         Play::Says("好。"),
     ]);
-    let lines = Lines {
-        memory_account: account.unwrap_or_else(alice_account),
-        ..Lines::default()
-    };
+    let lines = Lines { ..Lines::default() };
     let handle = home
         .create_full(&script, &catalog(home), Opening::default(), lines)
         .await;
@@ -139,7 +133,7 @@ const XIAOLIN: &str =
 async fn asking_whether_she_knows_someone_finds_their_card() {
     let home = Home::new();
     known(&home);
-    let found = searched(&home, "你认识小林吗", None).await;
+    let found = searched(&home, "你认识小林吗").await;
     let lines: Vec<&str> = found.lines().collect();
     assert_eq!(lines.len(), 2, "{found}");
     assert!(
@@ -159,15 +153,15 @@ async fn the_id_and_the_text_find_cards_and_retired_ones_stay_out() {
     let home = Home::new();
     known(&home);
     assert_eq!(
-        searched(&home, "qq:20018 是谁", None).await,
+        searched(&home, "qq:20018 是谁").await,
         "card of qq:20018: 阿杰写 Rust，说话直但靠谱。"
     );
-    assert_eq!(searched(&home, "谁常去海边拍照", None).await, XIAOLIN);
+    assert_eq!(searched(&home, "谁常去海边拍照").await, XIAOLIN);
     // 另一个家目录：前面几次搜的那几轮进了回合库，会被当成以前的对话搜到。
     let home = Home::new();
     known(&home);
     assert_eq!(
-        searched(&home, "阿明是谁", None).await,
+        searched(&home, "阿明是谁").await,
         "Nothing found.",
         "作废的卡不出"
     );
@@ -178,7 +172,7 @@ async fn the_id_and_the_text_find_cards_and_retired_ones_stay_out() {
 async fn a_person_without_a_card_is_found_by_what_was_remembered() {
     let home = Home::new();
     person(&home, "qq:20017", "小林用 RX 7800 XT");
-    let found = searched(&home, "小林", None).await;
+    let found = searched(&home, "小林").await;
     assert!(
         found.starts_with("m1 person qq:20017 ") && !found.contains("card of"),
         "没有卡的只有记下的：{found}"

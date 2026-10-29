@@ -10,7 +10,7 @@ use miyu_endpoint::schedules::{Clock, Sleep};
 use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::Script;
 
-use super::{Home, TOKEN, alice};
+use super::{Home, TOKEN};
 
 /// 手拨的钟：从 `start` 毫秒起，只在 [`Hand::advance`] 时走。
 pub struct Hand {
@@ -78,7 +78,6 @@ pub fn core_with_tools(
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

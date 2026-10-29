@@ -15,11 +15,11 @@ fn after_one_turn() -> Session {
     logged.session
 }
 
-/// 编号是 `n` 的命令：alice 要清空上下文。
+/// 编号是 `n` 的命令：主人要清空上下文。
 pub(super) fn clear(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Clear,
     })

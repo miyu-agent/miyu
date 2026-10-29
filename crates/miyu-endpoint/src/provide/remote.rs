@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Said, Sent};
-use miyu_kernel::id::{AccountId, ContentHash};
+use miyu_kernel::id::ContentHash;
 use miyu_kernel::template::Template;
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
@@ -222,11 +222,11 @@ impl RemoteTool {
         }
     }
 
-    /// 交回的图、文件引用的 blob 要在会话的属主 `owner` 名下（施工 O-2 三补；施工 SU-4 下起扩展和主人共用一个存处，不用再拷）。
-    /// 没有引用的、不知道是哪个会话的（测试里的假调用）原样交回；不在的记一行，照暂时不可用。
-    async fn handed(&self, done: Done, owner: Option<AccountId>) -> Done {
+    /// 交回的图、文件引用的 blob 要在附件存处里（施工 O-2 三补；施工 SU-4 下起扩展和主人共用一个存处，不用再拷）。
+    /// 没有引用的、不知道是哪个会话的（`in_session` 是假的，测试里的假调用）原样交回；不在的记一行，照暂时不可用。
+    async fn handed(&self, done: Done, in_session: bool) -> Done {
         let hashes = referenced(&done);
-        if owner.is_none() || hashes.is_empty() {
+        if !in_session || hashes.is_empty() {
             return done;
         }
         let root = self.stores.root.clone();
@@ -275,7 +275,7 @@ impl Tool for RemoteTool {
             let args: Value = serde_json::from_str(&call.args).unwrap_or_else(|_| json!({}));
             let asked = ids.and_then(|ids| ids.asked.as_ref());
             let session = ids.map(|ids| ids.session.as_str());
-            let owner = ids.map(|ids| ids.owner.clone());
+            let in_session = ids.is_some();
             let call_id = ids.map(|ids| ids.call.to_string());
             let mut params = json!({
                 "session": session,
@@ -312,7 +312,7 @@ impl Tool for RemoteTool {
                 tokio::select! {
                     outcome = &mut answer => {
                         cancel.state = Sending::Done;
-                        return self.handed(self.answered(outcome), owner).await;
+                        return self.handed(self.answered(outcome), in_session).await;
                     }
                     // 超时：交回那一句，`tool.cancel` 由 `cancel` 丢掉时发。
                     () = tokio::time::sleep_until(deadline) => return self.timed_out(),

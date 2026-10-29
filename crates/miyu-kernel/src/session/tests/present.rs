@@ -102,7 +102,7 @@ fn clearing_and_undoing_its_turn_take_the_block_away() {
         .expect("有那一块");
     let undo = Input::Command(Received {
         id: id(6),
-        by: alice(),
+        by: person(),
         at: at(6),
         command: Command::Revert {
             turn: Some(with_block),

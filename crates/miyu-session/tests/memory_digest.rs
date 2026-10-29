@@ -14,7 +14,7 @@ use miyu_store::recall::Room;
 use crate::support::*;
 
 fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 记下的时刻：会话的时区（东九区）里是 10 月 8 日。

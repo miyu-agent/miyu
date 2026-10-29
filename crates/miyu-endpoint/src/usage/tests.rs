@@ -76,18 +76,15 @@ fn the_parameters_are_read_and_checked() {
     }
 }
 
-/// 金额哪个币种排最前照系统配置（SU-3 上起只有这一份）：不写是出厂的 USD，写了 CNY 的谁的会话都照 CNY。
+/// 金额哪个币种排最前照配置（SU-3 上起只有这一份）：不写是出厂的 USD，写了 CNY 的照 CNY。
 #[test]
 fn amounts_lead_with_the_configured_currency() {
     let (root, dir) = crate::test_support::temp_root("usage-currency");
-    let alice = AccountId::parse("alice").expect("合写法");
-    let bob = AccountId::parse("bob").expect("合写法");
     let settings = root.path().join("config.toml");
     std::fs::create_dir_all(settings.parent().expect("有上一层")).expect("建得出");
     std::fs::write(&settings, "[usage]\ncurrency = \"CNY\"\n").expect("写得进");
     let config = crate::config::Config::load(
         &root,
-        &alice,
         None,
         miyu_models::settings::UsageSettings::ITEMS.to_vec(),
         crate::config::Environment::of(&[]),
@@ -98,7 +95,6 @@ fn amounts_lead_with_the_configured_currency() {
         Arc::new(miyu_session::testkit::Script::new([])),
         miyu_tool::Catalog::default(),
         None,
-        alice.clone(),
         "token".to_string(),
     )
     .with_config(config);
@@ -106,16 +102,14 @@ fn amounts_lead_with_the_configured_currency() {
     tally.amounts.insert("CNY".to_string(), 1.0);
     tally.amounts.insert("USD".to_string(), 2.0);
     let first = |shown: Value| shown["amounts"][0]["currency"].clone();
-    assert_eq!(currency(&core, &alice), "CNY");
-    assert_eq!(currency(&core, &bob), "CNY");
-    assert_eq!(first(tallied(&core, &alice, &tally)), json!("CNY"));
-    assert_eq!(first(tallied(&core, &bob, &tally)), json!("CNY"));
-    assert_eq!(first(total_row(&core, &bob, own(&tally))), json!("CNY"));
+    assert_eq!(currency(&core), "CNY");
+    assert_eq!(first(tallied(&core, &tally)), json!("CNY"));
+    assert_eq!(first(total_row(&core, own(&tally))), json!("CNY"));
     // 换算也照配置的币种（施工 UC-1）：没装取汇率的，只换得了它自己那个币种的那一笔，别的在 `rest`。
     tally.daily.insert((20_000, "CNY".to_string()), 1.0);
     tally.daily.insert((20_000, "USD".to_string()), 2.0);
     assert_eq!(
-        tallied(&core, &bob, &tally)["converted"],
+        tallied(&core, &tally)["converted"],
         json!({"currency": "CNY", "amount": 1, "rest": [{"currency": "USD", "amount": 2}]})
     );
     drop(dir);

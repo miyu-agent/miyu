@@ -12,7 +12,7 @@ use miyu_tool::Catalog;
 
 use super::extensions::{quick, read};
 use super::venues::BINDINGS;
-use super::{Home, TOKEN, alice, default_resources};
+use super::{Home, TOKEN, default_resources};
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展。
 pub fn served_core(home: &Home, script: &Script) -> Arc<Core> {
@@ -34,7 +34,6 @@ pub fn served_core_with(home: &Home, script: &Script, config: &str) -> Arc<Core>
     let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

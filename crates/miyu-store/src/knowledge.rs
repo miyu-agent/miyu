@@ -25,7 +25,6 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_recall::associate::Thresholds;
 
@@ -65,7 +64,7 @@ pub struct Knowledge {
 }
 
 /// 开着的索引：账号、库的编号 → 那一份。
-type Open = BTreeMap<(AccountId, String), Arc<Shelf>>;
+type Open = BTreeMap<String, Arc<Shelf>>;
 
 /// 一个库开着的索引和补的锁。索引交得出去（施工 K-2）：会话在后台补它缺的向量。
 #[derive(Debug)]
@@ -299,21 +298,21 @@ impl Knowledge {
     /// # Errors
     ///
     /// 知识库的目录、索引读不了。
-    pub fn list(&self, account: &AccountId) -> Result<(Vec<Base>, Vec<Skipped>), KnowledgeError> {
+    pub fn list(&self) -> Result<(Vec<Base>, Vec<Skipped>), KnowledgeError> {
         let mut bases = Vec::new();
         let mut skipped = Vec::new();
         for id in self.ids()? {
-            if self.shelf(account, &id).catching_up.try_lock().is_err() {
-                bases.push(self.counted(account, &id, None)?);
+            if self.shelf(&id).catching_up.try_lock().is_err() {
+                bases.push(self.counted(&id, None)?);
                 continue;
             }
-            match self.catch_up(account, &id) {
+            match self.catch_up(&id) {
                 Ok((base, mut dropped)) => {
                     skipped.append(&mut dropped);
                     bases.push(base);
                 }
                 Err(KnowledgeError::Unavailable(why)) => {
-                    bases.push(self.counted(account, &id, Some(why))?);
+                    bases.push(self.counted(&id, Some(why))?);
                 }
                 Err(error) => return Err(error),
             }
@@ -331,7 +330,6 @@ impl Knowledge {
     /// `only` 里有不在的库；目录、索引读不了。
     pub fn search(
         &self,
-        account: &AccountId,
         query: &str,
         only: Option<&[String]>,
         limit: usize,
@@ -350,12 +348,12 @@ impl Knowledge {
         let mut skipped = Vec::new();
         let mut lists = Vec::new();
         for id in ids {
-            match self.catch_up(account, &id) {
+            match self.catch_up(&id) {
                 Ok((_, mut dropped)) => skipped.append(&mut dropped),
                 Err(KnowledgeError::Unavailable(_)) => continue,
                 Err(error) => return Err(error),
             }
-            let shelf = self.shelf(account, &id);
+            let shelf = self.shelf(&id);
             lists.push(fused(&shelf.index, &id, query, limit, near, floor)?.into_iter());
         }
         let mut hits = Vec::new();
@@ -415,17 +413,13 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库；目录、索引读不了。
-    pub fn sections(
-        &self,
-        account: &AccountId,
-        id: &str,
-    ) -> Result<(Vec<Hit>, Vec<Skipped>), KnowledgeError> {
-        let skipped = match self.catch_up(account, id) {
+    pub fn sections(&self, id: &str) -> Result<(Vec<Hit>, Vec<Skipped>), KnowledgeError> {
+        let skipped = match self.catch_up(id) {
             Ok((_, skipped)) => skipped,
             Err(KnowledgeError::Unavailable(_)) => return Ok((Vec::new(), Vec::new())),
             Err(error) => return Err(error),
         };
-        let shelf = self.shelf(account, id);
+        let shelf = self.shelf(id);
         let hits = shelf
             .index
             .entries()?
@@ -437,8 +431,8 @@ impl Knowledge {
 
     /// 库 `id` 开着的索引（施工 K-2）：会话照它在后台补缺的向量（同记忆的回合库）。库在不在不查：没有的照样开一份空的。
     #[must_use]
-    pub fn index_of(&self, account: &AccountId, id: &str) -> Arc<RecallIndex> {
-        Arc::clone(&self.shelf(account, id).index)
+    pub fn index_of(&self, id: &str) -> Arc<RecallIndex> {
+        Arc::clone(&self.shelf(id).index)
     }
 }
 

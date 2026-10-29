@@ -2,7 +2,7 @@
 //! 照样等它回；掐掉（future 被丢掉）发 `tool.cancel`；回应先到的不发。
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, CallId, ExternalId, Seq, SessionId, VenueId};
+use miyu_kernel::id::{CallId, ExternalId, Seq, SessionId, VenueId};
 use miyu_kernel::origin::{By, External, Person};
 use miyu_tool::{CallIds, Done, Progress};
 use tokio::sync::mpsc;
@@ -29,17 +29,11 @@ fn remote_with(timeout: Duration, stores: Stores) -> (RemoteTool, Peer, mpsc::Re
     (remote, peer, lines)
 }
 
-/// 一次调用：会话（属主是管理员）、编号 7 的第 1 件，`asked` 要的。
+/// 一次调用：会话、编号 7 的第 1 件，`asked` 要的。
 fn call_by(asked: Option<By>) -> miyu_tool::Call {
-    call_of("admin", asked)
-}
-
-/// 同 [`call_by`]，会话的属主是 `owner`。
-fn call_of(owner: &str, asked: Option<By>) -> miyu_tool::Call {
     let mut call = miyu_tool::testkit::call(r#"{"to":"群"}"#);
     call.ids = Some(CallIds {
         session: SessionId::parse(SESSION).expect("合写法"),
-        owner: AccountId::parse(owner).expect("合写法"),
         call: CallId::new(Seq::new(7).expect("合写法"), 1).expect("合写法"),
         asked,
         preset: None,
@@ -59,12 +53,12 @@ fn text(done: &miyu_tool::Done) -> String {
     }
 }
 
-/// 群里的 `n` 号人；`account` 是主人对应表里对着的账号。
-fn member(n: u32, account: Option<&str>) -> By {
+/// 群里的 `n` 号人；`owner` 是主人对应表里认出的主人。
+fn member(n: u32, owner: bool) -> By {
     By::External(External {
         venue: VenueId::parse("qq:group:1").unwrap(),
         id: ExternalId::parse(&format!("qq:{n}")).unwrap(),
-        account: account.map(|name| AccountId::parse(name).unwrap()),
+        owner,
         role: None,
     })
 }
@@ -86,21 +80,18 @@ async fn sent_for(asked: Option<By>) -> (Value, String) {
 
 #[tokio::test]
 async fn a_call_carries_who_asked_and_whether_it_is_the_owner() {
-    let (sent, answer) = sent_for(Some(member(1, Some("alice")))).await;
+    let (sent, answer) = sent_for(Some(member(1, true))).await;
     assert_eq!(answer, "done");
     assert_eq!(sent["method"], "tool.call");
-    assert_eq!(sent["params"]["by"], json!(member(1, Some("alice"))));
+    assert_eq!(sent["params"]["by"], json!(member(1, true)));
     assert_eq!(sent["params"]["owner"], json!(true), "对应表里有的是主人");
     assert_eq!(
         sent["params"]["call_id"],
         json!(call_by(None).ids.unwrap().call.to_string())
     );
-    let (sent, _) = sent_for(Some(By::Person(Person::new(
-        AccountId::parse("alice").unwrap(),
-    ))))
-    .await;
+    let (sent, _) = sent_for(Some(By::Person(Person::default()))).await;
     assert_eq!(sent["params"]["owner"], json!(true), "本机的人是主人");
-    let (sent, _) = sent_for(Some(member(2, None))).await;
+    let (sent, _) = sent_for(Some(member(2, false))).await;
     assert_eq!(sent["params"]["owner"], json!(false), "不在对应表里的不是");
     let (sent, _) = sent_for(None).await;
     assert_eq!(sent["params"]["owner"], json!(false), "没有触发的不是");
@@ -192,10 +183,10 @@ fn image(blob: miyu_kernel::id::ContentHash) -> Block {
     })
 }
 
-/// 属主是 `owner` 的会话调一次，回 `blocks`，交回结果。
-async fn answered_with(stores: Stores, owner: &str, blocks: Vec<Block>) -> miyu_tool::Done {
+/// 会话调一次，回 `blocks`，交回结果。
+async fn answered_with(stores: Stores, blocks: Vec<Block>) -> miyu_tool::Done {
     let (remote, peer, mut lines) = remote_with(Duration::from_secs(60), stores);
-    let call = call_of(owner, None);
+    let call = call_by(None);
     let running = tokio::spawn(async move { remote.run(call, Progress::new(|_| {})).await });
     let sent = next(&mut lines).await;
     peer.answer(Response {
@@ -212,7 +203,7 @@ async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
     let blob = miyu_store::blob::Blobs::new(place.root.blobs())
         .put(b"not really a png")
         .expect("存得进");
-    let done = answered_with(place, "admin", vec![image(blob.clone())]).await;
+    let done = answered_with(place, vec![image(blob.clone())]).await;
     assert!(!done.error, "{:?}", done.blocks);
     assert_eq!(done.blocks, [image(blob)]);
     drop(dir);
@@ -223,7 +214,7 @@ async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
 async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
     let (place, dir) = stores();
     let missing = miyu_kernel::id::ContentHash::of(b"x");
-    let done = answered_with(place, "admin", vec![image(missing)]).await;
+    let done = answered_with(place, vec![image(missing)]).await;
     assert!(done.error);
     assert_eq!(
         text(&done),
@@ -273,7 +264,7 @@ async fn data_is_handed_over_unless_the_call_failed() {
 
 /// 有数据根、派它的那一轮在 `venue` 的调用，发出去的参数。
 async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
-    let mut call = call_of("bob", None);
+    let mut call = call_by(None);
     call.data_root = Some(data.to_path_buf());
     call.caller = venue.map(|venue| miyu_tool::Caller {
         venue: VenueId::parse(venue).expect("合写法"),

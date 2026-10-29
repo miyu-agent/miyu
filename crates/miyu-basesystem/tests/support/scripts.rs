@@ -39,19 +39,13 @@ impl Site {
         tool.run(call, Progress::new(|_| {})).await
     }
 
-    /// 同 [`Site::script`]，会话的属主是 `owner`（施工 X-44：状态目录照它分），脚本的来处是 `source`。
-    pub async fn script_by(&self, file: &str, source: &str, owner: &str) -> Done {
-        self.script_at(file, source, owner, None).await
+    /// 同 [`Site::script`]，脚本的来处是 `source`。
+    pub async fn script_by(&self, file: &str, source: &str) -> Done {
+        self.script_at(file, source, None).await
     }
 
     /// 同 [`Site::script_by`]，调用的场所是 `venue`（施工 X-44 补：场所会话的状态目录照场所分）。
-    pub async fn script_at(
-        &self,
-        file: &str,
-        source: &str,
-        owner: &str,
-        venue: Option<&str>,
-    ) -> Done {
+    pub async fn script_at(&self, file: &str, source: &str, venue: Option<&str>) -> Done {
         let tool = self.script_tool_from(file, source);
         let caller = venue.map(|venue| miyu_tool::Caller {
             venue: miyu_kernel::id::VenueId::parse(venue).expect("场所合写法"),
@@ -64,7 +58,6 @@ impl Site {
             ids: Some(miyu_tool::CallIds {
                 session: miyu_kernel::id::SessionId::parse("01a12f08-e382-70dc-942b-5deddc48d4da")
                     .expect("合写法"),
-                owner: miyu_kernel::id::AccountId::parse(owner).expect("合写法"),
                 call: miyu_kernel::id::CallId::new(
                     miyu_kernel::id::Seq::new(1).expect("合写法"),
                     1,

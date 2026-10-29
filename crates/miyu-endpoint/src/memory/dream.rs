@@ -7,22 +7,18 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::{Dreamed, Handle, NotDreamed};
 
 use super::params::Where;
-use super::{find, installed, read, remembers, session_id, using_for};
+use super::{find, installed, read, remembers, session_id, using};
 use crate::Core;
 use crate::refusal::Refusal;
 use crate::sessions::offset;
 
 /// `memory.dream`：替 `who` 照参数找哪一间（同 `memory.*`，施工 Y-7），现在就整理，交回 `{"given", "revised", "retired", "summary"}`；会话的
 /// `/stop` 叫停了的多一个 `"stopped": true`（施工 R-22），前面几样是叫停以前合完了的；跑在整理会话里的多 `"session"`（施工 D-2）。
-pub(crate) async fn call(
-    core: &Arc<Core>,
-    who: &AccountId,
-    params: &Value,
-) -> Result<Value, Refusal> {
+pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
     if !installed(core) {
         return Err(Refusal::MEMORY_NOT_INSTALLED);
     }
@@ -35,10 +31,10 @@ pub(crate) async fn call(
         }
         // 别的组合（写错的也在里面）照 `find` 判。
         _ => {
-            let keeper = find(core, who, at).await?;
+            let keeper = find(core, at).await?;
             // 合并的请求照这时的配置发，记在这一间的账号名下（施工 Y-7）。
-            let using = using_for(core, &keeper);
-            answered(keeper.dream(using.config, using.owner, offset()).await)?
+            let using = using(core);
+            answered(keeper.dream(using.config, offset()).await)?
         }
     };
     let mut answer = json!({
@@ -95,12 +91,8 @@ fn answered(dreamed: Result<Dreamed, NotDreamed>) -> Result<Dreamed, Refusal> {
 /// # Errors
 ///
 /// 这一间这时没有人叫的整理：`not_dreaming`；找哪一间的拒绝同 `memory.*`。
-pub(crate) async fn stop(
-    core: &Arc<Core>,
-    who: &AccountId,
-    params: &Value,
-) -> Result<Value, Refusal> {
-    let keeper = find(core, who, read(params)?).await?;
+pub(crate) async fn stop(core: &Arc<Core>, params: &Value) -> Result<Value, Refusal> {
+    let keeper = find(core, read(params)?).await?;
     match keeper.stop_dream() {
         true => Ok(json!({"stopped": true})),
         false => Err(Refusal::NOT_DREAMING),

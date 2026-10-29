@@ -45,22 +45,22 @@ impl Setup {
         who: Opening,
     ) -> Result<Setup, Refusal> {
         // 照属主那一份（施工 Y-2 下下中上）。
-        let (resolved, _) = core.mine(&who.owner).config().with_project(&workspace);
+        let (resolved, _) = core.mine().config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
         let level = opening_level(&permission, who.venue.as_ref());
         let profile = profile_for(
             ProfileSettings::from(&resolved.values()),
             who.venue.as_ref(),
             who.profile,
-            !(who.confined || super::confined(core, &who.owner)),
+            !who.confined,
         );
         // 空的编号是明着无工具（施工 P-16 下，`presets::opening`）：不找预设。
         let preset = match who.preset.as_deref() {
             Some("") => None,
             // 照新会话的属主找（施工 Y-2 中上）。
-            wanted => Some(presets::resolve(core, &who.owner, wanted).await?),
+            wanted => Some(presets::resolve(core, wanted).await?),
         };
-        let persona = personas::resolve(core, &who.owner, persona).await?;
+        let persona = personas::resolve(core, persona).await?;
         let resources = crate::presets::overrides::resources(core);
         Ok(Setup {
             resources,
@@ -90,20 +90,18 @@ impl Setup {
             persona: persona.map(|found| found.id.as_str()),
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),
             profile: self.profile.clone(),
-            personas: personas::personas(core, &who.owner),
-            memory_account: core.admin.clone(),
+            personas: personas::personas(core),
             memory_scope: who
                 .memory
                 .or(persona.and_then(|found| found.file.memory))
                 .unwrap_or(MemoryScope::Persona),
             venue: who.venue.clone().unwrap_or_else(local),
-            owner: who.owner.clone(),
             permission: self.permission.clone(),
             attended: who.attended,
             oneshot: who.oneshot,
             environment: environment(self.workspace.clone(), self.dirs.clone()),
             command: self.command.clone(),
-            by: super::admin(core),
+            by: super::person(),
             models: &*core.models,
             tools: core.tools.clone(),
             home: core.home.as_deref(),
@@ -111,31 +109,24 @@ impl Setup {
             sandbox_cache: core.sandbox_cache_of(),
             lineage: None,
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(
-                core,
-                &who.owner,
-                who.confined || super::confined(core, &who.owner),
-            )),
-            schedules: Some(crate::schedules::port::port(core, &who.owner)),
+            packages: Some(crate::packages::port::port(core, who.confined)),
+            schedules: Some(crate::schedules::port::port(core)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
-            index: Some(core.index_for(&who.owner)),
+            index: Some(core.index()),
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
-            installed: Some(crate::packages::installed(core, &who.owner)),
+            installed: Some(crate::packages::installed(core)),
             plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
-            configs: core.configs_of(&who.owner),
+            configs: core.configs_of(),
             model: who.model.clone(),
-            preset: self
-                .preset
-                .take()
-                .map(|found| presets::chosen(core, &who.owner, found)),
+            preset: self.preset.take().map(|found| presets::chosen(core, found)),
             no_tools: who.preset.as_deref() == Some(""),
-            presets: Some(presets::places(core, &who.owner)),
+            presets: Some(presets::places(core)),
             group: who.group,
-            confined: who.confined || super::confined(core, &who.owner),
+            confined: who.confined,
             images: who.images,
             titles: who.titles,
             dream: None,

@@ -35,7 +35,7 @@ pub(crate) async fn sessions(
     let platforms = bridge.platforms(core);
     // 场所 → 最新的会话：场所会话都在主人名下（施工 SU-4 中）。
     let mut newest: BTreeMap<String, SessionId> = BTreeMap::new();
-    for listed in mains(core, &core.admin, |row| row.venue != LOCAL, None).await? {
+    for listed in mains(core, |row| row.venue != LOCAL, None).await? {
         let newer = newest
             .get(&listed.venue)
             .is_none_or(|found| listed.id.as_str() > found.as_str());

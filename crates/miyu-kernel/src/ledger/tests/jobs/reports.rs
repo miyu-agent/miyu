@@ -87,7 +87,7 @@ fn a_child_reports_as_its_own_session() {
     for by in [
         session(B),
         r#"{"kind":"kernel"}"#.to_string(),
-        r#"{"kind":"person","account":"alice"}"#.to_string(),
+        r#"{"kind":"person"}"#.to_string(),
     ] {
         refused(
             &mut ledger,

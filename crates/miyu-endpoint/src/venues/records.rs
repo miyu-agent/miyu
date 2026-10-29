@@ -49,10 +49,9 @@ pub(crate) async fn records(core: &Core, params: RecordsParams) -> Result<Value,
         Some(_) => return Err(Refusal::BAD_PARAMS),
     };
     let window = miyu_assemble::group::Window { count, grow };
-    core.sessions
-        .owner(core, &session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+    if !core.sessions.exists(core, &session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     let dir = core.root.session_dir(&session);
     let blobs = Blobs::new(core.root.blobs());
     let resources = core.resources.clone();

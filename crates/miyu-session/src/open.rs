@@ -104,10 +104,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         persona_texts: _,
         profile: _,
         personas,
-        memory_account,
         memory_scope: _,
         venue,
-        owner,
         permission,
         attended,
         oneshot,
@@ -174,7 +172,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let blobs = Blobs::new(root.blobs());
     let store = blobs.clone();
     let (table, jobs_dir) = (Arc::clone(jobs), dir.clone());
-    let (owner_of, id_of, venue_of) = (owner.clone(), id.clone(), venue.clone());
+    let (id_of, venue_of) = (id.clone(), venue.clone());
     let place_resources = shipped.clone();
     let place_venue = venue.clone();
     // 那一间里她叫什么照人格的名字记（施工 E-1 修）。
@@ -192,8 +190,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         let turns = connect(
             memory.as_ref(),
             scope,
-            &memory_account,
-            &owner_of,
             (name.as_deref().unwrap_or(NO_PERSONA), &persona_book),
             (&id_of, !child),
             (&venue_of, place.1.is_some()),
@@ -207,7 +203,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     models.ready().await;
     let model = models.port(ForSession {
         id: id.clone(),
-        owner: owner.clone(),
         config: Arc::clone(config.current()),
         texts,
         blobs,
@@ -228,7 +223,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         Arc::new(Agents {
             port,
             session: id.clone(),
-            owner: owner.clone(),
             root: root.clone(),
             venue: venue.clone(),
             depth: Agents::depth_of(lineage.as_ref()),
@@ -259,7 +253,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         dream,
         origin,
         confined: shut_in,
-        ..snapshot.session_created(owner.clone(), venue.clone(), permission)
+        ..snapshot.session_created(venue.clone(), permission)
     };
     let (mut session, first) = Session::create(
         id.clone(),
@@ -303,7 +297,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     .for_session(root, &id, shipped.path())
     .with_workplace(workplace.clone());
     let who = Who {
-        owner: owner.clone(),
         venue: venue.clone(),
         parent: lineage.as_ref().map(|lineage| lineage.parent.clone()),
     };
@@ -321,7 +314,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         ToolKit {
             plugins: plugins.clone(),
             session: id.clone(),
-            owner: owner.clone(),
             confined,
             venue: venue.clone(),
             session_log,
@@ -400,7 +392,6 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             let ids = Ids {
                 id,
                 venue,
-                owner,
                 workspace: workplace.dir(),
             };
             Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)

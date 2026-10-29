@@ -47,19 +47,16 @@ async fn a_locked_table_backs_off_instead_of_spinning() {
     let session = client.create("c1", &cwd).await;
     core.start_schedules();
     core.schedules()
-        .add(
-            &alice(),
-            Wanted {
-                by: Creator::Person { account: alice() },
-                when: When::Every { every: 60 },
-                prompt: "看看 CI".to_string(),
-                target: Target::Session {
-                    session: SessionId::parse(&session).expect("会话编号合写法"),
-                },
-                looping: None,
-                first: None,
+        .add(Wanted {
+            by: Creator::Person,
+            when: When::Every { every: 60 },
+            prompt: "看看 CI".to_string(),
+            target: Target::Session {
+                session: SessionId::parse(&session).expect("会话编号合写法"),
             },
-        )
+            looping: None,
+            first: None,
+        })
         .expect("建得了");
     let file = miyu_store::schedules::path(&home.root);
     let lock = rusqlite::Connection::open(&file).expect("开得了");

@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use miyu_kernel::id::{AccountId, CommandId};
+use miyu_kernel::id::CommandId;
 use miyu_kernel::time::Timestamp;
 
 use super::*;
@@ -50,7 +50,7 @@ fn a_secret_change_is_written_like_the_sample() {
         &file,
         "journal.jsonl",
         Timestamp::parse("2026-10-01T08:01:00.000Z").unwrap(),
-        By::Person(Person::new(AccountId::parse("admin").unwrap())),
+        By::Person(Person::default()),
         Some(&CommandId::parse("secret-9f2c4e1a7b3d5f60-1").unwrap()),
         "secret.changed",
         &SecretChanged {

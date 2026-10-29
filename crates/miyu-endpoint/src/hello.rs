@@ -20,7 +20,6 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_sandbox::Availability;
 
 use std::sync::Arc;
@@ -98,7 +97,7 @@ pub(crate) struct Shaken {
 impl Shaken {
     /// 这一刻的这个连接：语言照现在的 `ui.language` 重算。连接都替主人干活（施工 SU-4 下），`admin` 是真的。
     pub(crate) fn now(&self, core: &Core) -> Peer {
-        let language = language_of(&core.mine(&core.admin).config(), self.system);
+        let language = language_of(&core.mine().config(), self.system);
         Peer {
             locale: Locale::of(Some(language)),
             language,
@@ -156,7 +155,6 @@ pub(crate) async fn hello(
     core: &Arc<Core>,
     params: Value,
     (spawned, source): (bool, Option<&str>),
-    account: &AccountId,
 ) -> Result<(Shaken, Via, Value), (Refusal, bool)> {
     let params: Params =
         serde_json::from_value(params).map_err(|_| (Refusal::BAD_PARAMS, false))?;
@@ -199,7 +197,7 @@ pub(crate) async fn hello(
     let mut result = json!({
         "protocol": PROTOCOL,
         "core": {"version": env!("CARGO_PKG_VERSION")},
-        "host": host(core, account),
+        "host": host(core),
         "sandbox": sandbox(&core.sandbox),
         "language": language,
         // 视图投影的版本（施工 9-8 中，`view.md`「握手」）：头照它决定用条目还是自己算。
@@ -306,7 +304,7 @@ fn system(locale: Option<&str>) -> &'static str {
 /// 原样，读不出来的是 `null`；`platform` 是核心所在的平台；`workspace` 是这个账号的工作区，换成真实的位置。不在
 /// 这里建它：管理员、系统账号的工作区核心起来时就建好了（`core.md`，施工 O-4 下），握手不该替每一个连上来的头造目录；换不成
 /// 的（没建出来）照原样交回，工具自己用到时会报错。管理员的另带 `dirs`：照 XDG 的那几处，同 `workspace` 的给法（施工 Y-11 上）。
-fn host(core: &Core, account: &AccountId) -> Value {
+fn host(core: &Core) -> Value {
     // 在的照真实位置，还没建的照原样：握手不替人建目录。
     let shown = |dir: std::path::PathBuf| {
         std::fs::canonicalize(&dir)
@@ -319,17 +317,14 @@ fn host(core: &Core, account: &AccountId) -> Value {
         "platform": std::env::consts::OS,
         "workspace": shown(core.root.workspace()),
     });
-    // 照 XDG 的那几处（施工 Y-11 上）：只给管理员（`06-多用户与身份.md` U25：普通用户看不到运行它的那台电脑，真实路径就是那台
-    // 电脑的东西）；远程的连整个 `host` 都不给（`connection/reach.rs`）。
-    if *account == core.admin {
-        let dirs: serde_json::Map<String, Value> = core
-            .root
-            .user_dirs()
-            .into_iter()
-            .map(|(name, dir)| (name.to_string(), json!(shown(dir))))
-            .collect();
-        host["dirs"] = Value::Object(dirs);
-    }
+    // 照 XDG 的那几处（施工 Y-11 上）；远程的连整个 `host` 都不给（`connection/reach.rs`）。
+    let dirs: serde_json::Map<String, Value> = core
+        .root
+        .user_dirs()
+        .into_iter()
+        .map(|(name, dir)| (name.to_string(), json!(shown(dir))))
+        .collect();
+    host["dirs"] = Value::Object(dirs);
     host
 }
 

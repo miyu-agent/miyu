@@ -40,7 +40,7 @@ pub fn speakers(history: &History, turn: TurnId) -> Vec<Speaker> {
         let speaker = match &event.by {
             By::External(external) => Speaker {
                 id: external.id.clone(),
-                owner: external.account.is_some(),
+                owner: external.owner,
             },
             By::Person(person) => match &person.via {
                 Some(via) => Speaker {

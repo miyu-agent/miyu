@@ -76,7 +76,7 @@ async fn schedules_are_added_listed_paused_resumed_and_cancelled() {
             "when": {"every": 600},
             "prompt": "看看 CI",
             "target": {"session": session},
-            "by": {"kind": "person", "account": "alice"},
+            "by": {"kind": "person"},
             "recurring": true,
             "paused": false,
             "created": "2026-10-26T00:00:00.000Z",

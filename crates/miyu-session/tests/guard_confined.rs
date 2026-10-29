@@ -204,7 +204,7 @@ async fn a_confined_session_stays_confined_after_loading() {
     turn(&home, &handle).await;
     stop(&handle).await;
     let loaded = home
-        .load_owned(
+        .load_placed(
             handle.id(),
             &script,
             &kit.catalog(),
@@ -212,7 +212,7 @@ async fn a_confined_session_stays_confined_after_loading() {
                 cwd: at(&home, "work"),
                 ..environment()
             }),
-            (None, true),
+            None,
         )
         .await;
     let mut pushes = watch(&loaded).await;

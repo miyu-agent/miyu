@@ -5,7 +5,6 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 
 /// 头一次放多久（毫秒）。
@@ -13,15 +12,15 @@ const FIRST: i64 = 1_000;
 /// 最多放多久（毫秒）。
 const MOST: i64 = 300_000;
 
-/// 放着的几个：账号、任务编号到「不早于」和这一回放了多久。
+/// 放着的几个：任务编号到「不早于」和这一回放了多久。
 #[derive(Default)]
-pub(super) struct Holds(Mutex<BTreeMap<(AccountId, String), (Timestamp, i64)>>);
+pub(super) struct Holds(Mutex<BTreeMap<String, (Timestamp, i64)>>);
 
 impl Holds {
     /// 又写不进一次：照上一回翻倍（头一次 1 秒，最多 5 分钟）往后放，交回不早于哪一刻。
-    pub(super) fn failed(&self, account: &AccountId, id: &str, now: Timestamp) -> Timestamp {
+    pub(super) fn failed(&self, id: &str, now: Timestamp) -> Timestamp {
         let mut holds = self.lock();
-        let key = (account.clone(), id.to_string());
+        let key = id.to_string();
         let wait = holds
             .get(&key)
             .map_or(FIRST, |(_, wait)| wait.saturating_mul(2).min(MOST));
@@ -32,19 +31,19 @@ impl Holds {
     }
 
     /// 写进了：不再放。
-    pub(super) fn cleared(&self, account: &AccountId, id: &str) {
-        self.lock().remove(&(account.clone(), id.to_string()));
+    pub(super) fn cleared(&self, id: &str) {
+        self.lock().remove(id);
     }
 
     /// 这一个的下一次 `next` 照放着的往后挪：没放着的照旧。
-    pub(super) fn later(&self, account: &AccountId, id: &str, next: Timestamp) -> Timestamp {
-        match self.lock().get(&(account.clone(), id.to_string())) {
+    pub(super) fn later(&self, id: &str, next: Timestamp) -> Timestamp {
+        match self.lock().get(id) {
             Some((until, _)) => next.max(*until),
             None => next,
         }
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, BTreeMap<(AccountId, String), (Timestamp, i64)>> {
+    fn lock(&self) -> std::sync::MutexGuard<'_, BTreeMap<String, (Timestamp, i64)>> {
         self.0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

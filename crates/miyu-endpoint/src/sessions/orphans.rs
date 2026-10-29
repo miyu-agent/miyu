@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, Effect};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_store::log::{first_event, read_events};
 use miyu_store::root::DataRoot;
 use miyu_store::trash;
@@ -24,7 +24,7 @@ use crate::Core;
 use crate::list::forget;
 
 /// 在后台收掉会话 `parent` 派到一半的空子会话：先不拿表的锁认，认出来有的再拿锁收（[`Open::remove_orphans`]）。
-pub(super) fn sweep_later(core: &Arc<Core>, owner: AccountId, parent: SessionId) {
+pub(super) fn sweep_later(core: &Arc<Core>, parent: SessionId) {
     let core = Arc::clone(core);
     tokio::spawn(async move {
         let (root, id) = (core.root.clone(), parent.clone());
@@ -39,20 +39,14 @@ pub(super) fn sweep_later(core: &Arc<Core>, owner: AccountId, parent: SessionId)
             return;
         }
         let mut open = core.sessions.open.lock().await;
-        open.remove_orphans(&core, &owner, &parent, orphans).await;
+        open.remove_orphans(&core, &parent, orphans).await;
     });
 }
 
 impl Open {
     /// 收掉会话 `parent` 派到一半的空子会话 `orphans`，表的锁在调的一方手里：在跑的停下（不问忙不忙，它们派的一起），目录
     /// 挪进回收处，最深的在前。挪不走的记一行运行日志。
-    async fn remove_orphans(
-        &mut self,
-        core: &Core,
-        owner: &AccountId,
-        parent: &SessionId,
-        orphans: Vec<SessionId>,
-    ) {
+    async fn remove_orphans(&mut self, core: &Core, parent: &SessionId, orphans: Vec<SessionId>) {
         for orphan in &orphans {
             if let Some(running) = self.running.remove(orphan)
                 && running.handle.discard().await.is_err()
@@ -62,8 +56,8 @@ impl Open {
         }
         self.created
             .retain(|(_, session)| !orphans.contains(session));
-        let (root, account, at, parent) = (core.root.clone(), owner.clone(), now(), parent.clone());
-        let index = core.index_for(&account);
+        let (root, at, parent) = (core.root.clone(), now(), parent.clone());
+        let index = core.index();
         let moved = tokio::task::spawn_blocking(move || {
             for orphan in orphans {
                 match trash::discard(&root, &orphan, at) {

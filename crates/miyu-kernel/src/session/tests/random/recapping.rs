@@ -69,7 +69,7 @@ fn recap(next_id: &mut u64) -> Input {
     let n = next_command(next_id);
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Recap,
     })

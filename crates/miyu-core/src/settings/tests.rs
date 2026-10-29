@@ -130,7 +130,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
 fn config(root: &DataRoot, system: &str, env: &[(&str, &str)]) -> Config {
     std::fs::write(root.path().join("config.toml"), system).expect("写得进");
     let environment = miyu_endpoint::config::Environment::of(env);
-    Config::load(root, &crate::admin(), None, items(), environment)
+    Config::load(root, None, items(), environment)
 }
 
 /// 等到 `done` 成立，最多十秒。
@@ -248,7 +248,6 @@ async fn a_changed_item_list_rewrites_the_files() {
     ));
     let second = Config::load(
         &root,
-        &crate::admin(),
         None,
         packaged.all(),
         miyu_endpoint::config::Environment::of(&[]),
@@ -290,7 +289,6 @@ fn an_extension_search_source_joins_the_dropdown() {
     .expect("写得进");
     let config = Config::load(
         &root,
-        &crate::admin(),
         None,
         all,
         miyu_endpoint::config::Environment::of(&[]),

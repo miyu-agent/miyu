@@ -332,7 +332,6 @@ fn configured_with(home: &Home, script: &Script, without: &[&str]) -> Arc<Core> 
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

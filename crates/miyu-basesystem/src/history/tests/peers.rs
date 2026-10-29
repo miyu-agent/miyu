@@ -27,7 +27,7 @@ fn told() -> Vec<Vec<Event>> {
         "session.created",
         None,
         alice(),
-        json!({"owner": "alice", "venue": "local", "policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "permission": {"level": "workspace", "read_only": false}, "parent": PARENT, "depth": 1}),
+        json!({"venue": "local", "policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "permission": {"level": "workspace", "read_only": false}, "parent": PARENT, "depth": 1}),
     );
     let session = |id: &str| json!({"kind": "session", "id": id});
     vec![vec![

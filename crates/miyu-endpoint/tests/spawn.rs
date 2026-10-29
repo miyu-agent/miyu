@@ -3,7 +3,7 @@
 
 use serde_json::{Value, json};
 
-use crate::support::{Client, Home, TOKEN, alice, default_resources};
+use crate::support::{Client, Home, TOKEN, default_resources};
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Effect, Level, Permission};
 use miyu_kernel::id::SessionId;
@@ -59,7 +59,6 @@ async fn a_child_session_does_its_task_and_is_listed_under_its_parent() {
     );
     assert_eq!(created.parent, Some(parent_id.clone()));
     assert_eq!(created.depth, Some(1));
-    assert_eq!(created.owner, alice());
     assert_eq!(created.venue.as_str(), "local");
     assert_eq!(
         created.permission,

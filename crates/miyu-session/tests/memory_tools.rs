@@ -152,10 +152,7 @@ async fn what_she_remembers_comes_from_this_turn_and_is_found_from_another_sessi
     let log = chat(&home, &first, 1, "记住我的显卡是 N 卡").await;
     assert_eq!(last_result(&log), "Saved as m1.");
     let turn = last_turn(&log);
-    let (memories, _) = home
-        .logs
-        .open(&Room::persona(&alice_account(), "engineer"))
-        .expect("开得了");
+    let (memories, _) = home.logs.open(&Room::persona("engineer")).expect("开得了");
     let entry = memories
         .book(|book| book.all().next().cloned())
         .expect("记下了一条");
@@ -273,11 +270,8 @@ async fn replaced_ones_and_her_own_session_stay_out_and_other_places_come_in() {
     use miyu_recall::{MemoryEvent, Saved};
     let home = Home::new();
     // 一条在群里说的（施工 R-13 上）：一个大脑，主人这边搜得到、改得了。
-    let (memories, _) = home
-        .logs
-        .open(&Room::persona(&alice_account(), "engineer"))
-        .expect("开得了");
-    let someone: By = serde_json::from_str(r#"{"kind":"person","account":"bob"}"#).expect("合写法");
+    let (memories, _) = home.logs.open(&Room::persona("engineer")).expect("开得了");
+    let someone: By = serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法");
     let private = Saved {
         class: "user".into(),
         text: "bob 的猫叫团子".into(),

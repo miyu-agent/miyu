@@ -26,7 +26,7 @@ use std::sync::Arc;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::{By, Person};
 use miyu_recall::MemoryId;
 use miyu_session::{
@@ -83,7 +83,6 @@ pub(crate) const METHODS: [&str; 11] = [
 /// 里的没有这个方法。
 pub(crate) async fn call(
     core: &Arc<Core>,
-    who: &AccountId,
     method: &str,
     id: &CommandId,
     params: &Value,
@@ -92,17 +91,17 @@ pub(crate) async fn call(
         return Err(Refusal::MEMORY_NOT_INSTALLED);
     }
     match method {
-        "memory.list" => list(core, who, read(params)?).await,
-        "memory.search" => search(core, who, read(params)?).await,
-        "memory.turns" => turns::turns(core, who, read(params)?).await,
-        "memory.remember" => write::remember(core, who, stamp(who, id), read(params)?).await,
-        "memory.update" => write::update(core, who, stamp(who, id), read(params)?).await,
-        "memory.forget" => forget(core, who, stamp(who, id), read(params)?).await,
-        "memory.restore" => restore(core, who, stamp(who, id), read(params)?).await,
-        "memory.dream_stop" => dream::stop(core, who, params).await,
-        "memory.cards" => cards::cards(core, who, read(params)?).await,
-        "memory.card_update" => cards::update(core, who, stamp(who, id), read(params)?).await,
-        "memory.card_forget" => cards::forget(core, who, stamp(who, id), read(params)?).await,
+        "memory.list" => list(core, read(params)?).await,
+        "memory.search" => search(core, read(params)?).await,
+        "memory.turns" => turns::turns(core, read(params)?).await,
+        "memory.remember" => write::remember(core, stamp(id), read(params)?).await,
+        "memory.update" => write::update(core, stamp(id), read(params)?).await,
+        "memory.forget" => forget(core, stamp(id), read(params)?).await,
+        "memory.restore" => restore(core, stamp(id), read(params)?).await,
+        "memory.dream_stop" => dream::stop(core, params).await,
+        "memory.cards" => cards::cards(core, read(params)?).await,
+        "memory.card_update" => cards::update(core, stamp(id), read(params)?).await,
+        "memory.card_forget" => cards::forget(core, stamp(id), read(params)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -166,14 +165,14 @@ pub(crate) async fn clear_in(
     blocking(move || keeper.clear(stamp, session)).await
 }
 
-async fn list(core: &Arc<Core>, who: &AccountId, params: List) -> Result<Value, Refusal> {
+async fn list(core: &Arc<Core>, params: List) -> Result<Value, Refusal> {
     let filter = Filter {
         class: params.class,
         from: params.from.as_deref().map(session_id).transpose()?,
         forgotten: params.forgotten,
         limit: limit(params.limit, LIST)?,
     };
-    let keeper = find(core, who, params.at).await?;
+    let keeper = find(core, params.at).await?;
     let (found, used) = blocking(move || {
         let found = keeper.list(&filter).map_err(Refused::Failed)?;
         Ok((found, keeper.used().map_err(Refused::Failed)?))
@@ -182,16 +181,16 @@ async fn list(core: &Arc<Core>, who: &AccountId, params: List) -> Result<Value, 
     Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
-async fn search(core: &Arc<Core>, who: &AccountId, params: Search) -> Result<Value, Refusal> {
+async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
     if params.query.trim().is_empty() {
         return Err(Refusal::BAD_PARAMS);
     }
     let limit = limit(params.limit, SEARCH)?;
-    let keeper = find(core, who, params.at).await?;
+    let keeper = find(core, params.at).await?;
     let (query, forgotten) = (params.query, params.forgotten);
     // 照意思找（施工 R-5 下）照这时的配置：先算问句的向量（`off` 的、等不到的只走关键词），搜完在后台补这一间缺的。远程的
     // 用量照这一间的账号记（施工 Y-7）。
-    let using = using_for(core, &keeper);
+    let using = using(core);
     let near = match keeper.vectors() {
         Some(vectors) => vectors.query(&using, &query).await,
         None => None,
@@ -214,17 +213,12 @@ async fn search(core: &Arc<Core>, who: &AccountId, params: Search) -> Result<Val
     Ok(json!({"memories": shown_all(&found, &used)}))
 }
 
-async fn forget(
-    core: &Arc<Core>,
-    who: &AccountId,
-    stamp: Stamp,
-    params: Forget,
-) -> Result<Value, Refusal> {
+async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value, Refusal> {
     match (params.id, params.clear.as_deref()) {
         (Some(id), None) => {
             let id = memory_id(&id)?;
             let why = params.why.unwrap_or_default();
-            let keeper = find(core, who, params.at).await?;
+            let keeper = find(core, params.at).await?;
             blocking(move || keeper.retire(stamp, id, why)).await?;
             Ok(json!({}))
         }
@@ -236,7 +230,7 @@ async fn forget(
                 )?),
                 _ => None,
             };
-            let keeper = find(core, who, params.at).await?;
+            let keeper = find(core, params.at).await?;
             let session = session.filter(|_| matches!(keeper.room(), Room::Persona { .. }));
             let cleared = blocking(move || keeper.clear(stamp, session)).await?;
             Ok(json!({"cleared": cleared}))
@@ -246,48 +240,43 @@ async fn forget(
 }
 
 /// 恢复作废的一条（施工 R-12 下）：本来就算数的什么都不写，也回 `{}`。
-async fn restore(
-    core: &Arc<Core>,
-    who: &AccountId,
-    stamp: Stamp,
-    params: Restore,
-) -> Result<Value, Refusal> {
+async fn restore(core: &Arc<Core>, stamp: Stamp, params: Restore) -> Result<Value, Refusal> {
     let id = memory_id(&params.id)?;
-    let keeper = find(core, who, params.at).await?;
+    let keeper = find(core, params.at).await?;
     blocking(move || keeper.restore(stamp, id)).await?;
     Ok(json!({}))
 }
 
 /// 人经协议写的：此刻、替谁干活的那个账号（施工 Y-7）、这条命令的编号。
-fn stamp(who: &AccountId, id: &CommandId) -> Stamp {
+fn stamp(id: &CommandId) -> Stamp {
     Stamp {
         at: now(),
-        by: person(who),
+        by: person(),
         cause: Some(id.clone()),
     }
 }
 
 /// 账号 `who` 这个人。
-fn person(who: &AccountId) -> By {
-    By::Person(Person::new(who.clone()))
+fn person() -> By {
+    By::Person(Person::default())
 }
 
 /// 替 `who` 干活，照参数找哪一间，听众是他（施工 Y-7）：人格那一间、无人格那一间都在主人名下，人格照 `who` 看得到的几层找。
-async fn find(core: &Arc<Core>, who: &AccountId, at: Where) -> Result<Keeper, Refusal> {
-    let hearer = person(who);
+async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
+    let hearer = person();
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
         (Some(persona), None, None) if persona == NO_PERSONA => {
             // 无人格那一间（施工 R-12 再补）：记忆账号是替谁干活的那个账号，同无人格的会话照属主。
-            let room = Room::persona(&core.admin, NO_PERSONA);
+            let room = Room::persona(NO_PERSONA);
             Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
         (persona, None, None) => {
             // 无人格不是人格（施工 P-12）：不写、默认人格也没设的，照人格找没有哪一间；无人格那一间照会话找。
-            let found = personas::resolve(core, who, persona.as_deref().map(Some))
+            let found = personas::resolve(core, persona.as_deref().map(Some))
                 .await?
                 .ok_or(Refusal::MEMORY_UNAVAILABLE)?;
-            let room = Room::persona(&core.admin, &found.id);
+            let room = Room::persona(&found.id);
             // 这一间里她叫什么（施工 E-1 修）：经协议记的、现在就整理的也不把她当认识的人。
             let memory = memory(core)?;
             memory.name_her(&room, found.file.name.as_ref());
@@ -313,7 +302,6 @@ const FOLLOWING: usize = 64;
 /// 人格记忆没装：`memory_not_installed`；找不到、写错了的同 `memory.*`；记忆日志读不了：`internal_error`，记一行。
 pub(crate) async fn follow(
     core: &Arc<Core>,
-    who: &AccountId,
     at: &crate::subscriptions::MemoryAt,
     after: Option<u64>,
 ) -> Result<miyu_session::Following, Refusal> {
@@ -322,7 +310,6 @@ pub(crate) async fn follow(
     }
     let keeper = find(
         core,
-        who,
         Where {
             persona: at.persona.clone(),
             session: at.session.clone(),
@@ -351,24 +338,13 @@ fn room(handle: &Handle) -> Option<Room> {
         .filter(|_| handle.venue().as_str() == LOCAL)
 }
 
-/// 照意思找的那一路照机主这时的配置（施工 R-5 下）：远程的用量记在机主名下。`model.embed`、`miyu check` 用。
+/// 照意思找的那一路照这时的配置（施工 R-5 下）。
 pub(crate) fn using(core: &Core) -> Using {
-    using_as(core, &core.admin)
-}
-
-/// 同 [`using`]，碰的是 `keeper` 那一间（施工 Y-7）：远程的用量照那一间的账号记。
-fn using_for(core: &Core, keeper: &Keeper) -> Using {
-    using_as(core, keeper.room().account())
-}
-
-/// 照 `owner` 这时的那一份配置（施工 Y-2 下下中下：成员的照他自己的，用不上机主自己的 key），远程的用量记在他名下。
-pub(crate) fn using_as(core: &Core, owner: &AccountId) -> Using {
-    let config = core.mine(owner).hub().current().borrow().clone();
+    let config = core.mine().hub().current().borrow().clone();
     let resolved = config.resolved().clone();
     let source: Arc<dyn ConfigSource> = config;
     Using {
         config: Arc::new(Turn::new(resolved, source)),
-        owner: owner.clone(),
     }
 }
 
@@ -377,7 +353,7 @@ async fn fill(core: &Core, keeper: Keeper) {
     if keeper.vectors().is_none() {
         return;
     }
-    let using = using_for(core, &keeper);
+    let using = using(core);
     // 记下已经成了，回应照常：补不成的 `blocking` 记了 `WARN memory failed`，补本身的出错 `Keeper::fill` 自己记。
     let _filled: Result<(), Refusal> = blocking(move || {
         keeper.fill(&using);

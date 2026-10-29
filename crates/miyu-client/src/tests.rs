@@ -132,7 +132,7 @@ fn a_refusal_keeps_its_reason_message_and_wait() {
 #[test]
 fn the_view_stream_reads_back_and_ignores_fields_it_does_not_know() {
     use crate::view::{Body, Change, Notice, State, Status};
-    let pushed = r#"{"op":"update","entry":{"id":"b5.0","kind":"tool","group":"g5.0","call":"call_6_1","name":"write","title":{"name":"Write","object":"a"},"state":"running","args":"{\"file_path\":\"a\"}","approval":{"access":"write","decision":"once","by":{"kind":"person","account":"alice"}},"turn":3,"at":"2026-09-25T07:00:04.000Z"}}"#;
+    let pushed = r#"{"op":"update","entry":{"id":"b5.0","kind":"tool","group":"g5.0","call":"call_6_1","name":"write","title":{"name":"Write","object":"a"},"state":"running","args":"{\"file_path\":\"a\"}","approval":{"access":"write","decision":"once","by":{"kind":"person"}},"turn":3,"at":"2026-09-25T07:00:04.000Z"}}"#;
     let change: Change = serde_json::from_str(pushed).expect("读得懂");
     assert_eq!(serde_json::to_string(&change).expect("写得出"), pushed);
     let later = r#"{"op":"add","entry":{"id":"e9","kind":"notice","what":"answered","questions":[],"answers":[],"by":{"kind":"kernel"},"future":{"x":1},"at":"2026-09-25T07:00:10.000Z"},"after":null}"#;

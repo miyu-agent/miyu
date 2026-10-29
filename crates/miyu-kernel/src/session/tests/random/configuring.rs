@@ -21,7 +21,7 @@ pub(super) fn some_configure(rng: &mut Rng, ids: &mut u64) -> Option<Input> {
     let model = MODELS[rng.below(3) as usize];
     Some(Input::Command(Received {
         id: CommandId::parse(&format!("model-{n}")).unwrap(),
-        by: alice(),
+        by: person(),
         at: at(30),
         command: Command::Configure {
             model: model.to_string(),

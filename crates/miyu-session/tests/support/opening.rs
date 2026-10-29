@@ -36,8 +36,6 @@ pub struct Lines {
     pub model: Option<String>,
     /// 记忆的范围（施工 R-3 下）：默认跟着人格。
     pub memory: MemoryScope,
-    /// 记忆归哪个账号（施工 P-1 上）：默认是属主 alice。
-    pub memory_account: AccountId,
     /// 预设（施工 P-2 上、中）：默认没有，全开。
     pub preset: Option<miyu_policy::preset::Chosen>,
     /// 核心交不交记忆（施工 R-2 下）：不交的是以前的版本造的会话，回合库里一条都没有。默认交。
@@ -67,7 +65,6 @@ impl Default for Lines {
             oneshot: false,
             model: None,
             memory: MemoryScope::Persona,
-            memory_account: alice_account(),
             preset: None,
             indexed: true,
             group: false,

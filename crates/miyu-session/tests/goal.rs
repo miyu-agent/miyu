@@ -30,7 +30,7 @@ async fn a_loaded_session_knows_its_goal() {
     let next = log.next_seq().get();
     let line = |seq: u64, kind: &str, body: &str| {
         Event::from_line(&format!(
-            r#"{{"seq":{seq},"at":"2026-10-12T01:00:00.000Z","kind":"{kind}","by":{{"kind":"person","account":"alice"}},"body":{body}}}"#
+            r#"{{"seq":{seq},"at":"2026-10-12T01:00:00.000Z","kind":"{kind}","by":{{"kind":"person"}},"body":{body}}}"#
         ))
         .expect("读得懂")
     };

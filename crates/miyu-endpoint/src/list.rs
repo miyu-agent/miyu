@@ -14,7 +14,7 @@ use std::path::Path;
 use serde_json::{Value, json};
 
 use miyu_kernel::event::{Dream, DreamEnded};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::index::{FILE, Opened, Row, SessionIndex};
 use miyu_store::log::{Mark, OpenError, first_event, read_marked};
@@ -39,14 +39,12 @@ pub(crate) fn local(row: &Row) -> bool {
 /// 写了的照它挑整理会话（施工 D-1 下）：`true` 只要整理会话，`false` 不要。
 pub(crate) async fn list(
     core: &Core,
-    account: &AccountId,
     oneshot: bool,
     dream: Option<bool>,
     limit: Option<usize>,
 ) -> Result<Vec<Value>, Refusal> {
     let root = core.root.clone();
-    let account = account.clone();
-    let index = core.index_for(&account);
+    let index = core.index();
     let busy = core.sessions.busy_ids().await;
     let waiting = core.sessions.waiting_ids().await;
     let window = windows(core);

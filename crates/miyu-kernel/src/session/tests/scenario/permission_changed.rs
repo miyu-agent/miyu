@@ -78,8 +78,8 @@ fn a_switch_between_turns_is_told_with_the_level_before() {
     assert_eq!(
         story(&stage)[8..13],
         [
-            "9 session.policy_changed alice",
-            "10 message.user alice",
+            "9 session.policy_changed person",
+            "10 message.user person",
             "11 turn.started kernel t11",
             "12 context.injected:permission kernel t11",
             "13 message.assistant model t11",

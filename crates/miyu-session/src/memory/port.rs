@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use miyu_kernel::facts::Present;
-use miyu_kernel::id::{AccountId, CallId, Seq, SessionId, TurnId};
+use miyu_kernel::id::{CallId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::{By, Tool};
 use miyu_kernel::session::Injection;
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -28,8 +28,6 @@ use super::{Extractor, Keeper, Listener, Memory, Query, Stamp, Using};
 pub(crate) struct Calls {
     keeper: Keeper,
     session: SessionId,
-    /// 属主：远程算向量的用量记在他名下（施工 R-5 补）；抽取的也是（施工 R-6 上）。
-    owner: AccountId,
     /// 这个会话的抽取（施工 R-6 上）：闹钟、在路上的那一次。
     extractor: Arc<Extractor>,
     /// 中途换成了这一间的人格（施工 P-13）：换的那一条，抽取从它以后抽。
@@ -43,13 +41,11 @@ impl Calls {
         memory: &Arc<Memory>,
         room: Room,
         listener: Listener,
-        owner: &AccountId,
         session: &SessionId,
     ) -> Calls {
         Calls {
             keeper: Keeper::new(memory, room, listener),
             session: session.clone(),
-            owner: owner.clone(),
             extractor: Arc::default(),
             floor: None,
         }
@@ -76,7 +72,6 @@ impl Calls {
         venue: &miyu_kernel::id::VenueId,
         (source, own): (super::Source, Vec<miyu_kernel::event::Event>),
     ) -> (Option<super::TurnLane>, Option<Calls>) {
-        let account = self.owner.clone();
         // 是不是主会话照日志第一条（施工 E-6）：读回的整份从 `session.created` 起。
         let main = match own.first().map(|event| &event.body) {
             Some(miyu_kernel::event::Body::SessionCreated(created)) => created.parent.is_none(),
@@ -85,8 +80,6 @@ impl Calls {
         super::connect(
             Some(&self.keeper.memory),
             miyu_policy::memory::MemoryScope::Persona,
-            &account,
-            &self.owner,
             (persona, personas),
             (&self.session, main),
             (venue, self.keeper.heard_in_a_place()),
@@ -94,9 +87,9 @@ impl Calls {
         )
     }
 
-    /// 抽取用的（施工 R-6 上）：记在哪一间的那一份、哪个会话、谁付钱、这个会话的抽取状态。
-    pub(crate) fn extracting(&self) -> (&Keeper, &SessionId, &AccountId, &Arc<Extractor>) {
-        (&self.keeper, &self.session, &self.owner, &self.extractor)
+    /// 抽取用的（施工 R-6 上）：记在哪一间的那一份、哪个会话、这个会话的抽取状态。
+    pub(crate) fn extracting(&self) -> (&Keeper, &SessionId, &Arc<Extractor>) {
+        (&self.keeper, &self.session, &self.extractor)
     }
 
     /// 会话记下了 `events`（施工 E-1 修三）：人话带着她在场所里叫什么的，记住最新的，她当场记的时候认她（`her.rs`）；结束了的
@@ -149,7 +142,6 @@ impl Calls {
     ) -> Option<Injection> {
         let using = Using {
             config: Arc::clone(config),
-            owner: self.owner.clone(),
         };
         self.keeper.recall(&using, &said, offset, &present).await
     }
@@ -167,7 +159,6 @@ impl Calls {
     ) -> Arc<dyn MemoryPort> {
         let using = Using {
             config: Arc::clone(config),
-            owner: self.owner.clone(),
         };
         Arc::new(Port(Arc::new(Inner {
             calls: self.clone(),
@@ -278,8 +269,8 @@ impl Inner {
             })
             .collect();
         let seen = (&self.calls.session, self.compacted);
-        // 打不打得开照这个会话的属主判（施工 E-6）：同 `history` 认的那一批。
-        let turns = keeper.turns(query, TURNS, (Some(seen), Some(&self.calls.owner)), near)?;
+        // 打不打得开照是不是主会话判（施工 E-6）：同 `history` 认的那一批。
+        let turns = keeper.turns(query, TURNS, (Some(seen), true), near)?;
         // 认识的人的卡（施工 E-3）：这一段上下文里认出来带过的照给，她搜了就是要看。
         let cards = keeper
             .search_cards(query, CARDS)?

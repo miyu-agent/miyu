@@ -9,7 +9,7 @@ use crate::event::DreamEnded;
 fn end_dream(n: u64, ended: DreamEnded) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::EndDream(ended),
     })

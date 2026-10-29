@@ -14,9 +14,9 @@ use crate::ledger::Ledger;
 use crate::template::escape;
 
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 const MEMORY: &str = r#"{"kind":"module","id":"memory"}"#;
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
 /// 替身的模板：短，一眼认得出是哪个字段。测的是换法，和出厂的措辞无关。
 fn templates() -> FactTemplates {

@@ -7,7 +7,7 @@ use std::fs;
 use std::io;
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_recall::Source;
 
 use crate::root::DataRoot;
@@ -80,13 +80,13 @@ impl RecallIndexes {
     /// # Errors
     ///
     /// 列不出目录；有一份写不进（其余的照样拿掉，报最后一个错）。
-    pub fn forget_session(&self, account: &AccountId, session: &SessionId) -> Result<(), DbError> {
+    pub fn forget_session(&self, session: &SessionId) -> Result<(), DbError> {
         let personas = self.personas()?;
         let source = session.to_string();
         let mut failed = None;
         let tomb = format!("{source}/");
         for persona in personas {
-            let (index, _) = self.turns(&Room::persona(account, &persona));
+            let (index, _) = self.turns(&Room::persona(&persona));
             // 先埋再拿掉（施工 R-2 下）：埋了以后补进来的一批写不进（`apply`），拿掉以后不会又多出来。
             if let Err(error) = index.bury(&tomb).and_then(|()| index.forget(&source)) {
                 failed = Some(error);

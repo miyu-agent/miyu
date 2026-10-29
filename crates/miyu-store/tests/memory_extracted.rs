@@ -30,7 +30,7 @@ fn extracted(of: u8, upto: u64, skipped: Option<Skipped>) -> MemoryEvent {
 fn the_furthest_extraction_of_each_session_is_kept_across_reopening() {
     let scratch = Scratch::new("memory-extracted");
     let root = root_in(&scratch);
-    let room = Room::persona(&admin(), "engineer");
+    let room = Room::persona("engineer");
     {
         let (log, _) = MemoryLogs::new(&root).open(&room).expect("开得了");
         assert_eq!(log.book(|book| book.extracted(&session(1))), None);

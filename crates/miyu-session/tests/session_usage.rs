@@ -124,7 +124,6 @@ async fn the_cost_is_recorded_and_she_reads_her_own_usage() {
         until: None,
         group: Vec::new(),
         session: Some((handle.id().clone(), false)),
-        account: None,
         offset: miyu_kernel::time::UtcOffset::UTC,
         daily: false,
     };

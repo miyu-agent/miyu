@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use miyu_kernel::event::{Level, Permission};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_session::testkit::Script;
 use miyu_session::{Child, Lineage};
 use miyu_store::resources::ResourceRoot;
@@ -22,7 +22,6 @@ use miyu_session::settings::ProfileSettings;
 #[tokio::test]
 async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
     let (root, dir) = temp_root("unit");
-    let admin = AccountId::parse("alice").expect("合写法");
     let resources = resources();
     let core = Arc::new(Core::new(
         root.clone(),
@@ -30,7 +29,6 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        admin.clone(),
         "token".to_string(),
     ));
     let parent = SessionId::parse("01900000-0000-7000-8000-000000000001").expect("合写法");
@@ -42,7 +40,6 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
             workspace_from: None,
         },
         persona: Some("engineer".to_string()),
-        owner: admin.clone(),
         venue: local(),
         permission: Permission {
             level: Level::Workspace,
@@ -68,7 +65,6 @@ async fn a_child_is_not_created_for_a_parent_gone_from_the_table() {
 #[tokio::test]
 async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
     let (root, dir) = temp_root("held");
-    let admin = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(
         Core::new(
             root,
@@ -76,13 +72,11 @@ async fn a_session_someone_holds_a_handle_to_stays_in_the_table() {
             Arc::new(Script::new([])),
             Catalog::default(),
             None,
-            admin.clone(),
             "token".to_string(),
         )
         .with_session_idle(Duration::from_millis(50)),
     );
     let opening = Opening {
-        owner: admin,
         attended: false,
         oneshot: false,
         model: None,
@@ -183,26 +177,4 @@ fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
         profile_for(empty, None, false, true),
         miyu_policy::Profile::default()
     );
-}
-
-/// 关不关起来照一处算（施工 SU-4 上）：主人本人的会话不关，平台桥名下的（群、陌生人的私聊）关起来。
-#[test]
-fn only_sessions_not_under_the_owner_are_confined() {
-    let (root, dir) = temp_root("confined");
-    let admin = AccountId::parse("alice").expect("合写法");
-    let core = Core::new(
-        root,
-        ResourceRoot::at(resources()),
-        Arc::new(Script::new([])),
-        Catalog::default(),
-        None,
-        admin.clone(),
-        "token".to_string(),
-    );
-    assert!(!super::confined(&core, &admin));
-    let bridge = AccountId::parse("bridge").expect("合写法");
-    assert!(super::confined(&core, &bridge));
-    if let Err(error) = std::fs::remove_dir_all(&dir) {
-        eprintln!("临时目录没删掉：{error}");
-    }
 }

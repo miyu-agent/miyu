@@ -250,10 +250,7 @@ fn change(
                 let written = file.written(text, config_file::version(&bytes));
                 config.secrets = written;
                 let (by, cause) = match who {
-                    Who::Person(cause) => (
-                        By::Person(Person::new(config.places.account.clone())),
-                        Some(cause),
-                    ),
+                    Who::Person(cause) => (By::Person(Person::default()), Some(cause)),
                     Who::Core => (By::Kernel, None),
                 };
                 record(&config, name, action, "set", by, cause);

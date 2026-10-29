@@ -22,7 +22,6 @@ async fn filling_is_on_from_the_start_until_done() {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
     assert!(!vectors.filling(), "还没起补");
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));

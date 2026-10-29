@@ -32,7 +32,6 @@ fn served_core(home: &Home, config: &str) -> Arc<Core> {
     let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

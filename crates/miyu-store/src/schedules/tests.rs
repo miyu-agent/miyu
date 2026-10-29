@@ -20,10 +20,6 @@ fn root(scratch: &Scratch) -> DataRoot {
     DataRoot::locate(&env).unwrap()
 }
 
-fn alice() -> AccountId {
-    AccountId::parse("alice").unwrap()
-}
-
 fn at(ms: i64) -> Timestamp {
     Timestamp::from_unix_millis(ms).unwrap()
 }
@@ -35,7 +31,7 @@ fn session() -> SessionId {
 /// 每隔一分钟、跑在 `session()` 上、人建的一个，第一次在 `next`。
 fn every_minute(next: i64) -> NewSchedule {
     NewSchedule {
-        by: Creator::Person { account: alice() },
+        by: Creator::Person,
         when: When::Every { every: 60 },
         prompt: "看看 CI".to_string(),
         target: Target::Session { session: session() },

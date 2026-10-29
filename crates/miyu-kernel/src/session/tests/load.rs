@@ -23,7 +23,7 @@ impl Logged {
         let (mut session, actions) = Session::create(
             session_id(),
             id(0),
-            alice(),
+            person(),
             at(0),
             created,
             policy(),

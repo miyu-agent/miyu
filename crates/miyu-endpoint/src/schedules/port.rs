@@ -8,7 +8,7 @@
 
 use std::sync::{Arc, Weak};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 use miyu_tool::{
     PER_SESSION, ScheduleAnswer, ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused,
@@ -19,17 +19,15 @@ use super::{Creator, Loop, Schedule, ScheduleError, Target, Wanted, When};
 use crate::Core;
 
 /// 交给会话的那一份。
-pub(crate) fn port(core: &Arc<Core>, owner: &AccountId) -> Arc<dyn SchedulePort> {
+pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn SchedulePort> {
     Arc::new(Port {
         core: Arc::downgrade(core),
-        owner: owner.clone(),
     })
 }
 
 /// 核心那一头，和这个会话的属主：她建的记在属主的表里。
 struct Port {
     core: Weak<Core>,
-    owner: AccountId,
 }
 
 impl SchedulePort for Port {
@@ -48,7 +46,7 @@ impl Port {
     ) -> Result<ScheduleAnswer, ScheduleRefused> {
         let core = self.core.upgrade().ok_or(ScheduleRefused::Unavailable)?;
         let schedules = core.schedules();
-        let all = schedules.list(&self.owner).map_err(refused)?;
+        let all = schedules.list().map_err(refused)?;
         let here: Vec<&Schedule> = all.iter().filter(|one| on(one, session)).collect();
         match ask {
             ScheduleAsk::Create {
@@ -76,7 +74,7 @@ impl Port {
                     looping: None,
                     first: None,
                 };
-                let added = schedules.add(&self.owner, wanted).map_err(refused)?;
+                let added = schedules.add(wanted).map_err(refused)?;
                 Ok(ScheduleAnswer::Created(shown(&added)))
             }
             ScheduleAsk::Delete { id } => {
@@ -85,7 +83,7 @@ impl Port {
                     .find(|one| one.id == id)
                     .ok_or(ScheduleRefused::NotFound)?;
                 let gone = shown(one);
-                schedules.cancel(&self.owner, &id).map_err(refused)?;
+                schedules.cancel(&id).map_err(refused)?;
                 Ok(ScheduleAnswer::Deleted(gone))
             }
             ScheduleAsk::List => Ok(ScheduleAnswer::Listed(
@@ -99,15 +97,13 @@ impl Port {
                 )
                 .ok_or(ScheduleRefused::Unavailable)?;
                 let woken = schedules
-                    .set_next(&self.owner, &looping.id, Some(next), prompt)
+                    .set_next(&looping.id, Some(next), prompt)
                     .map_err(refused)?;
                 Ok(ScheduleAnswer::Woken(shown(&woken)))
             }
             ScheduleAsk::StopLoop => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
-                schedules
-                    .cancel(&self.owner, &looping.id)
-                    .map_err(refused)?;
+                schedules.cancel(&looping.id).map_err(refused)?;
                 Ok(ScheduleAnswer::LoopStopped)
             }
         }

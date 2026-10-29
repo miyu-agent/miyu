@@ -53,14 +53,13 @@ async fn others_session(core: &Arc<Core>, caller: &Caller, request: &Request) ->
     }
     let id = request.params.get("session")?.as_str()?;
     let id = SessionId::parse(id).ok()?;
-    let owner = match core.sessions.loaded(&id).await {
-        Some(handle) => handle.owner().clone(),
-        None => core.sessions.owner(core, &id).await?,
-    };
+    if core.sessions.loaded(&id).await.is_none() && !core.sessions.exists(core, &id).await {
+        return None;
+    }
     let (venue, confined) = crate::sessions::placed(core, &id).await?;
     let reachable = match crate::venues::bridge(core, caller) {
         Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
-        None => owner == core.admin && (venue.as_str() == LOCAL || !confined),
+        None => venue.as_str() == LOCAL || !confined,
     };
     (!reachable).then_some(Refusal::NOT_FOUND)
 }

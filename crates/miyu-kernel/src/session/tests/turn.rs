@@ -119,7 +119,7 @@ fn a_message_during_the_turn_joins_it_without_opening_another() {
     assert_eq!(message.seq, seq(6));
     assert_eq!(message.turn, Some(turn3()));
     assert_eq!(message.cause, Some(id(2)));
-    assert_eq!(message.by, alice());
+    assert_eq!(message.by, person());
     let actions = session.handle(stored(6));
     assert_eq!(hooks(&actions), [turn3()], "挂接点只跑一次");
     assert_eq!(replies(&actions).len(), 2);

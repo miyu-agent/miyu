@@ -6,7 +6,7 @@ use super::*;
 fn forked(within: Option<u64>) -> Event {
     let within = within.map_or(String::new(), |turn| format!(r#","within":{turn}"#));
     event(&format!(
-        r#"{{"seq":6,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{{"kind":"kernel"}},"cause":"c1","body":{{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}},"parent":"0192f3a0-1111-7abc-8def-0123456789ab","depth":1,"forked":{{"from":"0192f3a0-1111-7abc-8def-0123456789ab","upto":5{within}}}}}}}"#
+        r#"{{"seq":6,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{{"kind":"kernel"}},"cause":"c1","body":{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}},"parent":"0192f3a0-1111-7abc-8def-0123456789ab","depth":1,"forked":{{"from":"0192f3a0-1111-7abc-8def-0123456789ab","upto":5{within}}}}}}}"#
     ))
 }
 

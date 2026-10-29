@@ -4,7 +4,6 @@
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_session::{Current, Goal, Handle};
 use miyu_view::Status;
 
@@ -50,13 +49,13 @@ pub(crate) fn whole(
         status["todos_done"] = json!(done);
     }
     if let Some(current) = current {
-        status["usage"] = crate::usage::tallied(core, handle.owner(), &current.tally);
+        status["usage"] = crate::usage::tallied(core, &current.tally);
         status["permission"] = json!(current.permission);
         status["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
         // 有没有能压的（施工 W-12）：每落一批盘重取「当前的」，变了跟着推。
         status["compactable"] = json!(current.compactable);
         if let Some(goal) = &current.goal {
-            status["goal"] = goal_of(core, handle.owner(), goal);
+            status["goal"] = goal_of(core, goal);
         }
     }
     // 中途换了的照向会话要的那一份（施工 P-13）；拿不到的照订阅时定下的。
@@ -85,14 +84,14 @@ pub(crate) fn whole(
 /// 会话状态的 `goal` 那一格（施工 X-6，`docs/blueprint/view.md`「会话状态」）：原文、上限（不限的不写）、状态、卡在哪（卡住的
 /// 才有）、第几轮、停过又接着跑了几次（施工 GOAL-1，0 也写）、设下的时刻、花了多少（写法同会话状态的 `usage`，币种照会话属主
 /// `owner` 的）。
-pub(crate) fn goal_of(core: &Core, owner: &AccountId, goal: &Goal) -> Value {
+pub(crate) fn goal_of(core: &Core, goal: &Goal) -> Value {
     let mut shown = json!({
         "text": goal.text,
         "state": goal.state.as_str(),
         "round": goal.round,
         "resumes": goal.resumes,
         "since": goal.since,
-        "usage": crate::usage::tallied(core, owner, &goal.spent),
+        "usage": crate::usage::tallied(core, &goal.spent),
     });
     if let Some(limit) = goal.limit {
         shown["limit"] = json!(limit.get());

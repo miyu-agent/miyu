@@ -59,7 +59,7 @@ fn a_subagent_message_reads_like_the_sample() {
 #[test]
 fn words_from_anyone_else_are_as_they_are() {
     let log = dispatched();
-    let alice: By = serde_json::from_str(r#"{"kind":"person","account":"alice"}"#).unwrap();
+    let alice: By = serde_json::from_str(r#"{"kind":"person"}"#).unwrap();
     let parent = by("01a0d75d-2180-7a3c-9e41-5b7d2c8f6a10");
     for sender in [alice, parent] {
         assert_eq!(
@@ -106,11 +106,7 @@ fn a_message_in_the_middle_of_a_turn_comes_after_the_results_of_that_step() {
 #[test]
 fn a_message_from_a_subagent_of_an_undone_turn_is_not_rendered() {
     let mut log = dispatched();
-    log.push(
-        r#"{"kind":"person","account":"alice"}"#,
-        "turn.reverted",
-        r#"{"turns":[3]}"#,
-    );
+    log.push(r#"{"kind":"person"}"#, "turn.reverted", r#"{"turns":[3]}"#);
     log.detached(&from(CHILD), "message.user", &words("改哪个？"));
     let whole = shape(&assembler().assemble(log.history()).messages).join("\n");
     assert!(!whole.contains("改哪个"), "{whole}");

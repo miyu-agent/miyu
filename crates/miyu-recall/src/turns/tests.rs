@@ -6,7 +6,7 @@ use miyu_kernel::time::Timestamp;
 
 use super::*;
 
-const ALICE: &str = r#"{"kind":"person","account":"admin"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 

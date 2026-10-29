@@ -93,7 +93,7 @@ fn cleared_she_starts_over_with_the_facts_and_what_is_said_next() {
     assert_eq!(
         story(&stage)[14..18],
         [
-            "15 message.user alice",
+            "15 message.user person",
             "16 turn.started kernel t16",
             "17 context.injected:env kernel t16",
             "18 context.injected:permission kernel t16",

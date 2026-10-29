@@ -118,7 +118,7 @@ fn a_report_while_busy_is_heard_at_the_next_step_and_opens_nothing() {
     assert_eq!(
         story(&s)[12..],
         [
-            "13 message.user alice",
+            "13 message.user person",
             "14 turn.started kernel t14",
             "15 message.assistant model t14",
             "16 model.called:ok kernel t14",
@@ -145,7 +145,7 @@ fn a_report_in_the_last_step_opens_the_next_turn() {
     assert_eq!(
         story(&s)[12..],
         [
-            "13 message.user alice",
+            "13 message.user person",
             "14 turn.started kernel t14",
             "15 child.reported child",
             "16 message.assistant model t14",
@@ -207,7 +207,7 @@ fn the_quiet_reports_only_record_and_the_next_turn_hears_them() {
         ..reported(2, JobReason::Stopped)
     };
     s.job_ends_with(starter(), None, stopped_by_her);
-    s.job_ends(3, JobReason::Undone, alice(), Some(id(7)));
+    s.job_ends(3, JobReason::Undone, person(), Some(id(7)));
     s.job_ends(4, JobReason::Restarted, By::Kernel, None);
     s.job_ends(5, JobReason::Aborted, By::Kernel, None);
     s.child_reports(1, CHILD, ChildReason::Undone, "");
@@ -267,7 +267,7 @@ fn a_person_stopping_a_subagent_still_wakes_her() {
     assert_eq!(trigger_of(&s, 14), Some(seq(13)), "被人停掉的照样开一轮");
     let mut s = dispatched(stage());
     s.model([Line::says("它被停了。")]);
-    s.job_ends(2, JobReason::Stopped, alice(), Some(id(9)));
+    s.job_ends(2, JobReason::Stopped, person(), Some(id(9)));
     assert_eq!(trigger_of(&s, 14), Some(seq(13)), "人停的后台命令也开");
 }
 

@@ -30,7 +30,7 @@ fn core_with(home: &Home, (official, extra): (&str, &str), keys: Vec<PublicKey>)
         &format!("[packages]\nsource = \"{official}\"\n{extra}"),
     );
     let items = [SourceSettings::ITEMS, SOURCE_FEEDS].concat();
-    let config = Config::load(&home.root, &alice(), None, items, Environment::of(&[]));
+    let config = Config::load(&home.root, None, items, Environment::of(&[]));
     Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_config(config)

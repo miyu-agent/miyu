@@ -7,7 +7,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, CommandId, ExternalId, VenueId};
+use miyu_kernel::id::{CommandId, ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 use miyu_store::index::Row;
 use miyu_tool::Stop;
@@ -92,12 +92,9 @@ pub(crate) struct AsParams {
     role: Option<Role>,
 }
 
-/// 平台身份 `id` 在主人对应表里是不是主人：是的交回主人的账号。
-pub(crate) fn bound(core: &Core, id: &ExternalId) -> Option<AccountId> {
-    owners_ids(core)
-        .iter()
-        .any(|one| one == id.as_str())
-        .then(|| core.admin.clone())
+/// 平台身份 `id` 在主人对应表里是不是主人。
+pub(crate) fn bound(core: &Core, id: &ExternalId) -> bool {
+    owners_ids(core).iter().any(|one| one == id.as_str())
 }
 
 /// 主人对应表里是主人的平台身份（施工 SU-1 补：只有一个主人，写了非空的字就是，值不再查是哪个账号；SU-3 改成只列平台身份）。
@@ -139,7 +136,7 @@ pub(crate) fn binding(
 ) -> Result<Value, Refusal> {
     bridge(core, caller).ok_or_else(bridge::refused)?;
     let id = ExternalId::parse(&params.id).map_err(|_| Refusal::BAD_PARAMS)?;
-    Ok(json!({"owner": bound(core, &id).is_some()}))
+    Ok(json!({"owner": bound(core, &id)}))
 }
 
 /// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」）。会话都在主人名下（施工 SU-4 中）；
@@ -165,19 +162,17 @@ pub(crate) async fn session(
         (Kind::Group, Some(recent @ 1..=RECENT_MOST)) => Some(recent),
         _ => return Err(Refusal::bad_field("recent")),
     };
-    let confined = peer.as_ref().and_then(|peer| bound(core, peer)).is_none();
+    let confined = !peer.as_ref().is_some_and(|peer| bound(core, peer));
     // 主人本人的私聊（对应表认出来的）主人这边的连接也开得了（同原来）；群、陌生人的私聊只有平台桥开。
     if confined {
         bridge(core, caller).ok_or_else(bridge::refused)?;
     }
-    let owner = core.admin.clone();
     // 同一个场所同时来两次：一个找、一个造，排着来，免得造出两个主线会话。
     let _one_at_a_time = core.venues.lock().await;
     if let Some(found) = find(core, &venue, confined).await? {
         return Ok(json!({"session": found.as_str(), "created": false}));
     }
     let who = Opening {
-        owner: owner.clone(),
         attended: false,
         oneshot: false,
         model: None,
@@ -215,7 +210,7 @@ async fn find(
     confined: bool,
 ) -> Result<Option<miyu_kernel::id::SessionId>, Refusal> {
     let venue = venue.as_str().to_string();
-    for listed in mains(core, &core.admin, move |row| row.venue == venue, None).await? {
+    for listed in mains(core, move |row| row.venue == venue, None).await? {
         if crate::sessions::confined_of(core, &listed.id).await == confined {
             return Ok(Some(listed.id));
         }
@@ -227,12 +222,11 @@ async fn find(
 /// 读法。
 async fn mains(
     core: &Arc<Core>,
-    owner: &AccountId,
     pick: impl Fn(&Row) -> bool + Send + 'static,
     limit: Option<usize>,
 ) -> Result<Vec<Listed>, Refusal> {
     let root = core.root.clone();
-    let index = core.index_for(owner);
+    let index = core.index();
     let found = tokio::task::spawn_blocking(move || {
         let pick = |row: &Row| row.parent.is_none() && pick(row);
         scan(
@@ -256,25 +250,23 @@ async fn mains(
 }
 
 /// `session.send` 的 `as` 记成谁（`venues.md`「`session.send` 的 `as`」）：场所会话 `handle`。没关起来的（主人本人的私聊）里对应表
-/// 认出的号是本人（带 `via`）；关起来的（群、陌生人的私聊，施工 SU-4 中起也在主人名下）里照旧是外部身份，对应表里有的另记账号：
-/// 主人在群里说话不当本人，不给主人才有的那些。
+/// 认出的号是本人（带 `via`）；关起来的（群、陌生人的私聊，施工 SU-4 中起也在主人名下）里照旧是外部身份，对应表里有的记上
+/// `owner`：主人在群里说话不当本人，不给主人才有的那些。
 pub(crate) fn speaker(
     core: &Core,
     handle: &miyu_session::Handle,
     params: AsParams,
 ) -> Result<By, Refusal> {
-    let (venue, owner) = (handle.venue(), handle.owner());
+    let venue = handle.venue();
     let id = ExternalId::parse(&params.external).map_err(|_| Refusal::BAD_PARAMS)?;
-    let account = bound(core, &id);
-    if !handle.confined() && account.as_ref() == Some(owner) {
-        let mut person = Person::new(owner.clone());
-        person.via = Some(id);
-        return Ok(By::Person(person));
+    let owner = bound(core, &id);
+    if !handle.confined() && owner {
+        return Ok(By::Person(Person { via: Some(id) }));
     }
     Ok(By::External(External {
         venue: venue.clone(),
         id,
-        account,
+        owner,
         role: Some(params.role.unwrap_or(Role::Member)),
     }))
 }

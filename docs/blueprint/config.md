@@ -587,7 +587,7 @@ miyu_config::settings! {
 样本 `docs/designs/samples/journal/config.changed.jsonl`（一行，文件里 `seq` 从 1 数起；`endpoint` 的 `config/journal/tests.rs` 照它逐字节比）：
 
 ```json
-{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"person","account":"admin"},"cause":"config-9f2c4e1a7b3d5f60-1","body":{"layer":"system","file":"config.toml","via":"set","changes":[{"key":"ui.language","old":"en","new":"zh"}]}}
+{"seq":1,"at":"2026-10-01T08:00:00.000Z","kind":"config.changed","by":{"kind":"person"},"cause":"config-9f2c4e1a7b3d5f60-1","body":{"layer":"system","file":"config.toml","via":"set","changes":[{"key":"ui.language","old":"en","new":"zh"}]}}
 ```
 
 - `body` 的格照这个先后：`layer`、`file`、`via`（`set`、`edit`、`file`）、`changes`。
@@ -599,7 +599,7 @@ miyu_config::settings! {
 样本 `docs/designs/samples/journal/secret.changed.jsonl`（`endpoint` 的 `secrets/tests.rs` 照它逐字节比）：
 
 ```json
-{"seq":1,"at":"2026-10-01T08:01:00.000Z","kind":"secret.changed","by":{"kind":"person","account":"admin"},"cause":"secret-9f2c4e1a7b3d5f60-1","body":{"name":"deepseek","action":"set","via":"set"}}
+{"seq":1,"at":"2026-10-01T08:01:00.000Z","kind":"secret.changed","by":{"kind":"person"},"cause":"secret-9f2c4e1a7b3d5f60-1","body":{"name":"deepseek","action":"set","via":"set"}}
 ```
 
 - `body` 的格照这个先后：`name`、`action`、`via`。`action`：`set` 新设、`replaced` 换掉、`deleted` 删掉。`via`：`set`（经 `secret.set`、`secret.delete`）、`file`（手改被看到的，`by` 是内核、没有 `cause`）。手改一次变了几个名字的，照名字的先后一个一条。
@@ -610,7 +610,7 @@ miyu_config::settings! {
 样本 `docs/designs/samples/journal/trust.changed.jsonl`：
 
 ```json
-{"seq":1,"at":"2026-10-01T08:02:00.000Z","kind":"trust.changed","by":{"kind":"person","account":"admin"},"cause":"config-9f2c4e1a7b3d5f60-2","body":{"path":"~/src/app","version":"sha256:…","trusted":true}}
+{"seq":1,"at":"2026-10-01T08:02:00.000Z","kind":"trust.changed","by":{"kind":"person"},"cause":"config-9f2c4e1a7b3d5f60-2","body":{"path":"~/src/app","version":"sha256:…","trusted":true}}
 ```
 
 - `path`：仓库在哪（`.miyu` 所在的那一层），写法同 `trust.toml`。`version`：信任、不信任的是哪一份。`trusted`：信不信任。手改 `trust.toml` 被看到的，照 `config.changed` 的规矩多一格 `via`（`file`），`by` 是内核。

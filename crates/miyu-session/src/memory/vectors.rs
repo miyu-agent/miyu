@@ -15,7 +15,6 @@ use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
-use miyu_kernel::id::AccountId;
 use miyu_models::settings::UseSettings;
 use miyu_store::memory::MemoryLog;
 use miyu_store::recall::RecallIndex;
@@ -49,8 +48,6 @@ const OFF: &str = "off";
 pub struct Using {
     /// 照它的 `models.embedding` 挑哪一路，远程的照它取地址、key。
     pub config: TurnConfig,
-    /// 远程的用量记在谁名下：会话的属主，协议是连上来的那个账号。
-    pub owner: AccountId,
 }
 
 /// 问句的向量：哪个模型算的、向量。
@@ -169,7 +166,6 @@ impl Vectors {
                 let remote = Remote {
                     data: Arc::clone(&self.data),
                     config: Arc::clone(&using.config),
-                    owner: using.owner.clone(),
                     provider: provider.to_string(),
                     model: model.to_string(),
                 };

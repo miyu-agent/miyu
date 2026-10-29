@@ -120,7 +120,7 @@ fn the_third_failed_compaction_in_a_row_pauses_before_the_turn_ends() {
     assert_eq!(
         since(&stage, from),
         [
-            format!("{} message.user alice", from + 1),
+            format!("{} message.user person", from + 1),
             format!("{turn} turn.started kernel t{turn}"),
             format!("{} model.called:error kernel t{turn}", from + 3),
             format!("{} context.compaction_paused kernel t{turn}", from + 4),
@@ -385,7 +385,7 @@ fn compacting_again_within_three_turns_counts_up_and_the_third_time_pauses() {
     assert_eq!(
         since(&stage, from),
         [
-            format!("{} message.user alice", from + 1),
+            format!("{} message.user person", from + 1),
             format!("{turn} turn.started kernel t{turn}"),
             format!("{} context.compaction_paused kernel t{turn}", from + 3),
             format!("{} message.assistant model t{turn}", from + 4),

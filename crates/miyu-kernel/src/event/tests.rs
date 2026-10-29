@@ -3,11 +3,10 @@
 
 use super::*;
 use crate::block::{Block, Text};
-use crate::id::AccountId;
 use crate::origin::Person;
 use crate::test_support::rejected;
 
-const USER: &str = r#"{"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-7f3a","body":{"blocks":[{"type":"text","text":"看看 src 目录"}]}}"#;
+const USER: &str = r#"{"seq":41,"at":"2026-09-25T07:04:05.123Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-7f3a","body":{"blocks":[{"type":"text","text":"看看 src 目录"}]}}"#;
 const UNKNOWN: &str = r#"{"seq":43,"at":"2026-09-25T07:04:05.456Z","kind":"ext.memory.recalled","turn":42,"by":{"kind":"module","id":"memory"},"body":{"hits":[{"id":"m1","score":0.87}]}}"#;
 
 #[test]
@@ -51,7 +50,7 @@ fn fields_are_written_in_the_drawing_order() {
         seq: Seq::new(41).unwrap(),
         at: Timestamp::parse("2026-09-25T07:04:05.123Z").unwrap(),
         turn: None,
-        by: By::Person(Person::new(AccountId::parse("alice").unwrap())),
+        by: By::Person(Person::default()),
         cause: Some(CommandId::parse("cmd-7f3a").unwrap()),
         body: Body::MessageUser(MessageUser {
             blocks: vec![Block::Text(Text {

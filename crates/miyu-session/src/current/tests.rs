@@ -72,7 +72,7 @@ fn compactions_are_counted_and_only_unexpected_cache_breaks() {
         r#"{"seq":6,"at":"2026-10-08T01:00:00.000Z","kind":"context.compacted","by":{"kind":"kernel"},"body":{"upto":5,"summary":"s"}}"#,
     );
     let reverted = event(
-        r#"{"seq":16,"at":"2026-10-08T01:00:00.000Z","kind":"turn.reverted","by":{"kind":"person","account":"alice"},"body":{"turns":[12]}}"#,
+        r#"{"seq":16,"at":"2026-10-08T01:00:00.000Z","kind":"turn.reverted","by":{"kind":"person"},"body":{"turns":[12]}}"#,
     );
     let events = [
         called(3, ""),

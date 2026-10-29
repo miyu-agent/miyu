@@ -7,7 +7,7 @@ use super::*;
 fn event(seq: u64, kind: &str, turn: u64) -> Event {
     let line = match kind {
         "said" => format!(
-            r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"alice"}},"body":{{"blocks":[{{"type":"text","text":"hi"}}]}}}}"#
+            r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"body":{{"blocks":[{{"type":"text","text":"hi"}}]}}}}"#
         ),
         "start" => format!(
             r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"turn.started","turn":{seq},"by":{{"kind":"kernel"}},"body":{{"trigger":{}}}}}"#,
@@ -26,7 +26,7 @@ fn event(seq: u64, kind: &str, turn: u64) -> Event {
             r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"job.reported","by":{{"kind":"tool","call_id":"call_4_1"}},"body":{{"job":"j1","reason":"exited","exit_code":0}}}}"#
         ),
         _ => format!(
-            r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person","account":"alice"}},"body":{{"title":"t"}}}}"#
+            r#"{{"seq":{seq},"at":"2026-10-08T01:00:00.000Z","kind":"session.meta_changed","by":{{"kind":"person"}},"body":{{"title":"t"}}}}"#
         ),
     };
     Event::from_line(&line).expect("合写法")

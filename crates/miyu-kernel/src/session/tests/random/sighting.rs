@@ -37,7 +37,7 @@ pub(super) fn some_sight(rng: &mut Rng, watch: &Watch, ids: &mut u64) -> Option<
             let n = next_command(ids);
             Some(Input::Command(Received {
                 id: CommandId::parse(&format!("sight-{n}")).unwrap(),
-                by: alice(),
+                by: person(),
                 at: at(31),
                 command: Command::Send {
                     blocks: vec![

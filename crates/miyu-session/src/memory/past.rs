@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::id::{AccountId, Seq, SessionId, TurnId, VenueId};
+use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::time::Timestamp;
 use miyu_recall::fuse_above;
 use miyu_store::recall::Origin;
@@ -19,7 +19,7 @@ impl Keeper {
     /// 这个场所的）。照关键词找；有问句的向量 `near` 的（施工 R-5 下）再照意思找，两路照名次合。下限照模型（施工 R-20，
     /// `docs/blueprint/recall.md` 第三条第 3 款）：只照意思找到的照 `core/memory/turns.toml`（表里没有的 0.40），只照关键词找到的
     /// 和问句不够像的照记忆搜那张 `core/memory/search.toml` 不要（表里没有的不设，还没补上向量的照留）。每一段带上那个会话在哪个
-    /// 场所、属主是 `asker` 的会话打不打得开它（施工 E-6，没有 `asker` 的一律打不开）。
+    /// 场所、`asking`（是会话里她在搜）的打不打得开它（施工 E-6，不是的一律打不开）。
     ///
     /// # Errors
     ///
@@ -28,7 +28,7 @@ impl Keeper {
         &self,
         query: &str,
         limit: usize,
-        (seen, asker): (Option<(&SessionId, Option<Seq>)>, Option<&AccountId>),
+        (seen, asking): (Option<(&SessionId, Option<Seq>)>, bool),
         near: Option<&Query>,
     ) -> Result<Vec<FoundTurn>, String> {
         self.memory.settle();
@@ -90,7 +90,7 @@ impl Keeper {
                 let venue = places
                     .get(session)
                     .and_then(|venue| VenueId::parse(venue).ok());
-                let opens = asker.is_some_and(|asker| opens(asker, origins.get(session), &venue));
+                let opens = asking && opens(origins.get(session), &venue);
                 Some(FoundTurn {
                     session: SessionId::parse(session).ok()?,
                     turn: TurnId::new(turn),
@@ -110,12 +110,12 @@ fn replaced(turn: &str, after: Option<Seq>) -> bool {
     after.is_some_and(|after| turn.parse::<u64>().is_ok_and(|turn| turn <= after.get()))
 }
 
-/// 属主是 `asker` 的会话打不打得开这一段的会话（施工 E-6）：同 `history` 认编号的那一批（`SessionsPort::list`：属主一样的主
-/// 会话）。回合库记着从哪来的照它判；没记过的（接上回合索引以前的库、还没载入过的会话）照场所判：场所会话打不开，本机的当是
+/// 打不打得开这一段的会话（施工 E-6）：同 `history` 认编号的那一批（`SessionsPort::list`：本机的主会话，场所会话不列）。回合库
+/// 记着从哪来的照它判，在场所里的打不开；没记过的（接上回合索引以前的库、还没载入过的会话）照场所判：场所会话打不开，本机的当是
 /// 自己的主会话（原来的样子）。问的会话自己读不了别的会话的（群），工具照旧不给编号（`miyu-memory` 的 `search.rs`）。
-fn opens(asker: &AccountId, origin: Option<&Origin>, venue: &Option<VenueId>) -> bool {
+fn opens(origin: Option<&Origin>, venue: &Option<VenueId>) -> bool {
     match origin {
-        Some(origin) => origin.main && origin.owner == asker.as_str(),
+        Some(origin) => origin.main && venue.is_none(),
         None => venue.is_none(),
     }
 }

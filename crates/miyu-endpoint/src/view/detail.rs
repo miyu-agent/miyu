@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{Body, Effect, Event};
-use miyu_kernel::id::{AccountId, CallId, JobId, Parent, SessionId};
+use miyu_kernel::id::{CallId, JobId, Parent, SessionId};
 use miyu_store::blob::Blobs;
 use miyu_view::NestedItem;
 
@@ -54,16 +54,8 @@ pub(crate) async fn detail(
         }
         (None, Some(job), None) => {
             let job = JobId::parse(&job).map_err(|_| Refusal::BAD_PARAMS)?;
-            let (owner, events) = super::events_of(core, &session).await?;
-            let nested = nested(
-                core,
-                peer,
-                (&session, &owner),
-                &events,
-                Parent::Job(job),
-                after,
-            )
-            .await?;
+            let events = super::events_of(core, &session).await?;
+            let nested = nested(core, peer, &session, &events, Parent::Job(job), after).await?;
             Ok(json!({ "nested": nested }))
         }
         (None, None, Some(upto)) => compaction(core, &session, upto).await,
@@ -79,16 +71,8 @@ async fn call_detail(
     call: CallId,
     after: Option<u32>,
 ) -> Result<Value, Refusal> {
-    let (owner, events) = super::events_of(core, session).await?;
-    let nested = nested(
-        core,
-        peer,
-        (session, &owner),
-        &events,
-        Parent::Call(call),
-        after,
-    )
-    .await?;
+    let events = super::events_of(core, session).await?;
+    let nested = nested(core, peer, session, &events, Parent::Call(call), after).await?;
     let result = events.into_iter().rev().find_map(|event| match event.body {
         Body::ToolResult(result) if result.call_id == call => Some(result),
         _ => None,
@@ -122,7 +106,7 @@ async fn call_detail(
 async fn nested(
     core: &Core,
     peer: Peer,
-    (session, owner): (&SessionId, &AccountId),
+    session: &SessionId,
     events: &[Event],
     parent: Parent,
     after: Option<u32>,
@@ -145,7 +129,7 @@ async fn nested(
     // 读字碰磁盘，同 `view.page` 拿到阻塞线程里。
     let (resources, titles, language) = (
         core.resources.clone(),
-        super::Titles::of(core, owner),
+        super::Titles::of(core),
         peer.language,
     );
     let texts = tokio::task::spawn_blocking(move || super::texts(&resources, language, &titles))
@@ -156,7 +140,7 @@ async fn nested(
 
 /// 一次压缩：替代到 `upto` 的那个检查点的摘要原文。没有的照没有这次调用拒。
 async fn compaction(core: &Core, session: &SessionId, upto: u64) -> Result<Value, Refusal> {
-    let (_, events) = super::events_of(core, session).await?;
+    let events = super::events_of(core, session).await?;
     let summary = events
         .into_iter()
         .rev()

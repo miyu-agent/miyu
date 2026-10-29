@@ -52,7 +52,6 @@ use std::sync::Arc;
 
 use miyu_config::merge::{Layers, Resolved, Trust, merge};
 use miyu_config::{Item, Layer};
-use miyu_kernel::id::AccountId;
 use miyu_session::ModelData;
 use miyu_store::root::DataRoot;
 
@@ -113,8 +112,6 @@ fn secrets_path(root: &DataRoot) -> PathBuf {
 /// 核心自己写的几份文件在哪：信任的记录、日志（施工 8-3；施工 SU-5 上起系统日志、账号日志并成一份）。
 #[derive(Debug, Clone)]
 pub(crate) struct Places {
-    /// 账号：日志里记是谁改的。
-    pub(crate) account: AccountId,
     /// `trust.toml`。
     trust: PathBuf,
     /// 日志 `journal.jsonl`。
@@ -122,9 +119,8 @@ pub(crate) struct Places {
 }
 
 impl Places {
-    fn of(root: &DataRoot, account: &AccountId) -> Places {
+    fn of(root: &DataRoot) -> Places {
         Places {
-            account: account.clone(),
             trust: root.path().join(trust::FILE),
             journal: root.path().join(miyu_store::journal::FILE),
         }
@@ -159,7 +155,6 @@ impl Config {
     /// 认，带 `env` 的项照 `environment` 读环境变量（只读这一次），`{ env = … }` 也照它。`home` 是系统的家目录。
     pub fn load(
         root: &DataRoot,
-        account: &AccountId,
         home: Option<&Path>,
         items: Vec<Item>,
         environment: Environment,
@@ -187,31 +182,22 @@ impl Config {
         }
         let secrets = SecretsFile::read(&secrets_path(root), SECRETS);
         crate::secrets::told(&secrets);
-        let mut config = Config::assemble(root, account, home, items, env, system, trust);
+        let mut config = Config::assemble(root, home, items, env, system, trust);
         config.environment = environment;
         config.secrets = secrets;
         config
     }
 
     /// 什么都没读：全是默认值（核心不给配置的时候，例如协议端点的测试）。
-    pub fn defaults(root: &DataRoot, account: &AccountId, items: Vec<Item>) -> Config {
+    pub fn defaults(root: &DataRoot, items: Vec<Item>) -> Config {
         let (path, shown) = system_at(root);
         let system = File::nothing(Layer::System, &path, &shown);
-        Config::assemble(
-            root,
-            account,
-            None,
-            items,
-            BTreeMap::new(),
-            system,
-            Vec::new(),
-        )
+        Config::assemble(root, None, items, BTreeMap::new(), system, Vec::new())
     }
 
     /// 起来时读的、默认的两条路共用。
     fn assemble(
         root: &DataRoot,
-        account: &AccountId,
         home: Option<&Path>,
         items: Vec<Item>,
         env: BTreeMap<&'static str, String>,
@@ -228,7 +214,7 @@ impl Config {
             trust,
             environment: Environment::of(&[]),
             secrets: SecretsFile::nothing(&secrets_path(root), SECRETS),
-            places: Places::of(root, account),
+            places: Places::of(root),
             resolved: Resolved::default(),
             models: None,
         };

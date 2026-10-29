@@ -20,7 +20,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::index::Row;
 use miyu_store::terminal::{self, Keyed, Pointer, Pointers};
@@ -65,7 +65,6 @@ pub(crate) struct SetParams {
 pub(crate) async fn get(
     core: &Arc<Core>,
     peer: Peer,
-    account: &AccountId,
     request: &Request,
     params: TerminalParams,
 ) -> Result<Value, Refusal> {
@@ -78,12 +77,12 @@ pub(crate) async fn get(
     let path = core.root.path().join(terminal::FILE);
     let (mut pointers, version) = read(&path)?;
     let pointer = current(&pointers, key.as_deref());
-    let settings = TerminalSettings::from(&core.mine(account).config().resolved().values());
+    let settings = TerminalSettings::from(&core.mine().config().resolved().values());
     let pointed = pointer
         .session
         .as_deref()
         .and_then(|id| SessionId::parse(id).ok())
-        .and_then(|id| row(core, account, &id));
+        .and_then(|id| row(core, &id));
     let renewed = match &pointed {
         _ if params.fresh => None,
         Some(row) if !idle(touched(row, &pointer), settings.idle_new_after, now()) => {
@@ -101,7 +100,6 @@ pub(crate) async fn get(
         return Ok(json!({"session": null}));
     }
     let who = Opening {
-        owner: account.clone(),
         attended: peer.input,
         oneshot: false,
         model: None,
@@ -137,14 +135,10 @@ pub(crate) async fn get(
 }
 
 /// `session.set_terminal`：见模块的说明。回应 `{"session"}`。
-pub(crate) async fn set(
-    core: &Arc<Core>,
-    account: &AccountId,
-    params: SetParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn set(core: &Arc<Core>, params: SetParams) -> Result<Value, Refusal> {
     let id = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
     let key = key(params.terminal)?;
-    if row(core, account, &id).is_none() {
+    if row(core, &id).is_none() {
         return Err(Refusal::NOT_FOUND);
     }
     let _one = core.terminal.lock().await;
@@ -233,13 +227,12 @@ fn read(path: &std::path::Path) -> Result<(Pointers, Option<String>), Refusal> {
     }
 }
 
-/// 会话列表里 `id` 那一行，是 `account` 自己的、本机的、主会话（不是子会话、不是一次性的）才算：删了的、别人的、场所会话、
-/// 子会话都没有。
-fn row(core: &Core, account: &AccountId, id: &SessionId) -> Option<Row> {
-    let rows = core.index_for(account).rows().ok()?;
-    rows.get(id).cloned().filter(|row| {
-        row.owner == *account && row.venue == LOCAL && row.parent.is_none() && !row.oneshot
-    })
+/// 会话列表里 `id` 那一行，是本机的、主会话（不是子会话、不是一次性的）才算：删了的、场所会话、子会话都没有。
+fn row(core: &Core, id: &SessionId) -> Option<Row> {
+    let rows = core.index().rows().ok()?;
+    rows.get(id)
+        .cloned()
+        .filter(|row| row.venue == LOCAL && row.parent.is_none() && !row.oneshot)
 }
 
 /// 上一次动静 `last` 到 `now` 超过 `minutes` 分钟了没有：0 是不换。

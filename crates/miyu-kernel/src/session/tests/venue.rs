@@ -24,11 +24,11 @@ fn venue(msg: &str, ambient: bool) -> VenueMessage {
     }
 }
 
-/// 编号是 `n` 的命令：alice 发一条带 `venue` 的话。
+/// 编号是 `n` 的命令：主人发一条带 `venue` 的话。
 fn said(n: u64, words: &str, venue: VenueMessage) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Send {
             blocks: vec![Block::Text(Text {
@@ -44,7 +44,7 @@ fn said(n: u64, words: &str, venue: VenueMessage) -> Input {
 fn append(n: u64, appended: Appended) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Append { event: appended },
     })
@@ -157,7 +157,7 @@ fn the_history_knows_its_own_session() {
 fn bare(n: u64, venue: VenueMessage) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Send {
             blocks: Vec::new(),

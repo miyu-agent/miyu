@@ -5,7 +5,7 @@
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::VenueMessage;
-use miyu_kernel::id::{AccountId, ExternalId, Seq, VenueId};
+use miyu_kernel::id::{ExternalId, Seq, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 use miyu_kernel::request::{Message, Request};
 use miyu_kernel::session::Command;
@@ -19,13 +19,8 @@ use crate::support::extracting::*;
 use crate::support::meaning::{catalog, chat};
 use crate::support::*;
 
-/// 记忆归的那个账号：就是会话的属主 alice（施工 SU-4 中起场所会话也归主人，群里谁在听只照关不关）。
-fn admin() -> AccountId {
-    AccountId::parse("alice").expect("合写法")
-}
-
 fn room() -> Room {
-    Room::persona(&admin(), "engineer")
+    Room::persona("engineer")
 }
 
 fn place(n: u32) -> VenueId {
@@ -33,7 +28,7 @@ fn place(n: u32) -> VenueId {
 }
 
 fn owner() -> Listener {
-    Listener::Owner(By::Person(Person::new(admin())))
+    Listener::Owner(By::Person(Person::default()))
 }
 
 /// 在这一间记一条：`venue` 是在哪个场所说的。
@@ -83,14 +78,10 @@ fn stamp() -> Stamp {
 #[test]
 fn a_confined_session_is_a_place_and_anything_else_is_the_owner() {
     let local = VenueId::parse("local").expect("合写法");
-    assert_eq!(Listener::of(false, &admin(), &local), owner());
+    assert_eq!(Listener::of(false, &local), owner());
+    assert_eq!(Listener::of(false, &place(1)), owner(), "主人自己的私聊");
     assert_eq!(
-        Listener::of(false, &admin(), &place(1)),
-        owner(),
-        "主人自己的私聊"
-    );
-    assert_eq!(
-        Listener::of(true, &admin(), &place(1)),
+        Listener::of(true, &place(1)),
         Listener::Place(place(1)),
         "群、陌生人的私聊（施工 SU-4 中：属主也是主人）"
     );
@@ -180,7 +171,6 @@ async fn a_place_gets_the_digest_and_every_line() {
     let script = Script::new([Play::Says("好。")]);
     let lines = Lines {
         venue: place(1),
-        memory_account: admin(),
         confined: true,
         ..Lines::default()
     };
@@ -213,7 +203,6 @@ async fn a_merge_started_in_a_place_sees_everything() {
     let script = Script::new([Play::Says("好。"), Play::Says("嗯。")]);
     let lines = Lines {
         venue: place(1),
-        memory_account: admin(),
         confined: true,
         ..Lines::default()
     };
@@ -234,7 +223,7 @@ fn member() -> By {
     By::External(External {
         venue: place(1),
         id: ExternalId::parse("qq:20017").expect("合写法"),
-        account: None,
+        owner: false,
         role: Some(Role::Member),
     })
 }
@@ -264,7 +253,6 @@ async fn in_a_group_what_she_extracts_says_who_spoke_and_stays_in_that_group() {
     let lines = Lines {
         venue: place(1),
         group: true,
-        memory_account: admin(),
         confined: true,
         ..Lines::default()
     };
@@ -331,7 +319,6 @@ async fn past_turns_from_any_place_are_found_anywhere() {
         let lines = Lines {
             venue: place(n),
             group: true,
-            memory_account: admin(),
             confined: true,
             ..Lines::default()
         };
@@ -355,7 +342,7 @@ async fn past_turns_from_any_place_are_found_anywhere() {
     }
     let found = |listener: Listener| {
         let mut sessions: Vec<String> = Keeper::new(&home.memory, room(), listener)
-            .turns("日语", 10, (None, None), None)
+            .turns("日语", 10, (None, false), None)
             .expect("搜得了")
             .into_iter()
             .map(|turn| turn.session.to_string())
@@ -385,7 +372,6 @@ async fn in_a_group_everything_dropped_follows_the_slice() {
     let lines = Lines {
         venue: place(1),
         group: true,
-        memory_account: admin(),
         confined: true,
         ..Lines::default()
     };
@@ -441,7 +427,6 @@ async fn a_counted_group_extracts_only_that_many_lines_per_round() {
         venue: place(1),
         group: true,
         recent: Some(1),
-        memory_account: admin(),
         confined: true,
         ..Lines::default()
     };

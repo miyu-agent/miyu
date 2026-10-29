@@ -1,1 +1,1 @@
-{"seq":171,"at":"2026-10-28T09:12:00.000Z","kind":"package.state","by":{"kind":"person","account":"alice"},"cause":"core-41","body":{"package":"todowrite","state":{}}}
+{"seq":171,"at":"2026-10-28T09:12:00.000Z","kind":"package.state","by":{"kind":"person"},"cause":"core-41","body":{"package":"todowrite","state":{}}}

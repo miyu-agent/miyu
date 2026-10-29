@@ -31,15 +31,8 @@ pub struct Home {
 }
 
 impl Home {
-    /// 已经 OOBE 过的（机主叫 `admin`，[`owner`]）：大多数测试照它。
+    /// 一个新的临时数据根。
     pub fn new() -> Home {
-        let home = Home::bare();
-        owner(&home.root);
-        home
-    }
-
-    /// 还没 OOBE 的（施工 Y-12 中上）：核心起来只跑设置那一段。
-    pub fn bare() -> Home {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
         let dir =
@@ -249,21 +242,4 @@ pub fn offline(root: impl AsRef<Path>) -> [(&'static str, PathBuf); 3] {
         ("XDG_CACHE_HOME", cache.clone()),
         ("LOCALAPPDATA", cache),
     ]
-}
-
-/// 数据根 `root` 已经 OOBE 过（施工 Y-12 中上）：机主叫 `admin`，核心照他起，测试里「照管理员」的路径、断言都不用改；没有机主的
-/// 核心只跑设置那一段。密码是占位的整串，这里的测试不拿它登录。
-pub fn owner(root: &DataRoot) {
-    use miyu_store::accounts::{self, Account, Accounts};
-    let mut written = Accounts::default();
-    written.put(Account {
-        id: "admin".to_string(),
-        username: "admin".to_string(),
-        password: "$argon2id$v=19$m=19456,t=2,p=1$placeholder".to_string(),
-        changed: miyu_kernel::time::Timestamp::parse("2026-10-23T00:00:00.000Z").expect("合写法"),
-        created: None,
-        disabled: false,
-        owner: true,
-    });
-    accounts::write(&root.path().join(accounts::FILE), &written, None).expect("写得进");
 }

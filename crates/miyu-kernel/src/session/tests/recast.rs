@@ -7,11 +7,11 @@ use super::load::Logged;
 use super::*;
 use crate::event::{PolicyChanged, TurnStarted};
 
-/// 编号是 `n` 的命令：alice 换人格 `persona`（外层没有是不换）、预设 `preset`。
+/// 编号是 `n` 的命令：主人换人格 `persona`（外层没有是不换）、预设 `preset`。
 fn recast(n: u64, persona: Option<Option<&str>>, preset: Option<&str>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Recast {
             persona: persona.map(|persona| persona.map(str::to_string)),
@@ -34,7 +34,7 @@ fn a_change_is_recorded_then_compacted_and_answered_once_both_are_stored() {
             ..PolicyChanged::default()
         })
     );
-    assert_eq!((&events[0].by, &events[0].cause), (&alice(), &Some(id(3))));
+    assert_eq!((&events[0].by, &events[0].cause), (&person(), &Some(id(3))));
     assert!(
         matches!(
             &events[1].body,

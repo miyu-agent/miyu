@@ -20,11 +20,11 @@ fn review() -> TypedCommand {
     }
 }
 
-/// `n` 号命令：alice 敲的 `/review a.rs`，展开成 `expanded`。
+/// `n` 号命令：主人敲的 `/review a.rs`，展开成 `expanded`。
 fn typed(n: u64, expanded: &str) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n),
         command: Command::Typed {
             blocks: text(expanded),
@@ -37,7 +37,7 @@ fn typed(n: u64, expanded: &str) -> Input {
 fn redo(n: u64, words: Option<&str>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(56),
         command: Command::Redo {
             text: words.map(text),

@@ -53,8 +53,8 @@ fn the_first_turn_injects_the_session_id_after_the_env_and_the_permission() {
     assert_eq!(
         story(&stage)[..6],
         [
-            "1 session.created alice",
-            "2 message.user alice",
+            "1 session.created person",
+            "2 message.user person",
             "3 turn.started kernel t3",
             "4 context.injected:env kernel t3",
             "5 context.injected:permission kernel t3",
@@ -105,7 +105,7 @@ fn after_a_compaction_it_is_injected_once_more() {
     assert_eq!(
         story(&stage)[9..],
         [
-            "10 message.user alice",
+            "10 message.user person",
             "11 turn.started kernel t11",
             "12 model.called:ok kernel t11",
             "13 context.compacted kernel t11",

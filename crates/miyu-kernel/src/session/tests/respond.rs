@@ -25,7 +25,7 @@ fn bridge() -> By {
 fn overheard(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Send {
             blocks: vec![Block::Text(Text {

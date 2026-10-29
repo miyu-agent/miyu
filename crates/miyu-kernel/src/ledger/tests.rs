@@ -16,7 +16,7 @@ mod seal;
 mod triggers;
 mod undo;
 
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 const SAID: &str = r#"{"blocks":[{"type":"text","text":"看看 src 目录"}]}"#;
 
 /// 拼一条事件：序号、所属回合、种类、`body`。外壳的其余几格用固定的写法。

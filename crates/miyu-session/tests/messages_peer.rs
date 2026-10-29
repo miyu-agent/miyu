@@ -6,7 +6,7 @@
 use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::support::{Home, Lines, Opening, ask, say};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Reason};
 use miyu_kernel::time::Timestamp;
@@ -103,11 +103,7 @@ impl SessionPort for Table {
     }
 
     /// 她能看到的唯一一个别的会话：`OTHER`。
-    fn sessions(
-        &self,
-        _owner: AccountId,
-        _stop: miyu_tool::Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>> {
+    fn sessions(&self, _stop: miyu_tool::Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         let other = MainSession {
             id: SessionId::parse(OTHER).expect("合写法"),
             title: String::new(),

@@ -1,1 +1,1 @@
-{"seq":163,"at":"2026-09-25T22:05:30.000Z","kind":"goal.changed","by":{"kind":"person","account":"alice"},"cause":"cmd-9f11","body":{"text":"把 src/ 里的测试都修绿，再把改了什么写进 CHANGES.md"}}
+{"seq":163,"at":"2026-09-25T22:05:30.000Z","kind":"goal.changed","by":{"kind":"person"},"cause":"cmd-9f11","body":{"text":"把 src/ 里的测试都修绿，再把改了什么写进 CHANGES.md"}}

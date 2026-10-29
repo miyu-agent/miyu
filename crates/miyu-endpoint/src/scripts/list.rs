@@ -9,7 +9,6 @@
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::script::feature_id;
 use miyu_session::switches::on;
 use miyu_store::scripts::Script;
@@ -19,23 +18,13 @@ use crate::config::project::shown;
 use crate::hello::Peer;
 use crate::personas::pick;
 
-/// `script.list`：`{"scripts": [...], "dir"}`；`dir` 是调用者 `account` 自己放脚本的文件夹（施工 X-27 补；施工 Y-2 中上起照
-/// 连接的账号，原来是管理员的）。主人列的是登记进工具目录的那一份（照旧）；别的账号照它自己的家目录、系统区、包现找：工具目录
-/// 照属主叠自己的脚本另排一步（Y-2 中-脚本目录）。
-pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Value {
-    let values = core.mine(account).config().resolved().values();
+/// `script.list`：`{"scripts": [...], "dir"}`；`dir` 是你放脚本的文件夹（施工 X-27 补）。列的是登记进工具目录的那一份。
+pub(crate) async fn list(core: &Core, peer: Peer) -> Value {
+    let values = core.mine().config().resolved().values();
     let switches = miyu_session::switches::of(&values);
-    let packages = core.packages_of(account);
-    // 登记上的脚本本来照工具名排（`Core::scripts`）；现找的 `find` 也照工具名排。
-    let scripts: Vec<Script> = match *account == core.admin {
-        true => core.scripts().to_vec(),
-        false => {
-            let (packages, root) = (core.packages_of(account), core.root.clone());
-            tokio::task::spawn_blocking(move || miyu_store::scripts::find(&packages, &root).0)
-                .await
-                .unwrap_or_default()
-        }
-    };
+    let packages = core.packages_of();
+    // 登记上的脚本照工具名排（`Core::scripts`）。
+    let scripts: Vec<Script> = core.scripts().to_vec();
     let listed: Vec<Value> = scripts
         .iter()
         .map(|script: &Script| {

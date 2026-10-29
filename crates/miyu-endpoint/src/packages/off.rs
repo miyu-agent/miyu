@@ -5,14 +5,12 @@
 
 use std::collections::BTreeSet;
 
-use miyu_kernel::id::AccountId;
-
 use crate::Core;
 
 impl Core {
     /// 关了的包：照系统配置读（施工 SU-4 中起场所会话也在主人名下，一样照它）。
-    pub(crate) fn packages_off(&self, account: &AccountId) -> BTreeSet<String> {
-        let values = self.mine(account).config().resolved().values();
+    pub(crate) fn packages_off(&self) -> BTreeSet<String> {
+        let values = self.mine().config().resolved().values();
         miyu_session::packages_off::of(&values)
     }
 }

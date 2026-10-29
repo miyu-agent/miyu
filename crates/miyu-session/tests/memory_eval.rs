@@ -21,7 +21,7 @@ use crate::support::eval::{
 use crate::support::meaning::{
     embed_package, filled, model_data, persona, real_package, shipped_model,
 };
-use crate::support::{Home, alice, alice_account};
+use crate::support::{Home, alice};
 
 #[test]
 fn the_eval_set_is_well_formed() {
@@ -344,7 +344,6 @@ async fn measure_the_eval_set() {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
     keeper.fill(&using);
     for (id, key) in &keys {

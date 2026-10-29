@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, Mutex, PoisonError};
 
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -91,11 +91,7 @@ impl SessionPort for Table {
         Box::pin(async { Ok(miyu_session::Peek::default()) })
     }
 
-    fn sessions(
-        &self,
-        _owner: AccountId,
-        _stop: miyu_tool::Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>> {
+    fn sessions(&self, _stop: miyu_tool::Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         let other = MainSession {
             id: sid(OTHER),
             title: String::new(),

@@ -53,7 +53,7 @@ fn found(home: &Home, room: &Room, words: &str) -> Vec<String> {
 }
 
 fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 会话 `session` 的策略快照。
@@ -103,7 +103,7 @@ async fn an_off_session_has_no_tools_and_keeps_no_turns_even_after_loading() {
     for words in ["显卡", "内存"] {
         assert!(found(&home, &persona(), words).is_empty(), "{words}");
         assert!(
-            found(&home, &Room::session(&alice_account(), &id), words).is_empty(),
+            found(&home, &Room::session(&id), words).is_empty(),
             "{words}"
         );
     }
@@ -119,7 +119,7 @@ async fn a_session_scope_lives_in_its_own_directory() {
     chat(&first, "cmd-1", "我养了一只猫").await;
     assert!(has_memory_tools(&script), "session 的有三件");
     assert_eq!(snapshot(&home, &id).memory_scope(), MemoryScope::Session);
-    let room = Room::session(&alice_account(), &id);
+    let room = Room::session(&id);
     assert_eq!(found(&home, &room, "养了").len(), 1, "这一轮进会话那一间");
     assert!(
         found(&home, &persona(), "养了").is_empty(),
@@ -189,20 +189,15 @@ async fn a_child_is_off_whatever_it_was_given() {
 #[tokio::test]
 async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place() {
     let home = Home::new();
-    let admin = miyu_kernel::id::AccountId::parse("admin").expect("合写法");
     let remember = Play::calls(&[("remember", r#"{"class":"user","text":"用户爱喝茶"}"#)]);
     let script = Script::new([remember, Play::Says("记住了。")]);
     let lines = Lines {
-        memory_account: admin.clone(),
         confined: true,
         ..Lines::default()
     };
     let handle = session(&home, &script, lines).await;
     chat(&handle, "cmd-1", "我爱喝茶").await;
-    let (log, _) = home
-        .logs
-        .open(&Room::persona(&admin, "engineer"))
-        .expect("开得了");
+    let (log, _) = home.logs.open(&Room::persona("engineer")).expect("开得了");
     let entry = log
         .book(|book| book.all().next().cloned())
         .expect("记在记忆账号那一间");
@@ -212,8 +207,5 @@ async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place()
         Some("local"),
         "照这个场所记"
     );
-    assert_eq!(
-        found(&home, &Room::persona(&admin, "engineer"), "喝茶").len(),
-        1
-    );
+    assert_eq!(found(&home, &Room::persona("engineer"), "喝茶").len(), 1);
 }

@@ -13,8 +13,8 @@ mod texts;
 mod undo;
 mod whole;
 
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const GROUP_MEMBER: &str = r#"{"kind":"external","venue":"qq:group:123456","id":"qq:10086"}"#;

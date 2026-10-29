@@ -214,7 +214,7 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
         .collect();
     assert!(
         said.iter()
-            .all(|by| matches!(by, By::External(external) if external.account.is_none())),
+            .all(|by| matches!(by, By::External(external) if !external.owner)),
         "平台桥的群里不认机主自己写的号：{said:?}"
     );
     let (tools, off) = latest(&home, &got[2]);

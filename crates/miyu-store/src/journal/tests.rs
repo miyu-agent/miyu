@@ -3,7 +3,7 @@
 
 use std::fs;
 
-use miyu_kernel::id::{AccountId, CommandId, EventKind};
+use miyu_kernel::id::{CommandId, EventKind};
 use miyu_kernel::origin::{By, Person};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
@@ -15,7 +15,7 @@ use crate::test_support::Scratch;
 fn entry(n: u32) -> Entry {
     Entry {
         at: Timestamp::parse("2026-10-01T08:00:00.000Z").unwrap(),
-        by: By::Person(Person::new(AccountId::parse("admin").unwrap())),
+        by: By::Person(Person::default()),
         cause: Some(CommandId::parse(&format!("config-9f2c4e1a7b3d5f60-{n}")).unwrap()),
         kind: EventKind::parse("config.changed").unwrap(),
         body: serde_json::from_str::<RawJson>(&format!("{{\"n\":{n}}}")).unwrap(),
@@ -39,8 +39,8 @@ fn entries_are_counted_from_one_and_written_like_events() {
     assert_eq!(
         lines(&path),
         [
-            "{\"seq\":1,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\",\"account\":\"admin\"},\"cause\":\"config-9f2c4e1a7b3d5f60-1\",\"body\":{\"n\":1}}",
-            "{\"seq\":2,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\",\"account\":\"admin\"},\"cause\":\"config-9f2c4e1a7b3d5f60-2\",\"body\":{\"n\":2}}",
+            "{\"seq\":1,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\"},\"cause\":\"config-9f2c4e1a7b3d5f60-1\",\"body\":{\"n\":1}}",
+            "{\"seq\":2,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\"},\"cause\":\"config-9f2c4e1a7b3d5f60-2\",\"body\":{\"n\":2}}",
         ]
     );
     let seen = Event::from_line(&lines(&path)[0]).unwrap();
@@ -63,7 +63,7 @@ fn a_half_written_last_line_is_cut_and_the_count_goes_on() {
     assert_eq!(lines.len(), 2);
     assert_eq!(
         lines[1],
-        "{\"seq\":2,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\",\"account\":\"admin\"},\"cause\":\"config-9f2c4e1a7b3d5f60-3\",\"body\":{\"n\":3}}",
+        "{\"seq\":2,\"at\":\"2026-10-01T08:00:00.000Z\",\"kind\":\"config.changed\",\"by\":{\"kind\":\"person\"},\"cause\":\"config-9f2c4e1a7b3d5f60-3\",\"body\":{\"n\":3}}",
         "半行截掉了，新的一行完整"
     );
 }

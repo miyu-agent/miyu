@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde_json::{Value, json};
 
-use crate::support::{Client, Home, alice};
+use crate::support::{Client, Home};
 use miyu_kernel::template::escape;
 use miyu_session::testkit::{Play, Script};
 
@@ -277,7 +277,6 @@ async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

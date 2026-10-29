@@ -134,7 +134,7 @@ async fn the_cores_own_write_is_pushed_once_and_before_the_reply() {
     assert_eq!(before.len(), 1, "先见推送、后见回应：{before:?}");
     let push = &before[0]["params"];
     assert_eq!(push["via"], "set");
-    assert_eq!(push["by"], json!({"kind": "person", "account": "alice"}));
+    assert_eq!(push["by"], json!({"kind": "person"}));
     assert_eq!(push["keys"], reply["result"]["keys"], "推的和回应的一样");
     assert_eq!(push["version"], reply["result"]["version"]);
     // 再手改另一份：监视照先后办，核心自己写的那一份要是重推了，会排在它前面。

@@ -35,7 +35,9 @@ impl Sessions {
         let mut open = self.open.lock().await;
         let running = open.running.get(id).map(|running| running.handle.clone());
         // 照属主的家目录办（施工 O-4 上）：哪个账号的家目录下都没有的是没有这个会话。
-        let owner = open.owner(core, id).await.ok_or(Refusal::NOT_FOUND)?;
+        if !open.exists(core, id).await {
+            return Err(Refusal::NOT_FOUND);
+        }
         let family = family(core, id, running.is_none()).await?;
         let parent = open.parent_of(core, id).await;
         if let Some(handle) = running {
@@ -66,10 +68,8 @@ impl Sessions {
         // 重发的造会话不再交回删了的会话。
         open.created
             .retain(|(_, session)| session != id && !family.contains(session));
-        let (root, account, at) = (core.root.clone(), owner, now());
-        // 回合库照记忆归谁找：系统账号的会话记在管理员名下（施工 O-4 下）。
-        let remembered = core.admin.clone();
-        let index = core.index_for(&account);
+        let (root, at) = (core.root.clone(), now());
+        let index = core.index();
         let (memory, recall) = (Arc::clone(&core.memory), Arc::clone(&core.memory.turns));
         let order: Vec<SessionId> = family.into_iter().rev().chain([id.clone()]).collect();
         let listing = Arc::clone(core);
@@ -82,11 +82,11 @@ impl Sessions {
                 // 挪走了才删那一行（施工 3-8 七补）：半路崩了，还在原处的照旧列得出来。
                 forget(&index, &session);
                 // 回合库里它的也拿掉（施工 R-2 上，`memory.md` 第一条第 7 款）：派生的，拿不掉只记一行，不挡删会话。
-                if let Err(error) = recall.forget_session(&remembered, &session) {
+                if let Err(error) = recall.forget_session(&session) {
                     tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "memory index not updated");
                 }
                 // 会话列表的推送（施工 9-5）：挪走一个报一个。
-                listing.listing.removed(&listing, session, account.clone());
+                listing.listing.removed(&listing, session);
                 Ok(())
             })
         })

@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::TypedCommand;
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::session::Command;
 use miyu_policy::slash::{expand, feature_id};
 use miyu_session::Handle;
@@ -30,8 +30,8 @@ use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
 /// 账号 `owner` 用得上的模板命令：家目录的、装了的包的，同名的先找到的赢，和登记表撞名的不算。照名字排。
-pub(crate) async fn found(core: &Core, owner: &AccountId) -> Vec<Template> {
-    let (packages, root) = (core.packages_of(owner), core.root.clone());
+pub(crate) async fn found(core: &Core) -> Vec<Template> {
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let found = tokio::task::spawn_blocking(move || slash::find(&packages, &root).0)
         .await
         .unwrap_or_default();
@@ -71,7 +71,7 @@ pub(super) async fn opened_by(
         return Ok(());
     };
     // 照会话的属主找（施工 Y-2 中上）。
-    let Ok(found) = crate::presets::resolve(core, handle.owner(), Some(&preset)).await else {
+    let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
         return Ok(());
     };
     if found.file.opens_in(feature, package) {
@@ -107,10 +107,10 @@ pub(super) async fn run(
         params.as_external.clone(),
     )?;
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
-    let template = found_named(core, handle.owner(), name).await;
+    let template = found_named(core, name).await;
     let own = matches!(&template, Some(own) if own.package.is_none());
     // 会话属主关了的包（施工 U23 末下）：它声明的命令、整页当没有。
-    let off = core.packages_off(handle.owner());
+    let off = core.packages_off();
     // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
     if !own
         && handle.venue().as_str() == LOCAL
@@ -128,7 +128,7 @@ pub(super) async fn run(
     };
     if template.is_none() && declared.is_none() {
         // 技能（施工 PT-2 下）：命令都没有这个名字的，照能点名用的技能认；停用、身份同模板命令（没有出厂值）。
-        let Some(skill) = skills::named(core, handle.owner(), name).await else {
+        let Some(skill) = skills::named(core, name).await else {
             return Err(Refusal::UNKNOWN_COMMAND);
         };
         match access(core, name, None) {
@@ -188,8 +188,8 @@ pub(super) async fn run(
 }
 
 /// 名字是 `name` 的那一条模板命令；没有的没有。
-async fn found_named(core: &Core, owner: &AccountId, name: &str) -> Option<Template> {
-    found(core, owner)
+async fn found_named(core: &Core, name: &str) -> Option<Template> {
+    found(core)
         .await
         .into_iter()
         .find(|template| template.name == name)

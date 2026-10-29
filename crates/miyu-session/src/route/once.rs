@@ -25,7 +25,6 @@ use miyu_http::Progress;
 use miyu_kernel::accumulate::{Delta, Kind};
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
-use miyu_kernel::id::AccountId;
 use miyu_kernel::request::{Message, Request};
 use miyu_models::pools::Member;
 use miyu_models::price::Tariff;
@@ -88,8 +87,6 @@ pub struct Ask {
     pub messages: Vec<Message>,
     /// 最多输出多少 token；没有的照供应商的默认。
     pub max_tokens: Option<u32>,
-    /// 谁付钱（施工 8-15）：`model.call` 是这个连接的账号，替看图是会话的属主。用量记在他的账号日志里。
-    pub owner: AccountId,
     /// 记账时挂哪个场所（施工 UC-2）：`model.call` 带了会话的是那个会话的场所；没有的不挂。
     pub venue: Option<String>,
 }
@@ -343,7 +340,6 @@ impl OneShot {
             .await;
             if let (true, Exchanged::Ended { usage, .. }) = (reply.sent(), &exchanged) {
                 let spent = Spent {
-                    owner: &ask.owner,
                     venue: ask.venue.as_deref(),
                     purpose: &ask.purpose,
                     target: &picked.choice.target,
@@ -382,7 +378,6 @@ impl OneShot {
 
 /// 发出去了的一次：记在谁的账上、用途、真发给的。
 struct Spent<'a> {
-    owner: &'a AccountId,
     venue: Option<&'a str>,
     purpose: &'a str,
     target: &'a Target,
@@ -404,10 +399,9 @@ impl Spent<'_> {
                 .and_then(|(tariff, usage)| tariff.cost(usage)),
             venue: self.venue.map(str::to_string),
         };
-        let owner = self.owner.clone();
         let purpose = self.purpose.to_string();
         blocking(move || {
-            if let Err(error) = ledger.one_shot(&owner, wall_now(), &call) {
+            if let Err(error) = ledger.one_shot(wall_now(), &call) {
                 tracing::warn!(target: TARGET, purpose = purpose.as_str(), error = %error, "usage not indexed");
             }
         })

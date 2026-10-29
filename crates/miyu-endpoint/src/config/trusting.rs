@@ -47,7 +47,7 @@ pub(crate) struct TrustParams {
 /// （施工 Y-2 下下中上）。
 pub(crate) fn trust(
     core: &Core,
-    (account, peer): (&miyu_kernel::id::AccountId, Peer),
+    peer: Peer,
     cause: &CommandId,
     params: TrustParams,
 ) -> Result<Value, Refusal> {
@@ -56,7 +56,7 @@ pub(crate) fn trust(
         tracing::warn!(target: TARGET, error = "no words for config/trust-header", "config words missing");
         return Err(Refusal::INTERNAL);
     };
-    let mine = core.mine(account);
+    let mine = core.mine();
     let mut config = mine.config();
     let Some(project) = config.project(&params.cwd) else {
         return Err(Refusal::NO_PROJECT_CONFIG);
@@ -121,7 +121,7 @@ fn done(config: &Config, cause: &CommandId, answer: &Answer<'_>) {
         trusted: answer.trusted,
         via: None,
     };
-    let by = By::Person(Person::new(config.places.account.clone()));
+    let by = By::Person(Person::default());
     journal::record(
         &config.places.journal,
         &config.places.shown(miyu_store::journal::FILE),

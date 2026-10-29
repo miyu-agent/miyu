@@ -6,7 +6,7 @@ use rusqlite::Row as SqlRow;
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, Dream, DreamEnded, Event};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
@@ -18,8 +18,6 @@ use crate::log::Mark;
 pub struct Row {
     /// 会话编号。
     pub id: SessionId,
-    /// 属主：`session.created` 的 `owner`。
-    pub owner: AccountId,
     /// 父会话：子会话才有。
     pub parent: Option<SessionId>,
     /// 一次性的：`miyu ask` 开的。
@@ -80,7 +78,6 @@ impl Row {
         };
         Some(Row {
             id,
-            owner: created.owner.clone(),
             parent: created.parent.clone(),
             oneshot: created.oneshot,
             title: String::new(),
@@ -185,57 +182,55 @@ impl Row {
     pub(super) fn from_sql(row: &SqlRow<'_>) -> Result<Row, IndexError> {
         let id: String = row.get(0)?;
         let bad = |what: &str| IndexError::Bad(format!("row {id}: {what}"));
-        let owner: String = row.get(1)?;
-        let parent: Option<String> = row.get(2)?;
+        let parent: Option<String> = row.get(1)?;
         let parent = match parent {
             Some(parent) => Some(SessionId::parse(&parent).map_err(|_| bad("parent"))?),
             None => None,
         };
         let millis = |at: i64| Timestamp::from_unix_millis(at).ok_or_else(|| bad("time"));
         let number = |n: i64| u64::try_from(n).map_err(|_| bad("mark"));
-        let next: i64 = row.get(11)?;
+        let next: i64 = row.get(10)?;
         Ok(Row {
             id: SessionId::parse(&id).map_err(|_| bad("id"))?,
-            owner: AccountId::parse(&owner).map_err(|_| bad("owner"))?,
             parent,
-            oneshot: row.get(3)?,
-            title: row.get(4)?,
-            pinned: row.get(5)?,
-            cwd: row.get(6)?,
-            created: millis(row.get(7)?)?,
-            last_active: millis(row.get(8)?)?,
+            oneshot: row.get(2)?,
+            title: row.get(3)?,
+            pinned: row.get(4)?,
+            cwd: row.get(5)?,
+            created: millis(row.get(6)?)?,
+            last_active: millis(row.get(7)?)?,
             mark: Mark {
-                segment: number(row.get(9)?)?,
-                bytes: number(row.get(10)?)?,
+                segment: number(row.get(8)?)?,
+                bytes: number(row.get(9)?)?,
                 next: miyu_kernel::id::Seq::new(number(next)?).ok_or_else(|| bad("mark"))?,
             },
-            preview: row.get(12)?,
-            venue: row.get(13)?,
-            persona: row.get(14)?,
-            preset: row.get(15)?,
-            named: row.get(16)?,
-            project: row.get(17)?,
-            tokens: u64::try_from(row.get::<_, i64>(18)?).map_err(|_| bad("tokens"))?,
+            preview: row.get(11)?,
+            venue: row.get(12)?,
+            persona: row.get(13)?,
+            preset: row.get(14)?,
+            named: row.get(15)?,
+            project: row.get(16)?,
+            tokens: u64::try_from(row.get::<_, i64>(17)?).map_err(|_| bad("tokens"))?,
             context: row
-                .get::<_, Option<i64>>(19)?
+                .get::<_, Option<i64>>(18)?
                 .map(|n| u64::try_from(n).map_err(|_| bad("context")))
                 .transpose()?,
-            context_model: row.get(20)?,
+            context_model: row.get(19)?,
             dream: row
-                .get::<_, Option<String>>(21)?
+                .get::<_, Option<String>>(20)?
                 .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream")))
                 .transpose()?,
-            origin: row.get(22)?,
-            forked: row.get::<_, i64>(23)? != 0,
+            origin: row.get(21)?,
+            forked: row.get::<_, i64>(22)? != 0,
             dream_result: row
-                .get::<_, Option<String>>(24)?
+                .get::<_, Option<String>>(23)?
                 .map(|text| serde_json::from_str(&text).map_err(|_| bad("dream_result")))
                 .transpose()?,
         })
     }
 
     /// 写进表里的几格，先后照 [`super::COLUMNS`]。数字超过 SQLite 的整数（`i64`）的报错：一段不会有那么长。
-    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 25], IndexError> {
+    pub(super) fn to_sql(&self) -> Result<[rusqlite::types::Value; 24], IndexError> {
         use rusqlite::types::Value;
         let number = |n: u64| {
             i64::try_from(n)
@@ -246,7 +241,6 @@ impl Row {
         let optional = |s: Option<&str>| s.map_or(Value::Null, text);
         Ok([
             text(self.id.as_str()),
-            text(self.owner.as_str()),
             optional(self.parent.as_ref().map(SessionId::as_str)),
             Value::Integer(i64::from(self.oneshot)),
             text(&self.title),

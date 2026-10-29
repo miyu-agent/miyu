@@ -179,7 +179,7 @@ fn interrupted_while_waiting_it_is_kept_for_the_next_line() {
     stage.say(&words(10));
     stage.interrupt(Queued::Return);
     assert!(
-        listed(&stage).ends_with("turn.ended:interrupted alice t15\n"),
+        listed(&stage).ends_with("turn.ended:interrupted person t15\n"),
         "{}",
         listed(&stage)
     );

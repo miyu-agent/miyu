@@ -67,11 +67,7 @@ enum KeyParam {
 
 /// `provider.test`：`config` 那一步给人看的话照 `peer` 的语言说。照这个连接的人那一份配置、他用得上的两份密钥（施工 Y-2
 /// 下下中中）：别人的 key、核心的环境变量他拿不到。
-pub(crate) async fn test(
-    core: &Core,
-    (account, peer): (&miyu_kernel::id::AccountId, Peer),
-    params: Value,
-) -> Result<Value, Refusal> {
+pub(crate) async fn test(core: &Core, peer: Peer, params: Value) -> Result<Value, Refusal> {
     let params: TestParams = serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?;
     if params.model.as_deref() == Some("") {
         return Err(Refusal::BAD_PARAMS);
@@ -87,7 +83,7 @@ pub(crate) async fn test(
     let model = params.model.as_deref();
     let probed = match (params.provider, params.candidate) {
         (Some(id), None) => {
-            let snapshot = snapshot(core, account);
+            let snapshot = snapshot(core);
             let values = snapshot.resolved.values();
             if !configured(&values).contains(&id) {
                 return Err(Refusal::UNKNOWN_PROVIDER);
@@ -105,7 +101,7 @@ pub(crate) async fn test(
             probe(&data, tried).await
         }
         (None, Some(written)) => {
-            let (candidate, key) = candidate(core, account, written);
+            let (candidate, key) = candidate(core, written);
             let id = candidate.id();
             let values = candidate.values();
             let reference = candidate.key.clone();
@@ -132,12 +128,8 @@ pub(crate) async fn test(
 
 /// 候选写成 [`Candidate`]，它的 key 先取好：`{value}` 的就是写的（照 `secret.set` 的规矩去掉前后空白，不收的当取不到），
 /// 别的照这一刻的密钥文件、核心的环境。
-fn candidate(
-    core: &Core,
-    account: &miyu_kernel::id::AccountId,
-    written: CandidateParams,
-) -> (Candidate, Option<Secret>) {
-    let mine = core.mine(account);
+fn candidate(core: &Core, written: CandidateParams) -> (Candidate, Option<Secret>) {
+    let mine = core.mine();
     let (key, value) = match written.key {
         None => (None, None),
         Some(KeyParam::Value(value)) => (Some(value_key()), Secret::new(&value).ok()),

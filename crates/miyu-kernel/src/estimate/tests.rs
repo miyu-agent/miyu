@@ -8,7 +8,7 @@ use crate::id::{CallId, ContentHash, DriverFamily, FileName, MediaType, ModelNam
 use crate::raw::RawJson;
 
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 
 /// 拼一条事件：序号、所属回合、由谁引起、种类、`body`。
 fn event(seq: u64, turn: Option<u64>, by: &str, kind: &str, body: &str) -> Event {

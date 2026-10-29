@@ -32,11 +32,11 @@ async fn memory_logs_name_the_room_by_kind_and_short_id_only() {
     until_turn_ends(&mut pushes).await;
     home.memory.settle();
     // 记忆日志那一边第一次开也记一行（施工 R-3 上）：人列一次就开。
-    let room = Room::persona(&alice_account(), "engineer");
+    let room = Room::persona("engineer");
     let keeper = Keeper::new(
         &home.memory,
         room.clone(),
-        Listener::Owner(By::Person(Person::new(alice_account()))),
+        Listener::Owner(By::Person(Person::default())),
     );
     keeper.list(&Filter::default()).expect("列得出");
 

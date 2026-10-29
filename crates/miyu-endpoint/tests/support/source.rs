@@ -10,7 +10,7 @@ use miyu_session::testkit::Script;
 use miyu_source::sign::{self, PublicKey};
 use miyu_tool::Catalog;
 
-use super::{Home, TOKEN, alice};
+use super::{Home, TOKEN};
 
 /// 新建一对钥匙：私钥，和只认它的公钥列表。
 pub fn keys() -> (String, Vec<PublicKey>) {
@@ -83,7 +83,6 @@ pub fn core_holding(
     );
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         miyu_endpoint::settings::SourceSettings::ITEMS.to_vec(),
         miyu_endpoint::config::Environment::of(&[]),

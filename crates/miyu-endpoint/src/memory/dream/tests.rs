@@ -6,7 +6,7 @@ use std::sync::Arc;
 use serde_json::json;
 
 use miyu_kernel::event::{Body, Purpose};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_recall::{MemoryEvent, from_event};
 use miyu_session::testkit::{Play, Script};
@@ -28,25 +28,23 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
     let resources = resources();
     let tools =
         Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的工具")).expect("合写法");
-    let admin = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources),
         Arc::new(script.clone()),
         tools,
         None,
-        admin.clone(),
         "token".to_string(),
     ));
     assert!(core.give_dream_sessions());
     let at = json!({"persona": NO_PERSONA});
     let remember = json!({"persona": NO_PERSONA, "class": "user", "text": "用户养了一只猫"});
     let id = CommandId::parse("c1").expect("合写法");
-    super::super::call(&core, &admin, "memory.remember", &id, &remember)
+    super::super::call(&core, "memory.remember", &id, &remember)
         .await
         .expect("记得下");
 
-    let answer = super::call(&core, &admin, &at).await.expect("整理了");
+    let answer = super::call(&core, &at).await.expect("整理了");
     let session =
         SessionId::parse(answer["session"].as_str().expect("回应带会话")).expect("合写法");
     assert_eq!(answer["summary"], json!(true), "{answer}");
@@ -82,8 +80,8 @@ async fn a_dream_runs_in_a_dream_session_and_names_it() {
 
     let keeper = Keeper::new(
         &core.memory,
-        Room::persona(&admin, NO_PERSONA),
-        Listener::Owner(crate::sessions::admin(&core)),
+        Room::persona(NO_PERSONA),
+        Listener::Owner(crate::sessions::person()),
     );
     let merging = keeper
         .follow(Some(0), 64)

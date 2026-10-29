@@ -288,9 +288,9 @@ fn leaving_after_a_failed_sync_answers_nothing() {
 
 #[test]
 fn only_replies_to_the_outside_are_held() {
-    use miyu_kernel::id::{AccountId, CallId, SessionId};
+    use miyu_kernel::id::{CallId, SessionId};
     use miyu_kernel::origin::{Person, Session, Tool};
-    let person = By::Person(Person::new(AccountId::parse("alice").expect("合写法")));
+    let person = By::Person(Person::default());
     assert!(outside(&person), "人发的扣着");
     let session = By::Session(Session {
         id: SessionId::parse("01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91").expect("合写法"),

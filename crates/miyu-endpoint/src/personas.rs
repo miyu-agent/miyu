@@ -6,7 +6,6 @@ use serde_json::{Value, json};
 
 use miyu_config::Words;
 use miyu_config::phrases::Label;
-use miyu_kernel::id::AccountId;
 use miyu_policy::persona::Problem;
 use miyu_store::human::Human;
 use miyu_store::personas::{Found, Layer, PersonaError, Personas};
@@ -28,9 +27,8 @@ const TARGET: &str = "miyu::endpoint";
 
 /// 账号 `account` 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
 /// 谁调都是主人那一份）。
-pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
-    Personas::new(&core.resources, &core.root, &core.admin)
-        .with_packages(&crate::packages::folders(core, account))
+pub(crate) fn personas(core: &Core) -> Personas {
+    Personas::new(&core.resources, &core.root).with_packages(&crate::packages::folders(core))
 }
 
 /// 找新会话的人格（施工 P-4 上，2026-10-08 项目主人：「人格允许为空」）：`wanted` 写了编号的是它，写了 `null` 的
@@ -38,20 +36,17 @@ pub(crate) fn personas(core: &Core, account: &AccountId) -> Personas {
 /// 拒绝；默认人格指着没有的当没设、记一行 `WARN`：配置是以前写的，人格可能后来删了。在阻塞线程里读盘。
 pub(crate) async fn resolve(
     core: &Core,
-    account: &AccountId,
     wanted: Option<Option<&str>>,
 ) -> Result<Option<Found>, Refusal> {
     let (id, default) = match wanted {
         Some(None) => return Ok(None),
         Some(Some(id)) => (id.to_string(), false),
-        None => {
-            match PersonaSettings::from(&core.mine(account).config().resolved().values()).default {
-                Some(id) => (id, true),
-                None => return Ok(None),
-            }
-        }
+        None => match PersonaSettings::from(&core.mine().config().resolved().values()).default {
+            Some(id) => (id, true),
+            None => return Ok(None),
+        },
     };
-    let personas = personas(core, account);
+    let personas = personas(core);
     let found = tokio::task::spawn_blocking({
         let id = id.clone();
         move || personas.find(&id)
@@ -140,9 +135,9 @@ pub(crate) fn remove(layers: &[Layer]) -> Option<&'static str> {
 
 /// `persona.list`：几层里所有的人格，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
 /// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补：人看的是名字）。
-pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
+pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let personas = personas(core, account);
+    let personas = personas(core);
     let state = core.root.state();
     // 读盘、看图都在阻塞线程里（施工 V-16：原来算图片版本是在这外面直接读盘的）。
     let read = tokio::task::spawn_blocking(move || {
@@ -188,14 +183,9 @@ pub(crate) struct GetParams {
 
 /// `persona.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；人设、角色扮演提示写没写；示范
 /// 对话几轮；删了会怎样（`remove`）。提示词原文照 `persona.read` 给，来自哪一层不往外给。
-pub(crate) async fn get(
-    core: &Core,
-    account: &AccountId,
-    peer: Peer,
-    params: GetParams,
-) -> Result<Value, Refusal> {
+pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
-    let personas = personas(core, account);
+    let personas = personas(core);
     let language = peer.language;
     let state = core.root.state();
     tokio::task::spawn_blocking(move || {

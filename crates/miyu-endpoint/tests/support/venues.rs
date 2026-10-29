@@ -12,7 +12,7 @@ use miyu_store::blob::Blobs;
 use miyu_store::log::read_events;
 use miyu_tool::Catalog;
 
-use super::{Home, TOKEN, alice};
+use super::{Home, TOKEN};
 
 /// 系统配置：`qq:10001` 是主人 alice（施工 SU-1 补：写了的值不再查是哪个账号，头照旧写 `admin`），`qq:10003` 没写。
 pub const BINDINGS: &str = "[external.bindings]\n\"qq:10001\" = \"admin\"\n";
@@ -40,7 +40,6 @@ pub fn configured_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

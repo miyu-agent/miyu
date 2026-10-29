@@ -16,7 +16,7 @@ const EVENTS: u64 = 130;
 
 fn line(seq: u64) -> String {
     let body = json!({"blocks": [{"type": "text", "text": format!("第 {seq} 句：{}", "今天把会话列表换成读索引。".repeat(6))}]});
-    json!({"seq": seq, "at": "2026-09-25T07:00:00.000Z", "kind": "message.user", "by": {"kind": "person", "account": "alice"}, "body": body}).to_string()
+    json!({"seq": seq, "at": "2026-09-25T07:00:00.000Z", "kind": "message.user", "by": {"kind": "person"}, "body": body}).to_string()
 }
 
 fn id(n: u64) -> SessionId {

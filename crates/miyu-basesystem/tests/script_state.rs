@@ -21,16 +21,16 @@ async fn a_script_keeps_its_state_per_source() {
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
-    let first = site.script_by("scripts/count.py", "~home", "alice").await;
+    let first = site.script_by("scripts/count.py", "~home").await;
     assert!(!first.error, "{}", text(&first));
     assert_eq!(printed(&first), format!("1 {}", state("~home").display()));
-    let again = site.script_by("scripts/count.py", "~home", "alice").await;
+    let again = site.script_by("scripts/count.py", "~home").await;
     assert_eq!(
         printed(&again),
         format!("2 {}", state("~home").display()),
         "下一次还在"
     );
-    let kit = site.script_by("scripts/count.py", "kit", "alice").await;
+    let kit = site.script_by("scripts/count.py", "kit").await;
     assert_eq!(
         printed(&kit),
         format!("1 {}", state("kit").display()),
@@ -55,7 +55,7 @@ async fn a_script_runs_without_state_when_the_folder_cannot_be_made() {
     let site = Site::new();
     site.file("scripts/count.py", COUNT);
     site.file("data/state/scripts", b"not a folder");
-    let done = site.script_by("scripts/count.py", "~home", "alice").await;
+    let done = site.script_by("scripts/count.py", "~home").await;
     assert!(!done.error, "{}", text(&done));
     assert_eq!(text(&done), "unset\n");
 }
@@ -71,22 +71,18 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let one = Some("qq:group:1");
-    let first = site
-        .script_at("scripts/count.py", "kit", "bridge", one)
-        .await;
+    let first = site.script_at("scripts/count.py", "kit", one).await;
     assert!(!first.error, "{}", text(&first));
     let group1 = state("@qq_3agroup_3a1/kit/count");
     assert_eq!(printed(&first), format!("1 {}", group1.display()));
-    let again = site
-        .script_at("scripts/count.py", "kit", "bridge", one)
-        .await;
+    let again = site.script_at("scripts/count.py", "kit", one).await;
     assert_eq!(
         printed(&again),
         format!("2 {}", group1.display()),
         "同一个群接得上"
     );
     let other = site
-        .script_at("scripts/count.py", "kit", "bridge", Some("qq:group:2"))
+        .script_at("scripts/count.py", "kit", Some("qq:group:2"))
         .await;
     let group2 = state("@qq_3agroup_3a2/kit/count");
     assert_eq!(
@@ -95,7 +91,7 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
         "另一个群另一格"
     );
     let local = site
-        .script_at("scripts/count.py", "kit", "alice", Some("local"))
+        .script_at("scripts/count.py", "kit", Some("local"))
         .await;
     assert_eq!(
         printed(&local),
@@ -118,11 +114,11 @@ async fn a_script_s_cache_is_in_the_data_root() {
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
-    let local = site.script_by("scripts/cached.py", "kit", "alice").await;
+    let local = site.script_by("scripts/cached.py", "kit").await;
     assert!(!local.error, "{}", text(&local));
     assert_eq!(printed(&local), home("kit/cached").display().to_string());
     let group = site
-        .script_at("scripts/cached.py", "kit", "bridge", Some("qq:group:1"))
+        .script_at("scripts/cached.py", "kit", Some("qq:group:1"))
         .await;
     assert_eq!(
         printed(&group),
@@ -148,7 +144,7 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
     site.file("scripts/homed.py", HOMED);
     let lines = |done: &Done| -> Vec<String> { text(done).lines().map(str::to_string).collect() };
     let local = site
-        .script_at("scripts/homed.py", "kit", "alice", Some("local"))
+        .script_at("scripts/homed.py", "kit", Some("local"))
         .await;
     assert!(!local.error, "{}", text(&local));
     let wanted: Vec<String> = ["pictures", "videos", "documents", "downloads"]
@@ -164,12 +160,10 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
     assert_eq!(lines(&local), wanted);
     let unset = vec!["unset".to_string(); 4];
     let group = site
-        .script_at("scripts/homed.py", "kit", "bridge", Some("qq:group:1"))
+        .script_at("scripts/homed.py", "kit", Some("qq:group:1"))
         .await;
     assert_eq!(lines(&group), unset, "场所会话不给");
-    let unknown = site
-        .script_at("scripts/homed.py", "kit", "alice", None)
-        .await;
+    let unknown = site.script_at("scripts/homed.py", "kit", None).await;
     assert_eq!(lines(&unknown), unset, "不知道在哪个场所的不给");
     let outside = site.script("scripts/homed.py", json!({})).await;
     assert_eq!(lines(&outside), unset, "会话外面的不给");

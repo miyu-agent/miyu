@@ -220,7 +220,7 @@ async fn answers_last(mut listener: Listener, used: String) {
         let id = request["id"].clone();
         let mut out = Vec::new();
         let result = match request["method"].as_str() {
-            Some("hello") => json!({"protocol": 1, "core": {"version": "0"}, "account": "admin"}),
+            Some("hello") => json!({"protocol": 1, "core": {"version": "0"}}),
             Some("session.create") => json!({"session": "s1", "events": [1], "cwd": used}),
             Some("session.send") => {
                 let event = |kind: &str, body: Value| {

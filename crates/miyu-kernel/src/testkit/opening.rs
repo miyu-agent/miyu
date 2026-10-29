@@ -21,7 +21,7 @@ pub const SESSION: &str = "01a0f233-cfec-7023-8ed5-2a037a1d5ec8";
 pub const CHILD_SESSION: &str = "01a0f234-0a1b-7c2d-8e3f-4a5b6c7d8e9f";
 
 /// 造会话时的样子：alice 的会话，在本机，工作区的权限，只读关着。
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
 /// 造的是哪一种会话。
 enum Opening {
@@ -116,7 +116,7 @@ impl Stage {
         now: Timestamp,
         opening: Opening,
     ) -> Stage {
-        let mut by: By = serde_json::from_str(r#"{"kind":"person","account":"alice"}"#)
+        let mut by: By = serde_json::from_str(r#"{"kind":"person"}"#)
             .unwrap_or_else(|e| panic!("alice 的写法坏了：{e}"));
         let mut created: SessionCreated =
             serde_json::from_str(CREATED).unwrap_or_else(|e| panic!("造会话的写法坏了：{e}"));

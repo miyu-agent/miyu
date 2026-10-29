@@ -14,7 +14,7 @@ use miyu_session::testkit::Script;
 use miyu_tool::Catalog;
 
 use super::extensions::{quick, read};
-use super::{Client, Home, TOKEN, alice};
+use super::{Client, Home, TOKEN};
 
 /// 测试用的服务。
 pub const SERVER: &str = env!("CARGO_BIN_EXE_miyu-test-mcp");
@@ -197,7 +197,6 @@ pub fn configured(home: &Home, script: &Script) -> Arc<Core> {
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

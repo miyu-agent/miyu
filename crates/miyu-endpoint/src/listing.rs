@@ -14,7 +14,7 @@ use std::sync::{Arc, OnceLock, Weak};
 use serde_json::{Value, json};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use crate::Core;
 use crate::list::{list, one};
@@ -23,11 +23,10 @@ use crate::refusal::Refusal;
 /// 广播最多攒多少条还没被读走的：读得慢的连接掉了队，推 `resync`。
 const QUEUE: usize = 1024;
 
-/// 一条推送：号、那个会话的属主（只转给他的连接，施工 Y-12 上）和写好的那一行。
+/// 一条推送：号和写好的那一行。
 #[derive(Debug)]
 pub(crate) struct Change {
     pub(crate) number: u64,
-    pub(crate) owner: AccountId,
     pub(crate) line: String,
 }
 
@@ -40,10 +39,10 @@ pub(crate) struct Snapshot {
 /// 排队的活。
 enum Job {
     Changed(SessionId),
-    /// 删了的会话和它原来的属主。
-    Removed(SessionId, AccountId),
-    /// 账号的一份列表。
-    List(AccountId, oneshot::Sender<Result<Snapshot, Refusal>>),
+    /// 删了的会话。
+    Removed(SessionId),
+    /// 一份列表。
+    List(oneshot::Sender<Result<Snapshot, Refusal>>),
 }
 
 /// 会话列表的推送：排队的那一头和广播。
@@ -87,20 +86,16 @@ impl Listing {
         drop(self.touched.send(session));
     }
 
-    /// 属主是 `owner` 的会话 `session` 删了。
-    pub(crate) fn removed(&self, core: &Arc<Core>, session: SessionId, owner: AccountId) {
+    /// 会话 `session` 删了。
+    pub(crate) fn removed(&self, core: &Arc<Core>, session: SessionId) {
         drop(self.touched.send(session.clone()));
-        self.send(core, Job::Removed(session, owner));
+        self.send(core, Job::Removed(session));
     }
 
-    /// 账号 `account` 的一份列表，排在这之前报的变化后面算。
-    pub(crate) async fn snapshot(
-        &self,
-        core: &Arc<Core>,
-        account: &AccountId,
-    ) -> Result<Snapshot, Refusal> {
+    /// 一份列表，排在这之前报的变化后面算。
+    pub(crate) async fn snapshot(&self, core: &Arc<Core>) -> Result<Snapshot, Refusal> {
         let (reply, answer) = oneshot::channel();
-        self.send(core, Job::List(account.clone(), reply));
+        self.send(core, Job::List(reply));
         answer.await.unwrap_or(Err(Refusal::INTERNAL))
     }
 
@@ -126,17 +121,12 @@ async fn work(
     pushes: broadcast::Sender<Arc<Change>>,
 ) {
     let number = AtomicU64::new(0);
-    let push = |owner: &AccountId, params: Value| {
+    let push = |params: Value| {
         let number = number.fetch_add(1, Ordering::Relaxed) + 1;
         let line =
             json!({"jsonrpc": "2.0", "method": "sessions.changed", "params": params}).to_string();
         // 没人订阅着的照样往上加号：订阅的回应记的是这一刻的号。
-        let owner = owner.clone();
-        drop(pushes.send(Arc::new(Change {
-            number,
-            owner,
-            line,
-        })));
+        drop(pushes.send(Arc::new(Change { number, line })));
     };
     while let Some(job) = jobs.recv().await {
         let Some(core) = core.upgrade() else {
@@ -152,23 +142,20 @@ async fn work(
             Job::Changed(session) => {
                 let mut next = Some(session);
                 while let Some(session) = next.take() {
-                    let Some(owner) = core.sessions.owner(&core, &session).await else {
+                    if !core.sessions.exists(&core, &session).await {
                         continue;
                     };
-                    if let Some(entry) = entry(&core, &owner, &session).await {
+                    if let Some(entry) = entry(&core, &session).await {
                         next = entry["parent"]
                             .as_str()
                             .and_then(|parent| SessionId::parse(parent).ok());
-                        push(&owner, json!({"session": session.as_str(), "entry": entry}));
+                        push(json!({"session": session.as_str(), "entry": entry}));
                     }
                 }
             }
-            Job::Removed(session, owner) => push(
-                &owner,
-                json!({"session": session.as_str(), "removed": true}),
-            ),
-            Job::List(account, reply) => {
-                let sessions = list(&core, &account, false, None, None).await;
+            Job::Removed(session) => push(json!({"session": session.as_str(), "removed": true})),
+            Job::List(reply) => {
+                let sessions = list(&core, false, None, None).await;
                 let at = number.load(Ordering::Relaxed);
                 drop(reply.send(sessions.map(|sessions| Snapshot {
                     number: at,
@@ -180,10 +167,10 @@ async fn work(
 }
 
 /// 算属主是 `owner` 的会话 `session` 的一项：不在了（删了、没有日志）的是空的，在阻塞线程里读索引和日志。
-async fn entry(core: &Core, owner: &AccountId, session: &SessionId) -> Option<Value> {
+async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
     let busy = core.sessions.busy_ids().await.contains(session);
     let waiting = core.sessions.waiting_ids().await.contains(session);
-    let (root, index) = (core.root.clone(), core.index_for(owner));
+    let (root, index) = (core.root.clone(), core.index());
     let session = session.clone();
     let window = crate::list::windows(core);
     // 场所会话不推（施工 O-3）：它不在本机的头上。

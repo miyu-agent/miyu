@@ -6,17 +6,17 @@ use super::executor::*;
 use super::*;
 use crate::event::{Decision, Level, PolicyChanged, ToolStatus};
 
-/// 编号是 `n` 的命令：alice 切权限级别，改哪样写哪样。
+/// 编号是 `n` 的命令：主人切权限级别，改哪样写哪样。
 pub(super) fn switch(n: u64, level: Option<Level>, read_only: Option<bool>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::SetPermission { level, read_only },
     })
 }
 
-/// 编号是 `n` 的命令：alice 开关只读。
+/// 编号是 `n` 的命令：主人开关只读。
 pub(super) fn read_only(n: u64, on: bool) -> Input {
     switch(n, None, Some(on))
 }
@@ -69,7 +69,7 @@ fn switching_while_idle_is_recorded_and_injected_when_the_next_turn_opens() {
             events[0].cause.clone(),
             events[0].turn
         ),
-        (alice(), Some(id(2)), None)
+        (person(), Some(id(2)), None)
     );
     assert_eq!(
         replies(&allowing(&mut session, stored(9))),

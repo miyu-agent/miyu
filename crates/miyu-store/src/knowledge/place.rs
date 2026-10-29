@@ -13,7 +13,6 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use miyu_config::Value;
 use miyu_config::edit::{Change, apply};
-use miyu_kernel::id::AccountId;
 
 use super::{Knowledge, KnowledgeError, Shelf};
 use crate::layers::valid;
@@ -138,8 +137,8 @@ impl Knowledge {
     }
 
     /// 库 `id` 开着的索引：开过的交回同一份。没有的库照自己的那一格开一份空的。
-    pub(super) fn shelf(&self, account: &AccountId, id: &str) -> Arc<Shelf> {
-        let key = (account.clone(), id.to_string());
+    pub(super) fn shelf(&self, id: &str) -> Arc<Shelf> {
+        let key = id.to_string();
         if let Some(shelf) = self.lock().get(&key) {
             return Arc::clone(shelf);
         }
@@ -240,7 +239,7 @@ impl Knowledge {
         let indexes = self.root.index().join("kb").join("packages").join(package);
         let closing: Vec<Arc<Shelf>> = {
             let mut open = self.lock();
-            let keys: Vec<(AccountId, String)> = open
+            let keys: Vec<String> = open
                 .iter()
                 .filter(|(_, shelf)| shelf.path.starts_with(&indexes))
                 .map(|(key, _)| key.clone())

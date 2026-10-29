@@ -42,7 +42,6 @@ async fn the_row_follows_what_the_session_writes_and_goes_with_it() {
     assert_eq!((got.title.as_str(), got.pinned), ("发版", true));
     assert_eq!(got.cwd.as_deref(), Some(work.as_str()));
     assert_eq!((got.oneshot, got.parent.as_ref()), (false, None));
-    assert_eq!(got.owner, alice());
     assert_eq!(got.created, log[0].at);
     assert_eq!(got.last_active, log.last().expect("有事件").at);
     let segment = home.root.session_dir(&got.id).join("000000000001.jsonl");

@@ -13,7 +13,7 @@ pub(super) fn opened(policy: Policy, oneshot: bool) -> Session {
     let (mut session, _) = Session::create(
         session_id(),
         id(0),
-        alice(),
+        person(),
         at(0),
         created,
         policy,
@@ -58,8 +58,8 @@ fn job_ended(rng: &mut Rng, watch: &Watch) -> Input {
             started.map(tool).unwrap_or(By::Kernel),
         ),
         4 => (JobReason::Stopped, true, tool(some_call(rng, watch))),
-        5 => (JobReason::Stopped, false, alice()),
-        6 => (JobReason::Undone, false, alice()),
+        5 => (JobReason::Stopped, false, person()),
+        6 => (JobReason::Undone, false, person()),
         7 => (JobReason::Restarted, false, By::Kernel),
         _ => (JobReason::Aborted, false, By::Kernel),
     };
@@ -91,7 +91,7 @@ fn child_reports(rng: &mut Rng, watch: &Watch, next_id: &mut u64) -> Input {
         .and_then(|job| job.session.clone())
         .unwrap_or_else(fallback);
     let by = match rng.below(10) {
-        0 => alice(),
+        0 => person(),
         _ => By::Session(Child {
             id: session.clone(),
         }),

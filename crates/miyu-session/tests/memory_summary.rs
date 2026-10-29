@@ -19,7 +19,7 @@ use miyu_store::recall::Room;
 use crate::support::*;
 
 fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 记下的时刻：UTC 的 10 月 7 日 20 点，会话的时区（东九区）里已经是 8 日，摘要里的日期照会话的时区写。
@@ -265,7 +265,7 @@ async fn nothing_for_an_off_session_or_an_empty_room() {
 #[tokio::test]
 async fn only_what_counts_and_from_everyone() {
     let home = Home::new();
-    let bob: By = serde_json::from_str(r#"{"kind":"person","account":"bob"}"#).expect("合写法");
+    let bob: By = serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法");
     save(&home, "user", "bob 的猫叫团子", bob, None);
     let wrong = save(&home, "user", "用户用 A 卡", alice(), None);
     save(

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, SessionId, VenueId};
+use miyu_kernel::id::{SessionId, VenueId};
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::{SEGMENT_LIMIT, SessionLog};
 use miyu_store::recall::{Origin, RecallIndexes, Room};
@@ -13,7 +13,7 @@ use miyu_store::root::DataRoot;
 use super::{Laid, Lanes, Opening, Source};
 use crate::agents::LOCAL;
 
-const ALICE: &str = r#"{"kind":"person","account":"admin"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 
@@ -83,7 +83,7 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
     // 载入以后、后台读日志以前又落了一条：后台读到的已经有它，交来的这一批里又有它。
     log.append(&[said, started.clone()]).expect("写得进");
     let recall = Arc::new(RecallIndexes::new(&root));
-    let room = Room::session(&AccountId::parse("admin").expect("账号写对了"), &session);
+    let room = Room::session(&session);
     let lanes = Lanes::default();
     let mut lane = lanes
         .open(Opening {
@@ -112,7 +112,6 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
 fn nothing_is_opened_until_the_lane_is_started() {
     let (scratch, root) = root("later");
     let session = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5eca").expect("编号写对了");
-    let account = AccountId::parse("admin").expect("账号写对了");
     let mut log =
         SessionLog::create(&root.session_dir(&session), SEGMENT_LIMIT).expect("建得了日志");
     log.append(&[
@@ -141,7 +140,7 @@ fn nothing_is_opened_until_the_lane_is_started() {
     ])
     .expect("写得进");
     let recall = Arc::new(RecallIndexes::new(&root));
-    let room = Room::session(&account, &session);
+    let room = Room::session(&session);
     let lanes = Lanes::default();
     let lane = lanes
         .open(Opening {
@@ -229,13 +228,12 @@ fn turn(seq: u64, said: &str) -> Vec<Event> {
 #[test]
 fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     let (_scratch, root) = root("undo");
-    let account = AccountId::parse("admin").expect("账号写对了");
     let recall = Arc::new(RecallIndexes::new(&root));
     let lanes = Lanes::default();
     let venue = VenueId::parse(LOCAL).expect("场所写对了");
     let opening = |session: &SessionId, log: &SessionLog| Opening {
         recall: Arc::clone(&recall),
-        room: Room::session(&account, session),
+        room: Room::session(session),
         session: session.clone(),
         origin: origin(),
         venue: venue.clone(),
@@ -254,7 +252,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     lanes.settle();
     let source: miyu_recall::Source =
         serde_json::from_str(&format!(r#"{{"session":"{small}","turn":2}}"#)).expect("写对了");
-    let room = Room::session(&account, &small);
+    let room = Room::session(&small);
     assert!(
         recall.alive(&room, &source).expect("读得了"),
         "撤销以前那一轮活着"
@@ -286,8 +284,5 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
 
 /// 本机的主会话，属主是管理员（施工 E-6）。
 fn origin() -> Origin {
-    Origin {
-        owner: "shorin".to_string(),
-        main: true,
-    }
+    Origin { main: true }
 }

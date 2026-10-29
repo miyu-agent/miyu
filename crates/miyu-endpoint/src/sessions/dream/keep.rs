@@ -13,12 +13,12 @@ use crate::list::{Listed, scan};
 /// 照这一趟 `session` 的那一间，留最近 `keep` 趟（它也算），删掉别的：交回删了几个。找不到它、读不了列表、删不成的记一行运行
 /// 日志。
 pub(super) async fn prune(core: &Arc<Core>, session: &SessionId, keep: usize) -> usize {
-    let Some(owner) = core.sessions.owner(core, session).await else {
+    if !core.sessions.exists(core, session).await {
         tracing::warn!(target: "miyu::endpoint", session = session.as_str(), "dream session not found to prune");
         return 0;
     };
     let busy = core.sessions.busy_ids().await;
-    let (root, index) = (core.root.clone(), core.index_for(&owner));
+    let (root, index) = (core.root.clone(), core.index());
     let listed = tokio::task::spawn_blocking(move || {
         let dreams = |row: &miyu_store::index::Row| row.dream.is_some();
         scan(&root, Some(&*index), &busy, dreams, None, &Stop::default())

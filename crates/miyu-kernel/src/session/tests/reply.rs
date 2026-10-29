@@ -136,7 +136,7 @@ fn the_next_turns_inject_only_what_changed() {
     // 过了整点：只注入环境，时间到了 17:00。
     let next_hour = Input::Command(Received {
         id: id(4),
-        by: alice(),
+        by: person(),
         at: Timestamp::parse("2026-09-25T08:00:01.000Z").unwrap(),
         command: Command::Send {
             blocks: vec![Block::Text(Text {

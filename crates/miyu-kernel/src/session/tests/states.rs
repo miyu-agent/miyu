@@ -93,7 +93,7 @@ fn by_tool(logged: &mut Logged, seen: u64, state: PackageState) -> (Vec<(String,
 fn set_state(n: u64, state: PackageState) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::SetState(state),
     })

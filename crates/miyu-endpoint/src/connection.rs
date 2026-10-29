@@ -250,14 +250,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         let id = || Value::String(request.id.as_str().to_string());
         let (answer, target, close) = match (request.method.as_str(), peer) {
             ("hello", _) => {
-                match hello(
-                    &core,
-                    request.params.clone(),
-                    (from_core, reach.source()),
-                    &core.admin,
-                )
-                .await
-                {
+                match hello(&core, request.params.clone(), (from_core, reach.source())).await {
                     Ok((shook, by, mut result)) => {
                         reach::strip(&reach, &mut result);
                         if let Some((ready, _)) = spawned.take()

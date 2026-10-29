@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::{AccountId, CommandId};
+use miyu_kernel::id::CommandId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
@@ -22,7 +22,6 @@ fn stopping_a_job_is_answered_in_the_background() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        AccountId::parse("alice").expect("合写法"),
         "token".to_string(),
     );
     let request = |method: &str| Request {

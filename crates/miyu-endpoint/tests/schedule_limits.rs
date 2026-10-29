@@ -134,7 +134,7 @@ async fn an_account_holds_at_most_two_hundred() {
     let session = client.create("c1", "~").await;
     for _ in 0..200 {
         let wanted = Wanted {
-            by: Creator::Person { account: alice() },
+            by: Creator::Person,
             when: When::Every { every: 3600 },
             prompt: "看看".to_string(),
             target: Target::Session {
@@ -143,7 +143,7 @@ async fn an_account_holds_at_most_two_hundred() {
             looping: None,
             first: None,
         };
-        core.schedules().add(&alice(), wanted).expect("没满的照建");
+        core.schedules().add(wanted).expect("没满的照建");
     }
     let full = client
         .call(
@@ -157,7 +157,7 @@ async fn an_account_holds_at_most_two_hundred() {
         "{full}"
     );
     assert_eq!(
-        core.schedules().list(&alice()).expect("读得出").len(),
+        core.schedules().list().expect("读得出").len(),
         200,
         "已有的照旧在"
     );

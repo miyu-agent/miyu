@@ -21,7 +21,7 @@
 //! - [`recall`]：检索库，SQLite 的 FTS5，照关键词找，派生的；切词在 `miyu-recall`（施工 R-1）；
 //! - [`watch`]：监视配置文件所在的目录，按文件名认，合并连着来的变动（施工 8-4）。
 
-pub mod accounts;
+pub mod access;
 pub mod attachments;
 pub mod blob;
 pub mod cache;

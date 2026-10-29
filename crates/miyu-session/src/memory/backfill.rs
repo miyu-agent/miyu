@@ -128,7 +128,6 @@ fn one(
     let floor = super::recast::floor(&events, persona);
     let (base, own) = super::recast::split(&base, &events, floor);
     let origin = Origin {
-        owner: created.owner.to_string(),
         main: created.parent.is_none(),
     };
     Turns::connect(recall, room, (session, origin), &created.venue, &base, own);

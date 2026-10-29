@@ -74,14 +74,13 @@ fn core(home: &Home, env: &[(&str, &str)], data: Arc<ModelData>) -> Arc<Core> {
         CatalogSettings::ITEMS,
     ]
     .concat();
-    let config = Config::load(&home.root, &alice(), None, items, Environment::of(env));
+    let config = Config::load(&home.root, None, items, Environment::of(env));
     let core = Core::new(
         home.root.clone(),
         ResourceRoot::at(default_resources()),
         Arc::new(Script::new([])),
         ToolCatalog::default(),
         None,
-        alice(),
         TOKEN.to_string(),
     );
     Arc::new(core.with_config(config).with_model_data(data))

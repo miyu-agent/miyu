@@ -8,17 +8,15 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use miyu_kernel::id::AccountId;
-
 /// 同一个库两次报之间至少隔多久。
 const EVERY: Duration = Duration::from_millis(100);
 
 /// 收进度的那一头：核心照它推给头。
 pub trait IndexWatch: Send + Sync {
     /// 账号 `account` 的库 `kb` 在建：要重建的 `total` 篇里做完了 `done` 篇。
-    fn indexing(&self, account: &AccountId, kb: &str, done: usize, total: usize);
+    fn indexing(&self, kb: &str, done: usize, total: usize);
     /// 账号 `account` 的库 `kb` 建好了。
-    fn indexed(&self, account: &AccountId, kb: &str);
+    fn indexed(&self, kb: &str);
 }
 
 /// 登记的那一头（`Knowledge` 要 `Debug`）。
@@ -34,7 +32,6 @@ impl std::fmt::Debug for Watcher {
 /// 补一个库这一趟的进度：开头报一次，之后照 [`EVERY`] 疏一疏，最后一篇照报。
 pub(super) struct Progress<'a> {
     watcher: Option<&'a Watcher>,
-    account: &'a AccountId,
     kb: &'a str,
     done: usize,
     total: usize,
@@ -43,22 +40,16 @@ pub(super) struct Progress<'a> {
 
 impl<'a> Progress<'a> {
     /// 要重建 `total` 篇：有的当场报开头。
-    pub(super) fn start(
-        watcher: Option<&'a Watcher>,
-        account: &'a AccountId,
-        kb: &'a str,
-        total: usize,
-    ) -> Progress<'a> {
+    pub(super) fn start(watcher: Option<&'a Watcher>, kb: &'a str, total: usize) -> Progress<'a> {
         let progress = Progress {
             watcher,
-            account,
             kb,
             done: 0,
             total,
             last: Instant::now(),
         };
         if let (Some(watcher), true) = (progress.watcher, total > 0) {
-            watcher.0.indexing(account, kb, 0, total);
+            watcher.0.indexing(kb, 0, total);
         }
         progress
     }
@@ -71,16 +62,14 @@ impl<'a> Progress<'a> {
         };
         if self.done == self.total || self.last.elapsed() >= EVERY {
             self.last = Instant::now();
-            watcher
-                .0
-                .indexing(self.account, self.kb, self.done, self.total);
+            watcher.0.indexing(self.kb, self.done, self.total);
         }
     }
 
     /// 补完了：重建过的报一声建好了。
     pub(super) fn finish(&self) {
         if let (Some(watcher), true) = (self.watcher, self.total > 0) {
-            watcher.0.indexed(self.account, self.kb);
+            watcher.0.indexed(self.kb);
         }
     }
 

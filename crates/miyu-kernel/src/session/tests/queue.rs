@@ -166,7 +166,7 @@ fn interrupting_with_return_takes_the_queued_back() {
     assert_eq!(withdrawn(&events[1]).messages, seqs(&[6, 7]));
     assert_eq!(
         (events[1].by.clone(), events[1].cause.clone()),
-        (alice(), Some(id(5)))
+        (person(), Some(id(5)))
     );
     assert_eq!(events[1].turn, Some(turn3()), "撤回记在这一轮里");
     assert_eq!(reason_of(&events[2]), &EndReason::Interrupted);

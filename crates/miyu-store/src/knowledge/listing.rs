@@ -3,7 +3,6 @@
 
 use std::collections::BTreeMap;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 
 use super::{DocumentKind, Knowledge, KnowledgeError, Reason, Skipped};
@@ -40,14 +39,10 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库；挂的目录用不了（[`KnowledgeError::Unavailable`]）；目录、索引读不了。
-    pub fn listing(
-        &self,
-        account: &AccountId,
-        id: &str,
-    ) -> Result<(Listing, Vec<Skipped>), KnowledgeError> {
-        let caught = self.caught(account, id)?;
+    pub fn listing(&self, id: &str) -> Result<(Listing, Vec<Skipped>), KnowledgeError> {
+        let caught = self.caught(id)?;
         let mut chunks: BTreeMap<String, usize> = BTreeMap::new();
-        for key in self.shelf(account, id).index.keys()? {
+        for key in self.shelf(id).index.keys()? {
             if let Some((source, _)) = key.rsplit_once('#') {
                 *chunks.entry(source.to_string()).or_default() += 1;
             }

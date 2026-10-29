@@ -162,7 +162,6 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
     setup.models.ready().await;
     let model = setup.models.port(ForSession {
         id: setup.id.clone(),
-        owner: setup.owner.clone(),
         config: std::sync::Arc::clone(config.current()),
         texts,
         blobs: Blobs::new(setup.root.blobs()),
@@ -171,7 +170,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
     });
     let created = miyu_kernel::event::SessionCreated {
         model: reference,
-        ..snapshot.session_created(setup.owner.clone(), setup.venue.clone(), setup.permission)
+        ..snapshot.session_created(setup.venue.clone(), setup.permission)
     };
     let (mut session, _) = Session::create(
         setup.id.clone(),

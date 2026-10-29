@@ -22,7 +22,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_store::blob::Blobs;
 use miyu_store::log::{OpenError, read_events};
 use miyu_store::packages::Found;
@@ -68,11 +68,11 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     if !(1..=MOST_TURNS).contains(&turns) || params.before == Some(0) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let (owner, events) = events_of(core, &session).await?;
+    let events = events_of(core, &session).await?;
     // 要条目的：投影要的字照这个连接的语言读，改了多少行照属主的 blob 算。
     let view = match params.view {
         true => Some((
-            (core.resources.clone(), Titles::of(core, &owner)),
+            (core.resources.clone(), Titles::of(core)),
             peer.language,
             Blobs::new(core.root.blobs()),
         )),
@@ -137,7 +137,7 @@ pub(crate) struct Titles {
 
 impl Titles {
     /// 会话属主 `owner` 看得到的（施工 U23 上下，[`Core::packages_of`]）。
-    pub(crate) fn of(core: &Core, owner: &AccountId) -> Titles {
+    pub(crate) fn of(core: &Core) -> Titles {
         let catalog = core.tools.current();
         let tools = catalog
             .specs()
@@ -159,7 +159,7 @@ impl Titles {
             .collect();
         Titles {
             packages_of,
-            packages: core.packages_of(owner),
+            packages: core.packages_of(),
             root: core.root.clone(),
             external: crate::skills::external(core),
             tools,
@@ -229,20 +229,18 @@ fn paged(
     (reply, projector)
 }
 
-/// 只读地读会话 `session` 的日志：照属主的家目录读（施工 O-4 上），交回属主和事件。没有这个会话的 `session_not_found`，
+/// 只读地读会话 `session` 的日志，交回事件。没有这个会话的 `session_not_found`，
 /// 读不下去的 `broken`。
-async fn events_of(core: &Core, session: &SessionId) -> Result<(AccountId, Vec<Event>), Refusal> {
-    let owner = core
-        .sessions
-        .owner(core, session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+async fn events_of(core: &Core, session: &SessionId) -> Result<Vec<Event>, Refusal> {
+    if !core.sessions.exists(core, session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     let dir = core.root.session_dir(session);
     let read = tokio::task::spawn_blocking(move || read_events(&dir))
         .await
         .map_err(|_| Refusal::INTERNAL)?;
     match read {
-        Ok(events) => Ok((owner, events)),
+        Ok(events) => Ok(events),
         Err(OpenError::Missing(_)) => Err(Refusal::NOT_FOUND),
         Err(error) => {
             tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "log not read");

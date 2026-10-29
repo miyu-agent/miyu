@@ -74,7 +74,6 @@ impl Home {
             models,
             tools,
             None,
-            miyu_core::admin(),
             token.to_string(),
         ))
     }
@@ -83,7 +82,6 @@ impl Home {
     pub fn core_configured(&self, models: Arc<dyn Models>, token: &str) -> Arc<Core> {
         let config = miyu_endpoint::config::Config::load(
             &self.root,
-            &miyu_core::admin(),
             None,
             miyu_core::settings::items(),
             miyu_endpoint::config::Environment::of(&[]),
@@ -95,7 +93,6 @@ impl Home {
                 models,
                 Catalog::default(),
                 None,
-                miyu_core::admin(),
                 token.to_string(),
             )
             .with_config(config),
@@ -117,7 +114,6 @@ impl Home {
                 models,
                 Catalog::default(),
                 None,
-                miyu_core::admin(),
                 token.to_string(),
             )
             .with_queries(queries),

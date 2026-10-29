@@ -26,7 +26,7 @@ fn at(minutes: i64) -> Timestamp {
 }
 
 fn admin() -> By {
-    serde_json::from_str(r#"{"kind":"person","account":"admin"}"#).expect("合写法")
+    serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法")
 }
 
 fn tool() -> By {
@@ -64,7 +64,7 @@ fn a_saved_memory_round_trips_as_an_event() {
     assert_eq!(event.body.kind(), "ext.memory.saved");
     assert_eq!(
         event.to_line(),
-        r#"{"seq":7,"at":"2026-10-07T08:01:00.000Z","kind":"ext.memory.saved","by":{"kind":"tool","call_id":"call_3_1"},"body":{"class":"user","text":"用 N 卡","sources":[{"session":"0192f3a0-1111-7abc-8def-001122334455","turn":3}],"audience":[{"kind":"person","account":"admin"}],"about":"2026-10"}}"#
+        r#"{"seq":7,"at":"2026-10-07T08:01:00.000Z","kind":"ext.memory.saved","by":{"kind":"tool","call_id":"call_3_1"},"body":{"class":"user","text":"用 N 卡","sources":[{"session":"0192f3a0-1111-7abc-8def-001122334455","turn":3}],"audience":[{"kind":"person"}],"about":"2026-10"}}"#
     );
     let back = Event::from_line(&event.to_line()).expect("读得回");
     assert_eq!(from_event(&back), Some(Ok(MemoryEvent::Saved(body)))); // 没有的不写：不出 `"about":null`、`"replaces":null`。
@@ -77,7 +77,7 @@ fn a_saved_memory_round_trips_as_an_event() {
     .expect("写得出");
     assert!(
         bare.to_line()
-            .ends_with(r#""audience":[{"kind":"person","account":"admin"}]}}"#),
+            .ends_with(r#""audience":[{"kind":"person"}]}}"#),
         "{}",
         bare.to_line()
     );

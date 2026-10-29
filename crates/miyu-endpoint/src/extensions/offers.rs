@@ -16,7 +16,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_config::phrases::Phrases;
-use miyu_kernel::id::AccountId;
 use miyu_policy::features::Feature;
 
 use super::TARGET;
@@ -32,30 +31,26 @@ pub(crate) struct Offer {
     pub(crate) summary: Phrases,
 }
 
-/// 交了的功能：（包，账号）到那一整份。
+/// 交了的功能：包到那一整份。
 #[derive(Default)]
-pub(crate) struct Offers(Mutex<BTreeMap<(String, AccountId), Vec<Offer>>>);
+pub(crate) struct Offers(Mutex<BTreeMap<String, Vec<Offer>>>);
 
 impl Offers {
-    fn table(&self) -> std::sync::MutexGuard<'_, BTreeMap<(String, AccountId), Vec<Offer>>> {
+    fn table(&self) -> std::sync::MutexGuard<'_, BTreeMap<String, Vec<Offer>>> {
         self.0.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 替 `account` 交了的全部，照包的编号、交的先后。
-    pub(crate) fn of(&self, account: &AccountId) -> Vec<Offer> {
+    /// 交了的全部，照包的编号、交的先后。
+    pub(crate) fn of(&self) -> Vec<Offer> {
         self.table()
-            .iter()
-            .filter(|((_, whose), _)| whose == account)
-            .flat_map(|(_, offers)| offers.iter().cloned())
+            .values()
+            .flat_map(|offers| offers.iter().cloned())
             .collect()
     }
 
-    /// 替 `account` 交了的功能（给预设、工具面的那一份）。
-    pub(crate) fn features_of(&self, account: &AccountId) -> Vec<Feature> {
-        self.of(account)
-            .into_iter()
-            .map(|offer| offer.feature)
-            .collect()
+    /// 交了的功能（给预设、工具面的那一份）。
+    pub(crate) fn features_of(&self) -> Vec<Feature> {
+        self.of().into_iter().map(|offer| offer.feature).collect()
     }
 }
 
@@ -98,10 +93,9 @@ impl Words {
 /// `feature.offer`：见模块说明，回 `{}`。不是核心拉起的扩展的连接 `not_an_extension`。
 pub(crate) fn offer(core: &Core, caller: &Caller, params: OfferParams) -> Result<Value, Refusal> {
     let package = caller.package.as_deref().ok_or(Refusal::NOT_AN_EXTENSION)?;
-    let account = core.admin.clone();
-    let offers = checked(core, (package, &account), params.features)?;
+    let offers = checked(core, package, params.features)?;
     let count = offers.len();
-    let key = (package.to_string(), account);
+    let key = package.to_string();
     let mut table = core.extensions.offers.table();
     if offers.is_empty() {
         table.remove(&key);
@@ -114,23 +108,19 @@ pub(crate) fn offer(core: &Core, caller: &Caller, params: OfferParams) -> Result
 }
 
 /// 查交的这一份：写法、撞不撞、工具是不是自己的。
-fn checked(
-    core: &Core,
-    (package, account): (&str, &AccountId),
-    offered: Vec<Offered>,
-) -> Result<Vec<Offer>, Refusal> {
+fn checked(core: &Core, package: &str, offered: Vec<Offered>) -> Result<Vec<Offer>, Refusal> {
     let bad = || Refusal::bad_field("features");
     // 这个人现在的功能里，除了这个包上一次交的那些，都是占着的编号。
     let mine: BTreeSet<String> = core
         .extensions
         .offers
         .table()
-        .get(&(package.to_string(), account.clone()))
+        .get(package)
         .into_iter()
         .flatten()
         .map(|offer| offer.feature.id.clone())
         .collect();
-    let installed = crate::scripts::features(core, account);
+    let installed = crate::scripts::features(core);
     let taken = |id: &str| installed.iter().any(|feature| feature.id == id) && !mine.contains(id);
     let catalog = core.tools.current();
     let own = |tool: &str| catalog.package_of(tool) == Some(package);

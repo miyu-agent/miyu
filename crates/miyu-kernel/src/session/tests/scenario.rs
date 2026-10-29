@@ -96,7 +96,7 @@ fn told(event: &Event) -> String {
         _ => String::new(),
     };
     let who = match &event.by {
-        By::Person(person) => person.account.as_str().to_string(),
+        By::Person(_) => "person".to_string(),
         By::Model(_) => "model".to_string(),
         By::Tool(tool) => format!("tool {}", tool.call_id),
         By::Module(module) => module.id.as_str().to_string(),
@@ -114,8 +114,8 @@ fn told(event: &Event) -> String {
 
 /// 第一轮开头的五条：会话创建、你说的那句、回合开始、环境和权限两块事实。
 const OPENING: [&str; 5] = [
-    "1 session.created alice",
-    "2 message.user alice",
+    "1 session.created person",
+    "2 message.user person",
     "3 turn.started kernel t3",
     "4 context.injected:env kernel t3",
     "5 context.injected:permission kernel t3",
@@ -174,7 +174,7 @@ fn two_reads_run_together_and_a_word_comes_in_between() {
         opening_then(&[
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 message.user alice t3",
+            "8 message.user person t3",
             "9 tool.result:ok tool call_6_2 t3",
             "10 tool.result:ok tool call_6_1 t3",
             "11 message.assistant model t3",
@@ -215,9 +215,9 @@ fn a_read_only_session_blocks_the_write_and_she_says_so() {
     assert_eq!(
         story(&stage),
         [
-            "1 session.created alice",
-            "2 session.policy_changed alice",
-            "3 message.user alice",
+            "1 session.created person",
+            "2 session.policy_changed person",
+            "3 message.user person",
             "4 turn.started kernel t4",
             "5 context.injected:env kernel t4",
             "6 context.injected:permission kernel t4",
@@ -253,7 +253,7 @@ fn the_step_limit_and_a_failed_request() {
             "10 model.called:ok kernel t3",
             "11 tool.result:error tool call_9_1 t3",
             "12 turn.ended:step_limit kernel t3",
-            "13 message.user alice",
+            "13 message.user person",
             "14 turn.started kernel t14",
             "15 model.called:error kernel t14",
             "16 turn.ended:error kernel t14",
@@ -279,14 +279,14 @@ fn undo_redo_and_say_again() {
     assert_eq!(
         story(&stage)[8..],
         [
-            "9 message.user alice",
+            "9 message.user person",
             "10 turn.started kernel t10",
             "11 message.assistant model t10",
             "12 model.called:ok kernel t10",
             "13 turn.ended:completed kernel t10",
-            "14 turn.reverted:10 alice",
-            "15 turn.unreverted:10 alice",
-            "16 message.user alice",
+            "14 turn.reverted:10 person",
+            "15 turn.unreverted:10 person",
+            "16 message.user person",
             "17 turn.started kernel t17",
             "18 message.assistant model t17",
             "19 model.called:ok kernel t17",
@@ -333,7 +333,7 @@ fn after_a_compaction_the_facts_come_again() {
             "9 turn.started kernel t9",
             "10 context.compacted kernel t9",
             "11 turn.ended:completed kernel t9",
-            "12 message.user alice",
+            "12 message.user person",
             "13 turn.started kernel t13",
             "14 context.injected:env kernel t13",
             "15 context.injected:permission kernel t13",

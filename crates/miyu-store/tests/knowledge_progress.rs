@@ -5,7 +5,6 @@
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 
-use miyu_kernel::id::AccountId;
 use miyu_store::knowledge::{BaseFields, IndexWatch, Knowledge, Reason};
 
 use crate::support::*;
@@ -18,7 +17,7 @@ struct Recorder {
 }
 
 impl IndexWatch for Recorder {
-    fn indexing(&self, _: &AccountId, kb: &str, done: usize, total: usize) {
+    fn indexing(&self, kb: &str, done: usize, total: usize) {
         self.heard
             .lock()
             .expect("拿得到锁")
@@ -29,7 +28,7 @@ impl IndexWatch for Recorder {
         }
     }
 
-    fn indexed(&self, _: &AccountId, kb: &str) {
+    fn indexed(&self, kb: &str) {
         self.heard
             .lock()
             .expect("拿得到锁")
@@ -46,7 +45,7 @@ fn filled(scratch: &Scratch, recorder: &Arc<Recorder>) -> Knowledge {
         description: None,
         auto: None,
     };
-    knowledge.found(&admin(), "notes", none).expect("建得了");
+    knowledge.found("notes", none).expect("建得了");
     let dir = root.path().join("kb/notes");
     for name in ["a.md", "b.md", "c.md"] {
         std::fs::write(dir.join(name), format!("# {name}\n猫\n")).expect("写得进");
@@ -59,7 +58,7 @@ fn rebuilding_is_reported_and_remembered() {
     let scratch = Scratch::new("kb-progress");
     let recorder = Arc::new(Recorder::default());
     let knowledge = filled(&scratch, &recorder);
-    let (bases, _) = knowledge.list(&admin()).expect("列得出");
+    let (bases, _) = knowledge.list().expect("列得出");
     let heard = recorder.heard.lock().expect("拿得到锁").clone();
     assert_eq!(heard.first().map(String::as_str), Some("notes 0/3"));
     assert_eq!(
@@ -77,7 +76,7 @@ fn rebuilding_is_reported_and_remembered() {
     assert!(!bases[0].indexing);
 
     let before = recorder.heard.lock().expect("拿得到锁").len();
-    knowledge.list(&admin()).expect("列得出");
+    knowledge.list().expect("列得出");
     assert_eq!(
         recorder.heard.lock().expect("拿得到锁").len(),
         before,
@@ -95,14 +94,14 @@ fn a_base_being_built_elsewhere_is_listed_without_waiting() {
     let knowledge = Arc::new(filled(&scratch, &recorder));
     let building = {
         let knowledge = Arc::clone(&knowledge);
-        std::thread::spawn(move || knowledge.reindex(&admin(), "notes").expect("建得了"))
+        std::thread::spawn(move || knowledge.reindex("notes").expect("建得了"))
     };
     wait.recv().expect("开始建了");
-    let (bases, _) = knowledge.list(&admin()).expect("不等它");
+    let (bases, _) = knowledge.list().expect("不等它");
     assert!(bases[0].indexing, "在建：{bases:?}");
     go.send(()).expect("放行");
     building.join().expect("建完了");
-    let (bases, _) = knowledge.list(&admin()).expect("列得出");
+    let (bases, _) = knowledge.list().expect("列得出");
     assert!(!bases[0].indexing);
 }
 
@@ -113,12 +112,12 @@ fn an_unchanged_skipped_document_is_not_read_again() {
     let knowledge = filled(&scratch, &recorder);
     let dir = root_in(&scratch).path().join("kb/notes");
     std::fs::write(dir.join("latin1.txt"), [b'c', b'a', 0xe9, b'\n']).expect("写得进");
-    let (_, skipped) = knowledge.list(&admin()).expect("列得出");
+    let (_, skipped) = knowledge.list().expect("列得出");
     assert_eq!(skipped.len(), 1, "{skipped:?}");
     assert_eq!(skipped[0].reason, Reason::NotUtf8);
 
     let before = recorder.heard.lock().expect("拿得到锁").len();
-    let (_, again) = knowledge.list(&admin()).expect("列得出");
+    let (_, again) = knowledge.list().expect("列得出");
     assert_eq!(
         recorder.heard.lock().expect("拿得到锁")[before..],
         [] as [String; 0],
@@ -130,7 +129,7 @@ fn an_unchanged_skipped_document_is_not_read_again() {
     assert_eq!(again[0].why, skipped[0].why);
 
     std::fs::write(dir.join("latin1.txt"), "café 猫\n").expect("写得进");
-    let (_, fixed) = knowledge.list(&admin()).expect("列得出");
+    let (_, fixed) = knowledge.list().expect("列得出");
     assert!(fixed.is_empty(), "改好了重读：{fixed:?}");
     assert!(
         recorder.heard.lock().expect("拿得到锁")[before..]

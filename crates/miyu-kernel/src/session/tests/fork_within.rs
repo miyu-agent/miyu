@@ -68,7 +68,7 @@ fn fork_at(parent: &Logged, child: SessionId) -> (Session, Vec<Event>, Vec<Event
         &base,
         PLACEHOLDER,
         id(100),
-        alice(),
+        person(),
         at(30),
         created_within(plan.upto, plan.within),
         policy(),
@@ -221,7 +221,7 @@ fn a_fork_within_a_turn_loads_back_the_same() {
 fn a_fork_point_in_the_wrong_place_is_refused() {
     let parent = parent();
     let fork = |base: &[Event], created: SessionCreated, within: bool| {
-        let opened = (child_id(), id(100), alice(), at(30));
+        let opened = (child_id(), id(100), person(), at(30));
         match within {
             true => Session::fork_within(
                 opened.0,

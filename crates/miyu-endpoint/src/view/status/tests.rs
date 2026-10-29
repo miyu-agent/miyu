@@ -3,7 +3,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_session::testkit::Script;
 use miyu_session::{Goal, GoalState, Tally};
@@ -23,7 +22,6 @@ fn a_goal_is_shown_with_its_round_and_spending() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        AccountId::parse("alice").expect("合写法"),
         "token".to_string(),
     );
     let mut spent = Tally::default();
@@ -40,7 +38,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
         by_you: false,
         spent,
     };
-    let shown = goal_of(&core, &core.admin, &goal);
+    let shown = goal_of(&core, &goal);
     assert_eq!(
         (
             &shown["text"],
@@ -65,7 +63,7 @@ fn a_goal_is_shown_with_its_round_and_spending() {
     goal.state = GoalState::Blocked;
     goal.reason = Some("要人给 key".to_string());
     goal.limit = NonZeroU32::new(20);
-    let shown = goal_of(&core, &core.admin, &goal);
+    let shown = goal_of(&core, &goal);
     assert_eq!(
         (&shown["state"], &shown["reason"], &shown["limit"]),
         (

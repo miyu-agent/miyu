@@ -28,7 +28,7 @@ fn said(seq: u64) -> Event {
     Event::from_line(
         &serde_json::json!({
             "seq": seq, "at": "2026-09-29T05:00:00.000Z", "kind": "message.user",
-            "by": {"kind": "person", "account": "alice"},
+            "by": {"kind": "person"},
             "body": {"blocks": [{"type": "text", "text": text}]},
         })
         .to_string(),
@@ -42,7 +42,7 @@ async fn how_long_fifty_thousand_events_take() {
     let scratch = Scratch::new();
     let dir = scratch.0.join("s");
     let mut log = SessionLog::create(&dir, SEGMENT_LIMIT).expect("建得了");
-    let created = Event::from_line(r#"{"seq":1,"at":"2026-09-29T05:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#)
+    let created = Event::from_line(r#"{"seq":1,"at":"2026-09-29T05:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#)
         .expect("读得懂");
     log.append(&[created]).expect("写得进");
     for batch in 0..50 {

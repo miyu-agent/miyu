@@ -7,7 +7,6 @@ use miyu_config::Layer;
 use miyu_config::merge::{Trust, merge};
 use miyu_config::parse::parse;
 use miyu_config::problem::{Code, Problem};
-use miyu_kernel::id::AccountId;
 use miyu_store::human::Human;
 
 use super::Config;
@@ -43,13 +42,9 @@ impl LayerParam {
 }
 
 /// `config.check`：把 `text` 当成一层的文件查，不生效。项目配置照「收紧」和另外几层合出来的比，不看信没信任。
-pub(crate) fn check(
-    core: &Core,
-    (account, peer): (&AccountId, Peer),
-    params: CheckParams,
-) -> Result<Value, Refusal> {
+pub(crate) fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let mine = core.mine(account);
+    let mine = core.mine();
     let problems = check_text(&mine.config(), &words, params.layer.layer(), &params.text)?;
     Ok(json!({ "problems": problems }))
 }

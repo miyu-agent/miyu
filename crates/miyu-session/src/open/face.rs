@@ -58,12 +58,11 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
             knowledge,
             persona: setup.persona.map(str::to_string),
             personas: setup.personas.clone(),
-            owner: setup.owner.clone(),
             home: setup.home.map(std::path::Path::to_path_buf),
             vectors: setup.vectors.clone(),
             recall: crate::knowledge::recall::texts(setup.resources),
         };
-        Arc::new(Shelves::new(shelving, setup.memory_account.clone()))
+        Arc::new(Shelves::new(shelving))
     });
     let (listed, reach) = match shelves.clone() {
         Some(shelves) => {

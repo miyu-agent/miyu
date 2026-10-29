@@ -107,9 +107,7 @@ async fn a_lane_remembers_like_its_main_session_and_its_turns_go_under_its_own_n
     stop(&branch).await;
     stop(&parent).await;
     home.memory.settle();
-    let (index, _) = home
-        .recall
-        .turns(&Room::persona(&alice_account(), "engineer"));
+    let (index, _) = home.recall.turns(&Room::persona("engineer"));
     let keys = index.keys().expect("列得出");
     let mine: Vec<&String> = keys
         .iter()
@@ -134,7 +132,7 @@ fn member() -> By {
     By::External(External {
         venue: VenueId::parse("qq:group:1").expect("合写法"),
         id: ExternalId::parse("qq:20017").expect("合写法"),
-        account: None,
+        owner: false,
         role: Some(Role::Member),
     })
 }
@@ -202,9 +200,7 @@ async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionI
 /// 回合库里搜「团子」：键和字。
 fn tuanzi(memory: &miyu_session::Memory) -> Vec<(String, String)> {
     memory.settle();
-    let (index, _) = memory
-        .turns
-        .turns(&Room::persona(&alice_account(), "engineer"));
+    let (index, _) = memory.turns.turns(&Room::persona("engineer"));
     index
         .search("团子", 10)
         .expect("搜得了")

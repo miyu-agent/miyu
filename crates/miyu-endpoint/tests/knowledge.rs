@@ -204,7 +204,7 @@ fn searching(query: &str) -> [Play; 2] {
 /// 库 `notes` 的块都补上了远程的向量没有。
 fn filled(home: &Home) -> bool {
     let knowledge = miyu_store::knowledge::Knowledge::new(&home.root);
-    let index = knowledge.index_of(&alice(), "notes");
+    let index = knowledge.index_of("notes");
     index
         .missing("emb/text-emb", 0, 10)
         .is_ok_and(|missing| missing.is_empty())

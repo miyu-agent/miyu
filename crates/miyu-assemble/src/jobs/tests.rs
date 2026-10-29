@@ -385,11 +385,7 @@ fn a_report_in_the_middle_of_a_turn_comes_after_the_results_of_that_step() {
 #[test]
 fn a_report_for_a_job_of_an_undone_turn_is_not_rendered() {
     let mut log = dispatched();
-    log.push(
-        r#"{"kind":"person","account":"alice"}"#,
-        "turn.reverted",
-        r#"{"turns":[3]}"#,
-    );
+    log.push(r#"{"kind":"person"}"#, "turn.reverted", r#"{"turns":[3]}"#);
     log.detached(KERNEL, "job.reported", EXITED);
     let child = format!(r#"{{"job":"j2","session":"{CHILD}","reason":"done","text":"好了"}}"#);
     log.detached(

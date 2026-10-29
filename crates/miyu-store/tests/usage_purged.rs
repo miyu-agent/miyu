@@ -80,13 +80,7 @@ fn purging_keeps_the_usage_and_the_totals_stay_the_same() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
-    let groups = [
-        Group::Model,
-        Group::Purpose,
-        Group::Session,
-        Group::Venue,
-        Group::Account,
-    ];
+    let groups = [Group::Model, Group::Purpose, Group::Session, Group::Venue];
     let before = (total(&index), rows(&index, &groups, 0));
     let purged = purge_later(&root);
     assert_eq!((purged.removed, purged.failed.clone()), (1, Vec::new()));
@@ -121,7 +115,7 @@ fn the_summary_is_hourly_by_provider_model_and_purpose() {
     assert_eq!(
         written,
         concat!(
-            r#"{"session":"01900000-0000-7000-8000-000000000002","owner":"admin","venue":"local","parent":"01900000-0000-7000-8000-000000000001","spent":["#,
+            r#"{"session":"01900000-0000-7000-8000-000000000002","venue":"local","parent":"01900000-0000-7000-8000-000000000001","spent":["#,
             r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T08:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":10,"cache_read":0,"cache_write":0,"output":1},"amounts":[{"currency":"USD","amount":0.125}]},"#,
             r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":20,"cache_read":5,"cache_write":0,"output":2},"amounts":[{"currency":"USD","amount":0.25}]},"#,
             r#"{"provider":"deepseek","model":"deepseek-flash","purpose":"recap","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":30,"cache_read":0,"cache_write":0,"output":3},"amounts":[{"currency":"CNY","amount":2}]},"#,

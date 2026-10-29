@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_session::testkit::{Play, Script};
@@ -55,11 +55,7 @@ impl SessionPort for Table {
         Box::pin(async { Ok(miyu_session::Peek::default()) })
     }
 
-    fn sessions(
-        &self,
-        _owner: AccountId,
-        _stop: Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>> {
+    fn sessions(&self, _stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         let listed = self.listed.clone();
         Box::pin(async move { Ok(listed) })
     }

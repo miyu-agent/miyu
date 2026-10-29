@@ -35,7 +35,7 @@ use std::sync::Arc;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event, Level, Permission, TransientBody};
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person};
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::{Timestamp, UtcOffset};
@@ -178,15 +178,9 @@ impl Home {
             persona: Some("engineer"),
             persona_texts: miyu_session::testkit::sample_persona_texts(),
             profile: lines.profile,
-            personas: miyu_store::personas::Personas::new(
-                &self.resources,
-                &self.root,
-                &alice_account(),
-            ),
-            memory_account: lines.memory_account,
+            personas: miyu_store::personas::Personas::new(&self.resources, &self.root),
             memory_scope: lines.memory,
             venue: lines.venue,
-            owner: alice_account(),
             permission: opening.permission,
             attended: opening.attended,
             oneshot: lines.oneshot,
@@ -304,28 +298,10 @@ impl Home {
         place: Workplace<'_>,
         sessions: Option<Arc<dyn SessionPort>>,
     ) -> Handle {
-        self.load_owned(session, models, tools, place, (sessions, true))
-            .await
-    }
-
-    /// 同 [`Home::load_placed`]，属主是不是管理员照 `owner_is_admin`（施工 Y-2 下上：成员的会话载入以后照样关着）。
-    pub async fn load_owned(
-        &self,
-        session: &SessionId,
-        models: &dyn Models,
-        tools: &Catalog,
-        place: Workplace<'_>,
-        (sessions, owner_is_admin): (Option<Arc<dyn SessionPort>>, bool),
-    ) -> Handle {
         let tools = &miyu_tool::Shelf::new(tools.clone());
         let loaded = load(Load {
             root: &self.root,
-            owner: alice_account(),
-            personas: miyu_store::personas::Personas::new(
-                &self.resources,
-                &self.root,
-                &alice_account(),
-            ),
+            personas: miyu_store::personas::Personas::new(&self.resources, &self.root),
             resources: &self.resources,
             id: session.clone(),
             place,
@@ -349,7 +325,6 @@ impl Home {
             plugins: self.plugins.clone(),
             memory: Some(self.memory()),
             presets: None,
-            confined: !owner_is_admin,
         });
         within("载入", loaded).await.expect("载入得了会话")
     }
@@ -428,12 +403,8 @@ pub fn now() -> Timestamp {
     Timestamp::from_unix_millis(i64::try_from(millis).expect("在范围里")).expect("在范围里")
 }
 
-pub fn alice_account() -> AccountId {
-    AccountId::parse("alice").expect("账号合写法")
-}
-
 pub fn alice() -> By {
-    By::Person(Person::new(alice_account()))
+    By::Person(Person::default())
 }
 
 /// 群里的一个人：alice 听不到只给他的（记忆的听众，`memory.md` 第九条）。
@@ -441,7 +412,7 @@ pub fn stranger() -> By {
     By::External(miyu_kernel::origin::External {
         venue: VenueId::parse("qq:group:1").expect("合写法"),
         id: miyu_kernel::id::ExternalId::parse("qq:10001").expect("合写法"),
-        account: None,
+        owner: false,
         role: None,
     })
 }

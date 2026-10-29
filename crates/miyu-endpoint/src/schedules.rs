@@ -17,13 +17,11 @@ pub(crate) mod port;
 mod ran;
 mod run;
 
-use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use jiff::tz::TimeZone;
 use tokio::sync::Notify;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::root::DataRoot;
 use miyu_store::schedules::{self as table, NewSchedule, Opened, Schedules as Table};
@@ -67,19 +65,20 @@ pub enum ScheduleError {
     Unknown,
     /// 交的时区不认识（施工 J-3 上）。
     Zone,
-    /// 这个账号挂满了 [`PER_ACCOUNT`] 个（施工 J-3 上）。
+    /// 挂满了 [`PER_ACCOUNT`] 个（施工 J-3 上）。
     TooMany,
-    /// 这个账号的唤醒表这一回用不了（坏了又开不了空的、版本比这一版新）。
+    /// 唤醒表这一回用不了（坏了又开不了空的、版本比这一版新）。
     Unusable,
     /// 读写库出错。
     Db(DbError),
 }
 
-/// 核心的唤醒表：各账号的表用到时开、开了一直开着；一个钟、一个叫醒睡着的那个的信号。
+/// 核心的唤醒表：用到时开、开了一直开着；一个钟、一个叫醒睡着的那个的信号。
 pub struct Schedules {
     root: DataRoot,
     clock: Arc<dyn Clock>,
-    tables: Mutex<BTreeMap<AccountId, Option<Arc<Table>>>>,
+    /// 开过的表：没开过的是空的；开过、用不了的是 `Some(None)`。
+    table: Mutex<Option<Option<Arc<Table>>>>,
     wake: Arc<Notify>,
     /// 写不进下一次的先放一放（`hold.rs`）。
     holds: hold::Holds,
@@ -109,7 +108,7 @@ impl Schedules {
         Schedules {
             root,
             clock: Arc::new(SystemClock),
-            tables: Mutex::new(BTreeMap::new()),
+            table: Mutex::new(None),
             wake: Arc::new(Notify::new()),
             holds: hold::Holds::default(),
             changes: tokio::sync::broadcast::channel(changes::CHANGES).0,
@@ -127,12 +126,12 @@ impl Schedules {
         self.clock.now()
     }
 
-    /// 给 `account` 建一个：第一次照 `wanted.first`，不写的照 `when` 从现在往后算。交回建好的一行。
+    /// 建一个：第一次照 `wanted.first`，不写的照 `when` 从现在往后算。交回建好的一行。
     ///
     /// # Errors
     ///
     /// cron 读不成、算不出第一次、隔得太短；表用不了、写不了。
-    pub fn add(&self, account: &AccountId, mut wanted: Wanted) -> Result<Schedule, ScheduleError> {
+    pub fn add(&self, mut wanted: Wanted) -> Result<Schedule, ScheduleError> {
         match &mut wanted.when {
             When::Cron {
                 cron, zone: named, ..
@@ -150,7 +149,7 @@ impl Schedules {
             When::At { .. } | When::Every { .. } => {}
         }
         // 熔断性质的安全上限（施工 J-3 上）：人建、她建、包建合计；到了只拒新建。
-        if self.list(account)?.len() >= PER_ACCOUNT {
+        if self.list()?.len() >= PER_ACCOUNT {
             return Err(ScheduleError::TooMany);
         }
         let now = self.now();
@@ -166,35 +165,33 @@ impl Schedules {
             looping: wanted.looping,
             next: Some(first),
         };
-        let added = self.table(account, true)?.add(new, now)?;
-        tracing::info!(target: TARGET, account = %account, schedule = %added.id, "schedule added");
+        let added = self.table(true)?.add(new, now)?;
+        tracing::info!(target: TARGET, schedule = %added.id, "schedule added");
         self.changed();
-        self.notify(account, &added.id);
+        self.notify(&added.id);
         Ok(added)
     }
 
-    /// `account` 的全部，照下一次排（停着的、没定下一次的在后）。还没有表的是空的。
+    /// 全部，照下一次排（停着的、没定下一次的在后）。还没有表的是空的。
     ///
     /// # Errors
     ///
     /// 表用不了、读不了。
-    pub fn list(&self, account: &AccountId) -> Result<Vec<Schedule>, ScheduleError> {
-        match self.table(account, false) {
+    pub fn list(&self) -> Result<Vec<Schedule>, ScheduleError> {
+        match self.table(false) {
             Ok(table) => Ok(table.list()?),
             Err(ScheduleError::Unknown) => Ok(Vec::new()),
             Err(error) => Err(error),
         }
     }
 
-    /// `account` 的编号是 `id` 的那一个。
+    /// 编号是 `id` 的那一个。
     ///
     /// # Errors
     ///
     /// 没有（[`ScheduleError::Unknown`]），表用不了、读不了。
-    pub fn get(&self, account: &AccountId, id: &str) -> Result<Schedule, ScheduleError> {
-        self.table(account, false)?
-            .get(id)?
-            .ok_or(ScheduleError::Unknown)
+    pub fn get(&self, id: &str) -> Result<Schedule, ScheduleError> {
+        self.table(false)?.get(id)?.ok_or(ScheduleError::Unknown)
     }
 
     /// 删掉一个。
@@ -202,13 +199,13 @@ impl Schedules {
     /// # Errors
     ///
     /// 没有，表用不了、写不了。
-    pub fn cancel(&self, account: &AccountId, id: &str) -> Result<(), ScheduleError> {
-        if !self.table(account, false)?.remove(id)? {
+    pub fn cancel(&self, id: &str) -> Result<(), ScheduleError> {
+        if !self.table(false)?.remove(id)? {
             return Err(ScheduleError::Unknown);
         }
-        tracing::info!(target: TARGET, account = %account, schedule = %id, "schedule cancelled");
+        tracing::info!(target: TARGET, schedule = %id, "schedule cancelled");
         self.changed();
-        self.notify(account, id);
+        self.notify(id);
         Ok(())
     }
 
@@ -217,8 +214,8 @@ impl Schedules {
     /// # Errors
     ///
     /// 没有，表用不了、写不了。
-    pub fn pause(&self, account: &AccountId, id: &str) -> Result<Schedule, ScheduleError> {
-        self.edit(account, id, |schedule, _| {
+    pub fn pause(&self, id: &str) -> Result<Schedule, ScheduleError> {
+        self.edit(id, |schedule, _| {
             schedule.paused = true;
             schedule.next = None;
             Ok(())
@@ -230,8 +227,8 @@ impl Schedules {
     /// # Errors
     ///
     /// 没有，算不出下一次（某个时刻一次的已经过了），表用不了、写不了。
-    pub fn resume(&self, account: &AccountId, id: &str) -> Result<Schedule, ScheduleError> {
-        self.edit(account, id, |schedule, now| {
+    pub fn resume(&self, id: &str) -> Result<Schedule, ScheduleError> {
+        self.edit(id, |schedule, now| {
             schedule.next =
                 Some(next::first(&schedule.when, now, &zone()).ok_or(ScheduleError::NoNext)?);
             schedule.paused = false;
@@ -246,12 +243,11 @@ impl Schedules {
     /// 没有，表用不了、写不了。
     pub fn set_next(
         &self,
-        account: &AccountId,
         id: &str,
         next: Option<Timestamp>,
         prompt: Option<String>,
     ) -> Result<Schedule, ScheduleError> {
-        self.edit(account, id, |schedule, _| {
+        self.edit(id, |schedule, _| {
             schedule.next = next;
             if let Some(prompt) = prompt {
                 schedule.prompt = prompt;
@@ -263,18 +259,17 @@ impl Schedules {
     /// 读出编号是 `id` 的那一个，照 `change` 改了写回去，叫醒睡着的那个。
     fn edit(
         &self,
-        account: &AccountId,
         id: &str,
         change: impl FnOnce(&mut Schedule, Timestamp) -> Result<(), ScheduleError>,
     ) -> Result<Schedule, ScheduleError> {
-        let table = self.table(account, false)?;
+        let table = self.table(false)?;
         let mut schedule = table.get(id)?.ok_or(ScheduleError::Unknown)?;
         change(&mut schedule, self.now())?;
         if !table.put(&schedule)? {
             return Err(ScheduleError::Unknown);
         }
         self.changed();
-        self.notify(account, id);
+        self.notify(id);
         Ok(schedule)
     }
 
@@ -283,75 +278,63 @@ impl Schedules {
         self.wake.notify_one();
     }
 
-    /// 账号 `account` 的表：开过的照开过的；没开过的，`create` 的没有就建，不 `create` 的没有文件就当没有
-    /// （[`ScheduleError::Unknown`]）。开不了的记一行、这一回都当用不了。
-    fn table(&self, account: &AccountId, create: bool) -> Result<Arc<Table>, ScheduleError> {
-        let mut tables = self
-            .tables
+    /// 表：开过的照开过的；没开过的，`create` 的没有就建，不 `create` 的没有文件就当没有（[`ScheduleError::Unknown`]）。开不了的
+    /// 记一行、这一回都当用不了。
+    fn table(&self, create: bool) -> Result<Arc<Table>, ScheduleError> {
+        let mut table = self
+            .table
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(found) = tables.get(account) {
+        if let Some(found) = table.as_ref() {
             return found.clone().ok_or(ScheduleError::Unusable);
         }
         if !create && !table::path(&self.root).exists() {
             return Err(ScheduleError::Unknown);
         }
         let (opened, how) = Table::open(&self.root);
-        said(account, &how, (&self.notices, self.now()));
+        said(&how, (&self.notices, self.now()));
         let opened = opened.map(Arc::new);
-        tables.insert(account.clone(), opened.clone());
+        *table = Some(opened.clone());
         opened.ok_or(ScheduleError::Unusable)
     }
 
-    /// 开着的几份表，照账号排。
-    fn opened(&self) -> Vec<(AccountId, Arc<Table>)> {
-        let tables = self
-            .tables
+    /// 开着的表：没开过、用不了的没有。
+    fn opened(&self) -> Option<Arc<Table>> {
+        self.table
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        tables
-            .iter()
-            .filter_map(|(account, table)| Some((account.clone(), Arc::clone(table.as_ref()?))))
-            .collect()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+            .flatten()
     }
 
-    /// 核心起来时：主人 `owner` 有唤醒表的开上，已经过了的跳过（错过的不补），照现在算下一次。
-    pub(crate) fn recall(&self, owner: &AccountId) {
-        for account in [owner]
-            .into_iter()
-            .filter(|_| table::path(&self.root).exists())
-        {
-            let Ok(table) = self.table(account, false) else {
-                continue;
-            };
-            let now = self.now();
-            match table.due(now) {
-                Ok(due) => {
-                    for schedule in due {
-                        run::skip(&table, account, schedule, now);
-                    }
+    /// 核心起来时：有唤醒表的开上，已经过了的跳过（错过的不补），照现在算下一次。
+    pub(crate) fn recall(&self) {
+        let Ok(table) = self.table(false) else {
+            return;
+        };
+        let now = self.now();
+        match table.due(now) {
+            Ok(due) => {
+                for schedule in due {
+                    run::skip(&table, schedule, now);
                 }
-                Err(error) => {
-                    tracing::warn!(target: TARGET, account = %account, error = %error, "schedules not read");
-                }
+            }
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "schedules not read");
             }
         }
     }
 
-    /// 最早的下一次，各账号里挑；写不进下一次、放着的照「不早于」往后挪（`hold.rs`）。
+    /// 最早的下一次；写不进下一次、放着的照「不早于」往后挪（`hold.rs`）。
     fn earliest(&self) -> Option<Timestamp> {
-        self.opened()
+        self.opened()?
+            .list()
+            .unwrap_or_default()
             .into_iter()
-            .flat_map(|(account, table)| {
-                let listed = table.list().unwrap_or_default();
-                listed
-                    .into_iter()
-                    .filter(|schedule| !schedule.paused)
-                    .filter_map(|schedule| {
-                        let next = schedule.next?;
-                        Some(self.holds.later(&account, &schedule.id, next))
-                    })
-                    .collect::<Vec<_>>()
+            .filter(|schedule| !schedule.paused)
+            .filter_map(|schedule| {
+                let next = schedule.next?;
+                Some(self.holds.later(&schedule.id, next))
             })
             .min()
     }
@@ -359,19 +342,19 @@ impl Schedules {
 
 /// 开一份表是什么情形，照它记日志：坏了改名留着的、比这一版新的、开不了的都是 `WARN`。坏了换了一份空的，另给人推一条
 /// `schedules.reset`（施工 J-3 下）：原来的都没了，要告诉他。
-fn said(account: &AccountId, how: &Opened, (notices, now): (&notices::Notices, Timestamp)) {
+fn said(how: &Opened, (notices, now): (&notices::Notices, Timestamp)) {
     match how {
         Opened::Kept => {}
-        Opened::Created => tracing::info!(target: TARGET, account = %account, "schedules created"),
+        Opened::Created => tracing::info!(target: TARGET, "schedules created"),
         Opened::SetAside { why, .. } => {
-            tracing::warn!(target: TARGET, account = %account, error = %why, "schedules set aside");
-            notices.send(account, "schedules.reset", now, serde_json::json!({}));
+            tracing::warn!(target: TARGET, error = %why, "schedules set aside");
+            notices.send(notices::RESET, now, serde_json::json!({}));
         }
         Opened::Newer(version) => {
-            tracing::warn!(target: TARGET, account = %account, version, "schedules newer");
+            tracing::warn!(target: TARGET, version, "schedules newer");
         }
         Opened::Unusable(error) => {
-            tracing::warn!(target: TARGET, account = %account, error = %error, "schedules unusable");
+            tracing::warn!(target: TARGET, error = %error, "schedules unusable");
         }
     }
 }

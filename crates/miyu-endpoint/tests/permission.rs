@@ -96,7 +96,7 @@ async fn switching_over_the_protocol_records_it_and_pushes_it() {
             json!({ "permission": permission }),
             "{event}"
         );
-        assert_eq!(event["by"], json!({"kind": "person", "account": "alice"}));
+        assert_eq!(event["by"], json!({"kind": "person"}));
         assert_eq!(event["cause"], json!(id));
         assert!(event.get("turn").is_none(), "空闲时切的不带回合：{event}");
     }

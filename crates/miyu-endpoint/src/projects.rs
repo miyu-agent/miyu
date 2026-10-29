@@ -12,7 +12,6 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_store::projects::{self, Project, Projects};
 
 use crate::Core;
@@ -35,15 +34,14 @@ const CLEARABLE: [&str; 6] = [
 
 /// 答一条 `project.*`；不认识的 `unknown_method`。
 pub(crate) async fn call(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
-    let account = &core.admin;
     match request.method.as_str() {
         "project.list" => {
             let read = read(core).await?;
             Ok(json!({"projects": read.projects.projects}))
         }
-        "project.create" => create(core, account, params(request)?).await,
-        "project.update" => update(core, account, params(request)?).await,
-        "project.delete" => delete(core, account, request, params(request)?).await,
+        "project.create" => create(core, params(request)?).await,
+        "project.update" => update(core, params(request)?).await,
+        "project.delete" => delete(core, request, params(request)?).await,
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
 }
@@ -82,7 +80,7 @@ pub(crate) struct DeleteParams {
 }
 
 /// `project.create`：名称必写；查好各格、人格和预设在不在，起编号，加在最后。
-async fn create(core: &Arc<Core>, account: &AccountId, fields: Fields) -> Result<Value, Refusal> {
+async fn create(core: &Arc<Core>, fields: Fields) -> Result<Value, Refusal> {
     let Some(name) = fields.name.clone() else {
         return Err(Refusal::bad_field("name"));
     };
@@ -100,9 +98,9 @@ async fn create(core: &Arc<Core>, account: &AccountId, fields: Fields) -> Result
         created: now,
     };
     apply(&mut project, fields);
-    known(core, account, &project).await?;
+    known(core, &project).await?;
     let id = project.project.clone();
-    change(core, account, &id, move |projects| {
+    change(core, &id, move |projects| {
         projects.projects.push(project);
         Ok(())
     })
@@ -112,11 +110,7 @@ async fn create(core: &Arc<Core>, account: &AccountId, fields: Fields) -> Result
 }
 
 /// `project.update`：写了值的换上，`unset` 列的清掉；一格又写又清、清名称、清不认识的格都是参数不对。
-async fn update(
-    core: &Arc<Core>,
-    account: &AccountId,
-    params: UpdateParams,
-) -> Result<Value, Refusal> {
+async fn update(core: &Arc<Core>, params: UpdateParams) -> Result<Value, Refusal> {
     for field in &params.unset {
         if !CLEARABLE.contains(&field.as_str()) || written(&params.fields, field) {
             return Err(Refusal::bad_field(field));
@@ -132,9 +126,9 @@ async fn update(
     for field in &params.unset {
         clear(&mut project, field);
     }
-    known(core, account, &project).await?;
+    known(core, &project).await?;
     let id = params.project;
-    change(core, account, &id, move |projects| {
+    change(core, &id, move |projects| {
         let slot = projects
             .find_mut(&project.project)
             .ok_or(Refusal::UNKNOWN_PROJECT)?;
@@ -148,14 +142,13 @@ async fn update(
 /// `project.delete`：先把里面的会话挪出来（施工 H-2，[`sessions::move_out`]），再从文件里拿掉；回挪了几个。
 async fn delete(
     core: &Arc<Core>,
-    account: &AccountId,
     request: &Request,
     params: DeleteParams,
 ) -> Result<Value, Refusal> {
     let id = params.project;
     sessions::find(core, &id).await?;
-    let moved = sessions::move_out(core, account, request, &id).await?;
-    change(core, account, &id, |projects| {
+    let moved = sessions::move_out(core, request, &id).await?;
+    change(core, &id, |projects| {
         projects
             .remove(&id)
             .map(drop)
@@ -222,15 +215,15 @@ fn clear(project: &mut Project, field: &str) {
 }
 
 /// 各格的写法对、写了的人格和预设在：人格、预设照造会话那一套找（设计第二节第 5 条：造项目时就查）。
-async fn known(core: &Core, account: &AccountId, project: &Project) -> Result<(), Refusal> {
+async fn known(core: &Core, project: &Project) -> Result<(), Refusal> {
     project
         .check()
         .map_err(|wrong| Refusal::bad_field(wrong.field()))?;
     if let Some(Some(persona)) = &project.persona {
-        crate::personas::resolve(core, account, Some(Some(persona.as_str()))).await?;
+        crate::personas::resolve(core, Some(Some(persona.as_str()))).await?;
     }
     if let Some(preset) = &project.preset {
-        crate::presets::resolve(core, account, Some(preset.as_str())).await?;
+        crate::presets::resolve(core, Some(preset.as_str())).await?;
     }
     Ok(())
 }
@@ -257,7 +250,6 @@ async fn read(core: &Core) -> Result<projects::Read, Refusal> {
 /// 排着改一次：读、照 `edit` 改、照读到的版本写回，写成了报项目 `id` 变了。`edit` 拒绝的什么都不写。
 async fn change(
     core: &Core,
-    account: &AccountId,
     id: &str,
     edit: impl FnOnce(&mut Projects) -> Result<(), Refusal> + Send,
 ) -> Result<(), Refusal> {
@@ -271,7 +263,7 @@ async fn change(
     .await;
     match written {
         Ok(Ok(())) => {
-            core.project_changes.notify(account, id);
+            core.project_changes.notify(id);
             Ok(())
         }
         Ok(Err(error)) => {

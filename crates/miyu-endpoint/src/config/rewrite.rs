@@ -52,7 +52,7 @@ pub(crate) fn rewrite(
 ) -> Result<(), Refusal> {
     let words = words(core, peer.language)?;
     let mut config = core.config();
-    let by = By::Person(Person::new(config.places.account.clone()));
+    let by = By::Person(Person::default());
     for _ in 0..TRIES {
         observe(core, &mut config, layer);
         let file = config.file();

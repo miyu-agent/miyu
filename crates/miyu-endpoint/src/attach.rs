@@ -26,7 +26,7 @@ use serde_json::{Value, json};
 
 use miyu_fs::{Boundary, Places, Zone, open_file, resolve, tilde};
 use miyu_kernel::block::{Block, File, Image};
-use miyu_kernel::id::{AccountId, ContentHash, FileName, MediaType, SourcePath};
+use miyu_kernel::id::{ContentHash, FileName, MediaType, SourcePath};
 use miyu_store::blob::{BlobError, Blobs};
 use miyu_store::root::DataRoot;
 
@@ -104,7 +104,6 @@ enum Source {
 /// 读、存要的几样：数据根、连接的账号（施工 Y-2中下）、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
 struct Place {
     root: DataRoot,
-    account: AccountId,
     home: Option<PathBuf>,
     own: Option<PathBuf>,
 }
@@ -113,7 +112,7 @@ struct Place {
 /// `package` 是存的扩展的包（人的连接没有）：存好了它拿得到这个 blob（施工 W-6 三补，[`Grants`]）。
 pub(crate) async fn put(
     core: &Core,
-    (account, package): (&AccountId, Option<&str>),
+    package: Option<&str>,
     params: PutParams,
 ) -> Result<Value, Refusal> {
     let name = params.name.as_deref().map(file_name).transpose()?;
@@ -128,7 +127,7 @@ pub(crate) async fn put(
         ),
         _ => return Err(Refusal::BAD_PARAMS),
     };
-    let mut place = place(core, account);
+    let mut place = place(core);
     place.own = package.and_then(|package| own_folder(core, package));
     let (blob, reply) = blocking(move || put_blocking(&place, source, given)).await?;
     if let Some(package) = package {
@@ -140,7 +139,6 @@ pub(crate) async fn put(
 /// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后：blob 照连接的账号 `account` 找。
 pub(crate) async fn blocks(
     core: &Core,
-    account: &AccountId,
     attachments: Vec<Attachment>,
 ) -> Result<Vec<Block>, Refusal> {
     let mut wanted = Vec::with_capacity(attachments.len());
@@ -162,7 +160,7 @@ pub(crate) async fn blocks(
     if wanted.is_empty() {
         return Ok(Vec::new());
     }
-    let place = place(core, account);
+    let place = place(core);
     blocking(move || {
         let blobs = Blobs::new(place.root.blobs());
         wanted
@@ -376,10 +374,9 @@ pub(crate) fn media_type(text: &str) -> Result<MediaType, Refusal> {
     MediaType::parse(text).map_err(|_| Refusal::BAD_PARAMS)
 }
 
-fn place(core: &Core, account: &AccountId) -> Place {
+fn place(core: &Core) -> Place {
     Place {
         root: core.root.clone(),
-        account: account.clone(),
         home: core.home.clone(),
         own: None,
     }

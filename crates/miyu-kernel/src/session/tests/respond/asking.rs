@@ -11,7 +11,7 @@ fn member(n: u32) -> By {
     By::External(External {
         venue: VenueId::parse("qq:group:1").unwrap(),
         id: ExternalId::parse(&format!("qq:{n}")).unwrap(),
-        account: None,
+        owner: false,
         role: None,
     })
 }
@@ -66,7 +66,7 @@ fn hooked(logged: &mut Logged) -> u64 {
 fn a_message_that_opens_the_turn_is_who_asked() {
     let mut logged = Logged::new();
     let seen = logged.ask(4, "hi");
-    assert_eq!(asked_by_the_next_call(&mut logged, seen), [Some(alice())]);
+    assert_eq!(asked_by_the_next_call(&mut logged, seen), [Some(person())]);
 }
 
 #[test]

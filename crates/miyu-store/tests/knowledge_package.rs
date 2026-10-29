@@ -28,7 +28,7 @@ fn own(root: &DataRoot, id: &str) -> PathBuf {
 
 fn listed(knowledge: &Knowledge) -> Vec<(String, Option<String>, bool)> {
     knowledge
-        .list(&admin())
+        .list()
         .expect("列得出")
         .0
         .into_iter()
@@ -55,7 +55,7 @@ fn a_package_base_is_listed_searched_and_read() {
         "name = \"雾港\"\nauto = true\n",
     );
     let knowledge = Knowledge::new(&root).with_packages(vec![("world-pack".into(), pack)]);
-    let (bases, _) = knowledge.list(&admin()).expect("列得出");
+    let (bases, _) = knowledge.list().expect("列得出");
     assert_eq!(bases.len(), 1);
     assert_eq!(
         (bases[0].id.as_str(), bases[0].name.as_str()),
@@ -64,9 +64,7 @@ fn a_package_base_is_listed_searched_and_read() {
     assert_eq!(bases[0].package.as_deref(), Some("world-pack"));
     assert!(bases[0].auto, "照包里写的");
     assert_eq!(bases[0].documents, 1);
-    let (hits, _) = knowledge
-        .search(&admin(), "守灯人", None, 5, None)
-        .expect("搜得了");
+    let (hits, _) = knowledge.search("守灯人", None, 5, None).expect("搜得了");
     assert_eq!(hits[0].kb, "world");
     let page = knowledge.read("world", "people.md", 1).expect("读得了");
     assert!(page.text.contains("守灯人"));
@@ -85,7 +83,7 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
     let root = root_in(&scratch);
     let pack = package(&scratch, "world-pack", "world", "auto = true\n");
     let knowledge = Knowledge::new(&root).with_packages(vec![("world-pack".into(), pack.clone())]);
-    knowledge.list(&admin()).expect("列得出");
+    knowledge.list().expect("列得出");
     let read_only = |result: Result<(), KnowledgeError>| {
         assert!(
             matches!(result, Err(KnowledgeError::Packaged)),
@@ -95,10 +93,10 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
     read_only(knowledge.add("world", "a.md", b"x\n", false));
     read_only(knowledge.save("world", "a.md", "x", false).map(|_| ()));
     read_only(knowledge.trash("world", "people.md", None).map(|_| ()));
-    read_only(knowledge.delete(&admin(), "world", None).map(|_| ()));
+    read_only(knowledge.delete("world", None).map(|_| ()));
     read_only(
         knowledge
-            .rename(&admin(), "world", fields(None, Some("新名字")))
+            .rename("world", fields(None, Some("新名字")))
             .map(|_| ()),
     );
     knowledge
@@ -110,7 +108,7 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
     );
 
     let off = knowledge
-        .rename(&admin(), "world", fields(Some(false), None))
+        .rename("world", fields(Some(false), None))
         .expect("开关改得了");
     assert!(!off.auto);
     assert!(!knowledge.auto("world").expect("在"));
@@ -122,12 +120,10 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
         "包里的不动"
     );
     knowledge
-        .rename(&admin(), "world", fields(Some(true), None))
+        .rename("world", fields(Some(true), None))
         .expect("开得回来");
     assert!(knowledge.auto("world").expect("在"));
-    knowledge
-        .reindex(&admin(), "world")
-        .expect("索引是我们的，重建得了");
+    knowledge.reindex("world").expect("索引是我们的，重建得了");
 }
 
 #[test]
@@ -152,7 +148,7 @@ fn your_own_base_wins_and_the_first_package_wins() {
     );
     assert_eq!(knowledge.title("lore").expect("在").0, "甲");
     assert!(matches!(
-        knowledge.found(&admin(), "lore", fields(None, None)),
+        knowledge.found("lore", fields(None, None)),
         Err(KnowledgeError::BaseExists)
     ));
 }
@@ -180,9 +176,9 @@ fn removing_a_package_takes_its_bases_index_and_switches() {
     let pack = package(&scratch, "world-pack", "world", "auto = true\n");
     own(&root, "notes");
     let knowledge = Knowledge::new(&root).with_packages(vec![("world-pack".into(), pack)]);
-    knowledge.list(&admin()).expect("列得出");
+    knowledge.list().expect("列得出");
     knowledge
-        .rename(&admin(), "world", fields(Some(false), None))
+        .rename("world", fields(Some(false), None))
         .expect("开关改得了");
     let index = root.index().join("kb/packages/world-pack");
     assert!(index.is_dir());
@@ -228,7 +224,7 @@ fn switches_are_written_where_the_data_root_really_is() {
     let pack = package(&scratch, "world-pack", "world", "auto = true\n");
     let knowledge = Knowledge::new(&root).with_packages(vec![("world-pack".into(), pack)]);
     knowledge
-        .rename(&admin(), "world", fields(Some(false), None))
+        .rename("world", fields(Some(false), None))
         .expect("开关改得了");
     assert!(!knowledge.auto("world").expect("在"));
     let mine = root.path().join("kb.toml");

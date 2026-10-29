@@ -33,7 +33,7 @@ use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
 
 use miyu_endpoint::{Core, serve};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::testkit::Script;
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::read_events;
@@ -133,7 +133,6 @@ impl Home {
             models,
             tools,
             None,
-            alice(),
             TOKEN.to_string(),
         );
         Arc::new(
@@ -172,7 +171,6 @@ impl Home {
         .concat();
         let config = miyu_endpoint::config::Config::load(
             &self.root,
-            &alice(),
             home.as_deref(),
             items,
             miyu_endpoint::config::Environment::of(env),
@@ -244,7 +242,6 @@ impl Home {
             Arc::new(script.clone()),
             Catalog::default(),
             None,
-            alice(),
             TOKEN.to_string(),
         )
     }
@@ -262,7 +259,6 @@ impl Home {
             Arc::new(script.clone()),
             tools,
             home,
-            alice(),
             token.to_string(),
         )
     }
@@ -309,10 +305,6 @@ impl Drop for Home {
         temp.push("-sandbox-tmp");
         let _ = std::fs::remove_dir_all(PathBuf::from(temp));
     }
-}
-
-pub fn alice() -> AccountId {
-    AccountId::parse("alice").expect("账号合写法")
 }
 
 /// 写的一头。

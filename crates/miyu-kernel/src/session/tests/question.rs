@@ -10,11 +10,11 @@ use crate::id::{CallId, ModuleId};
 use crate::origin::Tool;
 use crate::tool::Access;
 
-/// 编号是 `n` 的命令：alice 回答 `call_id` 问的那组题。
+/// 编号是 `n` 的命令：主人回答 `call_id` 问的那组题。
 pub(super) fn reply(n: u64, call_id: CallId, answers: Vec<Response>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Answer {
             call_id,
@@ -104,7 +104,7 @@ fn the_answer_goes_to_the_tool_once_it_is_stored() {
     assert_eq!(answered.answers, [picked(&["保留"])]);
     assert_eq!(
         (events[0].by.clone(), events[0].cause.clone()),
-        (alice(), Some(id(2)))
+        (person(), Some(id(2)))
     );
     assert!(handed(&actions).is_empty(), "回答落了盘才交给工具");
     let actions = session.handle(stored(9));
@@ -263,7 +263,7 @@ fn interrupting_while_you_are_asked_stops_the_call() {
         (
             call(6, 1),
             ToolStatus::Cancelled,
-            alice(),
+            person(),
             "question interrupted".to_string()
         )
     );
@@ -290,7 +290,7 @@ fn a_message_while_you_are_asked_voids_the_question() {
             (
                 call(6, 1),
                 ToolStatus::Skipped,
-                alice(),
+                person(),
                 "question voided".to_string()
             )
         );
@@ -327,7 +327,7 @@ fn a_message_while_you_are_asked_to_approve_skips_the_call() {
         (
             call(6, 1),
             ToolStatus::Skipped,
-            alice(),
+            person(),
             "skipped".to_string()
         )
     );

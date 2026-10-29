@@ -73,7 +73,6 @@ async fn a_dream_runs_its_batches_in_one_dream_session() {
     assert!(server.received().is_empty(), "没走一次性入口");
     let opened = lock(&fake.opened).clone();
     assert_eq!(opened.len(), 1, "一趟一个会话");
-    assert_eq!(opened[0].owner, alice_account(), "那一间的主人");
     assert_eq!(opened[0].room, DreamRoom::Persona("engineer".to_string()));
     assert!(opened[0].manual, "人叫的");
     assert_eq!(opened[0].from, None, "不经会话的没有");

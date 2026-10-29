@@ -27,7 +27,7 @@ fn created(oneshot: bool, parent: Option<&str>) -> String {
         format!(r#","parent":"{parent}","depth":1"#)
     });
     format!(
-        r#"{{"seq":1,"at":"{}","kind":"session.created","by":{{"kind":"person","account":"alice"}},"cause":"c1","body":{{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}},"oneshot":{oneshot},"cwd":"~/a"{parent}}}}}"#,
+        r#"{{"seq":1,"at":"{}","kind":"session.created","by":{{"kind":"person"}},"cause":"c1","body":{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}},"oneshot":{oneshot},"cwd":"~/a"{parent}}}}}"#,
         at(0)
     )
 }
@@ -40,7 +40,7 @@ fn meta(seq: u64, title: Option<&str>, pinned: Option<bool>) -> String {
     if let Some(pinned) = pinned {
         body.insert("pinned".into(), json!(pinned));
     }
-    json!({"seq": seq, "at": at(seq), "kind": "session.meta_changed", "by": {"kind": "person", "account": "alice"}, "body": body}).to_string()
+    json!({"seq": seq, "at": at(seq), "kind": "session.meta_changed", "by": {"kind": "person"}, "body": body}).to_string()
 }
 
 fn turn(seq: u64, cwd: Option<&str>) -> String {
@@ -49,7 +49,7 @@ fn turn(seq: u64, cwd: Option<&str>) -> String {
 }
 
 fn said(seq: u64) -> String {
-    json!({"seq": seq, "at": at(seq), "kind": "message.user", "by": {"kind": "person", "account": "alice"}, "body": {"blocks": [{"type": "text", "text": format!("第 {seq} 句")}]}}).to_string()
+    json!({"seq": seq, "at": at(seq), "kind": "message.user", "by": {"kind": "person"}, "body": {"blocks": [{"type": "text", "text": format!("第 {seq} 句")}]}}).to_string()
 }
 
 /// 这些行拼成一段：一行一个 `\n`。
@@ -237,7 +237,7 @@ fn a_log_shorter_than_the_row_or_off_the_line_is_read_whole() {
         ]),
     );
     // 换成更长的一份，记的位置落在一行中间。
-    let a = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"c1","body":{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"cwd":"~/rewritten"}}"#;
+    let a = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"cwd":"~/rewritten"}}"#;
     write(
         &site,
         A,
@@ -306,7 +306,7 @@ fn an_index_found_broken_while_listing_is_rebuilt() {
     let whole = listing(&site, Some(&index), false);
     rusqlite::Connection::open(index_path(&site))
         .expect("打得开")
-        .execute("UPDATE sessions SET owner = 'Not An Account'", [])
+        .execute("UPDATE sessions SET parent = 'not a session'", [])
         .expect("改得了");
     assert_eq!(listing(&site, Some(&index), false), whole);
     assert_eq!(

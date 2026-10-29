@@ -11,7 +11,7 @@ use tokio::sync::{mpsc, oneshot};
 use miyu_drivers::DriverTexts;
 use miyu_kernel::accumulate::Delta;
 use miyu_kernel::event::{CallError, Cost, EffortInUse, Purpose, Usage};
-use miyu_kernel::id::{AccountId, ContentHash, Seq, SessionId};
+use miyu_kernel::id::{ContentHash, Seq, SessionId};
 use miyu_kernel::origin::Model;
 use miyu_kernel::request::Request;
 use miyu_kernel::session::{Limits, Replaced};
@@ -55,8 +55,6 @@ pub trait Models: Send + Sync {
 pub struct ForSession {
     /// 会话编号：路由照它挑 key（施工 8-6，`models.md` 第一条第 6 条）。
     pub id: SessionId,
-    /// 会话的属主（施工 8-15）：替它看图的一次性调用记在他的账上。
-    pub owner: AccountId,
     /// 造会话、载入时取的那一份配置（施工 8-6）：会话用哪个模型、限额照它定。
     pub config: TurnConfig,
     /// 驱动的占位：取自这个会话的策略快照。

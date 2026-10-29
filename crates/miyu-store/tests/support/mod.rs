@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use miyu_kernel::event::{Event, Usage};
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::{Mark, SEGMENT_LIMIT, SessionLog};
@@ -77,10 +77,6 @@ pub fn extractor() -> PathBuf {
     program
 }
 
-pub fn admin() -> AccountId {
-    AccountId::parse("admin").expect("测试里做得到")
-}
-
 /// 第 `n` 个会话编号。
 pub fn session(n: u32) -> SessionId {
     SessionId::parse(&format!("01900000-0000-7000-8000-{n:012}")).expect("测试里做得到")
@@ -110,7 +106,7 @@ pub fn created(at_: Timestamp, parent: Option<&SessionId>) -> Event {
         at_,
         "session.created",
         &format!(
-            r#"{{"owner":"admin","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}}{parent}}}"#
+            r#"{{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{{"level":"workspace","read_only":false}}{parent}}}"#
         ),
     )
 }
@@ -199,7 +195,6 @@ pub fn forget(root: &DataRoot) {
 /// 管理员在本机的主会话。
 pub fn who(parent: Option<&SessionId>) -> Who {
     Who {
-        owner: admin(),
         venue: miyu_kernel::id::VenueId::parse("local").expect("测试里做得到"),
         parent: parent.cloned(),
     }
@@ -221,7 +216,6 @@ pub fn query(group: &[Group]) -> Query {
         until: None,
         group: group.to_vec(),
         session: None,
-        account: None,
         offset: UtcOffset::UTC,
         daily: false,
     }
@@ -229,7 +223,7 @@ pub fn query(group: &[Group]) -> Query {
 
 /// 补完再查。
 pub fn totals(index: &UsageIndex, query: &Query) -> Vec<Total> {
-    let problems = index.catch_up(&[admin()]).expect("测试里做得到");
+    let problems = index.catch_up().expect("测试里做得到");
     assert_eq!(problems, Vec::new(), "补的时候都读得完");
     index.query(query).expect("测试里做得到")
 }

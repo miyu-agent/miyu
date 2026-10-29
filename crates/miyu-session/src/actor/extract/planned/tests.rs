@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use miyu_kernel::assemble::Assembler;
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, Seq};
+use miyu_kernel::id::Seq;
 use miyu_kernel::time::UtcOffset;
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::{SessionLog, read_events};
@@ -56,9 +56,8 @@ fn group_assembler(scratch: &Scratch) -> Arc<dyn Assembler + Send + Sync> {
     let prompts = root.path().join("personas/miyu/prompts");
     std::fs::create_dir_all(&prompts).expect("建得了人格目录");
     std::fs::write(prompts.join("persona.md"), "你是 Miyu。").expect("写得进");
-    let alice = AccountId::parse("alice").expect("账号合写法");
     let resources = resources();
-    let personas = Personas::new(&resources, &root, &alice);
+    let personas = Personas::new(&resources, &root);
     let parts = Parts {
         name: Some("miyu".to_string()),
         texts: personas.find("miyu").expect("找得到 Miyu").texts,
@@ -99,7 +98,7 @@ impl Log {
         };
         log.push(|seq, at| {
             format!(
-                r#"{{"seq":{seq},"at":"{at}","kind":"session.created","by":{{"kind":"person","account":"alice"}},"cause":"c-1","body":{{"owner":"im","venue":"qq:group:5550","policy":"sha256:{}","permission":{{"level":"workspace","read_only":false}},"model":"fake/model"}}}}"#,
+                r#"{{"seq":{seq},"at":"{at}","kind":"session.created","by":{{"kind":"person"}},"cause":"c-1","body":{{"venue":"qq:group:5550","policy":"sha256:{}","permission":{{"level":"workspace","read_only":false}},"model":"fake/model"}}}}"#,
                 "0".repeat(64)
             )
         });
@@ -147,7 +146,7 @@ impl Log {
     fn owner_said(&mut self, name: &str, text: &str) {
         self.push(|seq, at| {
             format!(
-                r#"{{"seq":{seq},"at":"{at}","kind":"message.user","by":{{"kind":"person","account":"alice"}},"cause":"o-{seq}","body":{{"blocks":[{{"type":"text","text":"{text}"}}],"venue":{{"msg":"{seq}","name":"{name}"}}}}}}"#
+                r#"{{"seq":{seq},"at":"{at}","kind":"message.user","by":{{"kind":"person"}},"cause":"o-{seq}","body":{{"blocks":[{{"type":"text","text":"{text}"}}],"venue":{{"msg":"{seq}","name":"{name}"}}}}}}"#
             )
         });
     }
@@ -220,7 +219,7 @@ impl Log {
     fn persona(&mut self, persona: &str) {
         self.push(|seq, at| {
             format!(
-                r#"{{"seq":{seq},"at":"{at}","kind":"session.policy_changed","by":{{"kind":"person","account":"alice"}},"cause":"p-{seq}","body":{{"persona":"{persona}"}}}}"#
+                r#"{{"seq":{seq},"at":"{at}","kind":"session.policy_changed","by":{{"kind":"person"}},"cause":"p-{seq}","body":{{"persona":"{persona}"}}}}"#
             )
         });
     }
@@ -237,7 +236,7 @@ impl Log {
     fn reverted(&mut self, turn: u64) {
         self.push(|seq, at| {
             format!(
-                r#"{{"seq":{seq},"at":"{at}","kind":"turn.reverted","by":{{"kind":"person","account":"alice"}},"cause":"r-{seq}","body":{{"turns":[{turn}]}}}}"#
+                r#"{{"seq":{seq},"at":"{at}","kind":"turn.reverted","by":{{"kind":"person"}},"cause":"r-{seq}","body":{{"turns":[{turn}]}}}}"#
             )
         });
     }

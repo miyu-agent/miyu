@@ -27,23 +27,22 @@ use crate::sqlite::{self, connect, remove};
 
 pub use crate::sqlite::{DbError as IndexError, Opened};
 
-/// 索引的文件名，在账号的 `index/` 下（[`crate::root::DataRoot::index`]）。
+/// 索引的文件名，在 `index/` 下（[`crate::root::DataRoot::index`]）。
 pub const FILE: &str = "sessions.db";
 
 /// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 9-5 多了 `preview`，是 2；施工 O-3 多了 `venue`，是 3；
-/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13。
-const VERSION: i64 = 13;
+/// 施工 P-1 下多了 `persona`，是 4；施工 P-2 上多了 `preset`，是 5；施工 3-8 八补 多了 `named`，是 6；施工 H-2 多了 `project`，是 7；终端要的会话列表 tokens 一列多了 `tokens`，是 8；网页要的上下文用量（施工 9-5 再补）多了 `context`、`context_model`，是 9；整理会话（施工 D-1 下）多了 `dream`，是 10；终端集成开的（施工 8-33 四补）多了 `origin`，是 11；fork 子代理（施工 A-F 补）多了 `forked`，是 12；整理会话的结果（施工 DR-1）多了 `dream_result`，是 13；施工 SU-6 上去掉 `owner`（只有主人一个），是 14。
+const VERSION: i64 = 14;
 
 /// 表里的列，照这个先后读写（[`Row::from_sql`]、[`Row::to_sql`]）。
-const COLUMNS: &str = "id, owner, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result";
+const COLUMNS: &str = "id, parent, oneshot, title, pinned, cwd, created, last_active, segment, bytes, next, preview, venue, persona, preset, named, project, tokens, context, context_model, dream, origin, forked, dream_result";
 
 /// 写一行时的占位，个数照 [`COLUMNS`]。
-const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25";
+const VALUES: &str = "?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24";
 
 /// 建表。`segment`、`bytes`、`next` 是这一行照到日志的哪里（[`Mark`]）；时刻存成毫秒。
 const SCHEMA: &str = "CREATE TABLE sessions (
     id TEXT PRIMARY KEY NOT NULL,
-    owner TEXT NOT NULL,
     parent TEXT,
     oneshot INTEGER NOT NULL,
     title TEXT NOT NULL,
@@ -69,7 +68,7 @@ const SCHEMA: &str = "CREATE TABLE sessions (
     dream_result TEXT
 ) WITHOUT ROWID";
 
-/// 一个账号的会话列表的索引。
+/// 会话列表的索引。
 #[derive(Debug)]
 pub struct SessionIndex {
     /// 库文件在哪。
@@ -229,8 +228,8 @@ impl SessionIndex {
 }
 
 /// 换掉一整行，`WHERE` 由调的一方接上。
-const REPLACE: &str = "UPDATE sessions SET id = ?1, owner = ?2, parent = ?3, oneshot = ?4, title = ?5, pinned = ?6, \
-     cwd = ?7, created = ?8, last_active = ?9, segment = ?10, bytes = ?11, next = ?12, preview = ?13, venue = ?14, persona = ?15, preset = ?16, named = ?17, project = ?18, tokens = ?19, context = ?20, context_model = ?21";
+const REPLACE: &str = "UPDATE sessions SET id = ?1, parent = ?2, oneshot = ?3, title = ?4, pinned = ?5, \
+     cwd = ?6, created = ?7, last_active = ?8, segment = ?9, bytes = ?10, next = ?11, preview = ?12, venue = ?13, persona = ?14, preset = ?15, named = ?16, project = ?17, tokens = ?18, context = ?19, context_model = ?20";
 
 /// 照到的位置写成三格。
 fn mark_values(mark: &Mark) -> Result<[rusqlite::types::Value; 3], IndexError> {

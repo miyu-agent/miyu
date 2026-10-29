@@ -18,7 +18,6 @@ use miyu_endpoint::settings::{
     CommandSettings, EXTERNAL_BINDINGS, PermissionSettings, PersonaSettings, PresetSettings,
     SOURCE_FEEDS, SourceSettings, TerminalSettings, UiSettings,
 };
-use miyu_kernel::id::AccountId;
 use miyu_log::settings::LogSettings;
 use miyu_log::{Guard, Level, Levels};
 use miyu_models::settings::{
@@ -211,15 +210,10 @@ pub fn render(items: &[Item], words: &dyn Words) -> [Result<String, Missing>; 2]
     ]
 }
 
-/// 核心起来时读配置（第二条第 1 条）：系统配置、主人 `admin` 的信任的记录、密钥文件（施工 8-5），照登记的
+/// 核心起来时读配置（第二条第 1 条）：配置、信任的记录、密钥文件（施工 8-5），照登记的
 /// 全部清单认，带 `env` 的项、`{ env = … }` 照进程的环境变量。`home` 是系统的家目录。读不进来不影响起不起得来：有问题的每份记一条 `WARN`。
-pub fn read(
-    root: &DataRoot,
-    admin: &AccountId,
-    home: Option<&Path>,
-    packaged: &Packaged,
-) -> Config {
-    Config::load(root, admin, home, packaged.all(), Environment::process())
+pub fn read(root: &DataRoot, home: Option<&Path>, packaged: &Packaged) -> Config {
+    Config::load(root, home, packaged.all(), Environment::process())
 }
 
 /// 读完配置，照 `log.level` 的最终值换运行日志的级别（第二条第 7 条，`log.md`）：`MIYU_LOG` 设了、读得懂的照它（装日志时

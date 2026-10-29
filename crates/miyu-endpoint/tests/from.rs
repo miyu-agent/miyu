@@ -30,7 +30,7 @@ fn harness(name: &str) -> By {
 
 /// 本人。
 fn person() -> By {
-    serde_json::from_value(json!({"kind": "person", "account": "alice"})).expect("合写法")
+    serde_json::from_value(json!({"kind": "person"})).expect("合写法")
 }
 
 /// 一块字。

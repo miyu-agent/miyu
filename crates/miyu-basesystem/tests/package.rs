@@ -306,7 +306,6 @@ async fn installing_names_the_sessions_preset() {
     call.ids = Some(miyu_tool::CallIds {
         session: miyu_kernel::id::SessionId::parse("01a12f08-e382-70dc-942b-5deddc48d4da")
             .expect("合写法"),
-        owner: miyu_kernel::id::AccountId::parse("alice").expect("合写法"),
         call: miyu_kernel::id::CallId::new(miyu_kernel::id::Seq::new(1).expect("合写法"), 1)
             .expect("合写法"),
         asked: None,

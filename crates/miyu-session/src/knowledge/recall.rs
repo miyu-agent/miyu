@@ -174,7 +174,7 @@ impl Shelves {
             }
             let (hits, skipped) = self
                 .knowledge
-                .sections(&self.account, &id)
+                .sections(&id)
                 .map_err(|error| error.to_string())?;
             report(&skipped);
             sections.extend(hits);
@@ -217,11 +217,11 @@ impl Shelves {
         let vectors = self.vectors.as_ref()?;
         let near = vectors.query(using, said).await?;
         let ids: BTreeSet<String> = sections.iter().map(|hit| hit.kb.clone()).collect();
-        let (knowledge, account) = (Arc::clone(&self.knowledge), self.account.clone());
+        let knowledge = Arc::clone(&self.knowledge);
         let found = blocking(move || {
             let mut found: Vec<(String, f32)> = Vec::new();
             for id in ids {
-                let index = knowledge.index_of(&account, &id);
+                let index = knowledge.index_of(&id);
                 let hits = index
                     .nearest(&near.model, &near.vector, WIDE)
                     .map_err(|error| error.to_string())?;

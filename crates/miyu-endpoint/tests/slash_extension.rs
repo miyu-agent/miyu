@@ -103,7 +103,7 @@ async fn the_extension_answers_and_its_words_are_the_receipt() {
     );
     assert_eq!(params["session"], json!(session));
     assert_eq!(params["by"]["kind"], "person");
-    assert_eq!(params["owner"], "alice");
+    assert!(params.get("owner").is_none(), "不再带账号：{params}");
 }
 
 #[tokio::test]

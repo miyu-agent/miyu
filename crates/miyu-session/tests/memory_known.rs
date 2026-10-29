@@ -17,19 +17,19 @@ use crate::support::meaning::catalog;
 use crate::support::*;
 
 fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 fn group() -> VenueId {
     VenueId::parse("qq:group:1").expect("合写法")
 }
 
-/// 群里的 `id`；带 `account` 的是对应表认出来的主人。
+/// 群里的 `id`；`owner` 的是对应表认出来的主人。
 fn member(id: &str, owner: bool) -> By {
     By::External(External {
         venue: group(),
         id: ExternalId::parse(id).expect("合写法"),
-        account: owner.then(alice_account),
+        owner,
         role: None,
     })
 }

@@ -39,7 +39,7 @@ fn tagged(id: MemoryId, keywords: &str) -> MemoryEvent {
 }
 
 fn room() -> Room {
-    Room::persona(&admin(), "engineer")
+    Room::persona("engineer")
 }
 
 #[test]

@@ -7,7 +7,7 @@ use miyu_endpoint::Core;
 use miyu_session::testkit::Script;
 use miyu_tool::Catalog;
 
-use super::{Home, TOKEN, alice};
+use super::{Home, TOKEN};
 
 impl Home {
     /// 家目录：工作目录下的 `me/`（施工 PT-2 外：别的技能目录的 `~` 照它拼）。别的测试没有家目录，碰不到本机真的
@@ -30,7 +30,6 @@ impl Home {
         let home = self.me();
         let config = miyu_endpoint::config::Config::load(
             &self.root,
-            &alice(),
             Some(&home),
             miyu_store::skills::external::ITEMS.to_vec(),
             miyu_endpoint::config::Environment::of(&[]),

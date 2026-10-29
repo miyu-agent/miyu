@@ -152,8 +152,8 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
     );
     // 包里带的人格、预设被出厂的、排在前面的包盖住了（施工 P-11 上）。
     let (personas, presets) = (
-        crate::personas::personas(core, &core.admin),
-        crate::presets::presets(core, &core.admin),
+        crate::personas::personas(core),
+        crate::presets::presets(core),
     );
     let covered =
         tokio::task::spawn_blocking(move || (personas.covered(), presets.covered())).await;

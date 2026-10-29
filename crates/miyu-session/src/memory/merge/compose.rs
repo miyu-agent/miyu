@@ -169,7 +169,6 @@ impl MergeJob {
             Some(vectors) => {
                 let using = Using {
                     config: Arc::clone(&self.config),
-                    owner: self.owner.clone(),
                 };
                 vectors.query(&using, &entry.text).await
             }

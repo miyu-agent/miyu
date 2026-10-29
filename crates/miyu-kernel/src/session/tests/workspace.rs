@@ -4,11 +4,11 @@
 use super::*;
 use crate::event::WorkspaceChanged;
 
-/// 编号是 `n` 的命令：alice 换工作区。
+/// 编号是 `n` 的命令：主人换工作区。
 fn set_workspace(n: u64, cwd: &str, dirs: Option<&[&str]>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::SetWorkspace {
             cwd: cwd.to_string(),
@@ -32,7 +32,7 @@ fn a_change_is_recorded_and_the_next_turn_starts_there() {
     assert_eq!(events[0].body, changed("~/src/other", Some(&["~/notes"])));
     assert_eq!(
         (&events[0].by, &events[0].cause, events[0].turn),
-        (&alice(), &Some(id(2)), None)
+        (&person(), &Some(id(2)), None)
     );
     assert!(replies(&actions).is_empty(), "落了盘才回应");
     assert_eq!(

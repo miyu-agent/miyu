@@ -39,7 +39,6 @@ fn core(home: &Home, system: &str, local: Option<EmbedSetup>) -> Arc<miyu_endpoi
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

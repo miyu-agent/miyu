@@ -23,16 +23,15 @@ pub(super) async fn checked(
         return Ok(None);
     }
     // 会话要在（施工 Y-2 中上）。
-    core.sessions
-        .owner(core, session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+    if !core.sessions.exists(core, session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     if let Some(Some(id)) = persona {
-        crate::personas::resolve(core, &core.admin, Some(Some(id))).await?;
+        crate::personas::resolve(core, Some(Some(id))).await?;
     }
     // 空的是换成无工具（施工 P-16 下）：不用找。
     if let Some(id) = preset.filter(|id| !id.is_empty()) {
-        crate::presets::resolve(core, &core.admin, Some(id)).await?;
+        crate::presets::resolve(core, Some(id)).await?;
     }
     if subagent(core, session).await? {
         let field = if persona.is_some() {
@@ -50,10 +49,9 @@ pub(super) async fn checked(
 
 /// 会话 `session` 是不是派出去的子代理：有父会话、不是分叉出来的。会话没有、读不了第一条的照会话没有。
 async fn subagent(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
-    core.sessions
-        .owner(core, session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+    if !core.sessions.exists(core, session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     let dir = core.root.session_dir(session);
     let first = tokio::task::spawn_blocking(move || miyu_store::log::first_event(&dir))
         .await
@@ -75,10 +73,7 @@ pub(super) async fn send(
 ) -> Result<(), Refusal> {
     let id = CommandId::parse(&format!("{}/recast", request.id.as_str()))
         .map_err(|_| Refusal::BAD_PARAMS)?;
-    match handle
-        .command(id, crate::sessions::admin(core), command)
-        .await
-    {
+    match handle.command(id, crate::sessions::person(), command).await {
         Ok(Outcome::Rejected { reason, about }) => Err(Refusal::kernel_about(reason, &about)),
         Ok(_) => Ok(()),
         Err(_) => {

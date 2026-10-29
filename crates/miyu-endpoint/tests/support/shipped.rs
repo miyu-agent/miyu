@@ -10,7 +10,7 @@ use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::{Home, TOKEN, alice, default_resources};
+use super::{Home, TOKEN, default_resources};
 
 /// 夹具扩展的编号：子命令名、系统账号都是它。
 pub const ID: &str = "courier";
@@ -36,7 +36,6 @@ pub fn core(home: &Home, resources: &Path, script: &Script) -> Core {
         Arc::new(script.clone()),
         Catalog::default(),
         None,
-        alice(),
         TOKEN.to_string(),
     )
 }

@@ -226,7 +226,7 @@ impl Watch {
         }
         let appended = appended_of(actions);
         assert!(
-            matches!(appended.first(), Some(event) if event.body == Body::TurnReverted(TurnReverted { turns: vec![turn] }) && event.by == alice()),
+            matches!(appended.first(), Some(event) if event.body == Body::TurnReverted(TurnReverted { turns: vec![turn] }) && event.by == person()),
             "种子 {seed}：重做先记一条撤最后一轮的撤销：{actions:?}"
         );
         let recalls: Vec<&Vec<ContentHash>> = actions

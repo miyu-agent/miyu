@@ -12,7 +12,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use miyu_kernel::event::Permission;
-use miyu_kernel::id::{AccountId, CallId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CallId, CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::Timestamp;
@@ -63,11 +63,7 @@ pub trait SessionPort: Send + Sync {
     /// 属主是 `owner` 的主会话（施工 C-3，`cross-session.md` 第一条第 2 款）：`session.created` 不带 `parent`、没删的，含调的这个
     /// 会话自己，不排先后。和协议的 `session.list` 同一个函数算：每个会话只读地读一遍日志，不载入它；读下一个之前看一眼
     /// `stop`，举起来了就不往下读，交回已经读到的。放会话的目录读不了、核心正在停：交回原因。
-    fn sessions(
-        &self,
-        owner: AccountId,
-        stop: Stop,
-    ) -> Pending<'_, Result<Vec<MainSession>, String>>;
+    fn sessions(&self, stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>>;
 
     /// 只读地开会话 `session` 的日志（施工 C-4，`cross-session.md` 第二条第 2 款）：不载入它，在跑的也读得到。核心正在停的
     /// 交回原因；放会话目录本身不必读了才知道读不读得到，日志坏了、读不了的要等交回的 [`Log`] 读的时候才知道。`history`
@@ -137,8 +133,6 @@ pub struct Child {
     pub command: CommandId,
     /// 人格：派的时候挑的（施工 P-2 补）；没挑的是无人格（施工 P-4 上）。
     pub persona: Option<String>,
-    /// 属主：父会话的属主。
-    pub owner: AccountId,
     /// 场所：父会话的。
     pub venue: VenueId,
     /// 开始时的权限：父会话派它那一刻的，常用的那一级和只读开关都抄（只读开关以后跟着父会话变随 7-8）。
@@ -167,8 +161,6 @@ pub struct ForkChild {
     pub lineage: Lineage,
     /// 造它的命令编号：`session.created` 的 `cause`（`<父会话>/<编号>`），`by` 是父会话。
     pub command: CommandId,
-    /// 属主：父会话的。
-    pub owner: AccountId,
     /// 派它的那次调用：分叉点是那一步的 `message.assistant`。
     pub call: CallId,
     /// 那一步每个调用的占位结果（`core/tool-results/forked.txt`）。

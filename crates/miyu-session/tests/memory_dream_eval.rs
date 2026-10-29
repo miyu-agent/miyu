@@ -112,11 +112,7 @@ async fn dream(home: &Home) {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     let dreamed = keeper
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await;
     println!("  整理：{dreamed:?}");
 }

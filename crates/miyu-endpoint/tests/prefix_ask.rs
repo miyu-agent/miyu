@@ -37,10 +37,10 @@ async fn hello_asking(client: &mut Client) -> Value {
 
 /// 写 `text` 进那一份覆盖，等核心盯着的那一头看到（十秒为限）。
 async fn edit(home: &Home, core: &Core, text: &str) {
-    let before = core.edits_version(&alice());
+    let before = core.edits_version();
     home.write(RULE, text);
     for _ in 0..1000 {
-        if core.edits_version(&alice()) > before {
+        if core.edits_version() > before {
             return;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -239,19 +239,19 @@ async fn an_edited_skill_does_not_ask_because_the_prefix_stays() {
     home.until_turns(&session, 1).await;
     let before = latest_system(&home, &session);
 
-    let version = core.edits_version(&alice());
+    let version = core.edits_version();
     home.write(
         SKILL,
         "---\nname: notes\ndescription: Take notes, short ones.\n---\nWrite them down.\n",
     );
     // 给盯着的那一头一秒：原来这里号会变（技能那棵树在盯），现在不盯了，号照旧。
     for _ in 0..100 {
-        if core.edits_version(&alice()) > version {
+        if core.edits_version() > version {
             break;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    assert_eq!(core.edits_version(&alice()), version, "技能不算前缀的改动");
+    assert_eq!(core.edits_version(), version, "技能不算前缀的改动");
     let second = asking.say("s2", &session, "好").await;
     assert_eq!(reason(&second), "ok", "改技能不问：{second}");
     home.until_turns(&session, 2).await;

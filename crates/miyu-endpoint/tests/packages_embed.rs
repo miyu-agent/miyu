@@ -97,7 +97,6 @@ async fn the_local_model_follows_install_upgrade_and_removal() {
     home.write("config.toml", "");
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         core_items(),
         miyu_endpoint::config::Environment::of(&[]),

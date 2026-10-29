@@ -5,7 +5,7 @@ A session's truth is an append-only event log. Heads subscribed to the `events` 
 ## Envelope
 
 ```json
-{"seq": 42, "at": "2026-10-01T06:03:12.345Z", "kind": "message.user", "turn": 41, "by": {"kind": "person", "account": "admin"}, "cause": "m1", "body": {…}}
+{"seq": 42, "at": "2026-10-01T06:03:12.345Z", "kind": "message.user", "turn": 41, "by": {"kind": "person"}, "cause": "m1", "body": {…}}
 ```
 
 | Name | Notes |
@@ -14,7 +14,7 @@ A session's truth is an append-only event log. Heads subscribed to the `events` 
 | `at` | Time, UTC, milliseconds |
 | `kind` | Kind, see below |
 | `turn` | Which turn (that turn's `turn.started` number); omitted when it belongs to none |
-| `by` | Who: `person` (`account`; `via` when recognized on a platform), `external` (a person on a platform: `venue`, `id`, `role`, `account`?), `model`, `kernel`, `tool` (`call_id`), `module` (`id`, e.g. a package), `harness` (`name`), `session` (another session) |
+| `by` | Who: `person` (you; `via` when recognized on a platform), `external` (a person on a platform: `venue`, `id`, `role`; `owner: true` when the bindings recognize you), `model`, `kernel`, `tool` (`call_id`), `module` (`id`, e.g. a package), `harness` (`name`), `session` (another session) |
 | `cause` | Which command caused it: the request `id` |
 | `body` | Fields of this kind |
 

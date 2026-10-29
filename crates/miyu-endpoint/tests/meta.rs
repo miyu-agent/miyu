@@ -84,7 +84,7 @@ async fn renaming_records_the_trimmed_title_and_pushes_it_before_the_reply() {
         },
         "只写改了的那一格，去掉前后空白"
     );
-    assert_eq!(event.by, By::Person(Person::new(alice())));
+    assert_eq!(event.by, By::Person(Person::default()));
     assert_eq!(event.cause.as_ref().map(|cause| cause.as_str()), Some("t1"));
     assert_eq!(event.turn, None, "空闲时改的不带回合");
     // 人起的标题，列表那一项带 `named`（施工 3-8 八补，终端只把人起的写进输入框的边框）。

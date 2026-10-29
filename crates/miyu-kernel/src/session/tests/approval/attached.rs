@@ -19,7 +19,7 @@ fn picture() -> Block {
 fn with_picture(n: u64, decision: Decision) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Answer {
             call_id: call(6, 1),

@@ -13,7 +13,6 @@ mod write;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use miyu_kernel::id::AccountId;
 use miyu_policy::preset::KNOWLEDGE;
 use miyu_store::knowledge::{Knowledge, KnowledgeError, Meaning, Skipped};
 use miyu_store::personas::{PersonaError, Personas};
@@ -45,7 +44,6 @@ pub(crate) struct Shelving {
     pub(crate) knowledge: Arc<Knowledge>,
     pub(crate) persona: Option<String>,
     pub(crate) personas: Personas,
-    pub(crate) owner: AccountId,
     pub(crate) home: Option<PathBuf>,
     pub(crate) vectors: Option<Arc<Vectors>>,
     /// 自动想起要的字（施工 K-6 下，`knowledge/recall.rs`）：读不出来的这个会话不自动想起。
@@ -55,10 +53,8 @@ pub(crate) struct Shelving {
 /// 一个会话查知识库要的：照哪个账号查，和 [`Shelving`] 的那几样。
 pub(crate) struct Shelves {
     knowledge: Arc<Knowledge>,
-    account: AccountId,
     persona: Option<String>,
     personas: Personas,
-    owner: AccountId,
     home: Option<PathBuf>,
     vectors: Option<Arc<Vectors>>,
     recall: Option<Arc<recall::RecallTexts>>,
@@ -66,22 +62,19 @@ pub(crate) struct Shelves {
 
 impl Shelves {
     /// 会话的知识库：照记忆的账号 `account` 查。
-    pub(crate) fn new(shelving: Shelving, account: AccountId) -> Shelves {
+    pub(crate) fn new(shelving: Shelving) -> Shelves {
         let Shelving {
             knowledge,
             persona,
             personas,
-            owner,
             home,
             vectors,
             recall,
         } = shelving;
         Shelves {
             knowledge,
-            account,
             persona,
             personas,
-            owner,
             home,
             vectors,
             recall,
@@ -92,19 +85,15 @@ impl Shelves {
     pub(crate) fn using(&self, config: &TurnConfig) -> Using {
         Using {
             config: Arc::clone(config),
-            owner: self.owner.clone(),
         }
     }
 
     /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 收窄（查的账号照旧是属主的，施工 Y-7）。碰磁盘，在阻塞线程里调。
     pub(crate) fn recast(&self, persona: Option<String>) -> Shelves {
-        let account = self.owner.clone();
         Shelves {
             knowledge: Arc::clone(&self.knowledge),
-            account,
             persona,
             personas: self.personas.clone(),
-            owner: self.owner.clone(),
             home: self.home.clone(),
             vectors: self.vectors.clone(),
             recall: self.recall.clone(),
@@ -113,11 +102,7 @@ impl Shelves {
 
     /// 载入的会话的知识库：记忆的账号照属主算（`Personas::memory_account`，施工 Y-7），人格照它收窄（碰磁盘，在阻塞线程里）。
     pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
-        blocking(move || {
-            let account = shelving.owner.clone();
-            Arc::new(Shelves::new(shelving, account))
-        })
-        .await
+        blocking(move || Arc::new(Shelves::new(shelving))).await
     }
 
     /// 人格收窄成哪几个（`[knowledge] bases`）：没人格的、没写的、人格的文件没了的（会话照快照接着用）都是没有。
@@ -336,7 +321,7 @@ fn search(
     });
     let (hits, skipped) = shelves
         .knowledge
-        .search(&shelves.account, query, Some(&only), KB_HITS, meaning)
+        .search(query, Some(&only), KB_HITS, meaning)
         .map_err(|error| failed(&error))?;
     report(&skipped);
     let hits = hits
@@ -359,8 +344,8 @@ fn fill(shelves: &Shelves, using: &Using, searched: Vec<String>) {
         return;
     };
     for id in searched {
-        let index = shelves.knowledge.index_of(&shelves.account, &id);
-        vectors.fill_knowledge(using, format!("kb {} {id}", shelves.account), index);
+        let index = shelves.knowledge.index_of(&id);
+        vectors.fill_knowledge(using, format!("kb {id}"), index);
     }
 }
 

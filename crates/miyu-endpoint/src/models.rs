@@ -130,18 +130,14 @@ impl Snapshot {
 }
 
 /// `model.list`：照这个连接的人那一份配置列（施工 Y-2 下下中中）。
-pub(crate) async fn list(
-    core: &Core,
-    (account, language): (&miyu_kernel::id::AccountId, &str),
-    params: Value,
-) -> Result<Value, Refusal> {
+pub(crate) async fn list(core: &Core, language: &str, params: Value) -> Result<Value, Refusal> {
     let params: ListParams = match params {
         Value::Null => ListParams::default(),
         params => serde_json::from_value(params).map_err(|_| Refusal::BAD_PARAMS)?,
     };
     let data = Arc::clone(&core.model_data);
     data.wait().await;
-    let snapshot = snapshot(core, account);
+    let snapshot = snapshot(core);
     let values = snapshot.resolved.values();
     let configured = miyu_config::key::names(values.keys(), "providers.<id>", &[]);
     let mut chosen: Vec<String> = match &params.provider {
@@ -272,13 +268,9 @@ pub(crate) fn next(next: &Next) -> Option<Value> {
 /// # Errors
 ///
 /// 解析不出：写法不对（连同以前的挡位名）、没有这家供应商、没有这个池、池是空的（`unknown_model`，原话记一行 `DEBUG`）。
-pub(crate) fn record(
-    core: &Core,
-    account: &miyu_kernel::id::AccountId,
-    text: &str,
-) -> Result<String, Refusal> {
+pub(crate) fn record(core: &Core, text: &str) -> Result<String, Refusal> {
     // 照会话属主那一份查（施工 Y-2 下下中上）。
-    let values = core.mine(account).config().resolved().values();
+    let values = core.mine().config().resolved().values();
     miyu_models::reference::record(&values, text).map_err(|NoModel(why)| {
         tracing::debug!(target: "miyu::endpoint", why = %why, "unknown model");
         Refusal::UNKNOWN_MODEL
@@ -287,9 +279,9 @@ pub(crate) fn record(
 
 /// 抄一份这一刻的配置：每个用得到的引用（key，和地址是环境变量的引用时，施工 8-6b）都先取好值，拉列表、`model.list`
 /// 用的是同一份，不会各自再问一次核心的环境。`provider.detect`、`provider.test` 也用（施工 8-11）。
-pub(crate) fn snapshot(core: &Core, account: &miyu_kernel::id::AccountId) -> Snapshot {
+pub(crate) fn snapshot(core: &Core) -> Snapshot {
     // 照这个人那一份（施工 Y-2 下下中中）：他的供应商、他用得上的两份密钥。
-    let mine = core.mine(account);
+    let mine = core.mine();
     let config = mine.config();
     let resolved = config.resolved().clone();
     let values = resolved.values();

@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use miyu_kernel::block::Block;
-use miyu_kernel::id::{AccountId, CallId, Seq, SessionId};
+use miyu_kernel::id::{CallId, Seq, SessionId};
 use miyu_kernel::time::Timestamp;
 use miyu_tool::{
     CallIds, Done, Progress, ScheduleAnswer, ScheduleAnswering, ScheduleAsk, SchedulePort,
@@ -69,7 +69,6 @@ pub async fn run(name: &str, port: Option<&Arc<Fake>>, args: serde_json::Value) 
 pub fn ids() -> CallIds {
     CallIds {
         session: session(),
-        owner: AccountId::parse("alice").expect("合写法"),
         call: CallId::new(Seq::new(1).expect("合写法"), 1).expect("合写法"),
         asked: None,
         preset: None,

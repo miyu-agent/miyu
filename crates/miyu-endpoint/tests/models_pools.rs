@@ -82,14 +82,13 @@ fn built(
         CatalogSettings::ITEMS,
     ]
     .concat();
-    let config = Config::load(&home.root, &alice(), None, items, Environment::of(&[]));
+    let config = Config::load(&home.root, None, items, Environment::of(&[]));
     let core = Core::new(
         home.root.clone(),
         ResourceRoot::at(default_resources()),
         models,
         tools,
         None,
-        alice(),
         TOKEN.to_string(),
     );
     Arc::new(core.with_config(config).with_model_data(data))

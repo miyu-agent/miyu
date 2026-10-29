@@ -104,7 +104,7 @@ impl Watch {
                     ..PolicyChanged::default()
                 });
                 assert_eq!(event.body, body, "种子 {seed}");
-                assert_eq!(event.by, alice(), "种子 {seed}：换的人");
+                assert_eq!(event.by, person(), "种子 {seed}：换的人");
                 assert_eq!(event.cause, Some(id), "种子 {seed}");
                 let turn = self.turn_open().then(|| self.open_turn());
                 assert_eq!(event.turn, turn, "种子 {seed}：回合进行中的带上这个回合");

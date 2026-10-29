@@ -119,7 +119,6 @@ impl Home {
             models,
             tools,
             None,
-            AccountIdOf::admin(),
             opened.token.clone(),
         )
         .with_sandbox(sandbox);
@@ -440,15 +439,6 @@ pub struct Asked {
     pub out: String,
     pub err: String,
     pub screen: String,
-}
-
-/// 管理员的账号。
-pub struct AccountIdOf;
-
-impl AccountIdOf {
-    pub fn admin() -> miyu_kernel::id::AccountId {
-        miyu_kernel::id::AccountId::parse("admin").expect("账号合写法")
-    }
 }
 
 /// 说 `text`：新开一个一次性会话，中文，给人看；给人看的字照出厂的中文那一份。

@@ -59,7 +59,7 @@ fn starting_a_batch_and_failing_it_round_trip() {
     });
     assert!(
         line(6, &merging).contains(
-            r#""kind":"ext.memory.merging","by":{"kind":"person","account":"admin"},"body":{"upto":4,"fresh":2,"left":5,"manual":true,"given":["m1","m4"]}}"#
+            r#""kind":"ext.memory.merging","by":{"kind":"person"},"body":{"upto":4,"fresh":2,"left":5,"manual":true,"given":["m1","m4"]}}"#
         ),
         "{}",
         line(6, &merging)
@@ -71,7 +71,7 @@ fn starting_a_batch_and_failing_it_round_trip() {
         tries: Some(2),
     });
     assert!(line(7, &failed).ends_with(
-        r#""kind":"ext.memory.merge_failed","by":{"kind":"person","account":"admin"},"body":{"upto":4,"why":"no JSON object in the answer","tries":2}}"#
+        r#""kind":"ext.memory.merge_failed","by":{"kind":"person"},"body":{"upto":4,"why":"no JSON object in the answer","tries":2}}"#
     ));
     round_trip(&failed);
     let interrupted = MemoryEvent::MergeFailed(MergeFailed {

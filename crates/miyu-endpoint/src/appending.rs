@@ -72,20 +72,20 @@ pub(crate) async fn append(
     if venue_only && found.handle.venue().as_str() == list::LOCAL {
         return Err(Refusal::BAD_PARAMS);
     }
-    let by = recorder(core, caller)?;
+    let by = recorder(caller)?;
     let command = Command::Append { event };
     let events = command_by(core, request, &session, &found.handle, by, command).await?;
     let seq = events.first().copied().ok_or(Refusal::INTERNAL)?;
     Ok(json!({ "seq": seq }))
 }
 
-/// 记成谁：核心拉起的扩展是那个包（模块），人是他自己（施工 Y-2 下下上，原来一律是管理员；`session.respond` 同，施工 O-14 上）。
-pub(crate) fn recorder(core: &Core, caller: &Caller) -> Result<By, Refusal> {
+/// 记成谁：核心拉起的扩展是那个包（模块），人是主人（`session.respond` 同，施工 O-14 上）。
+pub(crate) fn recorder(caller: &Caller) -> Result<By, Refusal> {
     Ok(match &caller.package {
         Some(package) => By::Module(Module {
             id: ModuleId::parse(package).map_err(|_| Refusal::INTERNAL)?,
         }),
-        None => crate::sessions::admin(core),
+        None => crate::sessions::person(),
     })
 }
 

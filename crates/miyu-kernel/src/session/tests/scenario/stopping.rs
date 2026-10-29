@@ -18,10 +18,10 @@ fn a_word_while_she_speaks_then_an_interrupt_sends_it_on() {
     assert_eq!(
         story(&stage),
         opening_then(&[
-            "6 message.user alice t3",
+            "6 message.user person t3",
             "7 message.assistant model t3",
             "8 model.called:interrupted kernel t3",
-            "9 turn.ended:interrupted alice t3",
+            "9 turn.ended:interrupted person t3",
             "10 turn.started kernel t10",
             "11 message.assistant model t10",
             "12 model.called:ok kernel t10",
@@ -88,7 +88,7 @@ fn after_a_crash_the_turn_is_closed_and_waits_for_you() {
     assert_eq!(
         story(&stage)[6..],
         [
-            "7 message.user alice",
+            "7 message.user person",
             "8 turn.started kernel t8",
             "9 message.assistant model t8",
             "10 model.called:ok kernel t8",
@@ -126,8 +126,8 @@ fn an_interrupt_drops_the_held_tool() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 tool.result:cancelled alice t3",
-            "9 turn.ended:interrupted alice t3",
+            "8 tool.result:cancelled person t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -156,8 +156,8 @@ fn an_urgent_word_skips_the_calls_not_yet_sent() {
         opening_then(&[
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 message.user alice t3",
-            "9 tool.result:skipped alice t3",
+            "8 message.user person t3",
+            "9 tool.result:skipped person t3",
             "10 tool.result:ok tool call_6_1 t3",
             "11 message.assistant model t3",
             "12 model.called:ok kernel t3",
@@ -203,8 +203,8 @@ fn an_interrupt_waits_for_the_write_that_stops_before_changing() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 tool.result:cancelled alice t3",
-            "9 turn.ended:interrupted alice t3",
+            "8 tool.result:cancelled person t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     assert_eq!(result_of(&stage.log()[7]).3, "cancelled running");
@@ -227,7 +227,7 @@ fn a_write_that_finished_anyway_is_recorded_as_it_ran() {
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
             "8 tool.result:ok tool call_6_1 t3",
-            "9 turn.ended:interrupted alice t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     assert_eq!(result_of(&stage.log()[7]).3, "wrote");
@@ -243,8 +243,8 @@ fn ten_seconds_later_the_write_is_cut_off() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 tool.result:cancelled alice t3",
-            "9 turn.ended:interrupted alice t3",
+            "8 tool.result:cancelled person t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     assert_eq!(result_of(&stage.log()[7]).3, "cancelled running");
@@ -270,8 +270,8 @@ fn a_second_interrupt_stops_waiting() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 tool.result:cancelled alice t3",
-            "9 turn.ended:interrupted alice t3",
+            "8 tool.result:cancelled person t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     assert!(
@@ -312,9 +312,9 @@ fn words_during_the_wait_queue_up_and_an_undo_is_refused() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 message.user alice t3",
-            "9 tool.result:cancelled alice t3",
-            "10 turn.ended:interrupted alice t3",
+            "8 message.user person t3",
+            "9 tool.result:cancelled person t3",
+            "10 turn.ended:interrupted person t3",
             "11 turn.started kernel t11",
             "12 message.assistant model t11",
             "13 model.called:ok kernel t11",
@@ -334,8 +334,8 @@ fn a_planned_restart_during_the_wait_keeps_the_interrupt() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 tool.result:cancelled alice t3",
-            "9 turn.ended:interrupted alice t3",
+            "8 tool.result:cancelled person t3",
+            "9 turn.ended:interrupted person t3",
         ]
     );
     assert_eq!(stage.requests().len(), 1, "重启以后没有接着请求");
@@ -353,9 +353,9 @@ fn a_planned_restart_during_the_wait_hands_the_queue_on() {
         [
             "6 message.assistant model t3",
             "7 model.called:ok kernel t3",
-            "8 message.user alice t3",
-            "9 tool.result:cancelled alice t3",
-            "10 turn.ended:interrupted alice t3",
+            "8 message.user person t3",
+            "9 tool.result:cancelled person t3",
+            "10 turn.ended:interrupted person t3",
             "11 turn.started kernel t11",
             "12 turn.ended:restarted kernel t11",
             "13 turn.started kernel t13",

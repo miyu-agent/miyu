@@ -244,9 +244,9 @@ fn turn_indexes_are_one_per_account_and_persona_and_forgetting_a_session_reaches
     let scratch = Scratch::new("recall-indexes");
     let root = root_in(&scratch);
     let indexes = RecallIndexes::new(&root);
-    let (engineer, opened) = indexes.turns(&Room::persona(&admin(), "engineer"));
+    let (engineer, opened) = indexes.turns(&Room::persona("engineer"));
     assert!(matches!(opened, Some(Opened::Created)), "{opened:?}");
-    let (again, opened) = indexes.turns(&Room::persona(&admin(), "engineer"));
+    let (again, opened) = indexes.turns(&Room::persona("engineer"));
     assert!(opened.is_none(), "开过的不再开：{opened:?}");
     assert!(std::sync::Arc::ptr_eq(&engineer, &again));
     assert!(
@@ -258,7 +258,7 @@ fn turn_indexes_are_one_per_account_and_persona_and_forgetting_a_session_reaches
 
     let session = SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").unwrap();
     let other = SessionId::parse("0192f3a0-2222-7abc-8def-001122334455").unwrap();
-    let (miyu, _) = indexes.turns(&Room::persona(&admin(), "miyu"));
+    let (miyu, _) = indexes.turns(&Room::persona("miyu"));
     for index in [&engineer, &miyu] {
         for id in [&session, &other] {
             let edit = Edit::Put {
@@ -272,9 +272,9 @@ fn turn_indexes_are_one_per_account_and_persona_and_forgetting_a_session_reaches
     drop(indexes);
     // 新开的登记（核心重启以后）照样找得到磁盘上的每一个回合库。
     let indexes = RecallIndexes::new(&root);
-    indexes.forget_session(&admin(), &session).unwrap();
+    indexes.forget_session(&session).unwrap();
     for persona in ["engineer", "miyu"] {
-        let (index, _) = indexes.turns(&Room::persona(&admin(), persona));
+        let (index, _) = indexes.turns(&Room::persona(persona));
         assert_eq!(index.keys().unwrap(), [format!("{other}/3")], "{persona}");
     }
 }
@@ -295,7 +295,7 @@ fn measure_priming_a_thousand_turns() {
         let first = n * 4 + 2;
         let lines = [
             format!(
-                r#"{{"seq":{first},"at":"2026-10-07T08:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"admin"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句：周末想去看樱花，顺便吃个火锅"}}]}}}}"#
+                r#"{{"seq":{first},"at":"2026-10-07T08:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句：周末想去看樱花，顺便吃个火锅"}}]}}}}"#
             ),
             format!(
                 r#"{{"seq":{},"at":"2026-10-07T08:00:00.000Z","kind":"turn.started","turn":{},"by":{{"kind":"kernel"}},"body":{{"trigger":{first}}}}}"#,
@@ -390,7 +390,7 @@ fn a_source_is_alive_unless_its_turn_or_its_session_is_buried() {
     };
     // 活着的会话的目录在（施工 R-3 三补：出处活不活照会话的目录在不在）。
     std::fs::create_dir_all(root.session_dir(&session)).unwrap();
-    let (turns, _) = indexes.turns(&Room::persona(&admin(), "engineer"));
+    let (turns, _) = indexes.turns(&Room::persona("engineer"));
     turns
         .apply(
             &session.to_string(),
@@ -402,25 +402,25 @@ fn a_source_is_alive_unless_its_turn_or_its_session_is_buried() {
         .unwrap();
     assert!(
         !indexes
-            .alive(&Room::persona(&admin(), "engineer"), &at_turn(&session, 3))
+            .alive(&Room::persona("engineer"), &at_turn(&session, 3))
             .unwrap(),
         "撤销了的那一轮"
     );
     assert!(
         indexes
-            .alive(&Room::persona(&admin(), "engineer"), &at_turn(&session, 8))
+            .alive(&Room::persona("engineer"), &at_turn(&session, 8))
             .unwrap()
     );
-    indexes.forget_session(&admin(), &other).unwrap();
+    indexes.forget_session(&other).unwrap();
     assert!(
         !indexes
-            .alive(&Room::persona(&admin(), "engineer"), &at_turn(&other, 8))
+            .alive(&Room::persona("engineer"), &at_turn(&other, 8))
             .unwrap(),
         "删掉了的会话"
     );
     assert!(
         indexes
-            .alive(&Room::persona(&admin(), "miyu"), &at_turn(&session, 3))
+            .alive(&Room::persona("miyu"), &at_turn(&session, 3))
             .unwrap(),
         "别的人格的回合库里没埋"
     );
@@ -436,7 +436,7 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     let scratch = Scratch::new("recall-alive-rebuilt");
     let root = root_in(&scratch);
     let indexes = RecallIndexes::new(&root);
-    let room = Room::persona(&admin(), "engineer");
+    let room = Room::persona("engineer");
     let deleted = SessionId::parse("0192f3a0-3333-7abc-8def-001122334455").unwrap();
     let theirs = SessionId::parse("0192f3a0-4444-7abc-8def-001122334455").unwrap();
     let at = |session: &SessionId| Source {
@@ -456,7 +456,7 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     let trashed = root.trashed_sessions().join(deleted.as_str());
     std::fs::create_dir_all(trashed.parent().unwrap()).unwrap();
     std::fs::rename(&live, &trashed).unwrap();
-    indexes.forget_session(&admin(), &deleted).unwrap();
+    indexes.forget_session(&deleted).unwrap();
     assert!(!indexes.alive(&room, &at(&deleted)).unwrap());
     // 墓碑还在的时候恢复：照目录判，算活的（墓碑只挡后台补的一批）。再删一回。
     std::fs::rename(&trashed, &live).unwrap();

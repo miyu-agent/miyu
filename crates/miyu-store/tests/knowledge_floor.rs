@@ -27,8 +27,8 @@ fn the_floor_follows_the_model() {
     write(&kb(&root, "notes"), "cat.md", "团子的饭是鸡胸肉\n");
     let floors = Thresholds::parse("[thresholds]\n\"m\" = 0.5\n").expect("合写法");
     let knowledge = Knowledge::new(&root).with_floors(floors);
-    knowledge.list(&admin()).expect("补得了");
-    let index = knowledge.index_of(&admin(), "notes");
+    knowledge.list().expect("补得了");
+    let index = knowledge.index_of("notes");
     for model in ["m", "n"] {
         index
             .put_vector("cat.md#0", model, &[1.0, 0.0])
@@ -41,7 +41,7 @@ fn the_floor_follows_the_model() {
             vector: &vector,
         };
         !knowledge
-            .search(&admin(), "猫吃什么", None, 5, Some(near))
+            .search("猫吃什么", None, 5, Some(near))
             .expect("搜得了")
             .0
             .is_empty()

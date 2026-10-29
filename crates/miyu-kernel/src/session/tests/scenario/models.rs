@@ -201,7 +201,7 @@ fn a_change_is_recorded_once_and_handed_over_when_the_next_turn_starts() {
     let event = &stage.log()[from];
     assert_eq!(
         told(event),
-        format!("{} session.policy_changed alice", from + 1)
+        format!("{} session.policy_changed person", from + 1)
     );
     assert_eq!(changed(event), (Some("@free"), None));
     assert_eq!(event.cause.as_ref(), Some(&id), "cause 是那条命令");
@@ -232,7 +232,7 @@ fn a_change_during_a_turn_waits_for_the_next_one() {
     let event = stage.log().last().unwrap();
     assert_eq!(
         told(event),
-        "6 session.policy_changed alice t3",
+        "6 session.policy_changed person t3",
         "带上这个回合"
     );
     assert_eq!(event.cause.as_ref(), Some(&id));

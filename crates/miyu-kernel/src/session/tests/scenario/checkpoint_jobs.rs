@@ -155,7 +155,7 @@ fn an_undo_that_reads_back_the_log_stops_them_too() {
     let stop = crate::session::Action::StopJobs {
         undone: true,
         jobs: vec![JobId::new(1).unwrap(), JobId::new(2).unwrap()],
-        by: alice(),
+        by: person(),
         cause: undo,
     };
     assert_eq!(s.stopping(), [stop]);

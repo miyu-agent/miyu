@@ -10,7 +10,7 @@ use base64::engine::general_purpose::STANDARD;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, ContentHash};
+use miyu_kernel::id::ContentHash;
 use miyu_store::personas::{AVATARS, BACKGROUNDS, Found, Personas, avatar_in, background_in};
 
 use crate::Core;
@@ -118,14 +118,13 @@ pub(crate) struct Checked {
 /// （`persona.set` 先查它，再写别的）。
 pub(crate) async fn check(
     core: &Core,
-    account: &AccountId,
     picture: Picture,
     params: PictureParams,
 ) -> Result<Checked, Refusal> {
     let bytes = match (params.blob, params.unset) {
         (Some(blob), None) => {
             let hash = ContentHash::parse(&blob).map_err(|_| Refusal::BAD_PARAMS)?;
-            let (bytes, image) = crate::attach::picture(core, account, hash).await?;
+            let (bytes, image) = crate::attach::picture(core, hash).await?;
             let Some((media_type, width, height)) = image else {
                 return Err(picture.not_image());
             };
@@ -235,11 +234,10 @@ pub(crate) struct ReadParams {
 /// `persona.avatar`、`persona.background`：`{"<avatar|background>": <版本>, "media_type", "data"}`；没有的回 `null`。
 pub(crate) async fn read(
     core: &Core,
-    account: &AccountId,
     picture: Picture,
     params: ReadParams,
 ) -> Result<Value, Refusal> {
-    let personas = super::personas(core, account);
+    let personas = super::personas(core);
     tokio::task::spawn_blocking(move || {
         let found = personas
             .find(&params.persona)

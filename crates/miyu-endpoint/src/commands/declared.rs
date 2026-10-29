@@ -78,7 +78,6 @@ pub(super) async fn run(
         "text": params.text.trim(),
         "session": session.as_str(),
         "by": by,
-        "owner": handle.owner().as_str(),
         "language": peer.language,
     });
     let answer = tokio::time::timeout(ANSWER_WAIT, connection.call("command.call", asked))

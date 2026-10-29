@@ -2,7 +2,7 @@
 //! （2026-10-11、2026-10-21 项目主人定）。哪儿都想得起全部（施工 R-29：原来一个场所里只想起在这个场所说过的，2026-10-21
 //! 项目主人推翻）；谁在听只管记下时写什么：听众、在哪个场所说的。说不说全凭她自己，不另加规矩。
 
-use miyu_kernel::id::{AccountId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_kernel::origin::{By, Person};
 
 /// 这一次谁在听。
@@ -18,10 +18,10 @@ impl Listener {
     /// 照会话定：关在沙盒里的（`confined`）是会话所在的场所 `venue`；别的是主人 `owner`（施工 SU-4 中：原来照属主是不是记忆
     /// 账号，场所会话都归主人以后只能照关不关）。
     #[must_use]
-    pub fn of(confined: bool, owner: &AccountId, venue: &VenueId) -> Listener {
+    pub fn of(confined: bool, venue: &VenueId) -> Listener {
         match confined {
             true => Listener::Place(venue.clone()),
-            false => Listener::Owner(By::Person(Person::new(owner.clone()))),
+            false => Listener::Owner(By::Person(Person::default())),
         }
     }
 

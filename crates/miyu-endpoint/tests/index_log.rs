@@ -54,7 +54,7 @@ async fn created_rebuilt_and_found_broken_are_logged() {
     let before = client.call("l1", "session.list", json!({})).await;
     rusqlite::Connection::open(&path)
         .expect("打得开")
-        .execute("UPDATE sessions SET owner = 'Not An Account'", [])
+        .execute("UPDATE sessions SET parent = 'not a session'", [])
         .expect("改得了");
     let after = client.call("l2", "session.list", json!({})).await;
     assert_eq!(after["result"], before["result"], "照日志整份读，列得对");

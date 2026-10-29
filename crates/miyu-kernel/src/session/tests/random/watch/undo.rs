@@ -221,7 +221,7 @@ impl Watch {
                     self.undo.reading = None;
                 }
                 assert!(
-                    matches!(appended.as_slice(), [event] if event.body == Body::TurnReverted(TurnReverted { turns }) && event.by == alice()),
+                    matches!(appended.as_slice(), [event] if event.body == Body::TurnReverted(TurnReverted { turns }) && event.by == person()),
                     "种子 {seed}：撤销只记一条，列的是那一轮和它以后的：{actions:?}"
                 );
                 assert!(
@@ -236,7 +236,7 @@ impl Watch {
                 }
                 // 后面还有的，是记在一边的回报接着开的那一轮（施工 7-2，`watch/reports.rs` 查）。
                 assert!(
-                    matches!(appended.as_slice(), [event, ..] if event.body == Body::TurnUnreverted(TurnUnreverted { turns }) && event.by == alice()),
+                    matches!(appended.as_slice(), [event, ..] if event.body == Body::TurnUnreverted(TurnUnreverted { turns }) && event.by == person()),
                     "种子 {seed}：恢复只记一条，列的是最近一次撤销的那几轮：{actions:?}"
                 );
                 assert!(

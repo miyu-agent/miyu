@@ -414,13 +414,10 @@ impl Keeper {
 
     /// 同一间、主人那边在听的一份（施工 R-13 上）：合并照全部合，不管是哪个会话抽完以后起的。
     pub(crate) fn as_owner(&self) -> Keeper {
-        let account = match &self.room {
-            Room::Persona { account, .. } | Room::Session { account, .. } => account,
-        };
         Keeper {
             memory: Arc::clone(&self.memory),
             room: self.room.clone(),
-            listener: Listener::Owner(By::Person(Person::new(account.clone()))),
+            listener: Listener::Owner(By::Person(Person::default())),
             here: Arc::clone(&self.here),
         }
     }

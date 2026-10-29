@@ -173,7 +173,7 @@ impl Stage {
     ///
     /// alice 的写法坏了才会：那是替身自己的 bug。
     pub fn person_says(&mut self, words: &str) -> CommandId {
-        let alice: By = serde_json::from_str(r#"{"kind":"person","account":"alice"}"#)
+        let alice: By = serde_json::from_str(r#"{"kind":"person"}"#)
             .unwrap_or_else(|e| panic!("alice 的写法坏了：{e}"));
         let blocks = vec![Block::Text(Text {
             text: words.to_string(),

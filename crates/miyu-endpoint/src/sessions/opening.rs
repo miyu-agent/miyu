@@ -1,7 +1,7 @@
 //! 造会话时定下的几样（施工 8-32、P-9，从 `sessions.rs` 抽出来）：谁开的、在哪开的，开局的级别，带不带「关于你」。
 
 use miyu_kernel::event::Level;
-use miyu_kernel::id::{AccountId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 
@@ -11,8 +11,6 @@ use miyu_session::settings::ProfileSettings;
 /// 造会话时要记下的几样：有没有人能确认，是不是一次性的，用哪个模型。
 #[derive(Debug, Clone)]
 pub(crate) struct Opening {
-    /// 属主：主人（施工 SU-4 中起场所会话也是）。
-    pub(crate) owner: AccountId,
     /// 有没有人能确认：头握手时报的。
     pub(crate) attended: bool,
     /// 一次性的：`miyu ask` 开的（施工 3-9 下）。

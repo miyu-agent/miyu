@@ -67,7 +67,7 @@ fn message(seq: u64, text: &str) -> Event {
     Event::from_line(
         &serde_json::json!({
             "seq": seq, "at": "2026-09-29T05:00:00.000Z", "kind": "message.user",
-            "by": {"kind": "person", "account": "alice"},
+            "by": {"kind": "person"},
             "body": {"blocks": [{"type": "text", "text": text}]},
         })
         .to_string(),

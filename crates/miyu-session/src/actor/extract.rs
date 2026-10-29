@@ -62,7 +62,7 @@ impl Actor {
         let Some((calls, _)) = self.tools.memory() else {
             return;
         };
-        let (keeper, _, _, extractor) = calls.extracting();
+        let (keeper, _, extractor) = calls.extracting();
         if keeper.extraction().is_none() {
             return;
         }
@@ -94,7 +94,7 @@ impl Actor {
         let Some((calls, _)) = self.tools.memory() else {
             return;
         };
-        let (keeper, _, _, extractor) = calls.extracting();
+        let (keeper, _, extractor) = calls.extracting();
         let Some(extraction) = keeper.extraction() else {
             return;
         };
@@ -119,20 +119,20 @@ impl Actor {
     pub(super) fn extracting(&self) -> bool {
         self.tools
             .memory()
-            .is_some_and(|(calls, _)| calls.extracting().3.pending())
+            .is_some_and(|(calls, _)| calls.extracting().2.pending())
     }
 
     /// 叫停这个会话叫的整理（施工 R-22，`/dream stop`、`/stop`）：交回有没有在跑的。
     pub(super) fn hush_dreams(&self) -> bool {
         self.tools
             .memory()
-            .is_some_and(|(calls, _)| calls.extracting().3.hushes.hush())
+            .is_some_and(|(calls, _)| calls.extracting().2.hushes.hush())
     }
 
     /// 忙起来了：撤掉闹钟。在路上的那一次照样走完。
     pub(super) fn extract_cancel(&self) {
         if let Some((calls, _)) = self.tools.memory() {
-            calls.extracting().3.cancel();
+            calls.extracting().2.cancel();
         }
     }
 
@@ -142,7 +142,7 @@ impl Actor {
         let Some((calls, _)) = self.tools.memory() else {
             return;
         };
-        let (keeper, session, _, extractor) = calls.extracting();
+        let (keeper, session, extractor) = calls.extracting();
         let put_down = |extractor: &Extractor| match forced {
             true => extractor.unforce(),
             false => extractor.disarm(generation),
@@ -184,7 +184,7 @@ impl Actor {
         let Some((calls, offset)) = self.tools.memory() else {
             return;
         };
-        let (keeper, session, owner, extractor) = calls.extracting();
+        let (keeper, session, extractor) = calls.extracting();
         let read = read.map(|read| seeded(extractor, read));
         let Some(extraction) = keeper.extraction() else {
             return match forced {
@@ -226,7 +226,6 @@ impl Actor {
             keeper: keeper.clone(),
             extraction,
             config,
-            owner: owner.clone(),
             session: session.clone(),
             fallback: self.model.reference(),
             after,
@@ -272,14 +271,14 @@ impl Actor {
         let Some((calls, offset)) = self.tools.memory() else {
             return answer(reply, Err(NotDreamed::Off));
         };
-        let (keeper, session, owner, extractor) = calls.extracting();
+        let (keeper, session, extractor) = calls.extracting();
         // 从叫的这一刻起听着叫停（施工 R-22）：抽的时候叫停的，抽完不合。
         let hush = keeper.hush_for(extractor.hushes.listen());
         let config = Arc::clone(self.config.current());
         let dir = self.store.as_ref().and_then(|store| store.dir());
         let (Some(dir), true) = (dir, self.session.vacant()) else {
-            let (keeper, owner) = (keeper.clone(), owner.clone());
-            let dreaming = async move { keeper.dream_until(config, owner, offset, hush).await };
+            let keeper = keeper.clone();
+            let dreaming = async move { keeper.dream_until(config, offset, hush).await };
             tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
@@ -312,7 +311,7 @@ impl Actor {
         let Some((calls, offset)) = self.tools.memory() else {
             return answer(reply, Err(NotDreamed::Off));
         };
-        let (keeper, session, owner, extractor) = calls.extracting();
+        let (keeper, session, extractor) = calls.extracting();
         let read = read.map(|read| seeded(extractor, read));
         let config = Arc::clone(self.config.current());
         let extraction = keeper.extraction();
@@ -330,8 +329,8 @@ impl Actor {
         };
         let Some((read, extraction)) = read else {
             extractor.disarm(generation);
-            let (keeper, owner) = (keeper.clone(), owner.clone());
-            let dreaming = async move { keeper.dream_until(config, owner, offset, hush).await };
+            let keeper = keeper.clone();
+            let dreaming = async move { keeper.dream_until(config, offset, hush).await };
             tokio::spawn(async move { answer(reply, dreaming.await) });
             return;
         };
@@ -358,7 +357,6 @@ impl Actor {
             keeper: keeper.clone(),
             extraction,
             config,
-            owner: owner.clone(),
             session: session.clone(),
             fallback: self.model.reference(),
             after,

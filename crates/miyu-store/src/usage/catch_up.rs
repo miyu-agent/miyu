@@ -3,32 +3,32 @@
 //!
 //! - 会话每落一批（[`UsageIndex::advance`]）：写这一批里发出去了的请求；这一批从第 1 条起的新起一个位置，别的位置正好是
 //!   这一批之前的才挪到这一批之后。
-//! - 补（[`UsageIndex::catch_up`]）：先读账号日志记到以后的几条（`usage.purged` 换掉那个会话的单次行、标上 `purged`；
-//!   `usage.oneshot` 写一行），再看管理员的会话和回收处里的会话：标了 `purged` 的不读，记到的照 `read_marked` 读多出来的，
+//! - 补（[`UsageIndex::catch_up`]）：先读日志记到以后的几条（`usage.purged` 换掉那个会话的单次行、标上 `purged`；
+//!   `usage.oneshot` 写一行），再看会话和回收处里的会话：标了 `purged` 的不读，记到的照 `read_marked` 读多出来的，
 //!   没记过的、对不上的整份读。日志读不下去的照读到的写，位置不挪，报给调的一方记一行。
-//! - 一次性调用（[`UsageIndex::one_shot`]）：先追加进账号日志，再写一行（编号是账号日志里那一条的序号）。
+//! - 一次性调用（[`UsageIndex::one_shot`]）：先追加进日志，再写一行（编号是日志里那一条的序号）。
 //!
-//! 读日志、读账号日志不拿着库的锁：会话照常往里写，补的那一截写的时候再核对位置。
+//! 读会话日志、读日志不拿着库的锁：会话照常往里写，补的那一截写的时候再核对位置。
 
 use std::path::Path;
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::{AccountId, EventKind, Seq, SessionId, VenueId};
+use miyu_kernel::id::{EventKind, Seq, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::time::Timestamp;
 
 use super::purged::Purged;
 use super::spent::{OneShotCall, Spent, Who, insert};
-use super::{ONESHOT, PURGED, UsageError, UsageIndex, journal_source};
+use super::{JOURNAL, ONESHOT, PURGED, UsageError, UsageIndex};
 use crate::journal::{self, Entry};
 use crate::log::{Mark, OpenError, read_marked};
 use crate::root::DataRoot;
 use crate::sqlite::integer;
 
-/// 补的时候哪一份没读完：会话编号（或者 `journal:<账号>`）和为什么，调的一方照它记 `WARN usage not indexed`。
+/// 补的时候哪一份没读完：会话编号（或者 `journal`）和为什么，调的一方照它记 `WARN usage not indexed`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Problem {
     /// 哪一份。
@@ -45,7 +45,7 @@ struct Marked {
 }
 
 impl UsageIndex {
-    /// 会话 `id`（属主等照 `who`）落了盘的一批 `events`：写之前日志在 `before`，写完在 `after`（施工 8-15，
+    /// 会话 `id`（场所等照 `who`）落了盘的一批 `events`：写之前日志在 `before`，写完在 `after`（施工 8-15，
     /// `session/actor.md` 第 5 条）。见模块的说明。用不了的（打不开）什么都不写。
     ///
     /// # Errors
@@ -81,23 +81,21 @@ impl UsageIndex {
         Ok(())
     }
 
-    /// 补：账号 `accounts` 的账号日志、会话、回收处里的会话（见模块的说明）。交回没读完的几份。用不了的什么都不做。
+    /// 补：日志、会话、回收处里的会话（见模块的说明）。交回没读完的几份。用不了的什么都不做。
     ///
     /// # Errors
     ///
     /// 读写库出错；列不了放会话的目录。
-    pub fn catch_up(&self, accounts: &[AccountId]) -> Result<Vec<Problem>, UsageError> {
+    pub fn catch_up(&self) -> Result<Vec<Problem>, UsageError> {
         let mut problems = Vec::new();
-        for account in accounts {
-            self.catch_up_journal(account, &mut problems)?;
-            for (id, dir) in session_dirs(&self.root)? {
-                self.catch_up_dir(&id, &dir, &mut problems)?;
-            }
+        self.catch_up_journal(&mut problems)?;
+        for (id, dir) in session_dirs(&self.root)? {
+            self.catch_up_dir(&id, &dir, &mut problems)?;
         }
         Ok(problems)
     }
 
-    /// 只补账号 `account` 的会话 `id`（`session_usage` 查这个会话之前）。交回没读完的。
+    /// 只补会话 `id`（`session_usage` 查这个会话之前）。交回没读完的。
     ///
     /// # Errors
     ///
@@ -109,18 +107,13 @@ impl UsageIndex {
         Ok(problems)
     }
 
-    /// 一次性调用（施工 8-15，「怎么走」第九条第 4 条）：账号 `owner` 在 `at` 发出去的一次 `call`，先追加进他的账号日志
-    /// （`usage.oneshot`），再写一行，编号是那一条的序号。
+    /// 一次性调用（施工 8-15，「怎么走」第九条第 4 条）：在 `at` 发出去的一次 `call`，先追加进日志（`usage.oneshot`），再写
+    /// 一行，编号是那一条的序号。
     ///
     /// # Errors
     ///
-    /// 写不进账号日志（这时不写行：真相没有，汇总也不该有）；写不进库。
-    pub fn one_shot(
-        &self,
-        owner: &AccountId,
-        at: Timestamp,
-        call: &OneShotCall,
-    ) -> Result<(), UsageError> {
+    /// 写不进日志（这时不写行：真相没有，汇总也不该有）；写不进库。
+    pub fn one_shot(&self, at: Timestamp, call: &OneShotCall) -> Result<(), UsageError> {
         let body = serde_json::to_string(call)
             .and_then(|text| serde_json::from_str::<RawJson>(&text))
             .map_err(|error| UsageError::Bad(error.to_string()))?;
@@ -133,23 +126,19 @@ impl UsageIndex {
         };
         let path = self.root.path().join(journal::FILE);
         let seq = journal::append(&path, entry)?;
-        let row = Spent::one_shot(owner, seq.get(), at, call);
+        let row = Spent::one_shot(seq.get(), at, call);
         if let Some(db) = self.lock().as_ref() {
             insert(db, &[row])?;
         }
         Ok(())
     }
 
-    /// 补账号 `account` 的日志：从记到的字节往后读，对不上的从头读。
-    fn catch_up_journal(
-        &self,
-        account: &AccountId,
-        problems: &mut Vec<Problem>,
-    ) -> Result<(), UsageError> {
-        let source = journal_source(account.as_str());
+    /// 补日志：从记到的字节往后读，对不上的从头读。
+    fn catch_up_journal(&self, problems: &mut Vec<Problem>) -> Result<(), UsageError> {
+        let source = JOURNAL;
         let path = self.root.path().join(journal::FILE);
         let marked = match self.lock().as_ref() {
-            Some(db) => marked(db, &source)?,
+            Some(db) => marked(db, source)?,
             None => return Ok(()),
         };
         let from = marked.as_ref().map_or(0, |marked| marked.mark.bytes);
@@ -169,18 +158,18 @@ impl UsageIndex {
         };
         let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
         for entry in &entries {
-            if let Err(why) = take(&tx, account, entry) {
+            if let Err(why) = take(&tx, entry) {
                 problems.push(Problem {
-                    source: source.clone(),
+                    source: source.to_string(),
                     error: format!("entry {}: {why}", entry.seq),
                 });
             }
         }
-        // 账号日志只记读到第几个字节；场所、父会话、段都没有。
+        // 日志只记读到第几个字节；场所、父会话、段都没有。
         tx.execute(
-            "INSERT OR REPLACE INTO marks (source, owner, venue, parent, segment, bytes, next, purged) \
-             VALUES (?1, ?2, NULL, NULL, 0, ?3, 1, 0)",
-            params![source, account.as_str(), integer(end, "mark")?],
+            "INSERT OR REPLACE INTO marks (source, venue, parent, segment, bytes, next, purged) \
+             VALUES (?1, NULL, NULL, 0, ?2, 1, 0)",
+            params![source, integer(end, "mark")?],
         )?;
         tx.commit()?;
         Ok(())
@@ -270,8 +259,8 @@ impl UsageIndex {
     }
 }
 
-/// 账号日志里的一条：`usage.oneshot` 写一行，`usage.purged` 换掉那个会话的；别的种类不看。
-fn take(db: &Connection, account: &AccountId, entry: &Event) -> Result<(), String> {
+/// 日志里的一条：`usage.oneshot` 写一行，`usage.purged` 换掉那个会话的；别的种类不看。
+fn take(db: &Connection, entry: &Event) -> Result<(), String> {
     let Body::Unknown { kind, body } = &entry.body else {
         return Ok(());
     };
@@ -279,7 +268,7 @@ fn take(db: &Connection, account: &AccountId, entry: &Event) -> Result<(), Strin
         ONESHOT => {
             let call: OneShotCall =
                 serde_json::from_str(body.get()).map_err(|error| error.to_string())?;
-            let row = Spent::one_shot(account, entry.seq.get(), entry.at, &call);
+            let row = Spent::one_shot(entry.seq.get(), entry.at, &call);
             insert(db, &[row]).map_err(|error| error.to_string())
         }
         PURGED => {
@@ -308,28 +297,26 @@ fn replace(db: &Connection, purged: &Purged) -> Result<(), UsageError> {
 fn marked(db: &Connection, source: &str) -> Result<Option<Marked>, UsageError> {
     let found = db
         .query_row(
-            "SELECT owner, venue, parent, segment, bytes, next, purged FROM marks WHERE source = ?1",
+            "SELECT venue, parent, segment, bytes, next, purged FROM marks WHERE source = ?1",
             [source],
             |row| {
                 Ok((
-                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(0)?,
                     row.get::<_, Option<String>>(1)?,
-                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, i64>(2)?,
                     row.get::<_, i64>(3)?,
                     row.get::<_, i64>(4)?,
-                    row.get::<_, i64>(5)?,
-                    row.get::<_, bool>(6)?,
+                    row.get::<_, bool>(5)?,
                 ))
             },
         )
         .optional()?;
-    let Some((owner, venue, parent, segment, bytes, next, purged)) = found else {
+    let Some((venue, parent, segment, bytes, next, purged)) = found else {
         return Ok(None);
     };
     let bad = |what: &str| UsageError::Bad(format!("mark {source}: {what}"));
     let number = |n: i64| u64::try_from(n).map_err(|_| bad("mark"));
     let who = Who {
-        owner: AccountId::parse(&owner).map_err(|_| bad("owner"))?,
         venue: VenueId::parse(venue.as_deref().unwrap_or("local")).map_err(|_| bad("venue"))?,
         parent: parent
             .map(|parent| SessionId::parse(&parent).map_err(|_| bad("parent")))
@@ -389,11 +376,10 @@ fn write_mark(
     purged: bool,
 ) -> Result<(), UsageError> {
     db.execute(
-        "INSERT OR REPLACE INTO marks (source, owner, venue, parent, segment, bytes, next, purged) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT OR REPLACE INTO marks (source, venue, parent, segment, bytes, next, purged) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![
             source,
-            who.owner.as_str(),
             who.venue.as_str(),
             who.parent.as_ref().map(SessionId::as_str),
             integer(mark.segment, "mark")?,
@@ -405,12 +391,12 @@ fn write_mark(
     Ok(())
 }
 
-/// 账号日志的种类。
+/// 日志的种类。
 fn kind(name: &str) -> Result<EventKind, UsageError> {
     EventKind::parse(name).map_err(|error| UsageError::Bad(error.to_string()))
 }
 
-/// 账号 `account` 的会话和回收处里的会话：编号和目录。名字不合会话编号写法的不算。
+/// 会话和回收处里的会话：编号和目录。名字不合会话编号写法的不算。
 fn session_dirs(root: &DataRoot) -> Result<Vec<(SessionId, std::path::PathBuf)>, UsageError> {
     let mut dirs: Vec<_> = root
         .sessions()?

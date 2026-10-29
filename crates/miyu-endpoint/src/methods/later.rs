@@ -36,17 +36,8 @@ pub(crate) async fn call_later(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        // 图先照连接自己的账号找（`blob.put` 存在那里），找不到再照替谁干活的（施工 BUG-2）。
-        "model.call" => {
-            models::call(
-                core,
-                (&core.admin, &core.admin),
-                caller.package.as_deref(),
-                params(request)?,
-            )
-            .await
-        }
-        "memory.dream" => memory::dream::call(core, &core.admin, &request.params).await,
+        "model.call" => models::call(core, caller.package.as_deref(), params(request)?).await,
+        "memory.dream" => memory::dream::call(core, &request.params).await,
         "package.call" => backstage::call(core, caller, params(request)?).await,
         "command.run" => commands::run(core, &peer, &request.id, params(request)?).await,
         "fs.find" => files::find(core, params(request)?).await,

@@ -139,7 +139,7 @@ async fn bad_requests_record_nothing_and_refusals_name_the_messages() {
 }
 
 fn sessions_admin() -> miyu_kernel::origin::By {
-    miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::new(alice()))
+    miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::default())
 }
 
 /// 正在跑一轮时（施工 O-14 下）：并进这一轮，`turn.joined` 带回合编号；打断以后不另开一轮。

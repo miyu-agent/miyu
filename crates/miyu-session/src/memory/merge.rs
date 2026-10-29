@@ -21,7 +21,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use miyu_kernel::id::{AccountId, Seq, SessionId};
+use miyu_kernel::id::{Seq, SessionId};
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
 use miyu_recall::{Entry, MemoryId, Merging, Swept};
@@ -155,18 +155,16 @@ impl Keeper {
     pub async fn dream(
         &self,
         config: TurnConfig,
-        owner: AccountId,
         offset: UtcOffset,
     ) -> Result<Dreamed, NotDreamed> {
         let hush = self.hush_for(Hush::default());
-        self.dream_until(config, owner, offset, hush).await
+        self.dream_until(config, offset, hush).await
     }
 
     /// 同 [`Keeper::dream`]，`hush` 叫停了就停（施工 R-22，会话里的 `/dream`）。
     pub(crate) async fn dream_until(
         &self,
         config: TurnConfig,
-        owner: AccountId,
         offset: UtcOffset,
         hush: Hush,
     ) -> Result<Dreamed, NotDreamed> {
@@ -177,7 +175,6 @@ impl Keeper {
             keeper: self.as_owner(),
             extraction,
             config,
-            owner,
             offset,
             hush,
             from: None,
@@ -195,8 +192,6 @@ pub(crate) struct MergeJob {
     pub(crate) extraction: Extraction,
     /// 这一轮的配置：照它取 key、发、读 `memory.merge_*`。
     pub(crate) config: TurnConfig,
-    /// 记在谁的账上：会话的属主。
-    pub(crate) owner: AccountId,
     /// 日期照会话的时区写。
     pub(crate) offset: UtcOffset,
     /// 人叫停了就停（施工 R-22）；定时的听不见。
@@ -398,16 +393,11 @@ impl MergeJob {
         let Some(sessions) = self.keeper.memory.dream_sessions() else {
             return Ok(None);
         };
-        let (owner, room) = match self.keeper.room() {
-            Room::Persona { account, persona } => {
-                (account.clone(), DreamRoom::Persona(persona.clone()))
-            }
-            Room::Session { account, session } => {
-                (account.clone(), DreamRoom::Session(session.clone()))
-            }
+        let room = match self.keeper.room() {
+            Room::Persona { persona } => DreamRoom::Persona(persona.clone()),
+            Room::Session { session } => DreamRoom::Session(session.clone()),
         };
         let spec = DreamSpec {
-            owner,
             room,
             manual,
             from: if manual { self.from.clone() } else { None },

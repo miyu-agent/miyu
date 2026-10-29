@@ -5,7 +5,6 @@
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use miyu_kernel::id::AccountId;
 use miyu_store::packages::Found;
 
 use crate::Core;
@@ -40,9 +39,9 @@ impl Core {
     }
 
     /// `account` 的会话用得到的软件包：全部去掉关了的（`Core::packages_off`）。包的账号（平台桥、替主人干活的扩展）照全部。
-    pub fn packages_of(&self, account: &AccountId) -> Arc<Vec<Found>> {
+    pub fn packages_of(&self) -> Arc<Vec<Found>> {
         let all = self.system_packages();
-        let off = self.packages_off(account);
+        let off = self.packages_off();
         if off.is_empty() {
             return all;
         }

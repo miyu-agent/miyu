@@ -24,7 +24,7 @@ fn friend() -> By {
     By::External(External {
         venue: VenueId::parse("qq:private:20017").expect("场所合写法"),
         id: ExternalId::parse("qq:20017").expect("身份合写法"),
-        account: None,
+        owner: false,
         role: None,
     })
 }

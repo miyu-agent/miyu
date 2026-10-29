@@ -16,7 +16,6 @@
 
 mod remove;
 
-use miyu_kernel::id::AccountId;
 use serde_json::{Value, json};
 
 use miyu_policy::skill::feature_id;
@@ -42,8 +41,8 @@ pub(crate) fn external(core: &Core) -> Vec<External> {
 /// # Errors
 ///
 /// 找的线程崩了：内部出错；这种语言的字表读不出来。
-pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result<Value, Refusal> {
-    let (packages, root) = (core.packages_of(account), core.root.clone());
+pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let external = external(core);
     let found = tokio::task::spawn_blocking(move || {
         let found = miyu_store::skills::find(&packages, &root, &external).0;
@@ -52,7 +51,7 @@ pub(crate) async fn list(core: &Core, account: &AccountId, peer: Peer) -> Result
     .await
     .map_err(|_| Refusal::INTERNAL)?;
     let (found, packages) = found;
-    let switches = crate::presets::switches(core, account);
+    let switches = crate::presets::switches(core);
     let words = crate::config::methods::words(core, peer.language)?;
     let skills: Vec<Value> = found
         .iter()

@@ -21,7 +21,6 @@ impl Sessions {
         let ForkChild {
             lineage,
             command,
-            owner,
             call,
             placeholder,
         } = child;
@@ -43,7 +42,7 @@ impl Sessions {
                 cause: command,
                 by,
                 at,
-                index: Some(core.index_for(&owner)),
+                index: Some(core.index()),
                 seal_after: None,
                 within: Some(Within {
                     call,

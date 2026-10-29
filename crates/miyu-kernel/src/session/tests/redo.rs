@@ -6,11 +6,11 @@ use super::load::Logged;
 use super::*;
 use crate::event::MessageUser;
 
-/// `n` 号命令：alice 重做最后一轮，开这一轮的那一句换成 `words`（没有的原样）。
+/// `n` 号命令：主人重做最后一轮，开这一轮的那一句换成 `words`（没有的原样）。
 fn redo(n: u64, words: Option<&str>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(56),
         command: Command::Redo {
             text: words.map(|words| {

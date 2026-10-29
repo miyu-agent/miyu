@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::Handle;
 
 use crate::Core;
@@ -92,15 +92,13 @@ pub(super) async fn subscribe(
     match (stream_of(request), shaken) {
         (Ok(Stream::Config), shook) => {
             let system = shook.as_ref().map_or("en", Shaken::system);
-            subscriptions.add_config((core, &core.admin), system, out);
+            subscriptions.add_config(core, system, out);
             (Ok(json!({})), None)
         }
-        (Ok(Stream::Sessions), _) => {
-            match subscriptions.add_sessions((core, &core.admin), out).await {
-                Ok(result) => (Ok(result), Some(Target::Sessions)),
-                Err(refusal) => (Err(refusal), None),
-            }
-        }
+        (Ok(Stream::Sessions), _) => match subscriptions.add_sessions(core, out).await {
+            Ok(result) => (Ok(result), Some(Target::Sessions)),
+            Err(refusal) => (Err(refusal), None),
+        },
         (Ok(Stream::Extensions), Some(shook)) => {
             let listed = subscriptions.add_listed(core, false, shook, out);
             (listed, Some(Target::Extensions))
@@ -110,21 +108,19 @@ pub(super) async fn subscribe(
             (listed, Some(Target::Packages))
         }
         (Ok(Stream::Projects), Some(shook)) => {
-            let account = core.admin.clone();
-            let listed = subscriptions.add_projects(core, account, shook, out).await;
+            let listed = subscriptions.add_projects(core, shook, out).await;
             (listed, Some(Target::Projects))
         }
         (Ok(Stream::Schedules), Some(shook)) => {
-            let account = core.admin.clone();
-            let listed = subscriptions.add_schedules(core, account, shook, out);
+            let listed = subscriptions.add_schedules(core, shook, out);
             (listed, Some(Target::Schedules))
         }
         (Ok(Stream::Knowledge), Some(shook)) => {
-            let reply = subscriptions.add_kb(core, core.admin.clone(), shook, out);
+            let reply = subscriptions.add_kb(core, shook, out);
             (Ok(reply), Some(Target::Knowledge))
         }
         (Ok(Stream::Notices), Some(shook)) => {
-            let reply = subscriptions.add_notices(core, core.admin.clone(), shook, out);
+            let reply = subscriptions.add_notices(core, shook, out);
             (Ok(reply), Some(Target::Notices))
         }
         (Ok(Stream::Package(package)), Some(shook)) => {
@@ -135,7 +131,7 @@ pub(super) async fn subscribe(
             {
                 return (Err(Refusal::UNKNOWN_PACKAGE), None);
             }
-            let whose = (core.admin.clone(), package.clone());
+            let whose = package.clone();
             let reply = subscriptions.add_package_events(core, whose, shook, out);
             (Ok(reply), Some(Target::PackageEvents(package)))
         }
@@ -149,12 +145,10 @@ pub(super) async fn subscribe(
             let reply = subscriptions.add_widgets(core, looking, shook, out);
             (Ok(reply), Some(Target::Widgets))
         }
-        (Ok(Stream::Memory(at)), _) => {
-            match memory((core, &core.admin), subscriptions, request, at, out).await {
-                Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
-                Err(refusal) => (Err(refusal), None),
-            }
-        }
+        (Ok(Stream::Memory(at)), _) => match memory(core, subscriptions, request, at, out).await {
+            Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
+            Err(refusal) => (Err(refusal), None),
+        },
         (
             Ok(
                 Stream::Extensions
@@ -190,7 +184,7 @@ async fn events(
         let (upto, current) =
             subscribe_after(core, subscriptions, &handle, &session, after, out).await?;
         reply["upto"] = json!(upto);
-        now(core, handle.owner(), &mut reply, current.as_ref());
+        now(core, &mut reply, current.as_ref());
         return Ok((reply, Some(session)));
     }
     let current = match subscriptions.has(&session) {
@@ -204,12 +198,12 @@ async fn events(
                 return Err(Refusal::STOPPED);
             };
             let current = subscription.current().cloned();
-            let whose = (session, handle.owner().clone());
+            let whose = session;
             subscriptions.add(core, whose, subscription, Vec::new(), out.clone());
             current
         }
     };
-    now(core, handle.owner(), &mut reply, current.as_ref());
+    now(core, &mut reply, current.as_ref());
     Ok((reply, None))
 }
 
@@ -225,11 +219,9 @@ async fn view(
 ) -> Result<(Value, Option<SessionId>), Refusal> {
     let handle = core.sessions.get(core, &session).await?.handle;
     let mut reply = head(core, &handle, &session).await;
-    let owner = core
-        .sessions
-        .owner(core, &session)
-        .await
-        .ok_or(Refusal::NOT_FOUND)?;
+    if !core.sessions.exists(core, &session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
     let old = subscriptions.take(&session).await;
     let Ok((subscription, backlog)) = handle.subscribe_after(0).await else {
         core.sessions.forget(&session).await;
@@ -243,7 +235,7 @@ async fn view(
     let current = subscription.current().cloned();
     let language = shaken.now(core).language;
     let resources = core.resources.clone();
-    let skills = crate::view::Titles::of(core, &owner);
+    let skills = crate::view::Titles::of(core);
     let blobs = miyu_store::blob::Blobs::new(core.root.blobs());
     let (mut page, mut projector) = tokio::task::spawn_blocking(move || {
         crate::view::texts(&resources, language, &skills)
@@ -264,7 +256,7 @@ async fn view(
         page.remove("jobs");
         reply.extend(page);
     }
-    now(core, handle.owner(), &mut reply, current.as_ref());
+    now(core, &mut reply, current.as_ref());
     // 会话状态（施工 9-8 补上）：人格、预设照回应里已经读出来的。
     let fixed = Fixed {
         persona: reply.get("persona").cloned(),
@@ -316,11 +308,11 @@ async fn head(core: &Core, handle: &Handle, session: &SessionId) -> Value {
 /// 回应里「当前的」三格（施工 9-6 上）：这个会话累计的用量和计数（`usage`，写法同 `usage.query` 的一行），人设的权限
 /// （`permission`），还在跑的后台命令和子代理（`jobs`，照 `job.started` 的写法）。和订阅在会话 actor 的同一步里拿；会话停了、
 /// 拿不到的不写。
-fn now(core: &Core, owner: &AccountId, reply: &mut Value, current: Option<&miyu_session::Current>) {
+fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) {
     let Some(current) = current else {
         return;
     };
-    reply["usage"] = crate::usage::tallied(core, owner, &current.tally);
+    reply["usage"] = crate::usage::tallied(core, &current.tally);
     reply["permission"] = json!(current.permission);
     reply["jobs"] = json!(current.jobs);
     // 在跑的嵌套调用（施工 M-1）：没有的不写，以前的回应字节不变。
@@ -331,7 +323,7 @@ fn now(core: &Core, owner: &AccountId, reply: &mut Value, current: Option<&miyu_
     reply["workspace"] = json!({"cwd": current.cwd, "dirs": current.dirs});
     // 长期目标（施工 X-8 补）：同会话状态的 `goal`，没有的不写；之后照推过来的 `goal.changed` 换。
     if let Some(goal) = &current.goal {
-        reply["goal"] = crate::view::status::goal_of(core, owner, goal);
+        reply["goal"] = crate::view::status::goal_of(core, goal);
     }
     // 中途换了人格、预设的（施工 P-13）：照换成的写，换成无人格的不写 `persona`。
     if let Some(reply) = reply.as_object_mut() {
@@ -373,7 +365,7 @@ async fn subscribe_after(
         Refusal::BROKEN
     })?;
     let current = subscription.current().cloned();
-    let whose = (session.clone(), handle.owner().clone());
+    let whose = session.clone();
     subscriptions.add(core, whose, subscription, backlog, out.clone());
     Ok((upto, current))
 }
@@ -381,14 +373,14 @@ async fn subscribe_after(
 /// 替 `who` 订阅一间的记忆日志（施工 R-12 上、Y-7）：找哪一间、补什么、之后的照 `crate::memory::follow`；回应 `{"upto"}` 交给
 /// 新的转发任务，排在补的后面。
 async fn memory(
-    (core, who): (&Arc<Core>, &AccountId),
+    core: &Arc<Core>,
     subscriptions: &mut Subscriptions,
     request: &Request,
     at: MemoryAt,
     out: &mpsc::Sender<String>,
 ) -> Result<(Value, MemoryAt), Refusal> {
     let after = after_of(request)?;
-    let following = crate::memory::follow(core, who, &at, after).await?;
+    let following = crate::memory::follow(core, &at, after).await?;
     let upto = following.upto;
     subscriptions.add_memory(at.clone(), following, out);
     Ok((json!({ "upto": upto }), at))

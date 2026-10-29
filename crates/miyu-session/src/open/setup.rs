@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use miyu_kernel::event::Permission;
 use miyu_kernel::facts::Environment;
-use miyu_kernel::id::{AccountId, CommandId, SessionId, VenueId};
+use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::UtcOffset;
 use miyu_policy::features::Features;
@@ -133,14 +133,10 @@ pub struct Create<'a> {
     pub profile: Profile,
     /// 人格的几层（施工 P-1 再补）：回合开始时照它看人格的文件改了没有。
     pub personas: Personas,
-    /// 记忆归哪个账号（施工 P-1 上，`Personas::memory_account`）：回合库、记忆日志照它和人格开。
-    pub memory_account: AccountId,
     /// 记忆的范围（施工 R-3 下，`memory.md`「范围」）：记进快照，以后照它。子会话不管交的是什么，一律 `off`。
     pub memory_scope: MemoryScope,
     /// 在哪个场所。
     pub venue: VenueId,
-    /// 会话的属主：会话、blob 都在他的家目录里。
-    pub owner: AccountId,
     /// 开始时的权限。
     pub permission: Permission,
     /// 有没有人能确认（`02-内核.md` 第六节「确认怎么走」第 2 条）。
@@ -250,8 +246,6 @@ pub enum Workplace<'a> {
 pub struct Load<'a> {
     /// 数据根。
     pub root: &'a DataRoot,
-    /// 会话的属主。
-    pub owner: AccountId,
     /// 人格的几层（施工 P-1 上）：回合开始时照它看人格的文件改了没有（施工 P-1 再补）。
     pub personas: Personas,
     /// 资源目录（施工 P-1 再补）：人格的文件改了，照它重拼快照。
@@ -301,8 +295,6 @@ pub struct Load<'a> {
     pub memory: Option<Arc<crate::Memory>>,
     /// 同 [`Create::presets`]。
     pub presets: Option<PresetPlaces>,
-    /// 同 [`Create::confined`]。
-    pub confined: bool,
 }
 
 /// 照场所定预设（[`Chosen::situated`]）：显示不了图片的会话里要图的包整包扣下（施工 X-25），接这个场所平台的包整包开着（施工

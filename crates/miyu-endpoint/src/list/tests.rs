@@ -12,7 +12,7 @@ fn event(line: &str) -> Event {
     Event::from_line(line).expect("合写法")
 }
 
-pub(super) const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"c1","body":{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"cwd":"~/a"}}"#;
+pub(super) const CREATED: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false},"cwd":"~/a"}}"#;
 
 fn read(lines: &[&str]) -> Row {
     let created = event(CREATED);
@@ -44,7 +44,7 @@ fn last_active_is_the_time_of_the_last_event_of_any_kind() {
         read(&[]).last_active.to_string(),
         "2026-09-25T07:00:00.000Z"
     );
-    let renamed = r#"{"seq":2,"at":"2026-09-25T09:30:00.000Z","kind":"session.meta_changed","by":{"kind":"person","account":"alice"},"cause":"c2","body":{"title":"发版"}}"#;
+    let renamed = r#"{"seq":2,"at":"2026-09-25T09:30:00.000Z","kind":"session.meta_changed","by":{"kind":"person"},"cause":"c2","body":{"title":"发版"}}"#;
     let got = read(&[CREATED, renamed]);
     assert_eq!(got.last_active.to_string(), "2026-09-25T09:30:00.000Z");
     assert_eq!(got.title, "发版");
@@ -96,7 +96,7 @@ impl Drop for Site {
 }
 
 /// 很早以前的日志：`session.created` 不带 `cwd`，也没开过带 `cwd` 的回合。
-pub(super) const OLD: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"c1","body":{"owner":"alice","venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false}}}"#;
+pub(super) const OLD: &str = r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"c1","body":{"venue":"local","policy":"sha256:97f5f58cebf9e368ddcc668976ce5da07ceb80c7be52ac6d4edcf2ac8a639894","permission":{"level":"workspace","read_only":false}}}"#;
 
 pub(super) const A: &str = "0192f3a0-1111-7abc-8def-001122334455";
 pub(super) const B: &str = "0192f3a0-2222-7abc-8def-5566778899aa";

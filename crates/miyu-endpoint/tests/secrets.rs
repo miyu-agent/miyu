@@ -136,7 +136,7 @@ async fn setting_replacing_and_deleting_answer_and_leave_a_trail() {
             )
         })
         .collect();
-    let alice = json!({"kind": "person", "account": "alice"});
+    let alice = json!({"kind": "person"});
     let body = |name: &str, action: &str| json!({"name": name, "action": action, "via": "set"});
     assert_eq!(
         seen,

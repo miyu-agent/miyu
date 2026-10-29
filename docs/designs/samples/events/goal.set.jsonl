@@ -1,1 +1,1 @@
-{"seq":162,"at":"2026-09-25T22:05:00.000Z","kind":"goal.set","by":{"kind":"person","account":"alice"},"cause":"cmd-9f10","body":{"text":"把 src/ 里的测试都修绿，修完跑一遍全部测试","limit":30}}
+{"seq":162,"at":"2026-09-25T22:05:00.000Z","kind":"goal.set","by":{"kind":"person"},"cause":"cmd-9f10","body":{"text":"把 src/ 里的测试都修绿，修完跑一遍全部测试","limit":30}}

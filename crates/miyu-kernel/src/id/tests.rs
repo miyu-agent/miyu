@@ -13,7 +13,6 @@ fn samples_from_the_drawing_round_trip() {
     round_trip::<JobId>(r#""j2""#);
     round_trip::<JobId>(r#""j2.1""#);
     round_trip::<JobId>(r#""j2.1.1""#);
-    round_trip::<AccountId>(r#""alice""#);
     round_trip::<ContentHash>(
         r#""sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855""#,
     );
@@ -147,22 +146,6 @@ fn job_ids_sort_by_number() {
     assert!(parse("j2.9") < parse("j10"));
     assert!(parse("j2.1.5") < parse("j2.2"));
     assert!(parse("j5.8") < parse("j7"));
-}
-
-#[test]
-fn account_is_like_a_linux_login_name() {
-    let longest = "a".repeat(32);
-    for good in ["a", "alice", "bob_2-x", longest.as_str()] {
-        assert!(AccountId::parse(good).is_ok(), "{good} 应该读得进来");
-    }
-    rejected::<AccountId>(r#""Alice""#, "start with a lowercase letter");
-    rejected::<AccountId>(r#""1abc""#, "start with a lowercase letter");
-    rejected::<AccountId>(r#""小明""#, "start with a lowercase letter");
-    rejected::<AccountId>(r#""a b""#, "only lowercase letters");
-    rejected::<AccountId>(r#""aB""#, "only lowercase letters");
-    rejected::<AccountId>(&format!("\"{}\"", "a".repeat(33)), "at most 32");
-    rejected::<AccountId>(r#""con""#, "reserved name on Windows");
-    rejected::<AccountId>(r#""lpt9""#, "reserved name on Windows");
 }
 
 /// 算出来的内容哈希，和 SHA-256 公开的测试值一样（FIPS 180-2 的 "abc"，和空的内容）。

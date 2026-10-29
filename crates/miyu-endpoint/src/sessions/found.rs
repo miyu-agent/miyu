@@ -29,7 +29,7 @@ impl Open {
             });
         }
         // 照属主的家目录找（施工 O-4 上）：哪个账号的家目录下都没有的是没有这个会话。
-        let Some(owner) = super::stored_owner(core, id).await else {
+        if !super::stored(core, id).await {
             return Err(Refusal::NOT_FOUND);
         };
         // 照日志里最后一次记下的工作目录，都没有才退回 `~`（施工 4-9 再补三上）；加进来的目录照最后一次记下的（施工 5-10
@@ -46,9 +46,8 @@ impl Open {
         let resources = crate::presets::overrides::resources(core);
         let loaded = load_placed(Load {
             root: &core.root,
-            personas: crate::personas::personas(core, &owner),
+            personas: crate::personas::personas(core),
             resources: &resources,
-            owner: owner.clone(),
             id: id.clone(),
             place: Workplace::Remembered {
                 offset: offset(),
@@ -60,20 +59,19 @@ impl Open {
             sandbox: core.sandbox.helper(),
             sandbox_cache: core.sandbox_cache_of(),
             sessions: Some(spawn::port(core)),
-            packages: Some(crate::packages::port::port(core, &owner, confined)),
-            schedules: Some(crate::schedules::port::port(core, &owner)),
+            packages: Some(crate::packages::port::port(core, confined)),
+            schedules: Some(crate::schedules::port::port(core)),
             hooks: Some(crate::hooks::port(core)),
             jobs: &core.jobs,
-            index: Some(core.index_for(&owner)),
+            index: Some(core.index()),
             usage: core.ledger(),
             knowledge: Some(Arc::clone(&core.knowledge)),
             vectors: core.memory.vectors().cloned(),
-            installed: Some(crate::packages::installed(core, &owner)),
+            installed: Some(crate::packages::installed(core)),
             plugins: core.plugins.clone(),
             memory: Some(Arc::clone(&core.memory)),
-            presets: Some(crate::presets::places(core, &owner)),
-            confined: super::confined(core, &owner),
-            configs: core.configs_of(&owner),
+            presets: Some(crate::presets::places(core)),
+            configs: core.configs_of(),
         })
         .await;
         let (handle, placed) = match loaded {
@@ -94,7 +92,7 @@ impl Open {
                 dirs: placed.dirs,
             },
         );
-        super::orphans::sweep_later(core, owner, id.clone());
+        super::orphans::sweep_later(core, id.clone());
         Ok(Found {
             handle,
             cwd: workspace,

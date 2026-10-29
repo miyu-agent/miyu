@@ -7,11 +7,11 @@ use super::*;
 use crate::event::GoalOutcome;
 use crate::session::GoalChange;
 
-/// 编号是 `n` 的改目标的命令，alice 发的。
+/// 编号是 `n` 的改目标的命令，主人发的。
 fn goal(n: u64, change: GoalChange) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Goal(change),
     })

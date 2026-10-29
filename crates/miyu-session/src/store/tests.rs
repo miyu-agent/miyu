@@ -9,7 +9,7 @@ use super::{Indexed, Store};
 /// 第 `n` 号事件：一句话。
 fn said(n: u64) -> Event {
     Event::from_line(&format!(
-        r#"{{"seq":{n},"at":"2026-10-11T07:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"alice"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句"}}]}}}}"#
+        r#"{{"seq":{n},"at":"2026-10-11T07:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句"}}]}}}}"#
     ))
     .unwrap()
 }

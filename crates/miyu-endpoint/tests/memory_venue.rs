@@ -18,7 +18,7 @@ async fn the_owner_lists_what_was_said_anywhere_with_where() {
     // 核心开记忆日志以前，照数据根写进去一条群里说的。
     {
         let (log, _) = MemoryLogs::new(&home.root)
-            .open(&Room::persona(&alice(), "engineer"))
+            .open(&Room::persona("engineer"))
             .expect("开得了");
         let saved = Saved {
             class: "episode".into(),

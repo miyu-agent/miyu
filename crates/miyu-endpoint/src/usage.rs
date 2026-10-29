@@ -18,7 +18,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use miyu_kernel::event::Real;
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_models::price::ordered;
 use miyu_models::settings::UsageSettings;
@@ -78,20 +78,19 @@ pub(crate) struct QueryParams {
 /// `usage.query`：见模块的说明。
 pub(crate) async fn query(core: &Arc<Core>, params: QueryParams) -> Result<Value, Refusal> {
     let query = read(params, crate::sessions::offset)?;
-    let currency = currency(core, &core.admin);
+    let currency = currency(core);
     let usage = Arc::clone(&core.usage);
-    let accounts = vec![core.admin.clone()];
     let group = query.group.clone();
     let wanted = currency.clone();
     let found = tokio::task::spawn_blocking(move || {
-        let totals = match caught_up(&usage, &accounts, &query) {
+        let totals = match caught_up(&usage, &query) {
             Ok(totals) => Ok(totals),
             Err(error) => {
                 tracing::warn!(target: TARGET, error = %error, "usage not read");
                 if let Err(error) = usage.reset() {
                     tracing::warn!(target: TARGET, error = %error, "usage index unusable");
                 }
-                caught_up(&usage, &accounts, &query)
+                caught_up(&usage, &query)
             }
         }?;
         let daily: Vec<&[_]> = totals.iter().map(|total| total.daily.as_slice()).collect();
@@ -126,12 +125,8 @@ fn credit() -> Value {
 }
 
 /// 先补再查。
-fn caught_up(
-    usage: &UsageIndex,
-    accounts: &[miyu_kernel::id::AccountId],
-    query: &Query,
-) -> Result<Vec<Total>, UsageError> {
-    for problem in usage.catch_up(accounts)? {
+fn caught_up(usage: &UsageIndex, query: &Query) -> Result<Vec<Total>, UsageError> {
+    for problem in usage.catch_up()? {
         tracing::warn!(target: TARGET, session = problem.source.as_str(), error = problem.error.as_str(), "usage not indexed");
     }
     usage.query(query)
@@ -163,7 +158,6 @@ fn read(params: QueryParams, now_offset: fn() -> UtcOffset) -> Result<Query, Ref
         until: time(params.until)?,
         group,
         session,
-        account: None,
         offset,
         daily: true,
     })
@@ -240,10 +234,9 @@ fn converted_value(converted: Converted) -> Value {
 /// 记一行、只有它自己。
 pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
     let usage = Arc::clone(&core.usage);
-    let accounts = vec![core.admin.clone()];
     let root = session.as_str().to_string();
     let found = tokio::task::spawn_blocking(move || {
-        for problem in usage.catch_up(&accounts)? {
+        for problem in usage.catch_up()? {
             tracing::warn!(target: TARGET, session = problem.source.as_str(), error = problem.error.as_str(), "usage not indexed");
         }
         usage.tree(&root)
@@ -264,17 +257,15 @@ pub(crate) async fn tree(core: &Core, session: &SessionId) -> Vec<SessionId> {
 
 pub(crate) async fn branch(core: &Core, session: &SessionId) -> Option<Total> {
     let usage = Arc::clone(&core.usage);
-    let accounts = vec![core.admin.clone()];
     let query = Query {
         from: None,
         until: None,
         group: Vec::new(),
         session: Some((session.clone(), true)),
-        account: None,
         offset: crate::sessions::offset(),
         daily: true,
     };
-    let totals = tokio::task::spawn_blocking(move || caught_up(&usage, &accounts, &query))
+    let totals = tokio::task::spawn_blocking(move || caught_up(&usage, &query))
         .await
         .ok()?;
     match totals {
@@ -305,14 +296,14 @@ fn empty() -> Total {
 }
 
 /// 账号 `account` 的金额哪个币种排最前：照他这一刻的那一份配置（施工 Y-2 下下中下）。
-pub(crate) fn currency(core: &Core, account: &AccountId) -> String {
-    UsageSettings::from(&core.mine(account).config().resolved().values()).currency
+pub(crate) fn currency(core: &Core) -> String {
+    UsageSettings::from(&core.mine().config().resolved().values()).currency
 }
 
 /// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照会话属主 `owner` 这一刻的配置排、换算（施工 UC-1，常推的
 /// 一处：不等，只用缓存里的汇率，缺的在后面取）。
-pub(crate) fn total_row(core: &Core, owner: &AccountId, total: Total) -> Value {
-    let currency = currency(core, owner);
+pub(crate) fn total_row(core: &Core, total: Total) -> Value {
+    let currency = currency(core);
     let converted = core.usage.convert(
         &total.daily,
         &currency,
@@ -364,8 +355,8 @@ fn daily(tally: &miyu_session::Tally) -> Vec<(miyu_store::usage::rates::Day, Str
 }
 
 /// 会话自己累计的写成协议上的一行，币种照会话属主 `owner` 这一刻的配置排（施工 Y-2 下下中下）。
-pub(crate) fn tallied(core: &Core, owner: &AccountId, tally: &miyu_session::Tally) -> Value {
-    let mut value = total_row(core, owner, own(tally));
+pub(crate) fn tallied(core: &Core, tally: &miyu_session::Tally) -> Value {
+    let mut value = total_row(core, own(tally));
     value["main"] = json!(tally.main);
     value["compactions"] = json!(tally.compactions);
     value["cache_breaks"] = json!(tally.cache_breaks);

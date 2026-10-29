@@ -8,11 +8,10 @@
 //! - 用到时才盯（开会话、载入时，[`Core::watch_edits`]）。
 //! - 只留最近 [`KEPT`] 条：太久以前的改动问人时只说「还有几个」。
 
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use miyu_kernel::id::AccountId;
 use miyu_store::watch::{Watch, watch_tree};
 
 use crate::Core;
@@ -31,8 +30,6 @@ const TARGET: &str = "miyu::edits";
 struct Change {
     /// 第几下。
     seq: u64,
-    /// 谁的。
-    whose: AccountId,
     /// 照数据根写的相对路径。
     path: String,
 }
@@ -42,12 +39,10 @@ struct Change {
 struct State {
     /// 一共几下。
     seq: u64,
-    /// 每个家目录最后一下的号。
-    latest: BTreeMap<AccountId, u64>,
     /// 最近的几条。
     log: VecDeque<Change>,
-    /// 盯上了的家目录。
-    watched: BTreeSet<AccountId>,
+    /// 盯上了没有。
+    watched: bool,
     /// 盯着的：丢掉就不盯了。
     watches: Vec<Watch>,
 }
@@ -61,20 +56,16 @@ impl Edits {
         self.0.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 账号 `owner` 这时的号：他家目录的最后一下。
-    pub(crate) fn version(&self, owner: &AccountId) -> u64 {
-        self.state().latest.get(owner).copied().unwrap_or(0)
+    /// 这时的号：最后一下。
+    pub(crate) fn version(&self) -> u64 {
+        self.state().seq
     }
 
-    /// 账号 `owner` 号 `after` 以后改了的文件，照先后、不重；最多 `most` 个，多的交回还有几个。早就挪出表的那些也算进「还有」。
-    pub(crate) fn since(&self, owner: &AccountId, after: u64, most: usize) -> (Vec<String>, usize) {
+    /// 号 `after` 以后改了的文件，照先后、不重；最多 `most` 个，多的交回还有几个。早就挪出表的那些也算进「还有」。
+    pub(crate) fn since(&self, after: u64, most: usize) -> (Vec<String>, usize) {
         let state = self.state();
         let mut files: Vec<String> = Vec::new();
-        for change in state
-            .log
-            .iter()
-            .filter(|change| change.seq > after && change.whose == *owner)
-        {
+        for change in state.log.iter().filter(|change| change.seq > after) {
             if !files.contains(&change.path) {
                 files.push(change.path.clone());
             }
@@ -89,13 +80,12 @@ impl Edits {
         (files, more)
     }
 
-    /// 记一下：`whose` 家目录里的 `path` 变了。
-    fn record(&self, whose: AccountId, path: String) {
+    /// 记一下：`path` 变了。
+    fn record(&self, path: String) {
         let mut state = self.state();
         state.seq += 1;
         let seq = state.seq;
-        state.latest.insert(whose.clone(), seq);
-        state.log.push_back(Change { seq, whose, path });
+        state.log.push_back(Change { seq, path });
         while state.log.len() > KEPT {
             state.log.pop_front();
         }
@@ -103,17 +93,17 @@ impl Edits {
 }
 
 impl Core {
-    /// 账号 `owner` 这时的号：测试等盯着的那一头看到改动用。
+    /// 这时的号：测试等盯着的那一头看到改动用。
     #[cfg(feature = "testkit")]
     #[must_use]
-    pub fn edits_version(&self, owner: &AccountId) -> u64 {
-        self.edits.version(owner)
+    pub fn edits_version(&self) -> u64 {
+        self.edits.version()
     }
 
-    /// 盯上账号 `owner` 的家目录（盯过的不再盯）：开会话、载入时调。
-    pub(crate) fn watch_edits(self: &Arc<Self>, owner: &AccountId) {
+    /// 盯上你的那几处（盯过的不再盯）：开会话、载入时调。
+    pub(crate) fn watch_edits(self: &Arc<Self>) {
         let mut state = self.edits.state();
-        if !state.watched.insert(owner.clone()) {
+        if std::mem::replace(&mut state.watched, true) {
             return;
         }
         let layer = self.root.path().to_path_buf();
@@ -123,7 +113,7 @@ impl Core {
                 tracing::warn!(target: TARGET, kind = ?error.kind(), "edits not watched");
                 continue;
             }
-            let (weak, whose) = (Arc::downgrade(self), owner.clone());
+            let weak = Arc::downgrade(self);
             let watched = watch_tree(&dir, move |path: &Path| {
                 if let Some(core) = weak.upgrade() {
                     let shown = path
@@ -131,7 +121,7 @@ impl Core {
                         .unwrap_or(path)
                         .to_string_lossy()
                         .replace('\\', "/");
-                    core.edits.record(whose.clone(), shown);
+                    core.edits.record(shown);
                 }
             });
             match watched {

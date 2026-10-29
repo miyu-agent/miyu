@@ -31,7 +31,7 @@ fn write(dir: &Path, name: &str, text: &str) {
 /// 搜 `query`：哪个库、哪个文档。
 fn found(knowledge: &Knowledge, query: &str) -> Vec<(String, String)> {
     knowledge
-        .search(&admin(), query, None, 10, None)
+        .search(query, None, 10, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -60,7 +60,7 @@ fn a_mounted_folder_is_searched_and_read_and_the_base_dir_holds_only_kb_toml() {
     );
     write(&dir, "own.md", "团子在库目录里。\n");
     let knowledge = Knowledge::new(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("列得出");
+    let (bases, skipped) = knowledge.list().expect("列得出");
     assert!(skipped.is_empty());
     assert_eq!(bases.len(), 1);
     assert_eq!(
@@ -93,7 +93,7 @@ fn tilde_follows_the_home_directory() {
     let knowledge = Knowledge::new(&root).with_home(Some(scratch.0.clone()));
     assert_eq!(found(&knowledge, "橘猫")[0].1, "a.md");
     let homeless = Knowledge::new(&root);
-    let (bases, _) = homeless.list(&admin()).expect("列得出");
+    let (bases, _) = homeless.list().expect("列得出");
     assert!(bases[0].error.is_some(), "家目录不知道的用不了");
 }
 
@@ -109,7 +109,7 @@ fn an_unavailable_mount_keeps_its_index_and_is_skipped() {
     assert_eq!(found(&knowledge, "团子").len(), 2);
     let away = scratch.0.join("unplugged");
     std::fs::rename(&notes, &away).expect("挪得走");
-    let (bases, _) = knowledge.list(&admin()).expect("一个用不了的不碍事");
+    let (bases, _) = knowledge.list().expect("一个用不了的不碍事");
     let unplugged = &bases[0];
     assert_eq!(unplugged.id, "notes");
     assert!(unplugged.error.is_some(), "说为什么");
@@ -121,7 +121,7 @@ fn an_unavailable_mount_keeps_its_index_and_is_skipped() {
     );
     let only = ["notes".to_string()];
     let alone = knowledge
-        .search(&admin(), "团子", Some(&only), 10, None)
+        .search("团子", Some(&only), 10, None)
         .expect("只搜它也不算出错");
     assert!(alone.0.is_empty());
     assert!(matches!(
@@ -132,11 +132,7 @@ fn an_unavailable_mount_keeps_its_index_and_is_skipped() {
     assert_eq!(found(&knowledge, "橘猫")[0].0, "notes", "回来了照搜");
     // 写的不是绝对路径、也不是 `~/` 开头的：用不了。`.` 照工作目录是读得了的，照样不收。
     base(&root, "notes", "mount = \".\"\n");
-    assert!(
-        knowledge.list(&admin()).expect("列得出").0[0]
-            .error
-            .is_some()
-    );
+    assert!(knowledge.list().expect("列得出").0[0].error.is_some());
 }
 
 #[test]
@@ -186,7 +182,7 @@ fn an_unreadable_folder_inside_is_skipped() {
     }
     base(&root, "notes", &mount(&notes));
     let knowledge = Knowledge::new(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("列得出");
+    let (bases, skipped) = knowledge.list().expect("列得出");
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).expect("改得回");
     assert_eq!(bases[0].documents, 2);
     assert_eq!(

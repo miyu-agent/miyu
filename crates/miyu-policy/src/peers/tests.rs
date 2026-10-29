@@ -13,7 +13,7 @@ use crate::test_support::engineer;
 
 /// 发话的会话：短编号 `22334455`。
 const PEER: &str = r#"{"kind":"session","id":"0192f3a0-1111-7abc-8def-001122334455"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 
 /// 出厂的数。
 const FACTORY: Peers = Peers {
@@ -30,7 +30,7 @@ const EXPIRED: &str = r#"{"seq":4,"at":"2026-09-25T07:00:00.000Z","kind":"peer.i
 /// `by` 开了第一轮的日志。
 fn history(by: &str) -> History {
     let lines = [
-        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#.to_string(),
+        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#.to_string(),
         format!(
             r#"{{"seq":2,"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{by},"cause":"c1","body":{{"blocks":[{{"type":"text","text":"迁移写完了。"}}]}}}}"#
         ),

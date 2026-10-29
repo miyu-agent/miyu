@@ -35,7 +35,7 @@ async fn typed(client: &mut Client, session: &str, text: &str) -> Value {
 }
 
 fn rows(core: &Core) -> Vec<Schedule> {
-    core.schedules().list(&alice()).expect("读得出")
+    core.schedules().list().expect("读得出")
 }
 
 #[tokio::test]
@@ -57,7 +57,7 @@ async fn a_fixed_loop_runs_now_and_then_every_interval() {
     let row = rows(&core).pop().expect("有一行");
     assert_eq!(row.looping, Some(Loop::Fixed));
     assert_eq!(row.when, When::Every { every: 300 });
-    assert_eq!(row.by, Creator::Person { account: alice() });
+    assert_eq!(row.by, Creator::Person);
     assert!(matches!(&row.target, Target::Session { session: on } if on.to_string() == session));
     assert_eq!(
         row.next.map(|next| next.unix_millis()),
@@ -111,7 +111,7 @@ async fn off_leaves_the_session_s_other_schedules() {
     client.hello().await;
     let session = client.create("c1", "~").await;
     let plain = miyu_endpoint::schedules::Wanted {
-        by: Creator::Person { account: alice() },
+        by: Creator::Person,
         when: When::Every { every: 3600 },
         prompt: "每小时看一次".to_string(),
         target: Target::Session {
@@ -120,7 +120,7 @@ async fn off_leaves_the_session_s_other_schedules() {
         looping: None,
         first: None,
     };
-    core.schedules().add(&alice(), plain).expect("建得了");
+    core.schedules().add(plain).expect("建得了");
     let off = typed(&mut client, &session, "/loop off").await;
     assert_eq!(off["result"]["said"], "此会话没有循环。", "{off}");
     assert_eq!(rows(&core).len(), 1, "定时任务留着");

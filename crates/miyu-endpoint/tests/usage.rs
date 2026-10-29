@@ -109,12 +109,12 @@ async fn a_session_counts_under_its_session_venue_and_account() {
         .call(
             "q1",
             "usage.query",
-            json!({"session": session, "group": ["session", "venue", "account"]}),
+            json!({"session": session, "group": ["session", "venue"]}),
         )
         .await;
     assert_eq!(
         reply["result"]["rows"],
-        json!([{"session": session, "venue": "local", "account": "alice", "requests": 2,
+        json!([{"session": session, "venue": "local", "requests": 2,
             "usage": {"uncached": 120, "cache_read": 80, "cache_write": 0, "output": 20},
             "amounts": [{"currency": "USD", "amount": 2.0 * (60.0 + 40.0 * 0.5 + 10.0 * 2.0) / 1e6}],
             "unpriced": 0,

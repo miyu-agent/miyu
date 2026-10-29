@@ -19,7 +19,7 @@ use tracing::Instrument;
 use crate::lettering::Lettering;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::Permission;
-use miyu_kernel::id::{AccountId, CallId, ContentHash, JobId, Seq, SessionId, TurnId, VenueId};
+use miyu_kernel::id::{CallId, ContentHash, JobId, Seq, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::By;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::session::{Input, Reread, Subagent};
@@ -67,8 +67,6 @@ pub(crate) struct Tools {
     /// 场所和每个场所开着的场所插件（施工 O-60）：派调用时这一刻没开的当目录里没有，回「暂时不可用」。
     venue: VenueId,
     plugins: crate::VenuePlugins,
-    /// 会话的属主（施工 O-2 三补）。
-    owner: AccountId,
     catalog: Shelf,
     lettering: Arc<Lettering>,
     home: Option<PathBuf>,
@@ -217,7 +215,6 @@ impl Tools {
             });
         Tools {
             session: kit.session,
-            owner: kit.owner,
             catalog: kit.catalog,
             lettering: kit.lettering,
             home: kit.home,
@@ -353,7 +350,6 @@ impl Tools {
             schedules: self.schedules.clone(),
             ids: Some(CallIds {
                 session: self.session.clone(),
-                owner: self.owner.clone(),
                 call: call_id,
                 asked,
                 preset: self.preset.clone(),

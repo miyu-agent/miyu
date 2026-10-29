@@ -200,10 +200,10 @@ fn from(kept: &Kept, event: &Event, placeholders: &Placeholders) -> Option<Strin
 fn sender(by: &By, venue: &VenueMessage) -> Option<String> {
     let (id, role) = match by {
         By::External(external) => {
-            let role = match (&external.account, external.role) {
-                (Some(_), _) => Some("owner"),
-                (None, Some(Role::Manager)) => Some("manager"),
-                (None, _) => None,
+            let role = match (external.owner, external.role) {
+                (true, _) => Some("owner"),
+                (false, Some(Role::Manager)) => Some("manager"),
+                (false, _) => None,
             };
             (&external.id, role)
         }

@@ -12,7 +12,6 @@ use std::sync::PoisonError;
 
 use miyu_config::Value;
 use miyu_config::edit::{Change, apply};
-use miyu_kernel::id::AccountId;
 
 use super::place::Place;
 use super::read::target;
@@ -50,16 +49,11 @@ impl Knowledge {
     /// # Errors
     ///
     /// 编号不合写法（[`KnowledgeError::UnknownBase`]）；已经有了（[`KnowledgeError::BaseExists`]）；建不了、写不进。
-    pub fn found(
-        &self,
-        account: &AccountId,
-        kb: &str,
-        fields: BaseFields<'_>,
-    ) -> Result<Base, KnowledgeError> {
+    pub fn found(&self, kb: &str, fields: BaseFields<'_>) -> Result<Base, KnowledgeError> {
         let dir = self.vacant(kb)?;
         std::fs::create_dir_all(&dir).map_err(io)?;
         about(&dir, fields.values())?;
-        self.counted(account, kb, None)
+        self.counted(kb, None)
     }
 
     /// 改库 `kb` 的名字、说明、自动想起（`fields`）：不写的不动，空字符串、`false` 是拿掉；`kb.toml` 里别的照原样。
@@ -67,12 +61,7 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库；`kb.toml` 读不懂、写不进。
-    pub fn rename(
-        &self,
-        account: &AccountId,
-        kb: &str,
-        fields: BaseFields<'_>,
-    ) -> Result<Base, KnowledgeError> {
+    pub fn rename(&self, kb: &str, fields: BaseFields<'_>) -> Result<Base, KnowledgeError> {
         match self.place(kb)? {
             Place::Own(dir) => about(&dir, fields.values())?,
             // 包里的（施工 K-8）：名字、说明照包；自动想起的开关记在账号自己那边。
@@ -85,7 +74,7 @@ impl Knowledge {
                 }
             }
         }
-        self.counted(account, kb, None)
+        self.counted(kb, None)
     }
 
     /// 把现成的目录 `folder`（绝对路径或 `~/` 开头）挂成库 `kb`，照它补一遍，交回补完的样子和跳过的文档。挂不上的什么都不建。
@@ -95,7 +84,6 @@ impl Knowledge {
     /// 编号不合写法、已经有了；目录用不了（[`KnowledgeError::FolderUnavailable`]）；建不了、写不进、补不了。
     pub fn mount(
         &self,
-        account: &AccountId,
         kb: &str,
         folder: &str,
         fields: BaseFields<'_>,
@@ -107,7 +95,7 @@ impl Knowledge {
         let mut values = fields.values();
         values.push(("mount", Some(Value::Text(Cow::Owned(folder.to_string())))));
         about(&dir, values)?;
-        self.catch_up(account, kb)
+        self.catch_up(kb)
     }
 
     /// 往库 `kb` 里加一篇 `path`，内容是 `bytes`（人加的什么格式都行，PDF、网页也行）；已经有了的只在 `replace` 时换掉。
@@ -140,23 +128,18 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库；索引删不掉；挪不进回收站（[`KnowledgeError::Trash`]）。
-    pub fn delete(
-        &self,
-        account: &AccountId,
-        kb: &str,
-        home: Option<&Path>,
-    ) -> Result<String, KnowledgeError> {
+    pub fn delete(&self, kb: &str, home: Option<&Path>) -> Result<String, KnowledgeError> {
         let Place::Own(dir) = self.place(kb)? else {
             return Err(KnowledgeError::Packaged);
         };
         let dir = std::fs::canonicalize(dir).map_err(io)?;
-        let shelf = self.shelf(account, kb);
+        let shelf = self.shelf(kb);
         let _only_one = shelf
             .catching_up
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
         shelf.index.discard()?;
-        self.lock().remove(&(account.clone(), kb.to_string()));
+        self.lock().remove(kb);
         miyu_fs::trash::put(&dir, home).map_err(trash_refused)
     }
 
@@ -166,24 +149,18 @@ impl Knowledge {
     /// # Errors
     ///
     /// 没有这个库；索引建不了；补不了。
-    pub fn reindex(
-        &self,
-        account: &AccountId,
-        kb: &str,
-    ) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
+    pub fn reindex(&self, kb: &str) -> Result<(Base, Vec<Skipped>), KnowledgeError> {
         self.dir(kb)?;
         {
-            let shelf = self.shelf(account, kb);
+            let shelf = self.shelf(kb);
             let _only_one = shelf
                 .catching_up
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
             shelf.index.reset()?;
         }
-        match self.catch_up(account, kb) {
-            Err(KnowledgeError::Unavailable(why)) => {
-                Ok((self.counted(account, kb, Some(why))?, Vec::new()))
-            }
+        match self.catch_up(kb) {
+            Err(KnowledgeError::Unavailable(why)) => Ok((self.counted(kb, Some(why))?, Vec::new())),
             caught => caught,
         }
     }

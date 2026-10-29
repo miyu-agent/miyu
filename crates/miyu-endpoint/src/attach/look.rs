@@ -1,7 +1,7 @@
 //! 读图（施工 8-20 `model.call` 的图、施工 P-5 人格的头像）：blob 读出来照内容认成图片。
 
 use miyu_kernel::block::{Block, Image};
-use miyu_kernel::id::{AccountId, ContentHash, MediaType};
+use miyu_kernel::id::{ContentHash, MediaType};
 use miyu_store::blob::Blobs;
 use miyu_tool::attachment::{Kind, kind};
 
@@ -13,19 +13,14 @@ use crate::refusal::Refusal;
 /// 干活（请求照他的配置发、记在他的账上，一次性入口从他名下取图）。先照 `own` 找，找不到再照 `account`（施工 BUG-2：替机主干活的
 /// 扩展存在自己名下、以前照机主找，回 `unknown_attachment`）；在 `own` 名下找到、两个不是同一个账号的，拷一份进 `account` 名下。
 /// 都没有的 `unknown_attachment`，不是图的 `bad_params`，太大的 `attachment_too_big`。
-pub(crate) async fn images(
-    core: &Core,
-    (own, account): (&AccountId, &AccountId),
-    hashes: Vec<ContentHash>,
-) -> Result<Vec<Block>, Refusal> {
+pub(crate) async fn images(core: &Core, hashes: Vec<ContentHash>) -> Result<Vec<Block>, Refusal> {
     if hashes.is_empty() {
         return Ok(Vec::new());
     }
-    let place = place(core, account);
-    let own = own.clone();
+    let place = place(core);
     blocking(move || {
         let blobs = Blobs::new(place.root.blobs());
-        let mine = (own != place.account).then(|| Blobs::new(place.root.blobs()));
+        let mine: Option<Blobs> = None;
         hashes
             .into_iter()
             .map(|blob| {
@@ -64,10 +59,9 @@ pub(crate) async fn images(
 /// 交回 `None` 的图。blob 没有的 `unknown_attachment`。
 pub(crate) async fn picture(
     core: &Core,
-    account: &AccountId,
     blob: ContentHash,
 ) -> Result<(Vec<u8>, Option<(MediaType, u32, u32)>), Refusal> {
-    let place = place(core, account);
+    let place = place(core);
     blocking(move || {
         let bytes = read_blob(&Blobs::new(place.root.blobs()), &blob)?;
         let image = match kind(&bytes, None) {

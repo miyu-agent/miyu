@@ -60,7 +60,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 
 use miyu_kernel::event::SessionCreated;
-use miyu_kernel::id::{AccountId, SessionId, VenueId};
+use miyu_kernel::id::{SessionId, VenueId};
 use miyu_policy::memory::MemoryScope;
 use miyu_store::memory::MemoryLogs;
 use miyu_store::personas::Personas;
@@ -233,24 +233,18 @@ impl Memory {
 /// R-29，第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
 /// 回合索引照 `laid` 铺、照 `source` 读回日志：底子（分叉出来的支线才有，施工 R-13 三补）接在会话自己的前面。
 /// 那一间里她叫什么照 `personas` 里这个人格的名字记下（施工 E-1 修，`her.rs`）。`main` 是这个会话是不是主会话（不带 `parent`）：
-/// 回合库连同属主记下它从哪来（施工 E-6），搜到以前的对话时照它判她打不打得开。
-#[expect(
-    clippy::too_many_arguments,
-    reason = "接上记忆要的几样各是一样，拼成一个结构体只为过这一条"
-)]
+/// 回合库记下它从哪来（施工 E-6），搜到以前的对话时照它判她打不打得开。
 pub(crate) fn connect(
     memory: Option<&Arc<Memory>>,
     scope: MemoryScope,
-    account: &AccountId,
-    owner: &AccountId,
     (persona, personas): (&str, &Personas),
     (session, main): (&SessionId, bool),
     (venue, confined): (&VenueId, bool),
     (laid, source): (Laid<'_>, Source),
 ) -> (Option<TurnLane>, Option<Calls>) {
     let room = match scope {
-        MemoryScope::Persona => Room::persona(account, persona),
-        MemoryScope::Session => Room::session(owner, session),
+        MemoryScope::Persona => Room::persona(persona),
+        MemoryScope::Session => Room::session(session),
         MemoryScope::Off => return (None, None),
     };
     let Some(memory) = memory else {
@@ -273,17 +267,14 @@ pub(crate) fn connect(
         recall: Arc::clone(&memory.turns),
         room: room.clone(),
         session: session.clone(),
-        origin: Origin {
-            owner: owner.to_string(),
-            main,
-        },
+        origin: Origin { main },
         venue: venue.clone(),
         floor,
         laid: laid.sent(),
         source,
     });
-    let listener = Listener::of(confined, owner, venue);
-    let calls = Calls::new(memory, room, listener, owner, session).since(floor);
+    let listener = Listener::of(confined, venue);
+    let calls = Calls::new(memory, room, listener, session).since(floor);
     calls.extracting().0.called(here);
     (lane, Some(calls))
 }

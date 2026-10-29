@@ -11,7 +11,7 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_session::Handle;
 
@@ -73,15 +73,13 @@ impl Slash for LoopCommand {
     fn run<'a>(&'a self, call: Call<'a>) -> Running<'a> {
         Box::pin(async move {
             let asked = parse(call.rest)?;
-            let owner = call.handle().owner().clone();
-            let stopped = stop(call.core, &owner, call.session)?;
+            let stopped = stop(call.core, call.session)?;
             let said = match asked {
                 Asked::Off if stopped => Said::plain("commands/loop-off"),
                 Asked::Off => Said::plain("commands/loop-none"),
                 Asked::Fixed { every, prompt } => {
                     start(
                         call.core,
-                        &owner,
                         call.session,
                         When::Every { every },
                         Loop::Fixed,
@@ -96,7 +94,6 @@ impl Slash for LoopCommand {
                     let at = call.core.schedules().now();
                     start(
                         call.core,
-                        &owner,
                         call.session,
                         When::At { at },
                         Loop::Dynamic,
@@ -114,17 +111,15 @@ impl Slash for LoopCommand {
 }
 
 /// 删掉跑在这个会话上的循环（固定的、动态的）：删了的交回真，一个都没有的交回假。
-fn stop(core: &Core, owner: &AccountId, session: &SessionId) -> Result<bool, Refusal> {
+fn stop(core: &Core, session: &SessionId) -> Result<bool, Refusal> {
     let schedules = core.schedules();
-    let rows = schedules.list(owner).map_err(|_| Refusal::INTERNAL)?;
+    let rows = schedules.list().map_err(|_| Refusal::INTERNAL)?;
     let mut stopped = false;
     for row in rows.iter().filter(|row| {
         row.looping.is_some()
             && matches!(&row.target, Target::Session { session: on } if on == session)
     }) {
-        schedules
-            .cancel(owner, &row.id)
-            .map_err(|_| Refusal::INTERNAL)?;
+        schedules.cancel(&row.id).map_err(|_| Refusal::INTERNAL)?;
         stopped = true;
     }
     Ok(stopped)
@@ -133,7 +128,6 @@ fn stop(core: &Core, owner: &AccountId, session: &SessionId) -> Result<bool, Ref
 /// 建这个会话上的一行循环：第一次就是现在，唤醒表马上交进来。
 fn start(
     core: &Core,
-    owner: &AccountId,
     session: &SessionId,
     when: When,
     looping: Loop,
@@ -141,9 +135,7 @@ fn start(
 ) -> Result<(), Refusal> {
     let schedules = core.schedules();
     let wanted = Wanted {
-        by: Creator::Person {
-            account: owner.clone(),
-        },
+        by: Creator::Person,
         when,
         prompt: prompt.to_string(),
         target: Target::Session {
@@ -153,7 +145,7 @@ fn start(
         first: Some(schedules.now()),
     };
     schedules
-        .add(owner, wanted)
+        .add(wanted)
         .map(|_| ())
         .map_err(|_| Refusal::INTERNAL)
 }

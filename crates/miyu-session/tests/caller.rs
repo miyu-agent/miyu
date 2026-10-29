@@ -18,12 +18,12 @@ use crate::support::*;
 
 const GROUP: &str = "qq:group:1";
 
-/// 群里的主人：对应表认出来的外部身份（带 `account`）。
+/// 群里的主人：对应表认出来的外部身份（带 `owner`）。
 fn owner_in_group() -> By {
     By::External(External {
         venue: VenueId::parse(GROUP).expect("合写法"),
         id: ExternalId::parse("qq:10001").expect("合写法"),
-        account: Some(alice_account()),
+        owner: true,
         role: None,
     })
 }

@@ -3,7 +3,6 @@
 
 use std::sync::{Arc, Weak};
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::time::Timestamp;
 use miyu_store::schedules::{Loop, Schedule, Schedules as Table, Target};
 
@@ -13,7 +12,7 @@ use crate::Core;
 impl Core {
     /// 起唤醒表（施工 J-1 上）：开上已有的表、跳过错过的，然后在后台睡到点、到点交进会话。核心没了，它下一次醒来就收手。
     pub fn start_schedules(self: &Arc<Self>) -> tokio::task::JoinHandle<()> {
-        self.schedules.recall(&self.admin);
+        self.schedules.recall();
         tokio::spawn(run(Arc::downgrade(self)))
     }
 }
@@ -56,21 +55,21 @@ async fn run(core: Weak<Core>) {
             return;
         };
         let now = clock.now();
-        for (account, table) in core.schedules.opened() {
+        if let Some(table) = core.schedules.opened() {
             let due = match table.due(now) {
                 Ok(due) => due,
                 Err(error) => {
-                    tracing::warn!(target: TARGET, account = %account, error = %error, "schedules not read");
-                    continue;
+                    tracing::warn!(target: TARGET, error = %error, "schedules not read");
+                    Vec::new()
                 }
             };
             let holds = &core.schedules.holds;
             for schedule in due.into_iter().filter(|schedule| {
                 schedule
                     .next
-                    .is_some_and(|next| holds.later(&account, &schedule.id, next) <= now)
+                    .is_some_and(|next| holds.later(&schedule.id, next) <= now)
             }) {
-                fire(&core, &account, &table, schedule, now).await;
+                fire(&core, &table, schedule, now).await;
             }
         }
         drop(core);
@@ -80,13 +79,7 @@ async fn run(core: Weak<Core>) {
 }
 
 /// 到点的一个：先写下一次（跑完就没了的删掉），再交进会话，记上一次。
-async fn fire(
-    core: &Arc<Core>,
-    account: &AccountId,
-    table: &Table,
-    schedule: Schedule,
-    now: Timestamp,
-) {
+async fn fire(core: &Arc<Core>, table: &Table, schedule: Schedule, now: Timestamp) {
     let Some(due) = schedule.next else {
         return;
     };
@@ -108,15 +101,14 @@ async fn fire(
     };
     if let Err(error) = written {
         // 写不进下一次的不交：交了又记不住，下一次醒来会再交一遍。先放一放再试，不然马上又醒、又写不进，空转（`hold.rs`）。
-        core.schedules.holds.failed(account, &schedule.id, now);
-        tracing::warn!(target: TARGET, account = %account, schedule = %schedule.id, error = %error, "schedule not advanced");
+        core.schedules.holds.failed(&schedule.id, now);
+        tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not advanced");
         return;
     }
-    core.schedules.holds.cleared(account, &schedule.id);
-    let delivered = super::fire::deliver(core, account, &schedule, due).await;
+    core.schedules.holds.cleared(&schedule.id);
+    let delivered = super::fire::deliver(core, &schedule, due).await;
     tracing::info!(
         target: TARGET,
-        account = %account,
         schedule = %schedule.id,
         result = %delivered.result,
         "schedule fired"
@@ -128,18 +120,18 @@ async fn fire(
             session: delivered.session,
         };
         if let Err(error) = table.record(&schedule.id, &last, delivered.stop) {
-            tracing::warn!(target: TARGET, account = %account, schedule = %schedule.id, error = %error, "schedule not recorded");
+            tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not recorded");
         }
     }
     core.schedules.changed();
-    core.schedules.notify(account, &schedule.id);
+    core.schedules.notify(&schedule.id);
 }
 
 /// 核心起来时已经过了的一个（错过的不补）：跑完就没了的删掉，她自己定节奏的停着等，别的照现在算下一次；记一行。推给扩展的
 /// 记下错过了几次，下一次推的时候报（施工 J-4）。
-pub(super) fn skip(table: &Table, account: &AccountId, mut schedule: Schedule, now: Timestamp) {
+pub(super) fn skip(table: &Table, mut schedule: Schedule, now: Timestamp) {
     let due = schedule.next;
-    tracing::info!(target: TARGET, account = %account, schedule = %schedule.id, "schedule missed");
+    tracing::info!(target: TARGET, schedule = %schedule.id, "schedule missed");
     if let (Target::Package { missed }, Some(due)) = (&mut schedule.target, due) {
         *missed = missed.saturating_add(next::missed(&schedule.when, due, now, &zone()));
     }
@@ -153,6 +145,6 @@ pub(super) fn skip(table: &Table, account: &AccountId, mut schedule: Schedule, n
         table.put(&schedule).map(|_| ())
     };
     if let Err(error) = written {
-        tracing::warn!(target: TARGET, account = %account, schedule = %schedule.id, error = %error, "schedule not advanced");
+        tracing::warn!(target: TARGET, schedule = %schedule.id, error = %error, "schedule not advanced");
     }
 }

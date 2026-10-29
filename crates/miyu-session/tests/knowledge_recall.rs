@@ -75,7 +75,7 @@ fn world(home: &Home, toml: &str, people: &str) {
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), toml).expect("写得进");
     std::fs::write(dir.join("people.md"), people).expect("写得进");
-    home.knowledge.list(&alice_account()).expect("补得了");
+    home.knowledge.list().expect("补得了");
 }
 
 const PEOPLE: &str = "# 人物\n\n## 艾琳\n\n守灯人，十九岁。\n\n## 巴德\n\n老船长，缺了一根小指。\n";
@@ -163,8 +163,8 @@ async fn off_bases_and_a_preset_without_knowledge_bring_nothing() {
 
 /// 库 `world` 每一段都补上远程那个模型的向量：前两段同那一家回的（什么都挺像），后面的跟它垂直（一点都不像）。
 fn filled(home: &Home) {
-    home.knowledge.list(&alice_account()).expect("补得了");
-    let index = home.knowledge.index_of(&alice_account(), "world");
+    home.knowledge.list().expect("补得了");
+    let index = home.knowledge.index_of("world");
     for (n, key) in index.keys().expect("读得了").iter().enumerate() {
         let vector: [f32; 4] = match n < 2 {
             true => [0.6, 0.8, 0.0, 0.0],
@@ -235,7 +235,7 @@ async fn recall_fills_the_vectors_itself() {
         "auto = true\n",
         "# 人物\n\n## 艾琳\n\n守灯人，最怕打雷。\n",
     );
-    let index = home.knowledge.index_of(&alice_account(), "world");
+    let index = home.knowledge.index_of("world");
     assert!(
         !index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
         "开头还没有向量"

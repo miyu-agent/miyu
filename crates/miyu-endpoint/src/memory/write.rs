@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_recall::{CLASSES, PERSON};
 use miyu_session::Stamp;
 use miyu_tool::Remember;
@@ -18,7 +17,6 @@ use crate::refusal::Refusal;
 
 pub(super) async fn remember(
     core: &Arc<Core>,
-    account: &AccountId,
     stamp: Stamp,
     params: params::Remember,
 ) -> Result<Value, Refusal> {
@@ -41,7 +39,7 @@ pub(super) async fn remember(
         replaces: None,
         keywords: keywords.filter(|keywords| !keywords.is_empty()),
     };
-    let keeper = find(core, account, params.at).await?;
+    let keeper = find(core, params.at).await?;
     let id = blocking({
         let keeper = keeper.clone();
         move || keeper.save(stamp, remember, Vec::new())
@@ -53,7 +51,6 @@ pub(super) async fn remember(
 
 pub(super) async fn update(
     core: &Arc<Core>,
-    account: &AccountId,
     stamp: Stamp,
     params: Update,
 ) -> Result<Value, Refusal> {
@@ -67,7 +64,7 @@ pub(super) async fn update(
     if text.is_none() && keywords.is_none() && who.is_none() {
         return Err(Refusal::BAD_PARAMS);
     }
-    let keeper = find(core, account, params.at).await?;
+    let keeper = find(core, params.at).await?;
     let id = blocking({
         let keeper = keeper.clone();
         move || keeper.update(stamp, id, text, keywords, who)

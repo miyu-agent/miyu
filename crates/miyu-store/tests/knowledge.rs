@@ -25,7 +25,7 @@ fn write(dir: &Path, name: &str, text: &str) {
 fn hits(knowledge: &Knowledge, query: &str, only: Option<&str>) -> Vec<(String, String, usize)> {
     let only = only.map(|kb| vec![kb.to_string()]);
     knowledge
-        .search(&admin(), query, only.as_deref(), 10, None)
+        .search(query, only.as_deref(), 10, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -50,7 +50,7 @@ fn only_well_formed_bases_are_listed_with_what_kb_toml_says() {
     write(&kb(&root, "plain"), "words.txt", "猫 ねこ\n\n犬 いぬ\n");
     write(&kb(&root, "broken"), "kb.toml", "title = \"错的格\"\n");
     let knowledge = Knowledge::new(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("列得出");
+    let (bases, skipped) = knowledge.list().expect("列得出");
     assert!(skipped.is_empty(), "{skipped:?}");
     let ids: Vec<&str> = bases.iter().map(|base| base.id.as_str()).collect();
     assert_eq!(
@@ -73,7 +73,7 @@ fn only_well_formed_bases_are_listed_with_what_kb_toml_says() {
     assert!(bases[1].error.is_none());
     assert!(
         Knowledge::new(&root_in(&Scratch::new("kb-none")))
-            .list(&admin())
+            .list()
             .expect("列得出")
             .0
             .is_empty(),
@@ -125,7 +125,7 @@ fn too_big_or_not_utf8_documents_are_skipped_and_others_go_in() {
     std::fs::write(notes.join("big.txt"), "大".repeat(2 * 1024 * 1024)).expect("写得进");
     std::fs::write(notes.join("bytes.txt"), [0xff, 0xfe, 0x00, 0x41]).expect("写得进");
     let knowledge = Knowledge::new(&root);
-    let (bases, skipped) = knowledge.list(&admin()).expect("列得出");
+    let (bases, skipped) = knowledge.list().expect("列得出");
     let mut paths: Vec<&str> = skipped.iter().map(|one| one.path.as_str()).collect();
     paths.sort_unstable();
     assert_eq!(paths, ["big.txt", "bytes.txt"], "{skipped:?}");
@@ -153,10 +153,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
         );
     }
     let knowledge = Knowledge::new(&root);
-    let found = knowledge
-        .search(&admin(), "团子", None, 4, None)
-        .expect("搜得了")
-        .0;
+    let found = knowledge.search("团子", None, 4, None).expect("搜得了").0;
     let order: Vec<&str> = found.iter().map(|hit| hit.kb.as_str()).collect();
     assert_eq!(
         order,
@@ -172,7 +169,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
     // 照人格收窄的几个（施工 K-1 下）：同名次照给的先后，有一个不在的不搜。
     let narrowed = ["b".to_string(), "a".to_string()];
     let order: Vec<String> = knowledge
-        .search(&admin(), "团子", Some(&narrowed), 4, None)
+        .search("团子", Some(&narrowed), 4, None)
         .expect("搜得了")
         .0
         .into_iter()
@@ -184,7 +181,7 @@ fn several_bases_take_turns_and_one_can_be_searched_alone() {
         vec!["a".to_string(), "nope".to_string()],
     ] {
         assert!(matches!(
-            knowledge.search(&admin(), "团子", Some(&only), 4, None),
+            knowledge.search("团子", Some(&only), 4, None),
             Err(KnowledgeError::UnknownBase)
         ));
     }
@@ -253,15 +250,15 @@ fn with_a_query_vector_a_chunk_is_found_by_meaning() {
     let notes = kb(&root, "notes");
     write(&notes, "cat.md", "团子的饭是鸡胸肉\n");
     let knowledge = Knowledge::new(&root);
-    knowledge.list(&admin()).expect("补得了");
+    knowledge.list().expect("补得了");
     knowledge
-        .index_of(&admin(), "notes")
+        .index_of("notes")
         .put_vector("cat.md#0", "m", &[1.0, 0.0])
         .expect("写得进");
     let near = |vector: &'static [f32]| Meaning { model: "m", vector };
     let search = |near: Option<Meaning<'_>>| {
         knowledge
-            .search(&admin(), "猫吃什么", None, 5, near)
+            .search("猫吃什么", None, 5, near)
             .expect("搜得了")
             .0
             .into_iter()
@@ -290,15 +287,15 @@ fn the_meaning_side_lifts_a_lower_keyword_hit() {
     write(&notes, "a.md", "团子团子团子\n");
     write(&notes, "b.md", "团子是楼上的一只猫，每天在窗台上睡觉\n");
     let knowledge = Knowledge::new(&root);
-    knowledge.list(&admin()).expect("补得了");
+    knowledge.list().expect("补得了");
     // a 没补上向量：照意思那一路只有 b。
     knowledge
-        .index_of(&admin(), "notes")
+        .index_of("notes")
         .put_vector("b.md#0", "m", &[1.0, 0.0])
         .expect("写得进");
     let first = |near: Option<Meaning<'_>>| {
         knowledge
-            .search(&admin(), "团子", None, 1, near)
+            .search("团子", None, 1, near)
             .expect("搜得了")
             .0
             .into_iter()
@@ -332,15 +329,15 @@ fn measure_three_thousand_documents() {
     }
     let knowledge = Knowledge::new(&root);
     let started = std::time::Instant::now();
-    let (bases, _) = knowledge.list(&admin()).expect("补得了");
+    let (bases, _) = knowledge.list().expect("补得了");
     let first = started.elapsed();
     assert_eq!((bases[0].documents, bases[0].chunks), (3000, 24000));
     let started = std::time::Instant::now();
-    knowledge.list(&admin()).expect("补得了");
+    knowledge.list().expect("补得了");
     let again = started.elapsed();
     write(&dir, "d0/n0.md", "# 改了\n\n新的内容\n");
     let started = std::time::Instant::now();
-    let (bases, _) = knowledge.list(&admin()).expect("补得了");
+    let (bases, _) = knowledge.list().expect("补得了");
     let changed = started.elapsed();
     assert_eq!(bases[0].chunks, 23993);
     let started = std::time::Instant::now();

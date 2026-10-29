@@ -60,7 +60,6 @@ impl Sandbox {
         })
         .map_err(|e| format!("数据根找不到：{e}"))?;
         root.prepare().map_err(|e| format!("数据根建不了：{e}"))?;
-        owner(&root)?;
         let config = format!(
             "[providers.perf]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_PERF_KEY\" }}\n\n[providers.perf.models.perf-model]\nwindow = {WINDOW}\n\n[models]\nchat = \"perf/perf-model\"\n"
         );
@@ -182,25 +181,4 @@ fn tail(log: &Path) -> String {
     let text = std::fs::read_to_string(log).unwrap_or_default();
     let lines: Vec<&str> = text.lines().collect();
     lines[lines.len().saturating_sub(20)..].join("\n")
-}
-
-/// 数据根 `root` 已经 OOBE 过（施工 Y-12 中上修二）：写好机主 `admin`，核心照他起，本机令牌连上就能开会话；没有机主的核心只跑
-/// 设置那一段，量尺开会话回 `setup_first`。照 `crates/miyu/tests/support/mod.rs` 的 `owner()`，密码是占位的整串，量尺不拿它登录。
-/// 量法、预算不变：机主在起核心之前就在，核心不用照机主重起。
-fn owner(root: &DataRoot) -> Result<(), String> {
-    use miyu_store::accounts::{self, Account, Accounts};
-    let changed = miyu_kernel::time::Timestamp::parse("2026-10-23T00:00:00.000Z")
-        .map_err(|e| format!("时刻的写法不对：{e}"))?;
-    let mut written = Accounts::default();
-    written.put(Account {
-        id: "admin".to_string(),
-        username: "admin".to_string(),
-        password: "$argon2id$v=19$m=19456,t=2,p=1$placeholder".to_string(),
-        changed,
-        created: None,
-        disabled: false,
-        owner: true,
-    });
-    accounts::write(&root.path().join(accounts::FILE), &written, None)
-        .map_err(|e| format!("机主写不进：{e}"))
 }

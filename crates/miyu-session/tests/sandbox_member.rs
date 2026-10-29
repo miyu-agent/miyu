@@ -228,7 +228,7 @@ async fn the_owner_speaking_in_a_group_is_confined_like_everyone() {
         Some(By::External(External {
             venue: VenueId::parse("qq:group:1").expect("合写法"),
             id: ExternalId::parse("qq:10001").expect("合写法"),
-            account: Some(alice_account()),
+            owner: true,
             role: None,
         }))
     };

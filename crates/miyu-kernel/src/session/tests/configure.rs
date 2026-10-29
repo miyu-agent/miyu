@@ -9,11 +9,11 @@ use super::revert::revert;
 use super::*;
 use crate::event::PolicyChanged;
 
-/// 编号是 `n` 的命令：alice 换成 `model`。
+/// 编号是 `n` 的命令：主人换成 `model`。
 fn configure(n: u64, model: &str) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Configure {
             model: model.to_string(),
@@ -50,7 +50,7 @@ fn a_change_is_recorded_and_answered_once_stored() {
     assert_eq!(events[0].body, to("@free"));
     assert_eq!(
         (&events[0].by, &events[0].cause, events[0].turn),
-        (&alice(), &Some(id(2)), None)
+        (&person(), &Some(id(2)), None)
     );
     assert_eq!(
         replies(&session.handle(stored(2))),
@@ -81,7 +81,7 @@ fn the_model_the_session_was_made_with_is_handed_over_when_a_turn_starts() {
     let (mut session, _) = Session::create(
         session_id(),
         id(0),
-        alice(),
+        person(),
         at(0),
         created,
         policy(),

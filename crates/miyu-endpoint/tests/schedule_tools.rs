@@ -48,7 +48,7 @@ async fn ran(
 
 /// 属主的表。
 fn listed(core: &Core) -> Vec<Schedule> {
-    core.schedules().list(&alice()).expect("读得出")
+    core.schedules().list().expect("读得出")
 }
 
 #[tokio::test]
@@ -100,9 +100,7 @@ async fn she_creates_lists_and_deletes_on_her_session() {
         Play::Says("删了。"),
     ];
     let (core, _) = ran(&home, plays, |core, session| {
-        core.schedules()
-            .add(&alice(), mine(session, None))
-            .expect("建得了");
+        core.schedules().add(mine(session, None)).expect("建得了");
     })
     .await;
     assert!(listed(&core).is_empty(), "删了");
@@ -123,10 +121,10 @@ async fn she_sets_the_next_wakeup_of_this_session_s_loop() {
         *started.lock().unwrap() = Some(core.schedules().now());
         // 人敲 `/loop` 建的那种：属主建的、跑在这个会话上。
         let looping = Wanted {
-            by: Creator::Person { account: alice() },
+            by: Creator::Person,
             ..mine(session, Some(Loop::Dynamic))
         };
-        core.schedules().add(&alice(), looping).expect("建得了");
+        core.schedules().add(looping).expect("建得了");
     })
     .await;
     let rows = listed(&core);
@@ -177,15 +175,13 @@ async fn she_stops_the_loop_and_cannot_pass_the_cap() {
     let (core, session) = ran(&home, plays, |core, session| {
         // 循环那一行排在她建的二十个后面（t21）：停的照 `loop` 认，不是照先后。
         for _ in 0..miyu_tool::PER_SESSION {
-            core.schedules()
-                .add(&alice(), mine(session, None))
-                .expect("建得了");
+            core.schedules().add(mine(session, None)).expect("建得了");
         }
         let looping = Wanted {
-            by: Creator::Person { account: alice() },
+            by: Creator::Person,
             ..mine(session, Some(Loop::Dynamic))
         };
-        core.schedules().add(&alice(), looping).expect("建得了");
+        core.schedules().add(looping).expect("建得了");
     })
     .await;
     let rows = listed(&core);

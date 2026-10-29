@@ -9,7 +9,7 @@ use miyu_config::phrases::Label;
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Event, VenueMessage};
-use miyu_kernel::id::{AccountId, ExternalId, SessionId, TurnId, VenueId};
+use miyu_kernel::id::{ExternalId, SessionId, TurnId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 use miyu_kernel::session::Command;
 use miyu_kernel::time::UtcOffset;
@@ -26,11 +26,6 @@ use crate::support::*;
 /// 合卡的那一段的开头（`resources/software/memory/merge/people.txt`）。
 const PEOPLE: &str = "People you know in these memories:";
 
-/// 群会话的记忆归的那个账号（同 `memory_listener.rs`）。
-fn admin() -> AccountId {
-    AccountId::parse("admin").expect("合写法")
-}
-
 fn place() -> VenueId {
     VenueId::parse("qq:group:7").expect("合写法")
 }
@@ -40,7 +35,7 @@ fn member() -> By {
     By::External(External {
         venue: place(),
         id: ExternalId::parse("qq:20017").expect("合写法"),
-        account: None,
+        owner: false,
         role: Some(Role::Member),
     })
 }
@@ -82,7 +77,6 @@ async fn remembering_herself_by_her_name_in_the_group_keeps_it_as_an_episode() {
     let lines = Lines {
         venue: place(),
         group: true,
-        memory_account: admin(),
         ..Lines::default()
     };
     let handle = home
@@ -102,8 +96,8 @@ async fn remembering_herself_by_her_name_in_the_group_keeps_it_as_an_episode() {
     until_turn_ends(&mut pushes).await;
     let owner = Keeper::new(
         &home.memory,
-        Room::persona(&admin(), "engineer"),
-        Listener::Owner(By::Person(Person::new(admin()))),
+        Room::persona("engineer"),
+        Listener::Owner(By::Person(Person::default())),
     );
     let mut found: Vec<(String, String, Option<String>)> = owner
         .list(&Filter {
@@ -211,11 +205,7 @@ async fn a_dream_counts_her_name_in_the_venue_as_her() {
     let config_source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(config_source.with_project("~"), config_source));
     keeper(&home)
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await
         .expect("整理了");
     let asked = asked(&server, 0);

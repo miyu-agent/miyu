@@ -187,7 +187,6 @@ async fn the_tool_asks_the_picked_extension_source() {
     let ids = miyu_tool::CallIds {
         session: miyu_kernel::id::SessionId::parse("01890000-0000-7000-8000-000000000001")
             .expect("合写法"),
-        owner: miyu_kernel::id::AccountId::parse("bob").expect("合写法"),
         call: miyu_kernel::id::CallId::parse("call_1_1").expect("合写法"),
         asked: None,
         preset: None,

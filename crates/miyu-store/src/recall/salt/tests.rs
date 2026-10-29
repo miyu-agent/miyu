@@ -1,6 +1,6 @@
 use std::fs;
 
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 
 use super::{FILE, LEN, LogSalt};
 use crate::env::{Env, Platform};
@@ -24,14 +24,10 @@ fn root_in(scratch: &Scratch) -> DataRoot {
     root
 }
 
-fn account(name: &str) -> AccountId {
-    AccountId::parse(name).unwrap()
-}
-
 #[test]
 fn the_same_room_gets_the_same_short_id_and_others_differ() {
     let salt = LogSalt::fresh();
-    let mine = Room::persona(&account("alice"), "miyu");
+    let mine = Room::persona("miyu");
     let id = salt.room_id(&mine);
     assert_eq!(id.len(), 8, "8 位：{id}");
     assert!(
@@ -39,17 +35,16 @@ fn the_same_room_gets_the_same_short_id_and_others_differ() {
             .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
     );
     assert_eq!(salt.room_id(&mine.clone()), id);
-    assert_ne!(salt.room_id(&Room::persona(&account("bob"), "miyu")), id);
-    assert_ne!(salt.room_id(&Room::persona(&account("alice"), "luna")), id);
+    assert_ne!(salt.room_id(&Room::persona("luna")), id);
     let session = SessionId::parse("0192f3a0-0000-7000-8000-000000000001").unwrap();
-    let own = Room::session(&account("alice"), &session);
+    let own = Room::session(&session);
     assert_ne!(salt.room_id(&own), id);
     assert_eq!((mine.kind(), own.kind()), ("persona", "session"));
 }
 
 #[test]
 fn a_different_salt_gives_a_different_short_id() {
-    let room = Room::persona(&account("alice"), "miyu");
+    let room = Room::persona("miyu");
     assert_ne!(
         LogSalt::fresh().room_id(&room),
         LogSalt::fresh().room_id(&room)
@@ -59,7 +54,7 @@ fn a_different_salt_gives_a_different_short_id() {
 #[test]
 fn the_short_id_does_not_show_the_account_or_the_persona() {
     let salt = LogSalt::fresh();
-    let id = salt.room_id(&Room::persona(&account("alice"), "miyu"));
+    let id = salt.room_id(&Room::persona("miyu"));
     assert!(!id.contains("alice") && !id.contains("miyu"));
     assert_eq!(format!("{salt:?}"), "LogSalt(..)");
 }
@@ -74,7 +69,7 @@ fn a_missing_salt_is_made_and_kept_then_read_back() {
     assert_eq!(fs::read(&path).unwrap().len(), LEN);
     let again = LogSalt::load(&root).unwrap();
     assert_eq!(first, again);
-    let room = Room::persona(&account("alice"), "miyu");
+    let room = Room::persona("miyu");
     assert_eq!(first.room_id(&room), again.room_id(&room));
     // 不留临时文件。
     let left: Vec<_> = fs::read_dir(root.state())

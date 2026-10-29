@@ -72,7 +72,7 @@ fn the_turn_after_a_swap_asks_with_the_new_policy() {
     assert_eq!(
         story(&stage)[8..12],
         [
-            "9 message.user alice",
+            "9 message.user person",
             "10 turn.started kernel t10",
             "11 session.policy_changed kernel t10",
             "12 message.assistant model t10",

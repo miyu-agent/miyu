@@ -9,7 +9,6 @@
 use serde_json::json;
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
 use miyu_store::knowledge::IndexWatch;
 
 /// 广播里最多攒几条没收的：报得疏，一个库建一次几十条以内。
@@ -31,32 +30,22 @@ impl Progress {
         self.0.subscribe()
     }
 
-    fn send(&self, account: &AccountId, line: &serde_json::Value) {
-        if self
-            .0
-            .send(format!("{}\n{line}", account.as_str()))
-            .is_err()
-        {
+    fn send(&self, line: &serde_json::Value) {
+        if self.0.send(line.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }
     }
 }
 
 impl IndexWatch for Progress {
-    fn indexing(&self, account: &AccountId, kb: &str, done: usize, total: usize) {
+    fn indexing(&self, kb: &str, done: usize, total: usize) {
         let line = json!({"jsonrpc": "2.0", "method": "kb.indexing",
             "params": {"kb": kb, "done": done, "total": total}});
-        self.send(account, &line);
+        self.send(&line);
     }
 
-    fn indexed(&self, account: &AccountId, kb: &str) {
+    fn indexed(&self, kb: &str) {
         let line = json!({"jsonrpc": "2.0", "method": "kb.indexed", "params": {"kb": kb}});
-        self.send(account, &line);
+        self.send(&line);
     }
-}
-
-/// 一条是不是 `account` 的：是的交回推送的那一行，别的账号的、写法不对的没有。
-pub(crate) fn mine<'a>(pushed: &'a str, account: &AccountId) -> Option<&'a str> {
-    let (whose, line) = pushed.split_once('\n')?;
-    (whose == account.as_str()).then_some(line)
 }

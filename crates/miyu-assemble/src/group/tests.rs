@@ -9,7 +9,7 @@ const MEMBER: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:20017",
 const MANAGER: &str =
     r#"{"kind":"external","venue":"qq:group:1","id":"qq:20018","role":"manager"}"#;
 const OWNER: &str =
-    r#"{"kind":"external","venue":"qq:group:1","id":"qq:10001","account":"alice","role":"member"}"#;
+    r#"{"kind":"external","venue":"qq:group:1","id":"qq:10001","owner":true,"role":"member"}"#;
 const NAMELESS: &str = r#"{"kind":"external","venue":"qq:group:1","id":"qq:20019"}"#;
 const IMAGE: &str = r#"{"type":"image","blob":"sha256:0000000000000000000000000000000000000000000000000000000000000000","media_type":"image/png","width":1,"height":1}"#;
 

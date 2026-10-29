@@ -66,11 +66,11 @@ pub(super) fn after_one_turn() -> Session {
     loaded(one_turn_log(), Some(compaction(0)), Some(100_000))
 }
 
-/// 编号是 `n` 的命令：alice 要手动压缩，附上 `instructions`。
+/// 编号是 `n` 的命令：主人要手动压缩，附上 `instructions`。
 pub(super) fn compact(n: u64, instructions: Option<&str>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Compact {
             instructions: instructions.map(str::to_string),

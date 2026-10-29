@@ -2,7 +2,7 @@
 //! 连时凭访问密码换的设备令牌。
 //!
 //! - 一次性码（`account.setup_code`）：只给出示本机令牌连上的连接；5 分钟、一次；只在内存里，最多 16 个。网页第一次设访问密码用。
-//! - `account.setup {"password"}`：本机令牌、一次性码连上的设、改访问密码，写进 `system/accounts.json` 主人那一行；以前的设备令牌
+//! - `account.setup {"password"}`：本机令牌、一次性码连上的设、改访问密码，写进 `access.json`；以前的设备令牌
 //!   全部作废。一次性码连上的另交回一个新的设备令牌，这个连接从此是登录了的。
 //! - 访问密码握手：对上了造一个设备令牌（登录令牌）交回；照来源（网页软件转来的 `connection.remote` 的地址，本机来的算一份）60 秒内
 //!   试 5 次，剩下的时间里先拒、不验（施工 5-20）。还没设访问密码的一律 `password_not_set`。
@@ -10,7 +10,7 @@
 //! - `account.logout`：作废一个、全部；用设备令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
 //! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台、`miyu web` 要的）在 [`ticket`]。
 //!
-//! 一次性码、密码、设备令牌一个字都不进运行日志。凭据文件的读写在 `miyu-store`（`accounts.rs`、`logins.rs`），这里排着队
+//! 一次性码、密码、设备令牌一个字都不进运行日志。凭据文件的读写在 `miyu-store`（`access.rs`、`logins.rs`），这里排着队
 //! 一件件改（[`Identity`] 的锁），argon2 放进阻塞线程。
 
 pub(crate) mod avatar;
@@ -25,10 +25,9 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::sync::broadcast;
 
-use miyu_kernel::id::AccountId;
 use miyu_kernel::origin::{By, Person};
 use miyu_kernel::time::Timestamp;
-use miyu_store::accounts;
+use miyu_store::access;
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -201,7 +200,7 @@ pub(crate) async fn setup(
         verify(core, source, old).await?;
     }
     let password = params.password;
-    let hashed = tokio::task::spawn_blocking(move || accounts::hash(&password))
+    let hashed = tokio::task::spawn_blocking(move || access::hash(&password))
         .await
         .map_err(|_| Refusal::INTERNAL)?
         .map_err(|error| {
@@ -230,10 +229,7 @@ pub(crate) async fn setup(
 
 /// 设过访问密码没有。
 pub(crate) fn password_set(core: &Core) -> bool {
-    files::read_accounts(core)
-        .accounts
-        .of(core.admin.as_str())
-        .is_some_and(|owner| !owner.password.is_empty())
+    !files::read_access(core).access.password.is_empty()
 }
 
 /// 访问密码 `password` 握手，`source` 是来源（网页软件转来的地址；本机来的没有）：对上了交回设备令牌、它的过期时刻和这个连接
@@ -260,15 +256,11 @@ async fn verify(core: &Core, source: Option<&str>, password: String) -> Result<(
     if let Err(wait) = admit(&core.identity, &source) {
         return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
     }
-    let phc = files::read_accounts(core)
-        .accounts
-        .of(core.admin.as_str())
-        .map(|owner| owner.password.clone())
-        .filter(|phc| !phc.is_empty());
+    let phc = Some(files::read_access(core).access.password).filter(|phc| !phc.is_empty());
     let Some(phc) = phc else {
         return Err(Refusal::PASSWORD_NOT_SET);
     };
-    let right = tokio::task::spawn_blocking(move || accounts::verify(&phc, &password))
+    let right = tokio::task::spawn_blocking(move || access::verify(&phc, &password))
         .await
         .unwrap_or(false);
     // 错了的进来时已经记过（`admit`）。
@@ -380,6 +372,6 @@ fn login_expires(now: Timestamp) -> Timestamp {
 }
 
 /// 记进系统日志的人：账号 `account`。
-fn by(account: &AccountId) -> By {
-    By::Person(Person::new(account.clone()))
+fn by() -> By {
+    By::Person(Person::default())
 }

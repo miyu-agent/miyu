@@ -61,7 +61,6 @@ async fn goal(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
     preset_off(
         core,
         peer,
-        handle.owner(),
         listed.preset?,
         GOAL_PACKAGE,
         "commands/unavailable/goal-preset-off",
@@ -71,8 +70,7 @@ async fn goal(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
 
 /// 会话表里的这一条；查不到的没有。
 pub(super) async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::Listed> {
-    let owner = handle.owner().clone();
-    let (root, index) = (core.root.clone(), core.index_for(&owner));
+    let (root, index) = (core.root.clone(), core.index());
     let id = handle.id().clone();
     tokio::task::spawn_blocking(move || crate::list::one(&root, &index, &id, false))
         .await
@@ -83,15 +81,12 @@ pub(super) async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::
 async fn preset_off(
     core: &Core,
     peer: &Peer,
-    owner: &miyu_kernel::id::AccountId,
     preset: String,
     feature: &str,
     key: &'static str,
 ) -> Option<Said> {
     // 照会话的属主找（施工 Y-2 中上）。
-    let found = crate::presets::resolve(core, owner, Some(&preset))
-        .await
-        .ok()?;
+    let found = crate::presets::resolve(core, Some(&preset)).await.ok()?;
     if found.file.opens(feature) {
         return None;
     }
@@ -110,7 +105,6 @@ async fn memory(core: &Core, peer: &Peer, handle: &Handle) -> Option<Said> {
     preset_off(
         core,
         peer,
-        handle.owner(),
         listed.preset?,
         MEMORY,
         "commands/unavailable/preset-off",

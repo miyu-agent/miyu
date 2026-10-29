@@ -55,7 +55,7 @@ fn compaction_and_undo_forget_what_was_told() {
         "别的事件不清"
     );
     let undone: Event = serde_json::from_str(
-        r#"{"seq":9,"at":"2026-10-23T00:00:00.000Z","kind":"turn.reverted","by":{"kind":"person","account":"alice"},"body":{"turns":[3]}}"#,
+        r#"{"seq":9,"at":"2026-10-23T00:00:00.000Z","kind":"turn.reverted","by":{"kind":"person"},"body":{"turns":[3]}}"#,
     )
     .expect("合写法");
     docs.note(&[undone]);

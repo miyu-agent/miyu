@@ -7,7 +7,6 @@ use std::time::Duration;
 use miyu_http::testkit::{Reply, Server};
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::AccountId;
 use miyu_kernel::session::Command;
 use miyu_session::Handle;
 use miyu_session::testkit::{Play, Script};
@@ -80,8 +79,8 @@ fn put(home: &Home, text: &str) {
 }
 
 /// 等 `account` 的库 `notes` 的块都补上了 `MODEL` 的向量。
-async fn filled(home: &Home, account: &AccountId) {
-    let index = home.knowledge.index_of(account, "notes");
+async fn filled(home: &Home) {
+    let index = home.knowledge.index_of("notes");
     for _ in 0..600 {
         if index.missing(MODEL, 0, 10).expect("读得了").is_empty() {
             return;
@@ -116,7 +115,7 @@ async fn a_chunk_is_found_by_meaning_once_its_vectors_are_filled() {
         first.contains("Nothing found."),
         "头一次只走关键词：{first}"
     );
-    filled(&home, &alice_account()).await;
+    filled(&home).await;
     let second = last_result(&chat(&home, &handle, 2, "再找找").await);
     assert!(
         second.contains("团子的饭是鸡胸肉"),
@@ -174,7 +173,7 @@ async fn off_means_keywords_only_and_nobody_is_asked() {
     let first = last_result(&chat(&home, &handle, 1, "猫吃什么").await);
     assert!(first.contains("Nothing found."), "{first}");
     tokio::time::sleep(Duration::from_millis(500)).await;
-    let index = home.knowledge.index_of(&alice_account(), "notes");
+    let index = home.knowledge.index_of("notes");
     assert_eq!(
         index.missing(MODEL, 0, 10).expect("读得了").len(),
         1,
@@ -221,7 +220,6 @@ async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
-    let admin = AccountId::parse("admin").expect("合写法");
     put(&home, "团子的饭是鸡胸肉\n");
     let script = Script::new([
         search("猫吃什么"),
@@ -229,15 +227,12 @@ async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
         search("猫吃什么"),
         Play::Says("找到了。"),
     ]);
-    let lines = Lines {
-        memory_account: admin.clone(),
-        ..Lines::default()
-    };
+    let lines = Lines { ..Lines::default() };
     let handle = home
         .create_full(&script, &catalog(&home), Opening::default(), lines)
         .await;
     chat(&home, &handle, 1, "猫吃什么").await;
-    filled(&home, &admin).await;
+    filled(&home).await;
     let second = last_result(&chat(&home, &handle, 2, "再找找").await);
     assert!(second.contains("团子的饭是鸡胸肉"), "{second}");
     assert!(billed(&home) > 0, "记在主人名下");

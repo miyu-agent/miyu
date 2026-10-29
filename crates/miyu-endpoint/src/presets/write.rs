@@ -7,7 +7,6 @@
 //!   从头再来，三次还不行的 `preset_conflict`。
 //! - 删：删掉家目录那一层的文件，下面几层还有的回到它们的样子。
 
-use miyu_kernel::id::AccountId;
 use std::io;
 
 use serde::Deserialize;
@@ -39,12 +38,7 @@ pub(crate) struct SetParams {
 
 /// `preset.set`：照 `changes` 改家目录那一层，交回改完叠好的样子（同 `preset.get`）。不写 `preset` 的是新建（施工 P-3 补）：
 /// 编号由核心起，至少要写一项。
-pub(crate) async fn set(
-    core: &Core,
-    account: &AccountId,
-    peer: Peer,
-    params: SetParams,
-) -> Result<Json, Refusal> {
+pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
     if params.changes.is_empty() || params.preset.as_deref().is_some_and(|id| !valid(id)) {
         return Err(Refusal::BAD_PARAMS);
     }
@@ -60,14 +54,14 @@ pub(crate) async fn set(
     {
         return Err(Refusal::BAD_PARAMS);
     }
-    let presets = presets(core, account);
+    let presets = presets(core);
     let found = tokio::task::spawn_blocking(move || match params.preset {
         Some(id) => write(&presets, &id, &wanted, said.as_ref()),
         None => create(&presets, &wanted, said.as_ref()),
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;
-    let carried = super::carried(core, account).await;
+    let carried = super::carried(core).await;
     Ok(describe(core, &found, peer.language, &carried))
 }
 
@@ -112,15 +106,11 @@ pub(crate) struct DeleteParams {
 
 /// `preset.delete`：删掉家目录那一层的文件，交回 `{"remains"}`：下面几层还有没有。家目录那一层本来就没有的
 /// `nothing_to_delete`。
-pub(crate) async fn delete(
-    core: &Core,
-    account: &AccountId,
-    params: DeleteParams,
-) -> Result<Json, Refusal> {
+pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
     if !valid(&params.preset) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let presets = presets(core, account);
+    let presets = presets(core);
     let id = params.preset;
     tokio::task::spawn_blocking(move || {
         match std::fs::remove_file(presets.home_file(&id)) {

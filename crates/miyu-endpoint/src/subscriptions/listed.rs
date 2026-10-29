@@ -11,8 +11,6 @@ use tokio::sync::broadcast::{self, error::RecvError};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
-use miyu_kernel::id::AccountId;
-
 use super::Subscriptions;
 use crate::Core;
 use crate::hello::Shaken;
@@ -24,16 +22,16 @@ pub(super) enum Listed {
     Extensions,
     /// 软件包列表：推 `package.changed`；扩展的状态变了，列表里那一项的状态、开关跟着变，也推。
     Packages,
-    /// 这个账号的项目：推 `projects.changed`，别的账号的不推。
-    Projects(AccountId),
-    /// 这个账号的定时任务（施工 J-1 下）：推 `schedules.changed`，别的账号的不推。
-    Schedules(AccountId),
-    /// 这个账号的知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`，别的账号的不推。
-    Knowledge(AccountId),
-    /// 这个账号的通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`，别的账号的不推。
-    Notices(AccountId),
-    /// 包推给这个账号的（施工 IM-1 中下二，`backstage/events.rs`）：推 `package.event`，别的账号、别的包的不推。
-    PackageEvents(AccountId, String),
+    /// 项目：推 `projects.changed`。
+    Projects,
+    /// 定时任务（施工 J-1 下）：推 `schedules.changed`。
+    Schedules,
+    /// 知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`。
+    Knowledge,
+    /// 通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`。
+    Notices,
+    /// 包推给人的（施工 IM-1 中下二，`backstage/events.rs`）：推 `package.event`，别的包的不推。
+    PackageEvents(String),
 }
 
 impl Listed {
@@ -42,10 +40,10 @@ impl Listed {
         match self {
             Listed::Extensions => "extensions",
             Listed::Packages => "packages",
-            Listed::Projects(_) => "projects",
-            Listed::Schedules(_) => "schedules",
-            Listed::Knowledge(_) => "kb",
-            Listed::Notices(_) => "notices",
+            Listed::Projects => "projects",
+            Listed::Schedules => "schedules",
+            Listed::Knowledge => "kb",
+            Listed::Notices => "notices",
             Listed::PackageEvents(..) => "package",
         }
     }
@@ -53,7 +51,7 @@ impl Listed {
     /// 掉了队推的 `resync` 的参数：照包分的带上是哪个包。
     fn resync(&self) -> serde_json::Value {
         match self {
-            Listed::PackageEvents(_, package) => json!({"stream": "package", "package": package}),
+            Listed::PackageEvents(package) => json!({"stream": "package", "package": package}),
             _ => json!({"stream": self.stream()}),
         }
     }
@@ -72,10 +70,10 @@ impl Listed {
                 core.package_changes.subscribe(),
                 Some(core.extensions.subscribe()),
             ),
-            Listed::Projects(_) => (core.project_changes.subscribe(), None),
-            Listed::Schedules(_) => (core.schedules().subscribe(), None),
-            Listed::Knowledge(_) => (core.kb_progress.subscribe(), None),
-            Listed::Notices(_) => (core.schedules().notices().subscribe(), None),
+            Listed::Projects => (core.project_changes.subscribe(), None),
+            Listed::Schedules => (core.schedules().subscribe(), None),
+            Listed::Knowledge => (core.kb_progress.subscribe(), None),
+            Listed::Notices => (core.schedules().notices().subscribe(), None),
             Listed::PackageEvents(..) => (core.backstage.events.subscribe(), None),
         }
     }
@@ -83,22 +81,17 @@ impl Listed {
     /// 包 `id` 变了推的那一行。扩展的状态里没有这个包的不推；软件包列表里没有了的推 `entry: null`。
     fn line(&self, core: &Core, id: &str, shaken: &Shaken) -> Option<String> {
         let line = match self {
-            // 进度那一行广播时就写好了（施工 W-15）：只挑自己账号的。
-            // 通知那一行同样广播时就写好了（施工 J-3 下），写法同进度。
-            Listed::Knowledge(account) | Listed::Notices(account) => {
-                return crate::knowledge::progress::mine(id, account).map(str::to_string);
+            // 进度那一行广播时就写好了（施工 W-15）。通知那一行同样广播时就写好了（施工 J-3 下）。
+            Listed::Knowledge | Listed::Notices => return Some(id.to_string()),
+            Listed::PackageEvents(package) => {
+                return crate::backstage::mine(id, package).map(str::to_string);
             }
-            Listed::PackageEvents(account, package) => {
-                return crate::backstage::mine(id, account, package).map(str::to_string);
-            }
-            Listed::Projects(account) => {
-                let project = crate::projects::changes::mine(id, account)?;
-                let params = crate::projects::item(core, project)?;
+            Listed::Projects => {
+                let params = crate::projects::item(core, id)?;
                 json!({"jsonrpc": "2.0", "method": "projects.changed", "params": params})
             }
-            Listed::Schedules(account) => {
-                let id = crate::schedules::changes::mine(id, account)?;
-                let params = crate::schedules::methods::changed(core, account, id)?;
+            Listed::Schedules => {
+                let params = crate::schedules::methods::changed(core, id)?;
                 json!({"jsonrpc": "2.0", "method": "schedules.changed", "params": params})
             }
             Listed::Extensions => {
@@ -245,18 +238,17 @@ impl Subscriptions {
         }
     }
 
-    /// 订阅 `account` 的项目（施工 H-1）：同 [`Subscriptions::add_listed`]，回应 `{"projects": […]}` 经
+    /// 订阅项目（施工 H-1）：同 [`Subscriptions::add_listed`]，回应 `{"projects": […]}` 经
     /// [`super::Target::Projects`] 写出去。
     pub(crate) async fn add_projects(
         &mut self,
         core: &Arc<Core>,
-        account: AccountId,
         shaken: Shaken,
         out: &mpsc::Sender<String>,
     ) -> Result<serde_json::Value, crate::refusal::Refusal> {
         self.projects = Some(ListedForwarder::start(
             Arc::clone(core),
-            Listed::Projects(account.clone()),
+            Listed::Projects,
             shaken,
             out.clone(),
         ));
@@ -276,21 +268,20 @@ impl Subscriptions {
         self.projects = None;
     }
 
-    /// 订阅 `account` 的定时任务（施工 J-1 下）：同 [`Subscriptions::add_projects`]，回应 `{"schedules": […]}`。
+    /// 订阅定时任务（施工 J-1 下）：同 [`Subscriptions::add_projects`]，回应 `{"schedules": […]}`。
     pub(crate) fn add_schedules(
         &mut self,
         core: &Arc<Core>,
-        account: AccountId,
         shaken: Shaken,
         out: &mpsc::Sender<String>,
     ) -> Result<serde_json::Value, crate::refusal::Refusal> {
         self.schedules = Some(ListedForwarder::start(
             Arc::clone(core),
-            Listed::Schedules(account.clone()),
+            Listed::Schedules,
             shaken,
             out.clone(),
         ));
-        crate::schedules::methods::listed(core, &account)
+        crate::schedules::methods::listed(core)
     }
 
     /// 取消订阅定时任务的推送。
@@ -298,17 +289,16 @@ impl Subscriptions {
         self.schedules = None;
     }
 
-    /// 订阅这个账号 `account` 的知识库建索引的进度（施工 W-15）：回应是空的，这一刻的样子照 `kb.list`（`indexing`、`indexed_at`）。
+    /// 订阅知识库建索引的进度（施工 W-15）：回应是空的，这一刻的样子照 `kb.list`（`indexing`、`indexed_at`）。
     pub(crate) fn add_kb(
         &mut self,
         core: &Arc<Core>,
-        account: AccountId,
         shaken: Shaken,
         out: &mpsc::Sender<String>,
     ) -> serde_json::Value {
         self.kb = Some(ListedForwarder::start(
             Arc::clone(core),
-            Listed::Knowledge(account),
+            Listed::Knowledge,
             shaken,
             out.clone(),
         ));
@@ -320,17 +310,16 @@ impl Subscriptions {
         self.kb = None;
     }
 
-    /// 订阅这个账号 `account` 的通知（施工 J-3 下）：回应是空的，不补以前的。
+    /// 订阅通知（施工 J-3 下）：回应是空的，不补以前的。
     pub(crate) fn add_notices(
         &mut self,
         core: &Arc<Core>,
-        account: AccountId,
         shaken: Shaken,
         out: &mpsc::Sender<String>,
     ) -> serde_json::Value {
         self.notices = Some(ListedForwarder::start(
             Arc::clone(core),
-            Listed::Notices(account),
+            Listed::Notices,
             shaken,
             out.clone(),
         ));
@@ -342,18 +331,18 @@ impl Subscriptions {
         self.notices = None;
     }
 
-    /// 订阅包 `package` 推给这个账号 `account` 的（施工 IM-1 中下二）：回应是空的，不补以前的；一个连接能订几个包，同一个包再订
+    /// 订阅包 `package` 推给人的（施工 IM-1 中下二）：回应是空的，不补以前的；一个连接能订几个包，同一个包再订
     /// 换一个新的。
     pub(crate) fn add_package_events(
         &mut self,
         core: &Arc<Core>,
-        (account, package): (AccountId, String),
+        package: String,
         shaken: Shaken,
         out: &mpsc::Sender<String>,
     ) -> serde_json::Value {
         let forwarder = ListedForwarder::start(
             Arc::clone(core),
-            Listed::PackageEvents(account, package.clone()),
+            Listed::PackageEvents(package.clone()),
             shaken,
             out.clone(),
         );

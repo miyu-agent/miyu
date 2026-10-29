@@ -298,12 +298,12 @@ fn unknown_blocks_are_skipped() {
 fn events_outside_the_context_are_not_rendered() {
     let mut log = Log::new();
     log.push(
-        r#"{"kind":"person","account":"alice"}"#,
+        r#"{"kind":"person"}"#,
         "session.meta_changed",
         r#"{"title":"整理 src 目录"}"#,
     );
     log.push(
-        r#"{"kind":"person","account":"alice"}"#,
+        r#"{"kind":"person"}"#,
         "session.policy_changed",
         r#"{"permission":{"level":"workspace","read_only":true}}"#,
     );
@@ -314,7 +314,7 @@ fn events_outside_the_context_are_not_rendered() {
     );
     // 斜杠命令的那一句只给人看（施工 O-6）。
     log.push(
-        r#"{"kind":"person","account":"alice"}"#,
+        r#"{"kind":"person"}"#,
         "command.ran",
         r#"{"text":"/reset","command":"clear"}"#,
     );

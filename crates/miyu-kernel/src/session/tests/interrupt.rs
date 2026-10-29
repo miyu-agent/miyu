@@ -7,7 +7,7 @@ use crate::accumulate::{Delta, Kind};
 use crate::event::{CallResult, Effect, EndReason, FileChanged, Said, ToolStatus};
 use crate::id::{CallId, ContentHash};
 
-/// alice 在 07:00:`second` 打断，命令编号是 `n`，排着队的接着发。
+/// 主人在 07:00:`second` 打断，命令编号是 `n`，排着队的接着发。
 fn stop(n: u64, second: u64) -> Input {
     stop_with(n, at(second), Queued::Send)
 }
@@ -29,12 +29,12 @@ fn result_of(event: &Event) -> (CallId, ToolStatus, By, Option<CommandId>, Strin
     )
 }
 
-/// 回合被 alice 用命令 `n` 打断而结束。
+/// 回合被 主人用命令 `n` 打断而结束。
 fn interrupted_by(event: &Event, n: u64) {
     assert_eq!(reason_of(event), &EndReason::Interrupted);
     assert_eq!(
         (event.by.clone(), event.cause.clone()),
-        (alice(), Some(id(n)))
+        (person(), Some(id(n)))
     );
 }
 
@@ -146,7 +146,7 @@ fn interrupting_a_request_keeps_what_came_and_cancels_its_calls() {
         (
             call(6, 1),
             ToolStatus::Cancelled,
-            alice(),
+            person(),
             Some(id(2)),
             "cancelled before".to_string()
         )
@@ -211,7 +211,7 @@ fn interrupting_tools_cancels_the_calls_without_results() {
         (
             call(6, 2),
             ToolStatus::Cancelled,
-            alice(),
+            person(),
             Some(id(2)),
             "cancelled running".to_string()
         )
@@ -238,7 +238,7 @@ fn an_urgent_message_skips_the_calls_not_yet_run() {
         (
             call(6, 2),
             ToolStatus::Skipped,
-            alice(),
+            person(),
             Some(id(2)),
             "skipped".to_string()
         )

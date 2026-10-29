@@ -21,7 +21,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::{AccountId, ContentHash, SessionId};
+use miyu_kernel::id::{ContentHash, SessionId};
 use miyu_kernel::request::Message;
 use miyu_models::provider::NOT_CONFIGURED;
 use miyu_models::settings::UseSettings;
@@ -96,7 +96,6 @@ struct Line {
 /// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）；`package` 是扩展的连接的包（施工 Q-3：`side` 只认它登记的）。
 pub(crate) async fn call(
     core: &Arc<Core>,
-    (own, account): (&AccountId, &AccountId),
     package: Option<&str>,
     params: CallParams,
 ) -> Result<Value, Refusal> {
@@ -144,7 +143,7 @@ pub(crate) async fn call(
         if !line.text.is_empty() {
             blocks.push(Block::Text(Text { text: line.text }));
         }
-        blocks.extend(attach::images(core, (own, account), line.images).await?);
+        blocks.extend(attach::images(core, line.images).await?);
         // system 已经单拿出来了，后面只有 user、assistant。
         messages.push(match line.role {
             Role::Assistant => Message::Assistant { blocks },
@@ -155,7 +154,7 @@ pub(crate) async fn call(
         return Err(Refusal::no_model(NOT_CONFIGURED.to_string()));
     };
     // 照这个连接的人那一份配置（施工 Y-2 下下中下）。
-    let config = core.mine(account).hub().current().borrow().clone();
+    let config = core.mine().hub().current().borrow().clone();
     let resolved = config.resolved().clone();
     let model = match params.uses {
         Some(Use::Vision) => match UseSettings::from(&resolved.values()).vision {
@@ -174,7 +173,6 @@ pub(crate) async fn call(
         messages,
         max_tokens,
         // 用量记在这个连接的人名下（施工 Y-2 下下中下）。
-        owner: account.clone(),
         venue,
     };
     let replied = match &side {

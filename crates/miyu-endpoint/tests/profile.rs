@@ -113,7 +113,6 @@ fn served_core(home: &Home) -> Arc<Core> {
     let found = miyu_endpoint::packages::load(&resources, &home.root);
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

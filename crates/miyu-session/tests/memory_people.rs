@@ -211,11 +211,7 @@ async fn a_dream_cards_the_people_an_episode_involves() {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     keeper(&home)
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await
         .expect("整理了");
     let asked = asked(&server, 0);
@@ -297,11 +293,7 @@ async fn names_of_two_people_in_one_episode_do_not_cross() {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     keeper(&home)
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await
         .expect("整理了");
     assert!(
@@ -384,11 +376,7 @@ async fn a_dream_lists_the_names_each_person_used() {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     keeper(&home)
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await
         .expect("整理了");
     let asked = asked(&server, 0);

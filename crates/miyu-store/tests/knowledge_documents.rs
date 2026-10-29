@@ -35,7 +35,7 @@ fn rows(
     knowledge: &Knowledge,
     id: &str,
 ) -> Vec<(String, DocumentKind, u64, usize, Option<Reason>)> {
-    let (listing, _) = knowledge.listing(&admin(), id).expect("列得出");
+    let (listing, _) = knowledge.listing(id).expect("列得出");
     listing
         .documents
         .into_iter()
@@ -63,7 +63,7 @@ fn every_document_is_listed_by_path_with_its_size_and_chunks() {
     write(&dir, "photo.png", b"not a document");
     write(&dir, ".hidden.md", b"hidden");
     let knowledge = Knowledge::new(&root).with_extractor(Some(extractor()));
-    let (listing, skipped) = knowledge.listing(&admin(), "notes").expect("列得出");
+    let (listing, skipped) = knowledge.listing("notes").expect("列得出");
     assert!(skipped.is_empty(), "{skipped:?}");
     assert!(listing.folders.is_empty());
     let size = |name: &str| std::fs::metadata(dir.join(name)).expect("在").len();
@@ -122,7 +122,7 @@ fn what_cannot_be_read_says_why_and_keeps_its_old_chunks() {
     write(&dir, "big.txt", &vec![b'a'; 4 * 1024 * 1024 + 1]);
     std::fs::copy(fixture("blank.pdf"), dir.join("scan.pdf")).expect("拷得了");
     write(&dir, "broken.pdf", "这不是 PDF".as_bytes());
-    let (listing, skipped) = knowledge.listing(&admin(), "notes").expect("列得出");
+    let (listing, skipped) = knowledge.listing("notes").expect("列得出");
     let found: Vec<(&str, usize, Option<Reason>)> = listing
         .documents
         .iter()
@@ -183,10 +183,10 @@ fn an_empty_base_has_nothing_and_an_unknown_one_is_refused() {
     let root = root_in(&scratch);
     kb(&root, "empty", "");
     let knowledge = Knowledge::new(&root);
-    let (listing, _) = knowledge.listing(&admin(), "empty").expect("列得出");
+    let (listing, _) = knowledge.listing("empty").expect("列得出");
     assert!(listing.documents.is_empty() && listing.folders.is_empty());
     assert!(matches!(
-        knowledge.listing(&admin(), "nope"),
+        knowledge.listing("nope"),
         Err(KnowledgeError::UnknownBase)
     ));
 }
@@ -201,7 +201,7 @@ fn a_mounted_base_says_its_folder_and_an_unplugged_one_is_unavailable() {
     kb(&root, "notes", &format!("mount = '{written}'\n"));
     kb(&root, "own", "");
     let knowledge = Knowledge::new(&root);
-    let (bases, _) = knowledge.list(&admin()).expect("列得出");
+    let (bases, _) = knowledge.list().expect("列得出");
     assert_eq!(
         bases[0].mount.as_deref(),
         Some(written.as_str()),
@@ -212,7 +212,7 @@ fn a_mounted_base_says_its_folder_and_an_unplugged_one_is_unavailable() {
     let away = scratch.0.join("unplugged");
     std::fs::rename(&notes, &away).expect("挪得走");
     assert!(matches!(
-        knowledge.listing(&admin(), "notes"),
+        knowledge.listing("notes"),
         Err(KnowledgeError::Unavailable(_))
     ));
 }
@@ -233,7 +233,7 @@ fn an_unreadable_folder_is_listed_apart() {
         std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).expect("改得回");
         return;
     }
-    let listed = Knowledge::new(&root).listing(&admin(), "notes");
+    let listed = Knowledge::new(&root).listing("notes");
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).expect("改得回");
     let (listing, _) = listed.expect("列得出");
     assert_eq!(

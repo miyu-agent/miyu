@@ -144,14 +144,13 @@ struct Read {
 
 /// 照方法名办一条 `kb.*`（`methods.rs` 把 `kb.` 开头的都转过来，不认识的回 `unknown_method`）。读写主人的库。
 pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Result<Value, Refusal> {
-    let account = core.admin.clone();
-    if let Some(managed) = manage::call(core, &account, method, params).await {
+    if let Some(managed) = manage::call(core, method, params).await {
         return managed;
     }
     let knowledge = Arc::clone(&core.knowledge);
     match method {
         "kb.list" => {
-            let (bases, skipped) = blocking(move || knowledge.list(&account)).await?;
+            let (bases, skipped) = blocking(move || knowledge.list()).await?;
             report(&skipped);
             let bases: Vec<Value> = bases.into_iter().map(shown_base).collect();
             Ok(json!({ "bases": bases }))
@@ -166,14 +165,13 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                 return Err(Refusal::BAD_PARAMS);
             }
             // 照意思找（施工 K-2）：问句照这时的配置算向量，搜完在后台补搜过的几个库缺的向量；同她的 `kb_search`。
-            let using = crate::memory::using_as(core, &account);
+            let using = crate::memory::using(core);
             let vectors = core.memory.vectors();
             let near = match &vectors {
                 Some(vectors) => vectors.query(&using, &search.query).await,
                 None => None,
             };
             let searching = Arc::clone(&knowledge);
-            let owner = account.clone();
             let (hits, skipped, searched) = blocking(move || {
                 let only = search.kb.map(|kb| vec![kb]);
                 let meaning = near.as_ref().map(|near| Meaning {
@@ -181,7 +179,7 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
                     vector: &near.vector,
                 });
                 let (hits, skipped) =
-                    searching.search(&owner, &search.query, only.as_deref(), limit, meaning)?;
+                    searching.search(&search.query, only.as_deref(), limit, meaning)?;
                 let searched = match only {
                     Some(only) => only,
                     None => searching.ids()?,
@@ -192,8 +190,8 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             report(&skipped);
             if let Some(vectors) = vectors {
                 for id in searched {
-                    let index = knowledge.index_of(&account, &id);
-                    vectors.fill_knowledge(&using, format!("kb {account} {id}"), index);
+                    let index = knowledge.index_of(&id);
+                    vectors.fill_knowledge(&using, format!("kb {id}"), index);
                 }
             }
             Ok(json!({ "hits": hits.iter().map(shown).collect::<Vec<Value>>() }))
@@ -203,7 +201,7 @@ pub(crate) async fn call(core: &Arc<Core>, method: &str, params: &Value) -> Resu
             if !valid(&kb) {
                 return Err(Refusal::BAD_PARAMS);
             }
-            let (listing, skipped) = blocking(move || knowledge.listing(&account, &kb)).await?;
+            let (listing, skipped) = blocking(move || knowledge.listing(&kb)).await?;
             report(&skipped);
             let documents: Vec<Value> = listing.documents.iter().map(shown_document).collect();
             let folders: Vec<Value> = listing

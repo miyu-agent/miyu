@@ -51,11 +51,7 @@ async fn dream(home: &Home) {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));
     keeper(home, owner())
-        .dream(
-            config,
-            alice_account(),
-            UtcOffset::from_minutes(540).expect("合写法"),
-        )
+        .dream(config, UtcOffset::from_minutes(540).expect("合写法"))
         .await
         .expect("整理了");
 }
@@ -169,7 +165,7 @@ async fn another_room_hears_nothing() {
     save(&home, "用户的 key 放在备忘录里");
     save(&home, "用户养了一只猫");
     save(&home, "用户养了一只橘猫");
-    let other = miyu_store::recall::Room::persona(&alice_account(), "writer");
+    let other = miyu_store::recall::Room::persona("writer");
     let mut elsewhere = Keeper::new(&home.memory, other, owner())
         .follow(Some(0), 1024)
         .expect("跟得上")

@@ -12,7 +12,7 @@ use miyu_store::recall::Room;
 use crate::support::*;
 
 fn person() -> By {
-    serde_json::from_str(r#"{"kind":"person","account":"admin"}"#).expect("合写法")
+    serde_json::from_str(r#"{"kind":"person"}"#).expect("合写法")
 }
 
 fn saved(text: &str) -> MemoryEvent {
@@ -52,7 +52,7 @@ fn after_fills_in_and_later_ones_are_handed_over() {
     let scratch = Scratch::new("memory-follow");
     let root = root_in(&scratch);
     let (log, _) = MemoryLogs::new(&root)
-        .open(&Room::persona(&admin(), "engineer"))
+        .open(&Room::persona("engineer"))
         .expect("开得了");
     let (follower, seen) = recorder(usize::MAX);
     let (filled, upto) = log.follow(Some(0), follower).expect("读得出");
@@ -96,7 +96,7 @@ fn a_follower_that_says_no_is_dropped() {
     let scratch = Scratch::new("memory-follow-drop");
     let root = root_in(&scratch);
     let (log, _) = MemoryLogs::new(&root)
-        .open(&Room::persona(&admin(), "engineer"))
+        .open(&Room::persona("engineer"))
         .expect("开得了");
     let (follower, seen) = recorder(1);
     log.follow(None, follower).expect("读得出");

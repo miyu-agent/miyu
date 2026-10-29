@@ -26,9 +26,9 @@ fn keywords_round_trip_and_are_left_out_when_there_are_none() {
     body.keywords = Some("显卡,NVIDIA,GPU".to_string());
     let event = to_event(seq(7), at(1), tool(), &MemoryEvent::Saved(body.clone())).expect("写得出");
     assert!(
-        event.to_line().ends_with(
-            r#""audience":[{"kind":"person","account":"admin"}],"keywords":"显卡,NVIDIA,GPU"}}"#
-        ),
+        event
+            .to_line()
+            .ends_with(r#""audience":[{"kind":"person"}],"keywords":"显卡,NVIDIA,GPU"}}"#),
         "{}",
         event.to_line()
     );

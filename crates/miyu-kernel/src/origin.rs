@@ -6,7 +6,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::id::{
-    AccountId, CallId, ExternalId, HarnessName, ModelName, ModuleId, ProviderId, SessionId, VenueId,
+    CallId, ExternalId, HarnessName, ModelName, ModuleId, ProviderId, SessionId, VenueId,
 };
 use crate::raw::{self, RawJson};
 
@@ -14,9 +14,9 @@ use crate::raw::{self, RawJson};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum By {
-    /// 有账号的人。
+    /// 主人（Miyu 只给一个人用，施工 SU-6 上）。
     Person(Person),
-    /// 通讯平台上的人，没有账号，由桥担保（`06-多用户与身份.md` 第二节）。
+    /// 通讯平台上的人，由桥担保（`06-多用户与身份.md` 第二节）。
     External(External),
     /// 模型：它的回复 `message.assistant`，连同里面的工具调用。
     Model(Model),
@@ -37,22 +37,13 @@ pub enum By {
     Unknown(RawJson),
 }
 
-/// 有账号的人。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// 主人（施工 SU-6 上：只有一个人，不再记账号）。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Person {
-    /// 这个人的账号。
-    pub account: AccountId,
-    /// 经哪个平台身份认出来的本人（施工 O-3，`venues.md`）：主人在通讯平台的私聊里说的话，核心查主人对应表认出是这个账号
-    /// 本人。本机的头上说的没有。
+    /// 经哪个平台身份认出来的主人（施工 O-3，`venues.md`）：主人在通讯平台的私聊里说的话，核心查主人对应表认出是主人。
+    /// 本机的头上说的没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub via: Option<ExternalId>,
-}
-
-impl Person {
-    /// 账号 `account` 本人，在本机的头上。
-    pub fn new(account: AccountId) -> Person {
-        Person { account, via: None }
-    }
 }
 
 /// 通讯平台上的人。
@@ -62,10 +53,10 @@ pub struct External {
     pub venue: VenueId,
     /// 平台上的身份编号，由桥担保，例如 `qq:10086`。
     pub id: ExternalId,
-    /// 主人对应表里对着的本机账号（施工 O-3）：群里的主人仍是外部身份，写的时候就记下是谁，以后对应表改了不跟着变。
-    /// 不在表里的没有。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub account: Option<AccountId>,
+    /// 在主人对应表里，是主人（施工 O-3，SU-6 上起不再记账号）：群里的主人仍是外部身份，写的时候就记下，以后对应表改了不跟着
+    /// 变。不是的不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub owner: bool,
     /// 桥报的这个人在场所里的身份（施工 O-3）：斜杠命令照它判谁能用（O-6）。没有 `owner`：主人照对应表认。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub role: Option<Role>,
@@ -121,10 +112,8 @@ pub struct Harness {
 /// 到点的一个任务。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schedule {
-    /// 任务的编号（`t<n>`），在这个账号的唤醒表里。
+    /// 任务的编号（`t<n>`），在唤醒表里。
     pub schedule: String,
-    /// 唤醒表是谁的。
-    pub account: AccountId,
     /// 是循环的话，哪一种：组装照它挑标签（施工 J-2）。定时任务没有。
     #[serde(rename = "loop", default, skip_serializing_if = "Option::is_none")]
     pub looping: Option<ScheduleLoop>,
@@ -155,7 +144,7 @@ impl By {
     pub fn is_owner(&self) -> bool {
         match self {
             By::Person(_) => true,
-            By::External(external) => external.account.is_some(),
+            By::External(external) => external.owner,
             _ => false,
         }
     }

@@ -10,7 +10,6 @@ use std::sync::{Arc, Weak};
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::AccountId;
 use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
 use super::local::InfoParams;
@@ -26,10 +25,9 @@ use crate::hello::Peer;
 use crate::refusal::{Locale, Refusal};
 
 /// 交给会话的那一份：`confined` 是会话关在沙盒里（施工 SU-4 下）。
-pub(crate) fn port(core: &Arc<Core>, owner: &AccountId, confined: bool) -> Arc<dyn PackagesPort> {
+pub(crate) fn port(core: &Arc<Core>, confined: bool) -> Arc<dyn PackagesPort> {
     Arc::new(Port {
         core: Arc::downgrade(core),
-        owner: owner.clone(),
         confined,
     })
 }
@@ -37,7 +35,6 @@ pub(crate) fn port(core: &Arc<Core>, owner: &AccountId, confined: bool) -> Arc<d
 /// 核心那一头，和这个会话的属主（施工 Y-5 下下：她替属主装包；施工 U23 下上起装进他自己那一层）。
 struct Port {
     core: Weak<Core>,
-    owner: AccountId,
     /// 会话关在沙盒里（群、陌生人的私聊）：装不了、卸不了，列的时候裁掉只给主人的那几格（施工 SU-4 下：原来照属主是不是主人）。
     confined: bool,
 }
@@ -155,7 +152,7 @@ impl PackagesPort for Port {
                 .await
                 .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
-                open_in(&core, (&self.owner, self.peer()), &preset, package).await;
+                open_in(&core, self.peer(), &preset, package).await;
             }
             Ok(entry)
         })
@@ -253,7 +250,7 @@ impl PackagesPort for Port {
                         .await
                         .map_err(refused)?;
                     if let Some(preset) = preset {
-                        open_in(&core, (&self.owner, self.peer()), &preset, &package).await;
+                        open_in(&core, self.peer(), &preset, &package).await;
                     }
                     return Ok(entry);
                 }
@@ -264,7 +261,7 @@ impl PackagesPort for Port {
                     .await
                     .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
-                open_in(&core, (&self.owner, self.peer()), &preset, package).await;
+                open_in(&core, self.peer(), &preset, package).await;
             }
             Ok(entry)
         })
@@ -312,8 +309,8 @@ fn back(core: &Core, package: &str) -> Option<Back> {
 /// 在会话用的预设 `preset` 里打开她装的包 `package`（施工 F-10 下下，16 第三节）：预设不开没列出来的软件、也没写这个包的，往
 /// 家目录那一层的同名覆盖里写 `software.<编号> = true`；开着的、写过的（人关过的照人的）不动。写不成的记一行，装照样算成。
 /// 预设照会话属主 `owner` 的找、写（施工 Y-5 下下：原来照机主，成员的会话改的是机主的预设）。
-async fn open_in(core: &Arc<Core>, (owner, peer): (&AccountId, Peer), preset: &str, package: &str) {
-    let Ok(found) = crate::presets::presets(core, owner).find(preset) else {
+async fn open_in(core: &Arc<Core>, peer: Peer, preset: &str, package: &str) {
+    let Ok(found) = crate::presets::presets(core).find(preset) else {
         return;
     };
     if found.file.unlisted() == Unlisted::On || found.file.software.contains_key(package) {
@@ -323,7 +320,7 @@ async fn open_in(core: &Arc<Core>, (owner, peer): (&AccountId, Peer), preset: &s
     let Ok(params) = serde_json::from_value(change) else {
         return;
     };
-    if let Err(refusal) = crate::presets::write::set(core, owner, peer, params).await {
+    if let Err(refusal) = crate::presets::write::set(core, peer, params).await {
         tracing::warn!(target: TARGET, preset, package, reason = refusal.reason, "package not opened in the preset");
     }
 }

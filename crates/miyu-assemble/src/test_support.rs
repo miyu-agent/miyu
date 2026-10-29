@@ -15,9 +15,9 @@ use crate::texts::{
 };
 
 pub(crate) const KERNEL: &str = r#"{"kind":"kernel"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 pub(crate) const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
 /// 替身的固定字：短，一眼认得出是哪一句。测的是拼法，和出厂的措辞无关。
 pub(crate) fn texts() -> Texts {

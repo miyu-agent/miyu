@@ -3,7 +3,6 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
@@ -15,23 +14,20 @@ use crate::test_support::{resources, temp_root};
 #[tokio::test]
 async fn opening_in_a_preset_writes_the_owner_s_override() {
     let (root, dir) = temp_root("open-in");
-    let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        alice.clone(),
         "token".to_string(),
     ));
     let port = Port {
         core: Arc::downgrade(&core),
-        owner: alice.clone(),
         confined: false,
     };
     // 出厂的 `dev` 不开没列出来的软件：打开要写进同名覆盖。
-    open_in(&core, (&alice, port.peer()), "dev", "kit").await;
+    open_in(&core, port.peer(), "dev", "kit").await;
     let preset = std::fs::read_to_string(root.path().join("presets/dev.toml")).unwrap_or_default();
     assert!(preset.contains("kit = true"), "写进主人那一份：{preset}");
     drop(core);
@@ -45,19 +41,16 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
 #[tokio::test]
 async fn a_confined_session_cannot_change_packages() {
     let (root, dir) = temp_root("port-member");
-    let alice = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources()),
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        alice.clone(),
         "token".to_string(),
     ));
     let outsider = Port {
         core: Arc::downgrade(&core),
-        owner: alice.clone(),
         confined: true,
     };
     let kit = dir.join("kit");
@@ -100,7 +93,6 @@ async fn a_confined_session_cannot_change_packages() {
     assert!(outsider.list().await.is_ok(), "列得出");
     let owner = Port {
         core: Arc::downgrade(&core),
-        owner: alice,
         confined: false,
     };
     assert!(owner.inspect(kit.clone()).await.is_ok(), "主人的会话看得了");

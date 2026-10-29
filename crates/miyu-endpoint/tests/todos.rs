@@ -156,7 +156,7 @@ async fn the_todo_command_shows_and_clears_the_list() {
     assert_eq!(
         cleared(&home, &session),
         [(
-            miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::new(alice())),
+            miyu_kernel::origin::By::Person(miyu_kernel::origin::Person::default()),
             "k3".to_string()
         )]
     );

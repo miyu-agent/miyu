@@ -46,10 +46,10 @@ async fn a_backfilled_message_shows_when_it_was_sent() {
 /// 没名字的写平台身份；名字照模板的规矩转义成一行。按 `user` 筛照样算人说的。
 #[tokio::test]
 async fn a_venue_message_names_who_said_it() {
-    let member = |id: &str, role: &str, account: Option<&str>| {
+    let member = |id: &str, role: &str, owner: bool| {
         let mut by = json!({"kind": "external", "venue": "qq:group:1", "id": id, "role": role});
-        if let Some(account) = account {
-            by["account"] = json!(account);
+        if owner {
+            by["owner"] = json!(true);
         }
         by
     };
@@ -66,23 +66,23 @@ async fn a_venue_message_names_who_said_it() {
     let log = vec![vec![
         said(
             1,
-            member("qq:20017", "member", None),
+            member("qq:20017", "member", false),
             json!({"msg": "1", "name": "小林"}),
         ),
         said(
             2,
-            member("qq:20018", "manager", None),
+            member("qq:20018", "manager", false),
             json!({"msg": "2", "name": "老王", "show_ids": true}),
         ),
         said(
             3,
-            member("qq:1", "member", Some("admin")),
+            member("qq:1", "member", true),
             json!({"msg": "3", "name": "主人"}),
         ),
-        said(4, member("qq:20019", "member", None), json!({"msg": "4"})),
+        said(4, member("qq:20019", "member", false), json!({"msg": "4"})),
         said(
             5,
-            member("qq:20020", "member", None),
+            member("qq:20020", "member", false),
             json!({"msg": "5", "name": "a\nb"}),
         ),
     ]];

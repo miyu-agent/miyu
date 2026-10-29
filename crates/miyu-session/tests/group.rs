@@ -35,7 +35,7 @@ fn member() -> By {
     By::External(External {
         venue: VenueId::parse("qq:group:1").expect("场所合写法"),
         id: ExternalId::parse("qq:20017").expect("身份合写法"),
-        account: None,
+        owner: false,
         role: Some(Role::Member),
     })
 }

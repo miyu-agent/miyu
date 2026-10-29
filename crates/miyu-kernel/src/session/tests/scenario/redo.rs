@@ -92,8 +92,8 @@ fn redo_undoes_the_last_turn_and_says_the_same_again() {
     assert_eq!(
         story(&s)[13..],
         [
-            "14 turn.reverted:10 alice",
-            "15 message.user alice",
+            "14 turn.reverted:10 person",
+            "15 message.user person",
             "16 turn.started kernel t16",
             "17 message.assistant model t16",
             "18 model.called:ok kernel t16",
@@ -112,7 +112,7 @@ fn redo_undoes_the_last_turn_and_says_the_same_again() {
     let (resent, opened) = (event(&s, 15), event(&s, 16));
     assert_eq!(
         (&resent.by, &resent.cause, resent.turn),
-        (&alice(), &Some(id.clone()), None)
+        (&person(), &Some(id.clone()), None)
     );
     assert_eq!(trigger_of(&s, 16), Some(seq(15)));
     assert_eq!(opened.cause, Some(id.clone()));
@@ -215,8 +215,8 @@ fn queued_two() -> Stage {
     assert_eq!(
         story(&s)[5..],
         [
-            "6 message.user alice t3",
-            "7 message.user alice t3",
+            "6 message.user person t3",
+            "7 message.user person t3",
             "8 message.assistant model t3",
             "9 model.called:ok kernel t3",
             "10 turn.ended:completed kernel t3",
@@ -238,9 +238,9 @@ fn the_words_taken_over_from_the_turn_before_are_said_again_in_order() {
     assert_eq!(
         story(&s)[14..18],
         [
-            "15 turn.reverted:11 alice",
-            "16 message.user alice",
-            "17 message.user alice",
+            "15 turn.reverted:11 person",
+            "16 message.user person",
+            "17 message.user person",
             "18 turn.started kernel t18",
         ]
     );
@@ -266,9 +266,9 @@ fn a_redone_turn_takes_all_its_words_along_when_redone_or_undone() {
     assert_eq!(
         story(&s)[21..25],
         [
-            "22 turn.reverted:18 alice",
-            "23 message.user alice",
-            "24 message.user alice",
+            "22 turn.reverted:18 person",
+            "23 message.user person",
+            "24 message.user person",
             "25 turn.started kernel t25",
         ]
     );
@@ -365,8 +365,8 @@ fn a_compaction_in_the_turn_is_read_back_before_saying_it_again() {
     assert_eq!(
         story(&s)[17..21],
         [
-            "18 turn.reverted:10 alice",
-            "19 message.user alice",
+            "18 turn.reverted:10 person",
+            "19 message.user person",
             "20 turn.started kernel t20",
             "21 model.called:ok kernel t20",
         ],
@@ -399,8 +399,8 @@ fn a_turn_whose_opener_was_compacted_away_is_judged_after_reading_back() {
     assert_eq!(
         story(&s)[15..18],
         [
-            "16 turn.reverted:3 alice",
-            "17 message.user alice",
+            "16 turn.reverted:3 person",
+            "17 message.user person",
             "18 turn.started kernel t18",
         ]
     );
@@ -465,7 +465,7 @@ fn words_said_during_the_turn_are_not_said_again() {
     let call = s.ran()[0].0;
     s.say("顺便看看 b");
     s.release_tool(call);
-    assert_eq!(story(&s)[7], "8 message.user alice t3");
+    assert_eq!(story(&s)[7], "8 message.user person t3");
     let id = s.redo(None);
     assert_eq!(
         s.outcome(&id),
@@ -495,6 +495,6 @@ fn a_turn_opened_by_another_session_cannot_be_redone() {
         "{:?}",
         s.outcome(&id)
     );
-    assert_eq!(event(&s, resent).by, alice());
+    assert_eq!(event(&s, resent).by, person());
     assert_eq!(said(&s, resent), [text("我来问一句")]);
 }

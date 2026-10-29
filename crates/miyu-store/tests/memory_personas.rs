@@ -13,12 +13,11 @@ fn the_personas_with_a_log_or_turns_are_listed() {
     let logs = MemoryLogs::new(&root);
     assert_eq!(logs.personas().expect("列得出"), Vec::<String>::new());
     for persona in ["miyu", "engineer"] {
-        logs.open(&Room::persona(&admin(), persona))
-            .expect("开得了");
+        logs.open(&Room::persona(persona)).expect("开得了");
     }
     assert_eq!(logs.personas().expect("列得出"), ["engineer", "miyu"]);
     let turns = RecallIndexes::new(&root);
     assert_eq!(turns.personas().expect("列得出"), Vec::<String>::new());
-    turns.turns(&Room::persona(&admin(), "miyu"));
+    turns.turns(&Room::persona("miyu"));
     assert_eq!(turns.personas().expect("列得出"), ["miyu"]);
 }

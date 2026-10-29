@@ -10,16 +10,16 @@ use std::time::Duration;
 use serde_json::json;
 
 use miyu_session::testkit::Script;
-use miyu_store::{accounts, logins};
+use miyu_store::{access, logins};
 
 use crate::support::login::*;
 use crate::support::*;
 
-/// 读 `system/accounts.json`。
-fn accounts_of(home: &Home) -> accounts::Accounts {
-    accounts::read(&home.root.path().join(accounts::FILE))
+/// 读 `access.json`。
+fn access_of(home: &Home) -> access::Access {
+    access::read(&home.root.path().join(access::FILE))
         .expect("读得了")
-        .accounts
+        .access
 }
 
 /// 读主人的 `logins.json`。
@@ -64,17 +64,15 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
         let refused = browser.call("s", "account.setup", params.clone()).await;
         assert_eq!(why(&refused), "bad_params", "{params}: {refused}");
     }
-    assert!(accounts_of(&home).accounts.is_empty(), "什么都没写");
+    assert!(access_of(&home).password.is_empty(), "什么都没写");
     let reply = browser
         .call("s", "account.setup", json!({"password": "correct horse"}))
         .await;
     let token = reply["result"]["login"]["token"].as_str().expect("有令牌");
     assert!(is_hex64(token), "{reply}");
     assert!(reply["result"]["login"]["expires"].is_string());
-    // 落了盘才回：写在主人那一行。
-    let owner = accounts_of(&home).of("alice").cloned().expect("写进去了");
-    assert!(owner.owner);
-    assert!(accounts::verify(&owner.password, "correct horse"));
+    // 落了盘才回。
+    assert!(access::verify(&access_of(&home).password, "correct horse"));
     assert!(logins_of(&home).valid(
         &logins::digest(token),
         miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合")
@@ -265,7 +263,7 @@ async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
     let mut fresh = Client::connect(Arc::clone(&core));
     let reply = hello_with(&mut fresh, json!({"login": new_token})).await;
     assert!(reply.get("result").is_some(), "{reply}");
-    assert_eq!(accounts_of(&home).accounts.len(), 1, "还是主人那一行");
+    assert!(!access_of(&home).password.is_empty(), "还是那一份");
 }
 
 #[tokio::test]
@@ -350,7 +348,7 @@ async fn only_one_kind_of_credential_is_accepted() {
 #[tokio::test]
 async fn broken_files_read_as_empty() {
     let home = Home::new();
-    home.write("accounts.json", "not json");
+    home.write("access.json", "not json");
     let core = home.core(&Script::new([]));
     let issued = setup_code(&core).await;
     assert_eq!(issued["first"], true, "坏了的当没设过：{issued}");
@@ -358,7 +356,7 @@ async fn broken_files_read_as_empty() {
     let refused = hello_with(&mut browser, json!({"password": "whatever1"})).await;
     assert_eq!(why(&refused), "password_not_set", "{refused}");
     let token = set_up(&core, "correct horse").await;
-    assert_eq!(accounts_of(&home).accounts.len(), 1, "坏的那份换成了好的");
+    assert!(!access_of(&home).password.is_empty(), "坏的那份换成了好的");
     home.write("logins.json", "{");
     let mut stale = Client::connect(Arc::clone(&core));
     let refused = hello_with(&mut stale, json!({"login": token})).await;
@@ -419,22 +417,16 @@ async fn tickets_are_for_people_and_redeem_once() {
     assert_eq!(why(&bad), "bad_params");
 }
 
-/// 第一次起来的样子（施工 SU-1，`miyu_core::owner::ensure`）：账号文件里已经有主人那一行、密码是空的，照样算没设访问密码。
+/// 文件在、密码是空的（施工 SU-6 上）：照样算没设访问密码。
 #[tokio::test]
-async fn an_owner_row_without_a_password_is_not_a_password() {
+async fn an_access_file_without_a_password_is_not_a_password() {
     let home = Home::new();
-    let row = accounts::Account {
-        id: "alice".to_string(),
-        username: "alice".to_string(),
-        password: String::new(),
-        changed: miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合"),
-        created: None,
-        disabled: false,
-        owner: true,
-    };
-    let mut written = accounts::Accounts::default();
-    written.put(row);
-    accounts::write(&home.root.path().join(accounts::FILE), &written, None).expect("写得进");
+    access::write(
+        &home.root.path().join(access::FILE),
+        &access::Access::default(),
+        None,
+    )
+    .expect("写得进");
     let core = home.core(&Script::new([]));
     assert_eq!(setup_code(&core).await["first"], true, "还没设过");
     let mut bare = remote(&core, "192.168.1.30").await;

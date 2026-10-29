@@ -16,7 +16,7 @@ pub(super) fn some_meta(seed: u64, next_id: &mut u64) -> Input {
     let project = [None, Some("p1"), Some("")][rng.below(3) as usize].map(str::to_string);
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(30),
         command: Command::SetMeta {
             title: title.map(str::to_string),
@@ -48,7 +48,7 @@ pub(super) fn some_goal(seed: u64, next_id: &mut u64) -> Input {
     };
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(33),
         command: Command::Goal(change),
     })
@@ -63,7 +63,7 @@ pub(super) fn some_workspace(seed: u64, next_id: &mut u64) -> Input {
     let dirs = dirs[rng.below(3) as usize];
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(32),
         command: Command::SetWorkspace {
             cwd: cwd.to_string(),
@@ -76,7 +76,7 @@ pub(super) fn some_workspace(seed: u64, next_id: &mut u64) -> Input {
 pub(super) fn some_ran(next_id: &mut u64) -> Input {
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(31),
         command: Command::Ran {
             text: "/reset".to_string(),
@@ -89,7 +89,7 @@ pub(super) fn some_ran(next_id: &mut u64) -> Input {
 pub(super) fn some_overheard(next_id: &mut u64) -> Input {
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(33),
         command: Command::Send {
             blocks: vec![Block::Text(Text {
@@ -120,7 +120,7 @@ pub(super) fn some_appended(seed: u64, next_id: &mut u64) -> Input {
     };
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(34),
         command: Command::Append { event },
     })
@@ -137,7 +137,7 @@ pub(super) fn some_respond(seed: u64, overheard: u64, next_id: &mut u64) -> Inpu
     };
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(34),
         command: Command::Respond {
             to,
@@ -163,7 +163,7 @@ pub(super) fn some_note(seed: u64, next_id: &mut u64) -> Input {
     };
     Input::Command(Received {
         id: id(next_command(next_id)),
-        by: alice(),
+        by: person(),
         at: at(34),
         command: Command::Note { facts },
     })

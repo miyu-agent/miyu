@@ -24,8 +24,7 @@ pub(crate) fn version(core: &Core) -> Option<String> {
 
 /// `account.set_avatar`：见模块说明。
 pub(crate) async fn set(core: &Core, params: PictureParams) -> Result<Value, Refusal> {
-    let account = &core.admin;
-    let checked = picture::check(core, account, Picture::Avatar, params).await?;
+    let checked = picture::check(core, Picture::Avatar, params).await?;
     let dir = core.root.path().to_path_buf();
     if let Some(expect) = checked.expect() {
         let current = version(core);

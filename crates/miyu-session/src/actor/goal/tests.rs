@@ -13,7 +13,7 @@ fn event(seq: u64, kind: &str, by: &str, turn: Option<u64>, body: &str) -> Event
 }
 
 const GOAL: &str = r#"{"kind":"module","id":"goal"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 
 /// 一轮：第 `seq` 条是触发它的话（`by`），接着开一轮，回复里调不调工具，结束。

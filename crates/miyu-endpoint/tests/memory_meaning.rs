@@ -130,7 +130,6 @@ async fn the_built_in_option_notes_the_local_model() {
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[]),

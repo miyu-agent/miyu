@@ -8,11 +8,11 @@ use super::revert::revert;
 use super::*;
 use crate::event::MetaChanged;
 
-/// 编号是 `n` 的命令：alice 改标题、置顶，改哪样写哪样。
+/// 编号是 `n` 的命令：主人改标题、置顶，改哪样写哪样。
 fn set_meta(n: u64, title: Option<&str>, pinned: Option<bool>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::SetMeta {
             title: title.map(str::to_string),
@@ -46,7 +46,7 @@ fn renaming_is_recorded_and_answered_once_stored() {
     assert_eq!(events[0].body, meta(Some("整理 src 目录"), None));
     assert_eq!(
         (&events[0].by, &events[0].cause, events[0].turn),
-        (&alice(), &Some(id(2)), None)
+        (&person(), &Some(id(2)), None)
     );
     assert_eq!(
         replies(&session.handle(stored(2))),
@@ -144,7 +144,7 @@ fn a_slash_command_is_noted_and_kept_out_of_the_request() {
     let mut logged = Logged::new();
     let ran = Input::Command(Received {
         id: id(2),
-        by: alice(),
+        by: person(),
         at: at(2),
         command: Command::Ran {
             text: "/reset".to_string(),
@@ -160,7 +160,7 @@ fn a_slash_command_is_noted_and_kept_out_of_the_request() {
             command: "clear".to_string(),
         })
     );
-    assert_eq!((&events[0].by, &events[0].cause), (&alice(), &Some(id(2))));
+    assert_eq!((&events[0].by, &events[0].cause), (&person(), &Some(id(2))));
     assert_eq!(
         replies(&logged.handle(stored(2))),
         [&accepted_reply(2, &[2])]
@@ -168,11 +168,11 @@ fn a_slash_command_is_noted_and_kept_out_of_the_request() {
     assert_eq!(logged.handle(ran), [accepted_reply(2, &[2])], "只记一次");
 }
 
-/// 编号是 `n` 的命令：alice 移进项目 `project`（空的是移出来，施工 H-2）。
+/// 编号是 `n` 的命令：主人移进项目 `project`（空的是移出来，施工 H-2）。
 fn into_project(n: u64, project: &str) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::SetMeta {
             title: None,

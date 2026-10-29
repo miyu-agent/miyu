@@ -129,8 +129,7 @@ async fn with_continue_and_alone() {
     let newest: SessionId = home.sessions()[0].clone();
     assert_ne!(newest, first, "都不写开一个新会话");
     let log = home.log(&newest);
-    let person: By =
-        serde_json::from_value(json!({"kind": "person", "account": "admin"})).expect("合写法");
+    let person: By = serde_json::from_value(json!({"kind": "person"})).expect("合写法");
     assert_eq!(log[0].by, person, "会话是本人造的");
     assert_eq!(speakers(&log), [claude()], "第一句记成它发的");
 }

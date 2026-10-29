@@ -26,10 +26,9 @@ impl Places {
             exe: None,
         };
         let root = DataRoot::locate(&env).unwrap();
-        let admin = AccountId::parse("admin").unwrap();
         // 两个装着的包 `a`、`b`（施工 P-11 上）：先后照交进来的。
         let packages = [scratch.path().join("pkgs/a"), scratch.path().join("pkgs/b")];
-        let personas = Personas::new(&resources, &root, &admin).with_packages(&packages);
+        let personas = Personas::new(&resources, &root).with_packages(&packages);
         Places { scratch, personas }
     }
 
@@ -113,7 +112,7 @@ fn the_layers_stack_file_by_file_and_key_by_key() {
         "角色扮演提示照层叠，原样"
     );
     assert_eq!(found.reminders_from, Some(Layer::Home));
-    assert_eq!(found.home, Some(AccountId::parse("admin").unwrap()));
+    assert!(found.layers.contains(&Layer::Home));
 }
 
 #[test]
@@ -121,7 +120,7 @@ fn a_persona_only_in_the_shipped_layer_lives_in_no_home() {
     let places = Places::new();
     places.write(Layer::Shipped, "engineer", "prompts/persona.md", "x\n");
     let found = places.personas.find("engineer").unwrap();
-    assert_eq!(found.home, None);
+    assert!(!found.layers.contains(&Layer::Home));
     assert_eq!(found.file, PersonaFile::default(), "没有 persona.toml 也行");
     assert!(found.texts.examples.is_empty());
     assert_eq!(
@@ -131,7 +130,7 @@ fn a_persona_only_in_the_shipped_layer_lives_in_no_home() {
     // 家目录里只有一个空目录，也算住在那里。
     fs::create_dir_all(places.scratch.path().join("data/personas/bare")).unwrap();
     let bare = places.personas.find("bare").unwrap();
-    assert_eq!(bare.home, Some(AccountId::parse("admin").unwrap()));
+    assert!(bare.layers.contains(&Layer::Home));
     assert_eq!(bare.texts.persona, "", "没有人设是空的");
 }
 
@@ -197,9 +196,9 @@ fn ids_come_from_every_layer_once_in_order() {
     assert_eq!(places.personas.ids(), ["engineer", "miyu"]);
 }
 
-/// 人格住在谁的家目录（施工 P-1 上）：`home_of` 只看目录（记忆一律归会话的属主，施工 Y-7；SU-4 下起不另算）。
+/// 人格有没有你那一层（施工 P-1 上）：`at_home` 只看目录。
 #[test]
-fn home_of_follows_the_directories() {
+fn at_home_follows_the_directories() {
     let places = Places::new();
     places.write(Layer::Shipped, "engineer", "prompts/persona.md", "x\n");
     places.write(
@@ -209,13 +208,8 @@ fn home_of_follows_the_directories() {
         "user: a\nuser: b\n",
     );
     let personas = &places.personas;
-    assert_eq!(
-        personas
-            .home_of("miyu")
-            .map(|account| account.as_str().to_string()),
-        Some("admin".to_string())
-    );
-    assert_eq!(personas.home_of("engineer"), None);
+    assert!(personas.at_home("miyu"));
+    assert!(!personas.at_home("engineer"));
 }
 
 /// `miyu check` 用的查法（施工 8-30）：每一层各查各的，上面一层盖住了照样报；只查一份文件的照它在哪认。
@@ -335,7 +329,7 @@ fn nothing_ships_with_the_core() {
         exe: None,
     };
     let root = DataRoot::locate(&env).unwrap();
-    let personas = Personas::new(&resources, &root, &AccountId::parse("admin").unwrap());
+    let personas = Personas::new(&resources, &root);
     assert!(personas.ids().is_empty(), "{:?}", personas.ids());
     for gone in ["engineer", "none"] {
         assert!(
@@ -374,12 +368,9 @@ fn a_package_persona_sits_between_shipped_and_system() {
     assert_eq!(found.file.summary.unwrap().pick("en"), Some("Mine."));
     assert_eq!(found.texts.persona, "my cat\n");
     assert_eq!(found.persona_from, Some(Layer::Home));
-    assert_eq!(found.home, Some(AccountId::parse("admin").unwrap()));
+    assert!(found.layers.contains(&Layer::Home));
     assert_eq!(places.personas.ids(), ["cat"]);
-    assert!(
-        places.personas.home_of("cat").is_some(),
-        "家目录有改动的照旧归管理员"
-    );
+    assert!(places.personas.at_home("cat"), "你那一层有改动的算有");
     let only = Places::new();
     only.write(
         Layer::Package,
@@ -387,11 +378,7 @@ fn a_package_persona_sits_between_shipped_and_system() {
         "prompts/persona.md",
         "package persona\n",
     );
-    assert_eq!(
-        only.personas.home_of("cat"),
-        None,
-        "只在包里的不归谁的家目录"
-    );
+    assert!(!only.personas.at_home("cat"), "只在包里的不算");
     assert_eq!(only.personas.find("cat").unwrap().layers, [Layer::Package]);
 }
 

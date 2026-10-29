@@ -9,7 +9,7 @@ use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_session::testkit::Script;
 use miyu_tool::Catalog;
 
-use super::{Home, TOKEN, alice, providers};
+use super::{Home, TOKEN, providers};
 
 /// 假服务器回的一个向量 `[3, 4, 0, 0]`，报了 5 个输入 token。
 pub fn vector() -> Reply {
@@ -51,7 +51,6 @@ pub fn remote_with(
     .concat();
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         items,
         miyu_endpoint::config::Environment::of(&[("EMB_KEY", "sk-emb")]),

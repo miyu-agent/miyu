@@ -16,7 +16,7 @@ const C: &str = "01a0cf12-7e40-7d1b-8c3a-51d49f03b21c";
 /// 内核做的 `by`。
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 /// 人做的 `by`。
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 
 /// 07:00 过 `second` 秒。
 fn at(second: u64) -> Timestamp {

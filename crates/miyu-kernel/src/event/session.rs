@@ -4,14 +4,12 @@ use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};
 
-use crate::id::{AccountId, ContentHash, Seq, SessionId, TurnId, VenueId};
+use crate::id::{ContentHash, Seq, SessionId, TurnId, VenueId};
 use crate::text_enum::text_enum;
 
 /// `session.created`：会话创建。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionCreated {
-    /// 会话的属主。默认只有属主能读、改；群的会话，属主是管理员（`06-多用户与身份.md` 第三节）。
-    pub owner: AccountId,
     /// 会话所在的场所，例如 `local`、一个群 `qq:group:123456`。
     pub venue: VenueId,
     /// 策略快照（03 E5）。

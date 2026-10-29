@@ -24,10 +24,9 @@ pub(super) async fn check(
     hash: &ContentHash,
 ) -> Result<(), Refusal> {
     let id = SessionId::parse(session).map_err(|_| Refusal::BAD_PARAMS)?;
-    core.sessions
-        .owner(core, &id)
-        .await
-        .ok_or(Refusal::UNKNOWN_BLOB)?;
+    if !core.sessions.exists(core, &id).await {
+        return Err(Refusal::UNKNOWN_BLOB);
+    }
     let (venue, confined) = crate::sessions::placed(core, &id)
         .await
         .ok_or(Refusal::UNKNOWN_BLOB)?;

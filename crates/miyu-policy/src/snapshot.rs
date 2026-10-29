@@ -8,7 +8,7 @@ use miyu_assemble::{DefaultAssembler, Stable, Texts};
 use miyu_drivers::DriverTexts;
 use miyu_kernel::estimate::Flat;
 use miyu_kernel::event::{Permission, SessionCreated};
-use miyu_kernel::id::{AccountId, ContentHash, VenueId};
+use miyu_kernel::id::{ContentHash, VenueId};
 use miyu_kernel::session::{Compaction, Notes, Policy};
 use miyu_kernel::tool::{ToolTextSources, ToolTexts};
 use serde::{Deserialize, Serialize};
@@ -214,16 +214,10 @@ impl Snapshot {
         serde_json::from_slice(bytes).map_err(|error| SnapshotError(error.to_string()))
     }
 
-    /// 造会话的那一条：属主、场所、这份快照的哈希、开始时的权限（`03-事件模型.md` 第三节）。工作目录、模型（施工 8-8）由
+    /// 造会话的那一条：场所、这份快照的哈希、开始时的权限（`03-事件模型.md` 第三节）。工作目录、模型（施工 8-8）由
     /// 造会话的一方填上。造出来的是主会话：父会话、第几层没有（子会话随 M7，`agents.md`）。
-    pub fn session_created(
-        &self,
-        owner: AccountId,
-        venue: VenueId,
-        permission: Permission,
-    ) -> SessionCreated {
+    pub fn session_created(&self, venue: VenueId, permission: Permission) -> SessionCreated {
         SessionCreated {
-            owner,
             venue,
             policy: self.hash(),
             permission,

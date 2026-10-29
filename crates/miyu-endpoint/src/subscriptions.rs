@@ -39,7 +39,7 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{AccountId, SessionId};
+use miyu_kernel::id::SessionId;
 use miyu_session::{Ended, Pushed, Subscription};
 
 use crate::Core;
@@ -139,7 +139,7 @@ impl Subscriptions {
     pub(crate) fn add(
         &mut self,
         core: &Arc<Core>,
-        (session, owner): (SessionId, AccountId),
+        session: SessionId,
         subscription: Subscription,
         backlog: Vec<Event>,
         out: mpsc::Sender<String>,
@@ -148,7 +148,7 @@ impl Subscriptions {
         let pushing = Arc::new(AtomicBool::new(true));
         let task = tokio::spawn(forward(
             Arc::clone(core),
-            (session.clone(), owner),
+            session.clone(),
             subscription,
             backlog,
             waiting,
@@ -211,7 +211,7 @@ impl Subscriptions {
     /// 时用的语言。
     pub(crate) fn add_config(
         &mut self,
-        (core, account): (&Arc<Core>, &miyu_kernel::id::AccountId),
+        core: &Arc<Core>,
         system: &'static str,
         out: &mpsc::Sender<String>,
     ) {
@@ -219,7 +219,7 @@ impl Subscriptions {
             return;
         }
         // 订的是这个连接的人那一份（施工 Y-2 下下中上）。
-        let pushes = core.mine(account).hub().subscribe();
+        let pushes = core.mine().hub().subscribe();
         self.config = Some(ConfigForwarder::start(
             Arc::clone(core),
             pushes,
@@ -237,14 +237,14 @@ impl Subscriptions {
     /// 的；交回订阅的回应 `{"sessions": […]}`，它经 [`Target::Sessions`] 交给新的转发任务写出去。
     pub(crate) async fn add_sessions(
         &mut self,
-        (core, account): (&Arc<Core>, &miyu_kernel::id::AccountId),
+        core: &Arc<Core>,
         out: &mpsc::Sender<String>,
     ) -> Result<serde_json::Value, crate::refusal::Refusal> {
         let pushes = core.listing.subscribe();
-        let snapshot = core.listing.snapshot(core, account).await?;
+        let snapshot = core.listing.snapshot(core).await?;
         self.sessions = Some(SessionsForwarder::start(
             pushes,
-            (snapshot.number, account.clone()),
+            snapshot.number,
             out.clone(),
         ));
         Ok(serde_json::json!({"sessions": snapshot.sessions}))
@@ -383,7 +383,7 @@ impl Drop for Subscriptions {
 /// 交回订阅。
 async fn forward(
     core: Arc<Core>,
-    (session, owner): (SessionId, AccountId),
+    session: SessionId,
     mut subscription: Subscription,
     backlog: Vec<Event>,
     mut replies: mpsc::UnboundedReceiver<String>,
@@ -391,14 +391,7 @@ async fn forward(
     pushing: Arc<AtomicBool>,
 ) -> Subscription {
     if replay(&session, backlog, &out).await {
-        relay(
-            &core,
-            (&session, &owner),
-            &mut subscription,
-            &mut replies,
-            &out,
-        )
-        .await;
+        relay(&core, &session, &mut subscription, &mut replies, &out).await;
     }
     pushing.store(false, Ordering::Release);
     while let Some(reply) = replies.recv().await {
@@ -426,7 +419,7 @@ async fn replay(session: &SessionId, backlog: Vec<Event>, out: &mpsc::Sender<Str
 /// 转发的主循环：交回来的时候，这个订阅不再推了（连接不要它了的，也交回来）。
 async fn relay(
     core: &Core,
-    whose: (&SessionId, &AccountId),
+    session: &SessionId,
     subscription: &mut Subscription,
     replies: &mut mpsc::UnboundedReceiver<String>,
     out: &mpsc::Sender<String>,
@@ -441,7 +434,7 @@ async fn relay(
                 // 先放已经到了的推送；放着放着掉了队，这条回应也照样放出去再停。
                 let mut alive = true;
                 while let Some(next) = subscription.try_next() {
-                    if !deliver(core, whose, next, out).await {
+                    if !deliver(core, session, next, out).await {
                         alive = false;
                         break;
                     }
@@ -451,7 +444,7 @@ async fn relay(
                 }
             }
             next = subscription.next() => {
-                if !deliver(core, whose, next, out).await {
+                if !deliver(core, session, next, out).await {
                     return;
                 }
             }
@@ -463,13 +456,13 @@ async fn relay(
 /// `resync`。
 async fn deliver(
     core: &Core,
-    (session, owner): (&SessionId, &AccountId),
+    session: &SessionId,
     next: Result<Arc<Pushed>, Ended>,
     out: &mpsc::Sender<String>,
 ) -> bool {
     match next {
         Ok(pushed) => {
-            for line in lines(core, (session, owner), &pushed) {
+            for line in lines(core, session, &pushed) {
                 if out.send(line).await.is_err() {
                     return false;
                 }

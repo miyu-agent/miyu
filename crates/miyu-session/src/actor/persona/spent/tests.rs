@@ -12,7 +12,7 @@ use crate::SystemPart;
 
 const ONE: &str = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
 const TWO: &str = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
-const PERSON: &str = r#"{"kind":"person","account":"alice"}"#;
+const PERSON: &str = r#"{"kind":"person"}"#;
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 
 fn event(seq: u64, by: &str, kind: &str, body: &str) -> Event {
@@ -64,7 +64,7 @@ fn log() -> Vec<Event> {
             PERSON,
             "session.created",
             &format!(
-                r#"{{"owner":"alice","venue":"local","policy":"{ONE}","permission":{{"level":"workspace","read_only":false}}}}"#
+                r#"{{"venue":"local","policy":"{ONE}","permission":{{"level":"workspace","read_only":false}}}}"#
             ),
         ),
         event(2, KERNEL, "turn.started", "{}"),

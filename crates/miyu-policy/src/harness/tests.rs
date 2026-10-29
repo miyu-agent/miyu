@@ -10,7 +10,7 @@ use crate::test_support::engineer;
 /// Claude Code 开了第一轮的日志。
 fn history(by: &str) -> History {
     let lines = [
-        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#.to_string(),
+        r#"{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"kernel"},"body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}"#.to_string(),
         format!(
             r#"{{"seq":2,"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{by},"cause":"c1","body":{{"blocks":[{{"type":"text","text":"CI 修好了。"}}]}}}}"#
         ),
@@ -30,7 +30,7 @@ fn rendered(snapshot: &Snapshot, by: &str) -> String {
 }
 
 const CLAUDE: &str = r#"{"kind":"harness","name":"claude-code"}"#;
-const ALICE: &str = r#"{"kind":"person","account":"alice"}"#;
+const ALICE: &str = r#"{"kind":"person"}"#;
 
 #[test]
 fn the_tags_go_in_and_are_rendered() {

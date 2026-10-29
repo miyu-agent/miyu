@@ -133,7 +133,7 @@ fn a_session_created_without_titles_never_asks() {
     let (mut session, _) = Session::create(
         session_id(),
         id(0),
-        alice(),
+        person(),
         at(0),
         created,
         Policy {

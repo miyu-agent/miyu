@@ -67,7 +67,7 @@ fn a_fork_of_a_compacted_parent_loads_from_its_checkpoint() {
         child.clone(),
         &base,
         id(100),
-        alice(),
+        person(),
         at(30),
         created,
         policy(),

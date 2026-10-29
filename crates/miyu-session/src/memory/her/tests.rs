@@ -140,7 +140,6 @@ fn a_venue_name_counts_as_her_even_when_a_member_took_it() {
 /// 的那个，和人格的名字一起算；没带的不动，别的会话的不受影响。
 #[test]
 fn a_keeper_remembers_what_she_was_last_called_here() {
-    use miyu_kernel::id::AccountId;
     use miyu_store::env::{Env, Platform};
     use miyu_store::root::DataRoot;
 
@@ -159,12 +158,11 @@ fn a_keeper_remembers_what_she_was_last_called_here() {
     let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
     root.prepare().expect("临时目录里建得了骨架");
     let memory = Memory::new(&root, None);
-    let account = AccountId::parse("alice").expect("合写法");
-    let room = Room::persona(&account, "engineer");
+    let room = Room::persona("engineer");
     memory.name_her(&room, Some(&Label::One("Miyu".into())));
     let listener = || {
         Listener::Owner(miyu_kernel::origin::By::Person(
-            miyu_kernel::origin::Person::new(account.clone()),
+            miyu_kernel::origin::Person::default(),
         ))
     };
     let here = Keeper::new(&memory, room.clone(), listener());

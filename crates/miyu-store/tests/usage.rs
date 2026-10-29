@@ -4,7 +4,6 @@
 
 use std::fs;
 
-use miyu_kernel::id::AccountId;
 use miyu_store::journal;
 use miyu_store::log::SessionLog;
 use miyu_store::sqlite::Opened;
@@ -275,15 +274,15 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
         cost: None,
         venue: None,
     };
-    index.one_shot(&admin(), at(30), &call).unwrap();
-    index.one_shot(&admin(), at(31), &call).unwrap();
+    index.one_shot(at(30), &call).unwrap();
+    index.one_shot(at(31), &call).unwrap();
     // 带了会话的旁路请求挂上那个会话的场所（施工 UC-2）：照场所、用途分得出这个群的判官。
     let judged = OneShotCall {
         purpose: "judge".to_string(),
         venue: Some("qq:group:42".to_string()),
         ..call.clone()
     };
-    index.one_shot(&admin(), at(32), &judged).unwrap();
+    index.one_shot(at(32), &judged).unwrap();
     let journal = fs::read_to_string(root.path().join(journal::FILE)).unwrap();
     assert_eq!(journal.lines().count(), 3);
     assert!(journal.contains(r#""kind":"usage.oneshot""#), "{journal}");
@@ -324,12 +323,6 @@ fn one_shot_calls_go_to_the_account_journal_and_survive_a_rebuild() {
     let mut again = by_venue(&rebuilt);
     again.sort();
     assert_eq!(again, want, "场所也照账号日志读回来");
-    let other = AccountId::parse("bob").unwrap();
-    assert!(
-        totals(&rebuilt, &query(&[Group::Account]))
-            .iter()
-            .all(|total| total.keys[0].as_deref() != Some(other.as_str()))
-    );
 }
 
 #[test]

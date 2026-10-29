@@ -19,7 +19,7 @@ pub(crate) fn forget(core: &Core, keys: &[String]) {
     if keys.is_empty() {
         return;
     }
-    let by = By::Person(Person::new(core.config().places.account.clone()));
+    let by = By::Person(Person::default());
     for layer in [Layer::System] {
         let mut config = core.config();
         for _ in 0..TRIES {

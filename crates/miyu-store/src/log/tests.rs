@@ -12,7 +12,7 @@ use crate::test_support::Scratch;
 /// 第 `n` 号事件：alice 说的第 `n` 句。日志这一层不管事件之间的规矩，只管序号和能不能读。
 fn said(n: u64) -> Event {
     Event::from_line(&format!(
-        r#"{{"seq":{n},"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{{"kind":"person","account":"alice"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句"}}]}}}}"#
+        r#"{{"seq":{n},"at":"2026-09-25T07:00:00.000Z","kind":"message.user","by":{{"kind":"person"}},"body":{{"blocks":[{{"type":"text","text":"第 {n} 句"}}]}}}}"#
     ))
     .unwrap()
 }

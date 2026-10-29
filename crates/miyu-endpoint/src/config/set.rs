@@ -130,7 +130,7 @@ pub(crate) fn set(
     cause: &CommandId,
     params: SetParams,
 ) -> Result<Json, Refusal> {
-    let by = By::Person(Person::new(core.admin.clone()));
+    let by = By::Person(Person::default());
     set_in(core, peer, cause, params, by)
 }
 

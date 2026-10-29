@@ -82,7 +82,7 @@ async fn clear_and_its_alias_clear_the_context_and_are_noted() {
         [(
             "clear".into(),
             "/clear".into(),
-            By::Person(miyu_kernel::origin::Person::new(alice())),
+            By::Person(miyu_kernel::origin::Person::default()),
             "k1/ran".into()
         )]
     );

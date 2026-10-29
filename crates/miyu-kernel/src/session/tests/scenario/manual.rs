@@ -162,7 +162,7 @@ fn asked_to_compact_she_does_it_in_a_turn_of_its_own() {
     assert_eq!(
         story(&stage)[12..16],
         [
-            "13 message.user alice",
+            "13 message.user person",
             "14 turn.started kernel t14",
             "15 context.injected:env kernel t14",
             "16 context.injected:permission kernel t14",
@@ -182,7 +182,7 @@ fn what_is_said_during_the_compaction_opens_the_next_turn() {
         story(&stage)[8..],
         [
             "9 turn.started kernel t9",
-            "10 message.user alice t9",
+            "10 message.user person t9",
             "11 model.called:ok kernel t9",
             "12 context.compacted kernel t9",
             "13 turn.ended:completed kernel t9",
@@ -312,7 +312,7 @@ fn an_interrupted_manual_compaction_writes_no_checkpoint() {
         [
             "9 turn.started kernel t9",
             "10 model.called:interrupted kernel t9",
-            "11 turn.ended:interrupted alice t9",
+            "11 turn.ended:interrupted person t9",
         ]
     );
     assert!(compactions(&stage).is_empty());
@@ -330,7 +330,7 @@ fn after_a_restart_she_does_not_go_on_compacting() {
         story(&stage)[8..],
         [
             "9 turn.started kernel t9",
-            "10 message.user alice t9",
+            "10 message.user person t9",
             "11 model.called:interrupted kernel t9",
             "12 turn.ended:restarted kernel t9",
         ],
@@ -452,7 +452,7 @@ fn a_fork_after_a_compaction_starts_from_the_parent_checkpoint() {
         child_id.clone(),
         &base,
         id(100),
-        alice(),
+        person(),
         at(30),
         created,
         policy(),

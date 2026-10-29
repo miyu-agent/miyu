@@ -72,7 +72,6 @@ fn source(home: &Home, id: &str, program: &str) -> std::path::PathBuf {
 fn served(home: &Home) -> Arc<Core> {
     let config = miyu_endpoint::config::Config::load(
         &home.root,
-        &alice(),
         None,
         core_items(),
         miyu_endpoint::config::Environment::of(&[]),

@@ -120,7 +120,6 @@ impl MergeJob {
                             let keeper = self.keeper.clone();
                             let using = Using {
                                 config: Arc::clone(&self.config),
-                                owner: self.owner.clone(),
                             };
                             blocking(move || keeper.fill(&using)).await;
                         }
@@ -173,7 +172,6 @@ impl MergeJob {
                 blocks: vec![Block::Text(Text { text })],
             }],
             max_tokens: None,
-            owner: self.owner.clone(),
             venue: None,
         };
         let mut tell = self.watcher(asked);

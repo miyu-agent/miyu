@@ -46,7 +46,6 @@ async fn world(table: Option<&str>) -> (Home, Keeper, Using) {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     keeper.fill(&using);

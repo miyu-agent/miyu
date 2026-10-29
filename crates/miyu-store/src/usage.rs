@@ -45,26 +45,25 @@ pub type UsageError = DbError;
 /// 库的文件名，在数据根的 `state/` 下。
 pub const FILE: &str = "usage.db";
 
-/// 账号日志里一次性调用那一条的种类。
+/// 日志里一次性调用那一条的种类。
 pub const ONESHOT: &str = "usage.oneshot";
 
-/// 账号日志里删掉的会话那一条的种类。
+/// 日志里删掉的会话那一条的种类。
 pub const PURGED: &str = "usage.purged";
 
-/// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。
-const VERSION: i64 = 1;
+/// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 SU-6 上去掉 `owner`，是 2。
+const VERSION: i64 = 2;
 
 /// 建表。时刻存成毫秒；金额存成双精度，币种另一格。
 ///
-/// - `spent.source`：会话的请求是会话编号，一次性调用是 `journal:<账号>`，删掉的会话的合计是 `purged:<会话编号>`；
-///   `seq` 是 `model.called` 的序号、账号日志里那一条的序号、合计的第几格。
-/// - `marks.source`：会话编号，或者 `journal:<账号>`；会话的 `segment`、`bytes`、`next` 是 [`crate::log::Mark`]，账号日志的
+/// - `spent.source`：会话的请求是会话编号，一次性调用是 `journal`，删掉的会话的合计是 `purged:<会话编号>`；
+///   `seq` 是 `model.called` 的序号、日志里那一条的序号、合计的第几格。
+/// - `marks.source`：会话编号，或者 `journal`；会话的 `segment`、`bytes`、`next` 是 [`crate::log::Mark`]，日志的
 ///   `bytes` 是读到第几个字节，`segment` 是 0。
 const SCHEMA: &str = "CREATE TABLE spent (
     source TEXT NOT NULL,
     seq INTEGER NOT NULL,
     at INTEGER NOT NULL,
-    owner TEXT NOT NULL,
     venue TEXT,
     session TEXT,
     parent TEXT,
@@ -85,7 +84,6 @@ const SCHEMA: &str = "CREATE TABLE spent (
 CREATE INDEX spent_session ON spent (session);
 CREATE TABLE marks (
     source TEXT PRIMARY KEY NOT NULL,
-    owner TEXT NOT NULL,
     venue TEXT,
     parent TEXT,
     segment INTEGER NOT NULL,
@@ -97,7 +95,7 @@ CREATE TABLE marks (
 /// 用量汇总：一个核心一份。
 #[derive(Debug)]
 pub struct UsageIndex {
-    /// 数据根：账号日志、会话的目录照它找。
+    /// 数据根：日志、会话的目录照它找。
     root: DataRoot,
     /// 库文件在哪。
     path: PathBuf,
@@ -191,10 +189,8 @@ impl UsageIndex {
     }
 }
 
-/// 账号 `owner` 的日志在 `marks`、一次性调用在 `spent` 里的 `source`。
-fn journal_source(owner: &str) -> String {
-    format!("journal:{owner}")
-}
+/// 日志 `journal.jsonl` 在 `marks`、一次性调用在 `spent` 里的 `source`。
+const JOURNAL: &str = "journal";
 
 /// 删掉的会话 `session` 的合计在 `spent` 里的 `source`。
 fn purged_source(session: &str) -> String {

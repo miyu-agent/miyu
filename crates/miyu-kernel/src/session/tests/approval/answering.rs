@@ -4,7 +4,7 @@ use super::super::*;
 use crate::event::Decision;
 use crate::id::CallId;
 
-/// 编号是 `n` 的命令：alice 回答 `call_id` 的确认。
+/// 编号是 `n` 的命令：主人回答 `call_id` 的确认。
 pub(in crate::session::tests) fn answer(
     n: u64,
     call_id: CallId,
@@ -23,7 +23,7 @@ pub(in crate::session::tests) fn answer_nested(
 ) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Answer {
             call_id,

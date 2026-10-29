@@ -109,7 +109,7 @@ fn forgetting_a_session_buries_it_first() {
     let root = root_in(&scratch);
     let indexes = RecallIndexes::new(&root);
     let session = SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").unwrap();
-    let room = Room::persona(&admin(), "engineer");
+    let room = Room::persona("engineer");
     let (index, _) = indexes.turns(&room);
     let source = session.to_string();
     index
@@ -123,7 +123,7 @@ fn forgetting_a_session_buries_it_first() {
             seq(3),
         )
         .unwrap();
-    indexes.forget_session(&admin(), &session).unwrap();
+    indexes.forget_session(&session).unwrap();
     assert!(index.keys().unwrap().is_empty());
     assert!(index.is_buried(&format!("{source}/")).unwrap());
     index

@@ -6,25 +6,15 @@ use std::time::Duration;
 use tokio::sync::{broadcast, mpsc};
 
 use super::SessionsForwarder;
-use miyu_kernel::id::AccountId;
 
 use crate::listing::Change;
 
+/// 号是 `number` 的一条推送。
 fn change(number: u64) -> Arc<Change> {
-    change_of(number, "alice")
-}
-
-/// 属主是 `owner` 的一条推送。
-fn change_of(number: u64, owner: &str) -> Arc<Change> {
     Arc::new(Change {
         number,
-        owner: AccountId::parse(owner).expect("合写法"),
         line: format!("push {number}"),
     })
-}
-
-fn alice() -> AccountId {
-    AccountId::parse("alice").expect("合写法")
 }
 
 async fn lines(out: &mut mpsc::Receiver<String>, n: usize) -> Vec<String> {
@@ -43,7 +33,7 @@ async fn lines(out: &mut mpsc::Receiver<String>, n: usize) -> Vec<String> {
 async fn the_reply_goes_first_and_older_pushes_are_dropped() {
     let (pushes, receiver) = broadcast::channel(16);
     let (tx, mut out) = mpsc::channel(16);
-    let mut forwarder = SessionsForwarder::start(receiver, (2, alice()), tx);
+    let mut forwarder = SessionsForwarder::start(receiver, 2, tx);
     // 回应之前就到了的推送：号不大于 2 的已经在列表里了。
     for number in 1..=4 {
         drop(pushes.send(change(number)));
@@ -61,7 +51,7 @@ async fn the_reply_goes_first_and_older_pushes_are_dropped() {
 async fn falling_behind_sends_resync_and_stops() {
     let (pushes, receiver) = broadcast::channel(1);
     let (tx, mut out) = mpsc::channel(16);
-    let mut forwarder = SessionsForwarder::start(receiver, (0, alice()), tx);
+    let mut forwarder = SessionsForwarder::start(receiver, 0, tx);
     for number in 1..=3 {
         drop(pushes.send(change(number)));
     }
@@ -74,16 +64,4 @@ async fn falling_behind_sends_resync_and_stops() {
     drop(pushes.send(change(4)));
     let next = tokio::time::timeout(Duration::from_millis(200), out.recv()).await;
     assert!(matches!(next, Ok(None) | Err(_)), "停了：{next:?}");
-}
-
-/// 别人的会话的推送不转（施工 Y-12 上）：只转属主是这个连接的账号的。
-#[tokio::test]
-async fn only_the_owners_pushes_go_out() {
-    let (pushes, receiver) = broadcast::channel(16);
-    let (tx, mut out) = mpsc::channel(16);
-    let mut forwarder = SessionsForwarder::start(receiver, (0, alice()), tx);
-    drop(pushes.send(change_of(1, "bob")));
-    drop(pushes.send(change_of(2, "alice")));
-    forwarder.reply("reply".to_string()).expect("头一次交");
-    assert_eq!(lines(&mut out, 2).await, ["reply", "push 2"]);
 }

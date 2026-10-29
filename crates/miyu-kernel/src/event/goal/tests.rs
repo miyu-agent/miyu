@@ -13,7 +13,7 @@ fn round_trip(line: &str) -> Event {
 #[test]
 fn goal_events_read_and_write_as_drawn() {
     let set = round_trip(
-        r#"{"seq":4,"at":"2026-10-12T01:00:00.000Z","kind":"goal.set","by":{"kind":"person","account":"alice"},"cause":"cmd-1","body":{"text":"把测试修绿","limit":20}}"#,
+        r#"{"seq":4,"at":"2026-10-12T01:00:00.000Z","kind":"goal.set","by":{"kind":"person"},"cause":"cmd-1","body":{"text":"把测试修绿","limit":20}}"#,
     );
     let Body::GoalSet(set) = set.body else {
         panic!("是 goal.set");
@@ -23,13 +23,13 @@ fn goal_events_read_and_write_as_drawn() {
         ("把测试修绿", Some(20))
     );
     round_trip(
-        r#"{"seq":5,"at":"2026-10-12T01:00:01.000Z","kind":"goal.changed","by":{"kind":"person","account":"alice"},"cause":"cmd-2","body":{"text":"把测试和文档都修好"}}"#,
+        r#"{"seq":5,"at":"2026-10-12T01:00:01.000Z","kind":"goal.changed","by":{"kind":"person"},"cause":"cmd-2","body":{"text":"把测试和文档都修好"}}"#,
     );
     round_trip(
-        r#"{"seq":6,"at":"2026-10-12T01:00:02.000Z","kind":"goal.paused","by":{"kind":"person","account":"alice"},"cause":"cmd-3","body":{}}"#,
+        r#"{"seq":6,"at":"2026-10-12T01:00:02.000Z","kind":"goal.paused","by":{"kind":"person"},"cause":"cmd-3","body":{}}"#,
     );
     round_trip(
-        r#"{"seq":7,"at":"2026-10-12T01:00:03.000Z","kind":"goal.resumed","by":{"kind":"person","account":"alice"},"cause":"cmd-4","body":{}}"#,
+        r#"{"seq":7,"at":"2026-10-12T01:00:03.000Z","kind":"goal.resumed","by":{"kind":"person"},"cause":"cmd-4","body":{}}"#,
     );
     let ended = round_trip(
         r#"{"seq":8,"at":"2026-10-12T01:00:04.000Z","kind":"goal.ended","turn":7,"by":{"kind":"tool","call_id":"call_7_1"},"body":{"outcome":"blocked","reason":"要人给 key"}}"#,

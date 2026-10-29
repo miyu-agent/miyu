@@ -157,7 +157,7 @@ fn an_old_snapshot_without_the_tags_renders_it_like_the_persons_words() {
     };
     assert_eq!(
         render(&from("claude-code")),
-        render(r#"{"kind":"person","account":"alice"}"#),
+        render(r#"{"kind":"person"}"#),
         "没有标签：一个字节都不改"
     );
 }

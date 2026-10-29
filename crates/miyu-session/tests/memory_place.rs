@@ -6,7 +6,7 @@
 use miyu_http::testkit::Server;
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, VenueMessage};
-use miyu_kernel::id::{AccountId, ExternalId, VenueId};
+use miyu_kernel::id::{ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};
 use miyu_kernel::request::{Message, Request};
 use miyu_kernel::session::Command;
@@ -20,11 +20,6 @@ use crate::support::extracting::*;
 use crate::support::meaning::{catalog, persona};
 use crate::support::*;
 
-/// 群会话的记忆归的那个账号（同 `memory_listener.rs`）。
-fn admin() -> AccountId {
-    AccountId::parse("admin").expect("合写法")
-}
-
 fn group() -> VenueId {
     VenueId::parse("qq:group:7").expect("合写法")
 }
@@ -34,7 +29,7 @@ fn member() -> By {
     By::External(External {
         venue: group(),
         id: ExternalId::parse("qq:20017").expect("合写法"),
-        account: None,
+        owner: false,
         role: Some(Role::Member),
     })
 }
@@ -92,7 +87,6 @@ async fn extracted_memories_keep_the_group_name_of_their_turn() {
     let lines = Lines {
         venue: group(),
         group: true,
-        memory_account: admin(),
         ..Lines::default()
     };
     let handle = home
@@ -113,8 +107,8 @@ async fn extracted_memories_keep_the_group_name_of_their_turn() {
     requested(&server, 1).await;
     let owner = Keeper::new(
         &home.memory,
-        Room::persona(&admin(), "engineer"),
-        Listener::Owner(By::Person(Person::new(admin()))),
+        Room::persona("engineer"),
+        Listener::Owner(By::Person(Person::default())),
     );
     assert_eq!(
         wait_for(&owner, 2).await,

@@ -46,18 +46,13 @@ fn where_a_session_came_from_is_kept_with_its_source() {
     let scratch = Scratch::new("recall-origins");
     let (index, _) = RecallIndex::open(&place(&scratch));
     assert!(index.origins().expect("读得了").is_empty());
-    let origin = |owner: &str, main: bool| Origin {
-        owner: owner.into(),
-        main,
-    };
-    index.origin("s1", &origin("alice", true)).expect("写得进");
-    index.origin("s2", &origin("im", true)).expect("写得进");
-    index
-        .origin("s2", &origin("im", false))
-        .expect("再记换成新的");
+    let origin = |main: bool| Origin { main };
+    index.origin("s1", &origin(true)).expect("写得进");
+    index.origin("s2", &origin(true)).expect("写得进");
+    index.origin("s2", &origin(false)).expect("再记换成新的");
     let origins = index.origins().expect("读得了");
-    assert_eq!(origins.get("s1"), Some(&origin("alice", true)));
-    assert_eq!(origins.get("s2"), Some(&origin("im", false)));
+    assert_eq!(origins.get("s1"), Some(&origin(true)));
+    assert_eq!(origins.get("s2"), Some(&origin(false)));
     assert_eq!(origins.len(), 2);
 
     index.forget("s1").expect("拿得掉");

@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::TypedCommand;
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::Command;
 use miyu_kernel::template::Template;
@@ -29,8 +29,8 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 /// 账号 `owner` 能点名用的技能（`user-invocable` 不是 `false` 的），照名字排。
-pub(super) async fn found(core: &Core, owner: &AccountId) -> Vec<Skill> {
-    let (packages, root) = (core.packages_of(owner), core.root.clone());
+pub(super) async fn found(core: &Core) -> Vec<Skill> {
+    let (packages, root) = (core.packages_of(), core.root.clone());
     let external = crate::skills::external(core);
     tokio::task::spawn_blocking(move || miyu_store::skills::find(&packages, &root, &external).0)
         .await
@@ -41,8 +41,8 @@ pub(super) async fn found(core: &Core, owner: &AccountId) -> Vec<Skill> {
 }
 
 /// 名字是 `name`、能点名用的那一个技能；没有的没有。
-pub(super) async fn named(core: &Core, owner: &AccountId, name: &str) -> Option<Skill> {
-    found(core, owner)
+pub(super) async fn named(core: &Core, name: &str) -> Option<Skill> {
+    found(core)
         .await
         .into_iter()
         .find(|skill| skill.head.name == name)

@@ -65,14 +65,14 @@ use crate::time::UtcOffset;
 use crate::tool::{Access, ToolRule, ToolTextSources, ToolTexts};
 use listing::*;
 
-const CREATED: &str = r#"{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
+const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
 fn id(n: u64) -> CommandId {
     CommandId::parse(&format!("cmd-{n}")).unwrap()
 }
 
-fn alice() -> By {
-    serde_json::from_str(r#"{"kind":"person","account":"alice"}"#).unwrap()
+fn person() -> By {
+    serde_json::from_str(r#"{"kind":"person"}"#).unwrap()
 }
 
 /// 07:00 过 `second` 秒，UTC。东九区是 16:00 那一个小时。
@@ -88,7 +88,7 @@ fn seqs(numbers: &[u64]) -> Vec<Seq> {
     numbers.iter().map(|&n| seq(n)).collect()
 }
 
-/// 编号是 `n` 的命令：alice 发一条消息，内容是 `words`；`words` 是空的就一块内容都没有。
+/// 编号是 `n` 的命令：主人发一条消息，内容是 `words`；`words` 是空的就一块内容都没有。
 fn send(n: u64, words: &str) -> Input {
     message(n, words, false)
 }
@@ -98,21 +98,21 @@ fn urgent(n: u64, words: &str) -> Input {
     message(n, words, true)
 }
 
-/// 编号是 `n` 的命令：alice 打断正在进行的回合，排着队的接着发。
+/// 编号是 `n` 的命令：主人打断正在进行的回合，排着队的接着发。
 fn interrupt(n: u64) -> Input {
     stop_with(n, at(n % 60), Queued::Send)
 }
 
-/// 编号是 `n` 的命令：alice 打断正在进行的回合，排着队的退回来。
+/// 编号是 `n` 的命令：主人打断正在进行的回合，排着队的退回来。
 fn take_back(n: u64) -> Input {
     stop_with(n, at(n % 60), Queued::Return)
 }
 
-/// 编号是 `n` 的命令：alice 不打断、退回排着的 `message`（不写的是最新的一条，施工 Q-W）。
+/// 编号是 `n` 的命令：主人不打断、退回排着的 `message`（不写的是最新的一条，施工 Q-W）。
 fn withdraw(n: u64, message: Option<u64>) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Withdraw {
             message: message.map(seq),
@@ -120,11 +120,11 @@ fn withdraw(n: u64, message: Option<u64>) -> Input {
     })
 }
 
-/// alice 在 `at` 打断，排着队的照 `queued` 办。
+/// 主人在 `at` 打断，排着队的照 `queued` 办。
 fn stop_with(n: u64, at: Timestamp, queued: Queued) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at,
         command: Command::Interrupt { queued },
     })
@@ -140,7 +140,7 @@ fn message(n: u64, words: &str, urgent: bool) -> Input {
     };
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::Send {
             blocks,
@@ -321,7 +321,7 @@ fn session_with(policy: Policy) -> Session {
     let (mut session, _) = Session::create(
         session_id(),
         id(0),
-        alice(),
+        person(),
         at(0),
         created,
         policy,
@@ -365,7 +365,7 @@ fn creating_a_session_appends_session_created_and_replies_once_stored() {
     let (mut session, actions) = Session::create(
         session_id(),
         id(0),
-        alice(),
+        person(),
         at(0),
         created,
         policy(),
@@ -398,7 +398,7 @@ fn a_message_is_appended_and_answered_once_stored() {
     let message = &events[0];
     assert_eq!(message.seq, seq(2));
     assert_eq!(message.at, at(1));
-    assert_eq!(message.by, alice());
+    assert_eq!(message.by, person());
     assert_eq!(message.cause, Some(id(1)));
     assert_eq!(message.turn, None);
     assert!(matches!(&message.body, Body::MessageUser(message) if message.blocks.len() == 1));

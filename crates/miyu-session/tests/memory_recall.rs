@@ -60,7 +60,6 @@ async fn remember(home: &Home, short: usize, long: usize) {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
     Keeper::new(&home.memory, persona(), Listener::Owner(alice())).fill(&using);
     for n in 1..=short + long {
@@ -210,7 +209,6 @@ async fn recalled_unfilled() -> usize {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     };
     let vectors = home.memory.vectors().expect("接上了").clone();
     assert!(vectors.query(&using, ASKED).await.is_some(), "算得出");

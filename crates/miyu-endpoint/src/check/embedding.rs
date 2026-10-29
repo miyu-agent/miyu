@@ -19,11 +19,7 @@ pub(super) async fn embedding(core: &Core) -> Option<Value> {
         Ok(model) => model,
         Err(why) => return Some(json!({"model": null, "why": why})),
     };
-    let (memory, knowledge, admin) = (
-        Arc::clone(&core.memory),
-        Arc::clone(&core.knowledge),
-        core.admin.clone(),
-    );
+    let (memory, knowledge) = (Arc::clone(&core.memory), Arc::clone(&core.knowledge));
     let counted = model.clone();
     let counts = tokio::task::spawn_blocking(move || {
         let count = |index: &RecallIndex| index.coverage(&counted).ok();
@@ -31,7 +27,7 @@ pub(super) async fn embedding(core: &Core) -> Option<Value> {
             personas
                 .into_iter()
                 .filter_map(|persona| {
-                    let (have, total) = open(&Room::persona(&admin, &persona))?;
+                    let (have, total) = open(&Room::persona(&persona))?;
                     Some(json!({"persona": persona, "have": have, "total": total}))
                 })
                 .collect::<Vec<Value>>()
@@ -47,7 +43,7 @@ pub(super) async fn embedding(core: &Core) -> Option<Value> {
             .unwrap_or_default()
             .into_iter()
             .filter_map(|id| {
-                let (have, total) = count(&knowledge.index_of(&admin, &id))?;
+                let (have, total) = count(&knowledge.index_of(&id))?;
                 let name = knowledge
                     .title(&id)
                     .map_or_else(|_| id.clone(), |(name, _)| name);

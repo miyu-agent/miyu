@@ -9,8 +9,6 @@ use tokio::sync::broadcast::{self, error::RecvError};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
-use miyu_kernel::id::AccountId;
-
 use crate::listing::Change;
 
 /// 会话列表的订阅的转发任务。
@@ -26,11 +24,11 @@ impl SessionsForwarder {
     /// 起一个：先等订阅的回应、写出去，再从 `pushes` 转号大于 `after`、属主是 `account` 的，写进 `out`。
     pub(super) fn start(
         pushes: broadcast::Receiver<Arc<Change>>,
-        (after, account): (u64, AccountId),
+        after: u64,
         out: mpsc::Sender<String>,
     ) -> SessionsForwarder {
         let (reply, answer) = oneshot::channel();
-        let task = tokio::spawn(forward(pushes, (after, account), answer, out));
+        let task = tokio::spawn(forward(pushes, after, answer, out));
         SessionsForwarder {
             reply: Some(reply),
             task,
@@ -55,7 +53,7 @@ impl Drop for SessionsForwarder {
 /// 转发：回应先写，再照先后写推送；掉了队推 `resync` 停下。
 async fn forward(
     mut pushes: broadcast::Receiver<Arc<Change>>,
-    (after, account): (u64, AccountId),
+    after: u64,
     answer: oneshot::Receiver<String>,
     out: mpsc::Sender<String>,
 ) {
@@ -67,7 +65,7 @@ async fn forward(
     }
     loop {
         match pushes.recv().await {
-            Ok(change) if change.number <= after || change.owner != account => {}
+            Ok(change) if change.number <= after => {}
             Ok(change) => {
                 if out.send(change.line.clone()).await.is_err() {
                     break;

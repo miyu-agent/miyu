@@ -4,17 +4,13 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use miyu_kernel::id::{AccountId, CommandId};
+use miyu_kernel::id::CommandId;
 use miyu_session::testkit::{SAMPLE_PERSONA, Script, install_sample_persona};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
 use crate::Core;
 use crate::test_support::{TempDir, resources, temp_root};
-
-fn alice() -> AccountId {
-    AccountId::parse("alice").expect("合写法")
-}
 
 /// 机主是 alice 的核心，照 `script` 答；装了样本人格（主人家目录）、整理会话。交回数据根的目录（丢掉时删掉，放在前头：核心先丢）
 /// 和核心。
@@ -30,7 +26,6 @@ fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
         Arc::new(script.clone()),
         tools,
         None,
-        alice(),
         "token".to_string(),
     ));
     assert!(core.give_dream_sessions());
@@ -38,9 +33,9 @@ fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
 }
 
 /// 照账号 `who` 调一条 `memory.*`。
-async fn call(core: &Arc<Core>, who: &AccountId, id: &str, method: &str, params: Value) -> Value {
+async fn call(core: &Arc<Core>, id: &str, method: &str, params: Value) -> Value {
     let id = CommandId::parse(id).expect("合写法");
-    super::super::call(core, who, method, &id, &params)
+    super::super::call(core, method, &id, &params)
         .await
         .unwrap_or_else(|refusal| panic!("{method} 办得了：{}", refusal.reason))
 }
@@ -51,7 +46,6 @@ async fn remembering_her_as_a_person_by_protocol_keeps_it_as_an_episode() {
     let (_dir, core) = core("self-person", &Script::new([]).once(Vec::<&str>::new()));
     call(
         &core,
-        &alice(),
         "p1",
         "memory.remember",
         json!({"persona": SAMPLE_PERSONA, "class": "person", "who": "software engineer", "text": "她英语不好"}),
@@ -59,7 +53,6 @@ async fn remembering_her_as_a_person_by_protocol_keeps_it_as_an_episode() {
     .await;
     let listed = call(
         &core,
-        &alice(),
         "p2",
         "memory.list",
         json!({"persona": SAMPLE_PERSONA}),

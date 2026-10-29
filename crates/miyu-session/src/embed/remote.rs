@@ -14,7 +14,6 @@ use std::time::{Duration, Instant};
 
 use miyu_config::secret::Reference;
 use miyu_kernel::event::Usage;
-use miyu_kernel::id::AccountId;
 use miyu_models::facts::facts;
 use miyu_models::price::Tariff;
 use miyu_models::provider::Provider;
@@ -46,8 +45,6 @@ pub(crate) struct Remote {
     pub(crate) data: Arc<ModelData>,
     /// 调的一方手里的配置：她的工具是这一轮冻结的，协议是这时的。
     pub(crate) config: TurnConfig,
-    /// 记在谁的账上。
-    pub(crate) owner: AccountId,
     /// 供应商编号。
     pub(crate) provider: String,
     /// 模型名。
@@ -156,9 +153,8 @@ impl Remote {
             cost: tariff.and_then(|tariff| tariff.cost(&usage)),
             venue: None,
         };
-        let owner = self.owner.clone();
         blocking(move || {
-            if let Err(error) = ledger.one_shot(&owner, wall_now(), &call) {
+            if let Err(error) = ledger.one_shot(wall_now(), &call) {
                 tracing::warn!(target: TARGET, purpose = PURPOSE, error = %error, "usage not indexed");
             }
         })

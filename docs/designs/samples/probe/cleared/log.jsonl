@@ -1,5 +1,5 @@
-{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person","account":"alice"},"cause":"cmd-0","body":{"owner":"alice","venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}
-{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"看看 src 目录"}]}}
+{"seq":1,"at":"2026-09-25T07:00:00.000Z","kind":"session.created","by":{"kind":"person"},"cause":"cmd-0","body":{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}}
+{"seq":2,"at":"2026-09-25T07:00:01.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-1","body":{"blocks":[{"type":"text","text":"看看 src 目录"}]}}
 {"seq":3,"at":"2026-09-25T07:00:01.000Z","kind":"turn.started","turn":3,"by":{"kind":"kernel"},"cause":"cmd-1","body":{"trigger":2,"cwd":"~/src/miyu"}}
 {"seq":4,"at":"2026-09-25T07:00:01.000Z","kind":"context.injected","turn":3,"by":{"kind":"kernel"},"cause":"cmd-1","body":{"kind":"env","text":"<env time=\"Fri 2026-09-25 16:00–16:10\" timezone=\"UTC+09:00\" cwd=\"~/src/miyu\"/>\n"}}
 {"seq":5,"at":"2026-09-25T07:00:01.000Z","kind":"context.injected","turn":3,"by":{"kind":"kernel"},"cause":"cmd-1","body":{"kind":"permission","text":"<permission level=\"workspace\"/>\n"}}
@@ -13,7 +13,7 @@
 {"seq":13,"at":"2026-09-25T07:02:18.000Z","kind":"turn.started","turn":13,"by":{"kind":"kernel"},"cause":"cmd-2","body":{"cwd":"~/src/miyu"}}
 {"seq":14,"at":"2026-09-25T07:02:18.000Z","kind":"context.compacted","turn":13,"by":{"kind":"kernel"},"cause":"cmd-2","body":{"upto":12,"summary":"","trigger":"clear"}}
 {"seq":15,"at":"2026-09-25T07:02:18.000Z","kind":"turn.ended","turn":13,"by":{"kind":"kernel"},"cause":"cmd-2","body":{"reason":"completed"}}
-{"seq":16,"at":"2026-09-25T07:02:19.000Z","kind":"message.user","by":{"kind":"person","account":"alice"},"cause":"cmd-3","body":{"blocks":[{"type":"text","text":"刚才我让你看了哪个目录？"}]}}
+{"seq":16,"at":"2026-09-25T07:02:19.000Z","kind":"message.user","by":{"kind":"person"},"cause":"cmd-3","body":{"blocks":[{"type":"text","text":"刚才我让你看了哪个目录？"}]}}
 {"seq":17,"at":"2026-09-25T07:02:19.000Z","kind":"turn.started","turn":17,"by":{"kind":"kernel"},"cause":"cmd-3","body":{"trigger":16,"cwd":"~/src/miyu"}}
 {"seq":18,"at":"2026-09-25T07:02:19.000Z","kind":"context.injected","turn":17,"by":{"kind":"kernel"},"cause":"cmd-3","body":{"kind":"env","text":"<env time=\"Fri 2026-09-25 16:00–16:10\" timezone=\"UTC+09:00\" cwd=\"~/src/miyu\"/>\n"}}
 {"seq":19,"at":"2026-09-25T07:02:19.000Z","kind":"context.injected","turn":17,"by":{"kind":"kernel"},"cause":"cmd-3","body":{"kind":"permission","text":"<permission level=\"workspace\"/>\n"}}

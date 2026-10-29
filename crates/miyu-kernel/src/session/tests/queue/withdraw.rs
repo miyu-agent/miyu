@@ -26,7 +26,7 @@ fn withdrawing_takes_back_the_latest_and_the_turn_goes_on() {
             events[0].cause.clone(),
             events[0].turn
         ),
-        (alice(), Some(id(5)), Some(turn3()))
+        (person(), Some(id(5)), Some(turn3()))
     );
     assert!(
         session.handle(stored(8)).contains(&accepted_reply(5, &[8])),

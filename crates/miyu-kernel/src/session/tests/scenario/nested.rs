@@ -321,7 +321,7 @@ fn an_interrupt_cancels_them_before_the_shell() {
     stage.interrupt(Queued::Send);
     let lines = story(&stage);
     assert_eq!(lines[7], "8 tool.nested kernel t3");
-    assert_eq!(lines[8], "9 tool.result:cancelled alice t3");
+    assert_eq!(lines[8], "9 tool.result:cancelled person t3");
     assert_eq!(settled(&stage), ["call_6_1#1 cancelled"]);
     assert_eq!(stage.nested_cancelled(), [nested("call_6_1#1")]);
 }

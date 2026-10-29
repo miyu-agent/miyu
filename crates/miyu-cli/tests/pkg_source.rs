@@ -61,7 +61,6 @@ fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
             .expect("写得进");
             let config = miyu_endpoint::config::Config::load(
                 root,
-                &crate::support::AccountIdOf::admin(),
                 None,
                 miyu_endpoint::settings::SourceSettings::ITEMS.to_vec(),
                 miyu_endpoint::config::Environment::of(&[]),

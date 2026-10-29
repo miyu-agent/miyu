@@ -6,7 +6,7 @@ use super::line;
 use crate::render::render;
 use crate::test_support::*;
 
-const OWNER: &str = r#"{"kind":"person","account":"alice","via":"qq:10001"}"#;
+const OWNER: &str = r#"{"kind":"person","via":"qq:10001"}"#;
 const IMAGE: &str = r#"{"type":"image","blob":"sha256:0000000000000000000000000000000000000000000000000000000000000000","media_type":"image/png","width":1,"height":1}"#;
 
 /// 主人在私聊里发一条：内容块照 `blocks`（JSON，逗号隔开），场所的格照 `venue`。

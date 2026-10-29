@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Effect};
-use miyu_kernel::id::{AccountId, CommandId, SessionId};
+use miyu_kernel::id::{CommandId, SessionId};
 use miyu_kernel::session::Command;
 use miyu_session::Pushed;
 use miyu_session::testkit::{Play, Script};
@@ -15,7 +15,7 @@ use miyu_store::log::read_events;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
 
-use super::super::{Opening, admin};
+use super::super::{Opening, person};
 use crate::Core;
 use crate::test_support::{resources, temp_root};
 
@@ -45,18 +45,15 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
         Play::Holds,
         Play::Holds,
     ]);
-    let admin_account = AccountId::parse("alice").expect("合写法");
     let core = Arc::new(Core::new(
         root.clone(),
         ResourceRoot::at(resources),
         Arc::new(script.clone()),
         tools,
         None,
-        admin_account.clone(),
         "token".to_string(),
     ));
     let opening = Opening {
-        owner: admin_account.clone(),
         attended: false,
         oneshot: false,
         model: None,
@@ -86,7 +83,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
     let parent = core.sessions.get(&core, &created.id).await.expect("在跑");
     parent
         .handle
-        .command(CommandId::parse("c2").unwrap(), admin(&core), say("派一个"))
+        .command(CommandId::parse("c2").unwrap(), person(), say("派一个"))
         .await
         .expect("会话在跑");
     for _ in 0..1000 {
@@ -126,7 +123,7 @@ async fn no_one_wakes_the_child_between_its_stopped_report_and_its_deletion() {
             match open.running.get(&child) {
                 Some(running) => running
                     .handle
-                    .command(CommandId::parse("w1").unwrap(), admin(&core), say("醒醒"))
+                    .command(CommandId::parse("w1").unwrap(), person(), say("醒醒"))
                     .await
                     .is_ok(),
                 None => false,

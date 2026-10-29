@@ -11,9 +11,9 @@ use std::time::Duration;
 
 use miyu_session::{EmbedSetup, Embedder, Turn, Unavailable, Using, Vectors};
 
+use crate::support::Home;
 use crate::support::meaning::model_data;
 use crate::support::package::tiny_package;
-use crate::support::{Home, alice_account};
 
 /// 不写 `models.embedding` 的照本机的（alice 的）。
 fn using(home: &Home) -> Using {
@@ -22,7 +22,6 @@ fn using(home: &Home) -> Using {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     }
 }
 

@@ -90,7 +90,7 @@ fn a_connection_is_only_ever_marked_down_and_only_before_hello() {
 
 #[test]
 fn only_the_local_reply_keeps_its_host() {
-    let shook = json!({"host": {"home": "/home/a"}, "account": "admin"});
+    let shook = json!({"host": {"home": "/home/a"}, "language": "zh"});
     let mut local = shook.clone();
     strip(&Reach::Local, &mut local);
     assert_eq!(local, shook);
@@ -101,5 +101,5 @@ fn only_the_local_reply_keeps_its_host() {
         },
         &mut remote,
     );
-    assert_eq!(remote, json!({"account": "admin"}));
+    assert_eq!(remote, json!({"language": "zh"}));
 }

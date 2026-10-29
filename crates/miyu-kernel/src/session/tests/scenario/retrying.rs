@@ -241,7 +241,7 @@ fn an_interrupt_while_waiting_ends_the_turn() {
         story(&stage),
         opening_then(&[
             "6 model.called:error kernel t3",
-            "7 turn.ended:interrupted alice t3",
+            "7 turn.ended:interrupted person t3",
         ])
     );
     // 扣着的到点了再送回来，也不理。
@@ -290,7 +290,7 @@ fn a_switch_while_waiting_is_told_before_asking_again() {
         story(&stage)[5..],
         [
             "6 model.called:error kernel t3",
-            "7 session.policy_changed alice t3",
+            "7 session.policy_changed person t3",
             "8 context.injected:permission kernel t3",
             "9 message.assistant model t3",
             "10 model.called:ok kernel t3",

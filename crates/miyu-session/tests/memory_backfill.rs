@@ -31,7 +31,7 @@ async fn said(home: &Home, mut lines: Lines, words: &str) -> Handle {
 }
 
 fn persona() -> Room {
-    Room::persona(&alice_account(), "engineer")
+    Room::persona("engineer")
 }
 
 /// 那一间的回合库里搜 `words`，交回键。

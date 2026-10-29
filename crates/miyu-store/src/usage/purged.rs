@@ -1,5 +1,5 @@
 //! 删掉的会话的用量（施工 8-15，`docs/designs/07-存储.md` 第六节「删掉的会话，用量照样留在统计里」，`docs/blueprint/models.md`
-//! 「怎么走」第九条第 5 条）：回收处清掉一个会话之前，照它的日志算好合计，往属主的 `journal.jsonl` 追加一条 `usage.purged`，
+//! 「怎么走」第九条第 5 条）：回收处清掉一个会话之前，照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`，
 //! 写进去了才删目录（`crate::trash::purge`）。
 //!
 //! - 按（供应商、模型、用途、UTC 的整点小时）分：四项用量、请求数、没金额的次数，金额照币种各加各的。按小时存，分天时整点
@@ -13,7 +13,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use miyu_kernel::event::{Event, Real, Usage};
-use miyu_kernel::id::{AccountId, SessionId, VenueId};
+use miyu_kernel::id::{SessionId, VenueId};
 use miyu_kernel::time::Timestamp;
 
 use super::spent::{NO_USAGE, Spent, Who};
@@ -22,13 +22,11 @@ use crate::log::{OpenError, read_segments};
 /// 一个小时，毫秒。
 const HOUR_MS: i64 = 3_600_000;
 
-/// `usage.purged` 的 `body`：会话、属主、场所、父会话，按小时分好的合计。
+/// `usage.purged` 的 `body`：会话、场所、父会话，按小时分好的合计。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Purged {
     /// 哪个会话。
     pub session: SessionId,
-    /// 属主。
-    pub owner: AccountId,
     /// 场所。
     pub venue: VenueId,
     /// 父会话；主会话没有。
@@ -133,7 +131,6 @@ pub fn summarize(session: &SessionId, events: &[Event]) -> Option<Purged> {
         .collect();
     Some(Purged {
         session: session.clone(),
-        owner: who.owner,
         venue: who.venue,
         parent: who.parent,
         spent,
@@ -178,7 +175,6 @@ impl Purged {
                 source: source.clone(),
                 seq: 0,
                 at: hour.hour.unix_millis(),
-                owner: self.owner.as_str().to_string(),
                 venue: Some(self.venue.as_str().to_string()),
                 session: Some(self.session.as_str().to_string()),
                 parent: self
@@ -214,7 +210,6 @@ impl Purged {
     /// 会话的属主、场所、父会话。
     pub(crate) fn who(&self) -> Who {
         Who {
-            owner: self.owner.clone(),
             venue: self.venue.clone(),
             parent: self.parent.clone(),
         }

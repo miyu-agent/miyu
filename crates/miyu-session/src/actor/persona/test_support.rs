@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use miyu_config::Values;
-use miyu_kernel::id::{AccountId, VenueId};
+use miyu_kernel::id::VenueId;
 use miyu_kernel::tool::Access;
 use miyu_policy::features::{Feature, Features};
 use miyu_policy::memory::MemoryScope;
@@ -97,9 +97,8 @@ pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
 pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, DataRoot, Refresh) {
     let (scratch, root) = scratch_root(name, "You are Miyu.\n");
     write_preset(&root, text);
-    let alice = AccountId::parse("alice").expect("账号合写法");
     let resources = ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"));
-    let personas = Personas::new(&resources, &root, &alice);
+    let personas = Personas::new(&resources, &root);
     let presets = Presets::new(&resources, &root);
     let found = presets.find("p").expect("找得到预设");
     let chosen = Chosen::new(found.id, found.file, &installed());

@@ -17,7 +17,7 @@ use crate::id::ModuleId;
 pub(super) fn revert(n: u64, turn: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(56),
         command: Command::Revert {
             turn: Some(TurnId::new(seq(turn))),
@@ -29,7 +29,7 @@ pub(super) fn revert(n: u64, turn: u64) -> Input {
 pub(super) fn revert_last(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(56),
         command: Command::Revert { turn: None },
     })
@@ -39,7 +39,7 @@ pub(super) fn revert_last(n: u64) -> Input {
 pub(super) fn unrevert(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(57),
         command: Command::Unrevert,
     })
@@ -106,7 +106,7 @@ fn undo_takes_the_last_turn_away() {
             events[0].cause.clone(),
             events[0].turn
         ),
-        (alice(), Some(id(3)), None)
+        (person(), Some(id(3)), None)
     );
     assert!(replies(&actions).is_empty(), "落了盘才回应");
     assert!(
@@ -209,7 +209,7 @@ fn redo_brings_the_turns_back_and_the_next_request_grows_on() {
     );
     assert_eq!(
         (events[0].by.clone(), events[0].cause.clone()),
-        (alice(), Some(id(4)))
+        (person(), Some(id(4)))
     );
     assert!(
         logged

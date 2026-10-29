@@ -18,11 +18,10 @@ pub fn core(home: &Home) -> Arc<Core> {
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let alice = miyu_kernel::id::AccountId::parse("alice").expect("账号合写法");
     let mut found = miyu_endpoint::packages::load(&resources, &home.root);
     let packaged = miyu_endpoint::packages::settle(&mut found, &core_items);
     let items = core_items.into_iter().chain(packaged).collect();
-    let config = Config::load(&home.root, &alice, None, items, Environment::of(&[]));
+    let config = Config::load(&home.root, None, items, Environment::of(&[]));
     Arc::new(
         home.core_full(&Script::new([]), miyu_tool::Catalog::default(), None, TOKEN)
             .with_config(config)

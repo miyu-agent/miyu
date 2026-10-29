@@ -43,7 +43,6 @@ fn using(home: &Home) -> Using {
             Default::default(),
             Arc::clone(&*home.configs.borrow()),
         )),
-        owner: alice_account(),
     }
 }
 

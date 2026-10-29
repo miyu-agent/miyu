@@ -72,22 +72,14 @@ pub(crate) fn call<'a>(
         "check" => {
             answer(move || async move { crate::check::check(core, peer, params(request)?).await })
         }
-        "persona.list" => {
-            answer(move || async move { personas::list(core, &core.admin, peer).await })
-        }
+        "persona.list" => answer(move || async move { personas::list(core, peer).await }),
         "persona.avatar" => answer(move || async move {
-            personas::picture::read(
-                core,
-                &core.admin,
-                personas::picture::Picture::Avatar,
-                params(request)?,
-            )
-            .await
+            personas::picture::read(core, personas::picture::Picture::Avatar, params(request)?)
+                .await
         }),
         "persona.background" => answer(move || async move {
             personas::picture::read(
                 core,
-                &core.admin,
                 personas::picture::Picture::Background,
                 params(request)?,
             )
@@ -147,54 +139,40 @@ pub(crate) fn call<'a>(
         }),
         "port.list" => answer(move || async move { crate::extensions::list_ports(core) }),
         "persona.get" => {
+            answer(move || async move { personas::get(core, peer, params(request)?).await })
+        }
+        "persona.set" => {
+            answer(move || async move { personas::write::set(core, peer, params(request)?).await })
+        }
+        "persona.read" => answer(move || async move {
+            personas::write::read_prompt(core, peer, params(request)?).await
+        }),
+        "persona.delete" => {
+            answer(move || async move { personas::write::delete(core, params(request)?).await })
+        }
+        "preset.list" => answer(move || async move { crate::presets::list(core, peer).await }),
+        "preset.get" => {
+            answer(move || async move { crate::presets::get(core, peer, params(request)?).await })
+        }
+        "preset.set" => {
             answer(
-                move || async move { personas::get(core, &core.admin, peer, params(request)?).await },
+                move || async move { crate::presets::write::set(core, peer, params(request)?).await },
             )
         }
-        "persona.set" => answer(move || async move {
-            personas::write::set(core, &core.admin, peer, params(request)?).await
-        }),
-        "persona.read" => answer(move || async move {
-            personas::write::read_prompt(core, &core.admin, peer, params(request)?).await
-        }),
-        "persona.delete" => answer(move || async move {
-            personas::write::delete(core, &core.admin, params(request)?).await
-        }),
-        "preset.list" => {
-            answer(move || async move { crate::presets::list(core, &core.admin, peer).await })
+        "preset.delete" => {
+            answer(
+                move || async move { crate::presets::write::delete(core, params(request)?).await },
+            )
         }
-        "preset.get" => answer(move || async move {
-            crate::presets::get(core, &core.admin, peer, params(request)?).await
-        }),
-        "preset.set" => answer(move || async move {
-            crate::presets::write::set(core, &core.admin, peer, params(request)?).await
-        }),
-        "preset.delete" => answer(move || async move {
-            crate::presets::write::delete(core, &core.admin, params(request)?).await
-        }),
         kb if kb.starts_with("kb.") => {
             answer(move || async move { crate::knowledge::call(core, kb, &request.params).await })
         }
         method if memory::METHODS.contains(&method) => answer(move || async move {
-            memory::call(
-                core,
-                &core.admin,
-                &request.method,
-                &request.id,
-                &request.params,
-            )
-            .await
+            memory::call(core, &request.method, &request.id, &request.params).await
         }),
         "session.list" => answer(move || async move {
             let params: ListParams = params(request)?;
-            let sessions = list::list(
-                core,
-                &core.admin,
-                params.oneshot,
-                params.dream,
-                params.limit,
-            )
-            .await?;
+            let sessions = list::list(core, params.oneshot, params.dream, params.limit).await?;
             Ok(json!({"sessions": sessions}))
         }),
         "events.append" => answer(move || async move {
@@ -271,13 +249,13 @@ pub(crate) fn call<'a>(
             crate::sessions::state::get(core, caller, params(request)?).await
         }),
         "session.tools" => answer(move || async move {
-            crate::session_tools::tools(core, peer, &core.admin, params(request)?).await
+            crate::session_tools::tools(core, peer, params(request)?).await
         }),
         "session.usage_parts" => answer(move || async move {
             crate::session_context::usage_parts(core, peer, params(request)?).await
         }),
         "session.context" => answer(move || async move {
-            crate::session_context::context(core, peer, &core.admin, params(request)?).await
+            crate::session_context::context(core, peer, params(request)?).await
         }),
         "job.output" => {
             answer(move || async move { job_output::read(core, params(request)?).await })
@@ -285,21 +263,21 @@ pub(crate) fn call<'a>(
         "human.get" => {
             answer(move || async move { human::get(core, peer, params(request)?).await })
         }
-        "config.schema" => answer(move || async move {
-            config::methods::schema(core, (&core.admin, peer), params(request)?)
-        }),
-        "config.get" => answer(move || async move {
-            config::methods::get(core, (&core.admin, peer), params(request)?)
-        }),
-        "config.check" => answer(move || async move {
-            config::checking::check(core, (&core.admin, peer), params(request)?)
-        }),
+        "config.schema" => {
+            answer(move || async move { config::methods::schema(core, peer, params(request)?) })
+        }
+        "config.get" => {
+            answer(move || async move { config::methods::get(core, peer, params(request)?) })
+        }
+        "config.check" => {
+            answer(move || async move { config::checking::check(core, peer, params(request)?) })
+        }
         "config.set" => answer(move || async move {
             let params = params(request)?;
             match &caller.package {
                 // 核心拉起的扩展只能改自己的几项（施工 T-9 补），记成这个包。
                 Some(package) => {
-                    let by = crate::appending::recorder(core, caller)?;
+                    let by = crate::appending::recorder(caller)?;
                     config::from_package::set_from_package(
                         core,
                         peer,
@@ -312,7 +290,7 @@ pub(crate) fn call<'a>(
             }
         }),
         "config.trust" => answer(move || async move {
-            config::trusting::trust(core, (&core.admin, peer), &request.id, params(request)?)
+            config::trusting::trust(core, peer, &request.id, params(request)?)
         }),
         "secret.set" => {
             answer(move || async move { secrets::set(core, peer, request, params(request)?) })
@@ -321,9 +299,9 @@ pub(crate) fn call<'a>(
             answer(move || async move { secrets::delete(core, peer, request, params(request)?) })
         }
         "secret.list" => answer(move || async move { Ok(secrets::list(core)) }),
-        "model.list" => answer(move || async move {
-            models::list(core, (&core.admin, peer.language), params(request)?).await
-        }),
+        "model.list" => {
+            answer(move || async move { models::list(core, peer.language, params(request)?).await })
+        }
         "provider.detect" => answer(move || async move { providers::detect(core).await }),
         "provider.catalog" => {
             answer(move || async move { providers::catalog(core, peer, params(request)?).await })
@@ -331,14 +309,14 @@ pub(crate) fn call<'a>(
         "provider.rename" => answer(move || async move {
             providers::rename(core, peer, &request.id, params(request)?).await
         }),
-        "provider.test" => answer(move || async move {
-            providers::test(core, (&core.admin, peer), params(request)?).await
-        }),
+        "provider.test" => {
+            answer(move || async move { providers::test(core, peer, params(request)?).await })
+        }
         "usage.query" => {
             answer(move || async move { crate::usage::query(core, params(request)?).await })
         }
         "blob.put" => answer(move || async move {
-            let by = (&core.admin, caller.package.as_deref());
+            let by = caller.package.as_deref();
             attach::put(core, by, params(request)?).await
         }),
         "blob.open" => {
@@ -367,11 +345,11 @@ pub(crate) fn call<'a>(
         }
         "session.set_meta" => answer(move || session::set_meta(core, request)),
         "session.terminal" => answer(move || async move {
-            crate::terminal::get(core, peer, &core.admin, request, params(request)?).await
+            crate::terminal::get(core, peer, request, params(request)?).await
         }),
-        "session.set_terminal" => answer(move || async move {
-            crate::terminal::set(core, &core.admin, params(request)?).await
-        }),
+        "session.set_terminal" => {
+            answer(move || async move { crate::terminal::set(core, params(request)?).await })
+        }
         "session.delete" => answer(move || session::delete(core, request)),
         other => answer(move || async move {
             match core.queries.get(other).filter(|_| core.serves(other)) {
@@ -408,7 +386,7 @@ pub(crate) async fn command_to(
     handle: &Handle,
     command: Command,
 ) -> Result<Vec<u64>, Refusal> {
-    let by = crate::sessions::admin(core);
+    let by = crate::sessions::person();
     command_by(core, request, session, handle, by, command).await
 }
 

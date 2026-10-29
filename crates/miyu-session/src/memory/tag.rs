@@ -13,7 +13,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::id::AccountId;
 use miyu_kernel::request::Message;
 use miyu_kernel::template::Template;
 use miyu_kernel::time::UtcOffset;
@@ -66,7 +65,6 @@ pub(crate) struct Tagging {
     pub(crate) keeper: Keeper,
     pub(crate) extraction: Extraction,
     pub(crate) config: TurnConfig,
-    pub(crate) owner: AccountId,
     pub(crate) offset: UtcOffset,
 }
 
@@ -114,7 +112,6 @@ impl Tagging {
                 })],
             }],
             max_tokens: None,
-            owner: self.owner.clone(),
             venue: None,
         };
         let answered = self
@@ -165,7 +162,6 @@ impl MergeJob {
             keeper: self.keeper.clone(),
             extraction: self.extraction.clone(),
             config: Arc::clone(&self.config),
-            owner: self.owner.clone(),
             offset: self.offset,
         };
         tagging.run(entries).await

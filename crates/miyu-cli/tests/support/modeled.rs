@@ -16,7 +16,7 @@ use miyu_session::{Models, Routes};
 use miyu_tool::Catalog;
 
 use super::onboarding::{data, profiles};
-use super::{AccountIdOf, Home, dirs, resources, temp_root};
+use super::{Home, dirs, resources, temp_root};
 
 impl Home {
     /// 起一个核心：系统配置是 `config`，请求模型是真的路由（供应商写在 `config` 里，指到假服务器）。
@@ -37,10 +37,8 @@ impl Home {
         std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了目录");
         std::fs::write(&file, config).expect("写得进");
         let opened = miyu_ipc::open(&root, &dirs()).expect("起得来");
-        let admin = AccountIdOf::admin();
         let loaded = Config::load(
             &root,
-            &admin,
             None,
             miyu_core::settings::items(),
             Environment::of(&[]),
@@ -51,7 +49,6 @@ impl Home {
             models,
             Catalog::default(),
             None,
-            admin,
             opened.token.clone(),
         )
         .with_sandbox(Availability::Usable(PathBuf::from("miyu-sandbox")))

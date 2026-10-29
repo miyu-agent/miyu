@@ -244,11 +244,11 @@ fn clearing_because_all_is_done_carries_the_finished_list() {
     assert_eq!(dones(&actions), [Vec::<Todo>::new()], "写空的不带");
 }
 
-/// 编号是 `n` 的命令：alice 要清空待办（施工 D-3 再补，`/todo clear`）。
+/// 编号是 `n` 的命令：主人要清空待办（施工 D-3 再补，`/todo clear`）。
 fn clear_todos(n: u64) -> Input {
     Input::Command(Received {
         id: id(n),
-        by: alice(),
+        by: person(),
         at: at(n % 60),
         command: Command::ClearTodos,
     })
@@ -319,7 +319,7 @@ fn the_todo_command_records_a_clear_and_pushes_an_empty_list() {
         panic!("一条：{events:?}");
     };
     assert_eq!(event.body, Body::TodosCleared(TodosCleared {}));
-    assert_eq!(event.by, alice());
+    assert_eq!(event.by, person());
     assert_eq!(event.cause, Some(id(2)));
     assert_eq!(event.turn, None, "闲着时不属于哪一轮");
     let seq = event.seq;

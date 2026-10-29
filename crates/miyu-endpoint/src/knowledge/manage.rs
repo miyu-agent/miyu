@@ -2,7 +2,6 @@
 //! 挂目录、加文档、删文档、重建索引。怎么做在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应。照管理员的账号。
 //! 加的文档照附件上传好的 blob（2026-10-13 项目主人定）。
 
-use miyu_kernel::id::AccountId;
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -63,15 +62,13 @@ struct Removal {
 /// 照方法名办一条管理的 `kb.*`；不是这几个的交回 `None`，由调的一方接着认。
 pub(super) async fn call(
     core: &Arc<Core>,
-    account: &AccountId,
     method: &str,
     params: &Value,
 ) -> Option<Result<Value, Refusal>> {
     let knowledge = Arc::clone(&core.knowledge);
-    let account = account.clone();
     Some(match method {
-        "kb.create" | "kb.update" | "kb.mount" => named(knowledge, account, method, params).await,
-        "kb.delete" | "kb.reindex" => whole(core, knowledge, account, method, params).await,
+        "kb.create" | "kb.update" | "kb.mount" => named(knowledge, method, params).await,
+        "kb.delete" | "kb.reindex" => whole(core, knowledge, method, params).await,
         "kb.add" => document(core, knowledge, params).await,
         "kb.remove" => remove(core, knowledge, params).await,
         _ => return None,
@@ -79,12 +76,7 @@ pub(super) async fn call(
 }
 
 /// 建库、改名字说明、挂目录：交回那个库。
-async fn named(
-    knowledge: Arc<Knowledge>,
-    account: AccountId,
-    method: &str,
-    params: &Value,
-) -> Result<Value, Refusal> {
+async fn named(knowledge: Arc<Knowledge>, method: &str, params: &Value) -> Result<Value, Refusal> {
     let named: Named = read(params)?;
     let mount = method == "kb.mount";
     let renaming = method == "kb.update";
@@ -101,9 +93,9 @@ async fn named(
             auto: named.auto,
         };
         match (named.folder.as_deref(), renaming) {
-            (Some(folder), _) => knowledge.mount(&account, &named.kb, folder, fields),
-            (None, true) => Ok((knowledge.rename(&account, &named.kb, fields)?, Vec::new())),
-            (None, false) => Ok((knowledge.found(&account, &named.kb, fields)?, Vec::new())),
+            (Some(folder), _) => knowledge.mount(&named.kb, folder, fields),
+            (None, true) => Ok((knowledge.rename(&named.kb, fields)?, Vec::new())),
+            (None, false) => Ok((knowledge.found(&named.kb, fields)?, Vec::new())),
         }
     })
     .await?;
@@ -115,7 +107,6 @@ async fn named(
 async fn whole(
     core: &Core,
     knowledge: Arc<Knowledge>,
-    account: AccountId,
     method: &str,
     params: &Value,
 ) -> Result<Value, Refusal> {
@@ -125,10 +116,10 @@ async fn whole(
     }
     let home = core.home.clone();
     if method == "kb.delete" {
-        let trash = blocking(move || knowledge.delete(&account, &kb, home.as_deref())).await?;
+        let trash = blocking(move || knowledge.delete(&kb, home.as_deref())).await?;
         return Ok(json!({ "trash": trash }));
     }
-    let (base, skipped) = blocking(move || knowledge.reindex(&account, &kb)).await?;
+    let (base, skipped) = blocking(move || knowledge.reindex(&kb)).await?;
     report(&skipped);
     Ok(shown_base(base))
 }

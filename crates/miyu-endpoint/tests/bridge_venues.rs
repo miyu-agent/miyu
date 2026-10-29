@@ -76,7 +76,6 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     let Body::SessionCreated(created) = &created[0].body else {
         panic!("第一条是 session.created");
     };
-    assert_eq!(created.owner, alice(), "群也在主人名下（施工 SU-4 中）");
     assert!(created.confined, "群关起来");
     let id = miyu_kernel::id::SessionId::parse(&session).expect("会话编号");
     let mine = home.root.session_workspace(&id);
@@ -100,7 +99,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
         .map(|event| event.by)
         .find(|by| matches!(by, By::External(external) if external.id.as_str() == "qq:10001"));
     assert!(
-        matches!(&owner_said, Some(By::External(external)) if external.account == Some(alice())),
+        matches!(&owner_said, Some(By::External(external)) if external.owner),
         "{owner_said:?}"
     );
 
@@ -109,29 +108,29 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     let index = home.root.index().join("sessions.db");
     until_counted(
         &index,
-        "SELECT count(*) FROM sessions WHERE id = ?1 AND owner = 'alice'",
+        "SELECT count(*) FROM sessions WHERE id = ?1",
         &session,
     )
     .await;
     let ledger = home.root.state().join("usage.db");
     until_counted(
         &ledger,
-        "SELECT count(*) FROM spent WHERE session = ?1 AND owner = 'alice'",
+        "SELECT count(*) FROM spent WHERE session = ?1",
         &session,
     )
     .await;
     let mut client = Client::connect(core.clone());
     client.hello().await;
     let usage = client
-        .call("u1", "usage.query", json!({"group": ["account"]}))
+        .call("u1", "usage.query", json!({"group": ["venue"]}))
         .await;
-    let accounts: Vec<&str> = usage["result"]["rows"]
+    let venues: Vec<&str> = usage["result"]["rows"]
         .as_array()
         .unwrap_or_else(|| panic!("{usage}"))
         .iter()
-        .filter_map(|row| row["account"].as_str())
+        .filter_map(|row| row["venue"].as_str())
         .collect();
-    assert_eq!(accounts, ["alice"], "用量都在主人名下：{usage}");
+    assert!(venues.contains(&"qq:group:1"), "群的用量照场所记：{usage}");
 
     // 记忆归主人。群里的回合进主人那一间的回合库，记下它在哪个场所（施工 R-13 下，`memory.md`
     // 第一条第 1 款）；看删群会话时是不是照记忆归谁去埋墓碑。

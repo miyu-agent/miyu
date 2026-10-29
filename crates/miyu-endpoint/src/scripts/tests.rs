@@ -3,7 +3,6 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::id::AccountId;
 use miyu_session::testkit::Script;
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog;
@@ -33,16 +32,10 @@ fn the_owner_s_own_scripts_are_listed_for_the_owner_and_the_bridge() {
         Arc::new(Script::new([])),
         Catalog::default(),
         None,
-        AccountId::parse("alice").expect("合写法"),
         "token".to_string(),
     );
     core.follow_scripts();
-    let has_weather = |account: &str| {
-        super::features(&core, &AccountId::parse(account).expect("合写法"))
-            .installed("script-weather")
-    };
-    assert!(has_weather("alice"), "机主的照旧");
-    assert!(has_weather("courier"), "场所会话的属主（平台桥）照旧");
+    assert!(super::features(&core).installed("script-weather"));
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {
         eprintln!("临时目录没删掉：{error}");

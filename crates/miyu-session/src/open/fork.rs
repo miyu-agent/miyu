@@ -141,7 +141,6 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         let policy = snapshot.policy().map_err(ForkError::Policy)?;
         let (cwd, dirs) = remembered(&base);
         let child = SessionCreated {
-            owner: created.owner,
             venue: created.venue,
             policy: plan.policy,
             permission: plan.permission,

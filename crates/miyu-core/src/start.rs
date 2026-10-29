@@ -1,5 +1,4 @@
-//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：开套接字，找主人（没有的当场建，[`crate::owner::ensure`]），照他建
-//! 家目录、读两层清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
+//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：开套接字，建工作区、读清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
 
 use std::process::ExitCode;
 
@@ -22,21 +21,12 @@ pub(super) async fn start(
         Ok(opened) => opened,
         Err(error) => return failed("socket", error.to_string()),
     };
-    // 主人（施工 SU-1）：第一次起来照系统用户名当场建一个，没有「只能设置」的那一段。
-    let user = std::env::var("USER")
-        .or_else(|_| std::env::var("USERNAME"))
-        .ok();
-    let owner = match crate::owner::ensure(&root, user.as_deref(), crate::trash::now()) {
-        Ok(owner) => owner,
-        Err(reason) => return failed("owner", reason),
-    };
-    let said = false;
     if let Err(error) = root.prepare_workspace() {
         return failed("home", error.to_string());
     }
     let mut found = load_packages(&resources, &root);
     let packaged = settings::Packaged::of(&mut found);
-    let config = settings::read(&root, &owner, env.home.as_deref(), &packaged);
+    let config = settings::read(&root, env.home.as_deref(), &packaged);
     settings::log_level(&config, level, log);
     let locale = miyu_store::env::locale();
     settings::generate(
@@ -57,7 +47,7 @@ pub(super) async fn start(
         (root, resources, opened),
         options,
         (config, live),
-        (catalog, owner, said),
+        catalog,
     )
     .await
 }
