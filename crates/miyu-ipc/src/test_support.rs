@@ -14,7 +14,8 @@ impl Scratch {
     pub(crate) fn new() -> Scratch {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("miyu-ipc-test-{}-{n}", std::process::id()));
+        // 名字尽量短：下面要建套接字，macOS 上套接字的路径最长 104 字节（见 `tests/support/mod.rs`）。
+        let dir = std::env::temp_dir().join(format!("it{}-{n}", std::process::id()));
         fs::create_dir_all(&dir).expect("临时目录建得了");
         Scratch(dir)
     }
