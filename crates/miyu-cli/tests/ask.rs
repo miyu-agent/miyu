@@ -245,12 +245,10 @@ async fn an_unusable_sandbox_is_said_before_anything_else() {
     let Asked { code, err, .. } = home.ask(&plan("在吗")).await;
     assert_eq!(code, 0, "{err}");
     assert!(
-        err.starts_with(
-            "· 沙盒用不了（miyu-sandbox 跑不起来：重装一次 Miyu）：执行命令要你确认，miyu ask 里确认不了\n"
-        ),
+        err.starts_with("miyu: 警告：沙盒不可用：miyu-sandbox 无法运行\n提示：重新安装 Miyu\n"),
         "{err}"
     );
-    assert_eq!(err.matches("沙盒用不了").count(), 1, "{err}");
+    assert_eq!(err.matches("沙盒不可用").count(), 1, "{err}");
 }
 
 /// 加进来的目录（施工 5-10 上）：造会话、说话都带着，记进这一轮；`--continue` 时不写 `--add-dir` 的，这一轮就没有。

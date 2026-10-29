@@ -3,6 +3,7 @@
 //! 改、写、信任的几个子命令的字在 `config_write.rs`（施工 8-3）。
 
 use super::Language;
+use crate::diagnostic::Problem;
 
 impl Language {
     /// 报错一行里的级别：`错误`、`警告`。
@@ -144,28 +145,29 @@ impl Language {
         }
     }
 
-    /// `miyu ask` 起头：这里的项目配置 `file` 还没信任，这次没用它（施工 8-3）。
-    pub(crate) fn untrusted_project(&self, file: &str) -> String {
+    /// `miyu ask` 起头的告警：这里的项目配置 `file` 还没信任，这次没用它（施工 8-3，设计 47）。
+    pub(crate) fn untrusted_project(&self, file: &str) -> Problem {
         match self {
-            Language::Chinese => format!(
-                "· 这里的项目配置 {file} 还没信任，这次没用它：miyu config trust 看一眼再定"
-            ),
-            Language::English => format!(
-                "· The project config at {file} is not trusted yet, so it was not used: run miyu config trust to review it"
-            ),
+            Language::Chinese => Problem::new(format!("项目配置 {file} 尚未信任，本次没有使用"))
+                .hint("运行 'miyu config trust' 查看后决定"),
+            Language::English => Problem::new(format!(
+                "project config {file} is not trusted; not used this time"
+            ))
+            .hint("run 'miyu config trust' to review it"),
         }
     }
 
-    /// `miyu ask` 起头：配置里有几处错误。
-    pub(crate) fn config_errors(&self, errors: u64) -> String {
+    /// `miyu ask` 起头的告警：配置里有几处错误（设计 47）。
+    pub(crate) fn config_errors(&self, errors: u64) -> Problem {
         match (self, errors) {
-            (Language::Chinese, n) => format!("· 配置里有 {n} 处错误：miyu check 看是哪里"),
+            (Language::Chinese, n) => {
+                Problem::new(format!("配置中有 {n} 处错误")).hint("运行 'miyu check' 查看")
+            }
             (Language::English, 1) => {
-                "· 1 error in the config: run miyu check to see it".to_string()
+                Problem::new("the configuration has 1 error").hint("run 'miyu check' to see it")
             }
-            (Language::English, n) => {
-                format!("· {n} errors in the config: run miyu check to see them")
-            }
+            (Language::English, n) => Problem::new(format!("the configuration has {n} errors"))
+                .hint("run 'miyu check' to see them"),
         }
     }
 }

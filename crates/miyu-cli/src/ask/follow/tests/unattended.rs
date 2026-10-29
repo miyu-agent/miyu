@@ -37,7 +37,7 @@ fn steps_that_needed_approval_are_counted_and_the_exit_code_is_4() {
     assert_eq!(step, Step::Done(exit::UNATTENDED));
     assert_eq!(
         screen,
-        "想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n· 2 步没做：要你确认，miyu ask 里确认不了\n",
+        "想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\nmiyu: 警告：2 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n",
         "用量后面再印一行"
     );
 }
@@ -78,18 +78,23 @@ fn an_interrupted_turn_keeps_its_code_and_still_says_it_first() {
     let Fed { step, err, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
     assert!(
-        err.ends_with("· 1 步没做：要你确认，miyu ask 里确认不了\nmiyu: 已中断\n"),
+        err.ends_with(
+            "miyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\nmiyu: 已中断\n"
+        ),
         "{err}"
     );
 }
 
+/// 终端里告警照原色写（设计 47，项目主人 10-29：过程行照旧是灰的，告警不是过程）。
 #[test]
-fn in_a_terminal_not_done_is_red() {
+fn in_a_terminal_the_warning_is_not_gray() {
     let plan = plan(Format::Text, Language::Chinese);
     let turn = with_results("completed", vec![unattended("c1")]);
     let Fed { err, .. } = feed(&plan, true, &turn);
     assert!(
-        err.ends_with("\x1b[90m· 1 步\x1b[31m没做\x1b[90m：要你确认，miyu ask 里确认不了\x1b[0m\n"),
+        err.ends_with(
+            "\x1b[0m\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
+        ),
         "{err:?}"
     );
 }
@@ -104,7 +109,7 @@ fn in_english_one_step_and_several() {
     );
     assert!(
         err.ends_with(
-            "· 1 step not done: it needs your approval, which cannot be given in miyu ask\n"
+            "miyu: warning: 1 step needs approval and was skipped\nhint: run it in the terminal interface to approve\n"
         ),
         "{err}"
     );
@@ -115,7 +120,7 @@ fn in_english_one_step_and_several() {
     );
     assert!(
         err.ends_with(
-            "· 2 steps not done: they need your approval, which cannot be given in miyu ask\n"
+            "miyu: warning: 2 steps need approval and were skipped\nhint: run it in the terminal interface to approve\n"
         ),
         "{err}"
     );

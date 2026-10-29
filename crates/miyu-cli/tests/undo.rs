@@ -63,7 +63,7 @@ async fn undo_and_restore_leave_the_file_as_she_left_it() {
     assert_eq!(undone.code, 0, "{}", undone.err);
     assert_eq!(
         undone.out,
-        "· 撤销「改一下」这一轮\n发下一句之前，可以用 miyu restore 恢复。\n"
+        "已撤销「改一下」这一轮\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n"
     );
     assert_eq!(undone.err, "", "结果走标准输出");
     assert_eq!(
@@ -73,7 +73,7 @@ async fn undo_and_restore_leave_the_file_as_she_left_it() {
     );
     let restored = home.undo(&undo(Direction::Restore)).await;
     assert_eq!(restored.code, 0, "{}", restored.err);
-    assert_eq!(restored.out, "· 恢复「改一下」这一轮\n");
+    assert_eq!(restored.out, "已恢复「改一下」这一轮\n");
     assert_eq!(std::fs::read_to_string(&file).expect("在"), "new\n");
 }
 
@@ -127,7 +127,7 @@ async fn a_given_session_is_the_one_undone() {
         })
         .await;
     assert!(
-        undone.out.starts_with("· 撤销「改一下」这一轮\n"),
+        undone.out.starts_with("已撤销「改一下」这一轮\n"),
         "{}",
         undone.out
     );

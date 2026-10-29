@@ -16,6 +16,7 @@ use miyu_kernel::event::Said;
 use miyu_store::human::{Block, clean};
 
 use super::Plan;
+use crate::diagnostic::Problem;
 use crate::language::{Language, Word};
 use crate::shown::{Ink, Line, cut, cut_front, shown, tilde};
 
@@ -197,30 +198,22 @@ pub(crate) fn unattended(body: &Value) -> bool {
     body["status"] == "denied" && body["human"]["key"] == UNATTENDED
 }
 
-/// 有 `steps` 步因为要确认没做时，最后印的那一行：`· 1 步没做：要你确认，miyu ask 里确认不了`，「没做」是红的
-/// （`22-命令行.md` O3，施工 4-9）。
-pub(crate) fn unattended_line(plan: &Plan, steps: u64) -> Line {
-    let language = &plan.language;
-    let (before, after) = language.unattended(steps);
-    let mut line = Line::gray(before);
-    line.push(Ink::Red, language.word(Word::Denied));
-    line.push(Ink::Gray, after);
-    line
+/// 有 `steps` 步因为要确认没做时，最后的告警（`22-命令行.md` O3，施工 4-9，设计 47）。
+pub(crate) fn unattended_warning(plan: &Plan, steps: u64) -> Problem {
+    plan.language.unattended(steps)
 }
 
-/// 沙盒用不了时的那一句（施工 5-4 下）：原因照协议上的写法 `reason` 和这台机器的系统写。
-pub(crate) fn unsandboxed(plan: &Plan, reason: &str) -> Line {
-    Line::gray(
-        plan.language
-            .unsandboxed(reason, miyu_sandbox::Platform::current()),
-    )
+/// 沙盒用不了时的告警（施工 5-4 下）：原因照协议上的写法 `reason` 和这台机器的系统写。
+pub(crate) fn unsandboxed(plan: &Plan, reason: &str) -> Problem {
+    plan.language
+        .unsandboxed(reason, miyu_sandbox::Platform::current())
 }
 
-/// 工作目录太宽、核心退回了数据根的工作区时的那一句：敲命令时在 `plan.cwd`，实际在 `used` 里干活。
-pub(crate) fn moved(plan: &Plan, used: &str) -> Line {
+/// 工作目录太宽、核心退回了数据根的工作区时的告警：敲命令时在 `plan.cwd`，实际在 `used` 里干活。
+pub(crate) fn moved(plan: &Plan, used: &str) -> Problem {
     let home = plan.home.as_deref();
     let (given, used) = (clean(&tilde(&plan.cwd, home)), clean(&tilde(used, home)));
-    Line::gray(plan.language.moved(&given, &used))
+    plan.language.moved(&given, &used)
 }
 
 /// 接着说的会话在别处干活时的那一句（施工 9-7 上）：工作区是会话的，在 `used` 里。

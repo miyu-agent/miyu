@@ -67,11 +67,11 @@
 ```text
 用法：miyu recap [选项]
 
-一句话回顾会话：在做什么、做完了什么、卡在哪。
+总结当前会话：目标、已完成的、卡住的地方。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/recap.txt`（英文）：
@@ -79,10 +79,10 @@
 ```text
 Usage: miyu recap [options]
 
-Recap the session in a few lines: the goal, what is done, what is blocked.
+Summarize the session: the goal, what is done, what is blocked.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 

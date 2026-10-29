@@ -147,7 +147,7 @@ async fn a_subagent_messaged_after_it_reported_is_waited_for_again() {
     assert_eq!(code, 0, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等 1 个子代理回报…（按 Ctrl+C 不等了）\n· j1「查 A」报回来了\n↗ 留言 j1 · 送到了：j1\n\n答它了。\n· j1「查 A」报回来了\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
+        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· j1「查 A」已回报\n↗ 留言 j1 · 送到了：j1\n\n答它了。\n· j1「查 A」已回报\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
         "答了它以后还在等，它再报、叫醒的那一轮也印了"
     );
 }
@@ -185,7 +185,7 @@ async fn a_subagent_from_before_is_waited_for_once_messaged_like_the_sample() {
     let asking = ask_onto(&home.root, &before, presses, tape.clone());
     let pressing = async {
         within("印出等的那一行", async {
-            while !tape.text(|_| true).contains("等 2 个子代理回报") {
+            while !tape.text(|_| true).contains("等待 2 个子代理回报") {
                 tokio::time::sleep(Duration::from_millis(5)).await;
             }
         })
@@ -298,7 +298,7 @@ async fn ctrl_c_while_waiting_leaves_and_the_late_report_is_only_recorded() {
     let asking = ask_onto(&home.root, &plan, presses, tape.clone());
     let pressing = async {
         within("印出等的那一行", async {
-            while !tape.text(|_| true).contains("等 1 个子代理回报") {
+            while !tape.text(|_| true).contains("等待 1 个子代理回报") {
                 tokio::time::sleep(Duration::from_millis(5)).await;
             }
         })
@@ -314,7 +314,7 @@ async fn ctrl_c_while_waiting_leaves_and_the_late_report_is_only_recorded() {
     assert_eq!(code, 3, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等 1 个子代理回报…（按 Ctrl+C 不等了）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 不等了，子代理还在后台跑，下次 miyu ask -c 时 AI 会看到结果\n"
+        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果\n"
     );
     // 头走了才回报：只记下，不叫醒她。
     let main = home.oneshot().await;
@@ -352,7 +352,7 @@ async fn the_timeout_while_waiting_leaves_with_3() {
     assert_eq!(code, 3, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等 1 个子代理回报…（按 Ctrl+C 不等了）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 等到时间了，没回报的子代理还在后台跑\n"
+        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 已到等待时限，未回报的子代理仍在后台运行\n"
     );
 }
 
@@ -370,7 +370,7 @@ async fn the_timeout_interrupts_a_running_turn_and_leaves() {
     assert_eq!(code, 3, "{err}");
     // 替身开了个头（「…」）就停住；慢的机器上到时间时它可能还没开口，只看最后一行。
     assert!(
-        screen.ends_with("· 等到时间了\n"),
+        screen.ends_with("· 已到等待时限\n"),
         "没有子代理：只说到时间了：{screen}"
     );
     let main = home.oneshot().await;

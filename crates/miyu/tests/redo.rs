@@ -72,12 +72,12 @@ async fn the_last_ask_or_the_given_session_is_the_one_redone() {
     let lines: Vec<&str> = said.lines().collect();
     let header = lines
         .iter()
-        .position(|line| *line == "· 撤销「在吗」这一轮，重新做")
+        .position(|line| *line == "· 已撤销「在吗」这一轮，重新做")
         .unwrap_or_else(|| panic!("{said}"));
     assert!(
         lines[..header]
             .iter()
-            .all(|line| line.starts_with("· 沙盒用不了")),
+            .all(|line| line.starts_with("miyu: 警告：沙盒不可用") || line.starts_with("提示：")),
         "{said}"
     );
     assert_eq!(

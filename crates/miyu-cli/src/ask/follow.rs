@@ -30,8 +30,8 @@ use serde_json::{Value, json};
 use super::steps::{self, Drawn, Steps};
 use super::usage::Sum;
 use super::{Format, Plan, Screen, exit};
-use crate::diagnostic;
-use crate::shown::{GRAY, Line, RESET, write};
+use crate::diagnostic::{self, Level, Problem};
+use crate::shown::{GRAY, Ink, Line, RESET, write};
 use crate::undo::{Direction, UndoPlan, redo_lines};
 
 pub(crate) use ending::Leaving;
@@ -417,6 +417,14 @@ impl<'p> Follow<'p> {
 
     /// 印一行旁白。回答那一行还没完的，先在标准输出上换行（[`Follow::close_answer`]）；思考那一行还没完的，也先
     /// 换行；一块、一段思考后面欠着空行的，先空一行。和回答之间的空行，等回答来了再写。
+    /// 过程记录里的告警（设计 47，项目主人 10-29 定：过程行照旧，告警写成 `miyu: 警告：…`，建议另起一行）：原色，接在旁白的
+    /// 位置。
+    fn warn(&mut self, problem: &Problem, screen: &mut Screen<'_>) {
+        for line in problem.lines(self.plan.language, Level::Warning) {
+            self.aside(&Line::inked(Ink::Plain, line), screen);
+        }
+    }
+
     fn aside(&mut self, line: &Line, screen: &mut Screen<'_>) {
         self.close_answer(screen);
         self.thought();

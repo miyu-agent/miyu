@@ -159,7 +159,7 @@ fn a_directory_too_wide_is_said_once() {
     assert_eq!(
         screen,
         format!(
-            "· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
+            "miyu: 警告：工作目录 ~ 范围过大，改用 ~{sep}.miyu{sep}workspace\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
         ),
         "说一次，在最前面；后面的思考是一段，前后空一行"
     );
@@ -168,7 +168,7 @@ fn a_directory_too_wide_is_said_once() {
     let mut messages = vec![accepted(&same)];
     messages.extend(a_turn("completed"));
     let Fed { screen, .. } = feed(&plan, false, &messages);
-    assert!(!screen.contains("目录太宽"), "{screen}");
+    assert!(!screen.contains("范围过大"), "{screen}");
     // 给脚本的：不说。
     let plan = super::super::Plan {
         format: Format::Json,
@@ -219,7 +219,7 @@ fn an_unusable_sandbox_is_said_first_and_right_before_the_directory() {
     assert_eq!(
         screen,
         format!(
-            "· 沙盒用不了（主程序旁边没有 miyu-sandbox：重装一次 Miyu）：执行命令要你确认，miyu ask 里确认不了\n· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
+            "miyu: 警告：沙盒不可用：主程序旁边没有 miyu-sandbox\n提示：重新安装 Miyu\nmiyu: 警告：工作目录 ~ 范围过大，改用 ~{sep}.miyu{sep}workspace\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
         ),
         "最先说，和目录太宽那一句连着、不空行"
     );
@@ -245,10 +245,10 @@ fn a_session_working_elsewhere_is_said_once() {
     messages.extend(a_turn("completed"));
     let Fed { screen, .. } = feed(&plan, false, &messages);
     assert!(
-        screen.starts_with(&format!("· 这个会话在 ~{sep}src{sep}proj 里干活\n\n想一想")),
+        screen.starts_with(&format!("· 会话的工作目录：~{sep}src{sep}proj\n\n想一想")),
         "{screen}"
     );
-    assert_eq!(screen.matches("这个会话在").count(), 1, "{screen}");
+    assert_eq!(screen.matches("会话的工作目录").count(), 1, "{screen}");
 }
 
 #[test]
@@ -263,5 +263,5 @@ fn a_reply_that_comes_after_the_turn_is_still_waited_for() {
     messages.push(accepted(&used));
     let Fed { step, screen, .. } = feed(&plan, false, &messages);
     assert_eq!(step, Step::Done(exit::OK), "{screen}");
-    assert_eq!(screen.matches("这个会话在").count(), 1, "{screen}");
+    assert_eq!(screen.matches("会话的工作目录").count(), 1, "{screen}");
 }

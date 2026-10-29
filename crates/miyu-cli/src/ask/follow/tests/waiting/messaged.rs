@@ -7,15 +7,15 @@ use super::*;
 
 #[test]
 fn a_subagent_from_before_that_she_messaged_is_waited_for_without_a_title() {
-    // 施工 7-9 补：第一轮里她给这一次以前派的 j5 留了言，又派了 j1：两个都等；j5 报回来了那一行没有标题（这边没见过派它的
+    // 施工 7-9 补：第一轮里她给这一次以前派的 j5 留了言，又派了 j1：两个都等；j5 已回报那一行没有标题（这边没见过派它的
     // 那一条）。以前派的 j7 没留言，它的回报不印、不数。
     let messaged = json!({"kind": "job.messaged", "job": "j5"});
     for (language, waiting_line, j5, j1) in [
         (
             Language::Chinese,
-            "· 等 2 个子代理回报…（按 Ctrl+C 不等了）\n",
-            "· j5 报回来了\n",
-            "· j1「查 A」报回来了\n",
+            "· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\n",
+            "· j5 已回报\n",
+            "· j1「查 A」已回报\n",
         ),
         (
             Language::English,
@@ -76,7 +76,7 @@ fn the_report_line_is_one_clean_line() {
     messages.push(report(21, "j5\u{7}", "done"));
     let (_, screen, _) = waiting(&plan, false, &messages, |_, _| None);
     assert!(
-        screen.contains("· j1「查 A…」报回来了\n· j5\u{fffd} 报回来了\n"),
+        screen.contains("· j1「查 A…」已回报\n· j5\u{fffd} 已回报\n"),
         "{screen}"
     );
 }

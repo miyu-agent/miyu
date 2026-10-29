@@ -49,8 +49,8 @@
 样本 `docs/designs/samples/cli/undo-text.txt`（撤销，中文）：
 
 ```text
-· 撤销「把 README 改成中文」这一轮
-发下一句之前，可以用 miyu restore 恢复。
+已撤销「把 README 改成中文」这一轮
+提示：发送下一句之前，可以运行 'miyu restore' 恢复
 ```
 
 | 行 | 是什么 | 颜色 |
@@ -65,10 +65,10 @@
 
 | | 有 `said`，`turns` 是 0 或 1 | 有 `said`，几轮 | 没有 `said` |
 |---|---|---|---|
-| 撤销 | `· 撤销「<said>」这一轮` | `· 撤销「<said>」起的 <几> 轮` | `· 撤销最后一轮` |
-| 恢复 | `· 恢复「<said>」这一轮` | `· 恢复「<said>」起的 <几> 轮` | `· 恢复撤销的那一轮` |
+| 撤销 | `已撤销「<said>」这一轮` | `已撤销「<said>」起的 <几> 轮` | `已撤销最后一轮` |
+| 恢复 | `已恢复「<said>」这一轮` | `已恢复「<said>」起的 <几> 轮` | `已恢复撤销的那一轮` |
 
-**撤掉了压缩的那一句**（施工 6-9，`compaction.md` 第十一条）：回应里 `compactions` 大于 0 才印（核心只在撤销时交），印在第一行下面，灰，前面是 `· `。写 `· 撤掉了压缩，上下文回到了压缩前`：撤掉一次、几次（一轮里压过几次的）都是这一句（2026-09-29 项目主人定）。`miyu restore` 不印。
+**撤掉了压缩的那一句**（施工 6-9，`compaction.md` 第十一条）：回应里 `compactions` 大于 0 才印（核心只在撤销时交），印在第一行下面，灰，前面是 `· `。写 `已撤销压缩，上下文恢复到压缩前`：撤掉一次、几次（一轮里压过几次的）都是这一句（2026-09-29 项目主人定）。`miyu restore` 不印。
 
 例子（撤销，这一轮里压过一次）：
 
@@ -78,25 +78,25 @@
 发下一句之前，可以用 miyu restore 恢复。
 ```
 
-**撤掉了清空的那一句**（施工 6-8 补，`compaction.md` 第十四条，2026-09-30 项目主人定）：回应里 `clears` 大于 0 才印（核心只在撤销时交），照撤掉了压缩那一句的规矩：灰，前面是 `· `，撤掉一次、几次都是 `· 撤掉了清空，上下文回到了清空以前`，`miyu restore` 不印。两样都有的，先压缩后清空：回应里只有次数，没有先后，定一个顺序。
+**撤掉了清空的那一句**（施工 6-8 补，`compaction.md` 第十四条，2026-09-30 项目主人定）：回应里 `clears` 大于 0 才印（核心只在撤销时交），照撤掉了压缩那一句的规矩：灰，前面是 `· `，撤掉一次、几次都是 `已撤销清空，上下文恢复到清空前`，`miyu restore` 不印。两样都有的，先压缩后清空：回应里只有次数，没有先后，定一个顺序。
 
 样本 `docs/designs/samples/cli/undo-clear-text.txt`（撤销，这几轮里压过一次、清空过两次）：
 
 ```text
-· 撤销「接着把测试补完」起的 3 轮
-· 撤掉了压缩，上下文回到了压缩前
-· 撤掉了清空，上下文回到了清空以前
-发下一句之前，可以用 miyu restore 恢复。
+已撤销「接着把测试补完」起的 3 轮
+已撤销压缩，上下文恢复到压缩前
+已撤销清空，上下文恢复到清空前
+提示：发送下一句之前，可以运行 'miyu restore' 恢复
 ```
 
-**停掉了几个任务的那一句**（施工 7-8，`agents.md` 第七条第 1 条）：回应里 `jobs` 不空才印（核心只在撤销、重做时交），灰，前面是 `· `，只说几个：`· 停掉了 <几> 个任务`，是哪几个在回应里。印在撤掉了压缩、清空的那两句下面。`miyu restore` 不印。
+**停掉了几个任务的那一句**（施工 7-8，`agents.md` 第七条第 1 条）：回应里 `jobs` 不空才印（核心只在撤销、重做时交），灰，前面是 `· `，只说几个：`已停止 <几> 个任务`，是哪几个在回应里。印在撤掉了压缩、清空的那两句下面。`miyu restore` 不印。
 
 样本 `docs/designs/samples/cli/undo-jobs-text.txt`（撤销，这一轮放了一条后台命令、派了一个子代理，都还在跑）：
 
 ```text
-· 撤销「后台跑测试，再派一个去查 CI」这一轮
-· 停掉了 2 个任务
-发下一句之前，可以用 miyu restore 恢复。
+已撤销「后台跑测试，再派一个去查 CI」这一轮
+已停止 2 个任务
+提示：发送下一句之前，可以运行 'miyu restore' 恢复
 ```
 
 **最后一行**：只有 `miyu undo` 印：`发下一句之前，可以用 miyu restore 恢复。`
@@ -119,15 +119,15 @@ ESC[90m· 撤销「把 README 改成中文」这一轮ESC[0m
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 撤销，一轮 | `· 撤销「<said>」这一轮` | `· Undid the turn “<said>”` |
-| 撤销，几轮 | `· 撤销「<said>」起的 <几> 轮` | `· Undid <几> turns from “<said>”` |
-| 撤销，没有 `said` | `· 撤销最后一轮` | `· Undid the last turn` |
-| 撤掉了压缩（一次、几次同一句） | `· 撤掉了压缩，上下文回到了压缩前` | `· Undid the compaction; the context is back to how it was before` |
-| 撤掉了清空（一次、几次同一句，施工 6-8 补） | `· 撤掉了清空，上下文回到了清空以前` | `· Undid the clear; the context is back to before it.` |
-| 停掉了任务（施工 7-8） | `· 停掉了 <几> 个任务` | 一个：`· Stopped 1 job`；几个：`· Stopped <几> jobs` |
-| 恢复，一轮 | `· 恢复「<said>」这一轮` | `· Restored the turn “<said>”` |
-| 恢复，几轮 | `· 恢复「<said>」起的 <几> 轮` | `· Restored <几> turns from “<said>”` |
-| 恢复，没有 `said` | `· 恢复撤销的那一轮` | `· Restored the undone turn` |
+| 撤销，一轮 | `已撤销「<said>」这一轮` | `undid the turn “<said>”` |
+| 撤销，几轮 | `已撤销「<said>」起的 <几> 轮` | `undid <几> turns from “<said>”` |
+| 撤销，没有 `said` | `已撤销最后一轮` | `undid the last turn` |
+| 撤掉了压缩（一次、几次同一句） | `已撤销压缩，上下文恢复到压缩前` | `undid the compaction; the context is as it was before` |
+| 撤掉了清空（一次、几次同一句，施工 6-8 补） | `已撤销清空，上下文恢复到清空前` | `undid the clear; the context is as it was before` |
+| 停掉了任务（施工 7-8） | `已停止 <几> 个任务` | 一个：`stopped 1 job`；几个：`stopped <几> jobs` |
+| 恢复，一轮 | `已恢复「<said>」这一轮` | `restored the turn “<said>”` |
+| 恢复，几轮 | `已恢复「<said>」起的 <几> 轮` | `restored <几> turns from “<said>”` |
+| 恢复，没有 `said` | `已恢复撤销的那一轮` | `restored the undone turn` |
 | 最后一行 | 发下一句之前，可以用 miyu restore 恢复。 | Until you say something else, miyu restore brings it back. |
 | 没有一次性会话 | 还没有 miyu ask 开过的会话 | No session opened by miyu ask yet |
 | 核心断开 | 核心断开了 | The core went away |
@@ -143,11 +143,11 @@ ESC[90m· 撤销「把 README 改成中文」这一轮ESC[0m
 ```text
 用法：miyu undo [选项]
 
-撤掉最后一轮。也可以写成 miyu rewind。
+撤销上一轮（别名：rewind）。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/undo.txt`（`miyu undo`，英文）：
@@ -155,10 +155,10 @@ ESC[90m· 撤销「把 README 改成中文」这一轮ESC[0m
 ```text
 Usage: miyu undo [options]
 
-Undo the last turn. Also: miyu rewind.
+Undo the last turn (alias: rewind).
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 
@@ -167,11 +167,11 @@ Options:
 ```text
 用法：miyu restore [选项]
 
-发下一句之前，恢复最近一次撤销。
+恢复上一次撤销的内容，须在发送下一句之前。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/restore.txt`（`miyu restore`，英文）：
@@ -179,10 +179,10 @@ Options:
 ```text
 Usage: miyu restore [options]
 
-Bring back what the latest undo took, until you say something else.
+Restore what the last undo removed, before anything else is sent.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 

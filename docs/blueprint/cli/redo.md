@@ -45,7 +45,7 @@
 
 照 `miyu ask`（`cli/ask.md`「样子：`--format text`」）：她的回答在标准输出上，别的是旁白，在标准错误上，同一套写法、同一套颜色、同一套空行，由同一份代码印。最前面多几行旁白，说撤掉了哪一轮：
 
-1. 第一行照 `miyu undo` 的第一行（`cli/undo.md`「样子」），后面接「，重新做」：`· 撤销「<said>」这一轮，重新做`；没有 `said` 的（那一句只有附件）`· 撤销最后一轮，重新做`。`said` 是撤掉的那一轮原来那一句，换了话的也是。
+1. 第一行照 `miyu undo` 的第一行（`cli/undo.md`「样子」），后面接「，重新做」：`· 已撤销「<said>」这一轮，重新做`；没有 `said` 的（那一句只有附件）`· 已撤销最后一轮，重新做`。`said` 是撤掉的那一轮原来那一句，换了话的也是。
 2. 接着照 `miyu undo` 印撤掉了压缩那一句、停掉了几个任务那一句（施工 7-8，`cli/undo.md`「样子」）。文件不改回、不提文件（施工 U-1）。
 3. 不印 `miyu undo` 最后那一行「可以用 miyu restore 恢复」：重做以后恢复不了。
 4. 这几行是连着的旁白，灰；没动、出错红，差异的 `-`、`+` 行照 `miyu undo` 上色。上不上色照标准错误。
@@ -53,7 +53,7 @@
 样本 `docs/designs/samples/cli/redo-text.txt`（标准输出和标准错误按先后交错，照终端里看到的）：
 
 ```text
-· 撤销「把 README 的标题改成中文」这一轮，重新做
+· 已撤销「把 README 的标题改成中文」这一轮，重新做
 → 读取 README.md · 3 行
 
 改好了。
@@ -85,8 +85,8 @@
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 第一行 | `· 撤销「<said>」这一轮，重新做` | `· Undid the turn “<said>”, redoing it` |
-| 第一行，没有 `said` | `· 撤销最后一轮，重新做` | `· Undid the last turn, redoing it` |
+| 第一行 | `· 已撤销「<said>」这一轮，重新做` | `· Undid the turn “<said>”, redoing it` |
+| 第一行，没有 `said` | `· 已撤销最后一轮，重新做` | `· Undid the last turn, redoing it` |
 
 - 英文的引号是弯引号 `“` `”`。`said` 照 `miyu undo`：控制字符换成 `�`，超过 40 个字的留前面 40 个，后面加 `…`。
 - 别的字照 `cli/undo.md`（撤掉了压缩、清空、停掉了任务）、`cli/ask.md`（每一步、用量、说为什么结束、没有模型、打断了、核心断开）。
@@ -97,25 +97,24 @@
 样本 `crates/miyu-cli/src/help/zh/redo.txt`（中文）：
 
 ```text
-用法：miyu redo [选项] [话]
+用法：miyu redo [选项] [消息]
 
-撤掉最后一轮，把你那句话再发一次，让 AI 重新做。后面写了话的，换成这句再发。
+撤销上一轮并重新发送同一条消息；写了消息的改发新消息。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/redo.txt`（英文）：
 
 ```text
-Usage: miyu redo [options] [words]
+Usage: miyu redo [options] [message]
 
-Undo the last turn and send what you said again, so the AI does it over.
-Any words are sent instead of what you said.
+Undo the last turn and send its message again, or the new message if given.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 

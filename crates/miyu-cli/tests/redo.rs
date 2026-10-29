@@ -63,7 +63,7 @@ async fn the_last_ask_is_done_again() {
     assert_eq!(redone.code, 0, "{}", redone.err);
     assert_eq!(redone.out, "又好。\n", "标准输出上只有新的回答");
     assert!(
-        redone.err.starts_with("· 撤销「hi」这一轮，重新做\n"),
+        redone.err.starts_with("· 已撤销「hi」这一轮，重新做\n"),
         "{}",
         redone.err
     );
@@ -80,7 +80,7 @@ async fn the_last_ask_is_done_again() {
     assert_eq!(redone.code, 0, "{}", redone.err);
     assert_eq!(redone.out, "换了也好。\n");
     assert!(
-        redone.err.starts_with("· 撤销「hi」这一轮，重新做\n"),
+        redone.err.starts_with("· 已撤销「hi」这一轮，重新做\n"),
         "said 是撤掉的那一轮原来那一句：{}",
         redone.err
     );

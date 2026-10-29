@@ -74,7 +74,7 @@
 10. **Ctrl+C**：有回合在进行（还没认出第一轮的也算）：第一次发 `session.interrupt`，带 `queued: "return"`，等这一轮收尾；第二次不等了，说「打断了」，退出码 3。等子代理的时候按：不等了（「等子代理」第 7 条）。写了 `--from` 的（施工 7-10，2026-09-30 主会话定）：不打断，按一次就不等了，照第 13 条。
 11. **核心断开**：说「核心断开了」，退出码 1。
 12. **`--timeout` 到了**：有回合在进行的（还没认出第一轮的也算）发 `session.interrupt`，带 `queued: "return"`，不等它收尾；照「等子代理」第 8 条印完，退出码 3。写了 `--from` 的不打断，照第 13 条。
-13. **别的 harness 不等了**（`--from`，施工 7-10，2026-09-30 主会话定）：按 Ctrl+C、到了 `--timeout`，都只是不等了，不发 `session.interrupt`：那一轮是她的，会话是人的，别的 harness 不该打断人的会话。有回合在进行的（还没认出第一轮的也算），照收尾印用量、最后那一句，再印一行灰字 `· 不等了，AI 那一轮还在接着跑`、`· 等到时间了，AI 那一轮还在接着跑`，退出码 3。在等子代理的时候，照「等子代理」第 7、8 条。平常的 `miyu ask` 照旧打断。
+13. **别的 harness 不等了**（`--from`，施工 7-10，2026-09-30 主会话定）：按 Ctrl+C、到了 `--timeout`，都只是不等了，不发 `session.interrupt`：那一轮是她的，会话是人的，别的 harness 不该打断人的会话。有回合在进行的（还没认出第一轮的也算），照收尾印用量、最后那一句，再印一行灰字 `· 已停止等待，这一轮仍在继续`、`· 已到等待时限，这一轮仍在继续`，退出码 3。在等子代理的时候，照「等子代理」第 7、8 条。平常的 `miyu ask` 照旧打断。
 
 ### 样子：`--format text`
 
@@ -83,7 +83,7 @@
 样本 `docs/designs/samples/cli/ask-text.txt`（标准输出和标准错误按先后交错，照终端里看到的）：
 
 ```text
-· 目录太宽（~），这次在 ~/.miyu/workspace 里干活
+miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/workspace
 
 先读一下笔记。
 
@@ -101,12 +101,13 @@ todo.md
 
 改好了。
 · 输入 400 · 命中缓存 160（40%）· 输出 40
-· 1 步没做：要你确认，miyu ask 里确认不了
+miyu: 警告：1 步需要确认，已跳过
+提示：在终端界面中运行可以确认
 ```
 
 | 行 | 是什么 | 在哪 | 颜色 |
 |---|---|---|---|
-| 1 | 目录太宽那一句：`· 目录太宽（<敲命令时的目录>）` + `，这次在 <实际的目录> 里干活`，两个目录都照家目录写成 `~/…`；只在开新会话、目录太宽时有，第一步之前，一次。接着说的会话在别处干活的，换成 `· 这个会话在 <目录> 里干活`（英文 `· This session works in <目录>`，施工 9-7 上） | 标准错误 | 灰 |
+| 1 | 目录太宽的告警（设计 47，施工 CL-2 中）：`miyu: 警告：工作目录 <敲命令时的目录> 范围过大，改用 <实际的目录>`（英文 `miyu: warning: working directory <…> is too broad; using <…>`），两个目录都照家目录写成 `~/…`；只在开新会话、目录太宽时有，第一步之前，一次。接着说的会话在别处干活的，是一行过程旁白 `· 会话的工作目录：<目录>`（英文 `· Session working directory: <目录>`，施工 9-7 上），灰 | 标准错误 | 告警原色，旁白灰 |
 | 2、4、8、12 | 空行：一段思考、一块的前后 | 标准错误 | |
 | 3 | 她的思考，边想边印，是一段 | 标准错误 | 灰 |
 | 5–7 | 每一步，一步一行，做完才印，几件同时跑的照做完的先后 | 标准错误 | 见「每一步」 |
@@ -117,18 +118,18 @@ todo.md
 | 18 | 用量 | 标准错误 | 灰 |
 | 19 | 有几步因为要确认没做：最后那一句 | 标准错误 | 灰；「没做」红 |
 
-配置有错那一句（施工 8-2）：样本里没有它。只在握手的回应有 `config_errors` 时有，最先印，在沙盒用不了那一句前面，一次；标准错误，灰。
+配置有错的告警（施工 8-2，设计 47）：样本里没有它。只在握手的回应有 `config_errors` 时有，最先印，在沙盒用不了的告警前面，一次；标准错误，原色：`miyu: 警告：配置中有 <几> 处错误`，下一行 `提示：运行 'miyu check' 查看`。
 
-项目配置没信任那一句（施工 8-3）：样本里没有它。造会话、说话的回应里有 `untrusted_project` 时有，在配置有错那一句后面、沙盒用不了那一句前面（接着说的会话，说话的回应到了才说），一次；标准错误，灰。
+项目配置没信任的告警（施工 8-3，设计 47）：样本里没有它。造会话、说话的回应里有 `untrusted_project` 时有，在配置有错的告警后面、沙盒用不了的告警前面（接着说的会话，说话的回应到了才说），一次；标准错误，原色：`miyu: 警告：项目配置 <文件> 尚未信任，本次没有使用`，下一行 `提示：运行 'miyu config trust' 查看后决定`。
 
-沙盒用不了那一句（施工 5-4 下）：样本里没有它。只在握手的回应说沙盒用不了时有，在配置有错那一句后面、目录太宽那一句前面，一次；标准错误，灰，和目录太宽那一句连着、不空行。
+沙盒用不了的告警（施工 5-4 下，设计 47）：样本里没有它。只在握手的回应说沙盒用不了时有，在配置有错的告警后面、目录太宽的告警前面，一次；标准错误，原色，和目录太宽的告警连着、不空行：`miyu: 警告：沙盒不可用：<原因>`，能修的下一行 `提示：<怎么修>`。
 
 压缩那一行（施工 6-3 下，照项目主人 2026-09-29 定的样子）：样本里没有它。内核压缩时推的 `compaction.progress`、`compaction.done` 和摘要请求的 `model.called` 印成一行旁白，标准错误，灰，前后和一步一样照「换行和空行」：
 
 - 压缩中：`· 正在压缩上下文… 已写 3,120 字`；还没收到字的（摘要请求刚发出去，头一条进度是 0 字）只印 `· 正在压缩上下文…`，不写字数（施工 6-3 三补，和终端界面一样）。标准错误是终端的，每来一条进度回到行首、擦掉这一行重画（`\r` 加 `ESC[2K`）；不是终端的，压缩中不印。
 - 压好了：`· 上下文已压缩：812.3k → 31k token`。终端里擦掉进度那一行换成它。token 数不到一千照写，一千以上写 `k`、一百万以上写 `M`，一位小数，整的不写小数；数是估算（`compaction.md` 第一条），和供应商下一次报的会差一点。
-- 失败：`· 压缩失败：<原因>`，红。原因照摘要请求出错的分类说；取不出摘要的（`bad_summary`）分两种，原话说调了工具的说「摘要请求里调了工具」。被打断的不说：这一轮的收尾会说。
-- 调了工具、改走隔离式（`bad_summary`，原话末尾是 `trying again without tools`，施工 6-6 下）：不是失败，灰色一行 `· 摘要请求里调了工具，改用不带工具的再压`（英文 `· The summary called a tool; compacting again without tools`），这次压缩接着来进度。
+- 失败：`· 压缩失败：<原因>`，红。原因照摘要请求出错的分类说；取不出摘要的（`bad_summary`）分两种，原话说调了工具的说「摘要请求调用了工具」。被打断的不说：这一轮的收尾会说。
+- 调了工具、改走隔离式（`bad_summary`，原话末尾是 `trying again without tools`，施工 6-6 下）：不是失败，灰色一行 `· 摘要请求调用了工具，改为不带工具重新压缩`（英文 `· The summary called a tool; compacting again without tools`），这次压缩接着来进度。
 - 暂停了（`context.compaction_paused`，施工 6-6 上）：红，照 `reason` 印一行，写法见下表。不认识的 `reason`、缺了次数或序号的，印「自动压缩已暂停」那一行（见下表）。暂停着、这一次放不下的，照出错那一行印，分类说「自动压缩已暂停」。
 - `--format json` 不印：脚本读事件流里的 `compaction.done`。
 
@@ -197,7 +198,7 @@ todo.md
 - 输入是 0 的，不写命中率那一格：`· 输入 0 · 命中缓存 0 · 输出 0`。
 - 供应商一次都没报用量的，这一行不印。
 
-**最后那一句**：这一轮里有几个结果的状态是 `denied`、说法是 `core/tool-results/unattended`（内核在没人能确认时记的那一句），就印 `· <几> 步没做：要你确认，miyu ask 里确认不了`，印在用量后面。只读时要写被拦的、碰到数据根被拦的，都不算。
+**最后那一句**：这一轮里有几个结果的状态是 `denied`、说法是 `core/tool-results/unattended`（内核在没人能确认时记的那一句），就印告警 `miyu: 警告：<几> 步需要确认，已跳过` 和提示 `提示：在终端界面中运行可以确认`（设计 47，施工 CL-2 中），原色，印在用量后面。只读时要写被拦的、碰到数据根被拦的，都不算。
 
 **说为什么结束的那一句**：照结束的原因，印在最后。
 
@@ -229,11 +230,11 @@ todo.md
 5. **跟哪几轮**：第一轮照「怎么走」第 8 条认；第一轮结束以后，等着的时候这个会话开的每一轮都跟（被回报叫醒的；这期间别处开的也跟，照样印）。被打断结束的一轮（这一次按的 Ctrl+C，或者别处打断的），不再等，照它收尾。
 6. **印什么**（`--format text`）：
    1. 每一轮照上面「样子」印：思考、每一步、回答；用量那一行、最后那一句、说为什么结束的那一句，只在收尾时印一次。
-   2. 一轮结束了还有没报的，也没有要来的一轮：标准错误上印一行灰字 `· 等 <N> 个子代理回报…（按 Ctrl+C 不等了）`，`N` 是还欠着回报的几个。标准错误是终端的，原地刷新：不换行，回到行首、擦掉这一行重画（`\r` 加 `ESC[2K`），数目变了重画；别的东西要印之前先擦掉，屏幕照画它之前的样子接着印。不是终端的，一次 `miyu ask` 只印一次，照一行旁白。要来的一轮马上开的，不印。
-   3. 等的子代理报回来了：印一行灰字 `· <编号>「<标题>」报回来了`；没有标题的（这一次以前派、这一次留了言的，第 2 条）写 `· <编号> 报回来了`（施工 7-9 补）。照一行旁白。闲着时到的，这一行就在它叫醒的那一轮前面；一轮里到的，印在那一步前后。编号、标题照每一步参数的值写成一行（只取第一行，控制字符换掉，最多 80 个字）。
+   2. 一轮结束了还有没报的，也没有要来的一轮：标准错误上印一行灰字 `· 等待 <N> 个子代理回报…（按 Ctrl+C 停止等待）`，`N` 是还欠着回报的几个。标准错误是终端的，原地刷新：不换行，回到行首、擦掉这一行重画（`\r` 加 `ESC[2K`），数目变了重画；别的东西要印之前先擦掉，屏幕照画它之前的样子接着印。不是终端的，一次 `miyu ask` 只印一次，照一行旁白。要来的一轮马上开的，不印。
+   3. 等的子代理报回来了：印一行灰字 `· <编号>「<标题>」已回报`；没有标题的（这一次以前派、这一次留了言的，第 2 条）写 `· <编号> 已回报`（施工 7-9 补）。照一行旁白。闲着时到的，这一行就在它叫醒的那一轮前面；一轮里到的，印在那一步前后。编号、标题照每一步参数的值写成一行（只取第一行，控制字符换掉，最多 80 个字）。
    4. 收尾：用量那一行是跟过的每一轮每次请求加起来的；最后那一句的几步也是几轮加起来的；说为什么结束的那一句、退出码照最后结束的那一轮（上面「说为什么结束的那一句」）。
-7. **等子代理的时候按 Ctrl+C**（第一轮结束了、没有跟着的回合在进行）：不等了。终端里擦掉等的那一行，照收尾印用量、最后那一句，再印一行灰字 `· 不等了，子代理还在后台跑，下次 miyu ask -c 时 AI 会看到结果`，退出码 3。回合在进行时按照旧（「怎么走」第 10 条）。
-8. **`--timeout` 到了**：有回合在进行的叫它打断，不等它收尾；照第 7 条收好屏幕、印用量和最后那一句，再印一行灰字：还有子代理没报的 `· 等到时间了，没回报的子代理还在后台跑`，没有的 `· 等到时间了`；退出码 3。
+7. **等子代理的时候按 Ctrl+C**（第一轮结束了、没有跟着的回合在进行）：不等了。终端里擦掉等的那一行，照收尾印用量、最后那一句，再印一行灰字 `· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果`，退出码 3。回合在进行时按照旧（「怎么走」第 10 条）。
+8. **`--timeout` 到了**：有回合在进行的叫它打断，不等它收尾；照第 7 条收好屏幕、印用量和最后那一句，再印一行灰字：还有子代理没报的 `· 已到等待时限，未回报的子代理仍在后台运行`，没有的 `· 已到等待时限`；退出码 3。
 9. **`--format json`**：等的那一行、报回来了那一行不印；`turns` 照先后放这期间结束了的每一轮（下面「样子：`--format json`」）。不等了、到时间了的，照样印那一行 JSON，列出已经结束了的几轮，再在标准错误上说为什么不等了（不上色）。
 10. **头走了以后**：`miyu ask` 退出，连接断了，核心那边就没人看着这个一次性会话了，后来的回报只记下、不叫醒她，下次 `miyu ask -c` 时她一起看到（`agents.md` 第三条第 3 条；有没有头看着由会话 actor 照订阅数，`session/actor.md` 第 3 条）。
 11. **等不到的**：别处在这期间撤销了派它的那一轮、或者还能恢复撤销时，回报只记下、不开轮（`kernel/session.md`「回报」第 5、6 条），这边等的那一轮不会来；掉队重订以后漏看了回报的，也数不准。按 Ctrl+C 或者用 `--timeout`。
@@ -245,11 +246,11 @@ todo.md
 ↗ 派子代理 查 B · 派出去了：j2
 
 派出去了，等它们回来。
-· 等 2 个子代理回报…（按 Ctrl+C 不等了）
-· j1「查 A」报回来了
+· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）
+· j1「查 A」已回报
 
 A 查完了。
-· j2「查 B」报回来了
+· j2「查 B」已回报
 
 B 也查完了，都齐了。
 · 输入 500 · 命中缓存 200（40%）· 输出 50
@@ -264,11 +265,11 @@ B 也查完了，都齐了。
 ↗ 派子代理 查 C · 派出去了：j3
 
 转给 A 了，C 也派出去了。
-· 等 2 个子代理回报…（按 Ctrl+C 不等了）
-· j1 报回来了
+· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）
+· j1 已回报
 
 A 改好了。
-· j3「查 C」报回来了
+· j3「查 C」已回报
 
 C 也查完了。
 · 输入 500 · 命中缓存 200（40%）· 输出 50
@@ -322,10 +323,10 @@ C 也查完了。
 | 压缩中 | `· 正在压缩上下文… 已写 <字数> 字`；0 字时 `· 正在压缩上下文…` | `· Compacting the context… <n> characters written`；0 字时 `· Compacting the context…` |
 | 压好了 | `· 上下文已压缩：<压前> → <压后> token` | `· Context compacted: <before> → <after> tokens` |
 | 压缩失败 | `· 压缩失败：<原因>` | `· Compaction failed: <reason>` |
-| 暂停：连续失败 | `· 自动压缩连续失败 <n> 次，已暂停：可以手动压缩、换一个模型，或者开新会话` | `· Automatic compaction failed <n> times and is paused: compact manually, switch models, or start a new session` |
-| 暂停：内容太大 | `· 第 <序号> 条内容太大，压完很快又满了，自动压缩已暂停` | `· Entry <seq> is too large and keeps filling the context; automatic compaction is paused` |
-| 暂停：别的 | `· 自动压缩已暂停：可以手动压缩、换一个模型，或者开新会话` | `· Automatic compaction is paused: compact manually, switch models, or start a new session` |
-| 原因：摘要请求里调了工具 | 摘要请求里调了工具 | the summary called a tool |
+| 暂停：连续失败 | `· 自动压缩连续失败 <n> 次，已暂停（可以手动压缩、换模型或新建会话）` | `· Automatic compaction failed <n> times and is paused: compact manually, switch models, or start a new session` |
+| 暂停：内容太大 | `· 第 <序号> 条内容过大，压缩后很快又满，自动压缩已暂停` | `· Entry <seq> is too large and keeps filling the context; automatic compaction is paused` |
+| 暂停：别的 | `· 自动压缩已暂停（可以手动压缩、换模型或新建会话）` | `· Automatic compaction is paused: compact manually, switch models, or start a new session` |
+| 原因：摘要请求调用了工具 | 摘要请求调用了工具 | the summary called a tool |
 | 最后那一句，一步 | `· 1 步没做：要你确认，miyu ask 里确认不了` | `· 1 step not done: it needs your approval, which cannot be given in miyu ask` |
 | 最后那一句，几步 | `· 2 步没做：要你确认，miyu ask 里确认不了` | `· 2 steps not done: they need your approval, which cannot be given in miyu ask` |
 | 一步没做成的词 | 出错、没做、打断了、跳过了 | failed、not done、interrupted、skipped |
@@ -336,15 +337,15 @@ C 也查完了。
 | 打断了 | 打断了 | Interrupted |
 | 核心断开 | 核心断开了 | The core went away |
 | `--from` 后面是空的、只有空白（施工 7-10） | `--from 后面要写别的 harness 的名字` | `--from needs the name of the other harness` |
-| 等子代理，一个（施工 7-9） | `· 等 1 个子代理回报…（按 Ctrl+C 不等了）` | `· Waiting for 1 subagent to report… (Ctrl+C stops waiting)` |
-| 等子代理，几个 | `· 等 2 个子代理回报…（按 Ctrl+C 不等了）` | `· Waiting for 2 subagents to report… (Ctrl+C stops waiting)` |
-| 报回来了 | `· j1「查 A」报回来了` | `· j1 “查 A” reported back` |
-| 报回来了，没有标题（施工 7-9 补） | `· j5 报回来了` | `· j5 reported back` |
-| 等的时候按了 Ctrl+C | `· 不等了，子代理还在后台跑，下次 miyu ask -c 时 AI 会看到结果` | `· Stopped waiting; the subagents keep running, and the AI will see their results at the next miyu ask -c` |
-| 到了 `--timeout`，还有子代理没报 | `· 等到时间了，没回报的子代理还在后台跑` | `· Time is up; the subagents that have not reported keep running` |
-| 到了 `--timeout`，没有 | `· 等到时间了` | `· Time is up` |
-| `--from` 按了 Ctrl+C，她那一轮还在进行（施工 7-10） | `· 不等了，AI 那一轮还在接着跑` | `· Stopped waiting; the AI's turn keeps going` |
-| `--from` 到了 `--timeout`，她那一轮还在进行 | `· 等到时间了，AI 那一轮还在接着跑` | `· Time is up; the AI's turn keeps going` |
+| 等子代理，一个（施工 7-9） | `· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）` | `· Waiting for 1 subagent to report… (Ctrl+C stops waiting)` |
+| 等子代理，几个 | `· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）` | `· Waiting for 2 subagents to report… (Ctrl+C stops waiting)` |
+| 报回来了 | `· j1「查 A」已回报` | `· j1 “查 A” reported back` |
+| 报回来了，没有标题（施工 7-9 补） | `· j5 已回报` | `· j5 reported back` |
+| 等的时候按了 Ctrl+C | `· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果` | `· Stopped waiting; the subagents keep running, and their results arrive at the next miyu ask -c` |
+| 到了 `--timeout`，还有子代理没报 | `· 已到等待时限，未回报的子代理仍在后台运行` | `· Time is up; the subagents that have not reported keep running` |
+| 到了 `--timeout`，没有 | `· 已到等待时限` | `· Time is up` |
+| `--from` 按了 Ctrl+C，她那一轮还在进行（施工 7-10） | `· 已停止等待，这一轮仍在继续` | `· Stopped waiting; the turn keeps going` |
+| `--from` 到了 `--timeout`，她那一轮还在进行 | `· 已到等待时限，这一轮仍在继续` | `· Time is up; the turn keeps going` |
 | 没走完 | 这一轮没走完：<原因> | The turn did not finish: <reason> |
 | 出错 | 出错了：<分类>：<原话> | Error: <kind>: <message> |
 
@@ -372,42 +373,42 @@ C 也查完了。
 样本 `crates/miyu-cli/src/help/zh/ask.txt`（中文）：
 
 ```text
-用法：miyu ask [选项] <要说的话>
+用法：miyu ask [选项] <消息>
 
-说一句话，打印 AI 的回答。不写 -c、-s 的，每次新开一个会话。
-AI 派了子代理的，等它们都报回来、AI 说完再退出。
+发送消息并打印回复。不加 -c、-s 时新建会话。
+派出了子代理的，等子代理全部回报、回复结束后退出。
 
 选项：
-  -c, --continue          接着上一次 miyu ask 开的会话说
-  -s, --session <编号>    接着这个会话说
-      --format text|json  text 给人看（默认），json 给脚本
-      --add-dir <目录>    多放行一个目录，AI 能读能写，可以写好几次
-      --file <文件>       附上一个文件，图片、PDF、文本都行，可以写好几次
-      --timeout <时长>    最多等多久，到了就不等了：30s、10m、1h
-      --from <名字>       别的 harness 用：写上它的名字，例如 claude-code
-      --model <模型>      用这个模型说；接着的会话以后都用它
-      --no-memory         不召回、也不记；只管新开的会话
-  -h, --help              印帮助
+  -c, --continue          继续上一次 miyu ask 的会话
+  -s, --session <编号>    继续指定的会话
+      --format text|json  输出格式（默认 text）
+      --add-dir <目录>    允许读写另一个目录，可重复
+      --file <文件>       附加文件（图片、PDF、文本），可重复
+      --timeout <时长>    最长等待时间，例如 30s、10m、1h
+      --from <名字>       调用方 harness 的名字，例如 claude-code
+      --model <模型>      指定模型，继续的会话沿用
+      --no-memory         不召回也不保存记忆（仅新会话）
+  -h, --help              显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/ask.txt`（英文）：
 
 ```text
-Usage: miyu ask [options] <words>
+Usage: miyu ask [options] <message>
 
-Say something and print the AI's answer, in a new session unless -c or -s.
-If the AI starts subagents, it waits for their reports and the final answer.
+Send a message and print the reply, in a new session unless -c or -s.
+If subagents are started, wait for their reports and the final reply.
 
 Options:
-  -c, --continue          Go on in the session the last miyu ask opened
-  -s, --session <id>      Go on in this session
-      --format text|json  text for people (default), json for scripts
-      --add-dir <dir>     The AI may read and write it too; repeatable
-      --file <file>       Attach a file: image, PDF, text…; repeatable
-      --timeout <time>    Stop waiting after this long: 30s, 10m, 1h
-      --from <name>       For another harness: its name, e.g. claude-code
+  -c, --continue          Continue the last miyu ask session
+  -s, --session <id>      Continue the given session
+      --format text|json  Output format (default: text)
+      --add-dir <dir>     Allow access to another directory; repeatable
+      --file <file>       Attach a file (image, PDF, text); repeatable
+      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>       Name of the calling harness, e.g. claude-code
       --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or remember; new sessions only
+      --no-memory         Don't recall or save memories (new sessions only)
   -h, --help              Print help
 ```
 

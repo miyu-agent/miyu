@@ -9,16 +9,12 @@ use serde_json::Value;
 use super::super::steps;
 use super::super::{Format, Screen};
 use super::Follow;
-use crate::shown::Line;
 
 impl Follow<'_> {
     /// 握手的回应说配置里有几处错误（施工 8-2）：说一句，`miyu check` 看是哪里（施工 8-30 起）。
     pub(crate) fn config_errors(&mut self, errors: u64, screen: &mut Screen<'_>) {
         if self.plan.format == Format::Text {
-            self.aside(
-                &Line::gray(self.plan.language.config_errors(errors)),
-                screen,
-            );
+            self.warn(&self.plan.language.config_errors(errors), screen);
         }
     }
 
@@ -30,10 +26,7 @@ impl Follow<'_> {
         }
         self.untrusted = true;
         if self.plan.format == Format::Text {
-            self.aside(
-                &Line::gray(self.plan.language.untrusted_project(file)),
-                screen,
-            );
+            self.warn(&self.plan.language.untrusted_project(file), screen);
         }
     }
 
@@ -41,7 +34,7 @@ impl Follow<'_> {
     /// 只给人看的时候说。
     pub(crate) fn unsandboxed(&mut self, reason: &str, screen: &mut Screen<'_>) {
         if self.plan.format == Format::Text {
-            self.aside(&steps::unsandboxed(self.plan, reason), screen);
+            self.warn(&steps::unsandboxed(self.plan, reason), screen);
         }
     }
 
@@ -53,7 +46,7 @@ impl Follow<'_> {
         }
         self.cwd = used.to_string();
         if self.plan.format == Format::Text {
-            self.aside(&steps::moved(self.plan, used), screen);
+            self.warn(&steps::moved(self.plan, used), screen);
         }
     }
 

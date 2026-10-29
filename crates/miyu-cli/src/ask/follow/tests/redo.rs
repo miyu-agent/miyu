@@ -128,7 +128,7 @@ fn the_undo_lines_are_asides_without_the_restore_hint() {
     assert_eq!(step, Step::Going);
     assert_eq!(out, "");
     assert_eq!(
-        err, "· 撤销最后一轮，重新做\n· 撤掉了压缩，上下文回到了压缩前\n",
+        err, "· 已撤销最后一轮，重新做\n· 已撤销压缩，上下文恢复到压缩前\n",
         "以前的核心多交的 files 照样不印（施工 U-1）"
     );
 }
@@ -172,7 +172,7 @@ fn the_reply_cwd_is_taken_without_saying_it_is_too_wide() {
         ),
     ];
     let Fed { err, .. } = feed_redo(&printing(Language::Chinese), false, &messages);
-    assert_eq!(err, "· 撤销「hi」这一轮，重新做\n→ 读取 a.md · 1 行\n");
+    assert_eq!(err, "· 已撤销「hi」这一轮，重新做\n→ 读取 a.md · 1 行\n");
 }
 
 #[test]
@@ -195,6 +195,6 @@ fn what_came_before_the_reply_is_printed_after_the_undo_lines() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         screen,
-        "· 撤销「hi」这一轮，重新做\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
+        "· 已撤销「hi」这一轮，重新做\n\n想一想\n\n你好。\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"
     );
 }

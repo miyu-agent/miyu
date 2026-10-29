@@ -9,6 +9,7 @@ use super::paths::{Places, planned};
 use super::render::{columns, explain, problem, toml, values};
 use super::{ConfigCommand, ConfigPlan, tidy};
 use crate::ask::Format;
+use crate::diagnostic::Level;
 use crate::language::Language;
 
 /// 假的家目录：绝对路径，三个平台都是（`/home/me` 在 Windows 上不算绝对路径）。
@@ -322,12 +323,20 @@ fn edit_and_trust_words_match_the_blueprint() {
         "· Trusted. You will be asked again if it changes"
     );
     assert_eq!(
-        zh.untrusted_project("~/src/app/.miyu/config.toml"),
-        "· 这里的项目配置 ~/src/app/.miyu/config.toml 还没信任，这次没用它：miyu config trust 看一眼再定"
+        zh.untrusted_project("~/src/app/.miyu/config.toml")
+            .lines(zh, Level::Warning),
+        [
+            "miyu: 警告：项目配置 ~/src/app/.miyu/config.toml 尚未信任，本次没有使用",
+            "提示：运行 'miyu config trust' 查看后决定",
+        ]
     );
     assert_eq!(
-        en.untrusted_project("~/src/app/.miyu/config.toml"),
-        "· The project config at ~/src/app/.miyu/config.toml is not trusted yet, so it was not used: run miyu config trust to review it"
+        en.untrusted_project("~/src/app/.miyu/config.toml")
+            .lines(en, Level::Warning),
+        [
+            "miyu: warning: project config ~/src/app/.miyu/config.toml is not trusted; not used this time",
+            "hint: run 'miyu config trust' to review it",
+        ]
     );
     assert_eq!(
         zh.explain_header("启动时打开", "ui.startup", "说明。", "head_start"),

@@ -1,8 +1,7 @@
-Usage: miyu redo [options] [words]
+Usage: miyu redo [options] [message]
 
-Undo the last turn and send what you said again, so the AI does it over.
-Any words are sent instead of what you said.
+Undo the last turn and send its message again, or the new message if given.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help

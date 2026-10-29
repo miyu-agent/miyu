@@ -58,11 +58,11 @@
 ```text
 用法：miyu rename [选项] <标题>
 
-给会话起名，会话列表里一眼认得出。标题的几个词用空格连起来。
+重命名会话。标题中的多个词以空格连接。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/rename.txt`（英文）：
@@ -70,10 +70,10 @@
 ```text
 Usage: miyu rename [options] <title>
 
-Give the session a title, so it is easy to spot in the session list.
+Rename the session. Words of the title are joined with spaces.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 

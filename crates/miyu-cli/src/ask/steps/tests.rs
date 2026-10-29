@@ -7,6 +7,7 @@ use miyu_store::resources::ResourceRoot;
 
 use super::*;
 use crate::ask::{Format, Plan, Target};
+use crate::diagnostic::Level;
 use crate::language::Language;
 
 /// 根目录：Windows 上得带盘符才算绝对路径。
@@ -387,89 +388,21 @@ fn a_directory_too_wide_says_where_she_works() {
         ..plan(Language::Chinese)
     };
     assert_eq!(
-        moved(&chinese, &used).paint(false),
-        format!("· 目录太宽（~），这次在 ~{sep}.miyu{sep}workspace 里干活\n")
+        moved(&chinese, &used).lines(Language::Chinese, Level::Warning),
+        [format!(
+            "miyu: 警告：工作目录 ~ 范围过大，改用 ~{sep}.miyu{sep}workspace"
+        )]
     );
     let english = Plan {
         cwd: home,
         ..plan(Language::English)
     };
     assert_eq!(
-        moved(&english, &used).paint(true),
-        format!(
-            "\x1b[90m· Working directory too wide (~), using ~{sep}.miyu{sep}workspace this time\x1b[0m\n"
-        )
+        moved(&english, &used).lines(Language::English, Level::Warning),
+        [format!(
+            "miyu: warning: working directory ~ is too broad; using ~{sep}.miyu{sep}workspace"
+        )]
     );
 }
 
-/// 沙盒用不了那一句（施工 5-4 下）：每种原因照这台机器的系统写成人话；中英两种；不认得的原因照原样写进括号。
-#[test]
-fn an_unusable_sandbox_is_said_with_why_and_how_to_fix() {
-    use miyu_sandbox::Platform;
-
-    let every = [
-        Platform::Linux,
-        Platform::Macos,
-        Platform::Windows,
-        Platform::Other,
-    ];
-    let cases: [(&str, &[Platform], &str, &str); 6] = [
-        (
-            "helper_missing",
-            &every,
-            "主程序旁边没有 miyu-sandbox：重装一次 Miyu",
-            "miyu-sandbox is missing beside the main program: reinstall Miyu",
-        ),
-        (
-            "helper_failed",
-            &every,
-            "miyu-sandbox 跑不起来：重装一次 Miyu",
-            "miyu-sandbox does not run: reinstall Miyu",
-        ),
-        (
-            "no_mechanism",
-            &[Platform::Linux],
-            "内核没有能用的 Landlock：要 Linux 5.13 起，启动参数的 lsm= 里开着",
-            "the kernel has no usable Landlock: Linux 5.13 or later, enabled in the lsm= boot parameter",
-        ),
-        (
-            "no_mechanism",
-            &[Platform::Macos],
-            "装不上 Seatbelt 配置，Miyu 可能跑在别的沙盒里",
-            "the Seatbelt profile cannot be applied; Miyu may be running inside another sandbox",
-        ),
-        (
-            "no_mechanism",
-            &[Platform::Windows],
-            "这一版在 Windows 上还不能把命令关进沙盒",
-            "this version cannot sandbox commands on Windows yet",
-        ),
-        (
-            "no_mechanism",
-            &[Platform::Other],
-            "这个系统上没有能用的沙盒",
-            "no sandbox is available on this system",
-        ),
-    ];
-    for (reason, platforms, chinese, english) in cases {
-        for &platform in platforms {
-            assert_eq!(
-                Language::Chinese.unsandboxed(reason, platform),
-                format!("· 沙盒用不了（{chinese}）：执行命令要你确认，miyu ask 里确认不了"),
-                "{reason} {platform:?}"
-            );
-            assert_eq!(
-                Language::English.unsandboxed(reason, platform),
-                format!(
-                    "· Sandbox unavailable ({english}): commands need your approval, which cannot be given in miyu ask"
-                ),
-                "{reason} {platform:?}"
-            );
-        }
-    }
-    assert_eq!(
-        Language::Chinese.unsandboxed("no_user\u{1b}[2J", Platform::Windows),
-        "· 沙盒用不了（no_user\u{fffd}[2J）：执行命令要你确认，miyu ask 里确认不了",
-        "不认得的原因照原样写，控制字符换掉"
-    );
-}
+mod unsandboxed;

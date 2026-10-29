@@ -1,7 +1,7 @@
 Usage: miyu undo [options]
 
-Undo the last turn. Also: miyu rewind.
+Undo the last turn (alias: rewind).
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help

@@ -21,7 +21,7 @@ pub(super) fn lines(result: &Value, plan: &UndoPlan) -> Vec<Line> {
         .language
         .undo_header(plan.direction, said(result).as_deref(), turns(result));
     let mut lines = vec![Line::gray(header)];
-    lines.extend(body(result, plan));
+    lines.extend(body_texts(result, plan).into_iter().map(Line::gray));
     if plan.direction == Direction::Undo {
         lines.push(Line::gray(plan.language.restore_hint()));
     }
@@ -34,7 +34,12 @@ pub(crate) fn redo_lines(result: &Value, plan: &UndoPlan) -> Vec<Line> {
     let mut lines = vec![Line::gray(
         plan.language.redo_header(said(result).as_deref()),
     )];
-    lines.extend(body(result, plan));
+    // 重做接着是这一轮的过程记录：中间那几句照过程行写，带「·」（设计 47，项目主人 10-29）。
+    lines.extend(
+        body_texts(result, plan)
+            .into_iter()
+            .map(|text| Line::gray(format!("· {text}"))),
+    );
     lines
 }
 
@@ -54,7 +59,7 @@ fn turns(result: &Value) -> usize {
 }
 
 /// 第一行和最后一行中间的：撤掉了压缩、清空的那两句，停掉了几个任务的那一句。
-fn body(result: &Value, plan: &UndoPlan) -> Vec<Line> {
+fn body_texts(result: &Value, plan: &UndoPlan) -> Vec<String> {
     let language = &plan.language;
     let mut lines = Vec::new();
     // 撤掉了几次压缩、几次清空，核心撤销时才交，是 0 的不交：几次都说同一句，两样都有的先压缩后清空；恢复不说（施工 6-9、
@@ -62,15 +67,15 @@ fn body(result: &Value, plan: &UndoPlan) -> Vec<Line> {
     let undone = |field: &str| result[field].as_u64().is_some_and(|count| count > 0);
     if plan.direction == Direction::Undo {
         if undone("compactions") {
-            lines.push(Line::gray(language.compaction_undone()));
+            lines.push(language.compaction_undone().to_string());
         }
         if undone("clears") {
-            lines.push(Line::gray(language.clear_undone()));
+            lines.push(language.clear_undone().to_string());
         }
         // 停掉了几个任务，核心撤销时才交，没有的不交（施工 7-8）：只说几个，是哪几个在回应里。
         let stopped = result["jobs"].as_array().map_or(0, Vec::len);
         if stopped > 0 {
-            lines.push(Line::gray(language.jobs_stopped(stopped)));
+            lines.push(language.jobs_stopped(stopped));
         }
     }
     lines

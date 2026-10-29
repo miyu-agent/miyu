@@ -96,7 +96,7 @@ fn agent(job: &str, title: &str) -> Value {
         "session": "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91"})
 }
 
-/// 第 `seq` 条：`job` 报回来了。
+/// 第 `seq` 条：`job` 已回报。
 fn report(seq: u64, job: &str, reason: &str) -> Value {
     at(
         seq,
@@ -177,10 +177,10 @@ fn in_a_terminal_the_waiting_line_is_redrawn_and_wiped() {
     assert_eq!(
         screen,
         "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n\
-         \r\x1b[2K· 等 2 个子代理回报…（按 Ctrl+C 不等了）\
-         \r\x1b[2K· j1「查 A」报回来了\n\
-         \r\x1b[2K· 等 1 个子代理回报…（按 Ctrl+C 不等了）\
-         \r\x1b[2K· j2「查 B」报回来了\n\n都好了。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
+         \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\
+         \r\x1b[2K· j1「查 A」已回报\n\
+         \r\x1b[2K· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\
+         \r\x1b[2K· j2「查 B」已回报\n\n都好了。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
         "等的那一行不换行、原地画，别的来了先擦掉；用量两轮加起来，只印一次"
     );
 }
@@ -203,8 +203,8 @@ fn a_turn_woken_by_something_else_wipes_the_line_and_goes_on_as_usual() {
     assert_eq!(
         screen,
         "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n\
-         \r\x1b[2K· 等 2 个子代理回报…（按 Ctrl+C 不等了）\r\x1b[2K后台的跑完了。\n\
-         \r\x1b[2K· 等 2 个子代理回报…（按 Ctrl+C 不等了）"
+         \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\r\x1b[2K后台的跑完了。\n\
+         \r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）"
     );
 }
 
@@ -218,7 +218,7 @@ fn the_last_report_that_wakes_nobody_ends_it_at_once() {
     let (step, screen, _) = waiting(&plan, false, &messages, |_, _| None);
     assert_eq!(step, Step::Done(exit::OK));
     assert!(
-        screen.ends_with("· j2「查 B」报回来了\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"),
+        screen.ends_with("· j2「查 B」已回报\n· 输入 100 · 命中缓存 40（40%）· 输出 10\n"),
         "{screen}"
     );
 }
@@ -249,8 +249,8 @@ fn the_waiting_line_is_printed_once_when_not_a_terminal() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         screen,
-        "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n· 等 2 个子代理回报…（按 Ctrl+C 不等了）\n\
-         · j1「查 A」报回来了\n\nA 好了。\n· j2「查 B」报回来了\n\nB 好了。\n\
+        "↗ 派子代理 查 · 派出去了：j1\n\n派出去了。\n· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\n\
+         · j1「查 A」已回报\n\nA 好了。\n· j2「查 B」已回报\n\nB 好了。\n\
          · 输入 300 · 命中缓存 120（40%）· 输出 30\n"
     );
 }
@@ -342,13 +342,13 @@ fn leaving_while_waiting_says_why_after_the_usage() {
     });
     assert_eq!((step, left), (Step::Going, Some(exit::INTERRUPTED)));
     assert!(
-        screen.ends_with("派出去了。\n\r\x1b[2K· 等 2 个子代理回报…（按 Ctrl+C 不等了）\r\x1b[2K· 输入 100 · 命中缓存 40（40%）· 输出 10\n· 不等了，子代理还在后台跑，下次 miyu ask -c 时 AI 会看到结果\n"),
+        screen.ends_with("派出去了。\n\r\x1b[2K· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）\r\x1b[2K· 输入 100 · 命中缓存 40（40%）· 输出 10\n· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果\n"),
         "终端里等的那一行擦掉：{screen:?}"
     );
     // 到时间了：还有没报的、都报了（只剩一轮在跑）说法不一样。
     for (messages, said) in [
-        (first(), "· 等到时间了，没回报的子代理还在后台跑\n"),
-        (a_turn("completed")[..3].to_vec(), "· 等到时间了\n"),
+        (first(), "· 已到等待时限，未回报的子代理仍在后台运行\n"),
+        (a_turn("completed")[..3].to_vec(), "· 已到等待时限\n"),
     ] {
         let (_, screen, left) = waiting(&plan, false, &messages, |follow, screen| {
             Some(follow.leave(Leaving::TimedOut, screen))
@@ -415,7 +415,7 @@ fn json_lists_each_turn_and_prints_nothing_while_waiting() {
     assert_eq!(printed["turns"].as_array().map(Vec::len), Some(1));
     assert_eq!(
         said,
-        "· 不等了，子代理还在后台跑，下次 miyu ask -c 时 AI 会看到结果\n"
+        "· 已停止等待，子代理仍在后台运行，下次 miyu ask -c 时会收到结果\n"
     );
 }
 
@@ -450,7 +450,7 @@ fn english_says_the_same() {
     );
     assert_eq!(
         language.stopped_waiting(),
-        "· Stopped waiting; the subagents keep running, and the AI will see their results at the next miyu ask -c"
+        "· Stopped waiting; the subagents keep running, and their results arrive at the next miyu ask -c"
     );
     assert_eq!(language.timed_out(false), "· Time is up");
 }
@@ -485,7 +485,7 @@ fn steps_not_done_are_counted_over_every_turn() {
     assert_eq!(step, Step::Done(exit::UNATTENDED));
     assert!(
         screen.ends_with(
-            "· 输入 200 · 命中缓存 80（40%）· 输出 20\n· 1 步没做：要你确认，miyu ask 里确认不了\n"
+            "· 输入 200 · 命中缓存 80（40%）· 输出 20\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
         ),
         "{screen}"
     );

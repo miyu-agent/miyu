@@ -81,7 +81,7 @@ fn a_failed_summary_is_red_and_says_why() {
     let plan = plan(Format::Text, Language::Chinese);
     for (message, why) in [
         ("no summary in the reply", "摘要提取失败"),
-        ("the summary reply called a tool", "摘要请求里调了工具"),
+        ("the summary reply called a tool", "摘要请求调用了工具"),
     ] {
         let turn = compacted(vec![summary_called(
             "error",
@@ -158,7 +158,7 @@ fn a_pause_after_the_third_failure_is_red_and_says_what_to_do() {
     let Fed { err, .. } = feed(&plan, true, &turn);
     let red = |text: &str| format!("\x1b[31m{text}\x1b[0m\n");
     let failed = format!("\r\x1b[2K{}", red("· 压缩失败：认证失败"));
-    let pause = red("· 自动压缩连续失败 3 次，已暂停：可以手动压缩、换一个模型，或者开新会话");
+    let pause = red("· 自动压缩连续失败 3 次，已暂停（可以手动压缩、换模型或新建会话）");
     assert!(err.contains(&format!("{failed}{pause}")), "{err:?}");
 }
 
@@ -168,7 +168,7 @@ fn each_pause_reason_has_its_line() {
         (
             Language::Chinese,
             json!({"reason": "too_large", "entry": 57}),
-            "· 第 57 条内容太大，压完很快又满了，自动压缩已暂停",
+            "· 第 57 条内容过大，压缩后很快又满，自动压缩已暂停",
         ),
         (
             Language::English,
@@ -184,12 +184,12 @@ fn each_pause_reason_has_its_line() {
         (
             Language::Chinese,
             json!({"reason": "budget"}),
-            "· 自动压缩已暂停：可以手动压缩、换一个模型，或者开新会话",
+            "· 自动压缩已暂停（可以手动压缩、换模型或新建会话）",
         ),
         (
             Language::Chinese,
             json!({"reason": "too_large"}),
-            "· 自动压缩已暂停：可以手动压缩、换一个模型，或者开新会话",
+            "· 自动压缩已暂停（可以手动压缩、换模型或新建会话）",
         ),
         (
             Language::English,
@@ -238,7 +238,7 @@ fn a_tool_call_in_the_summary_falls_back_in_gray_and_the_compaction_goes_on() {
     for (language, line) in [
         (
             Language::Chinese,
-            "· 摘要请求里调了工具，改用不带工具的再压",
+            "· 摘要请求调用了工具，改为不带工具重新压缩",
         ),
         (
             Language::English,

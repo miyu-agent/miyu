@@ -1,2 +1,2 @@
-· 撤销「把 README 改成中文」这一轮
-发下一句之前，可以用 miyu restore 恢复。
+已撤销「把 README 改成中文」这一轮
+提示：发送下一句之前，可以运行 'miyu restore' 恢复

@@ -171,7 +171,7 @@ fn a_compaction_prints_the_line_and_the_usage_as_the_sample() {
     assert_eq!(err, sample(), "和样本逐字节一样");
 }
 
-/// 摘要请求里调了工具、改走隔离式（施工 6-6 下）：照 `miyu ask` 灰色说一句，接着压，压好了退出码 0。
+/// 摘要请求调用了工具、改走隔离式（施工 6-6 下）：照 `miyu ask` 灰色说一句，接着压，压好了退出码 0。
 #[test]
 fn going_isolated_is_said_and_the_compaction_goes_on() {
     let isolating = event(
@@ -186,7 +186,7 @@ fn going_isolated_is_said_and_the_compaction_goes_on() {
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(
         err,
-        format!("· 摘要请求里调了工具，改用不带工具的再压\n{}", sample())
+        format!("· 摘要请求调用了工具，改为不带工具重新压缩\n{}", sample())
     );
 }
 

@@ -71,19 +71,19 @@ async fn undo_and_restore_the_last_ask() {
     assert_eq!(undone.status.code(), Some(0), "{undone:?}");
     assert_eq!(
         String::from_utf8_lossy(&undone.stdout),
-        "· 撤销「在吗」这一轮\n发下一句之前，可以用 miyu restore 恢复。\n"
+        "已撤销「在吗」这一轮\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n"
     );
     let restored = run(&root, &["restore"]).await;
     assert_eq!(restored.status.code(), Some(0), "{restored:?}");
     assert_eq!(
         String::from_utf8_lossy(&restored.stdout),
-        "· 恢复「在吗」这一轮\n"
+        "已恢复「在吗」这一轮\n"
     );
     // `rewind` 和 `undo` 一样。
     let rewound = run(&root, &["rewind"]).await;
     assert_eq!(rewound.status.code(), Some(0), "{rewound:?}");
     assert!(
-        String::from_utf8_lossy(&rewound.stdout).starts_with("· 撤销「在吗」这一轮\n"),
+        String::from_utf8_lossy(&rewound.stdout).starts_with("已撤销「在吗」这一轮\n"),
         "{rewound:?}"
     );
     drop(held);

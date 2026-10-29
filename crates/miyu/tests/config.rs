@@ -207,7 +207,7 @@ async fn ask_first_says_the_config_has_errors_and_path_says_where_a_project_conf
         .unwrap_or_default()
         .to_string();
     assert_eq!(
-        first, "· 1 error in the config: run miyu check to see it",
+        first, "miyu: warning: the configuration has 1 error",
         "系统配置定了英文：{asked:?}"
     );
     // 施工 8-3：这里有一份还没信任的项目配置，接着说一句。
@@ -217,12 +217,12 @@ async fn ask_first_says_the_config_has_errors_and_path_says_where_a_project_conf
     );
     let asked = run(&root, &cwd, "zh_CN.UTF-8", &["ask", "在吗"]).await;
     let lines: Vec<String> = stderr(&asked).lines().map(str::to_string).collect();
+    // 告警照设计 47：配置有错那两行之后是项目配置没信任的那一行和提示。
     assert!(
-        lines.len() > 1
-            && lines[1].starts_with("· The project config at ")
-            && lines[1].ends_with(
-                "config.toml is not trusted yet, so it was not used: run miyu config trust to review it"
-            ),
+        lines.len() > 3
+            && lines[2].starts_with("miyu: warning: project config ")
+            && lines[2].ends_with("config.toml is not trusted; not used this time")
+            && lines[3] == "hint: run 'miyu config trust' to review it",
         "{asked:?}"
     );
     std::fs::remove_dir_all(cwd.join(".miyu")).expect("删得掉");

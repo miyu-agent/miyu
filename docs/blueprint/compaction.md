@@ -407,13 +407,13 @@ INFO  session  <会话> compacted seen=24 trigger=auto before=15465 after=2675 s
 | 压缩中 | 正在压缩上下文… | Compacting the context… |
 | 压好了 | 上下文已压缩：<压前> → <压后> token | Context compacted: <before> → <after> tokens |
 | 失败 | 压缩失败：<原因> | Compaction failed: <reason> |
-| 暂停 | 自动压缩连续失败 <n> 次，已暂停：可以手动压缩、换一个模型，或者开新会话 | Automatic compaction failed <n> times and is paused: compact manually, switch models, or start a new session |
-| 内容太大 | 第 <序号> 条内容太大，压完很快又满了，自动压缩已暂停 | Entry <seq> is too large and keeps filling the context; automatic compaction is paused |
+| 暂停 | 自动压缩连续失败 <n> 次，已暂停（可以手动压缩、换模型或新建会话） | Automatic compaction failed <n> times and is paused: compact manually, switch models, or start a new session |
+| 内容太大 | 第 <序号> 条内容过大，压缩后很快又满，自动压缩已暂停 | Entry <seq> is too large and keeps filling the context; automatic compaction is paused |
 | 暂停着、这一次放不下（出错那一行的分类） | 自动压缩已暂停 | Auto-compaction paused |
 | 没有能压的（`nothing_to_compact` 的那一句，`protocol.md`） | 没有可压缩的内容。 | Nothing to compact. |
 | 上下文本来就是空的（`nothing_to_clear` 的那一句，头当一条提示通知显示，2026-09-30 项目主人定） | 上下文为空。 | Context is empty. |
-| 撤掉了压缩（撤掉一次、几次都是这一句，2026-09-29 项目主人定） | 撤掉了压缩，上下文回到了压缩前 | Undid the compaction; the context is back to how it was before |
-| 撤掉了清空（撤掉一次、几次都是这一句，2026-09-30 项目主人定） | 撤掉了清空，上下文回到了清空以前 | Undid the clear; the context is back to before it. |
+| 撤掉了压缩（撤掉一次、几次都是这一句，2026-09-29 项目主人定） | 已撤销压缩，上下文恢复到压缩前 | undid the compaction; the context is as it was before |
+| 撤掉了清空（撤掉一次、几次都是这一句，2026-09-30 项目主人定） | 已撤销清空，上下文恢复到清空前 | undid the clear; the context is as it was before |
 | 快满了（M8） | 上下文快满了，到线会自动压缩 | The context is nearly full; it will be compacted automatically |
 | 裁剪了（随通讯平台） | 移出了最早的 <几> 条消息，还能用 history 查 | Moved the <n> oldest messages out of context; history can still find them |
 

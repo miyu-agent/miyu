@@ -67,7 +67,7 @@ async fn each_step_is_one_line_before_the_answer() {
     assert_eq!(
         screen,
         format!(
-            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：没有这个文件\n← 写入 {outside} · 没做：需要确认，无人确认\n\n读完了。\n· 输入 400 · 命中缓存 160（40%）· 输出 40\n· 1 步没做：要你确认，miyu ask 里确认不了\n"
+            "→ 读取 notes.md · 3 行\n→ 读取 missing.md · 出错：没有这个文件\n← 写入 {outside} · 没做：需要确认，无人确认\n\n读完了。\n· 输入 400 · 命中缓存 160（40%）· 输出 40\nmiyu: 警告：1 步需要确认，已跳过\n提示：在终端界面中运行可以确认\n"
         ),
         "工作区里的写相对的，外面的照原样；最后说有几步因为要确认没做（施工 4-9）"
     );
@@ -126,7 +126,7 @@ async fn a_directory_too_wide_is_said_first_and_once() {
     assert_eq!(
         screen,
         format!(
-            "· 目录太宽（~），这次在 {} 里干活\n✱ 找文件 *.md · 一个都没找到\n\n没有。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
+            "miyu: 警告：工作目录 ~ 范围过大，改用 {}\n✱ 找文件 *.md · 一个都没找到\n\n没有。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
             own[0].display()
         )
     );
@@ -144,7 +144,7 @@ async fn going_on_from_elsewhere_says_where_the_session_works() {
         .await;
     assert_eq!(first.code, 0, "{}", first.err);
     assert!(
-        !first.err.contains("目录太宽"),
+        !first.err.contains("范围过大"),
         "项目目录不说：{}",
         first.err
     );
@@ -159,7 +159,7 @@ async fn going_on_from_elsewhere_says_where_the_session_works() {
         })
         .await;
     assert_eq!(second.code, 0, "{}", second.err);
-    let said = format!("· 这个会话在 {} 里干活\n", work.text());
+    let said = format!("· 会话的工作目录：{}\n", work.text());
     assert_eq!(second.err.matches(&said).count(), 1, "{}", second.err);
     assert_eq!(second.out, "二。\n");
 }
@@ -270,6 +270,6 @@ async fn a_core_that_answers_last_still_hears_about_the_directory_first() {
     assert_eq!(code, 0);
     assert_eq!(
         screen,
-        "· 目录太宽（~），这次在 /elsewhere/workspace 里干活\n\n好。\n"
+        "miyu: 警告：工作目录 ~ 范围过大，改用 /elsewhere/workspace\n\n好。\n"
     );
 }

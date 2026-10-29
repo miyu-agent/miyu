@@ -66,7 +66,7 @@
 | 被打断 | 终端里进度那一行留着，下一行 `打断了` | 3 |
 | 这一轮没走完（重启、崩了） | `这一轮没走完：<原因>` | 1 |
 
-原因、分类的说法照 `cli/ask.md`「给人看的字」的出错的分类，调了工具的单说。摘要请求里调了工具、改走隔离式的（施工 6-6 下）不是失败：照 `miyu ask` 灰色印一行 `· 摘要请求里调了工具，改用不带工具的再压`，接着压。
+原因、分类的说法照 `cli/ask.md`「给人看的字」的出错的分类，调了工具的单说。摘要请求调用了工具、改走隔离式的（施工 6-6 下）不是失败：照 `miyu ask` 灰色印一行 `· 摘要请求调用了工具，改为不带工具重新压缩`，接着压。
 
 ### 退出码
 
@@ -87,25 +87,25 @@
 样本 `crates/miyu-cli/src/help/zh/compact.txt`（中文）：
 
 ```text
-用法：miyu compact [选项] [要求]
+用法：miyu compact [选项] [要点]
 
-把上下文压缩成一份摘要，最近的一段原样留着。后面写的话是给摘要的要求。
+把上下文压缩成摘要，最近的一段保留原文。可附上摘要要保留的要点。
 
 选项：
-  -s, --session <编号>  哪个会话；不写就是上一次 miyu ask 开的
-  -h, --help            印帮助
+  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+  -h, --help            显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/compact.txt`（英文）：
 
 ```text
-Usage: miyu compact [options] [words]
+Usage: miyu compact [options] [focus]
 
 Compact the context into a summary; the most recent part stays as it is.
-Any words are instructions for the summary, such as what to keep.
+Any words tell the summary what to keep.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help
 ```
 

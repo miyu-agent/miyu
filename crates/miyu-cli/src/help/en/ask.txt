@@ -1,16 +1,16 @@
-Usage: miyu ask [options] <words>
+Usage: miyu ask [options] <message>
 
-Say something and print the AI's answer, in a new session unless -c or -s.
-If the AI starts subagents, it waits for their reports and the final answer.
+Send a message and print the reply, in a new session unless -c or -s.
+If subagents are started, wait for their reports and the final reply.
 
 Options:
-  -c, --continue          Go on in the session the last miyu ask opened
-  -s, --session <id>      Go on in this session
-      --format text|json  text for people (default), json for scripts
-      --add-dir <dir>     The AI may read and write it too; repeatable
-      --file <file>       Attach a file: image, PDF, text…; repeatable
-      --timeout <time>    Stop waiting after this long: 30s, 10m, 1h
-      --from <name>       For another harness: its name, e.g. claude-code
+  -c, --continue          Continue the last miyu ask session
+  -s, --session <id>      Continue the given session
+      --format text|json  Output format (default: text)
+      --add-dir <dir>     Allow access to another directory; repeatable
+      --file <file>       Attach a file (image, PDF, text); repeatable
+      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>       Name of the calling harness, e.g. claude-code
       --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or remember; new sessions only
+      --no-memory         Don't recall or save memories (new sessions only)
   -h, --help              Print help

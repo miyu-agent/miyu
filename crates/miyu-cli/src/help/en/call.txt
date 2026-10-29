@@ -3,17 +3,16 @@ Usage: miyu call <tool> --<param> <value>...
        miyu call <tool> --json -
        miyu call --schema <tool>...
 
-Call one of this session's tools from a command the AI runs, so a script
-can use tools like functions. It only works inside a command Miyu runs,
-in a session whose preset has Tools from scripts on: from your own
-terminal, or with it off, it exits with 2.
+Call a tool of this session from a command Miyu runs, for use in scripts.
+Works only inside a command Miyu runs, in a session whose preset has Tools
+from scripts on; anywhere else it exits with 2.
 
-Each --<param> value is sent as text and fixed up to the tool's types;
-give a param more than once for a list. --json takes a JSON object, or
-reads it from stdin with -; named params override keys in it. Windows
-PowerShell 5.1 strips the double quotes inside arguments, so pipe the JSON
-there: '{"query":"niri"}' | miyu call web_search --json -
+Each --<param> value is sent as text and converted to the tool's types;
+repeat a param for a list. --json takes a JSON object, read from stdin
+with -; named params override keys in it. Windows PowerShell 5.1 strips
+double quotes inside arguments, so pipe the JSON there:
+'{"query":"niri"}' | miyu call web_search --json -
 
-Output: one line of JSON for tools with structured results, text for the
-rest. Exit codes: 0 done, 1 the tool failed or was denied, 2 bad usage,
+Output: one line of JSON for tools with structured results, text otherwise.
+Exit codes: 0 success, 1 tool failed or was denied, 2 bad usage,
 3 interrupted or the command has ended, 4 needs approval.

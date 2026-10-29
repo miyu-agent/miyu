@@ -103,18 +103,18 @@ impl Language {
         }
     }
 
-    /// 有 `steps` 步因为要确认没做（`22-命令行.md` O3，施工 4-9）：红的「没做」前面、后面的两段。
-    pub(crate) fn unattended(&self, steps: u64) -> (String, &'static str) {
+    /// 有 `steps` 步因为要确认没做的告警（`22-命令行.md` O3，施工 4-9，设计 47）。
+    pub(crate) fn unattended(&self, steps: u64) -> Problem {
         match (self, steps) {
-            (Language::Chinese, _) => (format!("· {steps} 步"), "：要你确认，miyu ask 里确认不了"),
-            (Language::English, 1) => (
-                "· 1 step ".to_string(),
-                ": it needs your approval, which cannot be given in miyu ask",
-            ),
-            (Language::English, _) => (
-                format!("· {steps} steps "),
-                ": they need your approval, which cannot be given in miyu ask",
-            ),
+            (Language::Chinese, _) => {
+                Problem::new(format!("{steps} 步需要确认，已跳过")).hint("在终端界面中运行可以确认")
+            }
+            (Language::English, 1) => Problem::new("1 step needs approval and was skipped")
+                .hint("run it in the terminal interface to approve"),
+            (Language::English, _) => {
+                Problem::new(format!("{steps} steps need approval and were skipped"))
+                    .hint("run it in the terminal interface to approve")
+            }
         }
     }
 
@@ -126,21 +126,21 @@ impl Language {
         }
     }
 
-    /// 接着说的会话在别处干活（施工 9-7 上）：工作区是会话的，`used` 是它在的目录。
+    /// 接着说的会话在别处干活（施工 9-7 上）：工作区是会话的，`used` 是它在的目录。过程记录里的一行。
     pub(crate) fn elsewhere(&self, used: &str) -> String {
         match self {
-            Language::Chinese => format!("· 这个会话在 {used} 里干活"),
-            Language::English => format!("· This session works in {used}"),
+            Language::Chinese => format!("· 会话的工作目录：{used}"),
+            Language::English => format!("· Session working directory: {used}"),
         }
     }
 
-    /// 工作目录太宽，核心退回了数据根的工作区：`given` 是敲命令时的目录，`used` 是实际干活的。
-    pub(crate) fn moved(&self, given: &str, used: &str) -> String {
+    /// 工作目录太宽、核心退回了数据根的工作区的告警（设计 47）：`given` 是敲命令时的目录，`used` 是实际干活的。
+    pub(crate) fn moved(&self, given: &str, used: &str) -> Problem {
         match self {
-            Language::Chinese => format!("· 目录太宽（{given}），这次在 {used} 里干活"),
-            Language::English => {
-                format!("· Working directory too wide ({given}), using {used} this time")
-            }
+            Language::Chinese => Problem::new(format!("工作目录 {given} 范围过大，改用 {used}")),
+            Language::English => Problem::new(format!(
+                "working directory {given} is too broad; using {used}"
+            )),
         }
     }
 

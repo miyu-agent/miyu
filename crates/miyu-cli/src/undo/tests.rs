@@ -72,7 +72,7 @@ fn the_undo_is_the_sample_of_the_drawing() {
 #[test]
 fn a_restore_says_what_it_brought_back() {
     let printed = printed(&agreed(), &plan(Direction::Restore, Language::Chinese));
-    assert_eq!(printed, "· 恢复「把 README 改成中文」这一轮\n");
+    assert_eq!(printed, "已恢复「把 README 改成中文」这一轮\n");
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn in_english_too() {
     let printed = printed(&agreed(), &plan(Direction::Undo, Language::English));
     assert_eq!(
         printed,
-        "· Undid the turn \u{201c}把 README 改成中文\u{201d}\nUntil you say something else, miyu restore brings it back.\n"
+        "undid the turn \u{201c}把 README 改成中文\u{201d}\nhint: run 'miyu restore' before sending anything else to bring it back\n"
     );
 }
 
@@ -91,7 +91,7 @@ fn long_words_are_cut() {
     let result = json!({"cwd": under(&["w"]), "turns": 1, "said": said});
     let printed = printed_as(&result, Direction::Undo);
     let first = printed.lines().next().expect("有第一行");
-    assert_eq!(first, format!("· 撤销「{}…」这一轮", "说".repeat(40)));
+    assert_eq!(first, format!("已撤销「{}…」这一轮", "说".repeat(40)));
 }
 
 /// 恢复的是几轮的（一次撤了几轮）：写「起的几轮」。
@@ -100,10 +100,10 @@ fn several_turns_are_counted() {
     let result = json!({"cwd": under(&["w"]), "turns": 3, "said": "第一句"});
     assert_eq!(
         printed_as(&result, Direction::Restore),
-        "· 恢复「第一句」起的 3 轮\n"
+        "已恢复「第一句」起的 3 轮\n"
     );
     assert!(
-        printed_as(&result, Direction::Undo).starts_with("· 撤销「第一句」起的 3 轮\n"),
+        printed_as(&result, Direction::Undo).starts_with("已撤销「第一句」起的 3 轮\n"),
         "撤销的也一样"
     );
 }
@@ -114,19 +114,19 @@ fn every_first_line_of_a_restore_names_it_restore() {
     let english = Language::English;
     assert_eq!(
         english.undo_header(Direction::Restore, Some("hi"), 1),
-        "· Restored the turn \u{201c}hi\u{201d}"
+        "restored the turn \u{201c}hi\u{201d}"
     );
     assert_eq!(
         english.undo_header(Direction::Restore, Some("hi"), 3),
-        "· Restored 3 turns from \u{201c}hi\u{201d}"
+        "restored 3 turns from \u{201c}hi\u{201d}"
     );
     assert_eq!(
         english.undo_header(Direction::Restore, None, 1),
-        "· Restored the undone turn"
+        "restored the undone turn"
     );
     assert_eq!(
         Language::Chinese.undo_header(Direction::Restore, None, 1),
-        "· 恢复撤销的那一轮"
+        "已恢复撤销的那一轮"
     );
 }
 
@@ -135,7 +135,7 @@ fn every_first_line_of_a_restore_names_it_restore() {
 #[test]
 fn an_undone_compaction_is_said_once_below_the_first_line() {
     let result = |compactions: u64| json!({"cwd": under(&["w"]), "turns": 1, "said": "接着来", "compactions": compactions});
-    let once = "· 撤销「接着来」这一轮\n· 撤掉了压缩，上下文回到了压缩前\n发下一句之前，可以用 miyu restore 恢复。\n";
+    let once = "已撤销「接着来」这一轮\n已撤销压缩，上下文恢复到压缩前\n提示：发送下一句之前，可以运行 'miyu restore' 恢复\n";
     assert_eq!(printed_as(&result(1), Direction::Undo), once);
     assert_eq!(
         printed_as(&result(2), Direction::Undo),
@@ -149,7 +149,7 @@ fn an_undone_compaction_is_said_once_below_the_first_line() {
     assert!(!printed_as(&result(1), Direction::Restore).contains("压缩"));
     let english = printed(&result(3), &plan(Direction::Undo, Language::English));
     assert!(
-        english.contains("\n· Undid the compaction; the context is back to how it was before\n"),
+        english.contains("\nundid the compaction; the context is as it was before\n"),
         "{english}"
     );
 }
@@ -169,7 +169,7 @@ fn an_undone_clear_is_said_after_an_undone_compaction() {
     );
     let alone = printed(&result(0, 1), &chinese);
     assert!(
-        alone.contains("起的 3 轮\n· 撤掉了清空，上下文回到了清空以前\n"),
+        alone.contains("起的 3 轮\n已撤销清空，上下文恢复到清空前\n"),
         "{alone}"
     );
     assert!(!alone.contains("压缩"), "{alone}");
@@ -181,7 +181,7 @@ fn an_undone_clear_is_said_after_an_undone_compaction() {
     let english = printed(&result(1, 1), &plan(Direction::Undo, Language::English));
     assert!(
         english.contains(
-            "\n· Undid the compaction; the context is back to how it was before\n· Undid the clear; the context is back to before it.\n"
+            "\nundid the compaction; the context is as it was before\nundid the clear; the context is as it was before\n"
         ),
         "{english}"
     );
@@ -215,6 +215,6 @@ fn stopped_jobs_are_said_in_one_line() {
     let restore = plan(Direction::Restore, Language::Chinese);
     assert!(!printed(&result(Some(two.clone())), &restore).contains("任务"));
     let english = plan(Direction::Undo, Language::English);
-    assert!(printed(&result(Some(one)), &english).contains("\n· Stopped 1 job\n"));
-    assert!(printed(&result(Some(two)), &english).contains("\n· Stopped 2 jobs\n"));
+    assert!(printed(&result(Some(one)), &english).contains("\nstopped 1 job\n"));
+    assert!(printed(&result(Some(two)), &english).contains("\nstopped 2 jobs\n"));
 }

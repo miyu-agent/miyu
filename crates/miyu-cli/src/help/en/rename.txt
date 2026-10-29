@@ -1,7 +1,7 @@
 Usage: miyu rename [options] <title>
 
-Give the session a title, so it is easy to spot in the session list.
+Rename the session. Words of the title are joined with spaces.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help

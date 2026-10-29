@@ -1,16 +1,16 @@
-用法：miyu ask [选项] <要说的话>
+用法：miyu ask [选项] <消息>
 
-说一句话，打印 AI 的回答。不写 -c、-s 的，每次新开一个会话。
-AI 派了子代理的，等它们都报回来、AI 说完再退出。
+发送消息并打印回复。不加 -c、-s 时新建会话。
+派出了子代理的，等子代理全部回报、回复结束后退出。
 
 选项：
-  -c, --continue          接着上一次 miyu ask 开的会话说
-  -s, --session <编号>    接着这个会话说
-      --format text|json  text 给人看（默认），json 给脚本
-      --add-dir <目录>    多放行一个目录，AI 能读能写，可以写好几次
-      --file <文件>       附上一个文件，图片、PDF、文本都行，可以写好几次
-      --timeout <时长>    最多等多久，到了就不等了：30s、10m、1h
-      --from <名字>       别的 harness 用：写上它的名字，例如 claude-code
-      --model <模型>      用这个模型说；接着的会话以后都用它
-      --no-memory         不召回、也不记；只管新开的会话
-  -h, --help              印帮助
+  -c, --continue          继续上一次 miyu ask 的会话
+  -s, --session <编号>    继续指定的会话
+      --format text|json  输出格式（默认 text）
+      --add-dir <目录>    允许读写另一个目录，可重复
+      --file <文件>       附加文件（图片、PDF、文本），可重复
+      --timeout <时长>    最长等待时间，例如 30s、10m、1h
+      --from <名字>       调用方 harness 的名字，例如 claude-code
+      --model <模型>      指定模型，继续的会话沿用
+      --no-memory         不召回也不保存记忆（仅新会话）
+  -h, --help              显示帮助

@@ -146,7 +146,7 @@ fn failed(language: &Language, reason: &str) -> String {
 /// 改走隔离式那一行（施工 6-6 下）。
 fn isolating(language: &Language) -> String {
     match language {
-        Language::Chinese => "· 摘要请求里调了工具，改用不带工具的再压".to_string(),
+        Language::Chinese => "· 摘要请求调用了工具，改为不带工具重新压缩".to_string(),
         Language::English => {
             "· The summary called a tool; compacting again without tools".to_string()
         }
@@ -162,19 +162,19 @@ fn paused(language: &Language, body: &Value) -> String {
     );
     match (language, reason, failures, entry) {
         (Language::Chinese, Some("failures"), Some(n), _) => {
-            format!("· 自动压缩连续失败 {n} 次，已暂停：可以手动压缩、换一个模型，或者开新会话")
+            format!("· 自动压缩连续失败 {n} 次，已暂停（可以手动压缩、换模型或新建会话）")
         }
         (Language::English, Some("failures"), Some(n), _) => format!(
             "· Automatic compaction failed {n} times and is paused: compact manually, switch models, or start a new session"
         ),
         (Language::Chinese, Some("too_large"), _, Some(seq)) => {
-            format!("· 第 {seq} 条内容太大，压完很快又满了，自动压缩已暂停")
+            format!("· 第 {seq} 条内容过大，压缩后很快又满，自动压缩已暂停")
         }
         (Language::English, Some("too_large"), _, Some(seq)) => format!(
             "· Entry {seq} is too large and keeps filling the context; automatic compaction is paused"
         ),
         (Language::Chinese, ..) => {
-            "· 自动压缩已暂停：可以手动压缩、换一个模型，或者开新会话".to_string()
+            "· 自动压缩已暂停（可以手动压缩、换模型或新建会话）".to_string()
         }
         (Language::English, ..) => "· Automatic compaction is paused: compact manually, switch models, or start a new session".to_string(),
     }
@@ -184,7 +184,7 @@ fn paused(language: &Language, body: &Value) -> String {
 fn reason(language: &Language, class: &str, message: &str) -> String {
     if class == "bad_summary" && message.contains("called a tool") {
         return match language {
-            Language::Chinese => "摘要请求里调了工具".to_string(),
+            Language::Chinese => "摘要请求调用了工具".to_string(),
             Language::English => "the summary called a tool".to_string(),
         };
     }

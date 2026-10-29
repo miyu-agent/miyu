@@ -251,7 +251,7 @@ async fn ctrl_c_from_another_harness_only_stops_waiting() {
     let (first, second, log) = leaving_a_busy_session(None).await;
     assert_eq!(second.code, 3, "{}", second.err);
     assert!(
-        second.err.ends_with("· 不等了，AI 那一轮还在接着跑\n"),
+        second.err.ends_with("· 已停止等待，这一轮仍在继续\n"),
         "{}",
         second.err
     );
@@ -263,7 +263,7 @@ async fn the_timeout_of_another_harness_only_stops_waiting() {
     let (first, second, log) = leaving_a_busy_session(Some(Duration::from_secs(1))).await;
     assert_eq!(second.code, 3, "{}", second.err);
     assert!(
-        second.err.ends_with("· 等到时间了，AI 那一轮还在接着跑\n"),
+        second.err.ends_with("· 已到等待时限，这一轮仍在继续\n"),
         "{}",
         second.err
     );

@@ -1,7 +1,7 @@
 Usage: miyu restore [options]
 
-Bring back what the latest undo took, until you say something else.
+Restore what the last undo removed, before anything else is sent.
 
 Options:
-  -s, --session <id>  Which session; default is the one the last miyu ask opened
+  -s, --session <id>  Session to use (default: the last miyu ask session)
   -h, --help          Print help

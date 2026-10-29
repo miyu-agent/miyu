@@ -6,7 +6,7 @@ use serde_json::json;
 
 use super::{Follow, Format, Screen, Step, steps};
 use crate::ask::exit;
-use crate::diagnostic;
+use crate::diagnostic::{self, Level};
 use crate::shown::{GRAY, Line, RESET, say, write};
 
 /// 为什么不等了（施工 7-9）。
@@ -144,8 +144,10 @@ impl Follow<'_> {
                     }
                 }
                 if self.unattended > 0 {
-                    let line = steps::unattended_line(self.plan, self.unattended);
-                    write(screen.err, &line.paint(screen.gray));
+                    let warning = steps::unattended_warning(self.plan, self.unattended);
+                    for line in warning.lines(self.plan.language, Level::Warning) {
+                        write(screen.err, &format!("{line}\n"));
+                    }
                 }
             }
             Format::Json => {

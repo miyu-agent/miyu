@@ -14,7 +14,7 @@ fn started(job: &str, title: &str) -> Value {
     json!({"kind": "job.started", "job": job, "what": "agent", "title": title, "session": "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91"})
 }
 
-/// 第 `seq` 条：`job` 报回来了，原因 `reason`。
+/// 第 `seq` 条：`job` 已回报，原因 `reason`。
 fn report(seq: u64, job: &str, reason: &str) -> Value {
     json!({"seq": seq, "kind": "child.reported", "body": {"job": job, "reason": reason, "text": ""}})
 }
