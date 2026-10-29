@@ -30,13 +30,6 @@ async fn connected(home: &Home, server: &Server) -> Client {
     client
 }
 
-/// 合并交回的一段，晚 `wait` 才回。
-fn slow(text: &str, wait: Duration) -> Reply {
-    let mut reply = said(text);
-    reply.body.insert(0, Piece::Wait(wait));
-    reply
-}
-
 async fn remember(client: &mut Client, id: &str, text: &str) {
     let reply = client
         .call(
@@ -166,16 +159,19 @@ fn every_turn(text: &str) -> Reply {
 
 #[tokio::test]
 async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_much() {
+    // 合并那一次的模型回答停在闸前，等后面的 `command.catalog` 回了才放行：后面的先回不靠时序。原来让它等 500 毫秒，
+    // 整套测试并着跑、机器忙时 catalog 比它慢，偶发红（同上一条 K-3 修的）。
+    let gate = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+    let mut held = said(&json!({"summary": "用户养猫。"}).to_string());
+    held.body
+        .insert(0, Piece::Gate(std::sync::Arc::clone(&gate)));
     let server = Server::start(vec![
         said("好。"),
         said("养猫"),
         every_turn("用户养了一只猫"),
         // 抽取记下以后、合并落完以后各写一次关键词（施工 R-15 下）。
         said(&json!({"keywords": []}).to_string()),
-        slow(
-            &json!({"summary": "用户养猫。"}).to_string(),
-            Duration::from_millis(500),
-        ),
+        held,
         said(&json!({"keywords": []}).to_string()),
         // 第二次 `/dream`：没有新记的，重看那一条（施工 R-19）。
         said("{}"),
@@ -215,9 +211,17 @@ async fn slash_dream_extracts_the_session_merges_in_the_background_and_says_how_
     let mut replies = Vec::new();
     let mut ran_before_reply = false;
     while replies.len() < 2 {
-        let message = client.next().await.expect("连着");
+        let Some(message) = client.next_within(Duration::from_secs(20)).await else {
+            // 整理挡住了后面的：放开闸让它做完再报，不然收尾时还在等它。
+            let _released = tokio::time::timeout(Duration::from_secs(5), gate.wait()).await;
+            panic!("整理挡住了后面的请求：{replies:?}");
+        };
         if message["id"].is_string() {
+            let first = replies.is_empty();
             replies.push(message);
+            if first {
+                gate.wait().await;
+            }
         } else if message["params"]["event"]["kind"] == "command.ran" {
             ran_before_reply = replies.iter().all(|reply| reply["id"] != "k1");
         }
