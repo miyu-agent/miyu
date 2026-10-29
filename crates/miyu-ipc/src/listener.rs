@@ -22,7 +22,7 @@ pub struct Listener {
     /// 套接字所在的这一层是这个数据根专用的（`$XDG_RUNTIME_DIR/miyu-<指纹>/`）：走的时候空了就删。
     own_dir: Option<PathBuf>,
     /// 单实例锁。放在最后：字段照声明的先后丢，锁最后放。
-    _lock: Lock,
+    lock: Lock,
 }
 
 impl Listener {
@@ -37,7 +37,7 @@ impl Listener {
             socket,
             path,
             own_dir,
-            _lock: lock,
+            lock,
         }
     }
 
@@ -53,6 +53,11 @@ impl Listener {
     /// 套接字在哪。
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// 拿着的那把锁的文件（施工 TMP-2）：核心照它定时看数据根还在不在。
+    pub fn held(&self) -> crate::Held {
+        self.lock.held()
     }
 }
 

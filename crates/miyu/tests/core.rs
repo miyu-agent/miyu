@@ -33,6 +33,49 @@ async fn a_head_starts_the_core_and_talks_to_it() {
     );
 }
 
+/// 头拉起的核心不空闲退出（Z-1 上），一直开着（施工 TMP-2）：测试半路 panic、走不到 `kill_core` 的，原来活过这一次门禁、
+/// 一直开着。夹具丢掉时照运行日志里的进程号收掉它。
+#[tokio::test]
+async fn a_core_nobody_stopped_goes_with_the_home() {
+    let home = Home::new();
+    let (connection, _) = within("拉起", connect_or_start(&home.root, || home.core_staying()))
+        .await
+        .expect("拉得起");
+    drop(connection);
+    let pid = home.core_pid().expect("运行日志里有进程号");
+    drop(home);
+    // 不等六十秒：核心自己看到数据根没了也会走（最多三十秒），这里看的是夹具收的。
+    let gone = tokio::time::timeout(Duration::from_secs(15), async {
+        while alive(&pid) {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await;
+    assert!(gone.is_ok(), "夹具丢掉以后核心 {pid} 还在");
+}
+
+/// 进程 `pid` 还在不在。
+fn alive(pid: &str) -> bool {
+    #[cfg(unix)]
+    let asked = Command::new("kill")
+        .args(["-0", pid])
+        .stderr(Stdio::null())
+        .status();
+    #[cfg(windows)]
+    let asked = Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {pid}"), "/NH"])
+        .output()
+        .map(|output| {
+            String::from_utf8_lossy(&output.stdout)
+                .split_whitespace()
+                .any(|word| word == pid)
+        });
+    #[cfg(unix)]
+    return asked.is_ok_and(|status| status.success());
+    #[cfg(windows)]
+    return asked.unwrap_or(false);
+}
+
 #[tokio::test]
 async fn a_second_head_uses_the_running_core() {
     let home = Home::new();

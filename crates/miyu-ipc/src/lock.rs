@@ -2,8 +2,12 @@
 //!
 //! 锁在 `run/core.lock` 上，用标准库的文件锁，三个平台一样。一直拿到核心退出：进程没了，操作系统
 //! 替它放开，崩了也不会留下一把死锁。同一个进程里打开两次也是两把，第二把拿不到。
+//!
+//! 数据根被删了（测试删临时目录、人手删的）拿着锁的核心不知道：锁还在它打开的那个文件上，路径上已经没有了，下一个核心
+//! 在新建的数据根上照样拿得到一把。核心照 [`Held::here`] 定时看一眼，不在了就走（施工 TMP-2）。
 
 use std::fs::{File, OpenOptions, TryLockError};
+use std::path::PathBuf;
 
 use miyu_store::root::DataRoot;
 
@@ -17,6 +21,16 @@ const FILE: &str = "core.lock";
 pub struct Lock {
     /// 锁在这个打开的文件上：文件关了，锁就放开。
     _file: File,
+    /// 锁文件在哪、是哪一个（施工 TMP-2）。
+    held: Held,
+}
+
+/// 拿着的那把锁的文件在哪、是哪一个（施工 TMP-2）：看数据根里的锁文件还是不是它。
+#[derive(Debug, Clone)]
+pub struct Held {
+    path: PathBuf,
+    /// Unix 上是设备号和 inode；Windows 上开着的文件删不掉、改不了名，只看在不在，没有。
+    id: Option<(u64, u64)>,
 }
 
 impl Lock {
@@ -33,11 +47,47 @@ impl Lock {
             .truncate(false)
             .open(root.run().join(FILE))?;
         match file.try_lock() {
-            Ok(()) => Ok(Lock { _file: file }),
+            Ok(()) => {
+                let held = Held {
+                    id: identity(&file.metadata()?),
+                    path: root.run().join(FILE),
+                };
+                Ok(Lock { _file: file, held })
+            }
             Err(TryLockError::WouldBlock) => Err(OpenError::Running),
             Err(TryLockError::Error(error)) => Err(OpenError::Io(error)),
         }
     }
+
+    /// 锁文件在哪、是哪一个：交给定时看的那一边。
+    pub fn held(&self) -> Held {
+        self.held.clone()
+    }
+}
+
+impl Held {
+    /// 数据根里的锁文件还是拿着的这一个：路径上还有，而且是同一个文件（Unix 上照设备号和 inode）。数据根删了的、删了又建了
+    /// 一个新的，不是。读不出来的当不是。碰一次磁盘。
+    pub fn here(&self) -> bool {
+        match std::fs::metadata(&self.path) {
+            Ok(now) => identity(&now) == self.id,
+            Err(_) => false,
+        }
+    }
+}
+
+/// 文件是哪一个：Unix 上是设备号和 inode，别的平台没有。
+#[cfg(unix)]
+#[expect(clippy::unnecessary_wraps, reason = "别的平台没有，交回的样子要一样")]
+fn identity(metadata: &std::fs::Metadata) -> Option<(u64, u64)> {
+    use std::os::unix::fs::MetadataExt;
+    Some((metadata.dev(), metadata.ino()))
+}
+
+/// 文件是哪一个：Windows 上没有。
+#[cfg(not(unix))]
+fn identity(_: &std::fs::Metadata) -> Option<(u64, u64)> {
+    None
 }
 
 #[cfg(test)]

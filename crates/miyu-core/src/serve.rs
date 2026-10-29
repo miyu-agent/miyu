@@ -43,6 +43,8 @@ pub enum Stopped {
     Idle,
     /// 收到停的信号：在跑的会话先有计划地停下了。
     Signal,
+    /// 数据根没了（施工 TMP-2）：锁文件不在了、换成了别的，在跑的会话先有计划地停下了。
+    Gone,
 }
 
 impl Stopped {
@@ -51,6 +53,7 @@ impl Stopped {
         match self {
             Stopped::Idle => "idle",
             Stopped::Signal => "signal",
+            Stopped::Gone => "gone",
         }
     }
 }
@@ -60,6 +63,7 @@ impl Stopped {
 ///
 /// 连着头的时候不定时看空不空闲（施工 V-6 下）：有连接就不算空闲，等连上、断开、来请求的信号（`Activity`）再算。没有连接
 /// 以后才每隔一会儿（`check`：空闲时限的四分之一）看一次（回合、后台命令、扩展忙完没有，没有统一的信号），看到退出为止。
+/// 每次看的时候先看数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：不是了的有计划地停下，交回 [`Stopped::Gone`]。
 ///
 /// 停之前记一条「停了」：那时锁还在手里，下一个核心起来之前，这一份日志还是它一个人写。交回以后，
 /// 监听器、锁、各个连接都没了。
@@ -82,6 +86,8 @@ pub async fn serve_then(
     stop: impl Future<Output = ()>,
     closing: impl Future<Output = ()>,
 ) -> Stopped {
+    // 数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：监听器交出去以前拿好。
+    let held = listener.held();
     let running = miyu_endpoint::run(listener, Arc::clone(&core));
     tokio::pin!(running, stop);
     let mut changes = core.activity().subscribe();
@@ -105,6 +111,13 @@ pub async fn serve_then(
             Ok(()) = changes.changed() => continue,
             () = tokio::time::sleep_until(next), if !connected => {
                 next = tokio::time::Instant::now() + every;
+                // 数据根没了（施工 TMP-2）：测试删了临时目录、人手删了的，锁文件不在了、换成了别的。不走的话，没有空闲时限的
+                // 核心永远开着，新建的数据根上还能再起一个。
+                if !held.here() {
+                    tracing::warn!(target: TARGET, "data root gone, stopping");
+                    core.stop_sessions().await;
+                    break Stopped::Gone;
+                }
                 if !core.idle().await {
                     quiet = None;
                     continue;

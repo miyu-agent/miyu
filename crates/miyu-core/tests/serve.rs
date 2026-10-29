@@ -393,6 +393,26 @@ async fn a_core_without_an_idle_limit_keeps_running() {
     assert!(waited.is_err(), "没退：{waited:?}");
 }
 
+/// 数据根没了的自己走（施工 TMP-2）：没有空闲时限的核心原来一直开着，测试漏掉的、数据根被删了的核心永远不退。删了数据根，
+/// 下一次看空不空闲的时候看到锁文件不在了，有计划地停下。Windows 上开着的文件删不掉，只在 Unix 上跑。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_core_whose_data_root_is_gone_stops_by_itself() {
+    let home = Home::new();
+    let opened = home.open();
+    let core = home.core(Arc::new(Script::new([])), &opened.token);
+    // 头一次交回一个短的时限，看的间隔就短；以后都交回没有：从来不空闲退出。
+    let asked = std::sync::atomic::AtomicUsize::new(0);
+    let idle = || (asked.fetch_add(1, std::sync::atomic::Ordering::Relaxed) == 0).then_some(IDLE);
+    let serving = serve(opened.listener, core, idle, std::future::pending());
+    tokio::pin!(serving);
+    let waited = tokio::time::timeout(WAIT, &mut serving).await;
+    assert!(waited.is_err(), "数据根还在，不走：{waited:?}");
+    std::fs::remove_dir_all(home.root.path()).expect("删得掉");
+    let stopped = within("数据根没了就走", serving).await;
+    assert_eq!(stopped, Stopped::Gone);
+}
+
 /// 空闲时限照系统配置（施工 Z-1 上）：`core.idle_exit` 写了分钟数的换成秒；写 0 的、没写的没有（不退）。
 #[test]
 fn the_idle_limit_comes_from_the_system_config_in_minutes() {

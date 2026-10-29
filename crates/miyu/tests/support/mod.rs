@@ -61,9 +61,16 @@ impl Home {
     /// 拉起核心的命令：`miyu core`，空闲 1 秒就走；数据根是这个临时目录，资源目录是源码树的；不用
     /// `$XDG_RUNTIME_DIR`，没有模型的 key。
     pub fn core(&self) -> Command {
+        let mut command = self.core_staying();
+        command.args(["--idle-seconds", "1"]);
+        command
+    }
+
+    /// 同 [`Home::core`]，只是不带空闲时限：同头拉起的一样一直开着（施工 TMP-2）。
+    pub fn core_staying(&self) -> Command {
         let mut command = Command::new(MIYU);
         command
-            .args(["core", "--idle-seconds", "1"])
+            .arg("core")
             .env("MIYU_HOME", self.root.path())
             .envs(offline(self.root.path()))
             .env("MIYU_RESOURCES", resources())
@@ -96,26 +103,51 @@ impl Home {
 }
 
 impl Home {
-    /// 停掉头拉起的核心（施工 8-6 起没有 key 也拉起；它空闲十分钟才走）：照运行日志「起来了」那一行的进程号结束它，等它走。
+    /// 停掉头拉起的核心（施工 8-6 起没有 key 也拉起；Z-1 上起默认不空闲退出）：照运行日志「起来了」那一行的进程号结束它，
+    /// 等它走。测试半路 panic 走不到这一步的，夹具丢掉时收（[`Drop`]，施工 TMP-2）。
     pub async fn kill_core(&self) {
+        let pid = self.core_pid().expect("运行日志里有进程号");
+        assert!(end(&pid, false), "结束得了 {pid}");
+        self.until_stopped().await;
+    }
+
+    /// 核心的进程号：运行日志里最后一行「起来了」写的。没起来过的没有。
+    pub fn core_pid(&self) -> Option<String> {
         let log = self.core_log();
         let pid = log
             .rsplit("pid=")
             .next()
-            .filter(|_| log.contains("pid="))
-            .and_then(|rest| rest.split(|c: char| !c.is_ascii_digit()).next())
-            .expect("运行日志里有进程号")
-            .to_string();
-        #[cfg(unix)]
-        let killed = Command::new("kill").arg(&pid).status();
-        #[cfg(windows)]
-        let killed = Command::new("taskkill").args(["/PID", &pid, "/F"]).status();
-        assert!(
-            killed.is_ok_and(|status| status.success()),
-            "结束得了 {pid}"
-        );
-        self.until_stopped().await;
+            .filter(|_| log.contains("pid="))?
+            .split(|c: char| !c.is_ascii_digit())
+            .next()?;
+        (!pid.is_empty()).then(|| pid.to_string())
     }
+
+    /// 锁还被拿着（有核心在跑）就最多等 `wait`，交回等到最后还被拿着没有。
+    fn held_after(&self, wait: Duration) -> bool {
+        let until = std::time::Instant::now() + wait;
+        loop {
+            let held = matches!(Lock::acquire(&self.root), Err(miyu_ipc::OpenError::Running));
+            if !held || std::time::Instant::now() >= until {
+                return held;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+}
+
+/// 结束进程 `pid`：Unix 上 `force` 的发 `SIGKILL`，不是的发 `SIGTERM`（核心有计划地停下）；Windows 上都是强行结束。交回
+/// 命令说成了没有。
+#[cfg_attr(windows, expect(unused_variables, reason = "Windows 上都是强行结束"))]
+fn end(pid: &str, force: bool) -> bool {
+    #[cfg(unix)]
+    let ended = Command::new("kill")
+        .args(force.then_some("-KILL"))
+        .arg(pid)
+        .status();
+    #[cfg(windows)]
+    let ended = Command::new("taskkill").args(["/PID", pid, "/F"]).status();
+    ended.is_ok_and(|status| status.success())
 }
 
 impl Drop for Home {
@@ -126,11 +158,15 @@ impl Drop for Home {
     fn drop(&mut self) {
         // 先等拉起的核心走（最多十秒，门禁满载时核心走得慢，施工 TMP-1）：它还活着的时候删了，它后台写的（缓存目录里的模型
         // 目录摘要，测试把缓存目录指在数据根里，见 [`offline`]）又一层层建回来。没拉起过的当场拿得到锁。
-        for _ in 0..500 {
-            if !matches!(Lock::acquire(&self.root), Err(miyu_ipc::OpenError::Running)) {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(20));
+        // 还不走的是不空闲退出的（头拉起的，施工 TMP-2）：测试半路 panic、没走到 `kill_core` 的，原来一直开着、活过这一次门禁。
+        // 照运行日志里的进程号先请它停，再不走强行结束。
+        if self.held_after(Duration::from_secs(10))
+            && let Some(pid) = self.core_pid()
+            && end(&pid, false)
+            && self.held_after(Duration::from_secs(10))
+        {
+            let _ = end(&pid, true);
+            let _ = self.held_after(Duration::from_secs(10));
         }
         // 删到一半撞上后台写入的过一会儿再删（施工 TMP-1）。
         miyu_store::testkit::remove_tree(&self.dir);

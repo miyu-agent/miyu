@@ -12,7 +12,7 @@
 | `crates/miyu-core/src/lib.rs` | `main`：起来的先后；工具目录；写那一行 |
 | `crates/miyu-core/src/start.rs`、`owner.rs` | 起来的后半段：开套接字、找主人，没有的当场照系统用户名建一个（施工 SU-1），照他读清单和配置 |
 | `crates/miyu-core/src/models.rs`、`models/` | 读资源目录里的供应商档案（TOML 读成 JSON 交给 `miyu-models`）和模型资料，造会话的路由（施工 8-6，`models.md`） |
-| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
+| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号，数据根没了就走（施工 TMP-2）；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
 | `crates/miyu-endpoint/src/lib.rs` 的 `Core::finish_writes` | 等记忆在后台还没做完的：回合开始没等完的读、回合索引的后台、补齐旧会话（施工 TMP-1 补3，下面「停下」第 6 条；`memory.md` 第三条第 4 款）；停会话（`stop_sessions`）时也等 |
 | `crates/miyu-core/src/pending.rs` | 另起线程写盘的登记下来，核心放锁之前等它们写完（施工 TMP-1 补2，下面「停下」第 6 条） |
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
@@ -132,8 +132,9 @@
 4. 停的信号：Ctrl+C（SIGINT），Unix 上还有 SIGTERM。收到了，先有计划地停下全部在跑的会话（跑到一半的回合记成「重启了」，下次载入接着干；在跑的后台命令先记 `restarted`、落了盘再整组杀，R5，施工 7-3），等记忆在后台的读写做完（施工 TMP-1 补3，第 6 条），再停。拉起的核心自成一个进程组，终端里按 Ctrl+C 打不到它，要停得明着发。
 5. Unix 上装不上 SIGTERM 的，记一条 `WARN SIGTERM not watched error=…`，只等 Ctrl+C。只等 Ctrl+C 的（Windows 上、Unix 上装不上 SIGTERM 的）连 Ctrl+C 也装不上，记一条 `WARN Ctrl+C not watched error=…`，当它不会来。SIGTERM 装得上时，等的是 Ctrl+C 和 SIGTERM 一起 `select!`：这时 Ctrl+C 装不上，照样记一条 `WARN Ctrl+C not watched error=…`，当它不会来，只等 SIGTERM（施工 4-9 再补三上）。
 6. 收尾，在放锁之前做完（施工 TMP-1 补2，`serve_then`）：等第 14 步清完回收处、清完缓存（`cache.rs`），等另起线程写盘的写完（缓存目录里整理好的模型目录，`models.md`「怎么走」第二条；`pending.rs`）。这些都碰数据根，只许拿着锁的核心做：原来锁放了才等，下一份核心起来、测试删数据根时撞上，删掉的目录又被一层层建回来（2026-10-29 主会话定：这是核心的毛病，不在测试夹具上补）。在这之前先等记忆在后台的读写做完（施工 TMP-1 补3，`Core::finish_writes`）：回合开始问记忆、限时过了会话不等的读（头一回读一间要建记忆日志、开库，`memory.md` 第三条第 4 款），回合索引的后台，补齐旧会话的线程。空闲退出的没停会话，在这里等；收到信号的停会话时（`stop_sessions`）就等过了。原来交回时那次读还在读，CI 上测试删数据根时撞上，剩下记忆日志、回合库。
-7. 停之前记一条 `INFO stopped reason=idle`（空闲）或 `reason=signal`（信号）：那时锁还在手里，下一个核心起来之前，这份日志还是它一个人写。
+7. 停之前记一条 `INFO stopped reason=idle`（空闲）、`reason=signal`（信号）或 `reason=gone`（数据根没了，第 9 条）：那时锁还在手里，下一个核心起来之前，这份日志还是它一个人写。
 8. 然后删掉套接字文件、放开锁，连接跟着没了，退出码 0。
+9. **数据根没了就走**（施工 TMP-2）：没有连接、每次看空不空闲的时候（第 1 条），先看数据根里的锁文件还是不是拿着的这一个（`ipc.md` 的 `Held`）。不是了（测试删了临时目录、人手删了数据根，删了又建了一个新的也算），记一条 `WARN data root gone, stopping`，照第 4 条有计划地停下会话，再照第 6 到 8 条走，`reason=gone`。没有空闲时限的（默认）核心原来一直开着：测试漏掉的、数据根被删了的核心永远不退，2026-10-29 主会话的机器上攒了十个、跑了二十小时。没有空闲时限的每 30 秒看一次，所以最多三十秒走；连着头的不看，头走了以后照常看。
 
 ### 出错
 
@@ -166,7 +167,8 @@
 | `ERROR` | `background write panicked`、`background writes not awaited panic=…`（施工 TMP-1 补2：另起线程写盘的、等它们的线程 panic 了） |
 | `ERROR` | `memory writes wait panicked`（施工 TMP-1 补3：等记忆在后台的读写的那个线程 panic 了；目标 `miyu::endpoint`） |
 | `WARN` | `SIGTERM not watched error=…`、`Ctrl+C not watched error=…` |
-| `INFO` | `stopped reason=idle`、`stopped reason=signal` |
+| `WARN` | `data root gone, stopping`（施工 TMP-2：数据根里的锁文件不在了、换了，「停下」第 9 条） |
+| `INFO` | `stopped reason=idle`、`stopped reason=signal`、`stopped reason=gone` |
 
 配置那几行的目标是 `miyu::config`：`WARN config schema not written file=state/config/<文件名> error=…`（第 6 步，施工 8-1）；`WARN config problems file=… errors=… warnings=…`、`WARN trust not read file=… error=…`、`WARN MIYU_LOG not understood, using config value=…`、`INFO log level level=… from=…`（第 6 步，施工 8-2）；`WARN config watch unavailable error=…`、`INFO config changed layer=… via=file keys=…`（第 6 步以后，施工 8-4）；`WARN secrets readable by others file=secrets.toml`（第 6 步、手改重读时）、`INFO secret changed name=… action=… via=…`（只有名字，施工 8-5）。
 
@@ -176,10 +178,10 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu/tests/core.rs` | 头拉起真的 `miyu core`，等它说好了再连；握手不再说是谁；再连不再拉起；两个头同时只拉起一个；起不来的说原因（找不到资源目录），日志里只写 `stage=resources`；已经在跑的写 `running` 就走、不写日志；什么都没写就退了的；空闲了自己走，日志里一条 `starting`、一条 `stopped reason=idle`；`starting` 那一行的数据根在家目录下的写成 `~`、有和 UTC 差多少；工作目录是数据根；起来时清一次回收处：删了满 7 天的删、没满的留，记一条 `trash purged removed=1`（施工 3-8 三补）；起来时探一次沙盒的助手：旁边有助手的记 `sandbox` 那一行、平台是这台机器的、有手段那一格，没有的记找不到（施工 5-1）；握手报的沙盒和记下的对得上（施工 5-4 下） |
+| `crates/miyu/tests/core.rs` | 头拉起真的 `miyu core`，等它说好了再连；握手不再说是谁；再连不再拉起；两个头同时只拉起一个；起不来的说原因（找不到资源目录），日志里只写 `stage=resources`；已经在跑的写 `running` 就走、不写日志；什么都没写就退了的；空闲了自己走，日志里一条 `starting`、一条 `stopped reason=idle`；`starting` 那一行的数据根在家目录下的写成 `~`、有和 UTC 差多少；工作目录是数据根；起来时清一次回收处：删了满 7 天的删、没满的留，记一条 `trash purged removed=1`（施工 3-8 三补）；起来时探一次沙盒的助手：旁边有助手的记 `sandbox` 那一行、平台是这台机器的、有手段那一格，没有的记找不到（施工 5-1）；握手报的沙盒和记下的对得上（施工 5-4 下）；头拉起的那种不空闲退出的核心没人停的，测试的夹具丢掉时收掉（施工 TMP-2） |
 | `crates/miyu/tests/crash.rs`（施工 7-8） | 真的 `miyu core`，模型是本机回环上的假服务器：放一个心跳到后台（Unix 上是命令起的孙进程），硬杀核心（Unix `SIGKILL`，Windows 结束进程、不连子进程），心跳几秒内停下；三个平台都跑 |
 | `crates/miyu-sandbox/src/lifeline/tests.rs`（施工 7-8，Unix） | 生命线还在，组里的照常跑；写端一关，看门的把整个组杀掉，孙进程也在里面 |
-| `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；收尾时锁还在、交回以后才放（施工 TMP-1 补2）；回合开始问记忆的读慢过限时、会话不等的，收到停的信号、空闲退出都等它读完才交回（施工 TMP-1 补3）；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6） |
+| `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；收尾时锁还在、交回以后才放（施工 TMP-1 补2）；回合开始问记忆的读慢过限时、会话不等的，收到停的信号、空闲退出都等它读完才交回（施工 TMP-1 补3）；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，没有空闲时限的删了数据根自己走、`reason=gone`（只在 Unix 上，施工 TMP-2），后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6） |
 | `crates/miyu-core/src/serve/tests.rs` | 多久看一次：四分之一，最多 30 秒，最少 100 毫秒；装不上的 Ctrl+C 当它不会来（造不出真的装不上，测的是等它的那一小段）。最后一个头走了才开始算空闲、断开时叫一声（`tests/serve.rs`，施工 V-6 下拿掉断开时那一声就红） |
 | `crates/miyu-core/src/pending/tests.rs`（施工 TMP-1 补2） | 读目录时另起线程写的整理好的一份，等完以后已经在缓存目录里了（写得慢的，测试里让它先睡 300 毫秒，也等）；登记了的都等 |
 | `crates/miyu-core/tests/tools.rs` | 工具目录里是基础系统的七件；资源目录坏了，说是哪一份 |
