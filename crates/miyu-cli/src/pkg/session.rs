@@ -79,10 +79,11 @@ pub(super) fn calls(
     let one = |tool, args| Ok(vec![(tool, args)]);
     match command {
         PkgCommand::List => one(PACKAGES, json!({})),
-        PkgCommand::Info { package } if is_path(&package) => {
+        // `-Si`、`-Qi` 照旧走 `packages`：工具答装着的那一份（施工 IN-2 不改它）。
+        PkgCommand::Info { package, .. } if is_path(&package) => {
             one(PACKAGES, json!({"path": folder(&package, cwd)}))
         }
-        PkgCommand::Info { package } => one(PACKAGES, json!({"package": package})),
+        PkgCommand::Info { package, .. } => one(PACKAGES, json!({"package": package})),
         PkgCommand::Search { words } => one(PACKAGES, json!({"search": words.join(" ")})),
         PkgCommand::Install { what } if is_path(&what) => {
             one(PACKAGE, json!({"install": folder(&what, cwd)}))

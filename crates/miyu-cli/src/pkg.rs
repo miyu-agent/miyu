@@ -7,6 +7,7 @@
 
 mod confirm;
 mod group;
+mod info;
 mod install;
 mod open;
 mod pack;
@@ -36,7 +37,7 @@ use crate::exit;
 use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
-use crate::shown::{offset, say};
+use crate::shown::say;
 pub use source::SyncFlags;
 
 /// `miyu pkg` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
@@ -85,6 +86,9 @@ pub enum PkgCommand {
     Info {
         /// 哪一个。
         package: String,
+        /// 查哪一处（施工 IN-2）：`-Si` 只查软件源，`-Qi` 只查装着的，`info` 不写、交给核心先查装着的。
+        #[arg(skip)]
+        source: Option<bool>,
     },
     /// 一个包装了哪些文件。
     Files {
@@ -112,7 +116,7 @@ pub enum PkgCommand {
         /// 搜什么。
         words: Vec<String>,
     },
-    /// pacman 的 `-S`：`-y` 是 `update`，`-s` 是 `search`（`-Sys` 先拿再搜），`-c` 是 `clean`，只带编号的是从软件源装。帮助页里写，clap 的列表里不列。
+    /// pacman 的 `-S`：`-y` 是 `update`，`-s` 是 `search`（`-Sys` 先拿再搜），`-c` 是 `clean`，`-i` 是只查软件源的 `info`，只带编号的是从软件源装。帮助页里写，clap 的列表里不列。
     #[command(short_flag = 'S', hide = true)]
     Sync(SyncFlags),
     /// pacman 的 `-Q`：不带别的是 `list`，`-i` 是 `info`，`-l` 是 `files`，`-o` 是 `owns`，`-k` 是 `check`。帮助页里写，
@@ -142,15 +146,19 @@ pub struct Query {
 }
 
 impl PkgCommand {
-    /// pacman 的写法换成正式的子命令。
+    /// pacman 的写法换成正式的子命令：`-Si`、`-Qi` 是只查软件源、只查装着的 `info`（施工 IN-2）。
     fn plain(self) -> PkgCommand {
         let query = match self {
             PkgCommand::Query(query) => query,
+            PkgCommand::Sync(flags) => return flags.plain(),
             other => return other,
         };
         let target = query.target.unwrap_or_default();
         match (query.info, query.files, query.owns, query.check) {
-            (true, ..) => PkgCommand::Info { package: target },
+            (true, ..) => PkgCommand::Info {
+                package: target,
+                source: Some(false),
+            },
             (_, true, ..) => PkgCommand::Files { package: target },
             (_, _, true, _) => PkgCommand::Owns { path: target },
             (.., true) => PkgCommand::Check {
@@ -290,23 +298,8 @@ async fn act(
         PkgCommand::Remove { package } => {
             group::remove(rpc, plan, &package, (input, out, err)).await
         }
-        PkgCommand::Info { package } => {
-            let params = json!({"package": package});
-            let info = ask(rpc, "package.info", params, language, err).await?;
-            if json {
-                say(out, &info.to_string());
-                return Ok(());
-            }
-            let listed = ask(rpc, "package.list", json!({}), language, err).await?;
-            let name = listed["packages"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .find(|one| one["package"] == package.as_str())
-                .and_then(|one| one["name"].as_str())
-                .unwrap_or_default();
-            lines(out, query::info(&info, name, offset(), language));
-            Ok(())
+        PkgCommand::Info { package, source } => {
+            info::show(rpc, plan, (&package, source), (out, err)).await
         }
         PkgCommand::Files { package } => {
             let params = json!({"package": package});

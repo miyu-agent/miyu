@@ -1,38 +1,9 @@
-//! `info`、`files`、`owns`、`check` 印成的那几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」）。
+//! `files`、`owns`、`check` 印成的那几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」）。
 
 use serde_json::json;
 
-use miyu_kernel::time::UtcOffset;
-
-use super::{checked, files, info, owner, size};
+use super::{checked, files, owner, size};
 use crate::language::Language;
-
-#[test]
-fn info_is_aligned_rows_of_what_people_need() {
-    let at = UtcOffset::from_minutes(8 * 60).expect("合法");
-    let home = json!({"package": "xpkg", "layer": "home", "version": "2.0", "files": 3,
-                      "size": 1536, "installed": "2026-10-11T06:03:00.000Z", "source": "/w/xpkg"});
-    assert_eq!(
-        info(&home, "测试包", at, &Language::Chinese),
-        [
-            "名称      测试包",
-            "版本      2.0",
-            "大小      1.5 KiB，3 个文件",
-            "安装时间  2026-10-11 14:03",
-        ],
-        "从哪装的不印"
-    );
-    let shipped = json!({"package": "net", "layer": "shipped", "files": 1, "size": 10});
-    assert_eq!(
-        info(&shipped, "Net", at, &Language::English),
-        [
-            "Name       Net",
-            "Size       10 B, 1 file",
-            "Installed  shipped with Miyu",
-        ],
-        "没写版本的不印那一行"
-    );
-}
 
 #[test]
 fn files_are_the_id_and_the_whole_path() {

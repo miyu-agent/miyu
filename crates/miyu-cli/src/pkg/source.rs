@@ -1,12 +1,12 @@
 //! `miyu pkg` 里软件源的几个（施工 G-3 上起，设计 `37-软件源.md` 第四节）：`update`（pacman 的 `-Sy`）拿新的索引，`search`
-//! （`-Ss`，施工 G-3 下）在软件源里搜。之后的从软件源装、`upgrade` 也住这里（`pkg.rs` 到了 500 行）。
+//! （`-Ss`，施工 G-3 下）在软件源里搜；`-Si`（施工 IN-2）换成 `info`。之后的从软件源装、`upgrade` 也住这里（`pkg.rs` 到了 500 行）。
 
 use std::io::Write;
 
 use clap::Args;
 use serde_json::{Value, json};
 
-use super::ask;
+use super::{PkgCommand, ask};
 use crate::diagnostic;
 use crate::exit;
 use crate::language::Language;
@@ -29,11 +29,25 @@ pub struct SyncFlags {
     /// `-Su`：`upgrade`（施工 G-5），`-Syu` 先拿再升。
     #[arg(short = 'u')]
     upgrade: bool,
+    /// `-Si <编号>`：只查软件源的 `info`（施工 IN-2），接一个编号，不和别的字母、词一起写。
+    #[arg(short = 'i', value_name = "ID", conflicts_with_all = ["refresh", "search", "clean", "upgrade", "words"])]
+    info: Option<String>,
     /// `-Ss` 搜的词。
     words: Vec<String>,
 }
 
 impl SyncFlags {
+    /// `-Si <编号>` 换成只查软件源的 `info`（施工 IN-2），别的照旧。
+    pub(super) fn plain(self) -> PkgCommand {
+        match self.info {
+            Some(package) => PkgCommand::Info {
+                package,
+                source: Some(true),
+            },
+            None => PkgCommand::Sync(self),
+        }
+    }
+
     /// 从软件源装的那几个：不带 `-s`、`-c`，写了编号的。
     pub(super) fn installs(&self) -> Option<&[String]> {
         (!self.search && !self.clean && !self.upgrade && !self.words.is_empty())

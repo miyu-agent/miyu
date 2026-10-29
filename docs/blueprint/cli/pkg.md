@@ -12,10 +12,11 @@
 | `crates/miyu-cli/src/pkg.rs` | 参数、找数据根、连核心、握手、照子命令发请求、退出码 |
 | `crates/miyu-cli/src/pkg/session.rs` | 会话里的 `miyu pkg`（施工 BS-1 中下）：经 `miyu call` 的通道，子命令换成调 `packages`、`package` |
 | `crates/miyu-cli/src/pkg/shown.rs` | 一个软件包印成一行（纯的，测试里照它算） |
-| `crates/miyu-cli/src/pkg/query.rs` | `info`、`files`、`owns`、`check` 印成几行，字节数写成给人看的（纯的，施工 F-8 下） |
+| `crates/miyu-cli/src/pkg/query.rs` | `files`、`owns`、`check` 印成几行，字节数写成给人看的（纯的，施工 F-8 下） |
+| `crates/miyu-cli/src/pkg/info.rs` | `info` 问核心、印成「键 : 值」（印的那几行是纯的，施工 IN-2） |
 | `crates/miyu-cli/src/pkg/confirm.rs` | 装、卸之前印的那一份、问的那一句、读答（施工 F-8 下补） |
 | `crates/miyu-cli/src/language/confirm.rs` | 印的那一份、问的那一句的字（施工 F-8 下补） |
-| `crates/miyu-cli/src/language/pkg.rs` | 给人看的几句，中英文 |
+| `crates/miyu-cli/src/language/pkg.rs` | 给人看的几句，中英文；`info` 的键、来源的说法在 `language/pkg/info.rs`（施工 IN-2） |
 | `crates/miyu-cli/src/help/{zh,en}/pkg.txt` | 帮助页 |
 
 ### 对外的样子
@@ -25,7 +26,7 @@
 | `list`（不写子命令也是它） | 列出来，照编号 | `package.list` |
 | `install <包目录\|包文件\|编号>` | 带 `/`、`\`，是 `.`、`..`，或者以 `.toml`、`.miyu`（包文件，施工 G-1）结尾的是一个包目录（或它里面的 `package.toml`）、包文件的路径，相对的照现在的目录换成绝对的，`.`、`..` 照字面去掉（施工 F-8 上）；别的是编号：出厂包的把卸掉的装回来，别的从软件源装（施工 G-4 下，核心判断）。从软件源装的印的那一份另有「一起装：」（依赖和版本）、「下载：」（多大）、「来源：」（来源仓库，官方的接「（官方）」，社区的接「（社区，没人审过）」）三行；问过以后印「正在下载 <多大>」，装好了一起装的依赖各印一行「已安装 <编号>」，要的那个印「已安装 <编号> <版本>」（没写版本的不接） | `package.install`，带 `path` 或者 `package` |
 | `remove <编号>` | 写组名的（`basesystem`，施工 BS-1 下中）照组卸：印「将卸载 <组>」「包含：<编号>、…」、问「卸载 '<组>'？[Y/n]」，一个一行「已卸载 <编号>」；`install <组名>` 同样装回组里卸掉的；组里没有要动的印「<组> 中没有需要处理的软件包」、退出码 0。卸掉：数据根里装的删掉，出厂的记一笔；它的设置和状态一并删掉（`packages.md`「装卸」第 7 条） | `package.remove` |
-| `info <编号>` | 一个包的信息：名称、版本、大小、安装时间 | `package.info`，名称照 `package.list` |
+| `info <编号>` | 一个包的信息（施工 IN-2，设计 `49-装包照pacman.md` 第一节）：装着的照本地，没装的照软件源，写成「键 : 值」；哪儿都没有的报「未找到软件包 '<编号>'」，退出码 1 | `package.info`，不写 `source`；`-Qi` 写 `false`、`-Si` 写 `true` |
 | `files <编号>` | 一个包装了哪些文件，一个一行、绝对路径 | `package.files` |
 | `owns <路径>` | 一个文件归哪个包；相对的照现在的目录换成绝对的 | `package.owns` |
 | `check [<编号>]` | 装好的文件改了、少了、多出来的；不写是数据根里记了的全部 | `package.check` |
@@ -35,7 +36,7 @@
 | `search [<词>…]` | 在软件源里搜（施工 G-3 下）：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已安装」，不是官方的接「社区」，被拉黑的接「已拉黑：理由」；版本不印。一个都没搜到的什么都不印、退出码 1（照 pacman）；用的是本机旧索引的在标准错误上警告一句。`--format json` 原样印回应 | `package.search` |
 | `pack <包目录>` | 把包目录打成包文件（施工 G-1，设计 `37-软件源.md` 第二节）：照装的那一套读清单，要写了版本；清单写了 `targets` 的用 `--target` 挑一种、没写的不许写；写到 `-o` 给的目录（没有的建上，不写的是现在的目录），文件名 `<编号>-<版本>[-<系统>].miyu`；印三行：「已打包 <路径>」、`SHA-256: <哈希>`、大小（`--format json` 印 `{"package", "version", "target", "path", "sha256", "size", "logo_shrunk"}`）。清单写了 `[package] logo` 的（施工 F-18 上，`package-pages.md`「清单多的几格」）：超了 256 KiB 或者宽高超了 512 的，打进去的是缩好的那一份（PNG 照 PNG、WebP 编无损 WebP），源文件不动，先印一句「已把图标 <路径> 缩小到 <宽>×<高>，<字节> 字节（源文件未改动）」；图标不在、不是 PNG / WebP、缩不下去的报「无法打包：…」。不连核心，也不碰数据根：作者的 CI 上没有数据根，那个位置放着别的东西也照打（施工 G-7） | 不发 |
 
-pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）：`-U` 是 `install`，`-R` 是 `remove`，`-Q` 是 `list`，`-Qi`、`-Ql`、`-Qo`、`-Qk` 是 `info`、`files`、`owns`、`check`，`-Sy` 是 `update`（施工 G-3 上），`-Ss` 是 `search`，`-Sys` 先拿再搜（施工 G-3 下）；`-S <编号>…` 从软件源装这几个、`-Sy <编号>…` 先拿索引再装、`-Sc` 是 `clean`（施工 G-4 下）；`-Su` 是 `upgrade`、`-Syu` 先拿索引再升（施工 G-5）；`-S` 什么都不带的照 pacman 报「没有指定目标」，另起一行提示「运行 'miyu pkg --help' 查看用法」（英文 `miyu: no targets specified`、`hint: run 'miyu pkg --help' for usage`；项目主人 2026-10-19 定照 pacman 说，CL-2 补照设计 47 改写法），退出码 2。`-Q` 后面的字母最多一个；`-Qi`、`-Ql`、`-Qo` 要接编号或路径，`-Q` 不带字母的不接（参数不对，退出码 2）。
+pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）：`-U` 是 `install`，`-R` 是 `remove`，`-Q` 是 `list`，`-Qi`、`-Ql`、`-Qo`、`-Qk` 是 `info`、`files`、`owns`、`check`（`-Qi` 只查装着的，施工 IN-2），`-Si <编号>` 是只查软件源的 `info`（施工 IN-2；只接一个编号，不和 `-y`、`-s`、`-c`、`-u` 一起写，写了的参数不对，退出码 2），`-Sy` 是 `update`（施工 G-3 上），`-Ss` 是 `search`，`-Sys` 先拿再搜（施工 G-3 下）；`-S <编号>…` 从软件源装这几个、`-Sy <编号>…` 先拿索引再装、`-Sc` 是 `clean`（施工 G-4 下）；`-Su` 是 `upgrade`、`-Syu` 先拿索引再升（施工 G-5）；`-S` 什么都不带的照 pacman 报「没有指定目标」，另起一行提示「运行 'miyu pkg --help' 查看用法」（英文 `miyu: no targets specified`、`hint: run 'miyu pkg --help' for usage`；项目主人 2026-10-19 定照 pacman 说，CL-2 补照设计 47 改写法），退出码 2。`-Q` 后面的字母最多一个；`-Qi`、`-Ql`、`-Qo` 要接编号或路径，`-Q` 不带字母的不接（参数不对，退出码 2）。
 
 | 选项 | 做什么 |
 |---|---|
@@ -53,7 +54,7 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 | 子命令 | 换成 |
 |---|---|
 | `list`、`-Q` | `packages {}` |
-| `info <编号>`、`-Qi` | `packages {"package"}`；写的是路径（同 `install` 认路径的写法）的 `packages {"path"}`：看那个包文件夹 |
+| `info <编号>`、`-Qi`、`-Si` | `packages {"package"}`（工具只答装着的，施工 IN-2 不改它）；写的是路径（同 `install` 认路径的写法）的 `packages {"path"}`：看那个包文件夹 |
 | `search <词…>`、`-Ss` | `packages {"search"}`，几个词照空格连起来 |
 | `install <路径\|编号>`、`-U`、`-S <编号…>` | `package {"install"}`，一个一次（施工 BS-1 中下修起：卸掉的出厂包、组名照装回走，不去软件源，问人的卡片是装回的那一份）；路径照现在的目录换成绝对的、`.`、`..` 照字面去掉，写到 `package.toml` 的取它所在的文件夹 |
 | `remove <编号>`、`-R` | `package {"remove"}` |
@@ -72,11 +73,11 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
    - `list`：一个一行，`<编号>  <名字>`，照编号排（核心把卸掉了的出厂的排在最后，这里照编号排进去），编号照最长的那个对齐、后面空两格；卸掉了的出厂的后面接「（已卸载）」；写错的没有名字，接「（清单有误：<哪里不对>）」。
    - 装、卸之前的那一份（施工 F-8 下补）：第一行「将安装 <编号> <版本>」，升级的接「（替换 <原来的版本>）」（原来没写版本的「（替换已装的）」），装回出厂的「将装回」，卸的「将卸载」；「包含：」程序（界面程序、扩展程序、小程序、内置功能）、命令 miyu <名字>、后台页、吉祥物、接入 <平台>、每个 MCP 服务一项「MCP 服务 <名字>」（施工 X-2）、技能、脚本（施工 X-13 上）、每个斜杠命令模板一项「斜杠命令 /<名字>」（施工 X-14 上补）、几项设置；「需要：」声明的能力，照核心给的名字；卸的「一并删除：」写了的设置的键、状态目录；「大小：」照 `info` 的写法，出厂的卸掉不删文件、没有这一行。几样之间用「、」隔开，没有的那一行不印。
    - `install`：「已安装 <编号> <版本>」（没写版本的不接），接着照第 2½ 步问、启用的印「已启用 <编号>」；`remove`：「已卸载 <编号>」。
-   - `info`（施工 F-8 下）：一格一行，前面的词照最宽的那个对齐、后面空两格：名称（写错的包没有）、版本（写了的）、大小（字节数照 pacman 写成 B、KiB、MiB、GiB，一位小数，接几个文件）、安装时间（照这台机器此刻的时区到分钟；出厂的写「出厂自带」，本地库没记的没有这一行）。从哪装的、哪一层不印。
+   - `info`（施工 F-8 下起，IN-2 照设计 49 第一节改）：一格一行写成「键 : 值」，键照印出来的最宽的那个按显示宽度补齐（中文一个字两格），再空一格、冒号、空一格（同设计 49 的样子）。没有值的行不印，「依赖」「推荐」没有的写「无」。没装的（`from: "source"`）照这个先后：软件源（源的名字）、编号、名称、版本、描述、依赖、推荐（几个编号空两格隔开，依赖同）、提供（照装之前那一份「包含」的写法，索引里的子命令取第一个、功能和给别的包带的内容不列）、需要的能力（照核心给的名字）、来源（来源仓库接「（官方）」或「（社区）」）、作者、上游、下载大小、安装后大小；装着的少软件源、下载大小，「安装后大小」后面多「被依赖」（空两格隔开）、最后一行「安装时间」（照这台机器此刻的时区到分钟；出厂的写「出厂自带」，本地库没记的没有这一行），来源写「出厂」「软件源」「本地」，从软件源装的接来源仓库（本地库只记来源仓库，分不出官方的源还是别人的源，不说官方）。几样之间用「、」连；大小照 pacman 写成 B、KiB、MiB、GiB，一位小数。从哪装的路径、哪一层、几个文件不印。用的是本机旧索引的不另说（`--format json` 里有 `stale`）。
    - `files`：一个文件一行，`<编号> <绝对路径>`（照 pacman 的 `-Ql`），照路径排。
    - `owns`：「<路径> 属于 <编号>」；在数据根里装的包的目录里、本地库没记的（包自己后来写的）「<路径> 在 <编号> 的目录里，不是安装时带的」；哪个包都没有的报「没有软件包包含 <路径>」，退出码 1（照 pacman）。路径照换成的绝对路径印。
    - `check`：每个包改了的「<编号>：已修改 <路径>」、少了的「缺失」、多出来的「多出」，一个一行；都没问题的一行「<编号>：正常」；数据根里一个记了的都没有的「没有可检查的软件包」。有改了、少了的退出码 1（照 pacman 的 `-Qk`），多出来的只是提示。
-4. **被拒绝**：核心的原话去掉句号接在 `miyu: ` 后面印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 报「无法安装 <写的>：package.toml:<几>：<哪里不对>」（英文 `cannot install <写的>: package.toml:<几>: <哪里不对>`，设计 47 第四节；`<写的>` 是命令里写的包目录、包文件或编号）。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：照 `data.conflicts` 一处一条报错「无法安装 <写的>：<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设；撞了一层的 `<包>` 写「出厂内容」「数据根」；英文 `cannot install <写的>: <kind> <name> exists in <package>`，那一层写 `the shipped content`、`the data root`），核心没列是哪几处的报「无法安装 <写的>：名称已被占用」。看一眼印的那一份多「人格 <编号>」「预设 <编号>」（施工 P-11 下）。核心断开、请求写不出去照 `miyu rename`。
+4. **被拒绝**：核心的原话去掉句号接在 `miyu: ` 后面印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 报「无法安装 <写的>：package.toml:<几>：<哪里不对>」（英文 `cannot install <写的>: package.toml:<几>: <哪里不对>`，设计 47 第四节；`<写的>` 是命令里写的包目录、包文件或编号）。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：照 `data.conflicts` 一处一条报错「无法安装 <写的>：<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设；撞了一层的 `<包>` 写「出厂内容」「数据根」；英文 `cannot install <写的>: <kind> <name> exists in <package>`，那一层写 `the shipped content`、`the data root`），核心没列是哪几处的报「无法安装 <写的>：名称已被占用」。看一眼印的那一份多「人格 <编号>」「预设 <编号>」（施工 P-11 下）。`info` 两处都没有的（`unknown_package`，施工 IN-2）照设计 47 报「未找到软件包 '<编号>'」（英文 `package '<id>' not found`）。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
 
@@ -86,13 +87,38 @@ miyu-base-mermaid  画 mermaid 图（已卸载）
 miyu-base-net      联网搜索
 ```
 
-`miyu pkg info pudding`、`miyu pkg -Ql pudding`、`miyu pkg -Qk`（施工 F-8 下）：
+`miyu pkg info miyu-im`（没装的，施工 IN-2，照设计 49 第一节；「提供」照索引里有的说）：
 
 ```text
-名称      布丁
-版本      1.2.0
-大小      1.5 KiB，3 个文件
-安装时间  2026-10-11 14:03
+软件源      : official
+编号        : miyu-im
+名称        : 接入 QQ
+版本        : 0.2.1
+描述        : 让她在 QQ 群和私聊里说话
+依赖        : 无
+推荐        : miyu-im-sponsor  miyu-memes
+提供        : 命令 miyu im、技能 sticker
+需要的能力  : 联网、替主人说话
+来源        : github.com/miyu-agent/miyu-im（官方）
+作者        : miyu-agent
+上游        : https://github.com/miyu-agent/miyu-im
+下载大小    : 2.2 MiB
+安装后大小  : 6.8 MiB
+```
+
+`miyu pkg info pudding`（装着的）、`miyu pkg -Ql pudding`、`miyu pkg -Qk`（施工 F-8 下）：
+
+```text
+编号        : pudding
+名称        : 布丁
+版本        : 1.2.0
+依赖        : 无
+推荐        : 无
+提供        : 扩展程序、命令 miyu pudding、后台页、2 项设置
+来源        : 本地
+安装后大小  : 1.5 KiB
+被依赖      : pudding-extra
+安装时间    : 2026-10-11 14:03
 
 pudding /home/me/.miyu/home/me/packages/pudding/package.toml
 pudding /home/me/.miyu/home/me/packages/pudding/skills/draw/SKILL.md
@@ -136,7 +162,10 @@ pudding：多出 cache.db
 | 撞了名（报错，一处一条） | 无法安装 {what}：{kind} {name} 已在 {holder} 中、无法安装 {what}：{kind} {name} 是核心自带的、无法安装 {what}：名称已被占用 | cannot install {what}: {kind} {name} exists in {holder}, … is built into the core, cannot install {what}: names already in use |
 | 已卸载 | （已卸载） | (removed) |
 | 写错了 | （清单有误：{problem}） | (invalid: {problem}) |
-| `info` 的四个词 | 名称、版本、大小、安装时间 | Name、Version、Size、Installed |
+| `info` 的键（施工 IN-2） | 软件源、编号、名称、版本、描述、依赖、推荐、提供、需要的能力、来源、作者、上游、下载大小、安装后大小、被依赖、安装时间 | Repository、Name、Title、Version、Description、Depends On、Recommends、Provides、Capabilities、Origin、Author、Upstream、Download Size、Installed Size、Required By、Install Date |
+| `info` 没有依赖、推荐 | 无 | None |
+| `info` 的来源 | 出厂、官方、社区、软件源、本地；{origin}（官方）、{origin}（社区）、{origin}（软件源） | shipped、official、community、repository、local；{origin} (official)、{origin} (community)、{origin} (repository) |
+| `info` 哪儿都没有（报错） | 未找到软件包 '{id}' | package '{id}' not found |
 | 大小 | {size}，{n} 个文件 | {size}, {n} files（一个的写 1 file） |
 | 出厂的 | 出厂自带 | shipped with Miyu |
 | 属于 | {path} 属于 {id} | {path} is owned by {id} |
@@ -178,10 +207,11 @@ pudding：多出 cache.db
 
 | 测试 | 守什么 |
 |---|---|
-| `crates/miyu-cli/src/pkg/tests.rs` | 一行的样子：照编号排、对齐，卸掉了的、写错了的各接一截，别的不印；带 `/`、以 `.toml` 结尾的是清单（照现在的目录换成绝对的），别的是编号；pacman 的写法换成正式的子命令，字母写多了、少了接的都不认（施工 F-8 下） |
+| `crates/miyu-cli/src/pkg/tests.rs` | 一行的样子：照编号排、对齐，卸掉了的、写错了的各接一截，别的不印；带 `/`、以 `.toml` 结尾的是清单（照现在的目录换成绝对的），别的是编号；pacman 的写法换成正式的子命令，字母写多了、少了接的都不认（施工 F-8 下）；`-Si`、`-Qi` 换成带 `source` 的 `info`，`-Si` 不接、接两个的不认（施工 IN-2） |
 | `crates/miyu-cli/src/pkg/confirm/tests.rs`（施工 F-8 下补） | 升级、装回、卸的那一份：每一样怎么说、没有的那一行不印；回车、`y`、`yes` 接着做，别的和标准输入关着的不做、各说一句 |
-| `crates/miyu-cli/src/pkg/query.rs` 的测试（施工 F-8 下） | `info` 对齐、从哪装的不印、没写版本的不印那一行、出厂的写「出厂自带」；`files` 是编号加绝对路径；`owns` 分装的时候带的和后来写的；`check` 一个一行、只有改了少了的算出错；字节数的写法 |
-| `crates/miyu/tests/pkg.rs` | 真跑：列出、照相对路径装、卸；卸掉出厂的标「已卸载」、照编号装回来；必需的卸不掉、写错的清单装不上，退出码 1；`--format json`；`-h`、子命令的 `-h`、`help pkg` 印的都是那一页，跟着界面语言；`-U` 装、`info`、`-Ql` 的绝对路径、`-Qo` 归哪个、没有的退出码 1、`-Qk` 正常和改了的退出码 1（施工 F-8 下）；装之前印的那一份、答不就没装、回车装上、标准输入关着的不卸、`--noconfirm` 不问（施工 F-8 下补） |
+| `crates/miyu-cli/src/pkg/info/tests.rs`（施工 IN-2） | `info` 的「键 : 值」：中文、英文照显示宽度对齐（中文两格），没装的、装着的各几行的先后，没有值的行不印，依赖、推荐空的写「无」，出厂的写「出厂自带」，从哪装的路径不印；`-Si`、`-Qi` 各带的 `source` |
+| `crates/miyu-cli/src/pkg/query.rs` 的测试（施工 F-8 下） | `files` 是编号加绝对路径；`owns` 分装的时候带的和后来写的；`check` 一个一行、只有改了少了的算出错；字节数的写法 |
+| `crates/miyu/tests/pkg.rs` | 真跑：列出、照相对路径装、卸；卸掉出厂的标「已卸载」、照编号装回来；必需的卸不掉、写错的清单装不上，退出码 1；`--format json`；`-h`、子命令的 `-h`、`help pkg` 印的都是那一页，跟着界面语言；`-U` 装、`info`（「键 : 值」、`-Qi` 没装的报「未找到软件包」，施工 IN-2）、`-Ql` 的绝对路径、`-Qo` 归哪个、没有的退出码 1、`-Qk` 正常和改了的退出码 1（施工 F-8 下）；装之前印的那一份、答不就没装、回车装上、标准输入关着的不卸、`--noconfirm` 不问（施工 F-8 下补） |
 
 ### 还没有的
 

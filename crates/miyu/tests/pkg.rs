@@ -127,12 +127,16 @@ async fn pkg_tells_about_installed_files_through_a_real_core() {
         "已安装 xpkg\n",
         "pacman 的 -U：{installed:?}"
     );
+    // 「键 : 值」（施工 IN-2）：装着的照本地答，不去软件源。
     let info = stdout(&run(&root, &cwd, zh, &["pkg", "info", "xpkg"]).await);
-    assert!(info.starts_with("名称      测试包\n"), "{info}");
+    assert!(info.starts_with("编号        : xpkg\n"), "{info}");
     assert!(
-        info.contains("个文件") && info.contains("安装时间  "),
+        info.contains("名称        : 测试包\n") && info.contains("\n安装时间    : "),
         "{info}"
     );
+    let ghost = run(&root, &cwd, zh, &["pkg", "-Qi", "ghost"]).await;
+    assert_eq!(ghost.status.code(), Some(1), "{ghost:?}");
+    assert_eq!(stderr(&ghost), "miyu: 未找到软件包 'ghost'\n");
 
     let files = stdout(&run(&root, &cwd, zh, &["pkg", "-Ql", "xpkg"]).await);
     let data = files

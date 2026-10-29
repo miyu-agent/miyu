@@ -28,7 +28,7 @@ $ miyu pkg info miyu-im
 安装后大小  : 6.8 MiB
 ```
 
-4. 装着的少「软件源」「下载大小」，多「被依赖」（装着的包里依赖它的）和最后一行「安装时间」（出厂的写「出厂自带」）；「来源」写「出厂」「官方」「社区」「本地」之一，从软件源装的接来源仓库。
+4. 装着的少「软件源」「下载大小」，多「被依赖」（装着的包里依赖它的）和最后一行「安装时间」（出厂的写「出厂自带」）；「来源」写「出厂」「软件源」「本地」之一，从软件源装的接来源仓库：本地库只记来源仓库，分不出装自官方的源还是别人的源，不说官方（IN-2 定）。
 5. 英文的键照 pacman：Repository、Name、Title、Version、Description、Depends On、Recommends、Provides、Capabilities、Origin、Author、Upstream、Download Size、Installed Size、Required By、Install Date。
 6. `--format json` 原样印核心的回应。
 

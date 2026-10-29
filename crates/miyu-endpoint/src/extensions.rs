@@ -15,7 +15,7 @@ mod state;
 pub(crate) mod stderr;
 mod supervise;
 
-pub(crate) use approval::{described, forget as forget_switch, held};
+pub(crate) use approval::{described, forget as forget_switch, held, named};
 pub(crate) use instance::Instance;
 pub(crate) use methods::{disable, enable, entry, restart, status, write as write_switches};
 pub(crate) use offers::offer;

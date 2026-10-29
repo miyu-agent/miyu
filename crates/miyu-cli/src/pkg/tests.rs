@@ -67,7 +67,14 @@ fn pacman_options_are_the_plain_commands() {
     assert!(matches!(one(&["pkg", "-U", "./x"]), PkgCommand::Install { what } if what == "./x"));
     assert!(matches!(one(&["pkg", "-R", "x"]), PkgCommand::Remove { package } if package == "x"));
     assert!(matches!(one(&["pkg", "-Q"]), PkgCommand::List));
-    assert!(matches!(one(&["pkg", "-Qi", "x"]), PkgCommand::Info { package } if package == "x"));
+    // `-Qi` 只查装着的、`-Si` 只查软件源、`info` 不写（施工 IN-2）。
+    let info = |args: &[&str]| match one(args) {
+        PkgCommand::Info { package, source } => (package, source),
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(info(&["pkg", "-Qi", "x"]), ("x".to_string(), Some(false)));
+    assert_eq!(info(&["pkg", "-Si", "x"]), ("x".to_string(), Some(true)));
+    assert_eq!(info(&["pkg", "info", "x"]), ("x".to_string(), None));
     assert!(matches!(one(&["pkg", "-Ql", "x"]), PkgCommand::Files { package } if package == "x"));
     assert!(matches!(one(&["pkg", "-Qo", "/a"]), PkgCommand::Owns { path } if path == "/a"));
     assert!(matches!(
@@ -77,12 +84,14 @@ fn pacman_options_are_the_plain_commands() {
     assert!(
         matches!(one(&["pkg", "-Qk", "x"]), PkgCommand::Check { package: Some(id) } if id == "x")
     );
-    assert!(matches!(one(&["pkg", "info", "x"]), PkgCommand::Info { package } if package == "x"));
     for wrong in [
         &["pkg", "-Qi"][..],
         &["pkg", "-Qil", "x"],
         &["pkg", "-Q", "x"],
         &["pkg", "-Qo"],
+        &["pkg", "-Si"],
+        &["pkg", "-Si", "x", "y"],
+        &["pkg", "-Ssi", "x"],
     ] {
         assert!(parsed(wrong).is_err(), "{wrong:?}");
     }

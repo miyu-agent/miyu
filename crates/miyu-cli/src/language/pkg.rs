@@ -1,9 +1,11 @@
 //! `miyu pkg` 给人看的字（施工 T-3，`docs/blueprint/cli/pkg.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行动词打头，
 //! 报错交 [`Problem`]，由 `diagnostic` 加 `miyu: `，建议另起一行）。
 
+mod info;
 mod pack;
 mod source;
 
+pub(crate) use info::{CameFrom, InfoKey};
 pub(crate) use pack::LogoWhy;
 
 use super::Language;
@@ -164,14 +166,6 @@ impl Language {
         match self {
             Language::Chinese => format!("（清单有误：{problem}）"),
             Language::English => format!(" (invalid: {problem})"),
-        }
-    }
-
-    /// `info` 每一行前面的那个词：名称、版本、大小、安装时间（施工 F-8 下）。
-    pub(crate) fn info_labels(&self) -> [&'static str; 4] {
-        match self {
-            Language::Chinese => ["名称", "版本", "大小", "安装时间"],
-            Language::English => ["Name", "Version", "Size", "Installed"],
         }
     }
 

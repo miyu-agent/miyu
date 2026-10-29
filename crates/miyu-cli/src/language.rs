@@ -24,7 +24,7 @@ mod setup;
 mod undo;
 
 pub(crate) use confirm::{Carried, Doing, PlanLabel};
-pub(crate) use pkg::{Checked, LogoWhy};
+pub(crate) use pkg::{CameFrom, Checked, InfoKey, LogoWhy};
 
 /// 界面语言。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

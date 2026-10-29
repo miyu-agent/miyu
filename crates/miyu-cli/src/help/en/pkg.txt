@@ -7,7 +7,7 @@ Commands:
   install <package>       Install a package (alias: -U)
   remove <id>             Remove a package with its settings and state
                           (alias: -R)
-  info <id>               Show package details (alias: -Qi)
+  info <id>               Show package details, from the source if not installed
   files <id>              List the files of a package (alias: -Ql)
   owns <path>             Find the package that owns a file (alias: -Qo)
   check [id]              Check installed files for changes (alias: -Qk)
@@ -22,7 +22,8 @@ Commands:
   <file>                  A .miyu package file
   <id>                    A package from the source, or a removed built-in one
 
-pacman forms: -S <id>… installs from the source, -Syu updates and upgrades.
+pacman forms: -S <id>… installs from the source, -Syu updates and upgrades,
+-Qi <id> shows an installed package, -Si <id> shows it from the source.
 
 Options:
       --format text|json  Output format (default: text)

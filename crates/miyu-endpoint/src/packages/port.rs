@@ -12,7 +12,6 @@ use serde_json::{Value, json};
 
 use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
-use super::local::InfoParams;
 use super::source;
 use super::source::fetch::SourceParams;
 use super::source::search::SearchParams;
@@ -116,9 +115,7 @@ impl PackagesPort for Port {
     fn info(&self, package: String) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let params: InfoParams = serde_json::from_value(json!({ "package": package }))
-                .map_err(|_| refused(Refusal::BAD_PARAMS))?;
-            let mut info = super::local::info(&core, self.peer().for_owner, params)
+            let mut info = super::local::info(&core, self.peer().for_owner, &package)
                 .await
                 .map_err(refused)?;
             if let Some(entry) = super::entry(&core, &package, self.peer()) {

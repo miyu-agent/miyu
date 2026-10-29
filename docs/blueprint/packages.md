@@ -297,7 +297,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 1. **在哪**：`<数据根>/state/packages/.local/<编号>/`。点开头：和包自己放状态的 `state/packages/<编号>/` 在同一层，编号不会撞上（设计 31 原来写的 `local/` 会撞上编号叫 `local` 的包）。
 2. **记什么**：`desc` 是一个 JSON 对象（`id`、`version` 写了的才有、`installed` 装的时刻、`source` 从哪装的、`size` 总字节数、从软件源装的另有 `origin` 来源仓库（施工 G-4 上，升级照它判断））；`files` 一个文件一行 `<SHA-256> <字节数> <相对包目录的路径>`，路径用 `/` 分开、照路径排、放最后（带空格也认得）。写的时候整份先写进 `.<编号>.new` 再换上。
 3. **什么时候写**：装成、升级成的照装好的包目录现算一份，记不成的记一行 `WARN package not recorded`、装照算成；卸掉的删掉那一份。核心起来读清单时，装上的读成了、还没记的补一份（`source` 是空的），记 `INFO package recorded`。出厂的不进本地库（资源目录归系统的包管理）。
-4. **答什么**：`package.info`、`package.files`（`protocol.md`），装上的照本地库（没记的现算），出厂的照现在的文件现算。
+4. **答什么**：`package.info`、`package.files`（`protocol.md`），装上的照本地库（没记的现算），出厂的照现在的文件现算。`package.info` 另照清单答名字、说明、依赖、推荐、带了什么（同装之前看一眼的「包含」）、要的能力，照装着的包答「被依赖」（`required_by`），从软件源装的答来源仓库（施工 IN-2，设计 `49-装包照pacman.md`）；没装的照软件源答（端点的 `packages/source/look.rs`：同从软件源装的找法，先拿索引、照先后找各个源，找到第一个就用，文件挑本机能用的那一份），照 pacman 的 `-Qi`、`-Si`。
 5. **查**（施工 F-8 中下，端点的 `packages/verify.rs`）：`package.owns` 照真实的位置看路径在哪个包的目录里、本地库里记没记；`package.check` 照本地库比：改了的（哈希不一样）、少了的、多出来的（包自己运行时写的也算，只是提示）。`miyu check` 不写文件时也报：改了的 `files_modified`、少了的 `files_missing`，各一条警告，`detail` 是几个，写在那个包的清单上。
 
 ### 装卸（施工 F-5 上，设计 `30-插件框架.md` 第九节）

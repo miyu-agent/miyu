@@ -127,24 +127,29 @@ pub(crate) fn described(core: &Core, manifest: &Manifest, language: &str) -> Opt
     if declared.is_empty() {
         return None;
     }
+    Some(named(core, declared.iter().map(|it| it.as_str()), language))
+}
+
+/// 几个能力的编号写成 `[{"id", "name", "summary"}]`，同 [`described`]：软件源索引里写的能力（施工 IN-2，`package.info` 查
+/// 软件源的那一份）也照它说。
+pub(crate) fn named<'a>(core: &Core, ids: impl Iterator<Item = &'a str>, language: &str) -> Value {
     let words = crate::config::methods::words(core, language).ok();
     let said = |key: String| {
         words
             .as_ref()
             .and_then(|words| Words::sentence(words, &key, &[]))
     };
-    let listed: Vec<Value> = declared
-        .iter()
-        .map(|capability| {
-            let key = format!("extensions/capabilities/{}", capability.as_str());
+    let listed: Vec<Value> = ids
+        .map(|id| {
+            let key = format!("extensions/capabilities/{id}");
             json!({
-                "id": capability.as_str(),
-                "name": said(key.clone()).unwrap_or_else(|| capability.as_str().to_string()),
+                "id": id,
+                "name": said(key.clone()).unwrap_or_else(|| id.to_string()),
                 "summary": said(format!("{key}/summary")),
             })
         })
         .collect();
-    Some(json!(listed))
+    json!(listed)
 }
 
 /// 卸掉了包 `id`（施工 F-8 五补，设计 31 第三节第 3 条「重装回来从头设」）：开关的文件里它开没开、批过什么一起删掉；都没有的不写

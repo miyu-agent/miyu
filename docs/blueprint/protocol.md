@@ -759,9 +759,13 @@
 
 不替主人干活的会话（关起来的场所会话，经软件包端口）拿到的每一项去掉只给主人的那几格（施工 U23-R修起照黑名单）：这台机器上的路径（`state`、`pages_dir`）、程序和参数（`command`、`commands`、`process`、`worker`、`check`）、MCP 服务的写法、读坏了的原话（`problem`、`line`）；`package.info` 也不给它 `source`：那是这台电脑上的路径。关没关一个包照配置读（`config.get`），列表里不写。
 
-**`package.info`、`package.files`**（施工 F-8 中上，`packages.md`「本地库」）：参数都是 `{"package"}`，多写的格 `bad_params`，没装的（或者卸掉了的出厂包）`unknown_package`。
+**`package.info`、`package.files`**（施工 F-8 中上，`packages.md`「本地库」）：参数是 `{"package"}`（`package.info` 另可写 `source`，施工 IN-2），多写的格 `bad_params`，没装的（或者卸掉了的出厂包）`unknown_package`。
 
-- `package.info`：`package`、`layer`（`home`、`shipped`）、`files`（几个文件）、`size`（一共多少字节）；写了的有 `version`；装上的本地库记了的有 `installed`（装的时刻）、`source`（从哪个路径装的，核心起来时补的没有）。出厂的照现在的文件现算。
+- `package.info`：`source` 写 `true` 的只查软件源（pacman 的 `-Si`），`false` 的只查装着的（`-Qi`），不写的先查装着的、没装的再查软件源（施工 IN-2，设计 `49-装包照pacman.md` 第三节第 2 条；老的头不写，装着的照旧答）。
+  - 装着的：`package`、`layer`（`home`、`shipped`）、`from`（`shipped`、`official`、`local`，同 `package.list`）、`files`（几个文件）、`size`（一共多少字节）；写了的有 `version`、`author`、`upstream`；装上的本地库记了的有 `installed`（装的时刻）、`source`（从哪个路径装的，核心起来时补的没有）。出厂的照现在的文件现算。施工 IN-2 加的几格，没有的不写：`name`、`summary`（清单写的，照连接的语言挑）、`depends`、`recommends`（编号的数组）、`provides`（带了什么，同装之前看一眼的「包含」那几格：`program`、`command`、`commands`、`page`、`mascot`、`theme`、`connection`、`settings`、`mcp`、`skills`、`scripts`、`slash`、`personas`、`presets`）、`capabilities`（扩展声明的，`[{"id", "name", "summary"}]`，同看一眼）、`required_by`（装着的包里依赖它的，照编号）、`origin`（从软件源装的来源仓库）。
+  - 没装的照软件源（照从软件源装的找法：先拿索引，照先后找官方的、配置里加的源，找到第一个就用）：`from: "source"`、`source`（源的名字；装着的那一份的 `source` 是本机路径，两样东西，看 `from` 分）、`package`、`version`、`depends`、`recommends`、`provides`（索引原样：种类到名字）、`capabilities`（照索引的编号，写法同装着的）、`origin`、`official`（别的源里的一律是假的）；有的才写 `name`、`summary`、`author`、`upstream`、`download`（本机能用的那份文件多少字节）、`installed_size`（索引的 `installed`）；用的是本机旧索引的带 `stale`（同 `package.search`）。
+  - 两处都没有的 `unknown_package`：不写 `source` 的软件源拿不成也算没有；只查软件源的照 `package.search` 拒（`source_unreachable`）。
+  - 她的软件包工具（`packages {"package"}`）照旧只拿装着的、施工 IN-2 以前那几格。
 - `package.files`：`dir`（包目录的绝对路径，施工 F-8 下）、`files`，每个 `{"path", "sha256", "size"}`：`path` 相对 `dir`、用 `/` 分开，照路径排。
 - `package.owns {"path"}`（施工 F-8 中下）：`path` 是绝对路径（相对的 `bad_params`），换成真实的位置，看在哪个包的目录里（两层都找）。回应 `{"package": 编号}` 加 `layer`、`path`（相对包目录）、`recorded`（本地库里有没有记它，出厂的总是假）；哪个包都不在的 `{"package": null}`。
 - `package.check {"package"?}`（施工 F-8 中下）：本地库记了的包，照记的一个个比哈希：`{"packages": [{"package", "modified", "missing", "extra"}]}`，三格都是相对包目录的路径；没记的、出厂的不在里面。写了 `package` 的只查它，没装的 `unknown_package`。

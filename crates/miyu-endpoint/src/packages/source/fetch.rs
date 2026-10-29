@@ -22,6 +22,7 @@ use miyu_store::packages::Packages;
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use super::feeds::{Feed, Tier};
+use super::sync::Synced;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -164,14 +165,31 @@ pub(crate) async fn install(
 /// 装要用的几个源的索引（施工 U23 下下）：挑中的那个在前，依赖在它里面找不到的再照官方的找。
 type Indexes = Vec<(Feed, Index)>;
 
-/// 挑从哪个源装：写了 `from` 的只看那一个，没写的照先后（官方的、配置里加的）找第一个有这个编号的。官方的拿不成、别的源也没有
-/// 的照官方的拒；`from` 写的源没有的
-/// `unknown_source`；都没有的 `unknown_package`。别的源拿不成的跳过，记一行。
+/// 挑从哪个源装（[`found`]），依赖在它里面找不到的再照官方的找：非官方的另带上官方的索引。
 async fn chosen(core: &Arc<Core>, params: &SourceParams) -> Result<Indexes, Refusal> {
+    let (feed, synced) = found(core, &params.source, params.from.as_deref()).await?;
+    let mut indexes = vec![(feed.clone(), synced.index)];
+    if feed.tier != Tier::Official {
+        let official = super::feeds::official(core);
+        if let Ok(synced) = super::sync::sync_feed(&official, false).await {
+            indexes.push((official, synced.index));
+        }
+    }
+    Ok(indexes)
+}
+
+/// 编号 `id` 在哪个源里：写了 `from` 的只看那一个，没写的照先后（官方的、配置里加的）找第一个有这个编号的，交回那个源和它的
+/// 索引（`package.info` 查软件源也照它找，施工 IN-2）。官方的拿不成、别的源也没有的照官方的拒；`from` 写的源没有的
+/// `unknown_source`；都没有的 `unknown_package`。别的源拿不成的跳过，记一行。
+pub(crate) async fn found(
+    core: &Arc<Core>,
+    id: &str,
+    from: Option<&str>,
+) -> Result<(Feed, Synced), Refusal> {
     let feeds = super::feeds::feeds(core);
     let wanted: Vec<&Feed> = feeds
         .iter()
-        .filter(|feed| params.from.as_deref().is_none_or(|name| feed.name == name))
+        .filter(|feed| from.is_none_or(|name| feed.name == name))
         .collect();
     if wanted.is_empty() {
         return Err(Refusal::UNKNOWN_SOURCE);
@@ -179,18 +197,9 @@ async fn chosen(core: &Arc<Core>, params: &SourceParams) -> Result<Indexes, Refu
     let mut failed = None;
     for feed in wanted {
         match super::sync::sync_feed(feed, false).await {
-            Ok(synced) if synced.index.entry(&params.source).is_some() => {
-                let mut indexes = vec![(feed.clone(), synced.index)];
-                if feed.tier != Tier::Official {
-                    let official = super::feeds::official(core);
-                    if let Ok(synced) = super::sync::sync_feed(&official, false).await {
-                        indexes.push((official, synced.index));
-                    }
-                }
-                return Ok(indexes);
-            }
+            Ok(synced) if synced.index.entry(id).is_some() => return Ok((feed.clone(), synced)),
             Ok(_) => {}
-            Err(refusal) if feed.tier == Tier::Official || params.from.is_some() => {
+            Err(refusal) if feed.tier == Tier::Official || from.is_some() => {
                 failed.get_or_insert(refusal);
             }
             Err(refusal) => {

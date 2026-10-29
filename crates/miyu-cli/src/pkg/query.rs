@@ -1,52 +1,11 @@
-//! `miyu pkg info`、`files`、`owns`、`check` 印成几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」，照 pacman 的
-//! `-Qi`、`-Ql`、`-Qo`、`-Qk`）：纯的，测试里照它算。只放人要的：从哪装的、哈希、哪一层不印（`--format json` 照原样有）。
+//! `miyu pkg files`、`owns`、`check` 印成几行（施工 F-8 下，`docs/blueprint/cli/pkg.md`「样子」，照 pacman 的 `-Ql`、`-Qo`、
+//! `-Qk`；`info` 在 [`super::info`]）：纯的，测试里照它算。只放人要的：哈希、哪一层不印（`--format json` 照原样有）。
 
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
-use miyu_kernel::time::{Timestamp, UtcOffset};
-
-use crate::config::columns;
 use crate::language::{Checked, Language};
-
-/// `info`：`info` 是 `package.info` 的回应，`name` 是 `package.list` 里它的名字（写错的包没有）。一行一格，前面的词照最宽的
-/// 那个对齐；没写版本的、没记安装时间的那一行不印。
-pub(crate) fn info(
-    info: &Value,
-    name: &str,
-    offset: UtcOffset,
-    language: &Language,
-) -> Vec<String> {
-    let [name_label, version_label, size_label, installed_label] = language.info_labels();
-    let mut rows: Vec<(&str, String)> = Vec::new();
-    if !name.is_empty() {
-        rows.push((name_label, name.to_string()));
-    }
-    if let Some(version) = info["version"].as_str() {
-        rows.push((version_label, version.to_string()));
-    }
-    let files = info["files"].as_u64().unwrap_or_default();
-    let bytes = size(info["size"].as_u64().unwrap_or_default());
-    rows.push((size_label, language.package_size(&bytes, files)));
-    if info["layer"] == "shipped" {
-        rows.push((installed_label, language.shipped().to_string()));
-    } else if let Some(at) = info["installed"].as_str() {
-        let at = Timestamp::parse(at).map_or_else(|_| at.to_string(), |at| at.local_minute(offset));
-        rows.push((installed_label, at));
-    }
-    let width = rows
-        .iter()
-        .map(|(label, _)| columns(label))
-        .max()
-        .unwrap_or(0);
-    rows.into_iter()
-        .map(|(label, value)| {
-            let pad = " ".repeat(width - columns(label));
-            format!("{label}{pad}  {value}")
-        })
-        .collect()
-}
 
 /// `files`：一个文件一行，`<编号> <绝对路径>`（照 pacman 的 `-Ql`）。`files` 是 `package.files` 的回应。
 pub(crate) fn files(id: &str, files: &Value) -> Vec<String> {

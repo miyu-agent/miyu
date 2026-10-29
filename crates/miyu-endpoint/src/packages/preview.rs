@@ -72,6 +72,22 @@ pub(crate) fn enabling(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, 
     )))
 }
 
+/// 装着的包带了什么、要什么能力（施工 IN-2，`package.info` 装着的那一份）：同装之前看一眼的「包含」那几格（`program`、`command`、
+/// `page`、`skills`……）和 `capabilities`。碰磁盘：照包目录 `dir` 找技能、脚本。
+pub(crate) fn provided(
+    core: &Core,
+    peer: Peer,
+    (id, manifest): (&str, &Manifest),
+    dir: &Path,
+) -> (Value, Option<Value>) {
+    let mut carried = carries(core, peer, id, manifest, &Content::of(dir));
+    let capabilities = carried.remove("capabilities");
+    for key in ["package", "version", "skipped"] {
+        carried.remove(key);
+    }
+    (Value::Object(carried), capabilities)
+}
+
 /// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、有没有状态目录。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
     let found = core.system_packages();

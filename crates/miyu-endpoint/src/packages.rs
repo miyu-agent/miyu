@@ -23,6 +23,7 @@ pub(crate) mod depends;
 pub(crate) mod fill;
 mod folder;
 pub(crate) mod group;
+mod info;
 mod item;
 pub(crate) mod left;
 pub(crate) mod local;

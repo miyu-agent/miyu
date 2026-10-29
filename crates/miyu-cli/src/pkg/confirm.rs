@@ -119,9 +119,9 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
     rows
 }
 
-/// 「包含」那一行：程序、子命令、后台页、吉祥物、接的平台、MCP 服务、技能、脚本、几项设置（卸的时候设置算在「一并
+/// 「包含」那一行（`info` 的「提供」也照它说，施工 IN-2）：程序、子命令、后台页、吉祥物、接的平台、MCP 服务、技能、脚本、几项设置（卸的时候设置算在「一并
 /// 删除」里）。
-fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
+pub(crate) fn included(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let mut items = Vec::new();
     if let Some(kind) = preview["program"].as_str() {
         items.push(language.program(kind));

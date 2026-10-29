@@ -76,10 +76,10 @@ pub(crate) fn backfill(places: &Packages, found: &[Found]) {
     }
 }
 
-/// `package.info`、`package.files` 的参数。
+/// `package.files` 的参数。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct InfoParams {
+pub(crate) struct FilesParams {
     package: String,
 }
 
@@ -132,22 +132,19 @@ pub(super) async fn entry(core: &Arc<Core>, id: &str) -> Result<Looked, Refusal>
     })
 }
 
-/// `package.info {package}`：编号、哪一层、版本、装的时刻和从哪装的（本地库里记了的才有）、几个文件、多少字节。不替主人干活的
-/// （`for_owner` 是假的）不给从哪装的：那是这台电脑上的路径。
-pub(crate) async fn info(
-    core: &Arc<Core>,
-    for_owner: bool,
-    params: InfoParams,
-) -> Result<Value, Refusal> {
+/// 装着的包 `id` 的基本几格（`package.info` 装着的那一份从它起，施工 IN-2 在 [`super::info`] 另加几格；她的软件包工具只用这几格）：
+/// 编号、哪一层、版本、装的时刻和从哪装的（本地库里记了的才有）、几个文件、多少字节。不替主人干活的（`for_owner` 是假的）不给
+/// 从哪装的：那是这台电脑上的路径。
+pub(crate) async fn info(core: &Arc<Core>, for_owner: bool, id: &str) -> Result<Value, Refusal> {
     let Looked {
         layer,
         version,
         desc,
         files,
         ..
-    } = entry(core, &params.package).await?;
+    } = entry(core, id).await?;
     let mut answer = json!({
-        "package": params.package,
+        "package": id,
         "layer": layer.as_str(),
         "files": files.len(),
         "size": local::size(&files),
@@ -161,7 +158,7 @@ pub(crate) async fn info(
     }
     // 作者、上游、从哪来（施工 F-12）：同 `package.list` 的那几格。
     let now = core.system_packages();
-    if let Some(found) = now.iter().find(|one| one.id == params.package) {
+    if let Some(found) = now.iter().find(|one| one.id == id) {
         let places = packages(core);
         answer["from"] = json!(super::fill::from(found, &places).as_str());
         if let Ok(manifest) = &found.read {
@@ -186,7 +183,7 @@ pub(crate) async fn info(
 
 /// `package.files {package}`：包目录 `dir`（绝对路径，施工 F-8 下：命令行照 pacman 印绝对路径），每个文件的 `path`（相对
 /// 包目录，`/` 分开）、`sha256`、`size`，照路径排。
-pub(crate) async fn files(core: &Arc<Core>, params: InfoParams) -> Result<Value, Refusal> {
+pub(crate) async fn files(core: &Arc<Core>, params: FilesParams) -> Result<Value, Refusal> {
     let looked = entry(core, &params.package).await?;
     let files: Vec<Value> = looked
         .files
