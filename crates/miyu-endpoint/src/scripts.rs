@@ -1,11 +1,11 @@
-//! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：核心起来时、装卸包以后照这一刻装了的包和管理员
-//! 家目录里的再找一遍（`miyu_store::scripts`），经内置包的端口造成工具（`Builtins::script`，只有 `miyu-core` 编进了
+//! 脚本登记进工具目录（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：核心起来时、装卸包以后照这一刻装了的包和数据根
+//! 里的再找一遍（`miyu_store::scripts`），经内置包的端口造成工具（`Builtins::script`，只有 `miyu-core` 编进了
 //! `miyu-basesystem`），整份换进工具目录（`Catalog::replacing_scripts`）：撞了别的工具名字的不登记、记一行。每个脚本算一个
 //! 功能 `script-<名字>`（[`features`]），预设照它开关。
 //!
-//! 家目录里自己放的不归哪个包，登记时挂在 [`miyu_store::scripts::HOME_PACKAGE`] 下。核心跟着管理员家目录里的 `scripts/`
+//! 数据根里自己放的不归哪个包，登记时挂在 [`miyu_store::scripts::HOME_PACKAGE`] 下。核心跟着数据根里的 `scripts/`
 //! （[`Core::watch_scripts`]，施工 X-12 补，2026-10-13 项目主人照推荐定）：新放的、改了的、删了的当场再找一遍，下一轮的工具面
-//! 跟着变，和个人设置里的 MCP 服务一样。不每轮重找：没动的时候工具面一字不变。列给头看的 `script.list` 在 `list.rs`（施工 X-27）。
+//! 跟着变，和配置里的 MCP 服务一样。不每轮重找：没动的时候工具面一字不变。列给头看的 `script.list` 在 `list.rs`（施工 X-27）。
 //!
 //! 找到了却没登记上的记下为什么（[`Missed`]，施工 X-46）：`miyu check` 照它分清撞名、造不成工具和核心还没读到。
 
@@ -81,7 +81,7 @@ impl Core {
         )
     }
 
-    /// 跟着管理员家目录里的 `scripts/`（施工 X-12 补）：没有的先建上；里面点开头的以外哪个文件变了，照 `follow_scripts`
+    /// 跟着数据根里的 `scripts/`（施工 X-12 补）：没有的先建上；里面点开头的以外哪个文件变了，照 `follow_scripts`
     /// 再找一遍。交回监视，丢掉就停。建不了、监视起不来的记一行 `WARN`，交回空的：照旧只在起来时、装卸包时找。
     pub fn watch_scripts(self: &Arc<Self>) -> Option<Watch> {
         let dir = miyu_store::scripts::own_dir(&self.root);
@@ -109,7 +109,7 @@ impl Core {
         }
     }
 
-    /// 照这一刻装了的包、管理员家目录再找一遍脚本，整份换进工具目录。没设内置包端口的（测试里造的核心）只记下找到的，不登记。
+    /// 照这一刻装了的包、数据根再找一遍脚本，整份换进工具目录。没设内置包端口的（测试里造的核心）只记下找到的，不登记。
     /// 碰磁盘：在起来的时候、装卸包的阻塞路径上调。
     pub(crate) fn follow_scripts(&self) {
         let _one = self
@@ -182,7 +182,7 @@ impl Core {
         };
     }
 
-    /// `account` 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：核心登记的全部，关了的包带的不算（施工 U23 末上）。
+    /// 看得到的登记上的脚本（预设的功能表、预设页、工具的来处要的）：核心登记的全部，关了的包带的不算（施工 U23 末上）。
     pub(crate) fn scripts_for(&self) -> Vec<Script> {
         let off = self.packages_off();
         self.scripts()
@@ -198,7 +198,7 @@ pub(crate) fn package(script: &Script) -> &str {
     script.package.as_deref().unwrap_or(HOME_PACKAGE)
 }
 
-/// 交给属主是 `owner` 的会话的功能：装了的，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的
+/// 交给会话的功能：装了的，加上每个登记上的脚本一个（施工 X-12 中）：编号 `script-<名字>`，`script` 是它的
 /// 工具名；系统配置里的 MCP 服务每个一个，挂在 [`HOME_PACKAGE`] 下（施工 F-9 下）。包里被它盖住的同名服务的功能留着也碰不到
 /// 工具：那个服务不起，目录里没有挂在那个包下的工具。
 pub(crate) fn features(core: &Core) -> Features {

@@ -73,7 +73,7 @@ pub struct SessionCreated {
     #[serde(default = "titled", skip_serializing_if = "Clone::clone")]
     pub titles: bool,
     /// 外部身份的会话（施工 SU-4 中：场所会话都在主人名下以后，关不关照这一格认）：群、陌生人的私聊关起来，只碰得到自己的
-    /// 工作区。不关的不写；以前的日志没有这一格，照属主读：属主不是主人的（平台桥名下的）是关起来的。
+    /// 工作区。不关的不写。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub confined: bool,
 }
@@ -222,7 +222,7 @@ text_enum!(
     Level {
         /// 工作区：工作区里能读能写，边界以外要问人（`11-权限与沙盒.md` 第二节）。命令进沙盒随 M5。
         Workspace = "workspace",
-        /// 完全放开：边界以内以外都放行，只挡数据根（`11-权限与沙盒.md` 第二节）。谁能切到这一级随多用户那一步。
+        /// 完全放开：边界以内以外都放行，只挡数据根（`11-权限与沙盒.md` 第二节）。
         Full = "full",
     }
 );

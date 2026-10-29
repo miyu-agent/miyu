@@ -1,5 +1,5 @@
 //! 终端会话（施工 8-33，设计 `22-命令行.md` 第七节）：`session.terminal` 没有的开一个、之后一直是它；`session.set_terminal`
-//! 指到选中的会话，只收自己的本机主会话；闲置超过 `terminal.idle_new_after` 的开新的、回应带上次的时刻，旧的不动；带 `fresh` 的
+//! 指到选中的会话，只收本机主会话；闲置超过 `terminal.idle_new_after` 的开新的、回应带上次的时刻，旧的不动；带 `fresh` 的
 //! 不管指着谁都开新的（施工 8-33 再补）；切过去的那一刻算一次动静，切回闲置了很久的不再被换掉（施工 8-33 三补）。
 
 use serde_json::{Value, json};

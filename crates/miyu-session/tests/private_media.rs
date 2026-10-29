@@ -41,7 +41,7 @@ fn item(kind: MediaKind, id: &str, name: Option<&str>, size: Option<u64>, shown:
     }
 }
 
-/// 一块图：blob 的内容是名字的字节（[`private_turns`] 放进属主名下），只看请求里块的字节。
+/// 一块图：blob 的内容是名字的字节（[`private_turns`] 放进 blob），只看请求里块的字节。
 fn picture(name: &str) -> Block {
     let image = serde_json::json!({"blob": ContentHash::of(name.as_bytes()), "name": name,
         "media_type": "image/png", "width": 4, "height": 3});
@@ -103,7 +103,7 @@ fn snapshot(home: &Home, session: &SessionId) -> Snapshot {
 /// 造一个私聊会话，照先后发 `messages`，每条一轮；交回每一轮的请求。
 async fn private_turns(messages: Vec<Command>) -> (Home, SessionId, Vec<Request>) {
     let home = Home::new();
-    // 图片块引用的 blob 放进属主名下（内容是假的，请求里只看块的字节）。
+    // 图片块引用的 blob 先放好（内容是假的，请求里只看块的字节）。
     let blobs = Blobs::new(home.root.blobs());
     for name in ["msg-801-1", "msg-805-1"] {
         blobs.put(name.as_bytes()).expect("存得下");

@@ -11,7 +11,7 @@ use crate::support::providers::{data, profiles, routed_serving, said};
 use crate::support::*;
 use miyu_http::testkit::Server;
 
-/// 包 `bot` 的清单：替机主干活的扩展（不声明系统账号），登记 `judge`（档位 `lite`）、`deep`（档位 `flagship`）。另装一个不拉起
+/// 包 `bot` 的清单：替主人干活的扩展（不是平台桥），登记 `judge`（档位 `lite`）、`deep`（档位 `flagship`）。另装一个不拉起
 /// 的包 `other`，登记 `theirs`：`bot` 写它的编号不认。
 fn install_bot(home: &Home, program: &str, steps: &[String]) {
     let args: Vec<String> = steps.iter().map(|arg| format!("{arg:?}")).collect();

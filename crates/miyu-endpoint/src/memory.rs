@@ -3,11 +3,11 @@
 //! 读参数、写回应。现在就整理（`memory.dream`、`/dream`，施工 R-7 补）在 `memory/dream.rs`，搜以前的对话（`memory.turns`，
 //! 施工 R-12 下）在 `memory/turns.rs`。
 //!
-//! - 哪一间（施工 Y-7；施工 SU-4 下起只有主人一个账号）：主人的。`persona` 是这个人格那一间（人格照这个账号看得到
-//!   的几层找）；`session` 是那个会话用的那一间（照会话交出来的 [`Handle::memory_room`]，会话只给属主，`connection/checks.rs`）；
-//!   都不写照默认人格，没有默认人格的没有哪一间（无人格不是人格，施工 P-12）；`persona` 写 `_none`（[`NO_PERSONA`]）的是这个账号
-//!   无人格那一间（施工 R-12 再补：网页的记忆页没有会话可借）。
-//! - 听众、记下的是谁：同上，替谁干活的那个账号。代表外部的人（`as`）不收，随 O 线。
+//! - 哪一间：`persona` 是这个人格那一间（人格照出厂、包、你的几层找）；`session` 是那个会话用的那一间（照会话交出来的
+//!   [`Handle::memory_room`]，关在沙盒里的场所会话碰不到，`connection/checks.rs`）；都不写照默认人格，没有默认人格的没有哪一间
+//!   （无人格不是人格，施工 P-12）；`persona` 写 `_none`（[`NO_PERSONA`]）的是无人格那一间（施工 R-12 再补：网页的记忆页没有会话
+//!   可借）。
+//! - 听众、记下的是谁：主人。代表外部的人（`as`）不收，随 O 线。
 //! - 碰记忆日志、检索库的在阻塞线程里做。
 
 mod cards;
@@ -27,7 +27,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use miyu_kernel::id::{CommandId, SessionId};
-use miyu_kernel::origin::{By, Person};
+use miyu_kernel::origin::By;
 use miyu_recall::MemoryId;
 use miyu_session::{
     ConfigSource, EmbedSetup, Embedder, Filter, Handle, Keeper, Listener, Stamp, Turn, Using,
@@ -188,8 +188,7 @@ async fn search(core: &Arc<Core>, params: Search) -> Result<Value, Refusal> {
     let limit = limit(params.limit, SEARCH)?;
     let keeper = find(core, params.at).await?;
     let (query, forgotten) = (params.query, params.forgotten);
-    // 照意思找（施工 R-5 下）照这时的配置：先算问句的向量（`off` 的、等不到的只走关键词），搜完在后台补这一间缺的。远程的
-    // 用量照这一间的账号记（施工 Y-7）。
+    // 照意思找（施工 R-5 下）照这时的配置：先算问句的向量（`off` 的、等不到的只走关键词），搜完在后台补这一间缺的。
     let using = using(core);
     let near = match keeper.vectors() {
         Some(vectors) => vectors.query(&using, &query).await,
@@ -247,27 +246,22 @@ async fn restore(core: &Arc<Core>, stamp: Stamp, params: Restore) -> Result<Valu
     Ok(json!({}))
 }
 
-/// 人经协议写的：此刻、替谁干活的那个账号（施工 Y-7）、这条命令的编号。
+/// 人经协议写的：此刻、主人、这条命令的编号。
 fn stamp(id: &CommandId) -> Stamp {
     Stamp {
         at: now(),
-        by: person(),
+        by: crate::sessions::person(),
         cause: Some(id.clone()),
     }
 }
 
-/// 账号 `who` 这个人。
-fn person() -> By {
-    By::Person(Person::default())
-}
-
-/// 替 `who` 干活，照参数找哪一间，听众是他（施工 Y-7）：人格那一间、无人格那一间都在主人名下，人格照 `who` 看得到的几层找。
+/// 照参数找哪一间，听众是主人。
 async fn find(core: &Arc<Core>, at: Where) -> Result<Keeper, Refusal> {
-    let hearer = person();
+    let hearer = crate::sessions::person();
     match (at.persona, at.session, at.as_external) {
         (_, _, Some(_)) | (Some(_), Some(_), None) => Err(Refusal::BAD_PARAMS),
         (Some(persona), None, None) if persona == NO_PERSONA => {
-            // 无人格那一间（施工 R-12 再补）：记忆账号是替谁干活的那个账号，同无人格的会话照属主。
+            // 无人格那一间（施工 R-12 再补）。
             let room = Room::persona(NO_PERSONA);
             Ok(Keeper::new(&memory(core)?, room, Listener::Owner(hearer)))
         }
@@ -367,7 +361,7 @@ pub(crate) fn installed(core: &Core) -> bool {
     core.memory.installed()
 }
 
-/// 核心一份的记忆（各账号的房间都在这一份登记里，用到哪一间才开，施工 Y-7）。人格记忆没装的当没有（施工 R-10）。
+/// 核心一份的记忆（每一间都在这一份登记里，用到哪一间才开）。人格记忆没装的当没有（施工 R-10）。
 fn memory(core: &Core) -> Result<Arc<miyu_session::Memory>, Refusal> {
     Some(Arc::clone(&core.memory))
         .filter(|memory| memory.installed())
@@ -426,7 +420,7 @@ pub(crate) fn give_recall(
 }
 
 /// 抽取要的几样（施工 R-6 上，`memory.md` 第六条）：请求模型的照一次性入口（照剧本回的端口没有，不抽）、资源目录里的字和 key 的
-/// 写法、管理员的 blob（抽取的请求只有字，用不上）。读不出来的记一行，没有：这个核心不抽，别的照常。
+/// 写法、blob（抽取的请求只有字，用不上）。读不出来的记一行，没有：这个核心不抽，别的照常。
 pub(crate) fn extraction(
     models: &dyn miyu_session::Models,
     resources: &miyu_store::resources::ResourceRoot,

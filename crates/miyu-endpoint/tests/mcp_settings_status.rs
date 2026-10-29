@@ -1,5 +1,5 @@
-//! 个人设置里的 MCP 服务给头的（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：软件包列表上被盖住的服务、全被盖住的
-//! 包带 `covered`；`mcp.list` 列出个人设置里的服务和它盖住了谁，`mcp.restart` 重启一个、没有的拒；订阅软件包列表的连接收
+//! 配置里的 MCP 服务给头的（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：软件包列表上被盖住的服务、全被盖住的
+//! 包带 `covered`；`mcp.list` 列出配置里的服务和它盖住了谁，`mcp.restart` 重启一个、没有的拒；订阅软件包列表的连接收
 //! `mcp.changed`，删掉的 `server` 是 `null`，不推叫 `~home` 的包。
 
 use std::sync::Arc;

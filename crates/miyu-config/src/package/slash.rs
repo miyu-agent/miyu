@@ -9,7 +9,7 @@ use super::reader::{Reader, command_name, line_of};
 use super::{Code, Problem};
 use crate::phrases::Phrases;
 
-/// 一条斜杠命令谁能用（施工 O-6 六补，`docs/blueprint/slash.md`「谁能用」）：系统配置 `commands.<名字>.access`、清单
+/// 一条斜杠命令谁能用（施工 O-6 六补，`docs/blueprint/slash.md`「谁能用」）：配置 `commands.<名字>.access`、清单
 /// `[[slash]]` 的出厂值都是这三种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
@@ -42,7 +42,7 @@ pub struct SlashCommand {
     pub summary: Phrases,
     /// 名字后面跟什么的提示，照语言；不跟字的没有。
     pub argument: Option<Phrases>,
-    /// 出厂的谁能用（施工 O-6 六补）：没写的没有，照 `admin`；系统配置写了的压过它。
+    /// 出厂的谁能用（施工 O-6 六补）：没写的没有，照 `admin`；配置写了的压过它。
     pub access: Option<Access>,
     /// 这一段写在第几行。
     pub line: Option<usize>,

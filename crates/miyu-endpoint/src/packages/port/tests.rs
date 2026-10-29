@@ -1,5 +1,4 @@
-//! 在会话的预设里打开装上的包，照会话属主（施工 Y-5 下下）；关在沙盒里的会话装不了包（施工 SU-2 上；施工 SU-4 下起照关不关，
-//! 不照属主）。
+//! 在会话的预设里打开装上的包（施工 Y-5 下下）；关在沙盒里的会话装不了包（施工 SU-2 上；施工 SU-4 下起照关不关）。
 
 use std::sync::Arc;
 
@@ -10,7 +9,7 @@ use miyu_tool::Catalog;
 use super::*;
 use crate::test_support::{resources, temp_root};
 
-/// 写进主人家目录里的同名覆盖（施工 SU-3 下：预设只有主人那一份）。
+/// 写进数据根里的同名覆盖（施工 SU-3 下：预设只有一份）。
 #[tokio::test]
 async fn opening_in_a_preset_writes_the_owner_s_override() {
     let (root, dir) = temp_root("open-in");
@@ -36,7 +35,7 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     }
 }
 
-/// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下，SU-2 上起没有自己那一层）：关在沙盒里的会话（群、陌生人的私聊，属主也是主人）一件一件拒
+/// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下）：关在沙盒里的会话（群、陌生人的私聊）一件一件拒
 /// `not_permitted`（工具先看一眼再做，只挡看一眼的话直接调做的那一件就漏了），什么都不动；只读的照旧给。
 #[tokio::test]
 async fn a_confined_session_cannot_change_packages() {

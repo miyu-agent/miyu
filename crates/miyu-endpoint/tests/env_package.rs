@@ -13,7 +13,7 @@ use miyu_store::blob::Blobs;
 
 use crate::support::*;
 
-/// 写进 alice 个人设置的称呼。
+/// 写进配置的称呼。
 const PROFILE: &str = "[profile]\nname = \"小林\"\n";
 
 /// 「关于你」那一块。

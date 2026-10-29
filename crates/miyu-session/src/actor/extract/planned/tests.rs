@@ -142,7 +142,7 @@ impl Log {
         });
     }
 
-    /// 主人在群里说一句（`by` 是账号：撤掉那一轮时这句跟着撤），群名片是 `name`。
+    /// 主人在群里说一句（`by` 是主人本人：撤掉那一轮时这句跟着撤），群名片是 `name`。
     fn owner_said(&mut self, name: &str, text: &str) {
         self.push(|seq, at| {
             format!(

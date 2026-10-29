@@ -27,8 +27,7 @@ pub(crate) fn answered_later(core: &Core, request: &Request) -> bool {
 }
 
 /// 在后台办一条 [`answered_later`] 认的请求，连接的这一头是 `peer`（`command.run` 的回执照它的语言写），连接是谁是 `caller`：
-/// 它的包是核心拉起的扩展的（施工 X-18：`package.call` 照它查能调哪几个，人的连接没有），`model.call` 的图照它的账号找
-/// （施工 Y-2中下）。
+/// 它的包是核心拉起的扩展的（施工 X-18：`package.call` 照它查能调哪几个，人的连接没有）。
 pub(crate) async fn call_later(
     core: &Arc<Core>,
     peer: Peer,

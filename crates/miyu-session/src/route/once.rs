@@ -13,7 +13,7 @@
 //!    不换的分类：不等，交 `model_failed`。收到过增量才出错的也换（交给底子的「说到一半断了」是假的）：半截没人看到。
 //! 6. 记一行 `INFO model call`（成了）或 `INFO model call failed`（没成），目标 `miyu::session`，不带会话编号。
 //! 7. 记账（施工 8-15，`models.md`「怎么走」第九条第 4 条）：每发出去一次（换端点再来的也算一次），照真发的那个模型的
-//!    价格算好金额，记进调的那个账号的账号日志和用量汇总（`usage.oneshot`），不记会话。写不进去的记一行
+//!    价格算好金额，记进日志 `journal.jsonl` 和用量汇总（`usage.oneshot`），不记会话。写不进去的记一行
 //!    `WARN usage not indexed purpose=… error=…`，照样交回答。
 
 mod reply;
@@ -180,7 +180,7 @@ impl OneShot {
         }
     }
 
-    /// 发一次：照这一次的配置 `config`（一次性的照这一刻不算项目配置的最终值），图从 `blobs`（调的一方那个账号的）取。
+    /// 发一次：照这一次的配置 `config`（一次性的照这一刻不算项目配置的最终值），图从 `blobs` 取。
     /// 记一行运行日志。
     ///
     /// # Errors
@@ -384,7 +384,7 @@ struct Spent<'a> {
 }
 
 impl Spent<'_> {
-    /// 记账：照价格算好金额，在阻塞线程里写进账号日志和用量汇总。没交用量汇总的（测试里）不记。
+    /// 记账：照价格算好金额，在阻塞线程里写进日志 `journal.jsonl` 和用量汇总。没交用量汇总的（测试里）不记。
     async fn record(&self, routes: &Routes, usage: Option<Usage>, tariff: Option<&Tariff>) {
         let Some(ledger) = routes.data.ledger() else {
             return;

@@ -14,7 +14,7 @@
       "net.search.deepseek.key": {"name": "DeepSeek", "description": "搜索服务供应商用 DeepSeek 时要它；没配的照用模型那边 DeepSeek 供应商的 key。按次收费。"},
       "net.search.tavily.key": {"name": "Tavily", "description": "搜索服务供应商选了 Tavily 时要它。"},
       "net.search.brave.key": {"name": "Brave Search", "description": "搜索服务供应商选了 Brave 时要它。"},
-      "net.internal_domains": {"name": "内部域名", "description": "别人（成员、群里的人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；管理员自己不受影响。写法例如 example-corp.com。"},
+      "net.internal_domains": {"name": "内部域名", "description": "别人（群里的人、陌生人）让 AI 上网时一律不去的域名，子域名也算，不管解析成什么地址、走不走代理；你自己不受影响。写法例如 example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG 的地址", "description": "你自己搭的 SearXNG，例如 http://127.0.0.1:8888，要开着 JSON 格式。搜索服务供应商选了 SearXNG 时用它。"},
       "net.search.source": {"name": "搜索服务供应商", "description": "AI 搜网页时用哪一家。自动是 Exa、Parallel、Firecrawl、AnySearch、You.com 依次试，被限额的歇一阵；选了一家的先用它，用不了再依次试别的。这几家都在国外，搜索词会发给它们。自己抓不下来的网页会请 Exa、Firecrawl、Parallel 代抓，网址也会发给它们。", "options": {"auto": "自动", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {
@@ -114,9 +114,9 @@
       },
       "commands.<id>.access": {
         "name": "谁能用这条命令",
-        "description": "这条斜杠命令谁能用：管理员是终端管理员和群管理员，所有人是群里随便哪个人也行，停用是谁都不行。不写的照命令自带的设置，没有的是管理员。",
+        "description": "这条斜杠命令谁能用：你和群管理员，或者群里随便哪个人也行，或者停用、谁都不行。不写的照命令自带的设置，没有的是你和群管理员。",
         "options": {
-          "admin": "管理员",
+          "admin": "你和群管理员",
           "anyone": "所有人",
           "off": "停用"
         }
@@ -183,7 +183,7 @@
       },
       "sandbox.tools.<name>": {
         "name": "不套沙盒：这件工具",
-        "description": "管理员放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在管理员自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。"
+        "description": "放行这件工具在沙盒外跑（碰硬件、要 root 的脚本这类）：值写这件工具的来处，自己放的脚本是 ~home，装的包写包的编号，出厂的 shell 是 shell；对不上的不算。放行了的在你自己的会话里不问、直接在沙盒外跑，群聊、陌生人的私聊照旧拒绝，只读的时候也拒绝。"
       },
       "packages.<id>.off": {
         "name": "把这个包关掉",
@@ -703,7 +703,7 @@
     "package-problems/prompt_override_bad": "这个提示词的覆盖没用上，照下一层或者出厂的：{detail}",
     "package-problems/override_bad": "这个工具说明的覆盖没用上，照出厂的：{detail}",
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
-    "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
+    "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
     "package-problems/script_state_left": "有这个脚本的状态目录（{detail}），可现在没有这个脚本了；用不上的话自己删掉这个目录",
     "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
     "package-problems/script_not_made": "这个脚本没登记上：{detail}",
@@ -714,7 +714,7 @@
     "package-problems/sandbox_tool_linked": "sandbox.tools.{name} 放行的工具，它的文件不在 Miyu 管得住的地方（真实位置 {real}），不算放行：链接、所在的目录是链接，都能指到她改得了的地方；要放行请把真文件放回家目录的 scripts/ 或装成包",
     "package-problems/sandbox_shell": "sandbox.tools.shell 放行了 shell：AI 跑的每条命令都在沙盒外跑、不问人",
     "package-problems/skill_skipped": "跳过了这个技能：{detail}",
-    "package-problems/skill_link_outside": "这个技能文件夹是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
+    "package-problems/skill_link_outside": "这个技能文件夹是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
     "package-problems/skill_name_mismatch": "写的名字和文件夹不同名，照写的名字 {detail} 用",
     "package-problems/skill_name_from_folder": "名字没写或者不合写法（1 到 64 个小写字母、数字、单个连字符），照文件夹的名字 {detail} 用",
     "package-problems/skill_yaml_lenient": "开头不是合法的 YAML：照「没加引号的值当一整句字」重读才读成，值里有冒号的请加上引号",
@@ -729,7 +729,7 @@
     "package-problems/persona_left": "软件包 {detail} 已经卸了，这一份是它留下的改动",
     "package-problems/preset_left": "软件包 {detail} 已经卸了，这一份是它留下的改动",
     "package-problems/slash_skipped": "跳过了这个斜杠命令：{detail}",
-    "package-problems/slash_link_outside": "这个命令模板是链接，指到数据根里的 {detail}，不在这个账号自己的文件夹里，跳过了",
+    "package-problems/slash_link_outside": "这个命令模板是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
     "package-problems/slash_covered": "和 {detail} 同名，被它盖住了，这一份不用",
     "package-problems/slash_builtin": "和 Miyu 自带的 /{detail} 同名，这一份不用",
     "package-problems/skill_command_clash": "和命令 /{detail} 同名，敲 /{detail} 用的是命令，不是这个技能",

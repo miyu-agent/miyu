@@ -32,7 +32,7 @@ pub(crate) async fn call(core: &Arc<Core>, params: &Value) -> Result<Value, Refu
         // 别的组合（写错的也在里面）照 `find` 判。
         _ => {
             let keeper = find(core, at).await?;
-            // 合并的请求照这时的配置发，记在这一间的账号名下（施工 Y-7）。
+            // 合并的请求照这时的配置发（施工 Y-7）。
             let using = using(core);
             answered(keeper.dream(using.config, offset()).await)?
         }

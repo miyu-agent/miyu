@@ -36,7 +36,7 @@ pub enum OpenError {
     Io(io::Error),
 }
 
-/// 写进运行日志的那一句：不带目录（带着账号），不带怎么坏的（可能转述那一行的字），段只写文件名（施工 LG-1 上）。要细的看
+/// 写进运行日志的那一句：不带目录（带着会话编号），不带怎么坏的（可能转述那一行的字），段只写文件名（施工 LG-1 上）。要细的看
 /// 字段。
 impl fmt::Display for OpenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -13,7 +13,7 @@
 //!
 //! 施工 O-31 前：在场所里做的事（访问类别 `venue`）只看会话在不在场所里（[`Place`]）：在的放行、不问，不在的拒绝。
 //!
-//! 施工 X-36：管理员在系统配置里放行了的工具（[`Unsandboxed`]，`11-权限与沙盒.md` A15），只碰得到自己工作区的会话照拒，只读
+//! 施工 X-36：主人在配置里放行了的工具（[`Unsandboxed`]，`11-权限与沙盒.md` A15），只碰得到自己工作区的会话照拒，只读
 //! 拒，别的放行、不问；高危的照问。执行器照同一份放行表不写沙盒的规格。
 
 use std::path::{Path, PathBuf};
@@ -81,9 +81,9 @@ pub(crate) struct Guard {
     private: RwLock<Vec<PathBuf>>,
     /// 只禁写的名单（施工 5-17 下）：同私密目录，造的时候是出厂的，回合开始照这一轮的配置换。
     readonly: RwLock<Readonly>,
-    /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
+    /// 主人放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，和在跑的调用共用，所以上锁。
     unsandboxed: RwLock<Unsandboxed>,
-    /// 管理员管得住的地方（施工 X-37 补）：会话开的时候定下，回合开始随放行表交出去。
+    /// 主人管得住的地方（施工 X-37 补）：会话开的时候定下，回合开始随放行表交出去。
     confines: Confines,
 }
 
@@ -140,9 +140,9 @@ impl Guard {
         }
     }
 
-    /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），管理员管得住的地方（[`Confines`]：
-    /// 账号 `owner` 家目录自己放东西的几处、资源目录 `resources`，没关起来的会话加系统那一层装上的包；关起来的只有资源目录，施工
-    /// SU-4 上照 [`Guard::new`] 交的关不关算，不另传），属主照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
+    /// 会话自己的几处（施工 X-37 补，造会话、载入共用）：附件目录（[`Guard::with_attachments`]），主人管得住的地方（[`Confines`]：
+    /// 资源目录 `resources`，没关起来的会话加数据根 `root` 里自己放东西的几处、装上的包；关起来的只有资源目录，施工
+    /// SU-4 上照 [`Guard::new`] 交的关不关算，不另传），照 XDG 的那几处（施工 Y-11 上，边界表的 `own`）。
     #[must_use]
     pub(crate) fn for_session(
         mut self,
@@ -151,13 +151,12 @@ impl Guard {
         resources: &Path,
     ) -> Guard {
         self.confines = Confines::of(root, self.confined.is_none(), resources);
-        // 会话属主自己的几处（施工 Y-11 上，家目录里照 XDG 的 pictures 这些）：边界表照工作区算，只给文件工具。成员的会话另算
-        // 上他的工作区（施工 Y-2 下①）：他报的工作目录不在里面时，数据根照旧禁着，他自己的工作区不能跟着被禁。
+        // 数据根里照 XDG 的几处（施工 Y-11 上，pictures 这些）：边界表照工作区算，只给文件工具。
         self.places.own = root.user_dirs().into_iter().map(|(_, dir)| dir).collect();
         self.with_attachments(miyu_store::attachments::dir(root, id))
     }
 
-    /// 管理员管得住的地方：回合开始照它和这一轮的放行表拼一份。
+    /// 主人管得住的地方：回合开始照它和这一轮的放行表拼一份。
     pub(crate) fn confines(&self) -> &Confines {
         &self.confines
     }
@@ -251,7 +250,7 @@ impl Guard {
         let level = effective(permission);
         let access = tool.spec().access.clone();
         // 在场所里做的事不报路径、不在沙盒外跑：只看会话在不在场所里（施工 O-31 前）。也给本机用的（`venues` 有 `local`，
-        // 施工 O-31 补：接入QQ 的「主动发消息」本机的会话里也叫她发），本机的会话里照对外发消息判：本机的会话就是管理员本人。
+        // 施工 O-31 补：接入QQ 的「主动发消息」本机的会话里也叫她发），本机的会话里照对外发消息判：本机的会话就是主人本人。
         let local_venue = access == Access::Venue
             && matches!(self.place, Place::Local(_))
             && tool.venues().is_some_and(|venues| venues.local);
@@ -307,10 +306,10 @@ impl Guard {
             &asking,
             checked,
         );
-        // 管理员放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
+        // 主人放行了的（施工 X-36）：照名字和来处认，工具自己报不报都一样。
         let granted = self.admin_granted(name, &call.cwd, dirs, grants);
-        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；管理员放行了的也一样（施工 X-36）；装包、
-        // 卸包也一样（施工 SU-4 中：原来照会话的属主不是主人拒，场所会话都归主人以后照关不关）。
+        // 要在沙盒外跑的：只碰得到自己工作区的会话一律拒，没人能放行（施工 5-12 下）；主人放行了的也一样（施工 X-36）；装包、
+        // 卸包也一样（施工 SU-4 中）。
         if let Some(confined) = &self.confined
             && (tool.outside_sandbox(&call) || granted || access == Access::Install)
         {
@@ -325,7 +324,7 @@ impl Guard {
         {
             return hazardous(verdict, (name, access), hazard, &asking);
         }
-        // 管理员放行了的：只读拒，别的不问；报的路径判了拒绝的照拒（施工 X-36）。
+        // 主人放行了的：只读拒，别的不问；报的路径判了拒绝的照拒（施工 X-36）。
         if granted {
             return match (verdict, level) {
                 (denied @ Verdict::Deny { .. }, _) => denied,

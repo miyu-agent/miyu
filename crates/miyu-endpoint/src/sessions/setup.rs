@@ -30,7 +30,7 @@ pub(crate) struct Setup {
     profile: Profile,
     preset: Option<miyu_store::presets::Found>,
     persona: Option<miyu_store::personas::Found>,
-    /// 属主的资源目录：压着他写的提示词覆盖（施工 OV-1 中）。
+    /// 资源目录：压着你写的提示词覆盖（施工 OV-1 中）。
     resources: miyu_store::resources::ResourceRoot,
 }
 
@@ -44,7 +44,6 @@ impl Setup {
         (workspace, dirs): (String, Vec<String>),
         who: Opening,
     ) -> Result<Setup, Refusal> {
-        // 照属主那一份（施工 Y-2 下下中上）。
         let (resolved, _) = core.mine().config().with_project(&workspace);
         let permission = PermissionSettings::from(&resolved.values());
         let level = opening_level(&permission, who.venue.as_ref());
@@ -57,7 +56,6 @@ impl Setup {
         // 空的编号是明着无工具（施工 P-16 下，`presets::opening`）：不找预设。
         let preset = match who.preset.as_deref() {
             Some("") => None,
-            // 照新会话的属主找（施工 Y-2 中上）。
             wanted => Some(presets::resolve(core, wanted).await?),
         };
         let persona = personas::resolve(core, persona).await?;

@@ -1,5 +1,5 @@
 //! 列会话的端口（`docs/blueprint/cross-session.md` 第一条，`tools/sessions.md`，施工 C-3）：`sessions` 这件工具只拿它，不认识
-//! 会话表。执行器照这个会话抄好它自己的编号、属主，经会话表列出同一个属主的主会话。
+//! 会话表。执行器照这个会话抄好它自己的编号，经会话表列出本机的主会话。
 //!
 //! 端口由下层定义、上层装（`00-设计理念.md` 第四节「依赖与接口的规矩」）：这里只定义形状，执行器（`miyu-session`）照
 //! 每一次调用造一个，交给 [`crate::Call::sessions`]。只有本机的主会话有；测试里的假调用没有，`sessions` 照「没有别的会话」答。
@@ -25,12 +25,12 @@ pub const SESSIONS: &str = "sessions";
 /// 认的时候至少几位：和短编号一样长（`kernel/ids.md`「会话的短编号」）。
 const SHORTEST: usize = 8;
 
-/// 列出这个会话的属主的别的主会话。
+/// 列出本机别的主会话。
 pub trait SessionsPort: Send + Sync {
     /// 这个会话自己的编号：列表第一行写它。
     fn this(&self) -> &SessionId;
 
-    /// 属主和这个会话一样的主会话（`session.created` 不带 `parent`），删了的不算，不含这个会话自己，不排先后。每个会话读一遍
+    /// 本机的主会话（`session.created` 不带 `parent`），删了的不算，不含这个会话自己，不排先后。每个会话读一遍
     /// 它的日志；读下一个之前看一眼 `stop`，举起来了就不往下读，交回已经读到的。
     fn list<'a>(&'a self, stop: &'a Stop) -> Listing<'a>;
 

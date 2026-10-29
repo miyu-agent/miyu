@@ -4,7 +4,7 @@
 //! 施工 3-9 三补）、打断，订阅会话的事件流（施工 3-8 中）。会话表照编号找会话，这次运行里没在跑的，从磁盘载入。只认字节流，不管它从哪来：本机套接字
 //! （施工 3-8 下）、命名管道、以后的 WebSocket，都把连接交给 [`serve`]。
 //!
-//! - [`Core`]：核心的家底：数据根、资源目录、给会话造请求模型的端口、管理员、本机令牌、会话表；
+//! - [`Core`]：核心的家底：数据根、资源目录、给会话造请求模型的端口、本机令牌、会话表；
 //! - [`serve`]：和一个连接说话，直到它关了；
 //! - [`run`]：在本机的监听器上一个个接连接，每个交给 [`serve`]；
 //! - [`Core::idle`]：没有连接、没有在跑的回合、也没有在跑的后台命令，核心据此空闲退出（施工 3-9 上、7-3）；
@@ -16,7 +16,7 @@
 //! - 模型：`model.list`，配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.rs`）；第一次接入的
 //!   `provider.detect`、`provider.catalog`、`provider.test`（施工 8-11，`providers.rs`）；
 //! - 给人看的字：`human.get`，工具的样子、说法的模板原文，头不用再自己去资源目录里读（施工 W-1，`human.rs`）。
-//! - 文件：`fs.list` 列一层目录，`fs.find` 模糊找文件，数据根只有账号自己的工作区能列、能找（施工 W-2，`files.rs`）。
+//! - 文件：`fs.list` 列一层目录，`fs.find` 模糊找文件，数据根里只有工作区 `workspace/` 能列、能找（施工 W-2，`files.rs`）。
 //! - 可选软件包登记的查询：方法名到怎么答的一张表（[`queries`]，施工 W-4）。核心起来时照编进来的包
 //!   （`miyu-core` 的 cargo 开关）往里登记，`mermaid.render` 就是这样接进来的；没编进来的方法，这张表里
 //!   压根没有它，握手以后的方法里找不到、这张表里也找不到的，一律 `unknown_method`。
@@ -133,12 +133,12 @@ pub struct Core {
     terminal: tokio::sync::Mutex<()>,
     /// 后台页的方法：哪个包登记了哪些、由哪个连接答（施工 F-6 中，`backstage.rs`）。
     backstage: backstage::Methods,
-    /// 系统的家目录：权限策略照它换 `~`，头报来的工作目录是它的就退回管理员的工作区（施工 4-3 下）。
+    /// 系统的家目录：权限策略照它换 `~`，头报来的工作目录是它的就退回会话的默认工作区（施工 4-3 下）。
     home: Option<PathBuf>,
     /// 这台机器上的沙盒能不能用（核心起来时探的）：握手时报给头（施工 5-4 下）；能用的，造会话、载入时把助手交给会话
     /// （施工 5-4 上）。
     sandbox: Availability,
-    /// 沙盒的缓存放在哪：`<缓存目录>/sandbox`，各账号一份在它下面；你的 cargo 目录在哪（施工 5-4 下）。算不出缓存目录的
+    /// 沙盒的缓存放在哪：`<缓存目录>/sandbox`；你的 cargo 目录在哪（施工 5-4 下）。算不出缓存目录的
     /// 没有。
     sandbox_cache: Option<(PathBuf, Option<PathBuf>)>,
     /// 本机令牌：本机连接握手时要出示（`04-核心协议.md` 第四节）。
@@ -212,7 +212,7 @@ pub struct Core {
     extensions: extensions::Extensions,
     /// MCP 服务（施工 X-3 上，`mcp.rs`）：`bundle` 包带的。
     mcp: mcp::Servers,
-    /// 管理员个人设置里的 MCP 服务（施工 F-9 下，`mcp/home.rs`）：这一刻照着起的几个。
+    /// 配置里的 MCP 服务（施工 F-9 下，`mcp/home.rs`）：这一刻照着起的几个。
     home_mcp: mcp::HomeMcp,
     /// 软件包列表里哪个包变了（施工 F-8 三补，`packages/changes.rs`）。
     package_changes: packages::changes::Changes,
@@ -243,7 +243,7 @@ impl Core {
         self.tools.current()
     }
 
-    /// 一份家底：会话表是空的，会话用到时再载入；打开管理员的会话列表的索引（施工 3-8 七补），坏了的删掉重建。
+    /// 一份家底：会话表是空的，会话用到时再载入；会话列表的索引用到时开（施工 3-8 七补），坏了的删掉重建。
     pub fn new(
         root: DataRoot,
         resources: ResourceRoot,
@@ -410,7 +410,7 @@ impl Core {
         self
     }
 
-    /// 同一份家底，沙盒的缓存放在 `root` 下面、各账号一份，你的 cargo 目录是 `cargo_home`（施工 5-4 下）。
+    /// 同一份家底，沙盒的缓存放在 `root` 下面，你的 cargo 目录是 `cargo_home`（施工 5-4 下）。
     #[must_use]
     pub fn with_sandbox_cache(mut self, root: PathBuf, cargo_home: Option<PathBuf>) -> Core {
         self.sandbox_cache = Some((root, cargo_home));

@@ -35,7 +35,7 @@ pub(crate) fn found(core: &Core) -> Vec<Page> {
 }
 
 impl Page {
-    /// 哪个包的整页（施工 U23 末下：会话属主关了的包不列、不开）。
+    /// 哪个包的整页（施工 U23 末下：关了的包不列、不开）。
     pub(crate) fn package(&self) -> &str {
         &self.package
     }

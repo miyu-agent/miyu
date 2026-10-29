@@ -49,7 +49,7 @@ const VERSION: i64 = 3;
 /// `vectors` 是每一条照模型的向量（施工 R-5 下，`vectors.rs`）：不换版本，每次开库、重建以后照 `vectors::ADD` 补上这张表，
 /// 以前的库也就有了。换版本就要删掉重建，删掉的会话那几块墓碑是删会话时写的，重建补不回来。`uses` 是回合库里记忆用到过的
 /// 每一次（施工 R-4 下，`uses.rs`），同向量表照 `uses::ADD` 补上。`places` 是回合库里哪个会话在哪个场所（施工 R-13 下，
-/// `places.rs`），同样补上；同一处的 `origins` 是每个会话的属主、是不是主会话（施工 E-6）。`stamps` 是每个来源的指纹（施工 K-1 上，`stamps.rs`：知识库的文档变没变），同样补上。
+/// `places.rs`），同样补上；同一处的 `origins` 是每个会话是不是主会话（施工 E-6）。`stamps` 是每个来源的指纹（施工 K-1 上，`stamps.rs`：知识库的文档变没变），同样补上。
 const SCHEMA: &str = "CREATE TABLE buried (
     key TEXT PRIMARY KEY NOT NULL
 ) WITHOUT ROWID;

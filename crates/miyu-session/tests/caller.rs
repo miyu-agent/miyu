@@ -36,7 +36,7 @@ fn seen(caller: &Option<Caller>) -> Option<Caller> {
     })
 }
 
-/// 交没交会话日志的目录：测试里的属主是管理员，都交，是这个会话自己的目录（施工 E-M）。
+/// 交没交会话日志的目录：测试里的会话没关起来，都交，是这个会话自己的目录（施工 E-M）。
 fn log_given(caller: &Option<Caller>, session: &miyu_kernel::id::SessionId) {
     let log = caller.as_ref().and_then(|caller| caller.log.as_ref());
     assert!(

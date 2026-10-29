@@ -1,6 +1,5 @@
-//! 附件照连接的账号存取（施工 Y-2中下，`protocol.md` 的 `blob.put`、`blob.open`、`blob.get`、`model.call`；施工 SU-4 中起包不再
-//! 各有一个账号，扩展传的和主人共用一个存处）：桥传的（一次传、分块传）都在主人名下；不带 `session` 的 `blob.get`、`model.call` 的
-//! 图照连接的账号（主人）找；它往主人的私聊里发的附件她照属主读。
+//! 附件存取（`protocol.md` 的 `blob.put`、`blob.open`、`blob.get`、`model.call`；施工 SU-4 中起扩展传的和会话共用一个存处）：
+//! 桥传的（一次传、分块传）都在存处里；不带 `session` 的 `blob.get`、`model.call` 的图照存处找；它往主人的私聊里发的附件她读得到。
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
@@ -15,7 +14,7 @@ use crate::blob_session::{got, on_qq, replies, served_core};
 use crate::support::extensions::*;
 use crate::support::*;
 
-/// 这个账号名下有没有这个 blob。
+/// 存处里有没有这个 blob。
 fn holds(home: &Home, blob: &str) -> bool {
     let hash = ContentHash::parse(blob).expect("合写法");
     Blobs::new(home.root.blobs()).path(&hash).is_file()
@@ -80,7 +79,7 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
         Ok(chunked.to_vec()),
         "不带会话的照自己名下读"
     );
-    // 这个核心没配模型：图先照自己名下找到了，才轮到找模型。
+    // 这个核心没配模型：图先找到了，才轮到找模型。
     assert_eq!(
         read[6]["error"]["data"]["reason"], "no_model",
         "看图照自己名下找：{:?}",
@@ -95,8 +94,8 @@ async fn the_bridges_uploads_stay_under_the_bridge_and_reach_the_owner_when_sent
     assert!(holds(&home, &p), "发出去的拷进了属主名下");
 }
 
-/// 替主人干活的扩展（不是平台桥，施工 BUG-2，onebot 偷表情包时撞上）：`blob.put` 存在主人名下（施工 SU-4 中），`model.call` 带
-/// 这张图找得到；只在别的账号名下的图照旧 `unknown_attachment`。
+/// 替主人干活的扩展（不是平台桥，施工 BUG-2，onebot 偷表情包时撞上）：`blob.put` 存进存处（施工 SU-4 中），`model.call` 带
+/// 这张图找得到；存处里没有的图照旧 `unknown_attachment`。
 #[tokio::test]
 async fn an_extension_working_for_the_owner_finds_its_own_upload() {
     let home = Home::new();

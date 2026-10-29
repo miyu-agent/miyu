@@ -30,7 +30,7 @@ pub(crate) struct Offered {
 
 /// 一个在跑的服务登记的提示词（施工 X-39，`Servers::prompts`）。
 pub(crate) struct Prompts {
-    /// 包的编号：个人设置里的是 `~home`。
+    /// 包的编号：配置里的是 `~home`。
     pub(crate) package: String,
     /// 服务名。
     pub(crate) service: String,

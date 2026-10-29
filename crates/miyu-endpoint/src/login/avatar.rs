@@ -1,4 +1,4 @@
-//! 你的头像（施工 AV-1；施工 SU-1 起只有主人一张）：一张 PNG、JPEG、WebP，放在主人的家目录 `avatar.<扩展名>`，上限同人格的头像
+//! 你的头像（施工 AV-1）：一张 PNG、JPEG、WebP，放在数据根 `avatar.<扩展名>`，上限同人格的头像
 //! （1 MiB、1024 像素），查法、写法同它（`personas/picture.rs`）。
 //!
 //! - `account.set_avatar {"blob"} | {"unset": true}`，可带 `expect`：换、删，回 `{"avatar": <版本或 null>}`。`expect` 对不上的
@@ -39,7 +39,7 @@ pub(crate) async fn set(core: &Core, params: PictureParams) -> Result<Value, Ref
     Ok(json!({"avatar": version(core)}))
 }
 
-/// `account.avatar` 的参数：没有格（施工 SU-1 起只有主人一张）。
+/// `account.avatar` 的参数：没有格（只有一张）。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct ReadParams {}

@@ -184,7 +184,7 @@ impl Fake {
         fake
     }
 
-    /// 带着一个文件的假工具，像脚本（施工 X-37 补）：管理员放行出沙盒时照这个文件的真实位置判。
+    /// 带着一个文件的假工具，像脚本（施工 X-37 补）：主人放行出沙盒时照这个文件的真实位置判。
     pub fn with_file(name: &str, access: Access, file: PathBuf, act: Act) -> Arc<Fake> {
         let mut fake = Fake::new(name, access, act);
         if let Some(fake) = Arc::get_mut(&mut fake) {

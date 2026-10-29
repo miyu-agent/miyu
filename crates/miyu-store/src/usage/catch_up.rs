@@ -243,7 +243,7 @@ impl UsageIndex {
             return Ok(());
         };
         let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-        // 读的时候账号日志里的 `usage.purged` 已经换过它的：不再写，免得加两遍。
+        // 读的时候 `journal.jsonl` 里的 `usage.purged` 已经换过它的：不再写，免得加两遍。
         if self::marked(&tx, id.as_str())?.is_some_and(|now| now.purged) {
             return Ok(());
         }

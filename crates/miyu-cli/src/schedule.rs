@@ -41,7 +41,7 @@ pub struct Schedule {
 /// `miyu schedule` 的子命令。
 #[derive(Debug, Clone, Subcommand)]
 pub enum ScheduleCommand {
-    /// 列出这个账号的定时任务。
+    /// 列出定时任务。
     List {
         /// 只列跑在这个会话上的。
         #[arg(long, value_name = "SESSION")]

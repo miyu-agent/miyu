@@ -1,7 +1,7 @@
 //! `session.respond {session, to, facts}`（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）：照已经旁听记下的几条开
 //! 一轮，回应 `{"events": [...]}`（同 `session.send`）。`to` 是 1 到 64 条序号，内核照序号排好、去重；`facts` 可以不写，每块
 //! `{kind, text}`，`kind` 照事实类别的写法，`text` 最多 4 KiB，原样记成 `context.injected`。写错的 `bad_params`，什么都不记。
-//! 记成谁同 `events.append`：核心拉起的扩展是那个包（模块），别的是管理员。内核拒的照原因码回，`not_ambient`、
+//! 记成谁同 `events.append`：核心拉起的扩展是那个包（模块），别的是主人。内核拒的照原因码回，`not_ambient`、
 //! `already_answered` 的 `data.messages` 是不合的那几条。
 //!
 //! `session.note {session, facts}`（施工 O-14 补，`docs/blueprint/venues.md`「记几块事实」）：只记事实、不开回合，回应同上。

@@ -101,7 +101,7 @@ fn put(home: &Home, kb: &str, path: &str, text: &str) {
     std::fs::write(file, text).expect("写得进");
 }
 
-/// 样本人格 `engineer` 收窄成 `bases`（写进主人家目录那一份 `persona.toml`）。
+/// 样本人格 `engineer` 收窄成 `bases`（写进数据根那一份 `persona.toml`）。
 fn narrow(home: &Home, bases: &str) {
     let file = home
         .root

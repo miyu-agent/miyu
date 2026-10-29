@@ -7,7 +7,7 @@ use miyu_session::testkit::Script;
 
 use crate::support::*;
 
-/// 个人设置的文件，照数据根算。
+/// 配置文件，照数据根算。
 const PERSONAL: &str = "config.toml";
 
 async fn set(client: &mut Client, id: &str, params: Value) -> Value {

@@ -1,6 +1,6 @@
 //! 搜得到人卡（施工 E-3，设计 42 第三节第 4 条，`docs/blueprint/memory.md`「工具」）：真会话、真记忆日志，执行器替身照剧本调
 //! `memory_search`。问「你认识小林吗」整句，对上叫法交回他的卡，排在记下的后面、以前的对话前面；平台编号、正文里的词也对得上；
-//! 作废的卡不出，别的账号那一间的卡搜不到，没有卡的照旧。名字、编号是虚构的。
+//! 作废的卡不出，没有卡的照旧。名字、编号是虚构的。
 
 use miyu_kernel::block::{Block, Text};
 use miyu_kernel::event::{Body, Event};
@@ -72,7 +72,7 @@ fn known(home: &Home) {
     write(home, &MemoryEvent::CardRetired(retired));
 }
 
-/// 她照剧本搜一次 `query`，交回这次搜的结果。账号是 `account` 的那一间（没有的是 alice）。
+/// 她照剧本搜一次 `query`，交回这次搜的结果。
 async fn searched(home: &Home, query: &str) -> String {
     let script = Script::new([
         Play::calls(&[(

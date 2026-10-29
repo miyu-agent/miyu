@@ -1,5 +1,5 @@
 //! 测试用的人格样本（施工 P-4 下：出厂不带人格）：`docs/designs/samples/personas/engineer/`，原来出厂的软件工程师。要人格的
-//! 测试把它装进主人的家目录（施工 SU-3 下：系统区那一层拿掉），照旧用编号 `engineer`。
+//! 测试把它装进数据根，照旧用编号 `engineer`。
 
 use std::path::{Path, PathBuf};
 
@@ -28,7 +28,7 @@ pub fn sample_persona_texts() -> PersonaTexts {
     }
 }
 
-/// 把样本装进数据根 `root` 里主人 `owner` 的家目录：`personas/engineer/`。
+/// 把样本装进数据根 `root`：`personas/engineer/`。
 ///
 /// # Panics
 ///

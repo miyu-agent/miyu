@@ -9,7 +9,7 @@ use miyu_session::testkit::Script;
 
 use crate::support::*;
 
-/// 一个带子命令、后台页、平台、系统账号、能力的扩展包。
+/// 一个带子命令、后台页、平台、能力的扩展包。
 const EXT: &str = "[package]\nprotocol = [1, 1]\nversion = \"3\"\nname = { en = \"Ext\" }\n\n[page]\ndir = \"page\"\n\n[command]\nname = \"ext\"\nprogram = \"miyu-ext\"\nabout = { en = \"X\" }\n\n[process]\nstart = \"manual\"\ncapabilities = [\"network\"]\n\n[connection]\nplatform = \"chat\"\n";
 
 /// 一个界面包，版本 `version`，两项配置。

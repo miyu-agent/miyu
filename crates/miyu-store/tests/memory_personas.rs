@@ -1,4 +1,4 @@
-//! 账号名下有记忆日志、回合库的几个人格（施工 R-25：`miyu check` 照它数补到了哪）。
+//! 有记忆日志、回合库的几个人格（施工 R-25：`miyu check` 照它数补到了哪）。
 
 use miyu_store::memory::MemoryLogs;
 use miyu_store::recall::{RecallIndexes, Room};

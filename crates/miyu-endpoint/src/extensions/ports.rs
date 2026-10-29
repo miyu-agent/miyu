@@ -6,7 +6,7 @@
 //! - `port.release {"port"}`：是这个连接登记的拿掉，别的不动，都回 `{}`。
 //! - 进程退出、连接断了（包括答应了 `process.retire` 的）照这个连接登记的都算放开：表里记着连接，查的时候断了的当没有，不用另做
 //!   收尾。核心重启表就空了，扩展起来再登记。
-//! - `port.list`：只给管理员（别人 `not_permitted`）看整张表 `{"ports": [{"port", "package", "account"?}]}`，照端口排；`account` 是每人一份的那个人。
+//! - `port.list`：看整张表 `{"ports": [{"port", "package"}]}`，照端口排。
 
 use std::collections::BTreeMap;
 use std::sync::{Mutex, PoisonError};

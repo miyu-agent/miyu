@@ -71,7 +71,7 @@ impl Site {
         tool.run(call, Progress::new(|_| {})).await
     }
 
-    /// 场地里的 `file` 这个脚本当工具：照它的开头读，当家目录里放的。
+    /// 场地里的 `file` 这个脚本当工具：照它的开头读，当数据根里自己放的。
     pub fn script_tool(&self, file: &str) -> Arc<dyn miyu_tool::Tool> {
         self.script_tool_from(file, miyu_store::scripts::HOME_PACKAGE)
     }

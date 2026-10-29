@@ -15,7 +15,7 @@ fn plain(path: &Path) -> String {
 }
 
 /// 重启以后第一次用到会话的是撤销（不带 `cwd`）：工作目录照最后一轮的 `turn.started`，回应里的 `cwd` 是它，
-/// `miyu undo` 才写得短路径。造会话时报的是 `~`（退回管理员的工作区），这一轮报的是项目目录：照的是这一轮的。
+/// `miyu undo` 才写得短路径。造会话时报的是 `~`（退回工作区），这一轮报的是项目目录：照的是这一轮的。
 #[tokio::test]
 async fn a_session_loaded_without_a_cwd_keeps_the_last_one() {
     let home = Home::new();

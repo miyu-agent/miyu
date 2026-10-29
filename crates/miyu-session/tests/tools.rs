@@ -215,7 +215,7 @@ async fn a_call_runs_in_the_turns_directory_and_she_hears_the_result() {
 
 #[tokio::test]
 async fn a_picture_from_a_tool_becomes_an_image_block_with_its_blob_stored() {
-    // 工具交回的图片（施工 4-13）：存成属主的 blob，换成图片块接在字后面；下一次请求里带着它。
+    // 工具交回的图片（施工 4-13）：存成 blob，换成图片块接在字后面；下一次请求里带着它。
     let home = Home::new();
     let look = Fake::new("look", Access::Read, Act::Shows(b"fake png bytes"));
     let script = Script::new([Play::calls(&[("look", "{}")]), Play::Says("看到了。")]);

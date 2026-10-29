@@ -1,5 +1,5 @@
 //! 她带的附件存成 blob、造成块（施工 C-9，`docs/blueprint/tools/send_message.md`「附件」）：`send_message` 的话、`subagent`
-//! 的交代都经它。存在发话这个会话的属主名下：她发得到的别的会话、她派的子会话都是同一个属主，读得到。块的样子同人附的
+//! 的交代都经它。blob 只有一份：她发得到的别的会话、她派的子会话都读得到。块的样子同人附的
 //! （`docs/blueprint/protocol.md` 的 `session.send` 第 4 条）：图片带名字，两种都带原来的路径。
 
 use std::path::Path;
@@ -57,7 +57,7 @@ pub(crate) async fn blocks(
     .await
 }
 
-/// 收的那个会话 `session`（属主 `owner`）读得到带过去的附件（施工 3-9 六补）：没有路径的、路径落在数据根 `root` 里的（发话
+/// 收的那个会话 `session` 读得到带过去的附件（施工 3-9 六补）：没有路径的、路径落在数据根 `root` 里的（发话
 /// 那个会话的附件目录），照 blob 拷进收的会话自己的附件目录，路径换成那里的；本机别处的原样（她照权限读原文件）。拷不下的
 /// 交回系统说的：整句不发。
 pub(crate) async fn kept_for(

@@ -1,6 +1,5 @@
 //! 人格的图：头像（施工 P-5，`docs/blueprint/personas.md`「头像」，设计 `16-人格与预设.md` Y13）和背景图（施工 P-6，「主题色、
-//! 背景图」，Y15）。一张 PNG、JPEG、WebP，存在人格目录里，照层叠走。`persona.set` 的 `avatar`、`background` 换、删管理员家目录
-//! 那一层的；`persona.avatar`、`persona.background` 读；`persona.list`、`persona.get` 带它们的版本，头照版本换缓存。两种只差
+//! 背景图」，Y15）。一张 PNG、JPEG、WebP，存在人格目录里，照层叠走。`persona.set` 的 `avatar`、`background` 换、删你那一层的；`persona.avatar`、`persona.background` 读；`persona.list`、`persona.get` 带它们的版本，头照版本换缓存。两种只差
 //! 名字和上限（[`Picture`]）。
 
 use std::path::Path;
@@ -114,7 +113,7 @@ pub(crate) struct Checked {
     expect: Option<Option<String>>,
 }
 
-/// 查 `picture` 那一格：blob 照连接的账号 `account` 读出来（施工 Y-2中下）、照内容认，合规矩的才收。拒了的什么都不写
+/// 查 `picture` 那一格：blob 读出来、照内容认，合规矩的才收。拒了的什么都不写
 /// （`persona.set` 先查它，再写别的）。
 pub(crate) async fn check(
     core: &Core,
@@ -156,7 +155,7 @@ pub(crate) async fn check(
     })
 }
 
-/// 把查过的写进人格 `id` 在管理员家目录那一层的目录：先删那一层原来的，再写新的（先写临时文件再改名）。`expect` 对不上的
+/// 把查过的写进人格 `id` 在你那一层的目录：先删那一层原来的，再写新的（先写临时文件再改名）。`expect` 对不上的
 /// `persona_conflict`，什么都不动。
 pub(crate) fn apply(personas: &Personas, id: &str, checked: &Checked) -> Result<(), Refusal> {
     let picture = checked.picture;
@@ -173,7 +172,7 @@ pub(crate) fn apply(personas: &Personas, id: &str, checked: &Checked) -> Result<
     })
 }
 
-/// 把查过的写进目录 `dir`（施工 AV-1 从 [`apply`] 挪出来，账号的头像同一个写法）：先删这一种图原来的几个名字，再写新的（先写
+/// 把查过的写进目录 `dir`（施工 AV-1 从 [`apply`] 挪出来，你的头像同一个写法）：先删这一种图原来的几个名字，再写新的（先写
 /// 临时文件再改名）；删掉的不写。
 pub(crate) fn replace(dir: &Path, checked: &Checked) -> std::io::Result<()> {
     let picture = checked.picture;
@@ -209,7 +208,7 @@ pub(crate) fn version_of(path: &Path) -> Option<String> {
     Some(ContentHash::of(&bytes).hex()[..16].to_string())
 }
 
-/// 读出 `path` 那张图：`{"<avatar|background>": <版本>, "media_type", "data"}`（施工 AV-1 起账号的头像也照它）。
+/// 读出 `path` 那张图：`{"<avatar|background>": <版本>, "media_type", "data"}`（施工 AV-1 起你的头像也照它）。
 pub(crate) fn encoded(path: &Path, picture: Picture) -> std::io::Result<Value> {
     let bytes = std::fs::read(path)?;
     let media_type = match path.extension().and_then(|extension| extension.to_str()) {

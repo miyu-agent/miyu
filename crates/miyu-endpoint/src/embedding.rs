@@ -1,5 +1,5 @@
-//! `model.embed {texts}`（施工 X-17，`docs/designs/34-表情包.md` 第五节第 2 条）：照这个账号的 `models.embedding`（本机的、远程
-//! 那一家）算一批字的向量，交回模型编号和向量；换了模型的向量不能和以前的比，扩展照编号重算。远程的用量记在管理员名下，同记忆
+//! `model.embed {texts}`（施工 X-17，`docs/designs/34-表情包.md` 第五节第 2 条）：照配置的 `models.embedding`（本机的、远程
+//! 那一家）算一批字的向量，交回模型编号和向量；换了模型的向量不能和以前的比，扩展照编号重算。远程的用量照记，同记忆
 //! 照意思找（`memory::using`）。和 `model.call` 一样不另设能力。
 
 use std::sync::Arc;

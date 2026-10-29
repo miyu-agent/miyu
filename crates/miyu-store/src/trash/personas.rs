@@ -13,7 +13,7 @@ use super::{DELETED_AT, deleted_at};
 use crate::durable::{create_dir, sync_dir};
 use crate::root::DataRoot;
 
-/// 把人格目录 `from`（编号 `id`）挪进账号 `account` 的回收处，删的时刻是 `at`：先在目录里写下 `deleted_at`、同步，再改名，
+/// 把人格目录 `from`（编号 `id`）挪进回收处，删的时刻是 `at`：先在目录里写下 `deleted_at`、同步，再改名，
 /// 同步两头的上一层。回收处没有的先建。
 ///
 /// # Errors
@@ -42,7 +42,7 @@ pub struct Purged {
     pub failed: Vec<(String, String)>,
 }
 
-/// 清一次账号 `account` 的人格回收处：删的时刻离 `now` 满了 `keep` 的连目录整个删掉；没满的、时钟往回拨过的留着；读不出
+/// 清一次人格回收处：删的时刻离 `now` 满了 `keep` 的连目录整个删掉；没满的、时钟往回拨过的留着；读不出
 /// 删的时刻的留着，记进 [`Purged::failed`]。回收处还没有的什么都不做。
 ///
 /// # Errors

@@ -119,7 +119,7 @@ async fn read_all<R: AsyncRead + Unpin>(
     // 核心拉起的扩展是哪个包（施工 9-4 下下）：握手交它自己的配置，之后变了推。
     let instance = spawned.as_ref().map(|(_, instance)| instance.clone());
     let package = instance.as_ref().map(|instance| instance.package.clone());
-    // 这个连接是谁：都是主人（施工 SU-4 中起包不再各有一个账号），是哪个包另记在 `package`。
+    // 这个连接是谁：都替主人干活（施工 SU-4 中），是哪个包另记在 `package`。
     // 核心往这个连接发的请求（施工 O-2 上，`reverse.rs`）：提供者的工具经它反向调用。
     let reverse = Peer::new(out.clone());
     let caller = Caller {
@@ -206,7 +206,7 @@ async fn read_all<R: AsyncRead + Unpin>(
         tracing::debug!(target: "miyu::endpoint", method = request.method.as_str(), "request");
         core.activity.touch();
         reap(&mut background);
-        // 办之前过的几道：凭据、本机才能用的、扩展的能力、会话只给属主（施工 Y-2 上，`checks.rs`）。
+        // 办之前过的几道：凭据、本机才能用的、扩展的能力、会话只给碰得到的（施工 Y-2 上，`checks.rs`）。
         let who = checks::Who {
             via: via.as_ref(),
             caller: &caller,

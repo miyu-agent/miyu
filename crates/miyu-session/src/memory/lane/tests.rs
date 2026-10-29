@@ -282,7 +282,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     );
 }
 
-/// 本机的主会话，属主是管理员（施工 E-6）。
+/// 本机的主会话（施工 E-6）。
 fn origin() -> Origin {
     Origin { main: true }
 }

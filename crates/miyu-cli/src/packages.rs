@@ -173,7 +173,7 @@ fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<O
 }
 
 /// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
-/// 读自己的文件，出厂的在资源目录、自己装的在家目录，由这边挑，包不自己拼家目录的布局），`MIYU_PACKAGE_STATE` 设成状态目录
+/// 读自己的文件，出厂的在资源目录、自己装的在数据根，由这边挑，包不自己拼数据根的布局），`MIYU_PACKAGE_STATE` 设成状态目录
 /// `state`（施工 F-15：同核心拉起扩展），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在
 /// 包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个）。
 fn command(

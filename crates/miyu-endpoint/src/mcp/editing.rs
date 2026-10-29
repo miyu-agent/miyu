@@ -1,11 +1,11 @@
-//! 头改个人设置里的 MCP 服务（施工 X-26，`docs/blueprint/mcp.md`「个人设置里的一张表」第 2 条：头要做编辑页的另给方法）：
+//! 头改配置里的 MCP 服务（施工 X-26，`docs/blueprint/mcp.md`「系统配置里的一张表」第 2 条：头要做编辑页的另给方法）：
 //! `mcp.set` 加上或者整条换掉一张 `[mcp.<名字>]`，`mcp.remove` 删掉一张。只给本机的人用。
 //!
 //! 写之前照读服务表的规矩查这一张（[`configured_mcp`]：名字的写法、命令不空、给哪种会话、时限……），写法照 `config.set`
-//! 的（`config/rewrite.rs`：带版本，不覆盖同时的手改）。写成了，正在跑的服务照「个人设置变了」那条路换（`home.rs` 的
+//! 的（`config/rewrite.rs`：带版本，不覆盖同时的手改）。写成了，正在跑的服务照「配置变了」那条路换（`home.rs` 的
 //! `follow_home_mcp`）：新写的起，改了的停下再起，删掉的停下、包里被它盖住的起回来。
 //!
-//! 随包来的服务（个人设置里没写这个名字、有包带着它）不能经 `mcp.set` 改：`server_from_package`。
+//! 随包来的服务（配置里没写这个名字、有包带着它）不能经 `mcp.set` 改：`server_from_package`。
 
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
@@ -68,12 +68,12 @@ pub(crate) struct RemoveParams {
     name: String,
 }
 
-/// `mcp.set`：查过写法，在个人设置里加上或者整条换掉这一张，回应 `{"name"}`。
+/// `mcp.set`：查过写法，在配置里加上或者整条换掉这一张，回应 `{"name"}`。
 ///
 /// # Errors
 ///
-/// 写错了的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对）；交了参数、没交程序的 `bad_params`；个人设置里没写、有包带着同名服务的
-/// `server_from_package`；个人设置读不进来、`mcp` 写成了放不下的样子的 `config_file_broken`；别的同 `config.set`。
+/// 写错了的 `mcp_invalid`（`data.problem` 照连接的语言说哪里不对）；交了参数、没交程序的 `bad_params`；配置里没写、有包带着同名服务的
+/// `server_from_package`；配置读不进来、`mcp` 写成了放不下的样子的 `config_file_broken`；别的同 `config.set`。
 pub(crate) fn set(
     core: &Core,
     peer: Peer,

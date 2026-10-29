@@ -14,7 +14,7 @@ use miyu_tool::Catalog;
 
 use super::{Home, TOKEN};
 
-/// 系统配置：`qq:10001` 是主人 alice（施工 SU-1 补：写了的值不再查是哪个账号，头照旧写 `admin`），`qq:10003` 没写。
+/// 配置：`qq:10001` 是主人（施工 SU-1 补：写了非空的值就算，这里写 `admin`），`qq:10003` 没写。
 pub const BINDINGS: &str = "[external.bindings]\n\"qq:10001\" = \"admin\"\n";
 
 /// 照对应表起来、工具目录是 `tools` 的核心：先把对应表写进系统配置。
@@ -23,7 +23,7 @@ pub fn bound_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {
     configured_core(home, script, tools)
 }
 
-/// 照数据根里这时的系统配置、个人设置起来的核心（施工 P-1 上起也读 `persona.default`）。
+/// 照数据根里这时的配置起来的核心（施工 P-1 上起也读 `persona.default`）。
 pub fn configured_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
@@ -50,7 +50,7 @@ pub fn configured_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core
     )
 }
 
-/// 账号 `account` 名下、目录在 `dir` 的会话的策略快照。
+/// 目录在 `dir` 的会话的策略快照。
 pub fn snapshot(home: &Home, dir: &Path) -> Snapshot {
     let log = read_events(dir).expect("读得了");
     let Body::SessionCreated(created) = &log[0].body else {

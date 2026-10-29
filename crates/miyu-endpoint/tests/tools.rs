@@ -94,7 +94,7 @@ async fn sessions_get_the_cores_sandbox_when_made_and_loaded() {
     assert_eq!(run.calls().len(), 2, "沙盒用不了，没人能确认，没跑");
 }
 
-/// 沙盒的缓存照属主交给会话（施工 5-4 下）：执行命令的调用带的环境变量指到 `<缓存>/<属主>` 里，那一处能写；换一份核心
+/// 沙盒的缓存交给会话（施工 5-4 下）：执行命令的调用带的环境变量指到 `<缓存>` 里，那一处能写；换一份核心
 /// 像重启过，载入的会话照样带。
 #[tokio::test]
 async fn sessions_get_the_sandbox_cache() {

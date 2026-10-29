@@ -1,4 +1,4 @@
-//! 文件改动的版本（施工 OV-1 下，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：核心盯着属主的覆盖、人格、
+//! 文件改动的版本（施工 OV-1 下，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：核心盯着数据根里的覆盖、人格、
 //! 预设那几棵树（技能不算：那一块钉在快照里，施工 PT-2 上），变一下加一；会话记着它最后一次拼快照时看到的号，回合开始只比号，变了照现在的文件重拼。号由协议端点给
 //! （[`EditsVersion`]），只在内存里。
 //!
@@ -8,7 +8,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-/// 取属主这时的号：协议端点给的，没交的（测试里造的）当一直是零。
+/// 取这时的号：协议端点给的，没交的（测试里造的）当一直是零。
 #[derive(Clone)]
 pub struct EditsVersion(pub Arc<dyn Fn() -> u64 + Send + Sync>);
 

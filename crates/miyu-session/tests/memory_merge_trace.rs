@@ -33,7 +33,7 @@ fn keeper(home: &Home) -> Keeper {
     Keeper::new(&home.memory, persona(), Listener::Owner(alice()))
 }
 
-/// 现在就整理这一间：照场地这时的配置、属主 alice、东九区。
+/// 现在就整理这一间：照场地这时的配置、主人 alice、东九区。
 async fn dream(home: &Home) -> Result<Dreamed, NotDreamed> {
     let source = Arc::clone(&*home.configs.borrow());
     let config = Arc::new(Turn::new(source.with_project("~"), source));

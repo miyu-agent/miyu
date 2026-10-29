@@ -45,7 +45,7 @@ impl Follow<'_> {
         }
     }
 
-    /// 核心说会话实际在 `used` 里干活：和头报的不一样，就是目录太宽、退回了账号的工作区，说一句。造会话、
+    /// 核心说会话实际在 `used` 里干活：和头报的不一样，就是目录太宽、退回了数据根的工作区，说一句。造会话、
     /// 说话的回应都带着它，一样的不再说：一次 `miyu ask` 只说一次。
     pub(crate) fn moved(&mut self, used: &str, screen: &mut Screen<'_>) {
         if used == self.cwd {

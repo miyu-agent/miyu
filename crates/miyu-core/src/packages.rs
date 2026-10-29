@@ -4,7 +4,7 @@
 //!
 //! 现在有 `mermaid`（施工 W-4）、`net`（施工 W-7，`net.md`，`packages/net.rs`），发行版都默认打开。
 //!
-//! [`clear_uploads`]：核心起来时清掉每个账号分块上传留下的暂存（施工 W-5，`web-module.md`「怎么走」第六条第 6
+//! [`clear_uploads`]：核心起来时清掉分块上传留下的暂存（施工 W-5，`web-module.md`「怎么走」第六条第 6
 //! 款）。和可选软件包无关，放在这里是因为两件事都是「核心起来时做一次的登记、收拾」。
 
 use miyu_endpoint::queries::Queries;
@@ -13,8 +13,8 @@ use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
 /// 照编进来的包往一张新的查询表里登记，交给 [`miyu_endpoint::Core::with_queries`]。每一行记着属于哪个包：包这时没装的，
-/// 端点当没有这个方法（施工 F-5 中，设计 30 第九节：装卸当场生效，这里只登记一次）。`root`、`admin`：`net` 抓到的卡片的图
-/// 存进这个账号的 blob（现在连上来的都是管理员，`net.md`「起草时定的」第 9 条）。
+/// 端点当没有这个方法（施工 F-5 中，设计 30 第九节：装卸当场生效，这里只登记一次）。`root`：`net` 抓到的卡片的图
+/// 存进数据根的 blob（`net.md`「起草时定的」第 9 条）。
 pub fn register(resources: &ResourceRoot, root: &DataRoot) -> Queries {
     let queries = Queries::new();
     #[cfg(feature = "mermaid")]

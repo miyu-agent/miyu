@@ -7,7 +7,7 @@ use miyu_session::testkit::Script;
 
 use crate::support::*;
 
-/// 管理员（测试里是 alice）家目录里的一份清单：子命令 `name` 跑 `program`，检查带 `args`。
+/// 你装的那一层里的一份清单：子命令 `name` 跑 `program`，检查带 `args`。
 fn install(home: &Home, id: &str, program: &str, args: &[&str]) {
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(

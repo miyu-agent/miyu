@@ -1,4 +1,4 @@
-//! 核心起来时清一次每个账号的缓存（施工 Y-11 上，`miyu_store::cache`）：30 天没碰的整格删；场所那一层，这个账号的会话索引里已经
+//! 核心起来时清一次缓存（施工 Y-11 上，`miyu_store::cache`）：30 天没碰的整格删；场所那一层，会话索引里已经
 //! 没有会话在那个场所的整层删。索引不在、读不出来的只照时间清（不知道哪些场所还在，宁可不删）。写了 `ready` 以后在阻塞线程里
 //! 清，不耽误头连上来；核心走之前等它清完（同回收处，`trash.rs`）。运行日志只记个数，不记路径。
 
@@ -13,7 +13,7 @@ use miyu_store::root::DataRoot;
 
 use crate::TARGET;
 
-/// 在阻塞线程里清一次所有账号的缓存，照现在的钟。交回等它清完的那一头。
+/// 在阻塞线程里清一次缓存，照现在的钟。交回等它清完的那一头。
 pub(crate) fn sweep(root: DataRoot) -> JoinHandle<()> {
     tokio::task::spawn_blocking(move || {
         let (removed, failed) = sweep_now(&root, SystemTime::now());

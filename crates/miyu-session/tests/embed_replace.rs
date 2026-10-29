@@ -116,7 +116,7 @@ async fn none_takes_the_local_way_away_and_a_setup_brings_it_back() {
 
 #[tokio::test]
 async fn the_same_model_from_another_place_is_a_replacement() {
-    // 出厂的那一份卸掉、家目录装了同样的一份：内容一样，程序照新的位置拉起。
+    // 出厂的那一份卸掉、数据根里装了同样的一份：内容一样，程序照新的位置拉起。
     let home = Home::new();
     let (vectors, first) = running(&home, tiny_package(&home.scratch.0.join("a/embed"))).await;
     vectors

@@ -64,7 +64,7 @@ pub(crate) struct Uploads {
 
 /// 一个开着的上传。
 struct Entry {
-    /// 开它的账号的 blob（施工 Y-2中下）：暂存、收齐了的都在它名下。
+    /// 存处的 blob：暂存、收齐了的都在这里。
     blobs: Blobs,
     /// 暂存文件在哪：`blobs/tmp/upload-<编号>`。
     path: PathBuf,
@@ -82,7 +82,7 @@ struct Entry {
 
 /// 这个连接上查 `upload` 的结果。
 enum Claim {
-    /// 还在、没过期：存在哪个账号名下，暂存文件在哪，已经收到几个，总共要收几个。
+    /// 还在、没过期：存在哪个存处，暂存文件在哪，已经收到几个，总共要收几个。
     Live(Blobs, PathBuf, u64, u64),
     /// 刚发现过期了，已经从表里摘掉：暂存文件还在磁盘上，调用方删。
     Expired(Blobs, PathBuf),

@@ -224,7 +224,7 @@ async fn recalled_unfilled() -> usize {
     blocks(&log, "recall").len()
 }
 
-/// 场所会话里也联想（施工 R-13 下）：主人自己的 QQ 私聊（属主就是记忆归的那个账号）是主人那边，照样想起来。场所里只冒出在
+/// 场所会话里也联想（施工 R-13 下）：主人自己的 QQ 私聊（没关起来）是主人那边，照样想起来。场所里只冒出在
 /// 那里说过的，和列、搜同一个判法（`Keeper` 的 `shown`，`memory_listener` 测）。
 #[tokio::test]
 async fn in_the_owners_own_private_chat_too() {
@@ -238,8 +238,7 @@ async fn in_the_owners_own_private_chat_too() {
     );
 }
 
-/// 群里也联想主人那边记的（施工 R-29：记忆是一个整体，原来场所里只冒出在那里说过的）：会话的属主不是记忆归的那个账号（系统
-/// 账号开的群会话那种），记下时没写场所的照样带上。
+/// 群里也联想主人那边记的（施工 R-29：记忆是一个整体，原来场所里只冒出在那里说过的）：关起来的群会话，记下时没写场所的照样带上。
 #[tokio::test]
 async fn in_a_group_what_was_remembered_elsewhere_too() {
     let lines = Lines {

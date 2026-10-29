@@ -1,4 +1,4 @@
-//! 出厂那一层的夹具扩展（施工 S-6 下）：接入QQ 搬出了核心仓库，出厂的包里不再有扩展（带命令、要的能力、配置项、系统账号的）。
+//! 出厂那一层的夹具扩展（施工 S-6 下）：接入QQ 搬出了核心仓库，出厂的包里不再有扩展（带命令、要的能力、配置项的）。
 //! 要测「出厂的扩展」怎样的，把源码树的资源目录整个拷一份，`packages/` 下多放这份测试自己写的清单 [`COURIER`]，核心照这份
 //! 资源目录造。
 
@@ -12,10 +12,10 @@ use miyu_tool::Catalog;
 
 use super::{Home, TOKEN, default_resources};
 
-/// 夹具扩展的编号：子命令名、系统账号都是它。
+/// 夹具扩展的编号：子命令名也是它。
 pub const ID: &str = "courier";
 
-/// 夹具扩展的清单：带子命令、手动开、要六样能力、声明系统账号、一项只能写系统配置的配置项 `courier.listen`。程序一定不在。
+/// 夹具扩展的清单：带子命令、手动开、要六样能力、一项只能写配置的配置项 `courier.listen`。程序一定不在。
 pub const COURIER: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"Courier\", zh = \"信使\" }\n\n[command]\nname = \"courier\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"Courier\" }\n\n[process]\nargs = [\"serve\"]\nstart = \"manual\"\ncapabilities = [\"tools\", \"sessions.drive\", \"act_for_external\", \"events.read\", \"events.write\", \"network\"]\n\n[settings.listen]\ntype = \"int\"\nmin = 1024\nmax = 65535\ndefault = 8301\nlayers = [\"system\"]\napplies = \"now\"\nname = { en = \"Port\" }\n";
 
 /// 拷一份源码树的资源目录到 `home.work` 下，出厂那一层多一个 [`COURIER`]，交回这份资源目录。

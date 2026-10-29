@@ -15,8 +15,7 @@ pub enum Listener {
 }
 
 impl Listener {
-    /// 照会话定：关在沙盒里的（`confined`）是会话所在的场所 `venue`；别的是主人 `owner`（施工 SU-4 中：原来照属主是不是记忆
-    /// 账号，场所会话都归主人以后只能照关不关）。
+    /// 照会话定：关在沙盒里的（`confined`）是会话所在的场所 `venue`；别的是主人 `owner`（施工 SU-4 中）。
     #[must_use]
     pub fn of(confined: bool, venue: &VenueId) -> Listener {
         match confined {

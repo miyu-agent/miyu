@@ -60,14 +60,14 @@ pub trait SessionPort: Send + Sync {
     /// 会话 `session` 这会儿的样子（施工 7-4）：照它的日志算，不载入它。
     fn peek(&self, session: SessionId) -> Pending<'_, Result<Peek, String>>;
 
-    /// 属主是 `owner` 的主会话（施工 C-3，`cross-session.md` 第一条第 2 款）：`session.created` 不带 `parent`、没删的，含调的这个
+    /// 本机的主会话（施工 C-3，`cross-session.md` 第一条第 2 款）：`session.created` 不带 `parent`、没删的，含调的这个
     /// 会话自己，不排先后。和协议的 `session.list` 同一个函数算：每个会话只读地读一遍日志，不载入它；读下一个之前看一眼
     /// `stop`，举起来了就不往下读，交回已经读到的。放会话的目录读不了、核心正在停：交回原因。
     fn sessions(&self, stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>>;
 
     /// 只读地开会话 `session` 的日志（施工 C-4，`cross-session.md` 第二条第 2 款）：不载入它，在跑的也读得到。核心正在停的
     /// 交回原因；放会话目录本身不必读了才知道读不读得到，日志坏了、读不了的要等交回的 [`Log`] 读的时候才知道。`history`
-    /// 只在认出 `session` 参数写的是这个属主看得到的另一个会话（不是它自己）时才调它。
+    /// 只在认出 `session` 参数写的是看得到的另一个会话（不是它自己）时才调它。
     fn read_log(&self, session: SessionId) -> Pending<'_, Result<Log, String>>;
 
     /// 会话 `session` 这时是不是没人看着的一次性会话（施工 C-5，`cross-session.md` 第三条第 4 款）：`send_message` 送到
@@ -154,7 +154,7 @@ pub struct Child {
     pub confined: bool,
 }
 
-/// 造一个 fork 子代理要的（施工 A-F 中）：属主、场所、权限、快照、模型、人格都照父会话落了盘的日志，只交这几样。
+/// 造一个 fork 子代理要的（施工 A-F 中）：场所、权限、快照、模型、人格都照父会话落了盘的日志，只交这几样。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ForkChild {
     /// 父会话和第几层。

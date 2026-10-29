@@ -64,7 +64,7 @@ impl Web {
     }
 }
 
-/// 跑一次 `miyu web`：照管理员 `admin` 那两层的清单找网页软件。
+/// 跑一次 `miyu web`：照两层的清单找网页软件。
 pub fn web(args: Web) -> ExitCode {
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));
     let (program, dir) = program(&Env::current());

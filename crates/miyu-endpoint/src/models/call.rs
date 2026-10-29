@@ -6,7 +6,7 @@
 //!    能写；`max_tokens` 是 1 到 4294967295；`model` 不是空字；`model`、`use` 至多写一个。不对的 `bad_params`。
 //!    `use` 是 `chat`、`vision`（施工 X-23）：照这一刻的配置用 `models.chat`、`models.vision`，扩展说不出具体的模型时用；
 //!    `models.vision` 没配的 `no_model`（`no vision model configured: set models.vision`，同替看图那一句）。
-//! 2. 图照这个账号的 blob 认（`attach.rs` 的 `images`）：没有的 `unknown_attachment`，不是图的 `bad_params`。一条消息里先字
+//! 2. 图照 blob 认（`attach.rs` 的 `images`）：没有的 `unknown_attachment`，不是图的 `bad_params`。一条消息里先字
 //!    后图。
 //! 3. 照核心这一刻的配置（不算项目配置的最终值）冻结一份，交给一次性入口（`Models::one_shot()`；照剧本回的端口没有，答
 //!    `no_model`）。没答成的照它的四种写成拒绝。
@@ -93,7 +93,7 @@ struct Line {
     images: Vec<ContentHash>,
 }
 
-/// `model.call`：图照连接的账号 `account` 找（施工 Y-2中下）；`package` 是扩展的连接的包（施工 Q-3：`side` 只认它登记的）。
+/// `model.call`：`package` 是扩展的连接的包（施工 Q-3：`side` 只认它登记的）。
 pub(crate) async fn call(
     core: &Arc<Core>,
     package: Option<&str>,
@@ -172,7 +172,6 @@ pub(crate) async fn call(
         system,
         messages,
         max_tokens,
-        // 用量记在这个连接的人名下（施工 Y-2 下下中下）。
         venue,
     };
     let replied = match &side {

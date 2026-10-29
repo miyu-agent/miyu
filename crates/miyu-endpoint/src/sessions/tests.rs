@@ -134,7 +134,7 @@ fn new_sessions_open_at_the_configured_level_only_on_this_machine() {
     );
 }
 
-/// 「关于你」（施工 P-9、P-9 补）：属主是管理员本人、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。
+/// 「关于你」（施工 P-9、P-9 补）：没关起来、又是本机开的或者桥说要的才带，别的都是空的；回复语言跟着一起带。
 #[test]
 fn the_profile_goes_only_to_the_admin_here_or_where_the_bridge_asks() {
     let settings = || ProfileSettings {

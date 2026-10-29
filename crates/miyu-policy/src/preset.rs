@@ -73,7 +73,7 @@ pub struct PresetFile {
     /// `[features]`、`[software]`、`[tools]`、全局开关、`unlisted` 都不管它；扣下的、这个人关了的照旧不开。不是文件里写的：
     /// 会话照场所算好放进来（[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub own: BTreeSet<String>,
-    /// 这个人关了的包（施工 U23 末上，个人设置 `packages.<编号>.off`，[`PresetFile::switching_off`]）：同扣下的包都不开；和扣下的
+    /// 主人关了的包（施工 U23 末上，配置 `packages.<编号>.off`，[`PresetFile::switching_off`]）：同扣下的包都不开；和扣下的
     /// 不一样的是它的功能算进没开的那几个，改了快照记的不一样，开着的会话下一个回合换上工具面。不是文件里写的，不进
     /// [`PresetFile::digest`]、不叠层。
     pub switched_off: BTreeSet<String>,

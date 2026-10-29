@@ -1,5 +1,5 @@
-//! 头改个人设置里的 MCP 服务（施工 X-26，`docs/blueprint/mcp.md`「个人设置里的一张表」第 2 条）：`mcp.set` 加上、整条换掉，
-//! 写进个人设置、别的字不动，正在跑的服务照新写的换；写错的、随包来的拒，什么都不写；`mcp.remove` 删掉、没有的拒。
+//! 头改配置里的 MCP 服务（施工 X-26，`docs/blueprint/mcp.md`「系统配置里的一张表」第 2 条）：`mcp.set` 加上、整条换掉，
+//! 写进配置、别的字不动，正在跑的服务照新写的换；写错的、随包来的拒，什么都不写；`mcp.remove` 删掉、没有的拒。
 //! `mcp.list` 知道工具的带 `tools`：起好列完的、照缓存先登记的都算，没起过、没缓存的不带。
 
 use std::sync::Arc;
@@ -11,7 +11,7 @@ use miyu_session::testkit::Script;
 use crate::support::mcp::*;
 use crate::support::*;
 
-/// 个人设置的字。
+/// 配置的字。
 fn settings(home: &Home) -> String {
     std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
 }
@@ -200,7 +200,7 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
     assert_eq!(reason(&missing), "unknown_server", "{missing}");
     assert_eq!(settings(&home), before, "拒了的什么都不写");
 
-    // 个人设置里已经写了的同名服务照常换：它本来就盖住了包里的。
+    // 配置里已经写了的同名服务照常换：它本来就盖住了包里的。
     home.write(
         "config.toml",
         &format!("{before}\n[mcp.carried]\ncommand = [\"old\"]\n"),

@@ -13,9 +13,9 @@ const EVERY: Duration = Duration::from_millis(100);
 
 /// 收进度的那一头：核心照它推给头。
 pub trait IndexWatch: Send + Sync {
-    /// 账号 `account` 的库 `kb` 在建：要重建的 `total` 篇里做完了 `done` 篇。
+    /// 库 `kb` 在建：要重建的 `total` 篇里做完了 `done` 篇。
     fn indexing(&self, kb: &str, done: usize, total: usize);
-    /// 账号 `account` 的库 `kb` 建好了。
+    /// 库 `kb` 建好了。
     fn indexed(&self, kb: &str);
 }
 

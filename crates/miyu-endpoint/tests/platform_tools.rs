@@ -25,7 +25,7 @@ fn tools() -> Value {
     json!({"tools": [one("qq_send"), one("tg_send"), one("note"), one("qqnote")]})
 }
 
-/// 账号 `account` 名下会话 `reply` 的工具面上的工具名，照名字排。
+/// 会话 `reply` 的工具面上的工具名，照名字排。
 fn face(home: &Home, reply: &Value) -> Vec<String> {
     let session = reply["result"]["session"]
         .as_str()
@@ -40,7 +40,7 @@ fn face(home: &Home, reply: &Value) -> Vec<String> {
     names
 }
 
-/// 账号 `account` 名下会话 `reply` 现在的快照（最后一次换上的，没换过的是造会话时的）：工具面上那几件、没开的功能。
+/// 会话 `reply` 现在的快照（最后一次换上的，没换过的是造会话时的）：工具面上那几件、没开的功能。
 fn latest(home: &Home, reply: &Value) -> (Vec<String>, Vec<String>) {
     let session = reply["result"]["session"]
         .as_str()

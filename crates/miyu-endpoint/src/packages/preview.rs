@@ -72,7 +72,7 @@ pub(crate) fn enabling(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, 
     )))
 }
 
-/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（系统配置、个人设置里写了的键）、有没有状态目录。
+/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、有没有状态目录。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
     let found = core.system_packages();
     let one = removable(&found, id)?;

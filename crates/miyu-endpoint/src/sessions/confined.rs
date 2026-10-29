@@ -6,13 +6,12 @@ use miyu_store::log::first_event;
 
 use crate::Core;
 
-/// 会话 `id`（属主 `owner`）关没关着（施工 SU-4 中）：照日志第一条 `session.created` 的 `confined`；以前的日志没这一格，属主不是
-/// 主人的算关着。读不了的算关着。
+/// 会话 `id` 关没关着（施工 SU-4 中）：照日志第一条 `session.created` 的 `confined`。读不了的算关着。
 pub(crate) async fn confined_of(core: &Core, id: &SessionId) -> bool {
     placed(core, id).await.is_none_or(|(_, confined)| confined)
 }
 
-/// 会话 `id`（属主 `owner`）的场所、关没关着（同 [`confined_of`]）：照日志第一条读，读不了的没有。
+/// 会话 `id` 的场所、关没关着（同 [`confined_of`]）：照日志第一条读，读不了的没有。
 pub(crate) async fn placed(core: &Core, id: &SessionId) -> Option<(VenueId, bool)> {
     let dir = core.root.session_dir(id);
     let first = tokio::task::spawn_blocking(move || first_event(&dir)).await;

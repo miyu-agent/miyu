@@ -1,5 +1,5 @@
-//! 人格（施工 P-1 上，`docs/blueprint/personas.md`）：造会话时照「开会话时指定、个人设置、系统配置」找人格、几层叠好；
-//! 记忆归哪个账号；`persona.list`、`persona.get`。找哪几层、怎么叠在 `miyu_store::personas`。
+//! 人格（施工 P-1 上，`docs/blueprint/personas.md`）：造会话时照「开会话时指定、配置」找人格、几层叠好；
+//! `persona.list`、`persona.get`。找哪几层、怎么叠在 `miyu_store::personas`。
 
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -25,8 +25,7 @@ use picture::Picture;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 账号 `account` 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
-/// 谁调都是主人那一份）。
+/// 看得到的几层人格：出厂、装着的软件包带的（施工 P-11 上）、你的（施工 SU-3 下）。
 pub(crate) fn personas(core: &Core) -> Personas {
     Personas::new(&core.resources, &core.root).with_packages(&crate::packages::folders(core))
 }

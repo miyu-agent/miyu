@@ -1,6 +1,6 @@
-//! 项目（施工 H-1，设计 `38-项目.md`）：`project.list`、`project.create`、`project.update`、`project.delete`，存在这个账号家目录的
+//! 项目（施工 H-1，设计 `38-项目.md`）：`project.list`、`project.create`、`project.update`、`project.delete`，存在数据根的
 //! `projects.json`（`miyu_store::projects`）。改的几个排着做（[`Core`] 的 `projects` 锁）：读、改、照读到的版本写，写成了报一声
-//! 「这个账号的这个项目变了」（[`changes`]），订阅 `projects` 的连接照它推（`subscriptions/listed.rs`）。只给人（`connection/rights.rs`
+//! 「这个项目变了」（[`changes`]），订阅 `projects` 的连接照它推（`subscriptions/listed.rs`）。只给人（`connection/rights.rs`
 //! 的表，施工 X-30）。
 
 pub(crate) mod changes;
@@ -228,12 +228,12 @@ async fn known(core: &Core, project: &Project) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// 这个账号的项目文件。
+/// 项目文件。
 fn file(core: &Core) -> PathBuf {
     core.root.path().join(projects::FILE)
 }
 
-/// 读这个账号的项目：读不成的记一行、内部出错（不替人改坏了的文件）。
+/// 读项目：读不成的记一行、内部出错（不替人改坏了的文件）。
 async fn read(core: &Core) -> Result<projects::Read, Refusal> {
     let path = file(core);
     let read = tokio::task::spawn_blocking(move || projects::read(&path)).await;
@@ -274,13 +274,13 @@ async fn change(
     }
 }
 
-/// 订阅 `projects` 的回应：这个账号这一刻的整张表。
+/// 订阅 `projects` 的回应：这一刻的整张表。
 pub(crate) async fn listed(core: &Core) -> Result<Value, Refusal> {
     let read = read(core).await?;
     Ok(json!({"projects": read.projects.projects}))
 }
 
-/// 推送里的一项：这个账号的项目 `id` 这一刻的样子；没有了的是删了。读不成的没有（不推）。
+/// 推送里的一项：项目 `id` 这一刻的样子；没有了的是删了。读不成的没有（不推）。
 pub(crate) fn item(core: &Core, id: &str) -> Option<Value> {
     let read = projects::read(&file(core)).ok()?;
     Some(match read.projects.find(id) {

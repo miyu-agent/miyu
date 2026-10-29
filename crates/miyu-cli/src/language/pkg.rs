@@ -105,11 +105,9 @@ impl Language {
     fn conflict_layer<'a>(&self, layer: &'a str) -> &'a str {
         match (self, layer) {
             (Language::Chinese, "shipped") => "出厂的",
-            (Language::Chinese, "system") => "系统区",
-            (Language::Chinese, "home") => "你的家目录",
+            (Language::Chinese, "home") => "你的数据根",
             (Language::English, "shipped") => "the shipped ones",
-            (Language::English, "system") => "the system area",
-            (Language::English, "home") => "your home",
+            (Language::English, "home") => "your data root",
             _ => layer,
         }
     }

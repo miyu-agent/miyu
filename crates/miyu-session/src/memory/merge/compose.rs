@@ -36,7 +36,7 @@ impl MergeJob {
             Some(text) => say(&texts.summary, &[("text", text)]),
             None => say(&texts.none, &[]),
         };
-        // 摘要从主人写起：照属主的称呼（这一份配置就是属主的），不看是哪个会话起的合并（施工 R-6 再修）。
+        // 摘要从主人写起：照这一份配置里的称呼，不看是哪个会话起的合并（施工 R-6 再修）。
         let owner = super::super::owner::owner(
             super::super::called(&self.config).as_deref(),
             &texts.unnamed,

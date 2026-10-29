@@ -1,4 +1,4 @@
-//! 软件包清单（施工 9-1 上，`docs/blueprint/packages.md`）：真核心走一遍。`package.list` 列出出厂的、管理员家目录里的，
+//! 软件包清单（施工 9-1 上，`docs/blueprint/packages.md`）：真核心走一遍。`package.list` 列出出厂的、你装的，
 //! 名字、说明照连接的语言挑；写错的、撞了的、协议版本对不上的带代码和给人看的一句；核心起来时读一次；`check` 查清单。
 //!
 //! 测试用的是仓库的资源目录：出厂的清单会越来越多（终端界面、桥），这里只断言出厂的网页和测试自己放的那几份，家目录里
@@ -26,7 +26,7 @@ about = { en = "Open the terminal interface", zh = "打开终端界面", ja = "�
 opens = ["config"]
 "#;
 
-/// 管理员（测试里是 alice）家目录里的一份清单。
+/// 你装的那一层里的一份清单。
 fn mine(home: &Home, id: &str, text: &str) {
     home.write(&format!("packages/{id}/package.toml"), text);
 }

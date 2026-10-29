@@ -69,7 +69,7 @@ fn core(home: &Home, hand: &Arc<Hand>) -> Arc<miyu_endpoint::Core> {
     core
 }
 
-/// 核心起来以前往 alice 的表里放一行包 `package` 建的、推给它自己、每十分钟一次，下一次在 `next` 毫秒。
+/// 核心起来以前往唤醒表里放一行包 `package` 建的、推给它自己、每十分钟一次，下一次在 `next` 毫秒。
 fn added_by(home: &Home, package: &str, next: i64) {
     let (table, _) = Schedules::open(&home.root);
     let table = table.expect("开得了");

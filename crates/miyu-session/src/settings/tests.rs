@@ -1,4 +1,4 @@
-//! `compaction.prepare`：默认开，系统配置、个人设置两层能写，项目配置不能，下一轮生效。
+//! `compaction.prepare`：默认开，配置能写，项目配置不能，下一轮生效。
 
 use super::*;
 use miyu_config::{Applies, Layer, Values};

@@ -168,7 +168,7 @@ impl Actor {
         let docs = self.project_docs_turn(&present);
         // 子目录的项目指令照同一个口径（施工 P-14 下）：这一轮读、改工作目录下面的文件时补。
         self.project_docs_look();
-        // 管理员放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
+        // 主人放行出沙盒的照这一轮的配置换（施工 X-36）：权限策略、执行器各拿一份。
         let unsandboxed =
             crate::unsandboxed::Unsandboxed::of(&values).within(self.guard.confines().clone());
         self.guard.set_unsandboxed(unsandboxed.clone());

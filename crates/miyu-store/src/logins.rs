@@ -14,7 +14,7 @@ use crate::config_file::WriteError;
 use crate::private_json;
 pub use crate::private_json::BadFile;
 
-/// 文件名：在账号的家目录里。
+/// 文件名：在数据根里。
 pub const FILE: &str = "logins.json";
 
 /// 现在的写法。

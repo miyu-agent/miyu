@@ -1,4 +1,4 @@
-//! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，系统配置
+//! 卸就是清干净（施工 F-8 中下补，设计 `31-软件包.md` 第三节第 3 条、定了的 H）：真核心走一遍。卸掉的包，配置
 //! 里它的几项删掉，别的项、注释不动；状态目录整个删掉。家目录里装的、出厂的都一样。开关的文件里它开没开、批过的能力也清掉
 //! （施工 F-8 五补）：装回来从头开、从头批。
 
@@ -37,7 +37,7 @@ async fn removing_a_package_forgets_its_settings_and_state() {
     let state = home.root.path().join("state/packages/xcfg");
     std::fs::create_dir_all(&state).expect("建得了");
     std::fs::write(state.join("data"), "x").expect("写得进");
-    // 它的脚本在各账号下的状态目录一起删，家目录里的脚本的、别的包的不动（施工 X-44）。
+    // 它的脚本的状态目录（各场所的也算）一起删，`~home` 脚本的、别的包的不动（施工 X-44）。
     for script in [
         "xcfg/live",
         "@qq_3agroup_3a1/xcfg/watch",

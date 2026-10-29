@@ -1,5 +1,5 @@
-//! 场所会话的沙盒（施工 MB-1；SU-4 上起没有成员了，只剩群、陌生人的私聊这些外部身份的会话）：真的经助手跑 `shell`。
-//! 读得到自己的工作区和程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）；读不到别的成员的家目录、数据根、
+//! 关起来的场所会话的沙盒（施工 MB-1；群、陌生人的私聊这些外部身份的会话）：真的经助手跑 `shell`。
+//! 读得到自己的工作区和程序跑起来要的系统文件（证书、域名解析、`/etc/hosts`、`git`）；读不到别的工作区、数据根、
 //! 跑核心的那个用户的家目录、机器上别处的文件、`/etc` 里名单外的、`/opt`；要出沙盒的拒、不问人，拒的话里没有核心那边的绝对
 //! 路径。关不住读的平台（Windows）上不跑，回 `no-commands`。没有收紧手段的机器到此为止。
 
@@ -105,7 +105,7 @@ async fn run(home: &Home, kind: Kind, cwd: &Path, command: &str) -> ToolResult {
     .await
 }
 
-/// 场地：这种会话的工作目录，里面放好 `own.txt`；别的成员的家目录、数据根、跑核心的用户的家目录、别处各放一份要藏住的。
+/// 场地：这种会话的工作目录，里面放好 `own.txt`；别的工作区、数据根、跑核心的用户的家目录、别处各放一份要藏住的。
 fn site(home: &Home, kind: Kind) -> (PathBuf, Vec<PathBuf>) {
     let cwd = match kind {
         Kind::Group => home.scratch.0.join("work"),
@@ -218,8 +218,8 @@ async fn going_outside_the_sandbox_is_refused_without_asking_or_naming_core_path
     }
 }
 
-/// 群里主人对应表认出的那个账号开口（施工 MB-1，2026-10-24 项目主人问到）：群会话照样关在群的工作区里，完全放开也一样；
-/// 读不到别处，要出沙盒的照样拒、不问。群里他仍是外部身份（设计 06 U8），会话的属主是接平台的系统账号。
+/// 群里对应表认出的主人开口（施工 MB-1，2026-10-24 项目主人问到）：群会话照样关在群的工作区里，完全放开也一样；
+/// 读不到别处，要出沙盒的照样拒、不问。群会话照 `confined` 关着，谁开口都一样。
 #[tokio::test]
 async fn the_owner_speaking_in_a_group_is_confined_like_everyone() {
     use miyu_kernel::id::ExternalId;

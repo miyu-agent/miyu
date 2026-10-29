@@ -162,7 +162,7 @@ impl Session {
 }
 
 /// 开回合 `turn` 的那一句，照 `events`（照序号排好的有效历史）看：它的 `turn.started` 有触发，触发的那一条是人亲口说的
-/// `message.user`（`by` 是有账号的人）的，交回那一条。开头、触发的那一条不在 `events` 里的（压缩掉了），说不准。
+/// `message.user`（`by` 是主人）的，交回那一条。开头、触发的那一条不在 `events` 里的（压缩掉了），说不准。
 pub(super) fn opener(events: &[Event], turn: TurnId) -> Opener<'_> {
     let find = |seq: Seq| {
         events

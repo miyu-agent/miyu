@@ -2,9 +2,8 @@
 //!
 //! 1. `to` 照编号的写法查，和 `from` 一样的、写法不对的 `bad_params`；合出来的配置里没有 `from` 的 `unknown_provider`，已经有
 //!    `to` 的 `provider_exists`。
-//! 2. 先个人设置、再系统配置，每一层照 `config.set` 的规矩写（`config/rewrite.rs`）：有 `[providers.<from>]` 的那一层换表名
-//!    （子表跟着走，密钥的引用在表里，跟着走），两层里指着 `<from>/<模型>` 的引用、模型的列表都换成 `<to>/<模型>`。后一层
-//!    写不成的，前一层改了的不撤，回那一层的错；再调一次照剩下的改。
+//! 2. 配置照 `config.set` 的规矩写（`config/rewrite.rs`）：`[providers.<from>]` 换表名
+//!    （子表跟着走，密钥的引用在表里，跟着走），指着 `<from>/<模型>` 的引用、模型的列表都换成 `<to>/<模型>`。
 //! 3. 用出来的、供应商的列表换编号，改名记进 `state/models/renamed.json`：钉着旧编号的会话下一轮起照新编号
 //!    （`miyu-session` 的 `route/turn.rs`）。
 

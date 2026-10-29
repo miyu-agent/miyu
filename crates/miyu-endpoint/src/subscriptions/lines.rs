@@ -11,7 +11,7 @@ use crate::Core;
 
 /// 一份推送写成 `event` 通知：一条事件一个，落了盘的、瞬时的都照 `03-事件模型.md` 的写法原样放进去；长期目标变了的写成瞬时
 /// 事件 `goal.changed`（施工 X-8 补，[`goal_changed`]）。
-/// 金额照会话属主 `owner` 的币种排。
+/// 金额照配置的币种排。
 pub(super) fn lines(core: &Core, session: &SessionId, pushed: &Pushed) -> Vec<String> {
     match pushed {
         Pushed::Events(events) => events

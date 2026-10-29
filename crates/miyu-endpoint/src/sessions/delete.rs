@@ -34,7 +34,7 @@ impl Sessions {
     pub(crate) async fn delete(&self, core: &Arc<Core>, id: &SessionId) -> Result<(), Refusal> {
         let mut open = self.open.lock().await;
         let running = open.running.get(id).map(|running| running.handle.clone());
-        // 照属主的家目录办（施工 O-4 上）：哪个账号的家目录下都没有的是没有这个会话。
+        // 数据根下没有的是没有这个会话（施工 O-4 上）。
         if !open.exists(core, id).await {
             return Err(Refusal::NOT_FOUND);
         }

@@ -160,7 +160,7 @@ fn a_broken_log_is_reported_not_fixed() {
 
 #[test]
 fn a_broken_log_says_where_in_english() {
-    // 写进运行日志的一句：哪一段（只写段的文件名）、第几行（施工 4-9 再补四中：原来是中文）。目录带着账号，怎么坏的
+    // 写进运行日志的一句：哪一段（只写段的文件名）、第几行（施工 4-9 再补四中：原来是中文）。目录带着会话编号，怎么坏的
     // 可能转述了那一行的字，都不写（施工 LG-1 上）。
     let segment = PathBuf::from("home")
         .join("alice")

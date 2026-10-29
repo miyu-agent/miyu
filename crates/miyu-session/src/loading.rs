@@ -1,4 +1,4 @@
-//! 脚本里能不能调，人在个人设置里改的那一层（`clicall`，施工 M-2，`39-脚本调工具.md` 第三节，2026-10-20 项目主人定）：来处写的
+//! 脚本里能不能调，人在配置里改的那一层（`clicall`，施工 M-2，`39-脚本调工具.md` 第三节，2026-10-20 项目主人定）：来处写的
 //! （说明文件、脚本开头、扩展登记、MCP 服务表）是默认，`clicall.tools.<name>`、`clicall.mcp.<id>` 写了的盖过它。一件工具先照
 //! 它自己那一项，没写的是 MCP 的工具再照它的服务那一项，都没写的照来处。工具名那一段是占位 `<name>`（施工 X-27：MCP 工具的
 //! 全名常超过 `<id>` 的 32 个字）；服务名照 `<id>`。
@@ -16,7 +16,7 @@ pub const CLICALL_TOOL: &str = "clicall.tools.<name>";
 /// 脚本里能不能调，一个 MCP 服务那一项的样子（施工 M-2）。
 pub const CLICALL_MCP: &str = "clicall.mcp.<id>";
 
-/// 登记的几项：最后一段是人起的名字，`settings!` 写不了，手写。设置页不画：头上还没有写法，写进个人设置就生效（施工 M-2）。
+/// 登记的几项：最后一段是人起的名字，`settings!` 写不了，手写。设置页不画：头上还没有写法，写进配置就生效（施工 M-2）。
 pub const ITEMS: &[Item] = &[item(CLICALL_TOOL, "clicall"), item(CLICALL_MCP, "clicall")];
 
 const fn item(key: &'static str, group: &'static str) -> Item {

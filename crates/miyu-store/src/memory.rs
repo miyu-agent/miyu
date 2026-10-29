@@ -111,7 +111,7 @@ impl MemoryLogs {
         }
     }
 
-    /// 账号 `account` 名下有记忆日志的几个人格（`modules/memory/<人格>/` 在的，照编号排；施工 R-25）。不开、不建。
+    /// 有记忆日志的几个人格（`modules/memory/<人格>/` 在的，照编号排；施工 R-25）。不开、不建。
     ///
     /// # Errors
     ///

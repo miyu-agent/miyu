@@ -178,7 +178,7 @@ async fn files_in_the_data_root_are_not_given_but_the_workspace_is() {
     let reply = put(&mut client, "b1", json!({"path": inside})).await;
     assert_eq!(reason(&reply), Some("attachment_in_data_root"), "{reply}");
     assert_eq!(reply["error"]["message"], "不能附加数据目录里的文件。");
-    // 管理员的工作区在数据根里，照边界表是能读能写的那一片：给。
+    // 工作区在数据根里，照边界表是能读能写的那一片：给。
     let workspace = home.root.workspace();
     std::fs::create_dir_all(&workspace).unwrap();
     let mine = workspace.join("mine.txt");

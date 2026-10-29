@@ -34,7 +34,7 @@ pub enum Opened {
     NoPage,
 }
 
-/// 打开 `ui.head` 指的界面，要的是 `page` 那一页（没有的是它的默认页）。管理员是 `admin`，拉起核心用 `start`。
+/// 打开 `ui.head` 指的界面，要的是 `page` 那一页（没有的是它的默认页）。拉起核心用 `start`。
 pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()

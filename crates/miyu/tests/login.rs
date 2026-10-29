@@ -225,7 +225,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     )
     .await;
     assert_eq!(system.status.code(), Some(2), "SU-3 起没有 --system");
-    // 老写法不留：`miyu login`、`miyu logout` 现在是不认识的子命令（`login` 留给登录账号）。
+    // 老写法不留：`miyu login`、`miyu logout` 现在是不认识的子命令。
     for old in [&["login", "deepseek"][..], &["logout", "deepseek"][..]] {
         let gone = run(&root, "C", old, FAKE).await;
         assert_eq!(gone.status.code(), Some(2), "{old:?}");

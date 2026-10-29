@@ -147,7 +147,7 @@ impl Catalog {
     }
 
     /// 换上这一刻的脚本（施工 X-12 中，`docs/blueprint/skills.md`「脚本」）：原来登记的脚本工具全拿掉，照 `scripts`（包的
-    /// 编号和一个脚本的工具，家目录里放的是 `~home`）一件件登记；查法同 [`Catalog::new`]，查不过的那一件不登记、别的照登记，
+    /// 编号和一个脚本的工具，数据根里自己放的是 `~home`）一件件登记；查法同 [`Catalog::new`]，查不过的那一件不登记、别的照登记，
     /// 一并交回没登记的（撞了别的工具的名字的这种）。脚本所在的包算经提供者登记的：会话下一个回合照现在的换。
     pub fn replacing_scripts(
         &self,
@@ -161,7 +161,7 @@ impl Catalog {
         catalog.with_scripts(scripts)
     }
 
-    /// 加上这几个脚本（施工 U23 中下：成员自己那一层的叠在底下那一份上），原来登记的脚本不动；查法、交回的同
+    /// 加上这几个脚本，原来登记的脚本不动；查法、交回的同
     /// [`Catalog::replacing_scripts`]：撞了名字的那一件不登记。
     pub fn with_scripts(
         &self,
@@ -244,7 +244,7 @@ impl Catalog {
         self.formerly.retain(|_, now| !names.contains(now));
     }
 
-    /// 拿掉包 `package` 的每一件（施工 U23 中中：成员的架子拿掉机主私人的 `~home`）：脚本、MCP 服务的、提供者登记的都拿掉；随包
+    /// 拿掉包 `package` 的每一件（施工 U23 中中）：脚本、MCP 服务的、提供者登记的都拿掉；随包
     /// 卸掉的记录也拿掉（用过它的会话调到时不报「已卸载」，同没有过：不透露那个包里有过什么）。
     #[must_use]
     pub fn without(&self, package: &str) -> Catalog {

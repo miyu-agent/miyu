@@ -14,7 +14,7 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 在 alice 家目录里放技能 `name`；交回 `SKILL.md` 的路径（列出来的写法：Windows 上反斜杠换成 `/`）。
+/// 在数据根里放技能 `name`；交回 `SKILL.md` 的路径（列出来的写法：Windows 上反斜杠换成 `/`）。
 fn put(home: &Home, name: &str) -> String {
     let dir = home.root.path().join("skills").join(name);
     std::fs::create_dir_all(&dir).expect("建得了");

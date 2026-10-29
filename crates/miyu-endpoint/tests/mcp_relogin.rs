@@ -24,7 +24,7 @@ fn calling() -> Script {
     ])
 }
 
-/// 个人设置写一张要登录的服务 `notes`，核心照剧本 `script` 起好、连好头，登录一次、等到它连上。
+/// 配置写一张要登录的服务 `notes`，核心照剧本 `script` 起好、连好头，登录一次、等到它连上。
 async fn logged_in(
     home: &Home,
     server: &HttpServer,

@@ -1,4 +1,4 @@
-//! 只剩系统配置一层（施工 SU-3 上，`docs/construction/SU-移除多用户.md` 第十五节）：`config.set` 不写 `layer` 的写进系统配置，
+//! 只剩配置一层（施工 SU-3 上，`docs/construction/SU-移除多用户.md` 第十五节）：`config.set` 不写 `layer` 的写进配置，
 //! 写 `personal` 的参数不对；手改的密钥文件下一轮就用上。
 
 use std::sync::Arc;

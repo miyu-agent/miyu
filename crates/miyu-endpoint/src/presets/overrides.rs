@@ -1,8 +1,7 @@
-//! 工具说明的同名覆盖（施工 OV-1 上，`miyu_policy::overrides`）：主人家目录 `tools/<工具>.toml`（施工 SU-3 下：系统区
-//! 那一层拿掉）；写坏了的整份不认，`check` 报。会话拼工具面时照它换（`PresetPlaces::overrides`）。
+//! 工具说明的同名覆盖（施工 OV-1 上，`miyu_policy::overrides`）：数据根 `tools/<工具>.toml`；写坏了的整份不认，`check` 报。会话拼工具面时照它换（`PresetPlaces::overrides`）。
 //!
 //! 提示词的同名覆盖（施工 OV-1 中，[`resources`]）：`prompts/<同样的路径>` 压着出厂的，查法在
-//! `miyu_store::resources`。造会话、载入会话时照属主交给会话。
+//! `miyu_store::resources`。造会话、载入会话时交给会话。
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -20,7 +19,7 @@ pub(crate) struct Layered {
     pub(crate) bad: Vec<(PathBuf, String)>,
 }
 
-/// 属主 `owner` 家目录里的工具说明覆盖。
+/// 数据根里的工具说明覆盖。
 pub(crate) fn of(core: &Core) -> Layered {
     let mut layered = Layered::default();
     for written in tools_in(&core.root.path().join(TOOLS)) {
@@ -60,7 +59,7 @@ pub(crate) fn problems(core: &Core) -> Vec<(PathBuf, String)> {
     bad
 }
 
-/// 属主 `owner` 的资源目录：压上他家目录里提示词的覆盖（施工 OV-1 中）。
+/// 资源目录：压上数据根里提示词的覆盖（施工 OV-1 中）。
 pub(crate) fn resources(core: &Core) -> ResourceRoot {
     core.resources
         .overlaid(vec![core.root.path().join(PROMPTS)])

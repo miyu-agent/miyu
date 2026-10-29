@@ -6,23 +6,23 @@
 //!   包里的程序共用 [`miyu_store::packages::launcher`]）。
 //! - 参数是她给的那份 JSON，写进标准输入，不超过 30 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：长的放进环境
 //!   变量起都起不来）。
-//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（施工 Y-11 上：会话属主家目录的
+//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（施工 Y-11 上：数据根的
 //!   `cache/<来处>/<工具名>/`，场所会话多一层场所，进沙盒的放进规格的 `write`；会话外面的调用照旧在系统临时目录 `miyu-scripts/<工具名>`
 //!   下面；30 天没碰的清掉，跑完清一次，`sweep.rs`），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
 //!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
-//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照会话属主、来处、工具名分，场所会话
-//!   另照场所分（施工 X-44 补：几个群都归系统账号），跑之前建好（Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根
-//!   照旧藏着）。建不成的、场所写不成目录名的、会话外面的调用（没有属主）不给，照常跑。
+//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照来处、工具名分，场所会话
+//!   另照场所分（施工 X-44 补：不分的话几个群共用一处），跑之前建好（Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根
+//!   照旧藏着）。建不成的、场所写不成目录名的、会话外面的调用不给，照常跑。
 //!   能丢的放缓存目录，要留的（登录态）放这里。
-//! - 本机的会话另给属主家目录的 `pictures/`、`videos/`、`documents/`、`downloads/`（施工 Y-11 补，[`home`]）：`MIYU_PICTURES_DIR`
+//! - 本机的会话另给数据根的 `pictures/`、`videos/`、`documents/`、`downloads/`（施工 Y-11 补，[`home`]）：`MIYU_PICTURES_DIR`
 //!   这四个，建好交真实位置、放进沙盒的 `write`；场所会话、会话外面的调用不给。
 //! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
-//!   单独放开脚本这一个文件只读（施工 X-12 下：家目录里放的、自己装的包带的在数据根里，沙盒藏着）。
+//!   单独放开脚本这一个文件只读（施工 X-12 下：自己放的、自己装的包带的在数据根里，沙盒藏着）。
 //! - 这一次在沙盒外跑（施工 5-14 改下，同 `shell`）：登记时参数里多一格布尔 `outside_sandbox`（说明是
 //!   `software/basesystem/script/outside-sandbox.txt`），写了 `true` 的照越过沙盒问人；交给脚本之前去掉这一格。脚本自己的参数里
 //!   本来就有这一格的不加、不覆盖，照原样交给它，这个脚本就只能在沙盒里跑。
@@ -94,7 +94,7 @@ pub(crate) struct Script {
     display_name: BTreeMap<String, String>,
     /// 开头写的给哪种会话（`Venues`，施工 X-43）：没写的没有。
     venues: Option<Venues>,
-    /// 来处：包的编号，家目录里放的是 `~home`（施工 X-44：状态目录照它分）。
+    /// 来处：包的编号，数据根里自己放的是 `~home`（施工 X-44：状态目录照它分）。
     source: String,
     /// 参数里那一格 `outside_sandbox` 是不是登记时加的（施工 5-14 改下）：脚本自己声明了的不算。
     outside: bool,
@@ -163,11 +163,11 @@ impl Script {
         .said(said("shell/failed").with("error", error))
     }
 
-    /// 这一次的状态目录（施工 X-44）：照会话属主、来处、工具名建好（Unix 上 0700），交真实位置。没有属主、数据根的，建不成的
+    /// 这一次的状态目录（施工 X-44）：照来处、工具名建好（Unix 上 0700），交真实位置。会话外面的调用（没有数据根），建不成的
     /// 没有（建不成的记一行 `WARN`）。
     fn state(&self, call: &Call) -> Option<PathBuf> {
         let root = call.data_root.as_deref().filter(|_| call.ids.is_some())?;
-        // 场所会话照场所分（施工 X-44 补）：几个群都归系统账号，不分的话 A 群读得到 B 群的。
+        // 场所会话照场所分（施工 X-44 补）：不分的话 A 群读得到 B 群的。
         let venue = call.caller.as_ref().map(|caller| &caller.venue);
         let Some(dir) = miyu_store::scripts::state_dir(root, venue, &self.source, &self.spec.name)
         else {
@@ -177,7 +177,7 @@ impl Script {
         self.prepared(&dir, Kept::State)
     }
 
-    /// 这一次的缓存目录（施工 Y-11 上）：会话属主家目录的 `cache/<来处>/<工具名>/`，场所会话多一层场所，建好交真实位置。没有属主、
+    /// 这一次的缓存目录（施工 Y-11 上）：数据根的 `cache/<来处>/<工具名>/`，场所会话多一层场所，建好交真实位置。没有
     /// 数据根的（会话外面的调用），场所写不成目录名的、建不成的照旧在系统临时目录 `miyu-scripts/<工具名>/` 下面。
     fn cache(&self, call: &Call) -> PathBuf {
         let venue = call.caller.as_ref().map(|caller| &caller.venue);
@@ -253,7 +253,7 @@ impl Script {
         let (program, args) = match call.sandbox.as_deref() {
             None => (program, args),
             Some(sandboxed) => {
-                // 脚本可能在数据根里（家目录里放的、自己装的包带的），沙盒藏着那一片：单独放开它这一个文件只读，解释器才
+                // 脚本可能在数据根里（自己放的、自己装的包带的），沙盒藏着那一片：单独放开它这一个文件只读，解释器才
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
                 let mut sandboxed = sandboxed.clone();
                 sandboxed.spec.reveal.push(file.clone());
@@ -262,7 +262,7 @@ impl Script {
                 sandboxed.spec.write.push(cache.to_path_buf());
                 // 交图的目录在缓存那一格旁边（同一个来处下面）：缓存挪进数据根以后它也被藏着，单独放开写（施工 Y-11 上）。
                 sandboxed.spec.write.extend(images.map(Path::to_path_buf));
-                // 家目录那几处（施工 Y-11 补）：已经建好，成员的会话也只到他自己家里。
+                // 数据根里那几处（施工 Y-11 补）：已经建好。
                 sandboxed
                     .spec
                     .write
@@ -416,7 +416,7 @@ impl Tool for Script {
             })
             .await;
             guard.disarm();
-            // 跑完清一次这个人的缓存（施工 Y-11 上）：照时间，一分钟内只清一次，不等它。
+            // 跑完清一次缓存（施工 Y-11 上）：照时间，一分钟内只清一次，不等它。
             sweep::after(&call);
             let seconds = self.timeout.to_string();
             match finished {

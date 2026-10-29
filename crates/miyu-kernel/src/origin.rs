@@ -37,7 +37,7 @@ pub enum By {
     Unknown(RawJson),
 }
 
-/// 主人（施工 SU-6 上：只有一个人，不再记账号）。
+/// 主人（施工 SU-6 上：只有一个人）。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Person {
     /// 经哪个平台身份认出来的主人（施工 O-3，`venues.md`）：主人在通讯平台的私聊里说的话，核心查主人对应表认出是主人。
@@ -53,7 +53,7 @@ pub struct External {
     pub venue: VenueId,
     /// 平台上的身份编号，由桥担保，例如 `qq:10086`。
     pub id: ExternalId,
-    /// 在主人对应表里，是主人（施工 O-3，SU-6 上起不再记账号）：群里的主人仍是外部身份，写的时候就记下，以后对应表改了不跟着
+    /// 在主人对应表里，是主人（施工 O-3，SU-6 上起只记这一个布尔）：群里的主人仍是外部身份，写的时候就记下，以后对应表改了不跟着
     /// 变。不是的不写。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub owner: bool,
@@ -130,7 +130,7 @@ pub enum ScheduleLoop {
 }
 
 impl By {
-    /// 是人（施工 R-8 从回合索引挪进内核，两处共用）：有账号的人（`Person`）、通讯平台上的人（`External`）。别的会话、子代理、
+    /// 是人（施工 R-8 从回合索引挪进内核，两处共用）：主人（`Person`）、通讯平台上的人（`External`）。别的会话、子代理、
     /// 别的 harness、工具、模块、内核都不是。回合索引收哪几轮（`memory.md` 第一条第 1 款）、联想拿哪句话（第四条第 1 款）
     /// 照它判。
     #[must_use]

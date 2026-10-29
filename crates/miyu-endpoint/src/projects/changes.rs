@@ -1,5 +1,5 @@
-//! 「哪个账号的哪个项目变了」的广播（施工 H-1）：`project.create`、`update`、`delete` 写成了报一声，订阅着 `projects` 的连接只推
-//! 自己账号的（`subscriptions/listed.rs`）。推的是这一刻的整项，晚到的、重复的都对。一条是「账号、换行、编号」：和软件包、扩展的
+//! 「哪个项目变了」的广播（施工 H-1）：`project.create`、`update`、`delete` 写成了报一声，推给订阅着 `projects` 的连接
+//! （`subscriptions/listed.rs`）。推的是这一刻的整项，晚到的、重复的都对。一条是项目编号：和软件包、扩展的
 //! 推送共用一个转发任务，那边收的是字。
 
 use tokio::sync::broadcast;

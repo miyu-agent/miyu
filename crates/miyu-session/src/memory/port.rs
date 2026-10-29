@@ -2,7 +2,7 @@
 //!
 //! 每个主会话一份 [`Calls`]（这一间、这个会话、听众），每次调用照它造一个端口，带上这一轮和这次调用：记下的出处是这一轮、
 //! `by` 是这次调用。怎么记、怎么挑在 [`Keeper`]（施工 R-3 补挪出去，协议也用）；碰磁盘的在阻塞线程里做。听众：本机的会话
-//! 是属主。
+//! 是主人。
 
 use std::sync::Arc;
 
@@ -35,7 +35,7 @@ pub(crate) struct Calls {
 }
 
 impl Calls {
-    /// 会话 `session`（属主 `owner`）的记忆，放在 `room` 那一间，`listener` 在听（施工 R-13 上；施工 SU-4 中起照关不关定，
+    /// 会话 `session` 的记忆，放在 `room` 那一间，`listener` 在听（施工 R-13 上；施工 SU-4 中起照关不关定，
     /// [`Listener::of`]）。
     pub(crate) fn new(
         memory: &Arc<Memory>,
@@ -132,7 +132,7 @@ impl Calls {
     }
 
     /// 这一轮联想带什么（施工 R-8，`recall.rs`）：场所会话里也联想，挑法照谁在听（施工 R-13 下）；`said` 是这一轮人说的话，照意思找照这一轮的配置 `config`
-    /// （`models.embedding`，远程的用量记在属主名下），日期照会话的时区 `offset`。
+    /// （`models.embedding`），日期照会话的时区 `offset`。
     pub(crate) async fn recall(
         &self,
         said: String,

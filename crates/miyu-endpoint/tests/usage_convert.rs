@@ -154,7 +154,7 @@ async fn without_a_rate_the_other_currency_stays_apart() {
     assert!((amount(&converted["rest"][0]["amount"]) - USD).abs() < 1e-12);
 }
 
-/// 会话状态里那一行照会话属主的币种换算（施工 UC-1）：常推的一处不等，只用缓存里的汇率；先查一回 `usage.query` 把汇率取下来，
+/// 会话状态里那一行照配置的币种换算（施工 UC-1）：常推的一处不等，只用缓存里的汇率；先查一回 `usage.query` 把汇率取下来，
 /// 订阅回应里的累计就换成了人民币。
 #[tokio::test]
 async fn a_sessions_own_total_is_converted_for_its_owner() {

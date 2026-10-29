@@ -1,17 +1,17 @@
 //! 用量汇总（施工 8-15，`docs/designs/07-存储.md` 第六节、S3，`docs/blueprint/models.md`「怎么走」第九条第 4 到 6 条）：
 //! `state/usage.db`，一个核心一份 SQLite，一个连接一直开着（和会话列表的索引一样，[`crate::sqlite`]）。它是派生的：真相是
-//! 会话的日志（`model.called`）和账号日志（`journal.jsonl`）里的 `usage.purged`、`usage.oneshot`，表随时可以删掉照它们重建。
+//! 会话的日志（`model.called`）和日志 `journal.jsonl` 里的 `usage.purged`、`usage.oneshot`，表随时可以删掉照它们重建。
 //!
 //! 表 `spent` 一行是一次请求，或者删掉的会话一个小时里一个（供应商、模型、用途）的合计（[`spent`]）；主键（`source`、`seq`），
-//! 重复写不出两行。表 `marks` 记每一份日志读到了哪里：会话的照 [`crate::log::Mark`]，账号日志照字节；连同会话的属主、场所、父会话，
+//! 重复写不出两行。表 `marks` 记每一份日志读到了哪里：会话的照 [`crate::log::Mark`]，`journal.jsonl` 照字节；连同会话的场所、父会话，
 //! 删掉的会话标 `purged`。
 //!
 //! - 写（[`UsageIndex::advance`]）：会话每落一批，actor 在阻塞线程里写这一批的行；记到的位置正好是这一批之前的才往前挪，
 //!   中间哪一批没写上的停在原处，等补（`catch_up.rs`）。
-//! - 补（[`UsageIndex::catch_up`]）：查询之前，账号日志、管理员的会话、回收处里的会话，记到的照 [`crate::log::read_marked`]
+//! - 补（[`UsageIndex::catch_up`]）：查询之前，`journal.jsonl`、数据根里的会话、回收处里的会话，记到的照 [`crate::log::read_marked`]
 //!   读多出来的一截，没记过的、对不上的整份读。空的表照这样补满，就是重建。
-//! - 一次性调用（[`UsageIndex::one_shot`]）：先往调的那个账号的 `journal.jsonl` 追加一条 `usage.oneshot`，再写一行。
-//! - 删掉的会话（[`purged`]）：回收处清它之前写进账号日志的 `usage.purged`，补的时候换掉它的单次行。
+//! - 一次性调用（[`UsageIndex::one_shot`]）：先往 `journal.jsonl` 追加一条 `usage.oneshot`，再写一行。
+//! - 删掉的会话（[`purged`]）：回收处清它之前写进 `journal.jsonl` 的 `usage.purged`，补的时候换掉它的单次行。
 //! - 查（[`UsageIndex::query`]）：照分组加起来，金额照币种各加各的（`query.rs`）；换算（施工 UC-1，[`UsageIndex::convert`]）
 //!   照每一笔那天的汇率换成一个币种（`convert.rs`），汇率在 `state/rates.db`（[`rates`]）。
 

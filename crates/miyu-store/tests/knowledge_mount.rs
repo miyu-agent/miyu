@@ -9,7 +9,7 @@ use miyu_store::root::DataRoot;
 
 use crate::support::*;
 
-/// 管理员的库 `id`，`kb.toml` 写 `toml`。
+/// 数据根里的库 `id`，`kb.toml` 写 `toml`。
 fn base(root: &DataRoot, id: &str, toml: &str) -> PathBuf {
     let dir = root.path().join("kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");

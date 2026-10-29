@@ -109,7 +109,7 @@ impl Home {
         };
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
-        // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
+        // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进数据根，测试照旧用 `engineer`。
         miyu_session::testkit::install_sample_persona(&root);
         let home = scratch.0.join("home");
         std::fs::create_dir_all(&home).expect("建得了假的家");

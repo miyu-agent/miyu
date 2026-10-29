@@ -1,4 +1,4 @@
-//! 网址的 MCP 服务（施工 X-32 上，`docs/blueprint/mcp.md`「网址的服务怎么说话」）：个人设置里写 `url` 的服务，核心不起进程，经
+//! 网址的 MCP 服务（施工 X-32 上，`docs/blueprint/mcp.md`「网址的服务怎么说话」）：配置里写 `url` 的服务，核心不起进程，经
 //! Streamable HTTP 连上、列出工具、会话里调得到；令牌发成 `Authorization: Bearer`、别的请求头照写的带；`mcp.list` 带 `url`、没有
 //! `pid`。`http://` 不是本机地址的不连，停下、日志里说清。
 
@@ -125,7 +125,7 @@ async fn an_expiring_session_reconnects_without_counting_failures() {
     assert_eq!(shakes, 4, "起来一次，过期三次各重连一次");
 }
 
-/// 头经 `mcp.set` 加上网址的服务（施工 X-32 下）：写进个人设置、连上；`mcp.list` 照写的交回 `url`、`bearer`、`headers`，编辑页
+/// 头经 `mcp.set` 加上网址的服务（施工 X-32 下）：写进配置、连上；`mcp.list` 照写的交回 `url`、`bearer`、`headers`，编辑页
 /// 照它填，再交回 `mcp.set` 一字不变。
 #[tokio::test]
 async fn a_url_server_is_set_and_listed_as_written() {
@@ -186,8 +186,7 @@ async fn a_url_server_is_set_and_listed_as_written() {
 }
 
 /// 先配服务、后存令牌（施工 X-32 补，GitHub 的远程服务撞出来的）：密钥存了、换了、删了，引用它的、开着的服务停下再起，连续失败
-/// 从零数；没引用它的不动；包没开的、带着引用它的服务的，不因此被拉起来。现在只有管理员一个账号、一份密钥文件；多用户那一段照
-/// 账号分开。
+/// 从零数；没引用它的不动；包没开的、带着引用它的服务的，不因此被拉起来。
 #[tokio::test]
 async fn a_server_follows_the_secret_it_uses() {
     let server = HttpServer::start(false).await;

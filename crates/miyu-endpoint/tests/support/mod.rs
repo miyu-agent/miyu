@@ -92,7 +92,7 @@ impl Home {
         };
         let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
         root.prepare().expect("临时目录里建得了骨架");
-        // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
+        // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进数据根，测试照旧用 `engineer`。
         miyu_session::testkit::install_sample_persona(&root);
         let work = std::env::temp_dir().join(format!(
             "miyu-endpoint-work-{}-{}-{n}",
@@ -104,7 +104,7 @@ impl Home {
         Home { dir, root, work }
     }
 
-    /// 一份核心：管理员 alice，请求模型照 `script` 回。同一个数据根上造第二份，就像核心重启过。
+    /// 一份核心：请求模型照 `script` 回。同一个数据根上造第二份，就像核心重启过。
     pub fn core(&self, script: &Script) -> Arc<Core> {
         self.core_with(script, TOKEN)
     }

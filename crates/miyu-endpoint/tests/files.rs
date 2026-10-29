@@ -1,5 +1,5 @@
 //! `fs.list`、`fs.find`（施工 W-2，`docs/blueprint/web-module.md`「三、列文件、找文件」、`protocol.md`
-//! 「`fs.list`」「`fs.find`」）：真核心上数据根不列不找、账号的工作区照样列；清单没建完先给一部分、`building`；
+//! 「`fs.list`」「`fs.find`」）：真核心上数据根不列不找、工作区照样列；清单没建完先给一部分、`building`；
 //! `fresh` 隔一段时间才重建；最多记几份、多了丢最久没用的；`path` 一律用 `/`。
 
 use std::path::Path;
@@ -18,7 +18,7 @@ async fn client(home: &Home) -> Client {
     client
 }
 
-/// 建好账号的家目录、工作区（`session.create` 以前就要用到工作区时，测试自己先建）。交回工作区的真实位置。
+/// 建好工作区（`session.create` 以前就要用到工作区时，测试自己先建）。交回工作区的真实位置。
 fn workspace(home: &Home) -> std::path::PathBuf {
     home.root.prepare_workspace().expect("建得了家目录、工作区");
     std::fs::canonicalize(home.root.workspace()).expect("工作区在")

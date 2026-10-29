@@ -273,7 +273,7 @@ fn target(word: &Word, places: &Places<'_>, recursive: bool) -> Option<Kind> {
     None
 }
 
-/// 落在工作区里面（`<数据根>/workspace/` 下面，不是它本身：规整过的路径不以 `/` 结尾；施工 SU-5 上拿掉了账号那一层）。
+/// 落在工作区里面（`<数据根>/workspace/` 下面，不是它本身：规整过的路径不以 `/` 结尾）。
 fn in_workspace(path: &str, data_root: &str) -> bool {
     path.strip_prefix(&format!("{}/workspace/", data_root.trim_end_matches('/')))
         .is_some()

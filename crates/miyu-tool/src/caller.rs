@@ -17,7 +17,7 @@ pub struct Caller {
     pub owner: bool,
     /// 这一轮发给的模型和思考强度（施工 E-M）：还没解析过的没有。
     pub model: Option<InUse>,
-    /// 会话日志的目录（施工 E-M）：只给属主是管理员的会话（`06-多用户与身份.md` U25：普通用户看不到运行它的那台电脑）。
+    /// 会话日志的目录（施工 E-M）：只给没关起来的会话（关起来的场所会话看不到运行它的那台电脑）。
     pub log: Option<PathBuf>,
 }
 

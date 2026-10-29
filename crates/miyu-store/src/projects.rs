@@ -1,4 +1,4 @@
-//! 项目 `projects.json`（施工 H-1，设计 `38-项目.md` 第一节）：一个账号的几个项目，照造的先后。哪个会话在哪个项目
+//! 项目 `projects.json`（施工 H-1，设计 `38-项目.md` 第一节）：主人的几个项目，照造的先后。哪个会话在哪个项目
 //! 记在会话自己的日志里，这里不另记名单。读、写照 `logins.json`（只给自己看的 JSON 小文件：0600、照读到的版本写）。
 
 use std::path::Path;
@@ -11,7 +11,7 @@ use crate::config_file::WriteError;
 use crate::private_json;
 pub use crate::private_json::BadFile;
 
-/// 文件名：在账号的家目录里。
+/// 文件名：在数据根里。
 pub const FILE: &str = "projects.json";
 
 /// 现在的写法。

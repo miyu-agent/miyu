@@ -1,7 +1,7 @@
 //! `fs.list`、`fs.find`、`fs.realpath`、`fs.read`（施工 W-2、W-3、W-6，`docs/blueprint/web-module.md`
 //! 「三、列文件、找文件」「四、路径」「七、分块读」）：列一层目录、在一个目录里模糊找文件、把一个路径换成真实的
 //! 位置、分块读一份文件。`fs.list`、`fs.find` 的回应一个样子：`items` 每一条 `{dir, full, marks, path, size}`；
-//! 数据根只有账号自己的工作区能列、能找、能读，落进去的 `path_forbidden`，换不成真实的位置、不是目录的
+//! 数据根只有工作区能列、能找、能读，落进去的 `path_forbidden`，换不成真实的位置、不是目录的
 //! `path_unreadable`。`fs.realpath` 不查边界，只换位置：落在数据根里的照样换。`fs.read` 的 `path` 相对的
 //! `bad_params`；换不成真实位置、不是普通文件、没有权限 `path_unreadable`。
 //!
@@ -178,7 +178,7 @@ fn realpath_blocking(place: &Place, params: RealpathParams) -> Result<Value, Ref
 
 /// `fs.read`：分块读本机的一份文件（施工 W-6，`web-module.md`「七、分块读」）。`path` 相对的（没有 `cwd` 可接）：
 /// `bad_params`；`length` 超过 [`miyu_fs::MAX_LENGTH`]：`bad_params`；换不成真实位置、不是普通文件、没有权限：
-/// `path_unreadable`；落在数据根里（账号的工作区以外）：`path_forbidden`。
+/// `path_unreadable`；落在数据根里（工作区以外）：`path_forbidden`。
 pub(crate) async fn read(core: &Core, params: ReadParams) -> Result<Value, Refusal> {
     if params.length > miyu_fs::MAX_LENGTH {
         return Err(Refusal::BAD_PARAMS);
@@ -261,7 +261,7 @@ fn item_json(dir: bool, full: &Path, path: &str, marks: &[usize]) -> Value {
     Value::Object(item)
 }
 
-/// 边界表：这个账号的工作区、数据根、这台机器的临时目录和系统目录（`fs.md` 第一节）。
+/// 边界表：工作区、数据根、这台机器的临时目录和系统目录（`fs.md` 第一节）。
 fn boundary_of(place: &Place) -> Boundary {
     let places = Places::here(
         place.root.workspace(),

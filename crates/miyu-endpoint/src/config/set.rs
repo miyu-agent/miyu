@@ -76,7 +76,7 @@ impl SetParams {
     }
 }
 
-/// 能改的一层（施工 SU-3 上：个人设置并进系统配置了）。
+/// 能改的一层（施工 SU-3 上起只有配置这一层）。
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub(super) enum WriteLayer {

@@ -61,7 +61,7 @@ impl Home {
         miyu_ipc::open(&self.root, &dirs).expect("起得来")
     }
 
-    /// 一份核心：管理员 admin，请求模型照 `models`。
+    /// 一份核心：请求模型照 `models`。
     pub fn core(&self, models: Arc<dyn Models>, token: &str) -> Arc<Core> {
         self.core_with(models, token, Catalog::default())
     }

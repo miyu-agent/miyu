@@ -11,7 +11,7 @@ use miyu_session::testkit::{Play, Script};
 use crate::scripts::{core, echo, feature, session};
 use crate::support::*;
 
-/// 个人设置的字。
+/// 配置的字。
 fn settings(home: &Home) -> String {
     std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
 }
@@ -58,7 +58,7 @@ fn names(face: &[(String, String)]) -> Vec<&str> {
 }
 
 /// 写好三个脚本：家目录里的 `weather`（全量、等 5 秒）、`plain`（什么给人看的都没写、先加载），装的包 `kit` 带的 `dice`；
-/// 个人设置的语言是 `language`。
+/// 配置的语言是 `language`。
 fn written(home: &Home, language: &str) {
     home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
     let weather = echo("weather").replace(
@@ -133,7 +133,7 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
     }
 }
 
-/// 退役的 `tool.set_loading`（施工 FL-1，工具一律全量）：照旧收、照旧查参数，回 `{}`，个人设置一个字不写，工具面照旧全量；
+/// 退役的 `tool.set_loading`（施工 FL-1，工具一律全量）：照旧收、照旧查参数，回 `{}`，配置一个字不写，工具面照旧全量；
 /// `mcp.list` 不再带 `need_load`，全局开关照常。
 #[tokio::test]
 async fn set_loading_is_accepted_and_changes_nothing() {

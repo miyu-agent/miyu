@@ -47,7 +47,7 @@ async fn running_core(
     (running, head)
 }
 
-/// 卸掉了画 mermaid、联网这两个出厂的包（家目录记了一笔，施工 F-5 上），编进来了、登记了也当没有 `mermaid.render`、
+/// 卸掉了画 mermaid、联网这两个出厂的包（数据根里记了一笔，施工 F-5 上），编进来了、登记了也当没有 `mermaid.render`、
 /// `link.preview`（施工 F-2、F-5 中，设计 30 第二节第 3 条）。
 #[tokio::test]
 async fn a_query_of_a_package_not_installed_is_unknown_method() {
@@ -81,7 +81,7 @@ async fn a_query_of_a_package_not_installed_is_unknown_method() {
     running.abort();
 }
 
-/// 起来时就卸掉了人格记忆（家目录记了一笔）：`memory.*` 回 `memory_not_installed`（施工 R-10，`memory.md` 第十一条）。装卸
+/// 起来时就卸掉了人格记忆（数据根里记了一笔）：`memory.*` 回 `memory_not_installed`（施工 R-10，`memory.md` 第十一条）。装卸
 /// 当场换的在 `crates/miyu-endpoint/tests/memory_installed.rs`。
 #[tokio::test]
 async fn memory_removed_before_start_says_not_installed() {
@@ -313,7 +313,7 @@ async fn startup_clears_leftover_upload_temp_files_but_leaves_blobs_alone() {
     blobs.create_upload("leftover").unwrap();
     // 一份真的 blob，不该被这一步碰到。
     let kept = blobs.put(b"kept across a restart").unwrap();
-    // 别的账号的上传存在它自己名下（施工 Y-2中下）：它留下的也清。
+    // 同一个 blob 目录另开一份留下的上传：也清。
     let other = Blobs::new(home.root.blobs());
     other.create_upload("theirs").unwrap();
     miyu_core::packages::clear_uploads(&home.root);
@@ -331,7 +331,7 @@ async fn startup_clears_leftover_upload_temp_files_but_leaves_blobs_alone() {
 #[tokio::test]
 async fn clearing_uploads_is_fine_when_the_account_never_stored_anything() {
     let home = Home::new();
-    // 这个账号的 blobs/ 目录都还没建过：起来时清暂存不该因为「没有」就出错、也不该把它建出来。
+    // blobs/ 目录都还没建过：起来时清暂存不该因为「没有」就出错、也不该把它建出来。
     miyu_core::packages::clear_uploads(&home.root);
     assert!(!home.root.blobs().exists());
 }

@@ -1,8 +1,8 @@
 //! 她装、卸软件包（施工 F-10 下，`docs/blueprint/tools/package.md`，设计 `31-软件包.md` 第六节）：真核心的会话调 `package`；
 //! 施工 BS-1 中起它不上工具面，她跑的命令里的 `miyu pkg` 经通道调（`support::pkg`），确认请求带着那一次的序号。
 //! 工作区那一级每次问人，确认请求的说明里带着看一眼的那一份（装的同 `package.install` 带 `preview`，卸的同 `package.remove`
-//! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。属主是主人的装进系统那一层（施工
-//! SU-1），装回出厂的、整组的照常装回来。
+//! 带 `preview`）；允许了才装、卸。完全放开直接做、不问。清单写错的不问，当场照拒绝交回她。装进你装的那一层，
+//! 装回出厂的、整组的照常装回来。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -212,7 +212,7 @@ async fn a_name_clash_tells_her_what_and_where() {
     assert!(!installed(&home, "akit"));
 }
 
-/// 她装回卸掉的出厂包、整组（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源；施工 SU-1 起属主是主人，
+/// 她装回卸掉的出厂包、整组（施工 BS-1 中下修，网页报的）：命令里的 `miyu pkg install mermaid` 不走软件源；
 /// 完全放开的照常装回来。
 #[tokio::test]
 async fn bringing_back_a_shipped_package_or_a_group_works() {

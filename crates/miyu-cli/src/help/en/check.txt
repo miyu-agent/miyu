@@ -16,4 +16,4 @@ Options:
 
 Examples:
   miyu check
-  miyu check ~/.miyu/home/admin/personas/miyu/prompts/examples.md
+  miyu check ~/.miyu/personas/miyu/prompts/examples.md

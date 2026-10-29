@@ -1,5 +1,5 @@
 //! 会话入口替看不了图的模型看图（施工 8-17，`docs/blueprint/models.md`「怎么走」第十三条第 4 条）：内核交来的转述请求经一次性
-//! 入口（`route/once.rs`）发给这一轮的 `models.vision`，用途 `vision`，图从会话属主的 blob 取。在派出去的任务里走完，带着会话
+//! 入口（`route/once.rs`）发给这一轮的 `models.vision`，用途 `vision`，图从 blob 取。在派出去的任务里走完，带着会话
 //! 的 span：一次性入口那一行 `model call` 也带着会话编号。
 //!
 //! - 没配 `models.vision` 的不发，当场没成。

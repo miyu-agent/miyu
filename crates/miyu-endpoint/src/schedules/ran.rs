@@ -9,7 +9,7 @@ use serde_json::json;
 use super::Schedules;
 
 impl Schedules {
-    /// 盯着订阅 `pushes`：交进去的那句（序号 `said`）开的那一轮结束时，给 `account` 推 `schedule.ran`。在自己的任务里等。
+    /// 盯着订阅 `pushes`：交进去的那句（序号 `said`）开的那一轮结束时，推 `schedule.ran`。在自己的任务里等。
     pub(super) fn watch_ran(
         &self,
         (schedule, session): (String, SessionId),

@@ -13,7 +13,7 @@ use miyu_session::testkit::{Play, Script};
 use crate::preset_face::snapshot;
 use crate::support::*;
 
-/// 写进 alice 个人设置的称呼。
+/// 写进配置的称呼。
 const PROFILE: &str = "[profile]\nname = \"小林\"\n";
 
 /// 请求里的全部字（system 加上消息），照调试的写法：事实在消息里。
@@ -56,7 +56,7 @@ fn seen(request: &Request) -> Vec<&'static str> {
     seen
 }
 
-/// 记一条无人格那一间的记忆、用 `params` 开会话说一句，交回会话编号和第一次请求。核心读个人设置里的称呼（「关于你」）和预设
+/// 记一条无人格那一间的记忆、用 `params` 开会话说一句，交回会话编号和第一次请求。核心读配置里的称呼（「关于你」）和预设
 /// 那几项。
 async fn opened(home: &Home, params: Value) -> (String, Request) {
     let script = Script::new([Play::Says("嗯。")]);

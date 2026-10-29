@@ -182,7 +182,7 @@ fn a_directory_too_wide_is_said_once() {
 
 #[test]
 fn paths_are_written_short_against_where_she_really_works() {
-    // 退回了账号的工作区：她读那里面的文件，路径照实际干活的目录写相对的，不照敲命令时的目录。
+    // 退回了数据根的工作区：她读那里面的文件，路径照实际干活的目录写相对的，不照敲命令时的目录。
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),

@@ -1,4 +1,4 @@
-//! 扩展用 embedding（施工 X-17，`model.embed`）：照这个账号的 `models.embedding` 算一批字的向量，交回模型编号和照先后的向量
+//! 扩展用 embedding（施工 X-17，`model.embed`）：照配置的 `models.embedding` 算一批字的向量，交回模型编号和照先后的向量
 //! （归一化过的）；
 //! 一条一条问远程那一家；条数、字数不对的 `bad_params`；没接向量那一路的 `embedding_off`；那一家出错的 `embedding_failed`、
 //! `data.why` 说原因。

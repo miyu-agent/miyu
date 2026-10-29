@@ -11,7 +11,7 @@ fn sent_a_sticker(sent: &ContentHash) -> Event {
     Event::from_line(&line).expect("读得出")
 }
 
-/// 她经工具发出去的图（`tool.result.sent`）算会话结构引用过的（施工 W-6 再补，接入QQ 发表情包要读管理员私聊里的）；
+/// 她经工具发出去的图（`tool.result.sent`）算会话结构引用过的（施工 W-6 再补，接入QQ 发表情包要读主人私聊里的）；
 /// 别的 blob 照样不算。
 #[test]
 fn a_sent_image_counts_as_referenced() {

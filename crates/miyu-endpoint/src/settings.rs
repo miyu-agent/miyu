@@ -35,7 +35,7 @@ miyu_config::settings! {
             applies: head_start,
             ui: { page: "general", group: "display", control: text },
         },
-        /// 第一次引导走过了（施工 8-11 四补，2026-10-08 终端、网页两个头要的）：账号级，只在个人设置里，每个账号各走一次；
+        /// 第一次引导走过了（施工 8-11 四补，2026-10-08 终端、网页两个头要的）：只走一次；
         /// 头走完引导写 `true`，以后不再进，缺什么去配置页补。设置页不画。核心不读它。
         welcomed: bool = false {
             kind: bool,
@@ -127,7 +127,7 @@ miyu_config::settings! {
 miyu_config::settings! {
     /// 一条斜杠命令的配置（施工 O-6 六补，`slash.md`「谁能用」，接入QQ 的会话 2026-10-17 要的）：`<id>` 是命令名（写法同「路径里的名字」，命令名都合）。
     pub struct CommandSettings in "commands.<id>" {
-        /// 谁能用：`admin` 本人、对应表里认得的、场所里管理的人；`anyone` 谁都行；`off` 谁都不行。没写的照命令的出厂值（扩展
+        /// 谁能用：`admin` 是你本人、对应表里认得的、场所里管理的人；`anyone` 谁都行；`off` 谁都不行。没写的照命令的出厂值（扩展
         /// 清单 `[[slash]]` 的 `access`），也没有的是 `admin`。设置页不画：带名字的这一段两个头还没有画法。
         access: Option<String> = none {
             kind: option ["admin", "anyone", "off"],
@@ -187,8 +187,8 @@ miyu_config::settings! {
 mod tests;
 
 /// 别的软件源（施工 U23 下下，设计 `37-软件源.md` 第五节）：`packages.sources.<id>.url` 放索引的那一层目录，`.key` 签它的
-/// Ed25519 公钥（base64），两样都写了才算一个源；加了就是信任它。系统配置里的所有人用，个人设置里的只给自己（装进他自己那一层）。
-/// 名字不许叫 `official`，个人设置和系统配置同名的那一条不认（`packages/source/feeds.rs`）。`settings!` 只认「段加字段名」，
+/// Ed25519 公钥（base64），两样都写了才算一个源；加了就是信任它。
+/// 名字不许叫 `official`（`packages/source/feeds.rs`）。`settings!` 只认「段加字段名」，
 /// 中间一段是占位的手写。当场生效。
 pub const SOURCE_FEEDS: &[miyu_config::Item] = &[
     source_feed("packages.sources.<id>.url", miyu_config::Kind::Url),
@@ -198,7 +198,7 @@ pub const SOURCE_FEEDS: &[miyu_config::Item] = &[
     ),
 ];
 
-/// [`SOURCE_FEEDS`] 的一项：系统配置、个人设置都能写，「软件包」页「软件源」那一组。
+/// [`SOURCE_FEEDS`] 的一项：写在配置里，「软件包」页「软件源」那一组。
 const fn source_feed(key: &'static str, kind: miyu_config::Kind) -> miyu_config::Item {
     miyu_config::Item {
         key,
@@ -220,8 +220,8 @@ const fn source_feed(key: &'static str, kind: miyu_config::Kind) -> miyu_config:
 }
 
 /// 主人的平台账号（施工 O-3；以前叫主人对应表，`docs/blueprint/venues.md`）：`external.bindings.<external>`，键是通讯平台上的身份，
-/// 值不空就算主人本人（施工 SU-3 下：`external.me` 并进来；im 写 `owner`，老部署写的账号名照样算）。
-/// `settings!` 只认「段加字段名」，最后一段是占位的这一项手写。只能写在系统配置，当场生效：下一句就照新的认。
+/// 值不空就算主人本人（施工 SU-3 下：`external.me` 并进来；im 写 `owner`）。
+/// `settings!` 只认「段加字段名」，最后一段是占位的这一项手写。写在配置里，当场生效：下一句就照新的认。
 pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {
     key: "external.bindings.<external>",
     kind: miyu_config::Kind::Name,
@@ -241,7 +241,7 @@ pub const EXTERNAL_BINDINGS: &[miyu_config::Item] = &[miyu_config::Item {
 }];
 
 /// 家底刚造出来、还没换上全部的清单时认的几项（[`crate::Core::new`]）：界面、人格、预设、权限、终端、工具加载和脚本里能不能调、
-/// 功能开关、管理员放行出沙盒的（施工 X-36）、档案、外部身份。
+/// 功能开关、你放行出沙盒的（施工 X-36）、档案、外部身份。
 pub(crate) fn core_items() -> Vec<miyu_config::Item> {
     [
         UiSettings::ITEMS,

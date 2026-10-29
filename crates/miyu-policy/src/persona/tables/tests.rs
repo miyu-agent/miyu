@@ -6,7 +6,7 @@ use crate::persona::{PersonaFile, color, read_toml};
 
 #[test]
 fn the_knowledge_bases_narrow_and_an_upper_layer_wins() {
-    // 施工 K-1 下（19 N11）：列了的只查那几个，空的列表一个都不查，没写的查账号下的全部。
+    // 施工 K-1 下（19 N11）：列了的只查那几个，空的列表一个都不查，没写的查全部。
     let read = |text: &str| read_toml(text).unwrap().knowledge;
     assert_eq!(
         read("[knowledge]\nbases = [\"notes\", \"world-2\"]\n"),

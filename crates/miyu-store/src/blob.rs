@@ -1,6 +1,6 @@
 //! blob（`docs/designs/07-存储.md` 第五节）：图片、文件、超长的工具输出、策略快照这些大内容，按
-//! 内容哈希存成单独的文件，事件里只放引用（`03-事件模型.md` E4）。一个账号一份，不跨账号去重
-//! （S5）：`blobs/<前两位>/<64 位十六进制>`。
+//! 内容哈希存成单独的文件，事件里只放引用（`03-事件模型.md` E4）。数据根里一份：
+//! `blobs/<前两位>/<64 位十六进制>`。
 //!
 //! 存：先写进 `tmp/` 里的临时文件、同步，再改名成它的哈希、同步目录。返回时它已经落了盘，这才能
 //! 写引用它的事件（07 第四节「先落 blob，再写引用它的事件」）。改名是原子的，所以磁盘上不会有
@@ -30,7 +30,7 @@ const TMP: &str = "tmp";
 /// 分块上传的暂存文件名打头的几个字（施工 W-5）：和 [`temp_name`] 起的名字（纯数字加一个连字符）区分开。
 const UPLOAD: &str = "upload-";
 
-/// 一个账号的 blob。
+/// 数据根里的 blob。
 #[derive(Debug, Clone)]
 pub struct Blobs {
     /// `blobs/`。
@@ -38,7 +38,7 @@ pub struct Blobs {
 }
 
 impl Blobs {
-    /// 一个账号的 blob 目录，平时是 [`DataRoot::blobs`](crate::root::DataRoot::blobs)。用到时才建。
+    /// blob 目录，平时是 [`DataRoot::blobs`](crate::root::DataRoot::blobs)。用到时才建。
     pub fn new(dir: PathBuf) -> Blobs {
         Blobs { dir }
     }
@@ -236,8 +236,8 @@ impl Blobs {
         discard(path);
     }
 
-    /// 核心起来时清掉这个账号 `tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工 W-5，
-    /// `web-module.md`「怎么走」第六条第 6 款）。交回删了几个；`tmp/` 还没建过（这个账号还没传过东西）
+    /// 核心起来时清掉 `tmp/` 里分块上传留下的暂存：`upload-*`，崩了、被杀留下的（施工 W-5，
+    /// `web-module.md`「怎么走」第六条第 6 款）。交回删了几个；`tmp/` 还没建过（还没传过东西）
     /// 当没有，交回 0。单个文件删不掉的跳过，接着清别的，不整个停下。
     ///
     /// # Errors

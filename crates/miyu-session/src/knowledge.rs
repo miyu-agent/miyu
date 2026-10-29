@@ -1,7 +1,7 @@
 //! 她查知识库（施工 K-1 下，`docs/blueprint/knowledge.md`「怎么走」第六条）：查得到哪几个库、知识库的端口；她的 system 里
 //! 列出来的那一块（施工 K-1 补，「列出来的那一块」）；她写知识库在 `knowledge/write.rs`（施工 K-3，第七条）。
 //!
-//! 查记忆的账号下的全部库（`memory_account`：会话的属主，系统账号的照管理员，施工 Y-7），人格的 `persona.toml` 写了
+//! 查核心一份的全部库，人格的 `persona.toml` 写了
 //! `[knowledge] bases` 的只要列着的、在的那几个（19 N11）。照这一刻的目录和人格文件算：建了库、改了人格，下一次就照新的。
 //! 一个都查不到的会话工具面上没有两件工具（2026-10-12 项目主人定），回合开始照 [`Shelves::listed`] 再判一次。碰磁盘的在阻塞
 //! 线程里做。搜的时候照意思找（施工 K-2，`knowledge.md`「怎么走」第四条）：同记忆，问句照这一轮的配置算向量，搜完在后台补
@@ -38,8 +38,7 @@ pub(crate) struct Listed {
     description: String,
 }
 
-/// 造一个会话的 [`Shelves`] 要的（施工 K-2 起放进一格）：核心一份的知识库、人格和它的几层、会话的属主（远程算向量的花费记在
-/// 他名下）、这台机器的家目录（删的挪进它的回收站，施工 K-3）、核心一份的算向量的（施工 K-2，没有的只走关键词）。
+/// 造一个会话的 [`Shelves`] 要的（施工 K-2 起放进一格）：核心一份的知识库、人格和它的几层、这台机器的家目录（删的挪进它的回收站，施工 K-3）、核心一份的算向量的（施工 K-2，没有的只走关键词）。
 pub(crate) struct Shelving {
     pub(crate) knowledge: Arc<Knowledge>,
     pub(crate) persona: Option<String>,
@@ -50,7 +49,7 @@ pub(crate) struct Shelving {
     pub(crate) recall: Option<Arc<recall::RecallTexts>>,
 }
 
-/// 一个会话查知识库要的：照哪个账号查，和 [`Shelving`] 的那几样。
+/// 一个会话查知识库要的：[`Shelving`] 的那几样。
 pub(crate) struct Shelves {
     knowledge: Arc<Knowledge>,
     persona: Option<String>,
@@ -61,7 +60,7 @@ pub(crate) struct Shelves {
 }
 
 impl Shelves {
-    /// 会话的知识库：照记忆的账号 `account` 查。
+    /// 会话的知识库。
     pub(crate) fn new(shelving: Shelving) -> Shelves {
         let Shelving {
             knowledge,
@@ -81,14 +80,14 @@ impl Shelves {
         }
     }
 
-    /// 照这一轮的配置 `config` 算向量要的：远程的花费记在会话的属主名下（施工 K-2）。
+    /// 照这一轮的配置 `config` 算向量要的（施工 K-2）。
     pub(crate) fn using(&self, config: &TurnConfig) -> Using {
         Using {
             config: Arc::clone(config),
         }
     }
 
-    /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 收窄（查的账号照旧是属主的，施工 Y-7）。碰磁盘，在阻塞线程里调。
+    /// 换了人格（施工 P-13）：同一个会话照人格 `persona` 收窄。碰磁盘，在阻塞线程里调。
     pub(crate) fn recast(&self, persona: Option<String>) -> Shelves {
         Shelves {
             knowledge: Arc::clone(&self.knowledge),
@@ -100,7 +99,7 @@ impl Shelves {
         }
     }
 
-    /// 载入的会话的知识库：记忆的账号照属主算（`Personas::memory_account`，施工 Y-7），人格照它收窄（碰磁盘，在阻塞线程里）。
+    /// 载入的会话的知识库：人格照它收窄（碰磁盘，在阻塞线程里）。
     pub(crate) async fn loaded(shelving: Shelving) -> Arc<Shelves> {
         blocking(move || Arc::new(Shelves::new(shelving))).await
     }
@@ -121,7 +120,7 @@ impl Shelves {
         }
     }
 
-    /// 她这一刻查得到的库：账号下在的，照编号排；人格收窄的只留列着的、在的那几个，照列的先后。人格的文件没了的（会话照
+    /// 她这一刻查得到的库：在的，照编号排；人格收窄的只留列着的、在的那几个，照列的先后。人格的文件没了的（会话照
     /// 快照接着用）当没收窄。
     ///
     /// # Errors
@@ -232,7 +231,7 @@ pub(crate) fn listing(
 }
 
 /// 交给几件工具的端口：每次调用造一个，照这一刻算查得到哪几个；照意思找照这一轮的配置 `config`（`models.embedding`，
-/// 施工 K-2），远程的花费记在会话的属主名下。核心没交知识库的会话没有。
+/// 施工 K-2）。核心没交知识库的会话没有。
 pub(crate) fn port(
     shelves: Option<&Arc<Shelves>>,
     config: &TurnConfig,

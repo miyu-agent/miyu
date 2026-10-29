@@ -1,4 +1,4 @@
-//! 经协议记下的她自己（施工 Y-7 起照账号分间；施工 SU-4 中起只剩主人一间）：照人的写法记的还是一段经过。真的会话表、脚本模型。
+//! 经协议记下的她自己：照人的写法记的还是一段经过。真的会话表、脚本模型。
 
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ use miyu_tool::Catalog;
 use crate::Core;
 use crate::test_support::{TempDir, resources, temp_root};
 
-/// 机主是 alice 的核心，照 `script` 答；装了样本人格（主人家目录）、整理会话。交回数据根的目录（丢掉时删掉，放在前头：核心先丢）
+/// 一份核心，照 `script` 答；装了样本人格、整理会话。交回数据根的目录（丢掉时删掉，放在前头：核心先丢）
 /// 和核心。
 fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
     let (root, dir) = temp_root(name);
@@ -32,7 +32,7 @@ fn core(name: &str, script: &Script) -> (TempDir, Arc<Core>) {
     (dir, core)
 }
 
-/// 照账号 `who` 调一条 `memory.*`。
+/// 调一条 `memory.*`。
 async fn call(core: &Arc<Core>, id: &str, method: &str, params: Value) -> Value {
     let id = CommandId::parse(id).expect("合写法");
     super::super::call(core, method, &id, &params)

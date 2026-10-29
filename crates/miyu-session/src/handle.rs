@@ -225,7 +225,7 @@ impl Handle {
         &self.id
     }
 
-    /// 这个会话的默认工作区（施工 5-14 中）：头照它认「默认工作区」，`session.set_workspace` 交账号的工作区本身时换成它。
+    /// 这个会话的默认工作区（施工 5-14 中）：头照它认「默认工作区」，`session.set_workspace` 交数据根的工作区 `workspace/` 本身时换成它。
     pub fn default_workspace(&self) -> &Path {
         &self.workspace
     }

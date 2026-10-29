@@ -61,7 +61,7 @@ impl Default for Timing {
 /// 怎么拉起一个包。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Plan {
-    /// 运行日志里写的：一份的是包的编号，每人一份的带上账号（[`super::Instance::label`]）。
+    /// 运行日志里写的：包的编号（[`super::Instance::label`]）。
     pub(super) id: String,
     /// 哪一份（施工 IM-1 中）：连进来时照它认是谁。
     pub(super) instance: super::Instance,
@@ -75,7 +75,7 @@ pub(super) struct Plan {
     pub(super) home: PathBuf,
     /// 核心手上的资源目录：拉起时设成 `MIYU_RESOURCES`（施工 O-18）。
     pub(super) resources: PathBuf,
-    /// 这个包的文件夹（清单所在的那一层，出厂的在资源目录、自己装的在家目录）：拉起时设成 `MIYU_PACKAGE_DIR`（施工 S-6 上，
+    /// 这个包的文件夹（清单所在的那一层，出厂的在资源目录、自己装的在数据根的 `packages/`）：拉起时设成 `MIYU_PACKAGE_DIR`（施工 S-6 上，
     /// `extensions.md`「怎么走」第 1 条）。
     pub(super) package: PathBuf,
     /// 标准错误接到哪个文件。
@@ -279,7 +279,7 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
     let errors = stderr::open(&plan.log)?;
     let mut command = plan.launch.command();
     // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
-    // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼家目录的布局（施工 S-6 上）；状态目录的真实位置照
+    // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；状态目录的真实位置照
     // `MIYU_PACKAGE_STATE` 给，工作目录照旧也是它（施工 F-15，2026-10-20 项目主人定：作者说明改成以变量为准）。
     command
         .args(&plan.args)

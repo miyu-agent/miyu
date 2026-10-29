@@ -1,6 +1,6 @@
 //! seccomp（施工 MB-1，2026-10-24 主会话定）：内核的 Landlock 管不住连 Unix 套接字（第 9 版起才管得住连路径上的）、抽象
 //! 套接字（第 6 版起）的机器上，关起来的会话（规格写了 `read`）的命令不准新建 AF_UNIX 套接字：`socket(AF_UNIX, …)` 回
-//! `EACCES`。路径上的、抽象的都连不上：机主的 D-Bus 会话总线、Docker、ssh-agent 这类能替命令在沙盒外读写的系统服务挡住。
+//! `EACCES`。路径上的、抽象的都连不上：跑核心的用户的 D-Bus 会话总线、Docker、ssh-agent 这类能替命令在沙盒外读写的系统服务挡住。
 //! `socketpair` 照放（Python 的多进程、node 的管道要它，连不到外面）。域名解析照常：nss 连 systemd-resolved 的套接字连不上，
 //! 回退到 DNS。
 //!

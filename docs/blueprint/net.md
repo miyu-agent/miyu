@@ -15,7 +15,7 @@
 | `crates/miyu-net/`（第 3 层，执行器） | 地址闸、钉住解析好的地址、代理、自己跟跳转、读到 `</head>`、挖元数据、认图 |
 | `crates/miyu-net/src/lib.rs` | `LinkPreview`：懒读规矩、记着抓过的、图存成 blob、交回卡片 |
 | `crates/miyu-net/src/rules.rs` | 读 `link_preview.json` |
-| `crates/miyu-http/src/guard.rs`（施工 U23 下下从 `miyu-net` 挪下来） | 地址闸三层：样子、解析、IP 段；只连公网的下载（`miyu-http` 的 `guarded.rs`）也照它，规矩只有一份 |
+| `crates/miyu-http/src/guard.rs`（施工 U23 下下从 `miyu-net` 挪下来） | 地址闸三层：样子、解析、IP 段 |
 | `crates/miyu-http/src/proxy.rs`（同上） | 这一跳走不走代理：照环境变量，和请求模型同一套读法 |
 | `crates/miyu-net/src/fetch.rs`、`fetch/clients.rs` | 一跳一跳地抓：每一跳过闸、钉地址或者交给代理、自己跟跳转；客户端复用 |
 | `crates/miyu-net/src/body.rs` | 读到 `</head>` 或者 `<body` 为止，YouTube 读到要的几样都有为止；读一张图、一份接口的回应；照开头的魔数认图 |

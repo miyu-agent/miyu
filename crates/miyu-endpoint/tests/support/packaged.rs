@@ -29,7 +29,7 @@ pub fn core(home: &Home) -> Arc<Core> {
     )
 }
 
-/// 装着的样本包的编号：要「下面一层」的测试把人格、预设放进它（施工 SU-3 下：系统区那一层拿掉以后，下面一层只剩出厂的、包带的）。
+/// 装着的样本包的编号：要「下面一层」的测试把人格、预设放进它（施工 SU-3 下：下面一层只有出厂的、包带的）。
 pub const SAMPLES: &str = "samples";
 
 /// 写一个装着的样本包 [`SAMPLES`]（只有清单），交回它的文件夹；人格、预设照 `personas/<编号>/`、`presets/<编号>.toml` 往里放。
@@ -42,7 +42,7 @@ pub fn samples(home: &Home) -> std::path::PathBuf {
     home.root.path().join("packages").join(SAMPLES)
 }
 
-/// 样本人格从主人家目录挪进样本包：`engineer` 成了下面那一层，家目录里没有它。
+/// 样本人格从数据根挪进样本包：`engineer` 成了下面那一层，家目录里没有它。
 pub fn sample_persona_below(home: &Home) {
     let dir = samples(home).join("personas");
     std::fs::create_dir_all(&dir).expect("建得了");

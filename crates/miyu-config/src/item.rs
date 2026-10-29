@@ -49,7 +49,7 @@ impl Item {
 /// 一层配置：一个值从哪来（`14-配置.md` 第三节）。照从下往上的先后排：上面的盖掉下面的。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Layer {
-    /// 系统配置 `config.toml`：主人写（施工 SU-3 上起个人设置并进来，只剩这一层）。
+    /// 配置 `config.toml`：主人写（协议上叫 `system`）。
     System,
     /// 项目配置：仓库里的 `.miyu/config.toml`，信任过才算，只认收紧的（施工 8-2）。
     Project,

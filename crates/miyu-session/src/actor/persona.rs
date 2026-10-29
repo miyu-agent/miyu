@@ -58,7 +58,7 @@ pub(crate) struct Refresh {
     pub(crate) skills: Option<crate::skills::Watch>,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，换预设时要图的包照旧扣下。
     pub(crate) images: bool,
-    /// 属主的项目文件（施工 H-3，`miyu_store::projects`）：回合开始照会话现在在哪个项目找附加提示词。
+    /// 项目文件（施工 H-3，`miyu_store::projects`）：回合开始照会话现在在哪个项目找附加提示词。
     pub(crate) projects: std::path::PathBuf,
     /// 记忆放在哪一间（施工 P-13）：和 [`crate::Handle`] 共用，换人格时跟着换。
     pub(crate) room: crate::memory::RoomCell,
@@ -112,7 +112,7 @@ impl Actor {
         // 会话现在在哪个项目（施工 H-3）：附加提示词照它找。人中途换的人格、预设（施工 P-13）。
         let project = self.session.project().map(str::to_string);
         let wanted = Wanted::of(&self.session, &refresh.snapshot, refresh.child);
-        // 属主的覆盖、人格、预设那几棵树改过的（施工 OV-1 下）：只比号，变了照现在的文件重拼。
+        // 覆盖、人格、预设那几棵树改过的（施工 OV-1 下）：只比号，变了照现在的文件重拼。
         let edits = refresh.presets.as_ref().map_or(0, PresetPlaces::edits);
         let prefix = Arc::clone(&refresh.prefix);
         let edited = edits > prefix.seen();

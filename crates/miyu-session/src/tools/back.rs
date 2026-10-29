@@ -24,9 +24,9 @@ use crate::unsandboxed::Grant;
 pub(crate) enum Wrap {
     /// 套。
     Sandbox,
-    /// 不套：工具报要在沙盒外跑的（权限策略照同一个报判过了），管理员放行了的、不是一个文件的工具。
+    /// 不套：工具报要在沙盒外跑的（权限策略照同一个报判过了），主人放行了的、不是一个文件的工具。
     Bare,
-    /// 管理员放行了的、带文件的工具：文件（真实的位置）落在这一次沙盒的规格写得了的地方（`write`）的照旧套，不在的不套。权限
+    /// 主人放行了的、带文件的工具：文件（真实的位置）落在这一次沙盒的规格写得了的地方（`write`）的照旧套，不在的不套。权限
     /// 策略照它的边界表判过同一条（`guard/unsandboxed.rs`）。
     BareUnlessWritable(PathBuf),
 }
@@ -118,12 +118,12 @@ impl Tools {
         }
     }
 
-    /// 换上这一轮管理员放行出沙盒的（施工 X-36）：之后派的调用照新的写不写沙盒的规格。
+    /// 换上这一轮主人放行出沙盒的（施工 X-36）：之后派的调用照新的写不写沙盒的规格。
     pub(crate) fn set_unsandboxed(&mut self, unsandboxed: crate::unsandboxed::Unsandboxed) {
         self.unsandboxed = unsandboxed;
     }
 
-    /// 这一次怎么套沙盒：工具报要在沙盒外跑的（施工 D-4）、管理员放行了的（施工 X-36）不套；放行了的带文件的，文件落在这一次
+    /// 这一次怎么套沙盒：工具报要在沙盒外跑的（施工 D-4）、主人放行了的（施工 X-36）不套；放行了的带文件的，文件落在这一次
     /// 沙盒写得了的地方的照旧套（施工 X-37 补，[`Wrap::BareUnlessWritable`]）。
     pub(crate) fn wrap(
         &self,

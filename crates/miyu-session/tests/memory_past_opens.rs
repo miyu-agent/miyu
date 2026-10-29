@@ -55,7 +55,7 @@ fn last_result(log: &[Event]) -> String {
 }
 
 /// 主线、分叉出来的支线各说一轮，新开的本机会话里搜：主线那一段带编号（`history` 读得到），支线那一段不带、什么场所都不加
-/// （本机的）。回合库记下两个会话的属主和是不是主会话。
+/// （本机的）。回合库记下两个会话是不是主会话。
 #[tokio::test]
 async fn a_lane_found_in_another_session_has_no_id() {
     let home = Home::new();
@@ -145,8 +145,7 @@ async fn a_lane_found_in_another_session_has_no_id() {
     stop(&asker).await;
 }
 
-/// 照回合库判（不经会话）：本机的主会话打得开；场所会话、支线打不开（施工 SU-6 上：原来靠属主不一样挡住场所会话，属主没了
-/// 照场所挡）；回合库没记过从哪来的（接上回合索引以前的库）照场所判，本机的当打得开、场所的打不开；不是会话里她在搜的（协议
+/// 照回合库判（不经会话）：本机的主会话打得开；场所会话、支线打不开（施工 SU-6 上：照场所挡）；回合库没记过从哪来的（接上回合索引以前的库）照场所判，本机的当打得开、场所的打不开；不是会话里她在搜的（协议
 /// 搜的）一律不算打得开。
 #[tokio::test]
 async fn whether_she_can_open_it_follows_main_and_place() {
@@ -220,7 +219,7 @@ async fn whether_she_can_open_it_follows_main_and_place() {
     assert_eq!(opened(false), nobody, "不是她在搜的一律打不开");
 }
 
-/// 关在沙盒里的群会话搜到主人本机会话里的一段，不给编号（施工 SU-4 中核过：场所会话也归主人、属主一样，群里没有读别的会话
+/// 关在沙盒里的群会话搜到主人本机会话里的一段，不给编号（施工 SU-4 中核过：群里没有读别的会话
 /// 的端口，工具照它不给）。
 #[tokio::test]
 async fn a_confined_group_gets_no_id_for_the_owner_s_chat() {

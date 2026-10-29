@@ -174,8 +174,8 @@ fn a_helper_with_mechanisms_is_handed_on() {
     assert!(others, "管得住套接字");
 }
 
-/// 沙盒能用、关起来的会话的 Unix 套接字却管不住的（施工 MB-1：内核的 Landlock 太老、又没有 seccomp）：照样能用（管理员本人的
-/// 会话照跑），成员的、场所的会话不跑命令，记一行 `WARN`，好查谁的成员为什么跑不了。
+/// 沙盒能用、关起来的会话的 Unix 套接字却管不住的（施工 MB-1：内核的 Landlock 太老、又没有 seccomp）：照样能用（主人本人的
+/// 会话照跑），关起来的场所会话不跑命令，记一行 `WARN`，好查群里为什么跑不了。
 #[cfg(target_os = "linux")]
 #[test]
 fn a_sandbox_that_cannot_confine_sockets_is_logged_and_keeps_others_off() {

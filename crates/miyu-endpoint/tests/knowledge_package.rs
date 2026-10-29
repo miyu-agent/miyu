@@ -1,5 +1,5 @@
 //! 软件包带来的知识库（施工 K-8，`docs/blueprint/knowledge.md`「对外的样子」包带来的那一节）：真核心装上一个带 `kb/world/`
-//! 的包，`kb.list` 当场有它、带 `package`，搜得到；改名字、说明、删拒 `kb_packaged`，只改自动想起的照改、记在账号自己的
+//! 的包，`kb.list` 当场有它、带 `package`，搜得到；改名字、说明、删拒 `kb_packaged`，只改自动想起的照改、记在数据根的
 //! `kb.toml`；要建同编号的拒 `kb_exists`。卸掉以后列表里没了，索引、开关一起清掉。核心起来时照核对过的清单：没收的包不带库。
 
 use std::path::PathBuf;

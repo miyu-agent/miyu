@@ -1,4 +1,4 @@
-//! 装、卸软件包（施工 F-5 上，`docs/blueprint/packages.md`「装卸」）：真核心走一遍。装进管理员家目录那一层，整个包文件夹拷进去
+//! 装、卸软件包（施工 F-5 上，`docs/blueprint/packages.md`「装卸」）：真核心走一遍。装进你装的那一层（`packages/`），整个包文件夹拷进去
 //! （施工 F-8 上：一个文件夹就是一个包）；
 //! 写错的、和出厂的撞了的、和别的包撞了的不装、什么都不留；升级换掉；卸家目录的删掉；卸出厂的记一笔、列表里标卸掉、装得回来；
 //! 必需的、没装的不能卸。装卸以后 `package.list`、预设的功能当场照新的。
@@ -32,7 +32,7 @@ fn source(home: &Home, id: &str, text: &str) -> PathBuf {
     folder
 }
 
-/// 管理员家目录那一层里的这个文件。
+/// 你装的那一层里的这个文件。
 fn mine(home: &Home, relative: &str) -> PathBuf {
     home.root.path().join("packages").join(relative)
 }

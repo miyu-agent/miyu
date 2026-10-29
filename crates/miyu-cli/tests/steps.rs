@@ -116,7 +116,7 @@ async fn a_directory_too_wide_is_said_first_and_once() {
         })
         .await;
     assert_eq!(code, 0, "{err}");
-    // 这个核心读不出家目录：`~` 说不清在哪，退回这个会话自己的默认工作区（施工 5-14），账号的工作区下面只有它一个。
+    // 这个核心读不出家目录：`~` 说不清在哪，退回这个会话自己的默认工作区（施工 5-14），数据根的工作区下面只有它一个。
     let workspace = home.root.workspace();
     let own: Vec<_> = std::fs::read_dir(&workspace)
         .expect("读得了")

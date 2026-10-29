@@ -1,4 +1,4 @@
-//! 工具交回的图片（施工 4-13，`docs/blueprint/session/tools.md`「效果存成 blob」）：存成属主的 blob，换成内核的
+//! 工具交回的图片（施工 4-13，`docs/blueprint/session/tools.md`「效果存成 blob」）：存成 blob，换成内核的
 //! 图片块，照先后接在内容块后面。
 
 use miyu_kernel::block::{Block, Image};

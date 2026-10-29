@@ -28,7 +28,7 @@ impl Open {
                 cwd: running.workspace.clone(),
             });
         }
-        // 照属主的家目录找（施工 O-4 上）：哪个账号的家目录下都没有的是没有这个会话。
+        // 数据根下没有的是没有这个会话（施工 O-4 上）。
         if !super::stored(core, id).await {
             return Err(Refusal::NOT_FOUND);
         };
@@ -42,7 +42,7 @@ impl Open {
         });
         // 关没关在沙盒里照日志第一条（施工 SU-4 中），软件包的端口照它裁（施工 SU-4 下）。
         let confined = super::confined_of(core, id).await;
-        // 属主写的提示词覆盖（施工 OV-1 中）。
+        // 你写的提示词覆盖（施工 OV-1 中）。
         let resources = crate::presets::overrides::resources(core);
         let loaded = load_placed(Load {
             root: &core.root,

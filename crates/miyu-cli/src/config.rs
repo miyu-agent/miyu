@@ -120,7 +120,7 @@ pub enum ConfigCommand {
 /// 只改、只开哪一份（`edit`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Only {
-    /// 系统配置（施工 SU-3 上：个人设置并进来了）。
+    /// 配置 `config.toml`。
     System,
     /// 项目配置。
     Project,

@@ -1,7 +1,7 @@
 //! 派子代理，执行器这一头（`docs/blueprint/agents.md` 第一条，`session/tools.md`「派子代理」，施工 7-5）：照父会话这一刻的
 //! 样子填好一个子会话，经会话表的端口（[`SessionPort`]）造出来，再把交代作为父会话发来的话送进去，开它的第一轮。
 //!
-//! 一个会话一份 [`Agents`]：属主、场所、第几层、父会话、有没有人能确认，造会话、载入时定。每一次调用照这一轮的工作目录、
+//! 一个会话一份 [`Agents`]：场所、第几层、父会话、有没有人能确认，造会话、载入时定。每一次调用照这一轮的工作目录、
 //! 加进来的目录、派出去那一刻的权限造一个端口交给工具（[`Agents::for_call`]），编号从会话共用的那一串里领；父子之间留言的
 //! 端口也照它造（`crate::messages`，施工 7-7）。
 //!
@@ -117,7 +117,7 @@ pub(crate) struct Offers {
     pub(crate) personas: Vec<Choice>,
     /// 脚本里能不能调，人改的那一层（施工 M-2）。
     pub(crate) clicall: Loading,
-    /// 属主写的工具说明的覆盖（施工 OV-1 上）：工具名到叠好的那一份；没写的没有。
+    /// 主人写的工具说明的覆盖（施工 OV-1 上）：工具名到叠好的那一份；没写的没有。
     pub(crate) overrides: Arc<BTreeMap<String, ToolOverride>>,
 }
 
@@ -132,7 +132,7 @@ impl Offers {
         }
     }
 
-    /// 带上属主写的工具说明的覆盖（施工 OV-1 上）。
+    /// 带上主人写的工具说明的覆盖（施工 OV-1 上）。
     #[must_use]
     pub(crate) fn overriding(mut self, overrides: Arc<BTreeMap<String, ToolOverride>>) -> Offers {
         self.overrides = overrides;
@@ -197,7 +197,7 @@ impl Agents {
     /// 造会话时定的工具面（施工 7-5、7-7、C-3、C-5）：目录里每件工具的规格换成快照里的写法。不能派子代理的会话不给
     /// `subagent`；场所会话（群）不给 `send_message`：它没有父，也派不了子代理，给了只会被 `not-here.txt` 拒。到了
     /// 深度上限的子会话照样有 `send_message`，能发给父、能发给别的会话，只是不能派子代理。只有本机的主会话有 `sessions`
-    /// （[`Agents::lists_sessions`]）。`session_usage` 只给本机的会话（施工 8-15）：群里的人不可信，花了多少钱是属主的事。
+    /// （[`Agents::lists_sessions`]）。`session_usage` 只给本机的会话（施工 8-15）：群里的人不可信，花了多少钱是主人的事。
     /// 工具面造会话时定，一个会话里不变，给了只会被拒的不给（`agents.md` 第一条第 6 条）。
     /// `subagent` 的 `pool` 照这时的配置 `values` 填上能选的池（施工 8-8 补：`miyu_models::pools::offered`，一个都没有的拿掉
     /// 这个参数）；`persona` 照 `offers` 填上这台机器上有的人格（施工 P-2 补）。`ask_user` 只给能问人的会话（[`Agents::asks`]，施工 D-2）。`todowrite` 只给本机的会话（施工 D-3）：群里没人
@@ -297,7 +297,7 @@ impl Agents {
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),
                 };
-                // 属主写的覆盖（施工 OV-1 上）：换不进的（参数格式里没有那个参数）照出厂的，记一行。
+                // 主人写的覆盖（施工 OV-1 上）：换不进的（参数格式里没有那个参数）照出厂的，记一行。
                 if let Some(written) = offers.overrides.get(&spec.name)
                     && let Err(why) = written.apply(&mut entry)
                 {

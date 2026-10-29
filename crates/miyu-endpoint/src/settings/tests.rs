@@ -31,7 +31,7 @@ fn a_chosen_language_wins_over_the_system() {
     assert_eq!(chosen("en").language_for(Some("ja_JP.UTF-8")), "en");
 }
 
-/// 主人的平台账号在起来时就认的那几项里，写在系统配置；`external.me` 并进来了（施工 SU-3 下）。
+/// 主人的平台账号在起来时就认的那几项里，写在配置里；`external.me` 并进来了（施工 SU-3 下）。
 #[test]
 fn owner_platform_numbers_are_a_setting_known_from_the_start() {
     let items = super::core_items();

@@ -251,7 +251,7 @@ impl Home {
             .to_string()
     }
 
-    /// 管理员的会话，从新到旧。
+    /// 数据根里的会话，从新到旧。
     pub fn sessions(&self) -> Vec<SessionId> {
         self.root.sessions().expect("列得出")
     }
@@ -368,7 +368,7 @@ fn temp_root() -> (PathBuf, DataRoot) {
     })
     .expect("MIYU_HOME 是绝对路径");
     root.prepare().expect("临时目录里建得了骨架");
-    // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进主人的家目录，测试照旧用 `engineer`。
+    // 出厂不带人格（施工 P-4 下）：样本的软件工程师装进数据根，测试照旧用 `engineer`。
     miyu_session::testkit::install_sample_persona(&root);
     (dir, root)
 }

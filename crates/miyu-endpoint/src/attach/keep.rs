@@ -1,5 +1,5 @@
 //! 没有本机路径的附件落成会话里的文件（施工 3-9 六补，`docs/blueprint/protocol.md`「`session.send`」第 5 条）：剪贴板贴的、
-//! 截图、远程的头传内容的，块里没有 `path`；核心照会话的属主读 blob，存进会话目录的 `attachments/`
+//! 截图、远程的头传内容的，块里没有 `path`；核心读 blob，存进会话目录的 `attachments/`
 //! （[`miyu_store::attachments`]），把路径填回块里。记进日志的块带着路径，以后每次请求照它拼，字节不变。
 //! 头交了路径的（本机文件）不拷：她读原文件，照权限判。
 
@@ -12,8 +12,8 @@ use super::{TARGET, blocking, place, read_blob};
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 把 `blocks` 里没有路径的图片、文件存进会话 `session`（属主 `owner`）的附件目录，路径填回块里。blob 照属主读（施工 SU-4 下起
-/// 只有主人一个存处）。读不了、存不下的记一行、`internal_error`。
+/// 把 `blocks` 里没有路径的图片、文件存进会话 `session` 的附件目录，路径填回块里。blob 从唯一的存处读（施工 SU-4 下）。
+/// 读不了、存不下的记一行、`internal_error`。
 pub(crate) async fn keep(
     core: &Core,
     session: &SessionId,

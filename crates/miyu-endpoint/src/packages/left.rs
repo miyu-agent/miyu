@@ -113,7 +113,7 @@ pub(super) fn back(core: &Core, id: &str) -> impl FnOnce() + Send + 'static {
 }
 
 /// `miyu check` 的提示（施工 P-11 下）：记着的、包没装着、家目录里还有的人格、预设，一条一个，`persona_left`、
-/// `preset_left`，`file` 是那一份改动在哪（主人家目录里）。
+/// `preset_left`，`file` 是那一份改动在哪（数据根里）。
 pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
     let (personas, presets) = (
         crate::personas::personas(core),

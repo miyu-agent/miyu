@@ -14,7 +14,7 @@ use miyu_session::testkit::Script;
 use crate::support::mcp::*;
 use crate::support::*;
 
-/// 一份核心，看着配置、起了扩展、跟着个人设置（密钥变了重起、删了服务清掉都在这一路上）；交回核心、连好的头，和要留着的两样。
+/// 一份核心，看着配置、起了扩展、跟着配置（密钥变了重起、删了服务清掉都在这一路上）；交回核心、连好的头，和要留着的两样。
 async fn running(home: &Home) -> (Arc<miyu_endpoint::Core>, Client, Box<dyn std::any::Any>) {
     running_with(home, &Script::new([])).await
 }
@@ -34,7 +34,7 @@ pub(crate) async fn running_with(
     (core, client, Box::new((watching, following)))
 }
 
-/// 个人设置写一张要登录的服务 `notes`，核心起好、连好头，等到它停在 `needs_login`。
+/// 配置写一张要登录的服务 `notes`，核心起好、连好头，等到它停在 `needs_login`。
 async fn waiting_for_login(
     home: &Home,
     server: &HttpServer,

@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 /// Linux（有 bubblewrap 的挂载盖住，只有 Landlock 的照 dsh）、macOS（Seatbelt 的拒绝规则）上不算。
 const HOME_IS_WIDE: bool = cfg!(windows);
 
-/// 真实的位置 `dir` 太不太宽，不能拿它当工作区（施工 5-14 改）：根目录，落在数据根 `data_root` 里而不在账号自己的工作区 `own`
+/// 真实的位置 `dir` 太不太宽，不能拿它当工作区（施工 5-14 改）：根目录，落在数据根 `data_root` 里而不在数据根的工作区 `own`
 /// 里的；Windows 上照 [`broad`]。几样都要先换成真实的位置再交进来。
 pub fn too_wide(dir: &Path, home: Option<&Path>, data_root: &Path, own: &Path) -> bool {
     if HOME_IS_WIDE {
@@ -20,7 +20,7 @@ pub fn too_wide(dir: &Path, home: Option<&Path>, data_root: &Path, own: &Path) -
     dir.parent().is_none() || (dir.starts_with(data_root) && !dir.starts_with(own))
 }
 
-/// 宽（施工 4-3 下）：是家目录 `home`、是根目录，包含数据根 `data_root`，或者落在数据根里而不在账号自己的工作区 `own` 里。
+/// 宽（施工 4-3 下）：是家目录 `home`、是根目录，包含数据根 `data_root`，或者落在数据根里而不在数据根的工作区 `own` 里。
 /// 加进来的目录、场所会话的工作目录照它（施工 5-14 改：这两样照旧）。几样都要先换成真实的位置再交进来。
 pub fn broad(dir: &Path, home: Option<&Path>, data_root: &Path, own: &Path) -> bool {
     home == Some(dir)

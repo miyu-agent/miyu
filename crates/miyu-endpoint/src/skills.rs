@@ -1,11 +1,11 @@
 //! `skill.list`（施工 X-26，`docs/blueprint/skills.md`「技能」，网页设置页「技能」那一页）：列出核心这一刻用得上的技能。
 //!
-//! 找法同造会话（`miyu_store::skills::find`）：管理员家目录里放的、装了的软件包带的，同名的照技能的先后规矩只留核心实际用的
+//! 找法同造会话（`miyu_store::skills::find`）：数据根里放的、装了的软件包带的，同名的照技能的先后规矩只留核心实际用的
 //! 那一份（自己放的赢，包之间出厂的先于家目录、同一层照编号），照名字排。一项：
 //!
 //! - `name`；`display_name`、`summary` 照连接的语言挑（同 `package.list`，这种语言没写的照英文、中文、日文的先后），一种都没写的
 //!   不带；
-//! - `from`：`home`（管理员自己放的）、`shipped`（出厂的包带的）、`package`（管理员装的包带的）、`agents`（别家共用的
+//! - `from`：`home`（你自己放的）、`shipped`（出厂的包带的）、`package`（你装的包带的）、`agents`（别家共用的
 //!   `~/.agents/skills/` 里的，施工 PT-2 中）；随包来的另带 `package` 编号；
 //! - `path`：`SKILL.md` 在哪，给人看的写法（家目录下的写成 `~/…`）；
 //! - `on`：技能、脚本、MCP 三页的全局开关这时开不开（施工 X-27，`features.skill-<名字>`），没写的算开；
@@ -35,8 +35,7 @@ pub(crate) fn external(core: &Core) -> Vec<External> {
     miyu_store::skills::external::of(&core.config().resolved().values(), core.home.as_deref())
 }
 
-/// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是调用者 `account` 自己放技能的文件夹（施工 X-27 补；施工 Y-2 中上
-/// 起照连接的账号：自己的、系统区的、包里的，原来是管理员的）。
+/// `skill.list`：`{"skills": [...], "dir"}`，照名字排；`dir` 是你自己放技能的文件夹（施工 X-27 补）。
 ///
 /// # Errors
 ///

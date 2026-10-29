@@ -1,5 +1,5 @@
 //! 场所会话与外部身份（施工 O-3，`docs/blueprint/venues.md`）：主人对应表认出私聊里的本人；`venue.session` 造、找回（核心重启
-//! 以后照样）、参数不对、不是平台桥的回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）；`as` 记成本人（带 `via`）或者外部身份（带 `account`、`role`）；
+//! 以后照样）、参数不对、不是平台桥的回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）；`as` 记成本人（带 `via`）或者外部身份（带 `owner`、`role`）；
 //! 本机的会话不收 `as`，场所会话只收带 `as` 的；场所会话不进 `session.list`、会话列表的推送；同一个命令编号再发只生效一次。
 
 use std::time::Duration;

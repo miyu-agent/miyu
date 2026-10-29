@@ -89,9 +89,9 @@ miyu_config::settings! {
 }
 
 miyu_config::settings! {
-    /// 内部域名（施工 MB-2，设计 06 U25 第 2 条，项目主人 2026-10-22 定）：别人（成员、场所里的人）让她上网时一律不去。
+    /// 内部域名（施工 MB-2，项目主人 2026-10-22 定）：别人（场所里的人）让她上网时一律不去。
     pub struct NetSettings in "net" {
-        /// 写了的域名和它的子域名，不管解析成什么地址、走不走代理；管理员自己不受影响。例如 `example-corp.com`。
+        /// 写了的域名和它的子域名，不管解析成什么地址、走不走代理；主人自己不受影响。例如 `example-corp.com`。
         internal_domains: Option<Vec<String>> = none {
             kind: texts [253],
             layers: [System],

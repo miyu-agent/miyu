@@ -1,5 +1,5 @@
 //! 人点名用技能（施工 PT-2 下，`docs/blueprint/skills.md`「人点名用」）：`/技能名 参数`，登记表、模板、扩展声明的都没有这个
-//! 名字时，照会话属主找得到的技能认（找法同造会话，`miyu_store::skills::find`）。读那份 `SKILL.md`，去掉开头，套一层
+//! 名字时，照找得到的技能认（找法同造会话，`miyu_store::skills::find`）。读那份 `SKILL.md`，去掉开头，套一层
 //! `<skill name=… path=…>` 外壳，人写了参数的再跟一行 `ARGUMENTS: …`，当这个人说的一句发出去（同模板命令，时间线上是人敲的
 //! 那一行）。外壳的字在资源目录的 `core/skills/invoked-*.txt`，名字、路径、参数照模板转义；正文原样，同她自己读那份文件。
 //!
@@ -28,7 +28,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
-/// 账号 `owner` 能点名用的技能（`user-invocable` 不是 `false` 的），照名字排。
+/// 能点名用的技能（`user-invocable` 不是 `false` 的），照名字排。
 pub(super) async fn found(core: &Core) -> Vec<Skill> {
     let (packages, root) = (core.packages_of(), core.root.clone());
     let external = crate::skills::external(core);

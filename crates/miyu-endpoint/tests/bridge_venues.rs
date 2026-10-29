@@ -1,6 +1,6 @@
-//! 平台桥和场所会话（施工 O-4 下起；施工 SU-4 中：包不再各有一个账号）：核心拉起的、清单写了平台的包是桥；它开的群会话在主人
-//! 名下、关起来（`session.created` 的 `confined`），找回照「场所加关不关」，回应不带属主；对应表里的主人在群里说话照旧是外部身份；
-//! 用量、回合库都在主人名下；主人的私聊不关，桥照样能对它说话；人的头碰不到关着的群会话、碰得到主人的私聊，桥碰不到本机的会话；
+//! 平台桥和场所会话（施工 O-4 下起；施工 SU-4 中）：核心拉起的、清单写了平台的包是桥；它开的群会话
+//! 关起来（`session.created` 的 `confined`），找回照「场所加关不关」；对应表里的主人在群里说话照旧是外部身份；
+//! 用量、回合库都照记；主人的私聊不关，桥照样能对它说话；人的头碰不到关着的群会话、碰得到主人的私聊，桥碰不到本机的会话；
 //! 桥只能写自己的包那一段的 `ext.*`。
 
 use std::path::Path;
@@ -91,7 +91,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     let made = snapshot(&home, &groups);
     assert!(made.group.is_some(), "群会话钉下时区");
     assert!(made.system.contains(note.trim_end()));
-    // 对应表认出的主人在群里说的照旧是外部身份带账号，不是本人（`as` 照关不关比，施工 SU-4 中）。
+    // 对应表认出的主人在群里说的照旧是外部身份带 `owner`，不是本人（`as` 照关不关比，施工 SU-4 中）。
     let owner_said = read_events(&groups)
         .expect("读得了")
         .into_iter()
@@ -104,7 +104,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
     );
 
     until_turns_in(&groups, 1).await;
-    // 会话落盘时就写：索引在主人的家目录下；用量记在主人名下（查之前，不靠 `usage.query` 补）。
+    // 会话落盘时就写：索引在数据根下；用量也记下（查之前，不靠 `usage.query` 补）。
     let index = home.root.index().join("sessions.db");
     until_counted(
         &index,
@@ -141,10 +141,10 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
     assert!(turns().exists(), "群里的回合进主人的回合库");
-    // 人的头碰不到关着的群会话（施工 Y-2 上；SU-4 中起照关不关，不照属主）。
+    // 人的头碰不到关着的群会话（施工 Y-2 上；SU-4 中起照关不关）。
     let reply = client.subscribe("g1", &session).await;
     assert_eq!(reason(&reply), Some("session_not_found"), "{reply}");
-    // 删掉群会话（桥删）：管理员的回合库里给它埋墓碑，记忆的出处在它里面的都算死了。等它空下来再放桥删：跑着的删不掉。
+    // 删掉群会话（桥删）：回合库里给它埋墓碑，记忆的出处在它里面的都算死了。等它空下来再放桥删：跑着的删不掉。
     until_idle(&groups).await;
     std::fs::write(&checked, "").expect("写得进");
     let got = replies(&path, 8).await;

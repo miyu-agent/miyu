@@ -45,14 +45,14 @@ pub(super) enum Stream {
     Extensions,
     /// 软件包列表的推送（施工 F-8 三补）。
     Packages,
-    /// 这个账号的项目（施工 H-1）。
+    /// 项目（施工 H-1）。
     Projects,
     Schedules,
-    /// 这个账号的知识库建索引的进度（施工 W-15）。
+    /// 知识库建索引的进度（施工 W-15）。
     Knowledge,
-    /// 这个账号的通知（施工 J-3 下）。
+    /// 通知（施工 J-3 下）。
     Notices,
-    /// 包推给这个账号的（施工 IM-1 中下二，`backstage/events.rs`）。
+    /// 包推给人的（施工 IM-1 中下二，`backstage/events.rs`）。
     Package(String),
     /// 一间的记忆日志（施工 R-12 上，`memory.md`「协议」）。
     Memory(MemoryAt),

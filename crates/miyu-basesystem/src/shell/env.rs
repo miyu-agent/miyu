@@ -45,7 +45,7 @@ pub(super) const MODEL: &str = "MIYU_MODEL";
 pub(super) const EFFORT: &str = "MIYU_EFFORT";
 pub(super) const SESSION_LOG: &str = "MIYU_SESSION_LOG";
 
-/// 照调用的事实 `caller` 另外设上的：没有的不设（日志目录只给属主是管理员的会话）。
+/// 照调用的事实 `caller` 另外设上的：没有的不设（日志目录只给没关起来的会话）。
 pub(super) fn told(caller: Option<&Caller>) -> Vec<(OsString, OsString)> {
     let Some(caller) = caller else {
         return Vec::new();

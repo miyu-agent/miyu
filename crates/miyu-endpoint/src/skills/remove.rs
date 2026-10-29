@@ -1,6 +1,6 @@
-//! `skill.remove`（施工 W-13，网页的技能页：单个删、多选删）：把管理员自己放的技能整个文件夹挪进系统回收站，同 `kb.remove`。
+//! `skill.remove`（施工 W-13，网页的技能页：单个删、多选删）：把你自己放的技能整个文件夹挪进系统回收站，同 `kb.remove`。
 //!
-//! 只删管理员家目录里放的（`skills/<文件夹>/`）；随包来的（出厂的、装的包带的）不能删，拒绝
+//! 只删数据根里放的（`skills/<文件夹>/`）；随包来的（出厂的、装的包带的）不能删，拒绝
 //! `skill_from_package`；别家共用目录（`~/.agents/skills/`，施工 PT-2 中）里的也不删，别的客户端也在用，拒绝 `skill_shared`。找法同 `skill.list`：同名的照核心实际用的那一份认，自己放的盖住了包里的，删的就是自己放的那一份，
 //! 删了包里的那一份重新露出来。几个名字先全查一遍，有一个不行就一个都不删；查过了才挪，挪到一半挪不动的，前面挪了的
 //! 已经在回收站里，拒绝 `trash_failed`。技能文件夹是链接的（施工 X-37）只挪链接本身，不碰它指到的文件夹。
@@ -33,7 +33,7 @@ pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, R
     if names.is_empty() || !names.iter().all(|name| seen.insert(name.as_str())) {
         return Err(Refusal::BAD_PARAMS);
     }
-    // 只删调用者自己放的（施工 Y-2 中上）：系统区的、包里的照「随包来的」拒。
+    // 只删你自己放的：包里的照「随包来的」拒。
     let (packages, root) = (core.packages_of(), core.root.clone());
     let home = core.home.clone();
     let external = super::external(core);
@@ -81,14 +81,14 @@ pub(crate) async fn remove(core: &Core, params: RemoveParams) -> Result<Value, R
     .map_err(|_| Refusal::INTERNAL)?
 }
 
-/// 技能 `SKILL.md` 所在的文件夹，照真实的位置；它得正好在管理员自己放技能的文件夹 `own` 下面一层，不然不删（防着链接
+/// 技能 `SKILL.md` 所在的文件夹，照真实的位置；它得正好在你自己放技能的文件夹 `own` 下面一层，不然不删（防着链接
 /// 指到别处）。
 fn folder(file: &Path, own: Option<&Path>) -> Option<PathBuf> {
     let folder = std::fs::canonicalize(file.parent()?).ok()?;
     (folder.parent()? == own?).then_some(folder)
 }
 
-/// 链接成的技能（施工 X-37）：链接本身，它得正好在管理员自己放技能的文件夹 `own` 下面一层。
+/// 链接成的技能（施工 X-37）：链接本身，它得正好在你自己放技能的文件夹 `own` 下面一层。
 fn own_link(link: &Path, own: Option<&Path>) -> Option<PathBuf> {
     let (place, name) = (
         std::fs::canonicalize(link.parent()?).ok()?,

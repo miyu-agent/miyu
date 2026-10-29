@@ -425,7 +425,7 @@ async fn numbers_go_on_after_a_failure_and_a_reload() {
     );
 }
 
-/// 关在沙盒里的会话（群、陌生人的私聊）派的子会话照旧关着（施工 SU-4 中：属主都是主人，不能再照属主算）。
+/// 关在沙盒里的会话（群、陌生人的私聊）派的子会话照旧关着（施工 SU-4 中）。
 #[tokio::test]
 async fn a_confined_session_s_child_is_confined_too() {
     let table = Arc::new(Table::default());

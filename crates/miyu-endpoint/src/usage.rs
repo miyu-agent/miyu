@@ -1,10 +1,10 @@
 //! 用量汇总在协议这一头（施工 8-15，`docs/blueprint/models.md`「协议」`usage.query`、「怎么走」第九条第 6 条）：核心起来时开
 //! `state/usage.db`（[`open`]），`usage.query` 先补再查（[`query`]）。
 //!
-//! - 参数：`from`、`until` 是时刻（左闭右开），`group` 是 `account`、`venue`、`model`、`day`、`session`、`purpose` 里的几样，
+//! - 参数：`from`、`until` 是时刻（左闭右开），`group` 是 `venue`、`model`、`day`、`session`、`purpose`、`use` 里的几样，
 //!   `session` 只算这个会话、写了 `tree` 的连它派的子会话，`offset` 是分天的时区（`+09:00` 这样写，不写是核心所在机器此刻
 //!   的）。不认识的分组、写法不对的时刻、时区、会话编号是 `bad_params`；不认识的格不理，「可以不写」的写 `null` 等于没写。
-//! - 补：管理员的账号日志、会话、回收处里的会话；读不完的记一行 `WARN usage not indexed`，照读到的算。
+//! - 补：日志、会话、回收处里的会话；读不完的记一行 `WARN usage not indexed`，照读到的算。
 //! - 回应 `rows`：分组的几格（没有的是 `null`），`requests`、`usage` 四项、`amounts`（照币种各加各的，`usage.currency` 排
 //!   最前，别的照币种代码的字母先后，取的是这一刻的配置：当场生效）、`unpriced`；`converted`（施工 UC-1）：照每一笔那天的
 //!   汇率换成 `usage.currency` 的一个数，没换成的那几笔在它的 `rest`，一笔都没换成的不写。用到了兜底源的汇率，回应顶上
@@ -295,12 +295,12 @@ fn empty() -> Total {
     }
 }
 
-/// 账号 `account` 的金额哪个币种排最前：照他这一刻的那一份配置（施工 Y-2 下下中下）。
+/// 金额哪个币种排最前：照这一刻的配置。
 pub(crate) fn currency(core: &Core) -> String {
     UsageSettings::from(&core.mine().config().resolved().values()).currency
 }
 
-/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照会话属主 `owner` 这一刻的配置排、换算（施工 UC-1，常推的
+/// 写成一行（施工 9-8 补下）：写法同 `usage.query` 的一行，币种照这一刻的配置排、换算（施工 UC-1，常推的
 /// 一处：不等，只用缓存里的汇率，缺的在后面取）。
 pub(crate) fn total_row(core: &Core, total: Total) -> Value {
     let currency = currency(core);
@@ -354,7 +354,7 @@ fn daily(tally: &miyu_session::Tally) -> Vec<(miyu_store::usage::rates::Day, Str
         .collect()
 }
 
-/// 会话自己累计的写成协议上的一行，币种照会话属主 `owner` 这一刻的配置排（施工 Y-2 下下中下）。
+/// 会话自己累计的写成协议上的一行，币种照这一刻的配置排。
 pub(crate) fn tallied(core: &Core, tally: &miyu_session::Tally) -> Value {
     let mut value = total_row(core, own(tally));
     value["main"] = json!(tally.main);

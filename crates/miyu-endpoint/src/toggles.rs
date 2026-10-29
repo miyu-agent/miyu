@@ -1,5 +1,5 @@
 //! 技能、脚本、MCP 三页上改的（施工 X-27，网页设置页要的）：全局开关 `feature.set`（`features.<功能编号>`，
-//! `miyu_session::switches`），只改管理员的个人设置，写法照 `config.set` 改一项（`config/set.rs`：带版本、不覆盖同时的手改、
+//! `miyu_session::switches`），只改配置，写法照 `config.set` 改一项（`config/set.rs`：带版本、不覆盖同时的手改、
 //! 写成了推 `config.changed`）；交 `null` 的删掉那一项，回到跟着预设。下一个回合生效。只给本机的人用（`connection/people.rs`）。
 //!
 //! 加载方式 `tool.set_loading`（施工 L-3）施工 FL-1 起什么都不改：工具一律全量。协议 1 冻结了这个方法，照旧收、照旧查参数，
@@ -62,7 +62,7 @@ pub(crate) fn set_loading(params: &LoadingParams) -> Result<Value, Refusal> {
     }
 }
 
-/// `feature.set`：改个人设置的 `features.<功能编号>`，回应 `{}`。
+/// `feature.set`：改配置的 `features.<功能编号>`，回应 `{}`。
 ///
 /// # Errors
 ///
@@ -80,7 +80,7 @@ pub(crate) fn set_feature(
     written(core, peer, cause, real, params.on)
 }
 
-/// 照 `config.set` 改个人设置里的一项 `real`：`value` 是 `None` 的删掉。
+/// 照 `config.set` 改配置里的一项 `real`：`value` 是 `None` 的删掉。
 fn written(
     core: &Core,
     peer: Peer,

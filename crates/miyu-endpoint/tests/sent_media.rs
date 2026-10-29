@@ -1,4 +1,4 @@
-//! 她发一张图（施工 X-19）：扩展的工具回答带 `sent` 的，记进 `tool.result.sent`（图拷进会话属主名下、扩展写的本机路径不收），
+//! 她发一张图（施工 X-19）：扩展的工具回答带 `sent` 的，记进 `tool.result.sent`（图得在存处里、扩展写的本机路径不收），
 //! 不进给模型的请求：她看到的只有结果的字。
 
 use std::sync::Arc;
@@ -100,7 +100,7 @@ async fn a_sent_image_is_logged_but_not_shown_to_the_model() {
     core.stop_extensions().await;
 }
 
-/// 包的工具交回一张它存的图（施工 SU-4 中：包不再各有一个账号，存的和主人共用一个存处）：会话里记下发了，图就在主人名下。
+/// 包的工具交回一张它存的图（施工 SU-4 中：存的和会话共用一个存处）：会话里记下发了，图就在存处里。
 #[tokio::test]
 async fn a_packages_image_is_in_the_owner_s_blobs() {
     let home = Home::new();

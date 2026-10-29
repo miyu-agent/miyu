@@ -66,7 +66,7 @@ fn within(dir: &Path, path: &str) -> PathBuf {
         .fold(dir.to_path_buf(), |at, part| at.join(part))
 }
 
-/// `owns`：`path` 归哪个包。`owned` 是 `package.owns` 的回应；哪个包都没有的交回 `None`。家目录里装的、本地库没记它的
+/// `owns`：`path` 归哪个包。`owned` 是 `package.owns` 的回应；哪个包都没有的交回 `None`。数据根里装的、本地库没记它的
 /// （包自己后来写的）另一种说法；出厂的不记，算它的。
 pub(crate) fn owner(path: &str, owned: &Value, language: &Language) -> Option<String> {
     let id = owned["package"].as_str()?;
@@ -77,7 +77,7 @@ pub(crate) fn owner(path: &str, owned: &Value, language: &Language) -> Option<St
     })
 }
 
-/// `check`：每个包改了的、少了的、多出来的一行一个，都没问题的一行「正常」；家目录里一个记了的都没有的一行说没有。交回那几行，
+/// `check`：每个包改了的、少了的、多出来的一行一个，都没问题的一行「正常」；数据根里一个记了的都没有的一行说没有。交回那几行，
 /// 和有没有改了、少了的（有的退出码 1，照 pacman 的 `-Qk`；多出来的只是提示）。
 pub(crate) fn checked(checked: &Value, language: &Language) -> (Vec<String>, bool) {
     let packages = checked["packages"].as_array().cloned().unwrap_or_default();

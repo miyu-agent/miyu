@@ -13,7 +13,7 @@ use crate::blocking::blocking;
 use crate::sandbox::Sandbox;
 
 /// 照实际生效的那一级 `permission` 给调用写上沙盒（第 1a 条）：这台机器上的沙盒用不了的，照原样。在阻塞线程里算。
-/// 写不成的不跑：记一行 `ERROR`，交回空的，照崩了算，不在沙盒外跑。`unless` 是管理员放行了的那件工具的文件（施工 X-37 补）：
+/// 写不成的不跑：记一行 `ERROR`，交回空的，照崩了算，不在沙盒外跑。`unless` 是主人放行了的那件工具的文件（施工 X-37 补）：
 /// 落在规格写得了的地方的照旧套，不在的不套。
 pub(super) async fn confine(
     mut call: Call,

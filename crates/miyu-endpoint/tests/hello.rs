@@ -1,5 +1,5 @@
 //! 握手回应里的 `host`，`fs.realpath`（施工 W-3，`docs/blueprint/web-module.md`「四、路径」、`protocol.md`
-//! 「握手」「`fs.realpath`」）：`host` 三格总有，`workspace` 是真实的位置；握手不替账号造工作区（管理员的工作区
+//! 「握手」「`fs.realpath`」）：`host` 三格总有，`workspace` 是真实的位置；握手不造工作区（工作区
 //! 核心起来时就建好了，`core.md`），没建过的就照原样交回。`fs.realpath` 往上找最近在的一层换成真实的位置，
 //! 相对的要配 `cwd`，不查边界。
 
@@ -29,7 +29,7 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
     let home = Home::new();
     let system_home = home.work.join("system-home");
     std::fs::create_dir_all(&system_home).expect("建得了目录");
-    // 工作区照真核心起来时的样子先建好（`core.md`：管理员的工作区核心起来时就建好了）。
+    // 工作区照真核心起来时的样子先建好（`core.md`：工作区核心起来时就建好了）。
     home.root.prepare_workspace().expect("建得了家目录、工作区");
     let mut client = Client::connect(home.core_at_home(&Script::new([]), system_home.clone()));
     let reply = client.hello().await;
@@ -52,7 +52,7 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
 }
 
 /// 握手不该替每一个连上来的头造目录：没人建过工作区，`host.workspace` 照原样交回、不在磁盘上建出它（施工
-/// miyu-cli `edit_leaves_the_file_alone_when_nothing_is_saved` 撞见过：早先握手顺手建了工作区，账号目录下
+/// miyu-cli `edit_leaves_the_file_alone_when_nothing_is_saved` 撞见过：早先握手顺手建了工作区，数据根下
 /// 多出一个不该有的 `workspace`，这个测试守住不再发生）。
 #[tokio::test]
 async fn host_workspace_is_given_as_is_and_not_created_when_nobody_has_used_the_account_yet() {
@@ -66,7 +66,7 @@ async fn host_workspace_is_given_as_is_and_not_created_when_nobody_has_used_the_
         json!(raw.display().to_string()),
         "还没建过，照原样交回：{reply}"
     );
-    // 账号目录下可能已经有核心起来时建的会话列表索引（施工 3-8 七补），但不该多出 `workspace`。
+    // 数据根下可能已经有核心起来时建的会话列表索引（施工 3-8 七补），但不该多出 `workspace`。
     assert!(!raw.exists(), "握手自己不该把工作区建出来：{reply}");
 }
 
@@ -83,7 +83,7 @@ async fn host_home_is_null_when_the_system_home_is_not_known() {
     assert!(host["home"].is_null(), "没有系统的家目录：{hello}");
 }
 
-/// 工作区是账号家目录下固定的一层：先造一份指向别处的符号链接，握手该把它换成链接指的真实位置，不是原样的那个
+/// 工作区是数据根下固定的一层：先造一份指向别处的符号链接，握手该把它换成链接指的真实位置，不是原样的那个
 /// 链接路径（施工 W-3「四、路径」第 1 条：`workspace` 换成真实的位置）。
 #[cfg(unix)]
 #[tokio::test]

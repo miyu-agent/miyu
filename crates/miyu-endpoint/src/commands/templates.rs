@@ -1,4 +1,4 @@
-//! 斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`）：登记表里没有的名字照这个会话属主的家目录、装了的包找
+//! 斜杠命令模板（施工 X-14 上，`docs/blueprint/slash.md`）：登记表里没有的名字照数据根、装了的包找
 //! `commands/<名字>.md`，展开成一段话当这个人说的一句发出去（`message.user` 带上人敲的那一行），时间线上有那一行，不另回执、
 //! 不另记 `command.ran`。和核心登记的撞名的不算（内置的赢）。谁能用：先过内置命令那一关，再看会话的预设开没开这条命令
 //! （每条一个功能 `command-<名字>`）。
@@ -29,7 +29,7 @@ use crate::hello::Peer;
 use crate::list::LOCAL;
 use crate::refusal::Refusal;
 
-/// 账号 `owner` 用得上的模板命令：家目录的、装了的包的，同名的先找到的赢，和登记表撞名的不算。照名字排。
+/// 用得上的模板命令：数据根里的、装了的包的，同名的先找到的赢，和登记表撞名的不算。照名字排。
 pub(crate) async fn found(core: &Core) -> Vec<Template> {
     let (packages, root) = (core.packages_of(), core.root.clone());
     let found = tokio::task::spawn_blocking(move || slash::find(&packages, &root).0)
@@ -70,7 +70,6 @@ pub(super) async fn opened_by(
     else {
         return Ok(());
     };
-    // 照会话的属主找（施工 Y-2 中上）。
     let Ok(found) = crate::presets::resolve(core, Some(&preset)).await else {
         return Ok(());
     };
@@ -109,7 +108,7 @@ pub(super) async fn run(
     // 先认再判身份：认不出的照旧 `unknown_command`，场所里的桥照它把话当成平常说的记下。
     let template = found_named(core, name).await;
     let own = matches!(&template, Some(own) if own.package.is_none());
-    // 会话属主关了的包（施工 U23 末下）：它声明的命令、整页当没有。
+    // 关了的包（施工 U23 末下）：它声明的命令、整页当没有。
     let off = core.packages_off();
     // 整页的命令（施工 X-15 下）：只在本机的会话里认，自己放的模板盖住它；只叫头打开那一页，不碰会话。
     if !own

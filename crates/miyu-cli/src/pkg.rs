@@ -95,7 +95,7 @@ pub enum PkgCommand {
         /// 哪个文件，相对的照现在的目录算。
         path: String,
     },
-    /// 装好的文件改没改；不写的是家目录里记了的全部。
+    /// 装好的文件改没改；不写的是数据根里记了的全部。
     Check {
         /// 只查哪一个。
         package: Option<String>,

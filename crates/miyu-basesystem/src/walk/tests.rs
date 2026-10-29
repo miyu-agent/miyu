@@ -110,7 +110,7 @@ fn a_private_dir_added_in_the_settings_is_kept_out() {
 }
 
 /// 工作目录包住数据根、私密目录（施工 5-14 改：工作目录是 `~` 的也是工作区）：最深的那一片算，照样不进；工作目录落在数据根里的
-/// （账号自己的工作区）那一片照进，数据根别处不进。
+/// （工作区 `workspace/`）那一片照进，数据根别处不进。
 #[test]
 fn a_working_dir_holding_the_data_root_still_keeps_it_out() {
     let dir = Temp(std::env::temp_dir().join(format!("miyu-walk-home-{}", std::process::id())));

@@ -1,6 +1,6 @@
-//! 个人设置里的 MCP 服务（施工 F-9，`docs/blueprint/mcp.md`「个人设置里的一张表」）：`miyu check` 照行报写错的、报盖住了包里
+//! 配置里的 MCP 服务（施工 F-9，`docs/blueprint/mcp.md`「系统配置里的一张表」）：`miyu check` 照行报写错的、报盖住了包里
 //! 同名服务的；`[mcp.<名字>]` 不算配置里不认识的键（F-9 上）。核心照它真起测试用的服务（`miyu-test-mcp`）：写了就起、挂在
-//! `~home` 下、预设里一个功能，盖住包里同名的（那个不起）；手改个人设置当场换：新写的起、包里同名的停下，删掉的停下、包里的
+//! `~home` 下、预设里一个功能，盖住包里同名的（那个不起）；手改配置当场换：新写的起、包里同名的停下，删掉的停下、包里的
 //! 照开关起回来（F-9 下）。
 
 use std::path::Path;
@@ -23,7 +23,7 @@ use crate::support::*;
 /// 带一个叫 `github` 的服务的包。
 const KIT: &str = "[package]\nname = { en = \"Kit\" }\n\n[[mcp]]\nname = \"github\"\ncommand = [\"kit-github\"]\n";
 
-/// 个人设置：界面语言，一个盖住包里那个的服务，一个写错的。
+/// 配置：界面语言，一个盖住包里那个的服务，一个写错的。
 const SETTINGS: &str = "[ui]\nlanguage = \"zh\"\n\n[mcp.github]\ncommand = [\"npx\", \"server-github\"]\n\n[mcp.empty]\ncommand = []\n";
 
 async fn connected(home: &Home) -> Client {
@@ -84,7 +84,7 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
         covered.contains("config.toml [mcp.github]"),
         "说被谁盖住：{covered}"
     );
-    // 只查个人设置这一份：照样报，盖住了的也报。
+    // 只查配置这一份：照样报，盖住了的也报。
     let path = home.root.path().join("config.toml");
     let one = client
         .call("k2", "check", json!({"file": path.to_string_lossy()}))
@@ -230,7 +230,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
         "先是包里的"
     );
 
-    // 写进个人设置：包里同名的停下，个人设置里的起来。
+    // 写进配置：包里同名的停下，配置里的起来。
     let (ours, record) = recording(&home, "settings");
     home.write(
         "config.toml",
@@ -253,7 +253,7 @@ async fn editing_the_settings_starts_and_stops_servers_on_the_spot() {
     until_line(&changed, "tools/list").await;
     assert_eq!(env_answer(&home, &mut client, &session, 3).await, "again");
 
-    // 删掉：个人设置里的停下，包里的照开关起回来。
+    // 删掉：配置里的停下，包里的照开关起回来。
     std::fs::remove_file(&theirs).expect("删得掉");
     home.write("config.toml", "[ui]\nlanguage = \"zh\"\n");
     until_exists(&theirs).await;
@@ -279,12 +279,12 @@ fn relay(home: &Home, program: &Program, start: &str, record: &str) {
     std::fs::write(&manifest, text).expect("写得进");
 }
 
-/// 个人设置里一张 `[mcp.xsvc]`，记到 `record`。
+/// 配置里一张 `[mcp.xsvc]`，记到 `record`。
 fn ours_xsvc(record: &str) -> String {
     format!("[mcp.xsvc]\ncommand = ['{SERVER}', '{record}']\n")
 }
 
-/// 起来、开始监视配置和跟着个人设置换的核心，连上的连接。
+/// 起来、开始监视配置和跟着配置换的核心，连上的连接。
 async fn following(
     home: &Home,
 ) -> (

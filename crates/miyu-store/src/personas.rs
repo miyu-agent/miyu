@@ -1,8 +1,7 @@
 //! 人格在哪、几层怎么叠（施工 P-1 上，`docs/blueprint/personas.md`，`16-人格与预设.md` 第四节）：出厂的
 //! `<资源目录>/personas/<编号>/`、装着的软件包带的 `<包文件夹>/personas/<编号>/`（施工 P-11 上，一个编号只认一份，
-//! `layers::covered`）、主人家目录 `personas/<编号>/`（施工 SU-3 下：系统区那一层拿掉），同名的后面
-//! 的叠在前面的上面：`persona.toml` 逐项盖，`prompts/` 里的文件同名替换、没写的沿用。读法同配置文件：只有本人写自己的
-//! 家目录，顺着链接读。文件怎么读成样子在 `miyu_policy::persona`。
+//! `layers::covered`）、数据根里的 `personas/<编号>/`，同名的后面
+//! 的叠在前面的上面：`persona.toml` 逐项盖，`prompts/` 里的文件同名替换、没写的沿用。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_policy::persona`。
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -284,7 +283,7 @@ impl Personas {
         ids.into_iter().collect()
     }
 
-    /// 包以外的几层里有人格 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、系统区、家目录，从下往上。
+    /// 包以外的几层里有人格 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、数据根里的，从下往上。
     pub fn layers_with(&self, id: &str) -> Vec<Layer> {
         self.dirs
             .iter()

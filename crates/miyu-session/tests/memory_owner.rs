@@ -2,7 +2,7 @@
 //! 先交抽取的回答、再交合并的。
 //!
 //! 抽取：这个会话的快照带了「关于你」、设了称呼的，指令里照称呼写主人；没设的、只有空白的、快照不带的写「用户」那一句（配置里
-//! 只有管理员的个人设置，不带「关于你」的会话不能把它当成那个人）。合并：照属主的称呼写，不看是哪个会话起的。
+//! 的称呼是主人的，不带「关于你」的会话不能把它当成那个人）。合并：照配置里的称呼写，不看是哪个会话起的。
 
 use miyu_http::testkit::Server;
 use miyu_session::testkit::{Play, Script};
@@ -21,12 +21,12 @@ const MERGE_NAMED: &str = "starting with your owner (write them as 阿凯),";
 const MERGE_UNNAMED: &str =
     "starting with your owner (write them as the user, translated into the language you write in),";
 
-/// 个人设置里写着称呼 `name`。
+/// 配置里写着称呼 `name`。
 fn called(name: &str) -> String {
     format!("[profile]\nname = \"{name}\"\n")
 }
 
-/// 抽一次、合一次（两轮，攒一个会话就合）：会话的「关于你」写称呼 `profile`，个人设置是 `personal`。交回抽取、合并的请求。
+/// 抽一次、合一次（两轮，攒一个会话就合）：会话的「关于你」写称呼 `profile`，配置里另接 `personal`。交回抽取、合并的请求。
 async fn asked_both(profile: &str, personal: &str) -> (String, String) {
     let server = Server::start(vec![every_turn("记一笔"), stream("{}")]).await;
     let mut home = Home::new();
@@ -80,8 +80,8 @@ async fn without_a_name_the_owner_is_the_user() {
 
 #[tokio::test]
 async fn a_session_without_the_profile_block_writes_the_user_but_the_summary_uses_the_name() {
-    // 快照不带「关于你」的（群聊、别人的会话、桥没写 `profile` 的场所会话）：抽取不拿管理员的称呼当这个人；合并写的是
-    // 这一间的主人，照属主的称呼。
+    // 快照不带「关于你」的（群聊、桥没写 `profile` 的场所会话）：抽取不拿主人的称呼当这个人；合并写的是
+    // 这一间的主人，照配置里的称呼。
     let (extract, merge) = asked_both("", &called("阿凯")).await;
     assert!(extract.contains(UNNAMED), "{extract}");
     assert!(merge.contains(MERGE_NAMED), "{merge}");

@@ -2,7 +2,7 @@
 //! `trash/sessions/<会话编号>/`，里面多一个 `deleted_at`，写着删的时刻；核心起来时清一次，满了留的时限的
 //! 真删（2026-09-30 项目主人定：删了的进回收处，留 7 天）。
 //!
-//! 真删之前先留底（施工 8-15，`07-存储.md` 第六节）：照它的日志算好用量的合计，往账号日志 `journal.jsonl` 追加一条
+//! 真删之前先留底（施工 8-15，`07-存储.md` 第六节）：照它的日志算好用量的合计，往日志 `journal.jsonl` 追加一条
 //! `usage.purged`（[`crate::usage::purged`]），写进去了才删目录；写不进去的留着，下次再清。
 //!
 //! 挪是一次改名：要么挪了、要么没挪，不会留半个会话。`deleted_at` 先写进还在原处的会话目录、落了盘，再改名：回收处里
@@ -29,7 +29,7 @@ use crate::usage;
 /// 回收处里每个会话目录下写着删的时刻的那个文件：一行，事件的时刻写法，例如 `2026-09-30T12:00:00.000Z`，加换行。
 pub const DELETED_AT: &str = "deleted_at";
 
-/// 把账号 `account` 的会话 `session` 挪进回收处，删的时刻是 `at`：先在会话目录里写下 `deleted_at`、同步，再把整个目录
+/// 把会话 `session` 挪进回收处，删的时刻是 `at`：先在会话目录里写下 `deleted_at`、同步，再把整个目录
 /// 改名成回收处里的那一个，同步两头的上一层。回收处没有的先建（Unix 上 0700）。调的一方先停下这个会话：开着的文件
 /// Windows 上挪不走。
 ///
@@ -60,8 +60,8 @@ pub struct Purged {
     pub failed: Vec<(SessionId, String)>,
 }
 
-/// 清一次账号 `account` 的回收处：删的时刻离 `now` 满了 `keep` 的，先往账号日志里留一条用量的底（`usage.purged`，时刻是
-/// `now`），再连目录整个删掉；留不了底的（日志读不了、账号日志写不进）留着，记进 [`Purged::failed`]。没满的、删的时刻比 `now` 还晚的
+/// 清一次回收处：删的时刻离 `now` 满了 `keep` 的，先往日志 `journal.jsonl` 里留一条用量的底（`usage.purged`，时刻是
+/// `now`），再连目录整个删掉；留不了底的（会话日志读不了、`journal.jsonl` 写不进）留着，记进 [`Purged::failed`]。没满的、删的时刻比 `now` 还晚的
 /// （时钟往回拨过）留着；读不出删的时刻的也留着，记进 [`Purged::failed`]：说不清它删了多久，不猜。名字不合会话编号写法的
 /// 不是这里放的，不看。回收处还没有的，什么都不做。
 ///
@@ -108,7 +108,7 @@ pub fn purge(root: &DataRoot, now: Timestamp, keep: Duration) -> io::Result<Purg
     Ok(purged)
 }
 
-/// 真删会话 `session`（目录在 `dir`）之前，照它的日志算好用量的合计，追加进账号 `account` 的日志。一次请求都没有的不写。
+/// 真删会话 `session`（目录在 `dir`）之前，照它的日志算好用量的合计，追加进 `journal.jsonl`。一次请求都没有的不写。
 fn keep_usage(
     root: &DataRoot,
     session: &SessionId,

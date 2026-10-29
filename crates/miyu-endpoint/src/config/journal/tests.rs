@@ -1,4 +1,4 @@
-//! 系统日志、账号日志里的一条和样本（`docs/designs/samples/journal/`）一字不差：`body` 的格照图纸的先后；之前没写的不带
+//! 日志里的一条和样本（`docs/designs/samples/journal/`）一字不差：`body` 的格照图纸的先后；之前没写的不带
 //! `old`，删掉的不带 `new`；写不进去的不往上报。
 
 use std::path::{Path, PathBuf};

@@ -149,7 +149,7 @@ impl SessionPort for Table {
         })
     }
 
-    /// 属主是 `owner` 的主会话（施工 C-3）：会话表里这时忙着的先记下，再在阻塞线程里照 `session.list` 的办法读。
+    /// 本机的主会话（施工 C-3）：会话表里这时忙着的先记下，再在阻塞线程里照 `session.list` 的办法读。
     fn sessions(&self, stop: Stop) -> Pending<'_, Result<Vec<MainSession>, String>> {
         Box::pin(async move {
             let core = self.core()?;

@@ -56,7 +56,7 @@ struct Slot {
 
 /// 扩展的表：核心一份。
 pub(crate) struct Extensions {
-    /// 每一份到它那一格（施工 IM-1 中起按（包，账号））。
+    /// 每个包到它那一格。
     slots: Mutex<BTreeMap<Instance, Slot>>,
     /// 开、关、重启一件件办：两个连接同时开同一个，不拉起两个。
     ops: tokio::sync::Mutex<()>,
@@ -66,7 +66,7 @@ pub(crate) struct Extensions {
     changed: broadcast::Sender<String>,
     /// 扩展登记的端口（施工 IM-5，`ports.rs`）。
     ports: ports::Ports,
-    /// 扩展按账号交的预设功能（施工 IM-6，`offers.rs`）。
+    /// 扩展交的预设功能（施工 IM-6，`offers.rs`）。
     pub(crate) offers: offers::Offers,
 }
 
@@ -193,7 +193,7 @@ impl Extensions {
         slot.task = Some((stop, task));
     }
 
-    /// 请包 `id` 的每一份退出、等它们退出（最多等到杀掉），状态记成关着：一份的，和每人一份的全部。
+    /// 请包 `id` 退出、等它退出（最多等到杀掉），状态记成关着。
     async fn halt(&self, id: &str) {
         let tasks = self.take(|instance| instance.package == id);
         self.join(tasks).await;
@@ -243,7 +243,7 @@ impl Core {
     pub fn start_extensions(self: &Arc<Self>) {
         // 脚本登记进工具目录（施工 X-12 中）：拉起扩展以前，扩展登记的工具撞了脚本的名字的照扩展那边报。
         self.follow_scripts();
-        // 个人设置里的 MCP 服务（施工 F-9 下）：起包里带的以前先定下谁盖住谁。
+        // 配置里的 MCP 服务（施工 F-9 下）：起包里带的以前先定下谁盖住谁。
         self.note_home_mcp();
         let (switches, _) = read_switches(self);
         let packages = self.system_packages();
@@ -252,7 +252,7 @@ impl Core {
         for (id, manifest) in processes_of(&all) {
             self.start_one(id, manifest, &switches);
         }
-        // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；个人设置里的写了就起（施工 F-9 下）。
+        // `bundle` 带的 MCP 服务同样照开关起（施工 X-3 上）；配置里的写了就起（施工 F-9 下）。
         self.start_mcp();
         self.start_home_mcp();
     }

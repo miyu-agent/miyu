@@ -1,6 +1,6 @@
 //! 她做的每一步（`docs/blueprint/cli/ask.md`「每一步」）：记下她调了什么，结果来了写成给人看的标题，例如
 //! `→ 读取 src/lib.rs · 37 行`；没做成的同一行写原因，「出错」「没做」是红的。执行命令、编辑的标题下面还有一块
-//! （施工 4-11，[`blocks`]）。工作目录太宽、核心退回账号的工作区时开头那一句，有几步因为要确认没做时最后那一句
+//! （施工 4-11，[`blocks`]）。工作目录太宽、核心退回数据根的工作区时开头那一句，有几步因为要确认没做时最后那一句
 //! （施工 4-9），也在这里写。
 //!
 //! 只管写成什么样，不管往哪写：一行分几段颜色（[`Line`]，在 `shown.rs` 里）。
@@ -216,7 +216,7 @@ pub(crate) fn unsandboxed(plan: &Plan, reason: &str) -> Line {
     )
 }
 
-/// 工作目录太宽、核心退回了账号的工作区时的那一句：敲命令时在 `plan.cwd`，实际在 `used` 里干活。
+/// 工作目录太宽、核心退回了数据根的工作区时的那一句：敲命令时在 `plan.cwd`，实际在 `used` 里干活。
 pub(crate) fn moved(plan: &Plan, used: &str) -> Line {
     let home = plan.home.as_deref();
     let (given, used) = (clean(&tilde(&plan.cwd, home)), clean(&tilde(used, home)));

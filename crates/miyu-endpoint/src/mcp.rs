@@ -5,7 +5,7 @@
 //! （`extensions.json`，没写的关着）；扩展包带的跟着扩展起停（施工 X-3 下）。核心起来时起开着的包的服务
 //! （[`Core::start_extensions`] 里），停的时候一起关掉；有在跑、在等着重启的，核心不算空闲。怎么起一个在 `launch.rs`，看管在
 //! `supervise.rs`，目录缓存在 `cache.rs`，工具名、规格在 `spec.rs`，一件工具在 `tool.rs`，结果换块在 `content.rs`，开关在
-//! `switch.rs`。管理员个人设置里的服务挂在 `~home` 下，盖住包里同名的（施工 F-9 下，`home.rs`）；头经 `mcp.set`、`mcp.remove`
+//! `switch.rs`。配置里的服务挂在 `~home` 下，盖住包里同名的（施工 F-9 下，`home.rs`）；头经 `mcp.set`、`mcp.remove`
 //! 改那几张表（施工 X-26，`editing.rs`，字怎么改在 `written.rs`）。
 
 mod cache;
@@ -154,7 +154,7 @@ impl Shared {
         *self.status.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 记下状态，告诉订阅着的连接这个包变了；个人设置里的服务报 `~home/<服务名>`（施工 F-9 补：推 `mcp.changed`，不推包）。
+    /// 记下状态，告诉订阅着的连接这个包变了；配置里的服务报 `~home/<服务名>`（施工 F-9 补：推 `mcp.changed`，不推包）。
     fn set(&self, core: &Core, state: State, failures: u32) {
         *self.status.lock().unwrap_or_else(PoisonError::into_inner) = Status { state, failures };
         match self.package.as_str() {
@@ -191,7 +191,7 @@ pub(crate) struct Servers {
     /// 正在等回调的登录（施工 X-42 上，`login/flow.rs`）：服务名到等着的那个任务和贴回来的地址交给它的那一头（施工 X-42 下），
     /// 又登录的停掉上一个。
     logins: Mutex<BTreeMap<String, login::Ongoing>>,
-    /// 续期刚写回去的那一份的摘要（施工 X-42 下）：密钥名到摘要，跟着个人设置的那一圈比到一样的不重起。
+    /// 续期刚写回去的那一份的摘要（施工 X-42 下）：密钥名到摘要，跟着配置的那一圈比到一样的不重起。
     wrote: Mutex<BTreeMap<String, u64>>,
 }
 
@@ -240,7 +240,7 @@ impl Servers {
     /// 的没有。
     pub(crate) fn state(&self, core: &Core, package: &str, manifest: &Manifest) -> Option<State> {
         let slots = self.slots();
-        // 被个人设置里同名的盖住的不起，不算进来（施工 F-9 下）。
+        // 被配置里同名的盖住的不起，不算进来（施工 F-9 下）。
         let states: Vec<State> = manifest
             .mcp
             .iter()
@@ -274,7 +274,7 @@ impl Servers {
         Some(State::Starting { pid: None })
     }
 
-    /// 起包 `package` 的服务（清单是 `manifest`）：在跑、在等的不动；被个人设置里同名的盖住了的不起（施工 F-9 下）。
+    /// 起包 `package` 的服务（清单是 `manifest`）：在跑、在等的不动；被配置里同名的盖住了的不起（施工 F-9 下）。
     fn launch(&self, core: &Arc<Core>, package: &str, manifest: &Manifest) {
         let dir = crate::packages::dir_of(core, package);
         for server in &manifest.mcp {

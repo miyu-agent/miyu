@@ -1,4 +1,4 @@
-//! 终端会话的指针 `terminal.json`（施工 8-33，设计 `22-命令行.md` 第七节）：这个账号在终端里说的话进哪个会话。
+//! 终端会话的指针 `terminal.json`（施工 8-33，设计 `22-命令行.md` 第七节）：在终端里说的话进哪个会话。
 //! 哪个会话算终端会话、闲置多久换新的，由端点照它和会话列表的索引定，这里只读写这一格。读、写照 `projects.json`（只给自己看的
 //! JSON 小文件：0600、照读到的版本写）。
 //!
@@ -15,7 +15,7 @@ use crate::config_file::WriteError;
 use crate::private_json;
 pub use crate::private_json::BadFile;
 
-/// 文件名：在账号的家目录里。
+/// 文件名：在数据根里。
 pub const FILE: &str = "terminal.json";
 
 /// 键最多记几个（施工 T-22）：多了丢最久没用的。

@@ -1,5 +1,5 @@
 //! `miyu provider login`、`list`、`logout`（`docs/blueprint/cli/login.md`，`config.md`「怎么走」第十一条，施工 8-5；施工 Y-13 上
-//! 从 `miyu login`、`miyu logout` 挪到 `provider` 下面，`miyu login` 留给登录账号）：管密钥的命令，
+//! 从 `miyu login`、`miyu logout` 挪到 `provider` 下面）：管密钥的命令，
 //! 照 opencode 的 `auth login`、`auth list`、`auth logout`（2026-10-01 项目主人定）。它们只是
 //! 协议的客户端：`secret.list`、`secret.set`、`secret.delete`。
 //!

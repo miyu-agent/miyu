@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 
 use crate::config::Config;
 
-/// 包 `package` 自己的那份：键到值。值是最终值（没写的照默认值，系统配置、个人设置合出来的，不看项目配置），密钥引用解成
+/// 包 `package` 自己的那份：键到值。值是最终值（没写的照默认值，配置合出来的，不看项目配置），密钥引用解成
 /// 真值的字；没设、没默认值、引用取不到的那一键不放。
 pub(crate) fn own(config: &Config, package: &str) -> BTreeMap<String, Value> {
     let prefix = format!("{package}.");

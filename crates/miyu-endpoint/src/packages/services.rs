@@ -11,7 +11,7 @@ use crate::Core;
 use crate::extensions::methods::details;
 
 /// 给包 `id`（清单是 `manifest`）那一项的 `mcp` 每一格填上这时的状态、加载方式、全局开关：没有 `mcp` 的不动。服务全被
-/// 个人设置里同名的盖住的，包那一项也带 `covered: true`（施工 F-9 补）。
+/// 配置里同名的盖住的，包那一项也带 `covered: true`（施工 F-9 补）。
 pub(super) fn fill(core: &Core, id: &str, manifest: &Manifest, item: &mut Value) {
     let Some(servers) = item.get_mut("mcp").and_then(Value::as_array_mut) else {
         return;
@@ -28,7 +28,7 @@ pub(super) fn fill(core: &Core, id: &str, manifest: &Manifest, item: &mut Value)
         };
         let status = core.mcp.service(id, &name);
         if core.home_mcp.covers(&name) {
-            // 被个人设置里同名的盖住了（施工 F-9 补）：不起，`state` 照旧是 `off`。
+            // 被配置里同名的盖住了（施工 F-9 补）：不起，`state` 照旧是 `off`。
             server["covered"] = json!(true);
         }
         server["state"] = json!(status.state.as_str());

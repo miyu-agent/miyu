@@ -1,4 +1,4 @@
-//! 技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：属主家目录里放的技能列进 system，一个一行带 `SKILL.md`
+//! 技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：数据根里放的技能列进 system，一个一行带 `SKILL.md`
 //! 的路径；技能的文件夹在数据根里，单独放开只读：读放行、写一律拒（完全放开也拒），旁边的数据根照旧谁都不能碰；只碰得到自己
 //! 工作区的群会话也读得到；载入以后照样放开。工具面上没有 `read` 的不列。
 
@@ -38,12 +38,12 @@ impl Kit {
     }
 }
 
-/// alice 家目录里的一处。
+/// 数据根里的一处。
 fn mine(home: &Home, path: &str) -> PathBuf {
     home.root.path().join(path)
 }
 
-/// 在 alice 家目录里放技能 `notes`、旁边放一份不给碰的；交回 `SKILL.md` 列出来的路径（Windows 上反斜杠换成了 `/`，她照抄
+/// 在数据根里放技能 `notes`、旁边放一份不给碰的；交回 `SKILL.md` 列出来的路径（Windows 上反斜杠换成了 `/`，她照抄
 /// 这一条读）。
 fn put(home: &Home) -> String {
     let file = mine(home, "skills").join("notes").join("SKILL.md");
@@ -66,7 +66,7 @@ fn one(tool: &str, path: &str) -> Play {
     Play::calls(&[(tool, &serde_json::json!({ "path": path }).to_string())])
 }
 
-/// 工作区在 `work/` 的会话，这一级是 `level`，场所 `venue`，属主是不是管理员照 `owner_is_admin`。
+/// 工作区在 `work/` 的会话，这一级是 `level`，场所 `venue`，`owner_is_admin` 是假的关起来。
 async fn session(
     home: &Home,
     script: &Script,

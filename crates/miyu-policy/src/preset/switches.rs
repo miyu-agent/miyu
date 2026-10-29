@@ -1,5 +1,5 @@
 //! 人在技能、脚本、MCP 三页上设的全局开关（施工 X-27，`docs/blueprint/presets.md`「全局开关」，2026-10-20 项目主人定）：记在
-//! 个人设置的 `features.<功能编号>`，`unlisted` 开着的预设照它；预设里对这个功能明写了开或关的照预设，三页只是方便管理。
+//! 配置的 `features.<功能编号>`，`unlisted` 开着的预设照它；预设里对这个功能明写了开或关的照预设，三页只是方便管理。
 //!
 //! - 「明写了」是叠好的文件里 `[features]` 写了这个功能，或者以前的 `[software]` 写了这个功能、它所在的包（[`By::Preset`]）；
 //!   都没写的照全局开关（[`By::Global`]）；全局开关也没写的照 `unlisted`（[`By::Default`]）。
@@ -44,7 +44,7 @@ impl By {
 }
 
 impl PresetFile {
-    /// 放进这一轮这个人关了的包 `off`（施工 U23 末上，个人设置 `packages.<编号>.off`）：整份换掉原来的（[`PresetFile::switched_off`]）。
+    /// 放进这一轮主人关了的包 `off`（施工 U23 末上，配置 `packages.<编号>.off`）：整份换掉原来的（[`PresetFile::switched_off`]）。
     /// 改了从下一个回合开始生效。施工 BS-1 上中起没有必需的包，哪个都关得掉。
     #[must_use]
     pub fn switching_off(mut self, off: impl IntoIterator<Item = String>) -> PresetFile {

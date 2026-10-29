@@ -19,7 +19,7 @@ use crate::support::*;
 /// 假的助手：假工具不起它。
 const HELPER: &str = "miyu-sandbox";
 
-/// 群会话（属主不是管理员），工作区 `work/`，沙盒能用，级别 `level`：执行命令的假工具 `run` 调一次，交回它拿到的沙盒和
+/// 关起来的群会话，工作区 `work/`，沙盒能用，级别 `level`：执行命令的假工具 `run` 调一次，交回它拿到的沙盒和
 /// 跑了几次。
 async fn confined(level: Level) -> (Home, PathBuf, Vec<Option<Arc<Sandboxed>>>) {
     let home = Home::outside_temp();
@@ -91,7 +91,7 @@ async fn a_confined_command_reads_and_writes_only_its_workspace() {
                 "家目录不在名单里"
             );
         }
-        // 家目录照工作区（施工 MB-1）：不给跑核心的那个用户的，git 这类读 `~/.gitconfig` 的在 macOS 上被拒就起不来，也透出机主。
+        // 家目录照工作区（施工 MB-1）：不给跑核心的那个用户的，git 这类读 `~/.gitconfig` 的在 macOS 上被拒就起不来，也透出跑核心的用户。
         assert_eq!(
             sandboxed.env,
             [

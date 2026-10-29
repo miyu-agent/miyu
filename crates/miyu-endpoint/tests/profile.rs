@@ -1,5 +1,5 @@
-//! 「AI 怎么认识你」（施工 P-9、P-9 补，`docs/blueprint/prompts.md`「关于你」）：个人设置里写了称呼、更多描述、回复语言的，本机开的新会话的
-//! system 里接上那一块、记进快照；没写的一字不变。场所会话只有属主是管理员本人、桥在 `venue.session` 里写了 `profile` 的
+//! 「AI 怎么认识你」（施工 P-9、P-9 补，`docs/blueprint/prompts.md`「关于你」）：配置里写了称呼、更多描述、回复语言的，本机开的新会话的
+//! system 里接上那一块、记进快照；没写的一字不变。场所会话只有没关起来（主人本人的私聊）、桥在 `venue.session` 里写了 `profile` 的
 //! 才带。
 
 use std::path::Path;
@@ -146,7 +146,7 @@ async fn replies(path: &Path, n: usize) -> Vec<Value> {
     }
 }
 
-/// 账号 `owner` 名下的会话 `session` 的快照里「关于你」那一块。
+/// 会话 `session` 的快照里「关于你」那一块。
 fn profile_of(home: &Home, session: &Value) -> Option<String> {
     let session = session["session"].as_str().expect("有编号");
     crate::support::venues::snapshot(home, &dir(home, session)).profile

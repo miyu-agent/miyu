@@ -146,7 +146,7 @@ pub(crate) struct Indexed {
     id: SessionId,
     /// 索引：没有的不更新。
     index: Option<Arc<SessionIndex>>,
-    /// 用量汇总，和这个会话的属主、场所、父会话：没有的不写。
+    /// 用量汇总，和这个会话的场所、父会话：没有的不写。
     usage: Option<(Arc<UsageIndex>, Who)>,
     /// 回合索引（施工 R-2 上）：主会话、核心交了登记的才有。在后台写（施工 V-9）。
     turns: Option<TurnLane>,
@@ -156,7 +156,7 @@ pub(crate) struct Indexed {
 }
 
 impl Indexed {
-    /// 日志 `log` 落了盘的每一批，照会话 `id` 更新 `index` 里的那一行，写进用量汇总 `usage`（属主等照 `who`），更新回合
+    /// 日志 `log` 落了盘的每一批，照会话 `id` 更新 `index` 里的那一行，写进用量汇总 `usage`（场所、父会话照 `who`），更新回合
     /// 索引 `turns`。
     pub(crate) fn new(
         log: SessionLog,

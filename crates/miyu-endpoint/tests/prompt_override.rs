@@ -1,4 +1,4 @@
-//! 提示词的同名覆盖（施工 OV-1 中）：`prompts/<路径>` 压着出厂的（施工 SU-3 下：系统区那一层拿掉），开会话拼 system
+//! 提示词的同名覆盖（施工 OV-1 中）：`prompts/<路径>` 压着出厂的（施工 SU-3 下），开会话拼 system
 //! 时照它；占位不对、不是英文的照出厂的，`check` 报。
 
 use serde_json::json;
@@ -82,7 +82,7 @@ pub(crate) fn latest_system(home: &Home, session: &str) -> String {
     Snapshot::from_bytes(&bytes).expect("读得懂").system
 }
 
-/// 载入的会话（核心重启以后）换快照时也照属主的覆盖拼：预设的文件改了，下一轮重拼的 system 用上他写的那一份。
+/// 载入的会话（核心重启以后）换快照时也照你的覆盖拼：预设的文件改了，下一轮重拼的 system 用上你写的那一份。
 #[tokio::test]
 async fn a_loaded_session_rebuilds_with_the_owner_s_overrides() {
     let home = Home::new();

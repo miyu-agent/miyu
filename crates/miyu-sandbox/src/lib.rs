@@ -62,7 +62,7 @@ pub fn set_confines_sockets(on: bool) {
     SOCKETS.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
-/// 关起来的会话（成员的、场所的）能不能跑命令（施工 MB-1）：读关得住（[`CONFINES_READS`]），能替命令在沙盒外读写的系统服务的
+/// 关起来的场所会话能不能跑命令（施工 MB-1）：读关得住（[`CONFINES_READS`]），能替命令在沙盒外读写的系统服务的
 /// 套接字也连不上（[`set_confines_sockets`]）。
 pub fn confines_others() -> bool {
     CONFINES_READS && SOCKETS.load(std::sync::atomic::Ordering::Relaxed)

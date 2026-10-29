@@ -1,7 +1,7 @@
-//! 管理员事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，`docs/blueprint/session/guard.md`）：系统配置的
+//! 主人事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，`docs/blueprint/session/guard.md`）：配置的
 //! `sandbox.tools.<名字>` 写的来处和工具目录里这件工具归的包一样，才算放行。放行了的，工作区这一级不问、执行器不给沙盒的规格；
 //! 只读拒；只碰得到自己工作区的会话（群聊）拒；来处对不上的、没写的照旧在沙盒里跑。带文件的（施工 X-37 补）：文件的真实位置
-//! 落在管得住的地方（家目录自己放东西的几处、资源目录）、又不在她这一轮写得了的地方的才算。脚本里调到的（嵌套调用）走同一条链。
+//! 落在管得住的地方（数据根里自己放东西的几处、资源目录）、又不在她这一轮写得了的地方的才算。脚本里调到的（嵌套调用）走同一条链。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -38,8 +38,8 @@ fn asked(log: &[Event]) -> bool {
         .any(|event| matches!(event.body, Body::ApprovalRequested(_)))
 }
 
-/// 在场地的 `work/` 里造一个会话，系统配置是 `config`，工具照 `tools`（`~home` 的包里），沙盒能用；场所是 `venue`、属主是不是
-/// 管理员照 `owner_is_admin`，这台机器上的沙盒能不能用照 `sandboxed`。她调一次 `call`，说一句，等这一轮完。
+/// 在场地的 `work/` 里造一个会话，配置是 `config`，工具照 `tools`（`~home` 的包里），沙盒能用；场所是 `venue`、
+/// `owner_is_admin` 是假的关起来，这台机器上的沙盒能不能用照 `sandboxed`。她调一次 `call`，说一句，等这一轮完。
 async fn turn(
     home: &mut Home,
     config: &str,
@@ -180,7 +180,7 @@ async fn a_granted_tool_whose_file_is_elsewhere_stays_in_the_sandbox() {
     );
 }
 
-/// 文件在家目录的 `scripts/` 里的照常放行：不问、不给沙盒的规格。
+/// 文件在数据根的 `scripts/` 里的照常放行：不问、不给沙盒的规格。
 #[tokio::test]
 async fn a_granted_script_in_the_home_folder_runs_outside() {
     let mut home = Home::outside_temp();
@@ -344,7 +344,7 @@ async fn a_group_chat_still_refuses_a_granted_tool() {
     assert_eq!(results(&log)[0].status, ToolStatus::Denied);
 }
 
-/// 主人的私聊（场所会话、属主是管理员）：没人能确认，放行了的照样不问、在沙盒外跑。
+/// 主人的私聊（场所会话、没关起来）：没人能确认，放行了的照样不问、在沙盒外跑。
 #[tokio::test]
 async fn the_owners_private_chat_runs_a_granted_tool() {
     let mut home = Home::outside_temp();

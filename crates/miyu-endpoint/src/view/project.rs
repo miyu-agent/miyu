@@ -1,5 +1,5 @@
 //! 把一页日志算成条目（施工 9-8 中，`docs/blueprint/view.md`「`view.page`」）：投影要的字、改了多少行的端口，在这里照
-//! 资源目录和属主的 blob 接上。投影本身是纯逻辑，在 `miyu-view`。
+//! 资源目录和 blob 接上。投影本身是纯逻辑，在 `miyu-view`。
 
 use std::sync::Arc;
 
@@ -34,7 +34,7 @@ impl Words for HumanWords {
     }
 }
 
-/// 改了多少行：照效果里的原文、属主的 blob 算，和 `view.detail` 的差异同一个算法。
+/// 改了多少行：照效果里的原文、blob 算，和 `view.detail` 的差异同一个算法。
 struct BlobLines(Blobs);
 
 impl Lines for BlobLines {

@@ -1,5 +1,5 @@
 //! `usage.query`（施工 8-15，`docs/blueprint/models.md`「协议」`usage.query`）：会话的请求、一次性调用都记得进，照分组加起来；
-//! 金额照币种各加各的，照 `usage.currency` 排；一次性调用照用途分组、写进账号日志、没有会话；参数不对的 `bad_params`。
+//! 金额照币种各加各的，照 `usage.currency` 排；一次性调用照用途分组、写进日志、没有会话；参数不对的 `bad_params`。
 
 use serde_json::{Value, json};
 

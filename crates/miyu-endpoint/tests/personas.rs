@@ -1,5 +1,5 @@
 //! 人格（施工 P-1 上，`docs/blueprint/personas.md`）：真核心走一遍。家目录里的人格叠在出厂的上面，人设进 system、示范对话
-//! 排在 system 后面历史前面；没写人格的照 `persona.default`（个人设置压着系统配置）；`venue.session` 带人格造、找回时不看；
+//! 排在 system 后面历史前面；没写人格的照 `persona.default`；`venue.session` 带人格造、找回时不看；
 //! 没有的 `unknown_persona`，编号不合写法的参数不对，写错了的 `persona_invalid` 带问题；`persona.list`、`persona.get`；
 //! 角色扮演提示排在人说的那句后面、system 带风格锁（施工 P-1 补）。
 
@@ -16,12 +16,12 @@ use miyu_tool::Catalog;
 use crate::support::venues::{BINDINGS, configured_core};
 use crate::support::*;
 
-/// 管理员（测试里是 alice）家目录里的人格 `id` 的一个文件。
+/// 数据根里的人格 `id` 的一个文件。
 fn mine(home: &Home, id: &str, file: &str, text: &str) {
     home.write(&format!("personas/{id}/{file}"), text);
 }
 
-/// 读系统配置、个人设置的核心（`support::venues`）。
+/// 读配置的核心（`support::venues`）。
 fn configured(home: &Home, script: &Script) -> Arc<Core> {
     configured_core(home, script, Catalog::default())
 }

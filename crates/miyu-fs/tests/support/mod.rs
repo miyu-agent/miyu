@@ -43,7 +43,7 @@ pub fn file(path: &Path, text: &str) {
 /// ```text
 /// home/  notes.txt  .ssh/id  .cargo/registry/x.rs
 /// work/  src/a.rs  .git/hooks/pre-commit  .git/config  .git/HEAD  sub/.git/hooks/x
-/// data/  run/token  home/admin/workspace/w.txt
+/// data/  run/token  workspace/w.txt
 /// tmp/   t.txt
 /// sys/   lib.txt
 /// work-other/  x.txt

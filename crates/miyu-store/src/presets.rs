@@ -1,5 +1,5 @@
 //! 预设在哪、几层怎么叠（施工 P-2 上，`docs/blueprint/presets.md`，`16-人格与预设.md` 第三、四节）：出厂的
-//! `<资源目录>/presets/<编号>.toml`、装着的软件包带的 `<包文件夹>/presets/<编号>.toml`（施工 P-11 上，一个编号只认一份）、主人家目录 `presets/<编号>.toml`（施工 SU-3 下：系统区那一层拿掉），同名的
+//! `<资源目录>/presets/<编号>.toml`、装着的软件包带的 `<包文件夹>/presets/<编号>.toml`（施工 P-11 上，一个编号只认一份）、数据根里的 `presets/<编号>.toml`，同名的
 //! 后面的叠在前面的上面，逐格盖。文件怎么读成样子在 `miyu_policy::preset`。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -62,7 +62,7 @@ impl fmt::Display for PresetError {
 
 impl std::error::Error for PresetError {}
 
-/// 预设的几层：出厂、系统区、管理员的家目录。
+/// 预设的几层：出厂、软件包带的、数据根里的。
 #[derive(Debug, Clone)]
 pub struct Presets {
     dirs: Vec<(Layer, PathBuf)>,
@@ -71,7 +71,7 @@ pub struct Presets {
 }
 
 impl Presets {
-    /// 照资源目录 `resources`、数据根 `root`、管理员 `admin` 定几层的位置。
+    /// 照资源目录 `resources`、数据根 `root` 定几层的位置。
     pub fn new(resources: &ResourceRoot, root: &DataRoot) -> Presets {
         Presets {
             dirs: vec![
@@ -112,7 +112,7 @@ impl Presets {
         self.stack(id, None)
     }
 
-    /// 同 [`Presets::find`]，只是家目录那一层的 `id` 照 `home` 这段字算，不读盘（施工 P-3 中）：`preset.set` 写之前照它查
+    /// 同 [`Presets::find`]，只是数据根那一层（`home`）的 `id` 照 `home` 这段字算，不读盘（施工 P-3 中）：`preset.set` 写之前照它查
     /// 改完的一份叠不叠得成。
     ///
     /// # Errors
@@ -122,11 +122,11 @@ impl Presets {
         self.stack(id, Some(home))
     }
 
-    /// 家目录那一层里预设 `id` 的文件（施工 P-3 中）：`preset.set` 写它、`preset.delete` 删它。编号由调用的一方查过。
+    /// 数据根那一层（`home`）里预设 `id` 的文件（施工 P-3 中）：`preset.set` 写它、`preset.delete` 删它。编号由调用的一方查过。
     ///
     /// # Panics
     ///
-    /// 实际不会 panic：[`Presets::new`] 总排上家目录那一层。
+    /// 实际不会 panic：[`Presets::new`] 总排上数据根那一层。
     pub fn home_file(&self, id: &str) -> PathBuf {
         let (_, dir) = self
             .dirs
@@ -200,7 +200,7 @@ impl Presets {
         ids.into_iter().collect()
     }
 
-    /// 包以外的几层里有预设 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、系统区、家目录，从下往上。
+    /// 包以外的几层里有预设 `id` 的那几层（施工 P-11 下，装包查撞名）：出厂、数据根里的，从下往上。
     pub fn layers_with(&self, id: &str) -> Vec<Layer> {
         self.dirs
             .iter()

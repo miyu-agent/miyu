@@ -5,7 +5,7 @@
 //! 2. `version` 和这份文件现在的版本对不上（人看过以后它又变了）：`config_conflict`，`data.version` 是现在的版本。人信任的
 //!    只能是他看过的那一份。
 //! 3. 收下的：先重读 `trust.toml`（手改过的在新的字上记），记下这个回答，照改配置的规矩写盘（顺着链接、临时文件、替换前再读、
-//!    有人手改就重来，最多三次）；换上新的记录，记账号日志 `trust.changed`、运行日志 `INFO project trust`，再回应。
+//!    有人手改就重来，最多三次）；换上新的记录，记日志 `trust.changed`、运行日志 `INFO project trust`，再回应。
 //! 4. 不推送：项目配置不推（第三条第 5 条）。下一个会话、下一句话、开着的会话的下一个回合照新的（施工 8-4）。
 //!
 //! `trust.toml` 读不懂（手改坏了）、写不成的：`internal_error`，记一条 `WARN config not written`，一个字节不动。
@@ -113,7 +113,7 @@ fn write(
     trust::records(&text).map_err(unreadable)
 }
 
-/// 记下了：账号日志 `trust.changed`，运行日志 `INFO project trust`。
+/// 记下了：日志 `trust.changed`，运行日志 `INFO project trust`。
 fn done(config: &Config, cause: &CommandId, answer: &Answer<'_>) {
     let body = TrustChanged {
         path: answer.shown,

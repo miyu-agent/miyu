@@ -1,14 +1,14 @@
 //! 附件（施工 3-9 三补，`docs/blueprint/protocol.md` 的 `blob.put`、`session.send`；`04-核心协议.md` 第九节）：人说话时
 //! 附上的图片、文件。
 //!
-//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成这个连接的账号的
-//!   blob（施工 Y-2中下），回应给头看的几样。
+//! - [`put`]：`blob.put`，本机的头传路径、核心自己读，远程的头传内容；认是什么（[`miyu_tool::attachment`]），存成
+//!   blob，回应给头看的几样。
 //! - [`blocks`]：`session.send` 的 `attachments` 变成内容块：blob 要在，照内容再认一遍，块里的宽高、媒体类型都是核心
 //!   自己量的；图片块、文件块都带着头交回来的名字（图片的施工 3-9 四补）。
-//! - [`images`]：`model.call` 的图照哈希变成图片块（施工 8-20）：blob 要在这个账号里，照内容认，不是图的参数不对；不带
+//! - [`images`]：`model.call` 的图照哈希变成图片块（施工 8-20）：blob 要在，照内容认，不是图的参数不对；不带
 //!   名字。
 //! - [`keep()`]：没有本机路径的附件落成会话目录里的文件，路径填回块里（施工 3-9 六补，`keep.rs`）。
-//! - [`get`]：`blob.get`，分块读这个账号的一个 blob，照属主给，不照会话（施工 W-6，`web-module.md`「七、分块读」）。
+//! - [`get`]：`blob.get`，分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」）。
 //!
 //! 读文件、读 blob、存 blob 都碰磁盘，在阻塞线程里做。
 //!
@@ -81,7 +81,7 @@ pub(crate) struct Attachment {
 #[derive(Debug, Deserialize)]
 pub(crate) struct GetParams {
     blob: String,
-    /// 照哪个会话的属主找（施工 W-6 补）；不写的照管理员。
+    /// 照哪个会话认读不读得到（施工 W-6 补，[`reach`]）；不写的照连接自己拿得到的。
     #[serde(default)]
     session: Option<String>,
     #[serde(default)]
@@ -101,14 +101,14 @@ enum Source {
     Data(Vec<u8>, FileName),
 }
 
-/// 读、存要的几样：数据根、连接的账号（施工 Y-2中下）、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
+/// 读、存要的几样：数据根、系统的家目录；调的是扩展的，它自己包目录的真实位置（施工 W-6 四补）。
 struct Place {
     root: DataRoot,
     home: Option<PathBuf>,
     own: Option<PathBuf>,
 }
 
-/// `blob.put`：读、认、存进连接的账号 `account` 名下，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。
+/// `blob.put`：读、认、存进存处，回应 `blob`、`name`、`media_type`、`kind`，图片另带 `width`、`height`。
 /// `package` 是存的扩展的包（人的连接没有）：存好了它拿得到这个 blob（施工 W-6 三补，[`Grants`]）。
 pub(crate) async fn put(
     core: &Core,
@@ -136,7 +136,7 @@ pub(crate) async fn put(
     Ok(reply)
 }
 
-/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后：blob 照连接的账号 `account` 找。
+/// `session.send`、`session.redo`（施工 4-7 再补）的附件变成内容块，照先后。
 pub(crate) async fn blocks(
     core: &Core,
     attachments: Vec<Attachment>,
@@ -194,9 +194,8 @@ pub(crate) fn read_blob(blobs: &Blobs, blob: &ContentHash) -> Result<Vec<u8>, Re
     })
 }
 
-/// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：不写 `session` 的照连接的账号名下（施工
-/// Y-2中下），写了的照
-/// 那个会话的属主（施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接（扩展的带着包，人的连接没有）。扩展不写
+/// `blob.get`：分块读一个 blob（施工 W-6，`web-module.md`「七、分块读」第 1、12 条）：写了 `session` 的照那个会话认
+/// （施工 W-6 补，谁读得到见 [`reach`]）；`caller` 是连接（扩展的带着包，人的连接没有）。扩展不写
 /// `session` 的只读得到它拿得到的（施工 W-6 三补，[`Grants`]）。没有这个 blob、读不到：`unknown_blob`；`length` 超过
 /// [`miyu_fs::MAX_LENGTH`]、会话编号不合写法：`bad_params`。
 pub(crate) async fn get(
@@ -333,7 +332,7 @@ fn own_folder(core: &Core, package: &str) -> Option<PathBuf> {
     std::fs::canonicalize(found.files_dir()).ok()
 }
 
-/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（这个账号的工作区以外）的不给，调的扩展自己的包目录
+/// 读本机的一个文件，交回内容和它真实的位置：换成真实的位置，数据根里（工作区以外）的不给，调的扩展自己的包目录
 /// 里的除外（真实位置在里面才算：包里的链接指到外面的照旧不给）；路上一层链接都不跟地打开，最多读到上限多一个字节。
 fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
     let real = resolve(Path::new("/"), place.home.as_deref(), path)

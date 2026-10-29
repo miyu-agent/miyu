@@ -14,7 +14,7 @@
       "net.search.deepseek.key": {"name": "DeepSeek", "description": "検索プロバイダーに DeepSeek を使うときに必要です。未設定ならモデルの DeepSeek プロバイダーのキーを使います。検索ごとに課金されます。"},
       "net.search.tavily.key": {"name": "Tavily", "description": "検索プロバイダーに Tavily を選んだときに必要です。"},
       "net.search.brave.key": {"name": "Brave Search", "description": "検索プロバイダーに Brave を選んだときに必要です。"},
-      "net.internal_domains": {"name": "内部ドメイン", "description": "ほかの人（メンバー、グループの人）に頼まれて AI がウェブを見るときに決して行かないドメインです。サブドメインも含み、どのアドレスに解決されてもプロキシを通すかどうかに関係なく適用されます。管理者は影響を受けません。例：example-corp.com。"},
+      "net.internal_domains": {"name": "内部ドメイン", "description": "ほかの人（グループの人、知らない人）に頼まれて AI がウェブを見るときに決して行かないドメインです。サブドメインも含み、どのアドレスに解決されてもプロキシを通すかどうかに関係なく適用されます。あなたは影響を受けません。例：example-corp.com。"},
       "net.search.searxng.url": {"name": "SearXNG のアドレス", "description": "自分で立てた SearXNG（例 http://127.0.0.1:8888）。JSON 形式を有効にしておきます。検索プロバイダーに SearXNG を選んだときに使います。"},
       "net.search.source": {"name": "検索プロバイダー", "description": "AI がウェブ検索に使うサービス。自動では Exa、Parallel、Firecrawl、AnySearch、You.com を順に試し、制限にかかったものはしばらく休ませます。選んだものを先に使い、使えなければほかを順に試します。検索語はこれらの海外のサービスに送られます。直接取得できないページは Exa、Firecrawl、Parallel に代わりに取得させ、その URL も送られます。", "options": {"auto": "自動", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {
@@ -114,9 +114,9 @@
       },
       "commands.<id>.access": {
         "name": "このコマンドを使える人",
-        "description": "このスラッシュコマンドを使える人。管理者はターミナルの管理者とグループの管理者、全員はチャットの誰でも、無効は誰も使えません。設定しない場合はコマンド自身の設定、それもなければ管理者です。",
+        "description": "このスラッシュコマンドを使える人。あなたとグループの管理者、チャットの誰でも、または無効（誰も使えない）。設定しない場合はコマンド自身の設定、それもなければあなたとグループの管理者です。",
         "options": {
-          "admin": "管理者",
+          "admin": "あなたとグループの管理者",
           "anyone": "全員",
           "off": "無効"
         }
@@ -183,7 +183,7 @@
       },
       "sandbox.tools.<name>": {
         "name": "サンドボックスなし：このツール",
-        "description": "管理者がこのツールをサンドボックスの外で実行することを許可します（ハードウェアに触れる、root が必要なスクリプトなど）。値はツールの出どころです。自分で置いたスクリプトは ~home、インストールしたパッケージはその ID、組み込みの shell は shell。一致しなければ許可されません。許可したツールは管理者自身のセッションでは確認なしにサンドボックスの外で実行されます。グループチャットや知らない人の個別チャットでは引き続き拒否され、読み取り専用のときも拒否されます。"
+        "description": "このツールをサンドボックスの外で実行することを許可します（ハードウェアに触れる、root が必要なスクリプトなど）。値はツールの出どころです。自分で置いたスクリプトは ~home、インストールしたパッケージはその ID、組み込みの shell は shell。一致しなければ許可されません。許可したツールはあなた自身のセッションでは確認なしにサンドボックスの外で実行されます。グループチャットや知らない人の個別チャットでは引き続き拒否され、読み取り専用のときも拒否されます。"
       },
       "packages.<id>.off": {
         "name": "このパッケージを自分だけオフにする",
@@ -703,7 +703,7 @@
     "package-problems/prompt_override_bad": "このプロンプトの上書きは使われず、下の層か出荷時のものになります：{detail}",
     "package-problems/override_bad": "このツール説明の上書きは使われず、出荷時のものになります：{detail}",
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
-    "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",
+    "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
     "package-problems/script_state_left": "スクリプト {detail} の状態フォルダーがありますが、今はそのスクリプトがありません。不要ならこのフォルダーを自分で削除してください",
     "package-problems/script_clashed": "スクリプト {detail} は他のツールと同じ名前なので登録されませんでした",
     "package-problems/script_not_made": "このスクリプトは登録されませんでした：{detail}",
@@ -714,7 +714,7 @@
     "package-problems/sandbox_tool_linked": "sandbox.tools.{name} が許可したツールのファイルは Miyu が管理できる場所の外にあります（実際の場所 {real}）。許可されません：リンクやリンクになっているフォルダーは、彼女が変更できる場所を指せます。許可するには、実ファイルをホームフォルダーの scripts/ に戻すか、パッケージとしてインストールしてください",
     "package-problems/sandbox_shell": "sandbox.tools.shell が shell を許可しています：AI が実行するすべてのコマンドが確認なしにサンドボックスの外で動きます",
     "package-problems/skill_skipped": "このスキルはスキップされました：{detail}",
-    "package-problems/skill_link_outside": "このスキルフォルダーはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",
+    "package-problems/skill_link_outside": "このスキルフォルダーはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
     "package-problems/skill_name_mismatch": "名前がフォルダー名と違います。書かれた名前 {detail} を使います",
     "package-problems/skill_name_from_folder": "名前がないか、書き方が正しくありません（1～64 文字の小文字・数字・単独のハイフン）。フォルダー名 {detail} を使います",
     "package-problems/skill_yaml_lenient": "先頭が正しい YAML ではありません。引用符のない値をひとつの文として読み直しました。コロンを含む値は引用符で囲んでください",
@@ -729,7 +729,7 @@
     "package-problems/persona_left": "パッケージ {detail} はアンインストール済みで、これはその残した変更です",
     "package-problems/preset_left": "パッケージ {detail} はアンインストール済みで、これはその残した変更です",
     "package-problems/slash_skipped": "このスラッシュコマンドはスキップされました：{detail}",
-    "package-problems/slash_link_outside": "このコマンドテンプレートはデータルート内の {detail} へのリンクで、このアカウント自身のフォルダーの外なので、スキップしました",
+    "package-problems/slash_link_outside": "このコマンドテンプレートはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
     "package-problems/slash_covered": "{detail} と同じ名前のため上書きされ、こちらは使われません",
     "package-problems/slash_builtin": "Miyu 組み込みの /{detail} と同じ名前のため、こちらは使われません",
     "package-problems/skill_command_clash": "コマンド /{detail} と同じ名前のため、/{detail} ではコマンドが実行され、このスキルは使われません",

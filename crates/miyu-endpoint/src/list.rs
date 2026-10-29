@@ -1,4 +1,4 @@
-//! 列出会话（`docs/designs/04-核心协议.md` 第五节「会话列表」的第一小块，施工 3-9 下）：管理员的会话，从新到旧；`oneshot`
+//! 列出会话（`docs/designs/04-核心协议.md` 第五节「会话列表」的第一小块，施工 3-9 下）：会话从新到旧；`oneshot`
 //! 的只要一次性的。标题、置顶（施工 3-8 三补），工作目录、最近一次动静（施工 C-3）照日志算，忙不忙看会话表。
 //!
 //! 照日志算的几样读会话列表的索引（施工 3-8 七补，`docs/blueprint/store/index.md`）：一个会话一行，记着照到日志的哪里。
@@ -35,7 +35,7 @@ pub(crate) fn local(row: &Row) -> bool {
     row.venue == LOCAL
 }
 
-/// 账号 `account` 的会话（施工 Y-12 上，以前一律是管理员的），从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。`dream`
+/// 会话从新到旧，最多 `limit` 个：`[{busy?, cwd, last_active, oneshot, parent, pinned?, session, title?}]`。`dream`
 /// 写了的照它挑整理会话（施工 D-1 下）：`true` 只要整理会话，`false` 不要。
 pub(crate) async fn list(
     core: &Core,
@@ -220,8 +220,8 @@ impl Listed {
     }
 }
 
-/// 在阻塞线程里一个个读：账号 `account` 的会话从新到旧，合 `pick` 的列进去，最多 `limit` 个；`busy` 里的是忙的。读下一个
-/// 会话之前看一眼 `stop`，举起来了交回已经读到的。`index` 是这个账号的会话列表的索引，没有的每个都整份读。
+/// 在阻塞线程里一个个读：会话从新到旧，合 `pick` 的列进去，最多 `limit` 个；`busy` 里的是忙的。读下一个
+/// 会话之前看一眼 `stop`，举起来了交回已经读到的。`index` 是会话列表的索引，没有的每个都整份读。
 ///
 /// # Errors
 ///
@@ -253,7 +253,7 @@ pub(crate) fn scan(
         }
         let dir = root.session_dir(&id);
         let row = match rows.remove(&id) {
-            // 属主、父会话、是不是一次性的只在 `session.created` 里，不会变：照旧的那一行挑。
+            // 父会话、是不是一次性的只在 `session.created` 里，不会变：照旧的那一行挑。
             Some(row) if !pick(&row) => continue,
             Some(row) => match caught_up(&dir, &row, index) {
                 Some(row) => Some(row),
@@ -359,7 +359,7 @@ fn put(index: Option<&SessionIndex>, row: &Row, was: Option<&Mark>) {
     }
 }
 
-/// 打开账号 `account` 的会话列表的索引（施工 3-8 七补）：核心起来时开一次，一直开着。新建的记一行 `INFO`；读不了、坏了、
+/// 打开会话列表的索引（施工 3-8 七补）：核心起来时开一次，一直开着。新建的记一行 `INFO`；读不了、坏了、
 /// 版本不对，删掉换了一份空的，记一行 `WARN`，列会话时照日志补；删了重建也打不开的记一行 `WARN`，每次列会话都整份读。
 pub(crate) fn open_index(root: &DataRoot) -> SessionIndex {
     let (index, opened) = SessionIndex::open(&root.index().join(FILE));

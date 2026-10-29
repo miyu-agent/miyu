@@ -5,7 +5,7 @@
 //! - 看得见：自己的全部，加装了的包里的；同编号的自己的赢，两个包同编号的照包的编号先到先得（同技能）。
 //! - 索引：自己的 `index/kb/<编号>.db`；包里的 `index/kb/packages/<包>/<编号>.db`（自己的编号不带
 //!   `/`，撞不上）。
-//! - 开关：包里的库照包里 `kb.toml` 的 `auto`；人改了的记在账号自己的 `kb.toml`：`[auto]` 下一行
+//! - 开关：包里的库照包里 `kb.toml` 的 `auto`；人改了的记在数据根的 `kb.toml`：`[auto]` 下一行
 //!   `"<包>/<编号>" = true/false`（项目主人 2026-10-13 定：包里的库只读，自动想起人能开关，卸包以后跟着没有）。
 
 use std::path::{Path, PathBuf};
@@ -93,7 +93,7 @@ impl Knowledge {
         problems
     }
 
-    /// 账号下看得见的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）：自己的，加包里的（施工
+    /// 看得见的库的编号，照编号排（施工 K-1 下起会话照它判给不给她两件工具、她查得到哪几个）：自己的，加包里的（施工
     /// K-8）。目录不在的当一个都没有。
     ///
     /// # Errors
@@ -110,7 +110,7 @@ impl Knowledge {
         Ok(ids)
     }
 
-    /// 账号下的知识库都在哪个目录下。
+    /// 知识库都在哪个目录下。
     pub(super) fn top(&self) -> PathBuf {
         self.root.path().join("kb")
     }
@@ -166,7 +166,7 @@ impl Knowledge {
         self.open.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 包里的库 `place` 自动想起的开关人改过的（账号自己的 `kb.toml`）；自己的、没改过的、读不了的没有。
+    /// 包里的库 `place` 自动想起的开关人改过的（数据根的 `kb.toml`）；自己的、没改过的、读不了的没有。
     pub(super) fn switched(&self, id: &str, place: &Place) -> Option<bool> {
         let package = place.package()?;
         let text = std::fs::read_to_string(self.switches()).ok()?;
@@ -174,7 +174,7 @@ impl Knowledge {
         switches.get(&format!("{package}/{id}")).copied()
     }
 
-    /// 包 `package` 里的库 `id` 自动想起开、关（施工 K-8）：记在账号自己的 `kb.toml`，别的照原样。
+    /// 包 `package` 里的库 `id` 自动想起开、关（施工 K-8）：记在数据根的 `kb.toml`，别的照原样。
     pub(super) fn switch(&self, package: &str, id: &str, auto: bool) -> Result<(), KnowledgeError> {
         let file = self.real_switches()?;
         let text = read_or_empty(&file)?;
@@ -185,13 +185,13 @@ impl Knowledge {
         miyu_fs::replace(&file, text.as_bytes()).map_err(io)
     }
 
-    /// 账号自己记开关的那一份。
+    /// 记开关的那一份。
     fn switches(&self) -> PathBuf {
         self.root.path().join("kb.toml")
     }
 
     /// 同 `switches`，换成真实的位置，写之前用：数据根的路上可能有链接（macOS 的临时目录 `/var`），
-    /// `miyu_fs::replace` 一层链接都不跟。账号的目录不在的建上。
+    /// `miyu_fs::replace` 一层链接都不跟。数据根不在的建上。
     fn real_switches(&self) -> Result<PathBuf, KnowledgeError> {
         let dir = self.root.path().to_path_buf();
         std::fs::create_dir_all(&dir).map_err(io)?;
@@ -234,7 +234,7 @@ impl Knowledge {
     ///
     /// # Errors
     ///
-    /// 索引关不上、删不掉；账号的 `kb.toml` 读不了、读不懂、写不进。
+    /// 索引关不上、删不掉；`kb.toml` 读不了、读不懂、写不进。
     fn forget_package(&self, package: &str) -> Result<(), KnowledgeError> {
         let indexes = self.root.index().join("kb").join("packages").join(package);
         let closing: Vec<Arc<Shelf>> = {

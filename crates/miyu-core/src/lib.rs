@@ -452,7 +452,7 @@ async fn run(
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
     models::follow(reading, cache, models::catalog_settings(core.config_now()));
     let purging = trash::purge(trashed);
-    // 清一次每个账号的缓存（施工 Y-11 上）：同回收处，走之前等它清完。
+    // 清一次缓存（施工 Y-11 上）：同回收处，走之前等它清完。
     let sweeping = cache::sweep(cached);
     let (fixed, configured) = (options.idle, Arc::clone(&core));
     let idle = move || fixed.or_else(|| serve::idle_limit(&configured));

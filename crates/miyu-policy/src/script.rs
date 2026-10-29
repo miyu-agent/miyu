@@ -9,7 +9,7 @@
 //! - `Parameters`：参数的 JSON Schema，接在下面的几行注释里，拼成一份 JSON 为止；顶层得是 `"type": "object"`。没写的当
 //!   没有参数；
 //! - `Need load`：`yes` 和没写的要先加载，`no` 是全量（施工 L-3，`25-工具加载.md` W9，2026-10-20 项目主人改：脚本默认先加载，
-//!   原来没写的全量）；大小写不论，`true`、`false` 也认。个人设置的 `loading.tools.<工具名>` 盖过它。
+//!   原来没写的全量）；大小写不论，`true`、`false` 也认。配置的 `loading.tools.<工具名>` 盖过它。
 //! - `Venues`：给哪种会话（施工 X-43）：`local`、`private`、`group` 里的几个，逗号隔开，同清单的 `venues`（同一份查法
 //!   [`miyu_config::package::venues_fit`]）；没写的哪种会话都有。只有英文的键名，同上面这些给机器读的格。
 //!

@@ -1,4 +1,4 @@
-//! 换快照的测试共用的（施工 P-2 下从 `tests.rs` 挪出来）：一个临时数据根，Miyu 住在管理员 alice 的家目录；有预设的会话
+//! 换快照的测试共用的（施工 P-2 下从 `tests.rs` 挪出来）：一个临时数据根，Miyu 住在里面；有预设的会话
 //! （施工 O-2 中从 `preset_tests.rs` 挪出来，目录换代的测试也用）。
 
 use std::path::{Path, PathBuf};
@@ -88,7 +88,7 @@ pub(super) fn installed() -> Features {
     )
 }
 
-/// 一个会话：人格 Miyu，预设是家目录里的 `p.toml`（内容 `text`），照它筛好的工具面、算好的范围拼的快照。
+/// 一个会话：人格 Miyu，预设是数据根里的 `p.toml`（内容 `text`），照它筛好的工具面、算好的范围拼的快照。
 pub(super) fn setup(name: &str, text: &str) -> (Scratch, DataRoot, Refresh) {
     setup_in(name, text, catalog())
 }

@@ -246,7 +246,7 @@ impl Vectors {
     }
 
     /// 照 `using` 在后台补一个知识库的索引 `index` 里缺的向量（施工 K-2，`knowledge.md`「怎么走」第四条）；`name` 是它的
-    /// 名字（`kb <账号> <编号>`：她的工具、人经协议补同一个库用同一个名字，同一时刻只有一个在补）。
+    /// 名字（`kb <编号>`：她的工具、人经协议补同一个库用同一个名字，同一时刻只有一个在补）。
     pub fn fill_knowledge(self: &Arc<Self>, using: &Using, name: String, index: Arc<RecallIndex>) {
         self.fill(using, name, Target::Knowledge(index));
     }

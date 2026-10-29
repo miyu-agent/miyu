@@ -113,7 +113,7 @@ pub(crate) struct Tools {
     callers: caller::Callers,
     /// 脚本里调的（施工 M-2，`nested.rs`）。
     nested: nested::Nesting,
-    /// 管理员放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
+    /// 主人放行出沙盒的（施工 X-36）：回合开始照这一轮的配置换，放行了的不写沙盒的规格。
     unsandboxed: crate::unsandboxed::Unsandboxed,
     /// 子目录的项目指令（施工 P-14 下，`docs.rs`）。
     docs: docs::Docs,
@@ -394,7 +394,7 @@ impl Tools {
             Progress::new(move |text| send(&backs, ToolBack::Progress { call_id, text }))
         };
         let span = tracing::Span::current();
-        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。管理员放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
+        // 工具报要在沙盒外跑的不写规格（施工 D-4）：权限策略照同一个报判过了，工作区一定问过人、人允许了才走到这里。主人放行了的也不写（施工 X-36）：权限策略照同一份放行表判过了。
         let wrap = self.wrap(&name, &tool, &call);
         let sandbox = self.sandbox.clone().filter(|_| wrap.needs_spec());
         let unless = wrap.unless();

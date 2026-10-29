@@ -1,5 +1,5 @@
-//! 新建、改、删人格，读提示词的原文（施工 P-3 下，`docs/blueprint/personas.md`「改」，16 第四、九节）：只写管理员家目录那一层
-//! 的人格目录。改出厂的、系统区的就是建同名覆盖，只写改了的；不写编号的是新建，编号由核心起（施工 P-3 补）。
+//! 新建、改、删人格，读提示词的原文（施工 P-3 下，`docs/blueprint/personas.md`「改」，16 第四、九节）：只写你那一层
+//! 的人格目录。改出厂的、包带的就是建同名覆盖，只写改了的；不写编号的是新建，编号由核心起（施工 P-3 补）。
 //!
 //! - `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设），提示词整份换、`unset` 删掉你那一层的；示范对话也能给一对
 //!   一对的（`pairs`，施工 P-3 补），核心写成文件的写法。几样一起查（改完的一份连同叠好以后），有错什么都不写。
@@ -53,13 +53,13 @@ pub(crate) struct SetParams {
     changes: Vec<ChangeParams>,
     #[serde(default)]
     prompts: BTreeMap<String, PromptParams>,
-    /// 头像（施工 P-5）：换成一张传上来的图，或者删掉家目录那一层的。
+    /// 头像（施工 P-5）：换成一张传上来的图，或者删掉你那一层的。
     #[serde(default)]
     avatar: Option<PictureParams>,
     /// 背景图（施工 P-6）：同头像。
     #[serde(default)]
     background: Option<PictureParams>,
-    /// 主题色（施工 P-6）：`#rrggbb`（大小写都认，写成小写），或者 `{"unset": true}` 删掉家目录那一层的。
+    /// 主题色（施工 P-6）：`#rrggbb`（大小写都认，写成小写），或者 `{"unset": true}` 删掉你那一层的。
     #[serde(default)]
     seed: Option<appearance::SeedParams>,
     /// 背景图露出多少（施工 P-7）：0 到 100 的整数，或者 `{"unset": true}`。
@@ -115,7 +115,7 @@ struct Pending {
     version: Option<String>,
 }
 
-/// `persona.set`：改家目录那一层，交回改完叠好的样子（同 `persona.get`）。不写 `persona` 的是新建（施工 P-3 补）：编号由
+/// `persona.set`：改你那一层，交回改完叠好的样子（同 `persona.get`）。不写 `persona` 的是新建（施工 P-3 补）：编号由
 /// 核心起，至少要写一样东西。
 pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
     let empty = params.changes.is_empty()
@@ -436,7 +436,7 @@ pub(crate) struct DeleteParams {
     persona: String,
 }
 
-/// `persona.delete`：家目录那一层这个人格的目录挪进回收处，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
+/// `persona.delete`：你那一层这个人格的目录挪进回收处，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
 /// `nothing_to_delete`。
 pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
     if !valid(&params.persona) {

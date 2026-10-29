@@ -1,4 +1,4 @@
-//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：真核心走一遍。造会话照「开会话时指定、个人设置、系统配置」找预设，指着
+//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：真核心走一遍。造会话照「开会话时指定、配置」找预设，指着
 //! 没有的、写错的不造；人格照「指定、`persona.default`」找，预设不再管（施工 P-4 上）；`session.created`、会话列表、`subscribe` 带上预设；
 //! `venue.session` 带预设；`preset.list`、`preset.get`；`check` 查预设。
 
@@ -13,12 +13,12 @@ use miyu_tool::Catalog;
 use crate::support::venues::{BINDINGS, configured_core};
 use crate::support::*;
 
-/// 管理员（测试里是 alice）家目录里的预设 `id`。
+/// 数据根里的预设 `id`。
 fn mine(home: &Home, id: &str, text: &str) {
     home.write(&format!("presets/{id}.toml"), text);
 }
 
-/// 读系统配置、个人设置的核心（`support::venues`）。
+/// 读配置的核心（`support::venues`）。
 fn configured(home: &Home, script: &Script) -> Arc<Core> {
     configured_core(home, script, Catalog::default())
 }

@@ -4,7 +4,7 @@ Manage schedules: at the set time, a message goes to a session for one turn.
 No command means list. Times missed while the core was stopped are skipped.
 
 Commands:
-  list                    List this account's schedules
+  list                    List all schedules
   add <message>...        Add one; pick one of --cron, --at, --every
   rm <id>                 Remove one
   pause <id>              Pause one

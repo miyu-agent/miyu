@@ -156,7 +156,7 @@ async fn wrong_places_are_refused_on_the_spot() {
             .any(|event| matches!(event.body, Body::WorkspaceChanged(_))),
         "拒绝的什么都没记"
     );
-    // 人明着要 `~`、核心读不出家目录（这个核心没有）：照不了，说读不了，不悄悄退回（施工 9-7 补，原来退回账号的工作区）。
+    // 人明着要 `~`、核心读不出家目录（这个核心没有）：照不了，说读不了，不悄悄退回（施工 9-7 补）。
     let wide = client
         .call(
             "w",
@@ -198,7 +198,7 @@ async fn a_change_survives_a_restart_before_any_turn() {
     );
 }
 
-/// 人选的太宽的工作区，核心重启以后照旧（施工 9-7 补：原来载入时再判一次太宽，人选的 `~` 被换成账号的工作区）。
+/// 人选的太宽的工作区，核心重启以后照旧（施工 9-7 补：原来载入时再判一次太宽，人选的 `~` 被换成 `workspace/`）。
 #[tokio::test]
 async fn a_chosen_wide_workspace_survives_a_restart() {
     let home = Home::new();

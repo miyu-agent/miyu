@@ -184,8 +184,7 @@ async fn a_child_is_off_whatever_it_was_given() {
     assert!(snapshot(&home, main.id()).memory.is_some(), "新造的写明");
 }
 
-/// 记忆放在记忆账号的那一间（施工 R-3 下）；关在沙盒里的会话照这个场所记（施工 R-13 上，`Listener`；施工 SU-4 中起照关不关，
-/// 不照属主是不是记忆账号）。
+/// 记忆放在人格的那一间（施工 R-3 下）；关在沙盒里的会话照这个场所记（施工 R-13 上，`Listener`；施工 SU-4 中起照关不关）。
 #[tokio::test]
 async fn the_room_follows_the_memory_account_and_a_confined_session_is_a_place() {
     let home = Home::new();

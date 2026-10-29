@@ -92,7 +92,7 @@ async fn extensions_only_reach_what_they_declared() {
         r#"ask:session.set_permission_level:{"session":"x","level":"full"}"#,
         r#"ask:session.set_workspace:{"session":"x","cwd":"~"}"#,
         "call:no.such_method",
-        // 要能力的：参数没查之前就挡下。删会话施工 Y-2 上起给有 `sessions.drive` 的扩展（只删得掉自己名下的，平台的后台删场所会话）。
+        // 要能力的：参数没查之前就挡下。删会话施工 Y-2 上起给有 `sessions.drive` 的扩展（只删得掉碰得到的，平台的后台删场所会话）。
         r#"ask:session.delete:{"session":"x"}"#,
         r#"ask:session.create:{"cwd":"~"}"#,
         r#"ask:session.send:{"session":"x","text":"hi"}"#,

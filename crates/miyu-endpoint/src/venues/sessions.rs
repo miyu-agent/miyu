@@ -2,7 +2,7 @@
 //! `{"sessions": [{"session", "venue"}]}`。通讯平台的桥起来时照它订阅，不用等每个场所来一条消息才找。
 //!
 //! 一个场所只看最新的那一个（和 `venue.session` 找回的是同一个；删了的挪进了回收处，本来就不在）；场所编号的平台前缀（第一个
-//! `:` 前面那一段）在这个包清单 `[connection] platform` 里的才列（施工 SU-4 中：场所会话都在主人名下，不再照属主分）。平台只认
+//! `:` 前面那一段）在这个包清单 `[connection] platform` 里的才列（施工 SU-4 中）。平台只认
 //! 前缀，核心不解读场所编号别的部分。只给平台桥，别的照没批 `act_for_external` 拒。
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -33,7 +33,7 @@ pub(crate) async fn sessions(
 ) -> Result<Value, Refusal> {
     let bridge = super::bridge(core, caller).ok_or_else(super::bridge::refused)?;
     let platforms = bridge.platforms(core);
-    // 场所 → 最新的会话：场所会话都在主人名下（施工 SU-4 中）。
+    // 场所 → 最新的会话（施工 SU-4 中）。
     let mut newest: BTreeMap<String, SessionId> = BTreeMap::new();
     for listed in mains(core, |row| row.venue != LOCAL, None).await? {
         let newer = newest

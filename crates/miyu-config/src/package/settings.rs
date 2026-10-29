@@ -404,7 +404,7 @@ fn fits(kind: &SettingKind, value: &toml_edit::Value) -> Option<Value> {
     }
 }
 
-/// `layers`：只认 `system`（施工 SU-3 上：个人设置那一层拿掉了）。
+/// `layers`：只认 `system`。
 fn layers(reader: &Reader<'_>, at: &str, item: &Node) -> Result<Vec<Layer>, Problem> {
     let bad = || {
         reader.problem(

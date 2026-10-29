@@ -25,7 +25,7 @@ use crate::personas::pick;
 ///   全局开关，`default` 都没写、照 `unlisted`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件
 ///   `{"name", "label", "on"}`：`label` 照给人看的字里这件工具的显示名，没有的照工具名；功能关着的都是关着，开着的照
 ///   `[tools]` 关没关。`package` 是它归哪个包（施工 ENV-1：头照它按包分组，包名照 `package.list` 查），同预设 `[software]`
-///   认的那个编号：机主私人的脚本、MCP 服务、自己放的模板命令是 `~home`；不归包的技能没有这一格。
+///   认的那个编号：你自己放的脚本、MCP 服务、模板命令是 `~home`；不归包的技能没有这一格。
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "by", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
@@ -44,7 +44,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         .filter_map(|one| Some((one.id.as_str(), one.read.as_ref().ok()?)))
     {
         packages.insert(package);
-        // 被个人设置里同名的服务盖住的不列：那个功能列在个人设置的那一个上（施工 F-9 下）。
+        // 被配置里同名的服务盖住的不列：那个功能列在配置的那一个上（施工 F-9 下）。
         for feature in manifest.features_of(package).into_iter().filter(|feature| {
             feature
                 .service
@@ -126,7 +126,7 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
         }
         listed.push(one);
     }
-    // 个人设置里的 MCP 服务各算一个功能（施工 F-9 下）：名字是服务名；工具是目录里挂在 `~home` 下、归它的。
+    // 配置里的 MCP 服务各算一个功能（施工 F-9 下）：名字是服务名；工具是目录里挂在 `~home` 下、归它的。
     for server in core.home_mcp.now().iter() {
         let id = server.feature_id();
         let (on, by) = file.decided(&id, HOME_PACKAGE);

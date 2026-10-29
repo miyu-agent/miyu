@@ -1,5 +1,5 @@
-//! 配置服务（`docs/blueprint/config.md`「怎么走」第二、三、五、六条，施工 8-2、8-3）：核心起来时读系统配置、管理员的
-//! 个人设置和信任的记录，合出不算项目配置的最终值；造会话、说话、`config.get` 时照目录找项目配置，带上信任着的那一份
+//! 配置服务（`docs/blueprint/config.md`「怎么走」第二、三、五、六条，施工 8-2、8-3）：核心起来时读配置
+//! 和信任的记录，合出不算项目配置的最终值；造会话、说话、`config.get` 时照目录找项目配置，带上信任着的那一份
 //! 再合一次。
 //!
 //! - [`Config::load`]：起来时读一次。读不进来不影响起不起得来（G8）：问题记下，那一层照空的算，每份有问题的文件记一条
@@ -12,7 +12,7 @@
 //! 只有核心写配置文件（G4），核心里只有这一个配置服务：它住在一把锁里，改、查排着队一件件办。改之前先把文件重读一遍，
 //! 手改过的照新的字改（G5 第 4 条）；写成了换上新的最终值，新的连接、新的会话照它。
 //!
-//! 施工 8-4：监视几份文件，手改了当场重读（`config/observe.rs`）；每换上一份新的，交给会话、核心，系统配置、个人设置变了
+//! 施工 8-4：监视几份文件，手改了当场重读（`config/observe.rs`）；每换上一份新的，交给会话、核心，配置变了
 //! 推 `config.changed`（`config/hub.rs`、`config/push.rs`）。
 //!
 //! 施工 8-5：密钥文件也在这里（`crate::secrets`）：起来时读、手改了重读，引用的密钥、环境变量取不到的报警告
@@ -85,7 +85,7 @@ pub struct Config {
     env: BTreeMap<&'static str, String>,
     /// 核心的环境：`{ env = … }` 照它取（施工 8-5）。
     environment: Environment,
-    /// 系统配置（施工 SU-3 上起只有这一层能改：个人设置并进来了）。
+    /// 配置（施工 SU-3 上起只有这一层能改）。
     pub(crate) system: File,
     /// 信任的记录。
     trust: Vec<trust::Record>,
@@ -109,7 +109,7 @@ fn secrets_path(root: &DataRoot) -> PathBuf {
     root.path().join(SECRETS)
 }
 
-/// 核心自己写的几份文件在哪：信任的记录、日志（施工 8-3；施工 SU-5 上起系统日志、账号日志并成一份）。
+/// 核心自己写的几份文件在哪：信任的记录、日志（施工 8-3；施工 SU-5 上起只有一份）。
 #[derive(Debug, Clone)]
 pub(crate) struct Places {
     /// `trust.toml`。
@@ -151,7 +151,7 @@ impl Project {
 }
 
 impl Config {
-    /// 起来时读：数据根 `root` 里的系统配置、主人 `account` 的信任的记录和密钥文件（施工 8-5），照清单 `items`
+    /// 起来时读：数据根 `root` 里的配置、信任的记录和密钥文件（施工 8-5），照清单 `items`
     /// 认，带 `env` 的项照 `environment` 读环境变量（只读这一次），`{ env = … }` 也照它。`home` 是系统的家目录。
     pub fn load(
         root: &DataRoot,

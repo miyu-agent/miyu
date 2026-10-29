@@ -39,12 +39,12 @@ impl Drop for Scratch {
     }
 }
 
-/// 临时目录下的数据根，建好了骨架和管理员的家目录。
+/// 临时目录下的数据根，建好了骨架和工作区。
 pub fn root_in(scratch: &Scratch) -> DataRoot {
     root_at(&scratch.0.join("data"))
 }
 
-/// 数据根在 `dir`（照这个路径用，路上有链接的不换成真实的位置），建好了骨架和管理员的家目录。
+/// 数据根在 `dir`（照这个路径用，路上有链接的不换成真实的位置），建好了骨架和工作区。
 pub fn root_at(dir: &Path) -> DataRoot {
     let root = DataRoot::locate(&Env {
         platform: Platform::current(),
@@ -96,7 +96,7 @@ pub fn line(seq: u64, at: Timestamp, kind: &str, body: &str) -> Event {
     .expect("测试里做得到")
 }
 
-/// 第 1 条：属主是管理员，在本机，父会话是 `parent`。
+/// 第 1 条：在本机，父会话是 `parent`。
 pub fn created(at_: Timestamp, parent: Option<&SessionId>) -> Event {
     let parent = parent.map_or(String::new(), |parent| {
         format!(r#","parent":"{}","depth":1"#, parent.as_str())
@@ -192,7 +192,7 @@ pub fn forget(root: &DataRoot) {
     }
 }
 
-/// 管理员在本机的主会话。
+/// 本机的主会话。
 pub fn who(parent: Option<&SessionId>) -> Who {
     Who {
         venue: miyu_kernel::id::VenueId::parse("local").expect("测试里做得到"),

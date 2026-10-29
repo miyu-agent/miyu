@@ -1,5 +1,5 @@
 //! 端口登记（施工 IM-5，接入通讯平台设计 06 第 4.6 节第 5 样）：扩展登记要听的端口，撞了的回 `port_taken`、不说是谁；同一个
-//! 连接再登记照收；放开的、进程停了的别人能登记；管理员看得到整张表；不是扩展的连接登记回 `not_an_extension`。
+//! 连接再登记照收；放开的、进程停了的别人能登记；人的连接看得到整张表；不是扩展的连接登记回 `not_an_extension`。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -97,7 +97,7 @@ async fn ports_are_claimed_once_released_with_the_process_and_listed_for_the_adm
     assert_eq!(why(&got[3]), "bad_params", "{got:?}");
     assert_eq!(why(&got[4]), "ok", "放别人的不报错、也不动：{got:?}");
 
-    // 管理员看整张表；不是扩展的连接登记不了。
+    // 人的连接看整张表；不是扩展的连接登记不了。
     let mut admin = Client::connect(Arc::clone(&core));
     admin.hello().await;
     let listed = admin.call("p1", "port.list", json!({})).await;

@@ -1,4 +1,4 @@
-//! `mcp.login {service}`（施工 X-42 上）：找服务（个人设置里的先，再找包里带的）、照挑战找授权服务器、拿客户端（存着的、同一个
+//! `mcp.login {service}`（施工 X-42 上）：找服务（配置里的先，再找包里带的）、照挑战找授权服务器、拿客户端（存着的、同一个
 //! 授权服务器的照用，没有的动态注册）、绑回调的端口（存着的那一个，绑不上的换一个随机的、动态注册来的照新端口重新注册一次）、拼
 //! 授权页交回；后台等回调（最多 10 分钟）：`state`、`iss` 对上了才换令牌，换到的照 `secret.set` 那一路存进
 //! `mcp-oauth-<服务名>`，密钥变了的那一路重起服务。同一个服务又登录的，上一次在等的那个停掉。浏览器不在核心那台机器上的，贴回来
@@ -122,7 +122,7 @@ pub(crate) async fn login(
     Ok(json!({ "url": page }))
 }
 
-/// 叫 `name` 的服务：个人设置里的先（同名的盖住包里的），再找装着的包带的。交回包的编号和那一张表。
+/// 叫 `name` 的服务：配置里的先（同名的盖住包里的），再找装着的包带的。交回包的编号和那一张表。
 fn find(core: &Core, name: &str) -> Option<(String, McpServer)> {
     if let Some(server) = core
         .home_mcp
@@ -348,7 +348,7 @@ impl Waiting {
         }
     }
 
-    /// 存进密钥文件：照 `secret.set` 那一路（整份重写、0600、照版本防并发改），记在登录的这个人名下。存不成的记一行。
+    /// 存进密钥文件：照 `secret.set` 那一路（整份重写、0600、照版本防并发改）。存不成的记一行。
     fn store(&self, stored: &Stored) -> bool {
         let Some(core) = self.core.upgrade() else {
             return false;

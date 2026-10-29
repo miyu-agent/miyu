@@ -133,7 +133,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
         let run = snapshot.run_texts().map_err(LoadError::Policy)?;
         let guard = snapshot.guard_texts().map_err(LoadError::Policy)?;
-        // 关不关（施工 SU-4 中）：日志里记了的照它；以前的日志没记，照造它的一方交的（属主不是主人的关起来）。
+        // 关不关（施工 SU-4 中）：照日志里 `session.created` 记的 `confined`。
         let shut = created.confined;
         let place = place(&created.venue, &place_resources, shut).map_err(LoadError::Shipped)?;
         // 能选的池照快照读回（施工 8-8 补）：造会话时拼的那一份，不重拼。
@@ -354,7 +354,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     .for_session(root, &id, shipped.path())
     .with_workplace(default_workspace.clone());
     let ledger = crate::usage::Ledger::of(usage.as_ref(), &id);
-    // 知识库照记忆的账号、快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
+    // 知识库照快照里的人格查（施工 K-1 下）；工具面照快照，第一个回合照现在的目录再判。
     let shelves = match knowledge {
         Some(knowledge) => Some(
             Shelves::loaded(Shelving {

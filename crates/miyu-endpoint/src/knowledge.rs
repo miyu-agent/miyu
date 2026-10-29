@@ -1,6 +1,6 @@
 //! 人经协议查知识库（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」，`protocol.md` 的 `kb.*`）：列、搜、读。怎么补
-//! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。照连接的
-//! 账号（施工 Y-2 中上；原来照管理员的）。不看知识库这个软件包装没装：文件是人的，人随时看得到。
+//! 索引、怎么搜在 `miyu_store::knowledge`，这里只管读参数、在阻塞线程里调、写回应、把跳过的文档记一行运行日志。
+//! 不看知识库这个软件包装没装：文件是人的，人随时看得到。
 
 mod manage;
 pub(crate) mod progress;
@@ -71,7 +71,7 @@ pub(crate) fn of_core(
     (Arc::new(knowledge), progress)
 }
 
-/// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`），出厂的先于家目录、同一层照编号（施工 F-8 六补：
+/// 清单读成了的软件包：编号、包目录（施工 K-8：知识库照它找包里的 `kb/`），出厂的先于你装的、同一层照编号（施工 F-8 六补：
 /// 核心升级后出厂的新带了同编号的库，出厂的赢，设计 31 定了的 J）。
 pub(crate) fn carried<'a>(found: impl IntoIterator<Item = &'a Found>) -> Vec<(String, PathBuf)> {
     let mut read: Vec<&Found> = found.into_iter().filter(|one| one.read.is_ok()).collect();

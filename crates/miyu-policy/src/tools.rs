@@ -30,7 +30,7 @@ pub struct ToolEntry {
     pub parameters: RawJson,
     /// 访问类别。
     pub access: Access,
-    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：来处写的、人在个人设置里改过的，算好了写进来。没有的不写，以前造
+    /// 脚本里能调（施工 M-2，`39-脚本调工具.md` 第三节）：来处写的、人在配置里改过的，算好了写进来。没有的不写，以前造
     /// 的快照读成不能：字节和以前一样，以前的会话里一件都不开（2026-10-20 项目主人定）。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub clicall: bool,

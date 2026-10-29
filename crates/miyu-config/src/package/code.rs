@@ -41,7 +41,7 @@ pub enum Code {
     BadPage,
     /// `pages_dir` 不是资源目录里的相对目录。
     BadPagesDir,
-    /// 两层里同一个编号：家目录那一份（`miyu-store` 认）。
+    /// 两层里同一个编号：数据根那一份（`miyu-store` 认）。
     Duplicate,
     /// 子命令名被先读到的包占了（`miyu-store` 认）。
     CommandTaken,

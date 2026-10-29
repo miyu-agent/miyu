@@ -124,7 +124,7 @@ impl Texts {
         }
     }
 
-    /// 核心拒了：写错的清单说哪里不对、第几行，没有这个包的照 `packages`，撞了名的一处一行，要管理员模式的让人进管理员模式，别的
+    /// 核心拒了：写错的清单说哪里不对、第几行，没有这个包的照 `packages`，撞了名的一处一行，别的
     /// 说原因代码。
     fn refused(&self, refusal: &PackageRefusal, what: &str) -> String {
         match refusal {

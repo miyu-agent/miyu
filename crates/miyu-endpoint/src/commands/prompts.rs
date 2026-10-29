@@ -27,7 +27,7 @@ use crate::refusal::Refusal;
 
 /// 这一刻用得上的一个提示词：在跑的服务的。
 pub(super) struct Usable {
-    /// 服务的包（个人设置里的是 `~home`）：预设照它开关。
+    /// 服务的包（配置里的是 `~home`）：预设照它开关。
     pub(super) package: String,
     /// 服务名。
     pub(super) service: String,
@@ -43,9 +43,9 @@ impl Usable {
     }
 }
 
-/// 这一刻在跑、列过了的服务登记的提示词，`account` 用得上的，照命令名排。
+/// 这一刻在跑、列过了的服务登记的提示词，关了的包带的不算，照命令名排。
 pub(super) fn usable(core: &Core) -> Vec<Usable> {
-    // 他关了的包带的服务（施工 U23 末下）不列、敲了当没有。
+    // 关了的包带的服务（施工 U23 末下）不列、敲了当没有。
     let off = core.packages_off();
     let mut usable: Vec<Usable> = core
         .mcp
@@ -224,7 +224,7 @@ fn configured(core: &Core, service: &str) -> bool {
         })
 }
 
-/// 取回来的图存成会话属主的 blob、换成图片块。有一张存不下来的照内部出错拒：少了字节的图以后每次请求都发不出去。碰磁盘。
+/// 取回来的图存成 blob、换成图片块。有一张存不下来的照内部出错拒：少了字节的图以后每次请求都发不出去。碰磁盘。
 fn stored(blobs: &Blobs, pictures: Vec<Picture>) -> Result<Vec<Block>, Refusal> {
     pictures
         .into_iter()

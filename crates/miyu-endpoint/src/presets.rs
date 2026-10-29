@@ -1,4 +1,4 @@
-//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、个人设置、系统配置」找预设、几层叠好；
+//! 预设（施工 P-2 上，`docs/blueprint/presets.md`）：造会话时照「开会话时指定、配置」找预设、几层叠好；
 //! `preset.list`、`preset.get`。找哪几层、怎么叠在 `miyu_store::presets`。
 
 use serde::Deserialize;
@@ -26,8 +26,7 @@ pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
 
-/// 账号 `account` 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、主人的家目录（施工 SU-3 下：系统区那一层拿掉，
-/// 谁调都是主人那一份）。
+/// 看得到的几层预设：出厂、装着的软件包带的（施工 P-11 上）、你的（施工 SU-3 下）。
 pub(crate) fn presets(core: &Core) -> Presets {
     Presets::new(&core.resources, &core.root)
         .with_packages(&crate::packages::folders(core))
@@ -50,20 +49,20 @@ pub(crate) async fn resolve(core: &Core, wanted: Option<&str>) -> Result<Found, 
     }
 }
 
-/// `account` 这时的 `preset.default`：个人设置压着系统配置，都没写的是出厂的 `full`（施工 CC-1 从 [`resolve`] 挪出来，不写会话的
+/// 这时的 `preset.default`：配置里没写的是出厂的 `full`（施工 CC-1 从 [`resolve`] 挪出来，不写会话的
 /// 命令菜单照它筛）。
 pub(crate) fn default_of(core: &Core) -> String {
     PresetSettings::from(&core.mine().config().resolved().values()).default
 }
 
-/// 交给属主是 `owner` 的会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能；施工 Y-2 中上起照属主）：改了预设的
+/// 交给会话的预设的几层和装了的功能（施工 P-2 下；施工 F-3 上起是功能）：改了预设的
 /// 文件，开着的会话下一个回合换上。
 pub(crate) fn places(core: &std::sync::Arc<Core>) -> PresetPlaces {
     // 扩展这时交的功能（施工 IM-6）每回合开始取一次：拿着核心的弱引用，会话活在核心里面。
     let weak = std::sync::Arc::downgrade(core);
-    // 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
+    // 你写的工具说明的覆盖（施工 OV-1 上）：拼工具面时读一次盘。
     let weak_written = std::sync::Arc::downgrade(core);
-    // 文件改动的版本（施工 OV-1 下）：盯上他那一层，会话回合开始比号。
+    // 文件改动的版本（施工 OV-1 下）：盯上你那一层，会话回合开始比号。
     core.watch_edits();
     let weak_edits = std::sync::Arc::downgrade(core);
     PresetPlaces {
@@ -101,7 +100,7 @@ pub(crate) fn chosen(core: &Core, found: Found) -> Chosen {
     Chosen::new(found.id, file, &features)
 }
 
-/// 预设 `preset` 在属主 `owner` 这里开没开包 `package`（施工 J-1 上：她建的定时任务到点时照会话现在的预设判）：包的功能里装着、
+/// 预设 `preset` 开没开包 `package`（施工 J-1 上：她建的定时任务到点时照会话现在的预设判）：包的功能里装着、
 /// 没被关掉的有一个就算开。没有预设的（以前的会话）都开着；无工具（空的编号）、找不到的预设、没装的包算关。
 pub(crate) fn package_on(core: &Core, preset: Option<&str>, package: &str) -> bool {
     let Some(preset) = preset else {
@@ -117,7 +116,7 @@ pub(crate) fn package_on(core: &Core, preset: Option<&str>, package: &str) -> bo
         .any(|feature| !chosen.off.contains(&feature.id))
 }
 
-/// 这时 `account` 的配置里写了的全局开关（施工 X-27，`miyu_session::switches`；施工 Y-2 下下中上起照人）：照配置服务最近换上的
+/// 这时配置里写了的全局开关（施工 X-27，`miyu_session::switches`）：照配置服务最近换上的
 /// 那一份读，不拿配置服务的锁。
 pub(crate) fn switches(core: &Core) -> std::collections::BTreeMap<String, bool> {
     let now = core.mine().hub().current();
@@ -246,8 +245,7 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
     Ok(describe(core, &found, peer.language, &carried))
 }
 
-/// 一个账号用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能（施工 Y-2 中上起照调用者，原来是
-/// 管理员的）。
+/// 用得上的技能（施工 X-11 上）、模板命令（施工 X-14 上）：功能表照它们一个列一个功能。
 pub(super) struct Carried {
     pub(super) skills: Vec<Skill>,
     pub(super) commands: Vec<Template>,

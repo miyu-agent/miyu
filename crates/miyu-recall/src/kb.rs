@@ -1,6 +1,6 @@
 //! 一个知识库的 `kb.toml`（施工 K-1 上，`docs/blueprint/knowledge.md`「对外的样子」）：给人看的名字、一句话说这个库是什么。
 //! 几格都可以不写；别的格不认，读进来报错（调的一方照没有 `kb.toml` 的样子用，把为什么交给人看）。`mount` 是挂进来的现成
-//! 目录（施工 K-4）：写了的库，文档在那里，只读。账号自己的 `kb.toml` 记软件包带来的库人改过的开关（施工 K-8，[`switches`]）。
+//! 目录（施工 K-4）：写了的库，文档在那里，只读。数据根的 `kb.toml` 记软件包带来的库人改过的开关（施工 K-8，[`switches`]）。
 //! 小节标题下那一行关键词怎么认在 [`Keys`]（施工 K-9）。
 
 use std::collections::BTreeMap;
@@ -38,7 +38,7 @@ pub fn about(text: &str) -> Result<About, String> {
     toml_edit::de::from_str(text).map_err(|error| error.to_string().trim().to_string())
 }
 
-/// 账号自己的 `kb.toml`（施工 K-8）：`[auto]` 下一行一个软件包带来的库，`"<包>/<编号>" = true/false`，是人改过的自动想起的
+/// 数据根的 `kb.toml`（施工 K-8）：`[auto]` 下一行一个软件包带来的库，`"<包>/<编号>" = true/false`，是人改过的自动想起的
 /// 开关。别的表不看（以后加的不碍事）。
 #[derive(Debug, Default, Deserialize)]
 struct Switches {
@@ -46,7 +46,7 @@ struct Switches {
     auto: BTreeMap<String, bool>,
 }
 
-/// 读账号自己的 `kb.toml` 里人改过的开关：`<包>/<编号>` → 开没开。
+/// 读数据根的 `kb.toml` 里人改过的开关：`<包>/<编号>` → 开没开。
 ///
 /// # Errors
 ///
@@ -83,7 +83,7 @@ mod tests {
             Some("~/notes")
         );
         assert!(about("title = \"错的格\"\n").is_err());
-        // 账号自己的开关（施工 K-8）：别的表不看，值不是真假的读不懂。
+        // 数据根那一份的开关（施工 K-8）：别的表不看，值不是真假的读不懂。
         let read =
             switches("[auto]\n\"world-pack/world\" = false\n[later]\nx = 1\n").expect("合写法");
         assert_eq!(read.get("world-pack/world"), Some(&false));

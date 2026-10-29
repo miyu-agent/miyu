@@ -1,5 +1,5 @@
 //! 她用定时工具（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：真核心的会话里她照剧本调 `cron_create`、`cron_list`、
-//! `cron_delete`、`schedule_wakeup`，经端口动属主的唤醒表。她建的记成这个会话建的、跑在这个会话上；动态循环那一行她定下一次、
+//! `cron_delete`、`schedule_wakeup`，经端口动唤醒表。她建的记成这个会话建的、跑在这个会话上；动态循环那一行她定下一次、
 //! 换那句话；没开循环的说没有在跑的循环。
 
 use std::sync::Arc;
@@ -46,7 +46,7 @@ async fn ran(
     (core, id)
 }
 
-/// 属主的表。
+/// 唤醒表。
 fn listed(core: &Core) -> Vec<Schedule> {
     core.schedules().list().expect("读得出")
 }
@@ -119,7 +119,7 @@ async fn she_sets_the_next_wakeup_of_this_session_s_loop() {
     let started = std::sync::Mutex::new(None);
     let (core, _) = ran(&home, plays, |core, session| {
         *started.lock().unwrap() = Some(core.schedules().now());
-        // 人敲 `/loop` 建的那种：属主建的、跑在这个会话上。
+        // 人敲 `/loop` 建的那种：你建的、跑在这个会话上。
         let looping = Wanted {
             by: Creator::Person,
             ..mine(session, Some(Loop::Dynamic))

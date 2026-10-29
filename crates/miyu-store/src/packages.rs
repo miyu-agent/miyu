@@ -1,6 +1,6 @@
 //! 软件包清单在哪、两层怎么认（施工 9-1 上，`docs/blueprint/packages.md`「在哪」）：一个文件夹就是一个包（施工 F-8 上，设计
-//! `31-软件包.md` 第二节），出厂的放资源目录的 `packages/<编号>/package.toml`，管理员自己装的放
-//! `packages/<编号>/package.toml`，包的文件都在这个文件夹里。一个包只有一份清单，不像人格那样一层层
+//! `31-软件包.md` 第二节），出厂的放资源目录的 `packages/<编号>/package.toml`，主人自己装的放
+//! 数据根的 `packages/<编号>/package.toml`，包的文件都在这个文件夹里。一个包只有一份清单，不像人格那样一层层
 //! 叠：同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照
 //! 编号，后读到的那一份报 `command_taken`。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_config::package`。
 //!
@@ -40,7 +40,7 @@ pub const BIN: &str = "bin";
 pub enum Layer {
     /// 随发行附带的，只读。
     Shipped,
-    /// 系统那一层：管理员装的（施工 U23 上上起在 `packages/`，协议上照旧叫 `home`）。
+    /// 主人装的：数据根的 `packages/`（协议上叫 `home`）。
     Home,
 }
 

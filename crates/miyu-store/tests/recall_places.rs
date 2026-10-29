@@ -40,7 +40,7 @@ fn a_session_is_placed_once_and_goes_with_its_source() {
     assert!(index.places().expect("读得了").is_empty(), "重建是空的");
 }
 
-/// 每个会话从哪来（施工 E-6）：属主、是不是主会话，记一次、再记换成新的；删会话跟着拿掉；重开还在，重建是空的。
+/// 每个会话从哪来（施工 E-6）：是不是主会话，记一次、再记换成新的；删会话跟着拿掉；重开还在，重建是空的。
 #[test]
 fn where_a_session_came_from_is_kept_with_its_source() {
     let scratch = Scratch::new("recall-origins");

@@ -153,7 +153,7 @@ async fn an_extension_provides_tools_and_answers_the_calls() {
     assert_eq!(call["params"]["session"], json!(session));
     assert_eq!(call["params"]["args"], json!({"x": 1}));
     assert!(call["params"]["call_id"].is_string(), "{call}");
-    // 本机的会话：是 alice 本人要的（施工 O-2 下）。
+    // 本机的会话：是主人本人要的（施工 O-2 下）。
     assert_eq!(call["params"]["by"]["kind"], "person", "{call}");
     assert_eq!(call["params"]["owner"], json!(true), "{call}");
     // 超时的那一次发了 tool.cancel，照那一次的编号。

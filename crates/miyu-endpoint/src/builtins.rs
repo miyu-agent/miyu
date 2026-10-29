@@ -29,7 +29,7 @@ pub trait Builtins: Send + Sync {
     fn embed(&self, found: &[&Found]) -> Option<miyu_session::EmbedSetup>;
 
     /// 一个脚本造成一件工具（施工 X-12 中，`miyu_basesystem::script`）：开头读好的 `head`、脚本文件 `file`、来处 `source`（包的
-    /// 编号，家目录里放的是 `~home`；施工 X-44：状态目录照它分）。
+    /// 编号，数据根里你放的是 `~home`；施工 X-44：状态目录照它分）。
     ///
     /// # Errors
     ///
@@ -42,7 +42,7 @@ pub trait Builtins: Send + Sync {
     ) -> Result<Arc<dyn Tool>, String>;
 
     /// 配置项 `key` 的选项 `option` 这一刻的状态（施工 N-2 下、N-3 上）：设置页的下拉里那个选项后面暗字写它，例如搜索来源的
-    /// 「冷却到 15:30」「要 key」。`values` 是这个账号的最终值。没有要说的是空的；不写的内置包都没有。
+    /// 「冷却到 15:30」「要 key」。`values` 是配置的最终值。没有要说的是空的；不写的内置包都没有。
     fn option_state(
         &self,
         _key: &str,

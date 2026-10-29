@@ -1,5 +1,5 @@
 //! 下架的模型移出池（施工 8-23，`docs/construction/8-23-下架的模型移出池（要补）.md`）：路由确认一个池的成员下架了，交到这里
-//! （[`miyu_session::Retirement`]），系统配置、个人设置里写着它的池（`pools.<名字>.models`）都拿掉它，经写配置的那一条路写
+//! （[`miyu_session::Retirement`]），配置里写着它的池（`pools.<名字>.models`）都拿掉它，经写配置的那一条路写
 //! （手改保护、推 `config.changed`、记日志），改的人记成内核。删空了的池留着。直接写在 `models.chat` 的不动。
 
 use std::sync::{Arc, Weak};

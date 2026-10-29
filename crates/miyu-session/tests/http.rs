@@ -305,7 +305,7 @@ async fn an_image_goes_out_as_its_bytes() {
     };
     let routes = models(&mut home, &server, images, false);
     let handle = home.create(&routes).await;
-    // 属主的 blob 里存着这张「图」：四个字节 miyu，base64 是 bWl5dQ==。
+    // blob 里存着这张「图」：四个字节 miyu，base64 是 bWl5dQ==。
     let blob = Blobs::new(home.root.blobs())
         .put(b"miyu")
         .expect("存得进去");

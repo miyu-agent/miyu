@@ -1,4 +1,4 @@
-//! `skill.remove`（施工 W-13，网页的技能页）：管理员自己放的整个文件夹挪进回收站，几个一起删；随包来的、没有的拒绝，带名字；
+//! `skill.remove`（施工 W-13，网页的技能页）：你自己放的整个文件夹挪进回收站，几个一起删；随包来的、没有的拒绝，带名字；
 //! 有一个不行就一个都不删；盖住了包里同名的，删了包里的露出来。链接成的只挪链接（施工 X-37）。
 
 use serde_json::{Value, json};
@@ -12,7 +12,7 @@ fn skill(name: &str) -> String {
     format!("---\nname: {name}\ndescription: Do {name}.\n---\n\nBody.\n")
 }
 
-/// 家目录里的 `notes`、盖住出厂同名的 `package-creator`，管理员装的包 `kit` 带的 `kit-notes`；连上（系统的家目录当是数据根）。
+/// 家目录里的 `notes`、盖住出厂同名的 `package-creator`，你装的包 `kit` 带的 `kit-notes`；连上（系统的家目录当是数据根）。
 async fn connected(home: &Home) -> Client {
     home.write("skills/notes/SKILL.md", &skill("notes"));
     home.write("skills/package-creator/SKILL.md", &skill("package-creator"));
@@ -103,7 +103,7 @@ async fn own_skills_go_to_the_trash_and_what_they_covered_shows_again() {
 
 /// 技能文件夹是链接（施工 X-37，原来找技能不跟链接）：指到数据根外面的照它指到的认，删的时候只挪链接本身、指到的文件夹不动；
 /// 指到数据根里别处的不认，也删不到（Unix；Windows 上建链接要权限，找法的测试在 `miyu-store` 里三个平台都跑）。删的那一头
-/// 另查链接、文件夹得正好在管理员的技能文件夹下面一层，是兜底。
+/// 另查链接、文件夹得正好在你的技能文件夹下面一层，是兜底。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_linked_folder_is_followed_but_only_the_link_is_removed() {

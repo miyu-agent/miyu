@@ -41,7 +41,7 @@ pub(super) async fn draft(
     let features = setup.presets.as_ref().map(|places| &places.features);
     let roleplay = features.is_none_or(|features| features.installed(ROLEPLAY));
     let preset = opened.preset.as_ref();
-    // 技能照这一刻装了的软件包、属主家目录里的找（施工 X-10 上），配置开着时加别的目录 `external`（施工 PT-2 外），只要预设
+    // 技能照这一刻装了的软件包、数据根里的找（施工 X-10 上），配置开着时加别的目录 `external`（施工 PT-2 外），只要预设
     // 开着的（施工 X-11 上）：列进 system，文件夹放开只读。
     let watch = setup.installed.clone().map(|installed| skills::Watch {
         installed,

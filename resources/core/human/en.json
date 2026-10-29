@@ -14,7 +14,7 @@
       "net.search.deepseek.key": {"name": "DeepSeek", "description": "Needed when DeepSeek is the search provider; if unset, the key of your DeepSeek model provider is used. Charged per search."},
       "net.search.tavily.key": {"name": "Tavily", "description": "Needed when Tavily is the search provider."},
       "net.search.brave.key": {"name": "Brave Search", "description": "Needed when Brave is the search provider."},
-      "net.internal_domains": {"name": "Internal domains", "description": "Domains the AI never visits on behalf of others (members, people in group chats), subdomains included, whatever they resolve to and whether or not a proxy is used; the admin is not affected. For example example-corp.com."},
+      "net.internal_domains": {"name": "Internal domains", "description": "Domains the AI never visits on behalf of others (people in group chats, strangers), subdomains included, whatever they resolve to and whether or not a proxy is used; you are not affected. For example example-corp.com."},
       "net.search.searxng.url": {"name": "SearXNG address", "description": "Your own SearXNG instance, for example http://127.0.0.1:8888, with the JSON format enabled. Used when SearXNG is the search provider."},
       "net.search.source": {"name": "Search provider", "description": "Which service AI uses to search the web. Auto tries Exa, Parallel, Firecrawl, AnySearch and You.com in turn and rests any that hit a rate limit; a chosen one is tried first, then the others. These services are outside China and receive the search terms. Pages that can't be fetched directly are fetched by Exa, Firecrawl or Parallel, which then receive the address.", "options": {"auto": "Auto", "exa": "Exa", "parallel": "Parallel", "firecrawl": "Firecrawl", "anysearch": "AnySearch", "you": "You.com", "deepseek": "DeepSeek", "tavily": "Tavily", "brave": "Brave", "searxng": "SearXNG", "duckduckgo": "DuckDuckGo", "bing": "Bing"}},
       "memory.extract_idle": {
@@ -114,9 +114,9 @@
       },
       "commands.<id>.access": {
         "name": "Who can use this command",
-        "description": "Who can use this slash command: admins are the terminal admin and group admins, everyone means anyone in the chat, off means no one. When unset, the command's own setting applies, otherwise admins.",
+        "description": "Who can use this slash command: you and group admins, anyone in the chat, or off for no one. When unset, the command's own setting applies, otherwise you and group admins.",
         "options": {
-          "admin": "Admins",
+          "admin": "You and group admins",
           "anyone": "Everyone",
           "off": "Off"
         }
@@ -183,7 +183,7 @@
       },
       "sandbox.tools.<name>": {
         "name": "No sandbox: this tool",
-        "description": "The admin lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in the admin's own sessions; group chats and strangers' private chats are still refused, and so is read-only."
+        "description": "Lets this tool run outside the sandbox (scripts that touch hardware or need root). The value is where the tool comes from: ~home for your own scripts, the package's id for installed packages, shell for the built-in shell; a mismatch doesn't count. A granted tool runs outside the sandbox without asking in your own sessions; group chats and strangers' private chats are still refused, and so is read-only."
       },
       "packages.<id>.off": {
         "name": "Turn this package off for me",
@@ -707,7 +707,7 @@
     "package-problems/prompt_override_bad": "This prompt override isn't used; the layer below or the shipped text applies: {detail}",
     "package-problems/override_bad": "This tool override isn't used; the shipped text applies: {detail}",
     "package-problems/script_skipped": "This script was skipped: {detail}",
-    "package-problems/script_link_outside": "This script is a link to {detail} inside the data root, outside this account's own folders; skipped",
+    "package-problems/script_link_outside": "This script is a link to {detail} inside the data root, outside the folders you keep things in; skipped",
     "package-problems/script_state_left": "There is a state folder for the script {detail}, but no such script now; delete the folder yourself if it is no longer needed",
     "package-problems/script_clashed": "Script {detail} has the same name as another tool and was not registered",
     "package-problems/script_not_made": "This script was not registered: {detail}",
@@ -718,7 +718,7 @@
     "package-problems/sandbox_tool_linked": "sandbox.tools.{name} grants a tool whose file is outside the places Miyu controls (it really is at {real}); not granted: a link, or a folder that is a link, can point somewhere she can change. To grant it, put the real file back in scripts/ in your home folder, or install it as a package",
     "package-problems/sandbox_shell": "sandbox.tools.shell grants shell: every command the AI runs goes outside the sandbox without asking",
     "package-problems/skill_skipped": "This skill was skipped: {detail}",
-    "package-problems/skill_link_outside": "This skill folder is a link to {detail} inside the data root, outside this account's own folders; skipped",
+    "package-problems/skill_link_outside": "This skill folder is a link to {detail} inside the data root, outside the folders you keep things in; skipped",
     "package-problems/skill_name_mismatch": "The name does not match the folder; the skill goes by the written name {detail}",
     "package-problems/skill_name_from_folder": "The name is missing or not 1 to 64 lowercase letters, digits and single hyphens; the skill goes by its folder name {detail}",
     "package-problems/skill_yaml_lenient": "The front matter is not valid YAML; it was read again with unquoted values taken as plain text. Quote values that contain a colon",
@@ -733,7 +733,7 @@
     "package-problems/persona_left": "Left over from package {detail}, which is uninstalled",
     "package-problems/preset_left": "Left over from package {detail}, which is uninstalled",
     "package-problems/slash_skipped": "This slash command was skipped: {detail}",
-    "package-problems/slash_link_outside": "This command template is a link to {detail} inside the data root, outside this account's own folders; skipped",
+    "package-problems/slash_link_outside": "This command template is a link to {detail} inside the data root, outside the folders you keep things in; skipped",
     "package-problems/slash_covered": "Same name as {detail}, which covers it; this one is not used",
     "package-problems/slash_builtin": "Same name as Miyu's built-in /{detail}; this one is not used",
     "package-problems/skill_command_clash": "Same name as the command /{detail}; typing /{detail} runs the command, not this skill",

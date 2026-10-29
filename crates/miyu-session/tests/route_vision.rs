@@ -29,7 +29,7 @@ fn config(first: &Server, second: &Server, m_inputs: &str, extra: &str) -> Strin
     )
 }
 
-/// 存进属主 blob 的一张「图」：四个字节 miyu，base64 是 bWl5dQ==。
+/// 存进 blob 的一张「图」：四个字节 miyu，base64 是 bWl5dQ==。
 fn stored(home: &Home) -> ContentHash {
     Blobs::new(home.root.blobs())
         .put(b"miyu")
@@ -244,7 +244,7 @@ async fn a_pinned_pool_is_blind_again_next_turn_after_moving_to_a_member_that_se
     assert_eq!(bodies(&second).len(), 1, "钉到看得了图的 n 以后照样先转述");
 }
 
-/// 替看图的用量记在会话属主的账上（施工 8-15，`models.md`「怎么走」第九条第 4 条）：属主的账号日志里一条 `usage.oneshot`，
+/// 替看图的用量记一笔（施工 8-15，`models.md`「怎么走」第九条第 4 条）：日志 `journal.jsonl` 里一条 `usage.oneshot`，
 /// 用途 `vision`，真发给的是看图的模型；不进会话的日志。
 #[tokio::test]
 async fn describing_is_billed_to_the_session_owner() {

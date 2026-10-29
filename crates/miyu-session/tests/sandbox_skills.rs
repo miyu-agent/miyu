@@ -1,6 +1,6 @@
 //! 沙盒里的命令读得到开着的技能文件夹（施工 X-10 中，`docs/blueprint/skills.md`「技能」第 3 条）：数据根照旧藏着，技能的
 //! 文件夹在规格里单独放开只读（本机的会话写进 `reveal`，外部身份的会话加进只准读的名单）。Unix 上有收紧手段的，真的经
-//! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。家目录里放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样
+//! 助手跑 `shell`：技能读得到、写不进，旁边的数据根读不到。自己放的脚本（施工 X-12 下）也在数据根里，经真助手跑照样
 //! 读得到它自己；往交图的目录里写的图（施工 X-35）经真助手照样写得进、交得上来。脚本是链接、指到数据根里自己装的包的（施工
 //! X-37），照它指到的那一个文件放开，照样跑得起来。
 
@@ -19,7 +19,7 @@ use miyu_tool::{Catalog, Tool};
 
 use crate::support::*;
 
-/// 在 alice 家目录里放技能 `notes`，旁边放一份不给碰的；交回技能文件夹的真实位置。
+/// 在数据根里放技能 `notes`，旁边放一份不给碰的；交回技能文件夹的真实位置。
 fn put(home: &Home) -> PathBuf {
     let dir = home.root.path().join("skills").join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
@@ -32,7 +32,7 @@ fn put(home: &Home) -> PathBuf {
     std::fs::canonicalize(dir).expect("在")
 }
 
-/// 工作区 `work/` 的会话，沙盒能用、助手是 `helper`，场所 `venue`、属主是不是管理员照 `owner_is_admin`：调一次 `tools` 里的
+/// 工作区 `work/` 的会话，沙盒能用、助手是 `helper`，场所 `venue`、`owner_is_admin` 是假的关起来：调一次 `tools` 里的
 /// `call`，交回会话。
 async fn session(
     home: &Home,
@@ -161,7 +161,7 @@ async fn a_command_reads_the_skill_but_not_the_data_root() {
     );
 }
 
-/// 脚本当工具（施工 X-12 下）：家目录里放的脚本在数据根里，经真助手跑照样读得到它自己这一个文件，旁边的数据根照旧读不到。
+/// 脚本当工具（施工 X-12 下）：自己放的脚本在数据根里，经真助手跑照样读得到它自己这一个文件，旁边的数据根照旧读不到。
 #[cfg(unix)]
 #[tokio::test]
 async fn a_script_in_the_data_root_runs_in_the_sandbox() {
@@ -308,7 +308,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
     );
 }
 
-/// 在 alice 家目录里放脚本 `keep.sh`（内容 `text`），在场所 `venue` 的会话里经真助手调一次：交回结果的状态、字。
+/// 在数据根里放脚本 `keep.sh`（内容 `text`），在场所 `venue` 的会话里经真助手调一次：交回结果的状态、字。
 #[cfg(unix)]
 async fn keep(home: &Home, helper: &Path, text: &str, venue: (&str, bool)) -> (ToolStatus, String) {
     let scripts = home.root.path().join("scripts");
@@ -398,7 +398,7 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
-/// 缓存目录（施工 Y-11 上）：在属主家目录的 `cache/` 里，数据根照旧藏着；经真助手跑的脚本写得进自己那一格，别的脚本的那一格
+/// 缓存目录（施工 Y-11 上）：在数据根的 `cache/` 里，数据根照旧藏着；经真助手跑的脚本写得进自己那一格，别的脚本的那一格
 /// 读不到。
 #[cfg(unix)]
 #[tokio::test]
@@ -423,7 +423,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
 }
 
-/// 家目录那四处（施工 Y-11 补）：经真助手跑，本机会话的脚本写得进属主的 `pictures/`、`downloads/`（数据根照旧藏着，先建好再起
+/// 家目录那四处（施工 Y-11 补）：经真助手跑，本机会话的脚本写得进数据根的 `pictures/`、`downloads/`（数据根照旧藏着，先建好再起
 /// 沙盒）。
 #[cfg(unix)]
 #[tokio::test]

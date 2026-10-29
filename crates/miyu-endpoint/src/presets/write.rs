@@ -1,11 +1,11 @@
-//! 新建、改、删预设（施工 P-3 中，`docs/blueprint/presets.md`「改」，16 第四、九节）：只写管理员家目录那一层的
-//! `<编号>.toml`。改出厂的、系统区的就是建同名覆盖，只写改了的项；不写编号的是新建，编号由核心起（施工 P-3 补）。
+//! 新建、改、删预设（施工 P-3 中，`docs/blueprint/presets.md`「改」，16 第四、九节）：只写你那一层的
+//! `<编号>.toml`。改出厂的、包带的就是建同名覆盖，只写改了的项；不写编号的是新建，编号由核心起（施工 P-3 补）。
 //!
 //! - 改：照 `config.set` 的 `changes` 那一套（`crate::toml_changes`），注释、顺序、别的字节照原样；改完的一份连同叠好以后
 //!   （底、绕圈）一起查，有错整条不收，什么都不写。
 //! - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换；替换之前发现这一瞬间有人手改了，
 //!   从头再来，三次还不行的 `preset_conflict`。
-//! - 删：删掉家目录那一层的文件，下面几层还有的回到它们的样子。
+//! - 删：删掉你那一层的文件，下面几层还有的回到它们的样子。
 
 use std::io;
 
@@ -36,7 +36,7 @@ pub(crate) struct SetParams {
     changes: Vec<ChangeParams>,
 }
 
-/// `preset.set`：照 `changes` 改家目录那一层，交回改完叠好的样子（同 `preset.get`）。不写 `preset` 的是新建（施工 P-3 补）：
+/// `preset.set`：照 `changes` 改你那一层，交回改完叠好的样子（同 `preset.get`）。不写 `preset` 的是新建（施工 P-3 补）：
 /// 编号由核心起，至少要写一项。
 pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
     if params.changes.is_empty() || params.preset.as_deref().is_some_and(|id| !valid(id)) {
@@ -104,7 +104,7 @@ pub(crate) struct DeleteParams {
     preset: String,
 }
 
-/// `preset.delete`：删掉家目录那一层的文件，交回 `{"remains"}`：下面几层还有没有。家目录那一层本来就没有的
+/// `preset.delete`：删掉你那一层的文件，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
 /// `nothing_to_delete`。
 pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
     if !valid(&params.preset) {
@@ -130,7 +130,7 @@ pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Re
     .map_err(|_| Refusal::INTERNAL)?
 }
 
-/// 读家目录那一层、查 `expect`、改、查改完的一份、写；撞上有人手改的从头再来。什么都没变的不写，照盘上的找。
+/// 读你那一层、查 `expect`、改、查改完的一份、写；撞上有人手改的从头再来。什么都没变的不写，照盘上的找。
 fn write(
     presets: &Presets,
     id: &str,

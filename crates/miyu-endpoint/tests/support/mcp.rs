@@ -181,7 +181,7 @@ pub async fn until_listed(
     }
 }
 
-/// 个人设置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。
+/// 配置里一张 `[mcp.probe]`：测试用的服务，记下收到的每一行到 `record`，环境变量 `MIYU_MCP_PROBE` 设成 `mine`。
 pub fn mine(record: &str) -> String {
     format!(
         "[mcp.probe]\ncommand = ['{SERVER}', '{record}']\nenv = {{ MIYU_MCP_PROBE = \"mine\" }}\ntimeout_ms = 1000\n"

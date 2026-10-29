@@ -143,7 +143,7 @@ async fn read_only_still_refuses_a_write_into_an_added_dir() {
     assert!(kit.edit.calls().is_empty());
 }
 
-/// 这个人自己的几处（施工 Y-11 上，家目录里的 pictures 这些）：落在数据根里也同工作区，写进去不用问人，还没建的也算；数据根
+/// 数据根里照 XDG 的几处（施工 Y-11 上，pictures 这些）：落在数据根里也同工作区，写进去不用问人，还没建的也算；数据根
 /// 别处照旧谁都不能碰。
 #[tokio::test]
 async fn a_write_into_the_owner_s_pictures_runs_without_asking() {

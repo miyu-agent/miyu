@@ -15,7 +15,7 @@ use miyu_tool::{Catalog, Tool};
 use crate::support::venues::configured_core;
 use crate::support::*;
 
-/// 在 alice 家目录里放两个技能：`notes` 写了给人看的名字、说明，`plain` 没写。交回 `notes` 的 `SKILL.md` 的路径。
+/// 在数据根里放两个技能：`notes` 写了给人看的名字、说明，`plain` 没写。交回 `notes` 的 `SKILL.md` 的路径。
 fn put(home: &Home) -> String {
     home.write(
         "skills/notes/SKILL.md",

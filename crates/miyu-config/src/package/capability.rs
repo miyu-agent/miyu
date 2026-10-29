@@ -1,4 +1,4 @@
-//! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，管理员
+//! 扩展能力（施工 9-4 下上，`docs/designs/05-内核接口.md` 第三节）：清单的 `[process] capabilities` 声明要哪些，主人
 //! 在开的那一下批（`extensions.md`）。只认这张表里的十七个名字（施工 X-15 上加了 `widgets`，施工 X-20 加了 `context.system`，施工 X-18 加了 `packages.call`，施工 N-5 加了 `search`，施工 X-30 加了 `memory.write`），先后照这张表。
 
 /// 一种扩展能力。

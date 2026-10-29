@@ -1,6 +1,6 @@
 //! 扩展读 blob（施工 W-6 三补，`protocol.md` 的 `blob.get` 第 1 条）：不写 `session` 的只读得到它自己存的、经 `package.call`
-//! 拿回来的（答的包自己拿得到的那几个）；写了 `session` 的，那个会话要引用过这个 blob，扩展是管理员也一样。以前不写 `session`
-//! 的照管理员名下给、写了管理员的会话照属主放行，扩展知道哈希就读得走主人任何一个 blob。人的连接照旧。
+//! 拿回来的（答的包自己拿得到的那几个）；写了 `session` 的，那个会话要引用过这个 blob。不这样管的话，扩展知道哈希
+//! 就读得走存处里任何一个 blob。人的连接照旧。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -172,7 +172,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
         "答的包写进回应、自己拿不到的照样读不到"
     );
 
-    // 包不再各有一个账号（施工 SU-4 中）：扩展存的和主人共用一个存处，包之间只靠上面的放行管；人的连接读自己的存处，都读得到。
+    // 扩展存的和会话共用一个存处（施工 SU-4 中），包之间只靠上面的放行管；人的连接都读得到。
     let own_hash_id = miyu_kernel::id::ContentHash::parse(&own_hash).expect("合写法");
     assert!(
         miyu_store::blob::Blobs::new(home.root.blobs())
@@ -214,7 +214,7 @@ async fn an_extension_naming_a_session_reads_only_what_it_refers_to() {
     drop(client);
     drop(core);
 
-    // 装上一个没声明系统账号的扩展（它是管理员）再起来：照这个会话读两份。
+    // 装上一个普通的扩展再起来：照这个会话读两份。
     let program = Program::new();
     let (path, step) = record(&home, "plain");
     let ask = |blob: &str| format!(r#"ask:blob.get:{{"blob":"{blob}","session":"{local}"}}"#);
@@ -238,7 +238,7 @@ async fn an_extension_naming_a_session_reads_only_what_it_refers_to() {
         Err("unknown_blob".to_string()),
         "会话没引用过的读不到：{read:?}"
     );
-    // 人的连接照旧：管理员照会话的属主读，没引用过的也读得到。
+    // 人的连接照旧：没引用过的也读得到。
     let mut client = Client::connect(core);
     client.hello().await;
     let reply = client

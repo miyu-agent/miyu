@@ -96,7 +96,7 @@ async fn phase(
     n: usize,
 ) -> Vec<Value> {
     let (path, step) = record(home, name);
-    // 每份核心的请求编号各带前缀：会话都归主人，核心照「属主加命令编号」认重发的，编号撞了会交回上一份造的。
+    // 每份核心的请求编号各带前缀：核心照命令编号认重发的，编号撞了会交回上一份造的。
     let ids = format!("ids:{name}-");
     let all: Vec<String> = [step.as_str(), &ids, "hello"]
         .iter()

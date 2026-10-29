@@ -52,7 +52,7 @@ pub(super) async fn open(setup: &Create<'_>, values: &Values) -> Opened {
             .as_ref()
             .is_none_or(|chosen| chosen.file.opens(MEMORY));
     let scope = memory::scope(setup.lineage.is_some(), opened, setup.memory_scope);
-    // 知识库照记忆的账号、人格查（施工 K-1 下）；一个都查不到的工具面上没有两件，回合开始再判。
+    // 知识库照人格查（施工 K-1 下）；一个都查不到的工具面上没有两件，回合开始再判。
     let shelves = setup.knowledge.clone().map(|knowledge| {
         let shelving = Shelving {
             knowledge,

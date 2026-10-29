@@ -1,7 +1,7 @@
 //! 项目配置的信任（`docs/blueprint/config.md`「怎么走」第三条）：没有记录的、内容变了的、仓库挪了的不算，报
 //! `untrusted_project`，造会话、说话的回应带它；信任着、版本一样的算，只认收紧的；选了不信任的不算、不再提醒（施工 8-2，
 //! 记录由人手写）。`config.trust`（施工 8-3）：版本对不上、没有项目配置、参数不对的拒绝；一个仓库一条，新的盖掉旧的；
-//! 记账号日志 `trust.changed`；手改过的 `trust.toml` 在新的字上记。
+//! 记日志 `trust.changed`；手改过的 `trust.toml` 在新的字上记。
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};

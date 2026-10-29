@@ -28,7 +28,7 @@ impl std::fmt::Debug for Watching {
 }
 
 impl Watching {
-    /// 起一个：是 `instance` 那一份（施工 IM-1 中下五：每人一份的只听他那一份的块），写进 `out`。
+    /// 起一个：听包 `instance` 的块，写进 `out`。
     pub(crate) fn start(
         core: Arc<Core>,
         instance: Instance,

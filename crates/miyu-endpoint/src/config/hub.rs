@@ -2,7 +2,7 @@
 //!
 //! - 交给会话：往 `tokio::sync::watch` 里放一份，会话在下一个回合开始时从里面取（[`Hub::configs`]）；
 //! - 交给核心：同一个 `watch`，核心照它当场换运行日志的级别、重写生成的文件（[`Hub::current`]）；
-//! - 有要推的（系统配置、个人设置变了），推给订阅着配置的连接（[`Hub::subscribe`]）。读得慢的掉队，推 `resync`。
+//! - 有要推的（配置变了），推给订阅着配置的连接（[`Hub::subscribe`]）。读得慢的掉队，推 `resync`。
 
 use std::sync::Arc;
 
@@ -73,7 +73,7 @@ impl Hub {
         self.pushes.subscribe()
     }
 
-    /// 配置服务换上了 `config`：交给会话、核心；`changed` 有的（系统配置、个人设置变了）推出去，推的带着这一份。
+    /// 配置服务换上了 `config`：交给会话、核心；`changed` 有的（配置变了）推出去，推的带着这一份。
     #[expect(
         clippy::let_underscore_must_use,
         reason = "没有订阅者就没人收，照常往下走"

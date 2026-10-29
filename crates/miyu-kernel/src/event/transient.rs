@@ -109,8 +109,8 @@ pub struct EffortInUse {
 }
 
 text_enum!(
-    /// 思考强度从配置的哪一层来（施工 8-18；8-18（补）起不再有会话那一层；SU-3 上起个人设置并进系统配置）：
-    /// `providers.<id>.models.<model>.effort` 写在系统配置里，照 `config.get` 说的来源。
+    /// 思考强度从配置的哪一层来（施工 8-18；8-18（补）起不再有会话那一层）：
+    /// `providers.<id>.models.<model>.effort` 写在配置里，照 `config.get` 说的来源。
     EffortSource {
         /// 系统配置 `config.toml`。
         System = "system",

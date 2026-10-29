@@ -196,7 +196,7 @@ async fn answered_with(stores: Stores, blocks: Vec<Block>) -> miyu_tool::Done {
     running.await.unwrap()
 }
 
-/// 扩展传进主人名下的图（施工 O-2 三补；施工 SU-4 下起和主人共用一个存处）：交回时块原样不动。
+/// 扩展传进存处的图（施工 O-2 三补；施工 SU-4 下起和会话共用一个存处）：交回时块原样不动。
 #[tokio::test]
 async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
     let (place, dir) = stores();
@@ -209,7 +209,7 @@ async fn an_answered_image_in_the_owner_s_store_is_given_as_is() {
     drop(dir);
 }
 
-/// 主人名下没有的 blob：照暂时不可用，不把读不到的图交给她。
+/// 存处里没有的 blob：照暂时不可用，不把读不到的图交给她。
 #[tokio::test]
 async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
     let (place, dir) = stores();
@@ -223,7 +223,7 @@ async fn an_image_nobody_uploaded_makes_the_tool_unavailable() {
     drop(dir);
 }
 
-/// 拷进会话属主名下的 blob（施工 W-11 补）：图片块、发出去的图、`images` 形状里的图都算；别的形状、读不成的不算。
+/// 结果引用的 blob（施工 W-11 补）：图片块、发出去的图、`images` 形状里的图都算；别的形状、读不成的不算。
 #[test]
 fn the_blobs_a_result_references_include_detail_images() {
     let hash = |n: u8| miyu_kernel::id::ContentHash::of(&[n]);
@@ -283,8 +283,8 @@ async fn sent_with_root(data: &std::path::Path, venue: Option<&str>) -> Value {
     sent
 }
 
-/// 调扩展的工具时交会话属主的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
-/// 只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里，图存到主人家里她就碰不到了，几个群还共用
+/// 调扩展的工具时交数据根的 pictures 位置（施工 Y-11 下）：照数据根的真实位置接上，不建；会话外面的调用（没有数据根）不写。
+/// 只给本机的会话（施工 Y-11 下修）：场所会话关在自己的工作区里，图存到数据根她就碰不到了，几个群还共用
 /// 一处；不知道在哪个场所的也不给。
 #[tokio::test]
 async fn a_call_carries_where_the_owner_s_pictures_go() {

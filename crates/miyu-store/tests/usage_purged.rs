@@ -1,6 +1,6 @@
-//! 删掉的会话的用量（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 5 条）：回收处清它之前往账号日志写
-//! `usage.purged`，写进去了才删目录；汇总照它换掉单次行，加起来一样多，删了汇总重建也一样；写了两遍不加两遍；写不进账号
-//! 日志的不删。分天：整点时区的和单次行一分不差，半点时区照小时的开头归到哪天。
+//! 删掉的会话的用量（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 5 条）：回收处清它之前往 `journal.jsonl` 写
+//! `usage.purged`，写进去了才删目录；汇总照它换掉单次行，加起来一样多，删了汇总重建也一样；写了两遍不加两遍；写不进
+//! `journal.jsonl` 的不删。分天：整点时区的和单次行一分不差，半点时区照小时的开头归到哪天。
 
 use std::fs;
 use std::time::Duration;
@@ -90,7 +90,7 @@ fn purging_keeps_the_usage_and_the_totals_stay_the_same() {
     assert!(journal.contains(r#""kind":"usage.purged""#), "{journal}");
     let after = (total(&index), rows(&index, &groups, 0));
     assert_eq!(after, before, "换成按小时的合计，加起来一样");
-    // 删了汇总重建：照账号日志读回来。
+    // 删了汇总重建：照 `journal.jsonl` 读回来。
     drop(index);
     forget(&root);
     let (rebuilt, _) = UsageIndex::open(&root);
@@ -203,7 +203,7 @@ fn a_summary_written_twice_counts_once() {
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
     let before = total(&index);
-    // 崩在写完账号日志、删目录之前：目录还在，下次再清又写一条。
+    // 崩在写完 `journal.jsonl`、删目录之前：目录还在，下次再清又写一条。
     let dir = root.session_dir(&session(2));
     let summary = purged::of_log(&dir, &session(2)).unwrap().unwrap();
     let entry = || journal::Entry {
@@ -231,7 +231,7 @@ fn without_a_journal_the_session_is_kept() {
     let root = root_in(&scratch);
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
-    // 账号日志的位置是个目录：写不进去。
+    // `journal.jsonl` 的位置是个目录：写不进去。
     fs::create_dir_all(root.path().join(journal::FILE)).unwrap();
     let purged = purge_later(&root);
     assert_eq!(purged.removed, 0);

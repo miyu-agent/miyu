@@ -20,7 +20,7 @@ pub(crate) fn check_dirs(core: &Core, dirs: &[String]) -> Result<(), Refusal> {
 }
 
 /// 加进来的一个目录太不太宽：`~` 本身、系统的家目录、根目录、包含数据根的（`miyu_fs::broad`：施工 5-14 改起工作目录不再
-/// 这样算，加进来的目录照旧，2026-10-22 主会话定），另外落在数据根里的一律算太宽，账号的工作区也不例外：工作目录太宽时有地方
+/// 这样算，加进来的目录照旧，2026-10-22 主会话定），另外落在数据根里的一律算太宽，`workspace/` 也不例外：工作目录太宽时有地方
 /// 可退，加进来的目录没有。换不成真实位置的照原样，边界表里那一片不算。
 fn dir_too_wide(core: &Core, dir: &str) -> bool {
     if dir.trim() == "~" {
@@ -52,7 +52,7 @@ pub(crate) struct Picked {
 }
 
 /// 照 `cwd` 挑工作目录（`11-权限与沙盒.md` 第四节「工作目录和工作区分开」，施工 5-14）：人在哪就是哪，太宽的照用、标上
-/// `wide`（2026-10-20 项目主人定，原来头自己带上的太宽照旧退回、人明着选的才照用）。落在数据根里、又不在属主的工作区
+/// `wide`（2026-10-20 项目主人定，原来头自己带上的太宽照旧退回、人明着选的才照用）。落在数据根里、又不在
 /// `workspace/` 里的，`~` 本身读不出家目录的，退回这个会话的默认工作区 `fallback`（建好）。换不成真实位置的照原样：
 /// 说不清它宽不宽，用到时工具自己报错。
 pub(crate) fn pick(core: &Core, cwd: &str, fallback: &Path) -> Picked {
@@ -91,7 +91,7 @@ pub(crate) fn wide(core: &Core, real: &Path) -> bool {
     )
 }
 
-/// 退回这个会话的默认工作区 `dir`：建好（建家目录时就建了账号的工作区，会话的那一个用到才建；建不了的照样退回，用到时工具
+/// 退回这个会话的默认工作区 `dir`：建好（建数据根时就建了 `workspace/`，会话的那一个用到才建；建不了的照样退回，用到时工具
 /// 自己报错），交回它。
 fn prepared(core: &Core, dir: &Path) -> Picked {
     if let Err(error) = core
@@ -108,7 +108,7 @@ fn prepared(core: &Core, dir: &Path) -> Picked {
     }
 }
 
-/// 造会话 `id` 时的工作目录（施工 5-14）：照 [`pick`] 挑；账号的工作区本身（网页不选目录时交的就是它，握手的
+/// 造会话 `id` 时的工作目录（施工 5-14）：照 [`pick`] 挑；`workspace/` 本身（网页不选目录时交的就是它，握手的
 /// `host.workspace`）换成这个会话的默认工作区；场所会话宽的（没带目录的是 `~`，照 [`Picked::broad`]：施工 5-14 改照旧）也用它：
 /// 外部身份只碰得到自己的工作区。
 /// 交回工作目录和太不太宽。只在造会话时这样认：以前的会话记着的照旧。
@@ -124,20 +124,20 @@ pub(crate) fn opening_cwd(core: &Core, who: &Opening, cwd: &str, id: &SessionId)
     }
 }
 
-/// 人明着要换去账号的工作区本身（网页的「默认工作区」交的就是它，握手的 `host.workspace`）：换成这个会话自己的默认工作区
+/// 人明着要换去 `workspace/` 本身（网页的「默认工作区」交的就是它，握手的 `host.workspace`）：换成这个会话自己的默认工作区
 /// `default`，建好（施工 5-14 中）。别的交回空。
 pub(crate) fn to_default(core: &Core, cwd: &str, default: &Path) -> Option<Picked> {
     account_workspace(core, cwd).then(|| prepared(core, default))
 }
 
-/// 工作目录是不是账号的工作区本身。
+/// 工作目录是不是 `workspace/` 本身。
 fn account_workspace(core: &Core, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
     let (_, own) = roots(core);
     miyu_fs::resolve(Path::new("/"), home.as_deref(), cwd).is_ok_and(|real| real == own)
 }
 
-/// 数据根、属主的工作区，都换成真实的位置：和人交来的路径同一个换法（`miyu_fs::resolve`：还不存在的照最近的、已经存在的
+/// 数据根、`workspace/`，都换成真实的位置：和人交来的路径同一个换法（`miyu_fs::resolve`：还不存在的照最近的、已经存在的
 /// 上级目录算），两边才比得上（施工 5-14 中修：macOS 的 `/var` 是链接、Windows 有短名，原来不存在的照原样，对不上）。
 /// 换不成的照原样。
 pub(crate) fn roots(core: &Core) -> (PathBuf, PathBuf) {

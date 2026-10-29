@@ -1,4 +1,4 @@
-//! 系统日志、账号日志 `journal.jsonl`（`docs/blueprint/config.md`「系统日志、账号日志」、「怎么走」第六条，`07-存储.md`
+//! 日志 `journal.jsonl`（`docs/blueprint/config.md`「怎么走」第六条，`07-存储.md`
 //! 第三节，施工 8-3）：配置、密钥的改动，项目配置的信任，一行一条。
 //!
 //! 外壳照事件的写法（`seq`、`at`、`kind`、`by`、`cause`、`body`，没有 `turn`），种类不进内核的种类表，内核读到照不认识的

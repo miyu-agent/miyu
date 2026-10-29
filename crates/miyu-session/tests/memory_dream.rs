@@ -20,7 +20,7 @@ fn says(n: usize) -> Script {
     Script::new((0..n).map(|_| Play::Says("好。")))
 }
 
-/// 这一间的整理记忆的一方：照场地这时的配置、属主 alice、东九区。
+/// 这一间的整理记忆的一方：照场地这时的配置、主人 alice、东九区。
 async fn dream(home: &Home) -> Result<Dreamed, NotDreamed> {
     let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
     // 场地的配置是不变的那一种：最终值照它合出来的（`normal` 池里放着整理记忆用的那一个）。

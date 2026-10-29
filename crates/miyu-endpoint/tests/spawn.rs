@@ -45,7 +45,7 @@ async fn a_child_session_does_its_task_and_is_listed_under_its_parent() {
         id: parent_id.clone(),
     });
 
-    // 第一条：由父会话造，带着父会话和第几层，属主、场所、权限、工作目录照父会话的，不是一次性的。
+    // 第一条：由父会话造，带着父会话和第几层，场所、权限、工作目录照父会话的，不是一次性的。
     let Body::SessionCreated(created) = &log[0].body else {
         panic!("第 1 条应该是造会话");
     };

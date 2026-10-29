@@ -3,7 +3,7 @@
 use super::{REFUSED, Refusal};
 
 impl Refusal {
-    /// 没有这个知识库（施工 K-1 上）：账号下没有这个编号的目录。编号不合写法的是 `bad_params`。
+    /// 没有这个知识库（施工 K-1 上）：没有这个编号的目录。编号不合写法的是 `bad_params`。
     pub(crate) const UNKNOWN_KB: Refusal = Refusal {
         code: REFUSED,
         reason: "unknown_kb",

@@ -131,7 +131,7 @@ async fn a_loaded_session_still_knows_where_it_is() {
 }
 
 /// 也给本机用的（`venues` 有 `local`，施工 O-31 补，接入QQ 的会话 2026-10-17 要的「主动发消息」）：本机的会话里照对外发消息
-/// 判（本机的会话就是管理员本人）：完全放开直接跑；工作区要问人，没人能确认的拒，说的是没人能确认、不是「不在场所里」。
+/// 判（本机的会话就是主人本人）：完全放开直接跑；工作区要问人，没人能确认的拒，说的是没人能确认、不是「不在场所里」。
 #[tokio::test]
 async fn a_venue_action_meant_for_local_too_goes_by_outbound_on_this_machine() {
     let venues = miyu_tool::Venues {

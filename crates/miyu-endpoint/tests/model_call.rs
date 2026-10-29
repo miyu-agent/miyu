@@ -1,5 +1,5 @@
 //! `model.call`（施工 8-20，`docs/blueprint/models.md`「协议」`model.call`、「怎么走」第十二条）：经一次性入口叫本机回环上
-//! 的假服务器。回应的形状；不造会话、不进会话日志；参数校验；图照这个账号的 blob 认；几种出错的 `data`；照剧本回的核心
+//! 的假服务器。回应的形状；不造会话、不进会话日志；参数校验；图照 blob 认；几种出错的 `data`；照剧本回的核心
 //! 没有一次性入口，答 `no_model`。
 
 use serde_json::{Value, json};
@@ -144,7 +144,7 @@ async fn an_image_is_this_accounts_blob_and_goes_out_after_the_words() {
             .await;
         assert_eq!(reason(&reply), Some("unknown_attachment"), "{reply}");
     }
-    // 是这个账号的、不是图：参数不对。
+    // 存处里有、不是图：参数不对。
     let text = client
         .call(
             "p2",

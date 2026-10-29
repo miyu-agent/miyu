@@ -30,7 +30,7 @@ pub enum Zone {
 /// 造边界表要的几个地方。都是原样的路径，[`Boundary::new`] 再换成真实的位置。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Places {
-    /// 这一轮的工作区。给之前先照 `11-权限与沙盒.md` 第四节挑过：太宽的已经退回了账号的工作区。
+    /// 这一轮的工作区。给之前先照 `11-权限与沙盒.md` 第四节挑过：太宽的已经退回了数据根的工作区。
     pub workspace: PathBuf,
     /// 这一轮加进来的目录，每一个都照工作区算（施工 5-10 上）。太宽的，协议端点已经拒绝了。
     pub dirs: Vec<PathBuf>,

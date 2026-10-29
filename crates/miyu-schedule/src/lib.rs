@@ -2,7 +2,7 @@
 //! `cron_create`、`cron_delete`、`cron_list`（包 [`SCHEDULE`]），动态循环每轮定下一次的 `schedule_wakeup`（包 [`LOOP`]）。两个包
 //! 能分开关：预设关了哪个，那几件就不在工具面上。
 //!
-//! 工具只拿 [`miyu_tool::SchedulePort`]：唤醒表在协议端点（施工 J-1），端点照会话属主造端口交进会话。给模型看的字在资源目录的
+//! 工具只拿 [`miyu_tool::SchedulePort`]：唤醒表在协议端点（施工 J-1），端点造端口交进会话。给模型看的字在资源目录的
 //! `software/schedule/`、`software/loop/` 下（进登记簿），给人看的在各自的 `human/`。`/loop` 是核心的斜杠命令，在端点里。
 
 mod cron;

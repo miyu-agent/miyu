@@ -1,16 +1,16 @@
 //! 工具链的缓存用沙盒自己的一份（`docs/blueprint/session/tools.md` 第 1a 条第 5 步，施工 5-4 下）：工作区这一级，cargo、
 //! npm、pip、go 的缓存经它们自己的环境变量指到沙盒的缓存里；cargo 的全局配置带过去，发布用的令牌不带。
 //!
-//! 一起派的几件只读的、同一个属主的几个会话会同时来备：建目录、建链接撞上了，照结果对不对算，不当出错。
+//! 一起派的几件只读的、几个会话会同时来备：建目录、建链接撞上了，照结果对不对算，不当出错。
 
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// 沙盒的缓存：这个会话的属主的那一份在哪，你的 cargo 目录在哪。核心算出来，造会话、载入时交进来。
+/// 沙盒的缓存：在哪，你的 cargo 目录在哪。核心算出来，造会话、载入时交进来。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SandboxCache {
-    /// 属主的那一份：`<缓存目录>/sandbox/<属主>`。
+    /// 只有一份：`<缓存目录>/sandbox`。
     pub dir: PathBuf,
     /// 你的 cargo 目录：核心的环境里 `CARGO_HOME` 设了、不是空的照它，不然 `~/.cargo`；不知道的是空的。
     pub cargo_home: Option<PathBuf>,

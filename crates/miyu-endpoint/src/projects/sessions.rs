@@ -15,7 +15,7 @@ use crate::list::{LOCAL, scan};
 use crate::refusal::Refusal;
 use crate::wire::Request;
 
-/// `account` 的项目 `id`：没有的 `unknown_project`。
+/// 项目 `id`：没有的 `unknown_project`。
 pub(crate) async fn find(core: &Core, id: &str) -> Result<Project, Refusal> {
     let read = super::read(core).await?;
     read.projects
@@ -45,7 +45,7 @@ pub(crate) async fn may_join(core: &Core, session: &SessionId) -> Result<(), Ref
     }
 }
 
-/// 删项目 `id` 之前：`account` 在这个项目里的会话一个个写一条 `session.meta_changed {"project": ""}`（`by` 是人），交回挪了
+/// 删项目 `id` 之前：在这个项目里的会话一个个写一条 `session.meta_changed {"project": ""}`（`by` 是人），交回挪了
 /// 几个。命令编号照这条请求的接 `/project`：一个会话里不会撞。
 pub(crate) async fn move_out(
     core: &Arc<Core>,
@@ -76,7 +76,7 @@ pub(crate) async fn move_out(
     Ok(members.len())
 }
 
-/// `account` 在项目 `id` 里的本机会话：照会话列表的那一套扫，照他自己的索引。
+/// 在项目 `id` 里的本机会话：照会话列表的那一套扫，照会话列表的索引。
 async fn members(core: &Core, id: &str) -> Result<Vec<SessionId>, Refusal> {
     let root = core.root.clone();
     let index = core.index();

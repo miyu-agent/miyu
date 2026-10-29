@@ -69,7 +69,7 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
         return Err(Refusal::BAD_PARAMS);
     }
     let events = events_of(core, &session).await?;
-    // 要条目的：投影要的字照这个连接的语言读，改了多少行照属主的 blob 算。
+    // 要条目的：投影要的字照这个连接的语言读，改了多少行照 blob 算。
     let view = match params.view {
         true => Some((
             (core.resources.clone(), Titles::of(core)),
@@ -120,7 +120,7 @@ pub(crate) fn texts(
     Ok(texts)
 }
 
-/// 投影兜底用的给人看的名字从哪来：找技能的地方（施工 9-8 四补：会话属主看得到的包、数据根、属主，施工 U23 上下；拿到阻塞线程里再找），工具
+/// 投影兜底用的给人看的名字从哪来：找技能的地方（施工 9-8 四补：看得到的包、数据根，施工 U23 上下；拿到阻塞线程里再找），工具
 /// 目录里这一刻的工具交的显示名（施工 9-8 六补：脚本、MCP 的、扩展的工具，照语言）。
 #[derive(Clone)]
 pub(crate) struct Titles {
@@ -136,7 +136,7 @@ pub(crate) struct Titles {
 }
 
 impl Titles {
-    /// 会话属主 `owner` 看得到的（施工 U23 上下，[`Core::packages_of`]）。
+    /// 看得到的（施工 U23 上下，[`Core::packages_of`]）。
     pub(crate) fn of(core: &Core) -> Titles {
         let catalog = core.tools.current();
         let tools = catalog

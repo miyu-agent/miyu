@@ -7,7 +7,7 @@
 //!
 //! 命令本身照请求的编号交给内核，内核照编号只生效一次；`command.ran` 用派生的编号 `<编号>/ran` 记，执行了的才记。
 //!
-//! 登记表里没有的名字照模板命令认（施工 X-14 上，[`templates`]）：属主家目录、装了的包里的 `commands/<名字>.md`，展开成一段话
+//! 登记表里没有的名字照模板命令认（施工 X-14 上，[`templates`]）：数据根、装了的包里的 `commands/<名字>.md`，展开成一段话
 //! 发出去。扩展整页的命令（施工 X-15 下，[`pages`]）也在那里认：只叫头打开那一页。
 
 use std::sync::Arc;
@@ -44,7 +44,7 @@ pub(crate) struct RunParams {
     /// 头所在的目录：只用来接 `/workspace` 后面相对的路径（施工 9-7 下）。
     #[serde(default)]
     cwd: Option<String>,
-    /// 本机会话里说命令的人（施工 Y-2 下下上）：照连接的人，不从参数读。没填的（不经 [`run`] 的）照旧是管理员。
+    /// 本机会话里说命令的人（施工 Y-2 下下上）：主人，不从参数读。没填的（不经 [`run`] 的）也是主人。
     #[serde(skip)]
     person: Option<By>,
     /// 前缀要变了时人选的（施工 OV-1 下，`sessions/prefix.rs`）：开新一轮的命令（模板、提示词、设定和继续长期目标）照它。
@@ -173,7 +173,7 @@ pub(crate) async fn run(
     Ok(json!({"command": slash.name(), "events": events, "said": said}))
 }
 
-/// 说命令的是谁：本机的会话是连上来的那个人 `person`（施工 Y-2 下下上，原来一律是管理员；不收 `as`），场所会话照 `as` 认出
+/// 说命令的是谁：本机的会话是主人 `person`（施工 Y-2 下下上；不收 `as`），场所会话照 `as` 认出
 /// 平台上的人（不带的 `venue_session`）。
 fn speaker(
     core: &Core,

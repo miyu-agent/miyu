@@ -114,7 +114,7 @@ struct Shared {
     open: AtomicBool,
     /// 会话目录：输出写在它下面的 `jobs/`。
     dir: PathBuf,
-    /// 会话属主的 blob：结束了整份输出存进这里。
+    /// blob：结束了整份输出存进这里。
     blobs: Blobs,
     /// 任务编号：这个会话一串，和派子代理的共用。
     ids: Arc<JobIds>,
@@ -139,7 +139,7 @@ pub(crate) struct Ended {
 }
 
 impl SessionJobs {
-    /// 照 `kit` 造：会话目录、属主的 blob，编号照这个会话的那一串领（和派子代理的共用），派出去的任务从名册记起（载入时照
+    /// 照 `kit` 造：会话目录、blob，编号照这个会话的那一串领（和派子代理的共用），派出去的任务从名册记起（载入时照
     /// 日志建的），停子代理经会话表的端口；结束了交回 `backs`。
     pub(crate) fn new(kit: Kit, backs: mpsc::UnboundedSender<Back>) -> SessionJobs {
         let Kit {
@@ -300,7 +300,7 @@ pub(crate) struct Kit {
     pub(crate) table: Arc<Jobs>,
     /// 会话目录：输出写在它下面的 `jobs/`。
     pub(crate) dir: PathBuf,
-    /// 属主的 blob。
+    /// blob。
     pub(crate) blobs: Blobs,
     /// 任务编号：和派子代理的共用一串。
     pub(crate) ids: Arc<JobIds>,

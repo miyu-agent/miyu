@@ -1,5 +1,5 @@
 //! 文件改了、前缀要变时发送前问一声（施工 OV-1 下，`docs/construction/OV-1-同名覆盖工具说明和提示词.md` 第十节）：握手声明了
-//! `caps.prefix_ask` 的头，属主的覆盖改过以后头一句拒 `prefix_changing`、带改了的文件；带 `keep` 的照常说、这一轮照新的拼；
+//! `caps.prefix_ask` 的头，你的覆盖改过以后头一句拒 `prefix_changing`、带改了的文件；带 `keep` 的照常说、这一轮照新的拼；
 //! 照新的拼过了不再问；重做、开轮的命令、设长期目标也问；没声明的头不问；带 `compact` 的先压缩再说。
 
 use std::sync::Arc;

@@ -1,5 +1,5 @@
 //! 关起来的会话的 Unix 套接字管不住的机器上（施工 MB-1：内核的 Landlock 太老、又没有 seccomp，核心起来时探到的
-//! [`miyu_sandbox::set_confines_sockets`]）：成员的、场所的会话不跑命令，回 `no-commands`，假工具一次都没跑；管理员本人的会话
+//! [`miyu_sandbox::set_confines_sockets`]）：关起来的场所会话不跑命令，回 `no-commands`，假工具一次都没跑；主人本人的会话
 //! 照跑。管得住以后照常跑。
 //!
 //! 只有这一个测试，自己一个进程：管不管得住是进程里一份，改了会碰到同时在跑的别的测试。

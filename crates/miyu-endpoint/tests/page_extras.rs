@@ -1,4 +1,4 @@
-//! 技能、脚本、MCP 三页另要的两样（施工 X-27 补，网页报的）：`skill.list`、`script.list` 顶上带 `dir`，管理员自己放的那个
+//! 技能、脚本、MCP 三页另要的两样（施工 X-27 补，网页报的）：`skill.list`、`script.list` 顶上带 `dir`，你自己放的那个
 //! 文件夹，一个都没有、还没建的也照写；软件包列表上包带的 MCP 服务每一格带 `on`，同 `mcp.list` 的一项，改了全局开关跟着变。
 //! 加载方式那一格施工 FL-1 拆了：工具一律全量，`tool.set_loading` 照旧回 `{}`、什么都不改。
 
@@ -66,7 +66,7 @@ async fn a_bundled_service_shows_its_switch_and_follows_changes() {
     core.stop_extensions().await;
 }
 
-/// 个人设置的字。
+/// 配置的字。
 fn settings(home: &Home) -> String {
     std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
 }

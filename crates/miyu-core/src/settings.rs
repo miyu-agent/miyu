@@ -3,7 +3,7 @@
 //! 和参考文件，放在 `state/config/`（[`generate`]）。
 //!
 //! 生成的三份是派生的：一样的不重写，写不成的记一条 `WARN config schema not written`，照样起来，缺了只是编辑器没有
-//! 补全。字照管理员的 `ui.language` 的最终值，`auto` 的照核心所在系统的语言。
+//! 补全。字照 `ui.language` 的最终值，`auto` 的照核心所在系统的语言。
 //!
 //! 运行中配置换了（施工 8-4，[`follow()`]）：`log.level` 变了当场换级别，`ui.language` 变了照新的语言重写这三份；装卸
 //! 软件包以后配置清单变了也重写（施工 F-5 补）。
@@ -199,7 +199,7 @@ pub fn items() -> Vec<Item> {
         .collect()
 }
 
-/// 生成的两份的文件名，和 [`render`] 交回的先后一样：系统配置的 Schema、参考文件（施工 SU-3 上：个人设置那一份拿掉了）。
+/// 生成的两份的文件名，和 [`render`] 交回的先后一样：配置的 Schema、参考文件。
 pub const FILES: [&str; 2] = ["config.schema.json", "reference.toml"];
 
 /// 照清单 `items`、字 `words` 生成的两份，先后照 [`FILES`]。系统配置的 Schema 只有能放进系统配置的项，参考文件是全部。

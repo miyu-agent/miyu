@@ -1,6 +1,6 @@
 //! 人经协议照意思找记忆（施工 R-5 下，`docs/blueprint/recall.md` 第三条）：真核心接上本机 embedding（手造的小模型、真的
 //! `miyu-embed`，小模型的测试数据目录当包目录：只读、核对得上），`memory.remember` 记下的时候就在后台补它的向量（施工 R-5 五补），补上以后 `memory.search` 照意思找得到。
-//! 远程的（施工 R-5 补）照这时的配置发给假服务器，用量记在管理员名下。`off` 的那一路和她的工具共用一个判法
+//! 远程的（施工 R-5 补）照这时的配置发给假服务器，用量照记。`off` 的那一路和她的工具共用一个判法
 //! （`miyu_session::Vectors` 照 `Using` 的配置挑），在会话的测试里。
 
 use std::path::{Path, PathBuf};

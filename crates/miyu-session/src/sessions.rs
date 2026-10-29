@@ -1,5 +1,5 @@
 //! 列会话，执行器这一头（`docs/blueprint/cross-session.md` 第一条，`session/tools.md`「列会话」，施工 C-3）：经会话表的端口
-//! （[`SessionPort::sessions`]）要这个会话的属主的主会话，拿掉它自己，交给 `sessions`。
+//! （[`SessionPort::sessions`]）要本机的主会话，拿掉它自己，交给 `sessions`。
 //!
 //! 只有本机的主会话有这个端口（[`Agents::lists_sessions`]），和工具面上有没有 `sessions` 是同一个判断。
 //!

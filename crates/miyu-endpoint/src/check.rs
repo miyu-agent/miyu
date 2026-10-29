@@ -1,13 +1,13 @@
 //! `check`：一次查完人手写的、Miyu 读的文件（施工 8-30，`docs/blueprint/protocol.md`「`check`」，`cli/check.md`）。
 //!
-//! 照磁盘上现在的字查，不是核心手里的那一份：人刚改完、核心还没重读的也查得到。不写文件的查全部：系统配置、管理员的
-//! 个人设置、`cwd` 的项目配置（没写 `cwd` 的不查）、密钥文件（照核心手里的问题：它的字是密钥，不另读）、三层里每个
+//! 照磁盘上现在的字查，不是核心手里的那一份：人刚改完、核心还没重读的也查得到。不写文件的查全部：配置、
+//! `cwd` 的项目配置（没写 `cwd` 的不查）、密钥文件（照核心手里的问题：它的字是密钥，不另读）、几层里每个
 //! 人格的两份字、每一份预设（每一层各查各的，预设施工 P-2 上）、软件包清单（施工 9-1 上）。写了文件的照它在哪认是哪一种，
 //! 只查那一份；认不出的 `unknown_file`。
 //!
 //! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`）。
 //!
-//! 个人设置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。不写文件的另带语义模型的状态（施工 R-25，`embedding.rs`）。
+//! 配置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。不写文件的另带语义模型的状态（施工 R-25，`embedding.rs`）。
 //!
 //! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`；包自己的检查照它报的）、
 //! `file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
@@ -58,8 +58,7 @@ struct ConfigFile {
     shown: String,
 }
 
-/// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。软件包照 `account` 看得到的查（施工
-/// U23 下上：系统那一份接上他自己那一层）。
+/// `check`：交回 `{"problems": [...]}`，不写文件的另带 `embedding`（接了照意思那一路的）。软件包照出厂的加你装的查。
 pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let home = core.home.clone();
@@ -107,7 +106,7 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
                 let message = crate::packages::sentence(&words, "prompt_override_bad", &why);
                 problems.push(json!({"kind": "override", "file": shown(core, &path), "code": "prompt_override_bad", "level": "warning", "message": message.unwrap_or_default()}));
             }
-            // 管理员放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
+            // 你放行出沙盒的（施工 X-36）：没有这件工具的、来处对不上的、放行了 shell 的。
             problems.extend(unsandboxed::unsandboxed(core, &words));
             // 装好的文件改了、少了（施工 F-8 中下）：本地库记了的才查，各一条警告。
             for (path, drift) in crate::packages::verify::drifted(core).await {
@@ -204,7 +203,7 @@ fn check_config(core: &Core, words: &Human, file: &ConfigFile) -> Result<Vec<Val
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");
     }
-    // 系统配置里的 MCP 服务另读（施工 F-9 上；SU-3 上起从个人设置挪过来）。
+    // 配置里的 MCP 服务另读（施工 F-9 上）。
     if file.layer == Layer::System {
         problems.extend(mcp::configured(core, words, &file.shown, &text));
     }

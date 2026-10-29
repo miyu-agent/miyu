@@ -159,7 +159,7 @@ impl Spawner {
         Ok(format!("{}\n\n{prompt}", shell.trim_end()))
     }
 
-    /// 经会话表从这次调用那一步分叉出子会话（施工 A-F 中）：属主、父会话、层数、命令编号照 `child`，别的照父会话落了盘的日志。
+    /// 经会话表从这次调用那一步分叉出子会话（施工 A-F 中）：父会话、层数、命令编号照 `child`，别的照父会话落了盘的日志。
     async fn forked(&self, child: Child) -> Result<SessionId, String> {
         let placeholder = self
             .agents

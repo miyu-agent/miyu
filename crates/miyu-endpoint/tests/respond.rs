@@ -1,5 +1,5 @@
 //! `session.respond`（施工 O-14 上，`docs/construction/O-14-照记下的开一轮（上）.md`）：照旁听记下的几条开一轮，`triggers` 排好
-//! 去重，事实接在内核的后面、`by` 是这个连接（本机的是管理员）；写错的什么都不记；不是旁听的、当过触发的拒，`data.messages`
+//! 去重，事实接在内核的后面、`by` 是这个连接（本机的是主人）；写错的什么都不记；不是旁听的、当过触发的拒，`data.messages`
 //! 是那几条；同一个请求编号再发只算一次。
 
 use serde_json::{Value, json};

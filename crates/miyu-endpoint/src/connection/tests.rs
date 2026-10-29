@@ -46,7 +46,7 @@ fn people_only_stays_people_only() {
         "project.create",
         "project.update",
         "project.delete",
-        // 施工 X-30：替人回答、改权限级别和工作目录、终端会话、账号和登录（删会话施工 Y-2 上起要 `sessions.drive`）。
+        // 施工 X-30：替人回答、改权限级别和工作目录、终端会话、访问密码和登录（删会话施工 Y-2 上起要 `sessions.drive`）。
         "session.answer",
         "session.set_permission_level",
         "session.set_workspace",

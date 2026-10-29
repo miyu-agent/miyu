@@ -69,7 +69,7 @@ pub fn organizer_after(home: &mut Home, server: &Server, extra: &str, idle: Dura
     organizer_full(home, server, extra, "", idle);
 }
 
-/// 同 [`organizer`]，个人设置写着 `personal`（施工 R-6 再修：称呼）。
+/// 同 [`organizer`]，配置里另接 `personal`（施工 R-6 再修：称呼）。
 pub fn organizer_as(home: &mut Home, server: &Server, extra: &str, personal: &str) {
     organizer_full(home, server, extra, personal, Duration::from_millis(100));
 }
@@ -100,7 +100,7 @@ pub fn organizer_tagging(home: &mut Home, server: &Server, extra: &str) {
 }
 
 /// 整理记忆的照开发端点（施工 R-16 的量尺）：`MIYU_DEV_BASE_URL`、`MIYU_DEV_API_KEY`、`MIYU_DEV_MODEL` 都设了才接，交回接没接上。
-/// key 只经环境变量交给配置，不写进哪里。`personal` 是个人设置（称呼）。
+/// key 只经环境变量交给配置，不写进哪里。`personal` 接在配置后面（称呼）。
 pub fn organizer_dev(home: &mut Home, personal: &str) -> bool {
     let (Ok(base_url), Ok(key), Ok(model)) = (
         std::env::var("MIYU_DEV_BASE_URL"),

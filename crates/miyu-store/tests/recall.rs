@@ -9,7 +9,7 @@ use miyu_store::recall::{Edit, Hit, Opened, RecallIndex, Room};
 
 use crate::support::*;
 
-/// 临时数据根里管理员的一个检索库的位置。
+/// 临时数据根里的一个检索库的位置。
 fn place(scratch: &Scratch) -> PathBuf {
     root_in(scratch).index().join("recall").join("test.db")
 }
@@ -427,7 +427,7 @@ fn a_source_is_alive_unless_its_turn_or_its_session_is_buried() {
 }
 
 /// 出处活不活照会话的目录在不在（施工 R-3 三补，`memory.md` 第二条第 4 款）：回合库删掉重建（坏了）以后，删会话时埋的那块
-/// 墓碑没了，进了回收处的会话照样算死的；目录又回来了的（从回收处恢复）算活的；哪个账号名下的都认得出。
+/// 墓碑没了，进了回收处的会话照样算死的；目录又回来了的（从回收处恢复）算活的。
 #[test]
 fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     use miyu_kernel::id::{SessionId, TurnId};
@@ -445,7 +445,7 @@ fn a_deleted_session_stays_dead_after_the_index_is_rebuilt() {
     };
     let live = root.session_dir(&deleted);
     std::fs::create_dir_all(&live).unwrap();
-    // 记忆归管理员、会话在别的账号（系统账号）名下的：照样认得出目录在。
+    // 另一个会话：目录在，照样认得出。
     std::fs::create_dir_all(root.session_dir(&theirs)).unwrap();
     assert!(indexes.alive(&room, &at(&deleted)).unwrap());
     assert!(

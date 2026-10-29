@@ -34,7 +34,7 @@ pub struct Script {
     pub package: Option<String>,
 }
 
-/// 账号 `account` 自己放脚本的文件夹：`scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
+/// 主人自己放脚本的文件夹：`scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
 pub fn own_dir(root: &DataRoot) -> PathBuf {
     root.path().join("scripts")
 }
@@ -98,9 +98,9 @@ fn hex(digit: u8) -> Option<u8> {
     }
 }
 
-/// 账号 `account` 在场所 `venue` 跑来处是 `source`（包的编号，家目录里放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的
+/// 在场所 `venue` 跑来处是 `source`（包的编号，数据根里自己放的是 [`HOME_PACKAGE`]）、工具名是 `tool` 的脚本时给它的
 /// 状态目录（施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：本机的会话、没说场所的是 `state/scripts/<来处>/<工具名>/`；场所会话多一层
-/// 场所（施工 X-44 补）：`state/scripts/@<场所>/<来处>/<工具名>/`（施工 SU-5 上拿掉了账号那一层）。场所写不成目录名的没有。不建：跑之前脚本工具建。
+/// 场所（施工 X-44 补）：`state/scripts/@<场所>/<来处>/<工具名>/`。场所写不成目录名的没有。不建：跑之前脚本工具建。
 pub fn state_dir(
     data_root: &Path,
     venue: Option<&VenueId>,
@@ -114,7 +114,7 @@ pub fn state_dir(
     Some(dir.join(source).join(tool))
 }
 
-/// 账号 `account` 在场所 `venue` 跑来处是 `source`、工具名是 `tool` 的脚本时给它的缓存目录（施工 Y-11 上，
+/// 在场所 `venue` 跑来处是 `source`、工具名是 `tool` 的脚本时给它的缓存目录（施工 Y-11 上，
 /// `MIYU_SCRIPT_CACHE_DIR`）：`cache/<来处>/<工具名>/`，场所会话多一层场所（同 [`state_dir`]）。场所写不成目录名的
 /// 没有。不建：跑之前脚本工具建。
 pub fn cache_dir(
@@ -131,7 +131,7 @@ pub fn cache_dir(
     Some(dir.join(source).join(tool))
 }
 
-/// 一格状态目录（施工 X-44）：`state/scripts/<账号>/<来处>/<工具名>/`，场所会话的多一层场所（施工 X-44 补）。
+/// 一格状态目录（施工 X-44）：`state/scripts/<来处>/<工具名>/`，场所会话的多一层场所（施工 X-44 补）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
     /// 来处：包的编号，或者 [`HOME_PACKAGE`]。
@@ -156,7 +156,7 @@ pub fn states(data_root: &Path) -> Vec<State> {
     found
 }
 
-/// 放来处的那几层：`state/scripts/` 本身，加它下面每个场所那一层（施工 X-44 补；施工 SU-5 上拿掉了账号那一层）。
+/// 放来处的那几层：`state/scripts/` 本身，加它下面每个场所那一层（施工 X-44 补）。
 fn places(data_root: &Path) -> Vec<PathBuf> {
     let root = state_root(data_root);
     let mut places: Vec<PathBuf> = folders(&root)
@@ -193,8 +193,8 @@ fn folders(dir: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// 卸掉来处是 `source` 的包（施工 X-44）：删掉每个账号下的 `state/scripts/<账号>/<来处>/`，场所那一层下面的
-/// `<账号>/@<场所>/<来处>/` 也删（施工 X-44 补）。本来就没有的不算错。
+/// 卸掉来处是 `source` 的包（施工 X-44）：删掉 `state/scripts/<来处>/`，场所那一层下面的
+/// `@<场所>/<来处>/` 也删（施工 X-44 补）。本来就没有的不算错。
 ///
 /// # Errors
 ///
@@ -209,7 +209,7 @@ pub fn forget_states(data_root: &Path, source: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-/// 找脚本：数据根 `root` 里账号 `account` 自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的。照工具名排。
+/// 找脚本：数据根 `root` 里主人自己放的，加装了的软件包 `packages` 里的。照工具名排。
 pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Script>, Vec<Skipped>) {
     let mut scripts: Vec<Script> = Vec::new();
     let mut skipped = Vec::new();

@@ -1,4 +1,4 @@
-//! 个人设置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
+//! 配置里的 MCP 服务给头的方法（施工 F-9 补，`docs/blueprint/protocol.md` 的 `mcp.*`）：`mcp.list` 列出这时的状态，
 //! `mcp.restart` 重启一个；状态变了推 `mcp.changed`（订阅软件包列表的连接收，`subscriptions/listed.rs`）。一项同软件包列表上
 //! 服务的那一格（施工 X-4），另带 `covers`：它盖住了哪些包里的同名服务；知道有哪些工具的另带 `tools`（施工 X-26）；加载方式
 //! `need_load` 和全局开关 `on`（施工 X-27）；浏览器登录过的带 `logged_in`（施工 X-42 下再补）。只给本机的人用。加、换、删在
@@ -21,11 +21,11 @@ use crate::refusal::Refusal;
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RestartParams {
-    /// 服务名：个人设置里的表名。
+    /// 服务名：配置里的表名。
     name: String,
 }
 
-/// `mcp.list`：`{"servers": [...]}`，照个人设置里写的先后。
+/// `mcp.list`：`{"servers": [...]}`，照配置里写的先后。
 pub(crate) fn list(core: &Core) -> Value {
     let servers: Vec<Value> = core
         .home_mcp
@@ -36,7 +36,7 @@ pub(crate) fn list(core: &Core) -> Value {
     json!({ "servers": servers })
 }
 
-/// 叫 `name` 的那一项；个人设置里没有了的没有（推送写 `null`）。
+/// 叫 `name` 的那一项；配置里没有了的没有（推送写 `null`）。
 pub(crate) fn entry(core: &Core, name: &str) -> Option<Value> {
     core.home_mcp
         .now()
@@ -108,7 +108,7 @@ pub(crate) fn reach(server: &McpServer, one: &mut Value) {
 
 /// 编辑页要先填上原来写的（施工 X-27 补，网页的 MCP 页要）：`env` 照写的（字照原样，引用写成 `{"secret": 名字}`、`{"env": 变量}`，
 /// 只是名字、不是值），没写的不带；`timeout_ms` 不是默认的才带。`command` 照旧是程序加参数，`mcp.set` 的 `command`、`args` 照它拆。
-/// 网址的服务（施工 X-32 上）带 `url`，`bearer`、`headers` 照 `env` 的写法。字照原样给：它本来就明文写在这个人的个人设置里，只有本机的
+/// 网址的服务（施工 X-32 上）带 `url`，`bearer`、`headers` 照 `env` 的写法。字照原样给：它本来就明文写在配置里，只有本机的
 /// 人列得到；要藏的值该写成密钥的引用。
 fn written(server: &McpServer, one: &mut Value) {
     match &server.reach {

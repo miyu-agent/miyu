@@ -174,7 +174,7 @@ async fn fs_read_rejects_the_data_root_and_lets_the_workspace_through() {
     assert_eq!(data(&reply), content, "{reply}");
     assert_eq!(reply["result"]["size"], json!(content.len()));
 
-    // 数据根里、不是账号的工作区：不给。
+    // 数据根里、不在工作区：不给。
     let inside = home.root.path().join("home").join("alice").join("note.txt");
     std::fs::create_dir_all(inside.parent().expect("有上级")).expect("建得了目录");
     std::fs::write(&inside, b"secret").expect("写得进");

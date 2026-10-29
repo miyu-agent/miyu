@@ -32,7 +32,7 @@ pub struct Command {
     pub package: Option<String>,
 }
 
-/// 找命令模板：装了的软件包 `packages` 里的，加数据根 `root` 里账号 `account` 自己放的。照名字排。
+/// 找命令模板：装了的软件包 `packages` 里的，加数据根 `root` 里主人自己放的。照名字排。
 pub fn find(packages: &[Found], root: &DataRoot) -> (Vec<Command>, Vec<Skipped>) {
     let mut places: Vec<(PathBuf, Option<String>)> = vec![(root.path().join("commands"), None)];
     let mut installed: Vec<&Found> = packages.iter().filter(|found| found.read.is_ok()).collect();

@@ -240,7 +240,7 @@ async fn undoing_says_the_typed_line() {
 /// 场所会话：和内置命令同一关，主人、管理的人能用，别人 `command_not_allowed`；不带 `as` 的 `venue_session`。
 #[tokio::test]
 async fn in_a_venue_the_same_people_as_for_builtins_may_run_one() {
-    // 放在包里：场所会话的属主不一定是管理员，包里的谁都找得到。
+    // 放在包里：包里的哪个会话都找得到。
     let home = Home::new();
     home.write(
         "packages/kit/package.toml",

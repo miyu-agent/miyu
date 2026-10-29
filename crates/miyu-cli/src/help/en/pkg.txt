@@ -31,7 +31,6 @@ pacman options work too:
 Options:
       --format text|json  list, info, files, owns, check: json for scripts
       --yes, --noconfirm  install, remove: do not ask first
-      --system            install, remove, upgrade, clean, update: as an admin
       --target <target>   pack: pick one of the manifest's targets
   -o, --out <dir>         pack: where to write the file
   -h, --help              Print help

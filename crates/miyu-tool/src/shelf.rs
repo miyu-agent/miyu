@@ -1,8 +1,8 @@
 //! 目录架子（施工 O-2 中，`docs/blueprint/providers.md`「目录换代」）：核心现在的工具目录，提供者登记一次换一代。核心、会话的
 //! 执行器、权限策略、回合开头换快照的那一段拿着同一个架子：执行、判权限照现在的那一份找工具，换快照的照代数看换没换。
 //!
-//! 叠起来的架子（施工 U23 中中，设计 06 U23）：每个人一个，叠在核心那一个上面（[`Shelf::over`]）。它自己那一层是「怎么从底下那一份
-//! 拼出他的这一份」（[`Compose`]）：成员的拿掉机主私人的 `~home`、放进他自己的脚本。读的时候照底下的代数、自己那一层的代数现拼，
+//! 叠起来的架子（施工 U23 中中）：叠在另一个架子上面（[`Shelf::over`]）。它自己那一层是「怎么从底下那一份
+//! 拼出这一份」（[`Compose`]）。读的时候照底下的代数、自己那一层的代数现拼，
 //! 两边都没变的用拼好的那份；代数是两边之和，两边都只增不减，拼出来的也只增不减。
 
 use std::any::Any;
@@ -26,8 +26,8 @@ enum Inner {
     Over(Over),
 }
 
-/// 叠在 `base` 上的：自己那一层，和上一次拼好的那份（照哪两个代数拼的）；`_keep` 跟着这个架子活（施工 U23 中下补：看着成员
-/// `scripts/` 的监视，没有会话拿着这个架子了就一起丢掉）。
+/// 叠在 `base` 上的：自己那一层，和上一次拼好的那份（照哪两个代数拼的）；`_keep` 跟着这个架子活（施工 U23 中下补：没有会话拿着
+/// 这个架子了就一起丢掉）。
 struct Over {
     base: Shelf,
     own: RwLock<Own>,
@@ -119,7 +119,7 @@ impl Shelf {
         WeakShelf(Arc::downgrade(&self.inner))
     }
 
-    /// 叠起来的架子换成照 `compose` 拼（施工 U23 中中：他自己的脚本改了），算一代；不是叠起来的什么都不做，交回假。
+    /// 叠起来的架子换成照 `compose` 拼（施工 U23 中中），算一代；不是叠起来的什么都不做，交回假。
     pub fn recompose(&self, compose: Compose) -> bool {
         let Inner::Over(over) = &*self.inner else {
             return false;
@@ -154,7 +154,7 @@ impl Shelf {
         self.read(|catalog| catalog.get(name).cloned())
     }
 
-    /// 现在的目录里叫 `name` 的那一件归哪个包（[`Catalog::package_of`]）：管理员放行出沙盒的照它认来处（施工 X-36）。
+    /// 现在的目录里叫 `name` 的那一件归哪个包（[`Catalog::package_of`]）：主人放行出沙盒的照它认来处（施工 X-36）。
     #[must_use]
     pub fn package_of(&self, name: &str) -> Option<String> {
         self.read(|catalog| catalog.package_of(name).map(str::to_string))

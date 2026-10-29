@@ -48,7 +48,7 @@ fn read(call: &str, path: &Path) -> Value {
 
 #[test]
 fn the_screen_is_the_sample_of_the_drawing() {
-    // 在家目录里敲的命令：太宽，核心退回了账号的工作区。
+    // 在家目录里敲的命令：太宽，核心退回了数据根的工作区。
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),

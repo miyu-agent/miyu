@@ -1,4 +1,4 @@
-//! `skill.list`（施工 X-26，`docs/blueprint/skills.md`「技能」）：三种来处各列一个（管理员自己放的、出厂的包带的、装的包带的），
+//! `skill.list`（施工 X-26，`docs/blueprint/skills.md`「技能」）：三种来处各列一个（你自己放的、出厂的包带的、装的包带的），
 //! 同名的只列核心实际用的那一份；给人看的名字、说明照连接的语言挑，没写的不带；路径在家目录下的写成 `~/…`。
 
 use serde_json::{Value, json};
@@ -16,7 +16,7 @@ fn skill(name: &str, metadata: &[&str]) -> String {
     format!("---\nname: {name}\ndescription: Do {name}.\n{metadata}---\n\nBody.\n")
 }
 
-/// 写好三种来处的技能：家目录里的 `notes`、盖住出厂同名的 `package-creator`，管理员装的包 `kit` 带的 `kit-notes`。
+/// 写好三种来处的技能：家目录里的 `notes`、盖住出厂同名的 `package-creator`，你装的包 `kit` 带的 `kit-notes`。
 fn written(home: &Home) {
     home.write("skills/notes/SKILL.md", &skill("notes", &[]));
     home.write(
@@ -40,7 +40,7 @@ fn written(home: &Home) {
     );
 }
 
-/// 照个人设置的语言 `language` 起一份核心（系统的家目录当是数据根），列一次。
+/// 照配置的语言 `language` 起一份核心（系统的家目录当是数据根），列一次。
 async fn listed(home: &Home, language: &str) -> Vec<Value> {
     home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);

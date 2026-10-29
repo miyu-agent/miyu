@@ -1,5 +1,5 @@
-//! 管理员事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，2026-10-20 项目主人定）：系统配置的
-//! `sandbox.tools.<工具名> = "<来处>"`。工具自己声明的一律不认，只认管理员在系统配置里写的。
+//! 主人事先放行出沙盒的工具（施工 X-36，`11-权限与沙盒.md` A15，2026-10-20 项目主人定）：配置的
+//! `sandbox.tools.<工具名> = "<来处>"`。工具自己声明的一律不认，只认主人在配置里写的。
 //!
 //! 值写来处，仿 sudoers 写命令的完整路径：和工具目录里这件工具这时归的包编号一样才算放行（[`miyu_tool::Catalog::package_of`]：
 //! 自己放的脚本是 `~home`，出厂的 `shell` 是 `basesystem`，装的包是它的编号）。脚本删了、别的包带了同名的工具来，对不上，
@@ -18,8 +18,8 @@ use miyu_tool::Shelf;
 /// 一件工具那一项的样子。工具名那一段照 `<name>`（同 `clicall.tools.<name>`）：MCP 工具的全名常超过 `<id>` 的 32 个字。
 pub const TOOL: &str = "sandbox.tools.<name>";
 
-/// 登记的一项：最后一段是工具名，`settings!` 写不了，手写。只认系统配置：管理员才碰得到。设置页先不画（隐私与安全页的
-/// 画法是头那边的事），写进系统配置就生效。
+/// 登记的一项：最后一段是工具名，`settings!` 写不了，手写。只认配置，项目配置写的不算。设置页先不画（隐私与安全页的
+/// 画法是头那边的事），写进配置就生效。
 pub const ITEMS: &[Item] = &[Item {
     key: TOOL,
     kind: Kind::Text { max: 200 },
@@ -39,16 +39,16 @@ pub const ITEMS: &[Item] = &[Item {
     },
 }];
 
-/// 这一轮放行了的：工具名到写的来处，和管理员管得住的地方（施工 X-37 补，[`Confines`]）。
+/// 这一轮放行了的：工具名到写的来处，和主人管得住的地方（施工 X-37 补，[`Confines`]）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Unsandboxed {
     granted: BTreeMap<String, String>,
     confines: Confines,
 }
 
-/// 管理员管得住的地方（施工 X-37 补）：放行出沙盒的工具，它的文件判那一刻的真实位置落在这几处下面的才算。这个账号家目录自己
-/// 放东西的几处（`DataRoot::own_places`）、资源目录（出厂的包），机主的再加系统那一层装上的包（`DataRoot::real_system_packages`，
-/// 施工 U23 上上：以前那一层在机主家目录里，只有机主的算），都是真实的位置。会话开的时候定下，回合开始随放行表交出去。
+/// 主人管得住的地方（施工 X-37 补）：放行出沙盒的工具，它的文件判那一刻的真实位置落在这几处下面的才算。资源目录（出厂的
+/// 包），没关起来的会话再加数据根里自己放东西的几处（`DataRoot::own_places`）、装上的包（`DataRoot::real_packages`），都是
+/// 真实的位置。会话开的时候定下，回合开始随放行表交出去。
 /// 空的（没给的）哪里都不算：带文件的工具一律不放行。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Confines(Vec<PathBuf>);
@@ -113,7 +113,7 @@ impl Unsandboxed {
         }
     }
 
-    /// 带上管理员管得住的地方（施工 X-37 补）。
+    /// 带上主人管得住的地方（施工 X-37 补）。
     #[must_use]
     pub fn within(self, confines: Confines) -> Unsandboxed {
         Unsandboxed { confines, ..self }

@@ -1,5 +1,4 @@
-//! 认命令、判谁能用（施工 O-6）：协议上走不到的几种在这里守，例如群里的主人（对应表里有、又不是会话属主的外部身份，要等
-//! 有第二个账号才造得出来）。
+//! 认命令、判谁能用（施工 O-6）：判身份的几种（群里的主人、管理的人、别人）在这里直接守。
 
 use miyu_kernel::id::{ExternalId, VenueId};
 use miyu_kernel::origin::{By, External, Person, Role};

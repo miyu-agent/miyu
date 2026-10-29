@@ -1,6 +1,6 @@
 //! `blob.get` 带 `session`（施工 W-6 补，`protocol.md` 的 `blob.get` 第 1 条）：照那个会话找。桥（接 QQ 的扩展）读得到群会话里
 //! 和主人私聊里引用过的 blob；只在正文里写着哈希的、没引用过的读不到，回
-//! `unknown_blob`（以前一律照管理员找，群里的读不到）。管理员的连接照会话的属主读；会话编号不合写法的 `bad_params`。
+//! `unknown_blob`。人的连接读不到群里的；会话编号不合写法的 `bad_params`。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -92,7 +92,7 @@ pub(crate) fn got(reply: &Value) -> Result<Vec<u8>, String> {
     }
 }
 
-/// 管理员的连接上传一份，交回它的哈希。
+/// 人的连接上传一份，交回它的哈希。
 async fn put(client: &mut Client, id: &str, bytes: &[u8]) -> String {
     let reply = client
         .call(
@@ -107,7 +107,7 @@ async fn put(client: &mut Client, id: &str, bytes: &[u8]) -> String {
         .to_string()
 }
 
-/// 管理员的连接往会话里以外部身份 `who` 发一句，带附件 `blob`；正文里写着 `mention`。
+/// 人的连接往会话里以外部身份 `who` 发一句，带附件 `blob`；正文里写着 `mention`。
 async fn send(client: &mut Client, id: &str, session: &str, who: &str, blob: &str, mention: &str) {
     let reply = client
         .call(
@@ -179,7 +179,7 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
         .to_string();
     let sent = replies(&path, 4).await;
     assert!(sent[3].get("error").is_none(), "桥发进它的群：{sent:?}");
-    // 桥传的存在主人名下（施工 SU-4 中），群会话也归主人。
+    // 桥传的存进存处（施工 SU-4 中），群会话也归主人。
     let hash = ContentHash::parse(&g).expect("合写法");
     assert!(
         miyu_store::blob::Blobs::new(home.root.blobs())
@@ -218,7 +218,7 @@ async fn the_bridge_reads_blobs_its_sessions_refer_to_and_nothing_else() {
     );
     assert_eq!(got(&read[9]), Err("bad_params".to_string()), "哈希不合写法");
 
-    // 管理员的连接读不到群里的（施工 Y-2 上：场所会话只在平台的后台看，人的头碰不到；U2 管理员不越过属主）；不合写法的
+    // 人的连接读不到群里的（施工 Y-2 上：场所会话只在平台的后台看，人的头碰不到）；不合写法的
     // 会话编号 `bad_params`。
     let reply = client
         .call("g1", "blob.get", json!({"blob": g, "session": group}))

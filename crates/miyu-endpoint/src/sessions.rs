@@ -64,19 +64,19 @@ pub(crate) struct Sessions {
 struct Open {
     /// 在跑的会话，和它现在的工作目录。
     running: BTreeMap<SessionId, Running>,
-    /// 最近造会话的命令编号（连同属主：施工 BUG-1，两个账号碰巧用了同一个编号各造各的），和它造出的会话，照从旧到新。
+    /// 最近造会话的命令编号，和它造出的会话，照从旧到新。
     created: VecDeque<(Made, SessionId)>,
     /// 这次运行里补回过去重的编号没有：第一次造会话时补一次。
     recalled: bool,
 }
 
-/// 一次造会话认谁：属主和命令编号。
+/// 一次造会话认谁：命令编号。
 type Made = CommandId;
 
 #[derive(Debug)]
 struct Running {
     handle: Handle,
-    /// 实际在哪个目录里干活：头报的太宽的，是账号的工作区。施工 9-7 上起只有人换工作区才变（[`Sessions::moved`]）。
+    /// 实际在哪个目录里干活：头报的太宽的，是 `workspace/`。施工 9-7 上起只有人换工作区才变（[`Sessions::moved`]）。
     workspace: String,
     /// 加进来的目录（施工 5-10 上）。同上。
     dirs: Vec<String>,
@@ -121,10 +121,9 @@ pub(crate) struct Found {
 }
 
 impl Sessions {
-    /// 造一个会话：属主照 `who.owner`（施工 SU-4 中起都是主人）；有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
+    /// 造一个会话：有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
     /// 没写的照默认预设，施工 P-2 上，`presets.rs`），再找人格：`persona` 照 [`personas::resolve`]，预设不再参与（施工 P-4
-    /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个属主同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找；
-    /// 别的账号碰巧用了同一个编号的照造新的（施工 BUG-1：以前只比编号，交回了别人的会话）。
+    /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找。
     pub(crate) async fn create(
         &self,
         core: &Arc<Core>,
@@ -146,7 +145,7 @@ impl Sessions {
                 open.created.pop_front();
             }
         }
-        // 同一个属主同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
+        // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。
         let made: Made = command.clone();
         let earlier = open
             .created
@@ -249,7 +248,6 @@ impl Sessions {
             id: child.lineage.parent.clone(),
         });
         // 没挑人格的子代理无人格（施工 P-4 上），不照默认人格。
-        // 子会话照它的属主找人格、预设（施工 Y-2 中上）。
         let persona = personas::resolve(core, Some(child.persona.as_deref()))
             .await
             .map_err(|refusal| format!("persona {:?}: {}", child.persona, refusal.reason))?;
@@ -368,13 +366,13 @@ impl Sessions {
     }
 }
 
-/// 主人：连上来的、核心替谁做事都记成他（施工 SU-4 下：原来照连接、照属主分）。
+/// 主人：连上来的、核心替谁做事都记成他（施工 SU-4 下）。
 pub(crate) fn person() -> By {
     By::Person(Person::default())
 }
 
 /// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
-/// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号，属主是主人。读不了的跳过。在阻塞线程里读，交回的照从旧
+/// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧
 /// 到新。
 async fn recall(core: &Core) -> Vec<(Made, SessionId)> {
     let root = core.root.clone();

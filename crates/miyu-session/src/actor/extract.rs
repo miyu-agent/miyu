@@ -50,8 +50,8 @@ impl Actor {
         (self.group_budget(), limit)
     }
 
-    /// 抽取照称呼写主人（施工 R-6 再修）：这个会话的快照带了「关于你」才用配置 `config` 里的称呼。不带的（群聊、别人的
-    /// 会话、桥没写 `profile` 的场所会话）不能把管理员的称呼当成这个人：配置里只有管理员的个人设置。
+    /// 抽取照称呼写主人（施工 R-6 再修）：这个会话的快照带了「关于你」才用配置 `config` 里的称呼。不带的（群聊、
+    /// 桥没写 `profile` 的场所会话）不能把主人的称呼当成这个人：配置里的称呼是主人的。
     fn owner_name(&self, config: &Turn) -> Option<String> {
         self.persona.as_ref()?.snapshot.profile.as_ref()?;
         called(config)

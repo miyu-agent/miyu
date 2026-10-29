@@ -1,5 +1,5 @@
 //! 装、卸（施工 F-5 上，设计 `30-插件框架.md` 第九节，`docs/blueprint/packages.md`「装卸」）：`package.install`、
-//! `package.remove` 改系统那一层的（照请求分层在 `asked.rs`，自己那一层的在 `mine.rs`，施工 U23 下上）。只动系统那一层（磁盘上
+//! `package.remove` 改你装的那一层（照请求分在 `asked.rs`，施工 U23 下上；磁盘上
 //! 怎么做在 `miyu_store::packages::install`），做完照两层重读、当场换掉核心手里的清单（[`Core::reload_packages`]）：
 //! `package.list`、预设的功能、开着的会话下一个回合都照新的。一次只做一件。
 
@@ -45,7 +45,7 @@ impl Core {
             .packages
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(found);
-        // 每人那几份照新的系统那一份重造（施工 U23 上下）：用到时再造。
+        // 去掉关了的那一份照新的重造（施工 U23 上下）：用到时再造。
         self.visible_packages.forget();
         // 脚本照新的清单重找、重登记（施工 X-12 中）。
         self.follow_scripts();
@@ -180,7 +180,7 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
         })
         .unwrap_or_default();
     let layer = one.layer;
-    // 它带的人格、预设在系统区、家目录里有改动的，卸成了记一笔是它留下的（施工 P-11 下）。
+    // 它带的人格、预设在你那一层有改动的，卸成了记一笔是它留下的（施工 P-11 下）。
     let noting = super::left::noting(core, &id, &one.files_dir());
     // 先停下用着它的、再删文件（施工 F-5 补）：Windows 上开着的文件删不掉。删不成的照原来的清单换回来。
     let all = refs(&found);
@@ -214,7 +214,7 @@ pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     crate::config::forget::forget(core, &keys);
     // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
     crate::extensions::forget_switch(core, &removed).await;
-    // 它的脚本在各账号下的状态目录（施工 X-44）：同包的状态目录一起删。
+    // 它的脚本的状态目录（施工 X-44）：同包的状态目录一起删。
     let (root, package) = (core.root.path().to_path_buf(), removed.clone());
     let cleared = blocking(move || {
         remove_dir_if_there(&state)?;
@@ -376,7 +376,7 @@ pub(super) async fn clear_of_conflicts(
     let reserved = core
         .commands
         .reserved(|package| super::is_installed(&installed, package));
-    // 人格、预设还和出厂、系统区、家目录里有的比（施工 P-11 下）。
+    // 人格、预设还和出厂、你那一层有的比（施工 P-11 下）。
     let layers = super::left::layers(core, id);
     let id = id.to_string();
     let found = blocking(move || {
@@ -407,7 +407,7 @@ pub(super) async fn shipped_clear_of_conflicts(
     clear_of_conflicts((core, peer), id, manifest, dir).await
 }
 
-/// 管理员家目录那一层。
+/// 你装的那一层（`home`）的目录。
 fn home(core: &Core) -> Result<PathBuf, Refusal> {
     packages(core)
         .home_dir()

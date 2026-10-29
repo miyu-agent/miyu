@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use miyu_kernel::id::SessionId;
 use miyu_store::root::DataRoot;
 
-/// 一个会话算工作区要的：账号的工作区（落在它里面的不算太宽）、这个会话的默认工作区。
+/// 一个会话算工作区要的：数据根的工作区 `workspace/`（落在它里面的不算太宽）、这个会话的默认工作区。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DefaultWorkspace {
     own: PathBuf,
@@ -15,7 +15,7 @@ pub(crate) struct DefaultWorkspace {
 }
 
 impl DefaultWorkspace {
-    /// 属主 `owner` 的会话，默认工作区用会话 `from` 的（主会话是自己，子会话、分叉出来的照 `session.created` 的
+    /// 默认工作区用会话 `from` 的（主会话是自己，子会话、分叉出来的照 `session.created` 的
     /// `workspace_from`）。
     pub(crate) fn new(root: &DataRoot, from: &SessionId) -> DefaultWorkspace {
         DefaultWorkspace {

@@ -59,7 +59,7 @@ pub struct ForSession {
     pub config: TurnConfig,
     /// 驱动的占位：取自这个会话的策略快照。
     pub texts: DriverTexts,
-    /// 属主的 blob：编码要用的图、文件在这里。
+    /// blob：编码要用的图、文件在这里。
     pub blobs: Blobs,
     /// 会话记着的引用（施工 8-8）：模型或 `@池`。造会话的是 `session.created` 的 `model`；载入的是内核从日志算的
     /// （`Session::reference()`，施工 8-10：被后来带 `model` 的 `session.policy_changed` 盖掉）。以前的日志没有这一格的、

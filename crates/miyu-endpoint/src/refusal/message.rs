@@ -116,10 +116,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "command_unavailable" => ("命令暂时不可用。", "Command unavailable for now."),
         "command_failed" => ("命令执行失败。", "Command failed."),
         "unknown_file" => ("不支持检查这个文件。", "This file cannot be checked."),
-        "command_not_allowed" => (
-            "仅终端管理员和群管理员可用。",
-            "Terminal and group admins only.",
-        ),
+        "command_not_allowed" => ("仅主人和群管理员可用。", "Owner and group admins only."),
         "nothing_to_delete" => ("没有可删除的内容。", "Nothing to delete."),
         "avatar_conflict" => (
             "头像已被修改，请刷新后重试。",
@@ -133,7 +130,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "预设已被修改，请刷新后重试。",
             "Preset was modified. Refresh and try again.",
         ),
-        "owner_only" => ("仅终端管理员可用。", "Terminal admin only."),
+        "owner_only" => ("仅主人可用。", "Owner only."),
         "session_stopped" => (
             "会话已停止，重新发送即可载入。",
             "Session stopped. Send again to reload.",
@@ -256,17 +253,7 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "model_failed" => ("模型请求失败。", "Model request failed."),
         // 施工 W-8（`web-module.md`「给人看的字」）。
         "bad_code" => ("一次性码已失效。", "One-time code expired."),
-        "bad_invite" => ("邀请码无效。", "Invalid invite code."),
-        "register_first" => ("请先注册。", "Register first."),
-        "account_disabled" => ("账号已停用。", "Account disabled."),
-        "username_taken" => ("用户名已被使用。", "Username taken."),
         "not_permitted" => ("没有权限。", "Not permitted."),
-        "unknown_account" => ("账号不存在。", "Account not found."),
-        "member_disabled" => (
-            "这个成员已停用，先启用。",
-            "This member is disabled. Enable them first.",
-        ),
-        "unknown_invite" => ("邀请码不存在。", "Invite not found."),
         "bad_ticket" => ("交接票已失效。", "Ticket expired."),
         "bad_login" => ("登录已失效，请重新登录。", "Login expired. Sign in again."),
         "bad_password" => ("访问密码错误。", "Incorrect access password."),

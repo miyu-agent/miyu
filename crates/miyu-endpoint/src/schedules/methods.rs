@@ -1,5 +1,5 @@
 //! `schedule.*`（施工 J-1 下，`docs/blueprint/schedules.md` 第五节，设计 `45-定时和循环.md` 第三节第 3 条）：人经协议建、列、
-//! 删、停、续定时任务。都照调用者替谁干活的那个账号的表：别人的编号一律 `unknown_schedule`。一项的写法在 [`entry`]，推送
+//! 删、停、续定时任务。一项的写法在 [`entry`]，推送
 //! （`schedules.changed`）也用它。
 //!
 //! 施工 J-4：扩展也能调（要批过 `sessions.drive`），建的记成包建的；它只看得到、改得了自己建的，别的编号一样 `unknown_schedule`。
@@ -97,7 +97,7 @@ fn own(core: &Core, package: Option<&str>, id: &str) -> Result<(), Refusal> {
     }
 }
 
-/// 订阅 `schedules` 的回应：这个账号这一刻的全部。
+/// 订阅 `schedules` 的回应：这一刻的全部。
 pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
     let listed: Vec<Value> = core
         .schedules()
@@ -109,7 +109,7 @@ pub(crate) fn listed(core: &Core) -> Result<Value, Refusal> {
     Ok(json!({"schedules": listed}))
 }
 
-/// 推送里的一项：这个账号的任务 `id` 这一刻的样子，没有了的是删了；表读不成的没有（不推）。
+/// 推送里的一项：任务 `id` 这一刻的样子，没有了的是删了；表读不成的没有（不推）。
 pub(crate) fn changed(core: &Core, id: &str) -> Option<Value> {
     match core.schedules().get(id) {
         Ok(schedule) => Some(json!({"id": id, "entry": entry(&schedule)})),
@@ -302,8 +302,8 @@ async fn opened(core: &Arc<Core>, new: NewParams) -> Result<Target, Refusal> {
     })
 }
 
-/// 每次新开的工作目录用得了：照开会话的同一套换成真实位置（`~` 照家目录），要是一个在的目录，不落在数据根里别人的地方
-/// （数据根里只有他自己的工作区能当工作目录，`sessions::pick`）。
+/// 每次新开的工作目录用得了：照开会话的同一套换成真实位置（`~` 照家目录），要是一个在的目录，不落在数据根里工作区以外的地方
+/// （数据根里只有工作区能当工作目录，`sessions::pick`）。
 fn usable(core: &Core, cwd: &str) -> bool {
     let home = crate::workspace::home(core);
     let Ok(real) = miyu_fs::resolve(std::path::Path::new("/"), home.as_deref(), cwd) else {

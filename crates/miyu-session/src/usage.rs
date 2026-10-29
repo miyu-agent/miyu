@@ -32,7 +32,7 @@ pub(crate) struct Ledger {
 }
 
 impl Ledger {
-    /// 用量汇总 `usage` 里属主 `owner` 的会话 `id`（施工 8-15）：`session_usage` 的端口照它造。没开汇总的没有。
+    /// 用量汇总 `usage` 里会话 `id` 的（施工 8-15）：`session_usage` 的端口照它造。没开汇总的没有。
     pub(crate) fn of(usage: Option<&Arc<UsageIndex>>, id: &SessionId) -> Option<Ledger> {
         usage.map(|index| Ledger {
             index: Arc::clone(index),

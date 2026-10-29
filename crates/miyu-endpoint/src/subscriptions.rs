@@ -134,7 +134,7 @@ impl Subscriptions {
             .is_some_and(|forwarder| !forwarder.view && forwarder.pushing.load(Ordering::Acquire))
     }
 
-    /// 订阅会话 `session`（属主 `owner`：推送里的金额照他的币种排）：起一个转发任务，先把补发的 `backlog` 照先后写进 `out`（不补的是空的），再写推送。原来有一个的，
+    /// 订阅会话 `session`（推送里的金额照配置的币种排）：起一个转发任务，先把补发的 `backlog` 照先后写进 `out`（不补的是空的），再写推送。原来有一个的，
     /// 换掉：旧的放完已经交给它的回应再退。
     pub(crate) fn add(
         &mut self,

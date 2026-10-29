@@ -64,7 +64,7 @@ impl Knowledge {
     pub fn rename(&self, kb: &str, fields: BaseFields<'_>) -> Result<Base, KnowledgeError> {
         match self.place(kb)? {
             Place::Own(dir) => about(&dir, fields.values())?,
-            // 包里的（施工 K-8）：名字、说明照包；自动想起的开关记在账号自己那边。
+            // 包里的（施工 K-8）：名字、说明照包；自动想起的开关记在数据根的 `kb.toml`。
             Place::Package { package, .. } => {
                 if fields.name.is_some() || fields.description.is_some() {
                     return Err(KnowledgeError::Packaged);

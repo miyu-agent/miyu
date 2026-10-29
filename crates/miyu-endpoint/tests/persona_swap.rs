@@ -16,7 +16,7 @@ use miyu_tool::Catalog;
 use crate::support::venues::configured_core;
 use crate::support::*;
 
-/// 管理员（测试里是 alice）家目录里 Miyu 的一个文件。
+/// 数据根里 Miyu 的一个文件。
 fn mine(home: &Home, file: &str, text: &str) {
     home.write(&format!("personas/miyu/{file}"), text);
 }

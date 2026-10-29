@@ -1,4 +1,4 @@
-//! 推送 `config.changed`（`docs/blueprint/config.md`「协议」「推送 `config.changed`」，施工 8-4）：系统配置、个人设置每变
+//! 推送 `config.changed`（`docs/blueprint/config.md`「协议」「推送 `config.changed`」，施工 8-4）：配置每变
 //! 一次，推给订阅着配置的连接。
 //!
 //! 配置服务换上新的一份时造一个 [`Changed`]，带着那一刻的整份配置；每个连接的转发任务照自己的语言写成一行（问题的话、
@@ -47,7 +47,7 @@ impl Via {
 pub(crate) struct Changed {
     /// 改完以后的整份配置：最终值、来源、问题照它。
     pub(crate) config: Arc<Config>,
-    /// 哪一层：系统配置、个人设置。
+    /// 哪一层：只有配置这一层（项目配置不推）。
     pub(crate) layer: Layer,
     /// 怎么改的。
     pub(crate) via: Via,

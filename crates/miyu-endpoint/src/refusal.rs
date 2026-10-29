@@ -3,7 +3,6 @@
 
 use miyu_kernel::session::Reason;
 
-mod account;
 mod commands;
 mod config;
 mod edits;
@@ -91,7 +90,7 @@ impl Refusal {
         reason: "unknown_preset",
         data: None,
     };
-    /// 要删的人格、预设在你家目录那一层本来就没有（施工 P-3 中）。
+    /// 要删的人格、预设在你那一层本来就没有（施工 P-3 中）。
     pub(crate) const NOTHING_TO_DELETE: Refusal = Refusal {
         code: REFUSED,
         reason: "nothing_to_delete",
@@ -122,7 +121,7 @@ impl Refusal {
         data: None,
     };
     /// 没有这个会话。
-    /// `model.embed`：这个账号的 `models.embedding` 是 `off`，或者要本机的却没装内置模型（施工 X-17）。
+    /// `model.embed`：配置的 `models.embedding` 是 `off`，或者要本机的却没装内置模型（施工 X-17）。
     pub(crate) const EMBEDDING_OFF: Refusal = Refusal {
         code: REFUSED,
         reason: "embedding_off",
@@ -200,7 +199,7 @@ impl Refusal {
         reason: "attachment_too_big",
         data: None,
     };
-    /// `blob.put` 的文件在数据根里、管理员的工作区以外（施工 3-9 三补）。
+    /// `blob.put` 的文件在数据根里、工作区以外（施工 3-9 三补）。
     pub(crate) const ATTACHMENT_IN_DATA_ROOT: Refusal = Refusal {
         code: REFUSED,
         reason: "attachment_in_data_root",
@@ -220,14 +219,14 @@ impl Refusal {
         reason: "path_unreadable",
         data: None,
     };
-    /// `fs.list`、`fs.find` 的目录落在数据根里、又不在这个账号的工作区里（施工 W-2）。`fs.read` 的路径也一样
+    /// `fs.list`、`fs.find` 的目录落在数据根里、又不在工作区里（施工 W-2）。`fs.read` 的路径也一样
     /// （施工 W-6）。
     pub(crate) const PATH_FORBIDDEN: Refusal = Refusal {
         code: REFUSED,
         reason: "path_forbidden",
         data: None,
     };
-    /// `blob.get` 的 blob 这个账号没有（施工 W-6）。
+    /// `blob.get` 的 blob 没有、读不到（施工 W-6）。
     pub(crate) const UNKNOWN_BLOB: Refusal = Refusal {
         code: REFUSED,
         reason: "unknown_blob",

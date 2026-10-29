@@ -2,8 +2,7 @@
 //! `method.call`」）：扩展登记它的后台页要调的方法，头调，核心反向转给扩展、交回它回的。登记不缓存：连接断了，调到的回
 //! `not_running`。
 //!
-//! 施工 IM-1 中下：照（包，账号）记、照（包，账号）转。每人一份的包，谁调就转给谁那一份（页面是看页面的那个人，扩展调的是它替
-//! 的那个人）；没在跑的照用到时拉起，等它登记了方法再转，最多等 60 秒。
+//! 没在跑的照用到时拉起，等它登记了方法再转，最多等 60 秒。
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, PoisonError};
@@ -24,7 +23,7 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 /// 时限能写的范围，毫秒（同工具的）。
 const TIMEOUT_RANGE: std::ops::RangeInclusive<u64> = 1000..=600_000;
 
-/// 哪一份（包，账号）登记了哪些方法、由哪个连接答；包推给人的广播（施工 IM-1 中下二，`events.rs`）。
+/// 哪个包登记了哪些方法、由哪个连接答；包推给人的广播（施工 IM-1 中下二，`events.rs`）。
 #[derive(Default)]
 pub(crate) struct Methods {
     table: Mutex<HashMap<Instance, Registered>>,

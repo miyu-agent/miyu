@@ -77,7 +77,7 @@ pub(super) async fn listed(core: &Core, handle: &Handle) -> Option<crate::list::
         .ok()?
 }
 
-/// 属主是 `owner` 的会话的预设 `preset` 没开功能 `feature`：交回 `key` 那一句，带上预设的名字；开着的、读不出预设的没有。
+/// 会话的预设 `preset` 没开功能 `feature`：交回 `key` 那一句，带上预设的名字；开着的、读不出预设的没有。
 async fn preset_off(
     core: &Core,
     peer: &Peer,
@@ -85,7 +85,6 @@ async fn preset_off(
     feature: &str,
     key: &'static str,
 ) -> Option<Said> {
-    // 照会话的属主找（施工 Y-2 中上）。
     let found = crate::presets::resolve(core, Some(&preset)).await.ok()?;
     if found.file.opens(feature) {
         return None;

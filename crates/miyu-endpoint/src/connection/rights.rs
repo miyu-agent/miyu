@@ -61,9 +61,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.revert" | "session.unrevert" | "session.redo" | "session.compact"
         | "session.clear" | "session.configure" | "session.fork" | "session.set_meta"
         | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
-        // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉自己名下的，属主照 `checks.rs` 查。
+        // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉碰得到的，照 `checks.rs` 查。
         "session.delete" => Needs(SessionsDrive),
-        // 定时任务（施工 J-1 下）：只碰自己账号的唤醒表。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
+        // 定时任务（施工 J-1 下）。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
         "schedule.add" | "schedule.list" | "schedule.cancel" | "schedule.pause"
         | "schedule.resume" => Needs(SessionsDrive),
         // 包在会话里的状态（施工 TW-1）：只读写自己这个包的。
@@ -106,7 +106,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "provider.detect" | "provider.test" | "script.list" | "skill.list" | "usage.query" => {
             Anyone
         }
-        // 只给人：替人回答、改权限和工作目录、终端会话、账号和登录、改人格预设、装卸软件包、改配置和密钥、项目。
+        // 只给人：替人回答、改权限和工作目录、终端会话、访问密码和登录、改人格预设、装卸软件包、改配置和密钥、项目。
         "session.answer"
         | "session.set_permission_level"
         | "session.set_workspace"

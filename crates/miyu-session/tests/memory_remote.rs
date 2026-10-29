@@ -12,7 +12,7 @@ use crate::support::meaning::*;
 use crate::support::remote_embedding::*;
 use crate::support::*;
 
-/// 账号日志里的 `usage.oneshot`。
+/// 日志 `journal.jsonl` 里的 `usage.oneshot`。
 fn billed(home: &Home) -> Vec<String> {
     let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
         .unwrap_or_default();
@@ -71,7 +71,7 @@ async fn a_remote_model_finds_a_memory_by_meaning() {
         .nearest(MODEL, &[0.6, 0.8, 0.0, 0.0], 1)
         .expect("读得了");
     assert!((near[0].similar - 1.0).abs() < 1e-4, "{}", near[0].similar);
-    // 每一次都记了一笔，记在属主名下。
+    // 每一次都记了一笔。
     let billed = billed(&home);
     assert!(billed.len() >= 3, "两次问句、补一条：{billed:?}");
     assert!(

@@ -133,7 +133,7 @@ impl Language {
         }
     }
 
-    /// 工作目录太宽，核心退回了账号的工作区：`given` 是敲命令时的目录，`used` 是实际干活的。
+    /// 工作目录太宽，核心退回了数据根的工作区：`given` 是敲命令时的目录，`used` 是实际干活的。
     pub(crate) fn moved(&self, given: &str, used: &str) -> String {
         match self {
             Language::Chinese => format!("· 目录太宽（{given}），这次在 {used} 里干活"),

@@ -20,7 +20,7 @@ use crate::support::*;
 /// 系统配置在数据根里的位置。
 const SYSTEM: &str = "config.toml";
 
-/// 照磁盘上的配置起来、开始监视的核心：alice 的家目录建好（监视要看它）。
+/// 照磁盘上的配置起来、开始监视的核心：数据根建好（监视要看它）。
 fn watched(home: &Home, script: &Script) -> (Arc<Core>, Watch) {
     home.root.prepare_workspace().expect("建得了家目录");
     let core = home.core_configured(script, None, &[]);

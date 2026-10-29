@@ -36,7 +36,7 @@ impl History {
         }
     }
 
-    /// 这几轮接过去的、人亲口发来的消息（`message.user`，`by` 是账号），撤了就跟没说过一样：
+    /// 这几轮接过去的、人亲口发来的消息（`message.user`，`by` 是主人），撤了就跟没说过一样：
     ///
     /// - 触发它们的那条；
     /// - 由上一轮排着队的消息接着开的那一轮（`02-内核.md` 第六节「排队的消息」第 2 条），上一轮
@@ -146,7 +146,7 @@ impl History {
     }
 }
 
-/// 人亲口发来的消息：`message.user`，`by` 是有账号的人。
+/// 人亲口发来的消息：`message.user`，`by` 是主人。
 fn said_by_the_person(event: &Event) -> bool {
     matches!(event.body, Body::MessageUser(_)) && matches!(event.by, By::Person(_))
 }

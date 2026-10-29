@@ -136,7 +136,7 @@ async fn a_script_s_cache_is_in_the_data_root() {
 /// 印出家目录那四处的脚本（施工 Y-11 补）：没给的印 `unset`。
 const HOMED: &[u8] = b"#!/usr/bin/env python3\n# Description: Homed.\nimport os\nfor name in ('PICTURES', 'VIDEOS', 'DOCUMENTS', 'DOWNLOADS'):\n    print(os.environ.get('MIYU_' + name + '_DIR', 'unset'))\n";
 
-/// 家目录那四处（施工 Y-11 补）：本机的会话交属主家目录的 `pictures/`、`videos/`、`documents/`、`downloads/`，建好交真实位置；
+/// 家目录那四处（施工 Y-11 补）：本机的会话交数据根的 `pictures/`、`videos/`、`documents/`、`downloads/`，建好交真实位置；
 /// 场所会话（没有一个人的家，给了就是几个群共用一处）、不知道在哪个场所的、会话外面的调用都不给。
 #[tokio::test]
 async fn a_local_script_gets_the_owner_s_home_folders() {

@@ -407,7 +407,7 @@ async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
 /// 说明能写空的字（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」）：就是没有说明，盖住出厂的那句，`*.get`、
 /// 说明能写空的字（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」）：就是没有说明，盖住下面那一层的那句，`*.get`、
 /// `*.list` 给 `null`；`unset` 才回到下面那一层的。名字照旧不收空的。出厂的不写说明（施工 P-4 下），这里拿装着的样本包里的一份试
-/// （施工 SU-3 下：系统区那一层拿掉）。
+/// （施工 SU-3 下）。
 #[tokio::test]
 async fn an_empty_summary_means_none_and_covers_the_lower_one() {
     let home = Home::new();

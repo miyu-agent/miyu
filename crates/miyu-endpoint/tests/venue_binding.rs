@@ -1,5 +1,5 @@
 //! `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台桥问一个平台身份是不是主人本人：写了的回 `{"owner": true}`（施工
-//! SU-1 补：值是什么都算主人；施工 SU-4 中起不再回账号），没写的回 `false`；身份写错的（空的）、多写格的、一次问几个的
+//! SU-1 补：值是什么都算主人），没写的回 `false`；身份写错的（空的）、多写格的、一次问几个的
 //! `bad_params`；本机的头（不是平台桥）回 `needs_approval`（没批 `act_for_external`，施工 SU-4 中起）。只读：对应表照旧。
 
 use std::path::Path;

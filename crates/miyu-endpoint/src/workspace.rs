@@ -3,8 +3,8 @@
 //! `cwd` 跟着变）。头每句话报的目录不再换它。
 //!
 //! 人明着换，写错了当场说，不悄悄退回：换不成真实位置、读不了的 `path_unreadable`，是文件的 `not_a_directory`，落在数据根里
-//! 又不是账号自己的工作区的 `path_forbidden`。太宽的（系统的家目录、根目录、包含数据根的）照人选的用，回应多 `wide`（施工
-//! 9-7 补，2026-10-09 项目主人定，原来退回账号的工作区）。加进来的目录照造会话的规矩查（`dir_too_wide`）。
+//! 又不是 `workspace/` 里的 `path_forbidden`。太宽的（系统的家目录、根目录、包含数据根的）照人选的用，回应多 `wide`（施工
+//! 9-7 补，2026-10-09 项目主人定）。加进来的目录照造会话的规矩查（`dir_too_wide`）。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -51,7 +51,7 @@ pub(crate) async fn set(
         check_dirs(core, dirs)?;
     }
     let found = core.sessions.get(core, &session).await?;
-    // 落在数据根里的照会话的属主认它自己的工作区（施工 O-4 下）。
+    // 落在数据根里的只认 `workspace/`（施工 O-4 下）。
     let picked = params
         .cwd
         .as_deref()
@@ -116,8 +116,8 @@ pub(crate) fn home(core: &Core) -> Option<PathBuf> {
         .and_then(|home| std::fs::canonicalize(home).ok())
 }
 
-/// 查一个人明着要换去的工作目录，交回实际用的：见模块的说明。`/workspace` 也照它查（施工 9-7 下）。账号自己的工作区照会话的
-/// 属主（施工 O-4 下）。人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。账号的工作区本身换成会话 `handle` 自己的默认
+/// 查一个人明着要换去的工作目录，交回实际用的：见模块的说明。`/workspace` 也照它查（施工 9-7 下）。
+/// 人明着选的，太宽的照用、标上 `wide`（施工 9-7 补）。`workspace/` 本身换成会话 `handle` 自己的默认
 /// 工作区（施工 5-14 中：网页的「默认工作区」交的是它）。
 pub(crate) fn checked(core: &Core, handle: &Handle, cwd: &str) -> Result<Picked, Refusal> {
     if let Some(picked) = to_default(core, cwd, handle.default_workspace()) {

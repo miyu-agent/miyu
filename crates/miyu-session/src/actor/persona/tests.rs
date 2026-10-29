@@ -1,5 +1,5 @@
 //! 看一遍人格改了没有（施工 P-1 再补）：没改的不换；改了的换，新快照存进 blob；以前造的快照没有指纹的不换；程序升级过、
-//! 核心的字和旧快照不一样的不换；人格写错了的照旧。人格放在临时数据根里管理员家目录那一层。
+//! 核心的字和旧快照不一样的不换；人格写错了的照旧。人格放在临时数据根里。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -25,7 +25,7 @@ fn seen(refresh: &Refresh) -> Seen {
     )
 }
 
-/// 一个临时数据根，Miyu 住在管理员 alice 的家目录，人设是 `persona`；和照这一刻的文件拼好快照的 `Refresh`。
+/// 一个临时数据根，Miyu 住在里面，人设是 `persona`；和照这一刻的文件拼好快照的 `Refresh`。
 fn setup(name: &str, persona: &str) -> (Scratch, DataRoot, Refresh) {
     setup_with(name, persona, None, None)
 }

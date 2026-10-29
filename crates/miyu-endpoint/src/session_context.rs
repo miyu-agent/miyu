@@ -113,7 +113,7 @@ pub(crate) async fn usage_parts(
 }
 
 /// 照连接的语言备好起名字的几样，交给 `f`：块的那句话、工具归哪块（问过的记下）、扩展包的名字。
-/// 工具归哪块照会话属主 `owner` 看得到的认（施工 U23 中下）。
+/// 工具归哪块照看得到的包认（施工 U23 中下）。
 fn named(core: &Arc<Core>, peer: Peer, f: impl FnOnce(&Namer) -> Value) -> Result<Value, Refusal> {
     let language = peer.language.to_string();
     let human = words(core, &language)?;

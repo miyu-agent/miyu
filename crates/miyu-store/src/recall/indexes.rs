@@ -1,4 +1,4 @@
-//! 回合库的登记（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条第 4、7 款）：一个账号、一个人格一份，
+//! 回合库的登记（施工 R-2 上，`docs/blueprint/memory.md`「怎么走」第一条第 4、7 款）：一个人格一份，
 //! `index/recall/turns-<人格>.db`。开过的留着、一直开着：一个库一个进程只开一个连接（`docs/designs/07-存储.md`
 //! 第六节）。
 
@@ -21,7 +21,7 @@ pub type Opener = Box<dyn Fn(&Room, &Opened) + Send + Sync>;
 
 /// 回合库的登记：照房间开、留着。核心里一份，会话表交给每个会话（施工 R-2 上）。
 pub struct RecallIndexes {
-    /// 数据根：库在账号的 `index/recall/` 下。
+    /// 数据根：库在 `index/recall/` 下。
     root: DataRoot,
     /// 开过的。
     open: Mutex<BTreeMap<Room, Arc<RecallIndex>>>,
@@ -73,7 +73,7 @@ impl RecallIndexes {
         (index, Some(opened))
     }
 
-    /// 删会话（进回收处）时：拿掉这个账号每一份回合库里会话 `session` 的全部和它照到了哪，埋一块整个会话的墓碑
+    /// 删会话（进回收处）时：拿掉每一份回合库里会话 `session` 的全部和它照到了哪，埋一块整个会话的墓碑
     /// `会话/`（施工 R-3 上：记忆的出处在它里面的都算死了）。磁盘上有的都算，没开过的这时开（核心重启以后，别的人格的
     /// 会话也删得掉）。
     ///
@@ -95,7 +95,7 @@ impl RecallIndexes {
         failed.map_or(Ok(()), Err)
     }
 
-    /// 账号 `account` 名下有回合库的几个人格（库文件在的，照目录里的先后；施工 R-25 从 [`RecallIndexes::forget_session`] 拆出来）。
+    /// 有回合库的几个人格（库文件在的，照目录里的先后；施工 R-25 从 [`RecallIndexes::forget_session`] 拆出来）。
     ///
     /// # Errors
     ///
@@ -126,7 +126,7 @@ impl RecallIndexes {
     /// 施工 R-3 三补），房间 `room` 的回合库里那一轮没埋（没撤销）。
     ///
     /// 会话照目录判、不照删会话时埋的那块墓碑：墓碑是派生的，回合库坏了删掉重建就没了，回收处里的会话没人再读出来补；目录是
-    /// 真相，从回收处恢复的也自然又算活的。先看这一间的账号名下（平常就在这里），没有再找别的账号（系统账号的会话、记忆归管理员）。
+    /// 真相，从回收处恢复的也自然又算活的。
     ///
     /// # Errors
     ///

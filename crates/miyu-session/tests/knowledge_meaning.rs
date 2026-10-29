@@ -71,14 +71,14 @@ fn search(query: &str) -> Play {
     Play::calls(&[("kb_search", &args)])
 }
 
-/// `account` 的知识库 `notes` 里放一篇。
+/// 知识库 `notes` 里放一篇。
 fn put(home: &Home, text: &str) {
     let dir = home.root.path().join("kb/notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("cat.md"), text).expect("写得进");
 }
 
-/// 等 `account` 的库 `notes` 的块都补上了 `MODEL` 的向量。
+/// 等库 `notes` 的块都补上了 `MODEL` 的向量。
 async fn filled(home: &Home) {
     let index = home.knowledge.index_of("notes");
     for _ in 0..600 {
@@ -205,7 +205,7 @@ async fn a_failing_remote_still_finds_by_keywords() {
     assert!(!server.received().is_empty(), "问过那一家");
 }
 
-/// 账号 `account` 的账号日志里记了几笔用量。
+/// 日志 `journal.jsonl` 里记了几笔用量。
 fn billed(home: &Home) -> usize {
     std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
         .unwrap_or_default()
@@ -216,7 +216,7 @@ fn billed(home: &Home) -> usize {
 
 #[tokio::test]
 async fn the_memory_account_s_base_is_filled_and_the_owner_pays() {
-    // 记忆的账号是管理员、会话的属主是 alice：查、补的是管理员的库，远程的花费记在 alice 名下（同记忆）。
+    // 查、补的是核心一份的库，远程的花费记进日志（同记忆）。
     let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);

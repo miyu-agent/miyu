@@ -1,5 +1,5 @@
 //! 建索引的进度推给头（施工 W-15，网页的知识库页要的：重建索引有进度）：知识库照文件补的时候报进来（`miyu_store` 的
-//! `IndexWatch`），这里写成推送的一行广播出去，订阅着 `kb` 的连接只推自己账号的（`subscriptions/listed.rs`）。
+//! `IndexWatch`），这里写成推送的一行广播给订阅着 `kb` 的连接（`subscriptions/listed.rs`）。
 //!
 //! - `kb.indexing {kb, done, total}`：要重建的 `total` 篇里做完了 `done` 篇；开头是 0，最后一篇照推，中间至多 0.1 秒一次。
 //! - `kb.indexed {kb}`：建好了。头照 `kb.list` 重读那一个库的样子（`indexed_at`、数）。
@@ -14,7 +14,7 @@ use miyu_store::knowledge::IndexWatch;
 /// 广播里最多攒几条没收的：报得疏，一个库建一次几十条以内。
 const PUSHES: usize = 256;
 
-/// 建索引的进度的广播：一条是「账号、换行、推送的那一行」。
+/// 建索引的进度的广播：一条是推送的那一行。
 #[derive(Debug)]
 pub(crate) struct Progress(broadcast::Sender<String>);
 

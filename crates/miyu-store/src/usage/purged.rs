@@ -207,7 +207,7 @@ impl Purged {
         rows
     }
 
-    /// 会话的属主、场所、父会话。
+    /// 会话的场所、父会话。
     pub(crate) fn who(&self) -> Who {
         Who {
             venue: self.venue.clone(),

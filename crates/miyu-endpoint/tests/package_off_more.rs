@@ -21,7 +21,7 @@ async fn lines(path: &std::path::Path, n: usize) {
     }
 }
 
-/// 把个人设置里的 `key` 写成 `value`。
+/// 把配置里的 `key` 写成 `value`。
 async fn set(client: &mut Client, n: u8, key: &str, value: bool) -> Value {
     client
         .call(

@@ -1,5 +1,5 @@
 //! `miyu mcp login <服务>`（`docs/blueprint/cli/mcp.md`，施工 X-42 上）：网址的 MCP 服务要浏览器登录的，连上核心（没在跑的
-//! 拉起）发 `mcp.login`，印出授权页的地址、试着打开浏览器，等服务连上（个人设置里的服务照 `mcp.list` 看，最多 10 分钟）。只是协议
+//! 拉起）发 `mcp.login`，印出授权页的地址、试着打开浏览器，等服务连上（配置里的服务照 `mcp.list` 看，最多 10 分钟）。只是协议
 //! 的客户端：令牌由核心换、存，这里一个字也不经手；印出来的只有授权页的地址。浏览器在别的机器上的（施工 X-42 下）：标准输入是终端
 //! 的同时读，贴回来的一行交给 `mcp.login_finish`，对不上的说一句、接着等。
 //!
@@ -132,7 +132,7 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
     waited(&mut rpc, &service, (&language, paste), out, err).await
 }
 
-/// 等服务连上：个人设置里的照 `mcp.list` 看；不在里面的（包里带的）印一句就算。`paste` 的同时读标准输入，贴回来的一行交给
+/// 等服务连上：配置里的照 `mcp.list` 看；不在里面的（包里带的）印一句就算。`paste` 的同时读标准输入，贴回来的一行交给
 /// `mcp.login_finish`（施工 X-42 下）；读到头的不再读。
 async fn waited(
     rpc: &mut Rpc,

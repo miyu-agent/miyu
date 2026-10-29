@@ -1,6 +1,6 @@
-//! 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」）：场所会话、属主不是管理员的，文件类工具只放行
+//! 只碰得到自己工作区的会话（施工 5-12，`11-权限与沙盒.md` 第三节「外部身份」）：关起来的场所会话，文件类工具只放行
 //! 工作区里的，外面的（连读）一律拒，写给她的是出厂的那一句，说法 `core/permissions/outside-workspace`；命令一律拒（沙盒把读
-//! 也关进工作区以后再放开）。管理员本人的场所会话、本机的会话照旧（成员的本机会话那一种 SU-4 上拿掉了）。场地不在
+//! 也关进工作区以后再放开）。没关起来的场所会话、本机的会话照旧。场地不在
 //! 系统的临时目录里：工作区 `work/`。
 
 use std::path::Path;
@@ -58,7 +58,7 @@ fn one(tool: &str, path: &str) -> Play {
     Play::calls(&[(tool, &serde_json::json!({ "path": path }).to_string())])
 }
 
-/// 场所 `venue` 里、工作区 `work/` 的会话：工作区这一级，没人能确认，属主是不是管理员照 `owner_is_admin`。
+/// 场所 `venue` 里、工作区 `work/` 的会话：工作区这一级，没人能确认，`owner_is_admin` 是假的关起来。
 async fn session(
     home: &Home,
     script: &Script,
@@ -188,8 +188,7 @@ async fn the_admins_own_chat_and_local_sessions_are_not_confined() {
     }
 }
 
-/// 关起来的会话载入以后照样关着（施工 Y-2 下上）：照日志第一条记的 `confined`，载入的一方交的是「不关」也一样（施工 SU-4 中：
-/// 端点载入时不再照属主算出关着）。
+/// 关起来的会话载入以后照样关着（施工 Y-2 下上）：照日志第一条记的 `confined`，载入的一方交的是「不关」也一样（施工 SU-4 中）。
 #[tokio::test]
 async fn a_confined_session_stays_confined_after_loading() {
     let home = Home::new();
@@ -250,7 +249,7 @@ async fn a_branch_of_a_confined_session_is_confined_too() {
     assert!(created.confined);
 }
 
-/// 关起来的会话装不了包（施工 SU-4 中：原来端点的软件包端口照属主不是主人拒，场所会话都归主人以后照关不关在闸上拒）：完全放开
+/// 关起来的会话装不了包（施工 SU-4 中：照关不关在闸上拒）：完全放开
 /// 的也一样，回出厂的那一句。不关的会话完全放开照常放行。
 #[tokio::test]
 async fn a_confined_session_installs_no_package() {

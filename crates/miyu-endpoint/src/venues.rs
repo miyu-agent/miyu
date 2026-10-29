@@ -51,7 +51,7 @@ pub(crate) struct VenueParams {
     /// 新造的会话用哪个预设（施工 P-2 上）：同 `persona`，桥照场所规则算好交来；不写的照默认预设。找回已有的会话时不看。
     #[serde(default)]
     preset: Option<String>,
-    /// 新造的会话带不带属主写的「关于你」（施工 P-9）：桥照场所规则算好交来，属主是管理员本人的私聊这类才写 `true`；不写的
+    /// 新造的会话带不带你写的「关于你」（施工 P-9）：桥照场所规则算好交来，你本人的私聊这类才写 `true`；不写的
     /// 不带，群聊不写。找回已有的会话时不看。
     #[serde(default)]
     profile: bool,
@@ -97,7 +97,7 @@ pub(crate) fn bound(core: &Core, id: &ExternalId) -> bool {
     owners_ids(core).iter().any(|one| one == id.as_str())
 }
 
-/// 主人对应表里是主人的平台身份（施工 SU-1 补：只有一个主人，写了非空的字就是，值不再查是哪个账号；SU-3 改成只列平台身份）。
+/// 主人对应表里是主人的平台身份（施工 SU-1 补：写了非空的字就是；SU-3 改成只列平台身份）。
 /// 值不是字的、空的不算。
 fn owners_ids(core: &Core) -> Vec<String> {
     let values = core.config().resolved().values();
@@ -127,7 +127,7 @@ pub(crate) struct BindingParams {
 }
 
 /// `venue.binding`（施工 O-31 前，`venues.md`「问对应表」）：平台身份 `id` 在主人对应表里是不是主人本人，回 `{"owner": true|false}`
-/// （施工 SU-4 中：原来回账号）。只给平台桥：提供者照它挡在场所里做的事（`providers.md`「在场所里做的事」），别的连接照没批
+/// （施工 SU-4 中）。只给平台桥：提供者照它挡在场所里做的事（`providers.md`「在场所里做的事」），别的连接照没批
 /// `act_for_external` 拒。只读。
 pub(crate) fn binding(
     core: &Core,
@@ -139,10 +139,10 @@ pub(crate) fn binding(
     Ok(json!({"owner": bound(core, &id)}))
 }
 
-/// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」）。会话都在主人名下（施工 SU-4 中）；
+/// `venue.session`：找回或者造场所 `venue` 的主线会话（`venues.md`「对外的样子」，施工 SU-4 中）：
 /// 私聊、对方在对应表里的是主人本人，不关，主人这边的连接也开得了；别的（群、陌生人的私聊）关起来、只有平台桥开，记进
 /// `session.created` 的 `confined`。照「场所加关不关」
-/// 找：主人的主会话里场所是它的、关不关一样的最新的那一个（对应表后来加了主人的号，原来关着的那个不接着用，另开一个）。
+/// 找：主会话里场所是它的、关不关一样的最新的那一个（对应表后来加了主人的号，原来关着的那个不接着用，另开一个）。
 pub(crate) async fn session(
     core: &Arc<Core>,
     caller: &Caller,
@@ -218,7 +218,7 @@ async fn find(
     Ok(None)
 }
 
-/// 属主 `owner` 的主会话（不是子会话）里合 `pick` 的，从新到旧，最多 `limit` 个：照会话列表的索引找，和 `session.list` 同一个
+/// 主会话（不是子会话）里合 `pick` 的，从新到旧，最多 `limit` 个：照会话列表的索引找，和 `session.list` 同一个
 /// 读法。
 async fn mains(
     core: &Arc<Core>,
@@ -250,7 +250,7 @@ async fn mains(
 }
 
 /// `session.send` 的 `as` 记成谁（`venues.md`「`session.send` 的 `as`」）：场所会话 `handle`。没关起来的（主人本人的私聊）里对应表
-/// 认出的号是本人（带 `via`）；关起来的（群、陌生人的私聊，施工 SU-4 中起也在主人名下）里照旧是外部身份，对应表里有的记上
+/// 认出的号是本人（带 `via`）；关起来的（群、陌生人的私聊）里照旧是外部身份，对应表里有的记上
 /// `owner`：主人在群里说话不当本人，不给主人才有的那些。
 pub(crate) fn speaker(
     core: &Core,

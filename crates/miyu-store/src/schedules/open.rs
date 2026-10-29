@@ -87,7 +87,7 @@ pub(super) fn open(path: &Path) -> (Option<Connection>, Opened) {
 fn connected(path: &Path) -> Result<(Connection, bool), DbError> {
     let (db, created) = sqlite::connect(path, SCHEMA, VERSION)?;
     db.pragma_update(None, "synchronous", "FULL")?;
-    // 锁住了不等：一个账号这个进程只有一个连接，别的进程开不了这个数据根（核心只有一个）；真锁住了（别人开着写）当场报错，
+    // 锁住了不等：这个进程只有一个连接，别的进程开不了这个数据根（核心只有一个）；真锁住了（别人开着写）当场报错，
     // 由到点的那一边退避再试（端点 `schedules/hold.rs`），不在这里卡住后台任务。
     db.busy_timeout(std::time::Duration::ZERO)?;
     Ok((db, created))
@@ -95,7 +95,7 @@ fn connected(path: &Path) -> Result<(Connection, bool), DbError> {
 
 /// 已有的库的版本比这一版新的，交回它的版本；没有库、读不出版本的不算（照常开，坏的改名留着）。只读地看，不建文件。
 ///
-/// 开了又关会丢掉这个进程在这个库上的文件锁（`crate::sqlite` 的规矩）：只在这个进程还没开过它的时候看（一个账号开一次）。
+/// 开了又关会丢掉这个进程在这个库上的文件锁（`crate::sqlite` 的规矩）：只在这个进程还没开过它的时候看（只开一次）。
 fn newer(path: &Path) -> Option<i64> {
     let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
     let found: i64 = db

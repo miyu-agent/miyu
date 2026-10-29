@@ -198,8 +198,7 @@ fn config_name(words: &Human, english: Option<&Human>, what: &str, id: &str) -> 
         .unwrap_or_else(|| id.to_string())
 }
 
-/// `config.get`：最终值，每个值附上来源；每一份文件的位置、版本；这几份文件现在的全部问题。读的是这个连接的人那一份
-/// （施工 Y-2 下下中上）：成员看得到系统配置和他自己的个人设置。
+/// `config.get`：最终值，每个值附上来源；每一份文件的位置、版本；这几份文件现在的全部问题。
 pub(crate) fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
     let off = core.packages_off();

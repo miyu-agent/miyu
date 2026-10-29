@@ -116,7 +116,7 @@ pub(crate) fn parse(line: &[u8]) -> Incoming {
     if object.get("jsonrpc") != Some(&Value::String("2.0".to_string())) {
         return Incoming::Bad(echo, Refusal::INVALID);
     }
-    // 管理员模式（施工 Y-12 下）施工 SU-1 拿掉了：老头带着的 `scope` 照收不理。
+    // 老头带着的 `scope` 照收不理（施工 SU-1）。
     object.remove("scope");
     let params = match object.remove("params") {
         None => Value::Object(serde_json::Map::new()),

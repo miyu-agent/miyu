@@ -4,7 +4,7 @@
 //!
 //! - 她自己建的（`by` 是会话里的她）到点时看那个会话现在的预设：关了建它的那个包（定时任务看 `schedule`，循环看 `loop`）的
 //!   这一次不跑，记 `skipped:preset_off`，下一次照算。人建的、包建的不看预设。
-//! - 会话没了、不是这个账号的：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
+//! - 会话没了：记 `skipped:session_gone`，任务停掉，留给人看、给人删。
 
 use std::sync::Arc;
 

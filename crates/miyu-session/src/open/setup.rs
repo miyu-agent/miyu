@@ -34,15 +34,15 @@ pub struct PresetPlaces {
     pub presets: Presets,
     /// 装了的功能（设计 `30-插件框架.md` 第三节）：开会话、载入时的那一份。
     pub features: Features,
-    /// 扩展这时替属主交的功能（施工 IM-6，`feature.offer`）：每回合开始取一次，接在 `features` 后面。没交的（测试里造的）没有。
+    /// 扩展这时交的功能（施工 IM-6，`feature.offer`）：每回合开始取一次，接在 `features` 后面。没交的（测试里造的）没有。
     pub offers: Option<OfferedFeatures>,
-    /// 属主写的工具说明的覆盖（施工 OV-1 上）：拼工具面时取一次。没交的（测试里造的）当没写。
+    /// 主人写的工具说明的覆盖（施工 OV-1 上）：拼工具面时取一次。没交的（测试里造的）当没写。
     pub overrides: Option<ToolOverrides>,
-    /// 属主的文件改动的版本（施工 OV-1 下）：回合开始比一次。没交的（测试里造的）一直是零。
+    /// 文件改动的版本（施工 OV-1 下）：回合开始比一次。没交的（测试里造的）一直是零。
     pub edits: Option<crate::prefix::EditsVersion>,
 }
 
-/// 取属主写的工具说明的覆盖（施工 OV-1 上）：协议端点给的，工具名到叠好的那一份。
+/// 取主人写的工具说明的覆盖（施工 OV-1 上）：协议端点给的，工具名到叠好的那一份。
 #[derive(Clone)]
 pub struct ToolOverrides(
     pub Arc<dyn Fn() -> Arc<BTreeMap<String, miyu_policy::overrides::ToolOverride>> + Send + Sync>,
@@ -55,12 +55,12 @@ impl std::fmt::Debug for ToolOverrides {
 }
 
 impl PresetPlaces {
-    /// 属主这时的文件改动的版本：没交的是零。
+    /// 这时的文件改动的版本：没交的是零。
     pub(crate) fn edits(&self) -> u64 {
         self.edits.as_ref().map_or(0, |edits| (edits.0)())
     }
 
-    /// 属主这时写的工具说明的覆盖：没交的是空的。
+    /// 这时写的工具说明的覆盖：没交的是空的。
     pub(crate) fn overrides(&self) -> Arc<BTreeMap<String, miyu_policy::overrides::ToolOverride>> {
         self.overrides
             .as_ref()
@@ -69,7 +69,7 @@ impl PresetPlaces {
     }
 }
 
-/// 取扩展这时替属主交的功能（施工 IM-6）：协议端点给的，只读内存里的一张小表。
+/// 取扩展这时交的功能（施工 IM-6）：协议端点给的，只读内存里的一张小表。
 #[derive(Clone)]
 pub struct OfferedFeatures(pub Arc<dyn Fn() -> Vec<miyu_policy::features::Feature> + Send + Sync>);
 
@@ -152,14 +152,14 @@ pub struct Create<'a> {
     /// 给会话造请求模型的端口：驱动的占位取自这个会话的策略快照。
     pub models: &'a dyn Models,
     /// 工具目录的架子：照现在的那一份存下这个会话的工具面（施工 4-1），以后照快照发；提供者的包换了，下一个回合换上
-    /// （施工 O-2 中）。执行工具时照现在的那一份找。照会话属主的（施工 U23 中中：成员的叠在核心那一个上，`Shelf::over`）。
+    /// （施工 O-2 中）。执行工具时照现在的那一份找。
     pub tools: Shelf,
     /// 系统的家目录：权限策略照它换 `~`、找工具链目录（施工 4-3 下）。读不出来的是空的。
     pub home: Option<&'a Path>,
     /// 沙盒的助手：这台机器上的沙盒能用才有（核心起来时探的，施工 5-4 上）。权限策略照它判执行命令，执行器照它
     /// 给每次调用写沙盒。
     pub sandbox: Option<&'a Path>,
-    /// 沙盒的缓存：属主的那一份在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
+    /// 沙盒的缓存：缓存目录在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
     /// 变量。
     pub sandbox_cache: Option<SandboxCache>,
     /// 父会话和第几层（施工 7-5）：子会话才有，写进 `session.created`；system 接上子会话的场所说明；到了深度上限的，
@@ -170,27 +170,27 @@ pub struct Create<'a> {
     pub sessions: Option<Arc<dyn SessionPort>>,
     /// 看软件包的端口（施工 F-10 上）：协议端点交进来，`packages` 照它看。没有的（测试里自己造的），`packages` 说看不了。
     pub packages: Option<Arc<dyn miyu_tool::PackagesPort>>,
-    /// 定时和循环的端口（施工 J-2）：协议端点照属主交进来，`cron_*`、`schedule_wakeup` 经它办。没有的（测试里自己造的），几件说
+    /// 定时和循环的端口（施工 J-2）：协议端点交进来，`cron_*`、`schedule_wakeup` 经它办。没有的（测试里自己造的），几件说
     /// 用不了。
     pub schedules: Option<Arc<dyn miyu_tool::SchedulePort>>,
     /// 回合开始问扩展要加的字（施工 X-16，`extensions.md`「回合开始的挂接点」）：协议端点交进来。没有的（测试里自己造的）不问。
     pub hooks: Option<Arc<dyn miyu_tool::HooksPort>>,
     /// 执行器的任务表，核心里一张（施工 7-3）：后台命令交给它。
     pub jobs: &'a Arc<Jobs>,
-    /// 属主的会话列表的索引（施工 3-8 七补）：日志每落一批，顺手更新这个会话的那一行。没有的（测试里自己造的）不更新。
+    /// 会话列表的索引（施工 3-8 七补）：日志每落一批，顺手更新这个会话的那一行。没有的（测试里自己造的）不更新。
     pub index: Option<Arc<SessionIndex>>,
     /// 用量汇总（施工 8-15）：日志每落一批，顺手写这一批发出去了的请求；`session_usage` 照它查。没有的（测试里自己造的）
     /// 不写，`session_usage` 照什么都没花答。
     pub usage: Option<Arc<UsageIndex>>,
     /// 从哪取配置（施工 8-4）：回合开始时照它冻结这一轮的配置。没有配置服务的（测试里）给 [`crate::fixed`] 的一份。
     pub configs: Configs,
-    /// 核心一份的知识库（施工 K-1 下，`knowledge.md`「怎么走」第六条）：照记忆的账号、人格查；没交的（测试里造的）查不了，
+    /// 核心一份的知识库（施工 K-1 下，`knowledge.md`「怎么走」第六条）：照人格查；没交的（测试里造的）查不了，
     /// 工具面上没有两件。
     pub knowledge: Option<Arc<miyu_store::knowledge::Knowledge>>,
     /// 核心一份的算向量的（施工 K-2，`knowledge.md`「怎么走」第四条）：知识库照意思找用它，不看人格记忆装没装。没交的只走
     /// 关键词。
     pub vectors: Option<Arc<crate::Vectors>>,
-    /// 装了的软件包（施工 X-10 上，`skills.md`「技能」第 2、3 条）：照它和属主家目录里的找技能，列进 system，文件夹放开只读。
+    /// 装了的软件包（施工 X-10 上，`skills.md`「技能」第 2、3 条）：照它和数据根里的找技能，列进 system，文件夹放开只读。
     /// 每次取的都是这一刻的（施工 X-11 下：回合开始照它再找一遍，装卸以后跟得上）。没交的（测试里自己造的）不找技能。
     pub installed: Option<Installed>,
     /// 每个场所开着的场所插件（施工 O-60，[`crate::VenuePlugins`]）：一个核心一份。工具面照它筛，回合开始照它重筛，派调用时照它拒。
@@ -211,7 +211,7 @@ pub struct Create<'a> {
     /// 群会话（施工 O-13 中）：`venue.session` 的 `kind` 是 `group` 的有。有的 system 接上群聊的格式说明，快照钉下这时的
     /// 时区和群聊近况最多带几条，群里的人说的渲染成一行一条。
     pub group: Option<GroupSettings>,
-    /// 外部身份的会话（施工 5-12，SU-4 上起照场所认、不照属主）：群会话、陌生人的私聊只碰得到自己的工作区，会话日志、
+    /// 外部身份的会话（施工 5-12，SU-4 上起照场所认）：群会话、陌生人的私聊只碰得到自己的工作区，会话日志、
     /// 放行出沙盒、对外发消息这些只给主人本人的也没有（`11-权限与沙盒.md` 第三节「外部身份」）。
     pub confined: bool,
     /// 场所显示得了图片吗（施工 X-25）：显示不了的，要图的包整包当没开（[`Chosen::situated`]），记进 `session.created`。
@@ -257,14 +257,14 @@ pub struct Load<'a> {
     /// 给会话造请求模型的端口：驱动的占位取自这个会话的策略快照。
     pub models: &'a dyn Models,
     /// 工具目录的架子：执行工具时照名字在现在的那一份里找（施工 4-2）。工具面照快照；提供者的包换了，下一个回合换上
-    /// （施工 O-2 中）。照会话属主的（施工 U23 中中）。
+    /// （施工 O-2 中）。
     pub tools: Shelf,
     /// 系统的家目录：权限策略照它换 `~`、找工具链目录（施工 4-3 下）。读不出来的是空的。
     pub home: Option<&'a Path>,
     /// 沙盒的助手：这台机器上的沙盒能用才有（核心起来时探的，施工 5-4 上）。权限策略照它判执行命令，执行器照它
     /// 给每次调用写沙盒。
     pub sandbox: Option<&'a Path>,
-    /// 沙盒的缓存：属主的那一份在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
+    /// 沙盒的缓存：缓存目录在哪、你的 cargo 目录在哪（施工 5-4 下）。核心算不出缓存目录的没有，沙盒里不设工具链的
     /// 变量。
     pub sandbox_cache: Option<SandboxCache>,
     /// 造子会话、给别的会话发命令的端口（施工 7-5）：同 [`Create::sessions`]。

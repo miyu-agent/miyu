@@ -3,14 +3,14 @@
 use super::{REFUSED, Refusal};
 
 impl Refusal {
-    /// 这个账号的唤醒表里没有这个编号。
+    /// 唤醒表里没有这个编号。
     pub(crate) const UNKNOWN_SCHEDULE: Refusal = Refusal {
         code: REFUSED,
         reason: "unknown_schedule",
         data: None,
     };
 
-    /// 这个账号挂满了 200 个（施工 J-3 上，熔断性质的安全上限）：先删几个。
+    /// 全机挂满了 200 个（施工 J-3 上，熔断性质的安全上限）：先删几个。
     pub(crate) const TOO_MANY_SCHEDULES: Refusal = Refusal {
         code: REFUSED,
         reason: "too_many_schedules",

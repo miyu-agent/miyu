@@ -2,8 +2,6 @@
 //! 「要一份列表」都进它的队，一个接一个算，算好的每一条带一个递增的号，广播给订阅着的连接。订阅的回应里的列表也由它算、
 //! 记下算到的号，转发时号不大于它的丢掉：回应以后的推送都比回应里的列表新。
 //!
-//! 一个账号只收得到自己的（施工 Y-12 上）：每条推送记着那个会话的属主，转发时只给属主的连接；要一份列表时照要的那个账号算。
-//!
 //! 会话报「变了」经会话表的端口（`SessionPort::listing`，`crate::spawn`）；造会话、派子代理、删会话由会话表自己报。一项照会话
 //! 列表的索引只算那一个会话（[`crate::list::one`]），和 `session.list` 同一个算法。任务第一次用到时才起，拿着核心的弱引用：
 //! 核心拿着它，它再强拿着核心就成了环。
@@ -166,7 +164,7 @@ async fn work(
     }
 }
 
-/// 算属主是 `owner` 的会话 `session` 的一项：不在了（删了、没有日志）的是空的，在阻塞线程里读索引和日志。
+/// 算会话 `session` 的一项：不在了（删了、没有日志）的是空的，在阻塞线程里读索引和日志。
 async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
     let busy = core.sessions.busy_ids().await.contains(session);
     let waiting = core.sessions.waiting_ids().await.contains(session);

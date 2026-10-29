@@ -94,7 +94,7 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
 核心停着时错过的不补。
 
 命令：
-  list                    列出这个账号的定时任务
+  list                    列出全部定时任务
   add <话>...             建一个；时间三选一：--cron、--at、--every
   rm <编号>               删掉一个
   pause <编号>            停一个
@@ -125,7 +125,7 @@ Manage schedules: at the set time, a message goes to a session for one turn.
 No command means list. Times missed while the core was stopped are skipped.
 
 Commands:
-  list                    List this account's schedules
+  list                    List all schedules
   add <message>...        Add one; pick one of --cron, --at, --every
   rm <id>                 Remove one
   pause <id>              Pause one

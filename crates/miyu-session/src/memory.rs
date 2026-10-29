@@ -107,7 +107,7 @@ pub struct Memory {
 
 impl Memory {
     /// 数据根 `root` 上一份空的记忆：两份登记，用到哪一间才开。回合库第一次开时记一行运行日志；人格那一间是新建的、重建过的，
-    /// 起一个后台线程补齐这个账号的旧会话（施工 R-2 下，`memory/backfill.rs`）。`summary` 是常驻的摘要那一块的字（施工
+    /// 起一个后台线程补齐旧会话（施工 R-2 下，`memory/backfill.rs`）。`summary` 是常驻的摘要那一块的字（施工
     /// R-4 上），没有的不交摘要。
     pub fn new(root: &DataRoot, summary: Option<SummaryTexts>) -> Arc<Memory> {
         let turns = Arc::new(RecallIndexes::new(root));
@@ -155,8 +155,8 @@ impl Memory {
 }
 
 impl Memory {
-    /// 运行日志里这一间的短号（施工 LG-1 下）：照这个数据根的盐算，同一间每次一样；和 [`Room::kind`] 一起写，不写账号、
-    /// 人格名、会话编号。
+    /// 运行日志里这一间的短号（施工 LG-1 下）：照这个数据根的盐算，同一间每次一样；和 [`Room::kind`] 一起写，不写人格名、
+    /// 会话编号。
     pub(crate) fn room_id(&self, room: &Room) -> String {
         self.salt.room_id(room)
     }
@@ -224,8 +224,8 @@ impl Memory {
 /// 接上会话 `session` 的记忆：回合索引（交给后台接上、往后照它写，施工 V-9，`memory/lane.rs`）和三件工具的端口
 /// （[`Calls`]）。范围是 `off` 的（子会话、`--no-memory`）不接，核心没交记忆的（测试里自己造的）没有。在阻塞线程里调。
 ///
-/// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在记忆账号 `account` 的那一间，只在这个会话里的在会话自己的目录
-/// 里（属主 `owner` 的）。听众照关不关（`confined`，施工 SU-4 中）：关在沙盒里的是那个场所，别的是属主。
+/// 记忆放在哪照范围（`memory.md`「范围」）：跟着人格的在这个人格那一间，只在这个会话里的在会话自己的目录里。听众照关不关
+/// （`confined`，施工 SU-4 中）：关在沙盒里的是那个场所，别的是主人。
 ///
 /// 跟着人格的、中途换过人格的（施工 P-13，`recast.rs`）：换过来以前的几轮当底子，抽取从换的那一条以后抽。
 ///
@@ -305,7 +305,7 @@ pub(crate) fn fork_child(created: &SessionCreated) -> bool {
 }
 
 /// 回合库这一回第一次开：新建的记 `INFO`，重建的、用不了的记 `WARN`（照会话列表的索引的说法）。哪一间写种类和短号
-/// `room_id`（施工 LG-1 下：不写账号、人格名、会话编号；R-2 下：开库的四处都从登记过，原来只有会话写回合那一处记）。
+/// `room_id`（施工 LG-1 下：不写人格名、会话编号；R-2 下：开库的四处都从登记过，原来只有会话写回合那一处记）。
 fn log_opened(room: &Room, room_id: &str, opened: &Opened) {
     let room_kind = room.kind();
     match opened {

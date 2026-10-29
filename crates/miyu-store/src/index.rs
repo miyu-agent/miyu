@@ -1,4 +1,4 @@
-//! 会话列表的索引（施工 3-8 七补，`docs/designs/07-存储.md` 第六节、S3；`docs/blueprint/store/index.md`）：一个账号一份
+//! 会话列表的索引（施工 3-8 七补，`docs/designs/07-存储.md` 第六节、S3；`docs/blueprint/store/index.md`）：数据根里一份
 //! SQLite，`index/sessions.db`，一个会话一行（[`Row`]）。它是派生的：日志才是真相，索引随时可以删掉照日志重建，
 //! 结构变了也是删掉重建，不写迁移（07 第六节）。
 //!

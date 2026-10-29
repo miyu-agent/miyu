@@ -47,7 +47,7 @@ pub(super) fn opening_level(permission: &PermissionSettings, venue: Option<&Venu
     }
 }
 
-/// 「关于你」（施工 P-9）：主人本人的会话（`admin`：没关起来的，施工 SU-4 中）、又是本机开的或者桥说要的（`asked`，
+/// 「关于你」（施工 P-9）：没关起来的会话（`admin`，施工 SU-4 中）、又是本机开的或者桥说要的（`asked`，
 /// `venue.session` 的 `profile`）才带；别的一律空的（子代理、群聊、陌生人的私聊都不带）。
 pub(super) fn profile_for(
     settings: ProfileSettings,

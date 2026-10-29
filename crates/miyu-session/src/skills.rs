@@ -1,7 +1,7 @@
 //! 她用得上的技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：找、system 里列出来的那一块、权限策略单独
 //! 放开只读的文件夹。
 //!
-//! 造会话时照这一刻装了的软件包和家目录里的找（`miyu_store::skills`），拼好的一块钉进快照，会话中途不改（列表变了的走
+//! 造会话时照这一刻装了的软件包和数据根里的找（`miyu_store::skills`），拼好的一块钉进快照，会话中途不改（列表变了的走
 //! 回合尾巴，施工 X-11）；放开只读的文件夹造会话、载入时各找一次。碰磁盘的在阻塞线程里做。
 
 use std::collections::BTreeMap;
@@ -23,7 +23,7 @@ use crate::path_text::path_text;
 /// 读技能用的那件工具（基本系统的 `read`）：工具面上没有它的，列出来她也读不了，不列。
 const READ: &str = "read";
 
-/// 找属主 `owner` 用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里他自己放的，加配置开着时别的目录 `external`
+/// 找用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里主人自己放的，加配置开着时别的目录 `external`
 /// 里的（施工 PT-2 外）。跳过的一个记一行，只写哪一种（同名被盖住的、链接指到外面的、别的），路径、原因里有人起的名字，不写
 /// （施工 LG-1 上）；别的目录读不了的静默跳过，记一行 debug。
 pub(crate) fn find(installed: &[Found], root: &DataRoot, external: &[External]) -> Vec<Skill> {

@@ -1,4 +1,4 @@
-//! 你的头像（施工 AV-1；施工 SU-1 起只有主人一张）：换、删，读得回；握手回应带版本；`account` 那一格不认了；对照的版本不对的
+//! 你的头像（施工 AV-1）：换、删，读得回；握手回应带版本；参数里写 `account` 的不认；对照的版本不对的
 //! `avatar_conflict`；不是图、太大的照人格头像的规矩拒。
 
 use std::sync::Arc;
@@ -57,7 +57,7 @@ async fn the_owner_sets_reads_and_unsets_the_avatar() {
     assert_eq!(read["result"]["media_type"], "image/png");
     assert_eq!(read["result"]["data"], STANDARD.encode(&picture));
 
-    // 只有一张：`account` 那一格不认了。
+    // 只有一张：写 `account` 的参数不对。
     let refused = bob
         .call("a3", "account.avatar", json!({"account": "alice"}))
         .await;

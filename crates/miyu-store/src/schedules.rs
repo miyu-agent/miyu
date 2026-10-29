@@ -1,10 +1,10 @@
-//! 唤醒表（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：一个账号一份 `state/schedules.db`，一行一个到点
+//! 唤醒表（施工 J-1 上，设计 `45-定时和循环.md` 第三节第 1 条）：一份 `state/schedules.db`，一行一个到点
 //! 叫她跑一轮的任务。定时任务、固定间隔的循环、她自己定节奏的循环都记在这里。
 //!
 //! 它是真相，不是派生的：和会话列表的索引、用量汇总不一样，坏了不删不重建（`open.rs`）。写盘照 `synchronous = FULL`，断电
 //! 不丢已经答应了的改动。
 //!
-//! - 编号 `t<n>`，账号里递增，删了的号不再用（`counter` 表）。
+//! - 编号 `t<n>`，递增，删了的号不再用（`counter` 表）。
 //! - 什么时候、跑在哪、谁建的照 JSON 存成一格：形状在 [`When`]、[`Target`]、[`Creator`]，加种类不改表。
 //! - 到点怎么算、怎么交进会话不在这里（端点的 `schedules`）：这里只存取。
 
@@ -116,7 +116,7 @@ pub enum Target {
         /// 工作目录。
         cwd: String,
     },
-    /// 建它的扩展自己（施工 J-4）：到点不进会话，推 `schedule.fired` 给那个包替这个账号的那一份。只有包建的有。
+    /// 建它的扩展自己（施工 J-4）：到点不进会话，推 `schedule.fired` 给那个包的进程。只有包建的有。
     Package {
         /// 核心停着时错过了几次，下一次推的时候一起报、报完清零（错过的照旧不补）。
         #[serde(default, skip_serializing_if = "is_zero")]
@@ -171,7 +171,7 @@ pub struct NewSchedule {
     pub next: Option<Timestamp>,
 }
 
-/// 一个账号的唤醒表：一个连接一直开着（`crate::sqlite` 的规矩），一次一个人用。
+/// 唤醒表：一个连接一直开着（`crate::sqlite` 的规矩），一次一个人用。
 pub struct Schedules {
     db: Mutex<Connection>,
     path: PathBuf,

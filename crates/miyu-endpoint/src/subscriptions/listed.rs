@@ -1,5 +1,5 @@
 //! 照编号推整项的几个列表的订阅：扩展的状态（施工 9-4 补，`docs/blueprint/extensions.md`「推送」）、软件包列表（施工 F-8 三补，
-//! `protocol.md`「软件包列表的推送」）、这个账号的项目（施工 H-1，设计 `38-项目.md` 第二节第 1 条）。一个连接各至多一个，一个转发任务。订阅的回应也交给它，它先写回应、再转推送：收到
+//! `protocol.md`「软件包列表的推送」）、项目（施工 H-1，设计 `38-项目.md` 第二节第 1 条）。一个连接各至多一个，一个转发任务。订阅的回应也交给它，它先写回应、再转推送：收到
 //! 「哪个包变了」，照这一刻的样子、这个连接这一刻的语言算那一项写出去。推的是整项、照这一刻算，晚到的、重复的都对，不用编号排
 //! 先后。读得慢、掉了队，推一条 `resync`（`{"stream": "extensions"}`、`{"stream": "packages"}`），这个订阅就停了，头重新订阅。
 //! 再订阅总是换一个新的。
@@ -98,7 +98,7 @@ impl Listed {
                 let entry = crate::extensions::entry(core, id, shaken.now(core))?;
                 json!({"jsonrpc": "2.0", "method": "extension.changed", "params": {"entry": entry}})
             }
-            // 个人设置里的 MCP 服务（施工 F-9 补）：推 `mcp.changed`，删掉了的 `server` 是 `null`。
+            // 配置里的 MCP 服务（施工 F-9 补）：推 `mcp.changed`，删掉了的 `server` 是 `null`。
             Listed::Packages => match crate::mcp::home::server_of(id) {
                 Some(name) => {
                     let server = crate::mcp::methods::entry(core, name);
@@ -232,7 +232,7 @@ impl Subscriptions {
             out.clone(),
         ));
         match listed {
-            // 照订的人是不是管理员裁格子（施工 U23-R修二：原来的 `now` 恒当不是，管理员拿到的也是成员那一份）。
+            // 照这一刻的连接裁格子（施工 U23-R修二）：连接都替主人干活，一格不裁。
             Listed::Packages => crate::packages::list(core, shaken.now(core)),
             _ => Ok(crate::extensions::status(core, shaken.now(core))),
         }

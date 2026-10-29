@@ -1,4 +1,4 @@
-//! 访问密码 `access.json`（施工 SU-6 上：只给一个人用，原来的账号表 `accounts.json` 只剩主人那一行的密码，`docs/blueprint/
+//! 访问密码 `access.json`（施工 SU-6 上：只给一个人用，只有一份哈希，`docs/blueprint/
 //! web-module.md`「怎么走」第一条第 1 条，照 Linux 的 `/etc/shadow`）：argon2id 的整串（带参数和盐）、改的时刻。只在要从局域网
 //! 连时才设；没设的是空的。
 //!

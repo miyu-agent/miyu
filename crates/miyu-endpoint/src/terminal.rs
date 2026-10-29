@@ -1,17 +1,17 @@
 //! 终端会话（施工 8-33，设计 `22-命令行.md` 第七节，2026-10-20 项目主人定）：在 shell 里说的话进的那个一直续下去的会话。
-//! 指针按账号记在 `terminal.json`（`miyu_store::terminal`）。哪个算、什么时候换新的由核心定，不在头：头去建
+//! 指针记在 `terminal.json`（`miyu_store::terminal`）。哪个算、什么时候换新的由核心定，不在头：头去建
 //! 会话、定规则，是向上依赖。
 //!
-//! - `session.terminal {cwd?, fresh?}`：交回终端会话。指着的还在、是这个账号自己的本机主会话，就是它；闲置超过
+//! - `session.terminal {cwd?, fresh?}`：交回终端会话。指着的还在、是本机主会话，就是它；闲置超过
 //!   `terminal.idle_new_after` 分钟的（0 是不换）开一个新的，回应带 `renewed: {last}`，旧的不动；没指过的、指着的删了、
 //!   不算数的开一个新的，回应带 `created: true`。新开的照 `terminal.persona`、`terminal.preset`（没设的跟随默认），在 `cwd`
 //!   （没写的照默认工作区）。同一时刻几个 shell 一起要的只开一个。`fresh: true` 不管指着谁，照新开的规矩开一个、指过去，
 //!   回应带 `created: true`（shellhook 的 `/new`，施工 8-33 再补：怎么开归核心，头不照 `terminal.*` 再拼一遍）。
-//! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收这个账号自己的本机主会话。
+//! - `session.set_terminal {session}`：指到这个会话（shellhook 的 `/sessions`）。只收本机主会话。
 //! - 指过去（`set_terminal`、新开的）的那一刻记在指针上，算这个终端会话的一次动静：闲置照会话的最后一次动静和它里晚的那个算
 //!   （施工 8-33 三补，2026-10-21 项目主人定：主动切过去的不该再被闲置规则换掉）。
 //! - 按终端分开（施工 T-22，2026-10-23 项目主人定：不同终端不同会话，真的对话了才开新的）：两个方法都多收 `terminal`（头生成的
-//!   键，1 到 128 个字、没有控制字符），带了的照「账号 + 键」各记一个指针，不带的照旧用原来那一个。`session.terminal` 多收
+//!   键，1 到 128 个字、没有控制字符），带了的照键各记一个指针，不带的照旧用原来那一个。`session.terminal` 多收
 //!   `create`（不写是真）：假的只问不开，没有、指着的不在了、闲置超时的回 `{"session": null}`，不新开、不挪指针；和 `fresh`
 //!   一起写的 `bad_params`。键各记最后一次用到的时刻，写的时候顺手清掉 7 天没用的，最多留 64 个（`miyu_store::terminal`）。
 

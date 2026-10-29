@@ -38,7 +38,7 @@ pub struct PersonaFile {
     /// 记忆的默认范围（`[memory] scope`，施工 R-3 下）：只能是 `persona`、`session`；没写的是没有，照 `persona` 算。
     pub memory: Option<MemoryScope>,
     /// 她查得到哪几个知识库（`[knowledge] bases`，施工 K-1 下，19 N11）：列了的只查列着的、在的那几个，空的列表一个都不查；
-    /// 没写的是没有，查账号下的全部。
+    /// 没写的是没有，查全部。
     pub knowledge: Option<Vec<String>>,
     /// 主题色（`[appearance] seed`，施工 P-6）：`#rrggbb`，读进来一律小写；没写的是没有，头从头像取色。
     pub seed: Option<String>,

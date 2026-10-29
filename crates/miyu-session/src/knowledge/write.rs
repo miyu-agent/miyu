@@ -1,6 +1,6 @@
 //! 她写知识库（施工 K-3，`docs/blueprint/knowledge.md`「怎么走」第七条，19 N14）：写哪几个、能不能建新库，交给知识库那一层
-//! 去写。写得了的是她这一刻查得到的库（第六条第 1 款）；写到还没有的库就是建它，人格收窄了的不建（建了她也查不到），账号下
-//! 有、人格没列的当没有。
+//! 去写。写得了的是她这一刻查得到的库（第六条第 1 款）；写到还没有的库就是建它，人格收窄了的不建（建了她也查不到），库在、
+//! 人格没列的当没有。
 
 use miyu_store::knowledge::Knowledge;
 use miyu_store::layers::valid;
@@ -75,9 +75,9 @@ fn visible(shelves: &Shelves, kb: &str) -> Result<(), KbRefused> {
     }
 }
 
-/// 建得了库 `kb`：人格没收窄（收窄了的建了她也查不到；账号下有、人格没列的也就落在这里，当没有）；编号合写法（不合的说清
+/// 建得了库 `kb`：人格没收窄（收窄了的建了她也查不到；库在、人格没列的也就落在这里，当没有）；编号合写法（不合的说清
 /// 怎么写，施工 K-3 补：R-9 真跑时她把编号写成中文，听到「没有这个库」又试了两次）；`path` 也得合写法（不然建了个空库却
-/// 什么都没写）。没收窄的她查得到账号下全部，走到这里的库一定还没有。
+/// 什么都没写）。没收窄的她查得到全部，走到这里的库一定还没有。
 fn creatable(shelves: &Shelves, kb: &str, path: &str) -> Result<(), KbRefused> {
     if shelves.narrowing().map_err(KbRefused::Failed)?.is_some() {
         return Err(KbRefused::NoBase(kb.to_string()));

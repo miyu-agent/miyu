@@ -1,5 +1,5 @@
 //! 扩展进程的测试共用的（施工 9-4 上、补）：测试用的扩展、装清单、造核心、等状态。`tests/extensions.rs`、
-//! `tests/extension_stream.rs` 用；带系统账号的清单、会话目录、等轮数、等库里数得到，`tests/system_account.rs` 和装上的
+//! `tests/extension_stream.rs` 用；平台桥的清单、会话目录、等轮数、等库里数得到，场所的测试和装上的
 //! 包当场换（施工 F-5 下）用。
 
 use std::path::{Path, PathBuf};
@@ -64,7 +64,7 @@ impl Drop for Program {
     }
 }
 
-/// 管理员（测试里是 alice）家目录里的一份 `process` 清单：程序 `program`，参数 `args`，`start` 照写。
+/// 你装的那一层里的一份 `process` 清单：程序 `program`，参数 `args`，`start` 照写。
 pub fn install(home: &Home, id: &str, program: &str, start: &str, args: &[String]) {
     install_asking(home, id, program, start, args, &[]);
 }
@@ -267,7 +267,7 @@ pub fn install_serving(
     approve(home, id, &BRIDGE);
 }
 
-/// 会话 `session` 在账号 `account` 名下的目录。
+/// 会话 `session` 的目录。
 pub fn dir(home: &Home, session: &str) -> std::path::PathBuf {
     home.root
         .session_dir(&SessionId::parse(session).expect("会话编号合写法"))

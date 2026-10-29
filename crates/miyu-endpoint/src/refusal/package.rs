@@ -7,7 +7,14 @@ use miyu_store::packages::conflicts::Holder;
 use super::{REFUSED, Refusal};
 
 impl Refusal {
-    /// 从软件源装写的 `from` 没有这个软件源（施工 U23 下下）：配置里没加、写错了，或者是别人个人设置里的。
+    /// 关在沙盒里的会话（群、陌生人的私聊）经端口装、卸、升级软件包（施工 SU-2 上）。
+    pub(crate) const NOT_PERMITTED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "not_permitted",
+        data: None,
+    };
+
+    /// 从软件源装写的 `from` 没有这个软件源（施工 U23 下下）：配置里没加、写错了。
     pub(crate) const UNKNOWN_SOURCE: Refusal = Refusal {
         code: REFUSED,
         reason: "unknown_source",
@@ -55,7 +62,7 @@ impl Refusal {
         reason: "not_switchable",
         data: None,
     };
-    /// 个人设置里没有这个名字的 MCP 服务（施工 F-9 补，`mcp.restart`）。
+    /// 配置里没有这个名字的 MCP 服务（施工 F-9 补，`mcp.restart`）。
     pub(crate) const UNKNOWN_SERVER: Refusal = Refusal {
         code: REFUSED,
         reason: "unknown_server",
@@ -86,7 +93,7 @@ impl Refusal {
         reason: "not_waiting",
         data: None,
     };
-    /// 个人设置里没写这个名字、有包带着同名的 MCP 服务（施工 X-26，`mcp.set`）：随包来的不经它改。
+    /// 配置里没写这个名字、有包带着同名的 MCP 服务（施工 X-26，`mcp.set`）：随包来的不经它改。
     pub(crate) const SERVER_FROM_PACKAGE: Refusal = Refusal {
         code: REFUSED,
         reason: "server_from_package",

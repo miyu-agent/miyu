@@ -55,12 +55,12 @@ pub fn configs_with(source: &str, more: &str, secrets: &[(Reference, &str)]) -> 
     fixed_with(resolved_with(source, more), secrets)
 }
 
-/// 照系统配置的字 `source` 合出来的最终值。写错的配置当场报出来。
+/// 照配置的字 `source` 合出来的最终值。写错的配置当场报出来。
 pub fn resolved(source: &str) -> Resolved {
     resolved_with(source, "")
 }
 
-/// 同 [`resolved`]，另有一段字 `more`：接在 `source` 后面，同一份系统配置（施工 SU-3 上：个人设置并进来了）。
+/// 同 [`resolved`]，另有一段字 `more`：接在 `source` 后面，同一份配置。
 pub fn resolved_with(source: &str, more: &str) -> Resolved {
     let text = format!("{source}\n{more}");
     let parsed = parse(&items(), Layer::System, &text).expect("写法对");

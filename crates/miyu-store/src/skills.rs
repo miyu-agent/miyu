@@ -69,12 +69,12 @@ impl Skipped {
     }
 }
 
-/// 账号 `account` 自己放技能的文件夹：`skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
+/// 主人自己放技能的文件夹：`skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
 pub fn own_dir(root: &DataRoot) -> PathBuf {
     root.path().join("skills")
 }
 
-/// 找技能：数据根 `root` 里自己放的（施工 SU-3 下：系统区那一处拿掉），加装了的软件包 `packages` 里的，加别的目录 `external`
+/// 找技能：数据根 `root` 里自己放的，加装了的软件包 `packages` 里的，加别的目录 `external`
 /// 里的（施工 PT-2 外：配置关着的交空的，一个都不碰）。照名字排。
 pub fn find(
     packages: &[Found],

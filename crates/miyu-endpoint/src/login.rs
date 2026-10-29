@@ -1,4 +1,4 @@
-//! 身份（`docs/blueprint/web-module.md`「怎么走」第一条，施工 W-8；施工 SU-1 起只有一个主人）：本机的头凭本机令牌；网页从局域网
+//! 身份（`docs/blueprint/web-module.md`「怎么走」第一条，施工 W-8）：本机的头凭本机令牌；网页从局域网
 //! 连时凭访问密码换的设备令牌。
 //!
 //! - 一次性码（`account.setup_code`）：只给出示本机令牌连上的连接；5 分钟、一次；只在内存里，最多 16 个。网页第一次设访问密码用。
@@ -6,7 +6,7 @@
 //!   全部作废。一次性码连上的另交回一个新的设备令牌，这个连接从此是登录了的。
 //! - 访问密码握手：对上了造一个设备令牌（登录令牌）交回；照来源（网页软件转来的 `connection.remote` 的地址，本机来的算一份）60 秒内
 //!   试 5 次，剩下的时间里先拒、不验（施工 5-20）。还没设访问密码的一律 `password_not_set`。
-//! - 设备令牌握手：哈希在主人的 `logins.json` 里、没过期。
+//! - 设备令牌握手：哈希在 `logins.json` 里、没过期。
 //! - `account.logout`：作废一个、全部；用设备令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
 //! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台、`miyu web` 要的）在 [`ticket`]。
 //!
@@ -371,7 +371,7 @@ fn login_expires(now: Timestamp) -> Timestamp {
     Timestamp::from_unix_millis(now.unix_millis() + LOGIN_DAYS * 86_400_000).unwrap_or(now)
 }
 
-/// 记进系统日志的人：账号 `account`。
+/// 记进日志的人：主人。
 fn by() -> By {
     By::Person(Person::default())
 }

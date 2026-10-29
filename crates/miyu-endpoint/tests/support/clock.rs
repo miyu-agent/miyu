@@ -56,7 +56,7 @@ impl Clock for Hand {
     }
 }
 
-/// 一份核心，唤醒表照 `hand` 看时间：读个人设置里的预设那几项，和 [`Home::core_with_items`] 一样读磁盘上的配置。
+/// 一份核心，唤醒表照 `hand` 看时间：读配置里的预设那几项，和 [`Home::core_with_items`] 一样读磁盘上的配置。
 pub fn core_with(home: &Home, script: &Script, hand: &Arc<Hand>) -> Arc<Core> {
     core_with_tools(home, script, hand, miyu_tool::Catalog::default())
 }

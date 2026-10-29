@@ -1,6 +1,5 @@
 //! 握手认交接票（施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）：凭据多一种 `ticket`，待遇同 `password`：对上了当场
 //! 作废，回应带新的设备令牌 `login`；用过、不认得的照 `login.redeem` 回 `bad_ticket`、断开；和别的凭据一起写的 `bad_params`。
-//! 施工 SU-1 起回应都不带 `account`、`admin`。
 
 use std::sync::Arc;
 

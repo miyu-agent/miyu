@@ -1,5 +1,5 @@
 //! 交给会话的定时端口（施工 J-2，设计 `45-定时和循环.md` 第三节第 3、4 条）：`cron_create`、`cron_delete`、`cron_list`、
-//! `schedule_wakeup` 经它动属主的唤醒表。造会话、载入时照属主造一个，同软件包的端口。
+//! `schedule_wakeup` 经它动唤醒表。造会话、载入时造一个，同软件包的端口。
 //!
 //! - 「这个会话上的」：她在这个会话里建的（`by` 是这个会话），和跑在这个会话上的（`target` 是这个会话，例如人敲的 `/loop`）。
 //!   列、删照它；一个会话最多 [`PER_SESSION`] 个只数她建的。
@@ -25,7 +25,7 @@ pub(crate) fn port(core: &Arc<Core>) -> Arc<dyn SchedulePort> {
     })
 }
 
-/// 核心那一头，和这个会话的属主：她建的记在属主的表里。
+/// 核心那一头：她建的记在唤醒表里。
 struct Port {
     core: Weak<Core>,
 }

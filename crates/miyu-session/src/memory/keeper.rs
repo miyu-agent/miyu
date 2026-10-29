@@ -90,7 +90,7 @@ impl Keeper {
         &self.room
     }
 
-    /// 运行日志里这一间的短号（施工 LG-1 下）：和 [`Room::kind`] 一起写，不写账号、人格名、会话编号。
+    /// 运行日志里这一间的短号（施工 LG-1 下）：和 [`Room::kind`] 一起写，不写人格名、会话编号。
     pub(crate) fn room_id(&self) -> String {
         self.memory.room_id(&self.room)
     }

@@ -1,4 +1,4 @@
-//! 软件包清单在哪、两层怎么认（施工 9-1 上）：出厂的、管理员家目录里的，照编号排；同一个编号认出厂的；子命令名撞了的
+//! 软件包清单在哪、两层怎么认（施工 9-1 上）：出厂的、数据根里的，照编号排；同一个编号认出厂的；子命令名撞了的
 //! 后读到的那一份报错；读不了的、不是 `.toml` 的、编号不合写法的。
 
 use std::fs;
@@ -162,12 +162,12 @@ fn every_command_of_a_package_takes_its_name() {
     assert_eq!(problem.line, Some(11), "报在被占的那个子命令名那一行");
 }
 
-/// 一份最小的扩展清单，声明了系统账号。
+/// 一份最小的扩展清单，还写着已经不认的 `system_account`。
 fn served(command: &str) -> String {
     ui(command).replace("\n[ui]\n", "\n[process]\nsystem_account = true\n")
 }
 
-/// 包不再各有一个账号（施工 SU-4 中）：清单里还写着 `system_account` 的照不认识的键，整份不收；编号和主人的账号一样的也照收。
+/// 包不再各有一个账号（施工 SU-4 中）：清单里还写着 `system_account` 的照不认识的键，整份不收。
 #[test]
 fn a_package_still_declaring_a_system_account_is_refused() {
     let places = Places::new();

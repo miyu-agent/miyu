@@ -70,7 +70,7 @@ pub struct Row {
 const PREVIEW_CHARS: usize = 50;
 
 impl Row {
-    /// 照日志的第一条起一行：`session.created` 的属主、父会话、是不是一次性的、工作目录，时刻既是造的时刻也是最近一次
+    /// 照日志的第一条起一行：`session.created` 的父会话、是不是一次性的、工作目录，时刻既是造的时刻也是最近一次
     /// 动静。照到哪里先记成第一段的开头，调的一方读完再换。第一条不是 `session.created` 的没有。
     pub fn new(id: SessionId, first: &Event) -> Option<Row> {
         let Body::SessionCreated(created) = &first.body else {

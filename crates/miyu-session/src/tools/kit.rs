@@ -24,7 +24,7 @@ pub(crate) struct ToolKit {
     /// 每个场所开着的场所插件（施工 O-60）：派调用时这一刻没开的当目录里没有。
     pub(crate) plugins: crate::VenuePlugins,
     pub(crate) venue: VenueId,
-    /// 会话日志的目录（施工 E-M）：属主是管理员的才交给命令（`MIYU_SESSION_LOG`），别人的 `None`。
+    /// 会话日志的目录（施工 E-M）：没关起来的会话才交给命令（`MIYU_SESSION_LOG`），关起来的 `None`。
     pub(crate) session_log: Option<PathBuf>,
     /// 工具目录的架子：执行时照现在的那一份找（施工 O-2 中）。
     pub(crate) catalog: Shelf,

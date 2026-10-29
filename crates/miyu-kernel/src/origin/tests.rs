@@ -7,7 +7,7 @@ use crate::test_support::{rejected, round_trip};
 fn every_kind_from_the_drawing_round_trips() {
     for json in [
         r#"{"kind":"person"}"#,
-        // 施工 O-3：私聊里认出的本人带 `via`；群里的外部身份带对应的账号、桥报的身份。
+        // 施工 O-3：私聊里认出的本人带 `via`；群里的外部身份带 `owner`、桥报的身份。
         r#"{"kind":"person","via":"qq:10001"}"#,
         r#"{"kind":"external","venue":"qq:group:123456","id":"qq:10086"}"#,
         r#"{"kind":"external","venue":"qq:group:123456","id":"qq:10001","owner":true,"role":"manager"}"#,

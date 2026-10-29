@@ -4,8 +4,8 @@
 //! - 端点照 [`reach`]（和 `provider.test` 同一段）：照调的一方手里的配置拼地址、key、另配的头，不走路由、池、冷却。认证头
 //!   照这一家的驱动写，另配的头照种子 [`PURPOSE`] 换；客户端照地址挑（落在本机的不走代理，[`ModelData::fetcher_for`]）。
 //! - 发 `{"model", "input"}`，最多等 [`WAIT`]；读 `data[0].embedding`，归一化（各家不一定归一化过）。
-//! - 供应商报了 `usage.prompt_tokens` 的照一次性调用记一笔 `usage.oneshot`（用途 [`PURPOSE`]，有价格的算金额），记在调的那个
-//!   账号名下；回的向量用不了的也记（那一家照样收了钱），没报的、出错的不记。
+//! - 供应商报了 `usage.prompt_tokens` 的照一次性调用记一笔 `usage.oneshot`（用途 [`PURPOSE`]，有价格的算金额）；
+//!   回的向量用不了的也记（那一家照样收了钱），没报的、出错的不记。
 //! - 每一次记一行 `INFO model call`（成了）或 `INFO model call failed`（没成，带原话），目标 `miyu::session`，和一次性入口那一行
 //!   同一个写法；key、地址不进日志。
 
@@ -128,7 +128,7 @@ impl Remote {
         Ok((vector, input))
     }
 
-    /// 记账：照这一份配置里 `provider` 这个模型的价格算好金额，在阻塞线程里写进账号日志和用量汇总。没交用量汇总的（测试里）
+    /// 记账：照这一份配置里 `provider` 这个模型的价格算好金额，在阻塞线程里写进日志和用量汇总。没交用量汇总的（测试里）
     /// 不记；写不进去的记一行 `WARN usage not indexed`。
     async fn record(&self, input: u64, provider: &Provider) {
         let Some(ledger) = self.data.ledger() else {

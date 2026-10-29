@@ -1,4 +1,4 @@
-//! 个人设置里一张 `[mcp.<名字>]` 的字（施工 X-26）：加在末尾、换在原处、删掉连同空行；别的字节一个不变；放不进去的不改。
+//! 配置里一张 `[mcp.<名字>]` 的字（施工 X-26）：加在末尾、换在原处、删掉连同空行；别的字节一个不变；放不进去的不改。
 
 use serde_json::json;
 
@@ -158,7 +158,7 @@ fn shapes_that_cannot_hold_a_server_are_refused() {
 }
 
 /// 鲁棒性（2026-10-22）：同一个服务混着写——点号键写在前面、子表写在后面（合法的 TOML）——换掉它时，插入的位置照原文算，
-/// 前面的点号那几行已经删了、字变短了，`&cut[..at]` 越界 panic（`written.rs` 的 `put`）。`mcp.set` 改个人设置就走这里。
+/// 前面的点号那几行已经删了、字变短了，`&cut[..at]` 越界 panic（`written.rs` 的 `put`）。`mcp.set` 改配置就走这里。
 /// 期望：不 panic；换得了就换，换不了交回空的。修之前这条是红的。
 #[test]
 fn a_server_written_both_dotted_and_as_tables_does_not_panic() {

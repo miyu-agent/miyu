@@ -1,6 +1,6 @@
 //! 斜杠命令 `/workspace`（施工 9-7 下，`docs/blueprint/protocol.md` 的 `command.run`）：真核心走一遍。`/workspace <路径>` 同
 //! `session.set_workspace` 只换工作目录，加进来的目录照旧；相对的照 `command.run` 带的 `cwd`（头所在的目录）接，没带的照会话
-//! 现在的工作区接；不带路径的只说现在在哪。写错的照那几种原因拒绝、什么都不记；太宽的退回账号的工作区，回执说一声。场所里
+//! 现在的工作区接；不带路径的只说现在在哪。写错的照那几种原因拒绝、什么都不记；太宽的退回 `workspace/`，回执说一声。场所里
 //! 只有主人能换。
 
 use std::path::Path;
@@ -228,7 +228,7 @@ async fn wrong_places_are_refused_and_too_wide_is_kept() {
     .await;
     assert_eq!(reason(&reply), Some("path_unreadable"), "{reply}");
 
-    // 读得出家目录的：照人选的用（施工 9-7 补，原来退回账号的工作区）；Windows 上 `~` 太宽，回执说一声范围大，别处不再太宽
+    // 读得出家目录的：照人选的用（施工 9-7 补）；Windows 上 `~` 太宽，回执说一声范围大，别处不再太宽
     // （施工 5-14 改）。
     let home = Home::new();
     let own_home = home.work.join("home");
