@@ -24,7 +24,7 @@ fn one_line_each_in_the_local_zone() {
     });
     assert_eq!(
         line(&cron, &Language::Chinese, &tokyo()),
-        "t1  cron 0 8 * * *（Asia/Tokyo）  下一次 2026-10-28 08:00  上一次 2026-10-27 08:00 跑了  新开 人格 miyu 目录 /home/me  「早报：天气和日程」"
+        "t1  cron 0 8 * * *（Asia/Tokyo）  下一次 2026-10-28 08:00  上一次 2026-10-27 08:00 已运行  新会话 人格 miyu 目录 /home/me  「早报：天气和日程」"
     );
     let every = json!({
         "id": "t2", "when": {"every": 600}, "prompt": "看一眼服务器", "target": {"session": "s-1"},
@@ -41,7 +41,7 @@ fn one_line_each_in_the_local_zone() {
     });
     assert_eq!(
         line(&at, &Language::Chinese, &TimeZone::UTC),
-        "t3  at 2026-10-28 00:00  下一次 2026-10-28 00:00  上一次 2026-10-27 00:00 跳过：会话没了  新开 无人格  「提醒我开会」"
+        "t3  at 2026-10-28 00:00  下一次 2026-10-28 00:00  上一次 2026-10-27 00:00 跳过：会话已不存在  新会话 无人格  「提醒我开会」"
     );
     let pushed = json!({
         "id": "t5", "when": {"every": 600}, "prompt": "{}", "target": {"package": {}},
@@ -50,7 +50,7 @@ fn one_line_each_in_the_local_zone() {
     });
     assert_eq!(
         line(&pushed, &Language::Chinese, &TimeZone::UTC),
-        "t5  every 10m  上一次 2026-10-27 00:00 跳过：包没在跑  推给包 im  「{}」"
+        "t5  every 10m  上一次 2026-10-27 00:00 跳过：软件包未运行  发给软件包 im  「{}」"
     );
     let once = json!({"id": "t4", "when": {"cron": "30 7 * * 1", "recurring": false}, "prompt": "x", "target": {"new": {}}});
     assert_eq!(
@@ -140,7 +140,10 @@ fn plan(words: &[&str], zone: TimeZone) -> SchedulePlan {
     }
 }
 
-fn add_params(words: &[&str], zone: TimeZone) -> Result<serde_json::Value, String> {
+fn add_params(
+    words: &[&str],
+    zone: TimeZone,
+) -> Result<serde_json::Value, crate::diagnostic::Problem> {
     let plan = plan(words, zone);
     let Some(ScheduleCommand::Add(add)) = &plan.args.command else {
         panic!("是 add");

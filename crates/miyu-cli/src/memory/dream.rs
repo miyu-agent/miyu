@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
 use super::refused;
-use crate::diagnostic;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::Language;
 use crate::language::Organized;
@@ -29,7 +29,7 @@ pub(super) async fn dream(
     mut presses: mpsc::Receiver<()>,
 ) -> Result<(), u8> {
     let sent = |error: std::io::Error, err: &mut dyn Write| {
-        say(err, &error.to_string());
+        diagnostic::error(err, *language, &Problem::new(error.to_string()));
         exit::ERROR
     };
     // 用时从发出去量到收到回应（施工 R-22 三补，同 `/dream` 的回执）。

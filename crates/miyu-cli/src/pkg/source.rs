@@ -7,6 +7,7 @@ use clap::Args;
 use serde_json::{Value, json};
 
 use super::ask;
+use crate::diagnostic;
 use crate::exit;
 use crate::language::Language;
 use crate::rpc::Rpc;
@@ -72,7 +73,7 @@ pub(super) async fn pacman(
         return clean(rpc, language, json, (out, err)).await;
     }
     if !flags.refresh && !flags.search {
-        say(err, language.nothing_to_sync());
+        diagnostic::error(err, *language, &language.nothing_to_sync());
         return Err(exit::MISUSE);
     }
     if flags.refresh {
@@ -102,10 +103,8 @@ pub(super) async fn search(
     )
     .await?;
     if let Some(why) = found["stale"].as_str() {
-        say(
-            err,
-            &language.index_stale(found["generated"].as_str().unwrap_or_default(), why),
-        );
+        let generated = found["generated"].as_str().unwrap_or_default();
+        diagnostic::warning(err, *language, &language.index_stale(generated, why));
     }
     let rows = found["packages"].as_array().cloned().unwrap_or_default();
     if json {
@@ -171,8 +170,12 @@ pub(super) async fn clean(
     Ok(())
 }
 
-/// `update`：不管本机那份新不新都去拿（`package.sync` 带 `force`）。拿成了印包数和索引的时刻；一处都没拿成、用的是本机那份的
-/// 说一句、退出码 1（照 pacman：`-Sy` 没拿成算失败）。`json` 的原样印回应。
+/// 官方的软件源在回应里叫什么（配置里起名字的那几个在 `sources` 里各带 `source`）。
+const OFFICIAL: &str = "official";
+
+/// `update`：不管本机那份新不新都去拿（`package.sync` 带 `force`）。一个软件源一行（施工 CL-2 补，官方的在前，配置里另加的
+/// 照回应的先后）：拿成了印包数和索引的时刻；官方的一处都没拿成、用的是本机那份的报错、退出码 1（照 pacman：`-Sy` 没拿成算
+/// 失败）；另加的没拿成的警告一句，不算失败。`json` 的原样印回应，报错、警告照样印在标准错误上。
 pub(super) async fn update(
     rpc: &mut Rpc,
     language: &Language,
@@ -183,14 +186,34 @@ pub(super) async fn update(
     if json {
         say(out, &synced.to_string());
     }
-    let generated = synced["generated"].as_str().unwrap_or_default();
-    if let Some(why) = synced["stale"].as_str() {
-        say(err, &language.index_stale(generated, why));
-        return Err(exit::ERROR);
+    let official = (OFFICIAL, &synced);
+    let others = synced["sources"].as_array().into_iter().flatten();
+    let mut failed = false;
+    for (index, (name, one)) in std::iter::once(official)
+        .chain(others.map(|one| (one["source"].as_str().unwrap_or_default(), one)))
+        .enumerate()
+    {
+        // 用的是本机那份的带 `stale`（最后一处的原因），本机也没有的是 `error`（原因码）。
+        let why = match (one["stale"].as_str(), one["error"].as_str()) {
+            (Some(why), _) => Some(why),
+            (None, Some(code)) => Some(language.source_error(code)),
+            (None, None) => None,
+        };
+        match (why, index) {
+            (Some(why), 0) => {
+                diagnostic::error(err, *language, &language.index_failed(name, why));
+                failed = true;
+            }
+            (Some(why), _) => {
+                diagnostic::warning(err, *language, &language.index_failed(name, why));
+            }
+            (None, _) if !json => {
+                let count = one["packages"].as_u64().unwrap_or_default();
+                let generated = one["generated"].as_str().unwrap_or_default();
+                say(out, &language.index_updated(name, count, generated));
+            }
+            (None, _) => {}
+        }
     }
-    if !json {
-        let count = synced["packages"].as_u64().unwrap_or_default();
-        say(out, &language.index_updated(count, generated));
-    }
-    Ok(())
+    if failed { Err(exit::ERROR) } else { Ok(()) }
 }

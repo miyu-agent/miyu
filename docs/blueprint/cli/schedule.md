@@ -42,17 +42,17 @@
 ### 怎么走
 
 1. **找数据根、连核心、握手**：照 `miyu memory`（`cli/memory.md` 第 1 步）。请求的编号是 `schedule-<16 位十六进制>-<序号>`。
-2. **读时刻、间隔**：`--at`、`--every` 读不懂的不连核心以后发，说清写法，退出码 2。
+2. **读时刻、间隔**：`--at`、`--every` 读不懂的不发，报「无法识别时间 '<写的>'」「无法识别间隔 '<写的>'」，另起一行提示写法，退出码 2。
 3. **发**：照上面的表；没给的选项不写那一格。
 4. **印**（标准输出）：
-   - `list`：一项一行，两个空格隔开：编号、什么时候（`cron <五段>`，记了时区、只跑一次的跟在括号里；`at <时刻>`；`every <间隔>`，间隔说成最大的整单位）、循环的接「循环」（她定节奏的「循环，她定节奏」）、停着的接「停着」、「下一次 <时刻>」、「上一次 <时刻> <结果>」、跑在哪（「会话 <编号>」，扩展建的推给它自己的「推给包 <编号>」（施工 J-4），或者「新开」接写了的人格、预设、目录）、那句话（「」括起来，换行换成空格，多于 40 个字的截掉接 `…`）。时刻照本机时区印到分钟。没有的不写。一个都没有的：「还没有定时任务。」
-   - `add`：「建好了：<那一项>」；`pause`、`resume`：「停了：<那一项>」「续上了：<那一项>」；`rm`：「删掉了：<编号>」。
+   - `list`：一项一行，两个空格隔开：编号、什么时候（`cron <五段>`，记了时区、只跑一次的跟在括号里；`at <时刻>`；`every <间隔>`，间隔说成最大的整单位）、循环的接「循环」（自己定节奏的「循环，节奏自定」）、停着的接「停着」、「下一次 <时刻>」、「上一次 <时刻> <结果>」、跑在哪（「会话 <编号>」，扩展建的推给它自己的「发给软件包 <编号>」（施工 J-4），或者「新会话」接写了的人格、预设、目录）、那句话（「」括起来，换行换成空格，多于 40 个字的截掉接 `…`）。时刻照本机时区印到分钟。没有的不写。一个都没有的：「没有定时任务」
+   - `add`：「已添加 <那一项>」；`pause`、`resume`：「已暂停 <那一项>」「已恢复 <那一项>」；`rm`：「已删除 <编号>」。
 5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1；`bad_params` 带了 `data.problem` 的，原话（去掉句号）后面接「：」和是哪一样（下面的表）。核心断开、请求写不出去照 `miyu memory`。远程登录连上的核心拒 `cwd` 的（`local_machine_only`）照原话。
 
 ### 样子
 
 ```text
-t1  cron 0 8 * * *（Asia/Tokyo）  下一次 2026-10-28 08:00  上一次 2026-10-27 08:00 跑了  新开 人格 miyu 目录 /home/me  「早报：天气和日程」
+t1  cron 0 8 * * *（Asia/Tokyo）  下一次 2026-10-28 08:00  上一次 2026-10-27 08:00 已运行  新会话 人格 miyu 目录 /home/me  「早报：天气和日程」
 t2  every 10m  停着  会话 s-1  「看一眼服务器」
 ```
 
@@ -68,85 +68,88 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
 
 | 键 | 中文 | 英文 |
 |---|---|---|
-| 一个都没有 | 还没有定时任务。 | No schedules yet. |
-| 建好了 | 建好了：{项} | Added: {item} |
-| 删掉了 | 删掉了：{id} | Removed: {id} |
-| 停了 | 停了：{项} | Paused: {item} |
-| 续上了 | 续上了：{项} | Resumed: {item} |
-| `--at` 读不懂 | 读不懂 --at {text}：写成 2026-10-28 08:00（照本机时区），或者带偏移的 2026-10-28T08:00:00+09:00。 | Can't read --at {text}: write 2026-10-28 08:00 (this machine's time zone), or with an offset like 2026-10-28T08:00:00+09:00. |
-| `--every` 读不懂 | 读不懂 --every {text}：写秒数，或者 90s、10m、2h、1d。 | Can't read --every {text}: write seconds, or 90s, 10m, 2h, 1d. |
-| 是哪一样（`data.problem`） | `when` 时间没写对、`cron` cron 读不懂，要标准五段、`past` 那个时刻已经过了、`short` 间隔至少 60 秒、`prompt` 话是空的、`session` 没有这个会话、`target` 会话和新开只能写一种、`zone` 不认识这个时区、`cwd` 目录不在、不是目录，或者不能用 | the time isn't written right、the cron can't be read; use the standard five fields、that time has already passed、the interval must be at least 60 seconds、the message is empty、no such session、give either a session or new-session options, not both、unknown time zone、the folder doesn't exist, isn't a folder, or can't be used |
-| 循环 | 循环、循环，她定节奏 | loop、loop, her pace |
+| 一个都没有 | 没有定时任务 | no schedules |
+| 建好了 | 已添加 {项} | added {item} |
+| 删掉了 | 已删除 {id} | removed {id} |
+| 停了 | 已暂停 {项} | paused {item} |
+| 续上了 | 已恢复 {项} | resumed {item} |
+| `--at` 读不懂（报错） | 无法识别时间 '{text}'；提示：写成 '2026-10-28 08:00'（本机时区）或 2026-10-28T08:00:00+09:00 | invalid time '{text}'; hint: use '2026-10-28 08:00' (local time) or 2026-10-28T08:00:00+09:00 |
+| `--every` 读不懂（报错） | 无法识别间隔 '{text}'；提示：写秒数，或 90s、10m、2h、1d | invalid interval '{text}'; hint: use seconds, or 90s, 10m, 2h, 1d |
+| 是哪一样（`data.problem`） | `when` 时间格式不对、`cron` cron 表达式无效，需要标准五段、`past` 时间已经过去、`short` 间隔至少 60 秒、`prompt` 消息为空、`session` 会话不存在、`target` 会话和新建会话的选项只能用一种、`zone` 未知时区、`cwd` 目录不存在或不可用 | invalid time、invalid cron expression, use the standard five fields、time already passed、interval must be at least 60 seconds、empty message、no such session、use either a session or new-session options, not both、unknown time zone、directory missing or unusable |
+| 循环 | 循环、循环，节奏自定 | loop、loop, self-paced |
 | 停着 | 停着 | paused |
 | 下一次、上一次 | 下一次 {时刻}、上一次 {时刻} {结果} | next {time}、last {time} {result} |
-| 上一次的结果 | `ran` 跑了、`queued` 排在后面、`sent` 推给了包、`skipped:session_gone` 跳过：会话没了、`skipped:preset_off` 跳过：预设关了它、`skipped:not_opened` 跳过：新会话开不成、`skipped:package_unavailable` 跳过：包没在跑，别的照原样 | ran、queued、sent to package、skipped: session gone、skipped: preset turned it off、skipped: new session didn't open、skipped: package not running |
-| 只跑一次（`cron`） | 只跑一次 | once |
-| 跑在哪 | 会话 {id}、推给包 {id}、新开 人格 {p} / 无人格 预设 {p} 目录 {dir} | session {id}、to package {id}、new persona {p} / no persona preset {p} in {dir} |
+| 上一次的结果 | `ran` 已运行、`queued` 已排队、`sent` 已发给软件包、`skipped:session_gone` 跳过：会话已不存在、`skipped:preset_off` 跳过：预设已关闭、`skipped:not_opened` 跳过：无法新建会话、`skipped:package_unavailable` 跳过：软件包未运行，别的照原样 | ran、queued、sent to package、skipped: session gone、skipped: disabled by preset、skipped: new session failed to open、skipped: package not running |
+| 只跑一次（`cron`） | 只运行一次 | once |
+| 跑在哪 | 会话 {id}、发给软件包 {id}、新会话 人格 {p} / 无人格 预设 {p} 目录 {dir} | session {id}、to package {id}、new persona {p} / no persona preset {p} in {dir} |
+
+报错、警告照设计 47 印在标准错误上：`miyu: <事>`（警告是 `miyu: 警告：`，英文 `miyu: warning: `），建议另起一行 `提示：`（英文 `hint: `）；下表报错那几行写的是 `miyu: ` 后面那一截。
 
 **帮助页**：`-h`、`--help`、`miyu help schedule`、各个子命令的 `-h` 印的都是这一页，规矩见 `cli/main.md`「帮助页」。
 
 样本 `crates/miyu-cli/src/help/zh/schedule.txt`（中文）：
 
 ```text
-用法：miyu schedule [命令] [选项]
+用法：miyu schedule <命令> [选项]
 
-管定时任务：到点把一句话交给一个会话跑一轮。不写命令就是 list。
-核心停着时错过的不补。
+不写命令时运行 list。到点时把一条消息交给会话运行一轮；核心停止期间错过的不补。
 
 命令：
-  list                    列出全部定时任务
-  add <话>...             建一个；时间三选一：--cron、--at、--every
-  rm <编号>               删掉一个
-  pause <编号>            停一个
-  resume <编号>           续一个，照现在重算下一次，错过的不补
+  list                    列出定时任务
+  add <消息>...           添加定时任务（时间用 --cron --at --every 之一）
+  rm <编号>               删除定时任务
+  pause <编号>            暂停定时任务
+  resume <编号>           恢复定时任务，从现在起重新计算下一次
 
 选项：
-      --cron <五段>       add：标准五段的 cron，例如 '0 8 * * *'；照本机的时区读
-      --once              add：--cron 的只跑一次
-      --zone <时区>       add：--cron 照这个时区读，例如 Asia/Tokyo
-      --at <时刻>         add：只跑一次，例如 '2026-10-28 08:00'（照本机时区），
-                          或者带偏移的 2026-10-28T08:00:00+09:00
-      --every <间隔>      add：每隔一阵，秒数或者 90s、10m、2h、1d，至少 60 秒
-      --session <编号>    add：跑在这个已有的会话上；list：只列跑在它上面的
-      --persona <人格>    add：每次新开一个会话，用这个人格
-      --no-persona        add：每次新开一个无人格的会话
-      --preset <预设>     add：每次新开的会话用这个预设
-      --cwd <目录>        add：每次新开的会话在这个目录里开，不写是家目录
-      --format text|json  list：json 给脚本
-  -h, --help              印帮助
+      --cron <五段>       按 cron 表达式运行，例如 '0 8 * * *'
+      --once              cron 只运行一次
+      --zone <时区>       cron 使用的时区，例如 Asia/Tokyo（默认本机时区）
+      --at <时刻>         在指定时刻运行一次，例如 '2026-10-28 08:00'
+                          （本机时区）或 2026-10-28T08:00:00+09:00
+      --every <间隔>      每隔一段时间运行，秒数或 90s 10m 2h 1d，至少 60 秒
+      --session <编号>    在这个会话上运行；list 时只列出它的
+      --persona <人格>    每次新建会话，使用这个人格
+      --no-persona        每次新建无人格的会话
+      --preset <预设>     新建的会话使用这个预设
+      --cwd <目录>        新建的会话的工作目录（默认家目录）
+      --format text|json  输出格式（默认 text）
+  -h, --help              显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/schedule.txt`（英文）：
 
 ```text
-Usage: miyu schedule [command] [options]
+Usage: miyu schedule <command> [options]
 
-Manage schedules: at the set time, a message goes to a session for one turn.
-No command means list. Times missed while the core was stopped are skipped.
+Runs list when no command is given. At the set time, a message goes to a
+session for one turn. Times missed while the core is stopped are skipped.
 
 Commands:
-  list                    List all schedules
-  add <message>...        Add one; pick one of --cron, --at, --every
-  rm <id>                 Remove one
-  pause <id>              Pause one
-  resume <id>             Resume one; the next time counts from now
+  list                    List schedules
+  add <message>...        Add a schedule (time: one of --cron, --at, --every)
+  rm <id>                 Remove a schedule
+  pause <id>              Pause a schedule
+  resume <id>             Resume a schedule; the next run counts from now
 
 Options:
-      --cron <fields>     add: a five-field cron such as '0 8 * * *', read in
-                          this machine's time zone
-      --once              add: the --cron one runs only once
-      --zone <zone>       add: read --cron in this time zone, e.g. Asia/Tokyo
-      --at <time>         add: run once, e.g. '2026-10-28 08:00' (this
-                          machine's time zone) or 2026-10-28T08:00:00+09:00
-      --every <interval>  add: repeat; seconds or 90s, 10m, 2h, 1d; at least 60s
-      --session <id>      add: run in this existing session; list: only those
+      --cron <fields>     Run on a five-field cron, e.g. '0 8 * * *'
+      --once              Run the cron only once
+      --zone <zone>       Time zone for the cron, e.g. Asia/Tokyo (default:
+                          this machine's)
+      --at <time>         Run once at a time, e.g. '2026-10-28 08:00' (local
+                          time) or 2026-10-28T08:00:00+09:00
+      --every <interval>  Repeat every interval: seconds or 90s, 10m, 2h, 1d;
+                          at least 60s
+      --session <id>      Run in this existing session; with list, show only
+                          its schedules
       --persona <persona>
-                          add: open a new session each time with this persona
-      --no-persona        add: open a new session each time with no persona
-      --preset <preset>   add: the new session uses this preset
-      --cwd <dir>         add: open the new session in this folder (home if
-                          not given)
-      --format text|json  list: json for scripts
+                          Open a new session each time with this persona
+      --no-persona        Open a new session each time with no persona
+      --preset <preset>   Use this preset for the new session
+      --cwd <dir>         Working directory for the new session (default:
+                          home)
+      --format text|json  Output format (default: text)
   -h, --help              Print help
 ```
 

@@ -1,35 +1,32 @@
-Usage: miyu memory [command] [options]
+Usage: miyu memory <command> [options]
 
-See what the AI remembers about you; search, add, edit, forget, clear,
-organize.
-Without a command it is list.
+Runs list when no command is given.
 
 Commands:
   list                    List memories, newest first
   search <words>          Search memories
-  add <text>              Remember one thing
-  edit <id> [<text>]      Change one; prints the new id; leave out the text
-                          to change only the keywords
-  forget <id>             Forget one
-  clear session [<id>]    Clear what this session remembered; default is
-                          the session the last miyu ask opened
-  clear me                Clear everything the AI remembers about you
-  dream                   Organize now: merge duplicates, fix stale ones,
-                          refresh the summary; Ctrl+C stops it, keeping
-                          what's done
-  cards                   List person cards: one per person you know,
-                          written when memories are organized
+  add <text>              Add a memory
+  edit <id> [<text>]      Edit a memory and print its new id; leave out the
+                          text to change only the keywords
+  forget <id>             Forget a memory
+  clear session [<id>]    Clear the memories of a session (default: the last
+                          miyu ask session)
+  clear me                Clear all memories about the user
+  dream                   Organize memories now (Ctrl+C stops, keeping what
+                          is done)
+  cards                   List person cards
 
 Options:
-      --persona <id>      Whose memory; default is the default persona
-  -s, --session <id>      The memory this session uses
-      --forgotten         list, search, cards: include forgotten ones
+      --persona <id>      Use the memories of this persona (default: the
+                          default persona)
+  -s, --session <id>      Use the memories of this session
+      --forgotten         Include forgotten memories
       --class user|feedback|episode|reference|person
-                          list: only this class; add: save as it (default
-                          user); person is someone the AI knows
-      --why <reason>      forget: why
-      --keywords <words>  add, edit: comma-separated words to find it by
-      --who <who>         add, edit: who a person memory is about, a platform
-                          id or a name; add --class person needs it
-      --format text|json  list, search, cards: json for scripts
+                          Filter by class, or set the class to add (default:
+                          user)
+      --why <reason>      Give the reason for forgetting
+      --keywords <words>  Set comma-separated search keywords
+      --who <who>         Set who a person memory is about: a platform id or
+                          a name
+      --format text|json  Output format (default: text)
   -h, --help              Print help

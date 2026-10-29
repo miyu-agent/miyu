@@ -28,7 +28,7 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
     assert_eq!(
         plan(&bare, Doing::Install, &Language::English),
         [
-            "Install x (replaces the installed one)",
+            "Will install x (replaces the installed one)",
             "Size: 9 B, 1 file"
         ],
         "没有的那一行不印"
@@ -65,7 +65,7 @@ fn a_removal_says_what_goes_with_it() {
     let shipped = json!({"package": "net", "layer": "shipped", "settings": [], "state": false});
     assert_eq!(
         plan(&shipped, Doing::Remove, &Language::English),
-        ["Remove net"]
+        ["Will remove net"]
     );
 }
 
@@ -73,7 +73,9 @@ fn a_removal_says_what_goes_with_it() {
 fn answered(answer: &[u8], doing: Doing) -> (Result<(), u8>, String, String) {
     let (mut out, mut err) = (Vec::new(), Vec::new());
     let mut input = answer;
-    let result = asked(&mut input, &mut out, &mut err, doing, &Language::Chinese);
+    let language = Language::Chinese;
+    let question = language.proceed(doing, "app");
+    let result = asked((&mut input, &mut out, &mut err), &question, &language);
     let text = |bytes: Vec<u8>| String::from_utf8(bytes).expect("是 UTF-8");
     (result, text(out), text(err))
 }
@@ -83,7 +85,7 @@ fn enter_or_yes_goes_on_and_anything_else_or_nothing_stops() {
     for yes in [&b"\n"[..], b"y\n", b"Y\n", b"yes\n", b" YES \r\n"] {
         let (result, out, err) = answered(yes, Doing::Install);
         assert_eq!(result, Ok(()), "{yes:?}");
-        assert_eq!((out.as_str(), err.as_str()), ("\n继续安装？[Y/n] ", ""));
+        assert_eq!((out.as_str(), err.as_str()), ("\n安装 'app'？[Y/n] ", ""));
     }
     for no in [&b"n\n"[..], b"no\n", b"x\n"] {
         let (result, _, err) = answered(no, Doing::Remove);
@@ -91,8 +93,11 @@ fn enter_or_yes_goes_on_and_anything_else_or_nothing_stops() {
     }
     let (result, out, err) = answered(b"", Doing::Remove);
     assert_eq!(result, Err(1), "标准输入关着的不做");
-    assert_eq!(out, "\n继续卸载？[Y/n] \n");
-    assert_eq!(err, "已取消：没有确认（不问用 --yes）\n");
+    assert_eq!(out, "\n卸载 'app'？[Y/n] \n");
+    assert_eq!(
+        err,
+        "miyu: 已取消：没有收到确认\n提示：加 '--yes' 跳过确认\n"
+    );
 }
 
 /// 只带技能、脚本的包（施工 X-13 上）：没有程序那一项，列出每个技能、脚本。
@@ -105,7 +110,7 @@ fn skills_and_scripts_are_listed_by_name() {
         [
             "将安装 notes",
             "包含：技能 take-notes、脚本 dice、斜杠命令 /review",
-            "读不成：skills/bad/SKILL.md（the head is not YAML）",
+            "无法读取：skills/bad/SKILL.md（the head is not YAML）",
             "大小：9 B，3 个文件"
         ]
     );

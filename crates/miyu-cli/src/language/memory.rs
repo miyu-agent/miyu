@@ -1,53 +1,56 @@
-//! `miyu memory` 给人看的字（施工 R-3 再补，`docs/blueprint/cli/memory.md`「给人看的字」）。
+//! `miyu memory` 给人看的字（施工 R-3 再补，`docs/blueprint/cli/memory.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行
+//! 动词打头、不带句号，报错交 [`Problem`]）。
 
 use super::Language;
+use crate::diagnostic::Problem;
 
 impl Language {
     /// `list` 一条都没有。
     pub fn no_memories(&self) -> &'static str {
         match self {
-            Language::Chinese => "还没有记忆。",
-            Language::English => "No memories yet.",
+            Language::Chinese => "没有记忆",
+            Language::English => "no memories",
         }
     }
 
     /// `cards` 一张都没有（施工 E-1 下）。
     pub fn no_cards(&self) -> &'static str {
         match self {
-            Language::Chinese => "还没有认识的人的卡。",
-            Language::English => "No person cards yet.",
+            Language::Chinese => "没有人物卡",
+            Language::English => "no person cards",
         }
     }
 
     /// `search` 一条都没找到。
     pub fn nothing_found(&self) -> &'static str {
         match self {
-            Language::Chinese => "没找到。",
-            Language::English => "Nothing found.",
+            Language::Chinese => "没有找到结果",
+            Language::English => "no matches",
         }
     }
 
     /// `add` 记成了 `id`。
     pub fn remembered(&self, id: &str) -> String {
         match self {
-            Language::Chinese => format!("记下了：{id}"),
-            Language::English => format!("Remembered as {id}"),
+            Language::Chinese => format!("已添加 {id}"),
+            Language::English => format!("added {id}"),
         }
     }
 
     /// `edit` 改好了，新的一条是 `id`。
     pub fn changed(&self, id: &str) -> String {
         match self {
-            Language::Chinese => format!("改好了：{id}"),
-            Language::English => format!("Changed; now {id}"),
+            Language::Chinese => format!("已修改，新编号 {id}"),
+            Language::English => format!("updated, new id {id}"),
         }
     }
 
     /// 清空清掉了 `count` 条。
     pub fn cleared(&self, count: u64) -> String {
-        match self {
-            Language::Chinese => format!("清掉了 {count} 条。"),
-            Language::English => format!("Cleared {count}."),
+        match (self, count) {
+            (Language::Chinese, _) => format!("已清除 {count} 条记忆"),
+            (Language::English, 1) => "cleared 1 memory".to_string(),
+            (Language::English, _) => format!("cleared {count} memories"),
         }
     }
 
@@ -56,16 +59,13 @@ impl Language {
     pub fn dreamed(&self, organized: &Organized) -> String {
         let took = miyu_view::clock(organized.took_ms);
         match (self, organized.given) {
-            (Language::Chinese, 0) => format!("无需整理，用时 {took}。"),
-            (Language::English, 0) => format!("Nothing to organize; took {took}."),
+            (Language::Chinese, 0) => format!("无需整理，用时 {took}"),
+            (Language::English, 0) => format!("nothing to organize, took {took}"),
             (Language::Chinese, _) => {
-                format!(
-                    "整理完成：{}，用时 {took}。",
-                    self.organized(organized, true)
-                )
+                format!("已整理：{}，用时 {took}", self.organized(organized, true))
             }
             (Language::English, _) => format!(
-                "Memory organized: {}; took {took}.",
+                "organized memories: {}, took {took}",
                 self.organized(organized, true)
             ),
         }
@@ -118,18 +118,22 @@ impl Language {
     }
 
     /// `add --class person` 没写 `--who`（施工 E-1 上）：认识的人要写是谁。
-    pub(crate) fn memory_needs_who(&self) -> &'static str {
+    pub(crate) fn memory_needs_who(&self) -> Problem {
         match self {
-            Language::Chinese => "认识的人要写 --who（平台编号或名字）。",
-            Language::English => "A person memory needs --who (a platform id or a name).",
+            Language::Chinese => {
+                Problem::new("--class person 缺少 --who").hint("加上 '--who <平台编号或名字>'")
+            }
+            Language::English => {
+                Problem::new("--class person needs --who").hint("add '--who <platform id or name>'")
+            }
         }
     }
 
     /// `dream` 第一次按 Ctrl+C（施工 R-23）：在叫停，再按一次直接退。
     pub(crate) fn dream_stopping(&self) -> &'static str {
         match self {
-            Language::Chinese => "正在停止整理……再按一次 Ctrl+C 直接退出。",
-            Language::English => "Stopping… press Ctrl+C again to quit now.",
+            Language::Chinese => "正在停止整理，再按一次 Ctrl+C 立即退出",
+            Language::English => "stopping, press Ctrl+C again to quit now",
         }
     }
 
@@ -138,30 +142,28 @@ impl Language {
     pub(crate) fn dream_stopped(&self, organized: &Organized) -> String {
         let took = miyu_view::clock(organized.took_ms);
         match (self, organized.given) {
-            (Language::Chinese, 0) => format!("整理已中断，用时 {took}，下次再整理。"),
+            (Language::Chinese, 0) => format!("已中断整理，用时 {took}，下次继续"),
             (Language::English, 0) => {
-                format!("Memory organizing stopped after {took}; it will continue next time.")
+                format!("stopped organizing, took {took}, the rest continues next time")
             }
             (Language::Chinese, _) => format!(
-                "整理已中断：{}，用时 {took}，其余下次再整理。",
+                "已中断整理：{}，用时 {took}，其余下次继续",
                 self.organized(organized, false)
             ),
             (Language::English, _) => format!(
-                "Memory organizing stopped: {}; took {took}; the rest next time.",
+                "stopped organizing: {}, took {took}, the rest continues next time",
                 self.organized(organized, false)
             ),
         }
     }
 
     /// 记的、改的太长：这一条 `chars` 个字，一条最多 `limit` 个。
-    pub(crate) fn too_long(&self, chars: u64, limit: u64) -> String {
+    pub(crate) fn too_long(&self, chars: u64, limit: u64) -> Problem {
         match self {
-            Language::Chinese => format!("太长了：这一条 {chars} 个字，一条最多 {limit} 个字。"),
-            Language::English => {
-                format!(
-                    "Too long: this one has {chars} characters, a memory takes at most {limit}."
-                )
-            }
+            Language::Chinese => Problem::new(format!("记忆过长：{chars} 字，上限 {limit} 字")),
+            Language::English => Problem::new(format!(
+                "memory too long: {chars} characters, limit {limit}"
+            )),
         }
     }
 

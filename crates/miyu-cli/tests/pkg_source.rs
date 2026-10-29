@@ -41,12 +41,19 @@ fn home(source: &str, keys: Vec<PublicKey>) -> Home {
 
 /// 同 [`home`]，另配一个镜像（空的不配）。
 fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
-    let source = source.to_string();
     let mirrors = if mirror.is_empty() {
         String::new()
     } else {
         format!("\"{mirror}\"")
     };
+    home_written(
+        format!("[packages]\nsource = \"{source}\"\nmirrors = [{mirrors}]\n"),
+        keys,
+    )
+}
+
+/// 认 `keys`、系统配置写的是 `config` 的核心。
+fn home_written(config: String, keys: Vec<PublicKey>) -> Home {
     Home::shaped(
         Arc::new(Script::new([])),
         Catalog::default(),
@@ -54,15 +61,15 @@ fn home_with_mirror(source: &str, mirror: &str, keys: Vec<PublicKey>) -> Home {
         move |core, root| {
             let path = root.path().join("config.toml");
             std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
-            std::fs::write(
-                &path,
-                format!("[packages]\nsource = \"{source}\"\nmirrors = [{mirrors}]\n"),
-            )
-            .expect("写得进");
+            std::fs::write(&path, &config).expect("写得进");
             let config = miyu_endpoint::config::Config::load(
                 root,
                 None,
-                miyu_endpoint::settings::SourceSettings::ITEMS.to_vec(),
+                [
+                    miyu_endpoint::settings::SourceSettings::ITEMS,
+                    miyu_endpoint::settings::SOURCE_FEEDS,
+                ]
+                .concat(),
                 miyu_endpoint::config::Environment::of(&[]),
             );
             core.with_config(config).with_source_keys(keys)
@@ -132,7 +139,7 @@ async fn update_fetches_the_index_and_says_how_many() {
         updated,
         (
             0,
-            "软件源已更新：2 个包（2026-10-19T03:00:00Z）\n".to_string(),
+            "已更新 official：2 个包（2026-10-19T03:00:00Z）\n".to_string(),
             String::new()
         )
     );
@@ -142,7 +149,7 @@ async fn update_fetches_the_index_and_says_how_many() {
         (
             2,
             String::new(),
-            "错误：没有指定目标（使用 -h 获取帮助）\n".to_string()
+            "miyu: 没有指定目标\n提示：运行 'miyu pkg --help' 查看用法\n".to_string()
         ),
         "照 pacman 说没有指定目标"
     );
@@ -155,10 +162,38 @@ async fn update_fetches_the_index_and_says_how_many() {
     let stale = pkg(&home, &["-Sy"]).await;
     assert_eq!(stale.0, 1, "旧的不收、算没拿成：{stale:?}");
     assert!(
-        stale
-            .2
-            .starts_with("软件源连不上，用的是本机的索引（2026-10-19T03:00:00Z）："),
+        stale.2.starts_with("miyu: 无法更新 official："),
         "{stale:?}"
+    );
+}
+
+/// 配置里另加的软件源（施工 CL-2 补）：一个源一行，官方的在前，另加的照名字；另加的拿不成的警告一句，不算失败。
+#[tokio::test]
+async fn update_says_one_line_for_each_source() {
+    let (secret, trusted) = keys();
+    let theirs = sign::generate().expect("生成得了");
+    let mut replies = serving("2026-10-19T03:00:00Z", 2, &secret);
+    replies.extend(serving("2026-10-18T03:00:00Z", 3, &theirs.secret));
+    let server = Server::start(replies).await;
+    let base = &server.base_url;
+    let public = &theirs.public;
+    let home = home_written(
+        format!(
+            "[packages]\nsource = \"{base}\"\nmirrors = []\n\n\
+             [packages.sources.extra]\nurl = \"https://unreachable.invalid/\"\nkey = \"{public}\"\n\n\
+             [packages.sources.friend]\nurl = \"{base}\"\nkey = \"{public}\"\n"
+        ),
+        trusted,
+    );
+    let updated = pkg(&home, &["update"]).await;
+    assert_eq!(
+        updated,
+        (
+            0,
+            "已更新 official：2 个包（2026-10-19T03:00:00Z）\n已更新 friend：3 个包（2026-10-18T03:00:00Z）\n"
+                .to_string(),
+            "miyu: 警告：无法更新 extra：无法连接\n".to_string()
+        )
     );
 }
 
@@ -203,7 +238,7 @@ async fn search_prints_one_line_each_and_nothing_found_is_exit_one() {
         all,
         (
             0,
-            "embed  语义模型  本机算向量\ncat    猫（社区）（被拉黑：spam）\n".to_string(),
+            "embed  语义模型  本机算向量\ncat    猫（社区）（已拉黑：spam）\n".to_string(),
             String::new()
         )
     );
@@ -290,13 +325,13 @@ async fn install_from_the_source_shows_the_plan_asks_and_cleans_up_after() {
         "问完接着说正在下载：{installed:?}"
     );
     assert!(
-        installed.1.ends_with("装好了：lib\n装好了：app\n"),
+        installed.1.ends_with("已安装 lib\n已安装 app 1.0\n"),
         "{installed:?}"
     );
     let cleaned = pkg(&home, &["clean"]).await;
     assert_eq!(
         cleaned,
-        (0, "缓存里没有要清的包文件\n".to_string(), String::new())
+        (0, "没有可清理的包文件\n".to_string(), String::new())
     );
     let cleaned = pkg(&home, &["-Sc"]).await;
     assert_eq!(cleaned.0, 0, "{cleaned:?}");
@@ -359,16 +394,19 @@ async fn upgrade_shows_what_changes_and_asks() {
     assert_eq!(upgraded.0, 0, "{upgraded:?}");
     assert!(
         upgraded.1.starts_with(
-            "软件源已更新：1 个包（2026-10-20T03:00:00Z）\n将升级 app 1.0 → 2.0\n下载："
+            "已更新 official：1 个包（2026-10-20T03:00:00Z）\n将升级 app 1.0 → 2.0\n下载："
         ),
         "{upgraded:?}"
     );
-    assert!(upgraded.1.contains("继续升级？[Y/n] "), "{upgraded:?}");
-    assert!(upgraded.1.ends_with("升级好了：app 2.0\n"), "{upgraded:?}");
+    assert!(upgraded.1.contains("升级 'app'？[Y/n] "), "{upgraded:?}");
+    assert!(
+        upgraded.1.ends_with("已升级 app 1.0 → 2.0\n"),
+        "{upgraded:?}"
+    );
     let again = pkg(&home, &["upgrade"]).await;
     assert_eq!(
         again,
-        (0, "没有要升级的软件包\n".to_string(), String::new())
+        (0, "没有可升级的软件包\n".to_string(), String::new())
     );
     if let Err(error) = std::fs::remove_dir_all(&scratch) {
         eprintln!("临时目录没删掉：{error}");

@@ -6,21 +6,22 @@ use std::io::{BufRead, Write};
 
 use serde_json::Value;
 
-use super::{PkgPlan, ask, confirm, lines, open, package_of, previewed};
+use super::{PkgPlan, ask_about, confirm, lines, open, package_of, previewed};
 use crate::language::Doing;
 use crate::rpc::Rpc;
 use crate::shown::say;
 
-/// 照 `params`（`path`、`package` 或 `source`）装一个。
+/// 照 `params`（`path`、`package` 或 `source`）装一个；`what` 是人写的那一个（报错里照它说）。
 pub(super) async fn run(
     rpc: &mut Rpc,
     plan: &PkgPlan,
-    params: Value,
+    (params, what): (Value, &str),
     (input, out, err): (&mut dyn BufRead, &mut dyn Write, &mut dyn Write),
 ) -> Result<(), u8> {
     let language = &plan.language;
     // 看一眼：没写 `--yes` 的印出来、问一句；要的能力装好以后打开时一并批（作者说明第九节第 1 条）。
-    let shown = ask(rpc, "package.install", previewed(&params), language, err).await?;
+    let preview = ("package.install", previewed(&params), Some(what));
+    let shown = ask_about(rpc, preview, language, err).await?;
     // 写的是组名的（施工 BS-1 下中）：组里卸掉了的一起装回来。
     if super::group::is_group(&shown) {
         return super::group::run(
@@ -38,22 +39,27 @@ pub(super) async fn run(
             (None, None) => Doing::Restore,
         };
         lines(out, confirm::plan(&shown, doing, language));
-        confirm::asked(input, out, err, doing, language)?;
+        let id = shown["package"].as_str().unwrap_or(what);
+        confirm::asked((input, out, err), &language.proceed(doing, id), language)?;
     }
     if let Some(bytes) = download {
         say(out, &language.downloading(&super::query::size(bytes)));
     }
-    let result = ask(rpc, "package.install", params, language, err).await?;
+    let result = ask_about(rpc, ("package.install", params, Some(what)), language, err).await?;
     let id = package_of(&result);
     for with in result["with"].as_array().into_iter().flatten() {
         say(out, &language.installed(with.as_str().unwrap_or_default()));
     }
-    say(out, &language.installed(id));
+    let version = result["version"]
+        .as_str()
+        .filter(|version| !version.is_empty());
+    let installed = version.map_or_else(|| id.to_string(), |version| format!("{id} {version}"));
+    say(out, &language.installed(&installed));
     if !open::wanted(&result, &shown) {
         return Ok(());
     }
-    if !open::agreed(input, out, plan.args.yes, language) {
-        say(out, language.not_opened());
+    if !open::agreed(input, out, (plan.args.yes, id), language) {
+        lines(out, language.not_opened(id).to_vec());
         return Ok(());
     }
     open::open(rpc, id, &open::capabilities(&shown), language, err).await?;

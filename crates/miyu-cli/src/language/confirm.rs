@@ -1,13 +1,15 @@
-//! `miyu pkg install`、`remove` 做之前印的那一份、问的那一句（施工 F-8 下补，`docs/blueprint/cli/pkg.md`「给人看的字」）。
+//! `miyu pkg install`、`remove` 做之前印的那一份、问的那一句（施工 F-8 下补，`docs/blueprint/cli/pkg.md`「给人看的字」；CL-2 补
+//! 照设计 47 第三节改：问的一句是「<动作> '<对象>'？[Y/n]」，没得答的是报错带建议）。
 
 use super::Language;
+use crate::diagnostic::Problem;
 
 impl Language {
     /// 装回、卸掉整个组（施工 BS-1 下中）时组里没有要动的包。
     pub(crate) fn nothing_in_group(&self, group: &str) -> String {
         match self {
-            Language::Chinese => format!("{group} 里没有要动的包"),
-            Language::English => format!("Nothing to do in {group}"),
+            Language::Chinese => format!("{group} 中没有需要处理的软件包"),
+            Language::English => format!("nothing to do in {group}"),
         }
     }
 
@@ -17,11 +19,11 @@ impl Language {
             (Language::Chinese, Doing::Install) => format!("将安装 {id}"),
             (Language::Chinese, Doing::Restore) => format!("将装回 {id}"),
             (Language::Chinese, Doing::Remove) => format!("将卸载 {id}"),
-            (Language::English, Doing::Install) => format!("Install {id}"),
-            (Language::English, Doing::Restore) => format!("Restore {id}"),
-            (Language::English, Doing::Remove) => format!("Remove {id}"),
+            (Language::English, Doing::Install) => format!("Will install {id}"),
+            (Language::English, Doing::Restore) => format!("Will restore {id}"),
+            (Language::English, Doing::Remove) => format!("Will remove {id}"),
             (Language::Chinese, Doing::Upgrade) => format!("将升级 {id}"),
-            (Language::English, Doing::Upgrade) => format!("Upgrade {id}"),
+            (Language::English, Doing::Upgrade) => format!("Will upgrade {id}"),
         }
     }
 
@@ -95,7 +97,7 @@ impl Language {
     pub(crate) fn plan_label(&self, label: PlanLabel) -> &'static str {
         match (self, label) {
             (Language::Chinese, PlanLabel::Includes) => "包含：",
-            (Language::Chinese, PlanLabel::Skipped) => "读不成：",
+            (Language::Chinese, PlanLabel::Skipped) => "无法读取：",
             (Language::Chinese, PlanLabel::Needs) => "需要：",
             (Language::Chinese, PlanLabel::AlsoDeletes) => "一并删除：",
             (Language::Chinese, PlanLabel::Size) => "大小：",
@@ -103,7 +105,7 @@ impl Language {
             (Language::Chinese, PlanLabel::Download) => "下载：",
             (Language::Chinese, PlanLabel::From) => "来源：",
             (Language::English, PlanLabel::Includes) => "Includes: ",
-            (Language::English, PlanLabel::Skipped) => "Cannot read: ",
+            (Language::English, PlanLabel::Skipped) => "Unreadable: ",
             (Language::English, PlanLabel::Needs) => "Needs: ",
             (Language::English, PlanLabel::AlsoDeletes) => "Also deletes: ",
             (Language::English, PlanLabel::Size) => "Size: ",
@@ -125,7 +127,7 @@ impl Language {
     pub(crate) fn origin_mark(&self, official: bool) -> &'static str {
         match (self, official) {
             (Language::Chinese, true) => "（官方）",
-            (Language::Chinese, false) => "（社区，没人审过）",
+            (Language::Chinese, false) => "（社区，未经审核）",
             (Language::English, true) => " (official)",
             (Language::English, false) => " (community, not reviewed)",
         }
@@ -135,7 +137,7 @@ impl Language {
     pub(crate) fn downloading(&self, size: &str) -> String {
         match self {
             Language::Chinese => format!("正在下载 {size}"),
-            Language::English => format!("Downloading {size}"),
+            Language::English => format!("downloading {size}"),
         }
     }
 
@@ -155,15 +157,29 @@ impl Language {
         }
     }
 
-    /// 问的那一句，后面不换行。
-    pub(crate) fn proceed(&self, doing: Doing) -> &'static str {
-        match (self, doing) {
-            (Language::Chinese, Doing::Remove) => "继续卸载？[Y/n] ",
-            (Language::Chinese, Doing::Upgrade) => "继续升级？[Y/n] ",
-            (Language::English, Doing::Upgrade) => "Proceed with upgrade? [Y/n] ",
-            (Language::Chinese, _) => "继续安装？[Y/n] ",
-            (Language::English, Doing::Remove) => "Proceed with removal? [Y/n] ",
-            (Language::English, _) => "Proceed with installation? [Y/n] ",
+    /// 问的那一句，后面不换行：`what` 是包的编号或组名。
+    pub(crate) fn proceed(&self, doing: Doing, what: &str) -> String {
+        let action = match (self, doing) {
+            (Language::Chinese, Doing::Install) => "安装",
+            (Language::Chinese, Doing::Restore) => "装回",
+            (Language::Chinese, Doing::Remove) => "卸载",
+            (Language::Chinese, Doing::Upgrade) => "升级",
+            (Language::English, Doing::Install) => "Install",
+            (Language::English, Doing::Restore) => "Restore",
+            (Language::English, Doing::Remove) => "Remove",
+            (Language::English, Doing::Upgrade) => "Upgrade",
+        };
+        match self {
+            Language::Chinese => format!("{action} '{what}'？[Y/n] "),
+            Language::English => format!("{action} '{what}'? [Y/n] "),
+        }
+    }
+
+    /// 升级不止一个时问的那一句，后面不换行。
+    pub(crate) fn proceed_upgrades(&self, count: usize) -> String {
+        match self {
+            Language::Chinese => format!("升级 {count} 个软件包？[Y/n] "),
+            Language::English => format!("Upgrade {count} packages? [Y/n] "),
         }
     }
 
@@ -171,15 +187,17 @@ impl Language {
     pub(crate) fn cancelled(&self) -> &'static str {
         match self {
             Language::Chinese => "已取消",
-            Language::English => "Cancelled",
+            Language::English => "cancelled",
         }
     }
 
     /// 没得答（标准输入关着）：脚本里要写 `--yes`。
-    pub(crate) fn unconfirmed(&self) -> &'static str {
+    pub(crate) fn unconfirmed(&self) -> Problem {
         match self {
-            Language::Chinese => "已取消：没有确认（不问用 --yes）",
-            Language::English => "Cancelled: not confirmed (use --yes to skip the question)",
+            Language::Chinese => Problem::new("已取消：没有收到确认").hint("加 '--yes' 跳过确认"),
+            Language::English => {
+                Problem::new("cancelled: no confirmation").hint("pass '--yes' to skip the question")
+            }
         }
     }
 }

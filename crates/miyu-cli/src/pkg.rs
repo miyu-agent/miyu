@@ -179,10 +179,7 @@ pub fn pkg(args: Pkg, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -288,7 +285,7 @@ async fn act(
         }
         PkgCommand::Install { what } => {
             let params = installing(&what, &plan.cwd);
-            install::run(rpc, plan, params, (input, out, err)).await
+            install::run(rpc, plan, (params, &what), (input, out, err)).await
         }
         PkgCommand::Remove { package } => {
             group::remove(rpc, plan, &package, (input, out, err)).await
@@ -335,7 +332,7 @@ async fn act(
                     Ok(())
                 }
                 (false, None) => {
-                    say(err, &language.owned_by_none(&shown));
+                    diagnostic::error(err, *language, &language.owned_by_none(&shown));
                     Err(exit::ERROR)
                 }
             }
@@ -367,7 +364,8 @@ async fn act(
                     source::update(rpc, language, json, (out, err)).await?;
                 }
                 for id in ids {
-                    install::run(rpc, plan, json!({"source": id}), (input, out, err)).await?;
+                    let params = json!({"source": id});
+                    install::run(rpc, plan, (params, id), (input, out, err)).await?;
                 }
                 Ok(())
             }
@@ -393,7 +391,7 @@ async fn act(
     }
 }
 
-/// 发一条请求；被拒绝的照 [`refused`] 说一句。
+/// 发一条请求；被拒绝的照 [`refused`] 说。
 async fn ask(
     rpc: &mut Rpc,
     method: &str,
@@ -401,10 +399,25 @@ async fn ask(
     language: &Language,
     err: &mut dyn Write,
 ) -> Result<Value, u8> {
-    link::request_saying(rpc, method, params, language, err, |error| {
-        refused(error, language)
-    })
-    .await
+    ask_about(rpc, (method, params, None), language, err).await
+}
+
+/// 同 [`ask`]，装的时候带上装的是什么（`what`，照人写的原样）：清单装不上、撞了名的报错里说「无法安装 `what`」。
+async fn ask_about(
+    rpc: &mut Rpc,
+    (method, params, what): (&str, Value, Option<&str>),
+    language: &Language,
+    err: &mut dyn Write,
+) -> Result<Value, u8> {
+    match link::answer(rpc, method, params, language, err).await? {
+        Ok(result) => Ok(result),
+        Err(error) => {
+            for problem in refused(&error, what, language) {
+                diagnostic::error(err, *language, &problem);
+            }
+            Err(exit::ERROR)
+        }
+    }
 }
 
 /// 同一条请求，只看一眼（`preview`，施工 F-8 下补）。
@@ -462,18 +475,19 @@ fn print(result: &Value, plan: &PkgPlan, out: &mut dyn Write) -> Result<(), u8> 
     Ok(())
 }
 
-/// 被拒绝时说的那一句：清单装不上的照 `data` 说哪里不对、第几行（核心的原话是给程序看的，说的是去 `data` 里看）；和装着的包
-/// 冲突的一处一行（施工 F-8 六补）；别的照核心的原话。
-fn refused(error: &Value, language: &Language) -> Problem {
+/// 被拒绝时说的：清单装不上的照 `data` 说哪里不对、第几行（核心的原话是给程序看的，说的是去 `data` 里看）；和装着的包冲突的
+/// 一处一条（施工 F-8 六补）；别的照核心的原话。`what` 是装的是什么（不是装的没有）。
+fn refused(error: &Value, what: Option<&str>, language: &Language) -> Vec<Problem> {
     let data = &error["data"];
     match (data["reason"].as_str(), data["problem"].as_str()) {
         (Some("package_invalid"), Some(problem)) => {
-            Problem::new(language.cannot_install(problem, data["line"].as_u64()))
+            vec![language.cannot_install(what, problem, data["line"].as_u64())]
         }
-        (Some("package_conflict"), _) => Problem::new(
-            language.conflicting(data["conflicts"].as_array().map_or(&[], Vec::as_slice)),
+        (Some("package_conflict"), _) => language.conflicting(
+            what,
+            data["conflicts"].as_array().map_or(&[], Vec::as_slice),
         ),
-        _ => language.refused(error["message"].as_str().unwrap_or_default()),
+        _ => vec![language.refused(error["message"].as_str().unwrap_or_default())],
     }
 }
 

@@ -146,10 +146,7 @@ pub fn kb(args: Kb, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -219,7 +216,7 @@ async fn act(
     let (args, language) = (&plan.args, &plan.language);
     // 库的编号写错的这里就说清写法（施工 K-7 修：核心只回「参数错误。」）。
     if let Some(id) = ids(args).into_iter().find(|id| !valid(id)) {
-        say(err, &language.kb_bad_id(id));
+        diagnostic::error(err, *language, &language.kb_bad_id(id));
         return Err(exit::MISUSE);
     }
     let auto = match (args.auto, args.no_auto) {
@@ -257,7 +254,7 @@ async fn act(
         }
         KbCommand::Edit { kb } => {
             if args.name.is_none() && args.description.is_none() && auto.is_none() {
-                say(err, language.kb_edit_nothing());
+                diagnostic::error(err, *language, &language.kb_edit_nothing());
                 return Err(exit::ERROR);
             }
             ask(
@@ -309,7 +306,7 @@ async fn add(
     for file in files {
         let name = file.file_name().unwrap_or_default().to_string_lossy();
         if !Knowledge::known(&name) {
-            say(err, &language.kb_not_document(&name));
+            diagnostic::error(err, *language, &language.kb_not_document(&name));
             return Err(exit::ERROR);
         }
     }
@@ -356,10 +353,8 @@ async fn read(
                     err,
                 )
                 .await?;
-                say(
-                    err,
-                    &language.kb_no_page(page, first["pages"].as_u64().unwrap_or(1)),
-                );
+                let pages = first["pages"].as_u64().unwrap_or(1);
+                diagnostic::error(err, *language, &language.kb_no_page(page, pages));
             } else {
                 diagnostic::error(err, *language, &refusal(&error, language));
             }

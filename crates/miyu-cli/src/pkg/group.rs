@@ -35,7 +35,7 @@ pub(super) async fn run(
     }
     if !plan.args.yes {
         lines(out, confirm::group_plan(shown, doing, language));
-        confirm::asked(input, out, err, doing, language)?;
+        confirm::asked((input, out, err), &language.proceed(doing, group), language)?;
     }
     let result = ask(rpc, method, params, language, err).await?;
     let done = match doing {
@@ -74,7 +74,9 @@ pub(super) async fn remove(
     }
     if !plan.args.yes {
         lines(out, confirm::plan(&shown, Doing::Remove, language));
-        confirm::asked(input, out, err, Doing::Remove, language)?;
+        let id = shown["package"].as_str().unwrap_or(package);
+        let question = language.proceed(Doing::Remove, id);
+        confirm::asked((input, out, err), &question, language)?;
     }
     let result = ask(rpc, "package.remove", params, language, err).await?;
     say(out, &language.uninstalled(package_of(&result)));

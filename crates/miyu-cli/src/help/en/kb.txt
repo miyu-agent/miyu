@@ -1,34 +1,32 @@
-Usage: miyu kb [command] [options]
+Usage: miyu kb <command> [options]
 
-Manage knowledge bases: documents the AI can look things up in.
-Without a command it is list. Removed documents and deleted bases go to
-the system trash, so you can get them back.
+Runs list when no command is given. Removed documents and deleted knowledge
+bases go to the system trash.
 
 Commands:
-  list [kb]               List knowledge bases; with a kb, its documents
-  search <words>          Search
+  list [kb]               List knowledge bases, or the documents in one
+  search <words>          Search knowledge bases
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base
   edit <kb>               Change the name, description or auto recall
-  add <kb> <file>...      Add files: PDF, web pages, text; 20 MiB each at most
+  add <kb> <file>...      Add files to a knowledge base, 20 MiB each at most
   remove <kb> <document>  Remove a document
-  mount <kb> <folder>     Mount an existing folder, read-only; your files stay
-                          as they are
-  delete <kb>             Delete a whole knowledge base; a mounted one only
-                          loses its registration, the folder stays
+  mount <kb> <folder>     Mount an existing folder as a read-only knowledge
+                          base
+  delete <kb>             Delete a knowledge base (a mounted one is only
+                          unregistered; the folder stays)
   reindex <kb>            Rebuild the index
 
 Options:
-      --kb <kb>           search: only this knowledge base
-      --page <page>       read: which page, the first one by default
-      --name <name>       new, edit, mount: the name people see
+      --kb <kb>           Search only this knowledge base
+      --page <page>       Read this page (default: 1)
+      --name <name>       Set the display name
       --description <description>
-                          new, edit, mount: one sentence about the base
-      --auto              new, edit, mount: turn on auto recall: when someone
-                          names a section of this base or says something close
-                          to it, the AI gets its opening lines
-      --no-auto           edit: turn off auto recall
-      --to <dir>          add: put the files in this folder of the base
-      --replace           add: replace ones that are already there
-      --format text|json  list, search: json for scripts
+                          Set a one-sentence description
+      --auto              Turn on auto recall: bring in the opening of a
+                          section when the conversation mentions it
+      --no-auto           Turn off auto recall
+      --to <dir>          Add into this folder of the knowledge base
+      --replace           Replace documents with the same name
+      --format text|json  Output format (default: text)
   -h, --help              Print help

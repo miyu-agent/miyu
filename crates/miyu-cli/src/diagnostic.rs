@@ -70,7 +70,6 @@ pub(crate) fn error(to: &mut dyn Write, language: Language, problem: &Problem) {
 }
 
 /// 往 `to` 上印一条警告。
-#[expect(dead_code, reason = "施工 CL-2 下：配置被盖住的那一句用上")]
 pub(crate) fn warning(to: &mut dyn Write, language: Language, problem: &Problem) {
     for line in problem.lines(language, Level::Warning) {
         say(to, &line);

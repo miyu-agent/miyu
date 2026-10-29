@@ -1,5 +1,5 @@
 //! 装好以后问一句「打开？」（作者说明第九节第 1 条，`docs/blueprint/cli/pkg.md`「怎么走」第 4 步）：装上的包有开关、关着的，
-//! 或者开着却没在跑、又要能力的（清单写了一起来就拉起，能力还没批），问「现在打开？[Y/n]」，答是发 `package.enable`，看一眼时
+//! 或者开着却没在跑、又要能力的（清单写了一起来就拉起，能力还没批），问「现在启用 '<编号>'？[Y/n]」，答是发 `package.enable`，看一眼时
 //! 列出的那几个能力一并批；`--yes` 当是。程序不在的不问（打不开）。答不、标准输入关着的不打开，说一句以后在「软件包」页里
 //! 打开，照样算装好了。
 
@@ -33,17 +33,17 @@ pub(super) fn capabilities(preview: &Value) -> Vec<String> {
         .collect()
 }
 
-/// 问一句、读一行答：空的、`y`、`yes` 打开；别的、标准输入关着的不打开。`yes` 的不问。
+/// 问一句（启用包 `id`）、读一行答：空的、`y`、`yes` 打开；别的、标准输入关着的不打开。`yes` 的不问。
 pub(super) fn agreed(
     input: &mut dyn BufRead,
     out: &mut dyn Write,
-    yes: bool,
+    (yes, id): (bool, &str),
     language: &Language,
 ) -> bool {
     if yes {
         return true;
     }
-    write(out, &format!("\n{}", language.open_now()));
+    write(out, &format!("\n{}", language.open_now(id)));
     let mut answer = String::new();
     match input.read_line(&mut answer) {
         Ok(0) | Err(_) => {

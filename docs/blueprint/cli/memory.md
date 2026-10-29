@@ -20,13 +20,13 @@
 |---|---|---|
 | `list`（不写子命令也是它） | 列出来，新的在前 | `memory.list`，带 `forgotten`、`class` |
 | `search <词>` | 搜，最相关的在前 | `memory.search`，带 `query`、`forgotten` |
-| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user`；带 `--keywords` 的另带 `keywords`（施工 R-15 上）；带 `--who` 的另带 `who`（`--class person` 要写：没写的、只有空白的不发，标准错误说「认识的人要写 --who（平台编号或名字）。」，退出码 2，施工 E-1 上） |
+| `add <话>` | 记一条 | `memory.remember`，`class` 照 `--class`，不写是 `user`；带 `--keywords` 的另带 `keywords`（施工 R-15 上）；带 `--who` 的另带 `who`（`--class person` 要写：没写的、只有空白的不发，标准错误报「--class person 缺少 --who」，另起一行提示「加上 '--who <平台编号或名字>'」，退出码 2，施工 E-1 上） |
 | `edit <编号> [<话>]` | 改一条 | `memory.update`；带 `--keywords`、`--who` 的另带 `keywords`、`who`；不写话的只换关键词（编号不变）、是谁（新编号）（施工 R-15 上、E-1 上） |
 | `forget <编号>` | 忘掉一条 | `memory.forget`，带 `--why` 的原因 |
 | `clear session [<会话>]` | 清掉这个会话记下的 | `memory.forget`，`clear: "session"`；不写会话的是上一次 `miyu ask` 开的 |
-| `clear me` | 清掉她关于你的全部记忆 | `memory.forget`，`clear: "me"` |
+| `clear me` | 清除关于用户本人的全部记忆 | `memory.forget`，`clear: "me"` |
 | `cards` | 列出认识的人的卡，照是谁排 | `memory.cards`，带 `forgotten`（施工 E-1 下）；一张一行：`<是谁> (<叫法>, …)  <日期>  <正文>`，是谁照最长的对齐，没有叫法的不写括号，作废的同一条记忆 |
-| `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒。等的时候按一次 Ctrl+C 发 `memory.dream_stop`（同一间、同一条连接），标准错误印「正在停止整理……再按一次 Ctrl+C 直接退出。」，接着等原来那一条回应；再按一次不等，直接退（施工 R-23） |
+| `dream` | 现在就整理：合掉重复的、改掉过时的、更新摘要 | `memory.dream`；要等模型，几秒到十几秒。等的时候按一次 Ctrl+C 发 `memory.dream_stop`（同一间、同一条连接），标准错误印「正在停止整理，再按一次 Ctrl+C 立即退出」，接着等原来那一条回应；再按一次不等，直接退（施工 R-23） |
 
 | 选项 | 做什么 |
 |---|---|
@@ -49,9 +49,9 @@
 2. **找哪一间**：写了 `--persona` 的带 `persona`，写了 `-s` 的带 `session`，都不写的都不带（核心照默认人格；没设默认人格的回 `memory_unavailable`，照原话说）。`clear session` 的会话：写了的照写的；没写的照 `-s`；都没写的照 `miyu rename` 找上一次 `miyu ask` 开的那个，一个都没有说「还没有 miyu ask 开过的会话」，退出码 1。
 3. **发**：照上面的表。
 4. **印**（标准输出）：
-   - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；认识的人那一类正文前面写 `[<是谁>] `（施工 E-1 上），发生过的事正文前面写 `[<涉及谁>, …] `（施工 E-1 修四，没有的不写）；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「还没有记忆。」，`search` 说「没找到。」。
-   - `add`：「记下了：<编号>」；`edit`：「改好了：<新的编号>」；`forget`：什么都不印；清空：「清掉了 <几> 条。」；`dream`：「整理完成：检查 <几> 条，修改 <几> 条，作废 <几> 条，用时 <用时>。」，是 0 的那一项不写、都是 0 的写「没有要改的」，摘要换了的多「，摘要已更新」，一条都没看的「无需整理，用时 <用时>。」（和 `/dream` 的回执同一句，R-22 三补起也是 0 的不写、末尾写用时：用时从发出 `memory.dream` 量到收到回应，照运行状态行的读秒写；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「整理已中断：检查 <几> 条，修改 <几> 条，作废 <几> 条，其余下次再整理。」，一批都没合完的「整理已中断，下次再整理。」（和 `/dream` 叫停了的回执同一句），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
-5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `memory.*`）。太长的（`memory_too_long`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.chars`、`data.limit` 说「太长了：这一条 121 个字，一条最多 120 个字。」。核心给了为什么的（`data.message`：整理没成的 `dream_failed`，施工 R-7 修，验收手册待定 10），原话去掉句号接「：」和它（英文的一句，照原样），同 `miyu kb` 挂不上的目录：「整理记忆失败：model request failed: HTTP 401」。核心断开、请求写不出去照 `miyu rename`。
+   - `list`、`search`：一条一行，`<编号>  <日期>  <正文>`，两个空格隔开；认识的人那一类正文前面写 `[<是谁>] `（施工 E-1 上），发生过的事正文前面写 `[<涉及谁>, …] `（施工 E-1 修四，没有的不写）；日期是记下的时刻照这台机器此刻的时区换成的那一天（`YYYY-MM-DD`）；作废的后面接 `（已作废：<原因>）`，原因是空的只接 `（已作废）`。一条都没有的：`list` 说「没有记忆」，`search` 说「没有找到结果」。
+   - `add`：「已添加 <编号>」；`edit`：「已修改，新编号 <新的编号>」；`forget`：什么都不印；清空：「已清除 <几> 条记忆」；`dream`：「已整理：检查 <几> 条，修改 <几> 条，作废 <几> 条，用时 <用时>」，是 0 的那一项不写、都是 0 的写「没有要改的」，摘要换了的多「，摘要已更新」，一条都没看的「无需整理，用时 <用时>」（和 `/dream` 的回执同一回事，R-22 三补起也是 0 的不写、末尾写用时：用时从发出 `memory.dream` 量到收到回应，照运行状态行的读秒写；R-19 起没有新记的也重看轮到的旧记忆，只有一条记忆都没有时才是这一句）。叫停了的（施工 R-23）：「已中断整理：检查 <几> 条，修改 <几> 条，作废 <几> 条，用时 <用时>，其余下次继续」，一批都没合完的「已中断整理，用时 <用时>，下次继续」（和 `/dream` 叫停了的回执同一回事），退出码 3（同 `miyu ask` 被打断）；按了两次的什么都不印，退出码 3。
+5. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `memory.*`）。太长的（`memory_too_long`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.chars`、`data.limit` 说「记忆过长：121 字，上限 120 字」。核心给了为什么的（`data.message`：整理没成的 `dream_failed`，施工 R-7 修，验收手册待定 10），原话去掉句号接「：」和它（英文的一句，照原样），同 `miyu kb` 挂不上的目录：「整理记忆失败：model request failed: HTTP 401」。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
 
@@ -76,94 +76,93 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 
 | 键 | 中文 | 英文 |
 |---|---|---|
-| 一条都没有（`list`） | 还没有记忆。 | No memories yet. |
-| 没找到（`search`） | 没找到。 | Nothing found. |
-| 一张卡都没有（`cards`，施工 E-1 下） | 还没有认识的人的卡。 | No person cards yet. |
-| 记下了 | 记下了：{id} | Remembered as {id} |
-| 改好了 | 改好了：{id} | Changed; now {id} |
-| 清掉了 | 清掉了 {n} 条。 | Cleared {n}. |
+| 一条都没有（`list`） | 没有记忆 | no memories |
+| 没找到（`search`） | 没有找到结果 | no matches |
+| 一张卡都没有（`cards`，施工 E-1 下） | 没有人物卡 | no person cards |
+| 记下了 | 已添加 {id} | added {id} |
+| 改好了 | 已修改，新编号 {id} | updated, new id {id} |
+| 清掉了 | 已清除 {n} 条记忆 | cleared {n} memories（一条的写 1 memory） |
 | 作废了 | （已作废：{why}）、（已作废） | (forgotten: {why}), (forgotten) |
-| 太长了 | 太长了：这一条 {chars} 个字，一条最多 {limit} 个字。 | Too long: this one has {chars} characters, a memory takes at most {limit}. |
-| 整理完了 | 整理完成：{几段}，用时 {took}。 | Memory organized: {几段}; took {took}. |
+| 太长了（报错） | 记忆过长：{chars} 字，上限 {limit} 字 | memory too long: {chars} characters, limit {limit} |
+| 没写是谁（报错，施工 E-1 上） | --class person 缺少 --who；提示：加上 '--who <平台编号或名字>' | --class person needs --who; hint: add '--who <platform id or name>' |
+| 整理完了 | 已整理：{几段}，用时 {took} | organized memories: {几段}, took {took} |
 | 几段（照先后，中文「，」、英文「, 」连起来） | 检查 {given} 条；修改 {revised} 条（是 0 不写）；作废 {retired} 条（是 0 不写）；没有要改的（改、作废都是 0）；摘要已更新（摘要换了，叫停的不写） | {given} checked; {revised} revised; {retired} retired; nothing to change; summary updated |
-| 没有要整理的 | 无需整理，用时 {took}。 | Nothing to organize; took {took}. |
-| 叫停了 | 整理已中断：{几段}，用时 {took}，其余下次再整理。一批都没合完的：整理已中断，用时 {took}，下次再整理。 | Memory organizing stopped: {几段}; took {took}; the rest next time. / Memory organizing stopped after {took}; it will continue next time. |
+| 没有要整理的 | 无需整理，用时 {took} | nothing to organize, took {took} |
+| 叫停中（标准错误） | 正在停止整理，再按一次 Ctrl+C 立即退出 | stopping, press Ctrl+C again to quit now |
+| 叫停了 | 已中断整理：{几段}，用时 {took}，其余下次继续。一批都没合完的：已中断整理，用时 {took}，下次继续 | stopped organizing: {几段}, took {took}, the rest continues next time / stopped organizing, took {took}, the rest continues next time |
 
-核心拒绝时说的话照核心写的原样印；没有一次性会话、核心断开照 `cli/undo.md`。
+报错、警告照设计 47 印在标准错误上：`miyu: <事>`（警告是 `miyu: 警告：`，英文 `miyu: warning: `），建议另起一行 `提示：`（英文 `hint: `）；下表报错那几行写的是 `miyu: ` 后面那一截。
+
+核心拒绝时说的话去掉句号照原样印；没有一次性会话、核心断开照 `cli/undo.md`。
 
 **帮助页**：`-h`、`--help`、`miyu help memory`、各个子命令的 `-h` 印的都是这一页，规矩见 `cli/main.md`「帮助页」。
 
 样本 `crates/miyu-cli/src/help/zh/memory.txt`（中文）：
 
 ```text
-用法：miyu memory [命令] [选项]
+用法：miyu memory <命令> [选项]
 
-看 AI 记了你什么，搜、记、改、忘、清空、整理。不写命令就是 list。
+不写命令时运行 list。
 
 命令：
-  list                    列出记下的，新的在前
-  search <词>             搜记下的
-  add <话>                记一条
-  edit <编号> [<话>]      改一条，印出新的编号；只改关键词的不写话
-  forget <编号>           忘掉一条
-  clear session [<会话>]  清掉这个会话记下的；不写是上一次 miyu ask 开的
-  clear me                清掉 AI 关于你的全部记忆
-  dream                   现在就整理：合掉重复的、改掉过时的、更新摘要；
-                          按 Ctrl+C 停下，合完的留着
-  cards                   列出认识的人的卡：整理时一人合一张
+  list                    列出记忆，新的在前
+  search <词>             搜索记忆
+  add <内容>              添加一条记忆
+  edit <编号> [内容]      修改一条记忆，打印新编号；只改关键词时不写内容
+  forget <编号>           作废一条记忆
+  clear session [会话]    清除一个会话记下的记忆（默认为上一次 miyu ask
+                          的会话）
+  clear me                清除关于用户本人的全部记忆
+  dream                   立即整理记忆（Ctrl+C 停止，已整理的保留）
+  cards                   列出人物卡
 
 选项：
-      --persona <编号>    哪个人格的记忆；不写是默认人格
-  -s, --session <编号>    这个会话用的那一份记忆
-      --forgotten         list、search、cards：连忘掉的一起
+      --persona <编号>    使用指定人格的记忆（默认为默认人格）
+  -s, --session <编号>    使用指定会话的记忆
+      --forgotten         列出时包括已作废的记忆
       --class user|feedback|episode|reference|person
-                          list：只要这一类；add：记成这一类，不写是 user；
-                          person 是认识的人
-      --why <原因>        forget：为什么忘
-      --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
-      --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
-                          add --class person 要写
-      --format text|json  list、search、cards：json 给脚本
-  -h, --help              印帮助
+                          按类别列出，或指定添加的类别（默认 user）
+      --why <原因>        说明作废的原因
+      --keywords <词>     设置检索用的关键词，用逗号分隔
+      --who <是谁>        指定人物记忆说的是谁，平台编号或名字
+      --format text|json  输出格式（默认 text）
+  -h, --help              显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/memory.txt`（英文）：
 
 ```text
-Usage: miyu memory [command] [options]
+Usage: miyu memory <command> [options]
 
-See what the AI remembers about you; search, add, edit, forget, clear,
-organize.
-Without a command it is list.
+Runs list when no command is given.
 
 Commands:
   list                    List memories, newest first
   search <words>          Search memories
-  add <text>              Remember one thing
-  edit <id> [<text>]      Change one; prints the new id; leave out the text
-                          to change only the keywords
-  forget <id>             Forget one
-  clear session [<id>]    Clear what this session remembered; default is
-                          the session the last miyu ask opened
-  clear me                Clear everything the AI remembers about you
-  dream                   Organize now: merge duplicates, fix stale ones,
-                          refresh the summary; Ctrl+C stops it, keeping
-                          what's done
-  cards                   List person cards: one per person you know,
-                          written when memories are organized
+  add <text>              Add a memory
+  edit <id> [<text>]      Edit a memory and print its new id; leave out the
+                          text to change only the keywords
+  forget <id>             Forget a memory
+  clear session [<id>]    Clear the memories of a session (default: the last
+                          miyu ask session)
+  clear me                Clear all memories about the user
+  dream                   Organize memories now (Ctrl+C stops, keeping what
+                          is done)
+  cards                   List person cards
 
 Options:
-      --persona <id>      Whose memory; default is the default persona
-  -s, --session <id>      The memory this session uses
-      --forgotten         list, search, cards: include forgotten ones
+      --persona <id>      Use the memories of this persona (default: the
+                          default persona)
+  -s, --session <id>      Use the memories of this session
+      --forgotten         Include forgotten memories
       --class user|feedback|episode|reference|person
-                          list: only this class; add: save as it (default
-                          user); person is someone the AI knows
-      --why <reason>      forget: why
-      --keywords <words>  add, edit: comma-separated words to find it by
-      --who <who>         add, edit: who a person memory is about, a platform
-                          id or a name; add --class person needs it
-      --format text|json  list, search, cards: json for scripts
+                          Filter by class, or set the class to add (default:
+                          user)
+      --why <reason>      Give the reason for forgetting
+      --keywords <words>  Set comma-separated search keywords
+      --who <who>         Set who a person memory is about: a platform id or
+                          a name
+      --format text|json  Output format (default: text)
   -h, --help              Print help
 ```
 

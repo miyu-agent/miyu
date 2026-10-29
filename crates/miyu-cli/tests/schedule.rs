@@ -72,7 +72,7 @@ async fn add_list_pause_resume_and_remove() {
     let cwd = home.outside();
 
     let none = run(&home, &cwd, &[]).await;
-    assert_eq!((none.code, none.out.as_str()), (0, "还没有定时任务。\n"));
+    assert_eq!((none.code, none.out.as_str()), (0, "没有定时任务\n"));
     let made = run(
         &home,
         &cwd,
@@ -82,8 +82,8 @@ async fn add_list_pause_resume_and_remove() {
     assert_eq!(made.code, 0, "{}", made.err);
     // 预设、目录没写的核心照默认定下来，印的是定下来的。
     assert!(
-        made.out.starts_with("建好了：t1  every 10m  下一次 ")
-            && made.out.contains("  新开 无人格 预设 ")
+        made.out.starts_with("已添加 t1  every 10m  下一次 ")
+            && made.out.contains("  新会话 无人格 预设 ")
             && made.out.ends_with("  「看一眼 服务器」\n"),
         "{}",
         made.out
@@ -91,7 +91,7 @@ async fn add_list_pause_resume_and_remove() {
     let shown = run(&home, &cwd, &["list"]).await;
     assert_eq!(
         (shown.code, shown.out.as_str()),
-        (0, made.out.trim_start_matches("建好了：")),
+        (0, made.out.trim_start_matches("已添加 ")),
         "列出来的和建好时印的一样"
     );
     let items = listed(&home, &cwd).await;
@@ -104,7 +104,7 @@ async fn add_list_pause_resume_and_remove() {
         paused.code == 0
             && paused
                 .out
-                .starts_with("停了：t1  every 10m  停着  新开 无人格 ")
+                .starts_with("已暂停 t1  every 10m  停着  新会话 无人格 ")
             && !paused.out.contains("下一次"),
         "停着的没有下一次：{}{}",
         paused.out,
@@ -112,7 +112,7 @@ async fn add_list_pause_resume_and_remove() {
     );
     let resumed = run(&home, &cwd, &["resume", "t1"]).await;
     assert!(
-        resumed.code == 0 && resumed.out.starts_with("续上了：t1  every 10m  下一次 "),
+        resumed.code == 0 && resumed.out.starts_with("已恢复 t1  every 10m  下一次 "),
         "{}{}",
         resumed.out,
         resumed.err
@@ -120,7 +120,7 @@ async fn add_list_pause_resume_and_remove() {
     let removed = run(&home, &cwd, &["rm", "t1"]).await;
     assert_eq!(
         (removed.code, removed.out.as_str()),
-        (0, "删掉了：t1\n"),
+        (0, "已删除 t1\n"),
         "{}",
         removed.err
     );
@@ -222,7 +222,7 @@ async fn refusals_say_what_was_wrong() {
     .await;
     assert_eq!(
         (past.code, past.err.as_str()),
-        (1, "miyu: 参数错误：那个时刻已经过了\n")
+        (1, "miyu: 参数错误：时间已经过去\n")
     );
     let zone = run(
         &home,
@@ -232,7 +232,7 @@ async fn refusals_say_what_was_wrong() {
     .await;
     assert_eq!(
         (zone.code, zone.err.as_str()),
-        (1, "miyu: 参数错误：不认识这个时区\n")
+        (1, "miyu: 参数错误：未知时区\n")
     );
     let missing = run(&home, &cwd, &["rm", "t99"]).await;
     assert_eq!(missing.code, 1);
@@ -240,7 +240,7 @@ async fn refusals_say_what_was_wrong() {
     let unread = run(&home, &cwd, &["add", "--every", "soon", "看"]).await;
     assert_eq!(unread.code, 2);
     assert!(
-        unread.err.starts_with("读不懂 --every soon"),
+        unread.err == "miyu: 无法识别间隔 'soon'\n提示：写秒数，或 90s、10m、2h、1d\n",
         "{}",
         unread.err
     );

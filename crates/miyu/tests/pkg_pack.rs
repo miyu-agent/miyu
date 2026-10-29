@@ -38,7 +38,7 @@ async fn pkg_packs_a_folder_that_installs_again() {
     let text = stdout(&packed);
     let lines: Vec<&str> = text.lines().collect();
     assert_eq!(lines.len(), 3, "{text}");
-    let printed = lines[0].strip_prefix("打好了：").expect("第一行是路径");
+    let printed = lines[0].strip_prefix("已打包 ").expect("第一行是路径");
     assert!(same_file(printed, &file), "{text}");
     let sha = lines[1].strip_prefix("SHA-256: ").expect("第二行是哈希");
     assert_eq!(sha.len(), 64, "{text}");
@@ -72,7 +72,7 @@ async fn pkg_packs_a_folder_that_installs_again() {
         &["pkg", "install", "xpkg-1.0.miyu", "--yes"],
     )
     .await;
-    assert_eq!(stdout(&installed), "装好了：xpkg\n", "{installed:?}");
+    assert_eq!(stdout(&installed), "已安装 xpkg 1.0\n", "{installed:?}");
     drop(held);
     if let Err(error) = std::fs::remove_dir_all(&cwd) {
         eprintln!("临时目录没删掉：{error}");
@@ -90,22 +90,22 @@ async fn pkg_pack_refuses_without_a_version_or_a_fitting_target() {
         (
             manifest("").replace("version = \"1.0\"\n", ""),
             vec![],
-            "The manifest has no version ([package] version)",
+            "miyu: cannot pack: the manifest has no version\nhint: add version to [package] in package.toml",
         ),
         (
             manifest(""),
             vec!["--target", "linux-x86_64"],
-            "The manifest has no targets: leave out --target",
+            "miyu: cannot pack: the manifest lists no targets\nhint: drop '--target'",
         ),
         (
             manifest("targets = [\"linux-x86_64\", \"macos-aarch64\"]\n"),
             vec![],
-            "This package is for linux-x86_64, macos-aarch64: pick one with --target",
+            "miyu: cannot pack: target required (linux-x86_64, macos-aarch64)\nhint: choose one with '--target <target>'",
         ),
         (
             manifest("targets = [\"linux-x86_64\"]\n"),
             vec!["--target", "windows-x86_64"],
-            "--target windows-x86_64 is not in the manifest's targets (linux-x86_64)",
+            "miyu: cannot pack: windows-x86_64 is not in the manifest's targets (linux-x86_64)",
         ),
     ];
     for (text, extra, said) in cases {

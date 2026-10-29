@@ -7,6 +7,7 @@ use std::io::{BufRead, Write};
 use serde_json::Value;
 
 use super::query::size;
+use crate::diagnostic;
 use crate::exit;
 use crate::language::{Carried, Doing, Language, PlanLabel};
 use crate::shown::{say, write};
@@ -177,20 +178,18 @@ fn strings(value: &Value) -> Vec<&str> {
         .collect()
 }
 
-/// 空一行问一句、读一行答。接着做的 `Ok`；不做的在标准错误上说一句，交回退出码 1。
+/// 空一行问 `question`（[`Language::proceed`] 那一句）、读一行答。接着做的 `Ok`；不做的在标准错误上说一句，交回退出码 1。
 pub(crate) fn asked(
-    input: &mut dyn BufRead,
-    out: &mut dyn Write,
-    err: &mut dyn Write,
-    doing: Doing,
+    (input, out, err): (&mut dyn BufRead, &mut dyn Write, &mut dyn Write),
+    question: &str,
     language: &Language,
 ) -> Result<(), u8> {
-    write(out, &format!("\n{}", language.proceed(doing)));
+    write(out, &format!("\n{question}"));
     let mut answer = String::new();
     match input.read_line(&mut answer) {
         Ok(0) | Err(_) => {
             say(out, "");
-            say(err, language.unconfirmed());
+            diagnostic::error(err, *language, &language.unconfirmed());
             Err(exit::ERROR)
         }
         Ok(_) => match answer.trim().to_lowercase().as_str() {

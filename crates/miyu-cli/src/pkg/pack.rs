@@ -13,6 +13,7 @@ use miyu_source::archive;
 use miyu_tool::picture::{Encoding, shrink_as};
 
 use super::joined;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::Language;
 use crate::language::LogoWhy;
@@ -56,8 +57,8 @@ pub(super) fn pack(
             say(out, &language.packed_size(packed.size));
             exit::OK
         }
-        Err(reason) => {
-            say(err, &reason);
+        Err(problem) => {
+            diagnostic::error(err, *language, &problem);
             exit::ERROR
         }
     }
@@ -74,8 +75,8 @@ type Made = (
 /// 打包时换进去的文件（相对包文件夹）和图标缩过的那一句（施工 F-18 上）。
 type Replaced = (BTreeMap<String, Vec<u8>>, Option<String>);
 
-/// 打一个：不成的是给人看的那一句。
-fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, String> {
+/// 打一个：不成的交回报错。
+fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, Problem> {
     let mut folder = joined(cwd, wanted.folder);
     if folder.file_name().and_then(|name| name.to_str()) == Some("package.toml") {
         folder.pop();
@@ -107,7 +108,7 @@ fn packed(wanted: &Wanted<'_>, cwd: &Path, language: &Language) -> Result<Made, 
 
 /// 包的图标（施工 F-18 上，`[package] logo`）：没写的什么都不换；在上限以内的照原样；超了的缩到上限以内（PNG 照 PNG、WebP
 /// 照无损 WebP），交回要换进去的字节和给人看的那一句。不在、不是 PNG / WebP、缩不下去的打包失败。
-fn logo(folder: &Path, logo: Option<&str>, language: &Language) -> Result<Replaced, String> {
+fn logo(folder: &Path, logo: Option<&str>, language: &Language) -> Result<Replaced, Problem> {
     let Some(logo) = logo else {
         return Ok((BTreeMap::new(), None));
     };
@@ -137,7 +138,7 @@ fn target(
     targets: &[Target],
     asked: Option<&str>,
     language: &Language,
-) -> Result<Option<Target>, String> {
+) -> Result<Option<Target>, Problem> {
     let listed = || {
         targets
             .iter()

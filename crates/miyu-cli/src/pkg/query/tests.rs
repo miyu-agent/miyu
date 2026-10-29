@@ -58,7 +58,7 @@ fn owns_tells_installed_from_written_later() {
     let later = json!({"package": "xpkg", "layer": "home", "path": "c", "recorded": false});
     assert_eq!(
         owner("/p/c", &later, &zh).as_deref(),
-        Some("/p/c 在 xpkg 的目录里，安装时没有")
+        Some("/p/c 在 xpkg 的目录里，不是安装时带的")
     );
     let shipped = json!({"package": "net", "layer": "shipped", "path": "a", "recorded": false});
     assert_eq!(

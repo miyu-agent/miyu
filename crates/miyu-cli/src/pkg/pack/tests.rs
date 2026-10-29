@@ -72,7 +72,7 @@ fn a_logo_over_the_limits_is_shrunk_into_the_package_only() {
     let (code, out, err) = run(&dir);
     assert_eq!(code, exit::OK, "{err}");
     assert!(
-        out.starts_with("Logo art/logo.png was over the limit; packed a 512×341,"),
+        out.starts_with("shrank logo art/logo.png to 512×341,"),
         "{out}"
     );
     let inside = packed_logo(&dir);
@@ -97,7 +97,7 @@ fn a_logo_within_the_limits_is_packed_as_it_is() {
     std::fs::write(dir.join("kit/art/logo.png"), &small).expect("写得进");
     let (code, out, err) = run(&dir);
     assert_eq!(code, exit::OK, "{err}");
-    assert!(!out.contains("Logo"), "没缩不说：{out}");
+    assert!(!out.contains("shrank"), "没缩不说：{out}");
     assert_eq!(packed_logo(&dir), small);
     std::fs::remove_dir_all(&dir).expect("删得掉");
 }
@@ -107,16 +107,13 @@ fn a_missing_or_broken_logo_stops_the_packing() {
     let dir = scratch("missing");
     let (code, _, err) = run(&dir);
     assert_eq!(code, exit::ERROR);
-    assert_eq!(
-        err.trim(),
-        "Cannot pack: the logo art/logo.png is not in the package folder"
-    );
+    assert_eq!(err.trim(), "miyu: cannot pack: logo art/logo.png not found");
     std::fs::write(dir.join("kit/art/logo.png"), b"not a picture").expect("写得进");
     let (code, _, err) = run(&dir);
     assert_eq!(code, exit::ERROR);
     assert_eq!(
         err.trim(),
-        "Cannot pack: the logo art/logo.png is not a PNG or WebP image"
+        "miyu: cannot pack: logo art/logo.png is not a PNG or WebP image"
     );
     std::fs::remove_dir_all(&dir).expect("删得掉");
 }

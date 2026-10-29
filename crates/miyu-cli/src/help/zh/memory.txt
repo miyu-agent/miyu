@@ -1,29 +1,27 @@
-用法：miyu memory [命令] [选项]
+用法：miyu memory <命令> [选项]
 
-看 AI 记了你什么，搜、记、改、忘、清空、整理。不写命令就是 list。
+不写命令时运行 list。
 
 命令：
-  list                    列出记下的，新的在前
-  search <词>             搜记下的
-  add <话>                记一条
-  edit <编号> [<话>]      改一条，印出新的编号；只改关键词的不写话
-  forget <编号>           忘掉一条
-  clear session [<会话>]  清掉这个会话记下的；不写是上一次 miyu ask 开的
-  clear me                清掉 AI 关于你的全部记忆
-  dream                   现在就整理：合掉重复的、改掉过时的、更新摘要；
-                          按 Ctrl+C 停下，合完的留着
-  cards                   列出认识的人的卡：整理时一人合一张
+  list                    列出记忆，新的在前
+  search <词>             搜索记忆
+  add <内容>              添加一条记忆
+  edit <编号> [内容]      修改一条记忆，打印新编号；只改关键词时不写内容
+  forget <编号>           作废一条记忆
+  clear session [会话]    清除一个会话记下的记忆（默认为上一次 miyu ask
+                          的会话）
+  clear me                清除关于用户本人的全部记忆
+  dream                   立即整理记忆（Ctrl+C 停止，已整理的保留）
+  cards                   列出人物卡
 
 选项：
-      --persona <编号>    哪个人格的记忆；不写是默认人格
-  -s, --session <编号>    这个会话用的那一份记忆
-      --forgotten         list、search、cards：连忘掉的一起
+      --persona <编号>    使用指定人格的记忆（默认为默认人格）
+  -s, --session <编号>    使用指定会话的记忆
+      --forgotten         列出时包括已作废的记忆
       --class user|feedback|episode|reference|person
-                          list：只要这一类；add：记成这一类，不写是 user；
-                          person 是认识的人
-      --why <原因>        forget：为什么忘
-      --keywords <词>     add、edit：只用来检索的关键词，逗号隔开
-      --who <是谁>        add、edit：认识的人说的是谁，平台号或名字；
-                          add --class person 要写
-      --format text|json  list、search、cards：json 给脚本
-  -h, --help              印帮助
+                          按类别列出，或指定添加的类别（默认 user）
+      --why <原因>        说明作废的原因
+      --keywords <词>     设置检索用的关键词，用逗号分隔
+      --who <是谁>        指定人物记忆说的是谁，平台编号或名字
+      --format text|json  输出格式（默认 text）
+  -h, --help              显示帮助

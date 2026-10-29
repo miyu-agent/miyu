@@ -1,85 +1,123 @@
-//! `miyu pkg` 给人看的字（施工 T-3，`docs/blueprint/cli/pkg.md`「给人看的字」）。
+//! `miyu pkg` 给人看的字（施工 T-3，`docs/blueprint/cli/pkg.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行动词打头，
+//! 报错交 [`Problem`]，由 `diagnostic` 加 `miyu: `，建议另起一行）。
+
+mod pack;
+mod source;
+
+pub(crate) use pack::LogoWhy;
 
 use super::Language;
+use crate::diagnostic::Problem;
 
 impl Language {
-    /// `install` 装好了 `id`。
-    pub fn installed(&self, id: &str) -> String {
+    /// `install` 装好了 `what`（编号，有版本的接版本）。
+    pub fn installed(&self, what: &str) -> String {
         match self {
-            Language::Chinese => format!("装好了：{id}"),
-            Language::English => format!("Installed {id}"),
+            Language::Chinese => format!("已安装 {what}"),
+            Language::English => format!("installed {what}"),
         }
     }
 
     /// 装好以后问的那一句，后面不换行（作者说明第九节第 1 条）。
-    pub(crate) fn open_now(&self) -> &'static str {
+    pub(crate) fn open_now(&self, id: &str) -> String {
         match self {
-            Language::Chinese => "现在打开？[Y/n] ",
-            Language::English => "Turn it on now? [Y/n] ",
+            Language::Chinese => format!("现在启用 '{id}'？[Y/n] "),
+            Language::English => format!("Enable '{id}' now? [Y/n] "),
         }
     }
 
-    /// 打开了 `id`。
+    /// 启用了 `id`。
     pub(crate) fn opened(&self, id: &str) -> String {
         match self {
-            Language::Chinese => format!("打开了：{id}"),
-            Language::English => format!("Turned on {id}"),
+            Language::Chinese => format!("已启用 {id}"),
+            Language::English => format!("enabled {id}"),
         }
     }
 
-    /// 没打开：以后在「软件包」页里打开。
-    pub(crate) fn not_opened(&self) -> &'static str {
+    /// 没启用：一行结果，一行建议（以后在「软件包」页里启用）。
+    pub(crate) fn not_opened(&self, id: &str) -> [String; 2] {
         match self {
-            Language::Chinese => "没有打开：以后在「软件包」页里打开",
-            Language::English => "Not turned on: turn it on later on the Packages page",
+            Language::Chinese => [
+                format!("未启用 {id}"),
+                "提示：之后可以在界面的软件包页面启用".to_string(),
+            ],
+            Language::English => [
+                format!("left {id} disabled"),
+                "hint: enable it later on the Packages page".to_string(),
+            ],
         }
     }
 
     /// `remove` 卸掉了 `id`。
     pub fn uninstalled(&self, id: &str) -> String {
         match self {
-            Language::Chinese => format!("卸掉了：{id}"),
-            Language::English => format!("Removed {id}"),
+            Language::Chinese => format!("已卸载 {id}"),
+            Language::English => format!("removed {id}"),
         }
     }
 
-    /// 清单装不上：哪里不对，知道第几行的带上。
-    pub(crate) fn cannot_install(&self, problem: &str, line: Option<u64>) -> String {
-        match (self, line) {
-            (Language::Chinese, Some(line)) => format!("装不上：{problem}（第 {line} 行）"),
-            (Language::Chinese, None) => format!("装不上：{problem}"),
-            (Language::English, Some(line)) => format!("Cannot install: {problem} (line {line})"),
-            (Language::English, None) => format!("Cannot install: {problem}"),
+    /// 清单装不上：装的是 `what`（照写的原样，不知道的没有），哪里不对，知道第几行的照 `package.toml:<行>` 带上。
+    pub(crate) fn cannot_install(
+        &self,
+        what: Option<&str>,
+        problem: &str,
+        line: Option<u64>,
+    ) -> Problem {
+        let problem = match line {
+            Some(line) => format!("package.toml:{line}: {problem}"),
+            None => problem.to_string(),
+        };
+        Problem::new(format!("{}{problem}", self.cannot_install_head(what)))
+    }
+
+    /// 「无法安装 `what`：」这一截。
+    fn cannot_install_head(&self, what: Option<&str>) -> String {
+        match (self, what) {
+            (Language::Chinese, Some(what)) => format!("无法安装 {what}："),
+            (Language::Chinese, None) => "无法安装：".to_string(),
+            (Language::English, Some(what)) => format!("cannot install {what}: "),
+            (Language::English, None) => "cannot install: ".to_string(),
         }
     }
 
-    /// 和装着的包冲突（施工 F-8 六补，照 pacman 的「冲突的文件」）：第一行说装不上，接着一处一行，「<哪一样> <名字> 已在
-    /// <包> 中」。`conflicts` 是核心交回的 `data.conflicts`。
-    pub(crate) fn conflicting(&self, conflicts: &[serde_json::Value]) -> String {
-        let mut said = vec![match self {
-            Language::Chinese => "装不上：名字已经有了".to_string(),
-            Language::English => "Cannot install: names already in use".to_string(),
-        }];
-        for one in conflicts {
-            let (kind, name) = (
-                self.conflict_kind(one["kind"].as_str().unwrap_or_default()),
-                one["name"].as_str().unwrap_or_default(),
-            );
-            // 撞了人格、预设的一层的（施工 P-11 下）写 `layer`，不写 `package`。
-            let holder = match one["layer"].as_str() {
-                Some(layer) => self.conflict_layer(layer).to_string(),
-                None => one["package"].as_str().unwrap_or_default().to_string(),
+    /// 和装着的包冲突（施工 F-8 六补，照 pacman 的「冲突的文件」）：一处一条报错，「无法安装 `what`：哪一样 名字 已在
+    /// 哪个包 中」；核心没列是哪几处的说名称已被占用。`conflicts` 是核心交回的 `data.conflicts`。
+    pub(crate) fn conflicting(
+        &self,
+        what: Option<&str>,
+        conflicts: &[serde_json::Value],
+    ) -> Vec<Problem> {
+        let head = self.cannot_install_head(what);
+        if conflicts.is_empty() {
+            let said = match self {
+                Language::Chinese => "名称已被占用",
+                Language::English => "names already in use",
             };
-            // 核心自带的斜杠命令（施工 BS-1 下下）。
-            let core = one["core"].as_bool() == Some(true);
-            said.push(match (self, core) {
-                (Language::Chinese, true) => format!("{kind} {name} 是核心自带的"),
-                (Language::English, true) => format!("{kind} {name} is built into the core"),
-                (Language::Chinese, false) => format!("{kind} {name} 已在 {holder} 中"),
-                (Language::English, false) => format!("{kind} {name} exists in {holder}"),
-            });
+            return vec![Problem::new(format!("{head}{said}"))];
         }
-        said.join("\n")
+        conflicts
+            .iter()
+            .map(|one| {
+                let (kind, name) = (
+                    self.conflict_kind(one["kind"].as_str().unwrap_or_default()),
+                    one["name"].as_str().unwrap_or_default(),
+                );
+                // 撞了人格、预设的一层的（施工 P-11 下）写 `layer`，不写 `package`。
+                let holder = match one["layer"].as_str() {
+                    Some(layer) => self.conflict_layer(layer).to_string(),
+                    None => one["package"].as_str().unwrap_or_default().to_string(),
+                };
+                // 核心自带的斜杠命令（施工 BS-1 下下）。
+                let core = one["core"].as_bool() == Some(true);
+                let said = match (self, core) {
+                    (Language::Chinese, true) => format!("{kind} {name} 是核心自带的"),
+                    (Language::English, true) => format!("{kind} {name} is built into the core"),
+                    (Language::Chinese, false) => format!("{kind} {name} 已在 {holder} 中"),
+                    (Language::English, false) => format!("{kind} {name} exists in {holder}"),
+                };
+                Problem::new(format!("{head}{said}"))
+            })
+            .collect()
     }
 
     /// 冲突的那一样叫什么；不认识的照原样。
@@ -104,10 +142,10 @@ impl Language {
     /// 人格、预设撞上的那一层叫什么（施工 P-11 下）；不认识的照原样。
     fn conflict_layer<'a>(&self, layer: &'a str) -> &'a str {
         match (self, layer) {
-            (Language::Chinese, "shipped") => "出厂的",
-            (Language::Chinese, "home") => "你的数据根",
-            (Language::English, "shipped") => "the shipped ones",
-            (Language::English, "home") => "your data root",
+            (Language::Chinese, "shipped") => "出厂内容",
+            (Language::Chinese, "home") => "数据根",
+            (Language::English, "shipped") => "the shipped content",
+            (Language::English, "home") => "the data root",
             _ => layer,
         }
     }
@@ -123,8 +161,8 @@ impl Language {
     /// 写错的包接在后面的那一截：哪里不对。
     pub(crate) fn broken_mark(&self, problem: &str) -> String {
         match self {
-            Language::Chinese => format!("（写错了：{problem}）"),
-            Language::English => format!(" (broken: {problem})"),
+            Language::Chinese => format!("（清单有误：{problem}）"),
+            Language::English => format!(" (invalid: {problem})"),
         }
     }
 
@@ -164,7 +202,7 @@ impl Language {
     /// `owns`：`path` 在包 `id` 的目录里，装的时候没有它（包自己后来写的）。
     pub(crate) fn inside_of(&self, path: &str, id: &str) -> String {
         match self {
-            Language::Chinese => format!("{path} 在 {id} 的目录里，安装时没有"),
+            Language::Chinese => format!("{path} 在 {id} 的目录里，不是安装时带的"),
             Language::English => {
                 format!("{path} is in the directory of {id} but was not installed with it")
             }
@@ -172,10 +210,10 @@ impl Language {
     }
 
     /// `owns`：哪个包都没有 `path`。
-    pub(crate) fn owned_by_none(&self, path: &str) -> String {
+    pub(crate) fn owned_by_none(&self, path: &str) -> Problem {
         match self {
-            Language::Chinese => format!("没有软件包包含 {path}"),
-            Language::English => format!("No package owns {path}"),
+            Language::Chinese => Problem::new(format!("没有软件包包含 {path}")),
+            Language::English => Problem::new(format!("no package owns {path}")),
         }
     }
 
@@ -201,7 +239,7 @@ impl Language {
     pub(crate) fn nothing_to_check(&self) -> &'static str {
         match self {
             Language::Chinese => "没有可检查的软件包",
-            Language::English => "No packages to check",
+            Language::English => "no packages to check",
         }
     }
 }
@@ -213,255 +251,4 @@ pub(crate) enum Checked {
     Missing,
     Extra,
     Fine,
-}
-
-/// `miyu pkg pack` 的字（施工 G-1）。
-impl Language {
-    /// 打好了，写在 `path`。
-    pub(crate) fn packed(&self, path: &str) -> String {
-        match self {
-            Language::Chinese => format!("打好了：{path}"),
-            Language::English => format!("Packed {path}"),
-        }
-    }
-
-    /// 包文件多大。
-    pub(crate) fn packed_size(&self, size: u64) -> String {
-        match self {
-            Language::Chinese => format!("大小：{size} 字节"),
-            Language::English => format!("Size: {size} bytes"),
-        }
-    }
-
-    /// 包的图标超了上限，打进去的是缩好的那一份（施工 F-18 上）：源文件夹不动。
-    pub(crate) fn logo_shrunk(
-        &self,
-        logo: &str,
-        (width, height, size): (u32, u32, usize),
-    ) -> String {
-        match self {
-            Language::Chinese => {
-                format!(
-                    "图标 {logo} 超了上限，打进去的缩成 {width}×{height}、{size} 字节（源文件没动）"
-                )
-            }
-            Language::English => format!(
-                "Logo {logo} was over the limit; packed a {width}×{height}, {size}-byte copy (the source file is unchanged)"
-            ),
-        }
-    }
-
-    /// 包的图标打不进去（施工 F-18 上）：不在、不是 PNG / WebP、缩不到上限以内。
-    pub(crate) fn bad_logo(&self, logo: &str, why: LogoWhy) -> String {
-        match (self, why) {
-            (Language::Chinese, LogoWhy::Missing) => format!("打包失败：包文件夹里没有图标 {logo}"),
-            (Language::English, LogoWhy::Missing) => {
-                format!("Cannot pack: the logo {logo} is not in the package folder")
-            }
-            (Language::Chinese, LogoWhy::NotImage) => {
-                format!("打包失败：图标 {logo} 不是 PNG 或 WebP 图片")
-            }
-            (Language::English, LogoWhy::NotImage) => {
-                format!("Cannot pack: the logo {logo} is not a PNG or WebP image")
-            }
-            (Language::Chinese, LogoWhy::TooBig) => {
-                format!("打包失败：图标 {logo} 缩不到 256 KiB、512×512 以内，换一张简单些的图")
-            }
-            (Language::English, LogoWhy::TooBig) => format!(
-                "Cannot pack: the logo {logo} can't be shrunk under 256 KiB and 512×512; use a simpler picture"
-            ),
-        }
-    }
-
-    /// 文件夹名不是包的编号。
-    pub(crate) fn not_a_package_id(&self, name: &str) -> String {
-        match self {
-            Language::Chinese => format!("文件夹名不是包的编号：{name}"),
-            Language::English => format!("The folder name is not a package id: {name}"),
-        }
-    }
-
-    /// 读不了清单。
-    pub(crate) fn unreadable(&self, path: &str) -> String {
-        match self {
-            Language::Chinese => format!("读不了：{path}"),
-            Language::English => format!("Cannot read {path}"),
-        }
-    }
-
-    /// 清单写错了、打不成。
-    pub(crate) fn cannot_pack(&self, why: &str) -> String {
-        match self {
-            Language::Chinese => format!("打包失败：{why}"),
-            Language::English => format!("Cannot pack: {why}"),
-        }
-    }
-
-    /// 清单没写版本。
-    pub(crate) fn no_version(&self) -> String {
-        match self {
-            Language::Chinese => "清单里没写版本（[package] version）".to_string(),
-            Language::English => "The manifest has no version ([package] version)".to_string(),
-        }
-    }
-
-    /// 清单没写 `targets`，却给了 `--target`。
-    pub(crate) fn no_targets(&self) -> String {
-        match self {
-            Language::Chinese => "清单没写 targets，不用 --target".to_string(),
-            Language::English => "The manifest has no targets: leave out --target".to_string(),
-        }
-    }
-
-    /// 清单写了 `targets`，要用 `--target` 挑一种。
-    pub(crate) fn needs_target(&self, listed: &str) -> String {
-        match self {
-            Language::Chinese => format!("这个包只能装在 {listed} 上，用 --target 挑一种"),
-            Language::English => format!("This package is for {listed}: pick one with --target"),
-        }
-    }
-
-    /// `--target` 不在清单的 `targets` 里。
-    pub(crate) fn not_listed_target(&self, asked: &str, listed: &str) -> String {
-        match self {
-            Language::Chinese => format!("--target {asked} 不在清单的 targets 里（{listed}）"),
-            Language::English => {
-                format!("--target {asked} is not in the manifest's targets ({listed})")
-            }
-        }
-    }
-}
-
-/// `miyu pkg update` 的字（施工 G-3 上）。
-impl Language {
-    /// 拿到了新的索引：几个包、索引的时刻。
-    pub(crate) fn index_updated(&self, count: u64, generated: &str) -> String {
-        match self {
-            Language::Chinese => format!("软件源已更新：{count} 个包（{generated}）"),
-            Language::English => format!("Package index updated: {count} packages ({generated})"),
-        }
-    }
-
-    /// 没拿成，用的是本机那份。
-    pub(crate) fn index_stale(&self, generated: &str, why: &str) -> String {
-        match self {
-            Language::Chinese => format!("软件源连不上，用的是本机的索引（{generated}）：{why}"),
-            Language::English => {
-                format!("Package source unreachable, using the local index ({generated}): {why}")
-            }
-        }
-    }
-}
-
-/// `miyu pkg search` 的几个标记（施工 G-3 下）。
-impl Language {
-    /// `-S` 什么都没带：照 pacman 的原话（项目主人 2026-10-19 定）。
-    pub(crate) fn nothing_to_sync(&self) -> &'static str {
-        match self {
-            Language::Chinese => "错误：没有指定目标（使用 -h 获取帮助）",
-            Language::English => "error: no targets specified (use -h for help)",
-        }
-    }
-
-    /// `clean`：清掉了几个包文件、腾出多少；一个都没有的说没有要清的。
-    pub(crate) fn cleaned(&self, removed: u64, freed: &str) -> String {
-        match (self, removed) {
-            (Language::Chinese, 0) => "缓存里没有要清的包文件".to_string(),
-            (Language::Chinese, _) => format!("清掉了 {removed} 个包文件，腾出 {freed}"),
-            (Language::English, 0) => "No package files to clean".to_string(),
-            (Language::English, _) => format!("Removed {removed} package files, freed {freed}"),
-        }
-    }
-
-    /// 装着的。
-    pub(crate) fn installed_mark(&self) -> &'static str {
-        match self {
-            Language::Chinese => "（已装）",
-            Language::English => " (installed)",
-        }
-    }
-
-    /// 不是官方的：没人审过。
-    pub(crate) fn community_mark(&self) -> &'static str {
-        match self {
-            Language::Chinese => "（社区）",
-            Language::English => " (community)",
-        }
-    }
-
-    /// 被拉黑了。
-    pub(crate) fn blocked_mark(&self, reason: &str) -> String {
-        match self {
-            Language::Chinese => format!("（被拉黑：{reason}）"),
-            Language::English => format!(" (blocked: {reason})"),
-        }
-    }
-}
-
-/// `miyu pkg upgrade` 的字（施工 G-5）。
-impl Language {
-    /// 没有要升级的。
-    pub(crate) fn nothing_to_upgrade(&self) -> &'static str {
-        match self {
-            Language::Chinese => "没有要升级的软件包",
-            Language::English => "Nothing to upgrade",
-        }
-    }
-
-    /// 升级好了一个。
-    pub(crate) fn upgraded(&self, id: &str, version: &str) -> String {
-        match self {
-            Language::Chinese => format!("升级好了：{id} {version}"),
-            Language::English => format!("Upgraded {id} to {version}"),
-        }
-    }
-
-    /// 软件源里没有了：照旧用着。
-    pub(crate) fn upgrade_gone(&self, id: &str) -> String {
-        match self {
-            Language::Chinese => format!("提示：{id} 在软件源里没有了，照旧用着装好的那一版"),
-            Language::English => format!(
-                "note: {id} is no longer in the package source; the installed version stays"
-            ),
-        }
-    }
-
-    /// 被拉黑了：照旧开着，卸不卸自己定。
-    pub(crate) fn upgrade_blocked(&self, id: &str, reason: &str) -> String {
-        match self {
-            Language::Chinese => format!("提示：{id} 被拉黑了（{reason}），照旧开着，卸不卸你定"),
-            Language::English => {
-                format!("note: {id} was blocked ({reason}); it stays on, removing it is up to you")
-            }
-        }
-    }
-
-    /// 来源仓库变了：不升。
-    pub(crate) fn upgrade_moved(&self, id: &str, now: &str) -> String {
-        match self {
-            Language::Chinese => format!("提示：{id} 在软件源里换成了 {now} 的，不升"),
-            Language::English => {
-                format!("note: {id} now comes from {now} in the package source; not upgraded")
-            }
-        }
-    }
-
-    /// `packages.hold` 里的：跳过。
-    pub(crate) fn upgrade_held(&self, id: &str) -> String {
-        match self {
-            Language::Chinese => format!("提示：{id} 在不升级的包里，跳过"),
-            Language::English => format!("note: {id} is held; skipped"),
-        }
-    }
-}
-
-/// 包的图标为什么打不进去（施工 F-18 上）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LogoWhy {
-    /// 包文件夹里没有。
-    Missing,
-    /// 不是 PNG、WebP。
-    NotImage,
-    /// 缩不到上限以内。
-    TooBig,
 }

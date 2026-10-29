@@ -57,13 +57,17 @@ fn an_empty_or_yes_answer_opens_and_anything_else_does_not() {
         ("", false),
     ] {
         let mut out = Vec::new();
-        let got = agreed(&mut typed.as_bytes(), &mut out, false, &language);
+        let got = agreed(&mut typed.as_bytes(), &mut out, (false, "app"), &language);
         assert_eq!(got, opens, "{typed:?}");
-        assert!(String::from_utf8(out).unwrap().contains("Turn it on now?"));
+        assert!(
+            String::from_utf8(out)
+                .unwrap()
+                .contains("Enable 'app' now? [Y/n] ")
+        );
     }
     let mut out = Vec::new();
     assert!(
-        agreed(&mut "n\n".as_bytes(), &mut out, true, &language),
+        agreed(&mut "n\n".as_bytes(), &mut out, (true, "app"), &language),
         "--yes 不问"
     );
     assert!(out.is_empty());

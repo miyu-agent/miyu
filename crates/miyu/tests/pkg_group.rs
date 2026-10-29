@@ -19,7 +19,7 @@ async fn the_base_system_is_removed_and_restored_by_its_group_name() {
     let nothing = run(&root, &cwd, zh, &["pkg", "install", "basesystem"]).await;
     assert_eq!(
         stdout(&nothing),
-        "basesystem 里没有要动的包\n",
+        "basesystem 中没有需要处理的软件包\n",
         "{nothing:?}"
     );
 
@@ -33,12 +33,12 @@ async fn the_base_system_is_removed_and_restored_by_its_group_name() {
         shown.starts_with("将卸载 basesystem\n包含：") && shown.contains("shell"),
         "{shown}"
     );
-    assert!(shown.contains("\n卸掉了：shell\n"), "{shown}");
+    assert!(shown.contains("\n已卸载 shell\n"), "{shown}");
     assert_eq!(removed.status.code(), Some(0), "{removed:?}");
 
     let back = run(&root, &cwd, zh, &["pkg", "install", "basesystem", "--yes"]).await;
     let shown = stdout(&back);
-    assert!(shown.contains("装好了：shell\n"), "{back:?}");
+    assert!(shown.contains("已安装 shell\n"), "{back:?}");
     assert!(!shown.contains("将装回"), "--yes 不问：{shown}");
     drop(held);
     if let Err(error) = std::fs::remove_dir_all(&cwd) {

@@ -3,7 +3,7 @@
 use serde_json::json;
 
 use super::{Pkg, PkgCommand, installing, refused, shown};
-use crate::diagnostic::Problem;
+use crate::diagnostic::{Level, Problem};
 use crate::language::Language;
 
 #[test]
@@ -16,7 +16,7 @@ fn a_package_is_one_aligned_line_and_only_what_people_need() {
     assert_eq!(
         shown::listed(&packages, &Language::Chinese),
         [
-            "bad         （写错了：第一行不是 TOML）",
+            "bad         （清单有误：第一行不是 TOML）",
             "basesystem  基础系统",
             "net         联网（已卸载）",
         ],
@@ -90,7 +90,7 @@ fn pacman_options_are_the_plain_commands() {
 
 #[test]
 fn a_conflict_says_cannot_install_and_one_line_each() {
-    // 施工 F-8 六补：照 pacman 的「冲突的文件」，第一行说装不上，接着一处一行。
+    // 施工 F-8 六补：照 pacman 的「冲突的文件」一处一行；CL-2 补起一处一条报错，说装的是哪一个。
     let error = json!({
         "message": "名称已被占用，无法安装。",
         "data": {"reason": "package_conflict", "conflicts": [
@@ -101,16 +101,51 @@ fn a_conflict_says_cannot_install_and_one_line_each() {
             {"kind": "persona", "name": "dog", "layer": "home"},
         ]}
     });
+    let said = |language: Language| -> Vec<String> {
+        refused(&error, Some("./pudding"), &language)
+            .iter()
+            .flat_map(|problem| problem.lines(language, Level::Error))
+            .collect()
+    };
     assert_eq!(
-        refused(&error, &Language::Chinese),
-        Problem::new(
-            "装不上：名字已经有了\n工具 read 已在 basesystem 中\n技能 pdf 已在 kit 中\nMCP 服务 lone 已在 svc 中\n斜杠命令 review 已在 kit 中\n人格 dog 已在 你的数据根 中"
-        )
+        said(Language::Chinese),
+        [
+            "miyu: 无法安装 ./pudding：工具 read 已在 basesystem 中",
+            "miyu: 无法安装 ./pudding：技能 pdf 已在 kit 中",
+            "miyu: 无法安装 ./pudding：MCP 服务 lone 已在 svc 中",
+            "miyu: 无法安装 ./pudding：斜杠命令 review 已在 kit 中",
+            "miyu: 无法安装 ./pudding：人格 dog 已在 数据根 中",
+        ]
     );
     assert_eq!(
-        refused(&error, &Language::English),
-        Problem::new(
-            "Cannot install: names already in use\ntool read exists in basesystem\nskill pdf exists in kit\nMCP server lone exists in svc\nslash command review exists in kit\npersona dog exists in your data root"
-        )
+        said(Language::English),
+        [
+            "miyu: cannot install ./pudding: tool read exists in basesystem",
+            "miyu: cannot install ./pudding: skill pdf exists in kit",
+            "miyu: cannot install ./pudding: MCP server lone exists in svc",
+            "miyu: cannot install ./pudding: slash command review exists in kit",
+            "miyu: cannot install ./pudding: persona dog exists in the data root",
+        ]
+    );
+}
+
+#[test]
+fn an_invalid_manifest_says_which_line() {
+    // 设计 47 第四节「装包失败」：`cannot install <包>: package.toml:<行>: <哪里不对>`。
+    let error = json!({
+        "message": "Invalid package.",
+        "data": {"reason": "package_invalid", "problem": "unknown key 'process.system_account'", "line": 29}
+    });
+    assert_eq!(
+        refused(&error, Some("foo"), &Language::English),
+        [Problem::new(
+            "cannot install foo: package.toml:29: unknown key 'process.system_account'"
+        )]
+    );
+    // 别的拒绝照核心的原话，只有一条。
+    let other = json!({"message": "软件包不存在。", "data": {"reason": "unknown_package"}});
+    assert_eq!(
+        refused(&other, None, &Language::Chinese),
+        [Problem::new("软件包不存在")]
     );
 }

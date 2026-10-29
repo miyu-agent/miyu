@@ -7,6 +7,7 @@ use std::io::{BufRead, Write};
 use serde_json::{Value, json};
 
 use super::{PkgPlan, ask, confirm, lines};
+use crate::diagnostic::{self, Problem};
 use crate::language::{Doing, Language};
 use crate::rpc::Rpc;
 use crate::shown::say;
@@ -19,8 +20,8 @@ pub(super) async fn run(
 ) -> Result<(), u8> {
     let language = &plan.language;
     let survey = ask(rpc, "package.upgrades", json!({}), language, err).await?;
-    for line in notices(&survey, language) {
-        say(err, &line);
+    for problem in notices(&survey, language) {
+        diagnostic::warning(err, *language, &problem);
     }
     let upgrades = survey["upgrades"].as_array().cloned().unwrap_or_default();
     if upgrades.is_empty() {
@@ -45,7 +46,11 @@ pub(super) async fn run(
             ));
         }
         lines(out, rows);
-        confirm::asked(input, out, err, Doing::Upgrade, language)?;
+        let question = match upgrades.as_slice() {
+            [one] => language.proceed(Doing::Upgrade, one["package"].as_str().unwrap_or_default()),
+            many => language.proceed_upgrades(many.len()),
+        };
+        confirm::asked((input, out, err), &question, language)?;
     }
     let done = ask(rpc, "package.upgrade", json!({}), language, err).await?;
     for row in done["upgraded"].as_array().into_iter().flatten() {
@@ -53,6 +58,7 @@ pub(super) async fn run(
             out,
             &language.upgraded(
                 row["package"].as_str().unwrap_or_default(),
+                row["from"].as_str().unwrap_or("?"),
                 row["to"].as_str().unwrap_or_default(),
             ),
         );
@@ -70,8 +76,8 @@ fn change(row: &Value, language: &Language) -> String {
     )
 }
 
-/// 盘点里要说一句的。
-fn notices(survey: &Value, language: &Language) -> Vec<String> {
+/// 盘点里要说一句的：一条一个警告。
+fn notices(survey: &Value, language: &Language) -> Vec<Problem> {
     let text = |row: &Value, key: &str| row[key].as_str().unwrap_or_default().to_string();
     let items = |key: &str| survey[key].as_array().cloned().unwrap_or_default();
     let mut said = Vec::new();

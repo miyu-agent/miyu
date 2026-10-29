@@ -123,13 +123,13 @@ async fn list_add_search_edit_and_forget() {
     let empty = run(&home, &[]).await;
     assert_eq!(
         (empty.code, empty.out.as_str()),
-        (0, "还没有记忆。\n"),
+        (0, "没有记忆\n"),
         "不写子命令就是 list"
     );
     let added = run(&home, &["add", "用户养了一只猫"]).await;
     assert_eq!(
         (added.code, added.out.as_str()),
-        (0, "记下了：m1\n"),
+        (0, "已添加 m1\n"),
         "{}",
         added.err
     );
@@ -138,7 +138,7 @@ async fn list_add_search_edit_and_forget() {
         &["add", "--class", "feedback", "回答要短，", "先说结论"],
     )
     .await;
-    assert_eq!(added.out, "记下了：m2\n");
+    assert_eq!(added.out, "已添加 m2\n");
 
     let listed = run(&home, &["list"]).await;
     assert_eq!(listed.code, 0);
@@ -163,12 +163,12 @@ async fn list_add_search_edit_and_forget() {
         found.out
     );
     let none = run(&home, &["search", "狗"]).await;
-    assert_eq!((none.code, none.out.as_str()), (0, "没找到。\n"));
+    assert_eq!((none.code, none.out.as_str()), (0, "没有找到结果\n"));
 
     let edited = run(&home, &["edit", "m1", "用户养了两只猫"]).await;
     assert_eq!(
         (edited.code, edited.out.as_str()),
-        (0, "改好了：m3\n"),
+        (0, "已修改，新编号 m3\n"),
         "{}",
         edited.err
     );
@@ -200,7 +200,7 @@ async fn list_add_search_edit_and_forget() {
     let too_long = run(&home, &["add", &long]).await;
     assert_eq!(too_long.code, 1);
     assert_eq!(
-        too_long.err, "miyu: 太长了：这一条 121 个字，一条最多 120 个字\n",
+        too_long.err, "miyu: 记忆过长：121 字，上限 120 字\n",
         "照 data 说清楚，不说「在 data 里」"
     );
     let unknown = run(&home, &["forget", "m99"]).await;
@@ -225,16 +225,13 @@ async fn clearing_one_session_or_everything() {
     let cleared = run(&home, &["clear", "session"]).await;
     assert_eq!(
         (cleared.code, cleared.out.as_str()),
-        (0, "清掉了 0 条。\n"),
+        (0, "已清除 0 条记忆\n"),
         "{}",
         cleared.err
     );
     let mine = run(&home, &["clear", "me"]).await;
-    assert_eq!(mine.out, "清掉了 1 条。\n");
-    assert_eq!(
-        run(&home, &["list", "--forgotten"]).await.out,
-        "还没有记忆。\n"
-    );
+    assert_eq!(mine.out, "已清除 1 条记忆\n");
+    assert_eq!(run(&home, &["list", "--forgotten"]).await.out, "没有记忆\n");
 
     // 会话那一间：-s 记进去，清掉这个会话的就是整间。
     let own = home
@@ -248,11 +245,11 @@ async fn clearing_one_session_or_everything() {
     );
     assert_eq!(
         run(&home, &["list"]).await.out,
-        "还没有记忆。\n",
+        "没有记忆\n",
         "人格那一间没有它们"
     );
     let cleared = run(&home, &["clear", "session", &own]).await;
-    assert_eq!(cleared.out, "清掉了 2 条。\n");
+    assert_eq!(cleared.out, "已清除 2 条记忆\n");
 }
 
 #[tokio::test]
@@ -264,7 +261,7 @@ async fn which_room_and_wrong_arguments() {
     let named = run(&home, &["add", "--persona", "engineer", "用户养猫"]).await;
     assert_eq!(
         (named.code, named.out.as_str()),
-        (0, "记下了：m1\n"),
+        (0, "已添加 m1\n"),
         "{}",
         named.err
     );
@@ -308,12 +305,12 @@ async fn dream_organizes_now_and_says_how_much() {
     receipt(
         &dreamed,
         0,
-        "整理完成：检查 2 条，作废 1 条，摘要已更新，用时 ",
-        "s。\n",
+        "已整理：检查 2 条，作废 1 条，摘要已更新，用时 ",
+        "s\n",
     );
     // 没有新记的照样重看轮到的旧记忆（施工 R-19）：留下的那一条。
     let again = run(&home, &["dream"]).await;
-    receipt(&again, 0, "整理完成：检查 1 条，没有要改的，用时 ", "s。\n");
+    receipt(&again, 0, "已整理：检查 1 条，没有要改的，用时 ", "s\n");
     let forgotten = run(&home, &["list", "--forgotten"]).await;
     assert!(
         forgotten.out.contains("（已作废：重复）"),
@@ -350,9 +347,9 @@ async fn ctrl_c_stops_the_dream() {
         press.send(()).await.expect("还在听");
     };
     let stopped = run_pressing(&home, &["dream"], presses, pressing).await;
-    receipt(&stopped, 3, "整理已中断，用时 ", "s，下次再整理。\n");
+    receipt(&stopped, 3, "已中断整理，用时 ", "s，下次继续\n");
     assert!(
-        stopped.err.contains("再按一次 Ctrl+C 直接退出"),
+        stopped.err.contains("再按一次 Ctrl+C 立即退出"),
         "{}",
         stopped.err
     );
@@ -361,8 +358,8 @@ async fn ctrl_c_stops_the_dream() {
     receipt(
         &next,
         0,
-        "整理完成：检查 1 条，没有要改的，摘要已更新，用时 ",
-        "s。\n",
+        "已整理：检查 1 条，没有要改的，摘要已更新，用时 ",
+        "s\n",
     );
     // 按两次：不等回应，直接退。
     run(&home, &["add", "用户养了一只橘猫"]).await;
@@ -383,7 +380,10 @@ async fn a_person_needs_who() {
     let missing = run(&home, &["add", "--class", "person", "小林用 4090"]).await;
     assert_eq!(
         (missing.code, missing.err.as_str()),
-        (2, "认识的人要写 --who（平台编号或名字）。\n"),
+        (
+            2,
+            "miyu: --class person 缺少 --who\n提示：加上 '--who <平台编号或名字>'\n"
+        ),
         "{}",
         missing.screen
     );
@@ -394,7 +394,7 @@ async fn a_person_needs_who() {
     .await;
     assert_eq!(blank.code, 2, "{}", blank.screen);
     let listed = run(&home, &["list"]).await;
-    assert_eq!(listed.out, "还没有记忆。\n", "什么都没记");
+    assert_eq!(listed.out, "没有记忆\n", "什么都没记");
     let added = run(
         &home,
         &["add", "--class", "person", "--who", "qq:2", "小林用 4090"],
@@ -412,7 +412,7 @@ async fn cards_are_listed() {
     let none = run(&home, &["cards"]).await;
     assert_eq!(
         (none.code, none.out.as_str()),
-        (0, "还没有认识的人的卡。\n"),
+        (0, "没有人物卡\n"),
         "{}",
         none.screen
     );

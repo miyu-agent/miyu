@@ -126,10 +126,7 @@ pub fn schedule(args: Schedule, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -223,8 +220,8 @@ async fn act(
         ScheduleCommand::Add(add) => {
             let params = match added(&add, plan) {
                 Ok(params) => params,
-                Err(said) => {
-                    say(err, &said);
+                Err(problem) => {
+                    diagnostic::error(err, *language, &problem);
                     return Err(exit::MISUSE);
                 }
             };
@@ -248,8 +245,8 @@ async fn act(
     Ok(())
 }
 
-/// `add` 交给核心的参数；时刻、间隔读不懂的交回说法。
-fn added(add: &Add, plan: &SchedulePlan) -> Result<Value, String> {
+/// `add` 交给核心的参数；时刻、间隔读不懂的交回报错。
+fn added(add: &Add, plan: &SchedulePlan) -> Result<Value, diagnostic::Problem> {
     let language = &plan.language;
     let when = if let Some(cron) = &add.cron {
         // 不写 `--zone` 的交本机的（IANA 名）；本机的说不出名字的不交，照核心所在机器的。

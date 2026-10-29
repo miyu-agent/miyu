@@ -137,10 +137,7 @@ pub fn memory(args: Memory, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -219,7 +216,7 @@ async fn act(
         && args.class.as_deref() == Some("person")
         && who.is_none()
     {
-        say(err, language.memory_needs_who());
+        diagnostic::error(err, *language, &language.memory_needs_who());
         return Err(exit::MISUSE);
     }
     let mut params = room(args);
@@ -335,9 +332,7 @@ fn refused(error: &Value, language: &Language) -> Problem {
         data["limit"].as_u64(),
         data["message"].as_str(),
     ) {
-        (Some("memory_too_long"), Some(chars), Some(limit), _) => {
-            Problem::new(language.too_long(chars, limit))
-        }
+        (Some("memory_too_long"), Some(chars), Some(limit), _) => language.too_long(chars, limit),
         (_, _, _, Some(why)) => language.refused_because(said, why),
         _ => language.refused(said),
     }

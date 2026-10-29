@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use serde_json::json;
 
 use super::shown::{bases, documents, hits, page};
+use crate::diagnostic::{Level, Problem};
 use crate::language::Language;
 
 #[test]
@@ -20,7 +21,7 @@ fn bases_one_line_each() {
         [
             "notes  日语笔记  12 篇  学日语的",
             "world  1 篇",
-            "usb    U 盘  3 篇（用不了：mounted folder /mnt/usb: not found）",
+            "usb    U 盘  3 篇（不可用：mounted folder /mnt/usb: not found）",
         ]
     );
     assert_eq!(
@@ -80,18 +81,36 @@ fn an_auto_base_says_so_after_its_count() {
 fn plain_refusals_in_both_languages() {
     // 施工 K-7 修：不认的格式、编号写错、页码出界，中英文。
     let (zh, en) = (Language::Chinese, Language::English);
+    let said = |language: Language, problem: Problem| problem.lines(language, Level::Error);
     assert_eq!(
-        en.kb_not_document("report.docx"),
-        "Only .md, .markdown, .txt, .pdf, .html, .htm can be added: report.docx"
+        said(en, en.kb_not_document("report.docx")),
+        [
+            "miyu: cannot add report.docx: unsupported format",
+            "hint: supported formats: .md, .markdown, .txt, .pdf, .html, .htm"
+        ]
     );
     assert_eq!(
-        zh.kb_not_document("report.docx"),
-        "只收 .md、.markdown、.txt、.pdf、.html、.htm：report.docx"
+        said(zh, zh.kb_not_document("report.docx")),
+        [
+            "miyu: 无法添加 report.docx：不支持的格式",
+            "提示：支持的格式：.md、.markdown、.txt、.pdf、.html、.htm"
+        ]
     );
-    assert!(en.kb_bad_id("日语").ends_with("at most 64: 日语"));
-    assert_eq!(zh.kb_no_page(9, 3), "没有第 9 页，一共 3 页。");
-    assert_eq!(en.kb_no_page(9, 1), "There is no page 9; it has 1 page.");
-    assert_eq!(en.kb_no_page(9, 3), "There is no page 9; it has 3 pages.");
+    let bad = said(en, en.kb_bad_id("日语"));
+    assert_eq!(bad[0], "miyu: invalid knowledge base id: 日语");
+    assert!(bad[1].ends_with("at most 64 characters"), "{bad:?}");
+    assert_eq!(
+        said(zh, zh.kb_no_page(9, 3)),
+        ["miyu: 没有第 9 页：共 3 页"]
+    );
+    assert_eq!(
+        said(en, en.kb_no_page(9, 1)),
+        ["miyu: no page 9: the document has 1 page"]
+    );
+    assert_eq!(
+        said(en, en.kb_no_page(9, 3)),
+        ["miyu: no page 9: the document has 3 pages"]
+    );
 }
 
 #[test]
@@ -105,8 +124,8 @@ fn a_base_from_a_package_says_which_one() {
     assert_eq!(
         bases(&listed, &names, &Language::Chinese),
         [
-            "world  雾港  4 篇  随 雾港世界观  自动想起  世界观",
-            "wiki   1 篇  随 shorin-wiki"
+            "world  雾港  4 篇  来自 雾港世界观  自动想起  世界观",
+            "wiki   1 篇  来自 shorin-wiki"
         ]
     );
     assert_eq!(
@@ -128,13 +147,13 @@ fn documents_one_line_each() {
         documents(&listed, &folders, &Language::Chinese),
         [
             "a.md      2.0 KiB  2026-10-19",
-            "scan.pdf  12 B  2026-10-18  （读不了：PDF 里没有文字（扫描的或者只有图））",
-            "odd.txt   1 B  2026-10-17  （读不了：later_reason）",
-            "locked/   （读不了：没有权限或者读取失败）",
+            "scan.pdf  12 B  2026-10-18  （无法读取：PDF 里没有文字（扫描件或只有图片））",
+            "odd.txt   1 B  2026-10-17  （无法读取：later_reason）",
+            "locked/   （无法读取：没有权限或读取失败）",
         ]
     );
     assert_eq!(
         documents(&listed[1..2], &[], &Language::English),
-        ["scan.pdf  12 B  2026-10-18  (unreadable: no text in the PDF (scanned or only pictures))"]
+        ["scan.pdf  12 B  2026-10-18  (unreadable: no text in the PDF (scanned or images only))"]
     );
 }

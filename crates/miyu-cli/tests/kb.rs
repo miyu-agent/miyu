@@ -71,7 +71,7 @@ async fn building_a_base_from_the_shell() {
     std::fs::write(cwd.join("dog.txt"), "阿黄是小狗。\n").expect("写得进");
 
     let none = run(&home, &cwd, &[]).await;
-    assert_eq!((none.code, none.out.as_str()), (0, "还没有知识库。\n"));
+    assert_eq!((none.code, none.out.as_str()), (0, "没有知识库\n"));
     let made = run(
         &home,
         &cwd,
@@ -87,7 +87,7 @@ async fn building_a_base_from_the_shell() {
     .await;
     assert_eq!(
         (made.code, made.out.as_str()),
-        (0, "建好了：notes\n"),
+        (0, "已创建 notes\n"),
         "{}",
         made.err
     );
@@ -99,10 +99,7 @@ async fn building_a_base_from_the_shell() {
     .await;
     assert_eq!(
         (added.code, added.out.as_str()),
-        (
-            0,
-            "加进去了：notes/pets/cat.md\n加进去了：notes/pets/dog.txt\n"
-        ),
+        (0, "已添加 notes/pets/cat.md\n已添加 notes/pets/dog.txt\n"),
         "{}",
         added.err
     );
@@ -128,25 +125,25 @@ async fn building_a_base_from_the_shell() {
     let found = run(&home, &cwd, &["search", "小橘"]).await;
     assert_eq!(found.out, "notes  pets/cat.md  猫\n  团子改名叫小橘。\n");
     let missing = run(&home, &cwd, &["search", "鹦鹉"]).await;
-    assert_eq!(missing.out, "没找到。\n");
+    assert_eq!(missing.out, "没有找到结果\n");
     let read = run(&home, &cwd, &["read", "notes", "pets/dog.txt"]).await;
     assert_eq!(read.out, "阿黄是小狗。\n");
     let edited = run(&home, &cwd, &["edit", "notes", "--name", "家"]).await;
-    assert_eq!(edited.out, "改好了：notes\n");
+    assert_eq!(edited.out, "已修改 notes\n");
     let nothing = run(&home, &cwd, &["edit", "notes"]).await;
     assert_eq!(
         (nothing.code, nothing.err.as_str()),
         (
             1,
-            "改什么：写 --name、--description、--auto 或者 --no-auto。\n"
+            "miyu: 没有要修改的内容\n提示：加上 '--name'、'--description'、'--auto' 或 '--no-auto'\n"
         )
     );
     let rebuilt = run(&home, &cwd, &["reindex", "notes"]).await;
-    assert_eq!(rebuilt.out, "重建好了：notes，2 篇\n");
+    assert_eq!(rebuilt.out, "已重建 notes 的索引：2 篇\n");
     let removed = run(&home, &cwd, &["remove", "notes", "pets/dog.txt"]).await;
     // 有的机器上临时目录那块盘没有能放的回收站：照实报。
     match removed.code {
-        0 => assert!(removed.out.starts_with("挪进回收站了："), "{}", removed.out),
+        0 => assert!(removed.out.starts_with("已移到回收站："), "{}", removed.out),
         _ => assert!(
             removed.err.starts_with("miyu: 挪不进回收站："),
             "{}",
@@ -170,7 +167,7 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     let mounted = run(&home, &cwd, &["mount", "mine", "notes"]).await;
     assert_eq!(
         (mounted.code, mounted.out.as_str()),
-        (0, "挂上了：mine，1 篇\n"),
+        (0, "已挂载 mine：1 篇\n"),
         "{}",
         mounted.err
     );
@@ -188,11 +185,7 @@ async fn mounting_a_folder_and_deleting_it_from_the_shell() {
     );
     let deleted = run(&home, &cwd, &["delete", "mine"]).await;
     match deleted.code {
-        0 => assert!(
-            deleted.out.starts_with("删掉了 mine，在回收站里："),
-            "{}",
-            deleted.out
-        ),
+        0 => assert!(deleted.out.starts_with("已删除 mine"), "{}", deleted.out),
         _ => assert!(
             deleted.err.starts_with("miyu: 挪不进回收站："),
             "{}",
@@ -224,7 +217,7 @@ async fn the_auto_switch_from_the_shell() {
     let off = run(&home, &cwd, &["edit", "world", "--no-auto"]).await;
     assert_eq!(
         (off.code, off.out.as_str()),
-        (0, "改好了：world\n"),
+        (0, "已修改 world\n"),
         "{}",
         off.err
     );
@@ -261,13 +254,13 @@ async fn what_the_core_would_refuse_is_said_plainly() {
         (
             1,
             "",
-            "只收 .md、.markdown、.txt、.pdf、.html、.htm：report.docx\n"
+            "miyu: 无法添加 report.docx：不支持的格式\n提示：支持的格式：.md、.markdown、.txt、.pdf、.html、.htm\n"
         ),
         "一个都不传"
     );
     assert_eq!(run(&home, &cwd, &[]).await.out, "notes  0 篇\n");
 
-    let rule = "库的编号要小写字母开头，只能有小写字母、数字、-、_，最多 64 个：日语\n";
+    let rule = "miyu: 知识库编号无效：日语\n提示：编号以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n";
     let named = run(&home, &cwd, &["new", "日语"]).await;
     assert_eq!((named.code, named.err.as_str()), (2, rule));
     let searched = run(&home, &cwd, &["search", "团子", "--kb", "日语"]).await;
@@ -279,7 +272,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
     let page = run(&home, &cwd, &["read", "notes", "long.md", "--page", "9"]).await;
     assert_eq!(
         (page.code, page.err.as_str()),
-        (1, "没有第 9 页，一共 2 页。\n")
+        (1, "miyu: 没有第 9 页：共 2 页\n")
     );
     let missing = run(&home, &cwd, &["read", "notes", "dog.md", "--page", "2"]).await;
     assert_eq!(
@@ -291,7 +284,7 @@ async fn what_the_core_would_refuse_is_said_plainly() {
 
 #[tokio::test]
 async fn a_base_from_a_package_from_the_shell() {
-    // 施工 K-8：装上一个带 kb/world/ 的包，列表接「随 <包名>」；只开关自动想起改得了，改名字照核心的原话拒。
+    // 施工 K-8：装上一个带 kb/world/ 的包，列表接「来自 <包名>」；只开关自动想起改得了，改名字照核心的原话拒。
     let home = Home::new(Arc::new(Script::new([])));
     let cwd = home.outside();
     let pack = cwd.join("world-pack");
@@ -346,20 +339,20 @@ async fn a_base_from_a_package_from_the_shell() {
     assert_eq!(installed.0, 0, "{}", installed.1);
     let listed = run(&home, &cwd, &[]).await;
     assert_eq!(
-        listed.out, "world  雾港  1 篇  随 雾港世界观  自动想起\n",
+        listed.out, "world  雾港  1 篇  来自 雾港世界观  自动想起\n",
         "{}",
         listed.err
     );
     let off = run(&home, &cwd, &["edit", "world", "--no-auto"]).await;
     assert_eq!(
         (off.code, off.out.as_str()),
-        (0, "改好了：world\n"),
+        (0, "已修改 world\n"),
         "{}",
         off.err
     );
     assert_eq!(
         run(&home, &cwd, &[]).await.out,
-        "world  雾港  1 篇  随 雾港世界观\n"
+        "world  雾港  1 篇  来自 雾港世界观\n"
     );
     let renamed = run(&home, &cwd, &["edit", "world", "--name", "新名字"]).await;
     assert_eq!(
@@ -385,7 +378,7 @@ async fn the_documents_of_a_base_from_the_shell() {
     assert!(rows[0].starts_with("a.md        7 B  20"), "{}", rows[0]);
     assert!(
         rows[1].starts_with("broken.txt  2 B  20")
-            && rows[1].ends_with("  （读不了：不是 UTF-8 编码）"),
+            && rows[1].ends_with("  （无法读取：不是 UTF-8 编码）"),
         "{}",
         rows[1]
     );
@@ -394,10 +387,7 @@ async fn the_documents_of_a_base_from_the_shell() {
     assert_eq!(value["documents"][1]["reason"], "not_utf8", "{}", json.out);
     assert_eq!(run(&home, &cwd, &["new", "empty"]).await.code, 0);
     let empty = run(&home, &cwd, &["list", "empty"]).await;
-    assert_eq!(
-        (empty.code, empty.out.as_str()),
-        (0, "这个库里还没有文档。\n")
-    );
+    assert_eq!((empty.code, empty.out.as_str()), (0, "没有文档\n"));
     let bad = run(&home, &cwd, &["list", "Bad Id"]).await;
     assert_eq!(bad.code, 2, "库的编号写错的说清写法：{}", bad.err);
 }

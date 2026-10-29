@@ -23,19 +23,19 @@
 | 子命令 | 做什么 | 发什么 |
 |---|---|---|
 | `list`（不写子命令也是它） | 列出来，照编号 | `package.list` |
-| `install <包目录\|包文件\|编号>` | 带 `/`、`\`，是 `.`、`..`，或者以 `.toml`、`.miyu`（包文件，施工 G-1）结尾的是一个包目录（或它里面的 `package.toml`）、包文件的路径，相对的照现在的目录换成绝对的，`.`、`..` 照字面去掉（施工 F-8 上）；别的是编号：出厂包的把卸掉的装回来，别的从软件源装（施工 G-4 下，核心判断）。从软件源装的印的那一份另有「一起装：」（依赖和版本）、「下载：」（多大）、「来源：」（来源仓库，官方的接「（官方）」，社区的接「（社区，没人审过）」）三行；问过以后印「正在下载 <多大>」，装好了一起装的依赖、要的那个各印一行「装好了：<编号>」 | `package.install`，带 `path` 或者 `package` |
-| `remove <编号>` | 写组名的（`basesystem`，施工 BS-1 下中）照组卸：印「将卸载 <组>」「包含：<编号>、…」、问一句，一个一行「卸掉了：<编号>」；`install <组名>` 同样装回组里卸掉的；组里没有要动的印「<组> 里没有要动的包」、退出码 0。卸掉：数据根里装的删掉，出厂的记一笔；它的设置和状态一并删掉（`packages.md`「装卸」第 7 条） | `package.remove` |
+| `install <包目录\|包文件\|编号>` | 带 `/`、`\`，是 `.`、`..`，或者以 `.toml`、`.miyu`（包文件，施工 G-1）结尾的是一个包目录（或它里面的 `package.toml`）、包文件的路径，相对的照现在的目录换成绝对的，`.`、`..` 照字面去掉（施工 F-8 上）；别的是编号：出厂包的把卸掉的装回来，别的从软件源装（施工 G-4 下，核心判断）。从软件源装的印的那一份另有「一起装：」（依赖和版本）、「下载：」（多大）、「来源：」（来源仓库，官方的接「（官方）」，社区的接「（社区，没人审过）」）三行；问过以后印「正在下载 <多大>」，装好了一起装的依赖各印一行「已安装 <编号>」，要的那个印「已安装 <编号> <版本>」（没写版本的不接） | `package.install`，带 `path` 或者 `package` |
+| `remove <编号>` | 写组名的（`basesystem`，施工 BS-1 下中）照组卸：印「将卸载 <组>」「包含：<编号>、…」、问「卸载 '<组>'？[Y/n]」，一个一行「已卸载 <编号>」；`install <组名>` 同样装回组里卸掉的；组里没有要动的印「<组> 中没有需要处理的软件包」、退出码 0。卸掉：数据根里装的删掉，出厂的记一笔；它的设置和状态一并删掉（`packages.md`「装卸」第 7 条） | `package.remove` |
 | `info <编号>` | 一个包的信息：名称、版本、大小、安装时间 | `package.info`，名称照 `package.list` |
 | `files <编号>` | 一个包装了哪些文件，一个一行、绝对路径 | `package.files` |
 | `owns <路径>` | 一个文件归哪个包；相对的照现在的目录换成绝对的 | `package.owns` |
 | `check [<编号>]` | 装好的文件改了、少了、多出来的；不写是数据根里记了的全部 | `package.check` |
-| `update` | 从软件源拿新的索引（施工 G-3 上）：不管本机那份新不新都去拿；印「软件源已更新：N 个包（<索引的时刻>）」；一处都没拿成、用的是本机那份的在标准错误上说「软件源连不上，用的是本机的索引（<时刻>）：<原因>」，退出码 1；本机也没有的照核心的原话，退出码 1。`--format json` 原样印回应 | `package.sync`，带 `force: true` |
-| `upgrade` | 照软件源升级装着的包（施工 G-5）：先盘点，软件源里没了的、被拉黑的、来源仓库变了的、`packages.hold` 跳过的在标准错误上各说一句「提示：…」；没有要升的印「没有要升级的软件包」、退出码 0；有的印「将升级 <编号> <旧版本> → <新版本>」一个一行、「下载：<多大>」，问「继续升级？[Y/n]」，升好了一个一行「升级好了：<编号> <版本>」 | `package.upgrades`、`package.upgrade` |
-| `clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下）：印「清掉了 N 个包文件，腾出 X」，一个都没有的印「缓存里没有要清的包文件」。`--format json` 原样印回应 | `package.clean` |
-| `search [<词>…]` | 在软件源里搜（施工 G-3 下）：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已装」，不是官方的接「社区」，被拉黑的接「被拉黑：理由」；版本不印。一个都没搜到的什么都不印、退出码 1（照 pacman）；用的是本机旧索引的在标准错误上说一句。`--format json` 原样印回应 | `package.search` |
-| `pack <包目录>` | 把包目录打成包文件（施工 G-1，设计 `37-软件源.md` 第二节）：照装的那一套读清单，要写了版本；清单写了 `targets` 的用 `--target` 挑一种、没写的不许写；写到 `-o` 给的目录（没有的建上，不写的是现在的目录），文件名 `<编号>-<版本>[-<系统>].miyu`；印三行：打好了的路径、`SHA-256: <哈希>`、大小（`--format json` 印 `{"package", "version", "target", "path", "sha256", "size", "logo_shrunk"}`）。清单写了 `[package] logo` 的（施工 F-18 上，`package-pages.md`「清单多的几格」）：超了 256 KiB 或者宽高超了 512 的，打进去的是缩好的那一份（PNG 照 PNG、WebP 编无损 WebP），源文件不动，先印一句「图标 <路径> 超了上限，打进去的缩成 <宽>×<高>、<字节> 字节（源文件没动）」；图标不在、不是 PNG / WebP、缩不下去的打包失败、说为什么。不连核心，也不碰数据根：作者的 CI 上没有数据根，那个位置放着别的东西也照打（施工 G-7） | 不发 |
+| `update` | 从软件源拿新的索引（施工 G-3 上）：不管本机那份新不新都去拿；一个软件源一行（施工 CL-2 补：官方的在前，配置里 `packages.sources` 另加的照名字），「已更新 <源>：N 个包（<索引的时刻>）」；官方的一处都没拿成、用的是本机那份的报「无法更新 official：<原因>」，退出码 1；另加的没拿成的警告「无法更新 <源>：<原因>」（本机也没有的原因说「无法连接」），不算失败；官方的本机也没有的照核心的原话，退出码 1。`--format json` 原样印回应，报错、警告照样印在标准错误上 | `package.sync`，带 `force: true` |
+| `upgrade` | 照软件源升级装着的包（施工 G-5）：先盘点，软件源里没了的、被拉黑的（另起一行提示怎么卸）、来源仓库变了的、`packages.hold` 跳过的在标准错误上各警告一句；没有要升的印「没有可升级的软件包」、退出码 0；有的印「将升级 <编号> <旧版本> → <新版本>」一个一行、「下载：<多大>」，问「升级 '<编号>'？[Y/n]」（不止一个的「升级 <几> 个软件包？[Y/n]」），升好了一个一行「已升级 <编号> <旧版本> → <新版本>」 | `package.upgrades`、`package.upgrade` |
+| `clean` | 清掉缓存里不是装着那一版的包文件（施工 G-4 下）：印「已清理 N 个包文件，释放 X」，一个都没有的印「没有可清理的包文件」。`--format json` 原样印回应 | `package.clean` |
+| `search [<词>…]` | 在软件源里搜（施工 G-3 下）：一行一个，`<编号>  <名字>  <说明>`，编号照最长的对齐；装着的接「已安装」，不是官方的接「社区」，被拉黑的接「已拉黑：理由」；版本不印。一个都没搜到的什么都不印、退出码 1（照 pacman）；用的是本机旧索引的在标准错误上警告一句。`--format json` 原样印回应 | `package.search` |
+| `pack <包目录>` | 把包目录打成包文件（施工 G-1，设计 `37-软件源.md` 第二节）：照装的那一套读清单，要写了版本；清单写了 `targets` 的用 `--target` 挑一种、没写的不许写；写到 `-o` 给的目录（没有的建上，不写的是现在的目录），文件名 `<编号>-<版本>[-<系统>].miyu`；印三行：「已打包 <路径>」、`SHA-256: <哈希>`、大小（`--format json` 印 `{"package", "version", "target", "path", "sha256", "size", "logo_shrunk"}`）。清单写了 `[package] logo` 的（施工 F-18 上，`package-pages.md`「清单多的几格」）：超了 256 KiB 或者宽高超了 512 的，打进去的是缩好的那一份（PNG 照 PNG、WebP 编无损 WebP），源文件不动，先印一句「已把图标 <路径> 缩小到 <宽>×<高>，<字节> 字节（源文件未改动）」；图标不在、不是 PNG / WebP、缩不下去的报「无法打包：…」。不连核心，也不碰数据根：作者的 CI 上没有数据根，那个位置放着别的东西也照打（施工 G-7） | 不发 |
 
-pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）：`-U` 是 `install`，`-R` 是 `remove`，`-Q` 是 `list`，`-Qi`、`-Ql`、`-Qo`、`-Qk` 是 `info`、`files`、`owns`、`check`，`-Sy` 是 `update`（施工 G-3 上），`-Ss` 是 `search`，`-Sys` 先拿再搜（施工 G-3 下）；`-S <编号>…` 从软件源装这几个、`-Sy <编号>…` 先拿索引再装、`-Sc` 是 `clean`（施工 G-4 下）；`-Su` 是 `upgrade`、`-Syu` 先拿索引再升（施工 G-5）；`-S` 什么都不带的照 pacman 在标准错误上说「错误：没有指定目标（使用 -h 获取帮助）」（英文 `error: no targets specified (use -h for help)`），退出码 2（项目主人 2026-10-19 定）。`-Q` 后面的字母最多一个；`-Qi`、`-Ql`、`-Qo` 要接编号或路径，`-Q` 不带字母的不接（参数不对，退出码 2）。
+pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）：`-U` 是 `install`，`-R` 是 `remove`，`-Q` 是 `list`，`-Qi`、`-Ql`、`-Qo`、`-Qk` 是 `info`、`files`、`owns`、`check`，`-Sy` 是 `update`（施工 G-3 上），`-Ss` 是 `search`，`-Sys` 先拿再搜（施工 G-3 下）；`-S <编号>…` 从软件源装这几个、`-Sy <编号>…` 先拿索引再装、`-Sc` 是 `clean`（施工 G-4 下）；`-Su` 是 `upgrade`、`-Syu` 先拿索引再升（施工 G-5）；`-S` 什么都不带的照 pacman 报「没有指定目标」，另起一行提示「运行 'miyu pkg --help' 查看用法」（英文 `miyu: no targets specified`、`hint: run 'miyu pkg --help' for usage`；项目主人 2026-10-19 定照 pacman 说，CL-2 补照设计 47 改写法），退出码 2。`-Q` 后面的字母最多一个；`-Qi`、`-Ql`、`-Qo` 要接编号或路径，`-Q` 不带字母的不接（参数不对，退出码 2）。
 
 | 选项 | 做什么 |
 |---|---|
@@ -66,17 +66,17 @@ pacman 的写法当别名（设计 `31-软件包.md` 第一节，定了的 A）�
 ### 怎么走
 
 1. **找数据根、连核心、握手**：照 `miyu memory`（`cli/memory.md` 第 1 步）。请求的编号是 `pkg-<16 位十六进制>-<序号>`。
-2. **发**：照上面的表。`install` 一律先发同一条请求带 `preview: true`（要的能力打开时一并批，下面第 2½ 步），`remove` 没写 `--yes` 的也先发；没写 `--yes` 的（施工 F-8 下补，`protocol.md`），照回应印一份要做什么（第 3 步），空一行问「继续安装？[Y/n]」「继续卸载？[Y/n]」，读标准输入的一行：空的、`y`、`yes`（不分大小写）接着发真的那一条；别的在标准错误上印「已取消」，退出码 1；标准输入关着的（脚本里、管道读完了）不做，标准输出补一个换行，标准错误印「已取消：没有确认（不问用 --yes）」，退出码 1。看一眼被拒的（写错的、必需的……）照第 4 步，不问。
-2½. **装好以后问一句「打开？」**（作者说明第九节第 1 条，2026-10-11 项目主人照推荐定，施工 F-8 四补）：装好的那一项（`package.install` 的回应）有开关、程序在，关着的；或者开着却没在跑（不是 `running`、`starting`）、看一眼时又列了要的能力的（清单写了一起来就拉起，能力还没批）：空一行问「现在打开？[Y/n]」，读一行，空的、`y`、`yes` 发 `package.enable {package, approve}`，`approve` 是看一眼时列出的那几个能力的编号，印「打开了：<编号>」；别的、标准输入关着的不打开，印「没有打开：以后在「软件包」页里打开」，照样算装好了，退出码 0。`--yes` 当是，不问。没有开关的（界面、小程序、只带技能脚本的）、程序不在的、已经在跑的不问。打开被拒的照第 4 步。
+2. **发**：照上面的表。`install` 一律先发同一条请求带 `preview: true`（要的能力打开时一并批，下面第 2½ 步），`remove` 没写 `--yes` 的也先发；没写 `--yes` 的（施工 F-8 下补，`protocol.md`），照回应印一份要做什么（第 3 步），空一行问「安装 '<编号>'？[Y/n]」「卸载 '<编号>'？[Y/n]」（装回出厂的「装回 '<编号>'？[Y/n]」），读标准输入的一行：空的、`y`、`yes`（不分大小写）接着发真的那一条；别的在标准错误上印「已取消」，退出码 1；标准输入关着的（脚本里、管道读完了）不做，标准输出补一个换行，标准错误报「已取消：没有收到确认」、另起一行提示「加 '--yes' 跳过确认」，退出码 1。看一眼被拒的（写错的、必需的……）照第 4 步，不问。
+2½. **装好以后问一句「打开？」**（作者说明第九节第 1 条，2026-10-11 项目主人照推荐定，施工 F-8 四补）：装好的那一项（`package.install` 的回应）有开关、程序在，关着的；或者开着却没在跑（不是 `running`、`starting`）、看一眼时又列了要的能力的（清单写了一起来就拉起，能力还没批）：空一行问「现在启用 '<编号>'？[Y/n]」，读一行，空的、`y`、`yes` 发 `package.enable {package, approve}`，`approve` 是看一眼时列出的那几个能力的编号，印「已启用 <编号>」；别的、标准输入关着的不打开，印「未启用 <编号>」、另起一行「提示：之后可以在界面的软件包页面启用」，照样算装好了，退出码 0。`--yes` 当是，不问。没有开关的（界面、小程序、只带技能脚本的）、程序不在的、已经在跑的不问。打开被拒的照第 4 步。
 3. **印**（标准输出）：
-   - `list`：一个一行，`<编号>  <名字>`，照编号排（核心把卸掉了的出厂的排在最后，这里照编号排进去），编号照最长的那个对齐、后面空两格；卸掉了的出厂的后面接「（已卸载）」；写错的没有名字，接「（写错了：<哪里不对>）」。
+   - `list`：一个一行，`<编号>  <名字>`，照编号排（核心把卸掉了的出厂的排在最后，这里照编号排进去），编号照最长的那个对齐、后面空两格；卸掉了的出厂的后面接「（已卸载）」；写错的没有名字，接「（清单有误：<哪里不对>）」。
    - 装、卸之前的那一份（施工 F-8 下补）：第一行「将安装 <编号> <版本>」，升级的接「（替换 <原来的版本>）」（原来没写版本的「（替换已装的）」），装回出厂的「将装回」，卸的「将卸载」；「包含：」程序（界面程序、扩展程序、小程序、内置功能）、命令 miyu <名字>、后台页、吉祥物、接入 <平台>、每个 MCP 服务一项「MCP 服务 <名字>」（施工 X-2）、技能、脚本（施工 X-13 上）、每个斜杠命令模板一项「斜杠命令 /<名字>」（施工 X-14 上补）、几项设置；「需要：」声明的能力，照核心给的名字；卸的「一并删除：」写了的设置的键、状态目录；「大小：」照 `info` 的写法，出厂的卸掉不删文件、没有这一行。几样之间用「、」隔开，没有的那一行不印。
-   - `install`：「装好了：<编号>」，接着照第 2½ 步问、打开的印「打开了：<编号>」；`remove`：「卸掉了：<编号>」。
+   - `install`：「已安装 <编号> <版本>」（没写版本的不接），接着照第 2½ 步问、启用的印「已启用 <编号>」；`remove`：「已卸载 <编号>」。
    - `info`（施工 F-8 下）：一格一行，前面的词照最宽的那个对齐、后面空两格：名称（写错的包没有）、版本（写了的）、大小（字节数照 pacman 写成 B、KiB、MiB、GiB，一位小数，接几个文件）、安装时间（照这台机器此刻的时区到分钟；出厂的写「出厂自带」，本地库没记的没有这一行）。从哪装的、哪一层不印。
    - `files`：一个文件一行，`<编号> <绝对路径>`（照 pacman 的 `-Ql`），照路径排。
-   - `owns`：「<路径> 属于 <编号>」；在数据根里装的包的目录里、本地库没记的（包自己后来写的）「<路径> 在 <编号> 的目录里，安装时没有」；哪个包都没有的「没有软件包包含 <路径>」印在标准错误上，退出码 1（照 pacman）。路径照换成的绝对路径印。
+   - `owns`：「<路径> 属于 <编号>」；在数据根里装的包的目录里、本地库没记的（包自己后来写的）「<路径> 在 <编号> 的目录里，不是安装时带的」；哪个包都没有的报「没有软件包包含 <路径>」，退出码 1（照 pacman）。路径照换成的绝对路径印。
    - `check`：每个包改了的「<编号>：已修改 <路径>」、少了的「缺失」、多出来的「多出」，一个一行；都没问题的一行「<编号>：正常」；数据根里一个记了的都没有的「没有可检查的软件包」。有改了、少了的退出码 1（照 pacman 的 `-Qk`），多出来的只是提示。
-4. **被拒绝**：核心的原话照原样印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 说「装不上：<哪里不对>（第 <几> 行）」。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：第一行「装不上：名字已经有了」（施工 P-11 下改，原来是「和已装的软件包冲突」：人格、预设还会和你的、出厂的撞），接着照 `data.conflicts` 一处一行「<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设；撞了一层的 `<包>` 写「出厂的」「你的家目录」；英文 `Cannot install: names already in use`、`<kind> <name> exists in <package>`，那一层写 `the shipped ones`、`your home`）。看一眼印的那一份多「人格 <编号>」「预设 <编号>」（施工 P-11 下）。核心断开、请求写不出去照 `miyu rename`。
+4. **被拒绝**：核心的原话去掉句号接在 `miyu: ` 后面印在标准错误上，退出码 1（`protocol.md` 的 `package.*`）。清单装不上的（`package_invalid`）例外：核心的原话是给程序看的（说的是去 `data` 里看），这里照 `data.problem`、`data.line` 报「无法安装 <写的>：package.toml:<几>：<哪里不对>」（英文 `cannot install <写的>: package.toml:<几>: <哪里不对>`，设计 47 第四节；`<写的>` 是命令里写的包目录、包文件或编号）。和装着的包撞了名的（`package_conflict`，施工 F-8 六补）也例外，照 pacman 列冲突：照 `data.conflicts` 一处一条报错「无法安装 <写的>：<哪一样> <名字> 已在 <包> 中」（子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设；撞了一层的 `<包>` 写「出厂内容」「数据根」；英文 `cannot install <写的>: <kind> <name> exists in <package>`，那一层写 `the shipped content`、`the data root`），核心没列是哪几处的报「无法安装 <写的>：名称已被占用」。看一眼印的那一份多「人格 <编号>」「预设 <编号>」（施工 P-11 下）。核心断开、请求写不出去照 `miyu rename`。
 
 ### 样子
 
@@ -110,13 +110,13 @@ pudding：多出 cache.db
 需要：联网
 大小：1.5 KiB，3 个文件
 
-继续安装？[Y/n]
+安装 'pudding'？[Y/n]
 
 将卸载 pudding 1.3.0
 一并删除：设置 pudding.port、状态目录
 大小：1.5 KiB，3 个文件
 
-继续卸载？[Y/n]
+卸载 'pudding'？[Y/n]
 ```
 
 ### 退出码
@@ -131,30 +131,47 @@ pudding：多出 cache.db
 
 | 键 | 中文 | 英文 |
 |---|---|---|
-| 装好了 | 装好了：{id} | Installed {id} |
-| 卸掉了 | 卸掉了：{id} | Removed {id} |
-| 装不上 | 装不上：{problem}（第 {line} 行）、装不上：{problem} | Cannot install: {problem} (line {line}), Cannot install: {problem} |
+| 装好了 | 已安装 {id}、已安装 {id} {version} | installed {id}, installed {id} {version} |
+| 卸掉了 | 已卸载 {id} | removed {id} |
+| 装不上（报错） | 无法安装 {what}：package.toml:{line}：{problem}、无法安装 {what}：{problem} | cannot install {what}: package.toml:{line}: {problem}, cannot install {what}: {problem} |
+| 撞了名（报错，一处一条） | 无法安装 {what}：{kind} {name} 已在 {holder} 中、无法安装 {what}：{kind} {name} 是核心自带的、无法安装 {what}：名称已被占用 | cannot install {what}: {kind} {name} exists in {holder}, … is built into the core, cannot install {what}: names already in use |
 | 已卸载 | （已卸载） | (removed) |
-| 写错了 | （写错了：{problem}） | (broken: {problem}) |
+| 写错了 | （清单有误：{problem}） | (invalid: {problem}) |
 | `info` 的四个词 | 名称、版本、大小、安装时间 | Name、Version、Size、Installed |
 | 大小 | {size}，{n} 个文件 | {size}, {n} files（一个的写 1 file） |
 | 出厂的 | 出厂自带 | shipped with Miyu |
 | 属于 | {path} 属于 {id} | {path} is owned by {id} |
-| 在目录里 | {path} 在 {id} 的目录里，安装时没有 | {path} is in the directory of {id} but was not installed with it |
-| 没有包 | 没有软件包包含 {path} | No package owns {path} |
+| 在目录里 | {path} 在 {id} 的目录里，不是安装时带的 | {path} is in the directory of {id} but was not installed with it |
+| 没有包（报错） | 没有软件包包含 {path} | no package owns {path} |
 | 查文件 | {id}：已修改 {path}、{id}：缺失 {path}、{id}：多出 {path}、{id}：正常 | {id}: modified {path}、missing、extra、{id}: OK |
-| 没得查 | 没有可检查的软件包 | No packages to check |
-| 将做什么 | 将安装 {id}、将装回 {id}、将卸载 {id} | Install {id}、Restore {id}、Remove {id} |
+| 没得查 | 没有可检查的软件包 | no packages to check |
+| 将做什么 | 将安装 {id}、将装回 {id}、将卸载 {id}、将升级 {id} | Will install {id}、Will restore {id}、Will remove {id}、Will upgrade {id} |
 | 替换 | （替换 {version}）、（替换已装的） | (replaces {version}), (replaces the installed one) |
 | 程序 | 界面程序、扩展程序、小程序、内置功能 | interface、extension、worker program、built-in feature |
 | 带的 | 命令 miyu {name}、后台页、吉祥物、接入 {platform}、{n} 项设置 | command miyu {name}、admin page、mascot、{platform} connection、{n} settings |
-| 行首 | 包含：、需要：、一并删除：、大小： | Includes: 、Needs: 、Also deletes: 、Size:  |
+| 行首 | 包含：、无法读取：、需要：、一并删除：、大小：、一起装：、下载：、来源： | Includes: 、Unreadable: 、Needs: 、Also deletes: 、Size: 、Also installs: 、Download: 、From:  |
+| 来源 | （官方）、（社区，未经审核） | (official), (community, not reviewed) |
 | 删的 | 设置 {keys}、状态目录 | settings {keys}、state directory |
-| 问 | 继续安装？[Y/n] 、继续卸载？[Y/n]  | Proceed with installation? [Y/n] 、Proceed with removal? [Y/n]  |
-| 不做 | 已取消 | Cancelled |
-| 没得答 | 已取消：没有确认（不问用 --yes） | Cancelled: not confirmed (use --yes to skip the question) |
+| 问 | 安装 '{id}'？[Y/n] 、装回 '{id}'？[Y/n] 、卸载 '{id}'？[Y/n] 、升级 '{id}'？[Y/n] 、升级 {n} 个软件包？[Y/n]  | Install '{id}'? [Y/n] 、Restore …、Remove …、Upgrade …、Upgrade {n} packages? [Y/n]  |
+| 不做 | 已取消 | cancelled |
+| 没得答（报错） | 已取消：没有收到确认；提示：加 '--yes' 跳过确认 | cancelled: no confirmation; hint: pass '--yes' to skip the question |
+| 问启用 | 现在启用 '{id}'？[Y/n]  | Enable '{id}' now? [Y/n]  |
+| 启用了、没启用 | 已启用 {id}；未启用 {id}，提示：之后可以在界面的软件包页面启用 | enabled {id}; left {id} disabled, hint: enable it later on the Packages page |
+| 下载中 | 正在下载 {size} | downloading {size} |
+| 拿到了索引（`update`，一个源一行） | 已更新 {source}：{n} 个包（{generated}） | updated {source}: {n} packages ({generated})（一个的写 1 package） |
+| 没拿到（`update`：官方的报错，另加的警告） | 无法更新 {source}：{why}；本机也没有的原因：无法连接 | cannot update {source}: {why}; unreachable |
+| 搜的时候用的旧索引（警告） | 无法连接软件源，使用本机索引（{generated}）：{why} | cannot reach the package source, using the local index ({generated}): {why} |
+| `-S` 什么都没带（报错） | 没有指定目标；提示：运行 'miyu pkg --help' 查看用法 | no targets specified; hint: run 'miyu pkg --help' for usage |
+| 清了 | 已清理 {n} 个包文件，释放 {size}、没有可清理的包文件 | removed {n} package files, freed {size}、no package files to clean |
+| 搜到的标记 | （已安装）、（社区）、（已拉黑：{reason}） | (installed), (community), (blocked: {reason}) |
+| 升级 | 没有可升级的软件包；已升级 {id} {from} → {to} | nothing to upgrade; upgraded {id} {from} → {to} |
+| 升级时的警告 | {id} 已不在软件源中，保留已安装的版本；{id} 已被拉黑：{reason}（提示：用 'miyu pkg remove {id}' 卸载）；{id} 改由 {now} 提供，未升级；跳过设为不升级的 {id} | {id} is no longer in the package source, keeping the installed version; {id} is blocked: {reason} (hint: remove it with 'miyu pkg remove {id}'); {id} now comes from {now}, not upgraded; skipping held package {id} |
+| 打包 | 已打包 {path}、大小：{n} 字节、已把图标 {logo} 缩小到 {w}×{h}，{n} 字节（源文件未改动） | packed {path}、Size: {n} bytes、shrank logo {logo} to {w}×{h}, {n} bytes (source file unchanged) |
+| 打包失败（报错） | 无法打包：{why}（找不到图标 {logo}、图标 {logo} 不是 PNG 或 WebP 图片、清单没有写版本……，能照着改的另起一行提示） | cannot pack: {why}（logo {logo} not found, the manifest has no version, …; hints on their own lines） |
 
-核心拒绝时说的话照核心写的原样印。
+报错、警告照设计 47 印在标准错误上：`miyu: <事>`（警告是 `miyu: 警告：`，英文 `miyu: warning: `），建议另起一行 `提示：`（英文 `hint: `）；下表报错那几行写的是 `miyu: ` 后面那一截。
+
+核心拒绝时说的话去掉句号照原样印。
 
 **帮助页**：`-h`、`--help`、`miyu help pkg`、各个子命令的 `-h` 印的都是这一页，规矩见 `cli/main.md`「帮助页」（`crates/miyu-cli/src/help/zh/pkg.txt`、`en/pkg.txt`）。
 
