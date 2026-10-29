@@ -268,7 +268,7 @@ fn settings_become_config_items_under_the_package() {
         "{PORT}\n[settings.idle_seconds]\ntype = \"int\"\nmin = 1\ndefault = 600\nhidden = true\nname = {{ en = \"Idle\" }}\n"
     )))
     .unwrap();
-    let items = items("web", &manifest.settings);
+    let items = items("web", "web", &manifest.settings);
     assert_eq!(items.len(), 2);
     let port = &items[0];
     assert_eq!(port.key, "web.port");
@@ -302,7 +302,7 @@ type = \"list\"\nelement = \"text\"\nname = { en = \"Trusted\" }\n\n[settings.mo
 }
 
 fn items_of(manifest: &crate::package::Manifest) -> Vec<Item> {
-    items("x", &manifest.settings)
+    items("x", "x", &manifest.settings)
 }
 
 #[test]
@@ -317,11 +317,15 @@ fn a_group_adds_one_level_to_the_name() {
         .map(|one| one.name.as_str())
         .collect();
     assert_eq!(names, ["qq.listen", "qq.token", "mode"], "照写的先后");
-    let keys: Vec<&str> = items("im", &manifest.settings)
-        .iter()
-        .map(|item| item.key)
-        .collect();
+    // 键照前缀起，组和包照编号（施工 PN-1）。
+    let items = items("miyu-im", "im", &manifest.settings);
+    let keys: Vec<&str> = items.iter().map(|item| item.key).collect();
     assert_eq!(keys, ["im.qq.listen", "im.qq.token", "im.mode"]);
+    assert!(
+        items
+            .iter()
+            .all(|item| (item.ui.group, item.ui.package) == ("miyu-im", Some("miyu-im")))
+    );
     assert_eq!(
         wrong("[settings.qq.Bad]\ntype = \"bool\"\nname = { en = \"X\" }\n"),
         Code::BadSettingName,

@@ -123,7 +123,7 @@ Group chat records for the judge (the small request that decides whether to answ
 
 ## `venue.*` in `events.append`
 
-Besides its own `ext.<package>.*` (see [Extensions](extensions.en.md#eventsappend)), a bridge can record two kinds in venue sessions:
+Besides its own `ext.<prefix>.*` (see [Extensions](extensions.en.md#eventsappend)), a bridge can record two kinds in venue sessions:
 
 | `kind` | `body` | Meaning |
 |---|---|---|

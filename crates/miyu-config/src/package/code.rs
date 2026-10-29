@@ -111,6 +111,10 @@ pub enum Code {
     BadNeeds,
     /// `[package] groups` 里的组名写法不对、重复，或者不在出厂的组表里（施工 BS-1 上中）。
     BadGroup,
+    /// `[package] prefix` 的写法不像包编号（施工 PN-1）。
+    BadPrefix,
+    /// 前缀已经被先读到的包占了（施工 PN-1，设计 48 第二节第 3 条）：`detail` 是前缀。
+    PrefixTaken,
     /// `[package] targets` 里有不认识的、重复的系统（施工 G-1）。
     BadTargets,
     /// `[package] miyu` 不是三段数字的版本（施工 X-31）。
@@ -177,6 +181,8 @@ impl Code {
             Code::BadContent => "bad_content",
             Code::BadNeeds => "bad_needs",
             Code::BadGroup => "bad_group",
+            Code::BadPrefix => "bad_prefix",
+            Code::PrefixTaken => "prefix_taken",
             Code::BadTargets => "bad_targets",
             Code::BadMiyu => "bad_miyu",
             Code::NeedsNewerMiyu => "needs_newer_miyu",
@@ -184,7 +190,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 55] = [
+    pub const ALL: [Code; 57] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -239,6 +245,8 @@ impl Code {
         Code::BadContent,
         Code::BadNeeds,
         Code::BadGroup,
+        Code::BadPrefix,
+        Code::PrefixTaken,
         Code::BadTargets,
     ];
 }

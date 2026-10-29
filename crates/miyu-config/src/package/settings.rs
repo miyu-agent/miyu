@@ -441,14 +441,14 @@ fn setting_name(name: &str) -> bool {
         && name.len() <= 64
 }
 
-/// 包 `package` 的配置项拼成配置清单的项：键 `<包>.<名字>`，挂在「软件包」那一页（[`PAGE`]）、这个包那一组。字留在进程里，
-/// 一直用到退出：只在核心起来、装卸时调。
-pub fn items(package: &str, settings: &[Setting]) -> Vec<Item> {
+/// 包 `package` 的配置项拼成配置清单的项：键 `<前缀>.<名字>`（`prefix`，施工 PN-1，[`super::Manifest::prefix_of`]），挂在
+/// 「软件包」那一页（[`PAGE`]）、这个包那一组。字留在进程里，一直用到退出：只在核心起来、装卸时调。
+pub fn items(package: &str, prefix: &str, settings: &[Setting]) -> Vec<Item> {
     let group: &'static str = leak(package);
     settings
         .iter()
         .map(|setting| Item {
-            key: leak(&format!("{package}.{}", setting.name)),
+            key: leak(&format!("{prefix}.{}", setting.name)),
             kind: leaked(&setting.kind),
             default: setting.default.clone(),
             layers: Box::leak(setting.layers.clone().into_boxed_slice()),

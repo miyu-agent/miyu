@@ -258,7 +258,7 @@ impl Human {
                     .insert(miyu_config::key::fill(OFF, &[id]), words.clone());
             }
             for setting in &manifest.settings {
-                let key = format!("{id}.{}", setting.name);
+                let key = format!("{}.{}", manifest.prefix_of(id), setting.name);
                 let words = ItemWords {
                     name: pick(&setting.label).unwrap_or_else(|| key.clone()),
                     description: pick(&setting.description).unwrap_or_default(),

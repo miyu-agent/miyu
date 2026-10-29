@@ -74,6 +74,9 @@ pub struct Manifest {
     pub ui: Option<Pages>,
     /// `miyu check` 怎么查它自己的文件（9-2 跑）。
     pub check: Option<Check>,
+    /// 配置键、扩展记的事件种类的前缀（施工 PN-1，设计 48 第二节，`[package] prefix`）：没写的没有，照包编号算
+    /// （[`Manifest::prefix_of`]）。
+    pub prefix: Option<String>,
     /// 配置项（施工 9-1 下）：照写的先后；没有的是空的。
     pub settings: Vec<Setting>,
     /// 在哪几个组里（施工 BS-1 上中，设计 44 第三节第 2 条）：只有内置包能写，照写的先后；没写的是空的。原来的 `required`
@@ -123,6 +126,14 @@ pub struct Manifest {
     pub author: Option<String>,
     /// 上游：这个包的源码仓库，`https://` 开头（施工 F-12，`[package] upstream`）：没写的没有。
     pub upstream: Option<String>,
+}
+
+impl Manifest {
+    /// 编号是 `id` 的这个包的前缀（施工 PN-1，设计 48 第二节）：写了 `[package] prefix` 的照写的，没写的是包编号。包声明的配置项
+    /// 的键是 `<前缀>.<名字>`，扩展记的事件种类是 `ext.<前缀>.<名字>`。
+    pub fn prefix_of<'a>(&'a self, id: &'a str) -> &'a str {
+        self.prefix.as_deref().unwrap_or(id)
+    }
 }
 
 /// 吉祥物包的 `[mascot]`（施工 F-7，`packages.md`「吉祥物包」）：模型文件的格式由终端定，核心只认它在哪。
@@ -426,6 +437,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         process,
         ui,
         check,
+        prefix: head.prefix,
         settings,
         groups: head.groups,
         features,

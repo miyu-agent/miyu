@@ -231,3 +231,62 @@ async fn an_extension_sets_only_its_own_plain_settings() {
     );
     core.stop_extensions().await;
 }
+
+/// 包的前缀（施工 PN-1，设计 48 第二节）：清单写了 `prefix` 的，配置项的键照前缀起；握手交的、它自己改得了的都是这几项，
+/// 关掉这个包的 `packages.<编号>.off` 不算它的：交的里没有，它改不了。
+#[tokio::test]
+async fn settings_follow_the_prefix_not_the_package_id() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, keep) = record(&home, "miyu-echo");
+    let set = format!(
+        "ask:config.set:{}",
+        json!({"layer": "system", "changes": [{"key": "echo.port", "value": 9000}]})
+    );
+    let off = format!(
+        "ask:config.set:{}",
+        json!({"layer": "system", "changes": [{"key": "packages.miyu-echo.off", "value": true}]})
+    );
+    home.write(
+        "packages/miyu-echo/package.toml",
+        &manifest(
+            &program.name(),
+            &steps(&[&keep, "hello", &set, &off, "listen"]),
+        )
+        .replacen("[package]\n", "[package]\nprefix = \"echo\"\n", 1),
+    );
+    let core = core_with_settings(&home, quick());
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    call(&mut client, "extension.enable", "miyu-echo").await;
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(60);
+    let answers = loop {
+        let answers: Vec<Value> = recorded(&path)
+            .into_iter()
+            .filter(|line| line.get("result").is_some() || line.get("error").is_some())
+            .collect();
+        if answers.len() >= 3 {
+            break answers;
+        }
+        assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    };
+    assert_eq!(
+        answers[0]["result"]["config"],
+        json!({"echo.port": 8400}),
+        "键照前缀起：{}",
+        answers[0]
+    );
+    assert!(
+        answers[1].get("error").is_none(),
+        "照前缀起的键是它自己的：{}",
+        answers[1]
+    );
+    assert_eq!(
+        answers[2]["error"]["data"]["reason"], "local_only",
+        "关掉自己的那一项不是它的：{}",
+        answers[2]
+    );
+    assert!(read(&home.root.path().join("config.toml")).contains("[echo]"));
+    core.stop_extensions().await;
+}

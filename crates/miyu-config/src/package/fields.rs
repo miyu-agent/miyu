@@ -22,8 +22,8 @@ pub(super) struct Table {
 
 /// `[package]`。
 pub(super) const PACKAGE: &[&str] = &[
-    "version", "protocol", "name", "summary", "groups", "icon", "logo", "needs", "targets",
-    "author", "upstream", "miyu",
+    "version", "protocol", "name", "summary", "prefix", "groups", "icon", "logo", "needs",
+    "targets", "author", "upstream", "miyu",
 ];
 
 /// `[command]`、`[[command]]`。

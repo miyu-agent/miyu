@@ -236,7 +236,7 @@ core.close()
 
 **读别的包给你带的内容**：别的包在清单里写 `[content.<你的编号>] dir = "…"` 就是给你带了一个目录。调 `content.list {}` 看谁带了，`content.read {"package", "path", "offset"?}` 分块读；装、卸、升级以后核心推 `content.changed`。
 
-**往会话里记自己的事件**：`events.append {"session", "kind": "ext.<你的编号>.<名字>", "body"}`。不开回合、不给模型看，界面和你以后读日志时看得到。
+**往会话里记自己的事件**：`events.append {"session", "kind": "ext.<你的前缀>.<名字>", "body"}`。不开回合、不给模型看，界面和你以后读日志时看得到。前缀是清单里的 `prefix`，没写的是包的编号。
 
 ## 别做的
 

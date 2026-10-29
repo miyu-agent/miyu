@@ -294,3 +294,24 @@ fn personas_and_presets_conflict_with_packages_and_layers() {
         ]
     );
 }
+
+/// 前缀（施工 PN-1，设计 48 第二节第 3 条）：写了的照写的，没写的照包编号；和装着的撞了就是冲突。
+#[test]
+fn a_prefix_conflicts_with_an_installed_id_or_prefix() {
+    let dir = Scratch::new();
+    let short = "[package]\nname = { en = \"Kit\" }\nprefix = \"kit\"\n";
+    let plain = package(dir.path(), "kit", BUNDLE, &[]);
+    let long = package(dir.path(), "miyu-kit", short, &[]);
+    assert_eq!(
+        check(&long, std::slice::from_ref(&plain)),
+        [("prefix", "kit".to_string(), "kit".to_string())],
+        "写的前缀撞上装着的包编号"
+    );
+    assert_eq!(
+        check(&plain, std::slice::from_ref(&long)),
+        [("prefix", "kit".to_string(), "miyu-kit".to_string())],
+        "没写的照包编号，撞上装着的前缀"
+    );
+    let other = package(dir.path(), "other", BUNDLE, &[]);
+    assert!(check(&long, &[other]).is_empty(), "不撞的不报");
+}

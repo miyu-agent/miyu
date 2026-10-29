@@ -2,7 +2,7 @@
 //! 「冲突的文件」，要装的包带的东西和装着的别的包重了名，就不装。每个包只往自己的文件夹里放，文件撞不上，撞的是几块共用的
 //! 名字：子命令、功能的编号、工具名（功能下列的、脚本）、技能、MCP 服务、知识库、斜杠命令模板（施工 X-14 上补，也不能和核心
 //! 内置的斜杠命令撞，内置的由调的一方交进来）、人格、预设（施工 P-11 下，设计 31 第十节第 4 条：还不能和出厂的、
-//! 数据根里的撞，那几层有没有由调的一方交进来）。
+//! 数据根里的撞，那几层有没有由调的一方交进来）、前缀（施工 PN-1，设计 48 第二节第 3 条：没写的照包编号）。
 //!
 //! 以前装完重读清单才认撞没撞，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在动文件以前
 //! 比，新来的让。同一个编号（升级）不跟自己比；家目录里自己放的技能、脚本不算（自己的赢，设计 31 第五节第 3 条）。
@@ -38,6 +38,8 @@ pub enum Kind {
     Persona,
     /// 预设的编号（施工 P-11 下）。
     Preset,
+    /// 前缀（施工 PN-1）：配置键、扩展记的事件种类用的，没写的照包编号。
+    Prefix,
 }
 
 impl Kind {
@@ -53,6 +55,7 @@ impl Kind {
             Kind::Slash => "slash",
             Kind::Persona => "persona",
             Kind::Preset => "preset",
+            Kind::Prefix => "prefix",
         }
     }
 }
@@ -135,6 +138,7 @@ pub fn conflicts(
 /// 一个包占的名字。
 fn names(id: &str, manifest: &Manifest, dir: &Path) -> BTreeSet<(Kind, String)> {
     let mut names = BTreeSet::new();
+    names.insert((Kind::Prefix, manifest.prefix_of(id).to_string()));
     names.extend(
         manifest
             .commands

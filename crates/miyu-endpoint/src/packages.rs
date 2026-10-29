@@ -183,8 +183,9 @@ pub(crate) fn mismatch(manifest: &Manifest) -> Option<String> {
     })
 }
 
-/// 包的配置项（施工 9-1 下，`packages.md`「配置项」）：读成了的清单的 `[settings]` 拼成配置项，键是 `<包>.<名字>`。包的编号
-/// 是核心自己的某个模块（`core_items` 里键的第一段，「软件包」那一页的不算）的，那一份改报 `settings_taken`、一项都不收。
+/// 包的配置项（施工 9-1 下，`packages.md`「配置项」）：读成了的清单的 `[settings]` 拼成配置项，键是 `<前缀>.<名字>`（施工
+/// PN-1：清单 `prefix`，没写的照包编号）。前缀是核心自己的某个模块（`core_items` 里键的第一段，「软件包」那一页的不算）的，
+/// 那一份改报 `settings_taken`、一项都不收。
 /// 核心起来时调一次：拼出来的项一直用到退出（`miyu_config::package::settings::items`）。
 pub fn settle(found: &mut [Found], core_items: &[Item]) -> Vec<Item> {
     settle_with(found, core_items, &|one| !absent(one))
@@ -213,15 +214,16 @@ pub fn settle_with(
         if manifest.settings.is_empty() {
             continue;
         }
-        if modules.contains(one.id.as_str()) {
+        let prefix = manifest.prefix_of(&one.id).to_string();
+        if modules.contains(prefix.as_str()) {
             one.read = Err(Issue::Wrong(Problem {
                 line: None,
                 code: Code::SettingsTaken,
-                detail: one.id.clone(),
                 message: format!(
-                    "package {} has the same name as a core module and cannot declare settings",
+                    "the prefix {prefix} of package {} is a core module and cannot declare settings",
                     one.id
                 ),
+                detail: prefix,
             }));
             continue;
         }
@@ -230,7 +232,7 @@ pub fn settle_with(
             continue;
         }
         // 一律在「软件包」那一页、这个包那一组（施工 F-6 上：「接入」页去掉了）。
-        items.extend(settings::items(&one.id, &manifest.settings));
+        items.extend(settings::items(&one.id, &prefix, &manifest.settings));
     }
     items
 }

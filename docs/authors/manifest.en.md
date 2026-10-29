@@ -73,6 +73,7 @@ The tables and fields on this page are stable (frozen on 2026-10-23): from now o
 | `protocol` | Required for packages with a program: `[lowest, highest]`; only `1` exists |
 | `version` | Version, for people only |
 | `summary` | A one-line summary |
+| `prefix` | The prefix of your settings keys and recorded event kinds, written like a package id; without it, the package id. A prefix that clashes with another package's (its id when it has none) won't install. Use it to keep keys short for a long id: id `miyu-im` with `prefix = "im"` has settings `im.*` and records `ext.im.*` |
 | `author` | Author: a person or organization, may include an email, one line, at most 100 characters. Shown on the package info page |
 | `upstream` | Upstream: the package's source repository, starting with `https://`. Shown on the package info page |
 | `icon` | A Lucide icon name. Not every head knows every Lucide name: the terminal only knows the names in its mapping table and draws the generic tool icon (a wrench) for the rest |
@@ -120,7 +121,7 @@ Makes it an extension; needs `[command]`.
 
 ## `[settings.<name>]`
 
-One table per setting; the key is `<package id>.<name>`. To group many settings, add one level: `[settings.<group>.<name>]` gives `<package id>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: the values arrive in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)).
+One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: the values arrive in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)).
 
 | Field | Notes |
 |---|---|

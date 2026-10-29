@@ -156,6 +156,7 @@ impl Packages {
         duplicates(&mut found);
         taken(&mut found);
         features_taken(&mut found);
+        prefixes_taken(&mut found);
         found
     }
 
@@ -353,6 +354,32 @@ fn features_taken(found: &mut [Found]) {
                 for feature in features {
                     owners.insert(feature.id, found[index].id.clone());
                 }
+            }
+        }
+    }
+}
+
+/// 前缀（施工 PN-1，设计 48 第二节第 3 条）：照读的先后先到先得，后到的那一份报 `prefix_taken`、整份不收；没写的照包编号算。
+/// 装的时候先查过（`conflicts`），读的时候撞得上的只剩核心升级后出厂的新带了同一个前缀的：出厂的先读到。
+fn prefixes_taken(found: &mut [Found]) {
+    let mut owners: BTreeMap<String, String> = BTreeMap::new();
+    for index in reading_order(found) {
+        let Ok(manifest) = &found[index].read else {
+            continue;
+        };
+        let prefix = manifest.prefix_of(&found[index].id).to_string();
+        match owners.get(&prefix) {
+            Some(owner) => {
+                let message = format!("prefix {prefix} is already taken by package {owner}");
+                found[index].read = Err(Issue::Wrong(Problem {
+                    line: None,
+                    code: Code::PrefixTaken,
+                    detail: prefix,
+                    message,
+                }));
+            }
+            None => {
+                owners.insert(prefix, found[index].id.clone());
             }
         }
     }

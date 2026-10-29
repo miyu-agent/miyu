@@ -142,7 +142,7 @@ pub(super) fn removable<'a>(found: &'a [Found], id: &str) -> Result<&'a Found, R
     Ok(one)
 }
 
-/// 包 `one` 的配置项的真的键（`<编号>.<名字>`），照清单列的；读坏了的清单没有。
+/// 包 `one` 的配置项的真的键（`<前缀>.<名字>`，施工 PN-1），照清单列的；读坏了的清单没有。
 pub(super) fn setting_keys(one: &Found) -> Vec<String> {
     one.read
         .as_ref()
@@ -150,7 +150,7 @@ pub(super) fn setting_keys(one: &Found) -> Vec<String> {
             manifest
                 .settings
                 .iter()
-                .map(|setting| format!("{}.{}", one.id, setting.name))
+                .map(|setting| format!("{}.{}", manifest.prefix_of(&one.id), setting.name))
                 .collect()
         })
         .unwrap_or_default()

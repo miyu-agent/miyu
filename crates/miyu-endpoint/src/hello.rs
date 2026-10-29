@@ -125,8 +125,10 @@ pub(crate) fn language_of(config: &Config, system: &'static str) -> &'static str
 /// 这个连接是谁（施工 O-4 下、O-13 上）：核心拉起的扩展是哪个包（本机的头没有）。
 #[derive(Debug, Clone)]
 pub(crate) struct Caller {
-    /// 核心拉起的扩展是哪个包：`events.append` 的 `ext.<包>.` 照它查、记成这个模块写的。
+    /// 核心拉起的扩展是哪个包：`events.append` 记成这个模块写的。
     pub(crate) package: Option<String>,
+    /// 这个包的前缀（施工 PN-1）：`events.append` 只收 `ext.<前缀>.` 开头的。
+    pub(crate) prefix: Option<String>,
     /// 核心往这个连接发请求的一头（施工 O-2 上）：`provide` 照它记下这个包由谁提供。
     pub(crate) reverse: crate::reverse::Peer,
 }

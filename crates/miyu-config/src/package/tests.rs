@@ -373,6 +373,29 @@ fn targets_are_read_in_order_and_unknown_ones_are_refused() {
     }
 }
 
+/// 前缀（施工 PN-1，设计 48 第二节）：写了的照写的，没写的照包编号；写法不像包编号的报 `bad_prefix`、说是哪一行。
+#[test]
+fn the_prefix_defaults_to_the_package_id() {
+    let bridge = read(BRIDGE).unwrap();
+    assert_eq!(bridge.prefix, None);
+    assert_eq!(bridge.prefix_of("miyu-im"), "miyu-im", "没写的照包编号");
+    let short = BRIDGE.replace(
+        "name = { en = \"QQ bridge\" }\n",
+        "name = { en = \"QQ bridge\" }\nprefix = \"im\"\n",
+    );
+    assert_eq!(read(&short).unwrap().prefix_of("miyu-im"), "im");
+    for bad in ["\"Im\"", "\"im.qq\"", "\"\"", "1"] {
+        let text = short.replace("\"im\"", bad);
+        let code = if bad == "1" {
+            Code::NotText
+        } else {
+            Code::BadPrefix
+        };
+        assert_eq!(wrong(&text), (code, Some(4)), "{bad}");
+    }
+    assert_eq!(Code::BadPrefix.as_str(), "bad_prefix");
+}
+
 #[test]
 fn a_newer_miyu_is_said_instead_of_unknown_keys() {
     let text = "[package]\nname = { en = \"N\" }\nmiyu = \"99.0.0\"\nfuture = true\n";

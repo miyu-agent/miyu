@@ -54,7 +54,7 @@
 | `goal.set`、`goal.changed`、`goal.paused`、`goal.resumed`、`goal.ended` | 长期目标设下、改了、停了、继续、结束 |
 | `dream.ended` | 一趟整理记忆跑完了：新记、改了、作废了几条，有没有写摘要，是不是叫停的 |
 | `venue.recalled`、`venue.delivered` | 平台上有人撤回了一条；她的话发到了平台上 |
-| `ext.<包>.<名字>` | 扩展自己记的（`events.append`） |
+| `ext.<前缀>.<名字>` | 扩展自己记的（`events.append`；前缀是清单的 `prefix`，没写的是包编号） |
 
 撤销、压缩、清空都不删事件：头照有效历史自己算该画什么（或者直接用视图流）。
 

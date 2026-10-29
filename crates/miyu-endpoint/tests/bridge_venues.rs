@@ -234,28 +234,54 @@ async fn until_idle(dir: &Path) {
 /// `events.append`（施工 O-13 上）：核心拉起的扩展只能写自己的包那一段的 `ext.*`。
 #[tokio::test]
 async fn an_extension_writes_only_its_own_ext_events() {
+    writes_only_its_own("bot", None, "ext.other.chat.decided").await;
+}
+
+/// 包的前缀（施工 PN-1，设计 48 第二节）：写了 `[package] prefix` 的，`ext.<前缀>.*` 是它的，`ext.<包编号>.*` 不是。
+#[tokio::test]
+async fn an_extension_writes_ext_events_under_its_prefix() {
+    writes_only_its_own("miyu-bot", Some("bot"), "ext.miyu-bot.chat.decided").await;
+}
+
+/// 包 `id`（前缀 `prefix`，没写的照编号）写一条 `ext.bot.chat.decided` 和一条 `other`：前一条记下、记成这个包写的，后一条
+/// `bad_params`。
+async fn writes_only_its_own(id: &str, prefix: Option<&str>, other: &str) {
     let home = Home::new();
     let program = Program::new();
-    let (path, step) = record(&home, "bot");
+    let (path, step) = record(&home, id);
+    let other =
+        format!(r#"ask:events.append:{{"session":"{{session}}","kind":"{other}","body":{{}}}}"#);
     install_serving(
         &home,
-        "bot",
+        id,
         &program.name(),
         &steps(&[
             &step,
             "hello",
             r#"ask:venue.session:{"venue":"qq:group:1","kind":"group"}"#,
             r#"ask:events.append:{"session":"{session}","kind":"ext.bot.chat.decided","body":{"to":[1]}}"#,
-            r#"ask:events.append:{"session":"{session}","kind":"ext.other.chat.decided","body":{}}"#,
+            &other,
             "wait",
         ]),
         "always",
         true,
     );
+    if let Some(prefix) = prefix {
+        let manifest = format!("packages/{id}/package.toml");
+        let text = read(&home.root.path().join(&manifest));
+        home.write(
+            &manifest,
+            &text.replacen(
+                "[package]\n",
+                &format!("[package]\nprefix = \"{prefix}\"\n"),
+                1,
+            ),
+        );
+    }
     let core = served_core(&home, &Script::new([]));
     let got = replies(&path, 4).await;
-    assert!(got[2]["result"]["seq"].is_u64(), "自己的包：{got:?}");
-    assert_eq!(reason(&got[3]), Some("bad_params"), "别的包的：{got:?}");
+    assert!(got[2]["result"]["seq"].is_u64(), "自己的：{got:?}");
+    assert_eq!(reason(&got[3]), Some("bad_params"), "不是自己的：{got:?}");
     let session = got[1]["result"]["session"]
         .as_str()
         .expect("有编号")
@@ -267,7 +293,7 @@ async fn an_extension_writes_only_its_own_ext_events() {
         .expect("记下了");
     assert_eq!(
         serde_json::to_value(&decided.by).expect("写得出"),
-        json!({"kind": "module", "id": "bot"}),
+        json!({"kind": "module", "id": id}),
         "记成这个包写的"
     );
     core.stop_extensions().await;

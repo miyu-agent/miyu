@@ -132,6 +132,7 @@ impl Language {
             (Language::Chinese, "slash") => "斜杠命令",
             (Language::Chinese, "persona") => "人格",
             (Language::Chinese, "preset") => "预设",
+            (Language::Chinese, "prefix") => "前缀",
             (Language::English, "mcp") => "MCP server",
             (Language::English, "knowledge") => "knowledge base",
             (Language::English, "slash") => "slash command",

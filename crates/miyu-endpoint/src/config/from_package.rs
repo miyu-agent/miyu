@@ -21,14 +21,11 @@ pub(crate) fn set_from_package(
     (package, by): (&str, By),
 ) -> Result<Json, Refusal> {
     let config = core.config();
-    let prefix = format!("{package}.");
-    // 键以包编号开头还不够：包编号和核心模块同名的包（叫 `ui`、`sandbox` 的）没声明配置项也装得上，`ui.*` 却是核心自己的项
-    // （施工 5-19）。只认这个包清单里声明的项（`ui.package` 是它）。
+    // 只认这个包清单里声明的项（施工 5-19：照挂在哪个包认，不照键的第一段；PN-1 起键照前缀起，和包编号不一定一样）。
     let own = |change: &ChangeParam| {
-        change.key.starts_with(&prefix)
-            && miyu_config::key::item_of(config.items(), &change.key)
-                .is_some_and(|item| item.ui.package == Some(package) && !holds_secret(&item.kind))
-            && !change.value.as_ref().is_some_and(Json::is_object)
+        miyu_config::key::item_of(config.items(), &change.key).is_some_and(|item| {
+            crate::extensions::config::declared_by(item, package) && !holds_secret(&item.kind)
+        }) && !change.value.as_ref().is_some_and(Json::is_object)
             && !change
                 .input
                 .as_deref()

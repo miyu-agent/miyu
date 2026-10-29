@@ -236,7 +236,7 @@ Text only: no Markdown, HTML or color codes. Full pages (`place = "page"`) can a
 
 **Reading content other packages bring for you**: another package writing `[content.<your id>] dir = "…"` in its manifest brings you a folder. Call `content.list {}` to see who did and `content.read {"package", "path", "offset"?}` to read in chunks; after installs, removals and upgrades the core sends `content.changed`.
 
-**Recording your own events in a session**: `events.append {"session", "kind": "ext.<your id>.<name>", "body"}`. It doesn't start a turn and isn't shown to the model; UIs and your own later log reads see it.
+**Recording your own events in a session**: `events.append {"session", "kind": "ext.<your prefix>.<name>", "body"}`. It doesn't start a turn and isn't shown to the model; UIs and your own later log reads see it. The prefix is `prefix` in your manifest, or your package id without it.
 
 ## Don't
 

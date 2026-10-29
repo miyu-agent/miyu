@@ -11,6 +11,7 @@ pub(super) struct Head {
     pub(super) protocol: Option<[u32; 2]>,
     pub(super) name: Phrases,
     pub(super) summary: Phrases,
+    pub(super) prefix: Option<String>,
     pub(super) groups: Vec<String>,
     pub(super) icon: Option<String>,
     pub(super) logo: Option<String>,
@@ -102,6 +103,10 @@ impl Reader<'_> {
             Some(item) => self.phrases(item, "package.summary")?,
             None => Phrases::new(),
         };
+        let prefix = match table.get("prefix") {
+            Some(item) => Some(self.prefix(item)?),
+            None => None,
+        };
         let groups = match table.get("groups") {
             None => Vec::new(),
             Some(item) => self.groups(kind, table, item)?,
@@ -122,6 +127,7 @@ impl Reader<'_> {
             protocol,
             name,
             summary,
+            prefix,
             groups,
             icon,
             logo,
@@ -157,6 +163,20 @@ impl Reader<'_> {
 
     /// `[package] groups`（施工 BS-1 上中，设计 44 第三节第 2 条）：这个包在哪几个组里，只有内置包能写；组名的写法同包的编号，
     /// 不重复，照写的先后。组名在不在出厂的组表里由读清单的一方查（`miyu_store::packages::groups`）。
+    /// `[package] prefix`（施工 PN-1，设计 48 第二节）：写法同包编号（`key::ID`）。
+    fn prefix(&self, item: &Item) -> Result<String, Problem> {
+        let prefix = self.text(item, "package.prefix")?;
+        if !crate::key::valid(crate::key::ID, &prefix) {
+            return Err(self.problem(
+                Some(item),
+                Code::BadPrefix,
+                &prefix,
+                format!("package.prefix: \"{prefix}\" is not written like a package id"),
+            ));
+        }
+        Ok(prefix)
+    }
+
     fn groups(
         &self,
         kind: PackageKind,

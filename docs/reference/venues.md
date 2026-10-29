@@ -123,7 +123,7 @@
 
 ## `events.append` 的 `venue.*`
 
-除了自己的 `ext.<包>.*`（见 [扩展](extensions.md#eventsappend)），桥还能往场所会话里记两种：
+除了自己的 `ext.<前缀>.*`（见 [扩展](extensions.md#eventsappend)），桥还能往场所会话里记两种：
 
 | `kind` | `body` | 是什么 |
 |---|---|---|

@@ -25,7 +25,7 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 
 **Problems**: every issue found while reading, checking or changing config is one item: `level` (`error` or `warning`), `code`, `file`, `line`, `column`, `key`, `expected`, `got`, `suggest` (the nearest key for a misspelled one), `using` (what's in use instead), `message` (a full sentence for people, in the connection's language). Fields that don't apply are omitted.
 
-**Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings that start with its own package id, aren't secrets and aren't written as references.
+**Who can call**: the read methods (`config.schema`, `config.get`, `config.check`, `secret.list`, `model.list`, `provider.*`, `model.call`, `model.embed`, `usage.query`) are open to people and extensions. The write methods (`config.trust`, `secret.set`, `secret.delete`) are for people only; extensions get `local_only`. `config.set` lets an extension change, one key at a time, only system settings its own manifest declares, that aren't secrets and aren't written as references.
 
 ## `config.schema`
 

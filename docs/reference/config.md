@@ -25,7 +25,7 @@
 
 **问题**：读、查、改配置时发现的每一处写成一条：`level`（`error` 或 `warning`）、`code`（原因码）、`file`、`line`、`column`、`key`、`expected`、`got`、`suggest`（拼错的键最近的那个）、`using`（现在照什么用着）、`message`（整句给人看的话，照连接的语言）。没有的格不写。
 
-**谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己包编号开头的、不是密钥、不写成引用的项。
+**谁能调**：读的（`config.schema`、`config.get`、`config.check`、`secret.list`、`model.list`、`provider.*`、`model.call`、`model.embed`、`usage.query`）人、扩展都能调。改的（`config.trust`、`secret.set`、`secret.delete`）只给人，扩展调回 `local_only`。`config.set` 扩展只能逐项改系统配置里自己清单声明的、不是密钥、不写成引用的项。
 
 ## `config.schema`
 

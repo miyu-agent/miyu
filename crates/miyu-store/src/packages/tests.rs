@@ -206,6 +206,38 @@ fn a_feature_id_is_taken_by_whoever_is_read_first() {
     assert_eq!((problem.detail.as_str(), problem.line), ("files", None));
 }
 
+/// 前缀（施工 PN-1，设计 48 第二节第 3 条）：照读的先后先到先得，后到的那一份报 `prefix_taken`、整份不收；没写的照包编号。
+#[test]
+fn a_prefix_is_taken_by_whoever_is_read_first() {
+    let places = Places::new();
+    let short = "[package]\nname = { en = \"T\" }\nprefix = \"tui\"\n";
+    places.write(Layer::Shipped, "miyu-tui/package.toml", short);
+    places.write(
+        Layer::Home,
+        "tui/package.toml",
+        "[package]\nname = { en = \"T\" }\n",
+    );
+    places.write(
+        Layer::Home,
+        "web/package.toml",
+        "[package]\nname = { en = \"W\" }\n",
+    );
+    let found = places.packages.read();
+    assert_eq!(
+        brief(&found),
+        [
+            ("miyu-tui".to_string(), Layer::Shipped, None),
+            ("tui".to_string(), Layer::Home, Some(Code::PrefixTaken)),
+            ("web".to_string(), Layer::Home, None),
+        ],
+        "出厂的先读到"
+    );
+    let Err(Issue::Wrong(problem)) = &found[1].read else {
+        panic!("撞了");
+    };
+    assert_eq!(problem.detail, "tui");
+}
+
 #[test]
 fn a_broken_manifest_is_listed_with_its_problem() {
     let places = Places::new();

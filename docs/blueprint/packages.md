@@ -161,9 +161,9 @@ program = "miyu-embed"
 | `name`、`description` | 语言到一句话，`name` 必写 |
 | `hidden` | `true` 的设置页不画：照样能写、能查、进 Schema |
 
-1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<包的编号>.<名字>`，例如 `web.port`。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<包的编号>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表里有 `type` 或 `name` 的（空的也算）是一项，别的是一组，所以组里的项不能叫 `type`、`name`。设置页照旧在这个包那一组。
+1. 名字：小写字母开头，只有小写字母、数字、`_`，最多 64 个。键是 `<前缀>.<名字>`，例如 `web.port`；前缀是 `[package] prefix`，没写的是包的编号（施工 PN-1，设计 48 第二节）。可以多一层组（施工 9-1 再补，接入通讯平台要的）：`[settings.<组>.<名字>]`，键是 `<前缀>.<组>.<名字>`，例如 `im.qq.listen`；组名照名字的写法，只多一层。一张表里有 `type` 或 `name` 的（空的也算）是一项，别的是一组，所以组里的项不能叫 `type`、`name`。设置页照旧在这个包那一组。
 2. 核心起来时读清单那一次，读成了的清单的配置项接在核心自己的配置项后面，进配置清单：读配置、`miyu check`、`config.schema`、`config.get`、`config.set`、生成的 Schema 和参考文件都照它。经 `package.install`、`package.remove` 装卸以后照新的清单再拼一次（`Builtins::settings`，`miyu-core` 装上），配置服务换上（`Config::refit`）：配置照手里的字重新认，认得的项、问题变了的推 `config.changed`（`via: package`）；生成的三份照新的清单重写（施工 F-5 补）。卸掉的包，配置里它的项一并删掉（「装卸」第 7 条）；项目目录里还写着的照旧报不认识。
-3. 包的编号是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
+3. 包的前缀是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的几项、联网的几组、基础系统的 `show.system_hint`）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
 
 **两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，装上的那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于装上的、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）；一个包加了几个的，每个都算，有一个被占就整份不收（施工 F-13）。同一个包里写了两个同名的也报 `command_taken`，报在后一个。和内置子命令撞的，由 9-2 在命令行那一头拦。别的包占了的名字装的时候先查过（下面「冲突」），读的时候撞得上的只剩核心升级后出厂的新带了同名的：出厂的先读到。
@@ -312,12 +312,12 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 
 ### 冲突（施工 F-8 六补，设计 `31-软件包.md` 第四节最后两条、定了的 I、J）
 
-1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名（加了几个的每个都算，施工 F-13）；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）。九样各算各的：技能 `notes` 和库 `notes` 不算撞。
+1. **查什么**：一个包占的名字（`miyu_store::packages::conflicts`）：`[command]` 的子命令名（加了几个的每个都算，施工 F-13）；功能（`Manifest::features_of`）的编号，MCP 服务的那一个算服务名；功能下列的工具名、`scripts/` 里脚本的工具名；`skills/` 里的技能名；`kb/` 里库的编号；`commands/` 里斜杠命令模板的名字（施工 X-14 上补，`slash.md`）、清单 `[[slash]]` 声明的命令名（施工 X-14 下，和模板一个名字空间）、`[[widget]]` 整页的命令名（施工 X-15 上，同一个名字空间）；`personas/` 里人格的编号、`presets/` 里预设的编号（施工 P-11 下）；前缀（`Manifest::prefix_of`，没写的照包编号，施工 PN-1）。十样各算各的：技能 `notes` 和库 `notes` 不算撞。
    人格、预设还和出厂、你那一层有的比（施工 P-11 下，设计 31 第十节第 4 条）：撞了的写 `layer` 不写 `package`；这个包以前卸掉时留下的改动（`state/packages/.leftovers.json`）、升级时装着的这一份已经带着的不算。卸包时它带的人格、预设在你那一层有改动的记进 `.leftovers.json`，重装它划掉；`miyu check` 对包没装着、改动还在的报 `persona_left`、`preset_left` 警告（`file` 是那一份改动）。
 2. **跟谁比**：两层里清单读成了的、编号不是它的包；斜杠命令模板另和核心内置的命令名、别名比（`Commands::reserved`，记在拥有它的包上：记忆的 `memory`，长期目标的 `goal`，待办的 `todowrite`，循环的 `loop`；`/clear`、`/stop`、`/workspace` 是核心自带的，撞了写 `core: true`，施工 BS-1 下下；拥有它的包自己不算，装回人格记忆不和 `/remember` 撞；包没装的命令不比，名字空出来）。升级同一个包不和自己比；读坏了的、卸掉的出厂的不比；你自己放的技能、脚本、MCP 服务不比（自己的赢，设计 31 第五节第 3 条）。
-3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
+3. **什么时候**：`package.install` 从路径装、装回出厂的，在读清单、比编号以后，动文件以前；`preview: true` 一样查。撞了的报 `package_conflict`，`data.conflicts` 一处一条 `{"kind", "name", "package"}`（`kind` 是 `command`、`feature`、`tool`、`skill`、`mcp`、`knowledge`、`slash`（斜杠命令模板，施工 X-14 上补）、`persona`、`preset`、`prefix`（施工 PN-1）），照哪一样、名字、包排（`protocol.md`）。查要读包文件夹里的技能、脚本、库，放在阻塞线程里。
 4. **以前**：装完重读清单才认，谁先到照编号算：编号排在前的新包装得上，被判撞了的是装着的那个，悄悄失效。现在新来的让。
-5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于装上的，同一层照编号。子命令、功能撞了的装上的那一份整份不收（`command_taken`、`feature_taken`）；技能、脚本、知识库跳过装上的那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
+5. **读的时候**：撞得上的只剩核心升级后出厂的新带了同名的（定了的 J）：出厂的先于装上的，同一层照编号。子命令、功能、前缀撞了的装上的那一份整份不收（`command_taken`、`feature_taken`、`prefix_taken`）；技能、脚本、知识库跳过装上的那一份，技能、脚本 `miyu check` 报被谁盖住（`skills.md`）。
 
 ### 出错
 
@@ -335,7 +335,8 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `bad_command_name`、`bad_program`、`bad_page`、`bad_pages_dir` | 子命令名、程序名、页名、页面目录的写法不对（`pages_dir` 不能是绝对路径、带 `..`、`\`、`:`） |
 | `duplicate`、`command_taken` | 两层同编号的装上的那一份；子命令名被先读到的占了 |
 | `bad_setting_name`、`bad_type`、`bad_element`、`bad_default`、`bad_choices`、`bad_range`、`bad_layers`、`bad_applies`、`not_bool` | 配置项写错：名字、类型、列表的元素（写错、写成 `list`、不是字，施工 9-1 补）、默认值、选项、范围、几层、什么时候生效、`hidden`（施工 9-1 下） |
-| `settings_taken` | 包的编号和核心自己的配置撞了、又声明了配置项（施工 9-1 下） |
+| `settings_taken` | 包的前缀和核心自己的配置撞了、又声明了配置项（施工 9-1 下；PN-1 起照前缀） |
+| `bad_prefix`、`prefix_taken` | `[package] prefix` 写法不像包编号；前缀被先读到的包占了（出厂的先于装上的，同一层照编号；没写的照包编号算）（施工 PN-1） |
 | `bad_capability` | `[process] capabilities` 里有不认识的、重复的名字（施工 9-4 下上） |
 | `bad_feature`、`bad_tool`、`bad_platform`、`bad_dependency` | 功能的编号写法不对；功能下的工具名写法不对（英文字母、数字、`_`、`-`，1 到 64 个）、同一个包里列了两次；平台名写法不对；依赖的包编号写法不对、重复（施工 F-1） |
 | `feature_taken` | 功能的编号被先读到的包占了（施工 F-1） |

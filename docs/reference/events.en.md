@@ -54,7 +54,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `goal.set`, `goal.changed`, `goal.paused`, `goal.resumed`, `goal.ended` | A standing goal was set, changed, paused, resumed, ended |
 | `dream.ended` | A memory consolidation run finished: how many memories it added, revised and retired, whether it wrote the summary, whether it was stopped |
 | `venue.recalled`, `venue.delivered` | Someone recalled a message on the platform; her message reached the platform |
-| `ext.<package>.<name>` | Recorded by an extension (`events.append`) |
+| `ext.<prefix>.<name>` | Recorded by an extension (`events.append`; the prefix is the manifest's `prefix`, or the package id without it) |
 
 Undo, compaction and clearing never delete events: heads work out what's in effect themselves (or simply use the view stream).
 

@@ -124,6 +124,9 @@ async fn read_all<R: AsyncRead + Unpin>(
     let reverse = Peer::new(out.clone());
     let caller = Caller {
         reverse: reverse.clone(),
+        prefix: package
+            .as_deref()
+            .map(|package| crate::extensions::config::prefix_of(&core, package)),
         package: package.clone(),
     };
     // 它手里有哪些能力（施工 X-30；SU-2 中起照开关文件里批过的）：批、升级都会重新拉起，一个连接算一次就够。

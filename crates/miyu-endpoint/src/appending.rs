@@ -126,15 +126,15 @@ fn appended(caller: &Caller, kind: &str, body: Value) -> Result<(Appended, bool)
     }
 }
 
-/// `ext.<包>.<名字>` 的一条：每段的写法、整个最多 128 个字节照内核的种类查（[`ExtEvent::new`]）；这里多查至少有包、名字两段，
-/// 包是这个连接自己的，`body` 是对象、不超过上限。
+/// `ext.<前缀>.<名字>` 的一条：每段的写法、整个最多 128 个字节照内核的种类查（[`ExtEvent::new`]）；这里多查至少有前缀、名字
+/// 两段，前缀是这个连接的包的（施工 PN-1：清单 `prefix`，没写的照包编号），`body` 是对象、不超过上限。
 fn ext(caller: &Caller, kind: &str, body: Value) -> Result<ExtEvent, Refusal> {
     let mut segments = kind.split('.');
-    let (Some("ext"), Some(package), Some(_)) = (segments.next(), segments.next(), segments.next())
+    let (Some("ext"), Some(prefix), Some(_)) = (segments.next(), segments.next(), segments.next())
     else {
         return Err(Refusal::BAD_PARAMS);
     };
-    if caller.package.as_deref().is_some_and(|own| own != package) {
+    if caller.prefix.as_deref().is_some_and(|own| own != prefix) {
         return Err(Refusal::BAD_PARAMS);
     }
     if !body.is_object() || body.to_string().len() > BODY {

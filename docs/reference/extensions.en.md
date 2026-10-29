@@ -270,7 +270,7 @@ Another package can write `[content.<its id>] dir = "…"` in its manifest to br
 
 Record an event without a turn number in a session: it doesn't start a turn, doesn't interrupt, and isn't shown to the model.
 
-**Params**: `session`, `kind`, `body` (a JSON object, at most 16 KiB). Extensions can only record `ext.<own package id>.<name>` (each segment starts with a lowercase letter; only lowercase letters, digits, `_`, `-`; at most 128 characters in all). Chat platform bridges can also record `venue.recalled` and `venue.delivered` (see [Venues](venues.en.md)).
+**Params**: `session`, `kind`, `body` (a JSON object, at most 16 KiB). Extensions can only record `ext.<own prefix>.<name>` (the prefix is the manifest's `prefix`, or the package id without it) (each segment starts with a lowercase letter; only lowercase letters, digits, `_`, `-`; at most 128 characters in all). Chat platform bridges can also record `venue.recalled` and `venue.delivered` (see [Venues](venues.en.md)).
 
 **Response**: `{"seq": <number>}`.
 
