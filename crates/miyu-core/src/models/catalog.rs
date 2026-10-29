@@ -59,7 +59,7 @@ pub struct Places {
 
 /// 读目录：挑新的、坏的退回另一份，读完记 `INFO catalog loaded`，坏了的记 `WARN catalog unreadable`，都读不了再记
 /// `WARN catalog empty`。一个模型坏了的记一行 `DEBUG`。挑中的那一份有整理好的就读它，`catalog loaded` 多一格
-/// `digest=true`；没有的解完另起线程整理一份（施工 V-5 中）。在阻塞线程里调。
+/// `digest=true`；没有的解完另起线程整理一份（施工 V-5 中），核心放锁之前等它写完（施工 TMP-1 补2）。在阻塞线程里调。
 pub fn load(places: &Places) -> Option<Loaded> {
     let mut candidates = vec![(CatalogSource::Snapshot, places.snapshot.clone())];
     if let Some(cache) = &places.cache {
@@ -100,8 +100,11 @@ pub fn load(places: &Places) -> Option<Loaded> {
                 }
                 let catalog = read.catalog;
                 loaded(&catalog, source, &fetched, started, false);
-                if let (Some(cache), Some(of)) = (&places.cache, of) {
-                    drop(digest::keep(cache.clone(), of, catalog.clone()));
+                // 写盘的线程登记下来，核心放锁之前等它写完（施工 TMP-1 补2，`crate::pending`）。
+                if let (Some(cache), Some(of)) = (&places.cache, of)
+                    && let Some(writing) = digest::keep(cache.clone(), of, catalog.clone())
+                {
+                    crate::pending::hold(writing);
                 }
                 return Some(Loaded {
                     catalog,

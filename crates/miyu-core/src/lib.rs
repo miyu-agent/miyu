@@ -26,6 +26,7 @@ pub mod memlog;
 pub mod models;
 pub mod owner;
 pub mod packages;
+mod pending;
 mod sandbox;
 mod serve;
 pub mod settings;
@@ -34,7 +35,7 @@ mod start;
 mod trash;
 
 pub use kit::Kit;
-pub use serve::{Stopped, idle_limit, serve};
+pub use serve::{Stopped, idle_limit, serve, serve_then};
 
 use std::io::{self, Write};
 use std::path::Path;
@@ -467,19 +468,16 @@ async fn run(
     let sweeping = cache::sweep(cached);
     let (fixed, configured) = (options.idle, Arc::clone(&core));
     let idle = move || fixed.or_else(|| serve::idle_limit(&configured));
-    serve(opened.listener, core, idle, serve::signal()).await;
-    if let Err(error) = purging.await {
-        tracing::error!(target: TARGET, panic = error.is_panic(), "trash purge panicked");
-    }
-    if let Err(error) = sweeping.await {
-        tracing::error!(target: TARGET, panic = error.is_panic(), "cache sweep panicked");
-    }
+    // 走之前的收尾在放锁之前做完（施工 TMP-1 补2）。
+    let closing = pending::closing(purging, sweeping);
+    serve_then(opened.listener, core, idle, serve::signal(), closing).await;
     ExitCode::SUCCESS
 }
 
 /// 起不来：原因写成那一行交给头，头印给人看；运行日志（装上了的话）只记没过的是哪一步 `stage`，原因是给人看的
-/// 中文，不进日志（施工 4-9 再补四上）。
+/// 中文，不进日志（施工 4-9 再补四上）。调它的地方接着就走、放锁，所以先等另起线程写盘的写完（施工 TMP-1 补2）。
 fn failed(stage: &'static str, reason: String) -> ExitCode {
+    pending::finish();
     tracing::warn!(target: TARGET, stage, "not started");
     say(&Ready::Failed(reason));
     ExitCode::FAILURE

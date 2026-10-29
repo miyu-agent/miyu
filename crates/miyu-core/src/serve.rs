@@ -69,6 +69,18 @@ pub async fn serve(
     idle: impl Fn() -> Option<Duration>,
     stop: impl Future<Output = ()>,
 ) -> Stopped {
+    serve_then(listener, core, idle, stop, async {}).await
+}
+
+/// 同 [`serve`]，停下以后、放锁之前先做完收尾 `closing`（施工 TMP-1 补2）：清回收处、清缓存、等另起线程写盘的写完，这些都碰
+/// 数据根，只许拿着锁的核心做。原来锁一放才等它们，下一份核心起来、测试删数据根时撞上。
+pub async fn serve_then(
+    listener: Listener,
+    core: Arc<Core>,
+    idle: impl Fn() -> Option<Duration>,
+    stop: impl Future<Output = ()>,
+    closing: impl Future<Output = ()>,
+) -> Stopped {
     let running = miyu_endpoint::run(listener, Arc::clone(&core));
     tokio::pin!(running, stop);
     let mut changes = core.activity().subscribe();
@@ -105,6 +117,8 @@ pub async fn serve(
     };
     // 扩展随核心退出（施工 9-4 上）：关它们的标准输入，一起等，没退的杀掉。
     core.stop_extensions().await;
+    // 锁跟着 `running` 里的监听器，交回时才放：收尾在这之前。
+    closing.await;
     tracing::info!(target: TARGET, reason = stopped.as_str(), "stopped");
     stopped
 }

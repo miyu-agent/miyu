@@ -15,6 +15,10 @@ use crate::TARGET;
 /// 缓存目录里的文件名。
 pub const FILE: &str = "models-dev.digest.json";
 
+/// 测试里让写盘的线程先睡一会儿再写（施工 TMP-1 补2）：像门禁满载时那样晚到，看核心放锁之前等不等它。
+#[cfg(test)]
+pub(crate) static SLOW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// 这一份原文的指纹：`source` 是哪一份，`file` 是原文，`fetched` 是它的 `meta` 里写的，`program` 是程序。读不到原文、
 /// 程序的大小和改动时间的没有。
 pub fn fingerprint(
@@ -50,6 +54,10 @@ pub fn keep(cache: PathBuf, of: String, catalog: Catalog) -> Option<std::thread:
     std::thread::Builder::new()
         .name("catalog-digest".to_string())
         .spawn(move || {
+            #[cfg(test)]
+            if SLOW.load(std::sync::atomic::Ordering::Relaxed) {
+                std::thread::sleep(std::time::Duration::from_millis(300));
+            }
             let text = catalog.digest(&of);
             let temp = cache.join(format!("{FILE}.{}.tmp", std::process::id()));
             let written = std::fs::create_dir_all(&cache)

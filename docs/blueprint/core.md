@@ -12,7 +12,8 @@
 | `crates/miyu-core/src/lib.rs` | `main`：起来的先后；系统的账号名 `admin`；工具目录；写那一行 |
 | `crates/miyu-core/src/start.rs`、`owner.rs` | 起来的后半段：开套接字、找主人，没有的当场照系统用户名建一个（施工 SU-1），照他读清单和配置 |
 | `crates/miyu-core/src/models.rs`、`models/` | 读资源目录里的供应商档案（TOML 读成 JSON 交给 `miyu-models`）和模型资料，造会话的路由（施工 8-6，`models.md`） |
-| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号 |
+| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
+| `crates/miyu-core/src/pending.rs` | 另起线程写盘的登记下来，核心放锁之前等它们写完（施工 TMP-1 补2，下面「停下」第 6 条） |
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 照编进来的可选软件包（cargo 开关）往查询表里登记，交给 `Core`（施工 W-4，`mermaid.md`；`net` 的 `link.preview` 在后台答，卡片的图存进管理员的 blob，施工 W-7，`net.md`）；起来时清掉管理员分块上传留下的暂存（施工 W-5） |
 | `crates/miyu-core/src/trash.rs` | 起来时清一次回收处；删了的会话留多久 `KEEP`（施工 3-8 三补）；删了的人格同样清（施工 P-3 下） |
@@ -85,11 +86,11 @@
 11. 工具目录：登记基础系统，十一件：`edit`、`glob`、`grep`、`history`、`jobs`（施工 7-4）、`send_message`（施工 7-7）、`read`、`shell`、`subagent`（施工 7-5；7-5 再补从 `agent` 改名，以前的名字照样找得到）、`trash`、`write`；工具的字从资源目录读，登记完就冻结（`tools/interface.md`）。
 12. 核心的家底：数据根、资源目录、模型、工具目录、系统的家目录、管理员 `admin`、本机令牌，会话表是空的，执行器的任务表是空的（施工 7-3，`protocol.md`）；人格记忆装没装照读到的清单设在核心一份的记忆上（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）；照编进来的可选软件包往查询表里登记（`packages.rs`，cargo 开关 `mermaid`、`net`，施工 W-4、W-7）：`mermaid.render`、`link.preview` 调得到，没编进来的核心起来时这张表里就没有这一行；两个包都等第一次调才读自己的资源（`net` 这时才读环境变量里的代理）。清一遍管理员分块上传留下的暂存：`blobs/tmp/` 里的 `upload-*`，崩了、被杀留下的（`packages::clear_uploads`，施工 W-5，`store.md` 第九条第 6 款）；在这一步做，接连接以前：真要传的东西这时都还没开始。不载入任何会话；会话列表的索引 `home/<账号>/index/sessions.db` 照账号用到时才开（施工 Y-12 上、中上：起来时不再先开管理员的，设置那一段的核心不替还没有的人建家目录），开了一直开着：没有的新建，读不了、坏了、版本不对的删掉换一份空的，列会话时照日志补；都不影响起不起得来（施工 3-8 七补，`store/index.md`「怎么走」第 1 条）。同样打开用量汇总 `state/usage.db`，一直开着，交给会话（落盘时写）、模型资料（一次性入口记账，`ModelData::keep_ledger`）、协议（`usage.query`）；新建的记 `INFO usage index created`，读不了、坏了、版本不对的删掉重建、记 `WARN usage index rebuilt`，查之前照日志补（施工 8-15，`models.md`「怎么走」第九条第 4 条）。会话表造会话、载入时交给会话一份造子会话的端口（施工 7-5，`protocol.md`「会话表」第 7 条）。
 13. 往标准输出写一行 `ready`。接着在后台读 models.dev 的目录、用出来的、供应商的列表，读完放行等着它的（造会话、载入、`model.list`），之后在后台更新目录（下面「模型」第 5、6 条，施工 8-7）。
-14. 清一次回收处（施工 3-8 三补，`store.md` 第 12 条第 2 款）：管理员的回收处里删了满 7 天（`KEEP`，2026-09-30 项目主人定）的会话连目录删掉。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好合计，往管理员的 `journal.jsonl` 追加一条 `usage.purged`，写进去了才删；写不进去的（连同日志读不了的）留着，记 `WARN trash entry kept`，下次再清。写了 `ready` 以后在阻塞线程里清，不耽误头连上来、第 15 步照常；核心退出之前等它清完。钟是这时系统的钟，读不出的当 1970 年（什么都不满时限，一个都不删）。删了的记一条 `INFO trash purged removed=<几个>`，一个都没删的不记；读不出删的时刻、删不掉的，一个一条 `WARN trash entry kept session=… error=…`；回收处读不了的记 `WARN trash not read error=…`。都不影响起不起得来。
+14. 清一次回收处（施工 3-8 三补，`store.md` 第 12 条第 2 款）：管理员的回收处里删了满 7 天（`KEEP`，2026-09-30 项目主人定）的会话连目录删掉。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好合计，往管理员的 `journal.jsonl` 追加一条 `usage.purged`，写进去了才删；写不进去的（连同日志读不了的）留着，记 `WARN trash entry kept`，下次再清。写了 `ready` 以后在阻塞线程里清，不耽误头连上来、第 15 步照常；核心放锁之前等它清完（下面「停下」第 6 条）。钟是这时系统的钟，读不出的当 1970 年（什么都不满时限，一个都不删）。删了的记一条 `INFO trash purged removed=<几个>`，一个都没删的不记；读不出删的时刻、删不掉的，一个一条 `WARN trash entry kept session=… error=…`；回收处读不了的记 `WARN trash not read error=…`。都不影响起不起得来。
 15. 开始自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux、macOS（施工 V-4 补）上起一个任务，记一行 `start`，之后每分钟一行，涨得快的多一行，写进 `state/logs/memory.jsonl`；量不出来的平台不起，记一条 `DEBUG memory samples unsupported`；文件打不开的记一条 `WARN memory samples not started`，照样起来。
 16. 一个个接连接，直到停下（下面「停下」）。
 
-第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <原因>`，退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因是给人看的中文，只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）。
+第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <原因>`，退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因是给人看的中文，只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）；写那一行之前先等另起线程写盘的写完（下面「停下」第 6 条），调它的地方接着就放锁。
 
 **那一行**
 
@@ -129,8 +130,9 @@
 3. 看到空闲，从这一次看的时刻记起；哪一次看的时候还空闲、已经够了空闲时限，就停。中间哪一次看到不空闲，从头记。所以从真的空下来算，到退出，至少是空闲时限，最多再多两个间隔；600 秒的，在 600 到 660 秒之间：记起的时刻和后来看的时刻都是当时的钟，正好满 600 秒的那一次看可能差几微秒不够，要等下一次。`--idle-seconds 0` 的，第一次看到空闲就停。
 4. 停的信号：Ctrl+C（SIGINT），Unix 上还有 SIGTERM。收到了，先有计划地停下全部在跑的会话（跑到一半的回合记成「重启了」，下次载入接着干；在跑的后台命令先记 `restarted`、落了盘再整组杀，R5，施工 7-3），再停。拉起的核心自成一个进程组，终端里按 Ctrl+C 打不到它，要停得明着发。
 5. Unix 上装不上 SIGTERM 的，记一条 `WARN SIGTERM not watched error=…`，只等 Ctrl+C。只等 Ctrl+C 的（Windows 上、Unix 上装不上 SIGTERM 的）连 Ctrl+C 也装不上，记一条 `WARN Ctrl+C not watched error=…`，当它不会来。SIGTERM 装得上时，等的是 Ctrl+C 和 SIGTERM 一起 `select!`：这时 Ctrl+C 装不上，照样记一条 `WARN Ctrl+C not watched error=…`，当它不会来，只等 SIGTERM（施工 4-9 再补三上）。
-6. 停之前记一条 `INFO stopped reason=idle`（空闲）或 `reason=signal`（信号）：那时锁还在手里，下一个核心起来之前，这份日志还是它一个人写。
-7. 然后删掉套接字文件、放开锁，连接跟着没了，退出码 0。
+6. 收尾，在放锁之前做完（施工 TMP-1 补2，`serve_then`）：等第 14 步清完回收处、清完缓存（`cache.rs`），等另起线程写盘的写完（缓存目录里整理好的模型目录，`models.md`「怎么走」第二条；`pending.rs`）。这些都碰数据根，只许拿着锁的核心做：原来锁放了才等，下一份核心起来、测试删数据根时撞上，删掉的目录又被一层层建回来（2026-10-29 主会话定：这是核心的毛病，不在测试夹具上补）。
+7. 停之前记一条 `INFO stopped reason=idle`（空闲）或 `reason=signal`（信号）：那时锁还在手里，下一个核心起来之前，这份日志还是它一个人写。
+8. 然后删掉套接字文件、放开锁，连接跟着没了，退出码 0。
 
 ### 出错
 
@@ -160,6 +162,7 @@
 | `INFO` | `trash purged removed=…`（施工 3-8 三补） |
 | `WARN` | `trash entry kept session=… error=…`、`trash not read error=…` |
 | `ERROR` | `trash purge panicked panic=…` |
+| `ERROR` | `background write panicked`、`background writes not awaited panic=…`（施工 TMP-1 补2：另起线程写盘的、等它们的线程 panic 了） |
 | `WARN` | `SIGTERM not watched error=…`、`Ctrl+C not watched error=…` |
 | `INFO` | `stopped reason=idle`、`stopped reason=signal` |
 
@@ -174,8 +177,9 @@
 | `crates/miyu/tests/core.rs` | 头拉起真的 `miyu core`，等它说好了再连；管理员叫 `admin`，建好了它的家目录；再连不再拉起；两个头同时只拉起一个；起不来的说原因（找不到资源目录），日志里只写 `stage=resources`；已经在跑的写 `running` 就走、不写日志；什么都没写就退了的；空闲了自己走，日志里一条 `starting`、一条 `stopped reason=idle`；`starting` 那一行的数据根在家目录下的写成 `~`、有和 UTC 差多少；工作目录是数据根；起来时清一次回收处：删了满 7 天的删、没满的留，记一条 `trash purged removed=1`（施工 3-8 三补）；起来时探一次沙盒的助手：旁边有助手的记 `sandbox` 那一行、平台是这台机器的、有手段那一格，没有的记找不到（施工 5-1）；握手报的沙盒和记下的对得上（施工 5-4 下） |
 | `crates/miyu/tests/crash.rs`（施工 7-8） | 真的 `miyu core`，模型是本机回环上的假服务器：放一个心跳到后台（Unix 上是命令起的孙进程），硬杀核心（Unix `SIGKILL`，Windows 结束进程、不连子进程），心跳几秒内停下；三个平台都跑 |
 | `crates/miyu-sandbox/src/lifeline/tests.rs`（施工 7-8，Unix） | 生命线还在，组里的照常跑；写端一关，看门的把整个组杀掉，孙进程也在里面 |
-| `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6） |
+| `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；收尾时锁还在、交回以后才放（施工 TMP-1 补2）；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6） |
 | `crates/miyu-core/src/serve/tests.rs` | 多久看一次：四分之一，最多 30 秒，最少 100 毫秒；装不上的 Ctrl+C 当它不会来（造不出真的装不上，测的是等它的那一小段）。最后一个头走了才开始算空闲、断开时叫一声（`tests/serve.rs`，施工 V-6 下拿掉断开时那一声就红） |
+| `crates/miyu-core/src/pending/tests.rs`（施工 TMP-1 补2） | 读目录时另起线程写的整理好的一份，等完以后已经在缓存目录里了（写得慢的，测试里让它先睡 300 毫秒，也等）；登记了的都等 |
 | `crates/miyu-core/tests/tools.rs` | 工具目录里是基础系统的七件；资源目录坏了，说是哪一份 |
 | `crates/miyu-core/src/models/tests.rs` | 出厂的档案读得进来，DeepSeek 那一套开关和请求形状探针用的 `Compat::deepseek()` 一样、收图不收 PDF、图照官方的算法（施工 8-6，原来写在代码里，施工 4-13）；TOML 变成 JSON，写错的说是档案 |
 | `crates/miyu-core/src/sandbox/tests.rs` | 探沙盒的助手：旁边没有的、不知道主程序在哪的记找不到，跑不了的记原因（施工 5-1）；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和原因（施工 5-4 上、下）；沙盒的缓存在缓存目录下的 `sandbox`，cargo 目录照 `CARGO_HOME`、空的当没设、不然 `~/.cargo`，算不出缓存目录的记一行、交回空的（施工 5-4 下） |

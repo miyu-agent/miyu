@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::support::{Head, Home, within};
-use miyu_core::{Stopped, models, serve};
+use miyu_core::{Stopped, models, serve, serve_then};
 use miyu_ipc::{ConnectError, Lock};
 use miyu_kernel::event::{Body, CallResult, EndReason, ErrorClass, JobReason};
 use miyu_kernel::origin::By;
@@ -51,6 +51,39 @@ async fn an_idle_core_stops_and_lets_go_of_everything() {
         }
     })
     .await;
+}
+
+/// 走之前的收尾（施工 TMP-1 补2：清回收处、清缓存、等另起线程写盘的写完）在放锁之前做完：收尾里锁还在手里，交回以后才放开。
+/// 原来锁一放就走到下一步，收尾还在碰数据根，下一份核心起来、测试删数据根时撞上它。
+#[tokio::test]
+async fn the_closing_work_is_done_before_the_lock_goes() {
+    let home = Home::new();
+    let opened = home.open();
+    let core = home.core(Arc::new(Script::new([])), &opened.token);
+    let held = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let (root, seen) = (home.root.clone(), Arc::clone(&held));
+    let closing = async move {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let running = matches!(Lock::acquire(&root), Err(miyu_ipc::OpenError::Running));
+        seen.store(running, std::sync::atomic::Ordering::Relaxed);
+    };
+    let stopped = within(
+        "空闲退出",
+        serve_then(
+            opened.listener,
+            core,
+            || Some(IDLE),
+            std::future::pending(),
+            closing,
+        ),
+    )
+    .await;
+    assert_eq!(stopped, Stopped::Idle);
+    assert!(
+        held.load(std::sync::atomic::Ordering::Relaxed),
+        "收尾时锁还在"
+    );
+    Lock::acquire(&home.root).expect("交回以后锁放开了");
 }
 
 #[tokio::test]
