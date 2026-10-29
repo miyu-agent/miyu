@@ -1,6 +1,7 @@
 //! `miyu web`（`docs/blueprint/web-module.md`「怎么走」第十一条第 1 款，施工 W-9）：主程序里不放网页的代码，照清单找网页
 //! 软件（施工 9-3：子命令是 `web` 的那个包的程序，出厂那一份是 `miyu-web`），找包文件夹的 `bin/`、主程序真实位置旁边的
-//! （Windows 上加 `.exe`，施工 F-8 上再补），把参数原样交给它的 `open`，等它退出，退出码照它的。没装的说怎么装，退出码 1。
+//! （Windows 上加 `.exe`，施工 F-8 上再补），把参数原样交给它的 `open`，等它退出，退出码照它的。没装的说怎么装，退出码 1
+//! （CL-2 下照设计 47：报错 `miyu: ` 打头，装法写成提示，照软件源装）。
 
 #[cfg(test)]
 mod tests;
@@ -16,6 +17,7 @@ use miyu_store::packages::{Packages, locate};
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
+use crate::diagnostic::{self, Problem};
 use crate::language::{self, Language};
 
 /// 清单里找不到网页那一份时照它找：出厂的网页软件。
@@ -106,9 +108,7 @@ pub fn web_on(
     err: &mut dyn Write,
 ) -> u8 {
     let Some(launch) = locate(program, dir, main) else {
-        if writeln!(err, "{}", not_installed(language)).is_err() {
-            // 标准错误关了：没有别处可说。
-        }
+        diagnostic::error(err, language, &not_installed(language));
         return 1;
     };
     // 照 `launch` 起：Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。主程序的真实位置照转交的规矩交（施工 G-15）：装进
@@ -127,22 +127,27 @@ pub fn web_on(
             .and_then(|code| u8::try_from(code).ok())
             .unwrap_or(1),
         Err(error) => {
-            if writeln!(err, "miyu web: {}: {error}", launch.program.display()).is_err() {
-                // 标准错误关了：没有别处可说。
-            }
+            let program = launch.program.display();
+            let problem = match language {
+                Language::Chinese => Problem::new(format!("无法运行 {program}：{error}")),
+                Language::English => Problem::new(format!("cannot run {program}: {error}")),
+            };
+            diagnostic::error(err, language, &problem);
             1
         }
     }
 }
 
-/// 没装网页界面：怎么装。
-fn not_installed(language: Language) -> &'static str {
+/// 网页界面的包编号：没装时照它说怎么装（同没装终端界面的那一句，`head.rs`）。
+const PACKAGE: &str = "web";
+
+/// 没装网页界面：照软件源装。
+fn not_installed(language: Language) -> Problem {
     match language {
         Language::Chinese => {
-            "没装网页界面。装法：装和 miyu 同一个版本的 miyu-web 包（Arch：yay -S miyu-web；Debian、Ubuntu：apt install miyu-web；Fedora：dnf install miyu-web；macOS：brew install miyu-web），它装在 miyu 旁边。"
+            Problem::new("未安装网页界面").hint(format!("用 'miyu pkg install {PACKAGE}' 安装"))
         }
-        Language::English => {
-            "The web UI is not installed. Install the miyu-web package of the same version as miyu (Arch: yay -S miyu-web; Debian, Ubuntu: apt install miyu-web; Fedora: dnf install miyu-web; macOS: brew install miyu-web); it goes next to miyu."
-        }
+        Language::English => Problem::new("no web interface installed")
+            .hint(format!("install it with 'miyu pkg install {PACKAGE}'")),
     }
 }

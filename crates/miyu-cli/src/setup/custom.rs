@@ -32,7 +32,7 @@ impl Flow<'_> {
             if url.starts_with("http://") || url.starts_with("https://") {
                 break url;
             }
-            say(self.err, language.not_a_url());
+            self.failed(&language.not_a_url());
         };
         say(self.err, language.protocol_heading());
         let rows: Vec<Row> = DRIVERS
@@ -46,8 +46,8 @@ impl Flow<'_> {
             match typed(self.ask(language.pick_number()), DRIVERS.len()) {
                 Typed::Picked(at) => break DRIVERS[at],
                 Typed::Empty | Typed::End => return self.not_picked(),
-                Typed::Zero => say(self.err, &language.not_a_number("0")),
-                Typed::Other(text) => say(self.err, &language.not_a_number(&text)),
+                Typed::Zero => self.failed(&language.not_a_number("0")),
+                Typed::Other(text) => self.failed(&language.not_a_number(&text)),
             }
         };
         Ok(Chosen {
@@ -86,12 +86,12 @@ impl Flow<'_> {
                 return Ok(suggested);
             }
             if !key::valid(key::ID, id) {
-                say(self.err, &language.bad_custom_id(id));
+                self.failed(&language.bad_custom_id(id));
                 continue;
             }
             let got = self.request("config.get", json!({})).await?;
             if taken(&got, id) {
-                say(self.err, &language.custom_id_taken(id));
+                self.failed(&language.custom_id_taken(id));
                 continue;
             }
             return Ok(id.to_string());

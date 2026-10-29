@@ -34,32 +34,32 @@
 
 ### 怎么走
 
-1. **连核心以前**：标准输入或标准错误不是终端、又没写 `--provider` 的：说「要在终端里选，或者写 miyu setup --provider <编号>」，退出码 2，不拉起核心。
+1. **连核心以前**：标准输入或标准错误不是终端、又没写 `--provider` 的：报「miyu: 需要在终端中选择」，提示「或者指定供应商：'miyu setup --provider <编号>'」，退出码 2，不拉起核心。
 2. **连核心、握手**：照 `miyu config`（没在跑的拉起来）。之后给人看的字照回应的 `language`。
 3. **选一家**（没写 `--provider`）：`provider.detect`、`provider.catalog {"featured": true}`（施工 8-11 再补，2026-10-08 项目主人定）。
    1. 头的环境里设了（去掉前后空白不是空的）、`looked_for` 里有、`keys` 里没有的变量：先说一段灰字，哪几个变量核心看不到，怎么让它看到（`models.md` 第七条第 2 条）。
-   2. 标准错误上一行头「选一家：」，一家一行 `  编号  名字  标记`：先是常用的几家，照 `featured` 的先后（配置里已经有的标「已配好」，`provider.detect` 的 `keys` 里有它、能用的标「已找到 key」；用不了的不编号、灰字、接用不了的原因）；再是本机跑着的服务（`local`，标「本机 <地址>」，已经配好的再接「，已配好」）；最后一行「自定义」。问「选一个编号：」。
-   3. 敲的是列出的编号：就是那一家，「自定义」接第 4 条。直接回车、读到头：说「没选」，退出码 1。别的（`0` 也算）：说「<敲的> 不是列出的编号」，再问。
+   2. 标准错误上一行头「选择供应商：」，一家一行 `  编号  名字  标记`：先是常用的几家，照 `featured` 的先后（配置里已经有的标「已配置」，`provider.detect` 的 `keys` 里有它、能用的标「已找到密钥」；用不了的不编号、灰字、接用不了的原因）；再是本机跑着的服务（`local`，标「本机 <地址>」，已经配好的再接「，已配置」）；最后一行「自定义」。问「选择编号：」。
+   3. 敲的是列出的编号：就是那一家，「自定义」接第 4 条。直接回车、读到头：报「miyu: 未选择」，退出码 1。别的（`0` 也算）：报「miyu: 无效的编号：<敲的>」，再问。
 4. **自定义**（施工 8-11 再补）：
-   1. 问「Base URL：」，去掉前后空白和末尾的 `/`。不是 `http://`、`https://` 开头的：说「要以 http:// 或 https:// 开头」，再问。直接回车、读到头：「没选」，退出码 1。
-   2. 标准错误上一行头「接口协议：」，列三行：`OpenAI 兼容`、`Anthropic`、`OpenAI Responses`（驱动 `openai-chat`、`anthropic`、`openai-responses`，核心现在会说的三种）。问「选一个编号：」，认法同第 3 条。
+   1. 问「Base URL：」，去掉前后空白和末尾的 `/`。不是 `http://`、`https://` 开头的：报「miyu: 地址必须以 http:// 或 https:// 开头」，再问。直接回车、读到头：「未选择」，退出码 1。
+   2. 标准错误上一行头「接口协议：」，列三行：`OpenAI 兼容`、`Anthropic`、`OpenAI Responses`（驱动 `openai-chat`、`anthropic`、`openai-responses`，核心现在会说的三种）。问「选择编号：」，认法同第 3 条。
    3. 名字是地址的主机名。配置里的编号照主机名起：本机的（`localhost`、IP）是 `local`；别的取倒数第二段（`api.example.com` 是 `example`），倒数第二段是通用的二级域名（`co`、`com`、`net`、`org`、`edu`、`gov`、`ac`）的再往前一段（`api.example.co.uk` 是 `example`）；写法照第 10 条改（`302.ai` 是 `p-302`）。试通了以后（或者人说仍然保存），配置里已经有这个编号的往后加 `-2`、`-3`。
-   4. 在终端里的接着问「ID（直接回车用 <起好的>）：」（施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，再接一家只能是 `local-2`，没地方改；8-11 七补，2026-10-14 项目主人定这一格叫「ID」，「编号」像 1234567）：去掉前后空白是空的、和起好的一样的，用起好的；不合「路径里的名字」写法的（小写字母开头，只用小写字母、数字、`-`、`_`，最长 32 个字），说「<敲的> 不能当 ID：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字」，再问；配置里已经有的（问一次 `config.get`），说「已经有 <敲的> 了」，再问；读到头：「没选」，退出码 1，什么都不写。贴的 key 存成这个 ID（第 8 条）。
-5. **`--provider`**：`provider.catalog` 带 `query` 是它，取 `id` 一模一样、能用的那一家。没有的：说「目录里没有能用的 <编号>」，退出码 2。`provider.detect` 里有它的 key 的，照找到的那个变量用（第一个）。
+   4. 在终端里的接着问「ID（回车使用 <起好的>）：」（施工 8-11 六补，2026-10-13 项目主人照推荐定：局域网的一律叫 `local`，再接一家只能是 `local-2`，没地方改；8-11 七补，2026-10-14 项目主人定这一格叫「ID」，「编号」像 1234567）：去掉前后空白是空的、和起好的一样的，用起好的；不合「路径里的名字」写法的（小写字母开头，只用小写字母、数字、`-`、`_`，最长 32 个字），报「miyu: ID 无效：<敲的>」、提示写法，再问；配置里已经有的（问一次 `config.get`），报「miyu: ID '<敲的>' 已存在」，再问；读到头：「未选择」，退出码 1，什么都不写。贴的 key 存成这个 ID（第 8 条）。
+5. **`--provider`**：`provider.catalog` 带 `query` 是它，取 `id` 一模一样、能用的那一家。没有的：报「miyu: 目录中没有可用的供应商 '<编号>'」，退出码 2。`provider.detect` 里有它的 key 的，照找到的那个变量用（第一个）。
 6. **key**：
    - 选的是找到的 key：引用那个变量 `{ env = … }`，不复制。写了 `--env` 的照 `--env`。
    - 选的是本机的服务、搜到的地址在本机的一家（`provider.catalog` 的 `local`）：不要 key。
    - 选的是已经配好的那一家：照配置，不问。
-   - 自定义的：问「Key（不显示，可以空）：」，读法同下一条；去掉前后空白是空的是不要 key（本机的服务、不要 key 的中转）。
-   - 别的：标准输入是终端的，问「粘贴 <编号> 的 key（不显示）：」，关掉回显读一行（和 `miyu provider login` 同一条：自己管终端的设置，按了 `Ctrl+C`、或者还没贴一个字时按了 `Ctrl+D`，说「没存，取消了」，退出码 130，整个 `miyu setup` 照取消办，配置一个字都不写，施工 8-5 补）；不是终端的，整份读标准输入，没有取消这一条。去掉前后空白是空的：说「没收到 key」，退出码 1。
-7. **试**：说「试一下 <名字>……」，`provider.test`：配好了的带 `provider`；自定义的带 `candidate`，`driver`、`base_url` 是填的；别的带 `candidate`，`catalog` 是这一家的编号；`key` 照上一步（贴的照 `{value}` 交，空的不带）；写了 `--model` 的带 `model`。
-   - 核心说要模型名（`need_model`，列不出模型、又不是认证错）、没写 `--model`、在终端里的（施工 8-11 再补、五补）：说「未获取到模型列表」，问「模型名：」，拿它（去掉前后空白）带 `model` 再试一次。直接回车、读到头：「没选」，退出码 1。
-   - 成了：只列了模型的（`checked` 是 `list`，施工 8-11 五补）灰字「· 通了：列出 <n> 个模型。」；发了一句的灰字「· 通了：试的 <模型>，<n> 毫秒收到第一个字。」；`listed` 是 `catalog` 的再一行灰字「· 供应商列不出模型，下面照 models.dev 的目录列。」。
-   - 没成：说「不通（<哪一步>）：<分类>：<原话>」（没有原话的不写第二个冒号以后；HTTP 状态在原话里，驱动写的 `HTTP 401: …`，和 `miyu ask` 出错那一行一样）。哪一步：`config` 是「配置」，`list` 是「列模型」，`request` 是「发请求」；分类照 `cli/ask.md` 出错那一行的说法。在终端里的先问「仍然保存？[y/N]」（施工 8-11 五补，2026-10-13 项目主人定：测不通也能接着走，不卡死）：`y`、`yes`（不分大小写）照填的往下走：还没有模型的先问「模型名：」（直接回车、读到头：「没选」，退出码 1），贴的 key 照样存（第 8 条），选模型那一步就用它。别的、直接回车回到上一步：贴的 key（自定义的也是）回到贴 key，别的回到第 3 条选一家（写了 `--provider` 的没有上一步，退出码 1）。不在终端里的不问，退出码 1。
-8. **存 key**（贴的 key 试通了，或者人说仍然保存）：`secret.set`，`name` 是这一家在配置里的编号（第 10 条）。成了：灰字照 `miyu provider login` 说「· <编号> 的 key 存好了」或「· 换掉了 <编号> 的 key」。被拒绝的：印核心的原话，退出码 1。
-9. **选模型**（没写 `--model`、没在第 7 条填模型名）：`provider.test` 列出的模型，试的那一个排第一、后面接「（推荐）」，别的照列出的先后。标准错误上一行头「选主对话的模型：」，一个一行 `  编号  模型`，最多列 20 个；多的再说一句「还有 <n> 个，敲名字也行。」。问「选一个编号，直接回车用推荐的：」。敲的是编号、列出来的模型名（列了的、没列的都算）：就是它；直接回车：推荐的；读到头：「没选」，退出码 1；别的：说「<敲的> 不在列表里」，再问。不在终端里的不问，用推荐的。
-10. **写**：`config.set` 写进配置（和设置页、网页的第一次引导一样）：`providers.<编号>.key`（施工 8-25：一家一个；找到的、`--env` 的是 `{ env }`，贴的是 `{ secret = "<编号>" }`；本机的服务不要 key，写 `providers.<编号>.local = true`，这一家因此算配好了）和 `models.chat` 是 `<编号>/<模型>`；自定义的另写 `driver`、`base_url`，贴了 key 的写 `key = { secret = "<编号>" }`、没贴的不写；已经配好的那一家只写 `models.chat`（编号照配置里的）。不写池（施工 Q-1：三个固定池 `lite`、`normal`、`flagship` 本来就在，`models.md`「池」）。屏幕上只说 `models.chat` 那一行。配置里的编号就是目录里的编号；目录里的编号不合「路径里的名字」写法的（`302ai`、`wafer.ai`），别的字换成 `-`、不是字母开头的前面加 `p-`（`p-302ai`、`wafer-ai`），另写 `catalog = "<目录里的编号>"`。成了：说「写好了：models.chat = <编号>/<模型>」，退出码 0。被拒绝的：印核心的原话，退出码 1。
-11. **核心断开**：说「核心断开了」，退出码 1。
+   - 自定义的：问「密钥（不显示，可留空）：」，读法同下一条；去掉前后空白是空的是不要 key（本机的服务、不要 key 的中转）。
+   - 别的：标准输入是终端的，问「粘贴 <编号> 的密钥（不显示）：」，关掉回显读一行（和 `miyu provider login` 同一条：自己管终端的设置，按了 `Ctrl+C`、或者还没贴一个字时按了 `Ctrl+D`，说「已取消，未保存」，退出码 130，整个 `miyu setup` 照取消办，配置一个字都不写，施工 8-5 补）；不是终端的，整份读标准输入，没有取消这一条。去掉前后空白是空的：报「miyu: 未收到密钥」，退出码 1。
+7. **试**：说「正在测试 <名字>…」，`provider.test`：配好了的带 `provider`；自定义的带 `candidate`，`driver`、`base_url` 是填的；别的带 `candidate`，`catalog` 是这一家的编号；`key` 照上一步（贴的照 `{value}` 交，空的不带）；写了 `--model` 的带 `model`。
+   - 核心说要模型名（`need_model`，列不出模型、又不是认证错）、没写 `--model`、在终端里的（施工 8-11 再补、五补）：说「未获取到模型列表」，问「模型名：」，拿它（去掉前后空白）带 `model` 再试一次。直接回车、读到头：「未选择」，退出码 1。
+   - 成了：只列了模型的（`checked` 是 `list`，施工 8-11 五补）灰字「已连通：列出 <n> 个模型」；发了一句的灰字「已连通：测试 <模型>，<n> 毫秒收到第一个字」；`listed` 是 `catalog` 的再一行灰字「· 供应商列不出模型，下面照 models.dev 的目录列。」。
+   - 没成：报「miyu: 连接失败（<哪一步>）：<分类>：<原话>」（没有原话的不写第二个冒号以后；HTTP 状态在原话里，驱动写的 `HTTP 401: …`，和 `miyu ask` 出错那一行一样）。哪一步：`config` 是「配置」，`list` 是「列模型」，`request` 是「发请求」；分类照 `cli/ask.md` 出错那一行的说法。在终端里的先问「仍然保存？[y/N]」（施工 8-11 五补，2026-10-13 项目主人定：测不通也能接着走，不卡死）：`y`、`yes`（不分大小写）照填的往下走：还没有模型的先问「模型名：」（直接回车、读到头：「未选择」，退出码 1），贴的 key 照样存（第 8 条），选模型那一步就用它。别的、直接回车回到上一步：贴的 key（自定义的也是）回到贴 key，别的回到第 3 条选一家（写了 `--provider` 的没有上一步，退出码 1）。不在终端里的不问，退出码 1。
+8. **存 key**（贴的 key 试通了，或者人说仍然保存）：`secret.set`，`name` 是这一家在配置里的编号（第 10 条）。成了：灰字照 `miyu provider login` 说「已保存 <编号> 的密钥」或「已替换 <编号> 的密钥」。被拒绝的：印核心的原话（加 `miyu: `、去掉句末句号），退出码 1。
+9. **选模型**（没写 `--model`、没在第 7 条填模型名）：`provider.test` 列出的模型，试的那一个排第一、后面接「（推荐）」，别的照列出的先后。标准错误上一行头「选主对话的模型：」，一个一行 `  编号  模型`，最多列 20 个；多的再说一句「还有 <n> 个，敲名字也行。」。问「选一个编号，直接回车用推荐的：」。敲的是编号、列出来的模型名（列了的、没列的都算）：就是它；直接回车：推荐的；读到头：「未选择」，退出码 1；别的：说「<敲的> 不在列表里」，再问。不在终端里的不问，用推荐的。
+10. **写**：`config.set` 写进配置（和设置页、网页的第一次引导一样）：`providers.<编号>.key`（施工 8-25：一家一个；找到的、`--env` 的是 `{ env }`，贴的是 `{ secret = "<编号>" }`；本机的服务不要 key，写 `providers.<编号>.local = true`，这一家因此算配好了）和 `models.chat` 是 `<编号>/<模型>`；自定义的另写 `driver`、`base_url`，贴了 key 的写 `key = { secret = "<编号>" }`、没贴的不写；已经配好的那一家只写 `models.chat`（编号照配置里的）。不写池（施工 Q-1：三个固定池 `lite`、`normal`、`flagship` 本来就在，`models.md`「池」）。屏幕上只说 `models.chat` 那一行。配置里的编号就是目录里的编号；目录里的编号不合「路径里的名字」写法的（`302ai`、`wafer.ai`），别的字换成 `-`、不是字母开头的前面加 `p-`（`p-302ai`、`wafer-ai`），另写 `catalog = "<目录里的编号>"`。成了：说「已设置 models.chat = <编号>/<模型>」，退出码 0。被拒绝的：印核心的原话，退出码 1。
+11. **核心断开**：报「miyu: 与核心的连接已断开」，退出码 1。
 
 ### 样子
 
@@ -67,11 +67,11 @@
 
 ```text
 $ miyu setup
-选一家：
+选择供应商：
   1   OpenCode Zen
   2   OpenCode Go
   3   ClinePass
-  4   DeepSeek          已找到 key
+  4   DeepSeek          已找到密钥
   5   Anthropic
   6   OpenAI
   7   OpenRouter
@@ -85,42 +85,42 @@ $ miyu setup
   15  MiniMax 国内版
   16  LMStudio          本机 http://127.0.0.1:1234/v1
   17  自定义
-选一个编号：4
-试一下 DeepSeek……
-· 通了：列出 2 个模型。
+选择编号：4
+正在测试 DeepSeek…
+已连通：列出 2 个模型
 选主对话的模型：
   1  deepseek-flash（推荐）
   2  deepseek-v4-pro
 选一个编号，直接回车用推荐的：
-写好了：models.chat = deepseek/deepseek-flash
+已设置 models.chat = deepseek/deepseek-flash
 ```
 
 自定义一家中转（2026-10-08 照真的中转跑过一遍，地址换成了例子）：
 
 ```text
 $ miyu setup
-选一家：
+选择供应商：
   1   OpenCode Zen
   …
   14  MiniMax 国内版
   15  自定义
-选一个编号：15
+选择编号：15
 Base URL：https://api.example.com/v1/
 接口协议：
   1  OpenAI 兼容
   2  Anthropic
   3  OpenAI Responses
-选一个编号：1
-Key（不显示，可以空）：
-试一下 api.example.com……
-· 通了：列出 2 个模型。
-ID（直接回车用 example）：
-· example 的 key 存好了
+选择编号：1
+密钥（不显示，可留空）：
+正在测试 api.example.com…
+已连通：列出 2 个模型
+ID（回车使用 example）：
+已保存 example 的密钥
 选主对话的模型：
   1  deepseek-v4.1-flash（推荐）
   2  glm-5.3-flash
 选一个编号，直接回车用推荐的：
-写好了：models.chat = example/deepseek-v4.1-flash
+已设置 models.chat = example/deepseek-v4.1-flash
 ```
 
 写进系统配置的：
@@ -138,29 +138,31 @@ chat = "example/deepseek-v4.1-flash"
 列不出模型的：
 
 ```text
-Key（不显示，可以空）：
-试一下 api.example.com……
+密钥（不显示，可留空）：
+正在测试 api.example.com…
 未获取到模型列表
 模型名：my-model
-试一下 api.example.com……
-· 通了：试的 my-model，640 毫秒收到第一个字。
-写好了：models.chat = example/my-model
+正在测试 api.example.com…
+已连通：测试 my-model，640 毫秒收到第一个字
+已设置 models.chat = example/my-model
 ```
 
 全写在参数上，从管道贴 key（脚本用）：
 
 ```text
 $ echo "$KEY" | miyu setup --provider deepseek --model deepseek-flash
-试一下 DeepSeek……
-· 通了：试的 deepseek-flash，812 毫秒收到第一个字。
-· deepseek 的 key 存好了
-写好了：models.chat = deepseek/deepseek-flash
+正在测试 DeepSeek…
+已连通：测试 deepseek-flash，812 毫秒收到第一个字
+已保存 deepseek 的密钥
+已设置 models.chat = deepseek/deepseek-flash
 ```
 
-核心是别的终端拉起的，看不到这个终端里后来设的 key（灰字）：
+核心是别的终端拉起的，看不到这个终端里后来设的 key（告警，CL-2 下照设计 47 改）：
 
 ```text
-· 核心未读到 OPENAI_API_KEY（核心启动后才设置）。核心空闲退出后重新运行 miyu setup，或选这一家贴 key。
+miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）
+提示：核心空闲退出后重新运行 'miyu setup'
+提示：或选择这一家供应商并粘贴密钥
 ```
 
 样本 `crates/miyu-cli/src/help/zh/setup.txt`（帮助页，中文）：
@@ -168,16 +170,16 @@ $ echo "$KEY" | miyu setup --provider deepseek --model deepseek-flash
 ```text
 用法：miyu setup [选项]
 
-接上第一个模型：从常用的几家、本机的模型服务里选一家，或者自定义地址
-和接口协议；贴 key，试通了，选主对话的模型，写进系统配置。
+配置第一个模型：从常用供应商、本机的模型服务中选择，或自定义地址和接口协议；
+粘贴密钥并测试连接，选择对话模型，写入系统配置。
 
 选项：
-      --provider <编号>  不选了，用目录里的这一家
-      --env <变量>       不贴了，key 照这个环境变量取
-      --model <模型>     不选了，用这个模型
-  -h, --help             印帮助
+      --provider <编号>  使用目录中的这个供应商，不再选择
+      --env <变量>       从这个环境变量读取密钥，不再粘贴
+      --model <模型>     使用这个模型，不再选择
+  -h, --help             显示帮助
 
-不在终端里的要写 --provider，key 从管道进来：
+不在终端中时必须给出 --provider，密钥从管道读取：
   echo "$KEY" | miyu setup --provider deepseek
 ```
 
@@ -186,14 +188,14 @@ $ echo "$KEY" | miyu setup --provider deepseek --model deepseek-flash
 ```text
 Usage: miyu setup [options]
 
-Connect the first model: pick a common provider, a model service on this
-machine, or a custom address and API protocol; paste the key, try it, pick
-the model for chat, and write it to the system config.
+Set up the first model: pick a common provider, a model service on this
+machine, or a custom address and API protocol; paste the key, test the
+connection, pick the chat model and write it to the system config.
 
 Options:
-      --provider <id>   Skip picking: use this provider from the catalog
-      --env <var>       Skip pasting: take the key from this variable
-      --model <model>   Skip picking: use this model
+      --provider <id>   Use this provider from the catalog without picking
+      --env <var>       Read the key from this variable without pasting
+      --model <model>   Use this model without picking
   -h, --help            Print help
 
 Outside a terminal, give --provider and pipe the key in:
@@ -213,42 +215,43 @@ Outside a terminal, give --provider and pipe the key in:
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 选一家的头一行 | 选一家： | Pick a provider: |
-| 找到了 key | 已找到 key | key found |
-| 已经配好 | 已配好（本机的接在地址后面：，已配好） | set up |
+| 选一家的头一行 | 选择供应商： | Pick a provider: |
+| 找到了 key | 已找到密钥 | key found |
+| 已经配好 | 已配置（本机的接在地址后面：，已配置） | configured |
 | 本机的服务 | 本机 {base_url} | local {base_url} |
 | 自定义 | 自定义 | Custom |
-| 用不了 | 用不了：{原因} | cannot use: {why} |
-| 用不了的原因 | 认不出它的接口；目录里没有它的地址；还没有 {driver} 驱动 | its API is not known; the catalog has no address for it; no {driver} driver yet |
-| 问编号 | 选一个编号： | Pick a number: |
-| 编号不对 | {敲的} 不是列出的编号 | {typed} is not a listed number |
-| 核心看不到 | 见「样子」（2026-10-08 项目主人定改短：照软件的说法） | · The core has not read {vars} (set after the core started). Run miyu setup again once the core exits when idle, or pick that provider and paste the key. |
+| 用不了 | 不可用：{原因} | unavailable: {why} |
+| 用不了的原因 | 未知的接口；目录中没有地址；还没有 {driver} 驱动 | unknown API; no address in the catalog; no {driver} driver yet |
+| 问编号 | 选择编号： | Pick a number: |
+| 编号不对（说完接着问） | miyu: 无效的编号：{敲的} | miyu: invalid number: {typed} |
+| 核心看不到 | 见「样子」（2026-10-08 项目主人定改短：照软件的说法；CL-2 下改成告警加两行提示） | miyu: warning: the core has not read {vars} (set after the core started)<br>hint: run 'miyu setup' again after the core exits when idle<br>hint: or pick that provider and paste the key |
 | 问地址 | Base URL： | Base URL: |
-| 地址不对 | 要以 http:// 或 https:// 开头 | Must start with http:// or https:// |
+| 地址不对（说完接着问） | miyu: 地址必须以 http:// 或 https:// 开头 | miyu: the address must start with http:// or https:// |
 | 接口协议的头一行 | 接口协议： | API protocol: |
 | 三种接口协议 | OpenAI 兼容；Anthropic；OpenAI Responses | OpenAI compatible; Anthropic; OpenAI Responses |
-| 自定义的 key | Key（不显示，可以空）： | Key (hidden, may be empty): |
+| 自定义的 key | 密钥（不显示，可留空）： | Key (hidden, may be empty): |
 | 取不到模型列表 | 未获取到模型列表 | Could not get the model list |
 | 问模型名 | 模型名： | Model name: |
-| 自定义的问 ID | ID（直接回车用 {起好的}）： | ID (Enter for {suggested}): |
-| 编号不合写法 | {敲的} 不能当编号：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字 | {typed} is not a valid ID: start with a lowercase letter, then lowercase letters, digits, - or _, up to 32 characters |
-| 编号已经有了 | 已经有 {敲的} 了 | {typed} is already taken |
-| 目录里没有 | 目录里没有能用的 {id} | No usable provider {id} in the catalog |
-| 要终端 | 要在终端里选，或者写 miyu setup --provider <编号> | Pick in a terminal, or run miyu setup --provider <id> |
-| 试 | 试一下 {name}…… | Trying {name}… |
-| 通了 | · 通了：试的 {model}，{ms} 毫秒收到第一个字。 | · It works: tried {model}, first token in {ms} ms. |
+| 自定义的问 ID | ID（回车使用 {起好的}）： | ID (Enter for {suggested}): |
+| 编号不合写法（说完接着问） | miyu: ID 无效：{敲的}<br>提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符 | miyu: invalid ID: {typed}<br>hint: start with a lowercase letter, use only lowercase letters, digits, - and _, at most 32 characters |
+| 编号已经有了（说完接着问） | miyu: ID '{敲的}' 已存在 | miyu: ID '{typed}' is already taken |
+| 目录里没有 | miyu: 目录中没有可用的供应商 '{id}' | miyu: no usable provider '{id}' in the catalog |
+| 要终端 | miyu: 需要在终端中选择<br>提示：或者指定供应商：'miyu setup --provider <编号>' | miyu: picking needs a terminal<br>hint: or give a provider: 'miyu setup --provider <id>' |
+| 试 | 正在测试 {name}… | testing {name}… |
+| 通了 | 已连通：测试 {model}，{ms} 毫秒收到第一个字 | connected: tested {model}, first token in {ms} ms |
+| 只列了模型就算通了 | 已连通：列出 {n} 个模型 | connected: listed {n} models |
 | 照目录列 | · 供应商列不出模型，下面照 models.dev 的目录列。 | · The provider listed no models; the list below is from the models.dev catalog. |
-| 不通 | 不通（{哪一步}）：{分类}：{原话} | Did not work ({stage}): {class}: {message} |
+| 不通 | miyu: 连接失败（{哪一步}）：{分类}：{原话} | miyu: connection failed ({stage}): {class}: {message} |
 | 哪一步 | 配置；列模型；发请求 | config; listing models; request |
 | 选模型的头一行 | 选主对话的模型： | Pick the model for chat: |
 | 推荐 | （推荐） | (recommended) |
 | 还有 | 还有 {n} 个，敲名字也行。 | {n} more; you can type a name. |
 | 问模型 | 选一个编号，直接回车用推荐的： | Pick a number, or press Enter for the recommended one: |
 | 不在列表里 | {敲的} 不在列表里 | {typed} is not in the list |
-| 写好了 | 写好了：models.chat = {ref} | Done: models.chat = {ref} |
-| `miyu ask` 先走 setup | 还没有模型，先接上一个。 | No model is set up yet. Let's connect one first. |
+| 写好了 | 已设置 models.chat = {ref} | set models.chat = {ref} |
+| `miyu ask` 先走 setup | 未配置模型，开始设置 | no model configured, starting setup |
 
-「没选」「没收到 key」「没存，取消了」「· {名字} 的 key 存好了」「· 换掉了 {名字} 的 key」「粘贴 {名字} 的 key（不显示）：」照 `miyu provider login` 的（`config.md`「给人看的字」；「没存，取消了」施工 8-5 补）。灰字的几行开头是「· 」，和 `miyu ask`、`miyu provider login` 的灰字一样。
+「未选择」「未收到密钥」「已取消，未保存」「已保存 {名字} 的密钥」「已替换 {名字} 的密钥」「粘贴 {名字} 的密钥（不显示）：」照 `miyu provider login` 的（`config.md`「给人看的字」；取消那一句施工 8-5 补）。CL-2 下照设计 47 改：报错 `miyu: ` 打头、建议另起一行写「提示：」，进度、结果行不带「·」和句号；表里的 `<br>` 是换行。选模型的几句（选模型的头一行、推荐、还有、问模型、不在列表里、照目录列）留给改选模型的那一步一起改，这一步照旧。
 
 ### 守着它的
 

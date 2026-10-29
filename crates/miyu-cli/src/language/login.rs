@@ -1,15 +1,17 @@
 //! `miyu provider login`、`list`、`logout` 给人看的字（施工 8-5，`docs/blueprint/config.md`「给人看的字」的「命令行」那张表、「样子」；
-//! 图纸没写到的几句 2026-10-01 主会话照施工员的推荐定）。key 从不出现在这里的任何一句里。
+//! 图纸没写到的几句 2026-10-01 主会话照施工员的推荐定；CL-2 下照设计 47 第三节改：结果行动词打头、不带句号，报错交
+//! [`Problem`]，建议另起一行）。key 从不出现在这里的任何一句里。
 
 use super::Language;
+use crate::diagnostic::Problem;
 
 impl Language {
     /// 交互着选的那张表的头一行：`login` 列出配置里用到的、设过的，`logout` 只列设过的。
     pub(crate) fn keys_heading(&self, logout: bool) -> &'static str {
         match (self, logout) {
-            (Language::Chinese, false) => "配置里用到的密钥：",
-            (Language::English, false) => "Keys the config uses:",
-            (Language::Chinese, true) => "设过的 key：",
+            (Language::Chinese, false) => "配置中使用的密钥：",
+            (Language::English, false) => "Keys used by the config:",
+            (Language::Chinese, true) => "已设置的密钥：",
             (Language::English, true) => "Keys that are set:",
         }
     }
@@ -17,82 +19,84 @@ impl Language {
     /// 问选哪一个：`login` 还能敲一个新名字。
     pub(crate) fn pick_key(&self, logout: bool) -> &'static str {
         match (self, logout) {
-            (Language::Chinese, false) => "选一个编号，或者敲一个新名字：",
+            (Language::Chinese, false) => "选择编号，或输入新名字：",
             (Language::English, false) => "Pick a number, or type a new name: ",
-            (Language::Chinese, true) => "选一个编号：",
+            (Language::Chinese, true) => "选择编号：",
             (Language::English, true) => "Pick a number: ",
         }
     }
 
     /// 直接回车、读到头：没选。
-    pub(crate) fn not_picked(&self) -> &'static str {
+    pub(crate) fn not_picked(&self) -> Problem {
         match self {
-            Language::Chinese => "没选",
-            Language::English => "Nothing picked",
+            Language::Chinese => Problem::new("未选择"),
+            Language::English => Problem::new("nothing picked"),
         }
     }
 
-    /// `login` 不写名字，一个能选的都没有。
-    pub(crate) fn no_keys_used(&self) -> &'static str {
+    /// `login` 不写名字，一个能选的都没有（设计 47 第四节）。
+    pub(crate) fn no_keys_used(&self) -> Problem {
         match self {
-            Language::Chinese => "配置里还没有用到密钥的供应商：写 miyu provider login <名字>",
-            Language::English => {
-                "No provider in the config uses a key yet: run miyu provider login <name>"
+            Language::Chinese => {
+                Problem::new("没有使用密钥的供应商").hint("用 'miyu provider login <名字>' 添加")
             }
+            Language::English => Problem::new("no provider uses a key")
+                .hint("add one with 'miyu provider login <name>'"),
         }
     }
 
     /// 名字不合写法（写在命令行上的、敲的）。
-    pub(crate) fn bad_key_name(&self, name: &str) -> String {
+    pub(crate) fn bad_key_name(&self, name: &str) -> Problem {
         match self {
-            Language::Chinese => format!(
-                "{name} 不能当 key 的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符"
-            ),
-            Language::English => format!(
-                "{name} cannot name a key: start with a lowercase letter and use only lowercase letters, digits, - and _, up to 64 characters"
+            Language::Chinese => Problem::new(format!("密钥名字无效：{name}"))
+                .hint("以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符"),
+            Language::English => Problem::new(format!("invalid key name: {name}")).hint(
+                "start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters",
             ),
         }
     }
 
     /// 不写名字又不在终端里：`command` 是 `provider login` 或 `provider logout`。
-    pub(crate) fn pick_needs_terminal(&self, command: &str) -> String {
+    pub(crate) fn pick_needs_terminal(&self, command: &str) -> Problem {
         match self {
-            Language::Chinese => format!("要在终端里选，或者写 miyu {command} <名字>"),
-            Language::English => format!("Pick in a terminal, or run miyu {command} <name>"),
+            Language::Chinese => Problem::new("需要在终端中选择")
+                .hint(format!("或者指定名字：'miyu {command} <名字>'")),
+            Language::English => Problem::new("picking needs a terminal")
+                .hint(format!("or give a name: 'miyu {command} <name>'")),
         }
     }
 
     /// 问 key：不显示。
     pub(crate) fn paste_key(&self, name: &str) -> String {
         match self {
-            Language::Chinese => format!("粘贴 {name} 的 key（不显示）："),
-            Language::English => format!("Paste the key for {name} (it will not show): "),
+            Language::Chinese => format!("粘贴 {name} 的密钥（不显示）："),
+            Language::English => format!("Paste the key for {name} (hidden): "),
         }
     }
 
     /// 读到的 key 去掉前后空白是空的。
-    pub(crate) fn no_key_given(&self) -> &'static str {
+    pub(crate) fn no_key_given(&self) -> Problem {
         match self {
-            Language::Chinese => "没收到 key",
-            Language::English => "No key was given",
+            Language::Chinese => Problem::new("未收到密钥"),
+            Language::English => Problem::new("no key given"),
         }
     }
 
     /// 贴 key 时取消了：按了 `Ctrl+C`，或者空行按了 `Ctrl+D`（施工 8-5 补）。
     pub(crate) fn key_paste_cancelled(&self) -> &'static str {
         match self {
-            Language::Chinese => "没存，取消了",
-            Language::English => "Not saved, cancelled",
+            Language::Chinese => "已取消，未保存",
+            Language::English => "cancelled, not saved",
         }
     }
 
     /// 存好了：`replaced` 的是换掉了原来的。
     pub(crate) fn key_saved(&self, name: &str, replaced: bool) -> String {
         match (self, replaced) {
-            (Language::Chinese, false) => format!("· {name} 的 key 存好了"),
-            (Language::Chinese, true) => format!("· 换掉了 {name} 的 key"),
-            (Language::English, false) => format!("· Saved the key for {name}"),
-            (Language::English, true) => format!("· Replaced the key for {name}"),
+            (Language::Chinese, false) => format!("已保存 {name} 的密钥"),
+            (Language::Chinese, true) => format!("已替换 {name} 的密钥"),
+            (Language::English, false) => format!("saved the key for {name}"),
+            (Language::English, true) => format!("replaced the key for {name}"),
         }
     }
 
@@ -115,27 +119,35 @@ impl Language {
         used_by.join(between)
     }
 
-    /// 一个都没设过。
+    /// `list` 一个都没设过。
     pub(crate) fn no_keys_yet(&self) -> &'static str {
         match self {
-            Language::Chinese => "还没有设过 key",
-            Language::English => "No keys yet",
+            Language::Chinese => "没有密钥",
+            Language::English => "no keys",
+        }
+    }
+
+    /// `logout` 选的时候一个都没设过。
+    pub(crate) fn no_keys_set(&self) -> Problem {
+        match self {
+            Language::Chinese => Problem::new("没有已设置的密钥"),
+            Language::English => Problem::new("no keys set"),
         }
     }
 
     /// 删掉了。
     pub(crate) fn key_deleted(&self, name: &str) -> String {
         match self {
-            Language::Chinese => format!("· 删掉了 {name} 的 key"),
-            Language::English => format!("· Deleted the key for {name}"),
+            Language::Chinese => format!("已删除 {name} 的密钥"),
+            Language::English => format!("deleted the key for {name}"),
         }
     }
 
     /// 要删的没设过。
-    pub(crate) fn no_such_key(&self, name: &str) -> String {
+    pub(crate) fn no_such_key(&self, name: &str) -> Problem {
         match self {
-            Language::Chinese => format!("{name} 没有设过 key"),
-            Language::English => format!("{name} has no key"),
+            Language::Chinese => Problem::new(format!("{name} 没有设置密钥")),
+            Language::English => Problem::new(format!("no key for {name}")),
         }
     }
 }

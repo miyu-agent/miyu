@@ -64,10 +64,7 @@ pub fn mcp(args: Mcp, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -124,7 +121,7 @@ async fn run(args: Mcp, start: impl FnOnce() -> Command) -> u8 {
     say(out, url);
     drop(out.flush());
     if !opened(url) {
-        say(err, language.browser_not_opened());
+        diagnostic::error(err, language, &language.browser_not_opened());
     }
     let paste = io::stdin().is_terminal();
     if paste {
@@ -159,7 +156,7 @@ async fn waited(
                 return exit::OK;
             }
             Some(_) if tokio::time::Instant::now() >= deadline => {
-                say(err, &language.login_timed_out(service));
+                diagnostic::error(err, *language, &language.login_timed_out(service));
                 return exit::ERROR;
             }
             Some(_) => {}

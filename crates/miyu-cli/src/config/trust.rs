@@ -33,7 +33,7 @@ pub(super) async fn trust(
     };
     let project = &got["files"]["project"];
     let Some(file) = project["file"].as_str() else {
-        say(talk.err, language.no_project_here());
+        talk.failed(language.no_project_here());
         return exit::ERROR;
     };
     let schema = match talk.ask("config.schema", json!({})).await {
@@ -58,11 +58,11 @@ pub(super) async fn trust(
     let trusted = match answer {
         Some(answer) => answer,
         None if !console.terminal() => {
-            say(talk.err, language.trust_needs_terminal());
+            talk.failed(language.trust_needs_terminal());
             return MISUSE;
         }
         None => {
-            write(talk.err, language.trust_question());
+            write(talk.err, &language.trust_question(&shown));
             let said = console.line().ok().flatten().unwrap_or_default();
             matches!(said.trim().to_lowercase().as_str(), "y" | "yes")
         }
@@ -75,7 +75,7 @@ pub(super) async fn trust(
             exit::OK
         }
         Ok(Reply::Refused(error)) if error["data"]["reason"] == "config_conflict" => {
-            say(talk.err, language.trust_conflict());
+            talk.failed(language.trust_conflict());
             exit::ERROR
         }
         Ok(Reply::Refused(error)) => talk.refused(&error),

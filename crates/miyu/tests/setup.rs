@@ -43,7 +43,7 @@ fn outside_a_terminal_it_needs_a_provider() {
     assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
-        "要在终端里选，或者写 miyu setup --provider <编号>\n"
+        "miyu: 需要在终端中选择\n提示：或者指定供应商：'miyu setup --provider <编号>'\n"
     );
     assert!(!home.root.run().join("socket").exists(), "没拉起核心");
 }

@@ -2,15 +2,14 @@
       miyu provider list [--format text|json]
       miyu provider logout [名字]
 
-供应商的 key：存、列、删。
+命令：
+  login [名字]   保存供应商的密钥，不写名字时从配置中选择
+  list           列出已设置密钥的供应商，不显示密钥
+  logout [名字]  删除供应商的密钥，不写名字时从已设置的中选择
 
-login：存一个供应商的 key。不写名字的，从配置里用到的里面选。贴的时候不显示，
-也可以从管道进来：echo "$KEY" | miyu provider login deepseek
-
-list：列出哪几家设了 key，不给看 key 本身。
-
-logout：删掉一个供应商的 key。不写名字的，从设了的里面选。
+粘贴的密钥不显示，也可以从管道读取：
+  echo "$KEY" | miyu provider login deepseek
 
 选项：
-      --format text|json  list 的输出：json 给脚本
-  -h, --help              印帮助
+      --format text|json  输出格式（默认 text，list）
+  -h, --help              显示帮助

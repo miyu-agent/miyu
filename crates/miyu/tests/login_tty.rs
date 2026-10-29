@@ -98,7 +98,7 @@ impl Capture {
         String::from_utf8_lossy(&self.buffer.lock().expect("锁没中毒")).replace('\r', "")
     }
 
-    /// 一直等，直到攒到的字里有 `needle`：给子进程时间印出「粘贴 ... 的 key（不显示）：」这一句，再送按键。最多
+    /// 一直等，直到攒到的字里有 `needle`：给子进程时间印出「粘贴 ... 的密钥（不显示）：」这一句，再送按键。最多
     /// 一分钟（CI 的机器可能慢），到点还没见到就说清楚现在攒到了什么。
     fn wait_for(&self, needle: &str) {
         let deadline = Instant::now() + Duration::from_secs(60);
@@ -195,7 +195,7 @@ async fn ctrl_c_while_pasting_cancels_exits_130_and_restores_echo() {
 
     let mut child = spawn(home.root.path(), &slave);
     let capture = Capture::start(&main);
-    capture.wait_for("粘贴 deepseek 的 key（不显示）：");
+    capture.wait_for("粘贴 deepseek 的密钥（不显示）：");
 
     // 贴了一截就按 Ctrl+C（0x03），不等按回车：构造 8-5 补要修的那个场景。
     (&main)
@@ -204,7 +204,7 @@ async fn ctrl_c_while_pasting_cancels_exits_130_and_restores_echo() {
 
     let (code, screen) = capture.finish(&mut child);
     assert_eq!(code, 130, "{screen}");
-    assert!(screen.ends_with("没存，取消了\n"), "{screen}");
+    assert!(screen.ends_with("已取消，未保存\n"), "{screen}");
     assert_eq!(secrets(&home), "", "密钥文件一个字都没写");
     assert!(
         echoing(&slave),
@@ -220,7 +220,7 @@ async fn a_normal_paste_with_enter_is_read_and_echo_stays_as_it_was() {
 
     let mut child = spawn(home.root.path(), &slave);
     let capture = Capture::start(&main);
-    capture.wait_for("粘贴 deepseek 的 key（不显示）：");
+    capture.wait_for("粘贴 deepseek 的密钥（不显示）：");
 
     (&main)
         .write_all(format!("{FAKE}\n").as_bytes())
@@ -228,7 +228,7 @@ async fn a_normal_paste_with_enter_is_read_and_echo_stays_as_it_was() {
 
     let (code, screen) = capture.finish(&mut child);
     assert_eq!(code, 0, "{screen}");
-    assert!(screen.ends_with("· deepseek 的 key 存好了\n"), "{screen}");
+    assert!(screen.ends_with("已保存 deepseek 的密钥\n"), "{screen}");
     assert!(
         secrets(&home).contains(&format!("deepseek = \"{FAKE}\"")),
         "{}",

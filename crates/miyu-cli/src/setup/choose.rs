@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 
 use super::flow::{Chosen, Flow, Key};
 use super::pick::{Row, Typed, numbered, typed};
+use crate::diagnostic;
 use crate::shown::{say, write};
 
 /// `--provider` 找那一家时最多看几家：编号里有这一截的都在里面。
@@ -47,12 +48,9 @@ impl Flow<'_> {
                         None => self.custom(),
                     };
                 }
-                Typed::Empty | Typed::End => {
-                    say(self.err, language.not_picked());
-                    return Err(crate::exit::ERROR);
-                }
-                Typed::Zero => say(self.err, &language.not_a_number("0")),
-                Typed::Other(text) => say(self.err, &language.not_a_number(&text)),
+                Typed::Empty | Typed::End => return self.not_picked(),
+                Typed::Zero => self.failed(&language.not_a_number("0")),
+                Typed::Other(text) => self.failed(&language.not_a_number(&text)),
             }
         }
     }
@@ -67,7 +65,8 @@ impl Flow<'_> {
             .filter(|name| !seen.contains(name) && self.plan.here.has(name))
             .collect();
         if !missing.is_empty() {
-            self.gray(self.plan.language.core_cannot_see(&missing));
+            let language = self.plan.language;
+            diagnostic::warning(self.err, language, &language.core_cannot_see(&missing));
         }
     }
 
@@ -175,7 +174,7 @@ impl Flow<'_> {
         let Some(entry) = list(&found["providers"])
             .find(|entry| entry["id"] == json!(id) && entry["supported"] == json!(true))
         else {
-            say(self.err, &self.plan.language.no_usable_provider(id));
+            self.failed(&self.plan.language.no_usable_provider(id));
             return Err(super::MISUSE);
         };
         let mut chosen = from_catalog(entry);

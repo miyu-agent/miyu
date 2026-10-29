@@ -37,3 +37,28 @@ fn a_pasted_line_is_trimmed_and_an_empty_one_is_not_taken() {
     assert_eq!(pasted("   "), None);
     assert_eq!(pasted(""), None);
 }
+
+// CL-2 下（设计 47）：打不开浏览器、等到时没登录是 `miyu: ` 打头的报错，结果行不带句号。
+
+#[test]
+fn the_words_follow_the_command_line_rules() {
+    use crate::diagnostic::Level;
+    let (zh, en) = (Language::Chinese, Language::English);
+    assert_eq!(
+        zh.browser_not_opened().lines(zh, Level::Error),
+        ["miyu: 无法打开浏览器，请手动打开上面的地址"]
+    );
+    assert_eq!(
+        en.browser_not_opened().lines(en, Level::Error),
+        ["miyu: cannot open a browser; open the address above manually"]
+    );
+    assert_eq!(
+        en.login_timed_out("notes").lines(en, Level::Error),
+        ["miyu: notes still not logged in after 10 minutes"]
+    );
+    assert_eq!(zh.logged_in("notes"), "已登录，notes 已连接");
+    assert_eq!(
+        en.logged_out("notes"),
+        "logged out of notes, log in again to use it"
+    );
+}

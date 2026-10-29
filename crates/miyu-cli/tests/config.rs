@@ -86,35 +86,35 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
         (
             set("ui.language", "zh"),
             0,
-            "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
+            "已设置 ui.language = \"zh\"（立即生效）\n",
         ),
-        (set("ui.language", "\"zh\""), 0, "· 本来就是 \"zh\"，没改\n"),
+        (set("ui.language", "\"zh\""), 0, "已经是 \"zh\"，未修改\n"),
         (
             set("permission.start_read_only", "true"),
             0,
-            "· permission.start_read_only = true 写进了系统配置，新会话生效\n",
+            "已设置 permission.start_read_only = true（新会话生效）\n",
         ),
         (
             set("ui.language", "en"),
             0,
-            "· ui.language = \"en\" 写进了系统配置，立即生效\n",
+            "已设置 ui.language = \"en\"（立即生效）\n",
         ),
         // 定了英文：握手以后照英文说。
         (
             unset("ui.language"),
             0,
-            "· Removed ui.language from the system config. It is now \"auto\" (default)\n",
+            "removed ui.language, now \"auto\" (default)\n",
         ),
         // 删掉以后跟着系统语言（中文）。
         (
             unset("ui.language"),
             0,
-            "· 系统配置里本来就没写 ui.language\n",
+            "系统配置中没有 ui.language，未修改\n",
         ),
         (
             set("ui.language", "zh"),
             0,
-            "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
+            "已设置 ui.language = \"zh\"（立即生效）\n",
         ),
     ];
     for (command, code, said) in cases {
@@ -130,7 +130,7 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
     assert_eq!(wrong.code, 1);
     assert_eq!(
         wrong.err,
-        "ui.language 只能是 auto、zh、en 或 ja，写的是 cn。改成其中一个，例如 ui.language = \"auto\"。\n"
+        "miyu: ui.language 只能是 auto、zh、en 或 ja，写的是 cn。改成其中一个，例如 ui.language = \"auto\"\n"
     );
     let unknown = run(&home, &cwd, set("ui.langauge", "zh"), &mut none).await;
     assert_eq!(unknown.code, 1);
@@ -143,7 +143,10 @@ async fn set_and_unset_say_what_happened_in_one_gray_line() {
     let refused = run(&home, &cwd, project, &mut none).await;
     assert_eq!(
         (refused.code, refused.err.as_str()),
-        (2, "项目配置只能手改：miyu config edit --project\n")
+        (
+            2,
+            "miyu: 项目配置只能手动编辑\n提示：运行 'miyu config edit --project'\n"
+        )
     );
 }
 
@@ -162,9 +165,9 @@ async fn edit_asks_again_until_it_checks_out_and_keeps_what_was_typed() {
         asked.err,
         format!(
             "{shown}:2:12 错误：ui.language 只能是 auto、zh、en 或 ja，写的是 \"cn\"。改成其中一个，例如 ui.language = \"auto\"。暂用 \"auto\"（默认值）。\n\
-             有 1 处错误，还没存。回车接着改，输入 q 放弃：\
+             有 1 处错误，未保存。按回车继续编辑，输入 q 放弃：\
              {shown}:4:1 警告：没有 ui.langauge 这一项。是不是想写 ui.language？已忽略此行。\n\
-             · 存好了，立即生效\n"
+             已保存（立即生效）\n"
         )
     );
     assert_eq!(asked.code, 0);
@@ -205,21 +208,21 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
     let cwd = std::env::temp_dir();
     let bad = "[ui]\nlanguage = \"cn\"\n";
     let cases: [(Fake, u8, &str); 4] = [
-        (at_terminal(&[], vec![Edit::Keep]), 0, "没改\n"),
+        (at_terminal(&[], vec![Edit::Keep]), 0, "未修改\n"),
         (
             at_terminal(&["q"], vec![Edit::Write(bad)]),
             1,
-            "放弃了，文件没动\n",
+            "已放弃，文件未修改\n",
         ),
         (
             at_terminal(&[], vec![Edit::Write(bad)]),
             1,
-            "放弃了，文件没动\n",
+            "已放弃，文件未修改\n",
         ),
         (
             at_terminal(&[], vec![Edit::Fail(3)]),
             1,
-            "编辑器没有正常退出（3），没存\n",
+            "miyu: 编辑器异常退出（3），未保存\n",
         ),
     ];
     for (mut console, code, ends) in cases {
@@ -252,7 +255,7 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
     let asked = run(&home, &cwd, edit(false), &mut elsewhere).await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (2, "miyu config edit 要在终端里用\n"),
+        (2, "miyu: 'miyu config edit' 需要在终端中运行\n"),
         "不在终端里"
     );
 }
@@ -272,7 +275,7 @@ async fn edit_keeps_the_copy_when_the_file_changed_meanwhile() {
     assert_eq!(
         asked.err,
         format!(
-            "你编辑的时候文件被改过了，没存。你改的在 {}\n",
+            "miyu: 编辑期间文件已被修改，未保存\n提示：修改内容保留在 {}\n",
             copy.to_string_lossy()
         )
     );
@@ -304,7 +307,10 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
     let repo = repository(&outside);
     let cwd = repo.join("src");
     let none = run(&home, &cwd, trust(false, false), &mut Fake::default()).await;
-    assert_eq!((none.code, none.err.as_str()), (1, "这里没有项目配置\n"));
+    assert_eq!(
+        (none.code, none.err.as_str()),
+        (1, "miyu: 当前目录没有项目配置\n")
+    );
 
     let written = "[permission]\nstart_read_only = true\n\n[ui]\nlanguage = \"zh\"\n";
     let mut console = at_terminal(
@@ -321,7 +327,7 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
         "{}",
         edited.err
     );
-    assert!(edited.err.ends_with("· 存好了\n"), "{}", edited.err);
+    assert!(edited.err.ends_with("已保存\n"), "{}", edited.err);
     let file = repo.join(".miyu").join("config.toml");
     assert_eq!(
         std::fs::read_to_string(&file).expect("在仓库的根新建了"),
@@ -330,13 +336,13 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
 
     let listed = run(&home, &cwd, trust(false, false), &mut Fake::default()).await;
     let header = format!(
-        "{} 会改这几项：\n  permission.start_read_only = true  新会话开局只读\n",
+        "{} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话开局只读\n",
         shown(&file)
     );
     assert_eq!(listed.out, header);
     assert_eq!(
         (listed.code, listed.err.as_str()),
-        (2, "要在终端里回答，或者写 --yes、--no\n"),
+        (2, "miyu: 需要在终端中确认\n提示：加上 '--yes' 或 '--no'\n"),
         "不在终端里又没写 --yes、--no"
     );
     let asked = run(
@@ -348,21 +354,21 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
     .await;
     assert_eq!(asked.out, header);
     assert_eq!(
-        (asked.code, asked.err.as_str()),
+        (asked.code, asked.err),
         (
             0,
-            "项目配置只能让限制更严。信任这一份吗？[y/N] · 信任了。内容变了会再问\n"
+            format!(
+                "信任 '{}'？[y/N] 已信任（文件变化后会再次询问）\n",
+                shown(&file)
+            )
         )
     );
     let again = run(&home, &cwd, trust(false, false), &mut Fake::default()).await;
-    assert_eq!(
-        (again.code, again.err.as_str()),
-        (0, "已经信任过这一份了\n")
-    );
+    assert_eq!((again.code, again.err.as_str()), (0, "已经信任，未修改\n"));
     let no = run(&home, &cwd, trust(false, true), &mut Fake::default()).await;
     assert_eq!(
         (no.code, no.err.as_str()),
-        (0, "· 不信任，这一份不会用。内容变了会再问\n")
+        (0, "已拒绝，不会使用（文件变化后会再次询问）\n")
     );
     let enter = run(
         &home,
@@ -374,13 +380,13 @@ async fn a_project_config_is_edited_and_saved_by_the_command_line_then_trusted()
     assert!(
         enter
             .err
-            .ends_with("· 不信任，这一份不会用。内容变了会再问\n"),
+            .ends_with("已拒绝，不会使用（文件变化后会再次询问）\n"),
         "直接回车是不信任"
     );
     let yes = run(&home, &cwd, trust(true, false), &mut Fake::default()).await;
     assert_eq!(
         (yes.code, yes.err.as_str()),
-        (0, "· 信任了。内容变了会再问\n")
+        (0, "已信任（文件变化后会再次询问）\n")
     );
 }
 
@@ -402,7 +408,7 @@ async fn trust_lists_problems_and_refuses_a_version_that_changed_while_looking()
     assert_eq!(
         asked.out,
         format!(
-            "{0} 会改这几项：\n  permission.start_read_only = true  新会话开局只读\n\
+            "{0} 会修改以下设置（项目配置只能收紧限制）：\n  permission.start_read_only = true  新会话开局只读\n\
              {0}:4:12 错误：ui.language 只能写在系统配置里，写在项目配置里不算。挪到系统配置里去。\n",
             shown(&file)
         ),
@@ -410,7 +416,9 @@ async fn trust_lists_problems_and_refuses_a_version_that_changed_while_looking()
     );
     assert_eq!(asked.code, 1);
     assert!(
-        asked.err.ends_with("你看的时候它又被改过了，再跑一次\n"),
+        asked
+            .err
+            .ends_with("miyu: 查看期间文件已被修改\n提示：重新运行 'miyu config trust'\n"),
         "{}",
         asked.err
     );

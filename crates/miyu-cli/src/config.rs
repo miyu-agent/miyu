@@ -192,10 +192,7 @@ pub fn config(args: Config, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -325,7 +322,7 @@ fn early(
         ConfigCommand::Edit { .. } if !console.terminal() => language.edit_needs_terminal(),
         _ => return None,
     };
-    say(err, said);
+    diagnostic::error(err, language, &said);
     Some(MISUSE)
 }
 
@@ -365,18 +362,27 @@ impl Talk<'_> {
         }
     }
 
-    /// 被拒绝了：写了 `data.problems` 的一条一句（不认识的键带最近的键名），没写的说核心的原话。交回退出码。
+    /// 被拒绝了：写了 `data.problems` 的一条一句（不认识的键带最近的键名），没写的说核心的原话，都照报错的规矩收拾（设计
+    /// 47 第五节）。交回退出码。
     pub(crate) fn refused(&mut self, error: &Value) -> u8 {
+        let language = self.plan.language;
         let problems = error["data"]["problems"].as_array();
-        match problems.filter(|problems| !problems.is_empty()) {
-            Some(problems) => {
-                for problem in problems {
-                    say(self.err, problem["message"].as_str().unwrap_or_default());
-                }
-            }
-            None => say(self.err, error["message"].as_str().unwrap_or_default()),
+        let said: Vec<&str> = match problems.filter(|problems| !problems.is_empty()) {
+            Some(problems) => problems
+                .iter()
+                .map(|problem| problem["message"].as_str().unwrap_or_default())
+                .collect(),
+            None => vec![error["message"].as_str().unwrap_or_default()],
+        };
+        for message in said {
+            diagnostic::error(self.err, language, &language.refused(message));
         }
         exit::ERROR
+    }
+
+    /// 在标准错误上报一件错（设计 47）：话由调用的一方照界面语言写好。
+    pub(crate) fn failed(&mut self, problem: Problem) {
+        diagnostic::error(self.err, self.plan.language, &problem);
     }
 
     /// 工作目录，照协议的写法。
@@ -453,7 +459,8 @@ async fn path(talk: &mut Talk<'_>, project: bool, out: &mut dyn Write) -> u8 {
         Some(file) => say(out, &places.absolute(file).to_string_lossy()),
         None => {
             say(out, &paths::planned(&talk.plan.cwd).to_string_lossy());
-            say(talk.err, talk.plan.language.no_file_yet());
+            let language = talk.plan.language;
+            diagnostic::warning(talk.err, language, &language.no_file_yet());
         }
     }
     exit::OK

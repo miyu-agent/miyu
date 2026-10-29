@@ -1,5 +1,6 @@
 //! `miyu config` 给人看的字（施工 8-2，`docs/blueprint/cli/config.md`「给人看的字」，样子在 `config.md`「样子」）；
-//! `miyu ask` 起头说配置有错、项目配置没信任的那两行。报错的整句话由核心照连接的语言说，这里只有命令行自己的几个词。
+//! `miyu ask` 起头说配置有错、项目配置没信任的那两行。报错的整句话由核心照连接的语言说，这里只有命令行自己的几个词
+//! （CL-2 下照设计 47：合计、还没有文件的告警）。
 //! 改、写、信任的几个子命令的字在 `config_write.rs`（施工 8-3）。
 
 use super::Language;
@@ -39,7 +40,7 @@ impl Language {
         };
         match (self, parts.is_empty()) {
             (Language::Chinese, true) => "没有问题".to_string(),
-            (Language::English, true) => "No problems".to_string(),
+            (Language::English, true) => "no problems".to_string(),
             (Language::Chinese, false) => parts.join("，"),
             (Language::English, false) => parts.join(", "),
         }
@@ -137,11 +138,11 @@ impl Language {
         }
     }
 
-    /// `path --project` 还没有这个文件。
-    pub(crate) fn no_file_yet(&self) -> &'static str {
+    /// `path --project` 还没有这个文件：印了路径以后的告警。
+    pub(crate) fn no_file_yet(&self) -> Problem {
         match self {
-            Language::Chinese => "还没有这个文件",
-            Language::English => "This file does not exist yet",
+            Language::Chinese => Problem::new("文件尚不存在"),
+            Language::English => Problem::new("the file does not exist yet"),
         }
     }
 

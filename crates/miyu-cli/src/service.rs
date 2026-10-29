@@ -106,10 +106,14 @@ pub fn service(args: Service) -> ExitCode {
 
 /// 说出来：成了的在标准输出上，没成的在标准错误上。
 fn say(language: Language, said: &Said) {
-    let line = language.service(said);
+    let text: String = language
+        .service(said)
+        .iter()
+        .map(|line| format!("{line}\n"))
+        .collect();
     let written = match said.code() {
-        exit::OK => writeln!(io::stdout(), "{line}"),
-        _ => writeln!(io::stderr(), "{line}"),
+        exit::OK => io::stdout().write_all(text.as_bytes()),
+        _ => io::stderr().write_all(text.as_bytes()),
     };
     if written.is_err() {
         // 输出关了：没有别处可说。

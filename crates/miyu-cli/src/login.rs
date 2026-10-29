@@ -136,10 +136,7 @@ pub fn login(args: KeyArgs, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -229,11 +226,12 @@ fn early(
         KeyCommand::Logout(name) => (name, "provider logout"),
         KeyCommand::List(_) => return None,
     };
-    match name {
-        Some(name) if !valid_name(name) => say(err, &language.bad_key_name(name)),
-        None if !console.terminal() => say(err, &language.pick_needs_terminal(which)),
+    let problem = match name {
+        Some(name) if !valid_name(name) => language.bad_key_name(name),
+        None if !console.terminal() => language.pick_needs_terminal(which),
         _ => return None,
-    }
+    };
+    diagnostic::error(err, language, &problem);
     Some(MISUSE)
 }
 
@@ -284,10 +282,21 @@ impl Keys<'_> {
         match self.request("secret.list", json!({})).await? {
             Ok(result) => Ok(result["secrets"].as_array().cloned().unwrap_or_default()),
             Err((_, message)) => {
-                say(self.err, &message);
+                self.refused(&message);
                 Err(exit::ERROR)
             }
         }
+    }
+
+    /// 报一件错（设计 47）。
+    fn failed(&mut self, problem: &Problem) {
+        diagnostic::error(self.err, self.plan.language, problem);
+    }
+
+    /// 核心拒绝了：原话照报错的规矩收拾（设计 47 第五节）。
+    fn refused(&mut self, message: &str) {
+        let language = self.plan.language;
+        diagnostic::error(self.err, language, &language.refused(message));
     }
 
     /// 印一行灰字。
@@ -336,7 +345,7 @@ impl Keys<'_> {
         let key = match read {
             Ok(key) if !key.trim().is_empty() => key,
             Ok(_) => {
-                say(self.err, language.no_key_given());
+                self.failed(&language.no_key_given());
                 return exit::ERROR;
             }
             Err(error) if error.kind() == io::ErrorKind::Interrupted => {
@@ -344,7 +353,7 @@ impl Keys<'_> {
                 return exit::CANCELLED;
             }
             Err(error) => {
-                say(self.err, &error.to_string());
+                self.failed(&Problem::new(error.to_string()));
                 return exit::ERROR;
             }
         };
@@ -356,7 +365,7 @@ impl Keys<'_> {
                 exit::OK
             }
             Ok(Err((_, message))) => {
-                say(self.err, &message);
+                self.refused(&message);
                 exit::ERROR
             }
             Err(code) => code,
@@ -379,11 +388,11 @@ impl Keys<'_> {
                 exit::OK
             }
             Ok(Err((reason, _))) if reason == "unknown_secret" => {
-                say(self.err, &language.no_such_key(&name));
+                self.failed(&language.no_such_key(&name));
                 exit::ERROR
             }
             Ok(Err((_, message))) => {
-                say(self.err, &message);
+                self.refused(&message);
                 exit::ERROR
             }
             Err(code) => code,
@@ -400,11 +409,11 @@ impl Keys<'_> {
         if secrets.is_empty() {
             return Err(match logout {
                 true => {
-                    say(self.err, language.no_keys_yet());
+                    self.failed(&language.no_keys_set());
                     exit::ERROR
                 }
                 false => {
-                    say(self.err, language.no_keys_used());
+                    self.failed(&language.no_keys_used());
                     MISUSE
                 }
             });
@@ -418,11 +427,11 @@ impl Keys<'_> {
         match pick::chosen(typed.trim(), &secrets) {
             pick::Chosen::Name(name) => Ok(name),
             pick::Chosen::Nothing => {
-                say(self.err, language.not_picked());
+                self.failed(&language.not_picked());
                 Err(exit::ERROR)
             }
             pick::Chosen::Bad(typed) => {
-                say(self.err, &language.bad_key_name(&typed));
+                self.failed(&language.bad_key_name(&typed));
                 Err(MISUSE)
             }
         }

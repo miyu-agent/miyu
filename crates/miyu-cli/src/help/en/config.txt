@@ -1,20 +1,17 @@
 Usage: miyu config <command> [options]
 
-See and change settings, and trust a project config.
-
 Commands:
-  get [key…]           Print the values in effect, or just the value of one key
-  set <key> <value>    Change one setting
-  unset <key>          Remove one from the system config, back to the default
-  edit                 Open in an editor, checked before it is saved
-  explain <key>        What each layer says and which one wins
-  path                 Print where the file is
-  trust                See what the project config here would set, and trust
-                       it or not
+  get [key…]           Print the values in effect, or the value of one key
+  set <key> <value>    Change a setting
+  unset <key>          Remove a setting from the system config
+  edit                 Open the config in an editor, checked before saving
+  explain <key>        Show the value in each layer and which one wins
+  path                 Print the path of the config file
+  trust                Review and trust or distrust the project config here
 
 Options:
-      --project           The project config here (edit, path)
-      --format text|json  For get, explain: json for scripts
-      --yes               For trust: trust it, without asking
-      --no                For trust: do not trust it, without asking
+      --project           Use the project config here (edit, path)
+      --format text|json  Output format (default: text)
+      --yes               Trust without asking (trust)
+      --no                Distrust without asking (trust)
   -h, --help              Print help

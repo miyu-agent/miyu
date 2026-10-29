@@ -24,6 +24,7 @@ use super::console::Console;
 use super::paths::{self, Places};
 use super::render;
 use super::{Reply, Talk};
+use crate::diagnostic::Problem;
 use crate::exit;
 use crate::shown::{Line, say, tilde, write};
 
@@ -89,7 +90,7 @@ async fn open(talk: &mut Talk<'_>, only: Only) -> Result<Editing, u8> {
     let read = match config_file::read(&path) {
         Ok(read) => read,
         Err(error) => {
-            say(talk.err, &format!("{shown}: {error}"));
+            talk.failed(Problem::new(format!("{shown}: {error}")));
             return Err(exit::ERROR);
         }
     };
@@ -111,7 +112,7 @@ async fn open(talk: &mut Talk<'_>, only: Only) -> Result<Editing, u8> {
             made,
         }),
         Err(error) => {
-            say(talk.err, &format!("{shown}: {error}"));
+            talk.failed(Problem::new(format!("{shown}: {error}")));
             Err(exit::ERROR)
         }
     }
@@ -131,12 +132,12 @@ async fn edited(
             Ok(Some(0)) => {}
             Ok(code) => {
                 editing.discard();
-                say(talk.err, &language.editor_failed(code));
+                talk.failed(language.editor_failed(code));
                 return None;
             }
             Err(error) => {
                 editing.discard();
-                say(talk.err, &error.to_string());
+                talk.failed(Problem::new(error.to_string()));
                 return None;
             }
         }
@@ -144,7 +145,7 @@ async fn edited(
             Ok(Some(read)) => read.text,
             Ok(None) => String::new(),
             Err(error) => {
-                say(talk.err, &error.to_string());
+                talk.failed(Problem::new(error.to_string()));
                 String::new()
             }
         };
@@ -192,11 +193,11 @@ async fn save(talk: &mut Talk<'_>, only: Only, editing: &Editing, text: &str) ->
             match config_file::write(&editing.path, &bytes, editing.version.as_deref()) {
                 Ok(()) => Vec::new(),
                 Err(WriteError::Changed) => {
-                    say(talk.err, &language.edit_conflict(&copy));
+                    talk.failed(language.edit_conflict(&copy));
                     return exit::ERROR;
                 }
                 Err(WriteError::Io(error)) => {
-                    say(talk.err, &format!("{}: {error}", editing.shown));
+                    talk.failed(Problem::new(format!("{}: {error}", editing.shown)));
                     return exit::ERROR;
                 }
             }
@@ -206,7 +207,7 @@ async fn save(talk: &mut Talk<'_>, only: Only, editing: &Editing, text: &str) ->
             match talk.request("config.set", params).await {
                 Ok(Reply::Done(result)) => applies(&result["keys"]),
                 Ok(Reply::Refused(error)) if error["data"]["reason"] == "config_conflict" => {
-                    say(talk.err, &language.edit_conflict(&copy));
+                    talk.failed(language.edit_conflict(&copy));
                     return exit::ERROR;
                 }
                 Ok(Reply::Refused(error)) => {

@@ -1,19 +1,17 @@
 用法：miyu config <命令> [选项]
 
-看配置、改配置、信任项目配置。
-
 命令：
-  get [键…]      印出最终的值，只写一个键时只印值
-  set <键> <值>  改一项
-  unset <键>     从系统配置里删掉一项，回到默认值
-  edit           用编辑器打开，存盘时先检查
-  explain <键>   这一项每一层写的什么、哪一个生效
-  path           印出配置文件在哪
-  trust          看这里的项目配置会改什么，信任或者不信任它
+  get [键…]      打印生效的值，只给一个键时只打印值
+  set <键> <值>  修改一项设置
+  unset <键>     从系统配置中删除一项，恢复默认值
+  edit           用编辑器打开，保存前检查
+  explain <键>   显示每一层的值和生效的那一层
+  path           打印配置文件的路径
+  trust          查看并决定是否信任当前目录的项目配置
 
 选项：
-      --project           当前目录的项目配置（edit、path）
-      --format text|json  get、explain：json 给脚本
-      --yes               trust：信任，不问
-      --no                trust：不信任，不问
-  -h, --help              印帮助
+      --project           使用当前目录的项目配置（edit、path）
+      --format text|json  输出格式（默认 text）
+      --yes               信任，不询问（trust）
+      --no                不信任，不询问（trust）
+  -h, --help              显示帮助

@@ -138,10 +138,14 @@ fn on_this_machine(_which: Which, _given: Option<(PathBuf, String)>) -> Said {
 
 /// 说出来：成了的在标准输出上，没成的在标准错误上。
 fn say(language: Language, said: &Said) {
-    let line = language.sandbox(said);
+    let text: String = language
+        .sandbox(said)
+        .iter()
+        .map(|line| format!("{line}\n"))
+        .collect();
     let written = match said.code() {
-        exit::OK => writeln!(io::stdout().lock(), "{line}"),
-        _ => writeln!(io::stderr().lock(), "{line}"),
+        exit::OK => io::stdout().lock().write_all(text.as_bytes()),
+        _ => io::stderr().lock().write_all(text.as_bytes()),
     };
     #[expect(
         clippy::let_underscore_must_use,

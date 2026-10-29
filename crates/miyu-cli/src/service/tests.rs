@@ -217,3 +217,84 @@ fn the_desktop_autostart_and_windows_with_a_data_root() {
     };
     assert_eq!(flow::run(&nowhere, ServiceAction::Enable), Said::NoHome);
 }
+
+// CL-2 下（设计 47）：成了的是结果行、systemd 接一行怎么不注销也开着的提示；没成的是 `miyu: ` 打头的报错。两种语言。
+
+#[test]
+fn each_outcome_reads_in_both_languages() {
+    use crate::language::Language;
+    let unit = PathBuf::from(UNIT);
+    let cases = [
+        (
+            Said::Enabled(Manager::Systemd, unit.clone()),
+            vec![
+                format!("已启用并启动 {UNIT}"),
+                "提示：注销后保持运行：sudo loginctl enable-linger $USER".to_string(),
+            ],
+            vec![
+                format!("enabled and started {UNIT}"),
+                "hint: keep it running after logout: sudo loginctl enable-linger $USER".to_string(),
+            ],
+        ),
+        (
+            Said::Enabled(Manager::Autostart, unit.clone()),
+            vec![format!("已启用 {UNIT}，下次登录桌面时启动")],
+            vec![format!("enabled {UNIT}, starts at the next desktop login")],
+        ),
+        (
+            Said::Disabled(Manager::Systemd, unit.clone()),
+            vec![format!("已停用并删除 {UNIT}")],
+            vec![format!("disabled and removed {UNIT}")],
+        ),
+        (
+            Said::NotEnabled(Manager::Systemd, unit.clone()),
+            vec![
+                "未安装".to_string(),
+                "提示：运行 'miyu service enable' 安装".to_string(),
+            ],
+            vec![
+                "not installed".to_string(),
+                "hint: run 'miyu service enable' to install it".to_string(),
+            ],
+        ),
+        (
+            Said::Status {
+                manager: Manager::Systemd,
+                file: unit.clone(),
+                installed: true,
+                on: Some(false),
+            },
+            vec![format!("已安装，未启用：{UNIT}")],
+            vec![format!("installed, not enabled: {UNIT}")],
+        ),
+        (
+            Said::Cannot(Problem::DataRootOnWindows),
+            vec![
+                "miyu: 无法安装服务：Windows 任务计划无法携带 MIYU_HOME".to_string(),
+                "提示：取消设置 MIYU_HOME 后重试".to_string(),
+            ],
+            vec![
+                "miyu: cannot install the service: a Windows scheduled task cannot carry MIYU_HOME"
+                    .to_string(),
+                "hint: unset MIYU_HOME and try again".to_string(),
+            ],
+        ),
+        (
+            Said::NoHome,
+            vec!["miyu: 无法确定家目录：HOME 未设置".to_string()],
+            vec!["miyu: cannot find the home directory: HOME is not set".to_string()],
+        ),
+        (
+            Said::Failed(
+                "systemctl --user daemon-reload".to_string(),
+                "boom.".to_string(),
+            ),
+            vec!["miyu: systemctl --user daemon-reload 失败：boom".to_string()],
+            vec!["miyu: systemctl --user daemon-reload failed: boom".to_string()],
+        ),
+    ];
+    for (said, chinese, english) in cases {
+        assert_eq!(Language::Chinese.service(&said), chinese, "{said:?}");
+        assert_eq!(Language::English.service(&said), english, "{said:?}");
+    }
+}

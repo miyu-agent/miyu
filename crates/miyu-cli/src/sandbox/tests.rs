@@ -369,33 +369,33 @@ fn each_outcome_reads_in_both_languages() {
     let cases = [
         (
             Said::Done(Which::Setup),
-            "沙盒用户建好了。",
-            "The sandbox user is set up.",
+            "已创建沙盒用户",
+            "created the sandbox user",
         ),
         (
             Said::Done(Which::Remove),
-            "沙盒用户撤掉了。",
-            "The sandbox user is removed.",
+            "已移除沙盒用户",
+            "removed the sandbox user",
         ),
         (
             Said::NotNeeded,
-            "这个平台不用装沙盒。",
-            "Nothing to set up on this platform.",
+            "此平台无需配置沙盒",
+            "nothing to set up on this platform",
         ),
         (
             Said::NeedsAdmin(Which::Setup),
-            "要管理员权限：用管理员身份跑 miyu sandbox setup。",
-            "Administrator rights are needed: run miyu sandbox setup as administrator.",
+            "miyu: 需要管理员权限\n提示：以管理员身份运行 'miyu sandbox setup'",
+            "miyu: administrator rights required\nhint: run 'miyu sandbox setup' as administrator",
         ),
         (
             Said::NeedsAdmin(Which::Remove),
-            "要管理员权限：用管理员身份跑 miyu sandbox remove。",
-            "Administrator rights are needed: run miyu sandbox remove as administrator.",
+            "miyu: 需要管理员权限\n提示：以管理员身份运行 'miyu sandbox remove'",
+            "miyu: administrator rights required\nhint: run 'miyu sandbox remove' as administrator",
         ),
         (
             Said::Failed(Which::Setup, InstallError::Administrator),
-            "已经有一个叫 miyu-sandbox 的管理员账号，不动它。",
-            "An administrator account named miyu-sandbox already exists; leaving it alone.",
+            "miyu: 已存在名为 miyu-sandbox 的管理员账号，未做改动",
+            "miyu: an administrator account named miyu-sandbox already exists; left unchanged",
         ),
         (
             Said::Failed(
@@ -404,29 +404,37 @@ fn each_outcome_reads_in_both_languages() {
                     path: "C:\\x".into(),
                 },
             ),
-            "C:\\x 不是 Miyu 的数据根。",
-            "C:\\x is not a Miyu data root.",
+            "miyu: C:\\x 不是 Miyu 的数据根",
+            "miyu: C:\\x is not a Miyu data root",
         ),
         (
             Said::Failed(
                 Which::Setup,
                 InstallError::failed("create user", "Access is denied."),
             ),
-            "装沙盒失败：create user：Access is denied.",
-            "Sandbox setup failed: create user: Access is denied.",
+            "miyu: 配置沙盒失败：create user：Access is denied",
+            "miyu: sandbox setup failed: create user: Access is denied",
         ),
         (
             Said::Failed(
                 Which::Remove,
                 InstallError::failed("delete user", "busy\x1b[2J"),
             ),
-            "卸沙盒失败：delete user：busy\u{FFFD}[2J",
-            "Sandbox removal failed: delete user: busy\u{FFFD}[2J",
+            "miyu: 移除沙盒失败：delete user：busy\u{FFFD}[2J",
+            "miyu: sandbox removal failed: delete user: busy\u{FFFD}[2J",
         ),
     ];
     for (said, chinese, english) in cases {
-        assert_eq!(Language::Chinese.sandbox(&said), chinese, "{said:?}");
-        assert_eq!(Language::English.sandbox(&said), english, "{said:?}");
+        assert_eq!(
+            Language::Chinese.sandbox(&said).join("\n"),
+            chinese,
+            "{said:?}"
+        );
+        assert_eq!(
+            Language::English.sandbox(&said).join("\n"),
+            english,
+            "{said:?}"
+        );
     }
 }
 

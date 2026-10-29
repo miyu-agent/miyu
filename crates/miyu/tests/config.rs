@@ -92,7 +92,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     assert_eq!(unknown.status.code(), Some(1));
     assert_eq!(
         stderr(&unknown),
-        "没有 ui.langauge 这一项。是不是想写 ui.language？\n"
+        "miyu: 没有 ui.langauge 这一项。是不是想写 ui.language？\n"
     );
 
     // 日志照系统配置记到 debug：连接的每一条请求都记下了（`log.level` 真的换上了）。
@@ -124,7 +124,7 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     assert_eq!(checked.status.code(), Some(1), "有错误：{checked:?}");
     let text = stdout(&checked);
     let lines: Vec<&str> = text.lines().collect();
-    assert_eq!(lines.len(), 4, "{text}");
+    assert_eq!(lines.len(), 5, "{text}");
     assert!(
         lines[0].ends_with("config.toml:1:1 warning: There is no x.y. Line ignored."),
         "系统配置定了英文：{text}"
@@ -135,8 +135,11 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     );
     assert_eq!(lines[2], "1 error, 1 warning");
     assert_eq!(
-        lines[3],
-        "Semantic model: not installed; searching by keywords only. Install it: miyu pkg install embed",
+        lines[3..],
+        [
+            "Semantic model: not installed, keyword search only",
+            "hint: install it with 'miyu pkg install embed'",
+        ],
         "合计后面是语义模型的状态，不算问题（施工 R-25）"
     );
 
@@ -235,7 +238,10 @@ async fn ask_first_says_the_config_has_errors_and_path_says_where_a_project_conf
             || printed == real.join(".miyu").join("config.toml"),
         "{printed:?}"
     );
-    assert_eq!(stderr(&project), "This file does not exist yet\n");
+    assert_eq!(
+        stderr(&project),
+        "miyu: warning: the file does not exist yet\n"
+    );
     std::fs::remove_dir_all(&cwd).expect("删得掉");
     drop(held);
 }
@@ -287,7 +293,7 @@ fn set_project_and_edit_outside_a_terminal_are_refused_before_the_core() {
     assert_eq!(project.status.code(), Some(2), "{project:?}");
     assert_eq!(
         stderr(&project),
-        "A project config is edited by hand: miyu config edit --project\n"
+        "miyu: the project config can only be edited by hand\nhint: run 'miyu config edit --project'\n"
     );
     let edit = miyu(home.root.path(), &cwd, "zh_CN.UTF-8", &["config", "edit"]);
     assert_eq!(
@@ -295,7 +301,7 @@ fn set_project_and_edit_outside_a_terminal_are_refused_before_the_core() {
         Some(2),
         "测试里标准输入不是终端：{edit:?}"
     );
-    assert_eq!(stderr(&edit), "miyu config edit 要在终端里用\n");
+    assert_eq!(stderr(&edit), "miyu: 'miyu config edit' 需要在终端中运行\n");
 }
 
 #[tokio::test]
@@ -316,7 +322,7 @@ async fn set_unset_and_trust_go_through_a_real_core() {
     assert_eq!(set.status.code(), Some(0), "{set:?}");
     assert_eq!(
         stderr(&set),
-        "· ui.language = \"zh\" 写进了系统配置，立即生效\n",
+        "已设置 ui.language = \"zh\"（立即生效）\n",
         "不是终端，灰字不上色"
     );
     let system = root.join("config.toml");
@@ -338,7 +344,7 @@ async fn set_unset_and_trust_go_through_a_real_core() {
         (unset.status.code(), stderr(&unset)),
         (
             Some(0),
-            "· 从系统配置里删掉了 ui.language，现在是 \"auto\"（默认值）\n".to_string()
+            "已删除 ui.language，现在是 \"auto\"（默认值）\n".to_string()
         ),
         "握手时系统配置还是中文"
     );
@@ -353,20 +359,20 @@ async fn set_unset_and_trust_go_through_a_real_core() {
     assert_eq!(unanswered.status.code(), Some(2), "{unanswered:?}");
     assert!(
         stdout(&unanswered).ends_with(
-            " would set:\n  permission.start_read_only = true  Start new sessions read-only\n"
+            " would set (a project config can only tighten limits):\n  permission.start_read_only = true  Start new sessions read-only\n"
         ),
         "{unanswered:?}"
     );
     assert_eq!(
         stderr(&unanswered),
-        "Answer in a terminal, or pass --yes or --no\n"
+        "miyu: confirmation needs a terminal\nhint: pass '--yes' or '--no'\n"
     );
     let trusted = run(&root, &repo, "C", &["config", "trust", "--yes"]).await;
     assert_eq!(
         (trusted.status.code(), stderr(&trusted)),
         (
             Some(0),
-            "· Trusted. You will be asked again if it changes\n".to_string()
+            "trusted (will ask again if the file changes)\n".to_string()
         )
     );
     let log = home.core_log();

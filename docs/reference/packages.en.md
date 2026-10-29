@@ -106,7 +106,7 @@ Fetch the index from the package source. Param `force` (optional): `true` fetche
 
 Response `{"generated", "fetched", "packages", "stale"?}`: when the index was generated and fetched (RFC 3339), and how many packages it lists; `stale` (the last place's reason, in English) means nothing could be fetched this time and the local copy is used.
 
-Other package sources: `packages.sources.<name>` in the configuration with a `url` and a `key` (a base64 Ed25519 public key). Both the system configuration and settings count (the system configuration wins on a shared name). They're fetched after the official one, each verified against its own key; the response adds `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`, with `{"source", "error"}` for one that couldn't be fetched.
+Other package sources: `packages.sources.<name>` in the system configuration with a `url` and a `key` (a base64 Ed25519 public key). They're fetched after the official one, each verified against its own key; the response adds `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`, with `{"source", "error"}` for one that couldn't be fetched.
 
 **Errors**
 

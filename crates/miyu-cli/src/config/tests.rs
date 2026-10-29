@@ -99,7 +99,7 @@ fn the_total_leaves_out_what_there_is_none_of() {
         "2 errors, 1 warning"
     );
     assert_eq!(Language::English.problems_total(1, 0), "1 error");
-    assert_eq!(Language::English.problems_total(0, 0), "No problems");
+    assert_eq!(Language::English.problems_total(0, 0), "no problems");
 }
 
 /// `config.get` 带 `all` 的一项和 `config.schema` 的一项：图纸「样子」里 `ui.language` 的例子。
@@ -236,51 +236,55 @@ fn a_missing_project_config_belongs_at_the_repository_root() {
 fn set_and_unset_lines_match_the_blueprint() {
     let (zh, en) = (Language::Chinese, Language::English);
     assert_eq!(
-        zh.saved("ui.language", "\"zh\"", "system", "now"),
-        "· ui.language = \"zh\" 写进了系统配置，立即生效"
+        zh.saved("ui.language", "\"zh\"", "now"),
+        "已设置 ui.language = \"zh\"（立即生效）"
     );
     assert_eq!(
-        en.saved("ui.language", "\"zh\"", "system", "now"),
-        "· ui.language = \"zh\" saved to the system config, takes effect immediately"
+        en.saved("ui.language", "\"zh\"", "now"),
+        "set ui.language = \"zh\" (takes effect immediately)"
     );
     assert_eq!(
-        en.saved(
-            "permission.start_read_only",
-            "true",
-            "system",
-            "new_session"
-        ),
-        "· permission.start_read_only = true saved to the system config, applies to new sessions"
+        en.saved("permission.start_read_only", "true", "new_session"),
+        "set permission.start_read_only = true (applies to new sessions)"
     );
     assert_eq!(
-        zh.saved("ui.startup", "\"recent\"", "system", "head_start"),
-        "· ui.startup = \"recent\" 写进了系统配置，重启后生效"
+        zh.saved("ui.startup", "\"recent\"", "head_start"),
+        "已设置 ui.startup = \"recent\"（重启后生效）"
     );
     assert_eq!(
-        zh.saved_below("log.level", "\"info\"", "system", "env", "\"debug\""),
-        "· log.level = \"info\" 写进了系统配置，环境变量里写着 \"debug\"，用的还是 \"debug\""
+        zh.overridden("log.level", "env", "\"debug\"")
+            .lines(zh, Level::Warning),
+        ["miyu: 警告：log.level 被环境变量覆盖，使用 \"debug\""]
     );
     assert_eq!(
-        en.saved_below("log.level", "\"info\"", "system", "env", "\"debug\""),
-        "· log.level = \"info\" saved to the system config, but the environment says \"debug\", so \"debug\" stays in use"
+        en.overridden("log.level", "env", "\"debug\"")
+            .lines(en, Level::Warning),
+        ["miyu: warning: log.level is overridden by the environment; using \"debug\""]
     );
-    assert_eq!(zh.already("\"zh\""), "· 本来就是 \"zh\"，没改");
-    assert_eq!(en.already("\"zh\""), "· Already \"zh\", nothing changed");
+    assert_eq!(zh.already("\"zh\""), "已经是 \"zh\"，未修改");
+    assert_eq!(en.already("\"zh\""), "already \"zh\", nothing changed");
     assert_eq!(
-        zh.removed("ui.language", "system", "\"auto\"", "default"),
-        "· 从系统配置里删掉了 ui.language，现在是 \"auto\"（默认值）"
+        zh.removed("ui.language", "\"auto\"", "default"),
+        "已删除 ui.language，现在是 \"auto\"（默认值）"
     );
     assert_eq!(
-        en.removed("ui.language", "system", "\"auto\"", "default"),
-        "· Removed ui.language from the system config. It is now \"auto\" (default)"
+        en.removed("ui.language", "\"auto\"", "default"),
+        "removed ui.language, now \"auto\" (default)"
     );
     assert_eq!(
         zh.not_there("ui.language", "system"),
-        "· 系统配置里本来就没写 ui.language"
+        "系统配置中没有 ui.language，未修改"
     );
     assert_eq!(
         en.not_there("log.level", "system"),
-        "· The system config did not have log.level"
+        "log.level is not in the system config, nothing changed"
+    );
+    assert_eq!(
+        zh.project_by_hand().lines(zh, Level::Error),
+        [
+            "miyu: 项目配置只能手动编辑",
+            "提示：运行 'miyu config edit --project'",
+        ]
     );
 }
 
@@ -289,38 +293,52 @@ fn edit_and_trust_words_match_the_blueprint() {
     let (zh, en) = (Language::Chinese, Language::English);
     assert_eq!(
         zh.edit_errors(1),
-        "有 1 处错误，还没存。回车接着改，输入 q 放弃："
+        "有 1 处错误，未保存。按回车继续编辑，输入 q 放弃："
     );
     assert_eq!(
         en.edit_errors(2),
-        "2 errors. Nothing saved yet. Press Enter to keep editing, or type q to give up: "
+        "2 errors, not saved. Press Enter to keep editing, or type q to give up: "
     );
-    assert_eq!(zh.edit_saved(&["now"]), "· 存好了，立即生效");
+    assert_eq!(zh.edit_saved(&["now"]), "已保存（立即生效）");
     assert_eq!(
         en.edit_saved(&["now", "new_session"]),
-        "· Saved, takes effect immediately, applies to new sessions"
+        "saved (takes effect immediately, applies to new sessions)"
     );
-    assert_eq!(en.edit_saved(&[]), "· Saved");
+    assert_eq!(en.edit_saved(&[]), "saved");
     assert_eq!(
-        en.edit_conflict("~/x"),
-        "The file changed while you were editing. Nothing saved. Your edit is in ~/x"
+        en.edit_conflict("~/x").lines(en, Level::Error),
+        [
+            "miyu: the file changed during editing; not saved",
+            "hint: the edited copy is kept in ~/x",
+        ]
     );
     assert_eq!(
-        en.editor_failed(Some(3)),
-        "The editor did not exit cleanly (3). Nothing saved"
+        en.editor_failed(Some(3)).lines(en, Level::Error),
+        ["miyu: the editor did not exit cleanly (3); not saved"]
     );
-    assert_eq!(zh.editor_failed(None), "编辑器没有正常退出（-），没存");
+    assert_eq!(
+        zh.editor_failed(None).lines(zh, Level::Error),
+        ["miyu: 编辑器异常退出（-），未保存"]
+    );
     assert_eq!(
         en.would_set("~/src/app/.miyu/config.toml"),
-        "~/src/app/.miyu/config.toml would set:"
+        "~/src/app/.miyu/config.toml would set (a project config can only tighten limits):"
     );
     assert_eq!(
-        en.trust_question(),
-        "A project config can only make limits stricter. Trust this one? [y/N] "
+        en.trust_question("~/src/app/.miyu/config.toml"),
+        "Trust '~/src/app/.miyu/config.toml'? [y/N] "
+    );
+    assert_eq!(
+        zh.trust_question("~/src/app/.miyu/config.toml"),
+        "信任 '~/src/app/.miyu/config.toml'？[y/N] "
     );
     assert_eq!(
         en.trust_answered(true),
-        "· Trusted. You will be asked again if it changes"
+        "trusted (will ask again if the file changes)"
+    );
+    assert_eq!(
+        zh.trust_needs_terminal().lines(zh, Level::Error),
+        ["miyu: 需要在终端中确认", "提示：加上 '--yes' 或 '--no'"]
     );
     assert_eq!(
         zh.untrusted_project("~/src/app/.miyu/config.toml")
@@ -398,14 +416,14 @@ fn every_applies_value_is_said_like_the_blueprint() {
     ];
     for (applies, chinese, english) in said {
         assert_eq!(
-            zh.saved(key, "4096", "system", applies),
-            format!("· {key} = 4096 写进了系统配置，{chinese}")
+            zh.saved(key, "4096", applies),
+            format!("已设置 {key} = 4096（{chinese}）")
         );
         assert_eq!(
-            en.saved(key, "4096", "system", applies),
-            format!("· {key} = 4096 saved to the system config, {english}")
+            en.saved(key, "4096", applies),
+            format!("set {key} = 4096 ({english})")
         );
-        assert_eq!(zh.edit_saved(&[applies]), format!("· 存好了，{chinese}"));
+        assert_eq!(zh.edit_saved(&[applies]), format!("已保存（{chinese}）"));
         assert_eq!(
             zh.explain_header("窗口", key, "说明。", applies),
             format!("窗口（{key}）：说明。{chinese}。")
@@ -423,17 +441,17 @@ fn every_applies_value_is_said_like_the_blueprint() {
     }
     // 认不出的（核心比命令行新）：不说什么时候生效，不瞎说「当场」。
     assert_eq!(
-        zh.saved(key, "4096", "system", "someday"),
-        format!("· {key} = 4096 写进了系统配置")
+        zh.saved(key, "4096", "someday"),
+        format!("已设置 {key} = 4096")
     );
     assert_eq!(
-        en.saved(key, "4096", "system", "someday"),
-        format!("· {key} = 4096 saved to the system config")
+        en.saved(key, "4096", "someday"),
+        format!("set {key} = 4096")
     );
-    assert_eq!(zh.edit_saved(&["someday"]), "· 存好了");
+    assert_eq!(zh.edit_saved(&["someday"]), "已保存");
     assert_eq!(
         en.edit_saved(&["now", "someday"]),
-        "· Saved, takes effect immediately"
+        "saved (takes effect immediately)"
     );
     assert_eq!(
         zh.explain_header("窗口", key, "说明。", "someday"),

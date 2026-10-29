@@ -45,9 +45,10 @@ fn a_missing_web_ui_says_how_to_install() {
         ),
         1
     );
-    let said = String::from_utf8(err).expect("UTF-8");
-    assert!(said.starts_with("没装网页界面。"), "{said}");
-    assert!(said.contains("miyu-web"), "{said}");
+    assert_eq!(
+        String::from_utf8(err).expect("UTF-8"),
+        "miyu: 未安装网页界面\n提示：用 'miyu pkg install web' 安装\n"
+    );
     let mut err = Vec::new();
     assert_eq!(
         web_on(
@@ -60,10 +61,9 @@ fn a_missing_web_ui_says_how_to_install() {
         ),
         1
     );
-    assert!(
-        String::from_utf8(err)
-            .expect("UTF-8")
-            .starts_with("The web UI is not installed.")
+    assert_eq!(
+        String::from_utf8(err).expect("UTF-8"),
+        "miyu: no web interface installed\nhint: install it with 'miyu pkg install web'\n"
     );
     std::fs::remove_dir_all(&dir).expect("删得掉临时目录");
 }

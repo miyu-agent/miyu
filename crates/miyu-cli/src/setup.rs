@@ -102,10 +102,7 @@ pub fn setup(args: Setup, start: impl FnOnce() -> Command) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => {
-            eprintln!("{error}");
-            return ExitCode::from(exit::ERROR);
-        }
+        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
     ExitCode::from(runtime.block_on(run(args, start)))
 }
@@ -207,7 +204,8 @@ pub async fn model_ready_on(
 /// 连核心以前就知道不对的：不在终端里又没写 `--provider`。说一句，交回退出码 2。
 fn early(plan: &SetupPlan, console: &dyn Console, err: &mut dyn Write) -> Option<u8> {
     if plan.setup.provider.is_none() && !console.terminal() {
-        say(err, plan.language.setup_needs_terminal());
+        let language = plan.language;
+        diagnostic::error(err, language, &language.setup_needs_terminal());
         return Some(MISUSE);
     }
     None

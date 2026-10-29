@@ -29,7 +29,7 @@ fn steady(screen: &str) -> String {
     let mut out = String::new();
     for line in screen.split_inclusive('\n') {
         match line.split_once("，") {
-            Some((head, tail)) if head.contains("通了") => {
+            Some((head, tail)) if head.contains("已连通") => {
                 let rest = tail.split_once(" 毫秒").map_or(tail, |(_, rest)| rest);
                 out.push_str(&format!("{head}，N 毫秒{rest}"));
             }
@@ -66,21 +66,21 @@ async fn a_key_in_the_environment_is_referenced_never_copied() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         steady(&asked.screen),
-        "· 核心未读到 OPENAI_API_KEY（核心启动后才设置）。核心空闲退出后重新运行 miyu setup，或选这一家贴 key。\n\
-         选一家：\n\
+        "miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）\n提示：核心空闲退出后重新运行 'miyu setup'\n提示：或选择这一家供应商并粘贴密钥\n\
+         选择供应商：\n\
          \x20 1  OpenCode Zen\n\
          \x20 2  OpenCode Go\n\
-         \x20 3  DeepSeek      已找到 key\n\
-         \x20    Anthropic     用不了：目录里没有它的地址\n\
-         \x20    OpenAI        用不了：目录里没有它的地址\n\
+         \x20 3  DeepSeek      已找到密钥\n\
+         \x20    Anthropic     不可用：目录中没有地址\n\
+         \x20    OpenAI        不可用：目录中没有地址\n\
          \x20 4  自定义\n\
-         选一个编号：试一下 DeepSeek……\n\
-         · 通了：列出 3 个模型。\n\
+         选择编号：正在测试 DeepSeek…\n\
+         已连通：列出 3 个模型\n\
          选主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  a-tiny\n\
          \x20 3  deepseek-v4-pro\n\
-         选一个编号，直接回车用推荐的：写好了：models.chat = deepseek/deepseek-flash\n"
+         选一个编号，直接回车用推荐的：已设置 models.chat = deepseek/deepseek-flash\n"
     );
     let config = home.system_config();
     assert!(
@@ -112,22 +112,22 @@ async fn a_pasted_key_is_tried_first_and_kept_only_once_it_works() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         steady(&asked.screen),
-        "选一家：\n\
+        "选择供应商：\n\
          \x20 1  OpenCode Zen\n\
          \x20 2  OpenCode Go\n\
          \x20 3  DeepSeek\n\
-         \x20    Anthropic     用不了：目录里没有它的地址\n\
-         \x20    OpenAI        用不了：目录里没有它的地址\n\
+         \x20    Anthropic     不可用：目录中没有地址\n\
+         \x20    OpenAI        不可用：目录中没有地址\n\
          \x20 4  自定义\n\
-         选一个编号：粘贴 deepseek 的 key（不显示）：试一下 DeepSeek……\n\
-         不通（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
-         仍然保存？[y/N] 粘贴 deepseek 的 key（不显示）：试一下 DeepSeek……\n\
-         · 通了：列出 2 个模型。\n\
-         · deepseek 的 key 存好了\n\
+         选择编号：粘贴 deepseek 的密钥（不显示）：正在测试 DeepSeek…\n\
+         miyu: 连接失败（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+         仍然保存？[y/N] 粘贴 deepseek 的密钥（不显示）：正在测试 DeepSeek…\n\
+         已连通：列出 2 个模型\n\
+         已保存 deepseek 的密钥\n\
          选主对话的模型：\n\
          \x20 1  deepseek-flash（推荐）\n\
          \x20 2  deepseek-v4-pro\n\
-         选一个编号，直接回车用推荐的：写好了：models.chat = deepseek/deepseek-v4-pro\n"
+         选一个编号，直接回车用推荐的：已设置 models.chat = deepseek/deepseek-v4-pro\n"
     );
     assert_eq!(typist.hidden, 2, "试不通、不保存，回到贴 key");
     assert_eq!(server.received().len(), 2, "两次都只列了模型");
@@ -159,15 +159,15 @@ async fn a_failed_try_can_be_saved_anyway() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     let (_, after) = asked
         .screen
-        .split_once("粘贴 deepseek 的 key（不显示）：")
+        .split_once("粘贴 deepseek 的密钥（不显示）：")
         .expect("问了 key");
     assert_eq!(
         after,
-        "试一下 DeepSeek……\n\
-         不通（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
+        "正在测试 DeepSeek…\n\
+         miyu: 连接失败（列模型）：认证失败：HTTP 401: Authentication Fails (no such user)\n\
          仍然保存？[y/N] 模型名：\
-         · deepseek 的 key 存好了\n\
-         写好了：models.chat = deepseek/my-model\n"
+         已保存 deepseek 的密钥\n\
+         已设置 models.chat = deepseek/my-model\n"
     );
     assert_eq!(typist.hidden, 1, "保存了就不回去贴 key");
     assert!(
@@ -194,7 +194,9 @@ async fn saving_anyway_without_a_model_name_is_not_picked() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.ends_with("仍然保存？[y/N] 模型名：没选\n"),
+        asked
+            .screen
+            .ends_with("仍然保存？[y/N] 模型名：miyu: 未选择\n"),
         "{}",
         asked.screen
     );
@@ -213,7 +215,11 @@ async fn cancelling_the_key_paste_writes_nothing() {
     typist.cancel_key = true;
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 130, "{}", asked.screen);
-    assert!(asked.screen.ends_with("没存，取消了\n"), "{}", asked.screen);
+    assert!(
+        asked.screen.ends_with("已取消，未保存\n"),
+        "{}",
+        asked.screen
+    );
     assert_eq!(home.system_config(), "", "配置一个字都没写");
     assert_eq!(home.secrets(), "", "密钥文件一个字都没写");
     assert!(server.received().is_empty(), "没发出去任何请求");
@@ -230,7 +236,7 @@ async fn a_local_service_needs_no_key() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert!(
         asked.screen.contains(&format!(
-            "  3  DeepSeek\n     Anthropic     用不了：目录里没有它的地址\n     OpenAI        用不了：目录里没有它的地址\n  4  Lab           本机 {}\n  5  自定义\n",
+            "  3  DeepSeek\n     Anthropic     不可用：目录中没有地址\n     OpenAI        不可用：目录中没有地址\n  4  Lab           本机 {}\n  5  自定义\n",
             server.base_url
         )),
         "{}",
@@ -256,7 +262,7 @@ async fn a_provider_already_set_up_only_gets_models_chat() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert!(
-        asked.screen.contains("  3  DeepSeek      已配好\n"),
+        asked.screen.contains("  3  DeepSeek      已配置\n"),
         "{}",
         asked.screen
     );
@@ -275,7 +281,7 @@ async fn nothing_picked_or_no_key_ends_with_1() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1);
     assert!(
-        asked.screen.ends_with("选一个编号：没选\n"),
+        asked.screen.ends_with("选择编号：miyu: 未选择\n"),
         "{}",
         asked.screen
     );
@@ -284,7 +290,7 @@ async fn nothing_picked_or_no_key_ends_with_1() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert!(
         asked.screen.contains(
-            "选一个编号：9 不是列出的编号\n选一个编号：x 不是列出的编号\n选一个编号：没选\n"
+            "选择编号：miyu: 无效的编号：9\n选择编号：miyu: 无效的编号：x\n选择编号：miyu: 未选择\n"
         ),
         "{}",
         asked.screen
@@ -295,7 +301,7 @@ async fn nothing_picked_or_no_key_ends_with_1() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1);
     assert!(
-        asked.screen.ends_with("（不显示）：没收到 key\n"),
+        asked.screen.ends_with("（不显示）：miyu: 未收到密钥\n"),
         "{}",
         asked.screen
     );
@@ -321,7 +327,7 @@ async fn ask_without_a_model_goes_through_setup_first_at_a_terminal() {
     assert!(
         asked
             .screen
-            .starts_with("还没有模型，先接上一个。\n选一家：\n"),
+            .starts_with("未配置模型，开始设置\n选择供应商：\n"),
         "{}",
         asked.screen
     );
@@ -351,7 +357,7 @@ async fn setup_writes_no_pools() {
     assert!(
         asked
             .screen
-            .ends_with("写好了：models.chat = deepseek/deepseek-flash\n"),
+            .ends_with("已设置 models.chat = deepseek/deepseek-flash\n"),
         "{}",
         asked.screen
     );

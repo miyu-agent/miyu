@@ -106,7 +106,7 @@
 
 回应 `{"generated", "fetched", "packages", "stale"?}`：索引生成的时刻、拿到的时刻（都是 RFC 3339）、几个包；这一次一处都没拿成、用的是本机那份的带 `stale`（最后一处的原因，英文）。
 
-别的软件源（施工 U23 下下）：配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的，系统配置、设置里的都算（同名的认系统配置的）。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。
+别的软件源（施工 U23 下下）：系统配置里 `packages.sources.<名字>` 写了 `url`、`key`（Ed25519 公钥的 base64）的。官方的拿完再拿它们，各照各的公钥验；回应多 `sources: [{"source", "generated", "fetched", "packages", "stale"?}]`，拿不成的那一项是 `{"source", "error"}`。
 
 **出错**
 

@@ -1,14 +1,15 @@
 Usage: miyu mcp login <server>
        miyu mcp logout <server>
 
-login: log in to a URL MCP server that only accepts browser authorization (one
-in the system config with a url and no token). Prints the authorization
-address and tries to open a browser; once you agree there, the token goes into
-the secrets file and the server connects by itself. If the browser is on
-another machine, paste back the whole address it lands on and press Enter.
-Waits up to 10 minutes. The core renews the token itself before it expires.
+Commands:
+  login <server>   Log in to a URL MCP server that needs browser authorization
+  logout <server>  Delete the stored login
 
-logout: delete the stored login; log in again to use the server.
+login prints the authorization address and tries to open a browser; once
+authorized there, the token goes into the secrets file and the server
+connects. If the browser is on another machine, paste back the full address
+it lands on and press Enter. Waits up to 10 minutes. The core renews the
+token before it expires.
 
 Options:
   -h, --help  Print help

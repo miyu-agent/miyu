@@ -41,12 +41,12 @@
 
 1. **连核心**：照 `miyu recap`（`config.md` 第十条第 1 条）：没在跑就拉起来（施工 8-6 起 key 来自配置，一律拉起；以前没设 `DEEPSEEK_API_KEY` 的不拉起、退出码 5）。
 2. **握手**：`caps.input` 是 `false`。之后给人看的字照回应的 `language`（`cli/main.md`「界面语言」）。
-3. **被拒绝的**：`data.problems` 里有东西的（`unknown_config_key`），一条一句印在标准错误上（带最近的键名）；没有的印核心的原话。退出码 1。
+3. **被拒绝的**：`data.problems` 里有东西的（`unknown_config_key`），一条一句印在标准错误上（带最近的键名）；没有的印核心的原话。都照报错的写法加 `miyu: `、去掉句末句号（设计 47 第五节，CL-2 下）。退出码 1。
 4. **`get`**：`config.get`，带当前目录当 `cwd`，写了键的带 `keys`。只写一个键：标准输出上只印值，字不带引号，别的照 TOML 的写法（`true`）。写了几个、一个都没写：一行一个 `键 = 值`，照键名排。`--format json`：回应的 `items` 原样，一行。
 5. **`explain`**：`config.get`（`keys` 是这一个、带 `cwd`、`all`），再 `config.schema`。第一行名字、键、说明、什么时候生效；下面每一层一行，从上往下（`config.md`「样子」）。值照 TOML 写；文件换成真的位置、家目录下的写成 `~/…`，后面接 `:行`；几列照显示的宽度对齐（中文算两列），后面还有东西的格补齐，最后一格不补。生效的那一行原色、末尾 `← 生效`；环境变量压着的写 `环境变量 MIYU_LOG`、`← 生效，只管这一次启动`；别的灰；写了、不算的末尾红字 `← 不算：<原因>`。`--format json`：那一项原样，多 `name`、`description`。
 6. **`check`**：施工 8-30 挪成主程序的 `miyu check`（`cli/check.md`），`miyu config` 下面不再有它（2026-10-07 项目主人定：只留一个统一的检查）。
-7. **`path`**：`config.get`（`--project` 的带 `cwd`），照 `files` 里那一层的 `file` 换成真的位置，一行，文件还没有也印。不写 `--project` 的是配置（`config.toml`）。`--project` 没找到项目配置的：从当前目录往上找有 `.git` 的那一层（仓库的根），没有的就是当前目录，印它下面的 `.miyu/config.toml`，标准错误上说「还没有这个文件」。
-8. **`set`、`unset`、`edit`、`trust`**（施工 8-3）：照 `config.md` 第十条第 4、5、6、11 条。印的那一行都在标准错误上，灰（标准错误是终端、`NO_COLOR` 没设才上色）；`trust` 列出会改哪几项在标准输出上。`set --project`、不在终端里的 `edit` 连核心以前就说一句，退出码 2：参数不对不拉起核心，没设 key 时也是 2。
+7. **`path`**：`config.get`（`--project` 的带 `cwd`），照 `files` 里那一层的 `file` 换成真的位置，一行，文件还没有也印。不写 `--project` 的是配置（`config.toml`）。`--project` 没找到项目配置的：从当前目录往上找有 `.git` 的那一层（仓库的根），没有的就是当前目录，印它下面的 `.miyu/config.toml`，标准错误上告警「文件尚不存在」（`miyu: 警告：文件尚不存在`，CL-2 下）。
+8. **`set`、`unset`、`edit`、`trust`**（施工 8-3）：照 `config.md` 第十条第 4、5、6、11 条。印的那一行结果都在标准错误上，灰（标准错误是终端、`NO_COLOR` 没设才上色）；`trust` 列出会改哪几项在标准输出上。`set` 写了、上面一层压着的，结果行后面接一行告警 `miyu: 警告：<键> 被<哪一层>覆盖，使用 <值>`（设计 47 第四节，CL-2 下）。没做成的照报错写（`miyu: ` 打头，建议另起一行写「提示：」）。`set --project`、不在终端里的 `edit` 连核心以前就报错，退出码 2：参数不对不拉起核心，没设 key 时也是 2。
    - `set`、`unset`、`explain` 的键先规整（施工 8-3 补，`miyu_config::key` 拆开再拼，和核心一个写法）：多余的引号、点两边的空格去掉，名字里有点的那一段照旧带引号；交给核心、找回应、印出来的都是规整过的。拆不开的原样交，由核心照原来的话报错。
 
 ### 样子
@@ -58,23 +58,21 @@
 ```text
 用法：miyu config <命令> [选项]
 
-看配置、改配置、信任项目配置。
-
 命令：
-  get [键…]      印出最终的值，只写一个键时只印值
-  set <键> <值>  改一项
-  unset <键>     从系统配置里删掉一项，回到默认值
-  edit           用编辑器打开，存盘时先检查
-  explain <键>   这一项每一层写的什么、哪一个生效
-  path           印出配置文件在哪
-  trust          看这里的项目配置会改什么，信任或者不信任它
+  get [键…]      打印生效的值，只给一个键时只打印值
+  set <键> <值>  修改一项设置
+  unset <键>     从系统配置中删除一项，恢复默认值
+  edit           用编辑器打开，保存前检查
+  explain <键>   显示每一层的值和生效的那一层
+  path           打印配置文件的路径
+  trust          查看并决定是否信任当前目录的项目配置
 
 选项：
-      --project           当前目录的项目配置（edit、path）
-      --format text|json  get、explain：json 给脚本
-      --yes               trust：信任，不问
-      --no                trust：不信任，不问
-  -h, --help              印帮助
+      --project           使用当前目录的项目配置（edit、path）
+      --format text|json  输出格式（默认 text）
+      --yes               信任，不询问（trust）
+      --no                不信任，不询问（trust）
+  -h, --help              显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/config.txt`（帮助页，英文）：
@@ -82,23 +80,20 @@
 ```text
 Usage: miyu config <command> [options]
 
-See and change settings, and trust a project config.
-
 Commands:
-  get [key…]           Print the values in effect, or just the value of one key
-  set <key> <value>    Change one setting
-  unset <key>          Remove one from the system config, back to the default
-  edit                 Open in an editor, checked before it is saved
-  explain <key>        What each layer says and which one wins
-  path                 Print where the file is
-  trust                See what the project config here would set, and trust
-                       it or not
+  get [key…]           Print the values in effect, or the value of one key
+  set <key> <value>    Change a setting
+  unset <key>          Remove a setting from the system config
+  edit                 Open the config in an editor, checked before saving
+  explain <key>        Show the value in each layer and which one wins
+  path                 Print the path of the config file
+  trust                Review and trust or distrust the project config here
 
 Options:
-      --project           The project config here (edit, path)
-      --format text|json  For get, explain: json for scripts
-      --yes               For trust: trust it, without asking
-      --no                For trust: do not trust it, without asking
+      --project           Use the project config here (edit, path)
+      --format text|json  Output format (default: text)
+      --yes               Trust without asking (trust)
+      --no                Distrust without asking (trust)
   -h, --help              Print help
 ```
 

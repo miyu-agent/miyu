@@ -23,7 +23,7 @@ fn steady(screen: &str) -> String {
     let mut out = String::new();
     for line in screen.split_inclusive('\n') {
         match line.split_once("，") {
-            Some((head, tail)) if head.contains("通了") => {
+            Some((head, tail)) if head.contains("已连通") => {
                 let rest = tail.split_once(" 毫秒").map_or(tail, |(_, rest)| rest);
                 out.push_str(&format!("{head}，N 毫秒{rest}"));
             }
@@ -50,18 +50,18 @@ async fn a_custom_provider_asks_address_protocol_and_key_and_is_named_after_its_
     let (_, after) = shown.split_once("  4  自定义\n").expect("有自定义那一行");
     assert_eq!(
         after,
-        "选一个编号：Base URL：要以 http:// 或 https:// 开头\n\
+        "选择编号：Base URL：miyu: 地址必须以 http:// 或 https:// 开头\n\
          Base URL：接口协议：\n\
          \x20 1  OpenAI 兼容\n\
          \x20 2  Anthropic\n\
          \x20 3  OpenAI Responses\n\
-         选一个编号：Key（不显示，可以空）：试一下 127.1……\n\
-         · 通了：列出 2 个模型。\n\
-         ID（直接回车用 local）：· local 的 key 存好了\n\
+         选择编号：密钥（不显示，可留空）：正在测试 127.1…\n\
+         已连通：列出 2 个模型\n\
+         ID（回车使用 local）：已保存 local 的密钥\n\
          选主对话的模型：\n\
          \x20 1  m-large（推荐）\n\
          \x20 2  m-small\n\
-         选一个编号，直接回车用推荐的：写好了：models.chat = local/m-small\n"
+         选一个编号，直接回车用推荐的：已设置 models.chat = local/m-small\n"
     );
     let config = home.system_config();
     let wanted = format!(
@@ -91,7 +91,7 @@ async fn a_taken_id_gets_a_number_and_an_empty_key_stores_nothing() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert!(
-        asked.screen.contains("ID（直接回车用 local-2）："),
+        asked.screen.contains("ID（回车使用 local-2）："),
         "{}",
         asked.screen
     );
@@ -103,7 +103,7 @@ async fn a_taken_id_gets_a_number_and_an_empty_key_stores_nothing() {
     assert!(written.contains("chat = \"local-2/m-small\""), "{written}");
     assert_eq!(home.secrets(), "", "空 key 不存");
     assert_eq!(server.received()[0].header("authorization"), None);
-    assert!(!asked.screen.contains("存好了"), "{}", asked.screen);
+    assert!(!asked.screen.contains("已保存"), "{}", asked.screen);
 }
 
 #[tokio::test]
@@ -116,15 +116,15 @@ async fn without_a_model_list_the_model_name_is_asked_and_tried() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     let shown = steady(&asked.screen);
     let (_, after) = shown
-        .split_once("Key（不显示，可以空）：")
+        .split_once("密钥（不显示，可留空）：")
         .expect("问了 key");
     assert_eq!(
         after,
-        "试一下 127.1……\n\
+        "正在测试 127.1…\n\
          未获取到模型列表\n\
-         模型名：试一下 127.1……\n\
-         · 通了：试的 my-model，N 毫秒收到第一个字。\n\
-         ID（直接回车用 local）：写好了：models.chat = local/my-model\n"
+         模型名：正在测试 127.1…\n\
+         已连通：测试 my-model，N 毫秒收到第一个字\n\
+         ID（回车使用 local）：已设置 models.chat = local/my-model\n"
     );
     let sent: serde_json::Value =
         serde_json::from_slice(&server.received()[2].body).expect("发的是 JSON");
@@ -145,7 +145,9 @@ async fn an_empty_model_name_or_url_is_not_picked_and_writes_nothing() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.ends_with("未获取到模型列表\n模型名：没选\n"),
+        asked
+            .screen
+            .ends_with("未获取到模型列表\n模型名：miyu: 未选择\n"),
         "{}",
         asked.screen
     );
@@ -154,7 +156,7 @@ async fn an_empty_model_name_or_url_is_not_picked_and_writes_nothing() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.ends_with("Base URL：没选\n"),
+        asked.screen.ends_with("Base URL：miyu: 未选择\n"),
         "{}",
         asked.screen
     );
@@ -186,16 +188,16 @@ async fn the_id_can_be_typed_and_a_bad_or_taken_one_is_asked_again() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     let (_, after) = asked
         .screen
-        .split_once("· 通了：列出 1 个模型。\n")
+        .split_once("已连通：列出 1 个模型\n")
         .expect("试通了");
     assert_eq!(
         after,
-        "ID（直接回车用 local）：Lan Box 不能当 ID：小写字母开头，只用小写字母、数字、- 和 _，最长 32 个字\n\
-         ID（直接回车用 local）：已经有 lan-box 了\n\
-         ID（直接回车用 local）：· office-gpu 的 key 存好了\n\
+        "ID（回车使用 local）：miyu: ID 无效：Lan Box\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 32 个字符\n\
+         ID（回车使用 local）：miyu: ID 'lan-box' 已存在\n\
+         ID（回车使用 local）：已保存 office-gpu 的密钥\n\
          选主对话的模型：\n\
          \x20 1  m-small（推荐）\n\
-         选一个编号，直接回车用推荐的：写好了：models.chat = office-gpu/m-small\n"
+         选一个编号，直接回车用推荐的：已设置 models.chat = office-gpu/m-small\n"
     );
     let written = home.system_config();
     let wanted = format!(
@@ -216,7 +218,9 @@ async fn the_id_can_be_typed_and_a_bad_or_taken_one_is_asked_again() {
     let asked = home.setup(&plan(Setup::default(), &[]), &mut typist).await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.ends_with("ID（直接回车用 local）：没选\n"),
+        asked
+            .screen
+            .ends_with("ID（回车使用 local）：miyu: 未选择\n"),
         "{}",
         asked.screen
     );

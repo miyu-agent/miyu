@@ -139,7 +139,7 @@ async fn a_named_login_reads_the_key_hidden_and_says_saved_or_replaced() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         asked.err,
-        "粘贴 deepseek 的 key（不显示）：· deepseek 的 key 存好了\n"
+        "粘贴 deepseek 的密钥（不显示）：已保存 deepseek 的密钥\n"
     );
     assert_eq!(asked.out, "");
     assert_eq!(
@@ -152,7 +152,7 @@ async fn a_named_login_reads_the_key_hidden_and_says_saved_or_replaced() {
     let asked = run(&home, Language::English, login("deepseek"), &mut console).await;
     assert_eq!(
         asked.err,
-        "Paste the key for deepseek (it will not show): · Replaced the key for deepseek\n"
+        "Paste the key for deepseek (hidden): replaced the key for deepseek\n"
     );
 }
 
@@ -171,7 +171,7 @@ async fn cancelling_the_key_paste_saves_nothing_and_exits_130() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (130, "粘贴 deepseek 的 key（不显示）：没存，取消了\n")
+        (130, "粘贴 deepseek 的密钥（不显示）：已取消，未保存\n")
     );
     assert_eq!(secrets(&home), "", "密钥文件一个字都没写");
     let asked = run(
@@ -185,7 +185,7 @@ async fn cancelling_the_key_paste_saves_nothing_and_exits_130() {
         (asked.code, asked.err.as_str()),
         (
             130,
-            "Paste the key for deepseek (it will not show): Not saved, cancelled\n"
+            "Paste the key for deepseek (hidden): cancelled, not saved\n"
         )
     );
 }
@@ -196,14 +196,14 @@ async fn a_piped_key_is_read_whole_without_asking() {
     let mut console = piping(&format!("  {FAKE}\n"));
     let asked = run(&home, Language::Chinese, login("deepseek"), &mut console).await;
     assert_eq!(asked.code, 0, "{}", asked.screen);
-    assert_eq!(asked.err, "· deepseek 的 key 存好了\n", "管道进来的不问");
+    assert_eq!(asked.err, "已保存 deepseek 的密钥\n", "管道进来的不问");
     assert_eq!((console.hidden, console.piped), (0, 1));
     assert!(
         secrets(&home).contains(&format!("deepseek = \"{FAKE}\"")),
         "存的去掉了前后空白"
     );
     let asked = run(&home, Language::Chinese, login("empty"), &mut piping(" \n")).await;
-    assert_eq!((asked.code, asked.err.as_str()), (1, "没收到 key\n"));
+    assert_eq!((asked.code, asked.err.as_str()), (1, "miyu: 未收到密钥\n"));
     let asked = run(
         &home,
         Language::Chinese,
@@ -213,7 +213,7 @@ async fn a_piped_key_is_read_whole_without_asking() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (1, "参数错误。\n"),
+        (1, "miyu: 参数错误\n"),
         "核心拒了照原话说"
     );
 }
@@ -231,7 +231,7 @@ async fn misuse_is_refused_before_anything() {
     assert_eq!(asked.code, 2);
     assert_eq!(
         asked.err,
-        "Deep Seek 不能当 key 的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符\n"
+        "miyu: 密钥名字无效：Deep Seek\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
     );
     let asked = run(
         &home,
@@ -242,7 +242,10 @@ async fn misuse_is_refused_before_anything() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (2, "要在终端里选，或者写 miyu provider login <名字>\n")
+        (
+            2,
+            "miyu: 需要在终端中选择\n提示：或者指定名字：'miyu provider login <名字>'\n"
+        )
     );
     let asked = run(
         &home,
@@ -254,7 +257,7 @@ async fn misuse_is_refused_before_anything() {
     assert_eq!(asked.code, 2);
     assert_eq!(
         asked.err,
-        "Pick in a terminal, or run miyu provider logout <name>\n"
+        "miyu: picking needs a terminal\nhint: or give a name: 'miyu provider logout <name>'\n"
     );
     assert_eq!(secrets(&home), "", "什么都没写");
 }
@@ -272,7 +275,7 @@ async fn picking_takes_a_number_or_a_new_name() {
     assert_eq!(asked.code, 2);
     assert_eq!(
         asked.err,
-        "配置里还没有用到密钥的供应商：写 miyu provider login <名字>\n"
+        "miyu: 没有使用密钥的供应商\n提示：用 'miyu provider login <名字>' 添加\n"
     );
     run(
         &home,
@@ -299,7 +302,7 @@ async fn picking_takes_a_number_or_a_new_name() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         asked.err,
-        "配置里用到的密钥：\n  1  bigmodel-2  已设置\n  2  deepseek    已设置\n选一个编号，或者敲一个新名字：粘贴 deepseek 的 key（不显示）：· 换掉了 deepseek 的 key\n"
+        "配置中使用的密钥：\n  1  bigmodel-2  已设置\n  2  deepseek    已设置\n选择编号，或输入新名字：粘贴 deepseek 的密钥（不显示）：已替换 deepseek 的密钥\n"
     );
     let asked = run(
         &home,
@@ -308,11 +311,7 @@ async fn picking_takes_a_number_or_a_new_name() {
         &mut typing(&["zeta"], FAKE),
     )
     .await;
-    assert!(
-        asked.err.ends_with("· zeta 的 key 存好了\n"),
-        "{}",
-        asked.err
-    );
+    assert!(asked.err.ends_with("已保存 zeta 的密钥\n"), "{}", asked.err);
     let asked = run(
         &home,
         Language::Chinese,
@@ -321,7 +320,7 @@ async fn picking_takes_a_number_or_a_new_name() {
     )
     .await;
     assert_eq!(asked.code, 1);
-    assert!(asked.err.ends_with("没选\n"), "{}", asked.err);
+    assert!(asked.err.ends_with("miyu: 未选择\n"), "{}", asked.err);
     let asked = run(
         &home,
         Language::Chinese,
@@ -340,7 +339,7 @@ async fn picking_takes_a_number_or_a_new_name() {
     assert_eq!(asked.code, 2);
     assert!(
         asked.err.ends_with(
-            "9 不能当 key 的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符\n"
+            "miyu: 密钥名字无效：9\n提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符\n"
         ),
         "{}",
         asked.err
@@ -357,7 +356,7 @@ async fn the_list_never_shows_a_key() {
         &mut piping(""),
     )
     .await;
-    assert_eq!((asked.code, asked.out.as_str()), (0, "还没有设过 key\n"));
+    assert_eq!((asked.code, asked.out.as_str()), (0, "没有密钥\n"));
     run(
         &home,
         Language::Chinese,
@@ -407,7 +406,10 @@ async fn logout_deletes_by_name_or_pick() {
         &mut typing(&["1"], ""),
     )
     .await;
-    assert_eq!((asked.code, asked.err.as_str()), (1, "还没有设过 key\n"));
+    assert_eq!(
+        (asked.code, asked.err.as_str()),
+        (1, "miyu: 没有已设置的密钥\n")
+    );
     run(
         &home,
         Language::Chinese,
@@ -431,7 +433,7 @@ async fn logout_deletes_by_name_or_pick() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (0, "· 删掉了 bigmodel-2 的 key\n")
+        (0, "已删除 bigmodel-2 的密钥\n")
     );
     let asked = run(
         &home,
@@ -442,7 +444,7 @@ async fn logout_deletes_by_name_or_pick() {
     .await;
     assert_eq!(
         (asked.code, asked.err.as_str()),
-        (1, "bigmodel-2 has no key\n")
+        (1, "miyu: no key for bigmodel-2\n")
     );
     let asked = run(
         &home,
@@ -454,7 +456,7 @@ async fn logout_deletes_by_name_or_pick() {
     assert_eq!(asked.code, 0, "{}", asked.screen);
     assert_eq!(
         asked.err,
-        "设过的 key：\n  1  deepseek  已设置\n选一个编号：· 删掉了 deepseek 的 key\n"
+        "已设置的密钥：\n  1  deepseek  已设置\n选择编号：已删除 deepseek 的密钥\n"
     );
     assert!(!secrets(&home).contains("sk-FAKE"));
 }

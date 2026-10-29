@@ -154,8 +154,8 @@ fn elsewhere_the_sandbox_needs_no_setup() {
     let before = listing(home.root.path());
     for action in ["setup", "remove"] {
         for (lang, said) in [
-            ("zh_CN.UTF-8", "这个平台不用装沙盒。"),
-            ("C", "Nothing to set up on this platform."),
+            ("zh_CN.UTF-8", "此平台无需配置沙盒"),
+            ("C", "nothing to set up on this platform"),
         ] {
             let output = miyu(&home, lang, &["sandbox", action]);
             assert_eq!(output.status.code(), Some(0), "{action}：{output:?}");

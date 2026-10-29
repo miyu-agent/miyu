@@ -3,7 +3,6 @@
 
 use super::flow::{Flow, Tried};
 use super::pick::{Row, Typed, numbered, typed};
-use crate::exit;
 use crate::shown::{say, write};
 
 /// 最多列几个模型。
@@ -46,10 +45,7 @@ impl Flow<'_> {
             match typed(self.ask(language.pick_model()), shown.len()) {
                 Typed::Picked(at) => return Ok(shown[at].to_string()),
                 Typed::Empty => return Ok(tried.model.clone()),
-                Typed::End => {
-                    say(self.err, language.not_picked());
-                    return Err(exit::ERROR);
-                }
+                Typed::End => return self.not_picked(),
                 Typed::Zero => say(self.err, &language.not_listed("0")),
                 Typed::Other(text) if ordered.contains(&text.as_str()) => return Ok(text),
                 Typed::Other(text) => say(self.err, &language.not_listed(&text)),

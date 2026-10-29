@@ -35,13 +35,13 @@
 
 照 `config.md` 第十一条。施工时补的细节：
 
-1. **连核心以前**：写了名字、不合名字的写法：说「<名字> 不能当 key 的名字：……」，退出码 2。没写名字、标准输入或标准错误不是终端的（`list` 不算）：说「要在终端里选，或者写 miyu provider login <名字>」（`logout` 写 `miyu provider logout <名字>`），退出码 2。都不拉起核心。
+1. **连核心以前**：写了名字、不合名字的写法：报「miyu: 密钥名字无效：<名字>」，提示写法，退出码 2。没写名字、标准输入或标准错误不是终端的（`list` 不算）：报「miyu: 需要在终端中选择」，提示「或者指定名字：'miyu provider login <名字>'」（`logout` 写 `miyu provider logout <名字>`），退出码 2。都不拉起核心。
 2. **连核心、握手**：照 `miyu config`（`cli/config.md` 第 1、2 条），没在跑就拉起来（施工 8-6 起一律拉起）。
-3. **选**（没写名字，在终端里）：`secret.list`。`login` 列全部（设了的、配置里用到还没设的），`logout` 只列设了的。一个都没有：`login` 说「配置里还没有用到密钥的供应商：写 miyu provider login <名字>」退出码 2，`logout` 说「还没有设过 key」退出码 1。有的：标准错误上印头一行（`login` 是「配置里用到的密钥：」，`logout` 是「设过的 key：」），一个一行 `  编号  名字  谁在用  设没设`，再问（`login`「选一个编号，或者敲一个新名字：」，`logout`「选一个编号：」）。编号表、问的话都在标准错误上，标准输出留给 `list`。敲的是列出的编号，就是那一个；不是编号、合名字写法的，就是这个名字；直接回车、读到头：说「没选」，退出码 1；别的：说名字不合写法那一句，退出码 2（2026-10-01 主会话定）。
-4. **读 key**：标准输入是终端的，标准错误上问「粘贴 <名字> 的 key（不显示）：」，自己管终端的设置读一行（Unix 上 `termios`，Windows 上控制台模式；读之前存下原来的设置，不管哪条路出去都照原样写回去，`panic` 也算）。按了 `Ctrl+C`，或者还没贴一个字时按了 `Ctrl+D`：当人不要了，说「没存，取消了」，退出码 130（照 Unix 被 `Ctrl+C` 打断的习惯）。不是终端的，整份读标准输入，没有取消这一条。读到的那一行（回车前的整段），去掉前后空白是空的：说「没收到 key」，退出码 1。原样交给 `secret.set`（核心去掉前后空白）（施工 8-5 补）。
-5. **存**：`secret.set`。成了：标准错误上一行灰字，照 `replaced` 说「存好了」或「换掉了」。被拒绝的（有控制字符、太长……）：印核心的原话，退出码 1。
-6. **`list`**：`secret.list`。标准输出上一个一行：名字、已设置或未设置、谁在用（几项用「、」连，英文用「, 」）；设了的在前、原色，没设的在后、灰；各自照名字的先后。几列照显示的宽度对齐，整列都空的不占位置。一个都没有：印「还没有设过 key」。`--format json`：回应原样，一行。
-7. **删**：`secret.delete`。成了：灰字「删掉了」。`unknown_secret`：说「<名字> 没有设过 key」，退出码 1。
+3. **选**（没写名字，在终端里）：`secret.list`。`login` 列全部（设了的、配置里用到还没设的），`logout` 只列设了的。一个都没有：`login` 报「miyu: 没有使用密钥的供应商」、提示「用 'miyu provider login <名字>' 添加」，退出码 2；`logout` 报「miyu: 没有已设置的密钥」，退出码 1。有的：标准错误上印头一行（`login` 是「配置中使用的密钥：」，`logout` 是「已设置的密钥：」），一个一行 `  编号  名字  谁在用  设没设`，再问（`login`「选择编号，或输入新名字：」，`logout`「选择编号：」）。编号表、问的话都在标准错误上，标准输出留给 `list`。敲的是列出的编号，就是那一个；不是编号、合名字写法的，就是这个名字；直接回车、读到头：报「miyu: 未选择」，退出码 1；别的：报名字不合写法那一句，退出码 2（2026-10-01 主会话定）。
+4. **读 key**：标准输入是终端的，标准错误上问「粘贴 <名字> 的密钥（不显示）：」，自己管终端的设置读一行（Unix 上 `termios`，Windows 上控制台模式；读之前存下原来的设置，不管哪条路出去都照原样写回去，`panic` 也算）。按了 `Ctrl+C`，或者还没贴一个字时按了 `Ctrl+D`：当人不要了，说「已取消，未保存」，退出码 130（照 Unix 被 `Ctrl+C` 打断的习惯）。不是终端的，整份读标准输入，没有取消这一条。读到的那一行（回车前的整段），去掉前后空白是空的：报「miyu: 未收到密钥」，退出码 1。原样交给 `secret.set`（核心去掉前后空白）（施工 8-5 补）。
+5. **存**：`secret.set`。成了：标准错误上一行灰字，照 `replaced` 说「已保存」或「已替换」。被拒绝的（有控制字符、太长……）：印核心的原话，照报错加 `miyu: `、去掉句末句号（设计 47 第五节），退出码 1。
+6. **`list`**：`secret.list`。标准输出上一个一行：名字、已设置或未设置、谁在用（几项用「、」连，英文用「, 」）；设了的在前、原色，没设的在后、灰；各自照名字的先后。几列照显示的宽度对齐，整列都空的不占位置。一个都没有：印「没有密钥」。`--format json`：回应原样，一行。
+7. **删**：`secret.delete`。成了：灰字「已删除 <名字> 的密钥」。`unknown_secret`：报「miyu: <名字> 没有设置密钥」，退出码 1。
 
 ### 样子
 
@@ -60,18 +60,17 @@ deepseek    已设置
       miyu provider list [--format text|json]
       miyu provider logout [名字]
 
-供应商的 key：存、列、删。
+命令：
+  login [名字]   保存供应商的密钥，不写名字时从配置中选择
+  list           列出已设置密钥的供应商，不显示密钥
+  logout [名字]  删除供应商的密钥，不写名字时从已设置的中选择
 
-login：存一个供应商的 key。不写名字的，从配置里用到的里面选。贴的时候不显示，
-也可以从管道进来：echo "$KEY" | miyu provider login deepseek
-
-list：列出哪几家设了 key，不给看 key 本身。
-
-logout：删掉一个供应商的 key。不写名字的，从设了的里面选。
+粘贴的密钥不显示，也可以从管道读取：
+  echo "$KEY" | miyu provider login deepseek
 
 选项：
-      --format text|json  list 的输出：json 给脚本
-  -h, --help              印帮助
+      --format text|json  输出格式（默认 text，list）
+  -h, --help              显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/provider.txt`（帮助页，英文）：
@@ -81,18 +80,17 @@ Usage: miyu provider login [name]
        miyu provider list [--format text|json]
        miyu provider logout [name]
 
-A provider's key: save, list, delete.
+Commands:
+  login [name]   Save a provider key, picking from the config without a name
+  list           List the providers that have a key, without the keys
+  logout [name]  Delete a provider key, picking from the set ones without a
+                 name
 
-login: Save a provider's key. Without a name, pick one the config uses. The key
-does not show as you paste it, and it can come from a pipe:
-echo "$KEY" | miyu provider login deepseek
-
-list: List which providers have a key, never the key.
-
-logout: Delete a provider's key. Without a name, pick one of those that are set.
+The pasted key is hidden; it can also come from a pipe:
+  echo "$KEY" | miyu provider login deepseek
 
 Options:
-      --format text|json  Output of list: json for scripts
+      --format text|json  Output format (default: text, list only)
   -h, --help              Print help
 ```
 
@@ -107,7 +105,7 @@ Options:
 
 ### 给人看的字
 
-见 `config.md`「给人看的字」的「命令行」那张表；「没存，取消了」照施工 8-5 补。
+见 `config.md`「给人看的字」的「命令行」那张表；取消那一句照施工 8-5 补；CL-2 下照设计 47 改了写法。
 
 ### 守着它的
 
@@ -117,7 +115,7 @@ Options:
 | `crates/miyu-cli/src/config/console/hidden.rs`（内联 `mod tests`） | 一个字节一个字节地认：回车（`\r`、`\n`）结束；`Ctrl+C` 随时取消；`Ctrl+D` 空行取消、攒了字的不取消；退格删上一个字节；读到头是空的；不是 UTF-8 报错 |
 | `crates/miyu-cli/src/config/console/unix.rs`（内联 `mod tests`） | `Guard` 本身，真的伪终端：进去关 `ECHO`、`ISIG`、`ICANON`，丢掉照原样写回去；`panic` 半路丢掉也照样写回（施工 8-5 补） |
 | `crates/miyu-cli/src/config/console/windows.rs`（内联 `mod tests`） | 控制台模式的读写、`Guard` 丢掉照原样写回去；CI 的 Windows 上跑，没有控制台时跳过（施工 8-5 补） |
-| `crates/miyu-cli/tests/login.rs` | 在进程里起核心、假终端照剧本回：写名字的贴 key 走关掉回显的那一条、管道的整份读、空的不收、核心拒了照原话；参数不对的三种；选（编号、新名字、没选、读到头、写错的、一个都没有）；`list` 两种格式；`logout` 写名字、选、没设过的；两种语言；屏幕上从头到尾没有 key；取消了说「没存，取消了」、退出码 130、密钥文件不写（施工 8-5 补） |
+| `crates/miyu-cli/tests/login.rs` | 在进程里起核心、假终端照剧本回：写名字的贴 key 走关掉回显的那一条、管道的整份读、空的不收、核心拒了照原话；参数不对的三种；选（编号、新名字、没选、读到头、写错的、一个都没有）；`list` 两种格式；`logout` 写名字、选、没设过的；两种语言；屏幕上从头到尾没有 key；取消了说「已取消，未保存」、退出码 130、密钥文件不写（施工 8-5 补） |
 | `crates/miyu/tests/login.rs` | 真核心：管道进来的 key 存进文件、0600；`list`、`logout`、两种语言；参数不对 2、老写法 `miyu login` 不认识；核心没在跑的拉起来、存进去（施工 8-6）；帮助页；整份运行日志（`trace`）、系统日志、屏幕上没有 key |
 | `crates/miyu/tests/login_tty.rs` | 真的伪终端、真的子进程（Unix 上）：贴 key 时送 `Ctrl+C`，130 退出、印了取消那一句、回显开回来；送正常的 key 加回车，读到的对、回显照原样（施工 8-5 补） |
 | `crates/miyu-cli/src/help/tests.rs` | 这一页列的选项（三个子命令的合在一起）和程序真有的对得上，最宽 80 列 |

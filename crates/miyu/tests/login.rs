@@ -93,7 +93,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         (
             Some(0),
             String::new(),
-            "· Saved the key for deepseek\n".to_string()
+            "saved the key for deepseek\n".to_string()
         )
     );
     let replaced = run(
@@ -108,7 +108,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         (
             Some(0),
             String::new(),
-            "· 换掉了 deepseek 的 key\n".to_string()
+            "已替换 deepseek 的密钥\n".to_string()
         )
     );
     let secrets = root.join("secrets.toml");
@@ -126,7 +126,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
     let empty = run(&root, "C", &["provider", "login", "other"], "  \n").await;
     assert_eq!(
         seen(&empty),
-        (Some(1), String::new(), "No key was given\n".to_string())
+        (Some(1), String::new(), "miyu: no key given\n".to_string())
     );
 
     let listed = run(&root, "C", &["provider", "list"], "").await;
@@ -147,7 +147,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         (
             Some(0),
             String::new(),
-            "· Deleted the key for deepseek\n".to_string()
+            "deleted the key for deepseek\n".to_string()
         )
     );
     let again = run(
@@ -162,11 +162,11 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         (
             Some(1),
             String::new(),
-            "deepseek 没有设过 key\n".to_string()
+            "miyu: deepseek 没有设置密钥\n".to_string()
         )
     );
     let none = run(&root, "C", &["provider", "list"], "").await;
-    assert_eq!(text(&none.stdout), "No keys yet\n");
+    assert_eq!(text(&none.stdout), "no keys\n");
 
     drop(held);
     home.until_stopped().await;
@@ -203,7 +203,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
     let bad = run(&root, "C", &["provider", "login", "Deep Seek"], FAKE).await;
     assert_eq!(bad.status.code(), Some(2));
     assert!(
-        text(&bad.stderr).starts_with("Deep Seek cannot name a key"),
+        text(&bad.stderr).starts_with("miyu: invalid key name: Deep Seek\nhint: "),
         "{bad:?}"
     );
     let unpicked = run(&root, "zh_CN.UTF-8", &["provider", "login"], FAKE).await;
@@ -212,7 +212,8 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
         (
             Some(2),
             String::new(),
-            "要在终端里选，或者写 miyu provider login <名字>\n".to_string()
+            "miyu: 需要在终端中选择\n提示：或者指定名字：'miyu provider login <名字>'\n"
+                .to_string()
         )
     );
     let format = run(&root, "C", &["provider", "login", "--format", "json"], "").await;
@@ -287,7 +288,7 @@ async fn config_check_reports_a_bad_secrets_file_without_its_values() {
         "{out}"
     );
     assert!(
-        out.ends_with("1 error\nSemantic model: not installed; searching by keywords only. Install it: miyu pkg install embed\n"),
+        out.ends_with("1 error\nSemantic model: not installed, keyword search only\nhint: install it with 'miyu pkg install embed'\n"),
         "合计后面是语义模型的状态（施工 R-25）：{out}"
     );
     // 只查密钥文件的：照核心手里的问题，只有它（施工 8-30）。

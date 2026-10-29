@@ -1,13 +1,16 @@
-用法：miyu service <命令>
+用法：miyu service <命令> [选项]
 
-让核心开机、登录就起：替你装、卸、看本人这一层的服务（Linux 是 systemd 用户服务，没有的桌面用自启动；macOS 是 launchd；Windows 是登录时的任务计划）。
+管理开机或登录时启动核心的用户服务：Linux 上是 systemd 用户服务，没有时用
+桌面自启动；macOS 上是 launchd；Windows 上是登录时的计划任务。
 
 命令：
-  enable   装上，交给服务管理器
-  disable  停掉、拿掉、删掉写的文件
-  status   装没装、开没开着
+  enable   安装并启用服务
+  disable  停用并删除服务
+  status   显示服务是否安装、是否启用
 
-服务跑的是现在这个 miyu，设了 MIYU_HOME 的照它。服务器上（专门的用户、/var/lib/miyu）的不经它，照仓库 packaging/README.md 手装。
+服务运行当前的 miyu，设置了 MIYU_HOME 时一并带上。系统级服务（专用用户、
+/var/lib/miyu）请按仓库中的 packaging/README.md 手动安装。
 
-      --format text|json  text 给人看（默认），json 给头、脚本：字段名不随语言变
-  -h, --help              印帮助
+选项：
+      --format text|json  输出格式（默认 text）
+  -h, --help              显示帮助

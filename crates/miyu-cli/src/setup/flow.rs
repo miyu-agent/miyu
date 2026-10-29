@@ -15,6 +15,7 @@ use serde_json::{Value, json};
 use super::SetupPlan;
 use super::pick::config_id;
 use crate::config::Console;
+use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::link;
 use crate::rpc::Rpc;
@@ -190,14 +191,11 @@ impl<'a> Flow<'a> {
                     }
                 }
                 let error = &tested["error"];
-                say(
-                    self.err,
-                    &language.did_not_work(
-                        tested["stage"].as_str().unwrap_or_default(),
-                        error["class"].as_str().unwrap_or_default(),
-                        error["message"].as_str().unwrap_or_default(),
-                    ),
-                );
+                self.failed(&language.did_not_work(
+                    tested["stage"].as_str().unwrap_or_default(),
+                    error["class"].as_str().unwrap_or_default(),
+                    error["message"].as_str().unwrap_or_default(),
+                ));
                 if self.console.terminal() && self.save_anyway() {
                     let model = match model {
                         Some(model) => model,
@@ -264,10 +262,15 @@ impl<'a> Flow<'a> {
         }
     }
 
-    /// 说「没选」，交回退出码 1。
+    /// 说「未选择」，交回退出码 1。
     pub(super) fn not_picked<T>(&mut self) -> Result<T, u8> {
-        say(self.err, self.plan.language.not_picked());
+        self.failed(&self.plan.language.not_picked());
         Err(exit::ERROR)
+    }
+
+    /// 报一件错（设计 47）：没走完的说完退出，问错了的说完接着问。
+    pub(super) fn failed(&mut self, problem: &Problem) {
+        diagnostic::error(self.err, self.plan.language, problem);
     }
 
     /// 读贴的 key：标准输入是终端的关掉回显读一行，不是的整份读。去掉前后空白是空的：`optional` 的（自定义的，施工 8-11
@@ -291,7 +294,7 @@ impl<'a> Flow<'a> {
         match read {
             Ok(key) if optional || !key.trim().is_empty() => Ok(key),
             Ok(_) => {
-                say(self.err, language.no_key_given());
+                self.failed(&language.no_key_given());
                 Err(exit::ERROR)
             }
             Err(error) if error.kind() == io::ErrorKind::Interrupted => {
@@ -299,7 +302,7 @@ impl<'a> Flow<'a> {
                 Err(exit::CANCELLED)
             }
             Err(error) => {
-                say(self.err, &error.to_string());
+                self.failed(&Problem::new(error.to_string()));
                 Err(exit::ERROR)
             }
         }

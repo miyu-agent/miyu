@@ -26,10 +26,7 @@ async fn a_quoted_model_key_is_found_and_next_turn_is_said() {
     .await;
     assert_eq!(
         (set.status.code(), stderr(&set)),
-        (
-            Some(0),
-            format!("· {key} = 4096 写进了系统配置，下一轮生效\n")
-        )
+        (Some(0), format!("已设置 {key} = 4096（下一轮生效）\n"))
     );
     let explain = run(&root, &cwd, "zh_CN.UTF-8", &["config", "explain", typed]).await;
     assert_eq!(explain.status.code(), Some(0), "{explain:?}");
@@ -48,13 +45,13 @@ async fn a_quoted_model_key_is_found_and_next_turn_is_said() {
     let unset = run(&root, &cwd, "zh_CN.UTF-8", &["config", "unset", typed]).await;
     assert_eq!(unset.status.code(), Some(0), "{unset:?}");
     assert!(
-        stderr(&unset).starts_with(&format!("· 从系统配置里删掉了 {key}，现在是 ")),
+        stderr(&unset).starts_with(&format!("已删除 {key}，现在是 ")),
         "{unset:?}"
     );
     let again = run(&root, &cwd, "zh_CN.UTF-8", &["config", "unset", typed]).await;
     assert_eq!(
         (again.status.code(), stderr(&again)),
-        (Some(0), format!("· 系统配置里本来就没写 {key}\n"))
+        (Some(0), format!("系统配置中没有 {key}，未修改\n"))
     );
     drop(held);
 }

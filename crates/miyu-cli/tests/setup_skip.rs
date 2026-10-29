@@ -40,7 +40,7 @@ async fn every_step_skipped_asks_nothing() {
     assert!(
         asked
             .screen
-            .ends_with("写好了：models.chat = deepseek/deepseek-v4-pro\n"),
+            .ends_with("已设置 models.chat = deepseek/deepseek-v4-pro\n"),
         "{}",
         asked.screen
     );
@@ -89,7 +89,7 @@ async fn outside_a_terminal_without_provider_is_misuse() {
     assert_eq!(asked.code, 2);
     assert_eq!(
         asked.screen,
-        "要在终端里选，或者写 miyu setup --provider <编号>\n"
+        "miyu: 需要在终端中选择\n提示：或者指定供应商：'miyu setup --provider <编号>'\n"
     );
     assert_eq!(typist.all, 0);
 }
@@ -103,7 +103,10 @@ async fn an_unusable_or_unknown_provider_is_misuse() {
             .setup(&plan(skip(Some(id), None, None), &[]), &mut typist)
             .await;
         assert_eq!(asked.code, 2, "{id}：{}", asked.screen);
-        assert_eq!(asked.screen, format!("目录里没有能用的 {id}\n"));
+        assert_eq!(
+            asked.screen,
+            format!("miyu: 目录中没有可用的供应商 '{id}'\n")
+        );
     }
 }
 
@@ -118,7 +121,7 @@ async fn outside_a_terminal_a_failed_try_is_1_and_nothing_is_written() {
         .await;
     assert_eq!(asked.code, 1, "{}", asked.screen);
     assert!(
-        asked.screen.contains("不通（列模型）：认证失败"),
+        asked.screen.contains("连接失败（列模型）：认证失败"),
         "{}",
         asked.screen
     );

@@ -97,7 +97,7 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
    2. 拿 `runas` 起一个提升过的自己（`ShellExecuteExW`，弹一次 UAC）：程序是自己的真实位置，参数是 `sandbox <setup 或 remove> --owner-home <数据根> --owner-sid <SID>`，照 Windows 命令行的规矩加引号（有空格、引号的包起来，引号前的反斜杠加倍）；窗口藏起来，出错不弹框；等它退出。提升后的进程可能是另一个管理员账号（标准用户在 UAC 里输别人的密码）：它自己的家目录、数据根、环境变量都不是本人的，所以记录写到参数给的数据根里，访问控制给参数给的 SID。
    3. 它退出 0：印「装好了」（「撤干净了」），退出 0。
    4. 人取消了提升：说一句「要管理员权限」，退出 1，什么都没改。
-   5. 它退出别的：读 `windows-error.json`，照它说，删掉它；读不到的，说「装沙盒失败：elevate：exit code <几>」。退出 1。
+   5. 它退出别的：读 `windows-error.json`，照它说，删掉它；读不到的，报「miyu: 配置沙盒失败：elevate：exit code <几>」。退出 1。
 4. **Windows，是管理员——`setup`**，照下面的次序，每一步幂等：
    1. 认数据根：里面要有 `.miyu-root` 标记（`store.md`），没有的报「不是 Miyu 的数据根」，用户、密码一样都不碰：免得密码换了却没处记。
    2. 查已有的 `miyu-sandbox`：是管理员的，不动，报错。
@@ -110,8 +110,8 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
       1. `state`、`state/sandbox` 一层一层来：没有就只建这一层，再查它不是链接（符号链接、目录联接都算；OneDrive 按需下载这类别的重解析点不算，数据根放在同步的目录里也装得上），查过了才往下一层走；是链接的不经它写，报错。不能先一口气建好再查：`state` 是链接的话，一口气建就顺着它建到别处去了。数据根本身是链接不要紧。
       2. 先删掉上次留下的 `windows.json.tmp`，再只许新建地建它，不跟链接，建的时候访问控制就是上面那样；写进去、同步，再改名成 `windows.json`，盖掉旧的。
       3. 挡得住提前放好的链接，挡不住检查完、写之前被换掉：和 `fs.md` 那一条一样，能换的人本来就能改本人的数据根。
-   9. 印「装好了」。
-5. **Windows，是管理员——`remove`**：认数据根（同上）；查已有的 `miyu-sandbox`，是管理员的不动、报错；删它的 profile；删用户；从 `UserList` 里取消隐藏；删记录文件。先删用户、后取消隐藏：删到一半没成的，账号照样藏着，不会出现在登录界面上。哪一样本来就没有，跳过不算错。印「撤干净了」。
+   9. 印「已创建沙盒用户」。
+5. **Windows，是管理员——`remove`**：认数据根（同上）；查已有的 `miyu-sandbox`，是管理员的不动、报错；删它的 profile；删用户；从 `UserList` 里取消隐藏；删记录文件。先删用户、后取消隐藏：删到一半没成的，账号照样藏着，不会出现在登录界面上。哪一样本来就没有，跳过不算错。印「已移除沙盒用户」。
 6. **提升过的自己**（带了那两个参数、又是管理员）没成：先把原因写进 `windows-error.json`（写不成就算了，照样说），再照常说、退出 1。
 7. **出错**：哪一步失败就说清是哪一步、系统的原话；装了一半的，再跑一次 `setup` 接着装。步骤的名字是英文：`check owner`（参数的写法、数据根的标记看不了）、`find owner`（找自己的数据根、SID）、`check account`、`create user`、`reset password`、`set flags`、`join Users`、`hide user`、`look up user`、`protect password`、`write record`、`delete profile`、`delete user`、`unhide user`、`delete record`、`elevate`、`write report`、`read report`、`clear report`。
 
@@ -123,7 +123,7 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
 
 ```text
 $ miyu sandbox setup
-沙盒用户建好了。
+已创建沙盒用户
 ```
 
 `miyu sandbox -h`、`miyu sandbox setup -h`、`miyu sandbox remove -h`、`miyu help sandbox` 印的是同一页。
@@ -133,15 +133,14 @@ $ miyu sandbox setup
 ```text
 用法：miyu sandbox <命令>
 
-装好、撤掉沙盒要管理员权限的那部分：一个专用的沙盒用户（Windows）。
+配置沙盒需要管理员权限的部分：专用的沙盒用户（仅 Windows）。不是管理员时会
+弹出一次 Windows 的权限确认。其他平台无需配置。
 
 命令：
-  setup   建好沙盒用户
-  remove  撤掉沙盒用户
+  setup   创建沙盒用户
+  remove  移除沙盒用户
 
-不是管理员时，弹一次 Windows 的权限确认。别的平台上不用装。
-
-  -h, --help  印帮助
+  -h, --help  显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/sandbox.txt`（帮助页，英文）：
@@ -149,15 +148,13 @@ $ miyu sandbox setup
 ```text
 Usage: miyu sandbox <command>
 
-Set up or remove what the sandbox needs an administrator for: a dedicated
-sandbox user (Windows).
+Set up the part of the sandbox that needs an administrator: a dedicated
+sandbox user (Windows only). Without administrator rights, Windows asks for
+permission once. Other platforms need nothing.
 
 Commands:
   setup   Create the sandbox user
   remove  Remove the sandbox user
-
-Without administrator rights, Windows asks for permission once. Other platforms
-need nothing.
 
   -h, --help  Print help
 ```
@@ -166,12 +163,12 @@ need nothing.
 
 | 什么时候 | 说的话 | 退出码 |
 |---|---|---|
-| 成功 | 装好了 / 撤干净了 / 这个平台不用装 | 0 |
+| 成功 | 已创建沙盒用户 / 已移除沙盒用户 / 此平台无需配置沙盒 | 0 |
 | 用法不对（多了参数、少了子命令等） | 照 `cli/main.md` 的「参数写错时」 | 2 |
-| 要管理员、人取消了提升 | 要管理员权限 | 1 |
-| 已经有这个名字的管理员账号 | 已经有一个叫 miyu-sandbox 的管理员账号 | 1 |
+| 要管理员、人取消了提升 | 需要管理员权限 | 1 |
+| 已经有这个名字的管理员账号 | 已存在名为 miyu-sandbox 的管理员账号 | 1 |
 | 给的数据根没有标记 | 不是 Miyu 的数据根 | 1 |
-| 哪一步失败 | 装沙盒失败（卸沙盒失败）：<哪一步>：<系统的原话> | 1 |
+| 哪一步失败 | 配置沙盒失败（移除沙盒失败）：<哪一步>：<系统的原话> | 1 |
 
 退出码照命令行共用的那张表（`cli/main.md`、`22-命令行.md` 第二节）。
 
@@ -179,16 +176,17 @@ need nothing.
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 装好了 | 沙盒用户建好了。 | The sandbox user is set up. |
-| 撤干净了 | 沙盒用户撤掉了。 | The sandbox user is removed. |
-| 这个平台不用装 | 这个平台不用装沙盒。 | Nothing to set up on this platform. |
-| 要管理员 | 要管理员权限：用管理员身份跑 miyu sandbox <setup 或 remove>。 | Administrator rights are needed: run miyu sandbox <setup or remove> as administrator. |
-| 管理员账号 | 已经有一个叫 miyu-sandbox 的管理员账号，不动它。 | An administrator account named miyu-sandbox already exists; leaving it alone. |
-| 不是数据根 | <路径> 不是 Miyu 的数据根。 | <path> is not a Miyu data root. |
-| 装的哪一步失败 | 装沙盒失败：<哪一步>：<原话> | Sandbox setup failed: <step>: <原话> |
-| 卸的哪一步失败 | 卸沙盒失败：<哪一步>：<原话> | Sandbox removal failed: <step>: <原话> |
+| 装好了 | 已创建沙盒用户 | created the sandbox user |
+| 撤干净了 | 已移除沙盒用户 | removed the sandbox user |
+| 这个平台不用装 | 此平台无需配置沙盒 | nothing to set up on this platform |
+| 要管理员 | miyu: 需要管理员权限<br>提示：以管理员身份运行 'miyu sandbox <setup 或 remove>' | miyu: administrator rights required<br>hint: run 'miyu sandbox <setup or remove>' as administrator |
+| 管理员账号 | miyu: 已存在名为 miyu-sandbox 的管理员账号，未做改动 | miyu: an administrator account named miyu-sandbox already exists; left unchanged |
+| 不是数据根 | miyu: <路径> 不是 Miyu 的数据根 | miyu: <path> is not a Miyu data root |
+| 装的哪一步失败 | miyu: 配置沙盒失败：<哪一步>：<原话> | miyu: sandbox setup failed: <step>: <原话> |
+| 卸的哪一步失败 | miyu: 移除沙盒失败：<哪一步>：<原话> | miyu: sandbox removal failed: <step>: <原话> |
 
-- `<setup 或 remove>` 照这一次敲的是哪一个；`<原话>` 里的控制字符换成 `�`。
+- `<setup 或 remove>` 照这一次敲的是哪一个；`<原话>` 里的控制字符换成 `�`，句末的句号去掉。
+- CL-2 下照设计 47 改：成了的是结果行，没成的 `miyu: ` 打头、建议另起一行写「提示：」；表里的 `<br>` 是换行。
 
 ### 守着它的
 

@@ -784,7 +784,7 @@ miyu_config::settings! {
 1. **连核心**：照 `miyu ask` 连（`cli/ask.md` 第 2 步），核心没在跑就拉起来（8-6 起 key 来自配置，一律拉起；8-6 以前没设 `DEEPSEEK_API_KEY` 的不拉起、退出码 5）。
 2. **握手**：照 `miyu ask`，`caps.input` 是 `false`。之后给人看的字照回应的 `language`，没握手之前照环境（`cli/main.md`「界面语言」）。命令行自己的字只有中文、英文，`ja` 的照英文（「还没有的」）。
 3. **`get [键…]`**：`config.get`，带上当前目录当 `cwd`。只写一个键：标准输出上只印值，字不带引号，别的照 TOML 的写法（`true`、`3`、`["a", "b"]`）。写了几个、一个都没写：一行一个 `键 = 值`，TOML 的写法，照键名排。`--format json`：`config.get` 回应的 `items` 原样。
-4. **`set <键> <值>`**：`config.set`，`changes` 是 `[{key, input}]`，不写 `layer`（就是系统配置）。不带 `expect`。成了：标准错误上印一行灰字（「样子」）：回应里这一项的来源是这一层的，说写进了哪一层、什么时候生效；来源是上面一层（或者环境变量）的，说那一层写着什么、用的还是它。回应里没有这一项（本来就是）：`config.get` 带 `all` 找这一层写的值，说本来就是。值有空格的照 shell 的规矩加引号。`--project` 连核心以前就说项目配置只能手改，退出码 2。
+4. **`set <键> <值>`**：`config.set`，`changes` 是 `[{key, input}]`，不写 `layer`（就是系统配置）。不带 `expect`。成了：标准错误上印一行灰字（「样子」）：回应里这一项的来源是这一层的，说设了什么、什么时候生效；来源是上面一层（或者环境变量）的，结果行后面再接一行告警，说被哪一层覆盖、用的是什么（CL-2 下，设计 47 第四节）。回应里没有这一项（本来就是）：`config.get` 带 `all` 找这一层写的值，说本来就是。值有空格的照 shell 的规矩加引号。`--project` 连核心以前就说项目配置只能手改，退出码 2。
 5. **`unset <键>`**：`config.set`，`changes` 是 `[{key, unset: true}]`。成了：说从哪一层删掉了、现在是哪一层的什么。这一层本来就没写（回应里没有这一项）：说一句本来就没写，退出码 0。
 6. **`edit`**（像 visudo，G4）：
    1. 标准输入、标准错误不是终端：说「miyu config edit 要在终端里用」，退出码 2。连核心以前就查（8-3）。
@@ -793,7 +793,7 @@ miyu_config::settings! {
    4. 用 `VISUAL`，没有用 `EDITOR`，都没有的 Unix 上是 `vi`、Windows 上是 `notepad`。Unix 上经 `sh -c` 跑，Windows 上经 `cmd /c`：带参数的（`code --wait`）也行，和 git 一样。编辑器退出码不是 0 的：说一句，副本删掉，退出码 1。
    5. 字没变：说「没改」，删掉副本，退出码 0。
    6. 变了：`config.check`。有错误：印出每一条，问「回车接着改，输入 q 放弃」（visudo 的做法，`14-配置.md` 第九节，2026-10-01 主会话定）。回车再打开编辑器，改的还在，存了再查。q 删掉副本，说放弃了，退出码 1。只有警告的：印出来，照样存。
-   7. 存：`config.set`，带 `text` 和第 2 步的版本。`config_conflict`：说「你编辑的时候文件被改过了」，副本留着、印出它在哪，退出码 1。成了：删掉副本，印一行灰字，照回应里改了的几项什么时候生效（照键名的先后，一样的只说一次，几种接在一起）；一项都没变的（只动了注释）只说存好了。
+   7. 存：`config.set`，带 `text` 和第 2 步的版本。`config_conflict`：报「miyu: 编辑期间文件已被修改，未保存」，副本留着、提示它在哪，退出码 1。成了：删掉副本，印一行灰字，照回应里改了的几项什么时候生效（照键名的先后，一样的只说一次，几种接在一起）；一项都没变的（只动了注释）只说存好了。
    8. `--project`：项目配置核心不写，这一步改成由命令行自己照第五条第 4 到 7 条写回（仓库里的文件，写它的是人，命令行替人存盘；用的是 `miyu-store` 的同一个 `config_file::write`）。没找到项目配置的，在仓库的根（有 `.git` 的那一层，没有就是当前目录）新建 `.miyu/config.toml`。成了只说存好了：项目配置什么时候生效照信任（改了内容要重新信任）。
 7. **`check`**：施工 8-30 起并进 `miyu check`（`cli/check.md`），`miyu config` 不再有这个子命令。
 8. **`explain <键>`**：`config.get`，带 `cwd`、`all: true`，再 `config.schema` 拿名字和说明。印第一行是名字、键、说明、什么时候生效。下面每一层一行，从上往下（「样子」）。`--format json`：`config.get` 那一项原样，多 `name`、`description`。
@@ -803,19 +803,19 @@ miyu_config::settings! {
     1. `config.get`，带当前目录当 `cwd`、`all: true`。没有 `files.project`：说「这里没有项目配置」，退出码 1。
     2. 标准输出上印出这份文件在哪、它会改哪几项（`layers` 里项目那一层、信任了就算的：没有 `problem` 或者是 `untrusted_project` 的；`键 = 值` 和名字，`键 = 值` 那一列照显示的宽度补齐），有问题的（不能写在这一层、写宽了、写错了）照「样子」报错一行印在后面，`untrusted_project` 那一条不印。
     3. 已经信任着这一份、又没写 `--no`：说「已经信任过这一份了」，退出码 0。
-    4. 写了 `--yes`、`--no` 的，照它 `config.trust`，不问。都没写：标准输入、标准错误不是终端的，说「要在终端里回答，或者写 --yes、--no」，退出码 2。是终端的，问「项目配置只能让限制更严。信任这一份吗？[y/N]」：`y`、`yes`（不分大小写）是信任，别的、直接回车是不信任，都记下。
+    4. 写了 `--yes`、`--no` 的，照它 `config.trust`，不问。都没写：标准输入、标准错误不是终端的，报「miyu: 需要在终端中确认」、提示「加上 '--yes' 或 '--no'」，退出码 2。是终端的，问「信任 '<文件>'？[y/N]」（项目配置只能收紧限制，写在列出会改哪几项的头一行）：`y`、`yes`（不分大小写）是信任，别的、直接回车是不信任，都记下。
     5. `config.trust` 带第 1 步读到的 `version`。`config_conflict`：说「你看的时候它又被改过了，再跑一次」，退出码 1。成了：印一行灰字，退出码 0。
 
 **十一、`miyu provider login`、`list`、`logout`**（8-5，2026-10-01 项目主人定）
 
 1. 连核心、握手：照第十条第 1、2 条。
-2. `login` 写了名字：照名字的写法查，不合的说「<名字> 不能当 key 的名字：……」，参数不对，退出码 2，连核心以前就说。
-3. `login` 没写名字：标准输入、标准错误都是终端的，`secret.list`，列出配置里用到的、设过的每一个密钥：编号、名字、谁在用（`used_by`）、设没设。输入编号选一个，也可以直接敲一个新名字。一个都没有：说「配置里还没有用到密钥的供应商：写 miyu provider login <名字>」，退出码 2。不是终端的：说「要在终端里选，或者写 miyu provider login <名字>」，参数不对，退出码 2，连核心以前就说。8-11 以后这里还列出目录里的供应商，选了连配置一起写（`models.md`）。
+2. `login` 写了名字：照名字的写法查，不合的报「miyu: 密钥名字无效：<名字>」，参数不对，退出码 2，连核心以前就说。
+3. `login` 没写名字：标准输入、标准错误都是终端的，`secret.list`，列出配置里用到的、设过的每一个密钥：编号、名字、谁在用（`used_by`）、设没设。输入编号选一个，也可以直接敲一个新名字。一个都没有：报「miyu: 没有使用密钥的供应商」、提示「用 'miyu provider login <名字>' 添加」，退出码 2。不是终端的：报「miyu: 需要在终端中选择」、提示「或者指定名字：'miyu provider login <名字>'」，参数不对，退出码 2，连核心以前就说。8-11 以后这里还列出目录里的供应商，选了连配置一起写（`models.md`）。
    - 编号表、问的话在标准错误上，标准输出留给 `list`。敲的不是列出的编号、也不合名字的写法：说第 2 条那一句，退出码 2；直接回车、读到头：说「没选」，退出码 1（2026-10-01 主会话定）。
-4. 读 key：标准输入是终端的，在标准错误上问「粘贴 <名字> 的 key（不显示）：」，关掉回显读一行（`rpassword`）。标准输入是管道的，整份读进来（`echo "$KEY" | miyu provider login deepseek`）。去掉前后空白是空的：说「没收到 key」，退出码 1。
-5. `secret.set`：成了，标准错误上印一行灰字，照回应的 `replaced` 说「存好了」或者「换掉了」。key 不印，也不印它的前几位。被拒绝的印核心的原话，退出码 1。
-6. `list`：`secret.list`，标准输出上一个一行：名字、已设置或未设置、谁在用。设了的在前，配置里用到、还没设的在后，灰字。一个都没有：印「还没有设过 key」。`--format json`：回应原样。
-7. `logout` 写了名字：`secret.delete`，成了印一行灰字「删掉了」。`unknown_secret`：说「<名字> 没有设过 key」，退出码 1。没写名字：终端里从设了的里面选（照第 3 条，头一行「设过的 key：」，问「选一个编号：」）；一个都没设过：说「还没有设过 key」，退出码 1。不是终端的，说「要在终端里选，或者写 miyu provider logout <名字>」，参数不对。
+4. 读 key：标准输入是终端的，在标准错误上问「粘贴 <名字> 的密钥（不显示）：」，关掉回显读一行（`rpassword`）。标准输入是管道的，整份读进来（`echo "$KEY" | miyu provider login deepseek`）。去掉前后空白是空的：报「miyu: 未收到密钥」，退出码 1。
+5. `secret.set`：成了，标准错误上印一行灰字，照回应的 `replaced` 说「已保存」或者「已替换」。key 不印，也不印它的前几位。被拒绝的印核心的原话（加 `miyu: `、去掉句末句号），退出码 1。
+6. `list`：`secret.list`，标准输出上一个一行：名字、已设置或未设置、谁在用。设了的在前，配置里用到、还没设的在后，灰字。一个都没有：印「没有密钥」。`--format json`：回应原样。
+7. `logout` 写了名字：`secret.delete`，成了印一行灰字「已删除 <名字> 的密钥」。`unknown_secret`：报「miyu: <名字> 没有设置密钥」，退出码 1。没写名字：终端里从设了的里面选（照第 3 条，头一行「已设置的密钥：」，问「选择编号：」）；一个都没设过：报「miyu: 没有已设置的密钥」，退出码 1。不是终端的，报「miyu: 需要在终端中选择」、提示「或者指定名字：'miyu provider logout <名字>'」，参数不对。
 8. 退出码：0 成了。1 核心拒绝了、没收到 key、没选、要删的没设过、连不上核心。2 参数不对。5 同第十条第 1 条（8-6 以前）。
 
 
@@ -888,75 +888,76 @@ ui.language = "zh"
 ui.startup = "new"
 ```
 
-**`miyu config set`、`unset` 印的那一行**（标准错误，灰）：
+**`miyu config set`、`unset` 印的那一行**（标准错误，灰；CL-2 下照设计 47 改：结果行动词打头，不带「·」和句号）：
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
-| 改了 | `· ui.language = "zh" 写进了系统配置，立即生效` | `· ui.language = "zh" saved to the system config, takes effect immediately` |
-| 改了，上面一层压着 | `· log.level = "info" 写进了系统配置，环境变量里写着 "debug"，用的还是 "debug"` | `· log.level = "info" saved to the system config, but the environment says "debug", so "debug" stays in use` |
-| 本来就是 | `· 本来就是 "zh"，没改` | `· Already "zh", nothing changed` |
-| 删掉了 | `· 从系统配置里删掉了 ui.language，现在是 "auto"（默认值）` | `· Removed ui.language from the system config. It is now "auto" (the default)` |
-| 本来就没写 | `· 系统配置里本来就没写 ui.language` | `· The system config did not have ui.language` |
+| 改了 | `已设置 ui.language = "zh"（立即生效）` | `set ui.language = "zh" (takes effect immediately)` |
+| 改了，上面一层压着 | `已设置 log.level = "info"`，再接一行告警 `miyu: 警告：log.level 被环境变量覆盖，使用 "debug"` | `set log.level = "info"`，再接一行告警 `miyu: warning: log.level is overridden by the environment; using "debug"` |
+| 本来就是 | `已经是 "zh"，未修改` | `already "zh", nothing changed` |
+| 删掉了 | `已删除 ui.language，现在是 "auto"（默认值）` | `removed ui.language, now "auto" (default)` |
+| 本来就没写 | `系统配置中没有 ui.language，未修改` | `ui.language is not in the system config, nothing changed` |
 
-「立即生效」按 `applies` 换：`立即生效`、`新会话生效`、`重启后生效`、`下一轮生效`、`重启核心后生效`（`takes effect immediately`、`applies to new sessions`、`takes effect after restart`、`takes effect next turn`、`takes effect after the core restarts`）。M8 用得上前四种（`head_start` 8-3 加，`next_turn` 8-6 起）。认不出的（核心比命令行新）不说什么时候生效：`· providers.dev.models.m-1.window = 4096 写进了系统配置`（施工 8-3 补）。
+「立即生效」按 `applies` 换：`立即生效`、`新会话生效`、`重启后生效`、`下一轮生效`、`重启核心后生效`（`takes effect immediately`、`applies to new sessions`、`takes effect after restart`、`takes effect next turn`、`takes effect after the core restarts`）。M8 用得上前四种（`head_start` 8-3 加，`next_turn` 8-6 起）。认不出的（核心比命令行新）不说什么时候生效：`已设置 providers.dev.models.m-1.window = 4096`（施工 8-3 补）。
 
-- 上面一层压着的（环境变量），照句子里的叫法：环境变量（`the environment says`）。
-- 删掉了以后括号里是现在那个值从哪一层来：默认值、系统配置（`the default`、`the system config`），和 `explain` 的层名一样。
-- 本来就没写的，英文句首大写：`· The system config did not have log.level`。
+- 只写系统配置（施工 SU-3 上），结果行不再说写进了哪一层。上面一层压着的（环境变量），告警照句子里的叫法：环境变量（`the environment`）。
+- 删掉了以后括号里是现在那个值从哪一层来：默认值、系统配置（`default`、`system config`），和 `explain` 的层名一样。
 
 **`miyu config edit` 存了有错时**：
 
 ```text
 $ miyu config edit
 ~/.miyu/config.toml:3:13 错误：ui.language 只能是 auto、zh、en 或 ja，写的是 "cn"。改成其中一个，例如 ui.language = "auto"。暂用 "auto"（默认值）。
-有 1 处错误，还没存。回车接着改，输入 q 放弃：
+有 1 处错误，未保存。按回车继续编辑，输入 q 放弃：
 ```
 
 - 一项的问题照 `config.check` 带「暂用…」（8-2 定的，8-3 照它改了这个例子）。
 - 问的那一句后面不换行，等人敲。英文的末尾冒号后面空一格。
-- 放弃：删掉副本，说「放弃了，文件没动」，退出码 1。读到头（Ctrl+D、管道关了）也算放弃。
-- 存好了：`· 存好了，立即生效`；改了几种生效时机不一样的项，接在一起（`· 存好了，立即生效、新会话生效`）；只动了注释的 `· 存好了`。
+- 放弃：删掉副本，说「已放弃，文件未修改」，退出码 1。读到头（Ctrl+D、管道关了）也算放弃。
+- 存好了：`已保存（立即生效）`；改了几种生效时机不一样的项，接在一起（`已保存（立即生效、新会话生效）`）；只动了注释的 `已保存`。
 
 **`miyu config trust`**：
 
 ```text
 $ miyu config trust
-~/src/app/.miyu/config.toml 会改这几项：
+~/src/app/.miyu/config.toml 会修改以下设置（项目配置只能收紧限制）：
   permission.start_read_only = true  新会话开局只读
-项目配置只能让限制更严。信任这一份吗？[y/N] y
-· 信任了。内容变了会再问
+信任 '~/src/app/.miyu/config.toml'？[y/N] y
+已信任（文件变化后会再次询问）
 ```
 
 ```text
 $ miyu config trust
-~/src/app/.miyu/config.toml would set:
+~/src/app/.miyu/config.toml would set (a project config can only tighten limits):
   permission.start_read_only = true  Start new sessions read-only
-A project config can only make limits stricter. Trust this one? [y/N] y
-· Trusted. You will be asked again if it changes
+Trust '~/src/app/.miyu/config.toml'? [y/N] y
+trusted (will ask again if the file changes)
 ```
 
-**`miyu ask` 起头那两行**（标准错误，灰，只在有的时候印）：
+**`miyu ask` 起头的告警**（标准错误，原色，只在有的时候印；CL-2 中照设计 47 改成告警加提示）：
 
 ```text
-· 配置里有 1 处错误：miyu check 看是哪里
-· 这里的项目配置 ~/src/app/.miyu/config.toml 还没信任，这次没用它：miyu config trust 看一眼再定
+miyu: 警告：配置中有 1 处错误
+提示：运行 'miyu check' 查看
+miyu: 警告：项目配置 ~/src/app/.miyu/config.toml 尚未信任，本次没有使用
+提示：运行 'miyu config trust' 查看后决定
 ```
 
 **`miyu provider login`、`list`、`logout`**：
 
 ```text
 $ miyu provider login
-配置里用到的密钥：
+配置中使用的密钥：
   1  deepseek    providers.deepseek.key  已设置
   2  bigmodel-2  providers.bigmodel.key  未设置
-选一个编号，或者敲一个新名字：2
-粘贴 bigmodel-2 的 key（不显示）：
-· bigmodel-2 的 key 存好了
+选择编号，或输入新名字：2
+粘贴 bigmodel-2 的密钥（不显示）：
+已保存 bigmodel-2 的密钥
 $ miyu provider list
 deepseek    已设置  providers.deepseek.key
 bigmodel-2  已设置  providers.bigmodel.key
 $ miyu provider logout bigmodel-2
-· 删掉了 bigmodel-2 的 key
+已删除 bigmodel-2 的密钥
 ```
 
 - 几列照显示的宽度对齐。key 从头到尾不出现在屏幕上。
@@ -1804,20 +1805,20 @@ currency = "USD"
 | `no_project_config` | 未找到项目配置。 | Project config not found. |
 | `unknown_secret` | 密钥不存在。 | Secret not found. |
 
-**命令行**（`crates/miyu-cli` 的界面语言，中文、英文）：
+**命令行**（`crates/miyu-cli` 的界面语言，中文、英文；CL-2 下照设计 47 改：报错 `miyu: ` 打头、建议另起一行写「提示：」，结果行动词打头、不带「·」和句号；表里的 `<br>` 是换行）：
 
 | 什么时候 | 中文 | 英文 |
 |---|---|---|
 | `check` 的合计 | `<n> 处错误，<m> 处警告`（没有的那一样不写） | `<n> errors, <m> warnings`（1 个时用单数） |
-| `check` 没有问题 | 没有问题 | No problems |
-| `edit` 不在终端里 | miyu config edit 要在终端里用 | miyu config edit needs a terminal |
-| `edit` 没改 | 没改 | Nothing changed |
-| `edit` 有错 | 有 <n> 处错误，还没存。回车接着改，输入 q 放弃： | <n> errors. Nothing saved yet. Press Enter to keep editing, or type q to give up: |
-| `edit` 放弃 | 放弃了，文件没动 | Gave up. The file is unchanged |
-| `edit` 冲突 | 你编辑的时候文件被改过了，没存。你改的在 <副本> | The file changed while you were editing. Nothing saved. Your edit is in <副本> |
-| `edit` 编辑器出错 | 编辑器没有正常退出（<退出码>），没存 | The editor did not exit cleanly (<code>). Nothing saved |
-| `edit` 存了 | · 存好了，<applies> | · Saved, <applies> |
-| `path --project` 还没有 | 还没有这个文件 | This file does not exist yet |
+| `check` 没有问题 | 没有问题 | no problems |
+| `edit` 不在终端里 | miyu: 'miyu config edit' 需要在终端中运行 | miyu: 'miyu config edit' needs a terminal |
+| `edit` 没改 | 未修改 | nothing changed |
+| `edit` 有错 | 有 <n> 处错误，未保存。按回车继续编辑，输入 q 放弃： | <n> errors, not saved. Press Enter to keep editing, or type q to give up: |
+| `edit` 放弃 | 已放弃，文件未修改 | gave up, file unchanged |
+| `edit` 冲突 | miyu: 编辑期间文件已被修改，未保存<br>提示：修改内容保留在 <副本> | miyu: the file changed during editing; not saved<br>hint: the edited copy is kept in <副本> |
+| `edit` 编辑器出错 | miyu: 编辑器异常退出（<退出码>），未保存 | miyu: the editor did not exit cleanly (<code>); not saved |
+| `edit` 存了 | 已保存（<applies>） | saved (<applies>) |
+| `path --project` 还没有 | miyu: 警告：文件尚不存在 | miyu: warning: the file does not exist yet |
 | `check` 一行的级别（8-2） | 错误、警告，后面接「：」 | error、warning，后面接「: 」 |
 | `check` 命令行自己读不了的文件（8-2） | 读不了这份文件：<原因>。这份文件超过 1 MiB，不读。这份文件不是 UTF-8。 | Cannot read this file: <why>. The file is over 1 MiB and is not read. The file is not UTF-8. |
 | `explain` 第一行（8-2） | <名字>（<键>）：<说明><生效>。 | <name> (<key>): <description> <applies>. |
@@ -1825,33 +1826,36 @@ currency = "USD"
 | `explain` 层的名字（8-2） | 默认值、系统配置、项目配置、环境变量 | default、system config、project config、environment |
 | `explain` 生效的那一行（8-2） | ← 生效；环境变量的：← 生效，只管这一次启动 | ← in effect；环境变量的：← in effect, for this launch only |
 | `explain` 不算的那一行（8-2） | ← 不算：还没信任、比下面几层宽、不能写在这一层 | ← does not count: not trusted yet、looser than the layers below、not allowed in this layer |
-| `set --project` | 项目配置只能手改：miyu config edit --project | A project config is edited by hand: miyu config edit --project |
-| `miyu ask` 起头：配置有错 | · 配置里有 <n> 处错误：miyu check 看是哪里 | · <n> errors in the config: run miyu check to see them（1 处时 `· 1 error in the config: run miyu check to see it`） |
-| `miyu ask` 起头：项目配置没信任 | · 这里的项目配置 <文件> 还没信任，这次没用它：miyu config trust 看一眼再定 | · The project config at <file> is not trusted yet, so it was not used: run miyu config trust to review it |
-| `trust` 没有项目配置 | 这里没有项目配置 | There is no project config here |
-| `trust` 列出 | <文件> 会改这几项： | <file> would set: |
-| `trust` 问 | 项目配置只能让限制更严。信任这一份吗？[y/N] | A project config can only make limits stricter. Trust this one? [y/N] |
-| `trust` 不在终端里 | 要在终端里回答，或者写 --yes、--no | Answer in a terminal, or pass --yes or --no |
-| `trust` 本来就信任 | 已经信任过这一份了 | This one is already trusted |
-| `trust` 冲突 | 你看的时候它又被改过了，再跑一次 | It changed while you were looking. Run this again |
-| `trust` 信任了 | · 信任了。内容变了会再问 | · Trusted. You will be asked again if it changes |
-| `trust` 不信任 | · 不信任，这一份不会用。内容变了会再问 | · Not trusted. It will not be used. You will be asked again if it changes |
-| `login` 列出 | 配置里用到的密钥： | Keys the config uses: |
-| `login` 选 | 选一个编号，或者敲一个新名字： | Pick a number, or type a new name: |
-| `login` 一个都没有 | 配置里还没有用到密钥的供应商：写 miyu provider login <名字> | No provider in the config uses a key yet: run miyu provider login <name> |
-| `login` 问 key | 粘贴 <名字> 的 key（不显示）： | Paste the key for <name> (it will not show): |
-| `login` 没收到 | 没收到 key | No key was given |
-| `login` 存好了 | · <名字> 的 key 存好了 | · Saved the key for <name> |
-| `login` 换掉了 | · 换掉了 <名字> 的 key | · Replaced the key for <name> |
+| `set --project` | miyu: 项目配置只能手动编辑<br>提示：运行 'miyu config edit --project' | miyu: the project config can only be edited by hand<br>hint: run 'miyu config edit --project' |
+| `miyu ask` 起头：配置有错 | miyu: 警告：配置中有 <n> 处错误<br>提示：运行 'miyu check' 查看 | miyu: warning: the configuration has <n> errors<br>hint: run 'miyu check' to see them（1 处时 `the configuration has 1 error`、`to see it`） |
+| `miyu ask` 起头：项目配置没信任 | miyu: 警告：项目配置 <文件> 尚未信任，本次没有使用<br>提示：运行 'miyu config trust' 查看后决定 | miyu: warning: project config <file> is not trusted; not used this time<br>hint: run 'miyu config trust' to review it |
+| `trust` 没有项目配置 | miyu: 当前目录没有项目配置 | miyu: no project config here |
+| `trust` 列出 | <文件> 会修改以下设置（项目配置只能收紧限制）： | <file> would set (a project config can only tighten limits): |
+| `trust` 问 | 信任 '<文件>'？[y/N] | Trust '<file>'? [y/N] |
+| `trust` 不在终端里 | miyu: 需要在终端中确认<br>提示：加上 '--yes' 或 '--no' | miyu: confirmation needs a terminal<br>hint: pass '--yes' or '--no' |
+| `trust` 本来就信任 | 已经信任，未修改 | already trusted, nothing changed |
+| `trust` 冲突 | miyu: 查看期间文件已被修改<br>提示：重新运行 'miyu config trust' | miyu: the file changed during review<br>hint: run 'miyu config trust' again |
+| `trust` 信任了 | 已信任（文件变化后会再次询问） | trusted (will ask again if the file changes) |
+| `trust` 不信任 | 已拒绝，不会使用（文件变化后会再次询问） | not trusted, will not be used (will ask again if the file changes) |
+| 核心拒绝了（`set`、`unset`、`edit`、`trust`、`provider`） | miyu: <核心的原话，去掉句末句号> | miyu: <the core's words, without the final period> |
+| `login` 列出 | 配置中使用的密钥： | Keys used by the config: |
+| `login` 选 | 选择编号，或输入新名字： | Pick a number, or type a new name: |
+| `login` 一个都没有 | miyu: 没有使用密钥的供应商<br>提示：用 'miyu provider login <名字>' 添加 | miyu: no provider uses a key<br>hint: add one with 'miyu provider login <name>' |
+| `login` 问 key | 粘贴 <名字> 的密钥（不显示）： | Paste the key for <name> (hidden): |
+| `login` 没收到 | miyu: 未收到密钥 | miyu: no key given |
+| `login` 存好了 | 已保存 <名字> 的密钥 | saved the key for <name> |
+| `login` 换掉了 | 已替换 <名字> 的密钥 | replaced the key for <name> |
+| `login` 取消了（8-5 补） | 已取消，未保存 | cancelled, not saved |
 | `list` 已设置、未设置 | 已设置、未设置 | set、not set |
-| `list` 一个都没有 | 还没有设过 key | No keys yet |
-| `logout` 删掉了 | · 删掉了 <名字> 的 key | · Deleted the key for <name> |
-| `logout` 没有 | <名字> 没有设过 key | <name> has no key |
-| `logout` 选的头一行（8-5，主会话定） | 设过的 key： | Keys that are set: |
-| `logout` 选（8-5，主会话定） | 选一个编号： | Pick a number: |
-| 选的时候直接回车、读到头（8-5，主会话定） | 没选 | Nothing picked |
-| 名字不合写法（写的、敲的，8-5，主会话定） | <名字> 不能当 key 的名字：小写字母开头，只有小写字母、数字、-、_，最长 64 个字符 | <name> cannot name a key: start with a lowercase letter and use only lowercase letters, digits, - and _, up to 64 characters |
-| 不写名字又不在终端里（8-5，主会话定） | 要在终端里选，或者写 miyu provider login <名字>（`logout` 写 miyu provider logout <名字>） | Pick in a terminal, or run miyu provider login <name> |
+| `list` 一个都没有 | 没有密钥 | no keys |
+| `logout` 删掉了 | 已删除 <名字> 的密钥 | deleted the key for <name> |
+| `logout` 没有 | miyu: <名字> 没有设置密钥 | miyu: no key for <name> |
+| `logout` 选的时候一个都没设过 | miyu: 没有已设置的密钥 | miyu: no keys set |
+| `logout` 选的头一行（8-5，主会话定） | 已设置的密钥： | Keys that are set: |
+| `logout` 选（8-5，主会话定） | 选择编号： | Pick a number: |
+| 选的时候直接回车、读到头（8-5，主会话定） | miyu: 未选择 | miyu: nothing picked |
+| 名字不合写法（写的、敲的，8-5，主会话定） | miyu: 密钥名字无效：<名字><br>提示：以小写字母开头，只含小写字母、数字、- 和 _，最多 64 个字符 | miyu: invalid key name: <name><br>hint: start with a lowercase letter, use only lowercase letters, digits, - and _, at most 64 characters |
+| 不写名字又不在终端里（8-5，主会话定） | miyu: 需要在终端中选择<br>提示：或者指定名字：'miyu provider login <名字>'（`logout` 写 `miyu provider logout <名字>`） | miyu: picking needs a terminal<br>hint: or give a name: 'miyu provider login <name>' |
 | `list` 谁在用连起来 | 几项用「、」连 | joined with「, 」 |
 
 **帮助页** `crates/miyu-cli/src/help/zh/config.txt`（8-2 施工时照 `cli/main.md`「帮助页」的规矩定稿，最宽 80 列；8-3 加了 `set`、`unset`、`edit`、`trust` 和 `--yes`、`--no`，样本在 `cli/config.md`）：
@@ -1859,23 +1863,21 @@ currency = "USD"
 ```text
 用法：miyu config <命令> [选项]
 
-看配置、改配置、信任项目配置。
-
 命令：
-  get [键…]      印出最终的值，只写一个键时只印值
-  set <键> <值>  改一项
-  unset <键>     从系统配置里删掉一项，回到默认值
-  edit           用编辑器打开，存盘时先检查
-  explain <键>   这一项每一层写的什么、哪一个生效
-  path           印出配置文件在哪
-  trust          看这里的项目配置会改什么，信任或者不信任它
+  get [键…]      打印生效的值，只给一个键时只打印值
+  set <键> <值>  修改一项设置
+  unset <键>     从系统配置中删除一项，恢复默认值
+  edit           用编辑器打开，保存前检查
+  explain <键>   显示每一层的值和生效的那一层
+  path           打印配置文件的路径
+  trust          查看并决定是否信任当前目录的项目配置
 
 选项：
-      --project           当前目录的项目配置（edit、path）
-      --format text|json  get、explain：json 给脚本
-      --yes               trust：信任，不问
-      --no                trust：不信任，不问
-  -h, --help              印帮助
+      --project           使用当前目录的项目配置（edit、path）
+      --format text|json  输出格式（默认 text）
+      --yes               信任，不询问（trust）
+      --no                不信任，不询问（trust）
+  -h, --help              显示帮助
 ```
 
 `crates/miyu-cli/src/help/en/config.txt`：
@@ -1883,23 +1885,20 @@ currency = "USD"
 ```text
 Usage: miyu config <command> [options]
 
-See and change settings, and trust a project config.
-
 Commands:
-  get [key…]           Print the values in effect, or just the value of one key
-  set <key> <value>    Change one setting
-  unset <key>          Remove one from the system config, back to the default
-  edit                 Open in an editor, checked before it is saved
-  explain <key>        What each layer says and which one wins
-  path                 Print where the file is
-  trust                See what the project config here would set, and trust
-                       it or not
+  get [key…]           Print the values in effect, or the value of one key
+  set <key> <value>    Change a setting
+  unset <key>          Remove a setting from the system config
+  edit                 Open the config in an editor, checked before saving
+  explain <key>        Show the value in each layer and which one wins
+  path                 Print the path of the config file
+  trust                Review and trust or distrust the project config here
 
 Options:
-      --project           The project config here (edit, path)
-      --format text|json  For get, explain: json for scripts
-      --yes               For trust: trust it, without asking
-      --no                For trust: do not trust it, without asking
+      --project           Use the project config here (edit, path)
+      --format text|json  Output format (default: text)
+      --yes               Trust without asking (trust)
+      --no                Distrust without asking (trust)
   -h, --help              Print help
 ```
 
@@ -1910,18 +1909,17 @@ Options:
       miyu provider list [--format text|json]
       miyu provider logout [名字]
 
-供应商的 key：存、列、删。
+命令：
+  login [名字]   保存供应商的密钥，不写名字时从配置中选择
+  list           列出已设置密钥的供应商，不显示密钥
+  logout [名字]  删除供应商的密钥，不写名字时从已设置的中选择
 
-login：存一个供应商的 key。不写名字的，从配置里用到的里面选。贴的时候不显示，
-也可以从管道进来：echo "$KEY" | miyu provider login deepseek
-
-list：列出哪几家设了 key，不给看 key 本身。
-
-logout：删掉一个供应商的 key。不写名字的，从设了的里面选。
+粘贴的密钥不显示，也可以从管道读取：
+  echo "$KEY" | miyu provider login deepseek
 
 选项：
-      --format text|json  list 的输出：json 给脚本
-  -h, --help              印帮助
+      --format text|json  输出格式（默认 text，list）
+  -h, --help              显示帮助
 ```
 
 `crates/miyu-cli/src/help/en/provider.txt`：
@@ -1931,18 +1929,17 @@ Usage: miyu provider login [name]
        miyu provider list [--format text|json]
        miyu provider logout [name]
 
-A provider's key: save, list, delete.
+Commands:
+  login [name]   Save a provider key, picking from the config without a name
+  list           List the providers that have a key, without the keys
+  logout [name]  Delete a provider key, picking from the set ones without a
+                 name
 
-login: Save a provider's key. Without a name, pick one the config uses. The key
-does not show as you paste it, and it can come from a pipe:
-echo "$KEY" | miyu provider login deepseek
-
-list: List which providers have a key, never the key.
-
-logout: Delete a provider's key. Without a name, pick one of those that are set.
+The pasted key is hidden; it can also come from a pipe:
+  echo "$KEY" | miyu provider login deepseek
 
 Options:
-      --format text|json  Output of list: json for scripts
+      --format text|json  Output format (default: text, list only)
   -h, --help              Print help
 ```
 
