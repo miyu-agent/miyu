@@ -83,6 +83,48 @@ fn next_to_the_program_or_in_share_miyu_one_level_up() {
     assert_eq!(found.path(), prefix.join("share").join("miyu"));
 }
 
+/// 桌面端的 `.app`（施工 DT-4 上）：程序在 `Contents/MacOS/miyu`，资源只能放在 `Contents/Resources/` 下，
+/// 照上一级下的 `Resources/miyu/` 找。照能力找：哪个平台上摆成这样都认。
+#[test]
+fn an_app_bundle_keeps_them_in_resources_miyu_one_level_up() {
+    let scratch = Scratch::new();
+    let contents = scratch.path().join("Miyu.app").join("Contents");
+    fs::create_dir_all(contents.join("MacOS")).unwrap();
+    fs::create_dir_all(contents.join("Resources").join("miyu")).unwrap();
+    let found =
+        ResourceRoot::locate(&env(None, Some(&contents.join("MacOS").join("miyu")))).unwrap();
+    assert_eq!(found.path(), contents.join("Resources").join("miyu"));
+    // 只有 `Resources/` 没有下面那一层的不算：`.app` 的 `Resources/` 里还放着图标这些别人的东西。
+    let bare = scratch.path().join("Bare.app").join("Contents");
+    fs::create_dir_all(bare.join("MacOS")).unwrap();
+    fs::create_dir_all(bare.join("Resources")).unwrap();
+    assert!(ResourceRoot::locate(&env(None, Some(&bare.join("MacOS").join("miyu")))).is_err());
+}
+
+/// 几处都有的，照先后：旁边的 `resources/`、上一级的 `share/miyu/`、上一级的 `Resources/miyu/`。
+#[test]
+fn the_places_are_tried_in_order() {
+    let scratch = Scratch::new();
+    let places = [
+        scratch.path().join("bin").join("resources"),
+        scratch.path().join("share").join("miyu"),
+        scratch.path().join("Resources").join("miyu"),
+    ];
+    places
+        .iter()
+        .for_each(|place| fs::create_dir_all(place).unwrap());
+    let program = scratch.path().join("bin").join("miyu");
+    for place in &places {
+        assert_eq!(
+            ResourceRoot::locate(&env(None, Some(&program)))
+                .unwrap()
+                .path(),
+            place
+        );
+        fs::remove_dir(place).unwrap();
+    }
+}
+
 #[test]
 fn nowhere_says_where_it_looked() {
     let scratch = Scratch::new();
@@ -94,6 +136,7 @@ fn nowhere_says_where_it_looked() {
         ResourceError::NotFound(vec![
             bin.join("resources"),
             scratch.path().join("target").join("share").join("miyu"),
+            scratch.path().join("target").join("Resources").join("miyu"),
         ])
     );
     assert!(error.to_string().contains("MIYU_RESOURCES"), "{error}");

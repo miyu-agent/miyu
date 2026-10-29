@@ -2,8 +2,9 @@
 //! 出厂的人格、提示词都在这里，随安装包一起分发，不编进二进制（R3）。
 //!
 //! 怎么找：先看环境变量 `MIYU_RESOURCES`，开发时把它指到源码树的 `resources/`；没设的，看程序的真实
-//! 位置，旁边有 `resources/` 就是它（安装脚本），上一级有 `share/miyu/` 就是它（deb、rpm、AUR、
-//! Homebrew）。都没有，说清找过哪几处，不猜别的位置。
+//! 位置，旁边有 `resources/` 就是它（安装脚本、Windows 的桌面端），上一级有 `share/miyu/` 就是它（deb、
+//! rpm、AUR、Homebrew），上一级有 `Resources/miyu/` 就是它（macOS 桌面端的 `.app`，施工 DT-4 上）。都没有，
+//! 说清找过哪几处，不猜别的位置。
 //!
 //! 读出来的原文交给第 2 层去拼快照（`miyu-policy`）。
 
@@ -35,7 +36,7 @@ pub enum ResourceError {
     Relative(PathBuf),
     /// `MIYU_RESOURCES` 指的地方不是一个目录。
     Missing(PathBuf),
-    /// 没设 `MIYU_RESOURCES`，程序旁边、上一级都没有。里面是找过的几处；程序的位置都不知道的，是空的。
+    /// 没设 `MIYU_RESOURCES`，程序旁边、上一级的两处都没有。里面是找过的几处；程序的位置都不知道的，是空的。
     NotFound(Vec<PathBuf>),
 }
 
@@ -96,7 +97,7 @@ impl ResourceRoot {
     /// # Errors
     ///
     /// `MIYU_RESOURCES` 是相对路径，或者指的不是目录；没设的时候，程序旁边的 `resources/`、上一级的
-    /// `share/miyu/` 都没有。
+    /// `share/miyu/`、`Resources/miyu/` 都没有。
     pub fn locate(env: &Env) -> Result<ResourceRoot, ResourceError> {
         if let Some(dir) = env.miyu_resources.as_ref().filter(|dir| !dir.is_empty()) {
             // 开头的 `~` 照家目录接（施工 4-11）；家目录找不到的，照原样，下面当相对路径报错。
@@ -115,6 +116,9 @@ impl ResourceRoot {
         let mut tried = vec![dir.join("resources")];
         if let Some(prefix) = dir.parent() {
             tried.push(prefix.join("share").join("miyu"));
+            // `.app` 的程序在 `Contents/MacOS/`，资源只能放在 `Contents/Resources/` 下；`Resources/` 里还有
+            // 图标这些别人的东西，所以认的是它下面的 `miyu/`（施工 DT-4 上）。
+            tried.push(prefix.join("Resources").join("miyu"));
         }
         match tried.iter().find(|candidate| candidate.is_dir()) {
             Some(found) => Ok(ResourceRoot::at(found.clone())),

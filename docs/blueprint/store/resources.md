@@ -99,14 +99,16 @@
 **1. 找资源目录**（`ResourceRoot::locate`）
 
 1. `MIYU_RESOURCES` 设了、不是空的：就是它，别处不看。开头的 `~` 和 `MIYU_HOME` 一样照家目录接（`store.md`），找不到家目录的当相对路径报错。接好以后要是绝对路径，相对的报错；它要是一个目录，不是的报错。
-2. 没设或者是空的：看程序的真实位置（`Env` 的 `exe`，顺着链接找到的本体）。它旁边有 `resources/` 目录，就是它；不然它的上一级下有 `share/miyu/` 目录，就是它。
-3. 都没有：报错，写明找过的两处。连程序在哪都不知道的，说不知道。
+2. 没设或者是空的：看程序的真实位置（`Env` 的 `exe`，顺着链接找到的本体）。它旁边有 `resources/` 目录，就是它；不然它的上一级下有 `share/miyu/` 目录，就是它；再不然它的上一级下有 `Resources/miyu/` 目录，就是它（施工 DT-4 上：macOS 桌面端的 `.app` 只能把资源放在 `Contents/Resources/` 下，那里还有图标这些别人的东西，所以要下面那一层 `miyu/`；照摆法认，不问是不是 macOS）。
+3. 都没有：报错，写明找过的三处。连程序在哪都不知道的，说不知道。
 4. 不猜别的位置。
 
 | 装法 | 程序 | 找到的资源目录 |
 |---|---|---|
 | 安装脚本 | `~/.local/lib/miyu/miyu` | 旁边的 `~/.local/lib/miyu/resources/` |
 | deb、rpm、AUR、Homebrew | `<前缀>/bin/miyu` | 上一级下的 `<前缀>/share/miyu/` |
+| 桌面端，Windows | `<装在哪>\miyu.exe` | 旁边的 `<装在哪>\resources\` |
+| 桌面端，macOS | `Miyu.app/Contents/MacOS/miyu` | 上一级下的 `Miyu.app/Contents/Resources/miyu/` |
 | 开发 | `target/debug/miyu` | 设 `MIYU_RESOURCES` 指到源码树的 `resources/` |
 
 **2. 读出一个人格要用的原文**（`ResourceRoot::sources`）
@@ -204,7 +206,7 @@
 |---|---|---|
 | `ResourceError` | `Relative` | `MIYU_RESOURCES 要写绝对路径，现在是 <路径>` |
 | | `Missing` | `MIYU_RESOURCES 指的 <路径> 不是一个目录` |
-| | `NotFound`，找过两处 | `找不到资源目录：<程序旁边的 resources>、<上一级的 share/miyu> 都没有。开发时设 MIYU_RESOURCES 指到源码树的 resources/` |
+| | `NotFound`，找过三处 | `找不到资源目录：<程序旁边的 resources>、<上一级的 share/miyu>、<上一级的 Resources/miyu> 都没有。开发时设 MIYU_RESOURCES 指到源码树的 resources/` |
 | | `NotFound`，不知道程序在哪 | `找不到资源目录：不知道程序在哪。开发时设 MIYU_RESOURCES 指到源码树的 resources/` |
 | `SourceError` | `Persona` | `persona id "<编号>" is not valid: it starts with a lowercase letter and has only lowercase letters, digits, - and _` |
 | | `Read` | `cannot read <路径>: <系统的原话>` |
@@ -220,7 +222,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-store/src/resources/tests.rs` | `MIYU_RESOURCES` 优先、开头的 `~` 照家目录接、要是绝对路径、要是目录；程序旁边的 `resources/`、上一级的 `share/miyu/`；都没有时写明找过哪两处、不知道程序在哪；读出软件工程师的人设和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；切了级别以后的权限那一份也是，施工 2-7 补）；人设文件缺了写明是哪一份；不合写法的编号拒绝；子会话的场所说明是它自己那份文件，没有的写明是哪一份（施工 7-5）；核心的几行是它们那两份文件，没有的写明是哪一份（施工 2-7 补）；合并转发那几行的三句各是各的文件、`forward()` 和随核心附带的字读的一样（施工 O-34）；私聊记号的语音那一句是 `voice.txt`、`private_media()` 和随核心附带的字读的一样（施工 O-35） |
+| `crates/miyu-store/src/resources/tests.rs` | `MIYU_RESOURCES` 优先、开头的 `~` 照家目录接、要是绝对路径、要是目录；程序旁边的 `resources/`、上一级的 `share/miyu/`、上一级的 `Resources/miyu/`（`.app`，只有 `Resources/` 的不算），三处照先后（施工 DT-4 上）；都没有时写明找过哪三处、不知道程序在哪；读出软件工程师的人设和随核心附带的字（会话编号的模板是它那份文件，施工 1-13 再补；切了级别以后的权限那一份也是，施工 2-7 补）；人设文件缺了写明是哪一份；不合写法的编号拒绝；子会话的场所说明是它自己那份文件，没有的写明是哪一份（施工 7-5）；核心的几行是它们那两份文件，没有的写明是哪一份（施工 2-7 补）；合并转发那几行的三句各是各的文件、`forward()` 和随核心附带的字读的一样（施工 O-34）；私聊记号的语音那一句是 `voice.txt`、`private_media()` 和随核心附带的字读的一样（施工 O-35） |
 | `crates/miyu-store/src/resources/overlay/tests.rs`、`crates/miyu-endpoint/tests/prompt_override.rs`（施工 OV-1 中） | 上一层合规矩的压着下一层、占位不对和中文的照下一层、都不合照出厂；`.json` 不盖；报不合的、出厂没有的、不是 `.txt`、`.md` 的；真核心开会话的 system 照覆盖换、`check` 报；核心重启后载入的会话换快照也照覆盖拼 |
 | `crates/miyu-store/tests/human.rs` | 内核给模型的每一句（`core/tool-results/`、`core/permissions/`）两种语言都有给人看的一句，要的字段不多于给模型的；照语言换成字，没有的语言照英文，没有这一句、少了字段的换不出；工具的显示名、后面跟的参数、符号、下面那一块，`block` 写别的读不懂；控制字符换掉、引号反斜杠照原样；什么都没有不算错，只有英文的照英文，读不懂的写明是哪一份、哪一句；配置那一格照 `Words` 交出去、句子的编号加 `core/`、写错了说是哪一份（施工 8-1）；中文、日文没写 `X/one` 的，退到 `X` 的字，英文自己写的不一样；每种语言的 `said_entries()` 都交得出清单上每一句的 `/one`；软件包自己写了 `X/one` 的，补的规矩不盖掉它（施工 4-5 再补） |
 | `crates/miyu-store/tests/human_languages.rs`（施工 4-5 补；4-5 再补加了单数的门禁） | 内核和每个软件包都有中文、英文、日文三份，说法的键、每一句要的字段、工具的样子（显示名以外）、配置那一格的项和选项、页、组（施工 8-1）都和英文那一份一样（没写 `X/one` 的按 `Human::load` 的规矩补齐了再比）；每件工具都有显示名，配置的名字、说明都不空；日文照语言换得出（找不到的语言会退回英文，所以直接查文件）；门禁：英文 `{count}`、`{total}` 后面紧跟着词的每一句，都有 `/one` 那一句对着 |
