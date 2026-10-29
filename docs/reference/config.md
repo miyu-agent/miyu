@@ -170,7 +170,7 @@
 
 **参数**：`provider`（配好了的）或 `candidate`（还没写进配置的：`driver`、`base_url`、`key`（`{secret}`、`{env}` 或 `{value}`，`value` 只用这一次、不存）、`catalog`），正好写一个；`model`（拿哪个试）。
 
-列得出模型就算通，不发请求；列不出、写的模型不在列表里时才发一句，那时会花一点额度。
+列得出模型就算通，不发请求；列不出（不是 key 错）、写的模型不在列表里时才发一句，那时会花一点额度。列不出又没写模型的，照目录里这一家的模型挑一个推荐的去发；目录里也没有这一家的才回 `need_model`。
 
 **回应**：成了 `{"ok": true, "checked", "models", "listed", "model"}`，发了一句的多 `first_token_ms`；没成 `{"ok": false, "stage", "error": {"class", "status"?, "message"}}`，`stage` 是 `list`、`request`、`config`，给一个模型名就能再试的带 `need_model: true`。
 

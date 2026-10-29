@@ -170,7 +170,7 @@ There is one secrets file: `secrets.toml`.
 
 **Params**: `provider` (a configured one) or `candidate` (not yet in the config: `driver`, `base_url`, `key` (`{secret}`, `{env}` or `{value}`; `value` is used once and not stored), `catalog`), exactly one; `model` (which model to try).
 
-Being able to list models counts as working, with no request sent; only when listing fails or the given model isn't listed is one message sent, which costs a little.
+Being able to list models counts as working, with no request sent; only when listing fails (not because of the key) or the given model isn't listed is one message sent, which costs a little. When listing fails and no model was given, a recommended one from this provider's models in the catalog is sent to; only a provider missing from the catalog answers with `need_model`.
 
 **Response**: success `{"ok": true, "checked", "models", "listed", "model"}`, plus `first_token_ms` when a message was sent; failure `{"ok": false, "stage", "error": {"class", "status"?, "message"}}`, `stage` being `list`, `request` or `config`; `need_model: true` when naming a model would allow another try.
 

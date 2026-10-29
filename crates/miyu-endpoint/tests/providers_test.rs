@@ -200,11 +200,12 @@ async fn the_probe_takes_the_configured_temperature_of_the_model() {
     assert_eq!(asked(&server, 1)["temperature"], 0.6);
 }
 
-/// 列不出（不是认证错）：没写模型的要模型名、不发请求；写了的拿它发一句，模型照目录列。
+/// 列不出（不是认证错）：模型照目录列；没写模型的照推荐挑一个发一句（施工 ST-1），写了的拿它发一句。
 #[tokio::test]
-async fn a_provider_that_cannot_list_asks_for_a_model_then_tries_it() {
+async fn a_provider_that_cannot_list_is_tried_with_a_model_from_the_catalog() {
     let server = Server::start(vec![
         Reply::error(404, &[], "no such path"),
+        first_words_then_stall(),
         Reply::error(404, &[], "no such path"),
         first_words_then_stall(),
     ])
@@ -220,11 +221,17 @@ async fn a_provider_that_cannot_list_asks_for_a_model_then_tries_it() {
     )
     .await;
     let result = &reply["result"];
-    assert_eq!(result["ok"], false, "{reply}");
-    assert_eq!(result["stage"], "list");
-    assert_eq!(result["need_model"], true);
-    assert_eq!(result["error"]["status"], 404);
-    assert_eq!(server.received().len(), 1, "没写模型的不发请求");
+    assert_eq!(result["ok"], true, "{reply}");
+    assert_eq!(result["checked"], "request", "没写模型的照目录挑一个发一句");
+    assert_eq!(result["listed"], "catalog");
+    let picked = result["model"].as_str().expect("挑了一个");
+    assert!(
+        result["models"]
+            .as_array()
+            .is_some_and(|models| models.iter().any(|model| model == picked)),
+        "挑的是目录里的：{reply}"
+    );
+    assert_eq!(asked(&server, 1)["model"], picked, "发的就是挑的那个");
 
     let reply = test(
         &home,
@@ -249,7 +256,7 @@ async fn a_provider_that_cannot_list_asks_for_a_model_then_tries_it() {
     assert_eq!(result["model"], "deepseek-flash");
     let bearer = format!("Bearer {FAKE}");
     assert_eq!(
-        server.received()[2].header("authorization"),
+        server.received()[3].header("authorization"),
         Some(bearer.as_str()),
         "{{value}} 去掉前后空白"
     );

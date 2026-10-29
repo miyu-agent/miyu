@@ -6,8 +6,9 @@
 //! 2. 列模型（[`list_models`]，和拉列表一样整个 30 秒）。拉到了的，`save` 的（配好了的一家）存进供应商的列表。
 //! 3. 列到了：写了模型、它在列表里的，或者没写、照推荐挑得出的（`miyu_models::onboard::recommend`），通了，不发请求。
 //!    列表是空的、又没写模型的：`list`，要人给一个模型名（`need_model`）。写了的模型不在列表里：拿它发一句（第 5 步）。
-//! 4. 列不到：认证错（`auth`）的就是没通，`list`。别的（这一家不给列、地址不对……）：写了模型的拿它发一句（第 5 步）；
-//!    没写的 `list`，要人给一个模型名（`need_model`）。模型照目录里对上的那一家列（`from_catalog`）。
+//! 4. 列不到：认证错（`auth`）的就是没通，`list`。别的（这一家不给列、地址不对……）：模型照目录里对上的那一家列
+//!    （`from_catalog`），写了模型的拿它、没写的照推荐挑一个，发一句（第 5 步，施工 ST-1）；目录里也挑不出的 `list`，要人给一个
+//!    模型名（`need_model`）。
 //! 5. 发：只有一条 user，没有 system，工具面只有档案的占位工具；收到正文那一块的第一段字就叫停，空闲 60 秒。驱动照这个模型
 //!    （施工 8-14，没有驱动的是 `config`），档案另配的头照固定的种子 `provider.test` 换。客户端和列模型用同一个（照地址挑，
 //!    施工 8-11 补：地址落在本机的不走代理，别的照环境变量，和会话真发时一样）。请求发了就报请求的结果（「施工时定的」8-11）。
@@ -190,12 +191,20 @@ async fn run(
         }
         Err(why) => {
             let error = classify(driver.as_ref(), &why);
-            let unauthorized = error.class == ErrorClass::Auth;
-            match probe.model {
-                Some(model) if !unauthorized => {
-                    (catalog_models(data, &provider), true, model.to_string())
-                }
-                _ => return Err(listing(error, !unauthorized)),
+            if error.class == ErrorClass::Auth {
+                return Err(listing(error, false));
+            }
+            // 列不到、又不是认证错（这一家不给列、地址换了……）：照目录里对上的那一家列，没写模型的照推荐挑一个，拿它发一句验
+            // 地址和 key（施工 ST-1：10-29 目录里 OpenCode Go 换了地址，新地址没有列模型的接口，人只能凭空填模型名）。目录里
+            // 也挑不出的才要人给模型名。
+            let models = catalog_models(data, &provider);
+            let chosen = match probe.model {
+                Some(model) => Some(model.to_string()),
+                None => pick(data, probe.resolved, &provider, &models),
+            };
+            match chosen {
+                Some(model) => (models, true, model),
+                None => return Err(listing(error, true)),
             }
         }
     };
