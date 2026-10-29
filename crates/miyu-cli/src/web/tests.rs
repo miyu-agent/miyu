@@ -78,9 +78,14 @@ fn an_installed_web_ui_gets_the_args_and_decides_the_exit_code() {
     std::fs::write(&main, "").expect("写得进");
     let seen = dir.join("seen");
     let program = dir.join("miyu-web");
+    let told = dir.join("told");
     std::fs::write(
         &program,
-        format!("#!/bin/sh\necho \"$@\" > {}\nexit 7\n", seen.display()),
+        format!(
+            "#!/bin/sh\necho \"$@\" > {}\necho \"$MIYU_PROGRAM\" > {}\nexit 7\n",
+            seen.display(),
+            told.display()
+        ),
     )
     .expect("写得进");
     std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).expect("改得了");
@@ -104,6 +109,14 @@ fn an_installed_web_ui_gets_the_args_and_decides_the_exit_code() {
     assert_eq!(
         std::fs::read_to_string(&seen).expect("跑了").trim(),
         "open --reset"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&told).expect("跑了").trim(),
+        std::fs::canonicalize(&main)
+            .expect("在")
+            .display()
+            .to_string(),
+        "主程序的真实位置交给它（施工 G-15）：装进数据根的网页软件旁边没有主程序"
     );
     std::fs::remove_dir_all(&dir).expect("删得掉临时目录");
 }

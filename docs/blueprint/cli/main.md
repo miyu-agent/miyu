@@ -40,7 +40,7 @@
 | `setup` | 接上第一个模型：找现成的 key 和本机的服务，或者搜目录、贴 key，试通了写进系统配置（施工 8-11） | `cli/setup.md` |
 | `service` | `enable`、`disable`、`status`：让核心开机、登录就起，替本人装、卸、看本人这一层的服务（施工 Z-1 下） | `cli/service.md` |
 | `sandbox` | `setup`、`remove`：Windows 上装好、撤掉沙盒用户，要管理员权限；别的平台上说一句不用装 | `sandbox/windows.md` |
-| `web` | 打开网页界面：找主程序旁边的网页软件 `miyu-web`，参数交给它；没装的说怎么装（施工 W-9） | `web-ui.md` |
+| `web` | 打开网页界面：找主程序旁边的网页软件 `miyu-web`，参数交给它；没装的说怎么装（施工 W-9）。环境照转交的规矩多 `MIYU_PROGRAM`（主程序的真实位置）、找到了包文件夹的多 `MIYU_PACKAGE_DIR`：装进数据根的网页软件靠它拉起核心（施工 G-15 补） | `web-ui.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
 | `core` | 核心进程：由头拉起，平时不用人敲；不写进帮助 | `core.md` |
 | `help` | clap 自带：印帮助，`miyu help <子命令>` 印那一条的 | |

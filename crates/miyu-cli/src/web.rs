@@ -111,8 +111,17 @@ pub fn web_on(
         }
         return 1;
     };
-    // 照 `launch` 起：Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。
-    match launch.command().args(args.args()).status() {
+    // 照 `launch` 起：Windows 上照 `#!` 起的是解释器加脚本（施工 X-34）。主程序的真实位置照转交的规矩交（施工 G-15）：装进
+    // 数据根的网页软件旁边没有主程序，要拉起核心的照它找；包文件夹有的也交。
+    let mut command = launch.command();
+    command.args(args.args()).env(
+        miyu_store::env::PROGRAM,
+        std::fs::canonicalize(main).unwrap_or_else(|_| main.to_path_buf()),
+    );
+    if !dir.as_os_str().is_empty() {
+        command.env("MIYU_PACKAGE_DIR", dir);
+    }
+    match command.status() {
         Ok(status) => status
             .code()
             .and_then(|code| u8::try_from(code).ok())
