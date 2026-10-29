@@ -8,6 +8,8 @@ Options:
       --port <port>  Port the web interface listens on this time (if not
                      running; default: 8300)
       --print        Print the address without opening a browser
+      --format <format>
+                     Print as text or json (json does not open a browser)
       --reset        Open with a one-time code to reset the username and
                      password
       --logout       Sign out every browser

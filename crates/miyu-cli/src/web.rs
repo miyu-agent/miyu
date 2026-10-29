@@ -32,6 +32,12 @@ pub struct Web {
     /// 不开浏览器，印网址。
     #[arg(long)]
     pub print: bool,
+    /// 印的格式（施工 CL-5，网页 W-977）：`json` 给桌面端、脚本读，网页软件当是 `--print`。
+    #[arg(long, value_name = "FORMAT", value_parser = ["text", "json"])]
+    pub format: Option<String>,
+    /// 没设过访问密码也要一张交接票（施工 CL-5，网页 W-978）：桌面端免密打开用，不进帮助；不和 `--reset` 一起写。
+    #[arg(long, hide = true, conflicts_with = "reset")]
+    pub ticket: bool,
     /// 忘了密码：带一次性码打开网页重设。
     #[arg(long)]
     pub reset: bool,
@@ -50,8 +56,14 @@ impl Web {
         if let Some(port) = self.port {
             args.extend(["--port".to_string(), port.to_string()]);
         }
+        if self.print {
+            args.push("--print".to_string());
+        }
+        if let Some(format) = &self.format {
+            args.extend(["--format".to_string(), format.clone()]);
+        }
         for (on, flag) in [
-            (self.print, "--print"),
+            (self.ticket, "--ticket"),
             (self.reset, "--reset"),
             (self.logout, "--logout"),
         ] {

@@ -17,6 +17,7 @@
 | CL-2 补 | `pkg`、`memory`、`kb`、`schedule` |
 | CL-3 | 设计 47 第三节第 10 条的检查进门禁 |
 | CL-4 | `miyu core stop`（桌面端 DT-4 下要的）：连在跑的核心发 `core.stop`，阻塞地拿一次 `run/core.lock` 等它真退了才回；没在跑的不拉起、退出码 0；和 `miyu core` 一样不进帮助 |
+| CL-5 | `miyu web --format text\|json`、`--ticket`（网页 W-977、W-978，桌面端调 `miyu web --print --format json --ticket`）：照原样交给 `miyu-web open`；`--format` 进帮助，`--ticket` 只给桌面端用、不进帮助，和 `--reset` 不一起写 |
 
 ### 蓝图改哪几节
 

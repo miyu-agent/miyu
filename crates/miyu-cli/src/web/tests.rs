@@ -7,6 +7,8 @@ fn the_flags_pass_through_in_order() {
     let all = Web {
         port: Some(8300),
         print: true,
+        format: Some("json".to_string()),
+        ticket: false,
         reset: true,
         logout: true,
         package: Some("onebot".to_string()),
@@ -18,6 +20,8 @@ fn the_flags_pass_through_in_order() {
             "--port",
             "8300",
             "--print",
+            "--format",
+            "json",
             "--reset",
             "--logout",
             "--package",
@@ -25,6 +29,17 @@ fn the_flags_pass_through_in_order() {
         ]
     );
     assert_eq!(Web::default().args(), ["open"]);
+    // 桌面端那一句（施工 CL-5）：交接票照原样交过去。
+    let desktop = Web {
+        print: true,
+        format: Some("json".to_string()),
+        ticket: true,
+        ..Web::default()
+    };
+    assert_eq!(
+        desktop.args(),
+        ["open", "--print", "--format", "json", "--ticket"]
+    );
 }
 
 #[test]
