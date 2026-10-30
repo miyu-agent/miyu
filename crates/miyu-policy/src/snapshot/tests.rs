@@ -1,6 +1,7 @@
 //! 快照的字节、读回来、造策略。随核心附带的字用仓库里出厂的那一份（编译时拿进来，不是读文件）。会话编号的模板在
 //! `facts.rs`。
 
+mod compare;
 mod drivers;
 mod facts;
 mod jobs;

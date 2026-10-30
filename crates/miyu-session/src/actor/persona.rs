@@ -358,8 +358,10 @@ fn look(
         Err(error) => return Seen::Kept(error.to_string()),
     };
     new.no_tools = matches!(preset, Preset::NoTools { .. });
-    // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。
-    if new.hash() == old.hash() {
+    // 目录换了代、这个会话的工具面没变的（只给群的、预设关着的），什么都不记。直接比两份快照（施工 V-24补）：快照没有跳过不写的
+    // 字段、没有浮点、没有 JSON 值，一样就是字节一样；以前两份各写一遍 JSON、各算一遍 SHA-256 再比。步数照预设重算的
+    // （`steps::restepped`）也在比的里面。
+    if new == *old {
         return Seen::Same;
     }
     // 程序升级过（核心的字变了），人格、预设都没改、工具面也没变的：照旧，不为升级断一次缓存（施工 P-1 三补）。
@@ -387,10 +389,11 @@ fn look(
         Ok(built) => built,
         Err(error) => return Seen::Kept(error),
     };
-    if let Err(error) = refresh.blobs.put(&new.to_bytes()) {
-        return Seen::Kept(error.to_string());
-    }
-    let hash = new.hash();
+    // 存的时候拿到的就是它的哈希（`Blobs::put` 交回内容哈希，同 `Snapshot::hash`），不再写一遍、算一遍。
+    let hash = match refresh.blobs.put(&new.to_bytes()) {
+        Ok(hash) => hash,
+        Err(error) => return Seen::Kept(error.to_string()),
+    };
     let recast = wanted.persona.map(|_| Recast { shelves });
     Seen::Swapped(
         Box::new(new),
