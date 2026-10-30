@@ -13,6 +13,9 @@
 //! - 这个模型照目录怎么说话（施工 8-14，[`Wire`]）：自己的包名、交错思考的字段，只取第 1、2 层对上的；不进 `model.list`。
 //!   能不能关思考照它换出来的驱动算（[`Provider::for_model`]）。
 //!
+//! 对目录、取对上的那一条只经 [`crate::Knowledge::lookup`]（施工 V-25 上，[`crate::catalog::CatalogLookup::model_side`]），
+//! 不直接碰目录：整份目录现算的、照记下的答的，合出来逐字一样。
+//!
 //! 缓存类别随用到它的那一步（「施工时定的」8-7）。
 
 mod source;
@@ -24,10 +27,10 @@ use miyu_config::{Value, key};
 use miyu_drivers::Inputs;
 use serde_json::{Map, Value as Json, json};
 
-use crate::catalog::{CatalogModel, Price, Rates, USD};
+use crate::catalog::{CatalogModel, ModelSide, Price, Rates, USD};
 use crate::effort;
 use crate::knowledge::Knowledge;
-use crate::matching::{Found, Matched, find};
+use crate::matching::{Found, Matched};
 use crate::provider::Provider;
 use crate::temperature;
 
@@ -154,9 +157,9 @@ pub fn facts(
         provider: &provider.id,
         model,
     };
-    let found = match knowledge.catalog {
-        Some(loaded) => find(
-            &loaded.catalog,
+    // 对目录、取对上的那一条只经查目录的接口（施工 V-25 上，`catalog/lookup.rs`）；没有的当没有目录。
+    let side = match knowledge.lookup {
+        Some(lookup) => lookup.model_side(
             knowledge.vendors,
             provider
                 .recognized
@@ -165,13 +168,13 @@ pub fn facts(
             model,
             written.text(&["catalog"]).map(|(text, _)| text).as_deref(),
         ),
-        None => Found::Nothing,
+        None => ModelSide::nothing(),
     };
-    let entry = match (&found, knowledge.catalog) {
-        (Found::Matched(matched), Some(loaded)) => loaded
-            .catalog
-            .model(&matched.provider, &matched.model)
-            .map(|entry| (entry, matched, loaded.fetched.as_str())),
+    let fetched = knowledge.lookup.map(|lookup| lookup.fetched());
+    let entry = match (&side.found, &side.entry, &fetched) {
+        (Found::Matched(matched), Some(entry), Some(fetched)) => {
+            Some((entry, matched, fetched.as_str()))
+        }
         _ => None,
     };
     // 对上了目录的：每一格借的来源都是这一个条目（价格另看挑的那家借不借）。
@@ -271,7 +274,7 @@ pub fn facts(
         ),
         wire,
     };
-    (facts, found)
+    (facts, side.found)
 }
 
 /// 查到的写成一格，没查到的是驱动的保守默认 `default`。

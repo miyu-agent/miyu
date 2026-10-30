@@ -5,7 +5,7 @@ use miyu_drivers::openai_chat::Compat;
 use std::collections::BTreeMap;
 
 use miyu_models::Knowledge;
-use miyu_models::catalog::{Catalog, CatalogSource, Loaded};
+use miyu_models::catalog::{Catalog, CatalogLookup, CatalogSource, Loaded};
 use miyu_models::observed::Learned;
 use miyu_models::profile::ImageTokens;
 
@@ -167,6 +167,7 @@ fn every_featured_provider_is_usable_with_the_bundled_data() {
         profiles: &profiles,
         vendors: &vendors,
         catalog: Some(&loaded),
+        lookup: Some(CatalogLookup::Full(&loaded)),
         learned: &Learned::default(),
         lists: &BTreeMap::new(),
     };

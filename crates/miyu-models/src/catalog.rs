@@ -18,11 +18,15 @@
 mod digest;
 mod index;
 mod inputs;
+mod lookup;
 mod price;
+mod recall;
 mod table;
 
 pub use inputs::Inputs;
+pub use lookup::{CatalogLookup, ModelSide, ProviderSide, model_side, provider_side};
 pub use price::{Price, Rates, Tier, USD};
+pub use recall::{RECALL_VERSION, Recall, Recalled, Recalling};
 pub use table::ModelTable;
 
 use std::borrow::Cow;
@@ -72,8 +76,8 @@ pub struct CatalogProvider {
     pub models: ModelTable,
 }
 
-/// 目录里的一个模型：只有用得上的格。
-#[derive(Debug, Clone, Default, PartialEq)]
+/// 目录里的一个模型：只有用得上的格。能写成 JSON、读回来（施工 V-25 上：查目录记下来的答里有它，[`Recalled`]）。
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CatalogModel {
     /// 显示名。
     pub name: Option<Text>,
@@ -125,8 +129,9 @@ pub struct Loaded {
     pub fetched: String,
 }
 
-/// 在用的是哪一份目录。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 在用的是哪一份目录。JSON 里的写法同 [`CatalogSource::as_str`]。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CatalogSource {
     /// 安装包带的快照。
     Snapshot,
