@@ -30,7 +30,7 @@ pub(crate) async fn call(
     let schedules = core.schedules();
     match request.method.as_str() {
         "schedule.add" => {
-            let wanted = wanted(core, package, params(request)?).await?;
+            let wanted = wanted(core, caller, params(request)?).await?;
             let added = schedules.add(wanted).map_err(refusal)?;
             Ok(json!({"schedule": entry(&added)}))
         }
@@ -179,12 +179,10 @@ pub(crate) struct IdParams {
     id: String,
 }
 
-/// 照参数拼出要建的：时刻、会话都查过；每次新开的人格、预设照这时的默认定下来。扩展（`package`）建的记成包建的。
-async fn wanted(
-    core: &Arc<Core>,
-    package: Option<&str>,
-    params: AddParams,
-) -> Result<Wanted, Refusal> {
+/// 照参数拼出要建的：时刻、会话都查过（会话要这个连接碰得到，施工 AS-3）；每次新开的人格、预设照这时的默认定下来。扩展
+/// （`caller.package`）建的记成包建的。
+async fn wanted(core: &Arc<Core>, caller: &Caller, params: AddParams) -> Result<Wanted, Refusal> {
+    let package = caller.package.as_deref();
     let when = match params.when {
         WhenParams {
             cron: Some(cron),
@@ -228,7 +226,7 @@ async fn wanted(
             new: None,
             package: None,
         }) => Target::Session {
-            session: session_of(core, &session).await?,
+            session: session_of(core, caller, &session).await?,
         },
         None
         | Some(TargetParams {
@@ -268,11 +266,12 @@ async fn wanted(
     })
 }
 
-/// 跑在已有的会话：要有。
-async fn session_of(core: &Arc<Core>, text: &str) -> Result<SessionId, Refusal> {
+/// 跑在已有的会话：要有，这个连接还要碰得到它（施工 AS-3，同 `connection/checks.rs` 第 4 道）。碰不到的和没有的一个说法，
+/// 看不到的不露。原来只查有没有：平台桥能往本机的会话、人的头能往关着的群会话里定时说话。
+async fn session_of(core: &Arc<Core>, caller: &Caller, text: &str) -> Result<SessionId, Refusal> {
     let session = SessionId::parse(text).map_err(|_| Refusal::bad_schedule("session"))?;
     match core.sessions.get(core, &session).await {
-        Ok(_) => Ok(session),
+        Ok(_) if crate::sessions::reachable(core, caller, &session).await => Ok(session),
         _ => Err(Refusal::bad_schedule("session")),
     }
 }

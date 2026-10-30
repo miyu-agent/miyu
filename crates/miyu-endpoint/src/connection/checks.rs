@@ -16,7 +16,6 @@ use miyu_kernel::id::SessionId;
 use super::{gate, reach, rights};
 use crate::Core;
 use crate::hello::Caller;
-use crate::list::LOCAL;
 use crate::login::Via;
 use crate::refusal::Refusal;
 use crate::wire::Request;
@@ -56,10 +55,6 @@ async fn others_session(core: &Arc<Core>, caller: &Caller, request: &Request) ->
     if core.sessions.loaded(&id).await.is_none() && !core.sessions.exists(core, &id).await {
         return None;
     }
-    let (venue, confined) = crate::sessions::placed(core, &id).await?;
-    let reachable = match crate::venues::bridge(core, caller) {
-        Some(bridge) => bridge.platforms(core).holds(venue.as_str()),
-        None => venue.as_str() == LOCAL || !confined,
-    };
+    let reachable = crate::sessions::reachable(core, caller, &id).await;
     (!reachable).then_some(Refusal::NOT_FOUND)
 }

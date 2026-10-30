@@ -39,7 +39,7 @@ pub(crate) mod prefix;
 mod setup;
 pub(crate) mod state;
 
-pub(crate) use confined::{confined_of, placed};
+pub(crate) use confined::{confined_of, placed, reachable};
 pub(crate) use opening::Opening;
 pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default, wide};
 pub(crate) use setup::Setup;
