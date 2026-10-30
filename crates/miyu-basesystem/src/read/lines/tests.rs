@@ -1,4 +1,5 @@
-//! 按行读：编码、二进制、分页、行号、截长行、64 KiB 的上限；整份文件的内容哈希（施工 4-6 上）。
+//! 按行读：编码、二进制、分页、行号、截长行、64 KiB 的上限；整份文件的内容哈希（施工 4-6 上）；一行只留开头、UTF-16 边读
+//! 边解，读出来的和整份读进来的一样，叫停了不读下去（审计 E-3）。
 
 use std::io::Write;
 
@@ -22,16 +23,26 @@ impl Temp {
     }
 
     fn page(&self, offset: u64, limit: u64) -> Page {
-        read(File::open(&self.0).unwrap(), offset, limit)
-            .unwrap()
-            .page
+        read(
+            File::open(&self.0).unwrap(),
+            offset,
+            limit,
+            &Stop::default(),
+        )
+        .unwrap()
+        .page
     }
 
     /// 读一页算出来的整份文件的哈希。
     fn hash(&self, offset: u64, limit: u64) -> Option<ContentHash> {
-        read(File::open(&self.0).unwrap(), offset, limit)
-            .unwrap()
-            .hash
+        read(
+            File::open(&self.0).unwrap(),
+            offset,
+            limit,
+            &Stop::default(),
+        )
+        .unwrap()
+        .hash
     }
 }
 
@@ -159,4 +170,127 @@ fn the_hash_is_of_the_whole_file_however_much_is_shown() {
     let mut long = vec![0_u8; 3];
     long.extend(std::iter::repeat_n(b'x', 20_000));
     assert_eq!(Temp::with(&long).hash(1, 1), Some(ContentHash::of(&long)));
+}
+
+/// 以前的读法（审计 E-3 以前）：整行切出来、整份 UTF-16 读进来再解。只用来对照，读出来的要一字不差。
+fn whole(bytes: &[u8], offset: u64, limit: u64) -> Page {
+    let utf16 = |unit: fn([u8; 2]) -> u16| {
+        let units: Vec<u16> = bytes[2..]
+            .chunks_exact(2)
+            .map(|pair| unit([pair[0], pair[1]]))
+            .collect();
+        let text = String::from_utf16_lossy(&units);
+        let count = if text.is_empty() {
+            0
+        } else {
+            text.split('\n').count() - usize::from(text.ends_with('\n'))
+        };
+        let lines: Vec<io::Result<String>> = text
+            .split('\n')
+            .take(count)
+            .map(|line| Ok(line.strip_suffix('\r').unwrap_or(line).to_string()))
+            .collect();
+        page(lines.into_iter(), offset, limit).unwrap()
+    };
+    match bytes {
+        [0xFF, 0xFE, ..] => return utf16(u16::from_le_bytes),
+        [0xFE, 0xFF, ..] => return utf16(u16::from_be_bytes),
+        _ => {}
+    }
+    let body = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]).unwrap_or(bytes);
+    let lines = body.split(|byte| *byte == b'\n').map(|line| {
+        let line = line.strip_suffix(b"\r").unwrap_or(line);
+        Ok(String::from_utf8_lossy(line).into_owned())
+    });
+    // `split` 对以换行结尾的多切一段空的、对空的切出一段空的：`BufRead::split` 都不交。
+    let mut lines: Vec<io::Result<String>> = lines.collect();
+    if body.is_empty() || body.ends_with(b"\n") {
+        lines.pop();
+    }
+    page(lines.into_iter(), offset, limit).unwrap()
+}
+
+/// UTF-16 带 BOM 的字节：`little` 是小端。
+fn wide(text: &[u16], little: bool) -> Vec<u8> {
+    let bom: [u8; 2] = if little { [0xFF, 0xFE] } else { [0xFE, 0xFF] };
+    bom.into_iter()
+        .chain(text.iter().flat_map(|unit| match little {
+            true => unit.to_le_bytes(),
+            false => unit.to_be_bytes(),
+        }))
+        .collect()
+}
+
+/// 一行只留开头（审计 E-3）：截线前后的长度、行尾的 `\r` 正好落在截线上、截线落在一个字中间、坏字节、UTF-16 的代理对和
+/// 落单的代理、最后多半个字，读出来都和整份读进来的一样。
+#[test]
+fn keeping_the_head_of_a_line_reads_the_same_as_the_whole() {
+    let mut cases: Vec<Vec<u8>> = Vec::new();
+    for n in [LINE_CHARS - 1, LINE_CHARS, LINE_CHARS + 1, LINE_CHARS + 2] {
+        cases.push("x".repeat(n).into_bytes());
+        cases.push(format!("{}\r\nnext\n", "x".repeat(n)).into_bytes());
+        cases.push(format!("{}\n", "字".repeat(n)).into_bytes());
+        cases.push(format!("{}\r\n", "😀".repeat(n)).into_bytes());
+    }
+    for n in [
+        LINE_BYTES - 2,
+        LINE_BYTES - 1,
+        LINE_BYTES,
+        LINE_BYTES + 1,
+        LINE_BYTES + 2,
+    ] {
+        let mut line = vec![b'a'; n];
+        line.push(b'\r');
+        line.extend_from_slice(b"\nafter\r");
+        cases.push(line);
+        // 截线落在一个四字节字的中间、坏字节在截线附近。
+        let mut cut = vec![b'b'; n.saturating_sub(2)];
+        cut.extend_from_slice("😀".as_bytes());
+        cut.extend_from_slice(b"\xFF\xFE tail\n");
+        cases.push(cut);
+        let mut bad = vec![0xC3; n];
+        bad.push(b'\n');
+        cases.push(bad);
+    }
+    cases.push(b"\xEF\xBB\xBF\r\n\n\r".to_vec());
+    cases.push(b"\n\n\n".to_vec());
+    let mut units: Vec<u16> = "a\r\n".encode_utf16().collect();
+    units.extend("😀".repeat(LINE_CHARS + 3).encode_utf16());
+    units.extend([0xD800, u16::from(b'x'), 0xDC00, u16::from(b'\n')]);
+    units.extend("y".repeat(LINE_CHARS).encode_utf16());
+    units.extend("\r\nz".encode_utf16());
+    for little in [true, false] {
+        cases.push(wide(&units, little));
+        let mut odd = wide(&units, little);
+        odd.push(0x41);
+        cases.push(odd);
+        cases.push(wide(
+            &"x".repeat(LINE_CHARS + 1)
+                .encode_utf16()
+                .collect::<Vec<_>>(),
+            little,
+        ));
+    }
+    for (n, bytes) in cases.iter().enumerate() {
+        for (offset, limit) in [(1, 2000), (2, 1), (3, 5)] {
+            assert_eq!(
+                Temp::with(bytes).page(offset, limit),
+                whole(bytes, offset, limit),
+                "第 {n} 份，第 {offset} 行起 {limit} 行"
+            );
+        }
+    }
+}
+
+/// 叫停了不往下读：交回 `Interrupted`。
+#[test]
+fn a_stopped_read_does_not_go_on() {
+    let file = Temp::with(b"one\ntwo\n");
+    let stop = Stop::default();
+    stop.raise();
+    let error = read(File::open(&file.0).unwrap(), 1, 10, &stop).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::Interrupted);
+    let wide_file = Temp::with(&wide(&"one\n".encode_utf16().collect::<Vec<_>>(), true));
+    let error = read(File::open(&wide_file.0).unwrap(), 1, 10, &stop).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::Interrupted);
 }
