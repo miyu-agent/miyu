@@ -1,4 +1,4 @@
-//! 两家结果页的读法（施工 N-3 下）：样本照 2026-10-19 真页面的结构删短（Bing 的整段照抄，链接是真的包法），人机验证页当限额。
+//! 两家结果页的读法（施工 N-3 下）：样本照 2026-10-19 真页面的结构删短，摘录的字是编的（LIC-3，发布前审计：不随源码发别人的内容），链接是真的包法，人机验证页当限额。
 
 use super::{bing, duckduckgo};
 use crate::search::Failure;
@@ -16,7 +16,7 @@ const DUCKDUCKGO: &str = r#"<html><body><div class="serp__results"><div id="link
 </div></div></body></html>"#;
 
 const BING: &str = r#"<html><body><ol id="b_results">
-<li class="b_algo" data-id iid=SERP.5351><div class="b_tpcn"><a class="tilk" aria-label="wikipedia.org" href="https://www.bing.com/ck/a?!&amp;&amp;p=bc9b&amp;ptn=3&amp;ver=2&amp;hsh=4&amp;u=a1aHR0cHM6Ly9qYS53aWtpcGVkaWEub3JnL3dpa2kvVE9LSU8&amp;ntb=1"><div class="tptt">wikipedia.org</div></a></div><h2><a target="_blank" href="https://www.bing.com/ck/a?!&amp;&amp;p=bc9b&amp;ptn=3&amp;ver=2&amp;hsh=4&amp;u=a1aHR0cHM6Ly9qYS53aWtpcGVkaWEub3JnL3dpa2kvVE9LSU8&amp;ntb=1" h="ID=SERP,5129.2"><strong>TOKIO</strong> - Wikipedia</a></h2><div class="b_caption"><p class="b_lineclamp2">長瀬は「TOKIOの楽曲は彼の演奏する音がないと全く形にならない」 …<a href="https://ja.wikipedia.org/wiki/TOKIO">阅读更多</a></p></div></li>
+<li class="b_algo" data-id iid=SERP.5351><div class="b_tpcn"><a class="tilk" aria-label="wikipedia.org" href="https://www.bing.com/ck/a?!&amp;&amp;p=bc9b&amp;ptn=3&amp;ver=2&amp;hsh=4&amp;u=a1aHR0cHM6Ly9qYS53aWtpcGVkaWEub3JnL3dpa2kvVE9LSU8&amp;ntb=1"><div class="tptt">wikipedia.org</div></a></div><h2><a target="_blank" href="https://www.bing.com/ck/a?!&amp;&amp;p=bc9b&amp;ptn=3&amp;ver=2&amp;hsh=4&amp;u=a1aHR0cHM6Ly9qYS53aWtpcGVkaWEub3JnL3dpa2kvVE9LSU8&amp;ntb=1" h="ID=SERP,5129.2"><strong>TOKIO</strong> - Wikipedia</a></h2><div class="b_caption"><p class="b_lineclamp2">示例摘要：这一段是编出来的，只留结果页的结构 …<a href="https://ja.wikipedia.org/wiki/TOKIO">阅读更多</a></p></div></li>
 <li class="b_algo"><h2><a href="https://docs.rs/tokio">tokio - Rust</a></h2></li>
 <li class="b_ad"><h2><a href="https://ads.example/">An ad</a></h2></li>
 </ol></body></html>"#;
@@ -53,7 +53,7 @@ fn bing_results_are_unwrapped_from_base64_and_ads_are_not_results() {
     );
     let snippet = hits[0].snippet.as_deref().unwrap();
     assert!(
-        snippet.starts_with("長瀬は") && !snippet.contains("阅读更多"),
+        snippet.starts_with("示例摘要") && !snippet.contains("阅读更多"),
         "摘录里不要展开的链接：{snippet}"
     );
     assert_eq!(hits[1].url, "https://docs.rs/tokio");

@@ -259,7 +259,9 @@ async fn more_than_a_hundred_says_how_many_are_left() {
     assert!(!error);
     assert_eq!(text.lines().count(), 101);
     assert!(
-        text.ends_with("(Showing 100 of 103 matching files; 3 more are not listed. Narrow the pattern or path to see the rest.)\n"),
+        text.ends_with(
+            "(3 more of 103 matches not listed. Use a narrower pattern or path to see them.)\n"
+        ),
         "{}",
         &text[text.len() - 120..]
     );

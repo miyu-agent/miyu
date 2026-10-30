@@ -84,8 +84,8 @@ async fn a_douyin_video_is_read_from_the_share_page_with_an_anonymous_ttwid() {
     )
     .await;
     assert_eq!(found.kind, Kind::Video);
-    assert_eq!(found.title, "2026年国庆节");
-    assert_eq!(found.author.as_deref(), Some("笑悟人生"));
+    assert_eq!(found.title, "示例作品");
+    assert_eq!(found.author.as_deref(), Some("示例作者"));
     assert_eq!(found.duration, Some(15));
     assert_eq!(found.site, "抖音");
     assert_eq!(
@@ -128,8 +128,8 @@ async fn without_the_share_page_douyin_falls_back_to_the_web_page() {
     )
     .await;
     assert_eq!(found.kind, Kind::Video);
-    assert_eq!(found.title, "2026年国庆节", "去掉了「 - 抖音」");
-    assert_eq!(found.author.as_deref(), Some("笑悟人生"));
+    assert_eq!(found.title, "示例作品", "去掉了「 - 抖音」");
+    assert_eq!(found.author.as_deref(), Some("示例作者"));
     assert_eq!(found.duration, Some(15));
     let web = site
         .seen()
@@ -150,7 +150,7 @@ async fn without_the_share_page_douyin_falls_back_to_the_web_page() {
         &format!("http://www.douyin.com:{}/video/{ID}", site.port),
     )
     .await;
-    assert_eq!(found.title, "2026年国庆节");
+    assert_eq!(found.title, "示例作品");
 }
 
 #[tokio::test]
@@ -240,7 +240,7 @@ async fn a_tiktok_video_is_read_from_its_page_data() {
     );
     let site = Site::start(vec![
         (
-            "/@scout/video/7440114099565972791".to_string(),
+            "/@mochi_example/video/7440114099565972791".to_string(),
             tiktok_page(&detail),
         ),
         (
@@ -248,11 +248,11 @@ async fn a_tiktok_video_is_read_from_its_page_data() {
             tiktok_page(&detail),
         ),
         (
-            "/@scout/video/1".to_string(),
+            "/@mochi_example/video/1".to_string(),
             tiktok_page("{\"statusCode\":10204,\"statusMsg\":\"item doesn't exist\"}"),
         ),
         (
-            "/@scout/video/2".to_string(),
+            "/@mochi_example/video/2".to_string(),
             Reply::html("<html><head><title>Access Denied</title></head></html>"),
         ),
     ])
@@ -266,22 +266,22 @@ async fn a_tiktok_video_is_read_from_its_page_data() {
     )])
     .await;
     let links = previewer(&Store::new());
-    let page = format!("http://www.tiktok.com:{port}/@scout/video/7440114099565972791");
+    let page = format!("http://www.tiktok.com:{port}/@mochi_example/video/7440114099565972791");
     let found = card(&links, &page).await;
     assert_eq!(found.kind, Kind::Video);
     assert!(
-        found.title.starts_with("Scramble up ur name"),
+        found.title.starts_with("Example caption"),
         "{}",
         found.title
     );
-    assert_eq!(found.author.as_deref(), Some("Scout, Suki & Stella"));
+    assert_eq!(found.author.as_deref(), Some("Mochi, Momo & Mimi"));
     assert_eq!(found.duration, Some(10));
     assert_eq!(found.site, "TikTok");
     assert_eq!(found.url, page);
     let seen = site
         .seen()
         .into_iter()
-        .find(|s| s.target == "/@scout/video/7440114099565972791")
+        .find(|s| s.target == "/@mochi_example/video/7440114099565972791")
         .expect("读了视频页");
     assert!(
         seen.accept_language.starts_with("en-US"),
@@ -299,7 +299,7 @@ async fn a_tiktok_video_is_read_from_its_page_data() {
         format!("http://www.tiktok.com:{port}/@/video/7440114099565972791")
     );
     // 不存在的、没有数据（被拦了）的：不可达。
-    for missing in ["/@scout/video/1", "/@scout/video/2"] {
+    for missing in ["/@mochi_example/video/1", "/@mochi_example/video/2"] {
         assert_eq!(
             miss(&links, &format!("http://www.tiktok.com:{port}{missing}")).await,
             Why::Unreachable,

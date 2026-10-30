@@ -32,18 +32,18 @@ fn page(detail: &str) -> String {
 fn video_pages_have_a_user_and_a_number() {
     let rules = rules();
     for yes in [
-        "https://www.tiktok.com/@scout/video/7440114099565972791",
+        "https://www.tiktok.com/@mochi_example/video/7440114099565972791",
         "https://www.tiktok.com/@/video/7440114099565972791?_r=1&_d=x",
-        "https://tiktok.com/@scout/video/7440114099565972791/",
+        "https://tiktok.com/@mochi_example/video/7440114099565972791/",
     ] {
         assert!(is_video(&rules, &url(yes)), "{yes}");
     }
     for no in [
-        "https://www.tiktok.com/@scout",
+        "https://www.tiktok.com/@mochi_example",
         "https://www.tiktok.com/video/7440114099565972791",
-        "https://www.tiktok.com/@scout/video/abc",
+        "https://www.tiktok.com/@mochi_example/video/abc",
         "https://vm.tiktok.com/ZMhvqjqjq/",
-        "https://www.nottiktok.com/@scout/video/1",
+        "https://www.nottiktok.com/@mochi_example/video/1",
     ] {
         assert!(!is_video(&rules, &url(no)), "{no}");
     }
@@ -58,11 +58,11 @@ fn a_video_gives_title_author_duration_and_cover() {
     let draft = item(&page(&detail)).expect("读得出");
     assert_eq!(draft.kind, Kind::Video);
     assert!(
-        draft.found.title.starts_with("Scramble up ur name"),
+        draft.found.title.starts_with("Example caption"),
         "{}",
         draft.found.title
     );
-    assert_eq!(draft.author, "Scout, Suki & Stella");
+    assert_eq!(draft.author, "Mochi, Momo & Mimi");
     assert_eq!(draft.duration, Some(10));
     let cover = draft.found.image.expect("有封面");
     assert!(

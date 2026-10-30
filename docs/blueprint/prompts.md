@@ -1003,12 +1003,12 @@ No files found
 #### `software/basesystem/glob/more.txt`
 
 - 什么时候加进来：找到的超过 100 个
-- token：约 28（估的）
-- 为什么加：告诉她一共几个、还有几个没列、怎么缩小；照 Claude Code 的说法（施工 4-4 下）
-- 指纹：`b52f16cc`
+- token：约 22（估的）
+- 为什么加：告诉她一共几个、还有几个没列、怎么缩小（施工 4-4 下；LIC-3 改成自己的说法：原来和 Claude Code 那一句一字不差，发布前审计 10-30）
+- 指纹：`e3311105`
 
 ```text
-(Showing {shown} of {total} matching files; {rest} more are not listed. Narrow the pattern or path to see the rest.)
+({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)
 ```
 
 #### `software/basesystem/glob/not-a-directory.txt`

@@ -51,7 +51,7 @@
 6. 往下走（下面「走目录」），留下相对搜的目录的路径对得上模式的普通文件。
 7. 一个都没有：`No files found`，不算出错。
 8. 有的：照新的在前，最多列 100 个，一个一行。路径在这一轮的工作目录里的写相对工作目录的（不是相对搜的目录），在外面的写绝对的；分隔符照平台原生的；Windows 上不写 `\\?\`。列出来的路径不转义。
-9. 多过 100 个的，列完接上 `(Showing {shown} of {total} matching files; {rest} more are not listed. Narrow the pattern or path to see the rest.)`：`shown` 是 100，`total` 是一共几个，`rest` 是没列的几个。
+9. 多过 100 个的，列完接上 `({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)`：`total` 是一共几个，`rest` 是没列的几个（`shown` 照旧交进去，这一句不用；LIC-3 改成自己的说法）。
 10. 叫停：丢掉这次调用时举旗，走目录每走一步看一眼，举了就不往下走。没有超时。
 
 **模式**（`pattern.rs`）：
@@ -101,7 +101,7 @@ a.rs
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
 | 一个都没找到 | `common/no-files.txt` | `No files found` |
-| 多过 100 个 | `glob/more.txt` | `(Showing {shown} of {total} matching files; {rest} more are not listed. Narrow the pattern or path to see the rest.)` |
+| 多过 100 个 | `glob/more.txt` | `({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)` |
 
 ### 出错
 

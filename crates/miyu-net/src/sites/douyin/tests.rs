@@ -85,8 +85,8 @@ fn a_shared_work_gives_title_author_duration_and_cover() {
         panic!("读得出作品");
     };
     assert_eq!(draft.kind, Kind::Video);
-    assert_eq!(draft.found.title, "2026年国庆节");
-    assert_eq!(draft.author, "笑悟人生");
+    assert_eq!(draft.found.title, "示例作品");
+    assert_eq!(draft.author, "示例作者");
     assert_eq!(draft.duration, Some(15), "15034 毫秒四舍五入成 15 秒");
     let cover = draft.found.image.expect("有封面");
     assert!(
@@ -113,11 +113,11 @@ fn a_deleted_work_is_gone_and_an_empty_page_falls_back() {
 
 #[test]
 fn a_work_without_a_description_is_titled_by_its_author() {
-    let item = r#"{"desc":"  ","author":{"nickname":"笑悟人生"},"video":{"duration":499}}"#;
+    let item = r#"{"desc":"  ","author":{"nickname":"示例作者"},"video":{"duration":499}}"#;
     let Shared::Found(draft) = shared(&share_page(item, "")) else {
         panic!("有作者也算");
     };
-    assert_eq!(draft.found.title, "笑悟人生");
+    assert_eq!(draft.found.title, "示例作者");
     assert_eq!(draft.duration, None, "不到半秒的当没有");
     let empty = r#"{"desc":"","author":{"nickname":""}}"#;
     assert!(matches!(shared(&share_page(empty, "")), Shared::Missed));
@@ -131,8 +131,8 @@ fn the_fallback_reads_the_video_object_among_the_json_ld() {
         "<head><script data-rh=\"true\" type=\"application/ld+json\" nonce=\"oCTy\">{breadcrumb}</script><script data-rh=\"true\" type=\"application/ld+json\" nonce=\"oCTy\">{VIDEO_OBJECT}</script></head>"
     );
     let draft = video_object(&page, " - 抖音").expect("有 VideoObject");
-    assert_eq!(draft.found.title, "2026年国庆节", "去掉了「 - 抖音」");
-    assert_eq!(draft.author, "笑悟人生");
+    assert_eq!(draft.found.title, "示例作品", "去掉了「 - 抖音」");
+    assert_eq!(draft.author, "示例作者");
     assert_eq!(draft.duration, Some(15));
     assert!(draft.found.image.is_some());
     assert!(

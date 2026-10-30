@@ -874,6 +874,7 @@ flowchart LR
 | 7-4 修 | `job.stop` 在后台答 | 一下子停上百个不再排成一队、大半不回。施工单见 `7-4修-job.stop后台答.md` |
 | 4-8 补三 | `shell` 前台不许干等 | 顶层一段就是不短于 2 秒的 `sleep` 的整条不跑，后台任务会自己回报。施工单见 `4-8补三-前台不许干等.md` |
 | LIC-1 | 许可证分层 | 核心和第一方程序 AGPL-3.0-or-later，作者说明、协议参考、写包技能 Apache-2.0；只经协议说话的程序是独立作品。施工单见 `LIC-1-许可证分层AGPL.md` |
+| LIC-3 | 发布前审计的许可证几条 | 10-30 发布前审计（miyu-agent-99）：`glob` 结果那一句原来和 Claude Code 一字不差，改成自己的说法；README 补供应商名称、图标是各自所有者商标的声明；`miyu-net` 测试样本里真实的抖音、TikTok 用户名、文案、签名链接和 Bing 摘录换成编的，结构照旧。压缩提示词的重写另议 |
 | PL-1 | 供应商自用、共用两份 | 同编号两层都配了的另出一份 `<编号>@system`（共用原样、只用共用的 key）；`model.list` 带 `layer`。施工单见 `PL-1-供应商自用共用两份.md` |
 | BS-1 上上 | 跑命令照声明认 | `Tool` 多 `runs_commands`、`background_parameter`，出厂的 `shell` 实现；核心里五处照名字认 `shell` 的（前台去掉后台参数、`miyu call` 那一段、system 那一句、嵌套通道、`sandbox_shell`）都改照声明；`ToolEntry` 多 `runs_commands`，以前的快照重拼前照目录补上，字节不变（设计 44 第三节第 3 条） | `BS-1上上-跑命令照声明认.md` |
 | BS-1 上中 | 基础系统拆成十八个包 | 一件一个包（`sessions`、`packages` 两对各合一个），清单写 `groups = ["basesystem"]`、同编号的功能写明工具；组表 `groups.toml`、`bad_group`；预设照组展开（`PresetFile::groups`，不进指纹）；删 `required`、`package_required`；后台、脚本调工具、展示开关照包判（`show.system_hint`）；极简开发照包开 | `BS-1上中-基础系统拆成十八个包.md` |
