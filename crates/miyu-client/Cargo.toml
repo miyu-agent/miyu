@@ -8,8 +8,9 @@ license.workspace = true
 publish.workspace = true
 
 [features]
-# 界面的测试照钉住的那份核心检出读资源目录、协议样本（`WORKSPACE_ROOT`）。
-testkit = []
+# 界面的测试照钉住的那份核心检出读资源目录、协议样本（`WORKSPACE_ROOT`）；开着 `http` 的另打开 miyu-http 的测试口子（地址闸的
+# `Testing`、假服务器 `Server`，施工 I-96 补）。
+testkit = ["miyu-http?/testkit"]
 # 工具的字怎么读（`tooltext`）、HTTP 客户端（`http`）只有接入QQ 用：放在 feature 后面，默认不开。界面不开就不拉 reqwest、
 # rustls、ring、沙盒那一套（网页 2026-10-16 量过：多 81 个 crate、release 程序大 351 KB）。
 tool = ["dep:miyu-tool"]

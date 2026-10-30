@@ -101,9 +101,15 @@ pub mod settings {
 }
 
 /// HTTP 客户端（施工 S-6 上；feature `http`，默认不开）：照核心的规矩下载（只 http、https，超时、代理照它），认本机回环的地址。
+/// 地址闸、代理、TLS 配置也转出（施工 I-96 补，接入通讯平台第二轮审查 I2-3：下载平台给的地址时每一跳过核心的地址闸、自己跟
+/// 跳转）；开着 `testkit` 的另转出闸的测试口子 `Testing` 和假服务器 `Server`。
 #[cfg(feature = "http")]
 pub mod http {
-    pub use miyu_http::{Get, Got, Proxy, fetcher, get, is_loopback_url};
+    pub use miyu_http::guard::{Guard, Resolved};
+    pub use miyu_http::proxy::Proxies;
+    pub use miyu_http::{Get, Got, Proxy, fetcher, get, is_loopback_url, tls};
+    #[cfg(feature = "testkit")]
+    pub use miyu_http::{guard::Testing, testkit::Server};
 }
 
 /// 协议里的类型。
