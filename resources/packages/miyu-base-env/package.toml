@@ -8,7 +8,8 @@ author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 prefix = "env"
 protocol = [1, 1]
-name = { en = "Environment info", zh = "注入环境信息", ja = "環境情報" }
+groups = ["environment"]
+name = { en = "Injected environment", zh = "注入环境信息", ja = "注入する環境情報" }
 summary = { en = "Tell the AI the time, working directory, permissions, model and who you are", zh = "告诉 AI 时间、工作目录、权限、模型和你是谁", ja = "時刻、作業ディレクトリ、権限、モデル、あなたについてを AI に伝えます" }
 
 [builtin]

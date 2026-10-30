@@ -37,8 +37,8 @@ fn the_preset_beats_the_global_switch_which_beats_unlisted() {
     assert_eq!(preset.decided("skill-weather", ""), (true, By::Preset));
     assert_eq!(
         preset.decided("skill-kit-notes", "kit"),
-        (false, By::Preset),
-        "包写在 [software] 里的也算明写"
+        (false, By::Group),
+        "包写在 [software] 里的也算明写，记是包、组定的（施工 FG-1）"
     );
     assert_eq!(preset.decided("script-echo", "~home"), (false, By::Global));
     assert_eq!(preset.decided("mcp-github", "~home"), (false, By::Global));
@@ -73,4 +73,38 @@ fn switches_stay_out_of_the_digest() {
     let plain = file(Unlisted::On, &[], &[], &[]);
     let switched = file(Unlisted::On, &[], &[], &[("skill-weather", false)]);
     assert_eq!(plain.digest(), switched.digest());
+}
+
+/// 谁定的分开记（施工 FG-1，设计 52 第三节第 3 条）：写了功能编号的（`[features]`、以前的 `[software]`）是 `preset`；写了它所在的
+/// 包、组的是 `group`；功能编号写了的压过包、组；原来那一格照旧把组算进 `preset`。
+#[test]
+fn a_package_or_group_is_told_apart_from_the_feature_itself() {
+    let mut preset = file(
+        Unlisted::Off,
+        &[("todowrite", false)],
+        &[("tasks", true), ("goal", true), ("miyu-base-net", true)],
+        &[],
+    );
+    preset.groups = BTreeMap::from([
+        ("miyu-base-todowrite".to_string(), vec!["tasks".to_string()]),
+        ("miyu-base-loop".to_string(), vec!["tasks".to_string()]),
+        ("miyu-base-goal".to_string(), vec!["tasks".to_string()]),
+    ]);
+    assert_eq!(
+        preset.decided("todowrite", "miyu-base-todowrite"),
+        (false, By::Preset)
+    );
+    assert_eq!(preset.decided("loop", "miyu-base-loop"), (true, By::Group));
+    assert_eq!(preset.decided("goal", "miyu-base-goal"), (true, By::Preset));
+    assert_eq!(
+        preset.decided("web-fetch", "miyu-base-net"),
+        (true, By::Group)
+    );
+    assert_eq!(
+        preset.decided("web-fetch", "miyu-base-env"),
+        (false, By::Default)
+    );
+    assert_eq!(By::Group.as_str(), "group");
+    assert_eq!(By::Group.as_flat_str(), "preset");
+    assert_eq!(By::Global.as_flat_str(), "global");
 }

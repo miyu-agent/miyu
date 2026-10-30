@@ -1,27 +1,27 @@
 {
   "tools": {
     "kb_search": {
-      "name": "ナレッジ検索",
+      "name": "検索",
       "subject": "query",
       "icon": "✱"
     },
     "kb_read": {
-      "name": "文書を読む",
+      "name": "閲覧",
       "subject": "path",
       "icon": "→"
     },
     "kb_save": {
-      "name": "ナレッジに保存",
+      "name": "新規作成",
       "subject": "path",
       "icon": "←"
     },
     "kb_edit": {
-      "name": "ナレッジを編集",
+      "name": "編集",
       "subject": "path",
       "icon": "←"
     },
     "kb_delete": {
-      "name": "文書を削除",
+      "name": "削除",
       "subject": "path",
       "icon": "←"
     }

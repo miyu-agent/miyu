@@ -9,13 +9,13 @@ unlisted = "off"
 
 [software]
 basesystem = true
-# 注入环境信息（施工 ENV-1）：环境那几块和「关于你」原来跟着基础系统开，挪进 env 包以后照旧开着。
-miyu-base-env = true
+# 注入环境信息组（施工 ENV-1：环境那几块和「关于你」原来跟着基础系统开，挪进 env 包以后照旧开着；施工 FG-1：自动注入 AGENTS 文档
+# 从基础系统组挪进这一组，照旧开着）。
+environment = true
 miyu-base-net = true
-miyu-base-goal = true
-# 定时任务、循环（施工 J-2，2026-10-26 项目主人定）：常规开发开着。
-miyu-base-schedule = true
-miyu-base-loop = true
+# 任务和定时组（施工 FG-1，设计 52 第一节第 1 条）：待办、定时、循环从基础系统组挪进这一组，长期目标原来就单写着开；常规开发照旧
+# 开着这四样（定时、循环是施工 J-2，2026-10-26 项目主人定），开的功能和改前一样。
+tasks = true
 # 人格记忆（施工 P-15，2026-10-20 项目主人定）。
 miyu-base-memory = true
 # 写技能、写包的两个技能（施工 P-8，2026-10-12 项目主人照推荐定）：不开的话她要写技能时看不到，只能在本机的目录里翻。

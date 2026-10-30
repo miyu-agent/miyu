@@ -202,6 +202,8 @@ mod preset_memory;
 mod preset_minimal;
 mod preset_none;
 mod preset_nothing;
+mod preset_sections;
+mod preset_sections_more;
 mod preset_set;
 mod preset_skills;
 mod preset_swap;

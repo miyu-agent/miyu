@@ -1,27 +1,27 @@
 {
   "tools": {
     "kb_search": {
-      "name": "Search knowledge",
+      "name": "Search",
       "subject": "query",
       "icon": "✱"
     },
     "kb_read": {
-      "name": "Read document",
+      "name": "Read",
       "subject": "path",
       "icon": "→"
     },
     "kb_save": {
-      "name": "Save to knowledge",
+      "name": "New",
       "subject": "path",
       "icon": "←"
     },
     "kb_edit": {
-      "name": "Edit knowledge",
+      "name": "Edit",
       "subject": "path",
       "icon": "←"
     },
     "kb_delete": {
-      "name": "Delete document",
+      "name": "Delete",
       "subject": "path",
       "icon": "←"
     }

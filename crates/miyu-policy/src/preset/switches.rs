@@ -1,8 +1,9 @@
 //! 人在技能、脚本、MCP 三页上设的全局开关（施工 X-27，`docs/blueprint/presets.md`「全局开关」，2026-10-20 项目主人定）：记在
 //! 配置的 `features.<功能编号>`，`unlisted` 开着的预设照它；预设里对这个功能明写了开或关的照预设，三页只是方便管理。
 //!
-//! - 「明写了」是叠好的文件里 `[features]` 写了这个功能，或者以前的 `[software]` 写了这个功能、它所在的包（[`By::Preset`]）；
-//!   都没写的照全局开关（[`By::Global`]）；全局开关也没写的照 `unlisted`（[`By::Default`]）。
+//! - 「明写了」是叠好的文件里 `[features]` 写了这个功能，或者以前的 `[software]` 写了这个功能（[`By::Preset`]）、它所在的包或组
+//!   （[`By::Group`]，施工 FG-1 从 [`By::Preset`] 拆出来）；都没写的照全局开关（[`By::Global`]）；全局开关也没写的照 `unlisted`
+//!   （[`By::Default`]）。
 //! - 全局开关只管 `unlisted` 是开的预设（2026-10-20 项目主人定）：`unlisted = "off"` 的（出厂的 `dev`）没写的照旧关着，
 //!   全局开关打开的也不开，记 [`By::Default`]。
 //! - 只管技能、脚本、MCP 服务三类功能（[`switchable`]），包自己的功能不接。
@@ -24,8 +25,10 @@ pub fn switchable(feature: &str) -> bool {
 /// 一个功能开不开是谁定的（`preset.get` 每一项的 `by`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum By {
-    /// 预设里明写了。
+    /// 预设里明写了这个功能的编号。
     Preset,
+    /// 预设没写功能的编号，写的是它所在的包或组（施工 FG-1，设计 52 第三节第 3 条）。
+    Group,
     /// 预设没写，照人设的全局开关。
     Global,
     /// 都没写，照预设的 `unlisted`。
@@ -37,8 +40,18 @@ impl By {
     pub fn as_str(self) -> &'static str {
         match self {
             By::Preset => "preset",
+            By::Group => "group",
             By::Global => "global",
             By::Default => "default",
+        }
+    }
+
+    /// `preset.get` 原来那一格 `features[].by` 的写法（施工 FG-1 以前没分出组）：写了包、组的照旧算 `preset`，原来的格一个不动；
+    /// 分开的写法在 `sections` 里。
+    pub fn as_flat_str(self) -> &'static str {
+        match self {
+            By::Group => By::Preset.as_str(),
+            other => other.as_str(),
         }
     }
 }
@@ -59,24 +72,27 @@ impl PresetFile {
         self
     }
 
-    /// 包 `package` 里的功能 `feature` 开不开、是谁定的：预设明写了的照预设；没写的三类功能，`unlisted` 开着的照全局开关；
-    /// 别的照 `unlisted`。不管扣下的包（[`PresetFile::opens_in`] 先挡）。
+    /// 包 `package` 里的功能 `feature` 开不开、是谁定的：预设明写了功能的照预设（[`By::Preset`]），写了它所在的包、组的照
+    /// 包、组（[`By::Group`]）；没写的三类功能，`unlisted` 开着的照全局开关；别的照 `unlisted`。不管扣下的包
+    /// （[`PresetFile::opens_in`] 先挡）。
     pub fn decided(&self, feature: &str, package: &str) -> (bool, By) {
-        let written = self
+        if let Some(on) = self
             .features
             .get(feature)
             .or_else(|| self.software.get(feature))
-            .or_else(|| self.software.get(package))
-            .or_else(|| {
-                // 包没单独写的照它所在的组（施工 BS-1 上中）：先写的组先算。
-                self.groups
-                    .get(package)
-                    .into_iter()
-                    .flatten()
-                    .find_map(|group| self.software.get(group))
-            });
-        if let Some(on) = written {
+        {
             return (*on, By::Preset);
+        }
+        let grouped = self.software.get(package).or_else(|| {
+            // 包没单独写的照它所在的组（施工 BS-1 上中）：先写的组先算。
+            self.groups
+                .get(package)
+                .into_iter()
+                .flatten()
+                .find_map(|group| self.software.get(group))
+        });
+        if let Some(on) = grouped {
+            return (*on, By::Group);
         }
         let unlisted = self.unlisted() == Unlisted::On;
         match self

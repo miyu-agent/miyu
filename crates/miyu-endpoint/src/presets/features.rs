@@ -4,9 +4,8 @@
 
 use std::collections::BTreeSet;
 
-use serde_json::{Value, json};
-
 use miyu_config::Words;
+use miyu_policy::preset::PresetFile;
 use miyu_policy::script::feature_id as script_feature;
 use miyu_policy::skill::feature_id;
 use miyu_policy::slash::feature_id as command_feature;
@@ -15,6 +14,7 @@ use miyu_store::presets::Found;
 use miyu_store::scripts::HOME_PACKAGE;
 
 use super::Carried;
+use super::entry::{Entry, Kind, Tool};
 use crate::Core;
 use crate::config::methods::words;
 use crate::personas::pick;
@@ -29,12 +29,20 @@ use crate::personas::pick;
 /// - 预设的 `[features]`、`[software]` 里写了、这台机器上没装的：`{"id", "name", "on", "by", "installed": false, "tools": []}`，
 ///   照编号排；名字照给人看的字 `software/<编号>`（以前内置的几样），没有的是编号。写的是装了的包的编号的不另列（它的功能
 ///   已经列了）。
-pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Value> {
+pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carried) -> Vec<Entry> {
     let words = words(core, language).ok();
     let catalog = core.tools.current();
     let found_packages = core.packages_of();
     let table = crate::scripts::features(core);
     let file = &found.file.clone().following(super::switches(core));
+    let row = |on: bool| {
+        let (words, catalog) = (words.as_ref(), &catalog);
+        move |name: &str| Tool {
+            name: name.to_string(),
+            label: label(words, catalog, name, language),
+            on: on && !file.tools_off.contains(name),
+        }
+    };
     let mut listed = Vec::new();
     let mut packages = BTreeSet::new();
     // 程序不在的扩展当没装（施工 F-6 上）：它的功能照「写了没装」列。
@@ -51,53 +59,38 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
                 .as_ref()
                 .is_none_or(|service| !core.home_mcp.covers(service))
         }) {
-            let (on, by) = file.decided(&feature.id, package);
-            let tools = tools_of(&catalog, &table, (package, &feature.id), |name| {
-                json!({
-                    "name": name,
-                    "label": label(words.as_ref(), &catalog, name, language),
-                    "on": on && !file.tools_off.contains(name),
-                })
-            });
-            let mut one = json!({
-                "id": feature.id,
-                "name": pick(&feature.name, language),
-                "package": package,
-                "on": on,
-                "by": by.as_str(),
-                "installed": true,
-                "tools": tools,
-            });
-            if let Some(summary) = pick(&feature.summary, language) {
-                one["summary"] = json!(summary);
-            }
-            listed.push(one);
+            let decided = file.decided(&feature.id, package);
+            let tools = tools_of(&catalog, &table, (package, &feature.id), row(decided.0));
+            // 包带的 MCP 服务归 MCP 那一组（设计 52 第一节第 3 条：这三类一定各自独立）。
+            let kind = match feature.service {
+                Some(_) => Kind::Mcp,
+                None => Kind::Package(package.to_string()),
+            };
+            let name = pick(&feature.name, language).unwrap_or_default();
+            listed.push(
+                Entry::installed((feature.id, name), package, decided, kind)
+                    .summed(pick(&feature.summary, language))
+                    .with_tools(tools)
+                    .ordered(feature.tools),
+            );
         }
     }
     // 扩展替这个人交的功能（施工 IM-6，`feature.offer`）：归交的那个包，写法同包自己的功能。
     for offer in core.extensions.offers.of() {
         let (id, package) = (&offer.feature.id, offer.feature.package.as_str());
-        let (on, by) = file.decided(id, package);
-        let tools = tools_of(&catalog, &table, (package, id), |name| {
-            json!({
-                "name": name,
-                "label": label(words.as_ref(), &catalog, name, language),
-                "on": on && !file.tools_off.contains(name),
-            })
-        });
-        let mut one = json!({
-            "id": id,
-            "name": pick(&offer.name, language).unwrap_or_else(|| id.clone()),
-            "package": package,
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": tools,
-        });
-        if let Some(summary) = pick(&offer.summary, language) {
-            one["summary"] = json!(summary);
-        }
-        listed.push(one);
+        let decided = file.decided(id, package);
+        let tools = tools_of(&catalog, &table, (package, id), row(decided.0));
+        let name = pick(&offer.name, language).unwrap_or_else(|| id.clone());
+        listed.push(
+            Entry::installed(
+                (id.clone(), name),
+                package,
+                decided,
+                Kind::Package(package.into()),
+            )
+            .summed(pick(&offer.summary, language))
+            .with_tools(tools),
+        );
     }
     let scripts = core.scripts_for();
     // 脚本各算一个功能（施工 X-12 中）：名字、说明照脚本写给人看的几格挑这个连接的语言，没写名字的照工具名；它自己那件工具
@@ -105,117 +98,32 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
     for script in &scripts {
         let id = script_feature(&script.head.name);
         let package = crate::scripts::package(script);
-        let (on, by) = file.decided(&id, package);
+        let decided = file.decided(&id, package);
         let name =
             pick(&script.head.display_name, language).unwrap_or_else(|| script.head.name.clone());
-        let mut one = json!({
-            "id": id,
-            "name": name,
-            "package": package,
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": [{
-                "name": script.head.name,
-                "label": name,
-                "on": on && !file.tools_off.contains(&script.head.name),
-            }],
-        });
-        if let Some(summary) = pick(&script.head.summary, language) {
-            one["summary"] = json!(summary);
-        }
-        listed.push(one);
+        let tool = Tool {
+            name: script.head.name.clone(),
+            label: name.clone(),
+            on: decided.0 && !file.tools_off.contains(&script.head.name),
+        };
+        listed.push(
+            Entry::installed((id, name), package, decided, Kind::Script)
+                .summed(pick(&script.head.summary, language))
+                .with_tools(vec![tool]),
+        );
     }
     // 配置里的 MCP 服务各算一个功能（施工 F-9 下）：名字是服务名；工具是目录里挂在 `~home` 下、归它的。
     for server in core.home_mcp.now().iter() {
         let id = server.feature_id();
-        let (on, by) = file.decided(&id, HOME_PACKAGE);
-        let tools = tools_of(&catalog, &table, (HOME_PACKAGE, &id), |name| {
-            json!({
-                "name": name,
-                "label": label(words.as_ref(), &catalog, name, language),
-                "on": on && !file.tools_off.contains(name),
-            })
-        });
-        listed.push(json!({
-            "id": id,
-            "name": server.name,
-            "package": HOME_PACKAGE,
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": tools,
-        }));
+        let decided = file.decided(&id, HOME_PACKAGE);
+        let tools = tools_of(&catalog, &table, (HOME_PACKAGE, &id), row(decided.0));
+        listed.push(
+            Entry::installed((id, server.name.clone()), HOME_PACKAGE, decided, Kind::Mcp)
+                .with_tools(tools),
+        );
     }
-    // 技能各算一个功能（施工 X-11 上）：名字、说明照技能写给人看的两格挑这个连接的语言（施工 X-13 下），没写名字的照技能的
-    // 名字；没有工具。
     let mut carried_ids = BTreeSet::new();
-    for skill in &carried.skills {
-        let id = feature_id(&skill.head.name);
-        let package = skill.package.as_deref().unwrap_or_default();
-        let (on, by) = file.decided(&id, package);
-        let mut one = json!({
-            "id": id,
-            "name": pick(&skill.head.display_name, language).unwrap_or_else(|| skill.head.name.clone()),
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": [],
-        });
-        if let Some(summary) = pick(&skill.head.summary, language) {
-            one["summary"] = json!(summary);
-        }
-        if !package.is_empty() {
-            one["package"] = json!(package);
-        }
-        listed.push(one);
-        carried_ids.insert(id);
-    }
-    // 模板命令各算一个功能（施工 X-14 上）：名字是 `/<命令名>`，说明照模板写的、照这个连接的语言挑；没有工具。自己放的挂在
-    // `~home` 下。
-    for command in &carried.commands {
-        let id = command_feature(&command.name);
-        let package = command.package.as_deref().unwrap_or(HOME_PACKAGE);
-        let (on, by) = file.decided(&id, package);
-        let mut one = json!({
-            "id": id,
-            "name": format!("/{}", command.name),
-            "package": package,
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": [],
-        });
-        if let Some(summary) = pick(&command.template.summary, language) {
-            one["summary"] = json!(summary);
-        }
-        listed.push(one);
-        carried_ids.insert(id);
-    }
-    // 扩展声明的命令各算一个功能（施工 X-14 下）：名字是 `/<命令名>`，说明照清单的、照连接的语言挑，挂在它的包下；自己放的
-    // 同名模板盖住它的不列。
-    for one in carried
-        .declared
-        .iter()
-        .filter(|one| !carried.commands.iter().any(|t| t.name == one.command.name))
-    {
-        let id = one.command.feature_id();
-        let (on, by) = file.decided(&id, &one.package);
-        let mut item = json!({
-            "id": id,
-            "name": format!("/{}", one.command.name),
-            "package": one.package,
-            "on": on,
-            "by": by.as_str(),
-            "installed": true,
-            "tools": [],
-        });
-        if let Some(summary) = pick(&one.command.summary, language) {
-            item["summary"] = json!(summary);
-        }
-        listed.push(item);
-        carried_ids.insert(id);
-    }
+    listed.extend(carried_entries(file, language, carried, &mut carried_ids));
     // `[software]` 里写的组名（施工 BS-1 上中，`basesystem = true`）不是没装的包：它照组分给了组里的包，不另列。
     let groups: BTreeSet<&String> = file.groups.values().flatten().collect();
     let written: BTreeSet<&String> = file
@@ -234,16 +142,60 @@ pub(super) fn listed(core: &Core, found: &Found, language: &str, carried: &Carri
             .as_ref()
             .and_then(|words| Words::sentence(words, &format!("software/{id}"), &[]))
             .unwrap_or_else(|| id.clone());
-        let (on, by) = file.decided(id, id);
-        listed.push(json!({
-            "id": id,
-            "name": name,
-            "on": on,
-            "by": by.as_str(),
-            "installed": false,
-            "tools": [],
-        }));
+        let mut entry =
+            Entry::installed((id.clone(), name), "", file.decided(id, id), Kind::Missing);
+        entry.installed = false;
+        listed.push(entry);
     }
+    listed
+}
+
+/// 技能（施工 X-11 上）、模板命令（施工 X-14 上）、扩展声明的命令（施工 X-14 下）各算一个功能，没有工具；编号记进 `ids`。
+/// - 技能：名字、说明照技能写给人看的两格挑这个连接的语言（施工 X-13 下），没写名字的照技能的名字；不归包的没有 `package`。
+/// - 模板命令：名字是 `/<命令名>`，说明照模板写的；自己放的挂在 `~home` 下。
+/// - 扩展声明的命令：名字是 `/<命令名>`，说明照清单的，挂在它的包下；自己放的同名模板盖住它的不列。
+fn carried_entries(
+    file: &PresetFile,
+    language: &str,
+    carried: &Carried,
+    ids: &mut BTreeSet<String>,
+) -> Vec<Entry> {
+    let mut listed = Vec::new();
+    for skill in &carried.skills {
+        let id = feature_id(&skill.head.name);
+        let package = skill.package.as_deref().unwrap_or_default();
+        let decided = file.decided(&id, package);
+        let name =
+            pick(&skill.head.display_name, language).unwrap_or_else(|| skill.head.name.clone());
+        listed.push(
+            Entry::installed((id, name), package, decided, Kind::Skill)
+                .summed(pick(&skill.head.summary, language)),
+        );
+    }
+    for command in &carried.commands {
+        let id = command_feature(&command.name);
+        let package = command.package.as_deref().unwrap_or(HOME_PACKAGE);
+        let decided = file.decided(&id, package);
+        let name = format!("/{}", command.name);
+        listed.push(
+            Entry::installed((id, name), package, decided, Kind::Skill)
+                .summed(pick(&command.template.summary, language)),
+        );
+    }
+    for one in carried
+        .declared
+        .iter()
+        .filter(|one| !carried.commands.iter().any(|t| t.name == one.command.name))
+    {
+        let id = one.command.feature_id();
+        let decided = file.decided(&id, &one.package);
+        let name = format!("/{}", one.command.name);
+        listed.push(
+            Entry::installed((id, name), &one.package, decided, Kind::Skill)
+                .summed(pick(&one.command.summary, language)),
+        );
+    }
+    ids.extend(listed.iter().map(|entry| entry.id.clone()));
     listed
 }
 
@@ -252,8 +204,8 @@ fn tools_of(
     catalog: &miyu_tool::Catalog,
     table: &miyu_policy::features::Features,
     (package, feature): (&str, &str),
-    row: impl Fn(&str) -> Value,
-) -> Vec<Value> {
+    row: impl Fn(&str) -> Tool,
+) -> Vec<Tool> {
     catalog
         .specs()
         .map(|spec| spec.name.as_str())

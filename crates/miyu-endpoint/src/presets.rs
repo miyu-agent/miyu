@@ -20,8 +20,10 @@ use crate::refusal::Refusal;
 use crate::settings::PresetSettings;
 
 pub(crate) mod edits;
+mod entry;
 mod features;
 pub(crate) mod overrides;
+mod sections;
 pub(crate) mod write;
 
 const TARGET: &str = "miyu::endpoint";
@@ -270,15 +272,20 @@ pub(super) async fn carried(core: &Core) -> Carried {
     }
 }
 
-/// 叠好的一个预设照 `preset.get` 写（`preset.set` 的回应也是它，施工 P-3 中），名字、说明照语言 `language` 挑。
+/// 叠好的一个预设照 `preset.get` 写（`preset.set` 的回应也是它，施工 P-3 中），名字、说明照语言 `language` 挑。`sections` 是同一些
+/// 功能分好组、排好先后（施工 FG-1，`sections.rs`），原来的格一个不动。
 fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Value {
+    let entries = features::listed(core, found, language, carried);
+    let sections = sections::sections(&entries, &sections::Shelf::of(core, language));
+    let features: Vec<Value> = entries.iter().map(entry::Entry::listed).collect();
     json!({
         "preset": found.id,
         "name": label(found.file.name.as_ref(), language),
         "summary": label(found.file.summary.as_ref(), language),
         "icon": found.file.icon,
         "unlisted": found.file.unlisted().as_str(),
-        "features": features::listed(core, found, language, carried),
+        "features": features,
+        "sections": sections,
         "remove": remove(&found.layers),
     })
 }

@@ -207,15 +207,14 @@ fn the_shipped_presets_read_cleanly() {
             .keys()
             .map(String::as_str)
             .collect::<Vec<_>>(),
+        // 施工 FG-1：待办、长期目标、定时、循环写组 `tasks`，环境和项目文档写组 `environment`。
         [
             "basesystem",
+            "environment",
             "miyu-base-authoring",
-            "miyu-base-env",
-            "miyu-base-goal",
-            "miyu-base-loop",
             "miyu-base-memory",
             "miyu-base-net",
-            "miyu-base-schedule"
+            "tasks"
         ]
     );
     let minimal = presets.find("minimal").unwrap();

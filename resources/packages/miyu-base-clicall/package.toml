@@ -1,5 +1,5 @@
 # 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
-# 脚本调工具（施工 M-6，项目主人 2026-10-23 定）：没有工具，开着的会话里命令能经 `miyu call` 调脚本里能调的工具。
+# 命令行调用工具（原来叫脚本调工具，施工 FG-1 改名；施工 M-6，项目主人 2026-10-23 定）：没有工具，开着的会话里命令能经 `miyu call` 调脚本里能调的工具。
 
 [package]
 author = "miyu-agent"
@@ -7,12 +7,12 @@ upstream = "https://github.com/miyu-agent/miyu"
 prefix = "clicall"
 protocol = [1, 1]
 groups = ["basesystem"]
-name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプトからツール" }
+name = { en = "Call tools from the command line", zh = "命令行调用工具", ja = "コマンドラインからツールを呼ぶ" }
 summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
 
 # 功能写明、编号照旧（施工 PN-2，设计 48 第三节第 1 条）：原来没写，功能编号照包编号算；包改名以后功能编号不跟着变。
 [features.clicall]
-name = { en = "Tools from scripts", zh = "脚本调工具", ja = "スクリプトからツール" }
+name = { en = "Call tools from the command line", zh = "命令行调用工具", ja = "コマンドラインからツールを呼ぶ" }
 summary = { en = "Scripts the AI runs can call tools in a batch, and the results stay out of the chat", zh = "AI 跑的脚本里能批量调工具，结果不进对话", ja = "AI が動かすスクリプトからツールをまとめて呼べます。結果は会話に入りません" }
 
 [builtin]

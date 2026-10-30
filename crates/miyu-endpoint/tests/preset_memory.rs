@@ -10,8 +10,9 @@ use crate::preset_face::{
 use crate::support::*;
 use miyu_session::testkit::Script;
 
-/// 和常规开发一样、只是不开记忆（出厂的两个都开着，施工 P-15）。
-const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nmiyu-base-net = true\nmiyu-base-goal = true\nmiyu-base-authoring = true\n";
+/// 和常规开发一样、只是不开记忆（出厂的两个都开着，施工 P-15）。施工 FG-1 起待办、定时、循环、长期目标在组 `tasks`，项目文档
+/// 不在组 `basesystem` 里了，另写上，开的和原来一样。
+const QUIET: &str = "[preset]\nname = \"安静\"\nunlisted = \"off\"\n\n[software]\nbasesystem = true\ntasks = true\nmiyu-base-project-docs = true\nmiyu-base-net = true\nmiyu-base-authoring = true\n";
 
 #[tokio::test]
 async fn a_preset_without_memory_drops_it() {

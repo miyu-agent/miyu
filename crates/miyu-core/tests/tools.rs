@@ -22,7 +22,8 @@ fn installed(resources: &ResourceRoot, without: &[&str]) -> Vec<Found> {
     found
 }
 
-/// 基础系统组里的包：`miyu-basesystem` 的十八个，加上定时、循环两个（施工 J-2，它们的代码在 `miyu-schedule`）。
+/// 原来基础系统组里的包：`miyu-basesystem` 的十八个，加上定时、循环两个（施工 J-2，它们的代码在 `miyu-schedule`）。施工 FG-1 起
+/// 待办、定时、循环进了任务和定时组，项目文档进了注入环境信息组，这里照旧一起卸。
 fn group() -> Vec<&'static str> {
     let mut group = miyu_basesystem::PACKAGES.to_vec();
     group.extend([miyu_schedule::SCHEDULE, miyu_schedule::LOOP]);

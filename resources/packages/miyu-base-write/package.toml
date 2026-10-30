@@ -6,12 +6,12 @@ upstream = "https://github.com/miyu-agent/miyu"
 prefix = "write"
 protocol = [1, 1]
 groups = ["basesystem"]
-name = { en = "Write files", zh = "写文件", ja = "ファイルを書く" }
+name = { en = "New file", zh = "新建文件", ja = "新規ファイル" }
 summary = { en = "Create or overwrite a file", zh = "新建或整个覆盖一个文件", ja = "ファイルを作るか丸ごと書き換えます" }
 
 # 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
 [features.write]
-name = { en = "Write files", zh = "写文件", ja = "ファイルを書く" }
+name = { en = "New file", zh = "新建文件", ja = "新規ファイル" }
 summary = { en = "Create or overwrite a file", zh = "新建或整个覆盖一个文件", ja = "ファイルを作るか丸ごと書き換えます" }
 tools = ["write"]
 

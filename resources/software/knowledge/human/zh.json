@@ -1,27 +1,27 @@
 {
   "tools": {
     "kb_search": {
-      "name": "查知识库",
+      "name": "搜索",
       "subject": "query",
       "icon": "✱"
     },
     "kb_read": {
-      "name": "读文档",
+      "name": "阅读",
       "subject": "path",
       "icon": "→"
     },
     "kb_save": {
-      "name": "记进知识库",
+      "name": "新建",
       "subject": "path",
       "icon": "←"
     },
     "kb_edit": {
-      "name": "改知识库",
+      "name": "编辑",
       "subject": "path",
       "icon": "←"
     },
     "kb_delete": {
-      "name": "删知识库文档",
+      "name": "删除",
       "subject": "path",
       "icon": "←"
     }

@@ -81,8 +81,8 @@ async fn the_list_says_which_group_each_package_is_in() {
         .unwrap_or_else(|| panic!("组带 packages（施工 PG-1）：{listed}"));
     assert_eq!(
         result["groups"].as_array().map(Vec::len),
-        Some(1),
-        "{listed}"
+        Some(5),
+        "出厂五个组（施工 FG-1，设计 52 第一节）：{listed}"
     );
     assert_eq!(
         group,
@@ -108,7 +108,18 @@ async fn the_list_says_which_group_each_package_is_in() {
         ],
         "照用途的先后：{packages:?}"
     );
-    assert!(!packages.contains(&"miyu-base-memory"), "不在组里的不列");
+    assert!(!packages.contains(&"miyu-base-memory"), "别的组里的不列");
+    let order: Vec<&Value> = result["groups"]
+        .as_array()
+        .expect("一串")
+        .iter()
+        .map(|group| &group["id"])
+        .collect();
+    assert_eq!(
+        order,
+        ["basesystem", "tasks", "environment", "persona", "research"],
+        "照组表的先后"
+    );
     let groups_of = |id: &str| -> Value {
         result["packages"]
             .as_array()
@@ -117,7 +128,12 @@ async fn the_list_says_which_group_each_package_is_in() {
             .unwrap_or_else(|| panic!("有 {id}：{listed}"))
     };
     assert_eq!(groups_of("miyu-base-shell"), json!(["basesystem"]));
-    assert_eq!(groups_of("miyu-base-memory"), Value::Null, "不在组里的不写");
+    assert_eq!(groups_of("miyu-base-memory"), json!(["persona"]));
+    assert_eq!(
+        groups_of("miyu-base-authoring"),
+        Value::Null,
+        "不在组里的不写"
+    );
 }
 
 /// 装的时刻（施工 PG-1，预设页照装的先后排）：装上的包带 `installed_at`，出厂的不写。

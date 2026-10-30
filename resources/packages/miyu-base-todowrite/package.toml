@@ -1,11 +1,11 @@
-# 基础系统组的一个包（施工 BS-1 上中，设计 44）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
+# 任务和定时组的一个包（施工 BS-1 上中，设计 44；施工 FG-1 从基础系统组挪来，设计 52 第一节）：内置包，代码编在核心里，默认装、能关能卸。给人看的字，不发给模型。
 
 [package]
 author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 prefix = "todowrite"
 protocol = [1, 1]
-groups = ["basesystem"]
+groups = ["tasks"]
 name = { en = "To-do list", zh = "待办清单", ja = "ToDo リスト" }
 summary = { en = "Keep a to-do list for the task at hand", zh = "给手上的活列一张待办", ja = "今の作業の ToDo リストを付けます" }
 

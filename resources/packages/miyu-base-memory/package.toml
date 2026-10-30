@@ -6,6 +6,7 @@ author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 prefix = "memory"
 protocol = [1, 1]
+groups = ["persona"]
 name = { en = "Persona memory", zh = "人格记忆", ja = "ペルソナの記憶" }
 summary = { en = "Remember what you said and recall it later", zh = "记住你说过的事，以后想得起来", ja = "話したことを覚えて、あとで思い出します" }
 
@@ -17,5 +18,7 @@ workers = ["miyu-embed"]
 [features.memory]
 name = { en = "Persona memory", zh = "人格记忆", ja = "ペルソナの記憶" }
 summary = { en = "Remember what you said and recall it later", zh = "记住你说过的事，以后想得起来", ja = "話したことを覚えて、あとで思い出します" }
+# 工具写明（施工 FG-1）：预设页照这个先后列（设计 52 第三节第 2 条）。
+tools = ["remember", "memory_search", "forget"]
 
 [builtin]

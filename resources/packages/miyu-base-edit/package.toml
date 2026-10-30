@@ -6,12 +6,12 @@ upstream = "https://github.com/miyu-agent/miyu"
 prefix = "edit"
 protocol = [1, 1]
 groups = ["basesystem"]
-name = { en = "Edit files", zh = "改文件", ja = "ファイルを編集" }
+name = { en = "Edit files", zh = "编辑文件", ja = "ファイルを編集" }
 summary = { en = "Replace exact text in a file", zh = "在文件里照原文替换", ja = "ファイルの中の文字列を置き換えます" }
 
 # 一个功能，编号同包（施工 BS-1 上中）：写明带的工具，装别的包时照它查工具撞名（`miyu_store::packages::conflicts`）。
 [features.edit]
-name = { en = "Edit files", zh = "改文件", ja = "ファイルを編集" }
+name = { en = "Edit files", zh = "编辑文件", ja = "ファイルを編集" }
 summary = { en = "Replace exact text in a file", zh = "在文件里照原文替换", ja = "ファイルの中の文字列を置き換えます" }
 tools = ["edit"]
 

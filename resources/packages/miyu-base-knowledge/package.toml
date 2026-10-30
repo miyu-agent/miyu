@@ -6,6 +6,7 @@ author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 prefix = "knowledge"
 protocol = [1, 1]
+groups = ["research"]
 name = { en = "Knowledge base", zh = "知识库", ja = "ナレッジベース" }
 summary = { en = "Look things up in your notes and documents", zh = "查你放进来的笔记和文档", ja = "あなたのノートや文書を調べられるようにします" }
 
@@ -13,5 +14,7 @@ summary = { en = "Look things up in your notes and documents", zh = "查你放�
 [features.knowledge]
 name = { en = "Knowledge base", zh = "知识库", ja = "ナレッジベース" }
 summary = { en = "Look things up in your notes and documents", zh = "查你放进来的笔记和文档", ja = "あなたのノートや文書を調べられるようにします" }
+# 工具写明（施工 FG-1）：预设页照这个先后列（设计 52 第三节第 2 条）。
+tools = ["kb_search", "kb_read", "kb_save", "kb_edit", "kb_delete"]
 
 [builtin]

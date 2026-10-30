@@ -20,7 +20,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 /// 出厂的组表，照写的先后；读不成的记一行、当没有。
-pub(super) fn table(core: &Core) -> Vec<Group> {
+pub(crate) fn table(core: &Core) -> Vec<Group> {
     let path = core.resources.path().join("packages").join("groups.toml");
     match std::fs::read_to_string(&path) {
         Ok(text) => miyu_config::package::groups::read(&text).unwrap_or_else(|error| {
