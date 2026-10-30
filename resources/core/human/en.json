@@ -73,7 +73,7 @@
       },
       "usage.currency": {
         "name": "Currency shown first",
-        "description": "Amounts are added up per currency, never converted. This one is listed first, the others by code. Three capital letters such as USD or CNY."
+        "description": "Amounts are shown in this currency, converted at each entry's day's rate; without a rate the amount is not shown. Three capital letters such as USD or CNY."
       },
       "ui.startup": {
         "name": "On start, open",
