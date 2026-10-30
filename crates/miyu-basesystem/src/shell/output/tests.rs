@@ -254,3 +254,15 @@ fn a_commands_output_keeps_progress_lines() {
         Shown::Whole("miyu-progress: 1\n".into())
     );
 }
+
+/// PowerShell 出错写的 CLIXML 交给她之前换回纯文本（施工 SW-4）。
+#[test]
+fn powershell_clixml_comes_back_as_plain_text() {
+    let capture = captured(&[
+        b"ok\r\n#< CLIXML\r\n<Objs Version=\"1.1.0.1\"><S S=\"Error\">Get-CimInstance : Access denied._x000D__x000A_</S></Objs>",
+    ]);
+    assert_eq!(
+        capture.shown(),
+        Shown::Whole("ok\nGet-CimInstance : Access denied.\n".into())
+    );
+}

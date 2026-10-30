@@ -184,8 +184,9 @@ fn firefox_s_relative_screenshot_paths_get_a_hint() {
     }
 }
 
-/// 沙盒里用 WMI 的命令失败了（施工 SW-3，Windows 的容器挡住 WMI）：末尾接一句，她直接申请在沙盒外跑。成了的、不在沙盒里的、
-/// 不用 WMI 的不接；别名、带路径和 `.exe` 的、管道后面的也认。
+/// Windows 上沙盒里用 WMI 的命令（施工 SW-3，Windows 的容器挡住 WMI）：末尾接一句，她直接申请在沙盒外跑。不看退出码（施工 SW-4：
+/// `Get-CimInstance` 连不上时照样退 0）；不在沙盒里的、不是 Windows 的、不用 WMI 的不接；别名、带路径和 `.exe` 的、管道后面的
+/// 也认。
 #[test]
 fn a_failed_wmi_command_in_the_sandbox_gets_a_hint() {
     let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
@@ -201,23 +202,43 @@ fn a_failed_wmi_command_in_the_sandbox_gets_a_hint() {
             || unreachable!("没到时"),
         )
     };
-    for (command, code, sandboxed, wanted) in [
-        ("Get-CimInstance Win32_OperatingSystem", 1, true, true),
-        ("gcim win32_bios | Select-Object Version", 1, true, true),
+    for (command, code, sandboxed, windows, wanted) in [
+        ("Get-CimInstance Win32_OperatingSystem", 1, true, true, true),
+        (
+            "gcim win32_bios | Select-Object Version",
+            1,
+            true,
+            true,
+            true,
+        ),
         (
             "C:\\Windows\\System32\\wbem\\WMIC.exe os get caption",
             1,
             true,
             true,
+            true,
         ),
-        ("Get-Date; systeminfo /FO LIST", 1, true, true),
-        ("(Get-ComputerInfo).OsName", 1, true, true),
-        ("Get-CimInstance Win32_OperatingSystem", 0, true, false),
-        ("Get-CimInstance Win32_OperatingSystem", 1, false, false),
-        ("Get-ChildItem C:\\nope", 1, true, false),
-        ("Get-Content wmic-notes.txt", 1, true, false),
+        ("Get-Date; systeminfo /FO LIST", 1, true, true, true),
+        ("(Get-ComputerInfo).OsName", 1, true, true, true),
+        ("Get-CimInstance Win32_OperatingSystem", 0, true, true, true),
+        (
+            "Get-CimInstance Win32_OperatingSystem",
+            1,
+            false,
+            true,
+            false,
+        ),
+        (
+            "Get-CimInstance Win32_OperatingSystem",
+            1,
+            true,
+            false,
+            false,
+        ),
+        ("Get-ChildItem C:\\nope", 1, true, true, false),
+        ("Get-Content wmic-notes.txt", 1, true, true, false),
     ] {
-        let text = text_of(&results.wmi(command, sandboxed, ended(code)));
+        let text = text_of(&results.wmi(command, sandboxed, windows, ended(code)));
         assert_eq!(
             text.trim_end().ends_with(hint.trim_end()),
             wanted,

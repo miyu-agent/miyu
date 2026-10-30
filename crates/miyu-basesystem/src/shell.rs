@@ -8,6 +8,7 @@
 
 mod background;
 mod channel;
+mod clixml;
 mod env;
 mod moved;
 mod output;
@@ -386,7 +387,10 @@ impl Tool for Shell {
                     let done = self.finished(finished, timeout);
                     let done = self.texts.results.screenshot(&args.command, done);
                     let sandboxed = call.sandbox.is_some();
-                    let done = self.texts.results.wmi(&args.command, sandboxed, done);
+                    let done =
+                        self.texts
+                            .results
+                            .wmi(&args.command, sandboxed, cfg!(windows), done);
                     touched::after(seen).into_iter().fold(done, Done::effect)
                 }
                 Ok(Waited::Moved(handover)) => {

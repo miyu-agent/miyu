@@ -50,7 +50,7 @@ CI 的 Windows 机器上收不住（GitHub 的 Windows 机器有桌面会话，M
 - MXC：`mxc-sdk` 1.0.1（MIT），`process_container/common/dispatcher.rs`（档位、访问控制的管理器）、`filesystem_bfs.rs`、`lib.rs` 的 `v1`。
 - 试验：施工单 `5-9改上-Windows沙盒接MXC.md` 的「试验」「第 0 步」。
 
-**WMI**（施工 SW-3，2026-10-30 项目主人定）：MXC 的容器挡住 WMI/CIM（`Get-CimInstance` 报连不上 CIM 资源，`systeminfo`、`Get-ComputerInfo` 底下也走它）。不放宽：看过 Codex（MXC、沙盒用户两条路都没为 WMI 开口子，被挡就申请到沙盒外跑）、Claude Code（Windows 上不进沙盒，只读名单特意不收 `Get-CimInstance`、`Get-WmiObject`：查询语句任意、能连远程主机）。沙盒里用 WMI 的命令失败时，`shell` 的结果末尾接 `no-wmi.txt` 一句，她申请在沙盒外跑这一条，人点允许。
+**WMI**（施工 SW-3，2026-10-30 项目主人定）：MXC 的容器挡住 WMI/CIM（`Get-CimInstance` 报连不上 CIM 资源，`systeminfo`、`Get-ComputerInfo` 底下也走它）。不放宽：看过 Codex（MXC、沙盒用户两条路都没为 WMI 开口子，被挡就申请到沙盒外跑）、Claude Code（Windows 上不进沙盒，只读名单特意不收 `Get-CimInstance`、`Get-WmiObject`：查询语句任意、能连远程主机）。沙盒里用到 WMI 的命令（不看退出码：`Get-CimInstance` 连不上是不终止的错、照样退 0，施工 SW-4），`shell` 的结果末尾接 `no-wmi.txt` 一句，她申请在沙盒外跑这一条，人点允许。
 
 ### 还没有的
 

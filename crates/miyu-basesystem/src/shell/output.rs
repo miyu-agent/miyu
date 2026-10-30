@@ -1,7 +1,8 @@
 //! 命令的输出（施工 4-8）：内存里只留头尾，边读边解成字推给头，结束以后截成头尾两段交给她。
 //!
 //! 给她看的最多 [`LIMIT`] 个字（照 Claude Code）。多了留头尾各一半：开头多半是它在做什么，结尾多半是出了什么错。
-//! 能截在行尾就截在行尾。照 UTF-8 解，解不开的字节换成 U+FFFD；`\r\n` 换成 `\n`。
+//! 能截在行尾就截在行尾。照 UTF-8 解，解不开的字节换成 U+FFFD；PowerShell 出错写的 CLIXML 换回纯文本（施工 SW-4，
+//! [`super::clixml`]）；`\r\n` 换成 `\n`。
 //!
 //! 脚本工具的输出另去掉进度行（施工 X-45）：一整行以 [`PROGRESS`] 开头的只推给头，不进结果，行数、字数、截长都照去掉以后的算。
 
@@ -156,6 +157,8 @@ impl Capture {
         let mut kept = self.head.clone();
         kept.extend(self.tail.iter());
         let text = lossy(kept);
+        // PowerShell 出错写的 CLIXML 换回纯文本（施工 SW-4）。
+        let text = super::clixml::plain(&text).into_owned();
         if text.chars().count() <= LIMIT {
             return Shown::Whole(unix(&text));
         }

@@ -99,11 +99,18 @@ impl Results {
         done
     }
 
-    /// 在沙盒里跑（`sandboxed`）、失败了、命令里用到 WMI 的（[`WMI_COMMANDS`]），末尾接 `no-wmi.txt`（施工 SW-3，2026-10-30
-    /// 项目主人定）：Windows 的沙盒（MXC 的容器）挡住 WMI，`Get-CimInstance` 一类在里面跑不成；说一句，她直接申请在沙盒外跑
-    /// 这一条，不用先试错。成了的、沙盒外跑的不接。
-    pub(super) fn wmi(&self, command: &str, sandboxed: bool, mut done: Done) -> Done {
-        if !sandboxed || !done.error || !uses_wmi(command) {
+    /// Windows 上（`windows`）在沙盒里跑（`sandboxed`）、命令里用到 WMI 的（[`WMI_COMMANDS`]），末尾接 `no-wmi.txt`（施工 SW-3，
+    /// 2026-10-30 项目主人定）：Windows 的沙盒（MXC 的容器）挡住 WMI，`Get-CimInstance` 一类在里面跑不成；说一句，她直接申请在
+    /// 沙盒外跑这一条，不用先试错。不看退出码（施工 SW-4：`Get-CimInstance` 连不上时报的是不终止的错，PowerShell 照样退 0，
+    /// 桌面端在虚拟机上看到 SW-3 只接上了 `wmic` 那条）：沙盒里 WMI 一定连不上。沙盒外跑的、别的系统上的不接。
+    pub(super) fn wmi(
+        &self,
+        command: &str,
+        sandboxed: bool,
+        windows: bool,
+        mut done: Done,
+    ) -> Done {
+        if !windows || !sandboxed || !uses_wmi(command) {
             return done;
         }
         append(&mut done, say(&self.wmi, &[]));

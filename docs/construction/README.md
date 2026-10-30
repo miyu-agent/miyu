@@ -1193,6 +1193,7 @@ flowchart LR
 | AE-1 | 步数上限 | 发布前审计查出步数上限从来没设：模型一直调工具，没人在场的会话就一直请求下去。项目主人 10-30 定的数（照 Claude Code 主对话不设、子代理设的分法）：有人看着的会话（终端、网页）人开的回合不设上限；通用子代理 800、fork 子代理 500，出厂常量；没人看着的（定时任务交进来开的回合、长期目标续轮开的回合、通讯平台、定时新开的会话、`miyu ask` 一次性的）出厂 500，预设 `[limits] unattended_steps` 可改。快照多一格 `auto_step_limit`，内核只让人开的回合照 `step_limit`，别的（定时任务、长期目标续轮、重启接着干、回报叫醒……）一律取两格里小的（10-30 主会话定：只有人开的不限）；以前造的快照照 `attended` 读成出厂的，不读成不限 |
 | SW-2 | Windows 沙盒里 PowerShell 不再退到受限模式 | 桌面端 10-30 在 Win11 虚拟机上：SW-1 以后命令起得来了，PowerShell 的命令还是一条条失败，开头那句设编码报「此语言模式仅支持核心类型上的方法调用」。出厂私密清单禁了整个 `AppData\\Local\\Packages`，MXC 容器自己的临时目录就在它下面，PowerShell 写不进临时目录做自查，退到 ConstrainedLanguage（对照证实；把 TEMP 指到别处不管用，MXC 在容器里强行改回）。项目主人定从 Windows 清单里去掉它；另给 PowerShell 加 `-OutputFormat Text`，出错写纯文本、不写 CLIXML |
 | SW-3 | 沙盒里连不上 WMI 时说一句 | 桌面端 10-30 在 Win11 虚拟机上：MXC 的容器挡住 WMI，`Get-CimInstance` 一类在沙盒里跑不成。项目主人看过 Codex、Claude Code 的做法后定照旧挡、只加说明：沙盒里用 WMI 的命令失败时，`shell` 结果末尾接一句「The sandbox blocks WMI…」（15 token），她直接申请在沙盒外跑这一条 |
+| SW-4 | PowerShell 的 CLIXML 解成纯文本、WMI 那句不看退出码 | 桌面端 10-30 复测 SW-2/SW-3：`-EncodedCommand` 起的 PowerShell 出错照样写 CLIXML（`-OutputFormat Text` 挡不住），她看到的是一团标记；`Get-CimInstance` 连不上是不终止的错、照样退 0，SW-3 那句只接上了 `wmic`。输出里认出 `#< CLIXML` 那一段，只留错误、警告的原文、还原转义；WMI 那句改成 Windows 上沙盒里用到 WMI 就接 |
 
 **命令行给程序调**（AP 线，设计 50，2026-10-30 项目主人定）
 
