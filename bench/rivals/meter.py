@@ -157,7 +157,8 @@ class Meter:
             last = now
         return time.monotonic() - start
 
-    def stop(self):
+    def stop(self, kill=True):
+        """读最后的数；`kill` 的再杀掉 scope 里剩下的进程（不杀的，量完家目录以后自己调 `kill`）。"""
         self._sample(with_pss=True)
         self._stop.set()
         self._thread.join(timeout=2)
@@ -185,9 +186,14 @@ class Meter:
             "samples": self.samples,
             "procs": sorted({e["comm"] for e in self.per_pid.values()}),
         }
+        if kill:
+            self.kill()
+        return result
+
+    def kill(self):
+        """杀掉 scope 里剩下的进程（`cgroup.kill`，等于 SIGKILL），等 scope 没了。"""
         if (self.dir / "cgroup.kill").exists():
             (self.dir / "cgroup.kill").write_text("1")
         end = time.monotonic() + 5
         while self.dir.exists() and time.monotonic() < end:
             time.sleep(0.05)
-        return result

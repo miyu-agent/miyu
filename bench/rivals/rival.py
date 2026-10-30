@@ -18,10 +18,15 @@ class Rival:
         self.table = table
         self.where = where
         self.home = where.homes / self.key
-        self.marker = table["marker"]
+        # 首屏的字也换占位：Miyu 的是模型名（`{model}`）。
+        self.marker = [places.fill(m, where.words({"home": str(self.home)})) for m in table["marker"]]
+
+    def base_url(self):
+        """这一家连的地址：用转发的是 `<转发>/<表名>/v1`（转发照路径分出是哪一家），不然照环境变量。"""
+        return f"{self.where.relay}/{self.key}/v1" if self.where.relay else self.where.base_url
 
     def words(self, **extra):
-        return self.where.words({"home": str(self.home), **extra})
+        return self.where.words({"home": str(self.home), "base_url": self.base_url(), **extra})
 
     def argv(self, kind, **extra):
         """`tui`、`resume`、`task`、`cont`、`daemon` 之一；这一家没有的交回 None。"""
@@ -31,7 +36,11 @@ class Rival:
         return [places.fill(part, words) for part in self.table[kind]]
 
     def env(self):
-        env = places.base_env()
+        env = places.base_env(strip=(self.where.upstream_key_env,) if self.where.upstream_key_env else ())
+        if self.where.relay:
+            # Miyu 的配置写的是 `{ env = "OPENAI_BASE_URL" }`、`{ env = "OPENAI_API_KEY" }`：照家换成转发、假 key。
+            env[places.BASE_URL] = self.base_url()
+            env[places.KEY] = places.FAKE_KEY
         words = self.words()
         env.update({k: places.fill(v, words) for k, v in self.table.get("env", {}).items()})
         return env

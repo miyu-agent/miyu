@@ -1,6 +1,7 @@
 """打开一个长会话（施工 V-7）：先照同样的 50 轮话把三家各自的长会话造出来（`gen`），再量打开它（`open`）。"""
 
 import json
+import os
 import subprocess
 import time
 
@@ -8,6 +9,7 @@ import homes
 import meter
 import places
 import reap
+import relay
 import term
 
 TURNS = 50
@@ -31,6 +33,7 @@ def message(k):
 def gen(r, rivals):
     """造长会话：第一轮开新会话，后面照 `cont` 接着说；造完存成模板 `<表名>-long`，会话编号记在模板里。"""
     homes.restore(r, rivals)
+    relay.mark(r.where, r.key, "long-gen")
     session = None
     started = time.monotonic()
     for k in range(1, TURNS + 1):
@@ -62,6 +65,8 @@ def session_of(r):
 def open_once(r, rivals, i):
     """照模板还原长会话，开终端界面接着它，等最后一句出现在屏幕上。"""
     homes.restore(r, rivals, "-long")
+    relay.mark(r.where, r.key, f"long-open-{i}")
+    load = os.getloadavg()[0]
     unit = meter.new_unit(f"{r.key}-long-{i}")
     m = meter.Meter(unit)
     screen = term.Term(
@@ -77,6 +82,7 @@ def open_once(r, rivals, i):
         "open_s": hit - screen.started,
         "open_cpu_usec": m.cpu_usec()[0],
         "open_pss": m.pss_now(),
+        "loadavg": load,
     }
     screen.pump(3)
     out["final"] = m.stop()

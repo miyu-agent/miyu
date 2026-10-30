@@ -53,6 +53,10 @@ def collect(where, rivals):
             "pinned_cpus": where.cpus,
         },
         "model": where.model,
+        # 经本机转发的（施工 V-27）：只记用没用，不记上游地址。
+        "relay": bool(where.relay),
+        # 量之前的 1、5、15 分钟负载：别的会话在编译时，时间类的数会抖（施工 V-27）。
+        "load_before": [round(x, 2) for x in os.getloadavg()],
         "core": _rev(where.core),
         "tui": _rev(where.tui_repo),
         "tui_matches_heads_toml": tui_rev == pinned

@@ -1,6 +1,7 @@
 """把原始结果汇成一张表（施工 V-7）：每个场景、每项的中位数和最小、最大，写成 JSON 和 Markdown。"""
 
 import json
+import re
 import statistics
 
 MIB = 2**20
@@ -60,7 +61,12 @@ SCENES = [
             ("wchar_kib", "写了 KiB（交给系统的）", lambda r: r["final"]["io"]["wchar"] / 1024),
             ("write_kib", "写盘 KiB（落到盘上的）", lambda r: r["final"]["io"]["write_bytes"] / 1024),
             ("read_kib", "读盘 KiB", lambda r: r["final"]["io"]["read_bytes"] / 1024),
-            ("data_kib", "家目录多了 KiB", lambda r: r["data_growth_bytes"] / 1024),
+            ("data_kib", "家目录多了 KiB（直接杀掉，崩溃、断电剩下的）", lambda r: r["data_growth_bytes"] / 1024),
+            (
+                "data_clean_kib",
+                "家目录多了 KiB（好好退出以后，平时）",
+                lambda r: r["data_growth_clean_bytes"] / 1024 if "data_growth_clean_bytes" in r else None,
+            ),
         ],
     ),
     (
@@ -77,6 +83,7 @@ SCENES = [
 
 
 def stat(values):
+    values = [v for v in values if v is not None]  # 旧的结果里没有的项（例如 V-27 以前没量「好好退出以后」）
     if not values:
         return None
     return {"median": statistics.median(values), "min": min(values), "max": max(values), "n": len(values)}
@@ -101,8 +108,57 @@ def trace(runs):
     ]
 
 
+# 用量表里场的先后和说明（`relay.mark` 记的场名去掉末尾的轮次）。
+TOKEN_SCENES = [
+    ("homes", "做模板"),
+    ("screen", "开终端界面"),
+    ("task", "一轮真任务"),
+    ("long-gen", "造长会话"),
+    ("long-open", "打开长会话"),
+]
+
+
+def tokens(where, rivals):
+    """转发记的用量（施工 V-27）：{显示名: {场: {requests, errors, input, cached, output, reasoning, runs}}}；没用转发的空。"""
+    log = where.results / "relay.jsonl"
+    if not log.exists():
+        return {}
+    names = {r.key: r.name for r in rivals}
+    out = {}
+    for line in log.read_text().splitlines():
+        entry = json.loads(line)
+        if entry.get("method") != "POST" or entry.get("rival") not in names:
+            continue
+        scene = re.sub(r"-\d+$", "", entry.get("scene") or "")
+        cell = out.setdefault(names[entry["rival"]], {}).setdefault(
+            scene, {"requests": 0, "errors": 0, "input": 0, "cached": 0, "output": 0, "reasoning": 0, "runs": set()}
+        )
+        cell["requests"] += 1
+        cell["runs"].add(entry.get("scene"))
+        if not 200 <= (entry.get("status") or 0) < 300:
+            cell["errors"] += 1
+        for k in ("input", "cached", "output", "reasoning"):
+            cell[k] += (entry.get("usage") or {}).get(k, 0)
+    for scenes in out.values():
+        for cell in scenes.values():
+            cell["runs"] = len(cell["runs"])
+    return out
+
+
+def loads(where, rivals):
+    """每一轮开头记的 1 分钟负载：最小、最大（施工 V-27）。"""
+    values = [
+        run["loadavg"]
+        for _key, _title, prefix, _metrics in SCENES
+        for runs in load(where, prefix, rivals).values()
+        for run in runs
+        if "loadavg" in run
+    ]
+    return [round(min(values), 2), round(max(values), 2)] if values else None
+
+
 def build(where, rivals, conditions):
-    summary = {"conditions": conditions, "scenes": {}}
+    summary = {"conditions": conditions, "scenes": {}, "tokens": tokens(where, rivals), "loads": loads(where, rivals)}
     for key, _title, prefix, metrics in SCENES:
         runs = load(where, prefix, rivals)
         summary["scenes"][key] = {
@@ -134,10 +190,20 @@ def markdown(summary, names):
         "",
         f"- 机器：{m['cpu']}，{m['logical_cores']} 个逻辑核，内存 {m['memory_gb']} GB；内核 {m['kernel']}，{m['arch']}"
         + (f"；绑在 {m['pinned_cpus']} 号核上" if m["pinned_cpus"] else ""),
-        f"- 模型：{c['model']}（三家同一个端点）",
+        f"- 模型：{c['model']}（三家同一个端点"
+        + ("，经本机转发：换上真 key、补会话头，`bench/rivals/relay.py`）" if c.get("relay") else "）"),
         "- 版本：" + "，".join(f"{n} {v or '—'}" for n, v in c["versions"].items()),
         f"- 提交：核心 {c['core']}，终端 {c['tui']}"
         + ("" if c["tui_matches_heads_toml"] else "（不是 heads.toml 钉的那一份）"),
+        *(
+            [
+                f"- 负载（1、5、15 分钟）：量之前 {'、'.join(map(str, c['load_before']))}"
+                + (f"；各轮开头的 1 分钟负载 {summary['loads'][0]}–{summary['loads'][1]}" if summary.get("loads") else "")
+                + "。负载高时时间类的数会抖，CPU、内存、读写受的影响小"
+            ]
+            if c.get("load_before")
+            else []
+        ),
         "- 量法：`docs/blueprint/perf.md`「三家对比」。数是中位数，括号里是最小到最大；"
         "每一轮的原始数据在同名的 `.json` 的 `runs` 里。",
         "",
@@ -170,15 +236,81 @@ def markdown(summary, names):
         install = [sum(v or 0 for v in disk["install"][n].values()) / MIB for n in shown]
         lines.append("| 装好 MiB | " + " | ".join(number(v) for v in install) + " |")
         lines.append(
-            "| 家目录跑过一次 KiB | " + " | ".join(number(disk["home_after_first_run"][n] / 1024) for n in shown) + " |"
+            "| 家目录跑过一次的数据 KiB（会话、日志、索引这些；好好退出以后，平时） | "
+            + " | ".join(number(disk["home_after_first_run"][n] / 1024) for n in shown)
+            + " |"
         )
+        crash = disk.get("home_after_first_run_crash") or {}
+        if crash:
+            lines.append(
+                "| 家目录跑过一次的数据 KiB（直接杀掉，崩溃、断电剩下的） | "
+                + " | ".join(number(crash[n] / 1024) if n in crash else "—" for n in shown)
+                + " |"
+            )
+        if "home_caches" in disk:
+            lines.append(
+                "| 会一直复用的缓存 KiB（模型目录、图标这类，不算在上一行） | "
+                + " | ".join(number(disk["home_caches"][n] / 1024) for n in shown)
+                + " |"
+            )
         lines.append(
             "| 长会话那一个会话 KiB | "
             + " | ".join(number(disk["long_session"][n] / 1024) if n in disk["long_session"] else "—" for n in shown)
             + " |"
         )
         lines.append("")
+        # 只拆被量的那一家（表里排第一的 Miyu），别家的照总数比（2026-10-31 项目主人要看 Miyu 是什么占的）。
+        for n in shown[:1]:
+            clean = (disk.get("home_files") or {}).get(n, {})
+            crash = (disk.get("home_files_crash") or {}).get(n)
+            paths = sorted(set(clean) | set(crash or {}), key=lambda p: -max(clean.get(p, 0), (crash or {}).get(p, 0)))
+            if not paths:
+                continue
+            head = "| 文件 | 好好退出以后 KiB |" + (" 直接杀掉 KiB |" if crash is not None else "")
+            lines += [f"{n} 家目录跑过一次的数据，按文件（照占的块；没有的写「—」）：", "", head]
+            lines.append("|---|---|" + ("---|" if crash is not None else ""))
+
+            def cell(files, path):
+                return number(files[path] / 1024) if path in files else "—"
+
+            for path in paths[:FILES_SHOWN]:
+                lines.append(
+                    f"| `{path}` | {cell(clean, path)} |" + (f" {cell(crash, path)} |" if crash is not None else "")
+                )
+            rest = paths[FILES_SHOWN:]
+            if rest:
+                total = number(sum(clean.get(p, 0) for p in rest) / 1024)
+                crash_total = number(sum(crash.get(p, 0) for p in rest) / 1024) if crash is not None else None
+                lines.append(f"| 其余 {len(rest)} 个 | {total} |" + (f" {crash_total} |" if crash is not None else ""))
+            lines.append("")
+    used = summary.get("tokens") or {}
+    shown = [n for n in names if n in used]
+    if shown:
+        lines += [
+            "### 模型用量（本机转发记的）",
+            "",
+            "每格：请求数（出错几次）；输入 token（其中缓存命中）；输出 token。",
+            "",
+            "| 场 | " + " | ".join(shown) + " |",
+            "|---|" + "---|" * len(shown),
+        ]
+        for scene, title in TOKEN_SCENES:
+            cells = []
+            for n in shown:
+                c = used[n].get(scene)
+                cells.append(
+                    "—"
+                    if not c
+                    else f"{c['requests']}（{c['errors']}）；{c['input']}（{c['cached']}）；{c['output']}"
+                )
+            if any(cell != "—" for cell in cells):
+                lines.append(f"| {title} | " + " | ".join(cells) + " |")
+        lines.append("")
     return "\n".join(lines)
+
+
+# 按文件列家目录的数据时最多列几个，剩下的合成一行。
+FILES_SHOWN = 25
 
 
 # 原始结果里不入库的格：命令输出的最后几行，带着本机的路径。

@@ -6,23 +6,27 @@
 # - {home}：这一家的沙箱家目录；{work}：工作目录的根（下面有 tui、task、long）；
 # - {prompt}：这一轮的话；{session}：长会话的编号；
 # - {miyu}、{tui}、{jcode}、{codex}：程序（照参数找到的，链接解开了）；{<程序>_dir}：它所在的目录；
-# - {release}：核心的 target/release；{core}：核心仓库；{tui_package}：终端仓库里的 tui/。
+# - {release}：核心的 target/release；{core}：核心仓库；{tui_package}：终端仓库里的 miyu-tui/（施工 PN-4 以前叫 tui/）。
 # key 不进占位、不写进任何文件：留在环境变量 OPENAI_API_KEY 里，各家从环境变量读。
 
 [miyu]
 name = "Miyu"
 programs = ["miyu", "tui"]
-# 首屏：屏幕上出现这几句里的一句（去掉空白比）就算到了。
-marker = ["Tab切换权限级别"]
+# 首屏：屏幕上出现这几句里的一句（去掉空白比）就算到了；占位照样换。挑连上核心、底下状态行报出模型才算到（施工 V-27 核对）：
+# 输入框和「Tab 切换权限级别」照机器缓存里记的先画（约 40 ms，那时还写着「正在连接核心…」），连上核心才有「工作区」，
+# 模型名再晚几十毫秒。和 jcode 的一样挑「界面报出用哪个模型」那一刻，不挑先画的架子。
+marker = ["{model}"]
 tui = ["{tui}"]
 resume = ["{tui}", "--resume", "{session}"]
 task = ["{miyu}", "ask", "{prompt}"]
 cont = ["{miyu}", "ask", "-c", "{prompt}"]
 # 热启动先起的后台进程。
 daemon = ["{miyu}", "core"]
-# 长会话：最新的那个会话目录的名字就是编号。
-session = { glob = "home/admin/sessions/*", id = "name" }
-session_files = ["home/admin/sessions/{session}"]
+# 长会话：最新的那个会话目录的名字就是编号。单人的，会话在数据根的 `sessions/<编号>/`（`store.md`，`DataRoot::session_dir`）。
+session = { glob = "sessions/*", id = "name" }
+session_files = ["sessions/{session}"]
+# 会一直复用的缓存（模型目录、图标、终端记的首页这类），硬盘那一场单列、不算进「跑过一次多了多少」（2026-10-31 项目主人定）。
+caches = [".cache"]
 install = [
   ["miyu（核心和命令行）", "{release}/miyu"],
   ["miyu-sandbox", "{release}/miyu-sandbox"],
@@ -47,19 +51,27 @@ run = [
   ["{miyu}", "config", "set", "providers.bench.key", '{ env = "OPENAI_API_KEY" }'],
   ["{miyu}", "config", "set", "models.chat", "bench/{model}"],
   ["{miyu}", "config", "set", "ui.welcomed", "true"],
+  # 新会话不问人格、预设，照默认的开（终端的 `tui.skip_pick`）：不然首屏是「请选择预设」的框，没有输入框（施工 V-27 查出）。
+  ["{miyu}", "config", "set", "tui.skip_pick", "true"],
 ]
 
 [jcode]
 name = "jcode"
 programs = ["jcode"]
-marker = ["Howwouldyouliketobegin", "OpenAI-compatible"]
+# 首屏：连上它的服务、头上那行报出供应商才算到（v0.99.1 先画一个空架子，约 20 ms 就有输入框，那时还没连上）。
+# v0.95 第一次开问的「How would you like to begin」v0.99.1 不再出现（施工 V-27 核对）。
+marker = ["OpenAI-compatible"]
 tui = ["{jcode}", "--no-update", "-p", "openai-compatible"]
 resume = ["{jcode}", "--no-update", "-p", "openai-compatible", "--resume", "{session}"]
 task = ["{jcode}", "--no-update", "run", "-p", "openai-compatible", "{prompt}"]
 cont = ["{jcode}", "--no-update", "--resume", "{session}", "run", "-p", "openai-compatible", "{prompt}"]
 daemon = ["{jcode}", "--no-update", "serve", "-p", "openai-compatible"]
+# 正常退出：停掉后台服务（量「好好退出以后」的家目录前先跑，剩下的再发 SIGTERM）。Miyu 没写，核心收到 SIGTERM 自己收尾。
+stop = ["{jcode}", "--no-update", "server", "stop"]
 session = { glob = ".jcode/sessions/*.json", id = "stem" }
 session_files = [".jcode/sessions/{session}*"]
+# 会一直复用的缓存：供应商的模型清单、会话搜索的索引缓存（`.jcode/cache/`）、远端的模型目录。
+caches = [".jcode/cache", ".config/jcode/remote_model_catalog_cache.json"]
 # 发行包是一个启动脚本加一个程序，压缩包、校验和不算。
 install = [
   ["jcode-linux-x86_64.bin", "{jcode_dir}/jcode-linux-x86_64.bin"],
@@ -93,6 +105,7 @@ cont = ["{codex}", "exec", "--skip-git-repo-check", "resume", "--last", "{prompt
 # 会话文件名的最后 36 个字是编号。
 session = { glob = "sessions/**/rollout-*.jsonl", id = "tail36" }
 session_files = ["sessions/**/rollout-*{session}.jsonl"]
+caches = [".cache"]
 # 装的是一个目录（程序在它的 bin/ 下，旁边是它带的 rg、bwrap）。
 install = [["codex（整个安装目录）", "{codex_dir}/.."]]
 

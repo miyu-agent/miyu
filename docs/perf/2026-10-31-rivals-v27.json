@@ -1,0 +1,4317 @@
+{
+  "conditions": {
+    "date": "2026-10-31",
+    "machine": {
+      "cpu": "AMD Ryzen 9 7940H w/ Radeon 780M Graphics",
+      "logical_cores": 16,
+      "memory_gb": 62.0,
+      "kernel": "7.2.10-zen1-1-zen",
+      "arch": "x86_64",
+      "pinned_cpus": "12-15"
+    },
+    "model": "beam-free",
+    "relay": true,
+    "load_before": [
+      15.36,
+      19.86,
+      20.04
+    ],
+    "core": "b9594775",
+    "tui": "49e8b217",
+    "tui_matches_heads_toml": true,
+    "versions": {
+      "Miyu": "miyu 0.0.0",
+      "jcode": "jcode v0.99.1 (7206efd0c)"
+    }
+  },
+  "scenes": {
+    "cold": {
+      "Miyu": {
+        "first_screen_ms": {
+          "median": 127.10774305742234,
+          "min": 120.50172802992165,
+          "max": 273.95122998859733,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 109.882,
+          "min": 98.116,
+          "max": 149.368,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 42.49609375,
+          "min": 34.46484375,
+          "max": 42.57421875,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "first_screen_ms": {
+          "median": 272.2941990941763,
+          "min": 159.41402700264007,
+          "max": 405.01391293946654,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 160.596,
+          "min": 95.534,
+          "max": 256.541,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 57.9609375,
+          "min": 57.142578125,
+          "max": 58.5341796875,
+          "n": 5
+        }
+      }
+    },
+    "idle": {
+      "Miyu": {
+        "cpu_pct": {
+          "median": 0.001545,
+          "min": 0.001345,
+          "max": 0.0018566666666666666,
+          "n": 5
+        },
+        "wakeups_per_s": {
+          "median": 0.08333333333333333,
+          "min": 0.08333333333333333,
+          "max": 0.08333333333333333,
+          "n": 5
+        },
+        "pty_bytes_per_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 39.380859375,
+          "min": 27.1845703125,
+          "max": 40.37890625,
+          "n": 5
+        },
+        "wchar_kib": {
+          "median": 10.431640625,
+          "min": 10.39453125,
+          "max": 10.48046875,
+          "n": 5
+        },
+        "write_kib": {
+          "median": 168.0,
+          "min": 152.0,
+          "max": 232.0,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "cpu_pct": {
+          "median": 0.5441183333333334,
+          "min": 0.42719666666666667,
+          "max": 0.59585,
+          "n": 5
+        },
+        "wakeups_per_s": {
+          "median": 8.35,
+          "min": 8.266666666666667,
+          "max": 8.683333333333334,
+          "n": 5
+        },
+        "pty_bytes_per_s": {
+          "median": 5.733333333333333,
+          "min": 5.733333333333333,
+          "max": 5.733333333333333,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 58.9521484375,
+          "min": 57.6181640625,
+          "max": 59.333984375,
+          "n": 5
+        },
+        "wchar_kib": {
+          "median": 89.0390625,
+          "min": 84.48828125,
+          "max": 92.9638671875,
+          "n": 5
+        },
+        "write_kib": {
+          "median": 352.0,
+          "min": 332.0,
+          "max": 412.0,
+          "n": 5
+        }
+      }
+    },
+    "warm": {
+      "Miyu": {
+        "first_screen_ms": {
+          "median": 99.8202059417963,
+          "min": 88.47418997902423,
+          "max": 113.16445702686906,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 65.703,
+          "min": 61.046,
+          "max": 80.259,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 42.443359375,
+          "min": 29.46875,
+          "max": 42.7255859375,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "first_screen_ms": {
+          "median": 164.9437639862299,
+          "min": 149.4578110286966,
+          "max": 204.6713479794562,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 95.829,
+          "min": 86.554,
+          "max": 130.721,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 57.0908203125,
+          "min": 56.8642578125,
+          "max": 58.1591796875,
+          "n": 5
+        }
+      }
+    },
+    "three": {
+      "Miyu": {
+        "pss_mib": {
+          "median": 48.7841796875,
+          "min": 42.4013671875,
+          "max": 49.505859375,
+          "n": 5
+        },
+        "idle_cpu_pct": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "pss_mib": {
+          "median": 74.654296875,
+          "min": 72.9638671875,
+          "max": 75.87890625,
+          "n": 5
+        },
+        "idle_cpu_pct": {
+          "median": 1.95371,
+          "min": 1.6619100000000002,
+          "max": 2.0324766666666667,
+          "n": 5
+        }
+      }
+    },
+    "task": {
+      "Miyu": {
+        "wall_s": {
+          "median": 7.625343365012668,
+          "min": 6.729993634973653,
+          "max": 9.29090897704009,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 148.395,
+          "min": 120.126,
+          "max": 203.854,
+          "n": 5
+        },
+        "peak_pss_mib": {
+          "median": 30.431640625,
+          "min": 24.4228515625,
+          "max": 30.6123046875,
+          "n": 5
+        },
+        "wchar_kib": {
+          "median": 383.375,
+          "min": 324.8857421875,
+          "max": 386.140625,
+          "n": 5
+        },
+        "write_kib": {
+          "median": 1184.0,
+          "min": 1096.0,
+          "max": 1272.0,
+          "n": 5
+        },
+        "read_kib": {
+          "median": 6584.0,
+          "min": 668.0,
+          "max": 41116.0,
+          "n": 5
+        },
+        "data_kib": {
+          "median": 375.884765625,
+          "min": 348.693359375,
+          "max": 376.3828125,
+          "n": 5
+        },
+        "data_clean_kib": {
+          "median": 26.8310546875,
+          "min": 23.7802734375,
+          "max": 27.3291015625,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "wall_s": {
+          "median": 9.585299764061347,
+          "min": 7.021989473956637,
+          "max": 14.500751493964344,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 217.695,
+          "min": 142.546,
+          "max": 332.585,
+          "n": 5
+        },
+        "peak_pss_mib": {
+          "median": 39.8779296875,
+          "min": 39.056640625,
+          "max": 40.697265625,
+          "n": 5
+        },
+        "wchar_kib": {
+          "median": 943.5703125,
+          "min": 759.857421875,
+          "max": 1321.76953125,
+          "n": 5
+        },
+        "write_kib": {
+          "median": 3084.0,
+          "min": 2772.0,
+          "max": 4768.0,
+          "n": 5
+        },
+        "read_kib": {
+          "median": 34988.0,
+          "min": 8996.0,
+          "max": 72636.0,
+          "n": 5
+        },
+        "data_kib": {
+          "median": 104.2646484375,
+          "min": 80.673828125,
+          "max": 154.3671875,
+          "n": 5
+        },
+        "data_clean_kib": {
+          "median": 104.4287109375,
+          "min": 80.9892578125,
+          "max": 154.685546875,
+          "n": 5
+        }
+      }
+    },
+    "long": {
+      "Miyu": {
+        "open_ms": {
+          "median": 54.56413805950433,
+          "min": 42.343094013631344,
+          "max": 84.54985299613327,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 58.184,
+          "min": 56.062,
+          "max": 78.093,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 42.841796875,
+          "min": 42.4912109375,
+          "max": 43.38671875,
+          "n": 5
+        }
+      },
+      "jcode": {
+        "open_ms": {
+          "median": 78.74685199931264,
+          "min": 69.56636894028634,
+          "max": 86.79547207430005,
+          "n": 5
+        },
+        "cpu_ms": {
+          "median": 102.69,
+          "min": 93.092,
+          "max": 110.349,
+          "n": 5
+        },
+        "pss_mib": {
+          "median": 73.7314453125,
+          "min": 72.298828125,
+          "max": 74.783203125,
+          "n": 5
+        }
+      }
+    }
+  },
+  "tokens": {
+    "Miyu": {
+      "homes": {
+        "requests": 1,
+        "errors": 0,
+        "input": 5596,
+        "cached": 2688,
+        "output": 31,
+        "reasoning": 27,
+        "runs": 1
+      },
+      "task": {
+        "requests": 29,
+        "errors": 0,
+        "input": 174857,
+        "cached": 131776,
+        "output": 2223,
+        "reasoning": 874,
+        "runs": 5
+      },
+      "long-gen": {
+        "requests": 56,
+        "errors": 0,
+        "input": 2064199,
+        "cached": 1852928,
+        "output": 2005,
+        "reasoning": 1373,
+        "runs": 1
+      }
+    },
+    "jcode": {
+      "homes": {
+        "requests": 1,
+        "errors": 0,
+        "input": 9288,
+        "cached": 64,
+        "output": 27,
+        "reasoning": 24,
+        "runs": 1
+      },
+      "task": {
+        "requests": 27,
+        "errors": 0,
+        "input": 275044,
+        "cached": 206080,
+        "output": 2856,
+        "reasoning": 809,
+        "runs": 5
+      },
+      "long-gen": {
+        "requests": 50,
+        "errors": 0,
+        "input": 2212238,
+        "cached": 2077248,
+        "output": 1087,
+        "reasoning": 690,
+        "runs": 1
+      }
+    }
+  },
+  "loads": [
+    4.48,
+    17.88
+  ],
+  "cpu_trace_ms": {
+    "Miyu": [
+      0.0,
+      0.4,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1,
+      0.0,
+      0.2,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.9,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "jcode": [
+      6.4,
+      1.1,
+      0.8,
+      0.8,
+      11.9,
+      27.8,
+      0.8,
+      0.8,
+      0.8,
+      1.5,
+      41.0,
+      0.7,
+      0.9,
+      0.8,
+      1.5,
+      37.6,
+      0.8,
+      0.9,
+      0.8,
+      1.3,
+      42.2,
+      0.9,
+      0.8,
+      1.0,
+      1.5,
+      34.9,
+      2.6,
+      0.9,
+      0.8,
+      1.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      37.2,
+      0.0,
+      0.1,
+      0.0,
+      0.0,
+      0.8,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      44.9,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.9,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      41.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      3.1,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      43.4,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.1,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "task_passed": {
+    "Miyu": "5/5",
+    "jcode": "5/5"
+  },
+  "disk": {
+    "install": {
+      "Miyu": {
+        "miyu（核心和命令行）": 35676160,
+        "miyu-sandbox": 548864,
+        "miyu-extract": 3207168,
+        "resources/": 7888896,
+        "miyu-tui（终端界面）": 24940544
+      },
+      "jcode": {
+        "jcode-linux-x86_64.bin": 171327488,
+        "启动脚本": 4096
+      }
+    },
+    "home_after_first_run": {
+      "Miyu": 360448,
+      "jcode": 319488
+    },
+    "home_caches": {
+      "Miyu": 8622080,
+      "jcode": 24576
+    },
+    "home_files": {
+      "Miyu": {
+        ".miyu-root": 4096,
+        "blobs/6c/6c71252db32ab7a31392baf52479eba3c6b767a69c476020fc79574eee116c71": 28672,
+        "config.toml": 4096,
+        "index/recall/memory-_none.db": 61440,
+        "index/recall/turns-_none.db": 61440,
+        "index/sessions.db": 8192,
+        "journal.jsonl": 4096,
+        "modules/memory/_none/000000000001.jsonl": 0,
+        "packages/miyu-tui/package.toml": 12288,
+        "run/core.lock": 0,
+        "run/socket": 4096,
+        "run/spawn.lock": 0,
+        "run/token": 4096,
+        "sessions/01a18d9f-0ce9-77e7-913a-66680e5b1d63/000000000001.jsonl": 16384,
+        "state/config/config.schema.json": 57344,
+        "state/config/reference.toml": 36864,
+        "state/log-salt": 4096,
+        "state/logs/core.log": 8192,
+        "state/logs/memory.jsonl": 4096,
+        "state/models/providers/bench.json": 4096,
+        "state/packages/.local/miyu-tui/desc": 4096,
+        "state/packages/.local/miyu-tui/files": 4096,
+        "state/rates.db": 8192,
+        "state/sandbox-probe.json": 4096,
+        "state/usage.db": 16384
+      },
+      "jcode": {
+        ".config/jcode/remote_model_catalog_cache.bak": 12288,
+        ".jcode/.auth.json.lock": 0,
+        ".jcode/.openai-auth.json.lock": 0,
+        ".jcode/active_pids/session_ant_1793377387592_dafe16245f75ae50": 4096,
+        ".jcode/builds/versions-prune.stamp": 0,
+        ".jcode/client_sessions/173569": 4096,
+        ".jcode/hotkey/last_dir": 4096,
+        ".jcode/keymap-snapshot.json": 4096,
+        ".jcode/last_focused_client_session": 4096,
+        ".jcode/last_seen_changelog": 4096,
+        ".jcode/logs/jcode-2026-10-31.log": 49152,
+        ".jcode/logs/memory/client-runtime-memory-2026-10-30.jsonl": 36864,
+        ".jcode/logs/memory/server-runtime-memory-2026-10-30.jsonl": 12288,
+        ".jcode/migrations/idle-animation-off": 4096,
+        ".jcode/migrations/swarm-spawn-mode-inline": 4096,
+        ".jcode/model-usage-v1.sqlite3": 20480,
+        ".jcode/model-usage-v1.sqlite3-shm": 32768,
+        ".jcode/model-usage-v1.sqlite3-wal": 0,
+        ".jcode/remote_header_hint.json": 4096,
+        ".jcode/servers.json": 4096,
+        ".jcode/session-metadata-v1.sqlite3": 4096,
+        ".jcode/session-metadata-v1.sqlite3-shm": 32768,
+        ".jcode/session-metadata-v1.sqlite3-wal": 61440,
+        ".jcode/sessions/session_llama_1793377380251_0ebe390c61ab7bee.bak": 4096,
+        ".jcode/sessions/session_llama_1793377380251_0ebe390c61ab7bee.json": 4096,
+        ".jcode/sessions-bak-prune.stamp": 0,
+        ".jcode/setup_hints.bak": 4096,
+        ".jcode/setup_hints.json": 4096
+      }
+    },
+    "long_session": {
+      "Miyu": 229376,
+      "jcode": 348160
+    },
+    "home_after_first_run_crash": {
+      "Miyu": 458752,
+      "jcode": 319488
+    },
+    "home_files_crash": {
+      "Miyu": {
+        ".miyu-root": 4096,
+        "journal.jsonl": 4096,
+        "config.toml": 4096,
+        "state/usage.db": 16384,
+        "state/rates.db": 8192,
+        "state/log-salt": 4096,
+        "state/usage.db-wal": 0,
+        "state/usage.db-shm": 32768,
+        "state/rates.db-wal": 0,
+        "state/rates.db-shm": 32768,
+        "state/sandbox-probe.json": 4096,
+        "run/spawn.lock": 0,
+        "run/core.lock": 0,
+        "run/token": 4096,
+        "run/socket": 4096,
+        "index/sessions.db": 8192,
+        "index/sessions.db-wal": 0,
+        "index/sessions.db-shm": 32768,
+        "state/logs/core.log": 8192,
+        "state/logs/memory.jsonl": 4096,
+        "state/config/config.schema.json": 57344,
+        "state/config/reference.toml": 36864,
+        "state/packages/.local/miyu-tui/desc": 4096,
+        "state/packages/.local/miyu-tui/files": 4096,
+        "state/models/providers/bench.json": 4096,
+        "packages/miyu-tui/package.toml": 12288,
+        "index/recall/memory-_none.db": 61440,
+        "index/recall/turns-_none.db": 61440,
+        "blobs/6c/6c71252db32ab7a31392baf52479eba3c6b767a69c476020fc79574eee116c71": 28672,
+        "sessions/01a18d9f-0ce9-77e7-913a-66680e5b1d63/000000000001.jsonl": 16384,
+        "modules/memory/_none/000000000001.jsonl": 0
+      },
+      "jcode": {
+        ".jcode/sessions-bak-prune.stamp": 0,
+        ".jcode/session-metadata-v1.sqlite3": 4096,
+        ".jcode/session-metadata-v1.sqlite3-wal": 61440,
+        ".jcode/session-metadata-v1.sqlite3-shm": 32768,
+        ".jcode/model-usage-v1.sqlite3": 20480,
+        ".jcode/.auth.json.lock": 0,
+        ".jcode/.openai-auth.json.lock": 0,
+        ".jcode/keymap-snapshot.json": 4096,
+        ".jcode/servers.json": 4096,
+        ".jcode/last_seen_changelog": 4096,
+        ".jcode/last_focused_client_session": 4096,
+        ".jcode/remote_header_hint.json": 4096,
+        ".jcode/model-usage-v1.sqlite3-wal": 0,
+        ".jcode/model-usage-v1.sqlite3-shm": 32768,
+        ".jcode/setup_hints.bak": 4096,
+        ".jcode/setup_hints.json": 4096,
+        ".jcode/logs/jcode-2026-10-31.log": 49152,
+        ".jcode/migrations/swarm-spawn-mode-inline": 4096,
+        ".jcode/migrations/idle-animation-off": 4096,
+        ".jcode/active_pids/session_ant_1793377387592_dafe16245f75ae50": 4096,
+        ".jcode/sessions/session_llama_1793377380251_0ebe390c61ab7bee.bak": 4096,
+        ".jcode/sessions/session_llama_1793377380251_0ebe390c61ab7bee.json": 4096,
+        ".jcode/hotkey/last_dir": 4096,
+        ".jcode/builds/versions-prune.stamp": 0,
+        ".jcode/client_sessions/173569": 4096,
+        ".jcode/logs/memory/server-runtime-memory-2026-10-30.jsonl": 12288,
+        ".jcode/logs/memory/client-runtime-memory-2026-10-30.jsonl": 36864,
+        ".config/jcode/remote_model_catalog_cache.bak": 12288
+      }
+    }
+  },
+  "runs": {
+    "cold": {
+      "Miyu": [
+        {
+          "tool": "Miyu",
+          "run": 0,
+          "first_screen_s": 0.12050172802992165,
+          "first_byte_s": 0.014830194064415991,
+          "startup_cpu_usec": 98116,
+          "startup_pss": 44597248,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 13.7001953125,
+          "idle_cpu_usec": 1052,
+          "idle_wakeups": 5,
+          "idle_wakeups_by_comm": {
+            "miyu-tui": 0,
+            "miyu": 5
+          },
+          "idle_pty_bytes": 0,
+          "idle_end_pss": 42024960,
+          "cpu_trace_usec": [
+            0,
+            353,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            62,
+            0,
+            195,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            13,
+            0,
+            940,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            99,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 99778,
+            "cpu_user_usec": 70625,
+            "cpu_system_usec": 29152,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0,
+              "miyu": 70000,
+              "awww": 0
+            },
+            "cgroup_memory_peak": 33419264,
+            "anon_now": 14520320,
+            "file_now": 14442496,
+            "peak_rss_sum": 50515968,
+            "peak_pss_sum": 44597248,
+            "last_pss_sum": 42024960,
+            "io": {
+              "rchar": 6540779,
+              "wchar": 10675,
+              "read_bytes": 11026432,
+              "write_bytes": 155648
+            },
+            "samples": 1448,
+            "procs": [
+              "awww",
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 1,
+          "first_screen_s": 0.12710774305742234,
+          "first_byte_s": 0.01919242599979043,
+          "startup_cpu_usec": 118510,
+          "startup_pss": 44642304,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 12.775390625,
+          "idle_cpu_usec": 807,
+          "idle_wakeups": 5,
+          "idle_wakeups_by_comm": {
+            "miyu-tui": 0,
+            "miyu": 5
+          },
+          "idle_pty_bytes": 0,
+          "idle_end_pss": 42340352,
+          "cpu_trace_usec": [
+            0,
+            482,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            243,
+            0,
+            124,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            9,
+            0,
+            729,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            69,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 120166,
+            "cpu_user_usec": 83882,
+            "cpu_system_usec": 36284,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0,
+              "miyu": 90000
+            },
+            "cgroup_memory_peak": 22519808,
+            "anon_now": 14213120,
+            "file_now": 3325952,
+            "peak_rss_sum": 50540544,
+            "peak_pss_sum": 44642304,
+            "last_pss_sum": 42340352,
+            "io": {
+              "rchar": 6535771,
+              "wchar": 10698,
+              "read_bytes": 1159168,
+              "write_bytes": 172032
+            },
+            "samples": 1448,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 2,
+          "first_screen_s": 0.27395122998859733,
+          "first_byte_s": 0.123352613998577,
+          "startup_cpu_usec": 149368,
+          "startup_pss": 44560384,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 14.3251953125,
+          "idle_cpu_usec": 927,
+          "idle_wakeups": 5,
+          "idle_wakeups_by_comm": {
+            "miyu-tui": 0,
+            "miyu": 5
+          },
+          "idle_pty_bytes": 0,
+          "idle_end_pss": 41293824,
+          "cpu_trace_usec": [
+            0,
+            450,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            159,
+            0,
+            140,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            13,
+            0,
+            851,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            63,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 151044,
+            "cpu_user_usec": 90333,
+            "cpu_system_usec": 60710,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 110000,
+              "awww": 0
+            },
+            "cgroup_memory_peak": 65675264,
+            "anon_now": 14565376,
+            "file_now": 45875200,
+            "peak_rss_sum": 50405376,
+            "peak_pss_sum": 44560384,
+            "last_pss_sum": 41293824,
+            "io": {
+              "rchar": 6542586,
+              "wchar": 10732,
+              "read_bytes": 40755200,
+              "write_bytes": 172032
+            },
+            "samples": 1450,
+            "procs": [
+              "awww",
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 3,
+          "first_screen_s": 0.1244135940214619,
+          "first_byte_s": 0.01994916400872171,
+          "startup_cpu_usec": 98953,
+          "startup_pss": 43508736,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 4.48046875,
+          "idle_cpu_usec": 908,
+          "idle_wakeups": 5,
+          "idle_wakeups_by_comm": {
+            "miyu-tui": 0,
+            "miyu": 5
+          },
+          "idle_pty_bytes": 0,
+          "idle_end_pss": 28505088,
+          "cpu_trace_usec": [
+            0,
+            434,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            36,
+            0,
+            190,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            13,
+            0,
+            842,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            53,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 100521,
+            "cpu_user_usec": 63793,
+            "cpu_system_usec": 36728,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0,
+              "miyu": 70000
+            },
+            "cgroup_memory_peak": 21413888,
+            "anon_now": 14090240,
+            "file_now": 3526656,
+            "peak_rss_sum": 49356800,
+            "peak_pss_sum": 43508736,
+            "last_pss_sum": 28505088,
+            "io": {
+              "rchar": 6535774,
+              "wchar": 10682,
+              "read_bytes": 2752512,
+              "write_bytes": 237568
+            },
+            "samples": 1448,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 4,
+          "first_screen_s": 0.13199849694501609,
+          "first_byte_s": 0.026046662940643728,
+          "startup_cpu_usec": 109882,
+          "startup_pss": 36139008,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 11.44140625,
+          "idle_cpu_usec": 1114,
+          "idle_wakeups": 5,
+          "idle_wakeups_by_comm": {
+            "miyu-tui": 0,
+            "miyu": 5
+          },
+          "idle_pty_bytes": 0,
+          "idle_end_pss": 34320384,
+          "cpu_trace_usec": [
+            0,
+            341,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            52,
+            0,
+            154,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            18,
+            0,
+            1029,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            67,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 111543,
+            "cpu_user_usec": 68078,
+            "cpu_system_usec": 43464,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 41312256,
+            "anon_now": 14159872,
+            "file_now": 7536640,
+            "peak_rss_sum": 49364992,
+            "peak_pss_sum": 36122624,
+            "last_pss_sum": 34320384,
+            "io": {
+              "rchar": 6535785,
+              "wchar": 10644,
+              "read_bytes": 17821696,
+              "write_bytes": 172032
+            },
+            "samples": 1447,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        }
+      ],
+      "jcode": [
+        {
+          "tool": "jcode",
+          "run": 0,
+          "first_screen_s": 0.2722941990941763,
+          "first_byte_s": 0.04148751008324325,
+          "startup_cpu_usec": 160596,
+          "startup_pss": 60776448,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 13.6220703125,
+          "idle_cpu_usec": 301933,
+          "idle_wakeups": 496,
+          "idle_wakeups_by_comm": {
+            "jcode": 496
+          },
+          "idle_pty_bytes": 344,
+          "idle_end_pss": 61815808,
+          "cpu_trace_usec": [
+            6425,
+            983,
+            865,
+            850,
+            28044,
+            7078,
+            793,
+            758,
+            814,
+            1471,
+            40975,
+            732,
+            813,
+            674,
+            1593,
+            37573,
+            841,
+            793,
+            794,
+            1240,
+            40233,
+            824,
+            607,
+            1000,
+            1151,
+            36743,
+            708,
+            824,
+            621,
+            1135,
+            0,
+            0,
+            24,
+            0,
+            35139,
+            0,
+            60,
+            0,
+            0,
+            698,
+            12,
+            0,
+            0,
+            0,
+            44207,
+            8572,
+            0,
+            0,
+            24,
+            867,
+            0,
+            0,
+            13,
+            14,
+            35105,
+            0,
+            0,
+            34,
+            0,
+            3064,
+            0,
+            25,
+            0,
+            0,
+            45857,
+            15,
+            39,
+            0,
+            0,
+            810,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 553130,
+            "cpu_user_usec": 217279,
+            "cpu_system_usec": 335850,
+            "cpu_by_comm_usec": {
+              "jcode": 90000,
+              "git": 0,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 48967680,
+            "anon_now": 14499840,
+            "file_now": 18632704,
+            "peak_rss_sum": 120532992,
+            "peak_pss_sum": 61843456,
+            "last_pss_sum": 61815808,
+            "io": {
+              "rchar": 8679983,
+              "wchar": 91176,
+              "read_bytes": 16945152,
+              "write_bytes": 339968
+            },
+            "samples": 1451,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 1,
+          "first_screen_s": 0.15941402700264007,
+          "first_byte_s": 0.023955318960361183,
+          "startup_cpu_usec": 95534,
+          "startup_pss": 60862464,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 9.6376953125,
+          "idle_cpu_usec": 357510,
+          "idle_wakeups": 521,
+          "idle_wakeups_by_comm": {
+            "jcode": 521
+          },
+          "idle_pty_bytes": 344,
+          "idle_end_pss": 60417024,
+          "cpu_trace_usec": [
+            4707,
+            1057,
+            769,
+            670,
+            6157,
+            29673,
+            794,
+            937,
+            795,
+            1232,
+            33626,
+            713,
+            905,
+            755,
+            1806,
+            39096,
+            705,
+            891,
+            640,
+            1264,
+            42225,
+            1830,
+            1616,
+            841,
+            1628,
+            27358,
+            37727,
+            1835,
+            795,
+            1548,
+            0,
+            0,
+            28,
+            0,
+            37184,
+            3199,
+            68,
+            0,
+            0,
+            765,
+            12,
+            0,
+            0,
+            0,
+            44904,
+            4106,
+            0,
+            0,
+            11,
+            976,
+            0,
+            0,
+            0,
+            32,
+            49719,
+            4447,
+            0,
+            31,
+            0,
+            3333,
+            0,
+            25,
+            0,
+            0,
+            43444,
+            1465,
+            40,
+            0,
+            0,
+            871,
+            0,
+            0,
+            0
+          ],
+          "final": {
+            "cpu_usec": 535484,
+            "cpu_user_usec": 209990,
+            "cpu_system_usec": 325493,
+            "cpu_by_comm_usec": {
+              "jcode": 80000,
+              "lspci": 0,
+              "git": 10000
+            },
+            "cgroup_memory_peak": 23658496,
+            "anon_now": 13836288,
+            "file_now": 278528,
+            "peak_rss_sum": 112922624,
+            "peak_pss_sum": 61537280,
+            "last_pss_sum": 60417024,
+            "io": {
+              "rchar": 8666109,
+              "wchar": 86516,
+              "read_bytes": 229376,
+              "write_bytes": 360448
+            },
+            "samples": 1447,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 2,
+          "first_screen_s": 0.17663911590352654,
+          "first_byte_s": 0.02324565197341144,
+          "startup_cpu_usec": 102486,
+          "startup_pss": 61377536,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 5.703125,
+          "idle_cpu_usec": 256318,
+          "idle_wakeups": 499,
+          "idle_wakeups_by_comm": {
+            "jcode": 499
+          },
+          "idle_pty_bytes": 344,
+          "idle_end_pss": 62216192,
+          "cpu_trace_usec": [
+            4748,
+            905,
+            753,
+            908,
+            7729,
+            27831,
+            833,
+            602,
+            830,
+            1366,
+            31119,
+            744,
+            971,
+            1029,
+            1229,
+            36057,
+            767,
+            708,
+            935,
+            1223,
+            31446,
+            880,
+            968,
+            1199,
+            1540,
+            30405,
+            2569,
+            1169,
+            623,
+            1084,
+            0,
+            0,
+            26,
+            0,
+            36446,
+            0,
+            58,
+            0,
+            0,
+            836,
+            10,
+            0,
+            0,
+            0,
+            33210,
+            0,
+            0,
+            0,
+            22,
+            601,
+            0,
+            0,
+            0,
+            25,
+            32213,
+            0,
+            0,
+            61,
+            0,
+            1930,
+            0,
+            52,
+            0,
+            0,
+            34758,
+            0,
+            0,
+            0,
+            0,
+            2089,
+            0,
+            34,
+            0
+          ],
+          "final": {
+            "cpu_usec": 438143,
+            "cpu_user_usec": 182793,
+            "cpu_system_usec": 255349,
+            "cpu_by_comm_usec": {
+              "jcode": 60000,
+              "lspci": 0,
+              "git": 0
+            },
+            "cgroup_memory_peak": 39538688,
+            "anon_now": 14344192,
+            "file_now": 15355904,
+            "peak_rss_sum": 112521216,
+            "peak_pss_sum": 73623552,
+            "last_pss_sum": 62216192,
+            "io": {
+              "rchar": 9953212,
+              "wchar": 87365,
+              "read_bytes": 10416128,
+              "write_bytes": 421888
+            },
+            "samples": 1449,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 3,
+          "first_screen_s": 0.40501391293946654,
+          "first_byte_s": 0.10504885693080723,
+          "startup_cpu_usec": 256541,
+          "startup_pss": 59918336,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 8.84326171875,
+          "idle_cpu_usec": 326471,
+          "idle_wakeups": 501,
+          "idle_wakeups_by_comm": {
+            "jcode": 501
+          },
+          "idle_pty_bytes": 344,
+          "idle_end_pss": 60489728,
+          "cpu_trace_usec": [
+            7937,
+            1693,
+            1585,
+            1301,
+            11910,
+            38960,
+            927,
+            833,
+            888,
+            1599,
+            44221,
+            857,
+            1142,
+            938,
+            1516,
+            44456,
+            802,
+            920,
+            1235,
+            1518,
+            45410,
+            910,
+            791,
+            1436,
+            1251,
+            43891,
+            1987,
+            864,
+            832,
+            1149,
+            0,
+            0,
+            37,
+            0,
+            44454,
+            0,
+            62,
+            0,
+            0,
+            1199,
+            11,
+            0,
+            0,
+            0,
+            47757,
+            0,
+            0,
+            0,
+            30,
+            777,
+            0,
+            0,
+            44,
+            0,
+            41501,
+            0,
+            15,
+            13,
+            0,
+            2227,
+            0,
+            39,
+            0,
+            0,
+            36023,
+            0,
+            0,
+            0,
+            0,
+            2331,
+            0,
+            45,
+            0
+          ],
+          "final": {
+            "cpu_usec": 696865,
+            "cpu_user_usec": 267921,
+            "cpu_system_usec": 428944,
+            "cpu_by_comm_usec": {
+              "jcode": 140000,
+              "sh": 0,
+              "readlink": 0,
+              "git": 30000,
+              "lspci": 20000
+            },
+            "cgroup_memory_peak": 76115968,
+            "anon_now": 14462976,
+            "file_now": 52346880,
+            "peak_rss_sum": 137502720,
+            "peak_pss_sum": 64801792,
+            "last_pss_sum": 60489728,
+            "io": {
+              "rchar": 9790555,
+              "wchar": 91684,
+              "read_bytes": 36323328,
+              "write_bytes": 356352
+            },
+            "samples": 1450,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci",
+              "readlink",
+              "sh"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 4,
+          "first_screen_s": 0.2952300950419158,
+          "first_byte_s": 0.05752144299913198,
+          "startup_cpu_usec": 203530,
+          "startup_pss": 60626944,
+          "settle_s": 13,
+          "idle_s": 60,
+          "loadavg": 12.55908203125,
+          "idle_cpu_usec": 350921,
+          "idle_wakeups": 519,
+          "idle_wakeups_by_comm": {
+            "jcode": 519
+          },
+          "idle_pty_bytes": 344,
+          "idle_end_pss": 61978624,
+          "cpu_trace_usec": [
+            6817,
+            1459,
+            786,
+            815,
+            17992,
+            26588,
+            907,
+            1102,
+            961,
+            1634,
+            45766,
+            900,
+            900,
+            675,
+            1216,
+            34631,
+            694,
+            856,
+            727,
+            1357,
+            46522,
+            799,
+            777,
+            673,
+            1692,
+            34913,
+            2839,
+            678,
+            851,
+            1308,
+            0,
+            0,
+            34,
+            0,
+            41028,
+            15602,
+            60,
+            0,
+            0,
+            825,
+            17,
+            0,
+            0,
+            0,
+            48760,
+            0,
+            0,
+            0,
+            30,
+            869,
+            0,
+            0,
+            61,
+            0,
+            47102,
+            6411,
+            0,
+            32,
+            0,
+            3920,
+            0,
+            46,
+            0,
+            0,
+            51994,
+            0,
+            0,
+            0,
+            0,
+            2883,
+            0,
+            39,
+            0
+          ],
+          "final": {
+            "cpu_usec": 661707,
+            "cpu_user_usec": 241936,
+            "cpu_system_usec": 419770,
+            "cpu_by_comm_usec": {
+              "jcode": 110000,
+              "git": 10000,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 83214336,
+            "anon_now": 14667776,
+            "file_now": 54296576,
+            "peak_rss_sum": 118386688,
+            "peak_pss_sum": 62040064,
+            "last_pss_sum": 61978624,
+            "io": {
+              "rchar": 9266885,
+              "wchar": 95195,
+              "read_bytes": 44236800,
+              "write_bytes": 417792
+            },
+            "samples": 1447,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci"
+            ]
+          }
+        }
+      ]
+    },
+    "long": {
+      "Miyu": [
+        {
+          "tool": "Miyu",
+          "run": 0,
+          "open_s": 0.05665895598940551,
+          "open_cpu_usec": 62178,
+          "open_pss": 44922880,
+          "loadavg": 6.63232421875,
+          "final": {
+            "cpu_usec": 115244,
+            "cpu_user_usec": 78231,
+            "cpu_system_usec": 37012,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 30359552,
+            "anon_now": 17436672,
+            "file_now": 8118272,
+            "peak_rss_sum": 55263232,
+            "peak_pss_sum": 49354752,
+            "last_pss_sum": 46622720,
+            "io": {
+              "rchar": 7954611,
+              "wchar": 27253,
+              "read_bytes": 5926912,
+              "write_bytes": 368640
+            },
+            "samples": 62,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 1,
+          "open_s": 0.05456413805950433,
+          "open_cpu_usec": 58184,
+          "open_pss": 44555264,
+          "loadavg": 6.50146484375,
+          "final": {
+            "cpu_usec": 109132,
+            "cpu_user_usec": 78140,
+            "cpu_system_usec": 30991,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 21487616,
+            "anon_now": 19189760,
+            "file_now": 159744,
+            "peak_rss_sum": 54403072,
+            "peak_pss_sum": 48581632,
+            "last_pss_sum": 46590976,
+            "io": {
+              "rchar": 7954612,
+              "wchar": 28535,
+              "read_bytes": 0,
+              "write_bytes": 352256
+            },
+            "samples": 62,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 2,
+          "open_s": 0.042343094013631344,
+          "open_cpu_usec": 56062,
+          "open_pss": 44854272,
+          "loadavg": 6.35693359375,
+          "final": {
+            "cpu_usec": 105587,
+            "cpu_user_usec": 70792,
+            "cpu_system_usec": 34794,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 70000
+            },
+            "cgroup_memory_peak": 21688320,
+            "anon_now": 17424384,
+            "file_now": 159744,
+            "peak_rss_sum": 55021568,
+            "peak_pss_sum": 49060864,
+            "last_pss_sum": 47070208,
+            "io": {
+              "rchar": 7954611,
+              "wchar": 28406,
+              "read_bytes": 0,
+              "write_bytes": 335872
+            },
+            "samples": 62,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 3,
+          "open_s": 0.04476324201095849,
+          "open_cpu_usec": 57338,
+          "open_pss": 45113344,
+          "loadavg": 6.16796875,
+          "final": {
+            "cpu_usec": 106732,
+            "cpu_user_usec": 77099,
+            "cpu_system_usec": 29632,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000,
+              "miyu": 70000
+            },
+            "cgroup_memory_peak": 23085056,
+            "anon_now": 17674240,
+            "file_now": 159744,
+            "peak_rss_sum": 55898112,
+            "peak_pss_sum": 49958912,
+            "last_pss_sum": 47337472,
+            "io": {
+              "rchar": 7954611,
+              "wchar": 28524,
+              "read_bytes": 0,
+              "write_bytes": 335872
+            },
+            "samples": 62,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 4,
+          "open_s": 0.08454985299613327,
+          "open_cpu_usec": 78093,
+          "open_pss": 45494272,
+          "loadavg": 6.39501953125,
+          "final": {
+            "cpu_usec": 140534,
+            "cpu_user_usec": 99355,
+            "cpu_system_usec": 41178,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 20000,
+              "miyu": 100000
+            },
+            "cgroup_memory_peak": 22237184,
+            "anon_now": 17592320,
+            "file_now": 159744,
+            "peak_rss_sum": 55767040,
+            "peak_pss_sum": 49909760,
+            "last_pss_sum": 47398912,
+            "io": {
+              "rchar": 7954613,
+              "wchar": 28327,
+              "read_bytes": 0,
+              "write_bytes": 368640
+            },
+            "samples": 62,
+            "procs": [
+              "miyu",
+              "miyu-tui"
+            ]
+          }
+        }
+      ],
+      "jcode": [
+        {
+          "tool": "jcode",
+          "run": 0,
+          "open_s": 0.08679547207430005,
+          "open_cpu_usec": 102690,
+          "open_pss": 76116992,
+          "loadavg": 6.50146484375,
+          "final": {
+            "cpu_usec": 111300,
+            "cpu_user_usec": 49146,
+            "cpu_system_usec": 62153,
+            "cpu_by_comm_usec": {
+              "jcode": 40000
+            },
+            "cgroup_memory_peak": 39944192,
+            "anon_now": 21237760,
+            "file_now": 14303232,
+            "peak_rss_sum": 97542144,
+            "peak_pss_sum": 70617088,
+            "last_pss_sum": 70617088,
+            "io": {
+              "rchar": 4837790,
+              "wchar": 252047,
+              "read_bytes": 11001856,
+              "write_bytes": 462848
+            },
+            "samples": 62,
+            "procs": [
+              "jcode"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 1,
+          "open_s": 0.08128617191687226,
+          "open_cpu_usec": 93092,
+          "open_pss": 78415872,
+          "loadavg": 6.30078125,
+          "final": {
+            "cpu_usec": 101727,
+            "cpu_user_usec": 46557,
+            "cpu_system_usec": 55169,
+            "cpu_by_comm_usec": {
+              "jcode": 30000,
+              "git": 0
+            },
+            "cgroup_memory_peak": 26943488,
+            "anon_now": 21573632,
+            "file_now": 339968,
+            "peak_rss_sum": 99381248,
+            "peak_pss_sum": 72938496,
+            "last_pss_sum": 72937472,
+            "io": {
+              "rchar": 5023072,
+              "wchar": 252479,
+              "read_bytes": 0,
+              "write_bytes": 528384
+            },
+            "samples": 62,
+            "procs": [
+              "git",
+              "jcode"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 2,
+          "open_s": 0.06956636894028634,
+          "open_cpu_usec": 93353,
+          "open_pss": 77313024,
+          "loadavg": 6.35693359375,
+          "final": {
+            "cpu_usec": 102636,
+            "cpu_user_usec": 44687,
+            "cpu_system_usec": 57949,
+            "cpu_by_comm_usec": {
+              "jcode": 40000
+            },
+            "cgroup_memory_peak": 26374144,
+            "anon_now": 21733376,
+            "file_now": 339968,
+            "peak_rss_sum": 99385344,
+            "peak_pss_sum": 71731200,
+            "last_pss_sum": 71729152,
+            "io": {
+              "rchar": 4838481,
+              "wchar": 251899,
+              "read_bytes": 0,
+              "write_bytes": 528384
+            },
+            "samples": 62,
+            "procs": [
+              "jcode"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 3,
+          "open_s": 0.07874685199931264,
+          "open_cpu_usec": 110349,
+          "open_pss": 75810816,
+          "loadavg": 6.39501953125,
+          "final": {
+            "cpu_usec": 124161,
+            "cpu_user_usec": 49919,
+            "cpu_system_usec": 74241,
+            "cpu_by_comm_usec": {
+              "jcode": 50000
+            },
+            "cgroup_memory_peak": 25886720,
+            "anon_now": 21168128,
+            "file_now": 339968,
+            "peak_rss_sum": 98791424,
+            "peak_pss_sum": 71953408,
+            "last_pss_sum": 71953408,
+            "io": {
+              "rchar": 4837869,
+              "wchar": 251888,
+              "read_bytes": 0,
+              "write_bytes": 528384
+            },
+            "samples": 62,
+            "procs": [
+              "jcode"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 4,
+          "open_s": 0.07737758499570191,
+          "open_cpu_usec": 103182,
+          "open_pss": 77915136,
+          "loadavg": 6.44384765625,
+          "final": {
+            "cpu_usec": 112480,
+            "cpu_user_usec": 41354,
+            "cpu_system_usec": 71125,
+            "cpu_by_comm_usec": {
+              "jcode": 50000
+            },
+            "cgroup_memory_peak": 26157056,
+            "anon_now": 21651456,
+            "file_now": 339968,
+            "peak_rss_sum": 99344384,
+            "peak_pss_sum": 72691712,
+            "last_pss_sum": 72691712,
+            "io": {
+              "rchar": 4837064,
+              "wchar": 251878,
+              "read_bytes": 0,
+              "write_bytes": 544768
+            },
+            "samples": 62,
+            "procs": [
+              "jcode"
+            ]
+          }
+        }
+      ]
+    },
+    "task": {
+      "Miyu": [
+        {
+          "tool": "Miyu",
+          "run": 0,
+          "exit": 0,
+          "wall_s": 6.729993634973653,
+          "settle_s": 1.0004495730390772,
+          "tests_pass": true,
+          "loadavg": 14.57470703125,
+          "data_growth_bytes": 357062,
+          "data_growth_files": 11,
+          "data_growth_clean_bytes": 24351,
+          "data_growth_clean_files": 1,
+          "shut": {
+            "seconds": 0.18647105700802058,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 196498,
+            "cpu_user_usec": 84029,
+            "cpu_system_usec": 112469,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "miyu": 100000,
+              "sh": 0,
+              "bwrap": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 53919744,
+            "anon_now": 10518528,
+            "file_now": 33992704,
+            "peak_rss_sum": 70402048,
+            "peak_pss_sum": 32099328,
+            "last_pss_sum": 29636608,
+            "io": {
+              "rchar": 4206709,
+              "wchar": 332683,
+              "read_bytes": 42102784,
+              "write_bytes": 1212416
+            },
+            "samples": 154,
+            "procs": [
+              "bash",
+              "bwrap",
+              "miyu",
+              "python3",
+              "sh",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 1,
+          "exit": 0,
+          "wall_s": 9.29090897704009,
+          "settle_s": 1.0003527599619702,
+          "tests_pass": true,
+          "loadavg": 16.4775390625,
+          "data_growth_bytes": 385416,
+          "data_growth_files": 11,
+          "data_growth_clean_bytes": 27985,
+          "data_growth_clean_files": 1,
+          "shut": {
+            "seconds": 0.18825662101153284,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 203854,
+            "cpu_user_usec": 92081,
+            "cpu_system_usec": 111772,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "miyu": 120000,
+              "sh": 0,
+              "bwrap": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 53710848,
+            "anon_now": 10428416,
+            "file_now": 34922496,
+            "peak_rss_sum": 69726208,
+            "peak_pss_sum": 31996928,
+            "last_pss_sum": 29218816,
+            "io": {
+              "rchar": 4256122,
+              "wchar": 395408,
+              "read_bytes": 39333888,
+              "write_bytes": 1302528
+            },
+            "samples": 204,
+            "procs": [
+              "bash",
+              "bwrap",
+              "miyu",
+              "python3",
+              "sh",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 2,
+          "exit": 0,
+          "wall_s": 7.625343365012668,
+          "settle_s": 1.0005580349825323,
+          "tests_pass": true,
+          "loadavg": 17.58251953125,
+          "data_growth_bytes": 384906,
+          "data_growth_files": 11,
+          "data_growth_clean_bytes": 27475,
+          "data_growth_clean_files": 1,
+          "shut": {
+            "seconds": 0.15737111889757216,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 148395,
+            "cpu_user_usec": 74366,
+            "cpu_system_usec": 74028,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "miyu": 70000
+            },
+            "cgroup_memory_peak": 28446720,
+            "anon_now": 10620928,
+            "file_now": 9089024,
+            "peak_rss_sum": 49917952,
+            "peak_pss_sum": 31909888,
+            "last_pss_sum": 29466624,
+            "io": {
+              "rchar": 4149949,
+              "wchar": 392959,
+              "read_bytes": 6742016,
+              "write_bytes": 1236992
+            },
+            "samples": 172,
+            "procs": [
+              "miyu",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 3,
+          "exit": 0,
+          "wall_s": 7.6221494630444795,
+          "settle_s": 1.000388688989915,
+          "tests_pass": true,
+          "loadavg": 16.05712890625,
+          "data_growth_bytes": 384916,
+          "data_growth_files": 11,
+          "data_growth_clean_bytes": 27485,
+          "data_growth_clean_files": 1,
+          "shut": {
+            "seconds": 0.1549225109629333,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 120126,
+            "cpu_user_usec": 59654,
+            "cpu_system_usec": 60471,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "miyu": 70000,
+              "sh": 0,
+              "bwrap": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 22724608,
+            "anon_now": 10334208,
+            "file_now": 3022848,
+            "peak_rss_sum": 71495680,
+            "peak_pss_sum": 31694848,
+            "last_pss_sum": 21356544,
+            "io": {
+              "rchar": 4228400,
+              "wchar": 392576,
+              "read_bytes": 1478656,
+              "write_bytes": 1122304
+            },
+            "samples": 172,
+            "procs": [
+              "bash",
+              "bwrap",
+              "miyu",
+              "python3",
+              "sh",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 4,
+          "exit": 0,
+          "wall_s": 8.37472429301124,
+          "settle_s": 1.0004243209259585,
+          "tests_pass": true,
+          "loadavg": 13.19482421875,
+          "data_growth_bytes": 384721,
+          "data_growth_files": 11,
+          "data_growth_clean_bytes": 27290,
+          "data_growth_clean_files": 1,
+          "shut": {
+            "seconds": 0.1534063610015437,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 127374,
+            "cpu_user_usec": 75353,
+            "cpu_system_usec": 52021,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "miyu": 60000,
+              "sh": 0,
+              "bwrap": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 23244800,
+            "anon_now": 10240000,
+            "file_now": 4251648,
+            "peak_rss_sum": 71204864,
+            "peak_pss_sum": 25609216,
+            "last_pss_sum": 20959232,
+            "io": {
+              "rchar": 4230077,
+              "wchar": 392180,
+              "read_bytes": 684032,
+              "write_bytes": 1138688
+            },
+            "samples": 187,
+            "procs": [
+              "bash",
+              "bwrap",
+              "miyu",
+              "python3",
+              "sh",
+              "sleep"
+            ]
+          }
+        }
+      ],
+      "jcode": [
+        {
+          "tool": "jcode",
+          "run": 0,
+          "exit": 0,
+          "wall_s": 14.500751493964344,
+          "settle_s": 1.0004918690538034,
+          "tests_pass": true,
+          "loadavg": 15.126953125,
+          "data_growth_bytes": 158072,
+          "data_growth_files": 2,
+          "data_growth_clean_bytes": 158398,
+          "data_growth_clean_files": 2,
+          "shut": {
+            "seconds": 0.09150645905174315,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 332585,
+            "cpu_user_usec": 177382,
+            "cpu_system_usec": 155203,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "jcode": 100000,
+              "lspci": 0,
+              "bash": 0,
+              "flatpak": 10000,
+              "python3": 0,
+              "": 0
+            },
+            "cgroup_memory_peak": 50663424,
+            "anon_now": 126976,
+            "file_now": 38617088,
+            "peak_rss_sum": 74928128,
+            "peak_pss_sum": 42674176,
+            "last_pss_sum": 146432,
+            "io": {
+              "rchar": 8432909,
+              "wchar": 1353492,
+              "read_bytes": 74379264,
+              "write_bytes": 4882432
+            },
+            "samples": 307,
+            "procs": [
+              "",
+              "bash",
+              "flatpak",
+              "jcode",
+              "lspci",
+              "python3",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 1,
+          "exit": 0,
+          "wall_s": 9.585299764061347,
+          "settle_s": 1.0003687619464472,
+          "tests_pass": true,
+          "loadavg": 17.80615234375,
+          "data_growth_bytes": 106767,
+          "data_growth_files": 2,
+          "data_growth_clean_bytes": 106935,
+          "data_growth_clean_files": 2,
+          "shut": {
+            "seconds": 0.06076585699338466,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 249690,
+            "cpu_user_usec": 130961,
+            "cpu_system_usec": 118728,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "jcode": 90000,
+              "lspci": 30000,
+              "bash": 0,
+              "flatpak": 0
+            },
+            "cgroup_memory_peak": 37597184,
+            "anon_now": 126976,
+            "file_now": 26337280,
+            "peak_rss_sum": 60112896,
+            "peak_pss_sum": 41815040,
+            "last_pss_sum": 147456,
+            "io": {
+              "rchar": 9161327,
+              "wchar": 966216,
+              "read_bytes": 44613632,
+              "write_bytes": 3158016
+            },
+            "samples": 210,
+            "procs": [
+              "bash",
+              "flatpak",
+              "jcode",
+              "lspci",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 2,
+          "exit": 0,
+          "wall_s": 10.680149417952634,
+          "settle_s": 1.0004195079673082,
+          "tests_pass": true,
+          "loadavg": 16.1279296875,
+          "data_growth_bytes": 129314,
+          "data_growth_files": 2,
+          "data_growth_clean_bytes": 129640,
+          "data_growth_clean_files": 2,
+          "shut": {
+            "seconds": 0.0600568390218541,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 217695,
+            "cpu_user_usec": 120527,
+            "cpu_system_usec": 97168,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "jcode": 60000,
+              "lspci": 0,
+              "git": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 37474304,
+            "anon_now": 126976,
+            "file_now": 25853952,
+            "peak_rss_sum": 62517248,
+            "peak_pss_sum": 42352640,
+            "last_pss_sum": 152576,
+            "io": {
+              "rchar": 7690038,
+              "wchar": 1134192,
+              "read_bytes": 35827712,
+              "write_bytes": 4448256
+            },
+            "samples": 232,
+            "procs": [
+              "bash",
+              "git",
+              "jcode",
+              "lspci",
+              "python3",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 3,
+          "exit": 0,
+          "wall_s": 7.021989473956637,
+          "settle_s": 1.0004394910065457,
+          "tests_pass": true,
+          "loadavg": 14.1962890625,
+          "data_growth_bytes": 82610,
+          "data_growth_files": 2,
+          "data_growth_clean_bytes": 82933,
+          "data_growth_clean_files": 2,
+          "shut": {
+            "seconds": 0.059757037088274956,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 168342,
+            "cpu_user_usec": 80438,
+            "cpu_system_usec": 87904,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "jcode": 40000,
+              "lspci": 0,
+              "bash": 0,
+              "python3": 0
+            },
+            "cgroup_memory_peak": 20975616,
+            "anon_now": 126976,
+            "file_now": 5365760,
+            "peak_rss_sum": 64049152,
+            "peak_pss_sum": 40953856,
+            "last_pss_sum": 152576,
+            "io": {
+              "rchar": 7400266,
+              "wchar": 778094,
+              "read_bytes": 12345344,
+              "write_bytes": 2945024
+            },
+            "samples": 160,
+            "procs": [
+              "bash",
+              "jcode",
+              "lspci",
+              "python3",
+              "sleep"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 4,
+          "exit": 0,
+          "wall_s": 8.323841460980475,
+          "settle_s": 1.0004911449505016,
+          "tests_pass": true,
+          "loadavg": 12.18115234375,
+          "data_growth_bytes": 104024,
+          "data_growth_files": 2,
+          "data_growth_clean_bytes": 104347,
+          "data_growth_clean_files": 2,
+          "shut": {
+            "seconds": 0.054041382973082364,
+            "forced": 0
+          },
+          "final": {
+            "cpu_usec": 142546,
+            "cpu_user_usec": 76405,
+            "cpu_system_usec": 66140,
+            "cpu_by_comm_usec": {
+              "sleep": 0,
+              "jcode": 40000,
+              "lspci": 0,
+              "bash": 0,
+              "flatpak": 0
+            },
+            "cgroup_memory_peak": 21479424,
+            "anon_now": 126976,
+            "file_now": 5734400,
+            "peak_rss_sum": 61616128,
+            "peak_pss_sum": 41444352,
+            "last_pss_sum": 153600,
+            "io": {
+              "rchar": 8497321,
+              "wchar": 951487,
+              "read_bytes": 9211904,
+              "write_bytes": 2838528
+            },
+            "samples": 186,
+            "procs": [
+              "bash",
+              "flatpak",
+              "jcode",
+              "lspci",
+              "sleep"
+            ]
+          }
+        }
+      ]
+    },
+    "three": {
+      "Miyu": [
+        {
+          "tool": "Miyu",
+          "run": 0,
+          "open_cpu_usec": 242337,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 0,
+          "pss": 49765376,
+          "loadavg": 10.376953125,
+          "finals": [
+            {
+              "cpu_usec": 221906,
+              "cpu_user_usec": 164042,
+              "cpu_system_usec": 57863,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0,
+                "miyu": 190000,
+                "awww": 0
+              },
+              "cgroup_memory_peak": 32903168,
+              "anon_now": 15192064,
+              "file_now": 12795904,
+              "peak_rss_sum": 52117504,
+              "peak_pss_sum": 39549952,
+              "last_pss_sum": 36175872,
+              "io": {
+                "rchar": 12434389,
+                "wchar": 11357,
+                "read_bytes": 13099008,
+                "write_bytes": 200704
+              },
+              "samples": 860,
+              "procs": [
+                "awww",
+                "miyu",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 12335,
+              "cpu_user_usec": 8532,
+              "cpu_system_usec": 3803,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 10000
+              },
+              "cgroup_memory_peak": 5595136,
+              "anon_now": 4018176,
+              "file_now": 0,
+              "peak_rss_sum": 16678912,
+              "peak_pss_sum": 8604672,
+              "last_pss_sum": 8604672,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 862,
+              "procs": [
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 11532,
+              "cpu_user_usec": 3290,
+              "cpu_system_usec": 8241,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5591040,
+              "anon_now": 4022272,
+              "file_now": 0,
+              "peak_rss_sum": 16834560,
+              "peak_pss_sum": 12921856,
+              "last_pss_sum": 12921856,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8212,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "miyu-tui"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 44089344
+        },
+        {
+          "tool": "Miyu",
+          "run": 1,
+          "open_cpu_usec": 284052,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 0,
+          "pss": 51910656,
+          "loadavg": 11.0703125,
+          "finals": [
+            {
+              "cpu_usec": 260328,
+              "cpu_user_usec": 204433,
+              "cpu_system_usec": 55895,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 10000,
+                "miyu": 230000,
+                "": 0
+              },
+              "cgroup_memory_peak": 19808256,
+              "anon_now": 14958592,
+              "file_now": 12288,
+              "peak_rss_sum": 51933184,
+              "peak_pss_sum": 39568384,
+              "last_pss_sum": 37041152,
+              "io": {
+                "rchar": 12429336,
+                "wchar": 11485,
+                "read_bytes": 53248,
+                "write_bytes": 151552
+              },
+              "samples": 861,
+              "procs": [
+                "",
+                "miyu",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 12376,
+              "cpu_user_usec": 7933,
+              "cpu_system_usec": 4442,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5861376,
+              "anon_now": 4014080,
+              "file_now": 0,
+              "peak_rss_sum": 16695296,
+              "peak_pss_sum": 9135104,
+              "last_pss_sum": 9135104,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8196,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 13719,
+              "cpu_user_usec": 6548,
+              "cpu_system_usec": 7170,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 10000
+              },
+              "cgroup_memory_peak": 5582848,
+              "anon_now": 4014080,
+              "file_now": 0,
+              "peak_rss_sum": 16719872,
+              "peak_pss_sum": 13787136,
+              "last_pss_sum": 13787136,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 860,
+              "procs": [
+                "miyu-tui"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 31252480
+        },
+        {
+          "tool": "Miyu",
+          "run": 2,
+          "open_cpu_usec": 201260,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 0,
+          "pss": 51153920,
+          "loadavg": 8.07275390625,
+          "finals": [
+            {
+              "cpu_usec": 184063,
+              "cpu_user_usec": 149621,
+              "cpu_system_usec": 34442,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0,
+                "miyu": 160000
+              },
+              "cgroup_memory_peak": 22364160,
+              "anon_now": 14942208,
+              "file_now": 2723840,
+              "peak_rss_sum": 50950144,
+              "peak_pss_sum": 38596608,
+              "last_pss_sum": 36369408,
+              "io": {
+                "rchar": 12429336,
+                "wchar": 11403,
+                "read_bytes": 1953792,
+                "write_bytes": 217088
+              },
+              "samples": 861,
+              "procs": [
+                "miyu",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 9834,
+              "cpu_user_usec": 5276,
+              "cpu_system_usec": 4558,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5562368,
+              "anon_now": 4022272,
+              "file_now": 0,
+              "peak_rss_sum": 16531456,
+              "peak_pss_sum": 9010176,
+              "last_pss_sum": 9010176,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 862,
+              "procs": [
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 9620,
+              "cpu_user_usec": 8701,
+              "cpu_system_usec": 918,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5599232,
+              "anon_now": 4014080,
+              "file_now": 0,
+              "peak_rss_sum": 16777216,
+              "peak_pss_sum": 13843456,
+              "last_pss_sum": 13843456,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "miyu-tui"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 33525760
+        },
+        {
+          "tool": "Miyu",
+          "run": 3,
+          "open_cpu_usec": 221174,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 0,
+          "pss": 51347456,
+          "loadavg": 7.376953125,
+          "finals": [
+            {
+              "cpu_usec": 200986,
+              "cpu_user_usec": 164826,
+              "cpu_system_usec": 36159,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0,
+                "miyu": 170000,
+                "awww": 0
+              },
+              "cgroup_memory_peak": 19693568,
+              "anon_now": 15081472,
+              "file_now": 98304,
+              "peak_rss_sum": 50860032,
+              "peak_pss_sum": 38646784,
+              "last_pss_sum": 36503552,
+              "io": {
+                "rchar": 12440198,
+                "wchar": 11704,
+                "read_bytes": 679936,
+                "write_bytes": 200704
+              },
+              "samples": 861,
+              "procs": [
+                "awww",
+                "miyu",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 12055,
+              "cpu_user_usec": 4019,
+              "cpu_system_usec": 8036,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0,
+                "awww": 0
+              },
+              "cgroup_memory_peak": 5853184,
+              "anon_now": 4014080,
+              "file_now": 0,
+              "peak_rss_sum": 16719872,
+              "peak_pss_sum": 9055232,
+              "last_pss_sum": 9055232,
+              "io": {
+                "rchar": 46054,
+                "wchar": 8431,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "awww",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 11378,
+              "cpu_user_usec": 6513,
+              "cpu_system_usec": 4865,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5070848,
+              "anon_now": 4009984,
+              "file_now": 0,
+              "peak_rss_sum": 16658432,
+              "peak_pss_sum": 13723648,
+              "last_pss_sum": 13723648,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "miyu-tui"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 30617600
+        },
+        {
+          "tool": "Miyu",
+          "run": 4,
+          "open_cpu_usec": 309206,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 0,
+          "pss": 44461056,
+          "loadavg": 15.29931640625,
+          "finals": [
+            {
+              "cpu_usec": 284742,
+              "cpu_user_usec": 204677,
+              "cpu_system_usec": 80064,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 10000,
+                "miyu": 250000,
+                "miyu-sandbox": 0
+              },
+              "cgroup_memory_peak": 29593600,
+              "anon_now": 15118336,
+              "file_now": 7913472,
+              "peak_rss_sum": 50876416,
+              "peak_pss_sum": 31867904,
+              "last_pss_sum": 29434880,
+              "io": {
+                "rchar": 12461665,
+                "wchar": 11726,
+                "read_bytes": 8491008,
+                "write_bytes": 167936
+              },
+              "samples": 861,
+              "procs": [
+                "miyu",
+                "miyu-sandbox",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 13739,
+              "cpu_user_usec": 8226,
+              "cpu_system_usec": 5512,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0,
+                "awww": 0
+              },
+              "cgroup_memory_peak": 5849088,
+              "anon_now": 4014080,
+              "file_now": 0,
+              "peak_rss_sum": 21889024,
+              "peak_pss_sum": 9247744,
+              "last_pss_sum": 9247744,
+              "io": {
+                "rchar": 46054,
+                "wchar": 8431,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 861,
+              "procs": [
+                "awww",
+                "miyu-tui"
+              ]
+            },
+            {
+              "cpu_usec": 13256,
+              "cpu_user_usec": 7544,
+              "cpu_system_usec": 5711,
+              "cpu_by_comm_usec": {
+                "miyu-tui": 0
+              },
+              "cgroup_memory_peak": 5853184,
+              "anon_now": 4022272,
+              "file_now": 0,
+              "peak_rss_sum": 16596992,
+              "peak_pss_sum": 13676544,
+              "last_pss_sum": 13676544,
+              "io": {
+                "rchar": 35206,
+                "wchar": 8204,
+                "read_bytes": 0,
+                "write_bytes": 0
+              },
+              "samples": 860,
+              "procs": [
+                "miyu-tui"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 41295872
+        }
+      ],
+      "jcode": [
+        {
+          "tool": "jcode",
+          "run": 0,
+          "open_cpu_usec": 211426,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 609743,
+          "pss": 79418368,
+          "loadavg": 11.7861328125,
+          "finals": [
+            {
+              "cpu_usec": 410184,
+              "cpu_user_usec": 168277,
+              "cpu_system_usec": 241906,
+              "cpu_by_comm_usec": {
+                "jcode": 70000,
+                "git": 0,
+                "lspci": 0
+              },
+              "cgroup_memory_peak": 24612864,
+              "anon_now": 15589376,
+              "file_now": 262144,
+              "peak_rss_sum": 114171904,
+              "peak_pss_sum": 45086720,
+              "last_pss_sum": 44976128,
+              "io": {
+                "rchar": 7364465,
+                "wchar": 96884,
+                "read_bytes": 221184,
+                "write_bytes": 622592
+              },
+              "samples": 858,
+              "procs": [
+                "git",
+                "jcode",
+                "lspci"
+              ]
+            },
+            {
+              "cpu_usec": 387942,
+              "cpu_user_usec": 145480,
+              "cpu_system_usec": 242461,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "": 0,
+                "git": 0
+              },
+              "cgroup_memory_peak": 14786560,
+              "anon_now": 6615040,
+              "file_now": 28672,
+              "peak_rss_sum": 69050368,
+              "peak_pss_sum": 26447872,
+              "last_pss_sum": 25304064,
+              "io": {
+                "rchar": 4718350,
+                "wchar": 56546,
+                "read_bytes": 0,
+                "write_bytes": 131072
+              },
+              "samples": 858,
+              "procs": [
+                "",
+                "git",
+                "jcode"
+              ]
+            },
+            {
+              "cpu_usec": 382726,
+              "cpu_user_usec": 166941,
+              "cpu_system_usec": 215785,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "git": 10000
+              },
+              "cgroup_memory_peak": 14671872,
+              "anon_now": 6639616,
+              "file_now": 28672,
+              "peak_rss_sum": 59625472,
+              "peak_pss_sum": 41808896,
+              "last_pss_sum": 41808896,
+              "io": {
+                "rchar": 4137267,
+                "wchar": 56217,
+                "read_bytes": 0,
+                "write_bytes": 163840
+              },
+              "samples": 858,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 54071296
+        },
+        {
+          "tool": "jcode",
+          "run": 1,
+          "open_cpu_usec": 271626,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 586113,
+          "pss": 78280704,
+          "loadavg": 16.609375,
+          "finals": [
+            {
+              "cpu_usec": 428198,
+              "cpu_user_usec": 178398,
+              "cpu_system_usec": 249799,
+              "cpu_by_comm_usec": {
+                "jcode": 80000,
+                "git": 0,
+                "lspci": 0,
+                "": 0
+              },
+              "cgroup_memory_peak": 23912448,
+              "anon_now": 14811136,
+              "file_now": 86016,
+              "peak_rss_sum": 105275392,
+              "peak_pss_sum": 43737088,
+              "last_pss_sum": 43634688,
+              "io": {
+                "rchar": 6947857,
+                "wchar": 96569,
+                "read_bytes": 217088,
+                "write_bytes": 565248
+              },
+              "samples": 859,
+              "procs": [
+                "",
+                "git",
+                "jcode",
+                "lspci"
+              ]
+            },
+            {
+              "cpu_usec": 386785,
+              "cpu_user_usec": 154189,
+              "cpu_system_usec": 232596,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "git": 10000
+              },
+              "cgroup_memory_peak": 16420864,
+              "anon_now": 8634368,
+              "file_now": 2002944,
+              "peak_rss_sum": 64024576,
+              "peak_pss_sum": 30126080,
+              "last_pss_sum": 30126080,
+              "io": {
+                "rchar": 3621739,
+                "wchar": 56051,
+                "read_bytes": 1642496,
+                "write_bytes": 135168
+              },
+              "samples": 859,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            },
+            {
+              "cpu_usec": 393270,
+              "cpu_user_usec": 155576,
+              "cpu_system_usec": 237694,
+              "cpu_by_comm_usec": {
+                "jcode": 60000,
+                "git": 0
+              },
+              "cgroup_memory_peak": 17784832,
+              "anon_now": 6569984,
+              "file_now": 3272704,
+              "peak_rss_sum": 65552384,
+              "peak_pss_sum": 40148992,
+              "last_pss_sum": 40148992,
+              "io": {
+                "rchar": 3956698,
+                "wchar": 56156,
+                "read_bytes": 2224128,
+                "write_bytes": 135168
+              },
+              "samples": 859,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 58118144
+        },
+        {
+          "tool": "jcode",
+          "run": 2,
+          "open_cpu_usec": 201172,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 553125,
+          "pss": 76508160,
+          "loadavg": 5.22607421875,
+          "finals": [
+            {
+              "cpu_usec": 387875,
+              "cpu_user_usec": 147395,
+              "cpu_system_usec": 240479,
+              "cpu_by_comm_usec": {
+                "jcode": 70000,
+                "lspci": 0,
+                "git": 0
+              },
+              "cgroup_memory_peak": 24371200,
+              "anon_now": 15343616,
+              "file_now": 102400,
+              "peak_rss_sum": 112664576,
+              "peak_pss_sum": 44073984,
+              "last_pss_sum": 44073984,
+              "io": {
+                "rchar": 7172279,
+                "wchar": 96110,
+                "read_bytes": 12288,
+                "write_bytes": 667648
+              },
+              "samples": 858,
+              "procs": [
+                "git",
+                "jcode",
+                "lspci"
+              ]
+            },
+            {
+              "cpu_usec": 366435,
+              "cpu_user_usec": 150543,
+              "cpu_system_usec": 215891,
+              "cpu_by_comm_usec": {
+                "jcode": 60000,
+                "git": 0
+              },
+              "cgroup_memory_peak": 15118336,
+              "anon_now": 6549504,
+              "file_now": 524288,
+              "peak_rss_sum": 70504448,
+              "peak_pss_sum": 26909696,
+              "last_pss_sum": 24269824,
+              "io": {
+                "rchar": 4589823,
+                "wchar": 58094,
+                "read_bytes": 1314816,
+                "write_bytes": 131072
+              },
+              "samples": 857,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            },
+            {
+              "cpu_usec": 368075,
+              "cpu_user_usec": 141169,
+              "cpu_system_usec": 226906,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "git": 10000
+              },
+              "cgroup_memory_peak": 15249408,
+              "anon_now": 6574080,
+              "file_now": 786432,
+              "peak_rss_sum": 62132224,
+              "peak_pss_sum": 40412160,
+              "last_pss_sum": 40412160,
+              "io": {
+                "rchar": 4288735,
+                "wchar": 57376,
+                "read_bytes": 1593344,
+                "write_bytes": 139264
+              },
+              "samples": 857,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 54738944
+        },
+        {
+          "tool": "jcode",
+          "run": 3,
+          "open_cpu_usec": 222864,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 498573,
+          "pss": 79564800,
+          "loadavg": 11.82861328125,
+          "finals": [
+            {
+              "cpu_usec": 375420,
+              "cpu_user_usec": 159452,
+              "cpu_system_usec": 215968,
+              "cpu_by_comm_usec": {
+                "jcode": 80000,
+                "lspci": 0,
+                "git": 0
+              },
+              "cgroup_memory_peak": 24924160,
+              "anon_now": 15532032,
+              "file_now": 327680,
+              "peak_rss_sum": 117297152,
+              "peak_pss_sum": 45917184,
+              "last_pss_sum": 45917184,
+              "io": {
+                "rchar": 6940945,
+                "wchar": 102245,
+                "read_bytes": 352256,
+                "write_bytes": 720896
+              },
+              "samples": 858,
+              "procs": [
+                "git",
+                "jcode",
+                "lspci"
+              ]
+            },
+            {
+              "cpu_usec": 353534,
+              "cpu_user_usec": 145021,
+              "cpu_system_usec": 208512,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "": 0,
+                "git": 20000
+              },
+              "cgroup_memory_peak": 17555456,
+              "anon_now": 8650752,
+              "file_now": 3297280,
+              "peak_rss_sum": 66162688,
+              "peak_pss_sum": 29546496,
+              "last_pss_sum": 29546496,
+              "io": {
+                "rchar": 3958127,
+                "wchar": 54773,
+                "read_bytes": 2314240,
+                "write_bytes": 131072
+              },
+              "samples": 858,
+              "procs": [
+                "",
+                "git",
+                "jcode"
+              ]
+            },
+            {
+              "cpu_usec": 363207,
+              "cpu_user_usec": 152204,
+              "cpu_system_usec": 211003,
+              "cpu_by_comm_usec": {
+                "jcode": 50000,
+                "git": 0
+              },
+              "cgroup_memory_peak": 17600512,
+              "anon_now": 6529024,
+              "file_now": 2916352,
+              "peak_rss_sum": 105943040,
+              "peak_pss_sum": 40341504,
+              "last_pss_sum": 40341504,
+              "io": {
+                "rchar": 4259465,
+                "wchar": 58613,
+                "read_bytes": 2129920,
+                "write_bytes": 172032
+              },
+              "samples": 858,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 60080128
+        },
+        {
+          "tool": "jcode",
+          "run": 4,
+          "open_cpu_usec": 290465,
+          "idle_s": 30.0,
+          "idle_cpu_usec": 589111,
+          "pss": 77002752,
+          "loadavg": 14.88720703125,
+          "finals": [
+            {
+              "cpu_usec": 462535,
+              "cpu_user_usec": 178743,
+              "cpu_system_usec": 283792,
+              "cpu_by_comm_usec": {
+                "jcode": 100000,
+                "git": 10000,
+                "lspci": 0
+              },
+              "cgroup_memory_peak": 24272896,
+              "anon_now": 15056896,
+              "file_now": 20480,
+              "peak_rss_sum": 117628928,
+              "peak_pss_sum": 43722752,
+              "last_pss_sum": 43720704,
+              "io": {
+                "rchar": 8049220,
+                "wchar": 104241,
+                "read_bytes": 8192,
+                "write_bytes": 663552
+              },
+              "samples": 859,
+              "procs": [
+                "git",
+                "jcode",
+                "lspci"
+              ]
+            },
+            {
+              "cpu_usec": 423754,
+              "cpu_user_usec": 160425,
+              "cpu_system_usec": 263328,
+              "cpu_by_comm_usec": {
+                "jcode": 70000,
+                "git": 20000
+              },
+              "cgroup_memory_peak": 17649664,
+              "anon_now": 10637312,
+              "file_now": 3108864,
+              "peak_rss_sum": 67301376,
+              "peak_pss_sum": 25975808,
+              "last_pss_sum": 25200640,
+              "io": {
+                "rchar": 5319422,
+                "wchar": 58109,
+                "read_bytes": 1855488,
+                "write_bytes": 131072
+              },
+              "samples": 859,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            },
+            {
+              "cpu_usec": 422080,
+              "cpu_user_usec": 157301,
+              "cpu_system_usec": 264778,
+              "cpu_by_comm_usec": {
+                "jcode": 60000,
+                "git": 0
+              },
+              "cgroup_memory_peak": 14630912,
+              "anon_now": 6516736,
+              "file_now": 0,
+              "peak_rss_sum": 67100672,
+              "peak_pss_sum": 38882304,
+              "last_pss_sum": 38882304,
+              "io": {
+                "rchar": 4039282,
+                "wchar": 56879,
+                "read_bytes": 0,
+                "write_bytes": 135168
+              },
+              "samples": 859,
+              "procs": [
+                "git",
+                "jcode"
+              ]
+            }
+          ],
+          "peak_cgroup_sum": 56553472
+        }
+      ]
+    },
+    "warm": {
+      "Miyu": [
+        {
+          "tool": "Miyu",
+          "run": 0,
+          "first_screen_s": 0.1057186140678823,
+          "startup_cpu_usec": 61046,
+          "tui_cpu_usec": 13541,
+          "daemon_cpu_usec": 47505,
+          "startup_pss": 44801024,
+          "loadavg": 10.322265625,
+          "final": {
+            "cpu_usec": 13541,
+            "cpu_user_usec": 7771,
+            "cpu_system_usec": 5770,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0,
+              "awww": 0
+            },
+            "cgroup_memory_peak": 14045184,
+            "anon_now": 4255744,
+            "file_now": 8900608,
+            "peak_rss_sum": 18386944,
+            "peak_pss_sum": 14265344,
+            "last_pss_sum": 14265344,
+            "io": {
+              "rchar": 30761,
+              "wchar": 7717,
+              "read_bytes": 6307840,
+              "write_bytes": 0
+            },
+            "samples": 3,
+            "procs": [
+              "awww",
+              "miyu-tui"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 91488,
+            "cpu_user_usec": 68217,
+            "cpu_system_usec": 23271,
+            "cpu_by_comm_usec": {
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 14090240,
+            "anon_now": 11857920,
+            "file_now": 249856,
+            "peak_rss_sum": 33480704,
+            "peak_pss_sum": 30466048,
+            "last_pss_sum": 30466048,
+            "io": {
+              "rchar": 6511336,
+              "wchar": 2542,
+              "read_bytes": 122880,
+              "write_bytes": 217088
+            },
+            "samples": 64,
+            "procs": [
+              "miyu"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 1,
+          "first_screen_s": 0.0998202059417963,
+          "startup_cpu_usec": 80259,
+          "tui_cpu_usec": 12439,
+          "daemon_cpu_usec": 67820,
+          "startup_pss": 44762112,
+          "loadavg": 10.5537109375,
+          "final": {
+            "cpu_usec": 12439,
+            "cpu_user_usec": 4794,
+            "cpu_system_usec": 7645,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0
+            },
+            "cgroup_memory_peak": 5844992,
+            "anon_now": 4018176,
+            "file_now": 8192,
+            "peak_rss_sum": 16666624,
+            "peak_pss_sum": 13752320,
+            "last_pss_sum": 13752320,
+            "io": {
+              "rchar": 35040,
+              "wchar": 7888,
+              "read_bytes": 0,
+              "write_bytes": 0
+            },
+            "samples": 3,
+            "procs": [
+              "miyu-tui"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 116074,
+            "cpu_user_usec": 80079,
+            "cpu_system_usec": 35994,
+            "cpu_by_comm_usec": {
+              "miyu": 110000
+            },
+            "cgroup_memory_peak": 14188544,
+            "anon_now": 12275712,
+            "file_now": 258048,
+            "peak_rss_sum": 33939456,
+            "peak_pss_sum": 30941184,
+            "last_pss_sum": 30941184,
+            "io": {
+              "rchar": 6508999,
+              "wchar": 2550,
+              "read_bytes": 114688,
+              "write_bytes": 204800
+            },
+            "samples": 64,
+            "procs": [
+              "miyu"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 2,
+          "first_screen_s": 0.08847418997902423,
+          "startup_cpu_usec": 64148,
+          "tui_cpu_usec": 11419,
+          "daemon_cpu_usec": 52729,
+          "startup_pss": 44505088,
+          "loadavg": 8.07275390625,
+          "final": {
+            "cpu_usec": 11419,
+            "cpu_user_usec": 4543,
+            "cpu_system_usec": 6876,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 0
+            },
+            "cgroup_memory_peak": 7909376,
+            "anon_now": 4022272,
+            "file_now": 2011136,
+            "peak_rss_sum": 16658432,
+            "peak_pss_sum": 13709312,
+            "last_pss_sum": 13709312,
+            "io": {
+              "rchar": 35089,
+              "wchar": 7888,
+              "read_bytes": 2113536,
+              "write_bytes": 0
+            },
+            "samples": 3,
+            "procs": [
+              "miyu-tui"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 86743,
+            "cpu_user_usec": 61126,
+            "cpu_system_usec": 25616,
+            "cpu_by_comm_usec": {
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 14503936,
+            "anon_now": 12128256,
+            "file_now": 262144,
+            "peak_rss_sum": 33796096,
+            "peak_pss_sum": 30726144,
+            "last_pss_sum": 30726144,
+            "io": {
+              "rchar": 6508997,
+              "wchar": 2541,
+              "read_bytes": 745472,
+              "write_bytes": 184320
+            },
+            "samples": 64,
+            "procs": [
+              "miyu"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 3,
+          "first_screen_s": 0.09099214209709316,
+          "startup_cpu_usec": 65703,
+          "tui_cpu_usec": 12089,
+          "daemon_cpu_usec": 53614,
+          "startup_pss": 30900224,
+          "loadavg": 7.75830078125,
+          "final": {
+            "cpu_usec": 12089,
+            "cpu_user_usec": 4052,
+            "cpu_system_usec": 8036,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000
+            },
+            "cgroup_memory_peak": 7131136,
+            "anon_now": 4022272,
+            "file_now": 1789952,
+            "peak_rss_sum": 16568320,
+            "peak_pss_sum": 8940544,
+            "last_pss_sum": 8940544,
+            "io": {
+              "rchar": 35040,
+              "wchar": 7888,
+              "read_bytes": 4009984,
+              "write_bytes": 0
+            },
+            "samples": 3,
+            "procs": [
+              "miyu-tui"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 86909,
+            "cpu_user_usec": 56638,
+            "cpu_system_usec": 30271,
+            "cpu_by_comm_usec": {
+              "miyu": 70000
+            },
+            "cgroup_memory_peak": 14327808,
+            "anon_now": 12189696,
+            "file_now": 266240,
+            "peak_rss_sum": 33656832,
+            "peak_pss_sum": 21890048,
+            "last_pss_sum": 21890048,
+            "io": {
+              "rchar": 6509002,
+              "wchar": 2542,
+              "read_bytes": 897024,
+              "write_bytes": 249856
+            },
+            "samples": 64,
+            "procs": [
+              "miyu"
+            ]
+          }
+        },
+        {
+          "tool": "Miyu",
+          "run": 4,
+          "first_screen_s": 0.11316445702686906,
+          "startup_cpu_usec": 74311,
+          "tui_cpu_usec": 17459,
+          "daemon_cpu_usec": 56852,
+          "startup_pss": 36272128,
+          "loadavg": 16.283203125,
+          "final": {
+            "cpu_usec": 17459,
+            "cpu_user_usec": 4136,
+            "cpu_system_usec": 13323,
+            "cpu_by_comm_usec": {
+              "miyu-tui": 10000
+            },
+            "cgroup_memory_peak": 27271168,
+            "anon_now": 4014080,
+            "file_now": 21315584,
+            "peak_rss_sum": 16773120,
+            "peak_pss_sum": 13863936,
+            "last_pss_sum": 13863936,
+            "io": {
+              "rchar": 35040,
+              "wchar": 7888,
+              "read_bytes": 20959232,
+              "write_bytes": 0
+            },
+            "samples": 3,
+            "procs": [
+              "miyu-tui"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 92743,
+            "cpu_user_usec": 66010,
+            "cpu_system_usec": 26732,
+            "cpu_by_comm_usec": {
+              "miyu": 80000
+            },
+            "cgroup_memory_peak": 18714624,
+            "anon_now": 12476416,
+            "file_now": 4280320,
+            "peak_rss_sum": 32731136,
+            "peak_pss_sum": 22339584,
+            "last_pss_sum": 22339584,
+            "io": {
+              "rchar": 6509003,
+              "wchar": 2526,
+              "read_bytes": 1335296,
+              "write_bytes": 217088
+            },
+            "samples": 64,
+            "procs": [
+              "miyu"
+            ]
+          }
+        }
+      ],
+      "jcode": [
+        {
+          "tool": "jcode",
+          "run": 0,
+          "first_screen_s": 0.1494578110286966,
+          "startup_cpu_usec": 86554,
+          "tui_cpu_usec": 48225,
+          "daemon_cpu_usec": 38329,
+          "startup_pss": 60121088,
+          "loadavg": 11.7861328125,
+          "final": {
+            "cpu_usec": 48225,
+            "cpu_user_usec": 18395,
+            "cpu_system_usec": 29830,
+            "cpu_by_comm_usec": {
+              "jcode": 10000
+            },
+            "cgroup_memory_peak": 14815232,
+            "anon_now": 6303744,
+            "file_now": 155648,
+            "peak_rss_sum": 42160128,
+            "peak_pss_sum": 28959744,
+            "last_pss_sum": 28959744,
+            "io": {
+              "rchar": 578408,
+              "wchar": 32871,
+              "read_bytes": 61440,
+              "write_bytes": 57344
+            },
+            "samples": 4,
+            "procs": [
+              "jcode"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 61798,
+            "cpu_user_usec": 19106,
+            "cpu_system_usec": 42692,
+            "cpu_by_comm_usec": {
+              "jcode": 20000,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 13914112,
+            "anon_now": 7892992,
+            "file_now": 1753088,
+            "peak_rss_sum": 48795648,
+            "peak_pss_sum": 41321472,
+            "last_pss_sum": 41321472,
+            "io": {
+              "rchar": 4803236,
+              "wchar": 18256,
+              "read_bytes": 942080,
+              "write_bytes": 114688
+            },
+            "samples": 65,
+            "procs": [
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 1,
+          "first_screen_s": 0.1855557489907369,
+          "startup_cpu_usec": 97745,
+          "tui_cpu_usec": 59393,
+          "daemon_cpu_usec": 38352,
+          "startup_pss": 60984320,
+          "loadavg": 17.88134765625,
+          "final": {
+            "cpu_usec": 59393,
+            "cpu_user_usec": 17509,
+            "cpu_system_usec": 41883,
+            "cpu_by_comm_usec": {
+              "jcode": 20000
+            },
+            "cgroup_memory_peak": 22544384,
+            "anon_now": 6336512,
+            "file_now": 9465856,
+            "peak_rss_sum": 41533440,
+            "peak_pss_sum": 29147136,
+            "last_pss_sum": 29147136,
+            "io": {
+              "rchar": 578241,
+              "wchar": 32876,
+              "read_bytes": 10563584,
+              "write_bytes": 57344
+            },
+            "samples": 5,
+            "procs": [
+              "jcode"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 62504,
+            "cpu_user_usec": 19076,
+            "cpu_system_usec": 43428,
+            "cpu_by_comm_usec": {
+              "jcode": 20000,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 27844608,
+            "anon_now": 7856128,
+            "file_now": 16191488,
+            "peak_rss_sum": 45883392,
+            "peak_pss_sum": 41213952,
+            "last_pss_sum": 41213952,
+            "io": {
+              "rchar": 3131065,
+              "wchar": 18126,
+              "read_bytes": 9396224,
+              "write_bytes": 98304
+            },
+            "samples": 66,
+            "procs": [
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 2,
+          "first_screen_s": 0.1649437639862299,
+          "startup_cpu_usec": 87231,
+          "tui_cpu_usec": 51065,
+          "daemon_cpu_usec": 36166,
+          "startup_pss": 59864064,
+          "loadavg": 5.15869140625,
+          "final": {
+            "cpu_usec": 51065,
+            "cpu_user_usec": 24036,
+            "cpu_system_usec": 27029,
+            "cpu_by_comm_usec": {
+              "jcode": 10000
+            },
+            "cgroup_memory_peak": 14483456,
+            "anon_now": 6320128,
+            "file_now": 122880,
+            "peak_rss_sum": 41168896,
+            "peak_pss_sum": 28425216,
+            "last_pss_sum": 28425216,
+            "io": {
+              "rchar": 578270,
+              "wchar": 32874,
+              "read_bytes": 1146880,
+              "write_bytes": 90112
+            },
+            "samples": 5,
+            "procs": [
+              "jcode"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 54587,
+            "cpu_user_usec": 20030,
+            "cpu_system_usec": 34557,
+            "cpu_by_comm_usec": {
+              "jcode": 20000,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 21786624,
+            "anon_now": 7815168,
+            "file_now": 10170368,
+            "peak_rss_sum": 47570944,
+            "peak_pss_sum": 41243648,
+            "last_pss_sum": 41243648,
+            "io": {
+              "rchar": 4135536,
+              "wchar": 18127,
+              "read_bytes": 5210112,
+              "write_bytes": 163840
+            },
+            "samples": 65,
+            "procs": [
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 3,
+          "first_screen_s": 0.1598864890402183,
+          "startup_cpu_usec": 95829,
+          "tui_cpu_usec": 56630,
+          "daemon_cpu_usec": 39199,
+          "startup_pss": 59685888,
+          "loadavg": 11.82861328125,
+          "final": {
+            "cpu_usec": 56630,
+            "cpu_user_usec": 19638,
+            "cpu_system_usec": 36992,
+            "cpu_by_comm_usec": {
+              "jcode": 10000
+            },
+            "cgroup_memory_peak": 21815296,
+            "anon_now": 6266880,
+            "file_now": 8933376,
+            "peak_rss_sum": 41279488,
+            "peak_pss_sum": 28769280,
+            "last_pss_sum": 28769280,
+            "io": {
+              "rchar": 578353,
+              "wchar": 32901,
+              "read_bytes": 4214784,
+              "write_bytes": 73728
+            },
+            "samples": 5,
+            "procs": [
+              "jcode"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 57738,
+            "cpu_user_usec": 21893,
+            "cpu_system_usec": 35844,
+            "cpu_by_comm_usec": {
+              "jcode": 20000,
+              "lspci": 0
+            },
+            "cgroup_memory_peak": 32296960,
+            "anon_now": 7409664,
+            "file_now": 21766144,
+            "peak_rss_sum": 45576192,
+            "peak_pss_sum": 40748032,
+            "last_pss_sum": 40748032,
+            "io": {
+              "rchar": 3132133,
+              "wchar": 18379,
+              "read_bytes": 13729792,
+              "write_bytes": 163840
+            },
+            "samples": 65,
+            "procs": [
+              "jcode",
+              "lspci"
+            ]
+          }
+        },
+        {
+          "tool": "jcode",
+          "run": 4,
+          "first_screen_s": 0.2046713479794562,
+          "startup_cpu_usec": 130721,
+          "tui_cpu_usec": 78461,
+          "daemon_cpu_usec": 52260,
+          "startup_pss": 59626496,
+          "loadavg": 14.703125,
+          "final": {
+            "cpu_usec": 78461,
+            "cpu_user_usec": 20365,
+            "cpu_system_usec": 58095,
+            "cpu_by_comm_usec": {
+              "jcode": 20000
+            },
+            "cgroup_memory_peak": 14675968,
+            "anon_now": 6352896,
+            "file_now": 159744,
+            "peak_rss_sum": 40001536,
+            "peak_pss_sum": 27593728,
+            "last_pss_sum": 27593728,
+            "io": {
+              "rchar": 578353,
+              "wchar": 32850,
+              "read_bytes": 8142848,
+              "write_bytes": 73728
+            },
+            "samples": 5,
+            "procs": [
+              "jcode"
+            ]
+          },
+          "daemon": {
+            "cpu_usec": 79822,
+            "cpu_user_usec": 32056,
+            "cpu_system_usec": 47766,
+            "cpu_by_comm_usec": {
+              "jcode": 30000,
+              "lspci": 0,
+              "git": 0
+            },
+            "cgroup_memory_peak": 14110720,
+            "anon_now": 7999488,
+            "file_now": 3969024,
+            "peak_rss_sum": 49418240,
+            "peak_pss_sum": 41431040,
+            "last_pss_sum": 41431040,
+            "io": {
+              "rchar": 3224404,
+              "wchar": 18228,
+              "read_bytes": 2646016,
+              "write_bytes": 147456
+            },
+            "samples": 66,
+            "procs": [
+              "git",
+              "jcode",
+              "lspci"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -8,24 +8,26 @@ from pathlib import Path
 import places
 
 
-def find(out):
-    """输出目录下内容里有 key 的文件。"""
-    key = os.environ.get(places.KEY, "").encode()
-    if not key or not Path(out).exists():
+def find(out, names=(places.KEY,)):
+    """输出目录下内容里有 key 的文件：`names` 是 key 所在的环境变量（用转发的另有真 key 的那一个，施工 V-27）。"""
+    keys = [os.environ.get(n, "").encode() for n in names if n]
+    keys = [k for k in keys if k and k != places.FAKE_KEY.encode()]
+    if not keys or not Path(out).exists():
         return []
     found = []
     for f in Path(out).rglob("*"):
         if f.is_file() and not f.is_symlink():
             try:
-                if key in f.read_bytes():
+                data = f.read_bytes()
+                if any(k in data for k in keys):
                     found.append(f)
             except OSError:
                 pass
     return found
 
 
-def report(out):
-    found = find(out)
+def report(out, names=(places.KEY,)):
+    found = find(out, names)
     if found:
         print(f"[leaks] {len(found)} 个文件里有 key（别家写的）：跑完把 {out} 整个删掉", flush=True)
         for f in found[:20]:

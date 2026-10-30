@@ -2,6 +2,9 @@
 
 端点和 key 只从环境变量来（OPENAI_BASE_URL、OPENAI_API_KEY、MIYU_BENCH_MODEL）：key 留在环境变量里交给各家，
 不写进任何文件、不打印；结果里只记模型名，不记地址。
+
+用本机转发的（`--upstream`，施工 V-27，`relay.py`）：真 key 在 `--upstream-key-env` 写的环境变量里，只交给转发进程；
+各家连转发，环境里是假 key（`FAKE_KEY`），不用设 OPENAI_BASE_URL、OPENAI_API_KEY。
 """
 
 import os
@@ -17,6 +20,12 @@ REPO = Path(__file__).resolve().parents[2]
 BASE_URL = "OPENAI_BASE_URL"
 KEY = "OPENAI_API_KEY"
 MODEL = "MIYU_BENCH_MODEL"
+
+# 终端仓库里装成软件包的那个目录：和包的编号同名（核心设计 48、施工 PN-4 起；以前叫 `tui/`），`heads.toml` 开头写着。
+TUI_PACKAGE = "miyu-tui"
+
+# 用转发时交给各家的假 key：转发换成真的。
+FAKE_KEY = "rivals-relay-placeholder"
 
 # 起各家之前从环境里去掉的：别让真家目录、真会话的设置漏进来。
 STRIPPED = ("MIYU_", "HERDR_", "CODEX_", "JCODE_")
@@ -43,6 +52,9 @@ class Places:
     cpus: str | None
     model: str
     base_url: str
+    # 用转发时：转发的根地址（`http://127.0.0.1:<端口>`，起来以后填）、真 key 在哪个环境变量里（施工 V-27）。
+    relay: str | None = None
+    upstream_key_env: str | None = None
 
     @property
     def homes(self):
@@ -72,7 +84,7 @@ class Places:
             "work": str(self.work),
             "core": str(self.core),
             "release": str(self.core / "target/release"),
-            "tui_package": str(self.tui_repo / "tui"),
+            "tui_package": str(self.tui_repo / TUI_PACKAGE),
         }
         for name, path in self.programs.items():
             # 没找到的（没装、也没指）不给占位：只量别的几家时用不到它（`rival.load` 查过要量的几家都找到了）。
@@ -101,7 +113,12 @@ def load(args):
     """照参数和环境变量定条件；缺了什么就说清楚、退出。"""
     if sys.platform != "linux":
         fail("只在 Linux 上量：CPU、内存照 cgroup v2 和 /proc 读（蓝图 perf.md「三家对比」）")
-    missing = [name for name in (BASE_URL, KEY, MODEL) if not os.environ.get(name)]
+    upstream = getattr(args, "upstream", None)
+    key_env = getattr(args, "upstream_key_env", None)
+    if upstream and not key_env:
+        fail("用 --upstream 时要用 --upstream-key-env 说真 key 在哪个环境变量里")
+    wanted = (MODEL, key_env) if upstream else (BASE_URL, KEY, MODEL)
+    missing = [name for name in wanted if not os.environ.get(name)]
     if missing:
         fail("没设环境变量 " + "、".join(missing))
     core = Path(args.core).resolve()
@@ -113,8 +130,8 @@ def load(args):
     for path, how in ((miyu, f"在 {core} 里 cargo build --release"), (tui, f"在 {tui_repo} 里 cargo build --release")):
         if not path.is_file():
             fail(f"没有 {path}：先{how}")
-    if not (tui_repo / "tui/package.toml").is_file():
-        fail(f"{tui_repo} 里没有 tui/package.toml，不是终端界面的仓库")
+    if not (tui_repo / TUI_PACKAGE / "package.toml").is_file():
+        fail(f"{tui_repo} 里没有 {TUI_PACKAGE}/package.toml，不是终端界面的仓库（施工 PN-4 以前的叫 tui/，太旧了）")
     programs = {"miyu": miyu, "tui": tui}
     for name in ("jcode", "codex"):
         programs[name] = program(getattr(args, name), name)
@@ -125,12 +142,14 @@ def load(args):
         out=Path(args.out).resolve(),
         cpus=args.cpus,
         model=os.environ[MODEL],
-        base_url=os.environ[BASE_URL],
+        # 用转发的，各家的地址照家算（`Rival.words`），这里只是占着。
+        base_url=os.environ.get(BASE_URL, "") if not upstream else "",
+        upstream_key_env=key_env if upstream else None,
     )
 
 
-def base_env():
-    """各家共用的环境：去掉 Miyu、herdr、codex、jcode 自己的变量，终端照同一种报。"""
-    env = {k: v for k, v in os.environ.items() if not k.startswith(STRIPPED)}
+def base_env(strip=()):
+    """各家共用的环境：去掉 Miyu、herdr、codex、jcode 自己的变量和 `strip` 里的（真 key 的变量），终端照同一种报。"""
+    env = {k: v for k, v in os.environ.items() if not k.startswith(STRIPPED) and k not in strip}
     env.update(TERM="xterm-256color", COLORTERM="truecolor", LANG="zh_CN.UTF-8")
     return env

@@ -7,7 +7,12 @@
 
     uv run bench/rivals/main.py --tui <终端仓库> all --into docs/perf
 
-端点、key、模型名照环境变量 OPENAI_BASE_URL、OPENAI_API_KEY、MIYU_BENCH_MODEL。
+端点、key、模型名照环境变量 OPENAI_BASE_URL、OPENAI_API_KEY、MIYU_BENCH_MODEL。经本机转发的（施工 V-27）：
+
+    uv run bench/rivals/main.py --tui <终端仓库> --upstream https://opencode.ai/zen/go/v1 \
+        --upstream-key-env OPENCODE_GO_API_KEY all --into docs/perf --tag <名>
+
+这时只要 MIYU_BENCH_MODEL 和真 key 的那个变量。
 """
 
 import argparse
@@ -23,6 +28,7 @@ import homes  # noqa: E402
 import leaks  # noqa: E402
 import long  # noqa: E402
 import places  # noqa: E402
+import relay  # noqa: E402
 import rival  # noqa: E402
 import screen  # noqa: E402
 import summary  # noqa: E402
@@ -38,6 +44,8 @@ def parse(argv):
     p.add_argument("--out", default=str(places.REPO / "target/rivals"), help="家目录、模板、原始结果放哪")
     p.add_argument("--cpus", help="绑到这几个核上量，例如 0-5；不写不绑")
     p.add_argument("--only", action="append", default=[], help="只量这一家（rivals.toml 的表名或显示名），可以写几次")
+    p.add_argument("--upstream", help="经本机转发连这个上游（到 /v1 为止）：各家连转发，转发换上真 key、补会话头（relay.py）")
+    p.add_argument("--upstream-key-env", help="用 --upstream 时，真 key 在哪个环境变量里（只交给转发）")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("homes", help="做家目录模板：配好模型、跑一轮、开一次终端界面")
     timing = argparse.ArgumentParser(add_help=False)
@@ -78,6 +86,8 @@ def recalled(where, rivals):
 def main(argv):
     args = parse(argv)
     where = places.load(args)
+    if args.upstream and args.command != "summary" and args.command != "disk":
+        relay.start(where, args.upstream)
     rivals = rival.load(where, args.only)
     into = Path(args.into).resolve() if getattr(args, "into", None) else None
     if args.command in ("homes", "all"):
@@ -100,7 +110,7 @@ def main(argv):
         disk.run(where, rivals)
     if args.command in ("summary", "all"):
         summary.run(where, rivals, recalled(where, rivals), into, args.tag)
-    leaks.report(where.out)
+    leaks.report(where.out, (places.KEY, where.upstream_key_env))
 
 
 if __name__ == "__main__":

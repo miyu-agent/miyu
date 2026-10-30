@@ -1,12 +1,14 @@
 """开终端界面的几个场景（施工 V-7）：冷启动到首屏、空闲、热启动到首屏、三个会话同时开。"""
 
 import json
+import os
 import subprocess
 import time
 
 import homes
 import meter
 import reap
+import relay
 import term
 
 
@@ -45,6 +47,8 @@ def cold(r, rivals, i, settle, idle):
 
     记每秒的 CPU，看收尾要多久才平；空闲那段记 CPU、唤醒、终端收到多少字节、结束时的常驻内存。"""
     homes.restore(r, rivals)
+    relay.mark(r.where, r.key, f"screen-{i}")
+    load = os.getloadavg()[0]
     screen, m = open_tui(r, f"{r.key}-cold-{i}")
     shown = first_screen(r, screen)
     out = {
@@ -56,6 +60,7 @@ def cold(r, rivals, i, settle, idle):
         "startup_pss": m.pss_now(),
         "settle_s": settle,
         "idle_s": idle,
+        "loadavg": load,
     }
     trace = []
     for _ in range(int(settle)):
@@ -95,6 +100,7 @@ def warm(r, rivals, i):
     if daemon is None:
         return None
     homes.restore(r, rivals)
+    load = os.getloadavg()[0]
     unit = meter.new_unit(f"{r.key}-daemon-{i}")
     dm = meter.Meter(unit)
     proc = subprocess.Popen(
@@ -119,6 +125,7 @@ def warm(r, rivals, i):
         "tui_cpu_usec": tui_cpu,
         "daemon_cpu_usec": daemon_cpu,
         "startup_pss": m.pss_now() + dm.pss_now(),
+        "loadavg": load,
     }
     out["final"], out["daemon"] = m.stop(), dm.stop()
     screen.close()
@@ -142,6 +149,7 @@ def pump_all(opened, seconds):
 def three(r, rivals, i, settle, idle):
     """同时开三个终端界面（各自一个会话），都到首屏后先等 `settle` 秒，再空闲 `idle` 秒：三个 scope 加起来。"""
     homes.restore(r, rivals)
+    load = os.getloadavg()[0]
     opened = []
     for k in range(3):
         screen, m = open_tui(r, f"{r.key}-three-{i}-{k}")
@@ -158,6 +166,7 @@ def three(r, rivals, i, settle, idle):
         "idle_s": idle,
         "idle_cpu_usec": sum(m.cpu_usec()[0] for _, m in opened) - cpu0,
         "pss": sum(m.pss_now() for _, m in opened),
+        "loadavg": load,
     }
     out["finals"] = [m.stop() for _, m in opened]
     out["peak_cgroup_sum"] = sum(f["cgroup_memory_peak"] for f in out["finals"])

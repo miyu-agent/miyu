@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1004</b><span>/ 1013 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1005</b><span>/ 1014 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-24补</b><span>最近一步（V-24 补 快照直接比较）</span></li>
+    <li><b class="mono">V-27</b><span>最近一步（V-27 三家对比照现在的样子）</span></li>
   </ul>
 </header>
 
@@ -490,6 +490,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV23"><span class="n">V-23</span>封存支线当场退下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV24"><span class="n">V-24</span>图片不每步重验<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV24b"><span class="n">V-24补</span>快照直接比较<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV27"><span class="n">V-27</span>三家对比照现在的样子<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -10615,6 +10616,64 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-24补-快照直接比较.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV27" aria-labelledby="h-sV27">
+  <div class="sheet-head"><h2 id="h-sV27"><span class="no">V-27</span>三家对比照现在的样子</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">三家对比的测具跟上现在的核心、终端和 jcode v0.99.1，两家经本机转发连同一个模型，跑一遍正式的 Miyu 对 jcode。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">三家对比照现在的样子</span><span class="dir-note">V-27</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>会话目录、终端包 <code>miyu-tui/</code>、jcode 首屏照现在的样子</li>
+              <li>本机转发 <code>relay.py</code>：换真 key、补会话头、记用量</li>
+              <li>首屏两家都等报出模型；Miyu 开 <code>tui.skip_pick</code></li>
+              <li>模板开两次再存、不拷套接字</li>
+              <li>硬盘缓存单列、Miyu 数据按文件；家目录两种口径</li>
+              <li>量之前、每一轮开头记负载</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">真 key 只在转发进程里，各家只拿假 key</span><span class="rl">施工 V-27</span></div>
+          <div class="tile new"><span class="nm">会话头照「这一家、这一场、第一句用户的话」补，两家一样</span><span class="rl">施工 V-27</span></div>
+          <div class="tile new"><span class="nm">复用的缓存不算进「跑过一次多了多少」</span><span class="rl">项目主人 2026-10-31</span></div>
+          <div class="tile new"><span class="nm">家目录直接杀掉、好好退出两种口径都列</span><span class="rl">项目主人 2026-10-31</span></div>
+          <div class="tile new"><span class="nm">配置参考两份照实列，不为数字好看省</span><span class="rl">项目主人 2026-10-31</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-27</dd></div>
+        <div><dt>名称</dt><dd>三家对比照现在的样子</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-31</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-27</dd></div>
+        <div><dt>验收</dt><dd>beam-free 跑完 all，两家真任务都 5/5，结果进 docs/perf</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>转发：会话头稳定、换 key、补头、记用量、日志里没有 key</span></li>
+        <li><span class="ok">✓</span><span>各家环境里没有真 key；leaks.py 和真 key 搜 target/rivals 都没有</span></li>
+        <li><span class="ok">✓</span><span>好好退出等收尾、不走的过时限才硬杀；两种口径都进 disk.json</span></li>
+        <li><span class="ok">✓</span><span>门禁全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-27-三家对比照现在的样子.md</code>；结果 <code>docs/perf/2026-10-31-rivals-v27.md</code>。</li>
       </ul>
     </div>
   </div>
