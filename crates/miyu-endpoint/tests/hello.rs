@@ -48,7 +48,9 @@ async fn host_has_the_three_fields_when_the_workspace_already_exists() {
 
     let workspace = host["workspace"].as_str().expect("workspace 是字符串");
     let expected = std::fs::canonicalize(home.root.workspace()).expect("在");
-    assert_eq!(workspace, expected.display().to_string(), "{reply}");
+    assert_eq!(workspace, miyu_fs::plain(&expected), "{reply}");
+    // Windows 上真实位置带 `\\?\`，交给头的不带（施工 WP-1：头拿它列目录找不到）。
+    assert!(!workspace.starts_with(r"\\?\"), "{reply}");
 }
 
 /// 握手不该替每一个连上来的头造目录：没人建过工作区，`host.workspace` 照原样交回、不在磁盘上建出它（施工

@@ -70,7 +70,7 @@
 | `protocol` | 选定的主版本：`1` |
 | `core` | `{"version"}`：核心的版本 |
 | `avatar` | 你的头像的版本，有头像的才带（施工 AV-1）：头照它换缓存，图用 `account.avatar` 取 |
-| `host` | `{"home", "platform", "workspace", "dirs"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、默认工作区、照 XDG 的几处 `{"pictures", "videos", "documents", "downloads"}`（在的给真实位置、还没建的照原样，施工 Y-11 上）。远程的连接整个没有（施工 Y-1 下）；扩展的没有 `dirs` |
+| `host` | `{"home", "platform", "workspace", "dirs"}`：系统的家目录（读不出的是 `null`）、`linux`/`macos`/`windows`、默认工作区、照 XDG 的几处 `{"pictures", "videos", "documents", "downloads"}`（在的给真实位置、还没建的照原样，施工 Y-11 上；Windows 上不带 `\\?\` 前缀，施工 WP-1）。远程的连接整个没有（施工 Y-1 下）；扩展的没有 `dirs` |
 | `language` | `zh`、`en`、`ja`：之后给人看的字用哪种。配置改了语言，下一句就照新的，不用再握手 |
 | `view` | 视图投影的版本，现在是 `1`（见 [会话](sessions.md) 的 `view.page`） |
 | `sandbox` | `{"usable": true}`，或者 `{"usable": false, "reason"}`：`helper_missing`、`helper_failed`、`no_mechanism` |

@@ -306,13 +306,9 @@ fn system(locale: Option<&str>) -> &'static str {
 /// 起来时就建好了（`core.md`），握手不该替每一个连上来的头造目录；换不成的（没建出来）照原样交回，工具自己用到时会报错。另带
 /// `dirs`：照 XDG 的那几处，同 `workspace` 的给法（施工 Y-11 上）。
 fn host(core: &Core) -> Value {
-    // 在的照真实位置，还没建的照原样：握手不替人建目录。
-    let shown = |dir: std::path::PathBuf| {
-        std::fs::canonicalize(&dir)
-            .unwrap_or(dir)
-            .display()
-            .to_string()
-    };
+    // 在的照真实位置，还没建的照原样：握手不替人建目录。Windows 上真实位置带的 `\\?\` 去掉（施工 WP-1：头拿它列目录找不到）。
+    let shown =
+        |dir: std::path::PathBuf| miyu_fs::plain(&std::fs::canonicalize(&dir).unwrap_or(dir));
     let mut host = json!({
         "home": core.home.as_deref().map(|home| home.display().to_string()),
         "platform": std::env::consts::OS,

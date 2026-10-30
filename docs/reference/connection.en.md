@@ -70,7 +70,7 @@ Give exactly one kind of credential: `token`, `code`, `login`, `ticket` or `pass
 | `protocol` | The chosen major version: `1` |
 | `core` | `{"version"}`: the core's version |
 | `avatar` | The version of your avatar, only when it has one (construction AV-1): heads use it to refresh their cache and fetch the picture with `account.avatar` |
-| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the default workspace, and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise, step Y-11). Not given to remote connections (Y-1 下); extensions get no `dirs` |
+| `host` | `{"home", "platform", "workspace", "dirs"}`: the system home directory (`null` if unknown), `linux`/`macos`/`windows`, the default workspace, and the XDG-style folders `{"pictures", "videos", "documents", "downloads"}` (the real path when it exists and as is otherwise, step Y-11; on Windows without the `\\?\` prefix, step WP-1). Not given to remote connections (Y-1 下); extensions get no `dirs` |
 | `language` | `zh`, `en` or `ja`: the language for text from now on. If the setting changes, the next message follows it without a new handshake |
 | `view` | The view projection version, currently `1` (see `view.page` in [Sessions](sessions.en.md)) |
 | `sandbox` | `{"usable": true}`, or `{"usable": false, "reason"}`: `helper_missing`, `helper_failed`, `no_mechanism` |

@@ -12,7 +12,8 @@
 //! - [`trash`]：系统的回收站，放进去、移回来（施工 4-6 下，4-7 上挪来）；
 //! - [`list_dir()`]：列一层目录，像 shell 补全那样（`fs.list`，施工 W-2）；
 //! - [`Index`]：模糊找文件的清单；[`score()`]：打分，`fs.find` 用（施工 W-2）；
-//! - [`read_range()`]：安全地打开以后读一段，`blob.get`、`fs.read` 共用（施工 W-6）。
+//! - [`read_range()`]：安全地打开以后读一段，`blob.get`、`fs.read` 共用（施工 W-6）；
+//! - [`plain()`]：交给人、给头看的路径去掉 Windows 的 `\\?\` 前缀（施工 WP-1）。
 
 mod boundary;
 mod find;
@@ -20,6 +21,7 @@ mod list;
 #[cfg(unix)]
 mod nofollow;
 mod open;
+mod plain;
 mod private;
 mod range;
 mod readonly;
@@ -32,6 +34,7 @@ pub use boundary::{Boundary, Places, Zone, system_dirs, within};
 pub use find::{Built, CAP, DEPTH, FRESH_SECS, Found, Index, MAX_INDEXES, SHOWN, score};
 pub use list::{Entry, list_dir};
 pub use open::{Kind, OpenError, open_file};
+pub use plain::plain;
 pub use private::{SHIPPED_PRIVATE, private_dirs, private_dirs_with, too_broad, written};
 pub use range::{MAX_LENGTH, Segment, read_range};
 pub use readonly::{Readonly, ReadonlyEntry, SHIPPED_READONLY, readonly_entry};
