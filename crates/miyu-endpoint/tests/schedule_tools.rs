@@ -139,6 +139,30 @@ async fn she_sets_the_next_wakeup_of_this_session_s_loop() {
 }
 
 #[tokio::test]
+async fn a_wakeup_too_far_to_write_waits_until_the_last_moment() {
+    let home = Home::new();
+    let plays = vec![
+        Play::calls(&[("schedule_wakeup", r#"{"delay_seconds":1000000000000000}"#)]),
+        Play::Says("等着。"),
+    ];
+    let (core, _) = ran(&home, plays, |core, session| {
+        let looping = Wanted {
+            by: Creator::Person,
+            ..mine(session, Some(Loop::Dynamic))
+        };
+        core.schedules().add(looping).expect("建得了");
+    })
+    .await;
+    let rows = listed(&core);
+    let row = rows.first().unwrap_or_else(|| panic!("{rows:?}"));
+    assert_eq!(
+        row.next,
+        Some(Timestamp::LATEST),
+        "没有上限，写不下的照最晚的时刻（施工 WK-1）"
+    );
+}
+
+#[tokio::test]
 async fn without_a_loop_she_hears_there_is_none() {
     let home = Home::new();
     let plays = vec![

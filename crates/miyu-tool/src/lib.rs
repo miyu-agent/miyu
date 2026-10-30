@@ -87,8 +87,7 @@ pub use run::{
 };
 pub use schedules::{
     CRON_CREATE, CRON_DELETE, CRON_LIST, IN_ALL, PER_SESSION, SCHEDULE_WAKEUP, ScheduleAnswer,
-    ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled, WAKEUP_MAX,
-    WAKEUP_MIN,
+    ScheduleAnswering, ScheduleAsk, SchedulePort, ScheduleRefused, Scheduled, WAKEUP_MIN,
 };
 pub use sessions::{
     Found, Listing, MainSession, Opening, SESSIONS, SessionsPort, find_session, reaches,

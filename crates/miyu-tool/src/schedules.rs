@@ -28,11 +28,8 @@ pub const PER_SESSION: usize = 20;
 /// 已有的照跑。
 pub const IN_ALL: usize = 200;
 
-/// 动态循环最短隔多久再醒（秒）：短了照它。
+/// 动态循环最短隔多久再醒（秒）：短了照它。没有上限（施工 WK-1，项目主人 2026-10-30 定）：长到时刻写不下的，照最晚的时刻。
 pub const WAKEUP_MIN: u64 = 60;
-
-/// 动态循环最长隔多久再醒（秒）：长了照它。
-pub const WAKEUP_MAX: u64 = 3600;
 
 /// 她要做的。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +50,7 @@ pub enum ScheduleAsk {
     },
     /// 列这个会话上的。
     List,
-    /// 动态循环过多少秒再醒：已经照 [`WAKEUP_MIN`]、[`WAKEUP_MAX`] 收过边界。
+    /// 动态循环过多少秒再醒：已经照 [`WAKEUP_MIN`] 收过下限。
     Wakeup {
         /// 过多少秒。
         delay: u64,

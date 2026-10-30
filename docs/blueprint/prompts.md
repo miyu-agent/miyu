@@ -5083,14 +5083,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/loop/tools/schedule_wakeup.json`
 
 - 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
-- token：152（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
-- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；60～3600 秒写在参数里，`reason` 只给人看
-- 指纹：`e6bfe440`
+- token：约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
+- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看
+- 指纹：`2d276b42`
 
 ```json
 {
   "description": "Set when the next iteration of a self-paced /loop runs. Call it in every iteration you want to continue, or the loop stops, and pick the delay by what you are waiting for. Pass stop to end the loop.",
-  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"Clamped to 60-3600."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, in one short sentence."},"stop":{"type":"boolean"}}}
+  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, in one short sentence."},"stop":{"type":"boolean"}}}
 }
 ```
 

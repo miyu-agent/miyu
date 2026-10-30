@@ -92,10 +92,11 @@ impl Port {
             ScheduleAsk::Wakeup { delay, prompt } => {
                 let looping = dynamic(&here, session).ok_or(ScheduleRefused::NoLoop)?;
                 let millis = i64::try_from(delay.saturating_mul(1000)).unwrap_or(i64::MAX);
+                // 没有上限（施工 WK-1）：写不下的照最晚的时刻。
                 let next = Timestamp::from_unix_millis(
                     schedules.now().unix_millis().saturating_add(millis),
                 )
-                .ok_or(ScheduleRefused::Unavailable)?;
+                .unwrap_or(Timestamp::LATEST);
                 let woken = schedules
                     .set_next(&looping.id, Some(next), prompt)
                     .map_err(refused)?;

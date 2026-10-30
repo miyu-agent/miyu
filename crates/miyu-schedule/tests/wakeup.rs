@@ -16,7 +16,13 @@ fn woken() -> ScheduleAnswer {
 
 #[tokio::test]
 async fn the_delay_is_kept_within_bounds() {
-    for (given, kept) in [(5, 60), (-3, 60), (600, 600), (99_999, 3_600)] {
+    for (given, kept) in [
+        (5, 60),
+        (-3, 60),
+        (600, 600),
+        (99_999, 99_999),
+        (i64::MAX, i64::MAX as u64),
+    ] {
         let port = Fake::answering(Ok(woken()));
         run(
             "schedule_wakeup",

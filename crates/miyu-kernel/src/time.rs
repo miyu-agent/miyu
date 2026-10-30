@@ -27,6 +27,9 @@ const MAX: i64 = 253_402_300_799_999;
 pub struct Timestamp(i64);
 
 impl Timestamp {
+    /// 能写的最晚的时刻：9999-12-31T23:59:59.999Z。
+    pub const LATEST: Timestamp = Timestamp(MAX);
+
     /// 由 Unix 毫秒数得到时刻。超出 0000 年到 9999 年返回 `None`。
     pub fn from_unix_millis(ms: i64) -> Option<Timestamp> {
         (MIN..=MAX).contains(&ms).then_some(Timestamp(ms))

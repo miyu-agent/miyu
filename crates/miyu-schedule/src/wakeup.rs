@@ -1,7 +1,7 @@
 //! `schedule_wakeup`（施工 J-2，设计 45 第三节第 4 条，照 Claude Code 的 `ScheduleWakeup`）：没写间隔的 `/loop` 是动态循环，她每轮
 //! 结束调它定下一次多久以后醒。访问类别是读。
 //!
-//! - 间隔照 [`WAKEUP_MIN`]～[`WAKEUP_MAX`] 收边界，超了照边界，不报错；`prompt` 覆盖醒来交进来的话，不写的照旧（照 Claude Code，
+//! - 间隔短于 [`WAKEUP_MIN`] 的照它，不报错，没有上限（施工 WK-1）；`prompt` 覆盖醒来交进来的话，不写的照旧（照 Claude Code，
 //!   她每次把同一句原话传回来）；`reason` 只给人看。成了说下一次几点，照会话的时区写。
 //! - `stop: true` 停掉这个会话的动态循环，别的参数不看。
 //! - 这个会话没开过循环的，端口拒，说没有在跑的循环。
@@ -16,7 +16,7 @@ use miyu_kernel::tool::Access;
 use miyu_tool::load::{self, LoadError};
 use miyu_tool::{
     Call, Done, Progress, Running, SCHEDULE_WAKEUP, ScheduleAnswer, ScheduleAsk, ScheduleRefused,
-    Spec, Tool, WAKEUP_MAX, WAKEUP_MIN,
+    Spec, Tool, WAKEUP_MIN,
 };
 
 use crate::LOOP_SOFTWARE;
@@ -123,9 +123,7 @@ impl Tool for Wakeup {
     }
 }
 
-/// 收进 [`WAKEUP_MIN`]～[`WAKEUP_MAX`]。
+/// 短于 [`WAKEUP_MIN`] 的照它，负的也是。
 fn clamp(delay: i64) -> u64 {
-    u64::try_from(delay)
-        .unwrap_or(0)
-        .clamp(WAKEUP_MIN, WAKEUP_MAX)
+    u64::try_from(delay).unwrap_or(0).max(WAKEUP_MIN)
 }
