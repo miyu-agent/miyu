@@ -224,8 +224,9 @@ fn recall_mark(sender: &By, by: &ExternalId, show_ids: bool) -> String {
     }
 }
 
-/// 别的线替她发进群里的一条：`[时刻] [you] [msg=编号]: 正文`，带的图每张一个 `[image]`。
-fn you(event: &Event, delivered: &VenueDelivered, texts: &GroupChat) -> String {
+/// 别的线替她发进群里的一条：`[时刻] [you] [msg=编号]: 正文`，带的图每张一个 `[image]`。群聊近况、抽取的那一段（施工 E-8，
+/// `recap.rs` 的 [`crate::recap::spoken`]）同一份写法。
+pub(crate) fn you(event: &Event, delivered: &VenueDelivered, texts: &GroupChat) -> String {
     format!(
         "[{}] [you] [msg={}]: {}",
         event.at.local_clock(texts.offset),

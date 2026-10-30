@@ -4,6 +4,7 @@
 
 use miyu_kernel::assemble::Assembler;
 use miyu_kernel::history::History;
+use miyu_kernel::id::SessionId;
 use miyu_kernel::time::UtcOffset;
 
 use crate::memory::{ExtractTexts, Read, ReadFrom, Voices, plan, remembered_since};
@@ -12,6 +13,8 @@ use crate::memory::{ExtractTexts, Read, ReadFrom, Voices, plan, remembered_since
 pub(crate) struct Planning<'a> {
     /// 这个会话的组装器（`Session::assembler`）。
     pub(crate) assembler: &'a dyn Assembler,
+    /// 这个会话自己（施工 E-8）：拼的历史照它认出别的线替她发进群里的话，这条线自己发的不再排进来。
+    pub(crate) own: &'a SessionId,
     /// 群聊近况每一轮带多少字节、最多几条（[`super::Actor`] 照人格快照算的）；不是群会话的没有。
     pub(crate) budget: Option<usize>,
     pub(crate) limit: Option<usize>,
@@ -35,7 +38,7 @@ pub(crate) fn planned(read: Read, how: &Planning<'_>) -> crate::memory::Plan {
         ReadFrom::Mark(landed) => Some(&landed.prefix),
         ReadFrom::Start(_) => None,
     };
-    let mut history = History::whole();
+    let mut history = History::whole().owned_by(how.own.clone());
     for event in events {
         history.append(event);
     }

@@ -120,18 +120,55 @@ pub(crate) struct Entry {
     pub(crate) text: String,
 }
 
-/// 第 `after` 条以后的几段（施工 R-6 上，`Assembler::spoken`）：取法照 [`entries`]，和回顾一样。
+/// 第 `after` 条以后的几段（施工 R-6 上，`Assembler::spoken`）：取法照 [`entries`]，和回顾一样；群会话另照先后排进别的线
+/// 替她发进群里的话（施工 E-8：支线回的那几句在这条线上只有 `venue.delivered`），写法同群聊近况的 `[you]` 行，算人这边的一段
+/// （不是哪一轮的回答）。这条线自己发的不排：她的回答已经在里面。回顾不用它，照旧只有 [`entries`]。
 pub(crate) fn spoken(history: &History, texts: &Texts, after: Seq) -> Vec<Spoken> {
-    entries(history, texts)
+    let ordered = history.ordered();
+    let mut spoken: Vec<(usize, Spoken)> = Vec::new();
+    let order: BTreeMap<Seq, usize> = ordered
+        .iter()
+        .enumerate()
+        .map(|(at, event)| (event.seq, at))
+        .collect();
+    let place = |seq: Seq| order.get(&seq).copied().unwrap_or(usize::MAX);
+    for entry in entries(history, texts) {
+        spoken.push((
+            place(entry.seq),
+            Spoken {
+                seq: entry.seq,
+                turn: entry.turn,
+                at: entry.at,
+                assistant: entry.assistant,
+                text: entry.text,
+            },
+        ));
+    }
+    if let Some(group) = &texts.group {
+        for event in &ordered {
+            let Body::VenueDelivered(delivered) = &event.body else {
+                continue;
+            };
+            if history.is_own(&delivered.line) {
+                continue;
+            }
+            spoken.push((
+                place(event.seq),
+                Spoken {
+                    seq: event.seq,
+                    turn: None,
+                    at: event.at,
+                    assistant: false,
+                    text: crate::group::you(event, delivered, group),
+                },
+            ));
+        }
+    }
+    spoken.sort_by_key(|(at, _)| *at);
+    spoken
         .into_iter()
-        .filter(|entry| entry.seq > after)
-        .map(|entry| Spoken {
-            seq: entry.seq,
-            turn: entry.turn,
-            at: entry.at,
-            assistant: entry.assistant,
-            text: entry.text,
-        })
+        .map(|(_, one)| one)
+        .filter(|one| one.seq > after)
         .collect()
 }
 

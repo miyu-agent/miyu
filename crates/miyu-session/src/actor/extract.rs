@@ -251,6 +251,7 @@ impl Actor {
                 read,
                 &Planning {
                     assembler: assembler.as_ref(),
+                    own: &job.session,
                     budget,
                     limit,
                     min_turns,
@@ -342,6 +343,7 @@ impl Actor {
             read,
             &Planning {
                 assembler: assembler.as_ref(),
+                own: session,
                 budget,
                 limit,
                 min_turns: 1,

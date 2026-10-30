@@ -71,6 +71,11 @@ impl Voices {
         let said = events
             .iter()
             .filter_map(|event| {
+                // 别的线替她发进群里的话（施工 E-8）：组装器交的是 `[you]` 那一行，原样放；这条线自己的组装器不交，记着也不用。
+                // 不是人，不进 `names`（`learn` 只认人话）。
+                if let (Body::VenueDelivered(_), Some(_)) = (&event.body, group) {
+                    return Some((event.seq, Voice::Line));
+                }
                 let Body::MessageUser(message) = &event.body else {
                     return None;
                 };

@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use miyu_kernel::assemble::Assembler;
 use miyu_kernel::event::Event;
-use miyu_kernel::id::Seq;
+use miyu_kernel::id::{Seq, SessionId};
 use miyu_kernel::time::UtcOffset;
 use miyu_store::env::{Env, Platform};
 use miyu_store::log::{SessionLog, read_events};
@@ -151,6 +151,15 @@ impl Log {
         });
     }
 
+    /// 线 `line` 替她发进群里一句（施工 E-8，桥记的 `venue.delivered`）：支线的是别的会话，这条线自己的是 [`MAIN`]。
+    fn delivered(&mut self, line: &str, text: &str) {
+        self.push(|seq, at| {
+            format!(
+                r#"{{"seq":{seq},"at":"{at}","kind":"venue.delivered","by":{{"kind":"module","id":"im"}},"cause":"d-{seq}","body":{{"line":"{line}","turn":3,"to":["qq:10001"],"msg":"d{seq}","text":"{text}"}}}}"#
+            )
+        });
+    }
+
     /// 她答一轮：回合开始、（要的话先调一次 remember）一句回答、回合结束。交回回答那一条的序号。
     fn answer(&mut self, text: &str, remember: bool) -> u64 {
         let trigger = self.seq;
@@ -286,6 +295,8 @@ struct Fixture {
     dir: PathBuf,
     assembler: Arc<dyn Assembler + Send + Sync>,
     texts: ExtractTexts,
+    /// 这个群会话自己（施工 E-8）。
+    own: SessionId,
 }
 
 impl Fixture {
@@ -300,12 +311,14 @@ impl Fixture {
             _scratch: scratch,
             assembler,
             texts,
+            own: SessionId::parse(MAIN).expect("会话编号合写法"),
         }
     }
 
     fn planning(&self) -> Planning<'_> {
         Planning {
             assembler: self.assembler.as_ref(),
+            own: &self.own,
             budget: Some(160),
             limit: Some(3),
             min_turns: 1,
@@ -361,6 +374,12 @@ impl Fixture {
 /// 她派的子代理在哪个会话里跑。
 const CHILD: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
 
+/// 这个群会话自己（主线，施工 E-8）。
+const MAIN: &str = "01a17c04-762d-7174-8307-fd1c42c011b8";
+
+/// 从主线分出去回话的支线（施工 E-8）。
+const BRANCH: &str = "01a17c05-26da-71a1-9c5c-91050118886b";
+
 /// 一直热闹的群会话：接上以后每次都从一处读起，拼出来的和整份读的一样；名字只在更早出现过的人照样认得出，群名片改了照新的，
 /// 换人格、压缩、读起以前派的子代理读起以后才报回来也一样；读起的那一处跨了段的也一样。
 #[test]
@@ -392,6 +411,11 @@ fn reading_from_a_mark_plans_the_same_as_reading_everything() {
         }
         if round == 33 {
             events.compacted();
+        }
+        if round % 7 == 2 {
+            // 支线替她回了一句，桥记回主线；这条线自己发出去的也记一条（施工 E-8）。
+            events.delivered(BRANCH, &format!("支线回第{round}轮"));
+            events.delivered(MAIN, &format!("主线发第{round}轮"));
         }
         answers.push(busy_round(&mut events, round));
         land(&mut log, &extractor, &events.take());
@@ -471,3 +495,5 @@ fn a_reloaded_session_catches_up_with_one_whole_read() {
         );
     }
 }
+
+mod branch;
