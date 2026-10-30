@@ -77,13 +77,14 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
         &logins::digest(token),
         miyu_kernel::time::Timestamp::from_unix_millis(0).expect("合")
     ));
-    // 设好了，这个连接什么都调得了；设备令牌连上的改密码要带现在的（施工 SU-1 补，见下面）。
+    // 设好了，这个连接什么都调得了；它是本机来的（没有 `connection.remote`），再改也不用带现在的（施工 PW-2；局域网来的要带，
+    // `login_device.rs`）。
     let listed = browser.call("l", "session.list", json!({})).await;
     assert!(listed.get("result").is_some(), "{listed}");
-    let refused = browser
+    let changed = browser
         .call("s", "account.setup", json!({"password": "another one"}))
         .await;
-    assert_eq!(why(&refused), "bad_params", "{refused}");
+    assert!(changed.get("result").is_some(), "{changed}");
     let refused = browser.call("c", "account.setup_code", json!({})).await;
     assert_eq!(why(&refused), "local_only", "{refused}");
     assert_eq!(setup_code(&core).await["first"], false, "设过了");

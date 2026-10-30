@@ -168,13 +168,13 @@ The access password is only needed to connect from the local network (a phone, a
 | `account.setup` | `password`, `old`? | `{}` on a local-token connection; otherwise `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
 | `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
 
-A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection (a web page opened from `miyu web`, or a LAN login) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Local-token and one-time-code connections never need it.
+A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection from another device on the LAN (brought in by the web server with `connection.remote`) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Connections from this machine never need it: local-token and one-time-code connections, and the device token of a page opened by `miyu web` on this machine (step PW-2, 2026-10-31).
 
 **Errors**
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection changing the access password without `old` |
+| `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection from the LAN changing the access password without `old` |
 | `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds, or all sources together tried 30 times (`data.retry_after_ms`) |
 | `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
 

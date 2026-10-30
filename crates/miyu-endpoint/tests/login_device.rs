@@ -1,5 +1,5 @@
-//! 设备令牌连上的设、改访问密码（施工 SU-1 补：网页从 `miyu web` 打开、局域网登录的都是设备令牌）：设过的要带对现在的，照来源
-//! 限流；还没设的直接设；握手回应照实写设没设。
+//! 设备令牌连上的设、改访问密码（施工 SU-1 补：网页从 `miyu web` 打开、局域网登录的都是设备令牌）：局域网来的设过的要带对现在的，
+//! 照来源限流；本机来的直接改（施工 PW-2）；还没设的直接设；握手回应照实写设没设。
 
 use std::sync::Arc;
 
@@ -114,4 +114,32 @@ async fn a_ticket_device_sets_the_first_password() {
     let mut phone = remote(&core, "192.168.1.20").await;
     let reply = hello_with(&mut phone, json!({"password": "correct horse"})).await;
     assert_eq!(reply["result"]["password_set"], true, "{reply}");
+}
+
+/// 本机来的设备令牌连上的（网页从 `miyu web` 在这台机器上打开，没有 `connection.remote`）设过访问密码也直接改，不用带 `old`
+/// （施工 PW-2，2026-10-31 项目主人）；改好了旧密码登不进、新的登得进。
+#[tokio::test]
+async fn a_local_device_changes_the_password_without_the_old_one() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let token = set_up(&core, "correct horse").await;
+    let mut local = Client::connect(Arc::clone(&core));
+    let reply = hello_with(&mut local, json!({"login": token})).await;
+    assert_eq!(reply["result"]["password_set"], true, "{reply}");
+    let reply = local
+        .call("s", "account.setup", json!({"password": "battery staple"}))
+        .await;
+    assert!(reply.get("result").is_some(), "本机来的不用旧密码：{reply}");
+    let mut old = remote(&core, "192.168.1.50").await;
+    assert_eq!(
+        why(&hello_with(&mut old, json!({"password": "correct horse"})).await),
+        "bad_password"
+    );
+    let mut new = remote(&core, "192.168.1.51").await;
+    assert!(
+        hello_with(&mut new, json!({"password": "battery staple"}))
+            .await
+            .get("result")
+            .is_some()
+    );
 }

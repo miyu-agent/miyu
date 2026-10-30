@@ -176,8 +176,10 @@ struct SetupParams {
     old: Option<String>,
 }
 
-/// `account.setup`：设、改访问密码。本机令牌、一次性码连上的直接设；设备令牌连上的（施工 SU-1 补：网页从 `miyu web` 打开的、
-/// 局域网登录的）已经设过的要带对现在的 `old`，照来源 `source` 限流，同密码登录；扩展拉起的连接 `local_only`。以前的设备令牌全部
+/// `account.setup`：设、改访问密码。本机令牌、一次性码连上的直接设；设备令牌连上的，本机来的（没有来源 `source`：网页从
+/// `miyu web` 在这台机器上打开的）也直接设（施工 PW-2，2026-10-31 项目主人：设访问密码先要输当前密码没必要），局域网别的设备
+/// 连进来的（施工 SU-1 补）已经设过的要带对现在的 `old`，照来源限流，同密码登录：免得别人借一台登录着的设备就改掉密码；扩展拉起
+/// 的连接 `local_only`。以前的设备令牌全部
 /// 作废、连着的断开；不是本机令牌的另交回一个新的设备令牌，这个连接从此照它算。交回回应和这个连接以后怎么算（没换的照旧）。
 pub(crate) async fn setup(
     core: &Arc<Core>,
@@ -191,7 +193,7 @@ pub(crate) async fn setup(
     if !good_password(&params.password) {
         return Err(Refusal::BAD_PARAMS);
     }
-    if via.login().is_some() && password_set(core) {
+    if via.login().is_some() && source.is_some() && password_set(core) {
         let old = params.old.ok_or(Refusal::BAD_PARAMS)?;
         verify(core, source, old).await?;
     }
