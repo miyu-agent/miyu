@@ -40,7 +40,7 @@ fn a_marker_is_found_anywhere() {
 
 #[test]
 fn the_reply_is_an_openai_chat_stream() {
-    let body = stream_pieces("你好 \"quoted\"", 1, 1000, 800);
+    let body = stream_body("你好 \"quoted\"", 1000, 800);
     let chunks: Vec<&str> = body
         .split("\n\n")
         .filter(|chunk| !chunk.is_empty())
@@ -54,37 +54,6 @@ fn the_reply_is_an_openai_chat_stream() {
         serde_json::from_str(chunks[1].strip_prefix("data: ").unwrap()).unwrap();
     assert_eq!(done["choices"][0]["finish_reason"], "stop");
     assert_eq!(done["usage"]["total_tokens"], 1800);
-}
-
-/// 切成几块（施工 V-22）：块数照给的，接起来是原文，不切开一个字；字比块少的一个字一块；头一块才带 `role`。
-#[test]
-fn a_split_reply_joins_back_to_the_text() {
-    let contents = |body: &str| -> Vec<serde_json::Value> {
-        body.split("\n\n")
-            .filter_map(|chunk| chunk.strip_prefix("data: "))
-            .filter(|chunk| *chunk != "[DONE]")
-            .map(|chunk| serde_json::from_str::<serde_json::Value>(chunk).unwrap())
-            .filter(|said| said["choices"][0]["finish_reason"].is_null())
-            .map(|said| said["choices"][0]["delta"].clone())
-            .collect()
-    };
-    let text = filler(3500);
-    for pieces in [1, 7, 300] {
-        let deltas = contents(&stream_pieces(&text, pieces, 10, 10));
-        assert_eq!(deltas.len(), pieces, "{pieces} 块");
-        let joined: String = deltas
-            .iter()
-            .map(|delta| delta["content"].as_str().unwrap())
-            .collect();
-        assert_eq!(joined, text);
-        assert_eq!(deltas[0]["role"], "assistant");
-        assert!(deltas[1..].iter().all(|delta| delta.get("role").is_none()));
-    }
-    assert_eq!(
-        contents(&stream_pieces("你好", 5, 1, 1)).len(),
-        2,
-        "一个字一块"
-    );
 }
 
 #[test]
@@ -145,8 +114,8 @@ fn usage_of(stream: &str) -> serde_json::Value {
 
 #[test]
 fn usage_follows_the_size_of_the_request() {
-    let small = answer(&[b'x'; 4_000], "reply", 1);
-    let large = answer(&[b'x'; 400_000], "reply", 1);
+    let small = answer(&[b'x'; 4_000], "reply");
+    let large = answer(&[b'x'; 400_000], "reply");
     assert_eq!(usage_of(&small)["prompt_tokens"], 1_000);
     assert_eq!(usage_of(&large)["prompt_tokens"], 100_000);
     assert!(small.contains("reply"), "{small}");
@@ -156,9 +125,9 @@ fn usage_follows_the_size_of_the_request() {
 fn a_summary_request_gets_a_summary() {
     let body =
         br#"{"messages":[{"content":"Write a detailed summary of the conversation above. ..."}]}"#;
-    let answered = answer(body, "ordinary reply", 1);
+    let answered = answer(body, "ordinary reply");
     assert!(answered.contains("<summary>"), "{answered}");
     assert!(!answered.contains("ordinary reply"), "{answered}");
-    let ordinary = answer(b"{\"messages\":[]}", "ordinary reply", 1);
+    let ordinary = answer(b"{\"messages\":[]}", "ordinary reply");
     assert!(!ordinary.contains("<summary>"), "{ordinary}");
 }

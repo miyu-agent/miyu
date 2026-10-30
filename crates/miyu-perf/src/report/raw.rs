@@ -40,10 +40,6 @@ pub fn json(results: &Results) -> Value {
     if let Some(remembering) = &results.remembering {
         raw["large_memory"] = large(remembering);
     }
-    if let Some(streamed) = &results.streamed {
-        raw["stream"] = json!({"pieces": streamed.pieces, "cpu_ms": times(&streamed.cpu),
-            "turn_ms": times(&streamed.turn)});
-    }
     raw
 }
 

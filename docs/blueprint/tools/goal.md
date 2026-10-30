@@ -20,13 +20,13 @@
 
 ### 对外的样子
 
-访问类别 `read`：只改这个会话自己的目标，只读开着也能用。说明三句：是什么、什么时候设（要很多轮的活，设了会话闲着就自己开下一轮）、怎么结束。三轮下限、收尾都写在调用以后的结果里，不写进说明。
+访问类别 `read`：只改这个会话自己的目标，只读开着也能用。说明两句：是什么、设了以后会话闲着就自己开下一轮、直到标完成或卡住（「只给要很多轮的活设」「验证过再标完成」施工 TX-2 照 J13 改成这样，重测几件小事都不乱开目标；验证的要求照旧写在每一轮的提示里）。三轮下限、收尾都写在调用以后的结果里，不写进说明。
 
 样本 `resources/software/goal/tools/goal.json`：
 
 ```json
 {
-  "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
+  "description": "Read, set or end this session's long-running goal. While it runs, the session starts a new round by itself whenever it is idle, until it is marked complete or blocked.",
   "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
 }
 ```

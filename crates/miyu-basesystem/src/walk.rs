@@ -10,11 +10,7 @@
 //! - 别的程序的私密目录也不进（施工 5-13，`miyu_fs::private_dirs`）：读它们要问人，从上面搜下来不该绕过去。搜的那个
 //!   目录就在里面的（问过了）、工作目录那一片照样进。
 //! - 按修改时间排，新的在前，时间一样的照路径排。
-//! - 不先把整棵树记下来（施工 V-21）：[`each`] 边走边交，要的一方只留自己要的（`glob` 留最新的 [`newest`] 几个、`grep`
-//!   留有匹配的）。2026-10-26 从家目录搜下来，先记下的几百万个文件让核心涨到约 900 MB。
 
-use std::cmp::Ordering;
-use std::collections::BinaryHeap;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -26,7 +22,7 @@ use miyu_tool::{Call, Stop};
 /// 版本库自己的目录，不进（Claude Code 的名单）。
 const VCS: [&str; 6] = [".git", ".svn", ".hg", ".bzr", ".jj", ".sl"];
 
-/// 走到的一个文件。照交出去的先后比（[`Ord`]）：新的在前，时间一样的照相对路径。
+/// 走到的一个文件。
 #[derive(Debug)]
 pub(crate) struct Found {
     /// 真实的位置。
@@ -36,30 +32,6 @@ pub(crate) struct Found {
     /// 修改时间：读不出来的当最早。
     modified: SystemTime,
 }
-
-impl Ord for Found {
-    /// 小的在前：新的在前，时间一样的照相对路径。
-    fn cmp(&self, other: &Found) -> Ordering {
-        other
-            .modified
-            .cmp(&self.modified)
-            .then_with(|| self.relative.cmp(&other.relative))
-    }
-}
-
-impl PartialOrd for Found {
-    fn partial_cmp(&self, other: &Found) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Found {
-    fn eq(&self, other: &Found) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
-}
-
-impl Eq for Found {}
 
 /// 走目录时不进的地方：Miyu 的数据根、别的程序的私密目录（施工 5-13），除了这一轮的工作目录那一片。
 pub(crate) struct Fence {
@@ -118,48 +90,12 @@ impl Fence {
 
 /// 在目录 `root`（已经换成真实的位置）下面走一遍，交回 `keep` 留下的每个普通文件，按修改时间新的在前。
 /// `keep` 拿到的是相对 `root`、分隔符写 `/` 的路径。`fence` 挡着的目录不进；叫停了（`stop`）就不往下走了。
-/// 整棵树都记下来：只有要照先后一个个搜、够了就停的（`grep` 列匹配的行）用它。
 pub(crate) fn files(
     root: &Path,
     fence: Fence,
     stop: &Stop,
     keep: impl Fn(&str) -> bool,
 ) -> Vec<Found> {
-    let mut found = Vec::new();
-    each(root, fence, stop, keep, |file| found.push(file));
-    found.sort();
-    found
-}
-
-/// 同 [`files`]，只留最新的 `limit` 个（照先后排好），另交回一共走到几个：不记下整棵树。
-pub(crate) fn newest(
-    root: &Path,
-    fence: Fence,
-    stop: &Stop,
-    keep: impl Fn(&str) -> bool,
-    limit: usize,
-) -> (Vec<Found>, usize) {
-    // 堆顶是留下的里面最旧的：多出一个就把它挤掉。
-    let mut kept = BinaryHeap::with_capacity(limit.saturating_add(1));
-    let mut total = 0;
-    each(root, fence, stop, keep, |file| {
-        total += 1;
-        kept.push(file);
-        if kept.len() > limit {
-            drop(kept.pop());
-        }
-    });
-    (kept.into_sorted_vec(), total)
-}
-
-/// 同 [`files`]，只是不排、不记：走到一个交一个给 `found`，照走到的先后。
-pub(crate) fn each(
-    root: &Path,
-    fence: Fence,
-    stop: &Stop,
-    keep: impl Fn(&str) -> bool,
-    mut found: impl FnMut(Found),
-) {
     let in_repo = root.ancestors().any(|dir| dir.join(".git").exists());
     let fence = fence.from(root);
     let mut builder = WalkBuilder::new(root);
@@ -176,7 +112,7 @@ pub(crate) fn each(
             let vcs = VCS.contains(&entry.file_name().to_string_lossy().as_ref());
             !vcs && !fence.keeps_out(entry.path())
         });
-    builder
+    let mut found: Vec<Found> = builder
         .build()
         .take_while(|_| !stop.stopped())
         // 读不了的目录（没有权限这类）跳过，别的照走：ripgrep 也是这样。
@@ -197,7 +133,13 @@ pub(crate) fn each(
                 modified,
             })
         })
-        .for_each(&mut found);
+        .collect();
+    found.sort_by(|a, b| {
+        b.modified
+            .cmp(&a.modified)
+            .then_with(|| a.relative.cmp(&b.relative))
+    });
+    found
 }
 
 /// `path` 相对 `root` 的路径，一段一段用 `/` 连起来。

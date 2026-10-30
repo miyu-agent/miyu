@@ -295,14 +295,9 @@ impl Actor {
 
     /// 一条条送进内核，回每个动作；当场回的输入排在后面接着送，直到没有。
     async fn drain(&mut self, mut inputs: VecDeque<Input>) -> Result<(), Stop> {
-        // 这一批全是流式的碎片（施工 V-22）：送进去的、内核交回的都是碎的（`kinds::chatty_input`、`chatty_action`），历史、
-        // 账本、限额、策略都没动，有没有能压的不会变，收尾不用重算（它要过一遍整段有效历史，以前流式时每个字算一次）。
-        let mut fragments = true;
         while let Some(input) = inputs.pop_front() {
             let kind = kinds::input(&input);
-            let chatty = kinds::chatty_input(&input);
-            fragments &= chatty;
-            match chatty {
+            match kinds::chatty_input(&input) {
                 true => tracing::trace!(target: TARGET, kind, "input"),
                 false => tracing::debug!(target: TARGET, kind, "input"),
             }
@@ -310,7 +305,6 @@ impl Actor {
             // 内核一收下就写「有没有在跑的回合」：回应在批中间就发出去了，回合开头慢的那一阵不能算闲着（`tests/busy.rs`）。
             self.settle_busy();
             for action in actions {
-                fragments &= kinds::chatty_action(&action);
                 inputs.extend(self.act(action).await?);
             }
         }
@@ -319,7 +313,7 @@ impl Actor {
         // 「空了告诉我」（施工 C-6）：先订、先把通知交出去，再写没有在跑的回合。
         self.after_batch();
         self.settle_busy();
-        self.push_now(!fragments);
+        self.push_now();
         Ok(())
     }
 

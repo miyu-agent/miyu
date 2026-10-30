@@ -124,24 +124,19 @@ fn find(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
         }
         Err(error) => return texts.common.failed(&dir, &error),
     }
-    // 只留最新的那几个、数一共几个（施工 V-21）：从家目录找下来不把几百万个文件都记下。
-    let (found, count) = walk::newest(
-        &real,
-        walk::Fence::of(call),
-        stop,
-        |relative| pattern.matches(relative),
-        LIMIT,
-    );
+    let found = walk::files(&real, walk::Fence::of(call), stop, |relative| {
+        pattern.matches(relative)
+    });
     if found.is_empty() {
         return texts.common.no_files();
     }
     let mut text = String::new();
-    for file in &found {
+    for file in found.iter().take(LIMIT) {
         text.push_str(&shown.path(&file.path));
         text.push('\n');
     }
-    let total = count.to_string();
-    if let Some(rest) = count.checked_sub(LIMIT).filter(|rest| *rest > 0) {
+    let total = found.len().to_string();
+    if let Some(rest) = found.len().checked_sub(LIMIT).filter(|rest| *rest > 0) {
         text.push_str(&say(
             &texts.more,
             &[
@@ -156,5 +151,5 @@ fn find(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
                 .with("total", total),
         );
     }
-    Done::ok(text).said(said_n("glob/files", "count", count as u64))
+    Done::ok(text).said(said_n("glob/files", "count", found.len() as u64))
 }

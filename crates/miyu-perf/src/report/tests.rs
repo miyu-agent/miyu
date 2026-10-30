@@ -110,11 +110,6 @@ fn results(memory: bool) -> Results {
             ..Large::default()
         },
         remembering: None,
-        streamed: Some(crate::measure::stream::Streamed {
-            pieces: 300,
-            cpu: vec![40.0, 50.0, 60.0],
-            turn: vec![70.0, 80.0, 90.0],
-        }),
         appends: vec![1.0, 2.0, 30.0],
     }
 }
@@ -383,27 +378,5 @@ fn the_remembering_session_is_held_to_the_same_budgets() {
         raw::json(&self::results(true))
             .get("large_memory")
             .is_none()
-    );
-}
-
-/// 流式一轮（施工 V-22）：表里两行没有预算的；以前的原始数据没有，读回来当没量、不出这两行。
-#[test]
-fn the_streamed_turn_is_listed_and_older_raw_data_goes_without() {
-    let text = rows::markdown(&results(true), &budgets(), "x").unwrap();
-    assert!(
-        text.contains("| 大会话上流式一轮（回答切成 300 块，3 轮）：核心花的 CPU（p50 / p95） | 50.0 / 60.0 ms |"),
-        "{text}"
-    );
-    assert!(text.contains(
-        "| 大会话上流式一轮（回答切成 300 块，3 轮）：说出去到这一轮结束（p50 / p95） |"
-    ));
-    let mut written = raw::json(&results(true));
-    written.as_object_mut().unwrap().remove("stream");
-    let read = load(&written, results(false).args).unwrap();
-    assert!(read.streamed.is_none());
-    assert!(
-        !rows::markdown(&read, &budgets(), "x")
-            .unwrap()
-            .contains("流式一轮")
     );
 }

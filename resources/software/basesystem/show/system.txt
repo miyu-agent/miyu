@@ -1,1 +1,1 @@
-When you make or fetch something meant to be looked at — an image, a web page, a document, video or audio — handing it over with show lets the user see it right away, rather than just a path.
+Files passed to show open in the user's interface. A path in a reply is only text to them.

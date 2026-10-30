@@ -50,12 +50,9 @@ impl Actor {
     }
 
     /// 送完一批以后推给头的（施工 X-8 补、W-12 补）：长期目标变了推一份；有没有能压的变了推一条 `compactable.changed`。头一回
-    /// 算只记下：订阅的回应带着这一刻的。`moved` 是假的（这一批全是流式的碎片，施工 V-22）不看有没有能压的：变不了。
-    pub(super) fn push_now(&mut self, moved: bool) {
+    /// 算只记下：订阅的回应带着这一刻的。
+    pub(super) fn push_now(&mut self) {
         self.push_goal();
-        if !moved {
-            return;
-        }
         let now = self.session.compactable();
         let before = self.counted().compactable.replace(now);
         if before.is_none_or(|before| before == now) {

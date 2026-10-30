@@ -335,7 +335,7 @@
 | 文件 | 原文 | 进到哪 |
 |---|---|---|
 | `permission-rule.txt` | `A <permission> block gives the permission level from that point on. In read_only, neither file tools nor commands can write anything. In workspace, commands can write only inside the workspace and the temp directory, and file tools need the user's approval to write outside the workspace. In full, there are no limits. Only the user can change the level.` | system，核心的几行的第一行；工具面是空的会话不带（施工 2-7 补） |
-| `local-paths-rule.txt` | `When a reply links or embeds a local file, write its absolute path. Relative paths resolve against the session working directory.` | system，核心的几行的第二行（施工 2-7 补） |
+| `local-paths-rule.txt` | `Relative paths in links and embeds in a reply resolve against the session working directory.` | system，核心的几行的第二行（施工 2-7 补） |
 | `machine.txt` | `The local machine runs {os}.` | system，核心的几行的第三行，`{os}` 换成本机系统的名字（施工 2-7 再补）；工具面是空的会话不带 |
 | `agent-version.txt` | `You run in miyu-agent {version}.` | system，核心的几行的最后一行，`{version}` 换成核心编进去的版本；有没有工具都带（施工 E-M） |
 | `style-lock.txt` | `<style-lock>Stay in character across tool calls. Tool results are working material; they are not a reason to switch into an assistant reporting tone.</style-lock>` | system 的最后一块，只有带角色扮演提示的人格（施工 P-1 补，`policy.md` 的 `with_style_lock`） |

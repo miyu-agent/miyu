@@ -63,12 +63,12 @@ You can write programs that call tools. When a task takes many tool calls or rea
 #### `software/basesystem/show/system.txt`
 
 - 什么时候加进来：工具面上有 `show`、开关 `show.system_hint` 开着（默认开，造会话时钉下）的会话，每次请求（施工 D-5 补二起；没有的、关着的、以前造的快照不带，一个字节不变）
-- token：45（2026-10-24 照 o200k 数）
-- 为什么加：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看，不只给一个路径（施工 D-5 补二，项目主人 2026-10-24 定留：改后说明不带这一句 8/12 主动用，带 12/12）；常量字节，前缀稳定
-- 指纹：`5dd51cfe`
+- token：TX-2 后 21（o200k 数，改前 45）；原来 45（2026-10-24 照 o200k 数）
+- 为什么加：做出来、拿到的图、网页、文档、音视频用 `show` 交给人看，不只给一个路径（施工 D-5 补二，项目主人 2026-10-24 定留：改后说明不带这一句 8/12 主动用，带 12/12）；常量字节，前缀稳定。施工 TX-2（2026-10-30，项目主人定做、照重测换）：改成事实「交给 show 的文件在人的界面里打开，回答里的路径对人只是字」（45 → 21）。重测照 D-5 补二的四个场景各 3 次：改前 12/12、改后 12/12 主动用 `show`（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
+- 指纹：`21416d43`
 
 ```text
-When you make or fetch something meant to be looked at — an image, a web page, a document, video or audio — handing it over with show lets the user see it right away, rather than just a path.
+Files passed to show open in the user's interface. A path in a reply is only text to them.
 ```
 
 ### 摘要请求的最后一块，人这边：摘要指令的正文
@@ -271,12 +271,12 @@ A <permission> block gives the permission level from that point on. In read_only
 #### `core/local-paths-rule.txt`
 
 - 什么时候加进来：新会话的每次请求（施工 2-7 补起；以前造的快照没有，照旧不拼）
-- token：25（2026-10-01 主会话在开发端点的 `deepseek-v4.1-flash` 上量，带行尾换行）
-- 为什么加：回答里提到本机的文件写绝对路径：头照会话的工作目录找相对路径。网页那边撞见（2026-10-01）：她把图存在工作区外，回答里写 `![](cat.png)`，头找不到。主会话 A/B（同一天，`miyu ask --add-dir`，让她画 SVG 存到工作区外的目录再显示出来，各 4 遍）：不加时 3 遍用相对路径提文件，写成图片的 2 次里 1 次是 `![](cat.png)`，找不到；加了以后写成图片的 3 次全是绝对路径，只有 1 次在正文里顺口用相对路径提了文件名（施工 2-7 补，项目主人同意并进这一张）
-- 指纹：`a40fbc7f`
+- token：TX-2 后 16（o200k 数，改前 24）；原来 25（2026-10-01 主会话在开发端点的 `deepseek-v4.1-flash` 上量，带行尾换行）
+- 为什么加：回答里提到本机的文件写绝对路径：头照会话的工作目录找相对路径。网页那边撞见（2026-10-01）：她把图存在工作区外，回答里写 `![](cat.png)`，头找不到。主会话 A/B（同一天，`miyu ask --add-dir`，让她画 SVG 存到工作区外的目录再显示出来，各 4 遍）：不加时 3 遍用相对路径提文件，写成图片的 2 次里 1 次是 `![](cat.png)`，找不到；加了以后写成图片的 3 次全是绝对路径，只有 1 次在正文里顺口用相对路径提了文件名（施工 2-7 补，项目主人同意并进这一张）。施工 TX-2（2026-10-30，项目主人定做、照重测换）：「回答里引本机文件写绝对路径」改成事实「回答里链接、嵌入的相对路径照会话的工作目录找」。重测照 2-7 补的剧本（画 SVG 存到工作区外再显示）各 8 次：两边都每次调 `show`，回答里嵌图的全是绝对路径、没有相对路径（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
+- 指纹：`b0aa3b60`
 
 ```text
-When a reply links or embeds a local file, write its absolute path. Relative paths resolve against the session working directory.
+Relative paths in links and embeds in a reply resolve against the session working directory.
 ```
 
 ### system，核心的几行的第三行（本机文件的路径那一句后面）
@@ -4287,12 +4287,12 @@ Output, the last {shown} of {chars} characters (all of it in jobs output):
 #### `core/jobs/subagent-venue.txt`
 
 - 什么时候加进来：子会话的每次请求（施工 7-5，`agents.md` 第九条第 3 条）
-- token：60（2026-09-30 照项目主人给的端点、`deepseek-v4.1-flash` 量）
-- 为什么加：子会话的场所说明：它是被派出来的，交代来自父会话、不是人，最后的回答就是交回去的回报，做完不用去查、不用等。照旧版子会话的交付约定（「回报对象是父会话」「不要轮询」，第五节）改写成英文；旧版里「改文件前先读行号」这类由工具保证的不带。常驻在子会话的 system：每个子会话一开始就要知道自己是谁、答给谁（施工 7-5）
-- 指纹：`40bbaadc`
+- token：TX-2 后 42（o200k 数，改前 60）；原来 60（2026-09-30 照项目主人给的端点、`deepseek-v4.1-flash` 量）
+- 为什么加：子会话的场所说明：它是被派出来的，交代来自父会话、不是人，最后的回答就是交回去的回报，做完不用去查、不用等。照旧版子会话的交付约定（「回报对象是父会话」「不要轮询」，第五节）改写成英文；旧版里「改文件前先读行号」这类由工具保证的不带。常驻在子会话的 system：每个子会话一开始就要知道自己是谁、答给谁（施工 7-5）。施工 TX-2（2026-10-30，项目主人定做、照重测换）：删「做完就给答案停下，不回头查、不等」，前一句「最后的回答自己交回父会话」留着。重测：派子代理数文件行数各 6 次，两边子代理回头问、发消息、干等都是 0（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
+- 指纹：`de26cd63`
 
 ```text
-You are a subagent, started by another session to do one task. That parent session wrote the task, not a person. Your final answer is your report and goes back to the parent on its own. When the task is done, give that answer and stop, without checking back or waiting.
+You are a subagent, started by another session to do one task. That parent session wrote the task, not a person. Your final answer is your report and goes back to the parent on its own.
 ```
 
 ### 消息，fork 子代理：交代前面，空一行接交代
@@ -4983,13 +4983,13 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/memory/tools/remember.json`
 
 - 什么时候加进来：会话的工具面里有 `remember`：记忆开着的主会话有，本机的、场所的都有（施工 R-13 下），子会话没有（每次请求都带）
-- token：184（2026-10-07 照开发端点量，十八件一起时的边际份量 149；施工 R-15 上多一格可选的 `keywords`，2026-10-19 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量，三件一起时 149 → 184，多 35；施工 E-1 上加 `person` 一类和可选的 `who`，2026-10-21 照同一个网关、同样量，184 → 225，多 41）
-- 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条。施工 R-15 上加 `keywords`（项目主人 2026-10-19 定：她当场记的也能带关键词，没写的由整理补）：一句，可选、逗号隔开、找得到它的别的说法、别的语言、用途；不进 `required`。真数据上补了关键词的混合联想带对了 23% → 30%、带了的里该带的 52% → 59%（施工单 `R-15-记忆的关键词（上）.md`）；只写在说明里，不常驻 system。施工 E-1 上（设计 42，项目主人 2026-10-21 提）：说明多「someone else you know」，`enum` 多 `person`，`who` 一句（她认识的别人是谁、名字或平台编号），不进 `required`（别的类不用写；`person` 没写的工具说一句）
-- 指纹：`b80eb72a`
+- token：TX-2 后 177（o200k 数，改前 183）；原来 184（2026-10-07 照开发端点量，十八件一起时的边际份量 149；施工 R-15 上多一格可选的 `keywords`，2026-10-19 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量，三件一起时 149 → 184，多 35；施工 E-1 上加 `person` 一类和可选的 `who`，2026-10-21 照同一个网关、同样量，184 → 225，多 41）
+- 为什么加：记一条或改一条：她能碰自己的记忆（施工 R-3 中，`17-记忆.md` L9、L11，`memory.md`「工具」）；人说「记住」「忘掉」她当场调（2026-10-07 项目主人定）。说明写四类各是什么、只记以后还用得上的；`text` 一句、120 字以内、日期写全（旧版实测：整理出来的超长的多半是技术问答全文，相对日期过了就看不懂）；`replaces` 改一条。施工 R-15 上加 `keywords`（项目主人 2026-10-19 定：她当场记的也能带关键词，没写的由整理补）：一句，可选、逗号隔开、找得到它的别的说法、别的语言、用途；不进 `required`。真数据上补了关键词的混合联想带对了 23% → 30%、带了的里该带的 52% → 59%（施工单 `R-15-记忆的关键词（上）.md`）；只写在说明里，不常驻 system。施工 E-1 上（设计 42，项目主人 2026-10-21 提）：说明多「someone else you know」，`enum` 多 `person`，`who` 一句（她认识的别人是谁、名字或平台编号），不进 `required`（别的类不用写；`person` 没写的工具说一句）。施工 TX-2（2026-10-30，项目主人定做、照重测换）：删「Only what will matter later.」。重测：一段话里三件长期的事、三件一次性的小事各 6 次，改前记长期的 17 条、小事 0，改后 15 条、小事 0（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
+- 指纹：`8af0895d`
 
 ```json
 {
-  "description": "Save a memory you keep across sessions: about the user, how they want you to work (and why), something you went through together, a lasting fact, or someone else you know. Only what will matter later.",
+  "description": "Save a memory you keep across sessions: about the user, how they want you to work (and why), something you went through together, a lasting fact, or someone else you know.",
   "parameters": {"type":"object","properties":{"class":{"type":"string","enum":["user","feedback","episode","reference","person"]},"text":{"type":"string","description":"One sentence, at most 120 characters, dates written out."},"replaces":{"type":"string","description":"Id of a memory this corrects, like m12."},"keywords":{"type":"string","description":"Optional comma-separated words to find it by: other names, other languages, what it is for."},"who":{"type":"string","description":"For person: who it is about, their name or an id like qq:10086."}},"required":["class","text"]}
 }
 ```
@@ -5027,13 +5027,13 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 #### `software/goal/tools/goal.json`
 
 - 什么时候加进来：会话的工具面里有 `goal`：长期目标开着的本机主会话（群里、私聊、子代理都没有，每次请求都带）
-- token：171 → 174（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量；X-9 给 `reason` 加「One sentence.」+3）
-- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明。施工 X-9 真跑看到卡住的原因写成了整份排查过程（六百多字），头上原样显示：`reason` 加一句「One sentence.」，排查过程写在收尾里
-- 指纹：`bf620b7f`
+- token：TX-2 后 116（o200k 数，改前 140）；原来 171 → 174（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量；X-9 给 `reason` 加「One sentence.」+3）
+- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明。施工 X-9 真跑看到卡住的原因写成了整份排查过程（六百多字），头上原样显示：`reason` 加一句「One sentence.」，排查过程写在收尾里。施工 TX-2（2026-10-30，项目主人定做、照重测换）：「只给要很多轮的活设」「验证过再标完成」两句改成事实「设了会话闲着就自己开下一轮，直到标完成或卡住」（验证的要求照旧在每一轮的提示里）。重测：三件一步能做完的小事各 2 次，两边乱开目标都是 0/6（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
+- 指纹：`7492f3e7`
 
 ```json
 {
-  "description": "Read, set or end this session's long-running goal. Set one only for work that takes many rounds: while it runs, the session starts a new round by itself whenever it is idle. End it with complete once the result is verified, or with blocked and a reason when you cannot go on.",
+  "description": "Read, set or end this session's long-running goal. While it runs, the session starts a new round by itself whenever it is idle, until it is marked complete or blocked.",
   "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
 }
 ```

@@ -74,8 +74,3 @@ path = "tests/all.rs"
 [[test]]
 name = "log"
 path = "tests/log.rs"
-
-# 量读一页用多少内存（2026-10-30 发布前测试，缺陷 E-3）：量的是整个进程的峰值常驻内存，自己一个程序。
-[[test]]
-name = "read_memory"
-path = "tests/read_memory.rs"

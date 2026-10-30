@@ -319,9 +319,7 @@ miyu_config::settings! {
 
 #### 最终值和来源（8-2）
 
-每个最终值都说得出来自哪一层、哪个文件的第几行，像 `git config --show-origin`（G2）。
-
-最终值合完算一次（施工 V-22）：`Resolved::values()` 交出的都是那一份，`Values` 几份共用一张表，哪一份要改（`set`）才另拷一张。读到的和以前每次照合出来的现拼一份一样；以前每读一次拷一整份，流式时每推一批要读语言、币种几次。协议上写成「来源」：
+每个最终值都说得出来自哪一层、哪个文件的第几行，像 `git config --show-origin`（G2）。协议上写成「来源」：
 
 ```json
 {"file":"config.toml","layer":"system","line":5}
@@ -1953,7 +1951,6 @@ Options:
 
 | 测试 | 守哪几条 | 哪一步 |
 |---|---|---|
-| `crates/miyu-config/src/merge/tests.rs` 的 `values_are_the_entries_every_time_and_a_change_stays_private`（施工 V-22） | 最终值每次取的都和逐项一样、几次取的一样；拿去改的是自己的一份，合出来的不变 |
 | `crates/miyu-config/src/item/tests.rs`、`item.rs` 的文档 | 宏生成的清单和设置类型一一对上：键、类型、默认值、层、环境变量、生效、界面提示照声明的先后；设置类型照最终值，没有的照默认值。选项区分大小写。没写默认值、选项只有一个的编译不过（`trybuild` 不引，写成宏的文档里的 `compile_fail` 例子）；数没写范围的随整数、小数那一步 | 8-1 |
 | `crates/miyu-config/src/list/tests.rs` | 查清单：键重复、按段互为前缀（`ui.lang` 不算）、写法不对（一段、大写、别的字、空段、数字或 `_` 开头）、第一段 `ext`、默认值过不了校验、选项少于两个或写重、一层都没有或层写重，各一例；几处都错的全报 | 8-1 |
 | `crates/miyu-config/src/words/tests.rs` | 查资源的字：缺名字、说明、选项名，页和组没名字，资源里多了项、选项、页、组，各一例。几个里的一个怎么连（一个、两个、三个以上，值和字两种「或」）。一项说明后面那几句。缺了哪一句照实报 | 8-1 |

@@ -68,9 +68,6 @@ pub struct Layers<'a> {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Resolved {
     entries: BTreeMap<String, (Value, Origin)>,
-    /// 最终值（施工 V-22）：合完算一次，[`Resolved::values`] 交出去的都是它，共用一份。以前每取一次照 `entries` 现拼一份，
-    /// 流式时每推一批都要取几次。
-    values: Values,
     /// 合的时候发现的问题：项目配置的 `not_tightening`、`untrusted_project`。
     pub problems: Vec<Problem>,
     /// 读不懂、当没设的环境变量：名字和原值。
@@ -83,9 +80,13 @@ impl Resolved {
         self.entries.get(key).map(|(value, origin)| (value, origin))
     }
 
-    /// 最终值：设置类型从它变过来。不拷贝，和别处取的共用一份（[`Values`] 改的时候才拷）。
+    /// 最终值：设置类型从它变过来。
     pub fn values(&self) -> Values {
-        self.values.clone()
+        let mut values = Values::default();
+        for (key, (value, _)) in &self.entries {
+            values.set(key, value.clone());
+        }
+        values
     }
 
     /// 全部真的键，照字节排。
@@ -147,11 +148,6 @@ pub fn merge(items: &[Item], layers: &Layers, env: &dyn Fn(&str) -> Option<Strin
             resolved.entries.insert(key, top);
         }
     }
-    let mut values = Values::default();
-    for (key, (value, _)) in &resolved.entries {
-        values.set(key, value.clone());
-    }
-    resolved.values = values;
     resolved
 }
 

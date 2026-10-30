@@ -15,7 +15,7 @@ use miyu_fs::{Kind, OpenError, open_file};
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_tool::picture;
-use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
+use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Target, Tool};
 
 use crate::blocking::blocking;
 use crate::common::{Common, Shown, said, said_n};
@@ -114,20 +114,15 @@ impl Tool for Read {
         let texts = self.texts.clone();
         Box::pin(async move {
             match serde_json::from_str::<Args>(&call.args) {
-                Ok(args) => {
-                    blocking(call.stop.clone(), move |stop| {
-                        read(&texts, &call, &args, stop)
-                    })
-                    .await
-                }
+                Ok(args) => blocking(call.stop.clone(), move |_| read(&texts, &call, &args)).await,
                 Err(error) => texts.common.bad_args(&error),
             }
         })
     }
 }
 
-/// 读：换成真实的位置，是目录就列，是文件就按行读；叫停了（`stop`）不读下去。
-fn read(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
+/// 读：换成真实的位置，是目录就列，是文件就按行读。
+fn read(texts: &Texts, call: &Call, args: &Args) -> Done {
     let path = args.file_path.as_str();
     let real = match call.real(path) {
         Ok(real) => real,
@@ -162,7 +157,7 @@ fn read(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
     if let Err(error) = file.rewind() {
         return texts.common.failed(path, &error);
     }
-    let paged = match lines::read(file, offset, limit, stop) {
+    let paged = match lines::read(file, offset, limit) {
         Ok(paged) => paged,
         Err(error) => return texts.common.failed(path, &error),
     };

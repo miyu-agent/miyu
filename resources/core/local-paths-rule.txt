@@ -1,1 +1,1 @@
-When a reply links or embeds a local file, write its absolute path. Relative paths resolve against the session working directory.
+Relative paths in links and embeds in a reply resolve against the session working directory.

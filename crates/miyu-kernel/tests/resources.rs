@@ -63,7 +63,7 @@ fn the_tool_result_sentences_are_usable() {
 }
 
 /// system 里核心的几行（`26-提示词.md` 第四节第 3 块，施工 2-7 补拼进 system）：本机文件的路径那一句也是一整行英文，
-/// 行尾一个换行，没有分号。
+/// 行尾一个换行，没有分号，说的是回答里的相对路径照会话的工作目录找（施工 TX-2）。
 #[test]
 fn the_local_paths_rule_is_one_plain_line() {
     let rule = include_str!("../../../resources/core/local-paths-rule.txt");
@@ -72,7 +72,8 @@ fn the_local_paths_rule_is_one_plain_line() {
         "{rule:?}"
     );
     assert!(!rule.contains(';'), "{rule}");
-    assert!(rule.contains("absolute path"), "{rule}");
+    // 施工 TX-2：只说相对路径照哪里找（事实），不再叫她写绝对路径。
+    assert!(rule.contains("working directory"), "{rule}");
 }
 
 /// system 里核心的几行（施工 2-7 再补）：本机是什么系统也是一整行英文，`{os}` 换成系统的名字，行尾一个换行，没有分号。

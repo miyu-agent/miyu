@@ -319,37 +319,3 @@ fn an_environment_variable_is_listed_on_top() {
         [(Origin::Env("MIYU_LOG"), true), (Origin::Default, false)]
     );
 }
-
-/// 最终值合的时候算一次（施工 V-22）：每次取的都和逐项 `get` 一样，几次取的一样；拿去改的是自己的一份，合出来的不变。
-#[test]
-fn values_are_the_entries_every_time_and_a_change_stays_private() {
-    let system = read(
-        Layer::System,
-        "[ui]\nlanguage = \"zh\"\n\n[log]\nlevel = \"debug\"\n",
-    );
-    let env = |name: &str| (name == "MIYU_LOG").then(|| "info".to_string());
-    let resolved = merge(
-        &items(),
-        &Layers {
-            system: Some(&system),
-            project: None,
-        },
-        &env,
-    );
-    let values = resolved.values();
-    let keys: Vec<&str> = values.keys().collect();
-    assert_eq!(keys, resolved.keys().collect::<Vec<_>>());
-    for key in resolved.keys() {
-        assert_eq!(
-            values.get(key),
-            resolved.get(key).map(|(value, _)| value),
-            "{key}"
-        );
-    }
-    assert_eq!(resolved.values(), values);
-    let mut changed = resolved.values();
-    changed.set("ui.language", text("en"));
-    assert_eq!(changed.get("ui.language"), Some(&text("en")));
-    assert_eq!(resolved.values().get("ui.language"), Some(&text("zh")));
-    assert_eq!(values.get("ui.language"), Some(&text("zh")));
-}

@@ -187,40 +187,33 @@ fn grep(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
         Ok(real) => real,
         Err(error) => return texts.common.failed(&path, &error),
     };
-    let dir = match std::fs::metadata(&real) {
-        Ok(meta) => meta.is_dir(),
+    let files: Vec<PathBuf> = match std::fs::metadata(&real) {
+        Ok(meta) if meta.is_dir() => walk::files(&real, walk::Fence::of(call), stop, |relative| {
+            filter
+                .as_ref()
+                .is_none_or(|filter| filter.matches(relative))
+        })
+        .into_iter()
+        .map(|found| found.path)
+        .collect(),
+        // 点名的一个文件：照搜，不管通配，ripgrep 也是这样。
+        Ok(_) => vec![real],
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             return texts.common.missing(&path, &real, &shown);
         }
         Err(error) => return texts.common.failed(&path, &error),
     };
-    let place = Place {
-        real,
-        dir,
-        filter: filter.as_ref(),
-    };
     let page = args.page();
     match args.output_mode.unwrap_or_default() {
         Mode::FilesWithMatches => {
-            let mut searcher = search::searcher(0, 0);
-            let found: Vec<PathBuf> = place
-                .matching(call, stop, |file| {
-                    search::matches(&mut searcher, &matcher, file).then_some(())
-                })
-                .into_iter()
-                .map(|(file, ())| file)
-                .collect();
+            let found = search::with_matches(&matcher, &files, stop);
             render::files(texts, &shown, &found, page)
         }
         Mode::Count => {
-            let mut searcher = search::searcher(0, 0);
-            let counted = place.matching(call, stop, |file| {
-                search::count(&mut searcher, &matcher, file)
-            });
+            let counted = search::counts(&matcher, &files, stop);
             render::counts(texts, &shown, &counted, page)
         }
         Mode::Content => {
-            let files = place.files(call, stop);
             // 一次最多写 64 KiB，一行至少一个字节：不限的也用不着收多过这么多行。多收一行，才知道后面还有没有。
             let need = page
                 .offset
@@ -229,65 +222,5 @@ fn grep(texts: &Texts, call: &Call, args: &Args, stop: &Stop) -> Done {
             let lines = search::lines(&matcher, &files, page, need, stop);
             render::lines(texts, &shown, &lines, page)
         }
-    }
-}
-
-/// 搜的地方：真实的位置，是不是目录，照哪个通配挑文件。
-struct Place<'a> {
-    real: PathBuf,
-    dir: bool,
-    filter: Option<&'a Pattern>,
-}
-
-impl Place<'_> {
-    /// 目录下面通配留下的文件，新的在前（[`walk::files`]）；点名的一个文件只有它：照搜，不管通配，ripgrep 也是这样。
-    fn files(&self, call: &Call, stop: &Stop) -> Vec<PathBuf> {
-        if !self.dir {
-            return vec![self.real.clone()];
-        }
-        walk::files(&self.real, walk::Fence::of(call), stop, |relative| {
-            self.keeps(relative)
-        })
-        .into_iter()
-        .map(|found| found.path)
-        .collect()
-    }
-
-    /// 同 [`Place::files`]，只是边走边照 `probe` 搜，只留搜到了的（`probe` 交回 `Some`），排好再交回（施工 V-21）：从家
-    /// 目录搜下来不先把几百万个文件都记下，留下的只有匹配的那几个。交回的和先走完、排好、再一个个搜的一样。
-    fn matching<T>(
-        &self,
-        call: &Call,
-        stop: &Stop,
-        mut probe: impl FnMut(&Path) -> Option<T>,
-    ) -> Vec<(PathBuf, T)> {
-        if !self.dir {
-            return probe(&self.real)
-                .map(|found| (self.real.clone(), found))
-                .into_iter()
-                .collect();
-        }
-        let mut found = Vec::new();
-        walk::each(
-            &self.real,
-            walk::Fence::of(call),
-            stop,
-            |relative| self.keeps(relative),
-            |file| {
-                if let Some(result) = probe(&file.path) {
-                    found.push((file, result));
-                }
-            },
-        );
-        found.sort_by(|a, b| a.0.cmp(&b.0));
-        found
-            .into_iter()
-            .map(|(file, result)| (file.path, result))
-            .collect()
-    }
-
-    /// 通配留不留这个相对路径：没给通配的都留。
-    fn keeps(&self, relative: &str) -> bool {
-        self.filter.is_none_or(|filter| filter.matches(relative))
     }
 }

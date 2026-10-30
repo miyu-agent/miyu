@@ -13,7 +13,6 @@
 //!    最后一轮（正在跑的那一轮不交，留给下次）。抽取本来就不进内核、不挡会话。
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use miyu_kernel::id::Seq;
 use tracing::Instrument;
@@ -58,9 +57,7 @@ impl Actor {
         called(config)
     }
 
-    /// 刚从忙到闲：抽取开着的上一个闹钟。封存了的支线（施工 C-8 下）闹钟当场就响（施工 V-23）：不会再开轮，等闲够
-    /// `extract_idle` 只是让它在内存里多挂半小时（群里一条话开一条支线，同时挂着三十来条）；响了照常判，不跳过抽取
-    /// （群里的支线一轮就封存，轮数不够，本来就不抽）。
+    /// 刚从忙到闲：抽取开着的上一个闹钟。
     pub(super) fn extract_when_idle(&self) {
         let Some((calls, _)) = self.tools.memory() else {
             return;
@@ -69,15 +66,12 @@ impl Actor {
         if keeper.extraction().is_none() {
             return;
         }
-        let idle = match self.session.sealed() {
-            true => Duration::ZERO,
-            false => keeper
-                .extraction()
-                .and_then(|extraction| extraction.idle)
-                .unwrap_or_else(|| {
-                    MemorySettings::from(&self.config.current().resolved.values()).extract_idle
-                }),
-        };
+        let idle = keeper
+            .extraction()
+            .and_then(|extraction| extraction.idle)
+            .unwrap_or_else(|| {
+                MemorySettings::from(&self.config.current().resolved.values()).extract_idle
+            });
         let generation = extractor.arm();
         let idle_ms = u64::try_from(idle.as_millis()).unwrap_or(u64::MAX);
         tracing::debug!(target: crate::TARGET, idle_ms, "memory extraction alarm set");

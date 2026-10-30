@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>998</b><span>/ 1007 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>995</b><span>/ 1004 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-23</b><span>最近一步（V-23 封存支线当场退下）</span></li>
+    <li><b class="mono">TX-2</b><span>最近一步（TX-2 常驻引导句）</span></li>
   </ul>
 </header>
 
@@ -484,10 +484,6 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV18"><span class="n">V-18</span>少落盘<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV19"><span class="n">V-19</span>盘忙不卡<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV20"><span class="n">V-20</span>支线不留父日志<span class="st">✓</span></a></li>
-        <li><a class="step done" href="#sV21"><span class="n">V-21</span>grep 大目录不爆内存<span class="st">✓</span></a></li>
-        <li><a class="step done" href="#sV21b"><span class="n">V-21补</span>read 大行不进内存<span class="st">✓</span></a></li>
-        <li><a class="step done" href="#sV22"><span class="n">V-22</span>流式每个字不重算<span class="st">✓</span></a></li>
-        <li><a class="step done" href="#sV23"><span class="n">V-23</span>封存支线当场退下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -1441,6 +1437,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sAS3"><span class="n">AS-3</span>定时的会话也要碰得到<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sAS8"><span class="n">AS-8</span>包里的名字哪个系统上都普通<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sTX1"><span class="n">TX-1</span>提示词瘦身<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sTX2"><span class="n">TX-2</span>常驻引导句<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -10312,205 +10309,6 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-20-支线不留父日志.md</code>；蓝图 <code>session/fork.md</code>「底子不常驻」。</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="sheet" id="sV21" aria-labelledby="h-sV21">
-  <div class="sheet-head"><h2 id="h-sV21"><span class="no">V-21</span>grep 大目录不爆内存</h2><span class="pill done">已完成</span></div>
-  <p class="purpose"><code>glob</code>、<code>grep</code> 从很大的目录搜下来，内存只跟要交回的东西走，不跟目录里有几个文件走。</p>
-  <figure class="frame">
-    <div class="drawing">
-      <div class="d01">
-        <div class="d01-left">
-          <div class="dir">
-            <div class="dir-label"><span class="path">grep 大目录不爆内存</span><span class="dir-note">V-21</span></div>
-            <ol class="pipe" aria-label="做了什么">
-              <li>走目录不先记整棵树：<code>walk::each</code> 走到一个交一个</li>
-              <li><code>glob</code> 只留最新的 100 个（堆里挑）、数一共几个</li>
-              <li><code>grep</code> 只列文件、计数两种边走边搜，只留搜到的、最后照同样的先后排</li>
-            </ol>
-          </div>
-        </div>
-        <div class="rules">
-          <p class="rules-title">这一步定下的</p>
-          <div class="tile new"><span class="nm">不设文件数上限、不截断结果：交回的要和原来一样</span><span class="rl">项目主人 2026-10-30（不为数字好看而省）</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="titleblock">
-      <dl>
-        <div><dt>图号</dt><dd class="mono">V-21</dd></div>
-        <div><dt>名称</dt><dd>grep 大目录不爆内存</dd></div>
-        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
-        <div><dt>提交</dt><dd class="mono">V-21</dd></div>
-        <div><dt>验收</dt><dd>约 122 万个文件的目录上峰值 429 → 13 MB（glob）、430 → 59 MB（grep）；不变的目录上交回的一字不差</dd></div>
-      </dl>
-    </figcaption>
-  </figure>
-  <div class="notes">
-    <div>
-      <h3>验收</h3>
-      <ul class="checks">
-        <li><span class="ok">✓</span><span>只留最新的几个和整棵树排好取前几个逐个一样</span></li>
-        <li><span class="ok">✓</span><span>计数模式照样新的在前、时间一样照路径</span></li>
-      </ul>
-    </div>
-    <div>
-      <h3>图纸</h3>
-      <ul>
-        <li>施工单 <code>docs/construction/V-21-grep大目录不爆内存.md</code>；蓝图 <code>tools/glob.md</code>「走目录」第 9 条、<code>tools/grep.md</code> 第 6 条。</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="sheet" id="sV21b" aria-labelledby="h-sV21b">
-  <div class="sheet-head"><h2 id="h-sV21b"><span class="no">V-21 补</span>read 大行不进内存</h2><span class="pill done">已完成</span></div>
-  <p class="purpose">10-30 发布前审计 E-3：<code>read</code> 读一页最多交 64 KiB，读的时候用的内存也不跟着文件多大走。</p>
-  <figure class="frame">
-    <div class="drawing">
-      <div class="d01">
-        <div class="d01-left">
-          <div class="dir">
-            <div class="dir-label"><span class="path">read 大行不进内存</span><span class="dir-note">V-21 补</span></div>
-            <ol class="pipe" aria-label="做了什么">
-              <li>按行读一行只留开头 8004 个字节，截出来和整行截的一字不差</li>
-              <li>带 BOM 的 UTF-16 边读边解成 UTF-8，再照同一条路分行</li>
-              <li>读的循环里看叫停的旗</li>
-            </ol>
-          </div>
-        </div>
-        <div class="rules">
-          <p class="rules-title">这一步定下的</p>
-          <div class="tile new"><span class="nm">输出一字不差：截的、行号、一共几行、整份的哈希</span><span class="rl">这一轮性能优化，项目主人 2026-10-30（不为数字好看而省）</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="titleblock">
-      <dl>
-        <div><dt>图号</dt><dd class="mono">V-21 补</dd></div>
-        <div><dt>名称</dt><dd>read 大行不进内存</dd></div>
-        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
-        <div><dt>提交</dt><dd class="mono">V-21补</dd></div>
-        <div><dt>验收</dt><dd>64 MiB 没换行的文本、64 MiB 的 UTF-16 读一页，峰值多分的 133、159 MiB → 16 MiB 以内</dd></div>
-      </dl>
-    </figcaption>
-  </figure>
-  <div class="notes">
-    <div>
-      <h3>验收</h3>
-      <ul class="checks">
-        <li><span class="ok">✓</span><span>审计的红测试 read_memory 修之前红、修之后绿</span></li>
-        <li><span class="ok">✓</span><span>和整份读进来的读法逐字对照：截线前后、截在多字节字中间、坏字节、代理对、落单代理、半个码元</span></li>
-      </ul>
-    </div>
-    <div>
-      <h3>图纸</h3>
-      <ul>
-        <li>施工单 <code>docs/construction/V-21补-read大行不进内存.md</code>；蓝图 <code>tools/read.md</code>「怎么走」第 1、3 款。</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="sheet" id="sV22" aria-labelledby="h-sV22">
-  <div class="sheet-head"><h2 id="h-sV22"><span class="no">V-22</span>流式每个字不重算</h2><span class="pill done">已完成</span></div>
-  <p class="purpose">模型一点点回答时，核心每收一块只做这一块该做的；量尺补上「流式一轮」，以前假模型一次回一整块，这一截从来没量过。</p>
-  <figure class="frame">
-    <div class="drawing">
-      <div class="d01">
-        <div class="d01-left">
-          <div class="dir">
-            <div class="dir-label"><span class="path">流式每个字不重算</span><span class="dir-note">V-22</span></div>
-            <ol class="pipe" aria-label="做了什么">
-              <li>全是流式碎片的一批不重算有没有能压的（它要过一遍整段有效历史）</li>
-              <li>配置的最终值合完算一次，<code>Values</code> 几份共用、改的才另拷</li>
-              <li>写给头时排着的几行一起写、只冲一次，字节和先后不变</li>
-              <li>量尺加「流式一轮」：回答切成几百块，量核心每轮花的 CPU</li>
-            </ol>
-          </div>
-        </div>
-        <div class="rules">
-          <p class="rules-title">这一步定下的</p>
-          <div class="tile new"><span class="nm">不给推送加时间节流，只合并已经排着的</span><span class="rl">项目主人 2026-10-30（不为数字好看而省）</span></div>
-          <div class="tile new"><span class="nm">读到的配置一字不变、写给头的先后不乱</span><span class="rl">核心主会话 2026-10-30</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="titleblock">
-      <dl>
-        <div><dt>图号</dt><dd class="mono">V-22</dd></div>
-        <div><dt>名称</dt><dd>流式每个字不重算</dd></div>
-        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
-        <div><dt>提交</dt><dd class="mono">V-22</dd></div>
-        <div><dt>验收</dt><dd>大会话上流式一轮核心的 CPU 85.5、84.8 → 47.9、34.9 ms（debug，300 块）</dd></div>
-      </dl>
-    </figcaption>
-  </figure>
-  <div class="notes">
-    <div>
-      <h3>验收</h3>
-      <ul class="checks">
-        <li><span class="ok">✓</span><span>最终值和逐项一样、改一份不动别的</span></li>
-        <li><span class="ok">✓</span><span>回应、推送交错入队，写出去先后、字节和一行行写的一样</span></li>
-        <li><span class="ok">✓</span><span>切块的回答接得回原文，旧的原始数据照样出表</span></li>
-      </ul>
-    </div>
-    <div>
-      <h3>图纸</h3>
-      <ul>
-        <li>施工单 <code>docs/construction/V-22-流式每个字不重算.md</code>；蓝图 <code>session/actor.md</code>、<code>config.md</code>、<code>protocol.md</code>、<code>perf.md</code>。</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section class="sheet" id="sV23" aria-labelledby="h-sV23">
-  <div class="sheet-head"><h2 id="h-sV23"><span class="no">V-23</span>封存支线当场退下</h2><span class="pill done">已完成</span></div>
-  <p class="purpose">群里一条话开一条支线、跑完一轮就封存；开着记忆的支线封存以后不再在内存里挂半小时等抽取的闹钟。</p>
-  <figure class="frame">
-    <div class="drawing">
-      <div class="d01">
-        <div class="d01-left">
-          <div class="dir">
-            <div class="dir-label"><span class="path">封存支线当场退下</span><span class="dir-note">V-23</span></div>
-            <ol class="pipe" aria-label="做了什么">
-              <li>封存了的支线抽取闹钟等 0：当场响、照常判，不跳过抽取</li>
-              <li>响完没事了，问空闲时当场退下</li>
-            </ol>
-          </div>
-        </div>
-        <div class="rules">
-          <p class="rules-title">这一步定下的</p>
-          <div class="tile new"><span class="nm">封存的支线不等闹钟、当场退下</span><span class="rl">项目主人 2026-10-30</span></div>
-          <div class="tile new"><span class="nm">支线不单独抽，支线里的对话由主线的抽取管</span><span class="rl">记忆那一线 2026-10-30 查过同意</span></div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="titleblock">
-      <dl>
-        <div><dt>图号</dt><dd class="mono">V-23</dd></div>
-        <div><dt>名称</dt><dd>封存支线当场退下</dd></div>
-        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
-        <div><dt>提交</dt><dd class="mono">V-23</dd></div>
-        <div><dt>验收</dt><dd>开着记忆、闲一小时才抽的支线封存了马上退下（修之前一直答还有事）</dd></div>
-      </dl>
-    </figcaption>
-  </figure>
-  <div class="notes">
-    <div>
-      <h3>验收</h3>
-      <ul class="checks">
-        <li><span class="ok">✓</span><span>一轮不够抽的不发抽取请求</span></li>
-        <li><span class="ok">✓</span><span>原有的退下、抽取、支线测试照旧</span></li>
-      </ul>
-    </div>
-    <div>
-      <h3>图纸</h3>
-      <ul>
-        <li>施工单 <code>docs/construction/V-23-封存支线当场退下.md</code>；蓝图 <code>memory.md</code> 第六条第 1 款、<code>session/fork.md</code>「封存」。</li>
       </ul>
     </div>
   </div>
@@ -54245,6 +54043,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>设计 <code>26-提示词.md</code> 第三节、J13、第十节；<code>25-工具加载.md</code> W2；施工单 <code>docs/construction/TX-1-提示词瘦身.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sTX2" aria-labelledby="h-sTX2">
+  <div class="sheet-head"><h2 id="h-sTX2"><span class="no">TX-2</span>常驻引导句</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">TX-1 留着的五句每次请求都带的引导，照原来的剧本重测以后换成事实写法：效果一样，字更少。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/ · 5 份</span><span class="dir-note">TX-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>show</code> 的 system 一句：交给 show 的文件在人的界面里打开（45 → 21）</li>
+              <li>本机路径：回答里的相对路径照工作目录找（24 → 16）</li>
+              <li>子会话场所说明删「做完就停、别回头等」；<code>remember</code> 删「只记以后用得上的」</li>
+              <li><code>goal</code> 说明：设了以后闲着就自己开下一轮，直到标完成或卡住（61 → 37）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">常驻的引导重测后换掉</span><span class="rl">一次性提示照 J2 留着</span></div>
+          <div class="tile new"><span class="nm">多轮测过的不改</span><span class="rl">记忆抽取整理、调工具的程序、压缩</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">TX-2</dd></div>
+        <div><dt>名称</dt><dd>常驻引导句</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">TX-2</dd></div>
+        <div><dt>验收</dt><dd>本机门禁全过；五条各照剧本重测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>show</code> 主动用 12/12 对 12/12</span></li>
+        <li><span class="ok">✓</span><span>子代理不回头问、不干等；几件小事都不乱开目标</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>设计 <code>26-提示词.md</code> J13、第十节；施工单 <code>docs/construction/TX-2-常驻引导句.md</code>。</li>
       </ul>
     </div>
   </div>

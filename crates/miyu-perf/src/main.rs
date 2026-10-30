@@ -78,17 +78,6 @@ async fn run(args: Args) -> Result<(), String> {
         memory: measure::FORGETFUL,
     };
     let large = measure::large::large(&sandbox, &mut fake, plan).await?;
-    eprintln!(
-        "流式一轮：大会话上说 {} 轮，回答切成 {} 块",
-        args.streams, args.pieces
-    );
-    let session = large
-        .dir
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .ok_or("大会话的目录没有名字")?;
-    let streamed =
-        measure::stream::streamed(&sandbox, &mut fake, &session, args.streams, args.pieces).await?;
     eprintln!("大会话（开着记忆）：说到 {} 条事件", args.events);
     let remembering = Plan {
         memory: measure::REMEMBERING,
@@ -112,7 +101,6 @@ async fn run(args: Args) -> Result<(), String> {
         hot,
         large,
         remembering: Some(remembering),
-        streamed: Some(streamed),
         appends,
     };
     let written = report::write(&results, &budgets, &args.out)?;
