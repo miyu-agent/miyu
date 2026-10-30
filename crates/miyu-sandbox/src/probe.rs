@@ -24,6 +24,11 @@ pub const BUILD: &str = env!("MIYU_SANDBOX_BUILD");
 /// 等它退出时多久看一次。
 const POLL: Duration = Duration::from_millis(10);
 
+/// Windows 上拉起助手不弹黑框（施工 NW-1）：核心本身没有控制台（网页软件、桌面端拉起的），拉起控制台程序时不带它，
+/// Windows 11 会新开一个控制台、交给 Windows Terminal 显示，每次核心起来都闪一下。
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 /// 助手说的：这台机器能收紧到什么程度。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Probe {
@@ -144,13 +149,18 @@ impl std::error::Error for ProbeError {}
 /// 起不来、到时了、退出码不是 0、说的读不懂、和核心不是同一份源码编的（[`ProbeError`]）。
 pub fn probe(helper: &Path, timeout: Duration) -> Result<Probe, ProbeError> {
     let deadline = Instant::now() + timeout;
-    let mut child = Command::new(helper)
+    let mut command = Command::new(helper);
+    command
         .arg("probe")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(ProbeError::Start)?;
+        .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let mut child = command.spawn().map_err(ProbeError::Start)?;
     let read = reader(&mut child);
     let bytes = match read.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
         Ok(Ok(bytes)) => bytes,

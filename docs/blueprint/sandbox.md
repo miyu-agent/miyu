@@ -92,7 +92,7 @@
 2. **核心起来时探一次**：
    - 主程序的真实位置照环境的快照（`core.md` 第 1 步）。
    - **记下的先用**（施工 V-5 上）：状态目录里的 `sandbox-probe.json` 记着上一次探成的结果，认四样：助手的路径、大小、改动时间，加上系统的版本（Linux 是内核版本号，Landlock 跟着内核走；别的平台是平台名加架构）；说法的版本 `miyu_sandbox::VERSION`、构建 id `miyu_sandbox::BUILD` 也要对得上（核心换了、助手没换的当没记过，施工 5-16 再补）。都对得上的直接用，记的那一行多一个字段 `remembered=true`，再在另一个线程里照下面跑一遍、成了就照新的记，下一次起来用新的。对不上、没记过、读不懂的，照下面现探。探成了的（手段空不空都算）才记，没找到、跑不了、超时、读不懂的不记。写的时候先写临时文件再换名，写不成的记一行 `DEBUG`，不影响起来。代码在 `crates/miyu-core/src/sandbox/remembered.rs`。
-   - 找到了就跑 `miyu-sandbox probe`，最多等 5 秒：读它的输出、等它退出加起来不过 5 秒，到时杀掉它。读输出在另一个线程里，它放出去的东西拿着管道不放，也不一直等。
+   - 找到了就跑 `miyu-sandbox probe`（Windows 上带 `CREATE_NO_WINDOW`，施工 NW-1：网页软件、桌面端拉起的核心没有控制台，不带的话 Windows 11 每次都弹一个黑框），最多等 5 秒：读它的输出、等它退出加起来不过 5 秒，到时杀掉它。读输出在另一个线程里，它放出去的东西拿着管道不放，也不一直等。
    - 成了：记一行 `INFO` `sandbox`，字段 `helper`（路径，家目录写成 `~`）、`platform`、`mechanisms`（逗号连起来，空的写 `none`）。
    - 没找到、跑不了、超时、说的读不懂：记一行 `WARN` `sandbox unavailable`，字段 `reason`，是这几句之一：`helper not found`、`cannot run helper: <原话>`、`helper timed out`、`helper failed: <退出码>`、`helper output not understood: <原话>`（版本不是 1 的写 `version <几>`）、`helper <路径> is from another build (helper <它报的，没报的写 none>, core <核心的>); rebuild it: cargo build -p miyu-sandbox`（构建 id 对不上，施工 5-16 再补：网页的 demo 树只编了 `-p miyu`，助手停在旧版，规格多了一格它认不出，原来每条沙盒命令都报 bad spec 退出 125）。
    - 探到了手段（`mechanisms` 不是空的）：能用，助手交给协议端点，造会话、载入时交给会话，权限策略照它判执行命令，执行器照它给每次调用写规格（施工 5-4 上，`core.md`）。手段是空的、探不成的：用不了，照上面的表记下原因，会话里工作区、只读两级执行命令都要问人（`session/guard.md`）。能不能用、为什么，握手时报给头（`protocol.md`，施工 5-4 下）。起不起得来不看它。
