@@ -2,7 +2,7 @@
 //! `core.stop`，再等它真的退了才回：阻塞地拿一次 `run/core.lock`，进程没了操作系统放锁，这里就醒，不轮询。
 //!
 //! 核心没在跑的什么都不说，退出码 0；被拒绝、连不上、等太久的照设计 47 说在标准错误上，退出码 1。成了什么都不印，同
-//! `systemctl stop`。
+//! `systemctl stop`。发了 `core.stop` 以后连接断了、没等到回应的，当核心接了（它收到就停，回应不一定送得到）。
 
 use std::io::Write;
 use std::process::ExitCode;
@@ -51,8 +51,14 @@ pub async fn core_stop_on(root: &DataRoot, language: Language, err: &mut dyn Wri
     if let Err(code) = link::hello(&mut rpc, &token, &language, false, err).await {
         return code;
     }
-    if let Err(code) = link::request(&mut rpc, "core.stop", json!({}), &language, err).await {
-        return code;
+    // 核心收到就停：回应可能还没送到连接就断了（CL-4 修，CI 上偶发）。断了的当它接了，照样等锁；只有明说拒绝的才报。
+    match rpc.call("core.stop", json!({})).await {
+        Ok(Some(reply)) if reply.get("error").is_some() => {
+            let message = reply["error"]["message"].as_str().unwrap_or_default();
+            return said(err, language, &language.refused(message));
+        }
+        Ok(_) => {}
+        Err(error) => return said(err, language, &Problem::new(error.to_string())),
     }
     drop(rpc);
     let waiting = {

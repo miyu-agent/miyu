@@ -31,7 +31,19 @@ fn temp_root(name: &str) -> DataRoot {
 /// 什么都不印，退出码 0。
 #[tokio::test]
 async fn stop_returns_only_after_the_lock_is_let_go() {
-    let root = temp_root("wait");
+    stops_cleanly("wait", true).await;
+}
+
+/// 核心收到 `core.stop` 停得快，回应还没送到连接就断了（CL-4 修：CI 上偶发「与核心的连接已断开」、退出码 1）：照样当它接了，
+/// 等锁放开，什么都不印，退出码 0。
+#[tokio::test]
+async fn a_core_that_hangs_up_before_answering_stop_still_counts() {
+    stops_cleanly("hangup", false).await;
+}
+
+/// 起一个假核心：答 `hello`；`core.stop` 照 `answer` 答或者不答就断开，再拿着锁 300 毫秒才放。`miyu core stop` 照样成、锁放了才回。
+async fn stops_cleanly(name: &str, answer: bool) {
+    let root = temp_root(name);
     let opened = miyu_ipc::open_locked(
         &root,
         &Dirs::current(),
@@ -50,16 +62,20 @@ async fn stop_returns_only_after_the_lock_is_let_go() {
             while let Some(line) = lines.next_line().await.expect("读得了") {
                 let request: Value = serde_json::from_str(&line).expect("是 JSON");
                 let method = request["method"].as_str().unwrap_or_default().to_string();
+                asked.push(method.clone());
+                if method == "core.stop" && !answer {
+                    break;
+                }
                 let reply = json!({"jsonrpc": "2.0", "id": request["id"], "result": {}});
                 write
                     .write_all(format!("{reply}\n").as_bytes())
                     .await
                     .expect("写得出");
-                asked.push(method.clone());
                 if method == "core.stop" {
                     break;
                 }
             }
+            drop((lines, write));
             tokio::time::sleep(std::time::Duration::from_millis(300)).await;
             released.store(true, Ordering::SeqCst);
             drop(listener);
