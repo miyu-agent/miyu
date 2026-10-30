@@ -36,14 +36,15 @@
 | 名字 | 说明 |
 |---|---|
 | `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
-| `options` | 选项：`value`、给人看的 `name`；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
+| `options` | 选项：`value`、给人看的 `name`；软件包清单里写了说明的带 `description`（暗色写在下面，PC-1）；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
 | `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里；`sandbox.readonly.remove` 同理，勾着的照旧受保护）；没有的勾着的是值里的 |
 | `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型 |
 | `default` | 默认值 |
 | `layers` | 能写在哪几层：`system`、`project` |
 | `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
 | `name`、`description` | 给人看的名字、说明，照连接的语言 |
-| `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件 |
+| `page`、`group`、`common`、`control` | 设置页放哪、常不常用、用什么控件：`select`、`toggle`、`number`、`text`、`list`、`combo`、`textarea`（几行的框）、`slider`（滑块，PC-1） |
+| `step` | 控件是 `slider` 的：一格多少（整数的是整数） |
 | `suggestions` | 控件是 `combo` 的：建议值 |
 | `hidden` | 设置页不画 |
 | `package` | 软件包的配置项：归哪个包 |

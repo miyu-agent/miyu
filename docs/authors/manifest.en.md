@@ -121,13 +121,18 @@ Makes it an extension; needs `[command]`.
 
 ## `[settings.<name>]`
 
-One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: the values arrive in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)).
+One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: an extension gets the values in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)); a package with only scripts reads them from the environment variable `MIYU_SETTINGS_JSON` (see [Scripts and skills](scripts-skills.en.md)).
 
 | Field | Notes |
 |---|---|
-| `type` | Required: `bool`, `int` (`min`, `max`), `option` (`choices`, at least two), `text` (`max`, default 200 characters), `name`, `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type) |
+| `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type) |
+| `choices` | The options of an `option`: an array of texts (`["auto", "opaque"]`), or an array of tables, each with a required `value` and an optional `name` and `description` written like the setting's own (the settings screen shows `name` in the dropdown and `description` dimmed below it). Don't mix the two; the config stores `value` |
+| `lines` | `lines = true` on a `text`: a box of several lines (for prompt templates and the like), at most 2000 characters without `max` |
+| `min`, `max` | The range of an `int`, the whole integer range when left out; required for `number` and integers only (like `0` to `2`), use `step` for finer values |
+| `step` | How much one step is for `int` and `number` (for the settings screen): positive, a whole number for `int` |
+| `slider` | `slider = true` on an `int` or `number` draws a slider; needs `min` and `max`. Without `step` it moves by 1 for `int` and by a hundredth of the range for `number` |
 | `default` | Default value of that type; not allowed for `secret` |
-| `layers` | One or both of `system`, `personal`; both by default |
+| `layers` | Only `system` (the system config), which is also the default |
 | `applies` | When it takes effect: `now`, `new_session`, `next_turn`, `program_start` (your program's next start, default) |
 | `name`, `description` | Shown to people |
 | `hidden` | `true`: not drawn on the settings screen, still writable and readable |

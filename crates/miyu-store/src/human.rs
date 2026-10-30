@@ -29,8 +29,8 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use miyu_config::package::Manifest;
 use miyu_config::package::settings::OFF;
+use miyu_config::package::{Choice, Manifest, SettingKind};
 use miyu_config::phrases::Phrases;
 use miyu_config::{ConfigWords, ItemWords, Words};
 use miyu_kernel::event::Said;
@@ -259,10 +259,26 @@ impl Human {
             }
             for setting in &manifest.settings {
                 let key = format!("{}.{}", manifest.prefix_of(id), setting.name);
+                // 选项的名字、说明（施工 PC-1）：没写名字的不放，`config.schema` 照值写。
+                let choices = match &setting.kind {
+                    SettingKind::Option(choices) => choices.as_slice(),
+                    SettingKind::List(element) => match element.as_ref() {
+                        SettingKind::Option(choices) => choices.as_slice(),
+                        _ => &[],
+                    },
+                    _ => &[],
+                };
+                let said = |words: fn(&Choice) -> &Phrases| -> BTreeMap<String, String> {
+                    choices
+                        .iter()
+                        .filter_map(|choice| Some((choice.value.clone(), pick(words(choice))?)))
+                        .collect()
+                };
                 let words = ItemWords {
                     name: pick(&setting.label).unwrap_or_else(|| key.clone()),
                     description: pick(&setting.description).unwrap_or_default(),
-                    options: BTreeMap::new(),
+                    options: said(|choice| &choice.name),
+                    option_descriptions: said(|choice| &choice.description),
                     suggestions: Vec::new(),
                 };
                 self.config.items.insert(key, words);

@@ -2,7 +2,11 @@
 //! 对代码；转成配置项以后键、类型、界面提示对。
 
 use super::*;
+use crate::item::Item;
 use crate::package::{Code, read};
+use crate::value::Number;
+
+mod vocabulary;
 
 /// 一份带配置项的网页清单。
 fn web(settings: &str) -> String {
@@ -54,7 +58,10 @@ fn every_type_reads() {
         ),
         (
             "type = \"option\"\nchoices = [\"a\", \"b\"]\ndefault = \"b\"",
-            SettingKind::Option(vec!["a".to_string(), "b".to_string()]),
+            SettingKind::Option(vec![
+                Choice::plain("a".to_string()),
+                Choice::plain("b".to_string()),
+            ]),
             Some(Value::Text("b".into())),
         ),
         (
@@ -102,7 +109,10 @@ fn a_list_reads_its_element_and_checks_the_default_one_by_one() {
         ),
         (
             "element = \"option\"\nchoices = [\"a\", \"b\"]\ndefault = [\"b\"]",
-            list(SettingKind::Option(vec!["a".to_string(), "b".to_string()])),
+            list(SettingKind::Option(vec![
+                Choice::plain("a".to_string()),
+                Choice::plain("b".to_string()),
+            ])),
             Some(Value::List(vec![text("b")].into())),
         ),
         (

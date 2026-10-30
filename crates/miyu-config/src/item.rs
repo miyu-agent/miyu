@@ -151,10 +151,15 @@ pub enum Control {
     Combo,
     /// 几行的框（施工 P-9 三补）：能换行的文字（[`crate::Kind::Lines`]），Enter 换行。
     TextArea,
+    /// 滑块（施工 PC-1）：整数、小数，两头照类型的 `min`、`max`，一格 `step`。
+    Slider {
+        /// 一格多少：整数的是整数。
+        step: crate::value::Number,
+    },
 }
 
 impl Control {
-    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`、`combo`、`textarea`。
+    /// 协议上的写法：`select`、`toggle`、`text`、`number`、`list`、`combo`、`textarea`、`slider`（施工 PC-1）。
     pub fn as_str(self) -> &'static str {
         match self {
             Control::Select => "select",
@@ -164,6 +169,7 @@ impl Control {
             Control::List => "list",
             Control::Combo => "combo",
             Control::TextArea => "textarea",
+            Control::Slider { .. } => "slider",
         }
     }
 }

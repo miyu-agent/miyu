@@ -47,6 +47,10 @@ pub struct ItemWords {
     /// 选项名：选项到给人看的名字。别的类型没有。
     #[serde(default)]
     pub options: BTreeMap<String, String>,
+    /// 选项的说明（施工 PC-1，包清单里 `choices` 写了 `description` 的）：选项到一句话，`config.schema` 照它带，头暗色写在下面。
+    /// 没写的选项不在里面。
+    #[serde(default)]
+    pub option_descriptions: BTreeMap<String, String>,
     /// 下拉加「其他」手写（`combo`，施工 P-9 补）的建议值，照这种语言的人最常用的排在前面；写进配置的就是值本身。别的
     /// 控件没有。
     #[serde(default)]

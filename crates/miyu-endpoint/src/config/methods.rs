@@ -124,6 +124,12 @@ fn schema_item(
                     .and_then(|said| said.options.get(*option))
                     .map_or(*option, String::as_str);
                 let mut named = json!({"name": name, "value": option});
+                // 选项的说明（施工 PC-1，包清单里写了的）：头暗色写在下面。
+                if let Some(description) =
+                    said.and_then(|said| said.option_descriptions.get(*option))
+                {
+                    named["description"] = json!(description);
+                }
                 if let Some(note) = notes(option) {
                     named["note"] = json!(note);
                 }
@@ -182,6 +188,10 @@ fn schema_item(
     map.insert("group".to_string(), json!(item.ui.group));
     map.insert("common".to_string(), json!(item.ui.common));
     map.insert("control".to_string(), json!(item.ui.control.as_str()));
+    // 滑块一格多少（施工 PC-1）。
+    if let miyu_config::Control::Slider { step } = item.ui.control {
+        map.insert("step".to_string(), json!(step.get()));
+    }
     // 下拉加「其他」手写（施工 P-9 补）：建议值照连接的语言那一份字表。
     if let Some(said) = said.filter(|said| !said.suggestions.is_empty()) {
         map.insert("suggestions".to_string(), json!(said.suggestions));

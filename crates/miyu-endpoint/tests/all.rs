@@ -164,6 +164,7 @@ mod package_switch;
 mod package_theme;
 mod package_tool;
 mod package_tool_open;
+mod package_vocabulary;
 mod packages;
 mod packages_archive;
 mod packages_config;

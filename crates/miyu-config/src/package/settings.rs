@@ -9,10 +9,10 @@ use toml_edit::{Item as Node, TableLike};
 
 use super::reader::Reader;
 use super::{Code, Problem};
-use crate::item::{Applies, Control, Item, Kind, Layer, Ui};
+use crate::item::{Applies, Control, Kind, Layer};
 use crate::parse;
 use crate::phrases::Phrases;
-use crate::value::Value;
+use crate::value::{Number, Value};
 
 /// 包的配置项都在设置页的这一页（施工 F-6 上起平台接入的也在这里：「接入」页去掉了，`package-pages.md`）。头照 `config.schema`
 /// 每一项的 `package` 把它们画在那个软件的信息页上。
@@ -23,6 +23,9 @@ pub const OFF: &str = "packages.<id>.off";
 
 /// 文字不写 `max` 的，最多几个字符。
 const TEXT_MAX: usize = 200;
+
+/// 几行字不写 `max` 的，最多几个字符（施工 PC-1）。
+const LINES_MAX: usize = 2000;
 
 /// 读好的一项。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +46,30 @@ pub struct Setting {
     pub description: Phrases,
     /// 设置页不画。
     pub hidden: bool,
+    /// 画成滑块（施工 PC-1，`int`、`number` 写了 `slider = true`）：一格多少；不是滑块的没有。
+    pub slider: Option<Number>,
+}
+
+/// 选项里的一个（施工 PC-1，设计 53 第一节）：存的值，给人看的名字、说明（没写的是空的：名字照值画）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Choice {
+    /// 存进配置的值。
+    pub value: String,
+    /// 给人看的名字。
+    pub name: Phrases,
+    /// 给人看的说明。
+    pub description: Phrases,
+}
+
+impl Choice {
+    /// 只有值的一个（原来那种字的写法）。
+    fn plain(value: String) -> Choice {
+        Choice {
+            value,
+            name: Phrases::new(),
+            description: Phrases::new(),
+        }
+    }
 }
 
 /// 一项的类型：配置清单的几种里包能用的。
@@ -57,12 +84,24 @@ pub enum SettingKind {
         /// 最大。
         max: i64,
     },
-    /// 选项：列出的几个之一，至少两个。
-    Option(Vec<String>),
+    /// 选项：列出的几个之一，至少两个（施工 PC-1 起每一个可以带给人看的名字、说明）。
+    Option(Vec<Choice>),
     /// 文字，最多 `max` 个字符。
     Text {
         /// 最多几个字符。
         max: usize,
+    },
+    /// 几行字（施工 PC-1，`text` 写 `lines = true`）：能换行，最多 `max` 个字符。
+    Lines {
+        /// 最多几个字符（换行也算一个）。
+        max: usize,
+    },
+    /// 小数（施工 PC-1，`type = "number"`）：`min` 到 `max`，两头必写、只收整数，精度照 `step`。
+    Number {
+        /// 最小。
+        min: i64,
+        /// 最大。
+        max: i64,
     },
     /// 名字。
     Name,
@@ -84,6 +123,11 @@ impl SettingKind {
                 max: *max,
             },
             SettingKind::Text { max } => Kind::Text { max: *max },
+            SettingKind::Lines { max } => Kind::Lines { max: *max },
+            SettingKind::Number { min, max } => Kind::Float {
+                min: *min,
+                max: *max,
+            },
             SettingKind::Name => Kind::Name,
             SettingKind::Url => Kind::Url,
             SettingKind::Secret => Kind::Secret,
@@ -100,11 +144,12 @@ impl SettingKind {
         }
     }
 
-    /// 设置页用的控件。
+    /// 设置页用的控件（滑块另看 [`Setting::slider`]）。
     fn control(&self) -> Control {
         match self {
             SettingKind::Bool => Control::Toggle,
-            SettingKind::Int { .. } => Control::Number,
+            SettingKind::Int { .. } | SettingKind::Number { .. } => Control::Number,
+            SettingKind::Lines { .. } => Control::TextArea,
             SettingKind::Option(_) => Control::Select,
             SettingKind::List(_) => Control::List,
             _ => Control::Text,
@@ -169,6 +214,7 @@ fn one(
     node: &Node,
 ) -> Result<Setting, Problem> {
     let kind = kind(reader, at, fields, node)?;
+    let slider = slider(reader, at, fields, &kind)?;
     let default = match fields.get("default") {
         None => None,
         Some(item) => Some(default(reader, at, &kind, item)?),
@@ -222,6 +268,7 @@ fn one(
         label,
         description,
         hidden,
+        slider,
     })
 }
 
@@ -241,7 +288,9 @@ fn kind(
                 Some(element),
                 Code::BadElement,
                 &format!("{at}.element"),
-                format!("{at}.element must be bool, int, option, text, name, url or secret"),
+                format!(
+                    "{at}.element must be bool, int, number, option, text, name, url or secret"
+                ),
             )
         };
         let name = element.as_str().ok_or_else(bad)?;
@@ -257,7 +306,9 @@ fn kind(
                 Some(item),
                 Code::BadType,
                 &format!("{at}.type"),
-                format!("{at}.type must be bool, int, option, text, name, url, secret or list"),
+                format!(
+                    "{at}.type must be bool, int, number, option, text, name, url, secret or list"
+                ),
             )
         })?;
         (kind, extra, false)
@@ -275,91 +326,6 @@ fn kind(
         .collect();
     reader.only(fields, at, &known)?;
     Ok(kind)
-}
-
-/// 不是列表的那几种：`name` 是哪一种、它带的几格；不认识的是 `None`。
-fn scalar(
-    reader: &Reader<'_>,
-    at: &str,
-    fields: &dyn TableLike,
-    node: &Node,
-    name: &str,
-) -> Result<Option<(SettingKind, &'static [&'static str])>, Problem> {
-    Ok(Some(match name {
-        "bool" => (SettingKind::Bool, &[]),
-        "int" => {
-            let bound = |key: &str, otherwise: i64| match fields.get(key) {
-                None => Ok(otherwise),
-                Some(item) => item.as_integer().ok_or_else(|| {
-                    reader.problem(
-                        Some(item),
-                        Code::BadRange,
-                        &format!("{at}.{key}"),
-                        format!("{at}.{key} must be an integer"),
-                    )
-                }),
-            };
-            let (min, max) = (bound("min", i64::MIN)?, bound("max", i64::MAX)?);
-            if min > max {
-                return Err(reader.problem(
-                    fields.get("min"),
-                    Code::BadRange,
-                    &format!("{at}.min"),
-                    format!("{at}.min must not be above {at}.max"),
-                ));
-            }
-            (SettingKind::Int { min, max }, super::fields::SETTING_INT)
-        }
-        "option" => {
-            let bad = |item: Option<&Node>| {
-                reader.problem(
-                    item.or(Some(node)),
-                    Code::BadChoices,
-                    &format!("{at}.choices"),
-                    format!("{at}.choices must list at least two different texts"),
-                )
-            };
-            let choices: Vec<String> = fields
-                .get("choices")
-                .and_then(Node::as_array)
-                .and_then(|array| {
-                    array
-                        .iter()
-                        .map(|value| value.as_str().map(str::to_string))
-                        .collect::<Option<Vec<_>>>()
-                })
-                .ok_or_else(|| bad(fields.get("choices")))?;
-            let mut distinct = choices.clone();
-            distinct.sort();
-            distinct.dedup();
-            if distinct.len() < 2 || distinct.len() != choices.len() {
-                return Err(bad(fields.get("choices")));
-            }
-            (SettingKind::Option(choices), super::fields::SETTING_OPTION)
-        }
-        "text" => {
-            let max = match fields.get("max") {
-                None => TEXT_MAX,
-                Some(item) => item
-                    .as_integer()
-                    .and_then(|max| usize::try_from(max).ok())
-                    .filter(|max| *max > 0)
-                    .ok_or_else(|| {
-                        reader.problem(
-                            Some(item),
-                            Code::BadRange,
-                            &format!("{at}.max"),
-                            format!("{at}.max must be a positive integer"),
-                        )
-                    })?,
-            };
-            (SettingKind::Text { max }, super::fields::SETTING_TEXT)
-        }
-        "name" => (SettingKind::Name, &[]),
-        "url" => (SettingKind::Url, &[]),
-        "secret" => (SettingKind::Secret, &[]),
-        _ => return Ok(None),
-    }))
 }
 
 /// 默认值：照类型查；选项照列出的几个查；列表照元素一个个查；密钥、密钥的列表不能有。
@@ -389,7 +355,7 @@ fn fits(kind: &SettingKind, value: &toml_edit::Value) -> Option<Value> {
     match kind {
         SettingKind::Option(choices) => value
             .as_str()
-            .filter(|text| choices.iter().any(|choice| choice == text))
+            .filter(|text| choices.iter().any(|choice| choice.value == *text))
             .map(|text| Value::Text(text.to_string().into())),
         SettingKind::List(element) => value
             .as_array()?
@@ -441,51 +407,11 @@ fn setting_name(name: &str) -> bool {
         && name.len() <= 64
 }
 
-/// 包 `package` 的配置项拼成配置清单的项：键 `<前缀>.<名字>`（`prefix`，施工 PN-1，[`super::Manifest::prefix_of`]），挂在
-/// 「软件包」那一页（[`PAGE`]）、这个包那一组。字留在进程里，一直用到退出：只在核心起来、装卸时调。
-pub fn items(package: &str, prefix: &str, settings: &[Setting]) -> Vec<Item> {
-    let group: &'static str = leak(package);
-    settings
-        .iter()
-        .map(|setting| Item {
-            key: leak(&format!("{prefix}.{}", setting.name)),
-            kind: leaked(&setting.kind),
-            default: setting.default.clone(),
-            layers: Box::leak(setting.layers.clone().into_boxed_slice()),
-            tighten: None,
-            env: None,
-            applies: setting.applies,
-            ui: Ui {
-                page: PAGE,
-                group,
-                package: Some(group),
-                common: false,
-                control: setting.kind.control(),
-                hidden: setting.hidden,
-            },
-        })
-        .collect()
-}
+mod build;
+mod types;
 
-/// 换成配置清单的类型：选项的字、列表的元素留在进程里。
-fn leaked(kind: &SettingKind) -> Kind {
-    match kind {
-        SettingKind::Option(choices) => Kind::Option(Box::leak(
-            choices
-                .iter()
-                .map(|choice| leak(choice))
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
-        )),
-        SettingKind::List(element) => Kind::List(Box::leak(Box::new(leaked(element)))),
-        plain => plain.plain().unwrap_or(Kind::Bool),
-    }
-}
-
-/// 一段字留在进程里。
-fn leak(text: &str) -> &'static str {
-    Box::leak(text.to_string().into_boxed_str())
-}
+pub use build::items;
+use types::{scalar, slider};
 
 #[cfg(test)]
 mod tests;

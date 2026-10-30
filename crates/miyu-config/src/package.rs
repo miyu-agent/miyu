@@ -43,7 +43,7 @@ pub use mcp::{
 };
 pub use need::Need;
 pub use search::{SEARCH_SOURCE, SearchSource};
-pub use settings::{Setting, SettingKind};
+pub use settings::{Choice, Setting, SettingKind};
 pub use side::{SIDE_TIERS, SideRequest};
 pub use slash::{Access, SlashCommand};
 pub use target::Target;

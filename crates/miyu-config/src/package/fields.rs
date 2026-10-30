@@ -50,13 +50,16 @@ pub(super) const SETTING: &[&str] = &[
 ];
 
 /// `type = "int"` 多的几格。
-pub(super) const SETTING_INT: &[&str] = &["min", "max"];
+pub(super) const SETTING_INT: &[&str] = &["min", "max", "step", "slider"];
+
+/// `type = "number"` 多的几格（施工 PC-1）。
+pub(super) const SETTING_NUMBER: &[&str] = &["min", "max", "step", "slider"];
 
 /// `type = "option"` 多的几格。
 pub(super) const SETTING_OPTION: &[&str] = &["choices"];
 
 /// `type = "text"` 多的几格。
-pub(super) const SETTING_TEXT: &[&str] = &["max"];
+pub(super) const SETTING_TEXT: &[&str] = &["max", "lines"];
 
 /// `type = "list"` 多的几格。
 pub(super) const SETTING_LIST: &[&str] = &["element"];
@@ -149,6 +152,7 @@ pub(super) const TABLES: [Table; 22] = [
         &[
             SETTING,
             SETTING_INT,
+            SETTING_NUMBER,
             SETTING_OPTION,
             SETTING_TEXT,
             SETTING_LIST,

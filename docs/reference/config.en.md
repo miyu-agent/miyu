@@ -36,14 +36,15 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 | Name | Notes |
 |---|---|
 | `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
-| `options` | Options: `value` and a display `name`; `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
+| `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when the package manifest wrote one (PC-1); `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
 | `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value; likewise `sandbox.readonly.remove`, where ticked stays protected); without it, ticked ones are those in the value |
 | `min`, `max`, `max_chars`, `element` | Range, length, list element type |
 | `default` | Default value |
 | `layers` | Where it may be written: `system`, `project` |
 | `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
 | `name`, `description` | Display name and description, in the connection's language |
-| `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control |
+| `page`, `group`, `common`, `control` | Where it goes on the settings screen, whether it's common, which control: `select`, `toggle`, `number`, `text`, `list`, `combo`, `textarea` (a box of several lines), `slider` (PC-1) |
+| `step` | For a `slider`: how much one step is (a whole number for integers) |
 | `suggestions` | `combo` controls: suggested values |
 | `hidden` | Not drawn on the settings screen |
 | `package` | A package's setting: which package |

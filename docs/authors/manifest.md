@@ -121,13 +121,18 @@ place = "status"
 
 ## `[settings.<名字>]`
 
-一项配置一张表，键是 `<前缀>.<名字>`（前缀见上面的 `prefix`，不写就是包的编号）。项多了可以分组，多写一层 `[settings.<组>.<名字>]`，键就是 `<前缀>.<组>.<名字>`（例如 `im.qq.listen`），只能多这一层；组里的项不能叫 `type`、`name`。设置页的「软件包」那一页有你一组。**不要自己读配置文件**：值在握手时交给你，改了推给你（见 [写扩展](extensions.md)）。
+一项配置一张表，键是 `<前缀>.<名字>`（前缀见上面的 `prefix`，不写就是包的编号）。项多了可以分组，多写一层 `[settings.<组>.<名字>]`，键就是 `<前缀>.<组>.<名字>`（例如 `im.qq.listen`），只能多这一层；组里的项不能叫 `type`、`name`。设置页的「软件包」那一页有你一组。**不要自己读配置文件**：扩展的值在握手时交给你，改了推给你（见 [写扩展](extensions.md)）；只带脚本的包，脚本从环境变量 `MIYU_SETTINGS_JSON` 读（见 [脚本和技能](scripts-skills.md)）。
 
 | 格 | 说明 |
 |---|---|
-| `type` | 必写：`bool`、`int`（`min`、`max`）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字）、`name`、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型） |
+| `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型） |
+| `choices` | `option` 的几个选项：字的数组（`["auto", "opaque"]`），或者表的数组，每张 `value` 必写，`name`、`description` 可以不写，写法同项的 `name`、`description`（设置页照 `name` 画下拉，`description` 暗色写在下面）。两种不能混着写；存进配置的是 `value` |
+| `lines` | `text` 写 `lines = true`：几行的框（放提示词模板这类），不写 `max` 时最多 2000 个字 |
+| `min`、`max` | `int` 的范围，不写是整数的全部范围；`number` 必写，只收整数（`0` 到 `2` 这样），精度用 `step` |
+| `step` | `int`、`number` 一格多少（设置页用）：正数，`int` 的是整数 |
+| `slider` | `int`、`number` 写 `slider = true` 画成滑块，要写 `min`、`max`；`step` 不写的 `int` 是 1、`number` 是范围的百分之一 |
 | `default` | 默认值，合这个类型；`secret` 不能写 |
-| `layers` | `system`、`personal` 里的一个或两个，默认两个 |
+| `layers` | 只能写 `system`（系统配置），不写也是它 |
 | `applies` | 什么时候生效：`now`、`new_session`、`next_turn`、`program_start`（你的程序下次启动，默认） |
 | `name`、`description` | 给人看的名字、说明 |
 | `hidden` | `true` 的设置页不画，照样能写、能查 |
