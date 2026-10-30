@@ -162,3 +162,71 @@ fn a_summary_request_gets_a_summary() {
     let ordinary = answer(b"{\"messages\":[]}", "ordinary reply", 1);
     assert!(!ordinary.contains("<summary>"), "{ordinary}");
 }
+
+fn script() -> script::Script {
+    script::Script {
+        marker: "perf-tool-03".to_string(),
+        calls: (0..3)
+            .map(|n| script::ToolCall {
+                id: format!("perf_03_{n:03}"),
+                name: "read".to_string(),
+                arguments: format!("{{\"file_path\":\"/w/{n}\"}}"),
+            })
+            .collect(),
+    }
+}
+
+/// 剧本（施工 V-29）：提到记号的照请求体里有几次的结果回下一次调用，回完了收尾；不提记号的不归它。
+#[test]
+fn a_script_answers_the_next_call() {
+    let script = script();
+    assert_eq!(script.answered(b"perf-tool-04: go."), None);
+    assert_eq!(script.answered(b"perf-tool-03: go."), Some(0));
+    assert_eq!(
+        script.answered(b"perf-tool-03 perf_03_000 perf_03_001"),
+        Some(2)
+    );
+    // 中间缺了一次的只数到缺的那里。
+    assert_eq!(script.answered(b"perf-tool-03 perf_03_001"), Some(0));
+    let stream = script.answer(b"perf-tool-03 perf_03_000", 1);
+    let chunks: Vec<serde_json::Value> = stream
+        .split("\n\n")
+        .filter_map(|chunk| chunk.strip_prefix("data: "))
+        .filter(|chunk| *chunk != "[DONE]")
+        .map(|chunk| serde_json::from_str(chunk).unwrap())
+        .collect();
+    assert!(stream.ends_with("data: [DONE]\n\n"));
+    assert_eq!(
+        chunks[0]["choices"][0]["delta"]["content"],
+        script::PREAMBLE
+    );
+    let call = &chunks[1]["choices"][0]["delta"]["tool_calls"][0];
+    assert_eq!(call["id"], "perf_03_001");
+    assert_eq!(call["function"]["name"], "read");
+    assert_eq!(call["function"]["arguments"], "{\"file_path\":\"/w/1\"}");
+    assert_eq!(chunks[2]["choices"][0]["finish_reason"], "tool_calls");
+    // 回完了：只有那一句，不带调用，照常 `stop`。
+    let last = script.answer(b"perf-tool-03", 3);
+    assert!(last.contains(script::PREAMBLE));
+    assert!(!last.contains("tool_calls"));
+    assert!(last.contains("\"finish_reason\":\"stop\""));
+}
+
+/// 真起一个（施工 V-29）：照剧本回，写完交来时刻，归剧本的请求带着第几次。
+#[tokio::test]
+async fn a_scripted_answer_reports_when_it_was_written() {
+    let mut fake = Fake::start(10).await.unwrap();
+    fake.script(Some(script()));
+    let body = "{\"x\":\"perf-tool-03 perf_03_000\"}";
+    let request = format!(
+        "POST /v1/chat/completions HTTP/1.1\r\nHost: x\r\nContent-Length: {}\r\n\r\n{body}",
+        body.len()
+    );
+    let reply = send(&fake.base_url, request).await;
+    assert!(reply.contains("perf_03_001"));
+    let arrival = fake.request_with("perf-tool-03").await.unwrap();
+    assert_eq!(arrival.step, Some(1));
+    assert!(arrival.cpu.is_none());
+    let answered = arrival.answered.await.unwrap();
+    assert!(answered.at >= arrival.at);
+}
