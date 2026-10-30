@@ -36,6 +36,9 @@ miyu-source = { path = "../miyu-source" }
 # 测试里的数据根。
 # 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
 miyu-store = { path = "../miyu-store", features = ["testkit"] }
+# 测试里只读地看回合库写到哪了（施工 V-28：不等安静就杀核心的那条，先等第一轮写进去；照库自己的开法开，忙的时候会删掉
+# 重建，不能用来探）。
+rusqlite = { version = "0.40", features = ["bundled"] }
 # 测试里开一对真的伪终端，贴 key 时按 `Ctrl+C` 走一遍真的子进程（施工 8-5 补，Unix 上才用得到；`termios`、`pty` 两个
 # 模块本身就只在 Unix 编）。
 rustix = { version = "1", features = ["termios", "pty"] }

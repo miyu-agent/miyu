@@ -226,8 +226,8 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     let (log, report) = logs.open(&Room::persona("engineer")).expect("开得了");
     let report = report.expect("第一次开交回情形");
     assert!(
-        matches!(report.index, Opened::Created),
-        "{:?}",
+        report.index.is_none(),
+        "一条都没有的不建库（施工 V-28）：{:?}",
         report.index
     );
     assert!(report.caught_up.is_none() && report.unreadable.is_empty());
@@ -238,8 +238,14 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
             .is_none(),
         "开过的不再交"
     );
-    log.append(at(1), tool(), None, &saved("用户用 N 卡"))
+    let appended = log
+        .append(at(1), tool(), None, &saved("用户用 N 卡"))
         .expect("记得下");
+    assert!(
+        matches!(appended.opened, Some(Opened::Created)),
+        "第一条记忆建库：{:?}",
+        appended.opened
+    );
     drop((log, logs));
     // 外壳是好的、记忆的 body 读不懂的一行：底账跳过它、说出来，别的照常。
     let segment = root
