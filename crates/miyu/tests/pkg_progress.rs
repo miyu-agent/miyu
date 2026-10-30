@@ -104,7 +104,15 @@ async fn a_terminal_gets_a_bar_as_wide_as_it_is_and_yes_skips_the_recommended() 
         ws_xpixel: 0,
         ws_ypixel: 0,
     };
-    rustix::termios::tcsetwinsize(&main, size).expect("设得了窗口大小");
+    // 设在从端上：macOS 上主端设不了（ENOTTY），Linux 上两端都行（IN-3 修）。
+    let opened = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(&slave)
+        .expect("打得开从端");
+    rustix::termios::tcsetwinsize(&opened, size).expect("设得了窗口大小");
+    // 设完就关：留着它，子进程退出以后主端等不到结束，一直读下去。
+    drop(opened);
     let mut child = Command::new(MIYU)
         .args(["pkg", "-S", "app", "--yes"])
         .env("MIYU_HOME", home.root.path())
