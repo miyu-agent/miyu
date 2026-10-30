@@ -48,7 +48,7 @@ struct CatalogParams {
 pub(crate) async fn detect(core: &Core) -> Result<Value, Refusal> {
     let data = Arc::clone(&core.model_data);
     data.wait().await;
-    let listed = data.with(onboard::listed);
+    let listed = data.with_holding(&data.held().await, false, onboard::listed);
     let values = core.config().resolved().values();
     let (by_env, by_url) = configured_by(&data, &values);
     let keys: Vec<Value> = {
@@ -112,7 +112,7 @@ pub(crate) async fn catalog(core: &Core, peer: Peer, params: Value) -> Result<Va
     };
     let data = Arc::clone(&core.model_data);
     data.wait().await;
-    let listed = data.with(onboard::listed);
+    let listed = data.with_holding(&data.held().await, false, onboard::listed);
     let providers: Vec<Value> = onboard::search(&listed, params.query.as_deref(), limit)
         .into_iter()
         .map(|entry| with_logo(&data, entry))
@@ -150,7 +150,7 @@ async fn featured(core: &Core, language: &str) -> Result<Value, Refusal> {
     })?;
     let data = Arc::clone(&core.model_data);
     data.wait().await;
-    let listed = data.with(onboard::listed);
+    let listed = data.with_holding(&data.held().await, false, onboard::listed);
     let providers: Vec<Value> = wanted
         .iter()
         .filter_map(|one| {

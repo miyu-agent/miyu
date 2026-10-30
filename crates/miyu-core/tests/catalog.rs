@@ -190,6 +190,7 @@ fn refresher(dir: &Dir, data: &Arc<ModelData>) -> Refresher {
         data: Arc::clone(data),
         client: fetcher(Proxy::Off).expect("造得出客户端"),
         cache: dir.at("cache"),
+        version: None,
     }
 }
 

@@ -9,10 +9,12 @@
 //! - 记不记由调的一方说（`remember`）：配置里写过、真问过的才该记；临时问一句的（搜目录、第一次接入试一家）不记，免得表
 //!   越记越大。
 //! - 写成 JSON、从 JSON 读回（[`Recalled::to_json`]、[`Recalled::from_json`]），照 `digest.rs` 的路子带写法的版本；读不懂的
-//!   报错，由调的一方处理。存盘、接进路由是施工 V-25 下的事。
+//!   报错，由调的一方处理。存盘、接进路由在 `miyu-session` 的 `ModelData`（施工 V-25 下）。
+//! - 换了目录的：照新目录把记下的输入全部重算（[`Recalled::rebuilt`]），调的一方原子地换上新的一份。
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
 
 use serde::{Deserialize, Serialize};
 
@@ -168,6 +170,48 @@ impl Recalled {
         Recall::Known(side)
     }
 
+    /// 换了一份目录（施工 V-25 下：后台拉到了新的、缓存被别的核心换过）：照新的 `loaded`、认原厂的表 `vendors` 把记下的每
+    /// 个输入重算一遍，交回版本串是 `of` 的新一份。旧的不动：还在用它查的照旧查完，查完的人换成新的（调的一方原子地换）。
+    ///
+    /// 重算的只是记下的这几十条输入，不是整份目录：认出的那一家变了的，模型那一面以后会拿新的「认出的那一家」来问，那时
+    /// 没记过、再借一次整份目录。旧的键留着不删：只多不少，输入都是配置里写过、真问过的。
+    pub fn rebuilt(&self, loaded: &Loaded, vendors: &Vendors, of: &str) -> Recalled {
+        let providers = self
+            .providers
+            .keys()
+            .map(|ask| {
+                let side = provider_side(
+                    &loaded.catalog,
+                    &ask.id,
+                    ask.url.as_deref(),
+                    ask.written.as_deref(),
+                );
+                (ask.clone(), side)
+            })
+            .collect();
+        let models = self
+            .models
+            .keys()
+            .map(|ask| {
+                let side = model_side(
+                    &loaded.catalog,
+                    vendors,
+                    ask.recognized.as_deref(),
+                    &ask.model,
+                    ask.written.as_deref(),
+                );
+                (ask.clone(), side)
+            })
+            .collect();
+        Recalled {
+            of: of.to_string(),
+            source: loaded.source,
+            fetched: loaded.fetched.clone(),
+            providers,
+            models,
+        }
+    }
+
     /// 写成 JSON：带写法的版本 [`RECALL_VERSION`]。
     ///
     /// # Errors
@@ -218,7 +262,8 @@ impl Recalled {
     }
 }
 
-/// 合资料时照记下的答（[`crate::catalog::CatalogLookup::Recalled`]）：记下的那一份（锁着，查的时候可能要记）、能借的整份目录、记不记。
+/// 合资料时照记下的答（[`crate::catalog::CatalogLookup::Recalled`]）：记下的那一份（锁着，查的时候可能要记）、能借的整份目录、
+/// 记不记，说不出来时记在哪。
 #[derive(Debug, Clone, Copy)]
 pub struct Recalling<'a> {
     /// 记下的那一份。
@@ -227,6 +272,10 @@ pub struct Recalling<'a> {
     pub catalog: Option<&'a Loaded>,
     /// 没记过、借整份目录现算的记不记：配置里写过、真问过的记，临时问一句的不记。
     pub remember: bool,
+    /// 说不出来（[`Recall::Unknown`]）时在这里立一下（施工 V-25 下）：这一次合出来的当没有目录，不能交出去——调的一方
+    /// 照它把整份目录读回来、重合一遍（`miyu-session` 的 `ModelData::with`）。供应商那一面说不出来时，合资料会拿「认不出」
+    /// 再去问模型那一面，交回的是认不出时的答，和有目录时不一样，所以只要立过一次，这一遍合出来的整个作废。没有的不立。
+    pub missed: Option<&'a AtomicBool>,
 }
 
 #[cfg(test)]

@@ -126,6 +126,7 @@ pub fn main(options: Options) -> ExitCode {
             .unwrap_or_default(),
         models::cache(&env),
         env.exe.clone(),
+        Some(root.state().join("models")),
     );
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(WORKERS)
@@ -367,6 +368,7 @@ async fn run(
         Arc::clone(&model_data),
         catalog,
         Some(root.state().join("models")),
+        Some(config.resolved().clone()),
     );
     let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.state()));
     let sandbox_cache = sandbox::cache(&env, std::env::var_os("CARGO_HOME"));
@@ -425,6 +427,7 @@ async fn run(
         manifests_of(&core),
     ));
     models::follow_cooldown(core.config_now(), Arc::clone(&model_data));
+    models::follow_recall(core.config_now(), Arc::clone(&model_data));
     // 监视配置文件（第七条）：拿着它一直到停，丢掉就不看了。
     let _watching = core.watch_config();
     say(&Ready::Ready);
