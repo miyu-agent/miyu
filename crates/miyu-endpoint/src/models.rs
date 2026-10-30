@@ -34,7 +34,7 @@ use miyu_models::embedding::EmbeddingNames;
 use miyu_models::pools;
 use miyu_models::provider::{self, NoModel};
 use miyu_models::settings::{PoolSettings, ProviderSettings, UseSettings};
-use miyu_session::{ModelData, Next, STALE, refresh_list};
+use miyu_session::{ModelData, Next, REFETCH, STALE, refresh_list};
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -165,7 +165,7 @@ pub(crate) async fn list(core: &Core, language: &str, params: Value) -> Result<V
                 .unwrap_or(());
         }
     } else {
-        refresh_stale(&data, &snapshot, &chosen);
+        refresh_stale(&data, &snapshot, &chosen, only.is_none());
     }
     let now = crate::sessions::now();
     let names = embedding_names(core);
@@ -316,20 +316,28 @@ pub(crate) fn snapshot(core: &Core) -> Snapshot {
     }
 }
 
-/// 没有列表、旧过 24 小时的几家：在后台拉，这一次不等。这一家自己用不了的不拉（拉了也是白拉，每问一次记一行）。
-fn refresh_stale(data: &Arc<ModelData>, snapshot: &Snapshot, chosen: &[String]) {
+/// 在后台拉这几家的列表，这一次不等：列整份的（`whole`，配置页、选模型的框）每家最多 [`REFETCH`] 拉一次（施工 V-26：上游换了
+/// 模型，开一次菜单就跟上）；只要几个模型的（底栏）照旧只拉没有列表、旧过 [`STALE`] 的，聊天时不一直去打供应商。这一家
+/// 自己用不了的不拉（拉了也是白拉，每问一次记一行）。拉到的变了，订着配置流的连接收到 `models.changed`。
+fn refresh_stale(data: &Arc<ModelData>, snapshot: &Snapshot, chosen: &[String], whole: bool) {
     let values = snapshot.resolved.values();
     let now = miyu_kernel::time::Timestamp::from_unix_millis(now_millis());
     for id in chosen {
-        let fresh = data
-            .list_fetched(id)
-            .zip(now)
-            .is_some_and(|(fetched, now)| {
-                let age = now.unix_millis().saturating_sub(fetched.unix_millis());
-                u128::try_from(age).is_ok_and(|age| age < STALE.as_millis())
-            });
         let usable = data.with(|knowledge| provider::provider(&values, knowledge, id).is_ok());
-        if fresh || !usable {
+        if !usable {
+            continue;
+        }
+        let due = match whole {
+            true => data.claim_list(id, REFETCH),
+            false => !data
+                .list_fetched(id)
+                .zip(now)
+                .is_some_and(|(fetched, now)| {
+                    let age = now.unix_millis().saturating_sub(fetched.unix_millis());
+                    u128::try_from(age).is_ok_and(|age| age < STALE.as_millis())
+                }),
+        };
+        if !due {
             continue;
         }
         let (data, id) = (Arc::clone(data), id.clone());
