@@ -111,8 +111,6 @@ async fn a_terminal_gets_a_bar_as_wide_as_it_is_and_yes_skips_the_recommended() 
         .open(&slave)
         .expect("打得开从端");
     rustix::termios::tcsetwinsize(&opened, size).expect("设得了窗口大小");
-    // 设完就关：留着它，子进程退出以后主端等不到结束，一直读下去。
-    drop(opened);
     let mut child = Command::new(MIYU)
         .args(["pkg", "-S", "app", "--yes"])
         .env("MIYU_HOME", home.root.path())
@@ -127,6 +125,9 @@ async fn a_terminal_gets_a_bar_as_wide_as_it_is_and_yes_skips_the_recommended() 
         .stderr(secondary(&slave))
         .spawn()
         .expect("跑得起来");
+    // 子进程拿到自己的一份以后再关：macOS 上从端全部关掉时窗口大小会被清掉（子进程照 80 列画），留着不关的话子进程退出以后
+    // 主端等不到结束，一直读下去。
+    drop(opened);
     let capture = Capture::start(&main);
     let (code, screen) = tokio::task::spawn_blocking(move || capture.finish(&mut child))
         .await
