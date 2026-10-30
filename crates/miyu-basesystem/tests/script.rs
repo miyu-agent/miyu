@@ -70,7 +70,7 @@ async fn a_slow_script_is_stopped_at_its_timeout() {
     );
     assert_eq!(
         text(&done),
-        "started\nStopped after 1 s because the script took too long.\n"
+        "started\nStopped at the script's 1 s time limit.\n"
     );
 }
 

@@ -208,10 +208,7 @@ async fn too_long_or_an_unknown_class_is_not_saved() {
     )
     .await;
     assert!(done.error);
-    assert_eq!(
-        text(&done),
-        "That is 121 characters; keep a memory under 120."
-    );
+    assert_eq!(text(&done), "That is 121 characters, over the 120 limit.");
     let exact = "猫".repeat(120);
     assert!(
         !call(
@@ -231,7 +228,7 @@ async fn too_long_or_an_unknown_class_is_not_saved() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "Unknown class mood; use user, feedback, episode, reference or person."
+        "Unknown class mood. Classes are user, feedback, episode, reference, person."
     );
     let done = call(
         Some(Arc::clone(&port)),
@@ -241,7 +238,7 @@ async fn too_long_or_an_unknown_class_is_not_saved() {
     .await;
     assert!(done.error);
     assert!(
-        text(&done).starts_with("The arguments are not right: "),
+        text(&done).starts_with("Bad arguments: "),
         "{}",
         text(&done)
     );

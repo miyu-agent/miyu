@@ -320,7 +320,7 @@ async fn a_long_list_is_cut_at_a_line_and_says_how_many_more() {
     assert!(shown > 0 && shown < 60, "{shown}");
     assert_eq!(
         lines[lines.len() - 2],
-        format!("…and {} more; memory_search finds them.", 60 - shown),
+        format!("…and {} more, found by memory_search.", 60 - shown),
         "截在一条的边界上，说还有几条"
     );
     assert!(lines[1].contains("第 59 件事"), "新的在前：{}", lines[1]);

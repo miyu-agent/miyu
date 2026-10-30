@@ -1,1 +1,1 @@
-(The output has {total} lines; offset {offset} is past the end.)
+(offset {offset} is past the output's {total} lines.)

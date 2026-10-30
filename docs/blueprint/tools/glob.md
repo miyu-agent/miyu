@@ -25,8 +25,8 @@
 
 ```json
 {
-  "description": "Find files by glob pattern, like `**/*.rs` or `src/*.ts`, respecting .gitignore. Returns up to 100 paths, most recently modified first.",
-  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"The directory to search in. Default is the working directory."}},"required":["pattern"]}
+  "description": "Find files by glob pattern, like `**/*.rs`, respecting .gitignore. Returns up to 100 paths, most recently modified first.",
+  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"Default: the working directory."}},"required":["pattern"]}
 }
 ```
 
@@ -51,7 +51,7 @@
 6. 往下走（下面「走目录」），留下相对搜的目录的路径对得上模式的普通文件。
 7. 一个都没有：`No files found`，不算出错。
 8. 有的：照新的在前，最多列 100 个，一个一行。路径在这一轮的工作目录里的写相对工作目录的（不是相对搜的目录），在外面的写绝对的；分隔符照平台原生的；Windows 上不写 `\\?\`。列出来的路径不转义。
-9. 多过 100 个的，列完接上 `({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)`：`total` 是一共几个，`rest` 是没列的几个（`shown` 照旧交进去，这一句不用；LIC-3 改成自己的说法）。
+9. 多过 100 个的，列完接上 `({rest} more of {total} matches not listed. A narrower pattern or path shows them.)`：`total` 是一共几个，`rest` 是没列的几个（`shown` 照旧交进去，这一句不用；LIC-3 改成自己的说法）。
 10. 叫停：丢掉这次调用时举旗，走目录每走一步看一眼，举了就不往下走。没有超时。
 
 **模式**（`pattern.rs`）：
@@ -101,13 +101,13 @@ a.rs
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
 | 一个都没找到 | `common/no-files.txt` | `No files found` |
-| 多过 100 个 | `glob/more.txt` | `({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)` |
+| 多过 100 个 | `glob/more.txt` | `({rest} more of {total} matches not listed. A narrower pattern or path shows them.)` |
 
 ### 出错
 
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
-| 参数不对 | `The arguments are not right: {error}.` | `common/bad-args`，字段 `error` |
+| 参数不对 | `Bad arguments: {error}.` | `common/bad-args`，字段 `error` |
 | 模式写得不对 | `The glob "{glob}" is not valid: {error}.`（`common/bad-glob.txt`） | `common/bad-glob`，字段 `glob`、`error` |
 | 搜的目录换不成真实的位置、读不了 | `Could not read "{path}": {error}.` | `common/failed`，字段 `path`、`error` |
 | 搜的目录没有 | `There is no file or directory at "{path}".`，加上相近的名字 | `common/missing` 或 `common/missing-similar` |

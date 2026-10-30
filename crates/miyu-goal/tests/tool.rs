@@ -146,7 +146,7 @@ async fn set_hands_the_objective_and_limit_to_the_port() {
     assert!(!done.error);
     assert_eq!(
         text(&done),
-        "Goal set. From now on a new round starts by itself whenever the session is idle."
+        "Goal set. A new round now starts by itself whenever the session is idle."
     );
     assert_eq!(
         port.asked(),
@@ -234,12 +234,12 @@ async fn refusals_say_what_went_wrong() {
     let cases = [
         (
             GoalRefused::TooEarly { round: 1 },
-            "Not marked blocked: this is round 1, and blocked needs at least 3 goal rounds. Make another concrete step first.",
+            "Not marked blocked: this is round 1, and blocked needs at least 3 goal rounds.",
             "software/goal/goal/too-early",
         ),
         (
             GoalRefused::Kernel(Reason::GoalExists),
-            "A goal is already set. Read it with action get. Only the user can change or clear it, with /goal.",
+            "A goal is already set, readable with action get. Only the user can change or clear it, with /goal.",
             "software/goal/goal/exists",
         ),
         (
@@ -281,7 +281,7 @@ async fn bad_arguments_and_no_port() {
         let done = call(Some(&port), args.clone()).await;
         assert!(done.error, "{args}");
         assert!(
-            text(&done).starts_with("The arguments are not right: "),
+            text(&done).starts_with("Bad arguments: "),
             "{args}: {}",
             text(&done)
         );

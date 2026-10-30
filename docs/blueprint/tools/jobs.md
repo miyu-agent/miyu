@@ -18,14 +18,14 @@
 
 ### 对外的样子
 
-访问类别 `read`：列、读什么都不改；停掉的是她自己派出去的，不碰文件，只读开着的时候也停得了。说明照 `26-提示词.md` 附录的草稿，「做完会自己报、不用轮询」那一句留着。
+访问类别 `read`：列、读什么都不改；停掉的是她自己派出去的，不碰文件，只读开着的时候也停得了。说明照 `26-提示词.md` 附录的草稿，「做完会自己报」那一句留着（后半「所以不用轮询」施工 TX-1 照 `26-提示词.md` J13 删掉，留事实，2026-10-30 项目主人照推荐定）。
 
 样本 `resources/software/basesystem/tools/jobs.json`：
 
 ```json
 {
-  "description": "List your background commands and subagents, read a command's output, or stop one. Finished jobs report to you on their own, so there is no need to poll.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["list","output","stop"]},"id":{"type":"string","description":"Job id, like j1."},"offset":{"type":"integer","description":"Line to start reading the output from."}},"required":["action"]}
+  "description": "List your background commands and subagents, read a command's output, or stop one. Finished jobs report to you on their own.",
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["list","output","stop"]},"id":{"type":"string","description":"Job id, like j1."},"offset":{"type":"integer","description":"First output line to read, from 1."}},"required":["action"]}
 }
 ```
 
@@ -71,7 +71,7 @@ j3 command "build": exited, 41000 ms
 字字…字
 字字…字
 字字…字
-(Showing lines 1-3 of 4. Use offset=4 to continue.)
+(Lines 1-3 of 4. Next: offset=4.)
 (j1 is still running.)
 ```
 
@@ -79,7 +79,7 @@ j3 command "build": exited, 41000 ms
 
 ```text
 Reading the tests first.
-(j2 is still running. It is using read, grep now.)
+(j2 is still running, using read, grep.)
 ```
 
 给她的字都在 `resources/software/basesystem/jobs/` 下，每一份以一个换行结尾，登记在 `26-提示词.md` 第十节：
@@ -91,11 +91,11 @@ Reading the tests first.
 | 没有这个任务 | `unknown.txt` | `There is no job {id}.` |
 | 停的时候已经结束了 | `ended.txt` | `{job} has already ended.` |
 | 停了 | `stopped.txt` | `Stopped {job}.` |
-| 读输出，后面还有 | `more.txt` | `(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)` |
-| 读输出，`offset` 过了结尾 | `past-end.txt` | `(The output has {total} lines; offset {offset} is past the end.)` |
+| 读输出，后面还有 | `more.txt` | `(Lines {from}-{to} of {total}. Next: offset={next}.)` |
+| 读输出，`offset` 过了结尾 | `past-end.txt` | `(offset {offset} is past the output's {total} lines.)` |
 | 读输出，一行都没有 | `empty.txt` | `No output.` |
 | 读输出，还在跑 | `running.txt` | `({job} is still running.)` |
-| 读输出，子代理这一步在跑工具 | `using.txt` | `({job} is still running. It is using {tools} now.)` |
+| 读输出，子代理这一步在跑工具 | `using.txt` | `({job} is still running, using {tools}.)` |
 
 - 换进句子的字段照模板的规矩转义（`tools/read.md` 第 8 条）：标题、她给的编号里的引号、换行写不进这一行。输出本身不转义。
 - `more.txt` 和 `read/more.txt` 一字不差，各登记各的：两件工具各管各的字。
@@ -127,7 +127,7 @@ Reading the tests first.
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/tests/jobs.rs` | 声明三个动作、访问类别是读、「不用轮询」那一句在；`list` 一个一行、标题里的引号转义、一个都没有和没有端口的一样；`output` 分页、从 `offset` 读起、上限停在整行上、`offset` 过了结尾、没存下来和空的一样、还在跑的、子代理在跑的工具；`stop` 照编号交给端口，停了、已经结束了、没有，几段的编号照样交（施工 7-1 补）；不合写法的编号照没有、没有端口的照没有、没写 `id` 参数不对、不认识的动作；六种说法两种语言都换得出字 |
+| `crates/miyu-basesystem/tests/jobs.rs` | 声明三个动作、访问类别是读、「做完会自己报」那一句在；`list` 一个一行、标题里的引号转义、一个都没有和没有端口的一样；`output` 分页、从 `offset` 读起、上限停在整行上、`offset` 过了结尾、没存下来和空的一样、还在跑的、子代理在跑的工具；`stop` 照编号交给端口，停了、已经结束了、没有，几段的编号照样交（施工 7-1 补）；不合写法的编号照没有、没有端口的照没有、没写 `id` 参数不对、不认识的动作；六种说法两种语言都换得出字 |
 | `crates/miyu-basesystem/src/jobs/page/tests.rs` | 最后一段没有换行也算一行、空行照算；停在整行上、停了照样数到结尾、多一个字就停在前一行；一行就超过的截断补 `…`、正好到上限的一整行照给；`offset` 过了结尾 |
 | `crates/miyu-session/tests/jobs_stop.rs`、`jobs_stop/agents.rs` | 会话里真的 `jobs`：读到这时的输出、停掉（`by` 是那次调用、`cause` 是那一轮的、`by_model`、不叫醒她）、列出来是停掉的；子代理最近的回答和在跑的工具、停掉它（经会话表停、回报记成它交来的、`by_model`、不叫醒） |
 | `crates/miyu-basesystem/tests/budget.rs` | 工具面的预算 |

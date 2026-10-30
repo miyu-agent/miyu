@@ -38,7 +38,7 @@
 | `open.txt` | `<project-instructions path="{path}">` |
 | `close.txt` | `</project-instructions>` |
 | `replaced.txt` | `The project instructions below replace the earlier ones for {root}.` |
-| `cut.txt` | `Project instructions stop here at {limit} bytes. Read the files for the rest.` |
+| `cut.txt` | `Project instructions stop here at {limit} bytes. The rest is in the files.` |
 
 ## 第一版不做
 

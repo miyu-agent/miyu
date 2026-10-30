@@ -183,7 +183,7 @@ async fn a_full_block_cuts_what_came_after_and_says_how_many() {
     assert!(block.starts_with("<memories>\nWhat I know: "), "{block}");
     assert!(
         block.ends_with(&format!(
-            "…and {} more; memory_search finds them.\n</memories>\n",
+            "…and {} more, found by memory_search.\n</memories>\n",
             40 - refs.len()
         )),
         "{block}"

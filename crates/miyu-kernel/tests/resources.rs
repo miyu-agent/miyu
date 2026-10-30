@@ -39,24 +39,26 @@ fn the_tool_result_sentences_are_usable() {
         "The arguments for \"read\" are not a JSON object.\n"
     );
     assert!(texts.cancelled_running().text.contains("partly done"));
-    assert!(texts.skipped().text.starts_with("The call was skipped"));
+    assert!(texts.skipped().text.starts_with("Skipped: "));
     assert!(texts.read_only().text.contains("read-only"));
-    assert!(texts.denied(None).text.contains("the user denied it."));
+    assert!(
+        texts
+            .denied(None)
+            .text
+            .contains("The user denied the call.")
+    );
     assert_eq!(
         texts.denied(Some("先别推")).text,
-        "The call was not run: the user denied it and said \"先别推\".\n"
+        "The user denied the call and said \"先别推\".\n"
     );
     assert!(texts.unattended().text.contains("approval"));
     assert!(texts.restarted().text.contains("Miyu restarted"));
-    for sentence in [
-        texts.question_interrupted().text,
-        texts.question_voided().text,
-        texts.question_unattended().text,
+    for (sentence, unanswered) in [
+        (texts.question_interrupted().text, "before answering"),
+        (texts.question_voided().text, "instead of answering"),
+        (texts.question_unattended().text, "No one can answer"),
     ] {
-        assert!(
-            sentence.starts_with("The question was not answered: "),
-            "{sentence}"
-        );
+        assert!(sentence.contains(unanswered), "{sentence}");
     }
 }
 

@@ -40,8 +40,8 @@
 
 ```json
 {
-  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to send with the message, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle.",
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"A subagent's job id like j1, parent, or a session id."},"message":{"type":"string","description":"Can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that session next goes idle."}},"required":["to"]}
 }
 ```
 
@@ -93,7 +93,7 @@ Message sent to j1.
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
 | 送到了 | `send_message/sent.txt` | `Message sent to {to}.` |
-| 送到了，对方没人看着 | `send_message/held.txt` | `Message saved for {to}. Nobody is watching that one-shot session, so it reads this only when someone continues it.` |
+| 送到了，对方没人看着 | `send_message/held.txt` | `Message saved for {to}, an unwatched one-shot session. It reads this only when someone continues it.` |
 | 主会话写了 `to: parent` | `send_message/no-parent.txt` | `This session has no parent.` |
 | 不是她派的子代理 | `send_message/not-yours.txt` | `"{to}" is not a subagent you started. Message only your own subagents or your parent.` |
 | 子代理被停掉了 | `send_message/stopped.txt` | `Subagent {to} was stopped and takes no more messages.` |
@@ -102,10 +102,10 @@ Message sent to j1.
 | 对得上不止一个会话 | `send_message/ambiguous.txt` | `"{to}" matches more than one session. Use the full id.` |
 | 是她自己 | `send_message/self.txt` | `"{to}" is this session.` |
 | 这个会话不能发给别的会话 | `send_message/not-here.txt` | `This session cannot message or watch other sessions.` |
-| 太长 | `send_message/too-long.txt` | `The message has {chars} characters, over the limit of {limit}. Send a shorter one.` |
+| 太长 | `send_message/too-long.txt` | `The message has {chars} characters, over the limit of {limit}.` |
 | 限速 | `send_message/too-many.txt` | `Too many messages to {to} just now. Put the rest into one message and send it later.` |
 | 一模一样的 | `send_message/duplicate.txt` | `{to} already has this exact message.` |
-| 对方没看的太多 | `send_message/inbox-full.txt` | `{to} has too many unread messages. Send again after it has read them.` |
+| 对方没看的太多 | `send_message/inbox-full.txt` | `{to} has too many unread messages. Sending works again once it reads them.` |
 | 订了（施工 C-6） | `send_message/watching.txt` | `You will get a notice when {to} is next idle.` |
 | 订子代理、父会话（施工 C-6） | `send_message/watch-peers-only.txt` | `notify_when_idle works only for other sessions.` |
 

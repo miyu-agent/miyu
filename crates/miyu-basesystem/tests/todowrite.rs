@@ -70,11 +70,7 @@ async fn all_done_or_empty_clears_the_list() {
     ] {
         let done = write(args.clone()).await;
         assert!(!done.error, "{args}");
-        assert_eq!(
-            text(&done),
-            "All todos are done. The list is cleared.\n",
-            "{args}"
-        );
+        assert_eq!(text(&done), "All todos done. List cleared.\n", "{args}");
         // 全部做完的带上做完的那一份（施工 D-3 补），空的就是空的。
         let finished = serde_json::from_value(args["todos"].clone()).expect("照参数读回");
         assert_eq!(
@@ -101,10 +97,7 @@ async fn bad_arguments_report_no_effect() {
     ] {
         let done = write(args.clone()).await;
         assert!(done.error, "{args}");
-        assert!(
-            text(&done).starts_with("The arguments are not right"),
-            "{args}"
-        );
+        assert!(text(&done).starts_with("Bad arguments"), "{args}");
         assert!(done.effects.is_empty(), "{args}");
     }
 }

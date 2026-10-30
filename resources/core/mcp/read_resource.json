@@ -1,4 +1,4 @@
 {
   "description": "Read one of this MCP server's resources by its URI, as listed by list_resources or filled into one of its URI templates.",
-  "parameters": {"type":"object","properties":{"uri":{"type":"string","description":"The resource's URI."}},"required":["uri"]}
+  "parameters": {"type":"object","properties":{"uri":{"type":"string"}},"required":["uri"]}
 }

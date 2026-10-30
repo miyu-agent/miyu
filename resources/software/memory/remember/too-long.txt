@@ -1,1 +1,1 @@
-That is {chars} characters; keep a memory under {limit}.
+That is {chars} characters, over the {limit} limit.

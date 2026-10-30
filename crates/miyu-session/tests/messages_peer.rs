@@ -200,7 +200,7 @@ async fn a_held_session_says_so_and_a_watched_one_says_sent() {
         (
             true,
             format!(
-                "Message saved for {OTHER}. Nobody is watching that one-shot session, so it reads this only when someone continues it.\n"
+                "Message saved for {OTHER}, an unwatched one-shot session. It reads this only when someone continues it.\n"
             ),
         ),
         (false, format!("Message sent to {OTHER}.\n")),
@@ -229,7 +229,9 @@ async fn the_three_peer_refusals_translate_to_their_own_sayings() {
         ),
         (
             Reason::InboxFull,
-            format!("{OTHER} has too many unread messages. Send again after it has read them.\n"),
+            format!(
+                "{OTHER} has too many unread messages. Sending works again once it reads them.\n"
+            ),
         ),
     ] {
         let table = Arc::new(Table::new(

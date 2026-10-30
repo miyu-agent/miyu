@@ -60,7 +60,7 @@ fn each_skill_is_one_line_with_its_file() {
     assert_eq!(
         block,
         Some(format!(
-            "Skills you can use (read the file before following one):\n\
+            "Skills you can use, each with its instructions in the file:\n\
              - notes: Take notes. Use when asked to \\u0022remember\\u0022. ({})\n\
              - pdf: Read \\u003cb\\u003ePDF\\u003c/b\\u003e files. ({})",
             file("notes"),

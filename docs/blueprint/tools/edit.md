@@ -25,8 +25,8 @@
 
 ```json
 {
-  "description": "Make exact text replacements in a file, one or more at a time. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean","description":"Replace every match. Default false."}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
+  "description": "Replace exact text in a file, one or more edits per call. Each old_string must match the file exactly, including indentation but not the line number prefix from read, and match only one place unless replace_all is set.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean"}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
 }
 ```
 
@@ -122,14 +122,14 @@ The closest text is at lines 2-2:
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
 | 改好了 | `edit/edited.txt` | `Edited "{path}".` |
-| 没给要改的 | `edit/no-edits.txt` | `No edits were given. Set edits, each with old_string and new_string.` |
-| `old_string` 是空的 | `edit/empty.txt` | `Edit {index}: old_string is empty. To create a file, use write.` |
+| 没给要改的 | `edit/no-edits.txt` | `No edits were given.` |
+| `old_string` 是空的 | `edit/empty.txt` | `Edit {index}: old_string is empty. write creates files.` |
 | 改前改后一样 | `edit/same.txt` | `Edit {index}: old_string and new_string are the same.` |
 | 没对上 | `edit/not-found.txt` | `Edit {index}: old_string was not found in "{path}".` |
 | 没对上、有最接近的 | `edit/closest.txt`，后面接那几行 | `The closest text is at lines {from}-{to}:` |
 | 不唯一 | `edit/not-unique.txt` | `Edit {index}: old_string matches {count} places in "{path}", at lines {lines}. Add surrounding lines to pick one, or set replace_all.` |
-| 重叠 | `edit/overlap.txt` | `Edits {first} and {second} overlap in "{path}". Merge them into one edit.` |
-| 不是文本 | `edit/not-text.txt` | `"{path}" is not UTF-8 or UTF-16 text. To replace it whole, use write.` |
+| 重叠 | `edit/overlap.txt` | `Edits {first} and {second} overlap in "{path}".` |
+| 不是文本 | `edit/not-text.txt` | `"{path}" is not UTF-8 or UTF-16 text. write can replace it whole.` |
 
 - `{index}`、`{first}`、`{second}` 是第几处，从 1 数起；`{lines}` 是行号，用 `, ` 连起来，例如 `1, 3`。
 - 出错句子里的 `{path}` 是她给的原样，改好了的那一句是照结果的规矩写的。

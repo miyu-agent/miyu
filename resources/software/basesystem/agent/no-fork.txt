@@ -1,1 +1,1 @@
-A fork cannot fork again. Do the work yourself.
+A fork cannot fork again.

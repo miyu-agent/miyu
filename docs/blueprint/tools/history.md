@@ -43,7 +43,7 @@
 ```json
 {
   "description": "Search or read back earlier parts of this conversation, including what compaction moved out of context. Entries are numbered like the checkpoint says.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Words to look for. Without it, entries are listed in order."},"from":{"type":"integer","description":"First entry number."},"to":{"type":"integer","description":"Last entry number."},"since":{"type":"string","description":"Earliest time, like 2026-09-29 14:00."},"until":{"type":"string","description":"Latest time."},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id, to read that session instead of this one."}}}
+  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Without it, entries are listed in order."},"from":{"type":"integer"},"to":{"type":"integer"},"since":{"type":"string","description":"Like 2026-09-29 14:00."},"until":{"type":"string"},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id to read."}}}
 }
 ```
 
@@ -83,11 +83,11 @@
 5. **找**（有 `query`）：
    1. 每个词都出现的算命中，不分大小写，照原样比，中文不分词。
    2. 新的在前。一条一行：`#<序号> <时刻> <谁>: <摘出来的一段>`（`<谁>` 是 `by` 的那三种写法，别的 harness 发来的是 `agent "<名字>"`，别的会话发来的是 `session <短编号>`，场所里的人是发的人，同群里那一行：`小林`、`老王 (id=qq:20018, manager)`），摘第一处命中前后，一共最多 200 个字；连着的空白（换行也算）换成一个空格，前后截掉了的写 `…`。比的是「读」时这一条下面的原文。
-   3. 还有更早的：末尾接 `(Showing {n} of {total} results. Use to={next} to see older ones.)`，`next` 是这一页最早那一条的序号减一。
+   3. 还有更早的：末尾接 `({n} of {total} results. Older: to={next}.)`，`next` 是这一页最早那一条的序号减一。
 6. **读**（没有 `query`）：
    1. 照先后，从范围的第一条起。每条头一行 `#<序号> <时刻> <谁>`（`<谁>` 同第 5 条），下面是原文：工具调用写成 `→ <工具名> <参数原文>`；图片、文件写占位。
    2. 整页最多 30000 个字，和 `shell` 一样；一条就超过的，截到上限，写明这一条一共多少字。
-   3. 还有：末尾接 `(Showing entries {first}-{last}. Use from={next} to continue.)`。
+   3. 还有：末尾接 `(Entries {first}-{last}. Next: from={next}.)`。
 7. 什么都没有：`No entries found`，不算出错。
 8. 叫停：读下一段日志之前看一眼；认 `session` 时列会话也照它（施工 C-4）。
 9. 时刻照这个会话的时区写，到分钟：`2026-09-29 14:03`。场所的消息带了平台给的时刻（`venue.sent`，补拉回来的比记下的早，施工 O-40）照它写、照它筛；先后照旧是序号。`until` 写到分钟的，那一分钟里的都算。读别的会话时也是这个会话自己的时区，和目标会话无关（施工 C-4）。
@@ -111,7 +111,7 @@
 #230 2026-09-29 15:10 agent "claude-code": …迁移脚本写好了，按会话分区…
 #212 2026-09-29 14:05 user: …数据库那张表改成按会话分区，别再用一张大表…
 #87 2026-09-29 11:40 assistant: …按会话分区的话，迁移要…
-(Showing 3 of 5 results. Use to=86 to see older ones.)
+(3 of 5 results. Older: to=86.)
 ```
 
 别的会话发来的一条（施工 C-2），「谁」写它的短编号：
@@ -149,7 +149,7 @@ This session cannot read other sessions.
 
 #212 2026-09-29 14:05 user
 数据库那张表改成按会话分区，别再用一张大表
-(Showing entries 211-212. Use from=213 to continue.)
+(Entries 211-212. Next: from=213.)
 ```
 
 ### 给人看的字

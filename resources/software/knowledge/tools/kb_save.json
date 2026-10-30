@@ -1,4 +1,4 @@
 {
   "description": "Save text to your knowledge bases as a new document, or append to one. Saving to a knowledge base that doesn't exist yet creates it.",
-  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"text":{"type":"string"},"append":{"type":"boolean","description":"Add to the end of the document."},"about":{"type":"string","description":"What a new knowledge base is for, one sentence."}},"required":["kb","path","text"]}
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"text":{"type":"string"},"append":{"type":"boolean"},"about":{"type":"string","description":"What a new knowledge base is for, one sentence."}},"required":["kb","path","text"]}
 }

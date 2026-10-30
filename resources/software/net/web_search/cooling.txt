@@ -1,1 +1,1 @@
-All web search sources are rate limited right now. Try again later.
+All web search sources are rate limited for now.

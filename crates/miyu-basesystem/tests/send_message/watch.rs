@@ -59,7 +59,7 @@ async fn a_message_is_sent_first_and_then_watched() {
         (
             Ok(Delivered::Held),
             format!(
-                "Message saved for {OTHER}. Nobody is watching that one-shot session, so it reads this only when someone continues it.\n"
+                "Message saved for {OTHER}, an unwatched one-shot session. It reads this only when someone continues it.\n"
             ),
         ),
         (
@@ -143,7 +143,7 @@ async fn without_a_message_it_must_watch() {
         assert!(done.error, "{args}");
         assert_eq!(
             text(&done),
-            "The arguments are not right: missing field `message`.\n",
+            "Bad arguments: missing field `message`.\n",
             "{args}"
         );
         assert!(port.asked().is_empty(), "{args}");

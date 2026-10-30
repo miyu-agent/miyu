@@ -1,1 +1,1 @@
-Started {job} in the background. You will be told when it ends. Read its output with jobs output.
+Started {job} in the background. Its end is reported automatically. jobs output shows its output.

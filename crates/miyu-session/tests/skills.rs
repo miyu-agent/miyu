@@ -139,7 +139,7 @@ async fn her_skills_are_listed_and_their_folder_is_read_only() {
         let system = &script.requests()[0].1.system;
         assert!(
             system.ends_with(&format!(
-                "Skills you can use (read the file before following one):\n- notes: Take notes. ({skill})"
+                "Skills you can use, each with its instructions in the file:\n- notes: Take notes. ({skill})"
             )),
             "列在 system 末尾：{system}"
         );

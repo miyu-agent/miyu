@@ -1,1 +1,1 @@
-(Showing files {from}-{to} of {total}. Use offset={next} to continue.)
+(Files {from}-{to} of {total}. Next: offset={next}.)

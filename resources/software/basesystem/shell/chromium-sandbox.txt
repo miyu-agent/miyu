@@ -1,1 +1,1 @@
-Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it; run it as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.
+Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it. It runs as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.

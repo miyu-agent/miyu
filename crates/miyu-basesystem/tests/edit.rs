@@ -150,10 +150,7 @@ async fn overlapping_or_failing_edits_change_nothing() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        format!(
-            "Edits 1 and 2 overlap in {}. Merge them into one edit.\n",
-            quoted("a.txt")
-        )
+        format!("Edits 1 and 2 overlap in {}.\n", quoted("a.txt"))
     );
     assert_eq!(
         done.human,

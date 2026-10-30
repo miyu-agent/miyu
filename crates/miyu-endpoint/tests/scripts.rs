@@ -158,7 +158,7 @@ async fn a_home_script_becomes_a_tool_that_runs_like_a_command() {
         })
         .expect("有结果");
     assert!(
-        result.contains("needs the user's approval, which no one can give here"),
+        result.contains("needs the user's approval, and no one here can give it"),
         "访问类别是执行：没有沙盒、没人能确认的拒绝：{result}"
     );
     // 时间线上写开头的显示名（施工 9-8 六补）：内核替它写的拒绝不记，照这一刻工具目录里的。

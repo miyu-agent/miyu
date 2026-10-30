@@ -1,1 +1,1 @@
-Project instructions stop here at {limit} bytes. Read the files for the rest.
+Project instructions stop here at {limit} bytes. The rest is in the files.

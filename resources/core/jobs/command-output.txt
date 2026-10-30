@@ -1,1 +1,1 @@
-The output has {chars} characters. Read it with jobs output.
+Output: {chars} characters, readable with jobs output.

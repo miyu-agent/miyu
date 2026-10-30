@@ -1,1 +1,1 @@
-Not marked blocked: this is round {round}, and blocked needs at least {least} goal rounds. Make another concrete step first.
+Not marked blocked: this is round {round}, and blocked needs at least {least} goal rounds.

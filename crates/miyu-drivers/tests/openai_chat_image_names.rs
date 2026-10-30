@@ -125,9 +125,7 @@ fn a_named_image_in_a_tool_result_keeps_its_name() {
     assert_eq!(moved.len(), 4, "{moved:?}");
     assert_eq!(
         moved[0],
-        said(
-            "These images and files were returned by the tool calls above.\n<image name=\"a.png\">\n"
-        )
+        said("Images and files returned by the tool calls above.\n<image name=\"a.png\">\n")
     );
     assert_eq!(moved[1]["type"], "image_url");
     assert_eq!(moved[2], said("</image>\n"));

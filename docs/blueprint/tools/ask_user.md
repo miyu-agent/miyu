@@ -24,8 +24,8 @@
 
 ```json
 {
-  "description": "Ask the user one or more questions with options and wait for the answers. Put the recommended option first and add \"(Recommended)\" to its label. Don't add an \"other\" option: the user can always type their own answer.",
-  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"A short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Text shown in monospace while the option is focused, such as code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean","description":"Allow picking more than one option."}},"required":["question"]}}},"required":["questions"]}
+  "description": "Ask the user one or more questions with options and wait for the answers. Put the recommended option first and add \"(Recommended)\" to its label. The user can also type their own answer.",
+  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"Short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Monospace text shown while the option is focused, like code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean"}},"required":["question"]}}},"required":["questions"]}
 }
 ```
 
@@ -56,7 +56,7 @@ Go on with these answers in mind.
 ### 怎么走
 
 1. 读参数：读不成的（少了 `questions`、选项没有 `label`、类型不对）、一道题都没有的，交回参数不对的那一句，端口一次都不问。
-2. 没有端口（这个会话不能问人；工具面上本来就不给，兜底）：出错，`No one can answer questions here. Ask in your reply instead.`（`unattended.txt`）。
+2. 没有端口（这个会话不能问人；工具面上本来就不给，兜底）：出错，`No one can answer questions here.`（`unattended.txt`）。
 3. 题交给端口，等回答。不设超时：人不回就一直等（`02-内核.md` 第六节「提问怎么走」）。
 4. 答了：照「结果」写成一段字，成功。
 5. 没答到就了结了（打断、等的时候来了一句话、收紧成只读、核心停了）：照叫停收场；这次调用的结果由内核照原来的规矩补（`kernel/asking.md`），这里交回的不再记。

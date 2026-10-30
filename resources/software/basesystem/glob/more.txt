@@ -1,1 +1,1 @@
-({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)
+({rest} more of {total} matches not listed. A narrower pattern or path shows them.)

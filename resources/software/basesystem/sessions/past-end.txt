@@ -1,1 +1,1 @@
-(You have {total} other sessions. Offset {offset} is past the end.)
+(offset {offset} is past your {total} other sessions.)

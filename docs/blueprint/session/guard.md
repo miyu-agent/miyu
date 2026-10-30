@@ -173,7 +173,7 @@
 |---|---|---|
 | 碰到数据根 | `"{path}" is inside Miyu's own data, which no tool can read or change.` | `core/permissions/forbidden`，字段 `path` |
 | 换不成真实的位置 | `Can't tell where "{path}" points: {reason}.` | `core/permissions/unresolvable`，字段 `path`、`reason` |
-| 只读的时候要写 | `The call was not run: the session is read-only.` | `core/tool-results/read-only` |
+| 只读的时候要写 | `Not run: the session is read-only.` | `core/tool-results/read-only` |
 
 - 三句的原文行尾都带换行；造会话、载入时拿空的字段试换过一次，要了不该有的字段的，会话造不成、载入不了（`policy.md`）。
 - `path` 是工具报的原样，不是换过的真实位置。换进去的字段照模板转义（`kernel/request.md`）；说法里的字段是原样的。
@@ -192,7 +192,7 @@
 |---|---|
 | 放行 | 派去执行 |
 | 拒绝 | 记一条被拒绝的结果（`denied`），`by` 是模块 `permissions`，带着写给她的一句和说法；这一步照常往下走，她接着干 |
-| 要问人，会话里没人能确认（例如 `miyu ask`） | 当场拒绝，`by` 是内核，写给她的是 `The call was not run: it needs the user's approval, which no one can give here.`，说法 `core/tool-results/unattended` |
+| 要问人，会话里没人能确认（例如 `miyu ask`） | 当场拒绝，`by` 是内核，写给她的是 `Not run: it needs the user's approval, and no one here can give it.`，说法 `core/tool-results/unattended` |
 | 要问人，只读时访问类别要写入 | 当场拒绝，`by` 是内核，写给她的是只读那一句 |
 | 要问人，别的 | 记一条 `tool.approval_requested`，`by` 是模块 `permissions`，照写 `access`、`rule`、`detail`，这次调用停下来等人 |
 

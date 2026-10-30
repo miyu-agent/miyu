@@ -28,8 +28,8 @@
 
 ```json
 {
-  "description": "Read a text file or an image (PNG, JPEG, GIF, WebP), or list a directory. Lines come back in cat -n format, numbered from 1, up to 2000 at a time. Prefer this over `cat` in the shell: files read here come back after compaction.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"offset":{"type":"integer","description":"The line number to start reading from, counting from 1."},"limit":{"type":"integer","description":"The number of lines to read. Default 2000."}},"required":["file_path"]}
+  "description": "Read a text file or an image, or list a directory. Text comes back as numbered lines, at most 2000 per call.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]}
 }
 ```
 
@@ -66,16 +66,16 @@
    5. 这一页最多 64 KiB（65536 字节）：写上这一行就超过的，停在前一行。这一页的第一行照写。接在后面说没读完的那一句不算在里面。
 6. 结果（都不算出错）：
    - 一行都没有（空文件、只有 BOM 的）：`(It is empty.)`
-   - `offset` 过了结尾：`(The file has {total} lines; offset {offset} is past the end.)`，`{offset}` 是她给的那个数。
-   - 有行：那几行；最后写到的一行不是最后一行的（`limit` 到了，或者 64 KiB 到了），接上 `(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)`，`next` 是 `to + 1`。
+   - `offset` 过了结尾：`(offset {offset} is past the file's {total} lines.)`，`{offset}` 是她给的那个数。
+   - 有行：那几行；最后写到的一行不是最后一行的（`limit` 到了，或者 64 KiB 到了），接上 `(Lines {from}-{to} of {total}. Next: offset={next}.)`，`next` 是 `to + 1`。
    - 读的同一遍里算出整份文件的内容哈希，BOM 也算在里面；读了一段的、空的、过了结尾的，也是整份的。报 `file.read`：`path` 是真实的位置；`lines` 是 `[from, to]`，空的、过了结尾的、二进制的没有这一格；`hash` 是整份的。
 7. 列目录：
    1. 读不了目录：读的时候出错了。
    2. 每一项写它的名字（解不开的字节换成 `�`），是目录的（不跟链接看）后面加 `/`。读不出来的那一项跳过。隐藏的照列，只列名字，不往下走。
    3. 一项都没有：`(It is empty.)`
-   4. 照写出来的样子排（按字节比，目录带着那个 `/` 比）。`offset` 过了一共几项：`(The directory has {total} entries; offset {offset} is past the end.)`
+   4. 照写出来的样子排（按字节比，目录带着那个 `/` 比）。`offset` 过了一共几项：`(offset {offset} is past the directory's {total} entries.)`
    5. 从第 `offset` 项起，最多 `limit` 项，一项一行；最多 64 KiB（接在后面的那一句不算），第一项照写。
-   6. 没列完的，接上 `(Showing entries {from}-{to} of {total}. Use offset={next} to continue.)`
+   6. 没列完的，接上 `(Entries {from}-{to} of {total}. Next: offset={next}.)`
    7. 列目录不报效果。
 8. 换进这些句子的字段照模板的规矩转义（`kernel/request.md`）：`\` 写成 `\\`，`"`、`&`、`<`、`>` 写成 `\u0022` 这样，换行写成 `\n`。句子里的 `{path}` 是她给的原样。
 9. 没有这个文件时的相近的名字（`glob`、`grep`、`edit`、`trash` 同一套）：
@@ -92,7 +92,7 @@
 ```text
 2	line 2
 3	line 3
-(Showing lines 2-3 of 5. Use offset=4 to continue.)
+(Lines 2-3 of 5. Next: offset=4.)
 ```
 
 读目录：
@@ -114,11 +114,11 @@ Did you mean "notes.txt"?
 
 | 什么时候 | 文件 | 原文 |
 |---|---|---|
-| 没读完 | `read/more.txt` | `(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)` |
+| 没读完 | `read/more.txt` | `(Lines {from}-{to} of {total}. Next: offset={next}.)` |
 | 空的 | `read/empty.txt` | `(It is empty.)` |
-| 过了结尾 | `read/past-end.txt` | `(The file has {total} lines; offset {offset} is past the end.)` |
-| 目录没列完 | `read/more-entries.txt` | `(Showing entries {from}-{to} of {total}. Use offset={next} to continue.)` |
-| 目录过了结尾 | `read/past-end-entries.txt` | `(The directory has {total} entries; offset {offset} is past the end.)` |
+| 过了结尾 | `read/past-end.txt` | `(offset {offset} is past the file's {total} lines.)` |
+| 目录没列完 | `read/more-entries.txt` | `(Entries {from}-{to} of {total}. Next: offset={next}.)` |
+| 目录过了结尾 | `read/past-end-entries.txt` | `(offset {offset} is past the directory's {total} entries.)` |
 
 **读图片**（施工 4-13）
 
@@ -137,13 +137,13 @@ Did you mean "notes.txt"?
 
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
-| 参数不对 | `The arguments are not right: {error}.`（`common/bad-args.txt`） | `common/bad-args`，字段 `error` |
+| 参数不对 | `Bad arguments: {error}.`（`common/bad-args.txt`） | `common/bad-args`，字段 `error` |
 | 换不成真实的位置、打开出错、读的时候出错、目录读不了 | `Could not read "{path}": {error}.`（`common/failed.txt`） | `common/failed`，字段 `path`、`error` |
 | 没有这个文件或目录 | `There is no file or directory at "{path}".`（`common/missing.txt`），后面一个相近的名字一行 `Did you mean "{path}"?`（`common/similar.txt`） | `common/missing`，字段 `path`；有相近名字的是 `common/missing-similar`，字段 `path`、`similar`（第一个） |
 | 不是普通文件，也不是目录 | `"{path}" is not a regular file or a directory.`（`read/not-a-file.txt`） | `read/not-a-file`，字段 `path` |
 | 二进制文件 | `"{path}" is a binary file.`（`read/binary.txt`） | `read/binary`，字段 `path` |
-| 图的文件太大 | `"{path}" is {size}, too large to view. Images must be at most 5 MiB. Make a smaller copy with a command and read that.`（`read/image-too-big.txt`） | `read/image-too-big`，字段 `path`、`size` |
-| 图的边太长 | `"{path}" is {width}×{height} pixels, too large to view. Images must be at most 8000 pixels on each side. Make a smaller copy with a command and read that.`（`read/image-too-wide.txt`） | `read/image-too-wide`，字段 `path`、`width`、`height` |
+| 图的文件太大 | `"{path}" is {size}, over the 5 MiB image limit. A smaller copy made with a command can be read.`（`read/image-too-big.txt`） | `read/image-too-big`，字段 `path`、`size` |
+| 图的边太长 | `"{path}" is {width}×{height} pixels, over the 8000-pixel image side limit. A smaller copy made with a command can be read.`（`read/image-too-wide.txt`） | `read/image-too-wide`，字段 `path`、`width`、`height` |
 
 - 参数不对的 `{error}` 是 JSON 解析的原话，例如 ``missing field `file_path` at line 1 column 12``。
 - 读的时候出错的 `{error}`：换不成的那几句见 `fs.md`「出错」，别的是系统的原话。
@@ -204,5 +204,4 @@ Did you mean "notes.txt"?
 
 - 读 PDF：DeepSeek 不收 PDF，另算（`10-自带软件.md` B11）。
 - 模型看不了图时，由配置里的看图模型替它看（替看图，`10-自带软件.md` 第三节末尾）：以后。
-- 说明里说读过的文件压缩以后会读回来：压缩随 M6（`09-压缩.md` 第四节「压后重建」），现在还没有。
 - 读技能正文时登记「用过哪个技能」（`10-自带软件.md` 第三节说明、`09-压缩.md` 第四节）。

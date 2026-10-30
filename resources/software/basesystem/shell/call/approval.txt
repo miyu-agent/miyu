@@ -1,1 +1,1 @@
-This call needs approval, which a script cannot ask for. Call {name} directly.
+This call needs approval, which only a direct {name} call can ask for.

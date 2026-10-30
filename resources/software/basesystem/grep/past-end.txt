@@ -1,1 +1,1 @@
-(There are only {total} results; offset {offset} skips them all.)
+(offset {offset} skips all {total} results.)

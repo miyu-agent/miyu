@@ -123,7 +123,7 @@ async fn writing_refusals_are_said_plainly() {
             "kb_save",
             serde_json::json!({"kb": "notes", "path": "a.md", "text": "x"}),
             "common/exists",
-            "a.md already exists in notes. Use append, or kb_edit.",
+            "a.md already exists in notes. append and kb_edit change it.",
         ),
         (
             KbRefused::TooLarge("a.md".to_string()),
@@ -158,14 +158,14 @@ async fn writing_refusals_are_said_plainly() {
             "kb_save",
             serde_json::json!({"kb": "个人备忘", "path": "a.md", "text": "x"}),
             "common/bad-id",
-            "个人备忘 is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.",
+            "个人备忘 is not a valid knowledge base id (lowercase letters, digits, - and _, starting with a letter).",
         ),
         (
             KbRefused::ReadOnly("notes".to_string()),
             "kb_edit",
             serde_json::json!({"kb": "notes", "path": "a.md", "old": "猫", "new": "狗"}),
             "common/read-only",
-            "notes is a mounted folder and read-only. Save to another knowledge base.",
+            "notes is a mounted folder and read-only.",
         ),
         (
             KbRefused::NotText("cat.pdf".to_string()),

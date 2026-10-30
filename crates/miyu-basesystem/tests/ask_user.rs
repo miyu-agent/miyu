@@ -125,7 +125,7 @@ async fn bad_arguments_never_reach_the_port() {
             .await;
         assert!(done.error, "{args}");
         assert!(
-            text(&done).starts_with("The arguments are not right"),
+            text(&done).starts_with("Bad arguments"),
             "{args}: {}",
             text(&done)
         );
@@ -139,10 +139,7 @@ async fn without_a_port_no_one_can_answer() {
         .done_with_questions("ask_user", args(), None)
         .await;
     assert!(done.error);
-    assert_eq!(
-        text(&done),
-        "No one can answer questions here. Ask in your reply instead.\n"
-    );
+    assert_eq!(text(&done), "No one can answer questions here.\n");
     let mut checked = Vec::new();
     check(&mut checked, human(done), said("ask_user/unattended"));
     readable(&checked, &[]);

@@ -1,1 +1,1 @@
-…and {count} more; memory_search finds them.
+…and {count} more, found by memory_search.

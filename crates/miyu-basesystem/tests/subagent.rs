@@ -147,12 +147,12 @@ fn it_declares_a_title_the_task_and_a_pool() {
     assert_eq!(parameters["required"], json!(["description", "prompt"]));
     assert_eq!(
         parameters["properties"]["pool"],
-        json!({"type": "string", "description": "Model pool for the task. Default: your own model."}),
+        json!({"type": "string", "description": "Default: your own model."}),
         "资源里没有 enum：会话开局时照配置拼（施工 8-8 补）"
     );
     assert_eq!(
         parameters["properties"]["persona"],
-        json!({"type": "string", "description": "Persona for the subagent. Default: no persona."}),
+        json!({"type": "string", "description": "Default: none."}),
         "资源里没有 enum：会话开局时照这台机器上有的拼（施工 P-2 补，同池）"
     );
     assert!(
@@ -161,8 +161,8 @@ fn it_declares_a_title_the_task_and_a_pool() {
     );
     assert!(
         spec.description
-            .contains("Without fork it sees nothing of this conversation"),
-        "交代要自己说得清那一句留着，只对不 fork 的（施工 A-F 中）：{}",
+            .contains("Without fork it sees only the prompt, not this conversation."),
+        "不 fork 的只看得到交代、看不到这段对话那一句留着（施工 A-F 中）：{}",
         spec.description
     );
 }
@@ -259,7 +259,7 @@ async fn the_pool_is_one_the_port_lists_and_goes_to_the_port() {
             .await;
         assert!(done.error, "{bad}");
         assert!(
-            text(&done).starts_with("The arguments are not right: "),
+            text(&done).starts_with("Bad arguments: "),
             "{}",
             text(&done)
         );
@@ -274,7 +274,7 @@ async fn a_wrong_pool_is_told_like_serde_tells_an_unknown_variant() {
     let site = Site::new();
     let said = |pool: &str, expected: &'static [&'static str]| {
         let error = serde_json::Error::unknown_variant(pool, expected);
-        format!("The arguments are not right: {error}.\n")
+        format!("Bad arguments: {error}.\n")
     };
     for (listed, expected) in [
         (&[][..], &[][..]),
@@ -302,7 +302,7 @@ async fn without_the_task_nothing_is_asked() {
             .done_with_agents("subagent", args, Some(port.clone()))
             .await;
         assert!(done.error);
-        assert!(text(&done).starts_with("The arguments are not right: "));
+        assert!(text(&done).starts_with("Bad arguments: "));
     }
     assert!(port.asked().is_empty());
 }
@@ -363,10 +363,7 @@ async fn a_persona_is_one_the_port_lists_and_goes_to_the_port() {
         .await;
     assert!(done.error);
     let error = serde_json::Error::unknown_variant("kiki", &["engineer", "miyu"]);
-    assert_eq!(
-        text(&done),
-        format!("The arguments are not right: {error}.\n")
-    );
+    assert_eq!(text(&done), format!("Bad arguments: {error}.\n"));
     assert_eq!(port.picked().len(), 3, "写错的端口不派");
 }
 

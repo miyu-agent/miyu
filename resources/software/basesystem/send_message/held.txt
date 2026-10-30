@@ -1,1 +1,1 @@
-Message saved for {to}. Nobody is watching that one-shot session, so it reads this only when someone continues it.
+Message saved for {to}, an unwatched one-shot session. It reads this only when someone continues it.

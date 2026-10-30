@@ -479,7 +479,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 **派子代理的工具 `subagent` 多一个参数 `pool`**（8-8 补，取代 8-8 的 `tier`）。说明不改，参数一句，不进 `required`。资源里的原文（`tools/subagent.md` 有整份样本）：
 
 ```json
-"pool":{"type":"string","description":"Model pool for the task. Default: your own model."}
+"pool":{"type":"string","description":"Default: your own model."}
 ```
 
 会话开局时照那时的配置拼好（2026-10-01 项目主人定，技术细节主会话定），以后照快照发：
@@ -488,7 +488,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 2. **拼法**（`ToolEntry::offer`，`crates/miyu-policy/src/tools/choice.rs`，造会话时 `Agents::face` 叫它）：一个都没有的，参数格式里拿掉 `pool`，和 8-8 以前一字不差。有的，`pool` 在 `type` 后面插 `enum`（列的那几个），`description` 后面每个池接一行 `\n<名字>: <说明>`，没写说明的只接 `\n<名字>`。别的格、别的参数一个字节不动。例子（池 `fast` 带说明，`flagship` 没带）：
 
    ```json
-   "pool":{"type":"string","enum":["fast","flagship"],"description":"Model pool for the task. Default: your own model.\nfast: Small model for quick lookups.\nflagship"}
+   "pool":{"type":"string","enum":["fast","flagship"],"description":"Default: your own model.\nfast: Small model for quick lookups.\nflagship"}
    ```
 
 3. **整个会话不变**：拼好的进快照，以后照快照发，载入不重拼。配置、开关、说明改了，新会话才看得到；会话里已经列着的池换了成员，照旧下一轮生效（池照这一轮的配置解析）。同一个核心上开着的几个会话，`subagent` 这一格可以不一样，缓存照会话算（同上）。子会话造的时候照它那时的配置拼它自己的。
@@ -503,7 +503,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 ```json
 {
-  "description": "Show how many tokens and how much money this session has used so far, and how full your context is.",
+  "description": "Show the tokens and money this session has used so far, and how full the context is.",
   "parameters": {"type":"object","properties":{}}
 }
 ```

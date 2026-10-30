@@ -239,11 +239,11 @@
 |---|---|---|
 | `image-omitted.txt` | `An image was attached here, but this model cannot view images.` | 没有 |
 | `file-omitted.txt` | `A file was attached here ({name}, {media_type}, {size} bytes), but this model cannot read it.` | `name`、`media_type`、`size`（字节数，施工 3-9 三补），照模板的规矩转义 |
-| `no-output.txt` | `The tool returned no output.` | 没有 |
-| `tool-attachments.txt` | `These images and files were returned by the tool calls above.` | 没有 |
-| `tool-attachments-only.txt` | `The tool returned only images or files. They are in the next message.` | 没有 |
+| `no-output.txt` | `(no output)` | 没有 |
+| `tool-attachments.txt` | `Images and files returned by the tool calls above.` | 没有 |
+| `tool-attachments-only.txt` | `The tool returned only images or files, in the next message.` | 没有 |
 | `file-open.txt` | `<file name="{name}">` | `name`，照模板的规矩转义（施工 3-9 三补） |
-| `file-cut.txt` | `Only the first {shown} of {total} bytes of this file are shown.` | `shown`、`total`（施工 3-9 三补） |
+| `file-cut.txt` | `Only the first {shown} of {total} bytes are shown.` | `shown`、`total`（施工 3-9 三补） |
 | `file-close.txt` | `</file>` | 没有（施工 3-9 三补） |
 | `image-open.txt` | `<image name="{name}">` | `name`，照模板的规矩转义（施工 3-9 四补） |
 | `image-close.txt` | `</image>` | 没有（施工 3-9 四补） |

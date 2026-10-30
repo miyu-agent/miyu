@@ -25,10 +25,10 @@ const CHANGED: &str = "[providers.a]\nlocal = false\n\n[models]\nchat = \"a/main
 [pools.off]\nmodels = [\"a/z\"]\n\n[pools.lite]\nmodels = []\nsubagent = true\n";
 
 /// 造会话时照 `CONFIG` 拼出来的 `pool` 那一格。
-const FAST_ONLY: &str = r#""pool":{"type":"string","enum":["fast"],"description":"Model pool for the task. Default: your own model.\nfast: Quick lookups."}"#;
+const FAST_ONLY: &str = r#""pool":{"type":"string","enum":["fast"],"description":"Default: your own model.\nfast: Quick lookups."}"#;
 
 /// 照 `CHANGED` 拼出来的。
-const BOTH: &str = r#""pool":{"type":"string","enum":["fast","slow"],"description":"Model pool for the task. Default: your own model.\nfast: Changed.\nslow: Big model, slow."}"#;
+const BOTH: &str = r#""pool":{"type":"string","enum":["fast","slow"],"description":"Default: your own model.\nfast: Changed.\nslow: Big model, slow."}"#;
 
 /// 调一次 `subagent`，带池 `pool`；交代就写 `title`，好认出是哪一次。
 fn pooled(title: &str, pool: &str) -> (&'static str, String) {
@@ -148,7 +148,7 @@ async fn a_pool_is_recorded_and_no_pool_or_a_tier_takes_the_parent_model() {
         assert_eq!(done[at].status, ToolStatus::Error, "{pool}");
         assert_eq!(
             text(done[at]),
-            format!("The arguments are not right: unknown variant `{pool}`, expected `fast`.\n"),
+            format!("Bad arguments: unknown variant `{pool}`, expected `fast`.\n"),
             "没开开关的、没成员的不列"
         );
     }
@@ -246,7 +246,7 @@ async fn the_face_is_built_when_the_session_starts_and_kept() {
     assert_eq!(text(done[2]), "Started subagent j1: \"丙\".\n");
     assert_eq!(
         text(done[3]),
-        "The arguments are not right: unknown variant `slow`, expected `fast`.\n",
+        "Bad arguments: unknown variant `slow`, expected `fast`.\n",
         "载入以后照快照列着的查，不照现在的配置"
     );
     assert_eq!(models(&table), [Some("@fast".to_string())]);
@@ -283,7 +283,7 @@ async fn without_pools_to_offer_there_is_no_pool_parameter() {
     one_turn(&home, &handle, 1).await;
     assert_eq!(
         subagent_parameters(&script.requests()[0].1),
-        r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Persona for the subagent. Default: no persona.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}"#,
+        r#"{"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"persona":{"type":"string","enum":["engineer"],"description":"Default: none.\nengineer: Software Engineer — Writes code and tracks down problems, no role-play"},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."}},"required":["description","prompt"]}"#,
         "没有池的拿掉 pool；人格照这台机器上的填，带名字和简单描述（施工 P-2 补、P-10）"
     );
 }

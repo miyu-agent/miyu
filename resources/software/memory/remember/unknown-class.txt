@@ -1,1 +1,1 @@
-Unknown class {class}; use user, feedback, episode, reference or person.
+Unknown class {class}. Classes are user, feedback, episode, reference, person.

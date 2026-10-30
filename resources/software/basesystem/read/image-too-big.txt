@@ -1,1 +1,1 @@
-"{path}" is {size}, too large to view. Images must be at most 5 MiB. Make a smaller copy with a command and read that.
+"{path}" is {size}, over the 5 MiB image limit. A smaller copy made with a command can be read.

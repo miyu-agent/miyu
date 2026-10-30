@@ -46,7 +46,7 @@
 | 动作 | 成了 | 没成 |
 |---|---|---|
 | `get` | `Objective: <原文>`、`State: <running 这类> · Round 3 of 10`（不限的 `Round 3`），卡住的再一行 `Blocked: <原因>`（`now.txt`、`reason.txt`）；没有目标 `No goal is set.`（`none.txt`） | — |
-| `set` | `Goal set. From now on a new round starts by itself whenever the session is idle.`（`set.txt`）：当场算授权过（`goal.md`「在新的架构里怎么放」第 3 条） | 已经有一个：说只有人能用 `/goal` 改、清掉（`exists.txt`） |
+| `set` | `Goal set. A new round now starts by itself whenever the session is idle.`（`set.txt`）：当场算授权过（`goal.md`「在新的架构里怎么放」第 3 条） | 已经有一个：说只有人能用 `/goal` 改、清掉（`exists.txt`） |
 | `complete` | 续轮开的那一轮里：收尾（`wrapup-completed.txt`）；人开的那一轮：`Goal marked complete.`（`completed.txt`） | 没有目标：`none.txt` |
 | `blocked` | 续轮开的那一轮里：收尾，带上原因（`wrapup-blocked.txt`）；人开的那一轮：`Goal marked blocked.`（`blocked.txt`） | 续轮开的那一轮里、目标开过的轮数不到 3、这一次运行里人没插过话（施工 X-9）：说这是第几轮、至少几轮（`too-early.txt`）；没有目标：`none.txt` |
 

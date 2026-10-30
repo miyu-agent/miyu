@@ -22,14 +22,14 @@
 
 ### 对外的样子
 
-访问类别 `read`：派出去这一下什么都不改，子会话照父会话抄了权限，改不改由它自己的权限管。连着的只读调用一起派，所以一步里调几次，就同时派几个（`agents.md` 第一条第 4 条）；只读开着的时候也派得出去，子会话抄着只读。说明和参数的原文如下，说明照 `26-提示词.md` 附录的草稿，「它看不到这边的对话，交代要自己说得清」那一句留着。施工 8-8 加过 `tier`，施工 8-8 补换成 `pool`（`models.md`「工具」）：说明、另两格一字不改；资源里的 `pool` 没有 `enum`，会话开局时照配置拼（「会话开局时拼 `pool`」），token 见 `26-提示词.md` 第十节。
+访问类别 `read`：派出去这一下什么都不改，子会话照父会话抄了权限，改不改由它自己的权限管。连着的只读调用一起派，所以一步里调几次，就同时派几个（`agents.md` 第一条第 4 条）；只读开着的时候也派得出去，子会话抄着只读。说明和参数的原文如下，说明照 `26-提示词.md` 附录的草稿，「不带 fork 它只看得到交代、看不到这边的对话」那一句留着（交代里该写什么那一串，施工 TX-1 照 `26-提示词.md` J13 去掉）。施工 8-8 加过 `tier`，施工 8-8 补换成 `pool`（`models.md`「工具」）：说明、另两格一字不改；资源里的 `pool` 没有 `enum`，会话开局时照配置拼（「会话开局时拼 `pool`」），token 见 `26-提示词.md` 第十节。
 
 样本 `resources/software/basesystem/tools/subagent.json`：
 
 ```json
 {
-  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. Without fork it sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}
+  "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."}},"required":["description","prompt"]}
 }
 ```
 
@@ -53,7 +53,7 @@
 拼出来的样子（池 `fast` 带说明 `Small model for quick lookups.`，`flagship` 没带）：
 
 ```json
-"pool":{"type":"string","enum":["fast","flagship"],"description":"Model pool for the task. Default: your own model.\nfast: Small model for quick lookups.\nflagship"}
+"pool":{"type":"string","enum":["fast","flagship"],"description":"Default: your own model.\nfast: Small model for quick lookups.\nflagship"}
 ```
 - 报的路径只有附件（施工 C-9）：同 `send_message`，照读文件的规矩查（`session/guard.md`）；没带附件的一条都不报。
 - 只有能派子代理的会话工具面里有它：在本机（场所 `local`）、还没到深度上限（`jobs.depth`，`agents.md`「对外的样子」）。场所会话、到了上限的会话造会话时就拿掉它，她调了照没有这件工具拒掉（`kernel/tools.md`）。
@@ -99,7 +99,7 @@ Started subagent j1: "查导出".
 |---|---|---|
 | 参数不对 | `common/bad-args.txt` | `common/bad-args`，字段 `error` |
 | 没有端口、端口说派不了 | `agent/not-started.txt` | `agent/not-started` |
-| fork 出来的又写了 `fork`（施工 A-F 中） | `agent/no-fork.txt`：`A fork cannot fork again. Do the work yourself.` | `agent/no-fork` |
+| fork 出来的又写了 `fork`（施工 A-F 中） | `agent/no-fork.txt`：`A fork cannot fork again.` | `agent/no-fork` |
 
 ### 给人看的字
 

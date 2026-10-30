@@ -190,7 +190,7 @@ fn the_withdrawn_message_never_reaches_the_request() {
 fn only_the_denied_result_of_an_approval_reaches_the_request() {
     let whole = assembled_upto(u64::MAX);
     assert!(
-        whole.contains("the user denied it and said"),
+        whole.contains("The user denied the call and said"),
         "被拒绝的结果要在请求里：{whole}"
     );
     assert!(

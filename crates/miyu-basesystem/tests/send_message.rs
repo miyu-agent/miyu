@@ -120,9 +120,10 @@ fn it_declares_the_recipient_the_message_and_the_watch() {
         "boolean"
     );
     assert!(
-        spec.description
-            .contains("Send only what they need to know now"),
-        "只发对方现在就得知道的那一句留着：{}",
+        spec.description.contains(
+            "The other side reads it at its next step, or starts a new turn with it if idle."
+        ),
+        "对方什么时候读到那一句留着：{}",
         spec.description
     );
     assert!(
@@ -185,7 +186,7 @@ async fn a_held_message_is_not_an_error() {
     assert!(!done.error, "没人看着不算出错");
     assert_eq!(
         text(&done),
-        "Message saved for j1. Nobody is watching that one-shot session, so it reads this only when someone continues it.\n"
+        "Message saved for j1, an unwatched one-shot session. It reads this only when someone continues it.\n"
     );
 }
 
@@ -217,7 +218,7 @@ async fn every_refusal_says_why() {
         (
             NotSent::InboxFull,
             "j1",
-            "j1 has too many unread messages. Send again after it has read them.\n",
+            "j1 has too many unread messages. Sending works again once it reads them.\n",
         ),
     ];
     for (why, recipient, said) in cases {
@@ -265,7 +266,7 @@ async fn without_both_arguments_nothing_is_asked() {
             .done_with_messages("send_message", args, Some(port.clone()))
             .await;
         assert!(done.error);
-        assert!(text(&done).starts_with("The arguments are not right: "));
+        assert!(text(&done).starts_with("Bad arguments: "));
     }
     assert!(port.asked().is_empty());
 }
@@ -285,7 +286,7 @@ async fn a_message_over_the_character_limit_is_rejected_before_sending() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "The message has 100001 characters, over the limit of 100000. Send a shorter one.\n"
+        "The message has 100001 characters, over the limit of 100000.\n"
     );
     assert!(port.asked().is_empty(), "超长的发出去之前拒");
     // 刚好到上限的：照发不误。

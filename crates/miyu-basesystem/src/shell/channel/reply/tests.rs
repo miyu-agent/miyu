@@ -102,7 +102,7 @@ fn each_ending_has_its_exit_code() {
         code(Nested::Settled(settled(NestedStatus::NeedsApproval))),
         Reply::said(
             4,
-            "This call needs approval, which a script cannot ask for. Call web_search directly.\n"
+            "This call needs approval, which only a direct web_search call can ask for.\n"
                 .to_string()
         )
     );
@@ -153,7 +153,7 @@ fn usage_mistakes_say_how_to_fix_them() {
             Nested::Refused(NestedRefusal::NotAllowed)
         )
         .stderr,
-        "miyu call does not work for chat_send; call it directly. Tools that work with miyu call: kb_read, web_search.\n"
+        "chat_send works only as a direct call, not via miyu call. Tools that work with miyu call: kb_read, web_search.\n"
     );
     assert_eq!(
         settle(&Port, &texts, "web_search", Nested::Refused(NestedRefusal::NotAnObject)),
@@ -182,7 +182,7 @@ fn schema_prints_the_description_and_parameters() {
     assert!(
         schema(&Port, &texts, "chat_send")
             .stderr
-            .starts_with("miyu call does not work for chat_send")
+            .starts_with("chat_send works only as a direct call, not via miyu call")
     );
 }
 

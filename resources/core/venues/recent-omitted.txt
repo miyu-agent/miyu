@@ -1,1 +1,1 @@
-({count} earlier messages did not fit here; fetch them with history.)
+({count} earlier messages did not fit here. history has them.)

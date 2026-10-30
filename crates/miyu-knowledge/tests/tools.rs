@@ -195,6 +195,6 @@ async fn refusals_and_bad_arguments_are_said_plainly() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "The arguments are not right: missing field `path` at line 1 column 14."
+        "Bad arguments: missing field `path` at line 1 column 14."
     );
 }

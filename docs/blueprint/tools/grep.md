@@ -25,8 +25,8 @@
 
 ```json
 {
-  "description": "Search file contents with a regular expression (ripgrep syntax), respecting .gitignore. Prefer this over grep or rg in the shell. `output_mode` picks file paths (default), matching lines, or counts per file.",
-  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"Literal braces need escaping, like interface\\{\\}."},"path":{"type":"string","description":"The file or directory to search. Default is the working directory."},"glob":{"type":"string","description":"Searches only files matching this glob, like *.rs."},"output_mode":{"type":"string","enum":["content","files_with_matches","count"],"description":"Default files_with_matches."},"-i":{"type":"boolean","description":"Case-insensitive."},"context":{"type":"integer","description":"Lines shown before and after each match in content mode."},"head_limit":{"type":"integer","description":"Results to show at most. Default 250. 0 means no limit."},"offset":{"type":"integer","description":"Results to skip first. Default 0."}},"required":["pattern"]}
+  "description": "Search file contents with a regular expression (ripgrep syntax), respecting .gitignore.",
+  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"Literal braces need escaping, like interface\\{\\}."},"path":{"type":"string","description":"Default: the working directory."},"glob":{"type":"string","description":"Like *.rs."},"output_mode":{"type":"string","enum":["content","files_with_matches","count"],"description":"Default files_with_matches."},"-i":{"type":"boolean"},"context":{"type":"integer","description":"Lines around each match, content mode only."},"head_limit":{"type":"integer","description":"Default 250. 0 means no limit."},"offset":{"type":"integer"}},"required":["pattern"]}
 }
 ```
 
@@ -75,18 +75,18 @@
 **只列文件、计数**（一共几条是知道的）：
 
 1. 一个都没有：只列文件的说 `No files found`，计数的说 `No matches found`，都不算出错。
-2. `offset` 不小于一共几条：`(There are only {total} results; offset {offset} skips them all.)`，不算出错。
+2. `offset` 不小于一共几条：`(offset {offset} skips all {total} results.)`，不算出错。
 3. 从第 `offset + 1` 条起，最多 `head_limit` 条，一条一行；最多 64 KiB，第一条照写。
-4. 后面还有的，接上 `(Showing files {from}-{to} of {total}. Use offset={next} to continue.)`：`from` 是 `offset + 1`，`to` 是写到的最后一条，`next` 就是 `to`。计数也是这一句。
+4. 后面还有的，接上 `(Files {from}-{to} of {total}. Next: offset={next}.)`：`from` 是 `offset + 1`，`to` 是写到的最后一条，`next` 就是 `to`。计数也是这一句。
 
 **匹配的行**（搜够数就停，不数一共几条）：
 
 1. 一处都没有：`No matches found`，不算出错。
-2. `offset` 不小于收下的几行匹配：`(There are only {total} results; offset {offset} skips them all.)`，不算出错。
+2. `offset` 不小于收下的几行匹配：`(offset {offset} skips all {total} results.)`，不算出错。
 3. 跳过前 `offset` 行匹配，写接下来的最多 `head_limit` 行。匹配的行写成 `<路径>:<行号>:<字>`；前后带出来的行写成 `<路径>-<行号>-<字>`，只写离这一页要写的某一行匹配够近的：同一个文件里，在它前面、前面带的行数以内，或者在它后面、后面带的行数以内（给了 `context` 的，前后都是它；不然前面是 `-B`、后面是 `-A`）。跳过的、这一页以外的匹配，前后行也不写。
 4. 带前后行时（前面、后面带的行数有一个大过 0），不连着的两段之间写一行 `--`，换了文件也算不连着；第一段前面不写。
 5. 最多 64 KiB：写到第一行匹配为止照写，之后写上这一行就超过的，停在那里。
-6. 停在 64 KiB，或者收下的匹配比写了的多：接上 `(Showing matches {from}-{to}; there are more. Use offset={next} to continue.)`，`to` 是 `offset` 加写了的匹配数，`next` 就是 `to`。
+6. 停在 64 KiB，或者收下的匹配比写了的多：接上 `(Matches {from}-{to}, more remain. Next: offset={next}.)`，`to` 是 `offset` 加写了的匹配数，`next` 就是 `to`。
 
 ### 样子
 
@@ -130,15 +130,15 @@ f.txt-9-line 9
 |---|---|---|
 | 只列文件，一个都没有 | `common/no-files.txt` | `No files found` |
 | 匹配的行、计数，一处都没有 | `grep/no-matches.txt` | `No matches found` |
-| 只列文件、计数，还有 | `grep/more-files.txt` | `(Showing files {from}-{to} of {total}. Use offset={next} to continue.)` |
-| 匹配的行，还有 | `grep/more-matches.txt` | `(Showing matches {from}-{to}; there are more. Use offset={next} to continue.)` |
-| `offset` 全跳过了 | `grep/past-end.txt` | `(There are only {total} results; offset {offset} skips them all.)` |
+| 只列文件、计数，还有 | `grep/more-files.txt` | `(Files {from}-{to} of {total}. Next: offset={next}.)` |
+| 匹配的行，还有 | `grep/more-matches.txt` | `(Matches {from}-{to}, more remain. Next: offset={next}.)` |
+| `offset` 全跳过了 | `grep/past-end.txt` | `(offset {offset} skips all {total} results.)` |
 
 ### 出错
 
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
-| 参数不对 | `The arguments are not right: {error}.` | `common/bad-args`，字段 `error` |
+| 参数不对 | `Bad arguments: {error}.` | `common/bad-args`，字段 `error` |
 | 正则写得不对 | `The pattern is not a valid regular expression: {error}.`（`grep/bad-pattern.txt`） | `grep/bad-pattern`，字段 `error` |
 | `glob` 写得不对 | `The glob "{glob}" is not valid: {error}.` | `common/bad-glob`，字段 `glob`、`error` |
 | 换不成真实的位置、读不了 | `Could not read "{path}": {error}.` | `common/failed`，字段 `path`、`error` |

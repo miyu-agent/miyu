@@ -1,1 +1,1 @@
-(Showing matches {from}-{to}; there are more. Use offset={next} to continue.)
+(Matches {from}-{to}, more remain. Next: offset={next}.)

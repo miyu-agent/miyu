@@ -80,7 +80,7 @@ async fn a_background_command_returns_at_once_and_keeps_running() {
     assert!(!done.error, "{}", text(&done));
     assert_eq!(
         text(&done),
-        "Started j7 in the background. You will be told when it ends. Read its output with jobs output.\n"
+        "Started j7 in the background. Its end is reported automatically. jobs output shows its output.\n"
     );
     assert_eq!(done.human, Some(said("shell/background").with("job", "j7")));
     assert_eq!(

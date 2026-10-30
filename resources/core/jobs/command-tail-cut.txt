@@ -1,1 +1,1 @@
-Output, the last {shown} of {chars} characters (read all of it with jobs output):
+Output, the last {shown} of {chars} characters (all of it in jobs output):

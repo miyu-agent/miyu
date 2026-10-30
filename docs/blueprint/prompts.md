@@ -198,12 +198,12 @@ Entries 1-{upto} were compacted. history still finds them by number, words or ti
 #### `core/compaction/notes-too-large.txt`
 
 - 什么时候加进来：候选里有太大、放不下没重读的
-- token：21（两个路径）（2026-09-29 照项目主人给的端点量）
-- 为什么加：告诉她哪几个没重读、要看自己读（施工 6-5）
-- 指纹：`8baa8550`
+- token：TX-1 后 9（o200k 数，改前 14）；原来 21（两个路径）（2026-09-29 照项目主人给的端点量）
+- 为什么加：告诉她哪几个没重读、要看自己读（施工 6-5）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`d577b543`
 
 ```text
-Not shown again, read them if you need them: {files}
+Too large to show again: {files}
 ```
 
 #### `core/compaction/notes-todos.txt`
@@ -220,12 +220,12 @@ Todo list before this checkpoint:
 #### `core/compaction/notes-uncovered.txt`
 
 - 什么时候加进来：摘要请求截短过的压缩
-- token：25（按第 1 到 5 条算）（2026-09-29 照项目主人给的端点量）
-- 为什么加：告诉她摘要没看到哪一段、还能用 `history` 取回（施工 6-6 中）：不写，她会以为摘要是全的
-- 指纹：`a9d80f5b`
+- token：TX-1 后 20（o200k 数，改前 25）；原来 25（按第 1 到 5 条算）（2026-09-29 照项目主人给的端点量）
+- 为什么加：告诉她摘要没看到哪一段、还能用 `history` 取回（施工 6-6 中）：不写，她会以为摘要是全的。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`32889a0c`
 
 ```text
-Entries {from}-{to} were cut to fit the summary request, so the summary misses them. history still finds them.
+The summary misses entries {from}-{to}, cut to fit its request. history still finds them.
 ```
 
 ### 检查点里重读的文件那一块
@@ -541,12 +541,12 @@ A file was attached here ({name}, {media_type}, {size} bytes, from {path}), but 
 #### `core/drivers/no-output.txt`
 
 - 什么时候加进来：工具一个字都没回
-- token：6
-- 为什么加：空的 tool 消息有的供应商不收（施工 3-4 上）
-- 指纹：`8b91fca5`
+- token：TX-1 后 3（o200k 数，改前 6）；原来 6
+- 为什么加：空的 tool 消息有的供应商不收（施工 3-4 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`02a713f7`
 
 ```text
-The tool returned no output.
+(no output)
 ```
 
 #### `core/tool-results/unknown.txt`
@@ -574,122 +574,122 @@ The arguments for "{name}" are not a JSON object.
 #### `core/tool-results/cancelled-before.txt`
 
 - 什么时候加进来：调用还没开始就被打断
-- token：14
-- 为什么加：每次调用都要有结果（施工 2-5）
-- 指纹：`f6e26cd9`
+- token：TX-1 后 10（o200k 数，改前 14）；原来 14
+- 为什么加：每次调用都要有结果（施工 2-5）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`e6cd6fa5`
 
 ```text
-The call was cancelled before it ran: the user interrupted the turn.
+The user interrupted the turn before the call ran.
 ```
 
 #### `core/tool-results/cancelled-running.txt`
 
 - 什么时候加进来：调用跑到一半被打断
-- token：22
-- 为什么加：同上
-- 指纹：`ed9ff1ca`
+- token：TX-1 后 18（o200k 数，改前 22）；原来 22
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`821b3005`
 
 ```text
-The call was cancelled while it was running: the user interrupted the turn. It may have been partly done.
+The user interrupted the turn while the call was running. It may have been partly done.
 ```
 
 #### `core/tool-results/skipped.txt`
 
 - 什么时候加进来：急着插话，这一步没跑的调用
-- token：12
-- 为什么加：同上
-- 指纹：`b4e9513a`
+- token：TX-1 后 9（o200k 数，改前 12）；原来 12
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`d89baeea`
 
 ```text
-The call was skipped: the user sent a new message.
+Skipped: the user sent a new message.
 ```
 
 #### `core/tool-results/read-only.txt`
 
 - 什么时候加进来：只读的时候拦下写入的
-- token：12
-- 为什么加：告诉她为什么没做（施工 2-7）
-- 指纹：`2cf22f0e`
+- token：TX-1 后 9（o200k 数，改前 12）；原来 12
+- 为什么加：告诉她为什么没做（施工 2-7）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`4dd87df4`
 
 ```text
-The call was not run: the session is read-only.
+Not run: the session is read-only.
 ```
 
 #### `core/tool-results/denied.txt`
 
 - 什么时候加进来：人拒绝了
-- token：11
-- 为什么加：同上
-- 指纹：`0854aede`
+- token：TX-1 后 6（o200k 数，改前 11）；原来 11
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`e8b6627d`
 
 ```text
-The call was not run: the user denied it.
+The user denied the call.
 ```
 
 #### `core/tool-results/denied-with-reason.txt`
 
 - 什么时候加进来：人拒绝了，还说了理由
-- token：16
-- 为什么加：同上，带上人的原话
-- 指纹：`be2b3120`
+- token：TX-1 后 11（o200k 数，改前 16）；原来 16
+- 为什么加：同上，带上人的原话。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`9035e368`
 
 ```text
-The call was not run: the user denied it and said "{reason}".
+The user denied the call and said "{reason}".
 ```
 
 #### `core/tool-results/unattended.txt`
 
 - 什么时候加进来：要确认却没人能确认
-- token：20
-- 为什么加：同上
-- 指纹：`0f3a92a5`
+- token：TX-1 后 17（o200k 数，改前 19）；原来 20
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`96b01f35`
 
 ```text
-The call was not run: it needs the user's approval, which no one can give here.
+Not run: it needs the user's approval, and no one here can give it.
 ```
 
 #### `core/tool-results/question-interrupted.txt`
 
 - 什么时候加进来：问人的时候被打断
-- token：12
-- 为什么加：每次调用都要有结果（施工 2-7 下）
-- 指纹：`84165132`
+- token：TX-1 后 8（o200k 数，改前 12）；原来 12
+- 为什么加：每次调用都要有结果（施工 2-7 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`2b37e769`
 
 ```text
-The question was not answered: the user interrupted the turn.
+The user interrupted the turn before answering.
 ```
 
 #### `core/tool-results/question-voided.txt`
 
 - 什么时候加进来：问的题作废了
-- token：14
-- 为什么加：同上
-- 指纹：`819d7c3e`
+- token：TX-1 后 10（o200k 数，改前 14）；原来 14
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`7c667ccb`
 
 ```text
-The question was not answered: the user sent a new message instead.
+The user sent a new message instead of answering.
 ```
 
 #### `core/tool-results/question-unattended.txt`
 
 - 什么时候加进来：要问人却没人能回答
-- token：12
-- 为什么加：同上
-- 指纹：`848c9bab`
+- token：TX-1 后 7（o200k 数，改前 12）；原来 12
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`49712a37`
 
 ```text
-The question was not answered: no one can answer here.
+No one can answer questions here.
 ```
 
 #### `core/tool-results/restarted.txt`
 
 - 什么时候加进来：有计划的重启打断了调用
-- token：20
-- 为什么加：同上（施工 2-8）
-- 指纹：`243bc2aa`
+- token：TX-1 后 16（o200k 数，改前 19）；原来 20
+- 为什么加：同上（施工 2-8）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ab49e5b7`
 
 ```text
-The call was cancelled: Miyu restarted before it finished. It may have been partly done.
+Miyu restarted before the call finished. It may have been partly done.
 ```
 
 #### `core/tool-results/unavailable.txt`
@@ -706,12 +706,12 @@ The tool "{name}" is not available right now.
 #### `core/tool-results/forked.txt`
 
 - 什么时候加进来：fork 子代理的头几条：父会话派它的那一步，每个调用一条，几个兄弟一字不差（施工 A-F 上，`session/fork.md`「fork 子代理」）
-- token：11（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`unavailable` 那一句同样量是 12）
-- 为什么加：每次调用都要有结果；那一步的调用真正的结果在父会话那边，子会话只知道它们交给父会话了（照 Claude Code 的 fork 占位结果，一句英文）
-- 指纹：`08dad253`
+- token：TX-1 后 9（o200k 数，改前 9）；原来 11（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`unavailable` 那一句同样量是 12）
+- 为什么加：每次调用都要有结果；那一步的调用真正的结果在父会话那边，子会话只知道它们交给父会话了（照 Claude Code 的 fork 占位结果，一句英文）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`f81286f4`
 
 ```text
-Forked; the parent handles this call.
+Forked. The parent handles this call.
 ```
 
 #### `core/tool-results/uninstalled.txt`
@@ -805,23 +805,23 @@ Can't tell where "{path}" points: {reason}.
 #### `core/permissions/not-in-venue.txt`
 
 - 什么时候加进来：权限策略拒绝：本机的会话调到在场所里做的事（访问类别 `venue`，施工 O-31 前，`session/guard.md` 第四条）；本机的会话的工具面本来没有这类工具，是兜底
-- token：20（2026-10-10 照开发端点量，接在 `hi` 和一个换行后面）
-- 为什么加：告诉她这件只在群聊、私聊里能用，别在这里再试；不进策略快照，本机的会话造、载入时读（同 `timed-out.txt`，进了以后以前造的会话换不了快照）
-- 指纹：`3ae63824`
+- token：TX-1 后 13（o200k 数，改前 20）；原来 20（2026-10-10 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：告诉她这件只在群聊、私聊里能用，别在这里再试；不进策略快照，本机的会话造、载入时读（同 `timed-out.txt`，进了以后以前造的会话换不了快照）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`20c5eae4`
 
 ```text
-This tool only works in a group or private chat on a messaging platform, not in this session.
+This tool works only in group or private chats on messaging platforms.
 ```
 
 #### `core/permissions/outside-workspace.txt`
 
 - 什么时候加进来：权限策略拒绝：只碰得到自己工作区的会话（外部身份的场所会话）要碰工作区外面的路径（施工 5-12）
-- token：约 22（路径按 `~/notes/a.md` 算，按 o200k 估）
-- 为什么加：告诉她哪一条、为什么，别换个说法再试，只用工作区里的；不进策略快照，这种会话造、载入时读（同 `not-in-venue.txt`）
-- 指纹：`235676a5`
+- token：TX-1 后 17（o200k 数，改前 19）；原来 约 22（路径按 `~/notes/a.md` 算，按 o200k 估）
+- 为什么加：告诉她哪一条、为什么，别换个说法再试，只用工作区里的；不进策略快照，这种会话造、载入时读（同 `not-in-venue.txt`）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`f2b2cfd9`
 
 ```text
-"{path}" is outside this chat's workspace. Here you can only use files inside it.
+"{path}" is outside this chat's workspace. Only workspace files are usable here.
 ```
 
 #### `core/permissions/no-commands.txt`
@@ -871,12 +871,12 @@ Could not read "{path}": {error}.
 #### `software/basesystem/common/bad-args.txt`
 
 - 什么时候加进来：参数不对（没写必填的这类）
-- token：约 9 加原因（估的）
-- 为什么加：同上，带上哪里不对（施工 4-4 上；4-4 下挪来，三件共用，字节没改）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 约 9 加原因（估的）
+- 为什么加：同上，带上哪里不对（施工 4-4 上；4-4 下挪来，三件共用，字节没改）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/basesystem/common/bad-glob.txt`
@@ -904,12 +904,12 @@ No files found
 #### `software/basesystem/read/more.txt`
 
 - 什么时候加进来：一次没读完
-- token：19（2026-09-30 和 `jobs/more.txt` 同一次量，字段按 `1`、`850`、`2000`、`851` 算；原来估的约 21）
-- 为什么加：调用之后才用得上的知识写进输出：下一次从哪一行接着读（施工 4-4 上）。4-4 下改成 opencode、pi 的说法 `to continue`
-- 指纹：`ea003235`
+- token：TX-1 后 18（o200k 数，改前 20）；原来 19（2026-09-30 和 `jobs/more.txt` 同一次量，字段按 `1`、`850`、`2000`、`851` 算；原来估的约 21）
+- 为什么加：调用之后才用得上的知识写进输出：下一次从哪一行接着读（施工 4-4 上）。4-4 下改成 opencode、pi 的说法 `to continue`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`dbfee64d`
 
 ```text
-(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)
+(Lines {from}-{to} of {total}. Next: offset={next}.)
 ```
 
 #### `software/basesystem/read/empty.txt`
@@ -926,34 +926,34 @@ No files found
 #### `software/basesystem/read/past-end.txt`
 
 - 什么时候加进来：`offset` 过了结尾
-- token：约 18（估的）
-- 为什么加：告诉她一共几行，好改 `offset`（施工 4-4 上）
-- 指纹：`0de3c1ae`
+- token：TX-1 后 14（o200k 数，改前 17）；原来 约 18（估的）
+- 为什么加：告诉她一共几行，好改 `offset`（施工 4-4 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`9dbd57e7`
 
 ```text
-(The file has {total} lines; offset {offset} is past the end.)
+(offset {offset} is past the file's {total} lines.)
 ```
 
 #### `software/basesystem/read/more-entries.txt`
 
 - 什么时候加进来：目录一次没列完
-- token：约 21（估的）
-- 为什么加：告诉她没列全、下一次从哪一项接着列（施工 4-4 上；4-4 下目录改成照 `offset`、`limit` 分页，和文件一样）
-- 指纹：`a11b284f`
+- token：TX-1 后 18（o200k 数，改前 20）；原来 约 21（估的）
+- 为什么加：告诉她没列全、下一次从哪一项接着列（施工 4-4 上；4-4 下目录改成照 `offset`、`limit` 分页，和文件一样）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`49a531ac`
 
 ```text
-(Showing entries {from}-{to} of {total}. Use offset={next} to continue.)
+(Entries {from}-{to} of {total}. Next: offset={next}.)
 ```
 
 #### `software/basesystem/read/past-end-entries.txt`
 
 - 什么时候加进来：读目录时 `offset` 过了结尾
-- token：约 17（估的）
-- 为什么加：告诉她一共几项，好改 `offset`（施工 4-4 下）
-- 指纹：`9f7707d2`
+- token：TX-1 后 14（o200k 数，改前 17）；原来 约 17（估的）
+- 为什么加：告诉她一共几项，好改 `offset`（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`05b0da4d`
 
 ```text
-(The directory has {total} entries; offset {offset} is past the end.)
+(offset {offset} is past the directory's {total} entries.)
 ```
 
 #### `software/basesystem/read/not-a-file.txt`
@@ -981,34 +981,34 @@ No files found
 #### `software/basesystem/read/image-too-big.txt`
 
 - 什么时候加进来：图的文件大过 5 MiB
-- token：33
-- 为什么加：读的时候就拦下太大的图：图跟着对话每次都发，被供应商拒掉的图会让这个会话以后的请求都失败；说清上限，让她先缩小（施工 4-13）
-- 指纹：`b8d728b5`
+- token：TX-1 后 27（o200k 数，改前 33）；原来 33
+- 为什么加：读的时候就拦下太大的图：图跟着对话每次都发，被供应商拒掉的图会让这个会话以后的请求都失败；说清上限，让她先缩小（施工 4-13）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`5bc66a4b`
 
 ```text
-"{path}" is {size}, too large to view. Images must be at most 5 MiB. Make a smaller copy with a command and read that.
+"{path}" is {size}, over the 5 MiB image limit. A smaller copy made with a command can be read.
 ```
 
 #### `software/basesystem/read/image-too-wide.txt`
 
 - 什么时候加进来：图的宽或者高大过 8000 像素
-- token：42
-- 为什么加：同上（施工 4-13）
-- 指纹：`620da231`
+- token：TX-1 后 35（o200k 数，改前 42）；原来 42
+- 为什么加：同上（施工 4-13）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`79305062`
 
 ```text
-"{path}" is {width}×{height} pixels, too large to view. Images must be at most 8000 pixels on each side. Make a smaller copy with a command and read that.
+"{path}" is {width}×{height} pixels, over the 8000-pixel image side limit. A smaller copy made with a command can be read.
 ```
 
 #### `software/basesystem/glob/more.txt`
 
 - 什么时候加进来：找到的超过 100 个
-- token：约 22（估的）
-- 为什么加：告诉她一共几个、还有几个没列、怎么缩小（施工 4-4 下；LIC-3 改成自己的说法：原来和 Claude Code 那一句一字不差，发布前审计 10-30）
-- 指纹：`e3311105`
+- token：TX-1 后 20（o200k 数，改前 22）；原来 约 22（估的）
+- 为什么加：告诉她一共几个、还有几个没列、怎么缩小（施工 4-4 下；LIC-3 改成自己的说法：原来和 Claude Code 那一句一字不差，发布前审计 10-30）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`c8f7760c`
 
 ```text
-({rest} more of {total} matches not listed. Use a narrower pattern or path to see them.)
+({rest} more of {total} matches not listed. A narrower pattern or path shows them.)
 ```
 
 #### `software/basesystem/glob/not-a-directory.txt`
@@ -1036,34 +1036,34 @@ No matches found
 #### `software/basesystem/grep/more-files.txt`
 
 - 什么时候加进来：只列文件、计数时多过 `head_limit`
-- token：约 21（估的）
-- 为什么加：一共几条、下一次从哪接（施工 4-4 下）
-- 指纹：`fd5b5a48`
+- token：TX-1 后 18（o200k 数，改前 20）；原来 约 21（估的）
+- 为什么加：一共几条、下一次从哪接（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`0a7be32b`
 
 ```text
-(Showing files {from}-{to} of {total}. Use offset={next} to continue.)
+(Files {from}-{to} of {total}. Next: offset={next}.)
 ```
 
 #### `software/basesystem/grep/more-matches.txt`
 
 - 什么时候加进来：列匹配的行时多过 `head_limit`
-- token：约 21（估的）
-- 为什么加：后面还有、下一次从哪接；搜够数就停，不数一共几条（施工 4-4 下）
-- 指纹：`8ec94ba6`
+- token：TX-1 后 17（o200k 数，改前 20）；原来 约 21（估的）
+- 为什么加：后面还有、下一次从哪接；搜够数就停，不数一共几条（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`007fa545`
 
 ```text
-(Showing matches {from}-{to}; there are more. Use offset={next} to continue.)
+(Matches {from}-{to}, more remain. Next: offset={next}.)
 ```
 
 #### `software/basesystem/grep/past-end.txt`
 
 - 什么时候加进来：`offset` 把结果全跳过了
-- token：约 17（估的）
-- 为什么加：告诉她一共几条，好改 `offset`（施工 4-4 下）
-- 指纹：`e73a3b4f`
+- token：TX-1 后 11（o200k 数，改前 17）；原来 约 17（估的）
+- 为什么加：告诉她一共几条，好改 `offset`（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`48133680`
 
 ```text
-(There are only {total} results; offset {offset} skips them all.)
+(offset {offset} skips all {total} results.)
 ```
 
 #### `software/basesystem/grep/bad-pattern.txt`
@@ -1113,23 +1113,23 @@ Edited "{path}".
 #### `software/basesystem/edit/no-edits.txt`
 
 - 什么时候加进来：一处要改的都没给
-- token：约 15（估的）
-- 为什么加：告诉她 `edits` 怎么写
-- 指纹：`69270c09`
+- token：TX-1 后 5（o200k 数，改前 16）；原来 约 15（估的）
+- 为什么加：告诉她 `edits` 怎么写。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`b0835639`
 
 ```text
-No edits were given. Set edits, each with old_string and new_string.
+No edits were given.
 ```
 
 #### `software/basesystem/edit/empty.txt`
 
 - 什么时候加进来：某一处的 `old_string` 是空的
-- token：约 15（估的）
-- 为什么加：新建文件要用 `write`，说清楚她好改
-- 指纹：`fe660fea`
+- token：TX-1 后 13（o200k 数，改前 17）；原来 约 15（估的）
+- 为什么加：新建文件要用 `write`，说清楚她好改。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ade08fcf`
 
 ```text
-Edit {index}: old_string is empty. To create a file, use write.
+Edit {index}: old_string is empty. write creates files.
 ```
 
 #### `software/basesystem/edit/same.txt`
@@ -1179,23 +1179,23 @@ Edit {index}: old_string matches {count} places in "{path}", at lines {lines}. A
 #### `software/basesystem/edit/overlap.txt`
 
 - 什么时候加进来：两处重叠了
-- token：约 17（估的）
-- 为什么加：说是哪两处，让她并成一处
-- 指纹：`75da2792`
+- token：TX-1 后 15（o200k 数，改前 20）；原来 约 17（估的）
+- 为什么加：说是哪两处，让她并成一处。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`9b60ce69`
 
 ```text
-Edits {first} and {second} overlap in "{path}". Merge them into one edit.
+Edits {first} and {second} overlap in "{path}".
 ```
 
 #### `software/basesystem/edit/not-text.txt`
 
 - 什么时候加进来：不是 UTF-8、也不是带 BOM 的 UTF-16
-- token：约 17（估的）
-- 为什么加：解不开的字节改完写回去就坏了：告诉她整份写用 `write`
-- 指纹：`aeca1480`
+- token：TX-1 后 20（o200k 数，改前 22）；原来 约 17（估的）
+- 为什么加：解不开的字节改完写回去就坏了：告诉她整份写用 `write`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`edb81cfd`
 
 ```text
-"{path}" is not UTF-8 or UTF-16 text. To replace it whole, use write.
+"{path}" is not UTF-8 or UTF-16 text. write can replace it whole.
 ```
 
 #### `software/basesystem/edit/indented.txt`
@@ -1322,34 +1322,34 @@ Killed by signal {signal}
 #### `software/basesystem/shell/timed-out.txt`
 
 - 什么时候加进来：到时整组杀掉了
-- token：约 30（估的）
-- 为什么加：说清是超时停的、要多久可以写多大的 `timeout`：调用之后才用得上的知识写进输出
-- 指纹：`27d6f39a`
+- token：TX-1 后 17（o200k 数，改前 29）；原来 约 30（估的）
+- 为什么加：说清是超时停的、要多久可以写多大的 `timeout`：调用之后才用得上的知识写进输出。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ad0897cc`
 
 ```text
-Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.
+Stopped at the {timeout} ms timeout. timeout can go up to {max}.
 ```
 
 #### `software/basesystem/shell/chromium-sandbox.txt`
 
 - 什么时候加进来：命令失败、输出里有 chromium 自己那层沙盒、资料目录、crash 上报起不来的原话（施工 SB-1、SB-1 修二，`shell/results.rs` 的 `CHROMIUM_SIGNS`），接在结果末尾
-- token：约 50（估的）
-- 为什么加：2026-10-23 项目主人定，同 Claude Code：沙盒里 chromium 要 `--no-sandbox --user-data-dir=<临时目录>`，外层沙盒还在、内层多余；SB-1 修二（主人验收撞见）：`~/.config/chromium` 被沙盒藏成只读的空目录，crashpad 建不了库就把主进程带崩，主会话定只在这一条命令前加 `XDG_CONFIG_HOME=<临时目录>`，不改挂载、不改全局。只有撞上才花 token，不进 `shell` 的说明
-- 指纹：`c20feeb3`
+- token：TX-1 后 54（o200k 数，改前 54）；原来 约 50（估的）
+- 为什么加：2026-10-23 项目主人定，同 Claude Code：沙盒里 chromium 要 `--no-sandbox --user-data-dir=<临时目录>`，外层沙盒还在、内层多余；SB-1 修二（主人验收撞见）：`~/.config/chromium` 被沙盒藏成只读的空目录，crashpad 建不了库就把主进程带崩，主会话定只在这一条命令前加 `XDG_CONFIG_HOME=<临时目录>`，不改挂载、不改全局。只有撞上才花 token，不进 `shell` 的说明。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`1807379f`
 
 ```text
-Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it; run it as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.
+Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it. It runs as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.
 ```
 
 #### `software/basesystem/shell/firefox-screenshot.txt`
 
 - 什么时候加进来：命令里调了 firefox、`--screenshot` 写的是相对路径（或者没写路径）（施工 SB-1 修，`shell/results.rs` 的 `relative_screenshot`），接在结果末尾，跑成没跑成都接
-- token：约 35（估的）
-- 为什么加：2026-10-23 项目主人验收撞见：firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0，比报错还糟；沙盒外一样，修不了 firefox，只能告诉她写绝对路径。只有撞上才花 token
-- 指纹：`7c5d6079`
+- token：TX-1 后 34（o200k 数，改前 35）；原来 约 35（估的）
+- 为什么加：2026-10-23 项目主人验收撞见：firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0，比报错还糟；沙盒外一样，修不了 firefox，只能告诉她写绝对路径。只有撞上才花 token。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`816930c0`
 
 ```text
-Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error; give it an absolute path, such as "$PWD/shot.png".
+Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error. An absolute path such as "$PWD/shot.png" works.
 ```
 
 #### `software/basesystem/shell/omitted.txt`
@@ -1366,12 +1366,12 @@ Firefox switches to / before it writes --screenshot, so a relative path is dropp
 #### `software/basesystem/shell/truncated.txt`
 
 - 什么时候加进来：同上，末尾那一句
-- token：约 28（估的）
-- 为什么加：照截断的规矩（`10-自带软件.md` 第十节）：显示了哪一段、一共多少、怎么看全
-- 指纹：`7b6fd4ac`
+- token：TX-1 后 24（o200k 数，改前 31）；原来 约 28（估的）
+- 为什么加：照截断的规矩（`10-自带软件.md` 第十节）：显示了哪一段、一共多少、怎么看全。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`4f22054b`
 
 ```text
-(Showed the start and the end of {total} characters. To see all of it, write the output to a file and read the file.)
+(Showed the start and end of {total} characters. Output saved to a file can be read in full.)
 ```
 
 #### `software/basesystem/shell/failed.txt`
@@ -1388,12 +1388,12 @@ Could not run {shell}: {error}.
 #### `software/basesystem/script/timed-out.txt`
 
 - 什么时候加进来：脚本到了开头写的秒数、整组杀掉了（施工 X-12 上；字段按 `60` 填）
-- token：15（2026-10-12 照开发端点量）
-- 为什么加：说清是超时停的；脚本的超时是作者写死的，不像 `shell` 能叫她写大一点，所以不提 `timeout`
-- 指纹：`071c142f`
+- token：TX-1 后 12（o200k 数，改前 13）；原来 15（2026-10-12 照开发端点量）
+- 为什么加：说清是超时停的；脚本的超时是作者写死的，不像 `shell` 能叫她写大一点，所以不提 `timeout`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`c7946a12`
 
 ```text
-Stopped after {seconds} s because the script took too long.
+Stopped at the script's {seconds} s time limit.
 ```
 
 #### `software/basesystem/script/failed.txt`
@@ -1410,12 +1410,12 @@ Could not run {name}: {error}.
 #### `software/basesystem/shell/no-background.txt`
 
 - 什么时候加进来：写了 `run_in_background: true`，这次调用却没有任务端口（会话外面的调用，例如测试；会话里总有）
-- token：25
-- 为什么加：告诉她在前台跑、慢的放宽 `timeout`。施工 7-3 起会话里放得到后台，`yet` 改成 `here`（2026-09-30 量）
-- 指纹：`5a85e7d4`
+- token：TX-1 后 18（o200k 数，改前 25）；原来 25
+- 为什么加：告诉她在前台跑、慢的放宽 `timeout`。施工 7-3 起会话里放得到后台，`yet` 改成 `here`（2026-09-30 量）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`474988ba`
 
 ```text
-Running in the background is not available here. Run the command in the foreground, with a larger timeout if it is slow.
+Running in the background is not available here. Foreground runs can take a larger timeout.
 ```
 
 #### `software/basesystem/shell/no-sleep.txt`
@@ -1432,23 +1432,23 @@ Foreground sleep is not allowed. Background jobs report back when they finish.
 #### `software/basesystem/shell/hazard.txt`
 
 - 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面七份之一，第七份施工 5-17 三补）
-- token：整句 22 到 25，模板 20（2026-10-20 量）
-- 为什么加：拒了要告诉她为什么、换个办法：不说的话她会换个写法再试同一件事；说「never allowed」免得她以为点了就行
-- 指纹：`ab1a4c44`
+- token：TX-1 后 13（o200k 数，改前 19）；原来 整句 22 到 25，模板 20（2026-10-20 量）
+- 为什么加：拒了要告诉她为什么、换个办法：不说的话她会换个写法再试同一件事；说「never allowed」免得她以为点了就行。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`3bb44575`
 
 ```text
-Not run: this command {reason}. That is never allowed, so do it another way.
+Not run: this command {reason}, which is never allowed.
 ```
 
 #### `software/basesystem/shell/started.txt`
 
 - 什么时候加进来：放到后台了，调用当场返回
-- token：22（`{job}` 按 `j1` 算）
-- 为什么加：她要知道编号、不用等也不用去查（结束了回报自己来，`agents.md` 第三条），和看输出的路；标题是她自己写的，不重复（施工 7-3，照 Claude Code 后台命令的回执）
-- 指纹：`64203e85`
+- token：TX-1 后 20（o200k 数，改前 23）；原来 22（`{job}` 按 `j1` 算）
+- 为什么加：她要知道编号、不用等也不用去查（结束了回报自己来，`agents.md` 第三条），和看输出的路；标题是她自己写的，不重复（施工 7-3，照 Claude Code 后台命令的回执）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`f80db4e9`
 
 ```text
-Started {job} in the background. You will be told when it ends. Read its output with jobs output.
+Started {job} in the background. Its end is reported automatically. jobs output shows its output.
 ```
 
 #### `software/basesystem/history/none.txt`
@@ -1465,45 +1465,45 @@ No entries found
 #### `software/basesystem/history/more-found.txt`
 
 - 什么时候加进来：「找」命中的多过这一页
-- token：18（2026-09-29 量）
-- 为什么加：一共几条、往前翻从哪接（`to` 是这一页最早那一条的前一条，施工 6-4）
-- 指纹：`c76053e0`
+- token：TX-1 后 16（o200k 数，改前 21）；原来 18（2026-09-29 量）
+- 为什么加：一共几条、往前翻从哪接（`to` 是这一页最早那一条的前一条，施工 6-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`c807c354`
 
 ```text
-(Showing {shown} of {total} results. Use to={next} to see older ones.)
+({shown} of {total} results. Older: to={next}.)
 ```
 
 #### `software/basesystem/history/more-read.txt`
 
 - 什么时候加进来：「读」这一页后面还有
-- token：15（2026-09-29 量）
-- 为什么加：这一页是第几到第几条、往下从哪接（施工 6-4）
-- 指纹：`580bd2f2`
+- token：TX-1 后 14（o200k 数，改前 16）；原来 15（2026-09-29 量）
+- 为什么加：这一页是第几到第几条、往下从哪接（施工 6-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`81609352`
 
 ```text
-(Showing entries {first}-{last}. Use from={next} to continue.)
+(Entries {first}-{last}. Next: from={next}.)
 ```
 
 #### `software/basesystem/history/cut.txt`
 
 - 什么时候加进来：一条就超过整页的上限，截掉的那一条末尾
-- token：13（2026-09-29 量）
-- 为什么加：说清这一条截了、一共多少字（施工 6-4）
-- 指纹：`0bbec816`
+- token：TX-1 后 13（o200k 数，改前 15）；原来 13（2026-09-29 量）
+- 为什么加：说清这一条截了、一共多少字（施工 6-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`dffd485e`
 
 ```text
-(This entry is cut at {shown} of its {total} characters.)
+(Entry cut at {shown} of {total} characters.)
 ```
 
 #### `software/basesystem/history/bad-time.txt`
 
 - 什么时候加进来：`since`、`until` 写得不对
-- token：34（2026-09-29 量）
-- 为什么加：带上正确的写法，她下一次照着写（施工 6-4）
-- 指纹：`53f79d4f`
+- token：TX-1 后 30（o200k 数，改前 33）；原来 34（2026-09-29 量）
+- 为什么加：带上正确的写法，她下一次照着写（施工 6-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`d2449bd1`
 
 ```text
-"{value}" is not a time. Write it like 2026-09-29 14:00, or just 2026-09-29.
+"{value}" is not a time. Formats: 2026-09-29 14:00 or 2026-09-29.
 ```
 
 #### `software/basesystem/history/no-log.txt`
@@ -1630,12 +1630,12 @@ The subagent could not be started.
 #### `software/basesystem/agent/no-fork.txt`
 
 - 什么时候加进来：fork 出来的子代理又调 `subagent` 写了 `fork`（施工 A-F 中）
-- token：12（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`not-started` 那一句同样量是 9）
-- 为什么加：fork 出来的工具面照父会话的，`subagent` 还在（前缀要一样），再 fork 只能调用时拒；说清不能再 fork、自己做（核心主会话 2026-10-24 定 fork 出来的不能再 fork）
-- 指纹：`bcbc27b1`
+- token：TX-1 后 6（o200k 数，改前 11）；原来 12（2026-10-24 照项目主人给的端点量：接在 `hi` 和一个换行后面；`not-started` 那一句同样量是 9）
+- 为什么加：fork 出来的工具面照父会话的，`subagent` 还在（前缀要一样），再 fork 只能调用时拒；说清不能再 fork、自己做（核心主会话 2026-10-24 定 fork 出来的不能再 fork）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`31278f2f`
 
 ```text
-A fork cannot fork again. Do the work yourself.
+A fork cannot fork again.
 ```
 
 #### `software/basesystem/jobs/listed.txt`
@@ -1696,23 +1696,23 @@ Stopped {job}.
 #### `software/basesystem/jobs/more.txt`
 
 - 什么时候加进来：`output`：这一页后面还有
-- token：19（字段按 `1`、`850`、`2000`、`851` 算，2026-09-30 量）
-- 为什么加：调用之后才用得上的知识写进输出：往下从哪接，和 `read/more.txt` 一字不差（施工 7-4）
-- 指纹：`ea003235`
+- token：TX-1 后 18（o200k 数，改前 20）；原来 19（字段按 `1`、`850`、`2000`、`851` 算，2026-09-30 量）
+- 为什么加：调用之后才用得上的知识写进输出：往下从哪接，和 `read/more.txt` 一字不差（施工 7-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`dbfee64d`
 
 ```text
-(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)
+(Lines {from}-{to} of {total}. Next: offset={next}.)
 ```
 
 #### `software/basesystem/jobs/past-end.txt`
 
 - 什么时候加进来：`output`：`offset` 过了结尾
-- token：15（字段按 `2`、`3` 算，2026-09-30 量）
-- 为什么加：告诉她一共几行，好改 `offset`，照 `read/past-end.txt`（施工 7-4）
-- 指纹：`595f147d`
+- token：TX-1 后 14（o200k 数，改前 17）；原来 15（字段按 `2`、`3` 算，2026-09-30 量）
+- 为什么加：告诉她一共几行，好改 `offset`，照 `read/past-end.txt`（施工 7-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ac179637`
 
 ```text
-(The output has {total} lines; offset {offset} is past the end.)
+(offset {offset} is past the output's {total} lines.)
 ```
 
 #### `software/basesystem/jobs/empty.txt`
@@ -1740,12 +1740,12 @@ No output.
 #### `software/basesystem/jobs/using.txt`
 
 - 什么时候加进来：`output`：子代理还在跑、这一步在跑工具，接在它最近的回答后面
-- token：14（字段按 `j2`、`read, grep` 算，2026-09-30 量）
-- 为什么加：「这一轮在做什么」（施工单）：最近的回答说了打算，在跑的工具说了做到哪（施工 7-4）
-- 指纹：`f3bce389`
+- token：TX-1 后 12（o200k 数，改前 15）；原来 14（字段按 `j2`、`read, grep` 算，2026-09-30 量）
+- 为什么加：「这一轮在做什么」（施工单）：最近的回答说了打算，在跑的工具说了做到哪（施工 7-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`dba58e1e`
 
 ```text
-({job} is still running. It is using {tools} now.)
+({job} is still running, using {tools}.)
 ```
 
 #### `software/basesystem/send_message/sent.txt`
@@ -1762,12 +1762,12 @@ Message sent to {to}.
 #### `software/basesystem/send_message/held.txt`
 
 - 什么时候加进来：送到了，对方是没人看着的一次性会话
-- token：26（2026-10-01 主会话量，开发端点的 `deepseek-v4.1-flash`，`{to}` 按 `22334455`，带行尾换行）
-- 为什么加：不是出错：话记下了，等人接着说时才一起看到，不是没送到（施工 C-5，`cross-session.md` 第三条第 4 款）
-- 指纹：`c39e1724`
+- token：TX-1 后 22（o200k 数，改前 24）；原来 26（2026-10-01 主会话量，开发端点的 `deepseek-v4.1-flash`，`{to}` 按 `22334455`，带行尾换行）
+- 为什么加：不是出错：话记下了，等人接着说时才一起看到，不是没送到（施工 C-5，`cross-session.md` 第三条第 4 款）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`2b40a48b`
 
 ```text
-Message saved for {to}. Nobody is watching that one-shot session, so it reads this only when someone continues it.
+Message saved for {to}, an unwatched one-shot session. It reads this only when someone continues it.
 ```
 
 #### `software/basesystem/send_message/no-parent.txt`
@@ -1861,12 +1861,12 @@ This session cannot message or watch other sessions.
 #### `software/basesystem/send_message/too-long.txt`
 
 - 什么时候加进来：`message` 超过 `peers.message_chars`（100000 个字）
-- token：21（`chars` 120000、`limit` 100000）
-- 为什么加：说清上限，好改短一点；发出去之前拒，父子之间的留言也照它（施工 C-5，`cross-session.md` 第五条第 4 款）
-- 指纹：`ccc6bacc`
+- token：TX-1 后 15（o200k 数，改前 20）；原来 21（`chars` 120000、`limit` 100000）
+- 为什么加：说清上限，好改短一点；发出去之前拒，父子之间的留言也照它（施工 C-5，`cross-session.md` 第五条第 4 款）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`340d603e`
 
 ```text
-The message has {chars} characters, over the limit of {limit}. Send a shorter one.
+The message has {chars} characters, over the limit of {limit}.
 ```
 
 #### `software/basesystem/send_message/too-many.txt`
@@ -1894,12 +1894,12 @@ Too many messages to {to} just now. Put the rest into one message and send it la
 #### `software/basesystem/send_message/inbox-full.txt`
 
 - 什么时候加进来：对方还没听到的别的会话的话到了上限
-- token：18
-- 为什么加：说清楚该怎么办：等对方看过再发（施工 C-5，`cross-session.md` 第五条第 3 款）
-- 指纹：`3a51c72d`
+- token：TX-1 后 17（o200k 数，改前 17）；原来 18
+- 为什么加：说清楚该怎么办：等对方看过再发（施工 C-5，`cross-session.md` 第五条第 3 款）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`eb9eac1c`
 
 ```text
-{to} has too many unread messages. Send again after it has read them.
+{to} has too many unread messages. Sending works again once it reads them.
 ```
 
 #### `software/basesystem/send_message/watching.txt`
@@ -1982,12 +1982,12 @@ You are session {id}.
 #### `software/basesystem/sessions/more.txt`
 
 - 什么时候加进来：`sessions`：这一页后面还有
-- token：18（字段按 `1`、`20`、`25`、`20` 算，2026-10-01 量）
-- 为什么加：调用之后才用得上的知识写进输出：往下从哪接（施工 C-3）
-- 指纹：`2a3cf943`
+- token：TX-1 后 16（o200k 数，改前 20）；原来 18（字段按 `1`、`20`、`25`、`20` 算，2026-10-01 量）
+- 为什么加：调用之后才用得上的知识写进输出：往下从哪接（施工 C-3）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`fc7b4ade`
 
 ```text
-(Showing {from}-{to} of {total}. Use offset={next} to see more.)
+({from}-{to} of {total}. Next: offset={next}.)
 ```
 
 #### `software/basesystem/sessions/none.txt`
@@ -2004,12 +2004,12 @@ You have no other sessions.
 #### `software/basesystem/sessions/past-end.txt`
 
 - 什么时候加进来：`sessions`：`offset` 过了结尾
-- token：16（字段按 `5`、`5` 算，2026-10-01 量）
-- 为什么加：告诉她一共几个，好改 `offset`，照 `jobs/past-end.txt`（施工 C-3）
-- 指纹：`4a11103e`
+- token：TX-1 后 13（o200k 数，改前 18）；原来 16（字段按 `5`、`5` 算，2026-10-01 量）
+- 为什么加：告诉她一共几个，好改 `offset`，照 `jobs/past-end.txt`（施工 C-3）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`55650de2`
 
 ```text
-(You have {total} other sessions. Offset {offset} is past the end.)
+(offset {offset} is past your {total} other sessions.)
 ```
 
 #### `software/basesystem/sessions/failed.txt`
@@ -2422,12 +2422,12 @@ Go on with these answers in mind.
 #### `software/basesystem/ask_user/unattended.txt`
 
 - 什么时候加进来：`ask_user`：这个会话没人能回答（工具面上本来就不给，兜底）
-- token：14（2026-10-07 量）
-- 为什么加：每次调用都要有结果；告诉她改在回复里问（`11-权限与沙盒.md` A11 的说法），施工 D-2
-- 指纹：`482ecb6c`
+- token：TX-1 后 7（o200k 数，改前 13）；原来 14（2026-10-07 量）
+- 为什么加：每次调用都要有结果；告诉她改在回复里问（`11-权限与沙盒.md` A11 的说法），施工 D-2。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`49712a37`
 
 ```text
-No one can answer questions here. Ask in your reply instead.
+No one can answer questions here.
 ```
 
 #### `software/basesystem/todowrite/updated.txt`
@@ -2444,23 +2444,23 @@ Todo list updated: {done} of {total} done.
 #### `software/basesystem/todowrite/cleared.txt`
 
 - 什么时候加进来：`todowrite`：全部做完（连同空的）
-- token：11（2026-10-07 量）
-- 为什么加：全部做完的清空（照 Claude Code），告诉她清了，下一次从空的写起（施工 D-3）
-- 指纹：`71fd595f`
+- token：TX-1 后 7（o200k 数，改前 10）；原来 11（2026-10-07 量）
+- 为什么加：全部做完的清空（照 Claude Code），告诉她清了，下一次从空的写起（施工 D-3）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ac8768b7`
 
 ```text
-All todos are done. The list is cleared.
+All todos done. List cleared.
 ```
 
 #### `software/memory/common/bad-args.txt`
 
 - 什么时候加进来：三件的参数读不懂（字段按 ``missing field `text` `` 填）
-- token：11（2026-10-07 量）
-- 为什么加：照基础系统 `common/bad-args.txt` 的说法：说清哪里不对，她下一次改（施工 R-3 中）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 11（2026-10-07 量）
+- 为什么加：照基础系统 `common/bad-args.txt` 的说法：说清哪里不对，她下一次改（施工 R-3 中）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/memory/common/off.txt`
@@ -2532,34 +2532,34 @@ Saved as {id}, replacing {old}.
 #### `software/memory/remember/too-long.txt`
 
 - 什么时候加进来：`remember` 超过 120 字（字段按 `135`、`120` 填）
-- token：13（2026-10-07 量）
-- 为什么加：一条一句，旧版实测超长的多半是技术问答全文（调研第一节第 1 个坑）（施工 R-3 中）
-- 指纹：`e9a6378b`
+- token：TX-1 后 14（o200k 数，改前 14）；原来 13（2026-10-07 量）
+- 为什么加：一条一句，旧版实测超长的多半是技术问答全文（调研第一节第 1 个坑）（施工 R-3 中）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`14910e8d`
 
 ```text
-That is {chars} characters; keep a memory under {limit}.
+That is {chars} characters, over the {limit} limit.
 ```
 
 #### `software/memory/remember/unknown-class.txt`
 
 - 什么时候加进来：`remember` 的类不是四类之一（字段按 `mood` 填）
-- token：13（2026-10-07 量；施工 E-1 上多列 `person`，2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量 15 → 17）
-- 为什么加：参数格式里有 `enum`，模型照样可能写别的：说清能写哪几类（施工 R-3 中；E-1 上起五类）
-- 指纹：`547e043f`
+- token：TX-1 后 17（o200k 数，改前 16）；原来 13（2026-10-07 量；施工 E-1 上多列 `person`，2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量 15 → 17）
+- 为什么加：参数格式里有 `enum`，模型照样可能写别的：说清能写哪几类（施工 R-3 中；E-1 上起五类）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`5594ab10`
 
 ```text
-Unknown class {class}; use user, feedback, episode, reference or person.
+Unknown class {class}. Classes are user, feedback, episode, reference, person.
 ```
 
 #### `software/memory/remember/no-who.txt`
 
 - 什么时候加进来：`remember` 新记的 `person` 没写 `who`
-- token：28（2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量）
-- 为什么加：认识的人要知道是谁才合得成卡、认得出（施工 E-1 上，设计 42）；说清写在哪、写名字还是平台编号
-- 指纹：`2e6e2b45`
+- token：TX-1 后 20（o200k 数，改前 26）；原来 28（2026-10-21 照 magpie 网关的 `group/auto-deepseek-v4-1-flash` 量）
+- 为什么加：认识的人要知道是谁才合得成卡、认得出（施工 E-1 上，设计 42）；说清写在哪、写名字还是平台编号。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`0fae9668`
 
 ```text
-Say who this person memory is about in who: their name, or their id like qq:10086 when you see one.
+A person memory needs who: their name, or an id like qq:10086 when known.
 ```
 
 #### `software/memory/forget/retired.txt`
@@ -2631,12 +2631,12 @@ Nothing found.
 #### `software/goal/common/bad-args.txt`
 
 - 什么时候加进来：`goal` 的参数读不懂（字段按 ``missing field `objective` `` 填）
-- token：10（2026-10-12 量）
-- 为什么加：照记忆的 `common/bad-args.txt`，字节一样（施工 X-8 上）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-12 量）
+- 为什么加：照记忆的 `common/bad-args.txt`，字节一样（施工 X-8 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/goal/common/off.txt`
@@ -2687,23 +2687,23 @@ Blocked: {reason}
 #### `software/goal/goal/set.txt`
 
 - 什么时候加进来：`set` 成了
-- token：19（2026-10-12 量）
-- 为什么加：说清设了以后会怎样：闲着就自己开下一轮（施工 X-8 上）
-- 指纹：`9af285ec`
+- token：TX-1 后 16（o200k 数，改前 18）；原来 19（2026-10-12 量）
+- 为什么加：说清设了以后会怎样：闲着就自己开下一轮（施工 X-8 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`35ca972c`
 
 ```text
-Goal set. From now on a new round starts by itself whenever the session is idle.
+Goal set. A new round now starts by itself whenever the session is idle.
 ```
 
 #### `software/goal/goal/exists.txt`
 
 - 什么时候加进来：`set` 时已经有一个（内核拒 `goal_exists`）
-- token：26（2026-10-12 量）
-- 为什么加：改、停、清掉只走 `/goal`（`goal.md`「定了的」第 1 条）：告诉她只有人能改，免得她反复试（施工 X-8 上）
-- 指纹：`7bac7bdb`
+- token：TX-1 后 24（o200k 数，改前 25）；原来 26（2026-10-12 量）
+- 为什么加：改、停、清掉只走 `/goal`（`goal.md`「定了的」第 1 条）：告诉她只有人能改，免得她反复试（施工 X-8 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`c34da509`
 
 ```text
-A goal is already set. Read it with action get. Only the user can change or clear it, with /goal.
+A goal is already set, readable with action get. Only the user can change or clear it, with /goal.
 ```
 
 #### `software/goal/goal/completed.txt`
@@ -2731,12 +2731,12 @@ Goal marked blocked.
 #### `software/goal/goal/too-early.txt`
 
 - 什么时候加进来：续轮开的那一轮里报卡住，目标开过的轮数不到 3（字段按 `1`、`3` 填）
-- token：28（2026-10-12 量）
-- 为什么加：报卡住要先做满 3 轮（`goal.md`「照旧版留下的」第 3 条）：不然第一轮遇到点麻烦就收工；规矩写在拒的结果里，不写进说明（施工 X-8 上）
-- 指纹：`48daffd8`
+- token：TX-1 后 21（o200k 数，改前 27）；原来 28（2026-10-12 量）
+- 为什么加：报卡住要先做满 3 轮（`goal.md`「照旧版留下的」第 3 条）：不然第一轮遇到点麻烦就收工；规矩写在拒的结果里，不写进说明（施工 X-8 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`00061fee`
 
 ```text
-Not marked blocked: this is round {round}, and blocked needs at least {least} goal rounds. Make another concrete step first.
+Not marked blocked: this is round {round}, and blocked needs at least {least} goal rounds.
 ```
 
 #### `software/goal/goal/failed.txt`
@@ -2782,12 +2782,12 @@ The goal is marked blocked and this autonomous run is ending. Write the closing 
 #### `software/schedule/common/bad-args.txt`
 
 - 什么时候加进来：`cron_*` 的参数读不出来、`prompt` 是空的
-- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：说清哪里不对（施工 J-2），同 `goal`
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：说清哪里不对（施工 J-2），同 `goal`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/schedule/common/off.txt`
@@ -2815,12 +2815,12 @@ Scheduled {id}. Next run: {next}.
 #### `software/schedule/cron/full.txt`
 
 - 什么时候加进来：她在这个会话里已经挂满 20 个（设计 45 第三节第 3 条）
-- token：17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：上限写在报错里，不写进说明（施工 J-2），叫她先删
-- 指纹：`70995250`
+- token：TX-1 后 15（o200k 数，改前 16）；原来 17（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：上限写在报错里，不写进说明（施工 J-2），叫她先删。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`9f0c309a`
 
 ```text
-This session already has {limit} jobs. Delete one with cron_delete first.
+This session already has {limit} jobs. cron_delete frees a slot.
 ```
 
 #### `software/schedule/cron/all-full.txt`
@@ -2892,12 +2892,12 @@ No jobs are scheduled in this session.
 #### `software/loop/common/bad-args.txt`
 
 - 什么时候加进来：`schedule_wakeup` 的参数读不出来
-- token：10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
-- 为什么加：同上
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 10（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量）
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/loop/common/off.txt`
@@ -2958,12 +2958,12 @@ delay_seconds is required unless stop is true.
 #### `software/knowledge/common/bad-args.txt`
 
 - 什么时候加进来：两件的参数读不懂（字段按 ``missing field `path` at line 1 column 14`` 填）
-- token：19（2026-10-12 量）
-- 为什么加：照记忆的 `common/bad-args.txt`：说清哪里不对，她下一次改（施工 K-1 下）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 19（2026-10-12 量）
+- 为什么加：照记忆的 `common/bad-args.txt`：说清哪里不对，她下一次改（施工 K-1 下）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/knowledge/common/off.txt`
@@ -3134,12 +3134,12 @@ Moved {path} in {kb} to the trash.
 #### `software/knowledge/common/exists.txt`
 
 - 什么时候加进来：`kb_save` 新建的那一篇已经有了（字段按 `notes`、`grammar.md` 填）
-- token：16（2026-10-12 量）
-- 为什么加：不盖掉人写的：说清用 `append` 或 `kb_edit`（施工 K-3）
-- 指纹：`672c5b66`
+- token：TX-1 后 16（o200k 数，改前 16）；原来 16（2026-10-12 量）
+- 为什么加：不盖掉人写的：说清用 `append` 或 `kb_edit`（施工 K-3）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`069c5e5c`
 
 ```text
-{path} already exists in {kb}. Use append, or kb_edit.
+{path} already exists in {kb}. append and kb_edit change it.
 ```
 
 #### `software/knowledge/common/too-large.txt`
@@ -3189,34 +3189,34 @@ Could not move {path} to the trash: {error}.
 #### `software/knowledge/common/bad-id.txt`
 
 - 什么时候加进来：`kb_save` 要建的库编号不合写法（字段按 `个人备忘` 填）
-- token：24（2026-10-12 量）
-- 为什么加：说清编号怎么写：R-9 真跑时她把编号写成中文，听到「没有这个库」又试了两次才换（施工 K-3 补）
-- 指纹：`dc477708`
+- token：TX-1 后 25（o200k 数，改前 25）；原来 24（2026-10-12 量）
+- 为什么加：说清编号怎么写：R-9 真跑时她把编号写成中文，听到「没有这个库」又试了两次才换（施工 K-3 补）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`50fbf281`
 
 ```text
-{kb} is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.
+{kb} is not a valid knowledge base id (lowercase letters, digits, - and _, starting with a letter).
 ```
 
 #### `software/knowledge/common/read-only.txt`
 
 - 什么时候加进来：`kb_save`、`kb_edit`、`kb_delete` 写到挂进来的库（字段按 `notes` 填）
-- token：15（2026-10-12 量）
-- 为什么加：挂进来的只读（19 N7）：说清写到别的库里（施工 K-4）
-- 指纹：`27cc421f`
+- token：TX-1 后 11（o200k 数，改前 17）；原来 15（2026-10-12 量）
+- 为什么加：挂进来的只读（19 N7）：说清写到别的库里（施工 K-4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`05c87a2b`
 
 ```text
-{kb} is a mounted folder and read-only. Save to another knowledge base.
+{kb} is a mounted folder and read-only.
 ```
 
 #### `software/knowledge/common/packaged.txt`
 
 - 什么时候加进来：`kb_save`、`kb_edit`、`kb_delete` 写到软件包带来的库（字段按 `notes` 填）
-- token：16（2026-10-13 量）
-- 为什么加：包里的库只读（施工 K-8，项目主人 2026-10-13 定）：同挂进来的那一句，说清是随包来的、写到别的库里
-- 指纹：`c11b044f`
+- token：TX-1 后 12（o200k 数，改前 18）；原来 16（2026-10-13 量）
+- 为什么加：包里的库只读（施工 K-8，项目主人 2026-10-13 定）：同挂进来的那一句，说清是随包来的、写到别的库里。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`ce112457`
 
 ```text
-{kb} comes with a package and is read-only. Save to another knowledge base.
+{kb} comes with a package and is read-only.
 ```
 
 #### `software/knowledge/common/not-text.txt`
@@ -3233,12 +3233,12 @@ Could not move {path} to the trash: {error}.
 #### `software/net/web_fetch/bad-args.txt`
 
 - 什么时候加进来：`web_fetch` 参数读不懂（字段按 serde 的原话填）
-- token：11（2026-10-18 量）
-- 为什么加：一句短话，说清抓不成的原因（施工 N-1）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 11（2026-10-18 量）
+- 为什么加：一句短话，说清抓不成的原因（施工 N-1）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/net/web_fetch/blocked.txt`
@@ -3398,23 +3398,23 @@ Could not reach {url}.
 #### `software/net/web_search/bad-args.txt`
 
 - 什么时候加进来：参数读不懂、`query` 是空的
-- token：11（2026-10-18 量）
-- 为什么加：一句短话，说清搜不成的原因（施工 N-2 上）
-- 指纹：`18997814`
+- token：TX-1 后 6（o200k 数，改前 9）；原来 11（2026-10-18 量）
+- 为什么加：一句短话，说清搜不成的原因（施工 N-2 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`06985eec`
 
 ```text
-The arguments are not right: {error}.
+Bad arguments: {error}.
 ```
 
 #### `software/net/web_search/cooling.txt`
 
 - 什么时候加进来：几家都在限额的冷却里，一家都没试
-- token：14（2026-10-18 量）
-- 为什么加：说清是限额，过会儿再试，不是她写错了（施工 N-2 上）
-- 指纹：`571da876`
+- token：TX-1 后 10（o200k 数，改前 14）；原来 14（2026-10-18 量）
+- 为什么加：说清是限额，过会儿再试，不是她写错了（施工 N-2 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`1da4587b`
 
 ```text
-All web search sources are rate limited right now. Try again later.
+All web search sources are rate limited for now.
 ```
 
 #### `software/net/web_search/failed.txt`
@@ -3523,12 +3523,12 @@ Could not write "{path}": {error}.
 #### `core/drivers/tool-attachments.txt`
 
 - 什么时候加进来：工具结果里有图片、文件
-- token：12
-- 为什么加：这类接口的 tool 消息只收文字，附件挪到后面（施工 3-4 上）
-- 指纹：`e86744b4`
+- token：TX-1 后 10（o200k 数，改前 12）；原来 12
+- 为什么加：这类接口的 tool 消息只收文字，附件挪到后面（施工 3-4 上）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`3942a8ad`
 
 ```text
-These images and files were returned by the tool calls above.
+Images and files returned by the tool calls above.
 ```
 
 ### 同上
@@ -3536,12 +3536,12 @@ These images and files were returned by the tool calls above.
 #### `core/drivers/tool-attachments-only.txt`
 
 - 什么时候加进来：工具结果只有附件
-- token：15
-- 为什么加：同上
-- 指纹：`043d8e27`
+- token：TX-1 后 13（o200k 数，改前 15）；原来 15
+- 为什么加：同上。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`d3d9bd13`
 
 ```text
-The tool returned only images or files. They are in the next message.
+The tool returned only images or files, in the next message.
 ```
 
 #### `core/drivers/image-description-open-named.txt`
@@ -3709,12 +3709,12 @@ Interrupted.
 #### `software/basesystem/shell/call/not-allowed.txt`
 
 - 什么时候加进来：调的工具脚本里调不了（类别不准、`clicall` 没开，退出码 2）（施工 M-3）
-- token：39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search`、`{tools}` 按出厂五件填）
-- 为什么加：告诉她直接调，列出能调的（设计 39 第三节第 4 条：拦在内核，名单要说清）
-- 指纹：`5a82db00`
+- token：TX-1 后 26（o200k 数，改前 26）；原来 39（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search`、`{tools}` 按出厂五件填）
+- 为什么加：告诉她直接调，列出能调的（设计 39 第三节第 4 条：拦在内核，名单要说清）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`04a50291`
 
 ```text
-miyu call does not work for {name}; call it directly. Tools that work with miyu call: {tools}.
+{name} works only as a direct call, not via miyu call. Tools that work with miyu call: {tools}.
 ```
 
 #### `software/basesystem/shell/call/outside.txt`
@@ -3798,12 +3798,12 @@ Usage: miyu call <tool> --<param> <value>... | miyu call <tool> --json '<object>
 #### `software/basesystem/shell/call/version.txt`
 
 - 什么时候加进来：`miyu call` 和在跑的核心不是同一个版本（退出码 2）（施工 M-3）
-- token：21（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
-- 为什么加：告诉她用 `PATH` 最前面的那一个（设计 39 第五节第 4 条）
-- 指纹：`a624d8b4`
+- token：TX-1 后 20（o200k 数，改前 20）；原来 21（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面）
+- 为什么加：告诉她用 `PATH` 最前面的那一个（设计 39 第五节第 4 条）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`31f6944d`
 
 ```text
-This miyu does not match the running Miyu. Use the miyu found first on PATH.
+This miyu does not match the running Miyu, but the first miyu on PATH does.
 ```
 
 #### `software/basesystem/shell/hazard/delete-home.txt`
@@ -4040,12 +4040,12 @@ Run these in a shell command:
 #### `core/drivers/file-cut.txt`
 
 - 什么时候加进来：文本文件超过 64 KiB，截掉了
-- token：17
-- 为什么加：截了要写明，不然她当看到的是整份（施工 3-9 三补）
-- 指纹：`41d3a816`
+- token：TX-1 后 14（o200k 数，改前 17）；原来 17
+- 为什么加：截了要写明，不然她当看到的是整份（施工 3-9 三补）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`6c54d8f7`
 
 ```text
-Only the first {shown} of {total} bytes of this file are shown.
+Only the first {shown} of {total} bytes are shown.
 ```
 
 ### 人附的文本文件的收尾
@@ -4160,12 +4160,12 @@ Ran for {ms} ms.
 #### `core/jobs/command-output.txt`
 
 - 什么时候加进来：存下了整份输出
-- token：14（`48213`）
-- 为什么加：不带输出本身，只写有多少字、怎么看（`agents.md` 第九条第 1 条，照 Claude Code、dsh）：调用之后才用得上的知识写进输出（施工 7-2）
-- 指纹：`78b1d7b5`
+- token：TX-1 后 12（o200k 数，改前 14）；原来 14（`48213`）
+- 为什么加：不带输出本身，只写有多少字、怎么看（`agents.md` 第九条第 1 条，照 Claude Code、dsh）：调用之后才用得上的知识写进输出（施工 7-2）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`41abeb42`
 
 ```text
-The output has {chars} characters. Read it with jobs output.
+Output: {chars} characters, readable with jobs output.
 ```
 
 #### `core/jobs/command-close.txt`
@@ -4204,12 +4204,12 @@ The user also talked to this subagent during the task.
 #### `core/jobs/subagent-truncated.txt`
 
 - 什么时候加进来：正文前面一行，正文超过上限、截过头尾（`truncated`）
-- token：16
-- 为什么加：告诉她中间少了、全文怎么看（`agents.md` 第二条第 3 条，施工 7-2）
-- 指纹：`6da93049`
+- token：TX-1 后 15（o200k 数，改前 16）；原来 16
+- 为什么加：告诉她中间少了、全文怎么看（`agents.md` 第二条第 3 条，施工 7-2）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`f178360c`
 
 ```text
-The middle of this report was cut. Read all of it with jobs output.
+The middle of this report was cut. jobs output has all of it.
 ```
 
 #### `core/jobs/subagent-silent.txt`
@@ -4261,12 +4261,12 @@ Output:
 #### `core/jobs/command-tail-cut.txt`
 
 - 什么时候加进来：回报带着输出的最后一段、整份比它长（施工 7-13；`shown`、`chars` 照 `2000`、`48213` 量）
-- token：22（2026-10-20 量），后面另接最后一段（最多 2000 个字）
-- 为什么加：2026-10-20 项目主人定：「输出很少的话给一定的额度」，超出的给怎么看。说带了最后几个、一共多少、全文用 `jobs output` 读，替掉 `command-output.txt` 那一句；输出本身照原样接在后面
-- 指纹：`6b003e69`
+- token：TX-1 后 20（o200k 数，改前 21）；原来 22（2026-10-20 量），后面另接最后一段（最多 2000 个字）
+- 为什么加：2026-10-20 项目主人定：「输出很少的话给一定的额度」，超出的给怎么看。说带了最后几个、一共多少、全文用 `jobs output` 读，替掉 `command-output.txt` 那一句；输出本身照原样接在后面。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`3e5e67de`
 
 ```text
-Output, the last {shown} of {chars} characters (read all of it with jobs output):
+Output, the last {shown} of {chars} characters (all of it in jobs output):
 ```
 
 ### 人这边：任务的回报（一块带标签的事实），正文中间
@@ -4538,12 +4538,12 @@ Group messages look like [HH:MM] name (id=..., role) [msg=...]: text, with optio
 #### `core/venues/recent-omitted.txt`
 
 - 什么时候加进来：同上，又装不下全部（一块 80000 字节，从最新往前装）（施工 O-13 下）
-- token：14（`{count}` 填 12，同上）
-- 为什么加：照旧版的缺口提示：前面还有几条没放进来、用 `history` 取，不说她就当群里只聊了这几句。旧版点名的是它自己的群聊记录工具，这里换成 `history`
-- 指纹：`0bf04d70`
+- token：TX-1 后 14（o200k 数，改前 15）；原来 14（`{count}` 填 12，同上）
+- 为什么加：照旧版的缺口提示：前面还有几条没放进来、用 `history` 取，不说她就当群里只聊了这几句。旧版点名的是它自己的群聊记录工具，这里换成 `history`。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`538b9b4a`
 
 ```text
-({count} earlier messages did not fit here; fetch them with history.)
+({count} earlier messages did not fit here. history has them.)
 ```
 
 ### 人这边：群里一行的内容、私聊记号那一块，语音的记号后面空一格
@@ -4720,13 +4720,13 @@ Reply with OK.
 #### `core/mcp/list_resources.json`
 
 - 什么时候加进来：会话的工具面上有声明了 `resources` 的 MCP 服务（施工 X-41）：每个这样的服务一件 `mcp__<服务名>__list_resources`，跟着它的工具登记、预设、先加载
-- token：估 30（先加载时只有名字和说明；加载了另加参数格式估 20），合时量
-- 为什么加：列出服务开放的资料和地址模板，她才知道能读什么：两句，列什么、一次一页；一个参数一句（`mcp.md`「怎么走」第七条）
-- 指纹：`3fc4a4fc`
+- token：TX-1 后 58（o200k 数，改前 69）；原来 估 30（先加载时只有名字和说明；加载了另加参数格式估 20），合时量
+- 为什么加：列出服务开放的资料和地址模板，她才知道能读什么：两句，列什么、一次一页；一个参数一句（`mcp.md`「怎么走」第七条）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`8dec9ff7`
 
 ```json
 {
-  "description": "List the resources this MCP server offers, such as files or documents, and the URI templates you can fill in. One page at a time; pass the nextCursor it gives for the next page.",
+  "description": "List the resources this MCP server offers, such as files or documents, and the URI templates you can fill in. One page at a time.",
   "parameters": {"type":"object","properties":{"cursor":{"type":"string","description":"The nextCursor from the previous page."}}}
 }
 ```
@@ -4734,81 +4734,81 @@ Reply with OK.
 #### `core/mcp/read_resource.json`
 
 - 什么时候加进来：同上，一件 `mcp__<服务名>__read_resource`
-- token：估 30（同上，参数格式估 20），合时量
-- 为什么加：照地址读一份资料：一句，读什么、地址从哪来；一个参数一句
-- 指纹：`e7985429`
+- token：TX-1 后 49（o200k 数，改前 57）；原来 估 30（同上，参数格式估 20），合时量
+- 为什么加：照地址读一份资料：一句，读什么、地址从哪来；一个参数一句。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`965478ff`
 
 ```json
 {
   "description": "Read one of this MCP server's resources by its URI, as listed by list_resources or filled into one of its URI templates.",
-  "parameters": {"type":"object","properties":{"uri":{"type":"string","description":"The resource's URI."}},"required":["uri"]}
+  "parameters": {"type":"object","properties":{"uri":{"type":"string"}},"required":["uri"]}
 }
 ```
 
 #### `software/basesystem/tools/read.json`
 
 - 什么时候加进来：会话的工具面里有 `read`（每次请求都带）
-- token：172
-- 为什么加：`read` 的说明和参数：照 26 附录的草稿，先去掉图片、PDF；说明里给她一个用它不用 `cat` 的理由（施工 4-4 上）。4-4 下照规范改（`10-自带软件.md` 第十节）：参数改名 `file_path`，每个参数一句说明（W2 改），写明行号是 cat -n 的样子；多出来的大半是参数说明。施工 4-13 加回图片：说明里写上四种格式（PNG、JPEG、GIF、WebP），她才想得到用它看图（+13）
-- 指纹：`c6991018`
+- token：TX-1 后 78（o200k 数，改前 144）；原来 172
+- 为什么加：`read` 的说明和参数：照 26 附录的草稿，先去掉图片、PDF；说明里给她一个用它不用 `cat` 的理由（施工 4-4 上）。4-4 下照规范改（`10-自带软件.md` 第十节）：参数改名 `file_path`，每个参数一句说明（W2 改），写明行号是 cat -n 的样子；多出来的大半是参数说明。施工 4-13 加回图片：说明里写上四种格式（PNG、JPEG、GIF、WebP），她才想得到用它看图（+13）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`2cceaf19`
 
 ```json
 {
-  "description": "Read a text file or an image (PNG, JPEG, GIF, WebP), or list a directory. Lines come back in cat -n format, numbered from 1, up to 2000 at a time. Prefer this over `cat` in the shell: files read here come back after compaction.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"offset":{"type":"integer","description":"The line number to start reading from, counting from 1."},"limit":{"type":"integer","description":"The number of lines to read. Default 2000."}},"required":["file_path"]}
+  "description": "Read a text file or an image, or list a directory. Text comes back as numbered lines, at most 2000 per call.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]}
 }
 ```
 
 #### `core/drivers/placeholder-tool.txt`
 
 - 什么时候加进来：档案点名了占位工具的供应商、工具面里缺那几件的请求（施工 8-14 补）
-- token：29
-- 为什么加：Zen 免费档按客户端识别，请求体的工具面里要有 `shell` 和 `read`；缺的补一条同名占位声明，说明写明别调用（`models.md` 第八条第 2 条）。2026-10-04 照 Go 的 `deepseek-v4.1-flash` 量：`hi` 接一个换行、再接这一句是 60，基线 `hi` 是 31，这一句 29
-- 指纹：`2f762840`
+- token：TX-1 后 22（o200k 数，改前 27）；原来 29
+- 为什么加：Zen 免费档按客户端识别，请求体的工具面里要有 `shell` 和 `read`；缺的补一条同名占位声明，说明写明别调用（`models.md` 第八条第 2 条）。2026-10-04 照 Go 的 `deepseek-v4.1-flash` 量：`hi` 接一个换行、再接这一句是 60，基线 `hi` 是 31，这一句 29。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`101b4ed1`
 
 ```text
-Placeholder for a tool this client is expected to send with the request; it is not available in this session. Do not call it.
+Placeholder for a tool this client is expected to send with the request. It is not available in this session.
 ```
 
 #### `software/basesystem/tools/glob.json`
 
 - 什么时候加进来：会话的工具面里有 `glob`（每次请求都带）
-- token：117
-- 为什么加：`glob` 的说明和参数，照 Claude Code 的形状；说明里写明新的在前、最多 100 个（施工 4-4 下）
-- 指纹：`8699a5e3`
+- token：TX-1 后 81（o200k 数，改前 93）；原来 117
+- 为什么加：`glob` 的说明和参数，照 Claude Code 的形状；说明里写明新的在前、最多 100 个（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`d3a62b38`
 
 ```json
 {
-  "description": "Find files by glob pattern, like `**/*.rs` or `src/*.ts`, respecting .gitignore. Returns up to 100 paths, most recently modified first.",
-  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"The directory to search in. Default is the working directory."}},"required":["pattern"]}
+  "description": "Find files by glob pattern, like `**/*.rs`, respecting .gitignore. Returns up to 100 paths, most recently modified first.",
+  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"Default: the working directory."}},"required":["pattern"]}
 }
 ```
 
 #### `software/basesystem/tools/grep.json`
 
 - 什么时候加进来：会话的工具面里有 `grep`（每次请求都带）
-- token：289
-- 为什么加：`grep` 的说明和参数，参数照 Claude Code 常用的八个；说明里写明用它、不用 shell 里的 grep、rg；`pattern` 那一句是它说明里最容易踩的坑：花括号要转义（施工 4-4 下）
-- 指纹：`07156e14`
+- token：TX-1 后 161（o200k 数，改前 230）；原来 289
+- 为什么加：`grep` 的说明和参数，参数照 Claude Code 常用的八个；说明里写明用它、不用 shell 里的 grep、rg；`pattern` 那一句是它说明里最容易踩的坑：花括号要转义（施工 4-4 下）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`4444ddd8`
 
 ```json
 {
-  "description": "Search file contents with a regular expression (ripgrep syntax), respecting .gitignore. Prefer this over grep or rg in the shell. `output_mode` picks file paths (default), matching lines, or counts per file.",
-  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"Literal braces need escaping, like interface\\{\\}."},"path":{"type":"string","description":"The file or directory to search. Default is the working directory."},"glob":{"type":"string","description":"Searches only files matching this glob, like *.rs."},"output_mode":{"type":"string","enum":["content","files_with_matches","count"],"description":"Default files_with_matches."},"-i":{"type":"boolean","description":"Case-insensitive."},"context":{"type":"integer","description":"Lines shown before and after each match in content mode."},"head_limit":{"type":"integer","description":"Results to show at most. Default 250. 0 means no limit."},"offset":{"type":"integer","description":"Results to skip first. Default 0."}},"required":["pattern"]}
+  "description": "Search file contents with a regular expression (ripgrep syntax), respecting .gitignore.",
+  "parameters": {"type":"object","properties":{"pattern":{"type":"string","description":"Literal braces need escaping, like interface\\{\\}."},"path":{"type":"string","description":"Default: the working directory."},"glob":{"type":"string","description":"Like *.rs."},"output_mode":{"type":"string","enum":["content","files_with_matches","count"],"description":"Default files_with_matches."},"-i":{"type":"boolean"},"context":{"type":"integer","description":"Lines around each match, content mode only."},"head_limit":{"type":"integer","description":"Default 250. 0 means no limit."},"offset":{"type":"integer"}},"required":["pattern"]}
 }
 ```
 
 #### `software/basesystem/tools/history.json`
 
 - 什么时候加进来：会话的工具面里有 `history`（每次请求都带）
-- token：224（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；原来 197，多 27，就是 `session` 这一格）
-- 为什么加：`history` 的说明和参数（施工 6-4）：说明两句，是什么、压缩换出去的也找得回；参数照图纸，`limit` 只写默认值。量法同上，八件一起时的边际份量（2026-09-29 照项目主人给的端点、`deepseek-v4.1-flash` 量）。施工 C-4 加 `session`（`cross-session.md` 第二条）：写了就读别的会话的日志，不是这次调用自己的；2026-10-21 施工 M-2 补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`c26d5edf`
+- token：TX-1 后 143（o200k 数，改前 176）；原来 224（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；原来 197，多 27，就是 `session` 这一格）
+- 为什么加：`history` 的说明和参数（施工 6-4）：说明两句，是什么、压缩换出去的也找得回；参数照图纸，`limit` 只写默认值。量法同上，八件一起时的边际份量（2026-09-29 照项目主人给的端点、`deepseek-v4.1-flash` 量）。施工 C-4 加 `session`（`cross-session.md` 第二条）：写了就读别的会话的日志，不是这次调用自己的；2026-10-21 施工 M-2 补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`2e8b4c5b`
 
 ```json
 {
   "description": "Search or read back earlier parts of this conversation, including what compaction moved out of context. Entries are numbered in log order.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Words to look for. Without it, entries are listed in order."},"from":{"type":"integer","description":"First entry number."},"to":{"type":"integer","description":"Last entry number."},"since":{"type":"string","description":"Earliest time, like 2026-09-29 14:00."},"until":{"type":"string","description":"Latest time."},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id, to read that session instead of this one."}}},
+  "parameters": {"type":"object","properties":{"query":{"type":"string","description":"Without it, entries are listed in order."},"from":{"type":"integer"},"to":{"type":"integer"},"since":{"type":"string","description":"Like 2026-09-29 14:00."},"until":{"type":"string"},"by":{"type":"string","enum":["user","assistant","tool"]},"limit":{"type":"integer","description":"Default 20."},"session":{"type":"string","description":"Another session's id to read."}}},
   "clicall": true
 }
 ```
@@ -4816,123 +4816,123 @@ Placeholder for a tool this client is expected to send with the request; it is n
 #### `software/basesystem/tools/edit.json`
 
 - 什么时候加进来：会话的工具面里有 `edit`（每次请求都带）
-- token：约 202（原来 209 减去去掉的那一句，估的）
-- 为什么加：`edit` 的说明和参数，字段名照 Claude Code，一次改几处（B6）：`edits` 里每一项 `old_string`、`new_string`、`replace_all`；说明两句：精确替换、一次几处，最容易踩的坑是缩进和读出来的行号那一截（施工 4-6 中）。「要先读过」那一句随施工 ED-1 去掉：没读过的也能改（2026-10-24 项目主人定）
-- 指纹：`0e14dee1`
+- token：TX-1 后 138（o200k 数，改前 161）；原来 约 202（原来 209 减去去掉的那一句，估的）
+- 为什么加：`edit` 的说明和参数，字段名照 Claude Code，一次改几处（B6）：`edits` 里每一项 `old_string`、`new_string`、`replace_all`；说明两句：精确替换、一次几处，最容易踩的坑是缩进和读出来的行号那一截（施工 4-6 中）。「要先读过」那一句随施工 ED-1 去掉：没读过的也能改（2026-10-24 项目主人定）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`4c5bb54f`
 
 ```json
 {
-  "description": "Make exact text replacements in a file, one or more at a time. Each old_string must match the file exactly, with its indentation and without the line number prefix from read, and match only one place unless replace_all is set.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean","description":"Replace every match. Default false."}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
+  "description": "Replace exact text in a file, one or more edits per call. Each old_string must match the file exactly, including indentation but not the line number prefix from read, and match only one place unless replace_all is set.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"edits":{"type":"array","description":"Each edit is matched against the file as it was before this call.","items":{"type":"object","properties":{"old_string":{"type":"string"},"new_string":{"type":"string"},"replace_all":{"type":"boolean"}},"required":["old_string","new_string"]}}},"required":["file_path","edits"]}
 }
 ```
 
 #### `software/basesystem/tools/shell.json`
 
 - 什么时候加进来：会话的工具面里有 `shell`（每次请求都带）
-- token：230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
-- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）
-- 指纹：`9cdf1c51`
+- token：TX-1 后 144（o200k 数，改前 191）；原来 230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
+- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）。施工 TX-1（2026-10-30）：`outside_sandbox` 的「被挡下就直接重跑、别先问」改成事实「带上它就是向人要许可」（2026-10-07 定的那句，项目主人照推荐定改）；删「Use it for builds, tests, git and other programs」
+- 指纹：`a4e28646`
 
 ```json
 {
-  "description": "Execute a command with {shell} and return its output. Use it for builds, tests, git and other programs. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title of what the command does, in a few words."},"timeout":{"type":"integer","description":"Milliseconds before the command is stopped, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"Run it in the background with no timeout and return a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. When the sandbox blocks a command, retry with this right away instead of asking first, because setting it is what asks the user."}},"required":["command","description"]}
+  "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
 }
 ```
 
 #### `software/basesystem/tools/trash.json`
 
 - 什么时候加进来：会话的工具面里有 `trash`（每次请求都带）
-- token：80
-- 为什么加：`trash` 的说明和参数：`file_path`，照另外几件的叫法；说明两句：移进系统回收站、撤销得回来，删东西用它不用 shell 里的 `rm`（施工 4-6 下）
-- 指纹：`02738142`
+- token：TX-1 后 41（o200k 数，改前 62）；原来 80
+- 为什么加：`trash` 的说明和参数：`file_path`，照另外几件的叫法；说明两句：移进系统回收站、撤销得回来，删东西用它不用 shell 里的 `rm`（施工 4-6 下）。施工 TX-1（2026-10-30）：删了「Use this instead of rm in the shell」，留「能还原」这个事实（项目主人照推荐定）
+- 指纹：`36b31320`
 
 ```json
 {
-  "description": "Move a file or directory to the system trash, where it can be restored. Use this instead of rm in the shell.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."}},"required":["file_path"]}
+  "description": "Move a file or directory to the system trash, where it can be restored.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"}},"required":["file_path"]}
 }
 ```
 
 #### `software/basesystem/tools/show.json`
 
 - 什么时候加进来：会话的工具面里有 `show`（每次请求都带；预设关了功能「展示」的不带）
-- token：约 125（2026-10-17 主会话照开发端点整张重量的边际份量 121，十八件合计 3073；施工 D-5 补第一句多 `video, audio`，按 o200k 估多 4）
-- 为什么加：`show` 的说明和参数（施工 D-5，设计 35，2026-10-17 项目主人定）：三句，是什么、她拿不回内容、同一个路径再展示换掉那一张；参数 `path`、`title` 各一句。不加的话她给人看图、页面只能贴路径让人自己开。施工 D-5 补（2026-10-23 项目主人照推荐定：先改说明再实测，她不主动用再在 system 加一句）：头认得音视频以后第一句写上视频、音频
-- 指纹：`02f4c3cd`
+- token：TX-1 后 79（o200k 数，改前 103）；原来 约 125（2026-10-17 主会话照开发端点整张重量的边际份量 121，十八件合计 3073；施工 D-5 补第一句多 `video, audio`，按 o200k 估多 4）
+- 为什么加：`show` 的说明和参数（施工 D-5，设计 35，2026-10-17 项目主人定）：三句，是什么、她拿不回内容、同一个路径再展示换掉那一张；参数 `path`、`title` 各一句。不加的话她给人看图、页面只能贴路径让人自己开。施工 D-5 补（2026-10-23 项目主人照推荐定：先改说明再实测，她不主动用再在 system 加一句）：头认得音视频以后第一句写上视频、音频。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`fdfe45d2`
 
 ```json
 {
-  "description": "Show a file to the user: an image, video, audio, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
-  "parameters": {"type":"object","properties":{"path":{"type":"string","description":"The file to show."},"title":{"type":"string","description":"A short title. Default: the file name."}},"required":["path"]}
+  "description": "Show a file to the user in their interface, such as an image, video, audio, web page, PDF or code. You get no content back. Showing the same path again replaces it.",
+  "parameters": {"type":"object","properties":{"path":{"type":"string"},"title":{"type":"string","description":"Default: the file name."}},"required":["path"]}
 }
 ```
 
 #### `software/basesystem/tools/write.json`
 
 - 什么时候加进来：会话的工具面里有 `write`（每次请求都带）
-- token：约 91（原来 100 减去去掉的那一句，估的）
-- 为什么加：`write` 的说明和参数，照 Claude Code：`file_path`、`content`，`content` 看名字就懂，不写说明（W2）；说明两句：新建或者整体覆盖，只改一部分的用 `edit`（第二句施工 4-6 中有了 `edit` 才加）（施工 4-6 上）。「已经在了的要先读过」那一句随施工 ED-2 去掉：没读过的也能写（2026-10-27 项目主人定）
-- 指纹：`a2095031`
+- token：TX-1 后 45（o200k 数，改前 68）；原来 约 91（原来 100 减去去掉的那一句，估的）
+- 为什么加：`write` 的说明和参数，照 Claude Code：`file_path`、`content`，`content` 看名字就懂，不写说明（W2）；说明两句：新建或者整体覆盖，只改一部分的用 `edit`（第二句施工 4-6 中有了 `edit` 才加）（施工 4-6 上）。「已经在了的要先读过」那一句随施工 ED-2 去掉：没读过的也能写（2026-10-27 项目主人定）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`a9bf25d9`
 
 ```json
 {
-  "description": "Create a file, or replace all of its content. To change part of a file, use `edit`.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"content":{"type":"string"}},"required":["file_path","content"]}
+  "description": "Create a file, or replace all of its content.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"content":{"type":"string"}},"required":["file_path","content"]}
 }
 ```
 
 #### `software/basesystem/tools/subagent.json`
 
 - 什么时候加进来：会话的工具面里有 `subagent`：本机、没到深度上限的会话（每次请求都带）；`pool` 那一格会话开局时照配置拼，一个池都没列的没有它
-- token：141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）；施工 A-F 中加 `fork`、说明第二句前面加 `Without fork`，2026-10-24 照项目主人给的端点、只带这一件量 441 → 473，多 32
-- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。
-- 指纹：`67333217`
+- token：TX-1 后 161（o200k 数，改前 216）；原来 141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）；施工 A-F 中加 `fork`、说明第二句前面加 `Without fork`，2026-10-24 照项目主人给的端点、只带这一件量 441 → 473，多 32
+- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`105e1d82`
 
 ```json
 {
-  "description": "Start a subagent in a new session to do one task in the background; its report arrives as a message when it finishes. Without fork it sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"A short title for the task, 3 to 5 words."},"prompt":{"type":"string","description":"The task for the subagent to perform."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to hand over with the prompt, at most 8."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."},"persona":{"type":"string","description":"Persona for the subagent. Default: no persona."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation and keeps your model and persona."}},"required":["description","prompt"]}
+  "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."}},"required":["description","prompt"]}
 }
 ```
 
 #### `software/basesystem/agent/foreground.txt`
 
 - 什么时候加进来：后台运行关着的会话（预设关了 `basesystem` 的 `background`）里 `subagent` 的说明换成它，参数照旧（每次请求都带）
-- token：59（2026-10-09 主会话在官方 `deepseek-flash` 上量：接在 `hi` 和一个换行后面；后台的那一句同样量是 57，多 2）
-- 为什么加：后台运行关着时子代理改前台跑，派它的那一步等它报回来（设计 30 第三节第 7 条，项目主人 2026-10-09 定；施工 T-1 下）：后台那一句说「在后台做、做完回报送来」，留着就是假话，她会以为能接着干别的。改成「派出去等它，报告在你下一步之前送到」，后半句照旧
-- 指纹：`0c7021ad`
+- token：TX-1 后 38（o200k 数，改前 58）；原来 59（2026-10-09 主会话在官方 `deepseek-flash` 上量：接在 `hi` 和一个换行后面；后台的那一句同样量是 57，多 2）
+- 为什么加：后台运行关着时子代理改前台跑，派它的那一步等它报回来（设计 30 第三节第 7 条，项目主人 2026-10-09 定；施工 T-1 下）：后台那一句说「在后台做、做完回报送来」，留着就是假话，她会以为能接着干别的。改成「派出去等它，报告在你下一步之前送到」，后半句照旧。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`c46d89ea`
 
 ```text
-Start a subagent in a new session to do one task and wait for it; its report arrives as a message before your next step. It sees nothing of this conversation, so the prompt must stand on its own: background, what is already known, the goal and what to report.
+Start a subagent in a new session to do one task and wait for it. Its report arrives as a message before your next step. It sees only the prompt, not this conversation.
 ```
 
 #### `software/basesystem/tools/jobs.json`
 
 - 什么时候加进来：会话的工具面里有 `jobs`（每次请求都带）
-- token：127（2026-09-30 照项目主人给的端点、`deepseek-v4.1-flash` 量，十件一起时的边际份量）
-- 为什么加：`jobs` 的说明和参数（施工 7-4）：说明照附录的草稿，两句：列出、读、停后台命令和子代理，做完会自己报、不用轮询（旧版实测：子代理反复查后台任务的状态，09-18 项目主人要求加上）。参数 `action`（三个动作，名字和 enum 说清了，不写说明）、`id`、`offset` 各一句；`offset` 草稿里没有，照 `read` 分页往下读要它。量法同上，十件一起时的边际份量
-- 指纹：`31346664`
+- token：TX-1 后 94（o200k 数，改前 100）；原来 127（2026-09-30 照项目主人给的端点、`deepseek-v4.1-flash` 量，十件一起时的边际份量）
+- 为什么加：`jobs` 的说明和参数（施工 7-4）：说明照附录的草稿，两句：列出、读、停后台命令和子代理，做完会自己报、不用轮询（旧版实测：子代理反复查后台任务的状态，09-18 项目主人要求加上）。参数 `action`（三个动作，名字和 enum 说清了，不写说明）、`id`、`offset` 各一句；`offset` 草稿里没有，照 `read` 分页往下读要它。量法同上，十件一起时的边际份量。施工 TX-1（2026-10-30）：删「so there is no need to poll」，留「做完会自己报」这个事实（09-18 项目主人要求加的那句，照推荐定删）
+- 指纹：`f2095f43`
 
 ```json
 {
-  "description": "List your background commands and subagents, read a command's output, or stop one. Finished jobs report to you on their own, so there is no need to poll.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["list","output","stop"]},"id":{"type":"string","description":"Job id, like j1."},"offset":{"type":"integer","description":"Line to start reading the output from."}},"required":["action"]}
+  "description": "List your background commands and subagents, read a command's output, or stop one. Finished jobs report to you on their own.",
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["list","output","stop"]},"id":{"type":"string","description":"Job id, like j1."},"offset":{"type":"integer","description":"First output line to read, from 1."}},"required":["action"]}
 }
 ```
 
 #### `software/basesystem/tools/sessions.json`
 
 - 什么时候加进来：会话的工具面里有 `sessions`：本机的主会话（每次请求都带）
-- token：95 → 101（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；C-5 第二句点名 `send_message`、`history`，多 6）
-- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`01e5313b`
+- token：TX-1 后 50（o200k 数，改前 80）；原来 95 → 101（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；C-5 第二句点名 `send_message`、`history`，多 6）
+- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`99c50e52`
 
 ```json
 {
-  "description": "List your other sessions, most recently active first. Each row gives the id to use with send_message and history, the title, working directory, whether it is busy and when it was last active.",
-  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}},
+  "description": "List your other sessions, most recently active first. Their ids work with send_message and history.",
+  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer"}}},
   "clicall": true
 }
 ```
@@ -4940,13 +4940,13 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/session_usage.json`
 
 - 什么时候加进来：会话的工具面里有 `session_usage`：本机的会话，主会话、子会话都有（每次请求都带）
-- token：48（2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十三件一起时的边际份量）
-- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）
-- 指纹：`c03ded21`
+- token：TX-1 后 33（o200k 数，改前 36）；原来 48（2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十三件一起时的边际份量）
+- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`0d0197be`
 
 ```json
 {
-  "description": "Show how many tokens and how much money this session has used so far, and how full your context is.",
+  "description": "Show the tokens and money this session has used so far, and how full the context is.",
   "parameters": {"type":"object","properties":{}},
   "clicall": true
 }
@@ -4955,27 +4955,27 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/ask_user.json`
 
 - 什么时候加进来：会话的工具面里有 `ask_user`：能问人的会话，有人能回答的本机主会话（每次请求都带）
-- token：237（2026-10-07 主会话照开发端点量，十四件一起时的边际份量）
-- 为什么加：她干活中途遇到要人拿主意的事，问一组题、等回答（施工 D-2，`10-自带软件.md` 第三节，`tools/ask_user.md`）。说明照附录的草稿一字不差，参数照 Claude Code，说明只给名字看不出来的三格（`header`、`preview`、`multiSelect`）
-- 指纹：`a5cc8719`
+- token：TX-1 后 168（o200k 数，改前 188）；原来 237（2026-10-07 主会话照开发端点量，十四件一起时的边际份量）
+- 为什么加：她干活中途遇到要人拿主意的事，问一组题、等回答（施工 D-2，`10-自带软件.md` 第三节，`tools/ask_user.md`）。说明照附录的草稿一字不差，参数照 Claude Code，说明只给名字看不出来的三格（`header`、`preview`、`multiSelect`）。施工 TX-1（2026-10-30）：「Don't add an other option」改成事实「人也能自己打字回答」；留推荐项那一句（项目主人定）
+- 指纹：`fd1ed5f4`
 
 ```json
 {
-  "description": "Ask the user one or more questions with options and wait for the answers. Put the recommended option first and add \"(Recommended)\" to its label. Don't add an \"other\" option: the user can always type their own answer.",
-  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"A short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Text shown in monospace while the option is focused, such as code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean","description":"Allow picking more than one option."}},"required":["question"]}}},"required":["questions"]}
+  "description": "Ask the user one or more questions with options and wait for the answers. Put the recommended option first and add \"(Recommended)\" to its label. The user can also type their own answer.",
+  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"Short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Monospace text shown while the option is focused, like code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean"}},"required":["question"]}}},"required":["questions"]}
 }
 ```
 
 #### `software/basesystem/tools/todowrite.json`
 
 - 什么时候加进来：会话的工具面里有 `todowrite`：本机的会话，主会话、子会话都有（每次请求都带）
-- token：139（2026-10-07 主会话照开发端点量，十五件一起时的边际份量）
-- 为什么加：她做多步的活时维护一张待办清单，头照着显示（施工 D-3，`10-自带软件.md` 第三节，`tools/todowrite.md`）。每次整份换，照 Claude Code、codex、opencode 的基本款（2026-10-07 项目主人定）；不要 Claude Code 的 `activeForm`，头照 `content` 显示就够。三句：是什么、整份换、怎么标状态
-- 指纹：`ae59687b`
+- token：TX-1 后 80（o200k 数，改前 103）；原来 139（2026-10-07 主会话照开发端点量，十五件一起时的边际份量）
+- 为什么加：她做多步的活时维护一张待办清单，头照着显示（施工 D-3，`10-自带软件.md` 第三节，`tools/todowrite.md`）。每次整份换，照 Claude Code、codex、opencode 的基本款（2026-10-07 项目主人定）；不要 Claude Code 的 `activeForm`，头照 `content` 显示就够。三句：是什么、整份换、怎么标状态。施工 TX-1（2026-10-30）：删了怎么标状态那一句（2026-10-07 定的三句之一，项目主人照推荐定删）
+- 指纹：`66fbeb2f`
 
 ```json
 {
-  "description": "Keep this session's task list for multi-step work, which the user sees. Each call replaces the whole list. Mark an item in_progress when you start it and completed as soon as it is done.",
+  "description": "This session's task list, which the user sees. Each call replaces the whole list.",
   "parameters": {"type":"object","properties":{"todos":{"type":"array","items":{"type":"object","properties":{"content":{"type":"string"},"status":{"type":"string","enum":["pending","in_progress","completed"]}},"required":["content","status"]}}},"required":["todos"]}
 }
 ```
@@ -5041,28 +5041,28 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/schedule/tools/cron_create.json`
 
 - 什么时候加进来：会话的工具面里有定时任务这个包（预设开着 `schedule`；施工 J-2 起），每次请求都带
-- token：183（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，录到的 24 件工具面上的边际份量）
-- 为什么加：在这个会话上建定时任务（设计 45 第三节第 3 条，施工 J-2）：照 Claude Code 的 `CronCreate` 改短成三句，是什么、五段 cron 照本机时区、一次性的怎么写；Claude Code 里「避开整点」「会话关了就没了」「7 天过期」三段不照搬（我们一个人用、表落盘、不过期），20 个的上限、下一次几点写在结果里
-- 指纹：`58bb6d37`
+- token：TX-1 后 135（o200k 数，改前 147）；原来 183（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，录到的 24 件工具面上的边际份量）
+- 为什么加：在这个会话上建定时任务（设计 45 第三节第 3 条，施工 J-2）：照 Claude Code 的 `CronCreate` 改短成三句，是什么、五段 cron 照本机时区、一次性的怎么写；Claude Code 里「避开整点」「会话关了就没了」「7 天过期」三段不照搬（我们一个人用、表落盘、不过期），20 个的上限、下一次几点写在结果里。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`01f06107`
 
 ```json
 {
   "description": "Schedule a prompt to be sent into this session later, once or on a schedule. Uses standard 5-field cron in this machine's local time: \"0 9 * * 1-5\" is weekdays at 9am. For a one-off reminder, pin minute, hour, day and month and set recurring to false.",
-  "parameters": {"type":"object","properties":{"cron":{"type":"string","description":"minute hour day-of-month month day-of-week."},"prompt":{"type":"string","description":"Sent as a message each time the job runs."},"recurring":{"type":"boolean","description":"Default true. false runs once, then deletes the job."}},"required":["cron","prompt"]}
+  "parameters": {"type":"object","properties":{"cron":{"type":"string","description":"minute hour day-of-month month day-of-week."},"prompt":{"type":"string"},"recurring":{"type":"boolean","description":"Default true. false runs once, then deletes the job."}},"required":["cron","prompt"]}
 }
 ```
 
 #### `software/schedule/tools/cron_delete.json`
 
 - 什么时候加进来：同 `cron_create.json`
-- token：60（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
-- 为什么加：删这个会话上的一个（施工 J-2）：照 Claude Code 的 `CronDelete`
-- 指纹：`6bd85168`
+- token：TX-1 后 31（o200k 数，改前 41）；原来 60（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量，同上）
+- 为什么加：删这个会话上的一个（施工 J-2）：照 Claude Code 的 `CronDelete`。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`106a0797`
 
 ```json
 {
   "description": "Delete a job scheduled in this session.",
-  "parameters": {"type":"object","properties":{"id":{"type":"string","description":"From cron_create or cron_list."}},"required":["id"]}
+  "parameters": {"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}
 }
 ```
 
@@ -5083,28 +5083,28 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/loop/tools/schedule_wakeup.json`
 
 - 什么时候加进来：会话的工具面里有循环这个包（预设开着 `loop`；施工 J-2 起），每次请求都带；没开着动态循环的会话里调了说没有在跑的循环
-- token：约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
-- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看
-- 指纹：`2d276b42`
+- token：TX-1 后 99（o200k 数，改前 115）；原来 约 148（2026-10-26 照 magpie 网关的 `clinepass/cline-pass/deepseek-v4.1-flash` 量的 152，WK-1 参数说明短了按 o200k 估）
+- 为什么加：动态循环每轮定下一次（设计 45 第三节第 4 条，施工 J-2）：照 Claude Code 的 `ScheduleWakeup` 改短成三句，什么时候调、不调循环就停、照在等什么挑间隔；下限 60 秒写在参数里（WK-1 去掉 3600 秒的上限，项目主人 10-30 定），`reason` 只给人看。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`e10ca74a`
 
 ```json
 {
-  "description": "Set when the next iteration of a self-paced /loop runs. Call it in every iteration you want to continue, or the loop stops, and pick the delay by what you are waiting for. Pass stop to end the loop.",
-  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, in one short sentence."},"stop":{"type":"boolean"}}}
+  "description": "Set when the next iteration of a self-paced /loop runs. The loop stops after an iteration that doesn't call it. Pass stop to end the loop.",
+  "parameters": {"type":"object","properties":{"delay_seconds":{"type":"integer","description":"At least 60."},"prompt":{"type":"string","description":"The /loop prompt, passed back unchanged."},"reason":{"type":"string","description":"Why this delay, one short sentence."},"stop":{"type":"boolean"}}}
 }
 ```
 
 #### `software/knowledge/tools/kb_search.json`
 
 - 什么时候加进来：会话的工具面里有 `kb_search`：知识库这个包装着、预设开着、查得到至少一个库的会话，本机的、场所的、子会话都有（施工 K-1 下，每次请求都带）
-- token：75（2026-10-12 照开发端点量，二十一件一起时的边际份量）
-- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
-- 指纹：`98ac0ead`
+- token：TX-1 后 39（o200k 数，改前 55）；原来 75（2026-10-12 照开发端点量，二十一件一起时的边际份量）
+- 为什么加：她查得到你放进来的文档（19 N4：专门的工具名，旧版做成 `read` 的前缀她想不起来用；施工 K-1 下，`knowledge.md`「她的工具」）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`50ed449b`
 
 ```json
 {
-  "description": "Search your knowledge bases: notes and documents kept for you to look things up.",
-  "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string","description":"Search only this knowledge base."}},"required":["query"]},
+  "description": "Search your knowledge bases of notes and documents.",
+  "parameters": {"type":"object","properties":{"query":{"type":"string"},"kb":{"type":"string"}},"required":["query"]},
   "clicall": true,
   "result": "{\"hits\":[{\"kb\",\"path\",\"heading\",\"snippet\",\"page\"}]}"
 }
@@ -5129,14 +5129,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/knowledge/tools/kb_save.json`
 
 - 什么时候加进来：知识库这个包装着、预设开着的会话，一个库都没有也带（施工 K-3，2026-10-12 项目主人定；每次请求都带）
-- token：139（2026-10-12 照开发端点量，二十五件一起时的边际份量）
-- 为什么加：她把东西记进知识库：新建一篇、接在一篇后面，写到还没有的库就是建它（19 N14，施工 K-3）
-- 指纹：`f6b68ec7`
+- token：TX-1 后 97（o200k 数，改前 107）；原来 139（2026-10-12 照开发端点量，二十五件一起时的边际份量）
+- 为什么加：她把东西记进知识库：新建一篇、接在一篇后面，写到还没有的库就是建它（19 N14，施工 K-3）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`b20f92ad`
 
 ```json
 {
   "description": "Save text to your knowledge bases as a new document, or append to one. Saving to a knowledge base that doesn't exist yet creates it.",
-  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"text":{"type":"string"},"append":{"type":"boolean","description":"Add to the end of the document."},"about":{"type":"string","description":"What a new knowledge base is for, one sentence."}},"required":["kb","path","text"]}
+  "parameters": {"type":"object","properties":{"kb":{"type":"string"},"path":{"type":"string"},"text":{"type":"string"},"append":{"type":"boolean"},"about":{"type":"string","description":"What a new knowledge base is for, one sentence."}},"required":["kb","path","text"]}
 }
 ```
 
@@ -5171,14 +5171,14 @@ Start a subagent in a new session to do one task and wait for it; its report arr
 #### `software/basesystem/tools/send_message.json`
 
 - 什么时候加进来：会话的工具面里有 `send_message`：本机的会话，到了深度上限的也有（每次请求都带）；旧会话冻着 `message_agent` 这个名字
-- token：165 → 204 → 241（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39；施工 C-9 加 `attachments`，2026-10-15 主会话照同一个模型量，只带这一件时 446 → 483，多 37）
-- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句
-- 指纹：`a9c97784`
+- token：TX-1 后 155（o200k 数，改前 203）；原来 165 → 204 → 241（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39；施工 C-9 加 `attachments`，2026-10-15 主会话照同一个模型量，只带这一件时 446 → 483，多 37）
+- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`0a0802a5`
 
 ```json
 {
-  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"Paths of files to send with the message, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle.",
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"A subagent's job id like j1, parent, or a session id."},"message":{"type":"string","description":"Can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that session next goes idle."}},"required":["to"]}
 }
 ```
 
@@ -5211,13 +5211,13 @@ Rerun this script outside the sandbox. When the sandbox blocks the script, retry
 #### `software/net/tools/web_search.json`
 
 - 什么时候加进来：会话的工具面里有 `web_search`：联网包装着、预设开着「网络搜索」的会话，本机的、场所的、子会话都有（施工 N-2 上，每次请求都带）
-- token：107（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
-- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）
-- 指纹：`7f10f57e`
+- token：TX-1 后 65（o200k 数，改前 74）；原来 107（2026-10-18 照开发端点量，和 `trash` 一起时的边际份量）
+- 为什么加：她能搜网页（设计 36 第一节，项目主人 2026-10-18 定）；2026-10-20 施工 M-2 加 `"clicall": true`（脚本里能调，不发给模型，token 不变）；2026-10-21 施工 M-4 加 `result`（结果的样子，不直接发给模型，换进 `shell` 说明那一段，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 指纹：`1a31d291`
 
 ```json
 {
-  "description": "Search the web and get titles, URLs and excerpts of matching pages. Read a page in full with web_fetch.",
+  "description": "Search the web and get titles, URLs and excerpts of matching pages.",
   "parameters": {"type":"object","properties":{"query":{"type":"string"},"allowed_domains":{"type":"array","items":{"type":"string"}},"blocked_domains":{"type":"array","items":{"type":"string"}}},"required":["query"]},
   "clicall": true,
   "result": "{\"kind\":\"links\",\"links\":[{\"title\",\"url\",\"snippet\",\"site\",\"date\"}]}"
@@ -5353,12 +5353,12 @@ set by the user with `/goal`
 #### `software/basesystem/read/image-scaled.txt`
 
 - 什么时候加进来：读的图超了上限、缩到上限以内交回的（施工 I-S）
-- token：约 25（`{path}` 按 `photo.png`、`{from}` 按 `9000×30`、`{to}` 按 `8000×26` 算，按 o200k 估）
-- 为什么加：告诉她看到的是缩过的：原图的细节、尺寸她要拿来做事（量坐标、裁剪）时得知道不是原样
-- 指纹：`34229c0e`
+- token：TX-1 后 21（o200k 数，改前 24）；原来 约 25（`{path}` 按 `photo.png`、`{from}` 按 `9000×30`、`{to}` 按 `8000×26` 算，按 o200k 估）
+- 为什么加：告诉她看到的是缩过的：原图的细节、尺寸她要拿来做事（量坐标、裁剪）时得知道不是原样。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`a352577b`
 
 ```text
-"{path}" is {from} pixels, so it was scaled down to {to} to fit the image limit.
+"{path}" is {from} pixels, scaled down to {to} to fit the image limit.
 ```
 
 ### 工具结果（`shell` 的输出）
@@ -5366,12 +5366,12 @@ set by the user with `/goal`
 #### `software/basesystem/shell/call/approval.txt`
 
 - 什么时候加进来：脚本里调的工具判出要问人、又不能停下来问（退出码 4）：挂在后台任务下面的、子会话里的、没人能确认的（施工 M-3；施工 M-7 上起前台、有人能确认的主会话里停下来等人，不出这句）
-- token：18（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
-- 为什么加：那里没人等着答，告诉她改成直接调那一件（设计 39 第六节第 4 条，MC4）
-- 指纹：`b5f4e521`
+- token：TX-1 后 17（o200k 数，改前 18）；原来 18（2026-10-20 照开发端点量，接在 `hi` 和一个换行后面，`{name}` 按 `web_search` 填）
+- 为什么加：那里没人等着答，告诉她改成直接调那一件（设计 39 第六节第 4 条，MC4）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`795f7a77`
 
 ```text
-This call needs approval, which a script cannot ask for. Call {name} directly.
+This call needs approval, which only a direct {name} call can ask for.
 ```
 
 ### 同上，接在 `bad-json.txt` 后面一行（空一格）
@@ -5535,12 +5535,12 @@ in {platform} group 「{place}」
 #### `software/memory/summary/more.txt`
 
 - 什么时候加进来：同上，超过 3000 字节截了的（字段按 `12` 填）
-- token：11（2026-10-08 量）
-- 为什么加：截了要说：还有几条、`memory_search` 找得到（施工 R-4 上）。一行照 `memory_search/memory.txt`，不另加字；两条的一块合计 41（外壳 8），截满的一块 964（3000 字节，中文为主）
-- 指纹：`fd8c77fa`
+- token：TX-1 后 11（o200k 数，改前 11）；原来 11（2026-10-08 量）
+- 为什么加：截了要说：还有几条、`memory_search` 找得到（施工 R-4 上）。一行照 `memory_search/memory.txt`，不另加字；两条的一块合计 41（外壳 8），截满的一块 964（3000 字节，中文为主）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`f165c51e`
 
 ```text
-…and {count} more; memory_search finds them.
+…and {count} more, found by memory_search.
 ```
 
 ### 事实：常驻的记忆摘要那一块，有摘要时的头一行
@@ -5865,12 +5865,12 @@ Memories:
 #### `core/skills/open.txt`
 
 - 什么时候加进来：工具面上有 `read`、找得到至少一个技能的会话（施工 X-10 上；每次请求都带）
-- token：13（2026-10-12 照开发端点量）
-- 为什么加：她知道下面是技能、照着做之前先读那份文件（`skills.md`「技能」第 2、3 条）
-- 指纹：`fa146d08`
+- token：TX-1 后 13（o200k 数，改前 12）；原来 13（2026-10-12 照开发端点量）
+- 为什么加：她知道下面是技能、照着做之前先读那份文件（`skills.md`「技能」第 2、3 条）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`673f6aee`
 
 ```text
-Skills you can use (read the file before following one):
+Skills you can use, each with its instructions in the file:
 ```
 
 ### system 第 4 块，一个技能一行
@@ -5941,12 +5941,12 @@ The project instructions below replace the earlier ones for {root}.
 #### `core/project-docs/cut.txt`
 
 - 什么时候加进来：几份加起来超过 32 KiB、截断了的
-- token：约 15（按 o200k 估）
-- 为什么加：告诉她没读全、剩下的自己读文件
-- 指纹：`1f4f908f`
+- token：TX-1 后 17（o200k 数，改前 17）；原来 约 15（按 o200k 估）
+- 为什么加：告诉她没读全、剩下的自己读文件。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
+- 指纹：`05ef5d42`
 
 ```text
-Project instructions stop here at {limit} bytes. Read the files for the rest.
+Project instructions stop here at {limit} bytes. The rest is in the files.
 ```
 
 ### 回合尾巴（`context.injected`，模块 `skills`），外壳头

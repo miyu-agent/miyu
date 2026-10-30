@@ -1,1 +1,1 @@
-{path} already exists in {kb}. Use append, or kb_edit.
+{path} already exists in {kb}. append and kb_edit change it.

@@ -26,8 +26,8 @@
 
 ```json
 {
-  "description": "List your other sessions, most recently active first. Each row gives the id to use with send_message and history, the title, working directory, whether it is busy and when it was last active.",
-  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}},
+  "description": "List your other sessions, most recently active first. Their ids work with send_message and history.",
+  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer"}}},
   "clicall": true
 }
 ```
@@ -67,7 +67,7 @@
 You are session 22334455.
 9f03b21c "修 CI" in ~/src/miyu: busy, last active 2026-10-01 14:03
 0c5d77aa (untitled) in ~/notes: idle, last active 2026-09-30 22:41
-(Showing 1-2 of 5. Use offset=2 to see more.)
+(1-2 of 5. Next: offset=2.)
 ```
 
 给她的字都在 `resources/software/basesystem/sessions/` 下，每一份以一个换行结尾，登记在 `26-提示词.md` 第十节：
@@ -77,9 +77,9 @@ You are session 22334455.
 | 第一行 | `you.txt` | `You are session {id}.` |
 | 有标题的一行 | `listed.txt` | `{id} "{title}" in {cwd}: {state}, last active {time}` |
 | 没标题的一行 | `listed-untitled.txt` | `{id} (untitled) in {cwd}: {state}, last active {time}` |
-| 后面还有 | `more.txt` | `(Showing {from}-{to} of {total}. Use offset={next} to see more.)` |
+| 后面还有 | `more.txt` | `({from}-{to} of {total}. Next: offset={next}.)` |
 | 没有别的 | `none.txt` | `You have no other sessions.` |
-| `offset` 过了结尾 | `past-end.txt` | `(You have {total} other sessions. Offset {offset} is past the end.)` |
+| `offset` 过了结尾 | `past-end.txt` | `(offset {offset} is past your {total} other sessions.)` |
 | 列不出来 | `failed.txt` | `Could not list the sessions: {error}` |
 
 - 换进句子的字段照模板的规矩转义（`tools/read.md` 第 8 条）：标题、工作目录里的引号、反斜杠、换行写不进这一行。

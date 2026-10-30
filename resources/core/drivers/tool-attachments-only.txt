@@ -1,1 +1,1 @@
-The tool returned only images or files. They are in the next message.
+The tool returned only images or files, in the next message.

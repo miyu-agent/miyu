@@ -1,1 +1,1 @@
-miyu call does not work for {name}; call it directly. Tools that work with miyu call: {tools}.
+{name} works only as a direct call, not via miyu call. Tools that work with miyu call: {tools}.

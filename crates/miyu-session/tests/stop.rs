@@ -82,7 +82,7 @@ async fn a_running_write_is_asked_to_stop_and_stops_before_changing() {
     assert_eq!(result.status, ToolStatus::Cancelled);
     assert_eq!(
         text(&result.blocks),
-        "The call was cancelled while it was running: the user interrupted the turn. It may have been partly done.\n"
+        "The user interrupted the turn while the call was running. It may have been partly done.\n"
     );
 }
 

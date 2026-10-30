@@ -1,1 +1,1 @@
-The call was cancelled while it was running: the user interrupted the turn. It may have been partly done.
+The user interrupted the turn while the call was running. It may have been partly done.

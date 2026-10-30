@@ -13,16 +13,18 @@ fn read_comes_from_the_resources_with_its_schema_as_written() {
     let spec = tool.spec();
     assert_eq!(spec.access, Access::Read);
     assert!(
-        spec.description.starts_with(
-            "Read a text file or an image (PNG, JPEG, GIF, WebP), or list a directory."
-        ),
+        spec.description
+            .starts_with("Read a text file or an image, or list a directory."),
         "{}",
         spec.description
     );
-    assert!(spec.description.contains("cat -n format"));
+    assert!(
+        spec.description
+            .contains("numbered lines, at most 2000 per call")
+    );
     assert_eq!(
         spec.parameters.get(),
-        r#"{"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"offset":{"type":"integer","description":"The line number to start reading from, counting from 1."},"limit":{"type":"integer","description":"The number of lines to read. Default 2000."}},"required":["file_path"]}"#
+        r#"{"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]}"#
     );
     let targets = tool.targets(&Call {
         args: r#"{"file_path":"src/a.rs"}"#.to_string(),
@@ -92,7 +94,7 @@ async fn a_file_reads_with_line_numbers_and_pages_on() {
         .await;
     assert_eq!(
         text,
-        "2\tline 2\n3\tline 3\n(Showing lines 2-3 of 5. Use offset=4 to continue.)\n"
+        "2\tline 2\n3\tline 3\n(Lines 2-3 of 5. Next: offset=4.)\n"
     );
     let (error, text) = site
         .call(
@@ -101,7 +103,7 @@ async fn a_file_reads_with_line_numbers_and_pages_on() {
         )
         .await;
     assert!(!error);
-    assert_eq!(text, "(The file has 5 lines; offset 9 is past the end.)\n");
+    assert_eq!(text, "(offset 9 is past the file's 5 lines.)\n");
 }
 
 #[tokio::test]
@@ -173,7 +175,7 @@ async fn a_directory_lists_its_entries_by_name_and_pages_on() {
         .await;
     assert_eq!(text.lines().count(), 1001);
     assert!(
-        text.ends_with("(Showing entries 1-1000 of 1003. Use offset=1001 to continue.)\n"),
+        text.ends_with("(Entries 1-1000 of 1003. Next: offset=1001.)\n"),
         "{}",
         &text[text.len() - 80..]
     );
@@ -193,7 +195,7 @@ async fn a_directory_lists_its_entries_by_name_and_pages_on() {
     assert!(!error);
     assert_eq!(
         text,
-        "(The directory has 1003 entries; offset 2000 is past the end.)\n"
+        "(offset 2000 is past the directory's 1003 entries.)\n"
     );
 }
 
@@ -210,7 +212,7 @@ async fn what_cannot_be_read_says_so() {
     );
     let (error, text) = site.call("read", serde_json::json!({"offset": 1})).await;
     assert!(error);
-    assert!(text.starts_with("The arguments are not right: "), "{text}");
+    assert!(text.starts_with("Bad arguments: "), "{text}");
     #[cfg(unix)]
     {
         let fifo = site.0.join("work/pipe");
@@ -277,7 +279,7 @@ async fn one_read_is_at_most_two_thousand_lines() {
         let (_, text) = site.call("read", args).await;
         assert_eq!(text.lines().count(), 2001, "2000 行加一句还没读完");
         assert!(
-            text.ends_with("(Showing lines 1-2000 of 2500. Use offset=2001 to continue.)\n"),
+            text.ends_with("(Lines 1-2000 of 2500. Next: offset=2001.)\n"),
             "{}",
             &text[text.len() - 80..]
         );

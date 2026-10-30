@@ -1,1 +1,1 @@
-A goal is already set. Read it with action get. Only the user can change or clear it, with /goal.
+A goal is already set, readable with action get. Only the user can change or clear it, with /goal.

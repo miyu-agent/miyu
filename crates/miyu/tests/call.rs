@@ -309,7 +309,7 @@ async fn a_script_calls_this_sessions_tools_through_its_own_endpoint() {
     assert_eq!(read(&work, "itself.code"), "2");
     assert!(
         read(&work, "itself.err")
-            .starts_with("miyu call does not work for shell; call it directly."),
+            .starts_with("shell works only as a direct call, not via miyu call."),
         "{}",
         read(&work, "itself.err")
     );

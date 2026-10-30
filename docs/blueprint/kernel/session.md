@@ -628,11 +628,11 @@
 |---|---|---|---|
 | `unknown` | 工具面上没有这个名字 | `error` | `There is no tool named "{name}".` |
 | `not-an-object` | 参数不是 JSON 对象 | `error` | `The arguments for "{name}" are not a JSON object.` |
-| `read-only` | 只读时拦下要写入的 | `denied` | `The call was not run: the session is read-only.` |
-| `cancelled-before` | 打断时还没跑过的 | `cancelled` | `The call was cancelled before it ran: the user interrupted the turn.` |
-| `cancelled-running` | 打断时跑到一半的 | `cancelled` | `The call was cancelled while it was running: the user interrupted the turn. It may have been partly done.` |
-| `skipped` | 急着插话，还没跑的；等人确认时来了一句话 | `skipped` | `The call was skipped: the user sent a new message.` |
-| `restarted` | 有计划的重启、崩了收尾时没有结果的 | `cancelled` | `The call was cancelled: Miyu restarted before it finished. It may have been partly done.` |
+| `read-only` | 只读时拦下要写入的 | `denied` | `Not run: the session is read-only.` |
+| `cancelled-before` | 打断时还没跑过的 | `cancelled` | `The user interrupted the turn before the call ran.` |
+| `cancelled-running` | 打断时跑到一半的 | `cancelled` | `The user interrupted the turn while the call was running. It may have been partly done.` |
+| `skipped` | 急着插话，还没跑的；等人确认时来了一句话 | `skipped` | `Skipped: the user sent a new message.` |
+| `restarted` | 有计划的重启、崩了收尾时没有结果的 | `cancelled` | `Miyu restarted before the call finished. It may have been partly done.` |
 
 回复被截断以后再来的那一块事实（`resources/core/facts/reply-cut.txt`，`kind` 是 `reply_cut`）：
 

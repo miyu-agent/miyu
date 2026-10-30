@@ -133,17 +133,17 @@
 |---|---|
 | `unknown.txt` | `There is no tool named "{name}".` |
 | `not-an-object.txt` | `The arguments for "{name}" are not a JSON object.` |
-| `read-only.txt` | `The call was not run: the session is read-only.` |
-| `unattended.txt` | `The call was not run: it needs the user's approval, which no one can give here.` |
-| `denied.txt` | `The call was not run: the user denied it.` |
-| `denied-with-reason.txt` | `The call was not run: the user denied it and said "{reason}".` |
-| `cancelled-before.txt` | `The call was cancelled before it ran: the user interrupted the turn.` |
-| `cancelled-running.txt` | `The call was cancelled while it was running: the user interrupted the turn. It may have been partly done.` |
-| `question-interrupted.txt` | `The question was not answered: the user interrupted the turn.` |
-| `skipped.txt` | `The call was skipped: the user sent a new message.` |
-| `question-voided.txt` | `The question was not answered: the user sent a new message instead.` |
-| `question-unattended.txt` | `The question was not answered: no one can answer here.` |
-| `restarted.txt` | `The call was cancelled: Miyu restarted before it finished. It may have been partly done.` |
+| `read-only.txt` | `Not run: the session is read-only.` |
+| `unattended.txt` | `Not run: it needs the user's approval, and no one here can give it.` |
+| `denied.txt` | `The user denied the call.` |
+| `denied-with-reason.txt` | `The user denied the call and said "{reason}".` |
+| `cancelled-before.txt` | `The user interrupted the turn before the call ran.` |
+| `cancelled-running.txt` | `The user interrupted the turn while the call was running. It may have been partly done.` |
+| `question-interrupted.txt` | `The user interrupted the turn before answering.` |
+| `skipped.txt` | `Skipped: the user sent a new message.` |
+| `question-voided.txt` | `The user sent a new message instead of answering.` |
+| `question-unattended.txt` | `No one can answer questions here.` |
+| `restarted.txt` | `Miyu restarted before the call finished. It may have been partly done.` |
 
 同一处还有几句，不是内核写的，编号的写法一样：
 

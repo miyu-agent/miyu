@@ -1,1 +1,1 @@
-({job} is still running. It is using {tools} now.)
+({job} is still running, using {tools}.)

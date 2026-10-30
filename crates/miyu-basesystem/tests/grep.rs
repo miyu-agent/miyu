@@ -189,7 +189,7 @@ async fn a_match_left_off_the_page_takes_its_context_lines_with_it() {
         (
             false,
             format!(
-                "{}(Showing matches 1-1; there are more. Use offset=1 to continue.)\n",
+                "{}(Matches 1-1, more remain. Next: offset=1.)\n",
                 listed(&["f.txt-1-line 1", "f.txt:2:hit 2", "f.txt-3-line 3"])
             )
         )
@@ -291,7 +291,7 @@ async fn head_limit_and_offset_page_through() {
         (
             false,
             format!(
-                "{}(Showing files 1-2 of 5. Use offset=2 to continue.)\n",
+                "{}(Files 1-2 of 5. Next: offset=2.)\n",
                 listed(&["1.txt", "2.txt"])
             )
         )
@@ -301,7 +301,7 @@ async fn head_limit_and_offset_page_through() {
         (
             false,
             format!(
-                "{}(Showing files 3-4 of 5. Use offset=4 to continue.)\n",
+                "{}(Files 3-4 of 5. Next: offset=4.)\n",
                 listed(&["3.txt", "4.txt"])
             )
         )
@@ -312,10 +312,7 @@ async fn head_limit_and_offset_page_through() {
     );
     assert_eq!(
         call(serde_json::json!({"pattern": "x", "offset": 10})).await,
-        (
-            false,
-            "(There are only 5 results; offset 10 skips them all.)\n".to_string()
-        )
+        (false, "(offset 10 skips all 5 results.)\n".to_string())
     );
     // 0 是不限。
     let (_, text) = call(serde_json::json!({"pattern": "x", "head_limit": 0})).await;
@@ -326,7 +323,7 @@ async fn head_limit_and_offset_page_through() {
         (
             false,
             format!(
-                "{}(Showing matches 1-2; there are more. Use offset=2 to continue.)\n",
+                "{}(Matches 1-2, more remain. Next: offset=2.)\n",
                 listed(&["1.txt:1:x", "2.txt:1:x"])
             )
         )
@@ -346,7 +343,7 @@ async fn by_default_at_most_two_hundred_fifty() {
     let (_, text) = site.call("grep", serde_json::json!({"pattern": "x"})).await;
     assert_eq!(text.lines().count(), 251);
     assert!(
-        text.ends_with("(Showing files 1-250 of 260. Use offset=250 to continue.)\n"),
+        text.ends_with("(Files 1-250 of 260. Next: offset=250.)\n"),
         "{}",
         &text[text.len() - 80..]
     );

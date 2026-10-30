@@ -103,7 +103,7 @@ async fn a_package_base_is_searched_and_recalled_but_not_written() {
     let log = chat(&home, &handle, 2, "记一下").await;
     assert_eq!(
         last_result(&log),
-        "world comes with a package and is read-only. Save to another knowledge base."
+        "world comes with a package and is read-only."
     );
     assert!(!base.join("a.md").exists());
     assert!(

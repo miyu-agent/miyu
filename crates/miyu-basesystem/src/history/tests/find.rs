@@ -90,7 +90,7 @@ async fn older_results_are_one_page_further() {
     let done = run_on(said(&texts), json!({"query": "note", "limit": 2})).await;
     assert_eq!(
         text(&done),
-        "#5 2026-09-29 14:04 user: note 5\n#4 2026-09-29 14:03 user: note 4\n(Showing 2 of 5 results. Use to=3 to see older ones.)\n"
+        "#5 2026-09-29 14:04 user: note 5\n#4 2026-09-29 14:03 user: note 4\n(2 of 5 results. Older: to=3.)\n"
     );
     assert!(
         human(&done).contains("history/found") && human(&done).contains("\"5\""),
@@ -99,7 +99,7 @@ async fn older_results_are_one_page_further() {
     );
     let done = run_on(said(&texts), json!({"query": "note", "limit": 2, "to": 3})).await;
     assert_eq!(seqs(&done), [3, 2]);
-    assert!(text(&done).ends_with("(Showing 2 of 3 results. Use to=1 to see older ones.)\n"));
+    assert!(text(&done).ends_with("(2 of 3 results. Older: to=1.)\n"));
     let done = run_on(said(&texts), json!({"query": "note", "to": 1})).await;
     assert_eq!(text(&done), "#1 2026-09-29 14:00 user: note 1\n");
 }

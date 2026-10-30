@@ -28,7 +28,7 @@ async fn she_stops_a_subagent_it_reports_stopped_and_she_is_not_woken() {
         result_text(&log, 1),
         format!(
             "{:?}",
-            text_blocks("Half of the tests read.\n(j1 is still running. It is using read now.)\n")
+            text_blocks("Half of the tests read.\n(j1 is still running, using read.)\n")
         ),
         "最近的回答和这一步在跑的工具"
     );

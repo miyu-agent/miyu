@@ -1,1 +1,1 @@
-The question was not answered: the user sent a new message instead.
+The user sent a new message instead of answering.

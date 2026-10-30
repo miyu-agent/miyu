@@ -23,7 +23,7 @@ async fn a_person_says_who() {
     assert!(done.error, "没写是谁");
     assert_eq!(
         text(&done),
-        "Say who this person memory is about in who: their name, or their id like qq:10086 when you see one."
+        "A person memory needs who: their name, or an id like qq:10086 when known."
     );
     for (args, expect) in [
         (

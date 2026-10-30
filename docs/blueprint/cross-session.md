@@ -259,7 +259,7 @@
 ```json
 {
   "description": "List your other sessions, most recently active first. Each row gives the session id, the title, working directory, whether it is busy and when it was last active.",
-  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer","description":"How many sessions to skip."}}}
+  "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer"}}}
 }
 ```
 
@@ -269,8 +269,8 @@
 
 ```json
 {
-  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle. Send only what they need to know now, such as a question or a finding that changes their plan, since your final report goes up on its own.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"The job id of your subagent, such as j1, parent, or a session id."},"message":{"type":"string","description":"The message to send, which can be left out with notify_when_idle."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that other session next finishes its work."}},"required":["to"]}
+  "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle.",
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"A subagent's job id like j1, parent, or a session id."},"message":{"type":"string","description":"Can be left out with notify_when_idle."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that session next goes idle."}},"required":["to"]}
 }
 ```
 
@@ -280,7 +280,7 @@
 **`history` 多一格**（C-4），待量 token：
 
 ```json
-"session":{"type":"string","description":"Another session's id, to read that session instead of this one."}
+"session":{"type":"string","description":"Another session's id to read."}
 ```
 
 **`sessions` 的结果**，例子：
@@ -289,7 +289,7 @@
 You are session 22334455.
 9f03b21c "修 CI" in ~/src/miyu: busy, last active 2026-10-01 14:03
 0c5d77aa (untitled) in ~/notes: idle, last active 2026-09-30 22:41
-(Showing 1-2 of 5. Use offset=2 to see more.)
+(1-2 of 5. Next: offset=2.)
 ```
 
 **`send_message` 发给别的会话、订了**，例子：
@@ -335,23 +335,23 @@ No notice came within 12 hours, so the request was dropped.
 | 列会话，第一行 | `sessions/you.txt` | `You are session {id}.` | C-3 |
 | 列会话，有标题的一行 | `sessions/listed.txt` | `{id} "{title}" in {cwd}: {state}, last active {time}` | C-3 |
 | 列会话，没标题的一行 | `sessions/listed-untitled.txt` | `{id} (untitled) in {cwd}: {state}, last active {time}` | C-3 |
-| 列会话，后面还有 | `sessions/more.txt` | `(Showing {from}-{to} of {total}. Use offset={next} to see more.)` | C-3 |
+| 列会话，后面还有 | `sessions/more.txt` | `({from}-{to} of {total}. Next: offset={next}.)` | C-3 |
 | 列会话，没有别的 | `sessions/none.txt` | `You have no other sessions.` | C-3 |
-| 列会话，`offset` 过了结尾 | `sessions/past-end.txt` | `(You have {total} other sessions. Offset {offset} is past the end.)` | C-3 |
+| 列会话，`offset` 过了结尾 | `sessions/past-end.txt` | `(offset {offset} is past your {total} other sessions.)` | C-3 |
 | 列会话，列不出来 | `sessions/failed.txt` | `Could not list the sessions: {error}` | C-3 |
 | 读别的会话，「谁」那一格 | `history/session.txt` | `session {id}` | C-2 |
 | 读别的会话，找不到 | `history/no-session.txt` | `No session has the id "{session}".` | C-4 |
 | 读别的会话，对得上不止一个 | `history/ambiguous.txt` | `"{session}" matches more than one session. Use the full id.` | C-4 |
 | 这个会话不能读别的会话 | `history/not-here.txt` | `This session cannot read other sessions.` | C-4 |
-| 发话，对方没人看着 | `send_message/held.txt` | `Message saved for {to}. Nobody is watching that one-shot session, so it reads this only when someone continues it.` | C-5 |
+| 发话，对方没人看着 | `send_message/held.txt` | `Message saved for {to}, an unwatched one-shot session. It reads this only when someone continues it.` | C-5 |
 | 发话，找不到 | `send_message/no-session.txt` | `No session has the id "{to}".` | C-5 |
 | 发话，对得上不止一个 | `send_message/ambiguous.txt` | `"{to}" matches more than one session. Use the full id.` | C-5 |
 | 发话，是自己 | `send_message/self.txt` | `"{to}" is this session.` | C-5 |
 | 这个会话不能发给别的会话 | `send_message/not-here.txt` | `This session cannot message or watch other sessions.` | C-5 |
-| 太长 | `send_message/too-long.txt` | `The message has {chars} characters, over the limit of {limit}. Send a shorter one.` | C-5 |
+| 太长 | `send_message/too-long.txt` | `The message has {chars} characters, over the limit of {limit}.` | C-5 |
 | 限速 | `send_message/too-many.txt` | `Too many messages to {to} just now. Put the rest into one message and send it later.` | C-5 |
 | 一模一样的 | `send_message/duplicate.txt` | `{to} already has this exact message.` | C-5 |
-| 对方没看的太多 | `send_message/inbox-full.txt` | `{to} has too many unread messages. Send again after it has read them.` | C-5 |
+| 对方没看的太多 | `send_message/inbox-full.txt` | `{to} has too many unread messages. Sending works again once it reads them.` | C-5 |
 | 订了 | `send_message/watching.txt` | `You will get a notice when {to} is next idle.` | C-6 |
 | 订子代理、父会话 | `send_message/watch-peers-only.txt` | `notify_when_idle works only for other sessions.` | C-6 |
 | 别的会话发来的话，开头 | `core/peers/message-open.txt` | `<session-message from="{id}">` | C-2 |

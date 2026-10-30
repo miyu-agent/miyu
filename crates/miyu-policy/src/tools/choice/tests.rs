@@ -6,7 +6,7 @@ use miyu_kernel::tool::Access;
 use super::*;
 
 /// 和资源里 `subagent` 的参数一样写法的一份：`pool` 在最后，没有 `enum`。
-const WITH_POOL: &str = r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title."},"prompt":{"type":"string","description":"The task."},"pool":{"type":"string","description":"Model pool for the task. Default: your own model."}},"required":["description","prompt"]}"#;
+const WITH_POOL: &str = r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title."},"prompt":{"type":"string","description":"The task."},"pool":{"type":"string","description":"Default: your own model."}},"required":["description","prompt"]}"#;
 
 /// 同一份拿掉 `pool`：施工 8-8 以前的样子。
 const WITHOUT_POOL: &str = r#"{"type":"object","properties":{"description":{"type":"string","description":"A short title."},"prompt":{"type":"string","description":"The task."}},"required":["description","prompt"]}"#;
@@ -50,8 +50,8 @@ fn choices_go_into_an_enum_and_one_line_each() {
         ],
     );
     let wanted = WITH_POOL.replace(
-        r#""pool":{"type":"string","description":"Model pool for the task. Default: your own model."}"#,
-        r#""pool":{"type":"string","enum":["fast","flagship"],"description":"Model pool for the task. Default: your own model.\nfast: Small model for quick lookups.\nflagship"}"#,
+        r#""pool":{"type":"string","description":"Default: your own model."}"#,
+        r#""pool":{"type":"string","enum":["fast","flagship"],"description":"Default: your own model.\nfast: Small model for quick lookups.\nflagship"}"#,
     );
     assert_eq!(tool.parameters.get(), wanted, "只变 pool 那一格");
     assert_eq!(

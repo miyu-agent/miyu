@@ -1,1 +1,1 @@
-Not run: this command {reason}. That is never allowed, so do it another way.
+Not run: this command {reason}, which is never allowed.

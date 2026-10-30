@@ -181,7 +181,7 @@ async fn pages_go_by_limit_and_offset() {
     assert_eq!(
         text(&first),
         format!(
-            "You are session 22334455.\n{}{}(Showing 1-2 of 5. Use offset=2 to see more.)\n",
+            "You are session 22334455.\n{}{}(1-2 of 5. Next: offset=2.)\n",
             row(5),
             row(4)
         )
@@ -194,7 +194,7 @@ async fn pages_go_by_limit_and_offset() {
     assert_eq!(
         text(&second),
         format!(
-            "You are session 22334455.\n{}{}(Showing 3-4 of 5. Use offset=4 to see more.)\n",
+            "You are session 22334455.\n{}{}(3-4 of 5. Next: offset=4.)\n",
             row(3),
             row(2)
         ),
@@ -209,7 +209,7 @@ async fn pages_go_by_limit_and_offset() {
     let port = Arc::new(Port::new((1..=21).map(nth).collect()));
     let whole = sessions(&port, json!({})).await;
     assert!(
-        text(&whole).ends_with("(Showing 1-20 of 21. Use offset=20 to see more.)\n"),
+        text(&whole).ends_with("(1-20 of 21. Next: offset=20.)\n"),
         "不写是 20 个：{}",
         text(&whole)
     );
@@ -222,7 +222,7 @@ async fn past_the_end_and_nobody_else() {
     assert!(!done.error);
     assert_eq!(
         text(&done),
-        "You are session 22334455.\n(You have 5 other sessions. Offset 5 is past the end.)\n"
+        "You are session 22334455.\n(offset 5 is past your 5 other sessions.)\n"
     );
     assert_eq!(
         done.human,
@@ -283,7 +283,7 @@ async fn bad_arguments_do_not_ask_the_port() {
         let done = sessions(&port, args.clone()).await;
         assert!(done.error, "{args}");
         assert!(
-            text(&done).starts_with("The arguments are not right: "),
+            text(&done).starts_with("Bad arguments: "),
             "{args}：{}",
             text(&done)
         );

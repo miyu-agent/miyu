@@ -1,1 +1,1 @@
-The call was not run: it needs the user's approval, which no one can give here.
+Not run: it needs the user's approval, and no one here can give it.

@@ -76,7 +76,7 @@ async fn a_sleep_is_still_stopped() {
     let stopped = results(&log)[0];
     assert_eq!(stopped.status, ToolStatus::Error, "{stopped:?}");
     assert!(
-        format!("{:?}", stopped.blocks).contains("Stopped after 300 ms"),
+        format!("{:?}", stopped.blocks).contains("Stopped at the 300 ms timeout"),
         "{stopped:?}"
     );
     assert!(reports(&log).is_empty());

@@ -1,1 +1,1 @@
-"{path}" is {width}×{height} pixels, too large to view. Images must be at most 8000 pixels on each side. Make a smaller copy with a command and read that.
+"{path}" is {width}×{height} pixels, over the 8000-pixel image side limit. A smaller copy made with a command can be read.

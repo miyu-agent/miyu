@@ -108,7 +108,7 @@ async fn a_small_file_read_before_the_cut_comes_back_and_survives_a_reload() {
     );
     // 大的进清单，清单里两个都有，还有取回指路。
     assert!(
-        compacted.notes.contains("Not shown again"),
+        compacted.notes.contains("Too large to show again"),
         "{}",
         compacted.notes
     );

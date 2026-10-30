@@ -108,7 +108,7 @@ fn an_unchanged_persona_is_the_same_and_a_changed_one_swaps() {
 #[test]
 fn a_swap_keeps_the_skills_it_was_made_with() {
     let (_scratch, root, mut refresh) = setup("skills-swap", "You are Miyu.\n");
-    let block = "Skills you can use (read the file before following one):\n- notes: Take notes. (/s/notes/SKILL.md)";
+    let block = "Skills you can use, each with its instructions in the file:\n- notes: Take notes. (/s/notes/SKILL.md)";
     refresh.snapshot = refresh
         .snapshot
         .clone()

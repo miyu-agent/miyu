@@ -31,12 +31,12 @@
 
 ```json
 {
-  "description": "Execute a command with {shell} and return its output. Use it for builds, tests, git and other programs. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title of what the command does, in a few words."},"timeout":{"type":"integer","description":"Milliseconds before the command is stopped, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"Run it in the background with no timeout and return a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. When the sandbox blocks a command, retry with this right away instead of asking first, because setting it is what asks the user."}},"required":["command","description"]}
+  "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
 }
 ```
 
-- 说明是一段模板：核心起来时找一次用哪个 shell，把 `{shell}` 换成它的名字（`bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`），核心跑着时不变；造会话时连同工具面存进快照。例如 Linux 上：`Execute a command with bash and return its output. Use it for builds, tests, git and other programs. Every call starts in the working directory, so cd does not carry over to the next call.`
+- 说明是一段模板：核心起来时找一次用哪个 shell，把 `{shell}` 换成它的名字（`bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`），核心跑着时不变；造会话时连同工具面存进快照。例如 Linux 上：`Execute a command with bash and return its output. Every call starts in the working directory, so cd does not carry over to the next call.`
 - 别的工具的说明不当模板读，里面的花括号是字面的。
 
 | 参数 | 必填 | 怎么认 |
@@ -45,7 +45,7 @@
 | `description` | 是 | 这条命令在做什么的短标题，几个词。前台的不用它跑命令，记在调用里，前端显示用（施工 4-13，2026-09-28 项目主人定；前端随 M8）；后台的是任务的标题，记进 `job.started`（施工 7-3）。没写的，参数不对 |
 | `timeout` | 否 | 毫秒。没给、给了 0，是 120000；大过 600000 的照 600000。要是不小于 0 的整数，负数参数不对。后台的不看它，照样查写法 |
 | `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameter` 去掉，不看名字） |
-| `outside_sandbox` | 否 | 布尔，没写是假。真的：这一次要在沙盒外跑，先问人（施工 D-4，2026-10-07 项目主人定，照 Claude Code 的 `dangerouslyDisableSandbox`）。说明里写明被挡下就直接带它重跑、别先在聊天里问：带上它就是在问人（施工 D-4 补，2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」）。工具自己不看它决定套不套沙盒，只报给权限策略和执行器（`Tool::outside_sandbox`）；写成字符串的照参数格式修正成布尔 |
+| `outside_sandbox` | 否 | 布尔，没写是假。真的：这一次要在沙盒外跑，先问人（施工 D-4，2026-10-07 项目主人定，照 Claude Code 的 `dangerouslyDisableSandbox`）。说明写明它重跑沙盒挡下的命令、带上它就是在向人要许可（施工 D-4 补；原来还写「被挡下就直接重跑、别先在聊天里问」，施工 TX-1 照 `26-提示词.md` J13 去掉这句引导，2026-10-30 项目主人照推荐定）。工具自己不看它决定套不套沙盒，只报给权限策略和执行器（`Tool::outside_sandbox`）；写成字符串的照参数格式修正成布尔 |
 
 - 别的参数不认，也不报错。
 - 不报要碰的路径。权限策略照访问类别判：完全放开放行；工作区、只读两级，沙盒能用就放行、在沙盒里跑，用不了的问人（施工 5-4 上，`session/guard.md`）。
@@ -77,7 +77,7 @@
    1. 内存里留的头尾接起来照 UTF-8 解（解不开的换成 `�`）。不多过 30000 个字的，整段给。
    2. 多过的，留开头 15000 个字、结尾 15000 个字：开头那一段的最后一个换行落在它后一半里的，截在这个换行后面；结尾那一段的开头已经在行首的（前一个字是换行），照原样；不然第一个换行落在它前一半里的，从这个换行后面起（施工 4-9 再补二）。一半按字节算。
    3. `\r\n` 换成 `\n`，单独的 `\r` 不动。
-   4. 每一段不是空的就以换行结尾：头、`[... {count} characters omitted ...]`、尾、`(Showed the start and the end of {total} characters. To see all of it, write the output to a file and read the file.)`。`count` 是一共的字数减去头尾给了的字数，`total` 是一共的字数，内存里丢掉的中间那一段也数在里面。
+   4. 每一段不是空的就以换行结尾：头、`[... {count} characters omitted ...]`、尾、`(Showed the start and end of {total} characters. Output saved to a file can be read in full.)`。`count` 是一共的字数减去头尾给了的字数，`total` 是一共的字数，内存里丢掉的中间那一段也数在里面。
    - 「字」按 UTF-8 数：不是接续字节的每个字节算一个字。
 10. 结果：
 
@@ -87,7 +87,7 @@
    | 退出码 0 | 输出 | 否 | `shell/done`，`count` 是几行 |
    | 退出码不是 0 | 输出，接 `Exit code {code}` | 是 | `shell/exited`，字段 `code` |
    | 被信号杀掉（Unix） | 输出，接 `Killed by signal {signal}` | 是 | `shell/signal`，字段 `signal`（信号的编号） |
-   | 到时了 | 输出，接 `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` | 是 | `shell/timed-out`，字段 `seconds` |
+   | 到时了 | 输出，接 `Stopped at the {timeout} ms timeout. timeout can go up to {max}.` | 是 | `shell/timed-out`，字段 `seconds` |
 
    - chromium 在沙盒里起不来（施工 SB-1，2026-10-23 项目主人定；SB-1 修二补）：退出码不是 0、被信号杀掉的，输出（截了的看头尾两段）里有 chromium 自己的这几句原话之一——`Failed to create a unique user data directory`、`The SUID sandbox helper binary was found, but is not configured correctly`、`Zygote process exited prematurely`、`No usable sandbox!`、`chrome_crashpad_handler: --database is required`、`Crash Reports`（`shell/results.rs` 的 `CHROMIUM_SIGNS`）——的，末尾再接 `chromium-sandbox.txt`。后两句是 SB-1 修二加的：加了 `--no-sandbox --user-data-dir` 以后，crashpad 照 `XDG_CONFIG_HOME` 在 `~/.config/chromium/Crash Reports` 建库，那里是沙盒藏起来的私密目录（只读的空目录），建不了就把主进程一起带崩（SIGTRAP，退出码 133）；她在这一条命令前加 `XDG_CONFIG_HOME=<临时目录>` 就过，不改挂载、不改全局的 `XDG_CONFIG_HOME`。
    - firefox 截图写了相对路径（施工 SB-1 修，2026-10-23 主人验收撞见）：命令里调了 firefox（某个词的文件名以 `firefox` 开头），`--screenshot` 跟着的路径（`=` 后面或者下一个词，去掉引号）不以 `/`、`$`、`~` 开头，或者没写路径（下一个词是网址、`data:`、别的参数，或者没有了：默认的 `screenshot.png` 也是相对的）的，不管跑成没有，末尾再接 `firefox-screenshot.txt`。firefox 起来先切到 `/`，相对路径悄悄写不出来、退出码照样 0；沙盒外也一样。chromium 照工作目录写，不接。
@@ -192,7 +192,7 @@ Exit code 2
 17501
 …
 20000
-(Showed the start and the end of 108894 characters. To see all of it, write the output to a file and read the file.)
+(Showed the start and end of 108894 characters. Output saved to a file can be read in full.)
 ```
 
 - 头：前 15000 个字截在 `3222` 的中间，最后一个换行落在后一半里，截在 `3221` 那一行后面，给 14998 个字。
@@ -206,15 +206,15 @@ Exit code 2
 | 退出码 0、没有输出 | `empty.txt` | `No output` |
 | 退出码不是 0 | `exit.txt` | `Exit code {code}` |
 | 被信号杀掉 | `signal.txt` | `Killed by signal {signal}` |
-| chromium 在沙盒里起不来（施工 SB-1、修二） | `chromium-sandbox.txt` | `Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it; run it as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.` |
-| firefox 截图写了相对路径（施工 SB-1 修） | `firefox-screenshot.txt` | `Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error; give it an absolute path, such as "$PWD/shot.png".` |
-| 到时了 | `timed-out.txt` | `Stopped after {timeout} ms because the command took too long. If it needs more time, pass a larger timeout, up to {max}.` |
-| 放到后台了 | `started.txt` | `Started {job} in the background. You will be told when it ends. Read its output with jobs output.` |
+| chromium 在沙盒里起不来（施工 SB-1、修二） | `chromium-sandbox.txt` | `Chromium can't start its own sandbox, profile or crash reporter inside this sandbox, which already contains it. It runs as XDG_CONFIG_HOME=$(mktemp -d) chromium --no-sandbox --user-data-dir=$(mktemp -d) <your other arguments>.` |
+| firefox 截图写了相对路径（施工 SB-1 修） | `firefox-screenshot.txt` | `Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error. An absolute path such as "$PWD/shot.png" works.` |
+| 到时了 | `timed-out.txt` | `Stopped at the {timeout} ms timeout. timeout can go up to {max}.` |
+| 放到后台了 | `started.txt` | `Started {job} in the background. Its end is reported automatically. jobs output shows its output.` |
 | 截在中间 | `omitted.txt` | `[... {count} characters omitted ...]` |
-| 截了，末尾 | `truncated.txt` | `(Showed the start and the end of {total} characters. To see all of it, write the output to a file and read the file.)` |
+| 截了，末尾 | `truncated.txt` | `(Showed the start and end of {total} characters. Output saved to a file can be read in full.)` |
 | 执行不了 | `failed.txt` | `Could not run {shell}: {error}.` |
-| 要放到后台，没有任务端口 | `no-background.txt` | `Running in the background is not available here. Run the command in the foreground, with a larger timeout if it is slow.` |
-| 认出灭顶的高危，拒了（施工 5-17） | `hazard.txt` | `Not run: this command {reason}. That is never allowed, so do it another way.` |
+| 要放到后台，没有任务端口 | `no-background.txt` | `Running in the background is not available here. Foreground runs can take a larger timeout.` |
+| 认出灭顶的高危，拒了（施工 5-17） | `hazard.txt` | `Not run: this command {reason}, which is never allowed.` |
 | 同上，`{reason}` | `hazard/delete-root.txt`、`delete-home.txt`、`delete-system.txt`、`delete-data-root.txt`、`disk-format.txt`、`disk-write.txt`、`container-host.txt`（施工 5-17 三补） | `would delete the root directory`、`would delete the home directory`、`would delete a top-level system directory`、`would delete Miyu's own data`、`would format a disk`、`would write to a raw disk device`、`would give a container full access to this machine's devices` |
 
 输出本身不转义；换进这几句的字段照模板的规矩转义（`tools/read.md` 第 8 条）。
@@ -246,7 +246,7 @@ Exit code 2
 
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
-| 参数不对 | `The arguments are not right: {error}.` | `common/bad-args`，字段 `error` |
+| 参数不对 | `Bad arguments: {error}.` | `common/bad-args`，字段 `error` |
 | 要放到后台，没有任务端口 | `no-background.txt` | `shell/no-background` |
 | 认出灭顶的高危（权限策略拒的，不进 `run`，施工 5-17） | `hazard.txt` 填上那一种 | `shell/hazard-<种类>` |
 | 起不来、等不了；后台的任务端口收不下 | `Could not run {shell}: {error}.` | `shell/failed`，字段 `error` |

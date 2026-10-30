@@ -1,1 +1,1 @@
-Edit {index}: old_string is empty. To create a file, use write.
+Edit {index}: old_string is empty. write creates files.

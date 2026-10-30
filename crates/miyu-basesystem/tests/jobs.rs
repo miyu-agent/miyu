@@ -115,7 +115,7 @@ fn listed(job: u64, what: JobKind, title: &str, ended: Option<&str>, took_ms: u6
 }
 
 #[test]
-fn it_declares_the_three_actions_and_says_not_to_poll() {
+fn it_declares_the_three_actions_and_that_finished_jobs_report() {
     let jobs = tool("jobs");
     let spec = jobs.spec();
     assert_eq!(spec.name, "jobs");
@@ -134,8 +134,9 @@ fn it_declares_the_three_actions_and_says_not_to_poll() {
     );
     assert_eq!(parameters["required"], json!(["action"]));
     assert!(
-        spec.description.contains("no need to poll"),
-        "做完会自己报、不用轮询那一句留着：{}",
+        spec.description
+            .contains("Finished jobs report to you on their own."),
+        "做完会自己报那一句留着：{}",
         spec.description
     );
 }
@@ -194,7 +195,7 @@ async fn output_pages_like_read() {
     let done = jobs(Some(port), json!({"action": "output", "id": "j1"})).await;
     assert_eq!(
         text(&done),
-        format!("{line}\n{line}\n{line}\n(Showing lines 1-3 of 4. Use offset=4 to continue.)\n")
+        format!("{line}\n{line}\n{line}\n(Lines 1-3 of 4. Next: offset=4.)\n")
     );
     let mut port = Port::new();
     port.command = Some("a\nb\n".to_string());
@@ -203,10 +204,7 @@ async fn output_pages_like_read() {
         json!({"action": "output", "id": "j1", "offset": 3}),
     )
     .await;
-    assert_eq!(
-        text(&done),
-        "(The output has 2 lines; offset 3 is past the end.)\n"
-    );
+    assert_eq!(text(&done), "(offset 3 is past the output's 2 lines.)\n");
 }
 
 #[tokio::test]
@@ -230,7 +228,7 @@ async fn output_says_what_is_still_going_on() {
     let done = jobs(Some(port), json!({"action": "output", "id": "j2"})).await;
     assert_eq!(
         text(&done),
-        "Reading the tests first.\n(j2 is still running. It is using read, grep now.)\n"
+        "Reading the tests first.\n(j2 is still running, using read, grep.)\n"
     );
     let mut port = Port::new();
     port.running = true;
@@ -304,10 +302,7 @@ async fn ids_that_are_not_jobs_and_missing_ids() {
         assert_eq!(text(&done), "There is no job j1.\n", "没有端口的照没有");
         let done = jobs(Some(Port::new()), json!({"action": action})).await;
         assert!(done.error);
-        assert_eq!(
-            text(&done),
-            "The arguments are not right: missing field `id`.\n"
-        );
+        assert_eq!(text(&done), "Bad arguments: missing field `id`.\n");
     }
     let done = jobs(Some(Port::new()), json!({"action": "watch"})).await;
     assert!(done.error, "不认识的动作参数不对");

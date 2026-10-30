@@ -144,7 +144,7 @@ async fn with_no_base_only_save_is_given_and_saving_makes_the_first() {
     assert_eq!(
         results,
         [
-            "菜谱 is not a usable knowledge base id. Use lowercase letters, digits, - and _, starting with a letter.",
+            "菜谱 is not a valid knowledge base id (lowercase letters, digits, - and _, starting with a letter).",
             "Created knowledge base recipes and saved pork.md.",
         ]
     );
@@ -206,7 +206,7 @@ async fn saving_appending_and_editing_follow_the_file_and_undo_leaves_it() {
     let edited = last_turn(&log);
     assert_eq!(
         last_result(&chat(&home, &handle, 3, "再新建").await),
-        "a.md already exists in notes. Use append, or kb_edit."
+        "a.md already exists in notes. append and kb_edit change it."
     );
     ask(&handle, "undo", Command::Revert { turn: Some(edited) })
         .await
@@ -368,7 +368,7 @@ async fn a_mounted_folder_is_searched_and_read_but_never_written() {
             _ => None,
         })
         .collect();
-    let read_only = "notes is a mounted folder and read-only. Save to another knowledge base.";
+    let read_only = "notes is a mounted folder and read-only.";
     assert_eq!(
         results,
         [

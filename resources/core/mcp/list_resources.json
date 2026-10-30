@@ -1,4 +1,4 @@
 {
-  "description": "List the resources this MCP server offers, such as files or documents, and the URI templates you can fill in. One page at a time; pass the nextCursor it gives for the next page.",
+  "description": "List the resources this MCP server offers, such as files or documents, and the URI templates you can fill in. One page at a time.",
   "parameters": {"type":"object","properties":{"cursor":{"type":"string","description":"The nextCursor from the previous page."}}}
 }

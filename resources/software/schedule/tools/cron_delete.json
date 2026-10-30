@@ -1,4 +1,4 @@
 {
   "description": "Delete a job scheduled in this session.",
-  "parameters": {"type":"object","properties":{"id":{"type":"string","description":"From cron_create or cron_list."}},"required":["id"]}
+  "parameters": {"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}
 }

@@ -178,7 +178,7 @@ async fn a_command_past_its_timeout_is_stopped() {
     assert!(started.elapsed() < Duration::from_secs(10), "没有等满");
     assert!(done.error);
     assert!(
-        text(&done).starts_with("Stopped after 300 ms "),
+        text(&done).starts_with("Stopped at the 300 ms timeout."),
         "{}",
         text(&done)
     );
@@ -282,9 +282,7 @@ async fn long_output_is_cut_to_its_start_and_end() {
     assert!(printed.contains("\n19999\n20000\n"), "尾还在");
     assert!(printed.contains(" characters omitted ...]\n"));
     assert!(
-        printed.ends_with(
-            " characters. To see all of it, write the output to a file and read the file.)\n"
-        ),
+        printed.ends_with(" characters. Output saved to a file can be read in full.)\n"),
         "{}",
         &printed[printed.len() - 200..]
     );
@@ -295,7 +293,7 @@ async fn long_output_is_cut_to_its_start_and_end() {
         .map(|n: u32| n.to_string().len() + ending)
         .sum();
     assert!(
-        printed.contains(&format!("the end of {total} characters")),
+        printed.contains(&format!("start and end of {total} characters")),
         "{}",
         &printed[printed.len() - 200..]
     );
@@ -436,7 +434,7 @@ async fn a_relative_firefox_screenshot_gets_told_to_use_an_absolute_path() {
     assert!(
         text(&relative)
             .trim_end()
-            .ends_with("such as \"$PWD/shot.png\"."),
+            .ends_with("An absolute path such as \"$PWD/shot.png\" works."),
         "{}",
         text(&relative)
     );

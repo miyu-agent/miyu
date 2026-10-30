@@ -1,1 +1,1 @@
-Stopped after {seconds} s because the script took too long.
+Stopped at the script's {seconds} s time limit.

@@ -382,13 +382,13 @@
 | `jobs/command-exit.txt` | `Exit code {code}.` | 有退出码 |
 | `jobs/command-signal.txt` | `Killed by signal {signal}.` | 被信号杀掉 |
 | `jobs/command-duration.txt` | `Ran for {ms} ms.` | 有用时 |
-| `jobs/command-output.txt` | `The output has {chars} characters. Read it with jobs output.` | 存下了输出、回报没带最后一段（以前的日志、以前的快照） |
+| `jobs/command-output.txt` | `Output: {chars} characters, readable with jobs output.` | 存下了输出、回报没带最后一段（以前的日志、以前的快照） |
 | `jobs/command-tail.txt` | `Output:`，后面紧跟整份输出 | 回报带了整份输出（不超过 2000 个字，施工 7-13） |
-| `jobs/command-tail-cut.txt` | `Output, the last {shown} of {chars} characters (read all of it with jobs output):`，后面紧跟最后一段 | 回报带了最后一段、整份比它长（施工 7-13） |
+| `jobs/command-tail-cut.txt` | `Output, the last {shown} of {chars} characters (all of it in jobs output):`，后面紧跟最后一段 | 回报带了最后一段、整份比它长（施工 7-13） |
 | `jobs/command-close.txt` | `</command-ended>` | 收尾 |
 | `jobs/subagent-open.txt` | `<subagent-report job="{job}" title="{title}" reason="{reason}">` | 子代理的回报，开头 |
 | `jobs/subagent-person.txt` | `The user also talked to this subagent during the task.` | 人插过话 |
-| `jobs/subagent-truncated.txt` | `The middle of this report was cut. Read all of it with jobs output.` | 正文截过 |
+| `jobs/subagent-truncated.txt` | `The middle of this report was cut. jobs output has all of it.` | 正文截过 |
 | `jobs/subagent-silent.txt` | `The subagent ended without saying anything.` | 一个字都没说，代替正文 |
 | `jobs/subagent-close.txt` | `</subagent-report>` | 收尾 |
 | `jobs/stopped-by-user.txt` | `The user stopped this.` | 人停的（`stopped`、不带 `by_model`），两种回报共用，紧跟标签那一行（施工 7-2 补） |
@@ -473,7 +473,7 @@ No notice came within 12 hours, so the request was dropped.
 <command-ended job="j1" title="跑全部测试" reason="exited">
 Exit code 0.
 Ran for 81234 ms.
-The output has 48213 characters. Read it with jobs output.
+Output: 48213 characters, readable with jobs output.
 </command-ended>
 ```
 
@@ -494,7 +494,7 @@ test result: ok. 12 passed
 <command-ended job="j1" title="跑全部测试" reason="exited">
 Exit code 101.
 Ran for 81234 ms.
-Output, the last 51 of 48213 characters (read all of it with jobs output):
+Output, the last 51 of 48213 characters (all of it in jobs output):
 test result: FAILED. 11 passed; 1 failed; 0 ignored
 </command-ended>
 ```
@@ -514,7 +514,7 @@ The user also talked to this subagent during the task.
 <command-ended job="j1" title="跑全部测试" reason="stopped">
 The user stopped this.
 Ran for 300000 ms.
-The output has 5120 characters. Read it with jobs output.
+Output: 5120 characters, readable with jobs output.
 </command-ended>
 ```
 
@@ -604,7 +604,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 
 ```text
 [Prior group chat records]
-(3 earlier messages did not fit here; fetch them with history.)
+(3 earlier messages did not fit here. history has them.)
 [14:01] 小林 [msg=8810] (recalled): 发错了
 [14:02] 阿杰 [msg=8811]: 今天谁值班
 [14:02] [you] [msg=8812]: 我看看排班表

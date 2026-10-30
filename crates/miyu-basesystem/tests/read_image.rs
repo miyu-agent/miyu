@@ -111,7 +111,7 @@ async fn too_big_files_are_refused_but_read_through_for_the_hash() {
         site.call("read", serde_json::json!({"file_path": "big.png"}))
             .await
             .1,
-        "\"big.png\" is 6.0 MiB, too large to view. Images must be at most 5 MiB. Make a smaller copy with a command and read that.\n"
+        "\"big.png\" is 6.0 MiB, over the 5 MiB image limit. A smaller copy made with a command can be read.\n"
     );
     let said = done.human.expect("有说法");
     assert_eq!(said.key, "software/basesystem/read/image-too-big");
@@ -139,7 +139,7 @@ async fn too_wide_images_are_refused() {
         site.call("read", serde_json::json!({"file_path": "wide.png"}))
             .await
             .1,
-        "\"wide.png\" is 9000×10 pixels, too large to view. Images must be at most 8000 pixels on each side. Make a smaller copy with a command and read that.\n"
+        "\"wide.png\" is 9000×10 pixels, over the 8000-pixel image side limit. A smaller copy made with a command can be read.\n"
     );
     let said = done.human.expect("有说法");
     assert_eq!(said.key, "software/basesystem/read/image-too-wide");
@@ -184,9 +184,10 @@ async fn an_image_that_cannot_be_measured_is_binary() {
 #[test]
 fn the_description_says_images_are_read_too() {
     assert!(
-        tool("read").spec().description.starts_with(
-            "Read a text file or an image (PNG, JPEG, GIF, WebP), or list a directory."
-        )
+        tool("read")
+            .spec()
+            .description
+            .starts_with("Read a text file or an image, or list a directory.")
     );
 }
 
@@ -212,7 +213,7 @@ async fn an_oversized_real_image_is_scaled_down_and_said_so() {
         site.call("read", serde_json::json!({"file_path": "real.png"}))
             .await
             .1,
-        "\"real.png\" is 9000×30 pixels, so it was scaled down to 8000×26 to fit the image limit.\n"
+        "\"real.png\" is 9000×30 pixels, scaled down to 8000×26 to fit the image limit.\n"
     );
     assert_eq!(
         done.human.expect("有说法").key,

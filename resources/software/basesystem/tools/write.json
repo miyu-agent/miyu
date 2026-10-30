@@ -1,4 +1,4 @@
 {
-  "description": "Create a file, or replace all of its content. To change part of a file, use `edit`.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"content":{"type":"string"}},"required":["file_path","content"]}
+  "description": "Create a file, or replace all of its content.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"content":{"type":"string"}},"required":["file_path","content"]}
 }

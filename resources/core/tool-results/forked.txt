@@ -1,1 +1,1 @@
-Forked; the parent handles this call.
+Forked. The parent handles this call.

@@ -19,13 +19,13 @@
 
 ### 对外的样子
 
-访问类别 `read`：只改这个会话自己的清单，只读开着也能写。说明三句：是什么、整份换、怎么标状态。不要 Claude Code 的 `activeForm`：头照 `content` 显示就够，多一格每次都多写一遍。
+访问类别 `read`：只改这个会话自己的清单，只读开着也能写。说明两句：是什么、整份换（怎么标状态那一句施工 TX-1 照 `26-提示词.md` J13 删掉，2026-10-30 项目主人照推荐定）。不要 Claude Code 的 `activeForm`：头照 `content` 显示就够，多一格每次都多写一遍。
 
 样本 `resources/software/basesystem/tools/todowrite.json`：
 
 ```json
 {
-  "description": "Keep this session's task list for multi-step work, which the user sees. Each call replaces the whole list. Mark an item in_progress when you start it and completed as soon as it is done.",
+  "description": "This session's task list, which the user sees. Each call replaces the whole list.",
   "parameters": {"type":"object","properties":{"todos":{"type":"array","items":{"type":"object","properties":{"content":{"type":"string"},"status":{"type":"string","enum":["pending","in_progress","completed"]}},"required":["content","status"]}}},"required":["todos"]}
 }
 ```
@@ -36,11 +36,11 @@
 | `todos[].content` | 是 | 一句话：要做的事 |
 | `todos[].status` | 是 | `pending`、`in_progress`、`completed`；别的是参数不对 |
 
-- 不强制只有一项在做：说明里点一句，内核不拦。
+- 不强制只有一项在做，内核不拦。
 - 一条路径都不报。
 - **谁有**：本机的会话，主会话、子会话各管各的清单；场所会话（群）没有（`session/tools.md`「工具面」）。
 
-**结果**（给她看的）：还有没做完的 `Todo list updated: <做完几项> of <一共几项> done.`（`updated.txt`）；全部做完（连同空的）清空，`All todos are done. The list is cleared.`（`cleared.txt`）。不把清单原样回给她。
+**结果**（给她看的）：还有没做完的 `Todo list updated: <做完几项> of <一共几项> done.`（`updated.txt`）；全部做完（连同空的）清空，`All todos done. List cleared.`（`cleared.txt`）。不把清单原样回给她。
 
 **效果** `todo.written`：`{"todos": [{"content": …, "status": …}]}`，清空的是空列表（`kernel/events-bodies.md`）。因为全部做完而清空的多一格 `done`：她这一次交的那一份（每一项都做完了）；她交了空的的不写（施工 D-3 补）。头不翻效果，照 `subscribe` 的 `todos` 和推送的 `todos.changed`（`protocol.md`）。人也能清掉：`/todo clear` 只清待办，`/clear` 连上下文一起清（施工 D-3 再补，`kernel/session.md`「待办」第 6 条、`protocol.md` 的 `command.run` 第 14 条）；不告诉她。
 

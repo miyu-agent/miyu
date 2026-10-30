@@ -264,7 +264,7 @@ async fn bad_arguments_say_what_is_wrong() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "\"yesterday\" is not a time. Write it like 2026-09-29 14:00, or just 2026-09-29.\n"
+        "\"yesterday\" is not a time. Formats: 2026-09-29 14:00 or 2026-09-29.\n"
     );
     for bad in [
         "2026-02-30",

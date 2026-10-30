@@ -162,15 +162,14 @@ async fn she_sets_a_goal_and_blocked_waits_for_round_three() {
         results[0],
         (
             true,
-            "Goal set. From now on a new round starts by itself whenever the session is idle."
-                .to_string()
+            "Goal set. A new round now starts by itself whenever the session is idle.".to_string()
         )
     );
     assert_eq!(
         results[1],
         (
             false,
-            "Not marked blocked: this is round 1, and blocked needs at least 3 goal rounds. Make another concrete step first."
+            "Not marked blocked: this is round 1, and blocked needs at least 3 goal rounds."
                 .to_string()
         )
     );
@@ -278,7 +277,7 @@ async fn setting_another_is_refused_and_get_reads_the_current_one() {
         [
             (
                 false,
-                "A goal is already set. Read it with action get. Only the user can change or clear it, with /goal."
+                "A goal is already set, readable with action get. Only the user can change or clear it, with /goal."
                     .to_string()
             ),
             (

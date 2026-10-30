@@ -65,7 +65,7 @@ async fn an_empty_prompt_never_reaches_the_table() {
     )
     .await;
     assert!(done.error);
-    assert_eq!(text(&done), "The arguments are not right: prompt is empty.");
+    assert_eq!(text(&done), "Bad arguments: prompt is empty.");
     assert!(port.asked().is_empty());
 }
 
@@ -81,7 +81,7 @@ async fn a_full_session_and_a_bad_cron_say_why() {
     assert!(done.error);
     assert_eq!(
         text(&done),
-        "This session already has 20 jobs. Delete one with cron_delete first."
+        "This session already has 20 jobs. cron_delete frees a slot."
     );
     let bad = Fake::answering(Err(ScheduleRefused::BadCron("6 fields".to_string())));
     let done = run(
@@ -182,7 +182,7 @@ async fn bad_arguments_say_what_is_wrong() {
     let done = run("cron_create", Some(&port), json!({"prompt": "x"})).await;
     assert!(done.error);
     assert!(
-        text(&done).starts_with("The arguments are not right: missing field `cron`"),
+        text(&done).starts_with("Bad arguments: missing field `cron`"),
         "{}",
         text(&done)
     );

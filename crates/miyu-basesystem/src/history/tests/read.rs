@@ -14,7 +14,7 @@ async fn entries_come_in_order_with_calls_written_out() {
             "#64 2026-09-25 16:33 user\n把仓库里的 .editorconfig 装到我的家目录\n\n",
             "#67 2026-09-25 16:33 assistant\n我把它复制过去。\n",
             "→ shell {\"command\":\"cp .editorconfig ~/.editorconfig\"}\n\n",
-            "#71 2026-09-25 16:33 tool\nThe call was not run: the user denied it and said \"家目录里已经有一份了，别覆盖\".\n",
+            "#71 2026-09-25 16:33 tool\nThe user denied the call and said \"家目录里已经有一份了，别覆盖\".\n",
         )
     );
     assert!(human(&done).contains("history/read"), "{}", human(&done));
@@ -25,7 +25,7 @@ async fn the_next_page_starts_after_the_last_shown() {
     let done = run_on(sample(), json!({"limit": 2})).await;
     assert_eq!(seqs(&done), [52, 54]);
     assert!(
-        text(&done).ends_with("(Showing entries 52-54. Use from=55 to continue.)\n"),
+        text(&done).ends_with("(Entries 52-54. Next: from=55.)\n"),
         "{}",
         text(&done)
     );
@@ -36,7 +36,7 @@ async fn the_next_page_starts_after_the_last_shown() {
     );
     let done = run_on(sample(), json!({"limit": 3, "from": 56})).await;
     assert_eq!(seqs(&done), [63, 64, 67]);
-    assert!(text(&done).ends_with("(Showing entries 63-67. Use from=68 to continue.)\n"));
+    assert!(text(&done).ends_with("(Entries 63-67. Next: from=68.)\n"));
     // 读到最后一页，不写往下翻那一句。
     let done = run_on(sample(), json!({"from": 80})).await;
     assert_eq!(seqs(&done), [81, 82]);
@@ -71,7 +71,7 @@ async fn a_page_stays_within_its_characters() {
     let done = run_on(long(&[20_000, 20_000]), json!({})).await;
     assert_eq!(seqs(&done), [1]);
     assert!(text(&done).chars().count() < PAGE + 100);
-    assert!(text(&done).ends_with("(Showing entries 1-1. Use from=2 to continue.)\n"));
+    assert!(text(&done).ends_with("(Entries 1-1. Next: from=2.)\n"));
     // 一条就超过的：截到放得下，写明一共多少字。
     let done = run_on(long(&[40_000, 10]), json!({})).await;
     let page = text(&done);
@@ -83,13 +83,11 @@ async fn a_page_stays_within_its_characters() {
     let head = "#1 2026-09-29 14:00 user\n";
     let shown = PAGE - head.chars().count() - 1;
     assert!(
-        page.contains(&format!(
-            "(This entry is cut at {shown} of its 40000 characters.)\n"
-        )),
+        page.contains(&format!("(Entry cut at {shown} of 40000 characters.)\n")),
         "{}",
         &page[page.len() - 200..]
     );
-    assert!(page.ends_with("(Showing entries 1-1. Use from=2 to continue.)\n"));
+    assert!(page.ends_with("(Entries 1-1. Next: from=2.)\n"));
     let done = run_on(long(&[40_000, 10]), json!({"from": 2})).await;
     assert_eq!(seqs(&done), [2]);
 }
@@ -98,5 +96,5 @@ async fn a_page_stays_within_its_characters() {
 async fn a_page_has_twenty_entries_unless_told_otherwise() {
     let done = run_on(long(&[1; 25]), json!({})).await;
     assert_eq!(seqs(&done), (1..=20).collect::<Vec<_>>());
-    assert!(text(&done).ends_with("(Showing entries 1-20. Use from=21 to continue.)\n"));
+    assert!(text(&done).ends_with("(Entries 1-20. Next: from=21.)\n"));
 }

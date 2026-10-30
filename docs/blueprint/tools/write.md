@@ -24,8 +24,8 @@
 
 ```json
 {
-  "description": "Create a file, or replace all of its content. To change part of a file, use `edit`.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string","description":"Absolute, or relative to the working directory."},"content":{"type":"string"}},"required":["file_path","content"]}
+  "description": "Create a file, or replace all of its content.",
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"content":{"type":"string"}},"required":["file_path","content"]}
 }
 ```
 
@@ -88,7 +88,7 @@ Created "src/new/a.rs".
 
 | 什么时候 | 给她的字 | 说法 |
 |---|---|---|
-| 参数不对 | `The arguments are not right: {error}.` | `common/bad-args`，字段 `error` |
+| 参数不对 | `Bad arguments: {error}.` | `common/bad-args`，字段 `error` |
 | 读过以后又改过了 | `"{path}" has changed since it was last read. Read it again first.`（`common/stale.txt`） | `common/stale` |
 | 是目录 | `"{path}" is a directory.`（`common/directory.txt`） | `common/directory` |
 | 不是普通文件 | `"{path}" is not a regular file.`（`common/not-a-regular-file.txt`） | `common/not-a-regular-file` |

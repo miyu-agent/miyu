@@ -1,1 +1,1 @@
-(Showing lines {from}-{to} of {total}. Use offset={next} to continue.)
+(Lines {from}-{to} of {total}. Next: offset={next}.)

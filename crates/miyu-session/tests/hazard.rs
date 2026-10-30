@@ -69,7 +69,9 @@ async fn wiping_out_home_is_refused_in_workspace_and_full_alike() {
         assert_eq!(result.status, ToolStatus::Denied, "{level:?}");
         let text = format!("{:?}", result.blocks);
         assert!(
-            text.contains("Not run: this command would delete the home directory."),
+            text.contains(
+                "Not run: this command would delete the home directory, which is never allowed."
+            ),
             "{text}"
         );
     }

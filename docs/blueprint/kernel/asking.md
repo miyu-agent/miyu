@@ -143,12 +143,12 @@
 
 | 名字 | 什么时候 | 状态 | 原文 |
 |---|---|---|---|
-| `denied` | 人拒绝了，没写理由 | `denied` | `The call was not run: the user denied it.` |
-| `denied-with-reason` | 人拒绝了，写了理由 | `denied` | `The call was not run: the user denied it and said "{reason}".` |
-| `unattended` | 要确认，没人能确认 | `denied` | `The call was not run: it needs the user's approval, which no one can give here.` |
-| `question-interrupted` | 问着人的时候被打断 | `cancelled` | `The question was not answered: the user interrupted the turn.` |
-| `question-voided` | 问着人的时候来了一句话 | `skipped` | `The question was not answered: the user sent a new message instead.` |
-| `question-unattended` | 要问人，没人能回答 | `skipped` | `The question was not answered: no one can answer here.` |
+| `denied` | 人拒绝了，没写理由 | `denied` | `The user denied the call.` |
+| `denied-with-reason` | 人拒绝了，写了理由 | `denied` | `The user denied the call and said "{reason}".` |
+| `unattended` | 要确认，没人能确认 | `denied` | `Not run: it needs the user's approval, and no one here can give it.` |
+| `question-interrupted` | 问着人的时候被打断 | `cancelled` | `The user interrupted the turn before answering.` |
+| `question-voided` | 问着人的时候来了一句话 | `skipped` | `The user sent a new message instead of answering.` |
+| `question-unattended` | 要问人，没人能回答 | `skipped` | `No one can answer questions here.` |
 
 请求、决定、题目、回答都不进请求：她看到的只有那次调用的结果（默认的组装不渲染它们，`crates/miyu-assemble/src/render.rs`）。
 

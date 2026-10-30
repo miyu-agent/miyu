@@ -131,7 +131,7 @@ fn a_long_text_file_is_cut_to_64_kib_and_says_so() {
     let said = said.as_str().expect("一个字符串");
     let total = long.len();
     let head = format!(
-        "<file name=\"big.log\">\nOnly the first 65536 of {total} bytes of this file are shown.\n{}\n</file>\n",
+        "<file name=\"big.log\">\nOnly the first 65536 of {total} bytes are shown.\n{}\n</file>\n",
         "a".repeat(65_536)
     );
     assert_eq!(said, head);

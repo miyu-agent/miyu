@@ -305,7 +305,7 @@ async fn a_fork_goes_on_from_the_step_that_made_it_with_the_parents_snapshot() {
     );
     let rest = format!("{:?}", &child_first.messages[2..]);
     assert!(
-        rest.contains("Forked; the parent handles this call."),
+        rest.contains("Forked. The parent handles this call."),
         "{rest}"
     );
     assert!(

@@ -26,7 +26,7 @@ fn glob_comes_from_the_resources() {
     );
     assert_eq!(
         spec.parameters.get(),
-        r#"{"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"The directory to search in. Default is the working directory."}},"required":["pattern"]}"#
+        r#"{"type":"object","properties":{"pattern":{"type":"string","description":"A pattern without / matches file names at any depth."},"path":{"type":"string","description":"Default: the working directory."}},"required":["pattern"]}"#
     );
     let target = |args: &str| {
         tool.targets(&Call {
@@ -260,7 +260,7 @@ async fn more_than_a_hundred_says_how_many_are_left() {
     assert_eq!(text.lines().count(), 101);
     assert!(
         text.ends_with(
-            "(3 more of 103 matches not listed. Use a narrower pattern or path to see them.)\n"
+            "(3 more of 103 matches not listed. A narrower pattern or path shows them.)\n"
         ),
         "{}",
         &text[text.len() - 120..]
@@ -312,5 +312,5 @@ async fn the_path_must_be_a_directory_that_exists() {
     );
     let (error, text) = site.call("glob", serde_json::json!({"path": "."})).await;
     assert!(error);
-    assert!(text.starts_with("The arguments are not right: "), "{text}");
+    assert!(text.starts_with("Bad arguments: "), "{text}");
 }

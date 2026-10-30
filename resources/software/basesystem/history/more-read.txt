@@ -1,1 +1,1 @@
-(Showing entries {first}-{last}. Use from={next} to continue.)
+(Entries {first}-{last}. Next: from={next}.)

@@ -28,8 +28,8 @@
 
 ```json
 {
-  "description": "Show a file to the user: an image, video, audio, HTML page, Markdown, PDF, code or any other file.\nThe user sees it in their interface; you get no content back.\nShowing the same path again replaces what was shown.",
-  "parameters": {"type":"object","properties":{"path":{"type":"string","description":"The file to show."},"title":{"type":"string","description":"A short title. Default: the file name."}},"required":["path"]}
+  "description": "Show a file to the user in their interface, such as an image, video, audio, web page, PDF or code. You get no content back. Showing the same path again replaces it.",
+  "parameters": {"type":"object","properties":{"path":{"type":"string"},"title":{"type":"string","description":"Default: the file name."}},"required":["path"]}
 }
 ```
 

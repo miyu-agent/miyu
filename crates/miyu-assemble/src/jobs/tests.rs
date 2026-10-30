@@ -312,7 +312,10 @@ fn a_command_with_its_tail_brings_the_output_along() {
         ..shipped()
     };
     let before = command(log.history(), &whole, &old).expect("渲染得出");
-    assert!(before.contains("The output has 27 characters."), "{before}");
+    assert!(
+        before.contains("Output: 27 characters, readable with jobs output."),
+        "{before}"
+    );
     assert!(!before.contains("test result"), "{before}");
 }
 
