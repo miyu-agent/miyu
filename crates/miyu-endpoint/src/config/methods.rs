@@ -71,6 +71,8 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         .vectors()
         .and_then(|vectors| vectors.local_name());
     let values = config.resolved().values();
+    // 这台机器装了哪些界面（施工 UH-1）：只对装了某个界面才有用的项（终端集成会话那几项、默认界面）照它标不画。
+    let heads = super::unused::heads(&core.system_packages());
     for item in items {
         let said = words
             .item(item.key)
@@ -78,7 +80,11 @@ pub(crate) fn schema(core: &Core, peer: Peer, params: SchemaParams) -> Result<Va
         let notes =
             |option: &str| noted(core, (&words, &values), item.key, option, local.as_deref());
         let usable = |option: &str| usable(item.key, option, local.is_some());
-        listed.push(schema_item(item, said, &notes, &usable));
+        let mut one = schema_item(item, said, &notes, &usable);
+        if super::unused::unused(item.key, &heads) {
+            one["hidden"] = json!(true);
+        }
+        listed.push(one);
         let page = item.ui.page;
         if !pages.iter().any(|seen| seen["id"] == page) {
             let name = config_name(&words, english.as_ref(), "pages", page);

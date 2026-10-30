@@ -63,6 +63,7 @@ mod config_option_state;
 mod config_set;
 mod config_set_private;
 mod config_trust;
+mod config_unused;
 mod config_watch;
 mod delete;
 mod delete_children;

@@ -41,6 +41,7 @@ pub(crate) mod rewrite;
 pub(crate) mod set;
 mod trust;
 pub(crate) mod trusting;
+mod unused;
 pub(crate) mod wire;
 
 #[cfg(test)]
