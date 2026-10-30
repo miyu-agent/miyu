@@ -1421,12 +1421,12 @@ Running in the background is not available here. Foreground runs can take a larg
 #### `software/basesystem/shell/no-sleep.txt`
 
 - 什么时候加进来：前台的 `shell` 命令顶层有一段就是 `sleep`（`Start-Sleep`）不短于 2 秒，整条不跑（`shell/waiting.rs`，2026-10-26 项目主人定）
-- token：14（2026-10-26 照 o200k 数）
-- 为什么加：后台任务办完会自己回报，前台干等白占这一轮；照终端转来的项目主人原意写英文
-- 指纹：`a8f4a20f`
+- token：23（2026-10-30 照 o200k 数；原来 14）
+- 为什么加：后台任务办完、别的会话回话都会自己叫醒她，前台干等白占这一轮。原来只说了后台任务，她发完跨会话消息后把 `sleep` 挪到后台去等，起了四个空跑的后台任务（2026-10-30 项目主人撞见），改成说清不用等、这一轮结束后什么会叫醒她（同一天项目主人定；照 J13 写成事实，不写「结束这一轮」的命令口吻；后台的纯 `sleep` 照跑，不拒，施工 4-8 补四）
+- 指纹：`b530dd1b`
 
 ```text
-Foreground sleep is not allowed. Background jobs report back when they finish.
+Not run: no need to wait. Finished background jobs and replies from other sessions wake you after this turn ends.
 ```
 
 #### `software/basesystem/shell/hazard.txt`
