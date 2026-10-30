@@ -10,13 +10,13 @@
 |---|---|
 | `crates/miyu-store/src/env.rs` | 环境快照：找数据根、资源目录要看的几样，从进程里读一次；系统的语言 `locale`（施工 8-1，都没设的看系统设置 `system_locale`，施工 8-2） |
 | `crates/miyu-store/src/env/os.rs` | 本机是什么系统 `os_name`（施工 2-7 再补）：写进 system 核心的几行 |
-| `crates/miyu-store/src/config_file.rs` | 读配置文件（施工 8-2，`config.md`「怎么走」第二条第 2 条）：没有的是空的，1 MiB 的上限，去掉开头的 BOM（记下有没有），不是 UTF-8 的报错，版本是整份字节的 SHA-256。写（施工 8-3，第五条第 4 到 7 条）：顺着链接写本体、临时文件在本体旁边、带上原来的权限位、替换前再读一次（和调用的一方读的版本不一样的放弃）、Windows 上改名失败歇 20 毫秒再试、最多 5 次 |
+| `crates/miyu-store/src/config_file.rs` | 读配置文件（施工 8-2，`config.md`「怎么走」第二条第 2 条）：没有的是空的，1 MiB 的上限，去掉开头的 BOM（记下有没有），不是 UTF-8 的报错，版本是整份字节的 SHA-256。写（施工 8-3，第五条第 4 到 7 条）：顺着链接写本体、临时文件在本体旁边、带上原来的权限位、替换前再读一次（和调用的一方读的版本不一样的放弃）、Windows 上改名失败歇 20 毫秒再试、最多 5 次。核心起来时清掉一个目录里写到一半崩了剩下的临时文件（`sweep_temps`，施工 AS-11：名字是 `.<文件名>.<进程号>-<计数>.tmp`、普通文件、放了满 10 分钟的；认不出的名字、刚写的不碰；数据根这一层，配置、密钥、信任的记录都在这里） |
 | `crates/miyu-store/src/watch.rs` | 监视几份文件（施工 8-4，`config.md`「怎么走」第七条），或者一整个目录（`watch_dir`，施工 X-12 补：数据根里的脚本，点开头的以外哪个名字变了都算，交出去的是目录）：看它们所在的目录（链接的另看本体所在的目录），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒里没有新的变动了才交出去；系统的监视起不来的退回每 2 秒轮询，交回原因 |
 | `crates/miyu-store/src/access.rs`、`logins.rs`、`private_json.rs` | 访问密码 `access.json`（argon2id，`m=19456`、`t=2`、`p=1`）、设备令牌的哈希 `logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
 | `crates/miyu-store/src/secrets.rs` | 密钥文件 `secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
 | `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`（施工 8-3，`config.md`「日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
 | `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；数据根里各处的位置；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1） |
-| `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用） |
+| `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用）；认临时文件的名字、清崩了剩下的（施工 AS-11） |
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条）。`write` 哪里都建目录（机器的缓存目录、头自己的文件）；写进数据根的用 `write_inside`，目录照第四条建（施工 TMP-1） |
 | `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15） |
@@ -276,6 +276,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
+| `src/durable/tests.rs` 的 `only_names_made_for_writing_count_as_temporary`、`sweeping_removes_only_old_temporary_files`（施工 AS-11） | 只认写的时候起的那种名字；只删放了够久的普通文件，刚写的、目录、认不出的留着；没有这个目录不算错 |
 | `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；工作区建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-root`；只有隐藏文件也不算空；进程的环境找得到 |
 | `crates/miyu-store/src/durable/tests.rs` | 一层层建、都是 0700、建两次不出错；挡路的文件报错 |
 | `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1） |

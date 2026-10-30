@@ -57,3 +57,67 @@ fn a_data_root_removed_after_it_was_found_is_not_made_again() {
     assert_eq!(error.kind(), io::ErrorKind::NotFound, "{error}");
     assert!(!scratch.path().exists(), "什么都没建");
 }
+
+/// 认得出的只有写的时候起的那种名字（施工 AS-11）。
+#[test]
+fn only_names_made_for_writing_count_as_temporary() {
+    assert!(is_temp_name(&temp_name("config.toml")));
+    for name in [
+        ".secrets.toml.4242-0.tmp",
+        ".config.toml.1-22.tmp",
+        ".a.b.c.9-9.tmp",
+    ] {
+        assert!(is_temp_name(name), "{name}");
+    }
+    for name in [
+        "config.toml.4242-0.tmp",
+        ".config.toml.tmp",
+        ".config.toml.4242.tmp",
+        ".config.toml.abc-1.tmp",
+        ".config.toml.1-x.tmp",
+        "..4242-0.tmp",
+        ".config.toml.4242-0.tmp.bak",
+        "notes.tmp",
+    ] {
+        assert!(!is_temp_name(name), "{name}");
+    }
+}
+
+/// 清的时候只删放了够久的、普通文件；刚写的、目录、认不出的都留着（施工 AS-11）。
+#[test]
+fn sweeping_removes_only_old_temporary_files() {
+    use std::time::{Duration, SystemTime};
+    let scratch = Scratch::bare();
+    let dir = scratch.path();
+    fs::create_dir_all(dir).unwrap();
+    for name in [
+        ".secrets.toml.1-0.tmp",
+        ".config.toml.1-1.tmp",
+        ".config.toml.tmp",
+    ] {
+        fs::write(dir.join(name), "x").unwrap();
+    }
+    fs::create_dir_all(dir.join(".folder.1-2.tmp")).unwrap();
+    let later = SystemTime::now() + Duration::from_secs(3600);
+    let swept = sweep_temps(dir, later, Duration::from_secs(600)).unwrap();
+    let mut removed: Vec<String> = swept
+        .removed
+        .iter()
+        .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    removed.sort();
+    assert_eq!(removed, [".config.toml.1-1.tmp", ".secrets.toml.1-0.tmp"]);
+    assert!(dir.join(".config.toml.tmp").exists());
+    assert!(dir.join(".folder.1-2.tmp").is_dir());
+    // 刚写的不碰。
+    fs::write(dir.join(".config.toml.1-3.tmp"), "x").unwrap();
+    let swept = sweep_temps(dir, SystemTime::now(), Duration::from_secs(600)).unwrap();
+    assert!(swept.removed.is_empty());
+    // 没有这个目录的不算错。
+    assert!(
+        sweep_temps(&dir.join("missing"), later, Duration::from_secs(600))
+            .unwrap()
+            .removed
+            .is_empty()
+    );
+}

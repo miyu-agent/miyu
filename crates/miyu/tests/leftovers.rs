@@ -1,7 +1,9 @@
-//! 核心起来时收拾上一次崩了留下的（发布前第二轮审查，施工 AE-7）：升级装上的包时两次改名之间被杀，`<编号>/` 没了、
-//! 原来那一份还在 `.<编号>.old`，起来时放回去。认不出的名字一个都不碰。
+//! 核心起来时收拾上一次崩了留下的（发布前第二轮审查，施工 AE-7、AS-11）：升级装上的包时两次改名之间被杀，`<编号>/` 没了、
+//! 原来那一份还在 `.<编号>.old`，起来时放回去；写配置、密钥时被杀留下的临时文件 `.<文件名>.<进程号>-<计数>.tmp`，
+//! 放了一阵的起来时删掉（里面可能是密钥的副本）。认不出的名字一个都不碰。
 
 use std::fs;
+use std::time::{Duration, SystemTime};
 
 use miyu_ipc::connect_or_start;
 
@@ -48,5 +50,47 @@ async fn an_upgrade_cut_off_between_the_renames_is_put_back_when_the_core_starts
     assert!(packages.join("cake").join("package.toml").is_file());
     for kept in [".pudding.bak", ".Not An Id.old"] {
         assert!(packages.join(kept).exists(), "{kept} 认不出，不该碰");
+    }
+}
+
+#[tokio::test]
+async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
+    let home = Home::new();
+    let root = home.root.path();
+    let day_ago = SystemTime::now() - Duration::from_secs(24 * 3600);
+    let put = |name: &str, old: bool| {
+        let path = root.join(name);
+        fs::write(&path, "secret = \"sk-test\"").expect("写得进");
+        if old {
+            fs::File::options()
+                .write(true)
+                .open(&path)
+                .and_then(|file| file.set_modified(day_ago))
+                .expect("改得了时刻");
+        }
+        path
+    };
+    let stale = [
+        put(".secrets.toml.4242-0.tmp", true),
+        put(".config.toml.4242-7.tmp", true),
+    ];
+    let kept = [
+        // 刚写的：说不定是别的程序正在写，不碰。
+        put(".config.toml.4242-8.tmp", false),
+        // 认不出的名字：人放的，不碰。
+        put(".config.toml.tmp", true),
+        put("notes.tmp", true),
+        put(".config.toml.abc-1.tmp", true),
+    ];
+    start_once(&home).await;
+    for path in stale {
+        assert!(
+            !path.exists(),
+            "{} 是崩了留下的临时文件，该删掉",
+            path.display()
+        );
+    }
+    for path in kept {
+        assert!(path.exists(), "{} 不该碰", path.display());
     }
 }

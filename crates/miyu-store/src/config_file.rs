@@ -194,6 +194,21 @@ impl Mode {
     }
 }
 
+pub use crate::durable::Swept;
+
+/// 临时文件放了多久以后算崩了留下的（施工 AS-11）：写一份配置只要几毫秒，十分钟还在的不会是正在写的。
+pub const STALE_TEMP: std::time::Duration = std::time::Duration::from_secs(600);
+
+/// 删掉目录 `dir` 里写配置、密钥时崩了留下的临时文件（施工 AS-11）：名字是写的时候起的那种
+/// （`.<文件名>.<进程号>-<计数>.tmp`）、放了满 [`STALE_TEMP`] 的。里面可能是密钥的副本。认不出的名字一个都不碰。
+///
+/// # Errors
+///
+/// 目录读不了（没有这个目录的不算错）。
+pub fn sweep_temps(dir: &Path, now: std::time::SystemTime) -> io::Result<Swept> {
+    crate::durable::sweep_temps(dir, now, STALE_TEMP)
+}
+
 /// 同 [`write()`]，权限照 `mode`；改名之前先叫一声 `before_rename`（交给它临时文件在哪）：测试照它在那一瞬间手改文件、
 /// 装作崩了。
 pub(crate) fn write_with(

@@ -187,6 +187,77 @@ pub(crate) fn temp_name(name: &str) -> String {
     )
 }
 
+/// 名字是不是 [`temp_name`] 起的：`.<文件名>.<进程号>-<计数>.tmp`，进程号、计数都是数字，文件名不是空的。
+pub(crate) fn is_temp_name(name: &str) -> bool {
+    let Some(inner) = name
+        .strip_prefix('.')
+        .and_then(|rest| rest.strip_suffix(".tmp"))
+    else {
+        return false;
+    };
+    let Some((file, numbers)) = inner.rsplit_once('.') else {
+        return false;
+    };
+    let digits = |part: &str| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit());
+    !file.is_empty()
+        && numbers
+            .split_once('-')
+            .is_some_and(|(pid, count)| digits(pid) && digits(count))
+}
+
+/// 删掉目录 `dir` 里崩了留下的临时文件（施工 AS-11）：名字是 [`temp_name`] 起的那种、是普通文件、最后改动在 `now` 之前
+/// 满 `age` 的。刚写的不碰（说不定是别的程序正在写），认不出的名字一个都不碰。交回删掉了哪几个；删不掉的说在哪、为什么。
+///
+/// # Errors
+///
+/// 目录读不了（没有这个目录的当没有，交回空的）。
+pub(crate) fn sweep_temps(
+    dir: &Path,
+    now: std::time::SystemTime,
+    age: std::time::Duration,
+) -> io::Result<Swept> {
+    let mut swept = Swept::default();
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(swept),
+        Err(error) => return Err(error),
+    };
+    for entry in entries {
+        let entry = entry?;
+        let Some(name) = entry.file_name().to_str().map(str::to_string) else {
+            continue;
+        };
+        if !is_temp_name(&name) {
+            continue;
+        }
+        let Ok(metadata) = fs::symlink_metadata(entry.path()) else {
+            continue;
+        };
+        let old_enough = metadata
+            .modified()
+            .ok()
+            .and_then(|modified| now.duration_since(modified).ok())
+            .is_some_and(|since| since >= age);
+        if !metadata.is_file() || !old_enough {
+            continue;
+        }
+        match fs::remove_file(entry.path()) {
+            Ok(()) => swept.removed.push(entry.path()),
+            Err(error) => swept.failed.push((entry.path(), error)),
+        }
+    }
+    Ok(swept)
+}
+
+/// [`crate::config_file::sweep_temps`] 的结果。
+#[derive(Debug, Default)]
+pub struct Swept {
+    /// 删掉了的。
+    pub removed: Vec<PathBuf>,
+    /// 删不掉的：在哪，为什么。
+    pub failed: Vec<(PathBuf, io::Error)>,
+}
+
 /// 删掉用不上的临时文件。
 #[expect(
     clippy::let_underscore_must_use,
