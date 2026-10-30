@@ -1,4 +1,5 @@
-//! 规格翻成 MXC 的请求（施工 5-9 改上）：能写的进读写路径，藏起来的进禁止路径（禁止压过只读、读写，2026-10-21 虚拟机上量过），
+//! 规格翻成 MXC 的请求（施工 5-9 改上）：能写的进读写路径，藏起来的进禁止路径（禁止压过只读、读写，2026-10-21 虚拟机上量过；
+//! 正被别的进程独占着的文件不交，施工 SW-1，`miyu_sandbox::deniable`），
 //! 读照设计 11 A4 整盘放开：每个固定盘的盘根进只读路径，单独放开只读的（技能文件夹）也进；网络照设计 11 A5 不管，进出都放行；
 //! 窗口放开（全关会挡 Win32k，PowerShell、git 起不来），剪贴板、模拟输入照 MXC 的默认不给。环境照助手自己的原样交（执行器
 //! 已经拣好了），不叠 MXC 的默认；工作目录是助手的。不限时：时限由执行器管。
@@ -35,7 +36,10 @@ pub(super) fn of(
             .into_iter()
             .chain(spec.reveal.iter().map(|path| text(path)))
             .collect(),
-        denied_paths: spec.hidden.iter().map(|path| text(path)).collect(),
+        denied_paths: miyu_sandbox::deniable(&spec.hidden, miyu_sandbox::busy)
+            .iter()
+            .map(|path| text(path))
+            .collect(),
         ..Default::default()
     });
     request.network = Some(NetworkPolicy {

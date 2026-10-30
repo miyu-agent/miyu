@@ -11,6 +11,7 @@
 //! - [`lifeline`]：核心没了，它起的命令跟着没（施工 7-8）：Unix 上每个组一个看门的，Windows 上核心进作业对象；
 //! - [`install`]：装沙盒要管理员权限的那一次，Windows 上建、撤专用的沙盒用户（施工 5-8，`docs/blueprint/sandbox/windows.md`）；
 //! - `testkit`：测试用的，cargo 编出来的助手在哪（施工 5-4 上）；
+//! - [`deniable`]：交给 MXC 的禁止路径先去掉被别的进程独占着的文件（施工 SW-1，Windows 上照 `busy` 问）；
 //! - [`set_mounts`]、[`mounts`]：这台机器的命令能不能用挂载收紧（施工 5-16）：核心探完设一次，执行器写规格时读。
 //!
 //! 助手本身在 `src/bin/miyu-sandbox/`：共用的在 `main.rs`，收紧和换成命令各平台一个文件。
@@ -18,6 +19,7 @@
 //! Linux（Landlock，施工 5-2、5-3）、macOS（Seatbelt，施工 5-7）上照规格收紧；Windows 还不收紧（5-9）。
 
 mod availability;
+mod busy;
 mod cmdline;
 pub mod install;
 pub mod lifeline;
@@ -29,6 +31,9 @@ pub mod testkit;
 mod wrap;
 
 pub use availability::{Availability, Unusable};
+#[cfg(windows)]
+pub use busy::busy;
+pub use busy::deniable;
 pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
 pub use probe::{BUILD, Platform, Probe, ProbeError, VERSION, probe};
