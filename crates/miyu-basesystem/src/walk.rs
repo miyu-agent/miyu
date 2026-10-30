@@ -209,12 +209,14 @@ pub(crate) fn each(
         .for_each(&mut found);
 }
 
-/// 照字面截相对路径用的 `root`（[`quick`]）：写得成 UTF-8、最后一段是名字或者根的才行，别的（例如 Windows 的 `C:`、
-/// `\\?\C:` 后面没有 `\`：再往下接一段，多出来的是根，不是名字）交给 [`slow`]。走一遍算一次。
+/// 照字面截相对路径用的 `root`（[`quick`]）：写得成 UTF-8、最后一段是名字或者根、Windows 上开头是前缀（盘符、`\\?\`、UNC）
+/// 的才行。别的交给 [`slow`]：Windows 的 `C:`、`\\?\C:` 后面没有 `\`，再往下接一段，多出来的是根，不是名字；没有前缀的
+/// `\\server` 再接 `\share` 就整个认成 UNC 的前缀了，一段段比时它不是起点的下面。走一遍算一次。
 fn quick_root(root: &Path) -> Option<&str> {
+    let prefixed = !cfg!(windows) || matches!(root.components().next(), Some(Component::Prefix(_)));
     let last = root.components().next_back();
     root.to_str()
-        .filter(|_| matches!(last, Some(Component::Normal(_) | Component::RootDir)))
+        .filter(|_| prefixed && matches!(last, Some(Component::Normal(_) | Component::RootDir)))
 }
 
 /// `path` 相对 `root` 的路径，一段一段用 `/` 连起来。`quick` 是 [`quick_root`] 交回的：有的先照字面截（施工 V-31），截不了的

@@ -149,7 +149,7 @@ a.rs
 | `crates/miyu-basesystem/src/pattern/tests.rs` | 模式的每一条规矩、写错了说哪里错、绝对路径的模式怎么拆（Windows 的前缀里的 `?`） |
 | `crates/miyu-basesystem/src/walk/tests.rs` | 丢掉这次调用，走目录就停 |
 | `crates/miyu-basesystem/src/walk/tests/fence.rs`（施工 V-31） | 剪掉碰不到的数据根、私密目录以后，起点在它们上面、里面、旁边、等于它，换了大小写的写法，有没有工作目录，挡哪些目录和剪之前逐个一样；剪下来只剩碰得到的；真的走一遍照旧 |
-| `crates/miyu-basesystem/src/walk/tests/relative.rs`（施工 V-31） | 相对路径直接截和一段段比交回的一字不差：一层层接出来的、起点以分隔符结尾、多一个分隔符、夹着 `.`、不是一段段的前缀、空的和相对的起点、根目录、不是 UTF-8 的名字、Windows 的盘符、`\\?\`、UNC、`/` 当分隔符、只有前缀没有根 |
+| `crates/miyu-basesystem/src/walk/tests/relative.rs`（施工 V-31） | 相对路径直接截和一段段比交回的一字不差：一层层接出来的、起点以分隔符结尾、多一个分隔符、夹着 `.`、不是一段段的前缀、空的和相对的起点、根目录、不是 UTF-8 的名字、Windows 的盘符、`\\?\`、UNC、`/` 当分隔符、只有前缀没有根、没有前缀的 |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/search.rs` | 会话里真的调它：工作区里找得到；从上面搜下来不进数据根 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |

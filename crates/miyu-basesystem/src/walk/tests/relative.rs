@@ -97,7 +97,7 @@ fn a_name_that_is_not_utf8_reads_the_same() {
     );
 }
 
-/// Windows 的几种写法：盘符、`\\?\`、UNC、`/` 当分隔符、只有前缀没有根。
+/// Windows 的几种写法：盘符、`\\?\`、UNC、`/` 当分隔符、只有前缀没有根、没有前缀的（`\\server` 再接一段就成了 UNC 的前缀）。
 #[cfg(windows)]
 #[test]
 fn windows_spellings_read_the_same() {
@@ -117,6 +117,10 @@ fn windows_spellings_read_the_same() {
         (r"C:", r"C:a"),
         (r"\\?\C:", r"\\?\C:\a"),
         (r"\\server", r"\\server\share\a"),
+        (r"\\server\share", r"\\server\share\a"),
+        (r"\x", r"\x\a"),
+        (r"\", r"\a"),
+        ("x", r"x\a"),
         (r"\\?\C:\r", r"\\?\C:\r\a/b"),
         (r"C:\r", r"C:\r/a"),
         ("C:/r/", "C:/r/a"),
