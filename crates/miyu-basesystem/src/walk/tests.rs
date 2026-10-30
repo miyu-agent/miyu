@@ -11,7 +11,7 @@ use std::sync::Arc;
 use miyu_config::secret::{Reference, Secret};
 use miyu_config::{Value, Values};
 
-use super::{Fence, files};
+use super::{Fence, files, newest};
 use crate::blocking::blocking;
 
 /// 一个用完就删的临时目录，里面有几个文件。
@@ -136,4 +136,45 @@ fn a_working_dir_holding_the_data_root_still_keeps_it_out() {
         "工作目录在数据根里：那一片照进"
     );
     assert!(fence.keeps_out(&real(&data.join("run"))), "数据根别处不进");
+}
+
+/// 只留最新的几个（施工 V-21）：和整棵树排好以后取前几个一样，时间一样的照路径；一共几个照走到的数。
+#[test]
+fn the_newest_few_are_the_head_of_the_whole_sorted_walk() {
+    let dir = Temp(std::env::temp_dir().join(format!("miyu-walk-newest-{}", std::process::id())));
+    let epoch = std::time::SystemTime::UNIX_EPOCH;
+    for n in 0..40_u64 {
+        let path = dir.0.join(format!("d{}/f{n:02}.txt", n % 3));
+        std::fs::create_dir_all(path.parent().expect("有上级目录")).expect("建得了目录");
+        std::fs::write(&path, "x").expect("写得进");
+        // 每三个一样的时间：排序要照路径分先后。
+        let at = epoch + Duration::from_secs(1_000_000 + (n / 3) * 60);
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .and_then(|file| file.set_modified(at))
+            .expect("改得了修改时间");
+    }
+    let whole = files(&dir.0, open(), &Stop::default(), |_| true);
+    let names = |found: &[super::Found]| -> Vec<String> {
+        found.iter().map(|file| file.relative.clone()).collect()
+    };
+    for limit in [0, 1, 5, 39, 40, 100] {
+        let (kept, total) = newest(&dir.0, open(), &Stop::default(), |_| true, limit);
+        assert_eq!(total, 40, "一共几个照走到的数");
+        assert_eq!(
+            names(&kept),
+            names(&whole[..limit.min(whole.len())]),
+            "留 {limit} 个"
+        );
+    }
+    let (kept, total) = newest(
+        &dir.0,
+        open(),
+        &Stop::default(),
+        |name| name.starts_with("d1/"),
+        3,
+    );
+    assert_eq!(total, 13, "只数留下的");
+    assert_eq!(names(&kept), ["d1/f37.txt", "d1/f34.txt", "d1/f31.txt"]);
 }

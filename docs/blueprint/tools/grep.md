@@ -59,7 +59,7 @@
    - 别的（点名的一个文件）：只搜它，不管 `glob`。
    - 没有：没有这个文件，带上相近的名字（`tools/read.md` 第 9 条）。
    - 读不了：读的时候出错了。
-6. 一个一个文件照先后搜：
+6. 一个一个文件照先后搜（`files_with_matches`、`count` 边走边搜、只留搜到了的，最后照同样的先后排，施工 V-21；交回的和先走完、排好再搜的一样。`content` 要照先后搜、够数就停，先走完排好）：
    - 照「安全地打开」开（`fs.md` 第四节）：打不开、读不了的跳过，当没搜到；不是普通文件的（FIFO、设备……）也算打不开，马上跳过，不卡住。
    - 带 BOM 的 UTF-16 照认（转成 UTF-8 再搜）。
    - 读到 NUL 字节的当二进制文件，整个跳过，前面搜到的也不算。一次读 64 KiB；只读到停下来的地方为止（只列文件时搜到第一处就停，列行时搜够数就停），没读到的那一段里有 NUL 也不知道。
@@ -172,6 +172,7 @@ f.txt-9-line 9
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-basesystem/tests/grep.rs` | 参数格式里的八个参数、报的路径；默认只列文件、新的在前；三种输出的写法；前后行和 `--`、`-C`、`context` 压过 `-A`、只要 `-A`；跳过的匹配不带它的前后行、`head_limit` 以外的也不带；`glob`、`include`、点名一个文件不管 `glob`；点名一个 FIFO 马上交回（Unix）；`-A`、`-B`、`-C` 写成字符串的整数也认；忽略的、二进制的、数据根里的不搜；`-i`、UTF-16；`head_limit`、`offset` 翻页、0 不限、`content` 够数就停；默认 250；一行截到 500；没搜到不算出错、正则和 `glob` 写错了算、没有的路径 |
+| `crates/miyu-basesystem/tests/grep.rs` 的 `counts_are_newest_first_and_the_same_time_sorts_by_path`（施工 V-21） | 边走边搜的计数照样新的在前、时间一样的照路径 |
 | `crates/miyu-basesystem/tests/glob.rs`、`src/pattern/tests.rs`、`src/walk/tests.rs` | 走目录、模式、叫停（和 `glob` 共用） |
 | `crates/miyu-basesystem/tests/human.rs` | 每一种结果的说法，两种语言都换得出字 |
 | `crates/miyu-session/tests/search.rs` | 会话里真的调它：工作区里搜得到、边界以外的也搜得到（施工 5-4 上）；从上面搜下来不进数据根 |

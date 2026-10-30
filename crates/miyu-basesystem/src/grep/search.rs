@@ -39,7 +39,7 @@ fn last_line(error: &str) -> String {
 }
 
 /// 前后各带几行的搜法；二进制的碰到 NUL 就不往下搜了。
-fn searcher(before: usize, after: usize) -> Searcher {
+pub(super) fn searcher(before: usize, after: usize) -> Searcher {
     SearcherBuilder::new()
         .binary_detection(BinaryDetection::quit(b'\x00'))
         .line_number(true)
@@ -48,36 +48,17 @@ fn searcher(before: usize, after: usize) -> Searcher {
         .build()
 }
 
-/// `files` 里有匹配的那几个，照原来的先后。
-pub(super) fn with_matches(matcher: &RegexMatcher, files: &[PathBuf], stop: &Stop) -> Vec<PathBuf> {
-    let mut searcher = searcher(0, 0);
-    files
-        .iter()
-        .take_while(|_| !stop.stopped())
-        .filter(|file| {
-            let mut sink = First::default();
-            search(&mut searcher, matcher, file, &mut sink) && sink.found && !sink.binary
-        })
-        .cloned()
-        .collect()
+/// 文件 `file` 里有没有匹配（二进制的、读不了的算没有）。`searcher` 照 [`searcher`]`(0, 0)` 造，几个文件共用一个。
+pub(super) fn matches(searcher: &mut Searcher, matcher: &RegexMatcher, file: &Path) -> bool {
+    let mut sink = First::default();
+    search(searcher, matcher, file, &mut sink) && sink.found && !sink.binary
 }
 
-/// `files` 里有匹配的那几个，各有几行匹配，照原来的先后。
-pub(super) fn counts(
-    matcher: &RegexMatcher,
-    files: &[PathBuf],
-    stop: &Stop,
-) -> Vec<(PathBuf, u64)> {
-    let mut searcher = searcher(0, 0);
-    files
-        .iter()
-        .take_while(|_| !stop.stopped())
-        .filter_map(|file| {
-            let mut sink = Count::default();
-            let ok = search(&mut searcher, matcher, file, &mut sink);
-            (ok && sink.lines > 0 && !sink.binary).then(|| (file.clone(), sink.lines))
-        })
-        .collect()
+/// 文件 `file` 里有几行匹配；没有的、二进制的、读不了的交回 `None`。`searcher` 同 [`matches()`]。
+pub(super) fn count(searcher: &mut Searcher, matcher: &RegexMatcher, file: &Path) -> Option<u64> {
+    let mut sink = Count::default();
+    let ok = search(searcher, matcher, file, &mut sink);
+    (ok && sink.lines > 0 && !sink.binary).then_some(sink.lines)
 }
 
 /// 一个文件里搜到的：匹配的行和前后带出来的行，照行号先后。

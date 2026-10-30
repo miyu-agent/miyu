@@ -78,6 +78,25 @@ async fn by_default_only_the_files_newest_first() {
     );
 }
 
+/// 每个文件几处也是新的在前、时间一样的照路径（施工 V-21：边走边搜，留下的照先后排）。
+#[tokio::test]
+async fn counts_are_newest_first_and_the_same_time_sorts_by_path() {
+    let site = Site::new();
+    for (name, age) in [("c.txt", 60), ("a.txt", 60), ("b.txt", 30), ("d.txt", 90)] {
+        site.file(&format!("work/{name}"), b"main\nmain\n");
+        site.aged(&format!("work/{name}"), age);
+    }
+    site.file("work/none.txt", b"other\n");
+    assert_eq!(
+        site.call(
+            "grep",
+            serde_json::json!({"pattern": "main", "output_mode": "count"})
+        )
+        .await,
+        (false, listed(&["b.txt:2", "a.txt:2", "c.txt:2", "d.txt:2"]))
+    );
+}
+
 #[tokio::test]
 async fn content_shows_path_line_and_text() {
     let site = Site::new();
