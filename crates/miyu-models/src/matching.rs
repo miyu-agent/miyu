@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::catalog::{Catalog, Entry};
 
@@ -59,8 +59,10 @@ impl Vendors {
     }
 }
 
-/// 供应商是怎么认出来的（`model.list` 的 `catalog.how`）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 供应商是怎么认出来的（`model.list` 的 `catalog.how`）。JSON 里的写法同 [`How::as_str`]（施工 V-25 上：查目录记下来的答
+/// 里有它）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum How {
     /// 手写的 `catalog`。
     Config,
@@ -85,7 +87,7 @@ impl How {
 }
 
 /// 一家配好的供应商在目录里是哪一家。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Recognized {
     /// 目录里的编号。
     pub provider: String,
@@ -151,7 +153,7 @@ pub(crate) fn address(url: &str) -> String {
 }
 
 /// 对上的条目。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Matched {
     /// 目录里的编号。
     pub provider: String,
@@ -164,7 +166,8 @@ pub struct Matched {
 }
 
 /// 对目录的结果。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Found {
     /// 对上了。
     Matched(Matched),

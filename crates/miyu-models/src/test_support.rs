@@ -10,7 +10,7 @@ use miyu_config::{Item, Layer};
 use serde_json::json;
 
 use crate::Knowledge;
-use crate::catalog::{Catalog, CatalogSource, Loaded};
+use crate::catalog::{Catalog, CatalogLookup, CatalogSource, Loaded};
 use crate::matching::Vendors;
 use crate::observed::{Learned, ProviderList};
 use crate::profile::Profiles;
@@ -74,6 +74,7 @@ impl Held {
             profiles: &self.profiles,
             vendors: &self.vendors,
             catalog: self.catalog.as_ref(),
+            lookup: self.catalog.as_ref().map(CatalogLookup::Full),
             learned: &self.learned,
             lists: &self.lists,
         }
