@@ -7,5 +7,5 @@ author = "miyu-agent"
 upstream = "https://github.com/miyu-agent/miyu"
 prefix = "authoring"
 name = { en = "Authoring", zh = "写技能和包", ja = "スキルとパッケージの作成" }
-summary = { en = "How to write skills, scripts and packages", zh = "教她写技能、脚本和软件包", ja = "スキル・スクリプト・パッケージの書き方" }
+summary = { en = "How to write skills, scripts and packages", zh = "怎么写技能、脚本和软件包", ja = "スキル・スクリプト・パッケージの書き方" }
 icon = "pencil"

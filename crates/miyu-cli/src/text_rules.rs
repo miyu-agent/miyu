@@ -124,3 +124,29 @@ fn errors_go_through_the_diagnostic_module() {
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
+
+/// 出厂包的名字、说明也会印在 `miyu pkg search`、`miyu pkg info` 里（施工 CL-6）：不用「她」。注释不算。
+#[test]
+fn shipped_package_summaries_do_not_say_her() {
+    let packages = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources/packages");
+    let mut wrong = Vec::new();
+    for manifest in files(&packages, "toml") {
+        let text = std::fs::read_to_string(&manifest).expect("读得了");
+        for (at, line) in text.lines().enumerate() {
+            let line = if line.trim_start().starts_with('#') {
+                ""
+            } else {
+                line
+            };
+            if line.contains('她') {
+                wrong.push(format!(
+                    "{}:{}: {}",
+                    manifest.display(),
+                    at + 1,
+                    line.trim()
+                ));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
