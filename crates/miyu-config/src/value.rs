@@ -7,6 +7,7 @@
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::item::Item;
 use crate::secret::Reference;
@@ -306,20 +307,25 @@ fn quoted(text: &str) -> String {
 
 /// 一份最终值：键到值。设置类型从它变过来（[`settings!`](crate::settings)），没有的项照默认值。分层合并交出它
 /// （[`crate::merge`]，施工 8-2）；全是默认值的一份是 [`Values::defaults`]。
+///
+/// 拷一份不拷内容（施工 V-22）：几份共用一张表，哪一份要改（[`Values::set`]）才给它另拷一张，别的不受影响。读配置的地方
+/// 很多（流式时每推一批都要读语言、币种），以前每读一次拷一整份。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Values {
-    map: BTreeMap<String, Value>,
+    map: Arc<BTreeMap<String, Value>>,
 }
 
 impl Values {
     /// 清单 `items` 里每一项都照默认值：没有默认值的、键里有人起的名字那一段的不在里面。
     pub fn defaults(items: &[Item]) -> Values {
         Values {
-            map: items
-                .iter()
-                .filter(|item| !item.is_pattern())
-                .filter_map(|item| Some((item.key.to_string(), item.default.clone()?)))
-                .collect(),
+            map: Arc::new(
+                items
+                    .iter()
+                    .filter(|item| !item.is_pattern())
+                    .filter_map(|item| Some((item.key.to_string(), item.default.clone()?)))
+                    .collect(),
+            ),
         }
     }
 
@@ -333,9 +339,9 @@ impl Values {
         self.map.get(key)
     }
 
-    /// 键 `key` 的值换成 `value`。
+    /// 键 `key` 的值换成 `value`：和别的几份共用着表的，先另拷一张再改。
     pub fn set(&mut self, key: &str, value: Value) {
-        self.map.insert(key.to_string(), value);
+        Arc::make_mut(&mut self.map).insert(key.to_string(), value);
     }
 }
 

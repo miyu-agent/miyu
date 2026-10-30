@@ -19,7 +19,7 @@
 use std::sync::Arc;
 
 use serde_json::{Value, json};
-use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinSet;
 
@@ -29,6 +29,7 @@ mod accounts;
 mod checks;
 mod gate;
 mod handing;
+mod outbox;
 mod reach;
 mod rights;
 mod streams;
@@ -38,6 +39,7 @@ use reach::Reach;
 mod tests;
 
 use handing::Handing;
+use outbox::write_all;
 use streams::{Stream, stream_of};
 
 use crate::extensions::Instance;
@@ -92,20 +94,6 @@ async fn serve_from<S>(
         read_all(read, core, out, (spawned, reach)),
         write_all(write, lines)
     );
-}
-
-/// 写的一头：一行行写出去，写不出去就停。
-async fn write_all<W: AsyncWrite + Unpin>(mut write: W, mut lines: mpsc::Receiver<String>) {
-    while let Some(line) = lines.recv().await {
-        let written = async {
-            write.write_all(line.as_bytes()).await?;
-            write.write_all(b"\n").await?;
-            write.flush().await
-        };
-        if written.await.is_err() {
-            return;
-        }
-    }
 }
 
 /// 读的一头：一条条办请求，回应放进写队列（订阅了的会话，经它的转发任务）。`spawned`、`reach` 见 [`serve_from`]。

@@ -270,6 +270,23 @@ fn unbudgeted(text: &mut String, results: &Results) {
             &format!("| {label}（p50 / p95） | {} ms |", spread(values)),
         );
     }
+    // 流式一轮（施工 V-22）：回答切成几百块，核心每收一块都走一遍；别的几行假模型一次回一整块，量不出这一截。
+    if let Some(streamed) = &results.streamed {
+        for (label, values) in [
+            ("核心花的 CPU", &streamed.cpu),
+            ("说出去到这一轮结束", &streamed.turn),
+        ] {
+            line(
+                text,
+                &format!(
+                    "| 大会话上流式一轮（回答切成 {} 块，{} 轮）：{label}（p50 / p95） | {} ms |",
+                    streamed.pieces,
+                    values.len(),
+                    spread(values)
+                ),
+            );
+        }
+    }
     line(
         text,
         &format!(

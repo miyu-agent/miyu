@@ -11,6 +11,7 @@ use crate::measure::large::Large;
 use crate::measure::sessions::Hot;
 use crate::measure::size::Size;
 use crate::measure::startup::Cold;
+use crate::measure::stream::Streamed;
 use crate::memory::{Process, Usage};
 
 /// 读回一整份。次数、大小照原始数据里的 `plan`，路径照 `args`。
@@ -73,6 +74,15 @@ pub fn results(raw: &Value, mut args: Args) -> Result<Results, String> {
         // 施工 V-9 以前的原始数据没有开着记忆的那一组。
         remembering: match raw.get("large_memory") {
             Some(remembering) => Some(large(remembering, "large_memory")?),
+            None => None,
+        },
+        // 施工 V-22 以前的原始数据没有流式一轮。
+        streamed: match raw.get("stream") {
+            Some(stream) => Some(Streamed {
+                pieces: count(&stream["pieces"], "stream.pieces")?,
+                cpu: times(&stream["cpu_ms"], "stream.cpu_ms")?,
+                turn: times(&stream["turn_ms"], "stream.turn_ms")?,
+            }),
             None => None,
         },
         appends: times(&raw["append"]["sync_ms"], "append.sync_ms")?,

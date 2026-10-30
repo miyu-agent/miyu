@@ -16,6 +16,7 @@ use crate::measure::large::Large;
 use crate::measure::sessions::Hot;
 use crate::measure::size::Size;
 use crate::measure::startup::Cold;
+use crate::measure::stream::Streamed;
 
 pub use gate::enforce;
 pub use load::results as load;
@@ -39,6 +40,8 @@ pub struct Results {
     pub large: Large,
     /// 开着记忆的大会话（施工 V-9）：以前的原始数据没有。
     pub remembering: Option<Large>,
+    /// 流式一轮（施工 V-22）：以前的原始数据没有。
+    pub streamed: Option<Streamed>,
     /// 追加并同步，每一条的毫秒数。
     pub appends: Vec<f64>,
 }
