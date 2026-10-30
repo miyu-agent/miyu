@@ -4,7 +4,7 @@
 //!
 //! 读的同一遍里算出整份文件的内容哈希（施工 4-6 上）：她改之前照它核对。不另读一遍，也不把整份读进内存：一行只留开头
 //! [`LINE_BYTES`] 个字节，带 BOM 的 UTF-16 边读边解（审计 E-3，2026-10-30：以前整行整行、整份 UTF-16 读进来，读一份 64 MiB
-//! 没有换行的文本要多分 133 MiB）。叫停了就不往下读。
+//! 没有换行的文本要多分 133 MiB）；不在这一页的行只数换行，不拷不解（施工 V-31）。叫停了就不往下读。
 
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Cursor, Read};
@@ -98,11 +98,20 @@ pub(crate) fn read(mut file: File, offset: u64, limit: u64, stop: &Stop) -> io::
 }
 
 /// 一行一行读：每行只留开头 [`LINE_BYTES`] 个字节，照不严格的 UTF-8 解成字（审计 E-3）。切行同 `BufRead::split`：以换行
-/// 结尾的，最后不多出一行空的。行尾的 `\r` 去掉。
+/// 结尾的，最后不多出一行空的。行尾的 `\r` 去掉。不在这一页的行只往后数到换行（[`Source::skip`]），不拷、不解（施工 V-31：
+/// 以前每一行都拷进新的 `Vec`、解成新的字串，读 8 MB 文件的末尾，这一项约占四成）。
 struct Lines<'a, R> {
     reader: R,
     stop: &'a Stop,
     done: bool,
+}
+
+/// 一行一行交给 [`page`] 的：要的一行交字，不要的只数。
+trait Source {
+    /// 下一行的字；读完了是 `None`。
+    fn line(&mut self) -> io::Result<Option<String>>;
+    /// 跳过下一行，交回有没有这一行。
+    fn skip(&mut self) -> io::Result<bool>;
 }
 
 impl<'a, R: BufRead> Lines<'a, R> {
@@ -114,56 +123,66 @@ impl<'a, R: BufRead> Lines<'a, R> {
         }
     }
 
-    /// 下一行留下的字节，和这一行是不是比留下的长；读完了没有。
-    fn next_line(&mut self) -> io::Result<Option<(Vec<u8>, bool)>> {
-        let mut kept = Vec::new();
+    /// 读过下一行：`kept` 是 `Some` 的，把这一行开头最多 [`LINE_BYTES`] 个字节接进去，交回这一行是不是比留下的长；`None`
+    /// 的只往后数。读完了（没有下一行）交 `None`。
+    fn next_line(&mut self, mut kept: Option<&mut Vec<u8>>) -> io::Result<Option<bool>> {
         let mut longer = false;
         let mut any = false;
         loop {
             if self.stop.stopped() {
+                self.done = true;
                 return Err(io::ErrorKind::Interrupted.into());
             }
-            let buffer = self.reader.fill_buf()?;
+            let buffer = match self.reader.fill_buf() {
+                Ok(buffer) => buffer,
+                Err(error) => {
+                    self.done = true;
+                    return Err(error);
+                }
+            };
             if buffer.is_empty() {
                 self.done = true;
-                return Ok(any.then_some((kept, longer)));
+                return Ok(any.then_some(longer));
             }
             any = true;
-            let (piece, used, ended) = match buffer.iter().position(|byte| *byte == b'\n') {
+            // 找换行用 memchr：一次比一整段，比一个字节一个字节地找快（V-29 量过，约占读大文件的 25%）。
+            let (piece, used, ended) = match memchr::memchr(b'\n', buffer) {
                 Some(at) => (&buffer[..at], at + 1, true),
                 None => (buffer, buffer.len(), false),
             };
-            let room = LINE_BYTES - kept.len();
-            kept.extend_from_slice(&piece[..piece.len().min(room)]);
-            longer |= piece.len() > room;
+            if let Some(kept) = kept.as_deref_mut() {
+                let room = LINE_BYTES - kept.len();
+                kept.extend_from_slice(&piece[..piece.len().min(room)]);
+                longer |= piece.len() > room;
+            }
             self.reader.consume(used);
             if ended {
-                return Ok(Some((kept, longer)));
+                return Ok(Some(longer));
             }
         }
     }
 }
 
-impl<R: BufRead> Iterator for Lines<'_, R> {
-    type Item = io::Result<String>;
-
-    fn next(&mut self) -> Option<io::Result<String>> {
+impl<R: BufRead> Source for Lines<'_, R> {
+    fn line(&mut self) -> io::Result<Option<String>> {
         if self.done {
-            return None;
+            return Ok(None);
         }
-        match self.next_line() {
-            Ok(Some((mut bytes, longer))) => {
-                if !longer && bytes.last() == Some(&b'\r') {
-                    bytes.pop();
-                }
-                Some(Ok(String::from_utf8_lossy(&bytes).into_owned()))
-            }
-            Ok(None) => None,
-            Err(error) => {
-                self.done = true;
-                Some(Err(error))
-            }
+        let mut bytes = Vec::new();
+        let Some(longer) = self.next_line(Some(&mut bytes))? else {
+            return Ok(None);
+        };
+        if !longer && bytes.last() == Some(&b'\r') {
+            bytes.pop();
         }
+        Ok(Some(String::from_utf8_lossy(&bytes).into_owned()))
+    }
+
+    fn skip(&mut self) -> io::Result<bool> {
+        if self.done {
+            return Ok(false);
+        }
+        Ok(self.next_line(None)?.is_some())
     }
 }
 
@@ -285,22 +304,27 @@ impl<R: Read> Read for Utf16<R> {
 }
 
 /// 照先后给出的每一行，挑出这一页：带行号，一行最长 [`LINE_CHARS`] 个字，一页最多 [`OUTPUT_BYTES`]。每一行都要
-/// 读到：一共几行靠它数，整份文件的哈希也靠它读到结尾。
-fn page(
-    lines: impl Iterator<Item = io::Result<String>>,
-    offset: u64,
-    limit: u64,
-) -> io::Result<Page> {
+/// 读到：一共几行靠它数，整份文件的哈希也靠它读到结尾。不在这一页的只数（[`Source::skip`]）。
+fn page(mut lines: impl Source, offset: u64, limit: u64) -> io::Result<Page> {
     let mut text = String::new();
     let mut total = 0;
     let mut to = offset.saturating_sub(1);
     let mut full = false;
-    for line in lines {
-        let line = line?;
-        total += 1;
-        if total < offset || full || total >= offset + limit {
+    loop {
+        // 先看下一行要不要，再读它：不要的不解字。`offset` 不过 `i64::MAX`、`limit` 不过 2000（`read.rs` 的 `Args`），
+        // 加起来不会溢出。
+        let next = total + 1;
+        if next < offset || full || next >= offset + limit {
+            if !lines.skip()? {
+                break;
+            }
+            total = next;
             continue;
         }
+        let Some(line) = lines.line()? else {
+            break;
+        };
+        total = next;
         let numbered = format!("{total}\t{}\n", cut(&line));
         if text.len() + numbered.len() > OUTPUT_BYTES && total > offset {
             full = true;

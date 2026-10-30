@@ -1907,6 +1907,7 @@ dependencies = [
  "grep-searcher",
  "ignore",
  "image",
+ "memchr",
  "miyu-config",
  "miyu-fs",
  "miyu-kernel",
