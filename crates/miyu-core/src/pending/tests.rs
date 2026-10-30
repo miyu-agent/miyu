@@ -55,6 +55,28 @@ fn finish_waits_for_every_write_held() {
     std::fs::remove_dir_all(dir).expect("删得掉");
 }
 
+/// 两处同时等（施工 TMP-3 补）：另一处先把登记取走、正在等它写完，这一处也要等到写完才交回。原来登记是整个进程一份、谁取走
+/// 谁等：后到的拿到空的马上交回，写盘的线程还在睡（960c21421 的 Windows 门禁，`finish_waits_for_every_write_held` 撞上了
+/// TMP-3 那条测试的 `finish`）。
+#[test]
+fn finish_waits_even_when_another_finish_took_the_writes() {
+    let dir = scratch();
+    let file = dir.join("written");
+    let target = file.clone();
+    hold(std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        std::fs::write(target, b"x").expect("写得进");
+    }));
+    let other = std::thread::spawn(finish);
+    // 让另一处先取走登记。
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    finish();
+    let written = file.is_file();
+    other.join().expect("另一处等完了");
+    std::fs::remove_dir_all(dir).expect("删得掉");
+    assert!(written, "另一处取走了登记，这一处也要等到写完");
+}
+
 /// 核心起来就另起线程读目录（`read_early`），读完才起写盘的线程、登记。核心在它读完以前就停下的：放锁时登记里还是空的，
 /// 夹具删了数据根，它读完又把缓存目录建回来（施工 TMP-3，main b47ecacb3 的门禁）。
 #[test]
