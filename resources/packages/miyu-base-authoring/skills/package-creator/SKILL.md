@@ -69,6 +69,6 @@ A package with MCP servers is installed off; the person turns it on in the packa
 
 Run these in a shell command:
 
-1. `miyu pkg info <folder>`: lists the scripts it will add; anything under `skipped` will not load, fix it first.
-2. `miyu pkg install <folder>`. The person is asked first. New tools appear from the next turn.
+1. `miyu pkg info ./<folder>`: lists the scripts it will add; anything under `skipped` will not load, fix it first.
+2. `miyu pkg install ./<folder>`. The person is asked first. New tools appear from the next turn.
 3. To change it, edit the files and install the folder again.
