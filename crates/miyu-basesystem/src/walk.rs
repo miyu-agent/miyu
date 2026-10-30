@@ -15,7 +15,7 @@
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use std::path::{Path, PathBuf};
+use std::path::{Component, MAIN_SEPARATOR, Path, PathBuf};
 use std::time::SystemTime;
 
 use ignore::WalkBuilder;
@@ -94,8 +94,16 @@ impl Fence {
     }
 
     /// 从 `root` 往下走：搜的那个目录就在里面的私密目录不挡（问过了才走得到这里）。
+    ///
+    /// 这棵树里碰不到的也去掉（施工 V-31）：走到的目录都是 `root` 再往下接几段（`ignore` 照上一层一段段 `join` 出来），
+    /// [`within`] 又是一段一段比的，`within(dir, fenced)` 成立只有两种：`fenced` 包住 `root`（含等于），或者 `fenced` 落在
+    /// `root` 下面。两样都不是的，[`Fence::keeps_out`] 对这棵树里每个目录都答「不挡它」，留着只是每进一个目录白比一遍
+    /// （V-29 量过，约占 `grep` 的 23%）。判断用的还是同一个 [`within`]，大小写、前缀的口径和挡的时候一样。
     fn from(mut self, root: &Path) -> Fence {
-        self.private.retain(|dir| !within(root, dir));
+        let reachable = |fenced: &Path| within(root, fenced) || within(fenced, root);
+        self.private
+            .retain(|dir| !within(root, dir) && reachable(dir));
+        self.data_root = self.data_root.filter(|dir| reachable(dir));
         self
     }
 
@@ -162,6 +170,7 @@ pub(crate) fn each(
 ) {
     let in_repo = root.ancestors().any(|dir| dir.join(".git").exists());
     let fence = fence.from(root);
+    let quick = quick_root(root);
     let mut builder = WalkBuilder::new(root);
     builder
         .hidden(false)
@@ -183,7 +192,7 @@ pub(crate) fn each(
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_some_and(|kind| kind.is_file()))
         .filter_map(|entry| {
-            let relative = relative(root, entry.path())?;
+            let relative = relative(root, quick, entry.path())?;
             if !keep(&relative) {
                 return None;
             }
@@ -200,8 +209,49 @@ pub(crate) fn each(
         .for_each(&mut found);
 }
 
-/// `path` 相对 `root` 的路径，一段一段用 `/` 连起来。
-fn relative(root: &Path, path: &Path) -> Option<String> {
+/// 照字面截相对路径用的 `root`（[`quick`]）：写得成 UTF-8、最后一段是名字或者根的才行，别的（例如 Windows 的 `C:`、
+/// `\\?\C:` 后面没有 `\`：再往下接一段，多出来的是根，不是名字）交给 [`slow`]。走一遍算一次。
+fn quick_root(root: &Path) -> Option<&str> {
+    let last = root.components().next_back();
+    root.to_str()
+        .filter(|_| matches!(last, Some(Component::Normal(_) | Component::RootDir)))
+}
+
+/// `path` 相对 `root` 的路径，一段一段用 `/` 连起来。`quick` 是 [`quick_root`] 交回的：有的先照字面截（施工 V-31），截不了的
+/// 照 [`slow`] 一段一段比。两条路交回的一字不差（`walk/tests/relative.rs` 对照）。
+fn relative(root: &Path, quick: Option<&str>, path: &Path) -> Option<String> {
+    quick
+        .zip(path.to_str())
+        .and_then(|(root, path)| self::quick(root, path))
+        .or_else(|| slow(root, path))
+}
+
+/// 照字面截：`path` 的字面以 `root` 开头，后面是「分隔符 名字 分隔符 名字……」（往下走目录时走到的都是这样：一层一层
+/// `join` 出来的），每个名字不空、不是 `.`、Windows 上不带 `/`（那里 `/` 也可能是分隔符）。不是这样的交 `None`，照
+/// [`slow`] 算。只认平台原生的分隔符：Windows 上换成 `/`。
+///
+/// 为什么：以前每个文件都 `strip_prefix` 再一段段拼，约占 `grep` 的 14%（V-29）。都是 UTF-8 时，逐段转 UTF-8 和整条转一样，
+/// 名字里又没有分隔符，截出来就是一段段拼出来的那一条。
+fn quick(root: &str, path: &str) -> Option<String> {
+    let rest = path.strip_prefix(root)?;
+    let rest = match rest.strip_prefix(MAIN_SEPARATOR) {
+        Some(rest) => rest,
+        None if rest.is_empty() || root.ends_with(MAIN_SEPARATOR) => rest,
+        None => return None,
+    };
+    let odd = |part: &str| part.is_empty() || part == "." || (cfg!(windows) && part.contains('/'));
+    if !rest.is_empty() && rest.split(MAIN_SEPARATOR).any(odd) {
+        return None;
+    }
+    Some(if cfg!(windows) {
+        rest.replace(MAIN_SEPARATOR, "/")
+    } else {
+        rest.to_owned()
+    })
+}
+
+/// 一段一段比：`path` 去掉 `root` 那几段，剩下的每段照不严格的 UTF-8 转成字，用 `/` 连起来。
+fn slow(root: &Path, path: &Path) -> Option<String> {
     let rest = path.strip_prefix(root).ok()?;
     let parts: Vec<String> = rest
         .components()

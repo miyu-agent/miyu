@@ -178,3 +178,6 @@ fn the_newest_few_are_the_head_of_the_whole_sorted_walk() {
     assert_eq!(total, 13, "只数留下的");
     assert_eq!(names(&kept), ["d1/f37.txt", "d1/f34.txt", "d1/f31.txt"]);
 }
+
+mod fence;
+mod relative;
