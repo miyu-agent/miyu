@@ -15,7 +15,7 @@ pub use row::{Row, cwd};
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params_from_iter};
 
@@ -23,7 +23,7 @@ use miyu_kernel::event::{Body, Event};
 use miyu_kernel::id::{Seq, SessionId};
 
 use crate::log::Mark;
-use crate::sqlite::{self, connect, remove};
+use crate::sqlite::{self, connect, idle, remove};
 
 pub use crate::sqlite::{DbError as IndexError, Opened};
 
@@ -73,8 +73,8 @@ const SCHEMA: &str = "CREATE TABLE sessions (
 pub struct SessionIndex {
     /// 库文件在哪。
     path: PathBuf,
-    /// 开着的连接：用不了的（删了重建也打不开）是空的，这时读出来没有一行、写什么都不写。
-    db: Mutex<Option<Connection>>,
+    /// 开着的连接：用不了的（删了重建也打不开）是空的，这时读出来没有一行、写什么都不写。登记给闲时合回（施工 V-28）。
+    db: Arc<Mutex<Option<Connection>>>,
 }
 
 impl SessionIndex {
@@ -84,7 +84,7 @@ impl SessionIndex {
         let (db, opened) = sqlite::open(path, SCHEMA, VERSION);
         let index = SessionIndex {
             path: path.to_path_buf(),
-            db: Mutex::new(db),
+            db: idle::keep("sessions", Mutex::new(db)),
         };
         (index, opened)
     }

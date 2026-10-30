@@ -31,8 +31,9 @@ sys-locale = "0.3"
 # 监视配置文件（施工 8-4，`config.md` 第七条）：Linux 上 inotify、macOS 上 FSEvents、Windows 上 ReadDirectoryChangesW，
 # 起不来的退回它自带的轮询。默认的功能只有 macOS 的 FSEvents。
 notify = "8.2"
-# 会话列表的索引（施工 3-8 七补，`07-存储.md` S3）：SQLite，`bundled` 自己带 SQLite 的源码编，三个平台一样。
-rusqlite = { version = "0.40", features = ["bundled"] }
+# 会话列表的索引（施工 3-8 七补，`07-存储.md` S3）：SQLite，`bundled` 自己带 SQLite 的源码编，三个平台一样。`hooks` 是
+# 提交钩子（施工 V-28：库最后一次写的时刻，闲时合回写前日志），SQLite 本身就有，不多编什么。
+rusqlite = { version = "0.40", features = ["bundled", "hooks"] }
 # 网页登录的密码哈希（施工 W-8，设计 06 U4）：argon2id，RustCrypto 的实现，MIT 或 Apache-2.0。盐由 getrandom 给。
 argon2 = { version = "0.6", default-features = false, features = ["alloc", "password-hash"] }
 getrandom = { version = "0.4", features = ["std"] }

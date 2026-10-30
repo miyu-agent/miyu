@@ -223,12 +223,14 @@ async fn a_head_asking_it_to_stop_stops_the_running_sessions_first() {
 /// 测试里回合开始问记忆的每次读慢多久（施工 TMP-1 补3）：比会话等的限时（300 毫秒）长得多，会话不等它，它照样读完。
 const SLOW_READ: Duration = Duration::from_millis(1500);
 
-/// 没有人格的那一间的记忆日志：回合开始问摘要，头一回读时建它。
-fn memory_log(home: &Home) -> std::path::PathBuf {
-    home.root.path().join("modules/memory/_none")
+/// 没有人格的那一间的记忆日志这个核心开过了没有：回合开始问摘要，读的时候头一回开它（先慢 [`SLOW_READ`] 再开）。开过的
+/// 再开不交回情形。以前照目录在不在看，施工 V-28 起一条记忆都没有的不建目录。
+fn memory_opened(memory: &miyu_session::Memory) -> bool {
+    let room = miyu_store::recall::Room::persona(miyu_store::recall::NO_PERSONA);
+    memory.logs.open(&room).expect("开得了").1.is_none()
 }
 
-/// 回合开始问记忆的读超了限时、会话不等的（施工 TMP-1 补3）：收到停的信号，交回时那次读已经读完，头一回读建的记忆日志在了。
+/// 回合开始问记忆的读超了限时、会话不等的（施工 TMP-1 补3）：收到停的信号，交回时那次读已经读完，头一回读开的记忆日志开过了。
 /// 原来交回时它还在读，测试删数据根时撞上，删完又建回来。
 #[tokio::test]
 async fn a_stop_signal_waits_for_the_memory_reads_the_turn_did_not() {
@@ -236,6 +238,7 @@ async fn a_stop_signal_waits_for_the_memory_reads_the_turn_did_not() {
     let opened = home.open();
     let core = home.core(Arc::new(Script::new([Play::Holds])), &opened.token);
     core.memory().slow_reads(SLOW_READ);
+    let memory = Arc::clone(core.memory());
     let (stop, stopping) = tokio::sync::oneshot::channel::<()>();
     let running = tokio::spawn(serve(
         opened.listener,
@@ -253,7 +256,7 @@ async fn a_stop_signal_waits_for_the_memory_reads_the_turn_did_not() {
     stop.send(()).expect("还在跑");
     let stopped = within("收到信号停下", running).await.expect("没 panic");
     assert_eq!(stopped, Stopped::Signal);
-    assert!(memory_log(&home).is_dir(), "那次读读完了才交回");
+    assert!(memory_opened(&memory), "那次读读完了才交回");
 }
 
 /// 同上，空闲退出的也等：回合早就结束了，那次读还在读。
@@ -263,6 +266,7 @@ async fn an_idle_stop_waits_for_the_memory_reads_too() {
     let opened = home.open();
     let core = home.core(Arc::new(Script::new([Play::Says("在。")])), &opened.token);
     core.memory().slow_reads(SLOW_READ);
+    let memory = Arc::clone(core.memory());
     let running = tokio::spawn(serve(
         opened.listener,
         core,
@@ -276,7 +280,7 @@ async fn an_idle_stop_waits_for_the_memory_reads_too() {
     drop(head);
     let stopped = within("空闲退出", running).await.expect("没 panic");
     assert_eq!(stopped, Stopped::Idle);
-    assert!(memory_log(&home).is_dir(), "那次读读完了才交回");
+    assert!(memory_opened(&memory), "那次读读完了才交回");
 }
 
 #[tokio::test]
