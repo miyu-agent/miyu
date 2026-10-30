@@ -3,6 +3,10 @@
 //!
 //! 服务反过来的请求在读的那个任务里当场回：`ping` 回空的，别的回「没有这个方法」（`-32601`）。工具变了的通知数一次。进度通知
 //! （`notifications/progress`，施工 PT-1 中下）照 `progressToken` 交给跟着它的那一头（[`Link::follow`]），没人跟的丢掉。
+//!
+//! 写的队列、每个进度令牌的通知队列最多排 [`QUEUE`] 条（施工 AE-8）：服务不读标准输入、跟进度的那一头不收，内存不跟着涨。
+//! 满了的通知（核心发的、服务发来的进度）丢掉，记一行 `DEBUG`；回服务的 `ping` 也一样；请求等空位，等的时间算在等回应的
+//! 时限里。
 
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -20,9 +24,13 @@ use crate::wire::{self, Incoming, Read};
 /// 「没有这个方法」。
 const METHOD_NOT_FOUND: i64 = -32601;
 
+/// 写的队列、一个进度令牌的通知队列最多排几条（施工 AE-8）：同核心给每条连接的出站队列（`miyu-endpoint` 的
+/// `connection::QUEUE`）。
+pub(crate) const QUEUE: usize = 256;
+
 /// 一条连接。
 pub(crate) struct Link {
-    out: mpsc::UnboundedSender<Vec<u8>>,
+    out: mpsc::Sender<Vec<u8>>,
     shared: Arc<Shared>,
     next: AtomicU64,
 }
@@ -42,7 +50,7 @@ struct Waiting {
     open: bool,
     asked: BTreeMap<u64, oneshot::Sender<Result<Value, Value>>>,
     /// 进度令牌（JSON 原文）到收进度通知的一头（施工 PT-1 下）。
-    following: BTreeMap<String, mpsc::UnboundedSender<Value>>,
+    following: BTreeMap<String, mpsc::Sender<Value>>,
 }
 
 impl Link {
@@ -52,7 +60,7 @@ impl Link {
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
     {
-        let (out, lines) = mpsc::unbounded_channel();
+        let (out, lines) = mpsc::channel(QUEUE);
         let shared = Arc::new(Shared {
             waiting: Mutex::new(Waiting {
                 open: true,
@@ -95,14 +103,23 @@ impl Link {
             cancel,
             done: false,
         };
-        if self.out.send(wire::request(id, method, params)).is_err() {
-            return Err(Failed::Closed);
-        }
-        let answered = match wait {
-            Some(wait) => tokio::time::timeout(wait, answer)
+        // 排空位和等回应算同一个时限：服务不读标准输入、队列满着的，到点照没等到回应收（施工 AE-8）。
+        let sent_and_answered = async {
+            if self
+                .out
+                .send(wire::request(id, method, params))
                 .await
-                .map_err(|_| Failed::TimedOut)?,
-            None => answer.await,
+                .is_err()
+            {
+                return Err(Failed::Closed);
+            }
+            Ok(answer.await)
+        };
+        let answered = match wait {
+            Some(wait) => tokio::time::timeout(wait, sent_and_answered)
+                .await
+                .map_err(|_| Failed::TimedOut)??,
+            None => sent_and_answered.await?,
         };
         asking.done = true;
         match answered {
@@ -112,16 +129,16 @@ impl Link {
         }
     }
 
-    /// 发通知 `method`。断了的不发。
+    /// 发通知 `method`。断了的、写的队列满了的不发（施工 AE-8）。
     pub(crate) fn tell(&self, method: &str, params: Value) {
-        if self.out.send(wire::notice(method, params)).is_err() {
-            tracing::debug!(target: TARGET, method, "notice not sent: closed");
+        if let Err(error) = self.out.try_send(wire::notice(method, params)) {
+            tracing::debug!(target: TARGET, method, error = %error, "notice not sent");
         }
     }
 
     /// 跟着进度令牌 `token` 的进度通知（施工 PT-1 下）：交回收通知参数的一头；丢掉 [`Following`] 就不跟了。
-    pub(crate) fn follow(&self, token: &Value) -> (mpsc::UnboundedReceiver<Value>, Following<'_>) {
-        let (sender, updates) = mpsc::unbounded_channel();
+    pub(crate) fn follow(&self, token: &Value) -> (mpsc::Receiver<Value>, Following<'_>) {
+        let (sender, updates) = mpsc::channel(QUEUE);
         let key = token.to_string();
         self.shared.lock().following.insert(key.clone(), sender);
         (updates, Following { link: self, key })
@@ -197,7 +214,7 @@ impl Shared {
 /// 服务读到头自己退出。
 async fn write<W: AsyncWrite + Unpin>(
     mut writer: W,
-    mut lines: mpsc::UnboundedReceiver<Vec<u8>>,
+    mut lines: mpsc::Receiver<Vec<u8>>,
     shared: Arc<Shared>,
 ) {
     while let Some(line) = lines.recv().await {
@@ -220,7 +237,7 @@ async fn write<W: AsyncWrite + Unpin>(
 /// 什么也不回、断了。
 async fn read<R: AsyncRead + Unpin>(
     reader: R,
-    out: mpsc::WeakUnboundedSender<Vec<u8>>,
+    out: mpsc::WeakSender<Vec<u8>>,
     shared: Arc<Shared>,
 ) {
     let mut reader = BufReader::new(reader);
@@ -257,8 +274,12 @@ async fn read<R: AsyncRead + Unpin>(
                 let Some(out) = out.upgrade() else {
                     break;
                 };
-                if out.send(wire::answer(&id, outcome)).is_err() {
-                    break;
+                match out.try_send(wire::answer(&id, outcome)) {
+                    Ok(()) => {}
+                    Err(mpsc::error::TrySendError::Full(_)) => {
+                        tracing::debug!(target: TARGET, method = method.as_str(), "answer to the MCP server dropped: queue full");
+                    }
+                    Err(mpsc::error::TrySendError::Closed(_)) => break,
                 }
             }
             Incoming::Notice(method, params) => match method.as_str() {
@@ -270,9 +291,9 @@ async fn read<R: AsyncRead + Unpin>(
                     let key = params.get("progressToken").map(Value::to_string);
                     let follower = key.and_then(|key| shared.lock().following.get(&key).cloned());
                     if let Some(follower) = follower
-                        && follower.send(params).is_err()
+                        && let Err(error) = follower.try_send(params)
                     {
-                        tracing::debug!(target: TARGET, "progress arrived after the caller left");
+                        tracing::debug!(target: TARGET, error = %error, "progress dropped");
                     }
                 }
                 _ => tracing::trace!(target: TARGET, method = method.as_str(), "MCP notice"),
@@ -298,3 +319,6 @@ fn rpc(error: Value) -> Failed {
         _ => Failed::Malformed(format!("an error without code or message: {error}")),
     }
 }
+
+#[cfg(test)]
+mod tests;
