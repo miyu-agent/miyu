@@ -6,11 +6,10 @@
 //! 前面、向上回报的截法换了），照整份再读一遍，走以前的 `Session::load`。
 
 use std::path::Path;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use miyu_kernel::event::{Body, Event, SessionCreated};
-use miyu_kernel::id::{CommandId, ContentHash, SessionId};
+use miyu_kernel::id::{CommandId, ContentHash, Seq, SessionId};
 use miyu_kernel::session::{Loader, Policy, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
@@ -19,6 +18,7 @@ use miyu_store::root::DataRoot;
 
 use super::LoadError;
 use crate::open::scan::{Scan, current_policy};
+use crate::store::Base;
 
 /// 读完了的日志。
 pub(super) struct Read {
@@ -26,8 +26,8 @@ pub(super) struct Read {
     pub(super) log: SessionLog,
     /// 造会话那一条，和它的 `cause`。
     pub(super) created: (SessionCreated, Option<CommandId>),
-    /// 分叉出来的：父会话的日志里到分叉点为止的。
-    pub(super) base: Option<Arc<Vec<Event>>>,
+    /// 分叉出来的：底子在哪（施工 V-20：只记位置，事件交给内核以后不留）。
+    pub(super) base: Option<Base>,
     /// 现在的快照，和照它取的策略。
     pub(super) snapshot: (Snapshot, Policy),
     /// 内核那一头。
@@ -42,8 +42,13 @@ pub(super) struct Read {
 pub(super) enum Loaded {
     /// 一块块喂完了，等收尾。
     Fed(Box<Loader>),
-    /// 一块块喂的对不上：整份，照以前的载入。
-    Whole(Vec<Event>),
+    /// 一块块喂的对不上：整份，照以前的载入。分叉出来的连底子一起重读。
+    Whole {
+        /// 底子：不是分叉出来的没有。
+        base: Option<Vec<Event>>,
+        /// 会话自己的整份日志。
+        events: Vec<Event>,
+    },
 }
 
 /// 照会话日志目录 `dir` 读、接着重放：会话 `id`，快照从 `store` 取，分叉出来的从数据根 `parents` 里的父会话
@@ -65,13 +70,8 @@ pub(super) fn read(
     let opened = SessionLog::open_each(dir, SEGMENT_LIMIT, |events| {
         if started.is_none() {
             let at = Instant::now();
-            match start(&events, id, store, parents) {
-                Ok(start) => {
-                    if let Some(base) = &start.base {
-                        scan.base(base);
-                    }
-                    started = Some(start);
-                }
+            match start(&events, id, store, parents, &mut scan) {
+                Ok(start) => started = Some(start),
                 Err(error) => {
                     failed = Some(error);
                     return Flow::Stop;
@@ -112,7 +112,14 @@ pub(super) fn read(
         snapshotted += at.elapsed();
     }
     let loaded = if loader.needs_whole(&snapshot.1) {
-        Loaded::Whole(read_events(dir).map_err(LoadError::Log)?)
+        Loaded::Whole {
+            base: base
+                .as_ref()
+                .map(|base| base.events_from(Seq::FIRST))
+                .transpose()
+                .map_err(LoadError::Log)?,
+            events: read_events(dir).map_err(LoadError::Log)?,
+        }
     } else {
         Loaded::Fed(Box::new(loader))
     };
@@ -130,19 +137,20 @@ pub(super) fn read(
 /// 头一块认出来的。
 struct Started {
     created: (SessionCreated, Option<CommandId>),
-    base: Option<Arc<Vec<Event>>>,
+    base: Option<Base>,
     /// 照着取策略的那一份快照。
     hash: ContentHash,
     snapshot: (Snapshot, Policy),
     loader: Loader,
 }
 
-/// 照头一块 `first` 认出造会话那一条、底子、这时的快照，开始一块块载入。
+/// 照头一块 `first` 认出造会话那一条、底子、这时的快照，开始一块块载入；底子里要记的交给 `scan` 记下。
 fn start(
     first: &[Event],
     id: &SessionId,
     store: &Blobs,
     parents: &DataRoot,
+    scan: &mut Scan,
 ) -> Result<Started, LoadError> {
     let created = match first.first() {
         Some(Event {
@@ -152,28 +160,25 @@ fn start(
         }) => (created.clone(), cause.clone()),
         _ => return Err(LoadError::NotCreated),
     };
-    // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。
-    let base = match &created.0.forked {
-        Some(forked) => {
-            let parent_log =
-                read_events(&parents.session_dir(&forked.from)).map_err(LoadError::Log)?;
-            let base: Vec<Event> = parent_log
-                .into_iter()
-                .take_while(|event| event.seq <= forked.upto)
-                .collect();
-            Some(Arc::new(base))
-        }
-        None => None,
-    };
+    // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。读出来的整份交给内核，
+    // 这里只留它在哪（施工 V-20）：以前另留一份、再拷一份给内核，支线活多久底子留多久。
+    let base = created
+        .0
+        .forked
+        .as_ref()
+        .map(|forked| Base::new(parents.session_dir(&forked.from), forked.upto));
+    let events = base
+        .as_ref()
+        .map(|base| base.events_from(Seq::FIRST))
+        .transpose()
+        .map_err(LoadError::Log)?;
+    if let Some(events) = &events {
+        scan.base(events);
+    }
     let hash = current_policy(first).unwrap_or(&created.0.policy).clone();
     let snapshot = policy_of(store, &hash)?;
-    let loader = Session::loader(
-        id.clone(),
-        base.as_deref().cloned(),
-        first,
-        snapshot.1.reports.clone(),
-    )
-    .map_err(LoadError::Kernel)?;
+    let loader = Session::loader(id.clone(), events, first, snapshot.1.reports.clone())
+        .map_err(LoadError::Kernel)?;
     Ok(Started {
         created,
         base,

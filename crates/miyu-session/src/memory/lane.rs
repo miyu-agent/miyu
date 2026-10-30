@@ -19,6 +19,7 @@ use miyu_store::recall::{Origin, RecallIndexes, Room};
 
 use super::Turns;
 use crate::TARGET;
+use crate::store::Base;
 
 /// 核心的那个后台线程：头一回用到时起，交活的端口一直留着。
 #[derive(Default)]
@@ -88,10 +89,10 @@ impl<'a> Laid<'a> {
     }
 }
 
-/// 会话的日志：目录，和分叉出来的支线的底子（施工 C-8 上）。读回时底子接在前面。
+/// 会话的日志：目录，和分叉出来的支线的底子在哪（施工 C-8 上、V-20）。读回时底子现读、接在前面。
 pub(crate) struct Source {
     pub(crate) dir: PathBuf,
-    pub(crate) base: Option<Arc<Vec<Event>>>,
+    pub(crate) base: Option<Base>,
 }
 
 enum Job {
@@ -251,8 +252,20 @@ fn connect(opening: Opening) -> Option<Open> {
             }
         },
     };
-    let base = source.base.as_deref().map_or(&[][..], Vec::as_slice);
-    let (base, mine) = super::recast::split(base, &own, floor);
+    // 底子只在接上的这一会儿读出来（施工 V-20）：接完就放掉，不跟着会话常驻。
+    let base = match source
+        .base
+        .as_ref()
+        .map(|base| base.events_from(Seq::FIRST))
+    {
+        None => Vec::new(),
+        Some(Ok(base)) => base,
+        Some(Err(error)) => {
+            tracing::warn!(target: TARGET, error = %error, "memory index not updated");
+            return None;
+        }
+    };
+    let (base, mine) = super::recast::split(&base, &own, floor);
     let turns = Turns::connect(&recall, &room, (&session, origin), &venue, &base, mine)?;
     let upto = own.last().map(|event| event.seq);
     Some(Open {
@@ -279,7 +292,7 @@ impl Open {
 
 impl Source {
     /// 会话日志 `log` 的，分叉出来的支线带上底子 `base`。
-    pub(crate) fn of(log: &SessionLog, base: Option<Arc<Vec<Event>>>) -> Source {
+    pub(crate) fn of(log: &SessionLog, base: Option<Base>) -> Source {
         Source {
             dir: log.dir().to_path_buf(),
             base,
@@ -288,7 +301,12 @@ impl Source {
 
     /// 底子接上会话自己的整份日志。
     fn events(&self) -> Result<Vec<Event>, String> {
-        let mut events = self.base.as_deref().cloned().unwrap_or_default();
+        let mut events = match &self.base {
+            Some(base) => base
+                .events_from(Seq::FIRST)
+                .map_err(|error| error.to_string())?,
+            None => Vec::new(),
+        };
         events.extend(read_events(&self.dir).map_err(|error| error.to_string())?);
         Ok(events)
     }

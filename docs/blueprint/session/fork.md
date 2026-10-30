@@ -37,6 +37,8 @@
 
 **订阅**：子会话是普通会话；`subscribe` 带 `after: upto` 补的只有子会话自己的事件，不重放继承来的那一段。
 
+**底子不常驻**（施工 V-20，2026-10-30）：载入支线时照 `forked` 读父会话的日志、读到 `upto` 就停，读出来的整份交给内核过账本、进有效历史（有效历史照常只留最近一次压缩以后的），不另留一份。之后要读回整份日志的几处（撤销、恢复以后重算她看过的文件、撤掉压缩读回更早的一段、换了人格重接回合索引、抽取记忆读日志）照父会话的目录和 `upto` 现读（`store.rs` 的 `Base`），从分叉点以后读起的不碰父会话的日志。为什么：以前载入一条支线就把底子整份留在内存里，支线活多久留多久；群主线三万多条事件时一条支线约 47 MB，群里同时挂着三十条，核心涨到 1.1 GB（2026-10-29 常驻核心的内存账）。父会话的日志只往后追加，`upto` 以前的不会变，什么时候读都一样；父会话被删了的，读底子报错（以前也是：下次载入支线照样要读父会话）。
+
 **封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（接入QQ 仓库的 `chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；日志留在磁盘上，再用到照常载入，载入的认得封存。
 
 **fork 子代理**（施工 A-F 上起，2026-10-24 项目主人定「从当前上下文分出去」、核心主会话定形状，`agents.md`「fork 子代理」）：她调 `subagent` 写 `fork` 的，子会话从父会话这一轮派它的那一步分叉，不退到这一轮开始之前：她这一轮读过、查到的，子代理都看得到。
@@ -60,6 +62,8 @@
 | `crates/miyu-kernel/src/session/fork/within.rs`、`ledger/forked.rs`（施工 A-F 上） | fork 子代理：照派它的那次调用算分叉点（`fork_plan_at`）；底子停在一步刚派出去的调用上；账本接着那一轮；占位结果、`forked` 收住那一轮（`Session::fork_within`） |
 | `crates/miyu-kernel/src/session/fork.rs` | 分叉要照的几样（`fork_plan`：分叉点、权限、模型、快照）；底子（父会话到分叉点为止的事件过一遍父会话的账本，停不在一轮当中）；`Session::fork` 写第一条 |
 | `crates/miyu-kernel/src/session/load.rs` 的 `load_forked` | 载入分叉出来的：底子只进有效历史，账本从 `upto + 1` 起、继承旁听 |
+| `crates/miyu-session/src/store.rs` 的 `Base`（施工 V-20） | 底子在哪：父会话的日志目录、`upto`；要用时现读、读到 `upto` 停，从分叉点以后读起的不读；父会话的日志读不到 `upto` 的报错 |
+| `crates/miyu-session/src/open/load/stream.rs` 的 `start`（施工 V-20） | 载入时读一遍底子：交给 `Scan` 记、交给内核的 `Loader`，只留 `Base` |
 | `crates/miyu-kernel/src/ledger.rs` 的 `starting_at`、`ledger/triggers.rs` 的 `heard_from` | 账本的第一条可以不是第 1 条（要写着分叉点）；继承父会话旁听记下的、当过触发的 |
 | `crates/miyu-kernel/src/history.rs` 的 `forked_from`、`is_own` | 分叉来源也算自己这条线：群聊近况不把主线替她发的话再渲染成 `[you]` 行（`miyu-assemble` 的 `group/recent.rs`） |
 | `crates/miyu-store/src/log.rs` 的 `create_at` | 日志的第一段照分叉点起名，读的时候照第一段的名字接着数 |
@@ -94,6 +98,7 @@
 | 测试 | 守什么 |
 |---|---|
 | `crates/miyu-kernel/src/session/tests/fork.rs` | 接着分叉点往下数、看得到父会话的历史、接着说和父会话接着说的有效历史一样；载入的和活着的一样；分叉点写错、没写 `forked`、序号接不上的拒；停在一轮当中的拒；没分叉的第一条只能是第 1 条；分叉点在跑着的那一轮之前；继承旁听 |
+| `crates/miyu-session/src/store/tests.rs`（施工 V-20） | 支线读回日志先接底子、从分叉点以前读起的接得上；底子照父会话的日志现读，父会话过了分叉点又说的不算；读到分叉点停、从分叉点以后读起的不碰父会话；父会话的日志没了报错 |
 | `crates/miyu-store/src/log/tests.rs` 的 `a_log_can_start_after_one` | 从第 N 条开始的日志：第一段的名字、打开、只读地读、没写进去就收拾 |
 | `crates/miyu-assemble/src/group/recent/tests.rs` 的 `in_a_fork_the_parent_line_is_her_own_line_too` | 分叉来源的话不是 `[you]` 行，别的线的照旧是 |
 | `crates/miyu-endpoint/tests/fork.rs` | 真核心：主线说完一轮分叉，两边接着说同一句请求前缀逐字节一样，重启以后支线照样载入；主线在跑一轮时分叉在它之前，支线照继承来的旁听开一轮、带桥的事实；主线记过她发出去的话以后两边回同一条前缀一样；再分叉、没有的、写法不对的拒；跑完一轮推来 `session.sealed`，再发、再照记下的开一轮拒 `session_sealed`，`seal_after` 写 0 的拒（C-8 下） |

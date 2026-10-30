@@ -14,7 +14,7 @@ use std::sync::Arc;
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId};
 use miyu_store::index::SessionIndex;
-use miyu_store::log::{Mark, SessionLog, read_events, read_segments};
+use miyu_store::log::{Mark, OpenError, SessionLog, read_events, read_segments};
 use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::ReadLog;
 
@@ -150,9 +150,8 @@ pub(crate) struct Indexed {
     usage: Option<(Arc<UsageIndex>, Who)>,
     /// 回合索引（施工 R-2 上）：主会话、核心交了登记的才有。在后台写（施工 V-9）。
     turns: Option<TurnLane>,
-    /// 分叉出来的会话的底子（施工 C-8 上）：父会话的日志里到分叉点为止的事件。读回日志时接在自己的前面，撤销读回到分叉点
-    /// 以前的也接得上。
-    base: Option<Arc<Vec<Event>>>,
+    /// 分叉出来的会话的底子在哪（施工 C-8 上、V-20）：读回日志时现读、接在自己的前面，撤销读回到分叉点以前的也接得上。
+    base: Option<Base>,
 }
 
 impl Indexed {
@@ -177,19 +176,65 @@ impl Indexed {
 
     /// 同一个，读回日志时先接上底子 `base`（施工 C-8 上）。
     #[must_use]
-    pub(crate) fn on_base(mut self, base: Arc<Vec<Event>>) -> Indexed {
+    pub(crate) fn on_base(mut self, base: Base) -> Indexed {
         self.base = Some(base);
         self
     }
 
-    /// 底子里第 `from` 条起的。
-    fn base_from(&self, from: Seq) -> Vec<Event> {
-        self.base
-            .iter()
-            .flat_map(|base| base.iter())
-            .filter(|event| event.seq >= from)
-            .cloned()
-            .collect()
+    /// 底子里第 `from` 条起的：不是分叉出来的没有。
+    fn base_from(&self, from: Seq) -> Result<Vec<Event>, String> {
+        self.base.as_ref().map_or(Ok(Vec::new()), |base| {
+            base.events_from(from).map_err(|error| error.to_string())
+        })
+    }
+}
+
+/// 分叉出来的会话的底子在哪（施工 C-8 上、V-20）：父会话的日志目录，到分叉点第几条为止。不常驻底子里的事件，要用的时候
+/// 照这个现读、读到分叉点就停：以前载入一条支线就把底子整份留在内存里，支线活多久留多久，父会话三万多条事件时一条支线约
+/// 47 MB，群里同时挂着三十条（2026-10-29 常驻核心的内存账）。父会话的日志只往后追加，分叉点以前的不会变，什么时候读都一样。
+#[derive(Debug, Clone)]
+pub(crate) struct Base {
+    /// 父会话的日志目录。
+    dir: PathBuf,
+    /// 分叉点：到这一条为止（连同它）。
+    upto: Seq,
+}
+
+impl Base {
+    /// 父会话的日志在 `dir`，到第 `upto` 条为止。
+    pub(crate) fn new(dir: PathBuf, upto: Seq) -> Base {
+        Base { dir, upto }
+    }
+
+    /// 只读地读第 `from` 条起、到分叉点为止的（父会话可能正在写）：一段一段读，过了分叉点就不读下去；`from` 已经过了分叉点
+    /// 的一条都不要，不读（撤销多半只读回分叉以后自己的那一截）。
+    ///
+    /// # Errors
+    ///
+    /// 父会话的日志打不开、坏了；读到分叉点以前就没了的（父会话被删了），报 [`OpenError::Missing`]：底子少一截，接上的
+    /// 历史就是错的，不能当没有。
+    pub(crate) fn events_from(&self, from: Seq) -> Result<Vec<Event>, OpenError> {
+        let mut events = Vec::new();
+        if from > self.upto {
+            return Ok(events);
+        }
+        let mut reached = false;
+        // 一段整个接过来、就地截掉不要的：一条条挪进新的 `Vec`，三万多条要跟着长大拷几遍，刚起的核心里页页缺（施工 V-14
+        // 量过的那种慢），载入一条支线慢两三成。
+        read_segments(&self.dir, |mut segment| {
+            reached = segment.last().is_some_and(|event| event.seq >= self.upto);
+            segment.retain(|event| event.seq >= from && event.seq <= self.upto);
+            if events.is_empty() {
+                events = segment;
+            } else {
+                events.extend(segment);
+            }
+            !reached
+        })?;
+        if !reached {
+            return Err(OpenError::Missing(self.dir.clone()));
+        }
+        Ok(events)
     }
 }
 
@@ -238,13 +283,13 @@ impl Store for Indexed {
     }
 
     fn events(&self) -> Result<Vec<Event>, String> {
-        let mut events = self.base_from(Seq::FIRST);
+        let mut events = self.base_from(Seq::FIRST)?;
         events.extend(self.log.events()?);
         Ok(events)
     }
 
     fn events_from(&self, from: Seq) -> Result<Vec<Event>, String> {
-        let mut events = self.base_from(from);
+        let mut events = self.base_from(from)?;
         events.extend(self.log.events_from(from)?);
         Ok(events)
     }

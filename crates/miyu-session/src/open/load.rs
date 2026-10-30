@@ -269,9 +269,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let placed = environment.clone();
     let (mut session, first) = match loaded {
         stream::Loaded::Fed(loader) => loader.finish(clock.now(), policy, environment),
-        stream::Loaded::Whole(events) => match &base {
+        stream::Loaded::Whole { base, events } => match base {
             Some(base) => {
-                Session::load_forked(id.clone(), base, events, clock.now(), policy, environment)
+                Session::load_forked(id.clone(), &base, events, clock.now(), policy, environment)
             }
             None => Session::load(id.clone(), events, clock.now(), policy, environment),
         },
