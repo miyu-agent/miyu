@@ -1,6 +1,6 @@
 //! blob 的测试：存了再取；放在哪；同一份存两遍；崩溃留下的临时文件；撞名；改名时目标已经有了；
 //! 读出来不对；分块上传的暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；
-//! 读一段（施工 W-6），不跟 blob 目录里的链接（施工 SEC-3）。
+//! 读一段（施工 W-6），不跟 blob 目录里的链接（施工 SEC-3）；核对过、文件没变的不再算哈希（施工 V-24）。
 
 use std::time::Duration;
 
@@ -159,6 +159,45 @@ fn a_blob_that_does_not_match_its_name_is_reported() {
         "{error}"
     );
     assert_eq!(fs::read_to_string(&path).unwrap(), "tampered");
+}
+
+/// 核对过的记下（施工 V-24）：同一个 `Blobs` 和从它拷出来的再取，文件一样长、修改时刻没变的不再算哈希；修改时刻、长短变了的
+/// 重新核对，坏了照报；另造的 `Blobs` 没记过，照算。一样长、修改时刻也一样的悄悄坏了查不出来：这是取舍，防的是文件被换、
+/// 被改，不防磁盘坏了一位（以前每次请求都把历史里的图重算一遍）。
+#[test]
+fn a_checked_blob_is_not_hashed_again_until_its_file_changes() {
+    let scratch = Scratch::new();
+    let blobs = blobs_in(&scratch);
+    let hash = blobs.put(b"original").unwrap();
+    assert_eq!(blobs.get(&hash).unwrap(), b"original");
+    let path = blobs.path(&hash);
+    let modified = fs::metadata(&path).unwrap().modified().unwrap();
+    let stamp = |at: SystemTime| {
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(at)
+            .unwrap();
+    };
+    fs::write(&path, b"tampere!").unwrap();
+    stamp(modified);
+    assert_eq!(
+        blobs.clone().get(&hash).unwrap(),
+        b"tampere!",
+        "拷出来的共用记下的：没变过，不再算"
+    );
+    assert!(
+        matches!(blobs_in(&scratch).get(&hash), Err(BlobError::Corrupt(_))),
+        "另造的没记过，照算"
+    );
+    stamp(modified + Duration::from_secs(5));
+    assert!(
+        matches!(blobs.get(&hash), Err(BlobError::Corrupt(_))),
+        "修改时刻变了，重新核对"
+    );
+    fs::write(&path, b"original").unwrap();
+    assert_eq!(blobs.get(&hash).unwrap(), b"original", "改回来的照样认");
 }
 
 #[test]
