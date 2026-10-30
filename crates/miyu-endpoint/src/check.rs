@@ -5,11 +5,11 @@
 //! 人格的两份字、每一份预设（每一层各查各的，预设施工 P-2 上）、软件包清单（施工 9-1 上）。写了文件的照它在哪认是哪一种，
 //! 只查那一份；认不出的 `unknown_file`。
 //!
-//! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`）。
+//! 不写文件的还查跳过的脚本、技能（施工 X-12 下，`skipped.rs`），唤醒表里读不懂的行（施工 AE-4，`schedules.rs`）。
 //!
 //! 配置里的 MCP 服务另读另报（施工 F-9 上，`mcp.rs`）。不写文件的另带语义模型的状态（施工 R-25，`embedding.rs`）。
 //!
-//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`；包自己的检查照它报的）、
+//! 一处一格：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`、`schedule`；包自己的检查照它报的）、
 //! `file`（照 `config.get` 的写法：数据根里的写成相对数据根的，
 //! 项目配置写成 `~/…`，出厂的人格写真的路径）、`code`、`level`、`message`（照这个连接的语言），有行列的带上。
 
@@ -30,6 +30,7 @@ use crate::Core;
 mod embedding;
 mod mcp;
 mod run;
+mod schedules;
 mod skipped;
 mod unsandboxed;
 use crate::config::checking::check_text;
@@ -96,6 +97,8 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
             problems.extend(skipped::skipped(core, &words).await);
             // MCP 服务列出来却没登记的工具（施工 X-37）。
             problems.extend(mcp::skipped(core, &words));
+            // 唤醒表里读不懂的行（施工 AE-4）。
+            problems.extend(schedules::unreadable(core, &words));
             // 工具说明的覆盖写坏了的（施工 OV-1 上）：照出厂的，各一条。
             for (path, why) in crate::presets::overrides::problems(core) {
                 let message = crate::packages::sentence(&words, "override_bad", &why);

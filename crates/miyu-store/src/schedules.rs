@@ -171,6 +171,22 @@ pub struct NewSchedule {
     pub next: Option<Timestamp>,
 }
 
+/// 读不懂的一行（施工 AE-4）：某一格被改坏了、换了这一版不认的写法。[`Schedules::list`]、[`Schedules::due`] 跳过它，
+/// 别的照常到点；[`Schedules::unreadable`] 交出来，调的一方照它记运行日志、`check` 报。人照编号删得掉。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Unreadable {
+    /// 编号；这一格也读不出的是 `?`。
+    pub id: String,
+    /// 为什么（英文一句：`bad when` 这样，说是哪一格）。
+    pub why: String,
+}
+
+impl From<Unreadable> for DbError {
+    fn from(one: Unreadable) -> DbError {
+        DbError::Bad(format!("schedule {}: {}", one.id, one.why))
+    }
+}
+
 /// 唤醒表：一个连接一直开着（`crate::sqlite` 的规矩），一次一个人用。
 pub struct Schedules {
     db: Mutex<Connection>,
@@ -235,21 +251,36 @@ impl Schedules {
     /// 读不了库、一行读不懂。
     pub fn get(&self, id: &str) -> Result<Option<Schedule>, DbError> {
         let db = self.lock();
-        db.query_row(row::SELECT_ONE, params![id], row::read)
+        Ok(db
+            .query_row(row::SELECT_ONE, params![id], row::read)
             .optional()?
-            .transpose()
+            .transpose()?)
     }
 
-    /// 全部，照下一次的时刻排，停着的、没有下一次的排在后面，同一时刻照编号。
+    /// 全部，照下一次的时刻排，停着的、没有下一次的排在后面，同一时刻照编号。读不懂的行跳过（施工 AE-4，[`Unreadable`]）。
     ///
     /// # Errors
     ///
-    /// 读不了库、一行读不懂。
+    /// 读不了库。
     pub fn list(&self) -> Result<Vec<Schedule>, DbError> {
+        Ok(self.read_all()?.0)
+    }
+
+    /// 读不懂的那几行（施工 AE-4），照 [`Schedules::list`] 的先后。
+    ///
+    /// # Errors
+    ///
+    /// 读不了库。
+    pub fn unreadable(&self) -> Result<Vec<Unreadable>, DbError> {
+        Ok(self.read_all()?.1)
+    }
+
+    /// 全部读一遍：读得懂的、读不懂的分开交。
+    fn read_all(&self) -> Result<(Vec<Schedule>, Vec<Unreadable>), DbError> {
         let db = self.lock();
         let mut statement = db.prepare(row::SELECT_ALL)?;
         let rows = statement.query_map([], row::read)?;
-        rows.map(|row| row?).collect()
+        split(rows)
     }
 
     /// 换掉编号相同的那一行（停、续、记上一次、改下一次都是它）；没有的交回假。
@@ -298,16 +329,17 @@ impl Schedules {
         Ok(at.and_then(Timestamp::from_unix_millis))
     }
 
-    /// 到点了的（下一次不晚于 `now`、没停），照时刻、编号排。
+    /// 到点了的（下一次不晚于 `now`、没停），照时刻、编号排。读不懂的行跳过（施工 AE-4）：原来一行坏了整份交错，全机的定时
+    /// 都不再响。
     ///
     /// # Errors
     ///
-    /// 读不了库、一行读不懂。
+    /// 读不了库。
     pub fn due(&self, now: Timestamp) -> Result<Vec<Schedule>, DbError> {
         let db = self.lock();
         let mut statement = db.prepare(row::SELECT_DUE)?;
         let rows = statement.query_map(params![now.unix_millis()], row::read)?;
-        rows.map(|row| row?).collect()
+        Ok(split(rows)?.0)
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {
@@ -316,4 +348,18 @@ impl Schedules {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
+}
+
+/// 读出来的行分成读得懂的、读不懂的；SQLite 自己出错的整份交错。
+fn split(
+    rows: impl Iterator<Item = rusqlite::Result<Result<Schedule, Unreadable>>>,
+) -> Result<(Vec<Schedule>, Vec<Unreadable>), DbError> {
+    let (mut kept, mut skipped) = (Vec::new(), Vec::new());
+    for row in rows {
+        match row? {
+            Ok(schedule) => kept.push(schedule),
+            Err(one) => skipped.push(one),
+        }
+    }
+    Ok((kept, skipped))
 }

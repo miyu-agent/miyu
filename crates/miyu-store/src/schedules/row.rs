@@ -5,7 +5,7 @@ use rusqlite::{Connection, Row, params};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 
-use super::{Last, Loop, Schedule, Target};
+use super::{Last, Loop, Schedule, Target, Unreadable};
 use crate::sqlite::DbError;
 
 /// 一行的几格，读的顺序同 [`read`]。
@@ -98,23 +98,27 @@ pub(super) fn record(db: &Connection, id: &str, last: &Last, stop: bool) -> Resu
     Ok(changed > 0)
 }
 
-/// 读一行：读不懂的那一格说是哪一行哪一格（外层 `Result` 是 SQLite 的，里层是读不懂的）。
-pub(super) fn read(row: &Row<'_>) -> rusqlite::Result<Result<Schedule, DbError>> {
-    let id: String = row.get(0)?;
-    let created: i64 = row.get(1)?;
-    let by: String = row.get(2)?;
-    let when: String = row.get(3)?;
-    let prompt: String = row.get(4)?;
-    let target: String = row.get(5)?;
-    let looping: Option<String> = row.get(6)?;
-    let paused: bool = row.get(7)?;
-    let next: Option<i64> = row.get(8)?;
-    let last_at: Option<i64> = row.get(9)?;
-    let last_result: Option<String> = row.get(10)?;
-    let last_session: Option<String> = row.get(11)?;
+/// 读一行：读不懂的那一格说是哪一行哪一格（外层 `Result` 是 SQLite 的，里层是读不懂的）。一格的类型不对（被人改坏了）也是
+/// 这一行读不懂，不是读不了库（施工 AE-4）：交在里层，[`super::Schedules::list`]、[`super::Schedules::due`] 照它跳过这一行。
+pub(super) fn read(row: &Row<'_>) -> rusqlite::Result<Result<Schedule, Unreadable>> {
+    let id: String = row.get(0).unwrap_or_else(|_| "?".to_string());
     Ok((|| {
-        let bad = |what: &str| DbError::Bad(format!("schedule {id}: bad {what}"));
+        let bad = |what: &str| Unreadable {
+            id: id.clone(),
+            why: format!("bad {what}"),
+        };
         let time = |ms: i64, what: &str| Timestamp::from_unix_millis(ms).ok_or_else(|| bad(what));
+        let created: i64 = row.get(1).map_err(|_| bad("created_at"))?;
+        let by: String = row.get(2).map_err(|_| bad("by"))?;
+        let when: String = row.get(3).map_err(|_| bad("when"))?;
+        let prompt: String = row.get(4).map_err(|_| bad("prompt"))?;
+        let target: String = row.get(5).map_err(|_| bad("target"))?;
+        let looping: Option<String> = row.get(6).map_err(|_| bad("loop"))?;
+        let paused: bool = row.get(7).map_err(|_| bad("paused"))?;
+        let next: Option<i64> = row.get(8).map_err(|_| bad("next_at"))?;
+        let last_at: Option<i64> = row.get(9).map_err(|_| bad("last_at"))?;
+        let last_result: Option<String> = row.get(10).map_err(|_| bad("last_result"))?;
+        let last_session: Option<String> = row.get(11).map_err(|_| bad("last_session"))?;
         let last = match (last_at, last_result) {
             (Some(at), Some(result)) => Some(Last {
                 at: time(at, "last_at")?,

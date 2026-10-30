@@ -10,9 +10,10 @@
 
 1. **开**：没有就建，`user_version` 是 1。只加表、加索引的改动不升版本。
 2. **坏了**：读不了、坏了的连同 `-wal`、`-shm` 改名成 `schedules.db.broken-<毫秒>` 留着，开一份空的，记 `WARN schedules set aside`。人的定时没了要告诉他：施工 J-3 中起另推 `notice {"kind": "schedules.reset"}`（第七节「给人的通知」）。
-3. **比这一版新**：新的程序写过、又换回旧的，不动它，这一回不用，记 `WARN schedules newer`。回到新的程序照样在。
-4. **写盘**：`synchronous = FULL`，答应了的改动断电也在。一个连接，开了一直开着。
-5. **用到时开**：人、她建第一个任务时建；核心起来时只在已经有表时开。
+3. **一行读不懂**（施工 AE-4，发布前测试 2026-10-30）：某一格被改坏了、换了这一版不认的写法（类型不对也算）的，`list`、`due` 跳过这一行，别的照常到点、照常列；`unreadable()` 交出它们（编号、哪一格），核心起来时一行记一条 `WARN schedule unreadable, skipped`，`check` 报 `schedule_unreadable`（`kind` 是 `schedule`）。照编号读它（`get`）的照旧报错，删（`cancel`）得掉。原来一行坏了 `due`、`list` 整份交错，睡着的那个当成一个都没有，全机的定时悄悄停掉。跳过它也不空转：最早的一次照 `list` 算，坏的那一行不在里面。SQLite 自己出错（读不了库）的照旧整份交错。
+4. **比这一版新**：新的程序写过、又换回旧的，不动它，这一回不用，记 `WARN schedules newer`。回到新的程序照样在。
+5. **写盘**：`synchronous = FULL`，答应了的改动断电也在。一个连接，开了一直开着。
+6. **用到时开**：人、她建第一个任务时建；核心起来时只在已经有表时开。
 
 一行一个任务：
 
@@ -55,7 +56,7 @@
 | 入口 | 做什么 |
 |---|---|
 | `add(Wanted)` | 建一个：cron 读不成、算不出第一次、隔得少于 60 秒的不收，什么都不建。`Wanted.first` 写了的照它（`/loop` 马上先跑一次写现在，施工 J-2），不写的照 `when` 从现在往后算 |
-| `list()` | 全部：有下一次的照时刻在前，停着的、没定下一次的在后，照编号；还没有表的是空的 |
+| `list()` | 全部：有下一次的照时刻在前，停着的、没定下一次的在后，照编号；还没有表的是空的；读不懂的行跳过（第一节第 3 条） |
 | `get(id)` | 一个；没有的是 `Unknown` |
 | `cancel(id)` | 删掉 |
 | `pause(id)` | 停：清掉下一次 |
@@ -99,9 +100,9 @@
 
 | 测试 | 守什么 |
 |---|---|
-| `crates/miyu-store/src/schedules/tests.rs` | 建、读、改、删，编号不复用；到点的、最早的照时刻，停着的不算；列表的先后；重开读得回原样；坏了的改名留着开空的，比这一版新的不动 |
+| `crates/miyu-store/src/schedules/tests.rs` | 建、读、改、删，编号不复用；到点的、最早的照时刻，停着的不算；列表的先后；重开读得回原样；坏了的改名留着开空的，比这一版新的不动；一行读不懂（写法认不出、类型不对）的跳过、交在 `unreadable` 里，别的照常到点、照常列，删得掉（施工 AE-4） |
 | `crates/miyu-endpoint/src/schedules/next/tests.rs` | cron 只认五段、照时区算、不含现在；每隔一阵的错过的跳过；一次的晚于现在才有 |
-| `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删 |
+| `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删；一行读不懂的跳过、`check` 报、删得掉，好的照常到点（施工 AE-4） |
 | `crates/miyu-endpoint/src/schedules/hold/tests.rs`、`crates/miyu-endpoint/tests/schedules_log.rs` | 写不进的放 1 秒起翻倍、最多 5 分钟、写进了清掉；表被锁住时拨过十秒只试几次、一次都不交，放开以后照常交 |
 | `crates/miyu-endpoint/tests/schedule_methods.rs`（施工 J-1 下） | 建、列（照会话筛）、停、续、删，一项的写法；写错的照哪一样拒、没有的 `unknown_schedule`；每次新开照这时的默认定下人格、预设、工作目录；订阅的回应是整张表，改了的、到点交过的推 `schedules.changed`，删了的 `removed` |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 两种标签照 `loop` 挑、带任务编号；没有字的原样；`by` 的 JSON 写法、读得回 |

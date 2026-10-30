@@ -711,6 +711,7 @@
     "package-problems/script_skipped": "跳过了这个脚本：{detail}",
     "package-problems/script_link_outside": "这个脚本是链接，指到数据根里的 {detail}，不在你放东西的那几个文件夹里，跳过了",
     "package-problems/script_state_left": "有这个脚本的状态目录（{detail}），可现在没有这个脚本了；用不上的话自己删掉这个目录",
+    "package-problems/schedule_unreadable": "这个定时任务读不懂，到点不会跑，别的照常（{detail}）；用不上的话照编号删掉",
     "package-problems/script_clashed": "脚本 {detail} 和别的工具重名，没登记上",
     "package-problems/script_not_made": "这个脚本没登记上：{detail}",
     "package-problems/script_not_loaded": "核心还没读到脚本 {detail}；过一会儿再查，一直这样就重启核心",

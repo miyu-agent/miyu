@@ -715,6 +715,7 @@
     "package-problems/script_skipped": "This script was skipped: {detail}",
     "package-problems/script_link_outside": "This script is a link to {detail} inside the data root, outside the folders you keep things in; skipped",
     "package-problems/script_state_left": "There is a state folder for the script {detail}, but no such script now; delete the folder yourself if it is no longer needed",
+    "package-problems/schedule_unreadable": "This schedule can't be read, so it won't run when due; the others are unaffected ({detail}). Delete it by its id if it is no longer needed",
     "package-problems/script_clashed": "Script {detail} has the same name as another tool and was not registered",
     "package-problems/script_not_made": "This script was not registered: {detail}",
     "package-problems/script_not_loaded": "The core has not picked up script {detail} yet; check again shortly, or restart the core if it stays",

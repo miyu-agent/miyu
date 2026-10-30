@@ -16,6 +16,7 @@
 | `crates/miyu-cli/src/help/{zh,en}/check.txt` | 帮助页 |
 | `crates/miyu-endpoint/src/check.rs` | 核心那一半：几份文件在哪、照磁盘上现在的字查、人格每一层各查各的、只查一份的照位置认 |
 | `crates/miyu-endpoint/src/check/embedding.rs` | 回应的 `embedding`：用哪个模型、补着没有、每个人格那一间和每个库补到了哪（施工 R-25） |
+| `crates/miyu-endpoint/src/check/schedules.rs` | 唤醒表里读不懂的行：一行一条警告 `schedule_unreadable`，带编号和哪一格（施工 AE-4，`schedules.md` 第一节第 3 条） |
 
 ### 对外的样子
 

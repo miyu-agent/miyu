@@ -711,6 +711,7 @@
     "package-problems/script_skipped": "このスクリプトはスキップされました：{detail}",
     "package-problems/script_link_outside": "このスクリプトはデータルート内の {detail} へのリンクで、あなたがものを置くフォルダーの外なので、スキップしました",
     "package-problems/script_state_left": "スクリプト {detail} の状態フォルダーがありますが、今はそのスクリプトがありません。不要ならこのフォルダーを自分で削除してください",
+    "package-problems/schedule_unreadable": "この定時タスクは読めないため、時刻になっても実行されません。他のタスクには影響しません（{detail}）。不要なら番号で削除してください",
     "package-problems/script_clashed": "スクリプト {detail} は他のツールと同じ名前なので登録されませんでした",
     "package-problems/script_not_made": "このスクリプトは登録されませんでした：{detail}",
     "package-problems/script_not_loaded": "コアはまだスクリプト {detail} を読み込んでいません。少し待って再確認し、変わらなければコアを再起動してください",

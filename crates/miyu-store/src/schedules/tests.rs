@@ -184,3 +184,70 @@ fn a_broken_table_is_set_aside_and_a_newer_one_left_alone() {
     assert!(table.is_none(), "这一回不用");
     assert_eq!(fs::read(&file).unwrap(), before, "没动它");
 }
+
+/// 发布前测试（2026-10-30，缺陷 E-4）：表里一行读不懂（那一格被改坏、换了写法），`due`、`list` 整个出错（`rows.map(|row| row?).collect()`
+/// 碰到第一行坏的就整份交错）。唤醒表那一头（`miyu-endpoint` 的 `schedules/run.rs`）`due` 出错记一行 WARN 当成没有到点的，
+/// `earliest` 照 `list().unwrap_or_default()` 当成一个都没有：一行坏了，全机的定时都不再响，也不报给人。期望：坏的那一行
+/// 跳过（或者单独报出来），好的照样到点。修之前这条是红的。
+#[test]
+fn one_unreadable_row_does_not_stop_the_others() {
+    let scratch = Scratch::new();
+    let root = root(&scratch);
+    let table = opened(&root);
+    let good = table.add(every_minute(2_000), at(1_000)).unwrap();
+    let bad = table.add(every_minute(3_000), at(1_000)).unwrap();
+    table
+        .lock()
+        .execute(
+            "UPDATE schedules SET when_json = '{\"fortnightly\":true}' WHERE id = ?1",
+            params![bad.id],
+        )
+        .unwrap();
+    let due = table.due(at(10_000));
+    assert!(
+        due.as_ref()
+            .is_ok_and(|due| due.iter().any(|one| one.id == good.id)),
+        "一行坏了，好的那一行也不到点了：{due:?}"
+    );
+    let listed = table.list();
+    assert!(
+        listed
+            .as_ref()
+            .is_ok_and(|all| all.iter().any(|one| one.id == good.id)),
+        "一行坏了，列不出好的那一行：{listed:?}"
+    );
+}
+
+/// 施工 AE-4：一格的类型不对（时刻那一格写成了字）也只是这一行读不懂：跳过，交在 `unreadable` 里，别的照读；照编号读
+/// 它的报错。
+#[test]
+fn a_cell_of_the_wrong_type_only_spoils_its_row() {
+    let scratch = Scratch::new();
+    let root = root(&scratch);
+    let table = opened(&root);
+    let good = table.add(every_minute(2_000), at(1_000)).unwrap();
+    let bad = table.add(every_minute(3_000), at(1_000)).unwrap();
+    table
+        .lock()
+        .execute(
+            "UPDATE schedules SET next_at = 'soon' WHERE id = ?1",
+            params![bad.id],
+        )
+        .unwrap();
+    let ids = |all: Vec<Schedule>| all.into_iter().map(|one| one.id).collect::<Vec<_>>();
+    assert_eq!(ids(table.list().unwrap()), std::slice::from_ref(&good.id));
+    assert_eq!(
+        ids(table.due(at(10_000)).unwrap()),
+        std::slice::from_ref(&good.id)
+    );
+    assert_eq!(
+        table.unreadable().unwrap(),
+        [Unreadable {
+            id: bad.id.clone(),
+            why: "bad next_at".to_string(),
+        }]
+    );
+    assert!(table.get(&bad.id).is_err(), "照编号读它的报错");
+    assert!(table.remove(&bad.id).unwrap(), "删得掉");
+    assert!(table.unreadable().unwrap().is_empty());
+}

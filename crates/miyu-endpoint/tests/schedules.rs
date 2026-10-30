@@ -326,3 +326,62 @@ async fn bad_ones_are_refused_and_pause_resume_cancel_work() {
     assert!(schedules.cancel(&added.id).is_err(), "没有的报错");
     assert!(schedules.list().unwrap().is_empty(), "没有表的是空的");
 }
+
+/// 施工 AE-4：表里一行读不懂（那一格被改坏了），别的照常到点；`check` 报它，人照编号删得掉。原来一行坏了 `due`、`list`
+/// 整份交错，全机的定时都不再响。坏的那一行比好的先到点：跳过它不空转、不挡后面的。
+#[tokio::test]
+async fn an_unreadable_row_is_skipped_reported_and_removable() {
+    let home = Home::new();
+    let script = Script::new([Play::Says("看过了。")]);
+    let hand = Hand::at(START);
+    let (core, mut client, session) = started(&home, &script, &hand).await;
+    let bad = core
+        .schedules()
+        .add(on(&session, When::Every { every: 300 }))
+        .unwrap();
+    let good = core
+        .schedules()
+        .add(on(&session, When::Every { every: 600 }))
+        .unwrap();
+    let file = miyu_store::schedules::path(&home.root);
+    rusqlite::Connection::open(&file)
+        .expect("开得了")
+        .execute(
+            "UPDATE schedules SET when_json = '{\"fortnightly\":true}' WHERE id = ?1",
+            [&bad.id],
+        )
+        .expect("改得了");
+    let listed: Vec<String> = core
+        .schedules()
+        .list()
+        .expect("读得出")
+        .into_iter()
+        .map(|one| one.id)
+        .collect();
+    assert_eq!(listed, std::slice::from_ref(&good.id), "读不懂的不列");
+    hand.advance(600_000);
+    home.until_turns(&session, 1).await;
+    let after = until_recorded(&core, &good.id).await;
+    assert_eq!(after.last.unwrap().result, "ran", "好的照常到点");
+    let checked = client.call("k", "check", json!({})).await;
+    let unreadable: Vec<_> = checked["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{checked}"))
+        .iter()
+        .filter(|one| one["code"] == "schedule_unreadable")
+        .collect();
+    assert_eq!(unreadable.len(), 1, "{checked}");
+    assert_eq!(unreadable[0]["kind"], "schedule");
+    assert_eq!(unreadable[0]["file"], "state/schedules.db");
+    let message = unreadable[0]["message"].as_str().unwrap_or_default();
+    assert!(
+        message.contains(&format!("{}: bad when", bad.id)),
+        "{message}"
+    );
+    core.schedules().cancel(&bad.id).expect("照编号删得掉");
+    let checked = client.call("k2", "check", json!({})).await;
+    assert!(
+        !checked.to_string().contains("schedule_unreadable"),
+        "删了不再报：{checked}"
+    );
+}

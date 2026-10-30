@@ -185,6 +185,18 @@ impl Schedules {
         }
     }
 
+    /// 读不懂的那几行（施工 AE-4，`check` 报）和表在哪；还没有表的、表用不了、读不了的是空的。
+    pub(crate) fn unreadable(
+        &self,
+    ) -> (Vec<miyu_store::schedules::Unreadable>, std::path::PathBuf) {
+        let rows = self
+            .table(false)
+            .ok()
+            .and_then(|table| table.unreadable().ok())
+            .unwrap_or_default();
+        (rows, table::path(&self.root))
+    }
+
     /// 编号是 `id` 的那一个。
     ///
     /// # Errors
@@ -313,6 +325,17 @@ impl Schedules {
             return;
         };
         let now = self.now();
+        // 读不懂的行（施工 AE-4）：到点、列出来都跳过，别的照常；起来时各记一行，`check` 也报。
+        match table.unreadable() {
+            Ok(unreadable) => {
+                for one in unreadable {
+                    tracing::warn!(target: TARGET, schedule = %one.id, why = %one.why, "schedule unreadable, skipped");
+                }
+            }
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "schedules not read");
+            }
+        }
         match table.due(now) {
             Ok(due) => {
                 for schedule in due {
