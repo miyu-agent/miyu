@@ -7,7 +7,7 @@
     }
   },
   "said": {
-    "wakeup/set": "Next at {next}: {reason}",
+    "wakeup/set": "Next at {next}",
     "wakeup/stopped": "Loop stopped",
     "wakeup/no-loop": "No loop is running",
     "wakeup/no-delay": "No delay given",

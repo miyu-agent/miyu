@@ -7,7 +7,7 @@
     }
   },
   "said": {
-    "wakeup/set": "次は {next}：{reason}",
+    "wakeup/set": "次は {next}",
     "wakeup/stopped": "ループを停止",
     "wakeup/no-loop": "動いているループはありません",
     "wakeup/no-delay": "間隔が指定されていません",

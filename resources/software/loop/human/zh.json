@@ -7,7 +7,7 @@
     }
   },
   "said": {
-    "wakeup/set": "下次 {next}：{reason}",
+    "wakeup/set": "下次 {next}",
     "wakeup/stopped": "已停止循环",
     "wakeup/no-loop": "没有在跑的循环",
     "wakeup/no-delay": "没给间隔",
