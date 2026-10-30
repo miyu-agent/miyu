@@ -17,8 +17,9 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
+use std::time::{Duration, Instant};
 
-use tokio::sync::watch;
+use tokio::sync::{broadcast, watch};
 
 use miyu_http::{Client, is_loopback_url};
 
@@ -38,6 +39,8 @@ use crate::TARGET;
 use super::retire::{Retirement, Retiring};
 
 mod renamed;
+#[cfg(test)]
+mod tests;
 
 /// 核心一份的模型资料。
 #[derive(Debug)]
@@ -68,7 +71,15 @@ pub struct ModelData {
     /// 供应商的图标（施工 8-31）：目录里的编号 → 图标。核心起来时从缓存读回来、拉过以后换上（`miyu-core` 的
     /// `models/logos.rs`）；没有的是空的，头照名字的第一个字画。
     logos: RwLock<Arc<BTreeMap<String, Logo>>>,
+    /// 后台拉列表的上一次（施工 V-26）：每一家最近一次在后台去拉的时刻，拉成拉不成都算（[`ModelData::claim_list`]）。只在
+    /// 这个进程的内存里，核心重启就清零。
+    claimed: Mutex<BTreeMap<String, Instant>>,
+    /// 哪几家的列表变了（施工 V-26）：换上的列表和原来的不一样就交一次，订着配置流的连接推 `models.changed`。
+    changes: broadcast::Sender<Vec<String>>,
 }
+
+/// 列表变了的通知攒多少条：头掉了队的只少一次刷新，下一次变了照样收到。
+const CHANGES: usize = 16;
 
 /// 用出来的、供应商的列表、池的指针：核心起来时从 `state/models/` 读回来的。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -100,6 +111,8 @@ impl ModelData {
             retiring: Mutex::new(Retiring::default()),
             placeholder_tool: String::new(),
             logos: RwLock::new(Arc::new(BTreeMap::new())),
+            claimed: Mutex::new(BTreeMap::new()),
+            changes: broadcast::channel(CHANGES).0,
         }
     }
 
@@ -252,11 +265,40 @@ impl ModelData {
         self.lock().lists.get(provider).map(|list| list.fetched)
     }
 
-    /// 换上 `provider` 这一家新拉的列表，写盘。
+    /// 换上 `provider` 这一家新拉的列表，写盘。列出来的模型和原来的不一样（原来没有的也算），交一次「这一家变了」（施工
+    /// V-26，[`ModelData::list_changes`]）：只差拉的时刻的不算。拉不成的不走到这里，旧的列表照旧用。
     pub fn set_list(&self, provider: &str, list: ProviderList) {
         let text = list.to_json();
-        self.lock().lists.insert(provider.to_string(), list);
+        let previous = self.lock().lists.insert(provider.to_string(), list.clone());
         self.write(&format!("providers/{provider}.json"), &text);
+        if previous.is_none_or(|previous| previous.models != list.models) {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "没有订着的就没人收，照常往下走"
+            )]
+            let _ = self.changes.send(vec![provider.to_string()]);
+        }
+    }
+
+    /// 订「哪几家的列表变了」（施工 V-26）：配置流的转发任务订，推 `models.changed`。
+    pub fn list_changes(&self) -> broadcast::Receiver<Vec<String>> {
+        self.changes.subscribe()
+    }
+
+    /// 后台要拉 `provider` 这一家的列表（施工 V-26）：上一次在后台拉离现在不到 `every` 的不拉，交回假；不然记下这一刻、交回
+    /// 真。拉成拉不成都算拉过：拉不到的一家不会每问一次就去拉一次。人要的（`model.list` 带 `refresh`）、池的成员判下架的
+    /// 不经这里，照旧当场拉。
+    pub fn claim_list(&self, provider: &str, every: Duration) -> bool {
+        let now = Instant::now();
+        let mut claimed = self.claimed.lock().unwrap_or_else(PoisonError::into_inner);
+        if claimed
+            .get(provider)
+            .is_some_and(|at| now.saturating_duration_since(*at) < every)
+        {
+            return false;
+        }
+        claimed.insert(provider.to_string(), now);
+        true
     }
 
     /// 池 `pool` 有 `count` 个成员：这一次取第几个，指针往前走一个（施工 8-8，[`Pointers::take`]）。只改内存：写盘由调的一方

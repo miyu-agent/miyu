@@ -89,6 +89,12 @@ async fn a_gone_member_leaves_every_pool_that_lists_it() {
         "这一次照旧出错：{reply}"
     );
 
+    // 当场重拉的列表是头一次拉到（施工 V-26）：先推 `models.changed`，再写配置推 `config.changed`。
+    let next = watcher.next().await.expect("推了");
+    assert_eq!(
+        next,
+        json!({"jsonrpc": "2.0", "method": "models.changed", "params": {"providers": ["a"]}})
+    );
     let next = watcher.next().await.expect("推了");
     assert_eq!(next["method"], "config.changed", "{next}");
     assert_eq!(next["params"]["by"], json!({"kind": "kernel"}), "{next}");
