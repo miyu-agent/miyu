@@ -25,6 +25,8 @@ pub(super) struct Results {
     pub(super) chromium: Template,
     /// firefox 截图写了相对路径时接的一句（施工 SB-1 修）。
     pub(super) screenshot: Template,
+    /// 沙盒里用 WMI 的命令失败了接的一句（施工 SW-3）。
+    pub(super) wmi: Template,
 }
 
 impl Results {
@@ -39,6 +41,7 @@ impl Results {
             truncated: text("truncated", &["total"])?,
             chromium: text("chromium-sandbox", &[])?,
             screenshot: text("firefox-screenshot", &[])?,
+            wmi: text("no-wmi", &[])?,
         })
     }
 
@@ -92,14 +95,18 @@ impl Results {
         if !relative_screenshot(command) {
             return done;
         }
-        let hint = say(&self.screenshot, &[]);
-        match done.blocks.iter_mut().rev().find_map(|block| match block {
-            Block::Text(text) => Some(text),
-            _ => None,
-        }) {
-            Some(text) => text.text.push_str(&hint),
-            None => done.blocks.push(Block::Text(Text { text: hint })),
+        append(&mut done, say(&self.screenshot, &[]));
+        done
+    }
+
+    /// 在沙盒里跑（`sandboxed`）、失败了、命令里用到 WMI 的（[`WMI_COMMANDS`]），末尾接 `no-wmi.txt`（施工 SW-3，2026-10-30
+    /// 项目主人定）：Windows 的沙盒（MXC 的容器）挡住 WMI，`Get-CimInstance` 一类在里面跑不成；说一句，她直接申请在沙盒外跑
+    /// 这一条，不用先试错。成了的、沙盒外跑的不接。
+    pub(super) fn wmi(&self, command: &str, sandboxed: bool, mut done: Done) -> Done {
+        if !sandboxed || !done.error || !uses_wmi(command) {
+            return done;
         }
+        append(&mut done, say(&self.wmi, &[]));
         done
     }
 
@@ -142,6 +149,50 @@ impl Results {
 /// 施工 SB-1 修二（主人验收撞见）：加了 `--no-sandbox --user-data-dir` 以后，crashpad 照 `XDG_CONFIG_HOME` 在
 /// `~/.config/chromium/Crash Reports` 建库，那里被沙盒藏成只读的空目录，建不了就把主进程一起带崩（SIGTRAP）。认它的两种
 /// 说法（随系统语言变的那半不认），提示多教一个 `XDG_CONFIG_HOME=<临时目录>`。
+/// 末尾一块字后面接 `hint`；一块字都没有的另起一块。
+fn append(done: &mut Done, hint: String) {
+    match done.blocks.iter_mut().rev().find_map(|block| match block {
+        Block::Text(text) => Some(text),
+        _ => None,
+    }) {
+        Some(text) => text.text.push_str(&hint),
+        None => done.blocks.push(Block::Text(Text { text: hint })),
+    }
+}
+
+/// 要连 WMI 的命令（小写，施工 SW-3）：CIM、WMI 的 cmdlet 和它们的别名，`wmic`，底下走 WMI 的 `systeminfo`、
+/// `Get-ComputerInfo`。
+const WMI_COMMANDS: [&str; 8] = [
+    "get-ciminstance",
+    "gcim",
+    "get-wmiobject",
+    "gwmi",
+    "invoke-cimmethod",
+    "wmic",
+    "systeminfo",
+    "get-computerinfo",
+];
+
+/// 命令里有一个词（去掉路径、`.exe`、引号）是 [`WMI_COMMANDS`] 之一，大小写不论。
+fn uses_wmi(command: &str) -> bool {
+    command
+        .split(|c: char| c.is_whitespace() || matches!(c, ';' | '|' | '&' | '(' | ')' | '{' | '}'))
+        .map(|word| {
+            let word = word
+                .trim_matches(|c| c == '\'' || c == '"')
+                .to_ascii_lowercase();
+            let name = word
+                .rsplit(['\\', '/'])
+                .next()
+                .unwrap_or_default()
+                .to_string();
+            name.strip_suffix(".exe")
+                .map(str::to_string)
+                .unwrap_or(name)
+        })
+        .any(|name| WMI_COMMANDS.contains(&name.as_str()))
+}
+
 const CHROMIUM_SIGNS: [&str; 6] = [
     "Failed to create a unique user data directory",
     "The SUID sandbox helper binary was found, but is not configured correctly",

@@ -385,6 +385,8 @@ impl Tool for Shell {
                 Ok(Waited::Finished(finished)) => {
                     let done = self.finished(finished, timeout);
                     let done = self.texts.results.screenshot(&args.command, done);
+                    let sandboxed = call.sandbox.is_some();
+                    let done = self.texts.results.wmi(&args.command, sandboxed, done);
                     touched::after(seen).into_iter().fold(done, Done::effect)
                 }
                 Ok(Waited::Moved(handover)) => {

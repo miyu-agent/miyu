@@ -1429,6 +1429,17 @@ Running in the background is not available here. Foreground runs can take a larg
 Not run: no need to wait. Finished background jobs and replies from other sessions wake you after this turn ends.
 ```
 
+#### `software/basesystem/shell/no-wmi.txt`
+
+- 什么时候加进来：在沙盒里跑、失败了、命令里有用 WMI 的词（`Get-CimInstance`、`gcim`、`Get-WmiObject`、`gwmi`、`Invoke-CimMethod`、`wmic`、`systeminfo`、`Get-ComputerInfo`，`shell/results.rs` 的 `WMI_COMMANDS`），接在结果末尾
+- token：15（2026-10-30 照 o200k 数）
+- 为什么加：Windows 的沙盒（MXC 的容器）挡住 WMI，查电脑状态的命令在里面跑不成；说一句，她直接申请在沙盒外跑这一条，不用先试错（2026-10-30 项目主人看过 Codex、Claude Code 的做法后定：照旧挡、只加说明，每条照旧申请；照 J13 写成事实，施工 SW-3）
+- 指纹：`75cf5d7c`
+
+```text
+The sandbox blocks WMI. Commands that need it work outside the sandbox.
+```
+
 #### `software/basesystem/shell/hazard.txt`
 
 - 什么时候加进来：`shell` 的命令认出灭顶的高危（删根、家目录、系统目录、数据根，格式化、写裸磁盘），工作区、完全放开两级都直接拒（施工 5-17；字段 `reason` 填下面七份之一，第七份施工 5-17 三补）

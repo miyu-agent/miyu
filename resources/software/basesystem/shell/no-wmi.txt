@@ -1,0 +1,1 @@
+The sandbox blocks WMI. Commands that need it work outside the sandbox.
