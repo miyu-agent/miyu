@@ -98,7 +98,7 @@ pub use path_text::path_text;
 pub use plugins::VenuePlugins;
 pub use port::{Cancel, ForSession, ModelPort, Models, Reports, Sight};
 pub use route::{
-    Answer, Ask, IDLE, LOCAL_WAIT, Missing, ModelData, Observed, OneShot, Probe, Probed,
+    Answer, Ask, IDLE, LOCAL_WAIT, Missing, ModelData, Observed, OneShot, Probe, Probed, REFETCH,
     Retirement, Routes, Running, STALE, Stage, Unanswered, Watched, find_local, probe,
     read_observed, refresh_list,
 };

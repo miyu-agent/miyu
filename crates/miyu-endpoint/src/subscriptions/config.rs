@@ -5,6 +5,9 @@
 //! `config.set` 的回应也交给它（照会话的订阅那样，`subscriptions.rs`）：配置服务先推、后回应，回应到手时这一次的推送一定
 //! 已经在它的队列里了；先把已经到了的推送放进写队列，再放回应，发 `config.set` 的那个连接先见推送、后见回应。停了以后
 //! 接着转回应，直到连接不要它了。
+//!
+//! 供应商的模型列表变了也从这里推（施工 V-26，`models.md` 第二条第 10 条）：`models.changed`，带哪几家，不带条目，头照自己的
+//! 参数重取 `model.list`。读得慢漏掉的不补：头初次连上、`resync` 以后本来就整份重读。
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,9 +43,10 @@ impl ConfigForwarder {
     ) -> ConfigForwarder {
         let (replies, waiting) = mpsc::unbounded_channel();
         let pushing = Arc::new(AtomicBool::new(true));
+        let lists = core.model_data.list_changes();
         let task = tokio::spawn(forward(
             Writer { core, system, out },
-            pushes,
+            (pushes, lists),
             waiting,
             Arc::clone(&pushing),
         ));
@@ -96,6 +100,13 @@ impl Writer {
         }
     }
 
+    /// 几家供应商的模型列表变了（施工 V-26）：推一条 `models.changed`。写队列关了交回 `false`。
+    async fn lists_changed(&self, providers: &[String]) -> bool {
+        let line = serde_json::json!({"jsonrpc": "2.0", "method": "models.changed",
+            "params": {"providers": providers}});
+        self.out.send(line.to_string()).await.is_ok()
+    }
+
     /// 掉了队：推一条 `resync`。
     async fn resync(&self) -> bool {
         tracing::warn!(target: "miyu::endpoint", stream = "config", "lagged, resync");
@@ -107,11 +118,14 @@ impl Writer {
 /// 转发：先转推送和回应；推送停了（掉了队），接着转回应，直到连接不要它了。
 async fn forward(
     writer: Writer,
-    mut pushes: broadcast::Receiver<Arc<Changed>>,
+    (mut pushes, mut lists): (
+        broadcast::Receiver<Arc<Changed>>,
+        broadcast::Receiver<Vec<String>>,
+    ),
     mut replies: mpsc::UnboundedReceiver<String>,
     pushing: Arc<AtomicBool>,
 ) {
-    relay(&writer, &mut pushes, &mut replies).await;
+    relay(&writer, (&mut pushes, &mut lists), &mut replies).await;
     pushing.store(false, Ordering::Release);
     while let Some(reply) = replies.recv().await {
         if writer.out.send(reply).await.is_err() {
@@ -123,9 +137,14 @@ async fn forward(
 /// 转发的主循环：交回来的时候，这个订阅不再推了（掉了队、连接断了、连接不要它了）。
 async fn relay(
     writer: &Writer,
-    pushes: &mut broadcast::Receiver<Arc<Changed>>,
+    (pushes, lists): (
+        &mut broadcast::Receiver<Arc<Changed>>,
+        &mut broadcast::Receiver<Vec<String>>,
+    ),
     replies: &mut mpsc::UnboundedReceiver<String>,
 ) {
+    // 列表变了的那一头没了（核心在停）就不再听它，免得一直醒。
+    let mut listening = true;
     loop {
         tokio::select! {
             biased;
@@ -151,6 +170,18 @@ async fn relay(
                 }
                 if writer.out.send(reply).await.is_err() || !alive {
                     return;
+                }
+            }
+            changed = lists.recv(), if listening => {
+                match changed {
+                    Ok(providers) => {
+                        if !writer.lists_changed(&providers).await {
+                            return;
+                        }
+                    }
+                    // 漏掉的不补：头 `resync`、重连以后整份重读。
+                    Err(RecvError::Lagged(_)) => {}
+                    Err(RecvError::Closed) => listening = false,
                 }
             }
             next = pushes.recv() => {

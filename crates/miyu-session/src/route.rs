@@ -55,7 +55,7 @@ mod sight;
 mod turn;
 
 pub use endpoint::Missing;
-pub use lists::{STALE, refresh_list};
+pub use lists::{REFETCH, STALE, refresh_list};
 pub use local::{LOCAL_WAIT, Running, find_local};
 #[cfg(any(test, feature = "testkit"))]
 pub(crate) use once::Said;

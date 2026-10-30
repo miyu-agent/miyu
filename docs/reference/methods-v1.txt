@@ -1,5 +1,5 @@
-# Methods frozen in protocol 1: add only; removing, renaming or changing one needs protocol 2.
 # 协议版本 1 冻结的方法（施工 Y-5 末下）：只加不改不删。删、改名、改意思的要升到协议 2。
+# Methods frozen in protocol 1: add only; removing, renaming or changing one needs protocol 2.
 account.avatar
 account.logout
 account.set_avatar
@@ -80,6 +80,7 @@ method.call
 model.call
 model.embed
 model.list
+models.changed
 package.call
 package.changed
 package.check

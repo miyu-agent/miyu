@@ -352,7 +352,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 - key 的 `state` 照旧给，8-9 修起只会是 `ok`（整家不再冷却，形状不变，头不用改）。例子：`{"ref":"env:DEEPSEEK_API_KEY","set":true,"state":"ok"}`。
 - key 的值从不交出去。
 - 能出向量的（`embedding`，施工 R-5 再补，2026-10-09 核心的主会话定）：给设置页的「语义模型」挑模型用（`models.embedding`，`recall.md` 第四条第 7 款）。目录不标 embedding 的输出种类（models.dev 里的 embedding 模型 `output` 全写 `text`，2026-10-09 查），照名字认，规矩是数据：资源目录的 `models/embedding.toml`（`miyu_models::embedding`），每次 `model.list` 读一次。模型名、目录里对上的那个条目的 `family`（都转小写）含 `contains` 里的一个，或者模型名最后一段（`/` 后面）、`family` 以 `starts` 里的一个开头，算；含 `except` 里的一个的不算。出厂 `contains = ["embed"]`、`starts = ["bge"]`、`except = ["rerank"]`：照 2026-10-09 的目录快照认出 72 个，都是 embedding 模型，`bge-reranker-v2-m3` 不算，漏一个 `intfloat/e5-mistral-7b-instruct`（名字里没有 embed、`family` 写的 `mistral`）。认错了照样能写、能用：选了以后核心照旧发一次就知道。规矩读不了、写错了的这一次一个都不标，记一行 `WARN embedding names unreadable error=…`，`model.list` 照常答。
-- `refresh` 是真的：先一家一家拉，拉完再答，拉不到的照旧用上一份。不是的：没有列表、旧过 24 小时、这一家用得了的，在后台拉，这一次照手头的答。
+- `refresh` 是真的：先一家一家拉，拉完再答，拉不到的照旧用上一份。不是的：这一家用得了的在后台拉，这一次照手头的答；不带 `models` 的每家最多一分钟拉一次，带 `models` 的只拉没有列表、旧过 24 小时的（第二条第 10 条，施工 V-26）。拉到的变了推 `models.changed`。
 - `models` 写了的（施工 V-6 上）：照第一个 `/` 分成供应商和模型（模型名里可以再有 `/`），`providers` 只列写到了、又配好了的那几家，每家的 `models` 只列写到了的、本来就会列的那几个，在算每个模型的资料之前就筛掉。写到了的供应商没配的不列，模型不在那一家的不列，都不算错。没有 `/`、`/` 哪一边是空的、不是字符串数组的：`bad_params`。`provider` 也写了的两样都照着筛。`pools`、`uses`、`catalog` 照旧整份交。
 
 **`provider.detect`**（查询，8-11）：没有参数（`params` 不写、写 `{}`）。先等目录读完。
@@ -626,7 +626,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 8. **合起来**：每一格照「模型的资料」那张表从上往下查。第 1、2 层对上的全借。第 3、4 层照 `15-模型与供应商.md` 第三节借，价格照第 6 条。
 9. **用出来的**：主请求、摘要请求报上下文超长，驱动交出了上限 N（「驱动要守的约定」第 7 条），N 比这个模型发的时候手头的窗口小（或者手头没有窗口）：记进 `state/models/learned.json`（已经学到的比 N 小的不换），记一行 `INFO learned window provider=… model=… window=…`。新造的、载入的会话用上；开着的会话下一个回合开始时用上（8-10，第六条第 3 条）。只学窗口。一直留着，手写的盖过它，删掉文件就重新学。这一次的超长照旧走被动压缩（`compaction.md` 第六条）。
-10. **供应商的列表**：`provider.test`、`model.list` 带 `refresh` 时拉。`model.list` 发现某家没有、或者旧过 24 小时的，在后台拉，这一次先照手头的答。照驱动的 `models_path()` GET，带这家的第一个能用的 key，连接 10 秒、整个 30 秒。拉到的存 `state/models/providers/<编号>.json`。拉不到的记一行 `WARN provider list failed`，照旧用上一份。拉列表的是核心一份的 GET 客户端，照这一家的地址挑：落在本机的不走代理（施工 8-11 补，`ModelData::fetcher_for`），别的照 `miyu_http::fetcher`。列表里报了窗口的，窗口这一格照它（第三层）。
+10. **供应商的列表**：`provider.test`、`model.list` 带 `refresh` 时拉，拉完再答。`model.list` 不带 `refresh` 的在后台拉、这一次先照手头的答：列整份的（不带 `models`：配置页、选模型的框）每家最多一分钟拉一次（`REFETCH`，施工 V-26，2026-10-30 项目主人定：上游换了模型，开一次菜单就跟上，不用等一天、不用按刷新）；只要几个模型的（底栏只问正在用的那几个）照旧只拉没有列表、旧过 24 小时的，聊天时不一直去打供应商。一分钟照家算、只在核心进程的内存里记（`ModelData::claim_list`），拉成拉不成都算拉过，重启清零。直接写的模型（`models.chat` 这些）请求回了 404 的，也在后台拉一次这一家（同样一分钟最多一次），只为让列表跟上，照旧报错、不改配置；池的成员照第十三条当场拉、判下架。换上的列表列的模型和原来不一样（原来没有的也算，只差拉的时刻的不算），推 `models.changed {"providers": [<编号>]}` 给订着配置的连接（`protocol.md` 推送那一张表，走配置订阅的转发任务 `subscriptions/config.rs`，不另起订阅）；拉不成的不推、不刷掉旧的；读得慢漏掉的不补（头 `resync`、重连以后整份重读）。照驱动的 `models_path()` GET，带这家的第一个能用的 key，连接 10 秒、整个 30 秒。拉到的存 `state/models/providers/<编号>.json`。拉不到的记一行 `WARN provider list failed`，照旧用上一份。拉列表的是核心一份的 GET 客户端，照这一家的地址挑：落在本机的不走代理（施工 8-11 补，`ModelData::fetcher_for`），别的照 `miyu_http::fetcher`。列表里报了窗口的，窗口这一格照它（第三层）。
 11. **倍率**：模型的 `price_multiplier`，没有的用供应商的，都没有是 1（`15-模型与供应商.md` 第三节，2026-09-30 项目主人定）。倍率和币种无关，照乘。
 12. **本机的服务当免费**（2026-10-01 项目主人定）：`local` 是真的供应商（地址在本机，或者档案标了），价格只认手写的，没写是 0，来源 `local`。目录按名字对上的价格不借。`provider.detect` 认出的本机服务写进配置以后自然是 `local`。
 
@@ -1138,6 +1138,8 @@ mimo = ["xiaomi"]
 
 | 测试 | 守哪几条 | 哪一步 |
 |---|---|---|
+| `crates/miyu-session/src/route/shared/tests.rs`（施工 V-26） | 后台拉一家有间隔、别的家照拉；换上的列表头一次、变了（连先后变了）才交「这一家变了」，只差拉的时刻的不交 | V-26 |
+| `crates/miyu-endpoint/tests/models.rs` 的 `a_whole_list_refetches_once_a_minute_and_announces_a_change`（施工 V-26） | 列整份的 `model.list` 后台拉、推 `models.changed` 给订着配置的连接；一分钟里再列整份、只要几个都不再拉；人按刷新拉回来一样的不推 | V-26 |
 | `crates/miyu-models/src/side/tests.rs`（Q-2） | 档位对上三个固定池，出厂的照编号排；池是空的落到会话的模型，有成员的落到池；清单认的档位就是三个固定池、照池名认得回来（Q-3） |
 | `crates/miyu-endpoint/tests/model_call_side.rs`（Q-3） | 扩展经真的路由调 `model.call`：登记了的 `side` 照档位从 `lite` 池取；没登记的、和 `model`、`use` 同写的、`session` 不跟着 `side` 的、人的连接写 `side` 的 `bad_params`，都没发；池是空的，写了会话的照会话的模型、没写的照 `models.chat`；`model.list` 的 `side` 列出 `<包>/<编号>`、名字说明照清单、`resolved` 跟着池 |
 | `crates/miyu-session/tests/route_side.rs`（Q-2） | 起标题照 `lite` 池、主请求照会话的模型；池是空的用会话的模型、不算退；池里出错退回会话的模型、记 `fell_back`；会话钉在 `lite` 池上的不再往下退 |
@@ -1278,7 +1280,7 @@ mimo = ["xiaomi"]
 | 26 | opencode Zen 的头、占位工具做成供应商的档案，占位补在统一的请求上（8-14 收窄成只做 Go 的会话头；8-14 补恢复：Zen 的头和占位都做，第八条） | Zen 的 Claude、GPT 走另外两种驱动，补在 openai-chat 的开关里管不到它们。头是 HTTP 的事，和驱动无关 | 照施工方案写成 openai-chat 的开关：另两种驱动要再做一遍 |
 | 27 | Zen 端点把 `User-Agent` 盖成 `opencode/<版本≥1.18>` 的形状，另带三个 `x-opencode-*` 头（2026-10-04 项目主人定：接上免费档，推翻 10-03 的「不冒充」） | 2026-10-04 实测：免费档照 User-Agent 认客户端——`miyu/<版本>` 一律 403；版本、`x-opencode-*` 里 id 的形状、工具面里的 `shell`/`read` 都参与判定。判据会被服务端改，改了就重跑探针 | 不冒充：免费档用不了（10-03 的做法） |
 | 28 | `provider.detect` 只探本机的地址，300 毫秒。不在起来时自动探 | 找现成的不该往外发请求。人要的时候才探 | 起来时就探：每次拉起核心都多几次连接 |
-| 29 | 供应商的列表人要时才拉（`provider.test`、`refresh`、`model.list` 缺了在后台拉） | 列表只给 `/models` 看，不值得每次起来带着 key 去请求 | 起来时拉一遍配好的每一家 |
+| 29 | 供应商的列表人要时才拉（`provider.test`、`refresh`、`model.list` 在后台拉：列整份的每家最多一分钟一次，施工 V-26 改；只要几个的缺了、旧过一天才拉），拉到的变了推 `models.changed` | 列表只给 `/models` 看，不值得每次起来带着 key 去请求；以前只在旧过一天时拉、拉完不告诉头，上游换了模型要按刷新（2026-10-30 项目主人提） | 起来时拉一遍配好的每一家；每次 `model.list` 都拉；拉完把新条目带进推送（头三处各照自己的参数取，带了用不上） |
 | 30 | 用出来的只学窗口，从超长的报错里解析上限 | 解析已经有了（`excess` 那一套），驱动多交一个数。别的（收不收图）靠报错的原话猜不准 | 也学图：原话五花八门 |
 | 31 | 开发用的三个环境变量挪进 `cargo xtask dev-home`，程序里删掉 | 真模型自测照旧一条命令，程序里不留开发开关。地址照旧不进仓库 | 留一个隐藏的环境变量：施工单 3-9 再补定过配置做好以后删 |
 | 32 | 新 crate `miyu-models` 放第 2 层 | 对目录、冷却、金额都是纯函数，照 `miyu-drivers` 的做法单测、随机测。执行器、核心、协议都要用 | 放在 `miyu-core`：会话 actor 在它下面一层用不到 |

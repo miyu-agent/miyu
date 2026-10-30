@@ -137,6 +137,8 @@ There is one secrets file: `secrets.toml`.
 
 **Params**: `provider` (only this one), `refresh` (boolean; fetch providers' model lists first, then answer), `models` (array; only these `<provider>/<model>`).
 
+Without `refresh`, the answer uses the lists at hand and fetches in the background: without `models`, each provider at most once a minute; with `models`, only providers with no list yet or one older than a day. If a fetched list changed, connections subscribed to the `config` stream get [`models.changed`](pushes.en.md).
+
 **Response**
 
 | Name | Notes |

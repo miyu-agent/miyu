@@ -1281,6 +1281,7 @@
 | `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：一个任务建了、停了、续了、删了、到点交过了 |
 | `notice` | `{"kind", "at", …}`：`schedule.ran {schedule, session, ok}`、`schedules.reset {}`（施工 J-3 中，`schedules.md` 第七节） | 订阅着 `notices` 的：每次新开会话的定时那一轮结束了、唤醒表坏了换了一份空的 |
 | `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置每变一次 |
+| `models.changed` | `{"providers": [<编号>…]}`，不带条目（施工 V-26，`models.md` 第二条第 10 条） | 订阅着配置的：核心在后台拉到的供应商模型列表和原来的不一样 |
 | `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |
 | `memory.dreaming` | `{"upto": <这一批，同它的 merging>, "kind": "revised", "id", "text"}`；`{"upto", "kind": "retired", "id", "retire": "outdated" \| "repeat" \| "worthless", "kept"?, "why"}`；`{"upto", "kind": "summary", "chars", "done"}`；都加订阅时写的 `persona` 或 `session`（施工 R-21） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 7 条，整理时她每写完一条（摘要每多 20 个字、写完）一条 |
 

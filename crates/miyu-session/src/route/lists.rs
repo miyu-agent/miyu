@@ -2,7 +2,8 @@
 //! 家的第一个取得到值的 key，整个 30 秒；读出来的存 `state/models/providers/<编号>.json`。拉不到的记一行
 //! `WARN provider list failed`，照旧用上一份。
 //!
-//! 谁来拉：`model.list` 带 `refresh` 的拉完再答，发现某家没有、旧过 24 小时的在后台拉（协议端点）。GET 一家、读出模型的那一段
+//! 谁来拉：`model.list` 带 `refresh` 的拉完再答；列整份的（不带 `models`）每家最多 [`REFETCH`] 在后台拉一次，只要几个模型的
+//! 发现某家没有、旧过 [`STALE`] 的在后台拉（协议端点，施工 V-26）；直接写的模型请求回 404 的也在后台拉一次（`route/retire.rs`）。GET 一家、读出模型的那一段
 //! （[`list_models`]）`provider.test` 列模型、`provider.detect` 探本机也用（施工 8-11，`route/probe.rs`、`route/local.rs`）。
 
 use std::sync::Arc;
@@ -26,8 +27,12 @@ pub(crate) const TIMEOUT: Duration = Duration::from_secs(30);
 /// 响应体最多多少字节：几千个模型的列表也就几 MB。
 const LIMIT: usize = 16 * 1024 * 1024;
 
-/// 列表旧过多久，`model.list` 在后台重拉。
+/// 列表旧过多久，只要几个模型的 `model.list`（底栏只问正在用的那几个）在后台重拉。
 pub const STALE: Duration = Duration::from_secs(24 * 60 * 60);
+
+/// 后台拉同一家最多多久一次（施工 V-26）：列整份的 `model.list`（配置页、选模型的框）、直接写的模型回了 404，照它节流
+/// （[`crate::ModelData::claim_list`]）。上游换了模型，开一次菜单就跟上，不用等满一天、不用按刷新。
+pub const REFETCH: Duration = Duration::from_secs(60);
 
 /// 拉编号 `id` 这一家的列表，照这一刻的最终值 `values`，key 照 `secret` 取。拉到了换上、写盘。
 ///

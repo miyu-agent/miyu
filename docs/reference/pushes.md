@@ -8,6 +8,7 @@
 | `view.add`、`view.update`、`view.append`、`view.hidden`、`view.remove`、`view.status` | `view` | 见 [视图流](view.md) |
 | `sessions.changed` | `sessions` | `{"session", "entry"}`：会话列表的一项整个换掉（同 `session.list` 的一项）；删了的 `{"session", "removed": true}`。子会话变了，父会话、祖先的那一项（`tokens` 连同子孙算）跟着一层层推 |
 | `config.changed` | `config` | `{"layer", "via", "by"?, "version", "keys", "problems"}`：一层配置变了，`keys` 同 `config.set` 的回应，`via` 是 `set`、`edit`、`file`（手改的）、`package`（装卸包以后） |
+| `models.changed` | `config` | `{"providers"}`：这几家供应商的模型列表变了（核心在后台拉到的和原来不一样），不带条目，照自己的参数重调 `model.list`。只在真变了时推；读得慢漏掉的不补，`resync`、重连以后整份重读 |
 | `extension.changed` | `extensions` | `{"entry"}`：一个扩展的状态，同 `extension.status` 的一项 |
 | `package.changed` | `packages` | `{"package", "entry"}`：软件包列表的一项，没有了的 `entry` 是 `null` |
 | `package.progress` | 不用订阅：只推给发起 `package.install`（真装）的那个连接 | `{"package", "stage", "index", "count", "done"?, "total"?}`：`stage` 是 `download`（带 `done`、`total`，从软件源下包文件下了多少字节、一共多少，开始、结束各一次，中间最多 200 毫秒一次）、`verify`（核对之前）、`install`（装之前）；`index`、`count` 是第几个、一共几个。从包文件夹、包文件装的只有 `verify`、`install` 各一次。老的核心只推 `{"package", "done", "total"}`，没写 `stage` 的当 `download`（施工 IN-3） |
