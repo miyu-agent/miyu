@@ -11,4 +11,4 @@ rev = "49e8b2174ef3596c3b7e5ba784b5dddee2b09567"
 
 [miyu-webui]
 repo = "https://github.com/miyu-agent/miyu-web"
-rev = "d9b8d84d44842e8a5b2d2c0287837c0af6ff21f2"
+rev = "3c57781887ee9d18de94eacdc34794a3956907c1"
