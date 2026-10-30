@@ -12,6 +12,8 @@
 | `systemd/system/miyu.service`、`miyu-web.service` | 服务器的样例：systemd 系统服务，核心和网页软件 |
 | `init/{openrc,runit,dinit}/` | 服务器的样例：别的初始化系统 |
 
+每个安装包的根目录都放仓库根上的 `LICENSE`（AGPL-3.0 全文）和 `THIRD-PARTY-LICENSES.txt`（编进程序的第三方包的许可证原文，`cargo xtask notices` 生成，蓝图 `licenses.md`「第三方许可证清单」）。带了头的，头的那一份也放进去（施工 AU-2）。
+
 ## 个人机器（第一版的重点）
 
 核心默认一直开着，不再空闲 10 分钟就退（施工 Z-1 上）；要省的在系统配置里写 `core.idle_exit = <分钟>`（`0` 是不退）。头连不上核心时照旧自己拉起，所以不装服务也能用；装了的开机、登录就起，通讯平台的桥、定时任务不等人打开头。

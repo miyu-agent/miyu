@@ -81,6 +81,11 @@ pub(crate) fn judge(found: &[(Package, &str)]) -> Vec<String> {
 
 /// 一个平台上用得到的第三方包。
 fn packages(root: &Path, cargo: &str, platform: &str) -> Result<Vec<Package>, String> {
+    Ok(third_party(&metadata(root, cargo, platform)?))
+}
+
+/// 一个平台上的 `cargo metadata` 输出（第三方许可证清单也用它，`notices.rs`）。
+pub(crate) fn metadata(root: &Path, cargo: &str, platform: &str) -> Result<Value, String> {
     let output = Command::new(cargo)
         .args(["metadata", "--format-version", "1", "--locked"])
         .args(["--filter-platform", platform])
@@ -91,8 +96,7 @@ fn packages(root: &Path, cargo: &str, platform: &str) -> Result<Vec<Package>, St
         let said = String::from_utf8_lossy(&output.stderr);
         return Err(said.lines().next().unwrap_or_default().to_string());
     }
-    let json: Value = serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())?;
-    Ok(third_party(&json))
+    serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())
 }
 
 /// 从 `cargo metadata` 的输出里取：依赖图里用得到的包，去掉工作区自己的。

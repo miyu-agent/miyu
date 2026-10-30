@@ -6,7 +6,8 @@
 //! 三道门禁都照图纸查：`docs/designs/01-架构.md` 第九节「代码的分层」。「文档」那一项还查登记簿：
 //! 给模型看的字和 `docs/designs/26-提示词.md` 第十节一一对上（施工 3-5 再补）；「给模型看的字」那一页和资源、登记簿
 //! 对得上，蓝图里标着「样本」的块和它指到的文件一字不差（施工 4-9 三补）。`cargo xtask prompts` 重新生成那一页。
-//! 「许可证」一项查发布的四个平台上用得到的第三方依赖，许可证都能和 GPL-3.0-or-later 合在一起发（施工 4-12）。
+//! 「许可证」一项查发布的四个平台上用得到的第三方依赖，许可证都能和 AGPL-3.0-or-later 合在一起发（施工 4-12），
+//! 第三方许可证清单 `THIRD-PARTY-LICENSES.txt` 是最新的（施工 AU-2，`notices.rs`）；`cargo xtask notices` 重新生成它。
 //! 里面的 cargo 一个接一个跑，不并行。
 
 mod dev_home;
@@ -18,6 +19,7 @@ mod layers;
 mod ledger;
 mod licenses;
 mod logs;
+mod notices;
 mod perf;
 mod prompts;
 mod purity;
@@ -71,6 +73,19 @@ fn main() -> ExitCode {
                 ExitCode::FAILURE
             }
         },
+        Some("notices") => match notices::write(
+            &root(),
+            &std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string()),
+        ) {
+            Ok(()) => {
+                println!("写好了 {}", notices::PATH);
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                ExitCode::FAILURE
+            }
+        },
         Some("prompts") => match prompts::write(&root()) {
             Ok(()) => {
                 println!("写好了 {}", prompts::PATH);
@@ -83,7 +98,7 @@ fn main() -> ExitCode {
         },
         _ => {
             eprintln!(
-                "用法：cargo xtask check | cargo xtask logs | cargo xtask methods | cargo xtask prompts | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
+                "用法：cargo xtask check | cargo xtask logs | cargo xtask methods | cargo xtask prompts | cargo xtask notices | cargo xtask dev-home <目录> | cargo xtask perf [量尺的参数]"
             );
             ExitCode::from(2)
         }
@@ -193,7 +208,11 @@ fn check() -> ExitCode {
     );
     outcomes.push(Outcome {
         name: "许可证",
-        problems: licenses::check(&root, &cargo),
+        problems: [
+            licenses::check(&root, &cargo),
+            notices::check(&root, &cargo),
+        ]
+        .concat(),
     });
     // 先在锁里把测试程序都编好，再出锁跑（2026-10-22 项目主人定：锁只管编译）。编不过的不再跑。
     let mut tests = cargo_step(
