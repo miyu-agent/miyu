@@ -1195,6 +1195,7 @@ flowchart LR
 | SW-3 | 沙盒里连不上 WMI 时说一句 | 桌面端 10-30 在 Win11 虚拟机上：MXC 的容器挡住 WMI，`Get-CimInstance` 一类在沙盒里跑不成。项目主人看过 Codex、Claude Code 的做法后定照旧挡、只加说明：沙盒里用 WMI 的命令失败时，`shell` 结果末尾接一句「The sandbox blocks WMI…」（15 token），她直接申请在沙盒外跑这一条 |
 | SW-4 | PowerShell 的 CLIXML 解成纯文本、WMI 那句不看退出码 | 桌面端 10-30 复测 SW-2/SW-3：`-EncodedCommand` 起的 PowerShell 出错照样写 CLIXML（`-OutputFormat Text` 挡不住），她看到的是一团标记；`Get-CimInstance` 连不上是不终止的错、照样退 0，SW-3 那句只接上了 `wmic`。输出里认出 `#< CLIXML` 那一段，只留错误、警告的原文、还原转义；WMI 那句改成 Windows 上沙盒里用到 WMI 就接 |
 | PW-2 | 本机来的改访问密码不用旧密码 | 项目主人 10-31（桌面端转来）：设访问密码先要输当前密码没必要。本机来的连接（本机令牌、一次性码、网页从 `miyu web` 在这台机器上打开的设备令牌）直接设、直接改；局域网别的设备连进来的照旧要带对现在的，免得别人借一台登录着的设备就改掉密码 |
+| CL-7 修 | 系统一层的包第一次转交先建数据根 | 桌面端 10-31 在 macOS 上用空的数据根第一次开 `miyu web`：转交给网页包之前只建了 `state/packages/miyu-webui/`、没有数据根的标记，网页软件照「认不出是 Miyu 的数据根」拒绝。转交前先照常建数据根（标记、骨架），认不出、建不成的照原话说 |
 
 **命令行给程序调**（AP 线，设计 50，2026-10-30 项目主人定）
 

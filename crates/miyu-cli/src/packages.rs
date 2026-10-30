@@ -148,6 +148,19 @@ pub fn forward(
         say(err, &not_installed(one, language));
         return Some(1);
     };
+    // 先照常建数据根（施工 CL-7 修）：标记、骨架都在了再建包的状态目录。不先建的，空的数据根里只多出一个
+    // `state/packages/<编号>/`、没有标记，接手的程序（网页软件）照「认不出是 Miyu 的数据根」拒绝（桌面端 10-31 在 macOS 上用
+    // 空的数据根第一次开 `miyu web` 撞到）。认不出、建不成的照原话说，不跑。
+    if let Ok(root) = DataRoot::locate(&Env::current())
+        && let Err(error) = root.prepare()
+    {
+        crate::diagnostic::error(
+            err,
+            language,
+            &crate::diagnostic::Problem::new(error.to_string()),
+        );
+        return Some(1);
+    }
     // 状态目录跑之前建好，交真实的位置（施工 F-15）；建不成的不跑。
     let state = match std::fs::create_dir_all(&one.state)
         .and_then(|()| std::fs::canonicalize(&one.state))

@@ -117,6 +117,41 @@ fn a_package_command_is_told_its_package_folder() {
     assert_eq!(text(&printed.stdout), format!("{}\n", main.display()));
 }
 
+/// 系统一层的包（装在资源目录里，桌面端、安装包里网页包就是这样）在全新的数据根上第一次转交（施工 CL-7 修）：先照常建好数据根
+/// （有标记），再建包的状态目录。原来只建出 `state/packages/<编号>/`、没有标记，网页软件接手时照「认不出是 Miyu 的数据根」拒绝
+/// （桌面端 10-31 在 macOS 上撞到）。
+#[cfg(unix)]
+#[test]
+fn a_system_package_command_on_a_fresh_data_root_prepares_it_first() {
+    let home = Home::new();
+    let resources = home.dir.join("resources");
+    let package = resources.join("packages/own");
+    let program = format!("miyu-printenv-{}", std::process::id());
+    std::fs::create_dir_all(package.join("bin")).expect("建得了目录");
+    std::fs::write(
+        package.join("package.toml"),
+        manifest("own", &program, "Own it"),
+    )
+    .expect("写得进");
+    std::os::unix::fs::symlink("/usr/bin/printenv", package.join("bin").join(&program))
+        .expect("链得上");
+    let fresh = home.dir.join("fresh");
+    let printed = Command::new(MIYU)
+        .args(["own", "MIYU_PACKAGE_STATE"])
+        .env("MIYU_HOME", &fresh)
+        .env("MIYU_RESOURCES", &resources)
+        .envs(crate::support::offline(&fresh))
+        .env("LANG", "C")
+        .output()
+        .expect("跑得起来");
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    assert!(fresh.join(".miyu-root").is_file(), "数据根先建好了，有标记");
+    assert!(
+        fresh.join("state/packages/own").is_dir(),
+        "再建包的状态目录"
+    );
+}
+
 #[test]
 fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
     let home = Home::new();
