@@ -1,19 +1,19 @@
-Usage: miyu web [options]
+Usage: miyu web [<options>]
 
 Open the web interface: start it if it is not running, then open it in a
 browser. The first time it opens with a one-time code for setting the
 username and password on the page.
 
 Options:
-      --port <port>  Port the web interface listens on this time (if not
-                     running; default: 8300)
-      --print        Print the address without opening a browser
+      --port <port>   Port the web interface listens on this time (if not
+                      running; default: 8300)
+      --print         Print the address without opening a browser
       --format <format>
-                     Print as text or json (json does not open a browser)
-      --reset        Open with a one-time code to reset the username and
-                     password
-      --logout       Sign out every browser
-      --package <id> Open this package's page under Backstage
-  -h, --help         Print help
+                      Print as text or json (json does not open a browser)
+      --reset         Open with a one-time code to reset the username and
+                      password
+      --logout        Sign out every browser
+      --package <id>  Open this package's page under Backstage
+  -h, --help          Print help
 
 The web interface is a separate program, miyu-web, installed next to miyu.

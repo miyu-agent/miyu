@@ -1,16 +1,16 @@
-Usage: miyu provider login [name]
-       miyu provider list [--format text|json]
-       miyu provider logout [name]
+Usage: miyu provider login [<name>]
+       miyu provider list [--format <text|json>]
+       miyu provider logout [<name>]
 
 Commands:
-  login [name]   Save a provider key, picking from the config without a name
-  list           List the providers that have a key, without the keys
-  logout [name]  Delete a provider key, picking from the set ones without a
-                 name
+  login [<name>]   Save a provider key, picking from the config without a name
+  list             List the providers that have a key, without the keys
+  logout [<name>]  Delete a provider key, picking from the set ones without a
+                   name
 
 The pasted key is hidden; it can also come from a pipe:
   echo "$KEY" | miyu provider login deepseek
 
 Options:
-      --format text|json  Output format (default: text, list only)
-  -h, --help              Print help
+      --format <text|json>  Output format (default: text, list only)
+  -h, --help                Print help

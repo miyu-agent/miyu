@@ -62,7 +62,7 @@
 
 0. **软件包加的子命令**（施工 9-2，`crates/miyu-cli/src/packages.rs`，`packages.md`「转交」）：第一个词不是内置的子命令（名字、别名都算，连 `help`），或者是 `help`、选项、没写，才照磁盘读两层的清单（不连核心）：
    1. 第一个词是某个包 `[command]` 的名字：照那份清单找程序（先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不找 `PATH`；施工 F-8 上再补），参数（第一个词以后的全部）、环境、标准输入输出原样交给它，Unix 上换成它，Windows 上起它、等它、这期间不理 Ctrl+C；退出码照它的。`help <名字>` 转成 `<程序> --help`。程序没找到：标准错误上说没找到、哪一份清单说这个子命令由它跑，退出码 1。
-   2. 主程序的帮助页在「命令」那一节后面多一节「软件包加的命令」（`Commands from packages:`），一个一行，名字照命令那一列对齐，说明照界面语言挑；没有的不写这一节。撞了内置子命令的不转交、不列：内置的优先（出厂网页那一份的 `web` 照旧走内置的，照清单找网页随 9-3）。
+   2. 主程序的帮助页在最后一组命令后面、「选项」那一节前面多一组「软件包加的命令」（`Commands from packages:`），空一行隔开，一个一行，说明和上面的命令从同一列（第 22 列）开始，说明照界面语言挑；没有的不写这一组（施工 AP-1：原来接在「命令」那一节后面）。撞了内置子命令的不转交、不列：内置的优先（出厂网页那一份的 `web` 照旧走内置的，照清单找网页随 9-3）。
    3. 别的照下面走。
 1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。
 2. 解析参数，不对的：
@@ -79,109 +79,100 @@
 
 **帮助页**：自己写的，一种语言十三页（`miyu`、`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`sandbox`、`config`、`provider`、`setup`），编进程序，资源目录找不到也印得出；每页以一个换行结尾，最宽 80 列（中文字算两列）。`ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的七页见 `cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`，`sandbox` 那一页见 `sandbox/windows.md`，`provider` 那一页见 `cli/login.md`；`miyu sandbox setup -h`、`miyu sandbox remove -h` 印的也是它。`help` 子命令、`core` 不列；`miyu core --help` 照样印得出，是 clap 照代码注释生成的。
 
+总表（`miyu`）照用途分组（对话、内容、软件包、设置、系统，软件包加的命令另一组，施工 AP-1），只列命令和全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项写在各自的页上；用法写 `miyu [<命令>] [<选项>]`，可以不写的整段用方括号，要填的写 `<名字>`，几个选一的写 `<text|json>`；命令那几组的说明从第 22 列开始，同一节里的选项、子命令说明也各自从同一列开始。末尾一句指向 `miyu help <命令>`。`ask` 的页多一节「退出状态」，列 0 到 5（`cli/ask.md`「退出码」）。
+
 样本 `crates/miyu-cli/src/help/zh/miyu.txt`（帮助页，中文）：
 
 ```text
-用法：miyu <命令> [选项]
+用法：miyu [<命令>] [<选项>]
 
-命令：
-  ask <消息>            发送消息并打印回复
-  undo                  撤销上一轮（别名：rewind）
-  restore               恢复上一次撤销的内容
-  redo [消息]           重做上一轮，可换成新消息
-  compact [要点]        压缩上下文
-  recap                 总结当前会话
-  rename <标题>         重命名会话
-  memory <命令>         管理记忆
-  kb <命令>             管理知识库
-  schedule <命令>       管理定时任务
-  pkg <命令>            管理软件包
-  mcp <命令>            登录或登出 MCP 服务
-  config <命令>         查看和修改设置
-  check [文件]          检查配置文件
-  provider <命令>       管理供应商密钥
-  setup                 配置模型供应商
-  web                   打开网页界面
-  service <命令>        管理后台服务
-  sandbox <命令>        配置或移除沙盒用户（Windows）
+不带命令时打开默认界面。
 
-ask 的选项：
-  -c, --continue          继续上一次 miyu ask 的会话
-  -s, --session <编号>    继续指定的会话
-      --format text|json  输出格式（默认 text）
-      --add-dir <目录>    允许读写另一个目录，可重复
-      --file <文件>       附加文件（图片、PDF、文本），可重复
-      --timeout <时长>    最长等待时间，例如 30s、10m、1h
-      --from <名字>       调用方 harness 的名字，例如 claude-code
-      --model <模型>      指定模型，继续的会话沿用
-      --no-memory         不召回也不保存记忆（仅新会话）
+对话：
+  ask <消息>          发送消息并打印回复
+  undo                撤销上一轮（别名：rewind）
+  restore             恢复上一次撤销的内容
+  redo [<消息>]       重做上一轮，可换成新消息
+  compact [<要点>]    压缩上下文
+  recap               总结当前会话
+  rename <标题>       重命名会话
 
-undo、restore、redo、compact、recap、rename 的选项：
-  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+内容：
+  memory <命令>       管理记忆
+  kb <命令>           管理知识库
+  schedule <命令>     管理定时任务
 
-每次 miyu ask 都新建会话；-c 和上面这些命令默认作用于最近一次的会话。
+软件包：
+  pkg <命令>          管理软件包
+  mcp <命令>          登录或登出 MCP 服务
+
+设置：
+  config <命令>       查看和修改设置
+  check [<文件>]      检查配置文件
+  provider <命令>     管理供应商密钥
+  setup               配置模型供应商
+
+系统：
+  service <命令>      管理后台服务
+  sandbox <命令>      配置或移除沙盒用户（Windows）
+
+选项：
+  -h, --help     显示帮助
+  -V, --version  显示版本
 
 例子：
   miyu ask "这个项目是做什么的"
   miyu ask -c "测试怎么跑"
   miyu undo
-  miyu compact 保留数据库设计的讨论
 
-  -h, --help     显示帮助
-  -V, --version  显示版本
+运行 'miyu help <命令>' 查看命令的说明。
 ```
 
 样本 `crates/miyu-cli/src/help/en/miyu.txt`（帮助页，英文）：
 
 ```text
-Usage: miyu <command> [options]
+Usage: miyu [<command>] [<options>]
 
-Commands:
-  ask <message>         Send a message and print the reply
-  undo                  Undo the last turn (alias: rewind)
-  restore               Restore what the last undo removed
-  redo [message]        Redo the last turn, optionally with a new message
-  compact [focus]       Compact the context
-  recap                 Summarize the session
-  rename <title>        Rename the session
-  memory <command>      Manage memories
-  kb <command>          Manage knowledge bases
-  schedule <command>    Manage scheduled jobs
-  pkg <command>         Manage packages
-  mcp <command>         Log in to or out of MCP servers
-  config <command>      View and change settings
-  check [file]          Check configuration files for errors
-  provider <command>    Manage provider keys
-  setup                 Set up a model provider
-  web                   Open the web interface
-  service <command>     Manage the background service
-  sandbox <command>     Set up or remove the sandbox user (Windows)
+Without a command, open the default interface.
 
-Options for ask:
-  -c, --continue          Continue the last miyu ask session
-  -s, --session <id>      Continue the given session
-      --format text|json  Output format (default: text)
-      --add-dir <dir>     Allow access to another directory; repeatable
-      --file <file>       Attach a file (image, PDF, text); repeatable
-      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
-      --from <name>       Name of the calling harness, e.g. claude-code
-      --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or save memories (new sessions only)
+Conversation:
+  ask <message>       Send a message and print the reply
+  undo                Undo the last turn (alias: rewind)
+  restore             Restore what the last undo removed
+  redo [<message>]    Redo the last turn, optionally with a new message
+  compact [<focus>]   Compact the context
+  recap               Summarize the session
+  rename <title>      Rename the session
 
-Options for undo, restore, redo, compact, recap and rename:
-  -s, --session <id>  Session to use (default: the last miyu ask session)
+Content:
+  memory <command>    Manage memories
+  kb <command>        Manage knowledge bases
+  schedule <command>  Manage scheduled jobs
 
-Each miyu ask starts a new session; -c and the commands above default to
-the most recent one.
+Packages:
+  pkg <command>       Manage packages
+  mcp <command>       Log in to or out of MCP servers
+
+Settings:
+  config <command>    View and change settings
+  check [<file>]      Check configuration files for errors
+  provider <command>  Manage provider keys
+  setup               Set up a model provider
+
+System:
+  service <command>   Manage the background service
+  sandbox <command>   Set up or remove the sandbox user (Windows)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 
 Examples:
   miyu ask "what is this project"
   miyu ask -c "how do I run the tests"
   miyu undo
-  miyu compact keep the database design discussion
 
-  -h, --help     Print help
-  -V, --version  Print version
+Run 'miyu help <command>' for more on a command.
 ```
 
 **参数写错时**：标准错误上照设计 47 报错：`miyu: ` 打头一行，能照着改的另起 `hint:`（「提示：」），退出码 2（施工 CL-2 上）。照 clap 报的错分：

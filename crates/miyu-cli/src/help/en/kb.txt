@@ -1,10 +1,10 @@
-Usage: miyu kb <command> [options]
+Usage: miyu kb <command> [<options>]
 
 Runs list when no command is given. Removed documents and deleted knowledge
 bases go to the system trash.
 
 Commands:
-  list [kb]               List knowledge bases, or the documents in one
+  list [<kb>]             List knowledge bases, or the documents in one
   search <words>          Search knowledge bases
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base
@@ -18,15 +18,15 @@ Commands:
   reindex <kb>            Rebuild the index
 
 Options:
-      --kb <kb>           Search only this knowledge base
-      --page <page>       Read this page (default: 1)
-      --name <name>       Set the display name
+      --kb <kb>             Search only this knowledge base
+      --page <page>         Read this page (default: 1)
+      --name <name>         Set the display name
       --description <description>
-                          Set a one-sentence description
-      --auto              Turn on auto recall: bring in the opening of a
-                          section when the conversation mentions it
-      --no-auto           Turn off auto recall
-      --to <dir>          Add into this folder of the knowledge base
-      --replace           Replace documents with the same name
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+                            Set a one-sentence description
+      --auto                Turn on auto recall: bring in the opening of a
+                            section when the conversation mentions it
+      --no-auto             Turn off auto recall
+      --to <dir>            Add into this folder of the knowledge base
+      --replace             Replace documents with the same name
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help

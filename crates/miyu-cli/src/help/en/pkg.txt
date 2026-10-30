@@ -1,33 +1,33 @@
-Usage: miyu pkg <command> [options]
+Usage: miyu pkg <command> [<options>]
 
 Runs list when no command is given.
 
 Commands:
-  list                    List installed packages (alias: -Q)
-  install <package>       Install a package (alias: -U)
-  remove <id>             Remove a package with its settings and state
-                          (alias: -R)
-  info <id>               Show package details, from the source if not installed
-  files <id>              List the files of a package (alias: -Ql)
-  owns <path>             Find the package that owns a file (alias: -Qo)
-  check [id]              Check installed files for changes (alias: -Qk)
-  pack <dir>              Pack a package folder into a .miyu file
-  update                  Update the package index (alias: -Sy)
-  search [words…]         Search the package source (alias: -Ss)
-  upgrade                 Upgrade installed packages (alias: -Su)
-  clean                   Remove old package files from the cache (alias: -Sc)
+  list               List installed packages (alias: -Q)
+  install <package>  Install a package (alias: -U)
+  remove <id>        Remove a package with its settings and state
+                     (alias: -R)
+  info <id>          Show package details, from the source if not installed
+  files <id>         List the files of a package (alias: -Ql)
+  owns <path>        Find the package that owns a file (alias: -Qo)
+  check [<id>]       Check installed files for changes (alias: -Qk)
+  pack <dir>         Pack a package folder into a .miyu file
+  update             Update the package index (alias: -Sy)
+  search [<words>…]  Search the package source (alias: -Ss)
+  upgrade            Upgrade installed packages (alias: -Su)
+  clean              Remove old package files from the cache (alias: -Sc)
 
 <package> can be:
-  <dir>                   A package folder with a package.toml
-  <file>                  A .miyu package file
-  <id>                    A package from the source, or a removed built-in one
+  <dir>   A package folder with a package.toml
+  <file>  A .miyu package file
+  <id>    A package from the source, or a removed built-in one
 
 pacman forms: -S <id>… installs from the source, -Syu updates and upgrades,
 -Qi <id> shows an installed package, -Si <id> shows it from the source.
 
 Options:
-      --format text|json  Output format (default: text)
-      --yes, --noconfirm  Install or remove without asking
-      --target <target>   Target system for pack
-  -o, --out <dir>         Output directory for pack (default: current)
-  -h, --help              Print help
+      --format <text|json>  Output format (default: text)
+      --yes, --noconfirm    Install or remove without asking
+      --target <target>     Target system for pack
+  -o, --out <dir>           Output directory for pack (default: current)
+  -h, --help                Print help

@@ -1,4 +1,4 @@
-Usage: miyu check [file] [options]
+Usage: miyu check [<file>] [<options>]
 
 Check the files written by hand: the system config, the project config here,
 the secrets file, persona.toml and prompts/examples.md in each persona
@@ -10,8 +10,8 @@ and knowledge bases, which are not counted as problems.
 With a file, only that file is checked.
 
 Options:
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help
 
 Examples:
   miyu check

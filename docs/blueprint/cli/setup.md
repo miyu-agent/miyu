@@ -168,7 +168,7 @@ miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）
 样本 `crates/miyu-cli/src/help/zh/setup.txt`（帮助页，中文）：
 
 ```text
-用法：miyu setup [选项]
+用法：miyu setup [<选项>]
 
 配置第一个模型：从常用供应商、本机的模型服务中选择，或自定义地址和接口协议；
 粘贴密钥并测试连接，选择对话模型，写入系统配置。
@@ -186,17 +186,17 @@ miyu: 警告：核心未读到 OPENAI_API_KEY（在核心启动后设置）
 样本 `crates/miyu-cli/src/help/en/setup.txt`（帮助页，英文）：
 
 ```text
-Usage: miyu setup [options]
+Usage: miyu setup [<options>]
 
 Set up the first model: pick a common provider, a model service on this
 machine, or a custom address and API protocol; paste the key, test the
 connection, pick the chat model and write it to the system config.
 
 Options:
-      --provider <id>   Use this provider from the catalog without picking
-      --env <var>       Read the key from this variable without pasting
-      --model <model>   Use this model without picking
-  -h, --help            Print help
+      --provider <id>  Use this provider from the catalog without picking
+      --env <var>      Read the key from this variable without pasting
+      --model <model>  Use this model without picking
+  -h, --help           Print help
 
 Outside a terminal, give --provider and pipe the key in:
   echo "$KEY" | miyu setup --provider deepseek

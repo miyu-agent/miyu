@@ -140,6 +140,7 @@ $ miyu sandbox setup
   setup   创建沙盒用户
   remove  移除沙盒用户
 
+选项：
   -h, --help  显示帮助
 ```
 
@@ -156,6 +157,7 @@ Commands:
   setup   Create the sandbox user
   remove  Remove the sandbox user
 
+Options:
   -h, --help  Print help
 ```
 

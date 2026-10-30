@@ -100,7 +100,7 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
 样本 `crates/miyu-cli/src/help/zh/memory.txt`（中文）：
 
 ```text
-用法：miyu memory <命令> [选项]
+用法：miyu memory <命令> [<选项>]
 
 不写命令时运行 list。
 
@@ -108,62 +108,62 @@ m2   2026-10-07  [qq:10086] 小林用 RX 7800 XT
   list                    列出记忆，新的在前
   search <词>             搜索记忆
   add <内容>              添加一条记忆
-  edit <编号> [内容]      修改一条记忆，打印新编号；只改关键词时不写内容
+  edit <编号> [<内容>]    修改一条记忆，打印新编号；只改关键词时不写内容
   forget <编号>           作废一条记忆
-  clear session [会话]    清除一个会话记下的记忆（默认为上一次 miyu ask
+  clear session [<会话>]  清除一个会话记下的记忆（默认为上一次 miyu ask
                           的会话）
   clear me                清除关于用户本人的全部记忆
   dream                   立即整理记忆（Ctrl+C 停止，已整理的保留）
   cards                   列出人物卡
 
 选项：
-      --persona <编号>    使用指定人格的记忆（默认为默认人格）
-  -s, --session <编号>    使用指定会话的记忆
-      --forgotten         列出时包括已作废的记忆
-      --class user|feedback|episode|reference|person
-                          按类别列出，或指定添加的类别（默认 user）
-      --why <原因>        说明作废的原因
-      --keywords <词>     设置检索用的关键词，用逗号分隔
-      --who <是谁>        指定人物记忆说的是谁，平台编号或名字
-      --format text|json  输出格式（默认 text）
-  -h, --help              显示帮助
+      --persona <编号>      使用指定人格的记忆（默认为默认人格）
+  -s, --session <编号>      使用指定会话的记忆
+      --forgotten           列出时包括已作废的记忆
+      --class <user|feedback|episode|reference|person>
+                            按类别列出，或指定添加的类别（默认 user）
+      --why <原因>          说明作废的原因
+      --keywords <词>       设置检索用的关键词，用逗号分隔
+      --who <是谁>          指定人物记忆说的是谁，平台编号或名字
+      --format <text|json>  输出格式（默认 text）
+  -h, --help                显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/memory.txt`（英文）：
 
 ```text
-Usage: miyu memory <command> [options]
+Usage: miyu memory <command> [<options>]
 
 Runs list when no command is given.
 
 Commands:
-  list                    List memories, newest first
-  search <words>          Search memories
-  add <text>              Add a memory
-  edit <id> [<text>]      Edit a memory and print its new id; leave out the
-                          text to change only the keywords
-  forget <id>             Forget a memory
-  clear session [<id>]    Clear the memories of a session (default: the last
-                          miyu ask session)
-  clear me                Clear all memories about the user
-  dream                   Organize memories now (Ctrl+C stops, keeping what
-                          is done)
-  cards                   List person cards
+  list                  List memories, newest first
+  search <words>        Search memories
+  add <text>            Add a memory
+  edit <id> [<text>]    Edit a memory and print its new id; leave out the
+                        text to change only the keywords
+  forget <id>           Forget a memory
+  clear session [<id>]  Clear the memories of a session (default: the last
+                        miyu ask session)
+  clear me              Clear all memories about the user
+  dream                 Organize memories now (Ctrl+C stops, keeping what
+                        is done)
+  cards                 List person cards
 
 Options:
-      --persona <id>      Use the memories of this persona (default: the
-                          default persona)
-  -s, --session <id>      Use the memories of this session
-      --forgotten         Include forgotten memories
-      --class user|feedback|episode|reference|person
-                          Filter by class, or set the class to add (default:
-                          user)
-      --why <reason>      Give the reason for forgetting
-      --keywords <words>  Set comma-separated search keywords
-      --who <who>         Set who a person memory is about: a platform id or
-                          a name
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+      --persona <id>        Use the memories of this persona (default: the
+                            default persona)
+  -s, --session <id>        Use the memories of this session
+      --forgotten           Include forgotten memories
+      --class <user|feedback|episode|reference|person>
+                            Filter by class, or set the class to add (default:
+                            user)
+      --why <reason>        Give the reason for forgetting
+      --keywords <words>    Set comma-separated search keywords
+      --who <who>           Set who a person memory is about: a platform id or
+                            a name
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help
 ```
 
 ### 守着它的

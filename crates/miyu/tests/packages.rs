@@ -124,12 +124,12 @@ fn the_help_page_lists_package_commands_but_not_ones_taken_by_builtins() {
     install(&home, "taken", &manifest("ask", "miyu", "Not me"));
     let zh = text(&miyu(&home, "zh_CN.UTF-8", &["-h"]).stdout);
     assert!(
-        zh.contains("\n\n软件包加的命令：\n  probe                 Probe it（中）\n\n"),
+        zh.contains("\n\n软件包加的命令：\n  probe               Probe it（中）\n\n选项：\n"),
         "{zh}"
     );
     let en = text(&miyu(&home, "C", &["--help"]).stdout);
     assert!(
-        en.contains("\n\nCommands from packages:\n  probe                 Probe it\n\n"),
+        en.contains("\n\nCommands from packages:\n  probe               Probe it\n\nOptions:\n"),
         "{en}"
     );
     assert!(!en.contains("Not me"), "撞了内置的不列：{en}");

@@ -65,7 +65,7 @@
 样本 `crates/miyu-cli/src/help/zh/recap.txt`（中文）：
 
 ```text
-用法：miyu recap [选项]
+用法：miyu recap [<选项>]
 
 总结当前会话：目标、已完成的、卡住的地方。
 
@@ -77,7 +77,7 @@
 样本 `crates/miyu-cli/src/help/en/recap.txt`（英文）：
 
 ```text
-Usage: miyu recap [options]
+Usage: miyu recap [<options>]
 
 Summarize the session: the goal, what is done, what is blocked.
 

@@ -1,15 +1,15 @@
-用法：miyu provider login [名字]
-      miyu provider list [--format text|json]
-      miyu provider logout [名字]
+用法：miyu provider login [<名字>]
+      miyu provider list [--format <text|json>]
+      miyu provider logout [<名字>]
 
 命令：
-  login [名字]   保存供应商的密钥，不写名字时从配置中选择
-  list           列出已设置密钥的供应商，不显示密钥
-  logout [名字]  删除供应商的密钥，不写名字时从已设置的中选择
+  login [<名字>]   保存供应商的密钥，不写名字时从配置中选择
+  list             列出已设置密钥的供应商，不显示密钥
+  logout [<名字>]  删除供应商的密钥，不写名字时从已设置的中选择
 
 粘贴的密钥不显示，也可以从管道读取：
   echo "$KEY" | miyu provider login deepseek
 
 选项：
-      --format text|json  输出格式（默认 text，list）
-  -h, --help              显示帮助
+      --format <text|json>  输出格式（默认 text，list）
+  -h, --help                显示帮助

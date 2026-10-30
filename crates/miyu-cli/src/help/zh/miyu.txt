@@ -1,47 +1,42 @@
-用法：miyu <命令> [选项]
+用法：miyu [<命令>] [<选项>]
 
-命令：
-  ask <消息>            发送消息并打印回复
-  undo                  撤销上一轮（别名：rewind）
-  restore               恢复上一次撤销的内容
-  redo [消息]           重做上一轮，可换成新消息
-  compact [要点]        压缩上下文
-  recap                 总结当前会话
-  rename <标题>         重命名会话
-  memory <命令>         管理记忆
-  kb <命令>             管理知识库
-  schedule <命令>       管理定时任务
-  pkg <命令>            管理软件包
-  mcp <命令>            登录或登出 MCP 服务
-  config <命令>         查看和修改设置
-  check [文件]          检查配置文件
-  provider <命令>       管理供应商密钥
-  setup                 配置模型供应商
-  web                   打开网页界面
-  service <命令>        管理后台服务
-  sandbox <命令>        配置或移除沙盒用户（Windows）
+不带命令时打开默认界面。
 
-ask 的选项：
-  -c, --continue          继续上一次 miyu ask 的会话
-  -s, --session <编号>    继续指定的会话
-      --format text|json  输出格式（默认 text）
-      --add-dir <目录>    允许读写另一个目录，可重复
-      --file <文件>       附加文件（图片、PDF、文本），可重复
-      --timeout <时长>    最长等待时间，例如 30s、10m、1h
-      --from <名字>       调用方 harness 的名字，例如 claude-code
-      --model <模型>      指定模型，继续的会话沿用
-      --no-memory         不召回也不保存记忆（仅新会话）
+对话：
+  ask <消息>          发送消息并打印回复
+  undo                撤销上一轮（别名：rewind）
+  restore             恢复上一次撤销的内容
+  redo [<消息>]       重做上一轮，可换成新消息
+  compact [<要点>]    压缩上下文
+  recap               总结当前会话
+  rename <标题>       重命名会话
 
-undo、restore、redo、compact、recap、rename 的选项：
-  -s, --session <编号>  指定会话（默认为上一次 miyu ask 的会话）
+内容：
+  memory <命令>       管理记忆
+  kb <命令>           管理知识库
+  schedule <命令>     管理定时任务
 
-每次 miyu ask 都新建会话；-c 和上面这些命令默认作用于最近一次的会话。
+软件包：
+  pkg <命令>          管理软件包
+  mcp <命令>          登录或登出 MCP 服务
+
+设置：
+  config <命令>       查看和修改设置
+  check [<文件>]      检查配置文件
+  provider <命令>     管理供应商密钥
+  setup               配置模型供应商
+
+系统：
+  service <命令>      管理后台服务
+  sandbox <命令>      配置或移除沙盒用户（Windows）
+
+选项：
+  -h, --help     显示帮助
+  -V, --version  显示版本
 
 例子：
   miyu ask "这个项目是做什么的"
   miyu ask -c "测试怎么跑"
   miyu undo
-  miyu compact 保留数据库设计的讨论
 
-  -h, --help     显示帮助
-  -V, --version  显示版本
+运行 'miyu help <命令>' 查看命令的说明。

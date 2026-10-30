@@ -26,8 +26,8 @@ use miyu_store::root::DataRoot;
 
 use crate::language::Language;
 
-/// 帮助页里命令那一列多宽（`help/<语言>/miyu.txt`：缩进两格，名字连空白到第 24 列）。
-const NAME_COLUMN: usize = 22;
+/// 帮助页里命令那一列多宽，不含缩进的两格（`help/<语言>/miyu.txt`：缩进两格，名字连空白到第 22 列，说明从第 22 列开始；施工 AP-1）。
+const NAME_COLUMN: usize = 20;
 
 /// 一个包加的子命令。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,14 +102,20 @@ pub fn help_section(language: Language, added: &[Added]) -> String {
     section
 }
 
-/// 帮助页 `page` 里，在「命令」那一节后面接上 `section`（空的照原样）：页面是用法一节、命令一节、再往下的几节，节和节之间
-/// 空一行，接在第二个空行那里。
+/// 帮助页 `page` 里，接上 `section`（空的照原样）：接在「选项：」（英文 `Options:`）那一节前面，也就是最后一组命令后面，空一行隔开
+/// （施工 AP-1）。找不到这一节的，照原来的办法：页面是用法一节、命令一节、再往下的几节，节和节之间空一行，接在第二个空行那里。
 pub fn with_section(page: &str, section: &str) -> String {
     if section.is_empty() {
         return page.to_string();
     }
-    let commands = page.find("\n\n").map(|at| at + 2);
-    let end = commands.and_then(|start| page[start..].find("\n\n").map(|at| start + at));
+    let options = ["\n\n选项：\n", "\n\nOptions:\n"]
+        .iter()
+        .filter_map(|mark| page.find(mark))
+        .min();
+    let end = options.or_else(|| {
+        let start = page.find("\n\n").map(|at| at + 2)?;
+        page[start..].find("\n\n").map(|at| start + at)
+    });
     match end {
         Some(at) => format!("{}\n\n{}{}", &page[..at], section.trim_end(), &page[at..]),
         None => format!("{page}\n{section}"),

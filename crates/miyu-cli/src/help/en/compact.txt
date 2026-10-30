@@ -1,4 +1,4 @@
-Usage: miyu compact [options] [focus]
+Usage: miyu compact [<options>] [<focus>]
 
 Compact the context into a summary; the most recent part stays as it is.
 Any words tell the summary what to keep.

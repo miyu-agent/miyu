@@ -1,4 +1,4 @@
-用法：miyu service <命令> [选项]
+用法：miyu service <命令> [<选项>]
 
 管理开机或登录时启动核心的用户服务：Linux 上是 systemd 用户服务，没有时用
 桌面自启动；macOS 上是 launchd；Windows 上是登录时的计划任务。
@@ -12,5 +12,5 @@
 /var/lib/miyu）请按仓库中的 packaging/README.md 手动安装。
 
 选项：
-      --format text|json  输出格式（默认 text）
-  -h, --help              显示帮助
+      --format <text|json>  输出格式（默认 text）
+  -h, --help                显示帮助

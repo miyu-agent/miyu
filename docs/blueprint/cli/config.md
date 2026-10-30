@@ -56,10 +56,10 @@
 样本 `crates/miyu-cli/src/help/zh/config.txt`（帮助页，中文）：
 
 ```text
-用法：miyu config <命令> [选项]
+用法：miyu config <命令> [<选项>]
 
 命令：
-  get [键…]      打印生效的值，只给一个键时只打印值
+  get [<键>…]    打印生效的值，只给一个键时只打印值
   set <键> <值>  修改一项设置
   unset <键>     从系统配置中删除一项，恢复默认值
   edit           用编辑器打开，保存前检查
@@ -68,33 +68,33 @@
   trust          查看并决定是否信任当前目录的项目配置
 
 选项：
-      --project           使用当前目录的项目配置（edit、path）
-      --format text|json  输出格式（默认 text）
-      --yes               信任，不询问（trust）
-      --no                不信任，不询问（trust）
-  -h, --help              显示帮助
+      --project             使用当前目录的项目配置（edit、path）
+      --format <text|json>  输出格式（默认 text）
+      --yes                 信任，不询问（trust）
+      --no                  不信任，不询问（trust）
+  -h, --help                显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/config.txt`（帮助页，英文）：
 
 ```text
-Usage: miyu config <command> [options]
+Usage: miyu config <command> [<options>]
 
 Commands:
-  get [key…]           Print the values in effect, or the value of one key
-  set <key> <value>    Change a setting
-  unset <key>          Remove a setting from the system config
-  edit                 Open the config in an editor, checked before saving
-  explain <key>        Show the value in each layer and which one wins
-  path                 Print the path of the config file
-  trust                Review and trust or distrust the project config here
+  get [<key>…]       Print the values in effect, or the value of one key
+  set <key> <value>  Change a setting
+  unset <key>        Remove a setting from the system config
+  edit               Open the config in an editor, checked before saving
+  explain <key>      Show the value in each layer and which one wins
+  path               Print the path of the config file
+  trust              Review and trust or distrust the project config here
 
 Options:
-      --project           Use the project config here (edit, path)
-      --format text|json  Output format (default: text)
-      --yes               Trust without asking (trust)
-      --no                Distrust without asking (trust)
-  -h, --help              Print help
+      --project             Use the project config here (edit, path)
+      --format <text|json>  Output format (default: text)
+      --yes                 Trust without asking (trust)
+      --no                  Distrust without asking (trust)
+  -h, --help                Print help
 ```
 
 - 8-3 加了 `set`、`unset`、`edit`、`trust` 和 `--yes`、`--no`。`--project` 那一行没写 `set`：`set --project` 只是说一句怎么改。

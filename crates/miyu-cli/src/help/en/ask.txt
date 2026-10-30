@@ -1,16 +1,24 @@
-Usage: miyu ask [options] <message>
+Usage: miyu ask [<options>] <message>
 
 Send a message and print the reply, in a new session unless -c or -s.
 If subagents are started, wait for their reports and the final reply.
 
 Options:
-  -c, --continue          Continue the last miyu ask session
-  -s, --session <id>      Continue the given session
-      --format text|json  Output format (default: text)
-      --add-dir <dir>     Allow access to another directory; repeatable
-      --file <file>       Attach a file (image, PDF, text); repeatable
-      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
-      --from <name>       Name of the calling harness, e.g. claude-code
-      --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or save memories (new sessions only)
-  -h, --help              Print help
+  -c, --continue            Continue the last miyu ask session
+  -s, --session <id>        Continue the given session
+      --format <text|json>  Output format (default: text)
+      --add-dir <dir>       Allow access to another directory; repeatable
+      --file <file>         Attach a file (image, PDF, text); repeatable
+      --timeout <time>      Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>         Name of the calling harness, e.g. claude-code
+      --model <model>       Use this model; a continued session keeps it
+      --no-memory           Don't recall or save memories (new sessions only)
+  -h, --help                Print help
+
+Exit status:
+  0  The turn ended normally
+  1  An error occurred, e.g. no connection to the core or a refusal
+  2  Bad arguments
+  3  Interrupted, or --timeout expired
+  4  The turn ended, but some steps needed confirmation and were skipped
+  5  No usable model

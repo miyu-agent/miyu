@@ -1,4 +1,4 @@
-用法：miyu check [文件] [选项]
+用法：miyu check [<文件>] [<选项>]
 
 检查手写的配置文件：系统配置、当前目录的项目配置、密钥文件、每个人格目录中的
 persona.toml 和 prompts/examples.md、每一份预设和软件包清单。每处问题打印
@@ -8,8 +8,8 @@ persona.toml 和 prompts/examples.md、每一份预设和软件包清单。每�
 给出文件时只检查这一份。
 
 选项：
-      --format text|json  输出格式（默认 text）
-  -h, --help              显示帮助
+      --format <text|json>  输出格式（默认 text）
+  -h, --help                显示帮助
 
 例子：
   miyu check

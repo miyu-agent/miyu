@@ -1,4 +1,4 @@
-用法：miyu undo [选项]
+用法：miyu undo [<选项>]
 
 撤销上一轮（别名：rewind）。
 

@@ -7,4 +7,5 @@
   setup   创建沙盒用户
   remove  移除沙盒用户
 
+选项：
   -h, --help  显示帮助

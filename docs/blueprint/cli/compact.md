@@ -87,7 +87,7 @@
 样本 `crates/miyu-cli/src/help/zh/compact.txt`（中文）：
 
 ```text
-用法：miyu compact [选项] [要点]
+用法：miyu compact [<选项>] [<要点>]
 
 把上下文压缩成摘要，最近的一段保留原文。可附上摘要要保留的要点。
 
@@ -99,7 +99,7 @@
 样本 `crates/miyu-cli/src/help/en/compact.txt`（英文）：
 
 ```text
-Usage: miyu compact [options] [focus]
+Usage: miyu compact [<options>] [<focus>]
 
 Compact the context into a summary; the most recent part stays as it is.
 Any words tell the summary what to keep.

@@ -1,7 +1,7 @@
-用法：miyu config <命令> [选项]
+用法：miyu config <命令> [<选项>]
 
 命令：
-  get [键…]      打印生效的值，只给一个键时只打印值
+  get [<键>…]    打印生效的值，只给一个键时只打印值
   set <键> <值>  修改一项设置
   unset <键>     从系统配置中删除一项，恢复默认值
   edit           用编辑器打开，保存前检查
@@ -10,8 +10,8 @@
   trust          查看并决定是否信任当前目录的项目配置
 
 选项：
-      --project           使用当前目录的项目配置（edit、path）
-      --format text|json  输出格式（默认 text）
-      --yes               信任，不询问（trust）
-      --no                不信任，不询问（trust）
-  -h, --help              显示帮助
+      --project             使用当前目录的项目配置（edit、path）
+      --format <text|json>  输出格式（默认 text）
+      --yes                 信任，不询问（trust）
+      --no                  不信任，不询问（trust）
+  -h, --help                显示帮助

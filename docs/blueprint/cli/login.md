@@ -56,42 +56,42 @@ deepseek    已设置
 样本 `crates/miyu-cli/src/help/zh/provider.txt`（帮助页，中文）：
 
 ```text
-用法：miyu provider login [名字]
-      miyu provider list [--format text|json]
-      miyu provider logout [名字]
+用法：miyu provider login [<名字>]
+      miyu provider list [--format <text|json>]
+      miyu provider logout [<名字>]
 
 命令：
-  login [名字]   保存供应商的密钥，不写名字时从配置中选择
-  list           列出已设置密钥的供应商，不显示密钥
-  logout [名字]  删除供应商的密钥，不写名字时从已设置的中选择
+  login [<名字>]   保存供应商的密钥，不写名字时从配置中选择
+  list             列出已设置密钥的供应商，不显示密钥
+  logout [<名字>]  删除供应商的密钥，不写名字时从已设置的中选择
 
 粘贴的密钥不显示，也可以从管道读取：
   echo "$KEY" | miyu provider login deepseek
 
 选项：
-      --format text|json  输出格式（默认 text，list）
-  -h, --help              显示帮助
+      --format <text|json>  输出格式（默认 text，list）
+  -h, --help                显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/provider.txt`（帮助页，英文）：
 
 ```text
-Usage: miyu provider login [name]
-       miyu provider list [--format text|json]
-       miyu provider logout [name]
+Usage: miyu provider login [<name>]
+       miyu provider list [--format <text|json>]
+       miyu provider logout [<name>]
 
 Commands:
-  login [name]   Save a provider key, picking from the config without a name
-  list           List the providers that have a key, without the keys
-  logout [name]  Delete a provider key, picking from the set ones without a
-                 name
+  login [<name>]   Save a provider key, picking from the config without a name
+  list             List the providers that have a key, without the keys
+  logout [<name>]  Delete a provider key, picking from the set ones without a
+                   name
 
 The pasted key is hidden; it can also come from a pipe:
   echo "$KEY" | miyu provider login deepseek
 
 Options:
-      --format text|json  Output format (default: text, list only)
-  -h, --help              Print help
+      --format <text|json>  Output format (default: text, list only)
+  -h, --help                Print help
 ```
 
 ### 退出码

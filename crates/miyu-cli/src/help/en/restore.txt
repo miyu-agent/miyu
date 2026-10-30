@@ -1,4 +1,4 @@
-Usage: miyu restore [options]
+Usage: miyu restore [<options>]
 
 Restore what the last undo removed, before anything else is sent.
 

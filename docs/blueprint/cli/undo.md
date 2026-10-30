@@ -141,7 +141,7 @@ ESC[90m· 撤销「把 README 改成中文」这一轮ESC[0m
 样本 `crates/miyu-cli/src/help/zh/undo.txt`（`miyu undo`，中文）：
 
 ```text
-用法：miyu undo [选项]
+用法：miyu undo [<选项>]
 
 撤销上一轮（别名：rewind）。
 
@@ -153,7 +153,7 @@ ESC[90m· 撤销「把 README 改成中文」这一轮ESC[0m
 样本 `crates/miyu-cli/src/help/en/undo.txt`（`miyu undo`，英文）：
 
 ```text
-Usage: miyu undo [options]
+Usage: miyu undo [<options>]
 
 Undo the last turn (alias: rewind).
 
@@ -165,7 +165,7 @@ Options:
 样本 `crates/miyu-cli/src/help/zh/restore.txt`（`miyu restore`，中文）：
 
 ```text
-用法：miyu restore [选项]
+用法：miyu restore [<选项>]
 
 恢复上一次撤销的内容，须在发送下一句之前。
 
@@ -177,7 +177,7 @@ Options:
 样本 `crates/miyu-cli/src/help/en/restore.txt`（`miyu restore`，英文）：
 
 ```text
-Usage: miyu restore [options]
+Usage: miyu restore [<options>]
 
 Restore what the last undo removed, before anything else is sent.
 

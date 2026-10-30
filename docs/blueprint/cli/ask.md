@@ -373,43 +373,59 @@ C 也查完了。
 样本 `crates/miyu-cli/src/help/zh/ask.txt`（中文）：
 
 ```text
-用法：miyu ask [选项] <消息>
+用法：miyu ask [<选项>] <消息>
 
 发送消息并打印回复。不加 -c、-s 时新建会话。
 派出了子代理的，等子代理全部回报、回复结束后退出。
 
 选项：
-  -c, --continue          继续上一次 miyu ask 的会话
-  -s, --session <编号>    继续指定的会话
-      --format text|json  输出格式（默认 text）
-      --add-dir <目录>    允许读写另一个目录，可重复
-      --file <文件>       附加文件（图片、PDF、文本），可重复
-      --timeout <时长>    最长等待时间，例如 30s、10m、1h
-      --from <名字>       调用方 harness 的名字，例如 claude-code
-      --model <模型>      指定模型，继续的会话沿用
-      --no-memory         不召回也不保存记忆（仅新会话）
-  -h, --help              显示帮助
+  -c, --continue            继续上一次 miyu ask 的会话
+  -s, --session <编号>      继续指定的会话
+      --format <text|json>  输出格式（默认 text）
+      --add-dir <目录>      允许读写另一个目录，可重复
+      --file <文件>         附加文件（图片、PDF、文本），可重复
+      --timeout <时长>      最长等待时间，例如 30s、10m、1h
+      --from <名字>         调用方 harness 的名字，例如 claude-code
+      --model <模型>        指定模型，继续的会话沿用
+      --no-memory           不召回也不保存记忆（仅新会话）
+  -h, --help                显示帮助
+
+退出状态：
+  0  这一轮照常结束
+  1  出错，例如连不上核心、被拒绝、模型出错
+  2  参数不对
+  3  被打断，或到了 --timeout 的时限
+  4  这一轮结束了，但有几步需要确认，没有做
+  5  没有可用的模型
 ```
 
 样本 `crates/miyu-cli/src/help/en/ask.txt`（英文）：
 
 ```text
-Usage: miyu ask [options] <message>
+Usage: miyu ask [<options>] <message>
 
 Send a message and print the reply, in a new session unless -c or -s.
 If subagents are started, wait for their reports and the final reply.
 
 Options:
-  -c, --continue          Continue the last miyu ask session
-  -s, --session <id>      Continue the given session
-      --format text|json  Output format (default: text)
-      --add-dir <dir>     Allow access to another directory; repeatable
-      --file <file>       Attach a file (image, PDF, text); repeatable
-      --timeout <time>    Maximum time to wait, e.g. 30s, 10m, 1h
-      --from <name>       Name of the calling harness, e.g. claude-code
-      --model <model>     Use this model; a continued session keeps it
-      --no-memory         Don't recall or save memories (new sessions only)
-  -h, --help              Print help
+  -c, --continue            Continue the last miyu ask session
+  -s, --session <id>        Continue the given session
+      --format <text|json>  Output format (default: text)
+      --add-dir <dir>       Allow access to another directory; repeatable
+      --file <file>         Attach a file (image, PDF, text); repeatable
+      --timeout <time>      Maximum time to wait, e.g. 30s, 10m, 1h
+      --from <name>         Name of the calling harness, e.g. claude-code
+      --model <model>       Use this model; a continued session keeps it
+      --no-memory           Don't recall or save memories (new sessions only)
+  -h, --help                Print help
+
+Exit status:
+  0  The turn ended normally
+  1  An error occurred, e.g. no connection to the core or a refusal
+  2  Bad arguments
+  3  Interrupted, or --timeout expired
+  4  The turn ended, but some steps needed confirmation and were skipped
+  5  No usable model
 ```
 
 ### 守着它的

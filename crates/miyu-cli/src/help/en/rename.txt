@@ -1,4 +1,4 @@
-Usage: miyu rename [options] <title>
+Usage: miyu rename [<options>] <title>
 
 Rename the session. Words of the title are joined with spaces.
 

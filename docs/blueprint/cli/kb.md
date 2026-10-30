@@ -126,46 +126,46 @@ manuals  cat.pdf  第 3 页
 样本 `crates/miyu-cli/src/help/zh/kb.txt`（中文）：
 
 ```text
-用法：miyu kb <命令> [选项]
+用法：miyu kb <命令> [<选项>]
 
 不写命令时运行 list。删除的文档和知识库会移到系统回收站。
 
 命令：
-  list [库]               列出知识库，或列出一个库里的文档
-  search <词>             搜索知识库
-  read <库> <文档>        读取文档的一页
-  new <库>                新建知识库
-  edit <库>               修改名字和说明，或开关自动想起
-  add <库> <文件>...      向知识库添加文件，每个最多 20 MiB
-  remove <库> <文档>      删除一篇文档
-  mount <库> <目录>       把现有目录挂载为只读知识库
-  delete <库>             删除知识库（挂载的库只取消登记，目录不动）
-  reindex <库>            重建索引
+  list [<库>]         列出知识库，或列出一个库里的文档
+  search <词>         搜索知识库
+  read <库> <文档>    读取文档的一页
+  new <库>            新建知识库
+  edit <库>           修改名字和说明，或开关自动想起
+  add <库> <文件>...  向知识库添加文件，每个最多 20 MiB
+  remove <库> <文档>  删除一篇文档
+  mount <库> <目录>   把现有目录挂载为只读知识库
+  delete <库>         删除知识库（挂载的库只取消登记，目录不动）
+  reindex <库>        重建索引
 
 选项：
-      --kb <库>           只搜索这个库
-      --page <页>         读取第几页（默认第 1 页）
-      --name <名字>       设置显示的名字
+      --kb <库>             只搜索这个库
+      --page <页>           读取第几页（默认第 1 页）
+      --name <名字>         设置显示的名字
       --description <说明>
-                          设置一句话说明
-      --auto              开启自动想起：对话提到库里某一段时自动带上它的开头
-      --no-auto           关闭自动想起
-      --to <目录>         添加到库里的这个目录
-      --replace           替换已有的同名文档
-      --format text|json  输出格式（默认 text）
-  -h, --help              显示帮助
+                            设置一句话说明
+      --auto                开启自动想起：对话提到库里某一段时自动带上它的开头
+      --no-auto             关闭自动想起
+      --to <目录>           添加到库里的这个目录
+      --replace             替换已有的同名文档
+      --format <text|json>  输出格式（默认 text）
+  -h, --help                显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/kb.txt`（英文）：
 
 ```text
-Usage: miyu kb <command> [options]
+Usage: miyu kb <command> [<options>]
 
 Runs list when no command is given. Removed documents and deleted knowledge
 bases go to the system trash.
 
 Commands:
-  list [kb]               List knowledge bases, or the documents in one
+  list [<kb>]             List knowledge bases, or the documents in one
   search <words>          Search knowledge bases
   read <kb> <document>    Read one page of a document
   new <kb>                Create a knowledge base
@@ -179,18 +179,18 @@ Commands:
   reindex <kb>            Rebuild the index
 
 Options:
-      --kb <kb>           Search only this knowledge base
-      --page <page>       Read this page (default: 1)
-      --name <name>       Set the display name
+      --kb <kb>             Search only this knowledge base
+      --page <page>         Read this page (default: 1)
+      --name <name>         Set the display name
       --description <description>
-                          Set a one-sentence description
-      --auto              Turn on auto recall: bring in the opening of a
-                          section when the conversation mentions it
-      --no-auto           Turn off auto recall
-      --to <dir>          Add into this folder of the knowledge base
-      --replace           Replace documents with the same name
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+                            Set a one-sentence description
+      --auto                Turn on auto recall: bring in the opening of a
+                            section when the conversation mentions it
+      --no-auto             Turn off auto recall
+      --to <dir>            Add into this folder of the knowledge base
+      --replace             Replace documents with the same name
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help
 ```
 
 ### 守着它的

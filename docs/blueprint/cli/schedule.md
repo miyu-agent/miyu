@@ -90,67 +90,67 @@ t2  every 10m  停着  会话 s-1  「看一眼服务器」
 样本 `crates/miyu-cli/src/help/zh/schedule.txt`（中文）：
 
 ```text
-用法：miyu schedule <命令> [选项]
+用法：miyu schedule <命令> [<选项>]
 
 不写命令时运行 list。到点时把一条消息交给会话运行一轮；核心停止期间错过的不补。
 
 命令：
-  list                    列出定时任务
-  add <消息>...           添加定时任务（时间用 --cron --at --every 之一）
-  rm <编号>               删除定时任务
-  pause <编号>            暂停定时任务
-  resume <编号>           恢复定时任务，从现在起重新计算下一次
+  list           列出定时任务
+  add <消息>...  添加定时任务（时间用 --cron --at --every 之一）
+  rm <编号>      删除定时任务
+  pause <编号>   暂停定时任务
+  resume <编号>  恢复定时任务，从现在起重新计算下一次
 
 选项：
-      --cron <五段>       按 cron 表达式运行，例如 '0 8 * * *'
-      --once              cron 只运行一次
-      --zone <时区>       cron 使用的时区，例如 Asia/Tokyo（默认本机时区）
-      --at <时刻>         在指定时刻运行一次，例如 '2026-10-28 08:00'
-                          （本机时区）或 2026-10-28T08:00:00+09:00
-      --every <间隔>      每隔一段时间运行，秒数或 90s 10m 2h 1d，至少 60 秒
-      --session <编号>    在这个会话上运行；list 时只列出它的
-      --persona <人格>    每次新建会话，使用这个人格
-      --no-persona        每次新建无人格的会话
-      --preset <预设>     新建的会话使用这个预设
-      --cwd <目录>        新建的会话的工作目录（默认家目录）
-      --format text|json  输出格式（默认 text）
-  -h, --help              显示帮助
+      --cron <五段>         按 cron 表达式运行，例如 '0 8 * * *'
+      --once                cron 只运行一次
+      --zone <时区>         cron 使用的时区，例如 Asia/Tokyo（默认本机时区）
+      --at <时刻>           在指定时刻运行一次，例如 '2026-10-28 08:00'
+                            （本机时区）或 2026-10-28T08:00:00+09:00
+      --every <间隔>        每隔一段时间运行，秒数或 90s 10m 2h 1d，至少 60 秒
+      --session <编号>      在这个会话上运行；list 时只列出它的
+      --persona <人格>      每次新建会话，使用这个人格
+      --no-persona          每次新建无人格的会话
+      --preset <预设>       新建的会话使用这个预设
+      --cwd <目录>          新建的会话的工作目录（默认家目录）
+      --format <text|json>  输出格式（默认 text）
+  -h, --help                显示帮助
 ```
 
 样本 `crates/miyu-cli/src/help/en/schedule.txt`（英文）：
 
 ```text
-Usage: miyu schedule <command> [options]
+Usage: miyu schedule <command> [<options>]
 
 Runs list when no command is given. At the set time, a message goes to a
 session for one turn. Times missed while the core is stopped are skipped.
 
 Commands:
-  list                    List schedules
-  add <message>...        Add a schedule (time: one of --cron, --at, --every)
-  rm <id>                 Remove a schedule
-  pause <id>              Pause a schedule
-  resume <id>             Resume a schedule; the next run counts from now
+  list              List schedules
+  add <message>...  Add a schedule (time: one of --cron, --at, --every)
+  rm <id>           Remove a schedule
+  pause <id>        Pause a schedule
+  resume <id>       Resume a schedule; the next run counts from now
 
 Options:
-      --cron <fields>     Run on a five-field cron, e.g. '0 8 * * *'
-      --once              Run the cron only once
-      --zone <zone>       Time zone for the cron, e.g. Asia/Tokyo (default:
-                          this machine's)
-      --at <time>         Run once at a time, e.g. '2026-10-28 08:00' (local
-                          time) or 2026-10-28T08:00:00+09:00
-      --every <interval>  Repeat every interval: seconds or 90s, 10m, 2h, 1d;
-                          at least 60s
-      --session <id>      Run in this existing session; with list, show only
-                          its schedules
+      --cron <fields>       Run on a five-field cron, e.g. '0 8 * * *'
+      --once                Run the cron only once
+      --zone <zone>         Time zone for the cron, e.g. Asia/Tokyo (default:
+                            this machine's)
+      --at <time>           Run once at a time, e.g. '2026-10-28 08:00' (local
+                            time) or 2026-10-28T08:00:00+09:00
+      --every <interval>    Repeat every interval: seconds or 90s, 10m, 2h, 1d;
+                            at least 60s
+      --session <id>        Run in this existing session; with list, show only
+                            its schedules
       --persona <persona>
-                          Open a new session each time with this persona
-      --no-persona        Open a new session each time with no persona
-      --preset <preset>   Use this preset for the new session
-      --cwd <dir>         Working directory for the new session (default:
-                          home)
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+                            Open a new session each time with this persona
+      --no-persona          Open a new session each time with no persona
+      --preset <preset>     Use this preset for the new session
+      --cwd <dir>           Working directory for the new session (default:
+                            home)
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help
 ```
 
 ### 守着它的

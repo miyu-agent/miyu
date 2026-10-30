@@ -1,4 +1,4 @@
-Usage: miyu redo [options] [message]
+Usage: miyu redo [<options>] [<message>]
 
 Undo the last turn and send its message again, or the new message if given.
 

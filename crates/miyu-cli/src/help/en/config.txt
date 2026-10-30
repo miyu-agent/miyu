@@ -1,17 +1,17 @@
-Usage: miyu config <command> [options]
+Usage: miyu config <command> [<options>]
 
 Commands:
-  get [key…]           Print the values in effect, or the value of one key
-  set <key> <value>    Change a setting
-  unset <key>          Remove a setting from the system config
-  edit                 Open the config in an editor, checked before saving
-  explain <key>        Show the value in each layer and which one wins
-  path                 Print the path of the config file
-  trust                Review and trust or distrust the project config here
+  get [<key>…]       Print the values in effect, or the value of one key
+  set <key> <value>  Change a setting
+  unset <key>        Remove a setting from the system config
+  edit               Open the config in an editor, checked before saving
+  explain <key>      Show the value in each layer and which one wins
+  path               Print the path of the config file
+  trust              Review and trust or distrust the project config here
 
 Options:
-      --project           Use the project config here (edit, path)
-      --format text|json  Output format (default: text)
-      --yes               Trust without asking (trust)
-      --no                Distrust without asking (trust)
-  -h, --help              Print help
+      --project             Use the project config here (edit, path)
+      --format <text|json>  Output format (default: text)
+      --yes                 Trust without asking (trust)
+      --no                  Distrust without asking (trust)
+  -h, --help                Print help

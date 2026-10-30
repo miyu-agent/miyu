@@ -8,4 +8,5 @@ Commands:
   setup   Create the sandbox user
   remove  Remove the sandbox user
 
+Options:
   -h, --help  Print help

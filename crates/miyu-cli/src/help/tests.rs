@@ -36,7 +36,7 @@ fn listed(page: &str) -> Listed {
 }
 
 /// 程序真有的选项：`command` 里有名字的参数，加上 clap 给每条命令都加的 `-h`、`--help`。要写值的，值写成能写的几样
-/// 用 `|` 连起来；不限的照 clap 的值名在 `values` 里查页里写成什么（`SESSION` 是 `<编号>`，`DIR` 是 `<目录>`，施工 5-10
+/// 用 `|` 连起来、外面套 `<>`（`<text|json>`，施工 AP-1）；不限的照 clap 的值名在 `values` 里查页里写成什么（`SESSION` 是 `<编号>`，`DIR` 是 `<目录>`，施工 5-10
 /// 上；`FILE` 是 `<文件>`，施工 3-9 三补；`TIME` 是 `<时长>`，施工 7-9；`NAME` 是 `<名字>`，施工 7-10；`MODEL` 是 `<模型>`，施工
 /// 8-10；`ID` 是 `<编号>`、`VAR` 是 `<变量>`，施工 8-11），查不到的写成 `<值名>`。藏起来的不算：它们不给人用（`sandbox` 那两个，施工 5-8）。
 fn real(command: &Command, values: &[(&str, &str)]) -> Listed {
@@ -72,7 +72,7 @@ fn real(command: &Command, values: &[(&str, &str)]) -> Listed {
                             .find(|(from, _)| *from == name)
                             .map_or_else(|| format!("<{name}>"), |(_, to)| (*to).to_string())
                     }
-                    false => possible.join("|"),
+                    false => format!("<{}>", possible.join("|")),
                 }
             }
         };
@@ -178,17 +178,16 @@ fn each_page_lists_exactly_the_options_there_are() {
             real(&rename, id),
             "{language:?} rename"
         );
-        // 主程序那一页：`ask` 的、`undo`、`restore`、`redo`、`compact`、`recap`、`rename` 的都列，再加 `-V`、`--version`。
-        let mut all = real(&ask, id);
-        all.extend(real(&recap, id));
-        all.extend(real(&rename, id));
-        all.extend(real(&undo, id));
-        all.extend(real(&redo, id));
-        all.extend(real(&compact, id));
-        all.insert((
-            vec!["--version".to_string(), "-V".to_string()],
-            String::new(),
-        ));
+        // 主程序那一页（设计 50 第五节）：只列全局选项 `-h`、`-V`，`ask` 和会话那几条命令的选项在各自的页上。
+        let all: Listed = [
+            (vec!["--help".to_string(), "-h".to_string()], String::new()),
+            (
+                vec!["--version".to_string(), "-V".to_string()],
+                String::new(),
+            ),
+        ]
+        .into_iter()
+        .collect();
         assert_eq!(listed(page(language, Page::Miyu)), all, "{language:?} miyu");
         // `config` 那一页（施工 8-2、8-3）：八个子命令的选项合在一起列，每个子命令印的都是它。
         let config = Config::augment_args(Command::new("config"));

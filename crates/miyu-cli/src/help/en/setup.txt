@@ -1,14 +1,14 @@
-Usage: miyu setup [options]
+Usage: miyu setup [<options>]
 
 Set up the first model: pick a common provider, a model service on this
 machine, or a custom address and API protocol; paste the key, test the
 connection, pick the chat model and write it to the system config.
 
 Options:
-      --provider <id>   Use this provider from the catalog without picking
-      --env <var>       Read the key from this variable without pasting
-      --model <model>   Use this model without picking
-  -h, --help            Print help
+      --provider <id>  Use this provider from the catalog without picking
+      --env <var>      Read the key from this variable without pasting
+      --model <model>  Use this model without picking
+  -h, --help           Print help
 
 Outside a terminal, give --provider and pipe the key in:
   echo "$KEY" | miyu setup --provider deepseek

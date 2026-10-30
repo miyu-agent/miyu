@@ -44,12 +44,14 @@ fn code(line: &str) -> &str {
 }
 
 /// 帮助页（`help/*/*.txt`）：缩进的那几行是命令、选项的说明，照动宾短语写，句末不带句号（第三节第 7 条）；省略号 `...` 是
-/// 用法里的「可重复」，不算。中文帮助「命令：」下面那几行的说明不列「、」串（总表只写「管理知识库」，不列「列、搜、读、建」）。
+/// 用法里的「可重复」，不算。中文帮助「命令：」下面那几行的说明不列「、」串（总表只写「管理知识库」，不列「列、搜、读、建」）；
+/// 中文总表 `zh/miyu.txt` 分成好几组（对话、内容……），缩进的行一律查（施工 AP-1）。
 #[test]
 fn help_descriptions_have_no_full_stops_or_listed_actions() {
     let mut wrong = Vec::new();
     for page in files(&src().join("help"), "txt") {
         let text = std::fs::read_to_string(&page).expect("读得了");
+        let table = page.ends_with("zh/miyu.txt");
         let mut commands = false;
         for (at, line) in text.lines().enumerate() {
             if !line.starts_with(' ') {
@@ -66,7 +68,7 @@ fn help_descriptions_have_no_full_stops_or_listed_actions() {
                     at + 1
                 ));
             }
-            if commands && trimmed.contains('、') {
+            if (commands || table) && trimmed.contains('、') {
                 wrong.push(format!(
                     "{}:{}: 命令说明列了一串：{trimmed}",
                     page.display(),

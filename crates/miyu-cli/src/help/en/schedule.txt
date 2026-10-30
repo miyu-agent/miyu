@@ -1,31 +1,31 @@
-Usage: miyu schedule <command> [options]
+Usage: miyu schedule <command> [<options>]
 
 Runs list when no command is given. At the set time, a message goes to a
 session for one turn. Times missed while the core is stopped are skipped.
 
 Commands:
-  list                    List schedules
-  add <message>...        Add a schedule (time: one of --cron, --at, --every)
-  rm <id>                 Remove a schedule
-  pause <id>              Pause a schedule
-  resume <id>             Resume a schedule; the next run counts from now
+  list              List schedules
+  add <message>...  Add a schedule (time: one of --cron, --at, --every)
+  rm <id>           Remove a schedule
+  pause <id>        Pause a schedule
+  resume <id>       Resume a schedule; the next run counts from now
 
 Options:
-      --cron <fields>     Run on a five-field cron, e.g. '0 8 * * *'
-      --once              Run the cron only once
-      --zone <zone>       Time zone for the cron, e.g. Asia/Tokyo (default:
-                          this machine's)
-      --at <time>         Run once at a time, e.g. '2026-10-28 08:00' (local
-                          time) or 2026-10-28T08:00:00+09:00
-      --every <interval>  Repeat every interval: seconds or 90s, 10m, 2h, 1d;
-                          at least 60s
-      --session <id>      Run in this existing session; with list, show only
-                          its schedules
+      --cron <fields>       Run on a five-field cron, e.g. '0 8 * * *'
+      --once                Run the cron only once
+      --zone <zone>         Time zone for the cron, e.g. Asia/Tokyo (default:
+                            this machine's)
+      --at <time>           Run once at a time, e.g. '2026-10-28 08:00' (local
+                            time) or 2026-10-28T08:00:00+09:00
+      --every <interval>    Repeat every interval: seconds or 90s, 10m, 2h, 1d;
+                            at least 60s
+      --session <id>        Run in this existing session; with list, show only
+                            its schedules
       --persona <persona>
-                          Open a new session each time with this persona
-      --no-persona        Open a new session each time with no persona
-      --preset <preset>   Use this preset for the new session
-      --cwd <dir>         Working directory for the new session (default:
-                          home)
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+                            Open a new session each time with this persona
+      --no-persona          Open a new session each time with no persona
+      --preset <preset>     Use this preset for the new session
+      --cwd <dir>           Working directory for the new session (default:
+                            home)
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help

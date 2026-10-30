@@ -76,23 +76,62 @@ fn a_missing_program_is_named_with_its_manifest() {
 
 #[test]
 fn the_help_page_gets_a_section_after_the_commands() {
+    use crate::help::{Page, page};
     let list = [added("tui", "miyu-tui"), added("onebot", "miyu-onebot")];
     let section = help_section(Language::Chinese, &list);
     assert_eq!(
         section,
-        "软件包加的命令：\n  tui                   打开终端界面\n  onebot                打开终端界面\n"
+        "软件包加的命令：\n  tui                 打开终端界面\n  onebot              打开终端界面\n"
     );
     assert_eq!(
         help_section(Language::English, &list[..1]),
-        "Commands from packages:\n  tui                   Open the terminal interface\n"
+        "Commands from packages:\n  tui                 Open the terminal interface\n"
     );
     assert_eq!(help_section(Language::English, &[]), "");
-    let page = "用法：miyu <命令>\n\n命令：\n  ask   说\n\nask 的选项：\n  -c\n";
-    assert_eq!(with_section(page, ""), page);
-    let with = with_section(page, &section);
+    // 说明和总表里的命令从同一列开始（第 22 列）。
+    let at = |text: &str, word: &str| {
+        let line = text
+            .lines()
+            .find(|line| line.contains(word))
+            .expect("有这行");
+        // 中文字占两列，别的一列。
+        line[..line.find(word).expect("有这个词")]
+            .chars()
+            .map(|c| if c.is_ascii() { 1 } else { 2 })
+            .sum::<usize>()
+    };
+    let table = page(Language::Chinese, Page::Miyu);
+    assert_eq!(at(&section, "打开终端界面"), 22);
+    assert_eq!(at(table, "发送消息并打印回复"), 22);
+    let sample = "用法：miyu <命令>\n\n对话：\n  ask   说\n\n系统：\n  web   开\n\n选项：\n  -c\n";
+    assert_eq!(with_section(sample, ""), sample);
+    let with = with_section(sample, &section);
+    assert!(
+        with.contains("  web   开\n\n软件包加的命令：\n  tui"),
+        "接在最后一组命令后面、「选项」前面：{with}"
+    );
+    assert!(with.contains("打开终端界面\n\n选项：\n  -c"), "{with}");
+    // 总表接上以后：中英文都在最后一组命令后面、「选项」前面。
+    let english = help_section(Language::English, &list[..1]);
+    let shown = with_section(page(Language::English, Page::Miyu), &english);
+    assert!(
+        shown.contains("(Windows)\n\nCommands from packages:\n  tui")
+            && shown.contains("interface\n\nOptions:\n  -h, --help"),
+        "{shown}"
+    );
+    let shown = with_section(table, &section);
+    assert!(
+        shown.contains("（Windows）\n\n软件包加的命令：\n  tui")
+            && shown.contains("打开终端界面\n  onebot")
+            && shown.contains("打开终端界面\n\n选项：\n  -h, --help"),
+        "{shown}"
+    );
+    // 找不到「选项」那一节的页：照原来的办法，接在第二个空行那里。
+    let bare = "用法：miyu <命令>\n\n命令：\n  ask   说\n\nask 的选项：\n  -c\n";
+    let with = with_section(bare, &section);
     assert!(
         with.contains("  ask   说\n\n软件包加的命令：\n  tui"),
-        "接在「命令」那一节后面：{with}"
+        "{with}"
     );
     assert!(with.contains("打开终端界面\n\nask 的选项："), "{with}");
 }

@@ -97,7 +97,7 @@
 样本 `crates/miyu-cli/src/help/zh/redo.txt`（中文）：
 
 ```text
-用法：miyu redo [选项] [消息]
+用法：miyu redo [<选项>] [<消息>]
 
 撤销上一轮并重新发送同一条消息；写了消息的改发新消息。
 
@@ -109,7 +109,7 @@
 样本 `crates/miyu-cli/src/help/en/redo.txt`（英文）：
 
 ```text
-Usage: miyu redo [options] [message]
+Usage: miyu redo [<options>] [<message>]
 
 Undo the last turn and send its message again, or the new message if given.
 

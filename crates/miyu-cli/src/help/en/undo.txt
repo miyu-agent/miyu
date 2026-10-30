@@ -1,4 +1,4 @@
-Usage: miyu undo [options]
+Usage: miyu undo [<options>]
 
 Undo the last turn (alias: rewind).
 

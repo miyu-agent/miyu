@@ -1,4 +1,4 @@
-Usage: miyu recap [options]
+Usage: miyu recap [<options>]
 
 Summarize the session: the goal, what is done, what is blocked.
 

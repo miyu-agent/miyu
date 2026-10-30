@@ -1,4 +1,4 @@
-Usage: miyu service <command> [options]
+Usage: miyu service <command> [<options>]
 
 Manage the user service that starts the core at boot or login: a systemd
 user service on Linux, or desktop autostart where there is none; launchd on
@@ -14,5 +14,5 @@ The service runs this miyu, with MIYU_HOME if set. For a system-wide service
 repository.
 
 Options:
-      --format text|json  Output format (default: text)
-  -h, --help              Print help
+      --format <text|json>  Output format (default: text)
+  -h, --help                Print help

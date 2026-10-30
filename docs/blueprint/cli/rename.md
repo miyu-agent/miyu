@@ -56,7 +56,7 @@
 样本 `crates/miyu-cli/src/help/zh/rename.txt`（中文）：
 
 ```text
-用法：miyu rename [选项] <标题>
+用法：miyu rename [<选项>] <标题>
 
 重命名会话。标题中的多个词以空格连接。
 
@@ -68,7 +68,7 @@
 样本 `crates/miyu-cli/src/help/en/rename.txt`（英文）：
 
 ```text
-Usage: miyu rename [options] <title>
+Usage: miyu rename [<options>] <title>
 
 Rename the session. Words of the title are joined with spaces.
 
