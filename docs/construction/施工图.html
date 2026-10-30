@@ -276,7 +276,7 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>987</b><span>/ 996 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>992</b><span>/ 1001 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
     <li><b class="mono">AU-2</b><span>最近一步（AU-2 第三方许可证清单）</span></li>
   </ul>
@@ -1430,6 +1430,11 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sDT4a"><span class="n">DT-4 上</span>.app 里找得到资源目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDT4b"><span class="n">DT-4 下</span>头能叫核心停下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sDT2"><span class="n">DT-2</span>桌面端照薄封装写进设计<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sAE4"><span class="n">AE-4</span>定时表一行坏了别的照跑<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sAS1"><span class="n">AS-1</span>软件源装的包要是索引写的那一个<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sAS2"><span class="n">AS-2</span>索引条目的写法不全信<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sAS3"><span class="n">AS-3</span>定时的会话也要碰得到<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sAS8"><span class="n">AS-8</span>包里的名字哪个系统上都普通<span class="st">✓</span></a></li>
       </ol>
     </li>
   </ol>
@@ -53686,6 +53691,253 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单在桌面端仓库 <code>miyu-agent/miyu-desktop</code> 的 <code>docs/construction/DT-2-图纸.md</code>；设计 <code>01-架构.md</code> 第一节、<code>21-网页.md</code> X9、<code>12-进程形态与分发.md</code> R2。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAE4" aria-labelledby="h-sAE4">
+  <div class="sheet-head"><h2 id="h-sAE4"><span class="no">AE-4</span>定时表一行坏了别的照跑</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">唤醒表里一行读不懂，原来整份出错、全机的定时悄悄停掉。现在只跳过那一行，别的照常到点，起来时记一行、check 报出来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心</span><span class="dir-note">AE-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>list、due 读不懂的行跳过</li>
+              <li>起来时一行记一条 WARN</li>
+              <li>check 报 schedule_unreadable</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">坏的一行</span><span class="rl">跳过、照编号删得掉</span></div>
+          <div class="tile new"><span class="nm">读不了库</span><span class="rl">照旧整份出错</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AE-4</dd></div>
+        <div><dt>名称</dt><dd>定时表一行坏了别的照跑</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">AE-4</dd></div>
+        <div><dt>验收</dt><dd>补丁的红测试修前红；一格类型不对的单元测试；真核心手拨钟的端到端测试；手写变异 5 个；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>一行坏了，好的照常到点</span></li>
+        <li><span class="ok">✓</span><span>check 报出来，删了不再报</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/schedules.md</code> 第一节第 3 条，<code>docs/blueprint/protocol.md</code>「<code>check</code>」，<code>docs/blueprint/cli/check.md</code>；施工单 <code>docs/construction/AE-4、AS-1～3、AS-8-发布前测试核心几条.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAS1" aria-labelledby="h-sAS1">
+  <div class="sheet-head"><h2 id="h-sAS1"><span class="no">AS-1</span>软件源装的包要是索引写的那一个</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">从软件源装的包文件，里面的编号和索引那一条对不上的不装：不然第三方源能借别的条目盖掉已装的包、接着用它批过的能力。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心</span><span class="dir-note">AS-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>从软件源装时交上索引那一条的编号</li>
+              <li>解开后比最上层文件夹</li>
+              <li>对不上的 package_file_bad，什么都不装</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">从软件源装</span><span class="rl">编号要对上</span></div>
+          <div class="tile new"><span class="nm">本机 .miyu 文件</span><span class="rl">照旧不比</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AS-1</dd></div>
+        <div><dt>名称</dt><dd>软件源装的包要是索引写的那一个</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">AS-1</dd></div>
+        <div><dt>验收</dt><dd>新测试修前红（bar 被换成 2.0）；手写变异 2 个；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>写着 foo、里面是 bar 的包不装，bar 原样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/protocol.md</code>「<code>package.install</code>」，设计 <code>37-软件源.md</code> 第四节第 4 条；施工单 <code>docs/construction/AE-4、AS-1～3、AS-8-发布前测试核心几条.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAS2" aria-labelledby="h-sAS2">
+  <div class="sheet-head"><h2 id="h-sAS2"><span class="no">AS-2</span>索引条目的写法不全信</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">索引里编号、版本、依赖、推荐写法不对的条目读的时候就丢掉，下载只落在缓存目录正下面：不然能借 /、..、\ 落到缓存外面。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心</span><span class="dir-note">AS-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>Index::parse 丢掉不合写法的条目</li>
+              <li>下载前再看文件名是不是缓存目录正下面的一个文件</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">编号</span><span class="rl">同包编号的写法</span></div>
+          <div class="tile new"><span class="nm">版本</span><span class="rl">字母、数字、._+-，不以 . 开头</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AS-2</dd></div>
+        <div><dt>名称</dt><dd>索引条目的写法不全信</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">AS-2</dd></div>
+        <div><dt>验收</dt><dd>两条新测试修前红（读进 11 条坏的；交回缓存外面的文件）；手写变异 8 个抓住 7 个，另一个等价；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>写法不对的条目搜不到、装不了</span></li>
+        <li><span class="ok">✓</span><span>缓存外面什么都不读、不写</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 设计 <code>37-软件源.md</code> 第三节第 3 条下；施工单 <code>docs/construction/AE-4、AS-1～3、AS-8-发布前测试核心几条.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAS3" aria-labelledby="h-sAS3">
+  <div class="sheet-head"><h2 id="h-sAS3"><span class="no">AS-3</span>定时的会话也要碰得到</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">schedule.add 的 target.session 原来只查会话在不在：平台桥能往本机的会话、人的头能往关着的群会话里定时说话。现在和连接的第 4 道检查一套判法。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心</span><span class="dir-note">AS-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>判法抽成 sessions::reachable</li>
+              <li>连接检查、schedule.add 两处共用</li>
+              <li>碰不到的和没有的一个说法</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">碰不到的会话</span><span class="rl">bad_params，problem 是 session</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AS-3</dd></div>
+        <div><dt>名称</dt><dd>定时的会话也要碰得到</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">AS-3</dd></div>
+        <div><dt>验收</dt><dd>审计补丁里两条修前红；手写变异 4 个；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>桥排不进本机的会话</span></li>
+        <li><span class="ok">✓</span><span>人的头排不进关着的群会话</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 <code>docs/blueprint/schedules.md</code> 第五节，<code>docs/blueprint/protocol.md</code>「关着的场所会话只给桥」；施工单 <code>docs/construction/AE-4、AS-1～3、AS-8-发布前测试核心几条.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sAS8" aria-labelledby="h-sAS8">
+  <div class="sheet-head"><h2 id="h-sAS8"><span class="no">AS-8</span>包里的名字哪个系统上都普通</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">Windows 上解包时中间一级写成 C:x 的，原来会写到 C 盘当前目录下。现在每一级名字都要哪个系统上都只是一个普通名字，解包、打包都查。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">核心</span><span class="dir-note">AS-8</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>每一级拒带 :、\、控制字符的</li>
+              <li>拒 Windows 保留名、结尾是 . 或空格的</li>
+              <li>拼好以后再看一眼还在暂存处下面</li>
+              <li>打包照同一套拒</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">包的名字</span><span class="rl">三个平台通用，哪里都照一套查</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AS-8</dd></div>
+        <div><dt>名称</dt><dd>包里的名字哪个系统上都普通</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">AS-8</dd></div>
+        <div><dt>验收</dt><dd>Windows 上的红测试修前在 CI 上红（run 41012432900）；不分平台的两条修前红；手写变异 8 个；本地门禁；三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>带盘符的一级拒，暂存处外面什么都没留</span></li>
+        <li><span class="ok">✓</span><span>像保留名的（console.txt、com10）照收</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>图纸 设计 <code>37-软件源.md</code> 第二节第 5 条；施工单 <code>docs/construction/AE-4、AS-1～3、AS-8-发布前测试核心几条.md</code>。</li>
       </ul>
     </div>
   </div>

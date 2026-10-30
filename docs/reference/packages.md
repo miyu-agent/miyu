@@ -96,7 +96,7 @@
 | `package_conflict` | 带的名字和装着的别的包撞了：子命令、功能、工具、技能、MCP 服务、知识库、斜杠命令、人格、预设、前缀 |
 | `not_permitted` | 会话里的 `package` 工具：会话不是主人的（场所里替外人的）装、升级、卸、装回包，启用扩展；列、看、搜照旧给 |
 | `package_exists` | 和出厂的同编号 |
-| `package_file_bad` | 包文件解不开 |
+| `package_file_bad` | 包文件解不开；从软件源装的，包里的编号和索引那一条对不上 |
 | `download_failed` | 从软件源装时包文件哪一处都没下成（大小、哈希对不上也算），`data.why` 是每一处的原因 |
 | `wrong_target` | 清单写了 `targets`，里面没有本机这一种系统 |
 | `depends_missing` | 依赖的包没装，`data.missing` |
@@ -360,7 +360,7 @@
 
 **参数**：`cwd`（照它找项目配置）、`file`（只查这一份）。
 
-**回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
+**回应**：`{"problems": [...]}`，一处一项：`kind`（`config`、`secrets`、`persona`、`preset`、`package`、`script`、`skill`、`slash`、`mcp`、`schedule`（唤醒表里读不懂的行，`schedule_unreadable`）；包自己的检查照它报的原样交，例如 `venue`）、`file`、`code`、`level`、`message`，有行列的带 `line`、`column`，配置的另带 `key`、`got`、`suggest`、`using`，包自己的检查可以另带 `key`、`rule`、`source`。
 
 不写 `file` 的全查：系统配置、`cwd` 的项目配置、密钥文件、每一层的人格和预设、软件包清单、包自己的检查；读不成的、被盖住的、链接指到数据根里不认的地方的脚本、技能、命令模板，撞名没登记上的脚本，和自带命令同名的命令模板，和命令同名、点名用不上的技能（`skill_command_clash`）；MCP 服务列出来却没登记上的工具、提示词；`sandbox.tools` 放行的工具没有了、来处对不上、是链接的，放行了 `shell` 的；装好的文件改了、少了。另带 `embedding`：语义模型的状态，不是问题（`model`，用不上的 `model` 是 `null`、带 `why`；后台在补的 `filling`；`memory`、`turns` 每个人格一项 `{persona, have, total}`；`kb` 每个库一项 `{id, name, have, total}`）。
 

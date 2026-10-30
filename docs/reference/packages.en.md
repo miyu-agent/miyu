@@ -96,7 +96,7 @@ Install and remove take effect at once: processes start or stop per their switch
 | `package_conflict` | A name it brings clashes with an installed package: subcommand, feature, tool, skill, MCP server, knowledge base, slash command, persona, preset, prefix |
 | `not_permitted` | The `package` tool in a session that isn't the owner's (one acting for outsiders in a venue) installing, upgrading, removing or restoring a package, or enabling an extension; listing, looking and searching still work |
 | `package_exists` | Same id as a built-in package |
-| `package_file_bad` | The package file can't be unpacked |
+| `package_file_bad` | The package file can't be unpacked; or, installing from a source, the package inside isn't the one the index entry names |
 | `download_failed` | Installing from the package source, the file couldn't be downloaded anywhere (a size or hash mismatch counts); `data.why` lists each place's reason |
 | `wrong_target` | The manifest lists `targets` and this system isn't one of them |
 | `depends_missing` | A dependency isn't installed, `data.missing` |
@@ -360,7 +360,7 @@ Heads add their own commands (like `/help`) to the menu themselves.
 
 **Params**: `cwd` (look for a project config from here), `file` (check only this one).
 
-**Response**: `{"problems": [...]}`, one per issue: `kind` (`config`, `secrets`, `persona`, `preset`, `package`, `script`, `skill`, `slash`, `mcp`; a package's own check passes on whatever it reported, e.g. `venue`), `file`, `code`, `level`, `message`, `line` and `column` when known, for config `key`, `got`, `suggest`, `using`, and from a package's own check optionally `key`, `rule`, `source`.
+**Response**: `{"problems": [...]}`, one per issue: `kind` (`config`, `secrets`, `persona`, `preset`, `package`, `script`, `skill`, `slash`, `mcp`, `schedule` (an unreadable row in the schedule table, `schedule_unreadable`); a package's own check passes on whatever it reported, e.g. `venue`), `file`, `code`, `level`, `message`, `line` and `column` when known, for config `key`, `got`, `suggest`, `using`, and from a package's own check optionally `key`, `rule`, `source`.
 
 Without `file` it checks everything: system config, the project config of `cwd`, the secrets file, personas and presets in every layer, package manifests, and packages' own checks; scripts, skills and command templates that can't be read, are covered, or are links into a part of the data root that isn't recognized, scripts not registered because of a name clash, command templates named like a built-in command, and skills named like a command, which typing their name won't reach (`skill_command_clash`); tools and prompts an MCP server listed that weren't registered; `sandbox.tools` grants whose tool is gone, comes from somewhere else or is a link, and a grant for `shell`; installed files that changed or went missing. It also returns `embedding`, the state of the semantic model, which is not a problem: `model` (`null` with `why` when it can't be used), `filling` while it backfills, `memory` and `turns` with one `{persona, have, total}` per persona, and `kb` with one `{id, name, have, total}` per knowledge base.
 

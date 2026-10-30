@@ -38,7 +38,7 @@
 | `prompt` | 字符串，必写 | 不能是空的 |
 | `target` | 对象，可以不写 | `{"session": <编号>}`、`{"new": {"persona"?, "preset"?, "cwd"?}}` 或 `{"package": {}}`，写一种；不写的是每次新开。`package` 只有扩展能写，人写了回 `bad_params`（不带 `data.problem`）。`persona`、`preset` 不写的照这时的默认定下来，`cwd` 不写是家目录 |
 
-回应 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 说是哪一样：`when`（没写对一种、时刻写法不对）、`cron`（读不成）、`past`（时刻已经过了）、`short`（隔得少于 60 秒）、`prompt`（空的）、`session`（没有这个会话）、`target`（两种都写了）、`zone`（时区不认识）、`cwd`（每次新开的工作目录不在、不是目录，或者落在数据根里工作区以外）。已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）的回 `too_many_schedules`，先删几个；已有的照跑。人格、预设找不到的照开会话回 `unknown_persona`、`unknown_preset`。
+回应 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 说是哪一样：`when`（没写对一种、时刻写法不对）、`cron`（读不成）、`past`（时刻已经过了）、`short`（隔得少于 60 秒）、`prompt`（空的）、`session`（没有这个会话，或者这个连接碰不到它：说法一样）、`target`（两种都写了）、`zone`（时区不认识）、`cwd`（每次新开的工作目录不在、不是目录，或者落在数据根里工作区以外）。已经有 200 个（人建、她建、包建合计，熔断性质的安全上限）的回 `too_many_schedules`，先删几个；已有的照跑。人格、预设找不到的照开会话回 `unknown_persona`、`unknown_preset`。
 
 ## `schedule.list`
 
