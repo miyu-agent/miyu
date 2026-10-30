@@ -25,6 +25,8 @@ pub struct Rpc {
     read: BufReader<ReadHalf<Connection>>,
     write: WriteHalf<Connection>,
     pushes: VecDeque<Value>,
+    /// 握手的回应（施工 V-29：工具一步照它的 `sandbox` 记沙盒能不能用）。
+    pub hello: Value,
 }
 
 impl Rpc {
@@ -42,10 +44,11 @@ impl Rpc {
             read: BufReader::new(read),
             write,
             pushes: VecDeque::new(),
+            hello: Value::Null,
         };
         let hello = json!({"protocol": [1, 1], "head": {"kind": "perf", "version": "0.0.0"},
             "caps": {"input": false}, "token": token});
-        rpc.call("hello", hello).await?;
+        rpc.hello = rpc.call("hello", hello).await?;
         Ok(rpc)
     }
 

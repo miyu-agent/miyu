@@ -3,7 +3,7 @@
 //!
 //! 两次分开编：量的二进制只照它自己的依赖编，别的包（测试夹具打开的开关）混不进去。沙盒放在 `target/perf/` 下：要在
 //! 真的磁盘上，同步才算数。后面跟的参数原样交给量尺（`--runs 3` 这些）；带 `--render <原始数据>` 的只编量尺，照现在的预算
-//! 重出表，不量。
+//! 重出表，不量。工具一步（`--tools`，施工 V-29）拷进工作区的树照源码树的 `crates/`。
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -51,6 +51,8 @@ pub fn run(cargo: &str, root: &Path, extra: &[String]) -> ExitCode {
         .arg(target.join("perf"))
         .arg("--out")
         .arg(root.join("docs/perf"))
+        .arg("--tree")
+        .arg(root.join("crates"))
         .args(extra)
         .current_dir(root)
         .status();
