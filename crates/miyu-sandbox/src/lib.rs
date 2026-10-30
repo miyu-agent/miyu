@@ -12,6 +12,7 @@
 //! - [`install`]：装沙盒要管理员权限的那一次，Windows 上建、撤专用的沙盒用户（施工 5-8，`docs/blueprint/sandbox/windows.md`）；
 //! - `testkit`：测试用的，cargo 编出来的助手在哪（施工 5-4 上）；
 //! - [`deniable`]：交给 MXC 的禁止路径先去掉被别的进程独占着的文件（施工 SW-1，Windows 上照 `busy` 问）；
+//! - [`carve()`]：藏起来的里面有要透出来的，改禁它旁边的（施工 SW-6，Windows 上 MXC 的禁止压过嵌在里面的放开）；
 //! - [`set_mounts`]、[`mounts`]：这台机器的命令能不能用挂载收紧（施工 5-16）：核心探完设一次，执行器写规格时读。
 //!
 //! 助手本身在 `src/bin/miyu-sandbox/`：共用的在 `main.rs`，收紧和换成命令各平台一个文件。
@@ -20,6 +21,7 @@
 
 mod availability;
 mod busy;
+mod carve;
 mod cmdline;
 pub mod install;
 pub mod lifeline;
@@ -34,6 +36,7 @@ pub use availability::{Availability, Unusable};
 #[cfg(windows)]
 pub use busy::busy;
 pub use busy::deniable;
+pub use carve::{carve, entries};
 pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
 pub use probe::{BUILD, Platform, Probe, ProbeError, VERSION, probe};

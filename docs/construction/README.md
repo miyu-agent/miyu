@@ -1199,6 +1199,8 @@ flowchart LR
 | I-96 补 | 门面转出地址闸 | 接入通讯平台第二轮审查 I2-3：下载平台给的地址每一跳过核心的地址闸、自己跟跳转。`miyu_client::http` 多转出 `Guard`、`Resolved`、`Proxies`、`tls`，`testkit` 下另转出 `Testing`、`Server` |
 | UH-1 | 用不上的设置项不画 | 项目主人 10-31 在 macOS 上只装了桌面端，设置里照样出现「默认界面」和终端集成会话那几项。`config.schema` 照装了哪些界面标 `hidden`：`terminal.*` 要有 `miyu-tui`，`ui.head` 要装了两个以上界面 |
 | UC-1 补 | 币种说明照换算写 | 「显示的币种」的说明还写着「不换算」，UC-1 起早就照每一笔那天的汇率换算了；中英日三份改掉 |
+| SW-5 | Windows 上先用安装包带的 PowerShell 7 | 桌面端 10-31 在 Win11 虚拟机上：没装 PowerShell 7，她照 bash 的习惯写 `&&`，Windows PowerShell 5.1 报错。项目主人定桌面端的安装包带一份官方的 PowerShell 7（zip，版本钉住），不另加提示。核心找 shell 时 Windows 上先找资源目录里的 `pwsh\pwsh.exe`，再找 `PATH` 里的，最后退回 5.1 |
+| SW-6 | Windows 沙盒里工作区写得进、包读得到 | 桌面端 10-31 在 Win11 虚拟机上：默认工作区在数据根里，Python 存文件报 PermissionError；用 Node 的包起不来，`lstat .miyu\packages` 报 EPERM。MXC 的禁止压过嵌在它里面的读写、只读，助手把整个数据根交成禁止路径。照规格的约定（藏起来的里面，能写的、单独放开只读的透得出来，Linux、macOS 本来就这样），助手交请求前在数据根里挖洞：不禁数据根，改禁通往它们的路上每一层旁边的项。代价：路上那几层的名字看得见（内容照旧读不到），命令跑着时在那几层新建的不在禁止的里面。桌面端手拼规格对照过：挖洞后写、删、Node 都成，令牌照旧读不到 |
 
 **命令行给程序调**（AP 线，设计 50，2026-10-30 项目主人定）
 
