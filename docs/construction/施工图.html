@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1006</b><span>/ 1015 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1007</b><span>/ 1016 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-26</b><span>最近一步（V-26 模型列表自己刷新）</span></li>
+    <li><b class="mono">V-30</b><span>最近一步（V-30 字表读一次）</span></li>
   </ul>
 </header>
 
@@ -492,6 +492,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV24b"><span class="n">V-24补</span>快照直接比较<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV27"><span class="n">V-27</span>三家对比照现在的样子<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV26"><span class="n">V-26</span>模型列表自己刷新<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV30"><span class="n">V-30</span>字表读一次<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -10725,6 +10726,58 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-26-模型列表自己刷新.md</code>；蓝图 <code>models.md</code> 第二条第 10 条、<code>protocol.md</code> 推送表。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV30" aria-labelledby="h-sV30">
+  <div class="sheet-head"><h2 id="h-sV30"><span class="no">V-30</span>字表读一次</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">给人看的字一种语言读一次，文件没变的大家共用，核心安静下来时放掉；终端冷启动时核心少做七成的活。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">字表读一次</span><span class="dir-note">V-30</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>读好的字照语言放在资源目录的架子上（<code>human/shelf.rs</code>），拷出来的资源目录共用</li>
+              <li>每次要字先看读过的那几份文件长短、修改时刻，变了的照旧重读</li>
+              <li>每一句说法共用，拷一份、补单数都不重新解模板</li>
+              <li>核心安静下来时先放掉读好的字，再还堆</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不为数字好看省：只砍重复读的浪费，功能、给人看的字一样不少</span><span class="rl">项目主人 2026-10-30</span></div>
+          <div class="tile new"><span class="nm">改了资源，核心不重启下一次就是新的</span><span class="rl">施工 W-1</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-30</dd></div>
+        <div><dt>名称</dt><dd>字表读一次</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-31</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-30</dd></div>
+        <div><dt>验收</dt><dd>冷启动一次打开 zh.json 41 次 → 1 次；核心的指令 10.47 亿 → 3.12 亿条</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>文件没变只读一遍、拷出来的资源目录共用</span></li>
+        <li><span class="ok">✓</span><span>改了文件、多出一种语言、多一个包都重读；读不懂的不放</span></li>
+        <li><span class="ok">✓</span><span>核心不重启也读到改过的资源（tests/human.rs）</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-30-字表读一次.md</code>；蓝图 <code>store/resources.md</code> 第 3 节第 8 条、<code>heap.md</code>「怎么走」第 2 条。</li>
       </ul>
     </div>
   </div>

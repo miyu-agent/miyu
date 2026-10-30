@@ -26,6 +26,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,10 @@ use miyu_kernel::template::Template;
 
 use crate::resources::ResourceRoot;
 
+mod shelf;
+
+pub use shelf::Shelf;
+
 /// 找不到别的语言时用的那一种。
 pub const FALLBACK: &str = "en";
 
@@ -45,7 +50,8 @@ pub const FALLBACK: &str = "en";
 #[derive(Debug, Clone, Default)]
 pub struct Human {
     tools: BTreeMap<String, Face>,
-    said: BTreeMap<String, Phrase>,
+    /// 每一句共用：拷一份 [`Human`]（放着的那份交出去时、补单数时）不重新解模板（施工 V-30）。
+    said: BTreeMap<String, Arc<Phrase>>,
     config: ConfigWords,
 }
 
@@ -121,25 +127,23 @@ impl Human {
     ///
     /// 有一份读得到、却读不懂（不是 JSON、写法不对、模板坏了），说是哪一份。读不到的不算错：没有这种语言的照
     /// 英文，英文也没有的，那一处就没有字。
+    ///
+    /// 读好的放在资源目录的架子上（[`Shelf`]，施工 V-30）：再要同一种语言的，先看读过的那几份文件（连同当时没有的）
+    /// 长短、修改时刻变没变，没变的交回放着的那份的拷贝，不再读、不再解模板；变了的照旧重读（改了资源，核心不重启下一次
+    /// 就是新的）。[`ResourceRoot::forget_words`] 以后再读。
     pub fn load(root: &ResourceRoot, language: &str) -> Result<Human, HumanError> {
+        let places = places(root);
+        let held = root
+            .shelf
+            .get(language, &places, || Human::read(&places, language))?;
+        Ok(Human::clone(&held))
+    }
+
+    /// 照 `places` 的先后读 `language` 这一种，不看架子。
+    fn read(places: &[(PathBuf, String)], language: &str) -> Result<Human, HumanError> {
         let mut human = Human::default();
-        human.add(&root.path().join("core"), "core", language)?;
-        let software = root.path().join("software");
-        let mut packages: Vec<String> = match std::fs::read_dir(&software) {
-            Ok(entries) => entries
-                .filter_map(Result::ok)
-                .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
-                .map(|entry| entry.file_name().to_string_lossy().into_owned())
-                .collect(),
-            Err(_) => Vec::new(),
-        };
-        packages.sort();
-        for package in packages {
-            human.add(
-                &software.join(&package),
-                &format!("software/{package}"),
-                language,
-            )?;
+        for (dir, prefix) in places {
+            human.add(dir, prefix, language)?;
         }
         human.fill_singular();
         Ok(human)
@@ -166,13 +170,13 @@ impl Human {
     /// 凡是有 `X` 没有 `X/one` 的，拿 `X` 补上 `X/one`（施工 4-5 再补「一个的时候说单数」）：英文那份自己写了
     /// 需要的那些 `X/one`，照它；中文、日文没写，退到这里，补出来的字跟 `X` 一个字不差（这两种语言不挑单复数）。
     fn fill_singular(&mut self) {
-        let missing: Vec<(String, Phrase)> = self
+        let missing: Vec<(String, Arc<Phrase>)> = self
             .said
             .iter()
             .filter(|(key, _)| !key.ends_with("/one"))
             .filter_map(|(key, phrase)| {
                 let one = format!("{key}/one");
-                (!self.said.contains_key(&one)).then(|| (one, phrase.clone()))
+                (!self.said.contains_key(&one)).then(|| (one, Arc::clone(phrase)))
             })
             .collect();
         self.said.extend(missing);
@@ -195,8 +199,10 @@ impl Human {
         for (key, source) in parsed.said {
             let template =
                 Template::parse(&source).map_err(|error| bad(format!("{key}: {error}")))?;
-            self.said
-                .insert(format!("{prefix}/{key}"), Phrase { source, template });
+            self.said.insert(
+                format!("{prefix}/{key}"),
+                Arc::new(Phrase { source, template }),
+            );
         }
         self.tools.extend(parsed.tools);
         self.config.items.extend(parsed.config.items);
@@ -307,6 +313,28 @@ impl Words for Human {
             });
         self.say(&said)
     }
+}
+
+/// 资源目录里有给人看的字的几处、说法编号的前缀，照读的先后：内核的，再照名字的先后每个出厂包（链接不算）。`software/`
+/// 读不了的当没有包。
+fn places(root: &ResourceRoot) -> Vec<(PathBuf, String)> {
+    let software = root.path().join("software");
+    let mut packages: Vec<String> = match std::fs::read_dir(&software) {
+        Ok(entries) => entries
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    packages.sort();
+    let mut places = vec![(root.path().join("core"), "core".to_string())];
+    places.extend(
+        packages
+            .into_iter()
+            .map(|package| (software.join(&package), format!("software/{package}"))),
+    );
+    places
 }
 
 /// 给人看的字段：控制字符换成 `�`，别的照原样。

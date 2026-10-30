@@ -20,6 +20,7 @@ use miyu_policy::{
 };
 
 use crate::env::Env;
+use crate::human::Shelf;
 
 /// 一个资源目录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,6 +28,8 @@ pub struct ResourceRoot {
     path: PathBuf,
     /// 压在出厂的字上面的几层同名覆盖（施工 OV-1 中，`overlay.rs`），从上往下排；没有的是空的。
     overlays: Vec<PathBuf>,
+    /// 读好的给人看的字（施工 V-30，[`crate::human::Shelf`]）：拷出来的几份共用。
+    pub(crate) shelf: Shelf,
 }
 
 /// 找不到资源目录。
@@ -131,6 +134,7 @@ impl ResourceRoot {
         ResourceRoot {
             path: path.into(),
             overlays: Vec::new(),
+            shelf: Shelf::default(),
         }
     }
 
