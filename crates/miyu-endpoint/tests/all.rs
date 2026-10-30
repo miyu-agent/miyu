@@ -231,6 +231,7 @@ mod schedule_package;
 mod schedule_tools;
 mod schedules;
 mod script_pages;
+mod script_settings;
 mod scripts;
 mod search_extension;
 mod secrets;

@@ -97,8 +97,10 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
         PackageKind::Mascot => &["package", "mascot", "depends", "recommends"],
         // 主题包（施工 F-16）：只有主题，不带吉祥物、程序。
         PackageKind::Theme => &["package", "theme", "depends", "recommends"],
+        // 只带脚本、技能的包（施工 PS-1）：配置项照 process 包那一套写，值跑它自己的脚本时交给脚本（`MIYU_SETTINGS_JSON`）。
         PackageKind::Bundle => &[
             "package",
+            "settings",
             "mcp",
             "mascot",
             "content",

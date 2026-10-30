@@ -138,7 +138,7 @@ program = "miyu-embed"
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
-| `bundle` | `[package]`、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
+| `bundle` | `[package]`、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
 
 施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
 
@@ -149,7 +149,7 @@ program = "miyu-embed"
 1. `name`、`summary`、`about` 照人格的写法：只认 `zh`、`en`、`ja`，每一句去掉前后空白不能是空的。
 2. `[check]` 的程序在标准输出上一行一处、每处一个 JSON，格子照 `check` 的回应（`kind`、`file`、`line`、`column`、`level`、`message`），可以多带 `key`、`rule`、`source`；`file` 照核心的写法：数据根里的写相对数据根的，资源目录里的写真的路径。只有警告时退出码 0，有错误 1（和通讯平台的会话 2026-10-07 对过）。
 
-**配置项**（`[settings.<名字>]`，施工 9-1 下）：
+**配置项**（`[settings.<名字>]`，施工 9-1 下；`ui`、`process` 包，施工 PS-1 起只带脚本的 `bundle` 也能写，同一张表、同一套画法）：
 
 | 格 | 是什么 |
 |---|---|
@@ -165,6 +165,7 @@ program = "miyu-embed"
 2. 核心起来时读清单那一次，读成了的清单的配置项接在核心自己的配置项后面，进配置清单：读配置、`miyu check`、`config.schema`、`config.get`、`config.set`、生成的 Schema 和参考文件都照它。经 `package.install`、`package.remove` 装卸以后照新的清单再拼一次（`Builtins::settings`，`miyu-core` 装上），配置服务换上（`Config::refit`）：配置照手里的字重新认，认得的项、问题变了的推 `config.changed`（`via: package`）；生成的三份照新的清单重写（施工 F-5 补）。卸掉的包，配置里它的项一并删掉（「装卸」第 7 条）；项目目录里还写着的照旧报不认识。
 3. 包的前缀是核心自己某一段配置的第一段（`ui`、`persona`、`permission`、`models`、`providers`、`log`、`usage`、`external` 这些，照核心起来时的配置清单认）、又声明了配置项的，这一份报 `settings_taken`，当写错了的列出，配置项一项都不收。
 4. 设置页：都在一页 `packages`（「软件包」），一个包一组，组的编号是包的编号、名字是包的名字；每一项的名字、说明用清单里的，照连接的语言挑（这种语言、`en`、`zh`、`ja`），不进 `core/human`。控件照类型：开关 `toggle`、整数 `number`、选项 `select`、列表 `list`，别的 `text`。`config.schema` 里列表照核心自己的列表写：多 `element`，元素是选项的多 `options`。 平台接入的包也在这一页（施工 F-6 上：「接入」页去掉了，设计 30 第十三节）。`config.schema` 里这一页的项多一格 `package`，就是组的编号，头照它把项画在那个软件的信息页上。程序不在 `miyu` 旁边的扩展、小程序当没装，配置项不进（`package-pages.md`「程序不在就当没装」）；界面不算。核心替内置包声明的配置项（现在是人格记忆的几项、联网的几组、基础系统的 `show.system_hint`）也挂在这一页、这个包那一组；包没装的照样认、照样有最终值，设置页不画（`hidden`，施工 F-4，设计 30 第七节）。
+5. 脚本包（施工 PS-1）：`bundle` 的配置项照上面登记、画；它自己 `scripts/` 下的脚本跑的时候拿到这几项这一刻的最终值（`MIYU_SETTINGS_JSON`，`skills.md`「脚本」第 3 条），扩展握手交的同一份（`extensions/config.rs` 的 `own`）。
 
 **两层怎么认**：一个包只有一份清单，不像人格那样一层层叠。同一个编号两层都有的，认出厂的，装上的那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于装上的、同一层照编号，先读到的得，后读到的那一份报 `command_taken`（报在子命令名那一行）；一个包加了几个的，每个都算，有一个被占就整份不收（施工 F-13）。同一个包里写了两个同名的也报 `command_taken`，报在后一个。和内置子命令撞的，由 9-2 在命令行那一头拦。别的包占了的名字装的时候先查过（下面「冲突」），读的时候撞得上的只剩核心升级后出厂的新带了同名的：出厂的先读到。
 

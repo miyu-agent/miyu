@@ -163,11 +163,6 @@ fn every_package_field_is_checked() {
     assert_eq!(content.kind, PackageKind::Bundle);
     assert_eq!(content.protocol, None);
     assert_eq!(
-        wrong("[package]\nname = { en = \"Notes\" }\n\n[settings.x]\ntype = \"bool\"\n").0,
-        Code::WrongKind,
-        "不带程序的包没有配置项"
-    );
-    assert_eq!(
         wrong(&TUI.replace("[package]\n", "[package]\nkind = \"ui\"\n")),
         (Code::UnknownKey, Some(2))
     );
@@ -416,4 +411,23 @@ fn a_newer_miyu_is_said_instead_of_unknown_keys() {
         wrong("[package]\nname = { en = \"N\" }\nmiyu = 1\n").0,
         Code::BadMiyu
     );
+}
+
+/// 只带脚本的包也能写配置项（施工 PS-1）：规矩同 process 包那一张表，读成了还是 bundle；密钥类的照旧不能写默认值。
+#[test]
+fn a_bundle_can_declare_settings() {
+    let text = "[package]\nname = { en = \"Draw\" }\n\n[settings.endpoint]\ntype = \"url\"\ndefault = \"https://example.com/v1\"\nname = { en = \"Endpoint\" }\n\n[settings.key]\ntype = \"secret\"\nname = { en = \"API key\" }\n";
+    let manifest = read(text).expect("bundle 写配置项读得成");
+    assert_eq!(manifest.kind, PackageKind::Bundle);
+    let names: Vec<&str> = manifest
+        .settings
+        .iter()
+        .map(|one| one.name.as_str())
+        .collect();
+    assert_eq!(names, ["endpoint", "key"]);
+    let defaulted = text.replace(
+        "type = \"secret\"\n",
+        "type = \"secret\"\ndefault = \"sk-1\"\n",
+    );
+    assert!(read(&defaulted).is_err(), "密钥写了默认值不收");
 }

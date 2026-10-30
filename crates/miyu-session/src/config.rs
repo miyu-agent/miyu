@@ -28,6 +28,16 @@ pub trait ConfigSource: Send + Sync + std::fmt::Debug {
     /// 照引用取一个密钥（施工 8-6）：`{ secret }` 照密钥文件，`{ env }` 照核心的环境。没设的、设成空的是空的。
     fn secret(&self, reference: &Reference) -> Option<Secret>;
 
+    /// 包 `package` 自己的配置项的最终值（施工 PS-1，[`miyu_tool::SettingsPort::package`]）：键去掉这个包的配置前缀，密钥照引用解成
+    /// 真值，没设的不放；不带项目配置。没有配置项的包、不认包的（测试里不变的配置）是空的。
+    fn package_settings(
+        &self,
+        package: &str,
+    ) -> Option<serde_json::Map<String, serde_json::Value>> {
+        let _ = package;
+        None
+    }
+
     /// 一层的配置是哪份文件，数据根里的相对路径（施工 8-15）：手写的价格记进 `cost.source` 时照它写
     /// （`config:<文件>:<行>`），和 `model.list` 的来源同一份。不认数据根的（测试里不变的配置）写层的名字。
     fn file(&self, layer: Layer) -> String {
@@ -48,12 +58,18 @@ pub struct Turn {
     pub resolved: Resolved,
     /// 取密钥的那一份。
     source: Arc<dyn ConfigSource>,
+    /// 配置服务这一刻的那一份（施工 PS-1）：包自己的配置项照它现取，不冻结。自己造的一轮（[`Turn::new`]）没有，照 `source`。
+    live: Option<Configs>,
 }
 
 impl Turn {
     /// 冻结一份：最终值 `resolved`，key 照 `source` 取（施工 8-20：一次性调用照这一刻不算项目配置的最终值，端点交进来）。
     pub fn new(resolved: Resolved, source: Arc<dyn ConfigSource>) -> Turn {
-        Turn { resolved, source }
+        Turn {
+            resolved,
+            source,
+            live: None,
+        }
     }
 
     /// 照引用取一个密钥：这一轮开始时的那一份。
@@ -75,6 +91,15 @@ impl miyu_tool::SettingsPort for Turn {
 
     fn secret(&self, reference: &Reference) -> Option<Secret> {
         Turn::secret(self, reference)
+    }
+
+    /// 包自己的配置项（施工 PS-1）：照配置服务这一刻的那一份，回合中途改了的下一次调用就换。
+    fn package(&self, package: &str) -> Option<serde_json::Map<String, serde_json::Value>> {
+        let now = match &self.live {
+            Some(live) => Arc::clone(&*live.borrow()),
+            None => Arc::clone(&self.source),
+        };
+        now.package_settings(package)
     }
 }
 
@@ -141,9 +166,17 @@ impl Turning {
 /// 从 `configs` 取当前的一份，照目录 `dir` 带上项目配置：读磁盘的那一步在阻塞线程里做。
 async fn take(configs: &Configs, dir: String) -> TurnConfig {
     let source = Arc::clone(&*configs.borrow());
+    let live = Some(configs.clone());
     blocking(move || {
         let resolved = source.with_project(&dir);
-        Arc::new(Turn { resolved, source })
+        Arc::new(Turn {
+            resolved,
+            source,
+            live,
+        })
     })
     .await
 }
+
+#[cfg(test)]
+mod tests;

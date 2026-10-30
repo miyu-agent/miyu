@@ -11,6 +11,14 @@ pub trait SettingsPort: Send + Sync {
 
     /// 照引用取一个密钥：这一轮开始时的那一份。没设的、设成空的是空的。
     fn secret(&self, reference: &Reference) -> Option<Secret>;
+
+    /// 包 `package` 自己的配置项这一刻的最终值（施工 PS-1）：键去掉这个包的配置前缀（有组的是 `组.名字`），密钥是解出来的
+    /// 真值，没设的键不放。不照这一轮冻结的那一份：改了的下一次调用就换。只有脚本用（`MIYU_SETTINGS_JSON`）。没有这个包、
+    /// 拿不到配置的是空的。
+    fn package(&self, package: &str) -> Option<serde_json::Map<String, serde_json::Value>> {
+        let _ = package;
+        None
+    }
 }
 
 impl std::fmt::Debug for dyn SettingsPort {

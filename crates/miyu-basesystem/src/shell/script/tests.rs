@@ -18,7 +18,7 @@ const DOCS: [(&str, &str); 2] = [
     ),
 ];
 
-/// 脚本拿得到的每一个：参数、几个目录、调用的事实、模型和日志、家目录那几处。
+/// 脚本拿得到的每一个：参数、几个目录、调用的事实、模型和日志、家目录那几处、包自己的配置项（施工 PS-1）。
 fn given() -> Vec<&'static str> {
     let mut names = vec![
         ARGS,
@@ -27,6 +27,7 @@ fn given() -> Vec<&'static str> {
         STATE,
         CALLER_VENUE,
         CALLER_OWNER,
+        SETTINGS,
         super::super::env::MODEL,
         super::super::env::EFFORT,
         super::super::env::SESSION_LOG,

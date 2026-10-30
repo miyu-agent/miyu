@@ -96,6 +96,16 @@ Linux、macOS 上 `chmod +x dice.py`。
       print("Read-only here: only the owner can change the title.")
   ```
 
+- 脚本包的配置项（施工 PS-1）：做成包的，清单里可以写 `[settings.<名字>]`，规矩同扩展包（类型、`default`、`applies`、`name`、`description`、`hidden`，`secret` 不能写默认值），人在设置的「软件包」页这个包那一组里填。包里 `scripts/` 下的脚本跑的时候，环境变量 `MIYU_SETTINGS_JSON` 里是这几项现在的值，一个 JSON 对象：键去掉这个包的配置前缀（清单 `[package] prefix`，没写就是包编号），有组的写 `组.名字`；`secret` 是解出来的真值；没填、也没默认值的键不放，所以用之前先看在不在。每次调用都现读，人改了下一次调用就是新的。只给这个包自己的脚本：别的包的、`scripts/` 里自己放的、AI 跑的命令都没有。
+
+  ```python
+  import json, os
+  settings = json.loads(os.environ.get("MIYU_SETTINGS_JSON", "{}"))
+  key = settings.get("api_key")
+  if not key:
+      print("Set the API key in Settings → Packages first.")
+  ```
+
 - 跑的规矩同 AI 跑命令：在沙盒里跑（只写得了工作区，Miyu 的数据目录读不到，脚本自己那个文件单独放开只读）；沙盒用不了的要人确认。
 
 **交图**

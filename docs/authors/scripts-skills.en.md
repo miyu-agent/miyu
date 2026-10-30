@@ -96,6 +96,16 @@ The header is the run of comment lines at the very top of the file; it ends at t
       print("Read-only here: only the owner can change the title.")
   ```
 
+- Settings of a script package (PS-1): a package can declare `[settings.<name>]` in its manifest, with the same rules as an extension package (type, `default`, `applies`, `name`, `description`, `hidden`; a `secret` cannot have a default). People fill them in under Settings → Packages, in this package's group. When a script under the package's `scripts/` runs, the environment variable `MIYU_SETTINGS_JSON` holds their current values as one JSON object: keys without the package's settings prefix (`[package] prefix` in the manifest, the package id when not written), `group.name` for grouped ones; a `secret` is the real value; keys that are neither set nor defaulted are left out, so check before use. It is read on every call, so a change applies from the next call. Only the package's own scripts get it: other packages' scripts, scripts you put in `scripts/` yourself and the commands the AI runs do not.
+
+  ```python
+  import json, os
+  settings = json.loads(os.environ.get("MIYU_SETTINGS_JSON", "{}"))
+  key = settings.get("api_key")
+  if not key:
+      print("Set the API key in Settings → Packages first.")
+  ```
+
 - It runs under the same rules as commands the AI runs: in the sandbox (can only write the workspace, can't read Miyu's data directory, the script file itself is readable); without a sandbox, a person must approve.
 
 **Handing over images**

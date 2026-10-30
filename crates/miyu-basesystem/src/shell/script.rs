@@ -10,6 +10,9 @@
 //!   `cache/<来处>/<工具名>/`，场所会话多一层场所，进沙盒的放进规格的 `write`；会话外面的调用照旧在系统临时目录 `miyu-scripts/<工具名>`
 //!   下面；30 天没碰的清掉，跑完清一次，`sweep.rs`），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
+//! - 包自己的配置项（施工 PS-1）：包里 `scripts/` 下的脚本另给 `MIYU_SETTINGS_JSON`，这个包配置项这一刻的最终值（一个 JSON 对象，
+//!   键去掉包的配置前缀，密钥是真值，没设的不放；[`miyu_tool::SettingsPort::package`]，每次调用现取）。家目录里人自己放的
+//!   （来处 `~home`）、没有配置项的包不给；`shell` 不经这里。值不进运行日志。
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
 //!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
@@ -86,6 +89,9 @@ const CALLER_VENUE: &str = "MIYU_CALLER_VENUE";
 
 /// 这一轮开口的是不是机器主人交给脚本的环境变量（施工 X-43）：`1`、`0`。
 const CALLER_OWNER: &str = "MIYU_CALLER_OWNER";
+
+/// 包自己的配置项（施工 PS-1）：这个包配置项的最终值，一个 JSON 对象。
+const SETTINGS: &str = "MIYU_SETTINGS_JSON";
 
 /// 一个脚本。
 pub(crate) struct Script {
@@ -223,6 +229,18 @@ impl Script {
         }
     }
 
+    /// 这个包自己的配置项（施工 PS-1）：写成一个 JSON 对象。家目录里人自己放的（来处 `~home`）、没有配置项的包、会话外面的调用
+    /// 没有。每次调用照端口现取，值不进运行日志（只记给了）。
+    fn settings(&self, call: &Call) -> Option<String> {
+        if self.source == miyu_store::scripts::HOME_PACKAGE {
+            return None;
+        }
+        let own = call.settings.as_ref()?.package(&self.source)?;
+        let text = serde_json::Value::Object(own).to_string();
+        tracing::debug!(target: "miyu::shell", tool = self.spec.name.as_str(), "script settings given");
+        Some(text)
+    }
+
     /// 家目录那几处（施工 Y-11 补，[`home`]）：该给的建好，交环境变量和真实位置；建不成的那一处不给（记一行 `WARN`）。
     fn homes(&self, call: &Call) -> Vec<(&'static str, PathBuf)> {
         home::wanted(call)
@@ -291,6 +309,9 @@ impl Script {
             vars.push((CALLER_VENUE.into(), caller.venue.as_str().into()));
             let owner = if caller.owner { "1" } else { "0" };
             vars.push((CALLER_OWNER.into(), owner.into()));
+        }
+        if let Some(own) = self.settings(call) {
+            vars.push((SETTINGS.into(), own.into()));
         }
         // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。
         vars.push(("PYTHONUTF8".into(), "1".into()));

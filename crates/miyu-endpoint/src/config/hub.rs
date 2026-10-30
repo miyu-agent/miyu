@@ -40,6 +40,27 @@ impl ConfigSource for Config {
         Config::secret(self, reference)
     }
 
+    /// 包自己的配置项（施工 PS-1，脚本的 `MIYU_SETTINGS_JSON`）：同扩展握手交的那一份（`extensions/config.rs` 的 `own`：最终值，
+    /// 密钥照手里的密钥文件解成真值，不另读盘），键去掉第一段配置前缀。没有配置项的包没有。
+    fn package_settings(
+        &self,
+        package: &str,
+    ) -> Option<serde_json::Map<String, serde_json::Value>> {
+        let declared = self
+            .items()
+            .iter()
+            .any(|item| crate::extensions::config::declared_by(item, package));
+        if !declared {
+            return None;
+        }
+        Some(
+            crate::extensions::config::own(self, package)
+                .into_iter()
+                .filter_map(|(key, value)| Some((key.split_once('.')?.1.to_string(), value)))
+                .collect(),
+        )
+    }
+
     /// 手写的价格记进 `cost.source` 时写哪份文件（施工 8-15）：系统配置 `config.toml`（施工 SU-3 上起只有它）。
     fn file(&self, _layer: miyu_config::Layer) -> String {
         Config::file(self).shown.clone()
