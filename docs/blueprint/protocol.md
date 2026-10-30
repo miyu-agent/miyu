@@ -144,7 +144,7 @@
 
 1. 参数读不成（缺了必写的格、哪一格类型不对）：`bad_params`，连接不断。
 2. `1` 不在 `[最低, 最高]` 里：`protocol_mismatch`，回完断开。
-3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），`password`。写了不止一种：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；网页软件转来的远程连接（`connection.remote`）一种都没写、又还没设访问密码的回 `password_not_set`。本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外几种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`password_not_set`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条：密码登录照来源（`connection.remote` 的地址，本机来的算一份）60 秒错 5 次先拒。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`。
+3. 凭据正好写一种（施工 W-8）：`token`，`code`，`login`，`ticket`（交接票，施工 LT-1），`password`。写了不止一种：`bad_params`，回完断开。一种都没写、本机令牌不对：`bad_token`，回完断开；网页软件转来的远程连接（`connection.remote`）一种都没写、又还没设访问密码的回 `password_not_set`。本机令牌长短要一样，每个字节都比，比到哪一个不一样都用一样长的时间。另外几种怎么验、被拒回什么（`bad_code`、`bad_login`、`bad_password`、`password_not_set`、`login_throttled`，都回完断开）照 `web-module.md`「怎么走」第一条：密码登录照来源（`connection.remote` 的地址，本机来的算一份；去掉端口，IPv6 照前 64 位算一份）60 秒错 5 次先拒，所有来源合起来 60 秒 30 次也先拒（施工 AS-4，发布前审计 10-30、项目主人同一天定；`login/throttle.rs`，过了窗口的记录清掉）。用一次性码连上的只能调 `hello`、`human.get`、`account.setup`，别的回 `setup_first`。
 4. 过了：连上来的人就是主人。他发的命令都记成他发的（`by` 是 `{"kind":"person"}`），命令引起的事件，`cause` 是请求的 `id`（`kernel/events.md`）。
 5. 握手以前：别的方法一律 `hello_first`，连接不断；读不懂的行照「请求」的表回；通知不理。
 6. 握手以前的拒绝说英文；`hello` 本身被拒的，话照这一次报的 `locale` 说（读得出来的话，施工 4-9 再补三上）。过了的，话照回应的 `language` 说（施工 8-2）：`ui.language` 定成 `en` 的，报 `zh-CN` 的头也听英文。握手以后再发 `hello`：照样从第 1 条查起；过了，换成这一次算出的语言和能力；这一次被拒的，话照这一次报的语言说，没断开的还是上一次握手的语言和能力。

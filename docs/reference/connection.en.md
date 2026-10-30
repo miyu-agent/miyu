@@ -97,7 +97,7 @@ Sending `hello` again after the handshake is fine: if it passes, the new languag
 | `bad_code`, `bad_login`, `bad_password` | Wrong one-time code, device token or access password (closes) |
 | `password_not_set` | No access password yet: a `password` was given, or a remote connection gave nothing (closes). Set one on this computer first |
 | `bad_ticket` | No such hand-off ticket, expired, or already used (closes) |
-| `login_throttled` | Five wrong passwords from the same place within 60 seconds; wait a while (closes). `data.retry_after_ms` says how long |
+| `login_throttled` | Five wrong passwords from the same place within 60 seconds, or 30 tries from all places together; wait a while (closes). `data.retry_after_ms` says how long. A place is an address without its port; IPv6 addresses in the same /64 count as one |
 | `hello_first` | Another method before the handshake (does not close) |
 | `setup_first` | Connected with a one-time code and called something other than `human.get` and `account.setup` |
 
@@ -175,7 +175,7 @@ A one-time code works once. Setting or changing the access password revokes ever
 | `data.reason` | When |
 |---|---|
 | `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection changing the access password without `old` |
-| `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds (`data.retry_after_ms`) |
+| `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds, or all sources together tried 30 times (`data.retry_after_ms`) |
 | `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
 
 ## `core.stop`

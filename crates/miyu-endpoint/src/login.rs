@@ -4,8 +4,8 @@
 //! - 一次性码（`account.setup_code`）：只给出示本机令牌连上的连接；5 分钟、一次；只在内存里，最多 16 个。网页第一次设访问密码用。
 //! - `account.setup {"password"}`：本机令牌、一次性码连上的设、改访问密码，写进 `access.json`；以前的设备令牌
 //!   全部作废。一次性码连上的另交回一个新的设备令牌，这个连接从此是登录了的。
-//! - 访问密码握手：对上了造一个设备令牌（登录令牌）交回；照来源（网页软件转来的 `connection.remote` 的地址，本机来的算一份）60 秒内
-//!   试 5 次，剩下的时间里先拒、不验（施工 5-20）。还没设访问密码的一律 `password_not_set`。
+//! - 访问密码握手：对上了造一个设备令牌（登录令牌）交回；照来源 60 秒内试 5 次、所有来源合起来 30 次，剩下的时间里先拒、
+//!   不验（施工 5-20、AS-4，[`throttle`]）。还没设访问密码的一律 `password_not_set`。
 //! - 设备令牌握手：哈希在 `logins.json` 里、没过期。
 //! - `account.logout`：作废一个、全部；用设备令牌、密码连着的连接收到作废就断开（[`Identity::revoked`]）。
 //! - 交接票 `login.ticket`、`login.redeem`（接入通讯平台、`miyu web` 要的）在 [`ticket`]。
@@ -15,9 +15,9 @@
 
 pub(crate) mod avatar;
 mod files;
+mod throttle;
 pub(crate) mod ticket;
 
-use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
@@ -43,10 +43,6 @@ const MOST_CODES: usize = 16;
 
 /// 登录令牌多久有效（设计 06 U4）。
 const LOGIN_DAYS: i64 = 30;
-
-/// 数登录失败的窗口、窗口里错几次就先拒（设计 06 U4 的初值）：照来源数。
-const WINDOW: Duration = Duration::from_secs(60);
-const TRIES: usize = 5;
 
 /// 密码最长几个字节（「起草时定的」第 45 条）：只防拿超长的串耗 argon2。原来还有至少 8 个字节的下限，施工 PW-1 去掉了（项目主人
 /// 2026-10-30：「没必要做这个限制」）。
@@ -106,7 +102,7 @@ struct Code {
 /// 核心一份的：一次性码、登录失败的计数（照来源）、作废的广播，改凭据文件排队的锁。
 pub(crate) struct Identity {
     codes: Mutex<Vec<Code>>,
-    failures: Mutex<BTreeMap<String, Vec<Instant>>>,
+    throttle: throttle::Throttle,
     revoked: broadcast::Sender<Revoked>,
     files: tokio::sync::Mutex<()>,
     code_ttl: Duration,
@@ -119,7 +115,7 @@ impl Identity {
     pub(crate) fn new(code_ttl: Duration) -> Identity {
         Identity {
             codes: Mutex::new(Vec::new()),
-            failures: Mutex::new(BTreeMap::new()),
+            throttle: throttle::Throttle::default(),
             revoked: broadcast::channel(64).0,
             files: tokio::sync::Mutex::new(()),
             code_ttl,
@@ -249,13 +245,14 @@ pub(crate) async fn password(
     ))
 }
 
-/// 对一遍访问密码 `password`，照来源 `source` 限流（没有的算 `local`）：60 秒错满 5 次的 `login_throttled`，没设的
-/// `password_not_set`，错的 `bad_password`；对了清掉这个来源错的次数。
+/// 对一遍访问密码 `password`，照来源 `source` 限流（没有的算 `local`，[`throttle`]）：错满了的 `login_throttled`，没设的
+/// `password_not_set`，错的 `bad_password`；对了清掉这个来源错的次数，合起来的撤掉这一次。
 async fn verify(core: &Core, source: Option<&str>, password: String) -> Result<(), Refusal> {
     let source = source.unwrap_or("local").to_string();
-    if let Err(wait) = admit(&core.identity, &source) {
-        return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs()));
-    }
+    let tried = match core.identity.throttle.admit(&source) {
+        Ok(tried) => tried,
+        Err(wait) => return Err(Refusal::login_throttled(millis(wait).max(1).unsigned_abs())),
+    };
     let phc = Some(files::read_access(core).access.password).filter(|phc| !phc.is_empty());
     let Some(phc) = phc else {
         return Err(Refusal::PASSWORD_NOT_SET);
@@ -267,11 +264,7 @@ async fn verify(core: &Core, source: Option<&str>, password: String) -> Result<(
     if !right {
         return Err(Refusal::BAD_PASSWORD);
     }
-    core.identity
-        .failures
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .remove(&source);
+    core.identity.throttle.forgive(&source, tried);
     Ok(())
 }
 
@@ -321,24 +314,6 @@ pub(crate) async fn logout(
 /// 告诉连着的连接哪些登录令牌作废了；一个都没在听的不要紧。
 fn announce(identity: &Identity, revoked: Revoked) {
     identity.revoked.send(revoked).unwrap_or(0);
-}
-
-/// 这个来源能不能再试：60 秒内已经试了 5 次的，交回还要等多久（等到最早那一次满 60 秒）；能试的当场先记一次失败，验对了
-/// 再清零。先查、验完才记的话，同时进来的握手都看到「还没错满」、都去验，60 秒 5 次挡不住并发，每个还各占一份 argon2 的
-/// 内存（施工 5-20）：查和记在同一把锁里。
-fn admit(identity: &Identity, source: &str) -> Result<(), Duration> {
-    let mut failures = identity
-        .failures
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner);
-    let now = Instant::now();
-    let tries = failures.entry(source.to_string()).or_default();
-    tries.retain(|at| now.duration_since(*at) < WINDOW);
-    if tries.len() >= TRIES {
-        return Err(WINDOW - now.duration_since(tries[tries.len() - TRIES]));
-    }
-    tries.push(now);
-    Ok(())
 }
 
 /// 密码写得合不合：不超过 1024 个字节，不能是空的、不能全是空白。

@@ -97,7 +97,7 @@
 | `bad_code`、`bad_login`、`bad_password` | 一次性码、设备令牌、访问密码不对（断开） |
 | `password_not_set` | 还没设访问密码：写了 `password` 的，或者远程来的什么都没写（断开）。先在这台电脑上设 |
 | `bad_ticket` | 交接票没有、过期了、用过了（断开） |
-| `login_throttled` | 同一个来源 60 秒里密码错了 5 次，先等一会儿（断开）；`data.retry_after_ms` 是还要等多久 |
+| `login_throttled` | 同一个来源 60 秒里密码错了 5 次，或者所有来源合起来 60 秒里试了 30 次，先等一会儿（断开）；`data.retry_after_ms` 是还要等多久。来源是地址，不看端口，IPv6 同一段 /64 算一个 |
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法 |
 
@@ -120,7 +120,7 @@
 | `data.reason` | 什么时候 |
 |---|---|
 | `bad_params`（`-32602`） | 参数不对；密码不合要求；设备令牌连上的改访问密码没带 `old` |
-| `bad_password`、`login_throttled` | 设备令牌连上的改访问密码，`old` 不对；这个来源 60 秒内错满 5 次（`data.retry_after_ms`） |
+| `bad_password`、`login_throttled` | 设备令牌连上的改访问密码，`old` 不对；这个来源 60 秒内错满 5 次、或者合起来满 30 次（`data.retry_after_ms`） |
 | `local_only` | 扩展调了；不是本机令牌连上的调了 `account.setup_code` |
 
 ## `core.stop`
