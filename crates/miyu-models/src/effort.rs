@@ -7,7 +7,8 @@
 //!   （[`crate::facts::Facts::effort`]，已经照档位查过），没有就不带。
 //! - 给头看的那一档，连同从哪来（[`shown`]、[`in_use`]）：会话的写 `session`，配置的照 `facts.effort` 的来源是哪一层配置
 //!   文件，翻成 `subscribe`、`model.changed` 的 `effort.from`。
-//! - `session.configure` 的 `effort` 照 [`levels_of`] 查：会话这时的引用有哪几档，池是成员的合起来。
+//! - `session.configure` 的 `effort` 照 [`levels_of`] 查：会话这时的引用有哪几档；池一档都没有（SM-1 补，项目主人 10-30：
+//!   「池子不应该能设置思考强度」），池里每个成员照它自己的配置。
 //! - 空闲超时放大几倍（[`idle_factor`]）：`high` 2 倍、`xhigh` 3 倍、`max` 4 倍，别的照基数（`15-模型与供应商.md` 第五节）。
 //! - 配置里写的不在档位里的（[`unknown`]）：报 `unknown_effort`，只报不丢，请求照没写发。档位由用它的一方交（要档案、目录）。
 
@@ -85,8 +86,8 @@ pub fn shown(
 }
 
 /// 引用 `text`（模型或 `@池`）这时有哪几档，照最终值 `resolved`、手头的资料 `knowledge`（施工 SM-1：`session.configure` 的
-/// `effort` 照它查）：模型的是它自己的；池的是认得出的成员各自的合起来（照先后，重复的只留第一个），用不上的成员照配置。
-/// 解析不出、那一家用不了的一档都没有。
+/// `effort` 照它查）：模型的是它自己的；池一档都没有（SM-1 补：池不能在会话里设思考强度，成员各照各的配置）。解析不出、
+/// 那一家用不了的一档都没有。
 pub fn levels_of(resolved: &Resolved, knowledge: &Knowledge<'_>, text: &str) -> Vec<String> {
     let values = resolved.values();
     let of = |id: &str, model: &str| match provider::provider(&values, knowledge, id) {
@@ -98,12 +99,7 @@ pub fn levels_of(resolved: &Resolved, knowledge: &Knowledge<'_>, text: &str) -> 
     };
     let found = match reference::resolve(&values, knowledge, text) {
         Ok(Pointed::Model(target)) => of(&target.provider.id, &target.model),
-        Ok(Pointed::Pool(pool)) => pool
-            .members
-            .iter()
-            .flat_map(|member| of(&member.provider, &member.model))
-            .collect(),
-        Err(_) => Vec::new(),
+        Ok(Pointed::Pool(_)) | Err(_) => Vec::new(),
     };
     levels(&found)
 }

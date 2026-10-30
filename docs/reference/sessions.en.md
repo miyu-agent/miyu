@@ -376,7 +376,7 @@ Change the session's model, persona, preset or reasoning effort; it applies from
 - `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
 - `persona`: a persona id; `null` means no persona.
 - `preset`: a preset id; `null` switches to no tools (step P-16).
-- `effort`: a reasoning effort level (step SM-1), checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; a pool offers what its members have together; when the same call changes the model, the new one's); `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
+- `effort`: a reasoning effort level (step SM-1), checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; when the same call changes the model, the new one's). A session on a pool cannot set one: you get `bad_params` (`data.field` is `effort`), and each member of the pool follows its own config; `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
 
 Changing the persona or preset compacts first: the core summarizes the conversation so far under the old persona right away, and the next turn switches over and continues from the summary. Memory that follows the persona is kept in the new persona's room from then on; earlier memories stay where they were.
 

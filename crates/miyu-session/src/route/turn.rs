@@ -44,7 +44,6 @@ impl Route {
         };
         let mut pinned = self.lock();
         pinned.config = Arc::clone(config);
-        pinned.effort = effort.map(str::to_string);
         // 内核没记引用的跟着这一轮的 `models.chat`（施工 8-10 再补：人能回到「跟着配置」）：配置换了，这一轮就换。
         let wanted = match recorded {
             Some(recorded) => Some(recorded.to_string()),
@@ -90,6 +89,9 @@ impl Route {
                 fallback
             }
         };
+        // 池不用会话记的那一档（SM-1 补）：成员各照各的配置；换回模型又用上。
+        let effort = effort.filter(|_| !matches!(resolved, Some(Resolved::Pool(_))));
+        pinned.effort = effort.map(str::to_string);
         let (member, mut limits) = match resolved {
             Some(Resolved::Model(target)) => (None, self.shared.limits(config, &target)),
             Some(Resolved::Pool(pool)) => {

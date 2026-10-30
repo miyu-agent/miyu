@@ -1,9 +1,9 @@
 //! `session.configure` 的 `effort`（施工 SM-1，设计 51，`docs/blueprint/models.md`「协议」）：要换成的一档照会话这时的模型的
 //! 档位查，不在里面的 `bad_params`（`data.field` 是 `effort`），什么都不记；`null` 是回到跟着配置，不查。
 //!
-//! 「会话这时的模型」：这一条一起换了模型的是换成的那个（回到跟着配置的照这一刻的 `models.chat`），没换的是会话接下来请求的
-//! 引用（`subscribe` 的 `model.ref`）。池的档位是认得出的成员各自的合起来：一次请求真发给的成员没有这一档的照配置
-//! （`miyu_models::effort::held`）。
+//! 「会话这时的模型」：这一条一起换了模型的是换成的那个（回到跟着配置的照这一刻的 `models.chat`），没换的是会话记着的引用
+//! （`Handle::current` 的 `model`，SM-1 补），没记的照 `models.chat`。池一档都没有，设什么都 `bad_params`（SM-1 补，项目
+//! 主人 10-30：「池子不应该能设置思考强度」）：池里每个成员照它自己的配置。
 
 use miyu_models::effort;
 

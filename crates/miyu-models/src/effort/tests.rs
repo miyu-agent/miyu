@@ -147,9 +147,9 @@ fn a_pool_offers_every_level_its_members_have() {
         super::levels_of(&resolved, &knowledge, "deepseek/a"),
         names(&["low", "high"])
     );
-    assert_eq!(
-        super::levels_of(&resolved, &knowledge, "@p"),
-        names(&["low", "high", "max"])
+    assert!(
+        super::levels_of(&resolved, &knowledge, "@p").is_empty(),
+        "池一档都没有（SM-1 补）"
     );
     assert!(super::levels_of(&resolved, &knowledge, "@nope").is_empty());
     assert!(super::levels_of(&resolved, &knowledge, "nope/x").is_empty());

@@ -126,12 +126,16 @@ impl Models for Routes {
         let resolved = reference
             .as_deref()
             .and_then(|text| self.resolve(&values, text).ok());
+        // 池不用会话记的那一档（SM-1 补，同 `Route::begin`）。
+        let effort = session
+            .effort
+            .filter(|_| !matches!(resolved, Some(Resolved::Pool(_))));
         let (member, mut limits) = match resolved {
             Some(Resolved::Model(target)) => (None, self.limits(config, &target)),
             Some(Resolved::Pool(pool)) => self.pool_start(config, &pool, session.sent.as_ref()),
             None => (None, nothing()),
         };
-        self.stamp(config, &mut limits, session.effort.as_deref());
+        self.stamp(config, &mut limits, effort.as_deref());
         Arc::new_cyclic(|me| Route {
             me: me.clone(),
             shared: self.clone(),
@@ -144,7 +148,7 @@ impl Models for Routes {
                 last: limits.model.clone(),
                 limits,
                 sticky: None,
-                effort: session.effort,
+                effort,
                 config: session.config,
             })),
         })

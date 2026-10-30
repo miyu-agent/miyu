@@ -99,7 +99,7 @@ fn efforts(home: &Home, session: &str) -> Vec<Value> {
 }
 
 /// `session.configure` 的 `effort`（施工 SM-1，设计 51）：照会话这时的模型的档位查过记一条，只写 `effort`；一样的不记；
-/// `none` 读成 `off`；`null` 回到跟着配置；和模型一起换的照换成的模型查，池的是成员的合起来。
+/// `none` 读成 `off`；`null` 回到跟着配置；和模型一起换的照换成的模型查。
 #[tokio::test]
 async fn session_configure_records_the_session_s_effort() {
     let home = Home::new();
@@ -126,10 +126,6 @@ async fn session_configure_records_the_session_s_effort() {
             "c8",
             json!({"session": session, "model": "a/x", "effort": "high"}),
         ),
-        (
-            "c9",
-            json!({"session": session, "model": "@p", "effort": "low"}),
-        ),
     ] {
         let (_, reply) = configuring(&mut client, id, params.clone()).await;
         assert_eq!(reply["result"], json!({}), "{params}：{reply}");
@@ -141,7 +137,6 @@ async fn session_configure_records_the_session_s_effort() {
             json!({"effort": {"level": "off"}}),
             json!({"effort": {"level": null}}),
             json!({"effort": {"level": "high"}}),
-            json!({"effort": {"level": "low"}}),
         ],
         "一样的不记，null 记一条"
     );
@@ -191,6 +186,7 @@ async fn session_configure_refuses_an_effort_the_model_lacks() {
         json!({"session": session, "effort": "max"}),
         json!({"session": session, "effort": "low", "model": "a/x"}),
         json!({"session": session, "effort": "high", "model": "b/n"}),
+        json!({"session": session, "effort": "high", "model": "@p"}),
         json!({"session": session, "effort": ""}),
         json!({"session": session, "effort": 3}),
         json!({"session": session, "effort": {"model": "a/m", "level": "high"}}),
@@ -213,6 +209,43 @@ async fn session_configure_refuses_an_effort_the_model_lacks() {
         .filter(|event| event["kind"] == "session.policy_changed")
         .count();
     assert_eq!(changed, 0, "什么都不记，模型也不换");
+}
+
+/// 池不能设思考强度（SM-1 补，项目主人 10-30：「池子不应该能设置思考强度」）：用着池的会话写一档的 `bad_params`
+/// （`data.field` 是 `effort`），什么都不记；`null` 照收。
+#[tokio::test]
+async fn a_session_on_a_pool_cannot_set_an_effort() {
+    let home = Home::new();
+    home.write("config.toml", CONFIG);
+    let mut client = Client::connect(core(&home, true));
+    client.hello().await;
+    let session = client.create("c1", "/tmp").await;
+    let (_, reply) = configuring(
+        &mut client,
+        "c2",
+        json!({"session": session, "model": "@p"}),
+    )
+    .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let (_, reply) = configuring(
+        &mut client,
+        "c3",
+        json!({"session": session, "effort": "high"}),
+    )
+    .await;
+    assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
+    assert_eq!(reply["error"]["data"]["field"], json!("effort"), "{reply}");
+    let (_, reply) = configuring(
+        &mut client,
+        "c4",
+        json!({"session": session, "effort": null}),
+    )
+    .await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    assert!(
+        efforts(&home, &session).is_empty(),
+        "池上设的不记；本来就跟着配置的写 null 也不记"
+    );
 }
 
 /// 四样都没写、写了空字的模型：`bad_params`，不找会话（写 `null` 的施工 8-10 再补起是回到跟着配置，`models_pools.rs` 守着）。

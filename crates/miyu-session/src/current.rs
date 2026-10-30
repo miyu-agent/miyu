@@ -32,6 +32,9 @@ pub struct Current {
     pub persona: Option<String>,
     /// 会话现在要用的预设（施工 P-13）：同上，以前的日志没记的没有。
     pub preset: Option<String>,
+    /// 会话记着的模型引用（模型或 `@池`，SM-1 补）：内核照日志算的，刚换了、还没开回合的也是换成的；没记的（跟着
+    /// `models.chat`）没有。`session.configure` 的 `effort` 照它查。
+    pub model: Option<String>,
     /// 这一刻有没有能压的（施工 W-12）：`session.compact` 会不会回 `nothing_to_compact`，判法同内核。
     pub compactable: bool,
 }

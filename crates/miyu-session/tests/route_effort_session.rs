@@ -1,6 +1,6 @@
 //! 会话记的思考强度（施工 SM-1，设计 51，`docs/blueprint/models.md`「怎么走」第十一条）：一个会话设了只管它自己，另一个照
 //! 配置；设了的改配置也照旧，没设的跟着配置；`null` 回到跟着配置；换到没有那一档的模型退回配置、`from` 照实写，换回来又
-//! 用上；重启以后照日志读回来。
+//! 用上；重启以后照日志读回来；换到池上不用会话那一档，成员照配置（SM-1 补）。
 //!
 //! 一台假服务器，档案是空的、没有目录：档位全照手写的 `reasoning`。两个会话说的话不一样，照话认请求是谁发的。
 
@@ -169,4 +169,36 @@ async fn a_model_without_the_level_falls_back_and_the_level_survives_a_restart()
     );
     turn(&loaded, "a-7", "echo").await;
     assert_eq!(last_sent(&first, "echo"), "none");
+}
+
+/// 池不用会话记的那一档（SM-1 补，项目主人 10-30：「池子不应该能设置思考强度」）：在 `a/m` 上设了 `high`，换到只有 `a/m` 的池
+/// 照配置的 `low` 发、`from` 是配置；换回 `a/m` 又用上 `high`。
+#[tokio::test]
+async fn a_pool_ignores_the_session_s_level() {
+    let first = Server::start(hellos(24)).await;
+    let mut home = Home::new();
+    let system = format!("{}\n[pools.p]\nmodels = [\"a/m\"]\n", config(&first, "low"));
+    home.configs = configs(&system, &[]);
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let a = create(&home, &routes, "a/m").await;
+    send(&a, "a-1", effort(Some("high"))).await;
+    turn(&a, "a-2", "alpha").await;
+    assert_eq!(last_sent(&first, "alpha"), "high");
+    let switch = |model: &str| Command::Configure {
+        model: model.to_string(),
+    };
+    send(&a, "a-3", switch("@p")).await;
+    turn(&a, "a-4", "bravo").await;
+    assert_eq!(last_sent(&first, "bravo"), "low", "池照成员的配置");
+    assert_eq!(a.next().effort, used("low", EffortSource::System));
+    stop(&a).await;
+    let a = home.load(a.id(), &routes).await;
+    assert_eq!(
+        a.next().effort,
+        used("low", EffortSource::System),
+        "载入时造的路由在池上也不用会话那一档"
+    );
+    send(&a, "a-5", switch("a/m")).await;
+    turn(&a, "a-6", "charlie").await;
+    assert_eq!(last_sent(&first, "charlie"), "high", "换回模型又用上");
 }

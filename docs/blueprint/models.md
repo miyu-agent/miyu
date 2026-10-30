@@ -25,7 +25,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-models/src/knowledge.rs` | 查资料时手头的几份：档案、认原厂的表、目录、用出来的、列表（`Knowledge`） | 8-7 |
 | `crates/miyu-models/src/reference.rs` | 两种写法：读、哪里能写哪几种（8-6）；造会话记下的引用（`record`）、一个引用这一轮指到一个模型还是一个池（`resolve`）、用途池里点名的模型（`named`）（8-8；挡位 8-8 补去掉了） | 8-6、8-8 |
 | `crates/miyu-models/src/settings.rs` | 模型这一块的配置项：`UseSettings`（`models.chat`、`vision`、`embedding`）、`PoolSettings`（`pools.<id>` 的成员、分法，8-8；派子代理能不能选、给模型看的说明，8-8 补）、`ProviderSettings`（`providers.<id>` 的驱动、地址、key、`catalog`，8-8 加 `cache`）、`ModelSettings`（`providers.<id>.models.<model>` 的窗口，8-18 加 `effort`），核心登记进清单（`config.md`） | 8-6 起 |
-| `crates/miyu-models/src/effort.rs` | 思考强度（8-18；会话那一层 8-18（补）去掉、SM-1 加回来）：档位名怎么规整（`none`、`disabled` 读成 `off`，有开关的多 `off`），会话的一档这个模型有没有（`held`），给头看的那一档从哪来（`shown`：会话的、再照 `in_use` 配置的哪一层），一个引用有哪几档（`levels_of`，池是成员的合起来，`session.configure` 照它查），空闲超时放大几倍（`idle_factor`），配置里写的不在档位里的（`unknown`，报 `unknown_effort`） | 8-18、SM-1 |
+| `crates/miyu-models/src/effort.rs` | 思考强度（8-18；会话那一层 8-18（补）去掉、SM-1 加回来）：档位名怎么规整（`none`、`disabled` 读成 `off`，有开关的多 `off`），会话的一档这个模型有没有（`held`），给头看的那一档从哪来（`shown`：会话的、再照 `in_use` 配置的哪一层），一个引用有哪几档（`levels_of`，池一档都没有（SM-1 补），`session.configure` 照它查），空闲超时放大几倍（`idle_factor`），配置里写的不在档位里的（`unknown`，报 `unknown_effort`） | 8-18、SM-1 |
 | `crates/miyu-models/src/temperature.rs` | 温度（8-22）：驱动的上限、这个模型用不用得了、配置里写的用不了的（`unusable_temperature`） | 8-22 |
 | `crates/miyu-models/src/profile.rs` | 档案的样子：驱动、地址、`compat`（8-18 多 `toggle`：开关思考的字段）、能收哪些输入、一张图怎么算，核心读成 JSON 交进来 | 8-6 起 |
 | `crates/miyu-models/src/provider.rs` | 一家供应商这一轮的样子（手写的、档案的合起来），一个引用这一轮发给谁，窗口手写的压过模型资料，没有模型时的原话 | 8-6 起 |
@@ -320,7 +320,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 
 1. 一格都没写、不是字符串也不是 `null`、是空字（`""`）：`bad_params`，不找会话。先找会话，找不到的回的是找不到。再解析 `model`，解析不出：`unknown_model`，什么都不记，原话记一行 `DEBUG unknown model`。
 2. 照这时不算项目配置的最终值解析（`record`，和 `session.create` 的 `model` 一样）：模型要那一家配了，池要至少一个认得出的成员，解析出的交给内核（`Configure`）。
-3. `effort` 照会话这时的模型的档位查（`models/effort.rs`）：同一条换了模型的是换成的那个（`null` 的是这一刻的 `models.chat`），没换的是会话接下来请求的引用（`subscribe` 的 `model.ref`）。模型照它自己的档位（「怎么走」第十一条第 1 条），池是认得出的成员各自的合起来。名字先规整（`none`、`disabled` 读成 `off`），不在里面的：`bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）。`null` 不查。查过的交给内核（`SetEffort`），命令编号是这条请求的接 `/effort`。
+3. `effort` 照会话这时的模型的档位查（`models/effort.rs`）：同一条换了模型的是换成的那个（`null` 的是这一刻的 `models.chat`），没换的是会话记着的引用（`Handle::current` 的 `model`，SM-1 补：原来照 `subscribe` 的 `model.ref`，刚换了模型、还没开回合的那还是上一轮的；没记的照这一刻的 `models.chat`）。模型照它自己的档位（「怎么走」第十一条第 1 条），池一档都没有，写了就 `bad_params`（SM-1 补，项目主人 10-30：「池子不应该能设置思考强度」），用着池的会话以前记的那一档也不用，池里每个成员照它自己的配置，换回模型又用上。名字先规整（`none`、`disabled` 读成 `off`），不在里面的：`bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）。`null` 不查。查过的交给内核（`SetEffort`），命令编号是这条请求的接 `/effort`。
 4. 和会话现在记着的一样：什么都不记，照样回 `{}`。不一样的，内核记一条 `session.policy_changed`，落了盘才回应；订阅着的先收到推送。模型、思考强度、人格和预设各记各的一条，照这个先后。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法。
 
@@ -1192,7 +1192,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-http/tests/get.rs`（8-11 那一条） | `get_full` 出错时交回状态码、头、响应体，原话和 `get` 的一样 | 8-11 |
 | `xtask/src/ledger.rs` | 新的几句和登记簿对得上（8-8、8-8 补：`subagent.json` 换了指纹；8-15：`session_usage.json` 和七句） | 8-8、8-11、8-14、8-15 |
 | `crates/miyu-core/tests/settings.rs`、`crates/miyu/tests/config.rs` | `usage.currency` 登记进清单、三种语言有名字和说明、生成的样本跟着变（8-15） | 8-15 |
-| `crates/miyu-models/src/effort/tests.rs` | 思考强度：`none`、`disabled` 读成 `off`、重复的去掉；目录的开关只在档案写了开关时多 `off`、只有开关的是 `off`、`on`；给头看的那一档从配置的哪一层来（`in_use`：系统、个人、都没有）；会话的一档这个模型有的才压着配置、`from` 照实写（`held`、`shown`）；引用有哪几档、池是成员的合起来（`levels_of`）；空闲超时放大几倍；配置里写的不在档位里的报在值那一行、那一家用不了的和不算数的那一层不查 | 8-18；8-18（补）去掉会话的 `pick` 测试；SM-1 |
+| `crates/miyu-models/src/effort/tests.rs` | 思考强度：`none`、`disabled` 读成 `off`、重复的去掉；目录的开关只在档案写了开关时多 `off`、只有开关的是 `off`、`on`；给头看的那一档从配置的哪一层来（`in_use`：系统、个人、都没有）；会话的一档这个模型有的才压着配置、`from` 照实写（`held`、`shown`）；引用有哪几档、池一档都没有（`levels_of`）；空闲超时放大几倍；配置里写的不在档位里的报在值那一行、那一家用不了的和不算数的那一层不查 | 8-18；8-18（补）去掉会话的 `pick` 测试；SM-1 |
 | `crates/miyu-models/src/temperature/tests.rs`、`facts/tests.rs`、`crates/miyu-drivers/tests/temperature.rs`、`crates/miyu-session/tests/route_temperature.rs`、`once.rs`、`crates/miyu-endpoint/tests/models_temperature.rs` | 温度：上限、目录说不收的、超过上限的照没写；三种驱动写在哪、没有的一个字节不变、Anthropic 开着思考不带；主请求、辅助请求、一次性入口、池里的成员各带各的，改了配置下一轮生效；`model.list` 的两格、`unusable_temperature`、`config.set` 的范围（「怎么走」第十四条） | 8-22 |
 | `crates/miyu-models/src/facts/tests.rs`、`catalog/tests.rs`、`profile/tests.rs`（8-18 那几条） | 资料的 `effort` 只认档位里的、来源写文件和行；配置写了的照写的、没写的是 `default`（8-18（补））；`reasoning` 照档案算开关、手写的盖过目录照样规整；目录的开关、`none`、只有预算的读法；档案的 `toggle` | 8-18 |
 | `crates/miyu-drivers/tests/openai_chat_effort.rs` | 没写思考强度的一个字节不加；档位发 `reasoning_effort`；`off`、`on` 照档案的开关，没有开关的 `off` 发 `none`、`on` 不加；都接在最后 | 8-18 |
@@ -1200,7 +1200,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-session/tests/route_effort.rs` | 一次请求照配置的默认、都没有；换模型以后用新模型自己的；轮换的池每个成员各用各的；改了配置下一轮生效；空闲超时照那一档放大（`effort_log.rs` 的 `WARN` 测试随会话那一层 8-18（补）删掉了） | 8-18；8-18（补）去掉会话那一层 |
 | `crates/miyu-session/tests/route_effort_session.rs`、`route_pools.rs`（SM-1 那一条） | 两个会话：A 设了照 A 的、B 照配置；改配置 A 照旧、B 跟着；`null` 回到跟着配置；换到没有那一档的模型退回配置、`from` 照实写，换回来又用上；重启以后照日志读回来。没写模型的会话照造它那一刻的 `models.chat`，改了 `models.chat` 照旧；记成没有的照旧跟着这时的 | SM-1 |
 | `crates/miyu-endpoint/tests/models_name.rs` | `model.list` 的 `name`：写了的照写的（带文件、行、层）、只有空白的当没写、照目录的名字、照编号、用不了的那一家也有、`key`；`config.set` 改了当场照新的答，超过 64 个字符拒 | 8-21 |
-| `crates/miyu-endpoint/tests/models_effort.rs` | `session.configure` 的 `effort` 记一条、一样的不记、`none` 读成 `off`、`null` 记一条、和模型一起换的照换成的查、池照成员合起来查；不在档位里的、空字、不是字的（8-18 那种对象）`bad_params`、`data.field` 是 `effort`、模型也不换；重启以后订阅说 `from: session`，另一个会话照配置（SM-1，替掉了 8-18（补）的「写了 `effort` 回 `bad_params`」）；一格都没写的 `bad_params`；`subscribe` 的 `effort.from`；`model.list` 的 `facts.effort.key`（普通的、模型名带点的）、`facts.effort` 来源是配置的带 `layer`（8-7（补））；配置里写错的 `unknown_effort`、算进 `config_errors`、`config.check` 照新的字查 | 8-18；8-18（补）；8-7（补） |
+| `crates/miyu-endpoint/tests/models_effort.rs` | `session.configure` 的 `effort` 记一条、一样的不记、`none` 读成 `off`、`null` 记一条、和模型一起换的照换成的查、池上设的拒（SM-1 补）；不在档位里的、空字、不是字的（8-18 那种对象）`bad_params`、`data.field` 是 `effort`、模型也不换；重启以后订阅说 `from: session`，另一个会话照配置（SM-1，替掉了 8-18（补）的「写了 `effort` 回 `bad_params`」）；一格都没写的 `bad_params`；`subscribe` 的 `effort.from`；`model.list` 的 `facts.effort.key`（普通的、模型名带点的）、`facts.effort` 来源是配置的带 `layer`（8-7（补））；配置里写错的 `unknown_effort`、算进 `config_errors`、`config.check` 照新的字查 | 8-18；8-18（补）；8-7（补） |
 | `crates/miyu-session/tests/route*.rs`、`http.rs`、`*_log.rs`（8-6 到 8-18 的） | 拆出底子以后一个不改照旧全过：会话入口的行为、请求的字节一个不变 | 8-20 |
 | `crates/miyu-session/tests/once.rs`、`once_pools.rs`、`once_shared.rs` | 一次性入口：模型、`@池`、不写照 `models.chat`；system 和几条消息照先后发、不带工具、`max_tokens` 照写的发；带图照字节发、模型不收图的不发；四种出错（`unknown_model`、`no_model`、`cooling`、`model_failed`）；配置的默认强度；key 照用途钉、取不到的跳过；429 当场换下一个 key、说到一半断了也换、只有一个候选的不再来、最多换 5 次、成了清掉冷却；钉住的池照指针取成员、出错换下一个成员，轮换的池指针一次走一个、跳过冷却的（`once_pools.rs`）；冷却两个入口共用：会话撞了 429 一次性的立刻避开，反过来也一样（`once_shared.rs`） | 8-20 |
 | `crates/miyu-kernel/src/session/tests/scenario/vision.rs`、`session/tests/random.rs` 的替它看图（8-17） | 内核这一头：什么时候转述、记事件、落了盘才请求、只转述一次、没成的这一轮不再试、带人这一轮的话、打断、切级别、老快照（`kernel/session.md`「守着它的」） | 8-17 |
@@ -1497,7 +1497,7 @@ SM-1 施工时照推荐定的技术细节（2026-10-30 施工时定，写进了�
 | 事件照 8-18 那一格：`session.policy_changed` 的 `effort` 还是对象、`level` 总是写、`null` 是回到跟着配置，只是不再写 `model`；带 `model` 的（8-18 的旧日志）读得进、写回去一字不差，但不算会话的一档 | 照旧的形状，旧日志不改一个字节；8-18（补）以后那几格一直没人理，现在当成会话的会让一个月前改过的会话突然换强度 | 改成 `"effort": "high"` 的字：旧日志的对象读不进；带 `model` 的也认：旧会话突然变了 |
 | 内核另开一个命令 `SetEffort { level }`，不往 `Configure` 里加格；协议那一头一条请求里模型、思考强度各发各的命令，思考强度的编号接 `/effort`（照人格、预设的 `/recast`） | `Configure` 的 `model` 是必写的字，加格要改十几处调用；和换人格、预设一个办法 | 往 `Configure` 加 `effort`：模型变成可以不写，十几处测试跟着改 |
 | 会话的一档回合开始由 actor 照 `Session::effort()` 取、交给路由，不加进 `RunTurnStartHooks` | 不碰 actor 的主文件（性能那条线在改它）；actor 本来就拿着内核的会话，取的是同一刻的值 | 加进动作：actor.rs 跟着改 |
-| `session.configure` 查档位照「会话接下来请求的引用」（`Handle::next().reference`），池是成员的档位合起来 | 头底栏显示的就是它；池里的成员各有各的档位，合起来哪一档都设得上，真发的成员没有的照配置（第十一条第 3 条） | 照钉着的那一个成员查：换了成员就设不上；池一律拒：池里的会话设不了 |
+| `session.configure` 查档位照「会话接下来请求的引用」（`Handle::next().reference`），池是成员的档位合起来（SM-1 补改成照会话记着的引用查、池一律拒，项目主人 10-30 定） | 头底栏显示的就是它；池里的成员各有各的档位，合起来哪一档都设得上，真发的成员没有的照配置（第十一条第 3 条） | 照钉着的那一个成员查：换了成员就设不上；池一律拒：池里的会话设不了 |
 | 档位不在里面的回 `bad_params`、`data.field` 是 `effort`，不恢复 8-18 的 `unknown_effort` 原因码 | 照施工单的写法；`data.field` 说清了是哪一格 | 加回 `unknown_effort`：多一个原因码、给人看的字 |
 | 限额里那一块给模型看的事实（施工 E-M 的 `Identity.effort`）照会话的一档改（`Routes::stamp`） | 告诉模型的和真发的一致 | 不改：会话设了 `max`，模型看到的还是配置的 `low` |
 | 会话刚换的一档下一个回合开始才进 `subscribe`、`model.changed`，不当场推 | 和换模型一样（`model.changed` 只在回合开始、出错换成员时推）；不碰 actor 的追加路径 | 落盘时当场推：要改 actor.rs |

@@ -387,11 +387,16 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
     };
     let effort = match params.effort() {
         Some(level) => {
-            // 照会话这时的模型查：一起换了的是换成的，回到跟着配置的是这一刻的 `models.chat`（施工 SM-1）。
+            // 照会话这时的模型查：一起换了的是换成的，回到跟着配置的是这一刻的 `models.chat`（施工 SM-1）；没换的是内核记着的
+            // （SM-1 补：刚换到池、还没开回合的，路由上还是上一轮的模型，照它查会放过池），没记的跟着 `models.chat`。
+            let chat = || miyu_models::provider::chat(&core.config().resolved().values());
             let reference = match model.as_deref() {
-                Some("") => miyu_models::provider::chat(&core.config().resolved().values()),
+                Some("") => chat(),
                 Some(model) => Some(model.to_string()),
-                None => found.handle.next().reference,
+                None => match found.handle.current().await {
+                    Ok(current) => current.model.or_else(chat),
+                    Err(_) => found.handle.next().reference,
+                },
             };
             let level = models::effort::checked(core, reference.as_deref(), level).await?;
             Some(Command::SetEffort { level })
