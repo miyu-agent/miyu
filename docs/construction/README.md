@@ -1188,6 +1188,7 @@ flowchart LR
 | SW-1 | Windows 沙盒跳过被独占的文件 | 桌面端 10-30 在 Win11 虚拟机上：会话里每条命令都 125，`CreateProcessSecurityEnvironment failed (0x80070020)`。MXC 把禁止路径交给系统，系统要一条条打开；出厂私密清单里的 `NTUSER.DAT`、`UsrClass.dat` 用户登录着时被系统独占，打不开。助手交禁止路径前去掉正被别的进程独占打开的文件（谁都读不到，跳过不少挡什么）；私密清单不动，读文件的工具照旧拒它们。桌面端在虚拟机上用五份规格对照证实 |
 | WP-1 | 交给头的路径不带 `\\?\` | 桌面端 10-30 在 Windows 上点「设工作区」，浏览目录的标题是 `\\?\C:\Users\…\.miyu\workspace`、内容「Directory not found」：握手回应的 `host.workspace`、`host.dirs` 换成真实位置后原样交出，Windows 上带扩展长度前缀，头拿它列目录找不到。交出去之前去掉（UNC 的换回 `\\`），核心内部照旧带着用；去前缀的函数原来基础系统、端点各写一份，挪进 `miyu_fs::plain` 共用 |
 | AE-1 | 步数上限 | 发布前审计查出步数上限从来没设：模型一直调工具，没人在场的会话就一直请求下去。项目主人 10-30 定的数（照 Claude Code 主对话不设、子代理设的分法）：有人看着的会话（终端、网页）人开的回合不设上限；通用子代理 800、fork 子代理 500，出厂常量；没人看着的（定时任务交进来开的回合、长期目标续轮开的回合、通讯平台、定时新开的会话、`miyu ask` 一次性的）出厂 500，预设 `[limits] unattended_steps` 可改。快照多一格 `auto_step_limit`，内核只让人开的回合照 `step_limit`，别的（定时任务、长期目标续轮、重启接着干、回报叫醒……）一律取两格里小的（10-30 主会话定：只有人开的不限）；以前造的快照照 `attended` 读成出厂的，不读成不限 |
+| SW-2 | Windows 沙盒里 PowerShell 不再退到受限模式 | 桌面端 10-30 在 Win11 虚拟机上：SW-1 以后命令起得来了，PowerShell 的命令还是一条条失败，开头那句设编码报「此语言模式仅支持核心类型上的方法调用」。出厂私密清单禁了整个 `AppData\\Local\\Packages`，MXC 容器自己的临时目录就在它下面，PowerShell 写不进临时目录做自查，退到 ConstrainedLanguage（对照证实；把 TEMP 指到别处不管用，MXC 在容器里强行改回）。项目主人定从 Windows 清单里去掉它；另给 PowerShell 加 `-OutputFormat Text`，出错写纯文本、不写 CLIXML |
 
 **命令行给程序调**（AP 线，设计 50，2026-10-30 项目主人定）
 

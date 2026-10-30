@@ -142,7 +142,7 @@
 | 平台 | 程序 | 参数 | 说明里的名字 |
 |---|---|---|---|
 | macOS | `/bin/zsh` | `-f +o nomatch -c <下面那一句>` | `zsh` |
-| Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -EncodedCommand <编好的命令>` | `PowerShell 7` |
+| Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand <编好的命令>`（`-OutputFormat Text` 施工 SW-2：出错照纯文本写，不写 CLIXML） | `PowerShell 7` |
 | Windows，没有 | `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`，没设 `SystemRoot` 的是 `powershell.exe` | 同上 | `Windows PowerShell 5.1` |
 | 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <下面那一句>` | `bash` |
 

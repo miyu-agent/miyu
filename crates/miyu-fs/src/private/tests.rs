@@ -126,3 +126,15 @@ fn shipped_ones_follow_their_environment_variables() {
         "去掉了出厂项，挪去的也不藏"
     );
 }
+
+/// Windows 上不藏整个商店应用的目录（施工 SW-2）：MXC 容器自己的临时目录在它下面，藏了 PowerShell 就退到受限的语言模式。
+#[cfg(windows)]
+#[test]
+fn the_store_apps_folder_is_not_hidden_on_windows() {
+    assert!(
+        !SHIPPED_PRIVATE
+            .iter()
+            .any(|dir| dir.ends_with("AppData/Local/Packages")),
+        "{SHIPPED_PRIVATE:?}"
+    );
+}

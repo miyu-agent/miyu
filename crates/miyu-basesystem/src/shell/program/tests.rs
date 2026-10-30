@@ -137,15 +137,17 @@ fn powershell_gets_the_command_encoded_after_its_prelude() {
     .expect("造得出");
     let args = args(&command);
     assert_eq!(
-        args[..4],
+        args[..6],
         [
             "-NoLogo",
             "-NoProfile",
             "-NonInteractive",
+            "-OutputFormat",
+            "Text",
             "-EncodedCommand"
         ]
     );
-    assert_eq!(args[4], encoded(&format!("{PRELUDE}dir")));
+    assert_eq!(args[6], encoded(&format!("{PRELUDE}dir")));
     // 「dir」的 UTF-16LE 是 64 00 69 00 72 00。
     assert_eq!(encoded("dir"), "ZABpAHIA");
     // 中文也照 UTF-16LE：「中」是 2d 4e。

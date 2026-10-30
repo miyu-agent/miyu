@@ -143,10 +143,10 @@ pub const SHIPPED_PRIVATE: &[&str] = &[
     "~/AppData/Local/Microsoft/IdentityCache",
     "~/AppData/Local/Microsoft/TokenBroker",
     "~/AppData/Local/Microsoft/OneAuth",
-    // 注册表、商店应用的私有数据。
+    // 注册表。商店应用的私有数据 `~/AppData/Local/Packages` 不列（施工 SW-2，2026-10-30 项目主人定）：MXC 的容器自己的目录
+    // （临时目录在内）就在它下面，名字每次不一样，禁了整个它，PowerShell 写不进临时目录就退到受限的语言模式，命令一条条失败。
     "~/NTUSER.DAT",
     "~/AppData/Local/Microsoft/Windows/UsrClass.dat",
-    "~/AppData/Local/Packages",
 ];
 
 /// 别的 Unix：三个平台都有的那几个，加凭据。

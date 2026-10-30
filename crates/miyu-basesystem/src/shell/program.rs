@@ -122,10 +122,14 @@ impl Program {
             Kind::Zsh => &["-f", "+o", "nomatch", "-c", RUN],
             Kind::PowerShell7 | Kind::WindowsPowerShell => {
                 encoded_script = encoded(&format!("{PRELUDE}{script}"));
+                // 出错照纯文本写（施工 SW-2）：不写的话，标准错误不是终端时 PowerShell 写成 CLIXML，开头那句没跑成时
+                // 还是系统代码页，交回来就是一团看不懂的 XML。
                 &[
                     "-NoLogo",
                     "-NoProfile",
                     "-NonInteractive",
+                    "-OutputFormat",
+                    "Text",
                     "-EncodedCommand",
                     &encoded_script,
                 ]
