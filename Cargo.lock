@@ -1880,6 +1880,7 @@ dependencies = [
  "miyu-kernel",
  "miyu-source",
  "miyu-store",
+ "rusqlite",
  "rustix",
  "serde_json",
  "tokio",

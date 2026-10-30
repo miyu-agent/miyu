@@ -8,8 +8,9 @@ mod support;
 use miyu_kernel::origin::{By, Person};
 use miyu_log::{LevelFilter, Memory as Logs};
 use miyu_session::testkit::{Play, Script};
-use miyu_session::{Filter, Keeper, Listener};
+use miyu_session::{Filter, Keeper, Listener, Stamp};
 use miyu_store::recall::{LogSalt, Room};
+use miyu_tool::Remember;
 
 use support::*;
 
@@ -31,7 +32,7 @@ async fn memory_logs_name_the_room_by_kind_and_short_id_only() {
         .expect("会话在跑");
     until_turn_ends(&mut pushes).await;
     home.memory.settle();
-    // 记忆日志那一边第一次开也记一行（施工 R-3 上）：人列一次就开。
+    // 记忆日志那一边建库也记一行（施工 R-3 上）：人列一次就开，一条记忆都没有的不建库（施工 V-28），记下第一条时建。
     let room = Room::persona("engineer");
     let keeper = Keeper::new(
         &home.memory,
@@ -39,6 +40,19 @@ async fn memory_logs_name_the_room_by_kind_and_short_id_only() {
         Listener::Owner(By::Person(Person::default())),
     );
     keeper.list(&Filter::default()).expect("列得出");
+    let stamp = Stamp {
+        at: now(),
+        by: By::Person(Person::default()),
+        cause: None,
+    };
+    let remember = Remember {
+        class: "user".to_string(),
+        text: "用户养了一只猫".to_string(),
+        replaces: None,
+        keywords: None,
+        who: None,
+    };
+    keeper.save(stamp, remember, Vec::new()).expect("记得下");
 
     let lines = logs.lines();
     let id = LogSalt::load(&home.root)

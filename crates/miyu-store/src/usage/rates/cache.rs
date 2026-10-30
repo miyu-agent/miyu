@@ -2,13 +2,13 @@
 //! 取不到的币种（源说不认识）也记一行，汇率是空的，同暂定的一样过期重取，不一直问。
 
 use std::path::Path;
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::book::{Fetched, Source};
 use super::{Day, day_of};
-use crate::sqlite;
+use crate::sqlite::{self, idle};
 
 /// 库的文件名，在数据根的 `state/` 下。
 pub const FILE: &str = "rates.db";
@@ -52,14 +52,17 @@ impl Cached {
 /// 汇率的缓存：一个核心一份，一个连接一直开着。用不了的（删了重建也打不开）是空的：读不到、写不进，每次都去取。
 #[derive(Debug)]
 pub(crate) struct Cache {
-    db: Mutex<Option<Connection>>,
+    /// 登记给闲时合回（施工 V-28）。
+    db: Arc<Mutex<Option<Connection>>>,
 }
 
 impl Cache {
     /// 打开 `path`，没有就建；坏了、版本不对的删掉重建。
     pub(crate) fn open(path: &Path) -> Cache {
         let (db, _) = sqlite::open(path, SCHEMA, VERSION);
-        Cache { db: Mutex::new(db) }
+        Cache {
+            db: idle::keep("rates", Mutex::new(db)),
+        }
     }
 
     /// （`day`，`currency`）那一行；没有的、读不了的没有。

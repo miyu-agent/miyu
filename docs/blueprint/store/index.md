@@ -53,7 +53,7 @@
 
 - 忙不忙不进索引：列会话时从会话表的内存里拿（`protocol.md` 的 `session.list` 第 5 条）。
 - 结构的版本记在 SQLite 的 `user_version` 里，现在是 14（施工 9-5 多了 `preview`、O-3 多了 `venue`、P-1 下多了 `persona`、P-2 上多了 `preset`、3-8 八补多了 `named`、H-2 多了 `project`、9-5 补多了 `tokens`、9-5 再补多了 `context`、`context_model`、D-1 下多了 `dream`、8-33 四补多了 `origin`、A-F 补多了 `forked`、DR-1 多了 `dream_result`、SU-6 上去掉 `owner`；老的照版本不对删掉重建）。结构一变就加一；对不上的删掉重建，不写迁移（`07-存储.md` 第六节）。
-- 日志模式是 WAL，`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏。丢了的那几次，照到的位置落在后面，列会话照日志补（下面第 3 条）。
+- 日志模式是 WAL，`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏。丢了的那几次，照到的位置落在后面，列会话照日志补（下面第 3 条）。闲下来以后写前日志合回主库、截短，`journal_size_limit` 是 0（施工 V-28，`store.md`「怎么走」第 14 条）。
 
 ### 怎么走
 

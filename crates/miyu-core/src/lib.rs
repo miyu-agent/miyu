@@ -33,6 +33,7 @@ pub mod settings;
 mod settle;
 mod start;
 mod trash;
+mod wal;
 
 pub use kit::Kit;
 pub use serve::{Stopped, idle_limit, serve, serve_then};
@@ -448,6 +449,8 @@ async fn run(
     let ledger = sampling
         .as_ref()
         .map(|sampling| Arc::clone(&sampling.ledger));
+    // 库闲下来以后把写前日志合回主库（施工 V-28，`wal.rs`）：照库最后一次写算，不照请求。
+    wal::spawn();
     // 还之前先放掉一阵里读好放着的字（施工 V-30，`miyu_store::human::Shelf`）。
     let _settling = settle::spawn(
         &core.activity(),

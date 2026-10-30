@@ -37,3 +37,4 @@ mod rename;
 mod settings;
 mod setup;
 mod undo;
+mod wal;
