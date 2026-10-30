@@ -248,24 +248,14 @@ pub fn missing(
         if !items.iter().any(|item| item.key == entry.item) {
             continue;
         }
-        let references: Vec<&Reference> = match &entry.value {
-            Value::Secret(reference) => vec![reference],
-            Value::List(values) => values
-                .iter()
-                .filter_map(|value| match value {
-                    Value::Secret(reference) => Some(reference),
-                    _ => None,
-                })
-                .collect(),
-            _ => continue,
-        };
-        for reference in references {
+        for (at, reference) in references(&entry.value) {
             let (code, name) = match reference {
                 Reference::Secret(name) if !secret(name) => (Code::UnknownSecret, name),
                 Reference::Env(name) if !env(name) => (Code::EnvNotSet, name),
                 _ => continue,
             };
-            let mut problem = Problem::item(code, layer, key, entry.at, &entry.raw);
+            let key = format!("{key}{at}");
+            let mut problem = Problem::item(code, layer, &key, entry.at, &entry.raw);
             problem.name = Some(name.clone());
             found.push(problem);
         }
@@ -273,18 +263,40 @@ pub fn missing(
     found
 }
 
+/// 一个值里的密钥引用和它在值里的位置：本身是引用的位置是空的；列表里的照它自己；一组字段的列表（施工 PC-2）照「第几项的哪个
+/// 字段」（`[2].key`）。
+fn references(value: &Value) -> Vec<(String, &Reference)> {
+    match value {
+        Value::Secret(reference) => vec![(String::new(), reference)],
+        Value::List(values) => values
+            .iter()
+            .enumerate()
+            .flat_map(|(n, value)| match value {
+                Value::Secret(reference) => vec![(String::new(), reference)],
+                Value::Record(fields) => fields
+                    .iter()
+                    .filter_map(|(name, field)| match field {
+                        Value::Secret(reference) => Some((format!("[{n}].{name}"), reference)),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
 /// 一份最终值里引用了哪些密钥（`secret.list` 的 `used_by`，施工 8-6 起列表里的也算）：密钥的名字和引用它的真的键。
 pub fn used(values: &crate::Values) -> Vec<(String, String)> {
     let mut found = Vec::new();
     for key in values.keys() {
-        let references: Vec<&Value> = match values.get(key) {
-            Some(Value::List(values)) => values.iter().collect(),
-            Some(value) => vec![value],
-            None => continue,
+        let Some(value) = values.get(key) else {
+            continue;
         };
-        for value in references {
-            if let Value::Secret(Reference::Secret(name)) = value {
-                found.push((name.clone(), key.to_string()));
+        for (at, reference) in references(value) {
+            if let Reference::Secret(name) = reference {
+                found.push((name.clone(), format!("{key}{at}")));
             }
         }
     }

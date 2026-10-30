@@ -249,3 +249,73 @@ pub(super) fn slider(
     });
     Ok(Some(Number::new(step)))
 }
+
+/// 一组字段（施工 PC-2，设计 53 第二节）：`fields` 一张表，每个字段一张 `[settings.<名字>.fields.<字段>]`，照普通项读（不写
+/// `layers`、`applies`，不能是列表）；字段名写法同项的名字，不能叫 `fields`。`title` 要是 `text`、`name`、`option` 字段之一。
+pub(super) fn record(
+    reader: &Reader<'_>,
+    at: &str,
+    fields: &dyn TableLike,
+    node: &Node,
+) -> Result<SettingKind, Problem> {
+    let table = reader.required(fields, node, at, "fields")?;
+    let listed = table.as_table_like().ok_or_else(|| {
+        reader.problem(
+            Some(table),
+            Code::NotATable,
+            &format!("{at}.fields"),
+            format!("{at}.fields must be a table"),
+        )
+    })?;
+    let mut read = Vec::new();
+    for (name, item) in listed.iter() {
+        let (field_at, field) = super::entry(reader, &format!("{at}.fields"), name, item)?;
+        if name == "fields" {
+            return Err(reader.problem(
+                Some(item),
+                Code::BadSettingName,
+                &field_at,
+                format!("{field_at}: a field cannot be called fields"),
+            ));
+        }
+        read.push(super::one(reader, name, &field_at, field, item, true)?);
+    }
+    if read.is_empty() {
+        return Err(reader.problem(
+            Some(table),
+            Code::MissingKey,
+            &format!("{at}.fields"),
+            format!("{at}.fields must list at least one field"),
+        ));
+    }
+    let title = match fields.get("title") {
+        None => None,
+        Some(item) => {
+            let named = item.as_str().filter(|title| {
+                read.iter().any(|field| {
+                    field.name == *title
+                        && matches!(
+                            field.kind,
+                            SettingKind::Text { .. } | SettingKind::Name | SettingKind::Option(_)
+                        )
+                })
+            });
+            Some(
+                named
+                    .ok_or_else(|| {
+                        reader.problem(
+                            Some(item),
+                            Code::BadTitle,
+                            &format!("{at}.title"),
+                            format!("{at}.title must name one of its text, name or option fields"),
+                        )
+                    })?
+                    .to_string(),
+            )
+        }
+    };
+    Ok(SettingKind::Record {
+        fields: read,
+        title,
+    })
+}

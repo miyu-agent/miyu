@@ -18,7 +18,7 @@ use std::ops::Range;
 
 use toml_edit::{Document, Item as Node, Key, Value as TomlValue};
 
-use crate::item::{Item, Kind, Layer};
+use crate::item::{Item, Kind, Layer, Record};
 use crate::key::{self, Fit};
 use crate::problem::{At, Code, Problem, nearest};
 use crate::value::{Number, Value};
@@ -178,17 +178,13 @@ impl Reader<'_> {
 
     /// 清单里的一项 `item`，真的键是 `full`，在 `key_at`。
     fn item(&mut self, item: &Item, full: &str, key_at: At, node: &Node) {
+        if let Kind::List(Kind::Record(record)) = item.kind {
+            self.records(item, record, full, key_at, node);
+            return;
+        }
         let at = self.value_at(node, key_at);
         let raw = self.slice(node.span()).unwrap_or_default().to_string();
-        let value = match item.kind {
-            Kind::Secret => crate::secret::read_node(node).map(Value::Secret),
-            // 网址：先试引用（`{ env = … }`，施工 8-6b；`{ secret = … }` 也读得出字节，交给 `Kind::check` 去挡），不是
-            // 引用形状的再照字读。
-            Kind::Url => crate::secret::read_node(node)
-                .map(Value::Secret)
-                .or_else(|| node.as_value().and_then(|value| read(item.kind, value))),
-            kind => node.as_value().and_then(|value| read(kind, value)),
-        };
+        let value = node_value(item.kind, node);
         let counts = item.layers.contains(&self.layer);
         if !counts {
             self.parsed
@@ -216,6 +212,109 @@ impl Reader<'_> {
                 .parsed
                 .problems
                 .push(Problem::item(code, self.layer, full, at, &raw)),
+        }
+    }
+
+    /// 一组字段的列表（施工 PC-2，设计 53 第二节）：写成表的数组 `[[<键>]]`，或者行内的 `[{ … }, …]`。每一项照字段查，问题报到
+    /// 「第几项的哪个字段」（`<键>[2].key`，从 0 数）；超过 [`crate::RECORDS_MOST`] 项的整条报 `out_of_range`。有一处不对的
+    /// 整条不收（G8 丢的是这一项）。
+    fn records(&mut self, item: &Item, record: &Record, full: &str, key_at: At, node: &Node) {
+        let raw = self.slice(node.span()).unwrap_or_default().to_string();
+        let counts = item.layers.contains(&self.layer);
+        let at = self.value_at(node, key_at);
+        if !counts {
+            self.parsed
+                .problems
+                .push(Problem::item(Code::WrongLayer, self.layer, full, at, &raw));
+        }
+        // 每一项和它在哪：表的数组照表头，行内的照那张行内表。
+        let tables: Option<Vec<(&dyn toml_edit::TableLike, At)>> = match node {
+            Node::ArrayOfTables(array) => Some(
+                array
+                    .iter()
+                    .map(|table| (table as &dyn toml_edit::TableLike, self.at(table.span())))
+                    .collect(),
+            ),
+            Node::Value(TomlValue::Array(array)) => array
+                .iter()
+                .map(|value| {
+                    value
+                        .as_inline_table()
+                        .map(|table| (table as &dyn toml_edit::TableLike, self.at(value.span())))
+                })
+                .collect(),
+            _ => None,
+        };
+        let mut problems = Vec::new();
+        let mut values = Vec::new();
+        match tables {
+            None => problems.push(Problem::item(Code::WrongType, self.layer, full, at, &raw)),
+            Some(tables) if tables.len() > crate::RECORDS_MOST => {
+                problems.push(Problem::item(Code::OutOfRange, self.layer, full, at, &raw));
+            }
+            Some(tables) => {
+                for (n, (table, table_at)) in tables.into_iter().enumerate() {
+                    let mut fields = BTreeMap::new();
+                    for (name, field_node) in table.iter() {
+                        let path = format!("{full}[{n}].{name}");
+                        let field_at = self.value_at(field_node, table_at);
+                        let field_raw = self
+                            .slice(field_node.span())
+                            .unwrap_or_default()
+                            .to_string();
+                        let Some(field) = record.fields.iter().find(|field| field.key == name)
+                        else {
+                            problems.push(Problem::item(
+                                Code::UnknownField,
+                                self.layer,
+                                &path,
+                                field_at,
+                                &field_raw,
+                            ));
+                            continue;
+                        };
+                        let checked = node_value(field.kind, field_node)
+                            .ok_or(Code::WrongType)
+                            .and_then(|value| {
+                                field.kind.check(&value)?;
+                                Ok(value)
+                            });
+                        match checked {
+                            Ok(value) => {
+                                fields.insert(name.to_string(), value);
+                            }
+                            Err(code) => problems
+                                .push(Problem::item(code, self.layer, &path, field_at, &field_raw)),
+                        }
+                    }
+                    for field in record.fields {
+                        if field.default.is_none() && table.get(field.key).is_none() {
+                            let path = format!("{full}[{n}].{}", field.key);
+                            problems.push(Problem::item(
+                                Code::MissingField,
+                                self.layer,
+                                &path,
+                                table_at,
+                                "",
+                            ));
+                        }
+                    }
+                    values.push(Value::Record(fields));
+                }
+            }
+        }
+        if problems.is_empty() {
+            let entry = Entry {
+                item: item.key,
+                value: Value::List(values.into()),
+                line: key_at.line,
+                at,
+                raw,
+                counts,
+            };
+            self.parsed.entries.insert(full.to_string(), entry);
+        } else if counts {
+            self.parsed.problems.extend(problems);
         }
     }
 
@@ -253,6 +352,18 @@ impl Reader<'_> {
     }
 }
 
+/// 照类型读一格（一个值，或者有表头的密钥）：密钥照引用读；网址先试引用（`{ env = … }`，施工 8-6b；`{ secret = … }` 也读得出
+/// 字节，交给 `Kind::check` 去挡），不是引用形状的再照字读；别的照 [`read`]。读不成的是空的。
+fn node_value(kind: Kind, node: &Node) -> Option<Value> {
+    match kind {
+        Kind::Secret => crate::secret::read_node(node).map(Value::Secret),
+        Kind::Url => crate::secret::read_node(node)
+            .map(Value::Secret)
+            .or_else(|| node.as_value().and_then(|value| read(kind, value))),
+        kind => node.as_value().and_then(|value| read(kind, value)),
+    }
+}
+
 /// 照类型读一个 TOML 的值：选项、网址、名字、引用、文字、时长要字，开关要布尔，整数要整数，小数要小数或整数，密钥要只有一格的行内表，列表要数组、
 /// 每一个照元素的类型。别的写法读不成。有表头的密钥不是值，不走这里（`secret::read_node`）。
 ///
@@ -286,6 +397,15 @@ pub fn read(kind: Kind, value: &TomlValue) -> Option<Value> {
         (Kind::Secret, TomlValue::InlineTable(table)) => {
             crate::secret::Reference::read(table).map(Value::Secret)
         }
+        // 一组字段（施工 PC-2）：行内表，认得的字段照字段的类型读；不认得的、读不成的整个读不成（逐个报在 `Reader::records`）。
+        (Kind::Record(record), TomlValue::InlineTable(table)) => table
+            .iter()
+            .map(|(name, value)| {
+                let field = record.fields.iter().find(|field| field.key == name)?;
+                Some((name.to_string(), read(field.kind, value)?))
+            })
+            .collect::<Option<BTreeMap<_, _>>>()
+            .map(Value::Record),
         (Kind::List(inner), TomlValue::Array(array)) => array
             .iter()
             .map(|value| read(*inner, value))

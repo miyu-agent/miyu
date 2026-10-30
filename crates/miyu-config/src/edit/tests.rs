@@ -7,6 +7,8 @@ use crate::edit::{Blocked, Change, apply, from_json, input, new_file};
 use crate::item::Kind;
 use crate::value::Value;
 
+mod records;
+
 fn zh() -> Value {
     Value::Text(Cow::Borrowed("zh"))
 }

@@ -1288,6 +1288,7 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | PC-1 | 选项带显示名、多行、小数、滑块 | 清单 `choices` 也收表的数组（`value`、`name`、`description`），`config.schema` 的选项照连接的语言带名字、说明；`text` 的 `lines = true` 是几行的框；`type = "number"` 是小数（范围只收整数，精度用 `step`）；`int`、`number` 的 `slider = true` 画滑块，`config.schema` 带 `step`。作者文档 `layers` 那一行改成只能写 `system`。施工单见 `PC-软件包配置项的词汇.md` |
+| PC-2 | 列表里每一项是一组字段 | 清单 `element = "record"`（`fields`、`title`），配置文件写成 `[[<前缀>.<名字>]]`，每一项照字段查、问题报到 `<键>[n].<字段>`（新码 `missing_field`），最多 100 项；`config.set` 整条换、写回照原来的块和注释，密钥字段只收引用；`config.schema` 带 `title`、`fields`；交给扩展、脚本的是对象数组、密钥是真值、没写的照默认值。施工单见 `PC-软件包配置项的词汇.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

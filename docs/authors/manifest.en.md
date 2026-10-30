@@ -125,7 +125,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 
 | Field | Notes |
 |---|---|
-| `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type) |
+| `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type; `record` makes each entry a set of fields, see below) |
 | `choices` | The options of an `option`: an array of texts (`["auto", "opaque"]`), or an array of tables, each with a required `value` and an optional `name` and `description` written like the setting's own (the settings screen shows `name` in the dropdown and `description` dimmed below it). Don't mix the two; the config stores `value` |
 | `lines` | `lines = true` on a `text`: a box of several lines (for prompt templates and the like), at most 2000 characters without `max` |
 | `min`, `max` | The range of an `int`, the whole integer range when left out; required for `number` and integers only (like `0` to `2`), use `step` for finer values |
@@ -133,9 +133,35 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 | `slider` | `slider = true` on an `int` or `number` draws a slider; needs `min` and `max`. Without `step` it moves by 1 for `int` and by a hundredth of the range for `number` |
 | `default` | Default value of that type; not allowed for `secret` |
 | `layers` | Only `system` (the system config), which is also the default |
+| `fields`, `title` | Only for a list with `element = "record"`: under `fields`, one table per field, `[settings.<name>.fields.<field>]`, written like a setting (`type`, `default`, `name`, `description`, `hidden`, and the PC-1 additions), without `layers` or `applies`, and not a `list`; a field can't be called `fields`, and a field without `default` must be written in every entry. `title` names the `text`, `name` or `option` field used as each entry's title. The whole list can't have a default; at most 100 entries |
 | `applies` | When it takes effect: `now`, `new_session`, `next_turn`, `program_start` (your program's next start, default) |
 | `name`, `description` | Shown to people |
 | `hidden` | `true`: not drawn on the settings screen, still writable and readable |
+
+A list whose entries are sets of fields (several accounts, each with a name, an endpoint and a key):
+
+```toml
+[settings.accounts]
+type = "list"
+element = "record"
+title = "name"
+name = { en = "Accounts" }
+
+[settings.accounts.fields.name]
+type = "text"
+name = { en = "Name" }
+
+[settings.accounts.fields.base_url]
+type = "url"
+default = "https://api.example.com/v1"
+name = { en = "Endpoint" }
+
+[settings.accounts.fields.key]
+type = "secret"
+name = { en = "Key" }
+```
+
+People fill it in as cards on the settings screen, and the config file holds an array of tables, `[[<prefix>.accounts]]`; a `secret` field is still only a reference, with the key itself in the secrets file. You get an array of objects: `[{"name": "Home", "base_url": "https://api.example.com/v1", "key": "sk-…"}]`, the key being the real value, unwritten fields taking their default, and fields without one left out.
 
 ## `[features.<id>]`
 

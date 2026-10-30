@@ -115,6 +115,28 @@ fn kind_problems(item: &Item) -> Vec<String> {
             vec![format!("{}：文字至少能写一个字", item.key)]
         }
         Kind::List(Kind::List(_)) => vec![format!("{}：列表的元素不能是列表", item.key)],
+        // 一组字段（施工 PC-2）：只当列表的元素；字段不能再是列表、一组字段，名字不重，标题是其中一个字段。
+        Kind::Record(_) => vec![format!("{}：一组字段只能当列表的元素", item.key)],
+        Kind::List(Kind::Record(record)) => {
+            let mut problems = Vec::new();
+            for field in record.fields {
+                if matches!(field.kind, Kind::List(_) | Kind::Record(_)) {
+                    problems.push(format!(
+                        "{}：字段 {} 不能是列表、一组字段",
+                        item.key, field.key
+                    ));
+                }
+                problems.extend(kind_problems(field));
+            }
+            let names: BTreeSet<&str> = record.fields.iter().map(|field| field.key).collect();
+            if names.len() != record.fields.len() {
+                problems.push(format!("{}：字段写重了", item.key));
+            }
+            if record.title.is_some_and(|title| !names.contains(title)) {
+                problems.push(format!("{}：标题不是哪个字段", item.key));
+            }
+            problems
+        }
         Kind::Bool
         | Kind::Secret
         | Kind::Int { .. }

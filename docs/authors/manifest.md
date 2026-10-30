@@ -125,7 +125,7 @@ place = "status"
 
 | 格 | 说明 |
 |---|---|
-| `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型） |
+| `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型，`record` 是每一项一组字段，见下面） |
 | `choices` | `option` 的几个选项：字的数组（`["auto", "opaque"]`），或者表的数组，每张 `value` 必写，`name`、`description` 可以不写，写法同项的 `name`、`description`（设置页照 `name` 画下拉，`description` 暗色写在下面）。两种不能混着写；存进配置的是 `value` |
 | `lines` | `text` 写 `lines = true`：几行的框（放提示词模板这类），不写 `max` 时最多 2000 个字 |
 | `min`、`max` | `int` 的范围，不写是整数的全部范围；`number` 必写，只收整数（`0` 到 `2` 这样），精度用 `step` |
@@ -133,9 +133,35 @@ place = "status"
 | `slider` | `int`、`number` 写 `slider = true` 画成滑块，要写 `min`、`max`；`step` 不写的 `int` 是 1、`number` 是范围的百分之一 |
 | `default` | 默认值，合这个类型；`secret` 不能写 |
 | `layers` | 只能写 `system`（系统配置），不写也是它 |
+| `fields`、`title` | `element = "record"` 的列表才有：`fields` 下面每个字段一张表 `[settings.<名字>.fields.<字段>]`，写法同一项（`type`、`default`、`name`、`description`、`hidden`，PC-1 那几种也能用），不写 `layers`、`applies`，不能再是 `list`；字段名不能叫 `fields`，没有 `default` 的字段每一项都要写。`title` 是拿哪个 `text`、`name`、`option` 字段当每一项的标题。整条列表不能写默认值，最多 100 项 |
 | `applies` | 什么时候生效：`now`、`new_session`、`next_turn`、`program_start`（你的程序下次启动，默认） |
 | `name`、`description` | 给人看的名字、说明 |
 | `hidden` | `true` 的设置页不画，照样能写、能查 |
+
+一项是一组字段的列表（例如几个账号，每个有备注、地址、Key）：
+
+```toml
+[settings.accounts]
+type = "list"
+element = "record"
+title = "name"
+name = { zh = "账号", en = "Accounts" }
+
+[settings.accounts.fields.name]
+type = "text"
+name = { zh = "备注" }
+
+[settings.accounts.fields.base_url]
+type = "url"
+default = "https://api.example.com/v1"
+name = { zh = "接口地址" }
+
+[settings.accounts.fields.key]
+type = "secret"
+name = { zh = "Key" }
+```
+
+人在设置页一张张卡片填，配置文件里写成表的数组 `[[<前缀>.accounts]]`；`secret` 字段照旧只写引用，Key 本身另存在密钥文件里。交给你的值是对象的数组：`[{"name": "家里", "base_url": "https://api.example.com/v1", "key": "sk-…"}]`，Key 是真值，没写的字段照默认值，没有默认值的不放。
 
 ## `[features.<编号>]`
 

@@ -38,7 +38,8 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 | `key`, `type` | Key and type: `bool`, `option`, `int`, `float`, `text`, `duration`, `path`, `url`, `name`, `reference`, `model`, `model_or`, `english`, `secret`, `list`, `table`. A segment a person names is written as a placeholder `<id>`, `<model>`, `<external>`, `<name>`, e.g. `providers.<id>.base_url` |
 | `options` | Options: `value` and a display `name`; `description` (shown dimmed below) when the package manifest wrote one (PC-1); `note` (shown dimmed after the name) and `available: false` (shown greyed out) when the core can tell |
 | `ticks` | How to tick a list with options: `unlisted` means ticked ones are those not in the value (`sandbox.private.remove`: ticked stays private, unticking adds it to the value; likewise `sandbox.readonly.remove`, where ticked stays protected); without it, ticked ones are those in the value |
-| `min`, `max`, `max_chars`, `element` | Range, length, list element type |
+| `min`, `max`, `max_chars`, `element` | Range, length, list element type (`record`: each entry is a set of fields, PC-2) |
+| `title`, `fields` | When the element is `record`: which field titles each entry (without it, entries are numbered); one entry per field, shaped like this table (`key` is the field name) |
 | `default` | Default value |
 | `layers` | Where it may be written: `system`, `project` |
 | `applies` | When it takes effect: `now`, `next_turn`, `new_session`, `restart`, `head_start` (the head's next start) |
@@ -86,7 +87,7 @@ Settings stack from the bottom up: built-in defaults → system config (`config.
 | `text` | string | Replace the whole file with this text |
 | `version` | string or `null` | Required with `text`: the version of the file you read; `null` means it didn't exist then |
 
-Give exactly one of `changes` and `text`. Each change: `key` (required); one of `value` (a JSON value), `input` (what a person typed, read by the setting's type), `unset: true` (reset to default); `expect` (optional): what this setting currently is in this layer, `{"value": …}` or `{}` (not set); refused if it doesn't match.
+Give exactly one of `changes` and `text`. Each change: `key` (required; a list whose element is `record` is replaced whole and can't be written as `<key>[0].<field>`); one of `value` (a JSON value; for a `record` list, an array of objects whose secret fields take only `{"secret": …}` or `{"env": …}`: plain text refuses the whole change, with the problem's `key` as `<key>[entry].<field>`), `input` (what a person typed, read by the setting's type), `unset: true` (reset to default); `expect` (optional): what this setting currently is in this layer, `{"value": …}` or `{}` (not set); refused if it doesn't match.
 
 **Response**: `{"keys", "version"}`. `keys` has each setting that changed: `value` (now in this layer; omitted when removed), `effective`, `origin` (final value and source counting the other layers), `applies`. If nothing changed, `keys` is empty and nothing is written.
 

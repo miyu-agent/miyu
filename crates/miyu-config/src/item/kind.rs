@@ -1,6 +1,7 @@
 //! 一项的类型（`docs/blueprint/config.md`「类型」）：能写什么、怎么查、环境变量里的怎么读。
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use crate::key::{self, ID, MODEL};
 use crate::problem::Code;
@@ -63,6 +64,9 @@ pub enum Kind {
         /// 最多几个字符。
         max: usize,
     },
+    /// 一组字段（施工 PC-2，设计 53 第二节）：只用作 [`Kind::List`] 的元素，列表里每一项是一张表，照 [`Record`] 的字段查。写成
+    /// 表的数组（`[[<前缀>.accounts]]`），协议上是对象的数组。
+    Record(&'static Record),
     /// 时长：正整数，后面可以跟 `s`、`m`、`h`，不写是秒（照 `miyu ask --timeout`，[`duration`]）；在 `min` 到 `max` 秒
     /// 之间，两头都算（施工 8-7：目录多久拉一次）。写成字。
     Duration {
@@ -71,6 +75,77 @@ pub enum Kind {
         /// 最长，秒。
         max: u64,
     },
+}
+
+/// 列表里一项的几个字段（施工 PC-2）：每个字段是一个配置项的样子，键是字段名，类型、默认值、界面提示照它；`layers`、`applies`
+/// 跟着整项，字段里的不看。字段不能再是列表、`Record`。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Record {
+    /// 字段，照清单写的先后。
+    pub fields: &'static [crate::Item],
+    /// 拿哪个字段当每一项的标题（`text`、`name`、`option` 之一）；没写的头照「第几项」写。
+    pub title: Option<&'static str>,
+}
+
+/// 一张 `Record` 列表最多几项（设计 53 第二节第 4 条）。
+pub const RECORDS_MOST: usize = 100;
+
+impl Record {
+    /// 一项 `fields` 的问题：没写、没有默认值的字段 `missing_field`，不认识的字段 `unknown_field`，写了的照字段的类型查。交回
+    /// 字段名和原因码，照字段的先后、不认识的接在后面。
+    pub fn problems(&self, fields: &BTreeMap<String, Value>) -> Vec<(String, Code)> {
+        let mut found = Vec::new();
+        for field in self.fields {
+            match fields.get(field.key) {
+                None if field.default.is_none() => {
+                    found.push((field.key.to_string(), Code::MissingField));
+                }
+                None => {}
+                Some(value) => {
+                    if let Err(code) = field.kind.check(value) {
+                        found.push((field.key.to_string(), code));
+                    }
+                }
+            }
+        }
+        for name in fields.keys() {
+            if !self.fields.iter().any(|field| field.key == name) {
+                found.push((name.clone(), Code::UnknownField));
+            }
+        }
+        found
+    }
+}
+
+/// 一个值的问题，带着它在值里的位置（施工 PC-2）：`Record` 的列表照「第几项的哪个字段」交（`[2].key`，第几项从 0 数），太多
+/// 项的整条交（位置是空的）；别的照 [`Kind::check`]。
+pub fn value_problems(kind: Kind, value: &Value) -> Vec<(String, Code)> {
+    match (kind, value) {
+        (Kind::List(Kind::Record(record)), Value::List(values)) => {
+            if values.len() > RECORDS_MOST {
+                return vec![(String::new(), Code::OutOfRange)];
+            }
+            let mut found = Vec::new();
+            for (n, value) in values.iter().enumerate() {
+                match value {
+                    Value::Record(fields) => found.extend(
+                        record
+                            .problems(fields)
+                            .into_iter()
+                            .map(|(field, code)| (format!("[{n}].{field}"), code)),
+                    ),
+                    _ => found.push((format!("[{n}]"), Code::WrongType)),
+                }
+            }
+            found
+        }
+        _ => kind
+            .check(value)
+            .err()
+            .map(|code| (String::new(), code))
+            .into_iter()
+            .collect(),
+    }
 }
 
 impl Kind {
@@ -106,8 +181,17 @@ impl Kind {
                 true => Ok(()),
                 false => ok_or_format(model(text)),
             },
+            (Kind::List(Kind::Record(_)), Value::List(values)) if values.len() > RECORDS_MOST => {
+                Err(Code::OutOfRange)
+            }
             (Kind::List(inner), Value::List(values)) if !matches!(inner, Kind::List(_)) => {
                 values.iter().try_for_each(|value| inner.check(value))
+            }
+            (Kind::Record(record), Value::Record(fields)) => {
+                match record.problems(fields).first() {
+                    Some((_, code)) => Err(*code),
+                    None => Ok(()),
+                }
             }
             (Kind::Float { min, max }, Value::Float(number)) => {
                 let number = number.get();
@@ -139,7 +223,7 @@ impl Kind {
     }
 
     /// 协议上的写法（`config.schema` 的 `type`）：`option`、`bool`、`secret`、`int`、`url`、`name`、`reference`、`model`、
-    /// `list`、`model_or`、`float`、`text`、`english`、`duration`。
+    /// `list`、`model_or`、`float`、`text`、`english`、`duration`、`record`（列表的元素，施工 PC-2）。
     pub fn as_str(&self) -> &'static str {
         match self {
             Kind::Option(_) => "option",
@@ -156,6 +240,7 @@ impl Kind {
             Kind::Text { .. } | Kind::Lines { .. } => "text",
             Kind::English { .. } => "english",
             Kind::Duration { .. } => "duration",
+            Kind::Record(_) => "record",
         }
     }
 

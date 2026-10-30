@@ -64,6 +64,9 @@ pub(super) const SETTING_TEXT: &[&str] = &["max", "lines"];
 /// `type = "list"` 多的几格。
 pub(super) const SETTING_LIST: &[&str] = &["element"];
 
+/// `element = "record"` 多的几格（施工 PC-2）。
+pub(super) const SETTING_RECORD: &[&str] = &["fields", "title"];
+
 /// `[features.<编号>]`。
 pub(super) const FEATURE: &[&str] = &["name", "summary", "tools"];
 
@@ -156,6 +159,7 @@ pub(super) const TABLES: [Table; 22] = [
             SETTING_OPTION,
             SETTING_TEXT,
             SETTING_LIST,
+            SETTING_RECORD,
         ],
     ),
     table("features", &[FEATURE]),

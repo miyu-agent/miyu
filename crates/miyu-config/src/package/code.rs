@@ -55,6 +55,8 @@ pub enum Code {
     BadDefault,
     /// 选项少于两个、有重复、不是字。
     BadChoices,
+    /// 一组字段的 `title` 不是它的 `text`、`name`、`option` 字段（施工 PC-2）。
+    BadTitle,
     /// `min`、`max` 不是整数、最小大于最大。
     BadRange,
     /// `layers` 不是只写着 `system`。
@@ -153,6 +155,7 @@ impl Code {
             Code::BadElement => "bad_element",
             Code::BadDefault => "bad_default",
             Code::BadChoices => "bad_choices",
+            Code::BadTitle => "bad_title",
             Code::BadRange => "bad_range",
             Code::BadLayers => "bad_layers",
             Code::BadApplies => "bad_applies",
@@ -190,7 +193,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 57] = [
+    pub const ALL: [Code; 58] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -217,6 +220,7 @@ impl Code {
         Code::BadElement,
         Code::BadDefault,
         Code::BadChoices,
+        Code::BadTitle,
         Code::BadRange,
         Code::BadLayers,
         Code::BadApplies,

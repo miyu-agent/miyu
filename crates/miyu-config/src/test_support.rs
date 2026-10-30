@@ -74,6 +74,7 @@ pub(crate) fn said(name: &str, description: &str, options: &[&str]) -> ItemWords
             .map(|option| (option.to_string(), option.to_uppercase()))
             .collect(),
         option_descriptions: std::collections::BTreeMap::new(),
+        fields: std::collections::BTreeMap::new(),
         suggestions: Vec::new(),
     }
 }
@@ -161,6 +162,9 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ("config/expected/reference", "<供应商>/<模型> 或 @<池>"),
         ("config/expected/model", "<供应商>/<模型>"),
         ("config/expected/list", "{item} 的列表"),
+        ("config/expected/record", "一组字段（{fields}）"),
+        ("config/missing-field", "{key} 没写：这个字段要写"),
+        ("config/unknown-field", "{key} 不是这一项的字段"),
         ("config/expected/id", "小写字母开头的编号"),
         ("config/expected/model-name", "1 到 128 个字节的模型名"),
         (

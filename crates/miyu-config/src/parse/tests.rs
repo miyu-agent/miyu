@@ -9,6 +9,8 @@ use crate::problem::{At, Code, Problem};
 use crate::test_support::item;
 use crate::value::Value;
 
+mod records;
+
 /// 手写的清单：两个只能放系统配置的选项，一个系统、项目两层都能放的开关。
 fn items() -> Vec<Item> {
     vec![

@@ -48,6 +48,9 @@ mod named_tests;
 #[cfg(test)]
 mod test_support;
 
-pub use item::{Applies, Control, Item, Kind, Layer, Tighten, Ui, duration};
+pub use item::{
+    Applies, Control, Item, Kind, Layer, RECORDS_MOST, Record, Tighten, Ui, duration,
+    value_problems,
+};
 pub use value::{Address, Number, Setting, Value, Values};
 pub use words::{ConfigWords, ItemWords, Missing, Words};

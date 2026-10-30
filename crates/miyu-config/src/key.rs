@@ -128,10 +128,26 @@ pub fn item_of<'a>(items: &'a [crate::Item], key: &str) -> Option<&'a crate::Ite
     if let Some(item) = items.iter().find(|item| item.key == key) {
         return Some(item);
     }
+
     let segments = split(key)?;
     items
         .iter()
         .find(|item| matches!(fit(item.key, &segments), Fit::Yes(_)))
+}
+
+/// 一处问题说的是清单里的哪一项（施工 PC-2）：同 [`item_of`]，另认列表里一项的字段 `<键>[第几项].<字段>`，交回那个字段的样子。
+/// 只给说问题的话用：改配置、查键照 [`item_of`]，字段不能单改。
+pub fn described_by<'a>(items: &'a [crate::Item], key: &str) -> Option<&'a crate::Item> {
+    let Some((list, rest)) = key.split_once('[') else {
+        return item_of(items, key);
+    };
+    let field = rest.split_once("].").map(|(_, field)| field)?;
+    match item_of(items, list)?.kind {
+        crate::Kind::List(crate::Kind::Record(record)) => {
+            record.fields.iter().find(|one| one.key == field)
+        }
+        _ => None,
+    }
 }
 
 /// 照样子 `pattern` 填上名字 `names`，交回真的键：占位依次换成名字，要加引号的加上。名字不够的，剩下的占位照原样。

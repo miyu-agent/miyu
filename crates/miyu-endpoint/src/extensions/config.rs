@@ -18,15 +18,43 @@ pub(crate) fn own(config: &Config, package: &str) -> BTreeMap<String, Value> {
         .filter(|item| declared_by(item, package))
         .filter_map(|item| {
             let (value, _) = resolved.get(item.key)?;
-            let value = match value {
-                miyu_config::Value::Secret(reference) => {
-                    Value::String(config.secret(reference)?.expose().to_string())
-                }
-                other => other.json(),
-            };
-            Some((item.key.to_string(), value))
+            Some((item.key.to_string(), handed(config, item.kind, value)?))
         })
         .collect()
+}
+
+/// 交出去的一个值：密钥引用解成真值的字（取不到的没有）；一组字段的列表（施工 PC-2）每一项是对象，密钥字段解成真值、取不到的
+/// 那个字段不放，没写的字段照默认值，没有默认值的不放。
+fn handed(config: &Config, kind: miyu_config::Kind, value: &miyu_config::Value) -> Option<Value> {
+    match (kind, value) {
+        (_, miyu_config::Value::Secret(reference)) => Some(Value::String(
+            config.secret(reference)?.expose().to_string(),
+        )),
+        (
+            miyu_config::Kind::List(miyu_config::Kind::Record(record)),
+            miyu_config::Value::List(items),
+        ) => Some(Value::Array(
+            items
+                .iter()
+                .map(|item| {
+                    let miyu_config::Value::Record(fields) = item else {
+                        return Value::Object(Map::new());
+                    };
+                    Value::Object(
+                        record
+                            .fields
+                            .iter()
+                            .filter_map(|field| {
+                                let value = fields.get(field.key).or(field.default.as_ref())?;
+                                Some((field.key.to_string(), handed(config, field.kind, value)?))
+                            })
+                            .collect(),
+                    )
+                })
+                .collect(),
+        )),
+        (_, other) => Some(other.json()),
+    }
 }
 
 /// 配置项 `item` 是不是包 `package` 的清单里声明的（施工 PN-1）：键照前缀起，不一定以包编号开头，照挂在哪个包认；「软件包」

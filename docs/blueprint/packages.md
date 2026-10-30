@@ -156,7 +156,8 @@ program = "miyu-embed"
 | `type` | 必写：`bool`、`int`（可以带 `min`、`max`，不写是整数的全部范围）、`number`（小数，施工 PC-1：`min`、`max` 必写、只收整数，进配置清单是 `float`）、`option`（带 `choices`，至少两个不重复的）、`text`（可以带 `max`，最多几个字符，不写是 200；`lines = true` 是几行字，进配置清单是 `lines`、控件 `textarea`，不写 `max` 是 2000，施工 PC-1）、`name`、`url`、`secret`（`{ secret = … }` 那种引用）、`list`（带 `element`，施工 9-1 补） |
 | `choices` | 字的数组；或者表的数组（施工 PC-1，设计 53 第一节）：`value` 必写（字），`name`、`description` 照项的写法、可以不写，别的格不收；两种不能混着写，`bad_choices`。存的是 `value`；名字、说明并进字表（`ItemWords` 的 `options`、`option_descriptions`），`config.schema` 的 `options` 每一个照连接的语言带 `name`（没写的是值）、`description`（没写的不带） |
 | `step`、`slider` | `int`、`number` 才有（施工 PC-1）：`step` 正数、`int` 的是整数，核心不拿它查值；`slider = true` 要写了 `min`、`max`，控件 `slider`（`miyu_config::Control::Slider`）带一格多少，`step` 不写的 `int` 是 1、`number` 是范围的百分之一；`config.schema` 带 `step`。不画滑块的不带 |
-| `element` | 只有列表写，必写：元素的类型，上面除 `list` 以外的一种；元素带的 `min`、`max`、`choices`、`max` 写在同一张表里，管每一个元素 |
+| `element` | 只有列表写，必写：元素的类型，上面除 `list` 以外的一种，或者 `record`（施工 PC-2：每一项一组字段，下一行）；元素带的 `min`、`max`、`choices`、`max` 写在同一张表里，管每一个元素 |
+| `fields`、`title` | `element = "record"` 才有（施工 PC-2，设计 53 第二节）：`fields` 下每个字段一张 `[settings.<名字>.fields.<字段>]`，照一项的写法读（`one()` 带「是字段」的标记），不收 `layers`、`applies`，不能是 `list`；字段名同项的名字的写法、不能叫 `fields`，至少一个（`missing_key`）。`title` 要是其中一个 `text`、`name`、`option` 字段，不然 `bad_title`。整条不能写默认值（`bad_default`）。拼成配置项是 `Kind::List(Kind::Record(…))`，字段各是一个 `Item`（键是字段名，挂在同一组）；字段的名字、说明、选项名并进字表的 `ItemWords.fields`；`config.schema` 带 `element: "record"`、`title`、`fields`（每个字段格同普通项） |
 | `default` | 合这个类型的值；选项要在 `choices` 里；列表写数组、每一个照元素查，空数组也算；`secret`、元素是 `secret` 的列表不能写。没写的没有默认值 |
 | `layers` | 只能写 `system`，不写也是它。项目配置不给包用 |
 | `applies` | `now`、`new_session`、`next_turn`、`program_start`（这个程序下次启动时，协议上写 `head_start`）；不写是 `program_start` |

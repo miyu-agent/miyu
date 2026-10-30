@@ -156,6 +156,27 @@ fn shape(kind: Kind) -> Map<String, Json> {
         Kind::List(inner) => {
             property.insert("type".to_string(), json!("array"));
             property.insert("items".to_string(), Json::Object(shape(*inner)));
+            if matches!(inner, Kind::Record(_)) {
+                property.insert("maxItems".to_string(), json!(crate::RECORDS_MOST));
+            }
+        }
+        // 一组字段（施工 PC-2）：一张表，字段照各自的类型，没有默认值的必写，别的字段不收。
+        Kind::Record(record) => {
+            property.insert("type".to_string(), json!("object"));
+            let fields: Map<String, Json> = record
+                .fields
+                .iter()
+                .map(|field| (field.key.to_string(), Json::Object(shape(field.kind))))
+                .collect();
+            property.insert("properties".to_string(), Json::Object(fields));
+            let required: Vec<&str> = record
+                .fields
+                .iter()
+                .filter(|field| field.default.is_none())
+                .map(|field| field.key)
+                .collect();
+            property.insert("required".to_string(), json!(required));
+            property.insert("additionalProperties".to_string(), json!(false));
         }
     }
     property

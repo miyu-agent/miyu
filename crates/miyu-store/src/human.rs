@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 use miyu_config::package::settings::OFF;
-use miyu_config::package::{Choice, Manifest, SettingKind};
+use miyu_config::package::{Choice, Manifest, Setting, SettingKind};
 use miyu_config::phrases::Phrases;
 use miyu_config::{ConfigWords, ItemWords, Words};
 use miyu_kernel::event::Said;
@@ -259,28 +259,7 @@ impl Human {
             }
             for setting in &manifest.settings {
                 let key = format!("{}.{}", manifest.prefix_of(id), setting.name);
-                // 选项的名字、说明（施工 PC-1）：没写名字的不放，`config.schema` 照值写。
-                let choices = match &setting.kind {
-                    SettingKind::Option(choices) => choices.as_slice(),
-                    SettingKind::List(element) => match element.as_ref() {
-                        SettingKind::Option(choices) => choices.as_slice(),
-                        _ => &[],
-                    },
-                    _ => &[],
-                };
-                let said = |words: fn(&Choice) -> &Phrases| -> BTreeMap<String, String> {
-                    choices
-                        .iter()
-                        .filter_map(|choice| Some((choice.value.clone(), pick(words(choice))?)))
-                        .collect()
-                };
-                let words = ItemWords {
-                    name: pick(&setting.label).unwrap_or_else(|| key.clone()),
-                    description: pick(&setting.description).unwrap_or_default(),
-                    options: said(|choice| &choice.name),
-                    option_descriptions: said(|choice| &choice.description),
-                    suggestions: Vec::new(),
-                };
+                let words = setting_words(setting, &key, &pick);
                 self.config.items.insert(key, words);
             }
             // 扩展的搜索来源（施工 N-5）：下拉里的名字照清单。
@@ -336,4 +315,42 @@ pub fn clean(value: &str) -> String {
         .chars()
         .map(|c| if c.is_control() { '\u{FFFD}' } else { c })
         .collect()
+}
+
+/// 包清单里一项的字（施工 9-1 下）：名字、说明照语言挑；选项的名字、说明（施工 PC-1，没写名字的不放，`config.schema` 照值写）；
+/// 一组字段的每个字段照同样挑（施工 PC-2）。没写名字的项照键 `key`。
+fn setting_words(
+    setting: &Setting,
+    key: &str,
+    pick: &dyn Fn(&Phrases) -> Option<String>,
+) -> ItemWords {
+    let element = match &setting.kind {
+        SettingKind::List(element) => element.as_ref(),
+        kind => kind,
+    };
+    let choices = match element {
+        SettingKind::Option(choices) => choices.as_slice(),
+        _ => &[],
+    };
+    let said = |words: fn(&Choice) -> &Phrases| -> BTreeMap<String, String> {
+        choices
+            .iter()
+            .filter_map(|choice| Some((choice.value.clone(), pick(words(choice))?)))
+            .collect()
+    };
+    let fields = match element {
+        SettingKind::Record { fields, .. } => fields
+            .iter()
+            .map(|field| (field.name.clone(), setting_words(field, &field.name, pick)))
+            .collect(),
+        _ => BTreeMap::new(),
+    };
+    ItemWords {
+        name: pick(&setting.label).unwrap_or_else(|| key.to_string()),
+        description: pick(&setting.description).unwrap_or_default(),
+        options: said(|choice| &choice.name),
+        option_descriptions: said(|choice| &choice.description),
+        fields,
+        suggestions: Vec::new(),
+    }
 }

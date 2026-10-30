@@ -10,7 +10,7 @@
 mod kind;
 mod settings;
 
-pub use kind::{Kind, duration};
+pub use kind::{Kind, RECORDS_MOST, Record, duration, value_problems};
 pub(crate) use kind::{Pointed, pointed};
 
 use crate::value::Value;

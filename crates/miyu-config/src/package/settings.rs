@@ -111,6 +111,14 @@ pub enum SettingKind {
     Secret,
     /// 列表：每一个照元素的类型，元素不能再是列表（施工 9-1 补）。
     List(Box<SettingKind>),
+    /// 一组字段（施工 PC-2，`element = "record"`）：只当列表的元素。字段照普通项读（不写 `layers`、`applies`，不能再是列表），
+    /// `title` 是拿来当每一项标题的字段名。
+    Record {
+        /// 字段，照写的先后。
+        fields: Vec<Setting>,
+        /// 当标题的字段：`text`、`name`、`option` 之一。
+        title: Option<String>,
+    },
 }
 
 impl SettingKind {
@@ -131,7 +139,9 @@ impl SettingKind {
             SettingKind::Name => Kind::Name,
             SettingKind::Url => Kind::Url,
             SettingKind::Secret => Kind::Secret,
-            SettingKind::Option(_) | SettingKind::List(_) => return None,
+            SettingKind::Option(_) | SettingKind::List(_) | SettingKind::Record { .. } => {
+                return None;
+            }
         })
     }
 
@@ -140,6 +150,8 @@ impl SettingKind {
         match self {
             SettingKind::Secret => true,
             SettingKind::List(element) => element.holds_secrets(),
+            // 一组字段的列表不写默认值（施工 PC-2）：项多、带密钥，交给人一项项加。
+            SettingKind::Record { .. } => true,
             _ => false,
         }
     }
@@ -167,19 +179,26 @@ pub(super) fn read(reader: &Reader<'_>, node: &Node) -> Result<Vec<Setting>, Pro
     for (name, item) in table.iter() {
         let (at, fields) = entry(reader, "settings", name, item)?;
         if fields.is_empty() || fields.contains_key("type") || fields.contains_key("name") {
-            settings.push(one(reader, name, &at, fields, item)?);
+            settings.push(one(reader, name, &at, fields, item, false)?);
             continue;
         }
         for (inner, item) in fields.iter() {
             let (at, fields) = entry(reader, &at, inner, item)?;
-            settings.push(one(reader, &format!("{name}.{inner}"), &at, fields, item)?);
+            settings.push(one(
+                reader,
+                &format!("{name}.{inner}"),
+                &at,
+                fields,
+                item,
+                false,
+            )?);
         }
     }
     Ok(settings)
 }
 
 /// `<上一层>.<名字>` 那一张表：名字合写法、是一张表。
-fn entry<'a>(
+pub(super) fn entry<'a>(
     reader: &Reader<'_>,
     above: &str,
     name: &str,
@@ -205,15 +224,16 @@ fn entry<'a>(
     Ok((at, fields))
 }
 
-/// 一项。
-fn one(
+/// 一项；`field` 是一组字段里的一个字段（施工 PC-2）：不能是列表，不写 `layers`、`applies`。
+pub(super) fn one(
     reader: &Reader<'_>,
     name: &str,
     at: &str,
     fields: &dyn TableLike,
     node: &Node,
+    field: bool,
 ) -> Result<Setting, Problem> {
-    let kind = kind(reader, at, fields, node)?;
+    let kind = kind(reader, at, fields, node, field)?;
     let slider = slider(reader, at, fields, &kind)?;
     let default = match fields.get("default") {
         None => None,
@@ -279,17 +299,30 @@ fn kind(
     at: &str,
     fields: &dyn TableLike,
     node: &Node,
+    field: bool,
 ) -> Result<SettingKind, Problem> {
     let item = reader.required(fields, node, at, "type")?;
-    let (kind, extra, list) = if item.as_str() == Some("list") {
+    let (kind, extra, list) = if item.as_str() == Some("list") && !field {
         let element = reader.required(fields, node, at, "element")?;
+        // 一组字段（施工 PC-2）：`fields`、`title` 另读。
+        if element.as_str() == Some("record") {
+            let record = types::record(reader, at, fields, node)?;
+            let known: Vec<&str> = super::fields::SETTING
+                .iter()
+                .chain(super::fields::SETTING_LIST)
+                .chain(super::fields::SETTING_RECORD)
+                .copied()
+                .collect();
+            reader.only(fields, at, &known)?;
+            return Ok(SettingKind::List(Box::new(record)));
+        }
         let bad = || {
             reader.problem(
                 Some(element),
                 Code::BadElement,
                 &format!("{at}.element"),
                 format!(
-                    "{at}.element must be bool, int, number, option, text, name, url or secret"
+                    "{at}.element must be bool, int, number, option, text, name, url, secret or record"
                 ),
             )
         };
@@ -298,6 +331,7 @@ fn kind(
         (SettingKind::List(Box::new(inner)), extra, true)
     } else {
         let scalar = match item.as_str() {
+            Some("list") => None,
             Some(name) => scalar(reader, at, fields, node, name)?,
             None => None,
         };
@@ -318,8 +352,10 @@ fn kind(
     } else {
         &[]
     };
+    // 字段里不写 `layers`、`applies`：跟着整项（施工 PC-2）。
     let known: Vec<&str> = super::fields::SETTING
         .iter()
+        .filter(|key| !field || !matches!(**key, "layers" | "applies"))
         .chain(extra)
         .chain(element)
         .copied()

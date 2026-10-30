@@ -28,6 +28,8 @@ pub enum Value {
     List(Cow<'static, [Value]>),
     /// 小数（施工 8-7）。
     Float(Number),
+    /// 一组字段（施工 PC-2）：`Record` 列表里的一项，字段名到值。
+    Record(BTreeMap<String, Value>),
 }
 
 /// 一个小数（施工 8-7）：照位比相等，所以值能比、能当键。`nan`、`inf` 读的时候就不收（[`crate::Kind::Float`]）。
@@ -68,6 +70,18 @@ impl Value {
                 let values: Vec<String> = values.iter().map(Value::toml).collect();
                 format!("[{}]", values.join(", "))
             }
+            Value::Record(fields) => {
+                let fields: Vec<String> = fields
+                    .iter()
+                    .map(|(name, value)| {
+                        format!("{} = {}", crate::key::join(&[name]), value.toml())
+                    })
+                    .collect();
+                match fields.is_empty() {
+                    true => "{}".to_string(),
+                    false => format!("{{ {} }}", fields.join(", ")),
+                }
+            }
         }
     }
 
@@ -82,6 +96,12 @@ impl Value {
             Value::List(values) => {
                 serde_json::Value::Array(values.iter().map(Value::json).collect())
             }
+            Value::Record(fields) => serde_json::Value::Object(
+                fields
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.json()))
+                    .collect(),
+            ),
         }
     }
 }

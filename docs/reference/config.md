@@ -38,7 +38,8 @@
 | `key`、`type` | 键、类型：`bool`、`option`、`int`、`float`、`text`、`duration`、`path`、`url`、`name`、`reference`、`model`、`model_or`、`english`、`secret`、`list`、`table`。键里人起的名字那一段写成占位 `<id>`、`<model>`、`<external>`、`<name>`，例如 `providers.<id>.base_url` |
 | `options` | 选项：`value`、给人看的 `name`；软件包清单里写了说明的带 `description`（暗色写在下面，PC-1）；核心查得出的带 `note`（暗色写在名字后面）、`available: false`（用不了，画成灰的） |
 | `ticks` | 列表带选项的怎么画勾：`unlisted` 的勾着的是不在值里的（`sandbox.private.remove`：勾着的照旧私密，取消勾选＝加进值里；`sandbox.readonly.remove` 同理，勾着的照旧受保护）；没有的勾着的是值里的 |
-| `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型 |
+| `min`、`max`、`max_chars`、`element` | 范围、长度、列表元素的类型（`record` 是每一项一组字段，PC-2） |
+| `title`、`fields` | 元素是 `record` 的：拿哪个字段当每一项的标题（没有的照「第几项」写）；每个字段一项，格同这张表（`key` 是字段名） |
 | `default` | 默认值 |
 | `layers` | 能写在哪几层：`system`、`project` |
 | `applies` | 什么时候生效：`now` 当场、`next_turn` 下一轮、`new_session` 以后开的会话、`restart` 重启核心、`head_start` 头下次启动 |
@@ -86,7 +87,7 @@
 | `text` | 字符串 | 整份换成这段字 |
 | `version` | 字符串或 `null` | 写了 `text` 的必写：你读到的这份文件的版本，`null` 是那时还没有这份文件 |
 
-`changes` 和 `text` 正好写一个。`changes` 每一项：`key`（必写）；`value`（JSON 的值）、`input`（人敲的字，照这一项的类型读）、`unset: true`（恢复默认）三选一；`expect`（可不写）：这一层这一项现在应当是 `{"value": …}` 或 `{}`（没写），对不上就拒。
+`changes` 和 `text` 正好写一个。`changes` 每一项：`key`（必写；元素是 `record` 的列表整条一起换，不能写成 `<键>[0].<字段>`）；`value`（JSON 的值；`record` 的列表是对象的数组，密钥字段只收 `{"secret": …}`、`{"env": …}`，写明文的整条拒、问题的 `key` 是 `<键>[第几项].<字段>`）、`input`（人敲的字，照这一项的类型读）、`unset: true`（恢复默认）三选一；`expect`（可不写）：这一层这一项现在应当是 `{"value": …}` 或 `{}`（没写），对不上就拒。
 
 **回应**：`{"keys", "version"}`。`keys` 是变了的每一项：`value`（这一层现在的值，删掉的不写）、`effective`、`origin`（算上别的层以后的最终值、来源）、`applies`。一项都没变的 `keys` 是空的，什么都不写。
 

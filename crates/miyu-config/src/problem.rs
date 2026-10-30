@@ -86,6 +86,10 @@ pub enum Code {
     SourceIncomplete,
     /// 软件源的 `key` 读不成 base64 的 Ed25519 公钥（施工 U23 下下）：这个源不用。`name` 是名字。协议上写 `bad_format`。
     SourceKey,
+    /// 列表里一项少写了必写的字段（没有默认值的，施工 PC-2）：`key` 是 `<键>[第几项].<字段>`。整项不收。
+    MissingField,
+    /// 列表里一项写了不认识的字段（施工 PC-2）：同 `unknown_key`，但这一项整个不收、算错误。
+    UnknownField,
 }
 
 impl Code {
@@ -119,6 +123,8 @@ impl Code {
             Code::ReadonlyNotShipped => "not_an_option",
             Code::SourceReserved => "not_an_option",
             Code::SourceIncomplete | Code::SourceKey => "bad_format",
+            Code::MissingField => "missing_field",
+            Code::UnknownField => "unknown_key",
         }
     }
 

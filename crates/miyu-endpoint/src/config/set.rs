@@ -36,6 +36,8 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
+mod records;
+
 /// 替换前发现有人手改，最多重来几次（第五条第 6 条）。
 pub(super) const TRIES: usize = 3;
 
@@ -252,6 +254,36 @@ fn wanted(
             return Err(Refusal::BAD_PARAMS);
         };
         let expect = change.expect.map(|expect| expect.get("value").cloned());
+        // 一组字段的列表（施工 PC-2）：整条一起换，问题报到「第几项的哪个字段」（`<键>[2].key`）。
+        if let (Some(record), Some((_, raw))) = (edit::record_of(item.kind), &value)
+            && item.layers.contains(&layer)
+        {
+            let json: Json = serde_json::from_str(raw).unwrap_or(Json::Null);
+            let read = match records::change_json(&json, raw) {
+                Some(json) => edit::from_json_records(record, &json),
+                None => Err(vec![(String::new(), Code::WrongType, raw.clone())]),
+            };
+            match read {
+                Ok(read) => wanted.push(Wanted {
+                    key: change.key,
+                    value: Some(read),
+                    expect,
+                }),
+                Err(found) => {
+                    for (at, code, raw) in found {
+                        problems.push(request_problem(
+                            config,
+                            code,
+                            layer,
+                            &format!("{}{at}", change.key),
+                            &raw,
+                            words,
+                        )?);
+                    }
+                }
+            }
+            continue;
+        }
         let value = match value {
             None => None,
             Some((read, raw)) => {

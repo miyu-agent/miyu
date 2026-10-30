@@ -65,6 +65,22 @@ pub fn apply(text: &str, change: Change<'_>) -> Result<String, Blocked> {
     let Some((last, group)) = path.split_last() else {
         return Err(blocked());
     };
+    // 一组字段的列表（施工 PC-2）：照表的结构换（`records.rs`）。
+    let existing = group
+        .iter()
+        .chain(std::iter::once(last))
+        .try_fold(document.as_item(), |node, part| node.get(part));
+    let value = match change {
+        Change::Set(_, value) => Some(value),
+        Change::Unset(_) => None,
+    };
+    if records::applies(value, existing) {
+        let edited = records::apply(text, group, last, value).ok_or_else(blocked)?;
+        return match Document::parse(edited.as_str()) {
+            Ok(_) => Ok(edited),
+            Err(_) => Err(blocked()),
+        };
+    }
     let section = section(&document, group).ok_or_else(blocked)?;
     let edited = match change {
         Change::Set(_, value) => set(text, &section, group, last, value),
@@ -102,7 +118,7 @@ pub fn input(kind: Kind, text: &str) -> Option<Value> {
             .map(Value::Secret)
             .or_else(|| Some(Value::Text(Cow::Owned(unquoted(text))))),
         Kind::Secret => Reference::from_input(text).map(Value::Secret),
-        Kind::Int { .. } | Kind::Float { .. } | Kind::List(_) => {
+        Kind::Int { .. } | Kind::Float { .. } | Kind::List(_) | Kind::Record(_) => {
             let document = Document::parse(format!("v = {text}")).ok()?;
             let value = document.get("v")?.as_value()?;
             crate::parse::read(kind, value)
@@ -449,6 +465,10 @@ pub fn newline(text: &str) -> &'static str {
         _ => "\n",
     }
 }
+
+pub(crate) mod records;
+
+pub use records::{from_json_records, record_of};
 
 #[cfg(test)]
 mod tests;

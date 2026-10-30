@@ -45,7 +45,7 @@ pub fn tell(
     let key = problem.key.as_deref().unwrap_or_default();
     let got = problem.got.as_deref().unwrap_or_default();
     let why = problem.why.as_deref().unwrap_or_default();
-    let item = crate::key::item_of(items, key);
+    let item = crate::key::described_by(items, key);
     let mut expected = None;
     let mut parts = Vec::new();
     let mut says_using = problem.code.whole_file();
@@ -54,6 +54,15 @@ pub fn tell(
         Code::TooBig => parts.push(sentence(words, "config/too-big", &[])?),
         Code::NotUtf8 => parts.push(sentence(words, "config/not-utf8", &[])?),
         Code::Syntax => parts.push(sentence(words, "config/syntax", &[("why", why)])?),
+        // 列表里一项的字段（施工 PC-2）：`key` 写成 `<键>[第几项].<字段>`，整项不收。
+        Code::MissingField => {
+            says_using = true;
+            parts.push(sentence(words, "config/missing-field", &[("key", key)])?);
+        }
+        Code::UnknownField => {
+            says_using = true;
+            parts.push(sentence(words, "config/unknown-field", &[("key", key)])?);
+        }
         Code::UnknownKey => {
             parts.push(match problem.suggest {
                 Some(suggest) => sentence(

@@ -160,6 +160,21 @@ fn schema_item(
         }
         Kind::List(inner) => {
             map.insert("element".to_string(), json!(inner.as_str()));
+            // 一组字段（施工 PC-2）：当标题的字段、每个字段一张（格同普通项），字照这一项的字里那个字段的。
+            if let Kind::Record(record) = inner {
+                if let Some(title) = record.title {
+                    map.insert("title".to_string(), json!(title));
+                }
+                let fields: Vec<Value> = record
+                    .fields
+                    .iter()
+                    .map(|field| {
+                        let words = said.and_then(|said| said.fields.get(field.key));
+                        schema_item(field, words, &|_| None, &|_| true)
+                    })
+                    .collect();
+                map.insert("fields".to_string(), json!(fields));
+            }
         }
         _ => {}
     }

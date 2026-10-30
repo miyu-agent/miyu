@@ -51,6 +51,9 @@ pub struct ItemWords {
     /// 没写的选项不在里面。
     #[serde(default)]
     pub option_descriptions: BTreeMap<String, String>,
+    /// 一组字段的列表（施工 PC-2）：每个字段的字，字段名到它的名字、说明、选项名。别的类型没有。
+    #[serde(default)]
+    pub fields: BTreeMap<String, ItemWords>,
     /// 下拉加「其他」手写（`combo`，施工 P-9 补）的建议值，照这种语言的人最常用的排在前面；写进配置的就是值本身。别的
     /// 控件没有。
     #[serde(default)]
@@ -245,6 +248,21 @@ pub(crate) fn expected(words: &dyn Words, kind: Kind) -> Result<String, Missing>
         Kind::List(inner) => {
             let item = expected(words, *inner)?;
             sentence(words, "config/expected/list", &[("item", &item)])
+        }
+        // 一组字段（施工 PC-2）：列出字段名。
+        Kind::Record(record) => {
+            let mut fields = String::new();
+            for field in record.fields {
+                fields = match fields.is_empty() {
+                    true => field.key.to_string(),
+                    false => sentence(
+                        words,
+                        "config/list",
+                        &[("rest", &fields), ("next", field.key)],
+                    )?,
+                };
+            }
+            sentence(words, "config/expected/record", &[("fields", &fields)])
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::item::Item;
 use crate::package::{Code, read};
 use crate::value::Number;
 
+mod record;
 mod vocabulary;
 
 /// 一份带配置项的网页清单。
