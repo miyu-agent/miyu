@@ -6,6 +6,7 @@ pub mod large;
 pub mod sessions;
 pub mod size;
 pub mod startup;
+pub mod stream;
 
 use std::path::Path;
 use std::time::{Duration, Instant};

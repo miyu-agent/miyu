@@ -5,9 +5,12 @@
 //! 什么时候读全了：量尺照这个时刻算「说一句到模型收到请求」。驱动先把整份请求体编好才发头，所以头到的时刻已经包含了
 //! 组装和编码；请求体在回环上传多久不算进去。
 //!
+//! 回答默认是一块正文；流式那一场（施工 V-22）照 [`Fake::split_into`] 切成几百块，像真模型那样一点点来。
+//!
 //! 和 `miyu_http::testkit` 的假服务器不同：那个照剧本回、回完就不收了；这里一直收，回的字多长由量尺定。
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 use serde_json::json;
@@ -30,6 +33,8 @@ pub struct Fake {
     /// 给核心写进配置的地址：`http://127.0.0.1:<端口>/v1`。
     pub base_url: String,
     arrivals: mpsc::UnboundedReceiver<Arrival>,
+    /// 之后的回答正文切成几块（施工 V-22）。
+    pieces: Arc<AtomicUsize>,
 }
 
 impl Fake {
@@ -48,15 +53,24 @@ impl Fake {
             .port();
         let reply: Arc<str> = filler(reply_bytes).into();
         let (sender, arrivals) = mpsc::unbounded_channel();
+        let pieces = Arc::new(AtomicUsize::new(1));
+        let split = Arc::clone(&pieces);
         tokio::spawn(async move {
             while let Ok((socket, _)) = listener.accept().await {
-                tokio::spawn(serve(socket, Arc::clone(&reply), sender.clone()));
+                let pieces = split.load(Ordering::Relaxed);
+                tokio::spawn(serve(socket, Arc::clone(&reply), pieces, sender.clone()));
             }
         });
         Ok(Fake {
             base_url: format!("http://127.0.0.1:{port}/v1"),
             arrivals,
+            pieces,
         })
+    }
+
+    /// 之后的回答正文切成 `pieces` 块（至少一块），一块一个事件（施工 V-22）：量流式时核心每收一块做了多少。
+    pub fn split_into(&self, pieces: usize) {
+        self.pieces.store(pieces.max(1), Ordering::Relaxed);
     }
 
     /// 等第一个提到 `marker` 的请求，交回它；之前到的别的请求（起标题这些辅助请求）跳过。
@@ -82,8 +96,13 @@ impl Fake {
     }
 }
 
-/// 一个连接：读一个请求，记下，回完关上。
-async fn serve(mut socket: TcpStream, reply: Arc<str>, arrivals: mpsc::UnboundedSender<Arrival>) {
+/// 一个连接：读一个请求，记下，回完关上。正文切成 `pieces` 块。
+async fn serve(
+    mut socket: TcpStream,
+    reply: Arc<str>,
+    pieces: usize,
+    arrivals: mpsc::UnboundedSender<Arrival>,
+) {
     let Some((head, body, at)) = read_request(&mut socket).await else {
         return;
     };
@@ -91,7 +110,7 @@ async fn serve(mut socket: TcpStream, reply: Arc<str>, arrivals: mpsc::Unbounded
         let mut response =
             b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n"
                 .to_vec();
-        response.extend_from_slice(answer(&body, &reply).as_bytes());
+        response.extend_from_slice(answer(&body, &reply, pieces).as_bytes());
         response
     } else {
         let list = r#"{"object":"list","data":[]}"#;
@@ -180,13 +199,14 @@ const SUMMARY_MARKER: &[u8] = b"Write a detailed summary of the conversation abo
 /// 量尺的摘要：草稿一句、摘要一段，几百字节。
 const SUMMARY: &str = "<analysis>量尺的摘要草稿。</analysis>\n<summary>量尺的摘要：用户一直在让模型回长段的字，好让会话长大；没有要接着做的事，也没有改过的文件。The measuring session only grows; nothing is pending.</summary>";
 
-/// 照请求体 `body` 回的事件流（施工 V-2 上）：摘要请求回 [`SUMMARY`]，别的回 `text`；用量照请求体、正文的字节数估。
-pub fn answer(body: &[u8], text: &str) -> String {
-    let said = match mentions(body, SUMMARY_MARKER) {
-        true => SUMMARY,
-        false => text,
+/// 照请求体 `body` 回的事件流（施工 V-2 上）：摘要请求回 [`SUMMARY`]（一块），别的回 `text`，切成 `pieces` 块；用量照
+/// 请求体、正文的字节数估。
+pub fn answer(body: &[u8], text: &str, pieces: usize) -> String {
+    let (said, pieces) = match mentions(body, SUMMARY_MARKER) {
+        true => (SUMMARY, 1),
+        false => (text, pieces),
     };
-    stream_body(said, tokens(body.len()), tokens(said.len()))
+    stream_pieces(said, pieces, tokens(body.len()), tokens(said.len()))
 }
 
 /// 字节数折成 token：四个字节一个，往上取整。
@@ -194,14 +214,26 @@ fn tokens(bytes: usize) -> usize {
     bytes.div_ceil(4)
 }
 
-/// 回答的事件流：正文一块，收尾一块带用量（输入 `prompt`、输出 `completion` 个 token），最后 `[DONE]`。
-pub fn stream_body(text: &str, prompt: usize, completion: usize) -> String {
-    let said = json!({"choices": [{"index": 0, "delta": {"role": "assistant", "content": text},
-        "finish_reason": null}]});
+/// 回答的事件流：正文照字切成 `pieces` 块（至少一块、不切开一个字；字比块少的一个字一块），一块一个事件，头一块带
+/// `role`；收尾一块带用量（输入 `prompt`、输出 `completion` 个 token），最后 `[DONE]`。
+pub fn stream_pieces(text: &str, pieces: usize, prompt: usize, completion: usize) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let size = chars.len().div_ceil(pieces.max(1)).max(1);
+    let mut stream = String::new();
+    for (n, piece) in chars.chunks(size).enumerate() {
+        let piece: String = piece.iter().collect();
+        let delta = match n {
+            0 => json!({"role": "assistant", "content": piece}),
+            _ => json!({"content": piece}),
+        };
+        let said = json!({"choices": [{"index": 0, "delta": delta, "finish_reason": null}]});
+        stream.push_str(&format!("data: {said}\n\n"));
+    }
     let done = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
         "usage": {"prompt_tokens": prompt, "completion_tokens": completion,
             "total_tokens": prompt + completion}});
-    format!("data: {said}\n\ndata: {done}\n\ndata: [DONE]\n\n")
+    stream.push_str(&format!("data: {done}\n\ndata: [DONE]\n\n"));
+    stream
 }
 
 /// 回答的正文：一段中英混排的字反复，凑到 `bytes` 个字节上下（不切开一个字）。

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// 用法，参数不对时印出来。
-pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <docs/perf/> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <docs/perf/>";
+pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <docs/perf/> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <docs/perf/>";
 
 /// 量的时候必写的几个路径。
 const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"];
@@ -42,6 +42,10 @@ pub struct Args {
     pub appends: usize,
     /// 假模型每次回多少字节的正文。
     pub reply_bytes: usize,
+    /// 流式一轮（施工 V-22）：在大会话上说几轮。
+    pub streams: usize,
+    /// 流式一轮：回答切成几块。
+    pub pieces: usize,
     /// 不订阅大会话以后等多久再量内存：要比会话 actor 空闲退出的 180 秒长（`miyu-endpoint` 的 `sessions::idle::IDLE`）。
     pub idle_wait: Duration,
     /// 闸门（施工 V-3）：有预算的哪一项量到的超过预算的这么多倍，量完报错退出；没写的只出表。
@@ -68,6 +72,8 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
         reloads: 20,
         appends: 2000,
         reply_bytes: 3500,
+        streams: 10,
+        pieces: 300,
         idle_wait: Duration::from_secs(200),
         gate: None,
     };
@@ -91,6 +97,8 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
             "--reloads" => args.reloads = number(flag, value)?,
             "--appends" => args.appends = number(flag, value)?,
             "--reply-bytes" => args.reply_bytes = number(flag, value)?,
+            "--streams" => args.streams = number(flag, value)?,
+            "--pieces" => args.pieces = number(flag, value)?,
             "--idle-wait" => args.idle_wait = Duration::from_secs(number(flag, value)?),
             "--gate" => args.gate = Some(factor(flag, value)?),
             _ => return Err(format!("不认识 {flag}\n{USAGE}")),
