@@ -77,7 +77,7 @@ fn turn(before: Vec<Value>, answer: &str) -> Vec<Value> {
 
 #[test]
 fn a_block_has_a_blank_line_before_and_after() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let messages = turn(
         vec![
             delta(json!({"index": 0, "start": "reasoning"})),
@@ -107,7 +107,7 @@ fn a_block_has_a_blank_line_before_and_after() {
 
 #[test]
 fn two_blocks_in_a_row_have_one_blank_line_and_the_first_has_none_before() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let messages = turn(
         vec![
             replied(json!([shell("c1", "ls"), shell("c2", "pwd")])),
@@ -128,7 +128,7 @@ fn two_blocks_in_a_row_have_one_blank_line_and_the_first_has_none_before() {
 #[test]
 fn a_block_after_the_answer_and_before_the_usage_line() {
     // 她先说了半句再执行：回答那一行先收尾，再空一行；最后一块后面还有用量那一行的，中间空一行。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let messages = vec![
         event("turn.started", 3, "ask-4", json!({"trigger": 2})),
         delta(json!({"index": 0, "start": "text"})),
@@ -155,7 +155,7 @@ fn a_block_after_the_answer_and_before_the_usage_line() {
 #[test]
 fn a_step_with_nothing_under_it_is_just_a_line() {
     // 编辑没改成：下面不印，照一行印；前面的空行是思考那一段的。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let missing = json!({"key": "software/basesystem/edit/not-found", "fields": {"index": "1"}});
     let messages = turn(
         vec![

@@ -19,7 +19,7 @@ use miyu_store::human::Human;
 use miyu_store::root::DataRoot;
 
 use crate::ask::follow::Follow;
-use crate::ask::{Format, Plan, Screen, Target, Watching, exit, follow_turn, human, presses};
+use crate::ask::{Output, Plan, Screen, Target, Watching, exit, follow_turn, human, presses};
 use crate::diagnostic;
 use crate::language::{self, Language};
 use crate::link;
@@ -195,7 +195,7 @@ fn printing(plan: &RedoPlan) -> Plan {
     Plan {
         text: String::new(),
         target: Target::Continue,
-        format: Format::Text,
+        format: Output::Text,
         cwd: String::new(),
         dirs: Vec::new(),
         files: Vec::new(),

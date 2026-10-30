@@ -13,7 +13,8 @@
       --preset <预设>       使用指定的预设（仅新会话）
       --permission <read-only|workspace|full>
                             权限级别：只读、工作区或完全放开（仅新会话）
-      --format <text|json>  输出格式（默认 text）
+      --format <text|json|jsonl>
+                            输出格式（默认 text），jsonl 每行一个事件
       --add-dir <目录>      允许读写另一个目录，可重复
       --file <文件>         附加文件（图片、PDF、文本），可重复
       --timeout <时长>      最长等待时间，例如 30s、10m、1h
@@ -33,4 +34,5 @@
 例子：
   miyu ask "这个项目是做什么的"
   cat 报错.log | miyu ask "为什么失败" -
+  git diff | miyu ask --format jsonl "审查这些改动" -
   miyu ask -C ~/src/app --permission read-only "检查这里的代码"

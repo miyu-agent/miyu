@@ -7,7 +7,7 @@ use serde_json::Value;
 use tokio::sync::mpsc;
 
 use crate::support::{Asked, Home, plan, within};
-use miyu_cli::{Format, Plan, Target};
+use miyu_cli::{Output, Plan, Target};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::{Play, Script};
 use miyu_store::log::first_event;
@@ -54,7 +54,7 @@ async fn continue_goes_on_in_the_last_oneshot_session() {
     assert_eq!(home.sessions()[0].as_str(), plain, "普通会话更新");
     let second = Plan {
         target: Target::Continue,
-        format: Format::Json,
+        format: Output::Json,
         ..plan("第二句")
     };
     let Asked { code, out, err, .. } = home.ask(&second).await;

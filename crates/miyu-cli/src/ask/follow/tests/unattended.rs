@@ -31,7 +31,7 @@ fn with_results(ended: &str, results: Vec<Value>) -> Vec<Value> {
 
 #[test]
 fn steps_that_needed_approval_are_counted_and_the_exit_code_is_4() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = with_results("completed", vec![unattended("c1"), unattended("c2")]);
     let Fed { step, screen, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::UNATTENDED));
@@ -44,7 +44,7 @@ fn steps_that_needed_approval_are_counted_and_the_exit_code_is_4() {
 
 #[test]
 fn other_denials_are_not_about_approval() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = with_results(
         "completed",
         vec![
@@ -60,7 +60,7 @@ fn other_denials_are_not_about_approval() {
 /// 认的是被拒的那一句：状态不是 `denied` 的，说法是那一句也不算。
 #[test]
 fn only_a_denial_counts() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let done = event(
         "tool.result",
         3,
@@ -73,7 +73,7 @@ fn only_a_denial_counts() {
 
 #[test]
 fn an_interrupted_turn_keeps_its_code_and_still_says_it_first() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = with_results("interrupted", vec![unattended("c1")]);
     let Fed { step, err, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
@@ -88,7 +88,7 @@ fn an_interrupted_turn_keeps_its_code_and_still_says_it_first() {
 /// 终端里告警照原色写（设计 47，项目主人 10-29：过程行照旧是灰的，告警不是过程）。
 #[test]
 fn in_a_terminal_the_warning_is_not_gray() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = with_results("completed", vec![unattended("c1")]);
     let Fed { err, .. } = feed(&plan, true, &turn);
     assert!(
@@ -101,7 +101,7 @@ fn in_a_terminal_the_warning_is_not_gray() {
 
 #[test]
 fn in_english_one_step_and_several() {
-    let plan = plan(Format::Text, Language::English);
+    let plan = plan(Output::Text, Language::English);
     let Fed { err, .. } = feed(
         &plan,
         false,
@@ -128,7 +128,7 @@ fn in_english_one_step_and_several() {
 
 #[test]
 fn json_tells_it_only_by_the_exit_code() {
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let turn = with_results("completed", vec![unattended("c1")]);
     let Fed { step, err, .. } = feed(&plan, true, &turn);
     assert_eq!(step, Step::Done(exit::UNATTENDED));

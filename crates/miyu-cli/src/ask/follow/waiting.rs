@@ -8,7 +8,7 @@
 
 use serde_json::{Value, json};
 
-use super::{Follow, Format, REDRAW, Screen, Step, steps};
+use super::{Follow, Output, REDRAW, Screen, Step, steps};
 use crate::shown::{Line, write};
 
 /// 等的那一行（施工 7-9）。
@@ -52,6 +52,7 @@ impl Follow<'_> {
         self.compacting = super::compacting::Compacting::default();
         self.turn = turn;
         self.joining.begin(joined);
+        self.stream_started(turn, screen);
     }
 
     /// 子代理的回报（`child.reported` 整条事件）：等的（这一次派出去的、留过言的），印一行报回来了。闲着时到的，都了结了就
@@ -64,7 +65,8 @@ impl Follow<'_> {
         let Some((job, title)) = self.agents.reported(event, running) else {
             return Step::Going;
         };
-        if self.plan.format == Format::Text {
+        self.stream_reported(&job, &event["body"], screen);
+        if self.plan.format == Output::Text {
             self.unwait(screen);
             let job = steps::one_line(&job);
             let title = title.as_deref().map(steps::one_line);
@@ -87,7 +89,7 @@ impl Follow<'_> {
         let Some(count) = self.agents.shown() else {
             return;
         };
-        if self.plan.format != Format::Text {
+        if self.plan.format != Output::Text {
             return;
         }
         let line = Line::gray(self.plan.language.waiting(count));

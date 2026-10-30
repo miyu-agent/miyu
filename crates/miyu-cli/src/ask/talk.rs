@@ -7,9 +7,9 @@ use tokio::time::Instant;
 
 use miyu_ipc::Connection;
 
-use super::follow::{Follow, Leaving, Step};
+use super::follow::{Follow, Leaving, Step, emit};
 use super::opening::set_permission;
-use super::{Plan, Screen, Target, exit};
+use super::{Output, Plan, Screen, Target, exit};
 use crate::diagnostic;
 use crate::language::Language;
 use crate::link;
@@ -98,6 +98,12 @@ pub async fn talk(
     };
     let mut follow = Follow::new(&session, &sent, plan);
     follow.waits();
+    // 事件流（施工 AP-3）：第一行说是哪个会话、是不是新开的；以前出的错只在标准错误上说。
+    let streams = plan.format == Output::Jsonl;
+    if streams {
+        let fields = json!({"new": !created.is_null(), "session": session});
+        emit(screen.out, "session", fields);
+    }
     // 握手的回应说配置里有错：最先说一句，在沙盒用不了那一句前面（施工 8-2）。
     if config_errors > 0 {
         follow.config_errors(config_errors, screen);
@@ -121,7 +127,12 @@ pub async fn talk(
         language: &plan.language,
         deadline,
     };
-    follow_turn(&mut rpc, &mut follow, &watching, screen, presses).await
+    let code = follow_turn(&mut rpc, &mut follow, &watching, screen, presses).await;
+    // 事件流的最后一行（施工 AP-3）。
+    if streams {
+        follow.stream_done(code, screen);
+    }
+    code
 }
 
 /// 跟着一轮时要的几样：重新订阅用的参数、哪个会话、打断时排着的怎么办（`return` 退回、`send` 接着发）、界面语言、最多等到

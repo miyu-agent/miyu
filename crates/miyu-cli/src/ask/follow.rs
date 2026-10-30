@@ -21,6 +21,8 @@ mod compacting;
 mod ending;
 mod joining;
 mod opening;
+mod reply;
+mod stream;
 mod waiting;
 
 use std::collections::BTreeMap;
@@ -29,12 +31,13 @@ use serde_json::{Value, json};
 
 use super::steps::{self, Drawn, Steps};
 use super::usage::Sum;
-use super::{Format, Plan, Screen, exit};
+use super::{Output, Plan, Screen, exit};
 use crate::diagnostic::{self, Level, Problem};
 use crate::shown::{GRAY, Ink, Line, RESET, write};
 use crate::undo::{Direction, UndoPlan, redo_lines};
 
 pub(crate) use ending::Leaving;
+pub(crate) use stream::emit;
 
 /// 回到行首、擦掉这一行：终端里原地刷新用（压缩的进度、等子代理的那一行）。
 const REDRAW: &str = "\r\x1b[2K";
@@ -122,6 +125,8 @@ pub(crate) struct Follow<'p> {
     waiting: waiting::Waiting,
     /// 她正忙时跟住听到这一句的那一轮（施工 7-10）。
     joining: joining::Joining,
+    /// 为什么没照常结束：事件流最后那一行 `done` 的 `reason`（施工 AP-3）。
+    why: Option<String>,
 }
 
 impl<'p> Follow<'p> {
@@ -160,6 +165,7 @@ impl<'p> Follow<'p> {
             agents: agents::Agents::default(),
             waiting: waiting::Waiting::default(),
             joining: joining::Joining::default(),
+            why: None,
         }
     }
 
@@ -179,7 +185,7 @@ impl<'p> Follow<'p> {
         if let Some(cwd) = result["cwd"].as_str() {
             self.cwd = cwd.to_string();
         }
-        if self.plan.format != Format::Text {
+        if self.plan.format != Output::Text {
             return;
         }
         let plan = UndoPlan {
@@ -202,6 +208,7 @@ impl<'p> Follow<'p> {
             self.replied = true;
             if let Some(error) = message.get("error") {
                 let reason = error["message"].as_str().unwrap_or_default();
+                self.why = Some("refused".to_string());
                 diagnostic::error(
                     screen.err,
                     self.plan.language,
@@ -257,6 +264,7 @@ impl<'p> Follow<'p> {
             "message.assistant" => {
                 self.reply(body);
                 self.steps.reply(body);
+                self.stream_steps(body, screen);
             }
             "tool.result" => {
                 self.agents.result(body);
@@ -289,7 +297,8 @@ impl<'p> Follow<'p> {
         let Some(text) = body["text"].as_str().filter(|text| !text.is_empty()) else {
             return;
         };
-        if self.plan.format != Format::Text {
+        self.stream_delta(kind, text, screen);
+        if self.plan.format != Output::Text {
             return;
         }
         match kind {
@@ -379,7 +388,8 @@ impl<'p> Follow<'p> {
         if steps::unattended(body) {
             self.unattended += 1;
         }
-        if self.plan.format != Format::Text {
+        self.stream_result(body, screen);
+        if self.plan.format != Output::Text {
             return;
         }
         let by_tool = event["by"]["kind"] == json!("tool");
@@ -419,9 +429,16 @@ impl<'p> Follow<'p> {
     /// 换行；一块、一段思考后面欠着空行的，先空一行。和回答之间的空行，等回答来了再写。
     /// 过程记录里的告警（设计 47，项目主人 10-29 定：过程行照旧，告警写成 `miyu: 警告：…`，建议另起一行）：原色，接在旁白的
     /// 位置。
+    /// 事件流的写成一行 `warning`（施工 AP-3），给脚本的（`--format json`）不说。
     fn warn(&mut self, problem: &Problem, screen: &mut Screen<'_>) {
-        for line in problem.lines(self.plan.language, Level::Warning) {
-            self.aside(&Line::inked(Ink::Plain, line), screen);
+        match self.plan.format {
+            Output::Text => {
+                for line in problem.lines(self.plan.language, Level::Warning) {
+                    self.aside(&Line::inked(Ink::Plain, line), screen);
+                }
+            }
+            Output::Jsonl => self.stream_warning(problem, screen),
+            Output::Json => {}
         }
     }
 
@@ -436,49 +453,6 @@ impl<'p> Follow<'p> {
         self.err_ends_line = true;
         self.aside = true;
         self.blank = false;
-    }
-
-    /// 最后写成的回复：正文块给 `--format json`。和前一段回复之间隔着步骤、前一段又没换行的，补一个换行，
-    /// 和标准输出上的一样。
-    fn reply(&mut self, body: &Value) {
-        let mut text = String::new();
-        for block in body["blocks"].as_array().into_iter().flatten() {
-            if block["type"] == json!("text")
-                && let Some(piece) = block["text"].as_str()
-            {
-                text.push_str(piece);
-            }
-        }
-        if text.is_empty() {
-            return;
-        }
-        if self.stepped && !self.answer.is_empty() && !self.answer.ends_with('\n') {
-            self.answer.push('\n');
-        }
-        self.stepped = false;
-        self.answer.push_str(&text);
-    }
-
-    /// 一次请求的记录：用量加起来；出错的记下，后来又成了的（重试）当没出过。压缩的摘要请求出错的，说压缩失败
-    /// （施工 6-3 下）。
-    fn called(&mut self, body: &Value, screen: &mut Screen<'_>) {
-        self.compaction_called(body, screen);
-        self.usage.add(&body["usage"]);
-        self.total.add(&body["usage"]);
-        self.failure = match body["result"].as_str() {
-            Some("error") => Some(Failure {
-                class: body["error"]["class"]
-                    .as_str()
-                    .unwrap_or("other")
-                    .to_string(),
-                message: body["error"]["message"]
-                    .as_str()
-                    .unwrap_or_default()
-                    .to_string(),
-                sent: !body["endpoint"].is_null(),
-            }),
-            _ => None,
-        };
     }
 }
 

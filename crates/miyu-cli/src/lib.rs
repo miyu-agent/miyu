@@ -57,7 +57,7 @@ mod text_rules;
 mod undo;
 
 pub use ask::{
-    Ask, Format, Opening, Permission, PersonaChoice, Plan, Screen, Target, ask, exit, talk,
+    Ask, Format, Opening, Output, Permission, PersonaChoice, Plan, Screen, Target, ask, exit, talk,
 };
 pub use call::call;
 pub use compact::{Compact, CompactPlan, compact, compact_on};

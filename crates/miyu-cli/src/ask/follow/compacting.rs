@@ -8,7 +8,7 @@
 
 use serde_json::Value;
 
-use super::{Follow, Format, REDRAW, Screen};
+use super::{Follow, Output, REDRAW, Screen};
 use crate::ask::usage::thousands;
 use crate::language::Language;
 use crate::shown::{Ink, Line, write};
@@ -29,7 +29,7 @@ impl Follow<'_> {
     /// 进度：记下是哪一次；终端里原地刷新那一行。
     pub(super) fn compaction_progress(&mut self, body: &Value, screen: &mut Screen<'_>) {
         self.compacting.seen = body["seen"].as_u64();
-        if self.plan.format != Format::Text || !screen.live {
+        if self.plan.format != Output::Text || !screen.live {
             return;
         }
         let written = body["written"].as_u64().unwrap_or(0);
@@ -60,6 +60,7 @@ impl Follow<'_> {
             body["before"].as_u64().unwrap_or(0),
             body["after"].as_u64().unwrap_or(0),
         );
+        self.stream_compacted(before, after, screen);
         let line = Line::gray(done(&self.plan.language, before, after));
         self.finish(&line, screen);
     }
@@ -94,7 +95,7 @@ impl Follow<'_> {
 
     /// 结果那一行：终端里画着进度的，擦掉换成它；没画的，照旁白印。
     fn finish(&mut self, line: &Line, screen: &mut Screen<'_>) {
-        if self.plan.format != Format::Text {
+        if self.plan.format != Output::Text {
             self.compacting.drawn = false;
             return;
         }

@@ -159,7 +159,7 @@ fn waiting(
 
 #[test]
 fn in_a_terminal_the_waiting_line_is_redrawn_and_wiped() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     // j1 崩了补报：不叫醒她，等的那一行重画成 1 个；j2 报了，叫醒她，同一批开了下一轮。
     messages.push(report(20, "j1", "aborted"));
@@ -188,7 +188,7 @@ fn in_a_terminal_the_waiting_line_is_redrawn_and_wiped() {
 #[test]
 fn a_turn_woken_by_something_else_wipes_the_line_and_goes_on_as_usual() {
     // 闲着时开的一轮没有报回来了那一行（例如后台命令结束叫醒的）：擦掉等的那一行，照没画过它接着印；等的那一行再画。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     messages.extend(round(
         20,
@@ -211,7 +211,7 @@ fn a_turn_woken_by_something_else_wipes_the_line_and_goes_on_as_usual() {
 #[test]
 fn the_last_report_that_wakes_nobody_ends_it_at_once() {
     // 最后一个是崩了补报、撤销停掉的：不叫醒她，没有要来的一轮，当场收尾。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     messages.push(report(20, "j1", "aborted"));
     messages.push(report(21, "j2", "undone"));
@@ -225,7 +225,7 @@ fn the_last_report_that_wakes_nobody_ends_it_at_once() {
 
 #[test]
 fn the_waiting_line_is_printed_once_when_not_a_terminal() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     messages.push(report(20, "j1", "done"));
     messages.extend(round(
@@ -258,7 +258,7 @@ fn the_waiting_line_is_printed_once_when_not_a_terminal() {
 #[test]
 fn a_report_the_last_request_missed_keeps_it_waiting_for_the_next_turn() {
     // j1 在第一轮最后一次请求发出去以后才到（序号 15 比看到的 12 大）：这一轮结束，内核同一批接着开下一轮，不收尾。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     let ended = messages.pop().expect("有结束那一条");
     messages.push(report(15, "j1", "done"));
@@ -286,7 +286,7 @@ fn a_report_the_last_request_missed_keeps_it_waiting_for_the_next_turn() {
 
 #[test]
 fn only_its_own_subagents_are_counted_and_said() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let messages = round(10, "ask-4", "好。", 12, json!([]), "completed");
     let (step, screen, _) = waiting(&plan, false, &messages, |_, _| None);
     assert_eq!(step, Step::Done(exit::OK), "没派子代理：第一轮结束就收尾");
@@ -306,7 +306,7 @@ fn only_its_own_subagents_are_counted_and_said() {
 fn heads_that_do_not_wait_leave_after_one_turn() {
     // `miyu redo`、`miyu compact` 不等子代理：没叫 `waits`，第一轮结束就收尾，用量照这一轮印。
     // 一轮里到的回报也不印：它们不等，也就不说谁报回来了。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     let ended = messages.pop().expect("有结束那一条");
     messages.push(report(15, "j1", "done"));
@@ -321,7 +321,7 @@ fn heads_that_do_not_wait_leave_after_one_turn() {
 
 #[test]
 fn an_interrupted_turn_ends_the_wait() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     let ended = messages.last_mut().expect("有结束那一条");
     ended["params"]["event"]["body"]["reason"] = json!("interrupted");
@@ -335,7 +335,7 @@ fn an_interrupted_turn_ends_the_wait() {
 
 #[test]
 fn leaving_while_waiting_says_why_after_the_usage() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let (step, screen, left) = waiting(&plan, true, &first(), |follow, screen| {
         assert!(follow.waiting(), "第一轮结束了、还有没报的：在等");
         Some(follow.leave(Leaving::Pressed, screen))
@@ -360,7 +360,7 @@ fn leaving_while_waiting_says_why_after_the_usage() {
 
 #[test]
 fn it_is_not_waiting_before_the_first_turn_ends_or_while_a_turn_runs() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     messages.truncate(3);
     waiting(&plan, false, &messages, |follow, _| {
@@ -384,7 +384,7 @@ fn it_is_not_waiting_before_the_first_turn_ends_or_while_a_turn_runs() {
 
 #[test]
 fn json_lists_each_turn_and_prints_nothing_while_waiting() {
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let mut messages = first();
     messages.push(report(20, "j1", "done"));
     messages.push(report(21, "j2", "done"));
@@ -421,7 +421,7 @@ fn json_lists_each_turn_and_prints_nothing_while_waiting() {
 
 #[test]
 fn english_says_the_same() {
-    let plan = plan(Format::Text, Language::English);
+    let plan = plan(Output::Text, Language::English);
     let mut messages = first();
     messages.push(report(20, "j1", "done"));
     messages.extend(round(
@@ -458,7 +458,7 @@ fn english_says_the_same() {
 #[test]
 fn steps_not_done_are_counted_over_every_turn() {
     // 第一轮有一步因为要确认没做，叫醒的那一轮照常结束：退出码还是 4，最后那一句照几轮加起来。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = first();
     messages.insert(
         3,

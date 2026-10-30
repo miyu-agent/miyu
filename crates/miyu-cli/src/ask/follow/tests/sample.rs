@@ -52,7 +52,7 @@ fn the_screen_is_the_sample_of_the_drawing() {
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     let accepted = json!({"jsonrpc": "2.0", "id": "ask-4", "result": {"events": [5], "cwd": used.to_string_lossy()}});
     let messages = vec![

@@ -1,21 +1,19 @@
 //! 开头那几行旁白（`docs/blueprint/cli/ask.md`「起头那几行」，`config.md` 第十条第 10 条）：配置里有错（施工 8-2）、这里的
 //! 项目配置还没信任（施工 8-3）、沙盒用不了（施工 5-4 下）、目录太宽（施工 4-5 下），照这个先后，都是标准错误上的灰字，
-//! 只给人看的时候说（`--format json` 的不印）。
+//! 只给人看的时候说（`--format json` 的不印；事件流的写成 `warning`，施工 AP-3）。
 //!
 //! 造会话、说话的回应都带着会话实际在哪个目录里干活、这里的项目配置还没信任：一样的只说一次（[`Follow::opened`]）。
 
 use serde_json::Value;
 
 use super::super::steps;
-use super::super::{Format, Screen};
+use super::super::{Output, Screen};
 use super::Follow;
 
 impl Follow<'_> {
     /// 握手的回应说配置里有几处错误（施工 8-2）：说一句，`miyu check` 看是哪里（施工 8-30 起）。
     pub(crate) fn config_errors(&mut self, errors: u64, screen: &mut Screen<'_>) {
-        if self.plan.format == Format::Text {
-            self.warn(&self.plan.language.config_errors(errors), screen);
-        }
+        self.warn(&self.plan.language.config_errors(errors), screen);
     }
 
     /// 造会话、说话的回应说这里的项目配置 `file` 还没信任、这次没用它（施工 8-3）：说一句，`miyu config trust` 看一眼再定。
@@ -25,17 +23,13 @@ impl Follow<'_> {
             return;
         }
         self.untrusted = true;
-        if self.plan.format == Format::Text {
-            self.warn(&self.plan.language.untrusted_project(file), screen);
-        }
+        self.warn(&self.plan.language.untrusted_project(file), screen);
     }
 
     /// 握手的回应说沙盒用不了，原因是 `reason`（协议上的写法）：执行命令都要确认，这里确认不了，说一句（施工 5-4 下）。
     /// 只给人看的时候说。
     pub(crate) fn unsandboxed(&mut self, reason: &str, screen: &mut Screen<'_>) {
-        if self.plan.format == Format::Text {
-            self.warn(&steps::unsandboxed(self.plan, reason), screen);
-        }
+        self.warn(&steps::unsandboxed(self.plan, reason), screen);
     }
 
     /// 核心说会话实际在 `used` 里干活：和头报的不一样，就是目录太宽、退回了数据根的工作区，说一句。造会话、
@@ -45,9 +39,7 @@ impl Follow<'_> {
             return;
         }
         self.cwd = used.to_string();
-        if self.plan.format == Format::Text {
-            self.warn(&steps::moved(self.plan, used), screen);
-        }
+        self.warn(&steps::moved(self.plan, used), screen);
     }
 
     /// 说话的回应到了（`result`）：项目配置没信任的说一句；会话在别处干活的（接着说的会话，工作区是它自己的，施工 9-7 上）
@@ -60,7 +52,7 @@ impl Follow<'_> {
             && used != self.cwd
         {
             self.cwd = used.to_string();
-            if self.plan.format == Format::Text {
+            if self.plan.format == Output::Text {
                 self.aside(&steps::elsewhere(self.plan, used), screen);
             }
         }

@@ -74,7 +74,7 @@ fn ended(seq: u64, turn: u64, reason: &str) -> Value {
 
 #[test]
 fn a_word_queued_into_the_running_turn_follows_that_turn() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = reply(3, "先前的。", 5);
     pushed.push(landed(8, 3));
     pushed.extend(reply(3, "收到了。", 8));
@@ -86,7 +86,7 @@ fn a_word_queued_into_the_running_turn_follows_that_turn() {
 
 #[test]
 fn a_word_from_another_harness_joins_the_next_turn_it_sees() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = vec![landed(8, 0)];
     pushed.extend(reply(3, "收到了。", 8));
     pushed.push(ended(11, 3, "completed"));
@@ -97,7 +97,7 @@ fn a_word_from_another_harness_joins_the_next_turn_it_sees() {
 
 #[test]
 fn a_joined_turn_that_did_not_hear_it_is_followed_by_the_next() {
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let mut pushed = vec![landed(8, 0)];
     pushed.extend(reply(3, "还在忙。", 7));
     pushed.push(ended(11, 3, "completed"));
@@ -123,7 +123,7 @@ fn a_joined_turn_that_did_not_hear_it_is_followed_by_the_next() {
 #[test]
 fn a_joined_turn_cut_by_an_interrupt_before_hearing_it_is_not_its_end() {
     // 打断时排着的接着发：下一轮由它开（`cause` 是自己的），那一轮才是。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = vec![landed(8, 3)];
     pushed.extend(reply(3, "还在忙。", 7));
     pushed.push(ended(11, 3, "interrupted"));
@@ -140,7 +140,7 @@ fn a_joined_turn_cut_by_an_interrupt_before_hearing_it_is_not_its_end() {
 #[test]
 fn the_next_turn_is_followed_whoever_opened_it() {
     // 人的话排进了那一轮，后面又有人说了一句：那一轮结束时由最后那一句接着开，`cause` 是别人的，照样是听到这一句的那一轮。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = vec![landed(8, 3)];
     pushed.extend(reply(3, "还在忙。", 7));
     pushed.push(ended(11, 3, "completed"));
@@ -154,7 +154,7 @@ fn the_next_turn_is_followed_whoever_opened_it() {
 
 #[test]
 fn a_joined_turn_that_heard_it_ends_it_however_it_ends() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = vec![landed(8, 0)];
     pushed.extend(reply(3, "收到了。", 8));
     pushed.push(ended(11, 3, "interrupted"));
@@ -164,7 +164,7 @@ fn a_joined_turn_that_heard_it_ends_it_however_it_ends() {
 
 #[test]
 fn a_turn_the_word_opens_itself_is_followed_as_before() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut pushed = vec![landed(2, 0)];
     pushed.extend(a_turn("completed"));
     let Fed { step, out, .. } = feed(&plan, false, &pushed);
@@ -188,7 +188,7 @@ fn a_turn_the_word_opens_itself_is_followed_as_before() {
 fn left(language: Language, why: Leaving, waited: bool) -> String {
     let plan = Plan {
         from: Some("claude-code".to_string()),
-        ..plan(Format::Text, language)
+        ..plan(Output::Text, language)
     };
     let tape = Tape::default();
     let (mut out, mut err) = (

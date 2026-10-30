@@ -59,7 +59,7 @@ fn a_turn_with_a_step() -> Vec<Value> {
 
 #[test]
 fn a_step_is_a_line_among_the_thinking_and_apart_from_the_answer() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let sep = MAIN_SEPARATOR;
     let Fed {
         step, out, screen, ..
@@ -98,7 +98,7 @@ fn a_turn_cut_by_a_step(status: &str, human: Value) -> Vec<Value> {
 
 #[test]
 fn an_answer_cut_by_a_step_ends_its_line_first() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let sep = MAIN_SEPARATOR;
     let missing = json!({"key": "software/basesystem/common/missing"});
     let Fed { out, screen, .. } = feed(
@@ -114,7 +114,7 @@ fn an_answer_cut_by_a_step_ends_its_line_first() {
     assert_eq!(out, "我先看看。\n看完了。\n", "文件里两段回答也隔开了");
     // 给脚本的：不印步骤，两段回复的正文照样隔开。
     let plan = super::super::Plan {
-        format: Format::Json,
+        format: Output::Json,
         ..plan
     };
     let Fed { out, err, .. } = feed(&plan, false, &a_turn_cut_by_a_step("error", missing));
@@ -126,7 +126,7 @@ fn an_answer_cut_by_a_step_ends_its_line_first() {
 #[test]
 fn replies_without_a_step_between_are_joined_as_they_are() {
     // 出错重试、带着半截接着说的：两段回复之间没有步骤，正文照原样接上。
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let messages = [
         event("turn.started", 3, "ask-4", json!({})),
         replied(json!([{"type": "text", "text": "说到一"}])),
@@ -149,7 +149,7 @@ fn a_directory_too_wide_is_said_once() {
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     // 新会话：造会话的回应说了一次，说话的回应一样的不再说。
     let mut messages = vec![accepted(&used), accepted(&used)];
@@ -171,7 +171,7 @@ fn a_directory_too_wide_is_said_once() {
     assert!(!screen.contains("范围过大"), "{screen}");
     // 给脚本的：不说。
     let plan = super::super::Plan {
-        format: Format::Json,
+        format: Output::Json,
         ..plan
     };
     let mut messages = vec![accepted(&used)];
@@ -186,7 +186,7 @@ fn paths_are_written_short_against_where_she_really_works() {
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     let todo = used.join("todo.md");
     let messages = [
@@ -209,7 +209,7 @@ fn an_unusable_sandbox_is_said_first_and_right_before_the_directory() {
     let used = under(&["home", ".miyu", "workspace"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     let mut messages = vec![accepted(&used)];
     messages.extend(a_turn("completed"));
@@ -225,7 +225,7 @@ fn an_unusable_sandbox_is_said_first_and_right_before_the_directory() {
     );
     // 给脚本的：不说。
     let plan = super::super::Plan {
-        format: Format::Json,
+        format: Output::Json,
         ..plan
     };
     let Fed { err, .. } = feed_after(&plan, false, Some("helper_missing"), None, &messages);
@@ -239,7 +239,7 @@ fn a_session_working_elsewhere_is_said_once() {
     let used = under(&["home", "src", "proj"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     let mut messages = vec![accepted(&used), accepted(&used)];
     messages.extend(a_turn("completed"));
@@ -257,7 +257,7 @@ fn a_reply_that_comes_after_the_turn_is_still_waited_for() {
     let used = under(&["home", "src", "proj"]);
     let plan = Plan {
         cwd: under(&["home"]).to_string_lossy().into_owned(),
-        ..plan(Format::Text, Language::Chinese)
+        ..plan(Output::Text, Language::Chinese)
     };
     let mut messages = a_turn("completed");
     messages.push(accepted(&used));

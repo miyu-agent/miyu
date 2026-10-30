@@ -17,7 +17,7 @@ fn under(parts: &[&str]) -> PathBuf {
 }
 
 /// 在 `/work` 里说「hi」；给人看的字照出厂的，家目录是 `/home`。
-fn plan(format: Format, language: Language) -> Plan {
+fn plan(format: Output, language: Language) -> Plan {
     let resources = ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"));
     Plan {
         text: "hi".to_string(),
@@ -198,7 +198,7 @@ fn feed_after(
 
 #[test]
 fn thinking_goes_to_stderr_and_the_answer_to_stdout() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let Fed {
         step,
         out,
@@ -219,7 +219,7 @@ fn thinking_goes_to_stderr_and_the_answer_to_stdout() {
 
 #[test]
 fn in_a_terminal_thinking_and_usage_are_gray_piece_by_piece() {
-    let plan = plan(Format::Text, Language::English);
+    let plan = plan(Output::Text, Language::English);
     let Fed {
         out, err, screen, ..
     } = feed(&plan, true, &a_turn("completed"));
@@ -236,7 +236,7 @@ fn in_a_terminal_thinking_and_usage_are_gray_piece_by_piece() {
 
 #[test]
 fn other_turns_sessions_and_commands_are_not_followed() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = vec![
         event("turn.started", 9, "ask-9", json!({})),
         event(
@@ -264,7 +264,7 @@ fn other_turns_sessions_and_commands_are_not_followed() {
 
 #[test]
 fn json_prints_one_line_at_the_end_and_nothing_else() {
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let Fed { step, out, err, .. } = feed(&plan, true, &a_turn("completed"));
     assert_eq!(step, Step::Done(exit::OK));
     assert_eq!(err, "");
@@ -294,7 +294,7 @@ fn failing(endpoint: Value, class: &str, message: &str) -> Vec<Value> {
 
 #[test]
 fn no_model_is_5_and_other_errors_are_1() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let Fed { step, out, err, .. } = feed(
         &plan,
         false,
@@ -318,7 +318,7 @@ fn no_model_is_5_and_other_errors_are_1() {
     assert_eq!(step, Step::Done(exit::ERROR));
     assert_eq!(err, "miyu: 认证失败：HTTP 401: bad key\n");
     let plan = super::super::Plan {
-        format: Format::Json,
+        format: Output::Json,
         ..plan
     };
     let Fed { out, .. } = feed(
@@ -336,7 +336,7 @@ fn no_model_is_5_and_other_errors_are_1() {
 /// 候选全在冷却、没发出去的（施工 8-9）：和没有模型一样是 5，说模型冷却中、接原话。
 #[test]
 fn cooling_is_5_too() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let Fed { step, err, .. } = feed(
         &plan,
         false,
@@ -355,7 +355,7 @@ fn cooling_is_5_too() {
 
 #[test]
 fn a_retry_that_worked_is_not_an_error() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = failing(json!("deepseek"), "retryable", "HTTP 500");
     messages.pop();
     messages.extend(a_turn("completed").into_iter().skip(1));
@@ -368,7 +368,7 @@ fn a_retry_that_worked_is_not_an_error() {
     );
     // 给脚本的那一行也不带出错。
     let plan = super::super::Plan {
-        format: Format::Json,
+        format: Output::Json,
         ..plan
     };
     let Fed { out, .. } = feed(&plan, false, &messages);
@@ -378,7 +378,7 @@ fn a_retry_that_worked_is_not_an_error() {
 
 #[test]
 fn how_a_turn_ends_decides_the_exit_code() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let Fed { step, err, .. } = feed(&plan, false, &a_turn("interrupted"));
     assert_eq!(step, Step::Done(exit::INTERRUPTED));
     assert!(err.ends_with("miyu: 已中断\n"), "{err}");
@@ -389,7 +389,7 @@ fn how_a_turn_ends_decides_the_exit_code() {
 
 #[test]
 fn thinking_cut_short_still_ends_its_line() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let messages = [
         event("turn.started", 3, "ask-4", json!({})),
         delta(json!({"seen": 5, "index": 0, "start": "reasoning"})),
@@ -406,7 +406,7 @@ fn thinking_cut_short_still_ends_its_line() {
 
 #[test]
 fn a_refused_message_says_why_and_a_lagging_one_resubscribes() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let refused = json!({"jsonrpc": "2.0", "id": "ask-4", "error": {"code": -32010, "message": "会话不存在。"}});
     let Fed { step, err, .. } = feed(&plan, false, &[refused]);
     assert_eq!(step, Step::Done(exit::ERROR));
@@ -422,5 +422,6 @@ mod compaction;
 mod joining;
 mod redo;
 mod sample;
+mod stream;
 mod unattended;
 mod waiting;

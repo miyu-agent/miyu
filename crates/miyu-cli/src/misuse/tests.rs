@@ -65,8 +65,8 @@ fn each_kind_of_mistake_has_one_sentence() {
         ),
         (
             &["ask", "--format", "xml", "hi"],
-            "miyu: '--format' 的值无效：'xml'\n提示：可选的值：text 或 json",
-            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text or json",
+            "miyu: '--format' 的值无效：'xml'\n提示：可选的值：text、json 或 jsonl",
+            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text, json or jsonl",
         ),
     ];
     for (args, chinese, english) in cases {

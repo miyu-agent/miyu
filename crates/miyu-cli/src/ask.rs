@@ -87,8 +87,8 @@ pub struct Ask {
     #[arg(short = 'c', long = "continue", id = "resume")]
     pub resume: bool,
     /// 输出的格式。
-    #[arg(long, value_enum, default_value_t = Format::Text)]
-    pub format: Format,
+    #[arg(long, value_enum, default_value_t = Output::Text)]
+    pub format: Output,
     /// 加进来的目录：和工作区一样能读能写，可以写好几次（施工 5-10 上）。读参数时就换成绝对的、查它是目录。
     #[arg(long = "add-dir", value_name = "DIR", value_parser = directory)]
     pub add_dir: Vec<PathBuf>,
@@ -192,6 +192,17 @@ pub enum Format {
     Json,
 }
 
+/// `miyu ask` 输出的格式（施工 AP-3）：比别的命令的 [`Format`] 多一种事件流。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Output {
+    /// 给人看：边收边打。
+    Text,
+    /// 给脚本：最后一行 JSON。
+    Json,
+    /// 给程序：标准输出一行一个事件，边跑边出（设计 50 第四节，`follow/stream.rs`）。
+    Jsonl,
+}
+
 /// 接哪个会话。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Target {
@@ -211,7 +222,7 @@ pub struct Plan {
     /// 接哪个会话。
     pub target: Target,
     /// 输出的格式。
-    pub format: Format,
+    pub format: Output,
     /// 工作目录：会话的环境跟着它。
     pub cwd: String,
     /// 加进来的目录，绝对路径，照写的先后、去掉重复的（施工 5-10 上）：造会话、说话都带着，没有的也写空的。

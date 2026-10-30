@@ -11,6 +11,7 @@ mod attach;
 mod compact;
 mod config;
 mod from;
+mod jsonl;
 mod kb;
 mod login;
 mod memory;

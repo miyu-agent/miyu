@@ -23,7 +23,7 @@ fn ask(words: &[&str]) -> Ask {
         words: words.iter().map(|word| (*word).to_string()).collect(),
         session: None,
         resume: false,
-        format: Format::Text,
+        format: Output::Text,
         add_dir: Vec::new(),
         file: Vec::new(),
         timeout: None,

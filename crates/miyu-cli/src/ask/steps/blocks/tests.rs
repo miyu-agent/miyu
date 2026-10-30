@@ -8,7 +8,7 @@ use miyu_store::human::Human;
 use miyu_store::resources::ResourceRoot;
 
 use super::super::Steps;
-use crate::ask::{Format, Plan, Target};
+use crate::ask::{Output, Plan, Target};
 use crate::language::Language;
 
 /// 根目录下面的 `parts`：Windows 上得带盘符才算绝对路径。
@@ -23,7 +23,7 @@ fn plan(language: Language) -> Plan {
     Plan {
         text: String::new(),
         target: Target::New,
-        format: Format::Text,
+        format: Output::Text,
         cwd: under(&["work"]).to_string_lossy().into_owned(),
         dirs: Vec::new(),
         files: Vec::new(),

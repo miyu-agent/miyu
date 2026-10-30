@@ -22,7 +22,7 @@ use tokio::sync::mpsc;
 
 use miyu_cli::language::Language;
 use miyu_cli::{
-    CompactPlan, Format, Plan, RedoPlan, Screen, Target, UndoPlan, compact_on, redo_on, talk,
+    CompactPlan, Output, Plan, RedoPlan, Screen, Target, UndoPlan, compact_on, redo_on, talk,
     undo_on,
 };
 use miyu_endpoint::Core;
@@ -446,7 +446,7 @@ pub fn plan(text: &str) -> Plan {
     Plan {
         text: text.to_string(),
         target: Target::New,
-        format: Format::Text,
+        format: Output::Text,
         cwd: "/work".to_string(),
         dirs: Vec::new(),
         files: Vec::new(),

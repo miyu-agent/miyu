@@ -36,6 +36,16 @@ impl Problem {
         self
     }
 
+    /// 它是什么那一行，不带程序名（施工 AP-3：事件流的告警照它写 `message`）。
+    pub(crate) fn what(&self) -> &str {
+        &self.what
+    }
+
+    /// 几条建议，不带「提示：」（施工 AP-3：事件流的告警照它写 `hints`）。
+    pub(crate) fn hints(&self) -> &[String] {
+        &self.hints
+    }
+
     /// 写成几行：报错是 `miyu: <事>`，警告是 `miyu: warning: <事>`，后面每条建议一行。
     pub(crate) fn lines(&self, language: Language, level: Level) -> Vec<String> {
         let first = match (level, language) {

@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 
 use crate::support::router::{Gate, Router};
 use crate::support::{Asked, Home, Tape, ask_onto, plan, shipped_tools, within};
-use miyu_cli::{Format, Plan, Target};
+use miyu_cli::{Output, Plan, Target};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::Play;
 
@@ -52,7 +52,7 @@ fn two_agents() -> (Router, Gate, Gate) {
 }
 
 /// 照 `format` 说那一句，第一轮结束了放 A 回报，叫醒的那一轮结束了再放 B：先后回报，印的先后一定。
-async fn ask_two(format: Format) -> Asked {
+async fn ask_two(format: Output) -> Asked {
     let (router, a, b) = two_agents();
     let home = home(router);
     let (_press, presses) = mpsc::channel(1);
@@ -79,7 +79,7 @@ async fn it_waits_for_both_reports_and_prints_every_turn_like_the_sample() {
         out,
         err,
         screen,
-    } = ask_two(Format::Text).await;
+    } = ask_two(Output::Text).await;
     assert_eq!(code, 0, "{err}");
     assert_eq!(
         out,
@@ -93,7 +93,7 @@ async fn it_waits_for_both_reports_and_prints_every_turn_like_the_sample() {
 
 #[tokio::test]
 async fn json_lists_every_turn_in_order() {
-    let Asked { code, out, err, .. } = ask_two(Format::Json).await;
+    let Asked { code, out, err, .. } = ask_two(Output::Json).await;
     assert_eq!(code, 0, "{err}");
     assert_eq!(err, "", "给脚本的标准错误上什么都不印");
     let printed: Value = serde_json::from_str(out.trim_end()).expect("一行 JSON");
@@ -107,6 +107,52 @@ async fn json_lists_every_turn_in_order() {
         ]),
         "第一轮三次请求，叫醒的两轮各一次"
     );
+}
+
+/// 事件流（施工 AP-3）：每一轮各自开头结尾，等的子代理报回来了一行 `agent.reported`，在它叫醒的那一轮前面；最后是 `done`。
+#[tokio::test]
+async fn jsonl_streams_every_turn_and_each_report() {
+    let Asked { code, out, err, .. } = ask_two(Output::Jsonl).await;
+    assert_eq!(code, 0, "{err}");
+    assert_eq!(err, "", "标准错误上什么都不印");
+    let lines = crate::jsonl::lines(&out);
+    let kept: Vec<&str> = crate::jsonl::types(&lines)
+        .into_iter()
+        .filter(|kind| !matches!(*kind, "text" | "thinking" | "step" | "step.done"))
+        .collect();
+    assert_eq!(
+        kept,
+        [
+            "session",
+            "turn.started",
+            "turn.ended",
+            "agent.reported",
+            "turn.started",
+            "turn.ended",
+            "agent.reported",
+            "turn.started",
+            "turn.ended",
+            "done"
+        ]
+    );
+    let reported: Vec<(&Value, &Value)> = lines
+        .iter()
+        .filter(|line| line["type"] == "agent.reported")
+        .map(|line| (&line["agent"], &line["text"]))
+        .collect();
+    assert_eq!(
+        reported,
+        [
+            (&json!("j1"), &json!("A 的结果。")),
+            (&json!("j2"), &json!("B 的结果。"))
+        ]
+    );
+    let steps: Vec<&Value> = lines
+        .iter()
+        .filter(|line| line["type"] == "step")
+        .map(|line| &line["tool"])
+        .collect();
+    assert_eq!(steps, [&json!("subagent"), &json!("subagent")]);
 }
 
 #[tokio::test]

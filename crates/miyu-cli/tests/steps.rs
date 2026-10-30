@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 
 use crate::support::outside::Outside;
 use crate::support::{Asked, Bare, Home, ask_at, dirs, plan, shipped_tools};
-use miyu_cli::{Format, Plan, Target};
+use miyu_cli::{Output, Plan, Target};
 use miyu_ipc::Listener;
 use miyu_session::testkit::{Play, Script};
 
@@ -172,7 +172,7 @@ async fn json_prints_no_steps() {
     let Asked { code, out, err, .. } = home
         .ask(&Plan {
             cwd: work.text(),
-            format: Format::Json,
+            format: Output::Json,
             ..plan("读一下")
         })
         .await;
@@ -192,7 +192,7 @@ async fn json_says_a_step_needed_approval_only_by_the_exit_code() {
     let Asked { code, out, err, .. } = home
         .ask(&Plan {
             cwd: work.text(),
-            format: Format::Json,
+            format: Output::Json,
             ..plan("读一下")
         })
         .await;

@@ -24,7 +24,7 @@ fn a_subagent_from_before_that_she_messaged_is_waited_for_without_a_title() {
             "· j1 \u{201c}查 A\u{201d} reported back\n",
         ),
     ] {
-        let plan = plan(Format::Text, language);
+        let plan = plan(Output::Text, language);
         let mut messages = round(
             10,
             "ask-4",
@@ -63,7 +63,7 @@ fn a_subagent_from_before_that_she_messaged_is_waited_for_without_a_title() {
 #[test]
 fn the_report_line_is_one_clean_line() {
     // 编号、标题照每一步参数的值写成一行：只取第一行，控制字符换掉（施工 7-9；没有标题的那一行也是，施工 7-9 补）。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let mut messages = round(
         10,
         "ask-4",

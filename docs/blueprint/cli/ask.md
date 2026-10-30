@@ -15,6 +15,8 @@
 | `crates/miyu-cli/src/language/input.rs` | 凑不出要说的话时说的几句（施工 AP-2） |
 | `crates/miyu-cli/src/ask/talk.rs` | 握手、传附件（施工 3-9 三补）、找会话、订阅、发、跟着那一轮；等子代理时按 Ctrl+C 不等了、`--timeout`（施工 7-9） |
 | `crates/miyu-cli/src/ask/follow.rs` | 收推送：回答、思考、每一步、用量 |
+| `crates/miyu-cli/src/ask/follow/stream.rs` | `--format jsonl` 的事件流：每一种事件裁成哪几格（施工 AP-3） |
+| `crates/miyu-cli/src/ask/follow/reply.rs` | 每次回复的正文、每次请求的用量和出错（施工 AP-3 从 `follow.rs` 挪出来） |
 | `crates/miyu-cli/src/ask/follow/ending.rs` | 一轮结束、都结束了、不等了：收尾印的几行，退出码（施工 7-9 从 `follow.rs` 挪出来） |
 | `crates/miyu-cli/src/ask/follow/waiting.rs` | 等子代理：跟被回报叫醒的几轮，等的那一行，报回来了那一行（施工 7-9） |
 | `crates/miyu-cli/src/ask/follow/agents.rs` | 照事件流数还有几个子代理没报、回报叫醒的那一轮来不来（施工 7-9）；这一次以前派、这一次留了言的也数（施工 7-9 补） |
@@ -36,7 +38,7 @@
 | `<words>...` | 要说的话；几个词用一个空格连起来。可以不写，从标准输入读；有一个词正好是 `-` 的，读标准输入接在后面（施工 AP-2，下面「标准输入」） |
 | `-s`、`--session <编号>` | 接着这个会话说；和 `--continue` 不能一起写 |
 | `-c`、`--continue` | 接着最新的那个一次性会话说 |
-| `--format text\|json` | 默认 `text` |
+| `--format text\|json\|jsonl` | 默认 `text`；`jsonl` 是事件流（施工 AP-3，下面「样子：`--format jsonl`」）。别的命令的 `--format` 照旧只有 `text`、`json` |
 | `--add-dir <目录>` | 多放行一个目录：和工作区一样能读能写；可以写好几次（施工 5-10 上） |
 | `--file <文件>` | 附上一个文件：图片、PDF、文本……；可以写好几次，照写的先后（施工 3-9 三补） |
 | `--from <名字>` | 别的 harness 发的（施工 7-10，`agents.md` 第十一条第 4 条）：写上它的名字，这一句记成它说的，不是本人。和 `-s`、`-c` 一起用是往那个会话里发；都不写开一个新会话。空的、只有空白的照「参数写错时」说（`cli/main.md`），退出码 2 |
@@ -312,6 +314,48 @@ C 也查完了。
 - 不印思考、每一步、沙盒用不了那一句、目录太宽那一句、用量那一行、最后那一句；标准错误上只印出错（被拒绝、核心断开……）和说为什么结束的那一句。
 - 退出码和 `text` 一样，有几步因为要确认没做的也是 4。
 
+### 样子：`--format jsonl`
+
+施工 AP-3，设计 50 第四节。标准输出一行一个事件，边跑边出（每一行写完就冲掉）；标准错误照旧只印出错（被拒绝、核心断开、说为什么结束的那一句、不等了的那一句），不印旁白。退出码和 `text` 一样。
+
+- 每一行是一个 JSON 对象，`type` 说是什么。格照名字的字母先后排（`serde_json` 的对象是按名字排的 `BTreeMap`，工作区没开 `preserve_order`）；没有多的空白。可有可无的格（下表打 `?` 的）没有时整格不写，不写 `null`。
+- 形状是命令行自己定的一份，从核心的事件裁出来，不原样转发：核心的事件以后加格、改说法，这一份照旧。
+- 先后：`session` 一次 → 每跟一轮 `turn.started`，中间是 `thinking`、`text`、`step`、`step.done`、`compaction`，最后 `turn.ended` → 等子代理时 `agent.reported` 在它叫醒的那一轮前面（一轮里到的在那一轮中间）→ `done` 一次。`warning` 照告警出来的地方：开头那几句在 `session` 后面、第一轮前面，有几步要确认没做的在最后一个 `turn.ended` 后面、`done` 前面。
+- 开好会话以前出的错（握手、传附件、造会话、切权限、订阅被拒，标准输入凑不出话……）：标准输出上什么都没有，原因在标准错误上，退出码照旧。开好以后不管怎么结束，最后一行都是 `done`。
+
+| `type` | 什么时候 | 格 |
+|---|---|---|
+| `session` | 开始，一次：开好会话、发出这一句以后 | `session`：会话编号；`new`：是不是这一次新开的（`-c`、`-s` 的是 `false`） |
+| `turn.started` | 跟的一轮开始（第一轮；等子代理时被叫醒的每一轮；她正忙时接上的那一轮） | `turn`：回合编号 |
+| `thinking` | 思考，来一段写一段（`model.delta` 里思考那一块的字） | `text` |
+| `text` | 回答，来一段写一段（`model.delta` 里正文那一块的字） | `text` |
+| `step` | 一步开始：她的回复（`message.assistant`）里每一次工具调用，照先后 | `id`：调用编号；`tool`：她写的工具名；`title`：显示名加参数的值，同 `text` 那一行去掉符号和结果那一句（`读取 src/lib.rs`）；没有显示名的照工具名 |
+| `step.done` | 一步结束：`tool.result` | `id`；`ok`：状态是不是 `ok`；`summary`?：结果那一句（同 `text` 那一行 ` · ` 后面的说法，`37 行`、`需要确认，无人确认`），换不成字的不写 |
+| `agent.reported` | 等的子代理报回来了（`child.reported`，同 `text` 的「报回来了」那一行，只认等着的） | `agent`：任务编号（`j1`）；`text`：它最后说的 |
+| `compaction` | 压缩了（`compaction.done`） | `before`、`after`：压之前、压完的 token 数（估算） |
+| `warning` | 告警，同 `text` 里 `miyu: 警告：` 那几句：配置有错、项目配置没信任、沙盒用不了、工作目录太宽、有几步要确认没做 | `message`：告警那一句，不带 `miyu: 警告：`，照界面语言；`hints`?：建议，一条一个，不带「提示：」 |
+| `turn.ended` | 一轮结束 | `turn`；`reason`：结束的原因，照核心的原样（`completed`、`interrupted`、`error`……）；`text`：这一轮的全部回答，写法同 `--format json` 的 `text`；`usage`：这一轮的用量，四格同 `--format json`（`input` 是加起来的输入，`cache_read`、`cache_write`、`output`，供应商没报的都是 0）；`error`?：这一轮最后一次请求出错的 `{"class", "message"}`，同 `--format json` |
+| `done` | 最后，一次 | `session`；`exit`：退出码；`reason`?：退出码不是 0 的为什么：`unattended`（4）、`no_model`（5）、`interrupted`、`error`、别的照最后那一轮结束的原因；不等了的 `stopped`（按了 Ctrl+C）、`timed_out`（到了 `--timeout`）；说话被拒的 `refused`；核心断开的 `disconnected` |
+
+样子（`miyu ask --format jsonl "在吗"`，回合编号、会话编号照实际的）：
+
+```text
+{"new":true,"session":"0192f3a0-…","type":"session"}
+{"turn":1,"type":"turn.started"}
+{"text":"想一想","type":"thinking"}
+{"id":"call_1_0","title":"读取 notes.md","tool":"read","type":"step"}
+{"id":"call_1_0","ok":true,"summary":"3 行","type":"step.done"}
+{"text":"你好","type":"text"}
+{"text":"。","type":"text"}
+{"after":31000,"before":812300,"type":"compaction"}
+{"agent":"j1","text":"A 的结果。","type":"agent.reported"}
+{"reason":"completed","text":"你好。","turn":1,"type":"turn.ended","usage":{"cache_read":40,"cache_write":0,"input":100,"output":10}}
+{"hints":["在终端界面中运行可以确认"],"message":"1 步需要确认，已跳过","type":"warning"}
+{"exit":4,"reason":"unattended","session":"0192f3a0-…","type":"done"}
+```
+
+（每一种各举一行，不是一次真跑的先后。）
+
 ### 退出码
 
 | 码 | 什么时候 |
@@ -411,7 +455,8 @@ C 也查完了。
       --preset <预设>       使用指定的预设（仅新会话）
       --permission <read-only|workspace|full>
                             权限级别：只读、工作区或完全放开（仅新会话）
-      --format <text|json>  输出格式（默认 text）
+      --format <text|json|jsonl>
+                            输出格式（默认 text），jsonl 每行一个事件
       --add-dir <目录>      允许读写另一个目录，可重复
       --file <文件>         附加文件（图片、PDF、文本），可重复
       --timeout <时长>      最长等待时间，例如 30s、10m、1h
@@ -431,6 +476,7 @@ C 也查完了。
 例子：
   miyu ask "这个项目是做什么的"
   cat 报错.log | miyu ask "为什么失败" -
+  git diff | miyu ask --format jsonl "审查这些改动" -
   miyu ask -C ~/src/app --permission read-only "检查这里的代码"
 ```
 
@@ -453,7 +499,9 @@ Options:
       --preset <preset>     Use the given preset (new sessions only)
       --permission <read-only|workspace|full>
                             Permission level (new sessions only)
-      --format <text|json>  Output format (default: text)
+      --format <text|json|jsonl>
+                            Output format (default: text); jsonl prints one
+                            event per line
       --add-dir <dir>       Allow access to another directory; repeatable
       --file <file>         Attach a file (image, PDF, text); repeatable
       --timeout <time>      Maximum time to wait, e.g. 30s, 10m, 1h
@@ -473,6 +521,7 @@ Exit status:
 Examples:
   miyu ask "What does this project do"
   cat error.log | miyu ask "Why did this fail" -
+  git diff | miyu ask --format jsonl "Review these changes" -
   miyu ask -C ~/src/app --permission read-only "Review the code here"
 ```
 
@@ -499,6 +548,9 @@ Examples:
 | `crates/miyu-cli/src/ask/input/tests.rs`（施工 AP-2） | 标准输入用真的管道喂：没写消息的整段是消息，`-` 接在后面空一行、写在哪都一样，读到空白的照写的；写了消息、没写 `-` 的不读（写的一头一直开着也不卡）；不是 UTF-8、空的、只有空白的读不成；伪终端里没写消息的当没有消息 |
 | `crates/miyu-cli/tests/opening.rs`（施工 AP-2） | 真的核心：`--no-persona` 不用配置里默认的人格、不写的照配置、`--persona`、`--preset` 记进 `session.created`；没有的人格退出码 1、不造会话；`--permission` 三种在人说的话前面切好 |
 | `crates/miyu/tests/ask_stdin.rs`（施工 AP-2） | 真跑主程序、标准输入接管道：没写消息的整段记成她收到的话；`-` 接在后面；写了消息不读、留着不关的管道也退出；不是 UTF-8、空的退出码 2；新会话的几样和 `-c`、`-s` 一起写、`--persona` 和 `--no-persona` 一起写、`--permission` 写错的退出码 2，各一句；伪终端里没写消息的退出码 2、不等人敲 |
+| `crates/miyu-cli/src/ask/follow/tests/stream.rs`（施工 AP-3） | 事件流：一轮的开头、思考、回答、结尾逐字节，格照字母排；每一步开始、结束，有说法的带 `summary`、没有的不写；开头的告警、压缩、出错的一轮带 `error`，标准错误上只有出错那一句 |
+| `crates/miyu-cli/tests/jsonl.rs`（施工 AP-3） | 真的核心：每一行是照字母排的 JSON，`session` 开头、`done` 结尾；接着说的 `new` 是 `false`；没有模型的那一轮带 `error`、`done` 退出码 5、`reason` 是 `no_model`；写到工作区外面要确认的一步：`step`、`step.done`（`ok` 是 `false`、说法）、`warning`、退出码 4 |
+| `crates/miyu-cli/tests/agents.rs` 的 `jsonl_streams_every_turn_and_each_report`（施工 AP-3） | 等子代理：每一轮各自开头结尾，两份回报 `agent.reported` 各在它叫醒的那一轮前面，最后 `done` |
 | `crates/miyu-cli/tests/attach.rs` | 真的核心走一遍 `--file`（施工 3-9 三补）：文字在前、附件照写的先后变成块，图片的宽高、文本的媒体类型；没有的、太大的说是哪个文件、为什么，中文、英文，退出码 1，不造会话 |
 | `crates/miyu-cli/tests/ask.rs` | 真的核心：开一次性会话、`--continue`、没有会话可接、被拒绝、没有模型、Ctrl+C 一次和两次；加进来的目录跟着每一次 `miyu ask`：`--continue` 不写的那一轮就没有，太宽的造会话时就被拒、不留空会话（施工 5-10 上）；`--model` 新开的照它造、接着的先换（`@池`）再说、换不成的（连同以前的挡位名）退出码 1 不发话（施工 8-10、8-8 补）；`--no-memory` 新开的会话快照里是 `off`、不写的不是（施工 R-3 下） |
 | `crates/miyu-cli/tests/steps.rs` | 真的核心、真的工具走一遍：每一步、执行命令和编辑那两块、目录太宽、给脚本的只看退出码。要确认的一步是写到工作区外面（施工 5-4 上起读哪儿都不问）；执行命令经 cargo 编出来的助手在沙盒里跑 |
@@ -517,7 +569,7 @@ Examples:
 
 设计里有、还没做的（`22-命令行.md` 第三节）：
 
-- `--tools`，`--format stream-json`。
+- `--tools`。（`--format stream-json` 施工 AP-3 做成了 `--format jsonl`，形状是命令行自己定的。）
 - 管道进来的内容当附件：施工 AP-2 起管道进来的是文字，接在消息里；不是 UTF-8 的不收。
 - 还没配模型时，先问首次引导的那两件事。
 - 这一句一时没有哪一轮听到它的，一直等到有一轮听到它：接上的那一轮被打断、这一句被退回了（`return`），或者 `--from` 的话被打断以后只记下、那个会话还能恢复撤销时只记下。按 Ctrl+C 或者用 `--timeout`（施工 7-10）。

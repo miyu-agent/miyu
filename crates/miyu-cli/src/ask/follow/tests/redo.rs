@@ -58,7 +58,7 @@ fn opened() -> Value {
 fn printing(language: Language) -> Plan {
     Plan {
         cwd: String::new(),
-        ..plan(Format::Text, language)
+        ..plan(Output::Text, language)
     }
 }
 

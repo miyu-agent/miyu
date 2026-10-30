@@ -51,7 +51,7 @@ fn done() -> Value {
 
 #[test]
 fn in_a_terminal_the_progress_is_redrawn_in_place_then_replaced() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = compacted(vec![summary_called("ok", None), done()]);
     let Fed { err, .. } = feed(&plan, true, &turn);
     let gray = |text: &str| format!("\x1b[90m{text}\x1b[0m");
@@ -66,7 +66,7 @@ fn in_a_terminal_the_progress_is_redrawn_in_place_then_replaced() {
 
 #[test]
 fn in_a_pipe_only_the_result_is_printed() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = compacted(vec![summary_called("ok", None), done()]);
     let Fed { screen, step, .. } = feed(&plan, false, &turn);
     assert_eq!(step, Step::Done(exit::OK));
@@ -78,7 +78,7 @@ fn in_a_pipe_only_the_result_is_printed() {
 
 #[test]
 fn a_failed_summary_is_red_and_says_why() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     for (message, why) in [
         ("no summary in the reply", "摘要提取失败"),
         ("the summary reply called a tool", "摘要请求调用了工具"),
@@ -95,7 +95,7 @@ fn a_failed_summary_is_red_and_says_why() {
 
 #[test]
 fn in_english_too() {
-    let plan = plan(Format::Text, Language::English);
+    let plan = plan(Output::Text, Language::English);
     let turn = compacted(vec![summary_called("ok", None), done()]);
     let Fed { screen, .. } = feed(&plan, false, &turn);
     assert!(
@@ -115,7 +115,7 @@ fn in_english_too() {
 
 #[test]
 fn json_prints_none_of_it() {
-    let plan = plan(Format::Json, Language::Chinese);
+    let plan = plan(Output::Json, Language::Chinese);
     let turn = compacted(vec![summary_called("ok", None), done()]);
     let Fed { err, .. } = feed(&plan, true, &turn);
     assert!(!err.contains("压缩"), "{err:?}");
@@ -124,7 +124,7 @@ fn json_prints_none_of_it() {
 #[test]
 fn a_progress_after_a_half_said_answer_starts_on_a_new_line() {
     // 回合中途压：她先说了半句，还没换行就来了进度。照一步的规矩先换行：进度那一行擦的是自己那一行，不能把她说的擦掉。
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = [
         event("turn.started", 3, "ask-4", json!({"trigger": 2})),
         delta(json!({"seen": 5, "index": 0, "start": "text"})),
@@ -150,7 +150,7 @@ fn paused(body: Value) -> Value {
 
 #[test]
 fn a_pause_after_the_third_failure_is_red_and_says_what_to_do() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let turn = compacted(vec![
         summary_called("error", Some(("auth", "denied"))),
         paused(json!({"reason": "failures", "failures": 3})),
@@ -197,7 +197,7 @@ fn each_pause_reason_has_its_line() {
             "· Automatic compaction is paused: compact manually, switch models, or start a new session",
         ),
     ] {
-        let plan = plan(Format::Text, language);
+        let plan = plan(Output::Text, language);
         let mut turn = a_turn("completed");
         turn.insert(1, paused(body.clone()));
         let Fed { screen, .. } = feed(&plan, false, &turn);
@@ -210,7 +210,7 @@ fn each_pause_reason_has_its_line() {
 
 #[test]
 fn a_request_that_would_not_fit_while_paused_ends_the_turn_with_the_class() {
-    let plan = plan(Format::Text, Language::Chinese);
+    let plan = plan(Output::Text, Language::Chinese);
     let message =
         "the request would not fit: 126400 tokens used + 20000 reserved for output > window 128000";
     let turn = [
@@ -245,7 +245,7 @@ fn a_tool_call_in_the_summary_falls_back_in_gray_and_the_compaction_goes_on() {
             "· The summary called a tool; compacting again without tools",
         ),
     ] {
-        let plan = plan(Format::Text, language);
+        let plan = plan(Output::Text, language);
         let turn = compacted(vec![
             summary_called(
                 "error",

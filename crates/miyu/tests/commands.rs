@@ -101,7 +101,7 @@ fn a_mistake_is_one_error_with_hints_and_exit_code_2() {
         (
             &["ask", "--format", "xml", "hi"],
             "C",
-            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text or json",
+            "miyu: invalid value 'xml' for '--format'\nhint: possible values: text, json or jsonl",
         ),
         // 短写的 `-s`、`-c` 就是 `--session`、`--continue`。
         (

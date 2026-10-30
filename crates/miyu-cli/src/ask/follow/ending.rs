@@ -4,7 +4,7 @@
 
 use serde_json::json;
 
-use super::{Follow, Format, Screen, Step, steps};
+use super::{Follow, Output, Screen, Step, steps};
 use crate::ask::exit;
 use crate::diagnostic::{self, Level};
 use crate::shown::{GRAY, Line, RESET, say, write};
@@ -25,6 +25,7 @@ impl Follow<'_> {
         self.close_turn(screen);
         self.turns
             .push(json!({"text": self.answer, "usage": self.usage.json()}));
+        self.stream_ended(self.turn, reason, screen);
         self.turn = None;
         self.reason = reason.to_string();
         self.agents.turn_ended(reason);
@@ -61,7 +62,7 @@ impl Follow<'_> {
     /// 收好这一轮的屏幕：只想了、没回答的（例如被打断了），思考那一行收个尾；回答末尾补上换行；最后是一块、一段思考的，
     /// 后面欠着空行。
     pub(super) fn close_turn(&mut self, screen: &mut Screen<'_>) {
-        if self.plan.format != Format::Text {
+        if self.plan.format != Output::Text {
             return;
         }
         self.part(screen, "");
@@ -99,6 +100,14 @@ impl Follow<'_> {
             ("error", None) => (exit::ERROR, Some(language.failed("other", ""))),
             (other, _) => (exit::ERROR, Some(language.unfinished(other))),
         };
+        // 事件流 `done` 的 `reason`（施工 AP-3）：照常结束的没有；有几步没做的是 `unattended`，没有模型的是 `no_model`，别的照
+        // 这一轮结束的原因。
+        self.why = match code {
+            exit::OK => None,
+            exit::UNATTENDED => Some("unattended".to_string()),
+            exit::NO_MODEL => Some("no_model".to_string()),
+            _ => Some(self.reason.clone()),
+        };
         self.close(note.is_some(), screen);
         if let Some(note) = note {
             diagnostic::error(screen.err, self.plan.language, &note);
@@ -118,12 +127,16 @@ impl Follow<'_> {
             (Leaving::Pressed, false) => language.stopped_waiting(),
             (Leaving::TimedOut, false) => language.timed_out(self.agents.owed() > 0),
         };
+        self.why = Some(match why {
+            Leaving::Pressed => "stopped".to_string(),
+            Leaving::TimedOut => "timed_out".to_string(),
+        });
         self.unwait(screen);
         self.close_turn(screen);
         self.close(true, screen);
         match self.plan.format {
-            Format::Text => write(screen.err, &Line::gray(line).paint(screen.gray)),
-            Format::Json => say(screen.err, &line),
+            Output::Text => write(screen.err, &Line::gray(line).paint(screen.gray)),
+            Output::Json | Output::Jsonl => say(screen.err, &line),
         }
         exit::INTERRUPTED
     }
@@ -132,7 +145,7 @@ impl Follow<'_> {
     /// 后面还有一句要印：一块、一段思考后面欠着的空行先写上。
     fn close(&mut self, more: bool, screen: &mut Screen<'_>) {
         match self.plan.format {
-            Format::Text => {
+            Output::Text => {
                 if self.total.seen || self.unattended > 0 || more {
                     self.settle(screen);
                 }
@@ -150,13 +163,18 @@ impl Follow<'_> {
                     }
                 }
             }
-            Format::Json => {
+            Output::Json => {
                 let mut result = json!({"session": self.session, "turns": self.turns});
                 if let Some(failure) = &self.failure {
                     result["error"] = json!({"class": failure.class, "message": failure.message});
                 }
                 write(screen.out, &format!("{result}\n"));
             }
+            Output::Jsonl if self.unattended > 0 => {
+                let warning = steps::unattended_warning(self.plan, self.unattended);
+                self.stream_warning(&warning, screen);
+            }
+            Output::Jsonl => {}
         }
     }
 }

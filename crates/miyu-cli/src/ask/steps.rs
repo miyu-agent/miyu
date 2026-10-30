@@ -131,6 +131,32 @@ impl Steps {
     }
 }
 
+impl Steps {
+    /// 一步开始时给事件流的（施工 AP-3）：调用 `id` 是哪件工具（她写的名字），标题是显示名加参数的值，同每一步那一行去掉
+    /// 符号和结果那一句；没有显示名的照工具名。对不上她调过的哪一次的没有。
+    pub(crate) fn opened(&self, id: &str, plan: &Plan, cwd: &str) -> Option<(String, String)> {
+        let called = self.calls.get(id)?;
+        let face = plan.human.tool(&called.name);
+        let name = match face {
+            Some(face) => face.name.clone(),
+            None => cut(&clean(&called.name), NAME_CHARS),
+        };
+        let subject = face.and_then(|face| face.subject.as_deref());
+        let title = match subject
+            .and_then(|subject| value_of(&called.args, subject, cwd, plan.home.as_deref()))
+        {
+            Some(value) => format!("{name} {value}"),
+            None => name,
+        };
+        Some((called.name.clone(), title))
+    }
+}
+
+/// 一次结果（`tool.result` 的 `body`）给人看的那一句（施工 AP-3：事件流的 `summary`）：换不成字的没有。
+pub(crate) fn summary(body: &Value, plan: &Plan) -> Option<String> {
+    Outcome::of(body, plan).said
+}
+
 /// 一次结果怎么样了：状态、给人看的那一句。
 #[derive(Debug)]
 struct Outcome {
