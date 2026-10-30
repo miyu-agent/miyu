@@ -30,7 +30,18 @@ fn ask(words: &[&str]) -> Ask {
         from: None,
         model: None,
         no_memory: false,
+        cd: None,
+        persona: None,
+        no_persona: false,
+        preset: None,
+        permission: None,
     }
+}
+
+/// 照 `args` 打算：要说的话是写的几个词用空格连起来（标准输入那一段另有测试，`input/tests.rs`）。
+fn plan_of(args: Ask, env: &Env, language: Language) -> Plan {
+    let text = args.words.join(" ");
+    plan(args, text, env, language)
 }
 
 /// 读的那件工具给人看的显示名。
@@ -42,7 +53,7 @@ fn read_name(plan: &Plan) -> Option<&str> {
 fn the_plan_reads_the_human_texts_in_the_interface_language() {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     let home = PathBuf::from("/home/someone");
-    let chinese = plan(
+    let chinese = plan_of(
         ask(&["读", "一下"]),
         &env(resources.clone(), Some(home.clone())),
         Language::Chinese,
@@ -51,11 +62,11 @@ fn the_plan_reads_the_human_texts_in_the_interface_language() {
     assert_eq!(chinese.target, Target::New);
     assert_eq!(chinese.home, Some(home), "路径照它写成 ~");
     assert_eq!(read_name(&chinese), Some("读取"));
-    let english = plan(ask(&["hi"]), &env(resources, None), Language::English);
+    let english = plan_of(ask(&["hi"]), &env(resources, None), Language::English);
     assert_eq!(read_name(&english), Some("Read"));
     // 读不出来的当没有：每一步照状态写最泛的一句。
     let nowhere = std::env::temp_dir().join("miyu-cli-no-resources-here");
-    let bare = plan(ask(&["hi"]), &env(nowhere, None), Language::Chinese);
+    let bare = plan_of(ask(&["hi"]), &env(nowhere, None), Language::Chinese);
     assert_eq!(read_name(&bare), None);
 }
 
@@ -68,7 +79,7 @@ fn added_dirs_keep_their_order_without_repeats() {
         add_dir: vec![a.clone(), b.clone(), a.clone()],
         ..ask(&["hi"])
     };
-    let planned = plan(args, &env(resources.clone(), None), Language::English);
+    let planned = plan_of(args, &env(resources.clone(), None), Language::English);
     assert_eq!(
         planned.dirs,
         [
@@ -76,7 +87,7 @@ fn added_dirs_keep_their_order_without_repeats() {
             b.to_string_lossy().into_owned()
         ]
     );
-    let none = plan(ask(&["hi"]), &env(resources, None), Language::English);
+    let none = plan_of(ask(&["hi"]), &env(resources, None), Language::English);
     assert!(none.dirs.is_empty());
 }
 
@@ -108,7 +119,7 @@ fn files_are_made_absolute_and_kept_in_order() {
         file: vec![a.clone(), b.clone(), a.clone()],
         ..ask(&["hi"])
     };
-    let planned = plan(args, &env(resources, None), Language::English);
+    let planned = plan_of(args, &env(resources, None), Language::English);
     let shown = |path: &PathBuf| path.to_string_lossy().into_owned();
     assert_eq!(planned.files, [shown(&a), shown(&b), shown(&a)]);
 }
@@ -147,7 +158,7 @@ fn timeout_is_a_whole_number_of_seconds_minutes_or_hours() {
         timeout: Some(Duration::from_secs(5)),
         ..ask(&["hi"])
     };
-    let plan = plan(waiting, &env(resources, None), Language::Chinese);
+    let plan = plan_of(waiting, &env(resources, None), Language::Chinese);
     assert_eq!(plan.timeout, Some(Duration::from_secs(5)));
 }
 
@@ -165,7 +176,7 @@ fn from_takes_any_name_but_a_blank_one() {
         from: Some("claude-code".to_string()),
         ..ask(&["hi"])
     };
-    let plan = plan(from, &env(resources, None), Language::Chinese);
+    let plan = plan_of(from, &env(resources, None), Language::Chinese);
     assert_eq!(plan.from.as_deref(), Some("claude-code"));
 }
 
@@ -184,4 +195,85 @@ fn no_memory_is_for_a_new_session_only() {
     assert_eq!(parsed(&["ask", "在吗"]).ok(), Some(false));
     assert!(parsed(&["ask", "--no-memory", "-c", "在吗"]).is_err());
     assert!(parsed(&["ask", "--no-memory", "-s", "x", "在吗"]).is_err());
+}
+
+/// 照 `miyu <words>` 读参数，交回 `ask` 那一段。
+fn parse(words: &[&str]) -> Result<Ask, clap::Error> {
+    use clap::Parser;
+
+    #[derive(Parser)]
+    struct Line {
+        #[command(flatten)]
+        ask: Ask,
+    }
+    Line::try_parse_from(words).map(|line| line.ask)
+}
+
+/// 新开的会话的几样（施工 AP-2）：和 `-c`、`-s` 一起写的读参数时就拒；`--persona` 和 `--no-persona` 不能一起写；权限级别只认
+/// 那三种。消息可以不写、可以写 `-`。
+#[test]
+fn new_session_options_are_for_a_new_session_only() {
+    for words in [
+        &["ask", "-C", ".", "-c", "在吗"][..],
+        &["ask", "--cd", ".", "-s", "x", "在吗"],
+        &["ask", "--persona", "a", "-c", "在吗"],
+        &["ask", "--no-persona", "-s", "x", "在吗"],
+        &["ask", "--preset", "full", "-c", "在吗"],
+        &["ask", "--permission", "full", "-s", "x", "在吗"],
+        &["ask", "--persona", "a", "--no-persona", "在吗"],
+        &["ask", "--permission", "root", "在吗"],
+        &["ask", "-C", "no-such-dir-for-miyu-cli-tests", "在吗"],
+    ] {
+        assert!(parse(words).is_err(), "{words:?}");
+    }
+    for words in [&["ask"][..], &["ask", "-"], &["ask", "看看", "-"]] {
+        assert!(parse(words).is_ok(), "{words:?}");
+    }
+    let parsed = parse(&[
+        "ask",
+        "--permission",
+        "read-only",
+        "--preset",
+        "minimal",
+        "x",
+    ])
+    .expect("读得成");
+    assert_eq!(parsed.permission, Some(Permission::ReadOnly));
+    assert_eq!(parsed.preset.as_deref(), Some("minimal"));
+}
+
+/// 新开的会话的几样带进这一次的打算里：`-C` 是工作目录（相对的接成绝对的、去掉 `.`），人格、预设、权限级别进 `opening`。
+#[test]
+fn new_session_options_go_into_the_plan() {
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
+    let here = std::env::current_dir().expect("有工作目录");
+    let args = parse(&[
+        "ask",
+        "-C",
+        ".",
+        "--persona",
+        "engineer",
+        "--preset",
+        "minimal",
+        "--permission",
+        "full",
+        "在吗",
+    ])
+    .expect("读得成");
+    let planned = plan_of(args, &env(resources.clone(), None), Language::Chinese);
+    assert_eq!(planned.cwd, here.display().to_string());
+    assert_eq!(
+        planned.opening,
+        Opening {
+            persona: PersonaChoice::Named("engineer".to_string()),
+            preset: Some("minimal".to_string()),
+            permission: Some(Permission::Full),
+        }
+    );
+    let without = parse(&["ask", "--no-persona", "在吗"]).expect("读得成");
+    let planned = plan_of(without, &env(resources.clone(), None), Language::Chinese);
+    assert_eq!(planned.opening.persona, PersonaChoice::Without);
+    let plain = plan_of(ask(&["在吗"]), &env(resources, None), Language::Chinese);
+    assert_eq!(plain.opening, Opening::default(), "不写的照配置");
+    assert_eq!(plain.cwd, here.display().to_string());
 }

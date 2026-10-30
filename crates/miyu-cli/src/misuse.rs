@@ -81,11 +81,9 @@ fn problem(
                 false => Problem::new("missing arguments").hint(format!("usage: {written}")),
             }
         }
-        // 最外面那一层必写的只有 `ask` 的要说的话：测试查着，多了一个，这里要跟着改。
-        ErrorKind::MissingRequiredArgument => match chinese {
-            true => Problem::new("缺少消息").hint("用法：miyu ask \"<消息>\""),
-            false => Problem::new("missing message").hint("usage: miyu ask \"<message>\""),
-        },
+        // 最外面那一层没有必写的了（施工 AP-2 起 `ask` 的要说的话可以从标准输入读，没有时由 `ask` 自己照同一句说）：测试查着，
+        // 多了一个，这里要跟着改。
+        ErrorKind::MissingRequiredArgument => language.missing_message(),
         ErrorKind::UnknownArgument => match (chinese, arg.starts_with('-')) {
             (true, true) => Problem::new(format!("无法识别的选项 '{arg}'")),
             (true, false) => Problem::new(format!("多余的参数 '{arg}'")),

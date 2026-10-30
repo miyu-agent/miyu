@@ -10,6 +10,9 @@
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令 `ask`；换上帮助页；拉起核心用的命令是自己加上 `core` |
 | `crates/miyu-cli/src/ask.rs` | 参数、退出码、找数据根、连核心、Ctrl+C；`--from`（施工 7-10） |
+| `crates/miyu-cli/src/ask/input.rs` | 要说的话从哪来：命令行上的几个词、标准输入（施工 AP-2） |
+| `crates/miyu-cli/src/ask/opening.rs` | 新开的会话的人格、预设、开局的权限级别（施工 AP-2） |
+| `crates/miyu-cli/src/language/input.rs` | 凑不出要说的话时说的几句（施工 AP-2） |
 | `crates/miyu-cli/src/ask/talk.rs` | 握手、传附件（施工 3-9 三补）、找会话、订阅、发、跟着那一轮；等子代理时按 Ctrl+C 不等了、`--timeout`（施工 7-9） |
 | `crates/miyu-cli/src/ask/follow.rs` | 收推送：回答、思考、每一步、用量 |
 | `crates/miyu-cli/src/ask/follow/ending.rs` | 一轮结束、都结束了、不等了：收尾印的几行，退出码（施工 7-9 从 `follow.rs` 挪出来） |
@@ -30,7 +33,7 @@
 
 | 参数 | 做什么 |
 |---|---|
-| `<words>...` | 要说的话，必填；几个词用一个空格连起来 |
+| `<words>...` | 要说的话；几个词用一个空格连起来。可以不写，从标准输入读；有一个词正好是 `-` 的，读标准输入接在后面（施工 AP-2，下面「标准输入」） |
 | `-s`、`--session <编号>` | 接着这个会话说；和 `--continue` 不能一起写 |
 | `-c`、`--continue` | 接着最新的那个一次性会话说 |
 | `--format text\|json` | 默认 `text` |
@@ -39,12 +42,29 @@
 | `--from <名字>` | 别的 harness 发的（施工 7-10，`agents.md` 第十一条第 4 条）：写上它的名字，这一句记成它说的，不是本人。和 `-s`、`-c` 一起用是往那个会话里发；都不写开一个新会话。空的、只有空白的照「参数写错时」说（`cli/main.md`），退出码 2 |
 | `--model <模型>` | 用哪个模型（施工 8-10，`models.md`「命令行」）：模型 `<供应商>/<模型>` 或 `@池`，原样交给核心解析（挡位 8-8 补去掉了，写挡位名的核心回 `unknown_model`）。不写 `-c`、`-s` 的，新开的会话照它造；接着说的，先换成它：永久换，以后都用它（`models.md`「定的」第 2 条） |
 | `--no-memory` | 不开记忆（施工 R-3 下，`memory.md`「范围」）：新开的会话 `session.create` 带 `"memory": "off"`，不召回、不记，工具面上没有记忆的三件。接着说的会话范围开局时就定了：和 `-c`、`-s` 一起写的读参数时就拒（照「参数写错时」） |
+| `-C`、`--cd <目录>` | 在这个目录干活（施工 AP-2，设计 50 第三节）：相对的照敲命令时的目录接成绝对的，去掉路径里的 `.`；不存在的、不是目录的照「参数写错时」说，退出码 2。`session.create` 的 `cwd` 照它写。`--file`、`--add-dir` 的相对路径照旧照敲命令时的目录接，不照它 |
+| `--persona <人格>` | 新开的会话用这个人格（施工 AP-2）：`session.create` 带 `persona`，编号原样交给核心，没有这个人格的照核心的原话说，退出码 1，不造会话 |
+| `--no-persona` | 新开的会话不用人格（施工 AP-2）：`session.create` 带 `"persona": null`；和 `--persona` 一起写的照「参数写错时」说 |
+| `--preset <预设>` | 新开的会话用这个预设（施工 AP-2）：`session.create` 带 `preset`，同 `--persona` |
+| `--permission <read-only\|workspace\|full>` | 新开的会话开局的权限级别（施工 AP-2）：造好以后、订阅之前发 `session.set_permission_level`。`read-only` 只写 `"read_only": true`（常用的那一级照配置）；`workspace`、`full` 写 `level` 和 `"read_only": false`（配置里开局只读的也关上：放宽到哪一级是调用方明写的）。不写的照配置，不发 |
 | `--timeout <时长>` | 最多等多久：从发出算到全部了结，到了不再等，退出码 3（施工 7-9，「等子代理」第 8 条）。正整数，后面可以跟 `s`、`m`、`h`，不写是秒（`30`、`30s`、`10m`、`1h`），照 GNU `timeout` 的写法；0、负数、小数、别的单位照「参数写错时」说（`cli/main.md`），退出码 2。长到算不出那一刻的，当没写 |
 
+- `-C`、`--persona`、`--no-persona`、`--preset`、`--permission`（施工 AP-2）只管新开的会话，同 `--no-memory`：和 `-c`、`-s` 一起写的读参数时就拒，照「参数写错时」说（`'--persona' 不能和 '--continue' 同时使用`），退出码 2。
 - 界面语言：`LC_ALL`、`LC_MESSAGES`、`LANG` 里第一个设了、不是空的（`cli/main.md`），`zh` 开头说中文，别的说英文。帮助页也照它。
 - 用到的环境变量：`MIYU_HOME`（数据根，不设是 `~/.miyu`）、`MIYU_RESOURCES`（资源目录，开发时用）、`NO_COLOR`。模型、key 来自配置（施工 8-6，`models.md`），头不看 key。
 
 ### 怎么走
+
+**标准输入**（施工 AP-2，设计 50 第二节）：读参数以后、找数据根之前，凑出要说的话。
+
+1. 没写消息、标准输入不是终端：读到头，整段就是消息，照原样，末尾的换行不去。
+2. 有一个词正好是 `-`：去掉它（几个都去掉，只读一次），读标准输入，接在其余几个词连成的话后面，中间空一行（`\n\n`）；其余几个词是空的，整段就是消息；读到的是空的、只有空白的，只用写的那几个词。`-` 写在哪都接在后面。标准输入是终端的照读，是明写的。
+3. 写了消息、没写 `-`：不读标准输入。别的程序拉起 `miyu` 时常常留着一个不关的管道，一看到管道就读会一直等下去。
+4. 标准输入是终端、又没写消息：报「缺少消息」（和以前 clap 报的同一句，下面「给人看的字」），退出码 2，不等人敲。
+5. 读到的不是 UTF-8 的：报「标准输入不是 UTF-8 文本」，退出码 2。凑出来是空的、只有空白的：报「缺少消息」，退出码 2。读的时候出错的：报「无法读取标准输入：<原话>」，退出码 1。
+6. 上限照核心收一句话的上限：这里不挡，超了照核心的拒绝说。
+
+凑好了以后：
 
 0. **加进来的目录**（施工 5-10 上）：`--add-dir` 的每一个，相对的照敲命令时的目录接成绝对的；不存在的、不是目录的，照「参数写错时」说（`cli/main.md`），退出码 2。照写的先后，去掉重复的。
 1. **找数据根**，建骨架。出错：原因写在标准错误上，退出码 1。
@@ -61,7 +81,7 @@
    - 被拒绝的：标准错误上印 `附不上 <绝对路径>：<核心照握手时的语言说的原因>`，退出码 1，不再往下：不造会话、不发话，也不留下空的会话。核心断开的，照第 11 条。
    - 在找会话之前传：`--continue`、`--session` 的，传不上也什么都不送进那个会话。
 5. **找会话**：
-   1. 不写：`session.create`，带 `cwd`（敲命令时的目录；读不出来的写 `.`）、`dirs`（加进来的目录，没有的写空的）和 `oneshot: true`；写了 `--model` 的再带 `model`（施工 8-10），写了 `--no-memory` 的再带 `memory: "off"`（施工 R-3 下）。回应里的 `cwd` 和敲命令时的目录不一样（目录太宽，退回默认工作区），第一步之前说一句。解析不出的：核心照握手时的语言写的原因照原样印在标准错误上，退出码 1，什么都不造。
+   1. 不写：`session.create`，带 `cwd`（敲命令时的目录；读不出来的写 `.`）、`dirs`（加进来的目录，没有的写空的）和 `oneshot: true`；写了 `--model` 的再带 `model`（施工 8-10），写了 `--no-memory` 的再带 `memory: "off"`（施工 R-3 下）；写了 `--persona` 的带 `persona`、`--no-persona` 的带 `"persona": null`、`--preset` 的带 `preset`（施工 AP-2）。写了 `--permission` 的，造好以后、订阅之前发 `session.set_permission_level`（写法见上面「对外的样子」）；被拒的照核心的原因印、退出码 1、不发话。回应里的 `cwd` 和敲命令时的目录不一样（目录太宽，退回默认工作区），第一步之前说一句。解析不出的：核心照握手时的语言写的原因照原样印在标准错误上，退出码 1，什么都不造。
    2. `--continue`：`session.list`，带 `oneshot: true`、`limit: 1`，取第一个。一个都没有：说「还没有 miyu ask 开过的会话」，退出码 1。
    3. `--session`：照写的。
    4. 接着说、写了 `--model` 的（施工 8-10）：找到会话以后、订阅之前发 `session.configure`，带 `session`、`model`。被拒绝的（解析不出、没有这个会话）：核心的原因照原样印在标准错误上，退出码 1，不订阅、不发话（`models.md`「施工时定的」8-10）。换成了的，这一句起就用它（下一个回合开始生效，这一句开的就是下一轮）。
@@ -336,6 +356,9 @@ C 也查完了。
 | 附件传不上（施工 3-9 三补） | 附不上 <文件>：<核心说的原因> | Cannot attach <file>: <reason> |
 | 打断了 | 打断了 | Interrupted |
 | 核心断开 | 核心断开了 | The core went away |
+| 没写消息又在终端里，或者凑出来是空的（施工 AP-2；clap 少了必写的参数时也是这一句） | `miyu: 缺少消息`、`提示：用法：miyu ask "<消息>"` | `miyu: missing message`、`hint: usage: miyu ask "<message>"` |
+| 标准输入不是 UTF-8（施工 AP-2） | `miyu: 标准输入不是 UTF-8 文本` | `miyu: standard input is not UTF-8 text` |
+| 读不了标准输入（施工 AP-2） | `miyu: 无法读取标准输入：<原话>` | `miyu: cannot read standard input: <reason>` |
 | `--from` 后面是空的、只有空白（施工 7-10） | `--from 后面要写别的 harness 的名字` | `--from needs the name of the other harness` |
 | 等子代理，一个（施工 7-9） | `· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）` | `· Waiting for 1 subagent to report… (Ctrl+C stops waiting)` |
 | 等子代理，几个 | `· 等待 2 个子代理回报…（按 Ctrl+C 停止等待）` | `· Waiting for 2 subagents to report… (Ctrl+C stops waiting)` |
@@ -373,14 +396,21 @@ C 也查完了。
 样本 `crates/miyu-cli/src/help/zh/ask.txt`（中文）：
 
 ```text
-用法：miyu ask [<选项>] <消息>
+用法：miyu ask [<选项>] [<消息>]
 
 发送消息并打印回复。不加 -c、-s 时新建会话。
 派出了子代理的，等子代理全部回报、回复结束后退出。
+不写消息时从标准输入读取消息；消息中写了 - 的，读取标准输入接在消息后面。
 
 选项：
   -c, --continue            继续上一次 miyu ask 的会话
   -s, --session <编号>      继续指定的会话
+  -C, --cd <目录>           在指定的目录中工作（仅新会话）
+      --persona <人格>      使用指定的人格（仅新会话）
+      --no-persona          不使用人格（仅新会话）
+      --preset <预设>       使用指定的预设（仅新会话）
+      --permission <read-only|workspace|full>
+                            权限级别：只读、工作区或完全放开（仅新会话）
       --format <text|json>  输出格式（默认 text）
       --add-dir <目录>      允许读写另一个目录，可重复
       --file <文件>         附加文件（图片、PDF、文本），可重复
@@ -397,19 +427,32 @@ C 也查完了。
   3  被打断，或到了 --timeout 的时限
   4  这一轮结束了，但有几步需要确认，没有做
   5  没有可用的模型
+
+例子：
+  miyu ask "这个项目是做什么的"
+  cat 报错.log | miyu ask "为什么失败" -
+  miyu ask -C ~/src/app --permission read-only "检查这里的代码"
 ```
 
 样本 `crates/miyu-cli/src/help/en/ask.txt`（英文）：
 
 ```text
-Usage: miyu ask [<options>] <message>
+Usage: miyu ask [<options>] [<message>]
 
 Send a message and print the reply, in a new session unless -c or -s.
 If subagents are started, wait for their reports and the final reply.
+Without a message, read it from standard input; with - in the message,
+append standard input to it.
 
 Options:
   -c, --continue            Continue the last miyu ask session
   -s, --session <id>        Continue the given session
+  -C, --cd <dir>            Work in the given directory (new sessions only)
+      --persona <persona>   Use the given persona (new sessions only)
+      --no-persona          Don't use a persona (new sessions only)
+      --preset <preset>     Use the given preset (new sessions only)
+      --permission <read-only|workspace|full>
+                            Permission level (new sessions only)
       --format <text|json>  Output format (default: text)
       --add-dir <dir>       Allow access to another directory; repeatable
       --file <file>         Attach a file (image, PDF, text); repeatable
@@ -426,6 +469,11 @@ Exit status:
   3  Interrupted, or --timeout expired
   4  The turn ended, but some steps needed confirmation and were skipped
   5  No usable model
+
+Examples:
+  miyu ask "What does this project do"
+  cat error.log | miyu ask "Why did this fail" -
+  miyu ask -C ~/src/app --permission read-only "Review the code here"
 ```
 
 ### 守着它的
@@ -448,6 +496,9 @@ Exit status:
 | `crates/miyu-cli/tests/from.rs`（施工 7-10） | 真的核心：`--from` 和 `-s`、`-c` 一起用往那个会话里发、都不写开新会话，记成 `harness`、带着名字，她收到的请求里是带标签的那一块；带 `from`、不带 `cwd`，写了 `--add-dir` 才带 `dirs`，会话的工作目录不变；往正忙的会话里发，平常的和 `--from` 都跟住听到它的那一轮、印它的回答、退出码 0；`--from` 按 Ctrl+C、到了 `--timeout` 退出码 3、说那一轮还在接着跑，她那一轮没被打断、照常答完 |
 | `crates/miyu-cli/src/ask/follow/tests/joining.rs`（施工 7-10） | 接上正忙的那一轮：人的话带着回合编号的当场接上，`--from` 的话接下一条带回合编号的推送；接上以前的推送不印；接上的那一轮没听到就结束的（被打断的也是）接着跟下一轮、不收尾，听到了的照它怎么结束收尾；闲着时由它开的那一轮照旧认；`--from` 在她那一轮还在进行时不等了的两种说法，两种语言，在等子代理时照旧 |
 | `crates/miyu-cli/src/ask/tests.rs` | 几个词用空格连起来；给人看的字照界面语言读，读不出来的当没有；加进来的目录照写的先后、去掉重复的；相对的接成绝对的，不是目录的读不成（施工 5-10 上）；`--file` 相对的接成绝对的、不查在不在，照写的先后、不去重（施工 3-9 三补）；`--timeout` 的写法，读不成的几种（施工 7-9）；`--from` 空的、只有空白的读不成，别的照原样（施工 7-10）；`--no-memory` 和 `-c`、`-s` 一起写的读不成（施工 R-3 下） |
+| `crates/miyu-cli/src/ask/input/tests.rs`（施工 AP-2） | 标准输入用真的管道喂：没写消息的整段是消息，`-` 接在后面空一行、写在哪都一样，读到空白的照写的；写了消息、没写 `-` 的不读（写的一头一直开着也不卡）；不是 UTF-8、空的、只有空白的读不成；伪终端里没写消息的当没有消息 |
+| `crates/miyu-cli/tests/opening.rs`（施工 AP-2） | 真的核心：`--no-persona` 不用配置里默认的人格、不写的照配置、`--persona`、`--preset` 记进 `session.created`；没有的人格退出码 1、不造会话；`--permission` 三种在人说的话前面切好 |
+| `crates/miyu/tests/ask_stdin.rs`（施工 AP-2） | 真跑主程序、标准输入接管道：没写消息的整段记成她收到的话；`-` 接在后面；写了消息不读、留着不关的管道也退出；不是 UTF-8、空的退出码 2；新会话的几样和 `-c`、`-s` 一起写、`--persona` 和 `--no-persona` 一起写、`--permission` 写错的退出码 2，各一句；伪终端里没写消息的退出码 2、不等人敲 |
 | `crates/miyu-cli/tests/attach.rs` | 真的核心走一遍 `--file`（施工 3-9 三补）：文字在前、附件照写的先后变成块，图片的宽高、文本的媒体类型；没有的、太大的说是哪个文件、为什么，中文、英文，退出码 1，不造会话 |
 | `crates/miyu-cli/tests/ask.rs` | 真的核心：开一次性会话、`--continue`、没有会话可接、被拒绝、没有模型、Ctrl+C 一次和两次；加进来的目录跟着每一次 `miyu ask`：`--continue` 不写的那一轮就没有，太宽的造会话时就被拒、不留空会话（施工 5-10 上）；`--model` 新开的照它造、接着的先换（`@池`）再说、换不成的（连同以前的挡位名）退出码 1 不发话（施工 8-10、8-8 补）；`--no-memory` 新开的会话快照里是 `off`、不写的不是（施工 R-3 下） |
 | `crates/miyu-cli/tests/steps.rs` | 真的核心、真的工具走一遍：每一步、执行命令和编辑那两块、目录太宽、给脚本的只看退出码。要确认的一步是写到工作区外面（施工 5-4 上起读哪儿都不问）；执行命令经 cargo 编出来的助手在沙盒里跑 |
@@ -466,7 +517,7 @@ Exit status:
 
 设计里有、还没做的（`22-命令行.md` 第三节）：
 
-- `--persona`、`--preset`、`--tools`、`--no-memory`，`--format stream-json`。
-- 管道进来的内容当附件。
+- `--tools`，`--format stream-json`。
+- 管道进来的内容当附件：施工 AP-2 起管道进来的是文字，接在消息里；不是 UTF-8 的不收。
 - 还没配模型时，先问首次引导的那两件事。
 - 这一句一时没有哪一轮听到它的，一直等到有一轮听到它：接上的那一轮被打断、这一句被退回了（`return`），或者 `--from` 的话被打断以后只记下、那个会话还能恢复撤销时只记下。按 Ctrl+C 或者用 `--timeout`（施工 7-10）。

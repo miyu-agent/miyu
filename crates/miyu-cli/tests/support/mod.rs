@@ -457,6 +457,7 @@ pub fn plan(text: &str) -> Plan {
         from: None,
         model: None,
         no_memory: false,
+        opening: miyu_cli::Opening::default(),
     }
 }
 

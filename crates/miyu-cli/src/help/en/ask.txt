@@ -1,11 +1,19 @@
-Usage: miyu ask [<options>] <message>
+Usage: miyu ask [<options>] [<message>]
 
 Send a message and print the reply, in a new session unless -c or -s.
 If subagents are started, wait for their reports and the final reply.
+Without a message, read it from standard input; with - in the message,
+append standard input to it.
 
 Options:
   -c, --continue            Continue the last miyu ask session
   -s, --session <id>        Continue the given session
+  -C, --cd <dir>            Work in the given directory (new sessions only)
+      --persona <persona>   Use the given persona (new sessions only)
+      --no-persona          Don't use a persona (new sessions only)
+      --preset <preset>     Use the given preset (new sessions only)
+      --permission <read-only|workspace|full>
+                            Permission level (new sessions only)
       --format <text|json>  Output format (default: text)
       --add-dir <dir>       Allow access to another directory; repeatable
       --file <file>         Attach a file (image, PDF, text); repeatable
@@ -22,3 +30,8 @@ Exit status:
   3  Interrupted, or --timeout expired
   4  The turn ended, but some steps needed confirmation and were skipped
   5  No usable model
+
+Examples:
+  miyu ask "What does this project do"
+  cat error.log | miyu ask "Why did this fail" -
+  miyu ask -C ~/src/app --permission read-only "Review the code here"

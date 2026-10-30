@@ -8,6 +8,7 @@ use tokio::time::Instant;
 use miyu_ipc::Connection;
 
 use super::follow::{Follow, Leaving, Step};
+use super::opening::set_permission;
 use super::{Plan, Screen, Target, exit};
 use crate::diagnostic;
 use crate::language::Language;
@@ -55,6 +56,12 @@ pub async fn talk(
         Ok(found) => found,
         Err(code) => return code,
     };
+    // 新开的会话写了 `--permission`：开好以后、订阅之前切到那一级（施工 AP-2）。
+    if !created.is_null()
+        && let Err(code) = set_permission(&mut rpc, &session, plan, screen).await
+    {
+        return code;
+    }
     // 接着说的会话写了 `--add-dir`：说之前把会话加进来的目录换成这几个（施工 9-7 上）。新会话造的时候就带上了。
     if created.is_null()
         && let Err(code) = added(&mut rpc, &session, plan, screen).await
@@ -279,6 +286,8 @@ async fn session(
             if plan.no_memory {
                 params["memory"] = json!("off");
             }
+            // 人格、预设（施工 AP-2）。
+            plan.opening.fill(&mut params);
             let result =
                 link::request(rpc, "session.create", params, &plan.language, screen.err).await?;
             let session = result["session"].as_str().unwrap_or_default().to_string();

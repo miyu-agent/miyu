@@ -11,6 +11,7 @@ mod config_write;
 mod confirm;
 mod embedding;
 mod harness;
+mod input;
 mod kb;
 mod login;
 mod mcp;

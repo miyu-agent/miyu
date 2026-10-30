@@ -1,11 +1,18 @@
-用法：miyu ask [<选项>] <消息>
+用法：miyu ask [<选项>] [<消息>]
 
 发送消息并打印回复。不加 -c、-s 时新建会话。
 派出了子代理的，等子代理全部回报、回复结束后退出。
+不写消息时从标准输入读取消息；消息中写了 - 的，读取标准输入接在消息后面。
 
 选项：
   -c, --continue            继续上一次 miyu ask 的会话
   -s, --session <编号>      继续指定的会话
+  -C, --cd <目录>           在指定的目录中工作（仅新会话）
+      --persona <人格>      使用指定的人格（仅新会话）
+      --no-persona          不使用人格（仅新会话）
+      --preset <预设>       使用指定的预设（仅新会话）
+      --permission <read-only|workspace|full>
+                            权限级别：只读、工作区或完全放开（仅新会话）
       --format <text|json>  输出格式（默认 text）
       --add-dir <目录>      允许读写另一个目录，可重复
       --file <文件>         附加文件（图片、PDF、文本），可重复
@@ -22,3 +29,8 @@
   3  被打断，或到了 --timeout 的时限
   4  这一轮结束了，但有几步需要确认，没有做
   5  没有可用的模型
+
+例子：
+  miyu ask "这个项目是做什么的"
+  cat 报错.log | miyu ask "为什么失败" -
+  miyu ask -C ~/src/app --permission read-only "检查这里的代码"

@@ -34,6 +34,7 @@ fn plan(language: Language) -> Plan {
         from: None,
         model: None,
         no_memory: false,
+        opening: crate::Opening::default(),
     }
 }
 

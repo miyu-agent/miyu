@@ -1,13 +1,17 @@
 //! `miyu ask`（`docs/designs/22-命令行.md` 第三节，施工 3-9 下）：连上核心（没在跑就拉起来），开一个一次性
 //! 会话，或者接着说；把一句话发给她，边收边打，她做的每一步印成一行（施工 4-5 下）；问完印一行用量。她派了子代理的，
 //! 等它们都报回来、被叫醒的几轮也印完才退出（施工 7-9）。没写 `--model` 的先看有没有模型（施工 8-11，
-//! [`crate::model_ready_on`]）：没有的在终端里先走一遍 `miyu setup`，不在终端里退出码 5、不造会话。
+//! [`crate::model_ready_on`]）：没有的在终端里先走一遍 `miyu setup`，不在终端里退出码 5、不造会话。要说的话可以从标准输入读
+//! （施工 AP-2，`ask/input.rs`）；新开的会话可以挑目录、人格、预设和开局的权限级别（施工 AP-2，`ask/opening.rs`）。
 
 pub(crate) mod follow;
+mod input;
+mod opening;
 mod steps;
 mod talk;
 mod usage;
 
+pub use opening::{Opening, Permission, PersonaChoice};
 pub use talk::talk;
 pub(crate) use talk::{Watching, follow_turn};
 pub(crate) use usage::Sum;
@@ -73,8 +77,8 @@ pub mod exit {
 /// `miyu ask` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
 #[derive(Debug, Clone, Args)]
 pub struct Ask {
-    /// 要说的话：几个词用空格连起来。
-    #[arg(required = true, num_args = 1..)]
+    /// 要说的话：几个词用空格连起来。可以不写，从标准输入读；有一个词正好是 `-` 的，读标准输入接在后面（施工 AP-2，
+    /// `ask/input.rs`）。
     pub words: Vec<String>,
     /// 接着某个会话说。
     #[arg(short = 's', long, conflicts_with = "resume")]
@@ -104,6 +108,22 @@ pub struct Ask {
     /// 不开记忆（施工 R-3 下）：新开的会话不召回、不记。接着的会话的范围开局时就定了，不和 `--continue`、`--session` 一起写。
     #[arg(long = "no-memory", conflicts_with_all = ["session", "resume"])]
     pub no_memory: bool,
+    /// 在这个目录干活（施工 AP-2）：读参数时就换成绝对的、查它是目录，同 `--add-dir`。只管新开的会话。
+    #[arg(short = 'C', long = "cd", value_name = "DIR", value_parser = workdir,
+        conflicts_with_all = ["session", "resume"])]
+    pub cd: Option<PathBuf>,
+    /// 用这个人格（施工 AP-2）：编号原样交给核心。只管新开的会话，不和 `--no-persona` 一起写。
+    #[arg(long, value_name = "PERSONA", conflicts_with_all = ["session", "resume", "no_persona"])]
+    pub persona: Option<String>,
+    /// 不用人格（施工 AP-2）。只管新开的会话。
+    #[arg(long = "no-persona", conflicts_with_all = ["session", "resume"])]
+    pub no_persona: bool,
+    /// 用这个预设（施工 AP-2）：编号原样交给核心。只管新开的会话。
+    #[arg(long, value_name = "PRESET", conflicts_with_all = ["session", "resume"])]
+    pub preset: Option<String>,
+    /// 开局的权限级别（施工 AP-2）：`read-only`、`workspace`、`full`，不写的照配置。只管新开的会话。
+    #[arg(long, value_enum, conflicts_with_all = ["session", "resume"])]
+    pub permission: Option<Permission>,
 }
 
 /// `--from` 的值（施工 7-10）：空的、只有空白的读不成，照「参数写错时」说（`cli/main.md`）；别的照原样。
@@ -133,6 +153,11 @@ fn directory(value: &str) -> Result<PathBuf, String> {
     } else {
         Err("not a directory".to_string())
     }
+}
+
+/// `-C`、`--cd` 的值（施工 AP-2）：同 `--add-dir`，再去掉路径里的 `.`（`-C .` 是敲命令时的目录本身，不是 `<它>/.`）。
+fn workdir(value: &str) -> Result<PathBuf, String> {
+    directory(value).map(|dir| dir.components().collect())
 }
 
 /// `--timeout` 的值（施工 7-9）：正整数，后面可以跟单位 `s`、`m`、`h`，不写是秒，照 GNU `timeout` 的写法；0、负数、小数、
@@ -207,6 +232,8 @@ pub struct Plan {
     pub model: Option<String>,
     /// 不开记忆（施工 R-3 下，`--no-memory`）：新开的会话 `session.create` 带 `"memory": "off"`。
     pub no_memory: bool,
+    /// 新开的会话用哪个人格、预设，开局的权限级别（施工 AP-2）：都不写的照配置。
+    pub opening: Opening,
 }
 
 /// 写到哪里：回答写 `out`，思考、用量、出错写 `err`；`gray` 的思考、用量是灰色。
@@ -224,6 +251,13 @@ pub struct Screen<'a> {
 /// 跑一次 `miyu ask`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
 pub fn ask(args: Ask, start: impl FnOnce() -> Command) -> ExitCode {
     let language = language::current();
+    // 要说的话先凑好（施工 AP-2）：凑不出的照参数写错报，不连核心。
+    let stdin = io::stdin();
+    let terminal = stdin.is_terminal();
+    let text = match input::message(&args.words, stdin.lock(), terminal) {
+        Ok(text) => text,
+        Err(unread) => return ExitCode::from(input::refuse(&unread, language)),
+    };
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -231,11 +265,11 @@ pub fn ask(args: Ask, start: impl FnOnce() -> Command) -> ExitCode {
         Ok(runtime) => runtime,
         Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
     };
-    ExitCode::from(runtime.block_on(run(args, start, language)))
+    ExitCode::from(runtime.block_on(run(args, text, start, language)))
 }
 
-/// 在运行时里：找数据根、连上核心、说。
-async fn run(args: Ask, start: impl FnOnce() -> Command, language: Language) -> u8 {
+/// 在运行时里：找数据根、连上核心、说 `text`。
+async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language: Language) -> u8 {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
@@ -251,7 +285,7 @@ async fn run(args: Ask, start: impl FnOnce() -> Command, language: Language) -> 
         Ok(connected) => connected,
         Err(reason) => return diagnostic::fail(&reason),
     };
-    let plan = plan(args, &env, language);
+    let plan = plan(args, text, &env, language);
     if plan.model.is_none() {
         // 先看有没有模型，用一条连接；有了（或者走完了 setup）再连一次说话，`talk` 不用管这一段（施工 8-11）。
         let ready = SetupPlan {
@@ -288,18 +322,30 @@ async fn run(args: Ask, start: impl FnOnce() -> Command, language: Language) -> 
     talk(connection, &token, &plan, &mut screen, presses).await
 }
 
-/// 这一次要说什么、怎么说：照参数、进程的环境 `env`、界面语言；工作目录是敲命令时的目录。
-fn plan(args: Ask, env: &Env, language: Language) -> Plan {
+/// 这一次要说 `text`，怎么说：照参数、进程的环境 `env`、界面语言；工作目录是 `-C` 写的，没写的是敲命令时的目录。
+fn plan(args: Ask, text: String, env: &Env, language: Language) -> Plan {
+    let opening = Opening {
+        persona: match (args.persona, args.no_persona) {
+            (Some(persona), _) => PersonaChoice::Named(persona),
+            (None, true) => PersonaChoice::Without,
+            (None, false) => PersonaChoice::Configured,
+        },
+        preset: args.preset,
+        permission: args.permission,
+    };
     Plan {
-        text: args.words.join(" "),
+        text,
         target: match (args.session, args.resume) {
             (Some(session), _) => Target::Session(session),
             (None, true) => Target::Continue,
             (None, false) => Target::New,
         },
         format: args.format,
-        cwd: std::env::current_dir()
-            .map_or_else(|_| ".".to_string(), |dir| dir.display().to_string()),
+        cwd: match args.cd {
+            Some(dir) => dir.display().to_string(),
+            None => std::env::current_dir()
+                .map_or_else(|_| ".".to_string(), |dir| dir.display().to_string()),
+        },
         dirs: added(&args.add_dir),
         files: args
             .file
@@ -313,6 +359,7 @@ fn plan(args: Ask, env: &Env, language: Language) -> Plan {
         from: args.from,
         model: args.model,
         no_memory: args.no_memory,
+        opening,
     }
 }
 

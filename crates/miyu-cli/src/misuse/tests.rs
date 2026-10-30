@@ -27,12 +27,7 @@ fn said(args: &[&str], language: Language) -> String {
 
 #[test]
 fn each_kind_of_mistake_has_one_sentence() {
-    let cases: [(&[&str], &str, &str); 9] = [
-        (
-            &["ask"],
-            "miyu: 缺少消息\n提示：用法：miyu ask \"<消息>\"",
-            "miyu: missing message\nhint: usage: miyu ask \"<message>\"",
-        ),
+    let cases: [(&[&str], &str, &str); 8] = [
         (
             &["ask", "--bogus", "hi"],
             "miyu: 无法识别的选项 '--bogus'",
@@ -120,8 +115,9 @@ fn values_are_joined_like_a_sentence() {
 }
 
 #[test]
-fn only_what_to_say_is_required() {
-    // 必写的多了一个，「少了要说的话」那一句就说错了：这里红了，`misuse` 跟着改。
+fn nothing_is_required_at_the_top() {
+    // 施工 AP-2 起 `ask` 的要说的话也可以不写（从标准输入读）：最外面那一层一个必写的都没有。多了一个，「少了要说的话」那一句
+    // 就说错了：这里红了，`misuse` 跟着改。
     let required: Vec<String> = miyu()
         .get_subcommands()
         .flat_map(|command| {
@@ -132,7 +128,7 @@ fn only_what_to_say_is_required() {
                 .collect::<Vec<_>>()
         })
         .collect();
-    assert_eq!(required, ["ask words"]);
+    assert!(required.is_empty(), "{required:?}");
 }
 
 #[test]

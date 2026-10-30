@@ -6,6 +6,7 @@
 mod support;
 
 mod ask;
+mod ask_stdin;
 mod call;
 mod commands;
 mod compact;
