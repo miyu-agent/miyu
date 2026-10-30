@@ -72,7 +72,7 @@ async fn a_new_catalog_is_used_by_the_next_session() {
     let mut home = Home::new();
     home.configs = configs(DEEPSEEK, &[]);
     let before = home.create(&routes).await;
-    data.replace_catalog(trimmed());
+    data.replace_catalog(trimmed(), None);
     let after = home.create(&routes).await;
     assert_eq!(before.limits().window, None);
     assert_eq!(after.limits().window, Some(1_000_000));

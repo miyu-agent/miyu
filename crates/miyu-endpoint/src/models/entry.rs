@@ -35,14 +35,16 @@ use miyu_models::provider::{self, NoModel, key_name};
 use miyu_models::reference::named;
 use miyu_models::settings::ProviderSettings;
 use miyu_models::temperature;
-use miyu_session::ModelData;
+use miyu_session::{Holding, ModelData};
 
 use super::Snapshot;
 
 /// 编号 `id` 这一家，冷却照 `now` 这一刻，能出向量的照 `names` 认。给了 `only` 的只列这几个模型（施工 V-6 上，
-/// `model.list` 的 `models`），在算每个模型的资料之前就筛掉。
+/// `model.list` 的 `models`），在算每个模型的资料之前就筛掉。要列目录里那一家的全部模型：借着 `holding` 的整份目录，临时
+/// 问的不记（施工 V-25 下）。
 pub(crate) fn provider(
     data: &ModelData,
+    holding: &Holding,
     snapshot: &Snapshot,
     id: &str,
     now: Timestamp,
@@ -66,8 +68,8 @@ pub(crate) fn provider(
         .key
         .as_ref()
         .is_some_and(|reference| snapshot.secret(reference).is_none());
-    data.with(
-        |knowledge| match provider::provider(&values, knowledge, id) {
+    data.with_holding(holding, false, |knowledge| {
+        match provider::provider(&values, knowledge, id) {
             Err(NoModel(problem)) => {
                 let mut entry = json!({
                     "id": id,
@@ -175,8 +177,8 @@ pub(crate) fn provider(
                     crate::providers::logo(data, recognized.map(|known| known.provider.as_str()));
                 entry
             }
-        },
-    )
+        }
+    })
 }
 
 /// 这一家给人看的名字：写了的（去掉两头空白不是空的）、目录里那一家的、编号（共用那份是原编号），照这个先后（施工 8-21）。

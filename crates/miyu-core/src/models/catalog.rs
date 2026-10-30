@@ -65,10 +65,18 @@ pub(crate) static SLOW: std::sync::atomic::AtomicBool = std::sync::atomic::Atomi
 /// `WARN catalog empty`。一个模型坏了的记一行 `DEBUG`。挑中的那一份有整理好的就读它，`catalog loaded` 多一格
 /// `digest=true`；没有的解完另起线程整理一份（施工 V-5 中），核心放锁之前等它写完（施工 TMP-1 补2）。在阻塞线程里调。
 pub fn load(places: &Places) -> Option<Loaded> {
-    #[cfg(test)]
-    if SLOW.load(std::sync::atomic::Ordering::Relaxed) {
-        std::thread::sleep(std::time::Duration::from_millis(300));
-    }
+    read(places, true)
+}
+
+/// 同 [`load`]，目录不常驻时临时读一份（施工 V-25 下：没记过的输入、要整份目录的地方）：读完那一行记成 `DEBUG`，不然每次
+/// `model.list` 都记一行 `INFO`。
+pub fn load_again(places: &Places) -> Option<Loaded> {
+    read(places, false)
+}
+
+/// 两份目录照新旧排好：`fetched` 大的在前，一样新的快照在前；连同各自所在的目录和 `meta`。起来时照排第一的那一份认记下的
+/// 那份还能不能用（施工 V-25 下，`super::recall`）。
+pub fn ranked(places: &Places) -> Vec<(CatalogSource, PathBuf, Option<Meta>)> {
     let mut candidates = vec![(CatalogSource::Snapshot, places.snapshot.clone())];
     if let Some(cache) = &places.cache {
         candidates.push((CatalogSource::Cache, cache.clone()));
@@ -82,7 +90,24 @@ pub fn load(places: &Places) -> Option<Loaded> {
         .collect();
     // 新的在前：`fetched` 大的；一样新的快照在前（排序是稳定的）。
     candidates.sort_by(|a, b| fetched(&b.2).cmp(fetched(&a.2)));
-    for (source, dir, meta) in candidates {
+    candidates
+}
+
+/// `source` 那一份所在的目录；缓存目录算不出来的没有。
+pub fn dir_of(places: &Places, source: CatalogSource) -> Option<&Path> {
+    match source {
+        CatalogSource::Snapshot => Some(&places.snapshot),
+        CatalogSource::Cache => places.cache.as_deref(),
+    }
+}
+
+/// [`load`]、[`load_again`]：`startup` 为真时读完记 `INFO`，不然记 `DEBUG`。
+fn read(places: &Places, startup: bool) -> Option<Loaded> {
+    #[cfg(test)]
+    if SLOW.load(std::sync::atomic::Ordering::Relaxed) {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+    }
+    for (source, dir, meta) in ranked(places) {
         let started = Instant::now();
         let fetched = meta.map(|meta| meta.fetched).unwrap_or_default();
         let of = places.cache.as_ref().and_then(|_| {
@@ -91,7 +116,7 @@ pub fn load(places: &Places) -> Option<Loaded> {
         if let (Some(cache), Some(of)) = (&places.cache, &of)
             && let Some(catalog) = digest::recall(cache, of)
         {
-            loaded(&catalog, source, &fetched, started, true);
+            loaded(&catalog, (source, &fetched), started, true, startup);
             return Some(Loaded {
                 catalog,
                 source,
@@ -107,7 +132,7 @@ pub fn load(places: &Places) -> Option<Loaded> {
                     tracing::debug!(target: TARGET, entry = %skipped, "catalog entry skipped");
                 }
                 let catalog = read.catalog;
-                loaded(&catalog, source, &fetched, started, false);
+                loaded(&catalog, (source, &fetched), started, false, startup);
                 // 写盘的线程登记下来，核心放锁之前等它写完（施工 TMP-1 补2，`crate::pending`）。
                 if let (Some(cache), Some(of)) = (&places.cache, of)
                     && let Some(writing) = digest::keep(
@@ -134,18 +159,30 @@ pub fn load(places: &Places) -> Option<Loaded> {
     None
 }
 
-/// 记一行 `INFO catalog loaded`；照整理好的一份读的多一格 `digest=true`。
-fn loaded(catalog: &Catalog, source: CatalogSource, fetched: &str, started: Instant, digest: bool) {
+/// 记一行 `catalog loaded`（`startup` 为真时 `INFO`，临时读的 `DEBUG`）；照整理好的一份读的多一格 `digest=true`。
+fn loaded(
+    catalog: &Catalog,
+    (source, fetched): (CatalogSource, &str),
+    started: Instant,
+    digest: bool,
+    startup: bool,
+) {
     let (providers, models, ms) = (
         catalog.providers().count(),
         catalog.model_count(),
         started.elapsed().as_millis(),
     );
     let source = source.as_str();
-    if digest {
-        tracing::info!(target: TARGET, source, fetched, providers, models, ms, digest, "catalog loaded");
-    } else {
-        tracing::info!(target: TARGET, source, fetched, providers, models, ms, "catalog loaded");
+    match (startup, digest) {
+        (true, true) => {
+            tracing::info!(target: TARGET, source, fetched, providers, models, ms, digest, "catalog loaded");
+        }
+        (true, false) => {
+            tracing::info!(target: TARGET, source, fetched, providers, models, ms, "catalog loaded");
+        }
+        (false, _) => {
+            tracing::debug!(target: TARGET, source, fetched, providers, models, ms, digest, "catalog loaded");
+        }
     }
 }
 
