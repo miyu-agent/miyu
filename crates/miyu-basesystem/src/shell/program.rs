@@ -1,5 +1,6 @@
 //! 用哪个 shell、怎么起（`10-自带软件.md` 第八节、B8，施工 4-8）：Linux 用 bash，macOS 用 zsh，Windows 用
-//! PowerShell，装了 PowerShell 7 用它。核心起来时找一次，说明里写明是哪一种。
+//! PowerShell，装了 PowerShell 7 用它：先找安装包带的（资源目录的 `pwsh/`，施工 SW-5），再找 `PATH` 里的。核心起来时
+//! 找一次，说明里写明是哪一种。
 //!
 //! 不读用户的启动文件：那里可能 `export` 了密钥，去掉密钥的那一步就白做了。`PATH` 照 [`super::env`] 从核心的环境带过去。
 //! PowerShell 的命令编成 UTF-16LE 的 base64 传过去（`-EncodedCommand`），引号、换行不会被命令行拆坏。
@@ -73,12 +74,13 @@ const RUN: &str = r#"eval "unset MIYU_COMMAND; $MIYU_COMMAND""#;
 const PRELUDE: &str = "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ProgressPreference = 'SilentlyContinue'; ";
 
 impl Program {
-    /// 照这台机器找：`path` 是核心环境里的 `PATH`。
-    pub(super) fn find(path: Option<&OsStr>) -> Program {
+    /// 照这台机器找：`path` 是核心环境里的 `PATH`，`resources` 是资源目录。
+    pub(super) fn find(path: Option<&OsStr>, resources: &Path) -> Program {
         choose(
             std::env::consts::OS,
             path,
             std::env::var_os("SystemRoot").as_deref(),
+            &bundled(resources),
         )
     }
 
@@ -139,12 +141,21 @@ impl Program {
     }
 }
 
-/// 照系统 `os`（`std::env::consts::OS` 的写法）挑：`path` 是 `PATH`，`system_root` 是 Windows 的 `SystemRoot`。
-fn choose(os: &str, path: Option<&OsStr>, system_root: Option<&OsStr>) -> Program {
+/// 安装包带的 PowerShell 7 放在资源目录 `resources` 里的位置（施工 SW-5）：Windows 的桌面端把官方的 zip 解开放在这里。
+fn bundled(resources: &Path) -> PathBuf {
+    resources.join("pwsh").join("pwsh.exe")
+}
+
+/// 照系统 `os`（`std::env::consts::OS` 的写法）挑：`path` 是 `PATH`，`system_root` 是 Windows 的 `SystemRoot`，`bundled`
+/// 是安装包带的 PowerShell 7 该在的位置（[`bundled`]），有的先用它：版本是钉住、和沙盒一起试过的。
+fn choose(os: &str, path: Option<&OsStr>, system_root: Option<&OsStr>, bundled: &Path) -> Program {
     let program = |kind, path| Program { kind, path };
     match os {
         "macos" => program(Kind::Zsh, PathBuf::from("/bin/zsh")),
-        "windows" => match which(path, "pwsh.exe") {
+        "windows" => match Some(bundled.to_path_buf())
+            .filter(|bundled| bundled.is_file())
+            .or_else(|| which(path, "pwsh.exe"))
+        {
             Some(found) => program(Kind::PowerShell7, found),
             None => program(
                 Kind::WindowsPowerShell,

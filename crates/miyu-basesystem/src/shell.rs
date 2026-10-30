@@ -97,7 +97,7 @@ struct Args {
 impl Shell {
     /// 照资源目录 `resources` 里的字造，共用的几句是 `common`。用哪个 shell 在这时候找，写进说明里。
     pub(crate) fn load(resources: &Path, common: Common) -> Result<Shell, LoadError> {
-        let program = Program::find(std::env::var_os("PATH").as_deref());
+        let program = Program::find(std::env::var_os("PATH").as_deref(), resources);
         let text = |name: &str, fields: &[&str]| load::text(resources, "shell", name, fields);
         Ok(Shell {
             spec: load::spec_filled(

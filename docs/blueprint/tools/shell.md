@@ -137,11 +137,12 @@
     - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。
     - 换进去的都是登记来的字，照原样、不转义（同 `--schema`）。工具面在一个会话里不变，这一段也不变；人改了预设、装了包，下一个回合工具面重算时一起换。
 
-**用哪个 shell**（核心起来时找一次，照核心环境里的 `PATH`）：
+**用哪个 shell**（核心起来时找一次，照资源目录和核心环境里的 `PATH`）：
 
 | 平台 | 程序 | 参数 | 说明里的名字 |
 |---|---|---|---|
 | macOS | `/bin/zsh` | `-f +o nomatch -c <下面那一句>` | `zsh` |
+| Windows，资源目录里有 `pwsh\pwsh.exe`（施工 SW-5：桌面端的安装包带官方的 zip，版本钉住、和沙盒一起试过） | 它 | 同下 | `PowerShell 7` |
 | Windows，`PATH` 里有 `pwsh.exe` | 找到的那一个 | `-NoLogo -NoProfile -NonInteractive -OutputFormat Text -EncodedCommand <编好的命令>`（`-OutputFormat Text` 施工 SW-2；`-EncodedCommand` 起的照样写 CLIXML，施工 SW-4 起输出里认出 `#< CLIXML` 那一段换回错误、警告的原文，`shell/clixml.rs`） | `PowerShell 7` |
 | Windows，没有 | `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`，没设 `SystemRoot` 的是 `powershell.exe` | 同上 | `Windows PowerShell 5.1` |
 | 别的（Linux 等） | `PATH` 里的 `bash`，找不到用 `/bin/bash` | `--noprofile --norc -c <下面那一句>` | `bash` |

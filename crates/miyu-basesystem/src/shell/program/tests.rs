@@ -30,12 +30,17 @@ impl Drop for Bin {
     }
 }
 
+/// 没带 PowerShell 7 的安装包：资源目录里没有这个文件。
+fn none() -> &'static Path {
+    Path::new("/nowhere/pwsh/pwsh.exe")
+}
+
 #[test]
 fn each_system_gets_its_own_shell() {
     let bin = Bin::with(&["bash", "pwsh.exe"]);
     let path = bin.path();
     assert_eq!(
-        choose("linux", Some(&path), None),
+        choose("linux", Some(&path), None, none()),
         Program {
             kind: Kind::Bash,
             path: bin.0.join("bash"),
@@ -43,19 +48,19 @@ fn each_system_gets_its_own_shell() {
         "照 PATH 找到的"
     );
     assert_eq!(
-        choose("linux", None, None).path,
+        choose("linux", None, None, none()).path,
         PathBuf::from("/bin/bash"),
         "找不到用 /bin/bash"
     );
     assert_eq!(
-        choose("macos", Some(&path), None),
+        choose("macos", Some(&path), None, none()),
         Program {
             kind: Kind::Zsh,
             path: PathBuf::from("/bin/zsh"),
         }
     );
     assert_eq!(
-        choose("windows", Some(&path), None),
+        choose("windows", Some(&path), None, none()),
         Program {
             kind: Kind::PowerShell7,
             path: bin.0.join("pwsh.exe"),
@@ -64,7 +69,7 @@ fn each_system_gets_its_own_shell() {
     let bare = Bin::with(&[]);
     let root = OsString::from("/win");
     assert_eq!(
-        choose("windows", Some(&bare.path()), Some(&root)),
+        choose("windows", Some(&bare.path()), Some(&root), none()),
         Program {
             kind: Kind::WindowsPowerShell,
             path: Path::new("/win/System32/WindowsPowerShell/v1.0/powershell.exe").to_path_buf(),
@@ -72,8 +77,35 @@ fn each_system_gets_its_own_shell() {
         "没装 PowerShell 7 的用系统自带的"
     );
     assert_eq!(
-        choose("windows", None, None).path,
+        choose("windows", None, None, none()).path,
         PathBuf::from("powershell.exe")
+    );
+}
+
+#[test]
+fn the_bundled_powershell_7_comes_first_on_windows() {
+    let resources = Bin::with(&[]);
+    std::fs::create_dir_all(resources.0.join("pwsh")).expect("建得了目录");
+    std::fs::write(resources.0.join("pwsh").join("pwsh.exe"), b"").expect("写得进");
+    let bin = Bin::with(&["pwsh.exe", "bash"]);
+    let bundled = bundled(&resources.0);
+    assert_eq!(
+        choose("windows", Some(&bin.path()), None, &bundled),
+        Program {
+            kind: Kind::PowerShell7,
+            path: bundled.clone(),
+        },
+        "安装包带的先于 PATH 里的"
+    );
+    assert_eq!(
+        choose("windows", None, Some(&OsString::from("/win")), &bundled).kind,
+        Kind::PowerShell7,
+        "带了的不退回系统自带的 5.1"
+    );
+    assert_eq!(
+        choose("linux", Some(&bin.path()), None, &bundled).path,
+        bin.0.join("bash"),
+        "别的系统不看它"
     );
 }
 
