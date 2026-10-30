@@ -176,3 +176,19 @@ async fn steps_start_and_finish_and_skipped_ones_warn() {
     assert_eq!(lines[n - 1]["reason"], "unattended");
     assert!(!outside.exists(), "没写");
 }
+
+/// 开好会话以前就失败的（施工 AP-3 补）：标准输出的最后一行照样是 `done`，没有 `session`，`reason` 是 `failed`；原因只在标准
+/// 错误上。这里是接着一个不存在的会话说。
+#[tokio::test]
+async fn a_failure_before_the_session_still_ends_with_done() {
+    let home = Home::new(Arc::new(Script::new([])));
+    let missing = Target::Session("01a00000-0000-7000-8000-000000000000".to_string());
+    let Asked { code, out, err, .. } = streamed(&home, "在吗", missing).await;
+    assert_ne!(code, 0, "{out}");
+    assert!(!err.is_empty(), "原因在标准错误上");
+    assert_eq!(
+        lines(&out),
+        [json!({"exit": code, "reason": "failed", "type": "done"})],
+        "只有一行 done：{out}"
+    );
+}

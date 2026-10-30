@@ -245,3 +245,19 @@ fn a_terminal_without_words_is_a_missing_message() {
     assert_eq!(code, Some(2), "{said}");
     assert_eq!(said, "miyu: 缺少消息\n提示：用法：miyu ask \"<消息>\"\n");
 }
+
+/// 写了 `--format jsonl` 的，标准输入凑不出话也照样以 `done` 结尾（施工 AP-3 补）：参数写错，`reason` 是 `usage`，退出码 2，
+/// 不连核心。
+#[test]
+fn a_missing_message_still_ends_the_stream_with_done() {
+    let home = Home::new();
+    let output = ask(home.root.path(), &["--format", "jsonl"])
+        .stdin(Stdio::null())
+        .output()
+        .expect("跑得起来");
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "{\"exit\":2,\"reason\":\"usage\",\"type\":\"done\"}\n"
+    );
+}

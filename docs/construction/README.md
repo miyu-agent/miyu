@@ -1198,6 +1198,7 @@ flowchart LR
 | AP-1 | 帮助页照 git、GNU 整理 | 总表按用途分五组、只列命令和全局选项，`ask` 和会话那几条命令的选项挪回各自的页；用法写 `miyu [<命令>] [<选项>]`，占位统一成 `<名字>`、`<text|json>`，同一节的说明从同一列开始；`ask` 页多「退出状态」一节列 0 到 5；软件包加的命令接在最后一组命令后面；文案检查改成总表所有缩进行都查「、」。施工单见 `AP-命令行给程序调.md` |
 | AP-2 | `miyu ask` 读标准输入、挑新会话的几样 | 没写消息、标准输入不是终端的读到头当消息；消息里写了 `-` 的读标准输入接在后面、空一行；写了消息不写 `-` 的不读（留着不关的管道也不卡）；终端里没写、读到空的、不是 UTF-8 的照参数写错报，退出码 2。新会话的 `-C, --cd`、`--persona`、`--no-persona`、`--preset`、`--permission read-only\|workspace\|full`（造好以后、发话之前 `session.set_permission_level`），和 `-c`、`-s` 一起写的照参数写错报；帮助页、蓝图跟着改 |
 | AP-3 | `miyu ask --format jsonl` 事件流 | 标准输出一行一个事件、边跑边出，格照字母排：`session`、`turn.started`、`thinking`、`text`、`step`、`step.done`、`agent.reported`、`compaction`、`warning`、`turn.ended`、`done`；形状是命令行自己定的，每种的格写在蓝图 `cli/ask.md`「样子：`--format jsonl`」；开好会话以后最后一行一定是 `done`（带退出码、不是 0 的带原因）；标准错误只印出错；`--format json` 照旧。`ask` 的格式另成一个三种的 `Output`，别的命令的 `--format` 照旧两种 |
+| AP-3 补 | 事件流总以 done 结尾 | 开好会话以前就失败的（连不上核心、握手、传附件、造会话被拒、标准输入凑不出话……）原来标准输出上什么都没有，调用的程序要分两种情况读；改成也写一行 `done`（不带 `session`，`reason` 是 `usage`、`no_model` 或 `failed`）。总帮助页的 `ask <消息>` 改成 `ask [<消息>]`。`-C` 不管 `--file`、`--add-dir` 的相对路径，写明 |
 
 **包的命名**（PN 线，设计 48，2026-10-29 项目主人定）
 

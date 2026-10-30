@@ -87,7 +87,7 @@
 不带命令时打开默认界面。
 
 对话：
-  ask <消息>          发送消息并打印回复
+  ask [<消息>]        发送消息并打印回复
   undo                撤销上一轮（别名：rewind）
   restore             恢复上一次撤销的内容
   redo [<消息>]       重做上一轮，可换成新消息
@@ -134,7 +134,7 @@ Usage: miyu [<command>] [<options>]
 Without a command, open the default interface.
 
 Conversation:
-  ask <message>       Send a message and print the reply
+  ask [<message>]     Send a message and print the reply
   undo                Undo the last turn (alias: rewind)
   restore             Restore what the last undo removed
   redo [<message>]    Redo the last turn, optionally with a new message

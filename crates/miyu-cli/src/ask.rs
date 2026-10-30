@@ -262,39 +262,41 @@ pub struct Screen<'a> {
 /// 跑一次 `miyu ask`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
 pub fn ask(args: Ask, start: impl FnOnce() -> Command) -> ExitCode {
     let language = language::current();
+    let jsonl = args.format == Output::Jsonl;
     // 要说的话先凑好（施工 AP-2）：凑不出的照参数写错报，不连核心。
     let stdin = io::stdin();
     let terminal = stdin.is_terminal();
     let text = match input::message(&args.words, stdin.lock(), terminal) {
         Ok(text) => text,
-        Err(unread) => return ExitCode::from(input::refuse(&unread, language)),
+        Err(unread) => return ExitCode::from(early(jsonl, input::refuse(&unread, language))),
     };
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => return ExitCode::from(diagnostic::fail(error.to_string())),
+        Err(error) => return ExitCode::from(early(jsonl, diagnostic::fail(error.to_string()))),
     };
     ExitCode::from(runtime.block_on(run(args, text, start, language)))
 }
 
 /// 在运行时里：找数据根、连上核心、说 `text`。
 async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language: Language) -> u8 {
+    let jsonl = args.format == Output::Jsonl;
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return diagnostic::fail(error.to_string()),
+        Err(error) => return early(jsonl, diagnostic::fail(error.to_string())),
     };
     if let Err(error) = root.prepare() {
-        return diagnostic::fail(error.to_string());
+        return early(jsonl, diagnostic::fail(error.to_string()));
     }
     let connected = connect_or_start(&root, start)
         .await
         .map_err(|error| error.to_string());
     let (mut connection, token) = match connected {
         Ok(connected) => connected,
-        Err(reason) => return diagnostic::fail(&reason),
+        Err(reason) => return early(jsonl, diagnostic::fail(&reason)),
     };
     let plan = plan(args, text, &env, language);
     if plan.model.is_none() {
@@ -312,11 +314,11 @@ async fn run(args: Ask, text: String, start: impl FnOnce() -> Command, language:
         let checked =
             model_ready_on(connection, &token, &ready, &mut console, &mut io::stderr()).await;
         if let Err(code) = checked {
-            return code;
+            return early(jsonl, code);
         }
         connection = match miyu_ipc::connect(&root).await {
             Ok((connection, _)) => connection,
-            Err(error) => return diagnostic::fail(error.to_string()),
+            Err(error) => return early(jsonl, diagnostic::fail(error.to_string())),
         };
     }
     let presses = presses();
@@ -410,3 +412,11 @@ pub(crate) fn presses() -> mpsc::Receiver<()> {
 
 #[cfg(test)]
 mod tests;
+
+/// 开会话以前就要退出（施工 AP-3 补）：写事件流的，标准输出的最后一行照样是 `done`（`talk::ended_early`）；交回 `code`。
+fn early(jsonl: bool, code: u8) -> u8 {
+    if jsonl {
+        talk::ended_early(&mut io::stdout(), code);
+    }
+    code
+}

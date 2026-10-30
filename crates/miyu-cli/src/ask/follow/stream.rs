@@ -4,8 +4,9 @@
 //! `BTreeMap`：工作区没开 `preserve_order`）。
 //!
 //! 先后：`session` 一次 → 每一轮 `turn.started`、`thinking`、`text`、`step`、`step.done`、`compaction`、`turn.ended` → 等子代理
-//! 时的 `agent.reported` → `done` 一次。`warning` 照告警出来的地方。开好会话以前就出错的（握手、传附件、造会话被拒……），
-//! 标准输出上什么都没有，原因在标准错误上。
+//! 时的 `agent.reported` → `done` 一次。`warning` 照告警出来的地方。开好会话以前就出错的（握手、传附件、造会话被拒、标准
+//! 输入凑不出话……）只有一行 `done`，不带 `session`（施工 AP-3 补，`talk::ended_early`），原因在标准错误上：最后一行总是
+//! `done`，调用的程序不用分两种情况读。
 
 use std::io::Write;
 

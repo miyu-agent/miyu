@@ -3,7 +3,7 @@ Usage: miyu [<command>] [<options>]
 Without a command, open the default interface.
 
 Conversation:
-  ask <message>       Send a message and print the reply
+  ask [<message>]     Send a message and print the reply
   undo                Undo the last turn (alias: rewind)
   restore             Restore what the last undo removed
   redo [<message>]    Redo the last turn, optionally with a new message

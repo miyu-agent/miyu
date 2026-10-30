@@ -30,7 +30,7 @@ pub async fn talk(
     // 拒绝、告诉她原因，不一直等着。
     let hello = match link::hello(&mut rpc, token, &plan.language, false, screen.err).await {
         Ok(hello) => hello,
-        Err(code) => return code,
+        Err(code) => return early(plan, screen, code),
     };
     let unsandboxed = link::unsandboxed(&hello);
     let config_errors = link::config_errors(&hello);
@@ -50,23 +50,23 @@ pub async fn talk(
     // 附件在造会话之前传：传不上的不发话，也不留下一个空的会话（施工 3-9 三补）。
     let attachments = match attach(&mut rpc, plan, screen).await {
         Ok(attachments) => attachments,
-        Err(code) => return code,
+        Err(code) => return early(plan, screen, code),
     };
     let (session, created) = match session(&mut rpc, plan, screen).await {
         Ok(found) => found,
-        Err(code) => return code,
+        Err(code) => return early(plan, screen, code),
     };
     // 新开的会话写了 `--permission`：开好以后、订阅之前切到那一级（施工 AP-2）。
     if !created.is_null()
         && let Err(code) = set_permission(&mut rpc, &session, plan, screen).await
     {
-        return code;
+        return early(plan, screen, code);
     }
     // 接着说的会话写了 `--add-dir`：说之前把会话加进来的目录换成这几个（施工 9-7 上）。新会话造的时候就带上了。
     if created.is_null()
         && let Err(code) = added(&mut rpc, &session, plan, screen).await
     {
-        return code;
+        return early(plan, screen, code);
     }
     let subscribe = json!({"session": session, "stream": "events"});
     let subscribed = link::request(
@@ -78,7 +78,7 @@ pub async fn talk(
     )
     .await;
     if let Err(code) = subscribed {
-        return code;
+        return early(plan, screen, code);
     }
     let send = send_params(&session, plan, attachments);
     // 从发出算起（施工 7-9）；长到算不出那一刻的，当没写。
@@ -93,7 +93,7 @@ pub async fn talk(
                 plan.language,
                 &diagnostic::Problem::new(error.to_string()),
             );
-            return exit::ERROR;
+            return early(plan, screen, exit::ERROR);
         }
     };
     let mut follow = Follow::new(&session, &sent, plan);
@@ -312,4 +312,24 @@ async fn session(
         link::request(rpc, "session.configure", params, &plan.language, screen.err).await?;
     }
     Ok((session, Value::Null))
+}
+
+/// 开好会话、跟上那一轮以前就要退出（施工 AP-3 补）：事件流的最后一行照样是 `done`（[`ended_early`]），原因在标准错误上
+/// 已经说过；交回 `code`。
+fn early(plan: &Plan, screen: &mut Screen<'_>, code: u8) -> u8 {
+    if plan.format == Output::Jsonl {
+        ended_early(screen.out, code);
+    }
+    code
+}
+
+/// 事件流里没开成会话的那一行 `done`（施工 AP-3 补）：没有 `session`，`reason` 照退出码：参数写错 `usage`、没有模型
+/// `no_model`、别的 `failed`。调用的程序只看最后一行就知道结束了、为什么。
+pub(crate) fn ended_early(out: &mut dyn std::io::Write, code: u8) {
+    let reason = match code {
+        exit::MISUSE => "usage",
+        exit::NO_MODEL => "no_model",
+        _ => "failed",
+    };
+    emit(out, "done", json!({"exit": code, "reason": reason}));
 }
