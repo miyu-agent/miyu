@@ -172,6 +172,10 @@ fn walk(folder: &Path) -> Result<Vec<Item>, Error> {
                 continue;
             }
             let relative = format!("{prefix}{name}");
+            // 解不开的名字打包时就拒（施工 AS-8），作者当场知道。
+            if !plain_name(name) {
+                return Err(Error::BadPath(relative));
+            }
             let meta = fs::symlink_metadata(entry.path())?;
             if meta.is_dir() {
                 stack.push((entry.path(), format!("{relative}/")));
@@ -340,6 +344,10 @@ fn unpack_within(
             None => top = Some(first.clone()),
         }
         let target = into.join(&first).join(&rest);
+        // 拼好以后再看一眼还在 `into` 下面（施工 AS-8）：每一级已经查过，这里兜底。
+        if !target.starts_with(into) {
+            return Err(Error::BadPath(path.display().to_string()));
+        }
         match entry.header().entry_type() {
             tar::EntryType::Directory => fs::create_dir_all(&target)?,
             tar::EntryType::Regular => {
@@ -369,19 +377,59 @@ fn unpack_within(
     })
 }
 
-/// 一项的路径拆成最上层的名字和下面的部分；绝对路径、`..`、名字不是 UTF-8 的不行。
+/// 一项的路径拆成最上层的名字和下面的部分；绝对路径、`..`、名字不是 UTF-8 的不行，哪一级不是哪个系统上都只是一个普通名字的
+/// 不行（[`plain_name`]，施工 AS-8）。`\` 先整个看：Windows 上它是分隔符，拆开就看不出来了。
 fn parts(path: &Path) -> Result<(String, PathBuf), Error> {
     let bad = || Error::BadPath(path.display().to_string());
+    if path.to_str().is_none_or(|text| text.contains('\\')) {
+        return Err(bad());
+    }
     let mut names = Vec::new();
     for component in path.components() {
         match component {
-            Component::Normal(name) => names.push(name.to_str().ok_or_else(bad)?.to_string()),
+            Component::Normal(name) => {
+                let name = name.to_str().ok_or_else(bad)?;
+                if !plain_name(name) {
+                    return Err(bad());
+                }
+                names.push(name.to_string());
+            }
             _ => return Err(bad()),
         }
     }
     let mut names = names.into_iter();
     let first = names.next().ok_or_else(bad)?;
     Ok((first, names.collect()))
+}
+
+/// 一级名字在哪个系统上都只是一个普通名字（施工 AS-8，发布前测试 2026-10-30）：非空，没有 `:`（Windows 上中间一级写成
+/// `C:x` 的，`PathBuf::join` 拼出来是 C 盘当前目录下的 `x`，跳出暂存目录；`x:y` 是备用数据流）、`\`、`/`、控制字符；不是
+/// Windows 的保留名（`CON`、`PRN`、`AUX`、`NUL`、`COM0`～`COM9`、`LPT0`～`LPT9`，不分大小写，带扩展名也算）；结尾不是 `.`、
+/// 空格（Windows 上会被去掉，成了另一个名字）。包是三个平台通用的，哪个平台上都照这个查。
+fn plain_name(name: &str) -> bool {
+    const RESERVED: [&str; 4] = ["con", "prn", "aux", "nul"];
+    let stem = name
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .trim_end()
+        .to_ascii_lowercase();
+    let numbered = ["com", "lpt"].iter().any(|device| {
+        stem.strip_prefix(device).is_some_and(|rest| {
+            let mut chars = rest.chars();
+            chars
+                .next()
+                .is_some_and(|c| c.is_ascii_digit() || matches!(c, '¹' | '²' | '³'))
+                && chars.next().is_none()
+        })
+    });
+    !name.is_empty()
+        && !name.ends_with(['.', ' '])
+        && !name
+            .chars()
+            .any(|c| matches!(c, ':' | '\\' | '/') || c.is_control())
+        && !RESERVED.contains(&stem.as_str())
+        && !numbered
 }
 
 /// 解开的文件照包里写的给权限：能执行的 `755`，别的 `644`；Unix 以外不管。

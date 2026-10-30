@@ -393,3 +393,94 @@ fn replaced_files_are_packed_from_memory() {
         fs::read(folder.join("package.toml")).expect("在")
     );
 }
+
+/// 施工 AS-8（发布前测试 2026-10-30）：Windows 上中间一级写成盘符（`a/C:x`）的，拼出来是「C 盘当前目录下的 x」，跳出暂存目录。
+/// 应当拒掉，也不该在 `into` 以外留下任何东西。只在 Windows 上有意义：别的平台上 `C:x` 是个普通的名字。
+#[cfg(windows)]
+#[test]
+fn audit_a_drive_letter_inside_the_path_is_refused_on_windows() {
+    let scratch = Scratch::new();
+    let file = scratch.path().join("drive.miyu");
+    let escaped = format!("audit-s8-{}", std::process::id());
+    let inside = format!("a/C:{escaped}");
+    raw(
+        &file,
+        &[
+            ("a/package.toml", tar::EntryType::Regular, b"x"),
+            (inside.as_str(), tar::EntryType::Regular, b"x"),
+        ],
+    );
+    let into = scratch.path().join("out");
+    let got = unpack(&file, &into);
+    let outside = std::path::PathBuf::from(format!("C:{escaped}"));
+    let leaked = outside.exists();
+    if leaked {
+        fs::remove_file(&outside).expect("清得掉漏出去的那份");
+    }
+    assert!(!leaked, "解包写到了暂存目录外面：{}", outside.display());
+    assert!(
+        matches!(got, Err(Error::BadPath(_))),
+        "带盘符的一级该拒：{got:?}"
+    );
+}
+
+/// 施工 AS-8（发布前测试 2026-10-30）：每一级都要是哪个系统上都只是一个普通名字的：带 `:`（Windows 上是盘符、备用数据流）、
+/// `\`、控制字符的，Windows 的保留名（`NUL`、`con.txt` 这些，不分大小写、带不带扩展名），结尾是 `.`、空格的，都拒。哪个平台上
+/// 都拒：包是三个平台通用的。和保留名只是像的照收。
+#[test]
+fn names_windows_cannot_hold_are_refused_everywhere() {
+    let scratch = Scratch::new();
+    let bad = [
+        "a/C:x",
+        "a/C:/x",
+        "C:/package.toml",
+        "a/x:stream",
+        "a/b\\c",
+        "a/NUL",
+        "a/con.txt",
+        "a/Com1",
+        "a/lpt9.log",
+        "a/x.",
+        "a/x ",
+        "a/x\u{7}",
+    ];
+    for (n, name) in bad.iter().enumerate() {
+        let file = scratch.path().join(format!("{n}.miyu"));
+        let top = name.split('/').next().unwrap_or_default();
+        let manifest = format!("{top}/package.toml");
+        raw(
+            &file,
+            &[
+                (manifest.as_str(), tar::EntryType::Regular, b"x"),
+                (name, tar::EntryType::Regular, b"x"),
+            ],
+        );
+        let into = scratch.path().join(format!("out-{n}"));
+        let got = unpack(&file, &into);
+        assert!(matches!(got, Err(Error::BadPath(_))), "{name:?}：{got:?}");
+    }
+    let file = scratch.path().join("fine.miyu");
+    raw(
+        &file,
+        &[
+            ("a/package.toml", tar::EntryType::Regular, b"x"),
+            ("a/console.txt", tar::EntryType::Regular, b"x"),
+            ("a/nul-ish", tar::EntryType::Regular, b"x"),
+            ("a/com10", tar::EntryType::Regular, b"x"),
+            ("a/.hidden", tar::EntryType::Regular, b"x"),
+        ],
+    );
+    let got = unpack(&file, &scratch.path().join("out-fine"));
+    assert!(got.is_ok(), "像保留名的照收：{got:?}");
+}
+
+/// 施工 AS-8：打包时同样拒，作者打包时就知道（Windows 上建不出这样的名字，只在 Unix 上试）。
+#[cfg(unix)]
+#[test]
+fn packing_a_name_windows_cannot_hold_is_refused() {
+    let scratch = Scratch::new();
+    let folder = sample(scratch.path());
+    put(&folder, "docs/a:b.md", b"x");
+    let got = pack(&folder, "pudding", &scratch.path().join("out.miyu"));
+    assert!(matches!(got, Err(Error::BadPath(_))), "{got:?}");
+}
