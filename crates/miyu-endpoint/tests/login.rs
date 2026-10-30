@@ -56,7 +56,7 @@ async fn a_code_comes_only_from_the_local_token_and_only_sets_the_password() {
     assert_eq!(why(&refused), "setup_first", "{refused}");
     // 写法不对的照旧是设密码的样子，可以再来；用户名那一格不认了。
     for params in [
-        json!({"password": "short"}),
+        json!({"password": ""}),
         json!({"password": "        "}),
         json!({"password": "x".repeat(1025)}),
         json!({"username": "shorin", "password": "correct horse"}),

@@ -48,8 +48,8 @@ const LOGIN_DAYS: i64 = 30;
 const WINDOW: Duration = Duration::from_secs(60);
 const TRIES: usize = 5;
 
-/// 密码最短、最长几个字节（「起草时定的」第 45 条）。
-const SHORTEST: usize = 8;
+/// 密码最长几个字节（「起草时定的」第 45 条）：只防拿超长的串耗 argon2。原来还有至少 8 个字节的下限，施工 PW-1 去掉了（项目主人
+/// 2026-10-30：「没必要做这个限制」）。
 const LONGEST: usize = 1024;
 
 /// 这个连接是怎么认出来的（握手时定）。
@@ -341,9 +341,9 @@ fn admit(identity: &Identity, source: &str) -> Result<(), Duration> {
     Ok(())
 }
 
-/// 密码写得合不合：8 到 1024 个字节，不能全是空白。
+/// 密码写得合不合：不超过 1024 个字节，不能是空的、不能全是空白。
 fn good_password(password: &str) -> bool {
-    (SHORTEST..=LONGEST).contains(&password.len()) && !password.trim().is_empty()
+    password.len() <= LONGEST && !password.trim().is_empty()
 }
 
 /// 32 个系统给的随机字节，写成 64 位小写十六进制。
@@ -375,3 +375,6 @@ fn login_expires(now: Timestamp) -> Timestamp {
 fn by() -> By {
     By::Person(Person::default())
 }
+
+#[cfg(test)]
+mod tests;

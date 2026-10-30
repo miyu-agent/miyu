@@ -166,7 +166,7 @@ The access password is only needed to connect from the local network (a phone, a
 | `account.setup` | `password`, `old`? | `{}` on a local-token connection; otherwise `{"login": {"expires", "token"}}`: a new device token, which this connection goes by from then on |
 | `account.logout` | `all` (boolean, default `false`) | `{"revoked": <how many>}`: revokes this device token, or all of them with `all` |
 
-A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is 8 to 1024 bytes and not all spaces. A device-token connection (a web page opened from `miyu web`, or a LAN login) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Local-token and one-time-code connections never need it.
+A one-time code works once. Setting or changing the access password revokes every device and closes their connections (except the one making the change). The password is at most 1024 bytes and must not be empty or only whitespace; there is no minimum length. A device-token connection (a web page opened from `miyu web`, or a LAN login) must give the current password as `old` once one is set; it is throttled by source, the same as password login. Before a password is set it needn't. Local-token and one-time-code connections never need it.
 
 **Errors**
 
