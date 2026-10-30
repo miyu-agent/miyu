@@ -332,11 +332,16 @@ class Shut(unittest.TestCase):
     """好好退出（施工 V-27）：先跑自己的退出命令，再 SIGTERM 等它收尾，不走的才硬杀。"""
 
     def spawn(self, home, script):
+        """起一个照 `MIYU_HOME` 认得出的进程，等它装好信号处理（写出 `ready`）再交回。光等进程列表里看得到不够：解释器一起来
+        就看得到，那时 `script` 还没跑到装处理的那一行，慢的机器上 SIGTERM 先到、照默认的死掉（V-27 修：CI 上两条红过）。"""
         env = {**os.environ, "MIYU_HOME": str(home)}
+        ready = home / "ready"
+        script = script.replace("#READY", f"pathlib.Path({str(ready)!r}).write_text('')")
         proc = subprocess.Popen([sys.executable, "-c", script], env=env)
-        for _ in range(100):
-            if reap.leftover([home]):
-                break
+        deadline = time.monotonic() + 30
+        while not (ready.exists() and reap.leftover([home])):
+            self.assertIsNone(proc.poll(), "子进程没装好就退了")
+            self.assertLess(time.monotonic(), deadline, "30 秒里没装好")
             time.sleep(0.02)
         return proc
 
@@ -347,7 +352,7 @@ class Shut(unittest.TestCase):
             script = (
                 "import signal,sys,time,pathlib\n"
                 f"def bye(*a):\n time.sleep(0.3); pathlib.Path({str(done)!r}).write_text('ok'); sys.exit(0)\n"
-                "signal.signal(signal.SIGTERM, bye)\nwhile True: time.sleep(0.05)\n"
+                "signal.signal(signal.SIGTERM, bye)\n#READY\nwhile True: time.sleep(0.05)\n"
             )
             proc = self.spawn(home, script)
             stop_ran = home / "stop-ran"
@@ -360,7 +365,8 @@ class Shut(unittest.TestCase):
     def test_one_that_ignores_sigterm_is_killed_after_the_limit(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
-            proc = self.spawn(home, "import signal,time\nsignal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)\n")
+            script = "import pathlib,signal,time\nsignal.signal(signal.SIGTERM, signal.SIG_IGN)\n#READY\ntime.sleep(60)\n"
+            proc = self.spawn(home, script)
             result = reap.shut([home], limit=0.5)
             proc.wait(timeout=5)
             self.assertEqual(result["forced"], 1)
