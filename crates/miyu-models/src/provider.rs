@@ -3,7 +3,8 @@
 //!
 //! 1. 驱动、地址：先看手写的，没写的看档案（`[providers.<目录里的编号>]`：写了 `catalog` 的是它，没写的是这一家自己的
 //!    编号）。档案也没有的，看它对上的目录里那一家（[`crate::matching::recognize`]）的 `api` 和 `npm`，`npm` 照档案的
-//!    `[npm]` 表换成驱动（8-7）。都没有的，这一家用不了，别的照常。
+//!    `[npm]` 表换成驱动（8-7）。都没有的，这一家用不了，别的照常。认哪一家、取那几格只经查目录的接口
+//!    （[`crate::catalog::CatalogLookup::provider_side`]，施工 V-25 上）。
 //! 2. 开关：档案的，没有的用驱动的默认（施工 L-2 登记过手写的 `strict_tools`，施工 FL-1 拆掉了：工具一律全量）。
 //! 3. key：一家一个（施工 8-25）。取不到值的这一家不当候选（由执行器取）。
 //! 4. 本机的服务：手写的 `local`，没写的照地址在不在本机（第二条第 12 条，8-7）。手写的地址是环境变量的引用时查不出来，
@@ -32,7 +33,7 @@ use miyu_drivers::{Anthropic, DriverTexts, OpenAiChat, OpenAiResponses};
 use crate::facts::Wire;
 use crate::headers;
 use crate::knowledge::Knowledge;
-use crate::matching::{Recognized, recognize};
+use crate::matching::Recognized;
 use crate::profile::ImageTokens;
 use crate::settings::{ProviderSettings, UseSettings};
 
@@ -261,21 +262,13 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         .or_else(|| profile.base_url.clone().map(Address::Literal));
     // 对目录只认得出字面地址：是环境变量的引用时查不出来，当没有这一格（第四条第 2 条第 2 层）。
     let written_text = written_url.as_ref().and_then(literal);
-    let recognized = knowledge.catalog.and_then(|loaded| {
-        recognize(
-            &loaded.catalog,
-            id,
-            written_text,
-            settings.catalog.as_deref(),
-        )
-    });
-    let listed = recognized.as_ref().and_then(|recognized| {
-        knowledge
-            .catalog
-            .and_then(|loaded| loaded.catalog.provider(&recognized.provider))
-    });
-    let from_npm = listed
-        .and_then(|listed| listed.npm.as_ref())
+    // 认目录里的哪一家、取那一家的包名和地址，只经查目录的接口（施工 V-25 上，`catalog/lookup.rs`）。
+    let side = knowledge
+        .lookup
+        .and_then(|lookup| lookup.provider_side(id, written_text, settings.catalog.as_deref()));
+    let from_npm = side
+        .as_ref()
+        .and_then(|side| side.npm.as_ref())
         .and_then(|npm| knowledge.profiles.npm.get(npm).cloned());
     let driver_written = settings.driver.is_some();
     let driver_from = match (&settings.driver, &profile.driver, &from_npm) {
@@ -285,8 +278,8 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         (None, None, None) => DriverFrom::Default,
     };
     let Some(base_url) = written_url.or_else(|| {
-        listed
-            .and_then(|listed| listed.api.clone())
+        side.as_ref()
+            .and_then(|side| side.api.clone())
             .map(Address::Literal)
     }) else {
         return Err(NoModel(format!(
@@ -322,7 +315,7 @@ pub fn provider(values: &Values, knowledge: &Knowledge<'_>, id: &str) -> Result<
         key: settings.key,
         images: profile.image_tokens,
         catalog,
-        recognized,
+        recognized: side.map(|side| side.recognized),
         local,
         driver_written,
         driver_from,

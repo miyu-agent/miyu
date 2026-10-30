@@ -25,7 +25,7 @@ use miyu_http::{Client, is_loopback_url};
 
 use miyu_kernel::time::Timestamp;
 use miyu_models::Knowledge;
-use miyu_models::catalog::Loaded;
+use miyu_models::catalog::{CatalogLookup, Loaded};
 use miyu_models::cooldown::{Cooldowns, Rules};
 use miyu_models::logos::Logo;
 use miyu_models::matching::Vendors;
@@ -238,6 +238,8 @@ impl ModelData {
             profiles: &self.profiles,
             vendors: &self.vendors,
             catalog: catalog.as_deref(),
+            // 合资料照旧拿整份目录现算（施工 V-25 上只切开接口，记下来的答随 V-25 下接进来）。
+            lookup: catalog.as_deref().map(CatalogLookup::Full),
             learned: &observed.learned,
             lists: &observed.lists,
         })

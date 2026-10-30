@@ -11,7 +11,8 @@ publish.workspace = true
 miyu-config = { path = "../miyu-config" }
 miyu-drivers = { path = "../miyu-drivers" }
 miyu-kernel = { path = "../miyu-kernel" }
-serde = { version = "1.0", features = ["derive"] }
+# `rc`：查目录记下来的答（施工 V-25 上，`catalog/recall.rs`）里有目录的条目，共用的字、价格是 `Arc`，原样写成 JSON。
+serde = { version = "1.0", features = ["derive", "rc"] }
 # 目录一个模型一个模型地读，坏一个不连累别的（施工 8-7）：先借着原文，再各自读。
 serde_json = { version = "1.0", features = ["raw_value"] }
 sha2 = { version = "0.11", default-features = false }
