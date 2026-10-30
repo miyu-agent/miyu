@@ -148,6 +148,7 @@ mod skills;
 mod skills_changed;
 mod spawn;
 mod stack;
+mod steps;
 mod stop;
 mod strict_tools;
 mod test_embed;

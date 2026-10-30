@@ -143,6 +143,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
         appended: Default::default(),
         bare: false,
         plugin_tools: Vec::new(),
+        steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Attended, None),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

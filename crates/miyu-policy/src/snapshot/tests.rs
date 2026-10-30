@@ -38,7 +38,7 @@ fn the_same_sources_give_the_same_bytes_and_they_read_back() {
     let text = crate::test_support::text_without_digest(&one);
     assert!(text.starts_with(r#"{"persona":"engineer","system":"You are a helpful software engineer.","core":{"checkpoint_open":"#), "{text}");
     assert!(
-        text.ends_with(r#""step_limit":null,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"line_percent":85,"margin_percent":5,"image":2000,"file":2000,"tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10,"skills":{"tokens":5000,"total":25000}},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}},"jobs":{"report_chars":30000,"nested_per_parent":8,"nested_per_session":16},"recap":{"turns":8,"tokens":8192},"title":{"tokens":1024,"chars":50,"tries":2},"peers":{"burst":5,"window":600,"unread":50,"watch_hours":12,"status_chars":200}}"#),
+        text.ends_with(r#""step_limit":null,"auto_step_limit":500,"attended":true,"resumes":3,"compaction":{"reserve_cap":20000,"margin":13000,"line_percent":85,"margin_percent":5,"image":2000,"file":2000,"tail":16000,"lead":16000,"rebuild":{"files":5,"file_tokens":5000,"total":50000,"min_window":32000,"candidates":10,"skills":{"tokens":5000,"total":25000}},"pause":{"failures":3,"turns":3,"refills":3},"shorten":{"tries":3,"percent":20}},"jobs":{"report_chars":30000,"nested_per_parent":8,"nested_per_session":16},"recap":{"turns":8,"tokens":8192},"title":{"tokens":1024,"chars":50,"tries":2},"peers":{"burst":5,"window":600,"unread":50,"watch_hours":12,"status_chars":200}}"#),
         "{text}"
     );
     // 改一个字，哈希就变了。

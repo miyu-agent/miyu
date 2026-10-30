@@ -18,6 +18,7 @@ use crate::shown::Shown;
 use crate::snapshot::{
     CompactionNumbers, CoreTexts, LEAD, LINE_PERCENT, MARGIN_PERCENT, Snapshot, TAIL,
 };
+use crate::steps::{StepLimits, Watched};
 
 /// 有计划的重启打断了一轮，再起来时连着接着干几次：`02-内核.md` 第六节「载入、崩溃、重启」的初值。
 const RESUMES: u32 = 3;
@@ -71,7 +72,7 @@ pub struct PersonaTexts {
     pub reminders: String,
 }
 
-/// 照 `26-提示词.md` 第四节拼出人格 `persona` 的快照。`attended` 是这个场所有没有人能确认。无人格的（施工 P-4 上）`sources`
+/// 照 `26-提示词.md` 第四节拼出人格 `persona` 的快照。`attended` 是这个场所有没有人能确认，步数上限照它给出厂的（施工 AE-1）。无人格的（施工 P-4 上）`sources`
 /// 里人格的字是空的，system 里只有核心自己的那段，没有指纹：回合开始不看人格的文件。
 pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snapshot {
     let digest = persona.map(|_| sources.persona.digest());
@@ -82,6 +83,7 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         tools: Vec::new(),
         core: sources.core,
         step_limit: None,
+        auto_step_limit: None,
         attended,
         resumes: RESUMES,
         compaction: Some(COMPACTION),
@@ -105,6 +107,8 @@ pub fn compose(persona: Option<&str>, sources: Sources, attended: bool) -> Snaps
         bare: false,
         plugin_tools: Vec::new(),
     }
+    // 步数上限照有没有人看着给出厂的（施工 AE-1）：子代理、预设写了的由造会话的一方再盖（[`Snapshot::with_steps`]）。
+    .with_steps(StepLimits::of(Watched::of(attended), None))
 }
 
 impl PersonaTexts {

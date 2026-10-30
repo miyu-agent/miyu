@@ -9,6 +9,7 @@ use tokio::sync::mpsc;
 
 use miyu_kernel::facts::Environment;
 use miyu_kernel::session::{Input, Session};
+use miyu_policy::steps::{StepLimits, Watched};
 use miyu_store::blob::Blobs;
 use miyu_store::recall::NO_PERSONA;
 use miyu_store::usage::Who;
@@ -193,6 +194,11 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let room = crate::memory::room_cell(calls.as_ref());
     // fork 子代理（施工 A-F 中）：是派出去的子代理，照子代理回报、不问人、不召回不记；快照一直是父会话那一份，不重筛。
     let fork_child = crate::memory::fork_child(&created);
+    // 步数上限照 fork 的出厂数（施工 AE-1）：快照是父会话那一份、不改，只换造好的策略里那两格。
+    let policy = match fork_child {
+        true => StepLimits::of(Watched::Fork, None).applied(policy),
+        false => policy,
+    };
     // 分叉出来的支线不是任务，不交回报（施工 C-8 上）；fork 子代理是。
     let upstream = match created.forked.as_ref().filter(|_| !fork_child) {
         Some(_) => None,

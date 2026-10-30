@@ -4,6 +4,7 @@
 
 use std::ops::Range;
 
+use miyu_policy::steps::StepLimits;
 use miyu_policy::{PersonaTexts, PresetPin, Snapshot, ToolEntry, compose};
 use miyu_store::resources::{ResourceRoot, SourceError};
 
@@ -44,6 +45,8 @@ pub(crate) struct Parts {
     pub(crate) bare: bool,
     /// 给了的场所插件工具（施工 O-60，`miyu_policy::Snapshot::plugin_tools`）。
     pub(crate) plugin_tools: Vec<String>,
+    /// 步数上限（施工 AE-1，`miyu_policy::steps`）：造会话时照会话的种类、预设算好；换快照时照它重算或者照旧。
+    pub(crate) steps: StepLimits,
 }
 
 /// 照 `parts` 拼一份快照，随核心附带的字从 `resources` 读这一刻的。
@@ -68,8 +71,9 @@ pub(crate) fn laid(
     let tells = crate::agents::clicall::tells(&parts.face);
     let shows = parts.show_hint && parts.face.iter().any(|tool| tool.name == "show");
     let mut ruler = Ruler::default();
-    let mut snapshot =
-        compose(parts.name.as_deref(), sources, parts.attended).with_tools(parts.face);
+    let mut snapshot = compose(parts.name.as_deref(), sources, parts.attended)
+        .with_tools(parts.face)
+        .with_steps(parts.steps);
     ruler.mark(SystemPart::Persona, "", &snapshot.system);
     snapshot.memory = parts.memory;
     snapshot.foreground = parts.foreground;

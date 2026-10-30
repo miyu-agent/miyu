@@ -183,5 +183,6 @@ fn parts_for(refresh: &super::Refresh, old: &Snapshot) -> Option<Parts> {
         appended: old.appended.clone(),
         bare: false,
         plugin_tools: old.plugin_tools.clone(),
+        steps: old.steps(),
     })
 }

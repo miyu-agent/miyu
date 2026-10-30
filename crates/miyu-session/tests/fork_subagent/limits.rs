@@ -1,4 +1,4 @@
-//! fork 子代理的记忆照子代理、派普通子代理照深度上限（施工 A-F 中）。
+//! fork 子代理的记忆照子代理、派普通子代理照深度上限（施工 A-F 中），步数上限照 fork 的出厂数（施工 AE-1）。
 
 use super::*;
 
@@ -152,6 +152,69 @@ async fn a_fork_at_the_depth_limit_starts_no_subagent() {
     assert!(
         matches!(again, Err(miyu_session::ForkError::NotMain)),
         "fork 子代理不能再分：{again:?}"
+    );
+    stop(&branch).await;
+    stop(&parent).await;
+}
+
+/// 步数上限（施工 AE-1）：fork 子代理的快照是父会话那一份（有人看着、人开的回合不限），载入以后照 fork 的出厂数
+/// [`miyu_policy::steps::FORK_STEPS`] 停：父会话交代开的那一轮请求到第 500 次结束，`step_limit`。
+#[tokio::test]
+async fn a_fork_stops_at_the_fork_step_limit() {
+    let home = Home::new();
+    let forks = Forks::new(&home);
+    let limit = miyu_policy::steps::FORK_STEPS as usize;
+    let reads = (0..=limit).map(|_| Play::calls(&[("read", r#"{"path":"nope.txt"}"#)]));
+    let plays = [
+        subagent(serde_json::json!({"fork": true})),
+        Play::Says("派出去了。"),
+    ];
+    let script = Script::new(plays.into_iter().chain(reads));
+    let tools = basesystem(&home);
+    let lines = Lines {
+        sessions: Some(Arc::clone(&forks) as Arc<dyn SessionPort>),
+        ..Lines::default()
+    };
+    let parent = home
+        .create_full(&script, &tools, Opening::default(), lines)
+        .await;
+    turn(&home, &parent, 1).await;
+    let (_, child) = forks.forked().remove(0);
+    let (_, id, by, command) = forks.sent().remove(0);
+    let branch = home
+        .load_full(
+            &child,
+            &script,
+            &tools,
+            &environment().cwd,
+            Some(Arc::clone(&forks) as Arc<dyn SessionPort>),
+        )
+        .await;
+    within("交代的回应", branch.command(id, by, command))
+        .await
+        .expect("子会话在跑");
+    let child_log = until_logged(&home, &child, |log| {
+        log.iter()
+            .filter(|event| matches!(event.body, Body::TurnEnded(_)))
+            .count()
+            >= 2
+    })
+    .await;
+    let started = child_log
+        .iter()
+        .rposition(|event| matches!(event.body, Body::TurnStarted(_)))
+        .expect("交代开了一轮");
+    let called = child_log[started..]
+        .iter()
+        .filter(|event| matches!(event.body, Body::ModelCalled(_)))
+        .count();
+    let ended = child_log.iter().rev().find_map(|event| match &event.body {
+        Body::TurnEnded(ended) => Some(ended.reason.clone()),
+        _ => None,
+    });
+    assert_eq!(
+        (ended, called),
+        (Some(miyu_kernel::event::EndReason::StepLimit), limit)
     );
     stop(&branch).await;
     stop(&parent).await;

@@ -1,5 +1,7 @@
 //! 预设文件的读法（施工 P-2 上）：每一格读对、三层没写的照默认；逐格叠；每一种写错写明第几行。
 
+mod limits;
+
 use super::*;
 use crate::features::Features;
 
@@ -150,7 +152,7 @@ fn a_problem_reads_as_a_line_and_a_sentence() {
         message: "broken".to_string(),
     };
     assert_eq!(no_line.to_string(), "broken");
-    assert_eq!(Code::ALL.len(), 14);
+    assert_eq!(Code::ALL.len(), 15);
 }
 
 #[test]

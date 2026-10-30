@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use miyu_kernel::session::{Input, Session};
 use miyu_models::provider::chat;
 use miyu_policy::preset::{Chosen, ROLEPLAY};
+use miyu_policy::steps::{StepLimits, Watched};
 use miyu_store::blob::Blobs;
 
 use super::face::{self, Opened};
@@ -101,6 +102,14 @@ pub(super) async fn draft(
         appended,
         bare: setup.dream.is_some(),
         plugin_tools: Vec::new(),
+        // 子代理照出厂的，主会话照有没有人看着、预设写的（施工 AE-1）。
+        steps: StepLimits::of(
+            match setup.lineage {
+                Some(_) => Watched::Subagent,
+                None => Watched::of(setup.attended),
+            },
+            preset.and_then(|chosen| chosen.file.unattended_steps),
+        ),
     };
     let parts = blocking(move || -> Result<Parts, CreateError> {
         let skills =

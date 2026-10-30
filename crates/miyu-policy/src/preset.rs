@@ -1,6 +1,6 @@
 //! 预设（施工 P-2 上，`docs/blueprint/presets.md`，`16-人格与预设.md` 第三节）：`[preset]` 的名字、说明、没列出来的功能开不开，
 //! `[features]` 按功能开关（施工 F-3 上，设计 `30-插件框架.md` 第四节），以前的 `[software]` 按软件包开关照认，`[tools]` 关掉
-//! 单件工具。纯逻辑：进来的是文件里的字，出去的是读好的样子，或者写明第几行错在哪（`read.rs`）。找哪几层、读盘由存储做。
+//! 单件工具，`[limits]` 没人看着时的步数上限（施工 AE-1）。纯逻辑：进来的是文件里的字，出去的是读好的样子，或者写明第几行错在哪（`read.rs`）。找哪几层、读盘由存储做。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -64,6 +64,9 @@ pub struct PresetFile {
     pub software: BTreeMap<String, bool>,
     /// 关掉的单件工具（开着的包里的）。
     pub tools_off: BTreeSet<String>,
+    /// 没人看着时一个回合最多请求几次模型（施工 AE-1，`[limits] unattended_steps`，正整数）：几层都没写的照出厂的
+    /// [`crate::steps::UNATTENDED_STEPS`]。
+    pub unattended_steps: Option<u32>,
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
@@ -102,6 +105,7 @@ impl PresetFile {
         lower.features.extend(self.features);
         lower.software.extend(self.software);
         lower.tools_off.extend(self.tools_off);
+        lower.unattended_steps = self.unattended_steps.or(lower.unattended_steps);
         lower
     }
 
@@ -157,10 +161,15 @@ impl PresetFile {
             &self.software,
             &self.tools_off,
         );
-        // 没写 `[features]` 的照以前的几格算（施工 F-3 上）：以前造的快照照旧对得上。
-        let bytes = match self.features.is_empty() {
-            true => serde_json::to_vec(&fields),
-            false => serde_json::to_vec(&(fields, &self.features)),
+        // 没写 `[features]` 的照以前的几格算（施工 F-3 上）、没写 `[limits]` 的不带它（施工 AE-1）：以前造的快照照旧对得上。
+        let bytes = match (self.features.is_empty(), self.unattended_steps) {
+            (true, None) => serde_json::to_vec(&fields),
+            (false, None) => serde_json::to_vec(&(fields, &self.features)),
+            (_, Some(steps)) => serde_json::to_vec(&(
+                fields,
+                &self.features,
+                serde_json::json!({"limits": {"unattended_steps": steps}}),
+            )),
         };
         ContentHash::of(&bytes.expect("预设的几格写得成 JSON"))
     }

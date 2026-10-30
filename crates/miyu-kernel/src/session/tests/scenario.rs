@@ -45,6 +45,7 @@ mod seal;
 mod session_fact;
 mod shorten;
 mod spans;
+mod steps;
 mod stopping;
 mod swap;
 mod tail;

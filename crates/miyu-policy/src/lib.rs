@@ -42,6 +42,7 @@ pub mod shown;
 pub mod skill;
 pub mod slash;
 mod snapshot;
+pub mod steps;
 mod text_file;
 mod title;
 mod tools;

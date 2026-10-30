@@ -103,6 +103,7 @@
 |---|---|
 | `preset`、`name`、`summary`、`icon` | 同上 |
 | `unlisted` | 叠好以后的 `on` 或 `off`：没列出来的功能默认开不开 |
+| `unattended_steps` | 叠好以后 `[limits]` 写的数：没人看着时一个回合最多请求几次模型；几层都没写的是 `null`，照出厂的 500 |
 | `features` | 一个个功能：`{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是它归哪个包，按包分组用，包名照 [`package.list`](packages.md) 查（自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能和没装的没有）；`by` 是开不开谁定的：`preset`（预设里写了）、`global`（预设没写，照技能、脚本、MCP 服务的全局开关，见 [`feature.set`](packages.md#toolset_loadingfeatureset)；只在 `unlisted` 是 `on` 的预设里有）、`default`（照 `unlisted`：`unlisted` 是 `off` 的预设没写的都是它，全局开关打开的也不开）；`tools` 是归它的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 的照它，没给的是去掉 `mcp__<服务名>__` 的工具名）。写了、没装的接在后面，`installed: false` |
 | `sections` | 同一些功能分好组、排好先后，界面照它画，不用自己翻译、排序、认编号。每组 `{"kind", "id", "name", "on", "total", "items"}`：`kind` 是 `group`（出厂的组：基础系统、任务和定时、注入环境信息、人格、查资料，`id` 是组名）、`package`（装的扩展带几个功能的，各自一组，`id` 是包编号）、`extensions`（装的扩展只带一个功能的合进这一组，一个扩展一行、名字是包名；没有的不列）、`skills`、`scripts`、`mcp`（没有的也列，`total` 是 0），照这个先后；`on`、`total` 是开着的、全部的功能几个。`items` 每项 `{"kind": "feature", "id", "name", "on", "by"}`，同一组里重名的带包名；`by` 多一种 `group`（预设写的是它所在的包或组，`preset` 是写了功能本身）；带几件工具的另带 `tools: [{"id", "name", "on"}]`，一件的不带 |
 | `remove` | 同 `persona.get` |
@@ -118,7 +119,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `preset` | 字符串 | 编号；不写是新建，核心起一个 `preset-<n>` |
-| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>` |
+| `changes` | 数组，必写、不能是空的 | 每项 `{"key", "value" | "unset": true, "expect"?}`；键是 `preset.name`、`preset.summary`、`preset.unlisted`、`features.<功能>`、`tools.<工具>`、`limits.unattended_steps`（正整数） |
 
 **回应**：同 `preset.get`。说明写空的字就是没有说明（盖住出厂的那句），`unset` 才回到出厂的。
 

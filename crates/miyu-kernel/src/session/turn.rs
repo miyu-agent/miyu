@@ -37,6 +37,9 @@ pub(super) struct Turn {
     pub(super) dirs: Vec<String>,
     /// 这一轮请求过几次模型，比步数上限用。重试的不算（施工 3-5 下）。
     pub(super) requests: u32,
+    /// 这一轮的步数上限（施工 AE-1）：开轮时照开它的那一条是谁说的定（[`super::Policy::steps_for`]），换策略时重算；没有就是
+    /// 不限。
+    pub(super) limit: Option<u32>,
     /// 这一步连着出了几次可以重试的错：说完了一次就清零（`retry.rs`）。
     pub(super) retries: u32,
     /// 下一次请求是重试：不算步数。
@@ -157,6 +160,7 @@ impl Session {
             cwd: self.environment.cwd.clone(),
             dirs: self.environment.dirs.clone(),
             requests: 0,
+            limit: self.policy.step_limit,
             retries: 0,
             retrying: false,
             truncations: 0,
@@ -208,6 +212,7 @@ impl Session {
         };
         let mut turn = self.new_turn(started.seq, cause.clone(), opened);
         turn.asked = self.asker(trigger);
+        turn.limit = self.policy.steps_for(turn.asked.as_ref());
         self.turn = Some(turn);
         self.effective = self.permission.clone();
         // 记在一边的回报这一轮就听到了（施工 7-2）：不再由它们另开一轮。

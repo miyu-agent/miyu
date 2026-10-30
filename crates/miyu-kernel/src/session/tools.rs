@@ -444,11 +444,7 @@ impl Session {
             let by = By::Tool(Tool { call_id: *call_id });
             return self.finish_turn(at, by, cause, EndReason::Completed);
         }
-        if self
-            .policy
-            .step_limit
-            .is_some_and(|limit| turn.requests >= limit)
-        {
+        if turn.limit.is_some_and(|limit| turn.requests >= limit) {
             return self.finish_turn(at, By::Kernel, cause, EndReason::StepLimit);
         }
         turn.stage = Stage::Ready;

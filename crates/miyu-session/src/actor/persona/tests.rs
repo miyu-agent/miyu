@@ -63,6 +63,7 @@ fn setup_with(
         appended: Default::default(),
         bare: false,
         plugin_tools: Vec::new(),
+        steps: miyu_policy::steps::StepLimits::of(miyu_policy::steps::Watched::Attended, None),
     };
     let snapshot = build(&resources, parts).expect("拼得成");
     let refresh = Refresh {

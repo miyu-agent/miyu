@@ -235,7 +235,7 @@ pub(crate) struct GetParams {
 }
 
 /// `preset.get`：叠好的样子（施工 P-3 补：只给人要看的）。名字、说明照这个连接的语言挑；`unlisted` 是叠好以后的（几层都没写的
-/// 是 `on`）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
+/// 是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能，各带下面的工具（施工 F-3 下，`features.rs`）；删了会怎样（`remove`，同人格）。来自哪几层
 /// 不往外给。
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
@@ -284,6 +284,7 @@ fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Va
         "summary": label(found.file.summary.as_ref(), language),
         "icon": found.file.icon,
         "unlisted": found.file.unlisted().as_str(),
+        "unattended_steps": found.file.unattended_steps,
         "features": features,
         "sections": sections,
         "remove": remove(&found.layers),

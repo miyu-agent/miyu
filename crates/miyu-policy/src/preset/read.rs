@@ -1,5 +1,5 @@
 //! 预设文件怎么读（施工 P-2 上；施工 F-3 上从 `preset.rs` 挪出来：那边放不下了）：`[preset]`、`[features]`、`[software]`、
-//! `[tools]` 四张表，写错的报第一处，带代码、第几行。
+//! `[tools]`、`[limits]`（施工 AE-1）五张表，写错的报第一处，带代码、第几行。
 
 use miyu_config::phrases::{self, Label, PhraseError};
 use miyu_config::secret::valid_name;
@@ -26,16 +26,19 @@ pub struct Problem {
 /// `preset.set` 写它是参数不对。
 pub const DEFAULT_PERSONA: &str = "default_persona";
 
+/// `[limits]` 里没人看着时一个回合最多请求几次模型的那个键（施工 AE-1）。
+const UNATTENDED_STEPS: &str = "unattended_steps";
+
 /// 预设文件错在哪一种。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Code {
     /// 读不成 TOML。
     Syntax,
-    /// 多了 `[preset]`、`[features]`、`[software]`、`[tools]` 以外的表。
+    /// 多了 `[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 以外的表。
     UnknownTable,
-    /// 这四样有一样不是表。
+    /// 这五样有一样不是表。
     NotATable,
-    /// `[preset]` 里多了别的键。
+    /// `[preset]`、`[limits]` 里多了别的键。
     UnknownKey,
     /// `name`、`summary` 不是一句字，也不是语言到一句话的表（以前的写法）。
     NotPhrases,
@@ -57,6 +60,8 @@ pub enum Code {
     BadFeature,
     /// `icon` 不是 Lucide 图标名的写法（施工 P-5）。
     BadIcon,
+    /// `[limits]` 的数不是正整数（施工 AE-1）：0、负数、小数、字都不收。
+    BadLimit,
 }
 
 impl Code {
@@ -77,11 +82,12 @@ impl Code {
             Code::NotFalse => "not_false",
             Code::BadFeature => "bad_feature",
             Code::BadIcon => "bad_icon",
+            Code::BadLimit => "bad_limit",
         }
     }
 
     /// 全部，照先后：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 14] = [
+    pub const ALL: [Code; 15] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -96,6 +102,7 @@ impl Code {
         Code::NotFalse,
         Code::BadFeature,
         Code::BadIcon,
+        Code::BadLimit,
     ];
 }
 
@@ -108,7 +115,7 @@ impl fmt::Display for Problem {
     }
 }
 
-/// 读一份预设文件：`[preset]`、`[features]`、`[software]`、`[tools]` 四张表，都可以没有。
+/// 读一份预设文件：`[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 五张表，都可以没有。
 ///
 /// # Errors
 ///
@@ -125,6 +132,7 @@ pub fn read(text: &str) -> Result<PresetFile, Problem> {
     for (key, item) in document.as_table().iter() {
         match key {
             "preset" => reader.preset(reader.table(key, item)?, &mut file)?,
+            "limits" => reader.limits(reader.table(key, item)?, &mut file)?,
             "features" => {
                 let switches = reader.switches(key, item, Code::BadFeature, "a feature id")?;
                 file.features.extend(switches);
@@ -252,6 +260,34 @@ impl Reader<'_> {
                     ));
                 }
             }
+        }
+        Ok(())
+    }
+
+    /// `[limits]` 那一张表（施工 AE-1）：只有 `unattended_steps`，正整数。
+    fn limits(&self, table: &dyn TableLike, file: &mut PresetFile) -> Result<(), Problem> {
+        for (key, item) in table.iter() {
+            if key != UNATTENDED_STEPS {
+                return Err(self.problem(
+                    item,
+                    Code::UnknownKey,
+                    &format!("limits.{key}"),
+                    format!("unknown key limits.{key}"),
+                ));
+            }
+            let steps = item
+                .as_integer()
+                .and_then(|steps| u32::try_from(steps).ok())
+                .filter(|steps| *steps > 0)
+                .ok_or_else(|| {
+                    self.problem(
+                        item,
+                        Code::BadLimit,
+                        "limits.unattended_steps",
+                        "limits.unattended_steps must be a positive whole number".to_string(),
+                    )
+                })?;
+            file.unattended_steps = Some(steps);
         }
         Ok(())
     }

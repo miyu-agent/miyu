@@ -350,6 +350,8 @@ fn look(
         appended,
         bare: false,
         plugin_tools,
+        // 步数上限照这一刻的预设重算（施工 AE-1）：改了 `[limits]` 下一轮生效。
+        steps: steps::restepped(old, refresh.child, &preset),
     };
     let mut new = match build(&refresh.resources, parts) {
         Ok(new) => new,
@@ -482,6 +484,7 @@ mod recast_tests;
 #[cfg(test)]
 mod shelf_tests;
 mod spent;
+mod steps;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

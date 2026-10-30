@@ -77,6 +77,7 @@ fn policy() -> Policy {
             },
         )]),
         step_limit: None,
+        auto_step_limit: None,
         tool_texts: ToolTexts::new(ToolTextSources {
             unknown: "no tool {name}",
             not_an_object: "bad args {name}",

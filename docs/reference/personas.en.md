@@ -103,6 +103,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 |---|---|
 | `preset`, `name`, `summary`, `icon` | As above |
 | `unlisted` | `on` or `off` after stacking: whether features it doesn't list are on |
+| `unattended_steps` | The number `[limits]` gives after stacking: at most how many model requests one turn makes when nobody is watching; `null` when no layer gives one, meaning the built-in 500 |
 | `features` | Each feature: `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`; `package` is the package it belongs to, for grouping; look its name up in [`package.list`](packages.en.md) (your own scripts, MCP servers and command templates say `~home`; skills outside packages and uninstalled ones have none); `by` says who decided `on`: `preset` (the preset says so), `global` (the preset says nothing and the global switch of a skill, script or MCP server does, see [`feature.set`](packages.en.md#toolset_loading-featureset); only in presets whose `unlisted` is `on`), `default` (follows `unlisted`: everything a preset with `unlisted` `off` leaves out, even when its global switch is on); `tools` are its tools, `{"name", "label", "on"}`; `label` is the name for people (an MCP server's `title` when it gives one, otherwise the tool name without `mcp__<server>__`). Ones it names that aren't installed come last with `installed: false` |
 | `sections` | The same features grouped and ordered, ready to draw: no translating, sorting or reading ids on your side. Each section is `{"kind", "id", "name", "on", "total", "items"}`: `kind` is `group` (a built-in group: base system, tasks and schedules, injected environment, persona, research; `id` is the group name), `package` (an installed extension with several features, one section each; `id` is the package id), `extensions` (installed extensions with a single feature share this section, one row each named after the package; left out when there are none), `skills`, `scripts`, `mcp` (always there, `total` 0 when empty), in that order; `on` and `total` count the features that are on and all of them. Each item is `{"kind": "feature", "id", "name", "on", "by"}`; two items with the same name in a section get the package name in brackets; `by` has one more value, `group` (the preset names the package or group the feature is in, while `preset` means it names the feature itself); a feature with several tools also has `tools: [{"id", "name", "on"}]`, one with a single tool doesn't |
 | `remove` | As in `persona.get` |
@@ -118,7 +119,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | Name | Type | Notes |
 |---|---|---|
 | `preset` | string | Id; omitted creates a new one, and the core picks `preset-<n>` |
-| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `features.<feature>`, `tools.<tool>` |
+| `changes` | array, required, not empty | Each `{"key", "value" | "unset": true, "expect"?}`; keys are `preset.name`, `preset.summary`, `preset.unlisted`, `features.<feature>`, `tools.<tool>`, `limits.unattended_steps` (a positive whole number) |
 
 **Response**: as `preset.get`. An empty string as the summary means "no summary" (covering the built-in one); `unset` goes back to the built-in one.
 

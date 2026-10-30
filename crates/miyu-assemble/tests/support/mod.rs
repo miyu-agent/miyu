@@ -87,6 +87,7 @@ fn policy_with(system: String) -> Policy {
             ("write".to_string(), rule(Access::Write)),
         ]),
         step_limit: Some(3),
+        auto_step_limit: None,
         tool_texts: tool_texts(),
         attended: true,
         resumes: 3,

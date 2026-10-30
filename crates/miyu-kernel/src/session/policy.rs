@@ -28,8 +28,12 @@ pub struct Policy {
     pub facts: FactTemplates,
     /// 工具面上每件工具的访问类别和参数格式，照名字查。不在这里的名字是模型编的。
     pub tools: BTreeMap<String, ToolRule>,
-    /// 一个回合最多请求几次模型；没有就是不限（`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。
+    /// 一个回合最多请求几次模型；没有就是不限（`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。每一轮都照它。
     pub step_limit: Option<u32>,
+    /// 不是人开的回合最多请求几次模型（施工 AE-1）：开这一轮的那一条不是人说的（定时任务、长期目标的续轮、重启接着干、
+    /// 回报叫醒、别的会话和 harness 发来的……），照它和 [`Policy::step_limit`] 里小的那个（[`Policy::steps_for`]）；没有就是只照
+    /// `step_limit`。有人看着只对人自己开的那一轮成立：人不在场时被叫醒、被接着干的就是没人看着。数由策略层给，内核不写死。
+    pub auto_step_limit: Option<u32>,
     /// 内核替工具写给模型的那几句。
     pub tool_texts: ToolTexts,
     /// 有没有人能确认：没有确认界面的场所没有，`miyu ask` 一律没有（`22-命令行.md` 第三节）。没有的，执行前的链说
@@ -214,6 +218,19 @@ pub struct Pause {
     pub refills: u32,
 }
 
+impl Policy {
+    /// 由 `by` 开的回合最多请求几次模型（施工 AE-1，`docs/blueprint/kernel/session.md`「工具怎么调、下一步怎么走」第 7 条）：
+    /// 人（`person`）开的照 [`Policy::step_limit`]；别的一律取它和 [`Policy::auto_step_limit`] 里小的那个，只有一个的照它
+    /// （2026-10-30 主会话定：只有人开的不限）。都没有的是不限。
+    pub fn steps_for(&self, by: Option<&By>) -> Option<u32> {
+        let auto = !matches!(by, Some(By::Person(_)));
+        match (self.step_limit, self.auto_step_limit.filter(|_| auto)) {
+            (Some(every), Some(auto)) => Some(every.min(auto)),
+            (every, auto) => every.or(auto),
+        }
+    }
+}
+
 /// 组装器是外面交进来的，不一定能打印，跳过它。
 impl fmt::Debug for Policy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -221,6 +238,7 @@ impl fmt::Debug for Policy {
             .field("facts", &self.facts)
             .field("tools", &self.tools)
             .field("step_limit", &self.step_limit)
+            .field("auto_step_limit", &self.auto_step_limit)
             .field("tool_texts", &self.tool_texts)
             .field("attended", &self.attended)
             .field("resumes", &self.resumes)
@@ -280,6 +298,11 @@ impl Session {
             return Vec::new();
         };
         self.policy.current = policy;
+        // 这一轮的步数上限照新的那一份重算（施工 AE-1）：换上的就是这一轮开始时的，预设改了的数这一轮生效。只在第一次请求
+        // 之前换，`asked` 还是开轮的那一条。
+        if let Some(turn) = self.turn.as_mut() {
+            turn.limit = self.policy.current.steps_for(turn.asked.as_ref());
+        }
         let body = Body::PolicyChanged(PolicyChanged {
             policy: Some(hash),
             ..PolicyChanged::default()

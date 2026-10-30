@@ -50,8 +50,14 @@ pub struct Snapshot {
     pub tools: Vec<ToolEntry>,
     /// 随核心附带的字。
     pub core: CoreTexts,
-    /// 一个回合最多请求几次模型；没有就是不限，默认不设（`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。
+    /// 一个回合最多请求几次模型，每一轮都照它；没有就是不限（`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。有人看着的
+    /// 主会话没有，别的照会话的种类给（施工 AE-1，`steps.rs`）。
     pub step_limit: Option<u32>,
+    /// 不是人开的回合（定时任务、长期目标的续轮、重启接着干、回报叫醒……）最多请求几次模型（施工 AE-1，`steps.rs`）：内核取它和 `step_limit` 里小的。
+    /// 以前造的快照里没有，读成照 `attended` 算的出厂数（`steps.rs` 的 `step_limits`），不读成不限；没有的不写，旧快照的字节
+    /// 不变。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_step_limit: Option<u32>,
     /// 有没有人能确认：有确认界面的头有；`miyu ask` 一律没有（`22-命令行.md` 第三节，`02-内核.md` 第六节「确认怎么走」）。
     pub attended: bool,
     /// 有计划的重启打断了一轮，再起来时连着接着干几次（`02-内核.md` 第六节「载入、崩溃、重启」）。
@@ -313,11 +319,13 @@ impl Snapshot {
             .with_reminder(self.reminder.clone());
         // 裸的回合开始不注入事实（施工 D-1 上）：请求和原来的一次性请求逐字节一样。
         let facts = if self.bare { facts.quiet() } else { facts };
+        let steps = self.step_limits();
         Ok(Policy {
             assembler: std::sync::Arc::new(DefaultAssembler::new(stable, texts)),
             facts,
             tools: rules,
-            step_limit: self.step_limit,
+            step_limit: steps.every,
+            auto_step_limit: steps.auto,
             tool_texts: self.tool_texts()?,
             attended: self.attended,
             resumes: self.resumes,

@@ -34,7 +34,7 @@
 ```
 
 1. 编号就是文件名，写法同人格的编号（小写字母开头，小写字母、数字、`-`、`_`，最多 64 个）。不合写法的、不是 `.toml` 的、是目录的不算。
-2. 同名的后面的叠在前面的上面，逐格盖：`[preset]` 逐格（`name`、`summary` 逐种语言），`[software]` 逐个键，关掉的工具叠在一起。空文件也算有这一层。
+2. 同名的后面的叠在前面的上面，逐格盖：`[preset]` 逐格（`name`、`summary` 逐种语言），`[software]` 逐个键，关掉的工具叠在一起，`[limits]` 逐格（施工 AE-1）。空文件也算有这一层。
 
 **格式**（只收下面这些，不认识的表、键报错，写明第几行）：
 
@@ -54,6 +54,9 @@ goal = true
 
 [tools]                        # 在开着的包里关掉单件工具：只能写 false
 shell = false
+
+[limits]                       # 施工 AE-1
+unattended_steps = 300         # 没人看着时一个回合最多请求几次模型：正整数
 ```
 
 1. `name`、`summary` 照人格的写法：一句字，名字去掉前后空白不能是空的，说明可以是空的字、就是没有说明（施工 P-3 补、再补）；以前写成语言表（`zh`、`en`、`ja`）的照样认，出厂的照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。叠好的文件的指纹照以前的写法算（没写的是空表、语言表照原样）：以前造的快照照旧对得上。
@@ -63,6 +66,7 @@ shell = false
    以前的 `[software]`（施工 F-3 上起照认，新写的用 `[features]`）：键是软件的编号，写法同包的编号。现在装了的：基础系统组 `basesystem`（施工 BS-1 上中起是组，写它就是写组里没单独写的包；施工 FG-1 起组里十六个包，待办、定时、循环挪进组 `tasks`，项目文档挪进组 `environment`，记忆、人设遵循提醒是组 `persona`，联网、知识库是组 `research`，`packages.md` 文件表 `groups.toml` 那一行）、记忆 `miyu-base-memory`（三件工具和回合开始的召回）、知识库 `miyu-base-knowledge`（两件工具，施工 K-1 下）、角色扮演 `miyu-base-roleplay`（人格的角色扮演提示和风格锁）、联网 `miyu-base-net`、长期目标 `miyu-base-goal`，和清单装的 `process` 包（桥）。出厂的包施工 PN-3 起叫 `miyu-base-*`（设计 48），功能编号还是改名前的短名，`[software]` 里写短名的照「先认功能的编号」认得：`memory = false` 关的是功能 `memory`；功能编号和短名不同的包（联网的 `web-search`、`web-fetch`，注入环境信息的 `env-*`，写技能和包的两个技能），写短名（`net`、`env`、`authoring`）哪个都认不上，要写包编号或者功能编号。写了没装的不报错（这台机器上以后可能装），`preset.get` 的 `software` 里标 `installed: false`（施工 P-3 补）。
 5. `[tools]` 的键是工具名：字母、数字、`-`、`_`，最多 64 个。单件打开某个包里的一件先不做（走查 C1），写 `true` 报错。
 6. 权限级别、压缩模板、强调色这些配置值随 P-2（下）（D1、C3）。
+7. `[limits]`（施工 AE-1，2026-10-30 项目主人定）只有 `unattended_steps`：没人看着时一个回合最多请求几次模型，正整数（0、负数、小数、字报 `bad_limit`，别的键报 `unknown_key`，写明第几行）。上一层写了的盖住下面的；几层都没写的照出厂的 500。管没人看着的主会话的每一轮、有人看着的会话里不是人开的回合（定时任务、长期目标续轮、重启接着干、回报叫醒……）；有人看着的会话里人开的回合不限，子代理照自己的出厂数（800、fork 500），都不看它（`policy.md`「步数上限」）。写了才进叠好的文件的指纹，没写的指纹和以前一字不差：以前造的快照照旧对得上；改了它，开着的会话下一个回合换上新的数（下面「改了文件」）。出厂的四份不写它。
 
 **出厂的三个**（Y6、Y7，`10-自带软件.md` 第四节；极简开发是施工 P-16 上加的）：
 
@@ -152,7 +156,7 @@ shell = false
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
 7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
@@ -177,11 +181,12 @@ shell = false
 | 代码 | 什么时候 |
 |---|---|
 | `syntax` | 读不成 TOML |
-| `unknown_table`、`not_a_table`、`unknown_key` | `[preset]`、`[software]`、`[tools]` 以外的表；这三样不是表；`[preset]` 里别的键 |
+| `unknown_table`、`not_a_table`、`unknown_key` | `[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 以外的表；这几样不是表；`[preset]`、`[limits]` 里别的键 |
 | `not_phrases`、`unknown_language`、`empty_phrase` | 「语言到一句话」那一格写错 |
 | `bad_unlisted` | `unlisted` 不是 `on`、`off`（`bad_persona` 随 `default_persona` 施工 P-4 上撤了） |
 | `bad_feature`、`bad_software`、`not_bool` | `[features]` 的键不合功能编号的写法（施工 F-3 上）；`[software]` 的键不合包编号的写法；值不是开关 |
 | `bad_tool`、`not_false` | `[tools]` 的键不是工具名的写法；值不是 `false` |
+| `bad_limit` | `[limits] unattended_steps` 不是正整数（施工 AE-1） |
 
 ### 守着它的
 
@@ -191,6 +196,7 @@ shell = false
 | `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；P-3 上写的 `base` 当没写（施工 P-3 再补） |
 | `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和你的中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |
+| `crates/miyu-policy/src/preset/tests/limits.rs`、`crates/miyu-endpoint/tests/preset_set/fields.rs` 的 `the_unattended_step_limit_is_written_and_read_back`（施工 AE-1） | `[limits]` 读对、逐格盖；0、负数、小数、字、超出范围报 `bad_limit`，别的键 `unknown_key`，都带行；没写的指纹和以前一字不差（写没写 `[features]` 两条都钉住），写了才变；`preset.set` 写 `limits.unattended_steps`、`preset.get` 回它，没写的是 `null`，0 整条不收，`unset` 去掉 |
 | `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补、再补） | 不写编号新建、`remove`、改出厂的只写改了的、保留格式、删一项、`expect`、整条不收还带一句、参数不对、删你那一层、一样的值不写（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |
 | `crates/miyu-endpoint/src/connection/tests.rs`（施工 P-3 中） | 扩展进程调了回 `local_only` 的名单 |
