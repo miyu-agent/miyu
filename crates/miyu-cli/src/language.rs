@@ -156,6 +156,18 @@ impl Language {
         }
     }
 
+    /// 不认识的命令是一个没装的软件包带的（施工 CL-7）：说去装它。
+    pub(crate) fn command_not_installed(&self, name: &str, package: &str) -> Problem {
+        match self {
+            Language::Chinese => Problem::new(format!("未知命令 '{name}'")).hint(format!(
+                "软件包 {package} 提供这个命令，用 'miyu pkg install {package}' 安装"
+            )),
+            Language::English => Problem::new(format!("unknown command '{name}'")).hint(format!(
+                "package {package} provides it; install it with 'miyu pkg install {package}'"
+            )),
+        }
+    }
+
     /// 没有可用的模型（施工 8-6；施工 8-11 起指向 `miyu setup`，`models.md`「给人看的字」）。
     pub(crate) fn no_model(&self) -> Problem {
         match self {

@@ -82,7 +82,7 @@
 | `projects.md` | 项目：会话的分组，`projects.json`、`project.*`、`projects` 流（施工 H-1 起，设计 `38-项目.md`） |
 | `presets.md` | 预设：在哪、格式、三层怎么叠、默认预设、找人格的先后、`preset.list`、`preset.get`（施工 P-2 上起） |
 | `web-module.md` | 网页界面这个软件和核心给它的通用方法：网页软件 `miyu-web`（端口、页面、WebSocket 照转、一次性登录、媒体地址），核心给所有头的 `human.get`、`fs.*`、`mermaid.render`、分块传和读 blob、`link.preview`：图纸，2026-10-01 项目主人批准；W-1 到 W-7 现在做，身份、网页软件等用户系统 |
-| `web-ui.md` | 网页软件 `miyu-web`：起停、端口（8300）、页面、WebSocket 照转、`miyu web`（施工 W-9，从 `web-module.md` 搬出来独立成页）；媒体地址随 W-10 |
+| `web-ui.md` | 网页软件 `miyu-web`：起停、端口（8300）、页面、WebSocket 照转、`miyu web`（施工 W-9；CL-7 起由网页包的 `[command]` 加，不再内置；从 `web-module.md` 搬出来独立成页）；媒体地址随 W-10 |
 | `webserve.md` | 只听本机的网页端口共用的底子 `miyu-webserve`：给页面文件、核对 Host 和 Origin、`/ws` 原样转给核心；网页软件用，从 `miyu-web` 搬来的搬家表（施工 O-16）；照终端的样子连核心的 `open` 施工 S-1 挪进 `miyu-client` |
 | `client.md` | 给界面用的门面 `miyu-client`：连核心、找数据根、协议里的类型、给人看的字、读自己的清单、运行日志，`open`（施工 S-1，设计 32 第二节） |
 | `mermaid.md` | mermaid 源码画成 SVG：可选软件包 `miyu-base-mermaid`、crate `miyu-mermaid`、`mermaid.render`，懒初始化、缓存、三种记号色（施工 W-4，2026-10-02 从 `web-module.md` 搬出来独立成页） |

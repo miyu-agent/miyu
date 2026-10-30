@@ -7,12 +7,15 @@
 //! 和内置的撞名：内置的优先，不转交、不列（装包时拦随装包那一步）。清单照磁盘现读，不连核心：转交不该为了找一个程序拉起
 //! 核心。
 
+mod offered;
 #[cfg(test)]
 mod tests;
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
 pub(crate) use windows::run;
+
+pub use offered::offering;
 
 use std::ffi::OsString;
 use std::io::Write;

@@ -32,8 +32,6 @@ pub enum Page {
     Service,
     /// `miyu setup -h`（施工 8-11）。
     Setup,
-    /// `miyu web -h`（施工 W-9）。
-    Web,
     /// `miyu check -h`（施工 8-30）。
     Check,
     /// `miyu memory -h`，各个子命令的 `-h` 也印它（施工 R-3 再补）。
@@ -96,8 +94,6 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Sandbox) => include_str!("help/en/sandbox.txt"),
         (Language::Chinese, Page::Setup) => include_str!("help/zh/setup.txt"),
         (Language::English, Page::Setup) => include_str!("help/en/setup.txt"),
-        (Language::Chinese, Page::Web) => include_str!("help/zh/web.txt"),
-        (Language::English, Page::Web) => include_str!("help/en/web.txt"),
         (Language::Chinese, Page::Memory) => include_str!("help/zh/memory.txt"),
         (Language::English, Page::Memory) => include_str!("help/en/memory.txt"),
         (Language::Chinese, Page::Kb) => include_str!("help/zh/kb.txt"),

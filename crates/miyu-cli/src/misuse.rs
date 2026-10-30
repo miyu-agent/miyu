@@ -11,10 +11,24 @@ use crate::language::Language;
 
 /// clap 报的错说成几行（设计 47）：`miyu: ` 打头的一行，能照着改的写在 `hint:` 里。帮助、版本不是错，主程序自己印，不走这里。
 pub fn misuse(error: &clap::Error, language: Language) -> Vec<String> {
-    problem(error, language).lines(language, Level::Error)
+    misuse_offering(error, language, &|_| None)
 }
 
-fn problem(error: &clap::Error, language: Language) -> Problem {
+/// 同 [`misuse`]，不认识的命令照 `offered` 找是哪个软件包带的（施工 CL-7，[`crate::packages::offering`]）：找到了提示去装它，
+/// 例如没装网页包时敲 `miyu web`。
+pub fn misuse_offering(
+    error: &clap::Error,
+    language: Language,
+    offered: &dyn Fn(&str) -> Option<String>,
+) -> Vec<String> {
+    problem(error, language, offered).lines(language, Level::Error)
+}
+
+fn problem(
+    error: &clap::Error,
+    language: Language,
+    offered: &dyn Fn(&str) -> Option<String>,
+) -> Problem {
     let chinese = language == Language::Chinese;
     let arg = clean(&first(error, ContextKind::InvalidArg));
     let value = clean(&first(error, ContextKind::InvalidValue));
@@ -28,7 +42,10 @@ fn problem(error: &clap::Error, language: Language) -> Problem {
                     Problem::new(format!("unknown command '{name}' for '{command}'"))
                         .hint(format!("see '{command} --help'"))
                 }
-                (None, _) => language.no_such_command(&name),
+                (None, _) => match offered(&name) {
+                    Some(package) => language.command_not_installed(&name, &package),
+                    None => language.no_such_command(&name),
+                },
             }
         }
         // 嵌着子命令的那一层（`miyu sandbox`，施工 5-8）后面没写：clap 报的是那一层的全名和能写的几个。

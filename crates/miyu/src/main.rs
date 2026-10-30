@@ -17,7 +17,7 @@ use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use miyu_cli::help::{Page, page};
 use miyu_cli::language::{self, Language};
-use miyu_cli::{Direction, misuse};
+use miyu_cli::{Direction, misuse_offering};
 
 /// 退出码：用法不对（`22-命令行.md` 第二节）。
 const USAGE: u8 = 2;
@@ -71,8 +71,6 @@ enum Command {
     Provider(miyu_cli::Provider),
     /// 第一次接入模型（施工 8-11）。
     Setup(miyu_cli::Setup),
-    /// 打开网页界面：找主程序旁边的网页软件，参数交给它（施工 W-9）。
-    Web(miyu_cli::Web),
     /// 核心进程：由头拉起，平时不用人敲。`miyu core stop` 叫在跑的核心停下（施工 CL-4，桌面端的「退出」用）。
     #[command(hide = true)]
     Core {
@@ -150,7 +148,6 @@ fn main() -> ExitCode {
         .mut_subcommand("setup", |setup| {
             setup.override_help(page(language, Page::Setup))
         })
-        .mut_subcommand("web", |web| web.override_help(page(language, Page::Web)))
         .mut_subcommand("check", |check| {
             check.override_help(page(language, Page::Check))
         })
@@ -258,7 +255,6 @@ fn main() -> ExitCode {
         Some(Command::Schedule(args)) => miyu_cli::schedule(args, core),
         Some(Command::Provider(args)) => miyu_cli::login(args.into(), core),
         Some(Command::Setup(args)) => miyu_cli::setup(args, core),
-        Some(Command::Web(args)) => miyu_cli::web(args),
         Some(Command::Core {
             action: Some(CoreAction::Stop),
             ..
@@ -319,7 +315,7 @@ fn refused(error: clap::Error, language: Language) -> ExitCode {
             ExitCode::SUCCESS
         }
         _ => {
-            for line in misuse(&error, language) {
+            for line in misuse_offering(&error, language, &miyu_cli::packages::offering) {
                 eprintln!("{line}");
             }
             ExitCode::from(USAGE)

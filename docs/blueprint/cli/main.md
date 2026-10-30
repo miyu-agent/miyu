@@ -9,7 +9,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令；换上帮助页；参数不对时交给 `misuse`；拉起核心用的命令 |
-| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,schedule,sandbox,config,provider,setup,web}.txt` | 帮助页：一种语言十五页（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
+| `crates/miyu-cli/src/help.rs`、`help/{zh,en}/{miyu,ask,undo,restore,redo,compact,recap,rename,memory,pkg,kb,schedule,sandbox,config,provider,setup}.txt` | 帮助页（施工 CL-7 起没有 `web` 那一页，网页包自己印）（`pkg` 那一页施工 T-3，`kb` 那一页施工 K-7 下，`schedule` 那一页施工 J-3 下），编进程序（施工 4-11；`web` 那一页施工 W-9，`setup` 那一页施工 8-11，`sandbox` 那一页施工 5-8，`compact` 那一页施工 6-8，`redo` 那一页施工 4-7 再补，`recap` 那一页施工 3-8 四补，`rename` 那一页施工 3-8 五补，`config` 那一页施工 8-2，`provider` 那一页施工 8-5，原来是 `login`、`logout` 两页，Y-13 上并成一页） |
 | `crates/miyu-cli/src/misuse.rs` | 参数写错时说的话，不认识的子命令也在这里（施工 4-11）；少了子命令、嵌着的子命令写错、成对的选项少了一个（施工 5-8） |
 | `crates/miyu-cli/src/diagnostic.rs` | 报错、警告、提示的写法（设计 47，施工 CL-2 上）：`miyu: ` 打头、警告多 `warning:`（「警告：」）、建议另起一行 `hint:`（「提示：」）；别处交来的原话去掉句末句号、开头大写词改小写；命令行往标准错误上报错都经它 |
 | `crates/miyu-cli/src/text_rules.rs` | 给人看的字的检查（施工 CL-3，设计 47 第三节第 10 条）：帮助页说明不带句号、中文命令总表不列「、」串、不写「她」「你」、报错不绕过 `diagnostic` |
@@ -41,7 +41,6 @@
 | `setup` | 接上第一个模型：找现成的 key 和本机的服务，或者搜目录、贴 key，试通了写进系统配置（施工 8-11） | `cli/setup.md` |
 | `service` | `enable`、`disable`、`status`：让核心开机、登录就起，替本人装、卸、看本人这一层的服务（施工 Z-1 下） | `cli/service.md` |
 | `sandbox` | `setup`、`remove`：Windows 上装好、撤掉沙盒用户，要管理员权限；别的平台上说一句不用装 | `sandbox/windows.md` |
-| `web` | 打开网页界面：找主程序旁边的网页软件 `miyu-web`，参数交给它；没装的说怎么装（施工 W-9）。环境照转交的规矩多 `MIYU_PROGRAM`（主程序的真实位置）、找到了包文件夹的多 `MIYU_PACKAGE_DIR`：装进数据根的网页软件靠它拉起核心（施工 G-15 补） | `web-ui.md` |
 | `call` | 在 AI 跑的命令里调这个会话的工具（施工 M-3，设计 39）：不读清单、不经 clap，`main.rs` 当场交给 `miyu_cli::call`；不写进总帮助，`miyu call -h` 印它自己的那一页 | `cli/call.md` |
 | `core` | 核心进程：由头拉起，平时不用人敲；不写进帮助 | `core.md` |
 | `help` | clap 自带：印帮助，`miyu help <子命令>` 印那一条的 | |
@@ -62,16 +61,15 @@
 
 0. **软件包加的子命令**（施工 9-2，`crates/miyu-cli/src/packages.rs`，`packages.md`「转交」）：第一个词不是内置的子命令（名字、别名都算，连 `help`），或者是 `help`、选项、没写，才照磁盘读两层的清单（不连核心）：
    1. 第一个词是某个包 `[command]` 的名字：照那份清单找程序（先找包文件夹的 `bin/`，再找 `miyu` 真实位置旁边的，不找 `PATH`；施工 F-8 上再补），参数（第一个词以后的全部）、环境、标准输入输出原样交给它，Unix 上换成它，Windows 上起它、等它、这期间不理 Ctrl+C；退出码照它的。`help <名字>` 转成 `<程序> --help`。程序没找到：标准错误上说没找到、哪一份清单说这个子命令由它跑，退出码 1。
-   2. 主程序的帮助页在最后一组命令后面、「选项」那一节前面多一组「软件包加的命令」（`Commands from packages:`），空一行隔开，一个一行，说明和上面的命令从同一列（第 22 列）开始，说明照界面语言挑；没有的不写这一组（施工 AP-1：原来接在「命令」那一节后面）。撞了内置子命令的不转交、不列：内置的优先（出厂网页那一份的 `web` 照旧走内置的，照清单找网页随 9-3）。
+   2. 主程序的帮助页在最后一组命令后面、「选项」那一节前面多一组「软件包加的命令」（`Commands from packages:`），空一行隔开，一个一行，说明和上面的命令从同一列（第 22 列）开始，说明照界面语言挑；没有的不写这一组（施工 AP-1：原来接在「命令」那一节后面）。撞了内置子命令的不转交、不列：内置的优先。`miyu web` 施工 CL-7 起不再内置，由网页包（`miyu-webui`）的 `[command]` 加，同 `miyu tui`（项目主人 2026-10-30 定：没装时内置的那一条只会报没装）。
    3. 别的照下面走。
 1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。
 2. 解析参数，不对的：
-   1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。
+   1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。本机存着的软件源索引（`state/packages/.sync/`，再照名字找 `state/packages/.sources/<名字>/`，不验签名，只是提示）里有包提供这个命令（`provides.command`）的，提示换成「软件包 <编号> 提供这个命令，用 'miyu pkg install <编号>' 安装」（施工 CL-7，`crates/miyu-cli/src/packages/offered.rs`）。
    2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0。
    3. 别的：标准错误上报错（下面「参数写错时」），退出码 2。
 3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `miyu-tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上报没装哪一个，提示用 `miyu pkg install <编号>` 装；装了别的界面的再提示一行换成哪几个（`miyu config set ui.head <编号>`），一个都没装的提示不用界面也能 `miyu ask`，退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：报这个界面的程序找不到，提示重新安装，后一行同上，退出码 1（设计 47，施工 CL-2 上）。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。
    - `config` 不写它的子命令（原来的 8-24）：在终端里、`ui.head` 那个界面的清单 `[ui] opens` 里有 `config` 的，同上拉起它、带 `--page config`；没有这一页的、不在终端里的，把 `config` 的帮助页印在标准输出上，退出码 2。
-   - `web`：照清单找网页软件（`web-ui.md`「怎么走」第二条）。
 4. `ask`、`undo`（`rewind`）、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`、`pkg`、`kb`、`schedule`、`config`、`provider`、`setup`、`mcp`：交给命令行的头（`cli/ask.md`、`cli/undo.md`、`cli/redo.md`、`cli/compact.md`、`cli/recap.md`、`cli/rename.md`、`cli/memory.md`、`cli/pkg.md`、`cli/kb.md`、`cli/schedule.md`、`cli/config.md`、`cli/login.md`、`cli/setup.md`、`cli/mcp.md`），连同拉起核心用的命令。
 5. 拉起核心用的命令：自己这个程序（`std::env::current_exe`，拿不到的用 `miyu`，照 `PATH` 找），加上 `core`。别的参数、环境变量不加；工作目录、标准输入输出、跟终端脱开，由拉起的那一边接（`ipc.md`）。
 6. `core`：跑核心进程，`--idle-seconds <秒>` 是空闲多少秒退出，不写的照系统配置 `core.idle_exit`，默认不退（施工 Z-1 上，`core.md`）。

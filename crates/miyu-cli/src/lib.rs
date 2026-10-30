@@ -55,7 +55,6 @@ mod shown;
 #[cfg(test)]
 mod text_rules;
 mod undo;
-mod web;
 
 pub use ask::{Ask, Format, Plan, Screen, Target, ask, exit, talk};
 pub use call::call;
@@ -71,7 +70,7 @@ pub use login::{
 };
 pub use mcp::{Mcp, McpCommand, mcp};
 pub use memory::{Clear as MemoryClear, Memory, MemoryCommand, MemoryPlan, memory, memory_on};
-pub use misuse::misuse;
+pub use misuse::{misuse, misuse_offering};
 pub use pkg::{Pkg, PkgCommand, PkgPlan, pkg, pkg_on};
 pub use recap::{Recap, RecapPlan, recap, recap_on};
 pub use redo::{Redo, RedoPlan, redo, redo_on};
@@ -84,4 +83,3 @@ pub use schedule::{
 pub use service::{Service, ServiceAction, service};
 pub use setup::{HeadEnv, Setup, SetupPlan, model_ready_on, setup, setup_on};
 pub use undo::{Direction, Undo, UndoPlan, undo, undo_on};
-pub use web::{Web, web, web_on};

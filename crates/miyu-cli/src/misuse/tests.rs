@@ -2,7 +2,7 @@
 
 use clap::{Args, Command};
 
-use super::{listed, misuse, synopsis};
+use super::{listed, misuse, misuse_offering, synopsis};
 use crate::help::Page;
 use crate::language::Language;
 use crate::{Ask, Config, Kb, Memory, Pkg, Sandbox, Undo};
@@ -270,4 +270,26 @@ fn every_nested_command_with_required_words_is_on_its_help_page() {
             }
         }
     }
+}
+
+/// 不认识的命令是一个没装的软件包带的（施工 CL-7）：提示去装它；查不到的照旧。
+#[test]
+fn a_command_from_a_package_not_installed_says_which_package() {
+    let error = miyu()
+        .try_get_matches_from(["miyu", "web"])
+        .expect_err("没有这个命令");
+    let offered = |name: &str| (name == "web").then(|| "miyu-webui".to_string());
+    assert_eq!(
+        misuse_offering(&error, Language::Chinese, &offered).join("\n"),
+        "miyu: 未知命令 'web'\n提示：软件包 miyu-webui 提供这个命令，用 'miyu pkg install miyu-webui' 安装"
+    );
+    assert_eq!(
+        misuse_offering(&error, Language::English, &offered).join("\n"),
+        "miyu: unknown command 'web'\nhint: package miyu-webui provides it; install it with 'miyu pkg install miyu-webui'"
+    );
+    let none = |_: &str| None;
+    assert_eq!(
+        misuse_offering(&error, Language::Chinese, &none).join("\n"),
+        "miyu: 未知命令 'web'\n提示：运行 'miyu --help' 查看可用命令"
+    );
 }
