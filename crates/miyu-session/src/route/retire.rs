@@ -2,7 +2,8 @@
 //! 模型列表，拉成了、里面没有它，才算下架（两样都说没有才算，2026-10-08 项目主人定）。确认完了交给端口（[`Retirement`]，端点
 //! 装上：下架了的从池里拿掉、写配置）。不挡这一次的出错收场；同一个模型同一时间只确认一次。
 //!
-//! - 只查池的成员：直接写在 `models.chat`、`models.vision` 的是人明着写的，撞上了照旧报错，人自己改。
+//! - 只查池的成员：直接写在 `models.chat`、`models.vision` 的是人明着写的，撞上了照旧报错，人自己改。只在后台拉一次这一家的
+//!   列表（施工 V-26，同一家最多 [`REFETCH`] 一次）：列表跟上上游，变了的头收到 `models.changed`，选模型的框里看得到。
 //! - 判 404 照状态码，不照报错的原话：几家的原话各不一样。
 
 use std::collections::BTreeSet;
@@ -13,7 +14,7 @@ use crate::TARGET;
 use crate::config::TurnConfig;
 
 use super::ended::Picked;
-use super::lists::refresh_list;
+use super::lists::{REFETCH, refresh_list};
 
 /// 模型不存在的状态码。
 const NOT_FOUND: u16 = 404;
@@ -43,7 +44,11 @@ impl fmt::Debug for Retiring {
 impl Picked {
     /// 出错收场时（施工 8-23）：状态码 `status` 是 404、发的是池的成员、端口装上了的，在后台确认它是不是下架了。
     pub(in crate::route) fn check_gone(&self, config: &TurnConfig, status: Option<u16>) {
-        if status != Some(NOT_FOUND) || self.choice.member.is_none() {
+        if status != Some(NOT_FOUND) {
+            return;
+        }
+        if self.choice.member.is_none() {
+            self.relist(config);
             return;
         }
         let who = &self.choice.who;
@@ -83,6 +88,20 @@ impl Picked {
                 tracing::warn!(target: TARGET, "retirement panicked");
             }
             data.retiring().checking.remove(&key);
+        });
+    }
+
+    /// 直接写的模型回了 404（施工 V-26）：在后台拉一次这一家的列表，只为让列表跟上上游，不判下架、不改配置；同一家最多
+    /// [`REFETCH`] 一次。拉不成的照旧用原来的列表（已经记过一行 `WARN`）。
+    fn relist(&self, config: &TurnConfig) {
+        let provider = self.choice.who.provider.clone();
+        if !self.routes.data.claim_list(&provider, REFETCH) {
+            return;
+        }
+        let (data, config) = (Arc::clone(&self.routes.data), Arc::clone(config));
+        tokio::spawn(async move {
+            let secret = |reference: &_| config.secret(reference);
+            drop(refresh_list(&data, &config.resolved.values(), &secret, &provider).await);
         });
     }
 }

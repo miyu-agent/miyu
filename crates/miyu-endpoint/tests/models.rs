@@ -24,6 +24,8 @@ use miyu_tool::Catalog as ToolCatalog;
 
 use crate::support::*;
 
+mod refetch;
+
 /// 档案：`[npm]` 和 DeepSeek 那一段，照出厂的写。
 fn profiles() -> Profiles {
     Profiles::parse(&json!({
