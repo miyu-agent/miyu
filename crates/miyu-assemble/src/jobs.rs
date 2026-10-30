@@ -6,7 +6,7 @@
 //!
 //! 后台命令结束写结束了、退出码或者信号、用时、输出有多少字和怎么看；回报带着输出的最后一段的（施工 7-13，最多 2000
 //! 个字），直接带上它，整份的只写一句开头，截过的说一共多少字、全文怎么看。子代理的回报带正文。输出、正文都原样放、不
-//! 转义：和检查点里的摘要一样，是多行正文。
+//! 转义：和检查点里的摘要一样，是多行正文；只中和提前写出的本标签收尾（施工 AS-10，`tag::defuse`）。
 //!
 //! 人停的（`stopped`、不带 `by_model`：`job.stop`、删子会话），两种都在标签那一行后面先写一句是人停的（施工 7-2
 //! 补）：人停的叫醒她，不写她会当成任务自己停了。她自己用 `jobs` 停的不写：不叫醒她，停它的那次调用就在上下文里。以前
@@ -21,7 +21,7 @@ use miyu_kernel::id::JobId;
 use miyu_kernel::origin::By;
 use miyu_kernel::template::Template;
 
-use crate::tag::tagged;
+use crate::tag::{defuse, tagged};
 use crate::texts::JobTexts;
 
 /// 后台命令结束的那一块：人停的先写一句，再是退出码或者信号、用时、输出；派它的那一轮撤掉了、没派过的，没有。
@@ -84,7 +84,7 @@ pub(crate) fn command(
                 &[("shown", &shown.to_string()), ("chars", &chars.to_string())],
             )),
         }
-        block.push_str(tail);
+        block.push_str(&defuse(tail, &[&texts.command_close]));
         if !tail.ends_with('\n') {
             block.push('\n');
         }
@@ -119,7 +119,7 @@ pub(crate) fn subagent(
     match reported.text.is_empty() {
         true => block.push_str(&texts.subagent_silent),
         false => {
-            block.push_str(&reported.text);
+            block.push_str(&defuse(&reported.text, &[&texts.subagent_close]));
             if !reported.text.ends_with('\n') {
                 block.push('\n');
             }

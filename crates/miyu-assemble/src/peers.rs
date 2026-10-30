@@ -46,7 +46,8 @@ pub(crate) fn idle(notice: &PeerIdle, texts: Option<&PeerTexts>) -> Option<Strin
     let mut block = texts.open.render(&fields).unwrap_or_default();
     match (&notice.reason, &notice.status) {
         (IdleReason::Idle, Some(line)) => {
-            block.push_str(line);
+            // 别的会话交来的那一行：只中和提前写出的收尾（施工 AS-10）。
+            block.push_str(&crate::tag::defuse(line, &[&texts.close]));
             if !line.ends_with('\n') {
                 block.push('\n');
             }

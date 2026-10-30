@@ -11,6 +11,7 @@ use super::*;
 use crate::test_support::{KERNEL, Log, shape, text_json, texts};
 use crate::{DefaultAssembler, Stable};
 
+mod audit;
 mod messages;
 
 const CHILD: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";

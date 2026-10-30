@@ -18,6 +18,7 @@ use miyu_kernel::id::{Seq, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::request::Message;
 
+use crate::tag::defuse;
 use crate::texts::Texts;
 use crate::{group, harness, jobs, peers, private};
 
@@ -230,12 +231,17 @@ fn said(history: &History, by: &By, blocks: Vec<Block>, texts: &Texts) -> Vec<Bl
 
 /// 第 `seq` 条排在检查点前面：被动压缩、回合开头压缩留下的尾巴里的，和摘要请求自己的 `model.called`。
 /// 检查点那一块（`kernel/request.md`「组装」第 2 条）：包装的开头、摘要、摘要的收尾、代码写的几段、重读的文件、包装的
-/// 结尾。摘要、重读的原文原样放，不转义：一个是模型自己写的多行正文，一个是文件本来的样子。重读的原文照 blob 从有效
-/// 历史取，取不到的那一份整块不写（施工 6-5）。
+/// 结尾。摘要、重读的原文原样放，不转义：一个是模型自己写的多行正文，一个是文件本来的样子；只中和提前写出的摘要、文件、
+/// 包装的收尾（施工 AS-10，`tag::defuse`：文件是工作区里的任意内容）。重读的原文照 blob 从有效历史取，取不到的那一份整块
+/// 不写（施工 6-5）。
 fn checkpoint_block(history: &History, compacted: &ContextCompacted, texts: &Texts) -> String {
+    let summary = defuse(
+        &compacted.summary,
+        &[&texts.checkpoint_close, &texts.checkpoint_end],
+    );
     let mut block = format!(
         "{}{}{}{}",
-        texts.checkpoint_open, compacted.summary, texts.checkpoint_close, compacted.notes
+        texts.checkpoint_open, summary, texts.checkpoint_close, compacted.notes
     );
     if let Some(wrap) = &texts.restored {
         for file in &compacted.restored {
@@ -244,7 +250,7 @@ fn checkpoint_block(history: &History, compacted: &ContextCompacted, texts: &Tex
             };
             let fields = BTreeMap::from([("path", file.path.as_str())]);
             block.push_str(&wrap.open.render(&fields).unwrap_or_default());
-            block.push_str(text);
+            block.push_str(&defuse(text, &[&wrap.close, &texts.checkpoint_end]));
             block.push_str(&wrap.close);
         }
     }
