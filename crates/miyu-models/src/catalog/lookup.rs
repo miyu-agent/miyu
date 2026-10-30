@@ -6,6 +6,7 @@
 //! 同一份目录、同样的输入，答的一定一样。所以答过的可以照输入记下来（[`Recalled`]），以后照记下的答，和现算逐字一样——
 //! 目录平时就不用常驻（施工 V-25 下）。这一步只切开、定接口，目录照旧常驻，合资料照旧用整份目录现算。
 
+use std::sync::atomic::Ordering;
 use std::sync::{MutexGuard, PoisonError};
 
 use serde::{Deserialize, Serialize};
@@ -104,7 +105,7 @@ pub enum CatalogLookup<'a> {
 
 impl CatalogLookup<'_> {
     /// 一家配好的供应商在目录里的那一面（[`provider_side`]）。照记下的答、又说不出来的（没记过、没有整份目录可借），当认
-    /// 不出——和以前「目录还没读完」一样。
+    /// 不出——和以前「目录还没读完」一样——并在 [`Recalling::missed`] 立一下，调的一方照它把这一遍作废重来。
     pub fn provider_side(
         &self,
         id: &str,
@@ -121,12 +122,18 @@ impl CatalogLookup<'_> {
                     written,
                     recalling.remember,
                 );
-                answer.known().flatten()
+                match answer {
+                    Recall::Known(side) => side,
+                    Recall::Unknown => {
+                        missed(recalling);
+                        None
+                    }
+                }
             }
         }
     }
 
-    /// 一个模型在目录里的那一面（[`model_side`]）。照记下的答、又说不出来的，当没对上。
+    /// 一个模型在目录里的那一面（[`model_side`]）。照记下的答、又说不出来的，当没对上，同样立一下。
     pub fn model_side(
         &self,
         vendors: &Vendors,
@@ -149,7 +156,10 @@ impl CatalogLookup<'_> {
                 );
                 match answer {
                     Recall::Known(side) => side,
-                    Recall::Unknown => ModelSide::nothing(),
+                    Recall::Unknown => {
+                        missed(recalling);
+                        ModelSide::nothing()
+                    }
                 }
             }
         }
@@ -169,6 +179,13 @@ impl CatalogLookup<'_> {
             CatalogLookup::Full(loaded) => loaded.source,
             CatalogLookup::Recalled(recalling) => lock(recalling).source(),
         }
+    }
+}
+
+/// 说不出来：立一下，调的一方照它作废这一遍、借整份目录重来（[`Recalling::missed`]）。
+fn missed(recalling: &Recalling<'_>) {
+    if let Some(flag) = recalling.missed {
+        flag.store(true, Ordering::Relaxed);
     }
 }
 

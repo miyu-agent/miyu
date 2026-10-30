@@ -188,6 +188,7 @@ fn recalled_answers_word_for_word_like_the_full_catalog() {
         recalled: &recalled,
         catalog: Some(&loaded),
         remember: true,
+        missed: None,
     });
     ask_all(
         filling,
@@ -210,6 +211,7 @@ fn recalled_answers_word_for_word_like_the_full_catalog() {
         recalled: &recalled,
         catalog: None,
         remember: true,
+        missed: None,
     });
     ask_all(
         recalling,
@@ -230,6 +232,7 @@ fn recalled_answers_word_for_word_like_the_full_catalog() {
         recalled: &back,
         catalog: None,
         remember: true,
+        missed: None,
     });
     ask_all(
         reread,
@@ -255,6 +258,7 @@ fn asking_without_remembering_answers_the_same_and_keeps_nothing() {
         recalled: &recalled,
         catalog: Some(&loaded),
         remember: false,
+        missed: None,
     });
     for (id, url, written) in provider_asks(&loaded.catalog) {
         same(
@@ -321,6 +325,7 @@ fn without_a_catalog_to_borrow_an_unknown_input_is_unknown() {
         recalled: &empty,
         catalog: None,
         remember: true,
+        missed: None,
     });
     assert_eq!(lookup.provider_side("deepseek", None, None), None);
     assert_eq!(
@@ -468,7 +473,10 @@ fn recalling<'a>(
             recalled,
             catalog,
             remember: true,
+            missed: None,
         })),
         ..full
     }
 }
+
+mod rebuild;
