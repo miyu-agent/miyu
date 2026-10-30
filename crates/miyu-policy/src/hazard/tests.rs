@@ -2,6 +2,8 @@
 
 use super::*;
 
+mod audit;
+
 const PLACES: Places<'static> = Places {
     cwd: "/home/me/proj",
     home: Some("/home/me"),
@@ -315,4 +317,38 @@ fn containers_that_take_the_host_are_refused_and_partial_ones_ask() {
     }
     assert!(Kind::ContainerHost.refused());
     assert!(!Kind::ContainerShare.refused());
+}
+
+/// 施工 AS-9 补上的几种写法，各自的边：`cd` 进子目录、`*.log` 这类有尾巴的通配、引号结束符的 heredoc 正文、只动暂存区的
+/// `git restore`、读设备、`source` 本地文件、不往下删的 `xargs` 照旧不报；`cd` 到说不清的地方、没加引号的 heredoc 正文里的
+/// 替换、`${T:+…}` 照新的认。
+#[test]
+fn the_edges_of_what_as9_added() {
+    for (command, expected) in [
+        ("cd build && rm -rf *", None),
+        ("cd ~ && rm -rf *.log", None),
+        ("cd ~ && rm -rf ./cache/*", None),
+        ("cat <<'EOF'\nrm -rf ~\nEOF", None),
+        ("cat <<-EOF\n\trm -rf ~\n\tEOF\necho ok", None),
+        ("rm -rf ~/.miyu*.bak", None),
+        ("git restore --staged src", None),
+        ("git restore -S .", None),
+        ("cp /dev/sda disk.img", None),
+        (". ./env.sh", None),
+        ("eval \"$(ssh-agent -s)\"", None),
+        ("bash -l script.sh", None),
+        ("ls | xargs rm -f", None),
+        ("T=/tmp/x; rm -rf \"${T:?}\"/*", None),
+        ("cd $DIR && rm -rf build", Some("delete_unresolved")),
+        ("cd - && rm -rf build", Some("delete_unresolved")),
+        ("cat <<EOF\n$(rm -rf ~)\nEOF", Some("delete_home")),
+        ("cat <<-EOF\n\tnotes\n\tEOF\nrm -rf ~", Some("delete_home")),
+        ("rm -rf \"${HOME:+x}\"", Some("delete_unresolved")),
+        ("git restore -SW .", Some("git_discard")),
+        ("cp disk.img /dev/sdb", Some("disk_write")),
+        ("sgdisk -Z /dev/sda", Some("disk_format")),
+        ("rm -rf /us*", Some("delete_system")),
+    ] {
+        assert_eq!(kind(command), expected, "{command}");
+    }
 }

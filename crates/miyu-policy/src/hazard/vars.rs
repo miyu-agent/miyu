@@ -78,7 +78,8 @@ impl<'a> Vars<'a> {
         }
     }
 
-    /// 把词里的 `$名字`、`${名字}` 换成记下的：全换得掉的交回换好的（不再说不清），有一个换不掉的交回原样。
+    /// 把词里的 `$名字`、`${名字}` 换成记下的（`${名字:?}` 这类带修饰的照名字换）：全换得掉的交回换好的（不再说不清），有一个
+    /// 换不掉的交回原样。
     pub(super) fn expand(&self, word: &Word) -> Word {
         if !word.unresolved {
             return word.clone();
@@ -99,6 +100,13 @@ impl<'a> Vars<'a> {
                         .unwrap_or(after.len());
                     (&after[..end], &after[end..])
                 }
+            };
+            // `${HOME:?}`、`${T:-默认}`、`${T=…}` 有值时就是它的值，照它换（施工 AS-9，shellcheck 推荐 `${HOME:?}`）；
+            // `${T:+…}` 是另一个值、`${#T}` 是长度，换不掉。
+            let name = match name.find([':', '?', '-', '=', '+']) {
+                Some(at) if !name[at..].trim_start_matches(':').starts_with('+') => &name[..at],
+                Some(_) => return word.clone(),
+                None => name,
             };
             let value = match self.known.get(name) {
                 Some(value) => value.as_str(),

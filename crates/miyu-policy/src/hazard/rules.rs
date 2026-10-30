@@ -2,6 +2,7 @@
 //! 都是问的交回最先认出的。
 
 use super::lex::{Simple, Word, parse};
+use super::paths::{absolute, target};
 use super::vars::{Vars, after_keywords};
 use super::{Kind, Places};
 
@@ -26,14 +27,19 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
     }
     let parsed = parse(text);
     let mut vars = Vars::new(places.home);
+    // 这时的当前目录（施工 AS-9）：单独成句的 `cd` 照它换，`cd` 到说不清的地方以后是空的。
+    let mut cwd = Some(places.cwd.to_string());
     for pipeline in &parsed.pipelines {
         if fetch_into_shell(pipeline) {
             found.push(Kind::PipeToShell);
         }
         for simple in pipeline {
-            one(simple, places, &vars, depth, found);
+            one(simple, places, (&vars, cwd.as_deref()), depth, found);
         }
         vars.assign(pipeline);
+        if let Some(next) = moved(pipeline, places, &vars, cwd.as_deref()) {
+            cwd = next;
+        }
     }
     for inner in &parsed.inner {
         if fetches(inner) && pipeline_feeds_shell(&parsed) {
@@ -43,22 +49,62 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
     }
 }
 
-/// 一个简单命令：先看它往哪里写，再剥外壳认命令。
-fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, found: &mut Vec<Kind>) {
+/// 单独成句的 `cd`、`pushd`（施工 AS-9）：换到哪（不写的是家目录，`-`、说不清的是空的）；`popd` 照说不清；不是的交回空的。
+fn moved(
+    pipeline: &[Simple],
+    places: &Places<'_>,
+    vars: &Vars<'_>,
+    cwd: Option<&str>,
+) -> Option<Option<String>> {
+    let [simple] = pipeline else {
+        return None;
+    };
+    let (first, rest) = after_keywords(&simple.words).split_first()?;
+    match first.text.as_str() {
+        "cd" | "pushd" => {}
+        "popd" => return Some(None),
+        _ => return None,
+    }
+    let dir = rest
+        .iter()
+        .find(|word| !word.text.starts_with('-') || word.text == "-");
+    Some(match dir {
+        None => places.home.map(str::to_string),
+        Some(word) if word.text == "-" => None,
+        Some(word) => absolute(&vars.expand(word), places, cwd),
+    })
+}
+
+/// 一个简单命令：先看它往哪里写，再剥外壳认命令。`here` 是记下的变量和这时的当前目录。
+fn one(
+    simple: &Simple,
+    places: &Places<'_>,
+    here: (&Vars<'_>, Option<&str>),
+    depth: usize,
+    found: &mut Vec<Kind>,
+) {
     if simple.writes.iter().any(|target| device(&target.text)) {
         found.push(Kind::DiskWrite);
     }
     let words = unwrap(&simple.words);
+    // 经 `xargs` 喂的（施工 AS-9）：目标从管道里来，字面上一个都没有。
+    let fed = simple.words[..simple.words.len() - words.len()]
+        .iter()
+        .any(|word| base(&word.text) == "xargs");
     let Some((first, rest)) = words.split_first() else {
         return;
     };
     let name = base(&first.text);
-    // `sh -c '…'`、`eval '…'`：里面的另认。
+    // `sh -c '…'`、`bash -lc '…'`：里面的另认（施工 AS-9：`-c` 和别的选项连写的也算，脚本是它后面第一个不是选项的词）。
     if is_shell(name) {
         if let Some(script) = rest
             .iter()
-            .position(|word| word.text == "-c")
-            .and_then(|at| rest.get(at + 1))
+            .position(|word| short_option(&word.text, 'c'))
+            .and_then(|at| {
+                rest[at + 1..]
+                    .iter()
+                    .find(|word| !word.text.starts_with('-'))
+            })
         {
             look(&script.text, places, depth + 1, found);
         }
@@ -70,8 +116,19 @@ fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, foun
         return;
     }
     match name {
-        "rm" | "rmdir" | "unlink" | "shred" => deleting(rest, places, vars, recursive(rest), found),
-        "find" => finding(rest, places, vars, found),
+        // 写到设备上（施工 AS-9）：`shred`、`tee` 的哪个目标是设备，`cp` 的最后一个是设备。
+        "shred" | "tee" if rest.iter().any(|word| device(&word.text)) => {
+            found.push(Kind::DiskWrite)
+        }
+        "cp" if rest.last().is_some_and(|word| device(&word.text)) => found.push(Kind::DiskWrite),
+        "rm" | "rmdir" | "unlink" | "shred" => {
+            let recursive = recursive(rest);
+            deleting(rest, places, here, recursive, found);
+            if fed && recursive {
+                found.push(Kind::DeleteUnresolved);
+            }
+        }
+        "find" => finding(rest, places, here, found),
         "git" => git(rest, found),
 
         "dd" if rest
@@ -80,7 +137,14 @@ fn one(simple: &Simple, places: &Places<'_>, vars: &Vars<'_>, depth: usize, foun
         {
             found.push(Kind::DiskWrite);
         }
-        "wipefs" | "mke2fs" => found.push(Kind::DiskFormat),
+        "wipefs" | "mke2fs" | "blkdiscard" | "mkswap" => found.push(Kind::DiskFormat),
+        "sgdisk"
+            if rest
+                .iter()
+                .any(|word| matches!(word.text.as_str(), "-Z" | "--zap-all")) =>
+        {
+            found.push(Kind::DiskFormat)
+        }
         name if name.starts_with("mkfs") => found.push(Kind::DiskFormat),
         "shutdown" | "reboot" | "halt" | "poweroff" => found.push(Kind::Power),
         "init"
@@ -176,6 +240,11 @@ fn base(text: &str) -> &str {
     text.rsplit('/').next().unwrap_or(text)
 }
 
+/// 短选项（`-` 打头、不是 `--`）里有 `letter`：`-c`、`-lc`、`-ec`。
+fn short_option(text: &str, letter: char) -> bool {
+    text.starts_with('-') && !text.starts_with("--") && text.contains(letter)
+}
+
 fn is_shell(name: &str) -> bool {
     matches!(name, "sh" | "bash" | "zsh" | "dash" | "ksh" | "fish")
 }
@@ -194,7 +263,7 @@ fn recursive(rest: &[Word]) -> bool {
 fn deleting(
     rest: &[Word],
     places: &Places<'_>,
-    vars: &Vars<'_>,
+    (vars, cwd): (&Vars<'_>, Option<&str>),
     recursive: bool,
     found: &mut Vec<Kind>,
 ) {
@@ -207,14 +276,19 @@ fn deleting(
         if options && word.text.starts_with('-') && word.text.len() > 1 {
             continue;
         }
-        if let Some(kind) = target(&vars.expand(word), places, recursive) {
+        if let Some(kind) = target(&vars.expand(word), places, cwd, recursive) {
             found.push(kind);
         }
     }
 }
 
 /// `find <路径…> … -delete` 或者 `-exec rm`：照删那几个起点算。
-fn finding(rest: &[Word], places: &Places<'_>, vars: &Vars<'_>, found: &mut Vec<Kind>) {
+fn finding(
+    rest: &[Word],
+    places: &Places<'_>,
+    (vars, cwd): (&Vars<'_>, Option<&str>),
+    found: &mut Vec<Kind>,
+) {
     let deletes = rest.iter().any(|word| word.text == "-delete")
         || rest.windows(2).any(|pair| {
             matches!(pair[0].text.as_str(), "-exec" | "-execdir")
@@ -227,98 +301,22 @@ fn finding(rest: &[Word], places: &Places<'_>, vars: &Vars<'_>, found: &mut Vec<
         .iter()
         .take_while(|word| !word.text.starts_with(['-', '(', '!']))
     {
-        if let Some(kind) = target(&vars.expand(word), places, true) {
+        if let Some(kind) = target(&vars.expand(word), places, cwd, true) {
             found.push(kind);
         }
     }
 }
 
-/// 删一个目标：照字面换成绝对路径（`dir/*` 照删 `dir` 算），再照 [`Places`] 判。
-fn target(word: &Word, places: &Places<'_>, recursive: bool) -> Option<Kind> {
-    let Some(path) = absolute(word, places) else {
-        return recursive.then_some(Kind::DeleteUnresolved);
-    };
-    let path = path
-        .strip_suffix("/*")
-        .or_else(|| path.strip_suffix("/.*"))
-        .unwrap_or(&path)
-        .to_string();
-    let path = if path.is_empty() {
-        "/".to_string()
-    } else {
-        path
-    };
-    let inside = |dir: &str, of: &str| {
-        of == dir || of.starts_with(&format!("{}/", dir.trim_end_matches('/')))
-    };
-    if path == "/" {
-        return Some(Kind::DeleteRoot);
-    }
-    if let Some(home) = places.home
-        && inside(&path, home)
-    {
-        return Some(Kind::DeleteHome);
-    }
-    if !in_workspace(&path, places.data_root)
-        && (inside(&path, places.data_root) || inside(places.data_root, &path))
-    {
-        return Some(Kind::DeleteDataRoot);
-    }
-    if path.rfind('/') == Some(0) {
-        return Some(Kind::DeleteSystem);
-    }
-    if inside(&path, places.cwd) {
-        return Some(Kind::DeleteWorkingDir);
-    }
-    None
-}
-
-/// 落在工作区里面（`<数据根>/workspace/` 下面，不是它本身：规整过的路径不以 `/` 结尾）。
-fn in_workspace(path: &str, data_root: &str) -> bool {
-    path.strip_prefix(&format!("{}/workspace/", data_root.trim_end_matches('/')))
-        .is_some()
-}
-
-/// 照字面换成绝对路径，去掉 `.`、`..`、多余的 `/`：`~`、`$HOME`、`${HOME}` 开头的接家目录，相对的接工作目录。别的变量、命令
-/// 替换说不清，交回空的。
-fn absolute(word: &Word, places: &Places<'_>) -> Option<String> {
-    let text = word.text.as_str();
-    let (base, rest) = if let Some(rest) = text
-        .strip_prefix("${HOME}")
-        .or_else(|| text.strip_prefix("$HOME"))
-    {
-        (places.home?, rest)
-    } else if word.unresolved {
-        return None;
-    } else if text == "~" || text.starts_with("~/") {
-        (places.home?, &text[1..])
-    } else if text.starts_with('/') {
-        ("/", text)
-    } else {
-        (places.cwd, text)
-    };
-    if rest.contains('$') {
-        return None;
-    }
-    let mut parts: Vec<&str> = Vec::new();
-    for part in base.split('/').chain(rest.split('/')) {
-        match part {
-            "" | "." => {}
-            ".." => {
-                parts.pop();
-            }
-            part => parts.push(part),
-        }
-    }
-    Some(format!("/{}", parts.join("/")))
-}
-
-/// 裸设备：`/dev/sd…`、`/dev/nvme…`、`/dev/mmcblk…`、`/dev/disk…`、`/dev/vd…`、`/dev/hd…`、`/dev/xvd…`。
+/// 裸设备：`/dev/sd…`、`/dev/nvme…`、`/dev/mmcblk…`、`/dev/disk…`、`/dev/vd…`、`/dev/hd…`、`/dev/xvd…`；LVM、LUKS 的映射设备
+/// `/dev/mapper/…`、`/dev/dm-…`，软 RAID `/dev/md…`，`/dev/loop…`、`/dev/nbd…`（施工 AS-9）。
 fn device(text: &str) -> bool {
     text.strip_prefix("/dev/").is_some_and(|name| {
-        ["sd", "nvme", "mmcblk", "disk", "rdisk", "vd", "hd", "xvd"]
-            .iter()
-            .any(|prefix| name.starts_with(prefix))
+        [
+            "sd", "nvme", "mmcblk", "disk", "rdisk", "vd", "hd", "xvd", "mapper/", "dm-", "md",
+            "loop", "nbd",
+        ]
+        .iter()
+        .any(|prefix| name.starts_with(prefix))
     })
 }
 
@@ -360,8 +358,12 @@ fn git(rest: &[Word], found: &mut Vec<Kind>) {
         {
             Some(Kind::GitDiscard)
         }
+        // 只动暂存区的不丢改动；带了 `--worktree`（`-W`）的连工作区一起丢，有 `--staged` 也算（施工 AS-9）。
         "restore"
-            if args.iter().any(|arg| matches!(*arg, "." | ":/")) && !args.contains(&"--staged") =>
+            if args.iter().any(|arg| matches!(*arg, "." | ":/"))
+                && (!(args.contains(&"--staged") || short('S'))
+                    || args.contains(&"--worktree")
+                    || short('W')) =>
         {
             Some(Kind::GitDiscard)
         }
@@ -398,12 +400,14 @@ fn fetch_into_shell(pipeline: &[Simple]) -> bool {
     false
 }
 
-/// `bash <(curl …)`、`sh -c "$(curl …)"`：替换里在下载，外面是 shell、解释器。
+/// `bash <(curl …)`、`sh -c "$(curl …)"`：替换里在下载，外面是 shell、解释器；在这个 shell 里执行的 `source`、`.`、`eval`
+/// 也算（施工 AS-9）。
 fn pipeline_feeds_shell(parsed: &super::lex::Parsed) -> bool {
     parsed.pipelines.iter().flatten().any(|simple| {
-        unwrap(&simple.words)
-            .first()
-            .is_some_and(|word| interpreter(base(&word.text)))
+        unwrap(&simple.words).first().is_some_and(|word| {
+            let name = base(&word.text);
+            interpreter(name) || matches!(name, "source" | "." | "eval")
+        })
     })
 }
 

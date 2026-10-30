@@ -1,7 +1,10 @@
 //! 把一条命令拆成一个个简单命令（施工 5-17）：认得 `&&`、`||`、`;`、`|`、`|&`、`&`、换行、括号，单双引号、反斜杠，
-//! `$( )`、反引号、`<( )`、`>( )` 里面的另拆一遍。不求和 shell 一模一样：只求认得出边界、拿到每个词的原样。
+//! `$( )`、反引号、`<( )`、`>( )` 里面的另拆一遍，heredoc 的正文不拆（施工 AS-9，`heredoc.rs`）。不求和 shell 一模一样：只求
+//! 认得出边界、拿到每个词的原样。
 //!
 //! 一个词里有没在单引号里的 `$`、反引号的，记成「说不清」（[`Word::unresolved`]）：值要到运行时才知道。
+
+mod heredoc;
 
 /// 一个词：引号、反斜杠去掉以后的样子。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,15 +32,7 @@ pub(crate) struct Parsed {
 
 /// 拆 `text`。
 pub(crate) fn parse(text: &str) -> Parsed {
-    let mut lexer = Lexer {
-        chars: text.chars().collect(),
-        at: 0,
-        parsed: Parsed::default(),
-        pipeline: Vec::new(),
-        simple: Simple::default(),
-        word: None,
-        redirect: None,
-    };
+    let mut lexer = Lexer::new(text);
     lexer.run();
     lexer.parsed
 }
@@ -51,6 +46,8 @@ struct Lexer {
     word: Option<Word>,
     /// 下一个词是重定向到的地方。
     redirect: Option<Redirect>,
+    /// 这一行完了要读正文的 heredoc（施工 AS-9）。
+    heredocs: Vec<heredoc::Heredoc>,
 }
 
 /// 重定向往哪边。
@@ -63,6 +60,19 @@ enum Redirect {
 }
 
 impl Lexer {
+    fn new(text: &str) -> Lexer {
+        Lexer {
+            chars: text.chars().collect(),
+            at: 0,
+            parsed: Parsed::default(),
+            pipeline: Vec::new(),
+            simple: Simple::default(),
+            word: None,
+            redirect: None,
+            heredocs: Vec::new(),
+        }
+    }
+
     fn run(&mut self) {
         while let Some(c) = self.peek(0) {
             match c {
@@ -103,6 +113,12 @@ impl Lexer {
                     }
                     self.redirect = Some(Redirect::Write);
                 }
+                // heredoc（`<<`、`<<-`，不是 `<<<`）：结束符不是参数，正文到下一行再读。
+                '<' if self.peek(1) == Some('<') && self.peek(2) != Some('<') => {
+                    self.descriptor();
+                    self.at += 2;
+                    self.heredoc_start();
+                }
                 '<' => {
                     self.descriptor();
                     self.at += 1;
@@ -133,6 +149,9 @@ impl Lexer {
                 {
                     self.at += 1;
                     self.end_pipeline();
+                    if c == '\n' {
+                        self.heredoc_bodies();
+                    }
                 }
                 '#' if self.word.is_none() => self.skip_comment(),
                 c if c.is_whitespace() => {
@@ -245,7 +264,8 @@ impl Lexer {
         self.chars[start..].iter().collect()
     }
 
-    /// `(` 已经吃掉了，到配上的 `)`：交回里面的原文。里面的引号照样认，免得引号里的括号算数。
+    /// `(` 已经吃掉了，到配上的 `)`：交回里面的原文。里面的引号照样认，免得引号里的括号算数；heredoc 的正文跳过，正文里的
+    /// 撇号不当引号（施工 AS-9）。
     fn until_close(&mut self) -> String {
         let start = self.at;
         let mut depth = 1;
@@ -256,6 +276,11 @@ impl Lexer {
                 (Some(q), c) if c == q => quote = None,
                 (Some(_), _) => {}
                 (None, '\'' | '"') => quote = Some(c),
+                (None, '<') if self.peek(0) == Some('<') && self.peek(1) != Some('<') => {
+                    self.at += 1;
+                    self.heredoc_start();
+                }
+                (None, '\n') if !self.heredocs.is_empty() => self.heredoc_bodies(),
                 (None, '(') => depth += 1,
                 (None, ')') => {
                     depth -= 1;

@@ -7,6 +7,7 @@
 
 mod container;
 mod lex;
+mod paths;
 mod prefix;
 mod rules;
 mod vars;
