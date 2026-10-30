@@ -115,8 +115,11 @@ impl Logos {
     /// 目录里没有供应商、默认图拉不到、存不进缓存的，说哪里不对；这一次什么都不换。
     pub async fn once(&self) -> Result<usize, String> {
         self.data.wait().await;
+        // 要目录里的每一家：整份目录借一份，取完编号就放（施工 V-25 下：不常驻时临时读，在阻塞线程里）。
         let ids: Vec<String> = self
             .data
+            .held()
+            .await
             .catalog()
             .map(|loaded| {
                 loaded

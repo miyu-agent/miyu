@@ -62,7 +62,7 @@ pub(crate) use once::Said;
 pub use once::{Answer, Ask, OneShot, Unanswered, Watched};
 pub use probe::{Probe, Probed, Stage, probe};
 pub use retire::Retirement;
-pub use shared::{ModelData, Observed, read_observed};
+pub use shared::{CatalogReader, Holding, ModelData, Observed, RECALL_FILE, read_observed};
 
 use std::future::Future;
 use std::pin::Pin;

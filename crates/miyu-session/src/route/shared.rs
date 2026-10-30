@@ -4,6 +4,9 @@
 //!
 //! - 目录在写了 `ready` 以后才读完（「起草时定的」第 13 条）：要它的（造会话、载入、`model.list`）先等它（[`ModelData::wait`]）。
 //!   都读不了也算读完：目录是空的。
+//! - 目录不常驻（施工 V-25 下，`recall.rs`）：起来时换上记下的那份（[`ModelData::recalled`]），合资料只照记下的答，没记过
+//!   的、要整份目录的才临时读。没有缓存目录、不知道程序在哪的（测试、`models::routes()`）照旧常驻（[`ModelData::loaded`]）。
+//!   「读完」说的是记下的那份读了、版本验过了，或者常驻的整份目录读完了。
 //! - 用出来的、供应商的列表是派生数据，在 `state/models/` 下：读的时候坏了当没有（核心起来时 [`read_observed`]），变了
 //!   就写（先写临时文件再改名，`miyu_store::generated`），写不成的记一行 `WARN`，内存里照样用。
 //! - 池的指针（施工 8-8，`models.md` 第三条第 6 条）：一个池一个，往前走一次（[`ModelData::take`]）写一次
@@ -25,7 +28,7 @@ use miyu_http::{Client, is_loopback_url};
 
 use miyu_kernel::time::Timestamp;
 use miyu_models::Knowledge;
-use miyu_models::catalog::{CatalogLookup, Loaded};
+use miyu_models::catalog::Loaded;
 use miyu_models::cooldown::{Cooldowns, Rules};
 use miyu_models::logos::Logo;
 use miyu_models::matching::Vendors;
@@ -38,17 +41,23 @@ use crate::TARGET;
 
 use super::retire::{Retirement, Retiring};
 
+mod recall;
 mod renamed;
 #[cfg(test)]
 mod tests;
+
+pub use recall::{CatalogReader, Holding, RECALL_FILE};
+use recall::{Held, Recall};
 
 /// 核心一份的模型资料。
 #[derive(Debug)]
 pub struct ModelData {
     profiles: Profiles,
     vendors: Vendors,
-    /// 在用的目录：外面一层是「读完了没有」，里面一层是「读没读成」。
-    catalog: watch::Sender<Option<Option<Arc<Loaded>>>>,
+    /// 在用的目录：外面一层是「读完了没有」，里面是常驻的整份（读没读成）或者记下的那份（施工 V-25 下）。
+    catalog: watch::Sender<Option<Held>>,
+    /// 目录不常驻时要的（施工 V-25 下，`recall.rs`）：怎么临时读整份目录、临时读来的那一份、补算和写盘的锁。
+    recall: Recall,
     observed: Mutex<Observed>,
     /// 池的指针（施工 8-8）：另一把锁，写盘时拿着它，不挡查资料。
     pointers: Mutex<Pointers>,
@@ -101,6 +110,7 @@ impl ModelData {
             profiles,
             vendors,
             catalog: watch::channel(None).0,
+            recall: Recall::default(),
             observed: Mutex::new(Observed::default()),
             pointers: Mutex::new(Pointers::default()),
             cooldowns: Mutex::new((Cooldowns::default(), Rules::default())),
@@ -199,19 +209,33 @@ impl ModelData {
         &self.placeholder_tool
     }
 
-    /// 目录读完了（读没读成都算）：连同读好的用出来的、供应商的列表一起换上，等着的都放行。
+    /// 目录读完了（读没读成都算），常驻：连同读好的用出来的、供应商的列表一起换上，等着的都放行。
     pub fn loaded(&self, catalog: Option<Loaded>, mut observed: Observed) {
         *self.pointers() = std::mem::take(&mut observed.pointers);
         *self.lock() = observed;
-        self.catalog.send_replace(Some(catalog.map(Arc::new)));
+        self.catalog
+            .send_replace(Some(Held::Full(catalog.map(Arc::new))));
     }
 
-    /// 后台拉到了新目录：换上。会话下一次查资料就用它（新会话当场用，开着的会话下一个回合）。
-    pub fn replace_catalog(&self, catalog: Loaded) {
-        self.catalog.send_replace(Some(Some(Arc::new(catalog))));
+    /// 后台拉到了新目录：换上。会话下一次查资料就用它（新会话当场用，开着的会话下一个回合）。不常驻的（施工 V-25 下）照它把
+    /// 记下的键全部重算、原子地换上新的一份、写盘，新目录随后放掉；`of` 是新目录的版本串（和记下的那份同一个算法），算不出来的
+    /// 从此改成常驻这一份（版本对不上就认不出记下的是哪一份）。
+    pub fn replace_catalog(&self, catalog: Loaded, of: Option<String>) {
+        let held = self.catalog.borrow().clone();
+        match (held, of) {
+            (Some(Held::Recalled(current)), Some(of)) => {
+                self.swap_refreshed(&current, catalog, &of);
+                // 新目录只借来重算，放掉了：还给系统（23 F3）。
+                miyu_heap::trim();
+            }
+            _ => {
+                self.catalog
+                    .send_replace(Some(Held::Full(Some(Arc::new(catalog)))));
+            }
+        }
     }
 
-    /// 等目录读完。
+    /// 等目录读完：常驻的整份目录读完（读没读成都算），或者不常驻的记下的那份读了、版本验过了（施工 V-25 下）。
     pub async fn wait(&self) {
         let mut receiver = self.catalog.subscribe();
         // 发的一方就是自己，`wait_for` 只会因为它没了出错：那时也不用等了。
@@ -220,29 +244,28 @@ impl ModelData {
         }
     }
 
-    /// 目录读完了（读没读成都算，施工 8-18）：配置服务查思考强度的档位以前看它，读完以前不查。
+    /// 目录读完了（同 [`ModelData::wait`]，施工 8-18）：配置服务查思考强度的档位以前看它，读完以前不查。
     pub fn is_loaded(&self) -> bool {
         self.catalog.borrow().is_some()
     }
 
-    /// 在用的目录；还没读完、读不成的没有。
+    /// 整份目录：常驻的就是那一份；不常驻的临时读一份（[`ModelData::hold`]，慢，在阻塞线程里调），借完放掉。还没读完、
+    /// 都读不了的没有。
     pub fn catalog(&self) -> Option<Arc<Loaded>> {
-        self.catalog.borrow().clone().flatten()
+        self.hold().into_catalog()
     }
 
-    /// 借着手头的资料做一件事：用出来的、列表的锁拿着，做完就放开，别在里面等。
-    pub fn with<R>(&self, work: impl FnOnce(&Knowledge<'_>) -> R) -> R {
-        let catalog = self.catalog();
-        let observed = self.lock();
-        work(&Knowledge {
-            profiles: &self.profiles,
-            vendors: &self.vendors,
-            catalog: catalog.as_deref(),
-            // 合资料照旧拿整份目录现算（施工 V-25 上只切开接口，记下来的答随 V-25 下接进来）。
-            lookup: catalog.as_deref().map(CatalogLookup::Full),
-            learned: &observed.learned,
-            lists: &observed.lists,
-        })
+    /// 借着手头的资料做一件事：用出来的、列表的锁拿着，做完就放开，别在里面等。配置里写过、真问过的用它（路由、回合开始、池的
+    /// 成员、配置检查）：不常驻时没记过的临时读整份目录、记下（施工 V-25 下）。`work` 可能做两遍、作废的那一遍看到的是没有
+    /// 目录时的答：只放查资料的纯活，别在里面断言（见 `recall.rs` 的 `asking`）。
+    /// [`Knowledge::catalog`] 不常驻时是空的：要整份目录的用 [`ModelData::with_holding`]。
+    pub fn with<R>(&self, work: impl FnMut(&Knowledge<'_>) -> R) -> R {
+        self.asking(true, work)
+    }
+
+    /// 同 [`ModelData::with`]，只是没记过的不记：临时问一句的用它（`provider.test` 试一家还没写进配置的）。
+    pub fn with_once<R>(&self, work: impl FnMut(&Knowledge<'_>) -> R) -> R {
+        self.asking(false, work)
     }
 
     /// 档案。

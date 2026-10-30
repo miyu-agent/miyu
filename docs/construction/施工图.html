@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1008</b><span>/ 1017 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1009</b><span>/ 1018 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-25上</b><span>最近一步（V-25 上 模型资料查表）</span></li>
+    <li><b class="mono">V-25下</b><span>最近一步（V-25 下 目录不常驻）</span></li>
   </ul>
 </header>
 
@@ -494,6 +494,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV26"><span class="n">V-26</span>模型列表自己刷新<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV30"><span class="n">V-30</span>字表读一次<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV25a"><span class="n">V-25 上</span>模型资料查表<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV25b"><span class="n">V-25 下</span>目录不常驻<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -10829,6 +10830,58 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-25上-模型资料查表.md</code>；蓝图 <code>models.md</code> 第二条第 8 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV25b" aria-labelledby="h-sV25b">
+  <div class="sheet-head"><h2 id="h-sV25b"><span class="no">V-25 下</span>目录不常驻</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">模型资料匹配一次就存下来，以后每一轮、核心重启都只读记下的；整份 models.dev 目录平时不进内存，核心空闲时活着的堆从 4.7 MB 降到 1.5 MB。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">目录不常驻</span><span class="dir-note">V-25 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>用到的输入第一次照整份目录查，答存进 <code>state/models/catalog.json</code></li>
+              <li>起来时版本对上的只读记下的，不读整份目录</li>
+              <li>没记过的输入、要整份目录的地方、后台拉到新目录时临时读、用完放</li>
+              <li>拉到新目录照新目录把记下的键全部重算换上</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">模型资料匹配一次就存下来，以后只读存下的</span><span class="rl">项目主人 2026-10-30</span></div>
+          <div class="tile new"><span class="nm">对外逐字一样、记下的有上限、坏了当没有、版本键带全、补算不进 observed 的锁</span><span class="rl">核心主会话 2026-10-30</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-25 下</dd></div>
+        <div><dt>名称</dt><dd>目录不常驻</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-10-30</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-25下</dd></div>
+        <div><dt>验收</dt><dd>连着一个头空闲时私有内存 8.4 → 5.3 MB，活着的堆 4.73 → 1.49 MB，冷启动到 ready 不变</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>头一次起来记下、之后每次只读记下的</span></li>
+        <li><span class="ok">✓</span><span>记下的坏了、版本不对当没有、重记</span></li>
+        <li><span class="ok">✓</span><span>对外的资料和整份目录现算逐字一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-25下-目录不常驻.md</code>；蓝图 <code>models.md</code> 第二条第 1 到 3 条、第 8 条、日志。</li>
       </ul>
     </div>
   </div>

@@ -42,7 +42,7 @@ use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::route::endpoint::{Missing, Reached, Unreached, reach};
 use crate::route::lists::{TIMEOUT, list_models, listing_texts};
-use crate::route::shared::ModelData;
+use crate::route::shared::{Holding, ModelData};
 
 /// 发那一句时多久没收到新的字节就算断了。
 const IDLE: Duration = Duration::from_secs(60);
@@ -137,7 +137,7 @@ async fn run(
         base_url,
         key,
     } = data
-        .with(|knowledge| reach(probe.values, knowledge, probe.id, probe.secret))
+        .with_once(|knowledge| reach(probe.values, knowledge, probe.id, probe.secret))
         .map_err(|Unreached { why, missing }| Probed::Failed {
             stage: Stage::Config,
             error: said(ErrorClass::NoModel, why.0),
@@ -172,7 +172,7 @@ async fn run(
             }
             let chosen = match probe.model {
                 Some(model) => Some(model.to_string()),
-                None => pick(data, probe.resolved, &provider, &models),
+                None => pick(data, &data.held().await, probe.resolved, &provider, &models),
             };
             let Some(model) = chosen else {
                 let nothing = said(ErrorClass::Unclassified, "no models listed".to_string());
@@ -197,11 +197,13 @@ async fn run(
             // 列不到、又不是认证错（这一家不给列、地址换了……）：照目录里对上的那一家列，没写模型的照推荐挑一个，拿它发一句验
             // 地址和 key（施工 ST-1：10-29 目录里 OpenCode Go 换了地址，新地址没有列模型的接口，人只能凭空填模型名）。目录里
             // 也挑不出的才要人给模型名。
-            let models = catalog_models(data, &provider);
+            let holding = data.held().await;
+            let models = catalog_models(&holding, &provider);
             let chosen = match probe.model {
                 Some(model) => Some(model.to_string()),
-                None => pick(data, probe.resolved, &provider, &models),
+                None => pick(data, &holding, probe.resolved, &provider, &models),
             };
+            drop(holding);
             match chosen {
                 Some(model) => (models, true, model),
                 None => return Err(listing(error, true)),
@@ -212,7 +214,7 @@ async fn run(
     // 发那一句照这个模型的驱动（施工 8-14：同一家里的模型可以各走各的），没有驱动的是 `config`；另配的头照固定的种子换。
     // 温度照这个模型配置的默认（施工 8-22），和会话真发时一样。
     let config = |NoModel(why): NoModel| failed(Stage::Config, ErrorClass::NoModel, why);
-    let (speaking, temperature) = data.with(|knowledge| {
+    let (speaking, temperature) = data.with_once(|knowledge| {
         let (facts, _) = facts(probe.resolved, knowledge, &provider, &model);
         let speaking = provider.for_model(&model, &facts.wire, &knowledge.profiles.npm);
         (speaking, facts.temperature.value)
@@ -372,26 +374,26 @@ fn classify(driver: &dyn Driver, failed: &Failed) -> CallError {
         .error
 }
 
-/// 目录里对上的那一家的模型名（照字节排）；没对上、没有目录的是空的。
-fn catalog_models(data: &ModelData, provider: &Provider) -> Vec<String> {
-    data.with(|knowledge| {
-        let recognized = provider.recognized.as_ref();
-        recognized
-            .zip(knowledge.catalog)
-            .and_then(|(recognized, loaded)| loaded.catalog.provider(&recognized.provider))
-            .map(|entry| entry.models.keys().map(|name| name.to_string()).collect())
-            .unwrap_or_default()
-    })
+/// 目录里对上的那一家的模型名（照字节排）；没对上、没有目录的是空的。要整份目录：借着 `holding`（施工 V-25 下）。
+fn catalog_models(holding: &Holding, provider: &Provider) -> Vec<String> {
+    let recognized = provider.recognized.as_ref();
+    recognized
+        .zip(holding.catalog())
+        .and_then(|(recognized, loaded)| loaded.catalog.provider(&recognized.provider))
+        .map(|entry| entry.models.keys().map(|name| name.to_string()).collect())
+        .unwrap_or_default()
 }
 
-/// 照推荐挑一个（`miyu_models::onboard::recommend`）：每个模型的资料照 `resolved` 和手头的资料查。
+/// 照推荐挑一个（`miyu_models::onboard::recommend`）：每个模型的资料照 `resolved` 和手头的资料查。要整份目录（发布日期）：借着
+/// `holding`，临时问的不记（施工 V-25 下）。
 fn pick(
     data: &ModelData,
+    holding: &Holding,
     resolved: &Resolved,
     provider: &Provider,
     models: &[String],
 ) -> Option<String> {
-    data.with(|knowledge| {
+    data.with_holding(holding, false, |knowledge| {
         let offered: Vec<Offered> = models
             .iter()
             .map(|model| {

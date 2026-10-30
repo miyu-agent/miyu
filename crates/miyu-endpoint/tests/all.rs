@@ -143,6 +143,7 @@ mod models_embedding;
 mod models_name;
 mod models_only;
 mod models_pools;
+mod models_recall;
 mod models_retire;
 mod models_temperature;
 mod note;

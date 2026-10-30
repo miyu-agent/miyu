@@ -2,7 +2,7 @@
 //! `fetched` 旧过 `every` 的，GET `url`，带上次的 `ETag`，连接 10 秒、整个 60 秒、最多 32 MiB。
 //!
 //! - 200：先读一遍，至少有一家供应商才算好的；写进缓存目录（临时文件再改名，`meta` 一起），换上新的，记
-//!   `INFO catalog refreshed`。304：只改 `meta` 的 `fetched`，记 `INFO catalog not modified`。
+//!   `INFO catalog refreshed`。目录不常驻的（施工 V-25 下）：照新目录把记下的键全部重算、原子地换上、写盘，新目录随后放掉。304：只改 `meta` 的 `fetched`，记 `INFO catalog not modified`。
 //! - 别的、读不了的、写不进的：记 `WARN catalog refresh failed`，一小时后再试。
 //! - 核心一直开着的，每过 `every` 再查一次；配置改了（当场生效）照新的算。缓存目录算不出来的不拉。
 //! - `url` 可以是环境变量的引用（施工 8-8，[`Schedule`]）：照核心的环境取，没设、设成空的到点了照失败算，记一行 `WARN`。
@@ -21,6 +21,7 @@ use miyu_models::settings::CatalogSettings;
 use miyu_session::ModelData;
 
 use super::catalog::{FILE, META, Meta};
+use super::recall::Version;
 use crate::TARGET;
 
 /// 失败了多久以后再试。
@@ -32,7 +33,7 @@ const TIMEOUT: Duration = Duration::from_secs(60);
 /// 最多多少字节。
 const LIMIT: usize = 32 * 1024 * 1024;
 
-/// 后台更新要的：交给谁、用哪个客户端、缓存在哪（`<缓存目录>/models`）。
+/// 后台更新要的：交给谁、用哪个客户端、缓存在哪（`<缓存目录>/models`）、新目录的版本串怎么算。
 #[derive(Clone)]
 pub struct Refresher {
     /// 换上新目录的地方。
@@ -41,6 +42,9 @@ pub struct Refresher {
     pub client: Client,
     /// 缓存的目录。
     pub cache: PathBuf,
+    /// 算新目录的版本串要的（施工 V-25 下，[`super::recall::Version`]）：目录不常驻时照它把记下的那份换成新的；没有的（不知道
+    /// 程序在哪）照旧常驻。
+    pub version: Option<Version>,
 }
 
 /// 后台更新照的：`[models.catalog]` 这一刻的最终值，地址照核心的环境取好了（施工 8-8）。
@@ -192,11 +196,20 @@ impl Refresher {
                     models = catalog.model_count(),
                     "catalog refreshed"
                 );
-                self.data.replace_catalog(Loaded {
+                // 版本串照写好的原文算（大小、改动时间是写完以后的）：和以后临时读回来、下次起来时算的对得上。
+                let of = self.version.as_ref().and_then(|version| {
+                    version.of(CatalogSource::Cache, &self.cache.join(FILE), &fetched)
+                });
+                let data = Arc::clone(&self.data);
+                let loaded = Loaded {
                     catalog,
                     source: CatalogSource::Cache,
                     fetched,
-                });
+                };
+                // 不常驻时照新目录重算记下的、写盘、还堆（施工 V-25 下）：在阻塞线程里做。
+                tokio::task::spawn_blocking(move || data.replace_catalog(loaded, of))
+                    .await
+                    .map_err(|error| error.to_string())?;
                 Ok(Refreshed::Replaced)
             }
         }
