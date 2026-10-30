@@ -157,14 +157,9 @@ async fn a_project_directory_stays_and_the_workspace_root_becomes_the_session_s(
     assert!(text.contains(&cwd_fact(&mine)), "{text}");
 }
 
-/// `~` 的回应：Windows 上太宽、带 `wide`，别处不再太宽、不带（施工 5-14 改）。
+/// `~` 的回应：不再太宽、不带 `wide`（施工 5-14 改，Windows 施工 SW-7 跟上）。
 fn home_wide(reply: &serde_json::Value) {
-    let wide = reply["result"].get("wide");
-    if cfg!(windows) {
-        assert_eq!(wide, Some(&json!(true)), "{reply}");
-    } else {
-        assert!(wide.is_none(), "{reply}");
-    }
+    assert!(reply["result"].get("wide").is_none(), "{reply}");
 }
 
 #[tokio::test]
@@ -187,8 +182,8 @@ async fn the_replies_say_where_the_session_works() {
         .as_str()
         .expect("造出来了")
         .to_string();
-    // 说话带着的目录先换过去（施工 9-7 再补，终端无缝集成；9-7 上那时照收不理）：照人选的用，太宽的回应带 `wide`（`~` 只有
-    // Windows 上还太宽，施工 5-14 改）。
+    // 说话带着的目录先换过去（施工 9-7 再补，终端无缝集成；9-7 上那时照收不理）：照人选的用，太宽的回应带 `wide`（`~` 不再太宽，
+    // 施工 5-14 改、SW-7）。
     let reply = client
         .call(
             "c2",

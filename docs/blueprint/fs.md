@@ -45,7 +45,7 @@
 | `resolve(cwd, home, input)` | 她给的路径换成真实的位置 |
 | `resolve_itself(cwd, home, input)` | 同上，最后一段不跟链接：碰的是这一条本身（`trash`）；没有名字可碰的交回空的 |
 | `tilde(input)` | `~` 开头的，交回 `~` 后面那一截 |
-| `too_wide(dir, home, data_root, own)` | 工作目录太不太宽：根目录、数据根里的；Windows 上还有家目录、包含数据根的（施工 5-14 改） |
+| `too_wide(dir, home, data_root, own)` | 工作目录太不太宽：根目录、数据根里的（施工 5-14 改；Windows 上的家目录、包含数据根的施工 SW-7 起也不算） |
 | `broad(dir, home, data_root, own)` | 宽：家目录、根目录、包含数据根的、数据根里的；加进来的目录、场所会话照它（施工 5-14 改） |
 | `open_file(real)` | 安全地打开一份要读的普通文件 |
 | `replace(real, bytes)` | 把一份文件整体换成 `bytes` |
@@ -299,7 +299,7 @@
 | `crates/miyu-fs/src/readonly/tests.rs` | 只禁写的名单（施工 5-17 下）：三种写法、不收的写法、家目录不知道的；出厂的前七个是工作区里的、这个平台的那几条也在；去掉的、加的、太宽的、重复的 |
 | `crates/miyu-fs/tests/resolve.rs` | 相对的照工作目录接、`.` 和走过存在的目录再 `..`、绝对的照原样、`~` 和 `~alice`、没有家目录、还不存在的照上级算、还不存在的 `..`（Unix 报错、Windows 照字面消掉）、链接照指向的地方算、指向不存在处的链接、Windows 两种分隔符；最后一段不跟链接：指向不存在处的、指到别处的链接交回链接本身，`.`、`..`、`~` 交回空的，`src/.` 是 `src` |
 | `crates/miyu-fs/tests/open.rs` | 普通文件打得开、目录和不存在的、最后一层是链接不跟（Unix、Windows）、路上有链接的不开（Unix（施工 5-10 下））、FIFO 不卡住、设备和套接字 |
-| `crates/miyu-fs/tests/wide.rs` | 宽的四样；家目录读不出来时；太宽的只有根目录、数据根里的，家目录、包含数据根的只有 Windows 上还算（施工 5-14 改） |
+| `crates/miyu-fs/tests/wide.rs` | 宽的四样；家目录读不出来时；太宽的只有根目录、数据根里的，家目录、包含数据根的哪个平台都不算（施工 5-14 改、SW-7） |
 | `crates/miyu-fs/src/replace/tests.rs` | 新建和覆盖、不留临时文件、只读的不写、盖不上去时临时文件删掉；路上有链接的一个字节都不落到链接指的地方、不留临时文件（Unix（施工 5-10 下））；临时文件建出来就不比原来的宽（Unix，施工 SEC-3） |
 | `crates/miyu-fs/src/nofollow/tests.rs` | 普通的文件、目录打得开；路上、最后一层有链接的报 `ELOOP`；一层一层打开那条路单独测：链接照样不开、相对的不收（施工 5-10 下） |
 | `crates/miyu-fs/tests/trash.rs` | Linux：放进场地假家目录的回收站，交回它在回收站里的位置、记下 `.trashinfo`；macOS、Windows（在 CI 上）：文件、目录放进系统的回收站，看完删掉（施工 U-1 起不再移回来） |

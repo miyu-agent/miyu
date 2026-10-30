@@ -90,7 +90,7 @@ async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
         sandboxed.spec.write
     );
     // 工作目录是家目录（施工 5-14 改：Linux、macOS 上不再太宽，家目录就是工作区）：落在里面的私密目录 macOS 上照藏（Seatbelt
-    // 藏得住），Linux 上没有挂载的不藏（这个测试的进程里没设挂载）。Windows 上照旧退回，照藏。
+    // 藏得住），Windows 上也藏（MXC 的禁止压过读写，施工 SW-7），Linux 上没有挂载的不藏（这个测试的进程里没设挂载）。
     let sandboxed = attached(&home, &home.home, false, Vec::new()).await;
     if cfg!(windows) || cfg!(target_os = "macos") {
         assert_eq!(sandboxed.spec.hidden, ssh_claude, "家目录：照藏");
@@ -107,7 +107,7 @@ async fn a_private_dir_inside_a_writable_place_is_not_hidden() {
     let sandboxed = attached(&home, &home.home.join(".config"), false, Vec::new()).await;
     let gh = real(&home.home.join(".config/gh"));
     let mut config = ssh_claude.to_vec();
-    if cfg!(target_os = "macos") {
+    if cfg!(any(target_os = "macos", windows)) {
         config.push(gh.clone());
     }
     assert_eq!(
