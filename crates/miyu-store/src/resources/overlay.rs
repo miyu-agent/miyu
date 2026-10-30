@@ -23,6 +23,8 @@ impl ResourceRoot {
         ResourceRoot {
             path: self.path.clone(),
             overlays: layers,
+            // 覆盖不碰给人看的字：读好的字照旧共用（施工 V-30）。
+            shelf: self.shelf.clone(),
         }
     }
 

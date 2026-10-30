@@ -18,12 +18,12 @@ pub const QUIET: Duration = Duration::from_secs(2);
 /// 安静下来以后再做的一件事（施工 V-6 下）。
 pub type Then = Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
-/// 起盯着请求的任务：每次安静下来调一次 `release`（核心里是 [`miyu_heap::trim`]，在阻塞线程里调），再等 `then` 做完。要在
-/// tokio 的运行时里调。
+/// 起盯着请求的任务：每次安静下来调一次 `release`（核心里是放掉读好的字、再 [`miyu_heap::trim`]，在阻塞线程里调），再等
+/// `then` 做完。要在 tokio 的运行时里调。
 pub fn spawn(
     activity: &Activity,
     quiet: Duration,
-    release: fn() -> bool,
+    release: impl Fn() -> bool + Clone + Send + 'static,
     then: Then,
 ) -> tokio::task::JoinHandle<()> {
     let mut changes = activity.subscribe();
@@ -33,7 +33,7 @@ pub fn spawn(
                 return;
             }
             while let Ok(Ok(())) = tokio::time::timeout(quiet, changes.changed()).await {}
-            if !settled(tokio::task::spawn_blocking(release).await) {
+            if !settled(tokio::task::spawn_blocking(release.clone()).await) {
                 return;
             }
             then().await;
