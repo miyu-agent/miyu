@@ -404,3 +404,51 @@ fn an_mcp_server_name_is_taken_by_whoever_is_read_first() {
         ("mcp-github", Some(4))
     );
 }
+
+/// 升级一个装上的包时，原来那一份先挪到 `.<编号>.old`、再把暂存的 `.<编号>.new` 换进来（`install::place`）。两次改名之间核心
+/// 被杀，`<编号>/` 没了：起来时 `install::recover` 把原来那一份放回去，包照旧读得到（施工 AE-7，发布前第二轮审查 R2-4）。
+#[test]
+fn an_upgrade_cut_off_between_the_renames_is_put_back() {
+    let places = Places::new();
+    places.write(Layer::Home, ".tui.old/package.toml", &ui("tui"));
+    places.write(Layer::Home, ".tui.new/package.toml", &ui("tui-new"));
+    let home = places.scratch.path().join("data/packages");
+    let recovered = install::recover(&home);
+    assert_eq!(recovered.restored, ["tui"]);
+    assert!(recovered.failed.is_empty(), "{:?}", recovered.failed);
+    let found: Vec<Found> = places.packages.read();
+    let tui = found
+        .iter()
+        .find(|found| found.id == "tui")
+        .expect("包还在");
+    assert_eq!(
+        fs::read_to_string(&tui.path).unwrap(),
+        ui("tui"),
+        "放回去的是原来那一份"
+    );
+    assert!(!home.join(".tui.new").exists(), "暂存的剩下的删掉");
+    // 再收拾一遍什么都不做。
+    assert!(install::recover(&home).restored.is_empty());
+}
+
+/// 收拾只认 `.<编号>.old`、`.<编号>.new`：本体在的备份删掉，认不出的名字不碰（施工 AE-7）。
+#[test]
+fn recovering_leaves_what_it_does_not_recognize() {
+    let places = Places::new();
+    places.write(Layer::Home, "cake/package.toml", &ui("cake"));
+    places.write(Layer::Home, ".cake.old/package.toml", &ui("cake"));
+    places.write(Layer::Home, ".cake.bak/package.toml", &ui("cake"));
+    places.write(Layer::Home, ".Cake Box.old/package.toml", &ui("cake"));
+    places.write(Layer::Home, ".old/package.toml", &ui("cake"));
+    let home = places.scratch.path().join("data/packages");
+    let recovered = install::recover(&home);
+    assert!(recovered.restored.is_empty());
+    assert!(!home.join(".cake.old").exists(), "本体在，备份是剩下的");
+    assert_eq!(
+        fs::read_to_string(home.join("cake/package.toml")).unwrap(),
+        ui("cake")
+    );
+    for kept in [".cake.bak", ".Cake Box.old", ".old"] {
+        assert!(home.join(kept).exists(), "{kept} 认不出，不该碰");
+    }
+}

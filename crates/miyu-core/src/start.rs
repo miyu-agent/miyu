@@ -24,6 +24,7 @@ pub(super) async fn start(
     if let Err(error) = root.prepare_workspace() {
         return failed("home", error.to_string());
     }
+    crate::leftovers::tidy(&root);
     let mut found = load_packages(&resources, &root);
     let packaged = settings::Packaged::of(&mut found);
     let config = settings::read(&root, env.home.as_deref(), &packaged);

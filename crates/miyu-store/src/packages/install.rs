@@ -4,6 +4,7 @@
 //! - 装：一个文件夹就是一个包（施工 F-8 上），整个文件夹拷成 `<编号>/`。先拷到点开头的暂存处，再换进去；原来就有的先挪到
 //!   点开头的备份处，[`Placed::keep`] 删备份，[`Placed::undo`] 放回去。
 //! - 卸家目录的：删掉整个文件夹。卸出厂的：记一笔 `<编号>.removed`（空文件），资源目录不动，删掉这一笔就回来。
+//! - 换进去那一下改名失败的，当场把备份放回去（施工 AE-7）；两次改名之间核心被杀的，下一次起来时 [`recover`] 放回去。
 
 use std::fs;
 use std::io;
@@ -62,8 +63,69 @@ pub fn place(home: &Path, id: &str, source: &Path) -> io::Result<Placed> {
     }
     let folder = home.join(id);
     let old = aside(&folder, home.join(format!(".{id}.old")))?;
-    fs::rename(&staged, &folder)?;
+    if let Err(error) = fs::rename(&staged, &folder) {
+        put_back(old.as_deref(), &folder);
+        discard(&staged);
+        return Err(error);
+    }
     Ok(Placed { folder, old })
+}
+
+/// 核心起来时收拾家目录 `home` 里上一次装、升级到一半剩下的（施工 AE-7）：这时没有在装的，点开头、名字是
+/// `.<编号>.old`、`.<编号>.new`（编号合写法）的都是剩下的。`<编号>/` 不在、`.<编号>.old` 在的（两次改名之间被杀、换进去失败
+/// 又没放回去），放回去；别的删掉。别的名字一个都不碰。目录读不了的当没有。
+pub fn recover(home: &Path) -> Recovered {
+    let mut recovered = Recovered::default();
+    let Ok(entries) = fs::read_dir(home) else {
+        return recovered;
+    };
+    let mut leftovers: Vec<(String, &str, PathBuf)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().into_string().ok()?;
+            let rest = name.strip_prefix('.')?;
+            let (id, kind) = rest
+                .strip_suffix(".old")
+                .map(|id| (id, "old"))
+                .or_else(|| rest.strip_suffix(".new").map(|id| (id, "new")))?;
+            crate::personas::valid(id).then(|| (id.to_string(), kind, entry.path()))
+        })
+        .collect();
+    // 先放回去，再删：同一个编号的 `.old`、`.new` 都在时，放回去的是原来那一份。
+    leftovers.sort_by_key(|(_, kind, _)| *kind == "new");
+    for (id, kind, path) in leftovers {
+        let folder = home.join(&id);
+        let done = match kind {
+            "old" if fs::symlink_metadata(&folder).is_err() => {
+                fs::rename(&path, &folder).map(|()| recovered.restored.push(id))
+            }
+            _ => remove_dir_if_there(&path),
+        };
+        if let Err(error) = done {
+            recovered.failed.push((path, error));
+        }
+    }
+    recovered
+}
+
+/// [`recover`] 收拾的结果。
+#[derive(Debug, Default)]
+pub struct Recovered {
+    /// 放回去的包的编号。
+    pub restored: Vec<String>,
+    /// 放不回去、删不掉的：在哪，为什么。
+    pub failed: Vec<(PathBuf, io::Error)>,
+}
+
+/// 换进去失败了，把挪开的原来那一份放回去：放不回去的留在备份处，下一次起来时 [`recover`] 再放。
+#[expect(
+    clippy::let_underscore_must_use,
+    reason = "放不回去就留在备份处，起来时再放；报的是换进去那一下的错"
+)]
+fn put_back(old: Option<&Path>, folder: &Path) {
+    if let Some(old) = old {
+        let _ = fs::rename(old, folder);
+    }
 }
 
 /// 删掉家目录 `home` 里的包 `id`：整个文件夹。

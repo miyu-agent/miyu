@@ -17,6 +17,7 @@
 | `crates/miyu-core/src/pending.rs` | 另起线程写盘的登记下来，核心放锁之前等它们写完（施工 TMP-1 补2，下面「停下」第 6 条）；还在读目录、还在写盘的照计数等（施工 TMP-3）；登记的也带一个记号，等完才放（施工 TMP-3 补） |
 | `crates/miyu-core/src/sandbox.rs` | 起来时找沙盒的助手、探一次，记日志（施工 5-1）；探到了手段的，交回助手（施工 5-4 上） |
 | `crates/miyu-core/src/packages.rs`、`packages/net.rs` | 照编进来的可选软件包（cargo 开关）往查询表里登记，交给 `Core`（施工 W-4，`mermaid.md`；`net` 的 `link.preview` 在后台答，卡片的图存进 blob，施工 W-7，`net.md`）；起来时清掉分块上传留下的暂存（施工 W-5） |
+| `crates/miyu-core/src/leftovers.rs` | 起来时收拾上一次崩了留下的：升级到一半的包（施工 AE-7） |
 | `crates/miyu-core/src/trash.rs` | 起来时清一次回收处；删了的会话留多久 `KEEP`（施工 3-8 三补）；删了的人格同样清（施工 P-3 下） |
 | `crates/miyu-core/src/settle.rs` | 一阵请求过去、安静 2 秒以后还内存（施工 V-5 中，`heap.md` 第 2 条） |
 | `crates/miyu-core/src/memlog.rs` | 自己记内存账：什么时候采、一行的样子、采样的任务（施工 V-4，`heap.md`「自己记账」） |
@@ -77,7 +78,7 @@
 2. 找数据根，建骨架（`store.md`）。
 3. 拿单实例锁 `run/core.lock`，不等。拿不到：已经有一个核心在跑，写 `running`，退出码 0，运行日志一个字都不写。先拿锁、再装日志：两个核心不写同一份日志。
 4. 装运行日志 `state/logs/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
-5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着建默认工作区 `workspace/`（没有就建，Unix 上 0700），建不了的起不来（`stage=home`）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
+5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着建默认工作区 `workspace/`（没有就建，Unix 上 0700），建不了的起不来（`stage=home`）。接着收拾上一次崩了留下的（`leftovers.rs`）：`packages/` 里升级到一半的包放回去（施工 AE-7，`packages.md`「装卸」第 1 条）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
 6. 找资源目录（`store.md`）。接着读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条）：配置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `state/config/`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。
 7. 起运行时：多线程，两个工作线程，接连接、会话、请求都在上面。
 8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。
@@ -181,6 +182,7 @@
 
 | 测试 | 守哪几条 |
 |---|---|
+| `crates/miyu/tests/leftovers.rs`（施工 AE-7） | 真核心：两次改名之间被杀的包起来时放回原来那一份，剩下的 `.old`、`.new` 清掉，认不出的名字不碰 |
 | `crates/miyu/tests/core.rs` | 头拉起真的 `miyu core`，等它说好了再连；握手不再说是谁；再连不再拉起；两个头同时只拉起一个；起不来的说原因（找不到资源目录），日志里只写 `stage=resources`；已经在跑的写 `running` 就走、不写日志；什么都没写就退了的；空闲了自己走，日志里一条 `starting`、一条 `stopped reason=idle`；`starting` 那一行的数据根在家目录下的写成 `~`、有和 UTC 差多少；工作目录是数据根；起来时清一次回收处：删了满 7 天的删、没满的留，记一条 `trash purged removed=1`（施工 3-8 三补）；起来时探一次沙盒的助手：旁边有助手的记 `sandbox` 那一行、平台是这台机器的、有手段那一格，没有的记找不到（施工 5-1）；握手报的沙盒和记下的对得上（施工 5-4 下）；头拉起的那种不空闲退出的核心没人停的，测试的夹具丢掉时收掉（施工 TMP-2）；`miyu core stop` 停掉真核心、回来时锁已放开、运行日志记 `stopped reason=request`，没在跑的不拉起（施工 CL-4） |
 | `crates/miyu-cli/src/core_stop/tests.rs`、`crates/miyu-ipc/src/lock/tests.rs`（施工 CL-4） | 假核心答完 `core.stop` 还拿着锁，`miyu core stop` 等锁放了才回、什么都不印；没在跑的退出码 0；`wait_released` 拿着时不醒、放了就醒、没有锁文件的当已放 |
 | `crates/miyu/tests/crash.rs`（施工 7-8） | 真的 `miyu core`，模型是本机回环上的假服务器：放一个心跳到后台（Unix 上是命令起的孙进程），硬杀核心（Unix `SIGKILL`，Windows 结束进程、不连子进程），心跳几秒内停下；三个平台都跑 |

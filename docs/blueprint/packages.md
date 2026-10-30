@@ -303,7 +303,8 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 
 ### 装卸（施工 F-5 上，设计 `30-插件框架.md` 第九节）
 
-1. **只动装上的那一层**（`miyu_store::packages::install`，`packages/`）：装是把整个包目录拷成 `<编号>/`（施工 F-8 上）；先拷到点开头的暂存处再换进去，原来就有的先挪到点开头的备份处，装成了删备份、装不成放回去。卸装上的是删掉这个包目录。卸出厂的是在 `packages/` 记一笔 `<编号>.removed`（空文件，像 systemd 的 mask），资源目录不动；装回来是删掉这一笔。
+1. **只动装上的那一层**（`miyu_store::packages::install`，`packages/`）：装是把整个包目录拷成 `<编号>/`（施工 F-8 上）；先拷到点开头的暂存处（`.<编号>.new`）再换进去，原来就有的先挪到点开头的备份处（`.<编号>.old`），装成了删备份、装不成放回去；换进去那一下改名失败的，当场把备份放回去（施工 AE-7）。卸装上的是删掉这个包目录。卸出厂的是在 `packages/` 记一笔 `<编号>.removed`（空文件，像 systemd 的 mask），资源目录不动；装回来是删掉这一笔。
+   - **起来时收拾**（施工 AE-7，发布前第二轮审查 R2-4）：两次改名之间核心被杀，`<编号>/` 没了、原来那一份还在 `.<编号>.old`。核心起来时、读清单之前（`core.md`「起来的先后」第 5 步）照 `install::recover` 收拾 `packages/`：这时没有在装的，名字是 `.<编号>.old`、`.<编号>.new`（编号照人格、预设的写法）的都是上一次剩下的。`<编号>/` 不在、`.<编号>.old` 在的放回去，记一行 `WARN half-done package upgrade put back package=<编号>`；别的删掉；放不回去、删不掉的记一行 `WARN package leftover kept`，不耽误起来。别的名字一个都不碰。
 2. **当场生效**：装、卸以后照两层重读、标没编进来的内置包、认配置项撞没撞，换掉核心手里的那一份（`Core::reload_packages`）。`package.list`、预设的功能、新开的会话、开着的会话下一个回合都照新的。内置包的工具照 `Builtins` 端口（`miyu-core` 装上）重新要，新装上的换进工具目录、卸掉的拿掉并记下随包卸掉了（施工 F-5 中，`Catalog::placing`、`removing`）：用过它的会话工具面不变、调到时报「已卸载」，开着的会话下一个回合拿到新装上的包的工具。查询记着属于哪个包，包没装的当没有（`unknown_method`）。扩展进程照装卸前后的清单停下、拉起、升级了的重起，经提供者登记的工具随包卸掉的同样报「已卸载」（施工 F-5 下，`extensions.md`「怎么走」第 7 条）；卸是先停用着它的再删文件（施工 F-5 补）。配置项照新的清单当场换（「配置项」第 2 条，施工 F-5 补）。人格记忆装没装最先照新的清单设（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）：开着的会话照它交不交摘要、抽不抽。本机的向量模型照新的清单当场换（`Builtins::embed` 拼、`Vectors::replace_local` 换，一样的不动，施工 F-5 再补）。这几样走同一个入口（`Core::switch_packages`）：卸包、升级在动文件以前照去掉它的清单换一遍，删不成、换不成的照原来的换回来。
 3. **装之前查**：路径要是绝对的包目录（文件夹名就是编号），或者包目录里的 `package.toml`（施工 F-8 上）；照规矩读得成；编号不和出厂的撞；关起来的会话装不了（`packages/may_manage.rs`）；带的名字不和装着的别的包撞，撞了的报 `package_conflict`、什么都不动（施工 F-8 六补，下面「冲突」）。拷进去以后照两层重读一遍，这一份还是读坏了的、是核心没编进来的内置包的，撤回（原来那一份放回去）、报 `package_invalid`。
 4. **卸之前查**：没装的 `unknown_package`（施工 BS-1 上中起没有必需的包，`package_required` 去掉了）。
@@ -366,6 +367,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 
 | 测试 | 守什么 |
 |---|---|
+| `crates/miyu-store/src/packages/tests.rs` 的 `an_upgrade_cut_off_between_the_renames_is_put_back`、`recovering_leaves_what_it_does_not_recognize`（施工 AE-7） | 两次改名之间被杀，收拾时放回原来那一份、暂存的删掉，再收拾一遍什么都不做；本体在的备份删掉；认不出的名字不碰 |
 | `crates/miyu-config/src/package/tests.rs` | 两份样例（终端界面会话给的草稿、桥那种）每一格读对；最小的清单；每一种写错报对代码和行 |
 | `crates/miyu-config/src/phrases.rs` 的测试 | 语言到一句话的读法、第一处错 |
 | `crates/miyu-store/src/packages/tests.rs` | 两层照编号排、不是 `.toml` 的和编号不合写法的不算；空的；同编号认出厂的；子命令名先到先得、报在那一行；写错的照样列出；状态目录；功能的编号先到先得、照包算的那一个也算（施工 F-1） |

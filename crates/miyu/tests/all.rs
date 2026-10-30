@@ -17,6 +17,7 @@ mod crash;
 mod dev_home;
 mod heads;
 mod kb;
+mod leftovers;
 mod link_preview;
 mod login;
 mod login_ticket;

@@ -22,6 +22,7 @@
 mod cache;
 pub mod embed;
 mod kit;
+mod leftovers;
 pub mod memlog;
 pub mod models;
 pub mod packages;
