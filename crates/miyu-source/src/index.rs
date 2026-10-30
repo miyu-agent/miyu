@@ -84,6 +84,37 @@ pub struct Entry {
     pub files: Vec<File>,
 }
 
+impl Entry {
+    /// 写法对不对（施工 AS-2）：编号、依赖、推荐照包编号的写法（`plain_id`），版本只许字母、数字、`.`、`_`、`+`、`-`、
+    /// 不以 `.` 开头、最多 64 个。编号、版本要拼进缓存里的文件名（`<编号>-<版本>.miyu`），别人的软件源写的索引不全信：带
+    /// `/`、`..`、`\` 的能让下载落到缓存外面。同 [`Logo::well_formed`]，读索引时不合的整条丢掉。
+    pub fn well_formed(&self) -> bool {
+        plain_id(&self.id)
+            && plain_version(&self.version)
+            && self.depends.iter().all(|id| plain_id(id))
+            && self.recommends.iter().all(|id| plain_id(id))
+    }
+}
+
+/// 包编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（同 `miyu_store::personas::valid`，这个 crate 不依赖
+/// `miyu-store`，照写一份）。
+fn plain_id(id: &str) -> bool {
+    let mut chars = id.chars();
+    chars.next().is_some_and(|first| first.is_ascii_lowercase())
+        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+        && id.len() <= 64
+}
+
+/// 版本的写法：字母、数字、`.`、`_`、`+`、`-`，不以 `.` 开头，最多 64 个。
+fn plain_version(version: &str) -> bool {
+    !version.is_empty()
+        && !version.starts_with('.')
+        && version.len() <= 64
+        && version
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-'))
+}
+
 /// 一个包文件。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct File {
@@ -171,18 +202,19 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl Index {
-    /// 照收到的字节读。
+    /// 照收到的字节读。编号、版本、依赖写法不对的条目丢掉（[`Entry::well_formed`]），别的照读。
     ///
     /// # Errors
     ///
     /// 不是这个写法的 JSON、版本不对、时刻不对。
     pub fn parse(bytes: &[u8]) -> Result<Index, Error> {
-        let index: Index =
+        let mut index: Index =
             serde_json::from_slice(bytes).map_err(|error| Error::Malformed(error.to_string()))?;
         if index.version != VERSION {
             return Err(Error::Unsupported(index.version));
         }
         index.time()?;
+        index.packages.retain(Entry::well_formed);
         Ok(index)
     }
 

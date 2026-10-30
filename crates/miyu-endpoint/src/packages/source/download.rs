@@ -3,7 +3,7 @@
 //! `/var/cache/pacman/pkg`），缓存里已经有、哈希对得上的不再下。进度照 `report` 报（下了多少、一共多少）。
 
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 
 use sha2::{Digest, Sha256};
@@ -36,7 +36,16 @@ pub(super) async fn fetch(
     wanted: &Wanted<'_>,
     report: &(dyn Fn(u64, u64) + Sync),
 ) -> Result<PathBuf, String> {
+    // 名字只能是缓存目录正下面的一个文件（施工 AS-2）：读索引时已经照写法丢掉了不合的条目，这里再兜一层。不然
+    // `../x` 照「缓存里已经有」交回缓存外面的文件、下好的 `.part` 换到缓存外面去。
     let target = cache.join(wanted.name);
+    let plain = matches!(
+        Path::new(wanted.name).components().collect::<Vec<_>>()[..],
+        [Component::Normal(_)]
+    );
+    if !plain || target.parent() != Some(cache) {
+        return Err(format!("not a plain file name: {}", wanted.name));
+    }
     let total = wanted.file.size;
     if sha256_of(&target).as_deref() == Some(wanted.file.sha256.as_str()) {
         report(total, total);
@@ -155,3 +164,6 @@ fn sha256_of(path: &Path) -> Option<String> {
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
+
+#[cfg(test)]
+mod tests;

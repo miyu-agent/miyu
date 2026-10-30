@@ -126,3 +126,37 @@ fn the_four_added_fields_write_and_read_back_and_an_older_index_leaves_them_empt
     let text = String::from_utf8(json).expect("UTF-8");
     assert!(text.contains("\"installed\":123456") && text.contains("\"recommends\""));
 }
+
+/// 施工 AS-2（发布前测试 2026-10-30）：编号、依赖、推荐照包编号的写法，版本只许字母、数字、`.`、`_`、`+`、`-` 且不以 `.`
+/// 开头；不合的条目丢掉，别的照读。它们要拼进缓存里的文件名，别人的软件源写的索引不全信：带 `/`、`..`、`\` 的能让下载落到
+/// 缓存外面。
+#[test]
+fn entries_whose_id_or_version_is_not_a_plain_name_are_dropped() {
+    let entry = |id: &str, version: &str, depends: &[&str], recommends: &[&str]| {
+        serde_json::json!({"id": id, "version": version, "origin": "github.com/someone/x",
+            "depends": depends, "recommends": recommends,
+            "files": [{"url": "https://example.invalid/x.miyu", "sha256": "ab", "size": 3}]})
+    };
+    let packages = vec![
+        entry("good", "1.0.0-rc.1+build_2", &["lib"], &["extra"]),
+        entry("../escape", "1.0", &[], &[]),
+        entry("a/b", "1.0", &[], &[]),
+        entry("Upper", "1.0", &[], &[]),
+        entry("", "1.0", &[], &[]),
+        entry("dots", "../../x", &[], &[]),
+        entry("back", "1\\..\\..\\x", &[], &[]),
+        entry("hidden", ".1", &[], &[]),
+        entry("empty", "", &[], &[]),
+        entry("colon", "1:0", &[], &[]),
+        entry("depends", "1.0", &["../lib"], &[]),
+        entry("recommends", "1.0", &[], &["a/b"]),
+    ];
+    let text = serde_json::json!({"version": 1, "generated": "2026-10-19T03:00:00Z", "packages": packages});
+    let index = Index::parse(text.to_string().as_bytes()).expect("读得成");
+    let ids: Vec<&str> = index
+        .packages
+        .iter()
+        .map(|entry| entry.id.as_str())
+        .collect();
+    assert_eq!(ids, ["good"]);
+}
