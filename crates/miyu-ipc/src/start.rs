@@ -20,8 +20,9 @@ use crate::{connect, connect_bare, sys};
 /// 拉起锁的名字，在 `run/` 里。
 const SPAWN_LOCK: &str = "spawn.lock";
 
-/// 等拉起锁、等核心说好了，各最多等多久。
-const WAIT: Duration = Duration::from_secs(10);
+/// 等拉起锁、等核心说好了，各最多等多久（施工 CS-1 从 10 秒放宽：几个核心同时冷启动、硬盘忙时，核心起来那几步要等落盘，
+/// 2026-10-31 Terminal-Bench 里量到过卡 24 秒）。
+const WAIT: Duration = Duration::from_secs(60);
 
 /// 等拉起锁、等已经在跑的核心能连上，每次歇多久。
 const PAUSE: Duration = Duration::from_millis(50);
@@ -117,7 +118,7 @@ async fn launch(command: Command, root: &DataRoot) -> Result<Ready, StartError> 
     spawn_detached(command, root.path()).await
 }
 
-/// 拉起 `command`、跟终端脱开，工作目录是 `dir`，等它往标准输出写来的那一行（[`Ready`]），最多 10 秒。核心照它拉起，
+/// 拉起 `command`、跟终端脱开，工作目录是 `dir`，等它往标准输出写来的那一行（[`Ready`]），最多 [`WAIT`]。核心照它拉起，
 /// 网页软件的 `open` 也照它拉起 `serve`（施工 W-9，`web-module.md`「怎么走」第十一条第 2 款）。
 ///
 /// # Errors

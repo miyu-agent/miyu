@@ -35,3 +35,9 @@ async fn a_core_that_says_nothing_for_too_long_times_out() {
     assert!(matches!(error, StartError::Timeout), "{error:?}");
     drop(writer);
 }
+
+#[test]
+fn a_cold_start_on_a_busy_disk_is_waited_for() {
+    // 施工 CS-1：Terminal-Bench 里几个核心同时冷启动，量到过卡 24 秒，10 秒不够。
+    assert!(WAIT >= Duration::from_secs(60), "{WAIT:?}");
+}
