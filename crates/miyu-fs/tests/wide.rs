@@ -1,5 +1,5 @@
-//! 工作目录太宽（施工 4-3 下）：根目录、落在数据根里而不在工作区 `workspace/` 里的太宽；家目录、包含数据根的只在 Windows 上还算（施工
-//! 5-14 改），加进来的目录、场所会话照旧照宽的算（`broad`）。太宽的工作目录对应的工作区是这个会话的默认工作区，别的就是它自己
+//! 工作目录太宽（施工 4-3 下）：根目录、落在数据根里而不在工作区 `workspace/` 里的太宽；家目录、包含数据根的不算（施工
+//! 5-14 改、SW-7），加进来的目录、场所会话照旧照宽的算（`broad`）。太宽的工作目录对应的工作区是这个会话的默认工作区，别的就是它自己
 //! （施工 5-14）。
 
 use std::path::{Path, PathBuf};
@@ -33,7 +33,7 @@ fn what_counts_as_broad() {
     assert!(!broad(&home, None, &data, &own));
 }
 
-/// 施工 5-14 改（2026-10-22 项目主人定）：家目录、包含数据根的不再太宽，只有 Windows 上照旧；根目录、落在数据根里的哪儿都太宽。
+/// 施工 5-14 改（2026-10-22 项目主人定）：家目录、包含数据根的不再太宽（Windows 施工 SW-7 跟上）；根目录、落在数据根里的哪儿都太宽。
 #[test]
 fn what_counts_as_too_wide() {
     let home = root().join("home").join("me");
@@ -45,12 +45,8 @@ fn what_counts_as_too_wide() {
     assert!(wide(&data.join("state")), "落在数据根里");
     assert!(!wide(&own), "账号自己的工作区");
     assert!(!wide(&home.join("proj")), "项目目录");
-    assert_eq!(wide(&home), cfg!(windows), "家目录：只有 Windows 上还算");
-    assert_eq!(
-        wide(&root().join("home")),
-        cfg!(windows),
-        "包含数据根：只有 Windows 上还算"
-    );
+    assert!(!wide(&home), "家目录");
+    assert!(!wide(&root().join("home")), "包含数据根");
 }
 
 #[test]

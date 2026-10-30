@@ -35,13 +35,8 @@ fn a_too_wide_directory_works_in_the_session_s_own_folder() {
         fallback,
         "落在数据根里太宽"
     );
-    // 家目录（这里还包住数据根）：施工 5-14 改起只有 Windows 上还太宽。
-    let home_is = if cfg!(windows) {
-        fallback.clone()
-    } else {
-        base.clone()
-    };
-    assert_eq!(place.of(&base, Some(&base), &data), home_is, "家目录");
+    // 家目录（这里还包住数据根）：施工 5-14 改起不太宽，Windows 施工 SW-7 跟上。
+    assert_eq!(place.of(&base, Some(&base), &data), base, "家目录");
     let project = base.join("proj");
     assert_eq!(
         place.of(&project, Some(&base), &data),

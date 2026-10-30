@@ -1,5 +1,5 @@
 //! 工作目录太宽（`11-权限与沙盒.md` 第四节「当前目录太宽」，施工 4-3 下）：根目录、落在数据根里的，不拿它当工作区。原来系统的
-//! 家目录、包含数据根的也算；施工 5-14 改起只有 Windows 上还算（[`too_wide`]），别处数据根、私密目录靠沙盒藏住，加进来的
+//! 家目录、包含数据根的也算；施工 5-14 改起不算（[`too_wide`]），数据根、私密目录靠沙盒藏住（Windows 施工 SW-7 跟上），加进来的
 //! 目录、场所会话照旧（[`broad`]）。
 //!
 //! 施工 5-14 起工作目录和工作区分开（11 第四节「工作目录和工作区分开」）：太宽的照样是工作目录（命令从这里起），能随便写的
@@ -7,16 +7,11 @@
 
 use std::path::{Path, PathBuf};
 
-/// 家目录本身、包住数据根的也算太宽的平台（施工 5-14 改，2026-10-22 项目主人定）：只有 Windows（MXC 量完再定，5-9 改下）。
-/// Linux（有 bubblewrap 的挂载盖住，只有 Landlock 的照 dsh）、macOS（Seatbelt 的拒绝规则）上不算。
-const HOME_IS_WIDE: bool = cfg!(windows);
-
 /// 真实的位置 `dir` 太不太宽，不能拿它当工作区（施工 5-14 改）：根目录，落在数据根 `data_root` 里而不在数据根的工作区 `own`
-/// 里的；Windows 上照 [`broad`]。几样都要先换成真实的位置再交进来。
-pub fn too_wide(dir: &Path, home: Option<&Path>, data_root: &Path, own: &Path) -> bool {
-    if HOME_IS_WIDE {
-        return broad(dir, home, data_root, own);
-    }
+/// 里的。家目录本身、包住数据根的不算（2026-10-22 项目主人定）：Linux 有 bubblewrap 的挂载盖住、只有 Landlock 的照 dsh，
+/// macOS 照 Seatbelt 的拒绝规则，Windows 照 MXC 的禁止压过读写（施工 SW-7，2026-10-31 项目主人定，虚拟机上量过）。几样都要
+/// 先换成真实的位置再交进来；`home` 不看，留着和 [`broad`] 一个样子。
+pub fn too_wide(dir: &Path, _home: Option<&Path>, data_root: &Path, own: &Path) -> bool {
     dir.parent().is_none() || (dir.starts_with(data_root) && !dir.starts_with(own))
 }
 

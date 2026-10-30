@@ -186,16 +186,13 @@ impl Sandbox {
 
 impl Sandbox {
     /// 藏起来的：数据根，加这台机器上有的别的程序的私密目录（施工 5-13，11 第四节；这一轮的配置加的、去掉的照它，施工 5-15 下）。落在能写的 `write` 里面的
-    /// 只在藏得住时（[`hides_inside`]：能用挂载，施工 5-16；macOS，施工 5-14 改）藏，不然不藏：私密目录照人给的算（同权限策略的
+    /// 只在藏得住时（[`hides_inside`]：能用挂载，施工 5-16；macOS，施工 5-14 改；Windows，施工 SW-7）藏，不然不藏：私密目录照人给的算（同权限策略的
     /// 先后），数据根照 dsh 不挖洞（施工 5-14 改，原来 Landlock 一级级绕开、冻住工作区那一层）。
     fn hidden(&self, data_root: PathBuf, write: &[PathBuf], mount: bool) -> Vec<PathBuf> {
         let mut hidden = Vec::new();
         // 数据根落在能写的里面（工作目录是 `~`，施工 5-14 改）：藏得住的照藏；只有 Landlock 的照 dsh 不挖洞（开会话时不提示，
-        // 2026-10-22 项目主人定）；能写的以外照旧藏。Windows 照旧藏（MXC 的禁止压过读写）。
-        if hides_inside(mount)
-            || cfg!(windows)
-            || !write.iter().any(|base| within(&data_root, base))
-        {
+        // 2026-10-22 项目主人定）；能写的以外照旧藏。
+        if hides_inside(mount) || !write.iter().any(|base| within(&data_root, base)) {
             hidden.push(data_root);
         }
         let private = match &self.private {
@@ -217,9 +214,10 @@ impl Sandbox {
 }
 
 /// 能写的范围里的藏不藏得住（施工 5-14 改）：有挂载的（bubblewrap，这一轮不是弱沙盒，`mount`）盖得住；macOS 的 Seatbelt 深的
-/// 拒绝规则压得过浅的允许，也藏得住（工作目录可以是 `~` 以后，`~` 里的私密目录就落在能写的里面）。只有 Landlock 的挖不掉。
+/// 拒绝规则压得过浅的允许，也藏得住（工作目录可以是 `~` 以后，`~` 里的私密目录就落在能写的里面）；Windows 的 MXC 禁止压过读写
+/// （施工 SW-7，2026-10-21、10-31 虚拟机上量过）。只有 Landlock 的挖不掉。
 fn hides_inside(mount: bool) -> bool {
-    mount || cfg!(target_os = "macos")
+    mount || cfg!(any(target_os = "macos", windows))
 }
 
 /// 藏起来的加上 `dir`，彼此不重叠（施工 5-15 下修）：落在已有的一条里面的（一样的也算）不加，已有的落在它里面的去掉。bwrap

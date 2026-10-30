@@ -47,17 +47,15 @@ fn a_private_dir_inside_a_writable_place_is_hidden_only_with_mounts() {
     );
     let real = |dir: &str| std::fs::canonicalize(home.join(dir)).expect("在");
     let write = [std::fs::canonicalize(&home).expect("在")];
-    let without: &[PathBuf] = if cfg!(target_os = "macos") {
+    let without: &[PathBuf] = if cfg!(any(target_os = "macos", windows)) {
         &[real(".miyu"), real(".ssh")]
-    } else if cfg!(windows) {
-        &[real(".miyu")]
     } else {
         &[]
     };
     assert_eq!(
         sandbox.hidden(real(".miyu"), &write, false),
         without,
-        "没有挂载：落在能写的里面的只有 macOS 上藏；数据根 Windows 上照藏，只有 Landlock 的不挖洞（施工 5-14 改）"
+        "没有挂载：落在能写的里面的 macOS、Windows 上藏，只有 Landlock 的不挖洞（施工 5-14 改、SW-7）"
     );
     let elsewhere = [std::fs::canonicalize(&scratch).expect("在").join("work")];
     assert_eq!(
