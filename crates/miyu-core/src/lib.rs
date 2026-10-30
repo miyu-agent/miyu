@@ -378,7 +378,7 @@ async fn run(
     };
     let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.state().join("logs");
-    let (generated, words) = (root.clone(), resources.clone());
+    let (generated, words, held) = (root.clone(), resources.clone(), resources.clone());
     let queries = packages::register(&resources, &root);
     #[cfg(feature = "net")]
     let searching = kit.clone();
@@ -445,10 +445,14 @@ async fn run(
     let ledger = sampling
         .as_ref()
         .map(|sampling| Arc::clone(&sampling.ledger));
+    // 还之前先放掉一阵里读好放着的字（施工 V-30，`miyu_store::human::Shelf`）。
     let _settling = settle::spawn(
         &core.activity(),
         settle::QUIET,
-        miyu_heap::trim,
+        move || {
+            held.forget_words();
+            miyu_heap::trim()
+        },
         memlog::on_settled(ledger),
     );
     // 写了 `ready` 以后在后台更新目录、拉图标（施工 8-7，「起草时定的」第 13 条）；读在上面已经开始了（施工 V-2 下）。
