@@ -13,12 +13,12 @@
 //! 她正忙时这一句不另开一轮，跟的是听到它的那一轮（施工 7-10，`joining.rs`）。开头那几行旁白（配置有错、项目配置没信任、
 //! 沙盒用不了、目录太宽）在 `opening.rs`。
 //!
-//! `miyu ask` 还等子代理（施工 7-9，[`Follow::waits`]）：这一轮结束了，派出去的子代理还有没报的，接着跟被回报叫醒的几轮，
-//! 都了结了才收尾（`waiting.rs`、`agents.rs`）；收尾的几行在 `ending.rs`。
+//! `miyu ask` 还等子代理、后台命令（施工 7-9，后台命令施工 AP-4，[`Follow::waits`]）：这一轮结束了，派出去的子代理、放到后台的
+//! 命令还有没报的，接着跟被回报叫醒的几轮，都了结了才收尾（`waiting.rs`、`jobs.rs`）；收尾的几行在 `ending.rs`。
 
-mod agents;
 mod compacting;
 mod ending;
+mod jobs;
 mod joining;
 mod opening;
 mod reply;
@@ -105,7 +105,7 @@ pub(crate) struct Follow<'p> {
     compacting: compacting::Compacting,
     /// 跟的是重做开的那一轮、回应还没到（施工 4-7 再补）：这时推过来的事件攒在这里，回应到了照撤销印那几行，再照先后收它们。
     redo: Option<Vec<Value>>,
-    /// 等子代理（施工 7-9）：第一轮结束了还有没报的，接着跟被回报叫醒的几轮。只有 `miyu ask` 等。
+    /// 等子代理、后台命令（施工 7-9、AP-4）：第一轮结束了还有没报的，接着跟被回报叫醒的几轮。只有 `miyu ask` 等。
     waits: bool,
     /// 第一轮结束过了：之后等着的时候开的每一轮都跟。
     ended_first: bool,
@@ -119,9 +119,10 @@ pub(crate) struct Follow<'p> {
     turns: Vec<Value>,
     /// 跟过的每一轮每次请求的用量加起来：最后那一行（施工 7-9）。`usage` 只是这一轮的。
     total: Sum,
-    /// 等的子代理（这一次派出去的，施工 7-9；这一次留过言的，施工 7-9 补），还有几个没报。
-    agents: agents::Agents,
-    /// 等子代理的那一行画着没有（施工 7-9）。
+    /// 等的任务（这一次派出去的子代理，施工 7-9；这一次留过言的子代理，施工 7-9 补；这一次放到后台的命令，施工 AP-4），还有
+    /// 几个没报。
+    jobs: jobs::Jobs,
+    /// 等的那一行画着没有（施工 7-9）。
     waiting: waiting::Waiting,
     /// 她正忙时跟住听到这一句的那一轮（施工 7-10）。
     joining: joining::Joining,
@@ -162,14 +163,15 @@ impl<'p> Follow<'p> {
             reason: String::new(),
             turns: Vec::new(),
             total: Sum::default(),
-            agents: agents::Agents::default(),
+            jobs: jobs::Jobs::default(),
             waiting: waiting::Waiting::default(),
             joining: joining::Joining::default(),
             why: None,
         }
     }
 
-    /// 等子代理（施工 7-9，`docs/blueprint/cli/ask.md`「等子代理」）：`miyu ask` 才等，`miyu redo`、`miyu compact` 跟完一轮就走。
+    /// 等子代理、后台命令（施工 7-9、AP-4，`docs/blueprint/cli/ask.md`「等子代理」）：`miyu ask` 才等，`miyu redo`、`miyu compact`
+    /// 跟完一轮就走。
     pub(crate) fn waits(&mut self) {
         self.waits = true;
     }
@@ -249,8 +251,8 @@ impl<'p> Follow<'p> {
                 self.started(event, screen);
                 return Step::Going;
             }
-            // 回报不带回合编号（施工 7-9）：哪一轮里到的都认。
-            "child.reported" => return self.child_reported(event, screen),
+            // 回报不带回合编号（施工 7-9）：哪一轮里到的都认。后台命令的回报也等（施工 AP-4）。
+            "child.reported" | "job.reported" => return self.job_reported(event, screen),
             _ => {}
         }
         // 她正忙时接上听到这一句的那一轮（施工 7-10，`joining.rs`）。
@@ -267,11 +269,11 @@ impl<'p> Follow<'p> {
                 self.stream_steps(body, screen);
             }
             "tool.result" => {
-                self.agents.result(body);
+                self.jobs.result(body);
                 self.result(event, screen);
             }
             "model.called" => {
-                self.agents.called(body);
+                self.jobs.called(body);
                 self.joining.called(body);
                 self.called(body, screen);
             }

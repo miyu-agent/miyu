@@ -3,15 +3,16 @@
 //! 加格、改说法，这一份照旧。每一行是一个 JSON 对象，`type` 说是什么，格照名字的字母先后排（`serde_json` 的 `Map` 是
 //! `BTreeMap`：工作区没开 `preserve_order`）。
 //!
-//! 先后：`session` 一次 → 每一轮 `turn.started`、`thinking`、`text`、`step`、`step.done`、`compaction`、`turn.ended` → 等子代理
-//! 时的 `agent.reported` → `done` 一次。`warning` 照告警出来的地方。开好会话以前就出错的（握手、传附件、造会话被拒、标准
-//! 输入凑不出话……）只有一行 `done`，不带 `session`（施工 AP-3 补，`talk::ended_early`），原因在标准错误上：最后一行总是
-//! `done`，调用的程序不用分两种情况读。
+//! 先后：`session` 一次 → 每一轮 `turn.started`、`thinking`、`text`、`step`、`step.done`、`compaction`、`turn.ended` → 等的子代理
+//! 报回来了 `agent.reported`、后台命令报回来了 `job.reported`（施工 AP-4） → `done` 一次。`warning` 照告警出来的地方。开好
+//! 会话以前就出错的（握手、传附件、造会话被拒、标准输入凑不出话……）只有一行 `done`，不带 `session`（施工 AP-3 补，
+//! `talk::ended_early`），原因在标准错误上：最后一行总是 `done`，调用的程序不用分两种情况读。
 
 use std::io::Write;
 
 use serde_json::{Value, json};
 
+use super::jobs::{Kind, Reported};
 use super::{Follow, Output, Screen, steps};
 use crate::ask::exit;
 use crate::diagnostic::Problem;
@@ -86,14 +87,32 @@ impl Follow<'_> {
         self.stream(screen, "step.done", fields);
     }
 
-    /// 等的子代理 `agent` 报回来了，`body` 是 `child.reported` 的：它最后说的。
-    pub(super) fn stream_reported(&self, agent: &str, body: &Value, screen: &mut Screen<'_>) {
-        let text = body["text"].as_str().unwrap_or_default();
-        self.stream(
-            screen,
-            "agent.reported",
-            json!({"agent": agent, "text": text}),
-        );
+    /// 等的任务报回来了，`body` 是回报的：子代理的 `agent.reported` 带它最后说的；后台命令的 `job.reported`（施工 AP-4）带结束
+    /// 的原因，有退出码的带 `exit`（被信号杀掉、停掉的没有）。
+    pub(super) fn stream_reported(
+        &self,
+        reported: &Reported,
+        body: &Value,
+        screen: &mut Screen<'_>,
+    ) {
+        let job = &reported.job;
+        match reported.kind {
+            Kind::Agent => {
+                let text = body["text"].as_str().unwrap_or_default();
+                self.stream(
+                    screen,
+                    "agent.reported",
+                    json!({"agent": job, "text": text}),
+                );
+            }
+            Kind::Command => {
+                let mut fields = json!({"job": job, "reason": body["reason"]});
+                if let Some(exit) = body["exit_code"].as_i64() {
+                    fields["exit"] = json!(exit);
+                }
+                self.stream(screen, "job.reported", fields);
+            }
+        }
     }
 
     /// 压缩了：压之前、压完的 token 数（估算）。

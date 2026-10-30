@@ -14,8 +14,8 @@ use miyu_cli::{Output, Plan, Target};
 use miyu_kernel::event::Body;
 use miyu_session::testkit::Play;
 
-/// 起一个核心：工具是出厂的，请求模型照 `router`。
-fn home(router: Router) -> Home {
+/// 起一个核心：工具是出厂的，请求模型照 `router`。`commands.rs` 也用。
+pub(crate) fn home(router: Router) -> Home {
     let tools = shipped_tools();
     Home::with_tools(std::sync::Arc::new(router), tools)
 }
@@ -281,56 +281,6 @@ async fn a_subagent_from_before_is_waited_for_once_messaged_like_the_sample() {
         .join("../../docs/designs/samples/cli/ask-agents-messaged-text.txt");
     let drawn = std::fs::read_to_string(&sample).expect("有样本");
     assert_eq!(screen, drawn, "和样本逐字节一样");
-}
-
-#[tokio::test]
-async fn a_background_command_is_not_waited_for_and_says_it_went_to_the_background() {
-    let work = crate::support::outside::Outside::new();
-    // 睡 6 秒：Windows 的 CI 上从起 shell 到命令行退出会超过 2 秒，睡 2 秒的退出前就跑完了（2026-10-07 run 1130）；后面等它结束
-    // 的 `within` 是 10 秒，不能睡得比它长。
-    let args = json!({"command": "sleep 6", "description": "睡一会", "run_in_background": true});
-    let router = Router::new(
-        "后台睡一会",
-        [
-            Play::calls(&[("shell", &args.to_string())]),
-            Play::Says("放到后台了。"),
-        ],
-    );
-    let home = home(router);
-    let (_press, presses) = mpsc::channel(1);
-    let plan = Plan {
-        cwd: work.text(),
-        ..plan("后台睡一会")
-    };
-    let Asked {
-        code, err, screen, ..
-    } = ask_onto(&home.root, &plan, presses, Tape::default()).await;
-    assert_eq!(code, 0, "{err}");
-    assert_eq!(
-        screen,
-        "$ sleep 6 · 放到后台了：j1\n\n放到后台了。\n· 输入 200 · 命中缓存 80（40%）· 输出 20\n",
-        "不印给模型看的英文回执；不等它"
-    );
-    let main = home.oneshot().await;
-    let ended = home
-        .log(&main)
-        .iter()
-        .any(|event| matches!(event.body, Body::JobReported(_)));
-    assert!(!ended, "退出时后台命令还在跑");
-    home.until_connections(0).await;
-    // 头走了：它结束了只记下，不叫醒她。
-    within("后台命令结束", async {
-        while !home
-            .log(&main)
-            .iter()
-            .any(|event| matches!(event.body, Body::JobReported(_)))
-        {
-            tokio::time::sleep(Duration::from_millis(20)).await;
-        }
-    })
-    .await;
-    tokio::time::sleep(Duration::from_millis(100)).await;
-    assert_eq!(turns_started(&home, &main), 1, "没人看着，只记下、不开轮");
 }
 
 #[tokio::test]

@@ -270,9 +270,9 @@
 
 **十一、`miyu ask` 和别的 harness**
 
-1. `miyu ask` 等到这一轮结束、这个会话派出去的子代理都回报完、被回报叫醒的几轮也结束，才退出；印的是这期间每一轮的回复，照先后。后台命令不等（`22-命令行.md` 第三节）。报过又被留言的（`job.messaged`）也等它再报。还有几个没报，头照事件流自己数，协议不另给（施工 7-9 做好了，`cli/ask.md`「等子代理」）。
+1. `miyu ask` 等到这一轮结束、这个会话派出去的子代理都回报完、被回报叫醒的几轮也结束，才退出；印的是这期间每一轮的回复，照先后。这几轮放到后台的命令也等它报回来（施工 AP-4，2026-10-31 项目主人定，照 dsh；以前不等）：一直开着的服务拖到第四条第 7 条的最长时间被停掉、报回来才了结，不想等的按 Ctrl+C 或者用 `--timeout`。报过又被留言的（`job.messaged`）也等它再报。还有几个没报，头照事件流自己数，协议不另给（施工 7-9 做好了，`cli/ask.md`「等子代理」）。
 2. `--timeout <时长>`：从发出算到全部了结，到时间打断、不再等，退出码 3（施工 7-9）。
-3. 等子代理时按 Ctrl+C：不等了，后台的照常跑，退出码 3（施工 7-9，2026-09-30 项目主人定）。
+3. 等子代理、后台命令时按 Ctrl+C：不等了，后台的照常跑，退出码 3（施工 7-9，2026-09-30 项目主人定；后台命令施工 AP-4）。
 4. 别的 harness 发消息：`miyu ask -s <会话编号> --from <名字> <话>`（2026-09-29 项目主人定，施工 7-10 做好了）。`session.send` 带上 `from`，记成 `harness`（`protocol.md`）。它是别处来的，照子代理的留言收（2026-09-30 主会话定）：她闲着开一轮，正忙下一步看到；打断不撤回，撤销不带走，不作废在等人的题。`miyu ask` 跟住听到它的那一轮，答完印回答，派了子代理的照第 1 条等；她正忙时这一句不另开一轮，跟的是那时在进行的那一轮（`cli/ask.md`「怎么走」第 8 条，平常的 `miyu ask -s` 也一样）。接着已有的会话说时不带 `cwd`：会话的工作目录是人的。按 Ctrl+C、到了 `--timeout` 只是不等了，不打断她那一轮（2026-09-30 主会话定）。会话编号由人交给它；`-c` 也行；都不写开一个新会话（本人造的，第一句记成它发的）。
 
 ### 样子
@@ -326,7 +326,7 @@
 | `crates/miyu-basesystem/tests/send_message.rs`、`crates/miyu-session/tests/messages.rs`、`messages_log.rs` | `send_message` 和执行器这一头（施工 7-7，`tools/send_message.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/messages.rs` | 真核心走一遍三层：孙代理问子代理、停下来等，子代理答它，孙代理做完报上来，子代理把整件活报给主会话，只报一次（施工 7-7）；子代理答孙代理时 `to` 写 `j1.1`（施工 7-1 补） |
 | `crates/miyu-session/tests/watched.rs`（施工 7-9） | 有头订阅着的一次性会话，回报叫醒她；走了一个头还有一个照样叫醒；头都走了只记下；造会话以后没人订阅过的当没人看着，后来有头订阅也不因为以前的开轮 |
-| `crates/miyu-cli/tests/agents.rs`、`src/ask/follow/tests/waiting.rs`、`src/ask/follow/agents/tests.rs`（施工 7-9） | `miyu ask` 等子代理（`cli/ask.md`「守着它的」）：跟着的时候回报叫醒她，头走了以后只记下 |
+| `crates/miyu-cli/tests/agents.rs`、`tests/commands.rs`、`src/ask/follow/tests/waiting.rs`、`src/ask/follow/jobs/tests.rs`（施工 7-9、AP-4） | `miyu ask` 等子代理、后台命令（`cli/ask.md`「守着它的」）：跟着的时候回报叫醒她，头走了以后只记下 |
 | `crates/miyu-kernel/src/session/tests/scenario/harness.rs`、`crates/miyu-endpoint/tests/from.rs`、`crates/miyu-assemble/src/harness/tests.rs`、`tests/probe_harness.rs`、`crates/miyu-basesystem/src/history/tests/harness.rs`、`crates/miyu-cli/tests/from.rs`、`src/ask/follow/tests/joining.rs`（施工 7-10） | 别的 harness 发来的话：内核照子代理的留言收（`kernel/session.md`「守着它的」）；协议上的 `from`（`protocol.md`「守着它的」）；渲染和请求形状（`kernel/request.md`「守着它的」）；`history` 注明来处（`tools/history.md`）；`miyu ask --from`、正忙时跟住听到它的那一轮（`cli/ask.md`「守着它的」） |
 | `crates/miyu-kernel/src/session/tests/scenario/reports.rs` 的 `a_subagent_she_stopped_herself_only_records`，`event/job/tests.rs` | 她停的子代理只记下；`child.reported` 的 `by_model` 读写一字不差；随机测试里子代理的回报也有她停的（`random/reporting.rs`）（施工 7-4） |
 

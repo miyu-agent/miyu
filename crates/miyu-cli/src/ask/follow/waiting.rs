@@ -1,10 +1,10 @@
-//! 等子代理（施工 7-9，`docs/blueprint/cli/ask.md`「等子代理」，样子 2026-09-30 项目主人定）：第一轮结束了还有子代理没报的，
-//! 接着跟被回报叫醒的几轮，都了结了才收尾。
+//! 等子代理、后台命令（施工 7-9，后台命令施工 AP-4，`docs/blueprint/cli/ask.md`「等子代理」，样子 2026-09-30 项目主人定）：
+//! 第一轮结束了还有子代理、后台命令没报的，接着跟被回报叫醒的几轮，都了结了才收尾。
 //!
-//! - 等的时候印一行灰字 `· 等 <N> 个子代理回报…（按 Ctrl+C 不等了）`：标准错误是终端的原地刷新，数目变了重画，别的东西来了
-//!   先擦掉；不是终端的只印一次。
-//! - 等的子代理报回来了，印一行灰字 `· <编号>「<标题>」报回来了`；这一次以前派、这一次留了言的没有标题，印
-//!   `· <编号> 报回来了`（施工 7-9 补）。回报和它叫醒的那一轮同一批到，这一行就在那一轮前面；一轮里到的，印在那一步前后。
+//! - 等的时候印一行灰字 `· 等待 <N> 个子代理回报…（按 Ctrl+C 停止等待）`，有后台命令的照实写进去（`· 等待 1 个子代理、2 个
+//!   后台命令回报…`）：标准错误是终端的原地刷新，数目变了重画，别的东西来了先擦掉；不是终端的只印一次。
+//! - 等的子代理、后台命令报回来了，印一行灰字 `· <编号>「<标题>」已回报`；这一次以前派、这一次留了言的子代理没有标题，印
+//!   `· <编号> 已回报`（施工 7-9 补）。回报和它叫醒的那一轮同一批到，这一行就在那一轮前面；一轮里到的，印在那一步前后。
 
 use serde_json::{Value, json};
 
@@ -43,7 +43,7 @@ impl Follow<'_> {
     /// 跟第 `turn` 轮：这一轮的回答、用量、出错从头记。`joined` 是它不是这一句开的，是接上的（施工 7-10）。
     pub(super) fn begin(&mut self, turn: Option<u64>, joined: bool, screen: &mut Screen<'_>) {
         self.unwait(screen);
-        self.agents.turn_started();
+        self.jobs.turn_started();
         self.kinds.clear();
         self.answer.clear();
         self.stepped = false;
@@ -55,44 +55,46 @@ impl Follow<'_> {
         self.stream_started(turn, screen);
     }
 
-    /// 子代理的回报（`child.reported` 整条事件）：等的（这一次派出去的、留过言的），印一行报回来了。闲着时到的，都了结了就
-    /// 收尾；回报叫醒她的，等那一轮；还有没报的，刷新等的那一行。不等子代理的不理。
-    pub(super) fn child_reported(&mut self, event: &Value, screen: &mut Screen<'_>) -> Step {
+    /// 子代理、后台命令的回报（`child.reported`、`job.reported` 整条事件，后台命令的施工 AP-4）：等的（这一次派出去的、放到
+    /// 后台的、留过言的），印一行报回来了。闲着时到的，都了结了就收尾；回报叫醒她的，等那一轮；还有没报的，刷新等的那一行。
+    /// 不等的头不理。
+    pub(super) fn job_reported(&mut self, event: &Value, screen: &mut Screen<'_>) -> Step {
         if !self.waits {
             return Step::Going;
         }
         let running = self.turn.is_some();
-        let Some((job, title)) = self.agents.reported(event, running) else {
+        let Some(reported) = self.jobs.reported(event, running) else {
             return Step::Going;
         };
-        self.stream_reported(&job, &event["body"], screen);
+        self.stream_reported(&reported, &event["body"], screen);
         if self.plan.format == Output::Text {
             self.unwait(screen);
-            let job = steps::one_line(&job);
-            let title = title.as_deref().map(steps::one_line);
+            let job = steps::one_line(&reported.job);
+            let title = reported.title.as_deref().map(steps::one_line);
             let line = Line::gray(self.plan.language.reported(&job, title.as_deref()));
             self.aside(&line, screen);
         }
         if running || !self.ended_first {
             return Step::Going;
         }
-        if self.agents.settled() {
+        if self.jobs.settled() {
             return self.wrap_up(screen);
         }
         self.wait_line(screen);
         Step::Going
     }
 
-    /// 还有子代理没报、也没有回报叫醒的一轮要来：印等的那一行。终端里原地刷新，不换行，数目变了重画；不是终端的只印一次。
+    /// 还有子代理、后台命令没报，也没有回报叫醒的一轮要来：印等的那一行。终端里原地刷新，不换行，数目变了重画；不是终端的
+    /// 只印一次。
     /// `--format json` 不印。
     pub(super) fn wait_line(&mut self, screen: &mut Screen<'_>) {
-        let Some(count) = self.agents.shown() else {
+        let Some(owed) = self.jobs.shown() else {
             return;
         };
         if self.plan.format != Output::Text {
             return;
         }
-        let line = Line::gray(self.plan.language.waiting(count));
+        let line = Line::gray(self.plan.language.waiting(owed.agents, owed.commands));
         if !screen.live {
             if !self.waiting.said {
                 self.waiting.said = true;

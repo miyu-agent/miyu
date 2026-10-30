@@ -445,14 +445,14 @@ fn english_says_the_same() {
     );
     let language = Language::English;
     assert_eq!(
-        language.waiting(1),
+        language.waiting(1, 0),
         "· Waiting for 1 subagent to report… (Ctrl+C stops waiting)"
     );
     assert_eq!(
-        language.stopped_waiting(),
+        language.stopped_waiting(2, 0),
         "· Stopped waiting; the subagents keep running, and their results arrive at the next miyu ask -c"
     );
-    assert_eq!(language.timed_out(false), "· Time is up");
+    assert_eq!(language.timed_out(0, 0), "· Time is up");
 }
 
 #[test]
@@ -491,4 +491,5 @@ fn steps_not_done_are_counted_over_every_turn() {
     );
 }
 
+mod commands;
 mod messaged;

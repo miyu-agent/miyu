@@ -8,6 +8,7 @@ mod support;
 mod agents;
 mod ask;
 mod attach;
+mod commands;
 mod compact;
 mod config;
 mod from;

@@ -12,14 +12,14 @@ use crate::shown::{GRAY, Line, RESET, say, write};
 /// 为什么不等了（施工 7-9）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Leaving {
-    /// 等子代理的时候按了 Ctrl+C。
+    /// 等子代理、后台命令的时候按了 Ctrl+C。
     Pressed,
     /// 到了 `--timeout`。
     TimedOut,
 }
 
 impl Follow<'_> {
-    /// 一轮结束了，原因是 `reason`：收好这一轮的屏幕，记下它的回答和用量。等子代理的、这一轮不是打断结束的，还有没报的，
+    /// 一轮结束了，原因是 `reason`：收好这一轮的屏幕，记下它的回答和用量。等的、这一轮不是打断结束的，还有没报的，
     /// 或者回报要叫醒她开下一轮的，接着等（施工 7-9）；别的收尾。
     pub(super) fn ended(&mut self, reason: &str, screen: &mut Screen<'_>) -> Step {
         self.close_turn(screen);
@@ -28,13 +28,13 @@ impl Follow<'_> {
         self.stream_ended(self.turn, reason, screen);
         self.turn = None;
         self.reason = reason.to_string();
-        self.agents.turn_ended(reason);
+        self.jobs.turn_ended(reason);
         // 接上的那一轮没听到这一句（施工 7-10，`joining.rs`）：同一批接着开的下一轮才是，不收尾，也不算第一轮结束了。
         if self.joining.missed() {
             return Step::Going;
         }
         self.ended_first = true;
-        if self.waits && reason != "interrupted" && !self.agents.settled() {
+        if self.waits && reason != "interrupted" && !self.jobs.settled() {
             self.wait_line(screen);
             return Step::Going;
         }
@@ -115,17 +115,19 @@ impl Follow<'_> {
         code
     }
 
-    /// 不等了（施工 7-9）：等子代理的时候按了 Ctrl+C，或者到了 `--timeout`（有回合在进行的，头已经叫它打断了）。写了
+    /// 不等了（施工 7-9）：等子代理、后台命令的时候按了 Ctrl+C，或者到了 `--timeout`（有回合在进行的，头已经叫它打断了）。写了
     /// `--from` 的，她那一轮还在进行时按 Ctrl+C 也是不等了，两样都不打断她（施工 7-10，[`Follow::interrupts`]）。收好屏幕，
     /// 照常印用量、最后那一句，再说一句为什么不等了；交回 3。
     pub(crate) fn leave(&mut self, why: Leaving, screen: &mut Screen<'_>) -> u8 {
         let language = self.plan.language;
         let running = !self.interrupts() && !self.waiting();
+        // 还欠着回报的是哪几样：那一句照实说（施工 AP-4）。
+        let owed = self.jobs.owed();
         let line = match (why, running) {
             (Leaving::Pressed, true) => language.left_running(false),
             (Leaving::TimedOut, true) => language.left_running(true),
-            (Leaving::Pressed, false) => language.stopped_waiting(),
-            (Leaving::TimedOut, false) => language.timed_out(self.agents.owed() > 0),
+            (Leaving::Pressed, false) => language.stopped_waiting(owed.agents, owed.commands),
+            (Leaving::TimedOut, false) => language.timed_out(owed.agents, owed.commands),
         };
         self.why = Some(match why {
             Leaving::Pressed => "stopped".to_string(),
