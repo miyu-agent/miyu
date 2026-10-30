@@ -172,7 +172,46 @@ fn the_hash_is_of_the_whole_file_however_much_is_shown() {
     assert_eq!(Temp::with(&long).hash(1, 1), Some(ContentHash::of(&long)));
 }
 
-/// 以前的读法（审计 E-3 以前）：整行切出来、整份 UTF-16 读进来再解。只用来对照，读出来的要一字不差。
+/// 施工 V-31 以前的 `page`，原样留下：每一行都解成字再挑，页外的也一样。只用来对照。
+fn page_before(
+    lines: impl Iterator<Item = io::Result<String>>,
+    offset: u64,
+    limit: u64,
+) -> io::Result<Page> {
+    let mut text = String::new();
+    let mut total = 0;
+    let mut to = offset.saturating_sub(1);
+    let mut full = false;
+    for line in lines {
+        let line = line?;
+        total += 1;
+        if total < offset || full || total >= offset + limit {
+            continue;
+        }
+        let numbered = format!("{total}\t{}\n", cut(&line));
+        if text.len() + numbered.len() > OUTPUT_BYTES && total > offset {
+            full = true;
+            continue;
+        }
+        text.push_str(&numbered);
+        to = total;
+    }
+    Ok(if total == 0 {
+        Page::Empty
+    } else if offset > total {
+        Page::PastEnd { total }
+    } else {
+        Page::Lines {
+            text,
+            from: offset,
+            to,
+            total,
+        }
+    })
+}
+
+/// 以前的读法（审计 E-3 以前）：整行切出来、整份 UTF-16 读进来再解，每一行都解成字（施工 V-31 以前）。只用来对照，读出来的
+/// 要一字不差。
 fn whole(bytes: &[u8], offset: u64, limit: u64) -> Page {
     let utf16 = |unit: fn([u8; 2]) -> u16| {
         let units: Vec<u16> = bytes[2..]
@@ -190,7 +229,7 @@ fn whole(bytes: &[u8], offset: u64, limit: u64) -> Page {
             .take(count)
             .map(|line| Ok(line.strip_suffix('\r').unwrap_or(line).to_string()))
             .collect();
-        page(lines.into_iter(), offset, limit).unwrap()
+        page_before(lines.into_iter(), offset, limit).unwrap()
     };
     match bytes {
         [0xFF, 0xFE, ..] => return utf16(u16::from_le_bytes),
@@ -207,7 +246,7 @@ fn whole(bytes: &[u8], offset: u64, limit: u64) -> Page {
     if body.is_empty() || body.ends_with(b"\n") {
         lines.pop();
     }
-    page(lines.into_iter(), offset, limit).unwrap()
+    page_before(lines.into_iter(), offset, limit).unwrap()
 }
 
 /// UTF-16 带 BOM 的字节：`little` 是小端。
@@ -292,5 +331,86 @@ fn a_stopped_read_does_not_go_on() {
     assert_eq!(error.kind(), io::ErrorKind::Interrupted);
     let wide_file = Temp::with(&wide(&"one\n".encode_utf16().collect::<Vec<_>>(), true));
     let error = read(File::open(&wide_file.0).unwrap(), 1, 10, &stop).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::Interrupted);
+}
+
+/// 页外的行只数不解（施工 V-31）：一批输入、一批从哪起读几行（页前、页后、正好是最后一行、过了结尾、停在 64 KiB），读出来
+/// 的和每一行都解的老读法一字不差，哈希照旧是整份的。跳过的那一段里有长过 [`LINE_BYTES`] 的行、`\r\n`、坏字节、跨过读的
+/// 那一块（8 KiB）的行，都不影响后面行号和字。
+#[test]
+fn skipping_the_lines_off_the_page_reads_the_same_as_before() {
+    let mut cases: Vec<Vec<u8>> = Vec::new();
+    let mut mixed = Vec::new();
+    for n in 0..300_usize {
+        match n % 7 {
+            0 => mixed.extend_from_slice(b"\r\n"),
+            1 => mixed.extend(std::iter::repeat_n(b'l', LINE_BYTES + 37 * n)),
+            2 => mixed.extend_from_slice("字😀\u{FFFD}".repeat(n).as_bytes()),
+            3 => mixed.extend_from_slice(b"\xFF\xC3 bad\r"),
+            4 => mixed.extend(std::iter::repeat_n(b'k', 8 * 1024 - 1)),
+            _ => mixed.extend_from_slice(format!("line {n}").as_bytes()),
+        }
+        mixed.push(b'\n');
+    }
+    cases.push(mixed.clone());
+    mixed.extend_from_slice(b"no newline at the end\r");
+    cases.push(mixed.clone());
+    let mut bom = vec![0xEF, 0xBB, 0xBF];
+    bom.extend_from_slice(&mixed);
+    cases.push(bom);
+    // 一行一千多个字节：六十来行就到 64 KiB。
+    cases.push(
+        (0..500)
+            .map(|n| format!("{n:04}{}\n", "w".repeat(1100)))
+            .collect::<String>()
+            .into_bytes(),
+    );
+    cases.push(b"\n".repeat(20_000));
+    cases.push(b"only".to_vec());
+    let text: String = (0..400).map(|n| format!("第 {n} 行\r\n")).collect();
+    let units: Vec<u16> = text.encode_utf16().collect();
+    cases.push(wide(&units, true));
+    cases.push(wide(&units, false));
+    for (n, bytes) in cases.iter().enumerate() {
+        let file = Temp::with(bytes);
+        for (offset, limit) in [
+            (1, 2000),
+            (1, 1),
+            (2, 1),
+            (5, 3),
+            (40, 70),
+            (150, 2000),
+            (299, 5),
+            (300, 1),
+            (301, 1),
+            (302, 10),
+            (400, 2000),
+            (401, 1),
+            (499, 2),
+            (19_999, 2000),
+            (20_001, 1),
+            (1_000_000, 2000),
+        ] {
+            assert_eq!(
+                file.page(offset, limit),
+                whole(bytes, offset, limit),
+                "第 {n} 份，第 {offset} 行起 {limit} 行"
+            );
+            assert_eq!(
+                file.hash(offset, limit),
+                Some(ContentHash::of(bytes)),
+                "第 {n} 份，第 {offset} 行起 {limit} 行"
+            );
+        }
+    }
+}
+
+/// 只跳过、一行都不要的时候叫停了，照样不往下读。
+#[test]
+fn a_stopped_read_does_not_go_on_while_skipping() {
+    let file = Temp::with(&b"skipped\n".repeat(10_000));
+    let stop = Stop::default();
+    stop.raise();
+    let error = read(File::open(&file.0).unwrap(), 1_000_000, 10, &stop).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::Interrupted);
 }
