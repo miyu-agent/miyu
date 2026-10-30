@@ -12,12 +12,17 @@
 //!
 //! 分块读（`web-module.md`「七、分块读」，施工 W-6）：[`Blobs::read_range`] 一块一块读出来，不用整份先取
 //! 进内存。
+//!
+//! 取的时候核对哈希（[`Blobs::get`]），核对过的记下文件的长短和修改时刻（施工 V-24）：同一个 `Blobs`（和从它拷出来的）再取，
+//! 文件没变过的不再算。会话的每一次请求都把历史里的图片、文件取一遍，以前每一次都整份重算。
 
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use miyu_kernel::id::{ContentHash, Hasher};
@@ -35,12 +40,20 @@ const UPLOAD: &str = "upload-";
 pub struct Blobs {
     /// `blobs/`。
     dir: PathBuf,
+    /// 核对过的：哪一个、核对时文件多长、修改时刻（施工 V-24）。拷出来的共用一份。
+    checked: Arc<Mutex<HashMap<ContentHash, Stamp>>>,
 }
+
+/// 一份文件的长短和修改时刻：变了就要重新核对。
+type Stamp = (u64, SystemTime);
 
 impl Blobs {
     /// blob 目录，平时是 [`DataRoot::blobs`](crate::root::DataRoot::blobs)。用到时才建。
     pub fn new(dir: PathBuf) -> Blobs {
-        Blobs { dir }
+        Blobs {
+            dir,
+            checked: Arc::default(),
+        }
     }
 
     /// 这个哈希的 blob 放在哪：`<前两位>/<64 位>`。
@@ -147,23 +160,46 @@ impl Blobs {
         Ok((segment.data, segment.size))
     }
 
-    /// 取一份内容，核对它的哈希：读出来和名字对不上，报错，不悄悄用，也不删（07 第五节）。
+    /// 取一份内容，核对它的哈希：读出来和名字对不上，报错，不悄悄用，也不删（07 第五节）。这个 `Blobs` 核对过、文件的长短
+    /// 和修改时刻都没变的不再算（施工 V-24）：防的是文件被换、被改；一样长、修改时刻也一样的悄悄坏了查不出来。
     ///
     /// # Errors
     ///
     /// 没有这个 blob；读出来和名字对不上；读不了。
     pub fn get(&self, hash: &ContentHash) -> Result<Vec<u8>, BlobError> {
-        let content = match fs::read(self.path(hash)) {
-            Ok(content) => content,
+        let mut file = match File::open(self.path(hash)) {
+            Ok(file) => file,
             Err(error) if error.kind() == io::ErrorKind::NotFound => {
                 return Err(BlobError::Missing(hash.clone()));
             }
             Err(error) => return Err(BlobError::Io(error)),
         };
+        // 长短、修改时刻照开着的这一份读，和读出来的内容是同一个文件。
+        let stamp: Option<Stamp> = file
+            .metadata()
+            .ok()
+            .and_then(|meta| Some((meta.len(), meta.modified().ok()?)));
+        let mut content =
+            Vec::with_capacity(stamp.map_or(0, |(len, _)| usize::try_from(len).unwrap_or(0)));
+        file.read_to_end(&mut content).map_err(BlobError::Io)?;
+        if stamp.is_some() && stamp == self.checked(hash) {
+            return Ok(content);
+        }
         if ContentHash::of(&content) != *hash {
             return Err(BlobError::Corrupt(hash.clone()));
         }
+        if let (Some(stamp), Ok(mut checked)) = (stamp, self.checked.lock()) {
+            checked.insert(hash.clone(), stamp);
+        }
         Ok(content)
+    }
+
+    /// 核对 `hash` 那一次文件的长短和修改时刻；没核对过的没有。
+    fn checked(&self, hash: &ContentHash) -> Option<Stamp> {
+        self.checked
+            .lock()
+            .ok()
+            .and_then(|checked| checked.get(hash).copied())
     }
 
     /// 前两位的目录。
