@@ -1,6 +1,7 @@
 //! 闲够了的会话退下（施工 V-2 再补，`docs/blueprint/session/actor.md`「退下」）：会话表问，actor 照自己的账答。别的都空着、
 //! 闲得不够的答还差多久；有头看着、有派出去还没回报的、有会话等它空下来、它在等别的会话、记忆的闹钟上着的答还有事；什么都
-//! 没有、闲够了的退下，之后再交命令是「会话停了」，载入回来接着用。封存了的支线（施工 C-8 下）没事了就退，不等闲够。
+//! 没有、闲够了的退下，之后再交命令是「会话停了」，载入回来接着用。封存了的支线（施工 C-8 下）没事了就退，不等闲够；开着
+//! 记忆的也不等抽取的闹钟（施工 V-23）。
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -228,4 +229,48 @@ async fn a_sealed_branch_retires_without_waiting_to_be_idle_long_enough() {
         "跑完一轮封存了"
     );
     assert_eq!(settled(&branch).await, Retire::Retired, "不等闲够 {LONG:?}");
+}
+
+/// 开着记忆、分出一条跑一轮就封存的支线，跑完，交回它。
+async fn sealed_branch(home: &Home, models: &Script) -> Handle {
+    let tools = catalog(home);
+    let parent = home
+        .create_full(models, &tools, Opening::default(), Lines::default())
+        .await;
+    talk(&parent, "m1", "在吗").await;
+    let child = new_id(now());
+    miyu_session::fork(Fork {
+        root: &home.root,
+        parent: parent.id(),
+        id: child.clone(),
+        cause: CommandId::parse("f1").expect("合写法"),
+        by: alice(),
+        at: now(),
+        index: None,
+        seal_after: NonZeroU32::new(1),
+        within: None,
+    })
+    .await
+    .expect("分叉得了");
+    let branch = home.load_with(&child, models, &tools).await;
+    talk(&branch, "m2", "再来").await;
+    assert!(
+        home.log(&child)
+            .iter()
+            .any(|event| matches!(event.body, Body::SessionSealed(_))),
+        "跑完封存了"
+    );
+    branch
+}
+
+/// 封存了的支线不等记忆的闹钟（施工 V-23）：闲一小时才抽的，跑完那一轮照样马上退下；只有一轮、不够抽，不发抽取的请求。
+#[tokio::test]
+async fn a_sealed_branch_with_memory_does_not_wait_for_the_alarm() {
+    let server = Server::start(Vec::new()).await;
+    let mut home = Home::new();
+    organizer_after(&mut home, &server, "", LONG);
+    let models = script([Play::Says("在。"), Play::Says("支线。")]);
+    let branch = sealed_branch(&home, &models).await;
+    assert_eq!(settled(&branch).await, Retire::Retired, "不等闲 {LONG:?}");
+    assert!(server.received().is_empty(), "一轮不够抽");
 }
