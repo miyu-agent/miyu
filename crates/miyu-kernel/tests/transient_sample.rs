@@ -231,7 +231,7 @@ fn the_model_changed_sample_is_written_exactly() {
             model: Some(ModelName::parse("deepseek-v4").expect("合模型名的写法")),
             effort: Some(EffortInUse {
                 level: "high".to_string(),
-                from: EffortSource::System,
+                from: EffortSource::Session,
             }),
             limits: ContextLimits {
                 window: Some(1_000_000),

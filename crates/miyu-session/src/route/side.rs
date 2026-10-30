@@ -67,7 +67,7 @@ impl Route {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        let ready = match routes.ready(config, &picked.choice, texts, None) {
+        let ready = match routes.ready(config, &picked.choice, texts, None, None) {
             Ok(ready) => ready,
             Err(no_model) => return Picked::Unavailable(no_model.0),
         };

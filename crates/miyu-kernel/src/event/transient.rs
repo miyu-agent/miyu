@@ -98,20 +98,22 @@ pub struct ModelChanged {
     pub why: ChangeWhy,
 }
 
-/// 一次请求用的思考强度和它从哪来（施工 8-18，8-18（补）起从哪来是配置的哪一层；`models.md`「怎么走」第十一条第 4
-/// 条）：`model.changed`、`subscribe` 回应的 `effort`。
+/// 一次请求用的思考强度和它从哪来（施工 8-18；从哪来是会话还是配置的哪一层，8-18（补）、SM-1；`models.md`「怎么走」
+/// 第十一条第 4 条）：`model.changed`、`subscribe` 回应的 `effort`。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct EffortInUse {
     /// 那一档：规整过的名字（`off`、`on`，或者目录里的档位名）。
     pub level: String,
-    /// 从配置的哪一层来。
+    /// 从哪来：会话记的，或者配置的哪一层。
     pub from: EffortSource,
 }
 
 text_enum!(
-    /// 思考强度从配置的哪一层来（施工 8-18；8-18（补）起不再有会话那一层）：
-    /// `providers.<id>.models.<model>.effort` 写在配置里，照 `config.get` 说的来源。
+    /// 思考强度从哪来（施工 8-18）：会话记的一档（SM-1，设计 51），或者 `providers.<id>.models.<model>.effort` 写在配置的
+    /// 哪一层，照 `config.get` 说的来源。
     EffortSource {
+        /// 会话记的那一档（`session.configure` 的 `effort`，施工 SM-1）：这个模型的档位里有它。
+        Session = "session",
         /// 系统配置 `config.toml`。
         System = "system",
     }

@@ -5,7 +5,8 @@
 //! - 挑（[`Routes::pick`]）：照解析出的模型或 `@池` 排候选（`route/choice.rs`、`route/pool.rs`，第四条那张表），取排在最前、
 //!   没在冷却的（`choice::pick`）。交回挑中的这一次（[`Picked`]，`route/ended.rs`）：发给谁、别的候选是谁，说完了照它记
 //!   冷却、说换没换端点。
-//! - 备好（[`Routes::ready`]）：照真发的那个模型查资料、取配置的默认思考强度、挑客户端（地址落在本机的不走代理），造驱动
+//! - 备好（[`Routes::ready`]）：照真发的那个模型查资料、挑思考强度（会话记的这个模型有的照它，不然照配置的默认，
+//!   `route/effort.rs`）、挑客户端（地址落在本机的不走代理），造驱动
 //!   和这一次的调用（[`Ready`]），带上它的价格（施工 8-15：说完了照用量算金额）。
 //! - 发：`route/exchange.rs`。
 //!
@@ -107,15 +108,16 @@ impl Routes {
         Ok((picked, pins))
     }
 
-    /// 挑定了 `choice`：照真发的那个模型查资料、换驱动（施工 8-14），思考强度、温度（施工 8-22）照配置的默认，驱动的占位是 `texts`，占位工具照档案
-    /// （8-14 补），输出上限 `max_output`
-    /// （没有的照供应商的默认；一定要写的驱动照模型资料的最大输出，资料也没有的驱动自己兜底，施工 8-12）。
+    /// 挑定了 `choice`：照真发的那个模型查资料、换驱动（施工 8-14），温度（施工 8-22）照配置的默认，思考强度照会话记的
+    /// `session`（这个模型有的，施工 SM-1）、再照配置的默认，驱动的占位是 `texts`，占位工具照档案（8-14 补），输出上限
+    /// `max_output`（没有的照供应商的默认；一定要写的驱动照模型资料的最大输出，资料也没有的驱动自己兜底，施工 8-12）。
     pub(super) fn ready(
         &self,
         config: &TurnConfig,
         choice: &Choice,
         texts: DriverTexts,
         max_output: Option<u32>,
+        session: Option<&str>,
     ) -> Result<Ready, NoModel> {
         let target = &choice.target;
         let model = ModelName::parse(&target.model).map_err(|error| NoModel(error.to_string()))?;
@@ -130,8 +132,10 @@ impl Routes {
         });
         let speaking = speaking?;
         let endpoint = choice.endpoint.clone();
-        // 思考强度照这个模型配置的默认（施工 8-18；8-18（补）起不认会话那一层，已经照档位查过）。
-        let effort = facts.effort.value.clone();
+        // 思考强度：会话记的这个模型有的照它（施工 SM-1），不然照配置的默认（施工 8-18，已经照档位查过）。
+        let effort = miyu_models::effort::held(session, facts.levels())
+            .map(str::to_string)
+            .or_else(|| facts.effort.value.clone());
         // 地址落在本机的不走代理（施工 8-11 补）：和探本机的服务、拉列表一样。
         let client = match is_loopback_url(&endpoint.base_url) {
             true => self.direct.clone(),

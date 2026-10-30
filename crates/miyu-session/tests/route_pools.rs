@@ -1,7 +1,7 @@
 //! 会话的路由里的池（`docs/blueprint/models.md`「守着它的」`route.rs` 那一行 8-8 的一半，施工 8-8）：两台假服务器各是一家。
 //! 钉住的池一个会话一直发给一个成员，新会话照指针分开；载入时照最近一条发出去了的 `model.called` 认回钉着的；指针写进
 //! `state/models/pools.json`；轮换的每次请求换下一个；这时用不了的成员跳过、钉到下一个；池没了退回 `models.chat`；限额照
-//! 钉着的成员，轮换的取小的；`session.created` 记下会话的引用。
+//! 钉着的成员，轮换的取小的；`session.created` 记下会话的引用，没写的照那一刻的 `models.chat`，之后改它不影响（施工 SM-1）。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -272,4 +272,37 @@ async fn a_session_that_follows_the_config_takes_whatever_chat_is_now() {
         ["b/y", "a/m", "b/y"],
         "跟着这时的 chat"
     );
+}
+
+/// 没写模型的会话照造它那一刻的 `models.chat` 记下（施工 SM-1，设计 51 第一节）：之后改 `models.chat`，它下一轮照旧；以前记成
+/// 没有的（造的时候连 `models.chat` 都没配）照旧跟着这时的 `models.chat`，不回头改日志。
+#[tokio::test]
+async fn a_session_keeps_the_chat_it_was_made_with_and_an_unrecorded_one_follows() {
+    let (first, second) = (
+        Server::start(hellos(8)).await,
+        Server::start(hellos(8)).await,
+    );
+    let with_a = two(&first, &second, r#""b/y""#, "");
+    let with_b = with_a.replace("chat = \"a/m\"", "chat = \"b/y\"");
+    let no_chat = with_a.replace("[models]\nchat = \"a/m\"\n", "");
+    assert!(with_b != with_a && no_chat != with_a, "锚点对得上");
+    let source =
+        |text: &str| -> Arc<dyn ConfigSource> { Arc::clone(&*configs(text, &[]).borrow()) };
+    let (switch, receiving) = watch::channel(source(&no_chat));
+    let mut home = Home::new();
+    home.configs = receiving;
+    let routes = routes(serde_json::json!({}), Duration::from_secs(60));
+    let old = create(&home, &routes, None).await;
+    assert_eq!(recorded(&home, &old), None, "chat 没配的不写");
+    switch.send_replace(source(&with_a));
+    let pinned = create(&home, &routes, None).await;
+    assert_eq!(recorded(&home, &pinned).as_deref(), Some("a/m"));
+    switch.send_replace(source(&with_b));
+    turn(&pinned, "cmd-1").await;
+    turn(&old, "cmd-2").await;
+    stop(&pinned).await;
+    stop(&old).await;
+    assert_eq!(sent(&home, &pinned), ["a/m"], "照造它那一刻的 chat");
+    assert_eq!(sent(&home, &old), ["b/y"], "记成没有的跟着这时的 chat");
+    assert_eq!(recorded(&home, &old), None, "不回头改日志");
 }

@@ -22,7 +22,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
 | [`session.set_meta`](#sessionset_meta) | Rename, pin |
 | [`session.terminal`, `session.set_terminal`](#sessionterminal-sessionset_terminal) | The terminal session: get it, point it elsewhere |
-| [`session.configure`](#sessionconfigure) | Change the model, persona or preset |
+| [`session.configure`](#sessionconfigure) | Change the model, persona, preset or reasoning effort |
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`view.page`](#viewpage) | Read history page by page |
@@ -55,7 +55,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 | `cwd` | string | The head's working directory as a person sees it, e.g. `~/src/miyu`. Omitted means the session's own default workspace; remote connections cannot give it (Y-1 下) |
 | `persona` | string or `null` | Which persona; `null` means none; omitted follows the `persona.default` setting |
 | `preset` | string or `null` | Which preset; omitted follows `preset.default`, else `full`; `null` means no tools: the session gets none (step P-16; the old way to say it, still accepted. New sessions pick "Nothing", `none`, step P-17) |
-| `model` | string | `<provider>/<model>` or `@<pool>`; omitted follows `models.chat` |
+| `model` | string | `<provider>/<model>` or `@<pool>`; omitted records `models.chat` as it is right now (a pool stays a pool), and later changes to `models.chat` leave this session alone |
 | `memory` | `persona`, `session`, `off` | Memory follows the persona, stays in this session, or is off; omitted follows the persona's setting |
 | `dirs` | array of strings | Extra directories, readable and writable like the working directory |
 | `chosen` | boolean, default `false` | Accepted and ignored (it used to mark a choice by the person): a too-wide `cwd` (root; on Windows also home) is always used and the response has `wide`; what the session may freely write is then its own default workspace |
@@ -370,18 +370,19 @@ A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.
 
 ## `session.configure`
 
-Change the session's model, persona or preset; it applies from the next turn.
+Change the session's model, persona, preset or reasoning effort; it applies from the next turn.
 
 **Params**: `session`; at least one of:
 - `model`: `<provider>/<model>` or `@<pool>`; `null` stops pinning a model and follows the configured `models.chat` again (read every turn, so a config change follows).
 - `persona`: a persona id; `null` means no persona.
 - `preset`: a preset id; `null` switches to no tools (step P-16).
+- `effort`: a reasoning effort level (step SM-1), checked against the levels of the session's model right now (`facts.reasoning` in `model.list`; a pool offers what its members have together; when the same call changes the model, the new one's); `null` goes back to following the config. It affects only this session: `providers.<id>.models.<model>.effort` in the config is the default for new sessions. A model without that level uses the config; switching back uses the level again.
 
 Changing the persona or preset compacts first: the core summarizes the conversation so far under the old persona right away, and the next turn switches over and continues from the summary. Memory that follows the persona is kept in the new persona's room from then on; earlier memories stay where they were.
 
-**Response**: `{}`. A change is pushed as `session.policy_changed`; when a model change takes effect, `model.changed`. `persona` and `preset` in `session.list` and the `subscribe` response show the new values right away.
+**Response**: `{}`. A change is pushed as `session.policy_changed`; when a model or effort change takes effect, `model.changed`. From then on `model.effort` in the `subscribe` response and in `model.changed` is `{"level", "from"}`: `from` is `session` for the session's own level, `system` for the config. `persona` and `preset` in `session.list` and the `subscribe` response show the new values right away.
 
-**Errors**: `bad_params` (nothing given, an empty string, a wrong type; a subagent changing persona or preset, with `data.field` naming it); `unknown_model`; `unknown_persona`; `unknown_preset`; `turn_running`: a turn is running while changing persona or preset (wait for it to finish).
+**Errors**: `bad_params` (nothing given, an empty string, a wrong type; a subagent changing persona or preset, with `data.field` naming it; an `effort` the session's model doesn't have, with `data.field` `effort`, and nothing changes); `unknown_model`; `unknown_persona`; `unknown_preset`; `turn_running`: a turn is running while changing persona or preset (wait for it to finish).
 
 ## `session.fork`
 

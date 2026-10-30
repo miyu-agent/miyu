@@ -28,8 +28,9 @@
 //!   窗口（第二条第 9 条）：新造的、载入的会话用上，开着的会话下一个回合开始时用上（施工 8-10）。
 //! - 第一次接入（施工 8-11）：探本机的服务（`route/local.rs`）、试一家供应商（`route/probe.rs`），协议的 `provider.detect`、
 //!   `provider.test` 调它们；和拉列表一样在这一层，不属于哪个会话。
-//! - 思考强度（施工 8-18；8-18（补）去掉了会话那一层，`route/effort.rs`）：照真发的那个模型配置的默认交给驱动，空闲超时
-//!   跟着放大；给头看的那一档（配置的哪一层）照限额里的模型算。
+//! - 思考强度（施工 8-18；会话那一层 8-18（补）去掉、SM-1 加回来，`route/effort.rs`）：会话记的一档造端口、回合开始时
+//!   收下；每次请求照真发的那个模型挑，它有会话那一档的照会话的，不然照配置的默认，空闲超时跟着放大；给头看的那一档、
+//!   限额里那一块事实写的档位照限额里的模型算。
 //! - 看不看得了图（施工 8-17）：限额的 `blind` 照模型资料的 `inputs`，池里有一个成员看不了就算看不了；替它看图经一次性入口
 //!   发给 `models.vision`（`route/sight.rs`）。
 
@@ -125,11 +126,12 @@ impl Models for Routes {
         let resolved = reference
             .as_deref()
             .and_then(|text| self.resolve(&values, text).ok());
-        let (member, limits) = match resolved {
+        let (member, mut limits) = match resolved {
             Some(Resolved::Model(target)) => (None, self.limits(config, &target)),
             Some(Resolved::Pool(pool)) => self.pool_start(config, &pool, session.sent.as_ref()),
             None => (None, nothing()),
         };
+        self.stamp(config, &mut limits, session.effort.as_deref());
         Arc::new_cyclic(|me| Route {
             me: me.clone(),
             shared: self.clone(),
@@ -142,6 +144,7 @@ impl Models for Routes {
                 last: limits.model.clone(),
                 limits,
                 sticky: None,
+                effort: session.effort,
                 config: session.config,
             })),
         })
@@ -208,6 +211,8 @@ struct Pinned {
     limits: Limits,
     /// 上一次主请求收到过增量、然后出错的那一个（施工 8-9，第四条第 3 条）：下一次主请求不挑，还发给它。说完了就放开。
     sticky: Option<Candidate>,
+    /// 会话记的思考强度（施工 SM-1）：造端口时照内核从日志算的，回合开始换成内核交的。真发的那个模型有这一档才用它。
+    effort: Option<String>,
     /// 最近一次定下的配置：造端口时的、回合开始冻结的（施工 8-18）。给头看的那一档照它查配置的默认。
     config: TurnConfig,
 }
@@ -229,8 +234,13 @@ impl ModelPort for Route {
         self.lock().limits.clone()
     }
 
-    fn turn(&self, config: &TurnConfig, reference: Option<&str>) -> Option<Replaced> {
-        self.begin(config, reference)
+    fn turn(
+        &self,
+        config: &TurnConfig,
+        reference: Option<&str>,
+        effort: Option<&str>,
+    ) -> Option<Replaced> {
+        self.begin(config, reference, effort)
     }
 
     fn effort(&self) -> Option<EffortInUse> {
@@ -337,13 +347,14 @@ impl Route {
         };
         let (picked, pins) = routes.pick(config, &values, &resolved, &seat)?;
         pinned.last = model_of(&picked.choice.target);
+        let effort = pinned.effort.clone();
         drop(pinned);
         let texts = self
             .texts
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        let ready = routes.ready(config, &picked.choice, texts, None)?;
+        let ready = routes.ready(config, &picked.choice, texts, None, effort.as_deref())?;
         Ok(send::Chosen {
             ready,
             blobs: self.blobs.clone(),

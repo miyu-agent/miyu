@@ -1,23 +1,29 @@
-//! 思考强度（`docs/blueprint/models.md`「怎么走」第十一条，施工 8-18；8-18（补）去掉了会话那一层，只剩配置的默认）：
-//! 每个模型的一项配置，写在系统配置里。
+//! 思考强度（`docs/blueprint/models.md`「怎么走」第十一条，施工 8-18；8-18（补）去掉了会话那一层，SM-1 加回来，设计 51）：
+//! 每个模型的一项配置，写在系统配置里；会话能另记一档，压在配置上。
 //!
 //! - 档位名（[`normalize`]、[`levels`]、[`offered`]）：照目录原样，`none`、`disabled` 读成 `off`；目录有开关、这一家的档案
 //!   写了开关的，多一档 `off`（放在最前面），只有开关的是 `off`、`on`。档案没写开关的，目录的开关不算：驱动说不出来。
-//! - 一次请求用哪一档：照配置的最终值（[`crate::facts::Facts::effort`]，已经照档位查过），没有就不带，不在这里另挑。
-//! - 给头看的那一档，连同从配置的哪一层来（[`in_use`]）：`facts.effort` 的来源是哪一层配置文件，翻成 `subscribe`、
-//!   `model.changed` 的 `effort.from`。
+//! - 一次请求用哪一档（[`held`]）：会话记的那一档在真发的那个模型这时的档位里就照它；不然照配置的最终值
+//!   （[`crate::facts::Facts::effort`]，已经照档位查过），没有就不带。
+//! - 给头看的那一档，连同从哪来（[`shown`]、[`in_use`]）：会话的写 `session`，配置的照 `facts.effort` 的来源是哪一层配置
+//!   文件，翻成 `subscribe`、`model.changed` 的 `effort.from`。
+//! - `session.configure` 的 `effort` 照 [`levels_of`] 查：会话这时的引用有哪几档，池是成员的合起来。
 //! - 空闲超时放大几倍（[`idle_factor`]）：`high` 2 倍、`xhigh` 3 倍、`max` 4 倍，别的照基数（`15-模型与供应商.md` 第五节）。
 //! - 配置里写的不在档位里的（[`unknown`]）：报 `unknown_effort`，只报不丢，请求照没写发。档位由用它的一方交（要档案、目录）。
 
 use miyu_config::key;
+use miyu_config::merge::Resolved;
 use miyu_config::parse::Parsed;
 use miyu_config::problem::{Code, Problem};
 use miyu_config::{Layer, Value};
 use miyu_drivers::{EFFORT_OFF, EFFORT_ON};
 use miyu_kernel::event::{EffortInUse, EffortSource};
 
+use crate::Knowledge;
 use crate::catalog::Reasoning;
-use crate::facts::{Fact, Source};
+use crate::facts::{Fact, Source, facts};
+use crate::provider;
+use crate::reference::{self, Resolved as Pointed};
 
 /// 配置里模型默认的思考强度那一项（[`crate::settings::ModelSettings`] 的 `effort`）。
 pub const ITEM: &str = "providers.<id>.models.<model>.effort";
@@ -55,6 +61,51 @@ pub fn offered(reasoning: &Reasoning, switchable: bool) -> Option<Vec<String>> {
         }
     }
     (!levels.is_empty()).then_some(levels)
+}
+
+/// 会话记的那一档 `session`，在这个模型这时的档位 `levels` 里的（施工 SM-1，「怎么走」第十一条第 4 条）：一次请求照它，
+/// 压着配置的默认；不在的（换了模型、目录变了）没有，照配置。
+pub fn held<'a>(session: Option<&'a str>, levels: &[String]) -> Option<&'a str> {
+    session.filter(|level| levels.iter().any(|known| known == level))
+}
+
+/// 给头看的那一档（施工 SM-1）：会话记的、这个模型有的，`from` 是 `session`；不然照配置的那一格（[`in_use`]）。
+pub fn shown(
+    session: Option<&str>,
+    effort: &Fact<Option<String>>,
+    levels: &[String],
+) -> Option<EffortInUse> {
+    match held(session, levels) {
+        Some(level) => Some(EffortInUse {
+            level: level.to_string(),
+            from: EffortSource::Session,
+        }),
+        None => in_use(effort),
+    }
+}
+
+/// 引用 `text`（模型或 `@池`）这时有哪几档，照最终值 `resolved`、手头的资料 `knowledge`（施工 SM-1：`session.configure` 的
+/// `effort` 照它查）：模型的是它自己的；池的是认得出的成员各自的合起来（照先后，重复的只留第一个），用不上的成员照配置。
+/// 解析不出、那一家用不了的一档都没有。
+pub fn levels_of(resolved: &Resolved, knowledge: &Knowledge<'_>, text: &str) -> Vec<String> {
+    let values = resolved.values();
+    let of = |id: &str, model: &str| match provider::provider(&values, knowledge, id) {
+        Ok(found) => facts(resolved, knowledge, &found, model)
+            .0
+            .levels()
+            .to_vec(),
+        Err(_) => Vec::new(),
+    };
+    let found = match reference::resolve(&values, knowledge, text) {
+        Ok(Pointed::Model(target)) => of(&target.provider.id, &target.model),
+        Ok(Pointed::Pool(pool)) => pool
+            .members
+            .iter()
+            .flat_map(|member| of(&member.provider, &member.model))
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    levels(&found)
 }
 
 /// 给头看的那一档，连同从配置的哪一层来（「怎么走」第十一条第 4、7 条）：`effort` 是 [`crate::facts::facts`] 算出来的

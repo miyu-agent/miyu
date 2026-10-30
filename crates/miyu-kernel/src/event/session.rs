@@ -125,12 +125,8 @@ pub struct Forked {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSealed {}
 
-/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型，也可以一起换。
+/// `session.policy_changed`：换了策略快照，或者换了权限，或者换了模型、思考强度，也可以一起换。
 /// 谁换的看事件的 `by`：人改的是配置，内核换的是目录变了、钉着的模型没了。
-///
-/// 施工 8-18 曾在这里加过 `effort`（会话给一个模型记的思考强度）；8-18（补）去掉了这一层，思考强度改在配置里
-/// （`models.md`「怎么走」第十一条）。以前的日志里带 `effort` 的照样读得进（格式只加不改，不认识的字段不管，
-/// `event.rs`「读进来的样子」），内核不再理它。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyChanged {
     /// 新的策略快照，下一个回合开始时生效（`02-内核.md` K3）。
@@ -154,6 +150,31 @@ pub struct PolicyChanged {
     /// 要换成的预设（施工 P-13）：编号，空的是无工具（施工 P-16 下，同人格的空的是无人格）。同上。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
+    /// 会话的思考强度换了（施工 SM-1，设计 51，`models.md`「事件」）：人换的，`by` 是人，下一个回合开始时生效，撤掉的回合里
+    /// 的也算（照 `model`）。写在最后一格。内核只记不解读。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effort: Option<Effort>,
+}
+
+/// `session.policy_changed` 的 `effort`（施工 SM-1）：会话的那一档换成 `level`，`null` 是回到跟着配置。
+///
+/// 施工 8-18 记过同一格，多一个 `model`：会话给那一个模型记的一档；8-18（补）去掉了那一层，内核不再理它。那时的日志照样
+/// 读得进、写回去一字不差，带 `model` 的照旧不理（[`Effort::session`]）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Effort {
+    /// 施工 8-18 的日志才有：那一格是给哪个模型记的。SM-1 起不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// 换成的一档，规整过的名字（`off`、`on`，或者目录里的档位名）；`null` 是回到跟着配置。总是写。
+    pub level: Option<String>,
+}
+
+impl Effort {
+    /// 会话这一层的一档（SM-1 写的）：外层 `Some` 是这一条换了会话的一档，里面 `None` 是回到跟着配置；8-18 那种带 `model` 的
+    /// 是 `None`，不算。
+    pub fn session(&self) -> Option<Option<&str>> {
+        self.model.is_none().then_some(self.level.as_deref())
+    }
 }
 
 /// `session.meta_changed`：改了哪项写哪项。

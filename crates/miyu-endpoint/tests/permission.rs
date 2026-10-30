@@ -54,6 +54,7 @@ fn switched_to(event: &Event) -> Option<&Permission> {
             replaced: None,
             persona: None,
             preset: None,
+            effort: None,
         }) => Some(permission),
         _ => None,
     }

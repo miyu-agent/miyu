@@ -43,7 +43,7 @@
 | `crates/miyu-endpoint/src/settings.rs` | 端点的配置项：界面语言 `ui.language`，`auto` 照系统的语言算出 `zh`、`en`、`ja`（施工 8-1 声明，8-2 握手时用）；新会话开局只读 `permission.start_read_only`（施工 8-2） |
 | `crates/miyu-endpoint/src/config.rs`、`config/` | 配置服务：起来时读的几份配置、最终值，照目录找项目配置、认信不信任；`config.schema`、`config.get`、`config.check`（施工 8-2，`config.md`）；`config.set`、`config.trust`，住在核心家底的一把锁里（施工 8-3）；监视配置文件、推 `config.changed`（施工 8-4）；密钥文件也住在这里（施工 8-5） |
 | `crates/miyu-endpoint/src/secrets.rs`、`secrets/` | `secret.set`、`secret.delete`、`secret.list`：只能写、删、列名字，从不交出值；手改密钥文件被看到的、留痕（施工 8-5，`config.md` 第九条） |
-| `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
+| `crates/miyu-endpoint/src/models.rs`、`models/` | `model.list`：配好的供应商、模型、每一格资料的值和来源（施工 8-7，`models.md`「协议」），池、用途（施工 8-8；挡位 8-8 补去掉了），模型和 key 的冷却（施工 8-9），`facts.effort` 多 `key`（8-18（补））；`session.create`、`session.configure` 的 `model` 怎么解析（`record`，施工 8-8、8-10）；`session.configure` 的参数（`ConfigureParams`）、`subscribe` 回应的 `model`（施工 8-10）；`subscribe` 的 `model` 多 `effort`（施工 8-18，`from` 是配置的哪一层，8-18（补）起；会话的 `session`，施工 SM-1）；`session.configure` 的 `effort` 照会话这时的模型的档位查（`models/effort.rs`，施工 SM-1）；`model.call`（`models/call.rs`，施工 8-20）：读参数、认图、调一次性入口（`miyu_session::OneShot`）、出错写成拒绝；8-15 起一次性调用记成用量 |
 | `crates/miyu-endpoint/src/usage.rs` | `usage.query`（施工 8-15，`models.md`「协议」）：读参数（`usage/tests.rs` 守着）、先补再查用量汇总、照 `usage.currency` 排金额、写成 `rows`；核心起来时开 `state/usage.db`（`open`） |
 | `crates/miyu-endpoint/src/providers.rs`、`providers/trial.rs` | 第一次接入的 `provider.detect`、`provider.catalog`、`provider.test`（施工 8-11，`models.md`「协议」、「怎么走」第七条）；探本机、试一次在会话那一层（`miyu_session::find_local`、`probe`） |
 | `crates/miyu-endpoint/src/providers/rename.rs`（施工 8-34） | `provider.rename`：照 `config.set` 的规矩改写（`config/rewrite.rs`），再叫模型资料换编号、记改名 |
@@ -236,7 +236,7 @@
 | `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
-| `session.configure` | 换模型、人格、预设，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13） |
+| `session.configure` | 换模型、人格、预设、思考强度，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
 | `config.schema` | 配置清单，名字和说明照这个连接的语言（施工 8-2，`config.md`「协议」）；选项可以带 `note`：只有核心查得出的才有，头接在名字后面暗色写（施工 R-5 再补）；可以带 `available: false`：核心查得出用不了的才有，头画成灰的、选不了（施工 R-5 三补）；列表带选项的可以带 `ticks: "unlisted"`：勾着的是不在值里的，头照它反着画（施工 5-15 再补） |
 | `config.get` | 最终值和来源，每一份文件在哪、版本，现在的全部问题；带 `cwd` 的算上那个目录的项目配置（施工 8-2）。`files` 多 `secrets`，只有 `file`；问题里有密钥文件的、引用取不到的（施工 8-5） |
@@ -275,7 +275,7 @@
 | `images` | 布尔，不写是 `true` | 这个头显示得了图片吗（施工 X-25，同 `venue.session` 的 `images`，`venues.md`）：以后的语音头写 `false`；终端、网页不写（终端在不支持图片的终端里也不写：同一个会话换个地方就看得了） |
 | `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43，同 `venue.session` 的 `titles`，`venues.md`）：`false` 的记进 `session.created`，从此不自动起 |
 | `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
-| `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat`，那也没配的不写 |
+| `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat` 原样记（写的是池就记池），以后改 `models.chat` 这个会话照旧（施工 SM-1，设计 51 第一节），那也没配的不写（照旧跟着以后的 `models.chat`） |
 | `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的照人格的 `persona.toml` 的 `[memory] scope`，那也没写的是 `persona` |
 
 回应：`session` 新会话的编号；`events` 是 `[1]`，就是 `session.created` 那一条；`cwd` 是会话实际在哪个目录里干活（「工作目录太宽」）；`wide`：太宽、照人选的用着的才有，是 `true`（施工 9-7 补）；`untrusted_project`：这个目录找得到项目配置、又还没问过信不信任（`trust.toml` 里没有这个仓库，或者记的内容和现在的不一样），写它在哪，写法同配置来源的 `file`（家目录下的写成 `~/…`）。信任着的、选了不信任的、没有项目配置的不写（施工 8-2，`config.md` 第三条第 2 条）。
@@ -1072,7 +1072,7 @@
 5. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。
 6. **内核自己起的标题**（施工 3-8 五补，`kernel/session.md`「起标题」）：没起名的会话一轮答完，核心单独发一次起标题的请求，起好了也记成 `session.meta_changed`（只写 `title`），推给订阅着这个会话的头，前面紧跟着那一次请求的 `model.called`（`purpose` 是 `title`）；两条都是 `by` 内核，没有 `cause`、不带 `turn`。和人改的一样出现在 `session.list` 里。人起过名、去掉过的会话不起，子会话、一次性的会话不起。头分得出是谁起的：看 `by`。协议的形状没变，只是 `session.meta_changed` 多了由内核起的这一种。
 
-**`session.configure`**（施工 8-10，`models.md`「协议」「怎么走」第六条，`kernel/session.md`「换模型」）
+**`session.configure`**（施工 8-10，`models.md`「协议」「怎么走」第六条，`kernel/session.md`「换模型」；`effort` 施工 SM-1，设计 51）
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -1080,17 +1080,19 @@
 | `model` | 字符串或 `null` | 换成的模型 `<供应商>/<模型>` 或 `@池`（`models.md`「两种写法」）；`null` 是回到跟着 `models.chat`（施工 8-10 再补） |
 | `persona` | 字符串或 `null` | 换成的人格；`null` 是无人格（施工 P-13） |
 | `preset` | 字符串 | 换成的预设（施工 P-13） |
+| `effort` | 字符串或 `null` | 换会话的思考强度（施工 SM-1）：一档的名字，照会话这时的模型的档位查；`null` 是回到跟着配置（`models.md`「怎么走」第十一条） |
 
-三格至少写一格。施工 8-18 一度在这里多收过一格 `effort`（会话给一个模型记的思考强度，`model` 那时变成可以不写）；8-18（补）去掉了这一层，思考强度改在配置里（`models.md`「怎么走」第十一条）。`effort` 写了（不是 `null`）的回 `bad_params`：这是「同一个主版本只做加法，双方都忽略不认识的字段」（`04-核心协议.md` 第八节）的一处例外——这个字段以前收过，照样收但当场拒，免得旧头以为还能这样换、静悄悄没生效。
+四格至少写一格。施工 8-18 收过的 `effort` 是对象（`{"model":…,"level":…}`，会话给一个模型记的一档），8-18（补）去掉了；SM-1 加回来的是字或 `null`，那种对象照旧读不成，`bad_params`。
 
 回应：`{}`。换了没有，看推送里的 `session.policy_changed`。
 
-1. 三格都没写、写了空字（`""`）、类型不对的、`effort` 写了的：`bad_params`，不找会话；`session` 不合写法的也是。
+1. 四格都没写、写了空字（`""`）、类型不对的：`bad_params`，不找会话；`session` 不合写法的也是。
 2. 先找会话，找不到的回的是找不到；没在跑的照「会话表」载入。再照这时不算项目配置的最终值解析（和 `session.create` 的 `model` 一样）：解析不出的 `unknown_model`，什么都不记，原话记一行 `DEBUG unknown model`。
 3. 和会话现在记着的一样的：什么都不记，照样回 `{}`。别的记一条 `session.policy_changed`，只写 `model`，`by` 取自连接，`cause` 是这一条的 `id`，回合进行中换的带上这个回合；落了盘才回应。
 4. 下一个回合开始时生效，一轮里前后一致；撤掉的回合里换的也算。生效的那一刻，订阅着的头收到 `model.changed`（`why` 是 `turn`），之后的 `subscribe` 带新的 `model`、限额。
 5. 以后别的临时开关（`04-核心协议.md` 第九节）加进来也是这个方法，参数至少写一个。
-6. **换人格、预设**（施工 P-13，`16-人格与预设.md` Y5，`kernel/session.md`「换人格、预设」）：先查人格、预设在不在（`unknown_persona`、`persona_invalid`、`unknown_preset`），子代理（有父会话、不是分叉出来的）不能换，`bad_params`，`data.field` 是写了的那一格；都在模型那一条之前查完。模型先换，再换人格、预设（命令编号接 `/recast`）。有回合在进行的 `turn_running`；和现在一样的什么都不记。收下的记一条 `session.policy_changed`（`persona`、`preset`，`by` 是人），能压的马上单开一轮压缩。下一个回合开始真换：执行器照新的人格、预设重拼快照，记一条带 `policy` 的 `session.policy_changed`；记忆的范围照旧，跟着人格的从这一轮起在新人格那一间（以前记的留在原来那一间，换之前还没抽的几轮不再抽）；知识库照新人格查。`session.list`、`subscribe` 回应、会话状态的 `persona`、`preset` 照换成的写（人换了就算，不等真换上）。
+6. **换思考强度**（施工 SM-1，设计 51，`kernel/session.md`「换思考强度」）：照会话这时的模型的档位查：同一条换了模型的是换成的那个（`model: null` 的是这一刻的 `models.chat`），没换的是会话接下来请求的引用（`subscribe` 的 `model.ref`）；池是认得出的成员各自的档位合起来。名字先规整（`none`、`disabled` 读成 `off`），不在里面的 `bad_params`，`data.field` 是 `effort`，原话记一行 `DEBUG unknown effort`，什么都不记（一起写的模型也不换）；`null` 不查。模型先换，再换思考强度（命令编号接 `/effort`），再换人格、预设。和现在一样的什么都不记；别的记一条 `session.policy_changed`，只写 `effort`（`{"level": …}`，`null` 照写），`by` 取自连接，回合进行中换的带上这个回合。下一个回合开始时生效：真发的那个模型有这一档的照它，没有的（换了模型、池里别的成员）照配置，不报错；换模型不清它。生效的那一刻 `model.changed`、之后的 `subscribe` 的 `effort.from` 是 `session`。
+7. **换人格、预设**（施工 P-13，`16-人格与预设.md` Y5，`kernel/session.md`「换人格、预设」）：先查人格、预设在不在（`unknown_persona`、`persona_invalid`、`unknown_preset`），子代理（有父会话、不是分叉出来的）不能换，`bad_params`，`data.field` 是写了的那一格；都在模型那一条之前查完。模型先换，再换人格、预设（命令编号接 `/recast`）。有回合在进行的 `turn_running`；和现在一样的什么都不记。收下的记一条 `session.policy_changed`（`persona`、`preset`，`by` 是人），能压的马上单开一轮压缩。下一个回合开始真换：执行器照新的人格、预设重拼快照，记一条带 `policy` 的 `session.policy_changed`；记忆的范围照旧，跟着人格的从这一轮起在新人格那一间（以前记的留在原来那一间，换之前还没抽的几轮不再抽）；知识库照新人格查。`session.list`、`subscribe` 回应、会话状态的 `persona`、`preset` 照换成的写（人换了就算，不等真换上）。
 
 **`session.delete`**（施工 3-8 三补，`store.md` 第 12 条，`agents.md` 第七条第 5 条）
 
@@ -1176,7 +1178,7 @@
 
 回应：`config` 的都是 `{}`；`sessions` 的 `subscribe` 是 `{"sessions": [<一项>, …]}`，`unsubscribe` 是 `{}`（施工 9-5）；`extensions` 的 `subscribe` 是 `{"extensions": [<一个>, …]}`，`unsubscribe` 是 `{}`（施工 9-4 补）；`memory` 的 `subscribe` 是 `{"upto": <序号>}`，`unsubscribe` 是 `{}`（施工 R-12 上）。`subscribe` 的是 `{"limits": <限额>, "model": <模型>}`，写了 `after` 的多一格 `upto`（补到哪一条）：`{"limits": <限额>, "model": <模型>, "upto": <序号>}`。当前的待办不空的多一格 `todos`（施工 D-3，照 `todo.written` 的写法）；会话用哪个人格写在 `persona`（施工 P-1 下）、哪个预设写在 `preset`（施工 P-2 上），都照日志第一条 `session.created` 读，以前的日志没有的不写；之后变了照推送的瞬时事件 `todos.changed`，头只认这两样，不自己翻效果。施工 9-6 上起再多三格「当前的」，和订阅在会话 actor 的同一步里拿，头之后照推过来的事件往上加、不重不漏：`usage` 这个会话（不带子会话）累计的，写法、口径同 `usage.query {"session": <它>}` 那一行（`requests`、`usage`、`amounts`、`unpriced`），另加 `main`（只算主请求的四项用量：`purpose` 是空的，压缩的摘要请求也算，回顾、起标题这些辅助请求不算；头照它算命中率、上下文，施工 9-6 上补）、`compactions`（压缩的检查点有几个）、`cache_breaks`（意外断了缓存的主请求有几次：带 `first_difference`、`purpose` 是空的；压缩的摘要请求（带 `compaction`，或者看到的比之前的主请求少）不算；压缩、撤销以后的头一个主请求本来就会断，也不算；口径同终端，施工 9-6 再补）；`permission` 人这一刻设的权限 `{"level", "read_only"}`；`jobs` 还在跑的后台命令和子代理，照编号，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`）。施工 9-7 上起再多 `workspace`：`{"cwd", "dirs"}`，会话在哪个目录干活，之后照推过来的 `session.workspace_changed` 换。施工 M-1 起再多 `nested`：在跑的嵌套调用（脚本里的 `miyu call`），照编号，每一个 `{id, name}`（施工 M-5 上起 `{id, name, args, at}`：参数原文、派去跑的时刻，头重连以后照它接着计时），没有的不写；之后照推过来的瞬时事件 `tool.nested_started`、事件 `tool.nested` 增减（`kernel/session.md`「嵌套调用」）。施工 X-8 补起再多 `goal`：这个会话的长期目标，写法同视图流会话状态的 `goal`（`view.md`「会话状态」），没有目标的不写；之后变了照推过来的瞬时事件 `goal.changed` 换（`kernel/events.md`），头不自己照 `goal.*` 和回合算第几轮、在不在等人。已经订阅着、再订阅一次不带 `after` 的（「还是那一个」），这几格另要一份这一刻的。`unsubscribe` 的是空对象 `{}`。
 
-**模型** `model`（施工 8-10，`models.md`「协议」）：会话接下来请求的。`ref` 是会话的引用（模型或 `@池`），`endpoint`、`model` 是接下来发给哪一家的哪个模型；轮换的池（每次都换）、解析不出的没有 `endpoint`、`model`，没配 `models.chat` 的会话没有 `ref`。一个都没有的不写这一格。回合开始重新解析过的、出错换了成员的是换了以后的。施工 8-18 多一格 `effort`：`{"level": <一档>, "from": "system"}`，接下来那个模型真用的思考强度和从配置的哪一层来（8-18（补）起不再有 `session`）；请求里什么都不带的、轮换的池不写。
+**模型** `model`（施工 8-10，`models.md`「协议」）：会话接下来请求的。`ref` 是会话的引用（模型或 `@池`），`endpoint`、`model` 是接下来发给哪一家的哪个模型；轮换的池（每次都换）、解析不出的没有 `endpoint`、`model`，没配 `models.chat` 的会话没有 `ref`。一个都没有的不写这一格。回合开始重新解析过的、出错换了成员的是换了以后的。施工 8-18 多一格 `effort`：`{"level": <一档>, "from": …}`，接下来那个模型真用的思考强度和从哪来：`session` 是会话记的那一档（`session.configure` 的 `effort`，这个模型有它，施工 SM-1），`system` 是配置；请求里什么都不带的、轮换的池不写。
 
 **限额** `limits`：会话实际用的模型给这个会话多少地方（施工 6-3 补）。两格都是 token 数，没有的不写，从不写 `null`；两格都没有就是 `{}`。
 
@@ -1729,7 +1731,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/config.rs`、`config_trust.rs`（施工 8-2） | 握手的 `language`、`config_errors`；`config.schema`、`config.get`、`config.check`；`unknown_config_key` 带 `problems`；开局只读照配置、照信任着的项目配置；造会话、说话的回应带 `untrusted_project`（`config.md`「守着它的」）。`config.trust` 的回答、拒绝、日志（施工 8-3） |
 | `crates/miyu-endpoint/tests/models.rs`（施工 8-7） | `model.list` 的形状、来源、状态；`provider` 只看一家、`unknown_provider`、参数不对；`refresh` 拉完再答、不写的在后台拉；冷却（施工 8-9）：模型照能用的 key 里最好的那个，都在冷却的带最早恢复的 `until`、`class`，认证失败停了整个 key 的那个 key 也是 `cooling`，取不到值的 key 不算（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/models_pools.rs`（施工 8-8） | `model.list` 的 `pools`（8-8 补多 `subagent`、`description`，没有 `tiers`）、`uses`；`session.create` 的 `model` 记下解析出的、`unknown_model` 什么都不造、不是字符串的 `bad_params`；`session.configure` 照这时的配置解析好记一条、先推再回应、一样的不记，参数不对的几种 `bad_params`、先找会话、解析不出的 `unknown_model`、都什么都不记；`subscribe` 的 `model` 照真路由解析出的写，轮换的池只有 `ref`，一个都没有的不写（施工 8-10，`models.md`「守着它的」） |
-| `crates/miyu-endpoint/tests/models_effort.rs`（施工 8-18；8-18（补）去掉会话那一层） | `session.configure` 写了 `effort` 回 `bad_params`、不写 `model` 回 `bad_params`；`subscribe` 的 `model` 多 `effort`，`from` 是配置的哪一层；`model.list` 的 `facts.effort`、多一格 `key`；配置里写错的 `unknown_effort`（`models.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/models_effort.rs`（施工 8-18；8-18（补）去掉会话那一层；SM-1 加回来） | `session.configure` 的 `effort` 记一条、一样的不记、`null` 回到跟着配置、和模型一起换的照换成的查、池照成员合起来查，不在档位里的、空字、8-18 那种对象 `bad_params`（`data.field` 是 `effort`）、什么都不记；一格都没写的 `bad_params`；重启以后订阅说 `from: session`；`subscribe` 的 `model` 多 `effort`，`from` 是会话或者配置的哪一层；`model.list` 的 `facts.effort`、多一格 `key`；配置里写错的 `unknown_effort`（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/providers.rs`、`providers_test.rs`、`providers_log.rs`（施工 8-11） | `provider.detect`、`provider.catalog`、`provider.test` 的形状、参数不对、`unknown_provider`，`{value}` 的 key 不进回应和运行日志（`models.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/provider_rename.rs`（施工 8-34） | 表连同子表、密钥的引用换名，引用、池的成员都换，别处的字照原样；改名记进模型资料；新编号已有、旧编号没有、写法不对的拒，什么都不写 |
 | `crates/miyu-endpoint/tests/memory_dream.rs`、`src/commands/tests.rs` 的 `only_dream_is_answered_later`、`src/subscriptions/later/tests.rs`（施工 R-7 补） | `memory.dream` 的回应、再叫一次是零、`memory_busy`、`memory_not_installed`、在后台答（同一个连接后面的请求先回）；`/dream` 的回执、命令表里列、在后台答，订阅着的 `command.ran` 先到；在后台答的命令只有 `/dream`；在后台答的回应照办完那一刻的订阅走：订阅着的交给转发任务，没订阅的、不是给会话的、放下了的直接写，换了的交给新的，只拿弱的一头、转发任务退得了，放下了的下一次开通道时清掉（细节见 `memory.md`「守着它的」） |

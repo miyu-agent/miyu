@@ -1,5 +1,5 @@
-//! 思考强度（施工 8-18；8-18（补）去掉会话那一层）：档位名规整、开关照档案、给头看的那一档从配置的哪一层来、空闲超时
-//! 放大几倍、配置里写的不在档位里的。
+//! 思考强度（施工 8-18；8-18（补）去掉会话那一层，SM-1 加回来）：档位名规整、开关照档案、会话的一档压着配置（这个模型
+//! 有的才算）、给头看的那一档从哪来、引用有哪几档（池是成员的合起来）、空闲超时放大几倍、配置里写的不在档位里的。
 
 use miyu_config::parse::parse;
 use serde_json::json;
@@ -96,6 +96,63 @@ fn in_use_reports_which_config_layer_set_it() {
         None,
         "没写在配置文件里的不带（不会真出现：effort 不借目录、不是本机免费价）"
     );
+}
+
+/// 会话记的一档压着配置，这个模型的档位里有的才算（施工 SM-1）：不在的、没记的照配置，`from` 照实写。
+#[test]
+fn the_session_level_wins_only_where_the_model_has_it() {
+    let config = Fact {
+        value: Some("low".to_string()),
+        source: Source::Config {
+            layer: Layer::System,
+            line: 3,
+        },
+    };
+    let levels = names(&["off", "low", "high"]);
+    assert_eq!(super::held(Some("high"), &levels), Some("high"));
+    assert_eq!(super::held(Some("max"), &levels), None, "这个模型没有");
+    assert_eq!(super::held(None, &levels), None);
+    let used = |level: &str, from: EffortSource| {
+        Some(EffortInUse {
+            level: level.to_string(),
+            from,
+        })
+    };
+    assert_eq!(
+        shown(Some("high"), &config, &levels),
+        used("high", EffortSource::Session)
+    );
+    assert_eq!(
+        shown(Some("max"), &config, &levels),
+        used("low", EffortSource::System),
+        "退回配置"
+    );
+    assert_eq!(
+        shown(None, &config, &levels),
+        used("low", EffortSource::System)
+    );
+}
+
+/// 引用有哪几档（施工 SM-1）：模型的是它自己的；池的是成员的合起来、去重；解析不出的一档都没有。
+#[test]
+fn a_pool_offers_every_level_its_members_have() {
+    let source = "[providers.deepseek]\nlocal = true\n\n\
+        [providers.deepseek.models.a]\nreasoning = [\"low\", \"high\"]\n\n\
+        [providers.deepseek.models.b]\nreasoning = [\"high\", \"max\"]\n\n\
+        [pools.p]\nmodels = [\"deepseek/a\", \"deepseek/b\"]\n";
+    let resolved = resolved(source);
+    let held = held();
+    let knowledge = held.knowledge();
+    assert_eq!(
+        super::levels_of(&resolved, &knowledge, "deepseek/a"),
+        names(&["low", "high"])
+    );
+    assert_eq!(
+        super::levels_of(&resolved, &knowledge, "@p"),
+        names(&["low", "high", "max"])
+    );
+    assert!(super::levels_of(&resolved, &knowledge, "@nope").is_empty());
+    assert!(super::levels_of(&resolved, &knowledge, "nope/x").is_empty());
 }
 
 #[test]

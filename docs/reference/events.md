@@ -25,7 +25,7 @@
 | `kind` | 是什么 |
 |---|---|
 | `session.created` | 会话创建（第 1 条）：场所、工作目录、人格、预设、模型…… |
-| `session.policy_changed` | 换了权限、模型，或者整份策略 |
+| `session.policy_changed` | 换了权限、模型、思考强度（`effort: {"level"}`，`null` 是回到跟着配置），或者整份策略 |
 | `session.workspace_changed` | 换了工作目录 |
 | `session.meta_changed` | 改了标题、置顶、项目（`project`：编号，空的是移出来）；没起名的会话由内核自己起标题，也是它 |
 | `session.recapped` | 一句回顾（不进她的上下文） |
@@ -68,7 +68,7 @@
 | `tool.progress` | 工具执行中的一段输出：`call_id`、`text` |
 | `tool.nested_started` | 脚本里的一次 `miyu call` 过了检查、派去跑了：`id`、`name`；了结以 `tool.nested` 为准 |
 | `status` | 请求在重试、换了供应商 |
-| `model.changed` | 会话接下来请求的模型、限额变了：`why` 是 `failover` 或 `turn` |
+| `model.changed` | 会话接下来请求的模型、思考强度、限额变了：`effort.from` 是 `session`（会话记的）或 `system`（配置）；`why` 是 `failover` 或 `turn` |
 | `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了 |
 | `todos.changed` | 当前的待办整份 |
 | `package.state_changed` | 一个包在这个会话里给头看的状态变了：`{"package", "state": {"widgets"?}}`，清掉了的 `state` 是 `{}` |

@@ -208,6 +208,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         blobs,
         reference: reference.clone(),
         sent: None,
+        effort: None,
     });
     let mut clock = Clock::default();
     let upstream = Upstream::of(

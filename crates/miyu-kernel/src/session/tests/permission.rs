@@ -36,6 +36,7 @@ fn switched_to(event: &Event) -> &Permission {
             replaced: None,
             persona: None,
             preset: None,
+            effort: None,
         }) => permission,
         body => panic!("应该是只换了权限的 session.policy_changed：{body:?}"),
     }

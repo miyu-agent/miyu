@@ -1197,6 +1197,12 @@ flowchart LR
 | IN-2 | info 照 pacman | `package.info` 多 `source` 参数，没装的照软件源答，装着的多清单写的几格和「被依赖」；`miyu pkg info` 写成「键 : 值」，`-Si` 只查软件源、`-Qi` 只查装着的 |
 | IN-3 | 装包分阶段 | 从软件源装的看一眼多 `recommends`、`installed`，`package.progress` 带 `stage`、`index`、`count`，先全下完、再核对、再装；`miyu pkg install` 照 pacman 印解析依赖、要装的和推荐的、几行「键 : 值」，问装不装、再问推荐的，终端里画进度条、管道里只印行，`--yes` 不装推荐的 |
 
+**会话各记模型和思考强度**（SM 线，设计 51，2026-10-30 项目主人定）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| SM-1 | 会话各记模型和思考强度 | 没写模型的会话照造它那一刻的 `models.chat` 原样记，以后改默认它照旧（核心本来就这样记，补上测试）；思考强度加回会话那一层：`session.configure` 多 `effort`（一档的名字照会话这时的模型的档位查，不在里面的 `bad_params`，`null` 回到跟着配置），记进 `session.policy_changed` 的 `effort`（照 8-18 的格，不再写 `model`，旧日志照读），下一个回合起压着配置，这个模型没有那一档的照配置；`subscribe`、`model.changed` 的 `effort.from` 多 `session`。头的改动（设计 51 第三节）各自做。施工单见 `SM-会话各记模型和思考强度.md` |
+
 **接入模型**（ST 线）
 
 | 步 | 名字 | 做什么 |

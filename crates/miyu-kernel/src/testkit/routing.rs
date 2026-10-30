@@ -35,6 +35,18 @@ impl Stage {
         })
     }
 
+    /// 换会话的思考强度（施工 SM-1）：`None` 是回到跟着配置。返回这个命令的编号。
+    pub fn configure_effort(&mut self, level: Option<&str>) -> CommandId {
+        self.command(Command::SetEffort {
+            level: level.map(str::to_string),
+        })
+    }
+
+    /// 会话记的思考强度，内核说的（施工 SM-1）。
+    pub fn effort(&self) -> Option<&str> {
+        self.session.effort()
+    }
+
     /// 换人格（施工 P-13）：`None` 是换成无人格。返回这个命令的编号。
     pub fn recast(&mut self, persona: Option<&str>) -> CommandId {
         self.command(Command::Recast {

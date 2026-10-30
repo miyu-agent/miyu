@@ -119,6 +119,7 @@ mod route;
 mod route_anthropic;
 mod route_cost;
 mod route_effort;
+mod route_effort_session;
 mod route_facts;
 mod route_failover;
 mod route_non_api;

@@ -71,7 +71,19 @@ pub(super) async fn send(
     handle: &Handle,
     command: Command,
 ) -> Result<(), Refusal> {
-    let id = CommandId::parse(&format!("{}/recast", request.id.as_str()))
+    send_as(core, request, (session, handle), "recast", command).await
+}
+
+/// 照这条请求的编号接 `/<suffix>` 发一个命令（换思考强度的接 `/effort`，施工 SM-1）：模型那一条已经用了原来的。拒绝的是
+/// 内核的原因码；会话停了的从表里拿掉。
+pub(super) async fn send_as(
+    core: &Core,
+    request: &Request,
+    (session, handle): (&SessionId, &Handle),
+    suffix: &str,
+    command: Command,
+) -> Result<(), Refusal> {
+    let id = CommandId::parse(&format!("{}/{suffix}", request.id.as_str()))
         .map_err(|_| Refusal::BAD_PARAMS)?;
     match handle.command(id, crate::sessions::person(), command).await {
         Ok(Outcome::Rejected { reason, about }) => Err(Refusal::kernel_about(reason, &about)),

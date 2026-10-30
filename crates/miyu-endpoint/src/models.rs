@@ -2,8 +2,9 @@
 //! 模型，每个模型每一格资料的值和来源、状态（思考强度的那一格多 `key`，施工 8-18（补））；在用的目录。池、用途的 `vision`
 //! （施工 8-8）：池写的成员和怎么分，派子代理能不能选、给模型看的说明（施工 8-8 补），两种用途各配的引用，没配的是
 //! `null`。8-8 的 `tiers` 8-8 补去掉了。模型、key 的冷却（施工 8-9）照核心一份的冷却表，照这一刻说。`session.create` 的
-//! `model` 怎么解析也在这里（[`record`]，施工 8-8）。`session.configure` 的参数（[`ConfigureParams`]，施工 8-10）、
-//! `subscribe` 回应的 `model`（[`next`]，施工 8-10；8-18 多 `effort`，从哪来是配置的哪一层，8-18（补））也在这里。
+//! `model` 怎么解析也在这里（[`record`]，施工 8-8）。`session.configure` 的参数（[`ConfigureParams`]，施工 8-10；`effort`
+//! 施工 SM-1 加回来，照会话这时的模型的档位查在 `models/effort.rs`）、
+//! `subscribe` 回应的 `model`（[`next`]，施工 8-10；8-18 多 `effort`，从哪来是会话或者配置的哪一层，8-18（补）、SM-1）也在这里。
 //! `model.call` 经一次性入口叫一次模型（`models/call.rs`，施工 8-20）。能出向量的模型多一格 `embedding`（施工 R-5 再补，照资源
 //! 目录的 `models/embedding.toml` 认，[`embedding_names`]）。
 //!
@@ -14,6 +15,7 @@
 //! 4. 照不算项目配置的最终值答。key 的值从不交出去，只说有没有值。
 
 mod call;
+pub(crate) mod effort;
 mod entry;
 mod retire;
 mod side;
@@ -49,11 +51,9 @@ struct ListParams {
     models: Option<Vec<String>>,
 }
 
-/// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset` 至少写一样，空字当参数不对（「施工时定的」
-/// 8-10）。思考强度改在
-/// 配置里，这里不再收 `effort`：写了（不是 `null`）的也是参数不对（施工 8-18（补），「怎么走」第十一条）——这是协议里
-/// 「同一个主版本只加、都忽略不认识的字段」的一处例外：这个字段以前收过，照样收但当场拒，免得旧头以为还能这样换、静悄悄
-/// 没生效。
+/// `session.configure` 的参数：`session` 必写，`model`、`persona`（施工 P-13）、`preset`、`effort`（施工 SM-1）至少写一样，空字
+/// 当参数不对（「施工时定的」8-10）。`effort` 只收字和 `null`：施工 8-18 那种对象（`{"model":…,"level":…}`，旧头发的）读不成，
+/// `bad_params`。
 #[derive(Debug, Deserialize)]
 pub(crate) struct ConfigureParams {
     /// 哪个会话。
@@ -67,22 +67,23 @@ pub(crate) struct ConfigureParams {
     /// 换成的预设（施工 P-13）：不写的不换，写 `null` 的换成无工具（施工 P-16 下）。
     #[serde(default, deserialize_with = "crate::personas::written")]
     preset: Option<Option<String>>,
-    /// 以前收的思考强度；只用来判断写没写，内容不读。
-    #[serde(default)]
-    effort: Option<Value>,
+    /// 换成的思考强度（施工 SM-1，设计 51）：一档的名字，写 `null` 的回到跟着配置，不写的不换。
+    #[serde(default, deserialize_with = "crate::personas::written")]
+    effort: Option<Option<String>>,
 }
 
 impl ConfigureParams {
-    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。三样一样都没写、写了空字、
-    /// 写了 `effort` 的是参数不对。
+    /// 换成的引用，原样：外层没有的是不换，写 `null` 的是里面没有（回到跟着 `models.chat`）。四样一样都没写、写了空字的
+    /// 是参数不对。
     ///
     /// # Errors
     ///
-    /// 三样都没写、空字、写了 `effort`：`bad_params`。
+    /// 四样都没写、空字：`bad_params`。
     pub(crate) fn model(&self) -> Result<Option<Option<&str>>, Refusal> {
         let empty = |text: &Option<String>| text.as_deref() == Some("");
-        if self.effort.is_some()
-            || (self.model.is_none() && self.persona.is_none() && self.preset.is_none())
+        let none = self.model.is_none() && self.persona.is_none() && self.preset.is_none();
+        if (none && self.effort.is_none())
+            || self.effort.as_ref().is_some_and(empty)
             || self.model.as_ref().is_some_and(empty)
             || self.persona.as_ref().is_some_and(empty)
             || self.preset.as_ref().is_some_and(empty)
@@ -90,6 +91,12 @@ impl ConfigureParams {
             return Err(Refusal::BAD_PARAMS);
         }
         Ok(self.model.as_ref().map(Option::as_deref))
+    }
+
+    /// 换成的思考强度（施工 SM-1）：外层没有的是不换，写 `null` 的是里面没有（回到跟着配置）。同 [`ConfigureParams::model`]
+    /// 先查过。
+    pub(crate) fn effort(&self) -> Option<Option<&str>> {
+        self.effort.as_ref().map(Option::as_deref)
     }
 
     /// 换成的人格、预设（施工 P-13）：同 [`ConfigureParams::model`] 先查过。

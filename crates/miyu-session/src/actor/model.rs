@@ -139,7 +139,11 @@ impl Actor {
     ) -> Input {
         self.config.turn(self.session.cwd().to_string()).await;
         let before = self.shown_now();
-        let replaced = self.model.turn(self.config.current(), reference.as_deref());
+        // 会话记的思考强度一起交（施工 SM-1）：内核照日志算的。
+        let effort = self.session.effort();
+        let replaced = self
+            .model
+            .turn(self.config.current(), reference.as_deref(), effort);
         self.hand(self.model.limits());
         if self.shown_now() != before {
             self.announce(ChangeWhy::Turn);

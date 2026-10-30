@@ -53,10 +53,18 @@ impl Tried {
     fn succeeded(self) {
         self.picked.succeeded();
         let picked = &self.picked.choice;
-        let changed =
-            self.pins && picked.member.is_some() && lock(&self.pinned).member != picked.member;
-        // 限额照模型资料算，不拿着钉着的锁算。
-        let limits = changed.then(|| self.picked.routes.limits(&self.config, &picked.target));
+        let (changed, effort) = {
+            let pinned = lock(&self.pinned);
+            let changed = self.pins && picked.member.is_some() && pinned.member != picked.member;
+            (changed, pinned.effort.clone())
+        };
+        // 限额照模型资料算，不拿着钉着的锁算；那一块事实写的档位照会话记的（施工 SM-1）。
+        let limits = changed.then(|| {
+            let routes = &self.picked.routes;
+            let mut limits = routes.limits(&self.config, &picked.target);
+            routes.stamp(&self.config, &mut limits, effort.as_deref());
+            limits
+        });
         let mut pinned = lock(&self.pinned);
         if self.main {
             pinned.sticky = None;

@@ -370,8 +370,9 @@ pub(super) async fn stop_job(core: &Arc<Core>, request: &Request) -> Result<Valu
     }
 }
 
-/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换人格、预设（施工 P-13）在
-/// `recast.rs`：先查完，模型先换，再换人格、预设。
+/// `session.configure`：换模型；`model` 写 `null` 的回到跟着 `models.chat`（施工 8-10 再补）。换思考强度（施工 SM-1）照会话
+/// 这时的模型查（`models/effort.rs`）。换人格、预设（施工 P-13）在`recast.rs`：先查完，模型先换，再换思考强度，再换人格、
+/// 预设。
 pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Value, Refusal> {
     let params: models::ConfigureParams = params(request)?;
     let text = params.model()?;
@@ -384,9 +385,25 @@ pub(super) async fn configure(core: &Arc<Core>, request: &Request) -> Result<Val
         Some(None) => Some(String::new()),
         None => None,
     };
+    let effort = match params.effort() {
+        Some(level) => {
+            // 照会话这时的模型查：一起换了的是换成的，回到跟着配置的是这一刻的 `models.chat`（施工 SM-1）。
+            let reference = match model.as_deref() {
+                Some("") => miyu_models::provider::chat(&core.config().resolved().values()),
+                Some(model) => Some(model.to_string()),
+                None => found.handle.next().reference,
+            };
+            let level = models::effort::checked(core, reference.as_deref(), level).await?;
+            Some(Command::SetEffort { level })
+        }
+        None => None,
+    };
     if let Some(model) = model {
         let command = Command::Configure { model };
         command_to(core, request, &session, &found.handle, command).await?;
+    }
+    if let Some(command) = effort {
+        recast::send_as(core, request, (&session, &found.handle), "effort", command).await?;
     }
     if let Some(command) = recast {
         recast::send(core, request, &session, &found.handle, command).await?;

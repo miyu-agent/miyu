@@ -68,6 +68,8 @@ pub struct ForSession {
     /// 最近一条发出去了的 `model.called` 发给了谁（施工 8-8，「起草时定的」第 2 条）：引用是钉住的池的，照它认钉着的成员。
     /// 新造的会话、一次都没发出去过的没有。
     pub sent: Option<Model>,
+    /// 会话记的思考强度（施工 SM-1，设计 51）：造会话的没有；载入的是内核从日志算的（`Session::effort()`）。
+    pub effort: Option<String>,
 }
 
 /// 请求模型的端口。
@@ -84,13 +86,19 @@ pub trait ModelPort: Send + Sync {
 
     /// 回合开始（施工 8-10，`models.md`「怎么走」第六条第 3 条）：照这一轮的配置 `config` 重新解析会话的引用 `reference`
     /// （内核交的，以前的会话没有的照端口自己记着的）；端点、限额跟着换。钉着的没了、退回了这一轮的 `models.chat` 的，
-    /// 交回原来的和退回的，内核记下。不重新解析的（测试的端口）什么都不做。
-    fn turn(&self, _config: &TurnConfig, _reference: Option<&str>) -> Option<Replaced> {
+    /// 交回原来的和退回的，内核记下。会话记的思考强度换成内核交的 `effort`（施工 SM-1）。不重新解析的（测试的端口）什么都
+    /// 不做。
+    fn turn(
+        &self,
+        _config: &TurnConfig,
+        _reference: Option<&str>,
+        _effort: Option<&str>,
+    ) -> Option<Replaced> {
         None
     }
 
     /// 接下来那个模型真用的思考强度（施工 8-18，`models.md`「怎么走」第十一条第 7 条）：给头看的，`subscribe`、
-    /// `model.changed` 照它写。轮换的池、什么都不带的、不知道的（测试的端口）没有。
+    /// `model.changed` 照它写，会话记的压着配置的（施工 SM-1）。轮换的池、什么都不带的、不知道的（测试的端口）没有。
     fn effort(&self) -> Option<EffortInUse> {
         None
     }

@@ -35,7 +35,7 @@
 | `crates/miyu-kernel/src/session/report.rs` | 向上回报：子会话欠不欠着父会话一份回报、什么时候报、报什么、正文怎么截（施工 7-6，`agents.md` 第二条、第八条） |
 | `crates/miyu-kernel/src/session/permission.rs` | 切权限级别、请求之前查事实 |
 | `crates/miyu-kernel/src/session/meta.rs` | 改标题、置顶；现在的标题、置顶（施工 3-8 三补） |
-| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。8-18 曾在这里加过会话给每个模型记的思考强度，8-18（补）去掉了 |
+| `crates/miyu-kernel/src/session/configure.rs` | 换模型：会话的引用和最近一次换模型写在第几条（`Reference`，施工 P-13 起也记要用的人格、预设），收命令，回合开始退回默认的记下（施工 8-10，`models.md`「怎么走」第六条）。换思考强度：会话的一档从日志算、收 `SetEffort`（施工 SM-1；8-18 那时每个模型一格，8-18（补）去掉了） |
 | `crates/miyu-kernel/src/session/recast.rs` | 中途换人格、预设（施工 P-13）：收命令、记下要换成的、马上单开一轮压缩（「换人格、预设」） |
 | `crates/miyu-kernel/src/session/send.rs` | 发一条消息（施工 8-10 从 `session.rs` 挪出来，那边放不下了） |
 | `crates/miyu-kernel/src/session/restart.rs`、`load.rs` | 有计划的重启；从日志载入（认出哪次压缩还算数，`history.md`「载入」）、崩了的收尾、重启后接着干 |
@@ -575,7 +575,13 @@
 3. **回合开始**：`RunTurnStartHooks` 带着现在的引用，执行器照这一轮的配置重新解析。交回的 `replaced`（钉着的没了，退回了这一轮的 `models.chat`）：`from` 正是现在的引用、`to` 和它不一样的，在注入前面追加一条 `session.policy_changed`，`model` 是 `to`，`replaced` 是 `from`，`by` 是内核，`cause` 是回合的，带着回合；对不上的不理：交回来之前人又换了，人换的算数，下一轮再解析（`models.md`「施工时定的」8-10）。
 4. 回合进行中换的，这一轮照开始时的，下一轮开始才交出去。手动压缩、清空单开的那一轮不跑挂接点，也就不交、不重新解析（`compaction.md`）。
 5. 换了模型，自动压缩的暂停解除：写在最近一条带 `model` 的 `session.policy_changed` 前面的暂停、失败不再算（`compaction.md` 第十条第 6 条，`breaker.rs`）。
-6. 施工 8-18 曾在这里加过「思考强度」一条：会话给每个模型记一格，从日志算。8-18（补）去掉了：思考强度改在配置里（`models.md`「怎么走」第十一条），内核不再记这一格，以前的日志里带 `effort` 的照读得进（不认识的字段不管），不拼进来。
+6. 施工 8-18 曾在这里加过「思考强度」一条：会话给每个模型记一格，从日志算。8-18（补）去掉了，施工 SM-1 改成会话一档加回来，见下面「换思考强度」。
+
+**换思考强度**（`SetEffort`，施工 SM-1，设计 51，`configure.rs`，`models.md`「怎么走」第十一条）：
+
+1. 会话的一档从日志算：带 `effort` 的 `session.policy_changed` 里最后那一档（`null` 是回到跟着配置），撤掉的回合里换的也算（照换模型）。换模型不清它。8-18 那时带 `model` 的一格不认（`Effort::session`）。`Session::effort()` 只读交给执行器：载入时照它造路由，回合开始时 actor 照它交给路由（不加进 `RunTurnStartHooks`）。
+2. 和现在的一样的：接受，什么都不记，编号照样记下。不一样的：追加一条 `session.policy_changed`，只写 `effort`（`{"level": …}`），`by` 是换的人，回合进行中的带上这个回合；落了盘才回应。档位协议那一头照会话这时的模型查过，内核只存字。封存了的拒（同换模型）。
+3. 这个模型有没有这一档、一次请求用哪一档，由执行器照真发的那个模型定（`models.md`「怎么走」第十一条第 3 条）。
 
 **换人格、预设**（`Recast`，施工 P-13，`recast.rs`，`16-人格与预设.md` Y5）：
 

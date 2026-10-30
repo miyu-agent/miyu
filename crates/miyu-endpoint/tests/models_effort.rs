@@ -1,6 +1,6 @@
-//! 思考强度在协议上的样子（施工 8-18；8-18（补）去掉会话那一层，`docs/blueprint/models.md`「协议」「怎么走」第十一条）：
-//! `session.configure` 不再收 `effort`（写了的 `bad_params`），`model` 变回必写（没写的也 `bad_params`）；`subscribe` 的
-//! `model` 多 `effort`，`from` 是配置的哪一层；`model.list` 的 `facts` 多 `effort`，带着完整的配置键名 `key`；配置里写的
+//! 思考强度在协议上的样子（施工 8-18；会话那一层 8-18（补）去掉、SM-1 加回来，`docs/blueprint/models.md`「协议」「怎么走」
+//! 第十一条）：`session.configure` 的 `effort` 照会话这时的模型的档位查过记一条，不在里面的 `bad_params`；`subscribe` 的
+//! `model` 多 `effort`，`from` 是会话或者配置的哪一层；`model.list` 的 `facts` 多 `effort`，带着完整的配置键名 `key`；配置里写的
 //! 不在档位里的报 `unknown_effort`、算进 `config_errors`。
 //!
 //! 没有目录：档位全照手写的 `reasoning`。
@@ -87,17 +87,112 @@ async fn configuring(client: &mut Client, id: &str, params: Value) -> (Vec<Value
     client.until_reply(id).await
 }
 
-/// `session.configure` 不再收 `effort`：写了的回 `bad_params`，不找会话、什么都不记（施工 8-18（补），「怎么走」原话
-/// 「思考强度改在配置里」）。
+/// 日志里换思考强度的那几条的 `body`，照先后（施工 SM-1）。
+fn efforts(home: &Home, session: &str) -> Vec<Value> {
+    logged(home, session)
+        .into_iter()
+        .filter(|event| {
+            event["kind"] == "session.policy_changed" && event["body"]["effort"].is_object()
+        })
+        .map(|event| event["body"].clone())
+        .collect()
+}
+
+/// `session.configure` 的 `effort`（施工 SM-1，设计 51）：照会话这时的模型的档位查过记一条，只写 `effort`；一样的不记；
+/// `none` 读成 `off`；`null` 回到跟着配置；和模型一起换的照换成的模型查，池的是成员的合起来。
 #[tokio::test]
-async fn session_configure_refuses_an_effort_parameter() {
+async fn session_configure_records_the_session_s_effort() {
     let home = Home::new();
     home.write("config.toml", CONFIG);
-    let mut client = Client::connect(core(&home, false));
+    let mut client = Client::connect(core(&home, true));
+    client.hello().await;
+    let session = client.create("c1", "/tmp").await;
+    client.subscribe("c2", &session).await;
+    let set = json!({"session": session, "effort": "high"});
+    let (pushed, reply) = configuring(&mut client, "c3", set.clone()).await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    let event = events(&pushed)
+        .into_iter()
+        .find(|event| event["kind"] == "session.policy_changed")
+        .expect("先推那一条，再回应");
+    assert_eq!(event["body"], json!({"effort": {"level": "high"}}));
+    assert_eq!(event["cause"], json!("c3/effort"));
+    for (id, params) in [
+        ("c4", set),
+        ("c5", json!({"session": session, "effort": "none"})),
+        ("c6", json!({"session": session, "effort": null})),
+        ("c7", json!({"session": session, "effort": null})),
+        (
+            "c8",
+            json!({"session": session, "model": "a/x", "effort": "high"}),
+        ),
+        (
+            "c9",
+            json!({"session": session, "model": "@p", "effort": "low"}),
+        ),
+    ] {
+        let (_, reply) = configuring(&mut client, id, params.clone()).await;
+        assert_eq!(reply["result"], json!({}), "{params}：{reply}");
+    }
+    assert_eq!(
+        efforts(&home, &session),
+        [
+            json!({"effort": {"level": "high"}}),
+            json!({"effort": {"level": "off"}}),
+            json!({"effort": {"level": null}}),
+            json!({"effort": {"level": "high"}}),
+            json!({"effort": {"level": "low"}}),
+        ],
+        "一样的不记，null 记一条"
+    );
+}
+
+/// 重启以后从日志读回来（施工 SM-1）：订阅把会话载入，`model.effort` 照会话记的，`from` 是 `session`；另一个会话照配置。
+#[tokio::test]
+async fn subscribe_after_a_restart_says_the_session_s_effort() {
+    let home = Home::new();
+    home.write("config.toml", CONFIG);
+    let first = core(&home, true);
+    let mut client = Client::connect(first.clone());
+    client.hello().await;
+    let set = client.create("c1", "/tmp").await;
+    let plain = client.create("c2", "/tmp").await;
+    let (_, reply) =
+        configuring(&mut client, "c3", json!({"session": set, "effort": "high"})).await;
+    assert_eq!(reply["result"], json!({}), "{reply}");
+    first.stop_sessions().await;
+    drop(client);
+    let mut client = Client::connect(core(&home, true));
+    client.hello().await;
+    let reply = client.subscribe("s1", &set).await;
+    assert_eq!(
+        reply["result"]["model"]["effort"],
+        json!({"level": "high", "from": "session"}),
+        "{reply}"
+    );
+    let reply = client.subscribe("s2", &plain).await;
+    assert_eq!(
+        reply["result"]["model"]["effort"],
+        json!({"level": "low", "from": "system"}),
+        "{reply}"
+    );
+}
+
+/// 不在会话这时的模型的档位里的、空字、不是字的（施工 8-18 那种对象，旧头发的）：`bad_params`，什么都不记，一起写的模型
+/// 也不换。
+#[tokio::test]
+async fn session_configure_refuses_an_effort_the_model_lacks() {
+    let home = Home::new();
+    home.write("config.toml", CONFIG);
+    let mut client = Client::connect(core(&home, true));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
     for (n, params) in [
-        json!({"session": session, "model": "a/m", "effort": {"model": "a/m", "level": "high"}}),
+        json!({"session": session, "effort": "max"}),
+        json!({"session": session, "effort": "low", "model": "a/x"}),
+        json!({"session": session, "effort": "high", "model": "b/n"}),
+        json!({"session": session, "effort": ""}),
+        json!({"session": session, "effort": 3}),
         json!({"session": session, "effort": {"model": "a/m", "level": "high"}}),
     ]
     .into_iter()
@@ -106,12 +201,23 @@ async fn session_configure_refuses_an_effort_parameter() {
         let (_, reply) = configuring(&mut client, &format!("bad-{n}"), params.clone()).await;
         assert_eq!(reason(&reply), Some("bad_params"), "{params}：{reply}");
     }
+    let (_, reply) = configuring(
+        &mut client,
+        "field",
+        json!({"session": session, "effort": "max"}),
+    )
+    .await;
+    assert_eq!(reply["error"]["data"]["field"], json!("effort"), "{reply}");
+    let changed = logged(&home, &session)
+        .into_iter()
+        .filter(|event| event["kind"] == "session.policy_changed")
+        .count();
+    assert_eq!(changed, 0, "什么都不记，模型也不换");
 }
 
-/// `model` 变回必写（施工 8-18 把它改成了「`model`、`effort` 至少一个」，8-18（补）改回去）：没写的、空字的 `bad_params`，
-/// 不找会话（写 `null` 的施工 8-10 再补起是回到跟着配置，`models_pools.rs` 守着）。
+/// 四样都没写、写了空字的模型：`bad_params`，不找会话（写 `null` 的施工 8-10 再补起是回到跟着配置，`models_pools.rs` 守着）。
 #[tokio::test]
-async fn session_configure_requires_a_model() {
+async fn session_configure_wants_something_to_change() {
     let home = Home::new();
     home.write("config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));

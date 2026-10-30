@@ -132,6 +132,8 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
 | `widgets` | Widgets | See [Packages and commands](packages.en.md) |
 
+`model` in the `events` response is what the session asks next: `ref` (its model or `@pool`), `endpoint` and `model` (who gets the next request; a rotating pool has neither), and `effort` `{"level", "from"}`: the reasoning effort that model uses, `from` being `session` (set with `session.configure`, step SM-1) or `system` (the config). A rotating pool, or a request that carries no effort, has no `effort`.
+
 What each stream pushes is in [Pushes](pushes.en.md).
 
 1. A connection has one subscription per session (`events` and `view` count as the same); subscribing again replaces it. `sessions`, `config`, `extensions`, `packages`, `projects`, `schedules`, `notices`, `kb` and `widgets` are one each per connection; `package` is one per package.

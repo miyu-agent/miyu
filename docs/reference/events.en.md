@@ -25,7 +25,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `kind` | Meaning |
 |---|---|
 | `session.created` | The session was created (event 1): venue, working directory, persona, preset, model… |
-| `session.policy_changed` | Permissions, model or the whole policy changed |
+| `session.policy_changed` | Permissions, model, reasoning effort (`effort: {"level"}`, `null` goes back to the config) or the whole policy changed |
 | `session.workspace_changed` | The working directory changed |
 | `session.meta_changed` | Title, pin or project changed (`project`: an id, empty when moved out); titles the kernel gives unnamed sessions too |
 | `session.recapped` | A recap (not in her context) |
@@ -68,7 +68,7 @@ Not recorded, no `seq`, only pushed to heads subscribed at that moment, never re
 | `tool.progress` | A piece of a running tool's output: `call_id`, `text` |
 | `tool.nested_started` | A `miyu call` from a script passed the checks and is running: `id`, `name`; it ends with `tool.nested` |
 | `status` | A request is retrying or switched provider |
-| `model.changed` | The model or limits for the next requests changed: `why` is `failover` or `turn` |
+| `model.changed` | The model, reasoning effort or limits for the next requests changed: `effort.from` is `session` (the session's own) or `system` (the config); `why` is `failover` or `turn` |
 | `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done |
 | `todos.changed` | The whole current to-do list |
 | `package.state_changed` | What heads see of a package's state in this session changed: `{"package", "state": {"widgets"?}}`; a cleared one has `state` `{}` |

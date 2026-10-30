@@ -278,7 +278,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     }
     .map_err(LoadError::Kernel)?;
     let replayed = replaying.elapsed();
-    // 路由照内核从日志算的引用造（施工 8-10）：换过模型的是换过以后的。
+    // 路由照内核从日志算的引用造（施工 8-10）：换过模型的是换过以后的；思考强度同样照日志算的（施工 SM-1）。
     let model = models.port(ForSession {
         id: id.clone(),
         config: Arc::clone(config.current()),
@@ -286,6 +286,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
         blobs,
         reference: session.reference().map(str::to_string),
         sent,
+        effort: session.effort().map(str::to_string),
     });
     // 重启以后接着干的那一轮，发主请求之前就知道限额（施工 6-3 上）；给头看的限额同上（施工 6-3 补）。检查点重读过的
     // 文件，内核在载入吐出来的动作里第一个要回原文（施工 6-9），actor 起来先做它。

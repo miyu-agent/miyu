@@ -167,6 +167,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
         blobs: Blobs::new(setup.root.blobs()),
         reference: reference.clone(),
         sent: None,
+        effort: None,
     });
     let created = miyu_kernel::event::SessionCreated {
         model: reference,

@@ -62,6 +62,12 @@ pub enum Command {
         /// 接入通讯平台要的：会话不再钉着哪一个，每一轮照这时的配置）。
         model: String,
     },
+    /// `session.configure` 的 `effort`：换会话的思考强度（施工 SM-1，设计 51），`configure.rs`。下一个回合开始时生效；和现在
+    /// 的一样的不记。
+    SetEffort {
+        /// 换成的一档，规整过的名字，协议那一头照会话这时的模型的档位查过；`None` 是回到跟着配置。
+        level: Option<String>,
+    },
     /// `session.set_meta`：改标题、置顶，改哪样写哪样（施工 3-8 三补，`meta.rs`）。
     SetMeta {
         /// 新的标题，照 `session.meta_changed` 的写法：空的是去掉标题；不改就没有。去掉前后空白、量长短是协议端点的事

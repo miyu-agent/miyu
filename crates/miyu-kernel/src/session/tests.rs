@@ -15,6 +15,7 @@ mod difference;
 mod dirs;
 mod dream;
 mod edits;
+mod effort;
 mod end_turn;
 mod executor;
 mod fork;
