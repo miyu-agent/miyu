@@ -6,10 +6,12 @@
 //! - 底账（`miyu_recall::MemoryBook`）跟着日志在内存里，打开时照日志算一遍：一个人格的记忆几百到几千条，不多背。
 //! - 记忆库是派生的检索库（`index/recall/memory-<人格>.db`，键是编号，照到的来源是 `log`）：追加时顺手写，写不进不挡住
 //!   追加，交回给调的一方记日志（[`Appended::indexed`]）；打开时照到的位置比日志短就照日志补。
+//! - 用到才建（施工 V-28）：日志一条都没写过的不建目录、不建第一段，第一次追加时建；库文件不在、日志里也没有要放进库的
+//!   记忆（没清掉的一条都没有）的不建库，读的时候当空的，第一次有要放进去的那一条时建、照底账整份放进去。原来就有的照旧开。
 //! - 跟着看（施工 R-12 上，[`MemoryLog::follow`]，`tail -f`）：登记一个回调，之后追加的落了盘、算进底账就交给它。
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use miyu_kernel::event::Event;
@@ -47,9 +49,12 @@ pub struct MemoryLog {
 
 #[derive(Debug)]
 struct Inner {
-    log: SessionLog,
+    /// 日志：一条都没写过的（目录、第一段都不在）是空的，第一次追加时建（施工 V-28）。
+    log: Option<SessionLog>,
     book: MemoryBook,
     followers: Followers,
+    /// 记忆库还没建（施工 V-28）：开的时候库文件不在、没有要放进去的，第一次有要放进去的时候建。
+    unbuilt: bool,
 }
 
 /// 跟着看这一份日志的一方（施工 R-12 上，[`MemoryLog::follow`]）：之后追加的一条落了盘、算进底账以后交给它，连同这时的
@@ -70,8 +75,9 @@ impl std::fmt::Debug for Followers {
 /// 这一回第一次开一份记忆日志时，派生的那些是什么情形：调的一方照它记运行日志。
 #[derive(Debug)]
 pub struct Report {
-    /// 记忆库开得怎么样。
-    pub index: Opened,
+    /// 记忆库开得怎么样：库文件不在、日志里没有要放进库的记忆的没开（施工 V-28），第一次要放进去时建，那时的情形交在
+    /// [`Appended::opened`]。
+    pub index: Option<Opened>,
     /// 照日志补了几条进记忆库：照到的位置跟得上日志的是 0。
     pub filled: usize,
     /// 照日志补记忆库出了错（没补上的下次再补）。
@@ -89,6 +95,9 @@ pub struct Appended {
     pub indexed: Result<(), DbError>,
     /// 清空的清掉了几条（施工 R-3 补）：不算改掉的旧版本；别的是 0。
     pub cleared: usize,
+    /// 记忆库是这一条建起来的（施工 V-28）：建得怎么样，调的一方照 [`Report::index`] 一样记日志。建不成的
+    /// （[`Opened::Unusable`]）这一回不再写库，同打开时就用不了的一样。
+    pub opened: Option<Opened>,
 }
 
 /// 记忆日志出错。
@@ -136,7 +145,8 @@ impl MemoryLogs {
         Ok(personas)
     }
 
-    /// 房间 `room` 的记忆日志：开过的交回同一份；没有的建一份空的。这一回第一次开的另交回派生的那些是什么情形（[`Report`]）。
+    /// 房间 `room` 的记忆日志：开过的交回同一份；没有的是一份空的，盘上什么都不建，第一次追加时才建（施工 V-28）。这一回
+    /// 第一次开的另交回派生的那些是什么情形（[`Report`]）。
     ///
     /// # Errors
     ///
@@ -148,11 +158,8 @@ impl MemoryLogs {
         }
         let dir = room.log(&self.root);
         let (log, events) = match SessionLog::open(&dir, SEGMENT_LIMIT) {
-            Ok(opened) => opened,
-            Err(OpenError::Missing(_)) => (
-                SessionLog::create(&dir, SEGMENT_LIMIT).map_err(MemoryError::Write)?,
-                Vec::new(),
-            ),
+            Ok((log, events)) => (Some(log), events),
+            Err(OpenError::Missing(_)) => (None, Vec::new()),
             Err(error) => return Err(MemoryError::Open(error)),
         };
         let mut book = MemoryBook::default();
@@ -162,16 +169,24 @@ impl MemoryLogs {
                 unreadable.push((event.seq, why));
             }
         }
-        let (index, opened) = RecallIndex::open(&room.memories(&self.root));
-        let (filled, caught_up) = match catch_up(&index, &events, &book) {
-            Ok(filled) => (filled, None),
-            Err(error) => (0, Some(error)),
+        let path = room.memories(&self.root);
+        let unbuilt = absent(&path) && book.all().filter_map(put_of).next().is_none();
+        let (index, opened, filled, caught_up) = if unbuilt {
+            (RecallIndex::absent(&path), None, 0, None)
+        } else {
+            let (index, opened) = RecallIndex::open(&path);
+            let (filled, caught_up) = match catch_up(&index, &events, &book) {
+                Ok(filled) => (filled, None),
+                Err(error) => (0, Some(error)),
+            };
+            (index, Some(opened), filled, caught_up)
         };
         let log = Arc::new(MemoryLog {
             inner: Mutex::new(Inner {
                 log,
                 book,
                 followers: Followers::default(),
+                unbuilt,
             }),
             index,
             dir,
@@ -215,13 +230,13 @@ impl MemoryLog {
                 id,
                 indexed: Ok(()),
                 cleared,
+                opened: None,
             });
         }
-        let seq = inner.log.next_seq();
+        let seq = inner.log.as_ref().map_or(Seq::FIRST, SessionLog::next_seq);
         let mut line = to_event(seq, at, by, event).map_err(MemoryError::Encode)?;
         line.cause = cause.cloned();
-        inner
-            .log
+        written(&mut inner.log, &self.dir)?
             .append(std::slice::from_ref(&line))
             .map_err(MemoryError::Write)?;
         // 清掉哪几条照追加以前的底账算：记忆库照它删字，改掉的旧版本也删。
@@ -232,24 +247,22 @@ impl MemoryLog {
         // 刚写成的一定读得懂：读不懂的是 bug，照样不挡住，底账照旧。
         let shown = inner.book.see(&line).map_err(MemoryError::Encode)?;
         let Inner {
-            book, followers, ..
+            book,
+            followers,
+            unbuilt,
+            ..
         } = &mut *inner;
         followers.0.retain_mut(|follow| follow(&line, book));
-        let indexed = match event {
-            MemoryEvent::Saved(saved) => self.index.apply(
-                SOURCE,
-                &[Edit::Put {
-                    key: MemoryId::new(seq).to_string(),
-                    text: indexed(&saved.text, saved.keywords.as_deref()),
-                    at,
-                }],
-                seq,
-            ),
+        let edits = match event {
+            MemoryEvent::Saved(saved) => Some(vec![Edit::Put {
+                key: MemoryId::new(seq).to_string(),
+                text: indexed(&saved.text, saved.keywords.as_deref()),
+                at,
+            }]),
             // 换了关键词的照新的字重放（施工 R-15 上）：检索库换字的时候拿掉旧的向量，补的照新的字补。清掉的、没有的不放。
-            MemoryEvent::Tagged(tagged) => match book.get(tagged.id).and_then(put_of) {
-                Some(put) => self.index.apply(SOURCE, &[put], seq),
-                None => Ok(()),
-            },
+            MemoryEvent::Tagged(tagged) => {
+                book.get(tagged.id).and_then(put_of).map(|put| vec![put])
+            }
             // 作废的不用改记忆库：搜得到，挑不挑是用的一方照底账判，恢复的也是（施工 R-12 下）；抽到哪、合并的摘要和记号不是
             // 一条记忆（施工 R-6 上、R-7 上、R-17）；人卡也不是（施工 E-1 下）。
             MemoryEvent::Retired(_)
@@ -261,14 +274,30 @@ impl MemoryLog {
             | MemoryEvent::Swept(_)
             | MemoryEvent::MergeFailed(_)
             | MemoryEvent::Card(_)
-            | MemoryEvent::CardRetired(_) => Ok(()),
+            | MemoryEvent::CardRetired(_) => None,
             // 清掉的人不要了：字不留在派生的库里。
-            MemoryEvent::Cleared(_) => self.index.apply(SOURCE, &removals(&cleared), seq),
+            MemoryEvent::Cleared(_) => Some(removals(&cleared)),
         };
+        // 记忆库还没建、这一条有要放进去的（施工 V-28）：建起来，照底账整份放（底账已经算进这一条了，清掉的不放）。
+        let build = *unbuilt
+            && edits
+                .as_deref()
+                .is_some_and(|edits| edits.iter().any(|edit| matches!(edit, Edit::Put { .. })));
+        let opened = build.then(|| {
+            *unbuilt = false;
+            self.index.build()
+        });
+        let edits = if build {
+            Some(book.all().filter_map(put_of).collect())
+        } else {
+            edits
+        };
+        let indexed = edits.map_or(Ok(()), |edits| self.index.apply(SOURCE, &edits, seq));
         Ok(Appended {
             id: MemoryId::new(seq),
             indexed,
             cleared: shown,
+            opened,
         })
     }
 
@@ -285,7 +314,7 @@ impl MemoryLog {
         follower: Follower,
     ) -> Result<(Vec<Event>, u64), MemoryError> {
         let mut inner = self.lock();
-        let upto = inner.log.next_seq().get() - 1;
+        let upto = inner.log.as_ref().map_or(0, |log| log.next_seq().get() - 1);
         let filled = match after {
             Some(after) if after < upto => read_events(&self.dir)
                 .map_err(MemoryError::Open)?
@@ -366,6 +395,22 @@ fn put_of(entry: &Entry) -> Option<Edit> {
         text: indexed(&entry.text, entry.keywords.as_deref()),
         at: entry.at,
     })
+}
+
+/// 日志还没建的（一条都没写过，施工 V-28）先建：目录和空的第一段。交回开着的日志。
+fn written<'a>(
+    log: &'a mut Option<SessionLog>,
+    dir: &Path,
+) -> Result<&'a mut SessionLog, MemoryError> {
+    match log {
+        Some(log) => Ok(log),
+        None => Ok(log.insert(SessionLog::create(dir, SEGMENT_LIMIT).map_err(MemoryError::Write)?)),
+    }
+}
+
+/// 库文件确实不在（施工 V-28）：看不出来的（读不了目录）当在，照常开，开不了的照开库的规矩报。
+fn absent(path: &Path) -> bool {
+    matches!(path.try_exists(), Ok(false))
 }
 
 /// 从记忆库里删掉这几条。

@@ -37,7 +37,7 @@ use miyu_kernel::time::Timestamp;
 use rusqlite::Connection;
 
 use crate::root::DataRoot;
-use crate::sqlite::{self, DbError, Opened, connect, remove};
+use crate::sqlite::{self, DbError, Opened, connect, idle, remove};
 
 /// 用量汇总读写出错（[`crate::sqlite::DbError`]）。
 pub type UsageError = DbError;
@@ -100,7 +100,7 @@ pub struct UsageIndex {
     /// 库文件在哪。
     path: PathBuf,
     /// 开着的连接：用不了的（删了重建也打不开）是空的，这时查出来没有一行、写什么都不写。
-    db: Mutex<Option<Connection>>,
+    db: Arc<Mutex<Option<Connection>>>,
     /// 汇率（施工 UC-1）：换算照它找，取汇率的端口由核心起来时装上（[`UsageIndex::rates`]）。
     rates: Arc<rates::RateBook>,
 }
@@ -115,7 +115,7 @@ impl UsageIndex {
         let index = UsageIndex {
             root: root.clone(),
             path,
-            db: Mutex::new(db),
+            db: idle::keep("usage", Mutex::new(db)),
             rates,
         };
         (index, opened)

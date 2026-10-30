@@ -6,6 +6,9 @@
 //! - 日志模式 WAL、`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏，丢了的照日志补。
 //! - 一个库一个进程只开一个连接，一直开着：打开再关上同一个库文件会丢掉 SQLite 在这个进程里的文件锁（07 第六节，旧版
 //!   把库弄坏过）。删的时候连同 `-wal`、`-shm` 三个一起删。
+//! - 闲时合回（施工 V-28，[`idle`]）：每个写连接装一个提交钩子，提交一次叫一声；核心等到库最后一次提交过去一阵子，把
+//!   `-wal` 合回主库、截成 0 字节。`journal_size_limit` 是 0：一阵子一直有写、等不到闲的，SQLite 自己做完检查点以后下一次
+//!   提交时 `-wal` 也截回去，不停在最高水位。被杀、断电时留在 `-wal` 里的只有最后那一阵没合的。
 //! - 库所在的目录还没有、要建的，只在数据根里建（`durable::create_dir`，施工 TMP-1）：数据根被删了的不建回来，这一回用不了，
 //!   错误里带着那个目录。所有的库都在数据根里。
 
@@ -17,6 +20,12 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use crate::durable::create_dir;
+
+pub mod idle;
+
+/// 自动检查点以后下一次提交把 `-wal` 截到多大（`journal_size_limit`，施工 V-28）：0 是截到只剩这一次提交写的那几页。截短是
+/// 一次 `ftruncate`，之后照常往后长，到下一次检查点。
+const WAL_LIMIT: i64 = 0;
 
 /// 打开一个库时是什么情形：调的一方照它记运行日志。
 #[derive(Debug)]
@@ -65,6 +74,11 @@ pub(crate) fn connect(
         create_dir(dir)?;
     }
     let db = Connection::open(path)?;
+    // 先装钩子：新建时建表那一次提交也算一次写（施工 V-28）。
+    db.commit_hook(Some(|| {
+        idle::wrote();
+        false
+    }))?;
     let found: i64 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
     match found {
         0 => {
@@ -85,6 +99,7 @@ pub(crate) fn connect(
         return Err(DbError::Bad(format!("journal mode {mode}")));
     }
     db.pragma_update(None, "synchronous", "NORMAL")?;
+    db.pragma_update(None, "journal_size_limit", WAL_LIMIT)?;
     Ok((db, found == 0))
 }
 

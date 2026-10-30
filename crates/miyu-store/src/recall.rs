@@ -12,7 +12,7 @@
 //! 施工 R-2 上）：没往前挪的，下次照真相补。键以 `来源/` 开头，拿掉一个来源照它（[`RecallIndex::forget`]）。
 
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
@@ -70,8 +70,9 @@ CREATE VIRTUAL TABLE terms USING fts5(words, content='', contentless_delete=1, t
 pub struct RecallIndex {
     /// 库文件在哪。
     path: PathBuf,
-    /// 写的连接：用不了的（删了重建也打不开）是空的，这时什么都不写。
-    db: Mutex<Option<Connection>>,
+    /// 写的连接：用不了的（删了重建也打不开）、还没开的（[`RecallIndex::absent`]）是空的，这时什么都不写。登记给闲时合回
+    /// （施工 V-28）。
+    db: Arc<Mutex<Option<Connection>>>,
     /// 读的连接（施工 V-14）：WAL 里读不等写，回合开始找记忆不用等后台那一批写完、等它提交时顺手做的检查点（一次十几到二十几
     /// 毫秒）。用不了的是空的，这时找不到任何一条。
     reader: Mutex<Option<Connection>>,

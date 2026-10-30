@@ -14,7 +14,7 @@ mod row;
 mod tests;
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ use miyu_kernel::id::SessionId;
 use miyu_kernel::time::Timestamp;
 
 use crate::root::DataRoot;
-use crate::sqlite::DbError;
+use crate::sqlite::{DbError, idle};
 
 pub use open::Opened;
 
@@ -189,7 +189,8 @@ impl From<Unreadable> for DbError {
 
 /// 唤醒表：一个连接一直开着（`crate::sqlite` 的规矩），一次一个人用。
 pub struct Schedules {
-    db: Mutex<Connection>,
+    /// 登记给闲时合回（施工 V-28）。
+    db: Arc<Mutex<Connection>>,
     path: PathBuf,
 }
 
@@ -205,7 +206,7 @@ impl Schedules {
         let (db, opened) = open::open(&path);
         (
             db.map(|db| Schedules {
-                db: Mutex::new(db),
+                db: idle::keep("schedules", Mutex::new(db)),
                 path,
             }),
             opened,
