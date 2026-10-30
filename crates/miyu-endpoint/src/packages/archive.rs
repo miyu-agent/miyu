@@ -23,11 +23,16 @@ pub(super) fn is_package_file(path: &Path) -> bool {
 
 /// 装包文件 `path`（`preview` 是只看一眼）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
 /// 的 `package_file_bad`；之后同装包文件夹（进度推给 `caller`，从软件源装的自己推、不传）。
+///
+/// 写了 `expected` 的（从软件源装的，索引里那一条的编号，施工 AS-1）：包文件里的编号（最上层文件夹的名字）对不上也是
+/// `package_file_bad`，什么都不装。不查的话，源里写着 `foo` 的条目装进来的可以是别的源装的 `bar`，盖掉它、接着用它的开关和
+/// 批过的能力（设计 `37-软件源.md`「换源就是换信任的对象」）。
 pub(super) async fn install(
     core: &Arc<Core>,
     peer: Peer,
     path: &Path,
     preview: bool,
+    expected: Option<&str>,
     caller: Option<&Reverse>,
 ) -> Result<Value, Refusal> {
     if !path.is_absolute() {
@@ -42,6 +47,10 @@ pub(super) async fn install(
         .await
         .map_err(|_| Refusal::INTERNAL);
     let answer = match unpacked {
+        Ok(Ok(unpacked)) if expected.is_some_and(|expected| expected != unpacked.id) => {
+            tracing::warn!(target: TARGET, expected = expected.unwrap_or_default(), got = unpacked.id.as_str(), "package file holds another package");
+            Err(Refusal::PACKAGE_FILE_BAD)
+        }
         Ok(Ok(unpacked)) if preview => {
             super::preview::installing(core, peer, &unpacked.folder).await
         }

@@ -48,7 +48,7 @@ pub(crate) async fn install(
         (Some(path), None, preview) => {
             let path = Path::new(&path);
             match (super::archive::is_package_file(path), preview) {
-                (true, _) => super::archive::install(core, peer, path, preview, caller).await,
+                (true, _) => super::archive::install(core, peer, path, preview, None, caller).await,
                 (false, true) => super::preview::installing(core, peer, path).await,
                 (false, false) => super::manage::from_path(core, (peer, caller), path, None).await,
             }

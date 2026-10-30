@@ -227,3 +227,47 @@ async fn a_file_that_does_not_match_the_index_is_not_installed() {
         call_collecting(&mut client, "package.install", json!({"source": "nothing"})).await;
     assert_eq!(reason(&unknown), Some("unknown_package"));
 }
+
+/// 施工 AS-1（发布前测试 2026-10-30）：索引里写着 `foo` 的条目，包文件里装的却是另一个已经装着的 `bar`：拒
+/// （`package_file_bad`），`bar` 原样、`foo` 不装。原来照包文件里最上层文件夹的名字装，盖掉别的源装的 `bar`，它的开关和批过的
+/// 能力照旧留着。
+#[tokio::test]
+async fn a_source_file_holding_another_package_id_is_refused() {
+    let home = Home::new();
+    let (secret, trusted) = keys();
+    let bar = packed(&home, "bar", "1.0", &[]);
+    let file = home.work.join("bar-1.0.miyu");
+    std::fs::write(&file, &bar.1).expect("写得进");
+    let disguised = packed(&home, "bar", "2.0", &[]);
+    let pair = signed(vec![entry("foo", &[], &disguised)], &secret);
+    let mut replies = serving(&pair);
+    replies.push(bytes(&disguised.1));
+    let server = Server::start(replies).await;
+    let mirror = format!("{}/m", server.base_url);
+    let mut client = Client::connect(core(
+        &home,
+        "https://unreachable.invalid/",
+        &[&mirror],
+        trusted,
+    ));
+    client.hello().await;
+    let (local, _) = call_collecting(
+        &mut client,
+        "package.install",
+        json!({"path": file.to_string_lossy()}),
+    )
+    .await;
+    assert_eq!(local["result"]["package"], "bar", "{local}");
+    let manifest = home.root.path().join("packages/bar/package.toml");
+    let before = std::fs::read(&manifest).expect("装了");
+
+    let (reply, _) =
+        call_collecting(&mut client, "package.install", json!({"source": "foo"})).await;
+    assert_eq!(reason(&reply), Some("package_file_bad"), "{reply}");
+    assert_eq!(
+        std::fs::read(&manifest).expect("还在"),
+        before,
+        "bar 没被换掉"
+    );
+    assert!(!installed(&home, "foo"));
+}

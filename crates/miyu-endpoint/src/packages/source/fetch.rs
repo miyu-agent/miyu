@@ -153,7 +153,15 @@ pub(crate) async fn install(
     let mut with = Vec::new();
     for (n, (step, file)) in steps.iter().zip(&files).enumerate() {
         progress::stage(caller, &step.entry.id, Stage::Install, At::nth(n, count));
-        answer = super::super::archive::install(core, peer, file, false, None).await?;
+        answer = super::super::archive::install(
+            core,
+            peer,
+            file,
+            false,
+            Some(step.entry.id.as_str()),
+            None,
+        )
+        .await?;
         let (record, id, origin) = (
             packages(core).local_root(),
             step.entry.id.clone(),
