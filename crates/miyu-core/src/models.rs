@@ -11,6 +11,7 @@
 pub mod catalog;
 pub mod digest;
 pub mod logos;
+pub mod recall;
 pub mod refresh;
 
 use std::path::PathBuf;
@@ -18,9 +19,10 @@ use std::sync::Arc;
 
 use tokio::sync::watch;
 
+use miyu_config::merge::Resolved;
 use miyu_config::secret::Reference;
 use miyu_http::{Proxy, client, fetcher};
-use miyu_models::catalog::Loaded;
+use miyu_models::catalog::Recalled;
 use miyu_models::cooldown::Rules;
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
@@ -30,6 +32,7 @@ use miyu_store::resources::ResourceRoot;
 
 use crate::TARGET;
 use catalog::Places;
+use recall::{Read, Version};
 use refresh::{Refresher, Schedule};
 
 /// 照资源目录造路由，模型资料还没读（目录、用出来的、供应商的列表随 [`begin`]、[`follow`]）。用出来的、列表写进 `state`
@@ -93,28 +96,37 @@ pub fn routes(resources: &ResourceRoot) -> Result<Arc<dyn Models>, String> {
 
 /// 最早的一步（施工 V-2 下补）：找到资源目录就在一个线程里读目录（快照和缓存挑新的），和读配置、生成文件这些起来的步子
 /// 并着走。头一连上就要载入会话，载入要等目录读完：原来造好路由才开始读，起来约 15 ms 以后才动手。线程起不来的，到
-/// [`begin`] 再读。`program` 是程序的真实位置：缓存目录里整理好的一份认它（施工 V-5 中，[`digest`]）。
-pub fn read_early(snapshot: PathBuf, cache: Option<PathBuf>, program: Option<PathBuf>) -> Early {
+/// [`begin`] 再读。`program` 是程序的真实位置：缓存目录里整理好的一份认它（施工 V-5 中，[`digest`]）。`state` 是
+/// `state/models`：记下的那份对得上排第一的那份目录的，不读整份目录（施工 V-25 下，[`recall`]）。
+pub fn read_early(
+    snapshot: PathBuf,
+    cache: Option<PathBuf>,
+    program: Option<PathBuf>,
+    state: Option<PathBuf>,
+) -> Early {
+    let version = Version::of_places(&snapshot, program.as_deref());
     let places = Places {
         snapshot,
         cache,
         program,
     };
-    let reading = places.clone();
+    let (reading, versioned, at) = (places.clone(), version.clone(), state.clone());
     // 核心放锁之前等它读完（施工 TMP-3）：读完才起写盘的线程、登记，没读完就放锁的会把删掉的数据根建回来。
     let held = crate::pending::working();
     let thread = std::thread::Builder::new()
         .name("catalog".to_string())
         .spawn(move || {
-            let loaded = catalog::load(&reading);
+            let read = recall::early(&reading, versioned.as_ref(), at.as_deref());
             drop(held);
-            loaded
+            read
         });
     if let Err(error) = &thread {
         tracing::warn!(target: TARGET, error = %error, "catalog thread not started");
     }
     Early {
         places,
+        version,
+        state,
         thread: thread.ok(),
     }
 }
@@ -122,7 +134,11 @@ pub fn read_early(snapshot: PathBuf, cache: Option<PathBuf>, program: Option<Pat
 /// [`read_early`] 起的那一次读。
 pub struct Early {
     places: Places,
-    thread: Option<std::thread::JoinHandle<Option<Loaded>>>,
+    /// 算版本串要的（施工 V-25 下）；没有的照旧常驻。
+    version: Option<Version>,
+    /// `state/models`：记下的那份在这里。
+    state: Option<PathBuf>,
+    thread: Option<std::thread::JoinHandle<Read>>,
 }
 
 impl Early {
@@ -132,44 +148,95 @@ impl Early {
     }
 
     /// 等它读完；线程没起来的现在读，读的线程 panic 了的当没读到。在阻塞线程里调。
-    fn finish(self) -> Option<Loaded> {
-        let Some(thread) = self.thread else {
+    fn finish(&mut self) -> Read {
+        let Some(thread) = self.thread.take() else {
             let _held = crate::pending::working();
-            return catalog::load(&self.places);
+            return recall::early(&self.places, self.version.as_ref(), self.state.as_deref());
         };
         thread.join().unwrap_or_else(|_| {
             tracing::error!(target: TARGET, "catalog read panicked");
-            None
+            Read::Full(None, None)
         })
     }
 }
 
 /// 造好路由以后（施工 V-2 下）：在阻塞线程里等 [`read_early`] 的目录、读用出来的，读完放行要它的（造会话、载入、
 /// `model.list`）。不等写 `ready`。交回读好的图标表，[`follow`] 照它在后台拉图标。
-pub fn begin(data: Arc<ModelData>, early: Early, state: Option<PathBuf>) -> Reading {
+///
+/// 目录不常驻（施工 V-25 下）：记下的那份对上了的直接换上；读了整份目录、又算得出版本串的，照起来时的配置 `config` 把写过
+/// 的都查一遍记下、写盘（`INFO catalog recall built`），再放掉整份目录、把空着的堆还给系统。没有缓存目录、不知道程序在哪的照旧
+/// 常驻。
+pub fn begin(
+    data: Arc<ModelData>,
+    early: Early,
+    state: Option<PathBuf>,
+    config: Option<Resolved>,
+) -> Reading {
     let table = early.places.snapshot.join(logos::TABLE);
     let reading = Arc::clone(&data);
+    let version = early.version.clone();
     let task = tokio::task::spawn_blocking(move || {
+        let mut early = early;
         let observed = state.as_deref().map(read_observed).unwrap_or_default();
-        reading.loaded(early.finish(), observed);
-        // 读目录剩下的还给系统（23 F3，施工 V-2 再补）：原文、解析的半成品放掉了，glibc 不还就一直占着。
+        let reader = early
+            .version
+            .clone()
+            .map(|version| recall::reader(early.places.clone(), version));
+        match (early.finish(), reader, config) {
+            (Read::Recalled(recalled), Some(reader), _) => {
+                reading.recalled(recalled, observed, reader);
+            }
+            (Read::Full(Some(loaded), Some(of)), Some(reader), Some(config)) => {
+                let started = std::time::Instant::now();
+                let empty = Recalled::new(&of, loaded.source, &loaded.fetched);
+                let recalled = reading.fill(empty, &loaded, &config);
+                let (providers, models) = recalled.len();
+                tracing::info!(
+                    target: TARGET,
+                    source = loaded.source.as_str(),
+                    fetched = loaded.fetched.as_str(),
+                    providers,
+                    models,
+                    ms = started.elapsed().as_millis(),
+                    "catalog recall built"
+                );
+                drop(loaded);
+                reading.recalled(recalled, observed, reader);
+            }
+            (Read::Full(loaded, _), _, _) => reading.loaded(loaded, observed),
+            (Read::Recalled(_), None, _) => {
+                // 记下的那份对上了却没有读法（不会发生：两样都照 `version` 来）：当没读到。
+                reading.loaded(None, observed);
+            }
+        }
+        // 读目录剩下的还给系统（23 F3，施工 V-2 再补）：原文、解析的半成品、不常驻时整份目录都放掉了，glibc 不还就一直占着。
         miyu_heap::trim();
         logos::table(&table)
     });
-    Reading { data, task }
+    Reading {
+        data,
+        task,
+        version,
+    }
 }
 
 /// [`begin`] 起的那一次读。
 pub struct Reading {
     data: Arc<ModelData>,
     task: tokio::task::JoinHandle<Option<miyu_models::logos::LogoTable>>,
+    /// 算版本串要的：后台更新换新目录时照它算（施工 V-25 下）。
+    version: Option<Version>,
 }
 
 /// 写了 `ready` 以后：等读完，再照 `settings` 在后台更新目录、拉图标。缓存目录 `cache`（`<缓存目录>/models`）算不出来的只读
 /// 快照、不拉。
 pub fn follow(reading: Reading, cache: Option<PathBuf>, settings: watch::Receiver<Schedule>) {
     tokio::spawn(async move {
-        let Reading { data, task } = reading;
+        let Reading {
+            data,
+            task,
+            version,
+        } = reading;
         let table = match task.await {
             Ok(table) => table,
             Err(error) => {
@@ -200,6 +267,7 @@ pub fn follow(reading: Reading, cache: Option<PathBuf>, settings: watch::Receive
                 data,
                 client,
                 cache,
+                version,
             }
             .run(settings)
             .await;
@@ -256,6 +324,25 @@ pub fn follow_cooldown(
         while config.changed().await.is_ok() {
             let now = rules(&config.borrow_and_update());
             data.set_cooldown_rules(now);
+        }
+    });
+}
+
+/// 配置换了（施工 V-25 下）：目录不常驻时，在阻塞线程里把配置里新写的模型照整份目录查一遍记下（`ModelData::
+/// remember_configured`），路由下一轮问到时不用在 tokio 的线程上读目录。常驻的什么都不做。
+pub fn follow_recall(
+    mut config: watch::Receiver<Arc<miyu_endpoint::config::Config>>,
+    data: Arc<ModelData>,
+) {
+    tokio::spawn(async move {
+        while config.changed().await.is_ok() {
+            let resolved = config.borrow_and_update().resolved().clone();
+            let data = Arc::clone(&data);
+            let remembered =
+                tokio::task::spawn_blocking(move || data.remember_configured(&resolved)).await;
+            if let Err(error) = remembered {
+                tracing::error!(target: TARGET, panic = error.is_panic(), "catalog recall panicked");
+            }
         }
     });
 }

@@ -90,6 +90,7 @@ fn finish_waits_for_a_catalog_read_still_going() {
         resources.join("snapshot"),
         Some(home.join("cache")),
         std::env::current_exe().ok(),
+        None,
     );
     finish();
     std::fs::remove_dir_all(&home).expect("删得掉");

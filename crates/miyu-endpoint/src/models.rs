@@ -164,22 +164,27 @@ pub(crate) async fn list(core: &Core, language: &str, params: Value) -> Result<V
                 .await
                 .unwrap_or(());
         }
-    } else {
-        refresh_stale(&data, &snapshot, &chosen, only.is_none());
     }
     let now = crate::sessions::now();
     let names = embedding_names(core);
+    // 要列那一家目录里的全部模型：整份目录借一份，这一次答完就放（施工 V-25 下：不常驻时临时读，在阻塞线程里）。
+    let holding = data.held().await;
     let providers: Vec<Value> = chosen
         .iter()
         .map(|id| {
             let models = only.as_ref().and_then(|only| only.get(id));
-            entry::provider(&data, &snapshot, id, now, &names, models)
+            entry::provider(&data, &holding, &snapshot, id, now, &names, models)
         })
         .collect();
-    let catalog = data.catalog().map_or(
+    let catalog = holding.meta().map_or(
         Value::Null,
-        |loaded| json!({"source": loaded.source.as_str(), "fetched": loaded.fetched}),
+        |(source, fetched)| json!({"source": source.as_str(), "fetched": fetched}),
     );
+    drop(holding);
+    // 不写 refresh 的：答好了再在后台拉，这一次照手头的（拉得快的时候也不会抢在答之前换上，mac 的 CI 上碰到过）。
+    if params.refresh != Some(true) {
+        refresh_stale(&data, &snapshot, &chosen, only.is_none());
+    }
     let uses = UseSettings::from(&values);
     Ok(json!({
         "providers": providers,

@@ -68,6 +68,11 @@ pub const ALLOWED: &[(&str, &str, &str)] = &[
         "`state/models/` 下写死的几个文件名（`learned.json` 这种），不是谁的东西",
     ),
     (
+        "crates/miyu-session/src/route/shared/recall.rs",
+        "file",
+        "`state/models/catalog.json`，写死的文件名，不是谁的东西（施工 V-25 下从 `shared.rs` 拆出来）",
+    ),
+    (
         "crates/miyu-session/src/embed/files.rs",
         "file",
         "嵌入模型清单里的文件名：随安装来的，不是谁的东西",

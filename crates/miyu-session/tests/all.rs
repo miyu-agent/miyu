@@ -13,6 +13,7 @@ mod attachments;
 mod backlog;
 mod busy;
 mod caller;
+mod catalog_recall;
 mod catch_up;
 mod delete;
 mod display_name;
