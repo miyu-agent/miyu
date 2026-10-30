@@ -69,7 +69,7 @@
     },
     "load_tools": {"name": "加载工具", "icon": "⇣"},
     "sessions": {
-      "name": "列会话",
+      "name": "列出会话",
       "icon": "≡"
     },
     "session_usage": {
@@ -81,7 +81,7 @@
       "icon": "?"
     },
     "packages": {
-      "name": "软件包",
+      "name": "查看软件包",
       "subject": "package",
       "icon": "≡"
     },
@@ -95,7 +95,7 @@
       "icon": "≡"
     },
     "send_message": {
-      "name": "留言",
+      "name": "发消息",
       "subject": "to",
       "icon": "↗"
     }

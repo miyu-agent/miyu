@@ -81,7 +81,7 @@
       "icon": "?"
     },
     "packages": {
-      "name": "パッケージ",
+      "name": "パッケージを見る",
       "subject": "package",
       "icon": "≡"
     },
@@ -95,7 +95,7 @@
       "icon": "≡"
     },
     "send_message": {
-      "name": "メッセージ",
+      "name": "メッセージを送る",
       "subject": "to",
       "icon": "↗"
     }

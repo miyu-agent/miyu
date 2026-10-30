@@ -324,8 +324,8 @@ async fn features_with_several_tools_list_them() {
     assert_eq!(
         tools("sessions"),
         json!([
-            {"id": "sessions", "name": "列会话", "on": true},
-            {"id": "send_message", "name": "留言", "on": true},
+            {"id": "sessions", "name": "列出会话", "on": true},
+            {"id": "send_message", "name": "发消息", "on": true},
         ])
     );
     assert_eq!(

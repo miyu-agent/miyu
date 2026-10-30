@@ -147,7 +147,7 @@ async fn a_subagent_messaged_after_it_reported_is_waited_for_again() {
     assert_eq!(code, 0, "{err}");
     assert_eq!(
         screen,
-        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· j1「查 A」已回报\n↗ 留言 j1 · 送到了：j1\n\n答它了。\n· j1「查 A」已回报\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
+        "↗ 派子代理 查 A · 派出去了：j1\n\n派出去了。\n· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）\n· j1「查 A」已回报\n↗ 发消息 j1 · 送到了：j1\n\n答它了。\n· j1「查 A」已回报\n\nA 加好了。\n· 输入 500 · 命中缓存 200（40%）· 输出 50\n",
         "答了它以后还在等，它再报、叫醒的那一轮也印了"
     );
 }

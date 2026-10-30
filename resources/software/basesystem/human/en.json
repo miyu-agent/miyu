@@ -69,7 +69,7 @@
     },
     "load_tools": {"name": "Load tools", "icon": "⇣"},
     "sessions": {
-      "name": "Sessions",
+      "name": "List sessions",
       "icon": "≡"
     },
     "session_usage": {
@@ -81,7 +81,7 @@
       "icon": "?"
     },
     "packages": {
-      "name": "Packages",
+      "name": "View packages",
       "subject": "package",
       "icon": "≡"
     },
@@ -95,7 +95,7 @@
       "icon": "≡"
     },
     "send_message": {
-      "name": "Message",
+      "name": "Send message",
       "subject": "to",
       "icon": "↗"
     }

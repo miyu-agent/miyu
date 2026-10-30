@@ -261,7 +261,7 @@ B 也查完了，都齐了。
 样本 `docs/designs/samples/cli/ask-agents-messaged-text.txt`（留言叫醒以前派的子代理，施工 7-9 补；标准错误不是终端时）：
 
 ```text
-↗ 留言 j1 · 送到了：j1
+↗ 发消息 j1 · 送到了：j1
 ↗ 派子代理 查 C · 派出去了：j3
 
 转给 A 了，C 也派出去了。
