@@ -79,9 +79,36 @@ impl Sandbox {
     ///
     /// 拉不起来、没写 `ready` 就走了、等太久。
     pub fn start(&self) -> Result<Running, String> {
+        self.start_with(Launch::default())
+    }
+
+    /// 照 `launch` 拉起核心（施工 V-29）：放不放进自己的 systemd scope、运行日志记到哪一级。别的同 [`Sandbox::start`]。
+    ///
+    /// # Errors
+    ///
+    /// 拉不起来、没写 `ready` 就走了、等太久。
+    pub fn start_with(&self, launch: Launch<'_>) -> Result<Running, String> {
         let cache = self.root.state().join("perf-cache");
         let began = Instant::now();
-        let mut child = Command::new(&self.miyu)
+        // 放进 scope 的经 `systemd-run --scope`：它登记好 scope 就把自己换成核心（`env` 也是换，进程号不变），环境照传。
+        // `XDG_RUNTIME_DIR` 留给 systemd-run 找用户的总线，进了 scope 再由 `env` 去掉。
+        let mut command = if launch.scoped {
+            let mut command = Command::new("systemd-run");
+            command
+                .args(["--user", "--scope", "--quiet", "--collect", "--"])
+                .args(["env", "-u", "XDG_RUNTIME_DIR"])
+                .arg(&self.miyu);
+            command
+        } else {
+            let mut command = Command::new(&self.miyu);
+            command.env_remove("XDG_RUNTIME_DIR");
+            command
+        };
+        command.env_remove("MIYU_LOG");
+        if let Some(level) = launch.log {
+            command.env("MIYU_LOG", level);
+        }
+        let mut child = command
             .args(["core", "--idle-seconds", "3600"])
             .env("MIYU_HOME", self.root.path())
             .env("MIYU_RESOURCES", &self.resources)
@@ -90,8 +117,6 @@ impl Sandbox {
             .env("LOCALAPPDATA", &cache)
             .env("MIYU_PERF_KEY", "perf")
             .env("NO_PROXY", "127.0.0.1")
-            .env_remove("XDG_RUNTIME_DIR")
-            .env_remove("MIYU_LOG")
             .env_remove("HTTP_PROXY")
             .env_remove("HTTPS_PROXY")
             .env_remove("ALL_PROXY")
@@ -144,6 +169,15 @@ impl Sandbox {
         }
         Err("核心停了，数据根的锁一分钟还没放开".to_string())
     }
+}
+
+/// 怎么拉起核心（施工 V-29）。默认的照别的几场：不放进 scope，不记运行日志的级别（核心照配置，出厂 `info`）。
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Launch<'a> {
+    /// 放进自己的 systemd scope：量连子进程的 CPU 要它（`cpu.rs`）。要 systemd 的用户会话。
+    pub scoped: bool,
+    /// `MIYU_LOG`：拆开一步各段时记到 `debug`，核心每处理一条输入、每做一个动作记一行（`log.md`）。
+    pub log: Option<&'a str>,
 }
 
 /// 跑着的核心。丢掉时结束它。

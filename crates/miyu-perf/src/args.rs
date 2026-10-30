@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::time::Duration;
 
 /// 用法，参数不对时印出来。
-pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <docs/perf/> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <docs/perf/>";
+pub const USAGE: &str = "用法：miyu-perf --miyu <release 的 miyu> --resources <resources/> --design <23-性能预算.md> --work <沙盒目录> --out <docs/perf/> [--runs 10] [--sessions 10] [--events 10000] [--tail 30] [--reloads 20] [--appends 2000] [--reply-bytes 3500] [--streams 10] [--pieces 300] [--idle-wait 200] [--gate 倍数]\n      miyu-perf --tools 20 --tree <拷进工作区的树> --miyu … --resources … --design … --work … --out … [--tools-log debug] [--tag 名]\n      miyu-perf --render <原始数据.json> --design <23-性能预算.md> --out <docs/perf/>";
 
 /// 量的时候必写的几个路径。
 const PATHS: [&str; 5] = ["--miyu", "--resources", "--design", "--work", "--out"];
@@ -50,6 +50,14 @@ pub struct Args {
     pub idle_wait: Duration,
     /// 闸门（施工 V-3）：有预算的哪一项量到的超过预算的这么多倍，量完报错退出；没写的只出表。
     pub gate: Option<f64>,
+    /// 工具一步（施工 V-29）：写了的只量这一场，每种调用量这么多次。
+    pub tools: Option<usize>,
+    /// 工具一步：拷进工作区的树，`grep`、`glob` 在它里面找（`cargo xtask perf` 填源码树的 `crates/`）。
+    pub tree: Option<PathBuf>,
+    /// 工具一步：核心的 `MIYU_LOG`，拆得更细时写 `debug`。
+    pub tools_log: Option<String>,
+    /// 工具一步：结果的文件名后面接的标签。
+    pub tag: Option<String>,
 }
 
 /// 读命令行参数（不含程序名）。
@@ -76,6 +84,10 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
         pieces: 300,
         idle_wait: Duration::from_secs(200),
         gate: None,
+        tools: None,
+        tree: None,
+        tools_log: None,
+        tag: None,
     };
     let mut given = Vec::new();
     let mut words = words.iter();
@@ -101,6 +113,10 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
             "--pieces" => args.pieces = number(flag, value)?,
             "--idle-wait" => args.idle_wait = Duration::from_secs(number(flag, value)?),
             "--gate" => args.gate = Some(factor(flag, value)?),
+            "--tools" => args.tools = Some(number(flag, value)?),
+            "--tree" => args.tree = Some(value.into()),
+            "--tools-log" => args.tools_log = Some(value.clone()),
+            "--tag" => args.tag = Some(value.clone()),
             _ => return Err(format!("不认识 {flag}\n{USAGE}")),
         }
         given.push(flag.as_str());
@@ -112,6 +128,9 @@ pub fn parse(words: &[String]) -> Result<Args, String> {
     };
     if let Some(missing) = needed.iter().find(|path| !given.contains(path)) {
         return Err(format!("缺 {missing}\n{USAGE}"));
+    }
+    if args.tools.is_some() && args.tree.is_none() {
+        return Err(format!("--tools 要和 --tree 一起写\n{USAGE}"));
     }
     Ok(args)
 }

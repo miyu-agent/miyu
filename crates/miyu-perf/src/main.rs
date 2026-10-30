@@ -6,6 +6,7 @@
 
 mod args;
 mod budget;
+mod cpu;
 mod fake;
 mod machine;
 mod measure;
@@ -64,6 +65,9 @@ async fn run(args: Args) -> Result<(), String> {
     }
     let mut fake = Fake::start(args.reply_bytes).await?;
     let sandbox = Sandbox::new(&args.work, &args.miyu, &args.resources, &fake.base_url)?;
+    if let (Some(samples), Some(tree)) = (args.tools, &args.tree) {
+        return tools(&args, &sandbox, &mut fake, samples, tree).await;
+    }
 
     eprintln!("冷启动：空跑一次，量 {} 次", args.runs);
     let cold = measure::startup::cold(&sandbox, args.runs).await?;
@@ -118,4 +122,40 @@ async fn run(args: Args) -> Result<(), String> {
     let written = report::write(&results, &budgets, &args.out)?;
     eprintln!("写好了 {}", written.display());
     report::enforce(&results, &budgets, args.gate)
+}
+
+/// 只量工具一步（施工 V-29），写 `<日期>-tools-…`。
+async fn tools(
+    args: &Args,
+    sandbox: &Sandbox,
+    fake: &mut Fake,
+    samples: usize,
+    tree: &std::path::Path,
+) -> Result<(), String> {
+    eprintln!("工具一步：每种 {samples} 次");
+    let before = report::tools::load();
+    let plan = measure::tools::Plan {
+        samples,
+        tree,
+        log: args.tools_log.as_deref(),
+    };
+    let steps = measure::tools::tool_steps(sandbox, fake, plan).await?;
+    let results = report::tools::ToolResults {
+        date: report::date_of(now()?),
+        machine: machine::Machine::read(),
+        load: [before, report::tools::load()],
+        tag: args.tag.clone(),
+        steps,
+    };
+    let written = report::tools::write(&results, &args.out)?;
+    eprintln!("写好了 {}", written.display());
+    Ok(())
+}
+
+/// 从 1970 年起的秒数。
+fn now() -> Result<u64, String> {
+    Ok(SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map_err(|e| format!("时钟在 1970 年以前：{e}"))?
+        .as_secs())
 }

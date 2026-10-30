@@ -1,6 +1,6 @@
 ## 量尺
 
-状态：施工 V-1（2026-10-10）；V-3 进 CI、加闸门（2026-10-11）；V-7 三家对比（2026-10-15）；V-27 三家对比照现在的样子跑（2026-10-30）。
+状态：施工 V-1（2026-10-10）；V-3 进 CI、加闸门（2026-10-11）；V-7 三家对比（2026-10-15）；V-27 三家对比照现在的样子跑（2026-10-30）；V-29 工具一步（2026-10-31）。
 
 ### 是什么
 
@@ -14,12 +14,14 @@
 | `crates/miyu-perf/src/main.rs` | 照先后量一遍，写结果 |
 | `args.rs` | 参数 |
 | `budget.rs` | 预算照 23 第二节的表读，判超没超 |
-| `fake.rs` | 假模型服务 |
+| `fake.rs` | 假模型服务；`fake/script.rs`：照剧本回工具调用（施工 V-29） |
+| `cpu.rs` | 读核心花的 CPU：各线程的 `schedstat`；放进了自己的 scope 的再读 cgroup 的 `cpu.stat`，连子进程（施工 V-29） |
 | `sandbox.rs` | 沙盒数据根，拉起、停掉核心 |
 | `rpc.rs` | 在连接上说 JSON-RPC，等一轮结束 |
 | `memory.rs` | 读进程的内存 |
 | `machine.rs` | 量的条件 |
 | `measure/startup.rs`、`sessions.rs`、`large.rs`、`stream.rs`（施工 V-22）、`append.rs`、`size.rs` | 每一项怎么量 |
+| `measure/tools.rs`、`tools/calls.rs`、`tools/split.rs`、`report/tools.rs` | 工具一步（施工 V-29，下面「工具一步」）：量、量哪几种调用、照日志拆段、写结果 |
 | `report.rs`、`report/raw.rs`、`report/rows.rs`、`report/load.rs` | 写原始数据、写表；从原始数据读回来（`--render`） |
 | `report/gate.rs` | 闸门：有预算的几行和表照同一份（`rows::checks`），时间超过预算的倍数、内存超过预算的报错（施工 V-3） |
 | `.github/workflows/ci.yml` 的 `perf` | CI 里每次都量一遍，表贴进那一次跑的摘要和日志，过不了闸门的这一项红（施工 V-3） |
@@ -44,6 +46,10 @@
 | `--out` | `docs/perf` | 结果写到哪 |
 | `--render` | 不写 | 不量：照这一份原始数据（`.json`）、照 23 现在的预算重出同名的 `.md`，原始数据不动。只编量尺，不编 `miyu` |
 | `--gate` | 不写 | 闸门的倍数（施工 V-3）：量完、表写好以后，有预算的哪一行时间超过预算的这么多倍、内存超过预算，报出来、退出码 1。不写的只出表 |
+| `--tools` | 不写 | 工具一步（施工 V-29）：写了的只量这一场，每种调用量这么多次（另加头一次不计），别的几场不量 |
+| `--tree` | `cargo xtask perf` 填源码树的 `crates/` | 工具一步拷进工作区的树（不拷 `target/`），`grep`、`glob` 在它里面找 |
+| `--tools-log` | 不写 | 工具一步：核心的 `MIYU_LOG`；拆得更细写 `debug`（记日志本身也花一点，主数照不写的那一次） |
+| `--tag` | 不写 | 工具一步：结果的文件名后面接 `-<标签>` |
 
 结果：`docs/perf/<日期>-<系统>-<架构>.json`（原始数据）和同名的 `.md`（条件、表）。日期是 UTC。同一天再量一次，盖掉同名的。
 
@@ -84,6 +90,27 @@
    - 23 第二节缺了要比的一行，量尺一开始就报错，不白量。
 10. 没有预算的也列出来：冷启动的三个点、说出去到模型收到请求（含这一句落盘的同步，大会话到了以后的那几轮、重启以后头一次各一行：和投影那两行一比就是同步占了多少，施工 V-2 中）、流式一轮的核心 CPU 和一轮多久（施工 V-22；以前的原始数据没有，`--render` 时不出这两行）、大会话有多大、载着它和空闲以后的内存、二进制大小。另有一张「会话长大的一路上」：照说之前的事件数每一千条一档，报说一句到收到请求、落了盘到收到请求、一轮的 p50、p95。V-2 中以前的原始数据没有「落了盘到收到请求」，`--render` 时照说出去到收到请求算（上界）。
 11. 条件写机器（CPU 型号、逻辑核数、内存）、系统、内核、rustc、提交（工作区有没提交的改动的标「+改动」）。不写主机名、用户名、路径。
+
+### 工具一步（施工 V-29）
+
+模型发出一个工具调用以后，核心多久把结果送回模型：agent 干活时这一段占的时间最长（2026-10-31 项目主人要每个工具都够快）。只量、不进闸门，没有预算；`cargo xtask perf --tools 20` 单独跑。
+
+**怎么走**
+
+1. 工作区在沙盒下的 `tools/`：两 KB 的小文件、8 MB 的大文件（十万行）、改的文件、拷进来的树（`--tree`），起成一个新的 git 仓库：`grep`、`glob` 在仓库里时照仓库根往下的 `.gitignore` 走，不另起一个仓库整棵树都被源码树的 `target/` 挡掉。
+2. 核心照别的几场拉起，有 `systemd-run` 的放进自己的 scope（`systemd-run --user --scope`，进程号不变）：连子进程的 CPU 读得到。会话都关着记忆、不起标题，照出厂预设（`full`）的工具面，工作目录是工作区。
+3. 假模型照剧本回（`fake/script.rs`）：提到这一轮记号的请求，照请求体里已经有前几次调用的结果（照调用编号数，驱动交回结果用的是供应商给的编号），回下一次调用（正文一句 `Checking.`、一个调用、`tool_calls` 收尾带用量、`[DONE]`），都回完了回那一句收尾。一轮里同一种调用一次接一次。
+4. 每一步记：假模型把带调用的回答连同 `[DONE]` 写完的那一刻，到读全带着这次结果的下一个请求头；两头各读一次核心的 CPU（各线程的 `schedstat`；在 scope 里的再读 cgroup 的 `cpu.stat`，核心拉起的 `miyu-sandbox`、`bwrap`、命令本身都算，挪到子进程的活照算，2026-10-30 项目主人定）。每种的头一次不算（头一回拉起沙盒、文件还不在页缓存里），之后的报 p50、p95。
+5. 量哪几种（工具名、参数照 `resources/software/basesystem/tools/*.json`，`tools/calls.rs`）：`read` 小文件、8 MB 文件的末尾 200 行、列目录（`read` 读目录）；`write` 4 KB（同一个文件一次次盖）；`edit` 一处；`grep` 在树里搜（默认只列文件、带行两种）；`glob` 在树里找；`shell` 的 `true`、`echo`、`cat` 小文件，在工作区这一级（关进沙盒）和完全放开（沙盒关着）各一遍，两边一比是沙盒的开销。
+6. 「什么都不做」的对照：同样一句回答不带调用，这一轮结束，量尺收到 `turn.ended` 当场再说一句；量回答写完到下一个请求头，拆成写完到收到 `turn.ended`、再说一句到核心落了盘回应、回应到请求头三段。这是核心收一轮、来回一趟、组装下一次请求的底子；工具一步减去它，大致是工具本身加上判权限、派、收回来的那几跳。
+7. 拆段（`tools/split.rs`，不改核心）：停了核心以后读会话日志、运行日志，每一处取它在一步里头一回出现的时刻减去回答写完的那一刻，几十步取平均。会话日志：带这次调用的 `message.assistant`（actor 收到「说完了」）、这次的 `tool.result`（结果交进内核）；运行日志：`running`（判过权限、派之前）、`ran`（actor 收到做完）、`request`（交给请求模型的端口），`--tools-log debug` 另有每条输入、每个动作一行。时刻只到毫秒。顺手查每次调用的结果都是 `ok`，不是的报出来不白量。
+8. 结果：`docs/perf/<日期>-tools-<系统>-<架构>[-<标签>].json`（每一步的毫秒和两种 CPU、对照、拆段）和同名的 `.md`。条件另记量之前、量完的 `/proc/loadavg`、握手回应里的 `sandbox`。没有 `--render`：表只照这一份数出。
+
+**和 jcode 比**（`bench/rivals/toolstep.py`、`toolfake.py`、`toolkinds.py`）
+
+1. 同一个假模型（Python，回法同上：提到记号、带工具表的请求才归剧本，起标题这些辅助请求回一句话不记），两家各收到同样意思的调用，工具名、参数照各家自己给模型的工具表（`toolkinds.py`：jcode v0.99.1 的 `read`、`write`、`edit`、`agentgrep`、`bash`；它的表里没有 `ls`，列目录不比；`agentgrep` 的 `find` 是照名字排出最像的前几个、带理由，和 `glob` 列全的口径不同）。
+2. Miyu：核心放进自己的 scope 起着，每种跑一次 `miyu ask --no-memory`（沙盒关着的几种加 `--permission full`），CPU 只算核心那个 scope。jcode：每种跑一次 `jcode run`，整个进程放进自己的 scope；它的命令不进沙盒。家目录都在 `--out` 下，jcode 的 `HOME`、`XDG_*` 都指进去，不碰本机的 `~/.jcode`；不调真模型。
+3. `--into docs/perf --tag <名>` 写 `docs/perf/<日期>-toolstep-<名>.json`、`.md`。只在有 systemd 用户会话的 Linux 上量。
 
 ### 闸门（施工 V-3，23 F4）
 
@@ -171,6 +198,7 @@ MIYU_BENCH_MODEL=… uv run bench/rivals/main.py --tui <终端仓库> --upstream
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-perf/src/fake/tests.rs` 的 `a_split_reply_joins_back_to_the_text`、`report/tests.rs` 的 `the_streamed_turn_is_listed_and_older_raw_data_goes_without`（施工 V-22） | 回答切成几块：块数照给的、接起来是原文、一块的同原来一样；流式一轮两行进表，以前的原始数据没有就不出 |
+| `crates/miyu-perf/src/fake/tests.rs` 的 `a_script_answers_the_next_call`、`a_scripted_answer_reports_when_it_was_written`，`cpu/tests.rs`，`measure/tools/split/tests.rs`，`args/tests.rs` 的 `the_tool_step_needs_a_tree`（施工 V-29） | 剧本照请求体里有几次结果回下一次调用、回完了收尾、不提记号的不归它；写完交来时刻；`cpu.stat`、`/proc/<进程号>/cgroup` 的读法；运行日志一行的读法、时区、ISO 时刻，各处照偏移平均、排先后，结果不是 `ok` 的报出来；`--tools` 要 `--tree` |
 | `crates/miyu-perf/src/stats/tests.rs` | 分位数照最近秩 |
 | `budget/tests.rs` | 只读第二节、分位和单位、一个数都没有的不算；判超没超；仓库里的 23 有要比的每一行 |
 | `fake/tests.rs` | 头的读法、记号从后往前找、回答的写法、真起一个收两个请求（请求体比一次读的大） |

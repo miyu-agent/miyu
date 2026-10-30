@@ -4,8 +4,7 @@
 //! 在大会话上（一万条事件，每一块都要做的活里有跟着历史长的，这里才看得出）：重启核心、订阅它，先说一句不量（载入以后头
 //! 一次从头投影），再说几轮，回答切成 `pieces` 块；每一轮记核心进程花了多少 CPU、一轮多久。
 
-use std::path::Path;
-
+use crate::cpu::threads;
 use crate::fake::Fake;
 use crate::measure::{say, subscribe};
 use crate::rpc::Rpc;
@@ -45,9 +44,9 @@ pub async fn streamed(
     let outcome = async {
         say(&mut rpc, fake, session, "perf-stream-warm").await?;
         for n in 0..turns {
-            let before = cpu(running.pid());
+            let before = threads(running.pid());
             let said = say(&mut rpc, fake, session, &format!("perf-stream-{n:03}")).await?;
-            if let (Some(before), Some(after)) = (before, cpu(running.pid())) {
+            if let (Some(before), Some(after)) = (before, threads(running.pid())) {
                 streamed.cpu.push(after - before);
             }
             streamed.turn.push(said.turn);
@@ -59,16 +58,4 @@ pub async fn streamed(
     drop(rpc);
     sandbox.stop(running)?;
     outcome.map(|()| streamed)
-}
-
-/// 进程 `pid` 到这时花的 CPU（毫秒）：各线程在 CPU 上的纳秒（`/proc/<进程号>/task/<线程号>/schedstat` 头一格）加起来。
-/// 只有 Linux 上读得到；量的那一轮里退了的线程算不进（阻塞线程空闲 10 秒才退，一轮里退不了）。
-fn cpu(pid: u32) -> Option<f64> {
-    let tasks = std::fs::read_dir(Path::new("/proc").join(pid.to_string()).join("task")).ok()?;
-    let mut nanos: u64 = 0;
-    for task in tasks.flatten() {
-        let text = std::fs::read_to_string(task.path().join("schedstat")).ok()?;
-        nanos += text.split_whitespace().next()?.parse::<u64>().ok()?;
-    }
-    Some(nanos as f64 / 1_000_000.0)
 }

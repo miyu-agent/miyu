@@ -76,3 +76,24 @@ fn the_gate_is_a_positive_factor() {
         );
     }
 }
+
+/// 工具一步（施工 V-29）：`--tools` 要和 `--tree` 一起写；日志级别、标签照写的。
+#[test]
+fn the_tool_step_needs_a_tree() {
+    let args = parse(&words(PATHS_GIVEN)).unwrap();
+    assert_eq!((args.tools, args.tree.clone()), (None, None));
+    let args = parse(&words(&format!(
+        "{PATHS_GIVEN} --tools 5 --tree /t --tools-log debug --tag 拆分"
+    )))
+    .unwrap();
+    assert_eq!(args.tools, Some(5));
+    assert_eq!(args.tree, Some(PathBuf::from("/t")));
+    assert_eq!(args.tools_log.as_deref(), Some("debug"));
+    assert_eq!(args.tag.as_deref(), Some("拆分"));
+    assert!(
+        parse(&words(&format!("{PATHS_GIVEN} --tools 5")))
+            .unwrap_err()
+            .contains("--tree")
+    );
+    assert!(parse(&words(&format!("{PATHS_GIVEN} --tools x --tree /t"))).is_err());
+}
