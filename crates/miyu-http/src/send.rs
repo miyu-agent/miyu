@@ -3,9 +3,12 @@
 //! 1. 先报「发出去了」，带上请求字节的哈希；再 `POST <地址><路径>`，请求体一个字节不改。地址、另配的
 //!    头写得不对，造不出请求的，出错 `other`，不重试。
 //! 2. 不是 2xx 的，读最多 64 KiB 的响应体，连同状态、响应头交给驱动分类。
-//! 3. 2xx 的，一片一片地读，每一片都套上空闲超时，交给解码器，解出来的增量马上交出去；解码器
-//!    说不用再读了就停。读完了（或者读到一半断了）由解码器收尾：它知道说没说完。
-//! 4. 打断：`cancel` 一完成就停，丢掉连接，交回 [`Outcome::Cancelled`]，不再报任何东西。
+//! 3. 2xx 的，一片一片地读，交给解码器，解出来的增量马上交出去；解码器说不用再读了就停。读完了（或者读到一半断了）
+//!    由解码器收尾：它知道说没说完。空闲超时量的是多久没解出新的内容，不是多久没来字节：一直发保活注释、不带内容的事件
+//!    的也照它超时（施工 AE-2，发布前审计）。
+//! 4. 整次请求另有总时限，空闲超时的 [`TOTAL_FACTOR`] 倍，从交给网络起算，等响应头、读出错的响应体、读流都算在里面
+//!    （施工 AE-2）：照思考强度放大的空闲超时一起放大，不另设配置。
+//! 5. 打断：`cancel` 一完成就停，丢掉连接，交回 [`Outcome::Cancelled`]，不再报任何东西。
 //!
 //! 运行日志（`28-运行日志.md`，施工 3-7 上）在 `DEBUG` 记两行：发出去了（主机名、请求多少字节），
 //! 怎么收场的（状态码、出错的分类、要等多久、用时）。请求体、key、地址的路径和参数、出错的原话
@@ -22,13 +25,16 @@ use miyu_kernel::accumulate::Delta;
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
 use miyu_kernel::id::ContentHash;
 use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
-use tokio::time::timeout;
+use tokio::time::{timeout, timeout_at};
 
 use crate::Endpoint;
 use crate::endpoint::host;
 
 /// 出错时的响应体最多读多少：分类用不着那么多，原话本来也只留 2000 字节。
 const ERROR_BODY_LIMIT: usize = 64 * 1024;
+
+/// 整次请求最多是空闲超时的几倍（施工 AE-2）：180 秒的是 30 分钟，`max` 那一档放大到 2 小时。
+pub const TOTAL_FACTOR: u32 = 10;
 
 /// 发一次请求要的。
 #[derive(Clone, Copy)]
@@ -43,7 +49,7 @@ pub struct Attempt<'a> {
     pub body: &'a [u8],
     /// 发到供应商地址后面的哪一截：编码交回的那一条（`Encoded::path`）。
     pub path: &'a str,
-    /// 多久没收到新的字节就算断了。
+    /// 多久没解出新的内容就算断了；整次请求最多它的 [`TOTAL_FACTOR`] 倍。
     pub idle: Duration,
 }
 
@@ -165,6 +171,10 @@ async fn exchange(
         .headers(extra)
         .body(attempt.body.to_vec());
     let at = Instant::now();
+    let total = attempt.idle.saturating_mul(TOTAL_FACTOR);
+    let deadline = tokio::time::Instant::from_std(at) + total;
+    // 下一片最多等到哪：`since` 以后空闲超时到的时候，不过总时限。
+    let until = |since: tokio::time::Instant| (since + attempt.idle).min(deadline);
     let waited = tokio::select! {
         biased;
         () = &mut cancel => None,
@@ -190,7 +200,7 @@ async fn exchange(
             let next = tokio::select! {
                 biased;
                 () = &mut cancel => return Outcome::Cancelled,
-                next = timeout(attempt.idle, response.chunk()) => next,
+                next = timeout_at(until(tokio::time::Instant::now()), response.chunk()) => next,
             };
             match next {
                 Ok(Ok(Some(bytes))) => body.extend_from_slice(&bytes),
@@ -214,15 +224,18 @@ async fn exchange(
     }
     let mut decoder = attempt.driver.decoder();
     let mut broken = None;
+    // 最近一次解出内容的时刻：保活注释、不带内容的事件不算（施工 AE-2）。
+    let mut quiet_since = tokio::time::Instant::now();
     loop {
         let next = tokio::select! {
             biased;
             () = &mut cancel => return Outcome::Cancelled,
-            next = timeout(attempt.idle, response.chunk()) => next,
+            next = timeout_at(until(quiet_since), response.chunk()) => next,
         };
         match next {
             Ok(Ok(Some(bytes))) => {
                 for delta in decoder.feed(&bytes) {
+                    quiet_since = tokio::time::Instant::now();
                     on(Progress::Delta(delta));
                 }
                 if decoder.done() {
@@ -236,6 +249,7 @@ async fn exchange(
             }
             // `finish_reason` 到了、只差 `[DONE]` 时停住：模型说完了，当说完了收尾（施工 4-9 再补三下）。
             Err(_) if decoder.finished() => break,
+            Err(_) if tokio::time::Instant::now() >= deadline => return too_long(total),
             Err(_) => return idle(attempt.idle),
         }
     }
@@ -308,7 +322,24 @@ fn misconfigured(why: &str) -> Outcome {
     }
 }
 
-/// 空闲超时：多久没收到新的字节，算可重试的错。
+/// 总时限到了还没说完（施工 AE-2）：算可重试的错，同空闲超时。
+fn too_long(total: Duration) -> Outcome {
+    Outcome::Ended {
+        usage: None,
+        error: Some(Classified {
+            error: CallError {
+                class: ErrorClass::Retryable,
+                message: format!("总超时：{} 秒还没有说完", total.as_secs_f64()),
+                status: None,
+                retry_after_ms: None,
+            },
+            excess: None,
+            limit: None,
+        }),
+    }
+}
+
+/// 空闲超时：多久没解出新的内容，算可重试的错。
 fn idle(idle: Duration) -> Outcome {
     Outcome::Ended {
         usage: None,

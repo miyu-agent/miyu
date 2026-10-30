@@ -36,5 +36,5 @@ pub use reqwest::Client;
 pub use reqwest::RequestBuilder;
 /// 它发出去交回的回应：要自己一段段读、限着长度的（`miyu-mcp` 的网址转接，施工 X-32 下）照这个名字拿。
 pub use reqwest::Response;
-pub use send::{Attempt, Outcome, Progress, send};
+pub use send::{Attempt, Outcome, Progress, TOTAL_FACTOR, send};
 pub use tls::tls;
