@@ -103,8 +103,8 @@ async fn a_subagent_takes_the_chosen_persona_and_preset_or_the_defaults() {
         serde_json::from_str(subagent.parameters.get()).expect("参数是 JSON");
     assert_eq!(
         parameters["properties"]["persona"]["enum"],
-        json!(["engineer"]),
-        "能挑的人格同池，进 enum"
+        json!(["engineer", "software-engineer"]),
+        "能挑的人格同池，进 enum；出厂带的软件工程师也能挑（施工 PE-1）"
     );
 }
 

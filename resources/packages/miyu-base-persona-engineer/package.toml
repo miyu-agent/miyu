@@ -1,0 +1,12 @@
+# 许可证：这个包（一个人格）同仓库，用 AGPL-3.0-or-later（仓库 README「许可证」）。
+# 软件工程师（施工 PE-1，2026-10-31 项目主人定，设计 16 Y11 改定）：只带一个人格 `software-engineer` 的出厂包，没有程序、没有功能、
+# 不进组。出厂就有，不算进第一次引导；删这个人格（`persona.delete`）就是卸这个包，`package.install` 写包编号装回来。给人看的字，
+# 不发给模型。
+
+[package]
+author = "miyu-agent"
+upstream = "https://github.com/miyu-agent/miyu"
+prefix = "persona-engineer"
+name = { en = "Software Engineer persona", zh = "软件工程师人格", ja = "ソフトウェアエンジニアのペルソナ" }
+summary = { en = "A built-in persona for coding work", zh = "出厂带的写代码用的人格", ja = "コーディング用の内蔵ペルソナ" }
+icon = "code"

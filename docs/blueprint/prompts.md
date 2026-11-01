@@ -4898,7 +4898,7 @@ Placeholder for a tool this client is expected to send with the request. It is n
 
 - 什么时候加进来：会话的工具面里有 `subagent`：本机、没到深度上限的会话（每次请求都带）；`pool` 那一格会话开局时照配置拼，一个池都没列的没有它
 - token：TX-1 后 161（o200k 数，改前 216）；原来 141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）；施工 A-F 中加 `fork`、说明第二句前面加 `Without fork`，2026-10-24 照项目主人给的端点、只带这一件量 441 → 473，多 32
-- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
+- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 PE-1（2026-10-31）出厂带软件工程师、写了 `subagent = true`：没建人格的会话也有 `persona` 这一格，照 o200k 数多 47（`enum` 一个编号、说明后面 `software-engineer: Software Engineer — <简单描述>` 一行）；用户删了它（卸了它的出厂包）的照旧拿掉
 - 指纹：`105e1d82`
 
 ```json
@@ -6100,6 +6100,33 @@ metadata:
 2. `miyu pkg install ./<folder>` the same way. The person is asked before it is installed. The skill shows up from the next turn.
 3. To change it later, edit the files in the workspace and install the folder again: the same id replaces the old one.
 ````
+
+### system 第一块（人设，第四节第 1 块）
+
+#### `packages/miyu-base-persona-engineer/personas/software-engineer/prompts/persona.md`
+
+- 什么时候加进来：用软件工程师这个人格（`software-engineer`）的会话的每次请求，派子代理挑了它的子会话也带（施工 PE-1）；出厂包 `miyu-base-persona-engineer` 装着才有，你那一层改了人设的照你那一份；没用这个人格的会话一个字节不变
+- token：335（2026-10-31 照 tiktoken `o200k_base` 量，带行尾换行）
+- 为什么加：项目主人 2026-10-31 定出厂带一个软件工程师人格（设计 16 Y11 改定）：写代码先用最简单的办法、用独立的依据验证、做完验过就收工、说话简洁。人格侧的字，原文照基准测试仓库 `runs/2026-10-31/effort/persona-v9.md` 一字不改；`persona.toml` 是给人看的名字、说明，不登记（同最上一层的人格目录）
+- 指纹：`23e9877e`
+
+```text
+You are a software engineer. Your output must be concise and direct.
+
+How you work:
+- Start with the simplest method that could work and get a small version running early. Do not add features, transformations or scope nobody asked for.
+- Ground every claim in the workspace and tool output. Check each command's exit code; when something fails, find out why before moving on.
+- Verify against evidence your solution did not produce: the existing tests, the spec or docs, real data, or an independent method. A check that shares your assumptions proves nothing.
+- When a request can be read in ways that lead to different work, ask if someone can answer; otherwise follow its wording and the usual convention, and say which reading you chose.
+- When the requested work is done and verified, stop and report. Do not start extra rounds of tuning, cleanup or review on your own.
+- If the request cannot be done as stated, say so plainly; do not fake a result or weaken a check to get one.
+- Before a long command, estimate how long it takes and try a small version first. Background jobs report when they finish; do other work meanwhile and collect their results before the final answer.
+- Before deleting or moving files, confirm the absolute path.
+- Do not narrate routine reads, searches or edits, and reference files by path instead of pasting them. Send independent reads and searches together.
+- Before the final answer, confirm that the files you were asked to produce or change are in their final state, and remove temporary files you created.
+
+Your final message says what changed, how it was verified, and anything not done or not verified.
+```
 
 ### system 第 4 块的头一行
 

@@ -17,6 +17,7 @@ use crate::refusal::Refusal;
 use crate::settings::PersonaSettings;
 
 mod appearance;
+pub(crate) mod delete;
 mod glance;
 pub(crate) mod picture;
 pub(crate) mod write;
@@ -123,10 +124,11 @@ fn listed_problem(id: &str, error: &PersonaError, words: Option<&Human>) -> Valu
 }
 
 /// 删了会怎样（施工 P-3 补，`*.get` 的 `remove`）：有家目录那一层、下面还有的是 `restore`（回到出厂的样子），只有家目录那
-/// 一层的是 `delete`（就没了），没有家目录那一层的没什么可删。
-pub(crate) fn remove(layers: &[Layer]) -> Option<&'static str> {
+/// 一层的是 `delete`（就没了）。没有家目录那一层的，`sole` 是只带它的出厂包（施工 PE-1，[`delete::sole_package`]）的，删了
+/// 连包卸掉、就没了，也是 `delete`；别的没什么可删。
+pub(crate) fn remove(layers: &[Layer], sole: bool) -> Option<&'static str> {
     match (layers.contains(&Layer::Home), layers.len()) {
-        (false, _) => None,
+        (false, _) => sole.then_some("delete"),
         (true, 1) => Some("delete"),
         (true, _) => Some("restore"),
     }
@@ -185,12 +187,13 @@ pub(crate) struct GetParams {
 pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
+    let packages = core.packages_of();
     let language = peer.language;
     let state = core.root.state();
     tokio::task::spawn_blocking(move || {
         personas
             .find(&params.persona)
-            .map(|found| describe(&found, language, &state))
+            .map(|found| describe(&found, language, &state, (packages.as_slice(), &personas)))
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?
@@ -198,9 +201,16 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
 }
 
 /// 叠好的一个人格照 `persona.get` 写（`persona.set` 的回应也是它，施工 P-3 下），名字、说明照语言 `language` 挑。图片的版本、
-/// 头像的候选主色照 `state` 里记下的给（施工 V-16），要读盘、解图，在阻塞线程里调。
-fn describe(found: &Found, language: &str, state: &std::path::Path) -> Value {
+/// 头像的候选主色照 `state` 里记下的给（施工 V-16），删了会怎样照看得到的包和几层人格 `below` 算（施工 PE-1），要读盘、解图，
+/// 在阻塞线程里调。
+fn describe(
+    found: &Found,
+    language: &str,
+    state: &std::path::Path,
+    below: (&[miyu_store::packages::Found], &Personas),
+) -> Value {
     let pictures = Pictures::of(found, state);
+    let sole = delete::sole_package(below.0, below.1, &found.id).is_some();
     json!({
         "persona": found.id,
         "name": label(found.file.name.as_ref(), language),
@@ -218,7 +228,7 @@ fn describe(found: &Found, language: &str, state: &std::path::Path) -> Value {
         "background_opacity": found.file.background_opacity,
         "background_focus": found.file.background_focus,
         "background_blur": found.file.background_blur,
-        "remove": remove(&found.layers),
+        "remove": remove(&found.layers, sole),
     })
 }
 

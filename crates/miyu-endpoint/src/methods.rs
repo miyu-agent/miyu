@@ -148,7 +148,7 @@ pub(crate) fn call<'a>(
             personas::write::read_prompt(core, peer, params(request)?).await
         }),
         "persona.delete" => {
-            answer(move || async move { personas::write::delete(core, params(request)?).await })
+            answer(move || async move { personas::delete::delete(core, params(request)?).await })
         }
         "preset.list" => answer(move || async move { crate::presets::list(core, peer).await }),
         "preset.get" => {

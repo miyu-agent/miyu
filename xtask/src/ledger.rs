@@ -39,8 +39,9 @@ const PACKAGES: &str = "packages";
 
 /// 包文件夹里给模型看的那几个子目录（施工 X-13 下）：技能的 `SKILL.md` 和参考资料，脚本的开头注释；包自己读的数据 `data/`
 /// （施工 S-6 上），里面给人看的 `human/` 照旧不查。接入QQ 的包文件夹随施工 S-6 下搬出核心仓库，给它 `data/` 里四份数据的豁免
-/// 一起去掉：它的字由它自己的仓库登记（设计 `32-仓库拆分.md` 第九节第 3、6 条）。
-const CARRIED: [&str; 3] = ["skills", "scripts", "data"];
+/// 一起去掉：它的字由它自己的仓库登记（设计 `32-仓库拆分.md` 第九节第 3、6 条）。包带的人格 `personas/`（施工 PE-1：出厂的
+/// 软件工程师住在包里）：人设这些照查，`persona.toml` 同最上一层的人格目录不查。
+const CARRIED: [&str; 4] = ["skills", "scripts", "data", PERSONAS];
 
 /// 资源目录最上一层的这个目录放出厂的预设（施工 P-2 上，`presets.md`）：给人看的名字、说明和开关表，不发给模型，不登记。
 const PRESETS: &str = "presets";
@@ -50,8 +51,8 @@ const PRESETS: &str = "presets";
 const SOFTWARE_DIR: &str = "software/";
 
 /// 人格目录里的 `persona.toml` 是给人看的名字、说明和几项配置，不发给模型，不登记（施工 P-1 下，`personas.md`）；同一个目录里
-/// `prompts/` 下的照查。
-const PERSONAS_DIR: &str = "personas/";
+/// `prompts/` 下的照查。人格目录在最上一层的 `personas/` 或者包文件夹里的 `personas/`（施工 PE-1，[`persona_toml`]）。
+const PERSONAS: &str = "personas";
 const PERSONA_TOML: &str = "persona.toml";
 
 const DATA_PACKAGES: [&str; 1] = ["mermaid"];
@@ -138,18 +139,21 @@ fn walk(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Resu
                 continue;
             }
             walk(&entry.path(), &format!("{path}/"), files)?;
-        } else if !(name == PERSONA_TOML
-            && prefix.starts_with(PERSONAS_DIR)
-            && prefix.matches('/').count() == 2)
-            && !DATA_FILES.contains(&path.as_str())
-        {
+        } else if !persona_toml(prefix, &name) && !DATA_FILES.contains(&path.as_str()) {
             files.insert(path, std::fs::read(entry.path()).map_err(unreadable)?);
         }
     }
     Ok(())
 }
 
-/// 出厂的软件包 `dir`（前缀 `prefix`）：每个包只查带的技能、脚本（[`CARRIED`]），清单这些不查。
+/// 前缀 `prefix` 下的 `name` 是不是一个人格目录里的 `persona.toml`：人格目录是 `personas/<编号>/`，或者包文件夹里的
+/// `packages/<包>/personas/<编号>/`（施工 PE-1）。
+fn persona_toml(prefix: &str, name: &str) -> bool {
+    let parts: Vec<&str> = prefix.trim_end_matches('/').split('/').collect();
+    name == PERSONA_TOML && matches!(parts.as_slice(), [PERSONAS, _] | [PACKAGES, _, PERSONAS, _])
+}
+
+/// 出厂的软件包 `dir`（前缀 `prefix`）：每个包只查带的技能、脚本、数据、人格（[`CARRIED`]），清单这些不查。
 fn carried(dir: &Path, prefix: &str, files: &mut BTreeMap<String, Vec<u8>>) -> Result<(), String> {
     let unreadable = |e: std::io::Error| format!("读不了 {}：{e}", dir.display());
     for entry in std::fs::read_dir(dir).map_err(unreadable)? {
@@ -291,6 +295,9 @@ mod tests {
             ("packages/kit/data/defaults.toml", "[chatty]"),
             ("packages/kit/data/bridge.json", "{}"),
             ("packages/kit/data/human/en.json", "{}"),
+            ("packages/kit/personas/x/persona.toml", "[persona]"),
+            ("packages/kit/personas/x/prompts/persona.md", "p"),
+            ("core/personas/x/persona.toml", "[persona]"),
         ] {
             let path = dir.join(path);
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -304,19 +311,21 @@ mod tests {
         // 视图投影的工具分类 core/view.json 不登记，别的照查（别处叫 models、web、mermaid、net 的目录、别的包的 web/ 照查：只有正好
         // 这几处才豁免；最上一层的 web/ 随施工 T-13 去掉豁免，再放进来照查）。软件包里带的技能、脚本、数据照查，数据里的出厂参数、
         // 桥的数这类文件名不豁免（接入QQ 那四份的豁免随施工 S-6 下去掉），数据里给人看的字、清单、后台页这些不查（施工 X-13 下、
-        // S-6 上）。
+        // S-6 上）。包带的人格照查人设、不查 `persona.toml`，只有人格目录里的那一份才豁免（施工 PE-1）。
         assert_eq!(
             found.keys().collect::<Vec<_>>(),
             [
                 "core/a.txt",
                 "core/models/m.txt",
                 "core/packages/p.txt",
+                "core/personas/x/persona.toml",
                 "core/presets/p.txt",
                 "core/web/w.txt",
                 "core/x/view.json",
                 "packages/kit/data/bridge.json",
                 "packages/kit/data/defaults.toml",
                 "packages/kit/data/notes.txt",
+                "packages/kit/personas/x/prompts/persona.md",
                 "packages/kit/scripts/dice.py",
                 "packages/kit/skills/notes/SKILL.md",
                 "packages/kit/skills/notes/reference.md",

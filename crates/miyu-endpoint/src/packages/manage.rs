@@ -158,7 +158,7 @@ pub(super) fn setting_keys(one: &Found) -> Vec<String> {
 }
 
 /// 卸包 `id`（`package.remove`，施工 F-6 上起 `package.disable` 关出厂的内置包也走这里）。
-pub(super) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value, Refusal> {
+pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value, Refusal> {
     let _one_at_a_time = core.packaging.lock().await;
     let found = core.system_packages();
     let one = removable(&found, &id)?;

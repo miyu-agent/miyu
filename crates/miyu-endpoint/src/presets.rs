@@ -287,6 +287,7 @@ fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Va
         "unattended_steps": found.file.unattended_steps,
         "features": features,
         "sections": sections,
-        "remove": remove(&found.layers),
+        // 包带的预设删不掉，卸包才没了（只有人格有连包卸掉的，施工 PE-1）。
+        "remove": remove(&found.layers, false),
     })
 }

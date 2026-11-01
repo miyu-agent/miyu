@@ -187,7 +187,7 @@
 | `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
 | `preset.set`、`preset.delete` | 新建、改一个预设（只写你那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
 | `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume` | 定时任务：建、列、删、停、续，照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
-| `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）（施工 P-3 下，`personas.md`「改」） |
+| `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）；你那一层没有、只有只带它的出厂包带的，删它是卸那个包（施工 P-3 下，PE-1，`personas.md`「改」） |
 | `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |
 | `persona.background` | 读一个人格的背景图：`{"background", "media_type", "data"}`，没有的 `null`（施工 P-6，`personas.md`「主题色、背景图」） |
 | `package.list` | 列出起来时读到的软件包清单（施工 9-1 上，`packages.md`）；装卸以后当场照新的，卸掉的出厂的带 `removed`（施工 F-5 上） |
@@ -751,7 +751,7 @@
 
 **`persona.read`**（施工 P-3 下）：`{"persona", "prompt": "persona" | "examples" | "reminders"}` → `{"text", "version"}`。`text` 是叠好的那一份的原文，`version` 是你那一层这一份的版本（`sha256:…`，照 `config.get` 的写法）；没有的都是 `null`。示范对话另带 `pairs: [{"user", "assistant"}, …]`（读好的一对一对，施工 P-3 补）。来自哪一层不给（施工 P-3 补）。编辑器照它在原文上改，存的时候把 `version` 当 `expect` 带回去。编号、名字不对的 `bad_params`，没有这个人格的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
 
-**`persona.delete`**（施工 P-3 下）：`{"persona"}` → `{"remains"}`，同 `preset.delete`；你那一层这个人格的整个目录挪进回收处 `trash/personas/<编号>.<删的时刻，毫秒>/`，留 7 天（同会话）。
+**`persona.delete`**（施工 P-3 下）：`{"persona"}` → `{"remains"}`，同 `preset.delete`；你那一层这个人格的整个目录挪进回收处 `trash/personas/<编号>.<删的时刻，毫秒>/`，留 7 天（同会话）。你那一层没有、只有出厂包带的，那个包又只带这一个人格的（施工 PE-1，出厂的软件工程师），卸掉那个包（同 `package.remove`，记 `packages/<编号>.removed`），回 `{"remains": false}`；装回来用 `package.install {"package": "<包编号>"}`。卸包被拒的照 `package.remove` 的拒绝（`package_depended`）。装上的包带的、包里还有别的的照旧 `nothing_to_delete`。`persona.get` 的 `remove` 照它给 `delete`。
 
 **`package.list`**（施工 9-1 上，`packages.md`「协议」）
 
@@ -849,7 +849,7 @@
 |---|---|---|
 | `persona` | 字符串，必写 | 人格的编号 |
 
-回应 `{"persona", "name", "summary", "subagent", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "seeds", "background_opacity", "background_focus", "background_blur", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头用 `seeds` 的第一个；`seeds` 施工 P-6 补：头像的候选主色，同 `persona.list`；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画；`background_blur` 施工 P-7 补：模糊多少，没有的 `null`，不模糊）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`subagent` 是派子代理时能不能挑它（施工 P-10 补，叠好的 `[persona] subagent`，没写的 `false`），改用 `changes` 的 `persona.subagent`；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
+回应 `{"persona", "name", "summary", "subagent", "prompts": {"persona", "reminders"}, "examples", "avatar", "background", "seed", "seeds", "background_opacity", "background_focus", "background_blur", "remove"}`（施工 P-3 补：只给人要看的；`avatar` 施工 P-5：头像的版本，图的字节的 SHA-256 前 16 位十六进制，没有的 `null`，图用 `persona.avatar` 读；`background` 施工 P-6：背景图的版本，写法同 `avatar`，图用 `persona.background` 读；`seed` 施工 P-6：主题色，小写的 `#rrggbb`，没有的 `null`，头用 `seeds` 的第一个；`seeds` 施工 P-6 补：头像的候选主色，同 `persona.list`；`background_opacity`、`background_focus` 施工 P-7：背景图露出多少、焦点，没有的 `null`，头照自己的默认画；`background_blur` 施工 P-7 补：模糊多少，没有的 `null`，不模糊）：`name`、`summary` 一句字（挑法同 `persona.list`）；`prompts` 里是人设、角色扮演提示有没有字（`true`、`false`）；`subagent` 是派子代理时能不能挑它（施工 P-10 补，叠好的 `[persona] subagent`，没写的 `false`），改用 `changes` 的 `persona.subagent`；`examples` 是示范对话几轮；`remove` 是删了会怎样（同 `preset.get`；你那一层没有、删它是连包卸掉的也是 `delete`，施工 PE-1）。原文照 `persona.read` 给。编号不合写法的 `bad_params`，没有的 `unknown_persona`，写错的 `persona_invalid`（带 `data.message`、`data.line`）。
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 

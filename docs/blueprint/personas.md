@@ -4,7 +4,7 @@
 
 人格管「她是谁」：人设、示范对话、角色扮演提示，以后还有声音、记忆的默认范围、能查的知识库（`16-人格与预设.md`）。一个人格是一个目录，三层叠起来：出厂的、装着的软件包带的（施工 P-11 上，设计 `31-软件包.md` 第十节）、你的（数据根的 `personas/`，协议里写 `home`）。造会话时照这一刻的文件拼进策略快照，之后钉在会话上（Y5）。
 
-- 出厂只带软件工程师那一句（Y6）。Miyu 是项目主人自己的人格，放在他的数据根里，不进仓库（Y10）。
+- 出厂带一个软件工程师 `software-engineer`（施工 PE-1，2026-10-31 项目主人定，16 Y11 改定）：住在出厂包 `miyu-base-persona-engineer` 里（「软件包带的」），能改、能删；不算进第一次引导，`persona.default` 出厂照旧不设。Miyu 是项目主人自己的人格，放在他的数据根里，不进仓库（Y10）。
 - 核心不读场所规则：场所会话用哪个人格，由通讯平台的桥照场所规则算好，经 `venue.session` 交来（`18-通讯平台.md` Q1、第四节）。
 
 状态：图纸，施工 P-1（上）做了（2026-10-07 主会话；方向照人格与预设走查，项目主人同一天定；场所会话的人格由桥交来和通讯平台的会话对过）。空人格、会话带上人格施工 P-1（下）做了（2026-10-07）。角色扮演提示和风格锁施工 P-1（补）做了（2026-10-07；方向是 J10 和项目主人 2026-10-07 定的「风格锁只给有角色扮演提示的人格」，技术细节主会话定）。改了文件下一个回合换上施工 P-1（再补）做了（2026-10-07，K3、走查 B8）；预设随 P-2；新建、改、删随 P-3（`base` 施工 P-3 上做了、P-3 补撤了：2026-10-08 项目主人看了界面定的，不要以谁为底）。
@@ -17,6 +17,8 @@
 | `crates/miyu-policy/src/compose.rs`、`snapshot.rs` | 人设进 system 第一块，示范对话进快照的 `demos`，组装时排在 system 后面、历史前面；角色扮演提示拼成快照的 `reminder`，有它的 system 最后带风格锁（施工 P-1 补） |
 | `crates/miyu-store/src/personas.rs` | 三层在哪、怎么叠、列出编号、包里被盖住的（施工 P-11 上） |
 | `crates/miyu-endpoint/src/personas.rs` | 造会话时照默认找人格、`persona.list`、`persona.get` |
+| `crates/miyu-endpoint/src/personas/delete.rs`（施工 PE-1 从 `write.rs` 挪出来） | `persona.delete`：删你那一层；只住在一个只带它的出厂包里的，连包卸掉（「软件包带的」第 3 条） |
+| `resources/packages/miyu-base-persona-engineer/`（施工 PE-1） | 出厂带的软件工程师 `software-engineer`：只带这一个人格的出厂包 |
 | `crates/miyu-endpoint/src/personas/glance.rs`（施工 V-16） | 图的版本、头像的候选主色记在 `state/personas/pictures.json`：照位置、大小、修改时刻认，对得上的不读图，换了图重算；坏了、删了照空的算 |
 | `crates/miyu-endpoint/src/settings.rs` | 配置项 `persona.default`（`config.md`） |
 
@@ -39,7 +41,7 @@ personas/<编号>/                 你的（数据根下）
 2. 同名的后面的叠在前面的上面：`persona.toml` 逐项盖（同一格里逐种语言盖），`prompts/` 里的文件同名替换、没写的沿用。只有一个空目录也算有这一层。
 3. 每样都可以没有：测试用的样本（软件工程师，`docs/designs/samples/personas/engineer/`）只有 `persona.toml` 的名字和 `prompts/persona.md`。
 4. `prompts/reminders.md`（施工 P-1 补）：整份是一条提示，照原样（例如旧版 Miyu 的 `miyu.hint.md`）；去掉末尾空白是空的，算没有。有它的人格每 3 轮在触发的那句后面多一块提示，system 最后多一句风格锁（`26-提示词.md` J10、第四节第 7 块）。
-5. 出厂一个人格都不带（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了，资源目录里没有 `personas/`。人格都是你自己建的（第一个由头的第一次引导带着建），以后也能做成软件包装进来。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
+5. 资源目录里没有 `personas/`（施工 P-4 下，2026-10-08 项目主人：「软件默认不自带任何人格，人格允许为空」，`16-人格与预设.md` Y11 改了）：原来出厂的软件工程师 `engineer`、空人格 `none` 撤掉了。施工 PE-1（2026-10-31 项目主人定，Y11 再改）起出厂带一个软件工程师 `software-engineer`，住在出厂包 `miyu-base-persona-engineer` 里（「软件包带的」第 3 条），人设见登记簿（`26-提示词.md` 第十节）；它不算进第一次引导，引导照常带人建自己的人格，`persona.default` 出厂照旧不设。软件工程师挪成测试用的样本 `docs/designs/samples/personas/engineer/`：要人格的测试把它装进临时数据根的 `personas/`（`miyu_session::testkit::install_sample_persona`），照旧用编号 `engineer`。以前造的、钉着 `engineer`、`none` 的会话照快照里冻结的接着用（「怎么走」第 6 条）。
 
 **`persona.toml`**：
 
@@ -107,7 +109,7 @@ assistant: 8640
 - 只给人要看的（2026-10-08 项目主人：「什么来自、基于，都是毫无意义的设计，你设计的时候必须考虑用户需要什么」）：名字、说明一句字，人设、角色扮演提示有没有字，示范对话几轮、一对一对的原文，删了会怎样（`remove`）。来自哪一层、以谁为底都不往协议上露；层只留在核心里，`miyu check` 照旧分层报。
 - `persona.toml` 照 `changes` 改（`crate::toml_changes`，同预设）；提示词整份换，`unset` 删你那一层的，空的字就是这一段是空的；示范对话另收一对一对的（`persona::write_examples` 写成文件的写法，写了读不回原样的拒绝）。写之前照改完的叠一遍（`Personas::find_with`：你那一层的几份照改完的算，删掉的当没有，没改的读盘），写错的什么都不写，拒绝里带照连接语言的一句（`data.message`）。
 - 提示词防覆盖（终端的会话要的）：`persona.read` 给原文和你那一层这一份的版本，`persona.set` 带回来当 `expect`。写盘照配置文件的规矩，一份一份写，只试一次：几份里写到一半撞上手改的，前面写了的不撤、回 `persona_conflict`（重来时前面那几份已经是改完的样子，不再写）。
-- 删：整个目录挪进 `trash/personas/<编号>.<删的时刻，毫秒>/`（`miyu_store::trash::personas`），里面多一个 `deleted_at`；核心起来时和会话一起清，满 7 天的真删。开着的会话照旧用快照里的；默认人格指着它的，以后开会话照旧拒（不悄悄换）。
+- 删：整个目录挪进 `trash/personas/<编号>.<删的时刻，毫秒>/`（`miyu_store::trash::personas`），里面多一个 `deleted_at`；核心起来时和会话一起清，满 7 天的真删。开着的会话照旧用快照里的；默认人格指着它的，以后开会话照旧拒（不悄悄换）。你那一层没有、只住在一个只带它的出厂包里的，删它是卸那个包（「软件包带的」第 3 条，施工 PE-1；在 `crates/miyu-endpoint/src/personas/delete.rs`），开着的会话、默认人格照同样的规矩。
 - 写 `persona.toml` 时顺手去掉 P-3 上写进去的 `base`（施工 P-3 再补），不留迁移步骤给人做。
 - 运行日志 `INFO persona saved`、`persona deleted`。不推 `persona.changed`：两个头都是每次打开重新读。
 
@@ -153,7 +155,7 @@ assistant: 8640
 
 1. 包文件夹里的 `personas/<编号>/`，和别的层一个样子，清单里不写。读成了的装着的包都算，不看包开没开；出厂的包在前、装上的在后，同一层照编号（核心的 `packages::folders`）。
 2. 一个编号只认一份（`miyu_store::layers::covered`）：出厂的有的，包里的不认（设计 31 定了的 J）；几个包都有的，认排在前面的。不认的那几份 `miyu check` 报 `persona_covered` 警告，说被谁盖住（同技能的 `skill_covered`）。
-3. 改照旧写你那一层，`remove` 照「你那一层有、下面还有」给 `restore`；包里的那一份删不掉，卸包才没了。
+3. 改照旧写你那一层，`remove` 照「你那一层有、下面还有」给 `restore`。包里的那一份删不掉，卸包才没了；只有一种例外（施工 PE-1，2026-10-31 项目主人定）：你那一层没有、出厂资源里也没有，认的那一份在出厂包里，那个包又只带这一个人格（不带程序、配置项、MCP 服务、吉祥物、给别的包带的内容，包文件夹里只有清单、图标和只有它一个的 `personas/`），`persona.delete` 就卸这个包（同 `package.remove`：`packages/<编号>.removed`，`packages.md`「装卸」第 1、5 条），回 `{"remains": false}`，`remove` 给 `delete`；装回来用 `package.install {"package": "<包编号>"}`。出厂的软件工程师就是这样。来自哪一层照旧不往协议上露。
 4. 卸了包，你那一层的改动留着照旧能用，只是没了包那一层；核心记一笔是哪个包留下的，`miyu check` 报 `persona_left` 提示，重装这个包不算撞名、那一笔划掉（施工 P-11 下，`packages.md`「冲突」）。
 5. 装的时候编号和别的包、出厂、你那一层的撞了不装（施工 P-11 下，`package_conflict` 写 `layer`）。
 
@@ -175,6 +177,8 @@ assistant: 8640
 | `crates/miyu-seeds/src/tests.rs`（施工 P-6 补） | 见得多的排第一、最多 4 个、少的也在候选里；透明的不算、全透明的没有候选；灰的给 Google 蓝；图的字节照 `thumbnail` 缩到 128 再挑、同一张图挑的一样、不是图的读不成；`#rrggbb` 小写 |
 | `crates/miyu-endpoint/tests/persona_appearance.rs`（施工 P-6） | 主题色大写写成小写、列出来带着、删了回到下面那一层、写错的和重复改的拒绝且什么都不写、只写主题色能新建；背景图比头像的上限大也收、读回、版本对不上不动、删了回到下面那一层、不合规矩的拒绝（`data` 带量到的和上限）且一起改的主题色也不写 |
 | `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的九种写明第几行（`[memory]` 的三种在内，R-3 下）、P-3 上写的 `base` 当没写（施工 P-3 再补）、`[memory] scope` 两种、不写是没有、上一层盖下面的、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
+| `crates/miyu-endpoint/tests/persona_shipped.rs`（施工 PE-1） | 全新的数据根上就有软件工程师、名字照连接的语言（中文、英文）、`remove` 是 `delete`，默认人格不设；改了写你那一层、下一次读到改后的，删掉改动回到出厂的、包还在；你那一层没有的删了是卸它的出厂包（列表里没了、`package.list` 里 `removed: true`、记了 `.removed`、再删 `nothing_to_delete`），写包编号装回来又有；装上的包带的照旧删不掉 |
+| `crates/miyu-endpoint/src/personas/delete/tests.rs`（施工 PE-1） | 只带这一个人格的包才算（带图标的也算）；带技能、带两个人格、带程序的不算；装上的包、你那一层也有的、没有的都不连包卸 |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |
 | `crates/miyu-store/src/trash/personas/tests.rs`（施工 P-3 下） | 挪进回收处整个目录不变、多 `deleted_at`、原处没了、同一个编号删两次各是各的、不在的报错；清的时候正好满的删、没满的留、读不出删的时刻的留并报出来、没有回收处什么都不做 |
 | `crates/miyu-store/src/personas/tests.rs` | 三层逐项、逐文件叠、包那一层在出厂和你的中间、出厂的和排在前面的包盖住别的包（施工 P-11 上）、来自哪一层；空目录也算有这一层；没有的、编号不合写法的、是文件不是目录的；写错的写明哪一层；列编号不重复、照编号排 |

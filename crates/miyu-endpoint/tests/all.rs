@@ -196,6 +196,7 @@ mod persona_avatar;
 mod persona_recast;
 mod persona_seeds;
 mod persona_set;
+mod persona_shipped;
 mod persona_swap;
 mod persona_swap_upgrade;
 mod personas;

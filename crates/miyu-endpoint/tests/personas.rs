@@ -294,6 +294,8 @@ async fn personas_are_listed_and_read() {
             {"persona": "broken", "problem": "不认识的表 [voice]：persona.toml 里只能有 [persona]、[memory]、[appearance]", "line": 1},
             {"persona": "engineer", "name": "软件工程师", "summary": "我的工程师", "avatar": null, "background": null, "seed": null, "seeds": null, "background_opacity": null, "background_focus": null, "background_blur": null},
             {"persona": "miyu", "name": "美羽", "summary": "Mine.", "avatar": null, "background": null, "seed": null, "seeds": null, "background_opacity": null, "background_focus": null, "background_blur": null},
+            // 出厂带的软件工程师（施工 PE-1）。
+            {"persona": "software-engineer", "name": "软件工程师", "summary": "写代码：先用最简单的办法，用独立的依据验证，做完验过就收工，说话简洁", "avatar": null, "background": null, "seed": null, "seeds": null, "background_opacity": null, "background_focus": null, "background_blur": null},
         ]),
         "握手说的是中文，挑中文，没有中文的照英文；来自哪几层不给（施工 P-3 补）"
     );

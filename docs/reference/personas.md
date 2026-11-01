@@ -42,7 +42,7 @@
 | `prompts` | `{"persona", "reminders"}`：人设、角色扮演提示有没有字（布尔）；原文用 `persona.read` 读 |
 | `examples` | 示范对话几轮 |
 | `subagent` | 派子代理时能不能挑它 |
-| `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了）、`null`（你那一层没有，没什么可删） |
+| `remove` | 删了会怎样：`restore`（回到出厂的样子）、`delete`（就没了；出厂带的软件工程师这类连包卸掉的也是它）、`null`（没什么可删） |
 
 **出错**：`unknown_persona`；`persona_invalid`（文件写错了：`data.problem`、`data.message`、`data.line`）。
 
@@ -85,9 +85,9 @@
 
 ## `persona.delete`
 
-**参数**：`persona`。**回应**：`{"remains"}`：`true` 下面还有出厂、软件包带的，回到它们的样子（界面写「恢复出厂」）；`false` 这个人格就没了。你的那一份挪进回收处，留 7 天。
+**参数**：`persona`。**回应**：`{"remains"}`：`true` 下面还有出厂、软件包带的，回到它们的样子（界面写「恢复出厂」）；`false` 这个人格就没了。你的那一份挪进回收处，留 7 天。出厂带的软件工程师这类只住在一个出厂包里的人格，你那一层没有时删它就是卸那个包（同 `package.remove`），回 `false`；用 `package.install {"package": "<包编号>"}` 装回来。
 
-**出错**：`nothing_to_delete`（你那一层本来就没有）；`local_only`。
+**出错**：`nothing_to_delete`（你那一层本来就没有，也不是能连包卸掉的）；`package_depended`（连包卸时，那个包被别的包依赖着）；`local_only`。
 
 ## `persona.avatar`、`persona.background`
 

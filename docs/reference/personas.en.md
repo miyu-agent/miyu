@@ -42,7 +42,7 @@ A persona whose files are wrong has only `persona` and `problem` (what's wrong, 
 | `prompts` | `{"persona", "reminders"}`: whether the character prompt and roleplay reminders have text (booleans); read the text with `persona.read` |
 | `examples` | How many example exchanges |
 | `subagent` | Whether it can be picked when spawning a subagent |
-| `remove` | What deleting does: `restore` (back to the built-in version), `delete` (gone), `null` (you have no layer to delete) |
+| `remove` | What deleting does: `restore` (back to the built-in version), `delete` (gone; also for a persona like the built-in Software Engineer that goes with its package), `null` (nothing to delete) |
 
 **Errors**: `unknown_persona`; `persona_invalid` (its files are wrong: `data.problem`, `data.message`, `data.line`).
 
@@ -85,9 +85,9 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 
 ## `persona.delete`
 
-**Params**: `persona`. **Response**: `{"remains"}`: `true` when built-in or package layers remain and it goes back to them (shown as "restore defaults"); `false` when the persona is gone. Your copy moves to the trash for 7 days.
+**Params**: `persona`. **Response**: `{"remains"}`: `true` when built-in or package layers remain and it goes back to them (shown as "restore defaults"); `false` when the persona is gone. Your copy moves to the trash for 7 days. A persona that lives only in a built-in package of its own, like the built-in Software Engineer, is deleted by removing that package (as `package.remove`) when you have no layer of it, and the response is `false`; `package.install {"package": "<package id>"}` brings it back.
 
-**Errors**: `nothing_to_delete` (you have no layer); `local_only`.
+**Errors**: `nothing_to_delete` (you have no layer, and it can't go with its package); `package_depended` (removing its package, another package depends on it); `local_only`.
 
 ## `persona.avatar`, `persona.background`
 

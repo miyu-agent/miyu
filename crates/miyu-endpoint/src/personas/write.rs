@@ -6,7 +6,7 @@
 //! - 提示词防覆盖：`persona.read` 给你那一层这一份的版本，`persona.set` 带着它（`expect`），对不上 `persona_conflict`。
 //! - 写盘照配置文件的规矩（`miyu_store::config_file`），一份一份写；只试一次：几份里写到一半撞上有人手改的，前面写了的不撤，
 //!   回 `persona_conflict`，头重读再来（重来时前面那几份已经是改完的样子，不再写）。
-//! - 删：整个目录挪进回收处（`miyu_store::trash::personas`），留 7 天。
+//! - 删在 `delete.rs`（施工 PE-1 挪出去）：整个目录挪进回收处（`miyu_store::trash::personas`），留 7 天。
 
 use std::collections::BTreeMap;
 use std::io;
@@ -21,7 +21,6 @@ use miyu_store::config_file::{self, ConfigText, WriteError};
 use miyu_store::human::Human;
 use miyu_store::layers::valid;
 use miyu_store::personas::{Edits, Found, PERSONA_MD, Personas, REMINDERS_MD};
-use miyu_store::trash;
 
 use super::appearance;
 use super::picture::{Picture, PictureParams};
@@ -30,7 +29,6 @@ use crate::Core;
 use crate::config::methods::words;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
-use crate::sessions::now;
 use crate::toml_changes::{ChangeParams, Wanted, check_expect, edited, wanted_as, without};
 
 /// 提示词的名字到人格目录里的位置。
@@ -155,22 +153,24 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
         }
     }
     let personas = personas(core);
+    let packages = core.packages_of();
     let language = peer.language;
     let state = core.root.state();
     tokio::task::spawn_blocking(move || {
+        let below = (packages.as_slice(), &personas);
         let found = match params.persona {
             Some(id) => write(&personas, &id, &wanted, &prompts, said.as_ref()),
             None => create(&personas, &wanted, &prompts, said.as_ref()),
         }?;
         if pictures.is_empty() {
-            return Ok(describe(&found, language, &state));
+            return Ok(describe(&found, language, &state, below));
         }
         for checked in &pictures {
             super::picture::apply(&personas, &found.id, checked)?;
         }
         personas
             .find(&found.id)
-            .map(|found| describe(&found, language, &state))
+            .map(|found| describe(&found, language, &state, below))
             .map_err(|error| super::told(&error, said.as_ref()))
     })
     .await
@@ -424,38 +424,6 @@ pub(crate) async fn read_prompt(
             reply["pairs"] = json!(found.texts.examples);
         }
         Ok(reply)
-    })
-    .await
-    .map_err(|_| Refusal::INTERNAL)?
-}
-
-/// `persona.delete` 的参数。
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DeleteParams {
-    persona: String,
-}
-
-/// `persona.delete`：你那一层这个人格的目录挪进回收处，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
-/// `nothing_to_delete`。
-pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
-    if !valid(&params.persona) {
-        return Err(Refusal::BAD_PARAMS);
-    }
-    let personas = personas(core);
-    let (root, at) = (core.root.clone(), now());
-    let id = params.persona;
-    tokio::task::spawn_blocking(move || {
-        let dir = personas.home_dir(&id);
-        if !dir.is_dir() {
-            return Err(Refusal::NOTHING_TO_DELETE);
-        }
-        if let Err(error) = trash::personas::discard(&root, &dir, &id, at) {
-            tracing::warn!(target: TARGET, kind = ?error.kind(), "persona not deleted");
-            return Err(Refusal::INTERNAL);
-        }
-        tracing::info!(target: TARGET, persona = %id, "persona deleted");
-        Ok(json!({"remains": personas.exists(&id)}))
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?
