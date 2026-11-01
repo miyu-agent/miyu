@@ -7,6 +7,10 @@
 //! 那一层。路上那几层落在整盘只读里：名字看得见，内容照旧读不到（10-31 虚拟机上对照过，数据根的令牌照旧读不到）。命令跑着时
 //! 在路上那几层新建的不在禁止的里面。列不出一层的（没权限、不在），这一条照旧整条禁，宁可透不出来。
 //!
+//! 藏起来的那一条落在能写的里面（或者就是能写的）的不挖，整条禁（施工 SW-9）：MXC 只挡列进禁止的那几项和它们下面，路上那
+//! 几层没列进去，又落在能写的里面，就能往里新建原来没有的名字、把整条改名（2026-11-02 桌面端在虚拟机上量过：SW-7 把 `~` 放成
+//! 能写以后，沙盒里往数据根里新建文件成了）。整条禁的，里面的读写 MXC 全挡（同一天量过新建、改写、追加、删、改名八样）。
+//!
 //! 挖法是纯逻辑（[`carve`]，哪个系统都测）；列目录由调用的给。
 
 use std::io;
@@ -15,15 +19,20 @@ use std::path::{Path, PathBuf};
 /// `hidden` 里每一条，里面有 `open` 的（落在它里面、不是它本身）就换成它下面不通往 `open` 的那几项，一层层往下；没有的照原样。
 /// `open` 本身、通往它的那几层都不进交回的；`open` 就是藏起来的那一条的，这一条不交（同 [`crate::Spec::hides`]：包住
 /// 藏起来的那种放开压不过它，照旧禁）。先后照 `hidden`，
-/// 换出来的照 `list` 列出来的先后。`list` 列一个目录下面的每一项（完整路径），列不出的这一条照原样整条交回。
+/// 换出来的照 `list` 列出来的先后。`list` 列一个目录下面的每一项（完整路径），列不出的这一条照原样整条交回。落在能写的
+/// `write` 里面（或者就是它）的不挖、整条交回（施工 SW-9）：挖开的路上那几层会能写。`open` 里一般也有 `write` 的那几条。
 pub fn carve(
     hidden: &[PathBuf],
-    open: &[PathBuf],
+    (write, open): (&[PathBuf], &[PathBuf]),
     list: impl Fn(&Path) -> io::Result<Vec<PathBuf>>,
 ) -> Vec<PathBuf> {
     let mut out = Vec::new();
     for dir in hidden {
         if open.contains(dir) {
+            continue;
+        }
+        if write.iter().any(|base| dir.starts_with(base)) {
+            out.push(dir.clone());
             continue;
         }
         match below(dir, open, &list) {

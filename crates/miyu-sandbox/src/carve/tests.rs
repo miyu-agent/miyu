@@ -19,6 +19,15 @@ fn tree(dirs: &[(&str, &[&str])]) -> impl Fn(&Path) -> io::Result<Vec<PathBuf>> 
     }
 }
 
+/// 没有能写的落在藏起来的外面时：同 SW-6。
+fn carve_open(
+    hidden: &[PathBuf],
+    open: &[PathBuf],
+    list: impl Fn(&Path) -> io::Result<Vec<PathBuf>>,
+) -> Vec<PathBuf> {
+    carve(hidden, (&[], open), list)
+}
+
 fn paths(list: &[&str]) -> Vec<PathBuf> {
     list.iter().map(PathBuf::from).collect()
 }
@@ -27,7 +36,7 @@ fn paths(list: &[&str]) -> Vec<PathBuf> {
 fn nothing_open_inside_keeps_the_whole_hidden_entry() {
     let list = tree(&[]);
     assert_eq!(
-        carve(&paths(&["/h/.miyu", "/h/.ssh"]), &paths(&["/work"]), list),
+        carve_open(&paths(&["/h/.miyu", "/h/.ssh"]), &paths(&["/work"]), list),
         paths(&["/h/.miyu", "/h/.ssh"])
     );
 }
@@ -43,7 +52,7 @@ fn open_paths_inside_are_carved_out_level_by_level() {
         ("/h/.miyu/packages", &["office", "other"]),
     ]);
     assert_eq!(
-        carve(
+        carve_open(
             &paths(&["/h/.miyu", "/h/.ssh"]),
             &paths(&["/h/.miyu/workspace/a", "/h/.miyu/packages/office"]),
             list,
@@ -63,7 +72,7 @@ fn open_paths_inside_are_carved_out_level_by_level() {
 fn an_unlistable_level_keeps_the_entry_hidden_whole() {
     let list = tree(&[("/h/.miyu", &["run", "workspace"])]);
     assert_eq!(
-        carve(
+        carve_open(
             &paths(&["/h/.miyu"]),
             &paths(&["/h/.miyu/workspace/a"]),
             list,
@@ -72,7 +81,7 @@ fn an_unlistable_level_keeps_the_entry_hidden_whole() {
         "列不出 workspace：它整条禁，宁可透不出来"
     );
     assert_eq!(
-        carve(&paths(&["/h/.miyu"]), &paths(&["/h/.miyu/x"]), tree(&[])),
+        carve_open(&paths(&["/h/.miyu"]), &paths(&["/h/.miyu/x"]), tree(&[])),
         paths(&["/h/.miyu"]),
         "数据根本身列不出：整条禁"
     );
@@ -81,11 +90,11 @@ fn an_unlistable_level_keeps_the_entry_hidden_whole() {
 #[test]
 fn only_an_open_path_equal_to_the_hidden_one_lets_it_through() {
     assert!(
-        carve(&paths(&["/h/.ssh"]), &paths(&["/h/.ssh"]), tree(&[])).is_empty(),
+        carve_open(&paths(&["/h/.ssh"]), &paths(&["/h/.ssh"]), tree(&[])).is_empty(),
         "放开的就是藏起来的这一条：照放开的"
     );
     assert_eq!(
-        carve(&paths(&["/h/.ssh"]), &paths(&["/h"]), tree(&[])),
+        carve_open(&paths(&["/h/.ssh"]), &paths(&["/h"]), tree(&[])),
         paths(&["/h/.ssh"]),
         "放开的包住藏起来的：照旧禁"
     );
@@ -101,4 +110,18 @@ fn entries_lists_a_real_directory() {
     assert_eq!(found, vec![dir.join("file"), dir.join("inner")]);
     assert!(entries(&dir.join("missing")).is_err());
     std::fs::remove_dir_all(&dir).expect("删得掉");
+}
+
+#[test]
+fn a_hidden_entry_inside_a_writable_one_is_not_carved() {
+    let list = tree(&[
+        ("/h/.miyu", &["run", "workspace"]),
+        ("/h/.miyu/workspace", &["a", "b"]),
+    ]);
+    let write = paths(&["/h", "/h/.miyu/workspace/a"]);
+    assert_eq!(
+        carve(&paths(&["/h/.miyu", "/h/.ssh"]), (&write, &write), list),
+        paths(&["/h/.miyu", "/h/.ssh"]),
+        "能写的 `~` 包住数据根：挖开的话数据根、workspace 那两层能新建、能改名，整条禁"
+    );
 }

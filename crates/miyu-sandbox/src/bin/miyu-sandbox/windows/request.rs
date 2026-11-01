@@ -66,8 +66,8 @@ pub(super) fn of(
     Ok(request)
 }
 
-/// 规格里藏起来的，里面能写的、单独放开只读的挖出来（施工 SW-6）。
+/// 规格里藏起来的，里面能写的、单独放开只读的挖出来（施工 SW-6）；落在能写的里面的不挖（施工 SW-9）。
 fn carved(spec: &Spec) -> Vec<std::path::PathBuf> {
     let open: Vec<_> = spec.write.iter().chain(&spec.reveal).cloned().collect();
-    miyu_sandbox::carve(&spec.hidden, &open, miyu_sandbox::entries)
+    miyu_sandbox::carve(&spec.hidden, (&spec.write, &open), miyu_sandbox::entries)
 }
