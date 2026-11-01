@@ -53,6 +53,8 @@ CI 的 Windows 机器上收不住（GitHub 的 Windows 机器有桌面会话，M
 
 **WMI**（施工 SW-3，2026-10-30 项目主人定）：MXC 的容器挡住 WMI/CIM（`Get-CimInstance` 报连不上 CIM 资源，`systeminfo`、`Get-ComputerInfo` 底下也走它）。不放宽：看过 Codex（MXC、沙盒用户两条路都没为 WMI 开口子，被挡就申请到沙盒外跑）、Claude Code（Windows 上不进沙盒，只读名单特意不收 `Get-CimInstance`、`Get-WmiObject`：查询语句任意、能连远程主机）。沙盒里用到 WMI 的命令（不看退出码：`Get-CimInstance` 连不上是不终止的错、照样退 0，施工 SW-4），`shell` 的结果末尾接 `no-wmi.txt` 一句，她申请在沙盒外跑这一条，人点允许。
 
+**已知、先不处理**（2026-11-02 桌面端在虚拟机上看到）：MXC 起过容器以后，同一个用户在沙盒外对被当成能写的根的那一层列目录看不全（`Test-Path` 得假、列出来是空的，往下一层又列得出来），管理员看得全；`C:\Users\<用户>` 上留着一条容器能力 SID 的 `(S,X)`（同步、穿越），是 MXC 让容器走进家目录加的，一直留着。都不影响沙盒挡什么；看不全那条影响平常用的再查。
+
 ### 还没有的
 
 - 外部身份的会话的 `read`、撤不撤 5-8 的沙盒用户、git 的 `safe.directory`：5-9 改下。
