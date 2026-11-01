@@ -106,6 +106,8 @@ pub(crate) fn detach(command: &mut std::process::Command) {
     use std::os::windows::process::CommandExt;
     use windows_sys::Win32::System::Threading::{CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS};
     command.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+    // 头的标准句柄不跟着进常驻的子进程（施工 CS-2）：重定向来的文件不然一直被核心开着。
+    miyu_pipe::uninherit_std_handles();
 }
 
 /// 没有用户编号。

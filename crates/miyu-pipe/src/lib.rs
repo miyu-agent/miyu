@@ -8,14 +8,19 @@
 //! - `create_for_containers`：同上，另让当前用户沙盒里的命令连得上（施工 M-3 下，脚本调工具的通道）；
 //! - `client_process`：管道另一头（客户端）进程的编号；
 //! - `current_user`：当前用户的 SID；
-//! - `server_user`：管道另一头（服务端）进程的用户 SID。
+//! - `server_user`：管道另一头（服务端）进程的用户 SID；
+//! - `uninherit_std_handles`：拉起常驻的子进程之前，本进程的三个标准句柄标成不能继承（施工 CS-2）。
 //!
 //! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。别的平台上这个 crate 只有
 //! [`owner_only`]。
 
 #[cfg(windows)]
+mod stdio;
+#[cfg(windows)]
 mod windows;
 
+#[cfg(windows)]
+pub use stdio::uninherit_std_handles;
 #[cfg(windows)]
 pub use windows::{client_process, create, create_for_containers, current_user, server_user};
 
