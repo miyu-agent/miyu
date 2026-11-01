@@ -5,7 +5,10 @@
 //! 为什么切在这里：整份目录八千多个模型、常驻约 3 MB，可一个核心真问到的只有配置里写的那几家、那几个模型。两个函数是纯的：
 //! 同一份目录、同样的输入，答的一定一样。所以答过的可以照输入记下来（[`Recalled`]），以后照记下的答，和现算逐字一样——
 //! 目录平时就不用常驻（施工 V-25 下）。这一步只切开、定接口，目录照旧常驻，合资料照旧用整份目录现算。
+//!
+//! 施工 V-32 多一个切口：`model.list` 要列目录里那一家的全部模型（[`listing_side`]），也是纯函数，照样记、照样借整份目录现算。
 
+use std::collections::BTreeMap;
 use std::sync::atomic::Ordering;
 use std::sync::{MutexGuard, PoisonError};
 
@@ -26,6 +29,15 @@ pub struct ProviderSide {
     pub api: Option<String>,
     /// 那一家的显示名（`model.list` 以后照它交，这一步还没人读）。
     pub name: Option<String>,
+}
+
+/// 目录里一家的模型清单（[`listing_side`]，施工 V-32）：`model.list` 列那一家目录里的全部模型要的几格。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CatalogListing {
+    /// 那一家的显示名（`model.list` 的 `name` 没写时照它）。
+    pub name: Option<String>,
+    /// 那一家的每个模型：模型名 → 目录里那一条的 `family`（认能出向量的用，`crate::embedding`）。
+    pub models: BTreeMap<String, Option<String>>,
 }
 
 /// 一个模型在目录里的那一面（[`model_side`]）：对目录的结果，和对上的那一条。
@@ -85,6 +97,26 @@ pub fn model_side(
         Found::Missing(_) | Found::Nothing => None,
     };
     ModelSide { found, entry }
+}
+
+/// 目录里编号 `provider` 那一家的模型清单（施工 V-32）：显示名，每个模型的名字和 `family`；目录里没有这一家的没有。
+///
+/// 纯函数：同一份目录、同样的输入，答的一定一样。
+pub fn listing_side(catalog: &Catalog, provider: &str) -> Option<CatalogListing> {
+    let listed = catalog.provider(provider)?;
+    Some(CatalogListing {
+        name: listed.name.clone(),
+        models: listed
+            .models
+            .iter()
+            .map(|(model, entry)| {
+                (
+                    model.to_string(),
+                    entry.family.as_deref().map(str::to_string),
+                )
+            })
+            .collect(),
+    })
 }
 
 /// 合资料时怎么查目录（施工 V-25 上）：两种，答的逐字一样。
@@ -159,6 +191,25 @@ impl CatalogLookup<'_> {
                     Recall::Unknown => {
                         missed(recalling);
                         ModelSide::nothing()
+                    }
+                }
+            }
+        }
+    }
+
+    /// 目录里编号 `provider` 那一家的模型清单（[`listing_side`]，施工 V-32）。照记下的答、又说不出来的，当目录里没有这一家，
+    /// 同样立一下。
+    pub fn listing(&self, provider: &str) -> Option<CatalogListing> {
+        match self {
+            CatalogLookup::Full(loaded) => listing_side(&loaded.catalog, provider),
+            CatalogLookup::Recalled(recalling) => {
+                let answer =
+                    lock(recalling).listing(recalling.catalog, provider, recalling.remember);
+                match answer {
+                    Recall::Known(listing) => listing,
+                    Recall::Unknown => {
+                        missed(recalling);
+                        None
                     }
                 }
             }

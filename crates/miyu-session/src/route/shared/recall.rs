@@ -4,8 +4,8 @@
 //!
 //! 1. 遇到没记过的输入（新配的模型、新供应商、会话记着的配置里已经没写的模型）：[`ModelData::with`] 先只照记下的合一遍，
 //!    说不出来的（`Recalling::missed` 立了）整遍作废，借整份目录重合一遍、记下、写盘。
-//! 2. 要整份目录的地方（`model.list` 列那一家目录里的全部模型、第一次接入、搜目录、常用的几家、`provider.test` 照目录挑模型、
-//!    图标）：[`ModelData::hold`] 临时读一份，[`ModelData::with_holding`] 借着它合；临时问的不记。
+//! 2. 要整份目录的地方（第一次接入、搜目录、常用的几家、`provider.test` 照目录挑模型、图标）：[`ModelData::hold`] 临时读一份，
+//!    [`ModelData::with_holding`] 借着它合；临时问的不记。`model.list` 列整份另记一份、不常驻（施工 V-32，`listing.rs`）。
 //! 3. 后台拉到新目录（[`ModelData::replace_catalog`]）、临时读回来的版本和记下的不一样（缓存被别的核心换过）：照新目录把
 //!    记下的键全部重算（`Recalled::rebuilt`），原子地换上新的一份、写盘。
 //!
@@ -55,10 +55,11 @@ pub(super) struct Recall {
     /// 临时读来的那一份和它的版本串：只留弱引用，借的人都放了就放掉。同时要的（几个 `model.list` 一起来）借同一份，不各读
     /// 一次。读的时候拿着这把锁，后来的等它读完再借。
     slot: Mutex<Option<(Weak<Loaded>, String)>>,
-    /// 补算没记过的输入时拿着：同时遇到同一个没记过的输入的，后来的等前一个记下了再照记下的答，整份目录只读一次。
-    missing: Mutex<()>,
-    /// 写盘时拿着：每次写的都是这一刻最新的那份，几次写不会把新的盖成旧的。
-    saving: Mutex<()>,
+    /// 补算没记过的输入时拿着：同时遇到同一个没记过的输入的，后来的等前一个记下了再照记下的答，整份目录只读一次。`model.list`
+    /// 补 `listing.json` 也拿它（施工 V-32）。
+    pub(super) missing: Mutex<()>,
+    /// 写盘时拿着：每次写的都是这一刻最新的那份，几次写不会把新的盖成旧的。`listing.json` 也在它里面读写（施工 V-32）。
+    pub(super) saving: Mutex<()>,
 }
 
 impl fmt::Debug for Recall {
@@ -74,8 +75,8 @@ impl fmt::Debug for Recall {
 /// 它，临时读来的目录没人借了就放掉（一阵请求过去以后核心把空着的堆还给系统）。
 #[derive(Debug, Clone, Default)]
 pub struct Holding {
-    loaded: Option<Arc<Loaded>>,
-    recalled: Option<Arc<Mutex<Recalled>>>,
+    pub(super) loaded: Option<Arc<Loaded>>,
+    pub(super) recalled: Option<Arc<Mutex<Recalled>>>,
 }
 
 impl Holding {
@@ -114,7 +115,7 @@ impl ModelData {
         *self.pointers() = std::mem::take(&mut observed.pointers);
         *self.lock() = observed;
         // 先写盘再放行：等着的一放行就可能有人去读这个文件。
-        self.write_recall(&recalled);
+        self.write_recalled(RECALL_FILE, &recalled);
         self.catalog
             .send_replace(Some(Held::Recalled(Arc::new(Mutex::new(recalled)))));
     }
@@ -265,7 +266,7 @@ impl ModelData {
     }
 
     /// 不常驻时的那份记下的；常驻的、还没读完的没有。
-    fn current_recalled(&self) -> Option<Arc<Mutex<Recalled>>> {
+    pub(super) fn current_recalled(&self) -> Option<Arc<Mutex<Recalled>>> {
         match &*self.catalog.borrow() {
             Some(Held::Recalled(recalled)) => Some(Arc::clone(recalled)),
             _ => None,
@@ -308,7 +309,7 @@ impl ModelData {
     }
 
     /// 照新目录 `loaded`（版本串 `of`）把 `current` 记下的键全部重算，原子地换上新的一份、写盘，记一行
-    /// `INFO catalog recall rebuilt`。调的一方拿着 `slot`。
+    /// `INFO catalog recall rebuilt`；`listing.json` 记下的跟着重算（施工 V-32，[`ModelData::relist`]）。调的一方拿着 `slot`。
     pub(super) fn swap(
         &self,
         current: &Mutex<Recalled>,
@@ -333,6 +334,7 @@ impl ModelData {
             "catalog recall rebuilt"
         );
         self.save(&rebuilt);
+        self.relist(loaded, of);
         rebuilt
     }
 
@@ -355,15 +357,15 @@ impl ModelData {
             return;
         }
         let recalled = lock(recalled).clone();
-        self.write_recall(&recalled);
+        self.write_recalled(RECALL_FILE, &recalled);
     }
 
-    /// 写 `state/models/catalog.json`；写不成 JSON 的（不会发生）记一行。
-    fn write_recall(&self, recalled: &Recalled) {
+    /// 写 `state/models/<name>`（`catalog.json`，施工 V-32 起还有 `listing.json`）；写不成 JSON 的（不会发生）记一行。
+    pub(super) fn write_recalled(&self, name: &str, recalled: &Recalled) {
         match recalled.to_json() {
-            Ok(text) => self.write(RECALL_FILE, &text),
+            Ok(text) => self.write(name, &text),
             Err(error) => {
-                tracing::warn!(target: TARGET, file = RECALL_FILE, error = %error, "model data not written");
+                tracing::warn!(target: TARGET, file = name, error = %error, "model data not written");
             }
         }
     }
@@ -399,6 +401,6 @@ fn ask_configured(resolved: &Resolved, knowledge: &Knowledge<'_>) {
 }
 
 /// 拿一把锁；别的线程拿着时出了 panic 的照样用：里面的每一样都是整条放进去的。
-fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+pub(super) fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }

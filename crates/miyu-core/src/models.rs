@@ -164,8 +164,8 @@ impl Early {
 /// `model.list`）。不等写 `ready`。交回读好的图标表，[`follow`] 照它在后台拉图标。
 ///
 /// 目录不常驻（施工 V-25 下）：记下的那份对上了的直接换上；读了整份目录、又算得出版本串的，照起来时的配置 `config` 把写过
-/// 的都查一遍记下、写盘（`INFO catalog recall built`），再放掉整份目录、把空着的堆还给系统。没有缓存目录、不知道程序在哪的照旧
-/// 常驻。
+/// 的都查一遍记下、写盘（`INFO catalog recall built`），`model.list` 记下的那份（`listing.json`）照它重算（施工 V-32），再放掉
+/// 整份目录、把空着的堆还给系统。没有缓存目录、不知道程序在哪的照旧常驻。
 pub fn begin(
     data: Arc<ModelData>,
     early: Early,
@@ -200,6 +200,8 @@ pub fn begin(
                     ms = started.elapsed().as_millis(),
                     "catalog recall built"
                 );
+                // `model.list` 记下的那份照新目录重算（施工 V-32）：头连上来列整份时不用再读一次整份目录。
+                reading.relist(&loaded, &of);
                 drop(loaded);
                 reading.recalled(recalled, observed, reader);
             }

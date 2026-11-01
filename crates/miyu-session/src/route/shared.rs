@@ -41,11 +41,13 @@ use crate::TARGET;
 
 use super::retire::{Retirement, Retiring};
 
+mod listing;
 mod recall;
 mod renamed;
 #[cfg(test)]
 mod tests;
 
+pub use listing::{LISTING_CAP, LISTING_FILE, Listed};
 pub use recall::{CatalogReader, Holding, RECALL_FILE};
 use recall::{Held, Recall};
 

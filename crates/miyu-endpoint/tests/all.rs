@@ -140,6 +140,7 @@ mod model_call_side;
 mod models;
 mod models_effort;
 mod models_embedding;
+mod models_listing;
 mod models_name;
 mod models_only;
 mod models_pools;

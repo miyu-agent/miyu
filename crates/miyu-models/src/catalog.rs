@@ -24,7 +24,9 @@ mod recall;
 mod table;
 
 pub use inputs::Inputs;
-pub use lookup::{CatalogLookup, ModelSide, ProviderSide, model_side, provider_side};
+pub use lookup::{
+    CatalogListing, CatalogLookup, ModelSide, ProviderSide, listing_side, model_side, provider_side,
+};
 pub use price::{Price, Rates, Tier, USD};
 pub use recall::{RECALL_VERSION, Recall, Recalled, Recalling};
 pub use table::ModelTable;

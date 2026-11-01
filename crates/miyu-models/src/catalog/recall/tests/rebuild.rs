@@ -45,7 +45,7 @@ fn an_unknown_answer_raises_the_missed_flag() {
 }
 
 /// 裁出来的目录改几处当成新拉的一份：DeepSeek 的一个模型窗口变了、价格变了，中转的一家整家没了，原厂加了一个模型。
-fn changed() -> Loaded {
+pub(super) fn changed() -> Loaded {
     let mut json: serde_json::Value =
         serde_json::from_str(crate::test_support::TRIMMED).expect("是 JSON");
     let flash = &mut json["deepseek"]["models"]["deepseek-flash"];

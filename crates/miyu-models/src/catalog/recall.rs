@@ -11,6 +11,9 @@
 //! - 写成 JSON、从 JSON 读回（[`Recalled::to_json`]、[`Recalled::from_json`]），照 `digest.rs` 的路子带写法的版本；读不懂的
 //!   报错，由调的一方处理。存盘、接进路由在 `miyu-session` 的 `ModelData`（施工 V-25 下）。
 //! - 换了目录的：照新目录把记下的输入全部重算（[`Recalled::rebuilt`]），调的一方原子地换上新的一份。
+//! - 第三张表（施工 V-32）：目录里一家的模型清单（[`listing_side`]），`model.list` 列整份时问；同一个类型另存一份
+//!   `state/models/listing.json`，平时不进内存（`miyu-session` 的 `route/shared/listing.rs`），两份的答照 [`Recalled::merge`]
+//!   并在一起查。路由那份（`catalog.json`）里这张表一直是空的，写出来的字和以前一个字节不差。
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -18,7 +21,9 @@ use std::sync::atomic::AtomicBool;
 
 use serde::{Deserialize, Serialize};
 
-use super::lookup::{ModelSide, ProviderSide, model_side, provider_side};
+use super::lookup::{
+    CatalogListing, ModelSide, ProviderSide, listing_side, model_side, provider_side,
+};
 use super::{CatalogSource, Loaded};
 use crate::matching::Vendors;
 
@@ -69,6 +74,8 @@ pub struct Recalled {
     fetched: String,
     providers: BTreeMap<ProviderAsk, Option<ProviderSide>>,
     models: BTreeMap<ModelAsk, ModelSide>,
+    /// 目录里一家的模型清单（施工 V-32）：目录里的编号 → 清单，目录里没有这一家的也记（`None`）。
+    listings: BTreeMap<String, Option<CatalogListing>>,
 }
 
 /// 写成 JSON、从 JSON 读回的样子：表的键不是字，写成一排「输入，答」。
@@ -80,6 +87,9 @@ struct Stored {
     fetched: String,
     providers: Vec<(ProviderAsk, Option<ProviderSide>)>,
     models: Vec<(ModelAsk, ModelSide)>,
+    /// 施工 V-32：空的不写，路由那份 `catalog.json` 的字照旧；没写的读成空的，以前写的照样读得回来。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    listings: Vec<(String, Option<CatalogListing>)>,
 }
 
 impl Recalled {
@@ -91,6 +101,7 @@ impl Recalled {
             fetched: fetched.to_string(),
             providers: BTreeMap::new(),
             models: BTreeMap::new(),
+            listings: BTreeMap::new(),
         }
     }
 
@@ -112,6 +123,25 @@ impl Recalled {
     /// 记了几条：供应商的、模型的。
     pub fn len(&self) -> (usize, usize) {
         (self.providers.len(), self.models.len())
+    }
+
+    /// 三张表一共记了几条（施工 V-32：看这一次多记了没有）。
+    pub fn entries(&self) -> usize {
+        self.providers.len() + self.models.len() + self.listings.len()
+    }
+
+    /// 把 `other` 记下的并进来（施工 V-32：`model.list` 把路由那份和 `listing.json` 并在一起查）：这里没有的输入照 `other` 的
+    /// 答记上，有的不动。两份必须是同一份目录（`of` 一样）的答，这里不查，由调的一方比。
+    pub fn merge(&mut self, other: Recalled) {
+        for (ask, side) in other.providers {
+            self.providers.entry(ask).or_insert(side);
+        }
+        for (ask, side) in other.models {
+            self.models.entry(ask).or_insert(side);
+        }
+        for (provider, listing) in other.listings {
+            self.listings.entry(provider).or_insert(listing);
+        }
     }
 
     /// 照记下的答 [`provider_side`]：记过的照记下的；没记过的借 `catalog` 现算，`remember` 为真时记下；没有 `catalog` 的
@@ -170,6 +200,26 @@ impl Recalled {
         Recall::Known(side)
     }
 
+    /// 照记下的答 [`listing_side`]（施工 V-32）：同 [`Recalled::provider_side`]。
+    pub fn listing(
+        &mut self,
+        catalog: Option<&Loaded>,
+        provider: &str,
+        remember: bool,
+    ) -> Recall<Option<CatalogListing>> {
+        if let Some(listing) = self.listings.get(provider) {
+            return Recall::Known(listing.clone());
+        }
+        let Some(loaded) = catalog else {
+            return Recall::Unknown;
+        };
+        let listing = listing_side(&loaded.catalog, provider);
+        if remember {
+            self.listings.insert(provider.to_string(), listing.clone());
+        }
+        Recall::Known(listing)
+    }
+
     /// 换了一份目录（施工 V-25 下：后台拉到了新的、缓存被别的核心换过）：照新的 `loaded`、认原厂的表 `vendors` 把记下的每
     /// 个输入重算一遍，交回版本串是 `of` 的新一份。旧的不动：还在用它查的照旧查完，查完的人换成新的（调的一方原子地换）。
     ///
@@ -203,12 +253,48 @@ impl Recalled {
                 (ask.clone(), side)
             })
             .collect();
+        let listings = self
+            .listings
+            .keys()
+            .map(|provider| (provider.clone(), listing_side(&loaded.catalog, provider)))
+            .collect();
         Recalled {
             of: of.to_string(),
             source: loaded.source,
             fetched: loaded.fetched.clone(),
             providers,
             models,
+            listings,
+        }
+    }
+
+    /// 记下的每一份清单里的每个模型，照没手写 `catalog` 的问法（认出的是清单那一家）借 `loaded` 问一遍、记下（施工 V-32）：
+    /// 换了目录、清单里多了模型的，`model.list` 头一回列它时不用再读整份目录。`loaded` 必须是记下时的那一份（`of`）。
+    pub fn fill_listed(&mut self, loaded: &Loaded, vendors: &Vendors) {
+        let asks: Vec<ModelAsk> = self
+            .listings
+            .iter()
+            .filter_map(|(provider, listing)| Some((provider, listing.as_ref()?)))
+            .flat_map(|(provider, listing)| {
+                listing.models.keys().map(|model| ModelAsk {
+                    recognized: Some(provider.clone()),
+                    model: model.clone(),
+                    written: None,
+                })
+            })
+            .collect();
+        for ask in asks {
+            if let std::collections::btree_map::Entry::Vacant(vacant) = self.models.entry(ask) {
+                let ask = vacant.key();
+                let side = model_side(
+                    &loaded.catalog,
+                    vendors,
+                    ask.recognized.as_deref(),
+                    &ask.model,
+                    None,
+                );
+                vacant.insert(side);
+            }
         }
     }
 
@@ -232,6 +318,11 @@ impl Recalled {
                 .models
                 .iter()
                 .map(|(ask, side)| (ask.clone(), side.clone()))
+                .collect(),
+            listings: self
+                .listings
+                .iter()
+                .map(|(provider, listing)| (provider.clone(), listing.clone()))
                 .collect(),
         };
         serde_json::to_string(&stored)
@@ -258,6 +349,7 @@ impl Recalled {
             fetched: stored.fetched,
             providers: stored.providers.into_iter().collect(),
             models: stored.models.into_iter().collect(),
+            listings: stored.listings.into_iter().collect(),
         })
     }
 }

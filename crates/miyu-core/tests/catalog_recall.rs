@@ -1,7 +1,8 @@
 //! 目录不常驻，核心起来时（施工 V-25 下，`docs/blueprint/models.md`「怎么走」第二条第 2 条）：头一回读整份目录、把配置里写过
 //! 的记下写进 `state/models/catalog.json`；下一回版本对上了不读整份目录（把原文换成同样大小、同样改动时间的乱码，整理好的
 //! 那份删掉：真读了就读不出来，答的却照旧）；记下的那份坏了、写法的版本不对、认原厂的表换了的，当没有、整份重算；后台拉到
-//! 新目录，记下的那份照新目录换版本、写盘。
+//! 新目录，记下的那份照新目录换版本、写盘。`model.list` 记下的那份（`listing.json`，施工 V-32）在起来时版本对不上、后台拉到
+//! 新目录时跟着重算。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -20,13 +21,14 @@ use miyu_core::models::refresh::{Refreshed, Refresher};
 use miyu_core::models::{begin, read_early};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Proxy, fetcher};
+use miyu_models::catalog::Recall;
 use miyu_models::catalog::Recalled;
 use miyu_models::facts::facts;
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::provider::provider;
 use miyu_models::settings::{ModelSettings, PoolSettings, ProviderSettings, UseSettings};
-use miyu_session::{ModelData, RECALL_FILE};
+use miyu_session::{LISTING_FILE, ModelData, RECALL_FILE};
 
 /// 用完就删的临时目录：快照（带认原厂的表）、缓存、`state/models`、一个当程序的文件。
 struct Dir(PathBuf);
@@ -240,4 +242,73 @@ async fn a_refresh_moves_the_recall_to_the_new_catalog() {
     let again = start(&dir).await;
     assert_eq!(window(&again), Some(3000));
     assert_eq!(recalled(&dir).of(), after.of());
+}
+
+/// `model.list` 那样列一遍 `p`（施工 V-32）：目录里那一家的清单里有没有 `m`，`m` 的窗口。
+fn listed(data: &ModelData) -> Vec<(bool, Option<u64>)> {
+    let resolved = resolved();
+    let values = resolved.values();
+    data.listing(&["p".to_string()], |knowledge, id| {
+        let Ok(found) = provider(&values, knowledge, id) else {
+            return (false, None);
+        };
+        let listed = knowledge
+            .lookup
+            .and_then(|lookup| lookup.listing("p"))
+            .is_some_and(|listing| listing.models.contains_key("m"));
+        (
+            listed,
+            facts(&resolved, knowledge, &found, "m").0.window.value,
+        )
+    })
+    .answers
+}
+
+/// 读回 `listing.json`。
+fn listing(dir: &Dir) -> Recalled {
+    let text = std::fs::read_to_string(dir.at("state").join(LISTING_FILE)).expect("写了");
+    Recalled::from_json(&text).expect("读得回来")
+}
+
+/// `p/m` 的窗口：只照 `recalled` 记下的（不借目录）。
+fn recalled_window(recalled: &mut Recalled) -> Option<u64> {
+    match recalled.model_side(None, &Vendors::default(), Some("p"), "m", None, false) {
+        Recall::Known(side) => side.entry.and_then(|entry| entry.window),
+        Recall::Unknown => None,
+    }
+}
+
+#[tokio::test]
+async fn the_listing_follows_a_new_catalog_at_start_and_on_refresh() {
+    let dir = Dir::new();
+    let data = start(&dir).await;
+    assert_eq!(listed(&data), vec![(true, Some(1000))]);
+    assert_eq!(listing(&dir).of(), recalled(&dir).of(), "同一个版本串");
+    drop(data);
+    // 目录换了一份：起来时读了整份目录，`listing.json` 跟着重算，不等 `model.list` 再读。
+    std::fs::write(dir.at("snapshot").join(FILE), catalog(2000)).expect("写得进");
+    let data = start(&dir).await;
+    let mut relisted = listing(&dir);
+    assert_eq!(relisted.of(), recalled(&dir).of(), "跟着换了版本串");
+    assert_eq!(recalled_window(&mut relisted), Some(2000));
+    assert_eq!(listed(&data), vec![(true, Some(2000))]);
+    // 后台拉到新目录：跟着重算。
+    let server = Server::start(vec![Reply {
+        status: 200,
+        headers: vec![],
+        body: vec![Piece::Bytes(catalog(3000).into_bytes())],
+    }])
+    .await;
+    let refresher = Refresher {
+        data: Arc::clone(&data),
+        client: fetcher(Proxy::Off).expect("造得出客户端"),
+        cache: dir.at("cache"),
+        version: Version::of_places(&dir.at("snapshot"), Some(&dir.at("program"))),
+    };
+    let url = format!("{}/api.json", server.base_url);
+    assert_eq!(refresher.once(&url).await, Refreshed::Replaced);
+    let mut relisted = listing(&dir);
+    assert_eq!(relisted.of(), recalled(&dir).of());
+    assert_eq!(recalled_window(&mut relisted), Some(3000));
+    assert_eq!(listed(&data), vec![(true, Some(3000))]);
 }
