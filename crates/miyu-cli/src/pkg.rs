@@ -11,6 +11,7 @@ mod info;
 mod install;
 mod open;
 mod pack;
+mod path;
 mod progress;
 mod query;
 mod session;
@@ -23,7 +24,6 @@ mod upgrade;
 pub(crate) use query::size;
 
 use std::io::{self, BufRead, Write};
-use std::path::{Component, Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use clap::{Args, Subcommand};
@@ -40,6 +40,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::say;
+use path::{installing, joined};
 pub use source::SyncFlags;
 
 /// `miyu pkg` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
@@ -86,7 +87,7 @@ pub enum PkgCommand {
     },
     /// 一个包的信息。
     Info {
-        /// 哪一个。
+        /// 哪一个：编号，或者包目录、包文件的路径（施工 IN-4，认法同 `install`）。
         package: String,
         /// 查哪一处（施工 IN-2）：`-Si` 只查软件源，`-Qi` 只查装着的，`info` 不写、交给核心先查装着的。
         #[arg(skip)]
@@ -430,36 +431,6 @@ fn lines(out: &mut dyn Write, rows: Vec<String>) {
     for row in rows {
         say(out, &row);
     }
-}
-
-/// `install` 装的是什么：带 `/`、`\`，是 `.`、`..`，或以 `.toml` 结尾的是一个包目录（或它里面的清单），换成绝对路径（相对的
-/// 照 `cwd` 算，施工 F-8 上）；别的是卸掉了的出厂的包的编号。
-fn installing(what: &str, cwd: &Path) -> Value {
-    let path = what.contains('/')
-        || what.contains('\\')
-        || what == "."
-        || what == ".."
-        || what.ends_with(".toml")
-        || what.ends_with(".miyu");
-    match path {
-        true => json!({"path": joined(cwd, what)}),
-        false => json!({"package": what}),
-    }
-}
-
-/// 相对的照 `cwd` 接成绝对的，`.`、`..` 照字面去掉（不碰磁盘）：核心照最后一段认编号，`.` 认不出来。
-fn joined(cwd: &Path, what: &str) -> PathBuf {
-    let mut path = PathBuf::new();
-    for part in cwd.join(what).components() {
-        match part {
-            Component::CurDir => {}
-            Component::ParentDir => {
-                path.pop();
-            }
-            other => path.push(other),
-        }
-    }
-    path
 }
 
 /// `list` 的回应印出来：`json` 的原样印那一串；`text` 的一行一个。

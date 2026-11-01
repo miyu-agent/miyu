@@ -20,6 +20,7 @@ use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
 use miyu_store::packages::Packages;
 
+use super::super::archive::Then;
 use super::super::progress::{self, At, Stage};
 use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
@@ -157,7 +158,7 @@ pub(crate) async fn install(
             core,
             peer,
             file,
-            false,
+            Then::Install,
             Some(step.entry.id.as_str()),
             None,
         )

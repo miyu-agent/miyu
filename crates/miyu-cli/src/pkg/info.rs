@@ -1,6 +1,7 @@
 //! `miyu pkg info`（施工 F-8 下起，IN-2 照设计 `49-装包照pacman.md` 第一节改）：装着的照本地（`-Qi`），没装的照软件源（`-Si`），
 //! 写成 pacman 的「键 : 值」。键照最宽的那个按显示宽度补齐（中文一个字两格）；没有值的行不印，「依赖」「推荐」没有的写「无」。
-//! 印成几行的 [`rows`] 是纯的，测试里照它算。
+//! 印成几行的 [`rows`] 是纯的，测试里照它算。写的是包目录、包文件的路径的（施工 IN-4，照 pacman 的 `-Qip`）照现在的目录换成
+//! 绝对的、发 `package.info {"path"}`，印法同装着的，多一行「无法读取」；`-Qi`、`-Si` 只接编号。
 
 use std::io::Write;
 
@@ -9,6 +10,7 @@ use serde_json::{Map, Value, json};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
 use super::confirm::included;
+use super::path::{is_path, joined};
 use super::query::size;
 use super::{PkgPlan, lines, refused};
 use crate::ask::Format;
@@ -29,7 +31,8 @@ pub(crate) fn params(package: &str, source: Option<bool>) -> Value {
     params
 }
 
-/// 问核心、印：`--format json` 的原样印回应；两处都没有的报「未找到软件包」，退出码 1。
+/// 问核心、印：`--format json` 的原样印回应；两处都没有的报「未找到软件包」，退出码 1。写的是路径的看那个包目录、包文件，
+/// 装不上的照 `install` 那样报（「无法安装 <写的>：…」）；`-Qi`、`-Si`（`source` 写了的）接路径的是用法错，退出码 2。
 pub(super) async fn show(
     rpc: &mut Rpc,
     plan: &PkgPlan,
@@ -37,13 +40,21 @@ pub(super) async fn show(
     (out, err): (&mut dyn Write, &mut dyn Write),
 ) -> Result<(), u8> {
     let language = &plan.language;
-    let asked = params(package, source);
+    let file = is_path(package);
+    if let (true, Some(source)) = (file, source) {
+        diagnostic::error(err, *language, &language.info_takes_an_id(source));
+        return Err(exit::MISUSE);
+    }
+    let asked = match file {
+        true => json!({"path": joined(&plan.cwd, package)}),
+        false => params(package, source),
+    };
     let info = match link::answer(rpc, "package.info", asked, language, err).await? {
         Ok(info) => info,
         Err(error) => {
             let problems = match error["data"]["reason"].as_str() {
-                Some("unknown_package") => vec![language.package_not_found(package)],
-                _ => refused(&error, None, language),
+                Some("unknown_package") if !file => vec![language.package_not_found(package)],
+                _ => refused(&error, file.then_some(package), language),
             };
             for problem in problems {
                 diagnostic::error(err, *language, &problem);
@@ -59,7 +70,8 @@ pub(super) async fn show(
 }
 
 /// `package.info` 的回应印成几行：先后照设计 49 第一节第 3、4 条，键照最宽的那个补齐，冒号前后各空一格。没装的
-/// （`from: "source"`）多「软件源」「下载大小」，装着的多「被依赖」「安装时间」。
+/// （`from: "source"`）多「软件源」「下载大小」，装着的多「被依赖」「安装时间」。包目录、包文件的（`from: "file"`，施工 IN-4）
+/// 照装着的，核心不给来源、被依赖、安装时间，「提供」后面多「无法读取」。
 pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<String> {
     let remote = info["from"] == "source";
     let text = |key: &str| info[key].as_str().map(str::to_string);
@@ -78,6 +90,7 @@ pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<
             Some(ids(&info["recommends"], language)),
         ),
         (InfoKey::Provides, provides(info, remote, language)),
+        (InfoKey::Skipped, skipped(info, language)),
         (InfoKey::Capabilities, capabilities(info, language)),
         (InfoKey::Origin, came(info, language)),
         (InfoKey::Author, text("author")),
@@ -151,6 +164,22 @@ fn provides(info: &Value, remote: bool, language: &Language) -> Option<String> {
             included(&Value::Object(shaped), Doing::Install, language)
         }
     };
+    (!items.is_empty()).then(|| items.join(language.list_separator()))
+}
+
+/// 「无法读取」（施工 IN-4）：读不成的技能、脚本、斜杠命令模板，写法同装之前那一份（`<包里的路径>（<为什么>）`）。
+fn skipped(info: &Value, language: &Language) -> Option<String> {
+    let items: Vec<String> = info["skipped"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|one| {
+            language.skipped(
+                one["file"].as_str().unwrap_or_default(),
+                one["why"].as_str().unwrap_or_default(),
+            )
+        })
+        .collect();
     (!items.is_empty()).then(|| items.join(language.list_separator()))
 }
 

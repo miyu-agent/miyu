@@ -1238,6 +1238,7 @@ flowchart LR
 | IN-1 | 索引多四格 | 软件源的索引里一个包多推荐、作者、上游、装好以后多大四格，`miyu-index` 收录时照清单和包文件算；以前生成的索引照旧读。施工单见 `IN-装包照pacman.md` |
 | IN-2 | info 照 pacman | `package.info` 多 `source` 参数，没装的照软件源答，装着的多清单写的几格和「被依赖」；`miyu pkg info` 写成「键 : 值」，`-Si` 只查软件源、`-Qi` 只查装着的 |
 | IN-3 | 装包分阶段 | 从软件源装的看一眼多 `recommends`、`installed`，`package.progress` 带 `stage`、`index`、`count`，先全下完、再核对、再装；`miyu pkg install` 照 pacman 印解析依赖、要装的和推荐的、几行「键 : 值」，问装不装、再问推荐的，终端里画进度条、管道里只印行，`--yes` 不装推荐的 |
+| IN-4 | info 看本地包 | 会话里她跑 `miyu pkg info ./包目录` 看得到那个包，普通终端里同一条却报未找到软件包：补上（照 pacman 的 `-Qip`）。`package.info` 多收 `path`（本机包目录、包文件的绝对路径，和 `package` 二选一），照真装之前查的那几样查一遍、什么都不装，交回装着的那一份的样子（`from: "file"`），写错的、撞了名的照真装那样拒；扩展带 `path` 调的回 `local_only`。`miyu pkg info <路径>` 照 `install` 认路径、换成绝对的，印「键 : 值」，读不成的技能、脚本多一行「无法读取」；`-Qi`、`-Si` 接路径的报用法错 |
 
 **会话各记模型和思考强度**（SM 线，设计 51，2026-10-30 项目主人定）
 

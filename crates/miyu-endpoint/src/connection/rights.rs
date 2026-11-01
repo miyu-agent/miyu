@@ -92,6 +92,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "widget.set" | "widget.clear" => Needs(Widgets),
         "system.append" => Needs(ContextSystem),
         "package.call" => Needs(PackagesCall),
+        // 看本机任意一处的包文件夹、包文件（施工 IN-4）：同装，只给人。
+        "package.info" if params.get("path").is_some_and(|path| !path.is_null()) => People,
         // 都能调：读配置和密钥的名字、附件、模型、给人看的字、装了什么、带来的内容、人格和预设、技能、脚本、记忆和知识库读的。
         "hello" | "unsubscribe" | "provide" | "human.get" | "blob.put" | "blob.get"
         | "blob.open" | "blob.write" | "blob.close" | "command.catalog" | "config.check"

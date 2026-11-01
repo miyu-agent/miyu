@@ -114,6 +114,15 @@ fn some_hang_on_the_params() {
         Right::Needs(Capability::EventsWrite)
     );
     assert_eq!(
+        right("package.info", &json!({"path": "/tmp/kit"})),
+        Right::People,
+        "看本机的包文件夹同装，只给人（施工 IN-4）"
+    );
+    assert_eq!(
+        right("package.info", &json!({"package": "kit"})),
+        Right::Anyone
+    );
+    assert_eq!(
         right("provide", &json!({"tools": []})),
         Right::Anyone,
         "空的照收"

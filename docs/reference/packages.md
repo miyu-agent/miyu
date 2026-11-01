@@ -25,7 +25,7 @@
 | [`command.catalog`](#commandcatalog) | 列能用的斜杠命令 |
 | [`check`](#check) | 查配置、人格、预设、软件包写没写错 |
 
-**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
+**谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
 **两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
 
@@ -61,11 +61,12 @@
 |---|---|---|
 | `package.logo` | `package`、`from`? | `{"package", "logo", "media_type", "data"}`：包自带的图标（施工 F-18 上），`logo` 是版本（内容的 SHA-256 前 16 位，同 `package.list` 那一格），`data` 是 base64，`media_type` 是 `image/png` 或 `image/webp`；清单没写、不合规矩（不在、不是 PNG / WebP、超 256 KiB、宽高超 512）的三格都是 `null`。另可写 `from`（软件源的名字，同 `package.search` 每一行的 `source`）：读那个源里的包的图标，没装的也行（施工 F-18 下）；不认识的源 `unknown_source`，索引里没有 `unknown_package`，下不成 `download_failed` |
 | `package.info` | `package`、`source`? | `source` 写 `true` 只查软件源，`false` 只查装着的，不写的先查装着的、没装的查软件源。装着的：`{"package", "layer", "from", "files", "size", "version"?, "author"?, "upstream"?, "installed"?, "source"?, "name"?, "summary"?, "depends"?, "recommends"?, "provides"?, "capabilities"?, "required_by"?, "origin"?}`：从哪来（同 `package.list`）、几个文件、多少字节、作者、上游、装的时刻、装的时候的本机路径；名字、说明、依赖、推荐、带了什么（同装之前看一眼的「包含」）、要的能力、装着的包里依赖它的、来源仓库。没装的照软件源：`{"from": "source", "source", "package", "version", "depends", "recommends", "provides", "capabilities", "origin", "official", "name"?, "summary"?, "author"?, "upstream"?, "download"?, "installed_size"?, "stale"?}`：`source` 是源的名字，`provides` 是索引原样，`download` 是本机那份文件多少字节，`installed_size` 是装好以后多大 |
+| `package.info` | `path`（和 `package` 二选一，不收 `source`；施工 IN-4） | 看本机一个包文件夹（或里面的 `package.toml`）、包文件 `.miyu` 的绝对路径，照 pacman 的 `-Qip`：什么都不装，照真装之前查的那几样查一遍。回应照装着的那一份的样子：`{"from": "file", "path", "package", "files", "size", "version"?, "name"?, "summary"?, "author"?, "upstream"?, "depends"?, "recommends"?, "provides"?, "capabilities"?, "skipped"?, "replaces"?}`：`path` 照写的原样（包文件的是那个文件，不是解开的暂存处），`files`、`size` 是包里几个文件、多少字节，`provides`、`capabilities`、`skipped`（读不成的技能、脚本、斜杠命令模板 `[{"file", "why"}]`）、`replaces` 同 `package.install` 看一眼的那几格；没有 `layer`、`installed`、`required_by`、`origin` |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
 | `package.check` | `package`（可不写） | `{"packages": [{"package", "modified", "missing", "extra"}…]}`：系统那一层装的包，装好以后改了、少了、多了的文件 |
 
-**出错**：`unknown_package`（`package.info` 两处都没有）；`source_unreachable`（`package.info` 只查软件源、软件源拿不到，本机也没有索引）；`bad_params`（`owns` 的路径是相对的）。
+**出错**：`unknown_package`（`package.info` 两处都没有）；`source_unreachable`（`package.info` 只查软件源、软件源拿不到，本机也没有索引）；`bad_params`（`owns` 的路径是相对的；`info` 的 `package`、`path` 都写或都没写，带 `path` 又写了 `source`，路径是相对的）。`info` 带 `path` 的另照 `package.install` 的出错拒：`path_unreadable`、`package_invalid`、`package_conflict`、`wrong_target`、`package_exists`、`package_file_bad`、`depends_missing`，见下一节。
 
 ## `package.install`、`package.remove`
 

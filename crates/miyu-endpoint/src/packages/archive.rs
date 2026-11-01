@@ -21,7 +21,18 @@ pub(super) fn is_package_file(path: &Path) -> bool {
     path.extension().and_then(|extension| extension.to_str()) == Some(EXTENSION)
 }
 
-/// 装包文件 `path`（`preview` 是只看一眼）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
+/// 包文件解开以后做什么（施工 IN-4 起三种）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Then {
+    /// 照包文件夹装。
+    Install,
+    /// 只看一眼（`package.install` 带 `preview`）。
+    Preview,
+    /// `package.info` 带 `path` 的那一份（`file_info.rs`）。
+    Describe,
+}
+
+/// 装包文件 `path`（`then` 是解开以后做什么）。路径不是绝对的 `bad_params`；读不了的 `path_unreadable`；解不开
 /// 的 `package_file_bad`；之后同装包文件夹（进度推给 `caller`，从软件源装的自己推、不传）。
 ///
 /// 写了 `expected` 的（从软件源装的，索引里那一条的编号，施工 AS-1）：包文件里的编号（最上层文件夹的名字）对不上也是
@@ -31,7 +42,7 @@ pub(super) async fn install(
     core: &Arc<Core>,
     peer: Peer,
     path: &Path,
-    preview: bool,
+    then: Then,
     expected: Option<&str>,
     caller: Option<&Reverse>,
 ) -> Result<Value, Refusal> {
@@ -51,8 +62,11 @@ pub(super) async fn install(
             tracing::warn!(target: TARGET, expected = expected.unwrap_or_default(), got = unpacked.id.as_str(), "package file holds another package");
             Err(Refusal::PACKAGE_FILE_BAD)
         }
-        Ok(Ok(unpacked)) if preview => {
+        Ok(Ok(unpacked)) if then == Then::Preview => {
             super::preview::installing(core, peer, &unpacked.folder).await
+        }
+        Ok(Ok(unpacked)) if then == Then::Describe => {
+            super::file_info::described(core, peer, &unpacked.folder).await
         }
         Ok(Ok(unpacked)) => {
             super::manage::from_path(core, (peer, caller), &unpacked.folder, Some(path)).await

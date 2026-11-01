@@ -24,6 +24,16 @@ pub(crate) async fn installing(
     peer: Peer,
     path: &Path,
 ) -> Result<Value, Refusal> {
+    let (answer, _) = looked(core, peer, path).await?;
+    Ok(Value::Object(answer))
+}
+
+/// 同 [`installing`]，另交回读成了的清单：`package.info` 带 `path` 的照它补名字、说明、依赖（施工 IN-4，`file_info.rs`）。
+pub(super) async fn looked(
+    core: &Arc<Core>,
+    peer: Peer,
+    path: &Path,
+) -> Result<(Map<String, Value>, Manifest), Refusal> {
     let (folder, id, manifest) = source(core, peer, path)?;
     clear_of_conflicts((core, peer), &id, manifest.clone(), folder.clone()).await?;
     let (files, content) =
@@ -39,7 +49,7 @@ pub(crate) async fn installing(
     }
     answer.insert("files".into(), json!(files.len()));
     answer.insert("size".into(), json!(local::size(&files)));
-    Ok(Value::Object(answer))
+    Ok((answer, manifest))
 }
 
 /// 把卸掉的出厂的包装回来：编号、版本、带了什么，`restores: true`。没卸过的 `unknown_package`。

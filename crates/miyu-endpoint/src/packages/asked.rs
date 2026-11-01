@@ -7,6 +7,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::archive::Then;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -48,7 +49,13 @@ pub(crate) async fn install(
         (Some(path), None, preview) => {
             let path = Path::new(&path);
             match (super::archive::is_package_file(path), preview) {
-                (true, _) => super::archive::install(core, peer, path, preview, None, caller).await,
+                (true, _) => {
+                    let then = match preview {
+                        true => Then::Preview,
+                        false => Then::Install,
+                    };
+                    super::archive::install(core, peer, path, then, None, caller).await
+                }
                 (false, true) => super::preview::installing(core, peer, path).await,
                 (false, false) => super::manage::from_path(core, (peer, caller), path, None).await,
             }

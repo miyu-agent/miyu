@@ -1,5 +1,5 @@
 //! `miyu pkg info` 的字（施工 IN-2，设计 `49-装包照pacman.md` 第一节，`docs/blueprint/cli/pkg.md`「给人看的字」）：每一行前面
-//! 的键（英文照 pacman）、没有依赖时写的「无」、来源的几种说法、哪儿都没有的报错。
+//! 的键（英文照 pacman）、没有依赖时写的「无」、来源的几种说法、哪儿都没有的报错；`-Qi`、`-Si` 接了路径的报错（施工 IN-4）。
 
 use super::super::Language;
 use crate::diagnostic::Problem;
@@ -15,6 +15,8 @@ pub(crate) enum InfoKey {
     DependsOn,
     Recommends,
     Provides,
+    /// 包目录、包文件里读不成的（施工 IN-4）。
+    Skipped,
     Capabilities,
     Origin,
     Author,
@@ -48,6 +50,7 @@ impl Language {
             InfoKey::DependsOn => ("依赖", "Depends On"),
             InfoKey::Recommends => ("推荐", "Recommends"),
             InfoKey::Provides => ("提供", "Provides"),
+            InfoKey::Skipped => ("无法读取", "Unreadable"),
             InfoKey::Capabilities => ("需要的能力", "Capabilities"),
             InfoKey::Origin => ("来源", "Origin"),
             InfoKey::Author => ("作者", "Author"),
@@ -89,6 +92,20 @@ impl Language {
             (_, None) => word.to_string(),
             (Language::Chinese, Some(origin)) => format!("{origin}（{word}）"),
             (Language::English, Some(origin)) => format!("{origin} ({word})"),
+        }
+    }
+
+    /// `-Qi`（`source` 是 `false`）、`-Si`（`true`）接的是路径（报错，施工 IN-4）：看包目录、包文件用 `info`。
+    pub(crate) fn info_takes_an_id(&self, source: bool) -> Problem {
+        let flag = match source {
+            true => "-Si",
+            false => "-Qi",
+        };
+        match self {
+            Language::Chinese => Problem::new(format!("{flag} 只接软件包编号"))
+                .hint("运行 'miyu pkg info <路径>' 查看软件包目录或文件"),
+            Language::English => Problem::new(format!("{flag} takes a package id"))
+                .hint("run 'miyu pkg info <path>' to look at a package folder or file"),
         }
     }
 

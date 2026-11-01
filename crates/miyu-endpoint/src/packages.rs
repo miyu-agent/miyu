@@ -20,6 +20,7 @@ mod archive;
 pub(crate) mod asked;
 pub(crate) mod changes;
 pub(crate) mod depends;
+mod file_info;
 pub(crate) mod fill;
 mod folder;
 pub(crate) mod group;

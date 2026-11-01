@@ -113,3 +113,35 @@ fn si_and_qi_say_where_to_look() {
     );
     assert_eq!(params("x", None), json!({"package": "x"}));
 }
+
+#[test]
+fn a_package_folder_reads_like_an_installed_one_and_says_what_cannot_be_read() {
+    let info = json!({
+        "from": "file", "path": "/work/my-skill", "package": "my-skill", "version": "1.2",
+        "name": "我的技能", "summary": "做点事", "author": "Ann",
+        "provides": {"skills": ["notes"], "scripts": ["hello"]},
+        "skipped": [{"file": "skills/bad/SKILL.md", "why": "missing front matter"},
+                    {"file": "scripts/x.sh", "why": "not text"}],
+        "files": 4, "size": 412, "replaces": {"version": "1.1"},
+    });
+    assert_eq!(
+        rows(&info, east_eight(), &Language::Chinese),
+        [
+            "编号        : my-skill",
+            "名称        : 我的技能",
+            "版本        : 1.2",
+            "描述        : 做点事",
+            "依赖        : 无",
+            "推荐        : 无",
+            "提供        : 技能 notes、脚本 hello",
+            "无法读取    : skills/bad/SKILL.md（missing front matter）、scripts/x.sh（not text）",
+            "作者        : Ann",
+            "安装后大小  : 412 B",
+        ],
+        "照装着的那几行，没有来源、安装时间；路径、几个文件、换下哪一份不印"
+    );
+    assert_eq!(
+        rows(&info, east_eight(), &Language::English)[7],
+        "Unreadable      : skills/bad/SKILL.md (missing front matter), scripts/x.sh (not text)"
+    );
+}
