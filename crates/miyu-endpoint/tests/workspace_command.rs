@@ -243,12 +243,12 @@ async fn wrong_places_are_refused_and_too_wide_is_kept() {
         json!({"session": session, "text": "/workspace ~"}),
     )
     .await;
-    // `~` 不再太宽（施工 5-14 改、SW-7）。
-    assert_eq!(
-        reply["result"]["said"],
-        json!("工作区已切换到 ~。"),
-        "{reply}"
-    );
+    let said = if cfg!(windows) {
+        "工作区已切换到 ~（范围较大）。"
+    } else {
+        "工作区已切换到 ~。"
+    };
+    assert_eq!(reply["result"]["said"], json!(said), "{reply}");
     assert_eq!(moves(&home.log(&session)).last(), Some(&"~".to_string()));
 }
 

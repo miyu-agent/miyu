@@ -45,7 +45,7 @@ fn dir_too_wide(core: &Core, dir: &str) -> bool {
 pub(crate) struct Picked {
     /// 实际用的目录：照原样的写法，退回的是这个会话的默认工作区。
     pub(crate) cwd: String,
-    /// 太宽（根目录、数据根里的；`~`、系统的家目录、包含数据根的施工 5-14 改、SW-7 起哪个平台都不算）：照用，工作区是会话的默认工作区。
+    /// 太宽（根目录；Windows 上还有 `~` 本身、系统的家目录、包含数据根的，施工 5-14 改）：照用，工作区是会话的默认工作区。
     pub(crate) wide: bool,
     /// 宽（`miyu_fs::broad`：`~` 本身、系统的家目录、根目录、包含数据根的）：场所会话照它退回默认工作区（施工 5-14 改照旧）。
     pub(crate) broad: bool,
