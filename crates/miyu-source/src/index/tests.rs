@@ -160,3 +160,64 @@ fn entries_whose_id_or_version_is_not_a_plain_name_are_dropped() {
         .collect();
     assert_eq!(ids, ["good"]);
 }
+
+/// 下载量和排序（施工 DL-1，设计 54 第一、三节）：每一条多 `published`（这一版第一次进索引的时刻）、`downloads`（各版本、各系统
+/// 加起来）、`downloads_week`（近 7 天）。以前生成的没有；写法不对的（不是时刻、不是非负整数）当没有，那一条照收。
+#[test]
+fn published_and_download_counts_are_read_leniently() {
+    let entry = |extra: serde_json::Value| {
+        let mut entry = serde_json::json!({"id": "draw", "version": "1.0", "origin": "github.com/someone/draw",
+            "files": [{"url": "https://example.invalid/x.miyu", "sha256": "ab", "size": 3}]});
+        for (key, value) in extra.as_object().expect("是表") {
+            entry[key] = value.clone();
+        }
+        entry
+    };
+    let text = serde_json::json!({"version": 1, "generated": "2026-10-31T03:00:00Z", "packages": [
+        entry(serde_json::json!({"published": "2026-10-31T09:00:00Z", "downloads": 1234, "downloads_week": 56})),
+        entry(serde_json::json!({"published": "yesterday", "downloads": -1, "downloads_week": 1.5})).tap_id("bad"),
+        entry(serde_json::json!({})).tap_id("old"),
+    ]});
+    let index = Index::parse(text.to_string().as_bytes()).expect("读得成");
+    let got: Vec<Counted<'_>> = index
+        .packages
+        .iter()
+        .map(|entry| {
+            (
+                entry.id.as_str(),
+                entry.published.as_deref(),
+                entry.downloads,
+                entry.downloads_week,
+            )
+        })
+        .collect();
+    assert_eq!(
+        got,
+        [
+            ("draw", Some("2026-10-31T09:00:00Z"), Some(1234), Some(56)),
+            ("bad", None, None, None),
+            ("old", None, None, None),
+        ],
+        "写法不对的当没有，那一条照收"
+    );
+    let written = serde_json::to_value(&index.packages[2]).expect("写得成");
+    assert!(
+        written.get("published").is_none() && written.get("downloads").is_none(),
+        "没有的不写：{written}"
+    );
+}
+
+/// 一条的编号、上的时刻、下载次数、近 7 天的下载次数。
+type Counted<'a> = (&'a str, Option<&'a str>, Option<u64>, Option<u64>);
+
+/// 测试里改一条的编号。
+trait TapId {
+    fn tap_id(self, id: &str) -> serde_json::Value;
+}
+
+impl TapId for serde_json::Value {
+    fn tap_id(mut self, id: &str) -> serde_json::Value {
+        self["id"] = serde_json::json!(id);
+        self
+    }
+}

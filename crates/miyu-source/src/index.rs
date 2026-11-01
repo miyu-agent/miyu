@@ -76,6 +76,29 @@ pub struct Entry {
     /// 上游（施工 IN-1）：清单 `[package] upstream` 的原样；没写的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upstream: Option<String>,
+    /// 这一版第一次进这个软件源的时刻（施工 DL-1，设计 54 第一节），RFC 3339：生成索引时照上一份沿用，编号、版本变了的写这一次
+    /// 生成的时刻。以前生成的没有；写法不对的读成没有（`time_or_none`），这一条照收。
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "time_or_none"
+    )]
+    pub published: Option<String>,
+    /// 各版本、各系统的发布文件一共被下载了几次（施工 DL-1）：照 GitHub 发布页的 `download_count` 加起来。不在 GitHub 发布页上的、
+    /// 问不成的、以前生成的没有；不是非负整数的读成没有。
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "count_or_none"
+    )]
+    pub downloads: Option<u64>,
+    /// 近 7 天新增的下载次数（施工 DL-1）：照软件源旁边的 `stats.json` 算，不满 7 天的历史、没有 `downloads` 的没有。
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "count_or_none"
+    )]
+    pub downloads_week: Option<u64>,
     /// 装好以后占多少字节（施工 IN-1）：包文件解开以后所有普通文件的字节数之和；一个包有几份文件（分系统的）时取最大的那一份。
     /// 以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -113,6 +136,25 @@ fn plain_version(version: &str) -> bool {
         && version
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-'))
+}
+
+/// 时刻的那一格（施工 DL-1）：是 RFC 3339 的时刻的照原样留着，别的（不是字、读不成时刻）读成没有，不让整份索引读不成。
+fn time_or_none<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(value
+        .as_str()
+        .filter(|text| text.parse::<Timestamp>().is_ok())
+        .map(str::to_string))
+}
+
+/// 次数的那一格（施工 DL-1）：非负整数的照收，别的读成没有。
+fn count_or_none<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<u64>, D::Error> {
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(value.as_u64())
 }
 
 /// 一个包文件。

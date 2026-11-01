@@ -3,7 +3,8 @@
 //!
 //! 每一条带人要的：编号、名字、说明（照连接的语言挑）、装着的版本、是不是官方、被拉黑的理由；版本也给（升级、头要比）；给哪几个
 //! 包带了内容（`contents`，施工 G-9：im 的商城只列 im 的插件）；带了哪几样、依赖哪几个包（`provides`、`depends`，施工 G-10：
-//! 软件市场照种类筛）；Lucide 的图标名、包自带图标的版本（`icon`、`logo`，施工 F-18 下）。
+//! 软件市场照种类筛）；Lucide 的图标名、包自带图标的版本（`icon`、`logo`，施工 F-18 下）；这一版上的时刻、下载次数、近 7 天的
+//! 下载次数（`published`、`downloads`、`downloads_week`，施工 DL-1，索引里有的才写）。
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -114,6 +115,16 @@ fn matching(
             }
             if let Some(logo) = entry.logo.as_ref().filter(|logo| logo.well_formed()) {
                 row["logo"] = json!(logo.version());
+            }
+            // 下载量和排序（施工 DL-1，设计 54 第三节）：索引里有的才写，头照它排最新、下载量、趋势。
+            if let Some(published) = &entry.published {
+                row["published"] = json!(published);
+            }
+            if let Some(downloads) = entry.downloads {
+                row["downloads"] = json!(downloads);
+            }
+            if let Some(week) = entry.downloads_week {
+                row["downloads_week"] = json!(week);
             }
             row
         })

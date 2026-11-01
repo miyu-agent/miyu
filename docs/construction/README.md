@@ -1303,6 +1303,12 @@ flowchart LR
 | PC-2 | 列表里每一项是一组字段 | 清单 `element = "record"`（`fields`、`title`），配置文件写成 `[[<前缀>.<名字>]]`，每一项照字段查、问题报到 `<键>[n].<字段>`（新码 `missing_field`），最多 100 项；`config.set` 整条换、写回照原来的块和注释，密钥字段只收引用；`config.schema` 带 `title`、`fields`；交给扩展、脚本的是对象数组、密钥是真值、没写的照默认值。施工单见 `PC-软件包配置项的词汇.md` |
 | PC-3 | 选模型、人格、知识库 | 清单 `type = "model"`（进配置清单是「引用」，供应商、池没有的 `bad_reference`）、`"persona"`、`"knowledge"`（写法同名字，没有的 `miyu check` 报警告 `unknown_persona`、`unknown_knowledge`）；列表、一组字段里的也查；`config.schema` 的 `type` 是 `reference`、`persona`、`knowledge`，头照它画选择框。施工单见 `PC-软件包配置项的词汇.md` |
 
+**下载量和排序**（DL 线，设计 54，2026-10-31 项目主人定）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| DL-1 | 核心认下载量 | 索引每一条多 `published`、`downloads`、`downloads_week`，写法不对的读成没有、那一条照收；`package.search` 有的才交出去。施工单见 `DL-下载量和排序.md` |
+
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 
 | 步 | 名字 | 做什么 |

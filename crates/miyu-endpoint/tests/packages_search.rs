@@ -141,3 +141,49 @@ async fn searching_without_a_source_is_refused() {
     let got = search(&mut client, "x").await;
     assert_eq!(reason(&got), Some("source_unreachable"), "{got}");
 }
+
+/// 下载量和排序（施工 DL-1，设计 54 第三节）：每一行带索引里的 `published`、`downloads`、`downloads_week`；索引里没有的、写法
+/// 不对的不写。
+#[tokio::test]
+async fn published_and_downloads_are_handed_over_when_the_index_has_them() {
+    let home = Home::new();
+    let (secret, trusted) = keys();
+    let mut draw = entry("draw", json!({"en": "Draw"}), json!({}));
+    draw["published"] = json!("2026-10-31T09:00:00Z");
+    draw["downloads"] = json!(1234);
+    draw["downloads_week"] = json!(56);
+    let mut odd = entry("odd", json!({"en": "Odd"}), json!({}));
+    odd["published"] = json!("last week");
+    odd["downloads"] = json!("many");
+    let index = serde_json::to_vec(&json!({
+        "version": 1,
+        "generated": "2026-10-31T10:00:00Z",
+        "packages": [draw, odd, entry("old", json!({"en": "Old"}), json!({}))],
+    }))
+    .expect("写得成");
+    let signature =
+        serde_json::to_vec(&sign::sign(&index, &secret).expect("签得了")).expect("写得成");
+    let server = Server::start(serving(&(index, signature))).await;
+    let mut client = Client::connect(core(&home, &server.base_url, &[], trusted));
+    client.hello().await;
+    let all = search(&mut client, "").await;
+    assert_eq!(
+        ids(&all),
+        ["draw", "odd", "old"],
+        "写法不对的那一条照收：{all}"
+    );
+    let rows = all["result"]["packages"].as_array().expect("有");
+    assert_eq!(
+        (
+            rows[0]["published"].clone(),
+            rows[0]["downloads"].clone(),
+            rows[0]["downloads_week"].clone()
+        ),
+        (json!("2026-10-31T09:00:00Z"), json!(1234), json!(56))
+    );
+    for row in &rows[1..] {
+        for key in ["published", "downloads", "downloads_week"] {
+            assert!(row.get(key).is_none(), "{key} 不写：{row}");
+        }
+    }
+}

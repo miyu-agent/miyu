@@ -347,6 +347,10 @@ fn entry_of(
         author: manifest.author.clone(),
         upstream: manifest.upstream.clone(),
         installed: None,
+        // 上线的时刻、下载次数（施工 DL-1）：收录时还没有，生成索引的那一步照上一份、GitHub 填（施工 DL-2）。
+        published: None,
+        downloads: None,
+        downloads_week: None,
         files: Vec::new(),
     }
 }
