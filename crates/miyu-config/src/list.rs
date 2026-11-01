@@ -147,6 +147,8 @@ fn kind_problems(item: &Item) -> Vec<String> {
         | Kind::Duration { .. }
         | Kind::Url
         | Kind::Name
+        | Kind::Persona
+        | Kind::Knowledge
         | Kind::Reference
         | Kind::Model
         | Kind::List(_) => Vec::new(),

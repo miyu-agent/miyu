@@ -163,6 +163,13 @@ pub(crate) fn words(items: &[Item]) -> Fake {
         ("config/expected/model", "<供应商>/<模型>"),
         ("config/expected/list", "{item} 的列表"),
         ("config/expected/record", "一组字段（{fields}）"),
+        ("config/expected/persona", "人格的编号"),
+        ("config/expected/knowledge", "知识库的编号"),
+        ("config/unknown-persona", "{key} 写的人格 {name} 现在没有"),
+        (
+            "config/unknown-knowledge",
+            "{key} 写的知识库 {name} 现在没有",
+        ),
         ("config/missing-field", "{key} 没写：这个字段要写"),
         ("config/unknown-field", "{key} 不是这一项的字段"),
         ("config/expected/id", "小写字母开头的编号"),

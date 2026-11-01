@@ -125,7 +125,7 @@ place = "status"
 
 | 格 | 说明 |
 |---|---|
-| `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型，`record` 是每一项一组字段，见下面） |
+| `type` | 必写：`bool`、`int`（`min`、`max`）、`number`（小数，`min`、`max` 必写）、`option`（`choices`，至少两个）、`text`（`max`，默认 200 个字；`lines`）、`name`、`model`（选模型：`<供应商>/<模型>` 或池 `@<池>`）、`persona`（选人格，写人格的编号）、`knowledge`（选知识库，写库的编号）、`url`、`secret`（只能写成 `{ secret = … }` 那种引用）、`list`（`element` 是元素的类型，`record` 是每一项一组字段，见下面） |
 | `choices` | `option` 的几个选项：字的数组（`["auto", "opaque"]`），或者表的数组，每张 `value` 必写，`name`、`description` 可以不写，写法同项的 `name`、`description`（设置页照 `name` 画下拉，`description` 暗色写在下面）。两种不能混着写；存进配置的是 `value` |
 | `lines` | `text` 写 `lines = true`：几行的框（放提示词模板这类），不写 `max` 时最多 2000 个字 |
 | `min`、`max` | `int` 的范围，不写是整数的全部范围；`number` 必写，只收整数（`0` 到 `2` 这样），精度用 `step` |

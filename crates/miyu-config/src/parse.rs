@@ -376,6 +376,8 @@ pub fn read(kind: Kind, value: &TomlValue) -> Option<Value> {
             Kind::Option(_)
             | Kind::Url
             | Kind::Name
+            | Kind::Persona
+            | Kind::Knowledge
             | Kind::Reference
             | Kind::Model
             | Kind::ModelOr(_)

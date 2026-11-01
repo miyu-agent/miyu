@@ -105,6 +105,12 @@ pub enum SettingKind {
     },
     /// 名字。
     Name,
+    /// 模型：`<供应商>/<模型>` 或者 `@<池>`（施工 PC-3），进配置清单是「引用」（[`Kind::Reference`]）。
+    Model,
+    /// 人格的编号（施工 PC-3）。
+    Persona,
+    /// 知识库的编号（施工 PC-3）。
+    Knowledge,
     /// 网址。
     Url,
     /// 密钥的引用：没有默认值。
@@ -137,6 +143,9 @@ impl SettingKind {
                 max: *max,
             },
             SettingKind::Name => Kind::Name,
+            SettingKind::Model => Kind::Reference,
+            SettingKind::Persona => Kind::Persona,
+            SettingKind::Knowledge => Kind::Knowledge,
             SettingKind::Url => Kind::Url,
             SettingKind::Secret => Kind::Secret,
             SettingKind::Option(_) | SettingKind::List(_) | SettingKind::Record { .. } => {
@@ -322,7 +331,7 @@ fn kind(
                 Code::BadElement,
                 &format!("{at}.element"),
                 format!(
-                    "{at}.element must be bool, int, number, option, text, name, url, secret or record"
+                    "{at}.element must be bool, int, number, option, text, name, model, persona, knowledge, url, secret or record"
                 ),
             )
         };
@@ -341,7 +350,7 @@ fn kind(
                 Code::BadType,
                 &format!("{at}.type"),
                 format!(
-                    "{at}.type must be bool, int, number, option, text, name, url, secret or list"
+                    "{at}.type must be bool, int, number, option, text, name, model, persona, knowledge, url, secret or list"
                 ),
             )
         })?;

@@ -26,7 +26,7 @@
 | `crates/miyu-config/src/merge.rs` | 分层合出最终值和来源（`Origin`）。项目配置只认信任过的、收紧的；环境变量最后盖上；一项在它那一层下面合出来的（`below`，报错的「现在照什么用着」）；每一层写的（`explain`） | 8-2 |
 | `crates/miyu-config/src/problem.rs`、`problem/tell.rs` | 报错：原因码、行列、收到的原文、离得最近的键名（`problem.rs`）；照一种语言说成话：期望、改法、现在照什么用着（`tell.rs`） | 8-2 |
 | `crates/miyu-config/src/edit.rs` | 改一项、删一项：照 `toml_edit` 记下的位置只换那一段字，别的字节一个不变；新文件第一行 `#:schema`；人敲的字、协议上 JSON 的值照类型读（`input`、`from_json`） | 8-3 |
-| `crates/miyu-config/src/dangling.rs` | 引用的东西没有（8-8）：引用、模型的列表指的供应商、池没有的报 `bad_reference`，有没有由用的一方交闭包说；端点的配置服务在 `Config::missing` 里调它 | 8-8 |
+| `crates/miyu-config/src/dangling.rs` | 引用的东西没有（8-8）：引用、模型的列表指的供应商、池没有的报 `bad_reference`，有没有由用的一方交闭包说；端点的配置服务在 `Config::missing` 里调。一组字段的列表里的也查（施工 PC-3）；`unknown_names` 报没有的人格、知识库（警告，`check` 调）它 | 8-8 |
 | `crates/miyu-config/src/rename.rs` | 供应商改名（8-34，`models.md`「怎么走」第十六条）：换 `[providers.<from>]` 的表名，找出指着它的引用、模型的列表 | 8-34 |
 | `crates/miyu-config/src/secret.rs` | 密钥（8-5）：名字的写法（`valid_name`）；配置里的引用 `Reference`（`{ secret = … }`、`{ env = … }`，TOML、JSON、人敲的三种读法）；取出来的密钥 `Secret`（`Debug` 只印 `Secret(…)`）；密钥文件的字怎么读（`parse_file`）、怎么改一行（`set_in`、`unset_in`，经 `edit::apply`，它 8-5 起认只有一段的键）；引用取不到的报警告（`missing`） | 8-5 |
 | `crates/miyu-store/src/config_file.rs` | 读配置文件：没有的是空的、上限、开头的 BOM、UTF-8、版本（8-2），记下有没有 BOM（8-3）。写（`write`）：顺着链接、先写临时文件再替换、同步、替换前再读一次、Windows 上重试（8-3）。临时文件的名字和生成的文件共用 `durable.rs` 的 `temp_name` | 8-2、8-3 |
@@ -147,6 +147,7 @@ trusted = true
 | 网址 `url` | `"https://…"`，或者 `{ env = "DEEPSEEK_API_URL" }`（施工 8-6b，照「密钥」这一行的读法、查法：行内表、有表头的表都认，没有 `{ secret = … }`：地址不进密钥文件） | `http://`、`https://` 开头（不分大小写），后面有主机名，没有空白、控制字符；不对的 `bad_format`；`{ env = … }` 取不到的（没设、设成空的）照第九条报 `env_not_set`，指的东西在不在由用它的一方当场说（8-6b 由会话的路由当场说 `no_model`） | 8-6（供应商的 `base_url`），8-6b 加引用 |
 | 名字 `name` | `"deepseek"` | 小写字母开头，只有小写字母、数字、`-`、`_`，最长 64 个字符；不对的 `bad_format` | 8-6（供应商的 `catalog`） |
 | 引用 `reference` | `"deepseek/deepseek-v4"` | 模型 `<供应商>/<模型>` 或池 `@<池>`（`models.md`「两种写法」），写法不对的 `bad_format`。指的供应商、池在不在，读进来以后照最终值另查，没有的 `bad_reference`（8-8，`miyu_config::dangling`，「报错」那张表），会话的路由也当场说 `no_model` | 8-6（`models.chat`） |
+| 人格 `persona`、知识库 `knowledge` | `"cat"` | 施工 PC-3（设计 53 第四节，只有软件包的清单声明）：写法同名字；有没有这个人格、这个知识库不在类型里查，`check` 照核心这时有的另查，没有的报警告 `unknown_persona`、`unknown_knowledge`（人格、库可能以后才建，不挡），列表、一组字段的列表里的也查（`dangling.rs` 的 `unknown_names`）；`config.check` 不查。软件包的 `type = "model"` 是上一行的引用（模型、池都行），一组字段里的也照 `bad_reference` 查 | PC-3 |
 | 模型 `model` | `"deepseek/deepseek-v4"` | 只能是 `<供应商>/<模型>`：池、写法不对的 `bad_format`。指的供应商在不在同引用 | 8-8（池的成员：宏里写 `models`，模型的列表） |
 | 模型或几个字 `model_or` | `"local"`、`"siliconflow/BAAI/bge-m3"` | 宏里写 `model_or ["local", "off"]`：等于列出的字的就是那个字（字不带 `/`，模型的写法一定带，撞不上）；别的照「模型」这一行查，不收池。指的供应商在不在只查模型那一种，同「模型」。说法是列出的字再接上「或 `<供应商>/<模型>`」；JSON Schema 是 `anyOf`：那几个字的 `enum`、模型的写法（`pattern`）；协议上 `config.schema` 的 `type` 是 `model_or`，带 `options`（那几个字和它们的名字），界面控件照 `text` | R-5 补（`models.embedding`） |
 | 给模型看的字 `english` | `"Small model for quick lookups."` | 必写最多几个字符，宏里写 `english [60]`；空的、超了的、有控制字符（连同换行：只能一行）的 `bad_format`；CJK 的字（汉字、假名、谚文、全角的标点和字母）数乘二不小于总字数的也是 `bad_format`：给模型看的字一律英文（`26-提示词.md` J3），期望说「一行英文」。协议上 `config.schema` 照文字一样带 `max` | 8-8 补（池的 `description`） |
@@ -371,6 +372,7 @@ miyu_config::settings! {
 | `bad_format` | 错误 | 时长、路径、网址、名字、引用写法不对；键里人起的名字那一段写法不对；`sandbox.private.add` 的一个目录不是 `~/…`、不是绝对路径（单给一句，说该怎么写，5-15 下补）；`sandbox.readonly.add` 的一项不是 `~/…`、绝对路径、不带 `..` 的相对路径（单给一句，5-17 下）；`skills.external.dirs` 的一项不是 `~`、`~/…`、绝对路径（同私密目录那一句，PT-2 外）：和别的项不同，手改的文件 `miyu check`、`config.check` 也报，不只 `config.set` 时查（2026-10-29 主会话定：读的时候认不了的静默跳过，人看不出来少了） | 8-6（网址、名字、引用、键里的名字） |
 | `bad_reference` | 错误 | 引用、模型的列表指的供应商、池在不算项目配置的最终值里没有（`name` 是指的那个）。读进来以后另查、只报不丢：值照样用，路由当场照它说 `no_model`；算进 `config_errors`。`config.check` 照「这段字换掉它那一层」合出来的查 | 8-8 |
 | `unknown_effort` | 错误 | 模型的 `effort` 不在这个模型这时的档位里（`name` 是写的那一档，档位照 `models.md`「模型的资料」的 `reasoning`）。照 `bad_reference` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。档位要目录：目录读完以前不查。那一家用不了（推不出驱动、地址）的不查 | 8-18 |
+| `unknown_persona`、`unknown_knowledge` | 警告 | 软件包配置项选的人格、知识库这时没有（`name` 是写的编号，施工 PC-3）。只在 `check` 里报（核心照这时有的人格、知识库查，列不出来的那一种不查），值照样用 |
 | `unusable_temperature` | 错误 | 模型的 `temperature` 这个模型用不了：目录说它不收温度（`temperature: false`），或者超过它真走的驱动的上限（`anthropic` 是 1，`name` 是上限）。照 `unknown_effort` 的办法：读进来以后另查、只报不丢，请求照没写发；算进 `config_errors`；`config.check` 照「这段字换掉它那一层」合出来的查。目录读完以前、那一家用不了的不查（`models.md`「怎么走」第十四条） | 8-22 |
 | `wrong_layer` | 错误 | 这一项不能写在这一层 | 8-2 |
 | `not_tightening` | 错误 | 项目配置写得比下面几层宽 | 8-2 |

@@ -28,12 +28,13 @@ use miyu_store::presets::{Checked as PresetChecked, Issue as PresetIssue};
 use crate::Core;
 
 mod embedding;
+mod known;
 mod mcp;
 mod run;
 mod schedules;
 mod skipped;
 mod unsandboxed;
-use crate::config::checking::check_text;
+use crate::config::checking::{Known, check_text};
 use crate::config::methods::{said_at, words};
 use crate::hello::Peer;
 use crate::personas::personas;
@@ -68,12 +69,13 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
         .as_deref()
         .map(|cwd| expand(cwd, home.as_deref(), None));
     let (configs, secrets_path, secrets) = config_files(core, &words, cwd.as_deref())?;
+    let known = known::known(core).await;
     let mut problems = Vec::new();
     let mut embedding = None;
     match params.file {
         None => {
             for file in &configs {
-                problems.extend(check_config(core, &words, file)?);
+                problems.extend(check_config(core, &words, file, &known)?);
             }
             problems.extend(secrets);
             let personas = personas(core);
@@ -130,9 +132,9 @@ pub(crate) async fn check(core: &Core, peer: Peer, params: CheckParams) -> Resul
         Some(file) => {
             let path = real(&expand(&file, home.as_deref(), cwd.as_deref()));
             if let Some(file) = configs.iter().find(|config| real(&config.path) == path) {
-                problems.extend(check_config(core, &words, file)?);
+                problems.extend(check_config(core, &words, file, &known)?);
             } else if let Some(file) = project_at(&path, home.as_deref()) {
-                problems.extend(check_config(core, &words, &file)?);
+                problems.extend(check_config(core, &words, &file, &known)?);
             } else if real(&secrets_path) == path {
                 problems.extend(secrets);
             } else if let Some(found) = check_packages(core, &words, Some(&path)).await? {
@@ -195,13 +197,18 @@ fn config_files(
 }
 
 /// 查一份配置文件磁盘上现在的字；还没有的不报，读不了的报一条。
-fn check_config(core: &Core, words: &Human, file: &ConfigFile) -> Result<Vec<Value>, Refusal> {
+fn check_config(
+    core: &Core,
+    words: &Human,
+    file: &ConfigFile,
+    known: &Known,
+) -> Result<Vec<Value>, Refusal> {
     let text = match config_file::read(&file.path) {
         Ok(Some(text)) => text.text,
         Ok(None) => return Ok(Vec::new()),
         Err(error) => return Ok(vec![unreadable(words, &file.shown, "config", &error)]),
     };
-    let mut problems = check_text(&core.config(), words, file.layer, &text)?;
+    let mut problems = check_text(&core.config(), words, (file.layer, &text), Some(known))?;
     for problem in &mut problems {
         problem["file"] = json!(file.shown);
         problem["kind"] = json!("config");

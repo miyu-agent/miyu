@@ -35,6 +35,11 @@ pub enum Kind {
     /// 模型：只能是 `<供应商>/<模型>`，不能是池（`models.md`「哪里能写哪几种」池的成员那一行，施工 8-8：池的成员是它的列表）。
     /// 写成字。
     Model,
+    /// 人格的编号（施工 PC-3，设计 53 第四节，软件包清单的 `type = "persona"`）：写法同 [`Kind::Name`]。有没有这个人格不在这里
+    /// 查：`check` 照核心手里的人格另查，没有的报警告 `unknown_persona`（人格可能以后才建，不挡）。写成字。
+    Persona,
+    /// 知识库的编号（施工 PC-3，`type = "knowledge"`）：同 [`Kind::Persona`]，没有的报警告 `unknown_knowledge`。写成字。
+    Knowledge,
     /// 列表：每一个照元素的类型（施工 8-6：供应商的几个 key 是密钥的列表）。元素不能再是列表。
     List(&'static Kind),
     /// 几个字之一或者一个模型（施工 R-5 补：`models.embedding` 写 `local`、`off` 或 `<供应商>/<模型>`）：等于列出的字的就是
@@ -174,7 +179,9 @@ impl Kind {
             (Kind::Url, Value::Text(text)) => ok_or_format(url(text)),
             // 网址也能是环境变量的引用（施工 8-6b）；`{ secret = … }` 不是合法的写法，落到最后的 `wrong_type`。
             (Kind::Url, Value::Secret(Reference::Env(_))) => Ok(()),
-            (Kind::Name, Value::Text(text)) => ok_or_format(crate::secret::valid_name(text)),
+            (Kind::Name | Kind::Persona | Kind::Knowledge, Value::Text(text)) => {
+                ok_or_format(crate::secret::valid_name(text))
+            }
             (Kind::Reference, Value::Text(text)) => ok_or_format(reference(text)),
             (Kind::Model, Value::Text(text)) => ok_or_format(model(text)),
             (Kind::ModelOr(words), Value::Text(text)) => match words.contains(&text.as_ref()) {
@@ -241,6 +248,8 @@ impl Kind {
             Kind::English { .. } => "english",
             Kind::Duration { .. } => "duration",
             Kind::Record(_) => "record",
+            Kind::Persona => "persona",
+            Kind::Knowledge => "knowledge",
         }
     }
 

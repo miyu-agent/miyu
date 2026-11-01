@@ -125,7 +125,7 @@ fn shape(kind: Kind) -> Map<String, Json> {
                 json!([{"type": "string", "format": "uri"}, reference_shape("env")]),
             );
         }
-        Kind::Name | Kind::Reference | Kind::Model => {
+        Kind::Name | Kind::Persona | Kind::Knowledge | Kind::Reference | Kind::Model => {
             property.insert("type".to_string(), json!("string"));
         }
         // 列出的几个字之一，或者一个模型（施工 R-5 补）：模型照写法粗查，供应商在不在是读进来以后的事。

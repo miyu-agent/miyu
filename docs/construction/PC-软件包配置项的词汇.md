@@ -49,3 +49,23 @@
 1. `miyu-config`：`settings::tests::record`（读字段、标题、拼成的配置项；十几种写错各报对代码）；`parse::tests::records`（两种写法读成同一个值，空的也收；字段报到第几项的哪个字段、明文密钥是类型不对、少写的指到那一项的表头；不是表的、不是列表的；101 项整条报、100 项收；`described_by` 认字段、`item_of` 不认）；`edit::tests::records`（块照原位换、变多变少、空的、删掉、没写的新开、只有块没有表头的、空文件、行内的，逐字比对，留不住的写在测试说明里）。
 2. 端点 `package_records`：`config.schema` 的形状；`config.set` 写成块、别的字节不动、`config.get` 读回引用、换成空的；明文密钥整条拒、文件一个字节不动、明文不落进配置文件和密钥库；写错的报到字段、超过 100 项、字段单改不收、手改写错 `check` 报；交给脚本、扩展的对象数组（真值、默认值、取不到的密钥字段不放）。四条在 main 的代码上都红，修后绿。
 3. 作者文档对照（`fields::tests`）跟上；手写变异、本地门禁、Windows clippy、三平台 CI。
+
+## PC-3：选 Miyu 自己的东西（设计第四节）
+
+### 目的
+
+- 清单 `type = "model"`：模型 `<供应商>/<模型>` 或池 `@<池>`，进配置清单是「引用」（`config.schema` 的 `type` 是 `reference`，同 `models.chat`），写法照引用查，指的供应商、池没有的 `bad_reference`（错误）。
+- `type = "persona"`、`"knowledge"`：写法同名字，`config.schema` 的 `type` 是 `persona`、`knowledge`；没有这个人格、知识库的 `miyu check` 报警告 `unknown_persona`、`unknown_knowledge`（以后才建的不挡）。
+- 三种都能当列表的元素、一组字段的字段；控件 `text`，头照 `type` 画选择框（`model.list`、池的列表、`persona.list`、`kb.list`）。值都是字，交给扩展、脚本的照原样。
+
+### 怎么做
+
+1. `miyu-config`：`Kind::Persona`、`Kind::Knowledge`（查法同 `Name`）；`Code::UnknownPersona`、`UnknownKnowledge`（警告，三种语言的话）；`dangling.rs` 抽出 `texts` 走本身、列表、一组字段的列表，`dangling` 照它查模型引用（字段里的也查），新加 `unknown_names`。
+2. 清单：`SettingKind::Model`、`Persona`、`Knowledge`；`bad_type`、`bad_element` 的话补上三种。
+3. 端点 `check`：拿配置的锁之前列好现有的人格、知识库（`check::known`，知识库在阻塞线程里列，列不出来的那一种不查），交给 `check_text` 查；`config.check` 不查。
+
+### 验收
+
+1. `miyu-config`：`settings::tests::choose`（三种读成、拼成的类型和控件、默认值照类型查）；`dangling::tests` 的 `package_choices_of_models_personas_and_knowledge_are_checked`（模型引用连同字段里的、人格的列表、知识库，没有的各一条，警告）。
+2. 端点 `package_choose`：`config.schema` 的类型、控件；`check` 只报真没有的（有的人格不报），建了知识库以后不报；交值照原样。两条在 main 的代码上都红，修后绿。
+3. 手写变异、本地门禁、Windows clippy、三平台 CI。

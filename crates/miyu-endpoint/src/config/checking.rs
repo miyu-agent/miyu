@@ -44,16 +44,32 @@ impl LayerParam {
 /// `config.check`：把 `text` 当成一层的文件查，不生效。项目配置照「收紧」和另外几层合出来的比，不看信没信任。
 pub(crate) fn check(core: &Core, peer: Peer, params: CheckParams) -> Result<Value, Refusal> {
     let words = words(core, peer.language)?;
-    let problems = check_text(&core.config(), &words, params.layer.layer(), &params.text)?;
+    let problems = check_text(
+        &core.config(),
+        &words,
+        (params.layer.layer(), &params.text),
+        None,
+    )?;
     Ok(json!({ "problems": problems }))
 }
 
-/// 把 `text` 当成 `config` 的 `layer` 那一层的文件查，交回给人看的问题（`config.check`；施工 8-30 起 `check` 也用它）。
+/// 现有的人格、知识库的编号（施工 PC-3）：`check` 照它报写了、却没有的（警告）。拿配置的锁之前列好；列不出来的那一种是空的，
+/// 不查（报了全是误报）。
+#[derive(Debug, Default)]
+pub(crate) struct Known {
+    /// 人格的编号。
+    pub(crate) personas: Option<std::collections::BTreeSet<String>>,
+    /// 知识库的编号。
+    pub(crate) knowledge: Option<std::collections::BTreeSet<String>>,
+}
+
+/// 把 `text` 当成 `config` 的 `layer` 那一层的文件查，交回给人看的问题（`config.check`；施工 8-30 起 `check` 也用它）。写了
+/// `known` 的另报写了、却没有的人格、知识库（施工 PC-3，只有 `check` 交）。
 pub(crate) fn check_text(
     config: &Config,
     words: &Human,
-    layer: Layer,
-    text: &str,
+    (layer, text): (Layer, &str),
+    known: Option<&Known>,
 ) -> Result<Vec<Value>, Refusal> {
     let parsed = match parse(config.items(), layer, text) {
         Ok(parsed) => parsed,
@@ -65,11 +81,21 @@ pub(crate) fn check_text(
     let mut layers = config.layers(None);
     let missing = config.missing_if(&parsed, layer);
     let external = super::private::external_dirs(&parsed, layer);
+    let unknown = known.map_or_else(Vec::new, |known| {
+        miyu_config::dangling::unknown_names(
+            config.items(),
+            &parsed,
+            layer,
+            &|id| known.personas.as_ref().is_none_or(|ids| ids.contains(id)),
+            &|id| known.knowledge.as_ref().is_none_or(|ids| ids.contains(id)),
+        )
+    });
     let mut found: Vec<&Problem> = parsed
         .problems
         .iter()
         .chain(&missing)
         .chain(&external)
+        .chain(&unknown)
         .collect();
     let tightening;
     if layer == Layer::Project {

@@ -236,6 +236,8 @@ pub(crate) fn expected(words: &dyn Words, kind: Kind) -> Result<String, Missing>
             )
         }
         Kind::Name => sentence(words, "config/expected/name", &[]),
+        Kind::Persona => sentence(words, "config/expected/persona", &[]),
+        Kind::Knowledge => sentence(words, "config/expected/knowledge", &[]),
         Kind::Reference => sentence(words, "config/expected/reference", &[]),
         Kind::Model => sentence(words, "config/expected/model", &[]),
         // 列出的几个字，再接上「或者一个模型」（施工 R-5 补，照网址接上 `{ env = … }` 的样子）。

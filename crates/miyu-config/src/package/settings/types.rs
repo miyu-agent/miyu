@@ -88,6 +88,10 @@ pub(super) fn scalar(
             )
         }
         "name" => (SettingKind::Name, &[]),
+        // 选 Miyu 自己的东西（施工 PC-3，设计 53 第四节）。
+        "model" => (SettingKind::Model, &[]),
+        "persona" => (SettingKind::Persona, &[]),
+        "knowledge" => (SettingKind::Knowledge, &[]),
         "url" => (SettingKind::Url, &[]),
         "secret" => (SettingKind::Secret, &[]),
         _ => return Ok(None),

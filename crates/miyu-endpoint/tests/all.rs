@@ -149,6 +149,7 @@ mod models_temperature;
 mod note;
 mod orphans;
 mod package_check;
+mod package_choose;
 mod package_depends;
 mod package_feeds;
 mod package_group_manage;
