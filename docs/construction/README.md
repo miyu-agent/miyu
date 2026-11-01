@@ -1309,6 +1309,7 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | DL-1 | 核心认下载量 | 索引每一条多 `published`、`downloads`、`downloads_week`，写法不对的读成没有、那一条照收；`package.search` 有的才交出去。施工单见 `DL-下载量和排序.md` |
+| DL-2 | 生成下载量 | `miyu-index` 写索引前读上一份沿用 `published`（`build`、`folder` 都是）；`build --github` 照来源仓库的全部发布数下载次数，记进 `stats.json`（最近 8 天），算近 7 天的；问不成的照上一份沿用、不挡生成。施工单见 `DL-下载量和排序.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 
