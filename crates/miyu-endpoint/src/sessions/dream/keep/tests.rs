@@ -16,6 +16,7 @@ fn listed(n: u8, persona: &str, busy: bool) -> Listed {
         cwd: "~".to_string(),
         busy,
         waiting: false,
+        viewed: false,
         last_active: Timestamp::from_unix_millis(0).expect("是时刻"),
         preview: String::new(),
         venue: "local".to_string(),

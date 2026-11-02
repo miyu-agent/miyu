@@ -102,6 +102,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "widget.set" | "widget.clear" => Needs(Widgets),
         "system.append" => Needs(ContextSystem),
         "package.call" => Needs(PackagesCall),
+        // 头开着哪个会话（施工 HV-1）：只有人的头开会话。
+        "session.viewing" => People,
         // 看本机任意一处的包文件夹、包文件（施工 IN-4）：同装，只给人。
         "package.info" if params.get("path").is_some_and(|path| !path.is_null()) => People,
         // 都能调：读配置和密钥的名字、附件、模型、给人看的字、装了什么、带来的内容、人格和预设、技能、脚本、记忆和知识库读的。

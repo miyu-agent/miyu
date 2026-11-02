@@ -21,6 +21,7 @@
 | [`session.set_permission_level`](#sessionset_permission_level) | 切权限级别、只读开关 |
 | [`session.set_workspace`](#sessionset_workspace) | 换工作目录 |
 | [`session.set_meta`](#sessionset_meta) | 改标题、置顶 |
+| [`session.viewing`](#sessionviewing) | 头告诉核心自己开着哪个会话 |
 | [`session.terminal`、`session.set_terminal`](#sessionterminalsessionset_terminal) | 终端会话：拿到它、指到别的会话 |
 | [`session.configure`](#sessionconfigure) | 换模型、人格、预设、思考强度 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
@@ -110,6 +111,7 @@
 | `preview` | 没有标题时：第一句话的第一行，最多 50 个字 |
 | `pinned` | `true`：置顶了 |
 | `busy` | `true`：有回合在进行 |
+| `viewed` | `true`：至少一个头开着它（[`session.viewing`](#sessionviewing)），后台通知由那个头出 |
 | `persona`、`preset` | 用哪个人格、预设，没有的不写；无工具的 `preset` 是 `null`，另带 `no_tools: true`（施工 P-16 下） |
 | `tokens` | 连同它派出去的子会话（一层层往下）一共用了多少 token：每次模型调用（主请求、起标题、压缩都算）的输入（没命中、缓存读、缓存写）加输出，和终端底栏的 `Σ` 同一个算法；还是 0 的不写 |
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
@@ -368,6 +370,16 @@
 **回应**：`{}`。变了的推 `session.meta_changed`。没起名的会话，核心在第一轮答完以后自己起一个标题，同样推 `session.meta_changed`（`by` 是内核）。
 
 **出错**：`bad_params`：一样都没写；标题空的、超过 200 个字；`project` 写空字符串、这个会话不能进项目（`data.field` 是 `project`）。`unknown_project`：没有这个项目。
+
+## `session.viewing`
+
+头告诉核心自己这时开着哪个会话：切会话、新开会话、刚起来时各发一次。只给人的头用，扩展调回 `needs_approval`。
+
+**参数**：`session`：开着的会话；`null` 或不写是哪个都没开。
+
+**回应**：`{}`。核心照连接记，连接断了就忘。会话列表那一项至少一个头开着时写 `viewed: true`，变了照 `busy` 那样推 `sessions.changed`。后台会话答完、在问、要确认的通知，开着它的那个头照常出，别的头见到 `viewed` 就不再另弹，免得几个头弹几遍。
+
+**出错**：`bad_params`；没有这个会话 `session_not_found`。
 
 ## `session.configure`
 

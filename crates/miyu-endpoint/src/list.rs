@@ -47,6 +47,7 @@ pub(crate) async fn list(
     let index = core.index();
     let busy = core.sessions.busy_ids().await;
     let waiting = core.sessions.waiting_ids().await;
+    let viewed = core.viewing.ids();
     let window = windows(core);
     let pick = move |row: &Row| {
         local(row)
@@ -60,6 +61,7 @@ pub(crate) async fn list(
         defaults::fill(&mut listed, &index, &root);
         for one in &mut listed {
             one.waiting = waiting.contains(&one.id);
+            one.viewed = viewed.contains(&one.id);
         }
         Ok::<_, std::io::Error>(listed)
     })
@@ -95,6 +97,8 @@ pub(crate) struct Listed {
     pub(crate) busy: bool,
     /// 这时在等人确认、回答（施工 SL-1）：照会话表填，扫目录的时候不知道。
     pub(crate) waiting: bool,
+    /// 这时至少一个头开着它（施工 HV-1）：照连接记的填，扫目录的时候不知道。
+    pub(crate) viewed: bool,
     /// 日志最后一条事件的时刻（施工 C-3）。
     pub(crate) last_active: Timestamp,
     /// 第一句话的第一行（施工 9-5）：空的是没有。
@@ -138,6 +142,7 @@ impl Listed {
             cwd: row.cwd.unwrap_or_else(|| NO_CWD.to_string()),
             busy,
             waiting: false,
+            viewed: false,
             last_active: row.last_active,
             preview: row.preview,
             venue: row.venue,
@@ -185,6 +190,9 @@ impl Listed {
         }
         if self.waiting {
             item["waiting"] = json!(true);
+        }
+        if self.viewed {
+            item["viewed"] = json!(true);
         }
         if let Some(persona) = &self.persona {
             item["persona"] = json!(persona);

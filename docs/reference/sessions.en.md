@@ -21,6 +21,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.set_permission_level`](#sessionset_permission_level) | Change the permission level, the read-only switch |
 | [`session.set_workspace`](#sessionset_workspace) | Change the working directory |
 | [`session.set_meta`](#sessionset_meta) | Rename, pin |
+| [`session.viewing`](#sessionviewing) | A head tells the core which session it has open |
 | [`session.terminal`, `session.set_terminal`](#sessionterminal-sessionset_terminal) | The terminal session: get it, point it elsewhere |
 | [`session.configure`](#sessionconfigure) | Change the model, persona, preset or reasoning effort |
 | [`session.fork`](#sessionfork) | Fork a child session |
@@ -111,6 +112,7 @@ Sending the same `id` again returns the session created the first time.
 | `preview` | When there's no title: the first line of the first message, at most 50 characters |
 | `pinned` | `true`: pinned |
 | `busy` | `true`: a turn is running |
+| `viewed` | `true`: at least one head has it open ([`session.viewing`](#sessionviewing)); that head shows its background notices |
 | `persona`, `preset` | Which persona and preset; omitted when none. With no tools `preset` is `null` and `no_tools: true` is added (step P-16) |
 | `tokens` | Tokens used by it and every session it spawned, all the way down: input (uncached, cache read, cache write) plus output of every model call (main, title, compaction alike), the same sum as the terminal's `Σ`; omitted while 0 |
 | `context` | `{"used", "window"?}`: tokens in context (the input of the latest main request: uncached, cache read, cache write, the same figure as the terminal footer and the session status); omitted before the first request and right after a compaction. `window` is the context window of that request's model under the current config, omitted when unknown |
@@ -367,6 +369,16 @@ A new one uses `terminal.persona` and `terminal.preset` (unset follows `persona.
 **Response**: `{}`. A change is pushed as `session.meta_changed`. Sessions without a name get a title from the core after the first turn, also pushed as `session.meta_changed` (`by` is the kernel).
 
 **Errors**: `bad_params`: nothing given; an empty title or one over 200 characters; an empty `project` string, or a session that cannot join (`data.field` is `project`). `unknown_project`: no such project.
+
+## `session.viewing`
+
+A head tells the core which session it has open: send it on switching, on opening a new session, and on start. For people's heads only; an extension gets `needs_approval`.
+
+**Params**: `session`: the open session; `null` or omitted means none.
+
+**Response**: `{}`. The core keeps one per connection and forgets it when the connection drops. A session-list item carries `viewed: true` while at least one head has it open, and a change is pushed in `sessions.changed` like `busy`. The head that has a background session open shows its "answered / asking / needs approval" notice as usual; other heads skip it when they see `viewed`, so several heads don't each pop one.
+
+**Errors**: `bad_params`; `session_not_found` when there is no such session.
 
 ## `session.configure`
 

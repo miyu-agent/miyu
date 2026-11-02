@@ -246,6 +246,7 @@ mod search_extension;
 mod secrets;
 mod session_context;
 mod session_tools;
+mod session_viewing;
 mod session_waiting;
 mod sessions;
 mod sessions_changed;

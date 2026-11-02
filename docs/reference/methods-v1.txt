@@ -165,6 +165,7 @@ session.terminal
 session.tools
 session.unrevert
 session.usage_parts
+session.viewing
 session.withdraw
 sessions.changed
 skill.list

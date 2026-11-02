@@ -168,6 +168,7 @@ async fn work(
 async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
     let busy = core.sessions.busy_ids().await.contains(session);
     let waiting = core.sessions.waiting_ids().await.contains(session);
+    let viewed = core.viewing.ids().contains(session);
     let (root, index) = (core.root.clone(), core.index());
     let session = session.clone();
     let window = crate::list::windows(core);
@@ -179,6 +180,7 @@ async fn entry(core: &Core, session: &SessionId) -> Option<Value> {
         crate::list::context::fill(std::slice::from_mut(&mut listed), &window);
         crate::list::defaults::fill(std::slice::from_mut(&mut listed), &index, &root);
         listed.waiting = waiting;
+        listed.viewed = viewed;
         Some(listed.to_json())
     })
     .await

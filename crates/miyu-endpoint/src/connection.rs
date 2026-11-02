@@ -128,6 +128,8 @@ async fn read_all<R: AsyncRead + Unpin>(
     let mut via: Option<Via> = None;
     let mut revoked: Option<tokio::sync::broadcast::Receiver<Revoked>> = None;
     let mut subscriptions = Subscriptions::default();
+    // 这个连接开着哪个会话（施工 HV-1）：连接断了，丢掉它就忘了。
+    let seat = crate::viewing::Viewing::seat(&core);
     // 这个连接上的分块上传（施工 W-5）：和请求一条条办，不用锁。
     let mut uploads = Uploads::new(core.upload_idle);
     // 这个连接在后台答的请求（施工 W-7）：连接断了，丢掉它就一起停了。
@@ -301,6 +303,15 @@ async fn read_all<R: AsyncRead + Unpin>(
                     }
                     _ => Err(Refusal::LOCAL_ONLY),
                 };
+                (answer(&request, result, locale), None, false)
+            }
+            ("session.viewing", Some(_)) => {
+                let result = crate::viewing::requested(&core, request.params.clone())
+                    .await
+                    .map(|session| {
+                        seat.view(session);
+                        json!({})
+                    });
                 (answer(&request, result, locale), None, false)
             }
             ("unsubscribe", Some(_)) => {
