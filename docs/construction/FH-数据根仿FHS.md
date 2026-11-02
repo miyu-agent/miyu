@@ -188,6 +188,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 数据根是 `/home/shorin/.cache/miyu-tui-home`（包装脚本 `~/.local/bin/miyu-remake` 里 `MIYU_HOME` 写死）；`~/.miyu` 是旧版 Miyu 的活数据，不碰。新数据根放在同一个路径（旧的整个改名留着），套接字的指纹、终端记的样子、恢复命令都不变。只拷几样，别的不要（设计 55 第六节第 2 条）。真跑由主人自己用 `!` 执行，sub1 写一次性脚本、在拷贝上演练过再交。
 
+**赞助账本一条都不能丢**（2026-11-02 项目主人再三说）：`miyu-im-sponsor` 的 `sponsors.json`（11-02 是 66 条，`version`、`next`、`entries` 三格）连同旁边的 `.bak-*` 一起拷；拷之前先另存一份到数据根以外（脚本做，路径写进输出），拷完逐字节比 SHA-256，条数、`next` 对得上才算搬完；`.before-fh` 和这份另存的都留到主人说可以删。脚本演练时也照这一条验。
 
 - [ ] 停 im、停核心（`run/core.lock` 放开）。
 - [ ] `/home/shorin/.cache/miyu-tui-home` 整个改名成 `miyu-tui-home.before-fh`；包装脚本的 `D=` 换成装 FH-3 以后核心的新部署目录。
@@ -196,10 +197,10 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
   - `config.toml` → `etc/config.toml`（首行 `#:schema` 换新的）；
   - `secrets.toml`、`access.json`、`logins.json` → `etc/private/`（0600）；
   - `extensions.json` → `etc/extensions.json`（im 批过的能力，不拷的话要重新批）；
-  - `state/packages/miyu-im-sponsor/sponsors.json` → `var/lib/miyu-im-sponsor/sponsors.json`；
+  - `state/packages/miyu-im-sponsor/sponsors.json` 和同目录的 `sponsors.json.bak-*` → `var/lib/miyu-im-sponsor/`（照上面那条：先另存、拷完比 SHA-256 和条数）；
   - `personas/persona-1/` → `root/personas/persona-1/`；`presets/dev.toml`、`minimal.toml` → `root/presets/`。
 - [ ] 装新版的核心、三个头、im、sponsor、表情包（FH-5上的发版），起来。
-- [ ] 验：网页、终端连得上；QQ 里 im 收发正常；赞助账本条数和拷之前一样；人格列表里有 Miyu；顶层只有 `.miyu-layout etc/ opt/ root/ var/ tmp/ run/`。
+- [ ] 验：网页、终端连得上；QQ 里 im 收发正常；赞助账本和拷之前逐字节一样，im 的赞助页、`miyu im` 列得出同样的条数；人格列表里有 Miyu；顶层只有 `.miyu-layout etc/ opt/ root/ var/ tmp/ run/`。
 - [ ] `.before-fh` 留着，主人说可以了再删。
 
 ## 九、给施工的会话的话
