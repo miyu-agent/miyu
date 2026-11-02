@@ -44,3 +44,13 @@ fn a_group_made_before_forwards_reads_without_them() {
         Ok((chat(540), Some(now)))
     );
 }
+
+/// 对照测试渲染照的字（施工 V-39 上；新旧照同一份，和哪一份无关）。
+fn rendering() -> miyu_assemble::GroupChat {
+    chat(540).texts().expect("字合写法")
+}
+
+mod files;
+mod old;
+mod same;
+mod script;

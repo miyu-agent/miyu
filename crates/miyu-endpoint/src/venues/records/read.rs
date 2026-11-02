@@ -1,0 +1,185 @@
+//! 判官的记录照日志边读边记（施工 V-39 上，`docs/construction/V-39上-判官边读边记.md`）：一遍读下来只留要显示的最后几条、
+//! 撤回和引用的编号，不再把整份日志读成事件、整份交给有效历史、一万多行全渲染再挑（`pass.rs`）。撤销过的会话照样交给真的
+//! 有效历史算，只是前面谁都碰不到的那一截收下就放掉；放早了的再读一遍；认不得的退回以前的整份读（[`whole`]）。
+//!
+//! 判官看到的字、`count`、报错和先后都和以前一样：头一遍照旧整份自检（坏了报坏了，没有报没有），然后取钉下的字（读不出的报
+//! 内部错），最后才看 `msg`（不在、不是场所人话、撤掉了的报参数错）。
+
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+
+use miyu_assemble::group::{Picked, Records, Window, quoted_as, records_from, records_in};
+use miyu_assemble::{ForwardTexts, GroupChat};
+use miyu_kernel::event::{Body, Event};
+use miyu_kernel::history::History;
+use miyu_kernel::id::{ExternalId, Seq};
+use miyu_store::log::{Flow, OpenError, read_events, read_range};
+
+use super::bones::hash;
+use super::pass::{Ended, Pass, Plan, Tuning};
+use crate::refusal::Refusal;
+
+/// 读会话日志的两种读法（测试里换成内存里的）。
+pub(super) trait Log {
+    /// 第 `from` 条到第 `upto` 条，一块块交给 `each`（同 [`read_range`]）。
+    fn range(
+        &mut self,
+        from: Seq,
+        upto: Option<Seq>,
+        each: &mut dyn FnMut(Vec<Event>) -> Flow,
+    ) -> Result<(), OpenError>;
+
+    /// 整份（同 [`read_events`]）。
+    fn whole(&mut self) -> Result<Vec<Event>, OpenError>;
+}
+
+/// 会话目录里的日志。
+pub(super) struct Dir(pub(super) PathBuf);
+
+impl Log for Dir {
+    fn range(
+        &mut self,
+        from: Seq,
+        upto: Option<Seq>,
+        each: &mut dyn FnMut(Vec<Event>) -> Flow,
+    ) -> Result<(), OpenError> {
+        read_range(&self.0, from, upto, each)
+    }
+
+    fn whole(&mut self) -> Result<Vec<Event>, OpenError> {
+        read_events(&self.0)
+    }
+}
+
+/// 第 `msg` 条照 `window` 的记录：见模块的说明。`texts` 照会话日志的第一条（没有的是空的）交回群会话的字和转发那几行的字。
+pub(super) fn judge(
+    log: &mut dyn Log,
+    msg: Seq,
+    window: Window,
+    texts: impl FnOnce(Option<&Event>) -> Result<(GroupChat, Option<ForwardTexts>), Refusal>,
+    tuning: Tuning,
+) -> Result<Records, Refusal> {
+    let need = window.most();
+    let mut pass = Pass::new(msg, need, Plan::Guess(Default::default()), tuning);
+    log.range(Seq::FIRST, None, &mut |events| pass.feed(events))
+        .map_err(refused)?;
+    pass.finish();
+    let (chat, forward) = texts(pass.first.as_ref())?;
+    let forward = forward.as_ref();
+    let pass = match pass.ended {
+        Ended::Done => pass,
+        Ended::Unsure => return whole(log, (msg, pass.last), window, &chat, forward),
+        Ended::Again => {
+            let mut again = Pass::new(msg, need, Plan::exact(pass.reaches), tuning);
+            if let Some(last) = pass.last {
+                log.range(Seq::FIRST, Some(last), &mut |events| again.feed(events))
+                    .map_err(refused)?;
+            }
+            again.finish();
+            if again.ended != Ended::Done {
+                return whole(log, (msg, pass.last), window, &chat, forward);
+            }
+            again
+        }
+    };
+    let Some(judged) = &pass.judged else {
+        return Err(Refusal::BAD_PARAMS);
+    };
+    let mut read_back = None;
+    let quote = match quoted(log, &pass, judged)? {
+        Quote::None => None,
+        Quote::Kept(k) => Some(&pass.ring[k]),
+        Quote::Read(event) => Some(&*read_back.insert(*event)),
+        Quote::Lost => return whole(log, (msg, pass.last), window, &chat, forward),
+    };
+    let last: Vec<&Event> = pass.ring.iter().collect();
+    let recalled: BTreeMap<&str, &ExternalId> = pass
+        .recalled
+        .iter()
+        .map(|(msg, by)| (msg.as_str(), by))
+        .collect();
+    let picked = Picked {
+        judged,
+        before: pass.before,
+        last: &last,
+        recalled: &recalled,
+        quote,
+    };
+    records_from(&picked, window, &chat, forward).ok_or(Refusal::BAD_PARAMS)
+}
+
+/// 以前的读法（施工 V-39 上以前），骨架认不得、引用的那一条读不回来时照它：整份读、整份交给留着一切的有效历史。只要头一遍
+/// 读到的第 `upto` 条为止（读的时候还在往后写的，后写的不要，同再读的那一遍）。
+fn whole(
+    log: &mut dyn Log,
+    (msg, upto): (Seq, Option<Seq>),
+    window: Window,
+    chat: &GroupChat,
+    forward: Option<&ForwardTexts>,
+) -> Result<Records, Refusal> {
+    let mut events = log.whole().map_err(refused)?;
+    if let Some(upto) = upto {
+        events.truncate(events.partition_point(|event| event.seq <= upto));
+    }
+    let mut history = History::whole();
+    for event in events {
+        history.append(event);
+    }
+    records_in(&history, msg, window, chat, forward).ok_or(Refusal::BAD_PARAMS)
+}
+
+/// 读日志的错照以前报：没有这个会话、日志坏了。
+fn refused(error: OpenError) -> Refusal {
+    match error {
+        OpenError::Missing(_) => Refusal::NOT_FOUND,
+        error => {
+            tracing::warn!(target: "miyu::endpoint", error = %error, "venue records not read");
+            Refusal::BROKEN
+        }
+    }
+}
+
+/// 引用的那一条在哪。
+#[derive(Debug, PartialEq)]
+pub(super) enum Quote {
+    /// 不引用的、它以前没有那个编号的。
+    None,
+    /// 在留着的最后几条里，第几条。
+    Kept(usize),
+    /// 不在，照序号读回来的。
+    Read(Box<Event>),
+    /// 留着的、读回来的对不上（编号的哈希撞了；日志只追加，读回来的不该对不上）。
+    Lost,
+}
+
+/// 要判的那一条引用的：它以前最后一条那个编号的（照哪一条记的是编号的哈希），在留着的最后几条里就用，不在的照序号读回那一条
+/// （只解那一窗）；对不上编号的（哈希撞了）退回整份读。
+pub(super) fn quoted(log: &mut dyn Log, pass: &Pass, judged: &Event) -> Result<Quote, Refusal> {
+    let reply_to = match &judged.body {
+        Body::MessageUser(said) => said
+            .venue
+            .as_ref()
+            .and_then(|venue| venue.reply_to.as_deref()),
+        _ => None,
+    };
+    let Some(seq) = reply_to.and_then(|reply_to| pass.quotes.get(&hash(reply_to)).copied()) else {
+        return Ok(Quote::None);
+    };
+    if let Ok(k) = pass.ring.binary_search_by_key(&seq, |event| event.seq) {
+        return Ok(if quoted_as(&pass.ring[k]) == reply_to {
+            Quote::Kept(k)
+        } else {
+            Quote::Lost
+        });
+    }
+    let mut found = None;
+    log.range(seq, Some(seq), &mut |events| {
+        found = events.into_iter().find(|event| event.seq == seq);
+        Flow::Stop
+    })
+    .map_err(refused)?;
+    Ok(match found {
+        Some(event) if quoted_as(&event) == reply_to => Quote::Read(Box::new(event)),
+        _ => Quote::Lost,
+    })
+}

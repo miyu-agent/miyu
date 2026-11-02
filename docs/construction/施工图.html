@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1021</b><span>/ 1030 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1022</b><span>/ 1031 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-37下</b><span>最近一步（V-37 下 回合索引和补发边读边处理）</span></li>
+    <li><b class="mono">V-39上</b><span>最近一步（V-39 上 判官边读边记）</span></li>
   </ul>
 </header>
 
@@ -506,6 +506,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV37a"><span class="n">V-37上</span>孤儿扫描不读整份日志<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV37b"><span class="n">V-37 中</span>日志照定长窗口读<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV37c"><span class="n">V-37 下</span>回合索引和补发边读边处理<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV39a"><span class="n">V-39 上</span>判官边读边记<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11479,6 +11480,62 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-37下-回合索引和补发边读边处理.md</code>；蓝图 <code>store.md</code> 第 7 条、<code>memory.md</code> 第一条第 5、6 款、<code>protocol.md</code>「补发」第 5、9 条、<code>session/actor.md</code> 第 6 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV39a" aria-labelledby="h-sV39a">
+  <div class="sheet-head"><h2 id="h-sV39a"><span class="no">V-39 上</span>判官边读边记</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">判官每问一次 <code>venue.records</code> 不再把整份群会话日志读成事件、整份交给有效历史、一万多行全渲染再挑：一遍边读边记，只留要显示的最后几条；撤销过的照样交给真的有效历史算，前面谁都碰不到的那一截收下就放。判官看到的字、报错一字不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">判官边读边记</span><span class="dir-note">V-39 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>miyu-assemble</code> 的判官记录拆成挑行（<code>Picked</code>）、渲染（<code>records_from</code>）两半，只渲染要显示的那几行；<code>records_in</code> 从有效历史挑</li>
+              <li>端点照 <code>read_range</code> 从头一块块读，事件交给真的 <code>History::whole</code>，谁都碰不到的那一截收下：记录数一数、只拷最后几条，撤回、引用的编号（哈希）记下</li>
+              <li>骨架边读边记每一轮最早的一条、触发、人话的回合和命令、回合结束，算每一次撤销、撤回的下界；撤销还能恢复时不放</li>
+              <li>头一遍留最后 256 条，撤得更早的照下界再读一遍；认不得的、引用对不上的退回以前的整份读；引用不在留着的里的照序号读回那一条</li>
+              <li>几遍都只读头一遍读到的那一截，报错照原来的先后</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">撤销过的会话只把会被撤到的那一截交给真的有效历史算，算不准的退回整份读（问题 1 取 B）</span><span class="rl">项目主人 2026-11-03（V-39 设计问题 1）</span></div>
+          <div class="tile new"><span class="nm">判官读日志时不解析无关的种类：这一步不做，自检照旧，另排一步</span><span class="rl">项目主人 2026-11-03（问题 2）</span></div>
+          <div class="tile new"><span class="nm">不换 <code>grow</code> 对齐的基准、不常驻记录行账</span><span class="rl">项目主人 2026-11-03（问题 5、6）</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-39 上</dd></div>
+        <div><dt>名称</dt><dd>判官边读边记</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-03</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-39上</dd></div>
+        <div><dt>验收</dt><dd>23.8 MB 的群会话（两份数据根回应 sha 和改前一样）：有撤销的堆多 120.2 → 11.7 MB、匿名 78.3 → 15.8 MB、指令 13.89 → 9.57 亿、中位 191 → 44 ms；不撤销的堆多 86.6 → 11.3 MB、匿名 61.2 → 15.4 MB、指令 9.68 → 9.03 亿、中位 52 → 36 ms；四个判官同时问匿名 327 → 52 MB（不撤销 216 → 49 MB）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>挑行、渲染两半：以前一行行全渲染再挑的照抄当准绳，三千段照种子造的群聊、每一条、十八样窗口新旧一样</span></li>
+        <li><span class="ok">✓</span><span>端点：以前整份读的照抄当准绳，三千段照种子造的群会话（撤销、恢复、撤回排着的话、很早的触发和引用、压缩、骨架认不得的），每一条、几样窗口、放的时机各样，新旧逐字比；撤销、撤回的下界以前那一截前后原样都在</span></li>
+        <li><span class="ok">✓</span><span>真文件分几段、坏行、半行、序号断、段名不对、没有的会话报的错和先后一样；读的时候日志在长的只看头一遍读到的</span></li>
+        <li><span class="ok">✓</span><span>两份数据根上每一条叫她的话两样窗口改前改后逐条一样</span></li>
+        <li><span class="ok">✓</span><span>手写变异 9 个都被逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-39上-判官边读边记.md</code>；蓝图 <code>venues.md</code>「判官看的群聊记录」第 3 条、<code>kernel/request.md</code>「在哪」<code>group/records.rs</code>、<code>store.md</code> 第 7 条 <code>read_range</code>。</li>
       </ul>
     </div>
   </div>

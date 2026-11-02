@@ -257,7 +257,9 @@ mod records;
 pub(crate) use forward::block as forwarded;
 
 pub(crate) use recent::recent;
-pub use records::{Records, Window, records, records_in};
+pub use records::{
+    Picked, Records, Window, on_record, quoted_as, records, records_from, records_in,
+};
 
 #[cfg(test)]
 mod tests;

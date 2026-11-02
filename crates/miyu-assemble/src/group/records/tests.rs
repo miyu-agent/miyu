@@ -262,3 +262,6 @@ fn records_in_a_window_say_how_many() {
     let plain = records(log.history(), msg, 20, &chat(), None).expect("是场所消息");
     assert_eq!(plain.count, 4);
 }
+
+mod old;
+mod same;
