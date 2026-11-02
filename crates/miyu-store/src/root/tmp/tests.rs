@@ -135,3 +135,19 @@ fn a_linked_tmp_is_not_cleared_through() {
     assert!(root.clear_own_tmp().is_err(), "是链接的不清");
     assert!(outside.is_file(), "链接那头一样都没删");
 }
+
+/// 清的路上只认普通的一层（施工 FH-4，core1 审 FH-3下 时提的）：拼进 `..`、`.` 的不清、交回错。包编号上游校验过，这里自己也
+/// 守住。
+#[test]
+fn a_path_with_dot_dot_clears_nothing() {
+    let scratch = Scratch::new();
+    let root = DataRoot::at(scratch.path().to_path_buf());
+    let victim = scratch.path().join("victim");
+    fs::create_dir_all(&victim).expect("建得了");
+    fs::write(victim.join("kept"), b"x").expect("写得进");
+    fs::create_dir_all(scratch.path().join("tmp")).expect("建得了");
+    for id in ["../victim", "./../victim"] {
+        assert!(root.clear_package_tmp(id).is_err(), "{id}：不清");
+        assert!(victim.join("kept").is_file(), "{id}：一样都没删");
+    }
+}

@@ -6,7 +6,7 @@
 
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use super::{DataRoot, TMP, VAR};
@@ -56,17 +56,25 @@ impl DataRoot {
         }
     }
 
-    /// 从数据根往下到 `dir`（含它自己）的每一层：在的都得是真目录，链接、文件都报错；不在的那一层往下不看，下面也没有东西。
+    /// 从数据根往下到 `dir`（含它自己）的每一层：只认普通的一层名字（`..`、`.` 报错），在的都得是真目录，链接、文件都报错；
+    /// 不在的那一层往下不看，下面也没有东西。
     ///
     /// # Errors
     ///
-    /// 哪一层是链接、不是目录（说是哪一层）；`dir` 不在数据根下面；读不了。
+    /// 哪一层是链接、不是目录（说是哪一层）；路上有 `..`、`.`；`dir` 不在数据根下面；读不了。
     fn plain_down(&self, dir: &Path) -> io::Result<()> {
         let below = dir
             .strip_prefix(&self.path)
             .map_err(|_| io::Error::other(format!("{} is outside the data root", dir.display())))?;
         let mut at = self.path.clone();
         for part in below.components() {
+            // 只认普通的一层：`..`、`.` 会走到别处去（施工 FH-4，调的一方校验过也照样守住）。
+            if !matches!(part, Component::Normal(_)) {
+                return Err(io::Error::other(format!(
+                    "{} is not a plain path below the data root: not clearing it",
+                    dir.display()
+                )));
+            }
             at.push(part);
             match fs::symlink_metadata(&at) {
                 Ok(metadata) if metadata.is_dir() => {}
