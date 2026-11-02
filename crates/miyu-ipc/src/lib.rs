@@ -11,6 +11,8 @@
 //!
 //! 头（[`connect`]）读 `run/socket`，核对套接字所在的目录只有自己能进，连过去，再现读本机令牌。核心没在跑，
 //! 头用 [`connect_or_start`] 把它拉起来，等它写来 [`Ready`] 那一行再连（施工 3-9 上）。
+//! 照 `run/socket` 连不上的，[`running_unreachable`] 再看一眼锁和算出来的位置：核心跑着时 `run/` 被删了，它还在、只是
+//! 连不上（施工 CS-3）。
 //!
 //! Unix 上是 Unix 域套接字；Windows 上是命名管道 `\\.\pipe\miyu-<指纹>`，只对本人开放，头连上以后核对
 //! 另一头的进程是自己的（施工 3-8 补）。
@@ -24,6 +26,7 @@ mod ready;
 mod start;
 #[cfg(test)]
 mod test_support;
+mod unreachable;
 
 #[cfg(unix)]
 mod unix;
@@ -40,6 +43,7 @@ pub use lock::{Held, Lock, wait_released};
 pub use place::{Dirs, fingerprint};
 pub use ready::Ready;
 pub use start::{connect_or_start, connect_or_start_bare, spawn_detached};
+pub use unreachable::running_unreachable;
 
 use std::fmt;
 use std::io;

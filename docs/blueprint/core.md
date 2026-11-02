@@ -35,7 +35,7 @@
 
 命令：`miyu core [--idle-seconds <秒>]`。它和它的参数都不写进帮助。
 
-`miyu core stop`（施工 CL-4，桌面端的「退出」用，也不写进帮助）：连已经在跑的核心（不拉起），握手、发 `core.stop`（下面「停下」），再阻塞地拿一次 `run/core.lock` 等它真的退了才回（`miyu_ipc::wait_released`，不轮询：进程没了操作系统放锁）。成了什么都不印，退出码 0；没在跑的什么都不说，退出码 0；被拒绝的照核心的原话、连不上的照原因、等了 60 秒还没退的说「核心在 60 秒内没有退出」，都照设计 47 印在标准错误上，退出码 1。
+`miyu core stop`（施工 CL-4，桌面端的「退出」用，也不写进帮助）：连已经在跑的核心（不拉起），握手、发 `core.stop`（下面「停下」），再阻塞地拿一次 `run/core.lock` 等它真的退了才回（`miyu_ipc::wait_released`，不轮询：进程没了操作系统放锁）。成了什么都不印，退出码 0；没在跑的什么都不说，退出码 0。「没在跑」要先确认（施工 CS-3）：照 `run/socket` 连不上时再看锁被拿着没有、照这台机器算出来的套接字位置上有没有自己的核心在听（`miyu_ipc::running_unreachable`），有的是核心跑着时 `run/` 被删了、令牌和位置都没了，说「核心还在跑，但连不上它」、提示照运行日志 `starting` 那一行的进程号结束它，退出码 1，不另想办法结束它；套接字本来就在 `run/` 里的（macOS、Linux 上没设 `$XDG_RUNTIME_DIR`）跟着删了、外面找不到，它自己定时看到锁文件没了会走（施工 TMP-2）。被拒绝的照核心的原话、连不上的照原因、等了 60 秒还没退的说「核心在 60 秒内没有退出」，都照设计 47 印在标准错误上，退出码 1。
 
 | 参数 | 做什么 |
 |---|---|
@@ -186,6 +186,7 @@
 | `crates/miyu/tests/leftovers.rs`（施工 AE-7、AS-11、R3-1 补） | 真核心：起来时就建好 `trash/`、`blobs/`、`modules/`、`index/`、`kb/`；两次改名之间被杀的包起来时放回原来那一份，剩下的 `.old`、`.new` 清掉，认不出的名字不碰；崩了剩下、放了满 10 分钟的配置和密钥临时文件起来时删掉，`run/` 里的、数据根这一层的都删（施工 R3-1），刚写的、认不出的不碰 |
 | `crates/miyu/tests/core.rs` | 头拉起真的 `miyu core`，等它说好了再连；握手不再说是谁；再连不再拉起；两个头同时只拉起一个；起不来的说原因（找不到资源目录），日志里只写 `stage=resources`；已经在跑的写 `running` 就走、不写日志；什么都没写就退了的；空闲了自己走，日志里一条 `starting`、一条 `stopped reason=idle`；`starting` 那一行的数据根在家目录下的写成 `~`、有和 UTC 差多少；工作目录是数据根；起来时清一次回收处：删了满 7 天的删、没满的留，记一条 `trash purged removed=1`（施工 3-8 三补）；起来时探一次沙盒的助手：旁边有助手的记 `sandbox` 那一行、平台是这台机器的、有手段那一格，没有的记找不到（施工 5-1）；握手报的沙盒和记下的对得上（施工 5-4 下）；头拉起的那种不空闲退出的核心没人停的，测试的夹具丢掉时收掉（施工 TMP-2）；`miyu core stop` 停掉真核心、回来时锁已放开、运行日志记 `stopped reason=request`，没在跑的不拉起（施工 CL-4） |
 | `crates/miyu-cli/src/core_stop/tests.rs`、`crates/miyu-ipc/src/lock/tests.rs`（施工 CL-4） | 假核心答完 `core.stop` 还拿着锁，`miyu core stop` 等锁放了才回、什么都不印；没在跑的退出码 0；`wait_released` 拿着时不醒、放了就醒、没有锁文件的当已放 |
+| `crates/miyu-cli/src/core_stop/tests.rs`、`crates/miyu-ipc/src/unreachable/tests.rs`、`lock/tests.rs`、`crates/miyu/tests/core.rs`（施工 CS-3） | 假核心拿着锁、`run/` 里的令牌和位置删了，`miyu core stop` 说连不上、退 1；锁拿着的、锁文件删了但算出来的位置还在听的算在跑，从没起过的、走了只留下文件的不算；`held` 分得清拿着的和留下的锁文件；真核心跑着时删掉整个 `run/`（Linux 上套接字放在 `$XDG_RUNTIME_DIR`，Windows 上是管道），`miyu core stop` 退 1、核心还在 |
 | `crates/miyu/tests/crash.rs`（施工 7-8） | 真的 `miyu core`，模型是本机回环上的假服务器：放一个心跳到后台（Unix 上是命令起的孙进程），硬杀核心（Unix `SIGKILL`，Windows 结束进程、不连子进程），心跳几秒内停下；三个平台都跑 |
 | `crates/miyu-sandbox/src/lifeline/tests.rs`（施工 7-8，Unix） | 生命线还在，组里的照常跑；写端一关，看门的把整个组杀掉，孙进程也在里面 |
 | `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；收尾时锁还在、交回以后才放（施工 TMP-1 补2）；回合开始问记忆的读慢过限时、会话不等的，收到停的信号、空闲退出都等它读完才交回（施工 TMP-1 补3）；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，没有空闲时限的删了数据根自己走、`reason=gone`（只在 Unix 上，施工 TMP-2），后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6）；头调 `core.stop` 先收到 `{}`，再照信号那样停下会话、原因是 `request`（施工 DT-4 下） |

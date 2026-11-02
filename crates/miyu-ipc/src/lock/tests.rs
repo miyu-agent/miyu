@@ -67,3 +67,16 @@ fn waiting_returns_once_the_lock_is_let_go() {
     waiting.join().expect("没崩").expect("等成了");
     Lock::acquire(&root).expect("等完照旧拿得到");
 }
+
+/// 锁拿着没有（施工 CS-3）：没有锁文件、留下的锁文件没人拿着的是没拿着；拿着的是，同一个进程里问也是。
+#[test]
+fn held_tells_a_taken_lock_from_a_left_one() {
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    assert!(!held(&root).expect("问得出"), "没有锁文件");
+    let lock = Lock::acquire(&root).expect("拿得到");
+    assert!(held(&root).expect("问得出"), "拿着");
+    drop(lock);
+    assert!(!held(&root).expect("问得出"), "留下的锁文件没人拿着");
+    Lock::acquire(&root).expect("问过以后照样拿得到");
+}

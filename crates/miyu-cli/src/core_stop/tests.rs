@@ -103,3 +103,26 @@ async fn nothing_running_is_nothing_to_stop() {
     assert!(err.is_empty(), "{}", String::from_utf8_lossy(&err));
     std::fs::remove_dir_all(root.path()).expect("删得掉临时目录");
 }
+
+/// 核心还拿着锁，`run/` 里的令牌、套接字位置被删了（施工 CS-3）：不当它没在跑，说连不上、指给人进程号在哪，退出码 1。
+#[tokio::test]
+async fn a_core_that_lost_its_run_files_is_not_called_stopped() {
+    let root = temp_root("lost");
+    let opened = miyu_ipc::open_locked(
+        &root,
+        &Dirs::current(),
+        Lock::acquire(&root).expect("拿得到锁"),
+    )
+    .expect("开得了套接字");
+    for name in ["socket", "token"] {
+        std::fs::remove_file(root.run().join(name)).expect("删得掉");
+    }
+    let mut err = Vec::new();
+    let code = core_stop_on(&root, Language::Chinese, &mut err).await;
+    let said = String::from_utf8_lossy(&err);
+    assert_eq!(code, exit::ERROR, "{said}");
+    assert!(said.starts_with("miyu: 核心还在跑，但连不上它"), "{said}");
+    assert!(said.contains("core.log"), "{said}");
+    drop(opened);
+    std::fs::remove_dir_all(root.path()).expect("删得掉临时目录");
+}

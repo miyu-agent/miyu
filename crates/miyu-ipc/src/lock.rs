@@ -86,6 +86,29 @@ pub fn wait_released(root: &DataRoot) -> std::io::Result<()> {
     file.unlock()
 }
 
+/// 这个数据根的锁现在被拿着没有（施工 CS-3，`miyu core stop` 连不上时确认核心真不在）：打开锁文件试拿一次，拿到当场放。
+/// 没有锁文件的算没拿着。同一个进程里另开一次也是另一把，拿着锁的进程自己问也是「拿着」。
+///
+/// # Errors
+///
+/// 打不开锁文件（没有的除外）、拿锁出错。
+pub(crate) fn held(root: &DataRoot) -> std::io::Result<bool> {
+    let file = match OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.run().join(FILE))
+    {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(error),
+    };
+    match file.try_lock() {
+        Ok(()) => file.unlock().map(|()| false),
+        Err(TryLockError::WouldBlock) => Ok(true),
+        Err(TryLockError::Error(error)) => Err(error),
+    }
+}
+
 impl Held {
     /// 数据根里的锁文件还是拿着的这一个：路径上还有，而且是同一个文件（Unix 上照设备号和 inode）。数据根删了的、删了又建了
     /// 一个新的，不是。读不出来的当不是。碰一次磁盘。

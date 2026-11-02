@@ -17,6 +17,7 @@
 | `crates/miyu-ipc/src/windows.rs` | 命名管道：等连接、连过去、核对另一头、跟终端脱开 |
 | `crates/miyu-ipc/src/ready.rs` | 核心说「好了」的那一行 |
 | `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8） |
+| `crates/miyu-ipc/src/unreachable.rs` | `running_unreachable`：照 `run/socket` 连不上时，核心是不是还在、只是连不上（施工 CS-3） |
 | `crates/miyu-ipc/src/error.rs` | 起不来、连不上、拉不起的几种情形和它们的话 |
 | `crates/miyu-pipe/src/lib.rs`、`windows.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
 
@@ -99,6 +100,13 @@
 4. 连上以后才读 `run/token`，去掉末尾的空白：核心刚换过令牌的，读到的是新的。
 5. 交回连接和令牌；令牌在握手时出示（`protocol.md`）。
 
+**连不上的核心还在不在**（`running_unreachable`，施工 CS-3）：头照 `run/socket` 连得 `NotRunning` 以后，要说「没在跑」的（`miyu core stop`，`core.md`）再看两样，有一样就是核心还在、只是连不上（跑着时 `run/` 被删了，令牌、位置都没了）：
+
+1. 锁被拿着：打开 `run/core.lock`（没有的算没拿着），试拿一次，拿到当场放。同一个进程里另开一次也是另一把，拿着锁的进程自己问也是「拿着」。
+2. 照这台机器的 `Dirs::current` 算出来的位置上有自己的核心在听：同「头连核心」第 2、3 步连一下就断开；`NotRunning`、`NotPrivate` 的算没有。放不下（路径太长）的算没有。
+
+套接字本来就在 `run/` 里的（macOS，Linux 上没有能用的 `$XDG_RUNTIME_DIR`）跟着删了，外面找不到；核心自己照 `Held::here` 定时看到锁文件没了会走（施工 TMP-2）。
+
 **拉起别的程序、等那一行**（等的时限施工 CS-1 从 10 秒放宽到 60 秒：几个核心同时冷启动、硬盘忙时，核心起来那几步要等落盘，2026-10-31 Terminal-Bench 里量到卡 24 秒）（`spawn_detached`，施工 W-9）：「连不上就拉起」第 4、5 步单独开放出来：拉起一条命令、跟终端脱开、工作目录照给的、等它写来的那一行（`Ready`），最多 60 秒。核心照它拉起，网页软件的 `open` 也照它拉起 `serve`（`web-ui.md`）。Windows 上拉起之前，头把自己的三个标准句柄标成不能继承（施工 CS-2，`miyu_pipe::uninherit_std_handles`）：标准库拉起子进程时本进程所有能继承的句柄都跟着进去，`miyu ask` 的标准输入是重定向来的文件时，核心不然一直开着它，文件删不掉（2026-11-02 桌面端撞到）。
 
 **不读本机令牌地连**（`connect_bare`、`connect_or_start_bare`，施工 W-8）：同上，只是第 4 步不读 `run/token`，只交回连接。网页软件转发浏览器的连接用它：浏览器的凭据由页面在握手时自己出示，网页软件的代码里拿不到本机令牌（`web-module.md`「起草时定的」第 4 条）。核对目录、核对管道另一头照旧；拉起照「连不上就拉起」。
@@ -165,7 +173,8 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-ipc/src/place/tests.rs` | 指纹是前 8 位十六进制；Linux 放 `$XDG_RUNTIME_DIR` 下；没有的放 `run/`；macOS 不看它；太长的放临时目录；上限按字节、不算结尾的零；哪里都放不下；Windows 是命名管道 |
-| `crates/miyu-ipc/src/lock/tests.rs` | 第二把锁等第一把放开；两个数据根不共用锁；锁文件删了的、删了又建了的不是拿着的那一个（只在 Unix 上，施工 TMP-2） |
+| `crates/miyu-ipc/src/lock/tests.rs` | 第二把锁等第一把放开；两个数据根不共用锁；锁文件删了的、删了又建了的不是拿着的那一个（只在 Unix 上，施工 TMP-2）；`held` 分得清拿着的和留下的锁文件（施工 CS-3） |
+| `crates/miyu-ipc/src/unreachable/tests.rs`（施工 CS-3） | 锁拿着、令牌和位置删了的算在跑；锁文件也删了、算出来的位置还在听的算在跑；从没起过的、走了只留下文件的不算 |
 | `crates/miyu-ipc/src/files/tests.rs` | 令牌是 64 位小写十六进制、读回来一样、每次换新的、只有自己能读（上次留下的临时文件不沿用）；位置是一行、读回来一样、相对路径不认、不是 UTF-8 的照原样 |
 | `crates/miyu-ipc/src/ready/tests.rs` | 三种写了读回来一样；原因只有一行；认不出的是起不来 |
 | `crates/miyu-ipc/src/start/tests.rs` | 听得到每一种；没说话就退了的；等太久的 |

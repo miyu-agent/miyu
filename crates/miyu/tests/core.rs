@@ -407,3 +407,59 @@ async fn core_stop_waits_until_the_core_is_gone_and_never_starts_one() {
     assert!(again.stderr.is_empty(), "{again:?}");
     assert_eq!(count(&home.core_log(), "starting"), 1, "没在跑的不拉起");
 }
+
+/// 核心跑着时数据根的 `run/` 被删了（施工 CS-3，审计 11-03 在 Windows 虚拟机上碰到）：令牌、套接字的位置跟着没了，头连不上它。
+/// `miyu core stop` 原来当它没在跑、什么都不说退 0，核心照旧开着；现在说连不上、退 1，核心还在。Linux 上把套接字放到 `run/`
+/// 外面（平常的 `$XDG_RUNTIME_DIR`），删了 `run/` 它还在听；macOS 上套接字就在 `run/` 里、跟着删了，外面什么都找不到它（它自己
+/// 定时看到锁文件没了会走，施工 TMP-2），不测。
+#[cfg(any(target_os = "linux", windows))]
+#[tokio::test]
+async fn core_stop_says_so_when_the_running_core_lost_its_run_dir() {
+    let home = Home::new();
+    let runtime = home.dir.with_extension("xdg");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&runtime)
+            .expect("建得了运行目录");
+    }
+    let core = || {
+        let mut command = home.core_staying();
+        command.env("XDG_RUNTIME_DIR", &runtime);
+        command
+    };
+    let (connection, _) = within("拉起", connect_or_start(&home.root, core))
+        .await
+        .expect("拉得起");
+    drop(connection);
+    let pid = home.core_pid().expect("运行日志里有进程号");
+    std::fs::remove_dir_all(home.root.run()).expect("删得掉 run/");
+
+    let cwd = home.root.path().to_path_buf();
+    let stopped = tokio::task::spawn_blocking(move || {
+        crate::support::cli::command(&cwd, &cwd, "zh_CN.UTF-8", &["core", "stop"])
+            .env("XDG_RUNTIME_DIR", &runtime)
+            .output()
+            .expect("跑得起来")
+    })
+    .await
+    .expect("没 panic");
+    assert_eq!(stopped.status.code(), Some(1), "{stopped:?}");
+    assert!(
+        String::from_utf8_lossy(&stopped.stderr).contains("连不上"),
+        "{stopped:?}"
+    );
+    assert!(alive(&pid), "核心还在，没被说成停了");
+
+    // 收掉它：补上 `run/` 再结束它。锁在删掉的那个文件上，新的锁文件当场拿得到，所以另照进程号等它真的走了。
+    std::fs::create_dir_all(home.root.run()).expect("建得了 run/");
+    home.kill_core().await;
+    within("核心走了", async {
+        while alive(&pid) {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await;
+}
