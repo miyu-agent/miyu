@@ -432,6 +432,8 @@ impl Session {
     /// 这一步齐了：有工具要结束这一轮的（施工 4-14）、到了步数上限的，结束回合；不然这一轮里切过级别的先把事实查一遍，等
     /// 追加过的事件都落了盘，请求下一次。
     pub(super) fn finish_step(&mut self, at: Timestamp, cause: Option<CommandId>) -> Vec<Event> {
+        // 回报叫醒的这一串合起来到了上限（审计 R3E-2，`chain.rs`）。
+        let runs_out = self.chain_runs_out();
         let Some(turn) = self.turn.as_mut() else {
             return Vec::new();
         };
@@ -444,7 +446,7 @@ impl Session {
             let by = By::Tool(Tool { call_id: *call_id });
             return self.finish_turn(at, by, cause, EndReason::Completed);
         }
-        if turn.limit.is_some_and(|limit| turn.requests >= limit) {
+        if runs_out || turn.limit.is_some_and(|limit| turn.requests >= limit) {
             return self.finish_turn(at, By::Kernel, cause, EndReason::StepLimit);
         }
         turn.stage = Stage::Ready;

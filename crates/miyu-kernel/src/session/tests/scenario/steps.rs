@@ -14,19 +14,19 @@ fn attended() -> Policy {
     policy
 }
 
-fn attended_stage() -> Stage {
+pub(super) fn attended_stage() -> Stage {
     Stage::new(attended, environment("~/src/miyu"), at(0))
 }
 
 /// 一直读：`n` 次调 `read`。
-fn reading(n: usize) -> Vec<Line> {
+pub(super) fn reading(n: usize) -> Vec<Line> {
     (0..n)
         .map(|_| Line::calls("再读。", &[("read", r#"{"path":"a"}"#)]))
         .collect()
 }
 
 /// 最后一轮：怎么结束的、请求了几次。
-fn last_turn(stage: &Stage) -> (Option<EndReason>, usize) {
+pub(super) fn last_turn(stage: &Stage) -> (Option<EndReason>, usize) {
     let log = stage.log();
     let started = log
         .iter()

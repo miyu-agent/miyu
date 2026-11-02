@@ -5,6 +5,7 @@
 mod asking;
 mod breaker;
 mod busy;
+mod chain;
 mod checkpoint_jobs;
 mod clear;
 mod commands;

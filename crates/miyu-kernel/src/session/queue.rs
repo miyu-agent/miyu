@@ -29,9 +29,12 @@ impl Session {
         let reports = reason != EndReason::Interrupted && !self.unwatched();
         let next = self.turn.as_ref().and_then(|turn| {
             let message = turn.queued.last().cloned();
+            // 回报叫醒的这一串用完了的，回报不接着开（审计 R3E-2，`chain.rs`）。
             let report = turn
                 .reports
-                .last()
+                .iter()
+                .rev()
+                .find(|arrived| !self.held_back(&arrived.waker))
                 .filter(|_| reports)
                 .map(|arrived| (arrived.seq, arrived.cause.clone()));
             message

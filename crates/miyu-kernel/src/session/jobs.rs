@@ -208,7 +208,7 @@ impl Session {
             if !hidden {
                 turn.reports.push(arrived);
             }
-        } else if !hidden && self.can_wake() {
+        } else if !hidden && self.can_wake() && !self.held_back(&arrived.waker) {
             events.extend(self.open_turn(at, arrived.seq, arrived.cause));
         } else {
             self.deferred.push(arrived);
@@ -226,7 +226,7 @@ impl Session {
             .deferred
             .iter()
             .rev()
-            .find(|arrived| !self.hidden(&arrived.waker))
+            .find(|arrived| !self.hidden(&arrived.waker) && !self.held_back(&arrived.waker))
             .cloned()
         else {
             return Vec::new();

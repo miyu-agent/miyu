@@ -43,7 +43,7 @@ impl Follow<'_> {
     /// 跟第 `turn` 轮：这一轮的回答、用量、出错从头记。`joined` 是它不是这一句开的，是接上的（施工 7-10）。
     pub(super) fn begin(&mut self, turn: Option<u64>, joined: bool, screen: &mut Screen<'_>) {
         self.unwait(screen);
-        self.jobs.turn_started();
+        self.jobs.turn_started(self.ended_first);
         self.kinds.clear();
         self.answer.clear();
         self.stepped = false;

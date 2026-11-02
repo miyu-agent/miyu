@@ -187,6 +187,7 @@ impl Loader {
             grants,
             rounds,
             busy,
+            chain,
             mut history,
             kept,
             ..
@@ -247,6 +248,7 @@ impl Loader {
             grants,
             rounds,
             busy,
+            chain,
             told_todos: Vec::new(),
             told_done: Vec::new(),
             told_states: Default::default(),

@@ -263,6 +263,7 @@ impl<'p> Follow<'p> {
         }
         let event = &message["params"]["event"];
         let kind = event["kind"].as_str().unwrap_or_default();
+        self.jobs.said(event);
         match kind {
             "turn.started" => {
                 self.started(event, screen);

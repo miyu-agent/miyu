@@ -50,6 +50,7 @@ impl Session {
             sight: super::sight::Sight::default(),
             grants: super::grants::Grants::default(),
             rounds: super::seal::Rounds::default(),
+            chain: super::chain::Chain::default(),
             busy: crate::waits::Busy::default(),
             told_todos: Vec::new(),
             told_done: Vec::new(),

@@ -14,6 +14,7 @@ mod asked;
 mod blank;
 mod breaker;
 mod call;
+mod chain;
 mod clear;
 mod compaction;
 mod configure;
@@ -165,6 +166,8 @@ pub struct Session {
     rounds: seal::Rounds,
     /// 她干活的时间，等人不算（施工 E-M 下，`waits.rs`）：每追加一条记一次。
     busy: crate::waits::Busy,
+    /// 被回报叫醒的这一串用了几步（审计 R3E-2，`chain.rs`）：每追加一条记一次。
+    chain: chain::Chain,
     /// 上次告诉头的待办（施工 D-3，`todos.rs`）：变了才推 `todos.changed`。只在内存里。
     told_todos: Vec<crate::event::Todo>,
     /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。

@@ -107,7 +107,7 @@ fn a_command_from_before_is_not_waited_for() {
 fn a_message_after_its_report_makes_it_owe_again() {
     let mut agents = two();
     agents.reported(&report(20, "j1", "done"), false);
-    agents.turn_started();
+    agents.turn_started(true);
     // 第 30 条回复里的调用留了言：回报在它前面，又欠一份。
     agents.result(&result(
         "call_30_1",
@@ -166,7 +166,7 @@ fn a_report_while_she_is_idle_brings_a_turn() {
         event["body"]["by_model"] = json!(by_model);
         agents.reported(&event, false);
         assert_eq!(agents.settled(), !wakes, "{what} {reason} {by_model}");
-        agents.turn_started();
+        agents.turn_started(true);
         assert!(agents.settled(), "等的那一轮开了头");
     }
 }
@@ -188,7 +188,7 @@ fn a_report_the_last_request_missed_brings_the_next_turn() {
     heard.called(&json!({"seen": 12}));
     heard.turn_ended("completed");
     assert!(heard.settled());
-    agents.turn_started();
+    agents.turn_started(true);
     agents.called(&json!({"seen": 25}));
     agents.turn_ended("error");
     assert!(agents.settled(), "下一轮里没有新到的：了结了");

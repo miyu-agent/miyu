@@ -15,6 +15,10 @@
 //! 再看到 `turn.started`。闲着时到的、会叫醒她的，等那一轮开头；一轮里到的、这一轮最后一次请求没看到的（序号比请求的
 //! `seen` 大），这一轮不是打断结束的，内核同一批接着开下一轮（「排队的消息」第 2 条），也等。这次 `miyu ask` 以前派出去、这一次
 //! 没留言的不数。
+//!
+//! 被回报叫醒的连着几轮合用一份步数（审计 R3E-2，`kernel/session.md`「回报」第 11 条）：叫醒的那一轮以 `step_limit` 结束，这一串
+//! 用完了，之后的回报内核只记下、不开轮，这边也不再等它开轮；人说了话（推过来的 `message.user` 是人说的）重新算。第一轮以后、
+//! 人没说过话时开的每一轮都当它是回报叫醒的：别的 harness、定时开的也这么当，最多早一点收尾，不会一直等下去。
 
 use std::collections::BTreeMap;
 
@@ -35,6 +39,12 @@ pub(super) struct Jobs {
     seen: u64,
     /// 回报叫醒了她，那一轮还没开头：下一条就是它的 `turn.started`。
     expecting: bool,
+    /// 跟着的这一轮当它是回报叫醒的（审计 R3E-2）：第一轮以后开的，开以前人没说过话。
+    woken: bool,
+    /// 回报叫醒的那一串用完了步数：人说话以前，回报不再叫醒她。
+    spent: bool,
+    /// 上一轮开了以后人说过话：下一轮是人开的。
+    person: bool,
 }
 
 /// 等的任务是哪一种（施工 AP-4）。
@@ -170,7 +180,7 @@ impl Jobs {
         if wakes(kind, body) {
             match running {
                 true => self.arrived = self.arrived.max(seq),
-                false => self.expecting = true,
+                false => self.expecting |= !self.spent,
             }
         }
         Some(Reported {
@@ -185,16 +195,34 @@ impl Jobs {
         self.seen = self.seen.max(body["seen"].as_u64().unwrap_or(0));
     }
 
-    /// 开了一轮：等的那一轮来了；这一轮的请求从头数。
-    pub(super) fn turn_started(&mut self) {
+    /// 推过来的一条事件 `event`：人说的 `message.user`，回报叫醒的那一串重新算，这时跑着的那一轮也不再算进去（审计 R3E-2）。
+    pub(super) fn said(&mut self, event: &Value) {
+        let person = matches!(event["by"]["kind"].as_str(), Some("person" | "external"));
+        if event["kind"] == "message.user" && person {
+            self.spent = false;
+            self.woken = false;
+            self.person = true;
+        }
+    }
+
+    /// 开了一轮：等的那一轮来了；这一轮的请求从头数。`after_first` 是第一轮结束以后开的：人没说过话的当它是回报叫醒的。
+    pub(super) fn turn_started(&mut self, after_first: bool) {
+        self.woken = after_first && !self.person;
+        self.person = false;
         self.expecting = false;
         self.arrived = None;
         self.seen = 0;
     }
 
     /// 一轮结束了，原因是 `reason`：这一轮里到的回报，最后一次请求没看到的，内核接着开下一轮；打断结束的不接着开。
+    /// 回报叫醒的一轮以 `step_limit` 结束的，那一串用完了，没听到的回报也不接着开（审计 R3E-2）。
     pub(super) fn turn_ended(&mut self, reason: &str) {
-        if reason != "interrupted" && self.arrived.is_some_and(|arrived| arrived > self.seen) {
+        self.spent |= self.woken && reason == "step_limit";
+        self.woken = false;
+        if !self.spent
+            && reason != "interrupted"
+            && self.arrived.is_some_and(|arrived| arrived > self.seen)
+        {
             self.expecting = true;
         }
         self.arrived = None;

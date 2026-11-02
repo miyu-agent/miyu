@@ -179,3 +179,34 @@ fn jsonl_writes_a_line_when_a_command_reports() {
         "{screen}"
     );
 }
+
+#[test]
+fn after_a_woken_turn_runs_out_of_steps_a_report_wakes_nobody() {
+    // 审计 R3E-2：回报叫醒的那一轮以 `step_limit` 结束，这一串的步数用完了，之后的回报只记下、不开轮：当场收尾。
+    let plan = plan(Output::Text, Language::Chinese);
+    let mut messages = first_with_command(true);
+    messages.push(report(20, "j1", "done"));
+    messages.extend(round(
+        21,
+        "child/report/7",
+        "A 好了。",
+        25,
+        json!([]),
+        "step_limit",
+    ));
+    let mut spent = messages.clone();
+    spent.push(ended(30, "j3", "exited", Some(0)));
+    let (step, _, _) = waiting(&plan, false, &spent, |_, _| None);
+    // 退出码照最后结束的那一轮：到了步数上限是 1。
+    assert_eq!(step, Step::Done(exit::ERROR), "没有要来的一轮，不再等");
+    // 人在别处说了一句：这一串重新算，回报照常叫醒她。
+    let mut person = at(28, "message.user", 0, "web-1", json!({"blocks": []}));
+    person["params"]["event"]["by"] = json!({"kind": "person"});
+    messages.push(person);
+    messages.push(ended(30, "j3", "exited", Some(0)));
+    let (step, _, _) = waiting(&plan, false, &messages, |follow, _| {
+        assert!(follow.waiting(), "等它叫醒的那一轮");
+        None
+    });
+    assert_eq!(step, Step::Going);
+}
