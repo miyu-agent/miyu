@@ -270,3 +270,22 @@ async fn the_core_s_own_program_under_a_hidden_place_is_let_through_read_only() 
     elsewhere.spec.hidden = vec!["/nowhere".into()];
     assert!(channel.sandboxed(&elsewhere).spec.reveal.is_empty());
 }
+
+/// 清留下的目录（施工 M-3 上，WC-1 挪到 `leftovers.rs`）：自己这个进程号的留着，等它退了、收掉了的子进程的整个删掉。真的问系统。
+#[test]
+fn directories_of_gone_cores_are_swept() {
+    let temp = std::env::temp_dir().join(format!("miyu-sweep-test-{}", std::process::id()));
+    let mut child = std::process::Command::new("true").spawn().expect("起得来");
+    let gone = child.id();
+    child.wait().expect("等得到");
+    let mine = temp.join(format!("miyu-call-{}", std::process::id()));
+    let left = temp.join(format!("miyu-call-{gone}"));
+    for dir in [&mine, &left] {
+        std::fs::create_dir_all(dir.join("bin")).expect("建得了");
+    }
+    sweep(&temp);
+    let (kept, swept) = (mine.is_dir(), !left.exists());
+    std::fs::remove_dir_all(&temp).expect("删得掉");
+    assert!(kept, "自己的留着");
+    assert!(swept, "进程不在了的删掉");
+}

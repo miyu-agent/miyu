@@ -19,7 +19,7 @@
 | `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8） |
 | `crates/miyu-ipc/src/unreachable.rs` | `running_unreachable`：照 `run/socket` 连不上时，核心是不是还在、只是连不上（施工 CS-3） |
 | `crates/miyu-ipc/src/error.rs` | 起不来、连不上、拉不起的几种情形和它们的话 |
-| `crates/miyu-pipe/src/lib.rs`、`windows.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
+| `crates/miyu-pipe/src/lib.rs`、`windows.rs`、`process.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID；一个进程还在不在跑（`process_running`，脚本调工具的通道清留下的目录用，施工 WC-1，`tools/shell.md`）。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
 
 ### 对外的样子
 

@@ -288,3 +288,26 @@ async fn a_command_in_the_sandbox_reaches_the_pipe() {
         eprintln!("miyu.exe 没编，只测了照协议连");
     }
 }
+
+/// 清留下的目录（施工 WC-1）：自己这个进程号的留着，等它退了的子进程的整个删掉（里面的 `bin\miyu.exe` 一起）。真的问系统。
+#[test]
+fn directories_of_gone_cores_are_swept() {
+    let temp = std::env::temp_dir().join(format!("miyu-sweep-test-{}", std::process::id()));
+    let mut child = Command::new("cmd")
+        .args(["/c", "exit 0"])
+        .spawn()
+        .expect("起得来");
+    let gone = child.id();
+    child.wait().expect("等得到");
+    let mine = temp.join(format!("miyu-call-{}", std::process::id()));
+    let left = temp.join(format!("miyu-call-{gone}"));
+    for dir in [&mine, &left] {
+        std::fs::create_dir_all(dir.join("bin")).expect("建得了");
+        std::fs::write(dir.join("bin").join("miyu.exe"), "").expect("写得进");
+    }
+    sweep(&temp);
+    let (kept, swept) = (mine.is_dir(), !left.exists());
+    std::fs::remove_dir_all(&temp).expect("删得掉");
+    assert!(kept, "自己的留着");
+    assert!(swept, "进程不在了的删掉");
+}

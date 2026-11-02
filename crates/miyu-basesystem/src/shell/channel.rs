@@ -22,6 +22,8 @@ use miyu_tool::Call;
 use super::{Shell, env, workdir};
 use crate::load::{self, LoadError};
 
+#[cfg(any(unix, windows))]
+mod leftovers;
 #[cfg(not(any(unix, windows)))]
 mod other;
 #[cfg(any(unix, windows))]

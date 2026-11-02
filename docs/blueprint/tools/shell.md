@@ -14,7 +14,7 @@
 | `crates/miyu-basesystem/src/shell/process.rs` | 起命令、读输出、等它结束、整组杀 |
 | `crates/miyu-basesystem/src/shell/process/waits.rs` | 等命令结束（施工 M-7 上挪出来）：进程结束和「在等人」「等完了」进同一根通道，等人的那几段不算时限 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
-| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
+| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs`、`channel/leftovers.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/touched.rs` | 前台命令改了她看过的文件：起来之前记修改时刻和大小，跑完变了的重读，交 `file.read`（施工 E-D 补） |
 | `crates/miyu-basesystem/src/shell/output.rs` | 输出：边读边解成字、内存里只留头尾、截成头尾两段；后台的边读边换行尾（`Crlf`） |
 | `crates/miyu-basesystem/src/load.rs` | 说明是一段模板，核心起来时换进 shell 的名字 |
@@ -120,7 +120,7 @@
 
 1. 哪些命令开：拿到了端口的（`Call.nested`，执行器只给直接调的 `shell`，这个会话的工具面上有 `clicall` 开着的工具才给，`session/tools.md`「1g」）。前台、放到后台、到时挪到后台都开。开不成的（目录建不成、套接字绑不上、Windows 上）记一行 `WARN`，命令照旧跑、没有端点。
 2. 端点：Unix 上一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`；第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。Windows 上一根命名管道 `\\.\pipe\miyu-call-<令牌的前 16 个字符>`，访问控制开给本人，另给本人沙盒里的命令（MXC 的基础容器，令牌带 `ALL APPLICATION PACKAGES`）只够连上、读写的权限（`miyu_pipe::create_for_containers`，`miyu call` 照同样几样权限开），一个连上来就建下一个实例接着等（施工 M-3 下）。容器里的命令由助手起、放进 MXC 自己的作业对象，嵌在这条命令的作业对象里，认人照旧过得了；别的进程连得上也过不了令牌、作业对象两关。令牌 128 位，系统给的随机字节（`getrandom`）。
-3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上）把核心所在的目录放到最前面。脚本里调到的一定是同一个版本。
+3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上、没有权限）把核心所在的目录放到最前面，建了的 `miyu-call-<进程号>` 当场删掉。脚本里调到的一定是同一个版本。核心走时不删自己的那个目录（Windows 上链接指着正在跑的程序），第一次建它时顺手删掉别的核心进程留下、进程已经不在了的同名目录（`channel/leftovers.rs`，名字是前缀加全是数字的进程号、是目录不是链接才看）：Unix 上只删属主是自己的（临时目录大家共用），Windows 上不看属主（`%TEMP%` 是每个用户自己的；指到共用目录的，别人的目录照访问控制删不掉，别人的进程打不开、当还在），问进程在不在用 `miyu_pipe::process_running`（打开进程看退出码，拿不准的当还在，施工 WC-1）。
 4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个端点（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。Windows 上放进去的是管道名，助手不看它：容器里连得上靠管道自己的访问控制（第 2 条，施工 M-3 下）。
 5. 认人：请求里的令牌对得上，连上来的进程是这条命令的。Unix 上照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组，要等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）；Windows 上照对方的进程号（`GetNamedPipeClientProcessId`）查它在不在这条命令的作业对象里（`IsProcessInJob`）：命令起来以后马上放进它自己的作业对象（`miyu_sandbox::lifeline::Job`，套在核心那个里面；只用来认人，不设限制，整组杀照旧 `taskkill /T`，2026-10-20 照推荐定），起来到放进去之间它起的不在里面，PowerShell 起来要上百毫秒，碰不到。命令起来以后才记下这一组、这个作业对象：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
 6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
@@ -317,6 +317,8 @@ Exit code 2
 | `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
 | `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_when_it_wants_out_and_what_to_show`（施工 D-4） | 写了 `outside_sandbox` 的报要在沙盒外跑，没写的、写了假的、参数不对的不报；问人时交 `command`、`title`，参数不对的交空的 |
 | `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4） | 工作区问人、允许一次的那一次不套沙盒；只读拒绝；完全放开不问；真经助手跑：允许以后写得进工作区以外 |
+| `crates/miyu-basesystem/src/shell/channel/leftovers/tests.rs`（施工 WC-1） | 留下的目录：名字对得上、是目录、进程不在了的整个删，名字差一点的、文件、进程还在的、不是自己的不动；进程号只认全是数字、放得进 `u32` 的 |
+| `crates/miyu-pipe/src/process/tests.rs`（施工 WC-1，只在 Windows 上） | 自己在跑；等它退了的子进程不在，句柄关了也不在；没有的进程号不在 |
 | `crates/miyu-basesystem/src/shell/channel/reply/tests.rs`（施工 M-3） | 结局写成退出码和字：一行 JSON、中文不转义；丢了图的说一句；出错、被拒、要问人、被打断、父级不在了各自的码和话；写错名字的指出对的；调不了的列出能调的；参数不对的跟上格式；`--schema` 的样子 |
 | `crates/miyu/tests/call.rs`（施工 M-3，Unix） | 真核心、真 `shell`：能调的一行 JSON、退出码 0，子 shell 里再起一层照样；调不了的、写错名字的退出码 2；`--schema`；`setsid` 出去的退出码 2（Linux）；命令结束以后同一个端点连不上，退出码 3；没有那两个变量的退出码 2；每次调用记 `tool.nested`、挂在那次 `shell` 下面、排在它的结果前面。放到后台的挂在任务下面（`j1#1`）、不带回合、排在任务报告前面；到时挪到后台的，挪过去以后的调用挂到任务下面 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |

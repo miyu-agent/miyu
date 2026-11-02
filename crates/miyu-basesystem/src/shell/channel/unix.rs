@@ -12,10 +12,10 @@ use tokio::task::{AbortHandle, JoinSet};
 use miyu_sandbox::Sandboxed;
 use miyu_tool::{NestedPort, Process};
 
-use super::Texts;
 use super::serve::{self, Binder, Bound, TARGET};
 #[cfg(test)]
 use super::serve::{MAX_OPEN, MAX_REQUEST, VERSION};
+use super::{Texts, leftovers};
 
 /// 一条命令的端点。丢掉就关。
 pub(in crate::shell) struct Channel {
@@ -113,7 +113,7 @@ fn home() -> io::Result<PathBuf> {
     HOME.get_or_init(|| {
         let temp = std::env::temp_dir();
         sweep(&temp);
-        let dir = temp.join(format!("miyu-call-{}", std::process::id()));
+        let dir = temp.join(format!("{}{}", leftovers::PREFIX, std::process::id()));
         create_private(&dir).ok().map(|()| dir)
     })
     .clone()
@@ -130,34 +130,22 @@ fn create_private(dir: &Path) -> io::Result<()> {
     std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
 }
 
-/// 删掉别的核心进程留下、进程已经不在了的目录：只认自己的、名字对得上的。
+/// 删掉别的核心进程留下、进程已经不在了的目录（`leftovers.rs`）：临时目录几个用户共用，只认属主是自己的。进程号是别的用户的
+/// 进程重用了的（问它报 `EPERM`）也算不在了：目录是自己的，那个核心早走了。
 fn sweep(temp: &Path) {
     use std::os::unix::fs::MetadataExt;
-    let Ok(entries) = std::fs::read_dir(temp) else {
-        return;
-    };
     let me = rustix::process::getuid().as_raw();
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let Some(pid) = name
-            .to_str()
-            .and_then(|name| name.strip_prefix("miyu-call-"))
-            .and_then(|pid| pid.parse::<i32>().ok())
-        else {
-            continue;
-        };
-        let mine = entry
-            .metadata()
-            .is_ok_and(|meta| meta.is_dir() && meta.uid() == me);
-        let gone = rustix::process::Pid::from_raw(pid)
-            .is_some_and(|pid| rustix::process::test_kill_process(pid).is_err());
-        if mine
-            && gone
-            && let Err(error) = std::fs::remove_dir_all(entry.path())
-        {
-            tracing::debug!(target: TARGET, error = %error, "stale miyu call directory not removed");
-        }
-    }
+    leftovers::sweep(
+        temp,
+        |pid| {
+            // 放不进 `pid_t` 的、0 不是哪个进程：不碰。
+            i32::try_from(pid)
+                .ok()
+                .and_then(rustix::process::Pid::from_raw)
+                .is_none_or(|pid| rustix::process::test_kill_process(pid).is_ok())
+        },
+        |meta| meta.uid() == me,
+    );
 }
 
 /// 放 `miyu` 的目录：只有这一个链接，指向核心自己。建不成的不加，`miyu call` 照 `PATH` 里原有的找。

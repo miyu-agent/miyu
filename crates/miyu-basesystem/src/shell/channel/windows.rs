@@ -8,7 +8,7 @@
 
 use std::ffi::OsString;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
 use tokio::net::windows::named_pipe::NamedPipeServer;
@@ -17,8 +17,8 @@ use tokio::task::{AbortHandle, JoinSet};
 use miyu_sandbox::Sandboxed;
 use miyu_tool::{NestedPort, Process};
 
-use super::Texts;
 use super::serve::{self, Binder, Bound, TARGET};
+use super::{Texts, leftovers};
 
 /// 一条命令的端点。丢掉就关。
 pub(in crate::shell) struct Channel {
@@ -91,15 +91,22 @@ pub(in crate::shell) fn keep(process: Box<dyn Process>, channel: Channel) -> Box
     serve::keep(process, channel)
 }
 
-/// 放 `miyu.exe` 的目录：`%TEMP%\miyu-call-<进程号>\bin`，里面是核心程序的硬链接；建不成的（不在同一个盘上）用核心所在的
-/// 目录。都拿不到的不加，`miyu call` 照 `PATH` 里原有的找。
+/// 放 `miyu.exe` 的目录：`%TEMP%\miyu-call-<进程号>\bin`，里面是核心程序的硬链接；建不成的（不在同一个盘上、没有权限：审计
+/// 11-03 在虚拟机上看到装在 `Program Files` 里的核心留下的 `bin` 都是空的）用核心所在的目录，建了的 `miyu-call-<进程号>` 当场
+/// 删掉，不留空目录。都拿不到的不加，`miyu call` 照 `PATH` 里原有的找。
+///
+/// 第一次用时先删别的核心进程留下、进程已经不在了的（施工 WC-1，`leftovers.rs`），同一天看到 10-21 以来攒了二十多个。核心走时
+/// 不删自己的那一个：链接指着的就是正在跑的程序，Windows 不让删正在跑的程序（没在虚拟机上单独量过），收拾交给下一个核心。不看属主：`%TEMP%` 是每个用户自己的
+/// （`%LOCALAPPDATA%\Temp`，别的用户进不来）；指到大家共用的目录里的，别人的目录照继承来的访问控制本来就删不掉，别人的进程
+/// 打不开、当还在（`miyu_pipe::process_running`），都不会动到。
 fn bin_dir() -> Option<PathBuf> {
     static DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
     DIR.get_or_init(|| {
         let exe = std::env::current_exe().ok()?;
-        let dir = std::env::temp_dir()
-            .join(format!("miyu-call-{}", std::process::id()))
-            .join("bin");
+        let temp = std::env::temp_dir();
+        sweep(&temp);
+        let home = temp.join(format!("{}{}", leftovers::PREFIX, std::process::id()));
+        let dir = home.join("bin");
         let linked = std::fs::create_dir_all(&dir).and_then(|()| {
             let link = dir.join("miyu.exe");
             match std::fs::remove_file(&link) {
@@ -112,11 +119,21 @@ fn bin_dir() -> Option<PathBuf> {
             Ok(()) => Some(dir),
             Err(error) => {
                 tracing::debug!(target: TARGET, error = %error, "miyu.exe not linked, using its own directory");
+                if let Err(error) = std::fs::remove_dir_all(&home)
+                    && error.kind() != io::ErrorKind::NotFound
+                {
+                    tracing::debug!(target: TARGET, error = %error, "unused miyu call directory not removed");
+                }
                 exe.parent().map(PathBuf::from)
             }
         }
     })
     .clone()
+}
+
+/// 删掉临时目录 `temp` 下别的核心进程留下、进程已经不在了的目录（`leftovers.rs`）。不看属主，为什么见 [`bin_dir`]。
+fn sweep(temp: &Path) {
+    leftovers::sweep(temp, miyu_pipe::process_running, |_| true);
 }
 
 /// 服务：等一个连上来，交给一个任务答，接着建下一个实例等。多了的直接断开。
