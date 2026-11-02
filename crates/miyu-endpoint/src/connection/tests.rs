@@ -69,7 +69,8 @@ fn capabilities_gate_what_they_name() {
         ("session.create", Capability::SessionsDrive),
         ("session.delete", Capability::SessionsDrive),
         ("session.send", Capability::SessionsDrive),
-        ("session.respond", Capability::SessionsDrive),
+        // 不带参数的 `session.respond` 是只带事实开一轮（施工 R3S-3）。
+        ("session.respond", Capability::ActForExternal),
         ("command.run", Capability::SessionsDrive),
         ("session.list", Capability::EventsRead),
         ("view.page", Capability::EventsRead),
@@ -99,6 +100,16 @@ fn some_hang_on_the_params() {
     assert_eq!(
         right("command.run", &acting),
         Right::Needs(Capability::ActForExternal)
+    );
+    assert_eq!(
+        right("session.respond", &json!({"to": [3]})),
+        Right::Needs(Capability::SessionsDrive),
+        "照记下的几条开一轮的照旧"
+    );
+    assert_eq!(
+        right("session.respond", &json!({"to": []})),
+        Right::Needs(Capability::ActForExternal),
+        "空的 to 同不写（施工 R3S-3）"
     );
     assert_eq!(
         right("session.send", &json!({"as": null})),

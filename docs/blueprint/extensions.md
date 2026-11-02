@@ -87,7 +87,7 @@
 | 要 `sessions.drive` | `needs_approval` | `session.create`、`send`（不带 `as`）、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`（不带 `as`）、`job.stop`，包的会话状态 `session.set_state`、`session.state`（施工 TW-1） |
 | 要 `events.read` | 同上 | `subscribe` 的 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`session.tools`、`view.page`、`view.detail`、`job.output` |
 | 要 `events.write` | 同上 | `events.append`（`ext.<前缀>.*`，施工 PN-1） |
-| 要 `act_for_external` | 同上 | 带 `as` 的 `session.send`、`command.run`，`session.note`，`venue.*`，`events.append` 的 `venue.*` |
+| 要 `act_for_external` | 同上 | 带 `as` 的 `session.send`、`command.run`，`session.note`，不写 `to` 的 `session.respond`（施工 R3S-3），`venue.*`，`events.append` 的 `venue.*` |
 | 要 `memory.write` | 同上 | `memory.remember`、`update`、`forget`、`restore`、`dream`、`dream_stop`、`card_update`、`card_forget`（施工 E-1 下），`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | 要 `fs.read`、`network` | 同上 | `fs.*`；`link.preview` |
 | 要 `tools`、`widgets`、`context.system`、`packages.call` | 同上 | 有工具的 `provide`（空的照收：斜杠命令、搜索要先 `provide` 一次）；`widget.set`、`widget.clear`；`system.append`；`package.call`（照旧另查对方的 `[export]`） |

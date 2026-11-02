@@ -56,6 +56,16 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
             Some("projects" | "schedules" | "notices" | "package") => People,
             _ => Anyone,
         },
+        // 不写 `to`、只带事实开一轮的（施工 O-64）同只记事实的 `session.note`（施工 R3S-3，项目主人 2026-11-02 定）：开一轮比
+        // 只记下影响还大，权限不该更松。
+        "session.respond"
+            if params
+                .get("to")
+                .and_then(Value::as_array)
+                .is_none_or(Vec::is_empty) =>
+        {
+            Needs(ActForExternal)
+        }
         // 驱动会话。
         "session.create" | "session.send" | "session.interrupt" | "session.withdraw"
         | "session.revert" | "session.unrevert" | "session.redo" | "session.compact"

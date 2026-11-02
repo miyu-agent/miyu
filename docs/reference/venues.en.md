@@ -99,7 +99,7 @@ Venue sessions only accept messages with `as` (otherwise `venue_session`); `as` 
 
 Start a turn from messages recorded while listening (when it's decided she should answer in a group); without `to`, start a turn from a few facts (e.g. a timed look at a private chat).
 
-**Params**: `session`; `to`: optional, the numbers of those `message.user` events, at most 64; `facts`: optional facts `[{"kind", "text"}]` (`text` at most 4 KiB), placed before the trigger. At least one of `to` and `facts` must be non-empty. Without `to`, the facts are recorded first and the last one starts the turn.
+**Params**: `session`; `to`: optional, the numbers of those `message.user` events, at most 64; `facts`: optional facts `[{"kind", "text"}]` (`text` at most 4 KiB), placed before the trigger. At least one of `to` and `facts` must be non-empty. Without `to`, the facts are recorded first and the last one starts the turn; an extension calling it this way needs `act_for_external`.
 
 **Response**: `{"events": [...]}`. If a turn is running, they join it and she hears them at the next step.
 

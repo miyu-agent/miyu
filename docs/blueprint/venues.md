@@ -151,7 +151,7 @@
 **照记下的几条开一轮**（施工 O-14 上，接入QQ 仓库的 chat.md 第七条第 3 条第 1 项，形状 2026-10-09 和通讯平台的会话对过）：`session.respond {session, to, facts}`，回应 `{"events": [...]}`（`turn.started` 和事实的序号，同 `session.send`）。
 
 1. `to`：序号的列表，最多 64 条，核心照序号排好、去重；`facts`：可以不写，每块 `{kind, text}`，`kind` 照事实类别的写法，`text` 最多 4 KiB，原样记成 `context.injected`，排在触发前面。写错的 `bad_params`，什么都不记。
-   `to` 可以不写或是空的（施工 O-64，通讯平台到点看一眼私聊要的：私聊里没有旁听记下、没回的消息，`session.send` 又得假扮人说话），这时 `facts` 至少一块，两样都空的 `bad_params`。闲着的先记下事实（不带回合编号），由最后一块开一轮，同后台命令的回报开的回合：`turn.started` 的 `trigger` 是它、没有 `triggers`，渲染在内核的事实后面，群会话里也不带近况；正在跑一轮的照第 3 条并进去，`turn.joined` 的 `triggers` 是空的。私聊、群、本机的会话都收。
+   `to` 可以不写或是空的（施工 O-64，通讯平台到点看一眼私聊要的：私聊里没有旁听记下、没回的消息，`session.send` 又得假扮人说话），这时 `facts` 至少一块，两样都空的 `bad_params`。闲着的先记下事实（不带回合编号），由最后一块开一轮，同后台命令的回报开的回合：`turn.started` 的 `trigger` 是它、没有 `triggers`，渲染在内核的事实后面，群会话里也不带近况；正在跑一轮的照第 3 条并进去，`turn.joined` 的 `triggers` 是空的。私聊、群、本机的会话都收；扩展这样调要 `act_for_external`，同 `session.note`（施工 R3S-3，2026-11-02 项目主人定）。
 2. 记成谁同下面的 `events.append`。同一个命令编号再发只算一次，回应和头一次一样。
 3. 正在跑一轮的并进这一轮（施工 O-14 下）：事实和一条 `turn.joined {triggers}`（带回合编号）当场记下，下一步就听到，这一轮没再请求就结束的接着开一轮，打断时不退回、不接着开。`to` 里有不是这个会话里旁听的 `message.user` 的 `not_ambient`，有已经当过触发的 `already_answered`，`data.messages` 是不合的那几条。
 4. 开的那一轮 `turn.started` 带 `triggers`，那几条在回合开始的地方渲染（群会话里一行一条），以后的群聊近况不再收它们。

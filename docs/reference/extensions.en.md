@@ -71,7 +71,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `context.system` | Putting a section at the end of the system prompt (`system.append`) |
 | `packages.call` | Calling methods other packages export (`package.call`) |
 | `search` | Being a search provider (manifest `[[search]]`, `search.query`) |
-| `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `venue.*`, recording `venue.*` events: for platform bridges only |
+| `act_for_external` | Speaking for people on a platform (`session.send` and `command.run` with `as`), `session.note`, `session.respond` without `to`, `venue.*`, recording `venue.*` events: for platform bridges only |
 | `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
 | `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output` |
 | `events.write` | Recording your own events in a session (`events.append`) |
