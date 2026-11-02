@@ -71,13 +71,13 @@ miyu-scripts 下只有 `miyu-scripts-ai-draw`（82c7115）、`miyu-skills-office
 
 | 文件:行 | 拼的路径 | 方式 | 用途 |
 |---|---|---|---|
-| `crates/miyu-web/src/serve.rs:41-42, 211-212` | `<run()>/web.lock` | **硬**（常量 `LOCK = "web.lock"`，`root.run().join(LOCK)`） | 网页软件单实例锁 |
-| `crates/miyu-web/src/serve.rs:417-418` | `<run()>/web.lock` | **硬** | `running()`：看锁有没有人拿着 |
-| `crates/miyu-web/src/serve.rs:44-45, 135, 426` | `<run()>/web` | **硬**（常量 `ADDRESS = "web"`，`write_address(&root.run(), …)`） | 写网页地址 |
+| `crates/miyu-web/src/serve.rs:41-42, 211-212` | `<run()>/web.lock` | **硬**（常量 `LOCK = "web.lock"`，`root.run().join(LOCK)`） | 网页软件单实例锁；FH-5上 起是 `run/miyu-webui/lock` |
+| `crates/miyu-web/src/serve.rs:417-418` | `<run()>/web.lock` | **硬** | `running()`：看锁有没有人拿着；FH-5上 起是 `run/miyu-webui/lock` |
+| `crates/miyu-web/src/serve.rs:44-45, 135, 426` | `<run()>/web` | **硬**（常量 `ADDRESS = "web"`，`write_address(&root.run(), …)`） | 写网页地址；FH-5上 起是 `run/miyu-webui/address` |
 | `crates/miyu-web/src/serve.rs:439-440` | `<run()>/web` | **硬** | `address()`：读网页地址（`open` 用） |
 | `crates/miyu-web/src/open.rs:59-60, 213-214` | `<run()>/open/<随机>.html` | **硬**（常量 `JUMPS = "open"`） | 带凭据的跳转页 |
 | `crates/miyu-web/src/open.rs:287-290` | `<run()>/open/` | **硬** | `forget`：只删这个目录里的跳转页 |
-| `crates/miyu-web/src/main.rs:124-129` | `<state()>/logs/web.log` | **硬**（`root.state().join("logs")`，文件名 `web`） | 网页软件的运行日志 |
+| `crates/miyu-web/src/main.rs:124-129` | `<state()>/logs/web.log` | **硬**（`root.state().join("logs")`，文件名 `web`） | 网页软件的运行日志；FH-5上 改走 `package_logs("miyu-webui")`，即 `var/log/miyu-webui/` |
 | `crates/miyu-web/src/main.rs:50-60, 160` | 数据根 | 钉：`DataRoot::locate` / `prepare` | 起来、`forget` |
 | `crates/miyu-web/src/open.rs:372` | 数据根路径 | 钉：`spawn_detached(…, root.path())`（工作目录是数据根） | 拉起 `serve` |
 | `crates/miyu-webserve/src/ws.rs:228`、`crates/miyu-web/src/media/link.rs:194-205` | 套接字（不读令牌） | 钉：`connect_or_start_bare` | `/ws`、`/media` 转发到核心 |
@@ -104,7 +104,7 @@ matugen 的输出在机器缓存目录（`~/.cache/miyu/matugen.json`），不�
 | `docs/blueprint/web-module.md:217-218, 558, 637, 647` | `run/web.lock`、`run/web` |
 | `docs/blueprint/web-module.md:295, 300, 540` | `blobs/tmp/`（还写着「这个账号的」） |
 | `docs/blueprint/web-module.md:323, 479` | `connect_bare` 不读 `run/token` |
-| `docs/blueprint/web-module.md:651`、`web-ui.md:36, 55` | `state/logs/web.log` |
+| `docs/blueprint/web-module.md:651`、`web-ui.md:36, 55` | `state/logs/web.log`（FH-5上 起 `var/log/miyu-webui/`） |
 | `docs/blueprint/web-ui.md:1, 15, 42-43, 65, 133, 135`（及 `serve.rs:1-11`、`open.rs:5` 的模块注释） | `run/web.lock`、`run/web`；`serve` 的工作目录是数据根 |
 | `docs/blueprint/web-ui.md:28, 50` | 网页包装进数据根的 `packages/miyu-webui/` |
 | `docs/blueprint/web-ui.md:67` | 跳转页 `run/open/<十六进制>.html` |
@@ -233,6 +233,6 @@ Python（`python/miyu_ext.py:89`）、Rust（`rust/src/reply.rs:314`）只转交
 ## 跨版本（布局改了以后的连锁）
 
 - 三个头（tui、web、im）都靠钉住的核心提交里的 `miyu_client` / `miyu_ipc` 找套接字（`run/core.sock` 或 `$XDG_RUNTIME_DIR/miyu-<指纹>/core.sock`，核心 `crates/miyu-ipc/src/place.rs:75-76`）和令牌（`run/token`，核心 `crates/miyu-ipc/src/files.rs:16-19`）。核心改了 `run/` 的位置，三个头都要换钉、重编、发版；`run/` 的位置不变，**已装的旧头照样连得上新核心**，旧头、旧核心还会照旧布局往新数据根里建 `state/` 这些：设计 55 改了标记文件名挡住它们（FH 审查第 2 条）。三个头现在钉的是三个不同的提交。
-- 网页的 `run/web.lock`、`run/web`、`run/open/` 是网页自己定、自己读写的；核心的 `store.md` 也列了 `web.lock`、`web`。挪 `run/` 时要和网页一起挪。
+- 网页的 `run/web.lock`、`run/web`、`run/open/` 是网页自己定、自己读写的；核心的 `store.md` 也列了 `web.lock`、`web`。挪 `run/` 时要和网页一起挪。2026-11-03 定：FH-5上 起挪进网页自己的运行时目录（`package_runtime("miyu-webui")`）：`run/miyu-webui/lock`（原 `run/web.lock`）、`run/miyu-webui/address`（原 `run/web`）、`run/miyu-webui/open/`（原 `run/open/`）。读写它们的只有 miyu-web 自己，桌面、终端经核心转给网页包的 `open` 命令。
 - im 读核心写的 `state/logs/miyu-im.stderr`：核心挪扩展标准错误的位置（例如挪到 `var/log/`），im 的 `logs.rs` 要同步。
 - memes、im-sponsor 靠「工作目录 = 包状态目录」：核心挪状态目录时只要继续把工作目录设成新位置就不受影响；更稳的是让它们改读 `MIYU_PACKAGE_STATE`。
