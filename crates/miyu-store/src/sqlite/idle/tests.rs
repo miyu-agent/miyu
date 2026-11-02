@@ -131,3 +131,48 @@ fn a_dropped_database_is_no_longer_merged() {
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     assert_eq!(wal(&path), 0);
 }
+
+/// 审计 2026-11-02 第三轮（边缘）：合是拿着写连接的锁做 `wal_checkpoint(TRUNCATE)`。有别的连接还在读老的一截（另一个进程开着库
+/// 读、读的连接一条语句没收尾）时，TRUNCATE 照忙等的时限（rusqlite 开库默认 5 秒）一直等它读完，这期间这个库的写全排在后面；
+/// 等不到的交回「没合完」，下一阵写以后再来一遍。
+#[test]
+fn a_reader_on_an_old_snapshot_does_not_hold_the_write_lock_for_seconds() {
+    let scratch = Scratch::bare();
+    let (path, db) = kept(scratch.path());
+    with(&db, |conn| write(conn, 0..5));
+    let reader = Connection::open(&path).expect("开得了");
+    reader.execute_batch("BEGIN").expect("开得了读");
+    let rows: i64 = reader
+        .query_row("SELECT COUNT(*) FROM t", [], |row| row.get(0))
+        .expect("读得了");
+    assert_eq!(rows, 5);
+    // 读的那一个停在老的一截上。
+    with(&db, |conn| write(conn, 5..10));
+    let started = std::time::Instant::now();
+    let done = checkpoint_all();
+    let took = started.elapsed();
+    reader.execute_batch("COMMIT").expect("收得了");
+    assert!(
+        took < Duration::from_secs(1),
+        "合一遍等了 {took:?}（{done:?}），写连接的锁一直拿着"
+    );
+}
+
+/// 合的时候把忙等时限临时设成 0（审计 R3E-4），合完照原来的设回去：平常的写照旧等别人的锁。
+#[test]
+fn merging_puts_the_busy_timeout_back() {
+    let scratch = Scratch::bare();
+    let (_, db) = kept(scratch.path());
+    let timeout = |conn: &Connection| -> i64 {
+        conn.query_row("PRAGMA busy_timeout", [], |row| row.get(0))
+            .expect("读得了")
+    };
+    // 拿着锁合：并着跑的别的测试合一遍也会合到这一个，先合掉了就成了「没什么要合的」。
+    with(&db, |conn| {
+        write(conn, 0..5);
+        let before = timeout(conn);
+        assert!(before > 0, "开库默认要等一会儿：{before}");
+        assert_eq!(truncate(conn).expect("合得了"), Outcome::Done);
+        assert_eq!(timeout(conn), before);
+    });
+}

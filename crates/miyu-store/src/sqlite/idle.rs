@@ -12,7 +12,8 @@
 //! - 合是 SQLite 自己的检查点（`PRAGMA wal_checkpoint(TRUNCATE)`）：先同步 `-wal`，抄回主库、同步主库，最后才截短。中途断电，
 //!   下次开库照 `-wal` 接着合，不丢、不坏：崩溃安全和不合一样。
 //! - 拿的是那个库的写连接的锁：同一个库的写排在它后面（一次几毫秒）；检索库读的连接不等（`recall/conn.rs`）。还有读在读老的
-//!   一截的（别的进程开着它读），合不完、不截，交回「没合完」，等下一阵写以后再合，不为它再起一次。
+//!   一截的（别的进程开着它读），合不完、不截，交回「没合完」，等下一阵写以后再合，不为它再起一次。合的时候忙等的时限是 0：
+//!   不等读的那一方读完，拿着锁干等（审计 R3E-4，原来一等就是开库默认的 5 秒）。
 //! - 合的事不在异步运行时里做：等着的一方是一个自己的线程。
 
 use std::ffi::OsString;
@@ -173,8 +174,13 @@ fn truncate(db: &Connection) -> Result<Outcome, DbError> {
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Outcome::Clean),
         Err(error) => return Err(error.into()),
     }
-    let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get(0))?;
-    Ok(if busy == 0 {
+    // 合的时候不忙等（审计 R3E-4）：TRUNCATE 碰上读老一截的，照忙等的时限（开库默认 5 秒）一直等它读完，这期间拿着写连接
+    // 的锁，这个库的写全排在后面。时限设成 0，SQLite 就照被动的那样能抄的抄、交回没合完；合完设回原来的。
+    let waited: i64 = db.query_row("PRAGMA busy_timeout", [], |row| row.get(0))?;
+    db.busy_timeout(Duration::ZERO)?;
+    let busy = db.query_row::<i64, _, _>("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get(0));
+    db.pragma_update(None, "busy_timeout", waited)?;
+    Ok(if busy? == 0 {
         Outcome::Done
     } else {
         Outcome::Busy
