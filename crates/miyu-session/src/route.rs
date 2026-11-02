@@ -142,7 +142,7 @@ impl Models for Routes {
         Arc::new_cyclic(|me| Route {
             me: me.clone(),
             shared: self.clone(),
-            session: session.id,
+            seed: session.seed,
             texts: RwLock::new(session.texts),
             blobs: session.blobs,
             pinned: Arc::new(Mutex::new(Pinned {
@@ -197,7 +197,8 @@ struct Route {
     /// 自己（施工 Q-2）：旁路请求在派出去的任务里换人、退会话的模型，要带着整个路由走。
     me: Weak<Route>,
     shared: Routes,
-    session: SessionId,
+    /// 挑 key、换会话头照它（[`ForSession::seed`]，施工 FC-1）。
+    seed: SessionId,
     /// 驱动的占位：取自会话的策略快照，换快照时跟着换（施工 P-1 三补）。
     texts: RwLock<DriverTexts>,
     blobs: Blobs,
@@ -347,7 +348,7 @@ impl Route {
             }
         };
         let seat = Seat {
-            seed: self.session.as_str(),
+            seed: self.seed.as_str(),
             held: pinned.member.as_ref(),
             sticky: pinned.sticky.as_ref().filter(|_| main),
             used: used.filter(|_| main),

@@ -287,6 +287,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     // 路由照内核从日志算的引用造（施工 8-10）：换过模型的是换过以后的；思考强度同样照日志算的（施工 SM-1）。
     let model = models.port(ForSession {
         id: id.clone(),
+        seed: ForSession::seed_of(&id, created.forked.as_ref()),
         config: Arc::clone(config.current()),
         texts,
         blobs,

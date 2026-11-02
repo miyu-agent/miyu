@@ -42,7 +42,8 @@ pub(super) fn registered(purpose: Option<&Purpose>) -> Option<&'static Side<'sta
 }
 
 impl Route {
-    /// 照登记 `side` 的档位，从固定池里挑一个成员，照这一轮的配置 `config`。种子是会话编号，不看钉着的、不粘。
+    /// 照登记 `side` 的档位，从固定池里挑一个成员，照这一轮的配置 `config`。种子同主请求（分叉出来的照来源会话，施工 FC-1），
+    /// 不看钉着的、不粘。
     pub(super) fn side(&self, config: &TurnConfig, side: &Side<'_>) -> Picked {
         let values = config.resolved.values();
         let routes = &self.shared;
@@ -50,7 +51,7 @@ impl Route {
             return Picked::Empty;
         };
         let seat = Seat {
-            seed: self.session.as_str(),
+            seed: self.seed.as_str(),
             held: None,
             sticky: None,
             used: None,

@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, oneshot};
 
 use miyu_drivers::DriverTexts;
 use miyu_kernel::accumulate::Delta;
-use miyu_kernel::event::{CallError, Cost, EffortInUse, Purpose, Usage};
+use miyu_kernel::event::{CallError, Cost, EffortInUse, Forked, Purpose, Usage};
 use miyu_kernel::id::{ContentHash, Seq, SessionId};
 use miyu_kernel::origin::Model;
 use miyu_kernel::request::Request;
@@ -53,8 +53,11 @@ pub trait Models: Send + Sync {
 /// 造端口时交进来的，这个会话自己的。
 #[derive(Debug, Clone)]
 pub struct ForSession {
-    /// 会话编号：路由照它挑 key（施工 8-6，`models.md` 第一条第 6 条）。
+    /// 会话编号。
     pub id: SessionId,
+    /// 路由挑 key、换另配的头（opencode 的会话头）照哪个会话的编号（施工 8-6，`models.md` 第一条第 6 条）：一般是自己；分叉
+    /// 出来的照来源会话（施工 FC-1）：前缀和来源会话一样，上游认同一个会话头才吃得到它的缓存。
+    pub seed: SessionId,
     /// 造会话、载入时取的那一份配置（施工 8-6）：会话用哪个模型、限额照它定。
     pub config: TurnConfig,
     /// 驱动的占位：取自这个会话的策略快照。
@@ -70,6 +73,14 @@ pub struct ForSession {
     pub sent: Option<Model>,
     /// 会话记的思考强度（施工 SM-1，设计 51）：造会话的没有；载入的是内核从日志算的（`Session::effort()`）。
     pub effort: Option<String>,
+}
+
+impl ForSession {
+    /// 载入的会话 `id` 挑 key、换会话头照哪个会话的编号（[`ForSession::seed`]，施工 FC-1）：`session.created` 记了 `forked`
+    /// 的照来源会话（来源会话不会是分叉出来的，照它的编号就是照它用的那一个），别的照自己。
+    pub fn seed_of(id: &SessionId, forked: Option<&Forked>) -> SessionId {
+        forked.map_or(id, |forked| &forked.from).clone()
+    }
 }
 
 /// 请求模型的端口。

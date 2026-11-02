@@ -203,6 +203,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     models.ready().await;
     let model = models.port(ForSession {
         id: id.clone(),
+        seed: id.clone(),
         config: Arc::clone(config.current()),
         texts,
         blobs,

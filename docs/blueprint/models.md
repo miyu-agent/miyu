@@ -781,7 +781,7 @@ flowchart TB
 
 opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）和 Console Go（`https://opencode.ai/zen/go/v1`，订阅）。两个都在目录里，地址、驱动照目录推，只写 key 就能用。
 
-1. **头**：档案 `[providers.opencode]`（Zen）和 `[providers.opencode-go]`（Go）各带几个头，值里的 `{session_digest}` 照种子换成 opencode 会话编号的样子，26 位小写十六进制：前 12 位是时间照 opencode 的倒序编法（`~(毫秒 × 4096)` 的低 48 位），后 14 位是种子的 SHA-256 的十六进制前 14 位（施工 8-14 补，2026-10-13）。种子是会话编号（同一个会话重启以后还是它），是 UUIDv7 的照它记的毫秒数编时间；一次性调用是用途，`provider.test` 是固定的 `provider.test`，这两种照固定的 2026-01-01 编。值里只认这一个字段，别的 `{…}` 读档案时就报错（档案读不进来）。头由 HTTP 执行器照端点另配的头发（`http.md`），和驱动无关；名字和上面同名的（`User-Agent`）换掉上面那个。
+1. **头**：档案 `[providers.opencode]`（Zen）和 `[providers.opencode-go]`（Go）各带几个头，值里的 `{session_digest}` 照种子换成 opencode 会话编号的样子，26 位小写十六进制：前 12 位是时间照 opencode 的倒序编法（`~(毫秒 × 4096)` 的低 48 位），后 14 位是种子的 SHA-256 的十六进制前 14 位（施工 8-14 补，2026-10-13）。种子是会话编号（同一个会话重启以后还是它；分叉出来的会话照来源会话的编号，施工 FC-1：前缀和来源会话一样，上游认同一个会话头才吃得到它的缓存，挑 key 也照它），是 UUIDv7 的照它记的毫秒数编时间；一次性调用是用途，`provider.test` 是固定的 `provider.test`，这两种照固定的 2026-01-01 编。值里只认这一个字段，别的 `{…}` 读档案时就报错（档案读不进来）。头由 HTTP 执行器照端点另配的头发（`http.md`），和驱动无关；名字和上面同名的（`User-Agent`）换掉上面那个。
 
    | 哪一家 | 头 | 值 |
    |---|---|---|

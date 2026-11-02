@@ -171,6 +171,7 @@ pub async fn preview_context(setup: Create<'_>) -> Result<Context, CreateError> 
     setup.models.ready().await;
     let model = setup.models.port(ForSession {
         id: setup.id.clone(),
+        seed: setup.id.clone(),
         config: std::sync::Arc::clone(config.current()),
         texts,
         blobs: Blobs::new(setup.root.blobs()),

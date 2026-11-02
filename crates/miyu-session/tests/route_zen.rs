@@ -8,9 +8,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::support::Home;
 use crate::support::calling::{asking, blobs, body, entry, frozen, user};
 use crate::support::routing::{configs, routes_with, turn};
+use crate::support::{Home, alice, now};
 use miyu_config::secret::Reference;
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_kernel::block::{Block, Text};
@@ -247,6 +247,50 @@ async fn a_session_sends_its_own_digest() {
         session_header(&server, 0),
         Some(format!("ses_{}", digest(handle.id().as_str()))),
         "会话照会话编号"
+    );
+}
+
+/// 分叉出来的会话照来源会话的编号换会话头（施工 FC-1）：前缀和来源会话一样，上游认同一个会话头才吃得到它的缓存。
+#[tokio::test]
+async fn a_forked_session_sends_its_source_digest() {
+    let server = Server::start((0..4).map(|_| hello("openai-chat")).collect()).await;
+    let mut home = Home::new();
+    home.configs = configs(
+        &source(&server.base_url, "opencode-go/deepseek-v4.1-flash"),
+        &key(),
+    );
+    let routes = zen_routes();
+    let parent = home.create(&routes).await;
+    turn(&parent, "cmd-1").await;
+    let child = miyu_session::new_id(now());
+    miyu_session::fork(miyu_session::Fork {
+        root: &home.root,
+        parent: parent.id(),
+        id: child.clone(),
+        cause: miyu_kernel::id::CommandId::parse("f1").expect("合写法"),
+        by: alice(),
+        at: now(),
+        index: None,
+        seal_after: None,
+        within: None,
+    })
+    .await
+    .expect("分叉得了");
+    let forked = home.load(&child, &routes).await;
+    turn(&forked, "cmd-2").await;
+    // 父会话还会起标题（旁路请求，种子同主请求），认 fork 的那一次照它带的会话编号。
+    let mark = format!("<session id=\\\"{child}\\\"/>");
+    let received = server.received();
+    let forked_request = received
+        .iter()
+        .find(|got| String::from_utf8_lossy(&got.body).contains(&mark))
+        .expect("fork 发了请求");
+    let wanted = format!("ses_{}", digest(parent.id().as_str()));
+    assert_eq!(session_header(&server, 0).as_deref(), Some(wanted.as_str()));
+    assert_eq!(
+        forked_request.header("x-opencode-session"),
+        Some(wanted.as_str()),
+        "分叉出来的照来源会话"
     );
 }
 
