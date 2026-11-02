@@ -1340,6 +1340,12 @@ flowchart LR
 | DL-1 | 核心认下载量 | 索引每一条多 `published`、`downloads`、`downloads_week`，写法不对的读成没有、那一条照收；`package.search` 有的才交出去。施工单见 `DL-下载量和排序.md` |
 | DL-2 | 生成下载量 | `miyu-index` 写索引前读上一份沿用 `published`（`build`、`folder` 都是）；`build --github` 照来源仓库的全部发布数下载次数，记进 `stats.json`（最近 8 天），算近 7 天的；问不成的照上一份沿用、不挡生成。施工单见 `DL-下载量和排序.md` |
 
+**数据根仿 FHS**（FH 线，设计 55，2026-11-02 项目主人定）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| FH-0 | 设计和计划 | 数据根照 Linux 的 FHS 分 `etc/ opt/ root/ var/ tmp/ run/`，给程序一组 `MIYU_*_DIR` 环境变量；FH-1 到 FH-7 的先后、谁做、待办。施工单见 `FH-数据根仿FHS.md`，盘点见 `FH-盘点-核心.md`、`FH-盘点-别的仓库.md` |
+
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 
 | 步 | 名字 | 做什么 |
