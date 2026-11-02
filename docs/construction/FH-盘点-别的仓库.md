@@ -132,6 +132,8 @@ matugen 的输出在机器缓存目录（`~/.cache/miyu/matugen.json`），不�
 
 im 不读 `MIYU_PACKAGE_STATE`（整个仓库查不到这个名字），自己用 `root.state().join("packages").join("miyu-im")` 算状态目录；还在数据根**顶层**读两处 store.md 布局里没列出来的东西（`venues.d/`、`modules/miyu-im/`）；还按核心的约定读核心写的 `state/logs/miyu-im.stderr`。
 
+补（2026-11-03，core1 数的）：im 的 main 调核心 `DataRoot` 的 `.state()`、`.cache()` 一共 36 处、28 个文件（代码加测试，多半是 `state/packages/miyu-im`、日志、统计）。FH-2上 起这两个方法去掉了，im 换钉以后编译就报出这些地方；要改成读 `MIYU_STATE_DIR`、`MIYU_LOG_DIR` 这些环境变量（FH-5上）。
+
 ### 产品代码
 
 | 文件:行 | 拼的路径 | 方式 | 用途 |

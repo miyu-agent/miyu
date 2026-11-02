@@ -192,6 +192,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 **赞助账本一条都不能丢**（2026-11-02 项目主人再三说）：`miyu-im-sponsor` 的 `sponsors.json`（11-02 是 66 条，`version`、`next`、`entries` 三格）连同旁边的 `.bak-*` 一起拷；拷之前先另存一份到数据根以外（脚本做，路径写进输出），拷完逐字节比 SHA-256，条数、`next` 对得上才算搬完；`.before-fh` 和这份另存的都留到主人说可以删。脚本演练时也照这一条验。
 
+- [ ] 停之前在旧核心上记下底数：Miyu 那一间 `memory.list` 的条数、会话列表的会话数、赞助账本的条数（脚本经协议只读地问，写进输出）。
 - [ ] 停 im、停核心（`run/core.lock` 放开）。
 - [ ] `/home/shorin/.cache/miyu-tui-home` 整个改名成 `miyu-tui-home.before-fh`；包装脚本的 `D=` 换成装 FH-3 以后核心的新部署目录。
 - [ ] 新核心对空的 `/home/shorin/.cache/miyu-tui-home` 起一次建好骨架后停下。
@@ -201,8 +202,10 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
   - `extensions.json` → `etc/extensions.json`（im 批过的能力，不拷的话要重新批）；
   - `state/packages/miyu-im-sponsor/sponsors.json` 和同目录的 `sponsors.json.bak-*` → `var/lib/miyu-im-sponsor/`（照上面那条：先另存、拷完比 SHA-256 和条数）；
   - `personas/persona-1/` → `root/personas/persona-1/`；`presets/dev.toml`、`minimal.toml` → `root/presets/`。
+  - 她的记忆（2026-11-03 主人定留，设计 55 第六节第 2 条）：`modules/memory/` 整个 → `root/memory/`；`sessions/` 整个 → `root/sessions/`（记忆的出处，出处没了的记忆看不见）；`blobs/` 整个 → `root/blobs/`（会话引用的附件、大内容）。回收处 `trash/` 不搬。
+  - 会话日志、记忆日志里写着的数据根里的绝对路径照前缀换：`<数据根>/sessions/` → `<数据根>/root/sessions/`、`<数据根>/workspace/` → `<数据根>/root/workspace/`（附件的 `path`、默认工作区）。照 rename-migrate 的做法：只换值正好以这个前缀开头的 JSON 字符串，别的一个字节不动；换完拿备份做纯字符串替换逐字节比对。
 - [ ] 装新版的核心、三个头、im、sponsor、表情包（FH-5上的发版），起来。
-- [ ] 验：网页、终端连得上；QQ 里 im 收发正常；赞助账本和拷之前逐字节一样，im 的赞助页、`miyu im` 列得出同样的条数；人格列表里有 Miyu；顶层只有 `.miyu-layout etc/ opt/ root/ var/ tmp/ run/`。
+- [ ] 验：网页、终端连得上；QQ 里 im 收发正常；赞助账本和拷之前逐字节一样，im 的赞助页、`miyu im` 列得出同样的条数；`memory.list`（Miyu 那一间，`forgotten` 不带）的条数和搬之前一样、搜得到搬之前搜得到的；会话列表里会话数和搬之前一样；人格列表里有 Miyu；顶层只有 `.miyu-layout etc/ opt/ root/ var/ tmp/ run/`。
 - [ ] `.before-fh` 留着，主人说可以了再删。
 
 ## 九、给施工的会话的话
