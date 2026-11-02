@@ -9,8 +9,9 @@ At a set time, hand one line to a session and let it run a turn: a morning brief
 | [`schedule.cancel`](#schedulecancel) | Delete one |
 | [`schedule.pause`](#schedulepause) | Pause |
 | [`schedule.resume`](#scheduleresume) | Resume |
+| [`schedule.update`](#scheduleupdate) | Change the time or the line |
 
-**Who may call**: people; extensions need an approved `sessions.drive` (construction J-4), otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses and resumes only those: touching one it did not add is `unknown_schedule`. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
+**Who may call**: people; extensions need an approved `sessions.drive` (construction J-4), otherwise `needs_approval`. What an extension adds is recorded as added by its package, and it sees, cancels, pauses, resumes and updates only those: touching one it did not add is `unknown_schedule`. To keep up, subscribe to the `schedules` stream ([connection](connection.en.md)); `schedules.changed` follows ([pushes](pushes.en.md)).
 
 ## An item
 
@@ -55,6 +56,23 @@ Param `id`. A paused one does not run; its next time is cleared. Response `{"sch
 ## `schedule.resume`
 
 Param `id`. The next time is counted from now; missed ones are not made up. A one-off whose time has passed gets `bad_params` (`past`). Response `{"schedule": <item>}`.
+
+## `schedule.update`
+
+Change one's time or line. The id stays the same; `last`, the creation time, `target` and `by` are kept; anything not written stays as it is.
+
+| Param | Type | Meaning |
+|---|---|---|
+| `id` | string, required | The schedule id |
+| `when` | object, optional | Written and checked as in `schedule.add` |
+| `prompt` | string, optional | Not empty |
+
+Write at least one of `when` and `prompt`; neither gets `bad_params` (no `data.problem`). A new `when` recounts `next` from now; missed ones are not made up. A paused one stays paused, and `resume` counts from the new time. A loop keeps its kind: a `dynamic` one only takes `at` (which sets when it next wakes), a `fixed` one only `every`; anything else gets `bad_params` (`when`). `prompt` can change on both. A bad one changes nothing and gets `bad_params` with the same `data.problem` as `schedule.add` (`when`, `cron`, `past`, `short`, `prompt`, `zone`). Response `{"schedule": <item>}`; `schedules` subscribers get `schedules.changed` as usual.
+
+```json
+{"jsonrpc": "2.0", "id": "u1", "method": "schedule.update", "params": {"id": "t1", "when": {"every": 1800}}}
+{"jsonrpc": "2.0", "id": "u1", "result": {"schedule": {"id": "t1", "when": {"every": 1800}, "prompt": "look at CI", "target": {"session": "<id>"}, "by": {"kind": "person"}, "recurring": true, "paused": false, "created": "2026-10-26T00:00:00.000Z", "next": "2026-10-26T00:50:00.000Z", "last": {"at": "2026-10-26T00:10:00.000Z", "result": "ran"}}}}
+```
 
 ## `schedule.fired`
 

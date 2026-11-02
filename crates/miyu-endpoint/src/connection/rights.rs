@@ -73,9 +73,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.respond" | "command.run" | "job.stop" => Needs(SessionsDrive),
         // 删会话（施工 Y-2 上，项目主人 10-23 定场所会话的删放在平台的后台）：只删得掉碰得到的，照 `checks.rs` 查。
         "session.delete" => Needs(SessionsDrive),
-        // 定时任务（施工 J-1 下）。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
+        // 定时任务（施工 J-1 下，改的施工 J-5）。施工 J-4 起扩展也能建，只看得到、改得了自己建的（`schedules/methods.rs`）。
         "schedule.add" | "schedule.list" | "schedule.cancel" | "schedule.pause"
-        | "schedule.resume" => Needs(SessionsDrive),
+        | "schedule.resume" | "schedule.update" => Needs(SessionsDrive),
         // 包在会话里的状态（施工 TW-1）：只读写自己这个包的。
         "session.set_state" | "session.state" => Needs(SessionsDrive),
         // 读会话里的东西。

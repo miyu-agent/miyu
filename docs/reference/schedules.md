@@ -9,8 +9,9 @@
 | [`schedule.cancel`](#schedulecancel) | 删掉 |
 | [`schedule.pause`](#schedulepause) | 停 |
 | [`schedule.resume`](#scheduleresume) | 续 |
+| [`schedule.update`](#scheduleupdate) | 改时间、改那句话 |
 
-**谁能调**：人；扩展要批过 `sessions.drive`（施工 J-4），没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了自己建的：碰别人建的一律 `unknown_schedule`。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
+**谁能调**：人；扩展要批过 `sessions.drive`（施工 J-4），没批的回 `needs_approval`，建的记成包建的，只看得到、删得了、停续得了、改得了自己建的：碰别人建的一律 `unknown_schedule`。要一直跟着最新的，订阅 `schedules` 流（[连接](connection.md)），之后推 `schedules.changed`（[推送](pushes.md)）。
 
 ## 一项
 
@@ -55,6 +56,23 @@
 ## `schedule.resume`
 
 参数 `id`。照现在重算下一次，错过的不补；一次的已经过了的回 `bad_params`（`past`）。回应 `{"schedule": <一项>}`。
+
+## `schedule.update`
+
+改一项的时间、那句话。编号不变，`last`、建的时刻、`target`、`by` 都留着；不写的照旧。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id` | 字符串，必写 | 任务编号 |
+| `when` | 对象，可以不写 | 写法、查法同 `schedule.add` |
+| `prompt` | 字符串，可以不写 | 不能是空的 |
+
+`when`、`prompt` 至少写一样，都不写的回 `bad_params`（不带 `data.problem`）。改了 `when` 的照现在重算 `next`，错过的不补；停着的改完还停着，`resume` 时照新的时间算。循环换不了种类：`loop` 是 `dynamic` 的 `when` 只能写 `at`（就是改下一次醒的时刻），`fixed` 的只能写 `every`，写别的回 `bad_params`（`when`）；`prompt` 都能改。写错的什么都不改，回 `bad_params`，`data.problem` 同 `schedule.add`（`when`、`cron`、`past`、`short`、`prompt`、`zone`）。回应 `{"schedule": <一项>}`，订着 `schedules` 的照常收到 `schedules.changed`。
+
+```json
+{"jsonrpc": "2.0", "id": "u1", "method": "schedule.update", "params": {"id": "t1", "when": {"every": 1800}}}
+{"jsonrpc": "2.0", "id": "u1", "result": {"schedule": {"id": "t1", "when": {"every": 1800}, "prompt": "看看 CI", "target": {"session": "<编号>"}, "by": {"kind": "person"}, "recurring": true, "paused": false, "created": "2026-10-26T00:00:00.000Z", "next": "2026-10-26T00:50:00.000Z", "last": {"at": "2026-10-26T00:10:00.000Z", "result": "ran"}}}}
+```
 
 ## `schedule.fired`
 

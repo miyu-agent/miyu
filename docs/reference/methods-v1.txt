@@ -133,6 +133,7 @@ schedule.fired
 schedule.list
 schedule.pause
 schedule.resume
+schedule.update
 schedules.changed
 script.list
 search.query

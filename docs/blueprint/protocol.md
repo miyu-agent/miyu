@@ -186,7 +186,7 @@
 | `persona.list`、`persona.get` | 列出人格、读一个人格叠好的样子（施工 P-1 上，`personas.md`） |
 | `preset.list`、`preset.get` | 列出预设、读一个预设叠好的样子（施工 P-2 上，`presets.md`） |
 | `preset.set`、`preset.delete` | 新建、改一个预设（只写你那一层），删掉你那一层（施工 P-3 中，`presets.md`「改」） |
-| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume` | 定时任务：建、列、删、停、续，照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
+| `schedule.add`、`schedule.list`、`schedule.cancel`、`schedule.pause`、`schedule.resume`、`schedule.update` | 定时任务：建、列、删、停、续、改（改的施工 J-5），照唤醒表（施工 J-1 下，`schedules.md` 第五节，协议参考 `docs/reference/schedules.md`） |
 | `persona.set`、`persona.read`、`persona.delete` | 新建、改一个人格（只写你那一层），读一份提示词的原文和版本，删掉你那一层（挪进回收处）；你那一层没有、只有只带它的出厂包带的，删它是卸那个包（施工 P-3 下，PE-1，`personas.md`「改」） |
 | `persona.avatar` | 读一个人格的头像：`{"avatar", "media_type", "data"}`，没有的 `null`（施工 P-5，`personas.md`「头像」） |
 | `persona.background` | 读一个人格的背景图：`{"background", "media_type", "data"}`，没有的 `null`（施工 P-6，`personas.md`「主题色、背景图」） |

@@ -2,7 +2,7 @@
 
 设计 `45-定时和循环.md`。核心里只有一样东西：到点把一句话交给一个会话跑一轮的「唤醒」，记在一张表里，核心重启不丢。定时任务、固定间隔的循环、她自己定节奏的循环都是它。
 
-状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26），J-1 下做完（协议 `schedule.*`、`schedules` 流）；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；J-4 做完（2026-10-27）：扩展能建，到点推给建它的扩展（第五节第 7 条），场所会话的循环由场所自己拿它拼。
+状态：J-1 上做完（唤醒表、到点、交进会话，2026-10-26），J-1 下做完（协议 `schedule.*`、`schedules` 流）；她的工具、`/loop`、标签的字是 J-2；命令行、系统通知是 J-3；J-4 做完（2026-10-27）：扩展能建，到点推给建它的扩展（第五节第 7 条），场所会话的循环由场所自己拿它拼；J-5 做完（2026-11-02）：`schedule.update` 改时间、改那句话，编号、上一次不变（第五节第 3a 条）。
 
 ### 一、唤醒表
 
@@ -40,7 +40,7 @@
 
 ### 三、到点
 
-1. 核心起来时（`Core::start_schedules`）开上已有的表、跳过错过的，然后一个后台任务只睡到最早的那一次。表一改（建、停、续、删、改下一次）就叫醒它重算；不轮询。真的钟一次最多睡一小时再看一眼：改了系统时间、机器睡过一觉，最多晚这么久发现。测试换手拨的钟（`Clock`，`Core::with_clock`）。
+1. 核心起来时（`Core::start_schedules`）开上已有的表、跳过错过的，然后一个后台任务只睡到最早的那一次。表一改（建、停、续、删、改、改下一次）就叫醒它重算；不轮询。真的钟一次最多睡一小时再看一眼：改了系统时间、机器睡过一觉，最多晚这么久发现。测试换手拨的钟（`Clock`，`Core::with_clock`）。
 2. 到点的一个：先把下一次写进表（一次的删掉，她自己定节奏的清掉下一次），再交进会话，最后只记上一次那几格。顺序不能反：她在那一轮里定下一次（`schedule_wakeup`，施工 J-2）不会被这里盖掉。写不进下一次的不交，记 `WARN schedule not advanced`：交了又记不住，下一次醒来会再交一遍。
 3. **写不进的先放一放**（2026-10-26 主会话审出来的）：表里还是过去那个时刻，不放的话马上又醒、又写不进，空转吃满一个核。只在内存里给它记一个「不早于」（`schedules/hold.rs`）：头一次 1 秒，再写不进翻倍，最多 5 分钟；算最早一次、挑到点的都照它往后挪，写进了就清掉。不碰表，核心重启就忘。表的连接锁住了不等（`busy_timeout = 0`），当场报错交给这里退避；睡到点的那个每一轮让一下线程，不霸着。
 4. **跑在已有的会话**：交一条 `Send`，`by` 是 `{"kind":"schedule","schedule":"t3","loop"?:"fixed"|"dynamic"}`（`kernel/ids.md`「谁」）。照「别处来的话」的规矩收（`kernel/session.md`「定时交进来的话」）：闲着开一轮，正在跑一轮的排在这一轮后面。`last_result` 照交的那一刻会话忙不忙记 `queued` 或 `ran`。命令编号 `schedule/<任务>/<这一次的毫秒>/say`：核心重启后再交一遍，会话认得是重发。
@@ -61,6 +61,7 @@
 | `cancel(id)` | 删掉 |
 | `pause(id)` | 停：清掉下一次 |
 | `resume(id)` | 续：照现在重算下一次，错过的不补；一次的已经过了的报 `NoNext` |
+| `update(id, when, prompt)` | 改（施工 J-5）：`when` 写了的照 `add` 一样查、换掉，没停的照现在重算下一次，停着的还停着；循环换不了种类（她自己定节奏的只认 `At`，固定间隔的只认 `Every`，别的报 `LoopKind`）；`prompt` 写了的换掉。编号、建的时刻、`by`、`target`、上一次都不动，记 `INFO schedule updated` |
 | `set_next(id, next, prompt)` | 改下一次，`prompt` 写了的换掉那句话（她自己定节奏的循环每轮定一次，施工 J-2）；`next` 没有的停着等 |
 
 协议 `schedule.*` 和推送照第五节（施工 J-1 下）。
@@ -72,9 +73,10 @@
 1. `schedule.add {when: {"cron", "recurring"?, "zone"?} | {"at"} | {"every"}, prompt, target?: {"session"} | {"new": {persona?, preset?, cwd?}}}`：不写 `target` 的是每次新开（人建的默认），人格、预设照这时的默认定下来（`personas::resolve`、`presets::resolve`，找不到的照开会话回 `unknown_persona`、`unknown_preset`），`cwd` 不写照家目录。回 `{"schedule": <一项>}`。写错的什么都不建，回 `bad_params`，`data.problem` 是 `when`（三种没写对一种、时刻写法不对）、`cron`、`past`、`short`、`prompt`（空的）、`session`（没有；这个连接碰不到的同样说，看不到的不露：平台桥碰不到本机的会话，人的头碰不到关着的场所会话，同 `protocol.md`「关着的场所会话只给桥」，施工 AS-3，发布前测试 2026-10-30 发现原来只查有没有）、`target`（两种都写了）、`zone`（不认识，施工 J-3 上）、`cwd`（每次新开的工作目录建时就查：照开会话的写法换成真实位置，不在、不是目录、落在数据根里又不在工作区 `workspace/` 里的，施工 J-3 上）。已有 `IN_ALL`（200）个的回 `too_many_schedules`：人建、她建、包建合计，熔断性质的安全上限（项目主人 2026-10-27 定），已有的照跑；她经工具建的照 `software/schedule/cron/all-full.txt` 告诉她叫人删。时刻照核心的写法（带毫秒）。带 `target.new.cwd` 的只给本机的连接（`reach.rs`，同项目的 `workspace`）。
 2. `schedule.list {session?}`：写了 `session` 的只列跑在它上面的，回 `{"schedules": [<一项>…]}`。
 3. `schedule.cancel {id}` 回 `{}`；`schedule.pause {id}`、`schedule.resume {id}` 回 `{"schedule": <一项>}`。
+3a. `schedule.update {id, when?, prompt?}`（施工 J-5，项目主人 2026-11-02 报定时、循环改不了时间，形状主会话当天定）：`when`、`prompt` 写法、查法同 `schedule.add`（`methods.rs` 的 `when_of`、`Schedules::update` 共用 `checked`），至少写一样，都不写的回 `bad_params`（不带 `data.problem`）。回 `{"schedule": <一项>}`，照常推 `schedules.changed`。改了 `when` 的照现在重算 `next`，停着的改完还停着；编号不变，`last`、建的时刻、`target`、`by` 都留着。循环换不了种类：`loop` 是 `dynamic` 的 `when` 只收 `at`（就是改下一次醒的时刻），`fixed` 的只收 `every`，别的回 `bad_params`（`problem` 是 `when`）：换了写法她那边的 `by.loop` 对不上。`prompt` 都能改。以前只能删了重建：编号换了、上一次没了，循环的 `by.loop` 断了。
 4. 一项：`{"id","when","prompt","target","by","recurring","paused","loop"?,"next"?,"last"?: {"at","result","session"?},"created"}`。
-5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。建、停、续、删、改下一次、到点交过都推（`schedules/changes.rs`，一条是任务编号，同项目的）；订着的连接都推。
-6. 谁能调：人；扩展要批过 `sessions.drive`（施工 J-4，`connection/rights.rs`），建的 `by` 记成包，只看得到、改得了自己建的（`methods.rs` 的 `mine`、`own`），别的编号一样 `unknown_schedule`。`schedules` 流只给人，扩展回 `local_only`。
+5. 推送：`subscribe {"stream":"schedules"}` 回 `{"schedules":[…]}`；之后推 `schedules.changed {"id","entry"}`，删了的 `{"id","removed":true}`；掉队推 `resync {"stream":"schedules"}`。建、停、续、删、改、改下一次、到点交过都推（`schedules/changes.rs`，一条是任务编号，同项目的）；订着的连接都推。
+6. 谁能调：人；扩展要批过 `sessions.drive`（施工 J-4，`connection/rights.rs`），建的 `by` 记成包，只看得到、改得了自己建的（`methods.rs` 的 `mine`、`own`，`schedule.update` 同样），别的编号一样 `unknown_schedule`。`schedules` 流只给人，扩展回 `local_only`。
 7. 推给扩展（施工 J-4，形状主会话 2026-10-27 和 onebot 定）：`target` 多一种 `{"package": {}}`，只有扩展能写（人写回 `bad_params`），不带 `loop`。到点不进会话：`fire.rs` 的 `pushed` 照 `by` 的包找那个包连着的连接（`Provided::linked`，不替它拉起），推通知 `schedule.fired {"id","at","prompt","missed"?}`，结果记 `sent`，推不到的记 `skipped:package_unavailable`。`missed` 是核心停着时错过的次数：起来跳过时（`run::skip`、`next::missed`，最多数到 1000）累加进表里 `target` 那一格，推过就清零。扩展握手成了另记一份连着的（`Provided` 的 `linked`），推通知照它找，不登记工具的扩展也推得到；工具调用照旧只认登记了工具的。
 
 ### 六、标签
@@ -93,6 +95,7 @@
 |---|---|
 | `crates/miyu-store/src/schedules.rs`、`schedules/{open,row}.rs` | 表：建、读、改、删、最早的、到点的；开、坏了改名、比这一版新的不动 |
 | `crates/miyu-endpoint/src/schedules.rs` | 入口、核心起来时开表和跳过错过的 |
+| `crates/miyu-endpoint/src/schedules/update.rs` | 改一项：换时间、换那句话，循环不改种类（施工 J-5） |
 | `crates/miyu-endpoint/src/schedules/{methods,changes}.rs`、`crates/miyu-endpoint/src/refusal/schedule.rs` | 协议 `schedule.*`、一项的写法、推送的广播、拒绝（施工 J-1 下） |
 | `crates/miyu-endpoint/src/schedules/{clock,next,run,fire,hold}.rs` | 钟、下一次、睡到点、交进会话（扩展建的推给它，施工 J-4）、写不进的先放一放 |
 | `crates/miyu-kernel/src/origin.rs` | `by` 的 `schedule` |
@@ -105,5 +108,6 @@
 | `crates/miyu-endpoint/tests/schedules.rs` | 真核心、手拨的钟：没到点不交、到点交进去记 `by: schedule`、原话原样、照上一次往后；每次新开照建时的预设开一个、一次的跑完删；核心起来时错过的跳过；会话没了停掉；她建的照预设、人建的照跑；她自己定节奏的交过以后停着等、改了下一次照新的那句再交；写错的不收，停、续、删；一行读不懂的跳过、`check` 报、删得掉，好的照常到点（施工 AE-4） |
 | `crates/miyu-endpoint/src/schedules/hold/tests.rs`、`crates/miyu-endpoint/tests/schedules_log.rs` | 写不进的放 1 秒起翻倍、最多 5 分钟、写进了清掉；表被锁住时拨过十秒只试几次、一次都不交，放开以后照常交 |
 | `crates/miyu-endpoint/tests/schedule_methods.rs`（施工 J-1 下） | 建、列（照会话筛）、停、续、删，一项的写法；写错的照哪一样拒、没有的 `unknown_schedule`；每次新开照这时的默认定下人格、预设、工作目录；订阅的回应是整张表，改了的、到点交过的推 `schedules.changed`，删了的 `removed` |
+| `crates/miyu-endpoint/tests/schedule_update.rs`（施工 J-5） | 改时间照现在重算下一次、列表和推送是改过的、写进了表、睡着的照新的下一次醒；改话编号和上一次留着、下一次不动；停着的改完还停着，续上照新的时间算；循环换不了种类、话能改；写错的照 `problem` 拒、什么都不改，都不写的、没有的编号照拒。扩展改不了别人建的、改得了自己的在 `schedule_package.rs` |
 | `crates/miyu-assemble/src/schedule/tests.rs` | 两种标签照 `loop` 挑、带任务编号；没有字的原样；`by` 的 JSON 写法、读得回 |
 | `crates/miyu-store/src/resources/tests.rs` 的 `schedule_texts_need_all_four_files` | 四份都在才读得出 |

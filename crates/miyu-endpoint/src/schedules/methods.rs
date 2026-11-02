@@ -1,5 +1,5 @@
 //! `schedule.*`（施工 J-1 下，`docs/blueprint/schedules.md` 第五节，设计 `45-定时和循环.md` 第三节第 3 条）：人经协议建、列、
-//! 删、停、续定时任务。一项的写法在 [`entry`]，推送
+//! 删、停、续、改（施工 J-5）定时任务。一项的写法在 [`entry`]，推送
 //! （`schedules.changed`）也用它。
 //!
 //! 施工 J-4：扩展也能调（要批过 `sessions.drive`），建的记成包建的；它只看得到、改得了自己建的，别的编号一样 `unknown_schedule`。
@@ -70,6 +70,22 @@ pub(crate) async fn call(
             own(core, package, &id)?;
             let resumed = schedules.resume(&id).map_err(refusal)?;
             Ok(json!({"schedule": entry(&resumed)}))
+        }
+        "schedule.update" => {
+            let UpdateParams { id, when, prompt } = params(request)?;
+            if when.is_none() && prompt.is_none() {
+                return Err(Refusal::BAD_PARAMS);
+            }
+            own(core, package, &id)?;
+            let when = when.map(|when| when_of(core, when)).transpose()?;
+            if prompt
+                .as_deref()
+                .is_some_and(|prompt| prompt.trim().is_empty())
+            {
+                return Err(Refusal::bad_schedule("prompt"));
+            }
+            let updated = schedules.update(&id, when, prompt).map_err(refusal)?;
+            Ok(json!({"schedule": entry(&updated)}))
         }
         _ => Err(Refusal::UNKNOWN_METHOD),
     }
@@ -172,6 +188,17 @@ pub(crate) struct ListParams {
     session: Option<String>,
 }
 
+/// `schedule.update` 的参数（施工 J-5）：`when`、`prompt` 至少写一样，写法同 `schedule.add`。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct UpdateParams {
+    id: String,
+    #[serde(default)]
+    when: Option<WhenParams>,
+    #[serde(default)]
+    prompt: Option<String>,
+}
+
 /// 只带编号的几个方法的参数。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -183,40 +210,7 @@ pub(crate) struct IdParams {
 /// （`caller.package`）建的记成包建的。
 async fn wanted(core: &Arc<Core>, caller: &Caller, params: AddParams) -> Result<Wanted, Refusal> {
     let package = caller.package.as_deref();
-    let when = match params.when {
-        WhenParams {
-            cron: Some(cron),
-            recurring,
-            zone,
-            at: None,
-            every: None,
-        } => When::Cron {
-            cron,
-            recurring: recurring.unwrap_or(true),
-            zone,
-        },
-        WhenParams {
-            cron: None,
-            recurring: None,
-            zone: None,
-            at: Some(at),
-            every: None,
-        } => {
-            let at = Timestamp::parse(&at).map_err(|_| Refusal::bad_schedule("when"))?;
-            if at <= core.schedules().now() {
-                return Err(Refusal::bad_schedule("past"));
-            }
-            When::At { at }
-        }
-        WhenParams {
-            cron: None,
-            recurring: None,
-            zone: None,
-            at: None,
-            every: Some(every),
-        } => When::Every { every },
-        _ => return Err(Refusal::bad_schedule("when")),
-    };
+    let when = when_of(core, params.when)?;
     if params.prompt.trim().is_empty() {
         return Err(Refusal::bad_schedule("prompt"));
     }
@@ -263,6 +257,44 @@ async fn wanted(core: &Arc<Core>, caller: &Caller, params: AddParams) -> Result<
         target,
         looping: None,
         first: None,
+    })
+}
+
+/// 照参数拼出「什么时候」：三种写一种，某个时刻的要晚于现在（建和改共用，施工 J-5）。
+fn when_of(core: &Core, params: WhenParams) -> Result<When, Refusal> {
+    Ok(match params {
+        WhenParams {
+            cron: Some(cron),
+            recurring,
+            zone,
+            at: None,
+            every: None,
+        } => When::Cron {
+            cron,
+            recurring: recurring.unwrap_or(true),
+            zone,
+        },
+        WhenParams {
+            cron: None,
+            recurring: None,
+            zone: None,
+            at: Some(at),
+            every: None,
+        } => {
+            let at = Timestamp::parse(&at).map_err(|_| Refusal::bad_schedule("when"))?;
+            if at <= core.schedules().now() {
+                return Err(Refusal::bad_schedule("past"));
+            }
+            When::At { at }
+        }
+        WhenParams {
+            cron: None,
+            recurring: None,
+            zone: None,
+            at: None,
+            every: Some(every),
+        } => When::Every { every },
+        _ => return Err(Refusal::bad_schedule("when")),
     })
 }
 
@@ -321,6 +353,8 @@ fn refusal(error: ScheduleError) -> Refusal {
         ScheduleError::Unknown => Refusal::UNKNOWN_SCHEDULE,
         ScheduleError::Zone => Refusal::bad_schedule("zone"),
         ScheduleError::TooMany => Refusal::TOO_MANY_SCHEDULES,
+        // 循环换不了种类（施工 J-5）：照「什么时候没写对」说。
+        ScheduleError::LoopKind => Refusal::bad_schedule("when"),
         ScheduleError::Unusable | ScheduleError::Db(_) => Refusal::INTERNAL,
     }
 }

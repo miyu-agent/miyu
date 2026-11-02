@@ -3,6 +3,7 @@
 //! 算下一次（`next.rs`），睡到点（`run.rs`），交进会话（`fire.rs`）。
 //!
 //! - 人经协议建的（施工 J-1 下）、她用工具建的（施工 J-2）、包建的（施工 J-4）都走 [`Schedules::add`]。
+//! - 人、扩展经协议改时间、改那句话走 [`Schedules::update`]（施工 J-5，`update.rs`）：编号、上一次不变。
 //! - 表改了叫醒睡着的那个（`Schedules::changed`），重算最早的一次；不轮询。
 //! - 错过的不补：核心起来时已经过了的跳过（`Schedules::recall`），照现在算下一次。
 
@@ -16,6 +17,7 @@ pub(crate) mod notices;
 pub(crate) mod port;
 mod ran;
 mod run;
+mod update;
 
 use std::sync::{Arc, Mutex};
 
@@ -67,6 +69,8 @@ pub enum ScheduleError {
     Zone,
     /// 挂满了 [`IN_ALL`] 个（施工 J-3 上）。
     TooMany,
+    /// 改时间改了循环的种类（施工 J-5）：她自己定节奏的只认某个时刻，固定间隔的只认每隔一阵。
+    LoopKind,
     /// 唤醒表这一回用不了（坏了又开不了空的、版本比这一版新）。
     Unusable,
     /// 读写库出错。
@@ -132,22 +136,7 @@ impl Schedules {
     ///
     /// cron 读不成、算不出第一次、隔得太短；表用不了、写不了。
     pub fn add(&self, mut wanted: Wanted) -> Result<Schedule, ScheduleError> {
-        match &mut wanted.when {
-            When::Cron {
-                cron, zone: named, ..
-            } => {
-                next::parse(cron).map_err(ScheduleError::Cron)?;
-                // 时区建时记下（施工 J-3 上）：交了的要认得，没交的记这台机器这一刻的。
-                match named {
-                    Some(name) => {
-                        TimeZone::get(name).map_err(|_| ScheduleError::Zone)?;
-                    }
-                    None => *named = zone().iana_name().map(str::to_string),
-                }
-            }
-            When::Every { every } if *every < MIN_EVERY => return Err(ScheduleError::TooShort),
-            When::At { .. } | When::Every { .. } => {}
-        }
+        checked(&mut wanted.when)?;
         // 熔断性质的安全上限（施工 J-3 上）：人建、她建、包建合计；到了只拒新建。
         if self.list()?.len() >= IN_ALL {
             return Err(ScheduleError::TooMany);
@@ -382,6 +371,27 @@ fn said(how: &Opened, (notices, now): (&notices::Notices, Timestamp)) {
     }
 }
 
+/// 查一个「什么时候」收不收，建和改（施工 J-5）共用：cron 要读得成，时区建时记下（施工 J-3 上：交了的要认得，没交的记这台
+/// 机器这一刻的），每隔一阵的不少于 [`MIN_EVERY`] 秒。
+fn checked(when: &mut When) -> Result<(), ScheduleError> {
+    match when {
+        When::Cron {
+            cron, zone: named, ..
+        } => {
+            next::parse(cron).map_err(ScheduleError::Cron)?;
+            match named {
+                Some(name) => {
+                    TimeZone::get(name).map_err(|_| ScheduleError::Zone)?;
+                }
+                None => *named = zone().iana_name().map(str::to_string),
+            }
+        }
+        When::Every { every } if *every < MIN_EVERY => return Err(ScheduleError::TooShort),
+        When::At { .. } | When::Every { .. } => {}
+    }
+    Ok(())
+}
+
 /// 本机的时区：cron 照它算。读不出的当 UTC。
 fn zone() -> TimeZone {
     TimeZone::try_system().unwrap_or(TimeZone::UTC)
@@ -402,6 +412,7 @@ impl std::fmt::Display for ScheduleError {
             ScheduleError::Unknown => f.write_str("unknown schedule"),
             ScheduleError::Zone => f.write_str("unknown time zone"),
             ScheduleError::TooMany => write!(f, "more than {IN_ALL} schedules"),
+            ScheduleError::LoopKind => f.write_str("loop kind cannot change"),
             ScheduleError::Unusable => f.write_str("schedules unusable"),
             ScheduleError::Db(error) => error.fmt(f),
         }

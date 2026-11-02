@@ -1,5 +1,6 @@
 //! 扩展建的定时（施工 J-4）：批过 `sessions.drive` 的扩展能调 `schedule.*`，建的记成包建的、只看得到改得了自己建的；「跑在哪」
 //! 写 `package` 的到点不进会话，推 `schedule.fired` 给建它的那个扩展，核心停着时错过的几次下一次一起报。人写不了 `package`。
+//! `schedule.update` 同样只改得了自己建的（施工 J-5）。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -100,6 +101,9 @@ async fn an_extension_schedules_for_itself_and_sees_only_its_own() {
         "call:schedule.list",
         r#"ask:schedule.cancel:{"id":"t3"}"#,
         r#"ask:schedule.pause:{"id":"t1"}"#,
+        r#"ask:schedule.update:{"id":"t3","prompt":"x"}"#,
+        r#"ask:schedule.update:{"id":"t1","when":{"every":60}}"#,
+        r#"ask:schedule.update:{"id":"t2","when":{"every":600}}"#,
     ];
     let path = install(&home, &program, "watch", &asks);
     // 别的包建的：它看不到、碰不了。
@@ -154,7 +158,7 @@ async fn an_extension_schedules_for_itself_and_sees_only_its_own() {
         .map(|entry| &entry["id"])
         .collect();
     assert_eq!(listed, [&json!("t2")]);
-    for step in ["s5", "s6"] {
+    for step in ["s5", "s6", "s7", "s8"] {
         let refused = until(&path, &format!(r#""id":"{step}""#), 1).await;
         assert_eq!(
             refused[0]["error"]["data"]["reason"], "unknown_schedule",
@@ -168,6 +172,15 @@ async fn an_extension_schedules_for_itself_and_sees_only_its_own() {
         "{kept}"
     );
     assert_eq!(kept["result"]["schedules"][2]["paused"], false, "{kept}");
+    assert_eq!(kept["result"]["schedules"][1]["prompt"], "早报", "{kept}");
+    assert_eq!(
+        kept["result"]["schedules"][2]["when"],
+        json!({"every": 600}),
+        "{kept}"
+    );
+    // 自己建的改得了（施工 J-5）。
+    let own = until(&path, r#""id":"s9""#, 1).await;
+    assert_eq!(own[0]["result"]["schedule"]["id"], "t2", "{own:?}");
 
     // 到点推给它自己：编号、该响的时刻、原样的那句话，没错过的不带 `missed`。
     hand.advance(600_000);

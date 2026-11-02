@@ -162,6 +162,7 @@ fn refused(error: ScheduleError) -> ScheduleRefused {
         ScheduleError::TooMany => ScheduleRefused::AllFull,
         ScheduleError::TooShort
         | ScheduleError::Zone
+        | ScheduleError::LoopKind
         | ScheduleError::Unusable
         | ScheduleError::Db(_) => ScheduleRefused::Unavailable,
     }
