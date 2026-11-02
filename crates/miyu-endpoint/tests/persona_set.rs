@@ -298,10 +298,7 @@ async fn mistakes_write_nothing_and_say_why_in_the_peer_language() {
         assert!(!told.is_empty() && !told.contains("home"), "照连接的语言、不带层：{reply}");
         assert_eq!(data["line"].as_u64(), line.map(|line: u64| line), "{reply}");
     }
-    assert!(
-        !home.root.path().join("personas/mine").exists(),
-        "什么都没写"
-    );
+    assert!(!home.root.personas().join("mine").exists(), "什么都没写");
     for (n, params) in [
         json!({"persona": "mine"}),
         json!({"changes": [], "prompts": {}}),
@@ -422,7 +419,7 @@ async fn deleting_moves_your_layer_into_the_trash() {
 #[tokio::test]
 async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
     let home = Home::new();
-    let dir = home.root.path().join("personas");
+    let dir = home.root.personas();
     std::fs::create_dir_all(dir.join("old")).unwrap();
     std::fs::write(
         dir.join("old/persona.toml"),

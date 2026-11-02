@@ -102,7 +102,7 @@ async fn an_extension_reads_only_blobs_it_stored_or_was_handed() {
         ]),
         &[],
     );
-    let manifest = home.root.path().join("packages/memes/package.toml");
+    let manifest = home.root.packages().join("memes/package.toml");
     let written = read(&manifest);
     std::fs::write(
         &manifest,

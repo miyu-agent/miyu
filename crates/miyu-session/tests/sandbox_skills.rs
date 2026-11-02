@@ -21,7 +21,7 @@ use crate::support::*;
 
 /// 在数据根里放技能 `notes`，旁边放一份不给碰的；交回技能文件夹的真实位置。
 fn put(home: &Home) -> PathBuf {
-    let dir = home.root.path().join("skills").join("notes");
+    let dir = home.root.skills().join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(
         dir.join("SKILL.md"),
@@ -171,7 +171,7 @@ async fn a_script_in_the_data_root_runs_in_the_sandbox() {
         return;
     }
     let home = Home::outside_temp();
-    let scripts = home.root.path().join("scripts");
+    let scripts = home.root.scripts();
     std::fs::create_dir_all(&scripts).expect("建得了");
     let marker = home.root.path().join("marker");
     std::fs::write(&marker, "secret\n").expect("写得进");
@@ -277,7 +277,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
         return;
     }
     let home = Home::outside_temp();
-    let scripts = home.root.path().join("scripts");
+    let scripts = home.root.scripts();
     std::fs::create_dir_all(&scripts).expect("建得了");
     let file = scripts.join("snap.sh");
     // 1×1 的 PNG 头：认格式、量尺寸只看这几个字节。
@@ -311,7 +311,7 @@ async fn a_script_in_the_sandbox_hands_over_images() {
 /// 在数据根里放脚本 `keep.sh`（内容 `text`），在场所 `venue` 的会话里经真助手调一次：交回结果的状态、字。
 #[cfg(unix)]
 async fn keep(home: &Home, helper: &Path, text: &str, venue: (&str, bool)) -> (ToolStatus, String) {
-    let scripts = home.root.path().join("scripts");
+    let scripts = home.root.scripts();
     std::fs::create_dir_all(&scripts).expect("建得了");
     let file = scripts.join("keep.sh");
     std::fs::write(&file, text).expect("写得进");

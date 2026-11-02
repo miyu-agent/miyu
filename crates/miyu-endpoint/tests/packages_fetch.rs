@@ -258,7 +258,7 @@ async fn a_source_file_holding_another_package_id_is_refused() {
     )
     .await;
     assert_eq!(local["result"]["package"], "bar", "{local}");
-    let manifest = home.root.path().join("packages/bar/package.toml");
+    let manifest = home.root.packages().join("bar/package.toml");
     let before = std::fs::read(&manifest).expect("装了");
 
     let (reply, _) =

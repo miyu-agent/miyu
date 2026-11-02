@@ -68,7 +68,7 @@ async fn a_bundled_service_shows_its_switch_and_follows_changes() {
 
 /// 配置的字。
 fn settings(home: &Home) -> String {
-    std::fs::read_to_string(home.root.path().join("config.toml")).unwrap_or_default()
+    std::fs::read_to_string(home.root.config_file()).unwrap_or_default()
 }
 
 #[tokio::test]

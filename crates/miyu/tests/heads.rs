@@ -97,7 +97,7 @@ impl Drop for Head {
 
 /// 装上的界面清单：编号 `id`，程序 `program`，认 `opens` 那几页。
 fn install(home: &Home, id: &str, program: &str, opens: &str) {
-    let dir = home.root.path().join("packages").join(id);
+    let dir = home.root.packages().join(id);
     std::fs::create_dir_all(&dir).expect("建得了目录");
     std::fs::write(
         dir.join("package.toml"),

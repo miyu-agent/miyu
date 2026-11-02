@@ -96,7 +96,7 @@ fn call(name: &str, args: serde_json::Value) -> Play {
 
 /// 在 alice 的知识库 `kb` 里放一个文档。
 fn put(home: &Home, kb: &str, path: &str, text: &str) {
-    let file = home.root.path().join("kb").join(kb).join(path);
+    let file = home.root.knowledge().join(kb).join(path);
     std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
     std::fs::write(file, text).expect("写得进");
 }
@@ -116,7 +116,7 @@ fn narrow(home: &Home, bases: &str) {
 /// `miyu-base-knowledge` 里（施工 PN-3 起两个编号不同，和核心里一样）。
 fn knowledge_off(home: &Home) -> Lines {
     let text = "[features]\nknowledge = false\n";
-    let dir = home.root.path().join("presets");
+    let dir = home.root.presets();
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("quiet.toml"), text).expect("写得进");
     let features = miyu_policy::features::Features::new(vec![miyu_policy::features::Feature {
@@ -146,7 +146,7 @@ async fn the_two_come_with_the_first_base_and_go_with_the_last() {
     chat(&home, &handle, 1, "在吗").await;
     put(&home, "notes", "cat.md", "# 猫\n\n团子是橘猫。\n");
     chat(&home, &handle, 2, "建了一个库").await;
-    std::fs::remove_dir_all(home.root.path().join("kb")).expect("删得了");
+    std::fs::remove_dir_all(home.root.knowledge()).expect("删得了");
     chat(&home, &handle, 3, "删光了").await;
     let requests = script.requests();
     assert!(!shelved(&requests[0].1), "一个库都没有的不给");
@@ -251,7 +251,7 @@ fn swaps(log: &[Event]) -> usize {
 
 /// 在 alice 的知识库 `kb` 里写 `kb.toml`。
 fn about(home: &Home, kb: &str, toml: &str) {
-    let dir = home.root.path().join("kb").join(kb);
+    let dir = home.root.knowledge().join(kb);
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), toml).expect("写得进");
 }

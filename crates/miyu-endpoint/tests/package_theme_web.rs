@@ -92,12 +92,8 @@ async fn both_themes_are_listed_and_any_file_under_the_web_dir_is_read() {
     );
     home.write("packages/night/web/index.js", "export default 1;");
     let font: Vec<u8> = (0..=255).collect();
-    std::fs::create_dir_all(home.root.path().join("packages/night/web/fonts")).expect("建得了");
-    std::fs::write(
-        home.root.path().join("packages/night/web/fonts/a.woff2"),
-        &font,
-    )
-    .expect("写得进");
+    std::fs::create_dir_all(home.root.packages().join("night/web/fonts")).expect("建得了");
+    std::fs::write(home.root.packages().join("night/web/fonts/a.woff2"), &font).expect("写得进");
     let big = "x".repeat(600 * 1024);
     home.write("packages/night/web/big.css", &big);
     let mut client = connected(&home).await;
@@ -209,7 +205,7 @@ async fn links_out_of_the_web_dir_are_not_followed() {
     home.write("packages/night/web/index.js", "1");
     home.write("packages/outside/secret.txt", "not yours");
     home.write("packages/away/package.toml", WEB_ONLY);
-    let root = home.root.path().join("packages");
+    let root = home.root.packages();
     symlink(
         root.join("outside/secret.txt"),
         root.join("night/web/leak.txt"),

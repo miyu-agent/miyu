@@ -205,11 +205,17 @@ fn command(
     resources: &Path,
 ) -> std::process::Command {
     let mut command = launch.command();
+    let dirs = miyu_store::program::PackageDirs {
+        app: dir.to_path_buf(),
+        state: state.to_path_buf(),
+    };
     command
         .args(args)
-        .env("MIYU_PACKAGE_DIR", dir)
-        .env("MIYU_PACKAGE_STATE", state)
-        .env("MIYU_RESOURCES", resources);
+        .envs(dirs.env(state))
+        .envs(miyu_store::program::named(
+            miyu_store::program::RESOURCES,
+            resources,
+        ));
     if let Some(program) = Env::current().exe {
         command.env(miyu_store::env::PROGRAM, program);
     }

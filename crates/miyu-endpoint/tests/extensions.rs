@@ -63,7 +63,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
     );
     assert_eq!(stderr(&home, "echo"), "hello from echo\n", "标准错误进日志");
     assert_eq!(
-        read(&home.root.path().join("extensions.json")),
+        read(&home.root.extensions_file()),
         "{\"version\":1,\"on\":{\"echo\":true}}\n"
     );
 
@@ -71,7 +71,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
     assert_eq!(disabled["result"]["state"], "off", "{disabled}");
     assert_eq!(disabled["result"]["on"], false);
     assert_eq!(
-        read(&home.root.path().join("extensions.json")),
+        read(&home.root.extensions_file()),
         "{\"version\":1,\"on\":{\"echo\":false}}\n"
     );
 }
@@ -116,7 +116,7 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
         lines[3],
         format!(
             "MIYU_PACKAGE_DIR={}",
-            home.root.path().join("packages").join("echo").display()
+            home.root.packages().join("echo").display()
         )
     );
     let state =

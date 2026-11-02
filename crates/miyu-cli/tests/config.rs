@@ -56,7 +56,7 @@ fn trust(yes: bool, no: bool) -> ConfigCommand {
 
 /// 系统配置在哪。
 fn config_file(home: &Home) -> PathBuf {
-    home.root.path().join("config.toml")
+    home.root.config_file()
 }
 
 /// 系统配置旁边还有没有编辑时的副本。

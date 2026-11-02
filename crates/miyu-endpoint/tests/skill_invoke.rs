@@ -75,7 +75,7 @@ async fn a_named_skill_is_said_with_its_body_in_a_wrapper() {
     assert_eq!(reply["result"]["command"], "notes", "{reply}");
     assert_eq!(reply["result"]["said"], "", "{reply}");
     home.until_turns(&session, 1).await;
-    let file = home.root.path().join("skills/notes/SKILL.md");
+    let file = home.root.skills().join("notes/SKILL.md");
     let path = miyu_session::path_text(&file);
     let wrapped = format!(
         "<skill name=\"notes\" path=\"{path}\">\n# notes\n\nStep one.\n</skill>\nARGUMENTS: the meeting"

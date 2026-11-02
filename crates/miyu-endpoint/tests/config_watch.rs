@@ -340,7 +340,7 @@ async fn a_hand_edited_trust_record_is_logged_and_used() {
         serde_json::to_string(&cwd).expect("写得成"),
         version(project.as_bytes())
     );
-    std::fs::write(home.root.path().join("trust.toml"), record).expect("写得进");
+    std::fs::write(home.root.trust_file(), record).expect("写得进");
     let get = json!({"keys": ["permission.start_read_only"], "cwd": cwd});
     let mut n = 0;
     loop {

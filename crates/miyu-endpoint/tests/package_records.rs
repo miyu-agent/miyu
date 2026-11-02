@@ -124,7 +124,7 @@ async fn a_record_list_is_set_whole_and_read_back_with_references() {
         )
         .await;
     assert!(set.get("error").is_none(), "{set}");
-    let written = std::fs::read_to_string(home.root.path().join("config.toml")).expect("写了");
+    let written = std::fs::read_to_string(home.root.config_file()).expect("写了");
     assert!(
         written.starts_with("# 我的配置\n[draw]\n"),
         "别的字节照原样：{written}"
@@ -150,7 +150,7 @@ async fn a_record_list_is_set_whole_and_read_back_with_references() {
         )
         .await;
     assert!(cleared.get("error").is_none(), "{cleared}");
-    let written = std::fs::read_to_string(home.root.path().join("config.toml")).expect("写了");
+    let written = std::fs::read_to_string(home.root.config_file()).expect("写了");
     assert!(
         written.contains("[draw]\naccounts = []\n") && !written.contains("[[draw.accounts]]"),
         "{written}"
@@ -163,7 +163,7 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
     home.write("packages/draw/package.toml", DRAW);
     home.write("config.toml", "[draw]\n");
     let mut client = connected(&home).await;
-    let before = std::fs::read(home.root.path().join("config.toml")).expect("在");
+    let before = std::fs::read(home.root.config_file()).expect("在");
     let refused = |reply: &Value| -> Vec<(String, String)> {
         assert_eq!(
             reply["error"]["data"]["reason"], "config_invalid",
@@ -196,10 +196,9 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
         [("draw.accounts[1].key".to_string(), "wrong_type".to_string())],
         "密钥字段只收引用，明文整条拒"
     );
-    let written = std::fs::read(home.root.path().join("config.toml")).expect("在");
+    let written = std::fs::read(home.root.config_file()).expect("在");
     assert_eq!(written, before, "配置文件一个字节都不动");
-    let secrets =
-        std::fs::read_to_string(home.root.path().join("secrets.toml")).unwrap_or_default();
+    let secrets = std::fs::read_to_string(home.root.secrets_file()).unwrap_or_default();
     assert!(!secrets.contains("sk-plain-text"), "明文不落进密钥库");
     assert!(
         !String::from_utf8_lossy(&written).contains("sk-plain-text"),

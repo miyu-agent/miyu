@@ -73,7 +73,7 @@ fn search(query: &str) -> Play {
 
 /// 知识库 `notes` 里放一篇。
 fn put(home: &Home, text: &str) {
-    let dir = home.root.path().join("kb/notes");
+    let dir = home.root.knowledge().join("notes");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("cat.md"), text).expect("写得进");
 }

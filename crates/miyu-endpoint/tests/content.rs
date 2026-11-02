@@ -80,8 +80,8 @@ async fn an_extension_reads_the_content_other_packages_carry_for_it() {
     home.write("packages/other/x/a", "a");
     #[cfg(unix)]
     std::os::unix::fs::symlink(
-        home.root.path().join("packages/pack"),
-        home.root.path().join("packages/pack/stickers/up"),
+        home.root.packages().join("pack"),
+        home.root.packages().join("pack/stickers/up"),
     )
     .expect("建得了链接");
     let core = core(&home, quick());

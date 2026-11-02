@@ -49,7 +49,7 @@ fn base(home: &Home, background: &[u8]) {
 
 /// 家目录那一层的 `persona.toml`。
 fn mine(home: &Home) -> Option<String> {
-    std::fs::read_to_string(home.root.path().join("personas/base/persona.toml")).ok()
+    std::fs::read_to_string(home.root.personas().join("base/persona.toml")).ok()
 }
 
 #[tokio::test]
@@ -237,7 +237,7 @@ async fn wrong_backgrounds_are_refused_and_nothing_is_written() {
         }
     }
     assert!(
-        !home.root.path().join("personas/base").exists(),
+        !home.root.personas().join("base").exists(),
         "图不合规矩，一起改的主题色也没写"
     );
     let none = client

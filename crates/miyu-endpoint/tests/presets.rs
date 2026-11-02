@@ -450,12 +450,12 @@ async fn check_reads_presets_from_disk() {
         })],
         "{reply}"
     );
-    let file = home.root.path().join("presets/fine.toml");
+    let file = home.root.presets().join("fine.toml");
     let reply = client
         .call("c2", "check", json!({"file": file.to_string_lossy()}))
         .await;
     assert_eq!(reply["result"], json!({"problems": []}), "{reply}");
-    let file = home.root.path().join("presets/bad.toml");
+    let file = home.root.presets().join("bad.toml");
     let reply = client
         .call("c3", "check", json!({"file": file.to_string_lossy()}))
         .await;
@@ -463,7 +463,7 @@ async fn check_reads_presets_from_disk() {
         reply["result"]["problems"][0]["code"], "not_false",
         "{reply}"
     );
-    let file = home.root.path().join("presets/gone.toml");
+    let file = home.root.presets().join("gone.toml");
     let reply = client
         .call("c4", "check", json!({"file": file.to_string_lossy()}))
         .await;

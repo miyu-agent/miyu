@@ -218,7 +218,7 @@ async fn trusting_records_the_answer_once_per_repository() {
         json!({"file": shown, "trusted": true}),
         "{reply}"
     );
-    let trust = home.root.path().join("trust.toml");
+    let trust = home.root.trust_file();
     let written = std::fs::read_to_string(&trust).expect("写了");
     assert!(
         written.starts_with(
@@ -247,7 +247,7 @@ async fn trusting_records_the_answer_once_per_repository() {
     );
     assert!(!read_only);
 
-    let logged: Vec<Value> = std::fs::read_to_string(home.root.path().join("journal.jsonl"))
+    let logged: Vec<Value> = std::fs::read_to_string(home.root.journal_file())
         .expect("记了")
         .lines()
         .map(|line| serde_json::from_str(line).expect("JSON"))
@@ -287,7 +287,7 @@ async fn the_answer_must_be_about_the_version_that_was_looked_at() {
         )
         .await;
     assert_eq!(reason(&missing), Some("bad_params"));
-    assert!(!home.root.path().join("trust.toml").exists(), "什么都没记");
+    assert!(!home.root.trust_file().exists(), "什么都没记");
 }
 
 #[tokio::test]
@@ -299,9 +299,9 @@ async fn a_hand_edited_record_file_is_kept() {
     client.hello().await;
     // 核心起来以后手写一条：信任 other。
     record(&home, &other, STRICT, true);
-    let hand = std::fs::read_to_string(home.root.path().join("trust.toml")).expect("在");
+    let hand = std::fs::read_to_string(home.root.trust_file()).expect("在");
     answer(&mut client, "c1", &app, STRICT, true).await;
-    let written = std::fs::read_to_string(home.root.path().join("trust.toml")).expect("在");
+    let written = std::fs::read_to_string(home.root.trust_file()).expect("在");
     assert!(written.starts_with(&hand), "手写的一字不动：{written}");
     let got = client
         .call("c2", "config.get", json!({"cwd": other.to_string_lossy()}))

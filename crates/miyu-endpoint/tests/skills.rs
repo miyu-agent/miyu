@@ -33,7 +33,7 @@ async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     } else {
         skill
     };
-    let folder = std::fs::canonicalize(home.root.path().join("skills").join("notes")).expect("在");
+    let folder = std::fs::canonicalize(home.root.skills().join("notes")).expect("在");
     let read = Fake::new("read", Access::Read, Act::Echo);
     let run = Fake::new("run", Access::Execute, Act::Echo);
     let tools = || {

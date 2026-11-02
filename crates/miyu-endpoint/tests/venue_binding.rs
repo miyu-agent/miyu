@@ -108,7 +108,7 @@ async fn a_bridge_asks_who_a_platform_id_is_bound_to() {
         .await;
     assert_eq!(reason(&refused), Some("needs_approval"), "{refused}");
     assert_eq!(
-        std::fs::read_to_string(home.root.path().join("config.toml")).expect("读得出"),
+        std::fs::read_to_string(home.root.config_file()).expect("读得出"),
         BINDINGS,
         "只读"
     );

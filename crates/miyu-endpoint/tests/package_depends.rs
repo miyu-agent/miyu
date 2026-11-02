@@ -153,7 +153,7 @@ async fn an_extension_missing_its_depends_is_not_started() {
     let args: Vec<String> = ["hello", "serve"].iter().map(ToString::to_string).collect();
     install(&home, "ctrl", &program.name(), "always", &args);
     install(&home, "relay", &program.name(), "always", &args);
-    let relay = home.root.path().join("packages/relay/package.toml");
+    let relay = home.root.packages().join("relay/package.toml");
     let text = std::fs::read_to_string(&relay).expect("装好了");
     std::fs::write(
         &relay,

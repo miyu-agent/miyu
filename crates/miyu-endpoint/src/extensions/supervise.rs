@@ -285,12 +285,16 @@ fn spawn(plan: &Plan) -> io::Result<Child> {
     // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
     // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；状态目录的真实位置照
     // `MIYU_PACKAGE_STATE` 给，工作目录照旧也是它（施工 F-15，2026-10-20 项目主人定：作者说明改成以变量为准）。
+    use miyu_store::program::{self, HOME, RESOURCES};
+    let dirs = program::PackageDirs {
+        app: plan.package.clone(),
+        state: plan.dir.clone(),
+    };
     command
         .args(&plan.args)
-        .env("MIYU_HOME", &plan.home)
-        .env("MIYU_RESOURCES", &plan.resources)
-        .env("MIYU_PACKAGE_DIR", &plan.package)
-        .env("MIYU_PACKAGE_STATE", &state)
+        .envs(program::named(HOME, &plan.home))
+        .envs(program::named(RESOURCES, &plan.resources))
+        .envs(dirs.env(&state))
         .current_dir(&plan.dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

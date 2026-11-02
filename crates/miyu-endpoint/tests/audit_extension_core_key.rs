@@ -67,7 +67,7 @@ async fn a_package_named_like_a_core_module_cannot_set_core_settings() {
         assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     };
-    let config = read(&home.root.path().join("config.toml"));
+    let config = read(&home.root.config_file());
     core.stop_extensions().await;
     assert_eq!(
         answer["error"]["data"]["reason"], "local_only",

@@ -368,12 +368,12 @@ async fn check_reads_the_manifests_from_disk() {
         })],
         "{reply}"
     );
-    let file = home.root.path().join("packages/term/package.toml");
+    let file = home.root.packages().join("term/package.toml");
     let reply = client
         .call("c2", "check", json!({"file": file.to_string_lossy()}))
         .await;
     assert_eq!(reply["result"], json!({"problems": []}), "{reply}");
-    let file = home.root.path().join("packages/bad/package.toml");
+    let file = home.root.packages().join("bad/package.toml");
     let reply = client
         .call("c3", "check", json!({"file": file.to_string_lossy()}))
         .await;
@@ -384,7 +384,7 @@ async fn check_reads_the_manifests_from_disk() {
     // 包目录里别的文件、以前那种放在 `packages/` 下的 `<编号>.toml` 都不是清单（施工 F-8 上）。
     for stray in ["term/notes.toml", "old.toml"] {
         home.write(&format!("packages/{stray}"), "x");
-        let file = home.root.path().join("packages").join(stray);
+        let file = home.root.packages().join(stray);
         let reply = client
             .call("c4", "check", json!({"file": file.to_string_lossy()}))
             .await;

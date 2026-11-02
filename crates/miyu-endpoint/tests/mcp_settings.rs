@@ -85,7 +85,7 @@ async fn check_reports_wrong_servers_and_covered_package_servers() {
         "说被谁盖住：{covered}"
     );
     // 只查配置这一份：照样报，盖住了的也报。
-    let path = home.root.path().join("config.toml");
+    let path = home.root.config_file();
     let one = client
         .call("k2", "check", json!({"file": path.to_string_lossy()}))
         .await;
@@ -271,7 +271,7 @@ fn relay(home: &Home, program: &Program, start: &str, record: &str) {
         start,
         &steps(&["hello", "wait"]),
     );
-    let manifest = home.root.path().join("packages/relay/package.toml");
+    let manifest = home.root.packages().join("relay/package.toml");
     let mut text = std::fs::read_to_string(&manifest).expect("读得了清单");
     text.push_str(&format!(
         "\n[[mcp]]\nname = \"xsvc\"\ncommand = ['{SERVER}', '{record}']\n"

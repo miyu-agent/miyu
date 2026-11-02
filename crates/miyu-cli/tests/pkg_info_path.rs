@@ -44,7 +44,7 @@ fn home() -> Home {
 }
 
 fn placed(home: &Home, id: &str) -> bool {
-    home.root.path().join("packages").join(id).exists()
+    home.root.packages().join(id).exists()
 }
 
 /// 印出来的几行里，「无法读取」那一行只认开头：为什么是技能那边的原话。

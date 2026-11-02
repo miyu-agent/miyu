@@ -278,6 +278,13 @@ impl DataRoot {
         self.path.join(STATE).join("logs")
     }
 
+    /// 包 `id` 自己写日志的目录：`state/logs/<编号>/`（施工 FH-2下；FH-3 起是 `var/log/<编号>/`，设计 55 第四节的
+    /// `MIYU_LOG_DIR`）。不建：用的一方建。核心记的扩展 stderr（[`DataRoot::extension_stderr`]）FH-3 起也落在这个目录里，叫
+    /// `stderr`、`stderr.old`，包自己不用这两个名字。
+    pub fn package_logs(&self, id: &str) -> PathBuf {
+        self.logs().join(id)
+    }
+
     /// 扩展（包 `id` 的实例）的标准错误：`state/logs/<编号>.stderr`（施工 F-10）。
     pub fn extension_stderr(&self, id: &str) -> PathBuf {
         self.logs().join(format!("{id}.stderr"))

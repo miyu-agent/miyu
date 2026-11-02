@@ -103,7 +103,7 @@ async fn a_server_wanting_a_login_connects_after_the_person_agrees() {
             .any(|request| request.header("authorization") == Some("Bearer access-1")),
         "连的时候带上换来的令牌"
     );
-    let secrets = home.root.path().join("secrets.toml");
+    let secrets = home.root.secrets_file();
     let written = std::fs::read_to_string(&secrets).expect("密钥文件在");
     assert!(written.contains("mcp-oauth-notes"), "{written}");
     #[cfg(unix)]
@@ -161,7 +161,7 @@ async fn a_second_login_binds_the_same_port_and_removing_the_server_clears_it() 
     let (status, _) = browse(&second).await;
     assert_eq!(status, 200, "要精确端口的授权服务器也认");
     home.write("config.toml", "");
-    let secrets = home.root.path().join("secrets.toml");
+    let secrets = home.root.secrets_file();
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(30);
     while std::fs::read_to_string(&secrets)
         .unwrap_or_default()

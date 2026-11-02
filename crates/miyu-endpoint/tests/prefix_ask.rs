@@ -56,7 +56,7 @@ fn reason(reply: &Value) -> &str {
 #[tokio::test]
 async fn an_edited_prefix_is_asked_before_the_next_turn() {
     let home = Home::new();
-    std::fs::create_dir_all(home.root.path().join("prompts/core")).expect("建得了");
+    std::fs::create_dir_all(home.root.prompt_overrides().join("core")).expect("建得了");
     home.write("commands/review.md", "Review $ARGUMENTS.\n");
     let script = Script::new([
         Play::Says("一。"),
@@ -191,7 +191,7 @@ async fn an_edited_prefix_is_asked_before_the_next_turn() {
 #[tokio::test]
 async fn a_goal_is_set_once_the_change_is_let_through() {
     let home = Home::new();
-    std::fs::create_dir_all(home.root.path().join("prompts/core")).expect("建得了");
+    std::fs::create_dir_all(home.root.prompt_overrides().join("core")).expect("建得了");
     let script = Script::new([Play::Says("一。"), Play::Says("做完了。")]);
     let core = home.core_with_tools(&script, goal_tools(), TOKEN);
     let mut asking = Client::connect(Arc::clone(&core));
@@ -275,7 +275,7 @@ async fn an_override_in_a_new_folder_is_asked_too() {
     let first = asking.say("s1", &session, "在吗").await;
     assert_eq!(reason(&first), "ok", "{first}");
     home.until_turns(&session, 1).await;
-    assert!(!home.root.path().join("prompts/core").exists());
+    assert!(!home.root.prompt_overrides().join("core").exists());
 
     edit(&home, &core, "Mine about local paths.\n").await;
     let refused = asking.say("s2", &session, "好").await;

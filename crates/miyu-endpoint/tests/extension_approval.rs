@@ -24,7 +24,7 @@ fn refused(reply: &Value) -> Option<&str> {
 
 /// 开关的文件。
 fn switches(home: &Home) -> String {
-    read(&home.root.path().join("extensions.json"))
+    read(&home.root.extensions_file())
 }
 
 #[tokio::test]

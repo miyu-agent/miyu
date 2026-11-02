@@ -73,7 +73,7 @@ async fn a_package_file_installs_and_is_recorded_as_its_source() {
     assert_eq!(preview["result"]["package"], "xtool", "{preview}");
     assert_eq!(preview["result"]["files"], 2, "{preview}");
     assert!(
-        !home.root.path().join("packages/xtool").exists(),
+        !home.root.packages().join("xtool").exists(),
         "看一眼什么都不装"
     );
     assert_eq!(left_unpacked(&home), 0, "看一眼的暂存处也删了");
@@ -81,8 +81,7 @@ async fn a_package_file_installs_and_is_recorded_as_its_source() {
     let reply = install(&mut client, json!({"path": file})).await;
     assert_eq!(reply["result"]["package"], "xtool", "{reply}");
     assert_eq!(
-        std::fs::read_to_string(home.root.path().join("packages/xtool/bin/data.txt"))
-            .expect("装进去了"),
+        std::fs::read_to_string(home.root.packages().join("xtool/bin/data.txt")).expect("装进去了"),
         "hi"
     );
     let info = client
@@ -106,7 +105,7 @@ async fn a_bad_package_file_installs_nothing() {
     let reply = install(&mut client, json!({"path": text})).await;
     assert_eq!(reason(&reply), Some("package_file_bad"), "{reply}");
     assert_eq!(left_unpacked(&home), 0);
-    assert!(!home.root.path().join("packages/xtool").exists());
+    assert!(!home.root.packages().join("xtool").exists());
 
     let missing = install(&mut client, json!({"path": home.work.join("none.miyu")})).await;
     assert_eq!(reason(&missing), Some("path_unreadable"), "{missing}");
@@ -127,7 +126,7 @@ async fn a_package_for_another_system_is_refused() {
     let file = packed(&home, &other, "xtool-other.miyu");
     let reply = install(&mut client, json!({"path": file})).await;
     assert_eq!(reason(&reply), Some("wrong_target"), "{reply}");
-    assert!(!home.root.path().join("packages/xtool").exists());
+    assert!(!home.root.packages().join("xtool").exists());
     assert_eq!(left_unpacked(&home), 0);
 
     if let Some(here) = Target::here() {

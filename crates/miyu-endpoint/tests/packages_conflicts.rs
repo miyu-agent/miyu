@@ -87,7 +87,7 @@ async fn listed(client: &mut Client, id: &str) -> Option<Value> {
 
 /// 你装的那一层里的这个包。
 fn placed(home: &Home, id: &str) -> bool {
-    home.root.path().join("packages").join(id).exists()
+    home.root.packages().join(id).exists()
 }
 
 #[tokio::test]

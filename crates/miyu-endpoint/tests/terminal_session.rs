@@ -112,7 +112,7 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
             std::fs::write(to.join(entry.file_name()), regex_lite_at(&text)).expect("写得进");
         }
     }
-    let pointer = home.root.path().join("terminal.json");
+    let pointer = home.root.terminal_file();
     // 指针上指过去的时刻也挪到那时（施工 8-33 三补）。
     let written = std::fs::read_to_string(&pointer).expect("记下了指针");
     std::fs::write(

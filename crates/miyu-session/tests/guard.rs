@@ -242,7 +242,7 @@ async fn nobody_to_ask_means_no() {
 #[tokio::test]
 async fn the_data_root_is_refused_at_every_level() {
     let home = Home::outside_temp();
-    let token = home.root.path().join("run").join("token-for-test");
+    let token = home.root.run().join("token-for-test");
     std::fs::write(&token, "secret").expect("写得进");
     let token = token.to_string_lossy().into_owned();
     for level in [Level::Workspace, Level::Full] {
@@ -325,7 +325,7 @@ async fn several_paths_go_by_the_strictest() {
     let home = Home::outside_temp();
     file(&home, "work/a.txt", "a");
     file(&home, "other/b.txt", "b");
-    let token = home.root.path().join("run").join("token-for-test");
+    let token = home.root.run().join("token-for-test");
     std::fs::write(&token, "secret").expect("写得进");
     let kit = Kit::new();
     let args = serde_json::json!({ "paths": [at(&home, "work/a.txt"), token.to_string_lossy(), at(&home, "other/b.txt")] }).to_string();

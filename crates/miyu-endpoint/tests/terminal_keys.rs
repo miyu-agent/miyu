@@ -79,10 +79,7 @@ async fn asking_without_create_never_opens_one() {
         "{asked_main}"
     );
     assert_eq!(count(&mut client, "l1").await, 0, "没开会话");
-    assert!(
-        !home.root.path().join("terminal.json").exists(),
-        "也没记指针"
-    );
+    assert!(!home.root.terminal_file().exists(), "也没记指针");
 
     // 有了以后只问也交回它。
     let made = terminal(&mut client, "t1", json!({"terminal": "pane-a"})).await;

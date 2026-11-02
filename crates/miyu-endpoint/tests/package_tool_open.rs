@@ -125,7 +125,7 @@ async fn installing_in_a_preset_that_keeps_unlisted_off_opens_it_there() {
         allow(&mut client, &home, &session, 1).await;
         home.until_turns(&session, 1).await;
         assert!(
-            home.root.path().join("packages").join(&id).exists(),
+            home.root.packages().join(&id).exists(),
             "装进系统那一层 {id}"
         );
         let file = home.root.path().join(format!("presets/{preset}.toml"));

@@ -151,7 +151,7 @@ async fn a_url_server_is_set_and_listed_as_written() {
         serde_json::json!({"name": "remote"}),
         "{set}"
     );
-    let path = home.root.path().join("config.toml");
+    let path = home.root.config_file();
     let text = std::fs::read_to_string(&path).expect("写了个人设置");
     let block = format!(
         "\n[mcp.remote]\nurl = \"{}\"\nbearer = \"t0k\"\nheaders = {{ X-Team = \"core\" }}\n",

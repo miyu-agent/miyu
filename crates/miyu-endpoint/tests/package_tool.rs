@@ -90,7 +90,7 @@ fn requests(home: &Home, session: &str) -> Vec<Value> {
 
 /// 装进了数据根的 `packages/`（施工 SU-5 上：只有这一层）。
 fn installed(home: &Home, id: &str) -> bool {
-    home.root.path().join("packages").join(id).exists()
+    home.root.packages().join(id).exists()
 }
 
 #[tokio::test]

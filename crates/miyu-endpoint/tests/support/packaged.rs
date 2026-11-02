@@ -39,7 +39,7 @@ pub fn samples(home: &Home) -> std::path::PathBuf {
         &format!("packages/{SAMPLES}/package.toml"),
         "[package]\nname = { en = \"Samples\" }\n",
     );
-    home.root.path().join("packages").join(SAMPLES)
+    home.root.packages().join(SAMPLES)
 }
 
 /// 样本人格从数据根挪进样本包：`engineer` 成了下面那一层，家目录里没有它。
@@ -47,5 +47,5 @@ pub fn sample_persona_below(home: &Home) {
     let dir = samples(home).join("personas");
     std::fs::create_dir_all(&dir).expect("建得了");
     let id = miyu_session::testkit::SAMPLE_PERSONA;
-    std::fs::rename(home.root.path().join("personas").join(id), dir.join(id)).expect("挪得了");
+    std::fs::rename(home.root.personas().join(id), dir.join(id)).expect("挪得了");
 }

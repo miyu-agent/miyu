@@ -32,7 +32,7 @@ async fn call(client: &mut Client, method: &str, params: Value) -> Value {
 }
 
 fn installed(home: &Home, id: &str) -> bool {
-    home.root.path().join("packages").join(id).exists()
+    home.root.packages().join(id).exists()
 }
 
 async fn preview(client: &mut Client, path: &Path) -> Value {
@@ -131,7 +131,7 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     assert_eq!(result["settings"], json!(["pane.port"]), "只说写了的");
     assert_eq!(result["state"], true);
     assert!(installed(&home, "pane") && state.exists(), "什么都不动");
-    let config = std::fs::read_to_string(home.root.path().join("config.toml"));
+    let config = std::fs::read_to_string(home.root.config_file());
     assert!(config.is_ok_and(|text| text.contains("port = 9")));
 
     let shipped = call(
@@ -166,7 +166,7 @@ async fn restoring_a_shipped_package_shows_it() {
         (json!(true), json!("builtin")),
         "{shown}"
     );
-    let removed = home.root.path().join("packages/miyu-base-net.removed");
+    let removed = home.root.packages().join("miyu-base-net.removed");
     assert!(removed.exists(), "什么都不动");
     let unknown = call(
         &mut client,

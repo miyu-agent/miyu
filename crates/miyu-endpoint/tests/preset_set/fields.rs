@@ -22,7 +22,7 @@ async fn the_default_persona_is_gone_from_presets() {
         assert_eq!(reason(&reply), Some("bad_params"), "{changes}：{reply}");
     }
     assert_eq!(mine(&home, "dev"), None, "什么都没写");
-    let dir = home.root.path().join("presets");
+    let dir = home.root.presets();
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(
         dir.join("old.toml"),

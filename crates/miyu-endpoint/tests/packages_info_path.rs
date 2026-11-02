@@ -43,7 +43,7 @@ async fn info(client: &mut Client, params: Value) -> Value {
 }
 
 fn placed(home: &Home, id: &str) -> bool {
-    home.root.path().join("packages").join(id).exists()
+    home.root.packages().join(id).exists()
 }
 
 #[tokio::test]

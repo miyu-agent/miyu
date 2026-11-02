@@ -95,7 +95,7 @@ async fn audit_an_extension_cannot_point_a_record_secret_field_at_another_secret
     // 给推送一点时间：改成了的话 `extension.config` 会把真值推过来。
     tokio::time::sleep(Duration::from_millis(300)).await;
     let recorded = read(&path);
-    let config = read(&home.root.path().join("config.toml"));
+    let config = read(&home.root.config_file());
     core.stop_extensions().await;
     let reasons: Vec<Value> = answers[1..3]
         .iter()
@@ -197,7 +197,7 @@ name = {{ en = "Mirrors" }}
     };
     tokio::time::sleep(Duration::from_millis(300)).await;
     let recorded = read(&path);
-    let config = read(&home.root.path().join("config.toml"));
+    let config = read(&home.root.config_file());
     core.stop_extensions().await;
     assert_eq!(
         answers[1]["error"]["data"]["reason"], "local_only",

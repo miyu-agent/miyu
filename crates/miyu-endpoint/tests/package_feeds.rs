@@ -141,7 +141,7 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
         )
         .await;
     assert_eq!(installed["result"]["layer"], "home", "{installed}");
-    assert!(home.root.path().join("packages/kit/package.toml").is_file());
+    assert!(home.root.packages().join("kit/package.toml").is_file());
     let desc = std::fs::read_to_string(home.root.path().join("state/packages/.local/kit/desc"))
         .expect("记进本地库");
     assert!(desc.contains("\"feed\":\"friends\""), "{desc}");

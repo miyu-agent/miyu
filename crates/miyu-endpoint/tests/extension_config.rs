@@ -216,7 +216,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
             "{refused}"
         );
     }
-    let journal = read(&home.root.path().join("journal.jsonl"));
+    let journal = read(&home.root.journal_file());
     let changed = journal
         .lines()
         .find(|line| line.contains("echo.port"))
@@ -226,7 +226,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
         "留痕记成这个包：{changed}"
     );
     assert!(
-        !read(&home.root.path().join("config.toml")).contains("deepseek"),
+        !read(&home.root.config_file()).contains("deepseek"),
         "引用一个都没写进去"
     );
     core.stop_extensions().await;
@@ -287,6 +287,6 @@ async fn settings_follow_the_prefix_not_the_package_id() {
         "关掉自己的那一项不是它的：{}",
         answers[2]
     );
-    assert!(read(&home.root.path().join("config.toml")).contains("[echo]"));
+    assert!(read(&home.root.config_file()).contains("[echo]"));
     core.stop_extensions().await;
 }

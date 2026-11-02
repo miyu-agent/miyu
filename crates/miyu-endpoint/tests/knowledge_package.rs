@@ -66,7 +66,7 @@ async fn a_package_brings_a_read_only_base_whose_switch_is_yours() {
         .await;
     assert_eq!(off["result"]["auto"], false, "{off}");
     assert_eq!(off["result"]["package"], "world-pack");
-    let mine = home.root.path().join("kb.toml");
+    let mine = home.root.knowledge_settings_file();
     assert!(
         std::fs::read_to_string(&mine)
             .expect("记下了")

@@ -261,10 +261,7 @@ async fn a_provider_that_cannot_list_is_tried_with_a_model_from_the_catalog() {
         "{{value}} 去掉前后空白"
     );
     assert!(shared.list_fetched("deepseek").is_none(), "候选不存列表");
-    assert!(
-        !home.root.path().join("secrets.toml").exists(),
-        "也不存 key"
-    );
+    assert!(!home.root.secrets_file().exists(), "也不存 key");
 }
 
 #[tokio::test]

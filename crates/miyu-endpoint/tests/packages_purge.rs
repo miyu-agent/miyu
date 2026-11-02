@@ -100,7 +100,7 @@ async fn removing_an_extension_forgets_its_switch_and_approvals() {
     let source = home.work.join("again").join("echo");
     std::fs::create_dir_all(&source).expect("建得了");
     std::fs::copy(
-        home.root.path().join("packages/echo/package.toml"),
+        home.root.packages().join("echo/package.toml"),
         source.join("package.toml"),
     )
     .expect("拷得了");

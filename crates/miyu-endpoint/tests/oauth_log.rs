@@ -106,8 +106,7 @@ async fn logging_in_never_writes_a_token_a_code_or_a_verifier() {
             "运行日志里有 {secret}：{log}"
         );
     }
-    let journal =
-        std::fs::read_to_string(home.root.path().join("journal.jsonl")).unwrap_or_default();
+    let journal = std::fs::read_to_string(home.root.journal_file()).unwrap_or_default();
     for secret in &secrets {
         assert!(!journal.contains(secret.as_str()), "系统日志里有 {secret}");
     }

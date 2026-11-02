@@ -39,6 +39,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
+use miyu_store::program::{SCRIPT_CACHE, SCRIPT_IMAGES, SCRIPT_STATE, named};
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
 
@@ -72,15 +73,6 @@ const ARGS: &str = "MIYU_ARGS_JSON";
 /// 32767 个字（UTF-16 计），超了起都起不来。按字节算的参数，UTF-16 的字数不会多过字节数：30 KiB 加上 `MIYU_ARGS_JSON=` 离
 /// 32767 还有两千多（32 KiB 的 ASCII 参数正好超）。长的只在标准输入里。
 const ARGS_IN_ENV: usize = 30 * 1024;
-
-/// 能写缓存的目录交给脚本的环境变量（同旧版）。
-const CACHE: &str = "MIYU_SCRIPT_CACHE_DIR";
-
-/// 交图的目录交给脚本的环境变量（施工 X-35）。
-const IMAGES: &str = "MIYU_SCRIPT_IMAGES_DIR";
-
-/// 状态目录交给脚本的环境变量（施工 X-44）。
-const STATE: &str = "MIYU_SCRIPT_STATE_DIR";
 
 /// 这一次在沙盒外跑的那一格（施工 5-14 改下，同 `shell`）。
 const OUTSIDE: &str = "outside_sandbox";
@@ -298,12 +290,18 @@ impl Script {
         if args_json.len() <= ARGS_IN_ENV {
             vars.push((ARGS.into(), args_json.into()));
         }
-        vars.push((CACHE.into(), cache.as_os_str().to_owned()));
-        if let Some(images) = images {
-            vars.push((IMAGES.into(), images.as_os_str().to_owned()));
-        }
-        if let Some(state) = state {
-            vars.push((STATE.into(), state.as_os_str().to_owned()));
+        // 几个目录的名字照 `miyu_store::program` 的名字表（施工 FH-2下）。
+        let dirs = [
+            (SCRIPT_CACHE, Some(cache)),
+            (SCRIPT_IMAGES, images),
+            (SCRIPT_STATE, state),
+        ];
+        for (names, dir) in dirs {
+            if let Some(dir) = dir {
+                vars.extend(
+                    named(names, dir).map(|(name, dir)| (name.into(), dir.into_os_string())),
+                );
+            }
         }
         for (var, dir) in homes {
             vars.push(((*var).into(), dir.as_os_str().to_owned()));

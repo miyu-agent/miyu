@@ -109,7 +109,7 @@ async fn a_link_out_of_the_page_is_not_followed() {
     with_page(&home, "relay");
     home.write("packages/relay/page/index.html", "<p>relay</p>");
     home.write("packages/relay/secret.txt", "not for the page");
-    let dir = home.root.path().join("packages/relay");
+    let dir = home.root.packages().join("relay");
     std::os::unix::fs::symlink(dir.join("secret.txt"), dir.join("page/leak.txt"))
         .expect("建得了链接");
     let core = core(&home, quick());

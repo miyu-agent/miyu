@@ -62,7 +62,7 @@ flowchart LR
 
 ## 三、FH-2：路径全走 `DataRoot`（纯重构，布局不变）
 
-状态：上半（产品代码）做完（2026-11-03，sub1）；下半（`ProgramDirs`、测试夹具照方法拼）接着做。
+状态：做完（2026-11-03，sub1）。上半是产品代码；下半是交给程序的环境变量（`miyu_store::program`：名字表和包的几处，扩展、`miyu <包的命令>`、脚本工具都照它给）、`DataRoot::package_logs`（core1 要的，头换钉时用）、测试里 `home.root.path().join(…)` 照方法拼的 159 处。测试里照相对路径写文件的（`home.write("config.toml", …)` 这些，约 250 处）没改：FH-3 换布局时照新位置改，跑起来就报。
 
 ### 目的
 
@@ -76,9 +76,9 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 - [x] 拆开只收一个父目录、自己往下拼的接口（新布局里这些子项分在不同块，签名这一步就要拆）：模型目录（`miyu-core/src/lib.rs:129,359,370`：`learned`、`pools`、`renamed` 和 `providers`、`catalog` 分开给）；`packages(core).state_root()`（`.unpack`、`.sync`、`.sources`、`.cache`、`.local`、`.leftovers`、各包状态，分成五处给）；`sandbox::probe(Some(&root.state()))`（`lib.rs:373`）；`settings.rs:280`；`extensions/stderr.rs:24`；`Blobs::new` 照旧收 `blobs/`（临时文件留在里面，设计 55 第三节第 5 条）。
 - [x] 缓存清扫只扫脚本的缓存：`miyu-store/src/cache.rs` 的 `prune` 把缓存目录下每个顶层文件夹当 `<来处>`，FH-3 以后 `var/cache/` 下还有 `index/`、`models/`、`packages/` 这些核心的东西，会被当成 30 天没碰的删掉。改成只对脚本缓存那一层（`script_cache` 的根），两处调用（`miyu-core/src/cache.rs:41`、`sweep.rs:22`）都照它。
 - [x] 写文件的临时文件：`config_file.rs` 的 `temp_dir` 只在「上一层是数据根」时用 `run/`，改成照数据根找（`DataRoot` 交进来，或往上找标记），新布局里 `etc/private/` 的密钥临时文件才会在 `run/`；`leftovers::tidy` 照旧清 `run/`。
-- [ ] 程序目录一处给：新 `ProgramDirs`（名字由做的人定），照程序种类（包、脚本、MCP 服务）算出设计 55 第四节表里的每一格，扩展（`extensions/supervise.rs`）、包的命令（`miyu-cli/src/packages.rs`）、脚本（`miyu-basesystem/src/shell/script.rs`、`script/home.rs`）、MCP（`mcp/launch.rs`）都从它拿；这一步只给旧名字、旧位置。
-- [ ] 测试夹具改用方法拼路径（核心盘点 3.6：`packages` 339 次、`scripts` 182、`skills` 161……）：先给 testkit 一组照 `DataRoot` 拼的小函数，再机械替换；能分几次提交。
-- [ ] 防回退：靠类型挡（上面删掉 `state()`、`cache()`，收紧 `path()`），不照字符串查：`packages`、`personas`、`skills`、`tools`、`config` 这些名字资源目录、协议里也在用，照字符串查会大量误报。
+- [x] 程序目录一处给：新 `ProgramDirs`（名字由做的人定），照程序种类（包、脚本、MCP 服务）算出设计 55 第四节表里的每一格，扩展（`extensions/supervise.rs`）、包的命令（`miyu-cli/src/packages.rs`）、脚本（`miyu-basesystem/src/shell/script.rs`、`script/home.rs`）、MCP（`mcp/launch.rs`）都从它拿；这一步只给旧名字、旧位置。
+- [x] 测试夹具改用方法拼路径（核心盘点 3.6：`packages` 339 次、`scripts` 182、`skills` 161……）：先给 testkit 一组照 `DataRoot` 拼的小函数，再机械替换；能分几次提交。
+- [x] 防回退：靠类型挡（上面删掉 `state()`、`cache()`，收紧 `path()`），不照字符串查：`packages`、`personas`、`skills`、`tools`、`config` 这些名字资源目录、协议里也在用，照字符串查会大量误报。
 
 ### 验收
 
@@ -108,7 +108,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 - [ ] `run/<编号>/`：给包的运行时目录；核心自己的照旧在 `run/` 这一层。
 - [ ] 保留名字：设计 55 第三节第 3 条那一串，由测试照各层的常量推出来、和设计对；装包时拒、`miyu check` 报。
 - [ ] 卸包清的，照设计 55 第三节第 4 条那张清单（包带的脚本的状态和缓存、MCP 服务的三处、`provide/`、`index/kb/packages/` 都在里面）。
-- [ ] 环境变量：`ProgramDirs` 照设计 55 第四节给新名字；旧名字（`MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR`）同时给、指到新位置，代码里标「FH-6 删」；拉起前建好每一个给出去的目录。
+- [ ] 环境变量：`miyu_store::program` 的名字表照设计 55 第四节加新名字（包的配置、缓存、日志、暂存、运行时几处跟着加进 `PackageDirs`，MCP 服务也照它给）；旧名字（`MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR`）同时给、指到新位置，代码里标「FH-6 删」；拉起前建好每一个给出去的目录。
 - [ ] `config.toml` 新建时第一行 `#:schema ../var/cache/config/config.schema.json`（照方法算）。
 - [ ] Windows 沙盒：`carve` 照新的几层排；`keep_places`（`miyu-session/src/sandbox.rs:250-268`）补的目录换新位置；`windows-run.md` 里「第一次新建的那一下」那条改成已解决（凭据在整条禁的 `etc/private/`）。
 - [ ] Linux、macOS 沙盒：`hidden` 照旧整个数据根；`write`、`reveal` 的那几处换新位置（工作区、技能文件夹、本会话附件、脚本的状态和缓存、四个 XDG 目录）。

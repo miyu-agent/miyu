@@ -330,7 +330,7 @@ async fn the_same_value_writes_nothing() {
         json!([{"key": "software.memory", "value": true}]),
     )
     .await;
-    let path = home.root.path().join("presets/dev.toml");
+    let path = home.root.presets().join("dev.toml");
     let text = "[preset]\nunlisted = 'off'\n\n[software]\nmemory   =   true\n";
     std::fs::write(&path, text).expect("写得进");
     let again = set(
@@ -367,7 +367,7 @@ async fn the_same_value_writes_nothing() {
 #[tokio::test]
 async fn an_old_base_is_ignored_and_dropped_on_the_next_save() {
     let home = Home::new();
-    let dir = home.root.path().join("presets");
+    let dir = home.root.presets();
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(
         dir.join("old.toml"),

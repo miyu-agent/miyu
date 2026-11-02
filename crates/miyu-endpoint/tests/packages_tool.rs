@@ -103,10 +103,7 @@ async fn a_session_looks_at_packages_through_the_core() {
         ),
         (json!("pane"), json!("2"), Value::Null)
     );
-    assert!(
-        !home.root.path().join("packages/pane").exists(),
-        "看一眼不装"
-    );
+    assert!(!home.root.packages().join("pane").exists(), "看一眼不装");
     drop(client);
     drop(core);
 

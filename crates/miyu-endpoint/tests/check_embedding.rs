@@ -110,7 +110,7 @@ async fn it_says_which_model_and_how_far_each_index_is_filled() {
         "补齐了"
     );
     // 只查一份的不带。
-    let settings = home.root.path().join("config.toml");
+    let settings = home.root.config_file();
     let one = checked(
         &mut client,
         "f1",
