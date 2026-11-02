@@ -63,8 +63,8 @@ pub use once::{Answer, Ask, OneShot, Unanswered, Watched};
 pub use probe::{Probe, Probed, Stage, probe};
 pub use retire::Retirement;
 pub use shared::{
-    CatalogReader, Holding, LISTING_CAP, LISTING_FILE, Listed, ModelData, Observed, RECALL_FILE,
-    read_observed,
+    CatalogReader, Holding, LISTING_CAP, LISTING_FILE, Listed, ModelData, Observed, RECALL_CAP,
+    RECALL_FILE, read_observed,
 };
 
 use std::future::Future;

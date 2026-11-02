@@ -11,13 +11,14 @@ use serde_json::{Value, json};
 
 use miyu_endpoint::Core;
 use miyu_endpoint::config::{Config, Environment};
+use miyu_models::catalog::{Catalog, CatalogSource, Loaded, Recalled};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::{
     CatalogSettings, ModelSettings, PoolSettings, PriceSettings, ProviderSettings, UseSettings,
 };
 use miyu_session::testkit::Script;
-use miyu_session::{ModelData, Models, Observed, Routes};
+use miyu_session::{ModelData, Models, Observed, RECALL_FILE, Routes};
 use miyu_store::resources::ResourceRoot;
 use miyu_tool::Catalog as ToolCatalog;
 
@@ -46,7 +47,11 @@ fn no_catalog() -> Arc<ModelData> {
 
 /// 一份核心：清单带上模型这一块，配置照磁盘上现在的几份读；`routed` 的请求模型的端口是真的路由（不发请求）。
 fn core(home: &Home, routed: bool) -> Arc<Core> {
-    let data = no_catalog();
+    core_with(home, routed, no_catalog())
+}
+
+/// 同 [`core`]，模型资料用 `data`。
+fn core_with(home: &Home, routed: bool, data: Arc<ModelData>) -> Arc<Core> {
     let models: Arc<dyn Models> = match routed {
         true => Arc::new(Routes {
             client: miyu_http::client(miyu_http::Proxy::Off).expect("造得出客户端"),
@@ -404,4 +409,44 @@ async fn a_default_effort_the_model_does_not_have_is_reported() {
         )
         .await;
     assert_eq!(checked["result"]["problems"], json!([]), "{checked}");
+}
+
+/// 查档位是临时问一句（审计 R3E-7）：`session.configure` 的模型名只查供应商配没配，随便写都过；原来查档位照「真问过的」
+/// 记下，这条请求被拒了，记下的还留在 `catalog.json` 里，只增不减。目录不常驻、记下的写在 `dir`。
+#[tokio::test]
+async fn checking_an_effort_does_not_remember_made_up_models() {
+    let home = Home::new();
+    home.write("config.toml", CONFIG);
+    let dir = home.root.state().join("models");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    let data = ModelData::new(
+        Profiles::parse(&json!({})).expect("档案写法对"),
+        Vendors::default(),
+        Some(dir.clone()),
+    );
+    let empty = || Loaded {
+        catalog: Catalog::parse("{}").expect("读得进").catalog,
+        source: CatalogSource::Snapshot,
+        fetched: "2026-10-01T00:00:00.000Z".to_string(),
+    };
+    data.recalled(
+        Recalled::new("v1", CatalogSource::Snapshot, &empty().fetched),
+        Observed::default(),
+        Arc::new(move || Some((empty(), "v1".to_string()))),
+    );
+    let mut client = Client::connect(core_with(&home, true, Arc::new(data)));
+    client.hello().await;
+    let session = client.create("c1", "/tmp").await;
+    let models = || {
+        let text = std::fs::read_to_string(dir.join(RECALL_FILE)).expect("换上时写了");
+        Recalled::from_json(&text).expect("读得回来").len().1
+    };
+    let before = models();
+    for n in 0..5 {
+        let params =
+            json!({"session": session, "model": format!("a/made-up-{n}"), "effort": "high"});
+        let (_, reply) = configuring(&mut client, &format!("made-up-{n}"), params).await;
+        assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
+    }
+    assert_eq!(models(), before, "被拒的请求问过的模型名不该记下");
 }

@@ -34,6 +34,11 @@ use super::{ModelData, Observed};
 /// 记下的那份存在 `state/models/` 下的这个文件里。
 pub const RECALL_FILE: &str = "catalog.json";
 
+/// 记下的那份模型那一面最多记几条（审计 R3E-7，2026-11-02 定）：记满了的，没记过的输入照旧借整份目录现算、答照样交，只是
+/// 不再记下。配置里写过、会话记着的通常几十条；`model.list` 那份（`listing.json`）连着这一份数上限（[`super::LISTING_CAP`]），
+/// 这一份封顶在两百，那边至少还剩八百。
+pub const RECALL_CAP: usize = 200;
+
 /// 临时读一份整份目录（核心交进来，`miyu-core` 的 `models/recall.rs`）：读的是这一刻排第一、读得了的那一份，连同它的版本串
 /// （目录的指纹、认原厂的表的哈希，和记下的那份的 `of` 同一个算法）。都读不了的没有。慢：在阻塞线程里、或者只在头一回调。
 pub type CatalogReader = Arc<dyn Fn() -> Option<(Loaded, String)> + Send + Sync>;
@@ -172,8 +177,8 @@ impl ModelData {
     }
 
     /// 借着 `holding` 的整份目录做一件事：[`Knowledge::catalog`] 是它，合资料照记下的答、没记过的借它现算，`remember` 为真时
-    /// 记下、写盘。要整份目录的地方用它（`model.list`、第一次接入、搜目录、`provider.test` 照目录挑模型）。锁同
-    /// [`ModelData::with`]。
+    /// 记下、写盘；记满了（[`RECALL_CAP`]）的不再记。要整份目录的地方用它（`model.list`、第一次接入、搜目录、`provider.test`
+    /// 照目录挑模型）。锁同 [`ModelData::with`]。
     pub fn with_holding<R>(
         &self,
         holding: &Holding,
@@ -185,6 +190,12 @@ impl ModelData {
             return self.run(catalog, catalog.map(CatalogLookup::Full), work);
         };
         let before = lock(recalled).len();
+        // 记满了的不再记（审计 R3E-7）：答照样借整份目录现算。
+        let full = before.1 >= RECALL_CAP;
+        if remember && full {
+            tracing::debug!(target: TARGET, models = before.1, cap = RECALL_CAP, "catalog recall over cap");
+        }
+        let remember = remember && !full;
         let lookup = CatalogLookup::Recalled(Recalling {
             recalled,
             catalog,

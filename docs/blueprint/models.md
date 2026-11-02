@@ -548,7 +548,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `state/models/learned.json` | 用出来的：`{"<供应商>/<模型>":{"window":{"value":…,"at":…}}}` | 重新学 |
 | `state/models/providers/<编号>.json` | 供应商的列表：`{"fetched":…,"models":[{"id":…,"window":…}]}` | 下次再拉 |
 | `state/models/pools.json` | 池的指针：`{"<池>":<下一个是第几个>}` | 从头轮 |
-| `state/models/catalog.json` | 记下的查目录的答（施工 V-25 下）：`{"v":1,"of":<版本串>,"source":…,"fetched":…,"providers":[[输入,答]…],"models":[[输入,答]…]}`，只记配置里写过、真问过的 | 起来时读一次整份目录、照配置重记；坏了、写法的版本不对的同样，记一行 `WARN` |
+| `state/models/catalog.json` | 记下的查目录的答（施工 V-25 下）：`{"v":1,"of":<版本串>,"source":…,"fetched":…,"providers":[[输入,答]…],"models":[[输入,答]…]}`，只记配置里写过、真问过的，模型那一面最多 200 条 | 起来时读一次整份目录、照配置重记；坏了、写法的版本不对的同样，记一行 `WARN` |
 | `state/models/listing.json` | `model.list` 列整份记下的查目录的答（施工 V-32）：和 `catalog.json` 同一个写法、同一个版本串，多一张 `listings`（目录里那一家的编号 → 显示名、每个模型的 `family`），平时不进内存，`model.list` 每次读、用完放；模型那一面最多 1000 条 | 下次 `model.list` 读一次整份目录、重记；坏了、版本串对不上的同样，坏了的记一行 `WARN` |
 | `state/usage.db` | 用量汇总，SQLite | 重建 |
 | `state/rates.db` | 汇率的缓存（施工 UC-1），SQLite | 重建：删掉再取 |
@@ -595,7 +595,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
      1. **认哪一份**：记下的那份带版本串 `of`：整理好的一份现成的指纹（哪一份、原文多大、什么时候改的、`fetched`，程序多大、什么时候改的），加认原厂的表 `vendors.toml` 的内容哈希。对不上的整份作废、重算。
      2. **起来时**（在读目录的那个线程里）：先读 `catalog.json`，算排第一那份目录的版本串，对上了不读整份目录（省内存就省在这里），记 `INFO catalog recalled source=… fetched=… providers=<记了几家> models=<记了几个> ms=…`，取代 `catalog loaded` 那一行。对不上、没有、读不懂、写法的版本不对的（后两种记一行 `WARN catalog recall unreadable`，不报错、不停核心），照旧读整份目录（记 `catalog loaded`），照起来时的配置把写过的都查一遍记下（每一家配好的供应商，它手写了资料的、用途、池里点名的、算向量的模型），写盘，记 `INFO catalog recall built …`，放掉整份目录、把空着的堆还给系统。「读完」（`wait`、`is_loaded`）说的是记下的那份读了、版本验过了。没有缓存目录（整理好的一份放不下）、不知道程序在哪（指纹算不出来）、没有 `state` 的（测试、`models::routes()`）照旧常驻整份目录。
      3. **临时读、用完放**：只在这几种时候读整份目录（照起来时同样的路挑一份，读完那一行记 `DEBUG`）：遇到没记过的输入（新配的模型、新供应商、会话记着的配置里已经没写的）；要整份目录的地方（第一次接入的 `onboard::listed`、`provider.detect`、`provider.catalog` 和常用的几家，`provider.test` 照目录列模型、挑模型，图标）；读回来的版本串和记下的不一样（缓存被别的核心换过）。同时要的借同一份，没人借了就放掉（一阵请求过去以后核心把空着的堆还给系统）。异步的地方在阻塞线程里读。
-     4. **记不记**：配置里写过、真问过的才记（路由、回合开始、池的成员、配置检查，`ModelData::with`）；`model.list` 列整份的另记一份、不常驻（第 7 款）；第一次接入、搜目录、`provider.test` 这类临时问的不记（`with_holding` 的 `remember=false`、`with_once`），免得越记越大。配置换了，在阻塞线程里把新写的照记下的问一遍、没记过的这时补（`follow_recall`）。
+     4. **记不记**：配置里写过、真问过的才记（路由、回合开始、池的成员、配置检查，`ModelData::with`）；`model.list` 列整份的另记一份、不常驻（第 7 款）；第一次接入、搜目录、`provider.test`、`session.configure` 查思考强度的档位（模型名只查供应商配没配、随便写都过，被拒了也不该留下，审计 R3E-7）这类临时问的不记（`with_holding` 的 `remember=false`、`with_once`），免得越记越大。有上限：模型那一面最多 200 条（`RECALL_CAP`，审计 R3E-7，2026-11-02 定）：配置里写过、会话记着的通常几十条；记满了的，没记过的输入照旧借整份目录现算、答照样交，只是不记、不写盘（`DEBUG catalog recall over cap`）。`listing.json` 的上限连着这一份数，这一份封顶在 200，那边至少还剩 800。配置换了，在阻塞线程里把新写的照记下的问一遍、没记过的这时补（`follow_recall`）。
      5. **没记过的怎么补**：路由在 tokio 的线程上同步问资料。合资料先只照记下的合一遍；有说不出来的（`Recalling::missed` 立了），这一遍合出来的整个作废——供应商那一面说不出来时会拿「认不出」去问模型那一面，交回的和有目录时不一样，不能当没有目录交出去——拿着补算的锁再照记下的问一遍（等锁时别人可能已经记下了），还说不出来的读一次整份目录、重合、记下、写盘。所以同时遇到同一个没记过的输入的只读一次；读盘这一下在调的线程上（几毫秒到几十毫秒，只在头一回），不在用出来的、列表的那把锁里。配置里新写的多半已经由上一款在阻塞线程里补齐了。
      6. 对外一个字节都不变：路由、资料（窗口、上限、价格、思考档位、温度、能不能收图）、供应商（驱动、地址、报错原话）、`model.list` 整份回应、档位、配置检查，和常驻时逐字一样（`miyu-endpoint` 的 `tests/models_recall.rs` 三种各导一份逐字节比，`model.list` 照 `listing.json` 的另由 `tests/models_listing.rs` 比）。只有一处跟着磁盘走得早一点：缓存被同一台机器上别的核心换过时，常驻的核心要到自己下次后台更新才换，不常驻的在下一次临时读时就照新的重算。V-32 起 `model.list` 照记下的答时不临时读，就不再顺带跟上别的核心换过的缓存，要等下一次临时读（没记过的输入）或后台更新。
      7. **`model.list` 列整份**（施工 V-32，2026-10-31 核心主会话定；`route/shared/listing.rs`）：要目录里那一家的全部模型（清单、显示名、`family`，每个模型对目录的答），以前每问一次临时读一次整份目录（有整理好的约 5 ms，现解原文约 20 ms，临时多占几 MB、留下约 2 MB 碎片）。改成第一次照整份目录算的时候把用到的答记进 `state/models/listing.json`，和 `catalog.json` 同一个写法、同一个版本串；以后每次 `model.list` 在阻塞线程里读这个小文件，并上路由那份照记下的答，用完就放，平时不在内存里（项目主人定空闲时只留必需的：放进 `catalog.json` 要一直多占 30～250 KB）。
@@ -1090,6 +1090,7 @@ mimo = ["xiaomi"]
 | `WARN` | `catalog listing unreadable error=…` | `state/models/listing.json` 读不了、读不懂、写法的版本不对：当没有，`model.list` 读一次整份目录重记（施工 V-32） |
 | `DEBUG` | `catalog read for a listing not recalled ms=…` | `model.list` 遇到没记过的，临时读了一次整份目录（施工 V-32） |
 | `DEBUG` | `catalog listing over cap models=… cap=…` | 记下这一家以后过了上限，这一家这一次不记（施工 V-32） |
+| `DEBUG` | `catalog recall over cap models=… cap=…` | 记下的那份记满了，这一次没记过的输入照整份目录现算、不记（审计 R3E-7） |
 | `WARN` | `catalog recall unreadable error=…` | `state/models/catalog.json` 读不了、读不懂、写法的版本不对：当没有，整份重算（施工 V-25 下） |
 | `DEBUG` | `catalog read for an input not recalled ms=… remember=…` | 遇到没记过的输入，临时读了一次整份目录（施工 V-25 下） |
 | `DEBUG` | `catalog digest not written error=…` | 整理好的一份写不进缓存目录（施工 V-5 中） |

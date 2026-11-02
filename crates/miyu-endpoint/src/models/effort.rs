@@ -26,11 +26,12 @@ pub(crate) async fn checked(
     };
     let level = effort::normalize(level).to_string();
     core.model_data.wait().await;
+    // 临时问一句（审计 R3E-7）：引用只查过供应商配没配，模型名随便写都过，被拒的这一条问过的不该记进 `catalog.json`。
     let resolved = core.config().resolved().clone();
     let levels = match reference {
         Some(text) => core
             .model_data
-            .with(|knowledge| effort::levels_of(&resolved, knowledge, text)),
+            .with_once(|knowledge| effort::levels_of(&resolved, knowledge, text)),
         None => Vec::new(),
     };
     if level.is_empty() || !levels.contains(&level) {

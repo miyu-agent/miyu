@@ -18,7 +18,7 @@ use miyu_models::facts::facts;
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::provider::provider;
-use miyu_session::{CatalogReader, ModelData, Observed, RECALL_FILE};
+use miyu_session::{CatalogReader, ModelData, Observed, RECALL_CAP, RECALL_FILE};
 
 const TRIMMED: &str = include_str!("../../miyu-models/testdata/models-dev-trimmed.json");
 
@@ -331,5 +331,51 @@ fn a_refresh_rebuilds_every_remembered_key() {
     assert_eq!(
         answers(&data, &resolved),
         answers(&resident(trimmed()), &resolved)
+    );
+}
+
+/// 记下的那份有上限（审计 R3E-7）：配了的供应商后面随便写的模型名（会话记着的、每一轮问的）一个个记下来，`catalog.json`
+/// 只增不减，大到连着它数上限的 `listing.json` 永远存不下。记满了的照旧借整份目录现算、答照样交，不再记、不再写盘。
+#[test]
+fn remembering_stops_at_the_cap() {
+    let scratch = Scratch::new();
+    let dir = scratch.0.join("models");
+    std::fs::create_dir_all(&dir).expect("建得了");
+    let resolved = resolved(CONFIG);
+    let count = Arc::new(AtomicUsize::new(0));
+    let data = recalling(
+        Recalled::new("v1", CatalogSource::Snapshot, &trimmed().fetched),
+        Some(dir.clone()),
+        reader(&count, "v1", Duration::ZERO, || Loaded {
+            catalog: Catalog::parse("{}").expect("读得进").catalog,
+            source: CatalogSource::Snapshot,
+            fetched: "2026-10-01T03:25:54.000Z".to_string(),
+        }),
+    );
+    let values = resolved.values();
+    let ask = |model: &str| {
+        data.with(|knowledge| {
+            let found = provider(&values, knowledge, "newapi").ok()?;
+            Some(facts(&resolved, knowledge, &found, model).0.window.value)
+        })
+    };
+    let asked = RECALL_CAP + 50;
+    for n in 0..asked {
+        assert!(ask(&format!("made-up-{n}")).is_some(), "照样答");
+    }
+    let saved = Recalled::from_json(&std::fs::read_to_string(dir.join(RECALL_FILE)).expect("写了"))
+        .expect("读得回来");
+    let models = saved.len().1;
+    assert!(
+        models <= RECALL_CAP + 2,
+        "问了 {asked} 个随便写的模型名，记下了 {models} 条"
+    );
+    let reads = count.load(Ordering::SeqCst);
+    assert!(ask("made-up-0").is_some());
+    assert!(ask("one-more").is_some());
+    assert_eq!(
+        count.load(Ordering::SeqCst),
+        reads + 1,
+        "记过的照记下的答，记满以后新来的每次现算"
     );
 }

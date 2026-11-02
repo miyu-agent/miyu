@@ -48,7 +48,7 @@ mod renamed;
 mod tests;
 
 pub use listing::{LISTING_CAP, LISTING_FILE, Listed};
-pub use recall::{CatalogReader, Holding, RECALL_FILE};
+pub use recall::{CatalogReader, Holding, RECALL_CAP, RECALL_FILE};
 use recall::{Held, Recall};
 
 /// 核心一份的模型资料。
