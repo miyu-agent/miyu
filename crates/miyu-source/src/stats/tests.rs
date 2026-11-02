@@ -250,3 +250,23 @@ fn counting_writes_both_fields_and_keeps_the_last_count_when_asking_fails() {
         "没有上一份的"
     );
 }
+
+/// 审计（2026-11-02 第三轮）：`download_count` 是 GitHub（或 `MIYU_INDEX_API` 指的地方）回的数，加起来不该溢出：调试版
+/// 直接 panic，发布版（没开 overflow-checks）悄悄绕回一个小数写进索引。期望饱和到 `u64::MAX` 或者报错，不 panic。
+#[test]
+fn audit_download_counts_do_not_overflow() {
+    let big = u64::MAX / 2 + 1;
+    let net = Net::default().page(
+        "miyu-agent/miyu-memes",
+        1,
+        &[&[("memes-1.0.miyu", big)], &[("memes-1.1.miyu", big)]],
+    );
+    let counted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        downloads(&net, API, "github.com/miyu-agent/miyu-memes", "memes")
+    }));
+    assert!(
+        matches!(counted, Ok(Ok(u64::MAX) | Err(_))),
+        "两个 2^63 的下载次数加起来溢出了：{:?}",
+        counted.as_ref().map_err(|_| "panic")
+    );
+}

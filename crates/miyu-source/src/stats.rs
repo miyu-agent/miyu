@@ -137,7 +137,8 @@ pub fn downloads(fetch: &dyn Fetch, api: &str, origin: &str, id: &str) -> Result
         .strip_prefix("github.com/")
         .filter(|repo| repo.split('/').count() == 2)
         .ok_or_else(|| format!("{origin} is not on GitHub"))?;
-    let mut total = 0;
+    // 次数是对方回的数，饱和着加（审计 R3S-5）：溢出时调试版 panic、发布版绕回一个小数写进索引。
+    let mut total: u64 = 0;
     for page in 1..=MOST_PAGES {
         let url = format!(
             "{}/repos/{repo}/releases?per_page={PER_PAGE}&page={page}",
@@ -145,12 +146,13 @@ pub fn downloads(fetch: &dyn Fetch, api: &str, origin: &str, id: &str) -> Result
         );
         let releases: Vec<Release> = serde_json::from_slice(&fetch.get(&url, MOST_PAGE)?)
             .map_err(|error| format!("unreadable releases: {error}"))?;
-        total += releases
+        total = releases
             .iter()
             .flat_map(|release| &release.assets)
             .filter(|asset| file_of(&asset.name, id))
-            .map(|asset| asset.download_count)
-            .sum::<u64>();
+            .fold(total, |total, asset| {
+                total.saturating_add(asset.download_count)
+            });
         if releases.len() < PER_PAGE {
             break;
         }
