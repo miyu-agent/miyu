@@ -10,6 +10,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 |---|---|
 | `crates/miyu-http/src/lib.rs` | 对外的几样 |
 | `crates/miyu-http/src/client.rs` | 客户端：TLS、`User-Agent`、连接超时、代理、关自动解压（W-7 补） |
+| `crates/miyu-http/src/tls.rs`、`tls/deferred.rs` | 整个进程共用的 TLS 配置（施工 V-5 上）；证书第一次验对方的证书时才读、才造验证器（施工 V-33，`Deferred`） |
 | `crates/miyu-http/src/loopback.rs` | 地址是不是回环（施工 8-11 补）：纯逻辑，不碰网络 |
 | `crates/miyu-http/src/guard.rs`、`proxy.rs` | 地址闸、这一跳走不走代理（施工 U23 下下从 `miyu-net` 挪下来，规矩见 `net.md`「怎么走」第 3 到 5 条）：替人上网的几处共用一份 |
 | `crates/miyu-http/src/endpoint.rs` | 端点：地址、key（可以没有，施工 8-6）、另配的头；打印时藏起 key、地址只写主机名；取主机名，日志也用它 |
@@ -51,7 +52,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 **客户端**
 
 1. 一个核心一个（`crates/miyu-core/src/models.rs` 造一次），各会话拿它的克隆，连接池里的连接跨请求复用。照环境变量走代理的、不走代理的各造一个（`FromEnvironment`、`Off`，POST、GET 各一对），核心起来时一起造好，不每次请求新造。
-2. TLS 用 rustls，根证书认两份：系统里装的、webpki 自带的。不用 OpenSSL。reqwest 编进了 HTTP/2。**一个进程只读一次证书**（施工 V-5 上）：`miyu_http::tls()` 第一次叫时读系统证书、拼好 TLS 配置（协议 TLS 1.2、1.3，ALPN 先 `h2` 后 `http/1.1`），以后每次交一份克隆；造客户端一律 `use_preconfigured_tls(tls())`，`miyu-net` 也用它。以前每造一个客户端就重读一遍系统证书（一千多个文件，十几毫秒），核心起来要造四个。核心起来时在另一个线程里先叫一次，和读目录、开端点并着做。
+2. TLS 用 rustls，根证书认两份：系统里装的、webpki 自带的。不用 OpenSSL。reqwest 编进了 HTTP/2。**一个进程只读一次证书**（施工 V-5 上）：`miyu_http::tls()` 第一次叫时读系统证书、拼好 TLS 配置（协议 TLS 1.2、1.3，ALPN 先 `h2` 后 `http/1.1`），以后每次交一份克隆；造客户端一律 `use_preconfigured_tls(tls())`，`miyu-net` 也用它。以前每造一个客户端就重读一遍系统证书（一千多个文件，十几毫秒），核心起来要造四个。**证书用到才读**（施工 V-33）：`tls()` 拼配置时不读证书，验证器换成 `tls/deferred.rs` 的 `Deferred`，第一次要验对方的证书时才读证书、造 rustls 自己的 `WebPkiServerVerifier`（参数和 `with_root_certificates` 造的一样：不给吊销列表），以后每一次原样交给它；几个连接同时第一次验的只造一次。只推迟、不改怎么验：证书链、主机名、有效期、签名全是那个验证器验的；不用造就答得出来的只有「支持哪些签名算法」，答的是密码学实现自带的同一张表。核心起来时不再先读（原来另起一个线程先叫一次）：起来时造好几个客户端（模型请求、拉列表、汇率、更新目录），一回一次网都不上的核心原来也要读三百多个文件、常驻约 100 KB 的证书库。第一次连对方时多花读证书的几毫秒，和一次网络往返比不显。用的是 rustls 的 `dangerous()` 接口（换验证器只有这一条路），2026-11-02 项目主人批。
 3. `User-Agent` 是 `miyu/<版本>`，版本是这个包的版本号。
 4. 连上一个地址最多等 30 秒，连不上是可重试的错。
 5. `FromEnvironment` 照环境变量 `HTTPS_PROXY`、`HTTP_PROXY`、`ALL_PROXY`、`NO_PROXY`（小写的也认），这是 reqwest 的默认做法；不读 Windows、macOS 的系统代理设置。`Off` 一概不走代理。**地址落在本机的一律直连**（施工 8-11 补）：照 `is_loopback_url` 判，不管 `FromEnvironment` 还是 `Off`，主机是 `localhost`（大小写不论）、`*.localhost`，或者是回环的 IP（`127.0.0.0/8`、`::1`，IPv4 映射的也算）的都不走代理——环境变量里的代理不会自动放行回环地址，`NO_PROXY` 没写回环地址的机器探不到本机的服务。挑哪个客户端（照环境变量的、不走代理的）由上一层照每次请求的地址选（`miyu-session` 的 `ModelData::fetcher_for`、`Routes::client`/`Routes::direct`），`miyu-http` 本身不挑，只给判断的方法（`is_loopback_host`、`is_loopback_url`）。不改 `NO_PROXY` 的读法，也不读系统的代理设置。
@@ -140,6 +141,7 @@ HTTP 执行器：照驱动编码好的字节发一次请求，流式地读回来
 | `crates/miyu-http/tests/get.rs`（施工 8-7） | 带头、带 `If-None-Match`、交回 `ETag`；304；不是 2xx 的、超过上限的、超时的各说一句；连不上的原话里没有地址和 key；`fetcher()` 也不带 `Accept-Encoding`（W-7 补） |
 | `crates/miyu-http/tests/log.rs` | 说完、限速、连不上、地址读不出主机名、叫停，各记哪两行；key、请求体和回复里的字、路径和参数、出错的原话一个字都不记 |
 | `crates/miyu-http/src/loopback.rs`（源码里的单元测试，施工 8-11 补） | 认回环：`127.0.0.1`、`127.1.2.3`、`localhost`（大小写不论）、`foo.localhost`、`[::1]`、`[::ffff:127.0.0.1]`（带不带方括号都认）；不认：`10.0.0.1`、`example.com`、`localhost.example.com`；`is_loopback_url` 照地址的主机判、读不出主机名的当不是 |
+| `crates/miyu-http/src/tls.rs`、`tls/deferred/tests.rs`（源码里的单元测试，施工 V-33） | 拼配置、造客户端一张证书都不读，每一份都先说 `h2`；第一次验证书时才造验证器、只造一次，问支持哪些算法不造；每一样答的（几张真证书、读不懂的、空的，几个主机名，带不带中间证书、OCSP）和直接造的 `WebPkiServerVerifier` 逐字一样；另有一条要连外网、门禁不跑的：正常的站连得上，过期的、主机名不对的、自签的、来历不明的根签的被拒 |
 | `crates/miyu-session/tests/http.rs` | 经驱动和 HTTP 请求一次；限速了等够再请求，日志里的出错带着 429；打断了断开连接；缺 blob 出错、不发；断了走接着写的路径；空闲超时；图片照字节发出去 |
 | `crates/miyu-session/tests/http_log.rs` | HTTP 的两行带上会话编号 |
 | `crates/miyu/tests/no_proxy.rs`（施工 8-11 补） | 真的核心：代理的环境变量指到一台没人听的本机端口，供应商的地址是本机回环上的假服务器——列模型、发一次请求、`provider.test` 照样连得上；供应商的地址不是回环的，代理的环境变量指到一台记请求的假代理，列模型、发请求都经它转发 |

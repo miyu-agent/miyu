@@ -116,8 +116,7 @@ pub fn main(options: Options) -> ExitCode {
         Ok(resources) => resources,
         Err(error) => return failed("resources", error.to_string()),
     };
-    // 系统的证书也在旁边先读（施工 V-5 上）：整个进程只读这一次（`miyu_http::tls`），后面造 HTTP 客户端时多半已经读好了。
-    drop(std::thread::spawn(|| drop(miyu_http::tls())));
+    // 系统的证书不再先读（施工 V-33）：第一次验对方的证书时才读（`miyu_http::tls`），一回一次网都不上的核心不读。
     // 目录最先读（施工 V-2 下补）：和下面读清单、配置、生成文件并着走。
     let catalog = models::read_early(
         resources
