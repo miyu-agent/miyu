@@ -6,10 +6,14 @@
 //! - 网络走 [`Fetch`]：小程序接 HTTP，测试接内存里的一张表。
 //! - 包自带的图标（施工 F-18 下，`[package] logo`）从包文件里取出来，放进 [`Collected::logos`]（照 [`Logo::path_for`]），和索引
 //!   一起发；条目记位置、哈希、大小。在包目录外、不是 PNG / WebP、超过 [`LOGO_MAX_BYTES`] 的不收图标、记一笔，包照收。
-//! - 社区那种来源（`kind = "topic"`）现在读得懂、不收，记一笔（第三节第 5 条：写法先备好）。
+//! - 社区那种来源（`kind = "topic"`，施工 CC-1，第三节第 5 条）：照 GitHub 的搜索列出打了话题的仓库（`topic` 模块管跳过谁），
+//!   和官方的走同一条路收，`official` 照在不在 `official.toml`。官方来源已经列了的不再列一遍：官方那一条为准。不晾，
+//!   打了话题的最新 Release 下一趟就收；作恶的事后写进 `blocked.toml`（2026-11-02 项目主人定）。
+//! - 来源仓库被拉黑的（`blocked.toml` 写了 `origin`）连 Release 都不问：社区仓库能把包文件做得很大，拉黑了就别再下。
 
 mod folder;
 pub mod rules;
+mod topic;
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -88,12 +92,20 @@ pub fn collect(
         match source {
             Source::Official => {
                 for repo in &rules.official {
-                    if !repos.contains(repo) {
+                    if !has_repo(&repos, repo) {
                         repos.push(repo.clone());
                     }
                 }
             }
-            Source::Topic(topic) => notes.push(format!("topic {topic}: not collected yet")),
+            Source::Topic(topic) => {
+                for repo in topic::search(topic, fetch, api, &mut notes) {
+                    if has_repo(&repos, &repo) {
+                        notes.push(format!("{repo}: skipped in topic {topic}, already listed"));
+                    } else {
+                        repos.push(repo);
+                    }
+                }
+            }
         }
     }
     let mut names = rules.names.clone();
@@ -101,7 +113,15 @@ pub fn collect(
     let mut logos = BTreeMap::new();
     for (n, repo) in repos.iter().enumerate() {
         let origin = rules::origin(repo);
-        let official = rules.official.contains(repo);
+        if let Some(blocked) = rules
+            .blocked
+            .iter()
+            .find(|blocked| blocked.origin.as_deref() == Some(origin.as_str()))
+        {
+            notes.push(format!("{repo}: blocked, {}", blocked.reason));
+            continue;
+        }
+        let official = has_repo(&rules.official, repo);
         let place = scratch.join(n.to_string());
         let entry = one_repo(repo, &origin, official, fetch, api, &place);
         discard(&place);
@@ -129,10 +149,11 @@ pub fn collect(
                 notes.push(format!("{repo}: claimed id {}", entry.id));
             }
         }
-        let blocked = rules.blocked.iter().find(|blocked| {
-            blocked.id.as_deref() == Some(entry.id.as_str())
-                || blocked.origin.as_deref() == Some(origin.as_str())
-        });
+        // 拉黑的来源仓库在下载之前已经跳过，这里只剩照编号拉黑的。
+        let blocked = rules
+            .blocked
+            .iter()
+            .find(|blocked| blocked.id.as_deref() == Some(entry.id.as_str()));
         if let Some(blocked) = blocked {
             notes.push(format!("{repo}: blocked, {}", blocked.reason));
             continue;
@@ -155,6 +176,11 @@ pub fn collect(
         notes,
         logos,
     }
+}
+
+/// `repo` 在不在 `repos` 里：GitHub 的 `owner/repo` 不分大小写，搜索交回的写法可能和 `official.toml` 的不一样。
+fn has_repo(repos: &[String], repo: &str) -> bool {
+    repos.iter().any(|listed| listed.eq_ignore_ascii_case(repo))
 }
 
 /// 一个仓库最新的 Release 收成一条。

@@ -7,7 +7,7 @@
 //! - `miyu-index verify <index.json> [--public <base64>]…`：照旁边的签名文件验；不写 `--public` 的照编进来的官方公钥。
 //! - `miyu-index build <规则目录> <输出目录> [--github]`（施工 G-2 下）：照规则目录里的四份 TOML 收一趟，写 `<输出目录>/index.json`（没签名，
 //!   之后跑 `sign`），新占的编号写回 `names.toml`，包自带的图标写进 `<输出目录>/logos/`（施工 F-18 下，随索引一起发），一行一件事印出这一趟收了什么、跳过了什么。GitHub 的令牌照环境变量
-//!   `GITHUB_TOKEN`，只发给 API 的 `/repos/` 下面；API 的地址默认 `https://api.github.com`，环境变量 `MIYU_INDEX_API` 能换（测试用）。
+//!   `GITHUB_TOKEN`，只发给 API 的 `/repos/`、`/search/` 下面（后一个是社区来源搜话题，施工 CC-1）；API 的地址默认 `https://api.github.com`，环境变量 `MIYU_INDEX_API` 能换（测试用）。
 //!   带 `--github` 的（施工 DL-2，设计 54）再问每个包的来源仓库全部发布的下载次数，记进 `<输出目录>/stats.json`（最近 8 天，
 //!   不签名），写进索引的 `downloads`、`downloads_week`；问不成的照上一份索引沿用，不挡生成。没有 `GITHUB_TOKEN` 的照匿名问，
 //!   一小时只有 60 次。
@@ -306,7 +306,8 @@ fn write_out(
     Ok(said.join("\n"))
 }
 
-/// 经 HTTP 拿：令牌只发给 API 的 `/repos/` 下面（读 Release 的说明）；下包文件不带它，跳到别的主机也不会带出去。
+/// 经 HTTP 拿：令牌只发给 API 的 `/repos/`（读 Release 的说明）、`/search/`（搜话题，匿名一分钟只能搜 10 次）下面；下包文件
+/// 不带它，跳到别的主机也不会带出去。
 struct Net {
     runtime: tokio::runtime::Runtime,
     client: reqwest::Client,
@@ -334,7 +335,10 @@ impl Net {
 impl Fetch for Net {
     fn get(&self, url: &str, limit: u64) -> Result<Vec<u8>, String> {
         let mut headers = Vec::new();
-        if url.starts_with(&format!("{}/repos/", self.api)) {
+        if ["/repos/", "/search/"]
+            .iter()
+            .any(|path| url.starts_with(&format!("{}{path}", self.api)))
+        {
             headers.push((
                 "accept".to_string(),
                 "application/vnd.github+json".to_string(),

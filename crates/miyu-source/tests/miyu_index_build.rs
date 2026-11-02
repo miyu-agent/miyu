@@ -1,6 +1,6 @@
 //! 真跑 `miyu-index build`（施工 G-2 下）：测试里起一个很小的 HTTP 服务冒充 GitHub。收成一条写进 `index.json`、新占的编号
 //! 写回 `names.toml`；令牌只发给 API 的地址，下包文件的不带。带 `--github` 的沿用上一份的上线时刻、数下载次数、写 `stats.json`
-//! （施工 DL-2）。
+//! （施工 DL-2）。社区来源搜话题也带令牌，收成社区的一条（施工 CC-1）。
 
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Write};
@@ -330,6 +330,60 @@ fn build_with_github_carries_published_over_and_counts_downloads() {
             .iter()
             .any(|(path, _)| path.contains("/releases?")),
         "不问发布"
+    );
+    assert!(std::fs::remove_dir_all(&dir).is_ok());
+}
+
+/// 社区来源（施工 CC-1）：搜话题带令牌，搜到的仓库收成社区的一条。
+#[test]
+fn build_collects_a_tagged_repo_as_community() {
+    let dir = scratch("topic");
+    let folder = dir.join("src/hello");
+    write(
+        &folder.join("package.toml"),
+        "[package]\nversion = \"0.1\"\nname = { en = \"Hello\" }\n",
+    );
+    let file = dir.join("hello-0.1.miyu");
+    archive::pack(&folder, "hello", &file).expect("打得成");
+    let routes: Routes = Arc::default();
+    let (address, seen) = serve(Arc::clone(&routes));
+    {
+        let mut routes = routes.lock().expect("锁得上");
+        routes.insert(
+            "/files/hello-0.1.miyu".to_string(),
+            std::fs::read(&file).expect("在"),
+        );
+        routes.insert(
+            "/repos/someone/miyu-hello/releases/latest".to_string(),
+            format!("{{\"assets\": [{{\"name\": \"hello-0.1.miyu\", \"browser_download_url\": \"{address}/files/hello-0.1.miyu\"}}]}}").into_bytes(),
+        );
+        routes.insert(
+            "/search/repositories?q=topic:miyu-package&per_page=100&page=1".to_string(),
+            br#"{"items": [{"full_name": "someone/miyu-hello", "fork": false, "archived": false}]}"#
+                .to_vec(),
+        );
+    }
+    let rules = dir.join("rules");
+    write(
+        &rules.join("sources.toml"),
+        "[[source]]\nkind = \"topic\"\ntopic = \"miyu-package\"\n",
+    );
+    let out = dir.join("out");
+    std::fs::create_dir_all(&out).expect("建得了");
+    let ran = run(&address, &["build", path(&rules), path(&out)]);
+    assert_eq!(ran.status.code(), Some(0), "{ran:?}");
+    let index =
+        Index::parse(&std::fs::read(out.join("index.json")).expect("写了")).expect("读得成");
+    assert_eq!(index.packages.len(), 1, "{ran:?}");
+    assert_eq!(index.packages[0].origin, "github.com/someone/miyu-hello");
+    assert!(!index.packages[0].official);
+    assert!(
+        seen.lock()
+            .expect("锁得上")
+            .iter()
+            .any(|(path, auth)| path.starts_with("/search/repositories?")
+                && auth.as_deref() == Some("Bearer tok")),
+        "搜话题带令牌"
     );
     assert!(std::fs::remove_dir_all(&dir).is_ok());
 }

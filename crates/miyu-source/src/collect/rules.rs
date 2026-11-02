@@ -1,7 +1,7 @@
 //! 收录的规则（施工 G-2 下，设计 `37-软件源.md` 第三节第 4 条）：`miyu-agent/packages` 仓库里的四份 TOML。
 //!
-//! - `sources.toml`：照哪几种来源收，`[[source]] kind = "official"`；以后社区的是 `kind = "topic"`、`topic = "…"`（第三节第
-//!   5 条），现在读到了照样认、收的时候跳过并记一笔。
+//! - `sources.toml`：照哪几种来源收，`[[source]] kind = "official"`；社区的是 `kind = "topic"`、`topic = "…"`（第三节第
+//!   5 条，施工 CC-1）。话题照 GitHub 认的写：小写字母、数字、`-`，不以 `-` 开头，至多 50 个字；它要拼进搜索的地址。
 //! - `official.toml`：`repos = ["miyu-agent/miyu-embed", …]`，项目主人自己的仓库。
 //! - `names.toml`：`[names]` 下编号到来源仓库，先到先得、永远跟着它；收录时新占的写回去。
 //! - `blocked.toml`：`[[blocked]]` 每条写 `id` 或 `origin`（或两个都写）和 `reason`。
@@ -18,7 +18,7 @@ use crate::index::Blocked;
 pub enum Source {
     /// `official.toml` 列的仓库。
     Official,
-    /// 打了这个话题标签的仓库（社区自动收录，以后做）。
+    /// 打了这个话题标签的仓库（社区自动收录，施工 CC-1）。
     Topic(String),
 }
 
@@ -89,6 +89,15 @@ pub fn valid_repo(repo: &str) -> bool {
     })
 }
 
+/// GitHub 认的话题：1 到 50 个小写字母、数字、`-`，不以 `-` 开头。
+fn valid_topic(topic: &str) -> bool {
+    (1..=50).contains(&topic.len())
+        && !topic.starts_with('-')
+        && topic
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
 /// 仓库 `owner/repo` 的来源写法。
 pub fn origin(repo: &str) -> String {
     format!("github.com/{repo}")
@@ -108,9 +117,12 @@ fn sources(root: &dyn TableLike) -> Result<Vec<Source>, String> {
             Some("topic") => table
                 .get("topic")
                 .and_then(Item::as_str)
-                .filter(|topic| !topic.is_empty())
+                .filter(|topic| valid_topic(topic))
                 .map(|topic| Source::Topic(topic.to_string()))
-                .ok_or_else(|| "sources.toml: a topic source needs topic".to_string()),
+                .ok_or_else(|| {
+                    "sources.toml: a topic source needs topic, lowercase letters, digits and -"
+                        .to_string()
+                }),
             other => Err(format!("sources.toml: unknown kind {other:?}")),
         })
         .collect()

@@ -1,5 +1,5 @@
 //! 收录（施工 G-2 下）：网络换成内存里的一张表。收成一条、多系统、编号被别的仓库占了、拉黑、文件名对不上、一个 Release 里
-//! 混了两个包、没有包文件、拿不到；社区来源记一笔；四份规则读得成、写错的报哪个文件。
+//! 混了两个包、没有包文件、拿不到；四份规则读得成、写错的报哪个文件。社区来源的在 `topic` 里（施工 CC-1）。
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -200,9 +200,6 @@ fn taken_blocked_and_broken_releases_are_left_out() {
         "miyu-agent/missing",
         "miyu-agent/evil",
     ]);
-    rules
-        .sources
-        .push(Source::Topic("miyu-package".to_string()));
     rules.names.insert(
         "memes".to_string(),
         "github.com/miyu-agent/miyu-memes".to_string(),
@@ -228,7 +225,6 @@ fn taken_blocked_and_broken_releases_are_left_out() {
         "miyu-agent/empty: skipped, no package file in the latest release",
         "miyu-agent/missing: skipped, https://api.example.invalid/repos/miyu-agent/missing/releases/latest: 404",
         "miyu-agent/evil: blocked, malware",
-        "topic miyu-package: not collected yet",
     ] {
         assert!(said.contains(expected), "少了「{expected}」：\n{said}");
     }
@@ -492,3 +488,5 @@ fn with_several_targets_the_biggest_installed_size_is_kept_in_either_order() {
         assert_eq!(got.index.packages[0].installed, Some(big_size));
     }
 }
+
+mod topic;

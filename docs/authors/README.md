@@ -53,7 +53,7 @@ hello/
 
 1. **打包**：`miyu pkg pack ./hello` 照装的那一套查清单，打成 `hello-<版本>.miyu`，印 SHA-256 和大小。清单写了 `targets` 的，一种系统打一个：`--target linux-x86_64`。版本库和缓存不打进去：`.git`、`.github`、`.hg`、`.svn`、`__pycache__`、`.DS_Store`、`*.pyc`，在哪一层都一样；别的都进，要留在包外面的打包前挪走。
 2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
-3. **收录**：软件源每天收一次各仓库最新的 Release，签名后发出去。现在只收官方仓库，社区包的自动收录以后再开。
+3. **收录**：给仓库打上话题（topic）`miyu-package`，软件源每天收一次各仓库最新的 Release，签名后发出去，下一次收录就在里面，标「社区」。编号先到先得：第一个发出这个编号的仓库一直占着它，别的仓库再用这个编号的不收。分叉出来的仓库、存档了的仓库不收。
 
 ## 三个平台
 
