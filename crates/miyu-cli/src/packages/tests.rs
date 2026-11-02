@@ -14,7 +14,8 @@ fn added(name: &str, program: &str) -> Added {
         ]),
         manifest: PathBuf::from("/data/packages/tui/package.toml"),
         resources: PathBuf::from("/usr/share/miyu"),
-        state: PathBuf::from("/data/state/packages/tui"),
+        package: "tui".to_string(),
+        home: PathBuf::from("/data"),
     }
 }
 
@@ -136,18 +137,18 @@ fn the_help_page_gets_a_section_after_the_commands() {
     assert!(with.contains("打开终端界面\n\nask 的选项："), "{with}");
 }
 
-/// 跑包的程序时环境多三个：`MIYU_PACKAGE_DIR` 是这个包的文件夹（施工 S-6 上），`MIYU_PACKAGE_STATE` 是它的状态目录（施工
-/// F-15），`MIYU_RESOURCES` 是资源目录（施工 S-6 中）；参数照原样。真的换成程序在
-/// `crates/miyu/tests/packages.rs` 照真二进制走一遍（Unix）。
+/// 跑包的程序时环境多：它在各层的几处（设计 55 第四节，新名字、旧名字都给，施工 S-6 上、F-15、FH-3下），`MIYU_RESOURCES`
+/// 是资源目录（施工 S-6 中），`MIYU_PROGRAM` 是主程序（施工 G-15）；参数照原样。真的换成程序在 `crates/miyu/tests/packages.rs`
+/// 照真二进制走一遍（Unix）。
 #[test]
 fn the_program_gets_its_package_folder() {
-    let dir = Path::new("/data/packages/tui");
-    let state = Path::new("/data/state/packages/tui");
+    let root = DataRoot::at(PathBuf::from("/data"));
+    let dirs = PackageDirs::of(&root, "tui", PathBuf::from("/data/opt/tui"));
     let resources = Path::new("/usr/share/miyu");
     let command = command(
         &Launch::direct(std::path::PathBuf::from("/bin/miyu-tui")),
         &[OsString::from("--x")],
-        (dir, state),
+        &dirs,
         resources,
     );
     assert_eq!(command.get_program(), "/bin/miyu-tui");
@@ -157,39 +158,42 @@ fn the_program_gets_its_package_folder() {
         program: std::path::PathBuf::from("python"),
         args: vec![OsString::from("/pkg/bin/miyu-tui")],
     };
-    let shebang = super::command(&script, &[OsString::from("--x")], (dir, state), resources);
+    let shebang = super::command(&script, &[OsString::from("--x")], &dirs, resources);
     assert_eq!(shebang.get_program(), "python");
     assert_eq!(
         shebang.get_args().collect::<Vec<_>>(),
         ["/pkg/bin/miyu-tui", "--x"]
     );
-    let envs: Vec<_> = command.get_envs().collect();
+    let envs: std::collections::BTreeMap<_, _> = command
+        .get_envs()
+        .map(|(name, value)| {
+            (
+                name.to_os_string(),
+                value.map(std::ffi::OsStr::to_os_string),
+            )
+        })
+        .collect();
+    let given = |name: &str| envs.get(std::ffi::OsStr::new(name)).cloned().flatten();
+    for (name, at) in dirs.env() {
+        assert_eq!(given(name), Some(at.into_os_string()), "{name}");
+    }
+    assert_eq!(given("MIYU_APP_DIR"), Some("/data/opt/tui".into()));
+    assert_eq!(
+        given("MIYU_PACKAGE_DIR"),
+        Some("/data/opt/tui".into()),
+        "旧名字照给"
+    );
+    assert_eq!(
+        given("MIYU_RESOURCES"),
+        Some(resources.as_os_str().to_os_string()),
+        "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）"
+    );
     // 主程序的真实位置（施工 G-15）：这里跑的是测试程序。
     let program = std::env::current_exe()
         .and_then(std::fs::canonicalize)
         .expect("测试程序在");
-    assert_eq!(
-        envs,
-        [
-            (
-                std::ffi::OsStr::new("MIYU_PACKAGE_DIR"),
-                Some(dir.as_os_str())
-            ),
-            (
-                std::ffi::OsStr::new("MIYU_PACKAGE_STATE"),
-                Some(state.as_os_str())
-            ),
-            (
-                std::ffi::OsStr::new("MIYU_PROGRAM"),
-                Some(program.as_os_str())
-            ),
-            (
-                std::ffi::OsStr::new("MIYU_RESOURCES"),
-                Some(resources.as_os_str())
-            ),
-        ],
-        "自己装的包程序在包的 bin/ 里，资源目录也得交（施工 S-6 中）；主程序在哪也交（施工 G-15）"
-    );
+    assert_eq!(given("MIYU_PROGRAM"), Some(program.into_os_string()));
+    assert_eq!(envs.len(), dirs.env().len() + 2, "{envs:?}");
 }
 
 #[test]

@@ -88,7 +88,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 ## 四、FH-3：换布局 layout 3
 
-状态：拆成上下两步。FH-3上（换布局）在 `step/FH-3` 上做完、等门禁（2026-11-03，sub1）；FH-3下（新环境变量和旧名过渡、拉起前建好给出去的目录、MCP 跟着给、`miyu <包的命令>` 不给资源目录的测试缺口）接着做。
+状态：拆成上下两步，都在 `step/FH-3` 上（2026-11-03，sub1）。FH-3上（换布局）门禁过了、交了 core1；FH-3下（新环境变量和旧名过渡、拉起前建好给出去的目录并清掉 `tmp/<编号>/`、MCP 跟着给、脚本给包文件夹、`miyu <包的命令>` 不给资源目录的测试缺口、清暂存时路上的链接、旧布局上跑包命令报旧版）做完、等门禁。整个 FH-3 等三家 FH-5上 对好了一起合。
 
 ### 目的
 
@@ -97,7 +97,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 ### 待办
 
 - [x] 标记：新文件名 `.miyu-layout`，写 `This directory is a Miyu data root (layout 3).`；读的时候核对版本。用到标记的四处一起换：`durable.rs` 的 `create_inside`、`config_file.rs:248`、`miyu-session/src/sandbox.rs:251`、`miyu-sandbox/src/install/files.rs:26`。有旧标记 `.miyu-root`、没有新标记的：不动、报设计 55 第六节第 1 条那句、退出码非零。
-- [x] `DataRoot` 各方法改成新位置；骨架：`prepare` 建 `etc/`、`etc/private/`（0700）、`run/`、`tmp/`；核心起来建设计 55 第五节第 2 条那张表。核心起来清 `tmp/unpack/`；`var/tmp/` 照时限清（初值 7 天，`root/tmp.rs`）。`tmp/<编号>/` 在拉起这个包的扩展之前清：放到 FH-3下，和给 `MIYU_TMP_DIR` 一起。
+- [x] `DataRoot` 各方法改成新位置；骨架：`prepare` 建 `etc/`、`etc/private/`（0700）、`run/`、`tmp/`；核心起来建设计 55 第五节第 2 条那张表。核心起来清 `tmp/unpack/`；`var/tmp/` 照时限清（初值 7 天，`root/tmp.rs`）。`tmp/<编号>/` 在拉起这个包的扩展、`miyu <包的命令>` 之前清（FH-3下，`PackageDirs::ready`）。清 `tmp/unpack/`、`tmp/<编号>/`、扫 `var/tmp/` 之前从数据根逐层看是真目录，哪一层是链接的整趟不清（FH-3下，core1 审 FH-3上 时提的）。
 - [x] 凭据进 `etc/private/`：`secrets.rs`、`access.rs`、`logins.rs`；沙盒安装程序两条路（`etc/private/sandbox-windows.json`、`var/log/sandbox/windows-error.json`）都逐层查不是链接。
 - [x] `opt/`：装包、暂存 `.<编号>.new|.old`、`install::recover`、`real_packages()`、`Confines`（`unsandboxed.rs:62-71`、`links.rs:44-50`）。
 - [x] `etc/removed/<编号>` 换掉 `packages/<编号>.removed`。
@@ -107,10 +107,10 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 - [x] `var/lib/`：`journal.jsonl`、`log-salt`、`models/` 里 `learned.json`、`pools.json`、`renamed.json`，`mcp/<服务>/`，包的数据 `<编号>/`。
 - [x] `var/cache/`：`index/`、`usage.db`、`rates.db`、`config/`、`models/`（`providers/`、`catalog.json`）、`packages/`、`mcp/<服务>.json`、`provide/<包>.json`（原 `state/providers/`）、`scripts/`、`personas/pictures.json`、`mermaid/`、`sandbox-probe.json`、`perf/`。
 - [x] `var/log/`：`core.log`、`memory.jsonl`、`mcp/<服务>.stderr`、`sandbox/`、`<编号>/stderr`（和 `stderr.old`，原 `state/logs/<扩展实例>.stderr`，`extensions/stderr.rs`）。
-- [ ] `run/<编号>/`：给包的运行时目录；核心自己的照旧在 `run/` 这一层。（位置 `DataRoot::package_runtime` FH-3上 有了，交出去在 FH-3下）
+- [x] `run/<编号>/`：给包的运行时目录；核心自己的照旧在 `run/` 这一层。
 - [x] 保留名字：设计 55 第三节第 3 条那一串，由测试照各层的常量推出来、和设计对；装包时拒、`miyu check` 报。
 - [x] 卸包清的，照设计 55 第三节第 4 条那张清单（包带的脚本的状态和缓存、MCP 服务的三处、`provide/`、`index/kb/packages/` 都在里面）。
-- [ ] 环境变量：`miyu_store::program` 的名字表照设计 55 第四节加新名字（包的配置、缓存、日志、暂存、运行时几处跟着加进 `PackageDirs`，MCP 服务也照它给）；旧名字（`MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR`）同时给、指到新位置，代码里标「FH-6 删」；拉起前建好每一个给出去的目录。
+- [x] 环境变量：`miyu_store::program` 的名字表照设计 55 第四节加新名字（包的配置、缓存、日志、暂存、运行时几处跟着加进 `PackageDirs`，MCP 服务也照它给）；旧名字（`MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR`）同时给、指到新位置，代码里标「FH-6 删」；拉起前建好每一个给出去的目录。（FH-3下：`program::PackageDirs` 七处加照 XDG 的四处，扩展、`miyu <包的命令>` 照 `PackageDirs::ready`；脚本另给包文件夹 `MIYU_APP_DIR`、只读放开；MCP 服务给 `MIYU_STATE_DIR`，就是工作目录。旧布局的数据根上跑包加的命令，先报「旧版的数据根」、退出 1，不再当成不认识的命令。）
 - [x] `config.toml` 新建时第一行 `#:schema ../var/cache/config/config.schema.json`（照方法算）。
 - [ ] Windows 沙盒（FH-3上 做了 `keep_places` 每条命令前补那张表、`windows-run.md`；虚拟机上量留到合之前）：`carve` 照新的几层排；`keep_places`（`miyu-session/src/sandbox.rs:250-268`）补的目录换新位置；`windows-run.md` 里「第一次新建的那一下」那条改成已解决（凭据在整条禁的 `etc/private/`）。
 - [x] Linux、macOS 沙盒：`hidden` 照旧整个数据根；`write`、`reveal` 的那几处换新位置（工作区、技能文件夹、本会话附件、脚本的状态和缓存、四个 XDG 目录）。

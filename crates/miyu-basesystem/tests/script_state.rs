@@ -172,3 +172,54 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
     let outside = site.script("scripts/homed.py", json!({})).await;
     assert_eq!(lines(&outside), unset, "会话外面的不给");
 }
+
+/// 印出几个目录变量的脚本（施工 FH-3下，设计 55 第四节）：新名字、旧名字各一行，没给的印 `unset`。
+const NAMES: &[u8] = b"#!/usr/bin/env python3\n# Description: Names.\nimport os\nfor name in ['MIYU_STATE_DIR', 'MIYU_SCRIPT_STATE_DIR', 'MIYU_CACHE_DIR', 'MIYU_SCRIPT_CACHE_DIR', 'MIYU_IMAGES_DIR', 'MIYU_SCRIPT_IMAGES_DIR', 'MIYU_APP_DIR', 'MIYU_CONFIG_DIR', 'MIYU_TMP_DIR']:\n    print(name + '=' + os.environ.get(name, 'unset'))\n";
+
+/// 脚本拿到的新名字和旧名字指同一处（旧名字 FH-6 删）；包带的脚本另拿包的文件夹 `MIYU_APP_DIR`，你自己放的没有；配置、
+/// 暂存不给（设计 55 第四节那一张表）。
+#[tokio::test]
+async fn a_script_gets_the_new_names_beside_the_old_ones() {
+    let site = Site::new();
+    site.file("data/opt/kit/scripts/names.py", NAMES);
+    site.file("scripts/names.py", NAMES);
+    let lines = |done: &Done| -> Vec<(String, String)> {
+        text(done)
+            .lines()
+            .filter_map(|line| line.split_once('='))
+            .map(|(name, value)| (name.to_string(), value.to_string()))
+            .collect()
+    };
+    let value = |got: &[(String, String)], name: &str| {
+        got.iter()
+            .find(|(one, _)| one == name)
+            .map(|(_, value)| value.clone())
+            .unwrap_or_else(|| panic!("没印 {name}：{got:?}"))
+    };
+    let packaged = site.script_by("data/opt/kit/scripts/names.py", "kit").await;
+    assert!(!packaged.error, "{}", text(&packaged));
+    let got = lines(&packaged);
+    for (new, old) in [
+        ("MIYU_STATE_DIR", "MIYU_SCRIPT_STATE_DIR"),
+        ("MIYU_CACHE_DIR", "MIYU_SCRIPT_CACHE_DIR"),
+        ("MIYU_IMAGES_DIR", "MIYU_SCRIPT_IMAGES_DIR"),
+    ] {
+        assert_ne!(value(&got, new), "unset", "{new}");
+        assert_eq!(
+            value(&got, new),
+            value(&got, old),
+            "{new} 和 {old} 指同一处"
+        );
+    }
+    let app = std::fs::canonicalize(site.0.join("data/opt/kit")).expect("在");
+    let given = std::fs::canonicalize(value(&got, "MIYU_APP_DIR")).expect("指到真的目录");
+    assert_eq!(given, app, "包带的脚本拿到包的文件夹");
+    assert_eq!(value(&got, "MIYU_CONFIG_DIR"), "unset");
+    assert_eq!(value(&got, "MIYU_TMP_DIR"), "unset");
+    let own = site.script_by("scripts/names.py", "~home").await;
+    assert_eq!(
+        value(&lines(&own), "MIYU_APP_DIR"),
+        "unset",
+        "你自己放的没有"
+    );
+}

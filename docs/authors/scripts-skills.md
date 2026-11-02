@@ -83,9 +83,11 @@ Linux、macOS 上 `chmod +x dice.py`。
   ```
 
 - 脚本工具里调不了 `miyu call`：调工具的通道只开给 AI 直接跑的 `shell` 命令，脚本工具跑起来不开，免得一层套一层。要先调工具、再处理结果的，别做成脚本工具，让 AI 在 `shell` 里跑它（比如放进技能里，正文写清楚怎么跑）。
-- 工作目录是会话的工作区；能写缓存的目录在 `MIYU_SCRIPT_CACHE_DIR`（在你的家目录的 `cache/` 里，每个脚本一格，重启也在；30 天没碰的会被清掉，所以只放丢了也能再生成的东西）。
+- 工作目录是会话的工作区；能写缓存的目录在 `MIYU_CACHE_DIR`（在数据根的 `var/cache/scripts/` 里，每个脚本一格，重启也在；30 天没碰的会被清掉，所以只放丢了也能再生成的东西）。
 - 给人的文件（画的图、下载的视频、生成的文档）存进你家目录的那几处，人在终端、网页里找得到：`MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`，跑之前建好、能写。只有你自己（本机）的会话给；群里、陌生人私聊的会话没有，那里照旧写缓存目录或工作区，所以用之前先看变量在不在。
-- 要一直留着的（登录态、上一次跑到哪）写进 `MIYU_SCRIPT_STATE_DIR`：每个脚本一格，下一次还在；本机的会话共用一格，群、陌生人的私聊照场所各是各的一格（同一个群开了新会话还是那一格）。装成包的，卸包时跟着删；自己放在 `scripts/` 里的，删了脚本状态目录还留着，`miyu check` 会提醒、印出在哪。
+- 要一直留着的（登录态、上一次跑到哪）写进 `MIYU_STATE_DIR`：每个脚本一格，下一次还在；本机的会话共用一格，群、陌生人的私聊照场所各是各的一格（同一个群开了新会话还是那一格）。装成包的，卸包时跟着删；自己放在 `scripts/` 里的，删了脚本状态目录还留着，`miyu check` 会提醒、印出在哪。
+- 做成包的脚本另有 `MIYU_APP_DIR`：它所在的包文件夹（清单、包带的别的文件都在里面），只读；`scripts/` 里自己放的没有。
+- 旧名字 `MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_IMAGES_DIR`、`MIYU_PACKAGE_DIR` 过渡期间照样给、指到同一处，下一版去掉，新写的照上面的名字。
 - 谁调的：`MIYU_CALLER_VENUE` 是在哪种会话里调的（本机的是 `local`，群、私聊是场所编号，例如 `qq:group:123`），`MIYU_CALLER_OWNER` 是这一轮开口的是不是机器主人（`1`、`0`；本机的会话是；群里几个人有一个不是主人的、说不清的都是 `0`）。
 - 这一轮用的模型：`MIYU_MODEL` 是模型名，`MIYU_EFFORT` 是思考强度（配置里没写的是 `default`）；`MIYU_SESSION_LOG` 是这个会话日志的目录，只有机主自己的会话有（别人看不到运行 Miyu 的那台电脑）。还没定下模型的、会话外面的调用都没有这几个，用之前先看在不在。
 - 这两个只是事实，不是门：AI 自己在命令里写 `MIYU_CALLER_OWNER=1 ./脚本` 挡不了。要让脚本只在某几种会话里有，写开头的 `Venues`；环境变量只用来调整行为，比如群里只读、不改东西：
@@ -110,11 +112,11 @@ Linux、macOS 上 `chmod +x dice.py`。
 
 **交图**
 
-要让 AI 直接看到图（截图、视频抽的帧），把图拷进 `MIYU_SCRIPT_IMAGES_DIR`：每次调用一个新的空目录，跑完 Miyu 收走，再删掉。
+要让 AI 直接看到图（截图、视频抽的帧），把图拷进 `MIYU_IMAGES_DIR`：每次调用一个新的空目录，跑完 Miyu 收走，再删掉。
 
 ```python
 import os, shutil
-shutil.copy("frame-01.png", os.environ["MIYU_SCRIPT_IMAGES_DIR"])
+shutil.copy("frame-01.png", os.environ["MIYU_IMAGES_DIR"])
 print("Grabbed 1 frame.")
 ```
 

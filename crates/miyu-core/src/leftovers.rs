@@ -47,6 +47,6 @@ pub(crate) fn tidy(root: &DataRoot) {
                 tracing::warn!(target: TARGET, error = %error, "stale var/tmp entry kept");
             }
         }
-        Err(error) => tracing::warn!(target: TARGET, error = %error, "var/tmp not read"),
+        Err(error) => tracing::warn!(target: TARGET, error = %error, "var/tmp not swept"),
     }
 }

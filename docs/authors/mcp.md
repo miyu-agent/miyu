@@ -77,7 +77,7 @@ clicall = false                                   # 可以不写：AI 在命令�
 
 ## 跑起来的样子
 
-- 工作目录是 `~/.miyu/state/mcp/<服务名>/`，不进沙盒；标准错误在 `~/.miyu/state/logs/mcp-<服务名>.stderr`，起不来先看它。
+- 工作目录是 `~/.miyu/var/lib/mcp/<服务名>/`，也照 `MIYU_STATE_DIR` 给，不进沙盒；标准错误在 `~/.miyu/var/log/mcp/<服务名>.stderr`，起不来先看它。
 - 起不来、崩了的退避着重试，连续 5 次停下；「软件包」页上看得到原因和标准错误的最后几行，点重启再试。
 - 新旧两版 MCP 都认，服务说哪一版都行。接工具、服务的说明、提示词；资源、`sampling` 这些不接。
 - Miyu 不替人装 Node、Python：用 `npx`、`uvx` 起的服务，说明里写清楚要先装什么。

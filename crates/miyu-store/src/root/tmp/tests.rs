@@ -98,3 +98,40 @@ fn a_link_is_removed_without_following_it() {
     assert_eq!(swept.removed, [root.var_tmp().join("link")]);
     assert!(kept.is_file(), "链接那头一点没动");
 }
+
+/// `var/`、`var/tmp/` 是指到数据根外面的链接（施工 FH-3下，core1 审 FH-3上 时提的）：整趟不清、交回错，外面的一样都不删。
+#[test]
+fn a_linked_var_or_var_tmp_is_not_swept() {
+    for linked in ["var", "var/tmp"] {
+        let scratch = Scratch::new();
+        let elsewhere = Scratch::bare();
+        fs::create_dir_all(elsewhere.path()).expect("建得了");
+        let outside = elsewhere.path().join("old");
+        fs::write(&outside, b"x").expect("写得进");
+        let root = DataRoot::at(scratch.path().to_path_buf());
+        let at = scratch.path().join(linked);
+        fs::create_dir_all(at.parent().expect("有上一级")).expect("建得了");
+        if !crate::test_support::link(elsewhere.path(), &at) {
+            return;
+        }
+        let swept = root.sweep_var_tmp(SystemTime::now() + 30 * DAY);
+        assert!(swept.is_err(), "{linked}：是链接的整趟不清");
+        assert!(outside.is_file(), "{linked}：链接那头一样都没删");
+    }
+}
+
+/// `tmp/` 是指到外面的链接：核心起来清 `tmp/unpack/` 不顺着它删到外面去。
+#[test]
+fn a_linked_tmp_is_not_cleared_through() {
+    let scratch = Scratch::new();
+    let elsewhere = Scratch::bare();
+    fs::create_dir_all(elsewhere.path().join("unpack")).expect("建得了");
+    let outside = elsewhere.path().join("unpack/kept");
+    fs::write(&outside, b"x").expect("写得进");
+    let root = DataRoot::at(scratch.path().to_path_buf());
+    if !crate::test_support::link(elsewhere.path(), &scratch.path().join("tmp")) {
+        return;
+    }
+    assert!(root.clear_own_tmp().is_err(), "是链接的不清");
+    assert!(outside.is_file(), "链接那头一样都没删");
+}

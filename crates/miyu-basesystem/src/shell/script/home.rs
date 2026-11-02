@@ -8,16 +8,10 @@ use std::path::PathBuf;
 use miyu_store::root::{DataRoot, USER_DIRS};
 use miyu_tool::Call;
 
-/// `name`（[`USER_DIRS`] 里的一处）交给脚本的环境变量：照名字配，不靠先后（施工 Y-11 补修），调了 [`USER_DIRS`] 的先后也
-/// 配不错。不认识的没有：[`USER_DIRS`] 加了一处，这里不补就不交，测试当场报红。
+/// `name`（[`USER_DIRS`] 里的一处）交给脚本的环境变量：照名字配，不靠先后（施工 Y-11 补修），名字只在
+/// `miyu_store::program::user_dir` 定（施工 FH-3下：包拿到的是同一个名字）。不认识的没有。
 pub(super) fn var(name: &str) -> Option<&'static str> {
-    match name {
-        "pictures" => Some("MIYU_PICTURES_DIR"),
-        "videos" => Some("MIYU_VIDEOS_DIR"),
-        "documents" => Some("MIYU_DOCUMENTS_DIR"),
-        "downloads" => Some("MIYU_DOWNLOADS_DIR"),
-        _ => None,
-    }
+    miyu_store::program::user_dir(name)?.first().copied()
 }
 
 /// 本机的场所。

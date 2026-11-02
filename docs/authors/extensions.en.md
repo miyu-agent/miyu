@@ -145,10 +145,20 @@ Slash commands, methods, pushes, the Rust example and the full example package a
 ## Being started
 
 - The program is the one in `bin/`; its arguments are `[process] args`.
-- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PACKAGE_DIR` (your package folder: find files you bring from here; don't build paths yourself) and `MIYU_PACKAGE_STATE` (your package's state directory, already created), `MIYU_PROGRAM` (the real path of the main `miyu` program: to start the core run `$MIYU_PROGRAM core`; don't look beside your own binary, a package installed into the data root has no main program next to it). `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set when a person runs `miyu <your command>` in a terminal.
-- Put your database and caches in the directory `MIYU_PACKAGE_STATE` names; it is removed on uninstall. Always find it through this variable: not through the working directory (it is the state directory when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
+- The environment is the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES`, `MIYU_PROGRAM` (the real path of the main `miyu` program: to start the core run `$MIYU_PROGRAM core`; don't look beside your own binary, a package installed into the data root has no main program next to it), and your package's own place in each part of the data root, all already created and given as real paths:
+  - `MIYU_APP_DIR`: your package folder (find the files you bring from here; don't build paths yourself);
+  - `MIYU_CONFIG_DIR`: configuration people edit by hand (`etc/<id>/`);
+  - `MIYU_STATE_DIR`: what must be kept, such as databases and logins (`var/lib/<id>/`; also the working directory when the core starts you);
+  - `MIYU_CACHE_DIR`: what can be made again (`var/cache/<id>/`);
+  - `MIYU_LOG_DIR`: your own logs (`var/log/<id>/`; the core keeps your standard error here as `stderr` and `stderr.old`, so don't use those two names);
+  - `MIYU_TMP_DIR`: short-lived scratch (`tmp/<id>/`, emptied before each start);
+  - `MIYU_RUNTIME_DIR`: locks, sockets, addresses that only mean something while running (`run/<id>/`);
+  - `MIYU_PICTURES_DIR`, `MIYU_VIDEOS_DIR`, `MIYU_DOCUMENTS_DIR`, `MIYU_DOWNLOADS_DIR`: files for the person.
+
+  The same set is given when a person runs `miyu <your command>` in a terminal. The old names `MIYU_PACKAGE_DIR` (same as `MIYU_APP_DIR`) and `MIYU_PACKAGE_STATE` (same as `MIYU_STATE_DIR`) are still set during the transition and go away in the next release.
+- Keep your things apart as above; all of these are removed on uninstall. Always find them through these variables: not through the working directory (it is `MIYU_STATE_DIR` when the core starts you, but the person's current directory when they run your command), and not by building a path under `MIYU_HOME`.
 - Only your program and the commands people run get this variable: scripts she runs in the sandbox can't read the state directory (it is inside the data root, which the sandbox hides).
-- Stderr goes to `~/.miyu/state/logs/<id>.stderr`; look there first when something goes wrong.
+- Stderr goes to `~/.miyu/var/log/<id>/stderr` (inside `MIYU_LOG_DIR`); look there first when something goes wrong.
 
 ## Handshake and settings
 
@@ -190,7 +200,7 @@ Response:
 ```
 
 - `args` are already corrected against your `input_schema`. `by` is who asked her; `owner` is whether the core recognizes that person as the owner. For tools that act in groups, check them yourself to decide who may use them.
-- `blocks` is content for the model: text `{"type": "text", "text"}`; for images, upload with `blob.put` first, then `{"type": "image", "blob", "media_type", "width", "height"}`. Images your package ships can be uploaded with `{"path": "<MIYU_PACKAGE_DIR>/files/cat.png"}` (other files in the data directory are refused).
+- `blocks` is content for the model: text `{"type": "text", "text"}`; for images, upload with `blob.put` first, then `{"type": "image", "blob", "media_type", "width", "height"}`. Images your package ships can be uploaded with `{"path": "<MIYU_APP_DIR>/files/cat.png"}` (other files in the data directory are refused).
 - Where to save images you draw or generate: calls inside a session carry `pictures`, the picture folder in the data root (a real path that may not exist yet; create it before writing). Saved there, people find them in the terminal and web UI. Without that field (calls outside a session, venue sessions such as groups and private chats, older cores) keep using the workspace: a venue session can only reach its own workspace, so an image saved elsewhere couldn't be read or sent from there.
 - On failure, still return a result with `error: true` and the reason written for the model; a JSON-RPC error also counts as failure.
 - To have her "send" an image (stickers and the like, drawn in the reply, sent as an image on chat platforms): add `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]` to the result, at most 4. The AI doesn't see `sent`.

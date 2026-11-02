@@ -6,8 +6,8 @@
 //!   包里的程序共用 [`miyu_store::packages::launcher`]）。
 //! - 参数是她给的那份 JSON，写进标准输入，不超过 30 KiB 的也交给环境变量 `MIYU_ARGS_JSON`（同旧版；施工 X-37：长的放进环境
 //!   变量起都起不来）。
-//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_SCRIPT_CACHE_DIR`（施工 Y-11 上：数据根的
-//!   `cache/<来处>/<工具名>/`，场所会话多一层场所，进沙盒的放进规格的 `write`；会话外面的调用照旧在系统临时目录 `miyu-scripts/<工具名>`
+//! - 工作目录是这一轮的工作目录；另给一个能写缓存的目录 `MIYU_CACHE_DIR`（施工 Y-11 上：数据根的
+//!   `var/cache/scripts/<来处>/<工具名>/`，场所会话多一层场所，进沙盒的放进规格的 `write`；会话外面的调用照旧在系统临时目录 `miyu-scripts/<工具名>`
 //!   下面；30 天没碰的清掉，跑完清一次，`sweep.rs`），`PYTHONUTF8=1`（Python 的标准输入、输出照 UTF-8）。别的环境变量照 `shell` 的
 //!   挑法。
 //! - 包自己的配置项（施工 PS-1）：包里 `scripts/` 下的脚本另给 `MIYU_SETTINGS_JSON`，这个包配置项这一刻的最终值（一个 JSON 对象，
@@ -16,13 +16,15 @@
 //! - 调用的事实（施工 X-43，[`miyu_tool::Caller`]）：`MIYU_CALLER_VENUE` 是场所（本机的 `local`、场所编号），`MIYU_CALLER_OWNER`
 //!   是这一轮开口的是不是机器主人（`1`、`0`）；会话外面的调用没有这两个。只是事实，不是门：挡场所的是开头的 `Venues`，工具照它
 //!   给哪种会话。核心环境里残留的照 `shell` 的挑法本来就去掉了（`MIYU_*` 不传）。
-//! - 持久的状态目录 `MIYU_SCRIPT_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照来处、工具名分，场所会话
+//! - 持久的状态目录 `MIYU_STATE_DIR`（施工 X-44，[`miyu_store::scripts::state_dir`]）：照来处、工具名分，场所会话
 //!   另照场所分（施工 X-44 补：不分的话几个群共用一处），跑之前建好（Unix 上 0700），交真实位置；进沙盒的放进规格的 `write`（数据根
 //!   照旧藏着）。建不成的、场所写不成目录名的、会话外面的调用不给，照常跑。
 //!   能丢的放缓存目录，要留的（登录态）放这里。
 //! - 本机的会话另给数据根的 `pictures/`、`videos/`、`documents/`、`downloads/`（施工 Y-11 补，[`home`]）：`MIYU_PICTURES_DIR`
 //!   这四个，建好交真实位置、放进沙盒的 `write`；场所会话、会话外面的调用不给。
-//! - 要交图的拷进另一个目录 `MIYU_SCRIPT_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
+//! - 名字照设计 55 第四节（施工 FH-3下，`miyu_store::program`）：旧名字 `MIYU_SCRIPT_*_DIR` 过渡期间一起给（FH-6 删）；包带的
+//!   脚本另给它的包文件夹 `MIYU_APP_DIR`，进沙盒的只读放开。
+//! - 要交图的拷进另一个目录 `MIYU_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
 //!   到时被杀的不看，读完删掉。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：自己放的、自己装的包带的在数据根里，沙盒藏着）。
@@ -39,7 +41,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
-use miyu_store::program::{SCRIPT_CACHE, SCRIPT_IMAGES, SCRIPT_STATE, named};
+use miyu_store::program::{APP, SCRIPT_CACHE, SCRIPT_IMAGES, SCRIPT_STATE, named};
 use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
 
@@ -236,6 +238,15 @@ impl Script {
         Some(text)
     }
 
+    /// 包带的脚本所在的包文件夹（设计 55 第四节的 `MIYU_APP_DIR`）：脚本都直接在包文件夹的 `scripts/` 下面（是链接的也是链接
+    /// 本身在那里），往上两层就是。你自己放的没有。
+    fn app(&self) -> Option<PathBuf> {
+        if self.source == miyu_store::scripts::HOME_PACKAGE {
+            return None;
+        }
+        self.file.parent()?.parent().map(Path::to_path_buf)
+    }
+
     /// 家目录那几处（施工 Y-11 补，[`home`]）：该给的建好，交环境变量和真实位置；建不成的那一处不给（记一行 `WARN`）。
     fn homes(&self, call: &Call) -> Vec<(&'static str, PathBuf)> {
         home::wanted(call)
@@ -270,6 +281,8 @@ impl Script {
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
                 let mut sandboxed = sandboxed.clone();
                 sandboxed.spec.reveal.push(file.clone());
+                // 包带的脚本：它的包文件夹只读放开（施工 FH-3下：交了 `MIYU_APP_DIR`，读得到才有用）。
+                sandboxed.spec.reveal.extend(self.app());
                 // 自己的状态目录能写（施工 X-44）、缓存目录能写（施工 Y-11 上）：在藏着的数据根里，越深的越算数。
                 sandboxed.spec.write.extend(state.map(Path::to_path_buf));
                 sandboxed.spec.write.push(cache.to_path_buf());
@@ -290,8 +303,10 @@ impl Script {
         if args_json.len() <= ARGS_IN_ENV {
             vars.push((ARGS.into(), args_json.into()));
         }
-        // 几个目录的名字照 `miyu_store::program` 的名字表（施工 FH-2下）。
+        // 几个目录的名字照 `miyu_store::program` 的名字表（施工 FH-2下；FH-3下 起新名字、旧名字都给）。
+        let app = self.app();
         let dirs = [
+            (APP, app.as_deref()),
             (SCRIPT_CACHE, Some(cache)),
             (SCRIPT_IMAGES, images),
             (SCRIPT_STATE, state),

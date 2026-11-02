@@ -1,7 +1,7 @@
 //! 软件包加的子命令（施工 9-2，`docs/blueprint/packages.md`「转交」，`cli/main.md`「分发」）：`miyu <名字> …` 不是内置的
 //! 子命令时，照两层的清单找 `[command]` 是它的那个包，原样跑包里的程序：参数、环境、标准输入输出照原样，退出码照它的；环境
-//! 只多 `MIYU_PACKAGE_DIR`（这个包的文件夹，施工 S-6 上）、`MIYU_PACKAGE_STATE`（这个包的状态目录，跑之前建好，施工 F-15），
-//! 同核心拉起扩展。
+//! 多它在各层的那几处（设计 55 第四节，`miyu_store::program::PackageDirs`：包的文件夹、配置、状态、缓存、日志、暂存、运行时，
+//! 跑之前建好、清掉暂存），同核心拉起扩展。
 //! `miyu help <名字>` 转成 `<程序> --help`：帮助由包自己说。`miyu -h` 多一节「软件包加的命令」。
 //!
 //! 和内置的撞名：内置的优先，不转交、不列（装包时拦随装包那一步）。清单照磁盘现读，不连核心：转交不该为了找一个程序拉起
@@ -24,6 +24,7 @@ use std::path::{Path, PathBuf};
 use miyu_config::phrases::Phrases;
 use miyu_store::env::Env;
 use miyu_store::packages::{Launch, Packages, locate};
+use miyu_store::program::PackageDirs;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
 
@@ -47,8 +48,10 @@ pub struct Added {
     pub manifest: PathBuf,
     /// 读到这份清单时的资源目录：转交时设成 `MIYU_RESOURCES`（施工 S-6 中查出来的）。
     pub resources: PathBuf,
-    /// 这个包的状态目录 `<数据根>/state/packages/<编号>/`：转交时建好、设成 `MIYU_PACKAGE_STATE`（施工 F-15，2026-10-20 项目主人定）。
-    pub state: PathBuf,
+    /// 哪个包：转交时照它在数据根里建好它的几处（施工 F-15、FH-3下）。
+    pub package: String,
+    /// 读到这份清单时的数据根。
+    pub home: PathBuf,
 }
 
 /// 两层里读成了的、带 `[command]` 的清单加的子命令，照编号排，一个包加几个的照写的先后（施工 F-13）。写错的、子命令名被先读到的占了的（`command_taken`）不算；
@@ -61,9 +64,10 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
     places
         .read()
         .into_iter()
-        .filter_map(|found| Some((found.read.ok()?, found.path, places.state_dir(&found.id))))
-        .flat_map(|(manifest, path, state)| {
+        .filter_map(|found| Some((found.read.ok()?, found.path, found.id)))
+        .flat_map(|(manifest, path, package)| {
             let resources = resources.path().to_path_buf();
+            let home = root.path().to_path_buf();
             manifest
                 .commands
                 .into_iter()
@@ -75,7 +79,8 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
                     about: command.about,
                     manifest: path.clone(),
                     resources: resources.clone(),
-                    state: state.clone(),
+                    package: package.clone(),
+                    home: home.clone(),
                 })
         })
         .collect()
@@ -132,6 +137,20 @@ fn pick(phrases: &Phrases, language: Language) -> Option<String> {
         .find_map(|code| phrases.get(*code).cloned())
 }
 
+/// 第一个词不是内置的子命令（照清单找包加的命令之前）：数据根是旧版 Miyu 的（只有旧标记 `.miyu-root`，设计 55 第六节第 1 条），
+/// 读不出包的清单，原来会当成不认识的命令报「未知命令」（webui 实测 FH-3上 时撞见）。这里先认布局，说同一句「旧版的数据根」、
+/// 交回退出码 1；别的（新布局、空的、找不到数据根）交回没有，照常往下走。数据根照这个进程的环境找。
+pub fn old_layout(language: Language, err: &mut dyn Write) -> Option<u8> {
+    let root = DataRoot::locate(&Env::current()).ok()?;
+    let at = |name: &str| std::fs::symlink_metadata(root.path().join(name)).is_ok();
+    if !at(miyu_store::root::OLD_MARKER) || at(miyu_store::root::MARKER) {
+        return None;
+    }
+    let said = miyu_store::root::PrepareError::OldLayout(root.path().to_path_buf()).to_string();
+    crate::diagnostic::error(err, language, &crate::diagnostic::Problem::new(said));
+    Some(1)
+}
+
 /// 该转交的交回退出码，不该的（第一个词是内置的、是选项、清单里没有）交回没有，照常解析。`args` 是整个命令行（第 0 个是
 /// 主程序），主程序在 `main`；没装程序、跑不起来的照 `language` 在 `err` 上说。
 pub fn forward(
@@ -161,20 +180,16 @@ pub fn forward(
         );
         return Some(1);
     }
-    // 状态目录跑之前建好，交真实的位置（施工 F-15）；建不成的不跑。
-    let state = match std::fs::create_dir_all(&one.state)
-        .and_then(|()| std::fs::canonicalize(&one.state))
-    {
-        Ok(state) => state,
+    // 它的几处跑之前建好、清掉上一回的暂存，交真实的位置（施工 F-15、FH-3下）；建不成的不跑。
+    let root = DataRoot::at(one.home.clone());
+    let dirs = match PackageDirs::ready(&root, &one.package, dir.to_path_buf()) {
+        Ok(dirs) => dirs,
         Err(error) => {
-            say(err, &no_state(one, &error, language));
+            say(err, &no_dirs(one, &root, &error, language));
             return Some(1);
         }
     };
-    Some(run(
-        command(&launch, &rest, (dir, &state), &one.resources),
-        err,
-    ))
+    Some(run(command(&launch, &rest, &dirs, &one.resources), err))
 }
 
 /// 命令行 `args` 转交给哪一个、交给它的参数；不该转交的没有。清单写的参数在前（施工 F-13）：`miyu shellhook install` 转交成
@@ -194,24 +209,20 @@ fn target<'a>(args: &[OsString], added: &'a [Added]) -> Option<(&'a Added, Vec<O
     ))
 }
 
-/// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另把 `MIYU_PACKAGE_DIR` 设成包文件夹 `dir`（施工 S-6 上：包照它
-/// 读自己的文件，出厂的在资源目录、自己装的在数据根，由这边挑，包不自己拼数据根的布局），`MIYU_PACKAGE_STATE` 设成状态目录
-/// `state`（施工 F-15：同核心拉起扩展），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在
-/// 包的 `bin/` 里，照「程序旁边」找不到资源目录；核心拉起时也设这一个），`MIYU_PROGRAM` 设成主程序的真实位置（施工 G-15）。
+/// 跑包的程序的命令：照 `launch` 起（Windows 上照 `#!` 起的是解释器加脚本，施工 X-34），参数 `args`，环境照这个进程的，另把它在
+/// 各层的几处 `dirs` 照设计 55 第四节的名字交（包照它读自己的文件、写自己的东西，不自己拼数据根的布局；施工 S-6 上、F-15、
+/// FH-3下），`MIYU_RESOURCES` 设成找到它的那份资源目录 `resources`（施工 S-6 中：自己装的包程序在包的 `bin/` 里，照「程序旁边」
+/// 找不到资源目录；核心拉起时也设这一个），`MIYU_PROGRAM` 设成主程序的真实位置（施工 G-15）。
 fn command(
     launch: &Launch,
     args: &[OsString],
-    (dir, state): (&Path, &Path),
+    dirs: &PackageDirs,
     resources: &Path,
 ) -> std::process::Command {
     let mut command = launch.command();
-    let dirs = miyu_store::program::PackageDirs {
-        app: dir.to_path_buf(),
-        state: state.to_path_buf(),
-    };
     command
         .args(args)
-        .envs(dirs.env(state))
+        .envs(dirs.env())
         .envs(miyu_store::program::named(
             miyu_store::program::RESOURCES,
             resources,
@@ -222,16 +233,17 @@ fn command(
     command
 }
 
-/// 状态目录建不成：转交不成，说是哪个目录、系统的原话（施工 F-15）。
-fn no_state(one: &Added, error: &std::io::Error, language: Language) -> String {
-    let state = one.state.display();
+/// 它的几处建不成：转交不成，说是哪个包的、系统的原话（施工 F-15）。
+fn no_dirs(one: &Added, root: &DataRoot, error: &std::io::Error, language: Language) -> String {
+    let state = root.package_state(&one.package);
+    let state = state.display();
     match language {
         Language::Chinese => format!(
-            "没能转交 miyu {}：建不了状态目录 {state}（{error}）。",
+            "没能转交 miyu {}：建不了它的目录 {state} 这些（{error}）。",
             one.name
         ),
         Language::English => format!(
-            "Could not hand miyu {} over: cannot create the state directory {state} ({error}).",
+            "Could not hand miyu {} over: cannot create its directories such as {state} ({error}).",
             one.name
         ),
     }

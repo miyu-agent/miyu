@@ -407,7 +407,6 @@ fn plan(core: &Core, instance: &Instance, manifest: &Manifest) -> Result<supervi
         instance: instance.clone(),
         launch,
         args,
-        dir: instance.state_dir(core),
         home: core.root.path().to_path_buf(),
         resources: core.resources.path().to_path_buf(),
         package: dir,

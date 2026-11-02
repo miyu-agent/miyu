@@ -213,12 +213,18 @@ fn spawn_once(plan: &Plan) -> io::Result<Child> {
         return Err(io::Error::other("a URL server has no process"));
     };
     miyu_store::root::create_inside(&plan.dir)?;
+    let state = std::fs::canonicalize(&plan.dir)?;
     let errors = stderr::open(&plan.log)?;
     let mut command = std::process::Command::new(program);
+    // 状态目录照设计 55 第四节的名字给（施工 FH-3下）：就是工作目录，真实位置；放在清单写的环境变量后面，盖不掉。
     command
         .args(args)
         .envs(env.iter().map(|(name, value)| (name, value)))
-        .current_dir(&plan.dir)
+        .envs(miyu_store::program::named(
+            miyu_store::program::MCP_STATE,
+            &state,
+        ))
+        .current_dir(&state)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(errors);

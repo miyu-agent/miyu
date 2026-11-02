@@ -324,3 +324,45 @@ async fn a_provider_cannot_take_an_mcp_name() {
     assert_eq!(answer["error"]["data"]["problem"], "name");
     core.stop_extensions().await;
 }
+
+/// 命令型的服务拿到 `MIYU_STATE_DIR`（施工 FH-3下，设计 55 第四节）：就是它的工作目录 `var/lib/mcp/<服务>/`，建好、交真实位置。
+#[tokio::test]
+async fn a_command_server_is_told_its_state_dir() {
+    let home = Home::new();
+    bundle(&home, "probe", "probe", &[]);
+    let script = Script::new([
+        Play::calls(&[
+            ("mcp__probe__env", r#"{"text":"MIYU_STATE_DIR"}"#),
+            ("mcp__probe__cwd", "{}"),
+        ]),
+        Play::Says("好。"),
+    ]);
+    let core = Arc::new(
+        home.core_full(&script, Catalog::default(), None, TOKEN)
+            .with_extension_timing(quick()),
+    );
+    core.start_extensions();
+    let mut client = Client::connect(Arc::clone(&core));
+    client.hello().await;
+    let enabled = enable(&mut client, "probe").await;
+    assert_eq!(enabled["result"]["enabled"], true, "{enabled}");
+    until_status(&mut client, "probe", "running").await;
+    let session = open(&mut client).await;
+    client.say("s1", &session, "调一下").await;
+    home.until_turns(&session, 1).await;
+    let got = results(&home, &session);
+    let text = |name: &str| {
+        got.iter()
+            .find(|(one, ..)| one == name)
+            .map(|(_, text, ..)| text.clone())
+            .unwrap_or_else(|| panic!("调了 {name}：{got:?}"))
+    };
+    let state = std::fs::canonicalize(home.root.mcp_workdir("probe")).expect("建好了");
+    assert_eq!(text("mcp__probe__env"), state.display().to_string());
+    assert_eq!(
+        text("mcp__probe__cwd"),
+        text("mcp__probe__env"),
+        "也是工作目录"
+    );
+    core.stop_extensions().await;
+}

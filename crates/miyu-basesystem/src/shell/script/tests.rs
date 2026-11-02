@@ -30,6 +30,7 @@ fn given() -> Vec<&'static str> {
         super::super::env::SESSION_LOG,
     ];
     for table in [
+        miyu_store::program::APP,
         miyu_store::program::SCRIPT_CACHE,
         miyu_store::program::SCRIPT_IMAGES,
         miyu_store::program::SCRIPT_STATE,

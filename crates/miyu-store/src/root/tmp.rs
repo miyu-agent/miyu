@@ -1,5 +1,8 @@
 //! 两个暂存（设计 `55-数据根仿FHS.md` 第三节第 5 条）：`tmp/` 短命，像 `/tmp`，核心起来只清自己的 `tmp/unpack/`；`var/tmp/`
-//! 跨重启留着，像 `/var/tmp`，核心起来时清掉放了满 [`STALE_VAR_TMP`] 没碰的。
+//! 跨重启留着，像 `/var/tmp`，核心起来时清掉放了满 [`STALE_VAR_TMP`] 没碰的；包的 `tmp/<编号>/` 拉起它之前清。
+//!
+//! 清之前从数据根往下逐层看是真目录（[`DataRoot::plain_down`]）：`tmp/`、`var/`、`var/tmp/` 哪一层是链接，就会顺着它删到数据根
+//! 外面去（施工 FH-3下，core1 审 FH-3上 时提的），整趟不清、交回错。
 
 use std::fs;
 use std::io;
@@ -32,19 +35,62 @@ impl DataRoot {
     ///
     /// 删不掉。
     pub fn clear_own_tmp(&self) -> io::Result<()> {
-        match fs::remove_dir_all(self.unpack_staging()) {
+        self.clear(&self.unpack_staging())
+    }
+
+    /// 拉起包 `id` 之前清掉它上一回留下的短命暂存 `tmp/<编号>/`（设计 55 第三节第 5 条）。
+    ///
+    /// # Errors
+    ///
+    /// 路上哪一层是链接、不是目录；删不掉。
+    pub fn clear_package_tmp(&self, id: &str) -> io::Result<()> {
+        self.clear(&self.package_tmp(id))
+    }
+
+    /// 整个删掉数据根下面的目录 `dir`：路上每一层是真目录才删，本来没有的不算错。
+    fn clear(&self, dir: &Path) -> io::Result<()> {
+        self.plain_down(dir)?;
+        match fs::remove_dir_all(dir) {
             Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
             _ => Ok(()),
         }
+    }
+
+    /// 从数据根往下到 `dir`（含它自己）的每一层：在的都得是真目录，链接、文件都报错；不在的那一层往下不看，下面也没有东西。
+    ///
+    /// # Errors
+    ///
+    /// 哪一层是链接、不是目录（说是哪一层）；`dir` 不在数据根下面；读不了。
+    fn plain_down(&self, dir: &Path) -> io::Result<()> {
+        let below = dir
+            .strip_prefix(&self.path)
+            .map_err(|_| io::Error::other(format!("{} is outside the data root", dir.display())))?;
+        let mut at = self.path.clone();
+        for part in below.components() {
+            at.push(part);
+            match fs::symlink_metadata(&at) {
+                Ok(metadata) if metadata.is_dir() => {}
+                Ok(_) => {
+                    return Err(io::Error::other(format!(
+                        "{} is a link or not a directory: not clearing through it",
+                        at.display()
+                    )));
+                }
+                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(())
     }
 
     /// 清 `var/tmp/` 下面放了满 [`STALE_VAR_TMP`] 没碰的：一项一项看，目录看它整棵里最近改过的那一刻，不跟链接。
     ///
     /// # Errors
     ///
-    /// `var/tmp/` 读不了（没有这个目录的不算错）。
+    /// `var/`、`var/tmp/` 是链接、不是目录（整趟不清）；`var/tmp/` 读不了（没有这个目录的不算错）。
     pub fn sweep_var_tmp(&self, now: SystemTime) -> io::Result<Swept> {
         let mut swept = Swept::default();
+        self.plain_down(&self.var_tmp())?;
         let entries = match fs::read_dir(self.var_tmp()) {
             Ok(entries) => entries,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(swept),

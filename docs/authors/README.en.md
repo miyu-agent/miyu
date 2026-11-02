@@ -37,7 +37,7 @@ hello/
 
 1. **Id** (the folder name): starts with a lowercase letter; only lowercase letters, digits, `-`, `_`; at most 64 characters. It can't clash with packages shipped with Miyu (`basesystem`, `memory`, `roleplay`, `mermaid`, `net`, `tui`, `web` and so on), and shouldn't clash with other people's extensions (installing the same id again is an upgrade and replaces theirs).
 2. **Names it brings must not clash either**: tools, skills, MCP servers and slash commands that clash with an installed package won't install. Prefixing names with the package id helps.
-3. **Don't write into the package folder after installing**: every file's hash is recorded at install time, and later additions show up in `miyu pkg check`. Write runtime state into the state directory `MIYU_PACKAGE_STATE` names.
+3. **Don't write into the package folder after installing**: every file's hash is recorded at install time, and later additions show up in `miyu pkg check`. Write runtime state into the state directory `MIYU_STATE_DIR` names (the other folders are listed on the extensions page).
 
 ## Install, try, check
 
@@ -45,7 +45,7 @@ hello/
 2. **Turn on**: after installing it asks "Turn it on now?"; yes approves the capabilities it asks for and turns it on; no leaves that for later, in the Packages page of the terminal or web UI. Packages with only skills and scripts have no switch; each skill and script is switched in presets.
 3. **Change and reinstall**: while developing, run `miyu pkg install ./hello` again after a change (it's an upgrade). To try things in a separate data directory without touching your everyday one: `MIYU_HOME=/tmp/miyu-try miyu …`.
 4. **Look**: `miyu pkg info hello` (name, version, size, install time), `miyu pkg files hello` (installed files), `miyu pkg check hello` (whether installed files changed), `miyu check` (mistakes in manifests, scripts, skills). The Packages page shows whether an extension is running, waiting to restart, or stopped (with the reason and the last lines of stderr).
-5. **Logs**: an extension's stderr is in `~/.miyu/state/logs/<id>.stderr`; the core's log is `~/.miyu/state/logs/core.log`.
+5. **Logs**: an extension's stderr is in `~/.miyu/var/log/<id>/stderr`; the core's log is `~/.miyu/var/log/core.log`.
    - **Keeping the core running**: once started, the core no longer quits when idle (step Z-1), so extensions stay up with it and chat-platform bridges and scheduled work don't wait for someone to open `miyu`. To start it at boot or login, install a service as described in `packaging/README.md` in the repository (a systemd user service on Linux, launchd on macOS, a scheduled task on Windows). Design: `docs/designs/12-进程形态与分发.md`, section 2.
 6. **Remove**: `miyu pkg remove hello`. The package folder, its state directory and its settings are removed together; entries in the secrets file stay (something else may use them).
 

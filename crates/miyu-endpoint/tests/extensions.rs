@@ -403,3 +403,62 @@ async fn what_cannot_start_says_why_and_wrong_packages_are_refused() {
         .await;
     assert_eq!(bad["error"]["data"]["reason"], "bad_params", "{bad}");
 }
+
+/// 设计 55 第四节那一张表（施工 FH-3下）：扩展拿到它在各层的那一格，新名字、旧名字指同一处，拉起前都建好、交真实位置；
+/// 短命暂存 `tmp/<编号>/` 拉起前清掉。
+#[tokio::test]
+async fn it_gets_one_ready_folder_in_each_layer() {
+    let home = Home::new();
+    let program = Program::new();
+    let (path, keep) = record(&home, "echo");
+    let names = [
+        "MIYU_APP_DIR",
+        "MIYU_CONFIG_DIR",
+        "MIYU_STATE_DIR",
+        "MIYU_CACHE_DIR",
+        "MIYU_LOG_DIR",
+        "MIYU_TMP_DIR",
+        "MIYU_RUNTIME_DIR",
+        "MIYU_PICTURES_DIR",
+        "MIYU_PACKAGE_DIR",
+        "MIYU_PACKAGE_STATE",
+    ];
+    let mut args = vec![keep.clone()];
+    args.extend(names.iter().map(|name| format!("env:{name}")));
+    args.extend(["hello".to_string(), "wait".to_string()]);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    install(&home, "echo", &program.name(), "always", &steps(&args));
+    let left = home.root.package_tmp("echo").join("left.txt");
+    std::fs::create_dir_all(left.parent().expect("有上一级")).expect("建得了");
+    std::fs::write(&left, "上一回的").expect("写得进");
+    let core = core(&home, quick());
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while read(&path).lines().count() < names.len() + 1 {
+        assert!(tokio::time::Instant::now() < deadline, "{}", read(&path));
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    let real = |at: std::path::PathBuf| {
+        std::fs::canonicalize(&at)
+            .unwrap_or_else(|error| panic!("{} 拉起前建好了：{error}", at.display()))
+    };
+    let root = &home.root;
+    let wanted = [
+        root.packages().join("echo"),
+        real(root.package_config("echo")),
+        real(root.package_state("echo")),
+        real(root.package_cache("echo")),
+        real(root.package_logs("echo")),
+        real(root.package_tmp("echo")),
+        real(root.package_runtime("echo")),
+        real(root.user_dir("pictures")),
+        root.packages().join("echo"),
+        real(root.package_state("echo")),
+    ];
+    let recorded = read(&path);
+    let lines: Vec<&str> = recorded.lines().skip(1).collect();
+    for ((name, at), line) in names.iter().zip(&wanted).zip(&lines) {
+        assert_eq!(*line, format!("{name}={}", at.display()));
+    }
+    assert!(!left.exists(), "短命暂存拉起前清掉了");
+    core.stop_extensions().await;
+}

@@ -109,11 +109,65 @@ fn a_package_command_is_told_its_package_folder() {
     assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
     let state = std::fs::canonicalize(home.root.path().join("var/lib/own")).expect("跑之前建好了");
     assert_eq!(text(&printed.stdout), format!("{}\n", state.display()));
+    // 设计 55 第四节（施工 FH-3下）：新名字和旧名字指同一处，跑之前都建好；短命暂存跑之前清掉。
+    let left = home.root.package_tmp("own").join("left.txt");
+    std::fs::create_dir_all(left.parent().expect("有上一级")).expect("建得了");
+    std::fs::write(&left, "上一回的").expect("写得进");
+    for (name, at) in [
+        ("MIYU_APP_DIR", dir.clone()),
+        ("MIYU_STATE_DIR", state.clone()),
+        ("MIYU_CONFIG_DIR", home.root.package_config("own")),
+        ("MIYU_CACHE_DIR", home.root.package_cache("own")),
+        ("MIYU_LOG_DIR", home.root.package_logs("own")),
+        ("MIYU_TMP_DIR", home.root.package_tmp("own")),
+        ("MIYU_RUNTIME_DIR", home.root.package_runtime("own")),
+    ] {
+        let printed = miyu(&home, "C", &["own", name]);
+        assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+        let real = std::fs::canonicalize(&at).unwrap_or_else(|_| panic!("{name} 跑之前建好了"));
+        assert_eq!(
+            text(&printed.stdout),
+            format!("{}\n", real.display()),
+            "{name}"
+        );
+    }
+    assert!(!left.exists(), "短命暂存跑之前清掉了");
     // 主程序的真实位置（施工 G-15）：装进数据根的包程序旁边没有主程序，要拉起核心的照它找。
     let printed = miyu(&home, "C", &["own", "MIYU_PROGRAM"]);
     assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
     let main = std::fs::canonicalize(MIYU).expect("主程序在");
     assert_eq!(text(&printed.stdout), format!("{}\n", main.display()));
+}
+
+/// 资源目录交的是认出来的那一个（施工 FH-3下补 FH-2下 变异没抓住的缺口）：`MIYU_RESOURCES` 写成 `~/` 开头的，包的程序
+/// 拿到的是接好家目录的绝对路径；转交时没设、只照原样继承的话，印出来的还是 `~/…`。
+#[cfg(unix)]
+#[test]
+fn a_package_command_is_told_the_resources_it_was_found_with() {
+    let home = Home::new();
+    let program = format!("miyu-printenv-{}", std::process::id());
+    install(&home, "own", &manifest("own", &program, "Own it"));
+    let dir = home.root.packages().join("own");
+    std::fs::create_dir_all(dir.join("bin")).expect("建得了目录");
+    std::os::unix::fs::symlink("/usr/bin/printenv", dir.join("bin").join(&program))
+        .expect("链得上");
+    let user = home.dir.join("user");
+    std::fs::create_dir_all(&user).expect("建得了");
+    std::os::unix::fs::symlink(crate::support::resources(), user.join("res")).expect("链得上");
+    let printed = Command::new(MIYU)
+        .args(["own", "MIYU_RESOURCES"])
+        .env("MIYU_HOME", home.root.path())
+        .env("HOME", &user)
+        .env("MIYU_RESOURCES", "~/res")
+        .envs(crate::support::offline(home.root.path()))
+        .env("LANG", "C")
+        .output()
+        .expect("跑得起来");
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    assert_eq!(
+        text(&printed.stdout),
+        format!("{}\n", user.join("res").display())
+    );
 }
 
 /// 系统一层的包（装在资源目录里，桌面端、安装包里网页包就是这样）在全新的数据根上第一次转交（施工 CL-7 修）：先照常建好数据根
@@ -236,4 +290,42 @@ async fn the_core_says_which_builtin_it_lacks() {
         0,
         "{log}"
     );
+}
+
+/// 旧版 Miyu 的数据根上跑包加的命令（施工 FH-3下，webui 实测 FH-3上 时撞见）：读不出包的清单，原来报「未知命令」、退出 2；
+/// 现在先认布局，报「旧版的数据根」那一句、退出 1，数据根一个字节不动。
+#[test]
+fn a_package_command_on_an_old_data_root_says_it_is_old() {
+    let home = Home::new();
+    let old = home.dir.join("old");
+    std::fs::create_dir_all(old.join("state")).expect("建得了");
+    std::fs::write(
+        old.join(".miyu-root"),
+        "This directory is a Miyu data root (layout 2).\n",
+    )
+    .expect("写得进");
+    let printed = Command::new(MIYU)
+        .args(["web", "--print"])
+        .env("MIYU_HOME", &old)
+        .env("MIYU_RESOURCES", crate::support::resources())
+        .envs(crate::support::offline(home.root.path()))
+        .env("LANG", "C")
+        .output()
+        .expect("跑得起来");
+    assert_eq!(printed.status.code(), Some(1), "{}", text(&printed.stderr));
+    let said = text(&printed.stderr);
+    assert!(said.contains("旧版 Miyu 的数据根（layout 2）"), "{said}");
+    assert!(!said.contains("web"), "不当成不认识的命令：{said}");
+    let mut left: Vec<String> = std::fs::read_dir(&old)
+        .expect("读得了")
+        .map(|entry| {
+            entry
+                .expect("读得了")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect();
+    left.sort();
+    assert_eq!(left, [".miyu-root", "state"], "一个字节不动");
 }

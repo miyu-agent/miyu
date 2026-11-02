@@ -69,8 +69,6 @@ pub(super) struct Plan {
     pub(super) launch: miyu_store::packages::Launch,
     /// 参数：清单的 `[process] args`。
     pub(super) args: Vec<String>,
-    /// 工作目录：包放状态的目录，没有的建。
-    pub(super) dir: PathBuf,
     /// 核心手上的数据根：拉起时设成 `MIYU_HOME`（施工 O-18，`extensions.md`「怎么走」第 1 条）。
     pub(super) home: PathBuf,
     /// 核心手上的资源目录：拉起时设成 `MIYU_RESOURCES`（施工 O-18）。
@@ -272,30 +270,27 @@ async fn spawn_settled(plan: &Plan) -> io::Result<Child> {
     }
 }
 
-/// 拉起：工作目录（包的状态目录）没有的建（只在数据根里建，施工 TMP-1），标准错误接到它的文件上，核心丢下它时杀掉。
+/// 拉起：先清掉它上一回的短命暂存、建好给它的几处（设计 55 第四节，[`miyu_store::program::PackageDirs::ready`]，只在数据根
+/// 里建），标准错误接到它的文件上，核心丢下它时杀掉。
 fn spawn(plan: &Plan) -> io::Result<Child> {
-    miyu_store::root::create_inside(&plan.dir)?;
-    let state = std::fs::canonicalize(&plan.dir)?;
+    use miyu_store::program::{self, HOME, RESOURCES};
+    let root = miyu_store::root::DataRoot::at(plan.home.clone());
+    let dirs = program::PackageDirs::ready(&root, &plan.instance.package, plan.package.clone())?;
     let errors = stderr::open(&plan.log)?;
     let mut command = plan.launch.command();
     // 主程序的真实位置（施工 G-15）：核心就是 `miyu core`，扩展要拉起核心、跑 `miyu` 的子命令照它找。
     if let Some(program) = miyu_store::env::Env::current().exe {
         command.env(miyu_store::env::PROGRAM, program);
     }
-    // 环境照核心的，只把这三个设成核心手上的（施工 O-18）：扩展和核心认同一份数据根、资源目录，不管核心是怎么找到它们的；
-    // 包文件夹由核心挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；状态目录的真实位置照
-    // `MIYU_PACKAGE_STATE` 给，工作目录照旧也是它（施工 F-15，2026-10-20 项目主人定：作者说明改成以变量为准）。
-    use miyu_store::program::{self, HOME, RESOURCES};
-    let dirs = program::PackageDirs {
-        app: plan.package.clone(),
-        state: plan.dir.clone(),
-    };
+    // 环境照核心的，数据根、资源目录设成核心手上的（施工 O-18）：扩展和核心认同一份，不管核心是怎么找到它们的；包文件夹由核心
+    // 挑是哪一层，扩展照它读自己的文件，不自己拼数据根的布局（施工 S-6 上）；它在各层的那一格照设计 55 第四节的名字给，交真实
+    // 位置，工作目录照旧是状态目录（施工 F-15）。
     command
         .args(&plan.args)
         .envs(program::named(HOME, &plan.home))
         .envs(program::named(RESOURCES, &plan.resources))
-        .envs(dirs.env(&state))
-        .current_dir(&plan.dir)
+        .envs(dirs.env())
+        .current_dir(&dirs.state)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(errors);

@@ -77,7 +77,7 @@ Install: `miyu pkg install ./notes-mcp`. A package with only servers installs **
 
 ## While running
 
-- The working directory is `~/.miyu/state/mcp/<server>/`, outside the sandbox; stderr goes to `~/.miyu/state/logs/mcp-<server>.stderr`. Look there first when it won't start.
+- The working directory is `~/.miyu/var/lib/mcp/<server>/`, also given as `MIYU_STATE_DIR`, outside the sandbox; stderr goes to `~/.miyu/var/log/mcp/<server>.stderr`. Look there first when it won't start.
 - Servers that fail to start or crash are retried with backoff and stopped after 5 failures in a row; the Packages page shows the reason and the last lines of stderr, and restarting tries again.
 - Both old and new MCP versions are understood. Tools, the server's instructions and its prompts are used; resources, `sampling` and the like aren't.
 - Miyu doesn't install Node or Python for people: for servers started with `npx` or `uvx`, say what must be installed first.

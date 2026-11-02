@@ -83,9 +83,11 @@ The header is the run of comment lines at the very top of the file; it ends at t
   ```
 
 - `miyu call` doesn't work inside a script tool: the channel for calling tools is only opened for a `shell` command the AI runs directly, not for script tools, so calls don't nest. If your script needs to call tools and then work on the results, don't make it a script tool; have the AI run it from `shell` (for example, ship it in a skill and say in the body how to run it).
-- The working directory is the session's workspace; a writable cache directory is in `MIYU_SCRIPT_CACHE_DIR` (in your home's `cache/`, one folder per script, kept across reboots; a folder untouched for 30 days is cleared, so keep only what can be made again).
+- The working directory is the session's workspace; a writable cache directory is in `MIYU_CACHE_DIR` (in the data root's `var/cache/scripts/`, one folder per script, kept across reboots; a folder untouched for 30 days is cleared, so keep only what can be made again).
 - Files meant for people (images you draw, videos you download, documents you make) go into the folders in your home, where people find them in the terminal and web UI: `MIYU_PICTURES_DIR`, `MIYU_VIDEOS_DIR`, `MIYU_DOCUMENTS_DIR`, `MIYU_DOWNLOADS_DIR`, created and writable before the script runs. Only your own sessions on this machine get them; group chats and strangers' private chats don't, so write to the cache folder or the workspace there, and check that a variable is set before using it.
-- Anything that must last (a login, where the last run stopped) goes in `MIYU_SCRIPT_STATE_DIR`: one folder per script, still there next time. Local sessions share one; each group and each stranger's private chat gets its own (split by venue, so a new session in the same group finds the same folder). For a script in a package, it is deleted when the package is removed; for one you put in `scripts/` yourself, it stays after you delete the script, and `miyu check` points it out.
+- Anything that must last (a login, where the last run stopped) goes in `MIYU_STATE_DIR`: one folder per script, still there next time. Local sessions share one; each group and each stranger's private chat gets its own (split by venue, so a new session in the same group finds the same folder). For a script in a package, it is deleted when the package is removed; for one you put in `scripts/` yourself, it stays after you delete the script, and `miyu check` points it out.
+- A script in a package also gets `MIYU_APP_DIR`: the package folder it sits in (the manifest and the package's other files), read-only. Scripts you put in `scripts/` yourself don't.
+- The old names `MIYU_SCRIPT_CACHE_DIR`, `MIYU_SCRIPT_STATE_DIR`, `MIYU_SCRIPT_IMAGES_DIR` and `MIYU_PACKAGE_DIR` are still set during the transition and point at the same places; they go away in the next release, so write new scripts with the names above.
 - Who called: `MIYU_CALLER_VENUE` is the kind of session it was called in (`local` on this machine, the venue id for a group or private chat, e.g. `qq:group:123`); `MIYU_CALLER_OWNER` says whether the person speaking this turn is the machine's owner (`1` or `0`; always `1` in local sessions; `0` when one of several people in a group is not the owner, or when it can't be told).
 - The model this turn uses: `MIYU_MODEL` is the model name and `MIYU_EFFORT` the reasoning effort (`default` when the config doesn't set one); `MIYU_SESSION_LOG` is this session's log directory, only in the machine owner's own sessions (other people don't get to see the computer Miyu runs on). Calls before a model is settled, and calls outside a session, have none of these, so check before using them.
 - These two are facts, not a gate: they can't stop the AI from writing `MIYU_CALLER_OWNER=1 ./script` in a command itself. To keep a script to some kinds of session, write `Venues` in the header; use the variables only to adjust what the script does, for example read-only in groups:
@@ -110,11 +112,11 @@ The header is the run of comment lines at the very top of the file; it ends at t
 
 **Handing over images**
 
-To let the AI see images directly (screenshots, frames from a video), copy them into `MIYU_SCRIPT_IMAGES_DIR`: a new empty folder for each call, which Miyu collects after the run and then deletes.
+To let the AI see images directly (screenshots, frames from a video), copy them into `MIYU_IMAGES_DIR`: a new empty folder for each call, which Miyu collects after the run and then deletes.
 
 ```python
 import os, shutil
-shutil.copy("frame-01.png", os.environ["MIYU_SCRIPT_IMAGES_DIR"])
+shutil.copy("frame-01.png", os.environ["MIYU_IMAGES_DIR"])
 print("Grabbed 1 frame.")
 ```
 

@@ -103,6 +103,12 @@ fn main() -> ExitCode {
     let added = match first {
         Some(first) if first != "help" && builtins.iter().any(|name| name == first) => Vec::new(),
         _ => {
+            // 旧版的数据根上找不到包加的命令（施工 FH-3下）：先说是旧版的，别当成不认识的命令。
+            if first.is_some_and(|word| word != "help" && !word.starts_with('-'))
+                && let Some(code) = miyu_cli::packages::old_layout(language, &mut std::io::stderr())
+            {
+                return ExitCode::from(code);
+            }
             let names: Vec<&str> = builtins.iter().map(String::as_str).collect();
             miyu_cli::packages::installed(&names)
         }

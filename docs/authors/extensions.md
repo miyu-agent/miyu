@@ -145,10 +145,20 @@ core.close()
 ## 被拉起
 
 - 程序是 `bin/` 下那一个，参数是 `[process] args`。
-- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PACKAGE_DIR`（你这个包的文件夹：包里带的文件照它找，别自己拼路径）、`MIYU_PACKAGE_STATE`（你这个包的状态目录，已经建好）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置：要拉起核心的跑 `$MIYU_PROGRAM core`，别照自己旁边找，装进数据根的包旁边没有主程序）。人在终端敲 `miyu <你的命令>` 时也设 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE`。
-- 你的数据库、缓存放在 `MIYU_PACKAGE_STATE` 指的目录里，卸载时一起删。一律照这个变量找，别靠工作目录（被拉起时工作目录也是它，可人敲命令时工作目录是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
+- 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置：要拉起核心的跑 `$MIYU_PROGRAM core`，别照自己旁边找，装进数据根的包旁边没有主程序），和你这个包在数据根里各自的那一格，都已经建好、是真实位置：
+  - `MIYU_APP_DIR`：你这个包的文件夹（包里带的文件照它找，别自己拼路径）；
+  - `MIYU_CONFIG_DIR`：给人手改的配置（`etc/<编号>/`）；
+  - `MIYU_STATE_DIR`：数据库、登录态这些要留着的（`var/lib/<编号>/`，被拉起时也是工作目录）；
+  - `MIYU_CACHE_DIR`：删了能重新生成的（`var/cache/<编号>/`）；
+  - `MIYU_LOG_DIR`：你自己的运行日志（`var/log/<编号>/`；核心记的标准错误也在这里，叫 `stderr`、`stderr.old`，这两个名字别用）；
+  - `MIYU_TMP_DIR`：短命的暂存（`tmp/<编号>/`，每次拉起前清空）；
+  - `MIYU_RUNTIME_DIR`：锁、套接字、地址这类跑着才有意义的（`run/<编号>/`）；
+  - `MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`：给人的文件存这里。
+
+  人在终端敲 `miyu <你的命令>` 时也设这一套。旧名字 `MIYU_PACKAGE_DIR`（同 `MIYU_APP_DIR`）、`MIYU_PACKAGE_STATE`（同 `MIYU_STATE_DIR`）过渡期间照样给，下一版去掉。
+- 你的东西照上面分开放，卸载时这几格一起删。一律照这些变量找，别靠工作目录（被拉起时工作目录是 `MIYU_STATE_DIR`，可人敲命令时是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
 - 这个变量只给扩展本身和人敲的命令用：她在沙盒里跑的脚本读不到状态目录（它在数据根里，沙盒整个藏着）。
-- 标准错误接到 `~/.miyu/state/logs/<编号>.stderr`，出了问题先看它。
+- 标准错误接到 `~/.miyu/var/log/<编号>/stderr`（就在 `MIYU_LOG_DIR` 里），出了问题先看它。
 
 ## 握手和配置
 
@@ -190,7 +200,7 @@ core.close()
 ```
 
 - `args` 已经照你的 `input_schema` 修正过。`by` 是谁让她做的，`owner` 是核心认不认这个人是主人本人：在群里做动作的工具，谁能用要你自己照它们挡。
-- `blocks` 是给模型看的内容：文字 `{"type": "text", "text"}`；图片先经 `blob.put` 传上去，再放 `{"type": "image", "blob", "media_type", "width", "height"}`。包里自己带的图用 `{"path": "<MIYU_PACKAGE_DIR>/files/cat.png"}` 传就行（数据目录里别处的文件不收）。
+- `blocks` 是给模型看的内容：文字 `{"type": "text", "text"}`；图片先经 `blob.put` 传上去，再放 `{"type": "image", "blob", "media_type", "width", "height"}`。包里自己带的图用 `{"path": "<MIYU_APP_DIR>/files/cat.png"}` 传就行（数据目录里别处的文件不收）。
 - 画出来、生成的图存到哪：会话里的调用多一格 `pictures`，是数据根里放图的目录（真实位置，可能还没建，写之前自己建好），存在这里人在终端、网页里找得到；没有这一格的（会话外面的调用、群和私聊这类场所会话、老的核心）照旧存工作区：场所会话只碰得到自己的工作区，存到别处她就读不到、发不出去。
 - 失败的照样回结果、`error` 写 `true`，把原因写给模型看；回 JSON-RPC 的错误也算失败。
 - 想让她「发出去」一张图（表情包这类，画在正文里，聊天平台当图发）：回答里加 `"sent": [{"blob", "media_type", "width", "height", "alt"?, "sticker"?}]`，至多 4 张。`sent` 不给 AI 看。
