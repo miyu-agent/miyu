@@ -105,7 +105,7 @@
 样本 `docs/designs/samples/cli/ask-text.txt`（标准输出和标准错误按先后交错，照终端里看到的）：
 
 ```text
-miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/workspace
+miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/root/workspace
 
 先读一下笔记。
 

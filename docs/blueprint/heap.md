@@ -35,7 +35,7 @@
 
 ### 自己记账（施工 V-4，23 F4）
 
-1. **记在哪**：`state/logs/memory.jsonl`，一行一个 JSON；满 1 MiB 挪成 `memory.jsonl.1`（盖掉上一份），只留这一份（`miyu_log::RotatingFile::open_file`，和运行日志一个换法，Unix 上新建的 0600）。一分钟一行、一行三百来字节，一份够记两天多。核心是按需起的，空闲够久了就退，一般记不满。
+1. **记在哪**：`var/log/memory.jsonl`，一行一个 JSON；满 1 MiB 挪成 `memory.jsonl.1`（盖掉上一份），只留这一份（`miyu_log::RotatingFile::open_file`，和运行日志一个换法，Unix 上新建的 0600）。一分钟一行、一行三百来字节，一份够记两天多。核心是按需起的，空闲够久了就退，一般记不满。
 2. **一行**：格照名字的字母先后，字节数都是整数：
 
    ```json

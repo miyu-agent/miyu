@@ -133,11 +133,15 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 ## 五、FH-4：文档
 
-- [ ] `docs/blueprint/store.md`「数据根里有什么」整棵树换成设计 55 第二节，方法表跟上。
-- [ ] `07-存储.md` 第二节「目录布局」：改成指向设计 55，留两条归属规则和「数据里存相对路径」（附件、工作区的例外写进去，设计 55 第六节第 4 条）。
-- [ ] 各蓝图、参考文档里写着旧路径的（`config.md`、`packages.md`、`knowledge.md`、`memory.md`、`personas.md`、`log.md`、`ipc.md`、`sandbox/*.md`、`cli/*.md`、`reference/*`），照 `git grep` 旧名字逐个改。
-- [ ] 给包作者的文档（`docs/authors/`，中英两份）：环境变量那一节换成设计 55 第四节那张表；写明「不拿 `MIYU_HOME` 拼路径」，`var/log/<编号>/` 下的 `stderr`、`stderr.old` 是核心的。
-- [ ] 施工记录（`docs/construction/README.md`）各步一行；施工图跟上。
+状态：做完、等门禁（2026-11-03，sub1，在 `step/FH-3` 上）。另带 core1 审 FH-3下 时要的一处加固：清暂存的路上只认普通的一层名字，`..`、`.` 报错不清。
+
+- [x] `docs/blueprint/store.md`「数据根里有什么」整棵树换成设计 55 第二节，方法表跟上。
+- [x] `07-存储.md` 第二节「目录布局」：改成指向设计 55，留两条归属规则和「数据里存相对路径」（附件、工作区的例外写进去，设计 55 第六节第 4 条）。
+- [x] 各蓝图、参考文档里写着旧路径的（`config.md`、`packages.md`、`knowledge.md`、`memory.md`、`personas.md`、`log.md`、`ipc.md`、`sandbox/*.md`、`cli/*.md`、`reference/*`），照 `git grep` 旧名字逐个改。
+- [x] 给包作者的文档（`docs/authors/`，中英两份）：环境变量那一节换成设计 55 第四节那张表；写明「不拿 `MIYU_HOME` 拼路径」，`var/log/<编号>/` 下的 `stderr`、`stderr.old` 是核心的。
+- [x] 施工记录（`docs/construction/README.md`）各步一行；施工图跟上。
+
+（`docs/perf/` 是测量记录、别的设计文档讲当时的决定，照历史留着；`架构全图.html` 是更早的布局，不改。）
 
 ### 验收
 

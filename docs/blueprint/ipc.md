@@ -155,7 +155,7 @@
 | `ConnectError::NotPrivate` | 套接字的目录别人也能进；Windows 上管道另一头不是自己的进程 | <目录或管道> 不是自己的，或者别人也能进：不连 |
 | `ConnectError::Io` | 读写出错，`run/socket` 写的不是绝对路径 | 系统的原话；`run/socket 写的不是绝对路径：<路径>` |
 | `StartError::Refused` | 核心说了起不来 | 核心起不来：<原因> |
-| `StartError::Silent` | 核心什么都没写就退了 | 核心没起来，也没说为什么：看数据根的 state/logs/core.log |
+| `StartError::Silent` | 核心什么都没写就退了 | 核心没起来，也没说为什么：看数据根的 var/log/core.log |
 | `StartError::Timeout` | 60 秒没等到那一行 | 等核心起来等了太久 |
 | `StartError::Busy` | 60 秒没拿到拉起锁 | 别的程序正在拉起核心，等了太久 |
 | `StartError::Connect` | 连不上 | 照 `ConnectError` 的话 |

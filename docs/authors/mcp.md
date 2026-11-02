@@ -4,7 +4,7 @@
 
 ## 最快：写进配置
 
-打开 `~/.miyu/config.toml`（或者 `miyu config edit`），一个服务一张表：
+打开 `~/.miyu/etc/config.toml`（或者 `miyu config edit`），一个服务一张表：
 
 ```toml
 [mcp.files]

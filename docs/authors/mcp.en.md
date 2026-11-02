@@ -4,7 +4,7 @@ Existing MCP (Model Context Protocol) servers plug straight into Miyu: the core 
 
 ## Quickest: your configuration
 
-Open `~/.miyu/config.toml` (or `miyu config edit`), one table per server:
+Open `~/.miyu/etc/config.toml` (or `miyu config edit`), one table per server:
 
 ```toml
 [mcp.files]

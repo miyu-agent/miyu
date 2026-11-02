@@ -24,9 +24,9 @@ Other methods go through one table: those for people only (answering for the per
 ## Launch
 
 - **Program**: looked up in the package folder's `bin/` first, then next to `miyu`, never on `PATH`; arguments are the manifest's `[process] args`.
-- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PACKAGE_DIR` (this package's folder), `MIYU_PACKAGE_STATE` (this package's state directory, already created), `MIYU_PROGRAM` (the real path of the main `miyu` program, G-15).
-- **Working directory**: the package's state directory `state/packages/<id>/`.
-- **Stderr**: appended to `state/logs/<id>.stderr`; over 1 MiB it is moved to `.old` first.
+- **Environment**: the core's, plus `MIYU_HOME` (data root), `MIYU_RESOURCES` (resources directory), `MIYU_PROGRAM` (the real path of the main `miyu` program, G-15), and this package's place in each part of the data root (design 55 section 4, all created and given as real paths): `MIYU_APP_DIR` (this package's folder), `MIYU_CONFIG_DIR`, `MIYU_STATE_DIR` (also the working directory), `MIYU_CACHE_DIR`, `MIYU_LOG_DIR`, `MIYU_TMP_DIR` (emptied before each start), `MIYU_RUNTIME_DIR`, and the four `MIYU_PICTURES_DIR`-style folders. The old names `MIYU_PACKAGE_DIR` and `MIYU_PACKAGE_STATE` are also set during the transition.
+- **Working directory**: the package's state directory `var/lib/<id>/`.
+- **Stderr**: appended to `var/log/<id>/stderr`; over 1 MiB it is moved to `.old` first.
 - **Handshake**: send `hello` as usual, without credentials. The response's `config` holds the final values of its own settings (secrets as real values).
 - **Exit**: the core closing its stdin means "please exit"; it is killed if it hasn't exited after 5 seconds.
 - **Crashes**: an exit with any code other than 1, being killed, or a failed handshake counts as a failure; it is restarted after 1, 2, 4, 8, 16 seconds, and stopped after 5 in a row (`failed_repeatedly`). **Exit code 1** means a problem a restart won't fix, like bad config or a taken port: it isn't restarted and stops at once (`config_error`). After 60 seconds of running, the failure count starts over.

@@ -65,7 +65,7 @@
    3. 别的照下面走。
 1. 先照界面语言给主程序和 `ask`、`undo`、`restore`、`redo`、`compact`、`recap`、`rename`、`memory`（连同它的子命令，施工 R-3 再补）、`pkg`（连同它的子命令，施工 T-3）、`kb`（连同它的子命令，施工 K-7 下）、`schedule`（连同它的子命令，施工 J-3 下）、`config`（连同它的八个子命令）、`provider`（连同它的 `login`、`list`、`logout`）、`setup`、`sandbox`（连同它的 `setup`、`remove`）换上帮助页（clap 的 `override_help`；`rewind` 是 `undo` 的别名，用同一页），再解析参数。
 2. 解析参数，不对的：
-   1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。本机存着的软件源索引（`state/packages/.sync/`，再照名字找 `state/packages/.sources/<名字>/`，不验签名，只是提示）里有包提供这个命令（`provides.command`）的，提示换成「软件包 <编号> 提供这个命令，用 'miyu pkg install <编号>' 安装」（施工 CL-7，`crates/miyu-cli/src/packages/offered.rs`）。
+   1. 不认识的子命令：标准错误上报 `miyu: 未知命令 '<名字>'`，提示运行 `miyu --help`（下面「给人看的字」），退出码 2。不连核心，不拉起，什么都不发。本机存着的软件源索引（`var/cache/packages/sync`，再照名字找 `var/cache/packages/sources/<名字>/`，不验签名，只是提示）里有包提供这个命令（`provides.command`）的，提示换成「软件包 <编号> 提供这个命令，用 'miyu pkg install <编号>' 安装」（施工 CL-7，`crates/miyu-cli/src/packages/offered.rs`）。
    2. `-h`、`--help`、`help`、`help <子命令>`：把那一页原样印在标准输出上，退出码 0。`-V`、`--version`：印 `miyu <版本>`，退出码 0。
    3. 别的：标准错误上报错（下面「参数写错时」），退出码 2。
 3. 没写子命令（施工 9-3，`crates/miyu-cli/src/head.rs`）：标准输入、标准输出都是终端的，连上核心（没在跑就拉起）问 `config.get` 拿 `ui.head`（出厂 `miyu-tui`），照两层清单找这个编号的界面包（`kind = "ui"`、有 `[command]`），程序照第 0 条找，换成它、不带参数，退出码照它的。没有这个界面（没清单、不是界面、没有子命令）：标准错误上报没装哪一个，提示用 `miyu pkg install <编号>` 装；装了别的界面的再提示一行换成哪几个（`miyu config set ui.head <编号>`），一个都没装的提示不用界面也能 `miyu ask`，退出码 1。有清单、程序不在旁边的（出厂带了终端的清单，程序随 M9；9-3 补）：报这个界面的程序找不到，提示重新安装，后一行同上，退出码 1（设计 47，施工 CL-2 上）。「装了的界面」只算程序在 `miyu` 旁边的：只有清单的列出来也打不开。不在终端里（被脚本调、接管道）：把主程序的帮助页印在标准输出上，退出码 2，不连核心。

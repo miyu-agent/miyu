@@ -27,7 +27,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 
 **Who can call**: `package.install`, `package.remove`, `package.enable`, `package.disable`, `package.restart`, `package.sync`, `package.search`, `package.clean`, `package.upgrades`, `package.upgrade`, `package.file`, `extension.*`, `mcp.*`, `tool.set_loading` and `feature.set` are for people only; extensions get `local_only`. So is `package.info` with `path` (it looks at any folder on this machine, like `package.install`; step IN-4). Everything else is open to people and extensions; extensions calling `package.call` have extra rules (below).
 
-**Two layers**: built-in (installed with Miyu) and installed (`packages/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records that in that layer, and it can be installed back.
+**Two layers**: built-in (installed with Miyu) and installed (`opt/` in the data root, called the `home` layer in the protocol). Installing the same id in that layer upgrades and replaces it; removing a built-in package records it in `etc/removed/` (an empty file named after the id), and it can be installed back.
 
 ## `package.list`
 

@@ -1,4 +1,4 @@
-miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/workspace
+miyu: 警告：工作目录 ~ 范围过大，改用 ~/.miyu/root/workspace
 
 先读一下笔记。
 

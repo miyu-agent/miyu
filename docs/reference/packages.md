@@ -27,7 +27,7 @@
 
 **谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
-**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `packages/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在这一层记一笔，能装回来。
+**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `opt/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），能装回来。
 
 ## `package.list`
 

@@ -24,9 +24,9 @@
 ## 拉起
 
 - **程序**：先找包文件夹的 `bin/`，再找 `miyu` 旁边，不走 `PATH`；参数是清单的 `[process] args`。
-- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PACKAGE_DIR`（这个包的文件夹）、`MIYU_PACKAGE_STATE`（这个包的状态目录，已经建好）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置，施工 G-15）。
-- **工作目录**：这个包放状态的目录 `state/packages/<编号>/`。
-- **标准错误**：追加到 `state/logs/<编号>.stderr`，超过 1 MiB 的先挪成 `.old`。
+- **环境**：照核心的，另设 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`（资源目录）、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置，施工 G-15），和这个包在各层的那一格（设计 55 第四节，都已经建好、交真实位置）：`MIYU_APP_DIR`（包的文件夹）、`MIYU_CONFIG_DIR`、`MIYU_STATE_DIR`（也是工作目录）、`MIYU_CACHE_DIR`、`MIYU_LOG_DIR`、`MIYU_TMP_DIR`（拉起前清空）、`MIYU_RUNTIME_DIR`，`MIYU_PICTURES_DIR` 这四个。旧名 `MIYU_PACKAGE_DIR`、`MIYU_PACKAGE_STATE` 过渡期间一起给。
+- **工作目录**：这个包放状态的目录 `var/lib/<编号>/`。
+- **标准错误**：追加到 `var/log/<编号>/stderr`，超过 1 MiB 的先挪成 `.old`。
 - **握手**：照常发 `hello`，不出示凭据。回应的 `config` 是它自己的配置项的最终值（密钥是真值）。
 - **退出**：核心关它的标准输入就是「请退出」，5 秒没退的杀掉。
 - **崩了**：退出码 1 以外的退出、被杀、握手不成都算一次失败，退避 1、2、4、8、16 秒再拉起，连续 5 次停下（`failed_repeatedly`）。**退出码 1** 表示配置错、端口被占这类重启也没用的：不再拉起，直接停下（`config_error`）。连着跑满 60 秒的，失败次数从零数。

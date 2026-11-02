@@ -3930,9 +3930,9 @@ on {platform}
 #### `packages/miyu-base-authoring/skills/package-creator/SKILL.md`
 
 - 什么时候加进来：同上，`skill-package-creator`
-- token：那一行 68（施工 PN-3 路径同上多 10 个字符，没重量）；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10；施工 SK-1 同上，+2）
+- token：那一行 68（施工 PN-3 路径同上多 10 个字符，没重量）；正文 741（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约多 10；施工 SK-1 同上，+2；施工 FH-4 沙盒那一句能写的地方换成新的变量名 `MIYU_CACHE_DIR`、`MIYU_STATE_DIR`，约 +6，没重量）
 - 为什么加：同上：脚本的开头怎么写、参数和输出、沙盒，MCP 服务的写法，检查和装
-- 指纹：`c3164e8c`
+- 指纹：`5f77ebf3`
 
 ````text
 ---
@@ -3987,7 +3987,7 @@ print(json.dumps({"faces": faces, "total": sum(faces)}))
 - `Parameters`: a JSON Schema object; it may span several comment lines. Leave it out for no parameters.
 - `Timeout`: seconds, 60 if left out. `Display name`, `显示名称`, `描述` are for people.
 - Arguments come as JSON in `MIYU_ARGS_JSON` and on standard input. Standard output is the result; a non-zero exit code is an error.
-- It runs like a command in the sandbox: it can write only in the workspace and `MIYU_SCRIPT_CACHE_DIR`. Use only what the machine already has (python3, sh); say in `Description` if it needs more.
+- It runs like a command in the sandbox: it can write only in the workspace, `MIYU_CACHE_DIR` and `MIYU_STATE_DIR`. Use only what the machine already has (python3, sh); say in `Description` if it needs more.
 - Start with `#!`. Run it once with `shell` before packaging it.
 
 ## MCP servers

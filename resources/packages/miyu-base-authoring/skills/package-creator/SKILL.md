@@ -50,7 +50,7 @@ print(json.dumps({"faces": faces, "total": sum(faces)}))
 - `Parameters`: a JSON Schema object; it may span several comment lines. Leave it out for no parameters.
 - `Timeout`: seconds, 60 if left out. `Display name`, `显示名称`, `描述` are for people.
 - Arguments come as JSON in `MIYU_ARGS_JSON` and on standard input. Standard output is the result; a non-zero exit code is an error.
-- It runs like a command in the sandbox: it can write only in the workspace and `MIYU_SCRIPT_CACHE_DIR`. Use only what the machine already has (python3, sh); say in `Description` if it needs more.
+- It runs like a command in the sandbox: it can write only in the workspace, `MIYU_CACHE_DIR` and `MIYU_STATE_DIR`. Use only what the machine already has (python3, sh); say in `Description` if it needs more.
 - Start with `#!`. Run it once with `shell` before packaging it.
 
 ## MCP servers

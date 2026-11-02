@@ -2,7 +2,7 @@
 
 ### 是什么
 
-- **命令模板**：一个 Markdown 文件，人敲 `/<名字> 参数` 时核心照它展开成一段话，当这个人说的一句发给 AI（照 Claude Code 的 custom slash commands：`.claude/commands/<名字>.md`，文件名就是命令名，`$ARGUMENTS` 换成参数）。软件包带在包文件夹的 `commands/<名字>.md`，本机自己放的在数据根的 `commands/<名字>.md`。
+- **命令模板**：一个 Markdown 文件，人敲 `/<名字> 参数` 时核心照它展开成一段话，当这个人说的一句发给 AI（照 Claude Code 的 custom slash commands：`.claude/commands/<名字>.md`，文件名就是命令名，`$ARGUMENTS` 换成参数）。软件包带在包文件夹的 `commands/<名字>.md`，本机自己放的在数据根的 `root/commands/<名字>.md`。
 - **扩展的命令**（施工 X-14 下）：清单里声明、交给包的程序办，回一段文字（同核心自己的命令那样回执）。
 - **MCP 服务的提示词**（施工 X-39，`mcp.md`「怎么走」第六条）：名字 `<服务名>:<提示词名>`，人敲的时候核心向服务取（`prompts/get`），取回来的并成这个人说的一句发出去，之后同模板。只在本机的会话里认，跟着服务的功能 `mcp-<服务名>` 开关，菜单里排在模板后面。
 
@@ -23,7 +23,7 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-policy/src/slash.rs` | 命令名的写法、功能编号 `command-<名字>`；读模板（开头可有可无，`description`、`argument-hint`、`metadata` 的 `summary_zh`、`summary_ja`）；照参数展开。纯逻辑 |
-| `crates/miyu-store/src/slash.rs` | 找：数据根的 `commands/` 先，再找装了的（清单读成了的）包的 `commands/`，出厂的包先于装上的、同一层照编号；同名的先找到的赢，后来的、名字不合写法的、开头写错的跳过并说为什么；子文件夹、点开头的、不是 `.md` 的不算；照名字排。另有包文件夹带了哪几条（`carried`，装包时查用） |
+| `crates/miyu-store/src/slash.rs` | 找：数据根的 `root/commands/` 先，再找装了的（清单读成了的）包的 `commands/`，出厂的包先于装上的、同一层照编号；同名的先找到的赢，后来的、名字不合写法的、开头写错的跳过并说为什么；子文件夹、点开头的、不是 `.md` 的不算；照名字排。另有包文件夹带了哪几条（`carried`，装包时查用） |
 | `crates/miyu-kernel/src/event/message.rs`、`session/input/command.rs`、`session/send.rs`、`session/redo.rs` | `message.user` 的 `command`（`TypedCommand`：名字、人敲的那一行）；内核命令 `Typed`：照 `session.send` 发、不急着插话；重做照原样的带着它，换了字的不带 |
 | `crates/miyu-endpoint/src/commands/templates.rs` | `command.run` 认不出的名字照这一条：找会话、认说话的人、找模板、判身份、看预设、展开、交给内核；`command.catalog` 的一项 |
 | `crates/miyu-endpoint/src/commands.rs`、`commands/catalog.rs` | 登记表里有的照旧，没有的转给模板；菜单里模板照名字排进去 |
@@ -44,7 +44,7 @@
 
 ### 找、盖住、开关
 
-1. **从哪找**：数据根的 `commands/` 先（同找技能），再找装了的包的 `commands/`，出厂的包先于装上的、同一层照编号（同技能，`packages.md`「冲突」第 5 条）。同名的先找到的赢，后来的跳过、记被谁盖住。`command.run`、`command.catalog`、`preset.get` 每次照这一刻找：文件少、只读开头，改了模板不用重启。模板可以是链接（施工 X-37，同技能、脚本，`skills.md`）：照它指到的读，断了的、绕回自己的跳过；真实位置落在数据根里的只认 `scripts`、`skills`、`commands`、`packages` 下面，别处的跳过（核心读出来的模板正文会发给模型，指到密钥文件 `secrets.toml` 就发出去了）。
+1. **从哪找**：数据根的 `root/commands/` 先（同找技能），再找装了的包的 `commands/`，出厂的包先于装上的、同一层照编号（同技能，`packages.md`「冲突」第 5 条）。同名的先找到的赢，后来的跳过、记被谁盖住。`command.run`、`command.catalog`、`preset.get` 每次照这一刻找：文件少、只读开头，改了模板不用重启。模板可以是链接（施工 X-37，同技能、脚本，`skills.md`）：照它指到的读，断了的、绕回自己的跳过；真实位置落在数据根里的只认 `scripts`、`skills`、`commands`、`packages` 下面，别处的跳过（核心读出来的模板正文会发给模型，指到密钥文件 `secrets.toml` 就发出去了）。
 2. **内置的赢**：名字和核心登记的（名字、别名）撞了的，模板不算：`command.run` 照内置的办，菜单、预设里不列它。
 3. **开关**：每条模板命令算一个功能 `command-<名字>`，挂在它的包下（自己放的挂在 `~home`），预设里能逐个开关；`preset.get` 列在技能后面：`{"id": "command-<名字>", "name": "/<名字>", "summary"?, "on", "installed": true, "tools": []}`，说明照模板写的、照连接的语言挑，没写的不带。`command.run` 照会话现在的预设判（会话表里记的编号，照这一刻的文件；没有预设的、读不出的当开着），关着的回 `command_not_allowed`，`data.why` 说「预设「<名字>」未启用 /<命令>。」（`commands/unavailable/command-preset-off`）；`command.catalog` 写了会话的不列。
 4. **谁能用**：和内置命令同一关（`may_run`：本机的会话是本人；场所会话照 `as`，主人、对应表里有的、管理的人；每条命令能另配 `commands.<名字>.access`，见下面「谁能用」），别人回 `command_not_allowed`，场所会话不带 `as` 的 `venue_session`。先找会话、认说话的人，再找模板：认不出的 `unknown_command`，谁打的都是（场所里的桥照它把话当平常说的记下，接入QQ 仓库的 `onebot.md`），认出了再判身份。

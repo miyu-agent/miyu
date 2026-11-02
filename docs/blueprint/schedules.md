@@ -6,7 +6,7 @@
 
 ### 一、唤醒表
 
-一份 `state/schedules.db`（SQLite，`miyu_store::schedules`）。它是真相，不是派生的，和会话列表的索引、用量汇总不一样：
+一份 `root/schedules.db`（SQLite，`miyu_store::schedules`）。它是真相，不是派生的，和会话列表的索引、用量汇总不一样：
 
 1. **开**：没有就建，`user_version` 是 1。只加表、加索引的改动不升版本。
 2. **坏了**：读不了、坏了的连同 `-wal`、`-shm` 改名成 `schedules.db.broken-<毫秒>` 留着，开一份空的，记 `WARN schedules set aside`。人的定时没了要告诉他：施工 J-3 中起另推 `notice {"kind": "schedules.reset"}`（第七节「给人的通知」）。

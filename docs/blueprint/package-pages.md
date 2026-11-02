@@ -24,7 +24,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 核心只查、不解码不缩（看开头的字节认格式、只看文件头量宽高，同人格的头像，`packages/logo.rs`）：不在（照真实路径，出了包目录的也算不在）、不是 PNG / WebP、超了上限的当没有图标，包照装，`miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`。本地开发目录同一个上限。
    - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
-3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `packages/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
+3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `opt/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
 
 ### `package.list` 每一项多的几格
 

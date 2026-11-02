@@ -1,6 +1,6 @@
 # Personas and presets: `persona.*`, `preset.*`
 
-A persona is "who she is": the character prompt, example dialogue, roleplay reminders, avatar, theme color. A preset is "what she can use": which features are on, which tools are off. Both are files in stacked layers: built-in, from packages, and yours (`personas/`, `presets/` in the data root); changes are written only to your layer, and a same-named file there covers the ones below. Chinese version: [personas.md](personas.md).
+A persona is "who she is": the character prompt, example dialogue, roleplay reminders, avatar, theme color. A preset is "what she can use": which features are on, which tools are off. Both are files in stacked layers: built-in, from packages, and yours (`root/personas/`, `root/presets/` in the data root); changes are written only to your layer, and a same-named file there covers the ones below. Chinese version: [personas.md](personas.md).
 
 | Method | What it does |
 |---|---|

@@ -61,12 +61,12 @@
 
 | 文件 | 是什么 |
 |---|---|
-| `.miyu-root`、`state/`、`run/` | 骨架（`store.md`） |
+| `.miyu-layout`、`etc/`、`etc/private/`、`run/`、`tmp/` | 骨架（`store.md`） |
 | `workspace/` | 默认工作区 |
 | `trash/sessions/` | 回收处：删掉的会话，留 7 天（`store.md` 第 12 条，施工 3-8 三补）。起来时清掉满了 7 天的 |
 | `trash/personas/` | 删掉的人格，`<编号>.<删的时刻，毫秒>/`，同样留 7 天、起来时清（施工 P-3 下） |
-| `state/logs/core.log` | 运行日志，满 10 MiB 换一份，留 `core.log.1` 到 `core.log.5`（`log.md`） |
-| `state/providers/<包>.json` | 扩展上一次登记的工具（`provide` 的参数原样），起来时照它先登记（`providers.md`「登记缓存」，施工 O-2 中） |
+| `var/log/core.log` | 运行日志，满 10 MiB 换一份，留 `core.log.1` 到 `core.log.5`（`log.md`） |
+| `var/cache/provide/<包>.json` | 扩展上一次登记的工具（`provide` 的参数原样），起来时照它先登记（`providers.md`「登记缓存」，施工 O-2 中） |
 | `run/core.lock`、`run/token`、`run/socket` | 单实例锁、本机令牌、套接字的位置（`ipc.md`） |
 | `run/core.sock` | 套接字本身，放在 `run/` 的时候（`ipc.md`「套接字放哪」） |
 
@@ -78,9 +78,9 @@
 1. 读一次环境的快照（`MIYU_HOME`、`MIYU_RESOURCES`、家目录、程序的真实位置这些），数据根、资源目录、沙盒的助手照它找；`MIYU_LOG`、放套接字的目录到用的那一步才读；配置里 `{ env }` 引用的变量到用的时候才查（施工 8-6 起核心不再读开发用的环境变量、`DEEPSEEK_API_KEY`）。
 2. 找数据根，建骨架（`store.md`）。
 3. 拿单实例锁 `run/core.lock`，不等。拿不到：已经有一个核心在跑，写 `running`，退出码 0，运行日志一个字都不写。先拿锁、再装日志：两个核心不写同一份日志。
-4. 装运行日志 `state/logs/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
+4. 装运行日志 `var/log/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
 5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着建默认工作区 `workspace/` 和敏感的几处顶层目录 `trash/`、`blobs/`、`modules/`、`index/`、`kb/`（没有就建，Unix 上 0700；后几个施工 R3-1 补：布局不变，只是不再用到才建，Windows 的沙盒只禁命令起来那一刻顶层已有的，命令跑着时第一次建的整棵读得到），建不了的起不来（`stage=home`）。接着收拾上一次崩了留下的（`leftovers.rs`）：`packages/` 里升级到一半的包放回去（施工 AE-7，`packages.md`「装卸」第 1 条）；数据根里写配置、密钥时剩下的临时文件删掉（施工 AS-11，`store.md`「在哪」的 `config_file.rs`；施工 R3-1 起看 `run/` 和数据根这一层）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
-6. 找资源目录（`store.md`）。接着读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条）：配置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `state/config/`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。
+6. 找资源目录（`store.md`）。接着读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条）：配置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `var/cache/config`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。
 7. 起运行时：多线程，两个工作线程，接连接、会话、请求都在上面。
 8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。
 9. 读供应商的档案、认原厂的表，造会话的路由和核心一份的模型资料（下面「模型」，施工 8-6、8-7）。目录这时还不读。
@@ -89,10 +89,10 @@
     - 本机 embedding（施工 R-5 下；R-5 三补改成照包，`recall.md` 第四条第 1 款）：照起来时读到的包清单拼（`embed::setup`）：人格记忆装着、它推荐的小程序包 `embed` 也装着（读成了、种类是小程序），程序照小程序清单先找包文件夹的 `bin/`、再找主程序真实位置的旁边（施工 F-8 上再补），模型清单 `model.toml`、模型文件在包目录里；交给协议端点（`Core::with_vectors`，接在模型资料后面：远程的 embedding 照那一份查供应商、记账，施工 R-5 补）。这一步只读模型清单，不核对文件、不碰网络、不拉起小程序：都等第一次要向量。没装 `embed` 的记一行 `INFO embedder unavailable reason=no embed package`（出厂不装，常态）；程序不在、模型清单读不了的记一行 `WARN embedder unavailable reason=…`。本机的那一路没有时，`models.embedding` 写了远程的照样用远程的，不写的只照关键词找。
     - 这两样都不影响起不起得来。
 11. 工具目录：登记基础系统，十一件：`edit`、`glob`、`grep`、`history`、`jobs`（施工 7-4）、`send_message`（施工 7-7）、`read`、`shell`、`subagent`（施工 7-5；7-5 再补从 `agent` 改名，以前的名字照样找得到）、`trash`、`write`；工具的字从资源目录读，登记完就冻结（`tools/interface.md`）。
-12. 核心的家底：数据根、资源目录、模型、工具目录、系统的家目录、本机令牌，会话表是空的，执行器的任务表是空的（施工 7-3，`protocol.md`）；人格记忆装没装照读到的清单设在核心一份的记忆上（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）；照编进来的可选软件包往查询表里登记（`packages.rs`，cargo 开关 `mermaid`、`net`，施工 W-4、W-7）：`mermaid.render`、`link.preview` 调得到，没编进来的核心起来时这张表里就没有这一行；两个包都等第一次调才读自己的资源（`net` 这时才读环境变量里的代理）。清一遍分块上传留下的暂存：`blobs/tmp/` 里的 `upload-*`，崩了、被杀留下的（`packages::clear_uploads`，施工 W-5，`store.md` 第九条第 6 款）；在这一步做，接连接以前：真要传的东西这时都还没开始。不载入任何会话；会话列表的索引 `index/sessions.db` 用到时才开，开了一直开着：没有的新建，读不了、坏了、版本不对的删掉换一份空的，列会话时照日志补；都不影响起不起得来（施工 3-8 七补，`store/index.md`「怎么走」第 1 条）。同样打开用量汇总 `state/usage.db`，一直开着，交给会话（落盘时写）、模型资料（一次性入口记账，`ModelData::keep_ledger`）、协议（`usage.query`）；新建的记 `INFO usage index created`，读不了、坏了、版本不对的删掉重建、记 `WARN usage index rebuilt`，查之前照日志补（施工 8-15，`models.md`「怎么走」第九条第 4 条）。会话表造会话、载入时交给会话一份造子会话的端口（施工 7-5，`protocol.md`「会话表」第 7 条）。
+12. 核心的家底：数据根、资源目录、模型、工具目录、系统的家目录、本机令牌，会话表是空的，执行器的任务表是空的（施工 7-3，`protocol.md`）；人格记忆装没装照读到的清单设在核心一份的记忆上（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）；照编进来的可选软件包往查询表里登记（`packages.rs`，cargo 开关 `mermaid`、`net`，施工 W-4、W-7）：`mermaid.render`、`link.preview` 调得到，没编进来的核心起来时这张表里就没有这一行；两个包都等第一次调才读自己的资源（`net` 这时才读环境变量里的代理）。清一遍分块上传留下的暂存：`blobs/tmp/` 里的 `upload-*`，崩了、被杀留下的（`packages::clear_uploads`，施工 W-5，`store.md` 第九条第 6 款）；在这一步做，接连接以前：真要传的东西这时都还没开始。不载入任何会话；会话列表的索引 `index/sessions.db` 用到时才开，开了一直开着：没有的新建，读不了、坏了、版本不对的删掉换一份空的，列会话时照日志补；都不影响起不起得来（施工 3-8 七补，`store/index.md`「怎么走」第 1 条）。同样打开用量汇总 `var/cache/usage.db`，一直开着，交给会话（落盘时写）、模型资料（一次性入口记账，`ModelData::keep_ledger`）、协议（`usage.query`）；新建的记 `INFO usage index created`，读不了、坏了、版本不对的删掉重建、记 `WARN usage index rebuilt`，查之前照日志补（施工 8-15，`models.md`「怎么走」第九条第 4 条）。会话表造会话、载入时交给会话一份造子会话的端口（施工 7-5，`protocol.md`「会话表」第 7 条）。
 13. 往标准输出写一行 `ready`。接着在后台读 models.dev 的目录、用出来的、供应商的列表，读完放行等着它的（造会话、载入、`model.list`），之后在后台更新目录（下面「模型」第 5、6 条，施工 8-7）。
 14. 清一次回收处（施工 3-8 三补，`store.md` 第 12 条第 2 款）：回收处里删了满 7 天（`KEEP`，2026-09-30 项目主人定）的会话连目录删掉。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`，写进去了才删；写不进去的（连同日志读不了的）留着，记 `WARN trash entry kept`，下次再清。写了 `ready` 以后在阻塞线程里清，不耽误头连上来、第 15 步照常；核心放锁之前等它清完（下面「停下」第 6 条）。钟是这时系统的钟，读不出的当 1970 年（什么都不满时限，一个都不删）。删了的记一条 `INFO trash purged removed=<几个>`，一个都没删的不记；读不出删的时刻、删不掉的，一个一条 `WARN trash entry kept session=… error=…`；回收处读不了的记 `WARN trash not read error=…`。都不影响起不起得来。
-15. 开始自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux、macOS（施工 V-4 补）上起一个任务，记一行 `start`，之后每分钟一行，涨得快的多一行，写进 `state/logs/memory.jsonl`；量不出来的平台不起，记一条 `DEBUG memory samples unsupported`；文件打不开的记一条 `WARN memory samples not started`，照样起来。接着起合库的写前日志的线程（施工 V-28，`store.md`「怎么走」第 14 条）：库最后一次提交过去 2 秒，把 `-wal` 合回主库、截短；一个进程只起一个，起不来的记一条 `WARN wal checkpoints not started`，照样起来。
+15. 开始自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux、macOS（施工 V-4 补）上起一个任务，记一行 `start`，之后每分钟一行，涨得快的多一行，写进 `var/log/memory.jsonl`；量不出来的平台不起，记一条 `DEBUG memory samples unsupported`；文件打不开的记一条 `WARN memory samples not started`，照样起来。接着起合库的写前日志的线程（施工 V-28，`store.md`「怎么走」第 14 条）：库最后一次提交过去 2 秒，把 `-wal` 合回主库、截短；一个进程只起一个，起不来的记一条 `WARN wal checkpoints not started`，照样起来。
 16. 一个个接连接，直到停下（下面「停下」）。
 
 第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <原因>`，退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因是给人看的中文，只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）；写那一行之前先等另起线程写盘的写完（下面「停下」第 6 条），调它的地方接着就放锁。
@@ -116,7 +116,7 @@
 2. 造会话的路由（`miyu_session::Routes`，`session/actor.md` 第 8 条）交给协议端点：用哪家供应商、哪个模型、哪个 key，全照配置（`[providers.<id>]`、`models.chat`），每个会话照回合开始时冻结的那一份挑（`config.md` 第八条第 3 条）。空闲超时 180 秒（`http.md`）。核心不再读开发用的 `MIYU_DEV_*` 和 `DEEPSEEK_API_KEY`：开发自测改成 `cargo xtask dev-home <目录>`（`models.md` 第十条）。
 3. 没配模型（`models.chat` 没配、配的解析不出、那一家用不了、key 一个都取不到）：照样起来；每次请求都当场说完、没发出去，分类 `no_model`，原话照 `models.md`「出错」（例如 `no model configured: set models.chat`），`model.called` 里没有端点和模型；内核不再来（`kernel/session.md`）。路由每次这样记一条 `WARN no model why=…`（目标 `miyu::session`）。
 4. key 照配置里的引用取：`{ secret }` 取密钥文件里的，`{ env }` 取核心起来时的环境；换了密钥，下一个回合开始时用上，不用重启（`config.md` 第九条第 8 条）。key 只在内存里，不进日志。
-5. 目录（施工 8-7，`models.md`「怎么走」第二条第 1、2 条）：找到资源目录就在一个线程里读（施工 V-2 下补；V-2 下以前写了 `ready` 以后才读，头一连上就要载入会话，白等约 30 ms；V-2 下是造好路由才读），和读清单、配置、生成文件这些起来的步子并着走、不挡 `ready`，造好路由以后等它读完、放行，安装包带的快照（`models/models-dev.json`）和缓存目录里的 `models/models-dev.json` 比旁边 `meta` 的 `fetched`，用新的；新的读不了用另一份；都读不了目录是空的，照样起来。同一次读 `state/models/` 下的用出来的、供应商的列表、池的指针（`pools.json`，施工 8-8），坏了的当没有。读完记 `INFO catalog loaded source=… fetched=… providers=… models=… ms=…`。要它的（造会话、载入、`model.list`）在这之前等着。2026-10-01 在开发机上量的读快照（release）见施工单 8-7「验收结果」。
+5. 目录（施工 8-7，`models.md`「怎么走」第二条第 1、2 条）：找到资源目录就在一个线程里读（施工 V-2 下补；V-2 下以前写了 `ready` 以后才读，头一连上就要载入会话，白等约 30 ms；V-2 下是造好路由才读），和读清单、配置、生成文件这些起来的步子并着走、不挡 `ready`，造好路由以后等它读完、放行，安装包带的快照（`models/models-dev.json`）和缓存目录里的 `models/models-dev.json` 比旁边 `meta` 的 `fetched`，用新的；新的读不了用另一份；都读不了目录是空的，照样起来。同一次读 `var/cache/models` 下的用出来的、供应商的列表、池的指针（`pools.json`，施工 8-8），坏了的当没有。读完记 `INFO catalog loaded source=… fetched=… providers=… models=… ms=…`。要它的（造会话、载入、`model.list`）在这之前等着。2026-10-01 在开发机上量的读快照（release）见施工单 8-7「验收结果」。
 6. 后台更新（`models.md`「怎么走」第二条第 3 条）：`models.catalog.update` 开着的（`MIYU_CATALOG_UPDATE` 压过），缓存的 `fetched` 旧过 `every` 的，GET `url`（是环境变量的引用的照核心的环境取，取不到的照失败算，施工 8-8：`models::refresh::Schedule`），带上次的 `ETag`；200 读得进、至少有一家的写进缓存目录、换上，304 只改 `meta`，别的一小时后再试。核心一直开着的每过 `every` 再查，配置改了当场照新的算。缓存目录算不出来的只读快照、不拉，记一行 `WARN catalog cache unavailable reason=…`。
 
 **子进程随核心退出**（施工 7-8，`12-进程形态与分发.md` R5，`agents.md` 第八条）
@@ -175,7 +175,7 @@
 | `WARN` | `data root gone, stopping`（施工 TMP-2：数据根里的锁文件不在了、换了，「停下」第 9 条） |
 | `INFO` | `stopped reason=idle`、`stopped reason=signal`、`stopped reason=request`、`stopped reason=gone` |
 
-配置那几行的目标是 `miyu::config`：`WARN config schema not written file=state/config/<文件名> error=…`（第 6 步，施工 8-1）；`WARN config problems file=… errors=… warnings=…`、`WARN trust not read file=… error=…`、`WARN MIYU_LOG not understood, using config value=…`、`INFO log level level=… from=…`（第 6 步，施工 8-2）；`WARN config watch unavailable error=…`、`INFO config changed layer=… via=file keys=…`（第 6 步以后，施工 8-4）；`WARN secrets readable by others file=secrets.toml`（第 6 步、手改重读时）、`INFO secret changed name=… action=… via=…`（只有名字，施工 8-5）。
+配置那几行的目标是 `miyu::config`：`WARN config schema not written file=var/cache/config/<文件名> error=…`（第 6 步，施工 8-1）；`WARN config problems file=… errors=… warnings=…`、`WARN trust not read file=… error=…`、`WARN MIYU_LOG not understood, using config value=…`、`INFO log level level=… from=…`（第 6 步，施工 8-2）；`WARN config watch unavailable error=…`、`INFO config changed layer=… via=file keys=…`（第 6 步以后，施工 8-4）；`WARN secrets readable by others file=secrets.toml`（第 6 步、手改重读时）、`INFO secret changed name=… action=… via=…`（只有名字，施工 8-5）。
 
 套接字的几行（`listening`、`stale socket removed`、`XDG_RUNTIME_DIR not usable`）见 `ipc.md`，连接、会话的见 `protocol.md`、`session/actor.md`。
 
@@ -201,7 +201,7 @@
 - `12-进程形态与分发.md` 第二节：按需运行、空闲多久、停的信号；「拉起时的握手」（那一行、先拿锁再装日志、清旧套接字的是核心）。第三节：一个主程序，`miyu core` 是它的子命令。
 - `07-存储.md` 第二节（数据根、骨架、`run/`）、第十节（单实例与锁）。
 - `15-模型与供应商.md` 第二节、`models.md`：模型从配置里来（施工 8-6 取代了配置做出来之前只认的 `DEEPSEEK_API_KEY`）。
-- `28-运行日志.md`：写到 `state/logs/`，`MIYU_LOG`。
+- `28-运行日志.md`：写到 `var/log`，`MIYU_LOG`。
 - `04-核心协议.md` 第九节 `session.delete`：删了的进回收处、留 7 天（2026-09-30 项目主人定，施工 3-8 三补）。
 
 ### 还没有的

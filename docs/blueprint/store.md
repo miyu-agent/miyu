@@ -138,7 +138,7 @@
 1. 建数据根本身，缺的上级一起建。
 2. 看顶层有没有 `.miyu-layout`。只看在不在：文件、目录、链接都算。
 3. 没有标记：
-   1. 目录里有任何东西（只有一个隐藏文件也算）：再看一眼标记，别处可能刚写下；还没有，报错，一个字节都不动它。有旧标记 `.miyu-root` 的报「旧版 Miyu 的数据根（layout 2），新版不认」（设计 55 第六节第 1 条）。
+   1. 目录里有任何东西（只有一个隐藏文件也算）：再看一眼标记，别处可能刚写下；还没有，报错，一个字节都不动它。有旧标记 `.miyu-layout` 的报「旧版 Miyu 的数据根（layout 2），新版不认」（设计 55 第六节第 1 条）。
    2. 目录是空的：只许新建地写标记，内容是 `This directory is a Miyu data root (layout 3).` 加换行；同步这个文件，再同步数据根。别处刚写下了的，也算成。
 4. 标记里写的不是这一版的布局（以后的、写坏了的）：报错，不动。空的多看几眼（最多半秒）：别处刚建、还没写进字；半秒后还是空的照写坏了算。
 5. 骨架 `etc/`、`etc/private/`、`run/`、`tmp/`，缺的才建；别的由核心起来时建（上一节）或用到时再建。
@@ -155,7 +155,7 @@
 **4. 建目录、同步**（`durable.rs`，这一页新建的目录都走它）
 
 1. 已经是目录的，不动。
-2. 不在数据根里的不建（施工 TMP-1）：往上找，没有一层的顶上有 `.miyu-layout` 的，报 `NotFound`：`<目录> is not inside a Miyu data root (no .miyu-layout above it), not creating it`。数据根被人删了（测试的夹具清掉了临时目录、人删了 `~/.miyu`），后台还在写的库、日志、blob 不再一层层把它建回来：原来一次测试在临时目录里留下五百多个目录。别的 crate 在数据根里写东西建目录的，用 `root::create_inside`，同一个规矩。不在数据根里的不查：建数据根本身（`prepare`）、配置文件（项目目录里的 `.miyu/`）、测这一条本身的测试（`create_dir_anywhere`，crate 里自己用），生成的文件的 `generated::write`（模型目录的缓存在机器的缓存目录里，头也拿它写自己的文件；写进数据根的配置清单、MCP 和扩展登记的缓存、`state/models/` 用 `write_inside`）。
+2. 不在数据根里的不建（施工 TMP-1）：往上找，没有一层的顶上有 `.miyu-layout` 的，报 `NotFound`：`<目录> is not inside a Miyu data root (no .miyu-layout above it), not creating it`。数据根被人删了（测试的夹具清掉了临时目录、人删了 `~/.miyu`），后台还在写的库、日志、blob 不再一层层把它建回来：原来一次测试在临时目录里留下五百多个目录。别的 crate 在数据根里写东西建目录的，用 `root::create_inside`，同一个规矩。不在数据根里的不查：建数据根本身（`prepare`）、配置文件（项目目录里的 `.miyu/`）、测这一条本身的测试（`create_dir_anywhere`，crate 里自己用），生成的文件的 `generated::write`（模型目录的缓存在机器的缓存目录里，头也拿它写自己的文件；写进数据根的配置清单、MCP 和扩展登记的缓存、`var/cache/models` 用 `write_inside`）。
 3. 缺的上级先一层层建。
 4. Unix 上新建的是 0700。同一刻别处建好了的，算成。
 5. 新建的每一层，都同步它的上一层：建目录这件事本身才算落盘。
@@ -293,7 +293,7 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `src/durable/tests.rs` 的 `only_names_made_for_writing_count_as_temporary`、`sweeping_removes_only_old_temporary_files`（施工 AS-11） | 只认写的时候起的那种名字；只删放了够久的普通文件，刚写的、目录、认不出的留着；没有这个目录不算错 |
-| `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；工作区建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-layout`；旧版的（`.miyu-root`）、别的布局的不动、各报各的；只有隐藏文件也不算空；进程的环境找得到 |
+| `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；工作区建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-layout`；旧版的（`.miyu-layout`）、别的布局的不动、各报各的；只有隐藏文件也不算空；进程的环境找得到 |
 | `crates/miyu-store/src/durable/tests.rs` | 一层层建、都是 0700、建两次不出错；挡路的文件报错 |
 | `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1）；有东西的库查过、放掉页以后照旧读得回来、写得进（施工 V-37 上） |
 | `crates/miyu-store/src/sqlite/idle/tests.rs`（施工 V-28） | 第 14 条：写过的库合一遍以后 `-wal` 是 0 字节、行都在、别的连接从主库读得到；被动检查点不截、之后的下一次提交照 `journal_size_limit` 截回去；写过以后等得到安静；放下了的库不再合、不出错 |

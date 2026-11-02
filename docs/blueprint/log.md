@@ -2,7 +2,7 @@
 
 ### 是什么
 
-核心进程自己的流水账：它起来了没有、在干什么、哪里出了错。一行一条英文，像 dmesg；写进数据根的 `state/logs/core.log`，满 10 MiB 换一份。它不是真相源，删了不丢任何东西；会话里发生的事在会话日志里（`store.md`）。
+核心进程自己的流水账：它起来了没有、在干什么、哪里出了错。一行一条英文，像 dmesg；写进数据根的 `var/log/core.log`，满 10 MiB 换一份。它不是真相源，删了不丢任何东西；会话里发生的事在会话日志里（`store.md`）。
 
 ### 在哪
 
@@ -36,11 +36,11 @@
 
 | 文件 | 是什么 |
 |---|---|
-| `<数据根>/state/logs/core.log` | 正在写的 |
-| `<数据根>/state/logs/core.log.1` … `core.log.5` | 以前的：`.1` 是上一份，`.5` 最老 |
-| `<数据根>/state/logs/memory.jsonl`、`memory.jsonl.1` | 核心自己记的内存账，不是运行日志：一行一个 JSON，满 1 MiB 换下、只留一份（施工 V-4，`heap.md`「自己记账」） |
+| `<数据根>/var/log/core.log` | 正在写的 |
+| `<数据根>/var/log/core.log.1` … `core.log.5` | 以前的：`.1` 是上一份，`.5` 最老 |
+| `<数据根>/var/log/memory.jsonl`、`memory.jsonl.1` | 核心自己记的内存账，不是运行日志：一行一个 JSON，满 1 MiB 换下、只留一份（施工 V-4，`heap.md`「自己记账」） |
 
-- `state/logs/` 没有就建（连同缺的上级），文件没有就建。Unix 上新建的目录 0700、文件 0600，只有本人能进、能读（`07-存储.md` 第二节；施工 4-9 再补四上：原来照系统默认的，一般是 0755、0644）；已经有的不改。Windows 上靠用户目录本身的访问控制。
+- `var/log` 没有就建（连同缺的上级），文件没有就建。Unix 上新建的目录 0700、文件 0600，只有本人能进、能读（`07-存储.md` 第二节；施工 4-9 再补四上：原来照系统默认的，一般是 0755、0644）；已经有的不改。Windows 上靠用户目录本身的访问控制。
 - 用到的环境变量：`MIYU_LOG`。
 
 ### 怎么走
@@ -49,7 +49,7 @@
 
 **2. 装上**（`install`）
 
-1. 打开 `<目录>/<名字>.log` 接着往后写，目录没有就建；量出它已经多长。核心的是 `state/logs/` 下的 `core`，网页软件的是 `web`（施工 W-9）。
+1. 打开 `<目录>/<名字>.log` 接着往后写，目录没有就建；量出它已经多长。核心的是 `var/log` 下的 `core`，网页软件的是 `web`（施工 W-9）。
 2. 记下家目录：写成一行时把它换成 `~`（第 5 条）。核心给的是它环境里的家目录（`store.md` 的环境快照）。
 3. 照给的级别记（核心给的是照 `MIYU_LOG` 读出来的，第 3 条）。筛的那一层能换（`tracing-subscriber` 的 `reload`）：核心读完配置以后照 `log.level` 换（施工 8-2）；运行中 `log.level` 的最终值变了（手改、`config.set`），当场换，记一条 `INFO log level`（施工 8-4）。`MIYU_LOG` 设了、读得懂的，最终值一直是它，不换。
 4. 装成这个进程全局的订阅者。一个进程只能装一次，第二次报错。
@@ -120,7 +120,7 @@
 3. 供应商出错的原话：不写，只写分类（`class`）。原话里可能回显请求里的字。
 4. HTTP：只写主机名、字节数、状态码、分类、供应商说要等多久、用时；地址的路径和参数不写。
 5. 这几条靠发日志的地方只交编号、长度、状态：接口上没有写内容的口子。由测试查（「守着它的」）。
-6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。记忆的一间（施工 LG-1 下）不写人格名、会话编号，写种类 `room_kind`（`persona`、`session`）和短号 `room_id`：8 位十六进制，数据根的盐（`state/log-salt`，32 个随机字节，0600，没有就在核心起来时造；读不出、写不成的记一行 `WARN memory log salt not kept`，这次起来另用一份只在内存里的）接上这一间算 SHA-256 取前 4 个字节。同一间每次一样，同机人格名少也一个个试不回去，日志拿到别的机器上对不上；盐不进日志、不进任何回应。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
+6. 出错的原因（`error` 这一格）写系统的原话，或者核心自己的报错，都是英文（施工 4-9 再补四中：核心自己的几种报错原来是中文）；路径里的家目录照第 5 条写成 `~`。原话里带着人的东西的不写原话（施工 LG-1 上，项目主人 2026-10-22 定）：等后台任务那一层出的错（`JoinError`）只写 `panic`（是不是 panic），panic 的内容不写；会话日志读不了的只写哪一段（段的文件名）、第几行，不写目录、不写怎么坏的；读文件、读目录的原话带路径的只写错误的种类，或者不写。记忆的一间（施工 LG-1 下）不写人格名、会话编号，写种类 `room_kind`（`persona`、`session`）和短号 `room_id`：8 位十六进制，数据根的盐（`var/lib/log-salt`，32 个随机字节，0600，没有就在核心起来时造；读不出、写不成的记一行 `WARN memory log salt not kept`，这次起来另用一份只在内存里的）接上这一间算 SHA-256 取前 4 个字节。同一间每次一样，同机人格名少也一个个试不回去，日志拿到别的机器上对不上；盐不进日志、不进任何回应。核心起不来的那一行不写原因，写没过的是哪一步（`stage`）：原因是给人看的中文，只交给头，头印给人看（`core.md`）。
 
 **8. 每一行**
 
@@ -145,9 +145,9 @@
 | `core` | INFO | `catalog refreshed`、`catalog not modified` | `fetched`、`providers`、`models`；304 的没有键 | 后台拉到了新目录、服务器说没变（第二条第 3 条） |
 | `core` | WARN | `catalog refresh failed` | `error` | 拉不到、读不了、写不进缓存，`models.catalog.url` 是环境变量的引用、取不到（施工 8-8，`error` 是 `models.catalog.url has no address`）：一小时后再试 |
 | `core` | WARN | `catalog cache unavailable` | `reason` | 算不出缓存目录：只读快照、不拉 |
-| `session` | INFO | `learned window` | `provider`、`model`、`window` | 请求报上下文超长、说了上限、比手头的窗口小：记进 `state/models/learned.json`（第二条第 9 条）。带会话编号 |
+| `session` | INFO | `learned window` | `provider`、`model`、`window` | 请求报上下文超长、说了上限、比手头的窗口小：记进 `var/lib/models/learned.json`（第二条第 9 条）。带会话编号 |
 | `session` | WARN | `provider list failed` | `provider`、`error` | 拉供应商的模型列表失败，照旧用上一份（第二条第 10 条） |
-| `session` | WARN | `model data not written`、`model data unreadable` | `file`、`error`；`error` | `state/models/` 下的写不进、坏了当没有（施工 8-8 起连同 `pools.json`） |
+| `session` | WARN | `model data not written`、`model data unreadable` | `file`、`error`；`error` | `var/cache/models` 下的写不进、坏了当没有（施工 8-8 起连同 `pools.json`） |
 | `session` | WARN | `pool member skipped` | `pool`、`member` | 池里认不出的成员（那一家没配），每次解析记一行（`models.md` 第三条第 1 条，施工 8-8）。带会话编号 |
 | `session` | INFO | `endpoint cooling` | `provider`、`key`（第几个，从 1 数；没写 key 的没有）、`model`、`class`、`for_ms`、`failures` | 一次出错记了冷却：限速、可重试、认证失败、额度用完四类（施工 Q-4 中多额度用完），冷却多少毫秒、这个单位连着第几次（`models.md` 第五条第 2 条，施工 8-9）。key 的值不进日志。带会话编号；一次性入口记的不带（施工 8-20） |
 | `session` | WARN | `provider out of quota` | `provider`、`model`、`until`（冷却到的时刻） | 额度、余额用完记了冷却（`models.md` 第五条第 2 条，施工 Q-4 中）：账号级的事，人一看就知道不是网断了是没钱了、几点恢复。带会话编号 |
@@ -278,7 +278,7 @@
 ### 出处
 
 - `28-运行日志.md` 第一节（写到哪、10 MB、留 5 份）、第二节（一行怎么写、字一律英文）、第三节（级别、`MIYU_LOG`）、第四节（写什么，不写什么）；LG1 到 LG3。
-- `07-存储.md` 第二节：`state/` 里放运行日志。
+- `55-数据根仿FHS.md` 第二节：`var/log/` 放运行日志。
 
 ### 还没有的
 
