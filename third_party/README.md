@@ -1,7 +1,7 @@
 # 补过的第三方库
 
-这里放的是从 crates.io 原样拷来、再补过几处的第三方库。根目录的 `Cargo.toml` 用 `[patch.crates-io]` 把依赖指到这里，`[workspace]
-exclude` 把它们排除在工作区外：它们不是我们的代码，门禁的 clippy、文档、行数这些规矩不管它们；许可证照包清单里的 `license`
+这里放的是从 crates.io 原样拷来、再补过几处的第三方库。用到它的 crate 写成路径依赖指到这里（施工 MP-1：原来用根目录的 `[patch.crates-io]`，那只在本工作区里管用，钉了核心的头、扩展编不过），根目录的 `[workspace]
+exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --all` 查到，所以每个目录里放一份 `disable_all_formatting = true` 的 `rustfmt.toml`）：它们不是我们的代码，门禁的 clippy、文档、行数这些规矩不管它们；许可证照包清单里的 `license`
 照常查（`docs/blueprint/licenses.md`）。
 
 每补一处都写在下面：改了哪个文件、为什么、怎么验。库升级时，先拷新版原样替换，再照这里把补丁一处处挪过去，对着下面的

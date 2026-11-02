@@ -46,8 +46,3 @@ opt-level = 3
 
 [profile.dev.package.blake2]
 opt-level = 3
-
-# 画 mermaid 的库用补过的那一份（施工 V-35）：量字宽时字体文件映射进来、不整份拷进内存，不在缓存目录另存字体，记住字体在哪个
-# 文件免得每次扫系统字体库，找到以后放掉整张字体表。原样拷自 crates.io 的 0.3.1，改了哪里见 `third_party/README.md`。
-[patch.crates-io]
-mermaid-rs-renderer = { path = "third_party/mermaid-rs-renderer" }

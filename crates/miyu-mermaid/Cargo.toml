@@ -10,7 +10,9 @@ publish.workspace = true
 [dependencies]
 # 画 SVG：设计 13 第九节定的库（旧版、tui-demo、web-demo 用的也是它）。只要出 SVG 的那一半，不要它自带的命令行
 # 和 PNG 输出（关掉默认功能）。MIT。
-mermaid-rs-renderer = { version = "0.3", default-features = false }
+# 用补过的那一份（施工 V-35，`third_party/README.md`）。写成路径依赖、不用根上的 `[patch]`（施工 MP-1）：`[patch]` 只在本
+# 工作区里管用，钉了核心的头、扩展照它拿到的是 crates.io 上没补过的，编不过；路径依赖跟着仓库走，它们什么都不用加。
+mermaid-rs-renderer = { path = "../../third_party/mermaid-rs-renderer", version = "0.3", default-features = false }
 # 独立探一次系统的字体库找不找得到字：画图的库自己找不到字体时只是退化成估算宽度、不会报错，核心要的是「读不到
 # 字体」这个信号，所以不能只靠它。和 mermaid-rs-renderer 带进来的是同一个版本。MIT。
 fontdb = "0.23"

@@ -1,0 +1,2 @@
+# 第三方原样拷来的代码不照本仓库的格式重排（施工 MP-1：改成路径依赖以后 `cargo fmt --all` 会连它一起查），见 `third_party/README.md`。
+disable_all_formatting = true
