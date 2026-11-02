@@ -36,7 +36,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
-mod records;
+pub(super) mod records;
 
 /// 替换前发现有人手改，最多重来几次（第五条第 6 条）。
 pub(super) const TRIES: usize = 3;
