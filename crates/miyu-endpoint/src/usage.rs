@@ -7,7 +7,8 @@
 //! - 补：日志、会话、回收处里的会话；读不完的记一行 `WARN usage not indexed`，照读到的算。
 //! - 回应 `rows`：分组的几格（没有的是 `null`），`requests`、`usage` 四项、`amounts`（照币种各加各的，`usage.currency` 排
 //!   最前，别的照币种代码的字母先后，取的是这一刻的配置：当场生效）、`unpriced`；`converted`（施工 UC-1）：照每一笔那天的
-//!   汇率换成 `usage.currency` 的一个数，没换成的那几笔在它的 `rest`，一笔都没换成的不写。用到了兜底源的汇率，回应顶上
+//!   汇率换成 `usage.currency` 的一个数，没换成的那几笔在它的 `rest`，一笔都没换成的不写；`converted_parts`（施工 UP-1）：
+//!   换成的那几笔分四种各多少，同一个币种，有一笔没分四种的不写，有一笔那一种用了、价格又不知道的那一种不写（用量是 0 的是准的 0）。用到了兜底源的汇率，回应顶上
 //!   写 `rates`（来源，头照它注明）。缺的汇率当场去取，最多等两秒；会话状态这些常推的几处不等，只用缓存。
 //! - 读出坏了的：记一行 `WARN usage not read`，删掉重建再补一次；还不行的回 `internal`。
 
@@ -25,7 +26,7 @@ use miyu_models::settings::UsageSettings;
 use miyu_store::root::DataRoot;
 use miyu_store::sqlite::Opened;
 use miyu_store::usage::rates::{Source, WAIT};
-use miyu_store::usage::{Converted, Group, Query, Total, UsageError, UsageIndex};
+use miyu_store::usage::{Converted, Daily, Group, Query, Total, UsageError, UsageIndex};
 
 use crate::Core;
 use crate::refusal::Refusal;
@@ -205,7 +206,12 @@ fn row(group: &[Group], total: Total, first: &str, converted: Option<Converted>)
     map.insert("amounts".to_string(), Value::Array(amounts));
     map.insert("unpriced".to_string(), json!(total.unpriced));
     if let Some(converted) = converted {
+        // 分四种的（施工 UP-1）：币种同 `converted`；不知道的那一种不写，一种都不知道、有一笔没分四种的整个不写。
+        let parts = converted.parts.filter(|parts| !parts.is_unknown());
         map.insert("converted".to_string(), converted_value(converted));
+        if let Some(parts) = parts {
+            map.insert("converted_parts".to_string(), json!(parts));
+        }
     }
     Value::Object(map)
 }
@@ -345,13 +351,9 @@ pub(crate) fn own(tally: &miyu_session::Tally) -> Total {
     }
 }
 
-/// 会话自己累计的按 UTC 日子、币种分开的金额（施工 UC-1）。
-fn daily(tally: &miyu_session::Tally) -> Vec<(miyu_store::usage::rates::Day, String, f64)> {
-    tally
-        .daily
-        .iter()
-        .map(|((day, currency), amount)| (*day, currency.clone(), *amount))
-        .collect()
+/// 会话自己累计的按 UTC 日子、币种分开的金额（施工 UC-1），连同分四种的（施工 UP-1）。
+fn daily(tally: &miyu_session::Tally) -> Vec<Daily> {
+    tally.daily.values().cloned().collect()
 }
 
 /// 会话自己累计的写成协议上的一行，币种照这一刻的配置排。

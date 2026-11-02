@@ -92,6 +92,18 @@ async fn amounts_are_converted_at_the_days_rate_and_the_rate_is_kept() {
         "人民币那一笔原样、美元那一笔乘 7：{reply}"
     );
     assert!(converted.get("rest").is_none(), "都换成了：{reply}");
+    // 一次性调用也带四种（施工 UP-1）：两家都只写了输入、输出的价格，缓存两种用量是 0，照样是准的 0。
+    let parts = &row["converted_parts"];
+    assert!(
+        (amount(&parts["uncached"]) - 12.0 * (1.0 + 7.0) / 1e6).abs() < 1e-12,
+        "{reply}"
+    );
+    assert!(
+        (amount(&parts["output"]) - 3.0 * (2.0 + 7.0) / 1e6).abs() < 1e-12,
+        "{reply}"
+    );
+    assert_eq!(parts["cache_read"], json!(0), "{reply}");
+    assert_eq!(parts["cache_write"], json!(0), "{reply}");
     assert_eq!(
         row["amounts"].as_array().map(Vec::len),
         Some(2),
@@ -206,11 +218,47 @@ async fn a_sessions_own_total_is_converted_for_its_owner() {
         (amount(&reply["result"]["rows"][0]["converted"]["amount"]) - spent * 7.0).abs() < 1e-12,
         "{reply}"
     );
+    let row = &reply["result"]["rows"][0];
+    parts_add_up(
+        row,
+        [
+            60.0 * 7.0 / 1e6,
+            40.0 * 0.5 * 7.0 / 1e6,
+            10.0 * 2.0 * 7.0 / 1e6,
+        ],
+    );
     let subscribed = client.subscribe("w1", &session).await;
     let usage = &subscribed["result"]["usage"];
     assert_eq!(usage["converted"]["currency"], "CNY", "{subscribed}");
     assert!(
         (amount(&usage["converted"]["amount"]) - spent * 7.0).abs() < 1e-12,
         "{subscribed}"
+    );
+    parts_add_up(
+        usage,
+        [
+            60.0 * 7.0 / 1e6,
+            40.0 * 0.5 * 7.0 / 1e6,
+            10.0 * 2.0 * 7.0 / 1e6,
+        ],
+    );
+}
+
+/// 一行的 `converted_parts`（施工 UP-1）：没命中、读缓存、输出照 `want` 换成了人民币，写缓存的价格不知道、用量是 0，是准的
+/// 0；四种加起来就是 `converted.amount`。
+fn parts_add_up(row: &Value, want: [f64; 3]) {
+    let parts = &row["converted_parts"];
+    let kinds = ["uncached", "cache_read", "output"];
+    for (kind, want) in kinds.iter().zip(want) {
+        assert!(
+            (amount(&parts[*kind]) - want).abs() < 1e-12,
+            "{kind}：{row}"
+        );
+    }
+    assert_eq!(parts["cache_write"], json!(0), "{row}");
+    let sum: f64 = kinds.iter().map(|kind| amount(&parts[*kind])).sum();
+    assert!(
+        (sum - amount(&row["converted"]["amount"])).abs() < 1e-12,
+        "加起来就是总数：{row}"
     );
 }

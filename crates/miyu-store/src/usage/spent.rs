@@ -9,11 +9,12 @@
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 
-use miyu_kernel::event::{Body, Cost, Event, ModelCalled, SessionCreated, Usage};
+use miyu_kernel::event::{Body, Cost, Event, ModelCalled, Real, SessionCreated, Usage};
 use miyu_kernel::id::{SessionId, VenueId};
 use miyu_kernel::time::Timestamp;
 
 use super::UsageError;
+use super::parts::Parts;
 use crate::sqlite::integer;
 
 /// 一个会话的场所、父会话：照 `session.created` 的。每一行都记，按场所分组照它。
@@ -94,6 +95,8 @@ pub struct Spent {
     pub usage: Usage,
     /// 金额和币种；没有的没有。
     pub amount: Option<(String, f64)>,
+    /// 金额分四种（施工 UP-1）：照那一次记下的价格算好的；没金额的、老的合计没有。
+    pub parts: Option<Parts>,
 }
 
 /// 什么都没有的用量。
@@ -169,6 +172,7 @@ impl Spent {
             unpriced: u64::from(usage.is_some() && cost.is_none()),
             usage: usage.unwrap_or(NO_USAGE),
             amount: cost.map(|cost| (cost.currency.clone(), cost.amount.get())),
+            parts: cost.zip(usage).map(|(cost, usage)| Parts::of(cost, &usage)),
         }
     }
 }
@@ -185,8 +189,10 @@ fn purpose(called: &ModelCalled) -> Option<String> {
 pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> {
     let mut insert = db.prepare_cached(
         "INSERT OR IGNORE INTO spent (source, seq, at, venue, session, parent, purpose, summary, \
-         provider, model, requests, unpriced, uncached, cache_read, cache_write, output, amount, currency) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+         provider, model, requests, unpriced, uncached, cache_read, cache_write, output, amount, currency, \
+         parted, uncached_amount, cache_read_amount, cache_write_amount, output_amount) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, \
+         ?19, ?20, ?21, ?22, ?23)",
     )?;
     for row in rows {
         let usage = &row.usage;
@@ -209,7 +215,17 @@ pub(crate) fn insert(db: &Connection, rows: &[Spent]) -> Result<(), UsageError> 
             integer(usage.output, "usage")?,
             row.amount.as_ref().map(|(_, amount)| *amount),
             row.amount.as_ref().map(|(currency, _)| currency.as_str()),
+            row.parts.is_some(),
+            part(row.parts.and_then(|parts| parts.uncached)),
+            part(row.parts.and_then(|parts| parts.cache_read)),
+            part(row.parts.and_then(|parts| parts.cache_write)),
+            part(row.parts.and_then(|parts| parts.output)),
         ])?;
     }
     Ok(())
+}
+
+/// 分好的一种写进库：不知道的空着。
+fn part(part: Option<Real>) -> Option<f64> {
+    part.map(Real::get)
 }

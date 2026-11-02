@@ -4,6 +4,7 @@
 //!   用途）是空的。一行照分组的几格的先后排，空的在前。
 //! - 金额照币种各加各的；照币种代码的字母先后，谁排最前由调的一方照 `usage.currency` 再排。要换算的（[`Query::daily`]，
 //!   施工 UC-1）另交每一组按 UTC 日子、币种分开的金额（[`Total::daily`]），调的一方照它换算（[`UsageIndex::convert`]）。
+//!   按天分的连同分四种的（施工 UP-1）：那一天那个币种有一行没分四种的（老的合计）整个没有，有一行哪一种空着的那一种没有。
 //! - 分天：时刻加上时区换成那个时区的日期；删掉的会话按小时存，照那一小时的开头归到哪天。
 //! - 只算一个会话的，写了 `tree` 的连它派的子会话（照 `marks` 里记的父会话一层层往下找）。
 
@@ -12,12 +13,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use rusqlite::types::Value;
 use rusqlite::{Connection, params_from_iter};
 
-use miyu_kernel::event::Usage;
+use miyu_kernel::event::{Real, Usage};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
-use super::rates::Day;
-use super::{UsageError, UsageIndex};
+use super::parts::Parts;
+use super::{Daily, UsageError, UsageIndex};
 
 /// 一天，毫秒。
 const DAY_MS: i64 = 86_400_000;
@@ -116,8 +117,8 @@ pub struct Total {
     pub amounts: Vec<(String, f64)>,
     /// 有用量、没金额的几次。
     pub unpriced: u64,
-    /// 按 UTC 日子、币种分开的金额（施工 UC-1）：换算照它；没要的（[`Query::daily`]）是空的。
-    pub daily: Vec<(Day, String, f64)>,
+    /// 按 UTC 日子、币种分开的金额（施工 UC-1），连同分四种的（施工 UP-1）：换算照它；没要的（[`Query::daily`]）是空的。
+    pub daily: Vec<Daily>,
 }
 
 impl UsageIndex {
@@ -238,7 +239,13 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
     if query.daily {
         let by_day = format!(
             "SELECT {} FROM spent WHERE {filter} AND currency IS NOT NULL{}",
-            select("at / 86400000, currency, SUM(amount)"),
+            select(
+                "at / 86400000, currency, SUM(amount), COUNT(*), SUM(parted), \
+                 COUNT(uncached_amount), SUM(uncached_amount), \
+                 COUNT(cache_read_amount), SUM(cache_read_amount), \
+                 COUNT(cache_write_amount), SUM(cache_write_amount), \
+                 COUNT(output_amount), SUM(output_amount)"
+            ),
             group_by("at / 86400000, currency")
         );
         let mut statement = db.prepare(&by_day)?;
@@ -248,8 +255,14 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
             let day: i64 = row.get(width)?;
             let currency: String = row.get(width + 1)?;
             let amount: f64 = row.get(width + 2)?;
+            let parts = parts(row, width + 3)?;
             if let Some(total) = totals.get_mut(&keys) {
-                total.daily.push((day, currency, amount));
+                total.daily.push(Daily {
+                    day,
+                    currency,
+                    amount,
+                    parts,
+                });
             }
         }
     }
@@ -257,6 +270,27 @@ fn sum(db: &Connection, query: &Query) -> Result<Vec<Total>, UsageError> {
         .iter()
         .filter_map(|keys| totals.remove(keys))
         .collect())
+}
+
+/// 按天分的一行里分四种的那几格（从第 `at` 格起）：行数、分了四种的行数，再是四种各自的「有几行知道」「加起来」。有一行
+/// 没分四种的整个没有；有一行哪一种空着的那一种没有。
+fn parts(row: &rusqlite::Row<'_>, at: usize) -> Result<Option<Parts>, UsageError> {
+    let rows: i64 = row.get(at)?;
+    let parted: i64 = row.get(at + 1)?;
+    if parted != rows {
+        return Ok(None);
+    }
+    let kind = |k: usize| -> Result<Option<Real>, UsageError> {
+        let known: i64 = row.get(at + 2 + 2 * k)?;
+        let sum: Option<f64> = row.get(at + 3 + 2 * k)?;
+        Ok(sum.filter(|_| known == rows).map(Real::new))
+    };
+    Ok(Some(Parts {
+        uncached: kind(0)?,
+        cache_read: kind(1)?,
+        cache_write: kind(2)?,
+        output: kind(3)?,
+    }))
 }
 
 /// 一格分组的值：日子读出来是天数。

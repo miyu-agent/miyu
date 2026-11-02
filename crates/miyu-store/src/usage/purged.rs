@@ -6,6 +6,8 @@
 //!   时区的一分不差；半点的时区按小时的开头归到哪天。按用途分，照用途分组的查询删了会话以后也对得上（「施工时定的」8-15）。
 //! - 写完整的值，不写增量：崩在写完、删目录之前的，下次照样再写一条，汇总照最后一条换，不会加两遍。
 //! - 日志后面坏了的，照坏的那一段以前的算（和补的时候一样）。没有一次请求的不写。
+//! - 金额分四种的（施工 UP-1）跟着每种币种的金额一起加、一起写（[`Amount::parts`]）：删了会话，分四种的照样在。以前写的
+//!   没有这一格，读进来的那几行不分四种。
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -16,6 +18,7 @@ use miyu_kernel::event::{Event, Real, Usage};
 use miyu_kernel::id::{SessionId, VenueId};
 use miyu_kernel::time::Timestamp;
 
+use super::parts::Parts;
 use super::spent::{NO_USAGE, Spent, Who};
 use crate::log::{OpenError, read_segments};
 
@@ -65,6 +68,9 @@ pub struct Amount {
     pub currency: String,
     /// 金额。
     pub amount: Real,
+    /// 分四种的（施工 UP-1）：这一格里每一次都有才有；以前写的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parts: Option<Parts>,
 }
 
 /// 会话 `session` 的日志在 `dir`：算好它的合计。日志后面坏了的照坏的那一段以前的；没有日志、第一条不是 `session.created`、
@@ -101,7 +107,12 @@ pub fn summarize(session: &SessionId, events: &[Event]) -> Option<Purged> {
         adding.unpriced += spent.unpriced;
         add(&mut adding.usage, &spent.usage);
         if let Some((currency, amount)) = spent.amount {
-            *adding.amounts.entry(currency).or_default() += amount;
+            let sum = adding
+                .amounts
+                .entry(currency)
+                .or_insert((0.0, Some(Parts::zero())));
+            sum.0 += amount;
+            sum.1 = Parts::join(sum.1, spent.parts);
         }
     }
     if hours.is_empty() {
@@ -121,9 +132,10 @@ pub fn summarize(session: &SessionId, events: &[Event]) -> Option<Purged> {
                 amounts: adding
                     .amounts
                     .into_iter()
-                    .map(|(currency, amount)| Amount {
+                    .map(|(currency, (amount, parts))| Amount {
                         currency,
                         amount: Real::new(amount),
+                        parts,
                     })
                     .collect(),
             })
@@ -142,7 +154,8 @@ struct Adding {
     requests: u64,
     unpriced: u64,
     usage: Usage,
-    amounts: BTreeMap<String, f64>,
+    /// 照币种：金额、分四种的。
+    amounts: BTreeMap<String, (f64, Option<Parts>)>,
 }
 
 impl Default for Adding {
@@ -189,6 +202,7 @@ impl Purged {
                 unpriced: hour.unpriced,
                 usage: hour.usage,
                 amount: None,
+                parts: None,
             };
             for amount in &hour.amounts {
                 rows.push(Spent {
@@ -196,6 +210,7 @@ impl Purged {
                     unpriced: 0,
                     usage: NO_USAGE,
                     amount: Some((amount.currency.clone(), amount.amount.get())),
+                    parts: amount.parts,
                     ..base.clone()
                 });
             }

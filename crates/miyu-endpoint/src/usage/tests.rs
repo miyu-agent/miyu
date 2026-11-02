@@ -106,8 +106,11 @@ fn amounts_lead_with_the_configured_currency() {
     assert_eq!(first(tallied(&core, &tally)), json!("CNY"));
     assert_eq!(first(total_row(&core, own(&tally))), json!("CNY"));
     // 换算也照配置的币种（施工 UC-1）：没装取汇率的，只换得了它自己那个币种的那一笔，别的在 `rest`。
-    tally.daily.insert((20_000, "CNY".to_string()), 1.0);
-    tally.daily.insert((20_000, "USD".to_string()), 2.0);
+    for (currency, amount) in [("CNY", 1.0), ("USD", 2.0)] {
+        let mut daily = Daily::new(20_000, currency.to_string());
+        daily.add(amount, None);
+        tally.daily.insert((20_000, currency.to_string()), daily);
+    }
     assert_eq!(
         tallied(&core, &tally)["converted"],
         json!({"currency": "CNY", "amount": 1, "rest": [{"currency": "USD", "amount": 2}]})
@@ -120,16 +123,22 @@ fn amounts_lead_with_the_configured_currency() {
 fn adding_two_totals_keeps_the_amounts_by_day() {
     let mut one = empty();
     one.amounts = vec![("USD".to_string(), 1.0)];
-    one.daily = vec![(20_000, "USD".to_string(), 1.0)];
+    let usd = Daily {
+        day: 20_000,
+        currency: "USD".to_string(),
+        amount: 1.0,
+        parts: None,
+    };
+    one.daily = vec![usd.clone()];
     let mut other = empty();
     other.amounts = vec![("CNY".to_string(), 3.0)];
-    other.daily = vec![(20_001, "CNY".to_string(), 3.0)];
+    let cny = Daily {
+        day: 20_001,
+        currency: "CNY".to_string(),
+        amount: 3.0,
+        parts: None,
+    };
+    other.daily = vec![cny.clone()];
     let sum = plus(one, &other);
-    assert_eq!(
-        sum.daily,
-        vec![
-            (20_000, "USD".to_string(), 1.0),
-            (20_001, "CNY".to_string(), 3.0)
-        ]
-    );
+    assert_eq!(sum.daily, vec![usd, cny]);
 }

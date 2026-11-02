@@ -1,6 +1,7 @@
 //! 删掉的会话的用量（施工 8-15，`docs/blueprint/models.md`「怎么走」第九条第 5 条）：回收处清它之前往 `journal.jsonl` 写
 //! `usage.purged`，写进去了才删目录；汇总照它换掉单次行，加起来一样多，删了汇总重建也一样；写了两遍不加两遍；写不进
-//! `journal.jsonl` 的不删。分天：整点时区的和单次行一分不差，半点时区照小时的开头归到哪天。
+//! `journal.jsonl` 的不删。分天：整点时区的和单次行一分不差，半点时区照小时的开头归到哪天。金额照币种连同分四种的一起写
+//! （施工 UP-1，价格只写了输入、输出：缓存用量是 0 的那一种写准的 0，读了缓存、价格不知道的那一格不写读缓存）。
 
 use std::fs;
 use std::time::Duration;
@@ -116,9 +117,9 @@ fn the_summary_is_hourly_by_provider_model_and_purpose() {
         written,
         concat!(
             r#"{"session":"01900000-0000-7000-8000-000000000002","venue":"local","parent":"01900000-0000-7000-8000-000000000001","spent":["#,
-            r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T08:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":10,"cache_read":0,"cache_write":0,"output":1},"amounts":[{"currency":"USD","amount":0.125}]},"#,
-            r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":20,"cache_read":5,"cache_write":0,"output":2},"amounts":[{"currency":"USD","amount":0.25}]},"#,
-            r#"{"provider":"deepseek","model":"deepseek-flash","purpose":"recap","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":30,"cache_read":0,"cache_write":0,"output":3},"amounts":[{"currency":"CNY","amount":2}]},"#,
+            r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T08:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":10,"cache_read":0,"cache_write":0,"output":1},"amounts":[{"currency":"USD","amount":0.125,"parts":{"uncached":0.00001,"cache_read":0,"cache_write":0,"output":2e-6}}]},"#,
+            r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":20,"cache_read":5,"cache_write":0,"output":2},"amounts":[{"currency":"USD","amount":0.25,"parts":{"uncached":0.00002,"cache_write":0,"output":4e-6}}]},"#,
+            r#"{"provider":"deepseek","model":"deepseek-flash","purpose":"recap","hour":"2026-10-01T23:00:00.000Z","requests":1,"unpriced":0,"usage":{"uncached":30,"cache_read":0,"cache_write":0,"output":3},"amounts":[{"currency":"CNY","amount":2,"parts":{"uncached":0.00003,"cache_read":0,"cache_write":0,"output":6e-6}}]},"#,
             r#"{"provider":"deepseek","model":"deepseek-flash","hour":"2026-10-02T00:00:00.000Z","requests":1,"unpriced":1,"usage":{"uncached":40,"cache_read":0,"cache_write":0,"output":4},"amounts":[]}]}"#
         )
     );

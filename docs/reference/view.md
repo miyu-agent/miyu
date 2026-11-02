@@ -71,7 +71,7 @@
 | `speed` | `{output, ms}`：最近一次的输出 token 和毫秒 |
 | `cooling_until` | 候选都在冷却时最早恢复的时刻 |
 | `preparing` | 后台在提前压缩：`{seen, since}` |
-| `usage` | 本会话累计用量 |
+| `usage` | 本会话累计用量，写法同 `usage.query` 的一行（连同 `converted`、`converted_parts`） |
 | `model`、`permission`、`todos`、`workspace`、`persona`、`preset` | 同订阅回应的那几格；中途换了人格、预设的跟着推。无工具的会话 `preset` 是 `null`、另带 `no_tools: true`，同会话列表（施工 P-16 下补） |
 | `todos_done` | 待办全部做完而清空时，清空前那一份（头打勾停一下再收） |
 | `goal` | 长期目标：`{text, limit, state, reason, round, since, usage}`，`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting` |

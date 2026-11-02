@@ -118,7 +118,9 @@ async fn a_session_counts_under_its_session_and_venue() {
             "amounts": [{"currency": "USD", "amount": 2.0 * (60.0 + 40.0 * 0.5 + 10.0 * 2.0) / 1e6}],
             "unpriced": 0,
             // 金额就是 `usage.currency`（默认美元）的：换算不用汇率（施工 UC-1）。
-            "converted": {"currency": "USD", "amount": 2.0 * (60.0 + 40.0 * 0.5 + 10.0 * 2.0) / 1e6}}]),
+            "converted": {"currency": "USD", "amount": 2.0 * (60.0 + 40.0 * 0.5 + 10.0 * 2.0) / 1e6},
+            // 四种照每一次记下的价格算好（施工 UP-1）；写缓存的价格不知道，可用量是 0：准的 0。
+            "converted_parts": {"uncached": 2.0 * 60.0 / 1e6, "cache_read": 2.0 * 40.0 * 0.5 / 1e6, "cache_write": 0, "output": 2.0 * 10.0 * 2.0 / 1e6}}]),
         "{reply}"
     );
 }

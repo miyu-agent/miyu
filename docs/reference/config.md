@@ -247,10 +247,12 @@
 | `session` | 字符串 | 只算这个会话；`tree: true` 连它派的子会话 |
 | `offset` | 时区，例如 `+09:00` | 分天照哪个时区，不写是核心所在机器的 |
 
-**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，原样）、`unpriced`（有用量、算不出金额的次数）、`converted`（换算成 `usage.currency` 的一个数：每一笔照它那天的汇率换，`{"currency","amount"}`；取不到汇率的那几笔在它的 `rest` 里，写法同 `amounts`；一笔都没换成的不写）。所有会话都记账。金额照配置的 `usage.currency` 排、换算。用到了 open.er-api.com 的汇率时，回应顶上多 `rates`（来源和链接），界面要注明来源。
+**回应**：`{"rows": [...]}`。一行：分组的那几格，`requests`（请求数）、`usage`（四项加起来）、`amounts`（照币种各加各的，原样）、`unpriced`（有用量、算不出金额的次数）、`converted`（换算成 `usage.currency` 的一个数：每一笔照它那天的汇率换，`{"currency","amount"}`；取不到汇率的那几笔在它的 `rest` 里，写法同 `amounts`；一笔都没换成的不写）、`converted_parts`（换成的那几笔分四种各多少：`{"uncached","cache_read","cache_write","output"}`，币种同 `converted`，四种都在时加起来就是 `converted.amount`；用量是 0 的那一种是准的 0，有一笔那一种用了、价格又不知道的，那一种不写；这一行里有老的、没分四种的账，整个不写；没有 `converted` 的也不写）。每一种照那一次请求自己记下的价格算好，跟着那一次记账，以后改价格不变。所有会话都记账。金额照配置的 `usage.currency` 排、换算。用到了 open.er-api.com 的汇率时，回应顶上多 `rates`（来源和链接），界面要注明来源。
 
 ```json
-{"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}
+{"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0,"converted":{"currency":"CNY","amount":0.00181896},"converted_parts":{"uncached":0.00174174,"cache_read":0,"cache_write":0,"output":0.00007722}}]}
 ```
+
+这一行写缓存的价格不知道，可它的用量是 0，`cache_write` 照样是 0；四种加起来就是 `converted.amount`。
 
 **出错**：`bad_params`。

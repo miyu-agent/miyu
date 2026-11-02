@@ -71,7 +71,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `speed` | `{output, ms}`: the latest output tokens and milliseconds |
 | `cooling_until` | When every candidate is cooling down, the earliest recovery time |
 | `preparing` | Compacting ahead in the background: `{seen, since}` |
-| `usage` | This session's total usage |
+| `usage` | This session's total usage, written like a `usage.query` row (including `converted` and `converted_parts`) |
 | `model`, `permission`, `todos`, `workspace`, `persona`, `preset` | As in the subscription response; a persona or preset changed mid-session is pushed. A no-tools session has `preset: null` plus `no_tools: true`, as in the session list (step P-16) |
 | `todos_done` | When the to-do list was cleared because everything was done, the list before clearing (heads tick everything, pause, then collapse) |
 | `goal` | The standing goal: `{text, limit, state, reason, round, since, usage}`, `state` being `running`, `paused`, `completed`, `blocked`, `waiting` |

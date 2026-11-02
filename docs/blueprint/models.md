@@ -61,7 +61,7 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `crates/miyu-drivers/src/lib.rs`、`openai_chat/effort.rs` | 调用多一格 `Call.effort`；`openai-chat` 照它发 `reasoning_effort` 或档案写的开关（`Compat.toggle`），没有的什么都不加（8-18） | 8-18 |
 | `crates/miyu-endpoint/src/config/effort.rs` | 配置里写的 `effort` 不在档位里的：读进来以后另查，报 `unknown_effort`（照 `bad_reference` 的办法，目录读完以前不查，8-18） | 8-18 |
 | `crates/miyu-http/src/get.rs` | 一次 GET：拉目录、拉模型列表、探本机的服务（8-7）；`get_full` 出错时另交回状态码、响应头、最多 64 KiB 的响应体，`provider.test` 列模型失败时照驱动分类（8-11） | 8-7、8-11 |
-| `crates/miyu-store/src/usage/rates.rs`、`rates/`、`usage/convert.rs`、`crates/miyu-session/src/rates.rs`（施工 UC-1） | 换算：汇率的缓存 `state/rates.db`、缺的并成一次取最多等两秒（`RateBook`）、取汇率的端口（`RateSource`，会话层用 HTTP 实现、核心起来时装上）、照每一笔那天的汇率换成一个数（`convert`） | UC-1 |
+| `crates/miyu-store/src/usage/rates.rs`、`rates/`、`usage/convert.rs`、`usage/parts.rs`、`crates/miyu-session/src/rates.rs`（施工 UC-1、UP-1） | 换算：汇率的缓存 `state/rates.db`、缺的并成一次取最多等两秒（`RateBook`）、取汇率的端口（`RateSource`，会话层用 HTTP 实现、核心起来时装上）、照每一笔那天的汇率换成一个数（`convert`）；金额分四种（`Parts`：照那一次记下的价格算、跟着那一行存，UP-1） | UC-1、UP-1 |
 | `crates/miyu-store/src/usage.rs`、`usage/` | 用量汇总 `state/usage.db`：一行的样子（`spent.rs`）、写和补（`catch_up.rs`：会话每落一批、补会话和日志、一次性调用记账）、删掉的会话的合计（`purged.rs`）、查（`query.rs`）。怎么开、坏了删掉重建和会话列表的索引共用 `sqlite.rs`；清回收处之前留底在 `trash.rs`；日志的锁、从记下的字节读起在 `journal.rs` | 8-15 |
 | `crates/miyu-basesystem/src/subagent.rs` | 派子代理的工具 `subagent` 多一格 `pool`（8-8 补，取代 8-8 的 `tier`）：只认这个会话列着的池，交给端口；执行器那一头 `crates/miyu-session/src/agents.rs` 造会话时照那时的配置拼参数（`Agents::face`），派的时候子会话记 `@池`，没写的抄父会话的引用（`Inherit`）；拼参数的那一段 JSON 在 `crates/miyu-policy/src/tools/choice.rs` | 8-8、8-8 补 |
 | `crates/miyu-basesystem/src/session_usage.rs` | 她自己查用量的工具：经端口（`miyu_tool::UsagePort`）要用量、金额、上下文，写成几句；执行器那一头在 `crates/miyu-session/src/usage.rs`（派出去那一刻向内核要上下文，先补这个会话再查） | 8-15 |
@@ -461,11 +461,11 @@ Miyu 怎么接上模型：配置里写几家供应商，每家带驱动、地址
 | `tree` | 布尔，不写是 `false` | 写了 `session` 的，连它派的子会话一起算 |
 | `offset` | 时区，可以不写 | 分天照哪个时区，写法 `+09:00`。不写是核心所在机器此刻的 |
 
-回应 `rows`，照分组的几样排，`null` 在前。每一行：分组的那几格（`model` 写成 `供应商/模型`，`day` 写成 `2026-10-01`，没有的写 `null`：一次性调用没有会话；场所只有写了 `session` 的 `model.call` 有，施工 UC-2），`requests` 发出去的请求数，`usage` 四项加起来，`amounts` 有金额的照币种各加各的（`[{"currency":"USD","amount":0.42},{"currency":"CNY","amount":1.3}]`，照 `usage.currency` 排，一个都没有的是空的），`unpriced` 有用量、没金额的有几次，`converted`（施工 UC-1，「怎么走」第九条第 8 条）：照每一笔那天的汇率换成 `usage.currency` 的 `{"currency":"CNY","amount":4.24}`，没换成的那几笔另带 `rest`（写法同 `amounts`），一笔都没换成的不写。用到了兜底源的汇率，回应顶上多 `rates`：`[{"source":"open.er-api.com","url":"https://www.exchangerate-api.com"}]`，头照它注明来源。`amounts` 原样，老头照旧。不分组的总有一行，一次请求都没有的是 0；分组的一组都没有的 `rows` 是空的。
+回应 `rows`，照分组的几样排，`null` 在前。每一行：分组的那几格（`model` 写成 `供应商/模型`，`day` 写成 `2026-10-01`，没有的写 `null`：一次性调用没有会话；场所只有写了 `session` 的 `model.call` 有，施工 UC-2），`requests` 发出去的请求数，`usage` 四项加起来，`amounts` 有金额的照币种各加各的（`[{"currency":"USD","amount":0.42},{"currency":"CNY","amount":1.3}]`，照 `usage.currency` 排，一个都没有的是空的），`unpriced` 有用量、没金额的有几次，`converted`（施工 UC-1，「怎么走」第九条第 8 条）：照每一笔那天的汇率换成 `usage.currency` 的 `{"currency":"CNY","amount":4.24}`，没换成的那几笔另带 `rest`（写法同 `amounts`），一笔都没换成的不写；`converted_parts`（施工 UP-1，「怎么走」第九条第 8 条「分四种」）：换成的那几笔里没命中的输入、读缓存、写缓存、输出各花了多少，`{"uncached":2.1,"cache_read":0.4,"cache_write":0.2,"output":1.54}`，币种同 `converted`，有的四种加起来就是 `converted.amount`；用量是 0 的那一种就是准的 0，有一笔那一种用了、价格又不知道的那一种不写，这一行有一笔没记四种的（老的合计）整个不写，没有 `converted` 的也不写。用到了兜底源的汇率，回应顶上多 `rates`：`[{"source":"open.er-api.com","url":"https://www.exchangerate-api.com"}]`，头照它注明来源。`amounts` 原样，老头照旧。不分组的总有一行，一次请求都没有的是 0；分组的一组都没有的 `rows` 是空的。
 
 - 参数不对（不认识的分组、时刻和时区写法不对、会话编号写法不对、类型不对）回 `bad_params`；查不到的会话回空的。不认识的格不理，「可以不写」的写 `null` 等于没写。
 - 先补再查（第九条第 4 条）；汇总读出坏了的，删掉重建再补一次，还不行回 `internal`。`usage.currency` 照这一刻的配置。
-- 订阅一个会话的回应里的 `usage`（施工 9-6 上，`protocol.md` 的 `subscribe`）和 `{"session": <它>}` 的这一行同一个写法、同一个口径，由会话 actor 随落盘累计，不经汇总；另加 `compactions`、`cache_breaks`。它的 `converted` 照配置的 `usage.currency`，只用缓存里的汇率（常推的一处，不等）。
+- 订阅一个会话的回应里的 `usage`（施工 9-6 上，`protocol.md` 的 `subscribe`）和 `{"session": <它>}` 的这一行同一个写法、同一个口径，由会话 actor 随落盘累计，不经汇总；另加 `compactions`、`cache_breaks`。它的 `converted`、`converted_parts` 照配置的 `usage.currency`，只用缓存里的汇率（常推的一处，不等）。
 - 例子：头看「这个会话（连子代理）× 用途」写 `{"session":"<编号>","tree":true,"group":["use"]}`，回 `{"rows":[{"use":"compaction",…},{"use":"main",…},{"use":"subagent",…}]}`，每行的四项用量、金额照旧。
 - 例子：`{"group":["purpose","model"]}` 回 `{"rows":[{"purpose":"vision","model":"deepseek/deepseek-flash","requests":2,"usage":{"uncached":1624,"cache_read":0,"cache_write":0,"output":18},"amounts":[{"currency":"USD","amount":0.0002544}],"unpriced":0}]}`。
 
@@ -810,14 +810,14 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
    8. 出处：目录的写 `catalog:<目录里的供应商>/<模型>`，手写的写 `config:<文件>:<行>`（文件照配置服务说的那一层的文件，`ConfigSource::file`；行是写了的第一项价格那一行），本机的写 `local`。
 3. **冻结**：端口把价格交给回报（`Reports::billed`），说完了照报的用量算好，连同用的那一档价格、币种、倍率、出处、分档的门槛，随「说完了」交给内核（`ModelEnded`、`AsideEnded` 的 `cost`），写进 `model.called` 的 `cost`。以后目录更新、人改倍率，已经记下的不重算。内核不碰价格：金额在执行器算，内核只记。测试的剧本端口不交价格，不写 `cost`（要的照 `Script::priced`）。
 4. **用量汇总**（`07-存储.md` 第六节，S3）：`state/usage.db`，SQLite，核心起来时开（`Core::new`），一个连接一直开着；怎么开、坏了删掉重建和会话列表的索引一样（`store/index.md`）。
-   - 一张表 `spent`，一行是发出去了的一次请求（`model.called` 带 `endpoint`、`model`）：来处、序号、时刻、场所、会话、父会话、用途、是不是摘要请求、供应商、模型、请求数（1）、没金额的次数、四项用量（没报的是 0）、金额和币种（没有的空着）。主键（来处、序号）：会话的请求是（会话编号、`model.called` 的序号），一次性调用是（`journal`、日志里那一条的序号），删掉的会话的合计是（`purged:<会话编号>`、第几格）。重复写不出两行。打断了、没报用量的照样算一次请求，不算没金额。
+   - 一张表 `spent`，一行是发出去了的一次请求（`model.called` 带 `endpoint`、`model`）：来处、序号、时刻、场所、会话、父会话、用途、是不是摘要请求、供应商、模型、请求数（1）、没金额的次数、四项用量（没报的是 0）、金额和币种（没有的空着）、金额分没分四种和分好的四种（施工 UP-1，第 8 条「分四种」：不知道的那一种空着，老的合计没分）。主键（来处、序号）：会话的请求是（会话编号、`model.called` 的序号），一次性调用是（`journal`、日志里那一条的序号），删掉的会话的合计是（`purged:<会话编号>`、第几格）。重复写不出两行。打断了、没报用量的照样算一次请求，不算没金额。
    - 一张表 `marks`，一份日志一行：读到了哪里（会话的照日志的位置，`journal.jsonl` 照字节）、场所、父会话，删掉的会话标 `purged`。
    - 会话每落一批（`Indexed`，`session/actor.md` 第 5 条），actor 在同一个阻塞线程里写这一批的行；记到的位置正好是这一批之前的才挪到这一批之后，这一批从第 1 条起的新起一行。写不进去的记一行 `WARN usage not indexed`，不影响会话。
    - 查之前先补（`usage.query` 补全部，`session_usage` 只补这个会话）：先读 `journal.jsonl` 记到以后的几条，再看会话、回收处里的会话：标了 `purged` 的不读，记到的读多出来的那一截，没记过的、对不上的整份读。日志后面坏了的照坏的那一段以前的写，位置不挪，记一行 `WARN usage not indexed`。
    - 表的版本和程序的不一样、打不开、坏了：删掉建一份空的，空的照上面补满，就是重建：全部会话、回收处、`journal.jsonl` 里的 `usage.purged`、`usage.oneshot`。
    - 撤掉的回合里的请求也算：钱已经花了。
    - **一次性调用**（第十二条，`model.call`、替看图）：每发出去一次（换端点再来的也算一次），照真发的那个模型的价格算好金额，往 `journal.jsonl` 追加一条 `usage.oneshot`（用途、供应商、模型、用量、金额，没有的不写），再写一行，没有会话，记用途。`model.call` 写了 `session` 的（旁路请求）另记 `venue`：那个会话的场所，`usage.query` 照场所、用途分得出「这个群的判官用了多少」（施工 UC-2，接入QQ 要的）；别的没有场所。写不进日志的不写行，记一行 `WARN usage not indexed purpose=… error=…`，照样交回答。
-5. **删掉的会话**：回收处清掉一个会话（`core.md` 第 14 步）之前，照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`：会话、场所、父会话，和它按（供应商、模型、用途、UTC 的整点小时）分好的四项用量、照币种分开的金额、请求数、没金额的次数，写完整的值。写进去了才删目录；写不进去的留着，下次再清。一次请求都没有的不写。日志后面坏了的照坏的那一段以前的算。汇总读到它时删掉这个会话的单次行（连同以前的合计），换成这一份，`marks` 标上 `purged`，以后不再读它的目录：重建时和还在的会话、回收处加起来，一个会话只在一处；崩在写完、删目录之前的，下次又写一条，照最后一条换，不加两遍。按小时存，分天时整点时区的一分不差；半点的时区（`+05:30` 这类）按小时的开头归到哪天。按用途分是施工时加的：照用途分组的查询删了会话以后对得上。日志的写法由 `config.md` 那一步（8-3）定，8-15 起一个核心里几个写的（配置服务、清回收处、一次性调用）照一把锁一条一条来。
+5. **删掉的会话**：回收处清掉一个会话（`core.md` 第 14 步）之前，照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`：会话、场所、父会话，和它按（供应商、模型、用途、UTC 的整点小时）分好的四项用量、照币种分开的金额（连同分四种的 `parts`，施工 UP-1：那一格里每一次都有才写，不知道的那一种不写；以前写的没有这一格）、请求数、没金额的次数，写完整的值。写进去了才删目录；写不进去的留着，下次再清。一次请求都没有的不写。日志后面坏了的照坏的那一段以前的算。汇总读到它时删掉这个会话的单次行（连同以前的合计），换成这一份，`marks` 标上 `purged`，以后不再读它的目录：重建时和还在的会话、回收处加起来，一个会话只在一处；崩在写完、删目录之前的，下次又写一条，照最后一条换，不加两遍。按小时存，分天时整点时区的一分不差；半点的时区（`+05:30` 这类）按小时的开头归到哪天。按用途分是施工时加的：照用途分组的查询删了会话以后对得上。日志的写法由 `config.md` 那一步（8-3）定，8-15 起一个核心里几个写的（配置服务、清回收处、一次性调用）照一把锁一条一条来。
 6. **`usage.query`**：照汇总表算。分组照参数，`day` 照 `offset` 把时刻换成那个时区的日期。金额照币种各加各的，照 `usage.currency` 排（2026-10-01 项目主人定）；另照第 8 条换算成 `usage.currency` 的一个数（`converted`，施工 UC-1），头显示这一个数，不标「≈」。没换成的那几笔照币种接在后面（「¥12.30 + $0.40」），没有价格的那几次注明「另有 N 次没有价格」（「给人看的字」）。
 7. **她自己查**：`session_usage`，只查这个会话（不带子会话），不给全部的汇总（`15-模型与供应商.md` 第八节）。只给本机的会话，群里的没有（「施工时定的」8-15）。
    - 用量、金额照汇总（先补这个会话，`session` 是这个会话、不带子会话）：和头经 `usage.query` 读的是同一份。金额照这一轮配置的 `usage.currency` 换算（第 8 条，缺的汇率当场取、最多等两秒），没换成的照币种接在后面。`Cost: {amounts}.` 那一句不变，填进去的是换算后的数（施工 UC-1）。
@@ -827,6 +827,9 @@ opencode 有两个端点：Zen（`https://opencode.ai/zen/v1`，按量付费）�
    - 缓存 `state/rates.db`（派生的，坏了、版本不对删掉重建）：一行一天一币种。正好那一天、那一天已经过完的定了，不再取；当天的、兜底源的、交回的日子比要的早的暂定，过 6 小时或者那一天过完以后再查到时重取（照用旧的，不等）。
    - 什么时候取：查询时先读缓存，缺的当场取，最多等两秒；同时缺的并成一次，同一个缺口在取的跟着等。等不到、离线的这一次照分币种，取回来照样记下。会话状态这些常推的几处不等，只用缓存，缺的在后面取。不做定时预取。
    - 取不到汇率的那几笔照币种接在 `rest` 里；一笔都没换成的不写 `converted`，头照 `amounts` 显示。
+   - **分四种**（施工 UP-1，2026-11-02 核心主会话定形状，网页头点开花费时要看）：每一次请求的金额照它自己记下的价格（`cost.price`、`cost.multiplier`，和金额同一份）分成没命中的输入、读缓存、写缓存、输出四种，一种 = 那一种的用量 × 那一种的价 ÷ 1000000 × 倍率，用量是 0 的那一种不管价格记没记都是准的 0（核心主会话 2026-11-02 定：不违反「算不准的钱不显示」）；写汇总那一行时算好、跟着那一行存（`spent` 的 `parted` 和四格），不照现在的价格重算。重建照日志里记下的价格算出一样的；删掉的会话照 `usage.purged` 里写的。
+     - 换算照金额同样的汇率，只算换成了的那几笔：有的四种加起来就是 `converted.amount`（差在浮点的舍入里）。
+     - 这一行有一笔（换没换成都算）没记四种的（以前写的 `usage.purged`），整行不给 `converted_parts`，不拼半截；有一笔哪一种用量不是 0、价格又没记的，那一种不给。没有价格的那几次照旧只算在 `unpriced` 里。
    - 上下文照内核这时的估算（和压缩线同一个算法，`compaction.md` 第一条）、窗口、压缩线：派这一次调用时 actor 向内核要一份（`Session::context_used()`、`context_limits()`，只读），交给端口；算不了的（没交过限额、策略里没有压缩）不写上下文。
    - 一件还是两件：先做一件（主会话定）。合并前主会话在开发端点上问六句（还剩多少上下文、这次花了多少钱、快压缩了吗……），挑对、答对就定一件；挑错、答错再开一步试两件。结果写进施工单和登记簿。
 
@@ -1218,6 +1221,7 @@ mimo = ["xiaomi"]
 | `crates/miyu-core/src/models/tests.rs`、`crates/miyu-core/tests/serve.rs` | 出厂的档案读得进来、DeepSeek 那一套和请求形状探针用的一样、TOML 读成 JSON、写坏的说是档案；真核心没配模型的每次请求 `no_model`、没发出去 | 8-6 |
 | `crates/miyu/tests/dev_home.rs` | `xtask dev-home` 的三个变量怎么读、哪些不收；造的配置照清单读一处错都没有；已经有配置的不盖、别人的目录不动；真核心在这个数据根上照配置连上假服务器，带着 `MIYU_DEV_API_KEY` 的值、发给写的那个模型，`miyu ask` 答得上来 | 8-6 |
 | `crates/miyu-store/tests/usage.rs`、`usage_purged.rs`、`crates/miyu-endpoint/tests/usage.rs`、`crates/miyu-endpoint/src/usage/tests.rs` | 一次一行、没发出去的不算、重复不出两行、补多出来的（连同换了段的、从没写过的）、重建（版本不对、乱写的文件、用着用着坏了）、回收处、撤掉的回合也算、分组（`null` 在前）、`tree`、左闭右开；`usage.purged` 按小时按用途的合计一字不差、写进去了才删、写不进去的留着、写两遍只算一次、重建照日志读回来、整点时区一分不差、半点时区照小时开头；一次性调用记进日志、照用途分组、重建以后还在；协议上照分组、币种各加各的、照 `usage.currency` 排、参数不对的 `bad_params` | 8-15 |
+| `crates/miyu-store/src/usage/convert/tests.rs`、`crates/miyu-store/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage_convert.rs`、`crates/miyu-endpoint/tests/usage.rs`（施工 UP-1） | 分四种：照同样的汇率换、加起来就是 `converted.amount`，没换成的不进四种；有一笔没记四种的整行不给，有一笔哪一种用了、价格不知道的那一种不给（没换成的那一笔也算），用量是 0 的照准的 0 给（只写了输入、输出价的模型缓存两种照给 0）；照每一次记下的价格算好记进汇总，重建一样，删掉的会话的合计带着，老的合计算进来的那一组不给、别的组照给；`usage.query` 的行（会话的请求、一次性调用）和订阅回应的累计都带 `converted_parts`，写缓存的价格不知道、用量是 0 的照 0 写 | UP-1 |
 | `crates/miyu-basesystem/tests/subagent.rs` | `pool` 只认端口列着的、交给端口，不写的、`null` 交没有，不在列表里的、大小写不对的、带 `@` 的、不是字的照参数不对、端口不派、原话列出能写的几个，一个都没列的照样拒；`tier` 不报错、不理它；资源里 `pool` 没有 `enum`（8-8 补） | 8-8、8-8 补 |
 | `crates/miyu-session/tests/spawn/pool.rs` | 子会话的引用：写了 `pool` 的记 `@池`，没写的、写 `tier` 的抄父会话钉着的；工具面照造会话时的配置拼，开着开关、有成员的才列，配置改了这个会话（连同载入以后）一字不变、新会话变，拿新会话才列的池在老会话里照参数不对；一个都没有的不出现 `pool`（8-8 补，取代 8-8 的 `tier.rs`） | 8-8 补 |
 | `crates/miyu-policy/src/tools/choice/tests.rs` | 拼 `pool`：一个都没有的拿掉、和资源去掉它一字不差，有的插 `enum`、说明一行一个，别的字节不动；照快照读回列着的，读回的和拼进去的一样，没有这一格的是空的（8-8 补） | 8-8 补 |

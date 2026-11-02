@@ -14,16 +14,20 @@
 //! - 删掉的会话（[`purged`]）：回收处清它之前写进 `journal.jsonl` 的 `usage.purged`，补的时候换掉它的单次行。
 //! - 查（[`UsageIndex::query`]）：照分组加起来，金额照币种各加各的（`query.rs`）；换算（施工 UC-1，[`UsageIndex::convert`]）
 //!   照每一笔那天的汇率换成一个币种（`convert.rs`），汇率在 `state/rates.db`（[`rates`]）。
+//! - 分四种（施工 UP-1，[`Parts`]）：写一行时照那一次记下的价格算好没命中、读缓存、写缓存、输出各花了多少，跟着那一行存；
+//!   换算时照同样的汇率换。
 
 mod catch_up;
 mod convert;
+mod parts;
 pub mod purged;
 mod query;
 pub mod rates;
 pub mod spent;
 
 pub use catch_up::Problem;
-pub use convert::Converted;
+pub use convert::{Converted, Daily};
+pub use parts::Parts;
 pub use query::{Group, Query, Total};
 pub use spent::{OneShotCall, Who};
 
@@ -51,13 +55,16 @@ pub const ONESHOT: &str = "usage.oneshot";
 /// 日志里删掉的会话那一条的种类。
 pub const PURGED: &str = "usage.purged";
 
-/// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 SU-6 上去掉 `owner`，是 2。
-const VERSION: i64 = 2;
+/// 表的结构的版本，记在 SQLite 的 `user_version` 里：结构一变就加一，对不上的删掉重建。施工 SU-6 上去掉 `owner`，是 2；
+/// 施工 UP-1 加分四种的金额，是 3（重建时照日志里记下的价格算，删掉的会话照 `usage.purged` 里有的）。
+const VERSION: i64 = 3;
 
 /// 建表。时刻存成毫秒；金额存成双精度，币种另一格。
 ///
 /// - `spent.source`：会话的请求是会话编号，一次性调用是 `journal`，删掉的会话的合计是 `purged:<会话编号>`；
 ///   `seq` 是 `model.called` 的序号、日志里那一条的序号、合计的第几格。
+/// - `parted`：这一行的金额分了四种（施工 UP-1）；`uncached_amount` 这四格是分好的，价格不知道的那一种空着。老的合计
+///   （没记四种的 `usage.purged`）是 0，四格都空着。
 /// - `marks.source`：会话编号，或者 `journal`；会话的 `segment`、`bytes`、`next` 是 [`crate::log::Mark`]，日志的
 ///   `bytes` 是读到第几个字节，`segment` 是 0。
 const SCHEMA: &str = "CREATE TABLE spent (
@@ -79,6 +86,11 @@ const SCHEMA: &str = "CREATE TABLE spent (
     output INTEGER NOT NULL,
     amount REAL,
     currency TEXT,
+    parted INTEGER NOT NULL,
+    uncached_amount REAL,
+    cache_read_amount REAL,
+    cache_write_amount REAL,
+    output_amount REAL,
     PRIMARY KEY (source, seq)
 ) WITHOUT ROWID;
 CREATE INDEX spent_session ON spent (session);
@@ -143,7 +155,7 @@ impl UsageIndex {
     /// （写 0 的不等：只用缓存，缺的在后面取）。一笔都没换成的没有。
     pub fn convert(
         &self,
-        daily: &[(rates::Day, String, f64)],
+        daily: &[Daily],
         currency: &str,
         now: Timestamp,
         wait: Duration,
@@ -156,7 +168,7 @@ impl UsageIndex {
     /// 同 [`UsageIndex::convert`]，几组一起：汇率只找一次（缺的并成一次去取、只等一回），照给的先后交回。
     pub fn convert_all(
         &self,
-        groups: &[&[(rates::Day, String, f64)]],
+        groups: &[&[Daily]],
         currency: &str,
         now: Timestamp,
         wait: Duration,
@@ -164,7 +176,12 @@ impl UsageIndex {
         let wanted: BTreeSet<(rates::Day, String)> = groups
             .iter()
             .flat_map(|daily| daily.iter())
-            .flat_map(|(day, from, _)| [(*day, from.clone()), (*day, currency.to_string())])
+            .flat_map(|daily| {
+                [
+                    (daily.day, daily.currency.clone()),
+                    (daily.day, currency.to_string()),
+                ]
+            })
             .collect();
         let found = match wanted.is_empty() {
             true => BTreeMap::new(),
