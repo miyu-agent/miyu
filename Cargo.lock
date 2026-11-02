@@ -2023,6 +2023,7 @@ dependencies = [
 name = "miyu-drivers"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
  "miyu-drivers",
  "miyu-kernel",
  "serde",
@@ -2119,7 +2120,10 @@ dependencies = [
 name = "miyu-http"
 version = "0.0.0"
 dependencies = [
+ "bytes",
+ "h2",
  "http",
+ "http-body",
  "hyper-util",
  "miyu-drivers",
  "miyu-http",

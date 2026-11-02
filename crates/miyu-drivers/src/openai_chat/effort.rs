@@ -6,11 +6,12 @@
 //!   写 `"reasoning_effort":"none"`，OpenAI 兼容的接口关思考就是这么写的。
 //! - `on`：写了开关的写开关的「开」；没写的没有别的说法，什么都不加，照供应商的默认。
 
-use super::{Compat, json};
+use super::Compat;
+use crate::fragments::Builder;
 use crate::{EFFORT_OFF, EFFORT_ON};
 
 /// 照这一次的思考强度 `effort` 和这一家的开关 `compat`，接在 `body` 后面（不含收尾的 `}`）。
-pub(super) fn write(body: &mut Vec<u8>, effort: Option<&str>, compat: &Compat) {
+pub(super) fn write(body: &mut Builder, effort: Option<&str>, compat: &Compat) {
     let Some(level) = effort else {
         return;
     };
@@ -24,9 +25,9 @@ pub(super) fn write(body: &mut Vec<u8>, effort: Option<&str>, compat: &Compat) {
 }
 
 /// 写一个顶层字段：`,"<name>":<value>`。
-fn field(body: &mut Vec<u8>, name: &str, value: &(impl serde::Serialize + ?Sized)) {
+fn field(body: &mut Builder, name: &str, value: &(impl serde::Serialize + ?Sized)) {
     body.push(b',');
-    json(body, name);
+    body.json(name);
     body.push(b':');
-    json(body, value);
+    body.json(value);
 }

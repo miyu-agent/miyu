@@ -18,11 +18,11 @@ use std::collections::BTreeSet;
 
 use miyu_kernel::id::ContentHash;
 use miyu_kernel::request::Request;
-use serde::Serialize;
 
 pub use crate::{EncodeError, Encoded};
 
-use crate::{BlobBytes, Call, DriverTexts, media};
+use crate::fragments::Builder;
+use crate::{BlobBytes, Call, DriverTexts, Fragments, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
 pub const FAMILY: &str = "openai-responses";
@@ -31,7 +31,22 @@ pub const FAMILY: &str = "openai-responses";
 pub const PATH: &str = "/responses";
 
 /// 编码：顶层照 `model`、`instructions`、`input`、`tools`、`"store":false`、`"stream":true`、`max_output_tokens`、思考强度的
-/// 先后写，别的字段一概不发。带着接着写记号的照原样发（这一家没有前缀续写），发到 [`PATH`]。
+/// 先后写，别的字段一概不发。带着接着写记号的照原样发（这一家没有前缀续写），发到 [`PATH`]。请求体整份写成字节
+/// （[`fragments`] 拼起来）。
+///
+/// # Errors
+///
+/// 要用的 blob 执行器没交进来：先照 [`blobs_needed`] 取。
+pub fn encode(
+    request: &Request,
+    call: &Call,
+    texts: &DriverTexts,
+    blobs: &dyn BlobBytes,
+) -> Result<Encoded, EncodeError> {
+    fragments(request, call, texts, blobs)?.to_bytes(blobs)
+}
+
+/// 编码成片段清单（施工 V-38）：同 [`encode`]，图片、PDF 的 base64 只记 blob 和大小，发的时候才读出来编。
 ///
 /// # Errors
 ///
@@ -40,34 +55,35 @@ pub const PATH: &str = "/responses";
 /// # Panics
 ///
 /// 实际不会 panic：线上的消息里没有写不成 JSON 的东西。
-pub fn encode(
+pub fn fragments(
     request: &Request,
     call: &Call,
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
-) -> Result<Encoded, EncodeError> {
+) -> Result<Encoded<Fragments>, EncodeError> {
     let items = input::write(request, call, texts, blobs)?;
-    let mut body = Vec::new();
+    let mut body = Builder::default();
     body.extend_from_slice(b"{\"model\":");
-    json(&mut body, call.model.as_str());
+    body.json(call.model.as_str());
     if !request.system.is_empty() {
         body.extend_from_slice(b",\"instructions\":");
-        json(&mut body, &request.system);
+        body.json(&request.system);
     }
     body.extend_from_slice(b",\"input\":[");
     let mut ranges = Vec::with_capacity(items.len());
-    for (index, item) in items.iter().enumerate() {
+    // 一项写完就放（施工 V-38）：线上的项是请求里的字拷出来的一份，不和请求体一起留到最后。
+    for (index, item) in items.into_iter().enumerate() {
         if index > 0 {
             body.push(b',');
         }
         let start = body.len();
-        json(&mut body, item);
+        body.json(&item);
         ranges.push(start..body.len());
     }
     body.push(b']');
     if let Some(tools) = wire::tools(request) {
         body.extend_from_slice(b",\"tools\":");
-        json(&mut body, &tools);
+        body.json(&tools);
     }
     body.extend_from_slice(b",\"store\":false,\"stream\":true");
     if let Some(limit) = call.max_output {
@@ -77,7 +93,7 @@ pub fn encode(
     effort::write(&mut body, call.effort.as_deref());
     body.push(b'}');
     Ok(Encoded {
-        body,
+        body: body.finish(),
         messages: ranges,
         path: PATH.to_string(),
     })
@@ -86,9 +102,4 @@ pub fn encode(
 /// 这份请求编码时要用哪些 blob：同 openai-chat（`media.rs`）。
 pub fn blobs_needed(request: &Request, call: &Call) -> BTreeSet<ContentHash> {
     media::blobs_needed(request, call)
-}
-
-/// 写成紧凑的 JSON，接在后面。
-fn json(body: &mut Vec<u8>, value: &(impl Serialize + ?Sized)) {
-    serde_json::to_writer(body, value).expect("线上的消息里没有写不成 JSON 的东西");
 }

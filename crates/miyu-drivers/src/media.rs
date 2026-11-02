@@ -6,7 +6,8 @@
 //! - 发不了的文件：内容是文本的照字放进来，带着文件名（施工 3-9 三补，[`crate::text_file`]）；别的写一句占位，带文件名、
 //!   媒体类型、大小。
 //!
-//! 字节由执行器先取好交进来（[`BlobBytes`]），没交进来的报缺了哪一个；要哪些照 [`blobs_needed`]。
+//! 字节由执行器先取好交进来（[`BlobBytes`]），没交进来的报缺了哪一个；要哪些照 [`blobs_needed`]，其中要整份字节的照
+//! [`blobs_whole`]（施工 V-38：照原样发的图片、PDF 只要大小）。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -14,6 +15,7 @@ use miyu_kernel::block::{Block, File, Image};
 use miyu_kernel::id::{ContentHash, SourcePath};
 use miyu_kernel::request::{Message, Request};
 
+use crate::fragments::Inline;
 use crate::{BlobBytes, Call, DriverTexts, EncodeError, text_file};
 
 /// 换成字要用的：占位的几句、blob 的字节、请求里的图的转述。
@@ -65,6 +67,23 @@ impl Media<'_> {
             .bytes(blob)
             .ok_or_else(|| EncodeError::MissingBlob(blob.clone()))
     }
+
+    /// 照原样发的一个 blob：记一段 base64，发的时候才读（施工 V-38，[`crate::Fragment::Base64`]）。`prefix` 是 base64 前面的
+    /// 字（data URL 的 `data:<类型>;base64,`），没有的是空的。执行器没交进来的报缺了哪一个。
+    pub(crate) fn inline(
+        &self,
+        blob: &ContentHash,
+        media_type: Option<&str>,
+    ) -> Result<Inline, EncodeError> {
+        let size = self
+            .blobs
+            .size(blob)
+            .ok_or_else(|| EncodeError::MissingBlob(blob.clone()))?;
+        Ok(match media_type {
+            Some(media_type) => Inline::data_url(media_type, blob, size),
+            None => Inline::bare(blob, size),
+        })
+    }
 }
 
 /// 接上一块文字（`openai-chat.md` 第 4 条，施工 8-13 从 `openai_chat/messages.rs` 挪来，`openai-responses` 也照它拼）：前面有字、
@@ -111,4 +130,24 @@ pub(crate) fn blobs_needed(request: &Request, call: &Call) -> BTreeSet<ContentHa
         }
     }
     needed
+}
+
+/// 这份请求编码时要整份字节的 blob（施工 V-38）：照字放进消息的文件，要认是不是文本、截前 64 KiB、写有多大。别的（能看的
+/// 图、能照原样发的 PDF）只要大小：base64 发的时候才从 blob 一小块一小块地读出来编。都在 [`blobs_needed`] 里。
+pub(crate) fn blobs_whole(request: &Request, call: &Call) -> BTreeSet<ContentHash> {
+    let mut whole = BTreeSet::new();
+    for message in &request.messages {
+        let blocks = match message {
+            Message::User { blocks } | Message::Tool { blocks, .. } => blocks,
+            Message::Assistant { .. } => continue,
+        };
+        for block in blocks {
+            if let Block::File(file) = block
+                && !(call.inputs.pdf && is_pdf(file))
+            {
+                whole.insert(file.blob.clone());
+            }
+        }
+    }
+    whole
 }

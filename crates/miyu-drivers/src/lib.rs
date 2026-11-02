@@ -8,17 +8,19 @@
 //! - [`anthropic`]：Anthropic 的消息接口（官方、opencode Zen 上的 Claude，施工 8-12）；
 //! - [`openai_responses`]：OpenAI 的 Responses 接口（官方、opencode Zen 上的 GPT，施工 8-13）；
 //! - [`sse`]：SSE 分帧；[`classify`]：出错分类；[`base64`]：图片、文件写成 data URL 要用的编码；
+//! - [`Fragments`]：编好的请求体是一串片段，图片、PDF 那几段只记 blob，发的时候才读出来编成 base64（施工 V-38）；
 //! - [`DeepSeekImages`]：一张图在 DeepSeek 上算多少 token（施工 6-3 上）；
 //! - [`text_file`]：人附的文本文件照字放进消息，什么算文本、最多给多少（施工 3-9 三补）。
 //!
-//! 一次调用要定的（[`Call`]）不在统一的请求里：同一份投影可以交给不同的端点。图片、文件的字节
-//! 由执行器先从 blob 取出来交进来（[`BlobBytes`]），驱动不碰文件；给模型看的几句占位也由执行器
+//! 一次调用要定的（[`Call`]）不在统一的请求里：同一份投影可以交给不同的端点。照字放进消息的文件，字节由执行器先从
+//! blob 取出来交进来；照原样发的图片、PDF 只要大小（[`BlobBytes`]），驱动不碰文件；给模型看的几句占位也由执行器
 //! 从资源目录读好交进来（[`DriverTexts`]）。
 
 pub mod anthropic;
 pub mod base64;
 pub mod classify;
 mod driver;
+mod fragments;
 mod image_tokens;
 mod media;
 pub mod openai_chat;
@@ -28,6 +30,7 @@ pub mod text_file;
 mod texts;
 
 pub use driver::{Anthropic, Decode, Driver, OpenAiChat, OpenAiResponses};
+pub use fragments::{Fragment, Fragments};
 pub use image_tokens::{DeepSeekImages, deepseek_image_tokens};
 pub use texts::{
     AttachedPathSources, DriverTextSources, DriverTexts, ImageDescriptionSources, ImageNameSources,
@@ -62,7 +65,7 @@ pub struct Call {
 
 /// 温度写成一个顶层字段 `,"temperature":<数>`（施工 8-22），接在思考强度那几样的前面。数照最短的十进制写（`0.7`、`1`）。
 /// 没有的什么都不加。
-pub(crate) fn write_temperature(body: &mut Vec<u8>, temperature: Option<f64>) {
+pub(crate) fn write_temperature(body: &mut fragments::Builder, temperature: Option<f64>) {
     if let Some(temperature) = temperature {
         body.extend_from_slice(format!(",\"temperature\":{temperature}").as_bytes());
     }
@@ -95,8 +98,16 @@ pub struct Listed {
 
 /// 取 blob 字节的端口：执行器照驱动列出的清单先取出来，编码时交进来。
 pub trait BlobBytes {
-    /// 这个 blob 的字节；没有，返回 `None`。
+    /// 这个 blob 整份的字节；没有（或者执行器只取了大小），返回 `None`。照字放进消息的文件用它
+    /// （[`Driver::blobs_whole`]）。
     fn bytes(&self, hash: &ContentHash) -> Option<&[u8]>;
+
+    /// 这个 blob 有多少个字节；没有，返回 `None`。照原样发的图片、PDF 编码时只要它：base64 发的时候才读（施工 V-38，
+    /// [`Fragment::Base64`]）。默认照 [`BlobBytes::bytes`] 量。
+    fn size(&self, hash: &ContentHash) -> Option<u64> {
+        self.bytes(hash)
+            .map(|bytes| u64::try_from(bytes.len()).unwrap_or(u64::MAX))
+    }
 }
 
 impl BlobBytes for BTreeMap<ContentHash, Vec<u8>> {
@@ -105,11 +116,12 @@ impl BlobBytes for BTreeMap<ContentHash, Vec<u8>> {
     }
 }
 
-/// 编码好的请求。
+/// 编码好的请求。`B` 是请求体：整份的字节（默认，[`Driver::encode`]），或者片段清单（[`Driver::fragments`]，发请求走它，
+/// 施工 V-38）。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Encoded {
-    /// 请求字节：发出去的就是它，它的 SHA-256 记进 `model.called`。
-    pub body: Vec<u8>,
+pub struct Encoded<B = Vec<u8>> {
+    /// 请求体：发出去的就是它，它的 SHA-256 记进 `model.called`。
+    pub body: B,
     /// 每条线上的消息在字节里的位置，照先后。openai-chat 的 system 和挪出来的那条 user 消息也各算一条；anthropic 的
     /// system 在顶层、不算，相邻同角色的合成一条（施工 8-12）；openai-responses 是 `input` 里的每一项，system 在
     /// `instructions`、不算（施工 8-13）。所以条数不一定和统一的请求一样。

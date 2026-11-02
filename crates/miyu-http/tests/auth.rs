@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use crate::support::{BODY, driver, sample};
 use miyu_drivers::classify::{Classified, Failure};
-use miyu_drivers::{BlobBytes, Call, Decode, Driver, EncodeError, Encoded, OpenAiChat};
+use miyu_drivers::{BlobBytes, Call, Decode, Driver, EncodeError, Encoded, Fragments, OpenAiChat};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Attempt, Endpoint, Outcome, Proxy, client, send};
 use miyu_kernel::id::ContentHash;
@@ -24,13 +24,17 @@ impl Driver for ApiKey {
         self.0.blobs_needed(request, call)
     }
 
-    fn encode(
+    fn blobs_whole(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash> {
+        self.0.blobs_whole(request, call)
+    }
+
+    fn fragments(
         &self,
         request: &Request,
         call: &Call,
         blobs: &dyn BlobBytes,
-    ) -> Result<Encoded, EncodeError> {
-        self.0.encode(request, call, blobs)
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        self.0.fragments(request, call, blobs)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {
@@ -73,7 +77,7 @@ async fn headers_sent(driver: &dyn Driver, key: Option<&str>) -> Vec<(String, St
             client: &client,
             endpoint: &endpoint,
             driver,
-            body: BODY,
+            body: BODY.to_vec().into(),
             path: "/chat/completions",
             idle: Duration::from_secs(5),
         },

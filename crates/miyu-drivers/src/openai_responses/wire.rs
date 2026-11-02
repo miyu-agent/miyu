@@ -7,6 +7,8 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::{Message, Request};
 use serde::Serialize;
 
+use crate::fragments::Inline;
+
 /// `input` 里的一项：带角色的消息，或者带种类的一项。
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -90,16 +92,16 @@ pub(super) enum Part {
     /// 图片，写成 data URL。
     #[serde(rename = "input_image")]
     Image {
-        /// `data:…;base64,…`。
-        image_url: String,
+        /// `data:…;base64,…`：base64 发的时候才编（施工 V-38）。
+        image_url: Inline,
     },
     /// 文件（PDF），写成 data URL。
     #[serde(rename = "input_file")]
     File {
         /// 文件名。
         filename: String,
-        /// `data:…;base64,…`。
-        file_data: String,
+        /// `data:…;base64,…`：base64 发的时候才编（施工 V-38）。
+        file_data: Inline,
     },
 }
 

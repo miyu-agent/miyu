@@ -25,7 +25,7 @@ async fn run(
             client: &client,
             endpoint,
             driver: &driver,
-            body: BODY,
+            body: BODY.to_vec().into(),
             path: "/chat/completions",
             idle,
         },
@@ -249,7 +249,7 @@ async fn sent_is_timed_when_handed_to_the_network() {
         client: &client,
         endpoint: &endpoint,
         driver: &driver,
-        body: BODY,
+        body: BODY.to_vec().into(),
         path: "/chat/completions",
         idle: Duration::from_secs(5),
     };

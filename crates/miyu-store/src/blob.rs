@@ -15,6 +15,9 @@
 //!
 //! 取的时候核对哈希（[`Blobs::get`]），核对过的记下文件的长短和修改时刻（施工 V-24）：同一个 `Blobs`（和从它拷出来的）再取，
 //! 文件没变过的不再算。会话的每一次请求都把历史里的图片、文件取一遍，以前每一次都整份重算。
+//!
+//! 只核对、只量大小（[`Blobs::check`]），和打开了从某个位置读（[`Blobs::open_at`]），施工 V-38：发请求时照原样发的图片、
+//! PDF 不整份取进内存，发的时候才一小块一小块地读出来编成 base64。
 
 use std::collections::HashMap;
 use std::fmt;
@@ -192,6 +195,82 @@ impl Blobs {
             checked.insert(hash.clone(), stamp);
         }
         Ok(content)
+    }
+
+    /// 核对一个 blob，交回它有多少个字节（施工 V-38）：照 [`Blobs::get`] 的规矩，这个 `Blobs` 核对过、文件的长短和修改时刻都
+    /// 没变的不再算；要算的一块一块地读着算，不把整份放进内存。发请求时照原样发的图片、PDF 编码前先这样核对、量大小，
+    /// 发的时候再照 [`Blobs::open_at`] 一小块一小块地读。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个 blob；读出来和名字对不上；读不了。
+    pub fn check(&self, hash: &ContentHash) -> Result<u64, BlobError> {
+        let (mut file, stamp) = self.open_stamped(hash)?;
+        match stamp {
+            Some((len, _)) if stamp == self.checked(hash) => Ok(len),
+            _ => self.verify(hash, &mut file, stamp),
+        }
+    }
+
+    /// 打开一个 blob、定位到第 `offset` 个字节，交回开着的文件（施工 V-38：发请求体时从这里一小块一小块地读）。核对过、文件的
+    /// 长短和修改时刻都没变的直接交回；变过的、没核对过的先照 [`Blobs::check`] 一块一块地整份核对一遍，对得上才交回。
+    ///
+    /// # Errors
+    ///
+    /// 没有这个 blob；读出来和名字对不上；读不了、定位不了。
+    pub fn open_at(&self, hash: &ContentHash, offset: u64) -> Result<File, BlobError> {
+        let (mut file, stamp) = self.open_stamped(hash)?;
+        if stamp.is_none() || stamp != self.checked(hash) {
+            self.verify(hash, &mut file, stamp)?;
+        }
+        file.seek(SeekFrom::Start(offset)).map_err(BlobError::Io)?;
+        Ok(file)
+    }
+
+    /// 打开一个 blob，连同打开的这一份的长短和修改时刻（读不出来的没有）。
+    fn open_stamped(&self, hash: &ContentHash) -> Result<(File, Option<Stamp>), BlobError> {
+        let file = match File::open(self.path(hash)) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                return Err(BlobError::Missing(hash.clone()));
+            }
+            Err(error) => return Err(BlobError::Io(error)),
+        };
+        let stamp = file
+            .metadata()
+            .ok()
+            .and_then(|meta| Some((meta.len(), meta.modified().ok()?)));
+        Ok((file, stamp))
+    }
+
+    /// 从头一块一块地读 `file`、算哈希，和名字对上了记下核对过（`stamp` 是打开时的长短和修改时刻），交回读了多少个字节。
+    fn verify(
+        &self,
+        hash: &ContentHash,
+        file: &mut File,
+        stamp: Option<Stamp>,
+    ) -> Result<u64, BlobError> {
+        file.seek(SeekFrom::Start(0)).map_err(BlobError::Io)?;
+        let mut hasher = Hasher::default();
+        let mut buffer = vec![0u8; 64 * 1024];
+        let mut total: u64 = 0;
+        loop {
+            let count = match file.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(count) => count,
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) => return Err(BlobError::Io(error)),
+            };
+            hasher.update(&buffer[..count]);
+            total = total.saturating_add(u64::try_from(count).unwrap_or(u64::MAX));
+        }
+        if hasher.finish() != *hash {
+            return Err(BlobError::Corrupt(hash.clone()));
+        }
+        if let (Some(stamp), Ok(mut checked)) = (stamp, self.checked.lock()) {
+            checked.insert(hash.clone(), stamp);
+        }
+        Ok(total)
     }
 
     /// 核对 `hash` 那一次文件的长短和修改时刻；没核对过的没有。

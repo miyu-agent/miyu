@@ -8,6 +8,8 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::{Message, Request};
 use serde::Serialize;
 
+use crate::fragments::Inline;
+
 /// 一条线上的消息，照 `role` 分开四种。
 #[derive(Debug, Serialize)]
 #[serde(tag = "role", rename_all = "lowercase")]
@@ -85,8 +87,8 @@ pub(super) enum Part {
 /// 图片的地址。
 #[derive(Debug, Serialize)]
 pub(super) struct Url {
-    /// data URL。
-    pub(super) url: String,
+    /// data URL：base64 发的时候才编（施工 V-38）。
+    pub(super) url: Inline,
 }
 
 /// 文件的名字和内容。
@@ -94,8 +96,8 @@ pub(super) struct Url {
 pub(super) struct FileData {
     /// 文件名。
     pub(super) filename: String,
-    /// data URL。
-    pub(super) file_data: String,
+    /// data URL：base64 发的时候才编（施工 V-38）。
+    pub(super) file_data: Inline,
 }
 
 /// assistant 消息里的一次工具调用。

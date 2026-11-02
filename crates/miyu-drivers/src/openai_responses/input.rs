@@ -17,8 +17,9 @@ use serde::de::IgnoredAny;
 
 use super::FAMILY;
 use super::wire::{Content, Item, Part, RoleMessage, Summary, Typed};
+use crate::fragments::Inline;
 use crate::media::{Media, is_pdf, join};
-use crate::{BlobBytes, Call, DriverTexts, EncodeError, base64};
+use crate::{BlobBytes, Call, DriverTexts, EncodeError};
 
 /// 写全部的项。
 pub(super) fn write(
@@ -138,13 +139,9 @@ impl Writer<'_> {
         })
     }
 
-    /// `data:<类型>;base64,<内容>`。
-    fn data_url(&self, media_type: &MediaType, blob: &ContentHash) -> Result<String, EncodeError> {
-        Ok(format!(
-            "data:{};base64,{}",
-            media_type.as_str(),
-            base64::encode(self.media.bytes(blob)?)
-        ))
+    /// `data:<类型>;base64,<内容>`：base64 发的时候才编（施工 V-38）。
+    fn data_url(&self, media_type: &MediaType, blob: &ContentHash) -> Result<Inline, EncodeError> {
+        self.media.inline(blob, Some(media_type.as_str()))
     }
 
     /// 线上的调用编号：自己家私有数据里的，没有就用内核分的（别家的编号写法不一定收）。

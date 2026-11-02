@@ -23,7 +23,7 @@ async fn run(endpoint: &Endpoint, cancel: impl Future<Output = ()> + Send) -> Ou
             client: &client,
             endpoint,
             driver: &driver,
-            body: BODY,
+            body: BODY.to_vec().into(),
             path: "/chat/completions?key=sk-test",
             idle: Duration::from_secs(5),
         },

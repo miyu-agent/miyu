@@ -44,7 +44,7 @@ async fn failure(body: Vec<Piece>) -> String {
             client: &client,
             endpoint: &endpoint,
             driver: &driver,
-            body: BODY,
+            body: BODY.to_vec().into(),
             path: "/chat/completions",
             idle: IDLE,
         },

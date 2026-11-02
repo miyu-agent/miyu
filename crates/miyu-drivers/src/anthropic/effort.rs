@@ -9,13 +9,14 @@
 //! 温度（施工 8-22，[`temperature`]）：开着思考只能用默认的温度，带了别的整个请求被拒。档位、`on` 的不带温度；`off`、没有的
 //! 照交来的带。
 
+use crate::fragments::Builder;
 use crate::{Call, EFFORT_OFF, EFFORT_ON};
 
 /// 开着思考的写法。
 const ADAPTIVE: &str = r#","thinking":{"type":"adaptive","display":"summarized"}"#;
 
 /// 照这一次的思考强度 `effort`，接在 `body` 后面（不含收尾的 `}`）。
-pub(super) fn write(body: &mut Vec<u8>, effort: Option<&str>) {
+pub(super) fn write(body: &mut Builder, effort: Option<&str>) {
     match effort {
         None => {}
         Some(EFFORT_OFF) => body.extend_from_slice(br#","thinking":{"type":"disabled"}"#),
@@ -23,7 +24,7 @@ pub(super) fn write(body: &mut Vec<u8>, effort: Option<&str>) {
         Some(level) => {
             body.extend_from_slice(ADAPTIVE.as_bytes());
             body.extend_from_slice(br#","output_config":{"effort":"#);
-            super::json(body, level);
+            body.json(level);
             body.push(b'}');
         }
     }

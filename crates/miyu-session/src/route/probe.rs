@@ -282,13 +282,14 @@ async fn ask(
         temperature,
     };
     let encoded = driver
-        .encode(&request, &call, &BTreeMap::new())
+        .fragments(&request, &call, &BTreeMap::new())
         .map_err(|error| failed(Stage::Request, ErrorClass::Unclassified, error.to_string()))?;
     let attempt = Attempt {
         client,
         endpoint,
         driver,
-        body: &encoded.body,
+        // 只有一句字，没有 blob（施工 V-38）。
+        body: encoded.body.into(),
         path: &encoded.path,
         idle: IDLE,
     };

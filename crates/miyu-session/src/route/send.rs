@@ -8,6 +8,7 @@
 //! - 出错：收到过增量才出错的，主请求记下它，下一次主请求还发给它；别的放开。
 //! - 被叫停：什么都不记，主请求的「说到一半断了」放开。
 
+use std::borrow::Cow;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -109,17 +110,18 @@ pub(super) enum Attempt {
     Retry(Box<Reports>),
 }
 
-/// 请求一次：经底子发，把回报交回 actor。被叫停的什么都不再报。
+/// 请求一次：经底子发，把回报交回 actor。被叫停的什么都不再报。请求交给底子，编码完就放（施工 V-38）：出错了内核照历史
+/// 重新组装再发，用不着留着。
 async fn ask(chosen: Chosen, request: Request, reports: Reports, cancel: Cancel) {
     let mut stop: Stop = Box::pin(cancel.wait());
-    attempt(chosen, &request, reports, &mut stop, false).await;
+    attempt(chosen, Cow::Owned(request), reports, &mut stop, false).await;
 }
 
 /// 试一次：经底子发，说完了照这个模型的价格算金额（施工 8-15）。`retry`：还没收到增量就出了会冷却的错的，不报，交回
-/// [`Attempt::Retry`]。
+/// [`Attempt::Retry`]。`request` 交进来的编码完就放，借来的（旁路请求换人还要再发）照旧借着（施工 V-38）。
 pub(super) async fn attempt(
     chosen: Chosen,
-    request: &Request,
+    request: Cow<'_, Request>,
     reports: Reports,
     stop: &mut Stop,
     retry: bool,

@@ -18,8 +18,9 @@ use serde::de::IgnoredAny;
 
 use super::wire::{Content, FileData, FunctionCall, Part, ToolCall as WireCall, Url, Wire};
 use super::{Compat, ContinuationField, EncodeError, FAMILY, ReasoningField, ReasoningReplay};
+use crate::fragments::Inline;
 use crate::media::{Media, is_pdf, join};
-use crate::{BlobBytes, Call, DriverTexts, base64};
+use crate::{BlobBytes, Call, DriverTexts};
 
 /// 写全部消息：system 在最前，每条 tool 消息串后面跟着挪出来的图片、文件。`continuing` 有的是
 /// 接着写：最后那条 user 不发，半截那条加上这个字段。
@@ -248,13 +249,9 @@ impl Writer<'_> {
         })
     }
 
-    /// `data:<类型>;base64,<内容>`。
-    fn data_url(&self, media_type: &MediaType, blob: &ContentHash) -> Result<String, EncodeError> {
-        Ok(format!(
-            "data:{};base64,{}",
-            media_type.as_str(),
-            base64::encode(self.media.bytes(blob)?)
-        ))
+    /// `data:<类型>;base64,<内容>`：base64 发的时候才编（施工 V-38）。
+    fn data_url(&self, media_type: &MediaType, blob: &ContentHash) -> Result<Inline, EncodeError> {
+        self.media.inline(blob, Some(media_type.as_str()))
     }
 }
 
@@ -301,7 +298,7 @@ impl Pieces {
     }
 }
 
-fn image_part(url: String) -> Part {
+fn image_part(url: Inline) -> Part {
     Part::ImageUrl {
         image_url: Url { url },
     }

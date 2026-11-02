@@ -19,6 +19,7 @@
 mod reply;
 mod side;
 
+use std::borrow::Cow;
 use std::collections::BTreeSet;
 
 use miyu_http::Progress;
@@ -317,7 +318,7 @@ impl OneShot {
             let mut texts = BTreeSet::new();
             let exchanged = exchange(
                 &ready,
-                &request,
+                Cow::Borrowed(&request),
                 blobs,
                 std::future::pending(),
                 |progress| {

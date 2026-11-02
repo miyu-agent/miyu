@@ -7,16 +7,17 @@
 //! - `off`（目录写 `none` 的那一档）：`"reasoning":{"effort":"none"}`。
 //! - `on`：这一家没有开关，不会有；来了什么都不加。
 
+use crate::fragments::Builder;
 use crate::{EFFORT_OFF, EFFORT_ON};
 
 /// 照这一次的思考强度 `effort`，接在 `body` 后面（不含收尾的 `}`）。
-pub(super) fn write(body: &mut Vec<u8>, effort: Option<&str>) {
+pub(super) fn write(body: &mut Builder, effort: Option<&str>) {
     match effort {
         None | Some(EFFORT_ON) => {}
         Some(EFFORT_OFF) => body.extend_from_slice(br#","reasoning":{"effort":"none"}"#),
         Some(level) => {
             body.extend_from_slice(br#","reasoning":{"effort":"#);
-            super::json(body, level);
+            body.json(level);
             body.extend_from_slice(
                 br#","summary":"auto"},"include":["reasoning.encrypted_content"]"#,
             );

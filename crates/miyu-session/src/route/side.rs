@@ -7,6 +7,7 @@
 //!   `INFO side fallback`，`model.called` 写 `fell_back`。回退只在出字以前（`models.md`「五」第 4 条）。
 //! - 会话的模型本身就是这个池的：不再退，照会话的模型发那一次、照池的规矩报（免得来回退）。
 
+use std::borrow::Cow;
 use std::sync::{Arc, PoisonError};
 
 use tracing::Instrument;
@@ -124,7 +125,9 @@ async fn ask(
             }
             Picked::Served(chosen) => {
                 let who = chosen.tried.picked.choice.who.clone();
-                match send::attempt(*chosen, &request, reports, &mut stop, true).await {
+                match send::attempt(*chosen, Cow::Borrowed(&request), reports, &mut stop, true)
+                    .await
+                {
                     Attempt::Reported => return,
                     Attempt::Retry(back) => {
                         reports = *back;
@@ -156,7 +159,7 @@ async fn session(
 ) {
     match route.choose(config, false, None) {
         Ok(chosen) => {
-            send::attempt(chosen, request, reports, stop, false).await;
+            send::attempt(chosen, Cow::Borrowed(request), reports, stop, false).await;
         }
         Err(error) => refused(reports, error),
     }

@@ -19,7 +19,7 @@ use serde_json::value::RawValue;
 use super::FAMILY;
 use super::wire::{Part, Source, Wire};
 use crate::media::{Media, is_pdf};
-use crate::{BlobBytes, Call, DriverTexts, EncodeError, base64};
+use crate::{BlobBytes, Call, DriverTexts, EncodeError};
 
 /// 这一家收的图片媒体类型：别的发过去也报 400，换成字（图纸「起草时定的」第 14 条）。
 const IMAGE_TYPES: [&str; 4] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -174,7 +174,7 @@ impl Writer<'_> {
         })
     }
 
-    /// base64 的内容。
+    /// base64 的内容：发的时候才编（施工 V-38）。
     fn source(
         &self,
         media_type: &str,
@@ -183,7 +183,7 @@ impl Writer<'_> {
         Ok(Source {
             kind: "base64",
             media_type: media_type.to_string(),
-            data: base64::encode(self.media.bytes(blob)?),
+            data: self.media.inline(blob, None)?,
         })
     }
 

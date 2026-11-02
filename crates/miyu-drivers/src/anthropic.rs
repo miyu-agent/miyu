@@ -26,7 +26,8 @@ use serde::Serialize;
 
 pub use crate::{EncodeError, Encoded};
 
-use crate::{BlobBytes, Call, DriverTexts, media};
+use crate::fragments::Builder;
+use crate::{BlobBytes, Call, DriverTexts, Fragments, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
 pub const FAMILY: &str = "anthropic";
@@ -44,7 +45,22 @@ pub const FALLBACK_MAX_TOKENS: u32 = 8192;
 const MARK: &[u8] = br#","cache_control":{"type":"ephemeral"}"#;
 
 /// 编码：顶层照 `model`、`max_tokens`、`system`、`tools`、`messages`、`"stream":true`、思考强度的先后写，别的字段一概不发。
-/// 带着接着写记号的照原样发（这一家不会接着写，图纸「起草时定的」第 16 条），发到 [`PATH`]。
+/// 带着接着写记号的照原样发（这一家不会接着写，图纸「起草时定的」第 16 条），发到 [`PATH`]。请求体整份写成字节（[`fragments`]
+/// 拼起来）。
+///
+/// # Errors
+///
+/// 要用的 blob 执行器没交进来：先照 [`blobs_needed`] 取。
+pub fn encode(
+    request: &Request,
+    call: &Call,
+    texts: &DriverTexts,
+    blobs: &dyn BlobBytes,
+) -> Result<Encoded, EncodeError> {
+    fragments(request, call, texts, blobs)?.to_bytes(blobs)
+}
+
+/// 编码成片段清单（施工 V-38）：同 [`encode`]，图片、PDF 的 base64 只记 blob 和大小，发的时候才读出来编。
 ///
 /// # Errors
 ///
@@ -53,18 +69,18 @@ const MARK: &[u8] = br#","cache_control":{"type":"ephemeral"}"#;
 /// # Panics
 ///
 /// 实际不会 panic：线上的消息里没有写不成 JSON 的东西。
-pub fn encode(
+pub fn fragments(
     request: &Request,
     call: &Call,
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
-) -> Result<Encoded, EncodeError> {
+) -> Result<Encoded<Fragments>, EncodeError> {
     let written = messages::write(request, call, texts, blobs)?;
     let tools = wire::tools(request);
     let marks = marks::place(request, tools.as_deref(), &written);
-    let mut body = Vec::new();
+    let mut body = Builder::default();
     body.extend_from_slice(b"{\"model\":");
-    json(&mut body, call.model.as_str());
+    body.json(call.model.as_str());
     let limit = call.max_output.unwrap_or(FALLBACK_MAX_TOKENS);
     body.extend_from_slice(format!(",\"max_tokens\":{limit}").as_bytes());
     if !request.system.is_empty() {
@@ -84,19 +100,20 @@ pub fn encode(
     }
     body.extend_from_slice(b",\"messages\":[");
     let mut ranges = Vec::with_capacity(written.messages.len());
-    for (m, message) in written.messages.iter().enumerate() {
+    // 一条写完就放（施工 V-38）：线上的消息是请求里的字拷出来的一份，不和请求体一起留到最后。
+    for (m, message) in written.messages.into_iter().enumerate() {
         if m > 0 {
             body.push(b',');
         }
         let start = body.len();
         body.extend_from_slice(b"{\"role\":");
-        json(&mut body, message.role);
+        body.json(message.role);
         body.extend_from_slice(b",\"content\":[");
-        for (b, part) in message.content.iter().enumerate() {
+        for (b, part) in message.content.into_iter().enumerate() {
             if b > 0 {
                 body.push(b',');
             }
-            block(&mut body, part, marks.messages.contains(&(m, b)));
+            block(&mut body, &part, marks.messages.contains(&(m, b)));
         }
         body.extend_from_slice(b"]}");
         ranges.push(start..body.len());
@@ -106,7 +123,7 @@ pub fn encode(
     effort::write(&mut body, call.effort.as_deref());
     body.push(b'}');
     Ok(Encoded {
-        body,
+        body: body.finish(),
         messages: ranges,
         path: PATH.to_string(),
     })
@@ -149,16 +166,11 @@ pub fn unmarked(encoded: &Encoded) -> Encoded {
 }
 
 /// 写一块：紧凑的 JSON；打了点的，在最后一格后面接上打点。每一块都是一个 JSON 对象，最后一个字节是 `}`。
-fn block(body: &mut Vec<u8>, value: &impl Serialize, marked: bool) {
-    json(body, value);
+fn block(body: &mut Builder, value: &impl Serialize, marked: bool) {
+    body.json(value);
     if marked {
         body.pop();
         body.extend_from_slice(MARK);
         body.push(b'}');
     }
-}
-
-/// 写成紧凑的 JSON，接在后面。
-fn json(body: &mut Vec<u8>, value: &(impl Serialize + ?Sized)) {
-    serde_json::to_writer(body, value).expect("线上的消息里没有写不成 JSON 的东西");
 }

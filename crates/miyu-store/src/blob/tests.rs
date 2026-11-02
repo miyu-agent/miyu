@@ -1,6 +1,7 @@
 //! blob 的测试：存了再取；放在哪；同一份存两遍；崩溃留下的临时文件；撞名；改名时目标已经有了；
 //! 读出来不对；分块上传的暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；
-//! 读一段（施工 W-6），不跟 blob 目录里的链接（施工 SEC-3）；核对过、文件没变的不再算哈希（施工 V-24）。
+//! 读一段（施工 W-6），不跟 blob 目录里的链接（施工 SEC-3）；核对过、文件没变的不再算哈希（施工 V-24）；只核对、打开了
+//! 从某处读（施工 V-38）。
 
 use std::time::Duration;
 
@@ -395,4 +396,57 @@ fn a_file_is_stored_as_the_same_blob_piece_by_piece() {
             .put_file(&scratch.path().join("none"), |_| {})
             .is_err()
     );
+}
+
+/// 只核对、量大小，和打开了从某处读（施工 V-38）：和 [`Blobs::get`] 同一套核对；核对过、没变过的不再算；变过的打开时先整份
+/// 核对，坏了照报；没有的报没有。
+#[test]
+fn checking_and_opening_follow_the_same_rules_as_get() {
+    let scratch = Scratch::new();
+    let blobs = blobs_in(&scratch);
+    let content: Vec<u8> = (0..200_000u32).map(|i| (i % 251) as u8).collect();
+    let hash = blobs.put(&content).unwrap();
+    assert_eq!(blobs.check(&hash).unwrap(), 200_000);
+    let mut tail = Vec::new();
+    blobs
+        .open_at(&hash, 199_990)
+        .unwrap()
+        .read_to_end(&mut tail)
+        .unwrap();
+    assert_eq!(tail, content[199_990..]);
+    let path = blobs.path(&hash);
+    let modified = fs::metadata(&path).unwrap().modified().unwrap();
+    let mut tampered = content.clone();
+    tampered[7] ^= 1;
+    fs::write(&path, &tampered).unwrap();
+    File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_modified(modified)
+        .unwrap();
+    assert_eq!(
+        blobs.check(&hash).unwrap(),
+        200_000,
+        "核对过、长短和修改时刻没变的不再算（同 V-24 的取舍）"
+    );
+    assert!(matches!(
+        blobs_in(&scratch).check(&hash),
+        Err(BlobError::Corrupt(_))
+    ));
+    assert!(matches!(
+        blobs_in(&scratch).open_at(&hash, 0),
+        Err(BlobError::Corrupt(_))
+    ));
+    fs::write(&path, b"short").unwrap();
+    assert!(
+        matches!(blobs.open_at(&hash, 0), Err(BlobError::Corrupt(_))),
+        "变过的打开时先整份核对"
+    );
+    let missing = ContentHash::of(b"never stored");
+    assert!(matches!(blobs.check(&missing), Err(BlobError::Missing(_))));
+    assert!(matches!(
+        blobs.open_at(&missing, 0),
+        Err(BlobError::Missing(_))
+    ));
 }

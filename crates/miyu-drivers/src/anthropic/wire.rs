@@ -9,6 +9,8 @@ use miyu_kernel::request::{Message, Request};
 use serde::Serialize;
 use serde_json::value::RawValue;
 
+use crate::fragments::Inline;
+
 /// 一条线上的消息：`user` 或者 `assistant`，内容一块一块的。
 #[derive(Debug)]
 pub(super) struct Wire {
@@ -94,8 +96,8 @@ pub(super) struct Source {
     pub(super) kind: &'static str,
     /// 媒体类型。
     pub(super) media_type: String,
-    /// base64 的内容。
-    pub(super) data: String,
+    /// base64 的内容：发的时候才编（施工 V-38）。
+    pub(super) data: Inline,
 }
 
 /// 工具面上的一件工具。

@@ -14,7 +14,14 @@ miyu-kernel = { path = "../miyu-kernel" }
 # 理由见 docs/construction/3-5-发请求与读流（上）.md「我定的」：异步里流式读取、超时、打断最顺；
 # TLS 用 rustls，证书认系统的和 webpki 自带的两份，不依赖 OpenSSL。
 reqwest = { version = "0.12", default-features = false, features = ["http2", "rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
-tokio = { version = "1", features = ["macros", "net", "time"] }
+# `rt`、`sync`（施工 V-38）：请求体里的 blob 在阻塞线程里读、编好一块经通道交过来一块。整个工作区本来就开着这两样。
+tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
+# 请求体边编边发（施工 V-38）：自己的流交给 reqwest 要照 `http-body` 的接口，一块块是 `bytes` 的共享缓冲（编好的字交出去
+# 不拷）；对方没处理就拒了要认 `h2` 的错（`REFUSED_STREAM`、`GOAWAY`），照 reqwest 原来的条件重发。三个都是 reqwest
+# 本来就带进来的同一版，没有新包。MIT。
+bytes = "1"
+http-body = "1"
+h2 = "0.4"
 # 这一跳走不走代理（施工 U23 下下从 miyu-net 挪下来的 `proxy.rs`）：reqwest 自己照环境变量走代理用的就是它的 `Matcher`，
 # `NO_PROXY` 的读法和请求模型一字不差。本来就在依赖图里（reqwest 带进来的）。MIT。
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }

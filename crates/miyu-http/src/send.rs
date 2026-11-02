@@ -1,7 +1,8 @@
 //! 发一次请求（`05-内核接口.md` 第七节「HTTP 执行器」）：发、读、空闲超时、出错、打断。
 //!
-//! 1. 先报「发出去了」，带上请求字节的哈希；再 `POST <地址><路径>`，请求体一个字节不改。地址、另配的
-//!    头写得不对，造不出请求的，出错 `other`，不重试。
+//! 1. `POST <地址><路径>`，请求体照驱动编好的片段清单边编边送，一个字节不改（施工 V-38，`body.rs`）；307、308 跳转和
+//!    h2 上对方没处理就拒了的，照 reqwest 原来的条件、次数从同一份片段清单再发（`resend.rs`）。收到响应头（或者出错、被叫停）
+//!    报「发出去了」，带上请求体的哈希。地址、另配的头写得不对，造不出请求的，出错 `other`，不重试。
 //! 2. 不是 2xx 的，读最多 64 KiB 的响应体，连同状态、响应头交给驱动分类。
 //! 3. 2xx 的，一片一片地读，交给解码器，解出来的增量马上交出去；解码器说不用再读了就停。读完了（或者读到一半断了）
 //!    由解码器收尾：它知道说没说完。空闲超时量的是多久没解出新的内容，不是多久没来字节：一直发保活注释、不带内容的事件
@@ -17,6 +18,7 @@
 
 use std::error::Error;
 use std::future::Future;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use miyu_drivers::Driver;
@@ -28,7 +30,9 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 use tokio::time::{timeout, timeout_at};
 
 use crate::Endpoint;
+use crate::body::{Body, Replay};
 use crate::endpoint::host;
+use crate::resend::{Delivered, deliver};
 
 /// 出错时的响应体最多读多少：分类用不着那么多，原话本来也只留 2000 字节。
 const ERROR_BODY_LIMIT: usize = 64 * 1024;
@@ -37,7 +41,6 @@ const ERROR_BODY_LIMIT: usize = 64 * 1024;
 pub const TOTAL_FACTOR: u32 = 10;
 
 /// 发一次请求要的。
-#[derive(Clone, Copy)]
 pub struct Attempt<'a> {
     /// HTTP 客户端，连接跨请求复用。
     pub client: &'a reqwest::Client,
@@ -45,8 +48,8 @@ pub struct Attempt<'a> {
     pub endpoint: &'a Endpoint,
     /// 哪一家的接口：路径、解码器、分类。
     pub driver: &'a dyn Driver,
-    /// 驱动编码好的请求字节。
-    pub body: &'a [u8],
+    /// 驱动编码好的请求体（施工 V-38）：片段清单和 blob 从哪里读。收到响应头、哈希算完就放（还在送的那一条流送完放）。
+    pub body: Body,
     /// 发到供应商地址后面的哪一截：编码交回的那一条（`Encoded::path`）。
     pub path: &'a str,
     /// 多久没解出新的内容就算断了；整次请求最多它的 [`TOTAL_FACTOR`] 倍。
@@ -56,8 +59,8 @@ pub struct Attempt<'a> {
 /// 读的过程中交出去的。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Progress {
-    /// 发出去了：请求字节的哈希，记进 `model.called`。在任何增量之前报，可不一定在真发之前：哈希等请求交给网络以后再算
-    /// （施工 PERF-1：上下文长了请求有几百 KB，算一遍要零点几毫秒，原来挡在请求上线前面）。
+    /// 发出去了：请求字节的哈希，记进 `model.called`。在任何增量之前报，可不一定在真发之前：收到响应头（或者出错、被叫停）
+    /// 才报（施工 PERF-1）。哈希跟着送出去的字节一路算（施工 V-38）；没送完就有了结果的，把剩下的生成出来算完，不往外送。
     Sent {
         /// 请求字节的 SHA-256。
         request: ContentHash,
@@ -127,69 +130,79 @@ async fn exchange(
     status: &mut Option<u16>,
 ) -> Outcome {
     tokio::pin!(cancel);
+    let Attempt {
+        client,
+        endpoint,
+        driver,
+        body,
+        path,
+        idle: idle_for,
+    } = attempt;
     // 「发出去了」在增量之前报：连不上的、造不出请求的、被叫停的也报过，`model.called` 里照样有发给了谁、请求的哈希。哈希
-    // 等请求交给网络以后再算，不挡在前面（施工 PERF-1）。
-    let mut sent = |at: Instant| {
-        on(Progress::Sent {
-            request: ContentHash::of(attempt.body),
-            at,
-        });
-    };
-    let url = format!(
-        "{}{}",
-        attempt.endpoint.base_url.trim_end_matches('/'),
-        attempt.path
-    );
+    // 跟着送出去的字节一路算，收到响应头才报（施工 PERF-1、V-38）。
+    let replay = Arc::new(Replay::new(body));
+    let url = format!("{}{}", endpoint.base_url.trim_end_matches('/'), path);
     // 认证头照驱动（施工 8-6），没有 key 的不带；另配的头：名字、值写得不对的，造不出请求（施工 4-9 再补三下）。认证头的
     // 值里有 key，写不对时只报头的名字。
-    let auth = attempt
-        .endpoint
+    let auth = endpoint
         .key()
-        .map(|key| attempt.driver.auth(key))
+        .map(|key| driver.auth(key))
         .unwrap_or_default();
     let auth = match extra_headers(&auth) {
         Ok(auth) => auth,
         Err(_) => {
-            sent(Instant::now());
+            let at = Instant::now();
+            on(sent(&replay, at).await);
             return misconfigured("认证头");
         }
     };
-    let extra = match extra_headers(&attempt.endpoint.headers) {
+    let extra = match extra_headers(&endpoint.headers) {
         Ok(extra) => extra,
         Err(why) => {
-            sent(Instant::now());
+            let at = Instant::now();
+            on(sent(&replay, at).await);
             return misconfigured(&why);
         }
     };
-    let request = attempt
-        .client
+    // 不带请求体的那一份：每一次发都照它另造，请求体从片段清单从头造（`resend.rs`）。
+    let template = client
         .post(url)
         .headers(auth)
         .header(CONTENT_TYPE, "application/json")
         .header(ACCEPT, "text/event-stream")
         // 另配的头换掉同名的，不是再加一个（施工 4-9 再补三下）。
         .headers(extra)
-        .body(attempt.body.to_vec());
+        .build();
     let at = Instant::now();
-    let total = attempt.idle.saturating_mul(TOTAL_FACTOR);
+    let total = idle_for.saturating_mul(TOTAL_FACTOR);
     let deadline = tokio::time::Instant::from_std(at) + total;
     // 下一片最多等到哪：`since` 以后空闲超时到的时候，不过总时限。
-    let until = |since: tokio::time::Instant| (since + attempt.idle).min(deadline);
-    let waited = tokio::select! {
-        biased;
-        () = &mut cancel => None,
-        waited = timeout(attempt.idle, request.send()) => Some(waited),
+    let until = |since: tokio::time::Instant| (since + idle_for).min(deadline);
+    let waited = match template {
+        Ok(template) => tokio::select! {
+            biased;
+            () = &mut cancel => None,
+            waited = timeout(idle_for, deliver(client, template, &replay)) => Some(waited),
+        },
+        Err(error) => Some(Ok(Delivered::Failed(error))),
     };
-    sent(at);
+    on(sent(&replay, at).await);
+    // 不用再发了：请求体放掉（还在送的那一条流送完放），等模型回答时手里不留整份请求。
+    drop(replay);
     let Some(waited) = waited else {
         return Outcome::Cancelled;
     };
     let mut response = match waited {
-        Ok(Ok(response)) => response,
+        Ok(Delivered::Response(response)) => response,
         // 地址写得不对：造不出请求，重来也一样（施工 4-9 再补三下：原来交给驱动分类，落成可以重试）。
-        Ok(Err(error)) if error.is_builder() => return misconfigured(&chain(&error.without_url())),
-        Ok(Err(error)) => return failed(attempt.driver, &chain(&error.without_url())),
-        Err(_) => return idle(attempt.idle),
+        Ok(Delivered::Failed(error)) if error.is_builder() => {
+            return misconfigured(&chain(&error.without_url()));
+        }
+        Ok(Delivered::Failed(error)) => return failed(driver, &chain(&error.without_url())),
+        Ok(Delivered::TooManyRedirects) => {
+            return failed(driver, "error following redirect: too many redirects");
+        }
+        Err(_) => return idle(idle_for),
     };
     let code = response.status();
     *status = Some(code.as_u16());
@@ -212,7 +225,7 @@ async fn exchange(
             .iter()
             .map(|(name, value)| (name.as_str(), value.as_str()))
             .collect();
-        let classified = attempt.driver.classify(&Failure {
+        let classified = driver.classify(&Failure {
             status: Some(code.as_u16()),
             headers: &pairs,
             body: &body,
@@ -222,7 +235,7 @@ async fn exchange(
             error: Some(classified),
         };
     }
-    let mut decoder = attempt.driver.decoder();
+    let mut decoder = driver.decoder();
     let mut broken = None;
     // 最近一次解出内容的时刻：保活注释、不带内容的事件不算（施工 AE-2）。
     let mut quiet_since = tokio::time::Instant::now();
@@ -250,7 +263,7 @@ async fn exchange(
             // `finish_reason` 到了、只差 `[DONE]` 时停住：模型说完了，当说完了收尾（施工 4-9 再补三下）。
             Err(_) if decoder.finished() => break,
             Err(_) if tokio::time::Instant::now() >= deadline => return too_long(total),
-            Err(_) => return idle(attempt.idle),
+            Err(_) => return idle(idle_for),
         }
     }
     let ending = decoder.finish();
@@ -278,6 +291,14 @@ async fn exchange(
             excess: None,
             limit: None,
         }),
+    }
+}
+
+/// 「发出去了」：请求体的哈希（没送完的算完，[`Replay::hash`]），交给网络的那一刻 `at`。
+async fn sent(replay: &Arc<Replay>, at: Instant) -> Progress {
+    Progress::Sent {
+        request: replay.hash().await,
+        at,
     }
 }
 

@@ -12,6 +12,9 @@ autotests = false
 miyu-kernel = { path = "../miyu-kernel" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
+# 图片、文件写成 base64（施工 V-38）：原来自己一个字一个字地拼，有图的请求 CPU 里它占两成。锁文件里本来就有这一版
+# （基础系统、端点、MCP 都用它），MIT 或 Apache-2.0；只要编码，默认功能关掉、只开 `alloc`。
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 
 [features]
 # 测试用的（施工 8-6）：DeepSeek 官方那一套开关 `Compat::deepseek()`。出厂的那一套住在供应商档案里；别的 crate 的测试

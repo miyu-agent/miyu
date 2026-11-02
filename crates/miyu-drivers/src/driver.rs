@@ -13,8 +13,8 @@ use miyu_kernel::request::Request;
 
 use crate::classify::{self, Classified, Failure};
 use crate::openai_chat::{self, Compat, Decoder};
-use crate::{BlobBytes, Call, DriverTexts, EncodeError, Encoded, Ending, Listed};
-use crate::{anthropic, openai_responses};
+use crate::{BlobBytes, Call, DriverTexts, EncodeError, Encoded, Ending, Fragments, Listed};
+use crate::{anthropic, media, openai_responses};
 
 /// 一个驱动：一家接口的翻译器。一个会话造一个，开关和占位冻结在里面。执行器在异步任务里用它，
 /// 所以能跨线程。
@@ -25,7 +25,22 @@ pub trait Driver: Send + Sync {
     /// 这份请求编码时要用哪些 blob，执行器照着先取出来。
     fn blobs_needed(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash>;
 
-    /// 编码。
+    /// 其中编码时要整份字节的（施工 V-38）：照字放进消息的文件。别的（照原样发的图片、PDF）执行器只取大小，发的时候才读。
+    fn blobs_whole(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash>;
+
+    /// 编码成片段清单（施工 V-38）：图片、PDF 的 base64 只记 blob 和大小，执行器发的时候才读出来编。
+    ///
+    /// # Errors
+    ///
+    /// 要用的 blob 执行器没交进来。
+    fn fragments(
+        &self,
+        request: &Request,
+        call: &Call,
+        blobs: &dyn BlobBytes,
+    ) -> Result<Encoded<Fragments>, EncodeError>;
+
+    /// 编码成整份的字节：[`Driver::fragments`] 拼起来，base64 照 `blobs` 里整份的字节编。测试、对照用。
     ///
     /// # Errors
     ///
@@ -35,7 +50,9 @@ pub trait Driver: Send + Sync {
         request: &Request,
         call: &Call,
         blobs: &dyn BlobBytes,
-    ) -> Result<Encoded, EncodeError>;
+    ) -> Result<Encoded, EncodeError> {
+        self.fragments(request, call, blobs)?.to_bytes(blobs)
+    }
 
     /// 一次响应一个解码器。
     fn decoder(&self) -> Box<dyn Decode>;
@@ -96,13 +113,17 @@ impl Driver for OpenAiChat {
         openai_chat::blobs_needed(request, call)
     }
 
-    fn encode(
+    fn blobs_whole(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash> {
+        media::blobs_whole(request, call)
+    }
+
+    fn fragments(
         &self,
         request: &Request,
         call: &Call,
         blobs: &dyn BlobBytes,
-    ) -> Result<Encoded, EncodeError> {
-        openai_chat::encode(request, call, &self.compat, &self.texts, blobs)
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        openai_chat::fragments(request, call, &self.compat, &self.texts, blobs)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {
@@ -168,13 +189,17 @@ impl Driver for Anthropic {
         anthropic::blobs_needed(request, call)
     }
 
-    fn encode(
+    fn blobs_whole(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash> {
+        media::blobs_whole(request, call)
+    }
+
+    fn fragments(
         &self,
         request: &Request,
         call: &Call,
         blobs: &dyn BlobBytes,
-    ) -> Result<Encoded, EncodeError> {
-        anthropic::encode(request, call, &self.texts, blobs)
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        anthropic::fragments(request, call, &self.texts, blobs)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {
@@ -246,13 +271,17 @@ impl Driver for OpenAiResponses {
         openai_responses::blobs_needed(request, call)
     }
 
-    fn encode(
+    fn blobs_whole(&self, request: &Request, call: &Call) -> BTreeSet<ContentHash> {
+        media::blobs_whole(request, call)
+    }
+
+    fn fragments(
         &self,
         request: &Request,
         call: &Call,
         blobs: &dyn BlobBytes,
-    ) -> Result<Encoded, EncodeError> {
-        openai_responses::encode(request, call, &self.texts, blobs)
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        openai_responses::fragments(request, call, &self.texts, blobs)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {

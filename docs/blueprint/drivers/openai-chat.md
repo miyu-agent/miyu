@@ -22,7 +22,8 @@
 | `crates/miyu-drivers/src/classify.rs` | 出错分类、要等多久、原话 |
 | `crates/miyu-drivers/src/texts.rs` | 给模型看的几句：五句占位，文本文件的三句（施工 3-9 三补），带名字的图片的三句（施工 3-9 四补），替它看的图的三句标签（施工 8-17） |
 | `crates/miyu-drivers/src/text_file.rs` | 什么算文本文件、最多给多少（施工 3-9 三补） |
-| `crates/miyu-drivers/src/base64.rs` | data URL 用的 base64 |
+| `crates/miyu-drivers/src/base64.rs` | data URL 用的 base64：`base64` 这个库的标准写法（施工 V-38）；发请求体时一块 48 KiB |
+| `crates/miyu-drivers/src/fragments.rs` | 片段清单（施工 V-38）：编码时代替整份的字节，线上的结构里内嵌 blob 的那一格（`Inline`）拆成单独的一段 |
 | `resources/core/drivers/` | 那几句的原文 |
 
 ### 对外的样子
@@ -33,7 +34,9 @@
 |---|---|
 | `family()` | `openai-chat`：私有数据里写的是它的，才归它用 |
 | `blobs_needed(请求, Call)` | 编码要用的 blob 清单，执行器照着先取 |
-| `encode(请求, Call, blob)` | 编码，交回 `Encoded` |
+| `blobs_whole(请求, Call)` | 其中要整份字节的（施工 V-38）：照字放进消息的文件；别的执行器只取大小（`BlobBytes::size`） |
+| `fragments(请求, Call, blob)` | 编码成片段清单，交回 `Encoded<Fragments>`（施工 V-38）：图片、PDF 的 base64 只记 blob 和大小（`Fragment::Base64`），执行器发的时候才读出来编；发请求走它 |
+| `encode(请求, Call, blob)` | 编码成整份的字节，交回 `Encoded`：`fragments` 拼起来，base64 照交进来的整份字节编（测试、对照用，有默认的写法） |
 | `decoder()` | 一次响应一个解码器 `Decode`：`feed(字节) -> 增量`、`done()`、`finished()`（`finish_reason` 到了没有，施工 4-9 再补三下）、`finish() -> Ending` |
 | `classify(Failure)` | 出错分类，交回 `Classified` |
 | `auth(key)` | 带 key 的请求要带的认证头（施工 8-6，`models.md`「驱动要守的约定」第 2 条）：`Authorization: Bearer <key>`。HTTP 执行器照它写，不自己写；没有 key 的请求不问它 |
@@ -96,13 +99,13 @@
      2. 内容是文本文件（整份是合法的 UTF-8，又没有 NUL 字节；媒体类型、扩展名不看，`crates/miyu-drivers/src/text_file.rs`），快照里有文本文件的三句的（施工 3-9 三补）：照文字接上，`file-open.txt`（带文件名）、内容、`file-close.txt`。内容原样，不转义（和检查点里重读的文件一样，`kernel/request.md`）；末尾没有换行的补一个，空的只有开头收尾。最多给 64 KiB（65,536 字节），多的截在字的边界上，开头那一行后面先写 `file-cut.txt`：给了多少、一共多少字节。原文整份留在 blob 里。
      3. 别的：换成 `file-omitted.txt` 那一句，带文件名、媒体类型、大小（字节数），照文字接上。
    - 为什么文本文件照字给（施工 3-9 三补，2026-09-30 项目主人定附件现在就排）：哪个模型都读得了字，不用另有本事；64 KiB 的上限是一个附件不占掉大半个上下文，它每次请求都跟着。以前造的快照里没有那三句，文本文件照第 3 小条写占位（`file-omitted.txt` 那时也没有大小）。
-   - data URL：`data:<媒体类型>;base64,<内容>`，base64 用 RFC 4648 的标准字母表，末尾补 `=`。字节由执行器照 `blobs_needed` 先取出来交进来，驱动不碰文件。
+   - data URL：`data:<媒体类型>;base64,<内容>`，base64 用 RFC 4648 的标准字母表，末尾补 `=`，不换行（施工 V-38 起用 `base64` 这个库，写出来逐字一样）。驱动不碰文件：编码时只要大小，`<内容>` 那一段记成片段清单里的一段 `Fragment::Base64`（开头的引号和前缀照 JSON 转义写在前一段字里），HTTP 执行器发的时候才从 blob 一小块一小块地读出来编（`http.md`「发一次」第 3 条）。拼起来和整份写的一个字节不差：base64 的字母表里没有要转义的字。
 10. **接着写**：开关是 `Prefix`、统一的请求带着 `continuation` 的：
     - 最后一条是 user 的（只有被打断的那一句），不发；
     - 写好以后最后一条是 assistant（半截那条）的，加上 `"prefix":true` 或 `"partial":true`；
     - `path` 是开关里的路径：只看开关和记号，最后几条的样子不对也发到那里。
     - 别的情形（开关是 `None`，或者没带记号）照原样发，`path` 是 `/chat/completions`。
-11. **要哪些 blob**（`blobs_needed`）：user 和 tool 消息里的图片（能看图时）、每一个文件（施工 3-9 三补：发不了的也要认是不是文本、要写有多大）。assistant 里的不算。
+11. **要哪些 blob**（`blobs_needed`）：user 和 tool 消息里的图片（能看图时）、每一个文件（施工 3-9 三补：发不了的也要认是不是文本、要写有多大）。assistant 里的不算。其中要整份字节的（`blobs_whole`，施工 V-38）：照字放进消息的文件（不是能照原样发的 PDF 的那些）；别的只要大小。线上的中间结构（每条线上的消息）写完一条放一条。
 12. **`Encoded.messages`**：每条线上的消息 JSON 在 `body` 里的起止，照先后。
 
 ### 怎么走：解码
@@ -303,7 +306,9 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/src/classify/excess/tests.rs` | 超了多少的几种写法；报了的上限单独读，后半段说不出也交、0 不交（施工 8-7） |
 | `crates/miyu-drivers/src/classify/tests.rs` | 超长的交出上限、限速的不交（施工 8-7）；每一类的例子；提到 token 的限速不当超长；额度用完算 `quota`（施工 Q-4 中起，原来算认证失败；401、403 带额度说法的也算它；OpenCode Zen 免费档用完的 `FreeUsageLimitError` 照 2026-10-22 实测的原样，要等多久照头记，施工 3-5 四补）；要等多久的四种写法；`x-should-retry`；原话和 2000 字节；HTTP 状态码另记一格，连不上的、流里报的没有（施工 3-5 三补） |
 | `crates/miyu-drivers/src/texts/tests.rs` | 文件名换进去、转义；以前的 `file-omitted` 没有大小照样换得出；文本文件带文件名、补换行、空的、截过的写明、文件名转义内容原样；没有那三句的交回空的；带名字的图片的标签、占位带名字、转义，不带名字的照旧，没有那三句的照不带名字的写（施工 3-9 四补）；不该有的字段报错 |
-| `crates/miyu-drivers/src/base64/tests.rs` | RFC 4648 的测试值，`+`、`/` |
+| `crates/miyu-drivers/src/base64/tests.rs` | RFC 4648 的测试值，`+`、`/`；换成库以后和原来自己拼的逐字一样（施工 V-38）；3 的倍数的块接起来和整份编的一样 |
+| `crates/miyu-drivers/src/fragments/tests.rs`（施工 V-38） | 内嵌的 blob 拆成单独的一段，拼起来和整份写的一字不差（前缀里的字照 JSON 转义）；位置算上还没编的 base64；blob 长短不对的报缺 |
+| `crates/miyu-session/src/route/exchange/golden.rs`（施工 V-38） | 金样：图、PDF、文本文件、工具结果里夹图、接着写、思考回传、替它看的图、占位工具、思考强度、温度、输出上限，openai-chat 两套、anthropic、openai-responses 四份，边编边发出去的字节和改前（`1b712ee5d`）的 SHA-256 一样，每条消息的起止、路径一样，「发出去了」报的哈希就是它 |
 | `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比） |
 
 ### 出处
