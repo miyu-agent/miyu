@@ -77,11 +77,11 @@ async fn the_handshake_hands_over_its_own_settings_and_changes_follow() {
     let program = Program::new();
     let (path, keep) = record(&home, "echo");
     home.write(
-        "packages/echo/package.toml",
+        "opt/echo/package.toml",
         &manifest(&program.name(), &steps(&[&keep, "hello", "listen"])),
     );
-    home.write("config.toml", "[echo]\ntoken = { secret = \"echo\" }\n");
-    home.write("secrets.toml", "echo = \"s3cret\"\n");
+    home.write("etc/config.toml", "[echo]\ntoken = { secret = \"echo\" }\n");
+    home.write("etc/private/secrets.toml", "echo = \"s3cret\"\n");
     let core = core_with_settings(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     let mine = client.hello().await;
@@ -185,7 +185,7 @@ async fn an_extension_sets_only_its_own_plain_settings() {
     plan.extend(asks.iter().map(String::as_str));
     plan.push("listen");
     home.write(
-        "packages/echo/package.toml",
+        "opt/echo/package.toml",
         &manifest(&program.name(), &steps(&plan)),
     );
     let core = core_with_settings(&home, quick());
@@ -248,7 +248,7 @@ async fn settings_follow_the_prefix_not_the_package_id() {
         json!({"layer": "system", "changes": [{"key": "packages.miyu-echo.off", "value": true}]})
     );
     home.write(
-        "packages/miyu-echo/package.toml",
+        "opt/miyu-echo/package.toml",
         &manifest(
             &program.name(),
             &steps(&[&keep, "hello", &set, &off, "listen"]),

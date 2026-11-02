@@ -206,7 +206,7 @@ fn each_charge_keeps_its_four_kinds_through_rebuilds_and_purges() {
         session(3).as_str()
     );
     miyu_store::journal::append(
-        &root.path().join(miyu_store::journal::FILE),
+        &root.journal_file(),
         miyu_store::journal::Entry {
             at: at(30),
             by: miyu_kernel::origin::By::Kernel,

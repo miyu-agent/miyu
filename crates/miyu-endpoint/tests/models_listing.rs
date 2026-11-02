@@ -152,7 +152,7 @@ fn observed() -> Observed {
 }
 
 fn config(home: &Home, text: &str) -> Config {
-    home.write("config.toml", text);
+    home.write("etc/config.toml", text);
     Config::load(&home.root, None, items(), Environment::of(ENV))
 }
 

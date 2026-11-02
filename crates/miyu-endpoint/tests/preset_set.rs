@@ -22,7 +22,7 @@ async fn connected(home: &Home) -> Client {
 
 /// 家目录那一层的文件，没有的是空的。
 fn mine(home: &Home, id: &str) -> Option<String> {
-    std::fs::read_to_string(home.root.path().join(format!("presets/{id}.toml"))).ok()
+    std::fs::read_to_string(home.root.path().join(format!("root/presets/{id}.toml"))).ok()
 }
 
 async fn set(client: &mut Client, id: &str, preset: &str, changes: Value) -> Value {
@@ -128,7 +128,7 @@ async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_t
     );
 
     home.write(
-        "presets/full.toml",
+        "root/presets/full.toml",
         "# 我自己的\n[tools]\nshell = false # 先关着\n\n[preset]\nname = { zh = \"全开\" }\n",
     );
     let renamed = set(
@@ -413,7 +413,7 @@ async fn an_empty_summary_means_none_and_covers_the_lower_one() {
     let home = Home::new();
     crate::support::packaged::samples(&home);
     home.write(
-        "packages/samples/presets/team.toml",
+        "opt/samples/presets/team.toml",
         "[preset]\nname = \"团队\"\nsummary = \"大家的\"\n",
     );
     let mut client = Client::connect(crate::support::packaged::core(&home));

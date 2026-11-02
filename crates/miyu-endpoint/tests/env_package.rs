@@ -52,10 +52,10 @@ async fn opened(client: &mut Client, home: &Home, id: &str, preset: &str) -> Sna
 #[tokio::test]
 async fn switching_the_package_off_is_byte_for_byte_like_turning_all_eight_off() {
     let home = Home::new();
-    home.write("config.toml", PROFILE);
-    home.write("presets/noenv.toml", &preset(&miyu_policy::shown::ALL));
+    home.write("etc/config.toml", PROFILE);
+    home.write("root/presets/noenv.toml", &preset(&miyu_policy::shown::ALL));
     home.write(
-        "presets/noprofile.toml",
+        "root/presets/noprofile.toml",
         &preset(&[miyu_policy::shown::PROFILE]),
     );
     let core = home.core_configured(&Script::new([]), None, &[]);
@@ -114,7 +114,7 @@ fn package_of<'a>(got: &'a serde_json::Value, id: &str) -> Option<&'a str> {
 #[tokio::test]
 async fn preset_get_says_which_package_each_feature_is_in() {
     let home = Home::new();
-    home.write("presets/noenv.toml", &preset(&miyu_policy::shown::ALL));
+    home.write("root/presets/noenv.toml", &preset(&miyu_policy::shown::ALL));
     let core = home.core_configured(&Script::new([]), None, &[]);
     let mut client = Client::connect(Arc::clone(&core));
     client

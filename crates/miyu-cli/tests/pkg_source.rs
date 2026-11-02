@@ -59,7 +59,7 @@ fn home_written(config: String, keys: Vec<PublicKey>) -> Home {
         Catalog::default(),
         Availability::Usable(PathBuf::from("miyu-sandbox")),
         move |core, root| {
-            let path = root.path().join("config.toml");
+            let path = root.path().join("etc/config.toml");
             std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");
             std::fs::write(&path, &config).expect("写得进");
             let config = miyu_endpoint::config::Config::load(

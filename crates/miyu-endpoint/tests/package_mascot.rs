@@ -41,9 +41,9 @@ fn mascot_problems(reply: &Value) -> Vec<(String, String)> {
 #[tokio::test]
 async fn a_mascot_is_listed_and_its_model_is_read() {
     let home = Home::new();
-    home.write("packages/pudding/package.toml", PUDDING);
-    home.write("packages/pudding/art/mascot.json", "{\"frames\": []}");
-    home.write("packages/pudding/notes.txt", "not the model");
+    home.write("opt/pudding/package.toml", PUDDING);
+    home.write("opt/pudding/art/mascot.json", "{\"frames\": []}");
+    home.write("opt/pudding/notes.txt", "not the model");
     let mut client = connected(&home).await;
     let listed = client.call("l", "package.list", json!({})).await;
     let pudding = listed["result"]["packages"]
@@ -98,9 +98,9 @@ async fn a_mascot_is_listed_and_its_model_is_read() {
 #[tokio::test]
 async fn check_says_when_the_model_is_missing_too_big_or_not_an_object() {
     let home = Home::new();
-    home.write("packages/pudding/package.toml", PUDDING);
+    home.write("opt/pudding/package.toml", PUDDING);
     let mut client = connected(&home).await;
-    let model = "packages/pudding/art/mascot.json";
+    let model = "opt/pudding/art/mascot.json";
     let reply = client.call("c1", "check", json!({})).await;
     assert_eq!(
         mascot_problems(&reply),
@@ -137,19 +137,19 @@ async fn check_says_when_the_model_is_missing_too_big_or_not_an_object() {
 async fn a_mascot_takes_no_protocol_and_no_other_tables() {
     let home = Home::new();
     home.write(
-        "packages/a/package.toml",
+        "opt/a/package.toml",
         &PUDDING.replace("[package]\n", "[package]\nprotocol = [1, 1]\n"),
     );
     home.write(
-        "packages/b/package.toml",
+        "opt/b/package.toml",
         &format!("{PUDDING}\n[command]\nname = \"b\"\nprogram = \"b\"\n"),
     );
     home.write(
-        "packages/c/package.toml",
+        "opt/c/package.toml",
         &PUDDING.replace("art/mascot.json", "../mascot.json"),
     );
     home.write(
-        "packages/d/package.toml",
+        "opt/d/package.toml",
         "[package]\nname = { en = \"D\" }\n\n[mascot]\n",
     );
     let mut client = connected(&home).await;
@@ -169,22 +169,13 @@ async fn a_mascot_takes_no_protocol_and_no_other_tables() {
     assert_eq!(
         codes,
         [
+            ("opt/a/package.toml".to_string(), "wrong_kind".to_string()),
+            ("opt/b/package.toml".to_string(), "wrong_kind".to_string()),
             (
-                "packages/a/package.toml".to_string(),
-                "wrong_kind".to_string()
-            ),
-            (
-                "packages/b/package.toml".to_string(),
-                "wrong_kind".to_string()
-            ),
-            (
-                "packages/c/package.toml".to_string(),
+                "opt/c/package.toml".to_string(),
                 "bad_mascot_model".to_string()
             ),
-            (
-                "packages/d/package.toml".to_string(),
-                "missing_key".to_string()
-            ),
+            ("opt/d/package.toml".to_string(), "missing_key".to_string()),
         ],
         "{reply}"
     );

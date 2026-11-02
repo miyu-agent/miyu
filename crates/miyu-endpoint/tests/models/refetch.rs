@@ -22,7 +22,7 @@ async fn a_whole_list_refetches_once_a_minute_and_announces_a_change() {
     };
     let server = Server::start(vec![page(&["a", "b"]), page(&["a", "b"])]).await;
     let home = Home::new();
-    home.write("config.toml", &config(&server.base_url));
+    home.write("etc/config.toml", &config(&server.base_url));
     let shared = data();
     let core = core(&home, &[("NEWAPI_KEY", "sk-relay")], Arc::clone(&shared));
     let mut client = Client::connect(Arc::clone(&core));

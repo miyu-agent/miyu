@@ -1,6 +1,7 @@
 //! 核心起来时收拾上一次崩了留下的（`docs/blueprint/core.md`「起来的先后」）：升级装上的包到一半被杀的放回去（施工 AE-7，
 //! [`miyu_store::packages::install::recover`]）；写配置、密钥时被杀留下的临时文件删掉（施工 AS-11，
-//! [`miyu_store::config_file::sweep_temps`]；施工 R3-1 起看 `run/` 和数据根这一层）。读清单、读配置之前做，在这之前没有在装的、在写的。
+//! [`miyu_store::config_file::sweep_temps`]；施工 R3-1 起看 `run/`）；两个暂存照设计 55 第三节第 5 条清：自己的 `tmp/unpack/`
+//! 整个清，`var/tmp/` 清放了满七天没碰的（施工 FH-3）。读清单、读配置之前做，在这之前没有在装的、在写的。
 
 use std::time::SystemTime;
 
@@ -16,24 +17,36 @@ pub(crate) fn tidy(root: &DataRoot) {
     for id in &recovered.restored {
         tracing::warn!(target: TARGET, package = id.as_str(), "half-done package upgrade put back");
     }
-    // 路径不写进运行日志（LG-1）：哪一份照 `packages/` 里点开头的那几个找得到。
+    // 路径不写进运行日志（LG-1）：哪一份照 `opt/` 里点开头的那几个找得到。
     for (_, error) in &recovered.failed {
         tracing::warn!(target: TARGET, error = %error, "package leftover kept");
     }
-    // 数据根这一层的配置、密钥的临时文件建在 `run/` 里（施工 R3-1）；顶层的是以前的版本剩下的，照样清。
-    for dir in [root.run(), root.path().to_path_buf()] {
-        match config_file::sweep_temps(&dir, SystemTime::now()) {
-            Ok(swept) => {
-                if !swept.removed.is_empty() {
-                    tracing::info!(target: TARGET, removed = swept.removed.len(), "leftover temporary files removed");
-                }
-                for (_, error) in &swept.failed {
-                    tracing::warn!(target: TARGET, error = %error, "leftover temporary file kept");
-                }
+    // 配置、密钥的临时文件建在 `run/` 里（施工 R3-1）。
+    match config_file::sweep_temps(&root.run(), SystemTime::now()) {
+        Ok(swept) => {
+            if !swept.removed.is_empty() {
+                tracing::info!(target: TARGET, removed = swept.removed.len(), "leftover temporary files removed");
             }
-            Err(error) => {
-                tracing::warn!(target: TARGET, error = %error, "data root not read for leftovers")
+            for (_, error) in &swept.failed {
+                tracing::warn!(target: TARGET, error = %error, "leftover temporary file kept");
             }
         }
+        Err(error) => {
+            tracing::warn!(target: TARGET, error = %error, "data root not read for leftovers")
+        }
+    }
+    if let Err(error) = root.clear_own_tmp() {
+        tracing::warn!(target: TARGET, error = %error, "unpack scratch not cleared");
+    }
+    match root.sweep_var_tmp(SystemTime::now()) {
+        Ok(swept) => {
+            if !swept.removed.is_empty() {
+                tracing::info!(target: TARGET, removed = swept.removed.len(), "stale var/tmp entries removed");
+            }
+            for (_, error) in &swept.failed {
+                tracing::warn!(target: TARGET, error = %error, "stale var/tmp entry kept");
+            }
+        }
+        Err(error) => tracing::warn!(target: TARGET, error = %error, "var/tmp not read"),
     }
 }

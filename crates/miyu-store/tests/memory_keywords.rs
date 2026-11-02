@@ -160,9 +160,7 @@ fn a_tagging_the_memory_index_has_not_seen_is_filled_in() {
         .id;
     drop((log, logs));
     // 日志里多一行换关键词的、记忆库还没照到它（像写完日志、没来得及写记忆库就停了）。
-    let segment = root
-        .path()
-        .join("modules/memory/engineer/000000000001.jsonl");
+    let segment = root.path().join("root/memory/engineer/000000000001.jsonl");
     let line = miyu_recall::to_event(
         miyu_kernel::id::Seq::new(2).expect("从 1 起"),
         at(2),

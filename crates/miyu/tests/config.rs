@@ -28,7 +28,7 @@ fn write(path: &Path, text: &str) {
 async fn a_core_with_a_config_says_where_each_value_came_from() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    let system = root.join("config.toml");
+    let system = root.join("etc/config.toml");
     write(&system, CHINESE);
     // 核心那边的系统语言是英文：生成的文件还是照系统配置写的中文。
     let english = || {
@@ -44,7 +44,10 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     let log = home.core_log();
     assert_eq!(count(&log, "log level level=debug from=config"), 1, "{log}");
     assert_eq!(
-        count(&log, "config problems file=config.toml errors=1 warnings=1"),
+        count(
+            &log,
+            "config problems file=etc/config.toml errors=1 warnings=1"
+        ),
         1,
         "{log}"
     );
@@ -72,7 +75,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     let json: serde_json::Value = serde_json::from_slice(&json.stdout).expect("是 JSON");
     assert_eq!(
         json["log.level"]["origin"],
-        serde_json::json!({"file": "config.toml", "layer": "system", "line": 2})
+        serde_json::json!({"file": "etc/config.toml", "layer": "system", "line": 2})
     );
 
     // 系统配置定了中文：LANG 是英文也说中文。
@@ -103,8 +106,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
     );
     // 生成的参考文件照系统配置的 `ui.language`（中文）。
     let reference =
-        std::fs::read_to_string(root.join("state").join("config").join("reference.toml"))
-            .expect("生成了");
+        std::fs::read_to_string(root.join("var/cache/config/reference.toml")).expect("生成了");
     assert!(reference.contains("界面语言"), "{reference}");
     let path = run(&root, &cwd, "C", &["config", "path"]).await;
     assert_eq!(PathBuf::from(stdout(&path).trim_end()), system);
@@ -115,7 +117,7 @@ async fn a_core_with_a_config_says_where_each_value_came_from() {
 async fn check_reports_each_problem_on_a_line_and_the_total() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    write(&root.join("config.toml"), &format!("x.y = 1\n{SYSTEM}"));
+    write(&root.join("etc/config.toml"), &format!("x.y = 1\n{SYSTEM}"));
     let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
         .await
         .expect("拉得起");
@@ -144,7 +146,7 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
     );
 
     // 写了文件的只查那一份，照它在哪认是哪一层（施工 8-30：不再有 --system、--project）。
-    let system = root.join("config.toml");
+    let system = root.join("etc/config.toml");
     write(&system, "log.level = \"verbose\"\n");
     let one = run(&root, &cwd, "C", &["check", &system.to_string_lossy()]).await;
     assert_eq!(one.status.code(), Some(1));
@@ -169,11 +171,7 @@ async fn check_reports_each_problem_on_a_line_and_the_total() {
         "{all:?}"
     );
     // 人格的文件也查（施工 8-30）。
-    let examples = root
-        .join("personas")
-        .join("miyu")
-        .join("prompts")
-        .join("examples.md");
+    let examples = root.join("root/personas/miyu/prompts/examples.md");
     write(&examples, "user: a\n");
     let persona = run(&root, &cwd, "C", &["check"]).await;
     assert_eq!(persona.status.code(), Some(1));
@@ -195,7 +193,7 @@ async fn ask_first_says_the_config_has_errors_and_path_says_where_a_project_conf
     let root = home.root.path().to_path_buf();
     // 配一个用不了的模型（施工 8-11）：没配的 `miyu ask` 不造会话，看不到造会话时说的那几句。
     write(
-        &root.join("config.toml"),
+        &root.join("etc/config.toml"),
         &format!("{SYSTEM}\n{}", crate::support::UNUSABLE_MODEL),
     );
     let (held, _) = within("拉起", connect_or_start(&home.root, || home.core()))
@@ -325,7 +323,7 @@ async fn set_unset_and_trust_go_through_a_real_core() {
         "已设置 ui.language = \"zh\"（立即生效）\n",
         "不是终端，灰字不上色"
     );
-    let system = root.join("config.toml");
+    let system = root.join("etc/config.toml");
     assert!(
         std::fs::read_to_string(&system)
             .expect("写了")
@@ -338,7 +336,10 @@ async fn set_unset_and_trust_go_through_a_real_core() {
         1,
         "{log}"
     );
-    assert!(root.join("journal.jsonl").exists(), "系统配置的进系统日志");
+    assert!(
+        root.join("var/lib/journal.jsonl").exists(),
+        "系统配置的进系统日志"
+    );
     let unset = run(&root, &cwd, "C", &["config", "unset", "ui.language"]).await;
     assert_eq!(
         (unset.status.code(), stderr(&unset)),

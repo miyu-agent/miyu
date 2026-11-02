@@ -28,7 +28,7 @@ opens = ["config"]
 
 /// 你装的那一层里的一份清单。
 fn mine(home: &Home, id: &str, text: &str) {
-    home.write(&format!("packages/{id}/package.toml"), text);
+    home.write(&format!("opt/{id}/package.toml"), text);
 }
 
 /// 只留这几个编号的，照列出的先后。
@@ -69,7 +69,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
     let home = Home::new();
     mine(&home, "term", TERM);
     let packages = listed(&home).await;
-    let state = home.root.path().join("state").join("packages").join("term");
+    let state = home.root.path().join("var/lib/term");
     assert_eq!(
         only(&packages, &["miyu-base-mermaid", "term"]),
         [
@@ -83,7 +83,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
                 "protocol": [1, 1],
                 "name": "画 mermaid 图",
                 "features": [],
-                "state": home.root.path().join("state").join("packages").join("miyu-base-mermaid").to_string_lossy(),
+                "state": home.root.path().join("var/lib/miyu-base-mermaid").to_string_lossy(),
                 "status": "ready",
                 "enabled": true,
             }),
@@ -360,7 +360,7 @@ async fn check_reads_the_manifests_from_disk() {
         packages,
         [&json!({
             "kind": "package",
-            "file": "packages/bad/package.toml",
+            "file": "opt/bad/package.toml",
             "code": "two_programs",
             "level": "error",
             "line": 5,
@@ -383,7 +383,7 @@ async fn check_reads_the_manifests_from_disk() {
     );
     // 包目录里别的文件、以前那种放在 `packages/` 下的 `<编号>.toml` 都不是清单（施工 F-8 上）。
     for stray in ["term/notes.toml", "old.toml"] {
-        home.write(&format!("packages/{stray}"), "x");
+        home.write(&format!("opt/{stray}"), "x");
         let file = home.root.packages().join(stray);
         let reply = client
             .call("c4", "check", json!({"file": file.to_string_lossy()}))

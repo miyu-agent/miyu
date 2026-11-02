@@ -230,7 +230,7 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
         assert_eq!(asked.code, code, "{}", asked.err);
         assert!(asked.err.ends_with(ends), "{}", asked.err);
         assert!(!config_file(&home).exists(), "文件没动");
-        // 系统配置旁边核心自己的东西（人格目录这些）不算编辑留下的。
+        // 系统配置旁边核心自己的东西（`etc/` 里的凭据目录这些）不算编辑留下的。
         let account = config_file(&home).parent().expect("有上一级").to_path_buf();
         let left: Vec<String> = std::fs::read_dir(&account)
             .map(|entries| {
@@ -242,10 +242,7 @@ async fn edit_leaves_the_file_alone_when_nothing_is_saved() {
                             .to_string_lossy()
                             .into_owned()
                     })
-                    .filter(|name| {
-                        !["packages", "personas", "run", "state", ".miyu-root"]
-                            .contains(&name.as_str())
-                    })
+                    .filter(|name| !["private", "removed"].contains(&name.as_str()))
                     .collect()
             })
             .unwrap_or_default();

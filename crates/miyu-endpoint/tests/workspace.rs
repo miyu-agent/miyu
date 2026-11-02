@@ -109,10 +109,7 @@ async fn a_too_wide_directory_stays_where_the_person_is() {
         assert!(text.contains(&cwd_fact(Path::new(&cwd))), "{cwd}：{text}");
     }
     // 数据根本身、落在数据根里的：退回这个会话的默认工作区，建好。
-    for inside_data in [
-        home.root.path().to_path_buf(),
-        home.root.path().join("state"),
-    ] {
+    for inside_data in [home.root.path().to_path_buf(), home.root.path().join("var")] {
         let (session, text) = seen(&home, &outside, &inside_data.to_string_lossy()).await;
         let own = own_of(&home, &session);
         assert!(text.contains(&cwd_fact(&own)), "{text}");
@@ -269,7 +266,7 @@ async fn the_replies_say_where_the_session_works() {
 async fn a_venue_session_without_a_directory_works_in_its_own_folder() {
     let home = Home::new();
     let outside = Outside::new();
-    home.write("config.toml", crate::support::venues::BINDINGS);
+    home.write("etc/config.toml", crate::support::venues::BINDINGS);
     let items = [
         miyu_endpoint::settings::PermissionSettings::ITEMS,
         miyu_endpoint::settings::EXTERNAL_BINDINGS,

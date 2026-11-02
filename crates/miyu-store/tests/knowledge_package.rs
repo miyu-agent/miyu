@@ -20,7 +20,7 @@ fn package(scratch: &Scratch, pkg: &str, id: &str, toml: &str) -> PathBuf {
 }
 
 fn own(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.path().join("kb").join(id);
+    let dir = root.path().join("root/kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("notes.md"), "自己的笔记。\n").expect("写得进");
     dir
@@ -103,7 +103,7 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
         .create("world", Some("她要建"))
         .expect("看得见的当已经有了");
     assert!(
-        !root.path().join("kb/world").exists(),
+        !root.path().join("root/kb/world").exists(),
         "她写到包里的库不另建一个盖住它"
     );
 
@@ -112,7 +112,7 @@ fn a_package_base_is_read_only_but_its_auto_switch_is_yours() {
         .expect("开关改得了");
     assert!(!off.auto);
     assert!(!knowledge.auto("world").expect("在"));
-    let mine = std::fs::read_to_string(root.path().join("kb.toml")).expect("记下了");
+    let mine = std::fs::read_to_string(root.path().join("etc/kb.toml")).expect("记下了");
     assert!(mine.contains("\"world-pack/world\" = false"), "{mine}");
     assert_eq!(
         std::fs::read_to_string(pack.join("kb/world/kb.toml")).expect("在"),
@@ -186,7 +186,7 @@ fn removing_a_package_takes_its_bases_index_and_switches() {
     assert!(knowledge.follow_packages(Vec::new()).is_empty(), "都清得掉");
     assert_eq!(listed(&knowledge), [("notes".to_string(), None, false)]);
     assert!(!index.exists(), "索引跟着删");
-    let mine = std::fs::read_to_string(root.path().join("kb.toml")).unwrap_or_default();
+    let mine = std::fs::read_to_string(root.path().join("etc/kb.toml")).unwrap_or_default();
     assert!(!mine.contains("world-pack"), "开关跟着删：{mine}");
     assert!(root.index().join("kb/notes.db").is_file(), "自己的不碍事");
 }
@@ -227,7 +227,7 @@ fn switches_are_written_where_the_data_root_really_is() {
         .rename("world", fields(Some(false), None))
         .expect("开关改得了");
     assert!(!knowledge.auto("world").expect("在"));
-    let mine = root.path().join("kb.toml");
+    let mine = root.path().join("etc/kb.toml");
     assert!(
         std::fs::read_to_string(&mine)
             .expect("记下了")

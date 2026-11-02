@@ -207,7 +207,7 @@ async fn a_failing_remote_still_finds_by_keywords() {
 
 /// 日志 `journal.jsonl` 里记了几笔用量。
 fn billed(home: &Home) -> usize {
-    std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
+    std::fs::read_to_string(home.root.journal_file())
         .unwrap_or_default()
         .lines()
         .filter(|line| line.contains(r#""kind":"usage.oneshot""#))

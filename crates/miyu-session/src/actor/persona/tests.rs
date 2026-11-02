@@ -239,7 +239,7 @@ fn roleplay_stays_off_across_a_swap() {
 #[test]
 fn a_persona_whose_files_are_gone_is_kept_quietly() {
     let (_scratch, root, refresh) = setup("gone", "You are Miyu.\n");
-    std::fs::remove_dir_all(root.path().join("personas/miyu")).expect("删得掉");
+    std::fs::remove_dir_all(root.path().join("root/personas/miyu")).expect("删得掉");
     assert!(matches!(seen(&refresh), Seen::Same));
 }
 

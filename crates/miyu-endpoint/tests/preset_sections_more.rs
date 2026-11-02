@@ -10,7 +10,7 @@ use crate::support::*;
 /// 一个扩展包的清单：程序 `program`，名字 `name`，`features` 是 `[features]` 那几段（空的就是整个包算一个功能）。
 fn extension(home: &Home, id: &str, program: &Program, name: &str, features: &str) {
     home.write(
-        &format!("packages/{id}/package.toml"),
+        &format!("opt/{id}/package.toml"),
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ zh = \"{name}\", en = \"{name} EN\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{}\"\nabout = {{ en = \"X\" }}\n\n[process]\n{features}",
             program.name()

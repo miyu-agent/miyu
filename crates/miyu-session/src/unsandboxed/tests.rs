@@ -199,14 +199,14 @@ fn installed_packages_are_controlled_only_for_the_owner() {
         exe: None,
     };
     let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
-    let path = site.0.join("data/packages/kit/scripts/run.py");
+    let path = site.0.join("data/opt/kit/scripts/run.py");
     std::fs::create_dir_all(path.parent().expect("有上级")).unwrap();
     std::fs::write(&path, "x").unwrap();
-    let system = site.0.join("data/packages/kit/scripts/run.py");
+    let system = site.0.join("data/opt/kit/scripts/run.py");
     let owner = Confines::of(&root, true, &site.0.join("own"));
     assert_eq!(
         owner.hold(&system),
-        Some(site.real("data/packages/kit/scripts/run.py")),
+        Some(site.real("data/opt/kit/scripts/run.py")),
         "机主的算"
     );
     let member = Confines::of(&root, false, &site.0.join("own"));
@@ -233,7 +233,7 @@ fn a_confined_session_s_script_is_never_let_out_of_the_sandbox() {
     };
     let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
     let script = || {
-        let path = site.0.join("data/scripts/weather.py");
+        let path = site.0.join("data/root/scripts/weather.py");
         std::fs::create_dir_all(path.parent().expect("有上级")).unwrap();
         std::fs::write(&path, "x").unwrap();
         let tool = Fake::with_file("weather", Access::Execute, path, Act::Echo) as Arc<dyn Tool>;
@@ -246,7 +246,7 @@ fn a_confined_session_s_script_is_never_let_out_of_the_sandbox() {
     let owner = granted().within(Confines::of(&root, true, &site.0.join("own")));
     assert_eq!(
         owner.grant("weather", &shelf),
-        Grant::File(site.real("data/scripts/weather.py")),
+        Grant::File(site.real("data/root/scripts/weather.py")),
         "主人的会话照旧放行"
     );
     let member = granted().within(Confines::of(&root, false, &site.0.join("own")));

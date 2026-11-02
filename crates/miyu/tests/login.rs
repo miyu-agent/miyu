@@ -111,7 +111,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
             "已替换 deepseek 的密钥\n".to_string()
         )
     );
-    let secrets = root.join("secrets.toml");
+    let secrets = root.join("etc/private/secrets.toml");
     let written = std::fs::read_to_string(&secrets).expect("写了");
     assert!(
         written.ends_with(&format!("deepseek = \"{FAKE_2}\"\n")),
@@ -191,7 +191,7 @@ async fn keys_go_in_by_pipe_list_without_values_and_come_out() {
         "照 trace 记：{log}"
     );
     assert!(!log.contains("FAKE"), "运行日志里有 key：{log}");
-    let journal = std::fs::read_to_string(root.join("journal.jsonl")).expect("记了");
+    let journal = std::fs::read_to_string(root.join("var/lib/journal.jsonl")).expect("记了");
     assert_eq!(journal.lines().count(), 3, "{journal}");
     assert!(!journal.contains("FAKE"), "{journal}");
 }
@@ -248,7 +248,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
             .await
             .expect("没 panic");
     assert_eq!(started.status.code(), Some(0), "{started:?}");
-    assert!(root.join("secrets.toml").exists());
+    assert!(root.join("etc/private/secrets.toml").exists());
     home.kill_core().await;
     for (lang, language) in [("zh_CN.UTF-8", Language::Chinese), ("C", Language::English)] {
         for args in [
@@ -271,7 +271,7 @@ async fn misuse_and_no_core_are_refused_before_reading_a_key() {
 async fn config_check_reports_a_bad_secrets_file_without_its_values() {
     let home = Home::new();
     let root = home.root.path().to_path_buf();
-    let secrets = root.join("secrets.toml");
+    let secrets = root.join("etc/private/secrets.toml");
     std::fs::write(
         &secrets,
         format!("ok = \"{FAKE}\"\nDeepSeek = \"{FAKE_2}\"\n"),

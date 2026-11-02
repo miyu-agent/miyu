@@ -19,7 +19,7 @@ pub const BINDINGS: &str = "[external.bindings]\n\"qq:10001\" = \"admin\"\n";
 
 /// 照对应表起来、工具目录是 `tools` 的核心：先把对应表写进系统配置。
 pub fn bound_core(home: &Home, script: &Script, tools: Catalog) -> Arc<Core> {
-    home.write("config.toml", BINDINGS);
+    home.write("etc/config.toml", BINDINGS);
     configured_core(home, script, tools)
 }
 

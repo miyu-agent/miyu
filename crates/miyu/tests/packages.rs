@@ -107,8 +107,7 @@ fn a_package_command_is_told_its_package_folder() {
     // 状态目录（施工 F-15）：跑之前建好，交真实的位置。
     let printed = miyu(&home, "C", &["own", "MIYU_PACKAGE_STATE"]);
     assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
-    let state =
-        std::fs::canonicalize(home.root.path().join("state/packages/own")).expect("跑之前建好了");
+    let state = std::fs::canonicalize(home.root.path().join("var/lib/own")).expect("跑之前建好了");
     assert_eq!(text(&printed.stdout), format!("{}\n", state.display()));
     // 主程序的真实位置（施工 G-15）：装进数据根的包程序旁边没有主程序，要拉起核心的照它找。
     let printed = miyu(&home, "C", &["own", "MIYU_PROGRAM"]);
@@ -145,11 +144,11 @@ fn a_system_package_command_on_a_fresh_data_root_prepares_it_first() {
         .output()
         .expect("跑得起来");
     assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
-    assert!(fresh.join(".miyu-root").is_file(), "数据根先建好了，有标记");
     assert!(
-        fresh.join("state/packages/own").is_dir(),
-        "再建包的状态目录"
+        fresh.join(".miyu-layout").is_file(),
+        "数据根先建好了，有标记"
     );
+    assert!(fresh.join("var/lib/own").is_dir(), "再建包的状态目录");
 }
 
 #[test]

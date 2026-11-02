@@ -66,14 +66,17 @@ async fn audit_an_extension_cannot_point_a_record_secret_field_at_another_secret
         json!({"layer": "system", "changes": [{"key": "echo.accounts", "input": "[{ name = \"b\", key = { env = \"DEEPSEEK_API_KEY\" } }]"}]})
     );
     home.write(
-        "packages/echo/package.toml",
+        "opt/echo/package.toml",
         &accounts_manifest(
             &program.name(),
             &steps(&[&keep, "hello", &by_value, &by_input, "listen"]),
         ),
     );
     // 主人给别的用途存的密钥：扩展不该拿得到。
-    home.write("secrets.toml", "deepseek = \"sk-victim-secret\"\n");
+    home.write(
+        "etc/private/secrets.toml",
+        "deepseek = \"sk-victim-secret\"\n",
+    );
     let core = core_with_settings(&home, quick());
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
@@ -129,7 +132,7 @@ async fn audit_an_extension_cannot_point_a_url_list_at_the_core_environment() {
         .map(|arg| format!("{arg:?}"))
         .collect();
     home.write(
-        "packages/echo/package.toml",
+        "opt/echo/package.toml",
         &format!(
             r#"[package]
 protocol = [1, 1]

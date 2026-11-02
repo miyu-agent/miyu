@@ -267,7 +267,7 @@ async fn writes_only_its_own(id: &str, prefix: Option<&str>, other: &str) {
         true,
     );
     if let Some(prefix) = prefix {
-        let manifest = format!("packages/{id}/package.toml");
+        let manifest = format!("opt/{id}/package.toml");
         let text = read(&home.root.path().join(&manifest));
         home.write(
             &manifest,

@@ -19,7 +19,7 @@ fn fields<'a>(name: Option<&'a str>, description: Option<&'a str>) -> BaseFields
 }
 
 fn top(root: &DataRoot) -> PathBuf {
-    root.path().join("kb")
+    root.path().join("root/kb")
 }
 
 /// 一块盘上没有能放的回收站的机器（临时目录那块盘）：照实报了算过，交回没挪成。

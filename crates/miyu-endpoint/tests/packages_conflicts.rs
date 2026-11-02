@@ -186,7 +186,7 @@ async fn scripts_mcp_services_and_knowledge_bases_count_too() {
 #[tokio::test]
 async fn upgrading_itself_or_shadowing_ones_own_is_not_a_conflict() {
     let home = Home::new();
-    home.write("skills/notes/SKILL.md", &skill("notes"));
+    home.write("root/skills/notes/SKILL.md", &skill("notes"));
     let mut client = connected(&home).await;
     let kit = source(
         &home,

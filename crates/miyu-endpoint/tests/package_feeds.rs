@@ -25,7 +25,7 @@ fn pair() -> (String, String) {
 /// 系统配置里官方的软件源是 `official`、另写 `extra` 的核心；官方的照 `keys` 验。
 fn core_with(home: &Home, (official, extra): (&str, &str), keys: Vec<PublicKey>) -> Arc<Core> {
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!("[packages]\nsource = \"{official}\"\n{extra}"),
     );
     let items = [SourceSettings::ITEMS, SOURCE_FEEDS].concat();
@@ -142,7 +142,7 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
         .await;
     assert_eq!(installed["result"]["layer"], "home", "{installed}");
     assert!(home.root.packages().join("kit/package.toml").is_file());
-    let desc = std::fs::read_to_string(home.root.path().join("state/packages/.local/kit/desc"))
+    let desc = std::fs::read_to_string(home.root.path().join("var/lib/packages/kit/desc"))
         .expect("记进本地库");
     assert!(desc.contains("\"feed\":\"friends\""), "{desc}");
 

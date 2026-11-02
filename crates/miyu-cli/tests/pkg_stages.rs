@@ -53,7 +53,7 @@ async fn source(tag: &str) -> (Home, Server, [usize; 3]) {
 fn installed(home: &Home, id: &str) -> bool {
     home.root
         .path()
-        .join("packages")
+        .join("opt")
         .join(id)
         .join("package.toml")
         .is_file()

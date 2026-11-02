@@ -41,7 +41,7 @@ fn script(window: u64) -> Script {
 async fn the_reply_is_the_drawing_example() {
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[providers.deepseek]\nlocal = false\n\n[models]\nchat = \"deepseek/deepseek-v4\"\n",
     );
     let items = [ProviderSettings::ITEMS, UseSettings::ITEMS].concat();

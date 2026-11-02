@@ -33,7 +33,7 @@ async fn a_script_put_in_or_taken_out_of_the_home_folder_is_followed_at_once() {
     assert!(core.scripts().is_empty(), "起来时家目录里还没有");
     let _watching = core.watch_scripts().expect("看得了");
     assert!(home.root.scripts().is_dir(), "没有的先建上");
-    home.write("scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/weather.py", &echo("weather"));
     until_scripts(&core, &["weather"]).await;
     let mut client = Client::connect(Arc::clone(&core));
     client.hello_without_input().await;

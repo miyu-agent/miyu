@@ -651,6 +651,7 @@
     "package-problems/bad_pages_dir": "{detail} must be a relative directory inside the resource directory, without .. or a leading /",
     "package-problems/duplicate": "A shipped package is already called {detail}; this one does not count",
     "package-problems/command_taken": "The command {detail} is taken by another package; this one does not count",
+    "package-problems/reserved_id": "The id {detail} is reserved in the data root; pick another id",
     "package-problems/protocol_mismatch": "This package speaks protocol versions {detail}, and the core speaks 1; upgrade them to the same release",
     "package-problems/bad_setting_name": "{detail}: a setting name starts with a lowercase letter and uses only lowercase letters, digits and _",
     "package-problems/bad_type": "{detail} must be bool, int, number, option, text, name, model, persona, knowledge, url, secret or list",

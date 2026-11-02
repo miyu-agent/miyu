@@ -23,7 +23,7 @@ fn a_too_wide_directory_works_in_the_session_s_own_folder() {
     let main = SessionId::parse("0199a1b2-0000-7000-8000-00000000abcd").expect("合写法");
     let place = DefaultWorkspace::new(&root, &main);
     let data = base.join("data");
-    let fallback = data.join("workspace").join(main.as_str());
+    let fallback = data.join("root/workspace").join(main.as_str());
     let root_dir = PathBuf::from(if cfg!(windows) { "C:\\" } else { "/" });
     assert_eq!(
         place.of(&root_dir, Some(&base), &data),
@@ -31,7 +31,7 @@ fn a_too_wide_directory_works_in_the_session_s_own_folder() {
         "根目录太宽"
     );
     assert_eq!(
-        place.of(&data.join("state"), Some(&base), &data),
+        place.of(&data.join("var"), Some(&base), &data),
         fallback,
         "落在数据根里太宽"
     );

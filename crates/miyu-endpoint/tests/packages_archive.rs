@@ -40,7 +40,7 @@ fn packed(home: &Home, folder: &Path, name: &str) -> PathBuf {
 
 /// 暂存处里还剩几样。
 fn left_unpacked(home: &Home) -> usize {
-    std::fs::read_dir(home.root.path().join("state/packages/.unpack"))
+    std::fs::read_dir(home.root.path().join("tmp/unpack"))
         .map(|dir| dir.count())
         .unwrap_or(0)
 }

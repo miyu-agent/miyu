@@ -69,7 +69,7 @@ async fn session_create_records_the_scope_and_refuses_a_wrong_one() {
 async fn a_memory_table_in_the_persona_file_is_refused() {
     let home = Home::new();
     home.write(
-        "personas/engineer/persona.toml",
+        "root/personas/engineer/persona.toml",
         "[memory]\nscope = \"persona\"\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));

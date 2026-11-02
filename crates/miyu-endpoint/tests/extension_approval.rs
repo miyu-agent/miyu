@@ -228,7 +228,7 @@ async fn an_approval_in_the_switches_file_counts() {
         &["network"],
     );
     home.write(
-        "extensions.json",
+        "etc/extensions.json",
         "{\"version\":1,\"on\":{\"auto\":true},\"approved\":{\"auto\":[\"network\"]}}\n",
     );
     let core = core(&home, quick());

@@ -31,7 +31,7 @@ mod indexes;
 mod meta;
 mod places;
 mod room;
-mod salt;
+pub(crate) mod salt;
 mod stamps;
 mod uses;
 mod vectors;

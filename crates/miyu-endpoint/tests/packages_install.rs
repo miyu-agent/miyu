@@ -191,8 +191,11 @@ async fn a_shipped_package_is_removed_by_a_note_and_comes_back() {
         .await;
     assert_eq!(reply["result"]["removed"], true, "{reply}");
     assert!(
-        mine(&home, "miyu-base-roleplay.removed").is_file(),
-        "家目录记一笔"
+        home.root
+            .removed_markers()
+            .join("miyu-base-roleplay")
+            .is_file(),
+        "etc/removed/ 里记一笔"
     );
     let packages = list(&mut client).await;
     let roleplay = find(&packages, "miyu-base-roleplay").expect("照样列");
@@ -211,7 +214,13 @@ async fn a_shipped_package_is_removed_by_a_note_and_comes_back() {
         )
         .await;
     assert_eq!(reply["result"]["package"], "miyu-base-roleplay", "{reply}");
-    assert!(!mine(&home, "miyu-base-roleplay.removed").exists());
+    assert!(
+        !home
+            .root
+            .removed_markers()
+            .join("miyu-base-roleplay")
+            .exists()
+    );
     assert!(
         find(&list(&mut client).await, "miyu-base-roleplay")
             .expect("回来了")
@@ -252,4 +261,33 @@ fn leftovers(home: &Home) -> Vec<String> {
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .filter(|name| name.starts_with('.'))
         .collect()
+}
+
+/// 编号是数据根里保留的名字的（设计 55 第三节第 3 条）：装之前就拒，照连接的语言说，`opt/` 里什么都不放（施工 FH-3）。
+#[tokio::test]
+async fn a_reserved_id_is_refused_before_anything_is_placed() {
+    let home = Home::new();
+    let mut client = connected(&home).await;
+    let reserved = source(&home, "mcp", &manifest("保留的", "xmcp"));
+    // 看一眼也拒：不等装进去重读才发现。
+    let looked = client
+        .call(
+            "p1",
+            "package.install",
+            json!({"path": reserved, "preview": true}),
+        )
+        .await;
+    assert_eq!(reason(&looked), Some("package_invalid"), "{looked}");
+    let reply = client
+        .call("i1", "package.install", json!({"path": reserved}))
+        .await;
+    assert_eq!(reason(&reply), Some("package_invalid"), "{reply}");
+    assert!(
+        reply["error"]["data"]["problem"]
+            .as_str()
+            .is_some_and(|said| said.contains("mcp") && said.contains("保留")),
+        "{reply}"
+    );
+    assert!(!mine(&home, "mcp").exists(), "什么都没放");
+    assert!(!home.root.local_packages().join("mcp").exists());
 }

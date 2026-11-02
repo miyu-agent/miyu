@@ -12,7 +12,7 @@ use miyu_store::env::{Env, Platform};
 use miyu_store::log::{SessionLog, read_events};
 use miyu_store::personas::Personas;
 use miyu_store::resources::ResourceRoot;
-use miyu_store::root::DataRoot;
+use miyu_store::root::{DataRoot, MARKER, MARKER_TEXT};
 
 use super::{Planning, planned};
 use crate::memory::{ExtractTexts, Extractor, Landings, Plan, Read, ReadFrom, read_extract};
@@ -32,7 +32,7 @@ fn scratch(name: &str) -> Scratch {
     drop(std::fs::remove_dir_all(&dir));
     std::fs::create_dir_all(&dir).expect("建得了临时目录");
     // 会话日志只在数据根里建目录（施工 TMP-1）：写上标记。
-    std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(dir.join(MARKER), MARKER_TEXT).expect("写得进标记");
     Scratch(dir)
 }
 
@@ -53,7 +53,7 @@ fn group_assembler(scratch: &Scratch) -> Arc<dyn Assembler + Send + Sync> {
     };
     let root = DataRoot::locate(&env).expect("MIYU_HOME 是绝对路径");
     root.prepare().expect("临时目录里建得了骨架");
-    let prompts = root.path().join("personas/miyu/prompts");
+    let prompts = root.personas().join("miyu/prompts");
     std::fs::create_dir_all(&prompts).expect("建得了人格目录");
     std::fs::write(prompts.join("persona.md"), "你是 Miyu。").expect("写得进");
     let resources = resources();

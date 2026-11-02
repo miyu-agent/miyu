@@ -45,6 +45,8 @@ pub enum Code {
     Duplicate,
     /// 子命令名被先读到的包占了（`miyu-store` 认）。
     CommandTaken,
+    /// 编号是数据根里保留的名字（设计 55 第三节第 3 条，施工 FH-3，`miyu-store` 认）：`detail` 是编号。
+    ReservedId,
     /// 配置项的名字写法不对。
     BadSettingName,
     /// 配置项的 `type` 不认识。
@@ -152,6 +154,7 @@ impl Code {
             Code::BadPagesDir => "bad_pages_dir",
             Code::Duplicate => "duplicate",
             Code::CommandTaken => "command_taken",
+            Code::ReservedId => "reserved_id",
             Code::BadSettingName => "bad_setting_name",
             Code::BadType => "bad_type",
             Code::BadElement => "bad_element",
@@ -196,7 +199,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 59] = [
+    pub const ALL: [Code; 60] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -218,6 +221,7 @@ impl Code {
         Code::BadPagesDir,
         Code::Duplicate,
         Code::CommandTaken,
+        Code::ReservedId,
         Code::BadSettingName,
         Code::BadType,
         Code::BadElement,

@@ -15,7 +15,7 @@ use crate::support::*;
 async fn the_step_that_read_a_skill_carries_its_name_for_people() {
     let home = Home::new();
     home.write(
-        "skills/notes/SKILL.md",
+        "root/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\nmetadata:\n  display_name: Notes\n  display_name_zh: 笔记\n---\n照这样记。\n",
     );
     let file = std::fs::canonicalize(home.root.skills().join("notes/SKILL.md")).expect("在");

@@ -43,7 +43,11 @@ fn the_output_is_capped_only_when_the_request_says_so() {
 async fn a_blob_that_cannot_be_read_is_reported_and_nothing_is_sent() {
     let dir = std::env::temp_dir().join(format!("miyu-v38-missing-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("建得了临时目录");
-    std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        dir.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let media = media();
     let png = ContentHash::of(&media.png);
     let notes = ContentHash::of(&media.notes);

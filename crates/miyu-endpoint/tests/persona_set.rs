@@ -16,7 +16,7 @@ async fn connected(home: &Home) -> Client {
 
 /// 家目录里人格 `id` 的一份，没有的是空的。
 fn mine(home: &Home, id: &str, file: &str) -> Option<String> {
-    std::fs::read_to_string(home.root.path().join(format!("personas/{id}/{file}"))).ok()
+    std::fs::read_to_string(home.root.path().join(format!("root/personas/{id}/{file}"))).ok()
 }
 
 /// 样本人格在下面那一层（装着的样本包里，施工 SU-3 下），连上照数据根读包的核心。
@@ -113,7 +113,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
         let path = home
             .root
             .path()
-            .join("personas/persona-1/prompts/reminders.md");
+            .join("root/personas/persona-1/prompts/reminders.md");
         std::fs::metadata(path).expect("在").ino()
     };
     let same = set(
@@ -129,7 +129,7 @@ async fn a_new_persona_is_made_in_one_call_with_its_prompts() {
         let path = home
             .root
             .path()
-            .join("personas/persona-1/prompts/reminders.md");
+            .join("root/personas/persona-1/prompts/reminders.md");
         assert_eq!(std::fs::metadata(path).expect("在").ino(), before, "没重写");
     }
 
@@ -364,7 +364,7 @@ async fn deleting_moves_your_layer_into_the_trash() {
         .call("d1", "persona.delete", json!({"persona": id}))
         .await;
     assert_eq!(gone["result"], json!({"remains": false}), "{gone}");
-    let trash = home.root.path().join("trash/personas");
+    let trash = home.root.path().join("root/trash/personas");
     let trashed: Vec<String> = std::fs::read_dir(&trash)
         .expect("回收处建了")
         .map(|entry| {

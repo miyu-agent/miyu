@@ -14,8 +14,7 @@ use crate::support::*;
 
 /// 日志 `journal.jsonl` 里的 `usage.oneshot`。
 fn billed(home: &Home) -> Vec<String> {
-    let journal = std::fs::read_to_string(home.root.path().join(miyu_store::journal::FILE))
-        .unwrap_or_default();
+    let journal = std::fs::read_to_string(home.root.journal_file()).unwrap_or_default();
     journal
         .lines()
         .filter(|line| line.contains(r#""kind":"usage.oneshot""#))

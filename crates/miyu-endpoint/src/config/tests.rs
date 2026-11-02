@@ -1,4 +1,5 @@
-//! 配置服务的单元测试：找项目配置（`project.rs`）、信任的记录（`trust.rs`）。
+//! 配置服务的单元测试：找项目配置（`project.rs`）、信任的记录（`trust.rs`）、几份文件的位置（`places.rs`）。
 
+mod places;
 mod project;
 mod trust;

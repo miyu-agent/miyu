@@ -1,7 +1,7 @@
 //! 卸了的包留下的改动（施工 P-11 下，设计 `31-软件包.md` 第十节第 6 条）：包带的人格、预设卸了就没了，数据根里同名的
 //! 改动留着、照旧能用。这里记一笔是哪个包留下的：`miyu check` 照它提示，重装这个包时它不算撞名。
 //!
-//! 放在 `<数据根>/state/packages/.leftovers.json`（点开头，和包的状态目录、本地库 `.local` 在同一层撞不上）：
+//! 放在本地库里 `<数据根>/var/lib/packages/leftovers.json`（名字带点，不合编号写法，和各包那一份撞不上）：
 //! `{"personas": {"<编号>": "<包>"}, "presets": {…}}`。只是提示用的，读不了、写坏了的当没有。
 
 use std::collections::BTreeMap;
@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 /// 文件名。
-pub const FILE: &str = ".leftovers.json";
+pub const FILE: &str = "leftovers.json";
 
 /// 留下的人格、预设：编号到留下它的包。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,7 +26,7 @@ pub struct Leftovers {
 }
 
 impl Leftovers {
-    /// 读 `state/packages`（`dir`）里的那一份；没有的、读不懂的是空的。
+    /// 读本地库（`dir`）里的那一份；没有的、读不懂的是空的。
     pub fn read(dir: &Path) -> Leftovers {
         fs::read_to_string(path(dir))
             .ok()

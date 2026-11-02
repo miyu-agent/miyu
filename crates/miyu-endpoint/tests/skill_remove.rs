@@ -14,16 +14,16 @@ fn skill(name: &str) -> String {
 
 /// 家目录里的 `notes`、盖住出厂同名的 `package-creator`，你装的包 `kit` 带的 `kit-notes`；连上（系统的家目录当是数据根）。
 async fn connected(home: &Home) -> Client {
-    home.write("skills/notes/SKILL.md", &skill("notes"));
-    home.write("skills/package-creator/SKILL.md", &skill("package-creator"));
+    home.write("root/skills/notes/SKILL.md", &skill("notes"));
     home.write(
-        "packages/kit/package.toml",
+        "root/skills/package-creator/SKILL.md",
+        &skill("package-creator"),
+    );
+    home.write(
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
-    home.write(
-        "packages/kit/skills/kit-notes/SKILL.md",
-        &skill("kit-notes"),
-    );
+    home.write("opt/kit/skills/kit-notes/SKILL.md", &skill("kit-notes"));
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);
     let mut client = Client::connect(core);
     client.hello().await;
@@ -149,7 +149,7 @@ async fn a_linked_folder_is_followed_but_only_the_link_is_removed() {
 #[tokio::test]
 async fn a_skill_in_another_folder_is_not_removed() {
     let home = Home::new();
-    home.write("config.toml", "[skills.external]\nenabled = true\n");
+    home.write("etc/config.toml", "[skills.external]\nenabled = true\n");
     home.write_elsewhere(".agents/skills", "pdf", "Shared.");
     let shared = home.me().join(".agents/skills/pdf/SKILL.md");
     let mut client = Client::connect(home.core_elsewhere(&Script::new([]), Default::default()));

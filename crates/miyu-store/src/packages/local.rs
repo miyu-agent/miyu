@@ -1,5 +1,5 @@
 //! 本地库（施工 F-8 中上，设计 `31-软件包.md` 第四节，照 pacman 的 `local/`）：家目录里装的每个包记一份，放在
-//! `<数据根>/state/packages/.local/<编号>/`（点开头：和包自己放状态的 `state/packages/<编号>/` 在同一层，编号不会撞上）。
+//! `<数据根>/var/lib/packages/<编号>/`（设计 55；`packages` 是保留的编号，不会和包自己放状态的 `var/lib/<编号>/` 撞上）。
 //!
 //! - `desc`：一个 JSON 对象，编号、版本（清单写了的）、装的时刻、从哪装的（核心起来时补的是空的）、总字节数。
 //! - `files`：一个文件一行 `<SHA-256> <字节数> <相对包目录的路径>`，路径用 `/` 分开，照路径排；路径放最后，带空格也认得。
@@ -13,8 +13,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// 本地库在状态目录 `state/packages/` 下的名字。
-pub const LOCAL: &str = ".local";
+/// 本地库在 `var/lib/` 下的名字（保留的编号，[`crate::root::RESERVED`]）。
+pub const LOCAL: &str = "packages";
 
 /// 一个包的信息（`desc`）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,7 +91,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// 本地库 `root`（`state/packages/.local`）里记下包 `desc.id`：整份先写进 `.<编号>.new` 再换上。
+/// 本地库 `root`（`var/lib/packages`）里记下包 `desc.id`：整份先写进 `.<编号>.new` 再换上。
 ///
 /// # Errors
 ///

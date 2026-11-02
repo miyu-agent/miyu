@@ -82,7 +82,7 @@ fn a_discarded_session_moves_whole_and_says_when() {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        for dir in [root.trashed_sessions(), root.path().join("trash")] {
+        for dir in [root.trashed_sessions(), root.path().join("root/trash")] {
             let mode = fs::metadata(&dir).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o700, "{}", dir.display());
         }

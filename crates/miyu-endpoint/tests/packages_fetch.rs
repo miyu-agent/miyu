@@ -29,7 +29,7 @@ fn desc(home: &Home, id: &str) -> Value {
     let text = std::fs::read_to_string(
         home.root
             .path()
-            .join("state/packages/.local")
+            .join("var/lib/packages")
             .join(id)
             .join("desc"),
     )
@@ -40,7 +40,7 @@ fn desc(home: &Home, id: &str) -> Value {
 fn installed(home: &Home, id: &str) -> bool {
     home.root
         .path()
-        .join("packages")
+        .join("opt")
         .join(id)
         .join("package.toml")
         .is_file()
@@ -133,7 +133,7 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
     assert!(
         home.root
             .path()
-            .join("state/packages/.cache/app-1.0.miyu")
+            .join("var/cache/packages/downloads/app-1.0.miyu")
             .is_file(),
         "下好的进缓存"
     );
@@ -154,7 +154,9 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
 
     // 清缓存：装着那一版的留下，别的删掉。
     std::fs::write(
-        home.root.path().join("state/packages/.cache/app-0.9.miyu"),
+        home.root
+            .path()
+            .join("var/cache/packages/downloads/app-0.9.miyu"),
         b"old",
     )
     .expect("写得进");
@@ -167,7 +169,7 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
     assert!(
         home.root
             .path()
-            .join("state/packages/.cache/app-1.0.miyu")
+            .join("var/cache/packages/downloads/app-1.0.miyu")
             .is_file()
     );
 }
@@ -209,7 +211,7 @@ async fn a_file_that_does_not_match_the_index_is_not_installed() {
         !home
             .root
             .path()
-            .join("state/packages/.cache/app-1.0.miyu")
+            .join("var/cache/packages/downloads/app-1.0.miyu")
             .exists(),
         "坏的不进缓存"
     );

@@ -16,7 +16,7 @@ impl Scratch {
         std::fs::remove_dir_all(&dir).unwrap_or(());
         // 开库只在数据根里建目录（施工 TMP-1）：写上标记。
         std::fs::create_dir_all(&dir).expect("建得了");
-        std::fs::write(dir.join(crate::root::MARKER), "").expect("写得进");
+        std::fs::write(dir.join(crate::root::MARKER), crate::root::MARKER_TEXT).expect("写得进");
         Scratch(dir)
     }
 }

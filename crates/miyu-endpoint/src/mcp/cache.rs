@@ -169,6 +169,13 @@ pub(crate) fn forget(core: &Core, service: &str) {
     {
         tracing::warn!(target: TARGET, service, dir = %dir.display(), error = %error, "mcp dir not removed");
     }
+    // 标准错误也清（设计 55 第三节第 4 条：MCP 服务的三处）。
+    let stderr = core.root.mcp_stderr(service);
+    if let Err(error) = std::fs::remove_file(&stderr)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        tracing::warn!(target: TARGET, service, file = %stderr.display(), error = %error, "mcp stderr not removed");
+    }
 }
 
 #[cfg(test)]

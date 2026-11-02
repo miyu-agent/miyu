@@ -12,7 +12,7 @@ use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 /// 从 `path` 装之前查的（装、看一眼共用）：包文件夹（写成里面的 `package.toml` 的取它的上一层）、编号（文件夹名）、读成了的
-/// 清单。路径不是绝对的、编号不合写法的 `bad_params`；读不了的 `path_unreadable`；写错的 `package_invalid`；清单写了
+/// 清单。路径不是绝对的、编号不合写法的 `bad_params`；读不了的 `path_unreadable`；写错的、编号是保留名字的 `package_invalid`；清单写了
 /// `targets`、里面没有本机这一种的 `wrong_target`（施工 G-1）；和出厂的撞了的 `package_exists`。
 pub(super) fn source(
     core: &Core,
@@ -38,6 +38,10 @@ pub(super) fn read(
     let text =
         std::fs::read_to_string(folder.join(MANIFEST)).map_err(|_| Refusal::PATH_UNREADABLE)?;
     let words = words(core, peer.language)?;
+    // 保留的编号整份不收（设计 55 第三节第 3 条）：先于读清单。
+    if let Some(problem) = miyu_store::packages::reserved_id(&id) {
+        return Err(invalid(&words, &problem));
+    }
     // 要更新的 Miyu 的照这一版报（施工 X-31）。
     let manifest = package::read_for(&text, env!("CARGO_PKG_VERSION"))
         .map_err(|problem| invalid(&words, &problem))?;

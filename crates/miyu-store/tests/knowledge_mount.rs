@@ -11,7 +11,7 @@ use crate::support::*;
 
 /// 数据根里的库 `id`，`kb.toml` 写 `toml`。
 fn base(root: &DataRoot, id: &str, toml: &str) -> PathBuf {
-    let dir = root.path().join("kb").join(id);
+    let dir = root.path().join("root/kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("kb.toml"), toml).expect("写得进");
     dir

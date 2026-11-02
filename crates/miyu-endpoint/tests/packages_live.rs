@@ -129,7 +129,7 @@ async fn ping(client: &mut Client) -> Value {
 #[tokio::test]
 async fn a_removed_builtin_leaves_old_sessions_saying_uninstalled_and_comes_back() {
     let home = Home::new();
-    home.write("packages/xkit/package.toml", XKIT);
+    home.write("opt/xkit/package.toml", XKIT);
     let script = Script::new([
         Play::Says("在。"),
         Play::calls(&[("xprobe", "{}")]),

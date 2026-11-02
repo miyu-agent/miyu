@@ -186,7 +186,7 @@ pub(super) fn read(work: &Path, name: &str) -> String {
 pub(super) fn log(home: &Home, session: &str) -> Vec<Value> {
     let mut events = Vec::new();
     {
-        let sessions = home.root.path().join("sessions").join(session);
+        let sessions = home.root.path().join("root/sessions").join(session);
         let Ok(segments) = std::fs::read_dir(&sessions) else {
             return events;
         };

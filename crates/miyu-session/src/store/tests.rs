@@ -24,7 +24,11 @@ fn a_forked_log_reads_back_with_its_base_first() {
     drop(std::fs::remove_dir_all(&root));
     // 会话日志只在数据根里建目录（施工 TMP-1）：写上标记，日志放在下面一层。
     std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(root.join(miyu_store::root::MARKER), "").unwrap();
+    std::fs::write(
+        root.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .unwrap();
     let parent = root.join("parent");
     let mut parent_log = SessionLog::create_at(&parent, SEGMENT_LIMIT, Seq::FIRST).unwrap();
     parent_log
@@ -55,7 +59,11 @@ fn a_base_reads_its_parent_up_to_the_fork_and_fails_without_it() {
     let root = std::env::temp_dir().join(format!("miyu-session-base-{}", std::process::id()));
     drop(std::fs::remove_dir_all(&root));
     std::fs::create_dir_all(&root).unwrap();
-    std::fs::write(root.join(miyu_store::root::MARKER), "").unwrap();
+    std::fs::write(
+        root.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .unwrap();
     let parent = root.join("parent");
     let mut parent_log = SessionLog::create_at(&parent, SEGMENT_LIMIT, Seq::FIRST).unwrap();
     parent_log.append(&[said(1), said(2), said(3)]).unwrap();

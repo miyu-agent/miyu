@@ -1,5 +1,5 @@
 //! 记忆日志的登记（施工 R-3 上，`docs/blueprint/memory.md`「对外的样子」的记忆日志、底账、记忆库）：一处记忆（房间，[`Room`]，
-//! 施工 R-3 下）一份记忆日志，跟着人格的在 `modules/memory/<人格>/`，只在会话里的在会话目录的 `memory/log/`，照会话
+//! 施工 R-3 下）一份记忆日志，跟着人格的在 `root/memory/<人格>/`（设计 55），照会话
 //! 日志的外壳和写法（[`SessionLog`]：崩了截掉半行、同步、按段）。
 //!
 //! - 几个会话同时往一份里写：核心一份登记，一份日志一把锁，序号在锁里领，所以连续不重。
@@ -120,7 +120,7 @@ impl MemoryLogs {
         }
     }
 
-    /// 有记忆日志的几个人格（`modules/memory/<人格>/` 在的，照编号排；施工 R-25）。不开、不建。
+    /// 有记忆日志的几个人格（`root/memory/<人格>/` 在的，照编号排；施工 R-25）。不开、不建。
     ///
     /// # Errors
     ///
@@ -201,6 +201,12 @@ impl MemoryLogs {
                 unreadable,
             }),
         ))
+    }
+
+    /// 放下房间 `room` 开着的那一份（设计 55 第三节第 6 条：人格连记忆进了回收处）：之后再开的照盘上重开。手里还拿着那一份的
+    /// 照旧写它原来那几个文件。交回开没开着。
+    pub fn forget(&self, room: &Room) -> bool {
+        self.lock().remove(room).is_some()
     }
 
     fn lock(&self) -> MutexGuard<'_, BTreeMap<Room, Arc<MemoryLog>>> {

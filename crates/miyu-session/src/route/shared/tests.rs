@@ -60,7 +60,11 @@ fn what_is_learned_and_what_is_fetched_are_kept_apart() {
     let scratch = std::env::temp_dir().join(format!("miyu-model-dirs-{}", std::process::id()));
     let root = miyu_store::root::DataRoot::at(scratch.clone());
     std::fs::create_dir_all(&scratch).expect("建得了");
-    std::fs::write(scratch.join(miyu_store::root::MARKER), "").expect("写得进");
+    std::fs::write(
+        scratch.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进");
     let dirs = super::ModelDirs {
         state: root.path().join("learned"),
         cache: root.path().join("fetched"),

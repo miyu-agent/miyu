@@ -27,7 +27,8 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     };
     // 出厂的 `dev` 不开没列出来的软件：打开要写进同名覆盖。
     open_in(&core, port.peer(), "dev", "kit").await;
-    let preset = std::fs::read_to_string(root.path().join("presets/dev.toml")).unwrap_or_default();
+    let preset =
+        std::fs::read_to_string(root.path().join("root/presets/dev.toml")).unwrap_or_default();
     assert!(preset.contains("kit = true"), "写进主人那一份：{preset}");
     drop(core);
     if let Err(error) = std::fs::remove_dir_all(&dir) {

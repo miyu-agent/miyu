@@ -73,11 +73,11 @@ async fn an_extension_reads_the_content_other_packages_carry_for_it() {
     all.push("serve".to_string());
     let all: Vec<&str> = all.iter().map(String::as_str).collect();
     install(&home, "memes", &program.name(), "always", &steps(&all));
-    home.write("packages/pack/package.toml", PACK);
-    home.write("packages/pack/stickers/index.json", "{\"n\": 1}");
-    home.write("packages/pack/secret.txt", "nope");
-    home.write("packages/other/package.toml", OTHER);
-    home.write("packages/other/x/a", "a");
+    home.write("opt/pack/package.toml", PACK);
+    home.write("opt/pack/stickers/index.json", "{\"n\": 1}");
+    home.write("opt/pack/secret.txt", "nope");
+    home.write("opt/other/package.toml", OTHER);
+    home.write("opt/other/x/a", "a");
     #[cfg(unix)]
     std::os::unix::fs::symlink(
         home.root.packages().join("pack"),

@@ -86,7 +86,7 @@ async fn an_upgraded_session_swaps_and_its_executor_takes_the_new_texts() {
     let home = Home::new();
     let resources = home.work.join("resources");
     copy_tree(&default_resources(), &resources);
-    home.write("personas/miyu/prompts/persona.md", "You are Miyu.\n");
+    home.write("root/personas/miyu/prompts/persona.md", "You are Miyu.\n");
     let forbidden = home.root.path().join("x.txt");
     let wrote = json!({"file_path": forbidden, "content": "x"}).to_string();
     let script = Script::new([
@@ -128,7 +128,7 @@ async fn an_upgraded_session_swaps_and_its_executor_takes_the_new_texts() {
 
     // 改了人格：下一个回合换上，执行器的字跟着换。
     home.write(
-        "personas/miyu/prompts/persona.md",
+        "root/personas/miyu/prompts/persona.md",
         "You are Miyu, softly.\n",
     );
     client.say("s3", &session, "写一个文件").await;

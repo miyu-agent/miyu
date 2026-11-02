@@ -52,10 +52,10 @@ async fn running_core(
 #[tokio::test]
 async fn a_query_of_a_package_not_installed_is_unknown_method() {
     let home = Home::new();
-    let mine = home.root.packages();
+    let mine = home.root.removed_markers();
     std::fs::create_dir_all(&mine).expect("建得了");
     for removed in [miyu_core::packages::MERMAID, miyu_core::packages::NET] {
-        std::fs::write(mine.join(format!("{removed}.removed")), "").expect("写得进");
+        std::fs::write(mine.join(removed), "").expect("写得进");
     }
     let queries = miyu_core::packages::register(&resources(), &home.root);
     let (running, mut head) = running_core(&home, queries).await;
@@ -86,9 +86,9 @@ async fn a_query_of_a_package_not_installed_is_unknown_method() {
 #[tokio::test]
 async fn memory_removed_before_start_says_not_installed() {
     let home = Home::new();
-    let mine = home.root.packages();
+    let mine = home.root.removed_markers();
     std::fs::create_dir_all(&mine).expect("建得了");
-    std::fs::write(mine.join(format!("{}.removed", miyu_memory::PACKAGE)), "").expect("写得进");
+    std::fs::write(mine.join(miyu_memory::PACKAGE), "").expect("写得进");
     let (running, mut head) = running_core(&home, Queries::new()).await;
     let reply = head.call("m1", "memory.list", json!({})).await;
     assert_eq!(

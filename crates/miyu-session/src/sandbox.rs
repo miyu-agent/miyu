@@ -244,16 +244,15 @@ fn outermost(hidden: &mut Vec<PathBuf>, dir: PathBuf) {
 }
 
 impl Sandbox {
-    /// 命令起来以前要在的几处，不在的建上（施工 R3-1、R3-1 补）：数据根的 `run/`（写配置、密钥的临时文件建在里面，
-    /// `miyu_store::config_file`），这个会话的 `jobs/`（后台命令的输出）。Windows 的沙盒只禁命令起来那一刻已有的（施工 SW-6），
-    /// 命令跑着时才建的目录里面读得到（2026-11-02 虚拟机上量过）。数据根没有标记的（不是数据根）不建。
+    /// 命令起来以前要在的几处，不在的建上（施工 R3-1、R3-1 补；FH-3）：数据根里核心起来时建的那几处（`etc/private/` 凭据、
+    /// `run/` 写配置、密钥的临时文件，`DataRoot::prepare_private`），这个会话的 `jobs/`（后台命令的输出）。Windows 的沙盒只禁
+    /// 命令起来那一刻已有的（施工 SW-6），命令跑着时才建的目录里面读得到（2026-11-02 虚拟机上量过）：核心跑着时被人删掉的，
+    /// 每条命令前补回来。数据根没有标记的（不是数据根）不建。
     fn keep_places(&self, data_root: &Path) -> io::Result<()> {
         if std::fs::symlink_metadata(data_root.join(miyu_store::root::MARKER)).is_err() {
             return Ok(());
         }
-        miyu_store::root::create_inside(
-            &miyu_store::root::DataRoot::at(data_root.to_path_buf()).run(),
-        )?;
+        miyu_store::root::DataRoot::at(data_root.to_path_buf()).prepare_private()?;
         match &self.jobs {
             Some(jobs) => miyu_store::root::create_inside(jobs),
             None => Ok(()),

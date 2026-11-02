@@ -31,7 +31,7 @@ fn at(millis: i64) -> Timestamp {
 
 /// 家目录里建一个人格目录，写一份人设，交回目录。
 fn persona(root: &DataRoot, id: &str) -> std::path::PathBuf {
-    let dir = root.path().join("personas").join(id);
+    let dir = root.path().join("root/personas").join(id);
     fs::create_dir_all(dir.join("prompts")).unwrap();
     fs::write(dir.join("prompts/persona.md"), "be kind\n").unwrap();
     dir
@@ -58,7 +58,7 @@ fn a_persona_moves_whole_and_twice_is_twice() {
     let second = persona(&root, "mine");
     discard(&root, &second, "mine", at(5)).unwrap();
     assert_eq!(fs::read_dir(root.trashed_personas()).unwrap().count(), 2);
-    let gone = root.path().join("personas").join("nobody");
+    let gone = root.path().join("root/personas/nobody");
     assert!(
         discard(&root, &gone, "nobody", at(9)).is_err(),
         "不在的报错"

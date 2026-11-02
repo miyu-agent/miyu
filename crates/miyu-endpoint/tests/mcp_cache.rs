@@ -177,12 +177,16 @@ async fn removing_a_bundle_clears_its_cache_and_working_dir() {
     let cache = home.root.mcp_catalog("probe");
     let dir = home.root.mcp_workdir("probe");
     assert!(cache.is_file() && dir.is_dir());
+    let stderr = home.root.mcp_stderr("probe");
+    std::fs::create_dir_all(stderr.parent().expect("有上一级")).expect("建得了");
+    std::fs::write(&stderr, "said something\n").expect("写得进");
 
     let removed = client
         .call("r", "package.remove", json!({"package": "probe"}))
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
     assert!(!cache.exists() && !dir.exists(), "缓存、工作目录清掉了");
+    assert!(!stderr.exists(), "标准错误也清掉了");
     client.say("s2", &session, "再调").await;
     home.until_turns(&session, 2).await;
     assert_eq!(

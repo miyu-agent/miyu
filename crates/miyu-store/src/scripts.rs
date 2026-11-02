@@ -157,7 +157,11 @@ pub fn states(root: &DataRoot) -> Vec<State> {
 
 /// 放来处的那几层：`state/scripts/` 本身，加它下面每个场所那一层（施工 X-44 补）。
 fn places(data_root: &DataRoot) -> Vec<PathBuf> {
-    let root = state_root(data_root);
+    places_in(state_root(data_root))
+}
+
+/// `root`（状态的、缓存的那一棵）里放来处的那几层：它本身，加它下面每个场所那一层。
+fn places_in(root: PathBuf) -> Vec<PathBuf> {
     let mut places: Vec<PathBuf> = folders(&root)
         .into_iter()
         .filter(|dir| name(dir).as_deref().and_then(venue_of).is_some())
@@ -192,14 +196,17 @@ fn folders(dir: &Path) -> Vec<PathBuf> {
         .collect()
 }
 
-/// 卸掉来处是 `source` 的包（施工 X-44）：删掉 `state/scripts/<来处>/`，场所那一层下面的
-/// `@<场所>/<来处>/` 也删（施工 X-44 补）。本来就没有的不算错。
+/// 卸掉来处是 `source` 的包（施工 X-44；设计 55 第三节第 4 条）：删掉状态 `root/state/scripts/<来处>/`、缓存
+/// `var/cache/scripts/<来处>/`，场所那一层下面的 `@<场所>/<来处>/` 也删（施工 X-44 补）。本来就没有的不算错。
 ///
 /// # Errors
 ///
 /// 删不掉的那一个。
 pub fn forget_states(root: &DataRoot, source: &str) -> std::io::Result<()> {
-    for place in places(root) {
+    for place in places(root)
+        .into_iter()
+        .chain(places_in(root.script_caches()))
+    {
         match std::fs::remove_dir_all(place.join(source)) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error),
             _ => {}

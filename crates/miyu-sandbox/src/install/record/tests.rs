@@ -15,9 +15,12 @@ fn record() -> Record {
     )
 }
 
-/// 记录落在数据根的哪里。
+/// 记录的文件名（设计 55）。
+const FILE: &str = "sandbox-windows.json";
+
+/// 记录落在数据根的哪里：只有本人读得到的 `etc/private/`。
 fn file(dir: &Dir) -> std::path::PathBuf {
-    dir.path().join("state").join("sandbox").join(FILE)
+    dir.path().join("etc").join("private").join(FILE)
 }
 
 #[test]
@@ -75,13 +78,13 @@ fn a_directory_that_is_not_a_data_root_gets_nothing() {
             path: dir.path().display().to_string()
         }
     );
-    assert!(!dir.path().join("state").exists(), "一个字节都没写");
+    assert!(!dir.path().join("etc").exists(), "一个字节都没写");
 }
 
 #[test]
 fn a_leftover_temporary_file_is_cleared_first() {
     let dir = Dir::root();
-    let sandbox = dir.path().join("state").join("sandbox");
+    let sandbox = dir.path().join("etc").join("private");
     std::fs::create_dir_all(&sandbox).expect("建得了");
     std::fs::write(sandbox.join(format!("{FILE}.tmp")), "half of an old record").expect("写得进");
     write(&dir.owner(), &record()).expect("写得进");

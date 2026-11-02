@@ -12,7 +12,11 @@ fn what_cannot_be_diffed_says_why() {
     let scratch = std::env::temp_dir().join(format!("miyu-diffs-{}", std::process::id()));
     // blob 只在数据根里建目录（施工 TMP-1）：写上标记。
     std::fs::create_dir_all(&scratch).expect("建得了");
-    std::fs::write(scratch.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        scratch.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let blobs = Blobs::new(scratch.clone());
     let absent = ContentHash::of(b"never stored");
     assert_eq!(side(&blobs, Some(&absent)), Err(Skipped::Missing));
@@ -46,7 +50,11 @@ fn texts_in_the_effect_are_used_before_blobs() {
     let scratch = std::env::temp_dir().join(format!("miyu-diffs-texts-{}", std::process::id()));
     // blob 只在数据根里建目录（施工 TMP-1）：写上标记。
     std::fs::create_dir_all(&scratch).expect("建得了");
-    std::fs::write(scratch.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        scratch.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let blobs = Blobs::new(scratch.clone());
     // 两边都写在效果里：一个 blob 都没有也算得出。
     let both = changed(Some(b"a\n"), b"b\n", (Some("a\n"), Some("b\n")));

@@ -293,7 +293,12 @@ async fn a_call_carries_where_the_owner_s_pictures_go() {
     let real = std::fs::canonicalize(&data).expect("在");
     assert_eq!(
         sent["params"]["pictures"],
-        json!(real.join("pictures").display().to_string())
+        json!(
+            miyu_store::root::DataRoot::at(real.clone())
+                .user_dir("pictures")
+                .display()
+                .to_string()
+        )
     );
     let (without, _) = sent_for(None).await;
     assert!(without["params"].get("pictures").is_none(), "{without}");

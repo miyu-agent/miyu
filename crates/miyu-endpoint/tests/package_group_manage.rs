@@ -100,11 +100,11 @@ async fn the_base_system_goes_and_comes_back_as_a_group() {
 async fn a_package_outside_needing_the_group_stops_its_removal() {
     let home = Home::new();
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n\n[depends]\npackages = [\"miyu-base-shell\"]\n",
     );
     home.write(
-        "packages/kit/skills/notes/SKILL.md",
+        "opt/kit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let core = packaged::core(&home);

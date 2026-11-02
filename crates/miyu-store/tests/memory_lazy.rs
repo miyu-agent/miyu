@@ -51,7 +51,7 @@ fn id(n: u64) -> MemoryId {
 fn places(root: &miyu_store::root::DataRoot) -> (std::path::PathBuf, std::path::PathBuf) {
     (
         root.index().join("recall/memory-engineer.db"),
-        root.path().join("modules/memory/engineer"),
+        root.path().join("root/memory/engineer"),
     )
 }
 

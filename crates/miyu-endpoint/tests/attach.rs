@@ -172,7 +172,7 @@ async fn too_big_is_refused_and_the_limits_themselves_are_taken() {
 async fn files_in_the_data_root_are_not_given_but_the_workspace_is() {
     let home = Home::new();
     let mut client = client(&home).await;
-    let inside = home.root.path().join("state").join("note.txt");
+    let inside = home.root.path().join("var").join("note.txt");
     std::fs::create_dir_all(inside.parent().unwrap()).unwrap();
     std::fs::write(&inside, b"secret").unwrap();
     let reply = put(&mut client, "b1", json!({"path": inside})).await;
@@ -267,7 +267,7 @@ async fn refusals_are_in_the_heads_language() {
         reply["error"]["message"],
         "Attachment too large (max 20 MiB; images 5 MiB, 8000 px)."
     );
-    let inside = home.root.path().join("state").join("x.txt");
+    let inside = home.root.path().join("var").join("x.txt");
     std::fs::write(&inside, b"x").unwrap();
     let reply = put(&mut english, "e4", json!({"path": inside})).await;
     assert_eq!(

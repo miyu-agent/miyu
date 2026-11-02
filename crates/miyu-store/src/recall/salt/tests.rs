@@ -80,6 +80,7 @@ fn a_salt_of_the_wrong_length_is_replaced() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     let path = root.salt_dir().join(FILE);
+    fs::create_dir_all(root.salt_dir()).unwrap();
     fs::write(&path, b"short").unwrap();
     let salt = LogSalt::load(&root).unwrap();
     let kept = fs::read(&path).unwrap();

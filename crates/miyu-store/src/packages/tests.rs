@@ -37,7 +37,7 @@ impl Places {
     fn write(&self, layer: Layer, file: &str, text: &str) {
         let base = match layer {
             Layer::Shipped => "res/packages",
-            Layer::Home => "data/packages",
+            Layer::Home => "data/opt",
         };
         let path = self.scratch.path().join(base).join(file);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -259,7 +259,7 @@ fn the_state_dir_is_under_the_state_root() {
         places
             .packages
             .state_dir("tui")
-            .ends_with("data/state/packages/tui")
+            .ends_with("data/var/lib/tui")
     );
 }
 
@@ -412,7 +412,7 @@ fn an_upgrade_cut_off_between_the_renames_is_put_back() {
     let places = Places::new();
     places.write(Layer::Home, ".tui.old/package.toml", &ui("tui"));
     places.write(Layer::Home, ".tui.new/package.toml", &ui("tui-new"));
-    let home = places.scratch.path().join("data/packages");
+    let home = places.scratch.path().join("data/opt");
     let recovered = install::recover(&home);
     assert_eq!(recovered.restored, ["tui"]);
     assert!(recovered.failed.is_empty(), "{:?}", recovered.failed);
@@ -440,7 +440,7 @@ fn recovering_leaves_what_it_does_not_recognize() {
     places.write(Layer::Home, ".cake.bak/package.toml", &ui("cake"));
     places.write(Layer::Home, ".Cake Box.old/package.toml", &ui("cake"));
     places.write(Layer::Home, ".old/package.toml", &ui("cake"));
-    let home = places.scratch.path().join("data/packages");
+    let home = places.scratch.path().join("data/opt");
     let recovered = install::recover(&home);
     assert!(recovered.restored.is_empty());
     assert!(!home.join(".cake.old").exists(), "本体在，备份是剩下的");
@@ -451,4 +451,26 @@ fn recovering_leaves_what_it_does_not_recognize() {
     for kept in [".cake.bak", ".Cake Box.old", ".old"] {
         assert!(home.join(kept).exists(), "{kept} 认不出，不该碰");
     }
+}
+
+/// 编号是数据根里保留的名字的（设计 55 第三节第 3 条）整份不收，报 `reserved_id`，两层都一样；别的照常。
+#[test]
+fn a_reserved_id_is_not_taken_as_a_package() {
+    let places = Places::new();
+    places.write(Layer::Shipped, "index/package.toml", &ui("index"));
+    places.write(Layer::Home, "mcp/package.toml", &ui("mcp"));
+    places.write(Layer::Home, "packages/package.toml", &ui("packs"));
+    places.write(Layer::Home, "fine/package.toml", &ui("fine"));
+    assert_eq!(
+        brief(&places.packages.read()),
+        [
+            ("fine".to_string(), Layer::Home, None),
+            ("index".to_string(), Layer::Shipped, Some(Code::ReservedId)),
+            ("mcp".to_string(), Layer::Home, Some(Code::ReservedId)),
+            ("packages".to_string(), Layer::Home, Some(Code::ReservedId)),
+        ]
+    );
+    let problem = reserved_id("mcp").expect("保留的");
+    assert_eq!(problem.detail, "mcp");
+    assert!(reserved_id("web").is_none());
 }

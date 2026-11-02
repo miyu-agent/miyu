@@ -43,13 +43,13 @@ async fn set(client: &mut Client, persona: &str, avatar: Value) -> Value {
 fn base(home: &Home, picture: &[u8]) {
     crate::support::packaged::samples(home);
     home.write(
-        "packages/samples/personas/base/persona.toml",
+        "opt/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n",
     );
     let path = home
         .root
         .path()
-        .join("packages/samples/personas/base/avatar.png");
+        .join("opt/samples/personas/base/avatar.png");
     std::fs::write(path, picture).expect("写得进");
 }
 

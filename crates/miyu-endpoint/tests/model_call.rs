@@ -18,7 +18,7 @@ fn config(server: &Server) -> String {
 
 /// 照 `config` 写好系统配置，连上请求模型是真路由的核心、握好手。
 async fn connected(home: &Home, config: &str) -> Client {
-    home.write("config.toml", config);
+    home.write("etc/config.toml", config);
     let mut client = Client::connect(routed(home, &[], data(profiles(json!({})))));
     client.hello().await;
     client
@@ -178,7 +178,7 @@ async fn each_failure_has_its_reason_and_data() {
         config(&server),
         url = server.base_url
     );
-    home.write("config.toml", &two);
+    home.write("etc/config.toml", &two);
     let core = routed(
         &home,
         &[("K1", "sk-1"), ("K2", "sk-2")],
@@ -240,7 +240,7 @@ async fn no_model_says_why_and_a_scripted_core_has_no_one_shot() {
     );
     let server = Server::start(Vec::new()).await;
     let scripted = Home::new();
-    scripted.write("config.toml", &config(&server));
+    scripted.write("etc/config.toml", &config(&server));
     let mut client = Client::connect(core(&scripted, &[], data(profiles(json!({})))));
     client.hello().await;
     let reply = client.call("c2", "model.call", asked("hi")).await;

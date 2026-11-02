@@ -58,10 +58,11 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
     let home = Home::new();
     let root = home.root.path();
     let day_ago = SystemTime::now() - Duration::from_secs(24 * 3600);
-    // 配置、密钥的临时文件建在 `run/` 里（施工 R3-1）；数据根这一层的是以前的版本剩下的，照样清。
+    // 配置、密钥的临时文件建在 `run/` 里（施工 R3-1）。
     fs::create_dir_all(root.join("run")).expect("建得了");
     let put = |name: &str, old: bool| {
         let path = root.join(name);
+        fs::create_dir_all(path.parent().expect("有上一级")).expect("建得了");
         fs::write(&path, "secret = \"sk-test\"").expect("写得进");
         if old {
             fs::File::options()
@@ -73,19 +74,20 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
         path
     };
     let stale = [
-        put(".secrets.toml.4242-0.tmp", true),
-        put(".config.toml.4242-7.tmp", true),
         put("run/.secrets.toml.4242-1.tmp", true),
         put("run/.trust.toml.4242-2.tmp", true),
+        // 核心自己的短命暂存起来就清（设计 55 第三节第 5 条）。
+        put("tmp/unpack/123-456/package.toml", false),
     ];
     let kept = [
         // 刚写的：说不定是别的程序正在写，不碰。
-        put(".config.toml.4242-8.tmp", false),
         put("run/.secrets.toml.4242-9.tmp", false),
         // 认不出的名字：人放的，不碰。
-        put(".config.toml.tmp", true),
-        put("notes.tmp", true),
-        put(".config.toml.abc-1.tmp", true),
+        put("run/.config.toml.tmp", true),
+        put("run/notes.tmp", true),
+        put("run/.config.toml.abc-1.tmp", true),
+        // 包的短命暂存在拉起它之前清，不在这时。
+        put("tmp/web/page.html", false),
     ];
     start_once(&home).await;
     for path in stale {
@@ -100,13 +102,60 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
     }
 }
 
-/// 敏感的几处顶层目录核心起来时就建好（施工 R3-1 补）：Windows 的沙盒只禁命令起来那一刻数据根顶层已有的，命令跑着时第一次
-/// 建的（删会话挪进 `trash/`、第一次存 blob、第一次记记忆）整棵读得到。
+/// 设计 55 第五节第 2 条那张表核心起来时就建好（施工 R3-1 补、FH-3）：Windows 的沙盒只禁命令起来那一刻已有的，命令跑着时
+/// 第一次建的（第一次存密钥、删会话挪进回收处、第一次存 blob、第一次记记忆）整棵读得到。顶层只有布局里的几样。
 #[tokio::test]
 async fn the_sensitive_places_are_made_when_the_core_starts() {
     let home = Home::new();
     start_once(&home).await;
-    for dir in ["trash", "blobs", "modules", "index", "kb"] {
+    let made = [
+        "etc",
+        "etc/private",
+        "etc/removed",
+        "opt",
+        "root",
+        "root/sessions",
+        "root/memory",
+        "root/kb",
+        "root/blobs",
+        "root/trash",
+        "root/state",
+        "root/workspace",
+        "var/lib",
+        "var/lib/packages",
+        "var/lib/mcp",
+        "var/cache",
+        "var/cache/index",
+        "var/log",
+        "var/tmp",
+        "tmp",
+        "run",
+    ];
+    for dir in made {
         assert!(home.root.path().join(dir).is_dir(), "{dir}/ 起来时就该在");
+    }
+    let mut top: Vec<String> = fs::read_dir(home.root.path())
+        .expect("读得了")
+        .map(|entry| {
+            entry
+                .expect("读得了")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect();
+    top.sort();
+    assert_eq!(
+        top,
+        [".miyu-layout", "etc", "opt", "root", "run", "tmp", "var"]
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(home.root.path().join("etc/private"))
+            .expect("在")
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o700, "凭据的目录只给本人");
     }
 }

@@ -18,7 +18,7 @@ use crate::support::*;
 
 /// 数据根里 Miyu 的一个文件。
 fn mine(home: &Home, file: &str, text: &str) {
-    home.write(&format!("personas/miyu/{file}"), text);
+    home.write(&format!("root/personas/miyu/{file}"), text);
 }
 
 fn configured(home: &Home, script: &Script) -> Arc<Core> {

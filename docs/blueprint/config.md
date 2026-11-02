@@ -79,7 +79,7 @@
 例子：`config.toml`。核心新建这份文件时写第一行，指向 Schema，写的是相对路径：
 
 ```toml
-#:schema state/config/config.schema.json
+#:schema ../var/cache/config/config.schema.json
 
 [log]
 level = "debug"

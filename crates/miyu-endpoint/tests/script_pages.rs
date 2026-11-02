@@ -60,21 +60,24 @@ fn names(face: &[(String, String)]) -> Vec<&str> {
 /// 写好三个脚本：家目录里的 `weather`（全量、等 5 秒）、`plain`（什么给人看的都没写、先加载），装的包 `kit` 带的 `dice`；
 /// 配置的语言是 `language`。
 fn written(home: &Home, language: &str) {
-    home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
+    home.write(
+        "etc/config.toml",
+        &format!("[ui]\nlanguage = \"{language}\"\n"),
+    );
     let weather = echo("weather").replace(
         "# 显示名称：回声\n",
         "# Display name: Echo\n# 显示名称：回声\n# Timeout: 5\n",
     );
-    home.write("scripts/weather.py", &weather);
+    home.write("root/scripts/weather.py", &weather);
     home.write(
-        "scripts/plain.py",
+        "root/scripts/plain.py",
         "#!/usr/bin/env python3\n# Description: Plain.\nprint('plain')\n",
     );
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
-    home.write("packages/kit/scripts/dice.py", &echo("dice"));
+    home.write("opt/kit/scripts/dice.py", &echo("dice"));
 }
 
 #[tokio::test]
@@ -139,11 +142,11 @@ async fn scripts_are_listed_with_where_they_come_from_in_the_connection_language
 async fn set_loading_is_accepted_and_changes_nothing() {
     let home = Home::new();
     home.write(
-        "scripts/weather.py",
+        "root/scripts/weather.py",
         &echo("weather").replace("# Need load: no\n", "# Need load: yes\n"),
     );
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[ui]\nlanguage = \"zh\"\n\n[mcp.github]\ncommand = [\"miyu-absent-mcp-server\"]\n",
     );
     let script = Script::new([Play::Says("一。")]);
@@ -211,13 +214,13 @@ async fn set_loading_is_accepted_and_changes_nothing() {
 #[tokio::test]
 async fn a_global_switch_rules_where_the_preset_says_nothing() {
     let home = Home::new();
-    home.write("scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/weather.py", &echo("weather"));
     home.write(
-        "skills/notes/SKILL.md",
+        "root/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\n\nBody.\n",
     );
     home.write(
-        "presets/keep.toml",
+        "root/presets/keep.toml",
         "[preset]\nname = { en = \"Keep\" }\nunlisted = \"on\"\n\n[features]\nscript-weather = true\n",
     );
     let says = ["一。", "二。", "三。", "四。", "五。"];
@@ -353,9 +356,9 @@ async fn a_global_switch_rules_where_the_preset_says_nothing() {
 #[tokio::test]
 async fn a_global_switch_leaves_an_off_preset_alone() {
     let home = Home::new();
-    home.write("scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/weather.py", &echo("weather"));
     home.write(
-        "presets/bare.toml",
+        "root/presets/bare.toml",
         "[preset]\nname = { en = \"Bare\" }\nunlisted = \"off\"\n",
     );
     let script = Script::new([Play::Says("一。"), Play::Says("二。")]);
@@ -412,7 +415,7 @@ async fn a_global_switch_leaves_an_off_preset_alone() {
 async fn badly_written_changes_are_refused_and_nothing_is_written() {
     let home = Home::new();
     let before = "[ui]\nlanguage = \"zh\"\n";
-    home.write("config.toml", before);
+    home.write("etc/config.toml", before);
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let long = "a".repeat(129);

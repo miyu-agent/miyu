@@ -119,8 +119,7 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
             home.root.packages().join("echo").display()
         )
     );
-    let state =
-        std::fs::canonicalize(home.root.path().join("state/packages/echo")).expect("拉起前建好了");
+    let state = std::fs::canonicalize(home.root.path().join("var/lib/echo")).expect("拉起前建好了");
     assert_eq!(lines[4], format!("MIYU_PACKAGE_STATE={}", state.display()));
     let program = std::env::current_exe()
         .and_then(std::fs::canonicalize)
@@ -362,14 +361,14 @@ async fn what_cannot_start_says_why_and_wrong_packages_are_refused() {
         &[],
     );
     home.write(
-        "packages/future/package.toml",
+        "opt/future/package.toml",
         &format!(
             "[package]\nprotocol = [2, 3]\nname = {{ en = \"F\" }}\n\n[command]\nname = \"future\"\nprogram = \"{}\"\nabout = {{ en = \"F\" }}\n\n[process]\n",
             program.name()
         ),
     );
     home.write(
-        "packages/face/package.toml",
+        "opt/face/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Face\" }\n\n[ui]\n",
     );
     let core = core(&home, quick());

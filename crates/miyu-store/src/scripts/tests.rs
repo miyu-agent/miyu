@@ -65,12 +65,12 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
         "res/packages/tools/scripts/shared.sh",
         &script("From the package."),
     );
-    places.write("data/scripts/shared", &script("My own."));
-    places.write("data/scripts/notes", &script("Mine."));
-    places.write("data/scripts/.hidden", &script("No."));
-    places.write("data/scripts/nested/inner", &script("No."));
-    places.write("data/scripts/broken", b"#!/bin/sh\necho no header\n");
-    places.write("data/scripts/binary", &[0xff, 0xfe, 0x00]);
+    places.write("data/root/scripts/shared", &script("My own."));
+    places.write("data/root/scripts/notes", &script("Mine."));
+    places.write("data/root/scripts/.hidden", &script("No."));
+    places.write("data/root/scripts/nested/inner", &script("No."));
+    places.write("data/root/scripts/broken", b"#!/bin/sh\necho no header\n");
+    places.write("data/root/scripts/binary", &[0xff, 0xfe, 0x00]);
     places.write("res/packages/bad/package.toml", b"[package\n");
     places.write("res/packages/bad/scripts/lost", &script("No."));
     let (scripts, skipped) = places.found();
@@ -123,7 +123,7 @@ fn scripts_come_from_installed_packages_and_the_home_folder() {
     );
     // 被谁盖住（施工 X-13 中）：自己放的那一份；别的跳过的没有。
     let by = skipped[2].by.as_ref().expect("同名的记了被谁盖住");
-    assert!(by.ends_with("data/scripts/shared"), "{by:?}");
+    assert!(by.ends_with("data/root/scripts/shared"), "{by:?}");
     assert!(skipped[..2].iter().all(|one| one.by.is_none()));
 }
 
@@ -140,20 +140,13 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
         "res/packages/z-tools/scripts/weather.sh",
         &script("Shipped."),
     );
-    places.write("data/packages/a-kit/package.toml", &manifest("a-kit"));
-    places.write(
-        "data/packages/a-kit/scripts/weather.sh",
-        &script("Installed."),
-    );
+    places.write("data/opt/a-kit/package.toml", &manifest("a-kit"));
+    places.write("data/opt/a-kit/scripts/weather.sh", &script("Installed."));
     let (scripts, skipped) = places.found();
     assert_eq!(scripts.len(), 1);
     assert_eq!(scripts[0].package.as_deref(), Some("z-tools"));
     assert_eq!(skipped.len(), 1, "{skipped:?}");
-    assert!(
-        skipped[0]
-            .path
-            .ends_with("packages/a-kit/scripts/weather.sh")
-    );
+    assert!(skipped[0].path.ends_with("opt/a-kit/scripts/weather.sh"));
 }
 
 #[test]
@@ -221,14 +214,14 @@ fn a_linked_script_is_read_through_and_kept_as_the_link() {
 #[test]
 fn a_scripts_state_lives_under_its_source_and_name() {
     let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
-    assert_eq!(state_root(root), Path::new("/data/state/scripts"));
+    assert_eq!(state_root(root), Path::new("/data/root/state/scripts"));
     assert_eq!(
         state_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/state/scripts/~home/dice"))
+        Some(Path::new("/data/root/state/scripts/~home/dice"))
     );
     assert_eq!(
         state_dir(root, None, "bilibili", "live").as_deref(),
-        Some(Path::new("/data/state/scripts/bilibili/live"))
+        Some(Path::new("/data/root/state/scripts/bilibili/live"))
     );
 }
 
@@ -295,12 +288,14 @@ fn a_venue_session_gets_its_own_state_folder() {
     let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
     assert_eq!(
         state_dir(root, Some(&venue("local")), HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/state/scripts/~home/dice")),
+        Some(Path::new("/data/root/state/scripts/~home/dice")),
         "本机的会话照旧"
     );
     assert_eq!(
         state_dir(root, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
-        Some(Path::new("/data/state/scripts/@qq_3agroup_3a1/kit/live"))
+        Some(Path::new(
+            "/data/root/state/scripts/@qq_3agroup_3a1/kit/live"
+        ))
     );
     assert_eq!(
         state_dir(root, Some(&venue(&"Z".repeat(128))), "kit", "live"),
@@ -337,16 +332,18 @@ fn a_script_s_cache_lives_in_the_home_split_like_its_state() {
     let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
     assert_eq!(
         cache_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
-        Some(Path::new("/data/cache/~home/dice"))
+        Some(Path::new("/data/var/cache/scripts/~home/dice"))
     );
     assert_eq!(
         cache_dir(root, Some(&venue("local")), "kit", "live").as_deref(),
-        Some(Path::new("/data/cache/kit/live")),
+        Some(Path::new("/data/var/cache/scripts/kit/live")),
         "本机的会话不分场所"
     );
     assert_eq!(
         cache_dir(root, Some(&venue("qq:group:1")), "kit", "live").as_deref(),
-        Some(Path::new("/data/cache/@qq_3agroup_3a1/kit/live"))
+        Some(Path::new(
+            "/data/var/cache/scripts/@qq_3agroup_3a1/kit/live"
+        ))
     );
     assert_eq!(
         cache_dir(root, Some(&venue(&"Z".repeat(128))), "kit", "live"),

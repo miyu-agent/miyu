@@ -39,7 +39,7 @@ async fn a_set_server_is_written_followed_replaced_and_removed() {
     let home = Home::new();
     home.root.prepare_workspace().expect("建得了家目录");
     let before = "[ui]\nlanguage = \"zh\" # 中文\n";
-    home.write("config.toml", before);
+    home.write("etc/config.toml", before);
     let core = configured(&home, &Script::new([]));
     let _watching = core.watch_config().expect("监视得了");
     core.start_extensions();
@@ -122,7 +122,7 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
     home.root.prepare_workspace().expect("建得了家目录");
     bundle(&home, "kit", "carried", &[]);
     let before = "[ui]\nlanguage = \"zh\"\n";
-    home.write("config.toml", before);
+    home.write("etc/config.toml", before);
     let core = configured(&home, &Script::new([]));
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
@@ -202,7 +202,7 @@ async fn bad_servers_and_package_ones_are_refused_and_nothing_is_written() {
 
     // 配置里已经写了的同名服务照常换：它本来就盖住了包里的。
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!("{before}\n[mcp.carried]\ncommand = [\"old\"]\n"),
     );
     let replaced = client
@@ -223,7 +223,7 @@ async fn listed_servers_carry_their_tools_once_known() {
     let flag = home.work.join("probe-down");
     let exit_if = format!("exit-if:{}", flag.display());
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!(
             "[mcp.probe]\ncommand = ['{SERVER}', '{exit_if}', '{record}']\ntimeout_ms = 1000\n\n[mcp.never]\ncommand = ['{SERVER}', 'exit:3']\n"
         ),
@@ -270,7 +270,7 @@ async fn an_edit_without_clicall_keeps_what_was_written() {
     let home = Home::new();
     home.root.prepare_workspace().expect("建得了家目录");
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[mcp.probe]\ncommand = [\"probe\"]\nclicall = false\n",
     );
     let core = configured(&home, &Script::new([]));

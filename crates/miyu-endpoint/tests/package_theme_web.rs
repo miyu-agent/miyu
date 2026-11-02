@@ -83,19 +83,16 @@ fn theme_problems(reply: &Value) -> Vec<(String, String)> {
 #[tokio::test]
 async fn both_themes_are_listed_and_any_file_under_the_web_dir_is_read() {
     let home = Home::new();
-    home.write("packages/night/package.toml", BOTH);
-    home.write("packages/night/theme.json", "{\"frame\": \"round\"}");
-    home.write("packages/night/notes.txt", "not a theme");
-    home.write(
-        "packages/night/web/manifest.json",
-        "{\"entry\": \"index.js\"}",
-    );
-    home.write("packages/night/web/index.js", "export default 1;");
+    home.write("opt/night/package.toml", BOTH);
+    home.write("opt/night/theme.json", "{\"frame\": \"round\"}");
+    home.write("opt/night/notes.txt", "not a theme");
+    home.write("opt/night/web/manifest.json", "{\"entry\": \"index.js\"}");
+    home.write("opt/night/web/index.js", "export default 1;");
     let font: Vec<u8> = (0..=255).collect();
     std::fs::create_dir_all(home.root.packages().join("night/web/fonts")).expect("建得了");
     std::fs::write(home.root.packages().join("night/web/fonts/a.woff2"), &font).expect("写得进");
     let big = "x".repeat(600 * 1024);
-    home.write("packages/night/web/big.css", &big);
+    home.write("opt/night/web/big.css", &big);
     let mut client = connected(&home).await;
 
     let night = listed(&mut client, "night").await;
@@ -176,7 +173,7 @@ async fn a_web_only_theme_installs_and_is_listed_without_a_terminal_file() {
 #[tokio::test]
 async fn check_says_when_the_web_dir_is_missing() {
     let home = Home::new();
-    home.write("packages/paper/package.toml", WEB_ONLY);
+    home.write("opt/paper/package.toml", WEB_ONLY);
     let mut client = connected(&home).await;
     let reply = client.call("c", "check", json!({})).await;
     assert_eq!(
@@ -185,7 +182,7 @@ async fn check_says_when_the_web_dir_is_missing() {
         "{reply}"
     );
     // 是个文件不是目录的也算不在。
-    home.write("packages/paper/web", "not a dir");
+    home.write("opt/paper/web", "not a dir");
     let reply = client.call("c2", "check", json!({})).await;
     assert_eq!(theme_problems(&reply).len(), 1, "{reply}");
 }
@@ -196,15 +193,12 @@ async fn check_says_when_the_web_dir_is_missing() {
 async fn links_out_of_the_web_dir_are_not_followed() {
     use std::os::unix::fs::symlink;
     let home = Home::new();
-    home.write("packages/night/package.toml", BOTH);
-    home.write("packages/night/theme.json", "{}");
-    home.write(
-        "packages/night/notes.txt",
-        "inside the package, outside web",
-    );
-    home.write("packages/night/web/index.js", "1");
-    home.write("packages/outside/secret.txt", "not yours");
-    home.write("packages/away/package.toml", WEB_ONLY);
+    home.write("opt/night/package.toml", BOTH);
+    home.write("opt/night/theme.json", "{}");
+    home.write("opt/night/notes.txt", "inside the package, outside web");
+    home.write("opt/night/web/index.js", "1");
+    home.write("opt/outside/secret.txt", "not yours");
+    home.write("opt/away/package.toml", WEB_ONLY);
     let root = home.root.packages();
     symlink(
         root.join("outside/secret.txt"),

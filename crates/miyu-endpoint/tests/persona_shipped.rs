@@ -113,8 +113,7 @@ async fn deleting_it_removes_its_shipped_package_and_installing_brings_it_back()
     assert!(
         home.root
             .path()
-            .join("packages")
-            .join(format!("{PACKAGE}.removed"))
+            .join(format!("etc/removed/{PACKAGE}"))
             .exists(),
         "同 package.remove 记一笔"
     );
@@ -179,10 +178,10 @@ async fn editing_it_writes_your_copy_and_deleting_that_goes_back_to_the_shipped_
 async fn a_persona_from_an_installed_package_still_cannot_be_deleted() {
     let home = Home::new();
     home.write(
-        "packages/kitty/package.toml",
+        "opt/kitty/package.toml",
         "[package]\nname = { en = \"Kitty\" }\n",
     );
-    home.write("packages/kitty/personas/cat/persona.toml", "[persona]\n");
+    home.write("opt/kitty/personas/cat/persona.toml", "[persona]\n");
     let mut client = connected(&home, "zh-CN").await;
     let got = client
         .call("g1", "persona.get", json!({"persona": "cat"}))
@@ -195,10 +194,5 @@ async fn a_persona_from_an_installed_package_still_cannot_be_deleted() {
         refused["error"]["data"]["reason"], "nothing_to_delete",
         "{refused}"
     );
-    assert!(
-        home.root
-            .path()
-            .join("packages/kitty/personas/cat")
-            .is_dir()
-    );
+    assert!(home.root.path().join("opt/kitty/personas/cat").is_dir());
 }

@@ -115,11 +115,9 @@ async fn an_idle_terminal_session_is_replaced_and_kept() {
     let pointer = home.root.terminal_file();
     // 指针上指过去的时刻也挪到那时（施工 8-33 三补）。
     let written = std::fs::read_to_string(&pointer).expect("记下了指针");
-    std::fs::write(
-        later.root.path().join("terminal.json"),
-        regex_lite_at(&written),
-    )
-    .expect("写得进");
+    let moved = later.root.terminal_file();
+    std::fs::create_dir_all(moved.parent().expect("有上一级")).expect("建得了");
+    std::fs::write(moved, regex_lite_at(&written)).expect("写得进");
 
     let mut client = Client::connect(later.core(&Script::new([])));
     client.hello().await;

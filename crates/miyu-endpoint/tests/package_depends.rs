@@ -105,14 +105,14 @@ async fn a_package_with_missing_depends_is_refused_and_a_depended_one_stays() {
 async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_read() {
     let home = Home::new();
     home.write(
-        "packages/addon/package.toml",
+        "opt/addon/package.toml",
         &manifest(
             "Addon",
             "\n[depends]\nworkers = [\"base\"]\n\n[recommends]\npackages = [\"nice\"]\n",
         ),
     );
     home.write(
-        "packages/relay/package.toml",
+        "opt/relay/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Relay\" }\n\n[command]\nname = \"relay\"\nprogram = \"miyu-relay\"\nabout = { en = \"R\" }\n\n[process]\n\n[export]\nmethods = [\"qq.inbound\", \"qq.groups\"]\n",
     );
     let mut client = connected(&home).await;
@@ -140,7 +140,7 @@ async fn an_installed_package_missing_its_depends_says_so_and_old_workers_still_
         .filter(|problem| problem["code"] == "depends_missing")
         .collect();
     assert_eq!(problems.len(), 1, "{reply}");
-    assert_eq!(problems[0]["file"], "packages/addon/package.toml");
+    assert_eq!(problems[0]["file"], "opt/addon/package.toml");
     assert_eq!(problems[0]["message"], "缺少依赖的软件包：base");
 }
 

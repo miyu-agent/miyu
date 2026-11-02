@@ -119,7 +119,7 @@ fn models(list: &Value, provider: &str) -> Vec<String> {
 #[tokio::test]
 async fn model_list_has_pools_and_both_uses() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let (mut client, _) = connect(&home).await;
     let reply = client.call("l1", "model.list", json!({})).await;
     let result = &reply["result"];
@@ -185,7 +185,7 @@ fn recorded(home: &Home, reply: &Value) -> Option<String> {
 #[tokio::test]
 async fn session_create_records_the_resolved_model_or_refuses_it() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let (mut client, _) = connect(&home).await;
     for (n, (model, wanted)) in [
         (json!("@free"), "@free"),
@@ -219,7 +219,7 @@ async fn session_create_records_the_resolved_model_or_refuses_it() {
     // `models.chat` 没配：没写的不记。有个池叫 `lite` 的，写 `lite` 的也不是它（施工 8-8 补：挡位名照写法不对）。
     let bare = Home::new();
     bare.write(
-        "config.toml",
+        "etc/config.toml",
         "[providers.a]\nlocal = false\n\n[pools.lite]\nmodels = [\"a/x\"]\n",
     );
     let (mut client, _) = connect(&bare).await;
@@ -235,7 +235,7 @@ async fn session_create_records_the_resolved_model_or_refuses_it() {
 async fn a_reference_to_what_is_not_configured_is_a_bad_reference() {
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[ui]\nlanguage = \"en\"\n\n[providers.a]\nlocal = false\n\n[models]\nchat = \"c/m\"\nvision = \"@nope\"\n\n[pools.p]\nmodels = [\"a/x\", \"d/y\"]\n",
     );
     let (mut client, hello) = connect(&home).await;
@@ -281,7 +281,7 @@ async fn a_reference_to_what_is_not_configured_is_a_bad_reference() {
 #[tokio::test]
 async fn a_child_session_records_the_pool_or_its_parent_model() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let tools = ToolCatalog::new(miyu_basesystem::tools(&default_resources()).unwrap()).unwrap();
     let pooled = json!({"description": "轻量", "prompt": "Task.", "pool": "free"}).to_string();
     let plain = json!({"description": "跟父会话", "prompt": "Task."}).to_string();
@@ -379,7 +379,7 @@ fn switched(home: &Home, session: &str) -> Vec<String> {
 #[tokio::test]
 async fn session_configure_records_the_resolved_model_once() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let (mut client, _) = connect(&home).await;
     let session = client.create("c1", "/tmp").await;
     client.subscribe("c2", &session).await;
@@ -406,7 +406,7 @@ async fn session_configure_records_the_resolved_model_once() {
 #[tokio::test]
 async fn session_configure_refuses_what_it_cannot_take() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let (mut client, _) = connect(&home).await;
     let session = client.create("c1", "/tmp").await;
     for (n, params) in [
@@ -440,7 +440,7 @@ async fn session_configure_refuses_what_it_cannot_take() {
 #[tokio::test]
 async fn subscribe_says_which_model_the_session_asks_next() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(routed(&home));
     client.hello().await;
     for (n, model, wanted) in [

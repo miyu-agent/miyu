@@ -38,7 +38,7 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/presets",
             Layer::Package => "pkgs/a/presets",
-            Layer::Home => "data/presets",
+            Layer::Home => "data/root/presets",
         };
         self.scratch.path().join(base)
     }
@@ -173,7 +173,7 @@ fn check_reads_every_layer_and_knows_its_files() {
     for other in [
         places.dir(Layer::Home).join("notes.txt"),
         places.dir(Layer::Home).join("sub").join("a.toml"),
-        places.scratch.path().join("data/config.toml"),
+        places.scratch.path().join("data/etc/config.toml"),
     ] {
         assert!(places.presets.check_file(&other).is_none(), "{other:?}");
     }

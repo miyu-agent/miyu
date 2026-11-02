@@ -110,7 +110,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
             "{line}"
         );
         assert!(
-            line.contains(&format!("file=state/config/{name}")),
+            line.contains(&format!("file=var/cache/config/{name}")),
             "{line}"
         );
         assert!(line.contains("error=\"no words for "), "{line}");
@@ -128,7 +128,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
 
 /// 照 `system` 这份系统配置、`env` 的环境变量读一份配置（施工 8-4）。
 fn config(root: &DataRoot, system: &str, env: &[(&str, &str)]) -> Config {
-    std::fs::write(root.path().join("config.toml"), system).expect("写得进");
+    std::fs::write(root.path().join("etc/config.toml"), system).expect("写得进");
     let environment = miyu_endpoint::config::Environment::of(env);
     Config::load(root, None, items(), environment)
 }
@@ -283,7 +283,7 @@ fn an_extension_search_source_joins_the_dropdown() {
     assert_eq!(options.first(), Some(&"auto"), "出厂的几家照旧在前");
     assert_eq!(options.last(), Some(&"finder/web"));
     std::fs::write(
-        root.path().join("config.toml"),
+        root.path().join("etc/config.toml"),
         "[net.search]\nsource = \"finder/web\"\n",
     )
     .expect("写得进");

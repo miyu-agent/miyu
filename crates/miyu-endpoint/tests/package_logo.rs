@@ -53,7 +53,7 @@ fn jpeg() -> Vec<u8> {
 
 /// 放一个带图标的包 `id`，图标的字节是 `logo`（没有的不放）。
 fn put(home: &Home, id: &str, logo: Option<&[u8]>) {
-    home.write(&format!("packages/{id}/package.toml"), KIT);
+    home.write(&format!("opt/{id}/package.toml"), KIT);
     if let Some(logo) = logo {
         let path = home.root.packages().join(id).join("art/logo.png");
         std::fs::create_dir_all(path.parent().expect("有上一层")).expect("建得了");

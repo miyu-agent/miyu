@@ -51,7 +51,7 @@ impl Places {
         let base = match layer {
             Layer::Shipped => "res/personas",
             Layer::Package => "pkgs/a/personas",
-            Layer::Home => "data/personas",
+            Layer::Home => "data/root/personas",
         };
         let path = self.scratch.path().join(base).join(id).join(file);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -128,7 +128,7 @@ fn a_persona_only_in_the_shipped_layer_lives_in_no_home() {
         ("", None)
     );
     // 家目录里只有一个空目录，也算住在那里。
-    fs::create_dir_all(places.scratch.path().join("data/personas/bare")).unwrap();
+    fs::create_dir_all(places.scratch.path().join("data/root/personas/bare")).unwrap();
     let bare = places.personas.find("bare").unwrap();
     assert!(bare.layers.contains(&Layer::Home));
     assert_eq!(bare.texts.persona, "", "没有人设是空的");
@@ -192,7 +192,7 @@ fn ids_come_from_every_layer_once_in_order() {
     places.write(Layer::Home, "miyu", "prompts/persona.md", "y\n");
     places.write(Layer::Home, "engineer", "persona.toml", "");
     places.write(Layer::Home, "Bad Name", "persona.toml", "");
-    fs::write(places.scratch.path().join("data/personas/loose"), "x").unwrap();
+    fs::write(places.scratch.path().join("data/root/personas/loose"), "x").unwrap();
     assert_eq!(places.personas.ids(), ["engineer", "miyu"]);
 }
 
@@ -250,7 +250,7 @@ fn every_layer_is_checked_on_its_own() {
             ),
             (
                 Layer::Home,
-                "data/personas/miyu/prompts/examples.md".to_string(),
+                "data/root/personas/miyu/prompts/examples.md".to_string(),
                 "last_line"
             ),
         ],
@@ -259,13 +259,13 @@ fn every_layer_is_checked_on_its_own() {
     let one = places
         .scratch
         .path()
-        .join("data/personas/miyu/prompts/examples.md");
+        .join("data/root/personas/miyu/prompts/examples.md");
     let checked = places.personas.check_file(&one).expect("是人格的文件");
     assert_eq!(checked.len(), 1);
     let fine = places
         .scratch
         .path()
-        .join("data/personas/miyu/persona.toml");
+        .join("data/root/personas/miyu/persona.toml");
     assert!(
         places
             .personas
@@ -276,7 +276,7 @@ fn every_layer_is_checked_on_its_own() {
     let missing = places
         .scratch
         .path()
-        .join("data/personas/fine/persona.toml");
+        .join("data/root/personas/fine/persona.toml");
     let checked = places.personas.check_file(&missing).expect("是人格的文件");
     assert!(
         matches!(checked[0].issue, Issue::Unreadable(_)),
@@ -287,13 +287,13 @@ fn every_layer_is_checked_on_its_own() {
     {
         let link = places.scratch.path().join("link");
         std::os::unix::fs::symlink(places.scratch.path().join("data"), &link).unwrap();
-        let through = link.join("personas/miyu/prompts/examples.md");
+        let through = link.join("root/personas/miyu/prompts/examples.md");
         let checked = places
             .personas
             .check_file(&through)
             .expect("经链接也是人格的文件");
         assert_eq!(checked.len(), 1);
-        let fresh = link.join("personas/fresh/persona.toml");
+        let fresh = link.join("root/personas/fresh/persona.toml");
         assert!(
             places.personas.check_file(&fresh).is_some(),
             "还没建的人格目录也认"
@@ -302,7 +302,7 @@ fn every_layer_is_checked_on_its_own() {
     let other = places
         .scratch
         .path()
-        .join("data/personas/miyu/prompts/persona.md");
+        .join("data/root/personas/miyu/prompts/persona.md");
     assert!(places.personas.check_file(&other).is_none(), "人设不查");
     assert!(
         places

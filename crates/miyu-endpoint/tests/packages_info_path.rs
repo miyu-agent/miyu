@@ -119,7 +119,7 @@ async fn a_package_file_is_unpacked_described_and_cleaned_up() {
     );
     assert_eq!(result["provides"]["skills"], json!(["notes"]), "{shown}");
     assert!(!placed(&home, "kit"), "什么都不装");
-    let unpacked = std::fs::read_dir(home.root.path().join("state/packages/.unpack"))
+    let unpacked = std::fs::read_dir(home.root.path().join("tmp/unpack"))
         .map(|dir| dir.count())
         .unwrap_or(0);
     assert_eq!(unpacked, 0, "暂存处用完就删");

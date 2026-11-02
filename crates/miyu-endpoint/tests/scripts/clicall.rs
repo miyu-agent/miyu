@@ -26,13 +26,13 @@ fn clicall(home: &Home, session: &str) -> Vec<(String, bool)> {
 #[tokio::test]
 async fn scripts_are_callable_only_when_they_or_the_settings_say_yes() {
     let home = Home::new();
-    home.write("scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/weather.py", &echo("weather"));
     home.write(
-        "scripts/lookup.py",
+        "root/scripts/lookup.py",
         &echo("lookup").replace("# Need load: no\n", "# Need load: no\n# Clicall: yes\n"),
     );
     home.write(
-        "scripts/secret.py",
+        "root/scripts/secret.py",
         &echo("secret").replace("# Need load: no\n", "# Need load: no\n# Clicall: no\n"),
     );
     let script = Script::new([Play::Says("好。"), Play::Says("好。")]);

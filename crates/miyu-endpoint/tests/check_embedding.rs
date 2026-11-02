@@ -30,7 +30,7 @@ fn program() -> PathBuf {
 
 /// 照系统配置 `system` 造核心，`local` 是本机的那一路（没有的是没装内置语义模型）。
 fn core(home: &Home, system: &str, local: Option<EmbedSetup>) -> Arc<miyu_endpoint::Core> {
-    home.write("config.toml", system);
+    home.write("etc/config.toml", system);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -69,7 +69,7 @@ const ENGINEER: &str = "[persona]\ndefault = \"engineer\"\n";
 #[tokio::test]
 async fn it_says_which_model_and_how_far_each_index_is_filled() {
     let home = Home::new();
-    home.write("kb/notes/cat.md", "# 团子\n\n我的猫，喝茶。\n");
+    home.write("root/kb/notes/cat.md", "# 团子\n\n我的猫，喝茶。\n");
     let mut client = Client::connect(core(&home, ENGINEER, Some(local())));
     client.hello().await;
     let reply = client

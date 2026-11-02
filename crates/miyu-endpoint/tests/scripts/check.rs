@@ -6,10 +6,13 @@ use super::*;
 #[tokio::test]
 async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     let home = Home::new();
-    home.write("scripts/weather.py", &echo("weather"));
-    home.write("scripts/read.py", &echo("read"));
-    home.write("scripts/broken.py", "#!/bin/sh\necho hi\n");
-    home.write("skills/notes/SKILL.md", "---\nname: notes\n---\nbody\n");
+    home.write("root/scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/read.py", &echo("read"));
+    home.write("root/scripts/broken.py", "#!/bin/sh\necho hi\n");
+    home.write(
+        "root/skills/notes/SKILL.md",
+        "---\nname: notes\n---\nbody\n",
+    );
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -33,9 +36,9 @@ async fn check_reports_skipped_and_clashed_scripts_and_skipped_skills() {
     assert_eq!(
         problems,
         [
-            row("script", "scripts/broken.py", "script_skipped"),
-            row("script", "scripts/read.py", "script_clashed"),
-            row("skill", "skills/notes/SKILL.md", "skill_skipped"),
+            row("script", "root/scripts/broken.py", "script_skipped"),
+            row("script", "root/scripts/read.py", "script_clashed"),
+            row("skill", "root/skills/notes/SKILL.md", "skill_skipped"),
         ],
         "{reply}"
     );
@@ -66,10 +69,10 @@ async fn check_reports_links_out_of_the_data_root() {
         std::fs::create_dir_all(at.parent().expect("有上级")).expect("建得了");
         std::os::unix::fs::symlink(home.root.path().join(target), at).expect("建得了链接");
     };
-    link("token.txt", "scripts/token.py");
-    link("nowhere.py", "scripts/gone.py");
-    link("keys", "skills/keys");
-    link("token.txt", "commands/token.md");
+    link("token.txt", "root/scripts/token.py");
+    link("nowhere.py", "root/scripts/gone.py");
+    link("keys", "root/skills/keys");
+    link("token.txt", "root/commands/token.md");
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -89,10 +92,10 @@ async fn check_reports_links_out_of_the_data_root() {
     assert_eq!(
         codes,
         [
-            ("script", "scripts/gone.py", "script_skipped"),
-            ("script", "scripts/token.py", "script_link_outside"),
-            ("skill", "skills/keys", "skill_link_outside"),
-            ("slash", "commands/token.md", "slash_link_outside"),
+            ("script", "root/scripts/gone.py", "script_skipped"),
+            ("script", "root/scripts/token.py", "script_link_outside"),
+            ("skill", "root/skills/keys", "skill_link_outside"),
+            ("slash", "root/commands/token.md", "slash_link_outside"),
         ],
         "{reply}"
     );
@@ -107,9 +110,9 @@ async fn check_reports_links_out_of_the_data_root() {
 #[tokio::test]
 async fn check_reports_state_left_by_scripts_that_are_gone() {
     let home = Home::new();
-    home.write("scripts/weather.py", &echo("weather"));
+    home.write("root/scripts/weather.py", &echo("weather"));
     for kept in ["~home/weather", "~home/gone", "kit/live", "kit/weather"] {
-        home.write(&format!("state/scripts/{kept}/data"), "x");
+        home.write(&format!("root/state/scripts/{kept}/data"), "x");
     }
     let mut client = Client::connect(core(&home, &Script::new([])));
     client.hello().await;
@@ -125,10 +128,10 @@ async fn check_reports_state_left_by_scripts_that_are_gone() {
         })
         .collect();
     assert_eq!(left.len(), 3, "{reply}");
-    assert_eq!(left[0].0, "state/scripts/kit/live");
+    assert_eq!(left[0].0, "root/state/scripts/kit/live");
     assert!(left[0].1.contains("kit/live"), "{reply}");
-    assert_eq!(left[1].0, "state/scripts/kit/weather");
-    assert_eq!(left[2].0, "state/scripts/~home/gone");
+    assert_eq!(left[1].0, "root/state/scripts/kit/weather");
+    assert_eq!(left[2].0, "root/state/scripts/~home/gone");
 }
 
 /// 没登记上的脚本分三种（施工 X-46）：撞了别的工具名字的 `script_clashed`，造不成工具的 `script_not_made`（带为什么），核心
@@ -136,10 +139,10 @@ async fn check_reports_state_left_by_scripts_that_are_gone() {
 #[tokio::test]
 async fn unregistered_scripts_say_why() {
     let home = Home::new();
-    home.write("scripts/read.py", &echo("read"));
-    home.write(&format!("scripts/{UNMADE}.py"), &echo(UNMADE));
+    home.write("root/scripts/read.py", &echo("read"));
+    home.write(&format!("root/scripts/{UNMADE}.py"), &echo(UNMADE));
     let core = core(&home, &Script::new([]));
-    home.write("scripts/later.py", &echo("later"));
+    home.write("root/scripts/later.py", &echo("later"));
     let mut client = Client::connect(core);
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;
@@ -159,11 +162,11 @@ async fn unregistered_scripts_say_why() {
             .map(|(_, code, message)| (code.as_str(), message.as_str()))
             .unwrap_or_else(|| panic!("{file} 没报：{reply}"))
     };
-    assert_eq!(code("scripts/read.py").0, "script_clashed");
-    let (unmade, why) = code(&format!("scripts/{UNMADE}.py"));
+    assert_eq!(code("root/scripts/read.py").0, "script_clashed");
+    let (unmade, why) = code(&format!("root/scripts/{UNMADE}.py"));
     assert_eq!(unmade, "script_not_made");
     assert!(why.contains(&format!("Cannot make {UNMADE}.")), "{why}");
-    let (later, said) = code("scripts/later.py");
+    let (later, said) = code("root/scripts/later.py");
     assert_eq!(later, "script_not_loaded");
     assert!(said.contains("later"), "{said}");
     assert_eq!(problems.len(), 3, "{reply}");

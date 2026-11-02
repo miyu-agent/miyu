@@ -212,11 +212,11 @@ fn entries_in_the_forbidden_zone_are_skipped_except_the_workspace() {
     let scratch = Scratch::new();
     let root = &scratch.0;
     touch(root, "data/secret.txt");
-    touch(root, "data/workspace/w.txt");
+    touch(root, "data/root/workspace/w.txt");
     touch(root, "keep.txt");
     // 工作区在数据根里面：照样进。
     let places = Places::here(
-        root.join("data/workspace"),
+        root.join("data/root/workspace"),
         (root.join("data"), root.join("data").join("kb")),
         None,
     );
@@ -226,8 +226,8 @@ fn entries_in_the_forbidden_zone_are_skipped_except_the_workspace() {
     let built = built(&index);
     let found = paths(&built);
     assert!(found.contains(&"keep.txt"));
-    assert!(found.contains(&"data/workspace/"));
-    assert!(found.contains(&"data/workspace/w.txt"));
+    assert!(found.contains(&"data/root/workspace/"));
+    assert!(found.contains(&"data/root/workspace/w.txt"));
     assert!(
         !found.contains(&"data/secret.txt"),
         "数据根里、工作区以外的不收：{found:?}"

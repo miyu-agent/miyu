@@ -64,9 +64,7 @@ async fn a_skill_added_mid_session_comes_in_the_tail_once_and_opens_its_folder()
     let added = home
         .root
         .path()
-        .join("skills")
-        .join("pdf")
-        .join("SKILL.md")
+        .join("root/skills/pdf/SKILL.md")
         .to_string_lossy()
         .into_owned();
     let script = Script::new([

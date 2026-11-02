@@ -270,7 +270,7 @@ async fn three_failures_in_a_row_skip_the_batch() {
             .map(|(text, _)| text.to_string())),
         None
     );
-    let dir = home.root.path().join("modules/memory/engineer");
+    let dir = home.root.path().join("root/memory/engineer");
     assert!(
         log_lines(&dir)
             .iter()

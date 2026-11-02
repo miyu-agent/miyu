@@ -46,7 +46,7 @@ fn mine(home: &Home, path: &str) -> PathBuf {
 /// 在数据根里放技能 `notes`、旁边放一份不给碰的；交回 `SKILL.md` 列出来的路径（Windows 上反斜杠换成了 `/`，她照抄
 /// 这一条读）。
 fn put(home: &Home) -> String {
-    let file = mine(home, "skills").join("notes").join("SKILL.md");
+    let file = home.root.skills().join("notes").join("SKILL.md");
     std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
     std::fs::write(
         &file,
@@ -196,7 +196,7 @@ async fn a_loaded_session_keeps_its_list_and_still_reads_skills() {
 async fn reading_the_skill_file_marks_the_skill_in_the_effect() {
     let home = Home::new();
     let skill = put(&home);
-    let reference = mine(&home, "skills").join("notes").join("reference.md");
+    let reference = home.root.skills().join("notes").join("reference.md");
     std::fs::write(&reference, "参考\n").expect("写得进");
     let reference = reference.to_string_lossy().into_owned();
     let resources = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");

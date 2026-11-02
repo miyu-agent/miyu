@@ -119,8 +119,9 @@ async fn an_installed_extension_starts_and_a_removed_one_stops() {
         .call("r1", "package.remove", json!({"package": "xbridge"}))
         .await;
     assert_eq!(reply["result"]["removed"], true, "{reply}");
-    until("卸掉的停下", || {
-        stderr(&home, "xbridge").contains("stopped")
+    // 先停下再清（设计 55 第三节第 4 条）：它的日志目录连同核心记的标准错误清掉了，就是停下了以后。
+    until("卸掉的停下、日志清掉", || {
+        !home.root.package_logs("xbridge").exists()
     })
     .await;
     let listed = client.call("s", "extension.status", json!({})).await;

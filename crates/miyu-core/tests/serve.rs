@@ -452,9 +452,9 @@ fn the_idle_limit_comes_from_the_system_config_in_minutes() {
     let limit = |written: Option<&str>| {
         let home = Home::new();
         if let Some(text) = written {
-            let system = home.root.path().to_path_buf();
-            std::fs::create_dir_all(&system).expect("建得了");
-            std::fs::write(system.join("config.toml"), text).expect("写得进");
+            let system = home.root.config_file();
+            std::fs::create_dir_all(system.parent().expect("有上一级")).expect("建得了");
+            std::fs::write(system, text).expect("写得进");
         }
         let core = home.core_configured(Arc::new(Script::new([])), "t");
         miyu_core::idle_limit(&core)

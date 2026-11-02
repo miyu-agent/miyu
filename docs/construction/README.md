@@ -1362,6 +1362,7 @@ flowchart LR
 | FH-1 | 记忆只跟随人格 | 去掉「只在这个会话里」的记忆范围：`session.create` 的 `memory` 只收 `persona`、`off`（`session` 回 `bad_params`），人格不再管范围（`persona.toml` 写了 `[memory]` 的 `unknown table`），会话目录下不再有 `memory/`，整理会话只有人格那一间；「清掉这个会话记下的」照留。设计 17 L2 改。施工单见 `FH-数据根仿FHS.md` |
 | FH-2上 | 数据根里的位置都经 `DataRoot` 拿 | 纯重构、布局不变：`miyu-store/src/root/places.rs` 按设计 55 的分块给出每一处的方法，产品代码里自己拼数据根路径的都换掉，`state()`、`cache()` 去掉；模型目录拆成用出来的、拉到的两处（`ModelDirs`）；包的状态根拆成状态、本地库、留下的改动、软件源缓存、下载、解包各一处；写配置、密钥的临时文件往上找数据根、建在它的 `run/` 里；知识库的边界、危险命令里的工作区由调的一方照数据根给，不再照 `kb/`、`workspace/` 猜。施工单见 `FH-数据根仿FHS.md` |
 | FH-2下 | 交给程序的环境变量一处给 | `miyu_store::program`：数据根、资源目录、包的文件夹和状态目录、脚本的状态、缓存、交图目录各一张名字表，扩展、`miyu <包的命令>`、脚本工具都照它给（名字和位置这一步不变，FH-3 起照设计 55 加新名字）；`DataRoot::package_logs` 给包自己写日志的目录；测试里照数据根拼的路径改用方法。施工单见 `FH-数据根仿FHS.md` |
+| FH-3上 | 换布局 layout 3 | 数据根照设计 55 分 `etc/ opt/ root/ var/ tmp/ run/`，标记换成 `.miyu-layout`（写着 layout 3，读的时候核对；旧的 `.miyu-root` 报「旧版的数据根」、不动）；凭据进 `etc/private/`，核心起来时建好那张表、沙盒里每条命令前再补；卸掉的出厂包记在 `etc/removed/<编号>`，本地库在 `var/lib/packages/`；两个暂存 `tmp/`（起来清 `unpack/`）、`var/tmp/`（清 7 天没碰的）；删人格、三层都没有了的记忆跟着进回收处；保留的包编号读清单时报 `reserved_id`、装的时候拒；卸包清各层的 `<编号>/`、脚本的缓存、`provide/`、MCP 的标准错误；Windows 沙盒安装的两份文件换位置。施工单见 `FH-数据根仿FHS.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

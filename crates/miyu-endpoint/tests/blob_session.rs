@@ -21,7 +21,7 @@ use crate::support::*;
 
 /// 照对应表、读好的清单起来的核心，拉起开着的扩展（同 `bridge_venues.rs`）。
 pub(crate) fn served_core(home: &Home, script: &Script) -> Arc<Core> {
-    home.write("config.toml", BINDINGS);
+    home.write("etc/config.toml", BINDINGS);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,

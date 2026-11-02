@@ -36,10 +36,7 @@ async fn lines(path: &std::path::Path, n: usize) {
 async fn started(home: &Home, program: &Program) -> (Arc<miyu_endpoint::Core>, Client, String) {
     let (path, step) = record(home, "wx");
     let steps = steps(&[&step, "hello", "ask:provide:{\"tools\":[]}", "serve"]);
-    home.write(
-        "packages/wx/package.toml",
-        &manifest(&program.name(), &steps),
-    );
+    home.write("opt/wx/package.toml", &manifest(&program.name(), &steps));
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),
@@ -134,7 +131,7 @@ async fn not_running_is_unavailable() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "packages/wx/package.toml",
+        "opt/wx/package.toml",
         &manifest(&program.name(), &steps(&["hello", "wait"])),
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -174,7 +171,7 @@ async fn menus_list_it_and_ones_own_template_covers_it() {
             .any(|one| one["id"] == "command-weather" && one["name"] == "/weather"),
         "{preset}"
     );
-    home.write("commands/weather.md", "Mine $ARGUMENTS.\n");
+    home.write("root/commands/weather.md", "Mine $ARGUMENTS.\n");
     let reply = run(&mut client, "k1", &session, "/weather tokyo").await;
     assert_eq!(
         reply["result"]["said"], "",
@@ -225,7 +222,7 @@ async fn a_shipped_access_off_turns_the_command_off() {
         "argument = { zh = \"<城市>\" }\naccess = \"off\"\n",
     );
     assert!(manifest.contains("access = \"off\""), "{manifest}");
-    home.write("packages/wx/package.toml", &manifest);
+    home.write("opt/wx/package.toml", &manifest);
     let core = Arc::new(
         home.core_full(&Script::new([]), Catalog::default(), None, TOKEN)
             .with_extension_timing(quick()),

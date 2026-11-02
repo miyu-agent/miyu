@@ -70,7 +70,7 @@ fn what_is_saved_is_there_after_reopening_and_found_by_words() {
         id(3)
     );
     drop((log, logs));
-    assert!(root.path().join("modules/memory/engineer").is_dir());
+    assert!(root.path().join("root/memory/engineer").is_dir());
 
     let logs = MemoryLogs::new(&root);
     let log = logs.open(&Room::persona("engineer")).expect("开得了").0;
@@ -103,9 +103,7 @@ fn a_torn_last_line_is_cut_off() {
         .append(at(1), tool(), None, &saved("养了一只猫"))
         .expect("记得下");
     drop(logs);
-    let segment = root
-        .path()
-        .join("modules/memory/engineer/000000000001.jsonl");
+    let segment = root.path().join("root/memory/engineer/000000000001.jsonl");
     let mut bytes = fs::read(&segment).expect("在");
     bytes.extend_from_slice(br#"{"seq":2,"at":"2026-10"#);
     fs::write(&segment, bytes).expect("写得进");
@@ -248,9 +246,7 @@ fn the_first_opening_reports_and_an_unreadable_memory_is_named() {
     );
     drop((log, logs));
     // 外壳是好的、记忆的 body 读不懂的一行：底账跳过它、说出来，别的照常。
-    let segment = root
-        .path()
-        .join("modules/memory/engineer/000000000001.jsonl");
+    let segment = root.path().join("root/memory/engineer/000000000001.jsonl");
     let mut bytes = fs::read(&segment).expect("在");
     bytes.extend_from_slice(
         b"{\"seq\":2,\"at\":\"2026-10-01T00:02:00.000Z\",\"kind\":\"ext.memory.saved\",\"by\":{\"kind\":\"kernel\"},\"body\":{\"text\":3}}\n",
@@ -297,7 +293,7 @@ fn measure_a_thousand_memories() {
             .map(|entry| entry.expect("读得出").metadata().expect("在").len())
             .sum()
     };
-    let logged = size(root.path().join("modules/memory/engineer"));
+    let logged = size(root.path().join("root/memory/engineer"));
     let started = std::time::Instant::now();
     let logs = MemoryLogs::new(&root);
     let (log, _) = logs.open(&Room::persona("engineer")).expect("开得了");

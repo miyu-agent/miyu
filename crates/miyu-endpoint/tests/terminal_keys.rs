@@ -139,7 +139,12 @@ async fn bad_terminal_keys_and_fresh_without_create_are_refused() {
 #[tokio::test]
 async fn writing_a_pointer_drops_keys_unused_for_a_week() {
     let home = Home::new();
-    let dir = home.root.path().to_path_buf();
+    let dir = home
+        .root
+        .terminal_file()
+        .parent()
+        .expect("有上一级")
+        .to_path_buf();
     std::fs::create_dir_all(&dir).expect("建得了目录");
     let stale = r#"{"terminals":{"old-pane":{"session":"01a0f233-cfec-7023-8ed5-2a037a1d5ec8","at":"2026-01-01T00:00:00.000Z","used":"2026-01-01T00:00:00.000Z"}}}"#;
     std::fs::write(dir.join("terminal.json"), stale).expect("写得进");

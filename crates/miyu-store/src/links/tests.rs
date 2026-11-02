@@ -66,8 +66,8 @@ fn real(path: &Path) -> PathBuf {
 #[test]
 fn a_link_counts_as_what_it_points_to() {
     let site = Site::new();
-    let place = site.dir("data/scripts");
-    site.file("data/scripts/plain.py");
+    let place = site.dir("data/root/scripts");
+    site.file("data/root/scripts/plain.py");
     let file = site.file("elsewhere/tool.py");
     let dir = site.dir("elsewhere/notes");
     if !(link(&file, &place.join("tool.py")) && link(&dir, &place.join("notes"))) {
@@ -90,7 +90,7 @@ fn a_link_counts_as_what_it_points_to() {
 #[test]
 fn a_broken_or_looping_link_is_skipped_and_said_why() {
     let site = Site::new();
-    let place = site.dir("data/skills");
+    let place = site.dir("data/root/skills");
     let (broken, looping) = (place.join("gone"), place.join("self"));
     if !(link(&site.at("nowhere"), &broken) && link(&looping, &looping)) {
         return;
@@ -119,9 +119,9 @@ fn a_broken_or_looping_link_is_skipped_and_said_why() {
 #[test]
 fn inside_the_data_root_only_the_package_folders_count() {
     let site = Site::new();
-    let place = site.dir("data/scripts");
-    let own = site.file("data/packages/kit/scripts/run.py");
-    let secret = site.file("data/secrets.toml");
+    let place = site.dir("data/root/scripts");
+    let own = site.file("data/opt/kit/scripts/run.py");
+    let secret = site.file("data/etc/private/secrets.toml");
     let free = site.file("elsewhere/free.py");
     for (target, name) in [(&own, "own.py"), (&secret, "secret.py"), (&free, "free.py")] {
         if !link(target, &place.join(name)) {
@@ -152,7 +152,7 @@ fn inside_the_data_root_only_the_package_folders_count() {
 fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
     let site = Site::new();
     let token = site.file("data/keys/token");
-    let place = site.at("data/scripts");
+    let place = site.at("data/root/scripts");
     if !link(&site.at("data/keys"), &place) {
         return;
     }
@@ -165,9 +165,9 @@ fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
 #[test]
 fn only_wanted_names_are_looked_at() {
     let site = Site::new();
-    let place = site.dir("data/commands");
-    site.file("data/commands/notes.md");
-    site.file("data/commands/readme.txt");
+    let place = site.dir("data/root/commands");
+    site.file("data/root/commands/notes.md");
+    site.file("data/root/commands/readme.txt");
     if !link(&site.at("nowhere"), &place.join("gone.txt")) {
         return;
     }

@@ -15,7 +15,7 @@ use crate::durable;
 use crate::root::DataRoot;
 
 /// 盐在状态区里的文件名。
-const FILE: &str = "log-salt";
+pub(crate) const FILE: &str = "log-salt";
 /// 盐几个字节。
 const LEN: usize = 32;
 /// 短号取摘要的前几个字节（写成两倍长的十六进制）。

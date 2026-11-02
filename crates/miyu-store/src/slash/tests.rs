@@ -75,14 +75,14 @@ fn commands_come_from_installed_packages_and_the_home_folder() {
         "res/packages/tools/commands/shared.md",
         "From the package.\n",
     );
-    places.write("data/commands/shared.md", "My own.\n");
+    places.write("data/root/commands/shared.md", "My own.\n");
     places.write(
-        "data/commands/notes.md",
+        "data/root/commands/notes.md",
         "---\ndescription: Notes\n---\nMine.\n",
     );
-    places.write("data/commands/.hidden.md", "No.\n");
-    places.write("data/commands/readme.txt", "No.\n");
-    places.write("data/commands/deeper/inner.md", "No.\n");
+    places.write("data/root/commands/.hidden.md", "No.\n");
+    places.write("data/root/commands/readme.txt", "No.\n");
+    places.write("data/root/commands/deeper/inner.md", "No.\n");
     // 读坏了的清单：它带的命令不算。
     places.write("res/packages/broken/package.toml", "[package\n");
     places.write("res/packages/broken/commands/lost.md", "No.\n");
@@ -106,7 +106,7 @@ fn commands_come_from_installed_packages_and_the_home_folder() {
     );
     assert!(skipped[0].why.contains("already provided by "));
     let by = skipped[0].by.as_ref().expect("同名的记了被谁盖住");
-    assert!(by.ends_with("data/commands/shared.md"), "{by:?}");
+    assert!(by.ends_with("data/root/commands/shared.md"), "{by:?}");
 }
 
 #[test]
@@ -114,30 +114,26 @@ fn a_shipped_package_wins_over_a_home_one_whatever_the_ids() {
     let places = Places::new();
     places.write("res/packages/z-tools/package.toml", &package("z-tools"));
     places.write("res/packages/z-tools/commands/review.md", "Shipped.\n");
-    places.write("data/packages/a-kit/package.toml", &package("a-kit"));
-    places.write("data/packages/a-kit/commands/review.md", "Installed.\n");
+    places.write("data/opt/a-kit/package.toml", &package("a-kit"));
+    places.write("data/opt/a-kit/commands/review.md", "Installed.\n");
     let (commands, skipped) = places.found();
     assert_eq!(
         brief(&commands),
         [("review", "Shipped.\n", Some("z-tools"))]
     );
     assert_eq!(skipped.len(), 1, "{skipped:?}");
-    assert!(
-        skipped[0]
-            .path
-            .ends_with("packages/a-kit/commands/review.md")
-    );
+    assert!(skipped[0].path.ends_with("opt/a-kit/commands/review.md"));
 }
 
 #[test]
 fn a_bad_name_or_head_is_skipped_and_said_why() {
     let places = Places::new();
-    places.write("data/commands/Bad_Name.md", "x\n");
+    places.write("data/root/commands/Bad_Name.md", "x\n");
     places.write(
-        "data/commands/broken.md",
+        "data/root/commands/broken.md",
         "---\ndescription: [x\n---\nbody\n",
     );
-    places.write("data/commands/fine.md", "ok\n");
+    places.write("data/root/commands/fine.md", "ok\n");
     let (commands, skipped) = places.found();
     assert_eq!(brief(&commands), [("fine", "ok\n", None)]);
     let mut why: Vec<(String, &str)> = skipped
@@ -188,15 +184,17 @@ fn a_package_folder_says_which_commands_it_carries() {
 fn a_linked_template_is_read_through() {
     let places = Places::new();
     places.write("elsewhere/notes.md", "Linked.\n");
-    places.write("data/secrets.toml", "token = \"no\"\n");
-    places.write("data/commands/own.md", "Mine.\n");
-    let own = places.root.path().join("commands");
+    places.write("data/etc/private/secrets.toml", "token = \"no\"\n");
+    places.write("data/root/commands/own.md", "Mine.\n");
+    let own = places.root.path().join("root/commands");
     let leak = own.join("leak.md");
     if !(link(
         &places.scratch.path().join("elsewhere/notes.md"),
         &own.join("notes.md"),
-    ) && link(&places.scratch.path().join("data/secrets.toml"), &leak))
-    {
+    ) && link(
+        &places.scratch.path().join("data/etc/private/secrets.toml"),
+        &leak,
+    )) {
         return;
     }
     let (commands, skipped) = places.found();
@@ -209,7 +207,7 @@ fn a_linked_template_is_read_through() {
         (skipped[0].path.clone(), skipped[0].outside.clone()),
         (
             leak,
-            fs::canonicalize(places.scratch.path().join("data/secrets.toml")).ok()
+            fs::canonicalize(places.scratch.path().join("data/etc/private/secrets.toml")).ok()
         )
     );
 }

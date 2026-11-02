@@ -143,7 +143,7 @@ fn a_reopened_table_reads_back_the_same() {
     assert!(
         table
             .path()
-            .ends_with(std::path::Path::new("state").join("schedules.db"))
+            .ends_with(std::path::Path::new("root").join("schedules.db"))
     );
 }
 

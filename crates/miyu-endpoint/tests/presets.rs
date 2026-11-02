@@ -15,7 +15,7 @@ use crate::support::*;
 
 /// 数据根里的预设 `id`。
 fn mine(home: &Home, id: &str, text: &str) {
-    home.write(&format!("presets/{id}.toml"), text);
+    home.write(&format!("root/presets/{id}.toml"), text);
 }
 
 /// 读配置的核心（`support::venues`）。
@@ -61,11 +61,11 @@ async fn without_a_preset_the_default_is_used() {
     let mut client = connected(configured(&home, &script)).await;
     let first = made(&create(&mut client, "c1", json!({"cwd": "~"})).await);
     // 系统配置写了 dev。
-    home.write("config.toml", "[preset]\ndefault = \"dev\"\n");
+    home.write("etc/config.toml", "[preset]\ndefault = \"dev\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let second = made(&create(&mut client, "c2", json!({"cwd": "~"})).await);
     // 系统配置改成 mine。
-    home.write("config.toml", "[preset]\ndefault = \"mine\"\n");
+    home.write("etc/config.toml", "[preset]\ndefault = \"mine\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let third = made(&create(&mut client, "c3", json!({"cwd": "~"})).await);
     // 指定的压着默认。
@@ -88,8 +88,8 @@ async fn without_a_preset_the_default_is_used() {
 #[tokio::test]
 async fn the_persona_comes_from_the_request_then_the_default_and_never_the_preset() {
     let home = Home::new();
-    home.write("personas/miyu/prompts/persona.md", "You are Miyu.\n");
-    home.write("config.toml", "[persona]\ndefault = \"miyu\"\n");
+    home.write("root/personas/miyu/prompts/persona.md", "You are Miyu.\n");
+    home.write("etc/config.toml", "[persona]\ndefault = \"miyu\"\n");
     mine(&home, "chat", "[preset]\nname = { en = \"Chat\" }\n");
     let script = Script::new([]);
     let mut client = connected(configured(&home, &script)).await;
@@ -149,7 +149,7 @@ async fn missing_bad_and_broken_presets_are_refused_and_nothing_is_made() {
         "home broken.toml:3: preset.unlisted must be on or off"
     );
     // 默认预设指着没有的：照样不悄悄换成别的（Y12）。
-    home.write("config.toml", "[preset]\ndefault = \"nobody\"\n");
+    home.write("etc/config.toml", "[preset]\ndefault = \"nobody\"\n");
     let mut client = connected(configured(&home, &script)).await;
     let reply = create(&mut client, "c4", json!({"cwd": "~"})).await;
     assert_eq!(reason(&reply), Some("unknown_preset"), "{reply}");
@@ -191,7 +191,7 @@ async fn every_view_names_the_preset_and_older_logs_name_none() {
     let first = home
         .root
         .path()
-        .join("sessions")
+        .join("root/sessions")
         .join(&dev)
         .join("000000000001.jsonl");
     let text = std::fs::read_to_string(&first).unwrap();
@@ -215,7 +215,7 @@ async fn every_view_names_the_preset_and_older_logs_name_none() {
 #[tokio::test]
 async fn a_venue_session_is_made_with_the_given_preset_and_found_again_without_it() {
     let home = Home::new();
-    home.write("config.toml", BINDINGS);
+    home.write("etc/config.toml", BINDINGS);
     let script = Script::new([]);
     let mut client = connected(configured(&home, &script)).await;
     let private = json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001", "preset": "dev"});
@@ -250,7 +250,7 @@ async fn a_venue_session_is_made_with_the_given_preset_and_found_again_without_i
 #[tokio::test]
 async fn a_venue_that_cannot_show_images_says_so_when_its_session_is_made() {
     let home = Home::new();
-    home.write("config.toml", BINDINGS);
+    home.write("etc/config.toml", BINDINGS);
     let script = Script::new([]);
     let mut client = connected(configured(&home, &script)).await;
     let voice = json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001", "images": false});
@@ -267,7 +267,7 @@ async fn a_venue_that_cannot_show_images_says_so_when_its_session_is_made() {
 #[tokio::test]
 async fn a_session_made_without_titles_says_so() {
     let home = Home::new();
-    home.write("config.toml", BINDINGS);
+    home.write("etc/config.toml", BINDINGS);
     let script = Script::new([]);
     let mut client = connected(configured(&home, &script)).await;
     let bot = json!({"venue": "qq:private:10001", "kind": "private", "peer": "qq:10001", "titles": false});
@@ -442,7 +442,7 @@ async fn check_reads_presets_from_disk() {
         presets,
         [&json!({
             "kind": "preset",
-            "file": "presets/bad.toml",
+            "file": "root/presets/bad.toml",
             "code": "not_false",
             "level": "error",
             "line": 2,

@@ -1,14 +1,11 @@
 //! 装到哪了那份记录（`docs/blueprint/sandbox/windows.md`「装到哪了那份记录」）：本人数据根里的
-//! `state/sandbox/windows.json`，一行 JSON，只给本人和 SYSTEM 读。卸载、`miyu doctor` 照它找，5-9 照它以沙盒用户的
+//! `etc/private/sandbox-windows.json`（设计 55，`DataRoot::sandbox_record_file`），一行 JSON，只给本人和 SYSTEM 读。卸载、`miyu doctor` 照它找，5-9 照它以沙盒用户的
 //! 身份登录。
 
 use miyu_kernel::time::Timestamp;
 use serde::{Deserialize, Serialize};
 
 use super::{InstallError, Owner, files};
-
-/// 记录的文件名，在数据根的 `state/sandbox/` 里。
-pub(crate) const FILE: &str = "windows.json";
 
 /// 记录的版本：改了写法就加一。读的时候只认它。
 pub(crate) const VERSION: u32 = 1;
@@ -82,7 +79,7 @@ pub(crate) fn write(owner: &Owner, record: &Record) -> Result<(), InstallError> 
     files::check_root(owner.home())?;
     let failed = |error: &dyn std::fmt::Display| InstallError::failed("write record", error);
     let line = record.to_line().map_err(|error| failed(&error))?;
-    files::replace_private(owner.home(), FILE, line.as_bytes(), owner.sid())
+    files::replace_private(owner.home(), &path(owner), line.as_bytes(), owner.sid())
         .map_err(|error| failed(&error))
 }
 
@@ -93,8 +90,13 @@ pub(crate) fn write(owner: &Owner, record: &Record) -> Result<(), InstallError> 
 /// 数据根没有标记；删不了（`delete record`）。
 pub(crate) fn delete(owner: &Owner) -> Result<(), InstallError> {
     files::check_root(owner.home())?;
-    let path = files::install_dir(owner.home()).join(FILE);
-    files::remove_if_there(&path).map_err(|error| InstallError::failed("delete record", error))
+    files::remove_if_there(&path(owner))
+        .map_err(|error| InstallError::failed("delete record", error))
+}
+
+/// 记录在哪。
+pub(crate) fn path(owner: &Owner) -> std::path::PathBuf {
+    files::root(owner.home()).sandbox_record_file()
 }
 
 #[cfg(test)]

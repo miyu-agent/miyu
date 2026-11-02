@@ -73,7 +73,7 @@ fn snapshot(home: &Home, session: &str) -> Snapshot {
 #[tokio::test]
 async fn with_background_off_the_shell_has_no_background_and_refuses_it() {
     let home = Home::new();
-    home.write("presets/quiet.toml", QUIET);
+    home.write("root/presets/quiet.toml", QUIET);
     let script = Script::new([
         Play::calls(&[(
             "shell",
@@ -142,7 +142,7 @@ async fn with_background_off_the_shell_has_no_background_and_refuses_it() {
 #[tokio::test]
 async fn with_background_off_a_subagent_is_waited_for() {
     let home = Home::new();
-    home.write("presets/quiet.toml", QUIET);
+    home.write("root/presets/quiet.toml", QUIET);
     let script = Script::new([
         Play::calls(&[(
             "subagent",
@@ -187,7 +187,7 @@ async fn with_background_off_a_subagent_is_waited_for() {
 #[tokio::test]
 async fn interrupting_the_parent_stops_its_foreground_subagent() {
     let home = Home::new();
-    home.write("presets/quiet.toml", QUIET);
+    home.write("root/presets/quiet.toml", QUIET);
     let script = Script::new([
         Play::calls(&[(
             "subagent",

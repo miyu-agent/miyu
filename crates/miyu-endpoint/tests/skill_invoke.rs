@@ -50,17 +50,17 @@ fn skill(name: &str, extra: &str) -> String {
 
 /// 家目录里的四个技能：平常的 `notes`、只许人点名的 `release`、不许人点名的 `style`、和模板命令撞名的 `review`。
 fn written(home: &Home) {
-    home.write("skills/notes/SKILL.md", &skill("notes", ""));
+    home.write("root/skills/notes/SKILL.md", &skill("notes", ""));
     home.write(
-        "skills/release/SKILL.md",
+        "root/skills/release/SKILL.md",
         &skill("release", "disable-model-invocation: true\n"),
     );
     home.write(
-        "skills/style/SKILL.md",
+        "root/skills/style/SKILL.md",
         &skill("style", "user-invocable: false\n"),
     );
-    home.write("skills/review/SKILL.md", &skill("review", ""));
-    home.write("commands/review.md", "The template review.\n");
+    home.write("root/skills/review/SKILL.md", &skill("review", ""));
+    home.write("root/commands/review.md", "The template review.\n");
 }
 
 #[tokio::test]
@@ -159,10 +159,10 @@ async fn who_may_name_a_skill_and_which_wins_a_clash() {
 async fn check_says_which_skills_lose_to_a_command() {
     let home = Home::new();
     written(&home);
-    home.write("skills/stop/SKILL.md", &skill("stop", ""));
-    home.write("commands/lint.md", "Lint it.\n");
+    home.write("root/skills/stop/SKILL.md", &skill("stop", ""));
+    home.write("root/commands/lint.md", "Lint it.\n");
     home.write(
-        "skills/lint/SKILL.md",
+        "root/skills/lint/SKILL.md",
         &skill("lint", "user-invocable: false\n"),
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -197,7 +197,7 @@ async fn a_preset_that_turns_a_skill_off_refuses_it() {
     let home = Home::new();
     written(&home);
     home.write(
-        "presets/quiet.toml",
+        "root/presets/quiet.toml",
         "[preset]\nname = \"安静\"\n\n[features]\nskill-notes = false\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));

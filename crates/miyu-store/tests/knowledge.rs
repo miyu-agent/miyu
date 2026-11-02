@@ -11,7 +11,7 @@ use miyu_store::root::DataRoot;
 use crate::support::*;
 
 fn kb(root: &DataRoot, id: &str) -> PathBuf {
-    let dir = root.path().join("kb").join(id);
+    let dir = root.path().join("root/kb").join(id);
     std::fs::create_dir_all(&dir).expect("建得了");
     dir
 }
@@ -199,7 +199,7 @@ fn a_document_is_read_page_by_page() {
     let long = "字".repeat(20_000);
     write(&notes, "long.md", &long);
     write(&notes, "short.txt", "");
-    std::fs::write(root.path().join("kb").join("secret.md"), "库外面的").expect("写得进");
+    std::fs::write(root.path().join("root/kb/secret.md"), "库外面的").expect("写得进");
     let knowledge = Knowledge::new(&root);
     let first = knowledge.read("notes", "long.md", 1).expect("读得出");
     assert_eq!(first.pages, 2);

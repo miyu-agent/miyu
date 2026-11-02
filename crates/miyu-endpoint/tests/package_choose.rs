@@ -42,10 +42,10 @@ fn item<'a>(schema: &'a Value, key: &str) -> &'a Value {
 #[tokio::test]
 async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
-    home.write("personas/cat/persona.toml", "[voice]\n");
+    home.write("opt/draw/package.toml", DRAW);
+    home.write("root/personas/cat/persona.toml", "[voice]\n");
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[draw]\nmodel = \"gone/m\"\npersona = \"cat\"\nkb = \"notes\"\nhelpers = [\"cat\", \"dog\"]\n",
     );
     let mut client = Client::connect(packaged::core(&home));
@@ -115,9 +115,9 @@ async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
 #[test]
 fn choices_are_handed_over_as_written() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[draw]\nmodel = \"@fast\"\npersona = \"cat\"\nhelpers = [\"cat\"]\n",
     );
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());

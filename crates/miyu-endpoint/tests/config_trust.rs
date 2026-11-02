@@ -30,7 +30,7 @@ fn repo(home: &Home, name: &str, text: &str) -> PathBuf {
 fn record(home: &Home, repo: &Path, text: &str, trusted: bool) {
     let path = repo.to_string_lossy().replace('\\', "\\\\");
     home.write(
-        "trust.toml",
+        "etc/trust.toml",
         &format!(
             "[[project]]\npath = \"{path}\"\nversion = \"{}\"\ntrusted = {trusted}\n",
             version(text.as_bytes())
@@ -138,7 +138,7 @@ async fn get_with_a_directory_shows_the_project_and_its_trust() {
     let home = Home::new();
     let loose = "[permission]\nstart_read_only = false\n";
     let repo = repo(&home, "app", loose);
-    home.write("config.toml", "permission.start_read_only = true\n");
+    home.write("etc/config.toml", "permission.start_read_only = true\n");
     let mut client = Client::connect(home.core_configured(&Script::new([]), None, &[]));
     client.hello().await;
     let cwd = repo.to_string_lossy().into_owned();

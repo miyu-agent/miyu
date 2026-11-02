@@ -232,7 +232,11 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
     let dir = std::env::temp_dir().join(format!("miyu-v38-golden-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("建得了临时目录");
     // blob 只在数据根里建目录（施工 TMP-1）：写上标记。
-    std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        dir.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let blobs = Blobs::new(dir.join("blobs"));
     let media = media();
     for bytes in [&media.png, &media.jpeg, &media.pdf, &media.notes] {

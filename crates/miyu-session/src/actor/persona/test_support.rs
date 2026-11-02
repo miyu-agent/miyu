@@ -50,7 +50,7 @@ pub(super) fn scratch_root(name: &str, persona: &str) -> (Scratch, DataRoot) {
 
 /// 写 Miyu 的一份字。
 pub(super) fn write(root: &DataRoot, file: &str, text: &str) {
-    let dir = root.path().join("personas/miyu/prompts");
+    let dir = root.path().join("root/personas/miyu/prompts");
     std::fs::create_dir_all(&dir).expect("建得了人格目录");
     std::fs::write(dir.join(file), text).expect("写得进");
 }
@@ -176,7 +176,7 @@ pub(super) fn setup_in(name: &str, text: &str, tools: Catalog) -> (Scratch, Data
 }
 
 pub(super) fn write_preset(root: &DataRoot, text: &str) {
-    let dir = root.path().join("presets");
+    let dir = root.path().join("root/presets");
     std::fs::create_dir_all(&dir).expect("建得了预设目录");
     std::fs::write(dir.join("p.toml"), text).expect("写得进");
 }

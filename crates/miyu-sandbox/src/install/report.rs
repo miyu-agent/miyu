@@ -1,13 +1,10 @@
 //! 提升过的自己没成时写下的原因（`docs/blueprint/sandbox/windows.md`「对外的样子」、「怎么走」第 3、6 条）：本人数据根里的
-//! `state/sandbox/windows-error.json`，一行 JSON，就是 [`InstallError`] 照原样写出来。
+//! `var/log/sandbox/windows-error.json`（设计 55，`DataRoot::sandbox_report_file`），一行 JSON，就是 [`InstallError`] 照原样写出来。
 //!
 //! 提升过的自己的窗口是藏起来的，它说的话人看不到；等它的那一个读了这份、照界面语言说给人听、删掉。起它之前先删掉
 //! 上次留下的，免得把旧的原因当成这一次的。
 
 use super::{InstallError, Owner, files};
-
-/// 原因的文件名，在数据根的 `state/sandbox/` 里。
-pub(crate) const FILE: &str = "windows-error.json";
 
 /// 提升过的自己写下没成的原因：认标记、不经链接、只给本人和 SYSTEM，盖掉旧的。
 ///
@@ -20,7 +17,7 @@ pub fn report(owner: &Owner, error: &InstallError) -> Result<(), InstallError> {
     let line = serde_json::to_string(error).map_err(|error| failed(&error))?;
     files::replace_private(
         owner.home(),
-        FILE,
+        &path(owner),
         format!("{line}\n").as_bytes(),
         owner.sid(),
     )
@@ -55,8 +52,8 @@ pub fn clear_report(owner: &Owner) -> Result<(), InstallError> {
 }
 
 /// 原因在哪。
-fn path(owner: &Owner) -> std::path::PathBuf {
-    files::install_dir(owner.home()).join(FILE)
+pub(crate) fn path(owner: &Owner) -> std::path::PathBuf {
+    files::root(owner.home()).sandbox_report_file()
 }
 
 #[cfg(test)]

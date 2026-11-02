@@ -86,11 +86,7 @@ async fn too_wide_dirs_are_refused_before_anything_is_written() {
         fake_home.to_string_lossy().into_owned(),
         root.to_string(),
         home.root.path().to_string_lossy().into_owned(),
-        home.root
-            .path()
-            .join("state")
-            .to_string_lossy()
-            .into_owned(),
+        home.root.path().join("var").to_string_lossy().into_owned(),
     ];
     for (n, dir) in wide.iter().enumerate() {
         let reply = client

@@ -164,9 +164,10 @@ pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     let one = removable(&found, &id)?;
     let home = home(core)?;
     let local_root = packages(core).local_root();
-    let state = packages(core).state_dir(&id);
-    // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H）：它的配置项照清单列的删，状态目录整个删，开关、批过的能力删（施工
-    // F-8 五补）。
+    let markers = packages(core).removed_markers();
+    // 卸就是清干净（施工 F-8 中下补，设计 31 定了的 H；设计 55 第三节第 4 条）：它的配置项照清单列的删，各层它的 `<编号>/`
+    // 整个删，开关、批过的能力删（施工 F-8 五补）。
+    let places = core.root.package_places(&id);
     let keys = setting_keys(one);
     // 它带的 MCP 服务的缓存、工作目录也清掉（施工 X-3 下）：它们不在包的状态目录里。
     let services: Vec<String> = one
@@ -194,7 +195,7 @@ pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
                 super::local::forget(&local_root, &id);
                 id
             }),
-            Layer::Shipped => install::mark_removed(&home, &id).map(|()| id),
+            Layer::Shipped => install::mark_removed(&markers, &id).map(|()| id),
         };
         if removed.is_ok() {
             left.keep();
@@ -215,10 +216,13 @@ pub(crate) async fn remove_package(core: &Arc<Core>, id: String) -> Result<Value
     crate::config::forget::forget(core, &keys);
     // 开关的文件里它开没开、批过的能力（施工 F-8 五补）：装回来从头开、从头批。
     crate::extensions::forget_switch(core, &removed).await;
-    // 它的脚本的状态目录（施工 X-44）：同包的状态目录一起删。
+    // 它的脚本的状态和缓存（施工 X-44）、它交过的「给」的那一份（`var/cache/provide/<编号>.json`）：同各层的目录一起删。
     let (root, package) = (core.root.clone(), removed.clone());
     let cleared = blocking(move || {
-        remove_dir_if_there(&state)?;
+        for place in &places {
+            remove_dir_if_there(place)?;
+        }
+        remove_file_if_there(&root.provide_cache(&package))?;
         miyu_store::scripts::forget_states(&root, &package)
     });
     if let Err(refusal) = cleared.await {
@@ -325,19 +329,19 @@ pub(super) async fn from_path(
     ))
 }
 
-/// 把卸掉的出厂的包 `id` 装回来：删掉家目录里记的那一笔。
+/// 把卸掉的出厂的包 `id` 装回来：删掉 `etc/removed/` 里记的那一笔。
 pub(super) async fn bring_back(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let places = packages(core);
     if !places.removed().iter().any(|removed| removed == id) {
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
     shipped_clear_of_conflicts((core, peer), id).await?;
-    let home = home(core)?;
+    let markers = places.removed_markers();
     let target = id.to_string();
     let before = core.system_packages();
     let back = super::left::back(core, id);
     blocking(move || {
-        install::unmark_removed(&home, &target)?;
+        install::unmark_removed(&markers, &target)?;
         back();
         Ok(())
     })
@@ -455,6 +459,14 @@ fn leaving<'a>(all: &[&'a Found], id: &str) -> Vec<&'a Found> {
 /// 删掉目录 `dir`；本来就没有的不算错。
 fn remove_dir_if_there(dir: &Path) -> std::io::Result<()> {
     match std::fs::remove_dir_all(dir) {
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
+        _ => Ok(()),
+    }
+}
+
+/// 删掉文件 `file`；本来就没有的不算错。
+fn remove_file_if_there(file: &Path) -> std::io::Result<()> {
+    match std::fs::remove_file(file) {
         Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
     }

@@ -18,17 +18,17 @@ fn skill(name: &str, metadata: &[&str]) -> String {
 
 /// 写好三种来处的技能：家目录里的 `notes`、盖住出厂同名的 `package-creator`，你装的包 `kit` 带的 `kit-notes`。
 fn written(home: &Home) {
-    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("root/skills/notes/SKILL.md", &skill("notes", &[]));
     home.write(
-        "skills/package-creator/SKILL.md",
+        "root/skills/package-creator/SKILL.md",
         &skill("package-creator", &["  display_name: My packages"]),
     );
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"kit\" }\n",
     );
     home.write(
-        "packages/kit/skills/kit-notes/SKILL.md",
+        "opt/kit/skills/kit-notes/SKILL.md",
         &skill(
             "kit-notes",
             &[
@@ -42,7 +42,10 @@ fn written(home: &Home) {
 
 /// 照配置的语言 `language` 起一份核心（系统的家目录当是数据根），列一次。
 async fn listed(home: &Home, language: &str) -> Vec<Value> {
-    home.write("config.toml", &format!("[ui]\nlanguage = \"{language}\"\n"));
+    home.write(
+        "etc/config.toml",
+        &format!("[ui]\nlanguage = \"{language}\"\n"),
+    );
     let core = home.core_configured(&Script::new([]), Some(home.root.path().to_path_buf()), &[]);
     let mut client = Client::connect(core);
     client.hello().await;
@@ -84,7 +87,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
 
     assert_eq!(
         named(&skills, "notes"),
-        &json!({"name": "notes", "from": "home", "path": "~/skills/notes/SKILL.md", "on": true}),
+        &json!({"name": "notes", "from": "home", "path": "~/root/skills/notes/SKILL.md", "on": true}),
         "自己放的：没有包，没写给人看的两格的不带"
     );
     let mine = named(&skills, "package-creator");
@@ -118,7 +121,7 @@ async fn skills_are_listed_once_each_with_where_they_come_from() {
             "package": "kit",
             "display_name": "キットメモ",
             "summary": "只有中文的说明",
-            "path": "~/packages/kit/skills/kit-notes/SKILL.md",
+            "path": "~/opt/kit/skills/kit-notes/SKILL.md",
             "on": true,
         }),
         "装的包带的：照日文挑，没写日文、英文的说明照中文"
@@ -148,10 +151,10 @@ async fn names_follow_the_connection_language() {
 async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
     let home = Home::new();
     home.write(
-        "skills/pdf-main/SKILL.md",
+        "root/skills/pdf-main/SKILL.md",
         "---\nname: pdf\ndescription: Use this skill when: the user mentions PDFs.\n---\nBody.\n",
     );
-    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("root/skills/notes/SKILL.md", &skill("notes", &[]));
     let skills = listed(&home, "zh").await;
     let pdf = named(&skills, "pdf");
     let codes: Vec<&str> = pdf["warnings"]
@@ -196,7 +199,7 @@ async fn slips_in_a_skill_come_with_warnings_in_the_people_language() {
 #[tokio::test]
 async fn skills_in_other_folders_are_listed_only_when_turned_on() {
     let home = Home::new();
-    home.write("skills/notes/SKILL.md", &skill("notes", &[]));
+    home.write("root/skills/notes/SKILL.md", &skill("notes", &[]));
     home.write_elsewhere(".agents/skills", "notes", "Elsewhere.");
     home.write_elsewhere(".agents/skills", "pdf", "Shared.");
     home.write_elsewhere("first", "pdf", "First.");
@@ -219,7 +222,7 @@ async fn skills_in_other_folders_are_listed_only_when_turned_on() {
     };
     assert_eq!(names(&list().await), ["notes"], "出厂关着");
 
-    home.write("config.toml", "[skills.external]\nenabled = true\n");
+    home.write("etc/config.toml", "[skills.external]\nenabled = true\n");
     let skills = list().await;
     assert_eq!(
         names(&skills),
@@ -241,7 +244,7 @@ async fn skills_in_other_folders_are_listed_only_when_turned_on() {
     assert!(notes.get("dir").is_none(), "{notes}");
 
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[skills.external]\nenabled = true\ndirs = [\"~/first\", \"~/.agents/skills\", \"relative\"]\n",
     );
     let skills = list().await;

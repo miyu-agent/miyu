@@ -54,7 +54,7 @@ async fn a_bridge_turns_on_its_plugin_tools_per_venue() {
     ]);
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(
-        "packages/bot/package.toml",
+        "opt/bot/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
             program.name(),

@@ -12,7 +12,11 @@ impl Scratch {
     pub(crate) fn new() -> Scratch {
         let scratch = Scratch::bare();
         fs::create_dir_all(&scratch.0).expect("建得了临时目录");
-        fs::write(scratch.0.join(crate::root::MARKER), "").expect("写得进标记");
+        fs::write(
+            scratch.0.join(crate::root::MARKER),
+            crate::root::MARKER_TEXT,
+        )
+        .expect("写得进标记");
         scratch
     }
 

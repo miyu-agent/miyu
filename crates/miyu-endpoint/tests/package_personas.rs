@@ -120,11 +120,11 @@ async fn a_package_brings_personas_and_presets_and_leaves_your_edits_behind() {
 async fn a_package_preset_named_like_a_shipped_one_is_covered() {
     let home = Home::new();
     home.write(
-        "packages/kitty/package.toml",
+        "opt/kitty/package.toml",
         "[package]\nname = { en = \"Kitty\" }\n",
     );
     home.write(
-        "packages/kitty/presets/full.toml",
+        "opt/kitty/presets/full.toml",
         "[preset]\nname = \"Not full\"\n",
     );
     let mut client = connected(&home).await;
@@ -141,7 +141,7 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
         .collect();
     assert_eq!(problems.len(), 1, "{reply}");
     assert_eq!(problems[0]["kind"], "preset");
-    assert_eq!(problems[0]["file"], "packages/kitty/presets/full.toml");
+    assert_eq!(problems[0]["file"], "opt/kitty/presets/full.toml");
     assert_eq!(problems[0]["level"], "warning");
 }
 
@@ -151,7 +151,7 @@ async fn a_package_preset_named_like_a_shipped_one_is_covered() {
 async fn persona_and_preset_ids_are_checked_before_installing() {
     let home = Home::new();
     home.write(
-        "personas/dog/persona.toml",
+        "root/personas/dog/persona.toml",
         "[persona]\nname = \"My dog\"\n",
     );
     let mut client = connected(&home).await;
@@ -253,14 +253,14 @@ async fn edits_left_by_an_uninstalled_package_are_noted_and_it_can_come_back() {
     assert!(
         home.root
             .path()
-            .join("state/packages/.leftovers.json")
+            .join("var/lib/packages/leftovers.json")
             .exists(),
         "卸了记下来"
     );
     let checked = client.call("k1", "check", json!({})).await;
     let noted = left(&checked);
     assert_eq!(noted.len(), 1, "{checked}");
-    assert_eq!(noted[0]["file"], "personas/cat");
+    assert_eq!(noted[0]["file"], "root/personas/cat");
     assert_eq!(noted[0]["level"], "warning");
     assert_eq!(
         noted[0]["message"],
@@ -271,6 +271,6 @@ async fn edits_left_by_an_uninstalled_package_are_noted_and_it_can_come_back() {
     assert!(back["result"].is_object(), "重装它不算撞：{back}");
     let checked = client.call("k2", "check", json!({})).await;
     assert!(left(&checked).is_empty(), "{checked}");
-    let record = home.root.path().join("state/packages/.leftovers.json");
+    let record = home.root.path().join("var/lib/packages/leftovers.json");
     assert!(!record.exists(), "重装以后那一笔划掉了");
 }

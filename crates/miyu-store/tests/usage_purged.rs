@@ -86,7 +86,7 @@ fn purging_keeps_the_usage_and_the_totals_stay_the_same() {
     let purged = purge_later(&root);
     assert_eq!((purged.removed, purged.failed.clone()), (1, Vec::new()));
     assert!(!root.trashed_sessions().join(session(2).as_str()).exists());
-    let journal = fs::read_to_string(root.path().join(journal::FILE)).unwrap();
+    let journal = fs::read_to_string(root.journal_file()).unwrap();
     assert_eq!(journal.lines().count(), 1);
     assert!(journal.contains(r#""kind":"usage.purged""#), "{journal}");
     let after = (total(&index), rows(&index, &groups, 0));
@@ -214,7 +214,7 @@ fn a_summary_written_twice_counts_once() {
         kind: miyu_kernel::id::EventKind::parse("usage.purged").unwrap(),
         body: serde_json::from_str(&serde_json::to_string(&summary).unwrap()).unwrap(),
     };
-    let path = root.path().join(journal::FILE);
+    let path = root.journal_file();
     journal::append(&path, entry()).unwrap();
     assert_eq!(total(&index), before, "目录还在也只算一处");
     journal::append(&path, entry()).unwrap();
@@ -233,7 +233,7 @@ fn without_a_journal_the_session_is_kept() {
     let (index, _) = UsageIndex::open(&root);
     spoken(&root, &index);
     // `journal.jsonl` 的位置是个目录：写不进去。
-    fs::create_dir_all(root.path().join(journal::FILE)).unwrap();
+    fs::create_dir_all(root.journal_file()).unwrap();
     let purged = purge_later(&root);
     assert_eq!(purged.removed, 0);
     assert_eq!(purged.failed.len(), 1, "{:?}", purged.failed);

@@ -34,12 +34,15 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
     // 什么都还没写：还没有的文件跳过，一处都没有（出厂的软件工程师也没错）。
     let empty = client.call("k0", "check", json!({})).await;
     assert_eq!(empty["result"], json!({"problems": []}), "{empty}");
-    home.write("secrets.toml", "DeepSeek = \"sk-x\"\n");
+    home.write("etc/private/secrets.toml", "DeepSeek = \"sk-x\"\n");
     let mut client = connected(&home).await;
     // 核心起来以后才改的：照磁盘上现在的查。
-    home.write("config.toml", "x.y = 1\n[ui]\nlanguage = \"klingon\"\n");
-    home.write("personas/miyu/persona.toml", "[voice]\n");
-    home.write("personas/miyu/prompts/examples.md", "user: a\nuser: b\n");
+    home.write("etc/config.toml", "x.y = 1\n[ui]\nlanguage = \"klingon\"\n");
+    home.write("root/personas/miyu/persona.toml", "[voice]\n");
+    home.write(
+        "root/personas/miyu/prompts/examples.md",
+        "user: a\nuser: b\n",
+    );
     let reply = client.call("k1", "check", json!({})).await;
     let problems = reply["result"]["problems"]
         .as_array()
@@ -71,35 +74,35 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
         [
             (
                 "config".into(),
-                "config.toml".into(),
+                "etc/config.toml".into(),
                 "unknown_key".into(),
                 "warning".into(),
                 Some(1)
             ),
             (
                 "config".into(),
-                "config.toml".into(),
+                "etc/config.toml".into(),
                 "not_an_option".into(),
                 "error".into(),
                 Some(3)
             ),
             (
                 "secrets".into(),
-                "secrets.toml".into(),
+                "etc/private/secrets.toml".into(),
                 "bad_format".into(),
                 "error".into(),
                 Some(1)
             ),
             (
                 "persona".into(),
-                "personas/miyu/persona.toml".into(),
+                "root/personas/miyu/persona.toml".into(),
                 "unknown_table".into(),
                 "error".into(),
                 Some(1)
             ),
             (
                 "persona".into(),
-                "personas/miyu/prompts/examples.md".into(),
+                "root/personas/miyu/prompts/examples.md".into(),
                 "take_turns".into(),
                 "error".into(),
                 Some(2)
@@ -119,16 +122,16 @@ async fn everything_is_checked_from_disk_layer_by_layer() {
 async fn one_file_is_checked_by_where_it_is() {
     let home = Home::new();
     let mut client = connected(&home).await;
-    home.write("personas/miyu/prompts/examples.md", "user: a\n");
-    home.write("config.toml", "[ui]\nlanguage = \"klingon\"\n");
+    home.write("root/personas/miyu/prompts/examples.md", "user: a\n");
+    home.write("etc/config.toml", "[ui]\nlanguage = \"klingon\"\n");
     let root = home.root.path();
     let path = |relative: &str| root.join(relative).to_string_lossy().into_owned();
     let system = client
-        .call("k1", "check", json!({"file": path("config.toml")}))
+        .call("k1", "check", json!({"file": path("etc/config.toml")}))
         .await;
     let seen: Vec<_> = system["result"]["problems"]
         .as_array()
-        .unwrap()
+        .unwrap_or_else(|| panic!("{system}"))
         .iter()
         .map(brief)
         .collect();
@@ -138,7 +141,7 @@ async fn one_file_is_checked_by_where_it_is() {
         .call(
             "k2",
             "check",
-            json!({"file": path("personas/miyu/prompts/examples.md")}),
+            json!({"file": path("root/personas/miyu/prompts/examples.md")}),
         )
         .await;
     assert_eq!(
@@ -150,7 +153,7 @@ async fn one_file_is_checked_by_where_it_is() {
         .call(
             "k3",
             "check",
-            json!({"file": path("personas/new/persona.toml")}),
+            json!({"file": path("root/personas/new/persona.toml")}),
         )
         .await;
     assert_eq!(
@@ -162,7 +165,7 @@ async fn one_file_is_checked_by_where_it_is() {
     {
         let link = home.work.join("root-link");
         std::os::unix::fs::symlink(root, &link).unwrap();
-        let through = link.join("personas/fresh/persona.toml");
+        let through = link.join("root/personas/fresh/persona.toml");
         let reply = client
             .call("k3b", "check", json!({"file": through.to_string_lossy()}))
             .await;
@@ -187,7 +190,7 @@ async fn one_file_is_checked_by_where_it_is() {
         .call(
             "k5",
             "check",
-            json!({"cwd": root.to_string_lossy(), "file": "config.toml"}),
+            json!({"cwd": root.to_string_lossy(), "file": "etc/config.toml"}),
         )
         .await;
     assert_eq!(

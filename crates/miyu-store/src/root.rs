@@ -16,32 +16,79 @@ use miyu_kernel::id::SessionId;
 use crate::durable::{create_dir, create_dir_anywhere, sync_dir};
 use crate::env::{Env, Platform};
 
-/// 自己放东西的几处（[`DataRoot::own_places`]）。
-const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
+/// 你自己放脚本、技能、命令模板的几处，在你的家里（[`DataRoot::own_places`]）。
+const OWN_PLACES: [&str; 3] = ["scripts", "skills", "commands"];
+
+/// 数据根这一层的几块（设计 `55-数据根仿FHS.md` 第二节）。
+const ETC: &str = "etc";
+/// 凭据，在 `etc/` 下面。
+const PRIVATE_DIR: &str = "private";
+/// 卸掉的出厂包的记号，在 `etc/` 下面。
+pub const REMOVED: &str = "removed";
+/// 装上的软件包。
+const OPT: &str = "opt";
+/// 你的家：只给一个人用，这个人就是 root（以后多用户另开 `home/<用户名>/`）。
+const USER: &str = "root";
+/// 机器的状态、缓存、日志、跨重启的暂存。
+const VAR: &str = "var";
+/// 短命的暂存。
+const TMP: &str = "tmp";
+
+/// 核心自己在 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这几层用到的名字（设计 55 第三节第 3 条）：包各占
+/// 一个 `<编号>/`，这些不能用作包的编号。测试照各层的方法推一遍，和这张表对。
+pub const RESERVED: [&str; 17] = [
+    "private", "removed", "models", "packages", "mcp", "index", "config", "provide", "scripts",
+    "personas", "mermaid", "sandbox", "perf", "unpack", "token", "socket", "log-salt",
+];
 
 /// 照 XDG 用户目录给主人的几处（施工 Y-11 上）：她替人做出来、拿到的东西放这里，用到的时候才建。名字照 XDG 的英文，界面上照
 /// 语言显示。
 pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"];
 
-/// 缓存（施工 Y-11 上）：`cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
-pub const CACHE: &str = "cache";
-
-/// 运行时：`run/`，锁文件、套接字、本机令牌；数据根这一层的配置、密钥写的时候的临时文件也建在这里（施工 R3-1，
+/// 运行时：`run/`，锁文件、套接字、本机令牌；写数据根里的配置、密钥时的临时文件也建在这里（施工 R3-1，
 /// `crate::config_file`）。
 pub const RUN: &str = "run";
 
-/// 核心起来时就建好的敏感的顶层目录（施工 R3-1 补，[`DataRoot::prepare_private`]）：删掉的会话、blob、记忆、索引、知识库。
-const PRIVATE: [&str; 5] = ["trash", "blobs", "modules", "index", "kb"];
+/// 核心起来时就建好的目录（施工 R3-1 补、FH-3，[`DataRoot::prepare_private`]，设计 55 第五节第 2 条）：Windows 的沙盒只禁
+/// 命令起来那一刻已有的，敏感的、透出路径上的几层都事先建好。
+const PRIVATE: [&str; 21] = [
+    "etc",
+    "etc/private",
+    "etc/removed",
+    "opt",
+    "root",
+    "root/sessions",
+    "root/memory",
+    "root/kb",
+    "root/blobs",
+    "root/trash",
+    "root/state",
+    "root/workspace",
+    "var/lib",
+    "var/lib/packages",
+    "var/lib/mcp",
+    "var/cache",
+    "var/cache/index",
+    "var/log",
+    "var/tmp",
+    "tmp",
+    RUN,
+];
 
-/// 第一次用时建的两个顶层目录：状态区、运行时（`07-存储.md` 第二节；施工 SU-5 上起数据根只有一层）。别的用到时再建。
-const SKELETON: [&str; 2] = ["state", RUN];
+/// 第一次用时建的：配置和凭据（建数据根时就在，Windows 沙盒里整条禁，凭据第一次新建时也在禁止的目录里）、运行时、短命的暂存
+/// （设计 55 第五节第 1 条）。别的核心起来时建（[`PRIVATE`]）。
+const SKELETON: [&str; 4] = ["etc", "etc/private", RUN, "tmp"];
 
-/// 标记文件：它在，这个目录才是 Miyu 的数据根（`07-存储.md` 第二节「认得出自己的数据根才动它」）。装沙盒时也照它
-/// 认给的数据根（`docs/blueprint/sandbox/windows.md`，施工 5-8）。
-pub const MARKER: &str = ".miyu-root";
+/// 标记文件：它在，这个目录才是 Miyu 的数据根（`07-存储.md` 第二节「认得出自己的数据根才动它」）。装沙盒时也照它认给的数据根
+/// （`docs/blueprint/sandbox/windows.md`，施工 5-8）。布局 3 起换了名字（施工 FH-3，设计 55 第六节第 1 条）：旧的程序只认
+/// [`OLD_MARKER`]，碰到新的数据根认不出、不往里写。
+pub const MARKER: &str = ".miyu-layout";
 
-/// 标记文件里写的一行：给翻到它的人看。现在只认文件在不在。
-const MARKER_TEXT: &str = "This directory is a Miyu data root (layout 2).\n";
+/// 以前（布局 1、2）的标记文件：有它、没有 [`MARKER`] 的是旧版的数据根，新版不认、不动。
+pub const OLD_MARKER: &str = ".miyu-root";
+
+/// 标记文件里写的一行，带布局的版本：读的时候认它。
+pub const MARKER_TEXT: &str = "This directory is a Miyu data root (layout 3).\n";
 
 /// 找不到数据根、缓存目录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,24 +152,28 @@ impl DataRoot {
         &self.path
     }
 
-    /// 装上的软件包：`packages/`（施工 SU-5 上：原来 `packages/`）。
+    /// 装上的软件包：`opt/`（设计 55 第二节）。
     pub fn packages(&self) -> PathBuf {
-        self.path.join("packages")
+        self.path.join(OPT)
     }
 
-    /// 自己放脚本、技能、命令模板、装包的几处（`scripts`、`skills`、`commands`、`packages`）的真实位置（施工 X-37、X-37 补）：
+    /// 自己放脚本、技能、命令模板的几处（`root/scripts`、`root/skills`、`root/commands`）和装包的 `opt/` 的真实位置（施工 X-37、X-37 补）：
     /// 找的时候认链接指到这几处下面的，主人放行出沙盒的文件得落在这几处下面。照数据根的真实位置接上，不一处处换成真实位置：
     /// `skills/` 本身是指到别处的链接时，换了就把别处当成自己的地方了。数据根本身是链接的（macOS 的临时目录在 `/var` 下面）照样
     /// 对。碰磁盘。
     pub fn own_places(&self) -> Vec<PathBuf> {
         let base = self.real();
-        OWN_PLACES.iter().map(|dir| base.join(dir)).collect()
+        OWN_PLACES
+            .iter()
+            .map(|dir| base.join(USER).join(dir))
+            .chain(std::iter::once(base.join(OPT)))
+            .collect()
     }
 
     /// 装上的包（[`DataRoot::packages`]）的真实位置（施工 U23 上上）：主人装的，放行出沙盒的文件落在这下面的也算管得住（同出厂
     /// 的包）。碰磁盘。
     pub fn real_packages(&self) -> PathBuf {
-        self.real().join("packages")
+        self.real().join(OPT)
     }
 
     /// 数据根的真实位置（还没有的照原样）。碰磁盘。
@@ -139,8 +190,8 @@ impl DataRoot {
         create_dir(&self.workspace())
     }
 
-    /// 建敏感的几处顶层目录，已经有的不动：核心起来时建（施工 R3-1 补），布局不变，只是不再用到才建。Windows 的沙盒只禁命令
-    /// 起来那一刻数据根顶层已有的（施工 SW-6），命令跑着时第一次建的整棵读得到。Unix 上新建的权限 0700。
+    /// 建 `PRIVATE`（设计 55 第五节第 2 条那张表）那几处，已经有的不动：核心起来时建（施工 R3-1 补、FH-3）。Windows 的
+    /// 沙盒只禁命令起来那一刻已有的（施工 SW-6），命令跑着时第一次建的整棵读得到。Unix 上新建的权限 0700。
     ///
     /// # Errors
     ///
@@ -152,6 +203,41 @@ impl DataRoot {
         Ok(())
     }
 
+    /// 配置和凭据：`etc/`。
+    fn etc(&self) -> PathBuf {
+        self.path.join(ETC)
+    }
+
+    /// 凭据：`etc/private/`。
+    fn private(&self) -> PathBuf {
+        self.etc().join(PRIVATE_DIR)
+    }
+
+    /// 你的家：`root/`。
+    fn user(&self) -> PathBuf {
+        self.path.join(USER)
+    }
+
+    /// 机器和包的状态：`var/lib/`。
+    fn var_lib(&self) -> PathBuf {
+        self.path.join(VAR).join("lib")
+    }
+
+    /// 能删的缓存：`var/cache/`。
+    fn var_cache(&self) -> PathBuf {
+        self.path.join(VAR).join("cache")
+    }
+
+    /// 运行日志：`var/log/`。
+    fn var_log(&self) -> PathBuf {
+        self.path.join(VAR).join("log")
+    }
+
+    /// 短命的暂存：`tmp/`（设计 55 第三节第 5 条）。
+    fn tmp(&self) -> PathBuf {
+        self.path.join(TMP)
+    }
+
     /// [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。
     pub fn user_dirs(&self) -> Vec<(&'static str, PathBuf)> {
         USER_DIRS
@@ -160,12 +246,12 @@ impl DataRoot {
             .collect()
     }
 
-    /// 工作区：`workspace/`（`07-存储.md` 第二节）。头报来的工作目录太宽时退回这里（`11-权限与沙盒.md` 第四节，施工 4-3 下）。
+    /// 工作区：`root/workspace/`（`07-存储.md` 第二节，设计 55）。头报来的工作目录太宽时退回这里（`11-权限与沙盒.md` 第四节，施工 4-3 下）。
     pub fn workspace(&self) -> PathBuf {
-        self.path.join("workspace")
+        self.user().join("workspace")
     }
 
-    /// 一个会话的默认工作区：`workspace/<会话编号>/`（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话一个」）。网页不选
+    /// 一个会话的默认工作区：`root/workspace/<会话编号>/`（施工 5-14，`11-权限与沙盒.md` 第四节「默认工作区每个会话一个」）。网页不选
     /// 目录的、工作目录太宽的照它；子会话、分叉出来的用父会话、来源会话的那一个（`session.created` 的 `workspace_from`）。不在这里
     /// 建：用到的一方自己建。
     pub fn session_workspace(&self, session: &SessionId) -> PathBuf {
@@ -179,7 +265,7 @@ impl DataRoot {
     ///
     /// 读不了目录。
     pub fn sessions(&self) -> io::Result<Vec<SessionId>> {
-        let entries = match fs::read_dir(self.path.join("sessions")) {
+        let entries = match fs::read_dir(self.user().join("sessions")) {
             Ok(entries) => entries,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(error) => return Err(error),
@@ -195,29 +281,29 @@ impl DataRoot {
         Ok(sessions)
     }
 
-    /// 一个会话的目录：`sessions/<会话编号>/`（`07-存储.md` 第三节）。
+    /// 一个会话的目录：`root/sessions/<会话编号>/`（`07-存储.md` 第三节）。
     pub fn session_dir(&self, session: &SessionId) -> PathBuf {
-        self.path.join("sessions").join(session.as_str())
+        self.user().join("sessions").join(session.as_str())
     }
 
-    /// 删掉的会话放在哪：回收处 `trash/sessions/`，一个会话一个目录，名字是会话编号（施工 3-8 三补，[`crate::trash`]）。
+    /// 删掉的会话放在哪：回收处 `root/trash/sessions/`，一个会话一个目录，名字是会话编号（施工 3-8 三补，[`crate::trash`]）。
     pub fn trashed_sessions(&self) -> PathBuf {
-        self.path.join("trash").join("sessions")
+        self.user().join("trash").join("sessions")
     }
 
-    /// 删掉的人格：`trash/personas/`（施工 P-3 下，`crate::trash::personas`）。
+    /// 删掉的人格：`root/trash/personas/`（施工 P-3 下，`crate::trash::personas`）。
     pub fn trashed_personas(&self) -> PathBuf {
-        self.path.join("trash").join("personas")
+        self.user().join("trash").join("personas")
     }
 
-    /// blob：`blobs/`（`07-存储.md` 第五节）。
+    /// blob：`root/blobs/`（`07-存储.md` 第五节）。
     pub fn blobs(&self) -> PathBuf {
-        self.path.join("blobs")
+        self.user().join("blobs")
     }
 
-    /// 派生数据：`index/`（`07-存储.md` 第六节）。会话列表的索引放在这里（施工 3-8 七补，[`crate::index`]）。
+    /// 派生数据：`var/cache/index/`（`07-存储.md` 第六节）。会话列表的索引放在这里（施工 3-8 七补，[`crate::index`]）。
     pub fn index(&self) -> PathBuf {
-        self.path.join("index")
+        self.var_cache().join("index")
     }
 
     /// 运行时：锁文件、套接字、本机令牌。
@@ -245,6 +331,10 @@ impl DataRoot {
             if fs::read_dir(&self.path)?.next().is_some() {
                 // 不是空的：可能是别处刚写下了标记，再看一眼。标记总是先于骨架写下，有了骨架就有标记。
                 if fs::symlink_metadata(&marker).is_err() {
+                    // 旧版的数据根（施工 FH-3，设计 55 第六节第 1 条）：不认、不动，说清楚是旧版的。
+                    if fs::symlink_metadata(self.path.join(OLD_MARKER)).is_ok() {
+                        return Err(PrepareError::OldLayout(self.path.clone()));
+                    }
                     return Err(PrepareError::NotOurs(self.path.clone()));
                 }
             } else {
@@ -265,11 +355,27 @@ impl DataRoot {
                 }
             }
         }
+        // 标记写的布局要是这一版的：以后的布局（数字更大）、写坏了的都不认（施工 FH-3）。
+        if marker_text(&marker) != MARKER_TEXT {
+            return Err(PrepareError::OtherLayout(self.path.clone()));
+        }
         for name in SKELETON {
             create_dir(&self.path.join(name))?;
         }
         Ok(())
     }
+}
+
+/// 标记里写的字。空的多看几眼（最多半秒）：别处刚只许新建地建了标记、还没写进字（两个头同时第一次拉起核心）。
+fn marker_text(marker: &Path) -> String {
+    for _ in 0..50 {
+        let text = fs::read_to_string(marker).unwrap_or_default();
+        if !text.is_empty() {
+            return text;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    String::new()
 }
 
 /// 在数据根里建目录，连同缺的上层（施工 TMP-1）：已经有的不动；要建的，往上找得到数据根的标记（[`MARKER`]）才建。别的 crate
@@ -285,9 +391,13 @@ pub fn create_inside(dir: &Path) -> io::Result<()> {
 /// 建骨架建不成。
 #[derive(Debug)]
 pub enum PrepareError {
-    /// 目录里有别的东西，又没有标记：认不出是 Miyu 的数据根，一个字节都不动它。里面是什么不去猜，
-    /// 只有这一种说法。
+    /// 目录里有别的东西，又没有标记：认不出是 Miyu 的数据根，一个字节都不动它。里面是什么不去猜。
     NotOurs(PathBuf),
+    /// 有旧版的标记（[`OLD_MARKER`]）、没有这一版的：旧版 Miyu 的数据根（布局 2），新版不认、不动（施工 FH-3，设计 55 第六节
+    /// 第 1 条）。
+    OldLayout(PathBuf),
+    /// 标记写的不是这一版的布局（以后的版本、写坏了的）：不认、不动。
+    OtherLayout(PathBuf),
     /// 读写出错。
     Io(io::Error),
 }
@@ -298,6 +408,16 @@ impl fmt::Display for PrepareError {
             PrepareError::NotOurs(path) => write!(
                 f,
                 "{} 里有别的东西，认不出是 Miyu 的数据根（顶层没有 {MARKER}），不动它。设 MIYU_HOME 指到一个空目录",
+                path.display()
+            ),
+            PrepareError::OldLayout(path) => write!(
+                f,
+                "{} 是旧版 Miyu 的数据根（layout 2），新版不认；设 MIYU_HOME 指到一个空目录，旧数据照施工单 FH-7 自己搬",
+                path.display()
+            ),
+            PrepareError::OtherLayout(path) => write!(
+                f,
+                "{} 的 {MARKER} 写的不是这一版的布局（layout 3），不动它",
                 path.display()
             ),
             PrepareError::Io(error) => error.fmt(f),
@@ -356,6 +476,9 @@ fn local_app_data(env: &Env) -> Result<PathBuf, RootError> {
 }
 
 mod places;
+mod tmp;
+
+pub use tmp::{STALE_VAR_TMP, Swept};
 
 #[cfg(test)]
 mod tests;

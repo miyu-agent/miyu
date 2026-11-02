@@ -35,7 +35,7 @@ fn source(home: &Home, version: &str, extra: &[(&str, &str)]) -> PathBuf {
 
 /// 本地库里包 `id` 的那一份。
 fn recorded(home: &Home, id: &str) -> PathBuf {
-    home.root.path().join("state/packages/.local").join(id)
+    home.root.path().join("var/lib/packages").join(id)
 }
 
 async fn call(client: &mut Client, method: &str, params: Value) -> Value {
@@ -139,7 +139,7 @@ async fn a_shipped_package_is_counted_from_its_files() {
 #[tokio::test]
 async fn an_older_install_is_recorded_when_the_core_reads_its_packages() {
     let home = Home::new();
-    home.write("packages/xtool/package.toml", &manifest("0.9"));
+    home.write("opt/xtool/package.toml", &manifest("0.9"));
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let info = call(&mut client, "package.info", json!({"package": "xtool"})).await;
@@ -217,7 +217,7 @@ async fn changed_and_missing_files_are_found() {
         .as_array()
         .expect("有")
         .iter()
-        .filter(|problem| problem["file"] == "packages/xtool/package.toml")
+        .filter(|problem| problem["file"] == "opt/xtool/package.toml")
         .filter_map(|problem| problem["code"].as_str())
         .collect();
     assert_eq!(codes, ["files_modified", "files_missing"], "{checked}");

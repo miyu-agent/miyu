@@ -33,7 +33,7 @@ async fn a_signed_index_is_kept_and_not_fetched_again_within_a_day() {
     assert_eq!(got["result"]["packages"], 2, "{got}");
     assert_eq!(got["result"]["generated"], "2026-10-19T03:00:00Z");
     assert!(got["result"].get("stale").is_none(), "{got}");
-    let dir = home.root.path().join("state/packages/.sync");
+    let dir = home.root.path().join("var/cache/packages/sync");
     assert_eq!(
         std::fs::read(dir.join("index.json")).expect("存了"),
         first.0,
@@ -104,7 +104,7 @@ async fn nothing_reachable_and_nothing_kept_is_refused() {
     let server = Server::start(serving(&signed("2026-10-19T03:00:00Z", &[], &other))).await;
     // 数据根里塞一份别的钥匙签的、时刻还新的：本机那份每次读都再验，验不过的当没有。
     let forged = signed("2026-10-19T03:00:00Z", &["evil"], &other);
-    let dir = home.root.path().join("state/packages/.sync");
+    let dir = home.root.path().join("var/cache/packages/sync");
     std::fs::create_dir_all(&dir).expect("建得了");
     std::fs::write(dir.join("index.json"), &forged.0).expect("写得进");
     std::fs::write(dir.join("index.json.sig"), &forged.1).expect("写得进");

@@ -17,7 +17,11 @@ async fn a_script_keeps_its_state_per_source() {
     let site = Site::new();
     site.file("scripts/count.py", COUNT);
     let state = |source: &str| {
-        let folder = site.0.join("data/state/scripts").join(source).join("count");
+        let folder = site
+            .0
+            .join("data/root/state/scripts")
+            .join(source)
+            .join("count");
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
@@ -54,7 +58,7 @@ async fn a_script_keeps_its_state_per_source() {
 async fn a_script_runs_without_state_when_the_folder_cannot_be_made() {
     let site = Site::new();
     site.file("scripts/count.py", COUNT);
-    site.file("data/state/scripts", b"not a folder");
+    site.file("data/root/state/scripts", b"not a folder");
     let done = site.script_by("scripts/count.py", "~home").await;
     assert!(!done.error, "{}", text(&done));
     assert_eq!(text(&done), "unset\n");
@@ -66,7 +70,7 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
     let site = Site::new();
     site.file("scripts/count.py", COUNT);
     let state = |relative: &str| {
-        let folder = site.0.join("data/state/scripts").join(relative);
+        let folder = site.0.join("data/root/state/scripts").join(relative);
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
@@ -110,7 +114,7 @@ async fn a_script_s_cache_is_in_the_data_root() {
     let site = Site::new();
     site.file("scripts/cached.py", CACHED);
     let home = |relative: &str| {
-        let folder = site.0.join("data/cache").join(relative);
+        let folder = site.0.join("data/var/cache/scripts").join(relative);
         std::fs::canonicalize(folder).expect("建好了")
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
@@ -150,7 +154,7 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
     let wanted: Vec<String> = ["pictures", "videos", "documents", "downloads"]
         .iter()
         .map(|name| {
-            let folder = site.0.join("data").join(name);
+            let folder = site.0.join("data/root").join(name);
             std::fs::canonicalize(folder)
                 .expect("建好了")
                 .display()

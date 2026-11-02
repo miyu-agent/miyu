@@ -3,8 +3,8 @@
 //!
 //! 写的一方可能是提升过的管理员，写的地方却是本人管着的数据根，所以：
 //! - 先认标记（[`check_root`]）：给的地方不是 Miyu 的数据根，一个字节都不写；
-//! - `state`、`state/sandbox` 是链接（符号链接、目录联接）的，不经它写（[`sandbox_dir`]）：不然提前放好的一个联接，
-//!   就能让管理员身份的写落到别处去；
+//! - 从数据根到放文件的目录，路上哪一层是链接（符号链接、目录联接）的，不经它写（[`dir_for`]）：不然提前放好的一个
+//!   联接，就能让管理员身份的写落到别处去；
 //! - 文件只许新建，不跟链接；Windows 上建的时候访问控制就只给本人和 SYSTEM（[`write_private`]）。
 //!
 //! 挡不住检查完、写之前被换掉：能换的人本来就能改本人的数据根（和 `fs.md` 那一条一样）。
@@ -32,19 +32,19 @@ pub(crate) fn check_root(home: &Path) -> Result<(), InstallError> {
     }
 }
 
-/// 数据根 `home` 下放安装记录、失败原因的目录（位置照 `DataRoot::sandbox_install_dir`，施工 FH-2）：从数据根往下一层一层来，
-/// 每一层没有就建，再查它不是链接，查过了才往下一层走。
+/// 数据根 `home` 下放文件 `file` 的那个目录（安装记录 `etc/private/`、失败原因 `var/log/sandbox/`，设计 55）：从数据根
+/// 往下一层一层来，每一层没有就建，再查它不是链接，查过了才往下一层走。
 ///
 /// 不能先一口气建好再查：路上哪一层要是一个链接，一口气建的时候就顺着它把后面几层建到别处去了。
 ///
 /// # Errors
 ///
-/// 建不了；哪一层是链接或者不是目录。
-pub(crate) fn sandbox_dir(home: &Path) -> io::Result<PathBuf> {
-    let target = install_dir(home);
-    let below = target
-        .strip_prefix(home)
-        .map_err(|_| io::Error::other("sandbox directory is outside the data root"))?;
+/// 建不了；哪一层是链接或者不是目录；`file` 不在数据根下面。
+pub(crate) fn dir_for(home: &Path, file: &Path) -> io::Result<PathBuf> {
+    let below = file
+        .parent()
+        .and_then(|parent| parent.strip_prefix(home).ok())
+        .ok_or_else(|| io::Error::other("sandbox file is outside the data root"))?;
     let mut dir = home.to_path_buf();
     for part in below.components() {
         dir.push(part);
@@ -53,9 +53,9 @@ pub(crate) fn sandbox_dir(home: &Path) -> io::Result<PathBuf> {
     Ok(dir)
 }
 
-/// 数据根 `home` 下放安装记录、失败原因的目录，不建（`DataRoot::sandbox_install_dir`）。
-pub(crate) fn install_dir(home: &Path) -> PathBuf {
-    miyu_store::root::DataRoot::at(home.to_path_buf()).sandbox_install_dir()
+/// 数据根 `home` 的样子（只用它算位置，不建）。
+pub(crate) fn root(home: &Path) -> miyu_store::root::DataRoot {
+    miyu_store::root::DataRoot::at(home.to_path_buf())
 }
 
 /// `path` 本身是一个真的目录：没有就只建这一层；是链接，或者不是目录的，报错。
@@ -124,15 +124,20 @@ pub(crate) fn remove_if_there(path: &Path) -> io::Result<()> {
     }
 }
 
-/// 写一份只给本人和 SYSTEM 的文件 `name`，放进 `state/sandbox/`：先删上次留下的临时文件，只许新建地写临时文件，同步，
-/// 再改名盖掉旧的。改名是同一个目录里的，要么是旧的、要么是新的，不会只有半份。
+/// 写一份只给本人和 SYSTEM 的文件 `file`（数据根 `home` 下面）：一层一层建好它的目录（[`dir_for`]），先删上次留下的
+/// 临时文件，只许新建地写临时文件，同步，再改名盖掉旧的。改名是同一个目录里的，要么是旧的、要么是新的，不会只有半份。
 ///
 /// # Errors
 ///
 /// 哪一步读写不了、目录是链接：交回系统的原话。
-pub(crate) fn replace_private(home: &Path, name: &str, bytes: &[u8], sid: &str) -> io::Result<()> {
-    let dir = sandbox_dir(home)?;
-    let temporary = dir.join(format!("{name}.tmp"));
+pub(crate) fn replace_private(home: &Path, file: &Path, bytes: &[u8], sid: &str) -> io::Result<()> {
+    let dir = dir_for(home, file)?;
+    let name = file
+        .file_name()
+        .ok_or_else(|| io::Error::other("sandbox file has no name"))?;
+    let mut temporary = name.to_os_string();
+    temporary.push(".tmp");
+    let temporary = dir.join(temporary);
     remove_if_there(&temporary)?;
     write_private(&temporary, bytes, sid)?;
     fs::rename(&temporary, dir.join(name))

@@ -30,10 +30,13 @@ fn system(home: &Home, session: &str) -> String {
 async fn prompt_overrides_go_into_new_sessions_and_bad_ones_are_reported() {
     let home = Home::new();
     home.write(
-        "prompts/core/local-paths-rule.txt",
+        "root/prompts/core/local-paths-rule.txt",
         "Always write absolute paths for local files.\n",
     );
-    home.write("prompts/core/agent-version.txt", "No placeholder here.\n");
+    home.write(
+        "root/prompts/core/agent-version.txt",
+        "No placeholder here.\n",
+    );
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let session = client.create("c1", "~").await;
@@ -86,7 +89,7 @@ pub(crate) fn latest_system(home: &Home, session: &str) -> String {
 #[tokio::test]
 async fn a_loaded_session_rebuilds_with_the_owner_s_overrides() {
     let home = Home::new();
-    home.write("presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
+    home.write("root/presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
     let session = {
         let mut client = Client::connect(home.core(&Script::new([])));
         client.hello().await;
@@ -96,10 +99,10 @@ async fn a_loaded_session_rebuilds_with_the_owner_s_overrides() {
     };
     assert!(!latest_system(&home, &session).contains("Mine about local paths."));
     home.write(
-        "prompts/core/local-paths-rule.txt",
+        "root/prompts/core/local-paths-rule.txt",
         "Mine about local paths.\n",
     );
-    home.write("presets/p.toml", "[preset]\nname = { en = \"P2\" }\n");
+    home.write("root/presets/p.toml", "[preset]\nname = { en = \"P2\" }\n");
     let mut client =
         Client::connect(home.core(&Script::new([miyu_session::testkit::Play::Says("嗯。")])));
     client.hello().await;

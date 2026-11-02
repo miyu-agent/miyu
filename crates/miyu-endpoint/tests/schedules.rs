@@ -220,7 +220,7 @@ async fn her_own_ones_follow_the_session_s_preset_and_people_s_do_not() {
     let hand = Hand::at(START);
     // 施工 J-2 起有了 `schedule` 包、在基础系统组里：会话用的预设单独关掉它，她建的不跑。
     home.write(
-        "presets/quiet.toml",
+        "root/presets/quiet.toml",
         "[preset]\nname = { en = \"Quiet\" }\nunlisted = \"off\"\n\n[software]\nbasesystem = true\nschedule = false\n",
     );
     let (core, mut client, _) = started(&home, &script, &hand).await;
@@ -372,7 +372,7 @@ async fn an_unreadable_row_is_skipped_reported_and_removable() {
         .collect();
     assert_eq!(unreadable.len(), 1, "{checked}");
     assert_eq!(unreadable[0]["kind"], "schedule");
-    assert_eq!(unreadable[0]["file"], "state/schedules.db");
+    assert_eq!(unreadable[0]["file"], "root/schedules.db");
     let message = unreadable[0]["message"].as_str().unwrap_or_default();
     assert!(
         message.contains(&format!("{}: bad when", bad.id)),

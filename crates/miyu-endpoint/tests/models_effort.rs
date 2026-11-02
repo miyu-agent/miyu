@@ -108,7 +108,7 @@ fn efforts(home: &Home, session: &str) -> Vec<Value> {
 #[tokio::test]
 async fn session_configure_records_the_session_s_effort() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, true));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -151,7 +151,7 @@ async fn session_configure_records_the_session_s_effort() {
 #[tokio::test]
 async fn subscribe_after_a_restart_says_the_session_s_effort() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let first = core(&home, true);
     let mut client = Client::connect(first.clone());
     client.hello().await;
@@ -183,7 +183,7 @@ async fn subscribe_after_a_restart_says_the_session_s_effort() {
 #[tokio::test]
 async fn session_configure_refuses_an_effort_the_model_lacks() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, true));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -221,7 +221,7 @@ async fn session_configure_refuses_an_effort_the_model_lacks() {
 #[tokio::test]
 async fn a_session_on_a_pool_cannot_set_an_effort() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, true));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -257,7 +257,7 @@ async fn a_session_on_a_pool_cannot_set_an_effort() {
 #[tokio::test]
 async fn session_configure_wants_something_to_change() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let session = client.create("c1", "/tmp").await;
@@ -284,7 +284,7 @@ async fn session_configure_wants_something_to_change() {
 #[tokio::test]
 async fn subscribe_says_which_config_layer_the_next_effort_comes_from() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, true));
     client.hello().await;
     for (n, model, wanted) in [
@@ -316,7 +316,7 @@ async fn subscribe_says_which_config_layer_the_next_effort_comes_from() {
 #[tokio::test]
 async fn model_list_shows_the_default_effort_and_its_full_config_key() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let reply = client.call("l", "model.list", json!({})).await;
@@ -338,7 +338,7 @@ async fn model_list_shows_the_default_effort_and_its_full_config_key() {
     assert_eq!(
         facts("m")["effort"],
         json!({
-            "value": "low", "from": "config", "file": "config.toml", "line": line,
+            "value": "low", "from": "config", "file": "etc/config.toml", "line": line,
             "layer": "system", "key": "providers.a.models.m.effort",
         })
     );
@@ -359,7 +359,7 @@ async fn the_key_quotes_a_model_name_with_dots() {
     let home = Home::new();
     let config = "[providers.dev]\ndriver = \"openai-chat\"\nbase_url = \"https://dev.invalid\"\n\n\
         [providers.dev.models.\"deepseek-v4.1-flash\"]\nreasoning = [\"low\", \"high\"]\n";
-    home.write("config.toml", config);
+    home.write("etc/config.toml", config);
     let mut client = Client::connect(core(&home, false));
     client.hello().await;
     let reply = client.call("l", "model.list", json!({})).await;
@@ -379,7 +379,7 @@ async fn the_key_quotes_a_model_name_with_dots() {
 #[tokio::test]
 async fn a_default_effort_the_model_does_not_have_is_reported() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let mut client = Client::connect(core(&home, false));
     let hello = client.hello().await;
     assert_eq!(hello["result"]["config_errors"], 1, "{hello}");
@@ -416,7 +416,7 @@ async fn a_default_effort_the_model_does_not_have_is_reported() {
 #[tokio::test]
 async fn checking_an_effort_does_not_remember_made_up_models() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let dir = home.root.model_state();
     std::fs::create_dir_all(&dir).expect("建得了");
     let data = ModelData::new(

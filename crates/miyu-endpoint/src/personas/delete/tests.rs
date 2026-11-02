@@ -81,7 +81,7 @@ fn the_sole_package_must_be_shipped_and_the_persona_nowhere_else() {
     );
     assert_eq!(sole_package(&packages, &personas, "cat"), None, "装上的包");
     assert_eq!(sole_package(&packages, &personas, "nobody"), None);
-    std::fs::create_dir_all(root.path().join("personas/engineer")).expect("建得了");
+    std::fs::create_dir_all(root.path().join("root/personas/engineer")).expect("建得了");
     assert_eq!(
         sole_package(&packages, &personas, "engineer"),
         None,

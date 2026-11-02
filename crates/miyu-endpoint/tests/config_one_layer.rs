@@ -12,7 +12,7 @@ use miyu_session::testkit::{Play, Script};
 use crate::support::*;
 
 /// 系统配置在数据根里的位置。
-const CONFIG: &str = "config.toml";
+const CONFIG: &str = "etc/config.toml";
 
 fn read(home: &Home, relative: &str) -> Option<String> {
     std::fs::read_to_string(home.root.path().join(relative)).ok()
@@ -64,7 +64,7 @@ async fn a_hand_edited_secret_reaches_the_next_turn() {
     let key = Reference::Secret("hand".to_string());
     assert!(script.configs()[0].secret(&key).is_none(), "还没写");
 
-    home.write("secrets.toml", "hand = \"sk-FAKE-HAND\"\n");
+    home.write("etc/private/secrets.toml", "hand = \"sk-FAKE-HAND\"\n");
     let mut n = 0;
     loop {
         n += 1;

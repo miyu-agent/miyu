@@ -50,20 +50,20 @@ fn sent(script: &Script, n: usize) -> Vec<String> {
 async fn a_package_switched_off_is_gone() {
     let home = Home::new();
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("packages/kit/scripts/dice.py", &echo("dice"));
+    home.write("opt/kit/scripts/dice.py", &echo("dice"));
     home.write(
-        "packages/kit/skills/kit-notes/SKILL.md",
+        "opt/kit/skills/kit-notes/SKILL.md",
         "---\nname: kit-notes\ndescription: Take notes.\n---\n\nBody.\n",
     );
     home.write(
-        "packages/kit2/package.toml",
+        "opt/kit2/package.toml",
         "[package]\nname = { en = \"Kit 2\" }\n",
     );
     home.write(
-        "packages/kit2/skills/kit2-notes/SKILL.md",
+        "opt/kit2/skills/kit2-notes/SKILL.md",
         "---\nname: kit2-notes\ndescription: Take other notes.\n---\n\nBody.\n",
     );
     let script = Arc::new(Script::new([Play::Says("一。"), Play::Says("二。")]));
@@ -167,7 +167,7 @@ async fn a_package_switched_off_is_gone() {
 #[tokio::test]
 async fn a_former_basesystem_package_written_off_by_hand_is_off() {
     let home = Home::new();
-    home.write("config.toml", "[packages.read]\noff = true\n");
+    home.write("etc/config.toml", "[packages.read]\noff = true\n");
     let script = Arc::new(Script::new([]));
     let core = core(&home, &script);
     let mut alice = Client::connect(Arc::clone(&core));

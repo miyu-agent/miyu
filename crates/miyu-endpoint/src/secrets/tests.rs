@@ -27,7 +27,11 @@ impl Scratch {
             std::process::id()
         ));
         std::fs::create_dir_all(&dir).expect("建得了临时目录");
-        std::fs::write(dir.join(miyu_store::root::MARKER), "").expect("写得进标记");
+        std::fs::write(
+            dir.join(miyu_store::root::MARKER),
+            miyu_store::root::MARKER_TEXT,
+        )
+        .expect("写得进标记");
         Scratch(dir)
     }
 }

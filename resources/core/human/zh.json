@@ -647,6 +647,7 @@
     "package-problems/bad_pages_dir": "{detail} 要写资源目录里的相对目录，不能有 .. 和开头的 /",
     "package-problems/duplicate": "已经有一个出厂的包叫 {detail}，这一份不算",
     "package-problems/command_taken": "子命令 {detail} 已经被别的包占了，这一份不算",
+    "package-problems/reserved_id": "编号 {detail} 是数据根里保留的名字，换一个编号",
     "package-problems/protocol_mismatch": "这个包说的协议版本是 {detail}，核心只说 1：把它们升级到同一个版本",
     "package-problems/bad_setting_name": "{detail}：配置项的名字要小写字母开头，只用小写字母、数字和 _",
     "package-problems/bad_type": "{detail} 只能是 bool、int、number、option、text、name、model、persona、knowledge、url、secret 或 list",

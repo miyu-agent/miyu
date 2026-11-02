@@ -16,7 +16,10 @@ use crate::prompt_override::latest_system;
 use crate::support::*;
 
 /// 改的那一份覆盖。
-const RULE: &str = "prompts/core/local-paths-rule.txt";
+const RULE: &str = "root/prompts/core/local-paths-rule.txt";
+
+/// 问人时给人看的写法：相对你那一层（`root/`）。
+const SHOWN: &str = "prompts/core/local-paths-rule.txt";
 
 /// 握手：令牌对，中文，能输入，会问「前缀要变」。
 async fn hello_asking(client: &mut Client) -> Value {
@@ -57,7 +60,7 @@ fn reason(reply: &Value) -> &str {
 async fn an_edited_prefix_is_asked_before_the_next_turn() {
     let home = Home::new();
     std::fs::create_dir_all(home.root.prompt_overrides().join("core")).expect("建得了");
-    home.write("commands/review.md", "Review $ARGUMENTS.\n");
+    home.write("root/commands/review.md", "Review $ARGUMENTS.\n");
     let script = Script::new([
         Play::Says("一。"),
         Play::Says("二。"),
@@ -86,7 +89,7 @@ async fn an_edited_prefix_is_asked_before_the_next_turn() {
     assert!(
         files
             .as_array()
-            .is_some_and(|files| files.contains(&json!(RULE))),
+            .is_some_and(|files| files.contains(&json!(SHOWN))),
         "{refused}"
     );
     let kept = asking
@@ -283,7 +286,7 @@ async fn an_override_in_a_new_folder_is_asked_too() {
     assert!(
         refused["error"]["data"]["files"]
             .as_array()
-            .is_some_and(|files| files.contains(&json!(RULE))),
+            .is_some_and(|files| files.contains(&json!(SHOWN))),
         "{refused}"
     );
 }

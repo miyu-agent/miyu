@@ -21,7 +21,7 @@ pub fn served_core(home: &Home, script: &Script) -> Arc<Core> {
 
 /// 同 [`served_core`]，系统配置照 `config` 写（施工 IM-3：另加别的平台的对应表）。
 pub fn served_core_with(home: &Home, script: &Script, config: &str) -> Arc<Core> {
-    home.write("config.toml", config);
+    home.write("etc/config.toml", config);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,

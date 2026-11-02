@@ -1,17 +1,15 @@
 //! 装、卸在磁盘上怎么做（施工 F-5 上，设计 `30-插件框架.md` 第九节，`docs/blueprint/packages.md`「装卸」）：只动数据根的
-//! `packages/`。
+//! `opt/`（设计 55）。
 //!
 //! - 装：一个文件夹就是一个包（施工 F-8 上），整个文件夹拷成 `<编号>/`。先拷到点开头的暂存处，再换进去；原来就有的先挪到
 //!   点开头的备份处，[`Placed::keep`] 删备份，[`Placed::undo`] 放回去。
-//! - 卸家目录的：删掉整个文件夹。卸出厂的：记一笔 `<编号>.removed`（空文件），资源目录不动，删掉这一笔就回来。
+//! - 卸家目录的：删掉整个文件夹。卸出厂的：在 `etc/removed/` 记一笔 `<编号>`（空文件），资源目录不动，删掉这一笔就
+//!   回来。
 //! - 换进去那一下改名失败的，当场把备份放回去（施工 AE-7）；两次改名之间核心被杀的，下一次起来时 [`recover`] 放回去。
 
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-
-/// 卸掉的出厂的包记的那一笔的后缀。
-pub const REMOVED: &str = ".removed";
 
 /// 换进去了的一个包：留着原来那一份的备份，好撤回。
 #[derive(Debug)]
@@ -137,14 +135,15 @@ pub fn take_out(home: &Path, id: &str) -> io::Result<()> {
     remove_dir_if_there(&home.join(id))
 }
 
-/// 记一笔：出厂的包 `id` 卸掉了。
+/// 记一笔：出厂的包 `id` 卸掉了。`markers` 是放记号的目录（[`crate::root::DataRoot::removed_markers`]），记号是里面的空文件
+/// `<编号>`。
 ///
 /// # Errors
 ///
 /// 建不了目录、写不了。
-pub fn mark_removed(home: &Path, id: &str) -> io::Result<()> {
-    fs::create_dir_all(home)?;
-    fs::write(home.join(format!("{id}{REMOVED}")), b"")
+pub fn mark_removed(markers: &Path, id: &str) -> io::Result<()> {
+    fs::create_dir_all(markers)?;
+    fs::write(markers.join(id), b"")
 }
 
 /// 删掉那一笔：出厂的包 `id` 装回来。
@@ -152,21 +151,21 @@ pub fn mark_removed(home: &Path, id: &str) -> io::Result<()> {
 /// # Errors
 ///
 /// 删不掉。
-pub fn unmark_removed(home: &Path, id: &str) -> io::Result<()> {
-    remove_if_there(&home.join(format!("{id}{REMOVED}")))
+pub fn unmark_removed(markers: &Path, id: &str) -> io::Result<()> {
+    remove_if_there(&markers.join(id))
 }
 
-/// 家目录 `home` 里记着卸掉的出厂的包的编号。目录读不了的当没有。
-pub fn removed(home: &Path) -> Vec<String> {
-    let Ok(entries) = fs::read_dir(home) else {
+/// 记号目录 `markers` 里记着卸掉的出厂的包的编号：是文件、名字合编号写法的才算。目录读不了的当没有。
+pub fn removed(markers: &Path) -> Vec<String> {
+    let Ok(entries) = fs::read_dir(markers) else {
         return Vec::new();
     };
     let mut ids: Vec<String> = entries
         .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_file()))
         .filter_map(|entry| {
-            let name = entry.file_name().into_string().ok()?;
-            let id = name.strip_suffix(REMOVED)?;
-            crate::personas::valid(id).then(|| id.to_string())
+            let id = entry.file_name().into_string().ok()?;
+            crate::personas::valid(&id).then_some(id)
         })
         .collect();
     ids.sort();

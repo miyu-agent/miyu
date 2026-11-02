@@ -41,9 +41,9 @@ fn theme_problems(reply: &Value) -> Vec<(String, String)> {
 #[tokio::test]
 async fn a_theme_is_listed_and_its_file_is_read() {
     let home = Home::new();
-    home.write("packages/ascii/package.toml", ASCII);
-    home.write("packages/ascii/look/theme.json", "{\"frame\": \"round\"}");
-    home.write("packages/ascii/notes.txt", "not the theme");
+    home.write("opt/ascii/package.toml", ASCII);
+    home.write("opt/ascii/look/theme.json", "{\"frame\": \"round\"}");
+    home.write("opt/ascii/notes.txt", "not the theme");
     let mut client = connected(&home).await;
     let listed = client.call("l", "package.list", json!({})).await;
     let ascii = listed["result"]["packages"]
@@ -99,9 +99,9 @@ async fn a_theme_is_listed_and_its_file_is_read() {
 #[tokio::test]
 async fn check_says_when_the_theme_is_missing_too_big_or_not_an_object() {
     let home = Home::new();
-    home.write("packages/ascii/package.toml", ASCII);
+    home.write("opt/ascii/package.toml", ASCII);
     let mut client = connected(&home).await;
-    let model = "packages/ascii/look/theme.json";
+    let model = "opt/ascii/look/theme.json";
     let reply = client.call("c1", "check", json!({})).await;
     assert_eq!(
         theme_problems(&reply),
@@ -138,24 +138,24 @@ async fn check_says_when_the_theme_is_missing_too_big_or_not_an_object() {
 async fn a_theme_takes_no_protocol_and_no_other_tables() {
     let home = Home::new();
     home.write(
-        "packages/a/package.toml",
+        "opt/a/package.toml",
         &ASCII.replace("[package]\n", "[package]\nprotocol = [1, 1]\n"),
     );
     home.write(
-        "packages/b/package.toml",
+        "opt/b/package.toml",
         &format!("{ASCII}\n[command]\nname = \"b\"\nprogram = \"b\"\n"),
     );
     home.write(
-        "packages/c/package.toml",
+        "opt/c/package.toml",
         &ASCII.replace("look/theme.json", "../theme.json"),
     );
     home.write(
-        "packages/d/package.toml",
+        "opt/d/package.toml",
         "[package]\nname = { en = \"D\" }\n\n[theme]\n",
     );
     // 主题包不带吉祥物（施工 F-16）。
     home.write(
-        "packages/e/package.toml",
+        "opt/e/package.toml",
         &format!("{ASCII}\n[mascot]\nmodel = \"m.json\"\n"),
     );
     let mut client = connected(&home).await;
@@ -175,26 +175,14 @@ async fn a_theme_takes_no_protocol_and_no_other_tables() {
     assert_eq!(
         codes,
         [
+            ("opt/a/package.toml".to_string(), "wrong_kind".to_string()),
+            ("opt/b/package.toml".to_string(), "wrong_kind".to_string()),
             (
-                "packages/a/package.toml".to_string(),
-                "wrong_kind".to_string()
-            ),
-            (
-                "packages/b/package.toml".to_string(),
-                "wrong_kind".to_string()
-            ),
-            (
-                "packages/c/package.toml".to_string(),
+                "opt/c/package.toml".to_string(),
                 "bad_theme_file".to_string()
             ),
-            (
-                "packages/d/package.toml".to_string(),
-                "missing_key".to_string()
-            ),
-            (
-                "packages/e/package.toml".to_string(),
-                "wrong_kind".to_string()
-            ),
+            ("opt/d/package.toml".to_string(), "missing_key".to_string()),
+            ("opt/e/package.toml".to_string(), "wrong_kind".to_string()),
         ],
         "{reply}"
     );

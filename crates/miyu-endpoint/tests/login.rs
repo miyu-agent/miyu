@@ -17,14 +17,14 @@ use crate::support::*;
 
 /// 读 `access.json`。
 fn access_of(home: &Home) -> access::Access {
-    access::read(&home.root.path().join(access::FILE))
+    access::read(&home.root.access_file())
         .expect("读得了")
         .access
 }
 
 /// 读主人的 `logins.json`。
 fn logins_of(home: &Home) -> logins::Logins {
-    logins::read(&home.root.path().join(logins::FILE))
+    logins::read(&home.root.logins_file())
         .expect("读得了")
         .logins
 }
@@ -223,7 +223,7 @@ async fn login_tokens_are_known_until_they_expire_or_are_revoked() {
         assert!(is_closed(&mut stranger).await);
     }
     // 过期了的不认：照文件写一个已经过期的。
-    let path = home.root.path().join(logins::FILE);
+    let path = home.root.logins_file();
     let read = logins::read(&path).expect("读得了");
     let mut written = read.logins.clone();
     let expired = "1".repeat(64);
@@ -349,7 +349,7 @@ async fn only_one_kind_of_credential_is_accepted() {
 #[tokio::test]
 async fn broken_files_read_as_empty() {
     let home = Home::new();
-    home.write("access.json", "not json");
+    home.write("etc/private/access.json", "not json");
     let core = home.core(&Script::new([]));
     let issued = setup_code(&core).await;
     assert_eq!(issued["first"], true, "坏了的当没设过：{issued}");
@@ -358,7 +358,7 @@ async fn broken_files_read_as_empty() {
     assert_eq!(why(&refused), "password_not_set", "{refused}");
     let token = set_up(&core, "correct horse").await;
     assert!(!access_of(&home).password.is_empty(), "坏的那份换成了好的");
-    home.write("logins.json", "{");
+    home.write("etc/private/logins.json", "{");
     let mut stale = Client::connect(Arc::clone(&core));
     let refused = hello_with(&mut stale, json!({"login": token})).await;
     assert_eq!(why(&refused), "bad_login", "{refused}");
@@ -422,12 +422,7 @@ async fn tickets_are_for_people_and_redeem_once() {
 #[tokio::test]
 async fn an_access_file_without_a_password_is_not_a_password() {
     let home = Home::new();
-    access::write(
-        &home.root.path().join(access::FILE),
-        &access::Access::default(),
-        None,
-    )
-    .expect("写得进");
+    access::write(&home.root.access_file(), &access::Access::default(), None).expect("写得进");
     let core = home.core(&Script::new([]));
     assert_eq!(setup_code(&core).await["first"], true, "还没设过");
     let mut bare = remote(&core, "192.168.1.30").await;

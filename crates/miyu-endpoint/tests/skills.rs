@@ -16,15 +16,13 @@ use miyu_tool::{Catalog, Tool};
 async fn skills_in_the_home_are_listed_and_read_before_and_after_a_restart() {
     let home = Home::new();
     home.write(
-        "skills/notes/SKILL.md",
+        "root/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\n\n照这样记。\n",
     );
     let skill = home
         .root
         .path()
-        .join("skills")
-        .join("notes")
-        .join("SKILL.md")
+        .join("root/skills/notes/SKILL.md")
         .to_string_lossy()
         .into_owned();
     // 她照列出来的那条读：Windows 上反斜杠换成了 `/`。

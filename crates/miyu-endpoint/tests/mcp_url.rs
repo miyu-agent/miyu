@@ -15,7 +15,7 @@ async fn a_url_server_is_connected_listed_and_called() {
     let server = HttpServer::start(true).await;
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!(
             "[mcp.remote]\nurl = \"{}\"\nbearer = \"t0k\"\nheaders = {{ X-Team = \"core\" }}\nneed_load = false\n",
             server.url
@@ -73,7 +73,7 @@ async fn a_url_server_is_connected_listed_and_called() {
 async fn plain_http_to_another_machine_is_not_connected() {
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[mcp.remote]\nurl = \"http://192.0.2.1/mcp\"\nbearer = \"t0k\"\n",
     );
     let core = configured(&home, &Script::new([]));
@@ -91,7 +91,7 @@ async fn an_expiring_session_reconnects_without_counting_failures() {
     let server = HttpServer::start(false).await;
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!(
             "[mcp.remote]\nurl = \"{}\"\nneed_load = false\n",
             server.url
@@ -196,14 +196,14 @@ async fn a_server_follows_the_secret_it_uses() {
     let home = Home::new();
     home.root.prepare_workspace().expect("建得了家目录");
     home.write(
-        "config.toml",
+        "etc/config.toml",
         &format!(
             "[mcp.remote]\nurl = \"{}\"\nbearer = {{ secret = \"t\" }}\n\n[mcp.other]\nurl = \"{}\"\n",
             server.url, other.url
         ),
     );
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         &format!(
             "[package]\nname = {{ en = \"kit\" }}\n\n[[mcp]]\nname = \"kitted\"\nurl = \"{}\"\nbearer = {{ secret = \"t\" }}\n",
             packaged.url

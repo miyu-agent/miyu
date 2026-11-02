@@ -9,7 +9,6 @@ use miyu_http::testkit::{Reply, Server};
 use miyu_models::catalog::{Price, Rates};
 use miyu_models::price::Tariff;
 use miyu_session::testkit::{Play, Script};
-use miyu_store::journal;
 
 /// 一家 `a` 在假服务器上：`a/m` 每百万输入 1、输出 2 人民币，`a/f` 没价格；`models.chat` 是 `a/m`。还有 `usage` 那一段。
 /// 假服务器在回环地址上，不写 `local = false` 会当本机的服务，没写价格的照免费算。
@@ -34,7 +33,7 @@ fn asked(model: &str, purpose: &str) -> Value {
 async fn one_shot_calls_count_by_purpose_and_land_in_the_journal() {
     let server = Server::start(vec![said("a"), said("b"), said("c")]).await;
     let home = Home::new();
-    home.write("config.toml", &config(&server, ""));
+    home.write("etc/config.toml", &config(&server, ""));
     let mut client = Client::connect(routed(&home, &[], data(profiles(json!({})))));
     client.hello().await;
     for (id, model, purpose) in [
@@ -64,14 +63,14 @@ async fn one_shot_calls_count_by_purpose_and_land_in_the_journal() {
         ]),
         "{reply}"
     );
-    let journal = std::fs::read_to_string(home.root.path().join(journal::FILE)).expect("有日志");
+    let journal = std::fs::read_to_string(home.root.journal_file()).expect("有日志");
     assert_eq!(
         journal.matches(r#""kind":"usage.oneshot""#).count(),
         3,
         "{journal}"
     );
     assert!(
-        journal.contains(r#""cost":{"amount":0.000018,"currency":"CNY","price":{"input":1,"output":2},"multiplier":1,"source":"config:config.toml:"#),
+        journal.contains(r#""cost":{"amount":0.000018,"currency":"CNY","price":{"input":1,"output":2},"multiplier":1,"source":"config:etc/config.toml:"#),
         "{journal}"
     );
 }
@@ -130,7 +129,7 @@ async fn currencies(usage: &str) -> Vec<String> {
     let server = Server::start(vec![said("a"), said("b")]).await;
     let home = Home::new();
     let extra = format!("\n[providers.a.models.u.price]\ninput = 1.0\noutput = 1.0\n{usage}");
-    home.write("config.toml", &(config(&server, "") + &extra));
+    home.write("etc/config.toml", &(config(&server, "") + &extra));
     let mut client = Client::connect(routed(&home, &[], data(profiles(json!({})))));
     client.hello().await;
     for (id, model) in [("c1", "a/m"), ("c2", "a/u")] {

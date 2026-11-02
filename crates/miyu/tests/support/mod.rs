@@ -55,7 +55,7 @@ impl Home {
 
     /// 系统配置写成 `text`：核心起来之前写。
     pub fn system_config(&self, text: &str) {
-        let file = self.root.path().join("config.toml");
+        let file = self.root.path().join("etc/config.toml");
         std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了目录");
         std::fs::write(file, text).expect("写得进");
     }
@@ -274,7 +274,7 @@ pub fn run_starting(dir: &Path, mut command: Command, input: &str) -> std::proce
 /// （Linux 的 `XDG_CACHE_HOME`、Windows 的 `LOCALAPPDATA`），哪个测试漏带了也只写进临时目录。macOS 的缓存目录照家目录，
 /// 不改家目录，只靠前一条。
 pub fn offline(root: impl AsRef<Path>) -> [(&'static str, PathBuf); 3] {
-    let cache = root.as_ref().join("state").join("test-cache");
+    let cache = root.as_ref().join("var").join("cache").join("test-cache");
     [
         ("MIYU_CATALOG_UPDATE", PathBuf::from("false")),
         ("XDG_CACHE_HOME", cache.clone()),

@@ -218,10 +218,9 @@ async fn a_linked_script_runs_in_the_sandbox_where_it_really_is() {
         return;
     }
     let home = Home::outside_temp();
-    let account = home.root.path().to_path_buf();
     let (scripts, real) = (
-        account.join("scripts"),
-        account.join("packages/kit/scripts"),
+        home.root.scripts(),
+        home.root.packages().join("kit/scripts"),
     );
     std::fs::create_dir_all(&scripts).expect("建得了");
     std::fs::create_dir_all(&real).expect("建得了");
@@ -351,7 +350,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
         return;
     }
     let home = Home::outside_temp();
-    let other = home.root.path().join("state/scripts/~home/other");
+    let other = home.root.path().join("root/state/scripts/~home/other");
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
@@ -361,7 +360,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_state() {
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "kept\nblocked-other\n");
-    let kept = home.root.path().join("state/scripts/~home/keep/n");
+    let kept = home.root.path().join("root/state/scripts/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
@@ -378,7 +377,7 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     let group2 = home
         .root
         .path()
-        .join("state/scripts/@qq_3agroup_3a2/~home/keep");
+        .join("root/state/scripts/@qq_3agroup_3a2/~home/keep");
     std::fs::create_dir_all(&group2).expect("建得了");
     std::fs::write(group2.join("n"), "secret\n").expect("写得进");
     let text = format!(
@@ -394,7 +393,7 @@ async fn a_group_s_script_cannot_read_another_group_s_state() {
     let kept = home
         .root
         .path()
-        .join("state/scripts/@qq_3agroup_3a1/~home/keep/n");
+        .join("root/state/scripts/@qq_3agroup_3a1/~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "kept\n");
 }
 
@@ -438,7 +437,7 @@ async fn a_local_script_in_the_sandbox_writes_into_the_owner_s_pictures() {
     let (status, output) = keep(&home, &helper, text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "saved\n");
-    let account = home.root.path().to_path_buf();
+    let account = home.root.user_layer();
     let read = |path: &str| std::fs::read_to_string(account.join(path)).expect("写进去了");
     assert_eq!(read("pictures/a.txt"), "drawn\n");
     assert_eq!(read("downloads/b.txt"), "got\n");

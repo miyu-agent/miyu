@@ -72,7 +72,7 @@ async fn opening_an_extension_asks_then_turns_it_on() {
     let home = Home::new();
     let program = Program::new();
     home.write(
-        "packages/relay/package.toml",
+        "opt/relay/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Relay\" }}\n\n[command]\nname = \"relay\"\nprogram = \"{}\"\nabout = {{ en = \"Relay\" }}\n\n[process]\nargs = [\"hello\", \"wait\"]\nstart = \"manual\"\ncapabilities = [\"tools\"]\n",
             program.name()
@@ -94,7 +94,7 @@ async fn opening_an_extension_asks_then_turns_it_on() {
 async fn a_package_whose_program_is_missing_is_refused_without_asking() {
     let home = Home::new();
     home.write(
-        "packages/ghost/package.toml",
+        "opt/ghost/package.toml",
         "[package]\nprotocol = [1, 1]\nname = { en = \"Ghost\" }\n\n[command]\nname = \"ghost\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = { en = \"G\" }\n\n[process]\n",
     );
     let (_client, session) = started(&home, r#"{"enable":"ghost"}"#.to_string(), "full").await;
@@ -128,7 +128,7 @@ async fn installing_in_a_preset_that_keeps_unlisted_off_opens_it_there() {
             home.root.packages().join(&id).exists(),
             "装进系统那一层 {id}"
         );
-        let file = home.root.path().join(format!("presets/{preset}.toml"));
+        let file = home.root.path().join(format!("root/presets/{preset}.toml"));
         let written = std::fs::read_to_string(&file).unwrap_or_default();
         assert_eq!(
             written.contains(&format!("{id} = true")),

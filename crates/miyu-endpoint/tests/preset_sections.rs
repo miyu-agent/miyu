@@ -315,7 +315,7 @@ async fn shipped_presets_are_sectioned_like_the_table() {
 async fn features_with_several_tools_list_them() {
     let home = Home::new();
     home.write(
-        "presets/quiet.toml",
+        "root/presets/quiet.toml",
         "[preset]\nname = { en = \"Quiet\" }\n\n[features]\nschedule = false\n\n[tools]\nkb_edit = false\n",
     );
     let mut client = connected(&home, "zh-CN").await;

@@ -52,7 +52,7 @@ const REVIEW: &str = "---\ndescription: Review a file\nargument-hint: <file>\nme
 #[tokio::test]
 async fn a_template_is_said_as_one_line_and_shown_as_typed() {
     let home = Home::new();
-    home.write("commands/review.md", REVIEW);
+    home.write("root/commands/review.md", REVIEW);
     let script = Script::new([Play::Says("好。")]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
@@ -86,13 +86,13 @@ async fn a_template_is_said_as_one_line_and_shown_as_typed() {
 async fn ones_own_covers_a_packages_and_a_builtin_name_stays_builtin() {
     let home = Home::new();
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("packages/kit/commands/review.md", "From the kit.\n");
-    home.write("packages/kit/commands/lint.md", "Lint $ARGUMENTS[0].\n");
-    home.write("commands/review.md", "My own review.\n");
-    home.write("commands/stop.md", "Not the builtin.\n");
+    home.write("opt/kit/commands/review.md", "From the kit.\n");
+    home.write("opt/kit/commands/lint.md", "Lint $ARGUMENTS[0].\n");
+    home.write("root/commands/review.md", "My own review.\n");
+    home.write("root/commands/stop.md", "Not the builtin.\n");
     let script = Script::new([Play::Says("好。"), Play::Says("嗯。")]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
@@ -119,7 +119,7 @@ async fn ones_own_covers_a_packages_and_a_builtin_name_stays_builtin() {
 #[tokio::test]
 async fn unknown_and_empty_ones_are_refused_and_nothing_is_said() {
     let home = Home::new();
-    home.write("commands/blank.md", "---\ndescription: x\n---\n  \n");
+    home.write("root/commands/blank.md", "---\ndescription: x\n---\n  \n");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let session = client.create("c1", "~").await;
@@ -133,9 +133,9 @@ async fn unknown_and_empty_ones_are_refused_and_nothing_is_said() {
 #[tokio::test]
 async fn a_preset_can_turn_one_off() {
     let home = Home::new();
-    home.write("commands/review.md", REVIEW);
+    home.write("root/commands/review.md", REVIEW);
     home.write(
-        "presets/quiet.toml",
+        "root/presets/quiet.toml",
         "[preset]\nname = \"安静\"\n\n[features]\ncommand-review = false\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));
@@ -173,9 +173,9 @@ async fn a_preset_can_turn_one_off() {
 #[tokio::test]
 async fn the_catalog_lists_templates_among_the_builtins() {
     let home = Home::new();
-    home.write("commands/review.md", REVIEW);
-    home.write("commands/plain.md", "\n  First line here.\nSecond.\n");
-    home.write("commands/stop.md", "Not the builtin.\n");
+    home.write("root/commands/review.md", REVIEW);
+    home.write("root/commands/plain.md", "\n  First line here.\nSecond.\n");
+    home.write("root/commands/stop.md", "Not the builtin.\n");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let reply = client.call("c1", "command.catalog", json!({})).await;
@@ -219,7 +219,7 @@ async fn the_catalog_lists_templates_among_the_builtins() {
 #[tokio::test]
 async fn undoing_says_the_typed_line() {
     let home = Home::new();
-    home.write("commands/review.md", REVIEW);
+    home.write("root/commands/review.md", REVIEW);
     let script = Script::new([Play::Says("好。")]);
     let mut client = Client::connect(home.core(&script));
     client.hello().await;
@@ -243,10 +243,10 @@ async fn in_a_venue_the_same_people_as_for_builtins_may_run_one() {
     // 放在包里：包里的哪个会话都找得到。
     let home = Home::new();
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("packages/kit/commands/review.md", REVIEW);
+    home.write("opt/kit/commands/review.md", REVIEW);
     let script = Script::new([Play::Says("在。")]);
     let mut client = Client::connect(bound_core(&home, &script, Catalog::default()));
     client.hello().await;
@@ -288,14 +288,14 @@ async fn in_a_venue_the_same_people_as_for_builtins_may_run_one() {
 #[tokio::test]
 async fn check_says_which_templates_are_not_used() {
     let home = Home::new();
-    home.write("commands/review.md", "Mine.\n");
-    home.write("commands/stop.md", "Not the builtin.\n");
-    home.write("commands/Bad.md", "x\n");
+    home.write("root/commands/review.md", "Mine.\n");
+    home.write("root/commands/stop.md", "Not the builtin.\n");
+    home.write("root/commands/Bad.md", "x\n");
     home.write(
-        "packages/kit/package.toml",
+        "opt/kit/package.toml",
         "[package]\nname = { en = \"Kit\" }\n",
     );
-    home.write("packages/kit/commands/review.md", "Theirs.\n");
+    home.write("opt/kit/commands/review.md", "Theirs.\n");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let reply = client.call("k1", "check", json!({})).await;

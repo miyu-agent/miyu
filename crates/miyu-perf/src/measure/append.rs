@@ -23,7 +23,12 @@ pub fn append(from: &Path, scratch: &Path, count: usize) -> Result<Vec<f64>, Str
     }
     // 会话日志只在数据根里建目录（施工 TMP-1）：临时的那一格写上标记，日志放在下面一层。
     std::fs::create_dir_all(scratch)
-        .and_then(|()| std::fs::write(scratch.join(miyu_store::root::MARKER), ""))
+        .and_then(|()| {
+            std::fs::write(
+                scratch.join(miyu_store::root::MARKER),
+                miyu_store::root::MARKER_TEXT,
+            )
+        })
         .map_err(|e| format!("建不了 {}：{e}", scratch.display()))?;
     let session = scratch.join("session");
     let mut log = SessionLog::create(&session, SEGMENT_LIMIT)

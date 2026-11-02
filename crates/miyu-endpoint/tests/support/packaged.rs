@@ -36,7 +36,7 @@ pub const SAMPLES: &str = "samples";
 /// 用 [`core`] 起的核心才读得到它。
 pub fn samples(home: &Home) -> std::path::PathBuf {
     home.write(
-        &format!("packages/{SAMPLES}/package.toml"),
+        &format!("opt/{SAMPLES}/package.toml"),
         "[package]\nname = { en = \"Samples\" }\n",
     );
     home.root.packages().join(SAMPLES)

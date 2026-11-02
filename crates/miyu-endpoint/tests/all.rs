@@ -196,6 +196,7 @@ mod peers;
 mod permission;
 mod persona_appearance;
 mod persona_avatar;
+mod persona_delete_memory;
 mod persona_recast;
 mod persona_seeds;
 mod persona_set;

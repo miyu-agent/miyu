@@ -37,13 +37,13 @@ async fn set(client: &mut Client, params: Value) -> Value {
 fn base(home: &Home, background: &[u8]) {
     crate::support::packaged::samples(home);
     home.write(
-        "packages/samples/personas/base/persona.toml",
+        "opt/samples/personas/base/persona.toml",
         "[persona]\nname = \"底\"\n\n[appearance]\nseed = \"#112233\"\n",
     );
     let path = home
         .root
         .path()
-        .join("packages/samples/personas/base/background.png");
+        .join("opt/samples/personas/base/background.png");
     std::fs::write(path, background).expect("写得进");
 }
 
@@ -162,7 +162,7 @@ async fn a_background_is_set_read_and_unset_back_to_the_layer_below() {
     assert!(
         home.root
             .path()
-            .join("personas/base/background.png")
+            .join("root/personas/base/background.png")
             .is_file()
     );
     let read = client

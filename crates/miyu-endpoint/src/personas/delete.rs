@@ -1,7 +1,10 @@
 //! 删人格（施工 P-3 下，`docs/blueprint/personas.md`「改」；施工 PE-1 从 `write.rs` 挪出来）：你那一层有的，整个目录挪进回收处
 //! （`miyu_store::trash::personas`），回到下面那一层。你那一层没有、只有出厂包带的，那个出厂包又只带这一个人格的（施工 PE-1，
-//! 2026-10-31 项目主人定：出厂的软件工程师能删），删它就是卸这个包，同 `package.remove`（`packages/<编号>.removed`），
+//! 2026-10-31 项目主人定：出厂的软件工程师能删），删它就是卸这个包，同 `package.remove`（`etc/removed/<编号>`），
 //! `package.install` 写包编号装回来。装上的包带的、包里还有别的的照旧删不掉。
+//!
+//! 记忆（设计 55 第三节第 6 条）：删的是你那一层、删完三层里都没有这个编号了的，记忆跟着进回收处
+//! （`trash::personas::take_memory`），登记里开着的那一份放下；删的只是盖在下面一层上的、连包卸掉的（装回来还是它），记忆不动。
 
 use std::path::Path;
 use std::sync::Arc;
@@ -13,6 +16,7 @@ use miyu_config::package::PackageKind;
 use miyu_store::layers::valid;
 use miyu_store::packages::{Found as Package, Layer as PackageLayer};
 use miyu_store::personas::{Personas, carried};
+use miyu_store::recall::Room;
 use miyu_store::trash;
 
 use super::{TARGET, personas};
@@ -44,6 +48,7 @@ pub(crate) async fn delete(core: &Arc<Core>, params: DeleteParams) -> Result<Jso
     let layers = personas(core);
     let packages = core.packages_of();
     let (root, at) = (core.root.clone(), now());
+    let logs = std::sync::Arc::clone(&core.memory.logs);
     let id = params.persona;
     let deleting = tokio::task::spawn_blocking({
         let id = id.clone();
@@ -57,6 +62,15 @@ pub(crate) async fn delete(core: &Arc<Core>, params: DeleteParams) -> Result<Jso
             if let Err(error) = trash::personas::discard(&root, &dir, &id, at) {
                 tracing::warn!(target: TARGET, kind = ?error.kind(), "persona not deleted");
                 return Err(Refusal::INTERNAL);
+            }
+            if !layers.exists(&id) {
+                logs.forget(&Room::Persona {
+                    persona: id.clone(),
+                });
+                // 挪不成的记忆留在原处，人格照删：同编号再建时接着用。
+                if let Err(error) = trash::personas::take_memory(&root, &id, at) {
+                    tracing::warn!(target: TARGET, kind = ?error.kind(), "persona memory kept in place");
+                }
             }
             Ok(Deleting::Home)
         }

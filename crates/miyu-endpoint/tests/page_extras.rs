@@ -29,7 +29,7 @@ async fn both_lists_name_the_folder_even_when_nothing_is_in_it() {
             .file_name()
             .expect("有名字")
             .to_string_lossy();
-        assert!(dir.ends_with(&format!("{root}/{folder}")), "{dir}");
+        assert!(dir.ends_with(&format!("{root}/root/{folder}")), "{dir}");
     }
 }
 

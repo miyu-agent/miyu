@@ -248,7 +248,11 @@ fn the_run_directory_is_back_before_a_command_starts() {
     let scratch = std::env::temp_dir().join(format!("miyu-sandbox-run-{}", std::process::id()));
     let data = scratch.join(".miyu");
     std::fs::create_dir_all(&data).expect("建得了目录");
-    std::fs::write(data.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        data.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let sandbox = Sandbox::new(
         PathBuf::from("miyu-sandbox"),
         Some(scratch.clone()),
@@ -275,7 +279,11 @@ fn the_jobs_directory_is_made_before_a_command_starts() {
     let scratch = std::env::temp_dir().join(format!("miyu-sandbox-jobs-{}", std::process::id()));
     let data = scratch.join(".miyu");
     std::fs::create_dir_all(&data).expect("建得了目录");
-    std::fs::write(data.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    std::fs::write(
+        data.join(miyu_store::root::MARKER),
+        miyu_store::root::MARKER_TEXT,
+    )
+    .expect("写得进标记");
     let jobs = data.join("sessions").join("s1").join("jobs");
     let sandbox = Sandbox::new(
         PathBuf::from("miyu-sandbox"),

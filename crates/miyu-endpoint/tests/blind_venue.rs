@@ -96,7 +96,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
             &capabilities,
         );
         if *needs {
-            let manifest = format!("packages/{id}/package.toml");
+            let manifest = format!("opt/{id}/package.toml");
             let text = read(&home.root.path().join(&manifest));
             home.write(
                 &manifest,
@@ -119,7 +119,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
         lines(path, 4).await;
     }
 
-    home.write("presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
+    home.write("root/presets/p.toml", "[preset]\nname = { en = \"P\" }\n");
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
     let seeing = client.create("c1", "~").await;
@@ -172,7 +172,7 @@ async fn a_session_that_cannot_show_images_leaves_out_the_packages_that_need_the
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
     home.write(
-        "presets/p.toml",
+        "root/presets/p.toml",
         "[preset]\nname = { en = \"P\" }\nunlisted = \"on\"\n",
     );
     client.say("s3", &blind, "三").await;

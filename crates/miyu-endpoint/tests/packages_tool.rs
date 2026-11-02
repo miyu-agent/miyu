@@ -166,7 +166,7 @@ async fn a_script_cannot_reach_packages_with_miyu_call() {
 async fn miyu_pkg_works_where_scripts_cannot_call_tools() {
     let home = Home::new();
     home.write(
-        "presets/pkg.toml",
+        "root/presets/pkg.toml",
         "[preset]\nname = { en = \"Pkg\" }\nunlisted = \"off\"\n\n[software]\nmiyu-base-shell = true\nmiyu-base-packages = true\n",
     );
     let script = Script::new([

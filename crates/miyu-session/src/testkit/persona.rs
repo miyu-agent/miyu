@@ -36,7 +36,7 @@ pub fn sample_persona_texts() -> PersonaTexts {
 pub fn install_sample_persona(root: &DataRoot) {
     copy(
         &sample_persona_dir(),
-        &root.path().join("personas").join(SAMPLE_PERSONA),
+        &root.path().join("root/personas").join(SAMPLE_PERSONA),
     );
 }
 

@@ -22,7 +22,7 @@ async fn edit_and_wait(home: &Home, core: &Arc<miyu_endpoint::Core>) {
     client
         .call("s1", "subscribe", json!({"stream": "config"}))
         .await;
-    home.write("config.toml", "[log]\nlevel = \"debug\"\n");
+    home.write("etc/config.toml", "[log]\nlevel = \"debug\"\n");
     let next = client.next().await.expect("推了");
     assert_eq!(next["params"]["via"], "file", "{next}");
 }

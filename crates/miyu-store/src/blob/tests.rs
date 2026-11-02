@@ -214,7 +214,7 @@ fn the_same_content_is_kept_once() {
         exe: None,
     })
     .unwrap();
-    assert_eq!(root.blobs(), scratch.path().join("data").join("blobs"));
+    assert_eq!(root.blobs(), scratch.path().join("data/root/blobs"));
     // 同一份内容存两次是同一个 blob（施工 SU-5 上：只有主人一个存处）。
     let blobs = Blobs::new(root.blobs());
     let hash = blobs.put(b"same picture").unwrap();

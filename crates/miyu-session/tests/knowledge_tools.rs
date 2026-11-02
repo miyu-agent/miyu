@@ -103,12 +103,7 @@ fn put(home: &Home, kb: &str, path: &str, text: &str) {
 
 /// 样本人格 `engineer` 收窄成 `bases`（写进数据根那一份 `persona.toml`）。
 fn narrow(home: &Home, bases: &str) {
-    let file = home
-        .root
-        .path()
-        .join("personas")
-        .join("engineer")
-        .join("persona.toml");
+    let file = home.root.path().join("root/personas/engineer/persona.toml");
     std::fs::write(file, format!("[knowledge]\nbases = {bases}\n")).expect("写得进");
 }
 

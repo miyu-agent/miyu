@@ -59,7 +59,7 @@ async fn connected(home: &Home) -> Client {
 #[tokio::test]
 async fn the_schema_lists_the_fields_of_a_record_list() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     let mut client = connected(&home).await;
     let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();
     let accounts = item(&schema, "draw.accounts");
@@ -106,9 +106,9 @@ async fn the_schema_lists_the_fields_of_a_record_list() {
 #[tokio::test]
 async fn a_record_list_is_set_whole_and_read_back_with_references() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "# 我的配置\n[draw]\n\n[ui]\nlanguage = \"zh\"\n",
     );
     let mut client = connected(&home).await;
@@ -160,8 +160,8 @@ async fn a_record_list_is_set_whole_and_read_back_with_references() {
 #[tokio::test]
 async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
-    home.write("config.toml", "[draw]\n");
+    home.write("opt/draw/package.toml", DRAW);
+    home.write("etc/config.toml", "[draw]\n");
     let mut client = connected(&home).await;
     let before = std::fs::read(home.root.config_file()).expect("在");
     let refused = |reply: &Value| -> Vec<(String, String)> {
@@ -255,7 +255,7 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
     assert!(one.get("error").is_some(), "{one}");
     // 手改写错的 check 报到字段。
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[[draw.accounts]]\nname = \"A\"\nkey = \"sk-plain\"\n",
     );
     let checked = client.call("k1", "check", json!({})).await;
@@ -272,12 +272,12 @@ async fn wrong_records_are_refused_at_their_field_and_plain_keys_never_land() {
 #[test]
 fn records_are_handed_over_as_objects_with_real_keys_and_defaults() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[[draw.accounts]]\nname = \"Home\"\nkey = { secret = \"home\" }\n\n[[draw.accounts]]\nname = \"Gone\"\nkey = { secret = \"nothing\" }\nmode = \"good\"\n",
     );
-    home.write("secrets.toml", "home = \"sk-home\"\n");
+    home.write("etc/private/secrets.toml", "home = \"sk-home\"\n");
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
     let mut found = miyu_endpoint::packages::load(&resources, &home.root);
     let items = miyu_endpoint::packages::settle(&mut found, &[]);

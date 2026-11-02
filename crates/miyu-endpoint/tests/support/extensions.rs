@@ -87,7 +87,7 @@ pub fn install_asking(
         }
     };
     home.write(
-        &format!("packages/{id}/package.toml"),
+        &format!("opt/{id}/package.toml"),
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Echo\", zh = \"回声\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"E\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\n{asking}",
             args.join(", ")
@@ -107,9 +107,8 @@ pub const BRIDGE: [&str; 5] = [
 /// 记下包 `id` 批过了 `capabilities`（施工 X-30：装上的包声明了能力的，批过才拉起）：施工 SU-2 中起记在开关文件
 /// `extensions.json` 的 `approved` 里。
 pub fn approve(home: &Home, id: &str, capabilities: &[&str]) {
-    let system = home.root.path().to_path_buf();
-    std::fs::create_dir_all(&system).expect("建得了");
-    let path = system.join("extensions.json");
+    let path = home.root.extensions_file();
+    std::fs::create_dir_all(path.parent().expect("有上一级")).expect("建得了");
     let mut switches: Value = std::fs::read_to_string(&path)
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
@@ -258,7 +257,7 @@ pub fn install_serving(
         ""
     };
     home.write(
-        &format!("packages/{id}/package.toml"),
+        &format!("opt/{id}/package.toml"),
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"{start}\"\ncapabilities = {BRIDGE:?}\n{connection}",
             args.join(", ")

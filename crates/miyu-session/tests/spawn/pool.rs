@@ -299,7 +299,7 @@ async fn only_personas_turned_on_for_subagents_are_offered() {
         async move {
             let mut home = Home::new();
             for (path, text) in &personas {
-                let file = home.root.path().join(path);
+                let file = home.root.user_layer().join(path);
                 std::fs::create_dir_all(file.parent().expect("有上级")).expect("建得了");
                 std::fs::write(file, text).expect("写得进");
             }

@@ -116,7 +116,11 @@ mod herself;
 fn vectors_use_the_system_config_and_keys() {
     use miyu_config::secret::Reference;
     let (root, _dir) = temp_root("using");
-    std::fs::write(root.path().join("secrets.toml"), "shared = \"sk-FAKE-A\"\n").expect("写得进");
+    std::fs::write(
+        root.path().join("etc/private/secrets.toml"),
+        "shared = \"sk-FAKE-A\"\n",
+    )
+    .expect("写得进");
     let core = Core::new(
         root.clone(),
         ResourceRoot::at(resources()),

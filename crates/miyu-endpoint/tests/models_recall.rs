@@ -191,7 +191,7 @@ fn direct(data: &ModelData, config: &Config, refs: &[(&str, &str)], providers: &
 /// `effort` 几种。会话编号换成 `S`。
 async fn protocol(data: Arc<ModelData>) -> String {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let config = Config::load(&home.root, None, items(), Environment::of(ENV));
     let models: Arc<dyn Models> = Arc::new(Routes {
         client: miyu_http::client(miyu_http::Proxy::Off).expect("造得出客户端"),
@@ -253,7 +253,7 @@ async fn protocol(data: Arc<ModelData>) -> String {
 #[tokio::test]
 async fn recalled_and_resident_answer_byte_for_byte_the_same() {
     let home = Home::new();
-    home.write("config.toml", CONFIG);
+    home.write("etc/config.toml", CONFIG);
     let config = Config::load(&home.root, None, items(), Environment::of(ENV));
     let mut dumps = Vec::new();
     for kind in [Kind::Resident, Kind::Filled, Kind::Empty] {

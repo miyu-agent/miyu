@@ -8,7 +8,7 @@ use miyu_session::testkit::Script;
 use crate::support::*;
 
 /// 配置文件，照数据根算。
-const PERSONAL: &str = "config.toml";
+const PERSONAL: &str = "etc/config.toml";
 
 async fn set(client: &mut Client, id: &str, params: Value) -> Value {
     client.call(id, "config.set", params).await

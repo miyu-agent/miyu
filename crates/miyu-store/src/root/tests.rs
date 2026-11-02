@@ -193,7 +193,13 @@ fn the_skeleton_is_built_and_building_it_again_is_fine() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    let dirs = [root.path().join("state"), root.run()];
+    let top = root.path();
+    let dirs = [
+        top.join("etc"),
+        top.join("etc/private"),
+        root.run(),
+        top.join("tmp"),
+    ];
     for dir in &dirs {
         assert!(dir.is_dir(), "{} 应该建好了", dir.display());
     }
@@ -257,7 +263,7 @@ fn sessions_are_listed_newest_first() {
     for id in ids {
         fs::create_dir_all(root.session_dir(&SessionId::parse(id).unwrap())).unwrap();
     }
-    fs::create_dir_all(root.path().join("sessions").join("not-a-session")).unwrap();
+    fs::create_dir_all(root.path().join("root/sessions/not-a-session")).unwrap();
     let listed: Vec<String> = root
         .sessions()
         .unwrap()
@@ -295,7 +301,12 @@ fn existing_directories_keep_their_permissions() {
     root.prepare().unwrap();
     let mode = |dir: &Path| fs::metadata(dir).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode(root.path()), 0o755, "人自己建的，权限不改");
-    assert_eq!(mode(&root.path().join("state")), 0o700, "新建的照样 0700");
+    assert_eq!(mode(&root.path().join("etc")), 0o700, "新建的照样 0700");
+    assert_eq!(
+        mode(&root.path().join("etc/private")),
+        0o700,
+        "凭据的目录 0700"
+    );
 }
 
 /// 这个目录里现在有哪些东西：相对的路径和文件内容，照名字排。
@@ -330,8 +341,8 @@ fn a_new_root_gets_the_marker() {
         }
         root.prepare().unwrap();
         assert_eq!(
-            fs::read_to_string(root.path().join(".miyu-root")).unwrap(),
-            "This directory is a Miyu data root (layout 2).\n"
+            fs::read_to_string(root.path().join(".miyu-layout")).unwrap(),
+            "This directory is a Miyu data root (layout 3).\n"
         );
         assert!(root.run().is_dir());
         // 有标记的照常用。
@@ -363,7 +374,7 @@ fn a_directory_that_is_not_ours_is_left_alone() {
         // 报错写明是哪个目录、为什么认不出。
         let said = error.to_string();
         assert!(said.contains(&root.path().display().to_string()), "{said}");
-        assert!(said.contains(".miyu-root"), "{said}");
+        assert!(said.contains(".miyu-layout"), "{said}");
         assert_eq!(contents(root.path()), before, "一个字节都不动");
     }
 }
@@ -396,7 +407,7 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
         ..env(Platform::Linux)
     };
     let root = DataRoot::locate(&env).unwrap();
-    let home = root.path().to_path_buf();
+    let home = root.path().join("root");
     assert_eq!(
         root.user_dirs(),
         [
@@ -406,7 +417,7 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
             ("downloads", home.join("downloads")),
         ]
     );
-    assert_eq!(root.script_caches(), home.join("cache"));
+    assert_eq!(root.script_caches(), root.path().join("var/cache/scripts"));
     assert!(!home.join("pictures").exists(), "不建");
     // 只有数据根路径的一方（施工 Y-11 下）照 `DataRoot::at` 拿到的是同一个位置（施工 Y-11 补修：只留一处布局）。
     for (name, dir) in root.user_dirs() {
@@ -422,11 +433,49 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
 #[test]
 fn create_inside_does_not_bring_a_deleted_root_back() {
     let root = Scratch::new();
-    let logs = root.path().join("state").join("logs");
+    let logs = root.path().join("var/log");
     create_inside(&logs).unwrap();
     assert!(logs.is_dir());
     let gone = Scratch::bare();
-    let error = create_inside(&gone.path().join("state").join("logs")).unwrap_err();
+    let error = create_inside(&gone.path().join("var").join("log")).unwrap_err();
     assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     assert!(!gone.path().exists());
+}
+
+/// 旧版的数据根（有 `.miyu-root`、没有新标记，设计 55 第六节第 1 条）、别的布局的（标记写的不是 layout 3）：不动、各报各的。
+#[test]
+fn an_old_or_other_layout_is_left_alone() {
+    let scratch = Scratch::new();
+    let root = root_in(&scratch);
+    fs::create_dir_all(root.path().join("state")).unwrap();
+    fs::write(
+        root.path().join(OLD_MARKER),
+        "This directory is a Miyu data root (layout 2).\n",
+    )
+    .unwrap();
+    let before = contents(root.path());
+    let error = root.prepare().unwrap_err();
+    assert!(
+        matches!(&error, PrepareError::OldLayout(path) if path == root.path()),
+        "{error:?}"
+    );
+    assert!(error.to_string().contains("layout 2"), "{error}");
+    assert_eq!(contents(root.path()), before, "一个字节都不动");
+
+    for text in [
+        "This directory is a Miyu data root (layout 4).\n",
+        "garbage",
+    ] {
+        let scratch = Scratch::new();
+        let root = root_in(&scratch);
+        fs::create_dir_all(root.path().join("etc")).unwrap();
+        fs::write(root.path().join(MARKER), text).unwrap();
+        let before = contents(root.path());
+        let error = root.prepare().unwrap_err();
+        assert!(
+            matches!(&error, PrepareError::OtherLayout(_)),
+            "{text}: {error:?}"
+        );
+        assert_eq!(contents(root.path()), before, "一个字节都不动");
+    }
 }

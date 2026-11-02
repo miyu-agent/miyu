@@ -64,14 +64,15 @@ use crate::secrets::SecretsFile;
 /// 运行日志的目标（`config.md`「出错」）。
 pub(crate) const TARGET: &str = "miyu::config";
 
-/// 系统配置在数据根里的位置。
-const SYSTEM: &str = "config.toml";
+/// 系统配置给人看的写法：相对数据根（[`DataRoot::config_file`]，设计 55 的 `etc/`）。
+const SYSTEM: &str = "etc/config.toml";
 
-/// 密钥文件在数据根里的位置（施工 8-5）。
-const SECRETS: &str = miyu_store::secrets::FILE;
+/// 密钥文件给人看的写法（施工 8-5）：相对数据根（[`DataRoot::secrets_file`]，设计 55 的 `etc/private/`）。
+const SECRETS: &str = "etc/private/secrets.toml";
 
-/// 核心新建系统配置时第一行指向的 Schema，相对这份文件（第五条第 2 条第 6 款）。
-const SYSTEM_SCHEMA: &str = "state/config/config.schema.json";
+/// 核心新建系统配置时第一行指向的 Schema，相对这份文件所在的 `etc/`（第五条第 2 条第 6 款）：生成的参考文件在
+/// [`DataRoot::config_reference`]。
+const SYSTEM_SCHEMA: &str = "../var/cache/config/config.schema.json";
 
 /// 手里的配置。
 #[derive(Debug, Clone)]
@@ -105,7 +106,7 @@ fn system_at(root: &DataRoot) -> (PathBuf, String) {
     (root.config_file(), SYSTEM.to_string())
 }
 
-/// 密钥文件在哪：`secrets.toml`。
+/// 密钥文件在哪：`etc/private/secrets.toml`。
 fn secrets_path(root: &DataRoot) -> PathBuf {
     root.secrets_file()
 }

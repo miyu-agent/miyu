@@ -23,13 +23,13 @@ fn config(home: &Home) -> Config {
 #[test]
 fn a_bundle_hands_its_scripts_its_own_settings() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     home.write(
-        "packages/plain/package.toml",
+        "opt/plain/package.toml",
         "[package]\nname = { en = \"Plain\" }\n",
     );
-    home.write("config.toml", "[draw]\nkey = { secret = \"draw\" }\n");
-    home.write("secrets.toml", "draw = \"sk-real\"\n");
+    home.write("etc/config.toml", "[draw]\nkey = { secret = \"draw\" }\n");
+    home.write("etc/private/secrets.toml", "draw = \"sk-real\"\n");
     let config = config(&home);
     let registered: Vec<(&str, &str, Option<&str>)> = config
         .items()
@@ -63,11 +63,11 @@ fn a_bundle_hands_its_scripts_its_own_settings() {
 fn the_prefix_is_what_is_taken_off() {
     let home = Home::new();
     home.write(
-        "packages/miyu-draw/package.toml",
+        "opt/miyu-draw/package.toml",
         &DRAW.replace("[package]\n", "[package]\nprefix = \"draw\"\n"),
     );
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[draw]\nendpoint = \"https://other.example.com\"\n",
     );
     let config = config(&home);

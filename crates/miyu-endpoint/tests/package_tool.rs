@@ -190,11 +190,11 @@ async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
 async fn a_name_clash_tells_her_what_and_where() {
     let home = Home::new();
     home.write(
-        "packages/zkit/package.toml",
+        "opt/zkit/package.toml",
         "[package]\nname = { en = \"Z\" }\n",
     );
     home.write(
-        "packages/zkit/skills/notes/SKILL.md",
+        "opt/zkit/skills/notes/SKILL.md",
         "---\nname: notes\ndescription: Take notes.\n---\nbody\n",
     );
     let folder = kit(&home, "akit");

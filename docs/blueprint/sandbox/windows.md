@@ -61,7 +61,7 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
 
 - 已经有一个叫 `miyu-sandbox` 的账号、它在 `Administrators` 组里（连经别的组间接在的）：`setup`、`remove` 都不动它，报「已经有一个叫 miyu-sandbox 的管理员账号」。沙盒用户是管理员，沙盒就形同虚设。
 
-**装到哪了那份记录** `state/sandbox/windows.json`（数据根下；沙盒读不到数据根）：
+**装到哪了那份记录** `etc/private/sandbox-windows.json`（数据根下；沙盒读不到数据根）：
 
 | 字段 | 是什么 |
 |---|---|
@@ -80,7 +80,7 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
 {"version":1,"username":"miyu-sandbox","user_sid":"S-1-5-21-2606943370-4158592556-3158051839-1002","password":"AQAAANC…","created_at":"2026-09-28T12:00:00.000Z"}
 ```
 
-**提升过的自己没成时写下的原因** `state/sandbox/windows-error.json`：提升过的自己的窗口是藏起来的，它说的话人看不到，所以没成时把原因写在这里，等它的那一个读了、照界面语言说给人听、删掉。写法和记录一样（只给本人和 SYSTEM）。一行 JSON，三种：
+**提升过的自己没成时写下的原因** `var/log/sandbox/windows-error.json`：提升过的自己的窗口是藏起来的，它说的话人看不到，所以没成时把原因写在这里，等它的那一个读了、照界面语言说给人听、删掉。写法和记录一样（只给本人和 SYSTEM）。一行 JSON，三种：
 
 ```json
 {"error":"administrator"}
@@ -107,8 +107,8 @@ Windows 上沙盒要的、要一次管理员权限的那件事（`sandbox.md` �
    6. 查出它的 SID；这个名字是个组、不是用户的，算错。
    7. 密码 DPAPI 加密（机器范围），base64。
    8. 写记录：
-      1. `state`、`state/sandbox` 一层一层来：没有就只建这一层，再查它不是链接（符号链接、目录联接都算；OneDrive 按需下载这类别的重解析点不算，数据根放在同步的目录里也装得上），查过了才往下一层走；是链接的不经它写，报错。不能先一口气建好再查：`state` 是链接的话，一口气建就顺着它建到别处去了。数据根本身是链接不要紧。
-      2. 先删掉上次留下的 `windows.json.tmp`，再只许新建地建它，不跟链接，建的时候访问控制就是上面那样；写进去、同步，再改名成 `windows.json`，盖掉旧的。
+      1. 从数据根到放文件的目录（`etc`、`etc/private`；`var`、`var/log`、`var/log/sandbox`）一层一层来：没有就只建这一层，再查它不是链接（符号链接、目录联接都算；OneDrive 按需下载这类别的重解析点不算，数据根放在同步的目录里也装得上），查过了才往下一层走；是链接的不经它写，报错。不能先一口气建好再查：`etc` 是链接的话，一口气建就顺着它建到别处去了。数据根本身是链接不要紧。
+      2. 先删掉上次留下的 `sandbox-windows.json.tmp`，再只许新建地建它，不跟链接，建的时候访问控制就是上面那样；写进去、同步，再改名成 `sandbox-windows.json`，盖掉旧的。
       3. 挡得住提前放好的链接，挡不住检查完、写之前被换掉：和 `fs.md` 那一条一样，能换的人本来就能改本人的数据根。
    9. 印「已创建沙盒用户」。
 5. **Windows，是管理员——`remove`**：认数据根（同上）；查已有的 `miyu-sandbox`，是管理员的不动、报错；删它的 profile；删用户；从 `UserList` 里取消隐藏；删记录文件。先删用户、后取消隐藏：删到一半没成的，账号照样藏着，不会出现在登录界面上。哪一样本来就没有，跳过不算错。印「已移除沙盒用户」。
@@ -199,7 +199,7 @@ Options:
 | `crates/miyu-sandbox/src/install/quote/tests.rs` | 没空格的照原样；空格、制表符、空的包起来；引号和它前面的反斜杠；包起来的结尾反斜杠加倍；非 ASCII、落单的代理项原样；带 NUL 的拼不成 |
 | `crates/miyu-sandbox/src/install/record/tests.rs` | 记录是一行、读回来一样；版本不认得、多了格、少了格、类型不对的读不了；写进参数给的数据根、没留临时文件；没有标记的一个字节都不写；上次留下的临时文件清掉；盖掉旧的；删、再删，删也要认标记 |
 | `crates/miyu-sandbox/src/install/report/tests.rs` | 三种原因写成上面那三行、读回来一样；没有的是空的；清掉、再清；后写的盖掉先写的；读不懂的说 `read report`；没有标记的不写 |
-| `crates/miyu-sandbox/src/install/files/tests.rs` | 标记只看在不在；`state/sandbox` 建在 `state` 下，再建也成；只许新建、不覆盖；Unix 上 `state`、`state/sandbox` 是链接的不经它写，放文件的地方是链接的不跟，文件是 0600；Windows 上建出来的访问控制就是本人和 SYSTEM、受保护，目录联接、目录链接都不经它写（建不了目录链接的机器上那一条跳过） |
+| `crates/miyu-sandbox/src/install/files/tests.rs` | 标记只看在不在；两处的目录一层一层建，再建也成，不在数据根下的不写；只许新建、不覆盖；Unix 上路上哪一层是链接的不经它写，放文件的地方是链接的不跟，文件是 0600；Windows 上建出来的访问控制就是本人和 SYSTEM、受保护，目录联接、目录链接都不经它写（建不了目录链接的机器上那一条跳过） |
 | `crates/miyu-sandbox/src/install/dpapi/tests.rs` | Windows：加密了解得回来；密文里没有明文（UTF-16 的也没有）；同一个密码两份密文不一样 |
 | `crates/miyu-sandbox/src/install/user/tests.rs` | Windows，`#[ignore]`，只在虚拟机上以管理员身份跑（会真建用户，用的是 `miyu-sbx-test`）：建出来是普通用户、启用、密码不过期、改不了密码、说明对、在 `Users` 不在 `Administrators`、藏着、照密码登得上；再建是重置密码、又启用，旧密码不能用了；是管理员的不动；没有的删了不算错，注册表没留下；同名的组不当成用户 |
 | `crates/miyu-cli/src/sandbox/tests.rs` | 怎么走，用替身：是管理员的直接干；替谁装照参数给的数据根和 SID，不问自己是谁；提升过的自己没成才写原因；不是管理员的先清旧原因、再起自己，参数带着数据根和 SID，自己不干；取消、退出 0、带原因退出（读了就清）、不带原因退出、起不来、查不了是不是管理员、找不到自己、参数写法不对，各怎么说；参数照主程序读回来是同一个人；每一句两种语言；退出码 |

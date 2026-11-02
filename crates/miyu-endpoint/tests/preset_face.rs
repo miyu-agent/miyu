@@ -114,14 +114,14 @@ async fn software_without_tools_is_pinned_off_but_left_out_of_the_line() {
     // 程序要在测试程序旁边：不在的当没装（施工 F-6 上）。
     let program = crate::support::extensions::Program::new();
     home.write(
-        "packages/quiet/package.toml",
+        "opt/quiet/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Quiet\" }}\n\n[command]\nname = \"quiet\"\nprogram = \"{}\"\nabout = {{ en = \"Q\" }}\n\n[process]\nargs = []\n",
             program.name()
         ),
     );
     home.write(
-        "presets/lean.toml",
+        "root/presets/lean.toml",
         "[preset]\nname = { en = \"Lean\" }\n\n[software]\nquiet = false\nmiyu-base-memory = false\n",
     );
     let (session, request) = first_request(
@@ -142,7 +142,7 @@ async fn software_without_tools_is_pinned_off_but_left_out_of_the_line() {
 async fn a_tool_turned_off_alone_is_gone_and_nothing_is_said() {
     let home = Home::new();
     home.write(
-        "presets/careful.toml",
+        "root/presets/careful.toml",
         "[preset]\nname = { en = \"Careful\" }\n\n[tools]\nshell = false\n",
     );
     let (_, request) = first_request(
@@ -164,10 +164,10 @@ async fn a_tool_turned_off_alone_is_gone_and_nothing_is_said() {
 #[tokio::test]
 async fn roleplay_off_drops_the_reminder_and_the_style_lock_and_the_line_comes_before_the_lock() {
     let home = Home::new();
-    home.write("personas/miyu/prompts/persona.md", "You are Miyu.\n");
-    home.write("personas/miyu/prompts/reminders.md", "Stay soft.\n");
+    home.write("root/personas/miyu/prompts/persona.md", "You are Miyu.\n");
+    home.write("root/personas/miyu/prompts/reminders.md", "Stay soft.\n");
     home.write(
-        "presets/quiet.toml",
+        "root/presets/quiet.toml",
         "[preset]\nname = { en = \"Quiet\" }\n\n[software]\nmiyu-base-memory = false\n",
     );
     let lock = std::fs::read_to_string(default_resources().join("core/style-lock.txt"))
@@ -202,7 +202,7 @@ async fn roleplay_off_drops_the_reminder_and_the_style_lock_and_the_line_comes_b
 async fn preset_get_lists_features_with_their_tools() {
     let home = Home::new();
     home.write(
-        "presets/nosh.toml",
+        "root/presets/nosh.toml",
         "[preset]\nname = { en = \"No sh\" }\n\n[features]\nqq = false\nkb = true\n\n[tools]\nforget = false\n",
     );
     let mut client = connected(configured(&home, &Script::new([]))).await;
@@ -300,7 +300,7 @@ fn switches(reply: &serde_json::Value) -> Vec<(&str, bool, bool)> {
 async fn a_package_turned_off_takes_all_its_tools_and_is_named() {
     let home = Home::new();
     home.write(
-        "presets/nobase.toml",
+        "root/presets/nobase.toml",
         "[preset]\nname = { en = \"No base\" }\n\n[software]\nbasesystem = false\n",
     );
     let (_, request) = first_request(
@@ -366,7 +366,7 @@ async fn first_request_without(home: &Home, without: &[&str], params: Value) -> 
 async fn a_feature_switched_off_takes_its_tools_and_is_named() {
     let home = Home::new();
     home.write(
-        "presets/noshell.toml",
+        "root/presets/noshell.toml",
         "[preset]\nname = { en = \"No shell\" }\n\n[features]\nshell = false\n",
     );
     let (session, request) = first_request(
@@ -422,8 +422,8 @@ async fn memory_not_in_the_given_list_says_not_installed() {
 #[tokio::test]
 async fn reminders_not_installed_drop_the_reminder_and_the_lock() {
     let home = Home::new();
-    home.write("personas/miyu/prompts/persona.md", "You are Miyu.\n");
-    home.write("personas/miyu/prompts/reminders.md", "Stay soft.\n");
+    home.write("root/personas/miyu/prompts/persona.md", "You are Miyu.\n");
+    home.write("root/personas/miyu/prompts/reminders.md", "Stay soft.\n");
     let lock = std::fs::read_to_string(default_resources().join("core/style-lock.txt"))
         .expect("读得出风格锁");
     let (session, request) = first_request_without(

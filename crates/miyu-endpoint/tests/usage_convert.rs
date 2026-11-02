@@ -49,7 +49,7 @@ async fn spent(home: &Home, rates: &Server) -> (Arc<Core>, Client) {
         crate::support::providers::said("b"),
     ])
     .await;
-    home.write("config.toml", &config(&model));
+    home.write("etc/config.toml", &config(&model));
     let core = routed(home, &[], data(profiles(json!({}))));
     let base = rates.base_url.trim_end_matches("/v1");
     core.install_rates(Arc::new(HttpRates::at(
@@ -181,7 +181,7 @@ async fn a_sessions_own_total_is_converted_for_its_owner() {
     ))])
     .await;
     let home = Home::new();
-    home.write("config.toml", "[usage]\ncurrency = \"CNY\"\n");
+    home.write("etc/config.toml", "[usage]\ncurrency = \"CNY\"\n");
     let usd = Tariff {
         price: Price::of(
             Rates {

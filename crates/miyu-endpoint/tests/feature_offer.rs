@@ -109,7 +109,7 @@ async fn offered_features_take_their_tools_into_the_preset_from_the_next_turn() 
     );
     // 只开包自己的功能、没列的都关着：交以前 qq_history 归包的功能、开着；交了以后归交的功能、关着。
     home.write(
-        "presets/p.toml",
+        "root/presets/p.toml",
         "[preset]\nname = { en = \"P\" }\nunlisted = \"off\"\n\n[features]\neach = true\n",
     );
     let core = core_with_script(

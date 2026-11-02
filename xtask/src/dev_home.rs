@@ -83,7 +83,7 @@ impl Vars {
     pub fn config(&self) -> String {
         let model = quoted(&self.model);
         let mut text = format!(
-            "#:schema ../state/config/config.schema.json\n\
+            "#:schema ../var/cache/config/config.schema.json\n\
              # cargo xtask dev-home 造的，开发自测用。地址照拉起核心的那个终端里的 {BASE_URL} 取，key 照 {KEY_ENV} 取。\n\
              \n\
              [providers.dev]\n\
@@ -127,7 +127,7 @@ pub fn make(dir: &Path, vars: &Vars) -> Result<PathBuf, String> {
     })
     .map_err(|error| error.to_string())?;
     root.prepare().map_err(|error| error.to_string())?;
-    let path = root.path().join("config.toml");
+    let path = root.config_file();
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)

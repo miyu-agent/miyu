@@ -9,7 +9,7 @@ use miyu_store::knowledge::{Knowledge, KnowledgeError};
 use crate::support::*;
 
 fn base(root: &miyu_store::root::DataRoot, kb: &str) -> PathBuf {
-    root.path().join("kb").join(kb)
+    root.path().join("root/kb").join(kb)
 }
 
 #[test]

@@ -18,7 +18,7 @@ use miyu_store::watch::Watch;
 use crate::support::*;
 
 /// 系统配置在数据根里的位置。
-const SYSTEM: &str = "config.toml";
+const SYSTEM: &str = "etc/config.toml";
 
 /// 照磁盘上的配置起来、开始监视的核心：数据根建好（监视要看它）。
 fn watched(home: &Home, script: &Script) -> (Arc<Core>, Watch) {
@@ -104,7 +104,7 @@ async fn a_hand_edit_is_pushed_and_logged() {
         }),
         "手改的不带 by"
     );
-    let logged = journal(&home, "journal.jsonl");
+    let logged = journal(&home, "var/lib/journal.jsonl");
     assert_eq!(logged.len(), 1, "{logged:?}");
     assert_eq!(logged[0]["by"], json!({"kind": "kernel"}));
     assert!(logged[0].get("cause").is_none(), "手改的没有 cause");
@@ -142,7 +142,7 @@ async fn the_cores_own_write_is_pushed_once_and_before_the_reply() {
     let next = pushed(&mut client).await;
     assert_eq!(next["layer"], "system", "自己写的不重推：{next}");
     assert_eq!(next["via"], "file");
-    let vias: Vec<Value> = journal(&home, "journal.jsonl")
+    let vias: Vec<Value> = journal(&home, "var/lib/journal.jsonl")
         .iter()
         .map(|line| line["body"]["via"].clone())
         .collect();
@@ -209,7 +209,7 @@ async fn a_comment_only_edit_is_not_pushed_and_a_deleted_file_empties_its_layer(
         }),
         "删掉的推了"
     );
-    assert_eq!(journal(&home, "journal.jsonl").len(), 2);
+    assert_eq!(journal(&home, "var/lib/journal.jsonl").len(), 2);
 }
 
 #[tokio::test]
@@ -358,7 +358,7 @@ async fn a_hand_edited_trust_record_is_logged_and_used() {
         assert!(n < 1000, "十秒内认了手改的信任：{got}");
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
-    let logged = journal(&home, "journal.jsonl");
+    let logged = journal(&home, "var/lib/journal.jsonl");
     assert_eq!(logged.len(), 1, "{logged:?}");
     assert_eq!(logged[0]["kind"], "trust.changed");
     assert_eq!(logged[0]["by"], json!({"kind": "kernel"}));

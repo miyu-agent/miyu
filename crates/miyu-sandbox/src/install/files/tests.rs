@@ -21,14 +21,40 @@ fn a_data_root_is_known_by_its_marker() {
     check_root(odd.path()).expect("是目录也算");
 }
 
+/// 安装记录在数据根的哪里（设计 55）：`etc/private/sandbox-windows.json`。
+fn record_file(root: &Dir) -> PathBuf {
+    root.path()
+        .join("etc")
+        .join("private")
+        .join("sandbox-windows.json")
+}
+
+/// 放安装记录的目录，一层一层建好。
+fn sandbox_dir(root: &Path) -> io::Result<PathBuf> {
+    let file = super::root(root).sandbox_record_file();
+    dir_for(root, &file)
+}
+
 #[test]
-fn the_sandbox_directory_is_made_under_state() {
+fn the_record_and_the_report_directories_are_made_layer_by_layer() {
     let root = Dir::root();
     let dir = sandbox_dir(root.path()).expect("建得了");
-    assert_eq!(dir, root.path().join("state").join("sandbox"));
+    assert_eq!(dir, record_file(&root).parent().expect("有上一级"));
     assert!(dir.is_dir());
     // 再来一次也成。
     assert_eq!(sandbox_dir(root.path()).expect("还在"), dir);
+    let report = super::root(root.path()).sandbox_report_file();
+    let made = dir_for(root.path(), &report).expect("建得了");
+    assert_eq!(made, root.path().join("var").join("log").join("sandbox"));
+    assert!(made.is_dir());
+}
+
+#[test]
+fn a_file_outside_the_data_root_is_refused() {
+    let root = Dir::root();
+    let elsewhere = Dir::new();
+    let error = dir_for(root.path(), &elsewhere.path().join("x.json")).expect_err("不在数据根下");
+    assert!(error.to_string().contains("outside"), "{error}");
 }
 
 #[test]
@@ -47,13 +73,25 @@ fn a_private_file_is_only_ever_new() {
 #[test]
 fn links_on_the_way_are_not_written_through() {
     use std::os::unix::fs::symlink;
-    for link_at in ["state", "state/sandbox"] {
+    let cases = [
+        ("etc", "record"),
+        ("etc/private", "record"),
+        ("var", "report"),
+        ("var/log", "report"),
+        ("var/log/sandbox", "report"),
+    ];
+    for (link_at, which) in cases {
         let root = Dir::root();
         let elsewhere = Dir::new();
         let at = root.path().join(link_at);
         std::fs::create_dir_all(at.parent().expect("有上一级")).expect("建得了");
         symlink(elsewhere.path(), &at).expect("建得了链接");
-        let error = sandbox_dir(root.path()).expect_err("不经链接写");
+        let place = super::root(root.path());
+        let file = match which {
+            "record" => place.sandbox_record_file(),
+            _ => place.sandbox_report_file(),
+        };
+        let error = dir_for(root.path(), &file).expect_err("不经链接写");
         assert!(error.to_string().contains("link"), "{link_at}: {error}");
         let untouched: Vec<_> = std::fs::read_dir(elsewhere.path())
             .expect("读得了")
@@ -111,7 +149,7 @@ fn on_windows_a_linked_directory_is_not_written_through() {
     // 建目录链接要开发者模式或管理员：CI 上是管理员；建不了的机器上这条跳过。
     let root = Dir::root();
     let elsewhere = Dir::new();
-    let state = root.path().join("state");
+    let state = root.path().join("etc");
     if let Err(error) = std::os::windows::fs::symlink_dir(elsewhere.path(), &state) {
         eprintln!("建不了目录链接，跳过：{error}");
         return;
@@ -130,7 +168,7 @@ fn on_windows_a_junction_on_the_way_is_not_written_through() {
     // 目录联接不要任何特权，谁都建得了：真要挡的就是它。标准库把它当链接（名字代理类的重解析点）。
     let root = Dir::root();
     let elsewhere = Dir::new();
-    let state = root.path().join("state");
+    let state = root.path().join("etc");
     let made = std::process::Command::new("cmd")
         .arg("/c")
         .arg("mklink")

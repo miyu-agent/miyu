@@ -24,7 +24,11 @@ impl Scratch {
         let dir = std::env::temp_dir().join(format!("miyu-{name}-{}-{n}", std::process::id()));
         fs::create_dir_all(&dir).expect("测试里做得到");
         // 数据根里的东西只在数据根里建目录（施工 TMP-1）：写上标记。
-        fs::write(dir.join(miyu_store::root::MARKER), "").expect("测试里做得到");
+        fs::write(
+            dir.join(miyu_store::root::MARKER),
+            miyu_store::root::MARKER_TEXT,
+        )
+        .expect("测试里做得到");
         Scratch(fs::canonicalize(&dir).expect("测试里做得到"))
     }
 }

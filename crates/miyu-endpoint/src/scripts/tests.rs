@@ -18,7 +18,7 @@ fn scripts_in_the_data_root_are_installed() {
         std::fs::write(path, text).expect("写得进");
     };
     write(
-        "scripts/weather.py",
+        "root/scripts/weather.py",
         "#!/usr/bin/env python3\n# Description: Weather.\nprint('sunny')\n",
     );
     let core = Core::new(

@@ -182,7 +182,7 @@ async fn a_platform_package_s_tools_skip_the_preset_in_its_own_venues() {
     let text = read(&manifest).replace("platform = \"qq\"", "platform = [\"qq\", \"tg\"]");
     std::fs::write(&manifest, text).expect("写得进");
     home.write(
-        "presets/off.toml",
+        "root/presets/off.toml",
         "[preset]\nname = { en = \"Off\" }\n\n[software]\nbridge = false\n\n[tools]\nnote = false\n",
     );
     let core = served_core_with(

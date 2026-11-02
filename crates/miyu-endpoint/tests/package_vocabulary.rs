@@ -64,7 +64,7 @@ fn item<'a>(schema: &'a Value, key: &str) -> &'a Value {
 #[tokio::test]
 async fn the_schema_says_choice_names_lines_numbers_and_sliders() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
     let schema = client.call("s1", "config.schema", json!({})).await["result"].clone();
@@ -127,9 +127,9 @@ async fn the_schema_says_choice_names_lines_numbers_and_sliders() {
 #[tokio::test]
 async fn values_are_checked_by_their_type_and_handed_over_as_written() {
     let home = Home::new();
-    home.write("packages/draw/package.toml", DRAW);
+    home.write("opt/draw/package.toml", DRAW);
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[draw]\nbackground = \"transparent\"\nprompt = \"\"\"\nA cat.\nIn the snow.\"\"\"\ntemperature = 1.25\nratio = 2\n",
     );
     let mut client = Client::connect(packaged::core(&home));
@@ -155,19 +155,19 @@ async fn values_are_checked_by_their_type_and_handed_over_as_written() {
         "count = 9",
         "prompt = 3",
     ] {
-        home.write("config.toml", &format!("[draw]\n{wrong}\n"));
+        home.write("etc/config.toml", &format!("[draw]\n{wrong}\n"));
         let checked = client.call("c1", "check", json!({})).await;
         let problems = checked["result"]["problems"].as_array().expect("有");
         assert!(
             problems
                 .iter()
-                .any(|problem| problem["file"] == "config.toml" && problem["kind"] == "config"),
+                .any(|problem| problem["file"] == "etc/config.toml" && problem["kind"] == "config"),
             "{wrong}：{checked}"
         );
     }
     // 交给脚本、扩展的照原样（施工 PS-1 那一份）。
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[draw]\nprompt = \"\"\"\nA cat.\nIn the snow.\"\"\"\ntemperature = 1.25\n",
     );
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());

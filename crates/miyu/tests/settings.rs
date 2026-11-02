@@ -116,13 +116,14 @@ async fn files_that_cannot_be_written_are_logged_and_the_core_still_starts() {
     let home = Home::new();
     // 该是目录的地方是个文件：三份都写不成。
     let blocked = home.root.config_reference();
+    std::fs::create_dir_all(blocked.parent().expect("有上一级")).expect("建得了");
     std::fs::write(&blocked, "not a directory").expect("写得进");
     run_once(&home, "en_US.UTF-8").await;
     let log = home.core_log();
     for (name, _) in FILES {
         let line = log
             .lines()
-            .find(|line| line.contains(&format!("file=state/config/{name}")))
+            .find(|line| line.contains(&format!("file=var/cache/config/{name}")))
             .unwrap_or_else(|| panic!("{name} 记了一条：{log}"));
         assert!(
             line.contains(" WARN  config   config schema not written "),

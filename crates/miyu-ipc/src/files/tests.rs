@@ -82,3 +82,11 @@ fn a_location_that_is_not_utf8_is_read_back_as_written() {
     write_location(&root, &socket).expect("写得进");
     assert_eq!(read_location(&root).expect("读得到"), socket);
 }
+
+#[test]
+fn the_names_in_run_are_reserved_package_ids() {
+    // 包在 `run/` 下各占一个 `run/<编号>/`（设计 55 第三节第 3 条）：令牌、套接字的名字不能被包拿去。
+    for name in [TOKEN, LOCATION] {
+        assert!(miyu_store::root::RESERVED.contains(&name), "{name}");
+    }
+}

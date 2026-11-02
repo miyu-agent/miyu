@@ -4,9 +4,9 @@
 //! 叠：同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照
 //! 编号，后读到的那一份报 `command_taken`。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_config::package`。
 //!
-//! 包自己在这台机器上的状态放 `<数据根>/state/packages/<编号>/`，包自己建、自己用（[`Packages::state_dir`]）。
+//! 包自己在这台机器上的状态放 `<数据根>/var/lib/<编号>/`，包自己建、自己用（[`Packages::state_dir`]）。
 //!
-//! 装、卸（施工 F-5 上）：只动家目录那一层（`install.rs`）。卸掉的出厂的包在家目录记一笔 `<编号>.removed`，读的时候不算装了
+//! 装、卸（施工 F-5 上）：只动家目录那一层（`install.rs`）。卸掉的出厂的包在 `etc/removed/` 记一笔 `<编号>`，读的时候不算装了
 //! （[`Packages::read`]），另外照样读得出来（[`Packages::read_removed`]），好让头给人装回来。
 
 use std::collections::BTreeMap;
@@ -111,6 +111,8 @@ pub struct Packages {
     states: PathBuf,
     /// 本地库（[`DataRoot::local_packages`]）。
     local: PathBuf,
+    /// 卸掉的出厂包的记号（[`DataRoot::removed_markers`]）。
+    removed: PathBuf,
 }
 
 impl Packages {
@@ -124,6 +126,7 @@ impl Packages {
             ],
             states: root.package_states(),
             local: root.local_packages(),
+            removed: root.removed_markers(),
         }
     }
 
@@ -133,6 +136,7 @@ impl Packages {
             dirs: vec![(Layer::Shipped, resources.path().join("packages"))],
             states: PathBuf::new(),
             local: PathBuf::new(),
+            removed: PathBuf::new(),
         }
     }
 
@@ -159,6 +163,7 @@ impl Packages {
     fn checked(&self, mut found: Vec<Found>) -> Vec<Found> {
         found.sort_by(|one, other| (&one.id, one.layer).cmp(&(&other.id, other.layer)));
         duplicates(&mut found);
+        reserved(&mut found);
         taken(&mut found);
         features_taken(&mut found);
         prefixes_taken(&mut found);
@@ -200,9 +205,17 @@ impl Packages {
             .map(|(_, dir)| dir.as_path())
     }
 
-    /// 家目录里记着卸掉的出厂的包的编号（施工 F-5 上）。
+    /// 记着卸掉的出厂的包的编号（施工 F-5 上）。只有出厂那一层的没有。
     pub fn removed(&self) -> Vec<String> {
-        self.home_dir().map(install::removed).unwrap_or_default()
+        if self.removed.as_os_str().is_empty() {
+            return Vec::new();
+        }
+        install::removed(&self.removed)
+    }
+
+    /// 卸掉的出厂包的记号放在哪（[`DataRoot::removed_markers`]）：卸、装回出厂的包写它。
+    pub fn removed_markers(&self) -> PathBuf {
+        self.removed.clone()
     }
 
     /// 两层的目录：`miyu check` 认写了的文件是不是一份清单（两边换成真的路径比，`miyu-endpoint` 的 `check.rs`）。
@@ -281,6 +294,25 @@ fn duplicates(found: &mut [Found]) {
             }));
         }
     }
+}
+
+/// 编号是数据根里保留的名字的（[`crate::root::RESERVED`]）整份不收，报 `reserved_id`：它的东西会和数据根自己的目录撞上。
+fn reserved(found: &mut [Found]) {
+    for one in found.iter_mut() {
+        if let Some(problem) = reserved_id(&one.id) {
+            one.read = Err(Issue::Wrong(problem));
+        }
+    }
+}
+
+/// 编号 `id` 是保留的名字的话，那一条问题（装包时查、读清单时查）；不是的没有。
+pub fn reserved_id(id: &str) -> Option<Problem> {
+    crate::root::RESERVED.contains(&id).then(|| Problem {
+        line: None,
+        code: Code::ReservedId,
+        message: format!("package id {id} is reserved in the data root"),
+        detail: id.to_string(),
+    })
 }
 
 /// 读的先后：出厂的先于家目录，同一层照编号。先到先得的几样（子命令名、功能的编号）照它。

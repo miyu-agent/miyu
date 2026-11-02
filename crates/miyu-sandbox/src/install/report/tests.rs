@@ -3,9 +3,13 @@
 use super::*;
 use crate::install::testkit::Dir;
 
-/// 原因落在数据根的哪里。
+/// 原因落在数据根的哪里：日志 `var/log/sandbox/windows-error.json`（设计 55）。
 fn file(dir: &Dir) -> std::path::PathBuf {
-    dir.path().join("state").join("sandbox").join(FILE)
+    dir.path()
+        .join("var")
+        .join("log")
+        .join("sandbox")
+        .join("windows-error.json")
 }
 
 #[test]

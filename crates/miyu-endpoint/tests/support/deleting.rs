@@ -20,11 +20,7 @@ use super::{Client, Home, default_resources};
 
 /// 回收处里会话 `session` 的目录。
 pub fn trashed(home: &Home, session: &str) -> PathBuf {
-    home.root
-        .path()
-        .join("trash")
-        .join("sessions")
-        .join(session)
+    home.root.path().join("root/trash/sessions").join(session)
 }
 
 /// 会话目录还在不在原处。

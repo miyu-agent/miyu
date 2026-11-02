@@ -60,12 +60,12 @@ async fn overrides_change_the_face_and_bad_ones_are_reported() {
         ]),
     );
     home.write(
-        "tools/echo.toml",
+        "root/tools/echo.toml",
         "[parameters.text]\ndescription = \"My param.\"\n",
     );
-    home.write("tools/broken.toml", "description = \"读一个文件。\"\n");
+    home.write("root/tools/broken.toml", "description = \"读一个文件。\"\n");
     home.write(
-        "tools/missing.toml",
+        "root/tools/missing.toml",
         "[parameters.nope]\ndescription = \"No such.\"\n",
     );
     let core = core_with_settings(&home, quick());

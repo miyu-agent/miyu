@@ -106,6 +106,6 @@ fn only_writes_into_the_data_root_refuse_a_missing_root() {
     assert_eq!(error.kind(), io::ErrorKind::NotFound);
     assert!(!gone.path().exists(), "不建回来");
     let root = Scratch::new();
-    let inside = root.path().join("state").join("config").join("a.json");
+    let inside = root.path().join("var/cache/config/a.json");
     assert!(write_inside(&inside, b"{}").unwrap());
 }

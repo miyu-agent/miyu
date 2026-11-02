@@ -19,7 +19,7 @@ use crate::support::*;
 
 /// 系统配置写成 `config`、读好的清单起来的核心，拉起开着的扩展。
 fn served_core(home: &Home, config: &str) -> Arc<Core> {
-    home.write("config.toml", config);
+    home.write("etc/config.toml", config);
     let items = [
         miyu_endpoint::settings::UiSettings::ITEMS,
         miyu_endpoint::settings::PersonaSettings::ITEMS,
@@ -77,7 +77,7 @@ fn made(reply: &Value) -> String {
 fn install_bridge(home: &Home, program: &str, args: &[String]) {
     let args: Vec<String> = args.iter().map(|arg| format!("{arg:?}")).collect();
     home.write(
-        "packages/bot/package.toml",
+        "opt/bot/package.toml",
         &format!(
             "[package]\nprotocol = [1, 1]\nname = {{ en = \"Bridge\" }}\n\n[command]\nname = \"bot\"\nprogram = \"{program}\"\nabout = {{ en = \"B\" }}\n\n[process]\nargs = [{}]\nstart = \"always\"\ncapabilities = {BRIDGE:?}\n\n[connection]\nplatform = \"qq\"\n",
             args.join(", ")
@@ -188,7 +188,7 @@ async fn a_bridge_lists_the_venue_sessions_of_its_platform() {
     // 删了的那一个从回收处拿回来：同一个群有两个，只列新的。陌生人后来写进了对应表、私聊又来了一句：他成了主人本人，另开一个
     // 不关沙盒的，列那一个，关着的旧的不列。
     let trashed = home.root.trashed_sessions().join(&deleted);
-    let restored = home.root.path().join("sessions").join(&deleted);
+    let restored = home.root.path().join("root/sessions").join(&deleted);
     std::fs::remove_file(trashed.join(miyu_store::trash::DELETED_AT)).expect("删得掉");
     std::fs::rename(&trashed, &restored).expect("挪得回来");
     let rebound = format!("{BINDINGS}\"qq:20001\" = \"alice\"\n");

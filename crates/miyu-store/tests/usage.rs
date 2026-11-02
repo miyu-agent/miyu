@@ -4,7 +4,6 @@
 
 use std::fs;
 
-use miyu_store::journal;
 use miyu_store::log::SessionLog;
 use miyu_store::sqlite::Opened;
 use miyu_store::usage::{Group, OneShotCall, Query, UsageIndex};
@@ -283,7 +282,7 @@ fn one_shot_calls_go_to_the_journal_and_survive_a_rebuild() {
         ..call.clone()
     };
     index.one_shot(at(32), &judged).unwrap();
-    let journal = fs::read_to_string(root.path().join(journal::FILE)).unwrap();
+    let journal = fs::read_to_string(root.journal_file()).unwrap();
     assert_eq!(journal.lines().count(), 3);
     assert!(journal.contains(r#""kind":"usage.oneshot""#), "{journal}");
     let by_purpose = |index: &UsageIndex| {

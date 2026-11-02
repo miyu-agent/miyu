@@ -41,7 +41,7 @@ fn listing(pieces: Vec<Piece>, models: &[&str]) -> Reply {
 async fn keys_are_found_in_the_core_environment_and_their_values_never_leave() {
     let home = Home::new();
     home.write(
-        "config.toml",
+        "etc/config.toml",
         "[providers.ds]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n\n[providers.zz]\nkey = { env = \"DEEPSEEK_API_KEY\" }\n",
     );
     let env = [
@@ -123,7 +123,7 @@ async fn local_services_are_probed_together_and_slow_ones_count_as_none() {
         "lab-later": {"driver": "google", "base_url": "http://127.0.0.1:9/v1"}
     });
     let home = Home::new();
-    home.write("config.toml", "[providers.mine]\ncatalog = \"lab-b\"\n");
+    home.write("etc/config.toml", "[providers.mine]\ncatalog = \"lab-b\"\n");
     let reply = ask(&home, &[], extra, "provider.detect", json!({})).await;
     let found = &reply["result"]["local"];
     assert_eq!(
@@ -242,7 +242,7 @@ async fn featured_ones_follow_the_resource_order_and_the_language() {
     );
 
     let english = Home::new();
-    english.write("config.toml", "[ui]\nlanguage = \"en\"\n");
+    english.write("etc/config.toml", "[ui]\nlanguage = \"en\"\n");
     let reply = ask(
         &english,
         &[],

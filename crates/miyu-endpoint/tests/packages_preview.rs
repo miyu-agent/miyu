@@ -106,11 +106,11 @@ async fn installing_shows_what_comes_and_changes_nothing() {
 #[tokio::test]
 async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     let home = Home::new();
-    home.write("packages/pane/package.toml", &pane("1"));
-    home.write("config.toml", "[pane]\nport = 9\n");
+    home.write("opt/pane/package.toml", &pane("1"));
+    home.write("etc/config.toml", "[pane]\nport = 9\n");
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
-    let state = home.root.path().join("state/packages/pane");
+    let state = home.root.path().join("var/lib/pane");
     std::fs::create_dir_all(&state).expect("建得了");
     let shown = call(
         &mut client,
@@ -149,7 +149,7 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
 #[tokio::test]
 async fn restoring_a_shipped_package_shows_it() {
     let home = Home::new();
-    home.write("packages/miyu-base-net.removed", "");
+    home.write("etc/removed/miyu-base-net", "");
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
     let shown = call(
@@ -166,7 +166,7 @@ async fn restoring_a_shipped_package_shows_it() {
         (json!(true), json!("builtin")),
         "{shown}"
     );
-    let removed = home.root.packages().join("miyu-base-net.removed");
+    let removed = home.root.removed_markers().join("miyu-base-net");
     assert!(removed.exists(), "什么都不动");
     let unknown = call(
         &mut client,
