@@ -119,3 +119,20 @@ fn joined_triggers_come_where_they_joined() {
         Some("user: <judge/> | [15:00] 小林 [msg=8804]: 第三个")
     );
 }
+
+/// 没有 `to`、照事实开的一轮（施工 O-64，通讯平台到点看一眼）：桥的事实先记下、不带回合编号，由它开一轮，渲染在内核的事实
+/// 后面，同回报开的回合；群会话里也不带近况。
+#[test]
+fn a_turn_opened_on_a_fact_shows_it_after_the_kernel_facts() {
+    let mut log = Log::new();
+    ambient(&mut log, "在吗", "8801");
+    let glance = log.detached(
+        BRIDGE,
+        "context.injected",
+        r#"{"kind":"glance","text":"<glance/>"}"#,
+    );
+    log.start(glance);
+    log.fact("<env/>");
+    assert_eq!(in_group(&log), ["user: <env/> | <glance/>"]);
+    assert_eq!(rendered(&log), ["user: <env/> | <glance/>"]);
+}

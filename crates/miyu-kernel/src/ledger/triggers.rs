@@ -1,7 +1,7 @@
 //! 账本里照记下的几条开的回合（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 2 条「`turn.started` 多一格 `triggers`」）：
 //! 哪些是旁听的 `message.user`，哪些已经当过触发。`turn.started` 带 `triggers` 的，每一条都要是旁听的、没当过触发的，照序号
-//! 排好，最后一条就是 `trigger`；`turn.joined`（施工 O-14 下）的也照这几条查，不能是空的。撤掉的回合当过的照样算当过：账本只增
-//! 不减。
+//! 排好，最后一条就是 `trigger`；`turn.joined`（施工 O-14 下）的也照这几条查，可以是空的（施工 O-64：桥只带事实并进来）。撤掉的
+//! 回合当过的照样算当过：账本只增不减。
 
 use std::collections::BTreeSet;
 
@@ -30,11 +30,9 @@ impl Triggers {
         self.check_list(&started.triggers)
     }
 
-    /// `turn.joined` 的 `triggers` 合不合规矩（施工 O-14 下）：不能是空的，别的同 `turn.started` 的。
+    /// `turn.joined` 的 `triggers` 合不合规矩（施工 O-14 下）：同 `turn.started` 的；空的也行（施工 O-64，`session.respond` 不写
+    /// `to`、只带事实并进来）。
     pub(super) fn check_joined(&self, joined: &TurnJoined) -> Result<(), String> {
-        if joined.triggers.is_empty() {
-            return Err("turn.joined should have triggers".to_string());
-        }
         self.check_list(&joined.triggers)
     }
 

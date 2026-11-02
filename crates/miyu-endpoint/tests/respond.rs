@@ -1,6 +1,6 @@
 //! `session.respond`（施工 O-14 上，`docs/construction/O-14-照记下的开一轮（上）.md`）：照旁听记下的几条开一轮，`triggers` 排好
 //! 去重，事实接在内核的后面、`by` 是这个连接（本机的是主人）；写错的什么都不记；不是旁听的、当过触发的拒，`data.messages`
-//! 是那几条；同一个请求编号再发只算一次。
+//! 是那几条；同一个请求编号再发只算一次。不写 `to` 的照事实开（施工 O-64）。
 
 use serde_json::{Value, json};
 
@@ -92,6 +92,43 @@ async fn respond_opens_a_turn_on_what_was_overheard() {
     assert_eq!(again["result"], reply["result"]);
 }
 
+/// 不写 `to`（施工 O-64，通讯平台到点看一眼私聊）：事实先记下，由它开一轮。
+#[tokio::test]
+async fn respond_without_messages_opens_a_turn_on_the_facts() {
+    let home = Home::new();
+    let (mut client, session, _) = overheard_twice(&home, &Script::new([Play::Says("在。")])).await;
+    let reply = client
+        .call(
+            "g1",
+            "session.respond",
+            json!({"session": session, "facts": [{"kind": "glance", "text": "<glance/>"}]}),
+        )
+        .await;
+    let events: Vec<u64> = reply["result"]["events"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter_map(Value::as_u64)
+        .collect();
+    home.until_turns(&session, 1).await;
+    let log = home.log(&session);
+    let at = |seq: u64| {
+        log.iter()
+            .find(|event| event.seq.get() == seq)
+            .expect("记下了")
+    };
+    assert!(
+        matches!(&at(events[0]).body, Body::ContextInjected(injected) if injected.text == "<glance/>"),
+        "{:?}",
+        at(events[0])
+    );
+    let Body::TurnStarted(turn) = &at(events[1]).body else {
+        panic!("接着开这一轮：{:?}", at(events[1]));
+    };
+    assert_eq!(turn.trigger.map(|seq| seq.get()), Some(events[0]));
+    assert!(turn.triggers.is_empty());
+}
+
 #[tokio::test]
 async fn bad_requests_record_nothing_and_refusals_name_the_messages() {
     let home = Home::new();
@@ -101,6 +138,8 @@ async fn bad_requests_record_nothing_and_refusals_name_the_messages() {
     let many: Vec<u64> = (1..=65).collect();
     for (n, params) in [
         json!({"session": session, "to": []}),
+        json!({"session": session}),
+        json!({"session": session, "facts": []}),
         json!({"session": session, "to": many}),
         json!({"session": session, "to": [0]}),
         json!({"session": session, "to": [seqs[0]], "facts": [{"kind": "Not A Kind", "text": "x"}]}),

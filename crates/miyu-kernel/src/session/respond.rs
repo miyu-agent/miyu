@@ -1,5 +1,6 @@
 //! 照记下的几条开一轮（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）：`Respond` 拿已经旁听记下的几条
-//! `message.user` 当触发开一轮，不新记消息；带来的几块事实接在内核的事实后面，都排在触发前面。
+//! `message.user` 当触发开一轮，不新记消息；带来的几块事实接在内核的事实后面，都排在触发前面。没有 `to` 的照事实开一轮
+//! （施工 O-64，通讯平台到点看一眼私聊要的）：事实先记下，最后一块当触发。
 
 use super::action::{Action, Reason};
 use super::jobs::{Arrived, Waker};
@@ -12,7 +13,8 @@ use crate::time::Timestamp;
 impl Session {
     /// 照 `to` 那几条开一轮，`facts` 原样记成 `by` 注入的事实，接在内核的事实后面。正在跑一轮的并进去（[`Session::join`]，施工
     /// O-14 下）；一条都没有的拒，`empty_message`；有不是旁听的拒，`not_ambient`；有当过触发的拒，`already_answered`：
-    /// 后两种带上是哪几条。`to` 照序号排好、去重。
+    /// 后两种带上是哪几条。`to` 照序号排好、去重。`to` 是空的照 `facts` 开（[`Session::prompted`]，施工 O-64），两样都空的
+    /// 拒，`empty_message`。
     pub(super) fn respond(
         &mut self,
         id: CommandId,
@@ -24,7 +26,7 @@ impl Session {
         to.sort_unstable();
         to.dedup();
         let Some(&trigger) = to.last() else {
-            return vec![rejected(id, Reason::EmptyMessage)];
+            return self.prompted(id, by, at, facts);
         };
         let not: Vec<Seq> = to
             .iter()
@@ -57,6 +59,40 @@ impl Session {
         if let (Some(turn), Some(last)) = (self.turn.as_mut(), events.last()) {
             turn.stage = super::turn::Stage::Opening { opened: last.seq };
         }
+        self.accept(id, events.iter().map(|event| event.seq).collect());
+        vec![Action::Append(events)]
+    }
+
+    /// 没有 `to`、照几块事实开一轮（施工 O-64）：一块都没有的拒，`empty_message`。正在跑一轮的照样并进去（`turn.joined` 的
+    /// `triggers` 是空的）；空闲的先记下事实（不带回合编号），由最后一块开一轮，同后台命令的回报开的回合。
+    fn prompted(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        facts: Vec<ContextInjected>,
+    ) -> Vec<Action> {
+        if facts.is_empty() {
+            return vec![rejected(id, Reason::EmptyMessage)];
+        }
+        if self.turn.is_some() {
+            return self.join(id, by, at, Vec::new(), facts);
+        }
+        let mut events: Vec<Event> = facts
+            .into_iter()
+            .map(|fact| {
+                self.record(
+                    at,
+                    by.clone(),
+                    Some(id.clone()),
+                    Body::ContextInjected(fact),
+                )
+            })
+            .collect();
+        let Some(trigger) = events.last().map(|fact| fact.seq) else {
+            return vec![rejected(id, Reason::EmptyMessage)];
+        };
+        events.extend(self.open_turn(at, trigger, Some(id.clone())));
         self.accept(id, events.iter().map(|event| event.seq).collect());
         vec![Action::Append(events)]
     }

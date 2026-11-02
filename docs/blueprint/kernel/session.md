@@ -100,7 +100,7 @@
 | 命令 | 协议里的方法 | 带着 | 见 |
 |---|---|---|---|
 | `Send { blocks, urgent, venue }` | `session.send` | 内容块；`urgent` 急着插话；`venue` 通讯平台上的一条消息的那几格（施工 O-13 上） | 「发一条消息」 |
-| `Respond { to, facts }` | `session.respond` | 开这一轮（正在跑的并进去，施工 O-14 下）的那几条旁听消息的序号、几块事实（施工 O-14 上） | 「照记下的几条开一轮」 |
+| `Respond { to, facts }` | `session.respond` | 开这一轮（正在跑的并进去，施工 O-14 下）的那几条旁听消息的序号、几块事实（施工 O-14 上）；序号可以没有，照事实开（施工 O-64） | 「照记下的几条开一轮」 |
 | `Note { facts }` | `session.note` | 几块事实，只记不开回合（施工 O-14 补） | 「记几块事实」 |
 | `Append { event }` | `events.append` | 扩展自己的 `ext.*`，或者 `venue.recalled`、`venue.delivered`（施工 O-13 上；别的种类经不了这条路，类型就不收） | 「桥记的事件」 |
 | `Interrupt { queued }` | `session.interrupt` | `Queued::Send` 排着的接着发，`Queued::Return` 退回，`Queued::Keep` 留着（施工 O-6） | 「打断」 |

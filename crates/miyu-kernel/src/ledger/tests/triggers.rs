@@ -96,7 +96,7 @@ fn triggers_are_overheard_in_order_unused_and_end_with_the_trigger() {
         .unwrap();
 }
 
-/// `turn.joined`（施工 O-14 下）：只在回合里；不能是空的；照 `turn.started` 的规矩查那几条；记下以后算当过触发。
+/// `turn.joined`（施工 O-14 下）：只在回合里；空的也行（施工 O-64）；照 `turn.started` 的规矩查那几条；记下以后算当过触发。
 #[test]
 fn a_join_happens_in_a_turn_and_uses_its_triggers_up() {
     let mut ledger = base();
@@ -118,11 +118,6 @@ fn a_join_happens_in_a_turn_and_uses_its_triggers_up() {
         .unwrap();
     refused(
         &mut ledger,
-        &joined(7, Some(6), ""),
-        "turn.joined should have triggers",
-    );
-    refused(
-        &mut ledger,
         &joined(7, Some(6), "3,2"),
         "triggers should be in order, each once",
     );
@@ -138,4 +133,6 @@ fn a_join_happens_in_a_turn_and_uses_its_triggers_up() {
         &joined(8, Some(6), "2,3"),
         "trigger 2 has already opened a turn",
     );
+    // 桥只带事实并进来的（施工 O-64）。
+    ledger.append(&joined(8, Some(6), "")).unwrap();
 }

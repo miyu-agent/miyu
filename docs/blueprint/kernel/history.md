@@ -96,9 +96,8 @@
 | `turn.started` 有 `trigger` 的，`trigger` 在它之前；没有的不查（手动压缩单开的那一轮，施工 6-8） | trigger should be an event before the turn started |
 | `turn.started` 带 `triggers` 的，最后一条是 `trigger`（施工 O-14 上） | trigger should be the last of triggers |
 | `triggers` 照序号排好、不重 | triggers should be in order, each once |
-| `triggers` 每一条都是旁听的 `message.user` | trigger <n> is not an overheard message.user |
+| `triggers` 每一条都是旁听的 `message.user`（`turn.joined` 的也照这三条查、记下以后算当过，施工 O-14 下；它的可以是空的，施工 O-64） | trigger <n> is not an overheard message.user |
 | `triggers` 每一条都没当过触发（撤掉的回合当过的也算） | trigger <n> has already opened a turn |
-| `turn.joined` 的 `triggers` 不空（施工 O-14 下）；别的照 `turn.started` 的那三条查，记下以后算当过 | turn.joined should have triggers |
 | 带 `turn` 的，是正在进行的那个回合 | turn <编号> is not the running turn |
 | `message.assistant`、`tool.result`、`tool.approval_requested`、`tool.approval_decided`、`question.asked`、`question.answered`、`message.withdrawn`、`turn.ended`、`context.compacted` 必须带 `turn`（`context.compacted` 施工 6-9 起：压缩跟着它所在的回合撤） | <种类> happens only in a turn and needs turn |
 | `message.assistant` 的 `seen` 在它之前 | seen <n> should come before this reply |
