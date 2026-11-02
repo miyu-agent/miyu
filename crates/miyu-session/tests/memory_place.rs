@@ -277,9 +277,15 @@ fn remember(text: &str, replaces: Option<miyu_recall::MemoryId>) -> Remember {
     }
 }
 
-/// 请求里的全部，时刻（`[HH:MM]`）换成一样的：两个会话前后差几毫秒，钟可能刚好跨一分钟。
+/// 请求里的全部，时刻换成一样的（[`clocks`]）。
 fn shape(request: &Request) -> String {
-    let text = format!("{request:?}");
+    clocks(&format!("{request:?}"))
+}
+
+/// 时刻换成一样的：两个会话前后差几毫秒，钟可能刚好跨一分钟（`[HH:MM]`），也可能跨环境块的十分钟一档
+/// （`<env time="… 02:10–02:20"`，施工 FL-1：慢的 Windows CI 上跨过一次）。
+fn clocks(text: &str) -> String {
+    let text = env_time(text);
     let mut out = String::new();
     let mut rest = text.as_str();
     while let Some(at) = rest.find('[') {
@@ -301,6 +307,37 @@ fn shape(request: &Request) -> String {
     }
     out.push_str(rest);
     out
+}
+
+/// 环境块的时段（`time=\"…\"`，照 Debug 写出来的样子）换成一样的。
+fn env_time(text: &str) -> String {
+    const OPEN: &str = "<env time=\\\"";
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(at) = rest.find(OPEN) {
+        out.push_str(&rest[..at + OPEN.len()]);
+        let tail = &rest[at + OPEN.len()..];
+        let end = tail.find("\\\"").unwrap_or(tail.len());
+        out.push_str("<time>");
+        rest = &tail[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// 两个会话跨了环境块的十分钟一档，换完一样（施工 FL-1）。
+#[test]
+fn the_shape_ignores_the_ten_minute_slot_of_the_env_block() {
+    let one = format!(
+        "{:?}",
+        "<env time=\"Tue 2026-11-03 02:10–02:20\" cwd=\"~\"/>[02:19] a"
+    );
+    let two = format!(
+        "{:?}",
+        "<env time=\"Tue 2026-11-03 02:20–02:30\" cwd=\"~\"/>[02:20] a"
+    );
+    assert_eq!(clocks(&one), clocks(&two));
+    assert!(clocks(&one).contains("cwd="), "别的照留：{}", clocks(&one));
 }
 
 /// 群名只给记忆：同样两句话，带群名和不带群名的两个群会话，发给模型的请求除了钟一个字节都不差，请求里也找不到群名。
