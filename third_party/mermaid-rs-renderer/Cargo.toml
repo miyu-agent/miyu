@@ -9,6 +9,10 @@
 # will likely look very different (and much more reasonable).
 # See Cargo.toml.orig for the original contents.
 
+# Miyu patch (WS-1): its own workspace root, so cargo does not climb to an enclosing checkout's
+# workspace (worktrees nested under the main checkout's .worktrees/ broke `cargo fmt --all`).
+[workspace]
+
 [package]
 edition = "2024"
 name = "mermaid-rs-renderer"
