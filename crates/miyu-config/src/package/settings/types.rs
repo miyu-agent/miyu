@@ -200,7 +200,8 @@ fn choices(
 }
 
 /// 滑块（施工 PC-1）：`int`、`number` 写了 `slider = true` 的，交回一格多少；要两头都写了。`step` 写了的要是正数，`int` 的是整数
-/// （不画滑块的也查，头照它画数字框的步长）；不写的 `int` 是 1、`number` 是范围的百分之一。
+/// （不画滑块的也查，头照它画数字框的步长）；不写的 `int` 是 1、`number` 是范围的百分之一，`number` 两头一样又不写 `step` 的照
+/// 范围写错拒掉。
 pub(super) fn slider(
     reader: &Reader<'_>,
     at: &str,
@@ -247,10 +248,21 @@ pub(super) fn slider(
             format!("{at} needs min and max to be a slider"),
         ));
     }
-    let step = step.unwrap_or(match whole {
-        true => 1.0,
-        false => (max - min) as f64 / 100.0,
-    });
+    // 先转成小数再减：两头写到 `i64` 两端的，整数相减会溢出。两头一样的小数滑块算出来一格是 0，和写 `step = 0` 一样拒掉
+    // （审计 R3E-1）。
+    let step = match (step, whole) {
+        (Some(step), _) => step,
+        (None, true) => 1.0,
+        (None, false) if min < max => (max as f64 - min as f64) / 100.0,
+        (None, false) => {
+            return Err(reader.problem(
+                fields.get("slider"),
+                Code::BadRange,
+                &format!("{at}.slider"),
+                format!("{at} needs min below max or a step to be a slider"),
+            ));
+        }
+    };
     Ok(Some(Number::new(step)))
 }
 

@@ -130,7 +130,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 | `lines` | `lines = true` on a `text`: a box of several lines (for prompt templates and the like), at most 2000 characters without `max` |
 | `min`, `max` | The range of an `int`, the whole integer range when left out; required for `number` and integers only (like `0` to `2`), use `step` for finer values |
 | `step` | How much one step is for `int` and `number` (for the settings screen): positive, a whole number for `int` |
-| `slider` | `slider = true` on an `int` or `number` draws a slider; needs `min` and `max`. Without `step` it moves by 1 for `int` and by a hundredth of the range for `number` |
+| `slider` | `slider = true` on an `int` or `number` draws a slider; needs `min` and `max`. Without `step` it moves by 1 for `int` and by a hundredth of the range for `number`; a `number` slider with `min` equal to `max` needs a `step` |
 | `default` | Default value of that type; not allowed for `secret` |
 | `layers` | Only `system` (the system config), which is also the default |
 | `fields`, `title` | Only for a list with `element = "record"`: under `fields`, one table per field, `[settings.<name>.fields.<field>]`, written like a setting (`type`, `default`, `name`, `description`, `hidden`, and the PC-1 additions), without `layers` or `applies`, and not a `list`; a field can't be called `fields`, and a field without `default` must be written in every entry. `title` names the `text`, `name` or `option` field used as each entry's title. The whole list can't have a default; at most 100 entries |

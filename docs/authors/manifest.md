@@ -130,7 +130,7 @@ place = "status"
 | `lines` | `text` 写 `lines = true`：几行的框（放提示词模板这类），不写 `max` 时最多 2000 个字 |
 | `min`、`max` | `int` 的范围，不写是整数的全部范围；`number` 必写，只收整数（`0` 到 `2` 这样），精度用 `step` |
 | `step` | `int`、`number` 一格多少（设置页用）：正数，`int` 的是整数 |
-| `slider` | `int`、`number` 写 `slider = true` 画成滑块，要写 `min`、`max`；`step` 不写的 `int` 是 1、`number` 是范围的百分之一 |
+| `slider` | `int`、`number` 写 `slider = true` 画成滑块，要写 `min`、`max`；`step` 不写的 `int` 是 1、`number` 是范围的百分之一；`number` 两头一样的要写 `step` |
 | `default` | 默认值，合这个类型；`secret` 不能写 |
 | `layers` | 只能写 `system`（系统配置），不写也是它 |
 | `fields`、`title` | `element = "record"` 的列表才有：`fields` 下面每个字段一张表 `[settings.<名字>.fields.<字段>]`，写法同一项（`type`、`default`、`name`、`description`、`hidden`，PC-1 那几种也能用），不写 `layers`、`applies`，不能再是 `list`；字段名不能叫 `fields`，没有 `default` 的字段每一项都要写。`title` 是拿哪个 `text`、`name`、`option` 字段当每一项的标题。整条列表不能写默认值，最多 100 项 |

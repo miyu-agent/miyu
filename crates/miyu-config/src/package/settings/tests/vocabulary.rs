@@ -167,3 +167,35 @@ fn every_wrong_number_lines_or_slider_says_what() {
         assert_eq!(wrong(&x(body)), code, "{body}");
     }
 }
+
+/// 审计 2026-11-02 第三轮（边缘）：小数滑块不写 `step` 时一格照 `(max - min) / 100` 算。两头一样的算出 0；两头写到 `i64` 两端的，
+/// `max - min` 在 `i64` 上减就溢出了：测试、调试构建当场 panic（读清单的是核心），发布构建绕成负数，交给头一格是负的。要么照
+/// 范围写错拒掉，要么一格是正数。
+#[test]
+fn a_number_slider_never_gets_a_step_that_is_not_positive() {
+    let mut bad = Vec::new();
+    for body in [
+        "type = \"number\"\nmin = 5\nmax = 5\nslider = true",
+        "type = \"number\"\nmin = -1\nmax = 9223372036854775807\nslider = true",
+        "type = \"number\"\nmin = -9223372036854775808\nmax = 9223372036854775807\nslider = true",
+    ] {
+        let text = web(&format!("[settings.x]\n{body}\nname = {{ en = \"X\" }}\n"));
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            read(&text).map(|mut package| package.settings.remove(0).slider)
+        }));
+        let fine = match &outcome {
+            Ok(Err(_)) => true,
+            Ok(Ok(step)) => step.is_some_and(|step| step.get() > 0.0),
+            Err(_) => false,
+        };
+        let said = match &outcome {
+            Ok(Ok(step)) => format!("一格 {step:?}"),
+            Ok(Err(problem)) => format!("拒了 {:?}", problem.code),
+            Err(_) => "读清单时 panic 了".to_string(),
+        };
+        if !fine {
+            bad.push(format!("{body:?}：{said}"));
+        }
+    }
+    assert!(bad.is_empty(), "{bad:#?}");
+}
