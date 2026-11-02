@@ -250,11 +250,12 @@ Exit code 2
 |---|---|---|
 | 参数不对 | `Bad arguments: {error}.` | `common/bad-args`，字段 `error` |
 | 要放到后台，没有任务端口 | `no-background.txt` | `shell/no-background` |
+| 这一轮的工作目录没了（删了、挪走了），前台、后台都不跑（施工 CW-1，2026-11-02 项目主人定：照实说、不换到别处跑） | `no-cwd.txt`，字段 `cwd` | `shell/no-cwd`，字段 `cwd` |
 | 认出灭顶的高危（权限策略拒的，不进 `run`，施工 5-17） | `hazard.txt` 填上那一种 | `shell/hazard-<种类>` |
 | 起不来、等不了；后台的任务端口收不下 | `Could not run {shell}: {error}.` | `shell/failed`，字段 `error` |
 | 退出码不是 0、被信号杀掉、到时了 | 见「怎么走」第 10 条 | 同上 |
 
-- `{shell}` 是说明里的那个名字；`{error}` 是系统的原话，例如工作目录不在时的 `No such file or directory (os error 2)`。
+- `{shell}` 是说明里的那个名字；`{error}` 是系统的原话。工作目录不在的，施工 CW-1 起先查、照 `no-cwd.txt` 说，不再报起进程的原话。
 
 ### 给人看的字
 

@@ -1429,6 +1429,17 @@ Running in the background is not available here. Foreground runs can take a larg
 Not run: no need to wait. Finished background jobs and replies from other sessions wake you after this turn ends.
 ```
 
+#### `software/basesystem/shell/no-cwd.txt`
+
+- 什么时候加进来：这一轮的工作目录没了（删了、挪走了），`shell` 一条命令都不跑（施工 CW-1）
+- token：28（2026-11-02 照 o200k 数）
+- 为什么加：原来照起进程的原话报「Could not run bash: No such file or directory」，她以为是 bash 坏了，换什么命令都一样、出不去（2026-11-02 项目主人的会话里连着撞了十几次）。改成说清是工作目录没了、人能换；项目主人定照实说、不换到别处跑，免得用相对路径的命令落到意想不到的地方
+- 指纹：`fa26d2b5`
+
+```text
+The working directory {cwd} no longer exists, so no command can run here. The person can switch this session to another working directory.
+```
+
 #### `software/basesystem/shell/no-wmi.txt`
 
 - 什么时候加进来：在沙盒里跑、失败了、命令里有用 WMI 的词（`Get-CimInstance`、`gcim`、`Get-WmiObject`、`gwmi`、`Invoke-CimMethod`、`wmic`、`systeminfo`、`Get-ComputerInfo`，`shell/results.rs` 的 `WMI_COMMANDS`），接在结果末尾

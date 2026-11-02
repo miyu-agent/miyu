@@ -164,6 +164,7 @@
     "shell/failed": "実行できません：{error}",
     "shell/no-background": "ここではバックグラウンドで実行できません",
     "shell/no-sleep": "フォアグラウンドで sleep して待つことはできません",
+    "shell/no-cwd": "作業ディレクトリがもうありません：{cwd}",
     "shell/hazard-delete_root": "実行していません：ルートディレクトリを削除します",
     "shell/hazard-delete_home": "実行していません：ホームディレクトリを削除します",
     "shell/hazard-delete_system": "実行していません：システムディレクトリを削除します",

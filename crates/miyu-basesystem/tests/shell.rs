@@ -352,23 +352,30 @@ async fn bad_arguments_and_background_runs_are_refused() {
     assert!(site.0.join("work/ran").exists());
 }
 
+/// 工作目录没了（施工 CW-1）：照实说是工作目录不在、人能换，不说「起不了」；前台、后台一样，命令一条都不跑。
 #[tokio::test]
 async fn a_missing_working_directory_is_reported() {
     let site = Site::new();
-    let done = site
-        .done_in(
-            "nowhere",
-            "shell",
-            json!({ "command": "exit 0", "description": "Test" }),
-        )
-        .await;
-    assert!(done.error);
-    assert!(text(&done).starts_with("Could not run "), "{}", text(&done));
-    assert!(
-        matches!(&done.human, Some(said) if said.key.ends_with("shell/failed")),
-        "{:?}",
-        done.human
-    );
+    for background in [false, true] {
+        let done = site
+            .done_in(
+                "nowhere",
+                "shell",
+                json!({ "command": "exit 0", "description": "Test", "run_in_background": background }),
+            )
+            .await;
+        assert!(done.error);
+        let said = text(&done);
+        assert!(
+            said.starts_with("The working directory ") && said.contains("nowhere no longer exists"),
+            "{said}"
+        );
+        assert!(
+            matches!(&done.human, Some(said) if said.key.ends_with("shell/no-cwd")),
+            "{:?}",
+            done.human
+        );
+    }
 }
 
 #[tokio::test]

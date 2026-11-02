@@ -71,6 +71,8 @@ struct Texts {
     no_background: Template,
     /// 前台干等的不跑时写给她的一句（2026-10-26）。
     no_sleep: Template,
+    /// 工作目录没了时写给她的一句（施工 CW-1），字段 `cwd`。
+    no_cwd: Template,
     started: Template,
     /// 认出灭顶的高危、直接拒时写给她的一句（施工 5-17），字段 `reason`。
     hazard: Template,
@@ -113,6 +115,7 @@ impl Shell {
                 failed: text("failed", &["shell", "error"])?,
                 no_background: text("no-background", &[])?,
                 no_sleep: text("no-sleep", &[])?,
+                no_cwd: text("no-cwd", &["cwd"])?,
                 started: text("started", &["job"])?,
                 hazard: text("hazard", &["reason"])?,
                 reasons: Kind::ALL
@@ -344,6 +347,12 @@ impl Tool for Shell {
                 Ok(args) => args,
                 Err(error) => return self.texts.common.bad_args(&error),
             };
+            // 工作目录没了（删了、挪走了）：命令起不来，照实说，不换到别处跑（施工 CW-1，2026-11-02 项目主人定）。原来报的是
+            // 「起不了 bash」，她换什么命令都一样，出不去。
+            if !workdir(&call).is_dir() {
+                return Done::error(say(&self.texts.no_cwd, &[("cwd", &call.cwd)]))
+                    .said(said("shell/no-cwd").with("cwd", call.cwd.clone()));
+            }
             if args.run_in_background {
                 return self.background(&call, args);
             }

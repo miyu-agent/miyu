@@ -268,10 +268,10 @@ async fn every_shell_outcome_says_something_people_can_read() {
         human(run(serde_json::json!({ "command": "exit 0", "description": "Test", "run_in_background": true })).await),
         said("shell/no-background"),
     );
-    // 起不来的：工作目录不在。
-    let failed = human(site.done_in("nowhere", "shell", command("exit 0")).await);
-    assert!(failed.key.ends_with("shell/failed"), "{failed:?}");
-    checked.push(failed);
+    // 工作目录不在（施工 CW-1）。
+    let missing = human(site.done_in("nowhere", "shell", command("exit 0")).await);
+    assert!(missing.key.ends_with("shell/no-cwd"), "{missing:?}");
+    checked.push(missing);
     #[cfg(unix)]
     check(
         &mut checked,
