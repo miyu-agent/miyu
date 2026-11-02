@@ -145,8 +145,8 @@ pub(crate) struct Watching<'a> {
     pub(crate) deadline: Option<Instant>,
 }
 
-/// 跟着那一轮边收边打，交回退出码（施工 6-8 从 [`talk`] 拆出来，`miyu compact` 也用）：收到 `resync` 重新订阅，不补看
-/// 掉的那些；第一次 Ctrl+C 打断这一轮，排着的照 `watching.queued` 办，等它收尾；第二次不等了，说「打断了」。等子代理的
+/// 跟着那一轮边收边打，交回退出码（施工 6-8 从 [`talk`] 拆出来，`miyu compact` 也用）：收到 `resync` 带着收到过的最后一个
+/// 序号重新订阅，掉的那一截由核心补回来（审计 R3E-3，[`Follow::resubscribe`]）；第一次 Ctrl+C 打断这一轮，排着的照 `watching.queued` 办，等它收尾；第二次不等了，说「打断了」。等子代理的
 /// 时候（施工 7-9）按 Ctrl+C 不等了；到了 `watching.deadline`，有回合在进行的打断它，不再等。别的 harness 说的（`--from`，
 /// 施工 7-10）两样都不打断，只是不等了。
 pub(crate) async fn follow_turn(
@@ -176,7 +176,7 @@ pub(crate) async fn follow_turn(
                     Step::Going => {}
                     Step::Done(code) => return code,
                     Step::Resubscribe => {
-                        if rpc.send("subscribe", (*subscribe).clone()).await.is_err() {
+                        if rpc.send("subscribe", follow.resubscribe(subscribe)).await.is_err() {
                             diagnostic::error(screen.err, **language, &language.disconnected());
                             return exit::ERROR;
                         }

@@ -128,6 +128,8 @@ pub(crate) struct Follow<'p> {
     joining: joining::Joining,
     /// 为什么没照常结束：事件流最后那一行 `done` 的 `reason`（施工 AP-3）。
     why: Option<String>,
+    /// 收到过的这个会话落了盘的推送里最大的序号：掉队以后带着它重新订阅，掉的那一截由核心补回来（审计 R3E-3）。
+    last: Option<u64>,
 }
 
 impl<'p> Follow<'p> {
@@ -167,6 +169,7 @@ impl<'p> Follow<'p> {
             waiting: waiting::Waiting::default(),
             joining: joining::Joining::default(),
             why: None,
+            last: None,
         }
     }
 
@@ -200,6 +203,16 @@ impl<'p> Follow<'p> {
         for line in redo_lines(result, &plan) {
             self.aside(&line, screen);
         }
+    }
+
+    /// 掉队以后重新订阅的参数（审计 R3E-3）：照 `subscribe` 原来的，带上收到过的最后一个序号（`after`），核心先补掉的那一截，
+    /// 这一轮的 `turn.ended`、等的 `job.reported` 不会掉。一条落了盘的都还没收到就掉了队的（掉的全是瞬时的增量）从头补
+    /// （`after: 0`）：说的这一句、开的这一轮可能就在掉的那一截里；只在这种少见的时候补整份日志，跟的照回合编号、命令编号认，
+    /// 以前的那些不印。
+    pub(crate) fn resubscribe(&self, subscribe: &Value) -> Value {
+        let mut params = subscribe.clone();
+        params["after"] = json!(self.last.unwrap_or(0));
+        params
     }
 
     /// 收一条回应或推送。
@@ -238,6 +251,10 @@ impl<'p> Follow<'p> {
             Some("resync") => return Step::Resubscribe,
             Some("event") => {}
             _ => return Step::Going,
+        }
+        // 攒着的（重做的回应还没到）也算收到了：之后照先后收，补的时候不用再要。
+        if let Some(seq) = message["params"]["event"]["seq"].as_u64() {
+            self.last = Some(self.last.map_or(seq, |last| last.max(seq)));
         }
         // 重做的回应还没到：先攒着，撤掉了哪一轮那几行印在最前面。
         if let Some(held) = self.redo.as_mut() {

@@ -23,6 +23,7 @@ mod pkg_stages;
 mod recap;
 mod redo;
 mod rename;
+mod resync;
 mod schedule;
 mod setup;
 mod setup_custom;

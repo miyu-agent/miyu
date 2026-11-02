@@ -416,6 +416,39 @@ fn a_refused_message_says_why_and_a_lagging_one_resubscribes() {
     assert_eq!(step, Step::Resubscribe);
 }
 
+#[test]
+fn resubscribing_asks_for_what_came_after_the_last_seq_it_saw() {
+    // 审计 R3E-3：一条落了盘的都没收到的从头补；收到过的照最大的那个序号补，别的会话的、瞬时的不算。
+    let plan = plan(Output::Json, Language::Chinese);
+    let (mut out, mut err) = (std::io::sink(), std::io::sink());
+    let mut screen = Screen {
+        out: &mut out,
+        err: &mut err,
+        gray: false,
+        live: false,
+    };
+    let subscribe = json!({"session": "s1", "stream": "events"});
+    let mut follow = Follow::new("s1", "ask-4", &plan);
+    let fresh = follow.resubscribe(&subscribe);
+    assert_eq!(
+        fresh,
+        json!({"session": "s1", "stream": "events", "after": 0})
+    );
+    let seq = |session: &str, seq: u64| {
+        json!({"jsonrpc": "2.0", "method": "event", "params": {"session": session, "event": {
+            "seq": seq, "kind": "context.injected", "body": {}}}})
+    };
+    for message in [
+        seq("s1", 7),
+        seq("s1", 5),
+        seq("s2", 99),
+        delta(json!({"text": "x"})),
+    ] {
+        follow.take(&message, &mut screen);
+    }
+    assert_eq!(follow.resubscribe(&subscribe)["after"], json!(7));
+}
+
 mod asides;
 mod blocks;
 mod compaction;
