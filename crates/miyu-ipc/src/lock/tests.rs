@@ -80,3 +80,20 @@ fn held_tells_a_taken_lock_from_a_left_one() {
     assert!(!held(&root).expect("问得出"), "留下的锁文件没人拿着");
     Lock::acquire(&root).expect("问过以后照样拿得到");
 }
+
+/// 没有文件身份的平台（Windows）照路径另开一次试拿（施工 CS-4）：拿着的时候是这一把；放开以后路径上的文件还在，可没人拿着，
+/// 不是这一把。三个平台都照 `id: None` 测这一支。
+#[test]
+fn without_an_identity_the_lock_is_tried_again_by_path() {
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    let lock = Lock::acquire(&root).expect("拿得到");
+    let held = Held {
+        path: root.run().join(FILE),
+        id: None,
+    };
+    assert!(held.here(), "拿着的时候");
+    drop(lock);
+    assert!(root.run().join(FILE).is_file(), "文件还在");
+    assert!(!held.here(), "放开了，路径上的那个没人拿着");
+}

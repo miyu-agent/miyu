@@ -29,7 +29,7 @@ pub struct Lock {
 #[derive(Debug, Clone)]
 pub struct Held {
     path: PathBuf,
-    /// Unix 上是设备号和 inode；Windows 上开着的文件删不掉、改不了名，只看在不在，没有。
+    /// Unix 上是设备号和 inode；Windows 上没有，照路径另开一次试拿（[`Held::here`]）。
     id: Option<(u64, u64)>,
 }
 
@@ -110,13 +110,29 @@ pub(crate) fn held(root: &DataRoot) -> std::io::Result<bool> {
 }
 
 impl Held {
-    /// 数据根里的锁文件还是拿着的这一个：路径上还有，而且是同一个文件（Unix 上照设备号和 inode）。数据根删了的、删了又建了
-    /// 一个新的，不是。读不出来的当不是。碰一次磁盘。
+    /// 数据根里的锁文件还是拿着的这一个：路径上还有，而且是同一个文件。数据根删了的、删了又建了一个新的，不是。读不出来的
+    /// 当不是。
+    ///
+    /// Unix 上照设备号和 inode 认。Windows 上没有文件的身份，照路径另开一次试拿（施工 CS-4）：拿得到的就没人拿着，不是这一把；
+    /// 拿不到的当还是（另一个核心正拿着它也算，那个核心在服务，这里晚点走不碍事）。以前只看在不在：删了 `run\` 以后另一个核心
+    /// 重建了锁文件又起不来，这一个就一直以为锁还在、永远不走（11-03 虚拟机复测）。
     pub fn here(&self) -> bool {
-        match std::fs::metadata(&self.path) {
-            Ok(now) => identity(&now) == self.id,
-            Err(_) => false,
+        match (std::fs::metadata(&self.path), self.id) {
+            (Ok(now), Some(id)) => identity(&now) == Some(id),
+            (Ok(_), None) => !unheld(&self.path),
+            (Err(_), _) => false,
         }
+    }
+}
+
+/// `path` 上的锁文件现在没人拿着：另开一次拿得到（当场放）。打不开、出错的当拿着。
+fn unheld(path: &std::path::Path) -> bool {
+    let Ok(file) = OpenOptions::new().read(true).write(true).open(path) else {
+        return false;
+    };
+    match file.try_lock() {
+        Ok(()) => file.unlock().is_ok(),
+        Err(_) => false,
     }
 }
 
