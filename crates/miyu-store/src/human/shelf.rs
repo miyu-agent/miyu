@@ -9,6 +9,9 @@
 //! （[`Stamp`]）；再要的时候照样看一遍（几十次 `stat`、列一次 `software/`），有一样不同就重读。改了资源，核心不重启下一次
 //! 就是新的（施工 W-1 定的）。一样长、修改时刻也一样的改动看不出来：同 V-24 核对图片的取舍。
 //!
+//! 哪一处都没有自己那份的语言（`human.get` 收 2 到 8 个字母的任何一种），读出来就是英文那份，照英文放、共用一份（审计
+//! R3E-6）。
+//!
 //! 放多久：核心一阵请求过去、安静下来时（`miyu-core` 的 `settle`）连同还堆一起放掉（[`ResourceRoot::forget_words`]），
 //! 核心空闲时不多占。读不懂的不放，下一次照旧再读、照旧报错。
 
@@ -33,46 +36,55 @@ struct Held {
     stamp: Stamp,
 }
 
-/// 一种语言读自哪几份文件，读的时候各是什么样：每一处的这种语言、英文两份，照先后；没有的是 `None`。
+/// 一种语言读自哪几份文件，读的时候各是什么样：每一处的这种语言、英文两份；没有的是 `None`。
 #[derive(PartialEq, Eq)]
 struct Stamp(Vec<(PathBuf, Option<(u64, SystemTime)>)>);
 
 impl Stamp {
-    fn of(places: &[(PathBuf, String)], language: &str) -> Stamp {
-        let languages: &[&str] = if language == FALLBACK {
-            &[FALLBACK]
-        } else {
-            &[language, FALLBACK]
+    /// `language` 照哪一种放、读的时候那几份文件的样子。哪一处都没有这种语言自己那份的，读出来和英文那份一字不差，照英文
+    /// 放（审计 R3E-6）：`human.get` 收 2 到 8 个字母的任何一种，原来每种各放一份完整的，换着语言问的放着的跟着涨。
+    fn of<'a>(places: &[(PathBuf, String)], language: &'a str) -> (&'a str, Stamp) {
+        let seen = |language: &str| -> Vec<_> {
+            places
+                .iter()
+                .map(|(dir, _)| {
+                    let file = dir.join("human").join(format!("{language}.json"));
+                    let seen = std::fs::metadata(&file)
+                        .ok()
+                        .and_then(|meta| Some((meta.len(), meta.modified().ok()?)));
+                    (file, seen)
+                })
+                .collect()
         };
-        let mut files = Vec::with_capacity(places.len() * languages.len());
-        for (dir, _) in places {
-            for language in languages {
-                let file = dir.join("human").join(format!("{language}.json"));
-                let seen = std::fs::metadata(&file)
-                    .ok()
-                    .and_then(|meta| Some((meta.len(), meta.modified().ok()?)));
-                files.push((file, seen));
-            }
+        let english = seen(FALLBACK);
+        if language == FALLBACK {
+            return (FALLBACK, Stamp(english));
         }
-        Stamp(files)
+        let mut own = seen(language);
+        if own.iter().all(|(_, seen)| seen.is_none()) {
+            return (FALLBACK, Stamp(english));
+        }
+        own.extend(english);
+        (language, Stamp(own))
     }
 }
 
 impl Shelf {
     /// `language` 那一份：放着的、`places` 里那几份文件都没变的，交回放着的；不然照 `read` 读，读成了放上。先看文件
-    /// 再读：读的当中又改了的，下一次看出来重读。读的时候拿着锁：几处同时要同一种语言的，只读一遍，别的等它。
+    /// 再读：读的当中又改了的，下一次看出来重读。读的时候拿着锁：几处同时要同一种语言的，只读一遍，别的等它。哪一处都没有
+    /// 这种语言自己那份的，照英文取、照英文读（`read` 交进去的是实际要读的那种），共用英文那一份。
     pub(crate) fn get(
         &self,
         language: &str,
         places: &[(PathBuf, String)],
-        read: impl FnOnce() -> Result<Human, HumanError>,
+        read: impl FnOnce(&str) -> Result<Human, HumanError>,
     ) -> Result<Arc<Human>, HumanError> {
-        let stamp = Stamp::of(places, language);
+        let (language, stamp) = Stamp::of(places, language);
         let mut held = self.lock();
         if let Some(found) = held.get(language).filter(|found| found.stamp == stamp) {
             return Ok(Arc::clone(&found.human));
         }
-        let human = Arc::new(read()?);
+        let human = Arc::new(read(language)?);
         let kept = Held {
             human: Arc::clone(&human),
             stamp,

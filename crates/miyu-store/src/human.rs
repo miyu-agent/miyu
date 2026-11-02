@@ -135,7 +135,7 @@ impl Human {
         let places = places(root);
         let held = root
             .shelf
-            .get(language, &places, || Human::read(&places, language))?;
+            .get(language, &places, |language| Human::read(&places, language))?;
         Ok(Human::clone(&held))
     }
 

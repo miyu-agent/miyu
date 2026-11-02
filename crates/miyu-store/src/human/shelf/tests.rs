@@ -28,7 +28,7 @@ fn take(root: &ResourceRoot, language: &str, reads: &Cell<usize>) -> Option<Stri
     let places = places(root);
     let human = root
         .shelf
-        .get(language, &places, || {
+        .get(language, &places, |language| {
             reads.set(reads.get() + 1);
             Human::read(&places, language)
         })
@@ -66,7 +66,7 @@ fn a_new_language_file_or_package_is_read_again() {
     write_words(&core, "en", "english");
     let root = ResourceRoot::at(scratch.path());
     let reads = Cell::new(0);
-    // 没有日文的照英文。
+    // 没有日文的照英文，放的就是英文那一份。
     assert_eq!(take(&root, "ja", &reads).as_deref(), Some("english"));
     // 原来没有的日文那份放进去了：看得出来。
     write_words(&core, "ja", "日本語");
@@ -76,7 +76,7 @@ fn a_new_language_file_or_package_is_read_again() {
     write_words(&scratch.path().join("software").join("extra"), "en", "pkg");
     take(&root, "ja", &reads);
     assert_eq!(reads.get(), 3);
-    // 每种语言各放各的：英文这时才头一次读。
+    // 第一步没有日文时照英文放过一份（审计 R3E-6），多了包看得出来，重读。
     assert_eq!(take(&root, "en", &reads).as_deref(), Some("english"));
     assert_eq!(reads.get(), 4);
 }
@@ -97,5 +97,31 @@ fn unreadable_words_are_not_held() {
     assert_eq!(
         hello(&Human::load(&root, "en").unwrap()).as_deref(),
         Some("fixed")
+    );
+}
+
+/// 审计 2026-11-02 第三轮（边缘）：架子照要的语言放，`human.get` 收 2 到 8 个小写字母的任何一种。没有自己那份文件的语言读出来
+/// 都是英文那份，却各占一份完整的 [`Human`]；只有核心安静下来（2 秒没有请求）才放掉，一直有请求、换着语言问的，放着的跟着涨。
+#[test]
+fn languages_without_their_own_words_do_not_each_hold_a_copy() {
+    let scratch = Scratch::new();
+    let core = scratch.path().join("core");
+    write_words(&core, "en", "hello");
+    write_words(&core, "zh", "你好");
+    let root = ResourceRoot::at(scratch.path());
+    for n in 0..200u32 {
+        let language: String = n
+            .to_string()
+            .chars()
+            .map(|digit| char::from(b'a' + digit.to_digit(10).map_or(0, |d| d as u8)))
+            .chain("xq".chars())
+            .collect();
+        let human = Human::load(&root, &language).unwrap();
+        assert_eq!(hello(&human).as_deref(), Some("hello"), "{language} 照英文");
+    }
+    let held = root.shelf.lock().len();
+    assert!(
+        held <= 3,
+        "200 种没有自己那份字的语言，架子上放了 {held} 份"
     );
 }
