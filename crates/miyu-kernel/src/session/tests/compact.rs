@@ -257,3 +257,15 @@ fn the_first_progress_goes_out_with_the_summary_request() {
     );
     assert!(progress(&session.handle(sent(8))).is_empty(), "不推第二条");
 }
+
+/// 窗口小到减去输出预留就没有压缩线的（VP-3，网页 11-02 报：换到窗口 8000、没报最大输出的模型，两轮 12k 的话发不出去，
+/// 手动压缩却回没有能压的）：尾巴的预算不能退回策略的上限（比窗口还大），照窗口的四分之一。
+#[test]
+fn a_window_too_small_for_a_line_still_bounds_the_tail() {
+    let mut numbers = compaction(1000);
+    numbers.reserve_cap = 20_000;
+    // 窗口 60 减去预留 20000 没有线；上限 1000 的尾巴装得下说过的全部，窗口的四分之一（15）装不下第一句那一组。
+    let mut session = loaded(one_turn_log(), Some(numbers), Some(60));
+    let actions = session.handle(compact(3, None));
+    assert_eq!(appended(&actions), seqs(&[9]), "{actions:?}");
+}

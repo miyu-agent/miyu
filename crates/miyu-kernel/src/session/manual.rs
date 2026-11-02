@@ -78,15 +78,12 @@ impl Session {
         self.manual_upto().is_some()
     }
 
-    /// 手动压缩替代到哪（`compaction.md` 第七条第 2 条）：照还没开的那一轮算，没有触发；尾巴的预算是策略的 `tail`，
-    /// 有压缩线的不超过它的四分之一（没报窗口的也能手动压）。策略里没有压缩（6-2 以前造的快照）、没交过限额（算不了
-    /// 尾巴）的，没有。
+    /// 手动压缩替代到哪（`compaction.md` 第七条第 2 条）：照还没开的那一轮算，没有触发；尾巴的预算见
+    /// [`Session::tail_budget`]（没报窗口的也能手动压）。策略里没有压缩（6-2 以前造的快照）、没交过限额（算不了尾巴）的，
+    /// 没有。
     pub(super) fn manual_upto(&self) -> Option<Seq> {
-        let compaction = self.policy.compaction.as_ref()?;
         let price = self.price()?;
-        let budget = self
-            .line()
-            .map_or(compaction.tail, |line| compaction.tail.min(line / 4));
+        let budget = self.tail_budget()?;
         self.upto_before(self.ledger.next_seq(), None, budget, &price, false)
     }
 

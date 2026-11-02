@@ -378,3 +378,36 @@ fn the_resend_after_a_passive_compaction_is_the_same_step() {
         "{story:#?}"
     );
 }
+
+/// 窗口小到减去输出预留就没有压缩线的（VP-3）：被动压缩的尾巴也照窗口的四分之一，不退回策略的上限（上限 1000 装得下说过
+/// 的全部，压不掉一句）。窗口 12，四分之一是 3，同 [`overflowing`]。
+#[test]
+fn a_window_too_small_for_a_line_still_bounds_the_overflow_tail() {
+    let make = || {
+        let mut policy = policy();
+        policy.compaction = Some(Compaction {
+            reserve_cap: 20_000,
+            margin: 10,
+            line_percent: 100,
+            margin_percent: 100,
+            tail: 1000,
+            lead: 0,
+            price: crate::estimate::Flat {
+                image: 50,
+                file: 50,
+            },
+            rebuild: None,
+            pause: Some(PAUSE),
+            shorten: None,
+            isolate: false,
+        });
+        policy
+    };
+    let mut stage = Stage::new(make, environment("~/src/miyu"), at(0));
+    stage.limits(Some(12), None);
+    stage.model([Line::says("好。")]);
+    stage.say("hi");
+    stage.model([too_long(), Line::says("S"), Line::says("嗯。")]);
+    stage.say("再说");
+    assert_eq!(compactions(&stage), [(8, Some(CompactTrigger::Overflow))]);
+}

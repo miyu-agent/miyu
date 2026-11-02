@@ -78,11 +78,8 @@ impl Session {
     /// 被动压缩压什么（第六条第 3 条）：尾巴照第三条第 2 条留、至少留最后一组；替代到的前面没有能压的，没有。压之前的用量
     /// 照这时的有效历史组装一次算；没交限额的（只有测试里）算 0。
     fn overflow_due(&self) -> Option<Due> {
-        let compaction = self.policy.compaction.as_ref()?;
         let price = self.price()?;
-        let budget = self
-            .line()
-            .map_or(compaction.tail, |line| compaction.tail.min(line / 4));
+        let budget = self.tail_budget()?;
         let upto = self.compaction_upto(budget, &price, true)?;
         let request = self.policy.assembler.assemble(&self.history);
         Some(Due {

@@ -186,6 +186,19 @@ impl Session {
             .line(limits.window, limits.max_output)
     }
 
+    /// 手动、被动压缩的尾巴预算（`compaction.md` 第七条第 2 条、第六条第 3 条）：策略的 `tail`，有压缩线的不超过它的四分之一；
+    /// 报了窗口、可窗口小到减去输出预留就没有线的，不超过窗口的四分之一（VP-3：不然退回策略的上限，比窗口还大，放不下的
+    /// 话一句也压不掉）。策略里没有压缩的，没有。
+    pub(super) fn tail_budget(&self) -> Option<u64> {
+        let tail = self.policy.compaction.as_ref()?.tail;
+        let window = self.limits.as_ref().and_then(|limits| limits.window);
+        Some(
+            self.line()
+                .or(window)
+                .map_or(tail, |bound| tail.min(bound / 4)),
+        )
+    }
+
     /// 压缩线以上、「窗口减输出预留」以下还能长多少（施工 6-11 补、再补）：到线不停的那一截。没有压缩线的没有。
     pub(super) fn headroom(&self) -> Option<u64> {
         let line = self.line()?;
