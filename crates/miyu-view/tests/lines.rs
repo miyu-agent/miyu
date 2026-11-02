@@ -3,11 +3,13 @@
 use std::sync::Arc;
 
 use miyu_kernel::accumulate::Kind;
-use miyu_kernel::event::{Event, ModelDelta, Piece, Transient, TransientBody};
+use miyu_kernel::event::{
+    CompactTrigger, CompactionProgress, Event, ModelDelta, Piece, Transient, TransientBody,
+};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
-use miyu_view::{Body, Entry, Projector};
+use miyu_view::{Body, Doing, Entry, Projector};
 
 use crate::support::*;
 
@@ -318,4 +320,39 @@ fn a_step_that_showed_a_file_carries_it() {
             serde_json::Value::Null,
         ]
     );
+}
+
+/// 请求 3 是摘要请求时推的压缩进度（施工 VP-1）。
+fn compacting(written: u64) -> Transient {
+    Transient {
+        body: TransientBody::CompactionProgress(CompactionProgress {
+            seen: Seq::new(3).expect("序号从 1 数起"),
+            trigger: CompactTrigger::Manual,
+            written,
+            expected: 2000,
+        }),
+        ..delta(0, Piece::Text(String::new()))
+    }
+}
+
+/// 手动压缩写摘要的那几秒（施工 VP-1，网页 11-02 报的「压缩时一直写思考中」）：摘要请求自己的增量开了思考、正文块，`doing`
+/// 照旧是在压，进度照推来的字数走；压完才清。
+#[test]
+fn the_summary_requests_own_blocks_keep_it_compacting() {
+    let mut projector = Projector::new(Arc::new(texts("en")), None);
+    for line in [CREATED, ASKED, STARTED] {
+        projector.event(&Event::from_line(line).expect("合写法"));
+    }
+    let written = |p: &Projector| match &p.status().doing {
+        Some(Doing::Compacting { written, .. }) => *written,
+        other => panic!("压着的时候照旧是在压：{other:?}"),
+    };
+    projector.transient(&compacting(0));
+    // 在想的那一段不推进度：头看到的一直是这时的状态。
+    projector.transient(&delta(0, Piece::Start(Kind::Reasoning)));
+    assert_eq!(written(&projector), 0);
+    projector.transient(&delta(1, Piece::Start(Kind::Text)));
+    assert_eq!(written(&projector), 0);
+    projector.transient(&compacting(120));
+    assert_eq!(written(&projector), 120, "进度照推来的字数走");
 }

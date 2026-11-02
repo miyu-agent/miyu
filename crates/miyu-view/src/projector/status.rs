@@ -116,7 +116,12 @@ impl Projector {
     pub(super) fn track_transient(&mut self, transient: &Transient) {
         match &transient.body {
             TransientBody::ModelDelta(delta) => {
-                if let Piece::Start(kind) = &delta.piece {
+                // 在压的是这一次摘要请求的（施工 VP-1）：它自己开的思考、正文块不盖掉「在压」，进度照压缩进度走。
+                let summarizing = matches!(
+                    &self.tracking.doing,
+                    Some(Doing::Compacting { entry, .. }) if *entry == EntryId::compaction(delta.seen)
+                );
+                if let (Piece::Start(kind), false) = (&delta.piece, summarizing) {
                     let entry = EntryId::block(delta.seen, delta.index);
                     self.tracking.doing = Some(match kind {
                         Kind::Text => Doing::Writing { entry },
