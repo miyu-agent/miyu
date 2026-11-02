@@ -324,7 +324,7 @@ impl Session {
         // 主请求报过超长的，先压（被动压缩，施工 6-7）。
         match self.turn.as_mut().and_then(|turn| turn.passive.take()) {
             Some(Passive::Due) => return self.passive_compaction(at),
-            Some(Passive::Again(due)) => return self.start_compaction(due),
+            Some(Passive::Again(due)) => return self.start_compaction(at, due),
             None => {}
         }
         let request = self.policy.assembler.assemble(&self.history);

@@ -259,7 +259,7 @@ impl Session {
         }
         match self.awaitable(&due) {
             Some(written) => self.await_prepared(at, due, written),
-            None => self.start_compaction(due),
+            None => self.start_compaction(at, due),
         }
     }
 

@@ -315,8 +315,9 @@ impl Session {
     }
 
     /// 发摘要请求：有效历史到第 `upto` 条的投影加摘要指令，名字是 `upto`。不算步数；也记进「上一次请求」，压完的
-    /// 第一次主请求照它比出前缀从哪变了。
-    pub(super) fn start_compaction(&mut self, due: Due) -> Vec<Action> {
+    /// 第一次主请求照它比出前缀从哪变了。请求一交出去就推一条还没写字的进度（VP-2）：执行器报「发出去了」要等响应头，
+    /// 慢的模型等好几秒，头这几秒认不出在压。
+    pub(super) fn start_compaction(&mut self, at: Timestamp, due: Due) -> Vec<Action> {
         let Due {
             upto,
             used,
@@ -366,6 +367,8 @@ impl Session {
             tries,
             isolated,
         };
+        let started =
+            Session::progress(at, Some(turn.id), turn.cause.clone(), compacting.started());
         let call = Call::new(upto, request.messages.len(), difference).compacting(compacting);
         turn.stage = Stage::Asking(call);
         // 重读排在摘要请求前面（施工 6-5）：执行器读完再发，摘要回来时结果已经记在这次请求上了。
@@ -382,6 +385,7 @@ impl Session {
             request,
             changed: difference,
         });
+        actions.push(Action::PushTransient(started));
         actions
     }
 

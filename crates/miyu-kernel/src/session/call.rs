@@ -145,27 +145,14 @@ impl Session {
         model: Model,
         request: ContentHash,
     ) -> Vec<Action> {
-        let Some(turn) = self.turn.as_ref() else {
-            return Vec::new();
-        };
-        let (id, cause) = (turn.id, turn.cause.clone());
         let Some(call) = self.call(seen) else {
             return Vec::new();
         };
-        if call.sent.is_some() {
-            return Vec::new();
+        if call.sent.is_none() {
+            call.sent = Some(Sent { at, model, request });
         }
-        call.sent = Some(Sent { at, model, request });
-        // 摘要请求发出去了：先推一条还没写字的进度，头一收到就能印「正在压缩」（施工 6-3 下）。
-        match call.compaction.as_ref() {
-            Some(compacting) => vec![Action::PushTransient(Session::progress(
-                at,
-                Some(id),
-                cause,
-                compacting.started(),
-            ))],
-            None => Vec::new(),
-        }
+        // 摘要请求的头一条进度交请求时已经推了（VP-2，`compaction.rs` 的 `start_compaction`）。
+        Vec::new()
     }
 
     /// 正在流的那次请求到目前为止的块（施工 9-8 八补，`protocol.md`「补发」第 4 条）：中途订阅的头没见过前面的增量，

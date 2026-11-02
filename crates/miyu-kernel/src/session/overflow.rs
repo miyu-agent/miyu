@@ -72,7 +72,7 @@ impl Session {
             events.extend(self.finish_turn(at, By::Kernel, cause, EndReason::Error));
             return vec![Action::Append(events)];
         }
-        self.start_compaction(due)
+        self.start_compaction(at, due)
     }
 
     /// 被动压缩压什么（第六条第 3 条）：尾巴照第三条第 2 条留、至少留最后一组；替代到的前面没有能压的，没有。压之前的用量

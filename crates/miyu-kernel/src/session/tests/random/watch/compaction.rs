@@ -412,7 +412,7 @@ impl Watch {
         self.undo.compacted();
     }
 
-    /// 推了进度：是在路上的那次摘要请求的，发出去了，字数只增不减。
+    /// 推了进度：是在路上的那次摘要请求的，字数只增不减；写了字的，请求发出去了。
     pub(super) fn compaction_progress(&mut self, progress: &CompactionProgress) {
         let seed = self.seed;
         self.seen_paths.insert("推了压缩的进度");
@@ -421,7 +421,7 @@ impl Watch {
             return;
         };
         assert_eq!(progress.seen, *seen, "种子 {seed}：进度不是在路上的那次的");
-        // 发出去时先推一条 0 字的（施工 6-3 下），之后每一条都比上一条多。
+        // 交请求时先推一条 0 字的（施工 6-3 下，VP-2 提到交请求时），之后每一条都比上一条多。
         if progress.written == 0 {
             self.seen_paths.insert("推了还没写字的进度");
         } else {
@@ -429,13 +429,13 @@ impl Watch {
                 progress.written > *written,
                 "种子 {seed}：进度的字数只增不减"
             );
+            assert!(
+                self.sent.contains(&progress.seen),
+                "种子 {seed}：摘要请求还没发出去就推了写了字的进度"
+            );
         }
         assert!((20_000..=80_000).contains(&progress.expected));
         *written = progress.written;
-        assert!(
-            self.sent.contains(&progress.seen),
-            "种子 {seed}：摘要请求还没发出去就推了进度"
-        );
     }
 
     /// 载入了：会话不记得交过的限额；手动压缩那一轮也不在了（崩了的收尾、重启的不接着压）；在路上的摘要请求跟着没了，不记

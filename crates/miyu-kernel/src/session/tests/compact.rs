@@ -226,3 +226,34 @@ fn a_message_does_not_withdraw_a_summary_request() {
             .any(|action| matches!(action, Action::CancelModel { .. }))
     );
 }
+
+/// 摘要请求一交给执行器就推一条 0 字的进度（VP-2）：执行器报「发出去了」要等响应头，慢的模型等好几秒，头那几秒认不出
+/// 在压。报了发出去不再推第二条。
+#[test]
+fn the_first_progress_goes_out_with_the_summary_request() {
+    use super::executor::sent;
+    use crate::event::{CompactTrigger, CompactionProgress, TransientBody};
+    let progress = |actions: &[Action]| -> Vec<CompactionProgress> {
+        actions
+            .iter()
+            .filter_map(|action| match action {
+                Action::PushTransient(transient) => match &transient.body {
+                    TransientBody::CompactionProgress(progress) => Some(progress.clone()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect()
+    };
+    let mut session = after_one_turn();
+    session.handle(compact(3, None));
+    let actions = session.handle(stored(9));
+    assert_eq!(calls(&actions).len(), 1, "发了摘要请求");
+    let pushed = progress(&actions);
+    assert_eq!(pushed.len(), 1, "{actions:?}");
+    assert_eq!(
+        (pushed[0].seen, pushed[0].written, &pushed[0].trigger),
+        (seq(8), 0, &CompactTrigger::Manual)
+    );
+    assert!(progress(&session.handle(sent(8))).is_empty(), "不推第二条");
+}

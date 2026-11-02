@@ -28,7 +28,7 @@ fn progress_is_pushed_instead_of_the_summary_text() {
         .iter()
         .map(|p| (p.seen.get(), p.written, p.expected))
         .collect();
-    // 发出去时先一条 0 字的（施工 6-3 下）。
+    // 交请求时先一条 0 字的（施工 6-3 下，VP-2）。
     assert_eq!(pushed, [(8, 0, 20_000), (8, 2, 20_000)]);
     assert!(
         progress(&stage)
