@@ -191,6 +191,7 @@ impl Projector {
                 c.before = Some(done.before);
                 c.after = Some(done.after);
                 c.prepared = done.prepared;
+                c.truncated = c.truncated.or(done.truncated);
                 if c.usage.is_none() {
                     c.usage.clone_from(&done.usage);
                 }
@@ -229,6 +230,7 @@ impl Projector {
                     }
                 }
                 c.instructions.clone_from(&compacted.instructions);
+                c.truncated = compacted.truncated;
                 c.written = None;
                 c.expected = None;
                 c.seen = None;
@@ -420,6 +422,7 @@ fn running() -> Compaction {
         expected: None,
         seen: None,
         prepared: false,
+        truncated: None,
         before: None,
         after: None,
         took_ms: None,

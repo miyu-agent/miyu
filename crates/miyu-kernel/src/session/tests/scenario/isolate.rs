@@ -242,6 +242,12 @@ fn a_shortened_request_that_calls_a_tool_goes_isolated_with_the_same_cut() {
     assert!(!summaries[0].1 && !summaries[1].1 && summaries[2].1);
     assert_eq!(summaries[1].2, summaries[2].2, "改走隔离式照截过的那一份");
     assert!(summaries[2].2.starts_with("truncated after "));
+    // 截掉了几组跟着改走隔离式带过去（施工 UP-2）。
+    let truncated = stage.log().iter().find_map(|event| match &event.body {
+        Body::ContextCompacted(compacted) => Some(compacted.truncated),
+        _ => None,
+    });
+    assert_eq!(truncated, Some(Some(1)));
 }
 
 #[test]

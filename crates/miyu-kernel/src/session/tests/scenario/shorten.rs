@@ -148,6 +148,50 @@ fn without_a_count_it_drops_a_fifth_of_the_groups_and_goes_again() {
     let compacted = last_compaction(&stage).unwrap();
     assert_eq!(compacted.upto.get(), 14);
     assert_eq!(compacted.notes, "<retrieve 14/><uncovered 1-5/>");
+    // 截掉了几组记在检查点上，推的压好了也带着（施工 UP-1 下，UP-2）。
+    assert_eq!(compacted.truncated, Some(1));
+    assert_eq!(done_truncated(&stage), [Some(1)]);
+}
+
+/// 推过的压好了里截掉了几组，照先后。
+fn done_truncated(stage: &Stage) -> Vec<Option<u32>> {
+    stage
+        .transients()
+        .iter()
+        .filter_map(|transient| match &transient.body {
+            crate::event::TransientBody::CompactionDone(done) => Some(done.truncated),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn two_cuts_add_up_and_an_uncut_compaction_writes_no_count() {
+    // 六组（到 20）：第一次去掉两组（切在 8 后面），第二次剩下四组去掉一组（切在 11 后面），一共三组。
+    let mut stage = shortening(Some(SHORTEN));
+    groups(&mut stage, 4);
+    stage.model([too_long(), too_long(), Line::says("S"), Line::says("嗯。")]);
+    stage.say("再说");
+    assert_eq!(
+        summaries(&stage),
+        [(20, None), (20, Some(8)), (20, Some(11))]
+    );
+    assert_eq!(last_compaction(&stage).unwrap().truncated, Some(3));
+    assert_eq!(done_truncated(&stage), [Some(3)]);
+    // 没截过的不写这一格：日志的字节和以前一样。
+    let mut stage = shortening(Some(SHORTEN));
+    four_groups(&mut stage);
+    stage.model([Line::says("S"), Line::says("嗯。")]);
+    stage.say("再说");
+    assert_eq!(last_compaction(&stage).unwrap().truncated, None);
+    assert_eq!(done_truncated(&stage), [None]);
+    let line = stage
+        .log()
+        .iter()
+        .find(|event| matches!(event.body, Body::ContextCompacted(_)))
+        .map(crate::event::Event::to_line)
+        .unwrap();
+    assert!(!line.contains("truncated"), "{line}");
 }
 
 #[test]
@@ -158,6 +202,7 @@ fn a_fifth_is_rounded_up() {
     stage.model([too_long(), Line::says("S"), Line::says("嗯。")]);
     stage.say("再说");
     assert_eq!(summaries(&stage), [(20, None), (20, Some(8))]);
+    assert_eq!(last_compaction(&stage).unwrap().truncated, Some(2));
 }
 
 #[test]

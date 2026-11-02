@@ -343,6 +343,7 @@ fn a_checkpoint_with_reread_files_recalls_them_first() {
             }],
             refills: None,
             prepared: false,
+            truncated: None,
         }),
     });
     let (_, actions) = load(logged.log);

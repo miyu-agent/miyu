@@ -88,6 +88,9 @@ pub struct Compaction {
     /// 换上的是提前压好的：不出进度。
     #[serde(default, skip_serializing_if = "is_false")]
     pub prepared: bool,
+    /// 摘要请求太长，截掉了最老的几组（施工 UP-2）：几组，头照它写「最早的一段没进摘要」；没截过的没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub truncated: Option<u32>,
     /// 压之前的用量。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub before: Option<u64>,

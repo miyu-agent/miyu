@@ -152,6 +152,9 @@ pub struct CompactionDone {
     /// 当场压的不写。
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub prepared: bool,
+    /// 摘要请求截掉了最老的几组（施工 UP-2）：几组，同那一条 `context.compacted` 的 `truncated`；没截过的不写。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub truncated: Option<u32>,
 }
 
 /// `todos.changed` 的 `body`：现在的整份待办（施工 D-3）。全部做完清空了、写过的都撤掉了的，是空列表。头照它换掉手里的那份，

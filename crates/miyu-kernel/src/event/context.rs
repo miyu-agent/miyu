@@ -59,6 +59,10 @@ pub struct ContextCompacted {
     /// 当场压的、以前的日志里没有的是假，不写这一格。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub prepared: bool,
+    /// 摘要请求太长、截掉了最老的几组才写成的（`compaction.md` 第三条第 10 条，施工 UP-2）：一共截掉了几组，头照它写「最早的
+    /// 一段没进摘要」。没截过的、以前的日志里没有的不写这一格，字节和以前一样。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub truncated: Option<u32>,
 }
 
 /// `context.compaction_paused`：暂停了自动压缩（`compaction.md` 第十条，施工 6-6 上）。不进上下文；有效历史里、最近

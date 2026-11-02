@@ -45,7 +45,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 
 | `what` | Fields |
 |---|---|
-| `compaction` | `trigger` (`auto`, `manual`, `overflow`), `state` (`running`, `done`, `failed`), `written`, `expected`, `prepared`, `before`, `after`, `took_ms`, `usage`, `instructions`; fetch the summary text with `view.detail` |
+| `compaction` | `trigger` (`auto`, `manual`, `overflow`), `state` (`running`, `done`, `failed`), `written`, `expected`, `prepared`, `before`, `after`, `took_ms`, `usage`, `instructions`, `truncated` (the summary request was too long and this many of the oldest groups were cut, so the earliest part is not in the summary; left out when nothing was cut); fetch the summary text with `view.detail` |
 | `cleared` | The context was cleared |
 | `paused` | Automatic compaction paused: `reason`, `failures` |
 | `reverted` | Turns were undone: `turns`, `said`, `jobs` |

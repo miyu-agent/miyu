@@ -89,7 +89,7 @@
 
 | `what` | 格 |
 |---|---|
-| `compaction` | `trigger`（`auto`、`manual`、`overflow`；在压时照进度带的，施工 6-11 再补）；`instructions`（手动压缩附的要求）；`state`（`running`、`done`、`failed`）；`written`、`expected`、`seen`（摘要写到哪了，同 `compaction.progress`，只在 `running` 时有，视图流里照进度 `view.update`；`written` 变小是重来）；`prepared: true`（换上的是提前压好的，不出进度；施工 6-11 三补起照 `context.compacted` 的 `prepared`，翻页也有，头照它不画结果行）；`before`、`after`（只在视图流里有：`compaction.done` 是瞬时的，翻页没有）；`took_ms`、`usage`；失败的 `error`（`class`、`status`、`message`）和 `explain`。摘要原文不进条目，点开时 `view.detail {session, compaction: <序号>}` 取。手动压缩那一轮的用时、用量接在这一条上，不另起 `end` |
+| `compaction` | `trigger`（`auto`、`manual`、`overflow`；在压时照进度带的，施工 6-11 再补）；`instructions`（手动压缩附的要求）；`state`（`running`、`done`、`failed`）；`written`、`expected`、`seen`（摘要写到哪了，同 `compaction.progress`，只在 `running` 时有，视图流里照进度 `view.update`；`written` 变小是重来）；`prepared: true`（换上的是提前压好的，不出进度；施工 6-11 三补起照 `context.compacted` 的 `prepared`，翻页也有，头照它不画结果行）；`before`、`after`（只在视图流里有：`compaction.done` 是瞬时的，翻页没有）；`took_ms`、`usage`；`truncated`（摘要请求截掉了最老的几组，照 `context.compacted` 的，翻页也有；没截过的不写，施工 UP-2）；失败的 `error`（`class`、`status`、`message`）和 `explain`。摘要原文不进条目，点开时 `view.detail {session, compaction: <序号>}` 取。手动压缩那一轮的用时、用量接在这一条上，不另起 `end` |
 | `cleared` | 上下文清空了；那一轮不另起 `end` |
 | `paused` | 暂停了自动压缩（`context.compaction_paused`）：`reason`、`failures`、`entry`，原样 |
 | `reverted` | 撤销了几轮：`turns`、`said`（撤掉的第一句的头一行）；（施工 U-1 拿掉了 `files`：撤销不再改回文件；以前日志里的 `files.restored` 不进视图）；`jobs`（停掉的后台任务的编号）；撤掉的条目另外 `hidden` |

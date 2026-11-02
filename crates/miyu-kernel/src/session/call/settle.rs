@@ -240,6 +240,7 @@ impl Session {
                     paths,
                     reread,
                     prepared: false,
+                    truncated: Some(compacting.groups()).filter(|groups| *groups > 0),
                 }
             });
         events.push(self.record(at, By::Kernel, cause, Body::ModelCalled(called)));

@@ -438,6 +438,7 @@ impl Session {
             paths: paths.clone(),
             reread: None,
             prepared: true,
+            truncated: None,
         };
         if paths.is_empty() {
             return self.swapped(at, summarized);

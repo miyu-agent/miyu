@@ -58,6 +58,7 @@ impl Stage {
                 restored: Vec::new(),
                 refills: None,
                 prepared: false,
+                truncated: None,
             }),
         );
         let closed = event(

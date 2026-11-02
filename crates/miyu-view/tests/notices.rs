@@ -2,8 +2,9 @@
 
 use std::sync::Arc;
 
-use miyu_kernel::event::{Choice, JobReason, Question, Response};
+use miyu_kernel::event::{Choice, ErrorClass, JobReason, Question, Response};
 use miyu_kernel::origin::By;
+use miyu_kernel::session::{Policy, Shorten};
 use miyu_kernel::testkit::{Line, Play};
 use miyu_view::Projector;
 
@@ -28,6 +29,54 @@ fn a_manual_compaction_is_one_notice_without_an_end() {
         "那一轮的用时接在这一条上：{notice}"
     );
     assert_eq!(of_kind(&entries, "end").len(), 1, "压缩那一轮不另起收尾");
+}
+
+/// 压缩线很低、摘要请求报超长会截短的策略（施工 UP-2）。
+fn shortening() -> Policy {
+    let mut policy = policy();
+    if let Some(compaction) = policy.compaction.as_mut() {
+        compaction.reserve_cap = 10;
+        compaction.margin = 10;
+        compaction.price = miyu_kernel::estimate::Flat {
+            image: 50,
+            file: 50,
+        };
+        compaction.shorten = Some(Shorten {
+            tries: 3,
+            percent: 20,
+        });
+    }
+    policy
+}
+
+#[test]
+fn a_compaction_that_cut_the_oldest_part_says_how_many_groups() {
+    let mut stage = policy_stage(shortening);
+    // 第一轮调两次工具再答：四组。第二轮的主请求报超长，被动压缩；摘要请求也报超长，截掉最老的一组再发。
+    stage.model([
+        Line::calls("", &[("read", "{}")]),
+        Line::calls("", &[("read", "{}")]),
+        Line::says("好。"),
+    ]);
+    stage.tools([Play::Done("a".to_string()), Play::Done("b".to_string())]);
+    stage.say("看看");
+    stage.limits(Some(200_000), None);
+    stage.model([
+        Line::fails(ErrorClass::ContextTooLong, "413"),
+        Line::fails(ErrorClass::ContextTooLong, "413"),
+        Line::says("summary"),
+        Line::says("嗯。"),
+    ]);
+    stage.say("再说");
+    let entries = same(&stage);
+    let compaction: Vec<_> = entries
+        .iter()
+        .map(json)
+        .filter(|entry| entry["what"] == "compaction")
+        .collect();
+    assert_eq!(compaction.len(), 1, "{entries:#?}");
+    assert_eq!(compaction[0]["state"], "done");
+    assert_eq!(compaction[0]["truncated"], 1, "{}", compaction[0]);
 }
 
 #[test]

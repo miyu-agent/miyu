@@ -43,7 +43,7 @@
 | `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用、人的决定 |
 | `question.asked`、`question.answered` | 她问了一组题、人的回答 |
 | `context.injected` | 注入进上下文的一块事实（记忆、扩展交的……） |
-| `context.compacted` | 压缩的检查点；清空上下文也是它（`trigger` 是 `clear`） |
+| `context.compacted` | 压缩的检查点；清空上下文也是它（`trigger` 是 `clear`）。摘要请求太长、截掉了最老的几组才写成的带 `truncated`（几组：最早的那一段没进摘要），没截过的不写 |
 | `context.compaction_paused` | 暂停了自动压缩 |
 | `job.reported` | 一条后台命令结束了 |
 | `child.reported` | 子代理的回报 |
@@ -69,7 +69,7 @@
 | `tool.nested_started` | 脚本里的一次 `miyu call` 过了检查、派去跑了：`id`、`name`；了结以 `tool.nested` 为准 |
 | `status` | 请求在重试、换了供应商 |
 | `model.changed` | 会话接下来请求的模型、思考强度、限额变了：`effort.from` 是 `session`（会话记的）或 `system`（配置）；`why` 是 `failover` 或 `turn` |
-| `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了 |
+| `compaction.started`、`compaction.progress`、`compaction.done` | 压缩开始（后台提前压的）、写到哪了、压好了；`compaction.done` 同样带 `truncated`（同那一条 `context.compacted` 的） |
 | `todos.changed` | 当前的待办整份 |
 | `package.state_changed` | 一个包在这个会话里给头看的状态变了：`{"package", "state": {"widgets"?}}`，清掉了的 `state` 是 `{}` |
 | `compactable.changed` | 有没有能压的变了：`{"compactable": <布尔>}`，同订阅回应的 `compactable`（`session.compact` 会不会回 `nothing_to_compact`） |

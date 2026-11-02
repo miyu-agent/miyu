@@ -111,6 +111,7 @@ fn compacted(n: u64, turn: u64, upto: u64, trigger: CompactTrigger) -> Event {
             restored: Vec::new(),
             refills: None,
             prepared: false,
+            truncated: None,
         }),
     )
 }

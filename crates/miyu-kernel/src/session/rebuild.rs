@@ -241,6 +241,7 @@ impl Session {
                 restored: Vec::new(),
                 refills: None,
                 prepared: false,
+                truncated: None,
             }),
         });
         let request = self.policy.assembler.assemble(&trial);

@@ -26,6 +26,8 @@ pub(super) struct Summarized {
     pub(super) reread: Option<Vec<Reread>>,
     /// 换上的是提前压好的那一份（施工 6-11 上，`prepare.rs`）：推的 `compaction.done` 带 `prepared`。
     pub(super) prepared: bool,
+    /// 摘要请求截掉了几组（施工 UP-2）；没截过的没有。
+    pub(super) truncated: Option<u32>,
 }
 
 impl Session {

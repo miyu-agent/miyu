@@ -45,7 +45,7 @@
 
 | `what` | 格 |
 |---|---|
-| `compaction` | `trigger`（`auto`、`manual`、`overflow`）、`state`（`running`、`done`、`failed`）、`written`、`expected`、`prepared`、`before`、`after`、`took_ms`、`usage`、`instructions`；摘要原文用 `view.detail` 取 |
+| `compaction` | `trigger`（`auto`、`manual`、`overflow`）、`state`（`running`、`done`、`failed`）、`written`、`expected`、`prepared`、`before`、`after`、`took_ms`、`usage`、`instructions`、`truncated`（摘要请求太长、截掉了最老的几组：几组，最早的那一段没进摘要；没截过的不写）；摘要原文用 `view.detail` 取 |
 | `cleared` | 上下文清空了 |
 | `paused` | 暂停了自动压缩：`reason`、`failures` |
 | `reverted` | 撤销了几轮：`turns`、`said`、`jobs` |

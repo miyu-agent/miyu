@@ -43,7 +43,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `tool.approval_requested`, `tool.approval_decided` | A person was asked to approve a call; their decision |
 | `question.asked`, `question.answered` | She asked a set of questions; the person's answers |
 | `context.injected` | A block of facts injected into the context (memory, something an extension returned…) |
-| `context.compacted` | A compaction checkpoint; clearing the context is one too (`trigger` is `clear`) |
+| `context.compacted` | A compaction checkpoint; clearing the context is one too (`trigger` is `clear`). When the summary request was too long and the oldest groups had to be cut, it carries `truncated` (how many groups: the earliest part is not in the summary); left out when nothing was cut |
 | `context.compaction_paused` | Automatic compaction was paused |
 | `job.reported` | A background command ended |
 | `child.reported` | A subagent's report |
@@ -69,7 +69,7 @@ Not recorded, no `seq`, only pushed to heads subscribed at that moment, never re
 | `tool.nested_started` | A `miyu call` from a script passed the checks and is running: `id`, `name`; it ends with `tool.nested` |
 | `status` | A request is retrying or switched provider |
 | `model.changed` | The model, reasoning effort or limits for the next requests changed: `effort.from` is `session` (the session's own) or `system` (the config); `why` is `failover` or `turn` |
-| `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done |
+| `compaction.started`, `compaction.progress`, `compaction.done` | A compaction started (one prepared in the background), how far the summary is, done; `compaction.done` carries the same `truncated` as its `context.compacted` |
 | `todos.changed` | The whole current to-do list |
 | `package.state_changed` | What heads see of a package's state in this session changed: `{"package", "state": {"widgets"?}}`; a cleared one has `state` `{}` |
 | `compactable.changed` | Whether there is anything to compact changed: `{"compactable": <bool>}`, same as `compactable` in the subscribe reply (whether `session.compact` would answer `nothing_to_compact`) |

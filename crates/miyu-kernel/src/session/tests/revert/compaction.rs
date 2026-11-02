@@ -238,6 +238,7 @@ fn compact_rereading(log: &mut Vec<Event>, restored: Vec<RestoredFile>) {
             restored,
             refills: None,
             prepared: false,
+            truncated: None,
         }),
     ));
     log.push(event(

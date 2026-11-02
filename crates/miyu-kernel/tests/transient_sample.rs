@@ -328,6 +328,7 @@ fn the_compaction_done_sample_is_written_exactly() {
             }),
             duration_ms: Some(41_250),
             prepared: false,
+            truncated: None,
         }),
     };
     let prepared = Transient {
@@ -349,11 +350,35 @@ fn the_compaction_done_sample_is_written_exactly() {
             }),
             duration_ms: Some(18_620),
             prepared: true,
+            truncated: None,
+        }),
+    };
+    // 摘要请求太长、截掉最老的两组才压成的（施工 UP-2）。
+    let truncated = Transient {
+        at: Timestamp::parse("2026-11-02T09:05:12.000Z").expect("样本的时刻合写法"),
+        turn: None,
+        by: By::Kernel,
+        cause: Some(CommandId::parse("cmd-d3f4").expect("命令编号合写法")),
+        body: TransientBody::CompactionDone(CompactionDone {
+            seen: Seq::new(240).expect("240 是合法的序号"),
+            trigger: CompactTrigger::Overflow,
+            before: 1_012_000,
+            after: 42_100,
+            usage: Some(Usage {
+                uncached: 905_400,
+                cache_read: 0,
+                cache_write: 0,
+                output: 3560,
+                reasoning: None,
+            }),
+            duration_ms: Some(52_300),
+            prepared: false,
+            truncated: Some(2),
         }),
     };
     assert_eq!(
         lines("transient/compaction.done.jsonl"),
-        [done.to_line(), prepared.to_line()]
+        [done.to_line(), prepared.to_line(), truncated.to_line()]
     );
 }
 

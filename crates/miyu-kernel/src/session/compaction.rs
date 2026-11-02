@@ -71,6 +71,8 @@ pub(super) struct Compacting {
     reread: Option<Vec<Reread>>,
     /// 截短重试截到第几条（施工 6-6 中，`shorten.rs`）；没截过的没有。
     cut: Option<Seq>,
+    /// 一共截掉了几组（施工 UP-2）：写进 `context.compacted` 的 `truncated`。
+    groups: u32,
     /// 截着再试了几次。
     tries: u32,
     /// 是隔离式（施工 6-6 下）：不带工具面，system 换成那一句。
@@ -101,6 +103,11 @@ impl Compacting {
     /// 截到第几条、截着再试了几次（施工 6-6 中）。
     pub(super) fn shortened(&self) -> (Option<Seq>, u32) {
         (self.cut, self.tries)
+    }
+
+    /// 一共截掉了几组（施工 UP-2）。
+    pub(super) fn groups(&self) -> u32 {
+        self.groups
     }
 
     /// 是隔离式（施工 6-6 下）。
@@ -325,8 +332,8 @@ impl Session {
             .as_mut()
             .and_then(|turn| turn.again.take())
             .filter(|again| again.upto == upto);
-        let (cut, tries, isolated) = again.map_or((None, 0, false), |again| {
-            (again.cut, again.tries, again.isolated)
+        let (cut, groups, tries, isolated) = again.map_or((None, 0, 0, false), |again| {
+            (again.cut, again.groups, again.tries, again.isolated)
         });
         let (assembler, asked) = (&self.policy.assembler, instructions.as_deref());
         let request = match isolated {
@@ -355,6 +362,7 @@ impl Session {
             paths: paths.clone(),
             reread: None,
             cut,
+            groups,
             tries,
             isolated,
         };
@@ -417,6 +425,7 @@ impl Session {
             paths,
             reread,
             prepared,
+            truncated,
         } = summarized;
         let rebuilt = self.rebuild(at, upto, cut, &summary, &paths, reread.as_deref());
         let body = Body::ContextCompacted(ContextCompacted {
@@ -428,6 +437,7 @@ impl Session {
             restored: rebuilt.restored,
             refills,
             prepared,
+            truncated,
         });
         let mut events = vec![self.record(at, By::Kernel, cause.clone(), body)];
         self.history.recall(rebuilt.texts);
@@ -452,6 +462,7 @@ impl Session {
                 usage,
                 duration_ms,
                 prepared,
+                truncated,
             }),
         });
         if self.turn.as_ref().is_some_and(|turn| turn.manual.is_some()) {

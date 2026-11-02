@@ -16,11 +16,13 @@ use crate::estimate;
 use crate::event::{Body, CompactTrigger};
 use crate::id::Seq;
 
-/// 等着再发的那一次摘要请求：替代到哪、截到第几条（没截过的没有）、截着再试了几次、是不是隔离式。
+/// 等着再发的那一次摘要请求：替代到哪、截到第几条（没截过的没有）、一共截掉了几组（施工 UP-2）、截着再试了几次、
+/// 是不是隔离式。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct Again {
     pub(super) upto: Seq,
     pub(super) cut: Option<Seq>,
+    pub(super) groups: u32,
     pub(super) tries: u32,
     pub(super) isolated: bool,
 }
@@ -41,13 +43,15 @@ impl Session {
         if tries >= shorten.tries {
             return false;
         }
-        let Some(next) = self.next_cut(compacting.upto(), cut, excess, shorten.percent) else {
+        let Some((next, dropped)) = self.next_cut(compacting.upto(), cut, excess, shorten.percent)
+        else {
             return false;
         };
         self.again(
             Again {
                 upto: compacting.upto(),
                 cut: Some(next),
+                groups: compacting.groups().saturating_add(dropped),
                 tries: tries + 1,
                 isolated: compacting.isolated(),
             },
@@ -66,6 +70,7 @@ impl Session {
             Again {
                 upto: compacting.upto(),
                 cut,
+                groups: compacting.groups(),
                 tries,
                 isolated: true,
             },
@@ -94,16 +99,16 @@ impl Session {
         true
     }
 
-    /// 再截到第几条：有效历史到第 `upto` 条的投影里，检查点后面、上一次截到的 `cut` 以后还剩的组，从最老的起去掉。有
-    /// `excess` 的，去掉的估算加起来刚好盖过它（盖不过的，去到只剩一组）；没有的，去掉剩下的 `percent`%，向上取整、
-    /// 至少一组。至少留一组：只剩一组的截不动，没有。
+    /// 再截到第几条，这一次去掉了几组：有效历史到第 `upto` 条的投影里，检查点后面、上一次截到的 `cut` 以后还剩的组，从最老
+    /// 的起去掉。有 `excess` 的，去掉的估算加起来刚好盖过它（盖不过的，去到只剩一组）；没有的，去掉剩下的 `percent`%，
+    /// 向上取整、至少一组。至少留一组：只剩一组的截不动，没有。
     fn next_cut(
         &self,
         upto: Seq,
         cut: Option<Seq>,
         excess: Option<u64>,
         percent: u32,
-    ) -> Option<Seq> {
+    ) -> Option<(Seq, u32)> {
         let price = self.price()?;
         let history = self.history.until(upto);
         let ordered = history.ordered();
@@ -143,7 +148,7 @@ impl Session {
                 share.clamp(1, groups - 1)
             }
         };
-        Some(starts[drop].1)
+        Some((starts[drop].1, u32::try_from(drop).ok()?))
     }
 }
 
@@ -153,6 +158,7 @@ pub(super) fn as_before(compacting: &Compacting) -> Again {
     Again {
         upto: compacting.upto(),
         cut,
+        groups: compacting.groups(),
         tries,
         isolated: compacting.isolated(),
     }

@@ -74,6 +74,7 @@
 | `notes` | 字符串 | 可以没有 | 代码写的几段，原文照存，以后逐字节回放（第八条） |
 | `restored` | 数组 | 可以没有 | 压后重读的文件：`path`、`blob`（内容的哈希）、`tokens`（估算），照渲染的先后 |
 | `refills` | 整数 | 可以没有 | 压完很快又到线，连着的第几次（第十条第 4 条，施工 6-6 上）；不是的没有 |
+| `truncated` | 整数 | 可以没有 | 摘要请求太长、截掉最老的几组才写成的：一共截掉了几组（第三条第 10 条第 5 条，施工 UP-2）；没截过的不写 |
 
 - 原来只有 `upto`、`summary` 两格的日志照旧读得出来。
 - 裁剪的那一种再加一格 `mode`，随通讯平台加（第五条）。
@@ -103,6 +104,7 @@
 **协议** `session.clear`（`protocol.md`，施工 6-8 补）：只有 `session` 一个参数。回应照 `session.compact`：`events` 是那一轮 `turn.started` 的序号，一整轮同一批落了盘才回。有回合在进行：`turn_running`；上下文本来就是空的：`nothing_to_clear`（第十四条第 2 条）；正在改回文件：`restoring`。不推 `compaction.progress`、`compaction.done`：没有摘要请求，推送里就是那一轮的三条事件。
 
 - 换上提前压好的那一份的（第十五条）：不推 `compaction.progress`，`compaction.done` 多一格 `prepared: true`，`usage`、`duration_ms` 是提前那一次摘要请求的。当场压的不写这一格。
+- 摘要请求截掉了最老的几组的（第三条第 10 条，施工 UP-2）：`compaction.done` 多一格 `truncated`，几组，同那一条 `context.compacted` 的；没截过的不写。
 - 在后台提前压的那一次发出去时推瞬时的 `compaction.started`（施工 6-11 再补，第十五条第 1 条）：`seen` 它的 N，`prepared` 是 `true`。头照它弹一句「已触发上下文压缩」，正文里不画；压失败、作废的不另推。
 - 压好了推瞬时的 `compaction.done`（6-3 下）：`seen` 哪一次摘要请求；`trigger` 哪一种压缩（`auto`、`manual`，施工 6-8：运行日志照它写）；`before` 压之前的用量（自动的是过了线的那一次主请求算出的，手动的是那一轮开头落了盘时照有效历史组装一次算的），`after` 压完的用量（照这时的有效历史组装一次算的），都是估算，和压缩线同一个算法；`usage`、`duration_ms` 是摘要请求的用量、用时，照它的 `model.called`。中途被打断、出错的不推（`kernel/events.md`）。
 
@@ -159,7 +161,7 @@
     2. 截掉哪些：有效历史到第 N 条的投影里，检查点后面的一组一组，从最老的起去掉，只切在切得开的地方（组和切法同第 2 条的留尾巴）。有 `excess` 的，去掉的估算（第一条第 2 条）加起来刚好盖过它；没有的，去掉 20% 的组，向上取整、至少一组。至少留一组；留不下的，这次压缩失败。按组不按轮（2026-09-29 施工 6-6 中定）：一轮任务里可以有几十组工具调用，按轮截，一轮的会话一组都截不掉；Claude Code 截的也是一组一组。
     3. 截过的摘要请求：检查点、留下的几组、摘要指令。留下的第一条是助手的，前面补一条 user：更早的对话为了压缩截掉了（`truncated.txt`）。组装器的 `summarize` 多一个参数：截到第几条，没有是不截。
     4. 截着最多再试 3 次，第 3 次还超长，这次压缩失败（第十条）。每一次都记一条 `model.called`（`compaction`、出错 `context_too_long`），`seen` 照旧是 N。报了超长那一刻不当场重发：截到哪记在回合上，回到准备好，这一批落了盘照常走发请求那一步（先落盘，后请求），环境、权限、会话编号几块事实照查，重读（第九条）照常再交一次，进度照常先推 0 字的。出错再来的（驱动分类可以重试的错，到点再发）照记下的发：截到哪、截了几次、是不是隔离式都不变（施工 6-6 补）。
-    5. 截过的，写压缩时 `notes` 最后多一段（`notes-uncovered.txt`）：第几到第几条摘要没看到，原文还在，用 `history` 取回（第八条第 4 条）。
+    5. 截过的，写压缩时 `notes` 最后多一段（`notes-uncovered.txt`）：第几到第几条摘要没看到，原文还在，用 `history` 取回（第八条第 4 条）。`context.compacted` 另记 `truncated`：几次截短一共截掉了几组（照组数，不照条数；出错再来、改走隔离式的照记下的接着算），推的 `compaction.done`、视图流里那一条压缩跟着带，头照它写「最早的一段没进摘要」（施工 UP-2，2026-11-02 核心主会话定形状，网页头要的）。没截过的不写，日志的字节和以前一样。
     6. 截过以后前缀变了，这一次不再命中缓存，照常发。
 11. **写 `context.compacted`**：`turn` 是这一轮，`by` 是内核，`cause` 是回合的。同时推瞬时的 `compaction.done`（见「对外的样子」）。之后照常组装下一次请求：环境、权限、会话编号几块事实和检查点后面还在的同类比，比不到的注入（`kernel/request.md`「事实」）。
 12. 摘要请求照常记一条 `model.called`，`seen` 是 N。
@@ -429,6 +431,7 @@ INFO  session  <会话> compacted seen=24 trigger=auto before=15465 after=2675 s
 | 组装的样本 | 压缩后的请求逐字节比对（`docs/designs/samples/requests/`）；清空的检查点不出字（`render/tests/clear.rs`，施工 6-8 补） |
 | 请求形状探针 | 压缩恰好让前缀重置一次，两次压缩之间只追加；摘要请求是上一次请求的前缀延伸（`08-上下文投影.md` 第七节）；清空过的会话，清空以后的第一次请求只剩工具面、system、三块事实和那一句（`docs/designs/samples/probe/cleared/`，施工 6-8 补） |
 | 会话的测试 | 压缩期间别的会话照常；打断取消；重读的文件存成 blob、重放时逐字节相同；运行日志 `compacted` 的 `trigger` 照 `compaction.done` |
+| 截掉了几组（施工 UP-2） | 一次截短记截掉的组数、两次截短加起来、改走隔离式带过去，`compaction.done` 跟着带；没截过的检查点、推送不写这一格（`scenario/shorten.rs`、`scenario/isolate.rs`）；视图流和翻页里那一条压缩带 `truncated`（`miyu-view` 的 `tests/notices.rs`）；`compaction.done` 的样本第三条一字不差（`tests/transient_sample.rs`） |
 | 协议、命令行的测试 | `session.compact` 的参数、回应、拒绝；`miyu compact` 印的几行、退出码（`protocol.md`、`cli/compact.md`，施工 6-8）；`session.clear` 的回应、推送、两种拒绝两种语言、撤掉它上下文回来（施工 6-8 补） |
 | 压缩里的任务（施工 7-8、7-8 补） | 还没听到的回报留在检查点后面（`scenario/checkpoint_jobs.rs`）；还在跑的任务不列，代码写的几段只有取回指路（`scenario/checkpoint_jobs.rs`，照出厂资源的真会话 `miyu-session` 的 `tests/rebuild.rs`）；7-8 以后造的快照带着那两份模板照样读得回来，读成和出厂的一样（`miyu-policy` 的 `snapshot/tests.rs`） |
 | 提前压好（施工 6-11 上、下） | 起压线、开关、G 是 0、小窗口不起；一次只有一个、压好了还用得上的不再起；到线换上不再请求、`prepared`、不推进度；到线还放得下的不停、照发，在路上的回来了下一次换上，一次都没有的到线起压（6-11 补，`scenario/prepare_go.rs`）；放不下了在路上的等它（6-11 下，`scenario/prepare_wait.rs`）：第一条进度带已经收到的字数、等的时候每段正文推一次、回来了换上，出错、取不出、调了工具的落了盘再当场压、进度从 0 起，尾巴已经超了、N 以前变了的不等，手动压缩没附要求的也等、附了要求的不等，等的时候打断留着下一次照用、重启照当场压；尾巴超了、撤销撤到 N、清空、开关关了、附了要求的照当场压，只撤尾巴的照用；出错、空的扔掉；调了工具照隔离式再来一次；重读在换上时做、读到最新的（`miyu-kernel` 的 `scenario/prepare.rs`、`prepare_drop.rs`）；随机测试里提前压、换上和撤销、手动压缩、清空、打断、重启随机交错，慢的那几次到线时还在路上，等它的进度是它收到的字数、等的时候不发请求（`random/watch/prepare.rs`）；真会话里配置开着换上、日志 `prepared=yes`、出错记 `WARN`，关着的当场压（`miyu-session` 的 `tests/prepare_log.rs`、`tests/prepare.rs`） |
