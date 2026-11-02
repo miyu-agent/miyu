@@ -67,21 +67,33 @@ pub enum RenderError {
     NotReady,
 }
 
-/// 画 mermaid 用的家底：资源目录在哪、懒读好的 `style.json`、画好的缓存。一个核心一份，一直留着到核心退出。
+/// 画 mermaid 用的家底：资源目录在哪、记字体位置的目录、懒读好的 `style.json`、画好的缓存。一个核心一份，一直留着到核心
+/// 退出。
 pub struct Mermaid {
     resources: PathBuf,
+    fonts: Option<PathBuf>,
     ready: OnceLock<Result<Style, ()>>,
     cache: Mutex<Vec<(Hash, Rendered)>>,
 }
 
 impl Mermaid {
-    /// 一份家底：只记资源目录在哪，不碰磁盘、不读字体——真正的初始化等第一次 [`Mermaid::render`]。
+    /// 一份家底：只记资源目录在哪，不碰磁盘、不读字体——真正的初始化等第一次 [`Mermaid::render`]。不记字体位置（每个进程第一次
+    /// 画图扫一遍系统字体库），要记的用 [`Mermaid::with_font_cache`]。
     pub fn new(resources: &Path) -> Mermaid {
         Mermaid {
             resources: resources.to_path_buf(),
+            fonts: None,
             ready: OnceLock::new(),
             cache: Mutex::new(Vec::new()),
         }
+    }
+
+    /// 字体在哪个文件记在 `dir` 下（施工 V-35，`mermaid.md`「怎么走」第 2 条）：下次起来对得上就不扫系统字体库。核心里是数据根的
+    /// `cache/mermaid`。画图的库整个进程共用这一个设置，每次画图前交给它。
+    #[must_use]
+    pub fn with_font_cache(mut self, dir: PathBuf) -> Mermaid {
+        self.fonts = Some(dir);
+        self
     }
 
     /// 画一张：源码去掉前后空白，是空的、超过上限、库说读不懂（或者崩了）的交回原因；同一份源码（照
@@ -113,8 +125,10 @@ impl Mermaid {
         if let Some((_, rendered)) = cache.iter().find(|(h, _)| *h == hash) {
             return Ok(rendered.clone());
         }
-        // 探字体要扫一遍系统的字体库，Windows 上能到几秒：空的、太长的、缓存里有的都不用等它，真要画才探。
-        if !fonts::available() {
+        // 探字体要扫一遍系统的字体库，Windows 上能到几秒：空的、太长的、缓存里有的都不用等它，真要画才探；画图的库记过字体在哪、
+        // 文件也没变的，不扫就知道有（施工 V-35）。
+        mermaid_rs_renderer::set_font_cache_dir(self.fonts.clone());
+        if !fonts::available(&families(style)) {
             return Err(RenderError::NotReady);
         }
         let rendered = draw(source, style)?;
@@ -201,13 +215,18 @@ fn theme(style: &Style) -> Theme {
     ] {
         color.clone_from(&style.marks.line);
     }
+    theme.font_family = families(style);
+    theme
+}
+
+/// 量字宽用的那一串字体名：`style.json` 的几种，各加引号，逗号隔开。
+fn families(style: &Style) -> String {
     let families: Vec<String> = style
         .fonts
         .iter()
         .map(|font| format!("\"{font}\""))
         .collect();
-    theme.font_family = families.join(", ");
-    theme
+    families.join(", ")
 }
 
 /// panic 带的话：是 `&str`、`String` 的照抄，别的（数字、自定义类型……）写一句泛泛的。

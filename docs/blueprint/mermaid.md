@@ -16,7 +16,8 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
 | `crates/miyu-mermaid/`（第 3 层，执行器） | 画 SVG、懒读 `style.json`、独立探一次字体库、缓存、崩了当画不出 |
 | `crates/miyu-mermaid/src/lib.rs` | `Mermaid`：公开的家底和 `render`；渲染器的主题怎么改（三种记号色、字体） |
 | `crates/miyu-mermaid/src/style.rs` | 读 `style.json` |
-| `crates/miyu-mermaid/src/fonts.rs` | 独立探一次系统的字体库找不找得到字 |
+| `crates/miyu-mermaid/src/fonts.rs` | 独立探一次系统的字体库找不找得到字；画图的库记过字体在哪、文件没变的不扫（施工 V-35） |
+| `third_party/mermaid-rs-renderer/` | 画图的库补过的一份（施工 V-35，`third_party/README.md`）：量字宽时字体文件映射进来、只记位置不存副本、扫字体用的整张表用完就放 |
 | `crates/miyu-endpoint/src/queries.rs` | 可选软件包登记的查询：方法名到怎么答的一张表，`QueryError`（软件包用得上的几种拒绝，不认得 JSON-RPC 的错误码） |
 | `crates/miyu-core/src/packages.rs` | 照编进来的可选软件包（cargo 开关）往查询表里登记；`mermaid.render` 的参数怎么读、`Mermaid` 的结果怎么翻成回应或者 `QueryError` |
 | `resources/software/mermaid/style.json` | 字体、三种记号色、源码的上限、记几张 |
@@ -42,6 +43,8 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
    `mermaid`：crate `miyu-mermaid`，经 `miyu-core` 的 cargo 开关 `mermaid` 编进来，发行版默认打开。没编进来
    的核心里没有这块代码，`mermaid.render` 回 `unknown_method`，头照代码块显示源码。
 2. 第一次调才初始化：读 `resources/software/mermaid/style.json`，之后一直留着，直到核心退出。系统的字体库（画图的库要量字的宽）在真要画的时候才探，整个进程只探一次：源码是空的、太长的、缓存里已经有的不用等它（2026-10-02 主会话定：CI 的 Windows 机器上扫字体能到几秒，几个测试一起扫过了十秒）。探不到字体记一条 `WARN mermaid not ready`，回 `internal_error`。
+
+   **字体只记在哪、不整份进内存**（施工 V-35，2026-11-02 项目主人定只在我们这里补画图的库）：画图的库量字宽时原来把系统字体库整个扫一遍、整张表常驻，选中的字体整个文件拷进内存（中文字体一个文件十几 MB），还在 `$XDG_CACHE_HOME/mmdr/font-cache` 另存一份整的：画过一张图核心的匿名内存永久多 20 MB。补过的一份（`third_party/mermaid-rs-renderer`）字体文件映射进来，只有读到的那几页进内存、随时丢得掉；扫字体用的表用完就放；缓存只记哪个文件的第几张、多长、什么时候改的，记在数据根的 `cache/mermaid`（`Mermaid::with_font_cache`，核心里由 `miyu-core` 的 `packages.rs` 传进来；没传的不记，测试里就是这样），对得上就直接映射、不扫系统字体库，对不上照旧扫、重记。探字体（本条上面）也先问画图的库记没记过（`has_remembered_font`），记过的不扫。量出来的宽、画出来的 SVG 一个字节都不变。画图的库默认的缓存目录（几个用这个库的程序共用）一个字都不写也不删：老版本留在那里的整份字体是缓存，人自己清。
 3. 源码去掉前后空白。空的：`bad_params`。超过 64 KiB：`mermaid_too_long`。
 4. 缓存：照源码的 SHA-256，最多 64 张，满了丢最久没用的。设计说「源码加尺寸」：SVG 不分尺寸，缓存只照源码；
    尺寸只在终端栅格化时用，那一步在头里。
@@ -88,6 +91,7 @@ mermaid 源码画成 SVG 由核心做一次：同一张图，终端和网页看�
 | `crates/miyu-mermaid/src/tests.rs` | 记号色都换得掉、底和框不填色；同一份源码第二次不重画、满了丢最早的那一张；空的、太长、画不出各说一句（库的原话不是空的）；造出 `Mermaid` 不碰磁盘，第一次调才读 `style.json`、探字体；`style.json` 读不懂当没法画；panic 的几种payload 都翻成字符串；真的 `style.json`、一张流程图一张时序图都画得出 |
 | `crates/miyu-mermaid/src/style/tests.rs` | 读得进来、少一格或者多一格不认的、数是 0 或者字体表是空的都读不了 |
 | `crates/miyu-mermaid/src/fonts/tests.rs` | 这台机器上读得到至少一种字体（真机验，三个平台都该过） |
+| `crates/miyu/tests/mermaid_fonts.rs`（施工 V-35） | 真的核心画一张图：数据根的 `cache/mermaid` 里只有几十字节的位置记录、没有拷下来的字体，画图的库默认的 `$XDG_CACHE_HOME/mmdr` 一个字都不写；重起核心照记下的位置再画，SVG 和头一回一字不差 |
 | `crates/miyu-endpoint/src/queries/tests.rs` | 没登记的方法交回 `None`；登记过的名字正好对上才找得到；同一个名字登记两次当场 panic |
 | `crates/miyu-core/tests/packages.rs` | 真核心走一遍：一张流程图、一张时序图都出 SVG，回应的 `marks` 和 SVG 里用的三种记号色对得上；同一份源码两次拿到一样的回应；空的 `bad_params`、超过上限 `mermaid_too_long`、画不出 `mermaid_failed`（`data.detail` 不是空的）；查询表没登记的方法（没编进来某个软件包的情形）回 `unknown_method` |
 

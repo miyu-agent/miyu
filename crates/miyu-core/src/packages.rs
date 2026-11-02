@@ -24,7 +24,7 @@ pub const NET: &str = "miyu-base-net";
 pub fn register(resources: &ResourceRoot, root: &DataRoot) -> Queries {
     let queries = Queries::new();
     #[cfg(feature = "mermaid")]
-    let queries = mermaid::register(resources, queries);
+    let queries = mermaid::register(resources, root, queries);
     #[cfg(feature = "net")]
     let queries = net::register(resources, Blobs::new(root.blobs()), queries);
     #[cfg(not(feature = "net"))]
@@ -62,7 +62,7 @@ mod mermaid {
     use miyu_endpoint::queries::QueryError;
     use miyu_mermaid::{Mermaid, RenderError};
 
-    use super::{Queries, ResourceRoot};
+    use super::{DataRoot, Queries, ResourceRoot};
 
     /// `mermaid.render` 的参数：`source` 必写（`web-module.md`「每个方法的参数和回应」）。
     #[derive(Deserialize)]
@@ -72,8 +72,10 @@ mod mermaid {
 
     /// 登记 `mermaid.render`：一个核心一份 [`Mermaid`]，交给闭包捕获，和核心的生命周期一样长
     /// （`mermaid.md`「怎么走」第 1 条：读字体、`style.json` 都等第一次调）。
-    pub(super) fn register(resources: &ResourceRoot, queries: Queries) -> Queries {
-        let mermaid = Arc::new(Mermaid::new(resources.path()));
+    /// 字体在哪个文件记在数据根的 `cache/mermaid` 下（施工 V-35）。
+    pub(super) fn register(resources: &ResourceRoot, root: &DataRoot, queries: Queries) -> Queries {
+        let mermaid =
+            Arc::new(Mermaid::new(resources.path()).with_font_cache(root.cache().join("mermaid")));
         queries.register_for(
             super::MERMAID,
             "mermaid.render",

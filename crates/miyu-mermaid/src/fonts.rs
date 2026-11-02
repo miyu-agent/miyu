@@ -4,11 +4,11 @@
 //! 不会报错：核心要的是「读不到字体」这个信号，所以这里独立探一次，不借它的。
 
 /// 这台机器上读得到至少一种字体。整个进程只探一次（扫系统的字体库慢，Windows 上能到几秒），探不到的记一条
-/// `WARN`，以后不再记。
-pub(crate) fn available() -> bool {
+/// `WARN`，以后不再记。画图的库记过 `families` 这一串字体在哪个文件、那个文件也没变的，不扫就当有（施工 V-35）。
+pub(crate) fn available(families: &str) -> bool {
     static FOUND: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *FOUND.get_or_init(|| {
-        let found = probe();
+        let found = mermaid_rs_renderer::has_remembered_font(families) || probe();
         if !found {
             tracing::warn!(target: crate::TARGET, error = "no font could be found on this system", "not ready");
         }
