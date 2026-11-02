@@ -179,3 +179,6 @@ fn memory_gets_the_recasts_and_the_last_names_heard() {
     let laid: Vec<u64> = both.laid().iter().map(|event| event.seq.get()).collect();
     assert_eq!(laid, [1]);
 }
+
+/// 派子代理的账（施工 V-37 上）：一条条记的和原来收空子会话时整份读一遍攒的一样。
+mod dispatched;

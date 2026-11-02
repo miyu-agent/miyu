@@ -91,7 +91,7 @@ pub use memory::{
 };
 pub use open::{
     Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError,
-    OfferedFeatures, PresetPlaces, ToolOverrides, Within, Workplace, create, fork, load,
+    OfferedFeatures, Placed, PresetPlaces, ToolOverrides, Within, Workplace, create, fork, load,
     load_placed, preview, preview_context,
 };
 pub use path_text::path_text;

@@ -1,9 +1,14 @@
 //! 从日志里认出来的几样（施工 3-9 六补从 `load.rs` 挪来：那一份到了行数上限）：现在的快照、最近一次记下的工作目录；载入时
-//! 边读边记的那几样（施工 V-15，[`Scan`]）。
+//! 边读边记的那几样（施工 V-15，[`Scan`]），派子代理的账（施工 V-37 上，[`Dispatched`]）。
 
-use miyu_kernel::event::{Body, Event};
-use miyu_kernel::id::ContentHash;
+use std::collections::BTreeSet;
+
+use miyu_kernel::block::Block;
+use miyu_kernel::event::{Body, Effect, Event};
+use miyu_kernel::facts::Environment;
+use miyu_kernel::id::{CallId, ContentHash, SessionId};
 use miyu_kernel::origin::Model;
+use miyu_tool::is_subagent;
 
 /// 现在的快照（施工 P-1 再补）：整份日志里最近一条带 `policy` 的 `session.policy_changed`，撤掉的回合里的也算（换快照不是
 /// 对话的一部分）；没换过的没有，照 `session.created` 的。
@@ -57,6 +62,8 @@ pub(super) struct Scan {
     pub(super) tally: crate::current::Tally,
     /// 长期目标（`Goals::of`）。
     pub(super) goals: crate::goal::Goals,
+    /// 派子代理的账（施工 V-37 上）。
+    pub(super) dispatched: Dispatched,
     /// 最后一条的时刻。
     pub(super) last: Option<miyu_kernel::time::Timestamp>,
     /// 读了几条。
@@ -124,6 +131,7 @@ impl Scan {
             }
             self.seen.note(event);
             self.roster.note(event);
+            self.dispatched.note(event);
         }
         self.tally.add(events);
         self.goals.add(events);
@@ -146,6 +154,70 @@ impl Scan {
     /// 最后一次记下的工作目录、加进来的目录（同 [`remembered`]）。
     pub(super) fn remembered(&self) -> (Option<String>, Vec<String>) {
         (self.cwd.clone(), self.dirs.clone().unwrap_or_default())
+    }
+}
+
+/// 载入交回的（施工 V-2 三补、V-37 上）：会话这时在哪干活，要不要认它派到一半的空子会话。
+#[derive(Debug)]
+pub struct Placed {
+    /// 在哪干活：照日志里最后一次记下的挑的，会话表照它记，不用再问 actor（施工 V-2 三补）。
+    pub environment: Environment,
+    /// 要不要认它派到一半的空子会话（施工 V-37 上，`agents.md` 第一条第 8 条）：日志里派子代理的调用，结果里都记下了
+    /// `job.started` 的不用认，是 `None`；有没记下的，是记下了的那些子会话，会话表里 `parent` 是它、又不在这里面的才是空
+    /// 子会话。照载入读完日志的那一刻。
+    pub recorded: Option<BTreeSet<SessionId>>,
+}
+
+/// 派子代理的账（施工 V-37 上）：派出去的 `subagent` 调用（以前造的会话里叫 `agent`，也算），结果里带着子会话的
+/// `job.started` 的调用和那些子会话。原来收空子会话时另把整份日志读一遍攒这三样，现在载入时一条条记；只看自己的日志，
+/// 分叉出来的底子不算（同原来只读自己的目录）。
+#[derive(Debug, Default)]
+pub(super) struct Dispatched {
+    /// 派子代理的调用。
+    calls: BTreeSet<CallId>,
+    /// 结果里带着子会话的 `job.started` 的调用。
+    started_calls: BTreeSet<CallId>,
+    /// 那些 `job.started` 里的子会话。
+    started: BTreeSet<SessionId>,
+}
+
+impl Dispatched {
+    /// 记下一条。
+    fn note(&mut self, event: &Event) {
+        match &event.body {
+            Body::MessageAssistant(reply) => {
+                self.calls
+                    .extend(reply.blocks.iter().filter_map(|block| match block {
+                        Block::ToolCall(call) if is_subagent(&call.name) => Some(call.call_id),
+                        _ => None,
+                    }));
+            }
+            Body::ToolResult(result) => {
+                for effect in &result.effects {
+                    if let Effect::JobStarted(job) = effect
+                        && let Some(session) = &job.session
+                    {
+                        self.started_calls.insert(result.call_id);
+                        self.started.insert(session.clone());
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// 读完了，连同在哪干活 `environment` 交回。
+    pub(super) fn placed(self, environment: Environment) -> Placed {
+        Placed {
+            environment,
+            recorded: self.recorded(),
+        }
+    }
+
+    /// 要不要认（[`Placed::recorded`]）：派子代理的调用都在带着子会话的 `job.started` 的调用里的不用认；不然交回记下了的
+    /// 子会话。
+    fn recorded(self) -> Option<BTreeSet<SessionId>> {
+        (!self.calls.is_subset(&self.started_calls)).then_some(self.started)
     }
 }
 

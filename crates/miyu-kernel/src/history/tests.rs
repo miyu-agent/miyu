@@ -5,6 +5,7 @@
 use super::*;
 use crate::ledger::Ledger;
 
+mod fit;
 mod jobs;
 mod ordered;
 mod recall;

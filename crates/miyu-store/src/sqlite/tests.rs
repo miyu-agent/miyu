@@ -42,3 +42,31 @@ fn an_existing_folder_needs_no_marker() {
     let (db, opened) = open(&dir.join("x.db"), SCHEMA, 1);
     assert!(db.is_some(), "{opened:?}");
 }
+
+/// 再开一份有东西的库（施工 V-37 上）：查过、放掉查时读进来的页以后，照旧是原来那一份，读得回来、写得进。
+#[test]
+fn a_kept_database_still_reads_back_after_the_check() {
+    let scratch = Scratch::bare();
+    let root = scratch.path().join("root");
+    fs::create_dir_all(&root).expect("建得了");
+    fs::write(root.join(MARKER), "x").expect("写得进");
+    let path = root.join("index/x.db");
+    let (db, _) = open(&path, SCHEMA, 1);
+    db.expect("开得了")
+        .execute_batch(
+            "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 5000)
+             INSERT INTO t SELECT x FROM c",
+        )
+        .expect("写得进");
+    let (db, opened) = open(&path, SCHEMA, 1);
+    assert!(matches!(opened, Opened::Kept), "{opened:?}");
+    let db = db.expect("开得了");
+    db.execute("INSERT INTO t (x) VALUES (5001)", [])
+        .expect("写得进");
+    let (count, sum): (i64, i64) = db
+        .query_row("SELECT count(*), sum(x) FROM t", [], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })
+        .expect("读得回来");
+    assert_eq!((count, sum), (5001, 5001 * 5002 / 2));
+}

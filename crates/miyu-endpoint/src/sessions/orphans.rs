@@ -6,29 +6,34 @@
 //!
 //! 只在父会话的日志里有没派成的 `subagent` 调用（结果里没有 `job.started`，或者还没有结果）时才去认：认要把会话表里每个会话
 //! 的第一条都读一遍，平常的载入不该为它慢下来。改名以前造的会话，日志里的调用叫 `agent`，一样认（施工 7-5 再补）。
+//!
+//! 有没有没派成的调用、哪些子会话记下了 `job.started`，是载入读日志时一条条记下交回的（施工 V-37 上，
+//! `miyu_session::Placed::recorded`）：原来这里另把父会话的整份日志读一遍，大会话每载入一次多一份整份日志在内存里。照的是
+//! 载入读完日志的那一刻，比原来后台读完的那一刻早，不晚。
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Effect};
+use miyu_kernel::event::Body;
 use miyu_kernel::id::SessionId;
-use miyu_store::log::{first_event, read_events};
+use miyu_store::log::first_event;
 use miyu_store::root::DataRoot;
 use miyu_store::trash;
-use miyu_tool::is_subagent;
 
 use super::delete::descendants;
 use super::{Open, now};
 use crate::Core;
 use crate::list::forget;
 
-/// 在后台收掉会话 `parent` 派到一半的空子会话：先不拿表的锁认，认出来有的再拿锁收（[`Open::remove_orphans`]）。
-pub(super) fn sweep_later(core: &Arc<Core>, parent: SessionId) {
+/// 在后台收掉会话 `parent` 派到一半的空子会话：先不拿表的锁认，认出来有的再拿锁收（[`Open::remove_orphans`]）。`recorded`
+/// 是它的日志里记下了 `job.started` 的子会话（载入时记下的）。
+pub(super) fn sweep_later(core: &Arc<Core>, parent: SessionId, recorded: BTreeSet<SessionId>) {
     let core = Arc::clone(core);
     tokio::spawn(async move {
         let (root, id) = (core.root.clone(), parent.clone());
-        let orphans = match tokio::task::spawn_blocking(move || orphans(&root, &id)).await {
+        let orphans = match tokio::task::spawn_blocking(move || orphans(&root, &id, &recorded))
+            .await
+        {
             Ok(orphans) => orphans,
             Err(error) => {
                 tracing::error!(target: "miyu::endpoint", panic = error.is_panic(), "orphan sweep panicked");
@@ -78,43 +83,14 @@ impl Open {
     }
 }
 
-/// 在阻塞线程里认：`parent` 派到一半的空子会话，连同它们派的，最深的在前。父会话的日志读不出来、会话列不出来的，当没有。
-fn orphans(root: &DataRoot, parent: &SessionId) -> Vec<SessionId> {
-    let Ok(events) = read_events(&root.session_dir(parent)) else {
-        return Vec::new();
-    };
-    let mut calls = BTreeSet::new();
-    let mut started_calls = BTreeSet::new();
-    let mut started = BTreeSet::new();
-    for event in &events {
-        match &event.body {
-            Body::MessageAssistant(reply) => {
-                calls.extend(reply.blocks.iter().filter_map(|block| match block {
-                    Block::ToolCall(call) if is_subagent(&call.name) => Some(call.call_id),
-                    _ => None,
-                }))
-            }
-            Body::ToolResult(result) => {
-                for effect in &result.effects {
-                    if let Effect::JobStarted(job) = effect
-                        && let Some(session) = &job.session
-                    {
-                        started_calls.insert(result.call_id);
-                        started.insert(session.clone());
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-    if calls.is_subset(&started_calls) {
-        return Vec::new();
-    }
+/// 在阻塞线程里认：`parent` 派到一半的空子会话，连同它们派的，最深的在前；`recorded` 是它的日志里记下了 `job.started` 的
+/// 子会话，不算。会话列不出来的，当没有。
+fn orphans(root: &DataRoot, parent: &SessionId, recorded: &BTreeSet<SessionId>) -> Vec<SessionId> {
     let Ok(ids) = root.sessions() else {
         return Vec::new();
     };
     let mut found = Vec::new();
-    for id in ids.into_iter().filter(|id| !started.contains(id)) {
+    for id in ids.into_iter().filter(|id| !recorded.contains(id)) {
         let child_of_parent = first_event(&root.session_dir(&id)).is_ok_and(|event| {
             matches!(&event.body, Body::SessionCreated(created) if created.parent.as_ref() == Some(parent))
         });

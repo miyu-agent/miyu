@@ -52,6 +52,7 @@ pub use error::{CreateError, LoadError};
 pub use face::preview;
 pub use fork::{Fork, ForkError, Within, fork};
 pub use load::{load, load_placed};
+pub use scan::Placed;
 pub(crate) use scan::current_policy;
 pub use setup::{
     Create, GroupSettings, Installed, Load, OfferedFeatures, PresetPlaces, ToolOverrides, Workplace,

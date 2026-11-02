@@ -35,7 +35,7 @@
 | `crates/miyu-session/src/report.rs` | 执行器交回报：补上任务编号、子会话，经 `SessionPort` 交给父会话；父会话载入以后叫起还没回报的子会话（施工 7-6） |
 | `crates/miyu-session/src/job_ids.rs` | 领任务编号：一个会话一份，照日志里用过的往下数，后台命令和子代理共用（施工 7-5、7-3） |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表那一头的 `SessionPort`（施工 7-5）：停下子会话、照它的日志看它（施工 7-4） |
-| `crates/miyu-endpoint/src/sessions.rs` | 会话表造子会话（施工 7-5）；删会话连子会话（`sessions/delete.rs`，施工 3-8 三补；停子会话、送回报在表的锁里，施工 7-8）；载入以后在后台收掉派到一半的空子会话（`sessions/orphans.rs`，施工 7-8；V-2 三补起在后台） |
+| `crates/miyu-endpoint/src/sessions.rs` | 会话表造子会话（施工 7-5）；删会话连子会话（`sessions/delete.rs`，施工 3-8 三补；停子会话、送回报在表的锁里，施工 7-8）；载入以后在后台收掉派到一半的空子会话（`sessions/orphans.rs`，施工 7-8；V-2 三补起在后台；V-37 上起照载入交回的认，不另读父会话的日志） |
 | `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：收下名字，记成 `harness`（施工 7-10） |
 | `crates/miyu-endpoint/src/undo/jobs.rs` | 撤销的回应里停掉的任务（`jobs`，施工 7-8，`protocol/undo.md`） |
 | `crates/miyu-sandbox/src/lifeline.rs`、`lifeline/` | 核心崩了，它起的命令跟着没（施工 7-8，`core.md`「子进程随核心退出」）：Unix 上每个组一个看门的，Windows 上核心进作业对象 |
@@ -151,7 +151,7 @@
 5. 只有本机（场所 `local`）的会话能派：场所会话里没有 `subagent`（第一版群里不能派，`18-通讯平台.md`）；外部身份只从场所会话进来，也就派不了（`11-权限与沙盒.md`）。
 6. 到了深度上限的会话，工具面里没有 `subagent`：工具面是造会话时定的，一个会话里不变（`08-上下文投影.md` C4），调了也只会被拒，不如不给。`send_message` 留着，它只能发给父。主会话没有父，`to` 写 `parent` 的照不认识的编号拒。
 7. 造不成、交代送不进去、核心正在停：这一次调用交回派不了，原因记进运行日志（`session/actor.md`「运行日志」），别的会话照常。领了的编号不回收；子会话造好了、交代没送进去的，留着一个空的子会话。
-8. 派到一半的空子会话（施工 7-8）：交代没送进去的（第 7 条），和父会话没来得及记下 `job.started` 就崩了的，父会话都认不得它。父会话载入以后在后台收掉（施工 V-2 三补：原来挡在载入的路上）：会话表里 `session.created` 的 `parent` 是它、它的日志里又没有这个子会话的 `job.started` 的，连同它们派的，在跑的停下，目录挪进回收处，最深的在前（照删会话，第七条第 5 条），一个记一行 `INFO orphan subagent removed`。只在父会话的日志里有没派成的 `subagent` 调用（以前造的会话里叫 `agent`，也算；结果里没有 `job.started`，或者还没有结果）时才去认：认要把会话表里每个会话的第一条都读一遍，平常的载入不为它慢下来（`protocol.md`「会话表」第 8 条）。
+8. 派到一半的空子会话（施工 7-8）：交代没送进去的（第 7 条），和父会话没来得及记下 `job.started` 就崩了的，父会话都认不得它。父会话载入以后在后台收掉（施工 V-2 三补：原来挡在载入的路上）：会话表里 `session.created` 的 `parent` 是它、它的日志里又没有这个子会话的 `job.started` 的，连同它们派的，在跑的停下，目录挪进回收处，最深的在前（照删会话，第七条第 5 条），一个记一行 `INFO orphan subagent removed`。只在父会话的日志里有没派成的 `subagent` 调用（以前造的会话里叫 `agent`，也算；结果里没有 `job.started`，或者还没有结果）时才去认：认要把会话表里每个会话的第一条都读一遍，平常的载入不为它慢下来（`protocol.md`「会话表」第 8 条）。有没有没派成的调用、哪些子会话记下了 `job.started`，是载入读日志时一条条记下、和把手一起交回的（施工 V-37 上，`Placed::recorded`），收的时候不再另把父会话的整份日志读一遍；照的是载入读完日志的那一刻，比原来后台读完的那一刻早，不晚。
 9. 派到一半被打断的（施工 7-5 补，2026-10-11）：派子代理那次调用被掐掉（打断、来了一句话、收紧成只读），子会话已经造好、交代还没送进去、调用还没交回的，执行器停掉它（`Unclaimed` 守着，丢掉时停，交回了解除）；派完了、结果送回来时调用已经被掐掉的（内核不要这个结果，`job.started` 没记下），照结果里的 `job.started` 停掉它（`tools/back.rs`）。停的命令编号是 `<父会话>/<任务编号>/stop`，`by` 是父会话，记一行 `INFO unclaimed subagent stopped`。子会话留在会话表里，父会话下次载入时照第 8 条收掉。
 
 **一补、fork 子代理**（施工 A-F 中起，2026-10-24 项目主人要子代理能「从当前上下文分出去」，核心主会话定六点；内核见 `session/fork.md`「fork 子代理」）
@@ -336,6 +336,7 @@
 | `crates/miyu-session/tests/jobs_stop/undo.rs`（施工 7-8） | 执行器这一头：撤销整组杀后台命令、回应之前就杀了、记 `undone`、`by`、`cause`；子代理经会话表停、回报记成它交来的；都不叫醒；自己退出的不再报；恢复不重起；结束了的不再杀 |
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 真核心：撤销、重做的回应列出停掉的，恢复不带、停过的再撤销不列 |
 | `crates/miyu-endpoint/src/sessions/delete/tests.rs`、`tests/orphans.rs`（施工 7-8） | 父会话记下子代理停了以后没人叫得醒它、它删得掉；父会话没记下的空子会话载入时挪进回收处，记下了的照留；改名以前造的父会话照样收（施工 7-5 再补） |
+| `crates/miyu-session/src/open/scan/tests/dispatched.rs`、`tests/spawn/recorded.rs`（施工 V-37 上） | 载入时一条条记的「要不要认、哪些记下了」和原来整份读一遍攒的一样：照种子造的三千份日志切成几条一块喂；真会话没派过、派成了、派不成、两个只派成一个、没记下结果就崩了、改名以前的 `agent` |
 | `crates/miyu/tests/crash.rs`、`crates/miyu-sandbox/src/lifeline/tests.rs`（施工 7-8） | 真的 `miyu core` 被硬杀，后台命令（Unix 上连它起的孙进程）跟着停，三个平台都跑；生命线断了看门的杀整组 |
 
 以后照每一步补。至少：内核的单元测试和场景（开始、结束、载入补中断、子会话回报的条件）；工具面的预算；真核心走一遍后台命令。

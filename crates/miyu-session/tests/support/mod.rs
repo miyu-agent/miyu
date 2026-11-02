@@ -42,9 +42,9 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
     Configs, Create, Handle, Jobs, Lineage, Load, Models, Pushed, SandboxCache, SessionPort,
-    Stopped, Subscription, create, load, new_id,
+    Stopped, Subscription, create, load_placed, new_id,
 };
-use miyu_session::{Memory, SummaryTexts, Workplace};
+use miyu_session::{Memory, Placed, SummaryTexts, Workplace};
 use miyu_store::env::{Env, Platform};
 use miyu_store::index::{FILE, SessionIndex};
 use miyu_store::log::read_events;
@@ -304,8 +304,22 @@ impl Home {
         place: Workplace<'_>,
         sessions: Option<Arc<dyn SessionPort>>,
     ) -> Handle {
+        self.placing(session, models, tools, place, sessions)
+            .await
+            .0
+    }
+
+    /// 同 [`Home::load_placed`]，另交回载入交回的那几样（施工 V-37 上：要不要认派到一半的空子会话）。
+    pub async fn placing(
+        &self,
+        session: &SessionId,
+        models: &dyn Models,
+        tools: &Catalog,
+        place: Workplace<'_>,
+        sessions: Option<Arc<dyn SessionPort>>,
+    ) -> (Handle, Placed) {
         let tools = &miyu_tool::Shelf::new(tools.clone());
-        let loaded = load(Load {
+        let loaded = load_placed(Load {
             root: &self.root,
             personas: miyu_store::personas::Personas::new(&self.resources, &self.root),
             resources: &self.resources,

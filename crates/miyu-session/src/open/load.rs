@@ -36,7 +36,7 @@ use crate::spawn::Lineage;
 use crate::store::{Indexed, LogDir};
 use crate::tools::ToolKit;
 
-use super::{Load, LoadError, Workplace};
+use super::{Load, LoadError, Placed, Workplace};
 use crate::default_workspace::DefaultWorkspace;
 
 mod stream;
@@ -52,12 +52,12 @@ pub async fn load(setup: Load<'_>) -> Result<Handle, LoadError> {
     Box::pin(load_placed(setup)).await.map(|(handle, _)| handle)
 }
 
-/// 同 [`load`]，另交回会话这时在哪干活（施工 V-2 三补）：照日志里最后一次记下的挑的，会话表照它记，不用再问 actor。
+/// 同 [`load`]，另交回会话这时在哪干活（施工 V-2 三补）、要不要认它派到一半的空子会话（施工 V-37 上），见 [`Placed`]。
 ///
 /// # Errors
 ///
 /// 同 [`load`]。
-pub async fn load_placed(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
+pub async fn load_placed(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
     let loaded = open(setup).await?;
     // 载入读、解的整份日志只留最近一次压缩以后的（23 F3，施工 V-2 再补）：别的放掉了，还给系统，不等会话退下。
     drop(tokio::task::spawn_blocking(miyu_heap::trim));
@@ -65,7 +65,7 @@ pub async fn load_placed(setup: Load<'_>) -> Result<(Handle, Environment), LoadE
 }
 
 /// 载入，读、解日志用的都在这里放掉。
-async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
+async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
     let Load {
         root,
         personas,
@@ -272,7 +272,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
     let (roster, sent, tally, goals) = (scan.roster, scan.sent, scan.tally, scan.goals);
     let scanned = scanning.elapsed();
     let replaying = Instant::now();
-    let placed = environment.clone();
+    let placed = scan.dispatched.placed(environment.clone());
     let (mut session, first) = match loaded {
         stream::Loaded::Fed(loader) => loader.finish(clock.now(), policy, environment),
         stream::Loaded::Whole { base, events } => match base {

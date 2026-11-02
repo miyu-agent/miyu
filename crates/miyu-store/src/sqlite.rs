@@ -2,7 +2,8 @@
 //! 用量汇总（施工 8-15，[`crate::usage`]）共用。库是派生的：日志才是真相，读不了、坏了、版本不对的删掉建一份空的，空的照
 //! 日志补，就是重建；结构变了也是删掉重建，不写迁移。
 //!
-//! - 版本记在 SQLite 的 `user_version` 里；0 是新文件，建表、记下版本；对得上的跑一次 `quick_check`。
+//! - 版本记在 SQLite 的 `user_version` 里；0 是新文件，建表、记下版本；对得上的跑一次 `quick_check`，查完放掉这条连接为
+//!   它读进来的页（`shrink_memory`，施工 V-37 上：查一遍把整个库读进页缓存，不放的话一直占着，回合库量到 2.3 MB）。
 //! - 日志模式 WAL、`synchronous` 是 `NORMAL`：提交时不同步，断电最多丢最后几次更新，库不会坏，丢了的照日志补。
 //! - 一个库一个进程只开一个连接，一直开着：打开再关上同一个库文件会丢掉 SQLite 在这个进程里的文件锁（07 第六节，旧版
 //!   把库弄坏过）。删的时候连同 `-wal`、`-shm` 三个一起删。
@@ -91,6 +92,8 @@ pub(crate) fn connect(
             if checked != "ok" {
                 return Err(DbError::Bad(format!("quick_check: {checked}")));
             }
+            // 查的时候读进来的页放掉（施工 V-37 上）：之后用到再读，结果不变。放不掉只是多占内存，不算库坏了。
+            drop(db.execute_batch("PRAGMA shrink_memory"));
         }
         other => return Err(DbError::Bad(format!("version {other}, not {version}"))),
     }

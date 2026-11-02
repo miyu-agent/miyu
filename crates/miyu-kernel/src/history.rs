@@ -6,6 +6,8 @@
 //!
 //! 撤销能撤掉压缩（施工 6-9）：更早的那一段从日志读回来，从留着一切的一份（[`History::whole`]）收起，收完落到
 //! 检查点上（[`History::settle`]，`docs/blueprint/kernel/history.md`「从日志的一段重建」）。载入也这样重建。
+//!
+//! 压缩以后多出来的容量放掉（施工 V-37 上）：不然压缩以前长到多少条，就一直占着多少条的地方。
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -20,6 +22,9 @@ mod undo;
 pub use jobs::Dispatched;
 pub use states::touches as touches_states;
 pub(crate) use todos::clears;
+
+/// 压缩以后空着多少条以上才缩（施工 V-37 上，[`fit`]）。一条 `Event` 占 512 字节，256 条是 128 KB。
+const SLACK: usize = 256;
 
 /// 一个会话的有效历史：最近一次压缩的检查点，加上它之后还有效的事件。
 ///
@@ -294,6 +299,7 @@ impl History {
             let upto = compacted.upto;
             self.events
                 .retain(|kept| kept.seq > upto && !matches!(kept.body, Body::ContextCompacted(_)));
+            fit(&mut self.events);
         }
         self.checkpoint = Some(checkpoint);
         self.recalled.clear();
@@ -323,6 +329,7 @@ impl History {
             Body::ContextCompacted(compacted) => {
                 let upto = compacted.upto;
                 self.events.retain(|kept| kept.seq > upto);
+                fit(&mut self.events);
                 self.checkpoint = Some(event);
                 self.undone.clear();
                 self.recalled.clear();
@@ -341,6 +348,16 @@ impl History {
             }
             _ => self.events.push(event),
         }
+    }
+}
+
+/// 压缩以后放掉多出来的容量（施工 V-37 上）：一半以上空着、空着的不止 [`SLACK`] 条的，缩到条数的一倍半，往后长先用留着的
+/// 那一半。压缩以后一般只剩几十到几百条（V-37 上量的：四万条的大会话载入以后有效历史 1,837 条、容量 2,048 条，手动压缩
+/// 以后剩 525 条；自动压缩的真会话剩 23、30 条），容量原来一直照压缩以前的留着。内容、先后不变。
+fn fit(events: &mut Vec<Event>) {
+    let (len, capacity) = (events.len(), events.capacity());
+    if capacity > len * 2 && capacity - len > SLACK {
+        events.shrink_to(len + len / 2);
     }
 }
 

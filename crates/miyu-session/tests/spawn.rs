@@ -36,6 +36,10 @@ mod moved;
 #[path = "spawn/unclaimed.rs"]
 mod unclaimed;
 
+/// 载入交回的要不要认派到一半的空子会话，和整份读日志认的一样（施工 V-37 上）。
+#[path = "spawn/recorded.rs"]
+mod recorded;
+
 /// 场所说明的原文。
 const VENUE: &str = include_str!("../../../resources/core/jobs/subagent-venue.txt");
 /// 核心的几行（施工 2-7 补）：权限那一句、本机文件的路径那一句、本机是什么系统那一句（施工 2-7 再补），一行一句。

@@ -293,7 +293,7 @@
 | `src/durable/tests.rs` 的 `only_names_made_for_writing_count_as_temporary`、`sweeping_removes_only_old_temporary_files`（施工 AS-11） | 只认写的时候起的那种名字；只删放了够久的普通文件，刚写的、目录、认不出的留着；没有这个目录不算错 |
 | `crates/miyu-store/src/root/tests.rs` | 三个平台的默认位置；`XDG_CACHE_HOME` 只挪 Linux 的缓存；`MIYU_HOME` 挪数据根、不挪缓存；空的当没设，相对的 `MIYU_HOME` 拒绝，开头的 `~` 照家目录接、`~别人` 当相对的、没有家目录时报错，相对的 `XDG_CACHE_HOME` 当没设；找不到家目录、`LOCALAPPDATA`；骨架建两次不出错、挡路的文件报错；八个线程同时建都成；工作区建一次、0700；列会话从新到旧；新建的 0700、已经有的不改；新的数据根写下标记；认不出的一个字节不动、报错写明目录和 `.miyu-root`；只有隐藏文件也不算空；进程的环境找得到 |
 | `crates/miyu-store/src/durable/tests.rs` | 一层层建、都是 0700、建两次不出错；挡路的文件报错 |
-| `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1） |
+| `crates/miyu-store/src/sqlite/tests.rs` | 数据根里开得成；数据根删了的报错、不建回来；已经有的目录不要标记（施工 TMP-1）；有东西的库查过、放掉页以后照旧读得回来、写得进（施工 V-37 上） |
 | `crates/miyu-store/src/sqlite/idle/tests.rs`（施工 V-28） | 第 14 条：写过的库合一遍以后 `-wal` 是 0 字节、行都在、别的连接从主库读得到；被动检查点不截、之后的下一次提交照 `journal_size_limit` 截回去；写过以后等得到安静；放下了的库不再合、不出错 |
 | `crates/miyu/tests/wal.rs`（施工 V-28） | 第 14 条，真核心、假模型：说过两轮、安静下来以后会话列表的索引、用量汇总、回合库的 `-wal` 都是 0 字节，这时硬杀核心，库开得了、没删掉重建、会话那一行和说过的话都在；不等安静就杀的也一样（崩溃安全不变） |
 | `crates/miyu-store/src/root/tests.rs` | 施工 TMP-1 加：`create_inside` 数据根里照建，删了的报错、不建回来 |

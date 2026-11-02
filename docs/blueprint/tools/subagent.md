@@ -18,7 +18,8 @@
 | `resources/software/basesystem/tools/subagent.json` | 说明和参数格式 |
 | `resources/software/basesystem/agent/*.txt` | 输出里给她看的两句（目录照以前的名字，「以前的名字」） |
 | `resources/software/basesystem/human/{zh,en,ja}.json` | 显示名（`subagent`、`agent` 两个键）、结果那一句 |
-| `crates/miyu-endpoint/src/sessions/orphans.rs` | 认派到一半的空子会话：日志里两个名字的调用都算（`agents.md` 第一条第 8 条） |
+| `crates/miyu-endpoint/src/sessions/orphans.rs` | 收派到一半的空子会话（`agents.md` 第一条第 8 条） |
+| `crates/miyu-session/src/open/scan.rs` 的 `Dispatched` | 载入时认日志里派子代理的调用：两个名字都算（施工 V-37 上从 `orphans.rs` 挪来） |
 
 ### 对外的样子
 

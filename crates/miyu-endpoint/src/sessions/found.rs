@@ -1,6 +1,7 @@
 //! 找会话（`docs/designs/07-存储.md` 第七节「会话按需载入」）：在跑的直接交回，没在跑的从磁盘载入（施工 7-8 从
 //! `sessions.rs` 挪来：删会话要拿着表的锁找父会话）。载入以后在后台收掉派到一半的空子会话（`orphans.rs`）。整份日志只在
-//! 载入时读一遍（施工 V-2 三补）：在哪干活交给载入顺手认，收空子会话不挡着载入。
+//! 载入时读一遍（施工 V-2 三补）：在哪干活交给载入顺手认，收空子会话不挡着载入；要不要收、哪些子会话记下了，也是载入
+//! 顺手记下交回的（施工 V-37 上），收的时候不再另读一遍父会话的日志。
 
 use std::sync::Arc;
 
@@ -16,7 +17,7 @@ use crate::spawn;
 
 impl Open {
     /// 找会话 `id`，表的锁在调的一方手里（[`super::Sessions::get`]）：在跑的直接交回；没在跑的从磁盘载入，载入以后在后台
-    /// 收掉它派到一半的空子会话（施工 7-8，V-2 三补起不挡着载入）。
+    /// 收掉它派到一半的空子会话（施工 7-8，V-2 三补起不挡着载入；V-37 上起日志里派子代理的调用都记下了的不起这一趟）。
     pub(super) async fn found(
         &mut self,
         core: &Arc<Core>,
@@ -83,16 +84,18 @@ impl Open {
             }
         };
         // 表里记的照载入挑定的：载入交回来，不拿着表的锁去问 actor（它头一批要做的事可能也要表的锁）。
-        let workspace = placed.cwd;
+        let workspace = placed.environment.cwd;
         self.running.insert(
             id.clone(),
             Running {
                 handle: handle.clone(),
                 workspace: workspace.clone(),
-                dirs: placed.dirs,
+                dirs: placed.environment.dirs,
             },
         );
-        super::orphans::sweep_later(core, id.clone());
+        if let Some(recorded) = placed.recorded {
+            super::orphans::sweep_later(core, id.clone(), recorded);
+        }
         Ok(Found {
             handle,
             cwd: workspace,
