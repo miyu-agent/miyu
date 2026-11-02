@@ -136,6 +136,7 @@ Windows 的沙盒只禁命令起来那一刻已有的，嵌在禁止里的放开
 1. **不认旧布局**（2026-11-02 项目主人定：还没发版，不做旧版兼容，代码整个改掉）：标记换名 `.miyu-layout`，新程序只认它、读里面的版本，不是 `layout 3` 的不动、报错停下：「这是旧版 Miyu 的数据根（layout 2），新版不认；设 `MIYU_HOME` 指到一个空目录，旧数据照施工单 FH-7 自己搬」。旧标记 `.miyu-root` 的数据根新程序不认（目录不空、没有新标记，照「认不出的不动」）；反过来旧的核心、头、沙盒助手只认 `.miyu-root`，碰到新数据根也认不出、不往里写（`run/` 下几样的位置没变，旧头连得上新核心，没有换名的话旧程序会照旧布局往新数据根里建 `state/` 这些）。产品里不写搬家。
 2. **主人那一份部署**（数据根 `/home/shorin/.cache/miyu-tui-home`，包装脚本 `~/.local/bin/miyu-remake` 写死；`~/.miyu` 是旧版 Miyu 的活数据，不碰）：现有的数据可以不要，只留配置和 im 的赞助账本（2026-11-02 项目主人定）。同一个路径新开数据根（旧的整个改名留着），拷配置类的文件（`config.toml`、`secrets.toml`、`access.json`、`logins.json`、`extensions.json`）、`miyu-im-sponsor` 的 `sponsors.json`、人格 `persona-1`、预设 `dev.toml`、`minimal.toml`（人格和预设 2026-11-02 主人定留）。
    - 她的记忆也留（2026-11-03 主人定）：记忆日志 `modules/memory/`（每个人格一份，连 `_none`）搬进 `root/memory/`；她记下的每一条带出处（哪个会话第几轮），出处全在不在了的会话里的召回、列出、搜都当它不在（`memory.md`「怎么走」第三条第 3、4 款），所以会话 `sessions/` 一起搬进 `root/sessions/`，会话引用的 `blobs/` 搬进 `root/blobs/`。会话日志里写着的数据根里的绝对路径（附件、默认工作区）照前缀整体换成新位置，换完逐字节核对；回忆库、会话列表、用量这些派生的不搬，新核心照日志重建。回收处里的会话不搬（出处在那里的本来就不算数）。
+   - im 的场所卡片也留（2026-11-03 主人定）：`state/packages/miyu-im/cards.json`（主人在后台页设的四张群卡，就是群白名单，另有私聊卡和默认值；不搬的话白名单回到出厂）→ `var/lib/miyu-im/cards.json`，旁边的 `home.json` 有的话一起拷，逐字节核对、计入底数。
    - im 的两份手改的配置照配置类拷：`venues.d/` → `etc/miyu-im/venues.d/`、`modules/miyu-im/moderation.txt` → `etc/miyu-im/moderation.txt`（有的才拷）。
    - 终端的输入历史也留（2026-11-03 主人定）：`state/packages/miyu-tui/history.jsonl` → `var/lib/miyu-tui/history.jsonl`，和记忆、赞助账本一样拷完核对行数、SHA-256。
    - 知识库、im 自己的记录（`state/packages/miyu-im/` 下的记录库、统计）不搬。
