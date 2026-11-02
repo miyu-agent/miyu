@@ -106,7 +106,7 @@ impl Core {
         if std::mem::replace(&mut state.watched, true) {
             return;
         }
-        let layer = self.root.path().to_path_buf();
+        let layer = self.root.user_layer();
         for tree in TREES {
             let dir = layer.join(tree);
             if let Err(error) = std::fs::create_dir_all(&dir) {
@@ -117,7 +117,7 @@ impl Core {
             let watched = watch_tree(&dir, move |path: &Path| {
                 if let Some(core) = weak.upgrade() {
                     let shown = path
-                        .strip_prefix(core.root.path())
+                        .strip_prefix(core.root.user_layer())
                         .unwrap_or(path)
                         .to_string_lossy()
                         .replace('\\', "/");

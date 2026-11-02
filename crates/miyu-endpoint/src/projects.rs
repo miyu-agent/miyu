@@ -230,7 +230,7 @@ async fn known(core: &Core, project: &Project) -> Result<(), Refusal> {
 
 /// 项目文件。
 fn file(core: &Core) -> PathBuf {
-    core.root.path().join(projects::FILE)
+    core.root.projects_file()
 }
 
 /// 读项目：读不成的记一行、内部出错（不替人改坏了的文件）。

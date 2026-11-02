@@ -87,7 +87,7 @@ pub fn main(options: Options) -> ExitCode {
     };
     // 装上时照 `MIYU_LOG`（没设、读不懂的是 INFO），读完配置再照 `log.level` 换（施工 8-2）。
     let level = miyu_log::level(std::env::var("MIYU_LOG").ok().as_deref());
-    let logs = root.state().join("logs");
+    let logs = root.logs();
     let log = match miyu_log::install(&logs, "core", level.filter, env.home.as_deref()) {
         Ok(guard) => guard,
         Err(error) => return failed("log", error.to_string()),
@@ -126,7 +126,7 @@ pub fn main(options: Options) -> ExitCode {
             .unwrap_or_default(),
         models::cache(&env),
         env.exe.clone(),
-        Some(root.state().join("models")),
+        Some(models::dirs(&root)),
     );
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(WORKERS)
@@ -356,7 +356,7 @@ async fn run(
     (config, live): (miyu_endpoint::config::Config, Live),
     catalog: models::Early,
 ) -> ExitCode {
-    let routes = match models::prepare(&resources, Some(root.state().join("models"))) {
+    let routes = match models::prepare(&resources, Some(models::dirs(&root))) {
         Ok(routes) => routes,
         Err(error) => return failed("models", error),
     };
@@ -367,10 +367,10 @@ async fn run(
     let reading = models::begin(
         Arc::clone(&model_data),
         catalog,
-        Some(root.state().join("models")),
+        Some(models::dirs(&root)),
         Some(config.resolved().clone()),
     );
-    let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.state()));
+    let sandbox = sandbox::probe(env.exe.as_deref(), Some(&root.sandbox_probe_dir()));
     let sandbox_cache = sandbox::cache(&env, std::env::var_os("CARGO_HOME"));
     let embedder = embed::setup(&env, &live.found);
     let kit = Kit::new(&resources);
@@ -379,7 +379,7 @@ async fn run(
         Err(error) => return failed("tools", error),
     };
     let (trashed, cached) = (root.clone(), root.clone());
-    let logs = root.state().join("logs");
+    let logs = root.logs();
     let (generated, words, held) = (root.clone(), resources.clone(), resources.clone());
     let queries = packages::register(&resources, &root);
     #[cfg(feature = "net")]

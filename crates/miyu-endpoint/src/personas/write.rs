@@ -155,7 +155,7 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     let personas = personas(core);
     let packages = core.packages_of();
     let language = peer.language;
-    let state = core.root.state();
+    let state = core.root.persona_picture_cache();
     tokio::task::spawn_blocking(move || {
         let below = (packages.as_slice(), &personas);
         let found = match params.persona {

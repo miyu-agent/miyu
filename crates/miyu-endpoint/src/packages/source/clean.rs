@@ -7,8 +7,6 @@ use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use super::super::packages;
-use super::download;
 use crate::Core;
 use crate::refusal::Refusal;
 
@@ -23,7 +21,7 @@ pub(crate) async fn clean(core: &Arc<Core>) -> Result<Value, Refusal> {
             Some(format!("{}-{version}", found.id))
         })
         .collect();
-    let cache = download::cache_dir(packages(core).state_root());
+    let cache = core.root.package_downloads();
     let (removed, freed) = tokio::task::spawn_blocking(move || sweep(&cache, &keep))
         .await
         .map_err(|_| Refusal::INTERNAL)?;

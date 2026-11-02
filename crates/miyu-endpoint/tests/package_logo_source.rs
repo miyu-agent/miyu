@@ -114,7 +114,7 @@ async fn a_logo_in_a_source_is_listed_by_version_and_fetched_once() {
 
     let liar = client.call("x", "package.logo", read("liar")).await;
     assert_eq!(liar["error"]["data"]["reason"], "download_failed", "{liar}");
-    let mut cached: Vec<String> = std::fs::read_dir(home.root.state().join("packages/.sync/logos"))
+    let mut cached: Vec<String> = std::fs::read_dir(home.root.official_feed().join("logos"))
         .expect("有")
         .flatten()
         .map(|entry| entry.file_name().to_string_lossy().into_owned())

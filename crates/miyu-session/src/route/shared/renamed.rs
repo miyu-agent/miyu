@@ -3,7 +3,7 @@
 
 use miyu_models::observed::Renamed;
 
-use super::{ModelData, TARGET};
+use super::{ModelData, Shelf, TARGET};
 
 impl ModelData {
     /// 旧编号 `from` 现在叫什么；没改过名的没有。
@@ -24,14 +24,18 @@ impl ModelData {
         let (learned, renamed) = (observed.learned.to_json(), observed.renamed.to_json());
         drop(observed);
         tracing::info!(target: TARGET, "provider renamed");
-        self.write("learned.json", &learned);
-        self.write("renamed.json", &renamed);
+        self.write(Shelf::State, "learned.json", &learned);
+        self.write(Shelf::State, "renamed.json", &renamed);
         if let Some(list) = list {
-            self.write(&format!("providers/{to}.json"), &list.to_json());
-            if let Some(dir) = &self.dir {
+            self.write(
+                Shelf::Cache,
+                &format!("providers/{to}.json"),
+                &list.to_json(),
+            );
+            if let Some(dirs) = &self.dir {
                 // 没有的不要紧：本来就是派生的
                 let _gone =
-                    std::fs::remove_file(dir.join("providers").join(format!("{from}.json")));
+                    std::fs::remove_file(dirs.cache.join("providers").join(format!("{from}.json")));
             }
         }
     }

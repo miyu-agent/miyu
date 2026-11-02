@@ -2,7 +2,7 @@
 //! 头像的候选主色（`seeds`，施工 P-6 补，`docs/blueprint/personas.md`「主题色、背景图」第 4 条：照 `miyu-seeds` 挑最多 4 个）。
 //!
 //! 算一次要整份读图、解图：debug 编的核心解一张 577 KB 的 JPEG 要 0.77 秒，release 编 0.04 秒（施工 V-16 量的）。原来只记在
-//! 这个进程里，核心一重启第一次 `persona.list` 就要现场算，终端的人格框跟着等。现在记在 `state/personas/pictures.json`：照图的
+//! 这个进程里，核心一重启第一次 `persona.list` 就要现场算，终端的人格框跟着等。现在记在人格图片的缓存里（`DataRoot::persona_picture_cache` 下的 `pictures.json`）：照图的
 //! 位置、大小、修改时刻认，三样都对得上的照记下的给，不读图；对不上的（换了图）重算、写回。它是派生的数据，坏了、删了照空的
 //! 算，下一次重算。读盘、解图，在阻塞线程里调。
 
@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 
 use miyu_kernel::id::ContentHash;
 
-/// 记在 `state/` 下面的哪个文件。
-const FILE: &str = "personas/pictures.json";
+/// 记在缓存目录（[`miyu_store::root::DataRoot::persona_picture_cache`]）下面的哪个文件。
+const FILE: &str = "pictures.json";
 
 /// 最多记几张图：人格就那么几个，超了整个清掉重来。
 const KEEP: usize = 256;
@@ -56,7 +56,7 @@ struct Book {
 /// 这个进程里的一份：第一次用时从 `state/` 读。
 static BOOK: LazyLock<Mutex<Option<(PathBuf, Book)>>> = LazyLock::new(|| Mutex::new(None));
 
-/// 看一张图：`state` 是数据根的 `state/`，`path` 是图，`seeds` 要不要挑候选主色。图不在、读不了的是 `None`。
+/// 看一张图：`state` 是缓存目录（`DataRoot::persona_picture_cache`），`path` 是图，`seeds` 要不要挑候选主色。图不在、读不了的是 `None`。
 pub(crate) fn look(state: &Path, path: &Path, seeds: bool) -> Option<Glance> {
     let meta = std::fs::metadata(path).ok()?;
     let modified = meta

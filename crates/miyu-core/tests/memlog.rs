@@ -18,7 +18,7 @@ use support::Home;
 
 /// 记下的几行。
 fn lines(home: &Home) -> Vec<Value> {
-    std::fs::read_to_string(home.root.state().join("logs").join(FILE))
+    std::fs::read_to_string(home.root.logs().join(FILE))
         .unwrap_or_default()
         .lines()
         .map(|line| serde_json::from_str(line).expect("一行一个 JSON"))
@@ -49,7 +49,7 @@ async fn the_core_samples_itself_at_start_and_on_the_tick() {
         every: Duration::from_millis(200),
         grew: u64::MAX,
     };
-    let sampling = memlog::spawn(&core, &home.root.state().join("logs"), timing);
+    let sampling = memlog::spawn(&core, &home.root.logs(), timing);
     if !cfg!(any(target_os = "linux", target_os = "macos")) {
         assert!(sampling.is_none(), "量不出来的平台不起");
         tokio::time::sleep(Duration::from_millis(300)).await;
@@ -93,7 +93,7 @@ async fn growing_fast_takes_one_more_sample_when_things_settle() {
         every: Duration::from_secs(3600),
         grew: 16 * 1024 * 1024,
     };
-    let sampling = memlog::spawn(&core, &home.root.state().join("logs"), timing).expect("量得出");
+    let sampling = memlog::spawn(&core, &home.root.logs(), timing).expect("量得出");
     until_why(&home, "start").await;
     sampling.ledger.settled().await;
     assert_eq!(lines(&home).len(), 1, "没涨够不采");

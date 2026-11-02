@@ -94,6 +94,7 @@ impl Site {
             workspace: self.at("work"),
             dirs: Vec::new(),
             data_root: self.at("data"),
+            knowledge: self.at("data/kb"),
             temp: self.at("tmp"),
             readable: vec![self.at("sys"), self.at("home/.cargo")],
             shelves: Vec::new(),

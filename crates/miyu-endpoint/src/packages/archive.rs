@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use miyu_source::archive::{self, EXTENSION};
 
-use super::{TARGET, packages};
+use super::TARGET;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -52,7 +52,7 @@ pub(super) async fn install(
     if !path.is_file() {
         return Err(Refusal::PATH_UNREADABLE);
     }
-    let into = staging(&packages(core).state_root().join(".unpack"));
+    let into = staging(&core.root.unpack_staging());
     let (file, place) = (path.to_path_buf(), into.clone());
     let unpacked = tokio::task::spawn_blocking(move || archive::unpack(&file, &place))
         .await

@@ -46,7 +46,14 @@ fn touch(root: &Path, relative: &str) {
 
 /// 不挡任何路径的边界表：工作区就是这个目录本身，数据根指到一个不存在的地方。
 fn permissive(root: &Path) -> Boundary {
-    let places = Places::here(root.to_path_buf(), root.join("does-not-exist"), None);
+    let places = Places::here(
+        root.to_path_buf(),
+        (
+            root.join("does-not-exist"),
+            root.join("does-not-exist").join("kb"),
+        ),
+        None,
+    );
     Boundary::new(&places)
 }
 
@@ -124,7 +131,11 @@ fn entries_in_the_forbidden_zone_are_skipped_but_siblings_still_list() {
     touch(&scratch.0, "data/secret.txt");
     touch(&scratch.0, "keep.txt");
     // 工作区在别处，数据根是 `data/`：`data/` 这一条自己落进「谁都不能碰」那一片。
-    let places = Places::here(scratch.0.join("elsewhere"), scratch.0.join("data"), None);
+    let places = Places::here(
+        scratch.0.join("elsewhere"),
+        (scratch.0.join("data"), scratch.0.join("data").join("kb")),
+        None,
+    );
     let boundary = Boundary::new(&places);
 
     let (entries, _) = list_dir(&scratch.0, "", &boundary).expect("列得了");

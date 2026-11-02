@@ -65,8 +65,8 @@ pub struct ModelData {
     pointers: Mutex<Pointers>,
     /// 冷却表和 `[models.cooldown]` 的规矩（施工 8-9）：另一把锁，只在内存里。
     cooldowns: Mutex<(Cooldowns, Rules)>,
-    /// `state/models`：用出来的、供应商的列表、池的指针写在这里。没有的不写（测试里）。
-    dir: Option<PathBuf>,
+    /// 用出来的、供应商的列表、池的指针写在哪两处（[`ModelDirs`]）。没有的不写（测试里）。
+    dir: Option<ModelDirs>,
     /// 拉供应商的列表用的客户端（`miyu_http::fetcher`）；没有的不拉。
     fetcher: Option<Client>,
     /// 探本机的服务用的客户端（不走代理，施工 8-11）；没有的不探。
@@ -106,8 +106,8 @@ pub struct Observed {
 }
 
 impl ModelData {
-    /// 档案、认原厂的表读好了，目录还没读完。用出来的、供应商的列表写进 `dir`（`state/models`）。
-    pub fn new(profiles: Profiles, vendors: Vendors, dir: Option<PathBuf>) -> ModelData {
+    /// 档案、认原厂的表读好了，目录还没读完。用出来的、供应商的列表写进 `dir` 那两处。
+    pub fn new(profiles: Profiles, vendors: Vendors, dir: Option<ModelDirs>) -> ModelData {
         ModelData {
             profiles,
             vendors,
@@ -284,7 +284,7 @@ impl ModelData {
         tracing::info!(target: TARGET, provider, model, window, "learned window");
         let text = observed.learned.to_json();
         drop(observed);
-        self.write("learned.json", &text);
+        self.write(Shelf::State, "learned.json", &text);
     }
 
     /// 编号 `provider` 的列表什么时候拉的；没拉过的没有。
@@ -297,7 +297,7 @@ impl ModelData {
     pub fn set_list(&self, provider: &str, list: ProviderList) {
         let text = list.to_json();
         let previous = self.lock().lists.insert(provider.to_string(), list.clone());
-        self.write(&format!("providers/{provider}.json"), &text);
+        self.write(Shelf::Cache, &format!("providers/{provider}.json"), &text);
         if previous.is_none_or(|previous| previous.models != list.models) {
             #[expect(
                 clippy::let_underscore_must_use,
@@ -337,7 +337,7 @@ impl ModelData {
     /// 把池的指针写进 `state/models/pools.json`（在阻塞线程里调）：拿着指针的锁写，写的总是这一刻最新的。
     pub fn save_pointers(&self) {
         let pointers = self.pointers();
-        self.write("pools.json", &pointers.to_json());
+        self.write(Shelf::State, "pools.json", &pointers.to_json());
     }
 
     /// 换上 `[models.cooldown]` 的规矩（施工 8-9）：核心起来时、配置换了时当场换，下一次出错用新的。
@@ -366,29 +366,67 @@ impl ModelData {
         self.pointers.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// 写 `state/models/<name>`。写不成的记一行，内存里照样用：它是派生数据。
-    fn write(&self, name: &str, text: &str) {
-        let Some(dir) = &self.dir else {
+    /// 写 `shelf` 那一处下的 `name`。写不成的记一行，内存里照样用：丢了重新学、重新拉。
+    fn write(&self, shelf: Shelf, name: &str, text: &str) {
+        let Some(dirs) = &self.dir else {
             return;
         };
         let path = name
             .split('/')
-            .fold(dir.clone(), |path, part| path.join(part));
+            .fold(dirs.of(shelf).to_path_buf(), |path, part| path.join(part));
         if let Err(error) = miyu_store::generated::write_inside(&path, text.as_bytes()) {
             tracing::warn!(target: TARGET, file = name, error = %error, "model data not written");
         }
     }
 }
 
-/// 读 `state/models/` 下的用出来的、供应商的列表、池的指针（在阻塞线程里调）：没有的、读不了的、坏的当没有，坏的记一行
-/// `WARN`。
-pub fn read_observed(dir: &Path) -> Observed {
+/// 路由写东西的两处（施工 FH-2，设计 `55-数据根仿FHS.md`）：`state` 放用出来的（学到的上下文窗口、池的指针、供应商改名），
+/// 丢了要重新学；`cache` 放拉到的（供应商的模型列表、目录答的记录），能重新拉。位置照 `DataRoot::model_state`、
+/// `DataRoot::model_cache`。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelDirs {
+    /// 用出来的。
+    pub state: PathBuf,
+    /// 拉到的。
+    pub cache: PathBuf,
+}
+
+impl ModelDirs {
+    /// 两处放在同一个目录 `dir` 里（测试照它造；FH-3 以前数据根里也是同一个 `state/models/`）。
+    pub fn in_one(dir: PathBuf) -> ModelDirs {
+        ModelDirs {
+            state: dir.clone(),
+            cache: dir,
+        }
+    }
+
+    /// `shelf` 那一处。
+    fn of(&self, shelf: Shelf) -> &Path {
+        match shelf {
+            Shelf::State => &self.state,
+            Shelf::Cache => &self.cache,
+        }
+    }
+}
+
+/// 写在 [`ModelDirs`] 的哪一处。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Shelf {
+    /// 用出来的。
+    State,
+    /// 拉到的。
+    Cache,
+}
+
+/// 读 `dirs` 两处下的用出来的、供应商的列表、池的指针（在阻塞线程里调）：没有的、读不了的、坏的当没有，坏的记一行 `WARN`。
+pub fn read_observed(dirs: &ModelDirs) -> Observed {
     let read = |path: &Path| std::fs::read_to_string(path).ok();
+    let dir = &dirs.state;
     let learned = read(&dir.join("learned.json"))
         .and_then(|text| warn_if_broken(Learned::parse(&text)))
         .unwrap_or_default();
     let mut lists = BTreeMap::new();
-    if let Ok(entries) = std::fs::read_dir(dir.join("providers")) {
+    if let Ok(entries) = std::fs::read_dir(dirs.cache.join("providers")) {
         for entry in entries.flatten() {
             let path = entry.path();
             let id = path

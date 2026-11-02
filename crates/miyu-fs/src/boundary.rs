@@ -36,6 +36,8 @@ pub struct Places {
     pub dirs: Vec<PathBuf>,
     /// Miyu 的数据根。
     pub data_root: PathBuf,
+    /// 数据根里放知识库的目录（施工 FH-2：调的一方照 `DataRoot::knowledge` 给，这一层不认数据根的布局）；下面一个库一个目录。
+    pub knowledge: PathBuf,
     /// 临时目录。
     pub temp: PathBuf,
     /// 只能读的：系统目录、工具链目录。
@@ -80,7 +82,11 @@ const TOOLCHAINS: &[&str] = &[".cargo", ".rustup", ".npm", ".gitconfig"];
 impl Places {
     /// 照这台机器：临时目录、系统目录、家目录下的工具链目录，`CARGO_HOME`、`RUSTUP_HOME` 指到的地方，出厂的私密目录、只禁写
     /// 名单。家目录读不出来的，工具链目录只算环境变量指到的。
-    pub fn here(workspace: PathBuf, data_root: PathBuf, home: Option<&Path>) -> Places {
+    pub fn here(
+        workspace: PathBuf,
+        (data_root, knowledge): (PathBuf, PathBuf),
+        home: Option<&Path>,
+    ) -> Places {
         let mut readable = system_dirs();
         if let Some(home) = home {
             readable.extend(TOOLCHAINS.iter().map(|name| home.join(name)));
@@ -94,6 +100,7 @@ impl Places {
             workspace,
             dirs: Vec::new(),
             data_root,
+            knowledge,
             temp: std::env::temp_dir(),
             readable,
             shelves: Vec::new(),
@@ -127,6 +134,7 @@ pub struct Boundary {
     workspace: Option<PathBuf>,
     dirs: Vec<PathBuf>,
     data_root: Option<PathBuf>,
+    knowledge: Option<PathBuf>,
     temp: Option<PathBuf>,
     readable: Vec<PathBuf>,
     shelves: Vec<PathBuf>,
@@ -146,6 +154,7 @@ impl Boundary {
             workspace: real(&places.workspace),
             dirs: places.dirs.iter().filter_map(|dir| real(dir)).collect(),
             data_root: real(&places.data_root),
+            knowledge: real_below(&places.knowledge),
             temp: real(&places.temp),
             readable: places.readable.iter().filter_map(|dir| real(dir)).collect(),
             shelves: places.shelves.iter().filter_map(|dir| real(dir)).collect(),
@@ -238,12 +247,12 @@ impl Boundary {
         Zone::Outside
     }
 
-    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：`<数据根>/kb/<库>/` 下面的。拒绝时照它换一句，
-    /// 指她去用知识库的工具。
+    /// 真实的位置 `path` 是不是数据根里某个知识库的文档（施工 K-3 补）：放知识库的目录（[`Places::knowledge`]）下、某个库里
+    /// 面的。拒绝时照它换一句，指她去用知识库的工具。
     #[must_use]
     pub fn knowledge(&self, path: &Path) -> bool {
         let Some(inside) = self
-            .data_root
+            .knowledge
             .as_ref()
             .and_then(|root| path.strip_prefix(root).ok())
         else {
@@ -252,7 +261,7 @@ impl Boundary {
         let parts: Vec<Component<'_>> = inside.components().collect();
         matches!(
             parts.as_slice(),
-            [Component::Normal(kb), Component::Normal(_), Component::Normal(_), ..] if *kb == "kb"
+            [Component::Normal(_), Component::Normal(_), ..]
         )
     }
 
@@ -277,6 +286,19 @@ impl Boundary {
 /// 换成真实的位置；不存在、读不了的不算。
 fn real(path: &Path) -> Option<PathBuf> {
     std::fs::canonicalize(path).ok()
+}
+
+/// 同 [`real`]，还没建的几层照最近一层已经在的上级的真实位置接上后面的名字：放知识库的目录用到才建（施工 FH-2）。
+fn real_below(path: &Path) -> Option<PathBuf> {
+    let mut missing = Vec::new();
+    let mut at = path;
+    loop {
+        if let Some(found) = real(at) {
+            return Some(missing.iter().rev().fold(found, |dir, name| dir.join(name)));
+        }
+        missing.push(at.file_name()?);
+        at = at.parent()?;
+    }
 }
 
 impl Boundary {

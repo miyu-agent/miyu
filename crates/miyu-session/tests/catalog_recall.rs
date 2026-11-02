@@ -110,7 +110,11 @@ fn reader(
 
 /// 不常驻的一份：记下的是 `recalled`，写盘在 `dir`。
 fn recalling(recalled: Recalled, dir: Option<PathBuf>, reader: CatalogReader) -> ModelData {
-    let data = ModelData::new(profiles(), vendors(), dir);
+    let data = ModelData::new(
+        profiles(),
+        vendors(),
+        dir.map(miyu_session::ModelDirs::in_one),
+    );
     data.recalled(recalled, Observed::default(), reader);
     data
 }

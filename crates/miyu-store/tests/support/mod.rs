@@ -180,7 +180,7 @@ pub fn write_log(dir: &Path, events: &[Event]) -> SessionLog {
 /// 删掉汇总的库文件（连同 `-wal`、`-shm`）：下次打开是空的，照日志补满。调的一方先关上它。
 pub fn forget(root: &DataRoot) {
     for suffix in ["", "-wal", "-shm"] {
-        let mut name = root.state().join(miyu_store::usage::FILE).into_os_string();
+        let mut name = root.usage_file().into_os_string();
         name.push(suffix);
         if let Err(error) = fs::remove_file(name) {
             assert_eq!(

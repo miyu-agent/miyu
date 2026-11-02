@@ -53,3 +53,36 @@ fn only_a_changed_list_is_announced() {
     data.set_list("deepseek", list(&["c", "a"], 4));
     assert_eq!(changes.try_recv().ok(), deepseek, "先后变了也算");
 }
+
+/// 用出来的和拉到的分两处写（施工 FH-2，设计 55）：学到的窗口、池的指针在 `state`，供应商的列表在 `cache`；读回来照样两处读。
+#[test]
+fn what_is_learned_and_what_is_fetched_are_kept_apart() {
+    let scratch = std::env::temp_dir().join(format!("miyu-model-dirs-{}", std::process::id()));
+    let root = miyu_store::root::DataRoot::at(scratch.clone());
+    std::fs::create_dir_all(&scratch).expect("建得了");
+    std::fs::write(scratch.join(miyu_store::root::MARKER), "").expect("写得进");
+    let dirs = super::ModelDirs {
+        state: root.path().join("learned"),
+        cache: root.path().join("fetched"),
+    };
+    let data = ModelData::new(Profiles::default(), Vendors::default(), Some(dirs.clone()));
+    let at = Timestamp::from_unix_millis(1).expect("合写法");
+    data.learn("dev", "m", 4096, at);
+    data.set_list("dev", list(&["m"], 1));
+    data.save_pointers();
+    assert!(dirs.state.join("learned.json").is_file());
+    assert!(dirs.state.join("pools.json").is_file());
+    assert!(dirs.cache.join("providers/dev.json").is_file());
+    assert!(
+        !dirs.state.join("providers").exists(),
+        "列表不在用出来的那一处"
+    );
+    assert!(
+        !dirs.cache.join("learned.json").exists(),
+        "学到的不在拉到的那一处"
+    );
+    let read = super::read_observed(&dirs);
+    assert_eq!(read.lists.len(), 1);
+    assert!(read.learned.window("dev", "m").is_some());
+    drop(std::fs::remove_dir_all(&scratch));
+}

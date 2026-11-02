@@ -188,6 +188,27 @@ fn a_file_at_the_top_of_a_data_root_is_written_through_run() {
     );
 }
 
+/// 数据根里更深一层的（设计 55 的 `etc/private/`，施工 FH-2）：照样往上找到数据根、临时文件建在它的 `run/` 里，不留在旁边。
+#[test]
+fn a_file_deeper_in_a_data_root_is_written_through_run_too() {
+    let root = Scratch::new();
+    let dir = root.path().join("etc").join("private");
+    fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("secrets.toml");
+    let mut seen = None;
+    write_with(&path, b"a = 1\n", None, Mode::Private, &mut |temp| {
+        seen = Some(temp.to_path_buf());
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"a = 1\n");
+    assert_eq!(
+        seen.unwrap().parent(),
+        Some(root.path().join("run").as_path())
+    );
+    assert_eq!(leftovers(&dir, &["secrets.toml"]), Vec::<String>::new());
+}
+
 /// 数据根还没有 `run/` 的（核心还没起来过，命令行先写配置）：建上再写。
 #[test]
 fn a_missing_run_directory_is_made_for_the_temporary_file() {

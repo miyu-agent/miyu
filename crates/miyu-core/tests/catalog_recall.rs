@@ -104,18 +104,27 @@ async fn start(dir: &Dir) -> Arc<ModelData> {
     let data = Arc::new(ModelData::new(
         Profiles::default(),
         Vendors::default(),
-        Some(dir.at("state")),
+        Some(miyu_session::ModelDirs {
+            state: dir.at("state"),
+            cache: dir.at("state"),
+        }),
     ));
     let early = read_early(
         dir.at("snapshot"),
         Some(dir.at("cache")),
         Some(dir.at("program")),
-        Some(dir.at("state")),
+        Some(miyu_session::ModelDirs {
+            state: dir.at("state"),
+            cache: dir.at("state"),
+        }),
     );
     drop(begin(
         Arc::clone(&data),
         early,
-        Some(dir.at("state")),
+        Some(miyu_session::ModelDirs {
+            state: dir.at("state"),
+            cache: dir.at("state"),
+        }),
         Some(resolved()),
     ));
     tokio::time::timeout(Duration::from_secs(10), data.wait())

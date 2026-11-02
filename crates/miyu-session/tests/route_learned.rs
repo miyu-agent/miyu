@@ -68,11 +68,11 @@ async fn a_stated_limit_is_learned_and_used_by_the_next_session() {
     ))
     .expect("这个测试程序只装这一次");
     let mut home = Home::new();
-    let dir = home.root.state().join("models");
+    let dir = home.root.model_state();
     let data = Arc::new(ModelData::new(
         Profiles::default(),
         Vendors::default(),
-        Some(dir.clone()),
+        Some(miyu_session::ModelDirs::in_one(dir.clone())),
     ));
     data.loaded(None, Observed::default());
     overflow(&mut home, &data, 65_536, "").await;
@@ -83,7 +83,7 @@ async fn a_stated_limit_is_learned_and_used_by_the_next_session() {
         Some(65_536)
     );
     assert_eq!(
-        read_observed(&dir).learned,
+        read_observed(&miyu_session::ModelDirs::in_one(dir.clone())).learned,
         learned,
         "核心下次起来读回同一份"
     );

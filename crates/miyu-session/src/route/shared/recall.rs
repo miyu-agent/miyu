@@ -29,7 +29,7 @@ use miyu_models::settings::UseSettings;
 
 use crate::TARGET;
 
-use super::{ModelData, Observed};
+use super::{ModelData, Observed, Shelf};
 
 /// 记下的那份存在 `state/models/` 下的这个文件里。
 pub const RECALL_FILE: &str = "catalog.json";
@@ -371,10 +371,10 @@ impl ModelData {
         self.write_recalled(RECALL_FILE, &recalled);
     }
 
-    /// 写 `state/models/<name>`（`catalog.json`，施工 V-32 起还有 `listing.json`）；写不成 JSON 的（不会发生）记一行。
+    /// 写拉到的那一处下的 `name`（`catalog.json`，施工 V-32 起还有 `listing.json`）；写不成 JSON 的（不会发生）记一行。
     pub(super) fn write_recalled(&self, name: &str, recalled: &Recalled) {
         match recalled.to_json() {
-            Ok(text) => self.write(name, &text),
+            Ok(text) => self.write(Shelf::Cache, name, &text),
             Err(error) => {
                 tracing::warn!(target: TARGET, file = name, error = %error, "model data not written");
             }

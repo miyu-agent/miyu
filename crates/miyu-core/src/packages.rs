@@ -75,7 +75,7 @@ mod mermaid {
     /// 字体在哪个文件记在数据根的 `cache/mermaid` 下（施工 V-35）。
     pub(super) fn register(resources: &ResourceRoot, root: &DataRoot, queries: Queries) -> Queries {
         let mermaid =
-            Arc::new(Mermaid::new(resources.path()).with_font_cache(root.cache().join("mermaid")));
+            Arc::new(Mermaid::new(resources.path()).with_font_cache(root.mermaid_cache()));
         queries.register_for(
             super::MERMAID,
             "mermaid.render",

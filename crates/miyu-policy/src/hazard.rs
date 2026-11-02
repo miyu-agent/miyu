@@ -122,8 +122,11 @@ pub struct Places<'a> {
     pub cwd: &'a str,
     /// 系统的家目录：`~`、`$HOME` 照它接。
     pub home: Option<&'a str>,
-    /// Miyu 的数据根。工作区 `workspace/` 里面的不算（施工 5-14 起会话的默认工作区都在它下面）。
+    /// Miyu 的数据根。
     pub data_root: &'a str,
+    /// 数据根里放各会话默认工作区的目录：它下面的不算删数据根（施工 5-14 起会话的默认工作区都在数据根里；施工 FH-2：调的一方
+    /// 照 `DataRoot::workspace` 给，这一层不认数据根的布局）。
+    pub workspaces: &'a str,
 }
 
 #[cfg(test)]

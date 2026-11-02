@@ -74,7 +74,7 @@ pub(crate) async fn get(
         return Err(Refusal::BAD_PARAMS);
     }
     let _one = core.terminal.lock().await;
-    let path = core.root.path().join(terminal::FILE);
+    let path = core.root.terminal_file();
     let (mut pointers, version) = read(&path)?;
     let pointer = current(&pointers, key.as_deref());
     let settings = TerminalSettings::from(&core.config().resolved().values());
@@ -142,7 +142,7 @@ pub(crate) async fn set(core: &Arc<Core>, params: SetParams) -> Result<Value, Re
         return Err(Refusal::NOT_FOUND);
     }
     let _one = core.terminal.lock().await;
-    let path = core.root.path().join(terminal::FILE);
+    let path = core.root.terminal_file();
     let (mut pointers, version) = read(&path)?;
     let pointer = Pointer {
         session: Some(id.as_str().to_string()),

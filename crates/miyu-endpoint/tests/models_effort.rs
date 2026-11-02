@@ -417,12 +417,12 @@ async fn a_default_effort_the_model_does_not_have_is_reported() {
 async fn checking_an_effort_does_not_remember_made_up_models() {
     let home = Home::new();
     home.write("config.toml", CONFIG);
-    let dir = home.root.state().join("models");
+    let dir = home.root.model_state();
     std::fs::create_dir_all(&dir).expect("建得了");
     let data = ModelData::new(
         Profiles::parse(&json!({})).expect("档案写法对"),
         Vendors::default(),
-        Some(dir.clone()),
+        Some(miyu_session::ModelDirs::in_one(dir.clone())),
     );
     let empty = || Loaded {
         catalog: Catalog::parse("{}").expect("读得进").catalog,

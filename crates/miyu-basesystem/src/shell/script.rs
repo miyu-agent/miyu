@@ -39,6 +39,7 @@ use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
 use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
+use miyu_store::root::DataRoot;
 use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
 
 use super::process::{self, Ending, Guard};
@@ -175,7 +176,8 @@ impl Script {
         let root = call.data_root.as_deref().filter(|_| call.ids.is_some())?;
         // 场所会话照场所分（施工 X-44 补）：不分的话 A 群读得到 B 群的。
         let venue = call.caller.as_ref().map(|caller| &caller.venue);
-        let Some(dir) = miyu_store::scripts::state_dir(root, venue, &self.source, &self.spec.name)
+        let root = DataRoot::at(root.to_path_buf());
+        let Some(dir) = miyu_store::scripts::state_dir(&root, venue, &self.source, &self.spec.name)
         else {
             tracing::warn!(target: "miyu::shell", tool = self.spec.name.as_str(), error = "venue too long", "script state not prepared");
             return None;
@@ -192,7 +194,8 @@ impl Script {
             .as_deref()
             .filter(|_| call.ids.is_some())
             .and_then(|root| {
-                miyu_store::scripts::cache_dir(root, venue, &self.source, &self.spec.name)
+                let root = DataRoot::at(root.to_path_buf());
+                miyu_store::scripts::cache_dir(&root, venue, &self.source, &self.spec.name)
             });
         home.and_then(|dir| self.prepared(&dir, Kept::Cache))
             .unwrap_or_else(|| {

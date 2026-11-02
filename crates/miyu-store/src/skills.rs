@@ -71,7 +71,7 @@ impl Skipped {
 
 /// 主人自己放技能的文件夹：`skills/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
 pub fn own_dir(root: &DataRoot) -> PathBuf {
-    root.path().join("skills")
+    root.skills()
 }
 
 /// 找技能：数据根 `root` 里自己放的，加装了的软件包 `packages` 里的，加别的目录 `external`

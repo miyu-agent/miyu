@@ -240,15 +240,19 @@ pub(crate) fn write_with(
     Ok(sync_dir(dir)?)
 }
 
-/// 替换 `dir` 里的一份文件时临时文件建在哪（施工 R3-1）：`dir` 是数据根（有标记）的，建在它的 `run/` 里，没有的建上；别处的
-/// 就在 `dir` 里。Windows 的沙盒为了透出工作区、技能文件夹，不整条禁数据根，只禁命令起来那一刻顶层已有的那几项（施工
-/// SW-6，`miyu_sandbox::carve`），命令跑着时在顶层新建的临时文件（里面是整份密钥）读得到；`run/` 里有本机令牌，从不透出任何
-/// 东西，整条禁，里面新建的也读不到。同一个数据根里改名照样是原子的。
+/// 替换 `dir` 里的一份文件时临时文件建在哪（施工 R3-1；施工 FH-2 改）：`dir` 在数据根里（往上找得到标记的）建在那个数据根的
+/// `run/` 里，没有的建上；别处的（仓库里的项目配置）就在 `dir` 里。Windows 的沙盒为了透出工作区、技能文件夹，不整条禁数据根，只
+/// 禁命令起来那一刻已有的那几项（施工 SW-6，`miyu_sandbox::carve`），命令跑着时在别处新建的临时文件（里面是整份密钥）读得到；
+/// `run/` 里有本机令牌，从不透出任何东西，整条禁，里面新建的也读不到。原来只认「上一层就是数据根」，配置、密钥挪进数据根下面
+/// 的目录（设计 55 的 `etc/`、`etc/private/`）以后照样建在 `run/` 里。同一个数据根里改名照样是原子的。
 fn temp_dir(dir: &Path) -> io::Result<PathBuf> {
-    if fs::symlink_metadata(dir.join(crate::root::MARKER)).is_err() {
+    let Some(root) = dir
+        .ancestors()
+        .find(|one| fs::symlink_metadata(one.join(crate::root::MARKER)).is_ok())
+    else {
         return Ok(dir.to_path_buf());
-    }
-    let run = dir.join(crate::root::RUN);
+    };
+    let run = crate::root::DataRoot::at(root.to_path_buf()).run();
     create_dir(&run)?;
     Ok(run)
 }

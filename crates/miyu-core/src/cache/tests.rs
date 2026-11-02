@@ -40,11 +40,11 @@ fn the_start_sweep_trusts_a_readable_index() {
     fs::create_dir_all(root.index()).expect("建得了");
     let (index, _) = SessionIndex::open(&root.index().join(FILE));
     drop(index);
-    aged(&root.cache().join("@qq_3agroup_3a1/kit/x"), 1, now);
-    aged(&root.cache().join("kit/old"), 31, now);
+    aged(&root.script_caches().join("@qq_3agroup_3a1/kit/x"), 1, now);
+    aged(&root.script_caches().join("kit/old"), 31, now);
     assert_eq!(sweep_now(&root, now), (2, 0));
-    assert!(!root.cache().join("@qq_3agroup_3a1").exists());
-    assert!(!root.cache().join("kit/old").exists());
+    assert!(!root.script_caches().join("@qq_3agroup_3a1").exists());
+    assert!(!root.script_caches().join("kit/old").exists());
     fs::remove_dir_all(scratch).expect("删得掉");
 }
 
@@ -54,14 +54,14 @@ fn without_an_index_only_age_counts() {
     let scratch = tempfile_dir();
     let root = root_in(&scratch);
     let now = SystemTime::now();
-    aged(&root.cache().join("@qq_3agroup_3a1/kit/x"), 1, now);
-    aged(&root.cache().join("kit/old"), 31, now);
+    aged(&root.script_caches().join("@qq_3agroup_3a1/kit/x"), 1, now);
+    aged(&root.script_caches().join("kit/old"), 31, now);
     assert_eq!(sweep_now(&root, now), (1, 0));
     assert!(
-        root.cache().join("@qq_3agroup_3a1/kit/x").exists(),
+        root.script_caches().join("@qq_3agroup_3a1/kit/x").exists(),
         "不知道的不删"
     );
-    assert!(!root.cache().join("kit/old").exists());
+    assert!(!root.script_caches().join("kit/old").exists());
     fs::remove_dir_all(scratch).expect("删得掉");
 }
 

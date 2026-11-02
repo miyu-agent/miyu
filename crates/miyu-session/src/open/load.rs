@@ -456,7 +456,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         knowledge: shelves,
         skills: watch,
         images,
-        projects: root.path().join(miyu_store::projects::FILE),
+        projects: root.projects_file(),
         room: room.clone(),
         plugins,
         frozen: fork_child,

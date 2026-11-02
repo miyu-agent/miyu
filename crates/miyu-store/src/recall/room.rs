@@ -72,7 +72,7 @@ impl Room {
     /// 记忆日志在哪。
     pub(crate) fn log(&self, root: &DataRoot) -> PathBuf {
         match self {
-            Room::Persona { persona } => root.path().join("modules").join("memory").join(persona),
+            Room::Persona { persona } => root.memory_log(persona),
         }
     }
 }

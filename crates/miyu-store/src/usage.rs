@@ -121,9 +121,9 @@ impl UsageIndex {
     /// 打开数据根 `root` 的用量汇总（`state/usage.db`），没有就建。读不了、坏了、版本不对的删掉建一份空的：空的照日志补满
     /// （[`UsageIndex::catch_up`]）。
     pub fn open(root: &DataRoot) -> (UsageIndex, Opened) {
-        let path = root.state().join(FILE);
+        let path = root.usage_file();
         let (db, opened) = sqlite::open(&path, SCHEMA, VERSION);
-        let rates = Arc::new(rates::RateBook::open(&root.state().join(rates::FILE)));
+        let rates = Arc::new(rates::RateBook::open(&root.rates_file()));
         let index = UsageIndex {
             root: root.clone(),
             path,

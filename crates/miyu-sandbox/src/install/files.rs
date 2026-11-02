@@ -32,19 +32,30 @@ pub(crate) fn check_root(home: &Path) -> Result<(), InstallError> {
     }
 }
 
-/// 数据根下的 `state/sandbox/`：一层一层来，每一层没有就建，再查它不是链接，查过了才往下一层走。
+/// 数据根 `home` 下放安装记录、失败原因的目录（位置照 `DataRoot::sandbox_install_dir`，施工 FH-2）：从数据根往下一层一层来，
+/// 每一层没有就建，再查它不是链接，查过了才往下一层走。
 ///
-/// 不能先一口气建好再查：`state` 要是一个链接，一口气建的时候就顺着它把 `sandbox` 建到别处去了。
+/// 不能先一口气建好再查：路上哪一层要是一个链接，一口气建的时候就顺着它把后面几层建到别处去了。
 ///
 /// # Errors
 ///
 /// 建不了；哪一层是链接或者不是目录。
 pub(crate) fn sandbox_dir(home: &Path) -> io::Result<PathBuf> {
-    let state = home.join("state");
-    plain_dir(&state)?;
-    let sandbox = state.join("sandbox");
-    plain_dir(&sandbox)?;
-    Ok(sandbox)
+    let target = install_dir(home);
+    let below = target
+        .strip_prefix(home)
+        .map_err(|_| io::Error::other("sandbox directory is outside the data root"))?;
+    let mut dir = home.to_path_buf();
+    for part in below.components() {
+        dir.push(part);
+        plain_dir(&dir)?;
+    }
+    Ok(dir)
+}
+
+/// 数据根 `home` 下放安装记录、失败原因的目录，不建（`DataRoot::sandbox_install_dir`）。
+pub(crate) fn install_dir(home: &Path) -> PathBuf {
+    miyu_store::root::DataRoot::at(home.to_path_buf()).sandbox_install_dir()
 }
 
 /// `path` 本身是一个真的目录：没有就只建这一层；是链接，或者不是目录的，报错。

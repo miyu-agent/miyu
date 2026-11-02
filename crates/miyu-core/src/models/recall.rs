@@ -1,5 +1,5 @@
 //! 目录不常驻，核心这一头（施工 V-25 下，`docs/blueprint/models.md`「怎么走」第二条第 2 条）：记下的那份
-//! （`state/models/catalog.json`，`miyu_session::ModelData` 管怎么记、怎么换）认哪一份目录、起来时读不读整份目录、临时怎么读。
+//! （模型目录拉到的那一处的 `catalog.json`，`miyu_session::ModelData` 管怎么记、怎么换）认哪一份目录、起来时读不读整份目录、临时怎么读。
 //!
 //! - 版本串 `of`（[`Version::of`]）：整理好的目录现成的指纹（`super::digest::fingerprint`：哪一份、原文多大、什么时候改的、
 //!   `fetched`，程序多大、什么时候改的），加认原厂的表（`models/vendors.toml`）的内容哈希。对不上的整份作废、重算。
@@ -61,7 +61,7 @@ pub enum Read {
     Recalled(Recalled),
 }
 
-/// 起来时（在读目录的那个线程里）：`version`、`state`（`state/models`）都有、又有缓存目录的，先读记下的那份，版本串和排第一
+/// 起来时（在读目录的那个线程里）：`version`、`state`（模型目录拉到的那一处，`DataRoot::model_cache`）都有、又有缓存目录的，先读记下的那份，版本串和排第一
 /// 那份目录的对上了就交回它、不读整份目录，记一行 `INFO catalog recalled`；别的读整份目录。记下的那份读不懂、写法的版本不对
 /// 的记一行 `WARN catalog recall unreadable`，当没有。在阻塞线程里调。
 pub fn early(places: &Places, version: Option<&Version>, state: Option<&Path>) -> Read {
@@ -104,7 +104,7 @@ fn of_loaded(places: &Places, version: &Version, loaded: &Loaded) -> Option<Stri
     version.of(loaded.source, &dir.join(FILE), &loaded.fetched)
 }
 
-/// 读 `state/models/catalog.json`：没有的没有；读不了、读不懂、写法的版本不对的记一行 `WARN`，当没有（整份重算）。
+/// 读拉到的那一处的 `catalog.json`：没有的没有；读不了、读不懂、写法的版本不对的记一行 `WARN`，当没有（整份重算）。
 fn read(state: &Path) -> Option<Recalled> {
     let path = state.join(RECALL_FILE);
     let text = match std::fs::read_to_string(&path) {

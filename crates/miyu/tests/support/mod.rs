@@ -83,7 +83,7 @@ impl Home {
 
     /// 核心的运行日志，全文。
     pub fn core_log(&self) -> String {
-        std::fs::read_to_string(self.root.state().join("logs").join("core.log")).unwrap_or_default()
+        std::fs::read_to_string(self.root.logs().join("core.log")).unwrap_or_default()
     }
 
     /// 等核心走：锁放开了，也连不上了。最多六十秒。先只看锁：一直去连它，每连一次都算有人在用，核心的空闲时限从头算

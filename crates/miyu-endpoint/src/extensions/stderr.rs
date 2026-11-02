@@ -21,7 +21,7 @@ const BYTES: u64 = 4096;
 
 /// 包 `id` 的标准错误的文件。
 pub(super) fn path(core: &Core, id: &str) -> PathBuf {
-    core.root.state().join("logs").join(format!("{id}.stderr"))
+    core.root.extension_stderr(id)
 }
 
 /// 打开 `path` 接标准错误：目录没有的建（只在数据根里建，数据根没了的不建回来，施工 TMP-1），太大的先挪成 `.old`，追加。

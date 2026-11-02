@@ -112,7 +112,7 @@ impl Knowledge {
 
     /// 知识库都在哪个目录下。
     pub(super) fn top(&self) -> PathBuf {
-        self.root.path().join("kb")
+        self.root.knowledge()
     }
 
     /// 库 `id` 在哪：编号合写法；自己的目录在的是自己的，不然是包里的（施工 K-8）。
@@ -187,15 +187,20 @@ impl Knowledge {
 
     /// 记开关的那一份。
     fn switches(&self) -> PathBuf {
-        self.root.path().join("kb.toml")
+        self.root.knowledge_settings_file()
     }
 
     /// 同 `switches`，换成真实的位置，写之前用：数据根的路上可能有链接（macOS 的临时目录 `/var`），
     /// `miyu_fs::replace` 一层链接都不跟。数据根不在的建上。
     fn real_switches(&self) -> Result<PathBuf, KnowledgeError> {
-        let dir = self.root.path().to_path_buf();
-        std::fs::create_dir_all(&dir).map_err(io)?;
-        Ok(std::fs::canonicalize(dir).map_err(io)?.join("kb.toml"))
+        let file = self.switches();
+        let (Some(dir), Some(name)) = (file.parent(), file.file_name()) else {
+            return Err(io(std::io::Error::other(
+                "knowledge settings file has no folder",
+            )));
+        };
+        std::fs::create_dir_all(dir).map_err(io)?;
+        Ok(std::fs::canonicalize(dir).map_err(io)?.join(name))
     }
 
     /// 自己的库的编号：`kb/` 下合写法的目录。

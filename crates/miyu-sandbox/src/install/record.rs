@@ -93,7 +93,7 @@ pub(crate) fn write(owner: &Owner, record: &Record) -> Result<(), InstallError> 
 /// 数据根没有标记；删不了（`delete record`）。
 pub(crate) fn delete(owner: &Owner) -> Result<(), InstallError> {
     files::check_root(owner.home())?;
-    let path = owner.home().join("state").join("sandbox").join(FILE);
+    let path = files::install_dir(owner.home()).join(FILE);
     files::remove_if_there(&path).map_err(|error| InstallError::failed("delete record", error))
 }
 

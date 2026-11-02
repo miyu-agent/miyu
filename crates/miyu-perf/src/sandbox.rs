@@ -63,8 +63,7 @@ impl Sandbox {
         let config = format!(
             "[providers.perf]\ndriver = \"openai-chat\"\nbase_url = \"{base_url}\"\nkey = {{ env = \"MIYU_PERF_KEY\" }}\n\n[providers.perf.models.perf-model]\nwindow = {WINDOW}\n\n[models]\nchat = \"perf/perf-model\"\n"
         );
-        std::fs::write(root.path().join("config.toml"), config)
-            .map_err(|e| format!("系统配置写不进：{e}"))?;
+        std::fs::write(root.config_file(), config).map_err(|e| format!("系统配置写不进：{e}"))?;
         Ok(Sandbox {
             root,
             work,
@@ -88,7 +87,7 @@ impl Sandbox {
     ///
     /// 拉不起来、没写 `ready` 就走了、等太久。
     pub fn start_with(&self, launch: Launch<'_>) -> Result<Running, String> {
-        let cache = self.root.state().join("perf-cache");
+        let cache = self.root.perf_cache();
         let began = Instant::now();
         // 放进 scope 的经 `systemd-run --scope`：它登记好 scope 就把自己换成核心（`env` 也是换，进程号不变），环境照传。
         // `XDG_RUNTIME_DIR` 留给 systemd-run 找用户的总线，进了 scope 再由 `env` 去掉。
@@ -147,7 +146,7 @@ impl Sandbox {
                 running.kill();
                 Err(format!(
                     "核心没起来（{outcome:?}）：{}",
-                    tail(&self.root.state().join("logs").join("core.log"))
+                    tail(&self.root.logs().join("core.log"))
                 ))
             }
         }

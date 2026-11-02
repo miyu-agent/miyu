@@ -192,7 +192,7 @@ fn events(root: &DataRoot, session: &str) -> Result<Vec<Value>, String> {
 
 /// 运行日志的每一行：轮换出去的（`core.log.1` 这些）先，老的在前。
 fn core_log(root: &DataRoot) -> Vec<String> {
-    let dir = root.state().join("logs");
+    let dir = root.logs();
     let mut lines = Vec::new();
     for n in (1..=5).rev() {
         lines.extend(read_lines(&dir.join(format!("core.log.{n}"))));

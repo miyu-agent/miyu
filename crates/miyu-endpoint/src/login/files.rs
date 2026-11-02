@@ -16,7 +16,7 @@ use crate::refusal::Refusal;
 
 /// 读 `access.json`：坏了的当空的。
 pub(super) fn read_access(core: &Core) -> access::Read {
-    let path = core.root.path().join(access::FILE);
+    let path = core.root.access_file();
     access::read(&path).unwrap_or_else(|error| {
         tracing::warn!(target: TARGET, error = %error, "access not read");
         access::Read {
@@ -47,7 +47,7 @@ pub(super) fn put_password(core: &Core, hashed: String, now: Timestamp) -> Resul
         changed: Some(now),
         ..read.access
     };
-    let path = core.root.path().join(access::FILE);
+    let path = core.root.access_file();
     access::write(&path, &access, read.version.as_deref())
         .map_err(|error| not_written("access not written", &error))?;
     Ok(first)
@@ -108,7 +108,7 @@ pub(super) fn record(core: &Core, at: Timestamp, kind: &str, body: &impl Seriali
 
 /// `logins.json` 在哪。
 fn logins_path(core: &Core) -> std::path::PathBuf {
-    core.root.path().join(logins::FILE)
+    core.root.logins_file()
 }
 
 /// 磁盘上现在那份的版本：坏了的文件写回时照它盖。没有的、读不了的是空的。

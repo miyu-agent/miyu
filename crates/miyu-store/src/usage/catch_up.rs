@@ -124,7 +124,7 @@ impl UsageIndex {
             kind: kind(ONESHOT)?,
             body,
         };
-        let path = self.root.path().join(journal::FILE);
+        let path = self.root.journal_file();
         let seq = journal::append(&path, entry)?;
         let row = Spent::one_shot(seq.get(), at, call);
         if let Some(db) = self.lock().as_ref() {
@@ -136,7 +136,7 @@ impl UsageIndex {
     /// 补日志：从记到的字节往后读，对不上的从头读。
     fn catch_up_journal(&self, problems: &mut Vec<Problem>) -> Result<(), UsageError> {
         let source = JOURNAL;
-        let path = self.root.path().join(journal::FILE);
+        let path = self.root.journal_file();
         let marked = match self.lock().as_ref() {
             Some(db) => marked(db, source)?,
             None => return Ok(()),

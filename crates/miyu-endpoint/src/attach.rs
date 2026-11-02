@@ -339,7 +339,7 @@ fn read(place: &Place, path: &str) -> Result<(Vec<u8>, PathBuf), Refusal> {
         .map_err(|_| Refusal::ATTACHMENT_UNREADABLE)?;
     let places = Places::here(
         place.root.workspace(),
-        place.root.path().to_path_buf(),
+        (place.root.path().to_path_buf(), place.root.knowledge()),
         place.home.as_deref(),
     );
     let own = place.own.as_ref().is_some_and(|own| real.starts_with(own));

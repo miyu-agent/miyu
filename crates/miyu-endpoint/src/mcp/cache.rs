@@ -48,10 +48,7 @@ pub(super) struct Remembered {
 
 /// 服务 `service` 的缓存在哪。
 pub(super) fn path(core: &Core, service: &str) -> PathBuf {
-    core.root
-        .state()
-        .join("mcp")
-        .join(format!("{service}.json"))
+    core.root.mcp_catalog(service)
 }
 
 /// 缓存照什么认这个服务（施工 X-3 下、X-32 上）：命令的是命令和环境变量的写法（引用的照引用写，不取值）；网址的是网址和请求头的

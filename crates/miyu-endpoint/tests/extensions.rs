@@ -48,7 +48,7 @@ async fn enabling_starts_it_in_its_own_directory_and_it_shakes_hands_without_a_t
     }
     let recorded = read(&path);
     let lines: Vec<&str> = recorded.lines().collect();
-    let dir = home.root.state().join("packages").join("echo");
+    let dir = home.root.package_state("echo");
     assert_eq!(
         std::fs::canonicalize(lines[0].trim_start_matches("cwd:")).expect("在"),
         std::fs::canonicalize(&dir).expect("建了"),

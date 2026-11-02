@@ -69,9 +69,12 @@ fn kept(dir: &std::path::Path) -> Arc<ModelData> {
     let data = ModelData::new(
         Profiles::parse(&serde_json::json!({})).expect("档案写法对"),
         Vendors::default(),
-        Some(dir.to_path_buf()),
+        Some(miyu_session::ModelDirs::in_one(dir.to_path_buf())),
     );
-    data.loaded(None, read_observed(dir));
+    data.loaded(
+        None,
+        read_observed(&miyu_session::ModelDirs::in_one(dir.to_path_buf())),
+    );
     Arc::new(data)
 }
 

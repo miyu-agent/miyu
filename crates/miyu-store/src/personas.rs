@@ -114,7 +114,7 @@ impl Personas {
         Personas {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("personas")),
-                (Layer::Home, root.path().join("personas")),
+                (Layer::Home, root.personas()),
             ],
         }
     }

@@ -102,12 +102,12 @@ pub struct Config {
 
 /// 系统配置在哪、给人看的写法（相对数据根）。
 fn system_at(root: &DataRoot) -> (PathBuf, String) {
-    (root.path().join(SYSTEM), SYSTEM.to_string())
+    (root.config_file(), SYSTEM.to_string())
 }
 
 /// 密钥文件在哪：`secrets.toml`。
 fn secrets_path(root: &DataRoot) -> PathBuf {
-    root.path().join(SECRETS)
+    root.secrets_file()
 }
 
 /// 核心自己写的几份文件在哪：信任的记录、日志（施工 8-3；施工 SU-5 上起只有一份）。
@@ -122,8 +122,8 @@ pub(crate) struct Places {
 impl Places {
     fn of(root: &DataRoot) -> Places {
         Places {
-            trust: root.path().join(trust::FILE),
-            journal: root.path().join(miyu_store::journal::FILE),
+            trust: root.trust_file(),
+            journal: root.journal_file(),
         }
     }
 
@@ -167,7 +167,7 @@ impl Config {
             .collect();
         let (path, shown) = system_at(root);
         let system = File::read(&items, Layer::System, path, shown);
-        let trust_path = root.path().join(trust::FILE);
+        let trust_path = root.trust_file();
         let trust = trust::read(&trust_path).unwrap_or_else(|error| {
             tracing::warn!(
                 target: TARGET,

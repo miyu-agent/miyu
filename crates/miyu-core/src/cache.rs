@@ -28,7 +28,7 @@ pub(crate) fn sweep(root: DataRoot) -> JoinHandle<()> {
 
 /// 清一次数据根 `root` 的缓存，现在是 `now`：交回删了几格、删不掉几格。
 pub(crate) fn sweep_now(root: &DataRoot, now: SystemTime) -> (usize, usize) {
-    let cache = root.cache();
+    let cache = root.script_caches();
     if !cache.is_dir() {
         return (0, 0);
     }

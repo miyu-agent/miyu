@@ -11,7 +11,11 @@ fn the_first_index_offering_the_command_names_the_package() {
         std::fs::create_dir_all(file.parent().expect("有上一级")).expect("建得了");
         std::fs::write(file, value.to_string()).expect("写得进");
     };
-    assert_eq!(offering_under(&dir, "web"), None, "什么都没存过");
+    assert_eq!(
+        offering_under((&dir.join(".sync"), &dir.join(".sources")), "web"),
+        None,
+        "什么都没存过"
+    );
     write(
         ".sync/index.json",
         json!({"packages": [{"id": "miyu-tui", "provides": {"command": ["tui"]}}, {"id": "theme"}]}),
@@ -27,15 +31,18 @@ fn the_first_index_offering_the_command_names_the_package() {
     std::fs::create_dir_all(dir.join(".sources/0-broken")).expect("建得了");
     std::fs::write(dir.join(".sources/0-broken/index.json"), "{").expect("写得进");
     assert_eq!(
-        offering_under(&dir, "tui").as_deref(),
+        offering_under((&dir.join(".sync"), &dir.join(".sources")), "tui").as_deref(),
         Some("miyu-tui"),
         "官方的先找"
     );
     assert_eq!(
-        offering_under(&dir, "web").as_deref(),
+        offering_under((&dir.join(".sync"), &dir.join(".sources")), "web").as_deref(),
         Some("miyu-webui"),
         "另加的照名字"
     );
-    assert_eq!(offering_under(&dir, "nope"), None);
+    assert_eq!(
+        offering_under((&dir.join(".sync"), &dir.join(".sources")), "nope"),
+        None
+    );
     std::fs::remove_dir_all(&dir).expect("删得掉临时目录");
 }

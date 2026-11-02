@@ -198,7 +198,7 @@ async fn wrong_places_are_refused_and_too_wide_is_kept() {
     let session = client.create("c1", &start).await;
     let file = home.work.join("note.txt");
     std::fs::write(&file, "x").expect("写得进");
-    let state = home.root.state().to_string_lossy().into_owned();
+    let state = home.root.run().to_string_lossy().into_owned();
     for (n, (path, wanted)) in [
         ("nope".to_string(), "path_unreadable"),
         (file.to_string_lossy().into_owned(), "not_a_directory"),

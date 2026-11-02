@@ -220,7 +220,7 @@ fn a_linked_script_is_read_through_and_kept_as_the_link() {
 /// 状态目录（施工 X-44）：照来处、工具名分，在数据根的 `state/scripts/` 下面。
 #[test]
 fn a_scripts_state_lives_under_its_source_and_name() {
-    let root = Path::new("/data");
+    let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
     assert_eq!(state_root(root), Path::new("/data/state/scripts"));
     assert_eq!(
         state_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
@@ -236,7 +236,7 @@ fn a_scripts_state_lives_under_its_source_and_name() {
 #[test]
 fn states_are_listed_and_one_source_is_forgotten_everywhere() {
     let scratch = Scratch::new();
-    let root = scratch.path();
+    let root = &crate::root::DataRoot::at(scratch.path().to_path_buf());
     for dir in ["~home/dice", "kit/live", "kit/watch", "other/x"] {
         fs::create_dir_all(state_root(root).join(dir)).expect("建得了");
     }
@@ -260,7 +260,7 @@ fn states_are_listed_and_one_source_is_forgotten_everywhere() {
     forget_states(root, "nothing").expect("没有的不算错");
     let left: Vec<String> = states(root).into_iter().map(|state| state.tool).collect();
     assert_eq!(left, ["x", "dice"]);
-    assert!(states(&root.join("missing")).is_empty());
+    assert!(states(&crate::root::DataRoot::at(root.path().join("missing"))).is_empty());
 }
 
 fn venue(text: &str) -> VenueId {
@@ -292,7 +292,7 @@ fn a_venue_turns_into_a_folder_name_and_back() {
 /// 场所会话的状态目录多一层场所（施工 X-44 补）；本机的会话照旧；场所写不成目录名的没有。
 #[test]
 fn a_venue_session_gets_its_own_state_folder() {
-    let root = Path::new("/data");
+    let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
     assert_eq!(
         state_dir(root, Some(&venue("local")), HOME_PACKAGE, "dice").as_deref(),
         Some(Path::new("/data/state/scripts/~home/dice")),
@@ -312,7 +312,7 @@ fn a_venue_session_gets_its_own_state_folder() {
 #[test]
 fn states_under_a_venue_are_listed_and_forgotten_too() {
     let scratch = Scratch::new();
-    let root = scratch.path();
+    let root = &crate::root::DataRoot::at(scratch.path().to_path_buf());
     for dir in [
         "@qq_3agroup_3a1/kit/live",
         "@qq_3agroup_3a2/kit/live",
@@ -334,7 +334,7 @@ fn states_under_a_venue_are_listed_and_forgotten_too() {
 /// 脚本的缓存目录（施工 Y-11 上）：`cache/<来处>/<工具名>/`，场所会话多一层场所；场所写不成目录名的没有。
 #[test]
 fn a_script_s_cache_lives_in_the_home_split_like_its_state() {
-    let root = Path::new("/data");
+    let root = &crate::root::DataRoot::at(PathBuf::from("/data"));
     assert_eq!(
         cache_dir(root, None, HOME_PACKAGE, "dice").as_deref(),
         Some(Path::new("/data/cache/~home/dice"))

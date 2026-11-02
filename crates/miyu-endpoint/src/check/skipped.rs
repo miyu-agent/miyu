@@ -27,7 +27,7 @@ pub(super) async fn skipped(core: &Core, words: &Human) -> Vec<Value> {
         let scripts = miyu_store::scripts::find(&packages, &root);
         let skills = miyu_store::skills::find(&packages, &root, &external);
         let slash = miyu_store::slash::find(&packages, &root);
-        let states = miyu_store::scripts::states(root.path());
+        let states = miyu_store::scripts::states(&root);
         (scripts, skills, slash, states)
     })
     .await;

@@ -160,7 +160,7 @@ impl SessionPort for Table {
             // 设计 41 DS7）：那是记忆模块的过程，不是她和人的对话。
             let main =
                 |row: &Row| row.parent.is_none() && crate::list::local(row) && row.dream.is_none();
-            let projects = root.path().join(miyu_store::projects::FILE);
+            let projects = root.projects_file();
             let (listed, projects) = tokio::task::spawn_blocking(move || {
                 let listed = scan(&root, Some(&*index), &busy, main, None, &stop);
                 // 项目照这一刻的文件（施工 H-3）：读不成的当没有项目，会话之间都互相看得到。

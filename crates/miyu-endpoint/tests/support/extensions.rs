@@ -234,7 +234,7 @@ pub fn read(path: &Path) -> String {
 }
 
 pub fn stderr(home: &Home, id: &str) -> String {
-    read(&home.root.state().join("logs").join(format!("{id}.stderr")))
+    read(&home.root.extension_stderr(id))
 }
 
 pub async fn call(client: &mut Client, method: &str, id: &str) -> Value {

@@ -112,7 +112,7 @@ async fn a_session_made_before_provide_gets_the_tools_at_its_next_turn() {
     let got = lines(&path, 3).await;
     let provided: Value = serde_json::from_str(&got[2]).unwrap();
     assert_eq!(provided["result"], json!({"tools": 1}), "{provided}");
-    let cached = home.root.state().join("providers/bridge.json");
+    let cached = home.root.provide_cache("bridge");
     let cached: Value = serde_json::from_str(&read(&cached)).expect("缓存是 JSON");
     assert_eq!(cached, tools(), "缓存照登记的原样");
 

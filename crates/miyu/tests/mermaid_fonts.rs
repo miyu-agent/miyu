@@ -137,7 +137,7 @@ async fn fonts_are_remembered_by_where_they_are_not_copied() {
     let mut core = start(&home);
     let first = draw(&home).await;
     stop(&mut core);
-    let remembered = files(&home.root.cache().join("mermaid"));
+    let remembered = files(&home.root.mermaid_cache());
     // 这台机器上一种都对不上的（CI 的 ubuntu 没装 `style.json` 那几种，`sans-serif` 默认对的 Arial 也没有），画图的库照字数估
     // 宽，没有位置可记；对得上的必须记下。
     assert_eq!(
@@ -161,5 +161,5 @@ async fn fonts_are_remembered_by_where_they_are_not_copied() {
     let again = draw(&home).await;
     stop(&mut core);
     assert_eq!(first, again, "照记下的位置画的和头一回一字不差");
-    assert_eq!(files(&home.root.cache().join("mermaid")), remembered);
+    assert_eq!(files(&home.root.mermaid_cache()), remembered);
 }

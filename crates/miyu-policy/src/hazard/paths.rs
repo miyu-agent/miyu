@@ -32,7 +32,7 @@ pub(super) fn target(
     {
         return Some(Kind::DeleteHome);
     }
-    if !in_workspace(&path, places.data_root)
+    if !in_workspace(&path, places.workspaces)
         && (inside(&path, places.data_root) || inside(places.data_root, &path))
     {
         return Some(Kind::DeleteDataRoot);
@@ -89,10 +89,12 @@ fn widest(path: &str, places: &Places<'_>) -> String {
         .unwrap_or_else(|| path.to_string())
 }
 
-/// 落在工作区里面（`<数据根>/workspace/` 下面，不是它本身：规整过的路径不以 `/` 结尾）。
-fn in_workspace(path: &str, data_root: &str) -> bool {
-    path.strip_prefix(&format!("{}/workspace/", data_root.trim_end_matches('/')))
-        .is_some()
+/// 落在放工作区的目录 `workspaces` 里面（不是它本身：规整过的路径不以 `/` 结尾）。
+fn in_workspace(path: &str, workspaces: &str) -> bool {
+    !workspaces.is_empty()
+        && path
+            .strip_prefix(&format!("{}/", workspaces.trim_end_matches('/')))
+            .is_some()
 }
 
 /// 照字面换成绝对路径，去掉 `.`、`..`、多余的 `/`：`~`、`$HOME`、`${HOME}` 开头的接家目录，相对的接 `cwd`（空的交回空的）。

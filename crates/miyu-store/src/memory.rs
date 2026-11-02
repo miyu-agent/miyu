@@ -126,7 +126,7 @@ impl MemoryLogs {
     ///
     /// 列不出目录（不在的当一个都没有）。
     pub fn personas(&self) -> std::io::Result<Vec<String>> {
-        let dir = self.root.path().join("modules").join("memory");
+        let dir = self.root.memory_logs();
         let entries = match std::fs::read_dir(dir) {
             Ok(entries) => entries,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),

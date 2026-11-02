@@ -199,7 +199,7 @@ async fn a_server_that_keeps_exiting_is_stopped_with_its_stderr_kept() {
     client.hello().await;
     enable(&mut client, "probe").await;
     until_status(&mut client, "probe", "stopped").await;
-    let stderr = read(&home.root.state().join("logs").join("mcp-probe.stderr"));
+    let stderr = read(&home.root.mcp_stderr("probe"));
     assert!(stderr.contains("cannot start"), "{stderr}");
     assert_eq!(
         stderr.matches("cannot start").count(),

@@ -376,7 +376,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         knowledge: shelves,
         skills: watch,
         images,
-        projects: root.path().join(miyu_store::projects::FILE),
+        projects: root.projects_file(),
         room: room.clone(),
         plugins,
         frozen: false,

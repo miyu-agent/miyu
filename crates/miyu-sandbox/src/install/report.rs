@@ -56,7 +56,7 @@ pub fn clear_report(owner: &Owner) -> Result<(), InstallError> {
 
 /// 原因在哪。
 fn path(owner: &Owner) -> std::path::PathBuf {
-    owner.home().join("state").join("sandbox").join(FILE)
+    files::install_dir(owner.home()).join(FILE)
 }
 
 #[cfg(test)]

@@ -23,12 +23,6 @@ const OWN_PLACES: [&str; 4] = ["scripts", "skills", "commands", "packages"];
 /// 语言显示。
 pub const USER_DIRS: [&str; 4] = ["pictures", "videos", "documents", "downloads"];
 
-/// 数据根 `data_root` 里照 XDG 的那一处 `name`（[`USER_DIRS`] 里的一个）：`<name>/`（施工 Y-11 下；施工 SU-5 上起直接在数据根
-/// 下）。调的一方手里只有数据根的路径时用它（调扩展的工具、脚本工具），和 [`DataRoot::user_dirs`] 同一个位置。不建。
-pub fn user_dir(data_root: &Path, name: &str) -> PathBuf {
-    data_root.join(name)
-}
-
 /// 缓存（施工 Y-11 上）：`cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
 pub const CACHE: &str = "cache";
 
@@ -101,6 +95,11 @@ impl DataRoot {
         })
     }
 
+    /// 已经找好的数据根（施工 FH-2）：工具、脚本拿到的是数据根的路径（`Call::data_root`），照它找里面的位置。不认标记、不建。
+    pub fn at(path: PathBuf) -> DataRoot {
+        DataRoot { path }
+    }
+
     /// 数据根本身。
     pub fn path(&self) -> &Path {
         &self.path
@@ -157,13 +156,8 @@ impl DataRoot {
     pub fn user_dirs(&self) -> Vec<(&'static str, PathBuf)> {
         USER_DIRS
             .iter()
-            .map(|name| (*name, user_dir(&self.path, name)))
+            .map(|name| (*name, self.user_dir(name)))
             .collect()
-    }
-
-    /// 缓存：`cache/`。不建。
-    pub fn cache(&self) -> PathBuf {
-        self.path.join(CACHE)
     }
 
     /// 工作区：`workspace/`（`07-存储.md` 第二节）。头报来的工作目录太宽时退回这里（`11-权限与沙盒.md` 第四节，施工 4-3 下）。
@@ -224,11 +218,6 @@ impl DataRoot {
     /// 派生数据：`index/`（`07-存储.md` 第六节）。会话列表的索引放在这里（施工 3-8 七补，[`crate::index`]）。
     pub fn index(&self) -> PathBuf {
         self.path.join("index")
-    }
-
-    /// 状态区：派生的全局索引、用量总表、运行日志。
-    pub fn state(&self) -> PathBuf {
-        self.path.join("state")
     }
 
     /// 运行时：锁文件、套接字、本机令牌。
@@ -365,6 +354,8 @@ fn home(env: &Env) -> Result<&Path, RootError> {
 fn local_app_data(env: &Env) -> Result<PathBuf, RootError> {
     absolute(&env.local_app_data).ok_or(RootError::NoLocalAppData)
 }
+
+mod places;
 
 #[cfg(test)]
 mod tests;

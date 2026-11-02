@@ -196,7 +196,7 @@ pub struct Schedules {
 
 /// 唤醒表在哪。
 pub fn path(root: &DataRoot) -> PathBuf {
-    root.path().join("state").join("schedules.db")
+    root.schedules_file()
 }
 
 impl Schedules {

@@ -172,7 +172,11 @@ fn recalling(
 ) -> Arc<ModelData> {
     let home = Home::new();
     let config = config(&home, text);
-    let data = ModelData::new(profiles(), vendors(), Some(state.to_path_buf()));
+    let data = ModelData::new(
+        profiles(),
+        vendors(),
+        Some(miyu_session::ModelDirs::in_one(state.to_path_buf())),
+    );
     let counting = Arc::clone(count);
     let reader: CatalogReader = Arc::new(move || {
         counting.fetch_add(1, Ordering::SeqCst);

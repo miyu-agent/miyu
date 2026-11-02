@@ -41,7 +41,7 @@ impl Talk {
 
 /// 等到参考文件合 `wanted`，最多六十秒，交回它。
 async fn until_reference(home: &Home, wanted: impl Fn(&str) -> bool) -> String {
-    let path = home.root.state().join("config").join("reference.toml");
+    let path = home.root.config_reference().join("reference.toml");
     within("参考文件重写", async {
         loop {
             let text = std::fs::read_to_string(&path).unwrap_or_default();

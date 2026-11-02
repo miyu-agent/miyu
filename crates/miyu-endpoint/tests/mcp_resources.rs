@@ -278,7 +278,7 @@ async fn the_cache_registers_them_before_the_server_is_up() {
     let first = Script::new([]);
     let core = started(&home, &first);
     drop(running(&core, &["probe"]).await);
-    let cache = home.root.state().join("mcp").join("probe.json");
+    let cache = home.root.mcp_catalog("probe");
     assert!(cache.is_file(), "列完写了缓存");
     core.stop_extensions().await;
     drop(core);

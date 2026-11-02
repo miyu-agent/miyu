@@ -160,7 +160,7 @@ fn size_of(dir: &Path) -> u64 {
 
 /// 核心日志里这个会话最近一条 `loaded` 的分段：`events=… read_ms=… … total_ms=…`；没有的没有。
 fn loaded(sandbox: &Sandbox, session: &str) -> Option<String> {
-    let log = std::fs::read_to_string(sandbox.root.state().join("logs").join("core.log")).ok()?;
+    let log = std::fs::read_to_string(sandbox.root.logs().join("core.log")).ok()?;
     log.lines()
         .rev()
         .find(|line| line.contains(session) && line.contains(" loaded "))

@@ -39,7 +39,7 @@ async fn a_cached_catalog_stands_in_until_the_server_is_up() {
     client.hello().await;
     enable(&mut client, "probe").await;
     until_status(&mut client, "probe", "running").await;
-    let cache = home.root.state().join("mcp").join("probe.json");
+    let cache = home.root.mcp_catalog("probe");
     assert!(cache.is_file(), "列完写了缓存");
     core.stop_extensions().await;
     drop(client);
@@ -174,8 +174,8 @@ async fn removing_a_bundle_clears_its_cache_and_working_dir() {
     let session = open(&mut client).await;
     client.say("s1", &session, "在吗").await;
     home.until_turns(&session, 1).await;
-    let cache = home.root.state().join("mcp").join("probe.json");
-    let dir = home.root.state().join("mcp").join("probe");
+    let cache = home.root.mcp_catalog("probe");
+    let dir = home.root.mcp_workdir("probe");
     assert!(cache.is_file() && dir.is_dir());
 
     let removed = client

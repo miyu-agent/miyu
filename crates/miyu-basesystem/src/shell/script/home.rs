@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use miyu_store::root::{USER_DIRS, user_dir};
+use miyu_store::root::{DataRoot, USER_DIRS};
 use miyu_tool::Call;
 
 /// `name`（[`USER_DIRS`] 里的一处）交给脚本的环境变量：照名字配，不靠先后（施工 Y-11 补修），调了 [`USER_DIRS`] 的先后也
@@ -32,9 +32,10 @@ pub(super) fn wanted(call: &Call) -> Vec<(&'static str, PathBuf)> {
     let (Some(root), true, true) = (call.data_root.as_deref(), call.ids.is_some(), local) else {
         return Vec::new();
     };
+    let root = DataRoot::at(root.to_path_buf());
     USER_DIRS
         .iter()
-        .filter_map(|name| Some((var(name)?, user_dir(root, name))))
+        .filter_map(|name| Some((var(name)?, root.user_dir(name))))
         .collect()
 }
 

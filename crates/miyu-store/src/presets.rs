@@ -78,7 +78,7 @@ impl Presets {
         Presets {
             dirs: vec![
                 (Layer::Shipped, resources.path().join("presets")),
-                (Layer::Home, root.path().join("presets")),
+                (Layer::Home, root.presets()),
             ],
             groups: BTreeMap::new(),
             homes: BTreeMap::new(),

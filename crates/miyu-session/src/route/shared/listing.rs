@@ -182,7 +182,7 @@ impl ModelData {
 
     /// 读 `listing.json`：没有的、没有 `state` 的没有；读不了、读不懂的记一行 `WARN`，当没有。
     fn read_listing(&self) -> Option<Recalled> {
-        let path = self.dir.as_ref()?.join(LISTING_FILE);
+        let path = self.dir.as_ref()?.cache.join(LISTING_FILE);
         let text = match std::fs::read_to_string(path) {
             Ok(text) => text,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return None,

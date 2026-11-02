@@ -14,10 +14,7 @@ const TARGET: &str = "miyu::endpoint";
 
 /// 包 `package` 的缓存在哪。
 fn path(core: &Core, package: &str) -> PathBuf {
-    core.root
-        .state()
-        .join("providers")
-        .join(format!("{package}.json"))
+    core.root.provide_cache(package)
 }
 
 /// 记下包 `package` 这一次登记的原文 `kept`（`provide` 的参数）。

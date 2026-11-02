@@ -297,7 +297,7 @@ impl Tool for RemoteTool {
                 .is_some_and(|caller| caller.venue.as_str() == crate::list::LOCAL);
             if let (Some(root), true, true) = (call.data_root.as_deref(), ids.is_some(), local) {
                 let root = std::fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
-                let pictures = miyu_store::root::user_dir(&root, "pictures");
+                let pictures = miyu_store::root::DataRoot::at(root).user_dir("pictures");
                 params["pictures"] = json!(pictures.display().to_string());
             }
             let mut cancel = Cancel {

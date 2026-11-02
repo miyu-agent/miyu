@@ -193,7 +193,7 @@ fn the_skeleton_is_built_and_building_it_again_is_fine() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     root.prepare().unwrap();
-    let dirs = [root.state(), root.run()];
+    let dirs = [root.path().join("state"), root.run()];
     for dir in &dirs {
         assert!(dir.is_dir(), "{} 应该建好了", dir.display());
     }
@@ -295,7 +295,7 @@ fn existing_directories_keep_their_permissions() {
     root.prepare().unwrap();
     let mode = |dir: &Path| fs::metadata(dir).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode(root.path()), 0o755, "人自己建的，权限不改");
-    assert_eq!(mode(&root.state()), 0o700, "新建的照样 0700");
+    assert_eq!(mode(&root.path().join("state")), 0o700, "新建的照样 0700");
 }
 
 /// 这个目录里现在有哪些东西：相对的路径和文件内容，照名字排。
@@ -406,11 +406,15 @@ fn the_user_dirs_and_the_cache_are_in_the_home() {
             ("downloads", home.join("downloads")),
         ]
     );
-    assert_eq!(root.cache(), home.join("cache"));
+    assert_eq!(root.script_caches(), home.join("cache"));
     assert!(!home.join("pictures").exists(), "不建");
-    // 只有数据根路径的一方（施工 Y-11 下）拼出来的是同一个位置（施工 Y-11 补修：只留一处布局）。
+    // 只有数据根路径的一方（施工 Y-11 下）照 `DataRoot::at` 拿到的是同一个位置（施工 Y-11 补修：只留一处布局）。
     for (name, dir) in root.user_dirs() {
-        assert_eq!(user_dir(root.path(), name), dir, "{name}");
+        assert_eq!(
+            DataRoot::at(root.path().to_path_buf()).user_dir(name),
+            dir,
+            "{name}"
+        );
     }
 }
 

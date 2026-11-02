@@ -139,7 +139,7 @@ pub(crate) fn remove(layers: &[Layer], sole: bool) -> Option<&'static str> {
 pub(crate) async fn list(core: &Core, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let personas = personas(core);
-    let state = core.root.state();
+    let state = core.root.persona_picture_cache();
     // 读盘、看图都在阻塞线程里（施工 V-16：原来算图片版本是在这外面直接读盘的）。
     let read = tokio::task::spawn_blocking(move || {
         personas
@@ -189,7 +189,7 @@ pub(crate) async fn get(core: &Core, peer: Peer, params: GetParams) -> Result<Va
     let personas = personas(core);
     let packages = core.packages_of();
     let language = peer.language;
-    let state = core.root.state();
+    let state = core.root.persona_picture_cache();
     tokio::task::spawn_blocking(move || {
         personas
             .find(&params.persona)

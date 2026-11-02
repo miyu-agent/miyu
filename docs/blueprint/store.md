@@ -15,7 +15,8 @@
 | `crates/miyu-store/src/access.rs`、`logins.rs`、`private_json.rs` | 访问密码 `access.json`（argon2id，`m=19456`、`t=2`、`p=1`）、设备令牌的哈希 `logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
 | `crates/miyu-store/src/secrets.rs` | 密钥文件 `secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
 | `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`（施工 8-3，`config.md`「日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
-| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；数据根里各处的位置；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1） |
+| `crates/miyu-store/src/root.rs` | 数据根在哪、建骨架、认标记；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1）；工具、脚本只拿到数据根路径时用的 `DataRoot::at`（施工 FH-2） |
+| `crates/miyu-store/src/root/places.rs`（施工 FH-2） | 数据根里每一处在哪：配置和凭据、你的东西、机器和包的状态、缓存、日志、暂存各一组方法（设计 `55-数据根仿FHS.md` 第二节的分块），别的代码只经它们拿位置、不自己拼；`state()`、`cache()` 这种「给一个目录、自己往下拼」的去掉了 |
 | `crates/miyu-store/src/durable.rs` | 建目录、同步目录；新建临时文件（只许新建，撞名换下一个；施工 8-5 起能建成 Unix 上 0600 的，`create_temp_with`）、删用不上的临时文件（施工 8-1 从 `blob.rs` 挪来，两处共用）；认临时文件的名字、清崩了剩下的（施工 AS-11） |
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条）。`write` 哪里都建目录（机器的缓存目录、头自己的文件）；写进数据根的用 `write_inside`，目录照第四条建（施工 TMP-1） |
 | `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |

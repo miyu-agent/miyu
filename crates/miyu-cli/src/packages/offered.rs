@@ -14,13 +14,14 @@ use miyu_store::root::DataRoot;
 /// 本机存着的软件源索引里提供命令 `name` 的包的编号；没有存过索引、哪个包都不带它的没有。
 pub fn offering(name: &str) -> Option<String> {
     let root = DataRoot::locate(&Env::current()).ok()?;
-    offering_under(&root.state().join("packages"), name)
+    offering_under((&root.official_feed(), &root.other_feeds()), name)
 }
 
-/// 同 [`offering`]，索引在 `packages`（数据根的 `state/packages/`）下面找。
-pub(crate) fn offering_under(packages: &Path, name: &str) -> Option<String> {
-    let mut indexes = vec![packages.join(".sync").join("index.json")];
-    if let Ok(entries) = std::fs::read_dir(packages.join(".sources")) {
+/// 同 [`offering`]，官方的索引在 `official` 下面，别的源一个一个目录在 `others` 下面（位置照
+/// [`DataRoot::official_feed`]、[`DataRoot::other_feeds`]）。
+pub(crate) fn offering_under((official, others): (&Path, &Path), name: &str) -> Option<String> {
+    let mut indexes = vec![official.join("index.json")];
+    if let Ok(entries) = std::fs::read_dir(others) {
         let mut sources: Vec<_> = entries
             .flatten()
             .map(|entry| entry.path().join("index.json"))

@@ -112,7 +112,7 @@ async fn the_bridge_opens_groups_under_the_owner_confined() {
         &session,
     )
     .await;
-    let ledger = home.root.state().join("usage.db");
+    let ledger = home.root.usage_file();
     until_counted(
         &ledger,
         "SELECT count(*) FROM spent WHERE session = ?1",

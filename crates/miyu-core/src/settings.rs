@@ -111,9 +111,6 @@ const OWNED: [(&str, &[Item]); 9] = [
     (crate::packages::NET, NET[6]),
 ];
 
-/// 生成的三份放在状态区的这个目录里：`state/config/`。
-const DIR: &str = "config";
-
 /// 软件包的配置项和读成了的清单（施工 9-1 下，`packages.md`「配置项」）：核心起来时照清单拼好一次，读配置、生成 Schema
 /// 和参考文件时并进去。
 #[derive(Debug, Clone, Default)]
@@ -277,7 +274,7 @@ pub fn generate(
             .map(|text| text.map_err(|error| error.to_string())),
         Err(error) => FILES.map(|_| Err(error.to_string())),
     };
-    let dir = root.state().join(DIR);
+    let dir = root.config_reference();
     for (name, text) in FILES.into_iter().zip(texts) {
         let written = text.and_then(|text| {
             generated::write_inside(&dir.join(name), text.as_bytes())
@@ -286,7 +283,13 @@ pub fn generate(
         if let Err(error) = written {
             tracing::warn!(
                 target: TARGET,
-                file = %format!("state/{DIR}/{name}"),
+                // 运行日志里写相对数据根的位置，不写家目录（`log.md`）。
+                file = %dir
+                    .join(name)
+                    .strip_prefix(root.path())
+                    .unwrap_or(Path::new(name))
+                    .to_string_lossy()
+                    .replace('\\', "/"),
                 error = %error,
                 "config schema not written"
             );

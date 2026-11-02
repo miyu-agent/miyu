@@ -19,7 +19,7 @@ pub(super) fn after(call: &Call) {
     let (Some(root), true) = (call.data_root.as_deref(), call.ids.is_some()) else {
         return;
     };
-    let cache = root.join(miyu_store::root::CACHE);
+    let cache = miyu_store::root::DataRoot::at(root.to_path_buf()).script_caches();
     {
         let mut last = LAST.lock().unwrap_or_else(PoisonError::into_inner);
         if last.get(&cache).is_some_and(|at| at.elapsed() < EVERY) {

@@ -21,11 +21,6 @@ pub(super) struct Wanted<'a> {
     pub(super) mirrors: &'a [String],
 }
 
-/// 缓存目录：`state/packages/.cache/`。
-pub(super) fn cache_dir(state_root: &Path) -> PathBuf {
-    state_root.join(".cache")
-}
-
 /// 下一个包文件到 `cache`，交回它的位置。
 ///
 /// # Errors

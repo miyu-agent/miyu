@@ -241,7 +241,7 @@ async fn the_replies_say_where_the_session_works() {
     assert_eq!(reply["result"]["cwd"], json!("~"), "{reply}");
     home_wide(&reply);
     // 明着选了数据根里面、又不在 `workspace/` 里的：照不了，退回这个会话的默认工作区。
-    let state = home.root.state().to_string_lossy().into_owned();
+    let state = home.root.run().to_string_lossy().into_owned();
     let reply = client
         .call(
             "c7",

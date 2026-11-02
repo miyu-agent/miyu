@@ -265,7 +265,7 @@ fn item_json(dir: bool, full: &Path, path: &str, marks: &[usize]) -> Value {
 fn boundary_of(place: &Place) -> Boundary {
     let places = Places::here(
         place.root.workspace(),
-        place.root.path().to_path_buf(),
+        (place.root.path().to_path_buf(), place.root.knowledge()),
         place.home.as_deref(),
     );
     Boundary::new(&places)

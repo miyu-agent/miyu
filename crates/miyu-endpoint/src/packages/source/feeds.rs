@@ -14,7 +14,6 @@ use miyu_config::problem::{Code, Problem};
 use miyu_config::{Address, Layer, Setting, Value};
 use miyu_source::sign::PublicKey;
 
-use super::super::packages;
 use crate::Core;
 use crate::settings::SourceSettings;
 
@@ -63,7 +62,7 @@ pub(crate) fn official(core: &Core) -> Feed {
         tier: Tier::Official,
         bases: super::sync::bases(&settings),
         keys: core.trust.keys.clone(),
-        dir: packages(core).state_root().join(".sync"),
+        dir: core.root.official_feed(),
     }
 }
 
@@ -71,7 +70,7 @@ pub(crate) fn official(core: &Core) -> Feed {
 pub(crate) fn feeds(core: &Core) -> Vec<Feed> {
     let system = written(&core.config().file().parsed);
     let mut all = vec![official(core)];
-    let state = packages(core).state_root().join(".sources");
+    let state = core.root.other_feeds();
     all.extend(
         system
             .iter()

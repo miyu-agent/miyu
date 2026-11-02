@@ -8,6 +8,7 @@ const PLACES: Places<'static> = Places {
     cwd: "/home/me/proj",
     home: Some("/home/me"),
     data_root: "/home/me/.miyu",
+    workspaces: "/home/me/.miyu/workspace",
 };
 
 fn kind(command: &str) -> Option<&'static str> {
@@ -188,10 +189,24 @@ fn the_corners_of_reading_a_command() {
     // 数据根不在家目录里：删它上面那一层也算删它。
     let places = Places {
         data_root: "/srv/miyu/data",
+        workspaces: "/srv/miyu/data/workspace",
         ..PLACES
     };
     assert_eq!(
         assess("rm -rf /srv/miyu", &places).map(Kind::code),
+        Some("delete_data_root")
+    );
+    // 放工作区的目录照给的认（施工 FH-2：调的一方照数据根的布局给），不照数据根下面的 `workspace/` 猜。
+    let moved = Places {
+        workspaces: "/home/me/.miyu/root/workspace",
+        ..PLACES
+    };
+    assert_eq!(
+        assess("rm -rf ~/.miyu/root/workspace/s1/build", &moved).map(Kind::code),
+        None
+    );
+    assert_eq!(
+        assess("rm -rf ~/.miyu/workspace/s1/build", &moved).map(Kind::code),
         Some("delete_data_root")
     );
 }

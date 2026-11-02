@@ -366,7 +366,7 @@ fn on(switches: &Switches, id: &str, manifest: &Manifest) -> bool {
 
 /// 开关的文件在哪。
 fn switches_path(core: &Core) -> PathBuf {
-    core.root.path().join(file::FILE)
+    core.root.extensions_file()
 }
 
 /// 读开关：读不成的当没有，记一行 `WARN`；交回它的版本（写回时用），读不成的也交回整份字节的版本，好盖掉它。

@@ -251,7 +251,9 @@ impl Sandbox {
         if std::fs::symlink_metadata(data_root.join(miyu_store::root::MARKER)).is_err() {
             return Ok(());
         }
-        miyu_store::root::create_inside(&data_root.join(miyu_store::root::RUN))?;
+        miyu_store::root::create_inside(
+            &miyu_store::root::DataRoot::at(data_root.to_path_buf()).run(),
+        )?;
         match &self.jobs {
             Some(jobs) => miyu_store::root::create_inside(jobs),
             None => Ok(()),

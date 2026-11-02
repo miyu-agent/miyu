@@ -39,7 +39,7 @@ impl LogSalt {
     ///
     /// 读不了、建不了状态区、写不进、系统给不出随机字节：交给调的一方记一行，这次起来用 [`LogSalt::fresh`]。
     pub fn load(root: &DataRoot) -> io::Result<LogSalt> {
-        let state = root.state();
+        let state = root.salt_dir();
         let path = state.join(FILE);
         if let Some(salt) = read(&path)? {
             return Ok(salt);

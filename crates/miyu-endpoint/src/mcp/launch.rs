@@ -136,17 +136,14 @@ fn resolved(config: &crate::config::Config, value: &EnvValue) -> Option<String> 
     }
 }
 
-/// 服务 `service` 的标准错误的文件：`state/logs/mcp-<服务名>.stderr`（软件包列表上停下了的给最后几行，施工 X-4）。
+/// 服务 `service` 的标准错误的文件（软件包列表上停下了的给最后几行，施工 X-4；位置照 `DataRoot::mcp_stderr`）。
 pub(crate) fn stderr_file(core: &Core, service: &str) -> PathBuf {
-    core.root
-        .state()
-        .join("logs")
-        .join(format!("mcp-{service}.stderr"))
+    core.root.mcp_stderr(service)
 }
 
-/// 服务 `service` 的工作目录：`state/mcp/<服务名>/`。
+/// 服务 `service` 的工作目录（位置照 `DataRoot::mcp_workdir`）。
 pub(super) fn work_dir(core: &Core, service: &str) -> PathBuf {
-    core.root.state().join("mcp").join(service)
+    core.root.mcp_workdir(service)
 }
 
 /// 只有名字的命令照这几种文件名找：Windows 上 `npx`、`uvx` 这类是 `.cmd`，`Command` 自己只认 `.exe`（施工 X-5）。找到的

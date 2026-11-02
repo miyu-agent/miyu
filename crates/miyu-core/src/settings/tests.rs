@@ -77,7 +77,7 @@ fn generated(root: &DataRoot, resources: &ResourceRoot, locale: Option<&str>) ->
 fn the_files_follow_the_system_language() {
     let scratch = Scratch::new();
     let root = scratch.root();
-    let dir = root.state().join("config");
+    let dir = root.config_reference();
     assert_eq!(
         generated(&root, &resources(), Some("ja_JP.UTF-8")),
         Vec::<String>::new()
@@ -115,7 +115,7 @@ fn missing_words_are_logged_for_each_file_and_nothing_is_written() {
         );
         assert!(line.contains("error=\"no words for "), "{line}");
     }
-    assert!(!root.state().join("config").exists(), "什么都没写");
+    assert!(!root.config_reference().exists(), "什么都没写");
     // 读不懂的字：也是每一份一条，原因是哪一份读不懂。
     std::fs::write(bare.join("core/human/en.json"), "{").expect("写得进");
     let lines = generated(&root, &ResourceRoot::at(&bare), None);
@@ -150,7 +150,7 @@ async fn until(what: &str, done: impl Fn() -> bool) {
 async fn a_changed_level_and_language_take_effect_right_away() {
     let scratch = Scratch::new();
     let root = scratch.root();
-    let reference = root.state().join("config").join("reference.toml");
+    let reference = root.config_reference().join("reference.toml");
     let read = || std::fs::read_to_string(&reference).unwrap_or_default();
     let memory = Memory::new();
     let (subscriber, levels) =
@@ -223,7 +223,7 @@ const XCFG: &str = "[package]\nprotocol = [1, 1]\nname = { en = \"X\" }\n\n[comm
 async fn a_changed_item_list_rewrites_the_files() {
     let scratch = Scratch::new();
     let root = scratch.root();
-    let reference = root.state().join("config").join("reference.toml");
+    let reference = root.config_reference().join("reference.toml");
     let read = || std::fs::read_to_string(&reference).unwrap_or_default();
     let (_subscriber, levels) =
         miyu_log::reloadable(Memory::new(), LevelFilter::INFO, String::new, None);

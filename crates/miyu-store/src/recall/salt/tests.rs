@@ -58,7 +58,7 @@ fn the_short_id_does_not_show_the_persona() {
 fn a_missing_salt_is_made_and_kept_then_read_back() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
-    let path = root.state().join(FILE);
+    let path = root.salt_dir().join(FILE);
     assert!(!path.exists());
     let first = LogSalt::load(&root).unwrap();
     assert_eq!(fs::read(&path).unwrap().len(), LEN);
@@ -67,7 +67,7 @@ fn a_missing_salt_is_made_and_kept_then_read_back() {
     let room = Room::persona("miyu");
     assert_eq!(first.room_id(&room), again.room_id(&room));
     // 不留临时文件。
-    let left: Vec<_> = fs::read_dir(root.state())
+    let left: Vec<_> = fs::read_dir(root.salt_dir())
         .unwrap()
         .filter_map(Result::ok)
         .filter(|entry| entry.file_name().to_string_lossy().ends_with(".tmp"))
@@ -79,7 +79,7 @@ fn a_missing_salt_is_made_and_kept_then_read_back() {
 fn a_salt_of_the_wrong_length_is_replaced() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
-    let path = root.state().join(FILE);
+    let path = root.salt_dir().join(FILE);
     fs::write(&path, b"short").unwrap();
     let salt = LogSalt::load(&root).unwrap();
     let kept = fs::read(&path).unwrap();
@@ -95,7 +95,7 @@ fn only_the_owner_reads_the_salt() {
     let scratch = Scratch::new();
     let root = root_in(&scratch);
     LogSalt::load(&root).unwrap();
-    let mode = fs::metadata(root.state().join(FILE))
+    let mode = fs::metadata(root.salt_dir().join(FILE))
         .unwrap()
         .permissions()
         .mode();

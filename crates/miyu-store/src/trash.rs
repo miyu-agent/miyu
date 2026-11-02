@@ -129,7 +129,7 @@ fn keep_usage(
         kind: EventKind::parse(usage::PURGED).map_err(|error| error.to_string())?,
         body,
     };
-    journal::append(&root.path().join(journal::FILE), entry)
+    journal::append(&root.journal_file(), entry)
         .map(|_| ())
         .map_err(|error| error.to_string())
 }

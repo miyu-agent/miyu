@@ -1354,6 +1354,7 @@ flowchart LR
 |---|---|---|
 | FH-0 | 设计和计划 | 数据根照 Linux 的 FHS 分 `etc/ opt/ root/ var/ tmp/ run/`，给程序一组 `MIYU_*_DIR` 环境变量；FH-1 到 FH-7 的先后、谁做、待办。施工单见 `FH-数据根仿FHS.md`，盘点见 `FH-盘点-核心.md`、`FH-盘点-别的仓库.md` |
 | FH-1 | 记忆只跟随人格 | 去掉「只在这个会话里」的记忆范围：`session.create` 的 `memory` 只收 `persona`、`off`（`session` 回 `bad_params`），人格不再管范围（`persona.toml` 写了 `[memory]` 的 `unknown table`），会话目录下不再有 `memory/`，整理会话只有人格那一间；「清掉这个会话记下的」照留。设计 17 L2 改。施工单见 `FH-数据根仿FHS.md` |
+| FH-2上 | 数据根里的位置都经 `DataRoot` 拿 | 纯重构、布局不变：`miyu-store/src/root/places.rs` 按设计 55 的分块给出每一处的方法，产品代码里自己拼数据根路径的都换掉，`state()`、`cache()` 去掉；模型目录拆成用出来的、拉到的两处（`ModelDirs`）；包的状态根拆成状态、本地库、留下的改动、软件源缓存、下载、解包各一处；写配置、密钥的临时文件往上找数据根、建在它的 `run/` 里；知识库的边界、危险命令里的工作区由调的一方照数据根给，不再照 `kb/`、`workspace/` 猜。施工单见 `FH-数据根仿FHS.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

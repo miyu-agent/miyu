@@ -7,7 +7,7 @@ use std::fs;
 use miyu_store::journal;
 use miyu_store::log::SessionLog;
 use miyu_store::sqlite::Opened;
-use miyu_store::usage::{FILE, Group, OneShotCall, Query, UsageIndex};
+use miyu_store::usage::{Group, OneShotCall, Query, UsageIndex};
 
 use crate::support::*;
 
@@ -54,7 +54,7 @@ fn each_sent_request_is_one_row_and_amounts_add_up_by_currency() {
     let root = root_in(&scratch);
     let (index, opened) = UsageIndex::open(&root);
     assert!(matches!(opened, Opened::Created));
-    assert_eq!(index.path(), root.state().join(FILE));
+    assert_eq!(index.path(), root.usage_file());
     spoken(&root, &index);
     let all = total(&index);
     assert_eq!(all.requests, 3, "没发出去的不算");
@@ -156,7 +156,7 @@ fn a_reverted_turn_still_counts() {
 fn a_broken_or_outdated_table_is_rebuilt_from_the_logs() {
     let scratch = Scratch::new("usage-rebuild");
     let root = root_in(&scratch);
-    let path = root.state().join(FILE);
+    let path = root.usage_file();
     {
         let (index, _) = UsageIndex::open(&root);
         spoken(&root, &index);

@@ -36,12 +36,12 @@ pub struct Script {
 
 /// 主人自己放脚本的文件夹：`scripts/`，还没建的也照写（施工 X-27 补，网页「打开目录」要）。
 pub fn own_dir(root: &DataRoot) -> PathBuf {
-    root.path().join("scripts")
+    root.scripts()
 }
 
-/// 脚本的状态目录都在数据根 `data_root` 的这下面（施工 X-44）：`state/scripts/`。卸包、`miyu check` 照它找。
-pub fn state_root(data_root: &Path) -> PathBuf {
-    data_root.join("state").join("scripts")
+/// 脚本的状态目录都在数据根 `root` 的这下面（施工 X-44；位置照 [`DataRoot::script_states`]）。卸包、`miyu check` 照它找。
+pub fn state_root(root: &DataRoot) -> PathBuf {
+    root.script_states()
 }
 
 /// 场所会话的那一层目录名的开头（施工 X-44 补）：包的编号、[`HOME_PACKAGE`] 都不这样开头，分得清这一层是场所。
@@ -102,12 +102,12 @@ fn hex(digit: u8) -> Option<u8> {
 /// 状态目录（施工 X-44，`MIYU_SCRIPT_STATE_DIR`）：本机的会话、没说场所的是 `state/scripts/<来处>/<工具名>/`；场所会话多一层
 /// 场所（施工 X-44 补）：`state/scripts/@<场所>/<来处>/<工具名>/`。场所写不成目录名的没有。不建：跑之前脚本工具建。
 pub fn state_dir(
-    data_root: &Path,
+    root: &DataRoot,
     venue: Option<&VenueId>,
     source: &str,
     tool: &str,
 ) -> Option<PathBuf> {
-    let mut dir = state_root(data_root);
+    let mut dir = state_root(root);
     if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
         dir.push(venue_dir(venue)?);
     }
@@ -118,13 +118,12 @@ pub fn state_dir(
 /// `MIYU_SCRIPT_CACHE_DIR`）：`cache/<来处>/<工具名>/`，场所会话多一层场所（同 [`state_dir`]）。场所写不成目录名的
 /// 没有。不建：跑之前脚本工具建。
 pub fn cache_dir(
-    data_root: &Path,
+    root: &DataRoot,
     venue: Option<&VenueId>,
     source: &str,
     tool: &str,
 ) -> Option<PathBuf> {
-    // 同 `DataRoot::cache`：调的一方手里只有数据根的路径。
-    let mut dir = data_root.join(crate::root::CACHE);
+    let mut dir = root.script_caches();
     if let Some(venue) = venue.filter(|venue| venue.as_str() != LOCAL) {
         dir.push(venue_dir(venue)?);
     }
@@ -142,10 +141,10 @@ pub struct State {
     pub path: PathBuf,
 }
 
-/// 数据根 `data_root` 里所有的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
-pub fn states(data_root: &Path) -> Vec<State> {
+/// 数据根 `root` 里所有的状态目录，照路径排（施工 X-44：`miyu check` 照它报没有脚本的那几格）。读不了的那一层跳过。
+pub fn states(root: &DataRoot) -> Vec<State> {
     let mut found = Vec::new();
-    for from in sources(data_root) {
+    for from in sources(root) {
         for path in folders(&from) {
             if let (Some(source), Some(tool)) = (name(&from), name(&path)) {
                 found.push(State { source, tool, path });
@@ -157,7 +156,7 @@ pub fn states(data_root: &Path) -> Vec<State> {
 }
 
 /// 放来处的那几层：`state/scripts/` 本身，加它下面每个场所那一层（施工 X-44 补）。
-fn places(data_root: &Path) -> Vec<PathBuf> {
+fn places(data_root: &DataRoot) -> Vec<PathBuf> {
     let root = state_root(data_root);
     let mut places: Vec<PathBuf> = folders(&root)
         .into_iter()
@@ -168,8 +167,8 @@ fn places(data_root: &Path) -> Vec<PathBuf> {
 }
 
 /// 每个来处的文件夹：[`places`] 下面不是场所那一层的。
-fn sources(data_root: &Path) -> Vec<PathBuf> {
-    places(data_root)
+fn sources(root: &DataRoot) -> Vec<PathBuf> {
+    places(root)
         .iter()
         .flat_map(|place| folders(place))
         .filter(|dir| !name(dir).is_some_and(|name| name.starts_with(VENUE_MARK)))
@@ -199,8 +198,8 @@ fn folders(dir: &Path) -> Vec<PathBuf> {
 /// # Errors
 ///
 /// 删不掉的那一个。
-pub fn forget_states(data_root: &Path, source: &str) -> std::io::Result<()> {
-    for place in places(data_root) {
+pub fn forget_states(root: &DataRoot, source: &str) -> std::io::Result<()> {
+    for place in places(root) {
         match std::fs::remove_dir_all(place.join(source)) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(error),
             _ => {}

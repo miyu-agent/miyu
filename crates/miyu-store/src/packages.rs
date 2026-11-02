@@ -107,7 +107,10 @@ impl Clone for Issue {
 #[derive(Debug, Clone)]
 pub struct Packages {
     dirs: Vec<(Layer, PathBuf)>,
-    state: PathBuf,
+    /// 放各包状态的目录（[`DataRoot::package_states`]）。
+    states: PathBuf,
+    /// 本地库（[`DataRoot::local_packages`]）。
+    local: PathBuf,
 }
 
 impl Packages {
@@ -119,7 +122,8 @@ impl Packages {
                 (Layer::Shipped, resources.path().join("packages")),
                 (Layer::Home, root.packages()),
             ],
-            state: root.state().join("packages"),
+            states: root.package_states(),
+            local: root.local_packages(),
         }
     }
 
@@ -127,7 +131,8 @@ impl Packages {
     pub fn shipped(resources: &ResourceRoot) -> Packages {
         Packages {
             dirs: vec![(Layer::Shipped, resources.path().join("packages"))],
-            state: PathBuf::new(),
+            states: PathBuf::new(),
+            local: PathBuf::new(),
         }
     }
 
@@ -182,9 +187,9 @@ impl Packages {
             .collect()
     }
 
-    /// 本地库在哪：`<数据根>/state/packages/.local`（施工 F-8 中上，[`local`]）。
+    /// 本地库在哪（施工 F-8 中上，[`local`]；位置照 [`DataRoot::local_packages`]）。
     pub fn local_root(&self) -> PathBuf {
-        local::root(&self.state)
+        self.local.clone()
     }
 
     /// 家目录那一层的目录（施工 F-5 上：装、卸只动它）；只有出厂那一层的没有。
@@ -205,14 +210,9 @@ impl Packages {
         self.dirs.iter().map(|(layer, dir)| (*layer, dir.as_path()))
     }
 
-    /// 包 `id` 在这台机器上放状态的目录：`<数据根>/state/packages/<编号>/`。不建：包自己建。
+    /// 包 `id` 在这台机器上放状态的目录（位置照 [`DataRoot::package_state`]）。不建：包自己建。
     pub fn state_dir(&self, id: &str) -> PathBuf {
-        self.state.join(id)
-    }
-
-    /// 包的状态目录的上一层 `state/packages/`（施工 P-11 下：卸了的包留下的改动记在这里，`leftovers`）。
-    pub fn state_root(&self) -> &Path {
-        &self.state
+        self.states.join(id)
     }
 }
 

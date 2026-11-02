@@ -50,7 +50,7 @@ async fn run_once(home: &Home, lang: &str) {
 }
 
 fn generated(home: &Home, name: &str) -> PathBuf {
-    home.root.state().join("config").join(name)
+    home.root.config_reference().join(name)
 }
 
 fn modified(path: &Path) -> SystemTime {
@@ -115,7 +115,7 @@ async fn the_same_files_are_left_alone_and_changed_ones_are_put_back() {
 async fn files_that_cannot_be_written_are_logged_and_the_core_still_starts() {
     let home = Home::new();
     // 该是目录的地方是个文件：三份都写不成。
-    let blocked = home.root.state().join("config");
+    let blocked = home.root.config_reference();
     std::fs::write(&blocked, "not a directory").expect("写得进");
     run_once(&home, "en_US.UTF-8").await;
     let log = home.core_log();

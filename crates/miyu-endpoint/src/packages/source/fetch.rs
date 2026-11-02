@@ -129,7 +129,7 @@ pub(crate) async fn install(
         ));
     }
     let _one_at_a_time = core.packaging.lock().await;
-    let cache = download::cache_dir(packages(core).state_root());
+    let cache = core.root.package_downloads();
     let count = steps.len();
     let mut files = Vec::with_capacity(count);
     for (n, step) in steps.iter().enumerate() {

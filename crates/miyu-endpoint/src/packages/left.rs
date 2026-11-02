@@ -10,7 +10,6 @@ use miyu_store::layers::Layer;
 use miyu_store::packages::conflicts::Kind;
 use miyu_store::packages::leftovers::Leftovers;
 
-use super::packages;
 use crate::Core;
 
 /// 装包 `id` 之前比的几层（`conflicts` 的 `layers`）：人格、预设的编号在出厂、家目录里有的那几层。不算的：这个包以前
@@ -21,7 +20,7 @@ pub(super) fn layers(core: &Core, id: &str) -> impl Fn(Kind, &str) -> Vec<Layer>
         crate::personas::personas(core),
         crate::presets::presets(core),
     );
-    let state = packages(core).state_root().to_path_buf();
+    let state = core.root.leftovers_dir();
     let mine = core
         .system_packages()
         .iter()
@@ -53,7 +52,7 @@ pub(super) fn noting(core: &Core, id: &str, dir: &Path) -> impl FnOnce() -> Left
         crate::personas::personas(core),
         crate::presets::presets(core),
     );
-    let state = packages(core).state_root().to_path_buf();
+    let state = core.root.leftovers_dir();
     let (id, dir) = (id.to_string(), dir.to_path_buf());
     move || {
         let edited = |layers: Vec<Layer>| layers.iter().any(|layer| matches!(layer, Layer::Home));
@@ -98,7 +97,7 @@ impl Left {
 
 /// 包 `id` 装上了：它以前留下的那几笔划掉。碰磁盘。
 pub(super) fn back(core: &Core, id: &str) -> impl FnOnce() + Send + 'static {
-    let state = packages(core).state_root().to_path_buf();
+    let state = core.root.leftovers_dir();
     let id = id.to_string();
     move || {
         let mut left = Leftovers::read(&state);
@@ -119,13 +118,13 @@ pub(crate) async fn warnings(core: &Core, words: &Human) -> Vec<Value> {
         crate::personas::personas(core),
         crate::presets::presets(core),
     );
-    let state = packages(core).state_root().to_path_buf();
+    let state = core.root.leftovers_dir();
     let installed: Vec<String> = core
         .system_packages()
         .iter()
         .map(|one| one.id.clone())
         .collect();
-    let dirs = [(Layer::Home, core.root.path().to_path_buf())];
+    let dirs = [(Layer::Home, core.root.user_layer())];
     let found = tokio::task::spawn_blocking(move || {
         let left = Leftovers::read(&state);
         // 一笔：哪一样、编号、包、那一份改动在哪；包又装着了的、改动删掉了的不算。

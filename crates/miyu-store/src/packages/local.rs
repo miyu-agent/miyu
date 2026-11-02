@@ -8,7 +8,7 @@
 
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -179,11 +179,6 @@ pub fn ids(root: &Path) -> Vec<String> {
 /// 一个包的总字节数。
 pub fn size(files: &[Entry]) -> u64 {
     files.iter().map(|file| file.size).sum()
-}
-
-/// 状态目录 `state` 下本地库在哪。
-pub fn root(state: &Path) -> PathBuf {
-    state.join(LOCAL)
 }
 
 #[cfg(test)]

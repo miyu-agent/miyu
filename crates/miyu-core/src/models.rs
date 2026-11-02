@@ -27,7 +27,7 @@ use miyu_models::cooldown::Rules;
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 use miyu_models::settings::CatalogSettings;
-use miyu_session::{IDLE, ModelData, Models, Observed, Routes, read_observed};
+use miyu_session::{IDLE, ModelData, ModelDirs, Models, Observed, Routes, read_observed};
 use miyu_store::resources::ResourceRoot;
 
 use crate::TARGET;
@@ -36,12 +36,12 @@ use recall::{Read, Version};
 use refresh::{Refresher, Schedule};
 
 /// 照资源目录造路由，模型资料还没读（目录、用出来的、供应商的列表随 [`begin`]、[`follow`]）。用出来的、列表写进 `state`
-/// （`state/models`，没有的不写）。
+/// （[`ModelDirs`] 那两处，没有的不写）。
 ///
 /// # Errors
 ///
 /// 档案、认原厂的表读不出来、写法不对（安装坏了）；HTTP 客户端造不出来（系统的证书读不了之类）。交回原因。
-pub fn prepare(resources: &ResourceRoot, state: Option<PathBuf>) -> Result<Routes, String> {
+pub fn prepare(resources: &ResourceRoot, state: Option<ModelDirs>) -> Result<Routes, String> {
     let profiles = resources
         .profiles()
         .map_err(|error| error.to_string())
@@ -97,12 +97,12 @@ pub fn routes(resources: &ResourceRoot) -> Result<Arc<dyn Models>, String> {
 /// 最早的一步（施工 V-2 下补）：找到资源目录就在一个线程里读目录（快照和缓存挑新的），和读配置、生成文件这些起来的步子
 /// 并着走。头一连上就要载入会话，载入要等目录读完：原来造好路由才开始读，起来约 15 ms 以后才动手。线程起不来的，到
 /// [`begin`] 再读。`program` 是程序的真实位置：缓存目录里整理好的一份认它（施工 V-5 中，[`digest`]）。`state` 是
-/// `state/models`：记下的那份对得上排第一的那份目录的，不读整份目录（施工 V-25 下，[`recall`]）。
+/// 路由写东西的两处 [`ModelDirs`]：拉到的那一处记下的那份对得上排第一的那份目录的，不读整份目录（施工 V-25 下，[`recall`]）。
 pub fn read_early(
     snapshot: PathBuf,
     cache: Option<PathBuf>,
     program: Option<PathBuf>,
-    state: Option<PathBuf>,
+    state: Option<ModelDirs>,
 ) -> Early {
     let version = Version::of_places(&snapshot, program.as_deref());
     let places = Places {
@@ -110,7 +110,11 @@ pub fn read_early(
         cache,
         program,
     };
-    let (reading, versioned, at) = (places.clone(), version.clone(), state.clone());
+    let (reading, versioned, at) = (
+        places.clone(),
+        version.clone(),
+        state.as_ref().map(|dirs| dirs.cache.clone()),
+    );
     // 核心放锁之前等它读完（施工 TMP-3）：读完才起写盘的线程、登记，没读完就放锁的会把删掉的数据根建回来。
     let held = crate::pending::working();
     let thread = std::thread::Builder::new()
@@ -136,8 +140,8 @@ pub struct Early {
     places: Places,
     /// 算版本串要的（施工 V-25 下）；没有的照旧常驻。
     version: Option<Version>,
-    /// `state/models`：记下的那份在这里。
-    state: Option<PathBuf>,
+    /// 路由写东西的两处：记下的那份在拉到的那一处（[`ModelDirs::cache`]）。
+    state: Option<ModelDirs>,
     thread: Option<std::thread::JoinHandle<Read>>,
 }
 
@@ -151,12 +155,21 @@ impl Early {
     fn finish(&mut self) -> Read {
         let Some(thread) = self.thread.take() else {
             let _held = crate::pending::working();
-            return recall::early(&self.places, self.version.as_ref(), self.state.as_deref());
+            let cache = self.state.as_ref().map(|dirs| dirs.cache.as_path());
+            return recall::early(&self.places, self.version.as_ref(), cache);
         };
         thread.join().unwrap_or_else(|_| {
             tracing::error!(target: TARGET, "catalog read panicked");
             Read::Full(None, None)
         })
+    }
+}
+
+/// 路由写东西的两处（施工 FH-2）：用出来的、拉到的，位置照数据根的方法。
+pub(crate) fn dirs(root: &miyu_store::root::DataRoot) -> ModelDirs {
+    ModelDirs {
+        state: root.model_state(),
+        cache: root.model_cache(),
     }
 }
 
@@ -169,7 +182,7 @@ impl Early {
 pub fn begin(
     data: Arc<ModelData>,
     early: Early,
-    state: Option<PathBuf>,
+    state: Option<ModelDirs>,
     config: Option<Resolved>,
 ) -> Reading {
     let table = early.places.snapshot.join(logos::TABLE);
@@ -177,7 +190,7 @@ pub fn begin(
     let version = early.version.clone();
     let task = tokio::task::spawn_blocking(move || {
         let mut early = early;
-        let observed = state.as_deref().map(read_observed).unwrap_or_default();
+        let observed = state.as_ref().map(read_observed).unwrap_or_default();
         let reader = early
             .version
             .clone()

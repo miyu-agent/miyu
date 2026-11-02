@@ -409,7 +409,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
         return;
     }
     let home = Home::outside_temp();
-    let other = home.root.cache().join("~home/other");
+    let other = home.root.script_caches().join("~home/other");
     std::fs::create_dir_all(&other).expect("建得了");
     std::fs::write(other.join("secret"), "secret\n").expect("写得进");
     let text = format!(
@@ -419,7 +419,7 @@ async fn a_script_in_the_sandbox_writes_only_its_own_cache() {
     let (status, output) = keep(&home, &helper, &text, ("local", true)).await;
     assert_eq!(status, ToolStatus::Ok, "{output}");
     assert_eq!(output, "cached\nblocked-other\n");
-    let kept = home.root.cache().join("~home/keep/n");
+    let kept = home.root.script_caches().join("~home/keep/n");
     assert_eq!(std::fs::read_to_string(kept).expect("留着"), "cached\n");
 }
 

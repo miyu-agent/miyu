@@ -17,7 +17,7 @@ use crate::refusal::Refusal;
 
 /// 主人的头像版本；没有的没有。
 pub(crate) fn version(core: &Core) -> Option<String> {
-    avatar_in(core.root.path())
+    avatar_in(&core.root.avatar_dir())
         .as_deref()
         .and_then(picture::version_of)
 }
@@ -25,7 +25,7 @@ pub(crate) fn version(core: &Core) -> Option<String> {
 /// `account.set_avatar`：见模块说明。
 pub(crate) async fn set(core: &Core, params: PictureParams) -> Result<Value, Refusal> {
     let checked = picture::check(core, Picture::Avatar, params).await?;
-    let dir = core.root.path().to_path_buf();
+    let dir = core.root.avatar_dir();
     if let Some(expect) = checked.expect() {
         let current = version(core);
         if &current != expect {
@@ -46,7 +46,7 @@ pub(crate) struct ReadParams {}
 
 /// `account.avatar`：见模块说明。
 pub(crate) async fn read(core: &Core, _params: ReadParams) -> Result<Value, Refusal> {
-    let dir = core.root.path().to_path_buf();
+    let dir = core.root.avatar_dir();
     tokio::task::spawn_blocking(move || match avatar_in(&dir) {
         Some(path) => picture::encoded(&path, Picture::Avatar).map_err(|_| Refusal::INTERNAL),
         None => Ok(Value::Null),

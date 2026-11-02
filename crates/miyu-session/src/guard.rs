@@ -116,7 +116,12 @@ impl Guard {
         lettering: Arc<Lettering>,
         (sandboxed, place, confined): (bool, Place, Option<Confined>),
     ) -> Guard {
-        let places = Places::here(PathBuf::new(), data_root.clone(), home.as_deref());
+        let knowledge = miyu_store::root::DataRoot::at(data_root.clone()).knowledge();
+        let places = Places::here(
+            PathBuf::new(),
+            (data_root.clone(), knowledge),
+            home.as_deref(),
+        );
         let real_home = home
             .as_deref()
             .map(|home| resolve(home, Some(home), "~").unwrap_or_else(|_| home.to_path_buf()));

@@ -7,8 +7,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use miyu_policy::overrides::ToolOverride;
-use miyu_store::overrides::{TOOLS, tools_in};
-use miyu_store::resources::{PROMPTS, ResourceRoot};
+use miyu_store::overrides::tools_in;
+use miyu_store::resources::ResourceRoot;
 
 use crate::Core;
 
@@ -22,7 +22,7 @@ pub(crate) struct Layered {
 /// 数据根里的工具说明覆盖。
 pub(crate) fn of(core: &Core) -> Layered {
     let mut layered = Layered::default();
-    for written in tools_in(&core.root.path().join(TOOLS)) {
+    for written in tools_in(&core.root.tool_overrides()) {
         match written.text.and_then(|text| ToolOverride::parse(&text)) {
             Ok(read) => {
                 layered.merged.insert(written.tool, read);
@@ -52,7 +52,7 @@ pub(crate) fn problems(core: &Core) -> Vec<(PathBuf, String)> {
             command_only: false,
         };
         if let Err(why) = written.apply(&mut entry) {
-            let path = core.root.path().join(TOOLS).join(format!("{tool}.toml"));
+            let path = core.root.tool_overrides().join(format!("{tool}.toml"));
             bad.push((path, why));
         }
     }
@@ -61,6 +61,5 @@ pub(crate) fn problems(core: &Core) -> Vec<(PathBuf, String)> {
 
 /// 资源目录：压上数据根里提示词的覆盖（施工 OV-1 中）。
 pub(crate) fn resources(core: &Core) -> ResourceRoot {
-    core.resources
-        .overlaid(vec![core.root.path().join(PROMPTS)])
+    core.resources.overlaid(vec![core.root.prompt_overrides()])
 }
