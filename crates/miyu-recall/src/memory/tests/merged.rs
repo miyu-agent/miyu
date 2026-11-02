@@ -47,7 +47,7 @@ fn a_summary_and_a_merge_mark_round_trip() {
 }
 
 #[test]
-fn the_book_keeps_the_last_summary_and_merge_and_counts_sessions_since() {
+fn the_book_keeps_the_last_summary_and_merge() {
     let session = |n: u64| {
         SessionId::parse(&format!("0192f3a0-1111-7abc-8def-00112233445{n}")).expect("合写法")
     };
@@ -83,11 +83,6 @@ fn the_book_keeps_the_last_summary_and_merge_and_counts_sessions_since() {
     for n in [1, 2, 1] {
         see(&mut book, &extracted(n), 0);
     }
-    assert_eq!(
-        book.sessions_since_merge(),
-        2,
-        "没合并过的照全部，同一个会话算一个"
-    );
     see(&mut book, &summary("旧的"), 1);
     see(&mut book, &summary("用户住在东京。"), 1);
     see(&mut book, &merged, 2);
@@ -97,10 +92,6 @@ fn the_book_keeps_the_last_summary_and_merge_and_counts_sessions_since() {
         "照最后一份"
     );
     assert_eq!(book.merged(), Some((at(2), seq(2))));
-    assert_eq!(book.sessions_since_merge(), 0, "合并以后重新数");
-    see(&mut book, &extracted(3), 3);
-    see(&mut book, &extracted(3), 3);
-    assert_eq!(book.sessions_since_merge(), 1);
     assert_eq!(book.all().count(), 0, "摘要、记号都不是一条记忆");
 }
 

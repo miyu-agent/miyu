@@ -11,7 +11,9 @@ fn the_retired_keys_are_known_and_others_are_not() {
     assert!(retired(&segments("providers.relay.compat.strict_tools")));
     assert!(retired(&segments("loading.tools.weather")));
     assert!(retired(&segments("loading.mcp.github")));
+    assert!(retired(&segments("memory.merge_sessions")));
     assert!(!retired(&segments("providers.relay.compat.stream_usage")));
     assert!(!retired(&segments("loading.tools")));
     assert!(!retired(&segments("ui.language")));
+    assert!(!retired(&segments("memory.merge_every")));
 }

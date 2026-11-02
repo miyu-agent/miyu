@@ -1,7 +1,7 @@
 //! 照记忆日志算出的底账（施工 R-3 上；施工 R-6 修从 `memory.rs` 挪出来，那边只剩事件怎么写、怎么读）：一条现在的样子
 //! [`Entry`]，整间的 [`MemoryBook`]。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, Seq, SessionId, VenueId};
@@ -89,8 +89,6 @@ pub struct MemoryBook {
     stale: bool,
     /// 最后一次合并：那一条的时刻、合到第几条（施工 R-7 上）。
     merged: Option<(Timestamp, Seq)>,
-    /// 最后一次合并以后抽过的会话（施工 R-7 上）：够数了才再合。
-    since_merge: BTreeSet<SessionId>,
     /// 开始合了、还没收尾的那一批合到第几条（施工 R-17）。
     merging: Option<Seq>,
     /// 整理顺带重看的旧记忆轮到第几条（施工 R-19）：最后一条 `ext.memory.swept` 的 `upto`。
@@ -168,11 +166,6 @@ impl MemoryBook {
     /// 全部人卡，照是谁排：作废了的也在。
     pub fn cards(&self) -> impl Iterator<Item = &PersonCard> {
         self.cards.values()
-    }
-
-    /// 最后一次合并以后抽过几个会话（施工 R-7 上，`memory.md` 第七条第 1 款）；没合并过的照全部，同一个会话算一个。
-    pub fn sessions_since_merge(&self) -> usize {
-        self.since_merge.len()
     }
 
     /// 编号 `id` 的那一条什么时候忘掉的（施工 R-6 修，`memory.md` 第六条第 4 款）：作废的照作废的时刻，改掉的照新版本记下的
@@ -279,7 +272,6 @@ impl MemoryBook {
                     .entry(extracted.session.clone())
                     .or_insert(extracted.upto);
                 *upto = (*upto).max(extracted.upto);
-                self.since_merge.insert(extracted.session);
                 Ok(Some(0))
             }
             Some(Ok(MemoryEvent::Summary(summary))) => {
@@ -289,7 +281,6 @@ impl MemoryBook {
             }
             Some(Ok(MemoryEvent::Merged(merged))) => {
                 self.merged = Some((event.at, merged.upto));
-                self.since_merge.clear();
                 self.close(merged.upto);
                 Ok(Some(0))
             }

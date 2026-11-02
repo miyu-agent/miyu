@@ -269,7 +269,7 @@ async fn a_dream_asked_in_a_session_names_it() {
 async fn a_merge_on_its_own_runs_in_a_dream_session_too() {
     let server = Server::start(vec![every_turn("用户养了一只猫")]).await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     let fake = Arc::new(Fake {
         steps: Mutex::new(vec![revise_m1()].into()),
         ..Fake::default()

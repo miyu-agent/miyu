@@ -3,6 +3,7 @@
 //!
 //! - `providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`：工具一律全量以后不起作用了（设计
 //!   `25-工具加载.md` W10，2026-10-27 项目主人定）。
+//! - `memory.merge_sessions`：后台整理不再要凑够几个会话，只看离上次多久（施工 E-9，2026-11-02 项目主人定）。
 
 use crate::key::{Fit, fit};
 
@@ -11,6 +12,7 @@ const RETIRED: &[&str] = &[
     "providers.<id>.compat.strict_tools",
     "loading.tools.<name>",
     "loading.mcp.<id>",
+    "memory.merge_sessions",
 ];
 
 /// 照段拆好的键 `segments` 是不是退役了的。

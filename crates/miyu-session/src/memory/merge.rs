@@ -1,15 +1,16 @@
-//! 合并（施工 R-7 上，`docs/blueprint/memory.md` 第七条）：抽取只往里加，隔一段时间、攒够几个会话，把新记的和相关的旧记忆放在
-//! 一起理一遍：重复的、被推翻的作废，相对的日期改成绝对的，写一段新的摘要。
+//! 合并（施工 R-7 上，`docs/blueprint/memory.md` 第七条）：抽取只往里加，隔一段时间把新记的和相关的旧记忆放在一起理一遍：
+//! 重复的、被推翻的作废，相对的日期改成绝对的，写一段新的摘要。
 //!
-//! - **什么时候**：抽取记下以后看一眼（`extract.rs` 的 `Job`）：上次合并以后有新记的（现在算数、听众合、出处活着，不算合并
-//!   自己改出来的）；那以后抽过的会话够 `memory.merge_sessions`；离上次合并过了 `memory.merge_every`（没合并过的不看时间）。
+//! - **什么时候**：抽取真记下了至少一条以后看一眼（`extract.rs` 的 `Job`；施工 E-9：抽到 0 条、整段跳过的不看，没有轮询）：上次合并以后有新记的（现在算数、听众合、出处活着，不算合并
+//!   自己改出来的）；离上次合并过了 `memory.merge_every`（没合并过的不看时间）。不看抽过几个会话（施工 E-9：一直在一个群里
+//!   聊的人格凑不够几个会话，从来不整理）。
 //!   一间一把锁（`Merges`，`merge/merges.rs`），在后台合，不挡会话。
 //! - **交什么**：一条 user，指令在前，后面是现在的摘要、上次合并以后新记的（旧的在前）、每条新记的照关键词和意思搜出来的相关
 //!   旧记忆（每条最多 [`RELATED`] 条，去重）。一条一行，同 `memory_search` 的写法。最多 `ROOM` 字节（`extract.rs`）：放不下的合完马上接着
 //!   合剩下的。发出去以前遮 key。
 //! - **交回、怎么落**：读法在 `miyu_recall::merge`；改的指着旧的（类、出处、听众照旧）、作废的带为什么、摘要、合到哪的记号，
 //!   都由记忆模块记。落的时候还算数、听众合的才落。
-//! - **现在就整理**（施工 R-7 补，`/dream`、`memory.dream`）：不看会话数、间隔，现在就合到没有剩下的，交回几样数
+//! - **现在就整理**（施工 R-7 补，`/dream`、`memory.dream`）：不看间隔，现在就合到没有剩下的，交回几样数
 //!   （[`Dreamed`]）；同一间正在合的交回忙。会话的 `/stop` 连它叫的这一趟一起停（施工 R-22，`merge/hush.rs`）：合完了的批留着，
 //!   正在合的那一批放弃（记一条 `stopped`）、下次再合。
 //! - **出错**：不动真相，下次抽完再来；同一间连着 [`TRIES`] 次不成的，记一条失败的记号、跳过这一批（成了一次、跳过一次都重新
@@ -241,15 +242,14 @@ impl MergeJob {
                 return;
             };
             let settings = MemorySettings::from(&self.config.resolved.values());
-            let sessions = usize::try_from(settings.merge_sessions).unwrap_or(usize::MAX);
             // 出错的当场记了 `WARN`：真相没动，下次抽完再来。
-            if let Err(why) = self.run(Some((settings.merge_every, sessions))).await {
+            if let Err(why) = self.run(Some(settings.merge_every)).await {
                 tracing::debug!(target: TARGET, room_kind = room.kind(), room_id = self.keeper.room_id().as_str(), error = why.as_str(), "memory merge stopped");
             }
         });
     }
 
-    /// 现在就整理（施工 R-7 补）：不看会话数、间隔，合到没有剩下的，交回几样数。
+    /// 现在就整理（施工 R-7 补）：不看间隔，合到没有剩下的，交回几样数。
     ///
     /// # Errors
     ///
@@ -270,13 +270,13 @@ impl MergeJob {
             .unwrap_or_else(|_| Err(NotDreamed::Failed("memory merge task failed".to_string())))
     }
 
-    /// 合到没有剩下的，交回合了多少：`check` 是头一批看的间隔和会话数（没有的不看），接着合的只看还有没有新记的（放不下的、
+    /// 合到没有剩下的，交回合了多少：`check` 是头一批看的间隔（没有的不看），接着合的只看还有没有新记的（放不下的、
     /// 合着的时候又记的）。
     ///
     /// # Errors
     ///
     /// 记忆日志读不了、有一次没成：英文的一句为什么，当场记了 `WARN`。
-    async fn run(&self, check: Option<(Duration, usize)>) -> Result<Dreamed, String> {
+    async fn run(&self, check: Option<Duration>) -> Result<Dreamed, String> {
         let mut trip = None;
         let done = self.batches(check, &mut trip).await;
         if let Some(trip) = trip {
@@ -299,7 +299,7 @@ impl MergeJob {
     /// 同 [`MergeJob::run`]。
     async fn batches(
         &self,
-        mut check: Option<(Duration, usize)>,
+        mut check: Option<Duration>,
         trip: &mut Option<ask::Trip>,
     ) -> Result<Dreamed, String> {
         let (manual, started, mut batches) = (check.is_none(), Instant::now(), 0_u32);

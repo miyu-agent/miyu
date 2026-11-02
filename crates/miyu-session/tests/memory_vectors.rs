@@ -280,7 +280,7 @@ async fn extracted_and_merged_memories_are_filled_without_a_search() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     meaning(&home);
     let handle = home
         .create_full(

@@ -77,6 +77,7 @@ async fn a_reopened_session_goes_on_from_where_it_was_extracted() {
     let server = Server::start(vec![every_turn("第一次"), every_turn("第二次")]).await;
     let mut home = Home::new();
     organizer(&mut home, &server, "");
+    merged_just_now(&home);
     let handle = home
         .create_full(
             &says(2),
@@ -114,6 +115,7 @@ async fn what_does_not_fit_is_extracted_right_after() {
     let server = Server::start(vec![every_turn("前两轮"), every_turn("后两轮")]).await;
     let mut home = Home::new();
     organizer(&mut home, &server, "");
+    merged_just_now(&home);
     let handle = home
         .create_full(
             &says(4),

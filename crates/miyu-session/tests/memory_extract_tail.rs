@@ -91,6 +91,7 @@ async fn once_caught_up_extraction_reads_only_after_the_last_mark() {
     .await;
     let mut home = Home::new();
     organizer_busy(&mut home, &server, "extract_max_turns = 3\n", None);
+    merged_just_now(&home);
     let script = Script::new((0..10).map(|_| Play::Says("好。")));
     let handle = home
         .create_full(

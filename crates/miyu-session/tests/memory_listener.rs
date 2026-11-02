@@ -198,7 +198,7 @@ async fn a_merge_started_in_a_place_sees_everything() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     save(&home, "主人养了一只猫", None);
     let script = Script::new([Play::Says("好。"), Play::Says("嗯。")]);
     let lines = Lines {

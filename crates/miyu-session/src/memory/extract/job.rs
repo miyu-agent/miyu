@@ -55,24 +55,22 @@ pub(crate) struct Job {
 
 impl Job {
     /// 照 `plan` 走一次：跳过的只记抽到了哪；要发的发、读、遮、记。之后：人叫了现在就整理的现在就合、把结果交回去；没叫的
-    /// 记下了抽到哪就看一眼够不够合并。
+    /// 这一次真记下了至少一条才看一眼够不够合并（施工 E-9：抽到 0 条、整段跳过的不看；没有轮询，也不另上闹钟）。
     pub(crate) async fn run(mut self, plan: Plan) {
-        let recorded = match plan {
+        let saved = match plan {
             Plan::Wait => {
                 self.extractor.finish(self.after, true);
-                false
+                0
             }
             Plan::Skip { upto } => {
-                let marked = self
-                    .mark(
-                        upto,
-                        (Vec::new(), BTreeMap::new()),
-                        Some(Skipped::Remembered),
-                    )
-                    .await
-                    .is_some();
+                self.mark(
+                    upto,
+                    (Vec::new(), BTreeMap::new()),
+                    Some(Skipped::Remembered),
+                )
+                .await;
                 self.extractor.finish(self.after, true);
-                marked
+                0
             }
             Plan::Ask {
                 upto,
@@ -86,12 +84,12 @@ impl Job {
             } => {
                 let recorded = match self.dropped(text, since).await {
                     Some(text) => self.ask(upto, text, turns, (&names, me), places).await,
-                    None => false,
+                    None => None,
                 };
-                if recorded && more {
+                if recorded.is_some() && more {
                     (self.again)();
                 }
-                recorded
+                recorded.unwrap_or(0)
             }
         };
         match self.dream.take() {
@@ -103,7 +101,7 @@ impl Job {
                     tracing::debug!(target: TARGET, session = %self.session, "dream answer not taken");
                 }
             }
-            None if recorded => self.merge_job().start(),
+            None if saved > 0 => self.merge_job().start(),
             None => {}
         }
     }
@@ -150,7 +148,7 @@ impl Job {
         ))
     }
 
-    /// 发、读、遮、记；交回记成了没有。
+    /// 发、读、遮、记；交回记下了几条（抽到哪记成了的，0 条也算记成了），没记成的交回没有。
     async fn ask(
         &self,
         upto: Seq,
@@ -158,7 +156,7 @@ impl Job {
         turns: BTreeSet<u64>,
         (names, here): (&BTreeMap<String, Option<String>>, BTreeSet<String>),
         places: BTreeMap<u64, String>,
-    ) -> bool {
+    ) -> Option<usize> {
         let started = Instant::now();
         let secrets = secrets(&self.config);
         let shapes = self.extraction.shapes.clone();
@@ -209,7 +207,7 @@ impl Job {
                     }
                 }
                 self.extractor.finish(self.after, true);
-                recorded.is_some()
+                recorded.map(|saved| saved.len())
             }
             Err(why) => {
                 let tries = self.extractor.finish(self.after, false);
@@ -218,7 +216,7 @@ impl Job {
                     self.mark(upto, (Vec::new(), BTreeMap::new()), Some(Skipped::Failed))
                         .await;
                 }
-                false
+                None
             }
         }
     }

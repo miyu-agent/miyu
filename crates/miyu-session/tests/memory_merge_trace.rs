@@ -129,7 +129,7 @@ async fn a_merge_in_the_background_is_not_manual() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     let handle = home
         .create_full(
             &Script::new([Play::Says("好。"), Play::Says("好。")]),

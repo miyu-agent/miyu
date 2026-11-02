@@ -28,7 +28,8 @@ fn by() -> By {
 }
 
 impl Keeper {
-    /// 这一间够不够合、合什么（`memory.md` 第七条第 1 款）：`check` 是间隔和会话数，没有的不看（接着合剩下的那几次）。
+    /// 这一间够不够合、合什么（`memory.md` 第七条第 1 款）：`check` 是间隔，没有的不看（接着合剩下的那几次）；不看抽过几个会话
+    /// （施工 E-9）。
     /// `sweep` 是挑（一趟的头一批，施工 R-19，第 11 款）的再带上轮到的旧记忆：上次重看到的那一条后面、现在算数、听众合的，
     /// 照编号最多 [`SWEEP`] 条，不够的从头接；人叫的整理没有新记的也照样重看这几条，后台的没有新记的不合。
     /// 没有新记的、不够的交回没有。新记的是上次合到的那一条以后、现在算数、听众合、出处活着的，不算合并自己改出来的；摘要
@@ -40,26 +41,25 @@ impl Keeper {
     pub(super) fn merge_batch(
         &self,
         now: Timestamp,
-        check: Option<(Duration, usize)>,
+        check: Option<Duration>,
         sweep: Sweep,
     ) -> Result<Option<Batch>, Refused> {
         let log = self.log()?;
-        let (summary, merged, stale, sessions, all, swept) = log.book(|book| {
+        let (summary, merged, stale, all, swept) = log.book(|book| {
             (
                 book.summary().map(|(text, _)| text.to_string()),
                 book.merged(),
                 book.summary_stale(),
-                book.sessions_since_merge(),
                 book.all().cloned().collect::<Vec<Entry>>(),
                 book.swept(),
             )
         });
-        if let Some((every, enough)) = check {
+        if let Some(every) = check {
             let waited = merged.is_none_or(|(at, _)| {
                 now.unix_millis().saturating_sub(at.unix_millis())
                     >= i64::try_from(every.as_millis()).unwrap_or(i64::MAX)
             });
-            if !waited || sessions < enough {
+            if !waited {
                 return Ok(None);
             }
         }

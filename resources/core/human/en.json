@@ -37,10 +37,6 @@
         "name": "How often to consolidate memories",
         "description": "After this long the AI goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what it knows about you."
       },
-      "memory.merge_sessions": {
-        "name": "Chats before consolidating",
-        "description": "Consolidate only after memories have been taken from at least this many chats since the last time."
-      },
       "memory.dream_keep": {
         "name": "Consolidation runs to keep",
         "description": "Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends."

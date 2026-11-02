@@ -59,6 +59,7 @@ async fn a_busy_session_is_extracted_every_few_turns() {
     let server = Server::start(vec![every_turn("用户在聊天"), every_turn("用户还在聊天")]).await;
     let mut home = Home::new();
     organizer_busy(&mut home, &server, "extract_max_turns = 3\n", None);
+    merged_just_now(&home);
     let script = Script::new((0..6).map(|_| Play::Says("好。")));
     let handle = home
         .create_full(

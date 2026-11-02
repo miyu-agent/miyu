@@ -30,7 +30,7 @@ fn called(name: &str) -> String {
 async fn asked_both(profile: &str, settings: &str) -> (String, String) {
     let server = Server::start(vec![every_turn("记一笔"), stream("{}")]).await;
     let mut home = Home::new();
-    organizer_as(&mut home, &server, "merge_sessions = 1\n", settings);
+    organizer_as(&mut home, &server, "", settings);
     let lines = Lines {
         profile: miyu_policy::Profile {
             name: profile.to_string(),

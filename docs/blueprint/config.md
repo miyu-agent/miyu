@@ -260,8 +260,7 @@ miyu_config::settings! {
 | `memory.extract_turns` | 整数 1 到 100 | `2` | 系统 | 不能写 | `next_turn` | R-6 上：上次抽到以后至少有几轮她答了话才抽 |
 | `memory.extract_max_turns` | 整数 2 到 500 | `20` | 系统 | 不能写 | `next_turn` | E-5（`memory.md` 第六条第 1 款）：一直不闲的会话上次开始抽以后结束了这么多轮就不等闲、在后台抽（2026-10-27 主人本机 QQ 主群一下午 299 轮、最长只停 10.7 分钟，闲 30 分钟才抽的一次都没抽） |
 | `memory.extract_max_wait` | 时长，10 分钟到 1 天 | `1h` | 系统 | 不能写 | `next_turn` | E-5：一直不闲的会话最早没抽的那一轮结束了这么久就不等闲、在后台抽 |
-| `memory.merge_every` | 时长，1 小时到 720 小时 | `24h` | 系统 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读 |
-| `memory.merge_sessions` | 整数 1 到 100 | `5` | 系统 | 不能写 | `next_turn` | R-7 上：上次合并以后至少抽过几个会话才再合 |
+| `memory.merge_every` | 时长，1 小时到 720 小时 | `16h` | 系统 | 不能写 | `next_turn` | R-7 上（`memory.md` 第七条第 1 款）：离上次合并至少多久才再合；抽取记下以后照那一轮的配置读。施工 E-9 起后台整理只看它（`memory.merge_sessions` 拆了，写过的照退役的键读），出厂 24h 改 16h（2026-11-02 项目主人定） |
 | `memory.dream_keep` | 整数 0 到 1000 | `20` | 系统 | 不能写 | `next_turn` | D-1 下（设计 41 DS9）：每一间留最近几趟整理会话，一趟跑完删多的；`0` 是跑完就删 |
 | `show.system_hint` | 开关 | `true` | 系统 | 不能写 | `new_session` | D-5 补二（`tools/show.md`，项目主人 2026-10-24 定）：system 里带不带 show 的那一句；工具面上有 `show` 的才带。造会话时读一次钉进快照（`no_show_hint`），会话中途改了 system 不变。核心替包 `miyu-base-show` 声明（`OWNED`，施工 BS-1 上中起；原来是基础系统；施工 PN-3 起包改了长编号，键照旧是 `show.*`），设置页在「软件包」那一页、展示那一组（组的编号是包编号 `miyu-base-show`） |
 | `skills.external.enabled` | 开关 | `false` | Miyu 的配置 | 不能写 | `next_turn` | PT-2 外（`skills.md`「定了的」第 4 条，2026-10-29 项目主人定）：读不读别的目录里的技能。关着的一个都不碰。「高级」页的「技能」一组；网页另画在技能页顶上 |
@@ -662,7 +661,7 @@ miyu_config::settings! {
 3. 解析（`miyu-config` 的 `parse.rs`，用 `toml_edit`）：
    1. TOML 写法不对：`syntax`，行、列照 `toml_edit` 报的位置（它报的错的开头，例如字没收尾的，指到那一行行尾）。`why` 只取它的原话（`TomlError::message` 的最后一行），不带它印出来的那一行原文：原文可能很长，密钥文件里更不能印。
    2. 照清单一项项认：键在清单里、这一层能写、类型和范围对的，收下，记下键所在的行。
-   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。退役的键（以前登记过、拆掉了的，`miyu_config` 的 `retired.rs`，施工 FL-1 起：`providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`）不报，也不进最终值：写过的人查配置不多一条警告。系统配置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::mcp::configured` 另读（施工 F-9 上，`mcp.md`）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
+   3. 不在清单里的键：`unknown_key`，警告，原样留在文件里，不进最终值。退役的键（以前登记过、拆掉了的，`miyu_config` 的 `retired.rs`，施工 FL-1 起：`providers.<id>.compat.strict_tools`、`loading.tools.<name>`、`loading.mcp.<id>`；施工 E-9 起：`memory.merge_sessions`）不报，也不进最终值：写过的人查配置不多一条警告。系统配置里的 `[mcp.<名字>]` 例外：不在清单里、跳过不报，由 `miyu_config::package::mcp::configured` 另读（施工 F-9 上，`mcp.md`）。不认识的一张表往里走，每一项照整个键报（`weird.thing`），离得最近的键名才找得准；空的不认识的表没什么可报。一组键（`ui`）下面写成了值：`wrong_type`，期望一张表。清单里的一项写成了表：`wrong_type`。
    4. 类型、范围、写法不对：那一项报错，不进最终值。
    5. 这一层不能写的：`wrong_layer`，不进最终值；值写得对的照样记下来，`explain` 列得出它、写明不算。
    6. 位置：一项的问题指到值（`log.level = "verbose"` 的第 9 列），不认识的键指到键；点号连着写的键（`ui.langauge = …`）指到整个键的开头。来源的 `line` 是键所在的那一行。列照 Unicode 字符数，`\r\n` 的 `\r` 在行尾不算进列。
@@ -1043,11 +1042,7 @@ extract_turns = 2
 
 # 多久归纳一次记忆：隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。
 # 能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。
-merge_every = "24h"
-
-# 攒几次聊天再归纳：上次归纳以后至少整理过这么多次聊天才归纳。
-# 能写：1 到 100 之间的整数。只能写在系统配置里。下一轮生效。
-merge_sessions = 5
+merge_every = "16h"
 
 [models]
 # 主对话的模型：新会话默认用的模型，写成 供应商/模型，例如 deepseek/deepseek-flash；也能写 @池。
@@ -1678,8 +1673,6 @@ currency = "USD"
 | 说明 | 整理记忆时用的模型，照用量算钱。没选的用主对话的模型。 | The model used to organize memories, billed by usage. If none is chosen, the chat model is used. | 記憶の整理に使うモデルです。使った分だけ料金がかかります。選ばなければ会話のモデルを使います。 |
 | `memory.merge_every` 名字（R-7 上） | 多久归纳一次记忆 | How often to consolidate memories | 記憶をまとめる間隔 |
 | 说明 | 隔这么久，她把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。 | After this long she goes over new and older memories together: drops repeats and outdated ones, and writes a summary of what she knows about you. | この間隔で、新しい記憶と以前の記憶を見直します：重複や古くなったものを除き、あなたについての要約を書きます。 |
-| `memory.merge_sessions` 名字（R-7 上） | 攒几次聊天再归纳 | Chats before consolidating | まとめる前の会話数 |
-| 说明 | 上次归纳以后至少整理过这么多次聊天才归纳。 | Consolidate only after memories have been taken from at least this many chats since the last time. | 前回まとめてから、少なくともこの数の会話から記憶を取り出したらまとめます。 |
 | `memory.dream_keep` 名字（D-1 下） | 保留几次整理过程 | Consolidation runs to keep | 残す整理の回数 |
 | 说明 | 每份记忆只保留最近这么多次整理记忆的过程，更早的移到回收处。0 是整理完就删。 | Keep only this many of the latest consolidation runs for each memory. Older ones go to the trash. 0 deletes each run when it ends. | 記憶ごとに、最新のこの回数分の整理の経過だけを残します。古いものはゴミ箱へ移します。0 は整理が終わるたびに削除します。 |
 | `net.search.source` 名字（N-2 下） | 搜索服务供应商 | Search provider | 検索プロバイダー |

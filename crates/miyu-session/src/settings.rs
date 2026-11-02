@@ -102,19 +102,12 @@ miyu_config::settings! {
             applies: next_turn,
             ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: text },
         },
-        /// 离上次合并至少多久才再合（施工 R-7 上）。
-        merge_every: Duration = "24h" {
+        /// 离上次合并至少多久才再合（施工 R-7 上；施工 E-9 起后台整理只看它，不再看抽过几个会话）。
+        merge_every: Duration = "16h" {
             kind: duration [3600, 2592000],
             layers: [System],
             applies: next_turn,
             ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: text },
-        },
-        /// 上次合并以后至少抽过几个会话才再合（施工 R-7 上）。
-        merge_sessions: i64 = 5 {
-            kind: int [1, 100],
-            layers: [System],
-            applies: next_turn,
-            ui: { page: "packages", group: "miyu-base-memory", package: "miyu-base-memory", control: number },
         },
         /// 每一间留最近几趟整理会话（施工 D-1 下，设计 41 DS9）：一趟跑完删多的，`0` 是跑完就删。
         dream_keep: i64 = 20 {

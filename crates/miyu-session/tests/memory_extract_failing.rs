@@ -73,6 +73,7 @@ async fn one_success_resets_the_wait() {
     let server = Server::start(replies).await;
     let mut home = Home::new();
     organizer_busy(&mut home, &server, "extract_max_turns = 2\n", None);
+    merged_just_now(&home);
     let script = Script::new((0..LAST + 6).map(|_| Play::Says("好。")));
     let handle = home
         .create_full(

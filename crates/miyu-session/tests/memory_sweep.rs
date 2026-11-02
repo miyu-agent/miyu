@@ -211,7 +211,7 @@ async fn a_background_merge_with_nothing_new_asks_nobody() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     old_memories(&home, 3);
     let handle = home
         .create_full(

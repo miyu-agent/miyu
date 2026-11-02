@@ -1,8 +1,8 @@
 //! 合并（施工 R-7 上，`docs/blueprint/memory.md` 第七条）：真会话、真记忆日志；整理记忆的模型是一台假服务器（`org/m`），先交
 //! 抽取的回答、再交合并的。会话的模型照剧本回。
 //!
-//! 够会话的抽完就合：一条 user，指令、现在的摘要（还没有）、新记的；改的指着旧的、类出处听众照旧，作废的带为什么，摘要和合到哪
-//! 都记下。不够会话的不合，够了再合；合过的时间没到不再合；相关的旧记忆跟着交、作废的和听众不合的不交；放不下的分两次，合并
+//! 没合过的抽完就合：一条 user，指令、现在的摘要（还没有）、新记的；改的指着旧的、类出处听众照旧，作废的带为什么，摘要和合到哪
+//! 都记下。只看离上次合并多久、不看抽过几个会话（施工 E-9）：一直在一个会话里聊的满了时间也合；合过的时间没到不再合；相关的旧记忆跟着交、作废的和听众不合的不交；放不下的分两次，合并
 //! 自己改出来的不算新记的；同一批连着三次不成的记失败的记号、跳过。
 
 use std::time::Duration;
@@ -24,16 +24,16 @@ fn says(n: usize) -> Script {
 }
 
 /// 多备的一个回答：假服务器只收备了回答的那几个请求，「不再发」要多备一个才看得出来。
-fn spare() -> miyu_http::testkit::Reply {
+pub(crate) fn spare() -> miyu_http::testkit::Reply {
     stream("{}")
 }
 
 /// 合并交回的一段：`revised`、`retired`、`summary` 照写的。
-fn merged(json: serde_json::Value) -> miyu_http::testkit::Reply {
+pub(crate) fn merged(json: serde_json::Value) -> miyu_http::testkit::Reply {
     stream(&json.to_string())
 }
 
-async fn session(home: &Home, turns: usize) -> Handle {
+pub(crate) async fn session(home: &Home, turns: usize) -> Handle {
     home.create_full(
         &says(turns),
         &catalog(home),
@@ -50,7 +50,7 @@ fn book<R>(home: &Home, read: impl FnOnce(&miyu_recall::MemoryBook) -> R) -> R {
 }
 
 /// 等底账照 `done` 成立（最多 10 秒）：照日志等，慢机器上不赌固定的时长。
-async fn until(home: &Home, done: impl Fn(&miyu_recall::MemoryBook) -> bool) {
+pub(crate) async fn until(home: &Home, done: impl Fn(&miyu_recall::MemoryBook) -> bool) {
     for _ in 0..200 {
         if book(home, &done) {
             return;
@@ -69,7 +69,7 @@ fn id(n: u64) -> MemoryId {
 }
 
 #[tokio::test]
-async fn enough_sessions_merge_after_extraction_and_land_as_events() {
+async fn the_first_extraction_merges_and_lands_as_events() {
     let server = Server::start(vec![
         every_turn("用户养了一只猫"),
         merged(serde_json::json!({
@@ -80,7 +80,7 @@ async fn enough_sessions_merge_after_extraction_and_land_as_events() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     let handle = session(&home, 2).await;
     chat(&home, &handle, 1, "我养了一只猫").await;
     chat(&home, &handle, 2, "是只橘猫").await;
@@ -129,41 +129,6 @@ async fn enough_sessions_merge_after_extraction_and_land_as_events() {
 }
 
 #[tokio::test]
-async fn too_few_sessions_wait_and_a_merge_does_not_repeat_before_its_time() {
-    let server = Server::start(vec![
-        every_turn("用户养了一只猫"),
-        every_turn("用户住在东京"),
-        merged(serde_json::json!({"summary": "用户养猫，住在东京。"})),
-        every_turn("用户周末写 Rust"),
-        spare(),
-    ])
-    .await;
-    let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 2\n");
-    let first = session(&home, 2).await;
-    chat(&home, &first, 1, "我养了一只猫").await;
-    chat(&home, &first, 2, "橘猫").await;
-    requested(&server, 1).await;
-    tokio::time::sleep(Duration::from_millis(500)).await;
-    assert_eq!(server.received().len(), 1, "一个会话不够两个");
-    let second = session(&home, 2).await;
-    chat(&home, &second, 1, "我住在东京").await;
-    chat(&home, &second, 2, "很多年了").await;
-    requested(&server, 3).await;
-    until(&home, |book| book.merged().is_some()).await;
-    assert!(asked(&server, 2).starts_with("Below are your memories"));
-    let third = session(&home, 2).await;
-    chat(&home, &third, 1, "我周末写 Rust").await;
-    chat(&home, &third, 2, "写编译器").await;
-    requested(&server, 4).await;
-    tokio::time::sleep(Duration::from_millis(500)).await;
-    assert_eq!(server.received().len(), 4, "合过的 24 小时内不再合");
-    for handle in [&first, &second, &third] {
-        stop(handle).await;
-    }
-}
-
-#[tokio::test]
 async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not() {
     let server = Server::start(vec![
         every_turn("团子三岁了"),
@@ -171,7 +136,7 @@ async fn related_old_memories_come_along_from_anywhere_and_retired_ones_do_not()
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     save(&home, "用户养了一只猫，叫团子");
     // 上次合并在很久以前、合到 m1：m1 是旧的，之后的是新记的。
     let (log, _) = home.logs.open(&persona()).expect("开得了");
@@ -244,7 +209,7 @@ async fn what_does_not_fit_goes_next_and_the_merges_own_edits_are_not_new() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     // 一百条长的（一条三百多字节）：一次放不下 32 KiB。
     for n in 0..100 {
         save(&home, &format!("第 {n} 条：{}", "很长的一句话".repeat(19)));
@@ -289,11 +254,7 @@ async fn three_failures_in_a_row_skip_the_batch() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(
-        &mut home,
-        &server,
-        "merge_sessions = 1\nextract_turns = 1\n",
-    );
+    organizer(&mut home, &server, "extract_turns = 1\n");
     let handle = session(&home, 3).await;
     chat(&home, &handle, 1, "我养了一只猫").await;
     requested(&server, 2).await;
@@ -328,7 +289,7 @@ async fn three_failures_in_a_row_skip_the_batch() {
 }
 
 #[tokio::test]
-async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_class() {
+async fn a_later_extraction_still_waits_for_the_interval_and_revisions_keep_the_class() {
     let server = Server::start(vec![
         every_turn("用户养了一只猫"),
         merged(serde_json::json!({
@@ -343,7 +304,7 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     let (log, _) = home.logs.open(&persona()).expect("开得了");
     // 认识的人那一条（施工 E-1 上）：改写的照旧是这一类、是谁、在哪个群（施工 E-4 上）带过去。
     let feedback = Saved {
@@ -405,12 +366,10 @@ async fn enough_sessions_still_wait_for_the_interval_and_revisions_keep_the_clas
     chat(&home, &second, 2, "很多年了").await;
     requested(&server, 3).await;
     // 第三个请求发出去了，抽取的回答落进日志还要一会儿。
-    until(&home, |book| book.sessions_since_merge() >= 1).await;
-    assert_eq!(
-        book(&home, |book| book.sessions_since_merge()),
-        1,
-        "会话够了"
-    );
+    until(&home, |book| {
+        book.all().any(|entry| entry.text == "用户住在东京")
+    })
+    .await;
     tokio::time::sleep(Duration::from_millis(500)).await;
     assert_eq!(server.received().len(), 3, "间隔没到不合");
     for handle in [&first, &second] {
@@ -426,7 +385,7 @@ async fn a_stale_summary_makes_the_next_merge_start_over() {
     ])
     .await;
     let mut home = Home::new();
-    organizer(&mut home, &server, "merge_sessions = 1\n");
+    organizer(&mut home, &server, "");
     save(&home, "用户养了一只猫");
     save(&home, "用户住在大阪");
     // 很久以前合过一次、写了摘要，合到 m2；后来人作废了 m2：摘要不算了。

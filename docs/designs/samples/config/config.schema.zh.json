@@ -157,19 +157,11 @@
           "type": "integer"
         },
         "merge_every": {
-          "default": "24h",
+          "default": "16h",
           "description": "隔这么久，AI 把新记的和以前的放在一起理一遍：重复的合掉，过时的作废，写一段对你的了解。能写：1h 到 720h 之间的时长，写成 30s、10m、1h 这样。只能写在系统配置里。下一轮生效。",
           "pattern": "^[0-9]+[smh]?$",
           "title": "多久归纳一次记忆",
           "type": "string"
-        },
-        "merge_sessions": {
-          "default": 5,
-          "description": "上次归纳以后至少整理过这么多次聊天才归纳。能写：1 到 100 之间的整数。只能写在系统配置里。下一轮生效。",
-          "maximum": 100,
-          "minimum": 1,
-          "title": "攒几次聊天再归纳",
-          "type": "integer"
         }
       },
       "type": "object"

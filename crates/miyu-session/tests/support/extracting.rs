@@ -258,3 +258,23 @@ fn walk(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
         })
         .collect()
 }
+
+/// 记一次刚合过（施工 E-9）：后台的合并只看离上次多久，没合过的抽到东西就合；只测抽取的测试先记一次刚合过，间隔（出厂
+/// 16 小时）没到不合，假服务器的回答都留给抽取。
+pub fn merged_just_now(home: &Home) {
+    let (log, _) = home.logs.open(&persona()).expect("开得了");
+    let mark = miyu_recall::Merged {
+        upto: Seq::new(1).expect("不是零"),
+        given: 0,
+        revised: 0,
+        retired: 0,
+        failed: false,
+    };
+    log.append(
+        super::now(),
+        super::alice(),
+        None,
+        &miyu_recall::MemoryEvent::Merged(mark),
+    )
+    .expect("记得下");
+}

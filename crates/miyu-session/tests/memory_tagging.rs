@@ -147,7 +147,7 @@ async fn a_merge_fills_in_up_to_twenty_without_keywords() {
     ])
     .await;
     let mut home = Home::new();
-    organizer_tagging(&mut home, &server, "merge_sessions = 1\n");
+    organizer_tagging(&mut home, &server, "");
     // 二十五条以前记的、没有关键词；一条有了的；一条作废了的。
     for n in 0..24 {
         save(&home, &format!("以前记的第 {n} 件事"));
