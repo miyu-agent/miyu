@@ -13,7 +13,8 @@
 //!
 //! 1. 顺着链接写：一层层找到它指向的本体（相对的照链接所在的目录接，最多 40 层，绕圈的报错），写本体，链接本身不动。
 //!    指向的地方还没有文件的，在那里新建。
-//! 2. 先写临时文件再替换：临时文件建在本体旁边，`.<文件名>.<进程号>-<计数>.tmp`，只许新建；写完、同步，Unix 上带上原文件
+//! 2. 先写临时文件再替换：临时文件建在本体旁边（数据根这一层的建在 `run/` 里，施工 R3-1，`temp_dir`），
+//!    `.<文件名>.<进程号>-<计数>.tmp`，只许新建；写完、同步，Unix 上带上原文件
 //!    的权限位（新文件照系统默认），再改名盖上本体，再同步目录。写到一半断电，磁盘上还是原来那一份。
 //! 3. 替换之前再读一次本体：和调用的一方上一次读的版本不一样（这一瞬间有人手改），放弃这一次（[`WriteError::Changed`]），
 //!    由它重读再来。这缩小了窗口，关不死：编辑器不加锁。
@@ -27,7 +28,9 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::durable::{create_dir_anywhere, create_temp_with, discard, sync_dir, temp_name};
+use crate::durable::{
+    create_dir, create_dir_anywhere, create_temp_with, discard, sync_dir, temp_name,
+};
 
 /// 一份配置文件最多多大：1 MiB。
 pub const LIMIT: u64 = 1024 * 1024;
@@ -228,13 +231,26 @@ pub(crate) fn write_with(
     // 配置文件在人指定的位置（项目目录里的也算），不只在数据根里（施工 TMP-1）。
     create_dir_anywhere(dir)?;
     let name = name.to_string_lossy();
-    let (temp, file) = create_temp_with(dir, || temp_name(&name), mode.bits(&target))?;
+    let (temp, file) = create_temp_with(&temp_dir(dir)?, || temp_name(&name), mode.bits(&target))?;
     let written = replace(file, content, &temp, &target, read, mode, before_rename);
     if written.is_err() {
         discard(&temp);
     }
     written?;
     Ok(sync_dir(dir)?)
+}
+
+/// 替换 `dir` 里的一份文件时临时文件建在哪（施工 R3-1）：`dir` 是数据根（有标记）的，建在它的 `run/` 里，没有的建上；别处的
+/// 就在 `dir` 里。Windows 的沙盒为了透出工作区、技能文件夹，不整条禁数据根，只禁命令起来那一刻顶层已有的那几项（施工
+/// SW-6，`miyu_sandbox::carve`），命令跑着时在顶层新建的临时文件（里面是整份密钥）读得到；`run/` 里有本机令牌，从不透出任何
+/// 东西，整条禁，里面新建的也读不到。同一个数据根里改名照样是原子的。
+fn temp_dir(dir: &Path) -> io::Result<PathBuf> {
+    if fs::symlink_metadata(dir.join(crate::root::MARKER)).is_err() {
+        return Ok(dir.to_path_buf());
+    }
+    let run = dir.join(crate::root::RUN);
+    create_dir(&run)?;
+    Ok(run)
 }
 
 /// 写进临时文件、同步、带上原来的权限位（`Private` 的不带，建的时候就是 0600）、关上；再读一次本体、对得上才改名盖上。

@@ -153,6 +153,55 @@ fn a_hand_edit_just_before_the_rename_wins_and_nothing_is_left_behind() {
     );
 }
 
+/// 数据根顶层的（配置、密钥）临时文件建在 `run/` 里（施工 R3-1）：Windows 沙盒挖开的是顶层，命令跑着时在顶层新建的不在禁止
+/// 的里面；`run/` 整条禁。写完不留，本体照常换上。
+#[test]
+fn a_file_at_the_top_of_a_data_root_is_written_through_run() {
+    let root = Scratch::new();
+    fs::create_dir_all(root.path().join("run")).unwrap();
+    let path = root.path().join("secrets.toml");
+    fs::write(&path, "a = 1\n").unwrap();
+    let mut seen = None;
+    write_with(
+        &path,
+        b"a = 2\n",
+        Some(&version(b"a = 1\n")),
+        Mode::Private,
+        &mut |temp| {
+            seen = Some(temp.to_path_buf());
+            Ok(())
+        },
+    )
+    .unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"a = 2\n");
+    let seen = seen.unwrap();
+    assert_eq!(seen.parent(), Some(root.path().join("run").as_path()));
+    let name = seen.file_name().unwrap().to_string_lossy().into_owned();
+    assert!(crate::durable::is_temp_name(&name), "{name}");
+    assert_eq!(
+        leftovers(root.path(), &["secrets.toml", "run", crate::root::MARKER]),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        leftovers(&root.path().join("run"), &[]),
+        Vec::<String>::new()
+    );
+}
+
+/// 数据根还没有 `run/` 的（核心还没起来过，命令行先写配置）：建上再写。
+#[test]
+fn a_missing_run_directory_is_made_for_the_temporary_file() {
+    let root = Scratch::new();
+    let path = root.path().join("config.toml");
+    write(&path, b"a = 1\n", None).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"a = 1\n");
+    assert!(root.path().join("run").is_dir());
+    assert_eq!(
+        leftovers(&root.path().join("run"), &[]),
+        Vec::<String>::new()
+    );
+}
+
 #[test]
 fn a_crash_before_the_rename_leaves_the_file_as_it_was() {
     let temp = Scratch::bare();

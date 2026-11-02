@@ -240,3 +240,30 @@ fn a_command_runs_when_a_private_dir_holds_the_data_root() {
         "{out:?}"
     );
 }
+
+/// 数据根的 `run/` 被删了的，下一条命令起来以前补上（施工 R3-1）：配置、密钥的临时文件建在它里面，Windows 的沙盒只禁命令起来
+/// 那一刻已有的，命令跑着时才建的 `run/` 里面读得到（2026-11-02 虚拟机上量过）。
+#[test]
+fn the_run_directory_is_back_before_a_command_starts() {
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-run-{}", std::process::id()));
+    let data = scratch.join(".miyu");
+    std::fs::create_dir_all(&data).expect("建得了目录");
+    std::fs::write(data.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    let sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        Some(scratch.clone()),
+        data.clone(),
+        (None, false),
+    );
+    let read_only = Permission {
+        level: Level::Workspace,
+        read_only: true,
+    };
+    sandbox
+        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
+        .expect("写得成")
+        .expect("进沙盒");
+    let made = data.join("run").is_dir();
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+    assert!(made, "run/ 在命令起来以前就在");
+}

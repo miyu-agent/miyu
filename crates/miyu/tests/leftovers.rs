@@ -58,6 +58,8 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
     let home = Home::new();
     let root = home.root.path();
     let day_ago = SystemTime::now() - Duration::from_secs(24 * 3600);
+    // 配置、密钥的临时文件建在 `run/` 里（施工 R3-1）；数据根这一层的是以前的版本剩下的，照样清。
+    fs::create_dir_all(root.join("run")).expect("建得了");
     let put = |name: &str, old: bool| {
         let path = root.join(name);
         fs::write(&path, "secret = \"sk-test\"").expect("写得进");
@@ -73,10 +75,13 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
     let stale = [
         put(".secrets.toml.4242-0.tmp", true),
         put(".config.toml.4242-7.tmp", true),
+        put("run/.secrets.toml.4242-1.tmp", true),
+        put("run/.trust.toml.4242-2.tmp", true),
     ];
     let kept = [
         // 刚写的：说不定是别的程序正在写，不碰。
         put(".config.toml.4242-8.tmp", false),
+        put("run/.secrets.toml.4242-9.tmp", false),
         // 认不出的名字：人放的，不碰。
         put(".config.toml.tmp", true),
         put("notes.tmp", true),

@@ -32,8 +32,12 @@ pub fn user_dir(data_root: &Path, name: &str) -> PathBuf {
 /// 缓存（施工 Y-11 上）：`cache/`，能丢的放这里，30 天没碰的清掉（`crate::cache`）。
 pub const CACHE: &str = "cache";
 
+/// 运行时：`run/`，锁文件、套接字、本机令牌；数据根这一层的配置、密钥写的时候的临时文件也建在这里（施工 R3-1，
+/// `crate::config_file`）。
+pub const RUN: &str = "run";
+
 /// 第一次用时建的两个顶层目录：状态区、运行时（`07-存储.md` 第二节；施工 SU-5 上起数据根只有一层）。别的用到时再建。
-const SKELETON: [&str; 2] = ["state", "run"];
+const SKELETON: [&str; 2] = ["state", RUN];
 
 /// 标记文件：它在，这个目录才是 Miyu 的数据根（`07-存储.md` 第二节「认得出自己的数据根才动它」）。装沙盒时也照它
 /// 认给的数据根（`docs/blueprint/sandbox/windows.md`，施工 5-8）。
@@ -213,7 +217,7 @@ impl DataRoot {
 
     /// 运行时：锁文件、套接字、本机令牌。
     pub fn run(&self) -> PathBuf {
-        self.path.join("run")
+        self.path.join(RUN)
     }
 
     /// 建骨架：先认标记。目录不存在、是空的，先写下标记；有标记的照常；不是空的又没有标记的，

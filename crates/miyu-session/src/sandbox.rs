@@ -111,7 +111,7 @@ impl Sandbox {
     ///
     /// # Errors
     ///
-    /// 数据根落在临时目录里，沙盒自己的临时目录建不成；沙盒的缓存建不成、链接建不成；有了却不是只给本人的。
+    /// 数据根的 `run/` 补不上；数据根落在临时目录里，沙盒自己的临时目录建不成；沙盒的缓存建不成、链接建不成；有了却不是只给本人的。
     pub(crate) fn for_call(
         &self,
         permission: &Permission,
@@ -128,6 +128,7 @@ impl Sandbox {
             return Ok(None);
         }
         let data_root = real(&self.data_root);
+        keep_run(&data_root)?;
         let mut env = Vec::new();
         let write = if level == Effective::Workspace {
             // 工作目录照权限策略的办法换（头报来的可能是 `~`），换不成的照原样。
@@ -256,6 +257,16 @@ fn granted_writes(grants: &[RawJson]) -> Vec<PathBuf> {
         .flatten()
         .filter_map(|scope| scope.as_str().map(PathBuf::from))
         .collect()
+}
+
+/// 数据根的 `run/` 在命令起来以前就在，被删了的补上（施工 R3-1）：配置、密钥写的时候的临时文件建在它里面
+/// （`miyu_store::config_file`）。Windows 的沙盒只禁命令起来那一刻数据根顶层已有的那几项（施工 SW-6），命令跑着时才建的
+/// `run/` 不在禁止的里面，里面的临时文件读得到（2026-11-02 虚拟机上量过）。没有数据根标记的（不是数据根）不建。
+fn keep_run(data_root: &Path) -> io::Result<()> {
+    if std::fs::symlink_metadata(data_root.join(miyu_store::root::MARKER)).is_err() {
+        return Ok(());
+    }
+    miyu_store::root::create_inside(&data_root.join(miyu_store::root::RUN))
 }
 
 /// 换成真实的位置；换不成的照原样，助手会再换一次，换不成就不跑。
