@@ -119,7 +119,13 @@ fn a_dropped_database_is_no_longer_merged() {
     with(&db, |conn| write(conn, 0..5));
     let weak = Arc::downgrade(&db);
     drop(db);
-    assert!(weak.upgrade().is_none(), "登记里只有弱引用");
+    // 同一个测试进程里别的测试会并着合一遍全部库（`checkpoint_all`），合的时候临时把登记里的每一个升成强引用：撞上那一下
+    // 这里会看到还活着。等它合完放开再判（V-28 修：本机连跑 30 遍红过 2 遍）。
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while weak.upgrade().is_some() {
+        assert!(std::time::Instant::now() < deadline, "登记里只有弱引用");
+        std::thread::sleep(Duration::from_millis(5));
+    }
     // 关上时 SQLite 自己合回、删掉 -wal；合一遍不碰它，也不出错。
     let done = checkpoint_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
