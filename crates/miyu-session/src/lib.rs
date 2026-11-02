@@ -79,7 +79,9 @@ pub use backlog::Backlog;
 pub use clock::new_id;
 pub use config::{ConfigSource, Configs, Turn, TurnConfig, fixed, fixed_with};
 pub use current::{Current, Tally};
-pub use embed::{EmbedSetup, Embedder, IDLE as EMBED_IDLE, Unavailable};
+pub use embed::{
+    EmbedSetup, Embedder, IDLE as EMBED_IDLE, MAX_TEXT as MAX_EMBED_TEXT, Unavailable,
+};
 pub use goal::{Goal, GoalState, Goals};
 pub use handle::context::{Charged, Context, Spent, SystemPart};
 pub use handle::{Ended, Handle, Pushed, Retire, Stopped, Subscription};

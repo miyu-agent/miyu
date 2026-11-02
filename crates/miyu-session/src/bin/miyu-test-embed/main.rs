@@ -97,8 +97,14 @@ fn serve(model: &Loaded, input: impl BufRead, mut output: impl Write) -> io::Res
     Ok(())
 }
 
+/// 一行请求最长多少字节：同真的 `miyu-embed`（审计第四轮 E-4，它的 `Embedder::line_cap`：256 KiB 的 6 倍加 4 KiB），超了回错。
+const LINE_CAP: usize = 256 * 1024 * 6 + 4096;
+
 /// 回一行请求。
 fn answer(model: &Loaded, line: &[u8]) -> Value {
+    if line.len() > LINE_CAP {
+        return json!({"id": null, "error": format!("bad request: line is longer than {LINE_CAP} bytes")});
+    }
     let request: Option<Value> = std::str::from_utf8(line)
         .ok()
         .and_then(|line| serde_json::from_str(line).ok());

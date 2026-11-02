@@ -209,3 +209,17 @@ async fn two_first_calls_at_once_both_wait_for_one_check() {
     assert!(same(&a.expect("算得出"), &cat()));
     assert!(same(&b.expect("算得出"), &cat()));
 }
+
+/// 很长的一句（施工 EM-1，审计第四轮 E-4）：小程序一行请求有上限，超了回错；核心发之前照 `MAX_TEXT` 在字的边界上截短，
+/// 交回的向量和只发截下的那一段一样。测试用的小程序照真的那一份设同样的上限。
+#[tokio::test]
+async fn a_very_long_text_is_cut_before_it_is_sent() {
+    let stage = Stage::new();
+    let embedder = Embedder::new(stage.setup());
+    // 「猫」三个字节，2 MiB 以后不落在字的边界上。
+    let long = "我的猫".repeat(2 * 1024 * 1024 / 9 + 1);
+    let cut = &long[..long.floor_char_boundary(miyu_session::MAX_EMBED_TEXT)];
+    let whole = embedder.embed(&long).await.expect("截短以后算得出");
+    let head = embedder.embed(cut).await.expect("算得出");
+    assert!(same(&whole, &head), "{whole:?} / {head:?}");
+}

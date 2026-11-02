@@ -34,6 +34,10 @@ pub const IDLE: Duration = Duration::from_secs(600);
 /// 这一回起不来几次，就不再拉起。
 const TRIES: u32 = 3;
 
+/// 交给小程序的一句最长多少字节（施工 EM-1）：更长的在字的边界上截短再发。`miyu-embed` 只看前这么多字节（它的切段硬顶），
+/// 一行请求的上限照它的 6 倍加 4 KiB 定（审计第四轮 E-4）：截短的结果和不截一样，也不会撞上那个上限回错。
+pub const MAX_TEXT: usize = 256 * 1024;
+
 /// 造一个 [`Embedder`] 要的（核心照装了的内置模型那个小程序包拼，`miyu-core` 的 `embed::setup`，施工 R-5 三补）。几格都一样、
 /// 模型清单的内容也一样的，换的时候算同一个（施工 R-5 四补）。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -170,7 +174,9 @@ impl Embedder {
         let Some(worker) = slot.worker.as_mut() else {
             return Err(Unavailable::Failed("miyu-embed is not running".to_string()));
         };
-        let answered = worker.ask(text).await;
+        let answered = worker
+            .ask(&text[..text.floor_char_boundary(MAX_TEXT)])
+            .await;
         slot.used = Some(Instant::now());
         match answered {
             Ok(vector) => Ok(vector),
