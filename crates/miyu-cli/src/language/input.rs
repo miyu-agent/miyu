@@ -1,4 +1,5 @@
-//! `miyu ask` 凑不出要说的话时说的（施工 AP-2，设计 50 第二节，设计 47）：没有消息、标准输入不是 UTF-8、读不了标准输入。
+//! `miyu ask` 凑不出要说的话时说的（施工 AP-2，设计 50 第二节，设计 47）：没有消息、标准输入不是 UTF-8、消息过长、读不了
+//! 标准输入。
 
 use super::Language;
 use crate::diagnostic::Problem;
@@ -19,6 +20,15 @@ impl Language {
         match self {
             Language::Chinese => Problem::new("标准输入不是 UTF-8 文本"),
             Language::English => Problem::new("standard input is not UTF-8 text"),
+        }
+    }
+
+    /// 消息太长，核心一行收不下（审计 R3E-5）：长的存成文件用 `--file` 附上。
+    pub(crate) fn message_too_long(&self) -> Problem {
+        match self {
+            Language::Chinese => Problem::new("消息过长").hint("长内容存成文件，用 --file 附上"),
+            Language::English => Problem::new("message too long")
+                .hint("save long text to a file and attach it with --file"),
         }
     }
 

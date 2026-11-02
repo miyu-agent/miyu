@@ -110,3 +110,39 @@ fn a_terminal_without_words_is_a_missing_message() {
     main.write_all("在吗\n\u{4}".as_bytes()).expect("敲得进");
     assert_eq!(message(&[], slave, terminal), Err(Unread::Missing));
 }
+
+/// 审计 2026-11-02 第三轮（边缘）：标准输入读到头、不设上限。核心收一行最多 1 MiB（`miyu-endpoint` 的 `wire::LINE_LIMIT`），
+/// 写进 `session.send` 的 JSON 以后超过的，核心回一句读不懂就断开，命令行只说核心断开了；读个没完的（`yes |`）一直读到内存
+/// 用光。凑出来的话已经超过一行装得下的，在连核心以前就该照参数写错报。
+#[test]
+fn stdin_larger_than_the_core_takes_in_one_line_is_refused_up_front() {
+    let huge = std::io::Read::take(std::io::repeat(b'a'), 2 * 1024 * 1024);
+    let got = message(&words(&[]), huge, false);
+    assert!(
+        got.is_err(),
+        "2 MiB 的标准输入照样凑成了 {} 字节的消息",
+        got.map_or(0, |text| text.len())
+    );
+}
+
+/// 读不完的标准输入（`yes |`）读到上限就停，照太长报，不读到内存用光（审计 R3E-5）。
+#[test]
+fn an_endless_stdin_stops_at_the_limit() {
+    assert_eq!(
+        message(&words(&[]), std::io::repeat(b'y'), false),
+        Err(Unread::TooLong)
+    );
+}
+
+/// 照写进 JSON 以后的长短算（审计 R3E-5）：控制字符一个字节写成六个，二十万个就过了一行；放得下的照收。比管道一次装得下的
+/// 多，不走 [`piped`]（写的一头会卡住），直接读字节。
+#[test]
+fn the_limit_counts_the_message_as_written_in_json() {
+    let controls = "\u{1}".repeat(200 * 1024);
+    assert_eq!(
+        message(&words(&[]), controls.as_bytes(), false),
+        Err(Unread::TooLong)
+    );
+    let plain = "a".repeat(512 * 1024);
+    assert_eq!(message(&words(&[]), plain.as_bytes(), false), Ok(plain));
+}

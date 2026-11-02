@@ -64,7 +64,7 @@
 3. 写了消息、没写 `-`：不读标准输入。别的程序拉起 `miyu` 时常常留着一个不关的管道，一看到管道就读会一直等下去。
 4. 标准输入是终端、又没写消息：报「缺少消息」（和以前 clap 报的同一句，下面「给人看的字」），退出码 2，不等人敲。
 5. 读到的不是 UTF-8 的：报「标准输入不是 UTF-8 文本」，退出码 2。凑出来是空的、只有空白的：报「缺少消息」，退出码 2。读的时候出错的：报「无法读取标准输入：<原话>」，退出码 1。
-6. 上限照核心收一句话的上限：这里不挡，超了照核心的拒绝说。
+6. 上限照核心收一行的上限（`protocol.md`「一行一条」，1 MiB）留出 64 KiB 给 `session.send` 的其余部分：凑出来的话写进 JSON（引号、换行、控制字符照写进去的长短算）超过 960 KiB 的，报「消息过长」，退出码 2，不连核心；标准输入读到 960 KiB 还没完的不往下读，照样报（`yes |` 这种读不完的不读到内存用光）。原来这里不挡，超了的核心回一句读不懂就断开，命令行只说「核心断开了」（审计 R3E-5）。
 
 凑好了以后：
 
@@ -405,6 +405,7 @@ C 也查完了。
 | 核心断开 | 核心断开了 | The core went away |
 | 没写消息又在终端里，或者凑出来是空的（施工 AP-2；clap 少了必写的参数时也是这一句） | `miyu: 缺少消息`、`提示：用法：miyu ask "<消息>"` | `miyu: missing message`、`hint: usage: miyu ask "<message>"` |
 | 标准输入不是 UTF-8（施工 AP-2） | `miyu: 标准输入不是 UTF-8 文本` | `miyu: standard input is not UTF-8 text` |
+| 消息过长（审计 R3E-5） | `miyu: 消息过长`、`提示：长内容存成文件，用 --file 附上` | `miyu: message too long`、`hint: save long text to a file and attach it with --file` |
 | 读不了标准输入（施工 AP-2） | `miyu: 无法读取标准输入：<原话>` | `miyu: cannot read standard input: <reason>` |
 | `--from` 后面是空的、只有空白（施工 7-10） | `--from 后面要写别的 harness 的名字` | `--from needs the name of the other harness` |
 | 等子代理，一个（施工 7-9） | `· 等待 1 个子代理回报…（按 Ctrl+C 停止等待）` | `· Waiting for 1 subagent to report… (Ctrl+C stops waiting)` |

@@ -8,6 +8,11 @@ use super::exit;
 use crate::diagnostic;
 use crate::language::Language;
 
+/// 要说的话写进 JSON 以后最多多少字节（审计 R3E-5）：核心收一行最多 1 MiB（`protocol.md`「一行一条」），超了回一句读不懂就断开，
+/// 命令行只看得到核心断开了；留 64 KiB 给 `session.send` 的其余部分（编号、会话、`--from`、附件）。标准输入读到这么多还没完
+/// 的就停，不读到头（`yes |` 这种读不完）。
+const TEXT_MOST: usize = 1024 * 1024 - 64 * 1024;
+
 /// 凑不出要说的话：为什么。
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Unread {
@@ -15,12 +20,14 @@ pub(crate) enum Unread {
     Missing,
     /// 读到的不是 UTF-8。照参数写错报，退出码 2。
     NotUtf8,
+    /// 凑出来的话写进 JSON 超过 [`TEXT_MOST`]，核心一行收不下。照参数写错报，退出码 2。
+    TooLong,
     /// 读标准输入出了错：底层的原话。退出码 1。
     Failed(String),
 }
 
 /// 照命令行上的 `words` 和标准输入 `stdin` 凑出要说的话；`terminal` 是标准输入是不是终端。几个词用一个空格连起来；要读标准
-/// 输入的照原样接上，不去掉末尾的换行。凑出来是空的、只有空白的，当没有消息。
+/// 输入的照原样接上，不去掉末尾的换行。凑出来是空的、只有空白的，当没有消息；写进 JSON 超过 [`TEXT_MOST`] 的太长。
 pub(crate) fn message(
     words: &[String],
     mut stdin: impl Read,
@@ -45,8 +52,12 @@ pub(crate) fn message(
         Some(piped) if piped.trim().is_empty() => said,
         Some(piped) => format!("{said}\n\n{piped}"),
     };
-    match text.trim().is_empty() {
-        true => Err(Unread::Missing),
+    if text.trim().is_empty() {
+        return Err(Unread::Missing);
+    }
+    // 写进 JSON 会变长（引号、换行、控制字符两到六个字节），照写进去的算。
+    match serde_json::to_string(&text).map_or(usize::MAX, |json| json.len()) > TEXT_MOST {
+        true => Err(Unread::TooLong),
         false => Ok(text),
     }
 }
@@ -57,18 +68,23 @@ pub(crate) fn refuse(unread: &Unread, language: Language) -> u8 {
     let (problem, code) = match unread {
         Unread::Missing => (language.missing_message(), exit::MISUSE),
         Unread::NotUtf8 => (language.stdin_not_utf8(), exit::MISUSE),
+        Unread::TooLong => (language.message_too_long(), exit::MISUSE),
         Unread::Failed(reason) => (language.stdin_unreadable(reason), exit::ERROR),
     };
     diagnostic::error(&mut io::stderr(), language, &problem);
     code
 }
 
-/// 读到头，要是 UTF-8。
+/// 读到头，要是 UTF-8；读到 [`TEXT_MOST`] 还没完的不往下读，太长（写进 JSON 只会更长）。
 fn read(stdin: &mut impl Read) -> Result<String, Unread> {
     let mut bytes = Vec::new();
     stdin
+        .take(TEXT_MOST as u64 + 1)
         .read_to_end(&mut bytes)
         .map_err(|error| Unread::Failed(error.to_string()))?;
+    if bytes.len() > TEXT_MOST {
+        return Err(Unread::TooLong);
+    }
     String::from_utf8(bytes).map_err(|_| Unread::NotUtf8)
 }
 
