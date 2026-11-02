@@ -305,17 +305,23 @@ model = "mascot.json"   # relative path inside the package folder
 
 ## `[theme]`
 
-A terminal theme (box lines, symbols, text styles), as a package:
+A look (box lines, symbols, text styles, colors and so on), as a package: a terminal theme, a web theme, or both.
 
 ```toml
 [package]
-name = { zh = "纯字符", en = "ASCII" }
+name = { zh = "夜", en = "Night" }
 
-[theme]
-file = "theme.json"     # relative path inside the package folder
+[theme.tui]
+file = "theme.json"     # terminal theme: relative path inside the package folder
+
+[theme.web]
+dir = "web"             # web theme: relative directory inside the package folder
 ```
 
-- `file` is required, written like `[mascot] model`.
+- `[theme]` holds two subtables, `tui` and `web`. Write at least one; with neither it is `missing_key`.
+- `[theme.tui]` has just `file`, required, written like `[mascot] model`; a bad one is `bad_theme_file`. What goes inside is in [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md) ("主题", themes) in the terminal repository.
+- `[theme.web]` has just `dir`, required, written like `[page] dir`; a bad one is `bad_theme_dir`. The directory is an ordinary web package (`manifest.json`, `index.js` and other files, scripts allowed); what goes inside is defined by the web UI.
+- The older spelling, `file` directly under `[theme]`, still works and is read as `[theme.tui] file`; written together with `[theme.tui]` it is `unknown_key`.
 - A theme package has just `[package]` and `[theme]`, plus optionally `[depends]` and `[recommends]`. `protocol`, `[command]`, `[mascot]` or any other table is `wrong_kind`: a theme package carries no mascot, and no other package can carry a theme.
-- `miyu check` checks the theme file the same way as a mascot's. What goes inside is in [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md) ("主题", themes) in the terminal repository.
-- No switch, settings or program; the terminal picks one by its setting `tui.look`.
+- `miyu check` checks the terminal theme file the same way as a mascot's, and reports a missing web theme directory as an error.
+- No switch, settings or program; the terminal picks one by its setting `tui.look`, the web UI by its own setting.

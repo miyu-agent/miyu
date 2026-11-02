@@ -27,6 +27,7 @@ pub mod settings;
 mod side;
 mod slash;
 mod target;
+mod theme;
 mod upgrade;
 mod version;
 mod widget;
@@ -101,7 +102,7 @@ pub struct Manifest {
     pub page: Option<String>,
     /// 吉祥物（`kind = "mascot"`，施工 F-7）：模型文件在包目录里的相对路径。
     pub mascot: Option<Mascot>,
-    /// 终端的主题（`[theme]`，施工 F-16）：主题文件在包目录里的相对路径。只有主题包能写。
+    /// 外观（`[theme]`，施工 F-16，TH-1 起分终端、网页两样）：只有外观包（`kind = "theme"`）能写。
     pub theme: Option<Theme>,
     /// 带的 MCP 服务（施工 X-2，`[[mcp]]`）：照写的先后；没有的是空的。只有扩展包、`bundle` 能写。
     pub mcp: Vec<McpServer>,
@@ -143,11 +144,15 @@ pub struct Mascot {
     pub model: String,
 }
 
-/// 主题包的 `[theme]`（施工 F-16，`packages.md`「主题包」）：主题文件的格式由终端定，核心只认它在哪，同吉祥物。
+/// 外观包的 `[theme]`（施工 F-16、TH-1，`packages.md`「外观包」）：终端主题、网页主题至少带一样。里面怎么写由终端、网页各自定，
+/// 核心只认它们在哪，同吉祥物。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
-    /// 主题文件：包目录里的相对路径，例如 `theme.json`。
-    pub file: String,
+    /// 终端主题文件（`[theme.tui] file`，以前的写法 `[theme] file` 也读进这里）：包目录里的相对路径，例如 `theme.json`；没带的没有。
+    pub tui: Option<String>,
+    /// 网页主题目录（`[theme.web] dir`）：包目录里的相对目录，里面是一个普通的网页包（`manifest.json`、`index.js` 等，可以带
+    /// 脚本，2026-11-02 项目主人定）；没带的没有。
+    pub web: Option<String>,
 }
 
 /// 包的种类：只说它跑在哪（设计 `30-插件框架.md` 第二节）；施工 F-8 上补起照带的表认（`kinds::of`），清单不写。
@@ -390,7 +395,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         None => None,
     };
     let theme = match root.get("theme").and_then(Item::as_table_like) {
-        Some(table) => Some(look::theme(&reader, table, &root["theme"])?),
+        Some(table) => Some(theme::read(&reader, table, &root["theme"])?),
         None => None,
     };
     let mcp = match root.get("mcp") {

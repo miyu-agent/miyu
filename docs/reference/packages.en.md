@@ -36,7 +36,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | Name | Notes |
 |---|---|
 | `package`, `layer` | Id; `shipped` or `home` |
-| `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a terminal theme, with `theme: {"file"}`; `package.file` gives only that file), `bundle` (no program; only MCP servers, skills, scripts and the like) |
+| `kind` | `builtin` (compiled into the core), `process` (an extension), `worker` (a helper started on demand), `ui` (a user interface), `mascot`, `theme` (a look: terminal theme, web theme, see the `theme` row below), `bundle` (no program; only MCP servers, skills, scripts and the like) |
 | `name`, `summary`, `icon` | Name, one-line summary, Lucide icon name |
 | `logo` | The version of the package's own logo: only when the manifest has `[package] logo` and the picture follows the rules; read the picture with `package.logo` |
 | `author`, `upstream` | Author and upstream source repository (`https://`); absent when the manifest doesn't say |
@@ -47,6 +47,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `page` | Has a package page, which heads list under package pages |
+| `theme` | What a theme package carries: `{"tui"?: {"file"}, "web"?: {"dir"}}`, `tui` the terminal theme file, `web` the web theme directory (an ordinary web package), at least one of them; paths are relative to the package directory, files are read with `package.file` |
 | `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `on` and `skipped` as in `mcp.list`. An extension not acting for the owner (a platform bridge acting for outsiders in a venue) gets only `name` and `state` (`reason` when stopped) for each server, and none of `state`, `pages_dir`, `command`, `commands`, `process`, `worker`, `check`, `problem`, `line` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |
 | `command`, `commands` | Subcommands it adds to `miyu`: `command` is the first `{"name", "program", "about"}`, `commands` all of them in the order written (a package can add several) |
@@ -160,7 +161,7 @@ Upgrade from the package source. Only packages installed from the source are tou
 
 ## `package.file`, `package.call`
 
-**`package.file`**: params `package`, `path` (relative, inside its page folder), `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages, mascot model files and theme files are read this way.
+**`package.file`**: params `package`, `path`, `offset`. Response `{"data", "size", "eof"}`, at most 512 KiB at a time. The web UI's package pages, mascot model files and theme packages' themes are read this way. For a package page, `path` is relative to the page folder; for a mascot package it can only be the `model` file; for a theme package it is relative to the package directory and can only be the terminal theme `file`, or any regular file under the web theme directory (e.g. `web/index.js`). Paths are resolved to real paths: links leading out of the package directory or the web directory, the directory itself and any other path are `not_found`.
 
 **`package.call`**: params `package`, `method`, `params` (optional). The core forwards it to that package's program (`method.call`) and returns whatever it answers. Answered in the background. Widget buttons and saving page forms go through it.
 

@@ -36,7 +36,7 @@
 | 名字 | 说明 |
 |---|---|
 | `package`、`layer` | 编号，`shipped` 或 `home` |
-| `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（终端的主题，带 `theme: {"file"}`，`package.file` 只给那一份）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
+| `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（外观：终端主题、网页主题，见下面 `theme` 一格）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
 | `logo` | 包自带的图标的版本（施工 F-18 上）：清单写了 `[package] logo`、图合规矩的才有，图用 `package.logo` 读 |
 | `author`、`upstream` | 作者、上游源码仓库（`https://` 开头）；清单没写的没有 |
@@ -47,6 +47,7 @@
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `page` | 有后台页的，头照它列「软件后台」 |
+| `theme` | 外观包带了什么：`{"tui"?: {"file"}, "web"?: {"dir"}}`，`tui` 是终端主题文件，`web` 是网页主题目录（一个普通的网页包），至少有一样；路径都相对包目录，文件用 `package.file` 读 |
 | `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。不替主人干活的扩展（场所里替外人的平台桥）拿到的每个服务只有 `name`、`state`（停下的带 `reason`），也没有 `state`、`pages_dir`、`command`、`commands`、`process`、`worker`、`check`、`problem`、`line` |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |
 | `command`、`commands` | 给 `miyu` 加的子命令：`command` 是第一个 `{"name", "program", "about"}`，`commands` 是全部，照写的先后（一个包可以加几个） |
@@ -160,7 +161,7 @@
 
 ## `package.file`、`package.call`
 
-**`package.file`**：参数 `package`、`path`（后台页目录里的相对路径）、`offset`。回应 `{"data", "size", "eof"}`，一次最多 512 KiB。网页的后台页、吉祥物的模型文件照它读。
+**`package.file`**：参数 `package`、`path`、`offset`。回应 `{"data", "size", "eof"}`，一次最多 512 KiB。网页的后台页、吉祥物的模型文件、外观包的主题照它读。`path` 对后台页是后台页目录里的相对路径；对吉祥物包只能是 `model` 那一份；对外观包相对包目录写，只能是终端主题的 `file` 那一份，或者网页主题目录下的任何一份普通文件（例如 `web/index.js`）。照真实路径找，链接指出包目录、指出网页目录的，目录本身、别的路径，都回 `not_found`。
 
 **`package.call`**：参数 `package`、`method`、`params`（可不写）。核心把它转给那个包的程序（`method.call`），程序回什么交回什么。在后台答。界面块上的按钮、整页的表单保存都走它。
 

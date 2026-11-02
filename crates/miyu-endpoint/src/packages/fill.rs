@@ -119,8 +119,16 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
     if let Some(icon) = &manifest.icon {
         item["icon"] = json!(icon);
     }
+    // 外观（施工 F-16、TH-1）：终端主题 `tui: {"file"}`、网页主题 `web: {"dir"}`，带了哪样写哪样。
     if let Some(theme) = &manifest.theme {
-        item["theme"] = json!({"file": theme.file});
+        let mut carried = json!({});
+        if let Some(file) = &theme.tui {
+            carried["tui"] = json!({"file": file});
+        }
+        if let Some(dir) = &theme.web {
+            carried["web"] = json!({"dir": dir});
+        }
+        item["theme"] = carried;
     }
     if let Some(mascot) = &manifest.mascot {
         item["mascot"] = json!({"model": mascot.model});

@@ -318,11 +318,11 @@ async fn check_packages(
                     let message = crate::packages::sentence(words, code, logo);
                     problems.push(json!({"kind": "package", "file": file, "code": code, "level": "warning", "message": message.unwrap_or_default()}));
                 }
-                // 主题包的主题文件（施工 F-16）：同吉祥物。
+                // 外观包的终端主题文件（施工 F-16）同吉祥物，网页主题目录要在（施工 TH-1）。
                 if let Some(theme) = &manifest.theme
-                    && let Some(code) = crate::packages::status::theme_problem(one, theme)
+                    && let Some((code, path)) = crate::packages::status::theme_problem(one, theme)
                 {
-                    let message = crate::packages::sentence(words, code, &theme.file);
+                    let message = crate::packages::sentence(words, code, path);
                     problems.push(json!({"kind": "package", "file": file, "code": code, "level": "error", "message": message.unwrap_or_default()}));
                 }
             }

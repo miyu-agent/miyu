@@ -4,7 +4,7 @@
 
 **给人看的字**（`name`、`summary`、`about`、配置项的 `name`、`description`……）写成「语言到一句话」：`{ en = "Hello", zh = "打招呼" }`，只认 `zh`、`en`、`ja`，界面照人的语言挑，没有的退到 `en`、`zh`、`ja`。
 
-**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是主题包（这两种见文末）；只有 `[package]` 的是只带技能、脚本、命令模板的包。还有界面、内置、小程序几种是 Miyu 自己用的，这里不写。
+**包是什么种类**不用写，照带了哪几张表认：有 `[process]` 的是扩展；没有程序、带了 `[[mcp]]` 的是 MCP 服务包；有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（这两种见文末）；只有 `[package]` 的是只带技能、脚本、命令模板的包。还有界面、内置、小程序几种是 Miyu 自己用的，这里不写。
 
 ## 一份完整的扩展清单
 
@@ -305,17 +305,23 @@ model = "mascot.json"   # 包文件夹里的相对路径
 
 ## `[theme]`
 
-终端的主题（框线、记号、字的修饰），做成一个包：
+外观（框线、记号、字的修饰、配色这些），做成一个包：带终端主题、网页主题，或者两样都带。
 
 ```toml
 [package]
-name = { zh = "纯字符", en = "ASCII" }
+name = { zh = "夜", en = "Night" }
 
-[theme]
-file = "theme.json"     # 包文件夹里的相对路径
+[theme.tui]
+file = "theme.json"     # 终端主题：包文件夹里的相对路径
+
+[theme.web]
+dir = "web"             # 网页主题：包文件夹里的相对目录
 ```
 
-- `file` 必写，写法同 `[mascot] model`。
-- 主题包只写 `[package]`、`[theme]`，另可写 `[depends]`、`[recommends]`；写了 `protocol`、`[command]`、`[mascot]` 或别的表都报 `wrong_kind`：主题包不带吉祥物，别的包也带不了主题。
-- `miyu check` 查主题文件，规矩同吉祥物。文件里面怎么写见终端仓库的 [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md)（「主题」）。
-- 没有开关、配置项、程序；终端照它的配置项 `tui.look` 挑用哪一个。
+- `[theme]` 下是 `tui`、`web` 两张子表，至少写一张，两张都没有的报 `missing_key`。
+- `[theme.tui]` 只有 `file`、必写，写法同 `[mascot] model`，写错报 `bad_theme_file`。里面怎么写见终端仓库的 [docs/blueprint/tui.md](https://github.com/miyu-agent/miyu-tui/blob/main/docs/blueprint/tui.md)（「主题」）。
+- `[theme.web]` 只有 `dir`、必写，写法同 `[page] dir`，写错报 `bad_theme_dir`。这个目录是一个普通的网页包（`manifest.json`、`index.js` 和别的文件，可以带脚本），里面怎么写由网页定。
+- 以前的写法 `[theme]` 下直接写 `file` 照认，当作 `[theme.tui] file`；和 `[theme.tui]` 一起写的报 `unknown_key`。
+- 外观包只写 `[package]`、`[theme]`，另可写 `[depends]`、`[recommends]`；写了 `protocol`、`[command]`、`[mascot]` 或别的表都报 `wrong_kind`：外观包不带吉祥物，别的包也带不了外观。
+- `miyu check` 查终端主题文件，规矩同吉祥物；网页主题目录不在也报错。
+- 没有开关、配置项、程序；终端照它的配置项 `tui.look` 挑用哪一个，网页照它自己的设置挑。

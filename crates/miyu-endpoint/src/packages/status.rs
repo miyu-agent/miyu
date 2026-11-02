@@ -80,13 +80,29 @@ pub(crate) fn mascot_problem(found: &Found, mascot: &Mascot) -> Option<&'static 
     })
 }
 
-/// 主题包的主题文件（施工 F-16，`packages.md`「主题包」）：同吉祥物的模型文件，代码换成 `theme_…`。
-pub(crate) fn theme_problem(found: &Found, theme: &Theme) -> Option<&'static str> {
-    data_problem(found, &theme.file).map(|problem| match problem {
-        Data::Missing => "theme_missing",
-        Data::TooBig => "theme_too_big",
-        Data::NotJson => "theme_not_json",
-    })
+/// 外观包（施工 F-16、TH-1，`packages.md`「外观包」）的毛病和出在哪个路径上：终端主题文件同吉祥物的模型文件，代码换成
+/// `theme_…`；网页主题目录不在（照真实路径找，顺着链接出了包目录的、不是目录的都算不在）报 `theme_missing`。网页目录里面
+/// 怎么写由网页查。好的没有。
+pub(crate) fn theme_problem<'a>(
+    found: &Found,
+    theme: &'a Theme,
+) -> Option<(&'static str, &'a str)> {
+    if let Some(file) = &theme.tui
+        && let Some(problem) = data_problem(found, file)
+    {
+        let code = match problem {
+            Data::Missing => "theme_missing",
+            Data::TooBig => "theme_too_big",
+            Data::NotJson => "theme_not_json",
+        };
+        return Some((code, file));
+    }
+    let dir = theme.web.as_deref()?;
+    let root = std::fs::canonicalize(found.files_dir()).ok();
+    let inside = std::fs::canonicalize(found.files_dir().join(dir)).is_ok_and(|real| {
+        root.as_ref().is_some_and(|root| real.starts_with(root)) && real.is_dir()
+    });
+    (!inside).then_some(("theme_missing", dir))
 }
 
 /// 包里一份数据文件的毛病。

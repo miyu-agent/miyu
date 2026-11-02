@@ -55,7 +55,8 @@ async fn a_theme_is_listed_and_its_file_is_read() {
         .unwrap_or_else(|| panic!("列出来了：{listed}"));
     assert_eq!(ascii["kind"], "theme");
     assert_eq!(ascii["name"], "纯字符");
-    assert_eq!(ascii["theme"], json!({"file": "look/theme.json"}));
+    // 老写法 `[theme] file` 读成终端主题（施工 TH-1）。
+    assert_eq!(ascii["theme"], json!({"tui": {"file": "look/theme.json"}}));
     assert!(ascii.get("protocol").is_none(), "不说协议：{ascii}");
 
     let model = client

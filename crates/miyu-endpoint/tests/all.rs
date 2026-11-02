@@ -167,6 +167,7 @@ mod package_settings;
 mod package_state;
 mod package_switch;
 mod package_theme;
+mod package_theme_web;
 mod package_tool;
 mod package_tool_open;
 mod package_vocabulary;

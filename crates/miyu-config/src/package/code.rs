@@ -89,8 +89,10 @@ pub enum Code {
     BadPageDir,
     /// `[mascot] model` 不是包目录里的相对路径（施工 F-7）。
     BadMascotModel,
-    /// `[theme] file` 不是包目录里的相对路径（施工 F-16）。
+    /// 终端主题文件（`[theme.tui] file`，老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16、TH-1）。
     BadThemeFile,
+    /// `[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）。
+    BadThemeDir,
     /// `[export] methods` 里有不是方法名的、重复的（施工 X-18）。
     BadExport,
     /// `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了。
@@ -173,6 +175,7 @@ impl Code {
             Code::BadPageDir => "bad_page_dir",
             Code::BadMascotModel => "bad_mascot_model",
             Code::BadThemeFile => "bad_theme_file",
+            Code::BadThemeDir => "bad_theme_dir",
             Code::BadExport => "bad_export",
             Code::BadMcp => "bad_mcp",
             Code::BadSlash => "bad_slash",
@@ -193,7 +196,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 58] = [
+    pub const ALL: [Code; 59] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -238,6 +241,7 @@ impl Code {
         Code::BadPageDir,
         Code::BadMascotModel,
         Code::BadThemeFile,
+        Code::BadThemeDir,
         Code::BadExport,
         Code::BadMcp,
         Code::BadSlash,

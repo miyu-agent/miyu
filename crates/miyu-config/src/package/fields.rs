@@ -85,8 +85,14 @@ pub(super) const PAGE: &[&str] = &["dir"];
 /// `[mascot]`。
 pub(super) const MASCOT: &[&str] = &["model"];
 
-/// `[theme]`。
-pub(super) const THEME: &[&str] = &["file"];
+/// `[theme]`：`tui`、`web` 两张子表（施工 TH-1）；`file` 是以前的写法，读成 `[theme.tui] file`。
+pub(super) const THEME: &[&str] = &["tui", "web", "file"];
+
+/// `[theme.tui]`：终端主题。
+pub(super) const THEME_TUI: &[&str] = &["file"];
+
+/// `[theme.web]`：网页主题。
+pub(super) const THEME_WEB: &[&str] = &["dir"];
 
 /// 一个 MCP 服务除了名字的几格：清单的 `[[mcp]]`、系统配置里的服务都是这几格。
 pub(super) const MCP_SERVER: [&str; 9] = [
@@ -173,7 +179,7 @@ pub(super) const TABLES: [Table; 22] = [
     },
     table("page", &[PAGE]),
     table("mascot", &[MASCOT]),
-    table("theme", &[THEME]),
+    table("theme", &[THEME, THEME_TUI, THEME_WEB]),
     table("mcp", &[&MCP]),
     table("slash", &[SLASH]),
     table("side", &[SIDE]),

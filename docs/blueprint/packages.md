@@ -36,7 +36,7 @@
 
 **在哪**：一个文件夹就是一个包（施工 F-8 上，设计 `31-软件包.md` 第二节）：出厂的放资源目录的 `packages/<编号>/`，你装的放数据根的 `packages/<编号>/`（`07-存储.md` 第二节；协议上这一层叫 `home`），清单是文件夹里的 `package.toml`，包自己的文件放在同一个文件夹里（照 `miyu_store::packages::Found::files_dir` 算，用的一方不自己拼）。包带的程序（扩展、小程序、界面）放在文件夹里的 `bin/` 下（施工 F-8 上再补，设计 `31-软件包.md` 第二节），名字照清单写的程序名，Windows 上加 `.exe`；装的时候随包拷进来，本地库记它的哈希。编号就是文件夹名，写法同人格的编号（小写字母开头，小写字母、数字、`-`、`_`，最多 64 个），不合写法的、文件夹里没有 `package.toml` 的不算。包自己在这台机器上的状态放 `<数据根>/state/packages/<编号>/`，包自己建、自己用。
 
-**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是主题包（施工 F-16）；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`；人格、预设照约定带在 `personas/`、`presets/` 里，施工 P-11 上，`personas.md`「软件包带的」；知识库照约定带在 `kb/<编号>/` 里，同 `skills/`，施工 K-8，`knowledge.md`「对外的样子」软件包带来的那一节），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle`、`mascot` 或 `theme`）。
+**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（施工 F-16，以前叫主题包，TH-1 起能带网页主题）；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`；人格、预设照约定带在 `personas/`、`presets/` 里，施工 P-11 上，`personas.md`「软件包带的」；知识库照约定带在 `kb/<编号>/` 里，同 `skills/`，施工 K-8，`knowledge.md`「对外的样子」软件包带来的那一节），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle`、`mascot` 或 `theme`）。
 
 ```toml
 [package]
@@ -138,6 +138,7 @@ program = "miyu-embed"
 | `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
+| `theme` | `[package]`、`[theme]`（施工 F-16；TH-1 起分 `[theme.tui]`、`[theme.web]`，见「外观包」）、`[depends]`、`[recommends]` |
 | `bundle` | `[package]`、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
 
 施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
@@ -253,24 +254,31 @@ model = "mascot.json"   # 包目录 packages/pudding/ 里的相对路径
 4. **`miyu check`**：模型文件不在（照真实路径，出了包目录的也算不在）`mascot_missing`，超过 256 KiB `mascot_too_big`，不是 JSON 的对象 `mascot_not_json`，都是错误，写清哪个包、哪个文件。模型里面写得对不对由终端查。
 5. **装卸照常**：`package.install`、`package.remove`；没有开关（`package.enable`、`package.disable` 回 `not_switchable`）、没有配置项、不拉起程序。终端照配置项 `tui.mascot`（终端的清单 `[settings.mascot]`，填包的编号）挑用哪一个。
 
-### 主题包（施工 F-16，2026-10-21 项目主人定，终端界面的会话转来）
+### 外观包（施工 F-16，2026-10-21 项目主人定，终端界面的会话转来；TH-1 起能带网页主题，2026-11-02 项目主人定）
 
-终端界面照网页的「皮肤」做一层变量化，叫「主题」：框线、记号、修饰、留白、动效一张表，做成专门的一种包，默认主题也是一个包（终端的图纸 `tui.md`「主题」）。格式由终端定，核心只认它在哪，同吉祥物包。
+终端界面照网页的「皮肤」做一层变量化，叫「主题」：框线、记号、修饰、留白、动效一张表，做成专门的一种包，默认主题也是一个包（终端的图纸 `tui.md`「主题」）。施工 TH-1 起同一种包也能带网页的主题，界面上统称「外观」：一个外观包带终端主题、网页主题，或者两样都带。种类照旧是 `theme`，已有的 `miyu-tui-theme-*` 不用改。格式由终端、网页各自定，核心只认它们在哪，同吉祥物包。
 
 ```toml
 # packages/miyu-tui-theme-ascii/package.toml
 [package]
 name = { zh = "纯字符", en = "ASCII" }
 
-[theme]
-file = "theme.json"   # 包目录里的相对路径
+[theme.tui]
+file = "theme.json"   # 终端主题：包目录里的相对路径
+
+[theme.web]
+dir = "web"           # 网页主题：包目录里的相对目录，里面是一个普通的网页包
 ```
 
-1. **清单**：主题包只能写 `[package]`、`[theme]`（另可写依赖），`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`；写了别的表（`[command]`、`[mascot]` 都算）照样 `wrong_kind`：主题包不带吉祥物，别的包也带不了主题。`[theme]` 只有 `file`、必写，写法同 `[mascot] model`，写错 `bad_theme_file`。
-2. **列出来**：`package.list` 的一项 `kind` 是 `theme`，多 `theme: {"file"}`，没有 `protocol`。装之前的看一眼多 `theme: true`。
-3. **读主题**：`package.file {"package", "path"}` 对主题包只给 `file` 那一份，照真实路径找，链接出了包目录的不认；别的路径 `file_not_found`。
-4. **`miyu check`**：主题文件不在 `theme_missing`、超过 256 KiB `theme_too_big`、不是 JSON 的对象 `theme_not_json`，都是错误（同吉祥物，一个函数查，`packages/status.rs` 的 `data_problem`）。主题里面写得对不对由终端查。
-5. **装卸照常**，没有开关、配置项、程序。终端照自己的配置项 `tui.look`（填主题包的编号）挑用哪一个。
+1. **清单**：外观包只能写 `[package]`、`[theme]`（另可写依赖），`[package]` 里可以写 `icon`；不说协议，写了 `protocol` 报 `wrong_kind`；写了别的表（`[command]`、`[mascot]` 都算）照样 `wrong_kind`：外观包不带吉祥物，别的包也带不了外观。`[theme]` 下只认 `tui`、`web` 两张子表和老写法的 `file`，至少带一样，都没有的报 `missing_key`（`theme.tui / theme.web`）。
+   - `[theme.tui]` 只有 `file`、必写，写法同 `[mascot] model`，写错 `bad_theme_file`。
+   - `[theme.web]` 只有 `dir`、必写，写法同 `[page] dir`，写错 `bad_theme_dir`。目录里是一个普通的网页包（`manifest.json`、`index.js` 和别的文件），可以带脚本，不设限（2026-11-02 项目主人定）；里面怎么写由网页定、网页查。
+   - 老写法 `[theme] file = "…"` 照认，读成 `[theme.tui] file`：装着的包不用改。和 `[theme.tui]` 一起写的，老的 `file` 报 `unknown_key`，免得两份路径不知道认哪个。
+   - 读法在 `miyu-config` 的 `package/theme.rs`，测试 `package/theme/tests.rs`。
+2. **列出来**：`package.list`、`package.info` 的一项 `kind` 是 `theme`，多 `theme: {"tui"?: {"file"}, "web"?: {"dir"}}`，带了哪样写哪样，没有 `protocol`；以前顶层的 `theme: {"file"}` 不再给（终端跟着改）。装之前的看一眼多 `theme: true`。`packages` 流推的 `package.changed` 里的那一项同形状。
+3. **读主题**：`package.file {"package", "path"}` 对外观包的 `path` 照包目录写：终端主题给 `file` 那一份（照原样比）；网页主题给网页目录下的任何一份普通文件（什么类型都给，分块、512 KiB 一块照旧），目录本身不算。照真实路径找：链接出了包目录的、出了网页目录的（指到包里别处的也算）、不是普通文件的，都 `not_found`；别的路径也 `not_found`。
+4. **`miyu check`**：终端主题文件不在 `theme_missing`、超过 256 KiB `theme_too_big`、不是 JSON 的对象 `theme_not_json`，都是错误（同吉祥物，一个函数查，`packages/status.rs` 的 `data_problem`）；网页主题目录不在（照真实路径，出了包目录的、不是目录的也算不在）同样 `theme_missing`。主题里面写得对不对由终端、网页查。
+5. **装卸照常**，没有开关、配置项、程序；只带网页主题的包照样装得上。终端照自己的配置项 `tui.look`（填外观包的编号）挑用哪一个，网页照它自己的设置挑。
 
 ### 给别的包带的内容（施工 X-22，设计 `34-表情包.md` 第三节「内容包」）
 
@@ -331,7 +339,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 |---|---|
 | `syntax` | 读不成 TOML |
 | `unknown_table`、`not_a_table`、`unknown_key` | 不认识的表、该是表的不是表、表里不认识的键 |
-| `missing_key` | 少了 `[package]`、程序表和 `[mascot]` 都没有（施工 F-8 上补）、`protocol`、`name`、`[command]` 的三格；功能的 `name`、`[connection] platform`、小程序的 `[worker]`、`program`（施工 F-1；少了 `[worker]` 的整份，没有行号） |
+| `missing_key` | 少了 `[package]`、程序表和 `[mascot]` 都没有（施工 F-8 上补）、`protocol`、`name`、`[command]` 的三格；功能的 `name`、`[connection] platform`、小程序的 `[worker]`、`program`（施工 F-1；少了 `[worker]` 的整份，没有行号）；`[theme]` 下 `tui`、`web` 都没有（施工 TH-1） |
 | `wrong_kind` | 写了这种包不能写的表（「格式」那张表）；`groups` 写在不是内置包的清单里（施工 BS-1 上中；原来的 `required` 同理，现在写了是 `unknown_key`） |
 | `bad_group` | `[package] groups` 里的组名写法不对、重复了（施工 BS-1 上中） |
 | `needs_command` | `[process]`、`[check]` 没有 `[command]` |
@@ -348,6 +356,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `feature_taken` | 功能的编号被先读到的包占了（施工 F-1） |
 | `not_built_in` | 清单是内置包，这一份核心没编进它的代码（施工 F-2，核心起来时标；`miyu check` 不查） |
 | `bad_icon`、`bad_page_dir` | `[package] icon` 不是 Lucide 图标名的写法，`[page] dir` 不是包目录里的相对目录（施工 F-6 上） |
+| `bad_theme_file`、`bad_theme_dir` | 终端主题文件（`[theme.tui] file`、老写法 `[theme] file`）不是包目录里的相对路径（施工 F-16），`[theme.web] dir` 不是包目录里的相对目录（施工 TH-1）；`tui`、`web` 没写成表的也算 |
 | `bad_logo` | `[package] logo` 不是包目录里一个 `.png`、`.webp` 的相对路径（施工 F-18 上，`package-pages.md`「清单多的几格」）；图本身不合规矩的在 `miyu check` 报警告 `logo_missing`、`logo_not_image`、`logo_too_big`，包照装 |
 | `bad_export` | `[export] methods` 里有不是方法名的、重复的（施工 X-18） |
 | `bad_mcp` | `[[mcp]]` 写错了（施工 X-2）：服务名、命令、环境变量、给哪种会话、时限，同一个包里服务名重了；`detail` 是哪一格（`mcp.<服务名>.<格>`）、报在那一段 |
