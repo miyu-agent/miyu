@@ -194,3 +194,30 @@ fn the_real_style_json_reads_and_both_sample_diagrams_render() {
         assert!(rendered.svg.starts_with("<svg"));
     }
 }
+
+/// 样式值原样拼进 SVG 的属性（审计第四轮 R-1 核心这一半，施工 MS-1）：带引号、尖括号、`&` 的整个不收，图里另写不出元素。
+#[test]
+fn a_style_value_cannot_write_an_element_into_the_svg() {
+    let scratch = Scratch::new();
+    scratch.write(&style_json(65536, 64));
+    let mermaid = Mermaid::new(&scratch.0);
+    for source in [
+        "graph TD\nA-->B\nstyle A fill:#fff\" /><image href=\"/x\"",
+        "graph TD\nA-->B\nclassDef bad stroke:#000'/><image href='/x'\nclass A bad",
+        "graph TD\nA-->B\nlinkStyle 0 stroke:#000\"/><image href=\"/x\"",
+        "C4Context\nPerson(a, \"A\")\nUpdateElementStyle(a, $bgColor=\"#fff'/><image href='/x\")",
+    ] {
+        let rendered = mermaid.render(source).expect("画得出来");
+        // C4 的人像本来就是一张内嵌的 `<image>`，查的是写进去的那个地址。
+        assert!(
+            !rendered.svg.contains("href=\"/x"),
+            "{source}：{}",
+            rendered.svg
+        );
+        assert!(
+            !rendered.svg.contains("href='/x"),
+            "{source}：{}",
+            rendered.svg
+        );
+    }
+}

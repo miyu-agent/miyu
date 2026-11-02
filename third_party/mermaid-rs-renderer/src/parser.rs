@@ -3170,10 +3170,10 @@ fn process_c4_line(line: &str, c4: &mut crate::ir::C4Data, boundary_stack: &mut 
                 .cloned()
                 .or_else(|| get_c4_kv(&kv, "element"));
             if let Some(element) = element {
-                let bg_color = get_c4_kv(&kv, "bgColor").or_else(|| positional.get(1).cloned());
-                let font_color = get_c4_kv(&kv, "fontColor").or_else(|| positional.get(2).cloned());
+                let bg_color = get_c4_kv(&kv, "bgColor").or_else(|| positional.get(1).cloned()).and_then(safe_style_value);
+                let font_color = get_c4_kv(&kv, "fontColor").or_else(|| positional.get(2).cloned()).and_then(safe_style_value);
                 let border_color =
-                    get_c4_kv(&kv, "borderColor").or_else(|| positional.get(3).cloned());
+                    get_c4_kv(&kv, "borderColor").or_else(|| positional.get(3).cloned()).and_then(safe_style_value);
                 let sprite = get_c4_kv(&kv, "sprite").or_else(|| positional.get(6).cloned());
                 let techn = get_c4_kv(&kv, "techn").or_else(|| positional.get(7).cloned());
 
@@ -3220,8 +3220,8 @@ fn process_c4_line(line: &str, c4: &mut crate::ir::C4Data, boundary_stack: &mut 
             if let (Some(from), Some(to)) = (from, to)
                 && let Some(rel) = c4.rels.iter_mut().find(|r| r.from == from && r.to == to)
             {
-                let text_color = get_c4_kv(&kv, "textColor").or_else(|| positional.get(2).cloned());
-                let line_color = get_c4_kv(&kv, "lineColor").or_else(|| positional.get(3).cloned());
+                let text_color = get_c4_kv(&kv, "textColor").or_else(|| positional.get(2).cloned()).and_then(safe_style_value);
+                let line_color = get_c4_kv(&kv, "lineColor").or_else(|| positional.get(3).cloned()).and_then(safe_style_value);
                 let offset_x = get_c4_kv(&kv, "offsetX").or_else(|| positional.get(4).cloned());
                 let offset_y = get_c4_kv(&kv, "offsetY").or_else(|| positional.get(5).cloned());
                 if let Some(val) = text_color {
@@ -6063,13 +6063,19 @@ fn parse_click_line(line: &str) -> Option<(String, crate::ir::NodeLink)> {
     Some((id, crate::ir::NodeLink { url, title, target }))
 }
 
+// Miyu patch (MS-1): style values are spliced into SVG attributes unescaped, so a value with a
+// quote, angle bracket or ampersand could close the attribute and write new elements. Drop it.
+fn safe_style_value(value: String) -> Option<String> {
+    (!value.contains(['"', '\'', '<', '>', '&'])).then_some(value)
+}
+
 fn parse_node_style(input: &str) -> crate::ir::NodeStyle {
     let mut style = crate::ir::NodeStyle::default();
     for part in input.split(',') {
         let mut kv = part.splitn(2, ':');
         let key = kv.next().unwrap_or("").trim();
         let value = kv.next().unwrap_or("").trim();
-        if key.is_empty() || value.is_empty() {
+        if key.is_empty() || value.is_empty() || safe_style_value(value.to_string()).is_none() {
             continue;
         }
         match key {
@@ -6093,7 +6099,7 @@ fn parse_edge_style(input: &str) -> crate::ir::EdgeStyleOverride {
         let mut kv = part.splitn(2, ':');
         let key = kv.next().unwrap_or("").trim();
         let value = kv.next().unwrap_or("").trim();
-        if key.is_empty() || value.is_empty() {
+        if key.is_empty() || value.is_empty() || safe_style_value(value.to_string()).is_none() {
             continue;
         }
         match key {

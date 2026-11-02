@@ -15,7 +15,7 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 `[[bench]]`、`[[example]]` 和开发依赖 `criterion` 跟着删掉。原版自带的单元测试 `include_str!` 了发布包里没有的 `docs/` 文件，
 从 crates.io 下下来本来就编不过，不跑。
 
-改了的只有 `src/text_metrics.rs`（量字宽）和 `src/lib.rs`（多导出两个函数），`Cargo.toml` 多一个依赖 `memmap2`：
+改了的只有 `src/text_metrics.rs`（量字宽）、`src/lib.rs`（多导出两个函数）和 `src/parser.rs`（第 6 条，施工 MS-1），`Cargo.toml` 多一个依赖 `memmap2`：
 
 1. 字体文件映射进来（`FontData::Mapped`），不整份拷进内存。原版 `data.to_vec()`：中文字体一个文件十几 MB，画过一张图就一直
    常驻。字体不在文件里的（`fontdb::Source::Binary`）照旧拷一份。
@@ -25,6 +25,11 @@ exclude` 把它们排除在工作区外（路径依赖照样会被 `cargo fmt --
 4. 记位置的目录由调用方定（`set_font_cache_dir`，`None` 不记）；没定过的照原版 `$XDG_CACHE_HOME/mmdr/font-cache`。那个默认
    目录是几个用这个库的程序共用的，里面原版存的整份字体分不清是谁的，一律不碰。
 5. `has_remembered_font`：问一串字体名记没记过、那个文件变没变，`miyu-mermaid` 探字体时先问它，记过的不用再扫系统字体库。
+
+6. 样式值过滤（施工 MS-1，审计第四轮 R-1 核心这一半）：`style`、`classDef`、子图样式（`parse_node_style`）、`linkStyle`
+   （`parse_edge_style`）、C4 的 `UpdateElementStyle`、`UpdateRelStyle` 的颜色值原样拼进 SVG 的属性，带 `"`、`'`、`<`、`>`、
+   `&` 的能闭合属性另写元素（比如一个读本机文件的 `<image>`）。这几样值里带这五个字符的整个不收（`safe_style_value`），
+   照没写处理。`crates/miyu-mermaid` 的 `a_style_value_cannot_write_an_element_into_the_svg` 守着四种写法。
 
 怎么验：同一批图（中文、英文、带重音的拉丁字母、emoji、时序图、类图、状态图、甘特图、饼图、三十个节点的长图）补前补后画出来的
 SVG 逐字节一样，头一回和照记下的位置画的那一回都比；`crates/miyu/tests/mermaid_fonts.rs` 守着只记位置、不写默认目录、重起以后
