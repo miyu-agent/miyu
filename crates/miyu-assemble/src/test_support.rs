@@ -190,6 +190,8 @@ fn job_texts() -> JobTexts {
         subagent_message_close: "</message>\n".to_string(),
         command_tail: "output\n".to_string(),
         command_tail_cut: template("last {shown} of {chars}\n"),
+        user_message_open: "<user>\n".to_string(),
+        user_message_close: "</user>\n".to_string(),
     }
 }
 

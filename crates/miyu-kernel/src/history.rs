@@ -112,6 +112,12 @@ impl History {
         self.jobs.in_session(session)
     }
 
+    /// 第 `seq` 条在子会话（子代理、分叉出来的）自己那一段里（施工 PM-1）：渲染照它把人切进来直接说的话和父会话写的交代
+    /// 分开。主会话、分叉出来的底子里父会话那一段的都不算：底子照父会话的原样渲染，前缀才和父会话一样。
+    pub fn childs_own(&self, seq: Seq) -> bool {
+        self.jobs.childs_own(seq)
+    }
+
     /// 会话 `session` 发来的话是别的会话发来的（施工 C-2，`docs/blueprint/cross-session.md` 第四条第 1 款）：它不是这个
     /// 会话的父会话，也不是这个会话派的子代理（派它的那一轮撤掉了的也算派过）。渲染、`history` 照它写标签、「谁」。
     pub fn is_peer(&self, session: &SessionId) -> bool {

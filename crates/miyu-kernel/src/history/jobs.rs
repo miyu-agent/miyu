@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use crate::event::{Body, Effect, Event, JobKind};
-use crate::id::{JobId, SessionId, TurnId};
+use crate::id::{JobId, Seq, SessionId, TurnId};
 
 /// 派出去过的任务，照编号；和这个会话的父会话（施工 C-2：认别的会话发来的话，和子代理一样压缩不丢）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -15,6 +15,8 @@ pub(super) struct Jobs {
     dispatched: BTreeMap<JobId, Dispatched>,
     /// 父会话：`session.created` 的 `parent`，主会话没有。
     parent: Option<SessionId>,
+    /// 子会话自己那一段从第几条起（施工 PM-1）：写了 `parent` 的那条 `session.created`。分叉出来的，前面是父会话的底子。
+    own_from: Option<Seq>,
 }
 
 /// 派出去的一个任务：渲染回报、判回报叫不叫醒她用。
@@ -36,7 +38,10 @@ impl Jobs {
     /// 记下这一条带来的变化：工具结果的效果里派出去的记下；撤掉的那几轮里派的标成撤掉了，恢复的去掉这个标。
     pub(super) fn note(&mut self, event: &Event) {
         match &event.body {
-            Body::SessionCreated(created) => self.parent = created.parent.clone(),
+            Body::SessionCreated(created) => {
+                self.parent = created.parent.clone();
+                self.own_from = created.parent.as_ref().map(|_| event.seq);
+            }
             Body::ToolResult(result) => {
                 for effect in &result.effects {
                     if let Effect::JobStarted(started) = effect {
@@ -71,6 +76,11 @@ impl Jobs {
     }
 
     /// 会话 `session` 是这个会话的父会话（施工 C-2）。
+    /// 第 `seq` 条是子会话自己那一段里的（施工 PM-1）：主会话、分叉出来的底子里的都不是。
+    pub(super) fn childs_own(&self, seq: Seq) -> bool {
+        self.own_from.is_some_and(|from| seq >= from)
+    }
+
     pub(super) fn is_parent(&self, session: &SessionId) -> bool {
         self.parent.as_ref() == Some(session)
     }

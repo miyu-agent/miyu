@@ -96,6 +96,13 @@ pub struct JobTexts {
     /// 只带最后一段时的开头：`shown`、`chars`（施工 7-13）。以前造的快照里没有，读成空的。
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub command_tail_cut: String,
+    /// 子会话里人直接说的话的标签（施工 PM-1）：和父会话写的交代分开。以前造的快照里没有，读成空的：照原样放；空的不写，
+    /// 旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub user_message_open: String,
+    /// 它的收尾（施工 PM-1）。以前造的快照里没有，读成空的。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub user_message_close: String,
 }
 
 impl JobTexts {
@@ -123,6 +130,8 @@ impl JobTexts {
             subagent_message_close: self.subagent_message_close.clone(),
             command_tail: self.command_tail.clone(),
             command_tail_cut: template(&self.command_tail_cut, &["shown", "chars"])?,
+            user_message_open: self.user_message_open.clone(),
+            user_message_close: self.user_message_close.clone(),
         })
     }
 }

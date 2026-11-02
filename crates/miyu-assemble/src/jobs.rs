@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{ChildReason, ChildReported, JobReason, JobReported};
 use miyu_kernel::history::{Dispatched, History};
-use miyu_kernel::id::JobId;
+use miyu_kernel::id::{JobId, Seq};
 use miyu_kernel::origin::By;
 use miyu_kernel::template::Template;
 
@@ -131,14 +131,22 @@ pub(crate) fn subagent(
 
 /// 人这边的一条消息的块（施工 7-7，`docs/blueprint/kernel/request.md`「子代理的留言」）：发消息的是这个会话派的子代理
 /// （`by` 是它的子会话）的，包一层标签，注明是哪个子代理（编号、标题），它的话原样放、不转义，末尾没有换行的补一个；
-/// 字以外的块接在后面。派它的那一轮撤掉了的，一块都不出：派它的调用已经不在上下文里了，和它的回报一样。别人发的（人、
-/// 父会话发给子代理的交代和留言）原样交回。以前造的快照没有标签，标签是空的，只剩它的话。
+/// 字以外的块接在后面。派它的那一轮撤掉了的，一块都不出：派它的调用已经不在上下文里了，和它的回报一样。子会话里人直接说的
+/// 话也包一层标签（施工 PM-1）：子会话的场所说明讲明交代是父会话写的，人切进来说的话不包就分不出来。别人发的（主会话里人
+/// 说的、父会话发给子代理的交代和留言）原样交回。以前造的快照没有标签，标签是空的，只剩它的话。
 pub(crate) fn message(
     history: &History,
-    by: &By,
+    (seq, by): (Seq, &By),
     blocks: Vec<Block>,
     texts: Option<&JobTexts>,
 ) -> Vec<Block> {
+    if let (By::Person(_), Some(texts)) = (by, texts)
+        && history.childs_own(seq)
+        && !texts.user_message_open.is_empty()
+    {
+        let open = texts.user_message_open.clone();
+        return tagged(open, blocks, &texts.user_message_close);
+    }
     let (By::Session(session), Some(texts)) = (by, texts) else {
         return blocks;
     };

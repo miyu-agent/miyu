@@ -4356,6 +4356,32 @@ You are a fork of the agent above. It wrote the task below, not the person. Your
 </subagent-message>
 ```
 
+### 人这边：子会话里人直接说的话（一块带标签的事实）
+
+#### `core/jobs/user-message-open.txt`
+
+- 什么时候加进来：标签那一行，子会话（子代理、分叉出来的）里人发来的 `message.user`（`by` 是人），之后每次请求照原文带；主会话里人说的不包
+- token：4（2026-11-02 照 o200k 数）
+- 为什么加：子会话的场所说明写着交代是父会话写的、不是人：人切进子会话说的话不包，它会当成父会话说的（2026-11-02 项目主人转来、定两处都补，施工 PM-1）。名字照回报里那一句「The user also talked to this subagent」
+- 指纹：`f2bcb066`
+
+```text
+<user-message>
+```
+
+### 人这边：子会话里人直接说的话
+
+#### `core/jobs/user-message-close.txt`
+
+- 什么时候加进来：收尾那一行，同 `user-message-open.txt`
+- token：4（2026-11-02 照 o200k 数）
+- 为什么加：标签的收尾（施工 PM-1）
+- 指纹：`50dcf15f`
+
+```text
+</user-message>
+```
+
 ### 人这边：别的 harness 发来的话（一块带标签的事实）
 
 #### `core/harness/message-open.txt`

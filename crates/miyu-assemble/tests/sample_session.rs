@@ -98,6 +98,8 @@ fn job_texts() -> JobTexts {
         subagent_message_close: job!("subagent-message-close.txt"),
         command_tail: job!("command-tail.txt"),
         command_tail_cut: template(job!("command-tail-cut.txt")),
+        user_message_open: job!("user-message-open.txt"),
+        user_message_close: job!("user-message-close.txt"),
     }
 }
 

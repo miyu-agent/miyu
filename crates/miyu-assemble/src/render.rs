@@ -194,7 +194,7 @@ pub(crate) fn spoken(
             let mut out = if blocks.is_empty() && media.is_none() {
                 group::bare(venue).into_iter().collect()
             } else {
-                said(history, &event.by, blocks, texts)
+                said(history, event, blocks, texts)
             };
             if let Some(media) = media {
                 // 记号那一行接在正文的块后面、图片块前面：没有这一行的（没带东西、全交了原图）和以前一个字节不差。
@@ -209,15 +209,15 @@ pub(crate) fn spoken(
             out.extend(forwards.map(|text| Block::Text(Text { text })));
             out
         }
-        _ => said(history, &event.by, blocks, texts),
+        _ => said(history, event, blocks, texts),
     }
 }
 
 /// 人这边的一条消息的块，照谁发的（主请求和回顾的请求共用）：子代理发来的留言注明是哪个子代理（施工 7-7，`jobs.rs`），
 /// 别的 harness 发来的话注明是它、叫什么（施工 7-10，`harness.rs`），别的会话发来的话注明是哪个会话（施工 C-2，`peers.rs`）；
 /// 别人（人、父会话）发的原样。
-fn said(history: &History, by: &By, blocks: Vec<Block>, texts: &Texts) -> Vec<Block> {
-    match by {
+fn said(history: &History, event: &Event, blocks: Vec<Block>, texts: &Texts) -> Vec<Block> {
+    match &event.by {
         By::Harness(from) => harness::message(from, blocks, texts.harness.as_ref()),
         By::Schedule(schedule) => {
             crate::schedule::message(schedule, blocks, texts.schedule.as_ref())
@@ -225,7 +225,7 @@ fn said(history: &History, by: &By, blocks: Vec<Block>, texts: &Texts) -> Vec<Bl
         By::Session(session) if history.is_peer(&session.id) => {
             peers::message(&session.id, blocks, texts.peers.as_ref())
         }
-        by => jobs::message(history, by, blocks, texts.jobs.as_ref()),
+        by => jobs::message(history, (event.seq, by), blocks, texts.jobs.as_ref()),
     }
 }
 

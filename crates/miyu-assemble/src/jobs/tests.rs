@@ -13,6 +13,7 @@ use crate::{DefaultAssembler, Stable};
 
 mod audit;
 mod messages;
+mod person;
 
 const CHILD: &str = "01a0d78c-ca52-7d19-8b64-0e3f5a7c2d91";
 
@@ -60,6 +61,8 @@ fn shipped() -> JobTexts {
         subagent_message_close: job!("subagent-message-close.txt"),
         command_tail: job!("command-tail.txt"),
         command_tail_cut: template(job!("command-tail-cut.txt")),
+        user_message_open: job!("user-message-open.txt"),
+        user_message_close: job!("user-message-close.txt"),
     }
 }
 

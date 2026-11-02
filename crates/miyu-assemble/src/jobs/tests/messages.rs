@@ -3,6 +3,7 @@
 //! 一步的工具结果后面；派它的那一轮撤掉了的不渲染；旧快照没有标签的只剩它的话。
 
 use miyu_kernel::block::{Block, Text};
+use miyu_kernel::id::Seq;
 use miyu_kernel::origin::{By, Session};
 use miyu_kernel::template::Template;
 
@@ -29,6 +30,11 @@ fn block(text: &str) -> Vec<Block> {
     })]
 }
 
+/// 渲染的那一条在日志里排得比造会话那一条后面。
+fn later() -> Seq {
+    Seq::new(100).unwrap()
+}
+
 /// 会话 `session` 发的 `by`。
 fn by(session: &str) -> By {
     By::Session(Session {
@@ -41,13 +47,18 @@ fn a_subagent_message_reads_like_the_sample() {
     let log = dispatched();
     let said = "macOS 上的临时目录要换成真实路径，还是只改测试？";
     assert_eq!(
-        message(log.history(), &by(CHILD), block(said), Some(&shipped())),
+        message(
+            log.history(),
+            (later(), &by(CHILD)),
+            block(said),
+            Some(&shipped())
+        ),
         block(SAMPLE),
     );
     assert_eq!(
         message(
             log.history(),
-            &by(CHILD),
+            (later(), &by(CHILD)),
             block(&format!("{said}\n")),
             Some(&shipped())
         ),
@@ -63,7 +74,12 @@ fn words_from_anyone_else_are_as_they_are() {
     let parent = by("01a0d75d-2180-7a3c-9e41-5b7d2c8f6a10");
     for sender in [alice, parent] {
         assert_eq!(
-            message(log.history(), &sender, block("用 a.rs"), Some(&shipped())),
+            message(
+                log.history(),
+                (later(), &sender),
+                block("用 a.rs"),
+                Some(&shipped())
+            ),
             block("用 a.rs"),
             "{sender:?}"
         );
@@ -121,7 +137,12 @@ fn an_old_snapshot_without_the_tags_keeps_only_the_words() {
         ..shipped()
     };
     assert_eq!(
-        message(log.history(), &by(CHILD), block("改哪个？"), Some(&old)),
+        message(
+            log.history(),
+            (later(), &by(CHILD)),
+            block("改哪个？"),
+            Some(&old)
+        ),
         block("改哪个？\n")
     );
 }

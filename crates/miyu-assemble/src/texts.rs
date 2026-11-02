@@ -241,6 +241,10 @@ pub struct JobTexts {
     pub command_tail: String,
     /// 只带最后一段时的开头（`command-tail-cut.txt`，施工 7-13）：字段 `shown`、`chars`。以前造的快照里没有，是空的。
     pub command_tail_cut: Template,
+    /// 子会话里人直接说的话的标签（`user-message-open.txt`，施工 PM-1）。以前造的快照里没有，是空的：照原样放。
+    pub user_message_open: String,
+    /// 它的收尾（`user-message-close.txt`，施工 PM-1）。以前造的快照里没有，是空的。
+    pub user_message_close: String,
 }
 
 /// 别的 harness 发来的话的标签（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，

@@ -352,6 +352,8 @@ impl ResourceRoot {
                 command_tail_cut: job("command-tail-cut.txt")?,
                 subagent_message_open: job("subagent-message-open.txt")?,
                 subagent_message_close: job("subagent-message-close.txt")?,
+                user_message_open: job("user-message-open.txt")?,
+                user_message_close: job("user-message-close.txt")?,
             }),
             harness: Some(HarnessTexts {
                 message_open: core(&["harness", "message-open.txt"])?,

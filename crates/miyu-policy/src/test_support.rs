@@ -280,6 +280,10 @@ fn jobs() -> crate::JobTexts {
         command_tail: include_str!("../../../resources/core/jobs/command-tail.txt").to_string(),
         command_tail_cut: include_str!("../../../resources/core/jobs/command-tail-cut.txt")
             .to_string(),
+        user_message_open: include_str!("../../../resources/core/jobs/user-message-open.txt")
+            .to_string(),
+        user_message_close: include_str!("../../../resources/core/jobs/user-message-close.txt")
+            .to_string(),
     }
 }
 
