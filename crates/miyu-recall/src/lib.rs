@@ -39,4 +39,4 @@ pub use memory::{
     indexed, keywords_of, shown_class, to_event,
 };
 pub use terms::{MAX_QUERY_TERMS, index_terms, query, query_terms};
-pub use turns::{Change, TurnFeed, TurnItem, key, replay};
+pub use turns::{Change, Priming, Replay, TurnFeed, TurnItem, key, replay};

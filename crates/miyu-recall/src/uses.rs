@@ -53,16 +53,13 @@ impl UseFeed {
     }
 
     /// 载入时整份过一遍：交回序号大于 `after` 的（照到的位置以后的；`None` 的整份交）。照到的位置以前调的搜索，结果在以后
-    /// 的，照样认得。
+    /// 的，照样认得。同一条条 [`UseFeed::see`] 收齐了再 [`since`]，边读日志边喂的也这样走（施工 V-37 下）。
     pub fn prime(&mut self, events: &[Event], after: Option<Seq>) -> Vec<Use> {
         let mut uses = Vec::new();
         for event in events {
-            let seen = self.see(event);
-            if after.is_none_or(|after| event.seq > after) {
-                uses.extend(seen);
-            }
+            uses.extend(self.see(event));
         }
-        uses
+        since(uses, after)
     }
 
     /// 看一条事件，交回它带上的那几条（照先后，不重）。
@@ -106,6 +103,13 @@ impl UseFeed {
     fn ours(&self, by: &By) -> bool {
         matches!(by, By::Module(module) if module.id.as_str() == self.module)
     }
+}
+
+/// 照到的位置以后的：序号大于 `after` 的（`None` 的全留），照先后。用到一次的序号就是带上它的那一条事件的，所以一条条
+/// [`UseFeed::see`] 收齐了再挑，和喂的时候照事件的序号挑一样（施工 V-37 下：接上时照到哪要等铺完、开了回合库才知道）。
+pub fn since(mut uses: Vec<Use>, after: Option<Seq>) -> Vec<Use> {
+    uses.retain(|used| after.is_none_or(|after| used.seq > after));
+    uses
 }
 
 /// 搜到的字开头那几行的编号：一行一条记忆，头一个词是编号（`memory_search/memory.txt`、`retired.txt`），到第一行不是的

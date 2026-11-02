@@ -69,3 +69,5 @@ fn a_base_reads_its_parent_up_to_the_fork_and_fails_without_it() {
     assert!(base.events_from(Seq::new(3).unwrap()).unwrap().is_empty());
     drop(std::fs::remove_dir_all(&root));
 }
+
+mod range;

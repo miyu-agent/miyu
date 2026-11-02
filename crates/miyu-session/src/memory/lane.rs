@@ -3,7 +3,8 @@
 //! 那一间攒着这个人格所有会话的回合，越用越大，原来整笔压在打开会话上。
 //!
 //! 一个核心一个线程，照交来的先后做：同一个会话的接上、几批照先后，一批不会赶在接上前面。接上时自己读日志，已经铺过的那几条
-//! 后来又交来的不再看。载入时等会话重放完了才交接上（[`TurnLane::start`]）：后台读日志、开库不和载入抢 CPU（CI 上开着记忆
+//! 后来又交来的不再看。读日志一块块读、边读边铺（施工 V-37 下）：底子、自己的整份事件不同时在内存里，原来两样各整份读出来
+//! 再铺，四万条、二十来兆的大会话一接就是几十兆的堆。载入时等会话重放完了才交接上（[`TurnLane::start`]）：后台读日志、开库不和载入抢 CPU（CI 上开着记忆
 //! 打开大会话原来多 7 ms 上下）；别的时候头一批交来以前交。回合库本来就照「照到哪」认落后的一批不写（`RecallIndex::apply`），会话停了、核心退了还没写的，下次
 //! 载入照日志补上。
 
@@ -13,11 +14,13 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, OnceLock, mpsc};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{Seq, SessionId, VenueId};
-use miyu_store::log::{SessionLog, read_events};
+use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
+use miyu_recall::{Replay, TurnItem};
+use miyu_store::log::{Flow, OpenError, SessionLog, read_range};
 use miyu_store::recall::{Origin, RecallIndexes, Room};
 
 use super::Turns;
+use super::turns::Laying;
 use crate::TARGET;
 use crate::store::Base;
 
@@ -229,8 +232,23 @@ fn run(inbox: &mpsc::Receiver<Job>, pending: &AtomicUsize) {
     }
 }
 
-/// 照 `opening` 接上：读不了日志的这一回不记（下次载入照日志补）。
+/// 照 `opening` 接上：读不了日志的这一回不记（下次载入照日志补），记一行。
 fn connect(opening: Opening) -> Option<Open> {
+    match attach(opening) {
+        Ok(opened) => Some(opened),
+        Err(error) => {
+            tracing::warn!(target: TARGET, error = %error, "memory index not updated");
+            None
+        }
+    }
+}
+
+/// 照 `opening` 接上；读不了日志的交回读不了的原因，回合库一点都不碰。
+///
+/// 边读边铺（施工 V-37 下）：底子（父会话到分叉点为止的）先一块块读、喂，再一块块读会话自己的，换人格以前的并进底子，铺完
+/// 才开库写。原来自己的、底子各整份读出来，照换人格那一条切开再铺：读的先后反过来了，报错照原来的先后，两样都读不了的报
+/// 自己的。
+fn attach(opening: Opening) -> Result<Open, OpenError> {
     let Opening {
         recall,
         room,
@@ -241,38 +259,40 @@ fn connect(opening: Opening) -> Option<Open> {
         laid,
         source,
     } = opening;
-    let own = match laid {
-        Laid::Empty => Vec::new(),
-        Laid::Given(own) => own,
-        Laid::Read(_) => match read_events(&source.dir) {
-            Ok(own) => own,
-            Err(error) => {
-                tracing::warn!(target: TARGET, error = %error, "memory index not updated");
-                return None;
-            }
-        },
-    };
-    // 底子只在接上的这一会儿读出来（施工 V-20）：接完就放掉，不跟着会话常驻。
-    let base = match source
-        .base
-        .as_ref()
-        .map(|base| base.events_from(Seq::FIRST))
+    let mut laying = Laying::new(floor);
+    // 底子只在接上的这一会儿读（施工 V-20），读一块喂一块就放掉，不跟着会话常驻。
+    if let Some(base) = &source.base
+        && let Err(error) = base.each(|events| events.iter().for_each(|event| laying.base(event)))
     {
-        None => Vec::new(),
-        Some(Ok(base)) => base,
-        Some(Err(error)) => {
-            tracing::warn!(target: TARGET, error = %error, "memory index not updated");
-            return None;
+        return Err(match &laid {
+            Laid::Read(_) => unreadable(&source.dir).unwrap_or(error),
+            Laid::Empty | Laid::Given(_) => error,
+        });
+    }
+    match laid {
+        Laid::Empty => {}
+        Laid::Given(own) => own.iter().for_each(|event| laying.own(event)),
+        Laid::Read(_) => {
+            read_range(&source.dir, Seq::FIRST, None, |events| {
+                events.iter().for_each(|event| laying.own(event));
+                Flow::Go
+            })?;
         }
-    };
-    let (base, mine) = super::recast::split(&base, &own, floor);
-    let turns = Turns::connect(&recall, &room, (&session, origin), &venue, &base, mine)?;
-    let upto = own.last().map(|event| event.seq);
-    Some(Open {
+    }
+    let upto = laying.upto();
+    let turns = Turns::lay(&recall, &room, (&session, origin), &venue, laying, |lost| {
+        source.replay(lost)
+    });
+    Ok(Open {
         turns,
         upto,
         source,
     })
+}
+
+/// 会话自己的日志读不了的，读不了的原因：底子读不了时看一眼，照原来先读自己的先后报。读得了的没有。
+fn unreadable(dir: &std::path::Path) -> Option<OpenError> {
+    read_range(dir, Seq::FIRST, None, |_| Flow::Go).err()
 }
 
 impl Open {
@@ -286,7 +306,7 @@ impl Open {
         };
         self.upto = Some(last.seq);
         let source = &self.source;
-        self.turns.advance(&events, || source.events());
+        self.turns.advance(&events, |lost| source.replay(lost));
     }
 }
 
@@ -299,16 +319,24 @@ impl Source {
         }
     }
 
-    /// 底子接上会话自己的整份日志。
-    fn events(&self) -> Result<Vec<Event>, String> {
-        let mut events = match &self.base {
-            Some(base) => base
-                .events_from(Seq::FIRST)
-                .map_err(|error| error.to_string())?,
-            None => Vec::new(),
-        };
-        events.extend(read_events(&self.dir).map_err(|error| error.to_string())?);
-        Ok(events)
+    /// 恢复了、增量不记得字的那几轮 `lost`（`Change::Lost`）：底子接上会话自己的整份日志过一遍（同 `miyu_recall::replay`），
+    /// 交回最后还在的那几轮，照回合的先后。一块块读、边读边算（施工 V-37 下），原来整份读出来再算；底子先读，读不了的先报。
+    fn replay(&self, lost: &[TurnId]) -> Result<Vec<TurnItem>, String> {
+        let mut replay = Replay::default();
+        if let Some(base) = &self.base {
+            base.each(|events| events.iter().for_each(|event| replay.see(event)))
+                .map_err(|error| error.to_string())?;
+        }
+        read_range(&self.dir, Seq::FIRST, None, |events| {
+            events.iter().for_each(|event| replay.see(event));
+            Flow::Go
+        })
+        .map_err(|error| error.to_string())?;
+        Ok(replay
+            .finish()
+            .into_iter()
+            .filter(|item| lost.contains(&item.turn))
+            .collect())
     }
 }
 

@@ -1,4 +1,5 @@
-//! 这个会话日志的只读入口（`docs/blueprint/tools/interface.md`，施工 6-4）：`history` 翻会话自己的记录用。
+//! 这个会话日志的只读入口（`docs/blueprint/tools/interface.md`，施工 6-4）：`history` 翻会话自己的记录用；订阅时补发的那一截
+//! 也照它读（施工 3-8 六补，照序号读一截的施工 V-37 下）。
 //!
 //! 工具不知道日志存在哪、怎么存：执行器照会话的目录造一个 [`ReadLog`]，包成 [`Log`] 交给这次调用。
 
@@ -6,6 +7,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use miyu_kernel::event::Event;
+use miyu_kernel::id::Seq;
 
 /// 一段一段读这个会话的日志，只读。
 pub trait ReadLog: Send + Sync {
@@ -16,6 +18,31 @@ pub trait ReadLog: Send + Sync {
     ///
     /// 读不了、日志坏了：原因，给她看。
     fn read(&self, each: &mut dyn FnMut(Vec<Event>) -> bool) -> Result<(), String>;
+
+    /// 照先后读第 `from` 条到第 `upto` 条（施工 V-37 下：订阅时补发的那一截），一块块交给 `each`，它交回 `false` 就不读
+    /// 下去；读过 `upto` 就停，后面的不读。最后一段末尾没写完的半行同 [`ReadLog::read`] 跳过。
+    ///
+    /// 默认照 [`ReadLog::read`] 一段段读、只交这一截。照会话目录读的（执行器造的那一个）照序号定位着读，`from` 以前的不解、
+    /// 不自检（`store.md` 第 7 条的 `read_range`）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`ReadLog::read`]。
+    fn read_range(
+        &self,
+        from: Seq,
+        upto: Seq,
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        self.read(&mut |segment| {
+            let past = segment.last().is_some_and(|event| event.seq >= upto);
+            let kept: Vec<Event> = segment
+                .into_iter()
+                .filter(|event| event.seq >= from && event.seq <= upto)
+                .collect();
+            (kept.is_empty() || each(kept)) && !past
+        })
+    }
 }
 
 /// 交给一次调用的日志入口；克隆出来的是同一个。
@@ -35,6 +62,20 @@ impl Log {
     /// 同 [`ReadLog::read`]。
     pub fn read(&self, mut each: impl FnMut(Vec<Event>) -> bool) -> Result<(), String> {
         self.0.read(&mut each)
+    }
+
+    /// 同 [`ReadLog::read_range`]。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`ReadLog::read`]。
+    pub fn read_range(
+        &self,
+        from: Seq,
+        upto: Seq,
+        mut each: impl FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        self.0.read_range(from, upto, &mut each)
     }
 }
 

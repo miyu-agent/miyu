@@ -156,6 +156,7 @@ mod strict_tools;
 mod test_embed;
 mod tools;
 mod turn_config;
+mod turns_laid;
 mod undo_compaction;
 mod undo_files;
 mod unsandboxed;

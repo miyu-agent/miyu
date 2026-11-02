@@ -427,3 +427,5 @@ fn a_lane_hears_the_lines_from_its_base_but_puts_only_its_own_turns() {
         [Change::Put(item(8, "团子吃什么\n\n猫粮加一点鸡胸肉"))]
     );
 }
+
+mod priming;

@@ -294,3 +294,80 @@ async fn an_unreadable_log_refuses_only_when_there_is_something_to_replay() {
     assert!(pushed.is_empty(), "{pushed:?}");
     assert!(reply["result"]["upto"].is_u64(), "{reply}");
 }
+
+/// 补发推出去的每一行，逐字节和原来一样（施工 V-37 下：原来攒着整份事件，推的时候一条条写成 `event` 通知；现在读日志时
+/// 就写好，攒着的是行）。照磁盘上的日志用原来的写法写出来，和连接上收到的原样的行比；`after` 落在头、中间、最后一条前面。
+#[tokio::test]
+async fn the_replayed_lines_are_byte_for_byte_what_the_old_way_wrote() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+
+    let home = Home::new();
+    let script = Script::new([
+        Play::Thinks {
+            thinking: "想一想。",
+            text: "好，\"引号\"、换行\n和 emoji 🐱 都照原样。",
+        },
+        Play::Floods(20),
+        Play::Says("又好。"),
+    ]);
+    let core = home.core(&script);
+    let mut client = Client::connect(std::sync::Arc::clone(&core));
+    let (session, _) = one_turn(&home, &mut client).await;
+    for (n, text) in [(2, "再来"), (3, "第三句")] {
+        client.say(&format!("t{n}"), &session, text).await;
+        home.until_turns(&session, n).await;
+    }
+    let id = miyu_kernel::id::SessionId::parse(&session).expect("合写法");
+    let log = home.log(&session);
+
+    let (near, far) = tokio::io::duplex(64 * 1024);
+    tokio::spawn(miyu_endpoint::serve(far, core));
+    let (read, mut write) = tokio::io::split(near);
+    let mut lines = tokio::io::BufReader::new(read).lines();
+    let hello = json!({"jsonrpc": "2.0", "id": "h", "method": "hello", "params": {"protocol": [1, 1], "head": {"kind": "test", "version": "0.0.0"}, "token": crate::support::TOKEN}});
+    let mut send = async |line: Value| {
+        write
+            .write_all(format!("{line}\n").as_bytes())
+            .await
+            .expect("写得进");
+    };
+    send(hello).await;
+    // 读原样的行，读到 `id` 的回应为止：交回回应以前的推送（原样的字）。
+    async fn until(
+        lines: &mut tokio::io::Lines<
+            tokio::io::BufReader<tokio::io::ReadHalf<tokio::io::DuplexStream>>,
+        >,
+        id: &str,
+    ) -> Vec<String> {
+        let mut pushed = Vec::new();
+        loop {
+            let line = tokio::time::timeout(Duration::from_secs(60), lines.next_line())
+                .await
+                .expect("等得到")
+                .expect("读得了")
+                .expect("没断开");
+            let value: Value = serde_json::from_str(&line).expect("是 JSON");
+            if value["id"] == json!(id) {
+                return pushed;
+            }
+            pushed.push(line);
+        }
+    }
+    until(&mut lines, "h").await;
+    for after in [0, 1, 7, log.len() - 1] {
+        let id_of = format!("s{after}");
+        send(json!({"jsonrpc": "2.0", "id": id_of, "method": "subscribe", "params": {"session": session, "stream": "events", "after": after}})).await;
+        let pushed = until(&mut lines, &id_of).await;
+        let old: Vec<String> = log[after..]
+            .iter()
+            .map(|event| {
+                format!(
+                    r#"{{"jsonrpc":"2.0","method":"event","params":{{"session":"{}","event":{}}}}}"#,
+                    id.as_str(),
+                    event.to_line()
+                )
+            })
+            .collect();
+        assert_eq!(pushed, old, "after {after}");
+    }
+}

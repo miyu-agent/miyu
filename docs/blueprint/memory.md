@@ -26,10 +26,10 @@
 | `crates/miyu-store/src/memory.rs` | 记忆日志的登记：照房间开日志、一份一把锁，追加、读回，维护底账和记忆库；跟着看（`MemoryLog::follow`：补的和之后交的在同一把锁里，不丢不重，R-12 上） | R-3 上 |
 | `crates/miyu-store/src/recall/room.rs` | 一间记忆（`Room`）：跟着人格的那一间的记忆日志、回合库、记忆库在哪 | R-3 下 |
 | `crates/miyu-policy/src/memory.rs` | 范围 `MemoryScope` 的三种写法；快照的 `memory` 怎么写、怎么读（没有的照 `persona`，认不出的照 `off`） | R-3 下 |
-| `crates/miyu-recall/src/turns.rs` | 回合索引里的一条怎么从日志算：`TurnFeed`（增量、载入时铺回）、`replay`（整份）、`key` | R-2 上 |
+| `crates/miyu-recall/src/turns.rs` | 回合索引里的一条怎么从日志算：`TurnFeed`（增量、载入时铺回）、`replay`（整份）、`key`；一条条铺的 `Priming`、一条条算整份的 `Replay`（施工 V-37 下） | R-2 上 |
 | `crates/miyu-store/src/recall/indexes.rs` | 回合库的登记：照房间开回合库、留着；删会话时拿掉人格那几间里它的 | R-2 上 |
 | `crates/miyu-session/src/memory.rs` | 执行器：会话写日志时顺手更新回合索引、载入时补上（R-2 上）；`Memory::new` 登记第一次开回合库时记日志、补齐（R-2 下）；以后后台抽取、合并 | R-2 起 |
-| `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到） | V-9、R-32 |
+| `crates/miyu-session/src/memory/lane.rs` | 回合索引在后台写（施工 V-9）：核心一个线程，照交来的先后接上（开库、对照到哪、读日志铺回）、写每一批，载入、落盘不等它，载入时等重放完了才交接上（V-9 补：不和载入抢 CPU）；搜以前的对话、读用到几次、删会话以前先等它把交过的写完，出处活不活不等；落盘的一批里有撤销、恢复的等这条道写完再回（R-32：回来以后照出处判活不活马上算数，Windows CI 撞见刚撤了马上搜还搜得到）；接上时一块块读日志、边读边铺，恢复了不记得字的边读边算（V-37 下） | V-9、R-32 |
 | `crates/miyu-session/src/memory/reads.rs` | 回合开始问记忆的那几次读（常驻那一块、人卡、联想）登记着，读完放下；`Memory::finish` 先等它们读完、再走 `Memory::settle`，核心停下、放锁以前调（第三条第 4 款，`core.md`「停下」第 6 条） | TMP-1 补3 |
 | `crates/miyu-session/src/memory/backfill.rs` | 补齐旧会话：照会话一个个读日志、照载入时的判法补（第一条第 9 款）；在跑的登记着，`Memory::settle` 连它们一起等（R-28：删会话、测试以前等补完，不然删了的会被补回来） | R-2 下 |
 | `crates/miyu-session/src/memory/summary.rs` | 常驻的摘要（R-7 下：有摘要时头一行是摘要、后面接之后新记的）：交不交、交什么、上限，外壳的字（`SummaryTexts`）；`memory/port.rs` 在阻塞线程里读，`actor/model.rs` 的 `hooks` 在回合开始问它、限时（第三条） | R-4 上 |
@@ -170,8 +170,8 @@
 2. **一条的字**：触发的那句人话（它的字块照先后用换行连起来、去掉前后空白），空一行，她这一轮最后一条字不空的回复（字块连起来、去掉前后空白）。只有一边有字的只写那一边；两边都没字的（只发了图、她一句没说）不收。群里照记下的几条开的一轮见第 1 款（几条一行一句、并进来的接在后面，R-13 再补）；别的回合中途进来、没有触发哪一轮的人话不算进去（R-2 先这样，以后要再说）。时刻是 `turn.started` 的。
 3. **什么时候收**：`turn.ended` 落了盘（哪种原因都收：被打断的也是聊过的）。键是 `会话编号/回合编号`（回合编号就是 `turn.started` 的序号）。
 4. **放在哪**：一个人格一份检索库（`recall.md`）：`index/recall/turns-<人格>.db`。人格照会话的策略快照（`Snapshot.persona`）。核心一份登记（`RecallIndexes`），用到哪一份才开、开了一直开着；新造的会话到第一次真要写时才开，造会话不多一次开库、建表、同步。`off` 的不接（「范围」）。
-5. **增量**（`miyu_recall::TurnFeed`，纯逻辑）：会话 actor 每落一批（`Indexed`，照 `store/index.md` 第二条的那一路），把这一批一条条交给它，它交回要放进的、要拿掉的；`turn.reverted` 的那几轮拿掉；`turn.unreverted` 的那几轮它不记得字（省内存，只记还没结束的那一轮），交回「要读回」，执行器把这个会话的日志整份读一遍，照全部事件算出那几轮的字再放进去（恢复很少见）。撤销的每一轮（人开的、不是人开的都算）另埋一块墓碑，恢复时 `TurnFeed` 交 `Restored`，揭掉（R-3 上，第二条第 4 款）。
-6. **照到哪**：检索库另记每个来源照到了哪个序号（`marks`），和这一批的放进、拿掉在同一个事务里写；一批里没有要改的不写（每落一批少写一次库），照到的位置落在后面不要紧，载入时多铺一截、交回的还是空的。载入会话时内核本来就拿到整份事件：照它们先把 `TurnFeed` 的状态铺回来，照到的以后的才放进库，补上崩了、更新失败落下的那一截；一条都没照过的会话就是整份补。
+5. **增量**（`miyu_recall::TurnFeed`，纯逻辑）：会话 actor 每落一批（`Indexed`，照 `store/index.md` 第二条的那一路），把这一批一条条交给它，它交回要放进的、要拿掉的；`turn.reverted` 的那几轮拿掉；`turn.unreverted` 的那几轮它不记得字（省内存，只记还没结束的那一轮），交回「要读回」，执行器把这个会话的日志（分叉出来的连底子）从头读一遍，照全部事件算出那几轮的字再放进去（恢复很少见）：一块块读、一条条喂 `miyu_recall::Replay`，整份事件不进内存（施工 V-37 下，原来整份读出来再 `replay`）。撤销的每一轮（人开的、不是人开的都算）另埋一块墓碑，恢复时 `TurnFeed` 交 `Restored`，揭掉（R-3 上，第二条第 4 款）。
+6. **照到哪**：检索库另记每个来源照到了哪个序号（`marks`），和这一批的放进、拿掉在同一个事务里写；一批里没有要改的不写（每落一批少写一次库），照到的位置落在后面不要紧，载入时多铺一截、交回的还是空的。载入会话以后接上（后台线程，施工 V-9）：照日志先把 `TurnFeed` 的状态铺回来，照到的以后的才放进库，补上崩了、更新失败落下的那一截；一条都没照过的会话就是整份补。边读边铺（施工 V-37 下，`miyu_recall::Priming`）：分叉出来的支线先照 `read_range` 一块块读底子到分叉点（只看、不交改动），再一块块读自己的日志，换人格以前的并进底子，以后的喂 `TurnFeed`、`UseFeed`，交回的改动、用到的连同序号收着，铺完才开库、照照到的位置挑；原来两样各整份读进内存再铺（四万条、二十来兆的大会话一接几十兆的堆）。写进库的每一行和原来一样；读不了日志的一点都不碰库，报的错照原来的先后（两样都读不了的报自己的）。底子从分叉点以后的不读、不自检（同 `store.md` 第 7 条的 `read_range`）。
 7. **删会话**（进回收处）：先埋整个会话的墓碑 `会话编号/`，再拿掉各个回合库里这个会话的全部（键以 `会话编号/` 开头的）和它的 `marks`（R-2 下改成先埋：埋了以后补进来的一批写不进，拿掉以后不会又多出来）。
 8. **出错**：更新、补、拿掉失败，记一行 `WARN memory index not updated session=… error=…`，会话照常；照到的位置没往前挪，下次载入照日志补。库用不了（`Opened::Unusable`）的，什么都不写。回合库这一回第一次开记一行：新建的 `INFO memory index created room_kind=… room_id=…`，重建的、用不了的 `WARN memory index rebuilt`、`memory index unusable`（带 `reason`、`error`）；哪一间写种类 `room_kind`（`persona`、`session`）和照数据根的盐算的短号 `room_id`，不写人格名、会话编号（施工 LG-1 下，`log.md`「怎么走」第 7 条第 6 款；R-2 下起由登记记，开库的四处都算）。
 9. **补齐旧会话**（R-2 下）：人格那一间的回合库这一回是新建的、重建过的（`Opened::Created`、`Rebuilt`），起一个后台线程，照会话一个个补，做的时候搜得到多少算多少。在跑的补齐登记着，`Memory::settle`（删会话以前、测试里）连它们一起等（R-28）：不等的话删了的会话会被补回来，载入时也会当成已经补过。
@@ -365,7 +365,7 @@
 | `crates/miyu-session/tests/memory_restore.rs`（R-12 下） | 第二条第 6 款：这里冒不出来的那一条（别的群）当没有，恢复不了、什么都不写；在那个群里、主人那边恢复得了（R-13 上改写） |
 | `crates/miyu-endpoint/tests/memory_restore.rs`（R-12 下） | 「协议」的 `memory.restore`，真核心：忘了的恢复以后照常列出、`retired` 是 `null`、搜得到；同一个编号只算一次（又忘了、清掉了再发照头一次回），本来就算数的回 `{}`、不写；订阅着的补得到 `ext.memory.restored`；改掉的、清掉的 `memory_not_current`，没有的 `unknown_memory`，写错的 `bad_params`，没装的 `memory_not_installed` |
 | `crates/miyu-endpoint/tests/memory_turns.rs`（R-12 下） | 「协议」的 `memory.turns`，真核心、真回合库：搜得到以前那一轮（会话、轮、时刻、人的话加她的回答）；`limit`；写错的六种 `bad_params`，没有的人格、没装的照原因拒 |
-| `crates/miyu-recall/src/uses/tests.rs`（R-4 下） | 第八条第 1 款：模块 `memory` 注入的 `refs` 算、一条事件里列几遍算一次、不是编号的不算，别的模块、内核的不算；她搜到的算到第一行不是记忆的为止，`Nothing found.`、没成的、别的工具的不算，一次调用只认一个结果；载入时只交照到的位置以后的，调用在以前、结果在以后的照样认得 |
+| `crates/miyu-recall/src/uses/tests.rs`（R-4 下） | 第八条第 1 款：模块 `memory` 注入的 `refs` 算、一条事件里列几遍算一次、不是编号的不算，别的模块、内核的不算；她搜到的算到第一行不是记忆的为止，`Nothing found.`、没成的、别的工具的不算，一次调用只认一个结果；载入时只交照到的位置以后的，调用在以前、结果在以后的照样认得；一条条喂、收齐了再照序号挑（`since`）和原来喂一条挑一条的一样（照种子三千份，施工 V-37 下） |
 | `crates/miyu-session/tests/memory_uses.rs`（R-4 下） | 第八条第 1、2 款，真会话、真回合库：常驻那一块带过一次；第二个会话常驻一次、她搜到一次，最近一次是搜到的那一刻；回合库里落下了的（删会话那样拿掉），载入时照日志补回来 |
 | `crates/miyu-endpoint/tests/memory_used.rs`（R-4 下） | 第八条第 4 款，真核心：没用过的 `used` 是 0、`used_at` 是 `null`；常驻那一块带过以后是 1，时刻是那一块的；`memory.search` 也带 |
 | `crates/miyu-recall/src/memory/tests/merged.rs` 的 `a_summary_stops_counting_once_what_it_covered_is_changed_or_cleared`（R-7 下） | 第七条第 8 款：作废了、改了合进去的一条，清空了一个会话的、整间的，摘要不算、下次从头来；新的一份又算；之后才记的、作废之后才记的不碍事；合并那一次的改、作废记在摘要前面不碍事 |
@@ -377,6 +377,9 @@
 | `crates/miyu-session/tests/memory_extract_dropped.rs`、`crates/miyu-recall/src/memory/tests/dropped.rs`、`memory/extract/tests.rs` 的一条（R-6 修） | 第六条第 4 款：这一段开始以后作废的、改掉的旧版本接在这一段后面，新的在前、一行照 `memory_search/memory.txt`；这一段以前就作废的、还算数的、清掉的不列；一条都没有的请求以 `</turn>` 结尾、不多一个字；最多 20 条，最早忘掉的放不下；底账照作废那一条的时刻、恢复了的不算、改掉的照新版本记下的时刻；这一段照第一句话的时刻算；群里的抽取只列这个群里忘掉的，主人那边的私事不出现（`memory_listener.rs` 的一条） |
 | `crates/miyu-assemble/src/recap/spoken_tests.rs`、`recap/tests.rs` 的一条（R-6 上） | 第六条第 2 款：只要 `after` 以后的、带回合和时刻；撤掉的回合在渲染和 `called_since` 两边都不算（平时的和留着一切的历史都是）；留着一切的历史里压缩替代掉的那几轮照样在、平时那一份里不在；回顾的请求逐字节不变 |
 | `crates/miyu-recall/src/turns/tests.rs` | 第一条第 1 到 5 款：人开的一轮结束收一条（字、时刻）；平台上的人也算；别的 harness、别的会话、内核开的、没有触发的不收；被打断的、出错的也收，两边都没字的不收；最后一条有字的回复才算；排着的几句照触发的那一句；照记下的几条开的一轮那几条和并进来的都进、她没开口的不收、只有图的那一句不占行（R-13 再补）；支线读底子：认得底子里还没回的人话，底子里父会话的回合不交（R-13 三补）；撤销拿掉、恢复要读回；`replay` 照最后还在的；载入时铺回进行中的一轮、只交照到以后的；键的写法 |
+| `crates/miyu-recall/src/turns/tests/priming.rs`（施工 V-37 下） | `Priming` 一条条铺、`TurnFeed::primed_on`、`Replay` 一条条算和原来整份铺的（照抄留着）交回的 `TurnFeed`、改动、最后还在的逐个相等：照种子造的三千份（几种人说话、几种开回合、并进来的、撤销、恢复、不在这一轮的回复），底子切在各处、照到哪落在各处 |
+| `crates/miyu-session/src/memory/lane/tests/laid.rs`、`lane/tests/old.rs`、`lane/tests/script.rs`（施工 V-37 下） | 第一条第 6 款：接上时边读边铺和原来整份读出来再铺的（照抄留着）各在一个数据根里接同一份日志，回合库导出来每张表每一行逐行相等、`upto` 一样：照种子造的一百六十份（撤销、恢复、换人格、群里照几句开、调搜记忆，分几段，分叉的带底子，库里照到一半的，接上以后落一批恢复）；换人格以后一条都没有的两边都不开库；自己的、底子、两样都读不了、父会话没写到分叉点的报的错一样、库一点不碰。`#[ignore]` 的照 `MIYU_V37_ROOT` 的数据根副本逐个会话比 |
+| `crates/miyu-session/tests/turns_laid.rs`（施工 V-37 下） | 真会话（记、搜记忆，撤销、恢复，中途换人格，分叉的支线接着说）的日志上，整份 `primed_on`、`prime` 和 `read_range` 一块块读、一条条喂 `Priming`、`UseFeed` 的交回的逐个相等 |
 | `crates/miyu-store/tests/recall.rs` | 第一条第 6、7 款：一批和照到哪一起写、空的一批也挪；拿掉一个来源只拿它自己的（`s1` 不碰 `s10`）；回合库照房间一份、开过的不再开，新的登记照样找得到磁盘上的每一份；R-1 的版本 1 删掉重建。量尺 `measure_priming_a_thousand_turns`（`#[ignore]`） |
 | `crates/miyu-store/tests/recall_marks.rs` | 第一条第 7 款、第 9 款（R-2 下）：落后的一批不写、照到的位置不往回挪、一样的照写；埋了墓碑的会话不再写、只看自己那一块；删会话先埋再拿掉，拿掉以后补进来的一批不写 |
 | `crates/miyu-session/tests/memory.rs` | 真会话：每一轮进库、撤销拿掉并埋墓碑（出处死了）、恢复放回并揭掉（活回来）；载入时补上落下的、照到了的不重写；子会话不进；场所会话里群里的人说的进、记下它在哪个场所，载入时不拿掉（R-13 下，原来 R-2 再补拿掉） |

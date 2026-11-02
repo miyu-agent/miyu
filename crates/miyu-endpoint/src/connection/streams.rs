@@ -344,7 +344,8 @@ fn now(core: &Core, reply: &mut Value, current: Option<&miyu_session::Current>) 
 
 /// 带 `after` 订阅（施工 3-8 六补）：总是换一个新的。原来有一个的，先等它把交给它的推送、回应都放完、拿回它的订阅，补的
 /// 就不和它的交错；新的拿到了才放下旧的，这个头一直算看着（施工 7-9）。补发的那一截和新的订阅在会话 actor 的同一步里拿，
-/// 在这里读完（会话照常跑，推送攒在新的订阅里），交给新的转发任务先写。交回补到哪一条，和同一步里拿的「当前的」几样。
+/// 在这里读完（会话照常跑，推送攒在新的订阅里），交给新的转发任务先写。读的时候一条条写成通知（施工 V-37 下，
+/// [`crate::subscriptions::event_lines`]），攒着的是写好的行，不是整份事件。交回补到哪一条，和同一步里拿的「当前的」几样。
 async fn subscribe_after(
     core: &Arc<Core>,
     subscriptions: &mut Subscriptions,
@@ -360,7 +361,8 @@ async fn subscribe_after(
     };
     drop(old);
     let upto = backlog.upto();
-    let backlog = backlog.read().await.map_err(|error| {
+    let lines = crate::subscriptions::event_lines(session.clone());
+    let backlog = backlog.lines(lines).await.map_err(|error| {
         tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "replay not read");
         Refusal::BROKEN
     })?;

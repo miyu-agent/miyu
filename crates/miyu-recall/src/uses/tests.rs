@@ -130,3 +130,72 @@ fn priming_hands_back_only_what_came_after_the_mark() {
     let mut whole = self::feed();
     assert_eq!(whole.prime(&events, None).len(), 3, "一条都没照过的整份交");
 }
+
+/// 原来的 `UseFeed::prime`（施工 R-4 下起，V-37 下以前），照抄：喂一条，照这一条的序号挑。
+fn old_prime(feed: &mut UseFeed, events: &[Event], after: Option<Seq>) -> Vec<Use> {
+    let mut uses = Vec::new();
+    for event in events {
+        let seen = feed.see(event);
+        if after.is_none_or(|after| event.seq > after) {
+            uses.extend(seen);
+        }
+    }
+    uses
+}
+
+/// 一条条喂、收齐了再照序号挑（施工 V-37 下，[`since`]），和原来喂一条挑一条的一样：照种子造的几千份，注入的、调搜索的、
+/// 结果（列了几条、没列、失败的、别的工具的），照到哪落在各处。
+#[test]
+fn seeing_all_then_keeping_what_came_after_is_the_old_priming() {
+    let mut dice = 0x5eed_2026_1103_u64;
+    let mut below = |n: u64| {
+        dice ^= dice << 13;
+        dice ^= dice >> 7;
+        dice ^= dice << 17;
+        dice % n.max(1)
+    };
+    for round in 0..3000 {
+        let mut events = Vec::new();
+        let mut calls = Vec::new();
+        for seq in 2..=below(60) + 2 {
+            let event = match below(4) {
+                0 => injected(
+                    seq,
+                    [MEMORY, OTHER][below(2) as usize],
+                    &["m1", "m2", "m2", "x"][..below(5) as usize],
+                ),
+                1 => {
+                    let call = format!("call_{seq}_1");
+                    calls.push(call.clone());
+                    called(seq, &call, ["memory_search", "read"][below(2) as usize])
+                }
+                _ => {
+                    let call = match calls.len() {
+                        0 => "call_999_1".to_string(),
+                        n => calls[below(n as u64) as usize].clone(),
+                    };
+                    let text = [
+                        "m3 user 2026-10-08: 猫\nm4 user 2026-10-08: 狗",
+                        "Nothing found.",
+                        "m5 user 2026-10-08: 鱼",
+                    ][below(3) as usize];
+                    result(seq, &call, ["ok", "ok", "error"][below(3) as usize], text)
+                }
+            };
+            events.push(event);
+        }
+        let after = Seq::new(below(events.len() as u64 + 2));
+        let old = old_prime(&mut feed(), &events, after);
+        let mut whole = feed();
+        assert_eq!(
+            pairs(&whole.prime(&events, after)),
+            pairs(&old),
+            "第 {round} 份"
+        );
+        let mut one = feed();
+        let mut seen = Vec::new();
+        events.iter().for_each(|event| seen.extend(one.see(event)));
+        assert_eq!(since(seen, after), old, "第 {round} 份");
+        assert_eq!(format!("{one:?}"), format!("{whole:?}"), "第 {round} 份");
+    }
+}

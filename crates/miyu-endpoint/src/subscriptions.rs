@@ -9,7 +9,7 @@
 //! 回应放完再退（施工 4-9 再补三上）。
 //!
 //! 带 `after` 订阅的（施工 3-8 六补），转发任务先把补发的那一截一条条放进写队列，再转推送、回应：订阅的回应也交给它，
-//! 排在补的后面。换掉原来那一个时，先等它把交给它的都放完、交回它的订阅（[`Subscriptions::take`]），补的才不和它的交错。
+//! 排在补的后面。补发的那一截读的时候就写成了 `event` 通知（施工 V-37 下，[`event_lines`]），交过来的是写好的行。换掉原来那一个时，先等它把交给它的都放完、交回它的订阅（[`Subscriptions::take`]），补的才不和它的交错。
 //!
 //! 会话的视图流（施工 9-8 下，`subscriptions/view.rs`）占同一个位置：一个会话在一个连接上要么是事件流、要么是视图流，回应
 //! 一样经它写出去。
@@ -134,14 +134,14 @@ impl Subscriptions {
             .is_some_and(|forwarder| !forwarder.view && forwarder.pushing.load(Ordering::Acquire))
     }
 
-    /// 订阅会话 `session`（推送里的金额照配置的币种排）：起一个转发任务，先把补发的 `backlog` 照先后写进 `out`（不补的是空的），再写推送。原来有一个的，
-    /// 换掉：旧的放完已经交给它的回应再退。
+    /// 订阅会话 `session`（推送里的金额照配置的币种排）：起一个转发任务，先把补发的 `backlog`（照 [`event_lines`] 写好的
+    /// 行）照先后写进 `out`（不补的是空的），再写推送。原来有一个的，换掉：旧的放完已经交给它的回应再退。
     pub(crate) fn add(
         &mut self,
         core: &Arc<Core>,
         session: SessionId,
         subscription: Subscription,
-        backlog: Vec<Event>,
+        backlog: Vec<String>,
         out: mpsc::Sender<String>,
     ) {
         let (replies, waiting) = self.later.open(session.clone());
@@ -385,12 +385,12 @@ async fn forward(
     core: Arc<Core>,
     session: SessionId,
     mut subscription: Subscription,
-    backlog: Vec<Event>,
+    backlog: Vec<String>,
     mut replies: mpsc::UnboundedReceiver<String>,
     out: mpsc::Sender<String>,
     pushing: Arc<AtomicBool>,
 ) -> Subscription {
-    if replay(&session, backlog, &out).await {
+    if replay(backlog, &out).await {
         relay(&core, &session, &mut subscription, &mut replies, &out).await;
     }
     pushing.store(false, Ordering::Release);
@@ -402,18 +402,20 @@ async fn forward(
     subscription
 }
 
-/// 补发（施工 3-8 六补）：照先后一条条写成 `event` 通知放进写队列，和推过来的一样。写队列关了（连接断了），交回 `false`。
-async fn replay(session: &SessionId, backlog: Vec<Event>, out: &mpsc::Sender<String>) -> bool {
-    for event in backlog {
-        if out
-            .send(notification(session, &event.to_line()))
-            .await
-            .is_err()
-        {
+/// 补发（施工 3-8 六补）：照先后一条条放进写队列，和推过来的一样。写队列关了（连接断了），交回 `false`。
+async fn replay(backlog: Vec<String>, out: &mpsc::Sender<String>) -> bool {
+    for line in backlog {
+        if out.send(line).await.is_err() {
             return false;
         }
     }
     true
+}
+
+/// 补发的一条怎么写（施工 V-37 下，交给 `miyu_session::Backlog::lines`）：会话 `session` 的 `event` 通知，事件照原样，和
+/// 推过来的一样。读补发的那一截时一条条当场写好，事件写完就放掉。
+pub(crate) fn event_lines(session: SessionId) -> impl Fn(&Event) -> String + Send + Sync + 'static {
+    move |event| notification(&session, &event.to_line())
 }
 
 /// 转发的主循环：交回来的时候，这个订阅不再推了（连接不要它了的，也交回来）。

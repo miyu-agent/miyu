@@ -75,26 +75,21 @@ impl TurnFeed {
     }
 
     /// 同 [`TurnFeed::primed`]，分叉出来的支线（施工 R-13 三补）：先看一遍底子 `base`（父会话到分叉点为止的），只为认得那里
-    /// 还没回的人话（支线那一轮的触发在底子里），底子里父会话的回合不交、不记；再照支线自己的 `events` 铺。
+    /// 还没回的人话（支线那一轮的触发在底子里），底子里父会话的回合不交、不记；再照支线自己的 `events` 铺。照 [`Priming`]
+    /// 一条条喂，和边读日志边喂的是同一份代码。
     pub fn primed_on(
         base: &[Event],
         events: &[Event],
         after: Option<Seq>,
     ) -> (TurnFeed, Vec<Change>) {
-        let mut feed = TurnFeed::default();
+        let mut priming = Priming::default();
         for event in base {
-            feed.see(event);
+            priming.base(event);
         }
-        feed.ended = Some(BTreeMap::new());
-        let mut changes = Vec::new();
         for event in events {
-            let seen = feed.see(event);
-            if after.is_none_or(|after| event.seq > after) {
-                changes.extend(seen);
-            }
+            priming.own(event);
         }
-        feed.ended = None;
-        (feed, changes)
+        priming.finish(after)
     }
 
     /// 看一条事件，交回要对回合库做的（照先后）。
@@ -218,22 +213,95 @@ impl TurnFeed {
     }
 }
 
-/// 整份日志过一遍，交回最后还在的几条，照回合的先后：撤销了没恢复的不在，恢复了的在。
+/// 一条条铺回 [`TurnFeed`]（施工 V-37 下）：接上回合索引时边读日志边喂，整份事件不用同时在内存里。先喂底子
+/// （[`Priming::base`]），再喂会话自己的（[`Priming::own`]），铺完照库里照到哪挑出改动（[`Priming::finish`]）。
+/// [`TurnFeed::primed_on`] 就是照它走的。
+#[derive(Debug, Default)]
+pub struct Priming {
+    feed: TurnFeed,
+    /// 自己的每一条交回的改动，连同那一条的序号：照到哪要等铺完、开了回合库才知道，先都收着。
+    changes: Vec<(Seq, Change)>,
+}
+
+impl Priming {
+    /// 底子里的一条（同 [`TurnFeed::primed_on`] 的 `base`）：只看，不交改动、不记结束了的。底子要在自己的前面喂完。
+    pub fn base(&mut self, event: &Event) {
+        self.feed.see(event);
+    }
+
+    /// 会话自己的一条：记得结束过的每一轮（恢复时照它放回），交回的改动连同序号收着。
+    pub fn own(&mut self, event: &Event) {
+        if self.feed.ended.is_none() {
+            self.feed.ended = Some(BTreeMap::new());
+        }
+        let seen = self.feed.see(event);
+        self.changes
+            .extend(seen.into_iter().map(|change| (event.seq, change)));
+    }
+
+    /// 铺完：交回接着用的增量 `TurnFeed`（不再记结束了的），和序号大于 `after` 的那几条交回的改动，照先后（`after` 是空的
+    /// 全交，同 [`TurnFeed::primed_on`]）。
+    pub fn finish(self, after: Option<Seq>) -> (TurnFeed, Vec<Change>) {
+        let Priming { mut feed, changes } = self;
+        feed.ended = None;
+        let changes = changes
+            .into_iter()
+            .filter(|(seq, _)| after.is_none_or(|after| *seq > after))
+            .map(|(_, change)| change)
+            .collect();
+        (feed, changes)
+    }
+}
+
+/// 整份日志过一遍，交回最后还在的几条，照回合的先后：撤销了没恢复的不在，恢复了的在。照 [`Replay`] 一条条喂。
 pub fn replay(events: &[Event]) -> Vec<TurnItem> {
-    let (_, changes) = TurnFeed::primed(events, None);
-    let mut kept = BTreeMap::new();
-    for change in changes {
-        match change {
-            Change::Put(item) => {
-                kept.insert(item.turn, item);
-            }
-            Change::Remove(turn) => {
-                kept.remove(&turn);
-            }
-            Change::Restored(_) | Change::Lost(_) => {}
+    let mut replay = Replay::default();
+    for event in events {
+        replay.see(event);
+    }
+    replay.finish()
+}
+
+/// 同 [`replay`]，一条条喂（施工 V-37 下）：恢复了、增量不记得字的那几轮，执行器边读日志边喂，不整份读进内存。
+#[derive(Debug)]
+pub struct Replay {
+    feed: TurnFeed,
+    /// 到这一条为止还在的。
+    kept: BTreeMap<TurnId, TurnItem>,
+}
+
+impl Default for Replay {
+    fn default() -> Replay {
+        Replay {
+            feed: TurnFeed {
+                ended: Some(BTreeMap::new()),
+                ..TurnFeed::default()
+            },
+            kept: BTreeMap::new(),
         }
     }
-    kept.into_values().collect()
+}
+
+impl Replay {
+    /// 下一条。
+    pub fn see(&mut self, event: &Event) {
+        for change in self.feed.see(event) {
+            match change {
+                Change::Put(item) => {
+                    self.kept.insert(item.turn, item);
+                }
+                Change::Remove(turn) => {
+                    self.kept.remove(&turn);
+                }
+                Change::Restored(_) | Change::Lost(_) => {}
+            }
+        }
+    }
+
+    /// 喂完：最后还在的几条，照回合的先后。
+    pub fn finish(self) -> Vec<TurnItem> {
+        self.kept.into_values().collect()
+    }
 }
 
 /// 回合库里的键：`会话编号/回合编号`，回合编号就是 `turn.started` 的序号。会话的全部条目都以 `会话编号/` 开头，删会话时

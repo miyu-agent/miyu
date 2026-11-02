@@ -14,7 +14,7 @@ use std::sync::Arc;
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId};
 use miyu_store::index::SessionIndex;
-use miyu_store::log::{Mark, OpenError, SessionLog, read_events, read_segments};
+use miyu_store::log::{Flow, Mark, OpenError, SessionLog, read_events, read_range, read_segments};
 use miyu_store::usage::{UsageIndex, Who};
 use miyu_tool::ReadLog;
 
@@ -67,7 +67,7 @@ pub(crate) trait Store: Send + 'static {
     /// 只读地读回整份日志。
     fn events(&self) -> Result<Vec<Event>, String>;
 
-    /// 只读地读回第 `from` 条起的日志（施工 6-9）：一段一段读，只留要的。
+    /// 只读地读回第 `from` 条起的日志（施工 6-9）：只留要的。
     fn events_from(&self, from: Seq) -> Result<Vec<Event>, String>;
 
     /// 日志在哪个目录（施工 R-6 上）：抽取在别的线程里只读地读它，不占 actor。不在磁盘上的（测试里）没有。
@@ -120,15 +120,18 @@ impl Store for SessionLog {
         read_events(self.dir()).map_err(|error| error.to_string())
     }
 
+    /// 照序号定位着读（施工 V-37 下，`miyu_store::log::read_range`）：`from` 以前的只数换行、不解，撤掉压缩时只解要读回的
+    /// 那一截。原来一段段整个解完再挑。跳过的那一截不自检（2026-11-03 项目主人定）。
     fn events_from(&self, from: Seq) -> Result<Vec<Event>, String> {
         let mut kept = Vec::new();
-        read_segments(self.dir(), |segment| {
-            kept.extend(segment.into_iter().filter(|event| event.seq >= from));
-            true
+        read_range(self.dir(), from, None, |events| {
+            gather(&mut kept, events);
+            Flow::Go
         })
         .map_err(|error| error.to_string())?;
         Ok(kept)
     }
+
     fn dir(&self) -> Option<PathBuf> {
         Some(SessionLog::dir(self).to_path_buf())
     }
@@ -206,8 +209,9 @@ impl Base {
         Base { dir, upto }
     }
 
-    /// 只读地读第 `from` 条起、到分叉点为止的（父会话可能正在写）：一段一段读，过了分叉点就不读下去；`from` 已经过了分叉点
-    /// 的一条都不要，不读（撤销多半只读回分叉以后自己的那一截）。
+    /// 只读地读第 `from` 条起、到分叉点为止的（父会话可能正在写）：过了分叉点就不读下去；`from` 已经过了分叉点的一条都不要，
+    /// 不读（撤销多半只读回分叉以后自己的那一截）。`from` 是第一条的（载入支线）一段一段读；比第一条大的（撤销读回到分叉点
+    /// 以前，施工 V-37 下）照序号定位着读，`from` 以前的只数换行、不解、不自检（2026-11-03 项目主人定）。
     ///
     /// # Errors
     ///
@@ -218,23 +222,56 @@ impl Base {
         if from > self.upto {
             return Ok(events);
         }
+        if from > Seq::FIRST {
+            self.range(from, |read| gather(&mut events, read))?;
+            return Ok(events);
+        }
         let mut reached = false;
         // 一段整个接过来、就地截掉不要的：一条条挪进新的 `Vec`，三万多条要跟着长大拷几遍，刚起的核心里页页缺（施工 V-14
         // 量过的那种慢），载入一条支线慢两三成。
         read_segments(&self.dir, |mut segment| {
             reached = segment.last().is_some_and(|event| event.seq >= self.upto);
             segment.retain(|event| event.seq >= from && event.seq <= self.upto);
-            if events.is_empty() {
-                events = segment;
-            } else {
-                events.extend(segment);
-            }
+            gather(&mut events, segment);
             !reached
         })?;
         if !reached {
             return Err(OpenError::Missing(self.dir.clone()));
         }
         Ok(events)
+    }
+
+    /// 同 [`Base::events_from`] 从第一条读起，只是照先后一块块交给 `each`，不攒成整份（施工 V-37 下：回合索引接上时边读
+    /// 边喂）。读到分叉点那一块就停，分叉点以后的不读、不自检。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Base::events_from`]。
+    pub(crate) fn each(&self, each: impl FnMut(Vec<Event>)) -> Result<(), OpenError> {
+        self.range(Seq::FIRST, each)
+    }
+
+    /// 照序号读第 `from` 条到分叉点（`miyu_store::log::read_range`），一块块交给 `each`；没读到分叉点的报没有。
+    fn range(&self, from: Seq, mut each: impl FnMut(Vec<Event>)) -> Result<(), OpenError> {
+        let mut reached = false;
+        read_range(&self.dir, from, Some(self.upto), |events| {
+            reached = events.last().is_some_and(|event| event.seq >= self.upto);
+            each(events);
+            Flow::Go
+        })?;
+        if !reached {
+            return Err(OpenError::Missing(self.dir.clone()));
+        }
+        Ok(())
+    }
+}
+
+/// 一块块收进一整份：头一块整个搬过来，不再拷一遍（同 `miyu_store::log` 里的，施工 V-14）。
+fn gather(events: &mut Vec<Event>, read: Vec<Event>) {
+    if events.is_empty() {
+        *events = read;
+    } else {
+        events.extend(read);
     }
 }
 
@@ -322,6 +359,21 @@ pub(crate) struct LogDir(pub(crate) PathBuf);
 impl ReadLog for LogDir {
     fn read(&self, each: &mut dyn FnMut(Vec<Event>) -> bool) -> Result<(), String> {
         read_segments(&self.0, each).map_err(|error| error.to_string())
+    }
+
+    /// 照序号定位着读（施工 V-37 下，`miyu_store::log::read_range`）：`from` 以前的只数换行、不解、不自检（2026-11-03 项目
+    /// 主人定），读过 `upto` 那一块就停，后面的段不打开。
+    fn read_range(
+        &self,
+        from: Seq,
+        upto: Seq,
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        read_range(&self.0, from, Some(upto), |events| match each(events) {
+            true => Flow::Go,
+            false => Flow::Stop,
+        })
+        .map_err(|error| error.to_string())
     }
 }
 

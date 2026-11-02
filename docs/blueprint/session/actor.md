@@ -23,14 +23,14 @@
 | `crates/miyu-session/src/handle.rs` | `Handle`：发命令、订阅、停下；推送 |
 | `crates/miyu-session/src/handle/retire.rs` | 问退不退：除了这一个没有别的把手（`alone`）、闲够了没有（`retire`，等一秒不答的叫它别答了，施工 V-2 再补） |
 | `crates/miyu-session/src/handle/subscription.rs` | 订阅：掉了队、会话停了就断；放下时告诉 actor（施工 7-9；施工 R-3 补从 `handle.rs` 挪出来：那边放不下了） |
-| `crates/miyu-session/src/backlog.rs` | 订阅时要补发的那一截：补到哪一条、在阻塞线程里读出来（施工 3-8 六补） |
+| `crates/miyu-session/src/backlog.rs` | 订阅时要补发的那一截：补到哪一条、在阻塞线程里读出来（施工 3-8 六补），照序号读、读的时候写成要推的行（施工 V-37 下） |
 | `crates/miyu-session/src/config.rs` | 会话从哪取配置（`ConfigSource`、`Configs`、`fixed`），回合开始时冻结的一份（`TurnConfig`）；造会话、载入时先取一份（施工 8-4）；一次性调用照端点交的一份冻结（`Turn::new`，施工 8-20） |
 | `crates/miyu-session/src/port.rs` | 请求模型的端口：`Models`、`ModelPort`、`Reports`（辅助请求的回报另走一路，`Reports::aside`，施工 3-8 四补；五补起回顾、起标题共用，`purpose()` 交回用途）、`Cancel`；`Models::one_shot()` 交回模型调用口的一次性入口（施工 8-20，测试照剧本回的端口没有） |
 | `crates/miyu-session/src/route.rs`、`route/send.rs`、`route/pool.rs`、`route/choice.rs`、`route/ended.rs` | 端口的真实现：每个会话的路由，照配置挑供应商、钉 key，经驱动和 HTTP 执行器请求（施工 8-6 取代 `http.rs`）；池里挑成员、池的限额（`route/pool.rs`，施工 8-8）；排候选、挑没在冷却的（`route/choice.rs`），说完了记冷却、换端点、成了才钉（`route/ended.rs`，施工 8-9）。施工 8-20 起它是模型调用口的会话入口（`models.md`「怎么走」第十二条）：挑、发、记冷却调底子（`route/base.rs`、`route/choice.rs`、`route/pool.rs`、`route/exchange.rs`、`route/ended.rs` 的 `Attempt`），会话自己的（退回 `models.chat`、钉 key、钉成员、说到一半断了、限额）在 `route.rs`、`route/send.rs` 的 `Tried` |
 | `crates/miyu-session/src/route/once.rs`、`once/reply.rs` | 模型调用口的一次性入口 `OneShot`（施工 8-20）：不属于哪个会话，和会话的路由共用底子；协议的 `model.call` 调它 |
 | `crates/miyu-session/src/route/sight.rs` | 会话入口替看不了图的模型看图（施工 8-17）：取 `models.vision`，经一次性入口发，结果交给 `Sight`（第 8 条第 6 款） |
 | `crates/miyu-session/src/clock.rs` | 会话的时钟、新的会话编号 |
-| `crates/miyu-session/src/store.rs` | 写盘的端口：平时是会话日志，每落一批顺手更新会话列表的索引（`Indexed`，施工 3-8 七补）、回合索引（施工 R-2 上），测试里换成写不进去的；也从这里读回日志（施工 6-9） |
+| `crates/miyu-session/src/store.rs` | 写盘的端口：平时是会话日志，每落一批顺手更新会话列表的索引（`Indexed`，施工 3-8 七补）、回合索引（施工 R-2 上），测试里换成写不进去的；也从这里读回日志（施工 6-9；读回第几条起的照序号定位着读，施工 V-37 下） |
 | `crates/miyu-session/src/memory.rs` | 回合索引的接线：接上（载入时铺回、补上）、每落一批交给 `TurnFeed`、写回合库、恢复时读回（施工 R-2 上，`memory.md` 第一条） |
 | `crates/miyu-session/src/kinds.rs`、`lines.rs` | 运行日志里的输入、动作种类名，和几种写法 |
 | `crates/miyu-session/src/blocking.rs` | 在阻塞线程里做完磁盘上的事 |
@@ -52,7 +52,7 @@
 | `new_id(时刻)` | 一个新的会话编号 |
 | `Handle` | 一个会话的收件箱，可以复制，几个头一起拿着 |
 | `Pushed`、`Subscription`、`Ended`、`Stopped` | 推送、订阅、订阅断了、会话停了 |
-| `Backlog` | 订阅时要补发的那一截（施工 3-8 六补）：`upto()` 补到哪一条，`read()` 在阻塞线程里读出来（第 6 条） |
+| `Backlog` | 订阅时要补发的那一截（施工 3-8 六补）：`upto()` 补到哪一条，`read()` 在阻塞线程里读出来，`lines(写法)` 读的时候一条条写成要推的行（施工 V-37 下，第 6 条） |
 | `Models`、`ForSession`、`ModelPort`、`Reports`、`Cancel`、`Sight` | 请求模型的端口。`ModelPort::describe(请求, 配置, Sight)` 替看不了图的模型看图（施工 8-17，第 7 条第 9 款）：马上返回，在别的任务里发，`Sight` 有 `seen(模型, 转述)`、`unseen(为什么)`；测试的端口当场 `unseen`。`ForSession` 带会话编号、造会话或载入时取的那一份配置（施工 8-6）、驱动的占位、blob 存处，会话记着的引用、最近一次发给了谁（施工 8-8）；`ModelPort::model()` 交回的是一份（路由的会变，施工 8-6），`reference()` 交回会话这时生效的引用（施工 8-8，测试的端口交造它的会话记着的），`effort()` 交回接下来那个模型真用的思考强度（施工 8-18；会话记的一档这个模型有的照它、`from` 是 `session`，不然照配置的默认，施工 SM-1；测试的端口没有），`turn()` 照这一轮的配置重新解析，连同内核记着的会话的一档（施工 SM-1：`ForSession.effort` 造端口时交、`turn(配置, 引用, 一档)` 回合开始交，actor 照 `Session::effort()` 取） |
 | `SessionPort`、`Child`、`Lineage`、`Pending` | 造子会话、给别的会话发命令的端口（施工 7-5）：会话表实现，造会话、载入时交进来。`create(子会话)`、`command(会话, 编号, 谁, 命令)`，`open(会话)` 叫起一个会话：没在跑的照会话表的规矩载入（施工 7-6） |
 | `Routes`、`IDLE` | 端口的真实现：每个会话的路由，照配置挑供应商、钉 key（施工 8-6，第 8 条）；空闲超时 180 秒，每次请求照它的思考强度放大（施工 8-18） |
@@ -173,7 +173,7 @@
 | 执行工具 | 照调用编号和这一轮的 `cause` 造一个任务端口（施工 7-3），一起交给执行工具的端口（`session/tools.md`） | 目录里没有这件工具的：一条出错的结果 |
 | 停下工具 | 掐掉跑它的任务（`session/tools.md`） | |
 | 压完重读（`Reread`，施工 6-5） | 在阻塞线程里一个一个读：照安全打开（`fs.md`），超过上限的不读完，不是普通文件、读不了、不是 UTF-8 的算读不到；读到的存进这个会话的 blob。这期间不收收件箱 | 一个一项：读到了（`blob`、原文）、太大、读不到（`compaction.md` 第九条） |
-| 读回日志（`ReadBack`，施工 6-9） | 在阻塞线程里只读地一段一段读这个会话的日志（`store.md` 的 `read_segments`），只留第 `from` 条起的。这期间不收收件箱。读不了的（日志坏了、磁盘出错）：记一行 `read back failed, stopped`，会话停下（第 9 条），和写不进去一样：从磁盘重新载入最清楚 | 读回的事件，从第 `from` 条到最后一条（`kernel/history.md`「撤掉压缩」） |
+| 读回日志（`ReadBack`，施工 6-9） | 在阻塞线程里只读地读这个会话的日志，只留第 `from` 条起的：照序号定位到第 `from` 条读起（`store.md` 第 7 条的 `read_range`，施工 V-37 下：原来一段一段整个读完、解完再挑），前面的只数换行、不解、不自检（2026-11-03 项目主人定）；分叉出来的会话读回到分叉点以前的，底子照样定位着读到分叉点就停。这期间不收收件箱。读不了的（日志坏了、磁盘出错）：记一行 `read back failed, stopped`，会话停下（第 9 条），和写不进去一样：从磁盘重新载入最清楚 | 读回的事件，从第 `from` 条到最后一条（`kernel/history.md`「撤掉压缩」） |
 | 取回原文（`Recall`，施工 6-9） | 在阻塞线程里照 blob 一个一个读这个会话的 blob，读不出来的、不是 UTF-8 的跳过。这期间不收收件箱 | 读出来的原文，照 blob 找（`kernel/history.md`「重读的原文」） |
 | 把回答交给工具 | 现在没有工具会问：记一行 `ERROR` | |
 | 向上回报（`Report`，施工 7-6） | 交给交回报的那一头，不等（「向上回报」）；没有那一头的（测试里自己造的子会话）交不出去 | |
@@ -223,7 +223,7 @@
 2. 订阅从 actor 收到它的那一刻起推。在发命令之前订阅的，这个命令产生的事件一定先于它的回应到。
 3. 补发（施工 3-8 六补）：要订阅时，actor 在收下这一封的同一步里交回三样：推送的那一头、这一刻落了盘的最后一条（内核的 `landed()`，一条都没有是 0）、日志的只读入口（和 `history` 用的是同一个，`session/tools.md`）。`subscribe_after(after)` 拿后两样造一个 `Backlog`：日志里序号大于 `after`、不大于那一条（`upto`）的事件。同一步里还拼好正在流的那次请求到目前为止的块（内核的 `streaming(at)`，施工 9-8 八补，`protocol.md`「补发」第 4 条）：订阅先推这几条 `model.delta`，推完才轮到之后的，只给这一个订阅。
    - 接得上、不重不漏：内核落盘以后推送是同一批动作，actor 回完一批动作才收下一封（第 3 条），所以这一步之前落了盘的都推过了，之后落盘的都还没推，只从这个订阅推过去。
-   - 读日志不在 actor 里：拿着 `Backlog` 的一方（协议端点）调 `read()`，在阻塞线程里只读地读，一次读完交回（不分批：载入会话本来就整份读进内存，照最简单的做，施工 3-8 六补定）。读的时候会话照常跑，新推的攒在订阅里，最多 1024 份（这一节第 1 款）。`upto` 以前的都落了盘，日志只往后追加，什么时候读都一样；读到的比 `upto` 多的不要。
+   - 读日志不在 actor 里：拿着 `Backlog` 的一方（协议端点）调 `read()`，在阻塞线程里只读地读，一次读完交回（不分批：载入会话本来就整份读进内存，照最简单的做，施工 3-8 六补定）。事件流的补发调 `lines(写法)`：同 `read()`，只是读出来的每一条当场照端点交的写法写成要推的那一行，事件写完就放掉，交回写好的行（施工 V-37 下：原来攒着整份事件，推的时候才写；推出去的字节、先后照旧）。读出来的一块块分给三个线程写，照块的先后接起来：写行挪到推第一条以前，不再和头读同时做，一个线程写大会话要多等几十毫秒；视图流要投影，照旧 `read()`。从第 `after + 1` 条照序号定位着读（日志的只读入口的 `read_range`，`store.md` 第 7 条），读到 `upto` 就停：`after` 以前的只数换行、不解、不自检，`upto` 以后的不读（施工 V-37 下，2026-11-03 项目主人定）。读的时候会话照常跑，新推的攒在订阅里，最多 1024 份（这一节第 1 款）。`upto` 以前的都落了盘，日志只往后追加，什么时候读都一样；读到的比 `upto` 多的不要。
    - `after` 不比 `upto` 小的，不读日志，交回空的。读不了的（日志坏了、读的时候会话目录被挪走了）交回原因。
 4. 读得慢、被挤掉了的：这个订阅掉了队，`Ended::Lagged`，以后一直是掉队，要重新订阅（协议里的 `resync`，`protocol.md`）。
 5. 会话停了：读完已经到了的，再读是 `Ended::Stopped`。
@@ -405,6 +405,8 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/report_up.rs`（施工 7-6） | 子会话把回报交给父会话：命令编号照报的那一轮、`by` 是子会话、任务编号照造它的命令读回；父会话先拒两次 `unknown_job` 再收，同一份交了三次；停了再载入同一份再交一次；父会话载入以后叫起还没回报的子会话，交代不再送 |
 | `crates/miyu-session/src/handle/tests.rs` | 掉过一次队就一直是掉队；会话停了读完剩下的；`try_next` 只拿已经到了的 |
 | `crates/miyu-session/tests/backlog.rs`（施工 3-8 六补） | 补发：补到订阅那一刻落了盘的最后一条，订阅以后、读之前又落了盘的不读进来，从订阅推过来、从下一条起；`after` 是 0、中间、最后一条、比最后一条大的，补的是序号大于它的 |
+| `crates/miyu-session/src/backlog/tests.rs`（施工 V-37 下） | 补发照序号读：三段夹一段空的、最后一段有半行，`after`、`upto` 落在每一处，交回的事件、写好的行、报的错都和原来一段段从头读到末尾再挑的（照抄留着）一样；分叉出来的、一段几千条的一样；`upto` 在第一段中间的后面的段不打开（打不开的目录）；坏行在那一截里的报的错一字不差，在 `after` 以前、`upto` 以后的不读、不报；没有要补的不读 |
+| `crates/miyu-session/src/store/tests/range.rs`（施工 V-37 下） | 读回照序号定位：三段夹一段空的、最后一段有半行、分叉出来的，读回第 `from` 条起的每一处和原来一段段读了再挑的（照抄留着）交回的、报的错一样；底子从每一条读到每一个分叉点一样，一块块交的连起来就是从第一条读的那一份，父会话没写到分叉点、没了的报没有；坏行在要的那一截里的报的错一字不差，在 `from` 以前、分叉点以后的不读、不报 |
 | `crates/miyu-session/tests/watched.rs`（施工 7-9） | 有没有头看着：一次性会话有头订阅着，后台命令结束叫醒她；走了一个头还有一个照样叫醒；订阅都放下了只记下；造会话以后没人订阅过的当没人看着，后来有头订阅也不因为以前的开轮 |
 | `crates/miyu-session/src/clock/tests.rs` | 时钟不往回走、1970 年以前当 0、出了范围停在最后一刻；会话编号是那一刻的 UUIDv7；同一毫秒里连造一千个照先后 |
 | `crates/miyu-session/tests/http.rs` | 经路由请求假服务器回复（施工 8-6 起配置指到它）；限速照服务器说的等；打断断开连接；缺 blob 出错、不发；回复断了接着说（开关照档案）；卡住的回复照空闲超时；图片照字节发出去 |
