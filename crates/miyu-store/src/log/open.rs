@@ -8,10 +8,12 @@ use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use miyu_kernel::event::Event;
+use miyu_kernel::id::Seq;
 
 use super::{Mark, SessionLog};
 
 mod parse;
+mod range;
 mod walk;
 
 pub use parse::Flow;
@@ -156,6 +158,31 @@ pub fn read_marked(
     each: impl FnMut(Vec<Event>) -> bool,
 ) -> Result<Option<Mark>, OpenError> {
     walk(dir, HalfLine::Skip, from, &mut by_segment(each))
+}
+
+/// 只读地读第 `from` 条到第 `upto` 条（施工 V-37 中）：照先后一块块交给 `each`，不攒成段、不攒成整份；读过 `upto` 当场停，
+/// 后面的段不打开，`upto` 是空的读到最后；`each` 交回 [`Flow::Stop`] 的不读下去。最后一段末尾没写完的半行同
+/// [`read_events`] 跳过，一个字节都不写。
+///
+/// 从哪里读起不另存索引：一段的名字就是这一段第一条的序号、一行一条、序号连着（打开时自检过），第 `from` 条在名字不大于
+/// 它的最后一段的第 `from − 名字 + 1` 行，数换行找到这一行的开头，从那里读起。对不上的退回从头读、`from` 以前的不交：名字
+/// 不大于它的那一段是空的、行数不够（不是最后一段），那一行读不成、不是第 `from` 条。最后一段的整行都在 `from` 前面的
+/// （还没写到），什么都不交。
+///
+/// **跳过的那一截不自检**：从 `from` 那一行读起的，前面的行只数换行，不解、不查序号、不查段名，那里坏了不报（同
+/// [`read_marked`] 从记下的位置读起）。读起以后的照旧自检，报坏了的行号照那一段的开头数（同从头读）。退回从头读的照
+/// [`read_events`] 整份自检。
+///
+/// # Errors
+///
+/// 没有这个会话；读到的那一截坏了；读写出错。
+pub fn read_range(
+    dir: &Path,
+    from: Seq,
+    upto: Option<Seq>,
+    mut each: impl FnMut(Vec<Event>) -> Flow,
+) -> Result<(), OpenError> {
+    range::read(dir, from, upto, &mut each)
 }
 
 /// 最后一段末尾没写完的半行怎么办。
