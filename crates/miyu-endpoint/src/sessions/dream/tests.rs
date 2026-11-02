@@ -141,6 +141,10 @@ async fn each_batch_is_a_turn_of_its_own_with_nothing_but_the_batch() {
     };
     let dream = created.dream.as_ref().expect("带 dream");
     assert_eq!(dream.persona.as_deref(), Some("engineer"));
+    assert_eq!(
+        dream.session, None,
+        "会话那一间去掉了，新的不写（施工 FH-1）"
+    );
     assert!(dream.manual);
     assert_eq!(created.persona, None, "没有人格");
     let purposes: Vec<_> = events

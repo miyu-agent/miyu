@@ -51,21 +51,18 @@ name = "美羽"
 summary = "My own persona."
 subagent = true
 
-[memory]
-scope = "session"
-
 [knowledge]
 bases = ["notes"]
 ```
 
-三张表，都可以不写：
+几张表，都可以不写（`[appearance]` 见下面「主题色、背景图」）：
 
 - `[persona]` 里的 `subagent`（施工 P-10 补，2026-10-17 项目主人定）：派子代理时能不能挑它，`true`、`false`，不写是不能（同池的 `subagent`）；上一层写了的盖下面的，写错报 `bad_subagent`。界面上叫「子代理可选」。
 - `[persona]` 里只有 `name`、`summary`、`subagent`（P-3 上那几个小时里写进去的 `base` 认出来当没写，下一次 `persona.set` 写这份文件时去掉，施工 P-3 再补）：各是一句字（施工 P-3 补，2026-10-08 项目主人定：名字只存一份、不分语言）。名字去掉前后空白不能是空的；说明可以是空的字，就是没有说明，盖住下面那一层的（施工 P-3 再补，2026-10-08 项目主人：「为什么说明不让为空？」），`*.get`、`*.list` 给 `null`，要回到下面那一层的照 `unset`。以前写成语言到一句话的表（`zh`、`en`、`ja`）的照样认，照连接的语言挑；出厂的几个照旧这么写，界面照连接的语言显示。上一层写了的整格换掉。界面上 `summary` 叫「简单描述」（2026-10-17 项目主人定，不另加字段），详细的写进人设 `prompts/persona.md`（界面上叫「具体人格提示词」）；派子代理挑人格时名字和它一起给模型看（施工 P-10，`tools/subagent.md`）。
-- `[memory]` 里只有 `scope`：用这个人格的会话，记忆的默认范围，`persona`（跟着人格）或 `session`（只在这个会话里）；`off` 不能写在这里，不记是开会话时的事（施工 R-3 下，`memory.md`「范围」）。不写是 `persona`。上一层写了的盖下面的。
+- 没有 `[memory]` 了：施工 R-3 下加的 `[memory] scope`（记忆的默认范围）施工 FH-1 去掉（设计 55 第六节第 3 条），记忆一律跟着人格、开会话时能关；写了的照不认识的表报 `unknown table [memory]`，不做旧版兼容。
 - `[knowledge]` 里只有 `bases`（施工 K-1 下，`knowledge.md`「怎么走」第六条，19 N11）：用这个人格的会话只查得到列着的、在的那几个知识库，一列知识库的编号（写法同人格的编号）；写了空的列表一个都查不到。不写是查全部。上一层写了的整格换掉。写错的报 `bad_knowledge_bases`（不是一列、编号不合写法）。
 
-别的表、别的键、别的值报错，写明第几行：`unknown table [<表>]`、`unknown key <表>.<键>`、`memory must be a table`、`memory.scope must be persona or session`、`persona.name must be text`。声音、知识库随它们的软件包，到时候再加。
+别的表、别的键、别的值报错，写明第几行：`unknown table [<表>]`、`unknown key <表>.<键>`、`knowledge must be a table`、`persona.name must be text`。声音、知识库随它们的软件包，到时候再加。
 
 **`prompts/examples.md`**（照旧版 `miyu-dialogs.md` 的写法）：
 
@@ -176,7 +173,7 @@ assistant: 8640
 | `crates/miyu-endpoint/tests/persona_seeds.rs`（施工 P-6 补） | 头像挑出的候选和 `miyu-seeds` 算的一样、最多 4 个、`persona.get`、`persona.list` 都带；没有头像的是 `null`；换了头像跟着换（`persona.set` 的回应和再读到的）；只有 PNG 开头、解不开的有版本没有候选 |
 | `crates/miyu-seeds/src/tests.rs`（施工 P-6 补） | 见得多的排第一、最多 4 个、少的也在候选里；透明的不算、全透明的没有候选；灰的给 Google 蓝；图的字节照 `thumbnail` 缩到 128 再挑、同一张图挑的一样、不是图的读不成；`#rrggbb` 小写 |
 | `crates/miyu-endpoint/tests/persona_appearance.rs`（施工 P-6） | 主题色大写写成小写、列出来带着、删了回到下面那一层、写错的和重复改的拒绝且什么都不写、只写主题色能新建；背景图比头像的上限大也收、读回、版本对不上不动、删了回到下面那一层、不合规矩的拒绝（`data` 带量到的和上限）且一起改的主题色也不写 |
-| `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的九种写明第几行（`[memory]` 的三种在内，R-3 下）、P-3 上写的 `base` 当没写（施工 P-3 再补）、`[memory] scope` 两种、不写是没有、上一层盖下面的、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
+| `crates/miyu-policy/src/persona/tests.rs`、`persona/tables/tests.rs`（施工 K-1 下挪出去的几张表） | `persona.toml` 三种语言、写错的几种写明第几行（`[memory]` 照不认识的表，施工 FH-1）、P-3 上写的 `base` 当没写（施工 P-3 再补）、读不成 TOML 也说第几行；`[knowledge] bases` 读得出、空的列表、不写是没有、上一层整格换掉，写错的四种（施工 K-1 下）；逐种语言叠；示范对话照旧版写法读（大小写、冒号后的空格、接着的行、空行）、写错的七种写明第几行；示范对话进请求在 system 后面历史前面、`stable` 数对、软件工程师的快照里没有 `demos` |
 | `crates/miyu-endpoint/tests/persona_shipped.rs`（施工 PE-1） | 全新的数据根上就有软件工程师、名字照连接的语言（中文、英文）、`remove` 是 `delete`，默认人格不设；改了写你那一层、下一次读到改后的，删掉改动回到出厂的、包还在；你那一层没有的删了是卸它的出厂包（列表里没了、`package.list` 里 `removed: true`、记了 `.removed`、再删 `nothing_to_delete`），写包编号装回来又有；装上的包带的照旧删不掉 |
 | `crates/miyu-endpoint/src/personas/delete/tests.rs`（施工 PE-1） | 只带这一个人格的包才算（带图标的也算）；带技能、带两个人格、带程序的不算；装上的包、你那一层也有的、没有的都不连包卸 |
 | `crates/miyu-endpoint/tests/persona_set.rs`（施工 P-3 下、补、再补） | 不写编号新建、读原文和版本、一对一对的示范对话、防覆盖、空的字、删提示词、写错的什么都不写还带一句、参数不对、删了挪进回收处（`protocol.md` 测试表）；旧的 `base` 照常列出、下一次写时去掉，写错的一项列表里照连接的语言说、带行 |

@@ -1,5 +1,6 @@
 //! 记忆的范围（施工 R-3 下，`docs/blueprint/memory.md`「范围」，`protocol.md` 的 `session.create`）：真核心走一遍。`memory`
-//! 三种照写的记进快照，写错的参数不对、什么都不造；不写的照人格的 `persona.toml`，那也没写的跟着人格。
+//! 两种照写的记进快照，写错的参数不对、什么都不造；不写的跟着人格。「只在这个会话里」去掉了（施工 FH-1，设计 55 第六节第 3
+//! 条）：写 `session` 的照写错的回，人格的 `persona.toml` 里不再有 `[memory]`。
 
 use serde_json::{Value, json};
 
@@ -34,7 +35,6 @@ async fn session_create_records_the_scope_and_refuses_a_wrong_one() {
     client.hello().await;
     for (id, memory, expected) in [
         ("c1", json!("persona"), MemoryScope::Persona),
-        ("c2", json!("session"), MemoryScope::Session),
         ("c3", json!("off"), MemoryScope::Off),
         ("c4", Value::Null, MemoryScope::Persona),
     ] {
@@ -48,6 +48,7 @@ async fn session_create_records_the_scope_and_refuses_a_wrong_one() {
         assert_eq!(scope(&home, session), expected, "{memory}");
     }
     for (id, memory) in [
+        ("c2", json!("session")),
         ("c5", json!("Off")),
         ("c6", json!("everywhere")),
         ("c7", json!(3)),
@@ -58,17 +59,18 @@ async fn session_create_records_the_scope_and_refuses_a_wrong_one() {
     let listed = client.call("l1", "session.list", json!({})).await;
     assert_eq!(
         listed["result"]["sessions"].as_array().map(Vec::len),
-        Some(4),
+        Some(3),
         "写错的什么都没造"
     );
 }
 
+/// 人格不再管范围（施工 FH-1）：`persona.toml` 写了 `[memory]` 的照不认识的表报，会话不造；不写的跟着人格。
 #[tokio::test]
-async fn without_it_the_persona_file_decides() {
+async fn a_memory_table_in_the_persona_file_is_refused() {
     let home = Home::new();
     home.write(
         "personas/engineer/persona.toml",
-        "[memory]\nscope = \"session\"\n",
+        "[memory]\nscope = \"persona\"\n",
     );
     let mut client = Client::connect(home.core(&Script::new([])));
     client.hello().await;
@@ -78,20 +80,8 @@ async fn without_it_the_persona_file_decides() {
         json!({"cwd": "~", "persona": "engineer"}),
     )
     .await;
-    let session = reply["result"]["session"].as_str().expect("造了");
-    assert_eq!(scope(&home, session), MemoryScope::Session, "照人格的");
-    let reply = create(
-        &mut client,
-        "c2",
-        json!({"cwd": "~", "persona": "engineer", "memory": "persona"}),
-    )
-    .await;
-    let session = reply["result"]["session"].as_str().expect("造了");
-    assert_eq!(
-        scope(&home, session),
-        MemoryScope::Persona,
-        "写了的压着人格的"
-    );
+    assert_eq!(reason(&reply), Some("persona_invalid"), "{reply}");
+    assert!(reply.to_string().contains("unknown table"), "{reply}");
 }
 
 /// 无人格的会话也有记忆（施工 P-12，2026-10-17 项目主人定，改掉 P-4 上的「无人格记忆不生效」）：范围照写的；不写的跟着人格，
@@ -107,11 +97,6 @@ async fn without_a_persona_memory_follows_what_is_asked() {
             "c2",
             json!({"cwd": "~", "persona": null, "memory": "persona"}),
             MemoryScope::Persona,
-        ),
-        (
-            "c3",
-            json!({"cwd": "~", "memory": "session"}),
-            MemoryScope::Session,
         ),
         ("c4", json!({"cwd": "~", "memory": "off"}), MemoryScope::Off),
     ] {

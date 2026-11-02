@@ -177,14 +177,3 @@ fn a_crash_before_the_index_is_built_is_caught_up_from_the_log() {
     assert_eq!(report.filled, 1, "照日志补上");
     assert_eq!(log.search("橘猫", 10).expect("搜得了"), [id(1)]);
 }
-
-#[test]
-fn a_session_room_without_memories_leaves_nothing_in_the_session_directory() {
-    let scratch = Scratch::new("memory-lazy-session");
-    let root = root_in(&scratch);
-    let session = SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").expect("合写法");
-    let logs = MemoryLogs::new(&root);
-    let (log, _) = logs.open(&Room::session(&session)).expect("开得了");
-    assert_eq!(log.search("猫", 10).expect("当空的读"), []);
-    assert!(!root.session_dir(&session).join("memory").exists());
-}

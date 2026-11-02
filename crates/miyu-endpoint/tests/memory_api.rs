@@ -222,7 +222,7 @@ async fn wrong_requests_are_refused_and_nothing_is_written() {
 }
 
 #[tokio::test]
-async fn the_room_is_the_personas_the_sessions_or_the_defaults() {
+async fn the_room_is_the_personas_or_the_defaults() {
     let home = Home::new();
     let mut client = connected(&home, &Script::new([])).await;
     let reply = client
@@ -238,36 +238,6 @@ async fn the_room_is_the_personas_the_sessions_or_the_defaults() {
         texts(&listed),
         pairs(&[("m1", "跟着人格的")]),
         "默认就是软件工程师"
-    );
-
-    let created = client
-        .call(
-            "c2",
-            "session.create",
-            json!({"cwd": "~", "memory": "session"}),
-        )
-        .await;
-    let own = created["result"]["session"]
-        .as_str()
-        .expect("造了")
-        .to_string();
-    let reply = client
-        .call(
-            "c3",
-            "memory.remember",
-            json!({"class": "user", "text": "只在会话里的", "session": own}),
-        )
-        .await;
-    assert_eq!(reply["result"]["id"], "m1", "会话那一间自己编号：{reply}");
-    let listed = client
-        .call("l2", "memory.list", json!({"session": own}))
-        .await;
-    assert_eq!(texts(&listed), pairs(&[("m1", "只在会话里的")]));
-    let listed = client.call("l3", "memory.list", json!({})).await;
-    assert_eq!(
-        texts(&listed),
-        pairs(&[("m1", "跟着人格的")]),
-        "人格那一间没有它"
     );
 
     let created = client

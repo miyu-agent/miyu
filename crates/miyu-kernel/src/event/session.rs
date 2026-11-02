@@ -78,13 +78,13 @@ pub struct SessionCreated {
     pub confined: bool,
 }
 
-/// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`，会话那一间写 `session`，两样有一样。
+/// 整理会话是哪一间的记忆、怎么来的（设计 41 DS1）：人格那一间写 `persona`；`session` 是以前会话那一间写的（施工 FH-1 去掉了，留着认老日志，新的不写）。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Dream {
     /// 人格那一间：人格的编号。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub persona: Option<String>,
-    /// 会话那一间：哪个会话的记忆。
+    /// 以前会话那一间写的会话编号；施工 FH-1 起不写，读老日志时认得。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session: Option<SessionId>,
     /// 人叫的（`/dream`、`memory.dream`、`miyu memory dream`）；后台自己合的不写。

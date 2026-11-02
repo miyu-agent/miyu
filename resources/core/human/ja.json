@@ -600,7 +600,6 @@
     "persona-problems/not_phrases": "{detail} には一文を書いてください",
     "persona-problems/unknown_language": "{detail}：言語は zh、en、ja のどれかです",
     "persona-problems/empty_phrase": "{detail} には空でない一文を書きます",
-    "persona-problems/bad_memory_scope": "{detail} は persona か session のどちらかです",
     "persona-problems/bad_knowledge_bases": "{detail} はナレッジベースの ID のリストです（例：[\"notes\"]）",
     "persona-problems/bad_seed": "{detail} は #rrggbb の形の色です",
     "persona-problems/bad_subagent": "{detail} は true か false です",

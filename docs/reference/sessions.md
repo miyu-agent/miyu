@@ -57,7 +57,7 @@
 | `persona` | 字符串或 `null` | 用哪个人格；`null` 是不用人格；不写照配置 `persona.default` |
 | `preset` | 字符串或 `null` | 用哪个预设；不写照 `preset.default`，都没有是 `full`；`null` 是无工具：一件工具都不给（施工 P-16 下；以前的写法，照旧认。新开的选「无功能」写 `none`，施工 P-17） |
 | `model` | 字符串 | `<供应商>/<模型>` 或 `@<池>`；不写的照这一刻的 `models.chat` 记下（写的是池就记池），以后改 `models.chat` 这个会话照旧 |
-| `memory` | `persona`、`session`、`off` | 记忆跟着人格、只在这个会话里、不用；不写照人格的设置 |
+| `memory` | `persona`、`off` | 记忆跟着人格、不用；不写是跟着人格。别的值（以前的 `session` 也算）回 `bad_params` |
 | `dirs` | 字符串的数组 | 另外加进来的目录，和工作目录一样能读能写 |
 | `chosen` | 布尔，默认 `false` | 照收不看（以前用来区分人选的）：太宽的 `cwd`（根目录；Windows 上还有家目录）一律照用、回应带 `wide`，能随便写的范围是这个会话自己的默认工作区 |
 | `oneshot` | 布尔，默认 `false` | 一次性的会话（命令行 `miyu ask` 那种） |
@@ -116,7 +116,7 @@
 | `tokens` | 连同它派出去的子会话（一层层往下）一共用了多少 token：每次模型调用（主请求、起标题、压缩都算）的输入（没命中、缓存读、缓存写）加输出，和终端底栏的 `Σ` 同一个算法；还是 0 的不写 |
 | `context` | `{"used", "window"?}`：上下文用了多少 token（最近一次主请求的输入：没命中、缓存读、缓存写，同终端底栏、会话状态的上下文），压缩以后、还没说过话的不写；`window` 是那一次请求的模型照这时的配置查到的上下文窗口，查不到的不写 |
 | `project` | 在哪个项目，不在的不写 |
-| `kind`、`dream` | 整理会话（整理记忆跑在里面的会话）才有：`kind` 是 `"dream"`，`dream` 是 `{"persona"?, "session"?, "manual"?, "from"?}`：哪个人格、哪个会话的记忆，人叫的写 `manual: true`，在哪个会话里叫的写 `from`；这一趟跑完了的多 `result`：`{"given", "revised", "retired", "summary", "stopped"?}`，新记、改了、作废了几条，有没有写摘要，叫停的写 `stopped: true`，没跑完的没有。主列表一般不列它们（传 `dream: false`），记忆页照 `dream` 列那一份记忆的 |
+| `kind`、`dream` | 整理会话（整理记忆跑在里面的会话）才有：`kind` 是 `"dream"`，`dream` 是 `{"persona"?, "session"?, "manual"?, "from"?}`：哪个人格的记忆（`session` 只在以前的会话里有），人叫的写 `manual: true`，在哪个会话里叫的写 `from`；这一趟跑完了的多 `result`：`{"given", "revised", "retired", "summary", "stopped"?}`，新记、改了、作废了几条，有没有写摘要，叫停的写 `stopped: true`，没跑完的没有。主列表一般不列它们（传 `dream: false`），记忆页照 `dream` 列那一份记忆的 |
 | `origin` | 终端集成开的会话（`session.terminal` 开的）才有，是 `"terminal"`：头的会话列表照它写「终端集成」。以前开的没有 |
 | `forked` | fork 子代理的会话才有，是 `true`：头照它换图标。普通子代理、主会话没有 |
 | `default_workspace` | 这个会话的默认工作区，绝对路径：主会话是它自己的 `…/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。`cwd` 和它一样的可以写「默认工作区」 |

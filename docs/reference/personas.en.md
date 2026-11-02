@@ -61,7 +61,7 @@ Editors edit the text and send `version` back as `expect` in `persona.set`.
 | Name | Type | Notes |
 |---|---|---|
 | `persona` | string | Id; omitted creates a new one, and the core picks `persona-<n>` |
-| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `memory.scope`, `appearance.seed` |
+| `changes` | array | Changes to `persona.toml`, written like `config.set`'s `changes`; keys are `persona.name`, `persona.summary`, `persona.subagent`, `appearance.seed` |
 | `prompts` | object | Prompt name (`persona`, `examples`, `reminders`) → `{"text": <whole>}` or `{"unset": true}`; examples may also be `{"pairs": [{"user", "assistant"}…]}`; each may carry `"expect": <version>` or `null` (doesn't exist yet) |
 | `avatar`, `background` | object | `{"blob": <hash>}` uses the uploaded image, `{"unset": true}` removes yours; may carry `expect` |
 | `seed` | string or `{"unset": true}` | Theme color `#rrggbb` |

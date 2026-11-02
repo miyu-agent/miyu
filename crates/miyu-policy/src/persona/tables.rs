@@ -1,48 +1,9 @@
-//! `persona.toml` 里 `[persona]` 以外的几张表（施工 P-6 从 `persona.rs` 挪出来守 500 行上限）：`[memory]`（施工 R-3 下）、
-//! `[knowledge]`（施工 K-1 下）、`[appearance]`（施工 P-6）。
+//! `persona.toml` 里 `[persona]` 以外的几张表（施工 P-6 从 `persona.rs` 挪出来守 500 行上限）：`[knowledge]`（施工 K-1 下）、
+//! `[appearance]`（施工 P-6）。`[memory]`（施工 R-3 下）施工 FH-1 去掉了，照不认识的表报。
 
 use toml_edit::Item;
 
 use super::{Code, Problem, problem};
-use crate::memory::MemoryScope;
-
-/// `[memory]`：只有 `scope`，`persona` 或 `session`。`off` 不在这里：不开记忆是开会话时、预设的事。
-pub(super) fn read_memory(
-    item: &Item,
-    at: &dyn Fn(&Item) -> Option<usize>,
-) -> Result<Option<MemoryScope>, Problem> {
-    let Some(table) = item.as_table_like() else {
-        return Err(problem(
-            at(item),
-            Code::NotATable,
-            "memory",
-            "memory must be a table".to_string(),
-        ));
-    };
-    let mut scope = None;
-    for (key, item) in table.iter() {
-        if key != "scope" {
-            return Err(problem(
-                at(item),
-                Code::UnknownKey,
-                &format!("memory.{key}"),
-                format!("unknown key memory.{key}"),
-            ));
-        }
-        scope = match item.as_str().and_then(MemoryScope::parse) {
-            Some(MemoryScope::Off) | None => {
-                return Err(problem(
-                    at(item),
-                    Code::BadMemoryScope,
-                    "memory.scope",
-                    "memory.scope must be persona or session".to_string(),
-                ));
-            }
-            found => found,
-        };
-    }
-    Ok(scope)
-}
 
 /// `[knowledge]`：只有 `bases`，一列知识库的编号（施工 K-1 下，19 N11）。编号的写法同 `miyu_store::layers::valid`（小写字母
 /// 开头，小写字母、数字、`-`、`_`，最多 64 个）：这一层不碰存储，照写一遍。列着的库在不在不查：查的时候不在的当没有。

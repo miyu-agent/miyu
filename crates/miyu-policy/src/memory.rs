@@ -1,5 +1,6 @@
 //! 记忆的范围（施工 R-3 下，`docs/blueprint/memory.md`「范围」，`docs/designs/17-记忆.md` L2、L3）：会话开局时定下、记进策略
-//! 快照，之后不改。人格的 `persona.toml` 写默认的（`persona` 或 `session`），开会话时能换成三种里的哪一种。
+//! 快照，之后不改。只有两种：跟着人格（默认）、不记；「只在这个会话里」施工 FH-1 去掉了（设计 55 第六节第 3 条，2026-11-02
+//! 项目主人定：记忆就是为了跨会话），以前的快照里写着 `session` 的照认不出的算。
 
 use std::fmt;
 
@@ -10,18 +11,15 @@ use crate::Snapshot;
 pub enum MemoryScope {
     /// 跟着人格：用这个人格的会话都想得起来（默认）。
     Persona,
-    /// 只在这个会话里：删掉会话，记忆一起没了。
-    Session,
     /// 不召回、也不记：`miyu ask --no-memory`，子代理（17 第二节）。
     Off,
 }
 
 impl MemoryScope {
-    /// 写法：`persona`、`session`、`off`。
+    /// 写法：`persona`、`off`。
     pub fn as_str(self) -> &'static str {
         match self {
             MemoryScope::Persona => "persona",
-            MemoryScope::Session => "session",
             MemoryScope::Off => "off",
         }
     }
@@ -30,7 +28,6 @@ impl MemoryScope {
     pub fn parse(text: &str) -> Option<MemoryScope> {
         match text {
             "persona" => Some(MemoryScope::Persona),
-            "session" => Some(MemoryScope::Session),
             "off" => Some(MemoryScope::Off),
             _ => None,
         }

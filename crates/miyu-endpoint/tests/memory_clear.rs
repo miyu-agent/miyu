@@ -1,12 +1,12 @@
 //! 人经协议清空记忆（施工 R-3 补，`docs/blueprint/memory.md` 第二条第 5 款）：真核心、真记忆日志，数据根在临时目录。清掉从
-//! 一个会话来的、清掉整间；会话那一间清会话的就是整间。
+//! 一个会话来的、清掉整间。
 
 use serde_json::json;
 
 use miyu_session::testkit::{Play, Script};
 use miyu_tool::Catalog;
 
-use crate::support::memories::{connected, pairs, texts, with_persona};
+use crate::support::memories::{pairs, texts, with_persona};
 use crate::support::*;
 
 /// 她经工具记的、人记的混在一起：清掉从一个会话来的只清出处全在它里面的，人记的不动；清掉关于我的是整间。
@@ -109,39 +109,4 @@ async fn clearing_takes_one_sessions_memories_or_the_whole_room() {
         Some("memory_not_current"),
         "清掉的不算了：{reply}"
     );
-}
-
-/// 会话那一间：清掉这个会话的就是整间。
-#[tokio::test]
-async fn clearing_a_session_scope_session_clears_its_room() {
-    let home = Home::new();
-    let mut client = connected(&home, &Script::new([])).await;
-    let created = client
-        .call(
-            "c1",
-            "session.create",
-            json!({"cwd": "~", "memory": "session"}),
-        )
-        .await;
-    let own = created["result"]["session"]
-        .as_str()
-        .expect("造了")
-        .to_string();
-    for (id, text) in [("c2", "一"), ("c3", "二")] {
-        client
-            .call(
-                id,
-                "memory.remember",
-                json!({"class": "user", "text": text, "session": own}),
-            )
-            .await;
-    }
-    let reply = client
-        .call(
-            "c4",
-            "memory.forget",
-            json!({"clear": "session", "session": own}),
-        )
-        .await;
-    assert_eq!(reply["result"], json!({"cleared": 2}), "{reply}");
 }

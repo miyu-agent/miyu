@@ -278,7 +278,7 @@
 | `titles` | 布尔，不写是 `true` | 这个会话自动起标题吗（施工 O-43，同 `venue.session` 的 `titles`，`venues.md`）：`false` 的记进 `session.created`，从此不自动起 |
 | `dirs` | 字符串的数组，可以不写 | 加进来的目录：和工作区一样能读能写（「加进来的目录」（施工 5-10 上））。不写是没有 |
 | `model` | 字符串，可以不写 | 用哪个模型：模型 `<供应商>/<模型>` 或池 `@<池>`（施工 8-8，`models.md`「两种写法」；挡位 8-8 补去掉了）。照这时的配置查过，记进 `session.created` 的 `model`；不写、写 `null` 的照这时的 `models.chat` 原样记（写的是池就记池），以后改 `models.chat` 这个会话照旧（施工 SM-1，设计 51 第一节），那也没配的不写（照旧跟着以后的 `models.chat`） |
-| `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`session`（只在这个会话里）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的照人格的 `persona.toml` 的 `[memory] scope`，那也没写的是 `persona` |
+| `memory` | 字符串，可以不写 | 记忆的范围（施工 R-3 下，`memory.md`「范围」）：`persona`（跟着人格）、`off`（不召回也不记）。记进策略快照，以后不改。不写、写 `null` 的是 `persona`。别的值 `bad_params`：原来的 `session`（只在这个会话里）施工 FH-1 去掉了，旧头再发它也回 `bad_params`，什么都不造 |
 
 回应：`session` 新会话的编号；`events` 是 `[1]`，就是 `session.created` 那一条；`cwd` 是会话实际在哪个目录里干活（「工作目录太宽」）；`wide`：太宽、照人选的用着的才有，是 `true`（施工 9-7 补）；`untrusted_project`：这个目录找得到项目配置、又还没问过信不信任（`trust.toml` 里没有这个仓库，或者记的内容和现在的不一样），写它在哪，写法同配置来源的 `file`（家目录下的写成 `~/…`）。信任着的、选了不信任的、没有项目配置的不写（施工 8-2，`config.md` 第三条第 2 条）。
 
@@ -733,7 +733,7 @@
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `persona` | 字符串，可以不写 | 人格的编号；不写的是新建，编号由核心起 `persona-<n>`（同 `preset.set`，施工 P-3 补） |
-| `changes` | 数组，可以不写 | 改 `persona.toml`，写法同 `preset.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`memory.scope`、`appearance.seed`（施工 P-6；写的值照 `[appearance]` 的规矩查，写错的 `persona_invalid`） |
+| `changes` | 数组，可以不写 | 改 `persona.toml`，写法同 `preset.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`appearance.seed`（`memory.scope` 施工 FH-1 去掉，写了的 `persona_invalid`：`unknown table [memory]`）（施工 P-6；写的值照 `[appearance]` 的规矩查，写错的 `persona_invalid`） |
 | `prompts` | 对象，可以不写 | 提示词名（`persona`、`examples`、`reminders`）到 `{"text": "<整份>"}`、`{"unset": true}`，示范对话另可写 `{"pairs": [{"user", "assistant"}, …]}`（施工 P-3 补）；都可带 `"expect": "<版本>" \| null`（照 `persona.read` 给的） |
 | `avatar` | 对象，可以不写 | 头像（施工 P-5，`personas.md`「头像」）：`{"blob": <内容哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `"expect": "<版本>" \| null` |
 | `background` | 对象，可以不写 | 背景图（施工 P-6，`personas.md`「主题色、背景图」），写法同 `avatar` |
@@ -854,7 +854,7 @@
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 
-人格记忆这个软件包没装的，十一个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十一个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，会话那一间没有（范围 `off`、不带人格、场所会话）的 `memory_unavailable`。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。听众是主人，记下的 `by` 是人；人格照几层找，`_none` 是无人格那一间；带 `session` 的照「办之前过的几道」。
+人格记忆这个软件包没装的，十一个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十一个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，这个会话用不了记忆（范围 `off`、不带人格、场所会话）的 `memory_unavailable`；带 `session` 的指的是那个会话的人格那一间。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。听众是主人，记下的 `by` 是人；人格照几层找，`_none` 是无人格那一间；带 `session` 的照「办之前过的几道」。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|

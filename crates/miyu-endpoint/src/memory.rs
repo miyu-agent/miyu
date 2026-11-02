@@ -110,7 +110,7 @@ pub(crate) async fn call(
     }
 }
 
-/// 会话 `handle` 里人记一条（`/remember`，施工 R-3 补）：记进这个会话那一间，类 `user`，出处空，听众是 `by`，命令编号是
+/// 会话 `handle` 里人记一条（`/remember`，施工 R-3 补）：记进这个会话用的那一间（它的人格那一间），类 `user`，出处空，听众是 `by`，命令编号是
 /// `id`（同一个编号再来交回头一次的）。交回记下的那句话（去掉了前后空白的）：回执照它说，不露编号（施工 R-3 四补）。
 ///
 /// # Errors
@@ -147,7 +147,7 @@ pub(crate) async fn remember_in(
 }
 
 /// 会话 `handle` 产生的记忆清掉（`/clear-memory`，施工 R-3 五补）：同 `memory.forget` 带 `clear: "session"`，出处全在这个会话
-/// 里的清掉，别的出处还有的、人记的（没有出处）不动；会话那一间的就是整间。`by` 是打命令的人，命令编号是 `id`。交回清掉了几条
+/// 里的清掉，别的出处还有的、人记的（没有出处）不动。`by` 是打命令的人，命令编号是 `id`。交回清掉了几条
 /// （不算改掉的旧版本）。
 ///
 /// # Errors
@@ -160,7 +160,7 @@ pub(crate) async fn clear_in(
     by: By,
 ) -> Result<usize, Refusal> {
     let keeper = keeper_of(core, handle, by.clone())?;
-    let session = matches!(keeper.room(), Room::Persona { .. }).then(|| handle.id().clone());
+    let session = Some(handle.id().clone());
     let stamp = Stamp {
         at: now(),
         by,
@@ -226,7 +226,7 @@ async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value,
             Ok(json!({}))
         }
         (None, Some(clear @ ("session" | "me"))) => {
-            // 清会话的：那个会话就是写的 `session`；会话那一间的就是整间。
+            // 清会话的：那个会话就是写的 `session`。
             let session = match clear {
                 "session" => Some(session_id(
                     params.at.session.as_deref().ok_or(Refusal::BAD_PARAMS)?,
@@ -234,7 +234,6 @@ async fn forget(core: &Arc<Core>, stamp: Stamp, params: Forget) -> Result<Value,
                 _ => None,
             };
             let keeper = find(core, params.at).await?;
-            let session = session.filter(|_| matches!(keeper.room(), Room::Persona { .. }));
             let cleared = blocking(move || keeper.clear(stamp, session)).await?;
             Ok(json!({"cleared": cleared}))
         }

@@ -89,10 +89,7 @@ impl Setup {
             persona_texts: persona.map(|found| found.texts.clone()).unwrap_or_default(),
             profile: self.profile.clone(),
             personas: personas::personas(core),
-            memory_scope: who
-                .memory
-                .or(persona.and_then(|found| found.file.memory))
-                .unwrap_or(MemoryScope::Persona),
+            memory_scope: who.memory.unwrap_or(MemoryScope::Persona),
             venue: who.venue.clone().unwrap_or_else(local),
             permission: self.permission.clone(),
             attended: who.attended,

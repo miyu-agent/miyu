@@ -277,9 +277,9 @@ async fn mistakes_write_nothing_and_say_why_in_the_peer_language() {
             Some(1),
         ),
         (
-            json!({"persona": "mine", "changes": [{"key": "memory.scope", "value": "off"}]}),
+            json!({"persona": "mine", "changes": [{"key": "memory.scope", "value": "persona"}]}),
             "home persona.toml:",
-            Some(2),
+            Some(1),
         ),
         (
             json!({"persona": "mine", "prompts": {"examples": {"pairs": [{"user": "a", "assistant": "照这样：\nuser: 你好"}]}}}),

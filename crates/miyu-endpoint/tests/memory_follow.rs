@@ -199,42 +199,29 @@ async fn another_rooms_and_unsubscribed_ones_are_quiet() {
     let mut client = watch(connected(&home, &Script::new([])).await);
     let (_, reply) = follow(&mut client, "s1", json!({"persona": "engineer"})).await;
     assert_eq!(reply["result"], json!({"upto": 0}), "一条都没有的是 0");
-    // 记忆只在会话里的会话：它那一间在会话目录里，和人格那一间不相干。
-    let created = client
-        .call(
-            "c0",
-            "session.create",
-            json!({"cwd": "~", "memory": "session"}),
-        )
-        .await;
-    let session = created["result"]["session"]
-        .as_str()
-        .expect("造了")
-        .to_string();
-    let (_, room) = follow(&mut client, "s2", json!({"session": session})).await;
+    // 无人格的那一间（`_none`）和软件工程师那一间不相干（施工 FH-1 以前这里用的是会话那一间）。
+    let (_, room) = follow(&mut client, "s2", json!({"persona": "_none"})).await;
     assert_eq!(room["result"], json!({"upto": 0}), "{room}");
     let elsewhere = client
         .call(
             "c1",
             "memory.remember",
-            json!({"session": session, "class": "user", "text": "只在这个会话里的"}),
+            json!({"persona": "_none", "class": "user", "text": "无人格那一间的"}),
         )
         .await;
     assert!(elsewhere["result"]["id"].is_string(), "{elsewhere}");
-    let message = client.next_push().await.expect("会话那一间的推了");
+    let message = client.next_push().await.expect("无人格那一间的推了");
     assert_eq!(message["method"], "memory.event", "{message}");
     assert_eq!(
-        message["params"]["session"],
-        session.as_str(),
+        message["params"]["persona"], "_none",
         "带的是订阅时写的那一格"
     );
-    assert!(message["params"].get("persona").is_none(), "{message}");
-    assert!(client.next_push().await.is_none(), "人格那一间的不推");
+    assert!(client.next_push().await.is_none(), "软件工程师那一间的不推");
     let gone = client
         .call(
             "u0",
             "unsubscribe",
-            json!({"stream": "memory", "session": session}),
+            json!({"stream": "memory", "persona": "_none"}),
         )
         .await;
     assert_eq!(gone["result"], json!({}));

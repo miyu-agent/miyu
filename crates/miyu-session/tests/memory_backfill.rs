@@ -66,11 +66,6 @@ async fn a_new_persona_index_is_filled_from_the_old_sessions() {
         ..Lines::default()
     };
     said(&home, off, "我的显卡是 N 卡").await;
-    let own = Lines {
-        memory: MemoryScope::Session,
-        ..Lines::default()
-    };
-    said(&home, own, "我在学 Rust").await;
     // 场所会话（群里）的也补（施工 R-13 下）：回合库记下它在哪个场所。
     let venue = Lines {
         venue: miyu_kernel::id::VenueId::parse("qq:group:5550").expect("合写法"),

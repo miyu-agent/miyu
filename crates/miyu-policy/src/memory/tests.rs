@@ -1,4 +1,5 @@
-//! 记忆的范围记进快照（施工 R-3 下）：写进去、读回来一字不差；以前造的没有，照 `persona`；不认识的照 `off`。
+//! 记忆的范围记进快照（施工 R-3 下）：写进去、读回来一字不差；以前造的没有，照 `persona`；不认识的照 `off`，以前的
+//! `session`（施工 FH-1 去掉）也是。
 
 use super::*;
 use crate::Snapshot;
@@ -6,7 +7,7 @@ use crate::test_support::engineer as snapshot;
 
 #[test]
 fn the_scope_goes_into_the_snapshot_and_comes_back() {
-    for scope in [MemoryScope::Persona, MemoryScope::Session, MemoryScope::Off] {
+    for scope in [MemoryScope::Persona, MemoryScope::Off] {
         let made = snapshot().with_memory(scope);
         let back = Snapshot::from_bytes(&made.to_bytes()).unwrap();
         assert_eq!(back.memory_scope(), scope);
@@ -34,19 +35,22 @@ fn an_old_snapshot_is_persona_and_an_unknown_scope_is_off() {
         MemoryScope::Persona
     );
     let mut odd = old;
-    odd.memory = Some("everywhere".to_string());
-    assert_eq!(odd.memory_scope(), MemoryScope::Off, "认不出的宁可不记");
+    for text in ["everywhere", "session"] {
+        odd.memory = Some(text.to_string());
+        assert_eq!(
+            odd.memory_scope(),
+            MemoryScope::Off,
+            "认不出的宁可不记：{text}"
+        );
+    }
 }
 
 #[test]
-fn the_three_scopes_are_written_as_words() {
-    for (scope, text) in [
-        (MemoryScope::Persona, "persona"),
-        (MemoryScope::Session, "session"),
-        (MemoryScope::Off, "off"),
-    ] {
+fn the_two_scopes_are_written_as_words() {
+    for (scope, text) in [(MemoryScope::Persona, "persona"), (MemoryScope::Off, "off")] {
         assert_eq!(scope.as_str(), text);
         assert_eq!(MemoryScope::parse(text), Some(scope));
     }
     assert_eq!(MemoryScope::parse("Persona"), None);
+    assert_eq!(MemoryScope::parse("session"), None, "只在这个会话里去掉了");
 }

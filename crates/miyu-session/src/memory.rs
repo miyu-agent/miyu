@@ -127,7 +127,7 @@ impl Memory {
             let id = opening.room_id(room);
             log_opened(room, &id, opened);
             let fresh = matches!(opened, Opened::Created | Opened::Rebuilt(_));
-            if !fresh || !matches!(room, Room::Persona { .. }) {
+            if !fresh {
                 return;
             }
             // 登记被放下了（核心在退出）就不补：下次开库时照样是新建的、重建的，再补。
@@ -261,7 +261,6 @@ pub(crate) fn connect(
 ) -> (Option<TurnLane>, Option<Calls>) {
     let room = match scope {
         MemoryScope::Persona => Room::persona(persona),
-        MemoryScope::Session => Room::session(session),
         MemoryScope::Off => return (None, None),
     };
     let Some(memory) = memory else {

@@ -83,7 +83,7 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
     // 载入以后、后台读日志以前又落了一条：后台读到的已经有它，交来的这一批里又有它。
     log.append(&[said, started.clone()]).expect("写得进");
     let recall = Arc::new(RecallIndexes::new(&root));
-    let room = Room::session(&session);
+    let room = Room::persona("engineer");
     let lanes = Lanes::default();
     let mut lane = lanes
         .open(Opening {
@@ -140,7 +140,7 @@ fn nothing_is_opened_until_the_lane_is_started() {
     ])
     .expect("写得进");
     let recall = Arc::new(RecallIndexes::new(&root));
-    let room = Room::session(&session);
+    let room = Room::persona("engineer");
     let lanes = Lanes::default();
     let lane = lanes
         .open(Opening {
@@ -233,7 +233,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     let venue = VenueId::parse(LOCAL).expect("场所写对了");
     let opening = |session: &SessionId, log: &SessionLog| Opening {
         recall: Arc::clone(&recall),
-        room: Room::session(session),
+        room: Room::persona("engineer"),
         session: session.clone(),
         origin: origin(),
         venue: venue.clone(),
@@ -252,7 +252,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
     lanes.settle();
     let source: miyu_recall::Source =
         serde_json::from_str(&format!(r#"{{"session":"{small}","turn":2}}"#)).expect("写对了");
-    let room = Room::session(&small);
+    let room = Room::persona("engineer");
     assert!(
         recall.alive(&room, &source).expect("读得了"),
         "撤销以前那一轮活着"

@@ -1,6 +1,5 @@
 //! 记忆的范围（施工 R-3 下，`docs/blueprint/memory.md`「范围」）：真会话、真记忆日志、真回合库，数据根在临时目录。`off` 的
-//! 工具面上没有三件、说过的不进回合库，载入以后照旧；`session` 的记在会话自己的目录里，别的会话搜不到，载入以后接着记在
-//! 那里；子会话的快照写 `off`。
+//! 工具面上没有三件、说过的不进回合库，载入以后照旧；子会话的快照写 `off`。「只在这个会话里」施工 FH-1 去掉了。
 
 use miyu_kernel::event::Body;
 use miyu_kernel::id::SessionId;
@@ -102,60 +101,7 @@ async fn an_off_session_has_no_tools_and_keeps_no_turns_even_after_loading() {
     stop(&handle).await;
     for words in ["显卡", "内存"] {
         assert!(found(&home, &persona(), words).is_empty(), "{words}");
-        assert!(
-            found(&home, &Room::session(&id), words).is_empty(),
-            "{words}"
-        );
     }
-}
-
-#[tokio::test]
-async fn a_session_scope_lives_in_its_own_directory() {
-    let home = Home::new();
-    let remember = Play::calls(&[("remember", r#"{"class":"user","text":"用户养了一只猫"}"#)]);
-    let script = Script::new([remember, Play::Says("记住了。")]);
-    let first = session(&home, &script, scoped(MemoryScope::Session)).await;
-    let id = first.id().clone();
-    chat(&first, "cmd-1", "我养了一只猫").await;
-    assert!(has_memory_tools(&script), "session 的有三件");
-    assert_eq!(snapshot(&home, &id).memory_scope(), MemoryScope::Session);
-    let room = Room::session(&id);
-    assert_eq!(found(&home, &room, "养了").len(), 1, "这一轮进会话那一间");
-    assert!(
-        found(&home, &persona(), "养了").is_empty(),
-        "不进人格那一间"
-    );
-    let (log, _) = home.logs.open(&room).expect("开得了");
-    assert_eq!(log.book(|book| book.all().count()), 1, "记在会话那一间");
-    let (shared, _) = home.logs.open(&persona()).expect("开得了");
-    assert_eq!(shared.book(|book| book.all().count()), 0);
-    let dir = home.root.session_dir(&id).join("memory");
-    assert!(
-        dir.join("log").is_dir() && dir.join("turns.db").is_file(),
-        "{dir:?}"
-    );
-
-    // 别的会话（跟着人格的）搜不到。
-    let search = || Play::calls(&[("memory_search", r#"{"query":"猫"}"#)]);
-    let script = Script::new([search(), Play::Says("不知道。")]);
-    let other = session(&home, &script, Lines::default()).await;
-    chat(&other, "cmd-1", "我养了什么？").await;
-    let said = home.log(other.id());
-    assert!(
-        said.iter()
-            .any(|event| matches!(&event.body, Body::ToolResult(result)
-            if format!("{:?}", result.blocks).contains("Nothing found."))),
-        "{said:?}"
-    );
-
-    // 载入以后接着记在会话那一间。
-    stop(&first).await;
-    let script = Script::new([Play::Says("好。")]);
-    let first = home.load_with(&id, &script, &catalog(&home)).await;
-    chat(&first, "cmd-2", "它叫年糕").await;
-    assert_eq!(found(&home, &room, "年糕").len(), 1);
-    assert!(found(&home, &persona(), "年糕").is_empty());
-    stop(&first).await;
 }
 
 #[tokio::test]

@@ -9,11 +9,9 @@ use miyu_kernel::request::Message;
 use serde::{Deserialize, Serialize};
 use toml_edit::{Document, Item};
 
-use crate::memory::MemoryScope;
-
 mod tables;
 pub use tables::{blur, color, percent};
-use tables::{read_appearance, read_knowledge, read_memory};
+use tables::{read_appearance, read_knowledge};
 
 /// `persona.toml` 在人格目录里的名字。
 pub const TOML: &str = "persona.toml";
@@ -35,8 +33,6 @@ pub struct PersonaFile {
     pub summary: Option<Label>,
     /// 派子代理时能不能挑它（`[persona] subagent`，施工 P-10 补，2026-10-17 项目主人定）：没写的是没有，照不能算。
     pub subagent: Option<bool>,
-    /// 记忆的默认范围（`[memory] scope`，施工 R-3 下）：只能是 `persona`、`session`；没写的是没有，照 `persona` 算。
-    pub memory: Option<MemoryScope>,
     /// 她查得到哪几个知识库（`[knowledge] bases`，施工 K-1 下，19 N11）：列了的只查列着的、在的那几个，空的列表一个都不查；
     /// 没写的是没有，查全部。
     pub knowledge: Option<Vec<String>>,
@@ -58,7 +54,6 @@ impl PersonaFile {
         lower.name = self.name.or(lower.name);
         lower.summary = self.summary.or(lower.summary);
         lower.subagent = self.subagent.or(lower.subagent);
-        lower.memory = self.memory.or(lower.memory);
         lower.knowledge = self.knowledge.or(lower.knowledge);
         lower.seed = self.seed.or(lower.seed);
         lower.background_opacity = self.background_opacity.or(lower.background_opacity);
@@ -107,7 +102,7 @@ pub struct Problem {
     pub line: Option<usize>,
     /// 哪一种错。
     pub code: Code,
-    /// 错的那一处：表名、键（`persona.<键>`、`memory.<键>`）、`persona.<格>.<语言>`、`memory.scope`，读不成 TOML 的是它的
+    /// 错的那一处：表名、键（`persona.<键>`、`knowledge.<键>`、`appearance.<键>`）、`persona.<格>.<语言>`，读不成 TOML 的是它的
     /// 原话；示范对话的是空的。
     pub detail: String,
     /// 错在哪，英文短句。
@@ -131,8 +126,6 @@ pub enum Code {
     UnknownLanguage,
     /// 一句话是空的、不是字。
     EmptyPhrase,
-    /// `[memory]` 的 `scope` 不是 `persona`、`session`（施工 R-3 下加的读法）。
-    BadMemoryScope,
     /// `[knowledge]` 的 `bases` 不是一列知识库的编号（施工 K-1 下）。
     BadKnowledgeBases,
     /// `[appearance]` 的 `seed` 不是 `#rrggbb`（施工 P-6）。
@@ -166,7 +159,6 @@ impl Code {
             Code::NotPhrases => "not_phrases",
             Code::UnknownLanguage => "unknown_language",
             Code::EmptyPhrase => "empty_phrase",
-            Code::BadMemoryScope => "bad_memory_scope",
             Code::BadKnowledgeBases => "bad_knowledge_bases",
             Code::BadSeed => "bad_seed",
             Code::BadSubagent => "bad_subagent",
@@ -181,7 +173,7 @@ impl Code {
     }
 
     /// 全部，照先后。
-    pub const ALL: [Code; 15] = [
+    pub const ALL: [Code; 14] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -189,7 +181,6 @@ impl Code {
         Code::NotPhrases,
         Code::UnknownLanguage,
         Code::EmptyPhrase,
-        Code::BadMemoryScope,
         Code::BadKnowledgeBases,
         Code::BadSeed,
         Code::BadSubagent,
@@ -210,7 +201,7 @@ impl fmt::Display for Problem {
 }
 
 /// 读 `persona.toml`：`[persona]` 一张表，里面只有 `name`、`summary`，各是一张语言到一句话的表（`zh`、`en`、`ja`），话不能是
-/// 空的，和 `subagent`（`true`、`false`，施工 P-10 补）；`[memory]` 一张表，里面只有 `scope`（`persona` 或 `session`，施工 R-3 下）；`[knowledge]` 一张表，里面只有 `bases`
+/// 空的，和 `subagent`（`true`、`false`，施工 P-10 补）；`[knowledge]` 一张表，里面只有 `bases`
 /// （一列知识库的编号，施工 K-1 下）；`[appearance]` 一张表，里面只有 `seed`
 /// （`#rrggbb`，大小写都认，施工 P-6）。整个文件、这几张表、每一格都可以没有。
 ///
@@ -228,10 +219,6 @@ pub fn read_toml(text: &str) -> Result<PersonaFile, Problem> {
     let at = |item: &Item| item.span().map(|span| line_of(text, span.start));
     let mut file = PersonaFile::default();
     for (key, item) in document.as_table().iter() {
-        if key == "memory" {
-            file.memory = read_memory(item, &at)?;
-            continue;
-        }
         if key == "knowledge" {
             file.knowledge = read_knowledge(item, &at)?;
             continue;

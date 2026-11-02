@@ -62,12 +62,10 @@ fn a_wrong_toml_says_which_line() {
         ("[knowledge]\nkeep = 1\n", 2, "unknown key knowledge.keep"),
         ("knowledge = 3\n", 1, "knowledge must be a table"),
         (
-            "[memory]\nscope = \"off\"\n",
-            2,
-            "memory.scope must be persona or session",
+            "[memory]\nscope = \"persona\"\n",
+            1,
+            "unknown table [memory]",
         ),
-        ("[memory]\nkeep = 1\n", 2, "unknown key memory.keep"),
-        ("memory = 3\n", 1, "memory must be a table"),
         (
             "[persona]\n\nvoice = \"x\"\n",
             3,
@@ -104,7 +102,6 @@ fn an_upper_layer_replaces_what_it_writes() {
         name: phrases(&[("en", "Engineer"), ("zh", "工程师")]),
         summary: phrases(&[("en", "Helps.")]),
         subagent: None,
-        memory: None,
         knowledge: None,
         seed: None,
         background_opacity: None,
@@ -115,7 +112,6 @@ fn an_upper_layer_replaces_what_it_writes() {
         name: one("我的工程师"),
         summary: None,
         subagent: None,
-        memory: None,
         knowledge: None,
         seed: None,
         background_opacity: None,
@@ -268,17 +264,12 @@ fn each_mistake_carries_its_code_and_where() {
     for (text, code, detail) in [
         ("[persona\n", Code::Syntax, None),
         ("[voice]\n", Code::UnknownTable, Some("voice")),
-        ("memory = 1\n", Code::NotATable, Some("memory")),
         (
-            "[memory]\nkind = 1\n",
-            Code::UnknownKey,
-            Some("memory.kind"),
+            "[memory]\nscope = \"persona\"\n",
+            Code::UnknownTable,
+            Some("memory"),
         ),
-        (
-            "[memory]\nscope = \"off\"\n",
-            Code::BadMemoryScope,
-            Some("memory.scope"),
-        ),
+        ("knowledge = 1\n", Code::NotATable, Some("knowledge")),
         ("appearance = 1\n", Code::NotATable, Some("appearance")),
         (
             "[appearance]\ncolor = 1\n",

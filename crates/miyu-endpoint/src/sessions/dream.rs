@@ -43,10 +43,7 @@ impl Sessions {
         let by = memory_module()?;
         let command =
             CommandId::parse(&format!("{id}/dream")).map_err(|error| error.to_string())?;
-        let (persona, session) = match spec.room {
-            DreamRoom::Persona(persona) => (Some(persona), None),
-            DreamRoom::Session(session) => (None, Some(session)),
-        };
+        let DreamRoom::Persona(persona) = spec.room;
         let shelf = core.tools.clone();
         let workspace = "~".to_string();
         let resources = crate::presets::overrides::resources(core);
@@ -96,9 +93,10 @@ impl Sessions {
             group: None,
             images: true,
             titles: true,
+            // 事件里的 `session` 那一格留着认老日志，新的不写（施工 FH-1：会话那一间去掉了）。
             dream: Some(Dream {
-                persona,
-                session,
+                persona: Some(persona),
+                session: None,
                 manual: spec.manual,
                 from: spec.from,
             }),

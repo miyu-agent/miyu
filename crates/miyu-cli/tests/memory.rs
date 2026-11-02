@@ -233,10 +233,8 @@ async fn clearing_one_session_or_everything() {
     assert_eq!(mine.out, "已清除 1 条记忆\n");
     assert_eq!(run(&home, &["list", "--forgotten"]).await.out, "没有记忆\n");
 
-    // 会话那一间：-s 记进去，清掉这个会话的就是整间。
-    let own = home
-        .create_with(serde_json::json!({"cwd": "/work", "memory": "session"}))
-        .await;
+    // 写会话的（-s、--session）指那个会话用的那一间，也就是它的人格那一间（施工 FH-1 以前这里是会话自己那一间）。
+    let own = home.create_with(serde_json::json!({"cwd": "/work"})).await;
     run(&home, &["add", "-s", &own, "一"]).await;
     run(&home, &["add", "二", "--session", &own]).await;
     assert_eq!(
@@ -244,12 +242,10 @@ async fn clearing_one_session_or_everything() {
         2
     );
     assert_eq!(
-        run(&home, &["list"]).await.out,
-        "没有记忆\n",
-        "人格那一间没有它们"
+        run(&home, &["list"]).await.out.lines().count(),
+        2,
+        "就是人格那一间"
     );
-    let cleared = run(&home, &["clear", "session", &own]).await;
-    assert_eq!(cleared.out, "已清除 2 条记忆\n");
 }
 
 #[tokio::test]

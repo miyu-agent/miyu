@@ -393,10 +393,8 @@ impl MergeJob {
         let Some(sessions) = self.keeper.memory.dream_sessions() else {
             return Ok(None);
         };
-        let room = match self.keeper.room() {
-            Room::Persona { persona } => DreamRoom::Persona(persona.clone()),
-            Room::Session { session } => DreamRoom::Session(session.clone()),
-        };
+        let Room::Persona { persona } = self.keeper.room();
+        let room = DreamRoom::Persona(persona.clone());
         let spec = DreamSpec {
             room,
             manual,

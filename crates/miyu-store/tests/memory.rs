@@ -306,55 +306,6 @@ fn measure_a_thousand_memories() {
     println!("log {} KiB, open {opened:?}", logged / 1024);
 }
 
-#[test]
-fn a_session_room_lives_in_the_session_directory_apart_from_the_persona() {
-    use miyu_kernel::id::SessionId;
-    use miyu_store::recall::RecallIndexes;
-    let scratch = Scratch::new("memory-session-room");
-    let root = root_in(&scratch);
-    let session = SessionId::parse("0192f3a0-1111-7abc-8def-001122334455").expect("合写法");
-    let room = Room::session(&session);
-    let logs = MemoryLogs::new(&root);
-    let (log, _) = logs.open(&room).expect("开得了");
-    assert_eq!(
-        log.append(at(1), tool(), None, &saved("只在这个会话里记得"))
-            .expect("记得下")
-            .id,
-        id(1)
-    );
-    let turns = RecallIndexes::new(&root);
-    turns
-        .turns(&room)
-        .0
-        .put(&format!("{session}/3"), "只在这个会话里聊过", at(1))
-        .expect("放得进");
-    let dir = root.session_dir(&session).join("memory");
-    assert!(
-        dir.join("log/000000000001.jsonl").is_file(),
-        "记忆日志在会话目录里"
-    );
-    assert!(
-        dir.join("turns.db").is_file() && dir.join("memory.db").is_file(),
-        "两个库也在"
-    );
-    let (persona, _) = logs.open(&Room::persona("engineer")).expect("开得了");
-    assert!(
-        persona.search("会话", 10).expect("搜得了").is_empty(),
-        "人格那一间看不到"
-    );
-    assert!(
-        turns
-            .turns(&Room::persona("engineer"))
-            .0
-            .search("聊过", 10)
-            .expect("搜得了")
-            .is_empty()
-    );
-    // 删会话照旧只碰人格那几间，会话那一间跟着目录走。
-    turns.forget_session(&session).expect("拿得掉");
-    assert_eq!(turns.turns(&room).0.keys().expect("读得了").len(), 1);
-}
-
 /// 清空（施工 R-3 补，`memory.md` 第二条第 5 款）：清掉的那几行从记忆库里删掉，追加交回清掉几条；以后记的照常搜得到；记忆库
 /// 删了照日志重建，清掉的也不放回去。
 #[test]

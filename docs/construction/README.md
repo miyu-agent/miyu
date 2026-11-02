@@ -1352,6 +1352,7 @@ flowchart LR
 | 步 | 名字 | 做什么 |
 |---|---|---|
 | FH-0 | 设计和计划 | 数据根照 Linux 的 FHS 分 `etc/ opt/ root/ var/ tmp/ run/`，给程序一组 `MIYU_*_DIR` 环境变量；FH-1 到 FH-7 的先后、谁做、待办。施工单见 `FH-数据根仿FHS.md`，盘点见 `FH-盘点-核心.md`、`FH-盘点-别的仓库.md` |
+| FH-1 | 记忆只跟随人格 | 去掉「只在这个会话里」的记忆范围：`session.create` 的 `memory` 只收 `persona`、`off`（`session` 回 `bad_params`），人格不再管范围（`persona.toml` 写了 `[memory]` 的 `unknown table`），会话目录下不再有 `memory/`，整理会话只有人格那一间；「清掉这个会话记下的」照留。设计 17 L2 改。施工单见 `FH-数据根仿FHS.md` |
 
 **提示词**（TX 线，不占里程碑的号；设计 26 J13，2026-10-30 项目主人定：系统的字只客观描述功能和注意点，不引导行为，减 token 是重点）
 

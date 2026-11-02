@@ -61,7 +61,7 @@
 | 名字 | 类型 | 说明 |
 |---|---|---|
 | `persona` | 字符串 | 编号；不写是新建，核心起一个 `persona-<n>` |
-| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`memory.scope`、`appearance.seed` |
+| `changes` | 数组 | 改 `persona.toml`，写法同 `config.set` 的 `changes`；键是 `persona.name`、`persona.summary`、`persona.subagent`、`appearance.seed` |
 | `prompts` | 对象 | 提示词名（`persona`、`examples`、`reminders`）→ `{"text": <整份>}` 或 `{"unset": true}`；示范对话另可写 `{"pairs": [{"user", "assistant"}…]}`；都可带 `"expect": <版本>` 或 `null`（还没有） |
 | `avatar`、`background` | 对象 | `{"blob": <哈希>}` 换成传上来的那一张，`{"unset": true}` 删掉你那一层的；可带 `expect` |
 | `seed` | 字符串或 `{"unset": true}` | 主题色 `#rrggbb` |

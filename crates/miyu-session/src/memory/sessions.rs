@@ -11,10 +11,8 @@ use crate::spawn::Pending;
 /// 整理会话是哪一间的（设计 41 DS1）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DreamRoom {
-    /// 人格那一间：人格的编号。
+    /// 人格那一间：人格的编号。会话那一间施工 FH-1 去掉了。
     Persona(String),
-    /// 会话那一间：哪个会话的记忆。
-    Session(SessionId),
 }
 
 /// 开一趟整理会话要的。

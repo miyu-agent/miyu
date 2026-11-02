@@ -3,13 +3,10 @@
 //! - 跟着人格的：`modules/memory/<人格>/`、`index/recall/turns-<人格>.db`、`index/recall/memory-<人格>.db`。
 //!   无人格的会话（施工 P-12，2026-10-17 项目主人定）也跟着「人格」走，编号写 [`NO_PERSONA`]：单独一间，无人格的会话
 //!   共用它。无人格不是人格，人格列表里没有它，也改不了。
-//! - 只在这个会话里的：会话自己的目录 `sessions/<会话>/memory/` 下，`log/`、`turns.db`、`memory.db`。删会话、进回收处、恢复
-//!   都跟着目录走，不另写一行。
+//! - 「只在这个会话里」的那一间（会话目录下的 `memory/`）施工 FH-1 去掉了（设计 55 第六节第 3 条）：记忆就是为了跨会话。
 
 use std::fmt;
 use std::path::PathBuf;
-
-use miyu_kernel::id::SessionId;
 
 use crate::root::DataRoot;
 
@@ -29,20 +26,14 @@ pub enum Room {
         /// 人格的编号。
         persona: String,
     },
-    /// 只在这个会话里。
-    Session {
-        /// 会话编号。
-        session: SessionId,
-    },
 }
 
-/// 整串的样子：`persona <人格>`、`session <会话>`。带人格名，不写进运行日志（施工 LG-1 下：日志照
+/// 整串的样子：`persona <人格>`。带人格名，不写进运行日志（施工 LG-1 下：日志照
 /// [`Room::kind`] 和 [`super::LogSalt::room_id`]）；短号照它算。
 impl fmt::Display for Room {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Room::Persona { persona } => write!(f, "persona {persona}"),
-            Room::Session { session } => write!(f, "session {session}"),
         }
     }
 }
@@ -55,19 +46,10 @@ impl Room {
         }
     }
 
-    /// 会话 `session` 自己的那一间。
-    pub fn session(session: &SessionId) -> Room {
-        Room::Session {
-            session: session.clone(),
-        }
-    }
-
-    /// 运行日志里写的种类（施工 LG-1 下）：`persona`、`session`。人格名、会话编号不写，照 [`super::LogSalt::room_id`]
-    /// 写短号。
+    /// 运行日志里写的种类（施工 LG-1 下）：`persona`。人格名不写，照 [`super::LogSalt::room_id`] 写短号。
     pub fn kind(&self) -> &'static str {
         match self {
             Room::Persona { .. } => "persona",
-            Room::Session { .. } => "session",
         }
     }
 
@@ -77,7 +59,6 @@ impl Room {
             Room::Persona { persona } => {
                 recall_dir(root).join(format!("{TURNS_PREFIX}{persona}{DB}"))
             }
-            Room::Session { .. } => self.session_dir(root).join(format!("turns{DB}")),
         }
     }
 
@@ -85,7 +66,6 @@ impl Room {
     pub(crate) fn memories(&self, root: &DataRoot) -> PathBuf {
         match self {
             Room::Persona { persona } => recall_dir(root).join(format!("memory-{persona}{DB}")),
-            Room::Session { .. } => self.session_dir(root).join(format!("memory{DB}")),
         }
     }
 
@@ -93,15 +73,6 @@ impl Room {
     pub(crate) fn log(&self, root: &DataRoot) -> PathBuf {
         match self {
             Room::Persona { persona } => root.path().join("modules").join("memory").join(persona),
-            Room::Session { .. } => self.session_dir(root).join("log"),
-        }
-    }
-
-    /// 会话那一间的目录。
-    fn session_dir(&self, root: &DataRoot) -> PathBuf {
-        match self {
-            Room::Session { session } => root.session_dir(session).join("memory"),
-            Room::Persona { .. } => root.path().to_path_buf(),
         }
     }
 }

@@ -59,12 +59,10 @@ impl Backfills {
     }
 }
 
-/// 补房间 `room`（人格那一间；别的不补）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。运行日志里
+/// 补房间 `room`（人格那一间）：一个个会话读日志、照判法补，读不了的记一行跳过，补完记一行补了几个。运行日志里
 /// 这一间写种类和短号 `room_id`（施工 LG-1 下）。
 pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room, room_id: &str) {
-    let Room::Persona { persona, .. } = room else {
-        return;
-    };
+    let Room::Persona { persona, .. } = room;
     let room_kind = room.kind();
     let sessions = match root.sessions() {
         Ok(sessions) => sessions,

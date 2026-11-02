@@ -76,24 +76,6 @@ async fn a_past_turn_is_found_with_where_and_when() {
         Some(1),
         "{both}"
     );
-
-    // 记忆只在会话里的会话有自己的回合库：人格那一间的这一轮不在里面。
-    let created = client
-        .call(
-            "c4",
-            "session.create",
-            json!({"cwd": "~", "memory": "session"}),
-        )
-        .await;
-    let own = created["result"]["session"].as_str().expect("造了");
-    let elsewhere = client
-        .call(
-            "l2",
-            "memory.turns",
-            json!({"session": own, "query": "显卡"}),
-        )
-        .await;
-    assert_eq!(elsewhere["result"], json!({"turns": []}), "{elsewhere}");
 }
 
 #[tokio::test]

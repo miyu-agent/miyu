@@ -1,8 +1,7 @@
-//! `persona.toml` 里 `[persona]` 以外的几张表（`[memory]`、`[knowledge]`、`[appearance]`）读得出、上一层盖下面的（施工 K-1 下从
+//! `persona.toml` 里 `[persona]` 以外的几张表（`[knowledge]`、`[appearance]`）读得出；`[memory]` 不再认（施工 FH-1）、上一层盖下面的（施工 K-1 下从
 //! `persona/tests.rs` 挪出来守 500 行上限）。写错了说第几行的在 `persona/tests.rs` 的 `a_wrong_toml_says_which_line`。
 
-use crate::memory::MemoryScope;
-use crate::persona::{PersonaFile, color, read_toml};
+use crate::persona::{Code, PersonaFile, color, read_toml};
 
 #[test]
 fn the_knowledge_bases_narrow_and_an_upper_layer_wins() {
@@ -28,26 +27,13 @@ fn the_knowledge_bases_narrow_and_an_upper_layer_wins() {
     );
 }
 
+/// 人格不再管记忆的范围（施工 FH-1，设计 55 第六节第 3 条）：`[memory]` 照不认识的表报，写的什么都一样。
 #[test]
-fn the_memory_scope_is_persona_or_session_and_an_upper_layer_wins() {
-    let read = |text: &str| read_toml(text).unwrap().memory;
-    assert_eq!(
-        read("[memory]\nscope = \"persona\"\n"),
-        Some(MemoryScope::Persona)
-    );
-    assert_eq!(
-        read("[memory]\nscope = \"session\"\n"),
-        Some(MemoryScope::Session)
-    );
-    assert_eq!(read("[memory]\n"), None, "不写是没有，照 persona 算");
-    let lower = read_toml("[memory]\nscope = \"session\"\n").unwrap();
-    assert_eq!(
-        PersonaFile::default().over(lower.clone()).memory,
-        Some(MemoryScope::Session),
-        "上一层没写沿用下面的"
-    );
-    let upper = read_toml("[memory]\nscope = \"persona\"\n").unwrap();
-    assert_eq!(upper.over(lower).memory, Some(MemoryScope::Persona));
+fn a_memory_table_is_unknown() {
+    for text in ["[memory]\nscope = \"persona\"\n", "[memory]\n"] {
+        let problem = read_toml(text).unwrap_err();
+        assert_eq!(problem.code, Code::UnknownTable, "{text}");
+    }
 }
 
 /// 主题色（施工 P-6）：`#rrggbb` 大小写都认、读成小写；上一层写了的盖下面的，没写沿用下面的。

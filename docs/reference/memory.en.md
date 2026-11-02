@@ -17,7 +17,7 @@ Chinese version: [memory.md](memory.md).
 
 ## Which memory
 
-Memories are kept in separate places: per persona (shared by all sessions with that persona), per session (sessions whose memory scope is `session`), and one more for sessions without a persona. Every `memory.*` method takes one of these to say which:
+Memories are kept in separate places: one per persona (shared by all sessions with that persona), and one more for sessions without a persona. Every `memory.*` method takes one of these to say which (a session means that session's persona's place):
 
 | Name | Notes |
 |---|---|

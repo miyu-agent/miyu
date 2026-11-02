@@ -1,7 +1,5 @@
 use std::fs;
 
-use miyu_kernel::id::SessionId;
-
 use super::{FILE, LEN, LogSalt};
 use crate::env::{Env, Platform};
 use crate::recall::Room;
@@ -36,10 +34,7 @@ fn the_same_room_gets_the_same_short_id_and_others_differ() {
     );
     assert_eq!(salt.room_id(&mine.clone()), id);
     assert_ne!(salt.room_id(&Room::persona("luna")), id);
-    let session = SessionId::parse("0192f3a0-0000-7000-8000-000000000001").unwrap();
-    let own = Room::session(&session);
-    assert_ne!(salt.room_id(&own), id);
-    assert_eq!((mine.kind(), own.kind()), ("persona", "session"));
+    assert_eq!(mine.kind(), "persona");
 }
 
 #[test]

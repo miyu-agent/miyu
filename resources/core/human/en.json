@@ -604,7 +604,6 @@
     "persona-problems/not_phrases": "{detail} must be text",
     "persona-problems/unknown_language": "{detail}: the language must be zh, en or ja",
     "persona-problems/empty_phrase": "{detail} must be text that is not empty",
-    "persona-problems/bad_memory_scope": "{detail} must be persona or session",
     "persona-problems/bad_knowledge_bases": "{detail} must be a list of knowledge base ids, like [\"notes\"]",
     "persona-problems/bad_seed": "{detail} must be a color like #rrggbb",
     "persona-problems/bad_subagent": "{detail} must be true or false",

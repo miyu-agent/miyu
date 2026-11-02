@@ -54,7 +54,7 @@ async fn a_preset_without_memory_drops_it() {
     // 开会话时要了记忆也没用：开不开归预设。
     let (session, _) = first_request(
         &home,
-        json!({"cwd": "~", "preset": "quiet", "memory": "session"}),
+        json!({"cwd": "~", "preset": "quiet", "memory": "persona"}),
     )
     .await;
     assert_eq!(memory_of(&home, &session).as_deref(), Some("off"));

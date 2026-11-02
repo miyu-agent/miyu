@@ -36,21 +36,23 @@ flowchart LR
 
 ## 二、FH-1：去掉「跟随会话」的记忆范围
 
+状态：核心这一半做完（2026-11-02，sub1）；头里选范围那一项等 core1 转给各头的会话。
+
 ### 目的
 
 记忆只剩两种范围：跟随人格、关掉（设计 55 第六节第 3 条，`17-记忆.md` L2 改）。「清掉这个会话记下的」照留。
 
 ### 待办
 
-- [ ] `17-记忆.md`：第二节表格去掉「跟随会话」那一行；L2 改成「已定：只有跟随人格（2026-11-02 项目主人定：记忆就是为了跨会话）」，原来「项目主人提出」那句的归属更正；L3「开会话时定」照留（定的是开不开）。
-- [ ] `miyu-policy/src/memory.rs`：`MemoryScope` 去掉 `Session`；快照里读到 `session` 的照现在「认不出的照 `off`」。
-- [ ] 人格的 `[memory]` 表：只剩一个值，整张表去掉（人格不再管范围）。人格清单解析严格，不认识的表报 `unknown_table`（`miyu-policy/src/persona.rs:213,252`）：写了 `[memory]` 的人格文件读不进来，照「不做旧版兼容」报错，提示删掉那一张表（主人的 `persona-1` 没写这张表，不受影响）。`personas.md` 跟上。
-- [ ] `persona.set` 的 `memory.scope` 键（`protocol.md:736`）去掉。
-- [ ] `session.create` 的 `memory`：只收 `persona`、`off`；`protocol.md` 跟上。
-- [ ] `miyu-store/src/recall/room.rs`：`Room::Session` 和 `sessions/<会话>/memory/` 去掉；`recall/indexes.rs`、`memory.rs` 跟上。
-- [ ] `miyu memory clear session` 照留，确认它清的是「这个会话往人格记忆里写的」。
+- [x] `17-记忆.md`：第二节表格去掉「跟随会话」那一行；L2 改成「已定：只有跟随人格（2026-11-02 项目主人定：记忆就是为了跨会话）」，原来「项目主人提出」那句的归属更正；L3「开会话时定」照留（定的是开不开）。
+- [x] `miyu-policy/src/memory.rs`：`MemoryScope` 去掉 `Session`；快照里读到 `session` 的照现在「认不出的照 `off`」。
+- [x] 人格的 `[memory]` 表：只剩一个值，整张表去掉（人格不再管范围）。人格清单解析严格，不认识的表报 `unknown_table`（`miyu-policy/src/persona.rs:213,252`）：写了 `[memory]` 的人格文件读不进来，照「不做旧版兼容」报错，提示删掉那一张表（主人的 `persona-1` 没写这张表，不受影响）。`personas.md` 跟上。
+- [x] `persona.set` 的 `memory.scope` 键（`protocol.md:736`）去掉。
+- [x] `session.create` 的 `memory`：只收 `persona`、`off`；`protocol.md` 跟上。
+- [x] `miyu-store/src/recall/room.rs`：`Room::Session` 和 `sessions/<会话>/memory/` 去掉；`recall/indexes.rs`、`memory.rs` 跟上。
+- [x] `miyu memory clear session` 照留，确认它清的是「这个会话往人格记忆里写的」。
 - [ ] 头里有选范围的（网页、终端的新建会话、人格编辑页）去掉「跟随会话」那一项（各头的会话，和 FH-5上一起换钉也行）。
-- [ ] 测试：范围是 `session` 的那几组删掉或改成 `off`；`memory.md` 的测试表跟上。
+- [x] 测试：范围是 `session` 的那几组删掉或改成 `off`；`memory.md` 的测试表跟上。
 
 ### 验收
 
@@ -185,6 +187,7 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 ## 八、FH-7：主人那一份部署
 
 数据根是 `/home/shorin/.cache/miyu-tui-home`（包装脚本 `~/.local/bin/miyu-remake` 里 `MIYU_HOME` 写死）；`~/.miyu` 是旧版 Miyu 的活数据，不碰。新数据根放在同一个路径（旧的整个改名留着），套接字的指纹、终端记的样子、恢复命令都不变。只拷几样，别的不要（设计 55 第六节第 2 条）。真跑由主人自己用 `!` 执行，sub1 写一次性脚本、在拷贝上演练过再交。
+
 
 - [ ] 停 im、停核心（`run/core.lock` 放开）。
 - [ ] `/home/shorin/.cache/miyu-tui-home` 整个改名成 `miyu-tui-home.before-fh`；包装脚本的 `D=` 换成装 FH-3 以后核心的新部署目录。
