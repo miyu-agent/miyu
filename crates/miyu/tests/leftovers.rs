@@ -99,3 +99,14 @@ async fn temporary_copies_left_by_a_crash_are_removed_when_the_core_starts() {
         assert!(path.exists(), "{} 不该碰", path.display());
     }
 }
+
+/// 敏感的几处顶层目录核心起来时就建好（施工 R3-1 补）：Windows 的沙盒只禁命令起来那一刻数据根顶层已有的，命令跑着时第一次
+/// 建的（删会话挪进 `trash/`、第一次存 blob、第一次记记忆）整棵读得到。
+#[tokio::test]
+async fn the_sensitive_places_are_made_when_the_core_starts() {
+    let home = Home::new();
+    start_once(&home).await;
+    for dir in ["trash", "blobs", "modules", "index", "kb"] {
+        assert!(home.root.path().join(dir).is_dir(), "{dir}/ 起来时就该在");
+    }
+}

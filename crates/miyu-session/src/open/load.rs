@@ -414,6 +414,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Environment), LoadError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             attachments: miyu_store::attachments::dir(root, &id),
+            jobs_dir: miyu_store::jobs::dir(&root.session_dir(&id)),
             workplace: Some(default_workspace.clone()),
             names: skill_names,
             packages,

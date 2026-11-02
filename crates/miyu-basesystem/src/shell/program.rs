@@ -178,9 +178,11 @@ fn choose(os: &str, path: Option<&OsStr>, system_root: Option<&OsStr>, bundled: 
     }
 }
 
-/// 在 `path` 列的目录里找叫 `name` 的程序。
+/// 在 `path` 列的目录里找叫 `name` 的程序。相对路径的那几项不看（施工 R3-1 补）：照它找到的跟着进程的工作目录变，核心的工作
+/// 目录是数据根。
 pub(super) fn which(path: Option<&OsStr>, name: &str) -> Option<PathBuf> {
     std::env::split_paths(path?)
+        .filter(|dir| dir.is_absolute())
         .map(|dir| dir.join(name))
         .find(|candidate| candidate.is_file())
 }

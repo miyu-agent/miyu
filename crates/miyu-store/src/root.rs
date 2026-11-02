@@ -36,6 +36,9 @@ pub const CACHE: &str = "cache";
 /// `crate::config_file`）。
 pub const RUN: &str = "run";
 
+/// 核心起来时就建好的敏感的顶层目录（施工 R3-1 补，[`DataRoot::prepare_private`]）：删掉的会话、blob、记忆、索引、知识库。
+const PRIVATE: [&str; 5] = ["trash", "blobs", "modules", "index", "kb"];
+
 /// 第一次用时建的两个顶层目录：状态区、运行时（`07-存储.md` 第二节；施工 SU-5 上起数据根只有一层）。别的用到时再建。
 const SKELETON: [&str; 2] = ["state", RUN];
 
@@ -135,6 +138,19 @@ impl DataRoot {
     /// 建不了；该是目录的地方是个文件。
     pub fn prepare_workspace(&self) -> io::Result<()> {
         create_dir(&self.workspace())
+    }
+
+    /// 建敏感的几处顶层目录，已经有的不动：核心起来时建（施工 R3-1 补），布局不变，只是不再用到才建。Windows 的沙盒只禁命令
+    /// 起来那一刻数据根顶层已有的（施工 SW-6），命令跑着时第一次建的整棵读得到。Unix 上新建的权限 0700。
+    ///
+    /// # Errors
+    ///
+    /// 建不了；该是目录的地方是个文件。
+    pub fn prepare_private(&self) -> io::Result<()> {
+        for name in PRIVATE {
+            create_dir(&self.path.join(name))?;
+        }
+        Ok(())
     }
 
     /// [`USER_DIRS`] 那几处：名字和位置，照 [`USER_DIRS`] 的先后。不建。

@@ -338,6 +338,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             knowledge: shelves.clone(),
             shelves: shelves_open,
             attachments: miyu_store::attachments::dir(root, &id),
+            jobs_dir: miyu_store::jobs::dir(&root.session_dir(&id)),
             workplace: Some(workplace.clone()),
             names: skill_names,
             packages,

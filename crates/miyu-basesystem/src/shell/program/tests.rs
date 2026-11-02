@@ -109,6 +109,26 @@ fn the_bundled_powershell_7_comes_first_on_windows() {
     );
 }
 
+/// `PATH` 里的相对路径不算（施工 R3-1 补）：照它找到的程序跟着进程的工作目录变，核心的工作目录是数据根，不该从那里找 shell。
+#[cfg(unix)]
+#[test]
+fn relative_entries_in_path_are_skipped() {
+    let bin = Bin::with(&["bash", "pwsh.exe"]);
+    let cwd = std::env::current_dir().expect("知道工作目录");
+    let mut relative = PathBuf::new();
+    for _ in cwd.components().skip(1) {
+        relative.push("..");
+    }
+    relative.push(bin.0.strip_prefix("/").expect("绝对路径"));
+    assert!(relative.join("bash").is_file(), "相对路径指得到");
+    let path = std::env::join_paths([&relative]).expect("拼得起来");
+    assert_eq!(which(Some(&path), "bash"), None);
+    assert_eq!(
+        choose("windows", Some(&path), None, none()).kind,
+        Kind::WindowsPowerShell
+    );
+}
+
 #[test]
 fn the_names_tell_the_editions_apart() {
     assert_eq!(Kind::Bash.name(), "bash");

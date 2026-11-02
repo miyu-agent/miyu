@@ -10,9 +10,14 @@ use miyu_kernel::id::JobId;
 
 use crate::durable;
 
+/// 会话目录 `session_dir` 下放后台命令输出的目录：`jobs/`。
+pub fn dir(session_dir: &Path) -> PathBuf {
+    session_dir.join("jobs")
+}
+
 /// 后台命令 `job` 的输出放在会话目录 `session_dir` 下的哪里：`jobs/<编号>.out`，例如 `jobs/j1.out`。
 pub fn output_path(session_dir: &Path, job: &JobId) -> PathBuf {
-    session_dir.join("jobs").join(format!("{job}.out"))
+    dir(session_dir).join(format!("{job}.out"))
 }
 
 /// 给后台命令 `job` 建一份空的输出文件，交回写的一头。没有 `jobs/` 的先建（Unix 上 0700，同步上一层）。已经有的

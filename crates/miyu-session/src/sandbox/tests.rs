@@ -267,3 +267,32 @@ fn the_run_directory_is_back_before_a_command_starts() {
     std::fs::remove_dir_all(&scratch).expect("删得掉");
     assert!(made, "run/ 在命令起来以前就在");
 }
+
+/// 这个会话的 `jobs/` 也在命令起来以前建好（施工 R3-1 补）：后台命令的输出写在里面，命令跑着时才建的 `jobs/` 在 Windows 的
+/// 沙盒里读得到（会话目录挖开时，它是路上那一层）。
+#[test]
+fn the_jobs_directory_is_made_before_a_command_starts() {
+    let scratch = std::env::temp_dir().join(format!("miyu-sandbox-jobs-{}", std::process::id()));
+    let data = scratch.join(".miyu");
+    std::fs::create_dir_all(&data).expect("建得了目录");
+    std::fs::write(data.join(miyu_store::root::MARKER), "").expect("写得进标记");
+    let jobs = data.join("sessions").join("s1").join("jobs");
+    let sandbox = Sandbox::new(
+        PathBuf::from("miyu-sandbox"),
+        Some(scratch.clone()),
+        data.clone(),
+        (None, false),
+    )
+    .with_jobs(jobs.clone());
+    let read_only = Permission {
+        level: Level::Workspace,
+        read_only: true,
+    };
+    sandbox
+        .for_call(&read_only, &scratch.to_string_lossy(), &[], &[])
+        .expect("写得成")
+        .expect("进沙盒");
+    let made = jobs.is_dir();
+    std::fs::remove_dir_all(&scratch).expect("删得掉");
+    assert!(made, "jobs/ 在命令起来以前就在");
+}

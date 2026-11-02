@@ -21,7 +21,10 @@ pub(super) async fn start(
         Ok(opened) => opened,
         Err(error) => return failed("socket", error.to_string()),
     };
-    if let Err(error) = root.prepare_workspace() {
+    if let Err(error) = root
+        .prepare_workspace()
+        .and_then(|()| root.prepare_private())
+    {
         return failed("home", error.to_string());
     }
     crate::leftovers::tidy(&root);

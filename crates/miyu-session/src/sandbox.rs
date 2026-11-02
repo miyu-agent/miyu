@@ -33,6 +33,8 @@ pub(crate) struct Sandbox {
     /// 这个会话的附件目录（施工 3-9 六补）：同技能文件夹单独放开只读；还没建（没存过附件）的不放：Landlock 认不得
     /// 不在的路径。
     attachments: Option<PathBuf>,
+    /// 这个会话放后台命令输出的目录 `jobs/`（施工 R3-1 补）：每条命令起来以前建好（`keep_places`）。
+    jobs: Option<PathBuf>,
     /// 工作目录太宽时退回哪（施工 5-14）：没有的能写的就是工作目录。
     workplace: Option<DefaultWorkspace>,
     /// 这一轮的私密目录（施工 5-15 下）：回合开始照配置换；还没换过的照出厂的。
@@ -58,6 +60,7 @@ impl Sandbox {
             confined,
             shelves: Vec::new(),
             attachments: None,
+            jobs: None,
             workplace: None,
             private: None,
             weak: false,
@@ -75,6 +78,13 @@ impl Sandbox {
     #[must_use]
     pub(crate) fn with_attachments(mut self, dir: PathBuf) -> Sandbox {
         self.attachments = Some(dir);
+        self
+    }
+
+    /// 这个会话放后台命令输出的目录（施工 R3-1 补）。
+    #[must_use]
+    pub(crate) fn with_jobs(mut self, dir: PathBuf) -> Sandbox {
+        self.jobs = Some(dir);
         self
     }
 
@@ -111,7 +121,7 @@ impl Sandbox {
     ///
     /// # Errors
     ///
-    /// 数据根的 `run/` 补不上；数据根落在临时目录里，沙盒自己的临时目录建不成；沙盒的缓存建不成、链接建不成；有了却不是只给本人的。
+    /// 数据根的 `run/`、这个会话的 `jobs/` 建不成；数据根落在临时目录里，沙盒自己的临时目录建不成；沙盒的缓存建不成、链接建不成；有了却不是只给本人的。
     pub(crate) fn for_call(
         &self,
         permission: &Permission,
@@ -128,7 +138,7 @@ impl Sandbox {
             return Ok(None);
         }
         let data_root = real(&self.data_root);
-        keep_run(&data_root)?;
+        self.keep_places(&data_root)?;
         let mut env = Vec::new();
         let write = if level == Effective::Workspace {
             // 工作目录照权限策略的办法换（头报来的可能是 `~`），换不成的照原样。
@@ -234,6 +244,20 @@ fn outermost(hidden: &mut Vec<PathBuf>, dir: PathBuf) {
 }
 
 impl Sandbox {
+    /// 命令起来以前要在的几处，不在的建上（施工 R3-1、R3-1 补）：数据根的 `run/`（写配置、密钥的临时文件建在里面，
+    /// `miyu_store::config_file`），这个会话的 `jobs/`（后台命令的输出）。Windows 的沙盒只禁命令起来那一刻已有的（施工 SW-6），
+    /// 命令跑着时才建的目录里面读得到（2026-11-02 虚拟机上量过）。数据根没有标记的（不是数据根）不建。
+    fn keep_places(&self, data_root: &Path) -> io::Result<()> {
+        if std::fs::symlink_metadata(data_root.join(miyu_store::root::MARKER)).is_err() {
+            return Ok(());
+        }
+        miyu_store::root::create_inside(&data_root.join(miyu_store::root::RUN))?;
+        match &self.jobs {
+            Some(jobs) => miyu_store::root::create_inside(jobs),
+            None => Ok(()),
+        }
+    }
+
     /// 真实位置是 `cwd` 的工作目录对应的工作区（施工 5-14）：退回默认工作区的，还没建的建上（Landlock 认不得不在的路径）。
     fn workspace(&self, cwd: &Path, data_root: &Path) -> io::Result<PathBuf> {
         let Some(workplace) = &self.workplace else {
@@ -257,16 +281,6 @@ fn granted_writes(grants: &[RawJson]) -> Vec<PathBuf> {
         .flatten()
         .filter_map(|scope| scope.as_str().map(PathBuf::from))
         .collect()
-}
-
-/// 数据根的 `run/` 在命令起来以前就在，被删了的补上（施工 R3-1）：配置、密钥写的时候的临时文件建在它里面
-/// （`miyu_store::config_file`）。Windows 的沙盒只禁命令起来那一刻数据根顶层已有的那几项（施工 SW-6），命令跑着时才建的
-/// `run/` 不在禁止的里面，里面的临时文件读得到（2026-11-02 虚拟机上量过）。没有数据根标记的（不是数据根）不建。
-fn keep_run(data_root: &Path) -> io::Result<()> {
-    if std::fs::symlink_metadata(data_root.join(miyu_store::root::MARKER)).is_err() {
-        return Ok(());
-    }
-    miyu_store::root::create_inside(&data_root.join(miyu_store::root::RUN))
 }
 
 /// 换成真实的位置；换不成的照原样，助手会再换一次，换不成就不跑。

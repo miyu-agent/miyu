@@ -137,7 +137,7 @@
     - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。
     - 换进去的都是登记来的字，照原样、不转义（同 `--schema`）。工具面在一个会话里不变，这一段也不变；人改了预设、装了包，下一个回合工具面重算时一起换。
 
-**用哪个 shell**（核心起来时找一次，照资源目录和核心环境里的 `PATH`）：
+**用哪个 shell**（核心起来时找一次，照资源目录和核心环境里的 `PATH`；`PATH` 里相对路径的那几项不看，照它找到的跟着工作目录变，核心的工作目录是数据根，施工 R3-1 补）：
 
 | 平台 | 程序 | 参数 | 说明里的名字 |
 |---|---|---|---|
@@ -306,7 +306,7 @@ Exit code 2
 | `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉；照命令里的词 `pkill -f` 杀不到自己所在的 shell、命令看不到 `MIYU_COMMAND`（施工 4-8 再补） |
 | `crates/miyu-basesystem/src/shell/tests.rs` | 超时的上下限；秒数怎么写；参数格式里写的上限、默认值和代码一样；每一段以换行结尾 |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` | 数行、数字；`\r\n`；内存只留头尾；截在行尾；中间丢过的照样数；一整行很长的照字数截；正好 30000 个字的整段给；切开的字等配齐；离截处太远的换行不用 |
-| `crates/miyu-basesystem/src/shell/program/tests.rs` | 各系统用哪个 shell、找不到时用什么；名字带版本；不读启动文件、只带给的变量；zsh 带 `+o nomatch`、没匹配到的通配符原样传下去（macOS）；PowerShell 的编码和前面那一句；带了沙盒的四种 shell 都经助手起、参数照先后、工作目录和环境变量照旧，规格写不成 JSON 的起不来（施工 5-1） |
+| `crates/miyu-basesystem/src/shell/program/tests.rs` | 各系统用哪个 shell、找不到时用什么、`PATH` 里的相对路径不看（施工 R3-1 补）；名字带版本；不读启动文件、只带给的变量；zsh 带 `+o nomatch`、没匹配到的通配符原样传下去（macOS）；PowerShell 的编码和前面那一句；带了沙盒的四种 shell 都经助手起、参数照先后、工作目录和环境变量照旧，规格写不成 JSON 的起不来（施工 5-1） |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` | 带了沙盒的真跑一次（Unix）：假助手 `/bin/echo` 收到的是 `run --spec <规格> -- <shell> <参数…>`；规格写不成 JSON 的说起不来，命令没跑（施工 5-1）；`a_sandboxed_command_gets_no_desktop`（4-8 补）：假助手 `/bin/sh` 读工作目录里的 `run`，沙盒里拿不到 `DISPLAY` |
 | `crates/miyu-basesystem/src/shell/process/tests.rs` | 杀不掉的命令，最多再等那么久就交回超时 |
 | `crates/miyu-basesystem/tests/log.rs` | 运行日志的来源是 `shell`；输出还没关那一行在阻塞线程里发，带会话编号（Linux） |
