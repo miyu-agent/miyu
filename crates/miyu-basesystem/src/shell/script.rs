@@ -311,15 +311,17 @@ impl Script {
             (SCRIPT_IMAGES, images),
             (SCRIPT_STATE, state),
         ];
+        // 交出去的照能给别的程序用的写法：Windows 上去掉表示得了的 `\\?\`（施工 FH-3下补；沙盒规格里照旧是真实位置）。
         for (names, dir) in dirs {
             if let Some(dir) = dir {
+                let dir = miyu_fs::usable(dir);
                 vars.extend(
-                    named(names, dir).map(|(name, dir)| (name.into(), dir.into_os_string())),
+                    named(names, &dir).map(|(name, dir)| (name.into(), dir.into_os_string())),
                 );
             }
         }
         for (var, dir) in homes {
-            vars.push(((*var).into(), dir.as_os_str().to_owned()));
+            vars.push(((*var).into(), miyu_fs::usable(dir).into_os_string()));
         }
         if let Some(caller) = &call.caller {
             vars.push((CALLER_VENUE.into(), caller.venue.as_str().into()));

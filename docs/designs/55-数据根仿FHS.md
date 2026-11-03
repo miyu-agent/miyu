@@ -114,10 +114,10 @@ Miyu 拉起来的程序（扩展、包带的命令和程序、脚本、MCP 服�
 | `MIYU_RUNTIME_DIR` | `run/<编号>/` | 不设 | 不设 |
 | `MIYU_IMAGES_DIR` | 不设 | 交图的目录（原 `MIYU_SCRIPT_IMAGES_DIR`） | 不设 |
 | `MIYU_PICTURES_DIR` `MIYU_VIDEOS_DIR` `MIYU_DOCUMENTS_DIR` `MIYU_DOWNLOADS_DIR` | `root/` 下四处 | 同左 | 不设 |
-| `MIYU_HOME` `MIYU_PROGRAM` `MIYU_RESOURCES` | 数据根、主程序、资源目录 | 同左 | 不设 |
+| `MIYU_HOME` `MIYU_PROGRAM` `MIYU_RESOURCES` | 数据根、主程序、资源目录 | 不设（脚本在沙盒里跑，不用知道数据根在哪，调核心经 `MIYU_CALL_SOCK`；核心环境里的 `MIYU_*` 一概不传，施工 4-8 补起就这样，2026-11-03 虚拟机实测后照历史定） | 不设 |
 
 - 不设的就是这一种程序用不着。
-- 核心拉起程序之前把给出去的目录都建好（Windows 沙盒要求，第五节），程序拿到的一定已经存在。
+- 核心拉起程序之前把给出去的目录都建好（Windows 沙盒要求，第五节），程序拿到的一定已经存在。交的是真实位置，Windows 上能用普通写法表示的不带 `\\?\`（cmd 的 `cd` 和不少老工具认不了；超长、有保留名的照原样，`miyu_fs::usable`）。
 - 旧名字 `MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR` 去掉。施工期间（FH-3 到 FH-6）核心新旧两套一起给、旧名字指到新位置，等各包发了新版再删（FH-6），不留到发版。
 - 以后多用户，个人那一格另加变量（例如 `MIYU_USER_STATE_DIR`），现有的不改名、不改义。
 - 给包作者的文档（`docs/authors/`）写这一张表，替掉 im 文档里「`<数据根>/state/logs/<你的包>.stderr`」那种写法。

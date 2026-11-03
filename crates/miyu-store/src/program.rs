@@ -110,7 +110,8 @@ impl PackageDirs {
     }
 
     /// 拉起之前（设计 55 第四节：程序拿到的一定已经存在）：先清掉上一回留下的短命暂存（[`DataRoot::clear_package_tmp`]：
-    /// 路上是链接的不清、不拉起），各处没有的建上（只在数据根里建），交回换成真实位置的那一份。包的文件夹照给的交。
+    /// 路上是链接的不清、不拉起），各处没有的建上（只在数据根里建），交回换成真实位置的那一份（Windows 上不带表示得了的
+    /// `\\?\`）。包的文件夹照给的交。
     ///
     /// # Errors
     ///
@@ -118,9 +119,10 @@ impl PackageDirs {
     pub fn ready(root: &DataRoot, id: &str, app: PathBuf) -> io::Result<PackageDirs> {
         root.clear_package_tmp(id)?;
         let dirs = PackageDirs::of(root, id, app);
+        // 真实位置照能交给别的程序用的写法交：Windows 上去掉表示得了的 `\\?\`（`miyu_fs::usable`）。
         let real = |dir: &Path| -> io::Result<PathBuf> {
             crate::root::create_inside(dir)?;
-            std::fs::canonicalize(dir)
+            Ok(miyu_fs::usable(&std::fs::canonicalize(dir)?))
         };
         let user = dirs
             .user

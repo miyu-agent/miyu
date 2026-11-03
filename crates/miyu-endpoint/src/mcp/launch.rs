@@ -213,7 +213,8 @@ fn spawn_once(plan: &Plan) -> io::Result<Child> {
         return Err(io::Error::other("a URL server has no process"));
     };
     miyu_store::root::create_inside(&plan.dir)?;
-    let state = std::fs::canonicalize(&plan.dir)?;
+    // 真实位置照能交给别的程序用的写法（Windows 上去掉表示得了的 `\\?\`，施工 FH-3下补）。
+    let state = miyu_fs::usable(&std::fs::canonicalize(&plan.dir)?);
     let errors = stderr::open(&plan.log)?;
     let mut command = std::process::Command::new(program);
     // 状态目录照设计 55 第四节的名字给（施工 FH-3下）：就是工作目录，真实位置；放在清单写的环境变量后面，盖不掉。

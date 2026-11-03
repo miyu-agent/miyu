@@ -139,3 +139,20 @@ fn every_name_in_a_table_points_at_the_same_place() {
         [("A", PathBuf::from("/x")), ("B", PathBuf::from("/x"))]
     );
 }
+
+/// Windows 上交出去的目录不带表示得了的 `\\?\`（施工 FH-3下补，虚拟机上实测：cmd 的 `cd` 和不少老工具认不了）。
+#[cfg(windows)]
+#[test]
+fn on_windows_the_folders_handed_over_have_no_verbatim_prefix() {
+    let scratch = Scratch::new();
+    let root = DataRoot::at(scratch.path().to_path_buf());
+    let dirs = PackageDirs::ready(&root, "kit", scratch.path().join("opt/kit")).expect("建得了");
+    for (name, at) in dirs.env() {
+        let text = at.to_string_lossy();
+        assert!(!text.starts_with(r"\\?\"), "{name}={text}");
+        assert!(
+            at.is_dir() || name.contains("APP") || name == "MIYU_PACKAGE_DIR",
+            "{name}={text}"
+        );
+    }
+}
