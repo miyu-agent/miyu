@@ -4,6 +4,8 @@
 //!
 //! - `schedule.ran {schedule, session, ok}`：每次新开会话的定时，开出来的那一轮结束了（`ran.rs`）；`ok` 是答完了。
 //! - `schedules.reset {}`：唤醒表坏了，改名留着、换了一份空的，原来的都没了。
+//!
+//! 同一条流另推 `notices.claimed {claimed}`（施工 TR-1，`viewing.rs`）：有没有连接认领了发后台通知变了。
 
 use serde_json::{Value, json};
 use tokio::sync::broadcast;
@@ -42,6 +44,15 @@ impl Notices {
             params.extend(more);
         }
         let line = json!({"jsonrpc": "2.0", "method": "notice", "params": params});
+        if self.0.send(line.to_string()).is_err() {
+            // 没有订阅着的连接：不用说。
+        }
+    }
+
+    /// 有没有连接认领了发后台通知变成了 `claimed`（施工 TR-1）：推 `notices.claimed`。
+    pub(crate) fn claimed(&self, claimed: bool) {
+        let line =
+            json!({"jsonrpc": "2.0", "method": "notices.claimed", "params": {"claimed": claimed}});
         if self.0.send(line.to_string()).is_err() {
             // 没有订阅着的连接：不用说。
         }

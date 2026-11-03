@@ -8,6 +8,7 @@ Chinese version: [connection.md](connection.md).
 | [`subscribe`, `unsubscribe`](#subscribe-unsubscribe) | Subscribe to or leave a push stream |
 | [`account.setup_code`, `account.setup`, `account.logout`](#accountsetup_code-accountsetup-accountlogout) | Access password: the one-time code for setting it from the web, setting and changing it, revoking devices |
 | [`account.set_avatar`, `account.avatar`](#your-avatar) | Your avatar |
+| [`notices.claim`](#noticesclaim) | Claim: this connection shows background notices |
 | [`core.stop`](#corestop) | Ask the core to stop |
 
 ## Connecting
@@ -126,7 +127,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `packages` | One item of the package list changed | `{"packages": […]}` |
 | `projects` | A project changed | `{"projects": […]}`, all of them |
 | `schedules` | A schedule changed or ran (construction J-1 lower) | `{"schedules": […]}`, all of them |
-| `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`; earlier ones are not replayed |
+| `notices` | Notices for people (construction J-3 middle): a new-session schedule's run has ended, the schedule table broke and was replaced by an empty one. Heads show system notifications from it | `{}`, plus `claimed: true` while a connection has claimed background notices ([`notices.claim`](#noticesclaim)); earlier ones are not replayed |
 | `package` | With `package`: what that package pushes to people (construction IM-1 lower-middle 2); its pages update from it instead of polling. A package that isn't installed gets `unknown_package` | `{}`; earlier ones are not replayed |
 | `kb` | Index-building progress of knowledge bases: `kb.indexing`, `kb.indexed` | `{}`: the current state comes from `kb.list` |
 | `memory` | One memory's log | `{"upto": <last sequence number at that moment>}` |
@@ -177,6 +178,20 @@ A one-time code works once. Setting or changing the access password revokes ever
 | `bad_params` (`-32602`) | Wrong params; the password is not acceptable; a device-token connection from the LAN changing the access password without `old` |
 | `bad_password`, `login_throttled` | A device-token connection changing the access password gave the wrong `old`; this source got it wrong 5 times within 60 seconds, or all sources together tried 30 times (`data.retry_after_ms`) |
 | `local_only` | An extension called it; `account.setup_code` not on a local-token connection |
+
+## `notices.claim`
+
+Claim background notices (construction TR-1): a head such as the tray, which opens no session and still has to pop system notifications after the browser is closed, calls it once on connecting to say "I pop the notices for sessions no head has open (no `viewed` on their session-list item) finishing, asking or needing approval, and the `notices` stream's notices". The core keeps it per connection and releases it when the connection drops; calling it again on the same connection changes nothing.
+
+**Who can call**: people; an extension gets `local_only`.
+
+| Method | Params | Response |
+|---|---|---|
+| `notices.claim` | none | `{}` |
+
+Other heads learn whether anyone has claimed from the `notices` stream: the subscribe response is `{"claimed": true}` while someone has, and still `{}` otherwise; when that changes, `notices.claimed {"claimed": <bool>}` is pushed (two connections claiming and one leaving pushes nothing). While someone has claimed, other heads stop popping system notifications for sessions nobody has open and for `notice`; a head that has a session open still pops that one's. Once the claimer leaves and `claimed: false` is pushed, they go back to popping as before.
+
+**Errors**: `bad_params`: params were given.
 
 ## `core.stop`
 

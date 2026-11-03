@@ -237,6 +237,7 @@
 | `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
 | `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
+| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-app` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
 | `session.configure` | 换模型、人格、预设、思考强度，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
@@ -1281,6 +1282,7 @@
 | `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
 | `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：一个任务建了、停了、续了、删了、到点交过了 |
 | `notice` | `{"kind", "at", …}`：`schedule.ran {schedule, session, ok}`、`schedules.reset {}`（施工 J-3 中，`schedules.md` 第七节） | 订阅着 `notices` 的：每次新开会话的定时那一轮结束了、唤醒表坏了换了一份空的 |
+| `notices.claimed` | `{"claimed"}`：有没有连接认领了发后台通知（`notices.claim`）变了（施工 TR-1） | 订阅着 `notices` 的：第一个认领的来了、最后一个走了 |
 | `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置每变一次 |
 | `models.changed` | `{"providers": [<编号>…]}`，不带条目（施工 V-26，`models.md` 第二条第 10 条） | 订阅着配置的：核心在后台拉到的供应商模型列表和原来的不一样 |
 | `memory.event` | `{"event": <记忆日志里那一行>}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上） | 订阅着一间的记忆日志的：上面「记忆日志的推送」第 3、4 条 |

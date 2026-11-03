@@ -81,6 +81,8 @@ model.call
 model.embed
 model.list
 models.changed
+notices.claim
+notices.claimed
 package.call
 package.changed
 package.check

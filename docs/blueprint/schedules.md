@@ -85,9 +85,10 @@
 
 ### 七、给人的通知（施工 J-3 中，形状两个头 2026-10-27 都推荐）
 
-- `subscribe {"stream": "notices"}`：回应 `{}`，不补以前的；扩展订不了（`local_only`）；掉队推 `resync {"stream": "notices"}`。
+- `subscribe {"stream": "notices"}`：回应 `{}`，有连接认领了发后台通知的写 `{"claimed": true}`（施工 TR-1，下面最后一条）；不补以前的；扩展订不了（`local_only`）；掉队推 `resync {"stream": "notices"}`。
 - `notice {"kind", "at", …}`：`schedule.ran {schedule, session, ok}`：每次新开会话的定时，交进去之前先订阅那个会话，交进去的那句开的那一轮结束时推（`schedules/ran.rs`），`ok` 是答完了；跑在已有会话上的不推（头照会话状态弹）。`schedules.reset {}`：唤醒表坏了改名留着、换了一份空的。
 - 不存盘（`schedules/notices.rs`，一条就是推送的那一行，同知识库的进度）。头照 `kind` 弹系统通知。
+- 谁来发后台通知（施工 TR-1，托盘 `miyu-app` 的蓝图 `app.md` 第 5 条）：托盘这样浏览器关了也要弹的头连上时调 `notices.claim`（只给人的头），核心照连接记（`viewing.rs` 的座位），断了就放。「有没有人认领」变了往这条流推 `notices.claimed {"claimed"}`，几个认领的走了一个不推。有人认领时，别的头不再为没人开着的会话（列表那一项没有 `viewed`）、`notice` 弹系统通知，免得和托盘弹两遍；开着某个会话的头照常弹它那一个。
 
 ### 八、代码和测试
 

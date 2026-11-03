@@ -149,6 +149,7 @@ mod models_recall;
 mod models_retire;
 mod models_temperature;
 mod note;
+mod notices_claim;
 mod orphans;
 mod package_check;
 mod package_choose;

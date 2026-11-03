@@ -1,4 +1,5 @@
-//! 记谁开着哪个会话（施工 HV-1）：只有「有没有头开着」变了的才交回来，两个头开着同一个、一个走了的不算变。
+//! 记谁开着哪个会话（施工 HV-1）：只有「有没有头开着」变了的才交回来，两个头开着同一个、一个走了的不算变。认领发后台通知
+//! 同样只在变了时推（施工 TR-1）。
 
 use miyu_kernel::id::SessionId;
 
@@ -28,4 +29,35 @@ fn only_flips_of_viewed_are_reported() {
     );
     assert_eq!(viewing.set(1, None), [id(3)]);
     assert!(viewing.ids().is_empty());
+}
+
+/// 认领发后台通知（施工 TR-1）：只在「有没有人认领」变了时推，几个认领的走了一个不推。
+#[test]
+fn a_claim_is_pushed_only_when_it_flips() {
+    let viewing = Viewing::default();
+    let notices = crate::schedules::notices::Notices::default();
+    let mut pushes = notices.subscribe();
+    let claimed = |line: String| -> serde_json::Value {
+        let line: serde_json::Value = serde_json::from_str(&line).expect("是 JSON");
+        assert_eq!(line["method"], "notices.claimed", "{line}");
+        line["params"]["claimed"].clone()
+    };
+    assert!(!viewing.claimed());
+    viewing.count(true, &notices);
+    viewing.count(true, &notices);
+    assert!(viewing.claimed());
+    assert_eq!(
+        claimed(pushes.try_recv().expect("推了")),
+        serde_json::json!(true)
+    );
+    assert!(pushes.try_recv().is_err(), "第二个来了不推");
+    viewing.count(false, &notices);
+    assert!(viewing.claimed(), "还有一个");
+    assert!(pushes.try_recv().is_err(), "走了一个不推");
+    viewing.count(false, &notices);
+    assert!(!viewing.claimed());
+    assert_eq!(
+        claimed(pushes.try_recv().expect("推了")),
+        serde_json::json!(false)
+    );
 }

@@ -314,6 +314,14 @@ async fn read_all<R: AsyncRead + Unpin>(
                     });
                 (answer(&request, result, locale), None, false)
             }
+            // 认领发后台通知（施工 TR-1）：同开着哪个会话记在这个连接的座位上，断了就放。
+            ("notices.claim", Some(_)) => {
+                let result = crate::viewing::claim_params(&request.params).map(|()| {
+                    seat.claim();
+                    json!({})
+                });
+                (answer(&request, result, locale), None, false)
+            }
             ("unsubscribe", Some(_)) => {
                 let result = stream_of(&request).map(|stream| {
                     match stream {

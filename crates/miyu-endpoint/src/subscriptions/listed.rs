@@ -28,7 +28,7 @@ pub(super) enum Listed {
     Schedules,
     /// 知识库建索引的进度（施工 W-15，`knowledge/progress.rs`）：推 `kb.indexing`、`kb.indexed`。
     Knowledge,
-    /// 通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`。
+    /// 通知（施工 J-3 下，`schedules/notices.rs`）：推 `notice`，有没有人认领发后台通知变了推 `notices.claimed`（施工 TR-1）。
     Notices,
     /// 包推给人的（施工 IM-1 中下二，`backstage/events.rs`）：推 `package.event`，别的包的不推。
     PackageEvents(String),
@@ -310,7 +310,8 @@ impl Subscriptions {
         self.kb = None;
     }
 
-    /// 订阅通知（施工 J-3 下）：回应是空的，不补以前的。
+    /// 订阅通知（施工 J-3 下）：不补以前的。回应是空的，有连接认领了发后台通知的写 `claimed: true`（施工 TR-1）：先起转发任务
+    /// 再看，看过以后变了的照样推。
     pub(crate) fn add_notices(
         &mut self,
         core: &Arc<Core>,
@@ -323,7 +324,10 @@ impl Subscriptions {
             shaken,
             out.clone(),
         ));
-        json!({})
+        match core.viewing.claimed() {
+            true => json!({"claimed": true}),
+            false => json!({}),
+        }
     }
 
     /// 取消订阅通知。

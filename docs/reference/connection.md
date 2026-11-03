@@ -8,6 +8,7 @@
 | [`subscribe`、`unsubscribe`](#subscribeunsubscribe) | 订阅、取消订阅一条推送流 |
 | [`account.setup_code`、`account.setup`、`account.logout`](#accountsetup_codeaccountsetupaccountlogout) | 访问密码：网页第一次设用的一次性码、设和改、作废设备 |
 | [`account.set_avatar`、`account.avatar`](#你的头像) | 你的头像 |
+| [`notices.claim`](#noticesclaim) | 认领：后台通知由这个连接发 |
 | [`core.stop`](#corestop) | 叫核心停下 |
 
 ## 怎么连
@@ -122,6 +123,20 @@
 | `bad_params`（`-32602`） | 参数不对；密码不合要求；局域网来的设备令牌改访问密码没带 `old` |
 | `bad_password`、`login_throttled` | 设备令牌连上的改访问密码，`old` 不对；这个来源 60 秒内错满 5 次、或者合起来满 30 次（`data.retry_after_ms`） |
 | `local_only` | 扩展调了；不是本机令牌连上的调了 `account.setup_code` |
+
+## `notices.claim`
+
+认领发后台通知（施工 TR-1）：托盘这样不开会话、浏览器关了也要弹系统通知的头连上时调一次，说「没有头开着的会话（会话列表那一项没有 `viewed`）答完、在问、要确认，和 `notices` 流的通知，由我来弹」。核心照连接记，连接断了就放；同一个连接再调一遍不变。
+
+**谁能调**：人；扩展调回 `local_only`。
+
+| 方法 | 参数 | 回应 |
+|---|---|---|
+| `notices.claim` | 没有 | `{}` |
+
+别的头从 `notices` 流知道有没有人认领：订阅的回应这一刻有人认领的写 `{"claimed": true}`，没有的还是 `{}`；「有没有人认领」变了推 `notices.claimed {"claimed": <布尔>}`（两个连接认领、走了一个不推）。有人认领时，别的头不再为没人开着的会话、`notice` 弹系统通知，开着某个会话的头照常弹它自己开着的那一个；认领的走了、推了 `claimed: false`，照原来的弹。
+
+**出错**：`bad_params`：带了参数。
 
 ## `core.stop`
 
