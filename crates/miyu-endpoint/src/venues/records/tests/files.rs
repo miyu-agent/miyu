@@ -17,8 +17,8 @@ use super::old;
 use super::rendering;
 use super::same::{WINDOWS, events};
 use crate::refusal::Refusal;
+use crate::sweep::Tuning;
 use crate::test_support::temp_root;
-use crate::venues::records::pass::Tuning;
 use crate::venues::records::read::{Dir, judge};
 
 /// 把 `events` 写成几段：`cuts` 是各段从第几条（下标）起。

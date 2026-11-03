@@ -17,8 +17,8 @@ use super::old;
 use super::rendering as chat;
 use super::script::{Dice, Script};
 use crate::refusal::Refusal;
-use crate::venues::records::bones::Bones;
-use crate::venues::records::pass::Tuning;
+use crate::sweep::Tuning;
+use crate::sweep::bones::Bones;
 use crate::venues::records::read::{Log, ONLY, judge};
 
 /// 内存里的日志：一块交 `chunk` 条；数着各种读法用了几次。
@@ -323,8 +323,9 @@ fn a_log_growing_while_read_reads_the_first_read() {
 /// 引用照编号的哈希记：撞了的（记的那一条编号不是这个）不拿来用，退回整份读；留着的、读回来的都对一遍。
 #[test]
 fn a_quote_whose_hash_collides_is_not_used() {
-    use crate::venues::records::bones::hash;
-    use crate::venues::records::pass::{Pass, Plan};
+    use crate::sweep::Plan;
+    use crate::sweep::bones::hash;
+    use crate::venues::records::pass::start;
     use crate::venues::records::read::{Quote, quoted};
     let line = |seq: u64, msg: &str, reply_to: &str| {
         Event::from_line(&format!(
@@ -333,19 +334,23 @@ fn a_quote_whose_hash_collides_is_not_used() {
         .expect("合写法")
     };
     let judged = line(9, "m9", r#","reply_to":"m2""#);
-    let mut pass = Pass::new(judged.seq, 20, Plan::exact(Vec::new()), Tuning::SHIPPED);
-    pass.ring.push_back(line(5, "m1", ""));
+    let mut pass = start(judged.seq, 20, Plan::exact(Vec::new()), Tuning::SHIPPED);
+    pass.settled.ring.push_back(line(5, "m1", ""));
     // 「m2」的哈希记成了第 5 条（编号是 m1）：撞了。
-    pass.quotes.insert(hash("m2"), Seq::new(5).expect("合写法"));
+    pass.settled
+        .quotes
+        .insert(hash("m2"), Seq::new(5).expect("合写法"));
     let mut log = Mem::new(vec![line(3, "m1", ""), line(5, "m1", "")], 1);
     assert_eq!(quoted(&mut log, &pass, &judged), Ok(Quote::Lost));
-    pass.ring.clear();
+    pass.settled.ring.clear();
     assert_eq!(
         quoted(&mut log, &pass, &judged),
         Ok(Quote::Lost),
         "读回来的也对一遍"
     );
-    pass.quotes.insert(hash("m2"), Seq::new(3).expect("合写法"));
+    pass.settled
+        .quotes
+        .insert(hash("m2"), Seq::new(3).expect("合写法"));
     let mut log = Mem::new(vec![line(3, "m2", "")], 1);
     assert!(matches!(
         quoted(&mut log, &pass, &judged),

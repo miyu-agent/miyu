@@ -20,13 +20,13 @@
 //! - 可选软件包登记的查询：方法名到怎么答的一张表（[`queries`]，施工 W-4）。核心起来时照编进来的包
 //!   （`miyu-core` 的 cargo 开关）往里登记，`mermaid.render` 就是这样接进来的；没编进来的方法，这张表里
 //!   压根没有它，握手以后的方法里找不到、这张表里也找不到的，一律 `unknown_method`。
-//! - 分块上传：`blob.open`、`blob.write`、`blob.close`，跟着连接走，收齐了存成 blob，回应和 `blob.put` 一样
-//!   （施工 W-5，`uploads.rs`）。连接断了、60 秒没写都作废。
+//! - 分块上传：`blob.open`、`blob.write`、`blob.close`，跟着连接走，收齐了存成 blob，回应和 `blob.put` 一样（施工 W-5，`uploads.rs`）；断了、60 秒没写都作废。
 //! - [`extensions`]：核心拉起的 `process` 包，经标准输入输出说同一套协议；开关、退避重启、随核心退出（施工 9-4 上）。
 
 mod activity;
 mod appending;
 mod appends;
+mod asked;
 mod attach;
 mod backstage;
 pub mod builtins;
@@ -77,6 +77,7 @@ pub mod settings;
 mod skills;
 mod spawn;
 mod subscriptions;
+mod sweep;
 mod terminal;
 #[cfg(test)]
 mod test_support;

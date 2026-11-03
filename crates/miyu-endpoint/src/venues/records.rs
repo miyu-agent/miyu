@@ -20,11 +20,10 @@ use miyu_store::resources::ResourceRoot;
 use crate::Core;
 use crate::refusal::Refusal;
 
-mod bones;
 mod pass;
 mod read;
 
-use pass::Tuning;
+use crate::sweep::Tuning;
 
 /// `count` 最多几条。
 const MOST: u64 = 100;

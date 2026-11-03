@@ -84,6 +84,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "session.tools"
         | "session.context"
         | "session.usage_parts"
+        | "session.prompts"
         | "view.page"
         | "view.detail"
         | "job.output" => Needs(EventsRead),

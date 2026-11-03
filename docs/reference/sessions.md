@@ -26,6 +26,7 @@
 | [`session.configure`](#sessionconfigure) | 换模型、人格、预设、思考强度 |
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
+| [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
 | [`view.page`](#viewpage) | 按页读历史 |
 | [`view.detail`](#viewdetail) | 一次工具调用的完整差异、一次压缩的摘要原文 |
 
@@ -34,7 +35,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -414,6 +415,27 @@
 **参数**：`session`。**回应**：`{}`，挪好了才回。订阅着它的头收到 `resync`。
 
 **出错**：`turn_running`：有回合在进行（先打断）；`internal_error`：挪不动。
+
+## `session.prompts`
+
+列出一个会话里你问过的所有话，照先后。界面照它列「问话跳转」：没读进来的那一句，照它的 `seq` 用 `view.page` 的 `before` 往前读到那一页再跳。只读日志，不载入会话。
+
+**参数**：`session`。
+
+**回应**：`prompts`，一项一句：
+
+| 名字 | 说明 |
+|---|---|
+| `seq` | 那条 `message.user` 的序号 |
+| `turn` | 它的回合：回合里排着的是那一轮，闲着时说的是它开的那一轮；都没有的不写 |
+| `at` | 它的时刻，写法同事件的 `at` |
+| `text` | 第一行，去掉前后空白，最多 100 个字；斜杠命令模板展开的照你敲的那一行（同 `session.list` 的 `preview` 的取法）。只有图、文件的是空的 |
+
+- **只列你本人在这里说的**：本机说的、桥替你在平台私聊里转进来的都列；子会话、父会话发来的，平台上别的人说的（群里认出是你的也算平台上的人），注入的（长期目标的续轮这些），别的 harness、定时任务交进来的都不列。
+- **照有效历史**：撤销掉的不列，恢复的放回，重做（编辑上一句）照最后那一版，撤回的排着的话不列；压缩过的照样列。
+- **分叉出来的会话**只列它自己的：底子里的话在父会话里列。
+
+**出错**：`bad_params`；`session_not_found`；`session_broken`。
 
 ## `view.page`
 

@@ -1,4 +1,4 @@
-//! 日志的骨架（施工 V-39 上）：边读边记几样小的，读到一次撤销、撤回时算它最早可能碰到第几条（下界）。有效历史
+//! 日志的骨架（施工 V-39 上；施工 SP-2 从判官挪出来，问话列表也用）：边读边记几样小的，读到一次撤销、撤回时算它最早可能碰到第几条（下界）。有效历史
 //! （`History::whole`）撤销时查的只有这几样（`miyu-kernel` 的 `history/undo.rs`）：撤的每一轮的事件（`turn` 是它的）；
 //! 这一轮 `turn.started` 的触发；上一轮（触发带的回合，或紧挨着这一轮开头结束的那一轮）里排着没听到的人话；触发不带回合的，
 //! 同一个命令一起发的人话。撤回（`message.withdrawn`）只碰它列的那几条。恢复只放回撤销拿走的。
@@ -14,11 +14,11 @@ use miyu_kernel::id::{Seq, TurnId};
 
 /// 算不准下界：调的一方退回整份读。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct Unsure;
+pub(crate) struct Unsure;
 
 /// 读到这里为止的骨架。
 #[derive(Debug, Default)]
-pub(super) struct Bones {
+pub(crate) struct Bones {
     /// 每一轮最早的一条（`turn` 是它的）。
     first: BTreeMap<TurnId, Seq>,
     /// `turn.started`：它的 `turn`、序号、触发。
@@ -35,7 +35,7 @@ pub(super) struct Bones {
 
 impl Bones {
     /// 记下一条（照先后）。
-    pub(super) fn note(&mut self, event: &Event) {
+    pub(crate) fn note(&mut self, event: &Event) {
         self.seen = Some(event.seq);
         if let Some(turn) = event.turn.filter(|&turn| self.last_turn != Some(turn)) {
             self.first.entry(turn).or_insert(event.seq);
@@ -56,7 +56,7 @@ impl Bones {
 
     /// 这一条（照先后读到它之前已经 [`Bones::note`] 过前面的）是撤销、撤回的：它最早可能碰到、查到第几条；碰不到什么的
     /// （撤的是空的、列的是空的）没有。别的种类没有。
-    pub(super) fn reach(&self, event: &Event) -> Result<Option<Seq>, Unsure> {
+    pub(crate) fn reach(&self, event: &Event) -> Result<Option<Seq>, Unsure> {
         match &event.body {
             Body::TurnReverted(reverted) => {
                 let mut low = None;
@@ -127,8 +127,8 @@ fn lower(low: &mut Option<Seq>, seq: Seq) {
     *low = Some(low.map_or(seq, |low| low.min(seq)));
 }
 
-/// 字的哈希：命令编号的只用来认同一个命令，撞了只会把下界算早；引用的编号的（`pass.rs`）用的时候再对一遍。
-pub(super) fn hash(cause: &str) -> u64 {
+/// 字的哈希：命令编号的只用来认同一个命令，撞了只会把下界算早；引用的编号的（判官的 `venues/records/pass.rs`）用的时候再对一遍。
+pub(crate) fn hash(cause: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
     cause.hash(&mut hasher);
     hasher.finish()

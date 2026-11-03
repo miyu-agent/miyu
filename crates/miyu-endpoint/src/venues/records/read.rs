@@ -20,13 +20,14 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 use miyu_store::log::{Flow, OpenError, read_range_only};
 
-use super::bones::hash;
-use super::pass::{Ended, Pass, Plan, Tuning};
+use super::pass::{Pass, start};
 use crate::refusal::Refusal;
+use crate::sweep::bones::hash;
+use crate::sweep::{Ended, Plan, Tuning};
 
 /// 判官自己要看正文的种类（施工 V-39 上补）：第一条（钉下的字照它找）；人话、她发进群里的、撤回（渲染、引用、要判的那一条，
 /// `miyu_assemble::group` 的 `on_record`、`quoted_as`、`records_from`）；回合的开头和结尾、撤销、恢复、撤回排着的话、压缩
-/// （`pass.rs`、`bones.rs`）。有效历史照种类认的那几种（撤销查触发时的回报、子会话回报、等的会话空了）
+/// （`pass.rs`、`crate::sweep`）。有效历史照种类认的那几种（撤销查触发时的回报、子会话回报、等的会话空了）
 /// [`miyu_kernel::event::Event::from_line_only`] 自己也全解，`message.assistant`、`model.called` 只解撤销看的几格。
 pub(super) const ONLY: &[&str] = &[
     "session.created",
@@ -88,17 +89,17 @@ pub(super) fn judge(
     tuning: Tuning,
 ) -> Result<Records, Refusal> {
     let need = window.most();
-    let mut pass = Pass::new(msg, need, Plan::Guess(Default::default()), tuning);
+    let mut pass = start(msg, need, Plan::guess(), tuning);
     log.range(Seq::FIRST, None, &mut |events| pass.feed(events))
         .map_err(refused)?;
     pass.finish();
-    let (chat, forward) = texts(pass.first.as_ref())?;
+    let (chat, forward) = texts(pass.settled.first.as_ref())?;
     let forward = forward.as_ref();
     let pass = match pass.ended {
         Ended::Done => pass,
         Ended::Unsure => return whole(log, (msg, pass.last), window, &chat, forward),
         Ended::Again => {
-            let mut again = Pass::new(msg, need, Plan::exact(pass.reaches), tuning);
+            let mut again = start(msg, need, Plan::exact(pass.reaches), tuning);
             if let Some(last) = pass.last {
                 log.range(Seq::FIRST, Some(last), &mut |events| again.feed(events))
                     .map_err(refused)?;
@@ -110,25 +111,26 @@ pub(super) fn judge(
             again
         }
     };
-    let Some(judged) = &pass.judged else {
+    let Some(judged) = &pass.settled.judged else {
         return Err(Refusal::BAD_PARAMS);
     };
     let mut read_back = None;
     let quote = match quoted(log, &pass, judged)? {
         Quote::None => None,
-        Quote::Kept(k) => Some(&pass.ring[k]),
+        Quote::Kept(k) => Some(&pass.settled.ring[k]),
         Quote::Read(event) => Some(&*read_back.insert(*event)),
         Quote::Lost => return whole(log, (msg, pass.last), window, &chat, forward),
     };
-    let last: Vec<&Event> = pass.ring.iter().collect();
+    let last: Vec<&Event> = pass.settled.ring.iter().collect();
     let recalled: BTreeMap<&str, &ExternalId> = pass
+        .settled
         .recalled
         .iter()
         .map(|(msg, by)| (msg.as_str(), by))
         .collect();
     let picked = Picked {
         judged,
-        before: pass.before,
+        before: pass.settled.before,
         last: &last,
         recalled: &recalled,
         quote,
@@ -190,11 +192,16 @@ pub(super) fn quoted(log: &mut dyn Log, pass: &Pass, judged: &Event) -> Result<Q
             .and_then(|venue| venue.reply_to.as_deref()),
         _ => None,
     };
-    let Some(seq) = reply_to.and_then(|reply_to| pass.quotes.get(&hash(reply_to)).copied()) else {
+    let Some(seq) = reply_to.and_then(|reply_to| pass.settled.quotes.get(&hash(reply_to)).copied())
+    else {
         return Ok(Quote::None);
     };
-    if let Ok(k) = pass.ring.binary_search_by_key(&seq, |event| event.seq) {
-        return Ok(if quoted_as(&pass.ring[k]) == reply_to {
+    if let Ok(k) = pass
+        .settled
+        .ring
+        .binary_search_by_key(&seq, |event| event.seq)
+    {
+        return Ok(if quoted_as(&pass.settled.ring[k]) == reply_to {
             Quote::Kept(k)
         } else {
             Quote::Lost

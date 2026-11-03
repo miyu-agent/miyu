@@ -5,7 +5,7 @@
 use rusqlite::Row as SqlRow;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Body, Dream, DreamEnded, Event};
+use miyu_kernel::event::{Body, Dream, DreamEnded, Event, MessageUser};
 use miyu_kernel::id::SessionId;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
@@ -129,16 +129,12 @@ impl Row {
         if let Body::GoalSet(set) = &event.body
             && self.preview.is_empty()
         {
-            self.preview = first_line(&set.text);
+            self.preview = first_line(&set.text, PREVIEW_CHARS);
         }
         if let Body::MessageUser(message) = &event.body
             && self.preview.is_empty()
         {
-            // 斜杠命令模板展开成的照人敲的那一行（施工 X-14 上）。
-            self.preview = match message.typed() {
-                Some(typed) => first_line(typed),
-                None => preview(&message.blocks),
-            };
+            self.preview = said(message, PREVIEW_CHARS);
         }
         if let Body::ModelCalled(called) = &event.body
             && let Some(usage) = &called.usage
@@ -290,22 +286,29 @@ pub fn cwd(event: &Event) -> Option<&str> {
     }
 }
 
-/// 一句话的预览（施工 9-5）：头一块文字的第一行，去掉前后空白，最多 [`PREVIEW_CHARS`] 个字。没有文字的是空的。
-fn preview(blocks: &[Block]) -> String {
-    blocks
-        .iter()
-        .find_map(|block| match block {
-            Block::Text(text) => Some(first_line(&text.text)),
-            _ => None,
-        })
-        .unwrap_or_default()
+/// 一句话给人看的那一行（施工 9-5；施工 SP-2 公开出来，`session.prompts` 照它取，两处一个取法）：斜杠命令模板展开成的照人敲的
+/// 那一行（施工 X-14 上），别的照头一块文字；第一行不是空白的那一行，去掉前后空白，最多 `most` 个字（按 Unicode 的字数）。
+/// 没有文字的是空的。
+#[must_use]
+pub fn said(message: &MessageUser, most: usize) -> String {
+    match message.typed() {
+        Some(typed) => first_line(typed, most),
+        None => message
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                Block::Text(text) => Some(first_line(&text.text, most)),
+                _ => None,
+            })
+            .unwrap_or_default(),
+    }
 }
 
-/// `text` 第一行不是空白的，截到 [`PREVIEW_CHARS`] 个字；都是空白的是空的。
-fn first_line(text: &str) -> String {
+/// `text` 第一行不是空白的，截到 `most` 个字；都是空白的是空的。
+fn first_line(text: &str, most: usize) -> String {
     text.lines()
         .map(str::trim)
         .find(|line| !line.is_empty())
-        .map(|line| line.chars().take(PREVIEW_CHARS).collect())
+        .map(|line| line.chars().take(most).collect())
         .unwrap_or_default()
 }

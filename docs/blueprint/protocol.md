@@ -31,6 +31,8 @@
 | `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：去掉控制字符、截到 128 字节，记成 `harness`（施工 7-10） |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表交给会话的端口：造子会话、给会话发命令（施工 7-5，`session/tools.md`「派子代理」）；停下子会话、照日志看它（施工 7-4）；列主会话（施工 C-3） |
 | `crates/miyu-endpoint/src/list.rs` | `session.list`：标题、置顶照日志算（施工 3-8 三补）；工作目录、最近一次动静、忙不忙（施工 C-3）；读会话列表的索引、照日志补，起来时打开它，删会话删行（施工 3-8 七补，`store/index.md`）。她用 `sessions` 列会话也是这一个 `scan`（`tools/sessions.md`） |
+| `crates/miyu-endpoint/src/asked.rs`、`asked/tests.rs`（施工 SP-2） | `session.prompts`：一个会话里主人问过的话，照有效历史，只读日志、一遍读完（「`session.prompts`」） |
+| `crates/miyu-endpoint/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表共用 |
 | `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补；读的时候照 `event_lines` 写好的行，施工 V-37 下），再推 `event`、`resync`；换掉一个订阅时等它写完 |
 | `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
@@ -263,6 +265,7 @@
 | `mermaid.render` | mermaid 源码画成 SVG。编进了 `miyu-base-mermaid` 包才有，没编进来回 `unknown_method`（施工 W-4，`mermaid.md`） |
 | `link.preview` | 一个链接的卡片：标题、简介、图（存成 blob）。编进了 `miyu-base-net` 包才有，没编进来回 `unknown_method`；在后台答（施工 W-7，`net.md`） |
 | `subscribe`、`unsubscribe` | 订阅、取消订阅会话的事件流；配置、会话列表、扩展的状态的推送 |
+| `session.prompts` | 一个会话里主人问过的所有话：序号、回合、时刻、第一行（照有效历史；施工 SP-2，网页的「问话跳转」用） |
 | `view.page` | 历史按页读：从末尾一页页往前，页的边界落在回合之间（施工 9-6 下）；写了 `view: true` 的交视图投影的条目（施工 9-8 中） |
 | `view.detail` | 一次调用的完整差异和结果原文（施工 9-6 三补、9-8 中）；一次压缩的摘要原文（施工 9-8 中） |
 
@@ -1139,6 +1142,23 @@
 8. 会话编号不合写法、`before` 是 0 或不是正整数、`turns` 不在 1 到 50、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。
 
 
+
+**`session.prompts`**（施工 SP-2，2026-11-03 网页 W-1069 要：右边的「问话跳转」把一个会话里的问话都列出来，没读进来的也能跳）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `session` | 字符串，必写 | 会话编号 |
+
+回应 `{"prompts": [{"seq", "turn", "at", "text"}, …]}`，照先后；没人问过的是空的数组。头要跳到没读进来的一句：照它的 `seq` 用 `view.page` 的 `before` 一页页往前读到那一页再跳。
+
+1. 一句是有效历史里一条主人本人说的 `message.user`：`by` 是主人（`person`），带不带 `via` 都算（桥代主人在私聊里转进来的、经平台身份认出来的也是主人本人说的：主人在 QQ 私聊里说的话都带 `via`，不列的话那种会话列出来是空的）。子会话、父会话发来的（`session`），平台上别的人说的（`external`，群里的主人也是），模块注入的（长期目标的续轮这些），别的 harness 的，定时任务、循环交进来的，内核的都不列。只有图、文件的照样列，`text` 是空的。
+2. 有效历史照留着一切的那一份（`History::whole`，同 `venue.records`）：撤销掉的不列，恢复的放回原处，重做（网页的「编辑上一句」）撤掉了原来那句、列重发的那一句，撤回的排着的话不列；压缩换出去的照样列。
+3. `seq` 是那条 `message.user` 的序号；`turn` 是它的回合：回合里来的（排着的）是那一轮，闲着时说的是它开的那一轮（有效历史里 `trigger` 是它的 `turn.started`），都没有的不写；`at` 是它的时刻，写法同事件的 `at`。
+4. `text` 同 `session.list` 的 `preview` 的取法（`miyu_store::index::said`，一处代码）：斜杠命令模板展开的照人敲的那一行（`command.text`），别的照头一块文字；第一个不是空白的那一行，去掉前后空白，只是最多 100 个字（`preview` 是 50 个）。
+5. 分叉出来的会话（`session.fork`、fork 子代理）只列它自己日志里的：底子里那一段的话在父会话的日志里，`view.page` 在这个会话上也翻不到；父会话照列它自己的。
+6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
+7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
+
 **`view.detail`**（施工 9-6 三补，2026-10-09 形状和终端界面、网页的会话对过；`04-核心协议.md` 第九节「条目只带摘要，完整的 diff 头展开时用 `view.detail` 按需取」）
 
 | 参数 | 类型 | 说明 |
@@ -1387,7 +1407,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `parse_error` | -32700 | 不是 JSON；一行太长（之后断开） |
 | `invalid_request` | -32600 | 是 JSON，不是请求（「请求」的表） |
 | `unknown_method` | -32601 | 握手以后，没有这个方法 |
-| `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `workspace`、`full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补），`after` 不是非负整数、和 `tail` 都写了、`wait` 没带 `after`（施工 V-6 上）；`model.list` 的 `models` 不是字符串数组、哪一个没有 `/` 或者 `/` 一边是空的（施工 V-6 上）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6）；`view.page` 第 7 条那几种（施工 9-6 下） |
+| `bad_params` | -32602 | 参数读不成、类型不对；会话编号、人格编号不合写法；`turn` 写了 0；`stream` 不是 `events`、`config`，`config` 带了 `session`、`after`（施工 8-4）；切权限级别两格都不写、`level` 不是 `workspace`、`full`；`blob.put` 第 1 条那几种；`session.send`、`session.redo` 的附件缺了格、格不合写法；`session.send` 的 `from` 不是字符串、去掉控制字符以后是空的（施工 7-10）；改标题两格都不写，标题去掉空白以后是空的、超过 200 个字；`job.stop`、`job.output` 的任务编号不合写法（施工 7-4），`job.output` 的 `tail` 不是 1 到 2000 的整数（施工 7-4 补），`after` 不是非负整数、和 `tail` 都写了、`wait` 没带 `after`（施工 V-6 上）；`model.list` 的 `models` 不是字符串数组、哪一个没有 `/` 或者 `/` 一边是空的（施工 V-6 上）；`human.get` 的 `language` 不合写法（施工 W-1）；`fs.realpath` 的 `path` 是相对的、没给 `cwd`（施工 W-3）；`mermaid.render` 的源码是空的（去掉前后空白以后，施工 W-4）；`blob.write` 的 `data` 不是 base64、解出来超过 512 KiB、加上它超过 `size`（施工 W-5）；`model.call` 的 `purpose` 不合写法、`messages` 不是那个样子、`max_tokens` 是 0 或者太大、`model` 是空字、图的 blob 不是图（施工 8-20）；`fs.read` 的 `path` 是相对的；`blob.get`、`fs.read` 的 `length` 超过 512 KiB（施工 W-6）；`link.preview` 的 `url` 没写、不是字符串（施工 W-7）；`usage.query` 的分组不认识、时刻和时区写法不对、会话编号不合写法、类型不对（施工 8-15）；`session.answer` 的 `decision`、`answers` 两样都写或都不写、`decision` 不是那三种、回答提问带了 `reason`、`call` 不合写法（施工 D-1）；`command.run` 的 `text` 不以 `/` 开头、本机的会话带了 `as`（施工 O-6）；`view.page` 第 7 条那几种（施工 9-6 下）；`session.prompts` 第 7 条那几种（施工 SP-2） |
 | `internal_error` | -32603 | 造会话时装坏了、磁盘上建不成、`session.created` 没落盘；列会话时读不了放会话的目录、崩了；附件存不下来、读不出来；删会话时读不了放会话的目录、挪不进回收处、崩了；读后台命令的输出时崩了（施工 7-4 补）；给人看的字读不懂（施工 W-1）；画图的库初始化不了：`style.json` 读不懂，或者这台机器上一种字体都读不到（施工 W-4）；分块上传的暂存文件建不了、写不进（施工 W-5）；`link_preview.json` 读不懂（施工 W-7） |
 | `hello_first` | -32010 | 握手以前发了别的方法 |
 | `protocol_mismatch` | -32010 | 头支持的主版本里没有 1（之后断开） |

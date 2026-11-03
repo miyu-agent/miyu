@@ -77,6 +77,7 @@ fn capabilities_gate_what_they_name() {
         ("command.run", Capability::SessionsDrive),
         ("session.list", Capability::EventsRead),
         ("view.page", Capability::EventsRead),
+        ("session.prompts", Capability::EventsRead),
         ("events.append", Capability::EventsWrite),
         ("session.note", Capability::ActForExternal),
         ("venue.plugins", Capability::ActForExternal),

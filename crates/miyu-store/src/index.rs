@@ -11,7 +11,7 @@
 
 mod row;
 
-pub use row::{Row, cwd};
+pub use row::{Row, cwd, said};
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

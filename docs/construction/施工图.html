@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1025</b><span>/ 1034 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1026</b><span>/ 1035 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-39下</b><span>最近一步（V-39 下 分叉底子交给载入和索引）</span></li>
+    <li><b class="mono">SP-2</b><span>最近一步（SP-2 列出会话里的问话）</span></li>
   </ul>
 </header>
 
@@ -510,6 +510,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV39b"><span class="n">V-39 中</span>支线底子边读边喂<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39a2"><span class="n">V-39 上补</span>判官只解析要的种类<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39c"><span class="n">V-39 下</span>分叉底子交给载入和索引<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sSP2"><span class="n">SP-2</span>列出会话里的问话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11702,6 +11703,60 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-39下-分叉底子交给载入和索引.md</code>；蓝图 <code>session/fork.md</code>「分叉读好的底子交给紧接着的载入」、<code>memory.md</code> 第一条第 6 款、<code>perf.md</code>「怎么量」第 5 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sSP2" aria-labelledby="h-sSP2">
+  <div class="sheet-head"><h2 id="h-sSP2"><span class="no">SP-2</span>列出会话里的问话</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">网页的「问话跳转」要把一个会话里主人问过的话都列出来，没读进来的也能先往前读到那一页再跳。原来只能 <code>view.page</code> 一页页翻到头，每一页都把整份日志读一遍。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">列出会话里的问话</span><span class="dir-note">SP-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>新方法 <code>session.prompts {session}</code> → <code>{prompts: [{seq, turn, at, text}]}</code>：有效历史里主人本人说的人话（桥代主人在私聊里转进来的、带 <code>via</code> 的也算），照先后；撤销的不列、恢复的放回、重做照最后那一版，压缩换出去的照样列</li>
+              <li><code>text</code> 和会话表的 <code>preview</code> 同一处代码：<code>miyu-store</code> 的取法公开成 <code>said(message, most)</code>，命令模板照人敲的那一行，问话最多 100 个字</li>
+              <li>闲着时说的 <code>turn</code> 写它开的那一轮；分叉出来的只列自己日志里的</li>
+              <li>只读日志、不载入、不落缓存：只全解人话，事件交给真的 <code>History::whole</code>，谁都碰不到的那一截收下就放，放早了照下界再读、认不得整份读</li>
+              <li>判官的「边读边过有效历史」挪到 <code>sweep.rs</code> 泛成 <code>Sweep&lt;S: Settle&gt;</code>，判官和问话列表共用，判官逻辑不变</li>
+              <li>权限、报错同 <code>view.page</code>；编号原派 SP-1，撞号改 SP-2</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">方法形状、只列主人本人、照有效历史、字同 preview</span><span class="rl">网页 W-1069，core1 转项目主人 2026-11-03</span></div>
+          <div class="tile new"><span class="nm">编号用 SP-2（SP-1 已是「每一轮的出字速度」）</span><span class="rl">协调方 2026-11-03</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SP-2</dd></div>
+        <div><dt>名称</dt><dd>列出会话里的问话</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-03</dd></div>
+        <div><dt>提交</dt><dd class="mono">SP-2</dd></div>
+        <div><dt>验收</dt><dd>十万条、56.9 MB 的本机会话：对比 <code>view.page</code> 翻到头（188 页），堆峰值 127.9 → 17.6 MB、匿名多 137.9 → 22.5 MB、指令 4,304 亿 → 19.5 亿、中位 16.8 s → 201 ms、回应 57.6 → 1.06 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>协议层先红后绿：普通问话、命令模板、撤销、恢复、重做、分叉、各种别的来路、半行、坏行、没有会话、参数不对、扩展缺 <code>events.read</code>，每个回应都和准绳比</span></li>
+        <li><span class="ok">✓</span><span>准绳「整份读 → History::whole → 主人本人的人话 → preview 的取法」，三千份照种子造的本机会话逐条比，放早了再读的两千多份、整份读的 11 份</span></li>
+        <li><span class="ok">✓</span><span>手写变异 10 个都逮住；判官的对照测试照旧全过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SP-2-列出会话里的问话.md</code>；蓝图 <code>protocol.md</code>「<code>session.prompts</code>」；参考 <code>sessions.md</code>、<code>sessions.en.md</code>。</li>
       </ul>
     </div>
   </div>

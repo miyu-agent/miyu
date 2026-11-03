@@ -112,6 +112,9 @@ pub(crate) fn call<'a>(
         "view.page" => {
             answer(move || async move { crate::view::page(core, peer, params(request)?).await })
         }
+        "session.prompts" => {
+            answer(move || async move { crate::asked::prompts(core, params(request)?).await })
+        }
         "view.detail" => {
             answer(move || async move { crate::view::detail(core, peer, params(request)?).await })
         }

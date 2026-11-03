@@ -156,6 +156,7 @@ session.fork
 session.interrupt
 session.list
 session.note
+session.prompts
 session.recap
 session.redo
 session.respond

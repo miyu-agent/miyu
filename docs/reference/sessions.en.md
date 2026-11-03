@@ -26,6 +26,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.configure`](#sessionconfigure) | Change the model, persona, preset or reasoning effort |
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
+| [`session.prompts`](#sessionprompts) | List what was asked in a session |
 | [`view.page`](#viewpage) | Read history page by page |
 | [`view.detail`](#viewdetail) | The full diff of a tool call; a compaction's summary |
 
@@ -34,7 +35,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -413,6 +414,27 @@ Moves it to the trash, kept for 7 days. Child sessions it spawned are deleted wi
 **Params**: `session`. **Response**: `{}` once moved. Heads subscribed to it get `resync`.
 
 **Errors**: `turn_running`: a turn is running (interrupt first); `internal_error`: couldn't move it.
+
+## `session.prompts`
+
+List everything you asked in a session, in order. Heads build a "jump to a prompt" list from it: for one that isn't loaded yet, page back with `view.page`'s `before` until its `seq` is on a page, then jump. Reads the log only; the session isn't loaded.
+
+**Params**: `session`.
+
+**Response**: `prompts`, one item per prompt:
+
+| Name | Notes |
+|---|---|
+| `seq` | The number of that `message.user` |
+| `turn` | Its turn: the turn it was queued in, or the turn it started if it was said while idle; omitted when neither |
+| `at` | Its time, written like an event's `at` |
+| `text` | The first line, trimmed, at most 100 characters; a slash-command template shows the line you typed (the same rule as `session.list`'s `preview`). Empty for images or files only |
+
+- **Only what you said here**: what you said locally and what a bridge relayed from your private chat are listed; messages from child or parent sessions, from other people on a platform (a group message recognized as yours still counts as a platform person), injected ones (such as goal rounds), and ones from other harnesses or schedules aren't.
+- **Follows the effective history**: reverted prompts are left out, unreverted ones come back, a redo (editing the last prompt) lists the final version, withdrawn queued messages are left out; compacted ones are still listed.
+- **A forked session** lists only its own; prompts in the part it was forked from are listed in the parent.
+
+**Errors**: `bad_params`; `session_not_found`; `session_broken`.
 
 ## `view.page`
 
