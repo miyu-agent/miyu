@@ -95,6 +95,7 @@ fn what_was_laid_from_the_log_is_not_seen_again() {
             floor: None,
             laid: Laid::Read(&[]),
             source: Source::of(&log, None),
+            primed: None,
         })
         .expect("起得了后台");
     lane.advance(&[started]);
@@ -152,6 +153,7 @@ fn nothing_is_opened_until_the_lane_is_started() {
             floor: None,
             laid: Laid::Read(&[]),
             source: Source::of(&log, None),
+            primed: None,
         })
         .expect("起得了后台");
     lanes.settle();
@@ -240,6 +242,7 @@ fn an_undone_turn_is_buried_by_the_time_the_batch_lands() {
         floor: None,
         laid: Laid::Read(&[]),
         source: Source::of(log, None),
+        primed: None,
     };
 
     let small = SessionId::parse("01a0f233-cfec-7023-8ed5-2a037a1d5ecb").expect("编号写对了");

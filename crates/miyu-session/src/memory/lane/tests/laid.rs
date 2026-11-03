@@ -2,6 +2,9 @@
 //! 每一行（条目的键、字、时刻，墓碑，照到哪，用到的，场所，从哪来，连全文检索的表）逐行相等，接上以后的 `upto`、读不了时
 //! 报的错一样。日志照种子造（[`Script`]）：撤销、恢复、中途换人格、群里照几句开的、调搜记忆的；分几段；分叉出来的支线带
 //! 底子（父会话过了分叉点又说了一截）；库里已经照到一半的；接上以后落一批恢复（不记得字，读回再算）的。
+//!
+//! 分叉出来的另接一遍（施工 V-39 下）：底子在分叉时照每一条 `Priming::base` 认好了交过来（`Opening::primed`），接上时不再
+//! 读底子，写进库的也和原来的逐行相等。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -13,7 +16,7 @@ use miyu_store::recall::{Origin, RecallIndexes, Room};
 use super::super::super::recast;
 use super::super::{Laid, Open, Opening, Source, attach};
 use super::old;
-use super::script::{Dice, Script};
+use super::script::{Dice, Script, primed};
 use crate::store::Base;
 
 const SESSION: &str = "01a0f233-cfec-7023-8ed5-2a037a1d5f01";
@@ -77,12 +80,13 @@ fn write_log(dir: &Path, first: u64, lines: &[String], cuts: &[usize]) {
     }
 }
 
-/// 一边接：`connect` 是原来的或者新的，`advance` 同。
+/// 一边接：`connect` 是原来的或者新的，`advance` 同；`prime` 的底子照分叉时认好的交过去（施工 V-39 下，只对分叉出来的）。
 fn run(
     case: &Case,
     side: &str,
     connect: fn(Opening) -> Result<Open, miyu_store::log::OpenError>,
     advance: fn(&mut Open, Vec<Event>),
+    prime: bool,
 ) -> Outcome {
     let (scratch, root) = super::root(side);
     let session = SessionId::parse(SESSION).expect("编号写对了");
@@ -118,6 +122,11 @@ fn run(
                 dir: dir.clone(),
                 base: base.clone(),
             },
+            primed: case
+                .parent
+                .as_ref()
+                .filter(|_| prime)
+                .map(|(lines, upto)| primed(lines, *upto)),
         }
     };
     if let Some(prefix) = case.prefix {
@@ -217,9 +226,25 @@ fn collect(dir: &Path, found: &mut Vec<PathBuf>) {
 
 /// 两边接同一份，比。临时目录照 `tag` 分开（几个测试一起跑）。
 fn same(case: &Case, tag: &str, what: &str) -> Outcome {
-    let old = run(case, &format!("{tag}-old"), old::connect, old::advance);
-    let new = run(case, &format!("{tag}-new"), attach, Open::advance);
+    let old = run(
+        case,
+        &format!("{tag}-old"),
+        old::connect,
+        old::advance,
+        false,
+    );
+    let new = run(case, &format!("{tag}-new"), attach, Open::advance, false);
     assert_eq!(new, old, "{what}");
+    new
+}
+
+/// 同 [`same`]，分叉出来的另照分叉时认好的底子接一遍（施工 V-39 下），也和原来的一样。
+fn same_primed(case: &Case, tag: &str, what: &str) -> Outcome {
+    let new = same(case, tag, what);
+    if case.parent.is_some() {
+        let primed = run(case, &format!("{tag}-primed"), attach, Open::advance, true);
+        assert_eq!(primed, new, "{what}（底子分叉时认好的）");
+    }
     new
 }
 
@@ -292,7 +317,7 @@ fn laying_piece_by_piece_writes_what_the_whole_log_did() {
     let (mut written, mut restored, mut forked, mut halfway) = (0, 0, 0, 0);
     for round in 0..160 {
         let case = random(&mut dice);
-        let outcome = same(&case, "laid", &format!("第 {round} 份"));
+        let outcome = same_primed(&case, "laid", &format!("第 {round} 份"));
         written += usize::from(items(&outcome) > 0);
         restored += usize::from(
             case.batch
@@ -376,11 +401,15 @@ fn an_unreadable_log_is_told_alike_and_touches_no_index() {
             broken(&own, 2),
         ),
     ] {
-        let outcome = same(&case(parent, own), "unreadable", what);
+        // 底子读得了、自己的坏了的，分叉时认好底子交过来的也报一样的错（施工 V-39 下）；底子坏了的分叉不成，交不过来。
+        let outcome = match what {
+            "自己的坏了" => same_primed(&case(parent, own), "unreadable", what),
+            _ => same(&case(parent, own), "unreadable", what),
+        };
         assert!(outcome.error.is_some(), "{what}");
         assert!(outcome.rows.is_empty(), "{what}：{:?}", outcome.rows);
     }
-    let outcome = same(&case(fine, own), "unreadable", "都读得了");
+    let outcome = same_primed(&case(fine, own), "unreadable", "都读得了");
     assert!(outcome.error.is_none());
     assert!(!outcome.rows.is_empty(), "读得了的开了库");
 }
@@ -440,6 +469,7 @@ fn sessions_in_a_data_root_lay_alike() {
                             dir: dir.clone(),
                             base: base.clone(),
                         },
+                        primed: None,
                     });
                     let upto = opened.as_ref().ok().map(|opened| opened.upto);
                     let error = opened.as_ref().err().map(ToString::to_string);

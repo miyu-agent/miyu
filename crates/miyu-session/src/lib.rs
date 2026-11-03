@@ -92,9 +92,9 @@ pub use memory::{
     MergeTexts, NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, TagTexts, Using, Vectors,
 };
 pub use open::{
-    Create, CreateError, Fork, ForkError, GroupSettings, Installed, Load, LoadError,
-    OfferedFeatures, Placed, PresetPlaces, ToolOverrides, Within, Workplace, create, fork, load,
-    load_placed, preview, preview_context,
+    Create, CreateError, Fork, ForkError, ForkedBase, GroupSettings, Installed, Load, LoadError,
+    OfferedFeatures, Placed, PresetPlaces, ToolOverrides, Within, Workplace, create, fork,
+    fork_handing, load, load_placed, preview, preview_context,
 };
 pub use path_text::path_text;
 pub use plugins::VenuePlugins;

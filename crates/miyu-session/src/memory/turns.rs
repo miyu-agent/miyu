@@ -64,6 +64,15 @@ impl Laying {
         }
     }
 
+    /// 同 [`Laying::new`]，底子已经喂好了（`priming`，施工 V-39 下：分叉时照底子的每一条 `Priming::base` 过）：接着只喂
+    /// 自己的。
+    pub(crate) fn primed(floor: Option<Seq>, priming: Priming) -> Laying {
+        Laying {
+            priming,
+            ..Laying::new(floor)
+        }
+    }
+
     /// 底子里的一条（施工 R-13 三补）：只为认得那里还没回的人话，父会话的回合不在支线名下再记。要在自己的前面喂完。
     pub(crate) fn base(&mut self, event: &Event) {
         self.priming.base(event);

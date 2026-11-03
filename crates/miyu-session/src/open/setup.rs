@@ -295,6 +295,9 @@ pub struct Load<'a> {
     pub memory: Option<Arc<crate::Memory>>,
     /// 同 [`Create::presets`]。
     pub presets: Option<PresetPlaces>,
+    /// 刚分叉出来的这条支线，分叉时读好的底子（施工 V-39 下，[`fork_handing`](crate::fork_handing)）：交了的，载入、回合
+    /// 索引照它接着走，不再读父会话。不是这条支线、不是这个分叉点的不用，照旧自己读；别的载入没有。
+    pub forked: Option<crate::ForkedBase>,
 }
 
 /// 照场所定预设（[`Chosen::situated`]）：显示不了图片的会话里要图的包整包扣下（施工 X-25），接这个场所平台的包整包开着（施工

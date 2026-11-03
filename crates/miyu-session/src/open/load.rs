@@ -3,7 +3,7 @@
 
 use std::path::Path;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use tokio::sync::mpsc;
 
@@ -39,7 +39,8 @@ use crate::tools::ToolKit;
 use super::{Load, LoadError, Placed, Workplace};
 use crate::default_workspace::DefaultWorkspace;
 
-mod stream;
+pub(super) mod stream;
+use stream::millis;
 
 /// 从磁盘载入一个会话：打开日志（自检、截尾），照第 1 条的策略哈希取快照、造策略，交给内核载入。
 /// 内核吐出来的动作照样回：有计划的重启打断了的一轮，接着干。
@@ -91,6 +92,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         plugins,
         memory,
         presets,
+        forked,
     } = setup;
     let span = actor::span(&id);
     let loading = Instant::now();
@@ -127,8 +129,9 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             snapshot: (snapshot, policy),
             loaded,
             scan,
+            primed,
             snapshotted,
-        } = stream::read(&dir, &id_of, &store, &parents)?;
+        } = stream::read(&dir, &id_of, &store, &parents, forked)?;
         let read = began.elapsed().saturating_sub(snapshotted);
         let snapshotting = Instant::now();
         let texts = snapshot.driver_texts().map_err(LoadError::Policy)?;
@@ -155,6 +158,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
             (
                 memory::Laid::Read(&laid),
                 memory::Source::of(&log, base.clone()),
+                primed,
             ),
         );
         let remembered = scan.remembered();
@@ -491,9 +495,4 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         .with_waiting(on_person)
         .with_prefix(prefix);
     Ok((handle, placed))
-}
-
-/// 毫秒，一位小数：运行日志里写载入各段用了多久（施工 V-2 中）。
-fn millis(took: Duration) -> f64 {
-    (took.as_secs_f64() * 10_000.0).round() / 10.0
 }

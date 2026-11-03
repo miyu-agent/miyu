@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use miyu_kernel::id::SessionId;
-use miyu_session::{Load, LoadError, Workplace, load_placed};
+use miyu_session::{ForkedBase, Load, LoadError, Workplace, load_placed};
 use miyu_store::log::OpenError;
 
 use super::{Found, Open, Running, offset};
@@ -18,10 +18,12 @@ use crate::spawn;
 impl Open {
     /// 找会话 `id`，表的锁在调的一方手里（[`super::Sessions::get`]）：在跑的直接交回；没在跑的从磁盘载入，载入以后在后台
     /// 收掉它派到一半的空子会话（施工 7-8，V-2 三补起不挡着载入；V-37 上起日志里派子代理的调用都记下了的不起这一趟）。
+    /// 刚分叉出来的支线带着分叉读好的底子（`forked`，施工 V-39 下）交给载入；在跑的用不上，跟着放掉。
     pub(super) async fn found(
         &mut self,
         core: &Arc<Core>,
         id: &SessionId,
+        forked: Option<ForkedBase>,
     ) -> Result<Found, Refusal> {
         if let Some(running) = self.running.get(id) {
             return Ok(Found {
@@ -73,6 +75,7 @@ impl Open {
             memory: Some(Arc::clone(&core.memory)),
             presets: Some(crate::presets::places(core)),
             configs: core.configs_of(),
+            forked,
         })
         .await;
         let (handle, placed) = match loaded {

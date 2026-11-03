@@ -17,7 +17,7 @@ use miyu_kernel::origin::{By, Person, Session};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
-use miyu_session::{Child, Create, Handle, create, new_id};
+use miyu_session::{Child, Create, ForkedBase, Handle, create, new_id};
 use miyu_store::log::first_event;
 
 use crate::Core;
@@ -210,7 +210,21 @@ impl Sessions {
     /// `session.set_workspace`（`workspace.rs`）。
     pub(crate) async fn get(&self, core: &Arc<Core>, id: &SessionId) -> Result<Found, Refusal> {
         let mut open = self.open.lock().await;
-        let found = open.found(core, id).await;
+        let found = open.found(core, id, None).await;
+        self.sweep(core);
+        found
+    }
+
+    /// 同 [`Sessions::get`]，会话 `id` 是刚分叉出来的支线，`base` 是分叉那一遍读好的底子（施工 V-39 下）：要从磁盘载入的
+    /// 交给载入，不再读父会话；已经在跑的（别的路先载入了）用不上，跟着放掉。
+    pub(crate) async fn get_forked(
+        &self,
+        core: &Arc<Core>,
+        id: &SessionId,
+        base: ForkedBase,
+    ) -> Result<Found, Refusal> {
+        let mut open = self.open.lock().await;
+        let found = open.found(core, id, Some(base)).await;
         self.sweep(core);
         found
     }

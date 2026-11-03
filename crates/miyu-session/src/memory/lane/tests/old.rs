@@ -22,6 +22,7 @@ pub(super) fn connect(opening: Opening) -> Result<Open, OpenError> {
         floor,
         laid,
         source,
+        primed: _,
     } = opening;
     let own = match laid {
         Laid::Empty => Vec::new(),

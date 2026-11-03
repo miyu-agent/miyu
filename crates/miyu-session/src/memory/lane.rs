@@ -7,6 +7,9 @@
 //! 再铺，四万条、二十来兆的大会话一接就是几十兆的堆。载入时等会话重放完了才交接上（[`TurnLane::start`]）：后台读日志、开库不和载入抢 CPU（CI 上开着记忆
 //! 打开大会话原来多 7 ms 上下）；别的时候头一批交来以前交。回合库本来就照「照到哪」认落后的一批不写（`RecallIndex::apply`），会话停了、核心退了还没写的，下次
 //! 载入照日志补上。
+//!
+//! 刚分叉出来的支线（施工 V-39 下）：分叉那一遍已经照底子认好了（[`Opening::primed`]），接上时不再读底子，只读会话自己的；
+//! 别的会话、以后再载入的支线照旧在这里读底子。
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -15,7 +18,7 @@ use std::sync::{Arc, OnceLock, mpsc};
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId, TurnId, VenueId};
-use miyu_recall::{Replay, TurnItem};
+use miyu_recall::{Priming, Replay, TurnItem};
 use miyu_store::log::{Flow, OpenError, SessionLog, read_range};
 use miyu_store::recall::{Origin, RecallIndexes, Room};
 
@@ -50,7 +53,8 @@ pub(crate) struct TurnLane {
     opening: Option<Box<Opening>>,
 }
 
-/// 接上要的几样：回合库在哪一间、会话、场所，抽取从哪一条以后算（中途换过人格的，施工 P-13），一开始铺什么、日志在哪。
+/// 接上要的几样：回合库在哪一间、会话、场所，抽取从哪一条以后算（中途换过人格的，施工 P-13），一开始铺什么、日志在哪，
+/// 底子认好了没有。
 pub(crate) struct Opening {
     pub(crate) recall: Arc<RecallIndexes>,
     pub(crate) room: Room,
@@ -60,6 +64,9 @@ pub(crate) struct Opening {
     pub(crate) floor: Option<Seq>,
     pub(crate) laid: Laid<'static>,
     pub(crate) source: Source,
+    /// 分叉时已经照底子（`source.base`）认好的（施工 V-39 下，`ForkedBase`）：有的接上时不再读底子。只有刚分叉出来、紧接着
+    /// 载入的支线有。
+    pub(crate) primed: Option<Priming>,
 }
 
 /// 一开始照会话自己的哪些事件铺。
@@ -247,7 +254,7 @@ fn connect(opening: Opening) -> Option<Open> {
 ///
 /// 边读边铺（施工 V-37 下）：底子（父会话到分叉点为止的）先一块块读、喂，再一块块读会话自己的，换人格以前的并进底子，铺完
 /// 才开库写。原来自己的、底子各整份读出来，照换人格那一条切开再铺：读的先后反过来了，报错照原来的先后，两样都读不了的报
-/// 自己的。
+/// 自己的。分叉时已经照底子认好的（`primed`，施工 V-39 下）不读底子，接着喂自己的。
 fn attach(opening: Opening) -> Result<Open, OpenError> {
     let Opening {
         recall,
@@ -258,10 +265,16 @@ fn attach(opening: Opening) -> Result<Open, OpenError> {
         floor,
         laid,
         source,
+        primed,
     } = opening;
-    let mut laying = Laying::new(floor);
+    let fed = primed.is_some();
+    let mut laying = match primed {
+        Some(priming) => Laying::primed(floor, priming),
+        None => Laying::new(floor),
+    };
     // 底子只在接上的这一会儿读（施工 V-20），读一块喂一块就放掉，不跟着会话常驻。
-    if let Some(base) = &source.base
+    if !fed
+        && let Some(base) = &source.base
         && let Err(error) = base.each(|events| events.iter().for_each(|event| laying.base(event)))
     {
         return Err(match &laid {

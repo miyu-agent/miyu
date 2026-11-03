@@ -139,6 +139,11 @@ fn member() -> By {
 
 /// 群里的主线旁听记下小林的一句「团子吃什么」，分叉一条支线，支线照这一句开一轮、她回一句；都停下。交回支线的编号。
 async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionId {
+    heard_then_answered(home, false).await
+}
+
+/// 同 [`heard_then_answered_in_a_lane`]；`handing` 的分叉读好的底子交给紧接着的载入（施工 V-39 下），回合索引不再读父会话。
+async fn heard_then_answered(home: &Home, handing: bool) -> miyu_kernel::id::SessionId {
     let script = Script::new([Play::Says("猫粮加一点鸡胸肉。")]);
     let tools = catalog(home);
     let lines = Lines {
@@ -171,7 +176,7 @@ async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionI
         .map(|event| event.seq)
         .expect("旁听记下了");
     let lane = new_id(now());
-    miyu_session::fork(Fork {
+    let setup = Fork {
         root: &home.root,
         parent: parent.id(),
         id: lane.clone(),
@@ -181,10 +186,25 @@ async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionI
         index: None,
         seal_after: None,
         within: None,
-    })
-    .await
-    .expect("分叉得了");
-    let branch = home.load_with(&lane, &script, &tools).await;
+    };
+    // 交底子的：分叉以后把父会话的日志挪开，支线载入、接上回合索引、回一轮都不读它，回合库照样记下底子里那句人话；
+    // 都停下以前挪回来。Windows 上父会话开着的日志挪不开，不挪。
+    let away = handing && cfg!(not(windows));
+    let parent_dir = home.root.session_dir(parent.id());
+    let moved = parent_dir.with_extension("away");
+    let branch = match handing {
+        true => {
+            let (_, forked) = miyu_session::fork_handing(setup).await.expect("分叉得了");
+            if away {
+                std::fs::rename(&parent_dir, &moved).expect("挪得开");
+            }
+            home.load_forked_with(&lane, forked, &script, &tools).await
+        }
+        false => {
+            miyu_session::fork(setup).await.expect("分叉得了");
+            home.load_with(&lane, &script, &tools).await
+        }
+    };
     let mut pushes = watch(&branch).await;
     let respond = Command::Respond {
         to: vec![line],
@@ -193,6 +213,10 @@ async fn heard_then_answered_in_a_lane(home: &Home) -> miyu_kernel::id::SessionI
     ask(&branch, "r1", respond).await.expect("会话在跑");
     until_turn_ends(&mut pushes).await;
     stop(&branch).await;
+    if away {
+        home.memory.settle();
+        std::fs::rename(&moved, &parent_dir).expect("挪得回");
+    }
     stop(&parent).await;
     lane
 }
@@ -239,6 +263,18 @@ async fn a_lane_turn_opened_by_a_line_heard_before_the_fork_keeps_that_line() {
     // 支线那一轮的触发在底子里（分叉点以前主线旁听记下的）：回合库那一段带着这句人话，只在支线名下记一次。
     let home = Home::new();
     let lane = heard_then_answered_in_a_lane(&home).await;
+    let found = tuanzi(&home.memory);
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert!(found[0].0.starts_with(&format!("{lane}/")), "{found:?}");
+    assert_eq!(found[0].1, "团子吃什么\n\n猫粮加一点鸡胸肉。");
+}
+
+#[tokio::test]
+async fn a_lane_handed_its_base_at_the_fork_keeps_that_line_without_reading_the_parent() {
+    // 分叉读好的底子交给紧接着的载入（施工 V-39 下）：回合索引照分叉时认好的底子接上，父会话的日志后台不再读；那一段照样
+    // 带着底子里那句人话，只在支线名下记一次。父会话的日志在支线载入、接上、回一轮的时候挪开了。
+    let home = Home::new();
+    let lane = heard_then_answered(&home, true).await;
     let found = tuanzi(&home.memory);
     assert_eq!(found.len(), 1, "{found:?}");
     assert!(found[0].0.starts_with(&format!("{lane}/")), "{found:?}");

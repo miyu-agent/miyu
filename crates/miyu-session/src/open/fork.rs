@@ -5,6 +5,10 @@
 //!
 //! 父会话一块块读（施工 V-39 中，`docs/construction/V-39中-支线底子边读边喂.md`）：边读边交给内核算分叉（[`ForkFeed`]），
 //! 整份不同时留在内存里；以前整份读进来、过两遍账本，再把分叉点以前的有效历史攒一遍，只为写一条。
+//!
+//! 分叉读好的底子交给紧接着的载入（施工 V-39 下，`docs/construction/V-39下-分叉底子交给载入和索引.md`，[`fork_handing`]）：
+//! 喂到分叉点的 `BaseFeed`、底子里她看过的文件、回合索引要认的底子（`Priming::base`）跟着分叉这一遍一起喂好，交给
+//! 调的一方，它紧接着载入这条支线时交过去，载入、回合索引都不再读父会话。只活在这一次分叉、载入之间，不落盘、不常驻。
 
 use std::fmt;
 use std::io;
@@ -12,13 +16,14 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
 
-use miyu_kernel::event::{Body, Forked, SessionCreated};
+use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{CallId, CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{BaseFeed, ForkFeed, ForkPlan, LoadError as Broken, Session};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::{BuildError, Snapshot, SnapshotError};
+use miyu_recall::Priming;
 use miyu_store::blob::{BlobError, Blobs};
 use miyu_store::index::SessionIndex;
 use miyu_store::log::{Flow, OpenError, SEGMENT_LIMIT, SessionLog, abandon, read_range};
@@ -26,6 +31,7 @@ use miyu_store::root::DataRoot;
 
 use super::scan::Place;
 use crate::blocking::blocking;
+use crate::effects::SeenScan;
 use crate::store::{Indexed, Store};
 
 /// 分叉要的几样。
@@ -96,12 +102,56 @@ impl fmt::Display for ForkError {
 
 impl std::error::Error for ForkError {}
 
+/// 分叉时读好的底子（施工 V-39 下）：父会话喂到分叉点为止的那一份（压缩以前的已经放掉），连同底子里她看过的文件、回合索引
+/// 要认的底子里还没回的人话。[`fork_handing`] 交回，交给紧接着载入这条支线的 [`Load::forked`](crate::Load::forked)：
+/// 载入、回合索引照它接着走，不再读父会话。
+///
+/// 只交给那一次载入：不是这条支线、不是这个分叉点的不用（照旧自己读）；没交出去、没用上的跟着放掉，不落盘、不常驻。
+pub struct ForkedBase {
+    /// 分叉出来的支线。
+    pub(crate) child: SessionId,
+    /// 父会话。
+    pub(crate) parent: SessionId,
+    /// 分叉点。
+    pub(crate) upto: Seq,
+    /// 喂到分叉点的底子。
+    pub(crate) base: BaseFeed,
+    /// 底子里她看过的文件（同载入时的 `Scan::base`）。
+    pub(crate) seen: SeenScan,
+    /// 回合索引照底子认的（同回合索引接上时的 `Laying::base`）。
+    pub(crate) priming: Priming,
+}
+
+impl fmt::Debug for ForkedBase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ForkedBase")
+            .field("child", &self.child)
+            .field("parent", &self.parent)
+            .field("upto", &self.upto)
+            .finish_non_exhaustive()
+    }
+}
+
 /// 分叉：写好子会话的第一条，交回分叉点。父会话照只读读（它可能正在写）。
 ///
 /// # Errors
 ///
 /// 见 [`ForkError`]。
 pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
+    forked::<()>(setup).await.map(|(upto, ())| upto)
+}
+
+/// 同 [`fork`]，另交回这一遍读好的底子（施工 V-39 下，[`ForkedBase`]）：调的一方紧接着载入这条支线时交过去。
+///
+/// # Errors
+///
+/// 同 [`fork`]。
+pub async fn fork_handing(setup: Fork<'_>) -> Result<(Seq, ForkedBase), ForkError> {
+    forked::<Handing>(setup).await
+}
+
+/// 分叉，喂底子时另照 `H` 记、写完第一条照它交回（[`Hand`]）。
+async fn forked<H: Hand>(setup: Fork<'_>) -> Result<(Seq, H::Handed), ForkError> {
     let Fork {
         root,
         parent,
@@ -122,8 +172,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             created,
             plan,
             base,
-            place,
-        } = read_parent(
+            noted: Noted { place, hand },
+        } = read_parent::<H>(
             &parent_dir,
             &parent,
             within.as_ref().map(|within| within.call),
@@ -154,7 +204,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             // 关着的会话分叉出来的照旧关着（施工 SU-4 中）。
             confined: created.confined,
             forked: Some(Forked {
-                from: parent,
+                from: parent.clone(),
                 upto: plan.upto,
                 seal_after,
                 within: plan.within,
@@ -167,6 +217,7 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             dirs,
         };
         let first_id = id.clone();
+        let child_id = id.clone();
         let first = match &within {
             Some(within) => Session::fork_within(
                 id,
@@ -182,8 +233,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             None => Session::fork(id, &base, cause, by, at, child, policy, environment),
         }
         .map_err(ForkError::Kernel)?;
-        // 喂好的底子到这里就放掉；紧接着的载入另读（交给它是施工 V-39 下的事）。
-        drop(base);
+        // 喂好的底子交给紧接着的载入（施工 V-39 下）；不交的到这里就放掉。
+        let handed = hand.hand(child_id, parent, plan.upto, base);
         let start = plan.upto.next();
         let log =
             SessionLog::create_at(&child_dir, SEGMENT_LIMIT, start).map_err(ForkError::Disk)?;
@@ -195,27 +246,95 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             }
             return Err(ForkError::Disk(error));
         }
-        Ok(plan.upto)
+        Ok((plan.upto, handed))
     })
     .await
 }
 
-/// 父会话读完了：它的 `session.created`、分叉要照的几样、喂到分叉点为止的底子、到分叉点为止记下的工作目录。
-struct Parent {
+/// 父会话读完了：它的 `session.created`、分叉要照的几样、喂到分叉点为止的底子、照到分叉点为止的每一条记下的。
+struct Parent<H> {
     created: SessionCreated,
     plan: ForkPlan,
     base: BaseFeed,
+    noted: Noted<H>,
+}
+
+/// 照喂进底子的每一条（到分叉点为止，照先后）记的：工作目录，和交不交底子的那一份（[`Hand`]）。
+#[derive(Default)]
+struct Noted<H> {
     place: Place,
+    hand: H,
+}
+
+impl<H: Hand> Noted<H> {
+    /// 记一条。
+    fn note(&mut self, event: &Event) {
+        self.place.note(event);
+        self.hand.note(event);
+    }
+}
+
+/// 分叉读好的底子交不交给载入（施工 V-39 下）：交的（[`Handing`]）喂底子时另记她看过的文件、回合索引认的底子，写完第一条
+/// 连同底子交回；不交的（`()`）什么都不记，底子写完第一条就放掉。
+trait Hand: Default + Send + 'static {
+    /// 交回的。
+    type Handed: Send + 'static;
+
+    /// 喂进底子的一条。
+    fn note(&mut self, event: &Event);
+
+    /// 写完第一条：支线 `child`、父会话 `parent`、分叉点 `upto`、喂好的底子 `base`。
+    fn hand(self, child: SessionId, parent: SessionId, upto: Seq, base: BaseFeed) -> Self::Handed;
+}
+
+impl Hand for () {
+    type Handed = ();
+
+    fn note(&mut self, _: &Event) {}
+
+    fn hand(self, _: SessionId, _: SessionId, _: Seq, _: BaseFeed) {}
+}
+
+/// 交底子的：照喂进底子的每一条记她看过的文件（同载入时的 `Scan::base`）、回合索引认的底子（同接上时的 `Laying::base`）。
+#[derive(Default)]
+struct Handing {
+    seen: SeenScan,
+    priming: Priming,
+}
+
+impl Hand for Handing {
+    type Handed = ForkedBase;
+
+    fn note(&mut self, event: &Event) {
+        self.seen.note(event);
+        self.priming.base(event);
+    }
+
+    fn hand(self, child: SessionId, parent: SessionId, upto: Seq, base: BaseFeed) -> ForkedBase {
+        ForkedBase {
+            child,
+            parent,
+            upto,
+            base,
+            seen: self.seen,
+            priming: self.priming,
+        }
+    }
 }
 
 /// 只读地一块块读父会话 `parent` 的日志（在 `dir`，它可能正在写），边读边交给内核算分叉（`call` 是 fork 子代理派它的那次
 /// 调用）。报错的先后同以前整份读进来再算：先是日志打不开、坏了（整份读完才知道，所以账本出的错先记着、接着读到底），
-/// 再是第一条不是造会话、不能从它分叉，再是账本、分叉点。第一条就不对的不交给内核，照样读完。
-fn read_parent(dir: &Path, parent: &SessionId, call: Option<CallId>) -> Result<Parent, ForkError> {
+/// 再是第一条不是造会话、不能从它分叉，再是账本、分叉点。第一条就不对的不交给内核，照样读完。喂进底子的每一条另照 `H` 记
+/// （[`Hand`]）。
+fn read_parent<H: Hand>(
+    dir: &Path,
+    parent: &SessionId,
+    call: Option<CallId>,
+) -> Result<Parent<H>, ForkError> {
     // 第一块到了没有，到了的第一条是不是造会话那一条。
     let mut created: Option<Option<SessionCreated>> = None;
     let mut feed: Option<ForkFeed> = None;
-    let mut place = Place::default();
+    let mut noted = Noted::<H>::default();
     read_range(dir, Seq::FIRST, None, |events| {
         if created.is_none() {
             let first = match events.first().map(|event| &event.body) {
@@ -228,7 +347,7 @@ fn read_parent(dir: &Path, parent: &SessionId, call: Option<CallId>) -> Result<P
             created = Some(first);
         }
         if let Some(feed) = &mut feed {
-            feed.feed(events, &mut |event| place.note(event));
+            feed.feed(events, &mut |event| noted.note(event));
         }
         Flow::Go
     })
@@ -240,13 +359,13 @@ fn read_parent(dir: &Path, parent: &SessionId, call: Option<CallId>) -> Result<P
         return Err(ForkError::NotMain);
     };
     let (plan, base) = feed
-        .finish(call, &mut |event| place.note(event))
+        .finish(call, &mut |event| noted.note(event))
         .map_err(ForkError::Kernel)?;
     Ok(Parent {
         created,
         plan,
         base,
-        place,
+        noted,
     })
 }
 

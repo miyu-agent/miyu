@@ -46,11 +46,15 @@ mod place;
 use place::place;
 mod scan;
 mod setup;
+#[cfg(feature = "testkit")]
+mod told;
+#[cfg(feature = "testkit")]
+pub(crate) use told::told;
 
 pub use draft::preview_context;
 pub use error::{CreateError, LoadError};
 pub use face::preview;
-pub use fork::{Fork, ForkError, Within, fork};
+pub use fork::{Fork, ForkError, ForkedBase, Within, fork, fork_handing};
 pub use load::{load, load_placed};
 pub use scan::Placed;
 pub(crate) use scan::current_policy;
@@ -194,7 +198,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
             (name.as_deref().unwrap_or(NO_PERSONA), &persona_book),
             (&id_of, !child),
             (&venue_of, place.1.is_some()),
-            (memory::Laid::Empty, memory::Source::of(&log, None)),
+            (memory::Laid::Empty, memory::Source::of(&log, None), None),
         );
         Ok((snapshot, policy, texts, run, (guard, place), log, turns))
     })

@@ -3,6 +3,9 @@
 //! 场所、关不关起来、工作目录、权限、策略快照、钉住的模型照父会话那一刻的。回应 `{session, upto}`。记成谁同 `events.append`。
 //! 父会话不是主会话的（子代理、分叉出来的）`bad_params`；没有的 `not_found`。`seal_after`（施工 C-8 下）写进子会话的 `forked`：
 //! 跑满这几轮封存，内核数、内核封。
+//!
+//! 写完第一条马上载入支线：分叉那一遍读好的底子（`miyu_session::ForkedBase`，施工 V-39 下）直接交给这一次载入，载入、
+//! 支线的回合索引都不再读父会话。只交这一次：支线已经在会话表里的、载入不成的，它跟着放掉，以后再载入照常自己读。
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -11,7 +14,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::id::SessionId;
-use miyu_session::{Fork, ForkError, new_id};
+use miyu_session::{Fork, ForkError, fork_handing, new_id};
 use miyu_store::log::OpenError;
 
 use crate::Core;
@@ -46,7 +49,7 @@ pub(crate) async fn fork(
     let cause = request.id.clone();
     let at = now();
     let child = new_id(at);
-    let upto = miyu_session::fork(Fork {
+    let (upto, base) = fork_handing(Fork {
         root: &core.root,
         parent: &parent,
         id: child.clone(),
@@ -59,7 +62,7 @@ pub(crate) async fn fork(
     })
     .await
     .map_err(|error| refused(&parent, &error))?;
-    core.sessions.get(core, &child).await?;
+    core.sessions.get_forked(core, &child, base).await?;
     core.listing.changed(core, child.clone());
     tracing::info!(target: TARGET, parent = parent.as_str(), session = child.as_str(), upto = upto.get(), "session forked");
     Ok(json!({"session": child, "upto": upto.get()}))

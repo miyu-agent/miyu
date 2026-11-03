@@ -439,3 +439,23 @@ fn block(index: usize, kind: Kind, text: &str, pieces: usize) -> Vec<Delta> {
     deltas.push(Delta::End { index });
     deltas
 }
+
+/// 照载入的读法读一个会话、交给内核载入，写成字（施工 V-39 下的对照测试）：分叉读好交过来的底子用上、没用上的比同一份。
+#[derive(Debug)]
+pub struct Told {
+    /// 造会话那一条、底子在哪、跟着记的几样、内核载入出来的会话和动作（或者载入报的错）。
+    pub loaded: String,
+    /// 分叉时回合索引照底子认好、载入交给回合索引的那一份：交过来、用上了的才有。
+    pub primed: Option<String>,
+    /// 一块块喂的对不上、照整份重来的。
+    pub whole: bool,
+}
+
+/// 载入会话 `id`（在数据根 `root`），交过去分叉读好的底子 `forked`（没有的照常自己读）：见 [`Told`]。不起会话、不接记忆。
+pub fn told(
+    root: &miyu_store::root::DataRoot,
+    id: &miyu_kernel::id::SessionId,
+    forked: Option<crate::ForkedBase>,
+) -> Told {
+    crate::open::told(root, id, forked)
+}

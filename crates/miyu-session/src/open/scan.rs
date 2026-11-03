@@ -111,6 +111,11 @@ impl Scan {
         }
     }
 
+    /// 同 [`Scan::base`]，分叉时已经照底子一条条记好的 `seen`（施工 V-39 下）：要在记自己的以前交。
+    pub(super) fn based(&mut self, seen: crate::effects::SeenScan) {
+        self.seen = seen;
+    }
+
     /// 读完了，要照哪一份快照：`now` 是照着取了策略的那一份；最近一次换的（`policy`）和它不一样的交回换成的，一样的、没换过的
     /// （照 `created`）没有。
     pub(super) fn switched(&self, now: &ContentHash, created: &ContentHash) -> Option<ContentHash> {

@@ -63,6 +63,7 @@ use std::sync::{Arc, OnceLock};
 use miyu_kernel::event::SessionCreated;
 use miyu_kernel::id::{SessionId, VenueId};
 use miyu_policy::memory::MemoryScope;
+use miyu_recall::Priming;
 use miyu_store::memory::MemoryLogs;
 use miyu_store::personas::Personas;
 use miyu_store::recall::{LogSalt, NO_PERSONA, Opened, Origin, RecallIndexes, Room};
@@ -248,7 +249,8 @@ impl Memory {
 ///
 /// 场所会话的回合也进回合索引，回合库记下它在哪个场所（施工 R-13 下，`memory.md` 第一条第 1 款）；哪儿都搜得到全部（施工
 /// R-29，第九条）。原来（施工 R-2 再补）场所会话不进、载入时拿掉，回合库的条目那时还没有场所。
-/// 回合索引照 `laid` 铺、照 `source` 读回日志：底子（分叉出来的支线才有，施工 R-13 三补）接在会话自己的前面。
+/// 回合索引照 `laid` 铺、照 `source` 读回日志：底子（分叉出来的支线才有，施工 R-13 三补）接在会话自己的前面；刚分叉出来、
+/// 分叉时已经照底子认好的（`primed`，施工 V-39 下）后台不再读底子。
 /// 那一间里她叫什么照 `personas` 里这个人格的名字记下（施工 E-1 修，`her.rs`）。`main` 是这个会话是不是主会话（不带 `parent`）：
 /// 回合库记下它从哪来（施工 E-6），搜到以前的对话时照它判她打不打得开。
 pub(crate) fn connect(
@@ -257,7 +259,7 @@ pub(crate) fn connect(
     (persona, personas): (&str, &Personas),
     (session, main): (&SessionId, bool),
     (venue, confined): (&VenueId, bool),
-    (laid, source): (Laid<'_>, Source),
+    (laid, source, primed): (Laid<'_>, Source, Option<Priming>),
 ) -> (Option<TurnLane>, Option<Calls>) {
     let room = match scope {
         MemoryScope::Persona => Room::persona(persona),
@@ -288,6 +290,7 @@ pub(crate) fn connect(
         floor,
         laid: laid.sent(),
         source,
+        primed,
     });
     let listener = Listener::of(confined, venue);
     let calls = Calls::new(memory, room, listener, session).since(floor);

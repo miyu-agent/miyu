@@ -347,3 +347,17 @@ impl Script {
         ))
     }
 }
+
+/// 分叉时照底子认好的（施工 V-39 下）：父会话的日志 `lines` 到第 `upto` 条为止的每一条，照先后 `Priming::base`（同分叉那一遍
+/// 交给载入的）。
+pub(super) fn primed(lines: &[String], upto: u64) -> miyu_recall::Priming {
+    let mut priming = miyu_recall::Priming::default();
+    for line in lines {
+        let event = miyu_kernel::event::Event::from_line(line).expect("造对了");
+        if event.seq.get() > upto {
+            break;
+        }
+        priming.base(&event);
+    }
+    priming
+}

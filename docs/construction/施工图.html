@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1024</b><span>/ 1033 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1025</b><span>/ 1034 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-39上补</b><span>最近一步（V-39 上补 判官只解析要的种类）</span></li>
+    <li><b class="mono">V-39下</b><span>最近一步（V-39 下 分叉底子交给载入和索引）</span></li>
   </ul>
 </header>
 
@@ -509,6 +509,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV39a"><span class="n">V-39 上</span>判官边读边记<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39b"><span class="n">V-39 中</span>支线底子边读边喂<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39a2"><span class="n">V-39 上补</span>判官只解析要的种类<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV39c"><span class="n">V-39 下</span>分叉底子交给载入和索引<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11646,6 +11647,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-39上补-判官只解析要的种类.md</code>；蓝图 <code>kernel/events.md</code> <code>Event::from_line_only</code>、<code>store.md</code> 第 7 条 <code>read_range_only</code>、<code>venues.md</code>「判官看的群聊记录」第 3 条。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV39c" aria-labelledby="h-sV39c">
+  <div class="sheet-head"><h2 id="h-sV39c"><span class="no">V-39 下</span>分叉底子交给载入和索引</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">群里开一条支线时父会话只解析一遍：分叉读好的底子连同她看过的文件、回合索引认好的底子交给紧接着的那一次载入，载入、支线的回合索引都不再读父会话。行为只在项目主人拍板的问题 4 那一处变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">分叉底子交给载入和索引</span><span class="dir-note">V-39 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>fork_handing</code>：分叉照 <code>ForkFeed</code> 的 <code>settled</code> 一条条另记 <code>SeenScan</code>、<code>Priming::base</code>，写完第一条连同喂好的 <code>BaseFeed</code> 交回 <code>ForkedBase</code>；<code>fork</code> 照旧不记</li>
+              <li>载入（<code>Load::forked</code>、<code>stream.rs</code> 的 <code>start</code>）：是这条支线、这个父会话、这个分叉点的直接用，不读父会话；对不上的照 V-39 中自己读</li>
+              <li>回合索引（<code>Opening::primed</code>、<code>Laying::primed</code>）：有认好的接上时不读底子，只读支线自己的</li>
+              <li>端点 <code>session.fork</code> 把它当参数交给 <code>Sessions::get_forked</code>；支线已经在表里的、载入不成的跟着放掉；fork 子代理不交</li>
+              <li>测试钩子 <code>testkit::told</code>：照载入的读法读、交给内核载入，写成字比</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">分叉读好的底子交给紧接着的载入（问题 3），行为不变</span><span class="rl">项目主人 2026-11-03（V-39 设计问题 3）</span></div>
+          <div class="tile new"><span class="nm">只对刚分叉出来、紧接着载入的支线，回合索引照分叉时认好的底子接上、后台不再重读（改了 V-37 第 6 条在这一处的口径）</span><span class="rl">项目主人 2026-11-03（V-39 设计问题 4）</span></div>
+          <div class="tile new"><span class="nm">交接的东西只在 <code>session.fork</code> 一个请求里从分叉递到载入：不放进会话表、不落盘、没人拿当场放</span><span class="rl">V-39 下施工单「交接的东西活多久」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-39 下</dd></div>
+        <div><dt>名称</dt><dd>分叉底子交给载入和索引</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-03</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-39下</dd></div>
+        <div><dt>验收</dt><dd>23.7 MiB 的群主线开一条支线：父会话解析 3 → 1 遍，指令 24.99 → 8.77 亿，<code>session.fork</code> 中位 102 → 68 ms；载入段堆 10.9 → 4.2 MB、后台回合索引不读底子；整段堆峰值 11.1 → 11.6 MB（只剩分叉那一遍，峰值本来就是它）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>两千五百份照种子造的父会话：交过去的和载入自己读的（V-39 中的路）读到的、内核载入出来的会话和动作、报错逐字一样，交上的回合索引认好的和照日志到分叉点认的一样；交给别的支线、分叉点变了、另一个父会话、交给父会话自己、支线坏了、支线没了都走到</span></li>
+        <li><span class="ok">✓</span><span>回合库逐行：V-37 下那一百六十份里分叉出来的另照认好的底子接一遍，每张表每一行一样；支线载入、接上、回一轮时把父会话的日志挪开，那一段照样带着底子里的那句人话</span></li>
+        <li><span class="ok">✓</span><span>手写变异 8 个都被逮住</span></li>
+        <li><span class="ok">✓</span><span>同一份数据根 17 次真分叉（闲着、在跑一轮、支线照旁听的一句开一轮），回应、推来的、回合库里支线名下的行改前改后一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-39下-分叉底子交给载入和索引.md</code>；蓝图 <code>session/fork.md</code>「分叉读好的底子交给紧接着的载入」、<code>memory.md</code> 第一条第 6 款、<code>perf.md</code>「怎么量」第 5 条。</li>
       </ul>
     </div>
   </div>

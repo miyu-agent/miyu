@@ -119,7 +119,7 @@ impl Open {
         };
         let parent = created.parent?;
         let job = job_in(&parent, &cause)?;
-        let found = self.found(core, &parent).await.ok()?;
+        let found = self.found(core, &parent, None).await.ok()?;
         Some((found.handle, job))
     }
 

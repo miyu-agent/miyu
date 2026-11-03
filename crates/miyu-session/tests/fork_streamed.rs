@@ -5,6 +5,8 @@
 //! 有的坏了一行（分叉点以前、以后、最后那一轮里）、末尾半行、一条都没有、没有这个会话、第一条不是造会话、是子代理或分叉出来
 //! 的、换的快照取不出；普通分叉、fork 子代理（派的调用在等的、不在等的）都有。
 
+#[path = "fork_streamed/handed.rs"]
+mod handed;
 #[path = "fork_streamed/make.rs"]
 mod make;
 #[path = "fork_streamed/old.rs"]

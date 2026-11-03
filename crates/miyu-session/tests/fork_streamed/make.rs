@@ -1,6 +1,7 @@
 //! 照种子造父会话的日志（施工 V-39 中的对照测试用）：每一条先交给父会话的账本，过得了才留，日志一定守规矩。人话（本机的人、
 //! 平台上的人；回合当中来的排着）、开一轮（照一句开、带工作目录和加进来的目录）、她答（有字、调工具）、调用的结果、结束、
-//! 压缩、撤销（连带压缩以前的）、恢复、撤回排着的话、换权限、换人格、换模型、换快照（有的、取不出的）、换工作目录。
+//! 压缩、撤销（连带压缩以前的）、恢复、撤回排着的话、换权限、换人格、换模型、换快照（有的、取不出的）、换工作目录。调用的
+//! 结果三条里一条带读了文件的效果（施工 V-39 下）。
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::SessionId;
@@ -35,6 +36,8 @@ const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const DIRS: [&str; 3] = [r#"["/w/a"]"#, r#"["/w/a","/w/b"]"#, "[]"];
 const CWDS: [&str; 3] = ["/w/one", "/w/two", "/w/three"];
+/// 读了的文件的哈希（随便一份）。
+const READ: &str = "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
 
 /// 造着的一份：账本、已经留下的行。
 pub(super) struct Make {
@@ -150,8 +153,16 @@ impl Make {
                 let pending = self.ledger.pending_calls();
                 if let Some(call) = dice.pick(&pending) {
                     let by = format!(r#"{{"kind":"tool","call_id":"{call}"}}"#);
+                    // 三条里一条带读了文件的效果（施工 V-39 下：载入照底子记她看过的文件）。
+                    let effects = match next % 3 {
+                        0 => format!(
+                            r#","effects":[{{"kind":"file.read","path":"/w/f{}","hash":"{READ}"}}]"#,
+                            next % 7
+                        ),
+                        _ => String::new(),
+                    };
                     let body = format!(
-                        r#"{{"call_id":"{call}","status":"ok","blocks":[{{"type":"text","text":"结果 {next}"}}]}}"#
+                        r#"{{"call_id":"{call}","status":"ok","blocks":[{{"type":"text","text":"结果 {next}"}}]{effects}}}"#
                     );
                     self.put("tool.result", Some(turn), &by, &body);
                 }

@@ -12,6 +12,7 @@ mod logs;
 pub mod meaning;
 mod opening;
 pub mod package;
+mod pushes;
 pub mod remote_embedding;
 pub mod resources;
 pub mod routing;
@@ -25,6 +26,11 @@ pub mod table;
 )]
 pub use logs::{LogDir, kinds, until_logged};
 pub use opening::{Lines, Opening};
+#[allow(
+    unused_imports,
+    reason = "挪进 pushes.rs 的两样：每个测试程序用到的不一样"
+)]
+pub use pushes::{until_delta, until_turn_ends};
 pub use scratch::Scratch;
 #[allow(unused_imports, reason = "只有沙盒那几个测试用")]
 pub use site::on_site;
@@ -33,7 +39,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use miyu_kernel::block::{Block, Text};
-use miyu_kernel::event::{Body, Event, Level, Permission, TransientBody};
+use miyu_kernel::event::{Event, Level, Permission};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person};
@@ -41,8 +47,8 @@ use miyu_kernel::session::{Command, Outcome};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{
-    Configs, Create, Handle, Jobs, Lineage, Load, Models, Pushed, SandboxCache, SessionPort,
-    Stopped, Subscription, create, load_placed, new_id,
+    Configs, Create, Handle, Jobs, Lineage, Load, Models, SandboxCache, SessionPort, Stopped,
+    Subscription, create, load_placed, new_id,
 };
 use miyu_session::{Memory, Placed, SummaryTexts, Workplace};
 use miyu_store::env::{Env, Platform};
@@ -309,6 +315,26 @@ impl Home {
             .0
     }
 
+    /// 同 [`Home::load_with`]，刚分叉出来的支线，交过去分叉读好的底子 `forked`（施工 V-39 下）。
+    pub async fn load_forked_with(
+        &self,
+        session: &SessionId,
+        forked: miyu_session::ForkedBase,
+        models: &dyn Models,
+        tools: &Catalog,
+    ) -> Handle {
+        self.placing_forked(
+            session,
+            models,
+            tools,
+            Workplace::Given(environment()),
+            None,
+            Some(forked),
+        )
+        .await
+        .0
+    }
+
     /// 同 [`Home::load_placed`]，另交回载入交回的那几样（施工 V-37 上：要不要认派到一半的空子会话）。
     pub async fn placing(
         &self,
@@ -317,6 +343,20 @@ impl Home {
         tools: &Catalog,
         place: Workplace<'_>,
         sessions: Option<Arc<dyn SessionPort>>,
+    ) -> (Handle, Placed) {
+        self.placing_forked(session, models, tools, place, sessions, None)
+            .await
+    }
+
+    /// 同 [`Home::placing`]，交过去分叉读好的底子 `forked`（施工 V-39 下）。
+    pub async fn placing_forked(
+        &self,
+        session: &SessionId,
+        models: &dyn Models,
+        tools: &Catalog,
+        place: Workplace<'_>,
+        sessions: Option<Arc<dyn SessionPort>>,
+        forked: Option<miyu_session::ForkedBase>,
     ) -> (Handle, Placed) {
         let tools = &miyu_tool::Shelf::new(tools.clone());
         let loaded = load_placed(Load {
@@ -345,6 +385,7 @@ impl Home {
             plugins: self.plugins.clone(),
             memory: Some(self.memory()),
             presets: None,
+            forked,
         });
         within("载入", loaded).await.expect("载入得了会话")
     }
@@ -400,20 +441,6 @@ pub async fn stop(handle: &Handle) {
         .expect("会话在跑，停得下");
 }
 
-/// 一直读推送，读到第一段增量：请求在读流了。
-pub async fn until_delta(subscription: &mut Subscription) {
-    within("增量", async {
-        loop {
-            let next = subscription.next().await.expect("订阅没断");
-            if matches!(&*next, Pushed::Transient(t) if matches!(t.body, TransientBody::ModelDelta(_)))
-            {
-                return;
-            }
-        }
-    })
-    .await;
-}
-
 /// 现在，照系统时间。
 pub fn now() -> Timestamp {
     let millis = std::time::SystemTime::now()
@@ -457,22 +484,6 @@ pub fn say(words: &str) -> Command {
         })],
         urgent: false,
         venue: None,
-    }
-}
-
-/// 一直读推送，读到回合结束那一条为止，交回读到的每一份。
-pub async fn until_turn_ends(subscription: &mut Subscription) -> Vec<Arc<Pushed>> {
-    let mut pushed = Vec::new();
-    loop {
-        let next = within("推送", subscription.next()).await.expect("订阅没断");
-        let ended = matches!(
-            &*next,
-            Pushed::Events(events) if events.iter().any(|event| matches!(event.body, Body::TurnEnded(_)))
-        );
-        pushed.push(next);
-        if ended {
-            return pushed;
-        }
     }
 }
 
