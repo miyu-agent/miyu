@@ -162,7 +162,7 @@ impl Ledger {
 
     /// 一阵请求过去、安静下来了（施工 V-6 下，`settle.rs` 在还了内存以后叫它）：RSS 比上一次采的时候涨了
     /// [`Timing::grew`] 以上的，多采一次。不定时看。
-    pub async fn settled(&self) {
+    pub async fn settled(self: &Arc<Ledger>) {
         let now = tokio::task::spawn_blocking(miyu_heap::usage::resident)
             .await
             .ok()
@@ -172,16 +172,14 @@ impl Ledger {
         }
     }
 
-    /// 采一次、写一行，记下这时的 RSS。核心没了的什么都不写，交回假。
-    async fn take(&self, why: Why) -> bool {
+    /// 采一次、记下这时的 RSS、写一行。核心没了的什么都不写，交回假。
+    async fn take(self: &Arc<Ledger>, why: Why) -> bool {
         let Some(sessions) = loaded(&self.core).await else {
             return false;
         };
-        let sink = Arc::clone(&self.sink);
-        let taken = tokio::task::spawn_blocking(move || take(&sink, why, sessions)).await;
-        if let Some(rss) = taken.ok().flatten() {
-            self.last.store(rss, Ordering::Release);
-        }
+        let ledger = Arc::clone(self);
+        // 写不进、量不出的都只是少一行，没有别的要做。
+        drop(tokio::task::spawn_blocking(move || take(&ledger, why, sessions)).await);
         true
     }
 }
@@ -204,18 +202,23 @@ async fn loaded(core: &Weak<Core>) -> Option<usize> {
     Some(core.loaded().await)
 }
 
-/// 采一次、写一行，交回这时的 RSS；量不出来的什么都不写。在阻塞线程里调。
-fn take(sink: &RotatingFile, why: Why, sessions: usize) -> Option<u64> {
-    let usage = miyu_heap::usage::usage()?;
+/// 采一次，先把这时的 RSS 记进账本、再写一行；量不出来的什么都不记、不写。在阻塞线程里调。
+///
+/// 先记后写（施工 FL-2）：行一看得见，账本里就是它的 RSS。原来先写、回到异步任务里才记，`start` 那一行刚写出去时来一次安静
+/// 下来（[`Ledger::settled`]），照还没记的 0 比，多采一行 `grew`。
+fn take(ledger: &Ledger, why: Why, sessions: usize) {
+    let Some(usage) = miyu_heap::usage::usage() else {
+        return;
+    };
+    ledger.last.store(usage.rss, Ordering::Release);
     let heap = miyu_heap::stats();
-    sink.write_line(&line(
+    ledger.sink.write_line(&line(
         crate::trash::now(),
         why,
         &usage,
         heap.as_ref(),
         sessions,
     ));
-    Some(usage.rss)
 }
 
 #[cfg(test)]
