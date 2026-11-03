@@ -240,10 +240,16 @@ fn check() -> ExitCode {
             .as_ref()
             .map(|dir| dir.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let env: Vec<(&str, &str)> = match &dir {
-            Some(_) => vec![("TMPDIR", &shown), ("TMP", &shown), ("TEMP", &shown)],
-            None => Vec::new(),
-        };
+        // 照 CI 那样跑（施工 FH-3 CI 补）：测试里「造不了符号链接就跳过」这类只在设了 `CI` 时算错，不设的话本机门禁
+        // 悄悄跳过、CI 上才红（FH-3 合进去以后撞见：新布局下造链接的上一层没建）。
+        let mut env: Vec<(&str, &str)> = vec![("CI", "1")];
+        if dir.is_some() {
+            env.extend([
+                ("TMPDIR", shown.as_str()),
+                ("TMP", &shown),
+                ("TEMP", &shown),
+            ]);
+        }
         tests = cargo_step(
             &cargo,
             &root,
