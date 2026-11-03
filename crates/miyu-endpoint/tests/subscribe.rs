@@ -143,7 +143,17 @@ async fn a_slow_reader_gets_a_resync_and_every_reply() {
     client.line(&send("c4", "again")).await;
     home.until_turns(&session, 2).await;
     let (mut resynced, mut after, mut replies) = (false, 0, Vec::new());
-    while let Some(next) = client.next_within(Duration::from_millis(500)).await {
+    // 该到的（`resync`、两条回应）到齐之前一直等：回应等后台同步，同步慢的时候隔了不止半秒才到，拿半秒没动静当到齐了会少数
+    // 一条（施工 FL-2）。到齐以后再看半秒，没有多出来的。
+    loop {
+        let next = if resynced && replies.len() == 2 {
+            match client.next_within(Duration::from_millis(500)).await {
+                Some(next) => next,
+                None => break,
+            }
+        } else {
+            client.next().await.expect("没断开")
+        };
         if next["method"] == json!("resync") {
             assert_eq!(
                 next["params"],
@@ -242,7 +252,16 @@ async fn unsubscribing_keeps_the_replies_already_handed_over() {
         let stop = json!({"jsonrpc": "2.0", "id": "c5", "method": method, "params": {"session": session, "stream": "events"}});
         client.line(&stop.to_string()).await;
         let mut replies = Vec::new();
-        while let Some(next) = client.next_within(Duration::from_millis(500)).await {
+        // 三条回应到齐之前一直等（同上一条：同步慢的时候不止半秒），到齐以后再看半秒，没有多出来的。
+        loop {
+            let next = if replies.len() == 3 {
+                match client.next_within(Duration::from_millis(500)).await {
+                    Some(next) => next,
+                    None => break,
+                }
+            } else {
+                client.next().await.expect("没断开")
+            };
             assert_ne!(next["method"], json!("resync"), "这么几百段不该掉队");
             if next.get("id").is_some() {
                 replies.push(next["id"].clone());
