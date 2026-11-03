@@ -156,6 +156,7 @@ mod package_depends;
 mod package_feeds;
 mod package_group_manage;
 mod package_groups;
+mod package_info_tools;
 mod package_logo;
 mod package_logo_source;
 mod package_mascot;

@@ -6,6 +6,7 @@ pub mod collect;
 pub mod index;
 pub mod sign;
 pub mod stats;
+pub mod tools;
 
 #[cfg(test)]
 mod test_support;

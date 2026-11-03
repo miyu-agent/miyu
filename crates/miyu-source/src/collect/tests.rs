@@ -490,4 +490,5 @@ fn with_several_targets_the_biggest_installed_size_is_kept_in_either_order() {
 }
 
 mod reserved;
+mod tools;
 mod topic;

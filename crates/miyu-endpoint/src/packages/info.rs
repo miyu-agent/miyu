@@ -66,8 +66,8 @@ async fn by_id(
 }
 
 /// 装着的那一份：[`super::local::info`] 的几格，另有清单写的名字、说明、依赖、推荐，带了什么（`provides`，同装之前看一眼的
-/// 「包含」）、要的能力（`capabilities`），装着的包里依赖它的（`required_by`，照编号），从软件源装的来源仓库（`origin`）。没有的
-/// 不写。
+/// 「包含」）、要的能力（`capabilities`），模型会多的工具（`tools`，施工 PV-1），装着的包里依赖它的（`required_by`，照编号），
+/// 从软件源装的来源仓库（`origin`）。没有的不写。
 async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refusal> {
     let mut answer = super::local::info(core, peer.for_owner, id).await?;
     let now = core.system_packages();
@@ -97,6 +97,11 @@ async fn installed(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value, Refu
         }
         if let Some(capabilities) = capabilities {
             answer["capabilities"] = capabilities;
+        }
+        // 装上以后模型会多的工具（施工 PV-1）：照本机包里的脚本开头、清单的功能读，同软件源收录的那一份。
+        let tools = miyu_source::tools::of(manifest, &found.files_dir());
+        if !tools.is_empty() {
+            answer["tools"] = json!(tools);
         }
     }
     let required_by = depends::dependents(&now, id);

@@ -381,6 +381,7 @@ fn entry_of(
         published: None,
         downloads: None,
         downloads_week: None,
+        tools: crate::tools::of(manifest, folder),
         files: Vec::new(),
     }
 }

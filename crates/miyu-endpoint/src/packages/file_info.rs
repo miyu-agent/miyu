@@ -27,7 +27,8 @@ pub(super) async fn file(core: &Arc<Core>, peer: Peer, path: &str) -> Result<Val
 }
 
 /// 包文件夹 `folder` 的那一份：看一眼的那几格里编号、版本、几个文件多大、要的能力、读不成的、换下哪一份照搬，带了什么
-/// （程序、子命令、技能、脚本……）收进 `provides`；另照清单补名字、说明（照连接的语言）、作者、上游、依赖、推荐。没有的不写。
+/// （程序、子命令、技能、脚本……）收进 `provides`；另照清单补名字、说明（照连接的语言）、作者、上游、依赖、推荐，照包里的脚本、
+/// 功能补模型会多的工具（`tools`，施工 PV-1）。没有的不写。
 pub(super) async fn described(
     core: &Arc<Core>,
     peer: Peer,
@@ -69,6 +70,11 @@ pub(super) async fn described(
     }
     if !carried.is_empty() {
         answer.insert("provides".into(), Value::Object(carried));
+    }
+    // 装上以后模型会多的工具（施工 PV-1）：照包里的脚本开头、清单的功能读，同装着的那一份。
+    let tools = miyu_source::tools::of(&manifest, folder);
+    if !tools.is_empty() {
+        answer.insert("tools".into(), json!(tools));
     }
     Ok(Value::Object(answer))
 }

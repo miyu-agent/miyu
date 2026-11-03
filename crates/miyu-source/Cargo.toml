@@ -9,6 +9,8 @@ publish.workspace = true
 
 [dependencies]
 miyu-config = { path = "../miyu-config" }
+# 包装上以后会多哪些工具（施工 PV-1）：脚本的开头照核心登记时同一份解析读。纯逻辑那一层，不带存储、网络。
+miyu-policy = { path = "../miyu-policy" }
 # 包文件是 zstd 压的 tar（设计 31 第八节第 1 条）。tar 是纯 Rust 的，MIT 或 Apache-2.0；zstd 和 reqwest 带进来的是同一版，
 # MIT（底下的 libzstd 是 BSD）。
 tar = { version = "0.4", default-features = false }

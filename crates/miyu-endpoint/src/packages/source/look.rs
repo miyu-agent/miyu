@@ -14,7 +14,8 @@ use crate::refusal::Refusal;
 
 /// 软件源里编号是 `id` 的那一个：`from: "source"`、源的名字、编号、版本、名字和说明（照连接的语言挑）、依赖、推荐、带了哪几样
 /// （索引原样）、要的能力（同装着的那一份的写法）、来源仓库、是不是官方；写了的有作者、上游、本机那份文件多大（`download`）、
-/// 装好以后多大（`installed_size`）；用的是本机旧索引的带 `stale`（同 `package.search`）。
+/// 装好以后多大（`installed_size`）、装上以后模型会多的工具（`tools`，施工 PV-1）；用的是本机旧索引的带 `stale`（同
+/// `package.search`）。
 ///
 /// # Errors
 ///
@@ -52,6 +53,10 @@ pub(crate) async fn look(core: &Arc<Core>, peer: Peer, id: &str) -> Result<Value
     }
     if let Some(bytes) = entry.installed {
         answer["installed_size"] = json!(bytes);
+    }
+    // 装上以后模型会多的工具（施工 PV-1）：索引那一格原样，没有的不写。
+    if !entry.tools.is_empty() {
+        answer["tools"] = json!(entry.tools);
     }
     if let Some(stale) = synced.stale {
         answer["stale"] = Value::String(stale);

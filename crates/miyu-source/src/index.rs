@@ -103,6 +103,9 @@ pub struct Entry {
     /// 以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub installed: Option<u64>,
+    /// 装上以后模型会多的工具（施工 PV-1，[`crate::tools`]）：没有的不写，以前生成的索引没有，读成空的。
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tools: Vec<crate::tools::Tool>,
     /// 包文件：不分系统的一份，或者一种系统一份。
     pub files: Vec<File>,
 }
