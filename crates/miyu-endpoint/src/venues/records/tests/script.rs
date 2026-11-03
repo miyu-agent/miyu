@@ -2,6 +2,10 @@
 //! 引用的——引用很早以前的、引用日志里没有的、带图的），开回合（照刚才一句、照很早以前一句旁听的、不带触发的、紧接着上一轮
 //! 结束开的），回合里排着的话、她的回复和请求、她发进群里的话，撤回，撤销（最近一轮、最近几轮、很早的一轮）、恢复，撤回排着
 //! 的话，压缩；偶尔撤一轮日志里没有的、触发写成还没有的序号（骨架认不得）。一行一条，序号从 1 数、接着往下数。
+//!
+//! 施工 V-39 上补加了判官不要的种类：工具结果、注入的事实、不认识的种类、暂停着没发出去的请求（撤销查排着的话时不算），
+//! 回合里到的回报、子会话回报、等的会话空了（照它们接着开下一轮的，撤销时认紧挨着结束的上一轮）；每 11 条有一条种类写在
+//! `body` 后面。
 
 /// 照种子走的随机数（xorshift，同 V-37 下的对照测试）。
 pub(super) struct Dice(pub(super) u64);
@@ -29,6 +33,8 @@ const MEMBERS: [&str; 3] = [
 const KERNEL: &str = r#"{"kind":"kernel"}"#;
 const BRIDGE: &str = r#"{"kind":"module","id":"onebot"}"#;
 const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
+const TOOL: &str = r#"{"kind":"tool","call_id":"call_5_1"}"#;
+const PEER: &str = r#"{"kind":"session","id":"01a0cf12-7e40-7d1b-8c3a-51d49f03b21c"}"#;
 const CREATED: &str = r#"{"venue":"qq:group:1","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
 /// 造着的一段日志。
@@ -47,6 +53,8 @@ pub(super) struct Script {
     undone: Vec<Vec<u64>>,
     /// 上一条人话的命令编号。
     cause: u64,
+    /// 回报、子会话回报、等的会话空了：序号。
+    reports: Vec<u64>,
 }
 
 impl Script {
@@ -60,6 +68,7 @@ impl Script {
             turns: Vec::new(),
             undone: Vec::new(),
             cause: 0,
+            reports: Vec::new(),
         };
         script.line("session.created", None, MEMBERS[2], None, CREATED);
         script
@@ -74,12 +83,22 @@ impl Script {
         let seq = self.next();
         let turn = turn.map_or(String::new(), |turn| format!(r#","turn":{turn}"#));
         let cause = cause.map_or(String::new(), |cause| format!(r#","cause":"c{cause}""#));
-        self.lines.push(format!(
-            r#"{{"seq":{seq},"at":"2026-11-03T0{}:{:02}:{:02}.000Z","kind":"{kind}"{turn},"by":{by}{cause},"body":{body}}}"#,
+        let at = format!(
+            "2026-11-03T0{}:{:02}:{:02}.000Z",
             seq / 3600 % 10,
             seq / 60 % 60,
             seq % 60
-        ));
+        );
+        // 每 11 条有一条种类写在 `body` 后面（不是核心写的样子，照样读得懂）。
+        self.lines.push(if seq.is_multiple_of(11) {
+            format!(
+                r#"{{"seq":{seq},"at":"{at}"{turn},"by":{by}{cause},"body":{body},"kind":"{kind}"}}"#
+            )
+        } else {
+            format!(
+                r#"{{"seq":{seq},"at":"{at}","kind":"{kind}"{turn},"by":{by}{cause},"body":{body}}}"#
+            )
+        });
     }
 
     /// 照种子写一段：`steps` 步。
@@ -193,14 +212,17 @@ impl Script {
 
     fn start(&mut self, dice: &mut Dice) {
         let seq = self.next();
-        let body = match (dice.below(8), self.said.last()) {
-            (0, _) | (_, None) => "{}".to_string(),
-            (1..=2, Some(_)) => {
+        let report = self.reports.last().copied().filter(|_| dice.odds(3));
+        let body = match (dice.below(8), self.said.last(), report) {
+            // 照回合里到的回报、子会话回报、等的会话空了开的。
+            (_, _, Some(report)) => format!(r#"{{"trigger":{report}}}"#),
+            (0, _, _) | (_, None, _) => "{}".to_string(),
+            (1..=2, Some(_), _) => {
                 // 照很早以前的一句旁听的开（`session.respond`）。
                 let old = self.said[dice.below(self.said.len() as u64) as usize];
                 format!(r#"{{"trigger":{old},"triggers":[{old}]}}"#)
             }
-            (_, Some(&last)) => format!(r#"{{"trigger":{last}}}"#),
+            (_, Some(&last), _) => format!(r#"{{"trigger":{last}}}"#),
         };
         let body = if dice.odds(150) {
             format!(r#"{{"trigger":{}}}"#, seq + 5)
@@ -216,7 +238,7 @@ impl Script {
     fn inside(&mut self, dice: &mut Dice) {
         let turn = self.open.expect("在一轮里");
         let seen = self.next() - 1 - dice.below(3).min(self.next() - 2);
-        match dice.below(3) {
+        match dice.below(6) {
             0 => self.line(
                 "message.assistant",
                 Some(turn),
@@ -231,6 +253,8 @@ impl Script {
                 None,
                 &format!(r#"{{"seen":{seen},"messages":1,"result":"ok"}}"#),
             ),
+            3 => self.unwanted(dice, turn, seen),
+            4 => self.report(dice),
             _ => {
                 let msg = self.id(dice);
                 self.line(
@@ -244,6 +268,69 @@ impl Script {
                 );
             }
         }
+    }
+
+    /// 判官不要的种类（施工 V-39 上补）：工具结果、注入的事实、不认识的种类、暂停着没发出去的请求（`seen` 照样写，撤销查
+    /// 排着的话时不算它）。
+    fn unwanted(&mut self, dice: &mut Dice, turn: u64, seen: u64) {
+        let call = self.next() - 1;
+        match dice.below(4) {
+            0 => self.line(
+                "tool.result",
+                Some(turn),
+                TOOL,
+                None,
+                &format!(
+                    r#"{{"call_id":"call_{call}_1","status":"ok","blocks":[{{"type":"text","text":"lib.rs\nmain.rs"}}],"duration_ms":12}}"#
+                ),
+            ),
+            1 => self.line(
+                "context.injected",
+                Some(turn),
+                KERNEL,
+                None,
+                r#"{"kind":"env","text":"<env cwd=\"~\"/>\n"}"#,
+            ),
+            2 => self.line("ext.note", Some(turn), BRIDGE, None, r#"{"x":[1,{"y":"z"}]}"#),
+            _ => self.line(
+                "model.called",
+                Some(turn),
+                KERNEL,
+                None,
+                &format!(
+                    r#"{{"seen":{seen},"messages":1,"result":"error","error":{{"class":"compaction_paused","message":"放不下"}}}}"#
+                ),
+            ),
+        }
+    }
+
+    /// 回合里到的回报、子会话回报、等的会话空了（不带回合编号）：下一轮可能照它接着开。
+    fn report(&mut self, dice: &mut Dice) {
+        let seq = self.next();
+        match dice.below(3) {
+            0 => self.line(
+                "job.reported",
+                None,
+                TOOL,
+                Some(9000 + seq),
+                r#"{"job":"j1","reason":"exited","exit_code":0,"duration_ms":5,"output":"sha256:3245795a51c1f9e64adb119c6b258a9079a4fdc7f1a15677f1d15d09910bef9c","chars":4}"#,
+            ),
+            1 => self.line(
+                "child.reported",
+                None,
+                PEER,
+                Some(9000 + seq),
+                r#"{"job":"j2","session":"01a0cf12-7e40-7d1b-8c3a-51d49f03b21c","reason":"done","text":"好了"}"#,
+            ),
+            _ => self.line(
+                "peer.idle",
+                None,
+                KERNEL,
+                Some(9000 + seq),
+                r#"{"session":"01a09b7e-3c15-7a62-b4e1-2f8e0c5d77aa","reason":"expired"}"#,
+            ),
+        }
+        self.reports.push(seq);
     }
 
     fn end(&mut self, dice: &mut Dice) {

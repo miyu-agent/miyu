@@ -93,7 +93,7 @@ fn real_shaped_sessions_read_the_same() {
                             half: HalfLine,
                             from: Option<&Mark>,
                             sink: &mut dyn FnMut(Piece) -> Flow| {
-                walk_in(dir, half, from, window, sink)
+                walk_in(dir, (half, Parse::Full), from, window, sink)
             };
             let (new, spent) = timed(&now, dir, HalfLine::Skip, None);
             if window == WINDOW {
@@ -105,7 +105,7 @@ fn real_shaped_sessions_read_the_same() {
                    half: HalfLine,
                    from: Option<&Mark>,
                    sink: &mut dyn FnMut(Piece) -> Flow| {
-            walk_in(dir, half, from, WINDOW, sink)
+            walk_in(dir, (half, Parse::Full), from, WINDOW, sink)
         };
         for mark in some_marks(dir) {
             let old = read(&before, dir, HalfLine::Skip, Some(&mark), Stop::Never);

@@ -9,6 +9,8 @@
 
 use miyu_kernel::event::Event;
 
+use super::Parse;
+
 mod stream;
 
 pub use stream::Flow;
@@ -58,8 +60,8 @@ fn cuts(bytes: &[u8], parts: usize) -> Vec<usize> {
     cuts
 }
 
-/// 一块整行：第一行是第 1 行。读不成的那一行记下就停。
-fn chunk(part: &[u8]) -> Lines {
+/// 一块整行，每一行照 `how` 解：第一行是第 1 行。读不成的那一行记下就停。
+fn chunk(part: &[u8], how: Parse<'_>) -> Lines {
     let mut events = Vec::with_capacity(memchr::memchr_iter(b'\n', part).count());
     let mut start = 0;
     for end in memchr::memchr_iter(b'\n', part) {
@@ -69,7 +71,8 @@ fn chunk(part: &[u8]) -> Lines {
         let one = std::str::from_utf8(line)
             .map_err(|_| (number, "not UTF-8".to_string()))
             .and_then(|text| {
-                Event::from_line(text).map_err(|error| (number, format!("not readable: {error}")))
+                how.line(text)
+                    .map_err(|error| (number, format!("not readable: {error}")))
             });
         match one {
             Ok(event) => events.push(event),

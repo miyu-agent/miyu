@@ -8,7 +8,7 @@ use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
 use miyu_kernel::event::Event;
 
-use super::{Lines, PER_THREAD, chunk, cuts, threads};
+use super::{Lines, PER_THREAD, Parse, chunk, cuts, threads};
 
 /// 解的线程最多领先交出去的几块（照线程数乘）。
 const AHEAD: usize = 2;
@@ -21,16 +21,17 @@ pub enum Flow {
     Stop,
 }
 
-/// `bytes` 是整行（同 `chunk`），解成事件，一块块照先后交给 `each`。交回这一段读不成的那一行（从 1 数）和为什么；
+/// `bytes` 是整行（同 `chunk`），每一行照 `how` 解成事件，一块块照先后交给 `each`。交回这一段读不成的那一行（从 1 数）和为什么；
 /// 都读成了、或者 `each` 叫停了的，没有。
 pub(in crate::log) fn stream(
     bytes: &[u8],
+    how: Parse<'_>,
     mut each: impl FnMut(Vec<Event>) -> Flow,
 ) -> Option<(usize, String)> {
     let threads = threads(bytes.len());
     let cuts = cuts(bytes, threads * PER_THREAD);
     if threads <= 1 || cuts.len() <= 2 {
-        let Lines { events, broken } = chunk(bytes);
+        let Lines { events, broken } = chunk(bytes, how);
         if !events.is_empty() && matches!(each(events), Flow::Stop) {
             return None;
         }
@@ -52,7 +53,7 @@ pub(in crate::log) fn stream(
     };
     std::thread::scope(|scope| {
         for _ in 0..threads {
-            scope.spawn(|| shared.work(&pieces));
+            scope.spawn(|| shared.work(&pieces, how));
         }
         let mut before = 0;
         let mut broken = None;
@@ -105,7 +106,7 @@ struct State {
 impl Shared {
     /// 解的线程：照先后领一块、解、放好，领先太多就等；领完了、叫停了就走。解的时候 panic 了的，先叫停（交的一方不再等它），
     /// panic 照样抛出去。
-    fn work(&self, pieces: &[&[u8]]) {
+    fn work(&self, pieces: &[&[u8]], how: Parse<'_>) {
         let _halt = Halt(self);
         loop {
             let at = {
@@ -125,7 +126,7 @@ impl Shared {
                 state.claimed += 1;
                 state.claimed - 1
             };
-            let lines = chunk(pieces[at]);
+            let lines = chunk(pieces[at], how);
             let mut state = self.lock();
             if !state.stop {
                 state.slots[at] = Some(lines);

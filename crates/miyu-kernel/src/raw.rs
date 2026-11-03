@@ -21,6 +21,11 @@ impl RawJson {
         serde_json::value::to_raw_value(value).ok().map(RawJson)
     }
 
+    /// `null`（施工 V-39 上补：只解要的种类时，不解的种类的 `body` 记成它）。
+    pub(crate) fn null() -> RawJson {
+        RawJson(RawValue::NULL.to_owned())
+    }
+
     /// 原样的 JSON 文本。
     pub fn get(&self) -> &str {
         self.0.get()

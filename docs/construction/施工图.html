@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1023</b><span>/ 1032 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1024</b><span>/ 1033 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-39中</b><span>最近一步（V-39 中 支线底子边读边喂）</span></li>
+    <li><b class="mono">V-39上补</b><span>最近一步（V-39 上补 判官只解析要的种类）</span></li>
   </ul>
 </header>
 
@@ -508,6 +508,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV37c"><span class="n">V-37 下</span>回合索引和补发边读边处理<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39a"><span class="n">V-39 上</span>判官边读边记<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39b"><span class="n">V-39 中</span>支线底子边读边喂<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV39a2"><span class="n">V-39 上补</span>判官只解析要的种类<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11591,6 +11592,60 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-39中-支线底子边读边喂.md</code>；蓝图 <code>session/fork.md</code>「底子一块块喂」「怎么走」第 1 条、<code>kernel/session.md</code>「对外的样子」、<code>store.md</code> 第 7 条 <code>read_range</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV39a2" aria-labelledby="h-sV39a2">
+  <div class="sheet-head"><h2 id="h-sV39a2"><span class="no">V-39 上补</span>判官只解析要的种类</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">判官读群会话日志时，和它无关的种类（工具结果、她的回复的正文、请求的用量……）不再解析正文；行完整、序号连续照查。看到的字、别的报错一字不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">判官只解析要的种类</span><span class="dir-note">V-39 上补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>内核加 <code>Event::from_line_only</code>：外壳全解；要的种类和有效历史照种类认的全解；<code>message.assistant</code>、<code>model.called</code> 只解撤销看的 <code>seen</code>、<code>error</code>；别的正文只过一遍，读成不认识的种类</li>
+              <li>读不成的照全解再读一遍，报的错一字不差</li>
+              <li>存储加 <code>read_range_only</code>，几个线程一起解的那条路也照它；别的读者照旧全解</li>
+              <li>判官的会话目录照它读，判官自己要的种类列在 <code>ONLY</code>，有效历史认的列在内核 <code>event/only.rs</code></li>
+              <li>V-39 上施工单「各 2,300 条」改成「各 2,301 条」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">判官读日志时和它无关的种类不解析正文；行完整、序号连续照查</span><span class="rl">项目主人 2026-11-03（V-39 设计问题 2）</span></div>
+          <div class="tile new"><span class="nm">不要的种类正文被外人改得不合写法、仍是合法 JSON 的，判官不再报 <code>session_broken</code>，下次打开会话照样查得出；除此以外行为不变</span><span class="rl">项目主人 2026-11-03</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-39 上补</dd></div>
+        <div><dt>名称</dt><dd>判官只解析要的种类</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-03</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-39上补</dd></div>
+        <div><dt>验收</dt><dd>23.8 MB 的群会话（两份数据根回应 sha 不变、每一条叫她的话逐条一样）：指令 9.2 → 7.2 亿（−22%）、堆多 11.9 → 10.1 MB、匿名 16.9 → 12.8 MB、中位 88 → 74 ms；四个判官同时问匿名 52 → 39 MB。没到设计估的 2～3 亿：不要的正文仍要过一遍分词，外壳照旧全解</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>内核：样本每一行三样深浅，外壳、全解的、那几格一样；坏行报的错和全解一字不差；不要的正文合 JSON、不合写法的不报</span></li>
+        <li><span class="ok">✓</span><span>存储：各处读起、几个线程一起解的大段，交的就是每一行只解要的种类读成的；坏行报的错和 <code>read_range</code> 一样</span></li>
+        <li><span class="ok">✓</span><span>端点：V-39 上的读法照抄当准绳，三千段照种子造的群会话（加了工具结果、暂停着的请求、照回报接着开的下一轮、种类写在正文后面的）逐字比；只要内核那几种的有效历史按条比</span></li>
+        <li><span class="ok">✓</span><span>真文件：不要的种类正文合 JSON 的照读、外壳坏了照报；手写变异 10 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-39上补-判官只解析要的种类.md</code>；蓝图 <code>kernel/events.md</code> <code>Event::from_line_only</code>、<code>store.md</code> 第 7 条 <code>read_range_only</code>、<code>venues.md</code>「判官看的群聊记录」第 3 条。</li>
       </ul>
     </div>
   </div>

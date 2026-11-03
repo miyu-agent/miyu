@@ -16,7 +16,7 @@ use miyu_kernel::event::Event;
 use miyu_kernel::id::Seq;
 
 use super::parse::{self, Flow};
-use super::{HalfLine, Mark, OpenError, broken, segments};
+use super::{HalfLine, Mark, OpenError, Parse, broken, segments};
 
 /// 一窗读多少字节（施工 V-37 中，量过定的）：一段的原文最多这么多同时在内存里，一行比它还长的照这一行撑大。一个线程至少
 /// 分半 MiB、最多 8 个线程（`parse.rs`），4 MiB 是 8 个线程都分得到活的最小的窗口：1 MiB 的打开大会话慢了快一倍；再大只多
@@ -34,22 +34,23 @@ pub(super) enum Piece {
     SegmentEnd,
 }
 
-/// 照段的先后读、自检，一块块交给 `sink`，它交回 [`Flow::Stop`] 就停。`from` 是空的从第一段开头读，不是空的从它记的
-/// 那一段、那个字节读起（`read_marked`）。交回读到了哪里（停下的，是停在读完了的最后一段后面）；`from` 和日志对不上的
-/// 交回空的。
+/// 照段的先后读、自检，每一行照 `how` 解（施工 V-39 上补），一块块交给 `sink`，它交回 [`Flow::Stop`] 就停。`from` 是空的
+/// 从第一段开头读，不是空的从它记的那一段、那个字节读起（`read_marked`）。交回读到了哪里（停下的，是停在读完了的最后一段
+/// 后面）；`from` 和日志对不上的交回空的。
 pub(super) fn walk(
     dir: &Path,
     half: HalfLine,
     from: Option<&Mark>,
+    how: Parse<'_>,
     sink: &mut dyn FnMut(Piece) -> Flow,
 ) -> Result<Option<Mark>, OpenError> {
-    walk_in(dir, half, from, WINDOW, sink)
+    walk_in(dir, (half, how), from, WINDOW, sink)
 }
 
 /// 同 [`walk`]，一窗读 `window` 字节（测试里调小，逼出窗口边上的几种）。
 fn walk_in(
     dir: &Path,
-    half: HalfLine,
+    (half, how): (HalfLine, Parse<'_>),
     from: Option<&Mark>,
     window: usize,
     sink: &mut dyn FnMut(Piece) -> Flow,
@@ -82,7 +83,8 @@ fn walk_in(
             is_last: k + 1 == segments.len(),
         };
         offset = 0;
-        let Some((bytes, stopped)) = read_segment(&segment, &mut next, half, window, sink)? else {
+        let Some((bytes, stopped)) = read_segment(&segment, &mut next, (half, how), window, sink)?
+        else {
             return Ok(None);
         };
         if stopped {
@@ -121,7 +123,7 @@ struct Segment<'a> {
 fn read_segment(
     segment: &Segment<'_>,
     next: &mut Seq,
-    half: HalfLine,
+    (half, how): (HalfLine, Parse<'_>),
     window: usize,
     sink: &mut dyn FnMut(Piece) -> Flow,
 ) -> Result<Option<(u64, bool)>, OpenError> {
@@ -165,7 +167,7 @@ fn read_segment(
         misnamed: None,
         stopped: false,
     };
-    let bad = read_windows(&mut file, from..end, window, &mut check, sink)?;
+    let bad = read_windows(&mut file, from..end, (window, how), &mut check, sink)?;
     if let Some((number, why)) = check.wrong.take().or(bad).or(check.misnamed.take()) {
         return Err(broken(path, number, why));
     }
@@ -246,7 +248,7 @@ impl Check<'_> {
 fn read_windows(
     file: &mut File,
     lines: std::ops::Range<u64>,
-    window: usize,
+    (window, how): (usize, Parse<'_>),
     check: &mut Check<'_>,
     sink: &mut dyn FnMut(Piece) -> Flow,
 ) -> io::Result<Option<(usize, String)>> {
@@ -261,11 +263,13 @@ fn read_windows(
     {
         let mut buffer = vec![0; size];
         file.read_exact(&mut buffer)?;
-        return Ok(parse::stream(&buffer, |events| check.block(events, sink)));
+        return Ok(parse::stream(&buffer, how, |events| {
+            check.block(events, sink)
+        }));
     }
     let (sender, receiver) = mpsc::sync_channel(QUEUE);
     std::thread::scope(|scope| {
-        let reader = scope.spawn(move || read_ahead(file, total, window, &sender));
+        let reader = scope.spawn(move || read_ahead(file, total, (window, how), &sender));
         let mut bad = None;
         for read in &receiver {
             match read {
@@ -309,7 +313,7 @@ enum Ahead {
 fn read_ahead(
     file: &mut File,
     mut left: u64,
-    window: usize,
+    (window, how): (usize, Parse<'_>),
     sender: &SyncSender<Ahead>,
 ) -> io::Result<()> {
     let mut buffer = vec![0; window];
@@ -321,7 +325,7 @@ fn read_ahead(
         let (cut, filled) = next_window(file, &mut buffer, held, &mut left, window)?;
         let mut lines = 0;
         let mut gone = false;
-        let bad = parse::stream(&buffer[..cut], |events| {
+        let bad = parse::stream(&buffer[..cut], how, |events| {
             lines += events.len();
             if sender.send(Ahead::Events(events)).is_ok() {
                 Flow::Go

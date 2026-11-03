@@ -21,6 +21,7 @@ mod job;
 mod message;
 mod model;
 mod nested;
+mod only;
 mod package;
 mod peer;
 mod question;
@@ -259,6 +260,20 @@ impl Event {
     /// 都返回错误，写明哪里错。
     pub fn from_line(line: &str) -> Result<Event, serde_json::Error> {
         serde_json::from_str(line)
+    }
+
+    /// 同 [`Event::from_line`]，只是只解 `only` 里的种类（施工 V-39 上补：判官读群会话日志用）。外壳照旧全解；`only` 里的
+    /// 种类、有效历史照种类认的那几种（撤销、恢复、撤回、压缩、回合的开头和结尾、人话、回报、子会话回报、等的会话空了）
+    /// 全解；`message.assistant`、`model.called` 只解有效历史撤销时看的 `seen`、`error` 几格，别的格空着；别的种类的
+    /// `body` 只过一遍（是合法的 JSON 就行），读成 [`Body::Unknown`]，种类照写、`body` 是 `null`。照先后交给留着一切的
+    /// 有效历史（[`crate::history::History::whole`]）算出来留下的事件和全解的一样。
+    ///
+    /// # Errors
+    ///
+    /// 读不成的照 [`Event::from_line`] 再读一遍，交回它的错，和全解报的一字不差；它读成了的交它读成的。不要的种类的
+    /// `body` 合 JSON、只是不合那一种的写法的，不报（全解报）。
+    pub fn from_line_only(line: &str, only: &[&str]) -> Result<Event, serde_json::Error> {
+        read::line_only(line, only).or_else(|_| Event::from_line(line))
     }
 }
 

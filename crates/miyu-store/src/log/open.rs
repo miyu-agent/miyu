@@ -90,14 +90,20 @@ impl SessionLog {
         mut each: impl FnMut(Vec<Event>) -> Flow,
     ) -> Result<SessionLog, OpenError> {
         let mut stopped = false;
-        let end = walk(dir, HalfLine::Cut, None, &mut |piece| match piece {
-            Piece::Events(read) => {
-                let flow = each(read);
-                stopped = matches!(flow, Flow::Stop);
-                flow
-            }
-            Piece::SegmentEnd => Flow::Go,
-        })?
+        let end = walk(
+            dir,
+            HalfLine::Cut,
+            None,
+            Parse::Full,
+            &mut |piece| match piece {
+                Piece::Events(read) => {
+                    let flow = each(read);
+                    stopped = matches!(flow, Flow::Stop);
+                    flow
+                }
+                Piece::SegmentEnd => Flow::Go,
+            },
+        )?
         .filter(|_| !stopped)
         .ok_or_else(|| OpenError::Missing(dir.to_path_buf()))?;
         let last = dir.join(super::segment_name_of(end.segment));
@@ -123,7 +129,7 @@ impl SessionLog {
 /// 没有这个会话（目录没有，或者一段都还没有）；日志坏了；读写出错。
 pub fn read_events(dir: &Path) -> Result<Vec<Event>, OpenError> {
     let mut events = Vec::new();
-    walk(dir, HalfLine::Skip, None, &mut |piece| {
+    walk(dir, HalfLine::Skip, None, Parse::Full, &mut |piece| {
         if let Piece::Events(read) = piece {
             gather(&mut events, read);
         }
@@ -140,7 +146,14 @@ pub fn read_events(dir: &Path) -> Result<Vec<Event>, OpenError> {
 ///
 /// 同 [`read_events`]。
 pub fn read_segments(dir: &Path, each: impl FnMut(Vec<Event>) -> bool) -> Result<(), OpenError> {
-    walk(dir, HalfLine::Skip, None, &mut by_segment(each)).map(|_| ())
+    walk(
+        dir,
+        HalfLine::Skip,
+        None,
+        Parse::Full,
+        &mut by_segment(each),
+    )
+    .map(|_| ())
 }
 
 /// 同 [`read_segments`]，只是从 `from` 读起（施工 3-8 七补：列会话照索引记的位置，只读多出来的那一截），交回读到了哪里：
@@ -157,7 +170,13 @@ pub fn read_marked(
     from: Option<&Mark>,
     each: impl FnMut(Vec<Event>) -> bool,
 ) -> Result<Option<Mark>, OpenError> {
-    walk(dir, HalfLine::Skip, from, &mut by_segment(each))
+    walk(
+        dir,
+        HalfLine::Skip,
+        from,
+        Parse::Full,
+        &mut by_segment(each),
+    )
 }
 
 /// 只读地读第 `from` 条到第 `upto` 条（施工 V-37 中）：照先后一块块交给 `each`，不攒成段、不攒成整份；读过 `upto` 当场停，
@@ -182,7 +201,44 @@ pub fn read_range(
     upto: Option<Seq>,
     mut each: impl FnMut(Vec<Event>) -> Flow,
 ) -> Result<(), OpenError> {
-    range::read(dir, from, upto, &mut each)
+    range::read(dir, from, upto, Parse::Full, &mut each)
+}
+
+/// 同 [`read_range`]，只是每一行照 [`Event::from_line_only`] 只解 `only` 里的种类（施工 V-39 上补：判官用，
+/// `docs/construction/V-39上补-判官只解析要的种类.md`）：外壳、`only` 里的、留着一切的有效历史照种类认的全解，别的种类的
+/// `body` 只过一遍。自检照旧（最后一段末尾的半行、序号连着、段名、每一行都是合法的 JSON），读不成的报的错（哪一段、第几行、
+/// 为什么）同 [`read_range`]；只有不要的种类的 `body` 合 JSON、不合那一种的写法的不报（2026-11-03 项目主人拍板接受）。
+///
+/// # Errors
+///
+/// 同 [`read_range`]。
+pub fn read_range_only(
+    dir: &Path,
+    from: Seq,
+    upto: Option<Seq>,
+    only: &[&str],
+    mut each: impl FnMut(Vec<Event>) -> Flow,
+) -> Result<(), OpenError> {
+    range::read(dir, from, upto, Parse::Only(only), &mut each)
+}
+
+/// 每一行怎么解（施工 V-39 上补）。
+#[derive(Clone, Copy)]
+enum Parse<'a> {
+    /// 全解（[`Event::from_line`]）。
+    Full,
+    /// 只解这几种（[`Event::from_line_only`]）。
+    Only(&'a [&'a str]),
+}
+
+impl Parse<'_> {
+    /// 解一行。
+    fn line(self, text: &str) -> serde_json::Result<Event> {
+        match self {
+            Parse::Full => Event::from_line(text),
+            Parse::Only(only) => Event::from_line_only(text, only),
+        }
+    }
 }
 
 /// 最后一段末尾没写完的半行怎么办。

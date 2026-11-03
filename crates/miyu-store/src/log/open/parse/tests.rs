@@ -3,6 +3,7 @@
 use miyu_kernel::event::Event;
 
 use super::{Flow, SPLIT_AT, chunk, cuts, stream};
+use crate::log::open::Parse;
 
 /// 第 `seq` 条的一行原文：alice 说的一句（同 `log/tests.rs` 的写法）。
 fn line(seq: u64) -> String {
@@ -27,7 +28,7 @@ fn joined(texts: &[String]) -> Vec<u8> {
 /// 一块块收齐：交出去的事件、读不成的那一行。
 fn streamed(bytes: &[u8]) -> (Vec<Event>, Option<(usize, String)>) {
     let mut got = Vec::new();
-    let broken = stream(bytes, |events| {
+    let broken = stream(bytes, Parse::Full, |events| {
         got.extend(events);
         Flow::Go
     });
@@ -80,10 +81,10 @@ fn reading_stops_at_the_first_broken_line() {
 #[test]
 fn streamed_pieces_join_up_in_order() {
     let bytes = joined(&many());
-    let whole = chunk(&bytes).events;
+    let whole = chunk(&bytes, Parse::Full).events;
     let mut got = Vec::new();
     let mut pieces = 0;
-    let broken = stream(&bytes, |events| {
+    let broken = stream(&bytes, Parse::Full, |events| {
         pieces += 1;
         got.extend(events);
         Flow::Go
@@ -101,7 +102,7 @@ fn a_streamed_broken_line_counts_from_the_segment_start() {
     texts[broken - 1] = "{not json".to_string();
     let bytes = joined(&texts);
     let mut got = 0;
-    let bad = stream(&bytes, |events| {
+    let bad = stream(&bytes, Parse::Full, |events| {
         got += events.len();
         Flow::Go
     });
@@ -117,7 +118,7 @@ fn a_stopped_stream_hands_over_nothing_more() {
     texts[last] = "{not json".to_string();
     let bytes = joined(&texts);
     let mut calls = 0;
-    let bad = stream(&bytes, |_| {
+    let bad = stream(&bytes, Parse::Full, |_| {
         calls += 1;
         Flow::Stop
     });
@@ -127,7 +128,7 @@ fn a_stopped_stream_hands_over_nothing_more() {
     let small = joined(&[line(1), line(2)]);
     let mut seen = Vec::new();
     assert!(
-        stream(&small, |events| {
+        stream(&small, Parse::Full, |events| {
             seen.extend(events.iter().map(|event| event.seq.get()));
             Flow::Go
         })

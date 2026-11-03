@@ -9,7 +9,7 @@ use miyu_kernel::id::Seq;
 
 use crate::log::open::parse::{self, Flow};
 use crate::log::open::walk::Piece;
-use crate::log::open::{HalfLine, Mark, OpenError, broken, segments};
+use crate::log::open::{HalfLine, Mark, OpenError, Parse, broken, segments};
 
 /// 照段的先后读、自检，一块块交给 `sink`（以前的 `walk`）。
 pub(super) fn walk(
@@ -126,7 +126,7 @@ fn read_segment(
     let mut wrong = None;
     let mut misnamed = None;
     let mut stopped = false;
-    let bad = parse::stream(&bytes[..complete], |events| {
+    let bad = parse::stream(&bytes[..complete], Parse::Full, |events| {
         // 先照先后查序号，接不上的当场停；段名不对的记下，照以前的先后最后才报（序号、读不成的那一行在它前面）。
         for event in &events {
             checked += 1;

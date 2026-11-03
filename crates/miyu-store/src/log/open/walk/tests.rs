@@ -15,7 +15,7 @@ use miyu_kernel::id::Seq;
 use self::cases::{HALF, Segments, broken, fine, halves, line, lines, replace_line, shapes};
 use super::{Piece, WINDOW, walk_in};
 use crate::log::open::parse::Flow;
-use crate::log::open::{HalfLine, Mark, OpenError};
+use crate::log::open::{HalfLine, Mark, OpenError, Parse};
 use crate::test_support::Scratch;
 
 /// 照 `segments` 在 `dir` 写好一个会话的日志（再放一个不是段的文件，不该看）。
@@ -250,7 +250,7 @@ fn same(
                         half: HalfLine,
                         from: Option<&Mark>,
                         sink: &mut dyn FnMut(Piece) -> Flow| {
-            walk_in(dir, half, from, window, sink)
+            walk_in(dir, (half, Parse::Full), from, window, sink)
         };
         let tiny = window < 7 || !thorough;
         let exact = fits(segments, window);
@@ -341,7 +341,7 @@ fn a_missing_session_is_missing_either_way() {
     let nobody = scratch.path().join("nobody");
     let now =
         |dir: &Path, half: HalfLine, from: Option<&Mark>, sink: &mut dyn FnMut(Piece) -> Flow| {
-            walk_in(dir, half, from, 7, sink)
+            walk_in(dir, (half, Parse::Full), from, 7, sink)
         };
     assert_eq!(
         read(&before, &nobody, HalfLine::Skip, None, Stop::Never),
@@ -425,7 +425,7 @@ fn a_directory_named_like_a_segment_fails_the_same() {
     fs::create_dir_all(dir.join("000000000011.jsonl")).unwrap();
     let now =
         |dir: &Path, half: HalfLine, from: Option<&Mark>, sink: &mut dyn FnMut(Piece) -> Flow| {
-            walk_in(dir, half, from, 64, sink)
+            walk_in(dir, (half, Parse::Full), from, 64, sink)
         };
     for half in [HalfLine::Skip, HalfLine::Cut] {
         let old = read(&before, &dir, half, None, Stop::Never);

@@ -2,6 +2,9 @@
 //! 那一条，几样 `count`、`grow`，放的时机、一块多大也照种子变，新旧比 `Ok(records, current, count)` 或拒绝码。撤销、撤回的
 //! 下界另查：它以前的那一截，这一次撤销、撤回前后在有效历史里原样都在。三条退路（再读一遍、整份读、读回引用的那一条）都要
 //! 走到。
+//!
+//! 施工 V-39 上补：新的那一份喂的是每一行只解判官要的种类读成的（`Event::from_line_only`，同会话目录里照
+//! `read_range_only` 读的），准绳照旧是全解的。
 
 use miyu_assemble::GroupChat;
 use miyu_assemble::group::{Window, records_in};
@@ -16,7 +19,7 @@ use super::script::{Dice, Script};
 use crate::refusal::Refusal;
 use crate::venues::records::bones::Bones;
 use crate::venues::records::pass::Tuning;
-use crate::venues::records::read::{Log, judge};
+use crate::venues::records::read::{Log, ONLY, judge};
 
 /// 内存里的日志：一块交 `chunk` 条；数着各种读法用了几次。
 pub(super) struct Mem {
@@ -98,14 +101,26 @@ pub(super) const WINDOWS: [Window; 6] = [
     },
 ];
 
-/// 照种子的一段日志。
-pub(super) fn events(seed: u64) -> Vec<Event> {
+/// 照种子的一段日志的每一行。
+pub(super) fn lines(seed: u64) -> Vec<String> {
     let mut dice = Dice(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
     let steps = 20 + dice.below(110);
-    Script::run(&mut dice, steps)
-        .lines
+    Script::run(&mut dice, steps).lines
+}
+
+/// 照种子的一段日志：每一行全解。
+pub(super) fn events(seed: u64) -> Vec<Event> {
+    lines(seed)
         .iter()
         .map(|line| Event::from_line(line).expect("合写法"))
+        .collect()
+}
+
+/// 同一段日志，每一行只解判官要的种类（施工 V-39 上补）。
+pub(super) fn only(seed: u64) -> Vec<Event> {
+    lines(seed)
+        .iter()
+        .map(|line| Event::from_line_only(line, ONLY).expect("合写法"))
         .collect()
 }
 
@@ -128,7 +143,10 @@ fn judged(events: &[Event]) -> Vec<Seq> {
         .filter(|event| {
             matches!(
                 event.body,
-                Body::MessageUser(_) | Body::TurnReverted(_) | Body::MessageWithdrawn(_)
+                Body::MessageUser(_)
+                    | Body::TurnReverted(_)
+                    | Body::MessageWithdrawn(_)
+                    | Body::ToolResult(_)
             )
         })
         .map(|event| event.seq)
@@ -162,6 +180,42 @@ fn reaches_hold(events: &[Event]) -> usize {
     checked
 }
 
+/// 只解要的种类的保证（施工 V-39 上补）：一种都不要（只有内核里有效历史认的那几种全解、回复和请求只解几格），交给留着一切的
+/// 有效历史，每一次撤销、恢复、撤回、开新的一轮以后留下的（序号、种类）和全解的一样，最后也一样。
+fn history_holds(seed: u64, events: &[Event]) {
+    let bare = lines(seed)
+        .into_iter()
+        .map(|line| Event::from_line_only(&line, &[]).expect("合写法"));
+    let shape = |history: &History| {
+        history
+            .events()
+            .iter()
+            .map(|event| (event.seq, event.body.kind().to_string()))
+            .collect::<Vec<_>>()
+    };
+    let mut full = History::whole();
+    let mut skim = History::whole();
+    for (event, bare) in events.iter().zip(bare) {
+        full.append(event.clone());
+        skim.append(bare);
+        if matches!(
+            event.body,
+            Body::TurnReverted(_)
+                | Body::TurnUnreverted(_)
+                | Body::MessageWithdrawn(_)
+                | Body::TurnStarted(_)
+        ) {
+            assert_eq!(
+                shape(&skim),
+                shape(&full),
+                "种子 {seed} 第 {} 条",
+                event.seq
+            );
+        }
+    }
+    assert_eq!(shape(&skim), shape(&full), "种子 {seed}");
+}
+
 fn below(history: &History, reach: Seq) -> Vec<Event> {
     history
         .events()
@@ -183,7 +237,9 @@ fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
     let texts = |_: Option<&Event>| Ok((chat(), None));
     for seed in seeds {
         let events = events(seed);
+        let only = only(seed);
         reaches_hold(&events);
+        history_holds(seed, &events);
         let mut history = History::whole();
         for event in events.clone() {
             history.append(event);
@@ -191,7 +247,7 @@ fn compare(seeds: std::ops::RangeInclusive<u64>) -> [usize; 3] {
         let tuning = tuning(seed);
         for (k, msg) in judged(&events).into_iter().enumerate() {
             for (w, &window) in WINDOWS.iter().enumerate().filter(|(w, _)| every(k, *w)) {
-                let mut log = Mem::new(events.clone(), 1 + (seed as usize + k + w) % 9);
+                let mut log = Mem::new(only.clone(), 1 + (seed as usize + k + w) % 9);
                 let new = judge(&mut log, msg, window, texts, tuning);
                 // 以前的读法照同一份有效历史挑（`old::judge` 每次整份重放，三千段太慢；它和这一样）。
                 let old =
@@ -245,10 +301,11 @@ fn a_log_growing_while_read_reads_the_first_read() {
     for seed in 1..=300 {
         let all = events(seed);
         let cut = all.len() * 2 / 3;
-        let (head, tail) = all.split_at(cut);
+        let head = &all[..cut];
+        let only = only(seed);
         for msg in judged(head) {
-            let mut log = Mem::new(head.to_vec(), 3);
-            log.grows = tail.to_vec();
+            let mut log = Mem::new(only[..cut].to_vec(), 3);
+            log.grows = only[cut..].to_vec();
             let texts = |_: Option<&Event>| Ok::<(GroupChat, _), _>((chat(), None));
             let tuning = Tuning {
                 flush_at: 2,

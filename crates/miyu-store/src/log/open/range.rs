@@ -11,13 +11,14 @@ use miyu_kernel::id::Seq;
 
 use super::parse::Flow;
 use super::walk::{Piece, SCAN, fill, walk};
-use super::{HalfLine, Mark, OpenError, segments};
+use super::{HalfLine, Mark, OpenError, Parse, segments};
 
-/// 读第 `from` 条到第 `upto` 条，一块块交给 `each`（同 [`super::read_range`]）。
+/// 读第 `from` 条到第 `upto` 条，每一行照 `parse` 解，一块块交给 `each`（同 [`super::read_range`]、[`super::read_range_only`]）。
 pub(super) fn read(
     dir: &Path,
     from: Seq,
     upto: Option<Seq>,
+    parse: Parse<'_>,
     each: &mut dyn FnMut(Vec<Event>) -> Flow,
 ) -> Result<(), OpenError> {
     let all = segments(dir)?;
@@ -30,15 +31,15 @@ pub(super) fn read(
     let mut sink = between(from, upto, each);
     match place(&all, from)? {
         Place::Nothing => Ok(()),
-        Place::Start => walk(dir, HalfLine::Skip, None, &mut sink).map(drop),
+        Place::Start => walk(dir, HalfLine::Skip, None, parse, &mut sink).map(drop),
         Place::At {
             mark,
             path,
             skipped,
-        } => match walk(dir, HalfLine::Skip, Some(&mark), &mut sink) {
+        } => match walk(dir, HalfLine::Skip, Some(&mark), parse, &mut sink) {
             Ok(Some(_)) => Ok(()),
             // 定位以后这一段又变了（日志只追加，不该有）：一条都还没交，退回从头读。
-            Ok(None) => walk(dir, HalfLine::Skip, None, &mut sink).map(drop),
+            Ok(None) => walk(dir, HalfLine::Skip, None, parse, &mut sink).map(drop),
             // 从这一段中间读起的，行号照这一段开头数（同从头读）。
             Err(OpenError::Broken { segment, line, why }) if segment == path => {
                 Err(OpenError::Broken {

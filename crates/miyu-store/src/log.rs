@@ -6,7 +6,10 @@
 
 mod open;
 
-pub use open::{Flow, OpenError, first_event, read_events, read_marked, read_range, read_segments};
+pub use open::{
+    Flow, OpenError, first_event, read_events, read_marked, read_range, read_range_only,
+    read_segments,
+};
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};

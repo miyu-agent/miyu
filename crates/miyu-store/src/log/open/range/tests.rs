@@ -249,3 +249,5 @@ fn beyond_the_end_and_before_the_start() {
         Err(OpenError::Missing(_))
     ));
 }
+
+mod only;

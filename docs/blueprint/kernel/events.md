@@ -11,6 +11,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-kernel/src/event.rs` | 外壳 `Event`；种类表 `Body`（宏 `bodies!`，加一种只加一行）；`Body::KINDS`、`Body::kind`；一行怎么读写 |
+| `crates/miyu-kernel/src/event/only.rs`（施工 V-39 上补） | 只解要的种类读一行（`Event::from_line_only`）：哪几种全解、哪几种只解几格、别的不解 |
 | `crates/miyu-kernel/src/event/session.rs`、`turn.rs`、`restore.rs`、`message.rs`、`tool.rs`、`question.rs`、`context.rs`、`model.rs`、`effect.rs`、`job.rs`、`peer.rs`、`image.rs`（施工 8-17）、`venue.rs`（施工 O-13 上：`message.user` 的 `venue` 格、`venue.recalled`、`venue.delivered`） | 各种 `body`（`kernel/events-bodies.md`） |
 | `crates/miyu-kernel/src/event/transient.rs` | 瞬时事件：外壳 `Transient` 和九种 `body`（`model.changed` 施工 8-9 加，由会话 actor 造；`todos.changed` 施工 D-3 加；`tool.nested_started` 施工 M-1 加；`compactable.changed` 施工 W-12 补加，由会话 actor 造） |
 | `crates/miyu-kernel/src/format_error.rs` | 编号、名字、时刻写法不对时的报错 `FormatError` |
@@ -34,6 +35,7 @@
 
 - `Event::to_line()`：写成一行，不带换行。换行由存日志的那一层加（`store.md`）。
 - `Event::from_line(line)`：读一行，交回事件或 serde_json 的错误。
+- `Event::from_line_only(line, 要的种类)`（施工 V-39 上补，判官读群会话日志用，`venues.md`「判官看的群聊记录」第 3 条）：同 `from_line`，只是只解要的种类。外壳照旧全解；要的种类，和有效历史照种类认的那几种（`turn.started`、`turn.ended`、`turn.reverted`、`turn.unreverted`、`message.user`、`message.withdrawn`、`context.compacted`，撤销认上一轮时看触发是哪一种的 `job.reported`、`child.reported`、`peer.idle`）全解；`message.assistant`、`model.called` 只解有效历史撤销查排着的话时看的几格（`seen`，回复另有 `interrupted`，请求另有 `messages`、`result`、`error`），别的格空着；别的种类的 `body` 只过一遍（是合法的 JSON 就行），读成不认识的种类（`Body::Unknown`），种类照写、`body` 是 `null`。照先后交给留着一切的有效历史（`History::whole`），撤销、恢复、撤回、压缩以后留下的事件和全解的一样（`kernel/history.md`；有效历史多认了别的种类、多看了别的格，`only.rs` 要跟着改）。读不成的照 `from_line` 再读一遍，交回它的错，和全解的一字不差（它读成了的交它读成的）；全解读得成的这里也读得成；不要的种类的 `body` 合 JSON、不合那一种的写法的，全解报错，这里不报（2026-11-03 项目主人拍板接受）。
 - `Body::kind()`：外壳里 `kind` 那一格写的名字；不认识的种类，是读到的那个名字。
 - `Body::KINDS`：内核认识的全部种类名，照下表的先后，样本测试拿它查每一种都有样本。
 
@@ -192,6 +194,7 @@ serde_json 在每一句后面加上 ` at line <几> column <几>`（没有测试
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-kernel/src/event/tests.rs` | 图纸上的两行读写一字不差（`lines_from_the_drawing_round_trip`）；认识的读成对应的类型；第 12 条（`an_unknown_kind_keeps_its_body_byte_for_byte`）；第 2 条字段顺序（`fields_are_written_in_the_drawing_order`）；第 3、7 条（`optional_fields_missing_or_null_read_as_absent`）；第 9 条（`new_fields_on_the_envelope_are_ignored`）；「出错」表里的几种（`broken_lines_say_what_is_wrong`） |
+| `crates/miyu-kernel/tests/only_samples.rs`、`src/event/only/tests.rs`（施工 V-39 上补） | `Event::from_line_only`：样本里每一行外壳和全解的一样，有效历史认的（测试里照规矩另抄一份，不引 `only.rs` 的表）、要的种类全解的一样，回复、请求那几格一样，别的读成 `null`，要的写全了的和全解一样（`each_kind_reads_as_deep_as_it_should`）；种类写在 `body` 后面的照样分（`a_kind_after_its_body_reads_the_same`）；外壳坏了、正文不是合法 JSON、要的种类正文不合写法、那几格不对的，报的错和全解一字不差（`a_broken_line_is_refused_word_for_word`）；不要的种类正文合 JSON、不合写法的不报（`a_skipped_body_that_is_still_json_is_not_checked`） |
 | `crates/miyu-kernel/src/event/transient/tests.rs` | 图纸上的那一行照写；四样增量各自的写法；没有 `turn`、`cause` 的不写；`tool.progress` 的写法 |
 | `crates/miyu-kernel/tests/samples.rs` | 第 13 条：每一份样本的每一行读写一字不差、认得出种类、种类和文件名对得上（`every_sample_round_trips_as_its_own_kind`）；认识的每一种都有样本（`every_known_kind_has_a_sample`）；几份样本讲同一个会话，序号不重复、时刻不往回走（`samples_tell_one_session_in_order`）；子代理的样本对得上：回报的会话、`by` 就是派它的 `job.started` 记的，子会话的第一条带着父会话、第 1 层（`the_child_in_the_samples_is_the_one_the_parent_started`，施工 7-1）；空了的通知对得上：等的会话前面订过，`idle` 的 `by` 是它、作废的是内核（`the_notices_in_the_samples_answer_the_watches`，施工 C-1） |
 | `crates/miyu-kernel/tests/transient_sample.rs` | 瞬时样本在代码里照着造、写出去一字不差（施工 8-9 加 `status` 带 `failover` 的一条、`model.changed`；施工 8-10 加 `why` 是 `turn` 的一条；施工 8-18 那一条带 `effort`，`from` 是 `system`，8-18（补）起）；推给头的几段增量交给累积器，拼出来的就是日志里 45 号回复的内容块 |
