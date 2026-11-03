@@ -27,8 +27,10 @@ async fn a_shell_line_from_a_blocking_thread_carries_the_session() {
     .expect("这个测试程序只装这一次");
     let site = Site::new();
     // `setsid` 出了命令的进程组，命令退出以后它还拿着输出：再等 0.5 秒还没关，记一行，在阻塞线程里。等它真的出了组
-    // （建了 `escaped`）命令才退出：不然整组杀的时候它还在组里，一起被杀掉。
-    let command = "setsid sh -c 'touch escaped; sleep 1' & \
+    // （建了 `escaped`）命令才退出：不然整组杀的时候它还在组里，一起被杀掉。它一直拿着输出，等这边看完、删了 `escaped`
+    // 才走（测试中途失败的，`Site` 删目录时也就没了）：原来只多拿一秒，机器忙时命令退出到开始那 0.5 秒之间耽搁过半秒，
+    // 它先关了，没记那一行（整套并跑时红过）。
+    let command = "setsid sh -c 'touch escaped; while [ -e escaped ]; do sleep 0.01; done' & \
                    while [ ! -e escaped ]; do sleep 0.01; done; echo started";
     let span = tracing::error_span!(target: "miyu::session", "session", session = SESSION);
     let done = site
@@ -38,8 +40,9 @@ async fn a_shell_line_from_a_blocking_thread_carries_the_session() {
         )
         .instrument(span)
         .await;
-    assert!(!done.error, "{done:?}");
     let lines = memory.lines();
+    std::fs::remove_file(site.real("work/escaped")).expect("放它走");
+    assert!(!done.error, "{done:?}");
     let line = lines
         .iter()
         .find(|line| line.contains("command output still open"))
