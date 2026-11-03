@@ -742,6 +742,7 @@ flowchart LR
 | G-13 | 打包跳过版本库和缓存 | `miyu pkg pack` 在包文件夹的哪一层都照名字跳过 `.git`（文件夹、文件都算）、`.github`、`.hg`、`.svn`、`__pycache__`、`*.pyc`、`.DS_Store`，不往里走，在「只有文件和文件夹」那一查之前；名单写死在 `miyu_source::archive`，不认 `.gitignore`。本地打的和 `pack.yml` 剔过再打的是同一个包（`pack.yml` 的 `rm` 等默认的 miyu 版本带上以后另删）。施工单见 `G-13-打包跳过版本库和缓存.md` |
 | G-14 | 包文件的类型 | `packaging/mime/miyu.xml` 给 `application/x-zstd-compressed-tar` 加 `*.miyu`（权重 80），不另开类型、不做双击安装（项目主人 2026-10-22 定）；`miyu-source` 的 `tests/mime.rs` 守着后缀和 `archive::EXTENSION` 对得上；deb、rpm、AUR 装进 `/usr/share/mime/packages/` 由各自的触发器跑 `update-mime-database`，安装脚本装进 `~/.local/share/mime/packages/` 自己跑。施工单见 `G-14-包文件的类型.md` |
 | G-15 | 自建软件源 | `miyu-index folder <包文件夹> <输出目录> --url <源的地址>`：把一个文件夹里的 `.miyu` 收成索引、包文件拷进 `files/`，`sign` 签名后用任何静态网页服务发出去，用的人照第三方源加进配置（项目主人 10-29 要一个不依赖 GitHub 的源测装包）。顺带：命令行转交子命令、核心拉起扩展多设 `MIYU_PROGRAM`（主程序的真实位置，装进数据根的网页软件靠它拉起核心）；`[ui] pages_dir` 改成相对包文件夹。施工单见 `G-15-自建软件源.md` |
+| G-16 | 一个仓库发几个包 | 收录时一个 Release 里照编号分开，每个编号各收一条、各自先到先得、各自照编号拉黑；同一个编号的几个文件要同一个版本，不是的整个仓库不收。im 的仓库同时发 `miyu-im` 和 `miyu-im-sponsor` 要它（2026-11-04）。设计 `37-软件源.md` 第三节第 4 条跟着改 |
 | H-1 | 项目这一样东西 | 设计 `38-项目.md`：`projects.json`、`project.*`、`projects` 流。施工单见 `H-1-项目这一样东西.md` |
 | H-2 | 会话在项目里 | 会话的 `project`：建、移进移出、列表、删项目挪出来。施工单见 `H-2-会话在项目里.md` |
 | H-3 | 附加提示词和留言的范围 | 项目的附加提示词进 system、下一轮跟着换；列会话照项目筛。施工单见 `H-3-附加提示词和留言.md` |

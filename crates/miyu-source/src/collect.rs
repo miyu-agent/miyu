@@ -1,7 +1,8 @@
 //! 收录（施工 G-2 下，设计 `37-软件源.md` 第三节第 4、5 条）：照 [`Rules`] 列出仓库，读每个仓库最新的 Release 里的 `.miyu`，
 //! 下载、算哈希、解开照 Miyu 自己那一套读清单，写成索引的一条。编号先到先得（`names.toml`），拉黑的去掉，官方的标上。
 //!
-//! - 一个仓库最新的 Release 里只能是同一个包的同一个版本：不分系统的一个文件，或者一种系统一个文件；文件名要和清单对得上
+//! - 一个仓库最新的 Release 里可以有几个包（施工 G-16：扩展和它带的插件住一个仓库）；照编号分开，每个编号各自收成一条、各自
+//!   先到先得。同一个编号的几个文件要是同一个版本：不分系统的一个文件，或者一种系统一个文件；文件名要和清单对得上
 //!   （[`archive::file_name`]）。对不上的、读不成的整个仓库这一次不收，记一笔。
 //! - 网络走 [`Fetch`]：小程序接 HTTP，测试接内存里的一张表。
 //! - 包自带的图标（施工 F-18 下，`[package] logo`）从包文件里取出来，放进 [`Collected::logos`]（照 [`Logo::path_for`]），和索引
@@ -13,6 +14,7 @@
 
 mod folder;
 pub mod rules;
+mod tally;
 mod topic;
 
 use std::collections::BTreeMap;
@@ -27,6 +29,7 @@ use crate::archive;
 use crate::index::{Entry, File, Index, Logo, VERSION};
 pub use folder::from_folder;
 pub use rules::{Rules, Source};
+use tally::Tally;
 
 /// 一个包文件最多多大。
 pub const MOST_FILE: u64 = 2 << 30;
@@ -57,7 +60,7 @@ pub struct Collected {
     pub logos: BTreeMap<String, Vec<u8>>,
 }
 
-/// 一个仓库收成的：一条、它的图标、要记的一笔。
+/// 一个仓库里的一个包收成的：一条、它的图标、要记的一笔。
 struct Gathered {
     entry: Entry,
     logo: Option<Vec<u8>>,
@@ -123,46 +126,24 @@ pub fn collect(
         }
         let official = has_repo(&rules.official, repo);
         let place = scratch.join(n.to_string());
-        let entry = one_repo(repo, &origin, official, fetch, api, &place);
+        let gathered = one_repo(repo, &origin, official, fetch, api, &place);
         discard(&place);
-        let Gathered { entry, logo, note } = match entry {
-            Ok(one) => one,
+        let gathered = match gathered {
+            Ok(all) => all,
             Err(why) => {
                 notes.push(format!("{repo}: skipped, {why}"));
                 continue;
             }
         };
-        if let Some(note) = note {
-            notes.push(format!("{repo}: {note}"));
+        for one in gathered {
+            let mut tally = Tally {
+                names: &mut names,
+                notes: &mut notes,
+                logos: &mut logos,
+                packages: &mut packages,
+            };
+            tally.take(one, repo, &origin, rules);
         }
-        match names.get(&entry.id) {
-            Some(owner) if *owner != origin => {
-                notes.push(format!(
-                    "{repo}: skipped, id {} belongs to {owner}",
-                    entry.id
-                ));
-                continue;
-            }
-            Some(_) => {}
-            None => {
-                names.insert(entry.id.clone(), origin.clone());
-                notes.push(format!("{repo}: claimed id {}", entry.id));
-            }
-        }
-        // 拉黑的来源仓库在下载之前已经跳过，这里只剩照编号拉黑的。
-        let blocked = rules
-            .blocked
-            .iter()
-            .find(|blocked| blocked.id.as_deref() == Some(entry.id.as_str()));
-        if let Some(blocked) = blocked {
-            notes.push(format!("{repo}: blocked, {}", blocked.reason));
-            continue;
-        }
-        notes.push(format!("{repo}: {} {}", entry.id, entry.version));
-        if let (Some(at), Some(bytes)) = (&entry.logo, logo) {
-            logos.insert(at.path.clone(), bytes);
-        }
-        packages.push(entry);
     }
     packages.sort_by(|a, b| a.id.cmp(&b.id));
     Collected {
@@ -183,7 +164,7 @@ fn has_repo(repos: &[String], repo: &str) -> bool {
     repos.iter().any(|listed| listed.eq_ignore_ascii_case(repo))
 }
 
-/// 一个仓库最新的 Release 收成一条。
+/// 一个仓库最新的 Release 收成的几个包，照编号第一次出现的先后。
 fn one_repo(
     repo: &str,
     origin: &str,
@@ -191,7 +172,7 @@ fn one_repo(
     fetch: &dyn Fetch,
     api: &str,
     place: &Path,
-) -> Result<Gathered, String> {
+) -> Result<Vec<Gathered>, String> {
     let url = format!("{}/repos/{repo}/releases/latest", api.trim_end_matches('/'));
     let release: Release = serde_json::from_slice(&fetch.get(&url, MOST_RELEASE)?)
         .map_err(|error| format!("unreadable release: {error}"))?;
@@ -200,8 +181,7 @@ fn one_repo(
         .iter()
         .filter(|asset| asset.name.ends_with(&format!(".{}", archive::EXTENSION)))
         .collect();
-    let mut gathered: Option<Gathered> = None;
-    let mut files: Vec<File> = Vec::new();
+    let mut gathered: Vec<(Gathered, Vec<File>)> = Vec::new();
     for (n, asset) in assets.iter().enumerate() {
         let bytes = fetch.get(&asset.browser_download_url, MOST_FILE)?;
         let read = read_package(
@@ -211,26 +191,38 @@ fn one_repo(
             &place.join(n.to_string()),
             (origin, official),
         )?;
-        let installed = read.gathered.entry.installed;
-        match &gathered {
-            None => gathered = Some(read.gathered),
-            Some(first)
-                if first.entry.id != read.gathered.entry.id
-                    || first.entry.version != read.gathered.entry.version =>
-            {
-                return Err("files of different packages in one release".to_string());
+        let Read {
+            gathered: one,
+            file,
+        } = read;
+        match gathered
+            .iter_mut()
+            .find(|(first, _)| first.entry.id == one.entry.id)
+        {
+            None => gathered.push((one, vec![file])),
+            Some((first, _)) if first.entry.version != one.entry.version => {
+                return Err(format!(
+                    "files of {} in different versions in one release",
+                    one.entry.id
+                ));
             }
-            Some(_) => {}
+            Some((first, files)) => {
+                first.entry.installed = first.entry.installed.max(one.entry.installed);
+                files.push(file);
+            }
         }
-        if let Some(first) = &mut gathered {
-            first.entry.installed = first.entry.installed.max(installed);
-        }
-        files.push(read.file);
     }
-    let mut gathered = gathered.ok_or("no package file in the latest release")?;
-    files.sort_by(|a, b| a.target.cmp(&b.target));
-    gathered.entry.files = files;
-    Ok(gathered)
+    if gathered.is_empty() {
+        return Err("no package file in the latest release".to_string());
+    }
+    Ok(gathered
+        .into_iter()
+        .map(|(mut one, mut files)| {
+            files.sort_by(|a, b| a.target.cmp(&b.target));
+            one.entry.files = files;
+            one
+        })
+        .collect())
 }
 
 /// 一个包文件读成的：这一条（还没有文件）、它的图标、要记的一笔，和它作为一个文件的那一格。

@@ -1,5 +1,6 @@
 //! 收录（施工 G-2 下）：网络换成内存里的一张表。收成一条、多系统、编号被别的仓库占了、拉黑、文件名对不上、一个 Release 里
-//! 混了两个包、没有包文件、拿不到；四份规则读得成、写错的报哪个文件。社区来源的在 `topic` 里（施工 CC-1）。
+//! 有几个包（施工 G-16）、同一个包两个版本、没有包文件、拿不到；四份规则读得成、写错的报哪个文件。社区来源的在 `topic`
+//! 里（施工 CC-1）。
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -187,8 +188,8 @@ fn taken_blocked_and_broken_releases_are_left_out() {
         "miyu-agent/bad-name",
         &[("memes.miyu".to_string(), bytes.clone())],
     );
-    let other = package(scratch.path(), "other", "1.0", "", None);
-    net.release("miyu-agent/mixed", &[(name, bytes.clone()), other]);
+    let newer = package(scratch.path(), "memes", "2.0", "", None);
+    net.release("miyu-agent/mixed", &[(name, bytes.clone()), newer]);
     net.release("miyu-agent/empty", &[]);
     let blocked = package(scratch.path(), "evil", "1.0", "", None);
     net.release("miyu-agent/evil", &[blocked]);
@@ -221,7 +222,7 @@ fn taken_blocked_and_broken_releases_are_left_out() {
     for expected in [
         "someone/memes-copy: skipped, id memes belongs to github.com/miyu-agent/miyu-memes",
         "miyu-agent/bad-name: skipped, memes.miyu should be memes-1.0.miyu",
-        "miyu-agent/mixed: skipped, files of different packages in one release",
+        "miyu-agent/mixed: skipped, files of memes in different versions in one release",
         "miyu-agent/empty: skipped, no package file in the latest release",
         "miyu-agent/missing: skipped, https://api.example.invalid/repos/miyu-agent/missing/releases/latest: 404",
         "miyu-agent/evil: blocked, malware",
@@ -490,5 +491,6 @@ fn with_several_targets_the_biggest_installed_size_is_kept_in_either_order() {
 }
 
 mod reserved;
+mod several;
 mod tools;
 mod topic;
