@@ -10,6 +10,7 @@
 //! - 查和停（施工 7-4）：这个会话派出去的任务照日志记在 [`Roster`] 里，任务端口经它列出、读输出、停掉，后台命令和子代理
 //!   都管（`query.rs`、`stop.rs`）；头经协议读后台命令的输出（施工 7-4 补），读的和 `jobs` 是同一份。
 
+mod batch;
 mod limits;
 mod output;
 mod peek;
@@ -28,7 +29,7 @@ use std::time::Instant;
 
 use tokio::sync::{mpsc, watch};
 
-use miyu_kernel::event::{Body, Event, JobReason, JobReported};
+use miyu_kernel::event::{Body, Event, JobLines, JobReason, JobReported};
 use miyu_kernel::id::{CallId, CommandId, JobId};
 use miyu_kernel::origin::{By, Tool};
 use miyu_kernel::session::Input;
@@ -127,6 +128,8 @@ struct Shared {
     /// 后台命令的输出写进一段、关上，回报落了盘，都叫一声（施工 V-6 上）：头带 `wait` 读 `job.output` 的等着它。actor 停了
     /// 跟着没了，等着的那一头就知道不用等了。
     changes: Arc<watch::Sender<u64>>,
+    /// 监视的命令攒批的截法（施工 MN-1 上）：快照里的那一行省略，最多 4000 个字。
+    cut: miyu_kernel::session::Reports,
 }
 
 /// 一条后台命令结束了，交回 actor 的：`job.reported` 的 `by`、`cause`、`body`（`kernel/session.md`「回报」第 2 条）。
@@ -136,6 +139,15 @@ pub(crate) struct Ended {
     by: By,
     cause: Option<CommandId>,
     reported: JobReported,
+}
+
+/// 监视的命令攒好的一批（施工 MN-1 上）：哪一条、起它的那次调用和那一轮，攒好的行。
+#[derive(Debug)]
+pub(crate) struct Lines {
+    job: JobId,
+    by: By,
+    cause: Option<CommandId>,
+    batch: batch::Batch,
 }
 
 impl SessionJobs {
@@ -149,6 +161,7 @@ impl SessionJobs {
             ids,
             roster,
             agents,
+            cut,
         } = kit;
         let owner = table.owners.fetch_add(1, Ordering::Relaxed);
         SessionJobs {
@@ -163,6 +176,7 @@ impl SessionJobs {
                 roster: Mutex::new(roster),
                 agents,
                 changes: Arc::new(watch::Sender::new(0)),
+                cut,
             }),
             landing: Vec::new(),
         }
@@ -213,6 +227,21 @@ impl SessionJobs {
             by: ended.by,
             cause: ended.cause,
             reported: ended.reported,
+        }
+    }
+
+    /// 监视的命令攒好的一批到了 actor（施工 MN-1 上）：写成内核的输入，时刻是到的那一刻。
+    pub(crate) fn lines(at: Timestamp, seen: Lines) -> Input {
+        Input::JobLines {
+            at,
+            by: seen.by,
+            cause: seen.cause,
+            lines: JobLines {
+                job: seen.job,
+                text: seen.batch.text,
+                lines: seen.batch.lines,
+                omitted: seen.batch.omitted,
+            },
         }
     }
 
@@ -308,6 +337,8 @@ pub(crate) struct Kit {
     pub(crate) roster: Roster,
     /// 会话表的端口和这个会话的编号：没交进来的停不了子代理。
     pub(crate) agents: Option<Arc<Agents>>,
+    /// 监视的命令攒批的截法（施工 MN-1 上，[`miyu_kernel::session::Reports::for_lines`]）。
+    pub(crate) cut: miyu_kernel::session::Reports,
 }
 
 /// actor 停了：这个会话在跑的都整组杀掉。有计划地停下的已经杀过了，这里什么都没有。
@@ -338,6 +369,25 @@ impl Shared {
             entry.output.close();
             entry.process.kill();
         }
+    }
+
+    /// 监视的命令攒好了一批（施工 MN-1 上）：还在表里、还没人报过结束的，交给 actor。拿着表的锁交，和报结束的是同一把：报了
+    /// 结束以后到的不交，内核那边也就不会在结束以后再记它的行。
+    fn lines(&self, key: &Key, by: &By, cause: Option<&CommandId>, batch: batch::Batch) {
+        let table = self.table.lock();
+        if table.get(key).is_none_or(|entry| entry.reported) {
+            return;
+        }
+        #[expect(
+            clippy::let_underscore_must_use,
+            reason = "actor 停了：命令跟着整组杀，这一批没人记也不要紧"
+        )]
+        let _ = self.backs.send(Back::JobLines(Lines {
+            job: key.1.clone(),
+            by: by.clone(),
+            cause: cause.cloned(),
+            batch,
+        }));
     }
 
     /// 等着的那一头报它自己退出了：还在表里、还没人报过的，记成报了，交给 actor。拿着表的锁交：停下时拿到锁的那一刻，报了

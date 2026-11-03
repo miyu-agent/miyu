@@ -179,14 +179,33 @@ impl Reports {
         let tail_chars = self.chars - head_chars;
         let head: String = text.chars().take(head_chars).collect();
         let tail: String = text.chars().skip(total - tail_chars).collect();
-        let count = (total - self.chars).to_string();
+        (self.join(&head, &tail, total - self.chars), true)
+    }
+
+    /// 截过的样子：头、一行省了 `count` 个字、尾。[`Reports::cut`] 照它拼；监视的命令边读边只留头尾的（施工 MN-1 上，
+    /// `miyu-session` 的 `jobs/batch.rs`）也照它拼，两处一字不差。
+    ///
+    /// # Panics
+    ///
+    /// 实际不会：造策略时拿 `count` 试换过那一行。
+    pub fn join(&self, head: &str, tail: &str, count: usize) -> String {
+        let count = count.to_string();
         let seam = self
             .omitted
             .render(&BTreeMap::from([("count", count.as_str())]))
             .unwrap_or_else(|error| {
                 panic!("the omitted line was tried with count when the policy was built: {error}")
             });
-        (format!("{head}\n{seam}{tail}"), true)
+        format!("{head}\n{seam}{tail}")
+    }
+
+    /// 监视的命令出的行的截法（施工 MN-1 上，设计 56 第三节第 2 条）：同一行省略，只是最多
+    /// [`super::LINE_CHARS`] 个字。
+    pub fn for_lines(&self) -> Reports {
+        Reports {
+            chars: super::LINE_CHARS,
+            omitted: self.omitted.clone(),
+        }
     }
 }
 

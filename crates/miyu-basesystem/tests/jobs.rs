@@ -53,6 +53,10 @@ impl JobPort for Port {
         self.listed.clone()
     }
 
+    fn longest(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(30 * 60)
+    }
+
     fn output(&self, job: JobId) -> Asking<'_, Result<Output, JobError>> {
         let reader = |text: &Option<String>| {
             text.clone()

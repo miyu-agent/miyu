@@ -18,6 +18,7 @@ use miyu_store::jobs::{create_output, output_path};
 use miyu_tool::{Asking, Background, Exit, JobError, JobPort, Listed, Output as Read, Process};
 
 use super::JobLimits;
+use super::batch;
 use super::output::Output;
 use super::stop::{Who, Why};
 use super::{Ended, Entry, Key, Shared};
@@ -54,7 +55,11 @@ impl Port {
 
 impl JobPort for Port {
     fn start(&self, command: Background) -> io::Result<JobId> {
-        let Background { output, process } = command;
+        let Background {
+            output,
+            process,
+            lines,
+        } = command;
         let process: Arc<dyn Process> = Arc::from(process);
         let shared = &self.shared;
         let job = shared.ids.next();
@@ -132,6 +137,19 @@ impl JobPort for Port {
             watch.run(&*process, &sink, &read);
         });
         let running = self.limits.running;
+        // 监视的（施工 MN-1 上）：标准输出另一份攒成批，一批交一次给 actor。
+        if let Some(lines) = lines {
+            let (shared, key) = (Arc::clone(shared), (shared.owner, job.clone()));
+            let (by, cause) = (self.by.clone(), self.cause.clone());
+            let batching = timing.clone();
+            thread::spawn(move || {
+                let _entered = batching.enter();
+                let cut = shared.cut.clone();
+                batch::run(lines, &cut, |batch| {
+                    shared.lines(&key, &by, cause.as_ref(), batch);
+                });
+            });
+        }
         thread::spawn(move || {
             let _entered = timing.enter();
             if let Err(RecvTimeoutError::Timeout) = done.recv_timeout(running) {
@@ -139,6 +157,10 @@ impl JobPort for Port {
             }
         });
         Ok(job)
+    }
+
+    fn longest(&self) -> Duration {
+        self.limits.running
     }
 
     fn list(&self) -> Vec<Listed> {

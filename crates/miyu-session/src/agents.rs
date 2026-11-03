@@ -309,9 +309,9 @@ impl Agents {
                     entry.offer(PERSONA_PARAMETER, &offers.personas);
                 }
                 // 只在有后台时才给的参数照工具自己声明的去掉（施工 BS-1 上，原来照名字认 `shell`）。
-                if let Some(parameter) = tool
+                for parameter in tool
                     .filter(|_| foreground)
-                    .and_then(|tool| tool.background_parameter())
+                    .map_or(&[][..], |tool| tool.background_parameters())
                 {
                     entry.without(parameter);
                 }

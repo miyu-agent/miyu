@@ -203,6 +203,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         true => StepLimits::of(Watched::Fork, None).applied(policy),
         false => policy,
     };
+    let cut = policy.reports.for_lines();
     // 分叉出来的支线不是任务，不交回报（施工 C-8 上）；fork 子代理是。
     let upstream = match created.forked.as_ref().filter(|_| !fork_child) {
         Some(_) => None,
@@ -318,6 +319,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         ids: Arc::clone(&job_ids),
         roster,
         agents: agents.clone(),
+        cut,
     };
     let waiting = session.waiting_children();
     let (inbox, mailbox) = mpsc::unbounded_channel();

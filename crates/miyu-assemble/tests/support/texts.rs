@@ -147,6 +147,8 @@ fn job_texts() -> JobTexts {
         command_tail_cut: template(job!("command-tail-cut.txt")),
         user_message_open: job!("user-message-open.txt"),
         user_message_close: job!("user-message-close.txt"),
+        lines_open: template(job!("lines-open.txt")),
+        lines_close: job!("lines-close.txt"),
     }
 }
 

@@ -1473,6 +1473,17 @@ Not run: this command {reason}, which is never allowed.
 Started {job} in the background. Its end is reported automatically. jobs output shows its output.
 ```
 
+#### `software/basesystem/shell/started-watch.txt`
+
+- 什么时候加进来：`shell` 写了 `watch`，放到后台了，调用当场返回
+- token：44（`{job}` 按 `j1`、`{minutes}` 按 `30` 算，2026-11-03 照 o200k 数）
+- 为什么加：她要知道编号；每一行标准输出都会叫醒她，所以只打印要她动手的行（不然一直被叫醒、撞上 120 条停下）；标准错误不叫醒、只进输出文件；跑到这一轮的 `jobs.max_running` 停下，要接着看自己再起。这几样调用以后才用得上，写在结果里、不写进说明（施工 MN-1 上，设计 56 第二节第 2 条，`10-自带软件.md` 第九节）
+- 指纹：`561edbd2`
+
+```text
+Watching {job} in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.
+```
+
 #### `software/basesystem/history/none.txt`
 
 - 什么时候加进来：筛完、找完一条都没有
@@ -4382,6 +4393,32 @@ You are a fork of the agent above. It wrote the task below, not the person. Your
 </user-message>
 ```
 
+### 人这边：监视的命令出的一批行（一块带标签的事实）
+
+#### `core/jobs/lines-open.txt`
+
+- 什么时候加进来：标签那一行，`job.lines` 记下了、派它的那一轮还在；闲着时是开这一轮的那条，正忙时合成一条排在那一步的工具结果后面，之后每次请求照原文带
+- token：14（字段按 `j1`、`跑全部测试` 算，2026-11-03 照 o200k 数）
+- 为什么加：标签带编号、标题，她认得出是哪一条监视的命令出的；这一批的行原样放在下面（施工 MN-1 上，设计 56 第四节第 2 条，照回报的外壳）
+- 指纹：`433b996c`
+
+```text
+<command-lines job="{job}" title="{title}">
+```
+
+### 人这边：监视的命令出的一批行
+
+#### `core/jobs/lines-close.txt`
+
+- 什么时候加进来：收尾那一行，同 `lines-open.txt`
+- token：4（2026-11-03 照 o200k 数）
+- 为什么加：标签的收尾（施工 MN-1 上）
+- 指纹：`4e14d491`
+
+```text
+</command-lines>
+```
+
 ### 人这边：别的 harness 发来的话（一块带标签的事实）
 
 #### `core/harness/message-open.txt`
@@ -4878,14 +4915,14 @@ Placeholder for a tool this client is expected to send with the request. It is n
 #### `software/basesystem/tools/shell.json`
 
 - 什么时候加进来：会话的工具面里有 `shell`（每次请求都带）
-- token：TX-1 后 144（o200k 数，改前 191）；原来 230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
-- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）。施工 TX-1（2026-10-30）：`outside_sandbox` 的「被挡下就直接重跑、别先问」改成事实「带上它就是向人要许可」（2026-10-07 定的那句，项目主人照推荐定改）；删「Use it for builds, tests, git and other programs」
-- 指纹：`a4e28646`
+- token：MN-1 上后 165（o200k 数，+21：加 `watch`）；TX-1 后 144（o200k 数，改前 191）；原来 230（2026-10-23 照开发端点量，十八件一起时的边际份量；2026-10-07 十五件一起是 237，施工 D-4 时十四件一起是 220，以前 DeepSeek 官方量的 183）
+- 为什么加：`shell` 的说明和参数，照 Claude Code：`command` 看名字就懂，不写说明；`timeout` 是毫秒、上限和默认值写在那一句里。说明三句：用哪种 shell（`{shell}` 在核心起来时换成 `bash`、`zsh`、`PowerShell 7`、`Windows PowerShell 5.1`，会话里不变），编译、测试、git 这些程序用它（原来还写「读搜改文件不用它」，2026-10-23 项目主人定删掉：只开 shell、read 时她没有别的办法改文件，那句和工具面矛盾；用 shell 读、搜、批量改本来就是正常做法，要偏好专用工具写在那件工具自己的说明里，例如 `grep` 的，只在它开着时出现；十八件一起时 239 → 230，-9），每次从工作目录起、`cd` 不带到下一次（施工 4-8）。施工 4-13 加必填的 `description`：这条命令在做什么的短标题，前端显示用，名字照 Claude Code、opencode（2026-09-28 项目主人定，+30）。施工 7-3 声明 `run_in_background`，一句：放到后台、不管超时、当场交回编号；「结束了会告诉你」是调用之后才用得上的，写进结果那一句（2026-09-30 量，+31；和 `agent` 一起九件时重量，照样 183）。施工 D-4 加 `outside_sandbox`，一句：在沙盒外跑、人允许以后、只在沙盒挡下以后（2026-10-07 主会话照开发端点量，十四件一起时 185 → 220，+35）。施工 D-4 补改成两句：重跑沙盒挡下的命令，被挡下就直接带它重跑、别先问，带上它就是在问人（2026-10-07 项目主人定，照 Claude Code「don't ask, just do it」；原来的「once the user approves」被读成要先在聊天里拿到同意；十五件一起时 218 → 237，+19）。施工 TX-1（2026-10-30）：`outside_sandbox` 的「被挡下就直接重跑、别先问」改成事实「带上它就是向人要许可」（2026-10-07 定的那句，项目主人照推荐定改）；删「Use it for builds, tests, git and other programs」施工 MN-1 上加 `watch`（2026-11-03，设计 56 第二节第 1 条）：说明一句 `Implies run_in_background. Each stdout line wakes you.`，写了它的照放到后台走；只在有后台时给，关了后台运行的预设和 `run_in_background` 一起去掉。
+- 指纹：`e7efecb4`
 
 ```json
 {
   "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
 }
 ```
 

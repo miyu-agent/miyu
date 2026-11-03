@@ -27,6 +27,8 @@ impl Session {
         reason: EndReason,
     ) -> Vec<Event> {
         let reports = reason != EndReason::Interrupted && !self.unwatched();
+        // 这一轮没有下一步了，挂着的监视命令的行这时记下，照回报接着开（施工 MN-1 上，`watch.rs`）。
+        let lines = self.record_pending_lines(at);
         let next = self.turn.as_ref().and_then(|turn| {
             let message = turn.queued.last().cloned();
             // 回报叫醒的这一串用完了的，回报不接着开（审计 R3E-2，`chain.rs`）。
@@ -42,7 +44,8 @@ impl Session {
                 .chain(report)
                 .max_by_key(|(seq, _)| *seq)
         });
-        let mut events = vec![self.end_turn(at, by, cause.clone(), reason)];
+        let mut events = lines;
+        events.push(self.end_turn(at, by, cause.clone(), reason));
         match next {
             Some((trigger, cause)) => events.extend(self.open_turn(at, trigger, cause)),
             None => events.extend(self.seal_if_done(at, cause)),

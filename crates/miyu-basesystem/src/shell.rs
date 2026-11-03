@@ -51,6 +51,10 @@ const DEFAULT: u64 = 120_000;
 /// `timeout` 最多写多大，毫秒（照 Claude Code）。改它要跟着改参数格式里的那一句。
 const MAX: u64 = 600_000;
 
+/// 监视的那个参数（施工 MN-1 上，设计 56 第二节）：写了它的照放到后台走，标准输出每出一批行叫醒她。和
+/// `run_in_background` 一样只在有后台时给（[`miyu_tool::Tool::background_parameters`]）。
+const WATCH: &str = "watch";
+
 /// `shell`。
 pub(crate) struct Shell {
     spec: Spec,
@@ -74,6 +78,8 @@ struct Texts {
     /// 工作目录没了时写给她的一句（施工 CW-1），字段 `cwd`。
     no_cwd: Template,
     started: Template,
+    /// 监视的命令交回编号时写给她的一句（`started-watch.txt`，施工 MN-1 上），字段 `job`、`minutes`。
+    started_watch: Template,
     /// 认出灭顶的高危、直接拒时写给她的一句（施工 5-17），字段 `reason`。
     hazard: Template,
     /// 直接拒的那几种各自说它做了什么（`shell/hazard/<种类>.txt`），填进 `hazard`。
@@ -91,6 +97,9 @@ struct Args {
     timeout: Option<u64>,
     #[serde(default)]
     run_in_background: bool,
+    /// 监视（施工 MN-1 上）：照放到后台走，标准输出、标准错误分开读，标准输出每出一批行记 `job.lines`、叫醒她。
+    #[serde(default)]
+    watch: bool,
     /// 这一次要在沙盒外跑（施工 D-4）：只报给权限策略和执行器，套不套沙盒照 `Call::sandbox`。
     #[serde(default)]
     outside_sandbox: bool,
@@ -117,6 +126,7 @@ impl Shell {
                 no_sleep: text("no-sleep", &[])?,
                 no_cwd: text("no-cwd", &["cwd"])?,
                 started: text("started", &["job"])?,
+                started_watch: text("started-watch", &["job", "minutes"])?,
                 hazard: text("hazard", &["reason"])?,
                 reasons: Kind::ALL
                     .into_iter()
@@ -159,11 +169,12 @@ impl Shell {
             Ok(prepared) => prepared,
             Err(error) => return self.failed(&error),
         };
-        let started = background::start(command).and_then(|(background, member)| {
+        let started = background::start(command, args.watch).and_then(|(background, member)| {
             // 通道跟着进程交给任务表，挂到任务下面以后才认人：之前连上来的等着（施工 M-3）。
             let binder = channel.as_ref().map(channel::Channel::binder);
             let background = Background {
                 output: background.output,
+                lines: background.lines,
                 process: match channel {
                     Some(channel) => channel::keep(background.process, channel),
                     None => background.process,
@@ -181,7 +192,18 @@ impl Shell {
         match started {
             Ok(job) => {
                 let id = job.to_string();
-                Done::ok(say(&self.texts.started, &[("job", &id)]))
+                // 监视的说清每一行都会叫醒她、只认标准输出、跑到几分钟停下（设计 56 第二节第 2 条）。
+                let text = match args.watch {
+                    true => {
+                        let minutes = jobs.longest().as_secs().div_ceil(60).to_string();
+                        say(
+                            &self.texts.started_watch,
+                            &[("job", &id), ("minutes", &minutes)],
+                        )
+                    }
+                    false => say(&self.texts.started, &[("job", &id)]),
+                };
+                Done::ok(text)
                     .said(said("shell/background").with("job", id))
                     .effect(Effect::JobStarted(JobStarted {
                         foreground: false,
@@ -220,6 +242,7 @@ impl Shell {
         let process: Box<dyn miyu_tool::Process> = Box::new(process);
         let background = Background {
             output: Box::new(moved::Rest::new(first, rest)),
+            lines: None,
             // 通道跟着进程交给任务表（施工 M-3）：脚本接着调，挂到任务下面。
             process: match channel {
                 Some(channel) => channel::keep(process, channel),
@@ -272,8 +295,8 @@ impl Tool for Shell {
         true
     }
 
-    fn background_parameter(&self) -> Option<&'static str> {
-        Some(miyu_tool::RUN_IN_BACKGROUND)
+    fn background_parameters(&self) -> &'static [&'static str] {
+        &[miyu_tool::RUN_IN_BACKGROUND, WATCH]
     }
 
     fn outside_sandbox(&self, call: &Call) -> bool {
@@ -364,7 +387,7 @@ impl Tool for Shell {
                 return Done::error(say(&self.texts.no_cwd, &[("cwd", &call.cwd)]))
                     .said(said("shell/no-cwd").with("cwd", call.cwd.clone()));
             }
-            if args.run_in_background {
+            if args.run_in_background || args.watch {
                 return self.background(&call, args);
             }
             // 前台干等的不跑（2026-10-26）：后台任务办完会自己回报。

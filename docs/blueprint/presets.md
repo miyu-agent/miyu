@@ -141,7 +141,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 5. **照预设挑**（施工 P-2 中）：
    - 装了的功能（施工 F-3 上）：读成了的内置包、扩展包带的功能（`miyu_endpoint::packages::features`，没写功能的包整个算一个），加上每个登记上的脚本一个（施工 X-12 中，`script-<工具名>`，端点的 `scripts::features`），随预设的几层交给会话。工具归哪个功能：MCP 服务的、脚本的照它们自己的功能，清单写明了的照写的，包只有一个功能的归它，都不是的照它的包的编号（`Features::of_tool`）。施工 F-3 上以前是：工具目录里有工具的包、`roleplay`、清单装的 `process` 包。
    - 一个功能开着：照「格式」第 4 条的先后（`PresetFile::opens_in`），全局开关照这一刻的配置（施工 X-27）。
-   - 工具面：归的功能开着的工具，减去 `[tools]` 关掉的（`PresetFile::keeps`），再照原来的几道筛（场所、子会话、能不能确认）。关了「后台运行」（`basesystem` 的 `background`）的：快照记 `foreground`，`shell` 拿掉 `run_in_background`（`ToolEntry::without`，别的字节不动），执行器不给任务端口（施工 T-1 上，设计 30 第三节第 7 条）；换预设时照新的预设定，以前就有的 `shell` 照旧快照里的原样，调到放到后台的照「这里不能放到后台」说。
+   - 工具面：归的功能开着的工具，减去 `[tools]` 关掉的（`PresetFile::keeps`），再照原来的几道筛（场所、子会话、能不能确认）。关了「后台运行」（`basesystem` 的 `background`）的：快照记 `foreground`，`shell` 拿掉 `run_in_background` 和 `watch`（施工 MN-1 上，照 `Tool::background_parameters` 一个个 `ToolEntry::without`，别的字节不动），执行器不给任务端口（施工 T-1 上，设计 30 第三节第 7 条）；换预设时照新的预设定，以前就有的 `shell` 照旧快照里的原样，调到放到后台的照「这里不能放到后台」说。
    - 脚本调工具（`basesystem` 的 `clicall`，施工 M-6，2026-10-23 项目主人定，设计 `39-脚本调工具.md` MC15）：关着的会话里工具面上每一件的 `clicall` 都当假（`agents/clicall.rs` 的 `on`），`shell` 的说明不接怎么用的那一段、system 没有那一句，和一件都不能在脚本里调的会话一字不差；内核不开通道，`miyu call` 退出码 2。出厂的全部功能、常规开发开着（整个基础系统开着），极简开发关着（没写、`unlisted` 关）。换预设时以前就有的工具照旧原样，只有 `clicall` 照新的预设（这一格不发给模型，工具说明一字不变）：关了的内核当场不开通道，以前接上的那一段照旧留着；打开的要新会话才接上那一段。
    - 记忆：人格记忆 `memory` 没开的、没装的（施工 F-3 上），范围一律 `off`，不管 `session.create` 的 `memory`（走查 E2：开不开归预设，范围归开会话时）。
    - 人设遵循提醒：`roleplay` 没开的、没装的（施工 F-3 上），快照里没有提醒短语、system 没有风格锁。
@@ -215,7 +215,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-core/tests/tools.rs`（施工 F-3 上） | 出厂的每一件工具都归上一个功能 |
 | `crates/miyu-session/src/actor/persona/tests.rs` | 角色扮演没开的换人格以后照旧没有提示和风格锁，换过以后不再换 |
 | `crates/miyu-session/src/actor/persona/preset_tests.rs`（施工 P-2 下） | 改了预设重新筛工具面、留着的那一件是快照里的原样、换过以后不再换、整包关掉的写进那一行、重新打开的照现在的目录拿；记忆照开会话时的（开着的照开，关着的照关）；角色扮演打开了提示回来；写错了的、没有指纹的不换 |
-| `crates/miyu-endpoint/tests/preset_background.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`、`crates/miyu-policy/src/snapshot/tests.rs`（施工 T-1 上） | 关了后台运行的预设：工具面上 `shell` 没有 `run_in_background`、别的参数不动，没有 `jobs`，快照记 `foreground`；硬写放到后台的回「这里不能放到后台」、不派任务；开着的照旧；换成关着的预设记下、以前就有的 `shell` 原样，改回来不记；`foreground` 写在快照最后、读得回来，开着的不写 |
+| `crates/miyu-endpoint/tests/preset_background.rs`、`crates/miyu-session/src/actor/persona/preset_tests.rs`、`crates/miyu-policy/src/snapshot/tests.rs`（施工 T-1 上） | 关了后台运行的预设：工具面上 `shell` 没有 `run_in_background`、`watch`（施工 MN-1 上），别的参数不动，没有 `jobs`，快照记 `foreground`；硬写放到后台的回「这里不能放到后台」、不派任务；开着的照旧；换成关着的预设记下、以前就有的 `shell` 原样，改回来不记；`foreground` 写在快照最后、读得回来，开着的不写 |
 | `crates/miyu-policy/src/preset/switches/tests.rs`、`crates/miyu-session/src/switches/tests.rs`（施工 X-27） | 预设明写的（`[features]`、`[software]` 的包）先，全局开关其次，`unlisted` 最后；`unlisted = "off"` 的预设不照全局开关；只认三类功能；不进指纹；配置项只读三类；写了功能编号的是 `preset`、写了包或组的是 `group`，原来那一格照旧算 `preset`（施工 FG-1） |
 | `crates/miyu-endpoint/tests/preset_sections.rs`、`preset_sections_more.rs`（施工 FG-1） | 出厂四个预设的 `sections`：组的先后、组里的功能和中文名（照设计 52 第一节的表）、开不开、`by`，开着的功能和改前一样；带几件工具的列工具（照清单的先后、`[tools]` 关的关着、功能关着的都关着），一件的不列；带几个功能的扩展自己一组、单功能的合进「扩展」，排在出厂组后面、技能前面，没有单功能扩展不列「扩展」；重名的带包名；组名、功能名、工具名照连接的语言 |
 | `crates/miyu-endpoint/tests/script_pages.rs` 的 `a_global_switch_leaves_an_off_preset_alone`（施工 X-27） | 真核心：全局开关打开的在 `unlisted = "off"` 的预设里照旧没有、`by` 是 `default`；默认开的预设里全局关掉的没有 |

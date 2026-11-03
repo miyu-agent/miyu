@@ -69,6 +69,7 @@ impl Held {
                 None => Box::new(first),
             },
             process: Box::new(Arc::clone(self)),
+            lines: None,
         }
     }
 

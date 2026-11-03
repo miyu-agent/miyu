@@ -96,7 +96,9 @@ async fn a_sandboxed_background_command_runs_through_the_helper() {
         )
         .await;
     assert!(!done.error, "{}", text(&done));
-    let miyu_tool::Background { output, process } = jobs.take(0);
+    let miyu_tool::Background {
+        output, process, ..
+    } = jobs.take(0);
     let printed: String = tokio::task::spawn_blocking(move || output.collect())
         .await
         .expect("没 panic");

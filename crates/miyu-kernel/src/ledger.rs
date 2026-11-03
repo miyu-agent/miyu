@@ -300,6 +300,11 @@ impl Ledger {
                 self.nested.check(nested)
             }
             Body::JobReported(reported) => self.jobs.check_reported(reported),
+            // 监视的命令出的行（施工 MN-1 上）：对得上一个还没结束的后台命令。
+            Body::JobLines(lines) if !self.jobs.command_running(&lines.job) => Err(format!(
+                "job {} is not a running background command",
+                lines.job
+            )),
             Body::ChildReported(reported) => self.jobs.check_child(reported, &event.by),
             Body::PeerIdle(idle) => self.check_idle(idle, &event.by),
             // 退回默认写的是原来那个，只和换成的那个一起出现（施工 8-10）。

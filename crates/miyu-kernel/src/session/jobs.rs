@@ -8,7 +8,7 @@
 //! 结束时还没听到的接着开下一轮（[`Session::finish_turn`]）。只记下的几种不叫醒；闲着时开不了的记在一边，恢复了撤销、
 //! 这时开得了，由最后那条接着开（[`Session::wake_deferred`]）。
 
-use super::action::{Action, Reason};
+use super::action::{Action, Reason, StopReason};
 use super::input::Input;
 use super::turn::Stage;
 use super::{Session, rejected};
@@ -85,8 +85,8 @@ impl Session {
         (!jobs.is_empty()).then(|| Action::StopJobs {
             jobs,
             by: by.clone(),
-            cause: cause.clone(),
-            undone: true,
+            cause: Some(cause.clone()),
+            reason: StopReason::Undone,
         })
     }
 
@@ -159,7 +159,7 @@ impl Session {
     }
 
     /// 记下一条回报，看叫不叫醒她。交回追加的事件：回报那一条，和由它开的那一轮的开头。过不了账本的什么都不记。
-    fn arrive(
+    pub(super) fn arrive(
         &mut self,
         at: Timestamp,
         by: By,
@@ -298,9 +298,11 @@ impl Session {
 fn wakes(body: &Body) -> bool {
     match body {
         Body::JobReported(reported) => match reported.reason {
-            JobReason::Exited | JobReason::TimedOut | JobReason::TooLarge | JobReason::Other(_) => {
-                true
-            }
+            JobReason::Exited
+            | JobReason::TimedOut
+            | JobReason::TooLarge
+            | JobReason::TooChatty
+            | JobReason::Other(_) => true,
             JobReason::Stopped => !reported.by_model,
             JobReason::Undone | JobReason::Restarted | JobReason::Aborted => false,
         },
@@ -309,6 +311,8 @@ fn wakes(body: &Body) -> bool {
             ChildReason::Undone | ChildReason::Aborted => false,
             ChildReason::Done | ChildReason::Other(_) => true,
         },
+        // 监视的命令出的行（施工 MN-1 上）：照回报叫醒她。
+        Body::JobLines(_) => true,
         _ => false,
     }
 }
@@ -318,6 +322,7 @@ fn job_of(body: &Body) -> Option<JobId> {
     match body {
         Body::JobReported(reported) => Some(reported.job.clone()),
         Body::ChildReported(reported) => Some(reported.job.clone()),
+        Body::JobLines(lines) => Some(lines.job.clone()),
         _ => None,
     }
 }

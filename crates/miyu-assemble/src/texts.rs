@@ -245,6 +245,10 @@ pub struct JobTexts {
     pub user_message_open: String,
     /// 它的收尾（`user-message-close.txt`，施工 PM-1）。以前造的快照里没有，是空的。
     pub user_message_close: String,
+    /// 监视的命令出的一批行的标签（`lines-open.txt`，施工 MN-1 上）：字段 `job`、`title`。以前造的快照里没有，是空的。
+    pub lines_open: Template,
+    /// 它的收尾（`lines-close.txt`，施工 MN-1 上）。以前造的快照里没有，是空的：那样的会话出不了 `job.lines`，不渲染。
+    pub lines_close: String,
 }
 
 /// 别的 harness 发来的话的标签（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，

@@ -48,7 +48,9 @@ async fn start(site: &Site, jobs: &Arc<Taken>, command: &str, timeout: Option<u6
 
 /// 读完它的输出、等它结束，最多三十秒。
 async fn finish(command: Background) -> (String, Exit) {
-    let Background { output, process } = command;
+    let Background {
+        output, process, ..
+    } = command;
     let read = tokio::task::spawn_blocking(move || output.collect::<String>());
     let waited = tokio::task::spawn_blocking(move || process.wait().expect("等得了"));
     tokio::time::timeout(Duration::from_secs(30), async {

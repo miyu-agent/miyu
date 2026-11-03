@@ -74,6 +74,7 @@ impl Session {
                         | Body::MessageAssistant(_)
                         | Body::ToolResult(_)
                         | Body::JobReported(_)
+                        | Body::JobLines(_)
                         | Body::ChildReported(_)
                         | Body::PeerIdle(_)
                 )

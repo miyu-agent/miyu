@@ -11,7 +11,9 @@
 
 use std::io::{self, Read};
 use std::process::{Child, Command, ExitStatus};
+use std::sync::mpsc;
 use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::thread;
 
 use miyu_tool::{Background, Exit, Process};
 
@@ -21,26 +23,32 @@ use super::process::{self, Group};
 /// 运行日志的来处，和前台一样（`process.rs`）。
 const TARGET: &str = "miyu::shell";
 
-/// 起一条后台命令：交回它的输出和进程（交给任务端口），和脚本调工具的通道认人时照的那一样（施工 M-3）。
+/// 起一条后台命令：交回它的输出和进程（交给任务端口），和脚本调工具的通道认人时照的那一样（施工 M-3）。`watching` 的（施工
+/// MN-1 上，`shell` 写了 `watch`）标准输出、标准错误分开读：两路都交进 `output`（照到达的先后），标准输出另抄一份交进
+/// `lines`。不监视的照旧一根管道，一个字节不变。
 ///
 /// # Errors
 ///
 /// 同前台：管道建不起来，或者程序起不来。
-pub(super) fn start(command: Command) -> io::Result<(Background, Option<process::Member>)> {
+pub(super) fn start(
+    command: Command,
+    watching: bool,
+) -> io::Result<(Background, Option<process::Member>)> {
     let process::Spawned {
         child,
         group,
         pipe,
+        errors,
         watch,
-    } = process::spawn(command, None)?;
+    } = process::spawn(command, None, watching)?;
     let member = process::member(group, &watch);
+    let (output, lines) = match errors {
+        Some(errors) => apart(pipe, errors),
+        None => (Box::new(Output::of(pipe)) as Lines, None),
+    };
     let background = Background {
-        output: Box::new(Output {
-            pipe,
-            decoder: Decoder::default(),
-            crlf: Crlf::default(),
-            ended: false,
-        }),
+        output,
+        lines,
         process: Box::new(Running {
             group,
             child: Mutex::new(Some(child)),
@@ -51,12 +59,54 @@ pub(super) fn start(command: Command) -> io::Result<(Background, Option<process:
     Ok((background, member))
 }
 
+/// 分开读的两路（施工 MN-1 上）：各一个线程照 [`Output`] 读，读到的照到达的先后交进写文件的那一份；标准输出另抄一份交给攒批
+/// 的。两头都读完了（两根管道都关了），两份才到头。
+fn apart(stdout: io::PipeReader, stderr: io::PipeReader) -> (Lines, Option<Lines>) {
+    let (merged, output) = mpsc::channel();
+    let (copied, lines) = mpsc::channel();
+    let errors = merged.clone();
+    thread::spawn(move || {
+        for text in Output::of(stdout) {
+            // 写文件、攒批的那一头不要了（任务表丢了这条命令），照样读到底：管道读不走，命令会卡在写上。
+            #[expect(clippy::let_underscore_must_use, reason = "收的那一头没了也照样读完")]
+            let _ = copied.send(text.clone());
+            #[expect(clippy::let_underscore_must_use, reason = "收的那一头没了也照样读完")]
+            let _ = merged.send(text);
+        }
+    });
+    thread::spawn(move || {
+        for text in Output::of(stderr) {
+            #[expect(clippy::let_underscore_must_use, reason = "收的那一头没了也照样读完")]
+            let _ = errors.send(text);
+        }
+    });
+    (
+        Box::new(output.into_iter()),
+        Some(Box::new(lines.into_iter())),
+    )
+}
+
+/// 一段一段交出来的输出。
+type Lines = Box<dyn Iterator<Item = String> + Send>;
+
 /// 读输出：一次读 8192 字节，解成字、换好行尾交出去。读完了（管道关了）、读不了的，把剩下的交出去就没有了。
 struct Output {
     pipe: io::PipeReader,
     decoder: Decoder,
     crlf: Crlf,
     ended: bool,
+}
+
+impl Output {
+    /// 从管道 `pipe` 读。
+    fn of(pipe: io::PipeReader) -> Output {
+        Output {
+            pipe,
+            decoder: Decoder::default(),
+            crlf: Crlf::default(),
+            ended: false,
+        }
+    }
 }
 
 impl Iterator for Output {

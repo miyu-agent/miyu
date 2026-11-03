@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 
 use miyu_kernel::id::{CommandId, JobId, SessionId};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Input, Outcome, Received};
+use miyu_kernel::session::{Input, Outcome, Received, StopReason};
 use miyu_tool::JobError;
 
 use super::{Actor, Stop, answer, answer_back};
@@ -122,19 +122,20 @@ impl Actor {
     }
 
     /// 停掉内核交来的几个（动作 `StopJobs`）：撤销停掉那几轮派出去、还在跑的（施工 7-8，`undone`），打断时停这一步在等的
-    /// 前台子代理（施工 T-1 下，`stopped`，人停的）。后台命令当场在阻塞线程里整组杀掉、存好输出，回报（`by`、`cause` 是撤销、
+    /// 前台子代理（施工 T-1 下，`stopped`，人停的），太吵的监视命令（施工 MN-1 上，`too_chatty`，`by`、`cause` 照起它的那次调用）。后台命令当场在阻塞线程里整组杀掉、存好输出，回报（`by`、`cause` 是撤销、
     /// 打断的人和命令）经收件箱交回，排在这一批后面：回应不等它落盘，可回应之前命令已经杀了。子代理另起一个任务经会话表停，
     /// 连它派的一起停，回报由子会话交来。已经结束了的（正好自己退出了、已经报过）不要紧。
     pub(super) async fn stop_jobs(
         &mut self,
         jobs: Vec<JobId>,
         by: By,
-        cause: CommandId,
-        undone: bool,
+        cause: Option<CommandId>,
+        reason: StopReason,
     ) {
-        let why = match undone {
-            true => Why::Undone,
-            false => Why::Stopped { by_model: false },
+        let why = match reason {
+            StopReason::Undone => Why::Undone,
+            StopReason::Interrupted => Why::Stopped { by_model: false },
+            StopReason::TooChatty => Why::TooChatty,
         };
         let mut agents = Vec::new();
         for job in jobs {
@@ -142,7 +143,7 @@ impl Actor {
                 Ok(Target::Command) => {
                     let who = Who {
                         by: by.clone(),
-                        cause: Some(cause.clone()),
+                        cause: cause.clone(),
                         why,
                     };
                     if let Some(ended) = self.jobs.stop_command(job, who).await {

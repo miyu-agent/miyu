@@ -36,4 +36,5 @@ mod subagent;
 mod todowrite;
 mod trash;
 mod walk_private;
+mod watch;
 mod write;

@@ -1,0 +1,1 @@
+{"seq":107,"at":"2026-09-25T07:53:02.000Z","kind":"job.lines","by":{"kind":"tool","call_id":"call_100_1"},"cause":"cmd-6f92","body":{"job":"j1","text":"FAIL tests::tmpdir (macOS)\nFAIL tests::symlink (macOS)","lines":2,"omitted":0}}

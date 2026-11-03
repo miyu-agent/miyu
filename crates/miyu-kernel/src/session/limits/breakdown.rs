@@ -183,7 +183,7 @@ fn spoken(history: &History, price: &dyn Price) -> Vec<(Said, u64)> {
             Body::MessageUser(_) => Said::User,
             Body::MessageAssistant(_) => Said::Assistant,
             Body::ToolResult(_) => Said::ToolResult,
-            Body::ChildReported(_) | Body::JobReported(_) => Said::Report,
+            Body::ChildReported(_) | Body::JobReported(_) | Body::JobLines(_) => Said::Report,
             Body::ContextInjected(fact) => Said::Fact {
                 module: match &event.by {
                     By::Module(module) => Some(module.id.clone()),

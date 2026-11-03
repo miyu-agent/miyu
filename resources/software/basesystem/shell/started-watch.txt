@@ -1,0 +1,1 @@
+Watching {job} in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.

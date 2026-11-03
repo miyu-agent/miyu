@@ -8,8 +8,8 @@ use crate::accumulate::Delta;
 use crate::block::Block;
 use crate::estimate::ImagePrice;
 use crate::event::{
-    CallError, ContextInjected, Cost, Effect, Event, IdleReason, JobReported, Purpose, Question,
-    Said, Usage,
+    CallError, ContextInjected, Cost, Effect, Event, IdleReason, JobLines, JobReported, Purpose,
+    Question, Said, Usage,
 };
 use crate::facts::Environment;
 use crate::id::{CallId, CommandId, ContentHash, ModuleId, Seq, SessionId, TurnId};
@@ -196,6 +196,19 @@ pub enum Input {
         cause: Option<CommandId>,
         /// 那一条的 `body`。
         reported: JobReported,
+    },
+    /// 监视的后台命令出了一批行（施工 MN-1 上，设计 56 第三节第 2 条）：执行器在 200 毫秒的窗口里攒好、截过一次交来。
+    /// 闲着记一条 `job.lines`、照回报开一轮；她这一轮在跑时挂在这一轮上，下一步问模型以前合成一条记下（`watch.rs`）。
+    /// 对不上一个还没结束的后台命令的，不理。
+    JobLines {
+        /// 到的时刻，取自执行器的时钟。
+        at: Timestamp,
+        /// 起它的那次调用。
+        by: By,
+        /// 那次调用所在回合的命令。
+        cause: Option<CommandId>,
+        /// 这一批：`job`、截过的 `text`、原来几行、截掉几个字。
+        lines: JobLines,
     },
     /// 辅助请求发出去了（施工 3-8 四补 `recap.rs`；五补起回顾、起标题共用这一路，`aside.rs`）：和主请求的
     /// [`Input::RequestSent`] 一样，名字是用途加它照到的那一条 `upto`。不是在路上的那一次的，不理。

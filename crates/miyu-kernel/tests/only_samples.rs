@@ -19,6 +19,7 @@ const HISTORY: &[&str] = &[
     "message.withdrawn",
     "context.compacted",
     "job.reported",
+    "job.lines",
     "child.reported",
     "peer.idle",
 ];

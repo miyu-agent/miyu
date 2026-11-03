@@ -19,7 +19,7 @@
 | `crates/miyu-kernel/src/event/context.rs` | `context.injected`、`context.compacted`、`context.compaction_paused`（`PauseReason`） |
 | `crates/miyu-kernel/src/event/model.rs` | `model.called`（`FirstDifference`、`Usage`、`BlockSpan`、`CallResult`、`CallError`、`ErrorClass`，辅助请求的用途 `Purpose`、是不是辅助请求 `aside()`，施工 3-8 四补） |
 | `crates/miyu-kernel/src/event/nested.rs` | `tool.nested`（`NestedStatus`）（施工 M-1） |
-| `crates/miyu-kernel/src/event/job.rs` | `job.reported`（`JobReason`）、`child.reported`（`ChildReason`）（施工 7-1） |
+| `crates/miyu-kernel/src/event/job.rs` | `job.reported`（`JobReason`）、`child.reported`（`ChildReason`）（施工 7-1）、`job.lines`（施工 MN-1 上） |
 | `crates/miyu-kernel/src/event/peer.rs` | `peer.idle`（`PeerIdle`、`IdleReason`，施工 C-1） |
 | `crates/miyu-kernel/src/event/image.rs` | `image.described`（`ImageDescribed`，施工 8-17） |
 
@@ -516,8 +516,24 @@
 | `aborted` | 核心崩了，进程跟着没了：载入时补（不变量 8） |
 | `timed_out` | 跑到了最长时间，停掉的（施工 7-12 下，`agents.md`「后台命令」第 7 条） |
 | `too_large` | 输出超过了上限，停掉的（施工 7-12 下） |
+| `too_chatty` | 监视的命令最近一小时记满了 120 条 `job.lines`，停掉的（施工 MN-1 上，`agents.md` 第四条第 8 条） |
 
-不认识的原样留着。哪一种都算结束：之后这个任务不再报。`by` 照原因记（2026-09-30 定，`kernel/session.md`「回报」第 2 条）：`exited`、`timed_out`、`too_large` 是起它的那次调用，`stopped` 是停它的人或者停它的那次 `jobs` 调用，`undone` 是撤销的人，`restarted`、`aborted` 是内核。
+不认识的原样留着。哪一种都算结束：之后这个任务不再报。`by` 照原因记（2026-09-30 定，`kernel/session.md`「回报」第 2 条）：`exited`、`timed_out`、`too_large`、`too_chatty` 是起它的那次调用，`stopped` 是停它的人或者停它的那次 `jobs` 调用，`undone` 是撤销的人，`restarted`、`aborted` 是内核。
+
+**`job.lines`**：监视的后台命令（`shell` 写了 `watch`）标准输出出的一批行（施工 MN-1 上，设计 56 第四节，`agents.md` 第四条第 8 条）。不带回合编号；`by`、`cause` 照 `job.reported` 的 `exited`：起它的那次调用、那一轮的命令。账本查它对得上一个还没结束的后台命令。
+
+| 格 | 写法 | 有没有 | 是什么 |
+|---|---|---|---|
+| `job` | 任务编号 | 必有 | 哪一个后台命令 |
+| `text` | 字符串 | 必有 | 这一批的行，行和行之间一个 `\n`（`\r\n` 换过），末尾没有；超过 4000 个字的留头尾各一半、中间一行写省了多少个字（`Reports::cut`） |
+| `lines` | 整数 | 必有 | 这一批原来有几行；她忙着时合成的是合进来的几批加起来的 |
+| `omitted` | 整数 | 必有 | 截掉了多少个字（Unicode 字符），没截的是 `0` |
+
+样本 `docs/designs/samples/events/job.lines.jsonl`：
+
+```json
+{"seq":107,"at":"2026-09-25T07:53:02.000Z","kind":"job.lines","by":{"kind":"tool","call_id":"call_100_1"},"cause":"cmd-6f92","body":{"job":"j1","text":"FAIL tests::tmpdir (macOS)\nFAIL tests::symlink (macOS)","lines":2,"omitted":0}}
+```
 
 **`child.reported`**：子会话的回报（施工 7-1，`agents.md` 第二条）。`by` 是那个子会话（`{"kind":"session","id":<子会话>}`），由账本查。
 

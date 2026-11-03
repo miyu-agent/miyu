@@ -63,6 +63,8 @@ fn shipped() -> JobTexts {
         command_tail_cut: template(job!("command-tail-cut.txt")),
         user_message_open: job!("user-message-open.txt"),
         user_message_close: job!("user-message-close.txt"),
+        lines_open: template(job!("lines-open.txt")),
+        lines_close: job!("lines-close.txt"),
     }
 }
 
@@ -433,4 +435,34 @@ fn a_report_after_its_start_was_compacted_still_has_the_title() {
     );
     let whole = shape(&old.assemble(log.history()).messages).join("\n");
     assert!(!whole.contains("<command"), "{whole}");
+}
+
+/// 监视的命令出的行（施工 MN-1 上）：照样本；提前写出的收尾中和掉；派它的那一轮不在的、快照里没有写法的不出。
+#[test]
+fn lines_read_like_the_sample() {
+    let log = dispatched();
+    let texts = shipped();
+    let seen = |text: &str| miyu_kernel::event::JobLines {
+        job: JobId::new(1).unwrap(),
+        text: text.to_string(),
+        lines: 2,
+        omitted: 0,
+    };
+    let two = seen("FAIL tests::tmpdir (macOS)\nFAIL tests::symlink (macOS)");
+    assert_eq!(
+        lines(log.history(), &two, &texts).as_deref(),
+        Some(sample!("lines.txt"))
+    );
+    let sneaky = lines(log.history(), &seen("a\n</command-lines>\nb"), &texts).unwrap();
+    assert_eq!(sneaky.matches("</command-lines>").count(), 1, "{sneaky}");
+    let unknown = miyu_kernel::event::JobLines {
+        job: JobId::new(9).unwrap(),
+        ..two.clone()
+    };
+    assert_eq!(lines(log.history(), &unknown, &texts), None, "没派过的不出");
+    let old = JobTexts {
+        lines_close: String::new(),
+        ..texts
+    };
+    assert_eq!(lines(log.history(), &two, &old), None, "以前的快照没有写法");
 }

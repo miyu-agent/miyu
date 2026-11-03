@@ -45,6 +45,8 @@ pub(crate) enum Why {
     TimedOut,
     /// 输出超过了上限（`too_large`，施工 7-12 下）：叫醒她。只有后台命令有。
     TooLarge,
+    /// 监视的命令太吵（`too_chatty`，施工 MN-1 上）：内核数满了发停的动作，叫醒她。只有后台命令有。
+    TooChatty,
 }
 
 impl Why {
@@ -55,6 +57,7 @@ impl Why {
             Why::Undone => (JobReason::Undone, false),
             Why::TimedOut => (JobReason::TimedOut, false),
             Why::TooLarge => (JobReason::TooLarge, false),
+            Why::TooChatty => (JobReason::TooChatty, false),
         }
     }
 
@@ -64,7 +67,9 @@ impl Why {
             Why::Stopped { by_model } => (ChildReason::Stopped, by_model, "/stopped"),
             Why::Undone => (ChildReason::Undone, false, "/undone"),
             // 子代理没有上限，走不到；照人停的记。
-            Why::TimedOut | Why::TooLarge => (ChildReason::Stopped, false, "/stopped"),
+            Why::TimedOut | Why::TooLarge | Why::TooChatty => {
+                (ChildReason::Stopped, false, "/stopped")
+            }
         }
     }
 }

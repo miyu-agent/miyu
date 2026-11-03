@@ -187,6 +187,8 @@ pub fn event(event: &Event, price: &dyn Price) -> u64 {
         // 回报（施工 CX-2）：组装时子代理的正文、后台命令带回来的最后一段原样放进请求，外面的开头、收尾不算。
         Body::ChildReported(reported) => tokens(reported.text.len()),
         Body::JobReported(reported) => tokens(reported.tail.as_ref().map_or(0, String::len)),
+        // 监视的命令出的行（施工 MN-1 上）：这一批原样放进请求。
+        Body::JobLines(lines) => tokens(lines.text.len()),
         _ => 0,
     }
 }

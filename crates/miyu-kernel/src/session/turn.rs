@@ -56,6 +56,8 @@ pub(super) struct Turn {
     /// 这一轮里到的、会叫醒她的回报，还没被请求看到过，照先后（施工 7-2，`jobs.rs`）。和排着队的消息一样下一次请求就
     /// 听到了；回合结束时还没听到的接着开下一轮，打断的不开。打断退回时不撤回：不是人说的话。
     pub(super) reports: Vec<super::jobs::Arrived>,
+    /// 这一轮里到的、还没记下的监视命令的行（施工 MN-1 上，`watch.rs`）：一条命令一份，下一步问模型以前、回合结束时记下。
+    pub(super) lines: Vec<super::watch::Pending>,
     /// 上一次请求以后切过权限级别：下一次请求之前把事实查一遍。
     pub(super) refresh: bool,
     /// 这一步压过了（施工 6-2 下）：压完照常发这一步本来要发的请求，不再压第二次（`compaction.md` 第三条第 1 条）。
@@ -168,6 +170,7 @@ impl Session {
             queued: Vec::new(),
             heard: Vec::new(),
             reports: Vec::new(),
+            lines: Vec::new(),
             refresh: false,
             compacted: false,
             interrupting: None,
@@ -310,7 +313,14 @@ impl Session {
                     speakers,
                 }]
             }
-            Stage::Ready if self.unstored.is_empty() => self.ask(at),
+            Stage::Ready if self.unstored.is_empty() => {
+                // 这一轮里到的监视命令的行先记下、落了盘再投影（施工 MN-1 上，`watch.rs`）。
+                let lines = self.record_pending_lines(at);
+                match lines.is_empty() {
+                    true => self.ask(at),
+                    false => vec![Action::Append(lines)],
+                }
+            }
             _ => Vec::new(),
         }
     }

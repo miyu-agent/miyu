@@ -34,6 +34,10 @@ pub trait JobPort: Send + Sync {
     /// 任务表收不下（输出的文件建不起来、会话已经停了）：这时任务表已经整组杀掉了它，交回原因。
     fn start(&self, command: Background) -> io::Result<JobId>;
 
+    /// 这一轮的后台命令最长跑多久（`jobs.max_running`，施工 7-12 下）：到了照停掉的规矩停下、报 `timed_out`。监视的命令交回
+    /// 编号时告诉她（施工 MN-1 上）。
+    fn longest(&self) -> std::time::Duration;
+
     /// 这个会话派出去的任务（施工 7-4）：还没结束的全部，和最近结束的几个，照编号排。照日志算，用时照这一刻。
     fn list(&self) -> Vec<Listed>;
 
@@ -120,6 +124,9 @@ pub struct Background {
     pub output: Box<dyn Iterator<Item = String> + Send>,
     /// 进程：等它结束、整组杀。
     pub process: Box<dyn Process>,
+    /// 监视的命令（`shell` 写了 `watch`，施工 MN-1 上）另交一份标准输出：照 `output` 一样合法化过，一段一段交出来，任务表攒成
+    /// 批记 `job.lines`。这时标准输出、标准错误分开读，`output` 里照到达的先后两路都有。不监视的没有。
+    pub lines: Option<Box<dyn Iterator<Item = String> + Send>>,
 }
 
 impl fmt::Debug for Background {

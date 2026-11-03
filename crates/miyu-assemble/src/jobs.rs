@@ -15,7 +15,7 @@
 use std::collections::BTreeMap;
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{ChildReason, ChildReported, JobReason, JobReported};
+use miyu_kernel::event::{Body, ChildReason, ChildReported, JobLines, JobReason, JobReported};
 use miyu_kernel::history::{Dispatched, History};
 use miyu_kernel::id::{JobId, Seq};
 use miyu_kernel::origin::By;
@@ -23,6 +23,16 @@ use miyu_kernel::template::Template;
 
 use crate::tag::{defuse, tagged};
 use crate::texts::JobTexts;
+
+/// 回报那一块，照种类：后台命令结束、子代理的回报、监视的命令出的行（施工 MN-1 上）；别的种类没有。
+pub(crate) fn report(history: &History, body: &Body, texts: &JobTexts) -> Option<String> {
+    match body {
+        Body::JobReported(reported) => command(history, reported, texts),
+        Body::ChildReported(reported) => subagent(history, reported, texts),
+        Body::JobLines(seen) => lines(history, seen, texts),
+        _ => None,
+    }
+}
 
 /// 后台命令结束的那一块：人停的先写一句，再是退出码或者信号、用时、输出；派它的那一轮撤掉了、没派过的，没有。
 pub(crate) fn command(
@@ -90,6 +100,26 @@ pub(crate) fn command(
         }
     }
     block.push_str(&texts.command_close);
+    Some(block)
+}
+
+/// 监视的命令出的一批行那一块（施工 MN-1 上，设计 56 第四节第 2 条）：标签带编号、标题，中间原样放这一批（截过的中间已经
+/// 有一行省了多少），只中和提前写出的本标签收尾。派它的那一轮撤掉了、没派过的，以前造的快照没有这两份字的，没有。
+pub(crate) fn lines(history: &History, seen: &JobLines, texts: &JobTexts) -> Option<String> {
+    if texts.lines_close.is_empty() {
+        return None;
+    }
+    let dispatched = shown(history, &seen.job)?;
+    let job = seen.job.to_string();
+    let mut block = fill(
+        &texts.lines_open,
+        &[("job", &job), ("title", &dispatched.title)],
+    );
+    block.push_str(&defuse(&seen.text, &[&texts.lines_close]));
+    if !seen.text.ends_with('\n') {
+        block.push('\n');
+    }
+    block.push_str(&texts.lines_close);
     Some(block)
 }
 

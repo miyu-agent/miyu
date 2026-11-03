@@ -7,6 +7,7 @@
 use super::*;
 use crate::event::{Effect, JobKind, JobStarted};
 use crate::id::{JobId, SessionId};
+use crate::session::StopReason;
 
 impl Watch {
     /// 下一个派出去的任务：编号接着日志里用过的最大的往下数，撤掉的回合里的也算，所以不会重复。`n` 为单的派子代理，
@@ -83,13 +84,17 @@ impl Watch {
             jobs,
             by,
             cause,
-            undone,
+            reason,
         } = stop
         else {
             unreachable!("只交停任务的");
         };
         // 随机的会话都开着后台运行：只有撤销会停任务（施工 T-1 下：打断停前台子代理的在 `scenario/foreground.rs`）。
-        assert!(*undone, "种子 {seed}：停任务的不是撤销：{stop:?}");
+        assert_eq!(
+            *reason,
+            StopReason::Undone,
+            "种子 {seed}：停任务的不是撤销：{stop:?}"
+        );
         self.seen_paths.insert("撤销停掉派出去的任务");
         let reverted = self
             .events
@@ -102,7 +107,7 @@ impl Watch {
         };
         assert_eq!(
             (&reverted.by, reverted.cause.as_ref()),
-            (by, Some(cause)),
+            (by, cause.as_ref()),
             "种子 {seed}：停任务的 by、cause 不是撤销的"
         );
         let ended: BTreeSet<JobId> = self

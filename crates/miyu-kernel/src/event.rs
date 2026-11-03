@@ -46,7 +46,7 @@ pub use goal::{
     GoalChanged, GoalEnded, GoalOutcome, GoalPaused, GoalResumed, GoalSet, round_command, round_of,
 };
 pub use image::ImageDescribed;
-pub use job::{ChildReason, ChildReported, JobReason, JobReported};
+pub use job::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
 pub use message::{MessageAssistant, MessageUser, MessageWithdrawn, TypedCommand};
 pub use model::{
     BlockSpan, CallError, CallResult, ErrorClass, FirstDifference, MessageRole, ModelCalled, Part,
@@ -218,6 +218,8 @@ bodies! {
     JobReported = "job.reported",
     /// 子会话的回报（施工 7-1）。
     ChildReported = "child.reported",
+    /// 监视的后台命令出的一批行（施工 MN-1 上）。
+    JobLines = "job.lines",
     /// 等的那个会话空下来了，或者等不到了（施工 C-1）。
     PeerIdle = "peer.idle",
     /// 一张图的转述：看不了图的模型由 `models.vision` 替它看过（施工 8-17）。

@@ -236,6 +236,7 @@ impl Loader {
             dream: replay.dream,
             watched: false,
             deferred: std::mem::take(&mut replay.deferred),
+            chatty: std::collections::BTreeSet::new(),
             restarting: false,
             duty,
             meta: std::mem::take(&mut replay.meta),

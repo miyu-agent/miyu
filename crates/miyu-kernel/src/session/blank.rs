@@ -39,6 +39,7 @@ impl Session {
             dream: created.dream.is_some(),
             watched: false,
             deferred: Vec::new(),
+            chatty: std::collections::BTreeSet::new(),
             restarting: false,
             duty: super::report::Duty::default(),
             meta: super::meta::Meta::default(),

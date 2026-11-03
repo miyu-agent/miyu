@@ -57,6 +57,7 @@ mod upward;
 mod upward_load;
 mod vision;
 mod watch;
+mod watch_lines;
 
 use super::executor::call;
 use super::*;

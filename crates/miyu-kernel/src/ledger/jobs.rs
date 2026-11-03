@@ -5,7 +5,7 @@
 //! 编号不回收要看整份日志：账本记着每一个派出去过的任务，撤掉的回合里派的也在，撤销、恢复、压缩都不动它们。一个任务
 //! 一项，账本随任务数长（`kernel/history.md`「账本」）。
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::Ledger;
 use crate::event::{
@@ -14,6 +14,7 @@ use crate::event::{
 };
 use crate::id::{CommandId, JobId, Seq, SessionId};
 use crate::origin::{By, Session};
+use crate::time::Timestamp;
 
 /// 派出去过的任务，照编号；和它们的标题（施工 9-6 上：订阅的回应交出还在跑的任务，头不用再翻整份日志找 `job.started`）。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -30,6 +31,11 @@ impl Ledger {
     /// `job` 是还没报过结束的后台命令（施工 M-1：嵌套调用挂在它下面才收）。
     pub fn command_running(&self, job: &JobId) -> bool {
         self.jobs.command_running(job)
+    }
+
+    /// 监视的命令 `job` 在 `at` 以前一小时里记下了几条 `job.lines`（施工 MN-1 上，太吵就停照它数）。
+    pub fn lines_within_hour(&self, job: &JobId, at: crate::time::Timestamp) -> usize {
+        self.jobs.lines_within_hour(job, at)
     }
 
     /// 还没报过结束的后台命令，照编号（施工 7-3：载入时给它们补 `aborted`）。
@@ -82,8 +88,12 @@ impl Ledger {
 /// 账本记着的一个任务：是什么，还会不会再报。
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Job {
-    /// 后台命令；`ended`：报过结束了，哪一种 `reason` 都算。
-    Command { ended: bool },
+    /// 后台命令；`ended`：报过结束了，哪一种 `reason` 都算；`lines`：最近一小时记下的 `job.lines` 的时刻，照先后（施工
+    /// MN-1 上：太吵就停照它数，载入时照日志重放跟着重建）。
+    Command {
+        ended: bool,
+        lines: VecDeque<Timestamp>,
+    },
     /// 子代理：它的子会话；`stopped`：以 `stopped`、`undone` 报过了，被停掉的不会再起来；`last`：最近一次回报的命令编号
     /// 和序号，一次都没报过的没有（施工 7-6：还在等它的回报；子会话再交同一份回报，照它认出是重的）；`messaged`：最近一次
     /// 回报以后给它留过言，它欠一份回报（施工 7-7）。
@@ -142,8 +152,8 @@ impl Jobs {
     pub(super) fn check_reported(&self, reported: &JobReported) -> Result<(), String> {
         let job = &reported.job;
         match self.0.get(job) {
-            Some(Job::Command { ended: false }) => Ok(()),
-            Some(Job::Command { ended: true }) => Err(format!("job {job} has already ended")),
+            Some(Job::Command { ended: false, .. }) => Ok(()),
+            Some(Job::Command { ended: true, .. }) => Err(format!("job {job} has already ended")),
             _ => Err(format!(
                 "job {job} is not a background command: no such job, or it is not a command"
             )),
@@ -181,15 +191,25 @@ impl Jobs {
     }
 
     /// `job` 是还没报过结束的后台命令（施工 M-1：嵌套调用挂在它下面才收）。
+    /// 监视的命令 `job` 在 `at` 以前一小时里记下了几条 `job.lines`（施工 MN-1 上）：滚动算，正好一小时以前的不算。
+    pub(super) fn lines_within_hour(&self, job: &JobId, at: Timestamp) -> usize {
+        match self.0.get(job) {
+            Some(Job::Command { lines, .. }) => {
+                lines.iter().filter(|seen| within_hour(**seen, at)).count()
+            }
+            _ => 0,
+        }
+    }
+
     pub(super) fn command_running(&self, job: &JobId) -> bool {
-        matches!(self.0.get(job), Some(Job::Command { ended: false }))
+        matches!(self.0.get(job), Some(Job::Command { ended: false, .. }))
     }
 
     /// 还没报过结束的后台命令，照编号（施工 7-3）。
     pub(super) fn running_commands(&self) -> Vec<JobId> {
         self.0
             .iter()
-            .filter(|(_, job)| matches!(job, Job::Command { ended: false }))
+            .filter(|(_, job)| matches!(job, Job::Command { ended: false, .. }))
             .map(|(id, _)| id.clone())
             .collect()
     }
@@ -200,7 +220,7 @@ impl Jobs {
         self.0
             .iter()
             .filter(|(_, job)| match job {
-                Job::Command { ended } => !ended,
+                Job::Command { ended, .. } => !ended,
                 Job::Agent {
                     stopped,
                     last,
@@ -292,7 +312,10 @@ impl Jobs {
             Body::ToolResult(result) => {
                 for started in started(&result.effects) {
                     let job = match (&started.what, &started.session) {
-                        (JobKind::Command, _) => Job::Command { ended: false },
+                        (JobKind::Command, _) => Job::Command {
+                            ended: false,
+                            lines: VecDeque::new(),
+                        },
                         (JobKind::Agent, Some(session)) => Job::Agent {
                             session: session.clone(),
                             stopped: false,
@@ -315,8 +338,15 @@ impl Jobs {
                 }
             }
             Body::JobReported(reported) => {
-                if let Some(Job::Command { ended }) = self.0.get_mut(&reported.job) {
+                if let Some(Job::Command { ended, lines }) = self.0.get_mut(&reported.job) {
                     *ended = true;
+                    lines.clear();
+                }
+            }
+            Body::JobLines(seen) => {
+                if let Some(Job::Command { lines, .. }) = self.0.get_mut(&seen.job) {
+                    lines.push_back(event.at);
+                    forget_before(lines, event.at);
                 }
             }
             Body::ChildReported(reported) => {
@@ -335,6 +365,21 @@ impl Jobs {
             }
             _ => {}
         }
+    }
+}
+
+/// `seen` 在 `at` 以前不到一小时（施工 MN-1 上，太吵就停的那一小时）。
+fn within_hour(seen: Timestamp, at: Timestamp) -> bool {
+    at.unix_millis().saturating_sub(seen.unix_millis()) < HOUR_MS
+}
+
+/// 一小时的毫秒数。
+const HOUR_MS: i64 = 3_600_000;
+
+/// 丢掉 `at` 以前满一小时的那些：账本里一条监视最多留一小时的时刻。
+fn forget_before(lines: &mut VecDeque<Timestamp>, at: Timestamp) {
+    while lines.front().is_some_and(|seen| !within_hour(*seen, at)) {
+        lines.pop_front();
     }
 }
 

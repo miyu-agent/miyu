@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use super::Stage;
 use crate::block::{Block, Text};
-use crate::event::{ChildReason, ChildReported, JobReason, JobReported};
+use crate::event::{ChildReason, ChildReported, JobLines, JobReason, JobReported};
 use crate::id::{CommandId, ContentHash, JobId, SessionId};
 use crate::origin::{By, Session};
 use crate::session::{Command, Input, Received, Subagent, Upward};
@@ -154,6 +154,33 @@ impl Stage {
             by,
             cause,
             reported,
+        });
+    }
+
+    /// 执行器交来监视的命令 `j<job>` 出的一批行（施工 MN-1 上）：`by` 是起它的那次调用、`cause` 照给的，没截过。
+    ///
+    /// # Panics
+    ///
+    /// 编号是 0：替身自己的 bug。
+    pub fn job_lines(
+        &mut self,
+        job: u64,
+        text: &str,
+        lines: u64,
+        by: By,
+        cause: Option<CommandId>,
+    ) {
+        let at = self.tick();
+        self.run(Input::JobLines {
+            at,
+            by,
+            cause,
+            lines: JobLines {
+                job: JobId::new(job).unwrap_or_else(|| panic!("任务编号从 1 起")),
+                text: text.to_string(),
+                lines,
+                omitted: 0,
+            },
         });
     }
 

@@ -262,6 +262,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         confined: shut_in,
         ..snapshot.session_created(venue.clone(), permission)
     };
+    // 监视的命令攒批的截法（施工 MN-1 上）：策略交给会话以前拿一份。
+    let cut = policy.reports.for_lines();
     let (mut session, first) = Session::create(
         id.clone(),
         command.clone(),
@@ -288,6 +290,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
         ids: Arc::clone(&job_ids),
         roster: Roster::default(),
         agents: agents.clone(),
+        cut,
     };
     let (inbox, mailbox) = mpsc::unbounded_channel();
     let lettering = Arc::new(Lettering::new(run, guard));

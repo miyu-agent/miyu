@@ -60,6 +60,10 @@ fn session(
         ids: Arc::new(JobIds::starting_after(None, used)),
         roster: Roster::default(),
         agents: None,
+        cut: miyu_kernel::session::Reports {
+            chars: miyu_kernel::session::LINE_CHARS,
+            omitted: miyu_kernel::template::Template::parse("").expect("空的合写法"),
+        },
     };
     let jobs = SessionJobs::new(kit, backs);
     (jobs, back)
@@ -387,4 +391,68 @@ fn the_tail_is_the_last_lines() {
     // 末尾的字节从「猫」的第二个字节起：照字取最后两个，坏掉的那一个不在里面。
     let cut = "猫狗".as_bytes()[1..].to_vec();
     assert_eq!(tail_of(&cut, 1), "狗");
+}
+
+/// 监视的命令（施工 MN-1 上）：标准输出的那一份攒成批交给 actor，写成内核的输入时 `by`、`cause` 照起它的那次调用；跑到最长
+/// 时间照样停掉报 `timed_out`。
+#[tokio::test]
+async fn a_watched_job_hands_its_lines_over_and_still_times_out() {
+    let scratch = Scratch::new();
+    let table = Arc::new(Jobs::new());
+    let (jobs, mut back) = session(&scratch, &table, 0);
+    let held = Held::new(&["one\ntwo\n"]);
+    let mut background = held.background();
+    background.lines = Some(Box::new(vec!["one\ntwo\n".to_string()].into_iter()));
+    let short = JobLimits {
+        running: Duration::from_secs(1),
+        ..roomy()
+    };
+    let job = jobs.port(call(), cause(), short).start(background).unwrap();
+    let waited = tokio::time::timeout(Duration::from_secs(10), back.recv()).await;
+    let Some(Back::JobLines(seen)) = waited.expect("十秒内交了一批") else {
+        panic!("先交的是那一批行");
+    };
+    let Input::JobLines {
+        by,
+        cause: got,
+        lines,
+        ..
+    } = SessionJobs::lines(at(), seen)
+    else {
+        panic!("写成监视的行");
+    };
+    assert_eq!(by, By::Tool(Tool { call_id: call() }), "起它的那次调用");
+    assert_eq!(got, cause());
+    assert_eq!(lines.job, job);
+    assert_eq!(
+        (lines.text.as_str(), lines.lines, lines.omitted),
+        ("one\ntwo", 2, 0)
+    );
+    let ended = next_end(&mut back).await;
+    assert_eq!(ended.reported.reason, JobReason::TimedOut, "到时照样停");
+    assert_eq!(held.killed(), 1);
+}
+
+/// 太吵（施工 MN-1 上）：内核数满了让停，报 `too_chatty`，不带 `by_model`，整组杀一次。
+#[tokio::test]
+async fn a_chatty_watch_is_stopped_as_too_chatty() {
+    let scratch = Scratch::new();
+    let table = Arc::new(Jobs::new());
+    let (jobs, _back) = session(&scratch, &table, 0);
+    let held = Held::new(&["x\n"]);
+    let job = jobs
+        .port(call(), cause(), roomy())
+        .start(held.background())
+        .unwrap();
+    until_written(&scratch.output(1), "x\n").await;
+    let chatty = Who {
+        by: By::Tool(Tool { call_id: call() }),
+        cause: cause(),
+        why: Why::TooChatty,
+    };
+    let stopped = jobs.stop_command(job, chatty).await.expect("在跑，停得了");
+    assert_eq!(stopped.reported.reason, JobReason::TooChatty);
+    assert!(!stopped.reported.by_model);
+    assert_eq!(stopped.by, By::Tool(Tool { call_id: call() }));
+    assert_eq!(held.killed(), 1);
 }

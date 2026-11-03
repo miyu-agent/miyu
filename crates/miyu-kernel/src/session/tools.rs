@@ -326,8 +326,8 @@ impl Session {
             actions.push(Action::StopJobs {
                 jobs: std::mem::take(&mut step.awaiting),
                 by: by.clone(),
-                cause: cause.clone(),
-                undone: false,
+                cause: Some(cause.clone()),
+                reason: super::action::StopReason::Interrupted,
             });
         }
         (events, actions)

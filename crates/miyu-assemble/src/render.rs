@@ -99,18 +99,12 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             }
             // 回报不带回合编号，照它在日志里的位置排：闲着时到的就是开这一轮的那条，照触发挪到回合开始的地方；回合中途
             // 到的排在那一步的工具结果后面（施工 7-2，`jobs.rs`）。
-            Body::JobReported(reported) => {
+            // 监视的命令出的行（施工 MN-1 上）照回报排。
+            Body::JobReported(_) | Body::ChildReported(_) | Body::JobLines(_) => {
                 let block = texts
                     .jobs
                     .as_ref()
-                    .and_then(|jobs| jobs::command(history, reported, jobs));
-                transcript.add(event.seq, Place::Here, block.into_iter().map(text_block).collect());
-            }
-            Body::ChildReported(reported) => {
-                let block = texts
-                    .jobs
-                    .as_ref()
-                    .and_then(|jobs| jobs::subagent(history, reported, jobs));
+                    .and_then(|jobs| jobs::report(history, &event.body, jobs));
                 transcript.add(event.seq, Place::Here, block.into_iter().map(text_block).collect());
             }
             // 空了的通知（施工 C-6，`peers.rs`）：不带回合编号，照回报排。

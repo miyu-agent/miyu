@@ -284,6 +284,8 @@ fn jobs() -> crate::JobTexts {
             .to_string(),
         user_message_close: include_str!("../../../resources/core/jobs/user-message-close.txt")
             .to_string(),
+        lines_open: include_str!("../../../resources/core/jobs/lines-open.txt").to_string(),
+        lines_close: include_str!("../../../resources/core/jobs/lines-close.txt").to_string(),
     }
 }
 

@@ -404,6 +404,11 @@ impl JobPort for Taken {
         Ok(JobId::new(6 + commands.len() as u64).expect("从 1 数起"))
     }
 
+    /// 出厂的最长时间（30 分钟）：监视的命令交回编号时照它说几分钟（施工 MN-1 上）。
+    fn longest(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(30 * 60)
+    }
+
     /// `shell` 用不到查和停（施工 7-4）：一个都没有。
     fn list(&self) -> Vec<miyu_tool::Listed> {
         Vec::new()

@@ -258,10 +258,10 @@ pub trait Tool: Send + Sync {
         false
     }
 
-    /// 只在会话有后台时才给的那个参数（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话，工具面上去掉它。`shell` 的是
-    /// `run_in_background`。默认没有。
-    fn background_parameter(&self) -> Option<&'static str> {
-        None
+    /// 只在会话有后台时才给的那几个参数（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话，工具面上去掉它们。`shell`
+    /// 的是 `run_in_background` 和 `watch`（施工 MN-1 上）。默认没有。
+    fn background_parameters(&self) -> &'static [&'static str] {
+        &[]
     }
 
     /// 不上工具面（施工 BS-1 中，设计 `44-基础系统拆包.md` 第三节第 4 条）：她看不见、直接调不了，`miyu call` 也调不了，只给核心

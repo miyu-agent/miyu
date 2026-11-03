@@ -44,6 +44,7 @@ mod http;
 mod jobs;
 mod jobs_moved;
 mod jobs_stop;
+mod jobs_watch;
 mod kb_eval;
 mod knowledge_formats;
 mod knowledge_meaning;

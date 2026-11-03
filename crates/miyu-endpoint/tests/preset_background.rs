@@ -75,48 +75,57 @@ async fn with_background_off_the_shell_has_no_background_and_refuses_it() {
     let home = Home::new();
     home.write("root/presets/quiet.toml", QUIET);
     let script = Script::new([
-        Play::calls(&[(
-            "shell",
-            r#"{"command":"echo hi","description":"Say hi","run_in_background":true}"#,
-        )]),
+        Play::calls(&[
+            (
+                "shell",
+                r#"{"command":"echo hi","description":"Say hi","run_in_background":true}"#,
+            ),
+            // 监视的一样（施工 MN-1 上）：它也是放到后台。
+            (
+                "shell",
+                r#"{"command":"echo hi","description":"Watch hi","watch":true}"#,
+            ),
+        ]),
         Play::Says("好。"),
     ]);
     let quiet = session(&home, &script, "quiet").await;
     let requests = script.requests();
     let request = &requests[0].1;
     let shell = parameters(request, "shell").expect("有 shell");
-    assert!(
-        shell["properties"].get("run_in_background").is_none(),
-        "{shell}"
-    );
+    for parameter in ["run_in_background", "watch"] {
+        assert!(shell["properties"].get(parameter).is_none(), "{shell}");
+    }
     assert!(parameters(request, "jobs").is_none(), "没有 jobs");
     assert!(snapshot(&home, &quiet).foreground, "快照记下");
-    let refused = home
+    let results: Vec<_> = home
         .log(&quiet)
         .into_iter()
-        .find_map(|event| match event.body {
+        .filter_map(|event| match event.body {
             Body::ToolResult(result) => Some(result),
             _ => None,
         })
-        .expect("有结果");
-    assert_eq!(refused.status, ToolStatus::Error, "出错");
-    let said: String = refused
-        .blocks
-        .iter()
-        .map(|block| match block {
-            Block::Text(Text { text }) => text.clone(),
-            _ => String::new(),
-        })
         .collect();
-    assert!(
-        said.starts_with("Running in the background is not available here."),
-        "{said}"
-    );
-    assert!(
-        refused.effects.is_empty(),
-        "不派任务：{:?}",
-        refused.effects
-    );
+    assert_eq!(results.len(), 2, "两次调用两条结果");
+    for refused in results {
+        assert_eq!(refused.status, ToolStatus::Error, "出错");
+        let said: String = refused
+            .blocks
+            .iter()
+            .map(|block| match block {
+                Block::Text(Text { text }) => text.clone(),
+                _ => String::new(),
+            })
+            .collect();
+        assert!(
+            said.starts_with("Running in the background is not available here."),
+            "{said}"
+        );
+        assert!(
+            refused.effects.is_empty(),
+            "不派任务：{:?}",
+            refused.effects
+        );
+    }
 
     // 开着的照旧：同一件 `shell` 只差那一项。
     let other = Home::new();
@@ -124,16 +133,17 @@ async fn with_background_off_the_shell_has_no_background_and_refuses_it() {
     let on = session(&other, &full, "full").await;
     let request = &full.requests()[0].1;
     let mut whole = parameters(request, "shell").expect("有 shell");
-    assert!(
-        whole["properties"].get("run_in_background").is_some(),
-        "{whole}"
-    );
+    for parameter in ["run_in_background", "watch"] {
+        assert!(whole["properties"].get(parameter).is_some(), "{whole}");
+    }
     assert!(parameters(request, "jobs").is_some(), "有 jobs");
     assert!(!snapshot(&other, &on).foreground);
-    whole["properties"]
-        .as_object_mut()
-        .expect("是对象")
-        .remove("run_in_background");
+    for parameter in ["run_in_background", "watch"] {
+        whole["properties"]
+            .as_object_mut()
+            .expect("是对象")
+            .remove(parameter);
+    }
     assert_eq!(whole, shell, "别的参数不动");
 }
 

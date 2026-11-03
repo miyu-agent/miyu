@@ -454,9 +454,9 @@ impl Actor {
                 jobs,
                 by,
                 cause,
-                undone,
+                reason,
             } => {
-                self.stop_jobs(jobs, by, cause, undone).await;
+                self.stop_jobs(jobs, by, cause, reason).await;
                 None
             }
             // 向上回报（施工 7-6）：交给交回报的那一头，不等。没有的（测试里自己造的子会话）交不出去，运行日志里的

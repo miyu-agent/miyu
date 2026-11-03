@@ -193,7 +193,7 @@ impl InputKind {
             Input::Reread { .. } => InputKind::Reread,
             Input::Recalled { .. } => InputKind::Recalled,
             Input::Woke { .. } => InputKind::Woke,
-            Input::JobEnded { .. } => InputKind::JobEnded,
+            Input::JobEnded { .. } | Input::JobLines { .. } => InputKind::JobEnded,
             Input::Watched { .. } => InputKind::Watched,
             Input::WatchEnded { .. } => InputKind::WatchEnded,
             Input::AsideSent { .. } => InputKind::AsideSent,

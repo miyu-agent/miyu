@@ -189,6 +189,10 @@ async fn a_write_that_fails_stops_the_session() {
             ids: Arc::new(crate::job_ids::JobIds::starting_after(None, 0)),
             roster: crate::jobs::Roster::default(),
             agents: None,
+            cut: miyu_kernel::session::Reports {
+                chars: miyu_kernel::session::LINE_CHARS,
+                omitted: miyu_kernel::template::Template::parse("").expect("空的合写法"),
+            },
         },
         guard,
         mailbox,

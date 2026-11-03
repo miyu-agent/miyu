@@ -18,10 +18,10 @@ fn job(n: u64) -> JobId {
 /// 撤销 `undo` 交出的停任务：停 `jobs`，`by` 是 alice。
 fn stop(jobs: &[u64], undo: &CommandId) -> Action {
     Action::StopJobs {
-        undone: true,
+        reason: crate::session::StopReason::Undone,
         jobs: jobs.iter().map(|&n| job(n)).collect(),
         by: person(),
-        cause: undo.clone(),
+        cause: Some(undo.clone()),
     }
 }
 

@@ -66,6 +66,7 @@ impl History {
                 Body::MessageUser(_) if trigger.turn.is_some() => trigger.turn,
                 Body::MessageUser(_)
                 | Body::JobReported(_)
+                | Body::JobLines(_)
                 | Body::ChildReported(_)
                 | Body::PeerIdle(_) => self.ended_before(event.seq),
                 _ => continue,

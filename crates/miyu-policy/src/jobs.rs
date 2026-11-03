@@ -103,6 +103,12 @@ pub struct JobTexts {
     /// 它的收尾（施工 PM-1）。以前造的快照里没有，读成空的。
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub user_message_close: String,
+    /// 监视的命令出的一批行的标签：`job`、`title`（施工 MN-1 上）。以前造的快照里没有，读成空的；空的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub lines_open: String,
+    /// 它的收尾（施工 MN-1 上）。以前造的快照里没有，读成空的。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub lines_close: String,
 }
 
 impl JobTexts {
@@ -132,6 +138,8 @@ impl JobTexts {
             command_tail_cut: template(&self.command_tail_cut, &["shown", "chars"])?,
             user_message_open: self.user_message_open.clone(),
             user_message_close: self.user_message_close.clone(),
+            lines_open: template(&self.lines_open, &["job", "title"])?,
+            lines_close: self.lines_close.clone(),
         })
     }
 }

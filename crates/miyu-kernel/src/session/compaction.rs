@@ -302,6 +302,7 @@ impl Session {
                     Body::MessageUser(_)
                         | Body::ChildReported(_)
                         | Body::JobReported(_)
+                        | Body::JobLines(_)
                         | Body::PeerIdle(_)
                 ) && floor.is_none_or(|floor| event.seq > floor)
             })

@@ -141,26 +141,41 @@ pub(super) struct Spawned {
     pub(super) child: Child,
     pub(super) group: Group,
     pub(super) pipe: io::PipeReader,
+    /// 标准错误另一根管道读的一头（施工 MN-1 上，监视的命令）：这时 `pipe` 只有标准输出。合在一起的没有。
+    pub(super) errors: Option<io::PipeReader>,
     pub(super) watch: Watch,
 }
 
 /// 起命令：标准输入接空的，有 `input` 的（脚本的参数，施工 X-12 上）接一根管道、写完就关；标准输出、标准错误接到同一根
-/// 管道上，自成一组（Unix 上组里有看门的，施工 7-8）。交回它的进程、整组杀的时候认它的那个编号、管道读的一头、看门的。
-/// 前台、后台（施工 7-3）都这样起。
+/// 管道上，`apart` 的（监视的命令，施工 MN-1 上，设计 56 第三节第 9 条）标准错误另接一根，三个平台一样；自成一组（Unix 上组
+/// 里有看门的，施工 7-8）。交回它的进程、整组杀的时候认它的那个编号、管道读的一头（分开的两头）、看门的。前台、后台（施工
+/// 7-3）都这样起。
 ///
 /// # Errors
 ///
 /// 管道建不起来，或者程序起不来（找不到、工作目录不在）。
-pub(super) fn spawn(mut command: Command, input: Option<Vec<u8>>) -> io::Result<Spawned> {
+pub(super) fn spawn(
+    mut command: Command,
+    input: Option<Vec<u8>>,
+    apart: bool,
+) -> io::Result<Spawned> {
     let (pipe, writer) = io::pipe()?;
     let stdin = match input {
         Some(_) => Stdio::piped(),
         None => Stdio::null(),
     };
-    command
-        .stdin(stdin)
-        .stdout(writer.try_clone()?)
-        .stderr(writer);
+    let errors = match apart {
+        true => {
+            let (errors, error_writer) = io::pipe()?;
+            command.stdout(writer).stderr(error_writer);
+            Some(errors)
+        }
+        false => {
+            command.stdout(writer.try_clone()?).stderr(writer);
+            None
+        }
+    };
+    command.stdin(stdin);
     let mut watch = alone(&mut command);
     // 父进程手里的写端在 `command` 里，这个函数一返回就跟着它关掉：留着的话，命令都退出了读的一头也读不到结尾。
     let mut child = command.spawn()?;
@@ -180,6 +195,7 @@ pub(super) fn spawn(mut command: Command, input: Option<Vec<u8>>) -> io::Result<
         child,
         group,
         pipe,
+        errors,
         watch,
     })
 }
@@ -214,8 +230,9 @@ pub(super) fn start(
         child,
         group,
         pipe,
+        errors: _,
         watch,
-    } = spawn(command, input)?;
+    } = spawn(command, input, false)?;
     let capture = Capture::new(progress_lines);
     let output = Arc::new(Mutex::new(Sink {
         capture,

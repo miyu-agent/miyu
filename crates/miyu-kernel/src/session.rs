@@ -65,9 +65,10 @@ mod todos;
 mod tools;
 mod truncated;
 mod turn;
+mod watch;
 mod workspace;
 
-pub use action::{Action, Outcome, Reason};
+pub use action::{Action, Outcome, Reason, StopReason};
 pub use configure::Replaced;
 pub use fork::{BaseFeed, ForkFeed, ForkPlan};
 pub use input::{
@@ -83,6 +84,7 @@ pub use policy::{
     Titles,
 };
 pub use report::Upward;
+pub use watch::{CHATTY, LINE_CHARS};
 
 use crate::event::{Body, Event, Permission, SessionCreated, ToolResult, ToolStatus};
 use crate::facts::Environment;
@@ -142,6 +144,8 @@ pub struct Session {
     /// 闲着时到的、会叫醒她、这时却开不了一轮的回报，照先后（施工 7-2，`jobs.rs`）：随便哪一轮开了就清掉；恢复了撤销、
     /// 这时开得了，由最后那条接着开。
     deferred: Vec<Arrived>,
+    /// 太吵、已经发过停的动作的监视命令（施工 MN-1 上，`watch.rs`）：再来的批次不记、不再发。只在内存里：重启了命令也就停了。
+    chatty: std::collections::BTreeSet<crate::id::JobId>,
     /// 收到了「要重启了」（施工 7-3）：要关了，之后到的回报只记下、不开轮。只在内存里。
     restarting: bool,
     /// 子会话欠着父会话的回报（施工 7-6，`report.rs`）：每追加一条记一次。
@@ -345,6 +349,12 @@ impl Session {
                 cause,
                 reported,
             } => self.job_ended(at, by, cause, reported),
+            Input::JobLines {
+                at,
+                by,
+                cause,
+                lines,
+            } => self.job_lines(at, by, cause, lines),
             Input::AsideSent {
                 at,
                 purpose,

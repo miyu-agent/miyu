@@ -354,6 +354,8 @@ impl ResourceRoot {
                 subagent_message_close: job("subagent-message-close.txt")?,
                 user_message_open: job("user-message-open.txt")?,
                 user_message_close: job("user-message-close.txt")?,
+                lines_open: job("lines-open.txt")?,
+                lines_close: job("lines-close.txt")?,
             }),
             harness: Some(HarnessTexts {
                 message_open: core(&["harness", "message-open.txt"])?,

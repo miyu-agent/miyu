@@ -327,6 +327,7 @@ impl Watch {
                     JobReason::Exited
                     | JobReason::TimedOut
                     | JobReason::TooLarge
+                    | JobReason::TooChatty
                     | JobReason::Other(_) => true,
                 };
                 (reported.job.clone(), wakes, true)

@@ -32,7 +32,7 @@
 ```json
 {
   "description": "Execute a command with {shell} and return its output. Every call starts in the working directory, so cd does not carry over to the next call.",
-  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
+  "parameters": {"type":"object","properties":{"command":{"type":"string"},"description":{"type":"string","description":"Short title, a few words."},"timeout":{"type":"integer","description":"Milliseconds, up to 600000. Default 120000."},"run_in_background":{"type":"boolean","description":"No timeout. Returns a job id at once."},"watch":{"type":"boolean","description":"Implies run_in_background. Each stdout line wakes you."},"outside_sandbox":{"type":"boolean","description":"Rerun a command the sandbox blocked. Setting it asks the user for approval."}},"required":["command","description"]}
 }
 ```
 
@@ -44,7 +44,8 @@
 | `command` | 是 | 要执行的命令 |
 | `description` | 是 | 这条命令在做什么的短标题，几个词。前台的不用它跑命令，记在调用里，前端显示用（施工 4-13，2026-09-28 项目主人定；前端随 M8）；后台的是任务的标题，记进 `job.started`（施工 7-3）。没写的，参数不对 |
 | `timeout` | 否 | 毫秒。没给、给了 0，是 120000；大过 600000 的照 600000。要是不小于 0 的整数，负数参数不对。后台的不看它，照样查写法 |
-| `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameter` 去掉，不看名字） |
+| `run_in_background` | 否 | 布尔，没写是假。真的放到后台（施工 7-3，下面「后台」）。写成字符串的（`"true"`）内核照参数格式修正成布尔。预设关了「后台运行」的会话工具面上没有这一项（施工 T-1 上，`presets.md`「怎么走」；施工 BS-1 上起照 `Tool::background_parameters` 去掉，不看名字） |
+| `watch` | 否 | 布尔，没写是假。真的：监视，照放到后台走（和 `run_in_background` 一起写、只写它都一样），标准输出每出一批行记一条 `job.lines`、叫醒她（施工 MN-1 上，设计 56，下面「后台」第 9 条）。说明一句 `Implies run_in_background. Each stdout line wakes you.`。和 `run_in_background` 一样只在有后台时给，预设关了「后台运行」的会话工具面上没有 |
 | `outside_sandbox` | 否 | 布尔，没写是假。真的：这一次要在沙盒外跑，先问人（施工 D-4，2026-10-07 项目主人定，照 Claude Code 的 `dangerouslyDisableSandbox`）。说明写明它重跑沙盒挡下的命令、带上它就是在向人要许可（施工 D-4 补；原来还写「被挡下就直接重跑、别先在聊天里问」，施工 TX-1 照 `26-提示词.md` J13 去掉这句引导，2026-10-30 项目主人照推荐定）。工具自己不看它决定套不套沙盒，只报给权限策略和执行器（`Tool::outside_sandbox`）；写成字符串的照参数格式修正成布尔 |
 
 - 别的参数不认，也不报错。
@@ -55,7 +56,7 @@
 ### 怎么走
 
 1. 读参数，读不懂的（没写 `command`、类型不对）：参数不对。
-2. `run_in_background` 是真的：照下面「后台」走，不定超时。
+2. `run_in_background` 或者 `watch` 是真的：照下面「后台」走，不定超时。
 3. 定超时（上面的表）。
    - 调用带了沙盒的（`Call.sandbox`，施工 5-1）：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`，别的都照下面走：Unix 上助手换成了 shell，是同一个进程；Windows 上助手起子进程、等它（`sandbox.md`）。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照下面「起不来」说，不会不经沙盒就跑。沙盒带的环境变量（`Sandboxed.env`，例如 `TMPDIR`）照挑好的之后设上，同名的盖掉（施工 5-4 上）。
 4. 前台干等的不跑（2026-10-26 项目主人定，`shell/waiting.rs`）：照顶层把命令切成几段（`;`、`&&`、`||`、换行、单个 `&`；引号、反斜杠、括号、花括号里的不算），有一段就是 `sleep <时长…>`（PowerShell 的 `Start-Sleep`），时长合起来不短于 2 秒（写成变量这类看不出多长的当长的），整条不跑：出错，给她的一句 `no-sleep.txt`（后台任务办完会自己回报），说法 `shell/no-sleep`。管道里的、循环体里的、放到后台的（`sleep 5 &`）、两秒以内的短停照跑。
@@ -107,6 +108,7 @@
 6. 交出去的输出一段一段读：一次读 8192 字节，照 UTF-8 边读边解，一个字切在两段中间的留到下一段，读完了剩下的换成 `�`；`\r\n` 换成 `\n`，一段以 `\r` 结尾的留着它看下一段，单独的 `\r` 不动；不截。读不了的当读完了，记一行 `DEBUG` `command output not readable`。
 7. 交出去的进程：等它结束交回退出码，没有退出码的（Unix 上被信号杀掉）交回信号的编号。等到了先记下它结束了、再放下句柄，Unix 上组里还在跑的（`&` 放到后台的）也杀掉，和前台一样。整组杀照前台：Unix `kill(-pgid, SIGKILL)`，Windows `taskkill /T /F /PID`；已经结束了的不再按编号杀，可能杀错：杀的那一头拿着「结束了没有」那把锁杀，杀完之前句柄放不下，Windows 上编号也就不会被别的进程拿去。
 8. 之后的事是任务表的：输出写进会话目录的 `jobs/<编号>.out`，结束了记 `job.reported`（`session/tools.md`「后台命令」）。
+9. 写了 `watch` 的（监视，施工 MN-1 上，设计 56，`agents.md` 第四条第 8 条）：起进程时标准输出、标准错误各接一根管道（`process::spawn` 的 `apart`，三个平台一套写法；Windows 沙盒的助手本来就分开搬两路，分开保得住），各一个线程照第 6 条读：两路照到达的先后都交进 `Background::output`（写 `.out` 的那一份），标准输出另抄一份交进 `Background::lines`，任务表攒成批记 `job.lines`；标准错误不叫醒。给她的字是 `started-watch.txt`（编号、每一行标准输出都会叫醒她所以只打印要她动手的行、标准错误只进输出文件、跑到 `minutes` 分钟停下要接着看再起；分钟照任务端口的 `JobPort::longest`，即这一轮的 `jobs.max_running`，向上取整），说法照 `shell/background`。不写 `watch` 的照旧一根管道，一个字节不变。
 
 **命令改了她看过的文件**（施工 E-D 补，项目主人 2026-10-23 定「认前台 shell 改的」，`touched.rs`）
 1. 前台命令起来之前，照 `Call.seen` 记下她看过的每个文件这一刻的修改时刻和大小（不读内容；不在的、不是普通文件的记空）。
@@ -211,6 +213,7 @@ Exit code 2
 | firefox 截图写了相对路径（施工 SB-1 修） | `firefox-screenshot.txt` | `Firefox switches to / before it writes --screenshot, so a relative path is dropped without an error. An absolute path such as "$PWD/shot.png" works.` |
 | 到时了 | `timed-out.txt` | `Stopped at the {timeout} ms timeout. timeout can go up to {max}.` |
 | 放到后台了 | `started.txt` | `Started {job} in the background. Its end is reported automatically. jobs output shows its output.` |
+| 监视的放到后台了（施工 MN-1 上） | `started-watch.txt`，字段 `job`、`minutes` | `Watching {job} in the background. Each stdout line wakes you, so print only lines you must act on. stderr goes only to the output file. It stops after {minutes} minutes; start it again to keep watching.` |
 | 截在中间 | `omitted.txt` | `[... {count} characters omitted ...]` |
 | 截了，末尾 | `truncated.txt` | `(Showed the start and end of {total} characters. Output saved to a file can be read in full.)` |
 | 执行不了 | `failed.txt` | `Could not run {shell}: {error}.` |
@@ -297,6 +300,7 @@ Exit code 2
 
 | 测试 | 守哪几条 |
 |---|---|
+| `crates/miyu-basesystem/tests/watch.rs`（施工 MN-1 上） | 真的起进程、三个平台：写了 `watch` 的放到后台、结果那一句（30 分钟）；标准输出单独交进 `lines`、标准错误不在里面，写文件的那一份两路都有；不写的没有 `lines`；没有任务端口的不跑 |
 | `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量和前台一样（4-8 补：带着探针重新拉起测试程序）；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
 | `crates/miyu-session/tests/jobs_moved.rs`（施工 7-12） | 真的 `shell`、三个平台：前台到时挪到后台，调用当场交回编号、`job.started`，跑完了记 `job.reported`，输出是挪过去以前读到的接上以后的（`\r\n` 换好）；挪过去以前输出太长的照给她看的截在中间；人停得掉；开头是 `sleep` 的照旧杀、不进任务表；Linux 上结束了组里放出去的也杀掉 |
 | `crates/miyu-basesystem/src/shell/waiting/tests.rs`、`tests/human.rs`（2026-10-26） | 前台干等的认法：顶层的、不短于两秒的 `sleep`、`Start-Sleep` 拒（几种时长写法、变量当长的、`;`、`&&`、`||`、换行、后台以后的那一段）；管道、循环体、放到后台的、引号里的、套在 `sh -c` 里的、短停照跑；拒了说 `shell/no-sleep` |

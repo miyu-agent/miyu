@@ -127,12 +127,12 @@ pub enum Action {
     StopJobs {
         /// 停哪几个，照编号。
         jobs: Vec<JobId>,
-        /// 撤销的人：后台命令那几条 `job.reported` 的 `by`。
+        /// 撤销、打断的人，太吵的是起它的那次调用：后台命令那几条 `job.reported` 的 `by`。
         by: By,
-        /// 撤销的命令：那几条的 `cause`。
-        cause: CommandId,
-        /// 撤销停的是真：回报记 `undone`。打断时停这一步在等的前台子代理的是假（施工 T-1 下）：回报记 `stopped`，人停的。
-        undone: bool,
+        /// 撤销、打断的命令，太吵的是起它的那一轮的：那几条的 `cause`。
+        cause: Option<CommandId>,
+        /// 为什么停：回报照它记 `undone`、`stopped`、`too_chatty`（施工 MN-1 上把原来的 `undone` 并进来）。
+        reason: StopReason,
     },
     /// 压完要重读的文件（`compaction.md` 第九条，施工 6-5）：排在摘要请求的「请求模型」前面，执行器读完、存成
     /// blob，送回 [`super::Input::Reread`]，再做下一个动作。
@@ -375,4 +375,15 @@ pub(super) fn rejected_about(id: CommandId, reason: Reason, about: Vec<Seq>) -> 
         id,
         outcome: Outcome::Rejected { reason, about },
     }
+}
+
+/// 内核叫执行器停任务的原因（[`Action::StopJobs`]，施工 MN-1 上把原来的 `undone` 并进来）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StopReason {
+    /// 撤销派它的那一轮（施工 7-8）：回报记 `undone`，不叫醒她。
+    Undone,
+    /// 打断时停这一步在等的前台子代理（施工 T-1 下）：回报记 `stopped`，人停的，不带 `by_model`。
+    Interrupted,
+    /// 监视的命令最近一小时记满了 `job.lines`（施工 MN-1 上，`watch.rs`）：回报记 `too_chatty`，叫醒她。
+    TooChatty,
 }

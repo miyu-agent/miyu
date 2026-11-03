@@ -57,8 +57,24 @@ text_enum!(
         TimedOut = "timed_out",
         /// 输出超过了上限，停掉的（施工 7-12 下，照 Claude Code：5 GB）。
         TooLarge = "too_large",
+        /// 监视的命令太吵，停掉的（施工 MN-1 上，设计 56 第三节第 5 条）：最近一小时记满了 120 条 `job.lines`。
+        TooChatty = "too_chatty",
     }
 );
+
+/// `job.lines`：监视的后台命令（`shell` 写了 `watch`）标准输出出的一批行（施工 MN-1 上，设计 56 第四节）。`by`、`cause` 照
+/// `job.reported`：起它的那次调用、那一轮的。不带回合编号，撤哪一轮都不拿走它；照回报的规矩叫醒她（`agents.md` 第三条）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct JobLines {
+    /// 哪一个后台命令。
+    pub job: JobId,
+    /// 这一批的行，`\r\n` 换成了 `\n`。超过一批的上限（4000 个字）的留头尾、中间一行写省了多少个字（`Reports::cut`）。
+    pub text: String,
+    /// 这一批原来有几行。她忙着时合成的一条是合进来的几批加起来的。
+    pub lines: u64,
+    /// 截掉了多少个字（Unicode 字符），没截的是 0。
+    pub omitted: u64,
+}
 
 /// `child.reported`：子会话的回报。`by` 是那个子会话。一个子代理可以报好几次：父会话留言叫醒它，它那一轮结束时再报
 /// （`agents.md` 第六条）。

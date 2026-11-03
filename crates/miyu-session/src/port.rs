@@ -386,6 +386,8 @@ pub(crate) enum Back {
     },
     /// 一条后台命令结束了（施工 7-3）。
     Job(crate::jobs::Ended),
+    /// 监视的命令攒好了一批行（施工 MN-1 上）。
+    JobLines(crate::jobs::Lines),
     /// 替它看图回来了（施工 8-17）：哪一张图，成了的替它看的模型和转述，没成的为什么。
     Described {
         blob: ContentHash,
