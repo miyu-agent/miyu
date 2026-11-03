@@ -47,6 +47,7 @@ Manage packages, extension processes and the MCP servers in the system config; l
 | `features` | Its features (presets switch these) |
 | `status`, `enabled` | With a process: running or not, on or not |
 | `page` | Has a package page, which heads list under package pages |
+| `tray` | Has a package page and a `[tray]` table: `{"name"}`, the tray menu line's text in the connection's language; clicking it opens the package page. The tray lists only packages that are on |
 | `theme` | What a theme package carries: `{"tui"?: {"file"}, "web"?: {"dir"}}`, `tui` the terminal theme file, `web` the web theme directory (an ordinary web package), at least one of them; paths are relative to the package directory, files are read with `package.file` |
 | `mcp` | Its MCP servers: `name`, `command` (`url` for a URL server), `venues`, `state`, `failures`…; `on` and `skipped` as in `mcp.list`. An extension not acting for the owner (a platform bridge acting for outsiders in a venue) gets only `name` and `state` (`reason` when stopped) for each server, and none of `state`, `pages_dir`, `command`, `commands`, `process`, `worker`, `check`, `problem`, `line` |
 | `widgets` | Its declared widgets: `id`, `place`, `title`, `scope`, `command` |

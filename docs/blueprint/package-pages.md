@@ -15,6 +15,9 @@ logo = "art/logo.png"     # 可以不写：包自带的图标，一张 PNG 或 W
 
 [page]                    # 软件后台页，可以不写；只有扩展（process）、内置包（builtin）能写
 dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入口是里面的 index.html
+
+[tray]                    # 托盘菜单里的一行，可以不写；要先有 [page]（施工 TR-2）
+name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
 ```
 
 1. `icon`：小写字母开头，只有小写字母、数字、`-`，最多 64 个。核心只查写法，不查 Lucide 里有没有；头认不出的照没写画。不合写法的 `bad_icon`。
@@ -25,6 +28,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
    - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
 3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `opt/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
+4. `[tray] name`（施工 TR-2，托盘 `miyu-app` 的蓝图 `app.md` 第 4 条「软件包挂的入口」，2026-11-03 项目主人定）：托盘菜单里挂一行，写法同 `[package] name`，点了用浏览器打开这个包自己的后台页（`miyu web --package <编号>`）。一个包至多一行，只能是「打开它的后台页」：不写目标，也就没法指到命令、网址、别的包。没写 `[page]` 的、写了 `name` 以外的格的 `bad_tray`；别的种类写了 `wrong_kind`。
 
 ### `package.list` 每一项多的几格
 
@@ -33,6 +37,7 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 | `icon` | 清单写了 | 照原样 |
 | `logo` | 清单写了、合规矩 | 图标的版本：内容的 SHA-256 前 16 位十六进制，头照它换缓存；图用 `package.logo` 读（施工 F-18 上） |
 | `page` | 有后台页 | `true`：清单写了 `[page]`，`index.html` 在 |
+| `tray` | 有后台页、清单写了 `[tray]` | `{"name"}`：托盘菜单里那一行的字，照连接的语言挑（施工 TR-2）。托盘只列开着的（`enabled` 不是 `false`） |
 | `status` | 读成了的 | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，见下 |
 | `enabled` | 有开关的 | 开关现在是开是关，见「开关」 |
 
@@ -178,7 +183,8 @@ dir = "page"              # 包目录 packages/<编号>/ 下的子目录，入�
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-config/src/package/look/tests.rs`（施工 F-6 上） | `icon`、`[page] dir` 读得出；写法不对的 `bad_icon`、`bad_page_dir`，报在那一行；`[page]` 只给扩展、内置包 |
-| `crates/miyu-endpoint/tests/package_switch.rs`（施工 F-6 上） | `package.list` 的 `status`、`enabled`、`icon`、`page`（目录里没有 `index.html` 的不带）；开关开、关扩展，出厂内置包卸掉、装回来；必需的、界面、程序不在、没有的拒绝；程序不在的配置项不进 schema、功能不进预设，界面的照旧；`miyu check` 报 `page_missing` |
+| `crates/miyu-config/src/package/look/tests.rs`（施工 TR-2） | `[tray] name` 读成分语言的名字，扩展、内置包都能写；写了 `name` 以外的格（`page`、`url`、`command`、`package`）、没写 `[page]` 的报 `bad_tray`、`detail` 和行号对；少了名字、名字是空的、吉祥物包写了照各自的代码 |
+| `crates/miyu-endpoint/tests/package_switch.rs`（施工 F-6 上，托盘入口施工 TR-2） | `package.list` 的 `status`、`enabled`、`icon`、`page`（目录里没有 `index.html` 的不带）、`tray`（照连接的语言，没有后台页入口的不带）；开关开、关扩展，出厂内置包卸掉、装回来；必需的、界面、程序不在、没有的拒绝；程序不在的配置项不进 schema、功能不进预设，界面的照旧；`miyu check` 报 `page_missing` |
 | `crates/miyu-endpoint/tests/package_settings.rs`（施工 F-6 上改） | 包的配置项带 `package`，核心自己的不带；平台接入的在「软件包」页，没有 `connections` 页 |
 | `crates/miyu-endpoint/tests/extensions.rs`（施工 F-6 上改） | 程序不在的 `extension.enable` 回 `program_missing` |
 | `crates/miyu-endpoint/src/backstage/file/tests.rs`、`calls/tests.rs`（施工 F-6 中） | 后台页里的路径怎么拆、哪些不收；方法名的写法 |

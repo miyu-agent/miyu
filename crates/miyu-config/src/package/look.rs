@@ -1,11 +1,13 @@
 //! 清单里给头看的几格（施工 F-6 上，`docs/blueprint/package-pages.md`「清单多的几格」，设计 `30-插件框架.md` 第十三节）：
-//! `[package] icon` 是 Lucide 的图标名，`[page] dir` 是软件后台页在包目录里的哪个子目录。只查写法：图标名在 Lucide 里有没有、
+//! `[package] icon` 是 Lucide 的图标名，`[page] dir` 是软件后台页在包目录里的哪个子目录，`[tray] name` 是托盘菜单里打开后台页
+//! 的那一行（施工 TR-2）。只查写法：图标名在 Lucide 里有没有、
 //! 目录里有没有 `index.html`，核心不管（头认不出的图标照没写画，没有入口的 `package.list` 不带 `page`）。
 
 use toml_edit::{Item, TableLike};
 
 use super::reader::{Reader, relative_dir};
 use super::{Code, PackageKind, Problem};
+use crate::phrases::Phrases;
 
 /// 图标名最多几个字符。
 const ICON_MAX: usize = 64;
@@ -72,6 +74,38 @@ pub(super) fn page(
                 "page.dir must be a relative directory inside the package directory".to_string(),
             )
         })
+}
+
+/// `[tray]`（施工 TR-2，托盘 `miyu-app` 的蓝图 `app.md` 第 4 条「软件包挂的入口」）：只有 `name`，必写，分语言。点了打开的总是
+/// 这个包自己的后台页，所以不收目标：写了 `name` 以外的格（命令、网址、别的包、别的页）、没写 `[page]`（`page` 是假的）的
+/// `bad_tray`，免得托盘成了能跑任意东西的启动器（2026-11-03 项目主人定）。
+pub(super) fn tray(
+    reader: &Reader<'_>,
+    table: &dyn TableLike,
+    at: &Item,
+    page: bool,
+) -> Result<Phrases, Problem> {
+    if let Some((key, item)) = table
+        .iter()
+        .find(|(key, _)| !super::fields::TRAY.contains(key))
+    {
+        return Err(reader.problem(
+            Some(item),
+            Code::BadTray,
+            &format!("tray.{key}"),
+            format!("tray.{key}: a tray entry only opens this package's own [page], so it takes just name"),
+        ));
+    }
+    if !page {
+        return Err(reader.problem(
+            Some(at),
+            Code::BadTray,
+            "tray",
+            "[tray] opens this package's own [page]: write [page] too".to_string(),
+        ));
+    }
+    let name = reader.required(table, at, "tray", "name")?;
+    reader.phrases(name, "tray.name")
 }
 
 /// `[mascot]`（施工 F-7）：只有 `model`，必写，包目录里的相对路径（写法同 `[page] dir`：不许 `..`、开头的 `/`）。

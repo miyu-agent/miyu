@@ -46,6 +46,14 @@ pub(super) fn listed(
             }
             if status::page(found, manifest) {
                 item["page"] = json!(true);
+                // 托盘入口（施工 TR-2）：跟着后台页，入口不在的不带；名字照连接的语言挑。
+                if let Some(name) = manifest
+                    .tray
+                    .as_ref()
+                    .and_then(|tray| crate::personas::pick(tray, language))
+                {
+                    item["tray"] = json!({ "name": name });
+                }
             }
             item["state"] = json!(places.state_dir(&found.id).to_string_lossy());
             // 装的时刻（施工 PG-1：预设页照装的先后排）：本地库只记装进家目录的，出厂的没有。

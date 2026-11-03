@@ -49,6 +49,9 @@ tools = ["hello_greet"]
 [page]
 dir = "page"                                        # package page: the folder needs index.html
 
+[tray]
+name = { en = "Open Hello", zh = "打开打招呼" }      # a line in the tray menu; opens the page above
+
 [export]
 methods = ["greet"]                                 # methods other packages can call with package.call
 
@@ -189,6 +192,21 @@ Feature ids are global; prefixing them with the package id helps.
 ## `[page]`
 
 `dir`: the package page folder, which needs `index.html`; opened from the web UI's Packages page. The page calls methods you registered through a channel the web app provides (`package.methods`, `method.call`; see [Writing an extension](extensions.en.md)).
+
+## `[tray]`
+
+Adds a line to the tray menu (Miyu's tray icon; the menu bar icon on macOS) that opens your package page (`[page]`, the section above) in the browser. One line per package; it only opens your own package page, never a command, a URL or another package.
+
+| Key | Notes |
+|---|---|
+| `name` | The line's text, written like `[package] name`; picked by the person's language |
+
+```toml
+[tray]
+name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
+```
+
+Only extensions and built-in packages that have `[page]` can write it; without `[page]`, or with any key besides `name`, it's `bad_tray`. The tray lists it while the package is installed and on and its page's `index.html` is there.
 
 ## `[[mcp]]`
 

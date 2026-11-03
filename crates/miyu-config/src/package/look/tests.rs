@@ -100,3 +100,65 @@ fn a_logo_is_a_relative_png_or_webp_path() {
         );
     }
 }
+
+/// 托盘入口（施工 TR-2，`package-pages.md`「清单多的几格」第 4 条）：`[tray] name` 读成分语言的名字；内置包也能写。
+#[test]
+fn a_tray_entry_is_read() {
+    let manifest = read(&process(
+        "",
+        "\n[page]\ndir = \"page\"\n\n[tray]\nname = { en = \"Open bridge\", zh = \"打开桥\" }\n",
+    ))
+    .unwrap();
+    let tray = manifest.tray.expect("读了托盘入口");
+    assert_eq!(
+        (
+            tray.get("zh").map(String::as_str),
+            tray.get("en").map(String::as_str)
+        ),
+        (Some("打开桥"), Some("Open bridge"))
+    );
+    assert_eq!(read(&process("", "")).unwrap().tray, None);
+    let builtin = "[package]\nprotocol = [1, 1]\nname = { en = \"Memory\" }\n\n[page]\ndir = \"page\"\n\n[tray]\nname = { en = \"Memory\" }\n\n[builtin]\n";
+    assert!(read(builtin).unwrap().tray.is_some());
+}
+
+/// 托盘入口只能打开自己的后台页（施工 TR-2）：写了 `name` 以外的格（指到命令、网址、别的包、页面）、没写 `[page]` 的报
+/// `bad_tray`，报在那一行；少了 `name`、名字写错照各自的代码；别的种类写了 `wrong_kind`。
+#[test]
+fn a_tray_entry_only_opens_its_own_page() {
+    let page = "\n[page]\ndir = \"page\"\n";
+    for (extra, detail) in [
+        ("page = \"other\"", "tray.page"),
+        ("url = \"https://example.com\"", "tray.url"),
+        ("command = \"rm\"", "tray.command"),
+        ("package = \"other\"", "tray.package"),
+    ] {
+        let text = process(
+            "",
+            &format!("{page}\n[tray]\nname = {{ en = \"Open\" }}\n{extra}\n"),
+        );
+        let problem = read(&text).unwrap_err();
+        assert_eq!(
+            (problem.code, problem.detail.as_str(), problem.line),
+            (Code::BadTray, detail, Some(17)),
+            "{extra}"
+        );
+    }
+    let without_page = read(&process("", "\n[tray]\nname = { en = \"Open\" }\n")).unwrap_err();
+    assert_eq!(
+        (without_page.code, without_page.detail.as_str()),
+        (Code::BadTray, "tray"),
+        "{without_page:?}"
+    );
+    let unnamed = read(&process("", &format!("{page}\n[tray]\n"))).unwrap_err();
+    assert_eq!(unnamed.code, Code::MissingKey);
+    let empty = read(&process(
+        "",
+        &format!("{page}\n[tray]\nname = {{ en = \"\" }}\n"),
+    ))
+    .unwrap_err();
+    assert_eq!(empty.code, Code::EmptyPhrase);
+    let mascot = "[package]\nname = { en = \"Cat\" }\n\n[mascot]\nmodel = \"cat.glb\"\n\n[tray]\nname = { en = \"Cat\" }\n";
+    let problem = read(mascot).unwrap_err();
+    assert_eq!(problem.code, Code::WrongKind, "{problem:?}");
+}

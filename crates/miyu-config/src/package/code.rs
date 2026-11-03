@@ -105,6 +105,8 @@ pub enum Code {
     BadSearch,
     /// `[[side]]` 写错了（施工 Q-3）：编号、档位、名字、说明，同一个包里重了。
     BadSide,
+    /// `[tray]` 写错了（施工 TR-2）：没写 `[page]`，写了 `name` 以外的格（托盘入口只能打开这个包自己的后台页）。
+    BadTray,
     /// `[package] author` 不是一行 1 到 100 个字（施工 F-12）。
     BadAuthor,
     /// `[package] upstream` 不是 `https://` 开头的网址（施工 F-12）。
@@ -184,6 +186,7 @@ impl Code {
             Code::BadSlash => "bad_slash",
             Code::BadSearch => "bad_search",
             Code::BadSide => "bad_side",
+            Code::BadTray => "bad_tray",
             Code::BadAuthor => "bad_author",
             Code::BadUpstream => "bad_upstream",
             Code::BadWidget => "bad_widget",
@@ -199,7 +202,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 60] = [
+    pub const ALL: [Code; 61] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -251,6 +254,7 @@ impl Code {
         Code::BadSlash,
         Code::BadSearch,
         Code::BadSide,
+        Code::BadTray,
         Code::BadAuthor,
         Code::BadUpstream,
         Code::BadWidget,

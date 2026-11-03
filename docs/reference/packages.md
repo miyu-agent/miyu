@@ -47,6 +47,7 @@
 | `features` | 里面的功能（预设照它开关） |
 | `status`、`enabled` | 有进程的：在跑没有、开着没有 |
 | `page` | 有后台页的，头照它列「软件后台」 |
+| `tray` | 有后台页、清单写了 `[tray]` 的：`{"name"}`，托盘菜单里那一行的字，照连接的语言；点了打开这个包的后台页。托盘只列开着的 |
 | `theme` | 外观包带了什么：`{"tui"?: {"file"}, "web"?: {"dir"}}`，`tui` 是终端主题文件，`web` 是网页主题目录（一个普通的网页包），至少有一样；路径都相对包目录，文件用 `package.file` 读 |
 | `mcp` | 带的 MCP 服务：`name`、`command`（网址的服务是 `url`）、`venues`、`state`、`failures`……；`on`、`skipped` 同 `mcp.list` 的一项。不替主人干活的扩展（场所里替外人的平台桥）拿到的每个服务只有 `name`、`state`（停下的带 `reason`），也没有 `state`、`pages_dir`、`command`、`commands`、`process`、`worker`、`check`、`problem`、`line` |
 | `widgets` | 声明的界面块：`id`、`place`、`title`、`scope`、`command` |

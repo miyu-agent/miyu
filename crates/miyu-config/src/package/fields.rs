@@ -82,6 +82,9 @@ pub(super) const WORKER: &[&str] = &["program", "args"];
 /// `[page]`。
 pub(super) const PAGE: &[&str] = &["dir"];
 
+/// `[tray]`（施工 TR-2）：只有名字，打开的总是这个包自己的后台页。
+pub(super) const TRAY: &[&str] = &["name"];
+
 /// `[mascot]`。
 pub(super) const MASCOT: &[&str] = &["model"];
 
@@ -141,7 +144,7 @@ pub(super) const EXPORT: &[&str] = &["methods"];
 pub(super) const CONTENT: &[&str] = &["dir"];
 
 /// 清单认得的表，照这个先后；哪种包能写哪几张见 `kinds::tables`。
-pub(super) const TABLES: [Table; 22] = [
+pub(super) const TABLES: [Table; 23] = [
     table("package", &[PACKAGE]),
     Table {
         name: "builtin",
@@ -178,6 +181,7 @@ pub(super) const TABLES: [Table; 22] = [
         for_authors: false,
     },
     table("page", &[PAGE]),
+    table("tray", &[TRAY]),
     table("mascot", &[MASCOT]),
     table("theme", &[THEME, THEME_TUI, THEME_WEB]),
     table("mcp", &[&MCP]),

@@ -1,4 +1,4 @@
-//! 软件包列表的状态、开关、图标、后台页，程序不在就当没装（施工 F-6 上，`docs/blueprint/package-pages.md`）：真核心走一遍。
+//! 软件包列表的状态、开关、图标、后台页、托盘入口（施工 TR-2），程序不在就当没装（施工 F-6 上，`docs/blueprint/package-pages.md`）：真核心走一遍。
 //! 程序一定不在的扩展、界面（测试自己装的）是「程序不在」的样子；自己装的扩展用测试用的扩展，是「程序在」的样子。两个界面的
 //! 出厂清单施工 S-5 搬走了，界面这一种照自己装的 `screen` 测。
 
@@ -58,15 +58,19 @@ async fn the_list_says_status_switch_icon_and_page() {
         &relay(
             &program.name(),
             "icon = \"radio\"",
-            "\n[page]\ndir = \"page\"\n",
+            "\n[page]\ndir = \"page\"\n\n[tray]\nname = { en = \"Open relay\", zh = \"打开中转\" }\n",
         ),
     );
     home.write("opt/relay/page/index.html", "<p>relay</p>");
     // 写了后台页、目录里没有 index.html 的不带 `page`。
     home.write(
         "opt/bare/package.toml",
-        &relay(&program.name(), "", "\n[page]\ndir = \"page\"\n")
-            .replace("name = \"relay\"", "name = \"bare\""),
+        &relay(
+            &program.name(),
+            "",
+            "\n[page]\ndir = \"page\"\n\n[tray]\nname = { en = \"Open bare\" }\n",
+        )
+        .replace("name = \"relay\"", "name = \"bare\""),
     );
     ghost(&home);
     screen(&home);
@@ -85,8 +89,15 @@ async fn the_list_says_status_switch_icon_and_page() {
         (json!("off"), json!(false), json!("radio"), json!(true)),
         "{relay}"
     );
+    // 托盘入口照连接的语言挑名字（施工 TR-2）。
+    assert_eq!(relay["tray"], json!({"name": "打开中转"}), "{relay}");
     let bare = entry(&mut client, "bare").await;
-    assert_eq!((bare.get("icon"), bare.get("page")), (None, None), "{bare}");
+    // 后台页的入口不在：托盘入口跟着不带。
+    assert_eq!(
+        (bare.get("icon"), bare.get("page"), bare.get("tray")),
+        (None, None, None),
+        "{bare}"
+    );
     // 施工 BS-1 上中起没有必需的包：原来基础系统的 shell 也是个能关的出厂内置包。
     let shell = entry(&mut client, "miyu-base-shell").await;
     assert_eq!(

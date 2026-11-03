@@ -134,8 +134,8 @@ program = "miyu-embed"
 | 种类 | 能写的表 |
 |---|---|
 | `ui` | `[package]`、`[command]`、`[ui]`、`[check]`、`[settings]`、`[depends]`、`[recommends]` |
-| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）（施工 X-2） |
-| `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]` |
+| `process` | `[package]`、`[command]`、`[process]`、`[check]`、`[settings]`、`[features]`、`[connection]`、`[depends]`、`[recommends]`、`[page]`、`[[mcp]]`、`[[slash]]`（施工 X-14 下）、`[[widget]]`（施工 X-15 上，`widgets.md`）、`[[side]]`（施工 Q-3，`models.md`「旁路请求」）、`[tray]`（施工 TR-2）（施工 X-2） |
+| `builtin` | `[package]`、`[features]`、`[depends]`、`[recommends]`、`[page]`、`[tray]`（施工 TR-2） |
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
 | `theme` | `[package]`、`[theme]`（施工 F-16；TH-1 起分 `[theme.tui]`、`[theme.web]`，见「外观包」）、`[depends]`、`[recommends]` |
@@ -144,6 +144,8 @@ program = "miyu-embed"
 施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
 
 施工 F-6 上加的两格（`package-pages.md`「清单多的几格」）：`[package] icon` 是 Lucide 的图标名，哪种包都能写；`[page] dir` 是软件后台页在包目录里的子目录，入口是里面的 `index.html`，只有扩展、内置包能写。
+
+施工 TR-2 加的一张（`package-pages.md`「清单多的几格」第 4 条）：`[tray] name` 在托盘菜单（`miyu-app`）里挂一行，点了用浏览器打开这个包自己的后台页；要先有 `[page]`。
 
 **功能**（施工 F-1）：写了 `[features]` 的照写的先后；写了空的 `[features]` 的一个都没有；没写的内置包、扩展包整个算一个，编号、名字、说明照包的，下面的工具不列（都归它，F-3 照这一条挂）。界面、小程序没有功能。两个包的功能编号撞了：照读的先后（出厂的先于装上的，同一层照编号）先到先得，后到的那一份报 `feature_taken`、整份不收，报在那个功能那一行（照包算的那一个没有行号）。依赖的小程序装没装，这一步只读不查（F-2）。
 
@@ -200,6 +202,7 @@ program = "miyu-embed"
 | `check` | 有 `[check]` 的 | `{"args"}` |
 | `icon` | 写了的（施工 F-6 上） | 原样 |
 | `page` | 有后台页的（施工 F-6 上） | `true` |
+| `tray` | 有后台页、清单写了 `[tray]` 的（施工 TR-2） | `{"name"}`：托盘菜单里那一行的字，照语言挑 |
 | `status` | 读成了的（施工 F-6 上） | `running`、`starting`、`stopped`、`off`、`ready`、`program_missing` 之一，算法见 `package-pages.md`；依赖的包缺了的（卸掉的出厂的不算）是 `depends_missing`（施工 F-11） |
 | `enabled` | 有开关的（施工 F-6 上） | 开关现在开没开：扩展照它的开关，出厂的内置包照有没有卸掉（施工 BS-1 上中起没有必需的包，都有开关） |
 | `contents` | 给别的包带了内容的（施工 G-9） | 给哪几个包带了内容：清单里 `[content.<包>]` 的编号，照编号排。im 的商城照它挑 im 的插件 |
@@ -370,6 +373,7 @@ dir = "memes"             # 包目录里的相对目录，写法同 [page] dir
 | `needs_newer_miyu` | 要比正在跑的这一版新的 Miyu（施工 X-31）：`detail` 是清单写的版本。装包、读装了的包时（`miyu_config::package::read_for`）第一件事比它，比不过的整份不再往下读，不报新版本才有的格是不认识的键；正在跑的是 `0.0.0`（开发时编的，没发过版）的不比；打包（`miyu pkg pack`）、软件源收录照 `read` 读，不比，只查写法 |
 | `bad_search` | `[[search]]` 写错了：编号、名字，重了，没声明 `search` 能力（施工 N-5） |
 | `bad_side` | `[[side]]` 写错了（施工 Q-3）：编号不合写法、少了，档位不是 `lite`、`normal`、`flagship`，少了名字、说明，同一个包里重了；`detail` 是哪一格（`side.<编号>.<格>`） |
+| `bad_tray` | `[tray]` 写错了（施工 TR-2）：没写 `[page]`（`detail` 是 `tray`），写了 `name` 以外的格（`detail` 是 `tray.<格>`）；`name` 本身照「语言到一句话」那几个代码报 |
 | `bad_author` | `[package] author` 不是一行 1 到 100 个字（施工 F-12） |
 | `bad_upstream` | `[package] upstream` 不是 `https://` 开头、不带空白、至多 300 个字的网址（施工 F-12） |
 | `depends_missing` | 装着的包依赖的包缺了（施工 F-11，`miyu check` 是错误）：`detail` 是缺的那几个，逗号分开 |

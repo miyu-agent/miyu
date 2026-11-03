@@ -102,6 +102,8 @@ pub struct Manifest {
     pub logo: Option<String>,
     /// 软件后台页（施工 F-6 上）：包目录里的子目录，入口是里面的 `index.html`；没写的没有。只有扩展、内置包能写。
     pub page: Option<String>,
+    /// 托盘入口（施工 TR-2，`[tray] name`）：托盘菜单里打开这个包的后台页的那一行，分语言；只有写了 `[page]` 的才有，没写的没有。
+    pub tray: Option<Phrases>,
     /// 吉祥物（`kind = "mascot"`，施工 F-7）：模型文件在包目录里的相对路径。
     pub mascot: Option<Mascot>,
     /// 外观（`[theme]`，施工 F-16，TH-1 起分终端、网页两样）：只有外观包（`kind = "theme"`）能写。
@@ -392,6 +394,10 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         Some(table) => Some(look::page(&reader, table, &root["page"])?),
         None => None,
     };
+    let tray = match root.get("tray").and_then(Item::as_table_like) {
+        Some(table) => Some(look::tray(&reader, table, &root["tray"], page.is_some())?),
+        None => None,
+    };
     let mascot = match root.get("mascot").and_then(Item::as_table_like) {
         Some(table) => Some(look::mascot(&reader, table, &root["mascot"])?),
         None => None,
@@ -455,6 +461,7 @@ pub fn read(text: &str) -> Result<Manifest, Problem> {
         icon: head.icon,
         logo: head.logo,
         page,
+        tray,
         mascot,
         theme,
         mcp,

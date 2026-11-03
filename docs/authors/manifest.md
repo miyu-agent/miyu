@@ -49,6 +49,9 @@ tools = ["hello_greet"]
 [page]
 dir = "page"                                        # 后台页：目录里要有 index.html
 
+[tray]
+name = { en = "Open Hello", zh = "打开打招呼" }      # 托盘菜单里一行，点了打开上面的后台页
+
 [export]
 methods = ["greet"]                                 # 别的包能经 package.call 调的方法
 
@@ -189,6 +192,21 @@ tools = ["hello_greet"]
 ## `[page]`
 
 `dir`：后台页的目录，里面要有 `index.html`，网页的「软件包」页里打开。页面经网页软件给的通道调你登记的方法（`package.methods`、`method.call`，见 [写扩展](extensions.md)）。
+
+## `[tray]`
+
+在托盘菜单（Miyu 常驻的托盘图标，macOS 上是菜单栏图标）里挂一行，点了用浏览器打开你的后台页（上一节 `[page]`）。一个包一行；只能打开你自己的后台页，不能写命令、网址、别的包。
+
+| 格 | 说明 |
+|---|---|
+| `name` | 那一行的字，写法同 `[package] name`，照人的语言挑 |
+
+```toml
+[tray]
+name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
+```
+
+只有写了 `[page]` 的扩展、内置包能写；没写 `[page]`、写了 `name` 以外的格，报 `bad_tray`。包要装着、开着，后台页的 `index.html` 在，托盘才列它。
 
 ## `[[mcp]]`
 
