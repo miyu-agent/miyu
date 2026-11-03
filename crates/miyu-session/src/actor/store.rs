@@ -118,6 +118,11 @@ impl Actor {
         // 阻塞线程带着会话的 span：那边记的 `session index not updated` 也有会话编号（施工 3-8 七补）。
         let span = tracing::Span::current();
         let sync = must_sync(&events);
+        // 这一批结束了几轮：落了盘再交给抽取，从落盘那一刻起算等了多久（施工 FL-2，`Extractor::note_ended`）。
+        let ended = events
+            .iter()
+            .filter(|event| matches!(event.body, Body::TurnEnded(_)))
+            .count();
         // 同步挪到后台的（施工 V-19）：只写、不同步，写完拿最新的句柄；不挪的照旧连同同步写。
         let background = store.background();
         let written = tokio::task::spawn_blocking(move || {
@@ -138,9 +143,13 @@ impl Actor {
         match written {
             Ok((store, Ok(handle), seen, mark)) => {
                 self.store = Some(store);
-                // 抽取记一处读起的位置（施工 E-5 补）：这一批里有回合结束的。
-                if let (Some((memory, _)), Some(mark)) = (self.tools.memory(), mark) {
-                    memory.landed(mark);
+                let at = self.clock.now();
+                if let Some((memory, _)) = self.tools.memory() {
+                    memory.ended(ended, at);
+                    // 抽取记一处读起的位置（施工 E-5 补）：这一批里有回合结束的。
+                    if let Some(mark) = mark {
+                        memory.landed(mark);
+                    }
                 }
                 self.written(upto, sync, handle);
                 match seen {
@@ -150,10 +159,7 @@ impl Actor {
                     }
                     None => {}
                 }
-                Ok(Some(Input::Stored {
-                    at: self.clock.now(),
-                    upto,
-                }))
+                Ok(Some(Input::Stored { at, upto }))
             }
             Ok((_, Err(error), _, _)) => {
                 tracing::warn!(target: TARGET, kind = ?error.kind(), "write failed, stopped");

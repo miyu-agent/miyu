@@ -3,6 +3,7 @@
 use super::*;
 use crate::memory::extract::ended_only;
 use crate::memory::extract::tests::seq;
+use miyu_kernel::event::Body;
 use miyu_kernel::id::TurnId;
 use miyu_kernel::time::Timestamp;
 
@@ -77,7 +78,7 @@ fn a_busy_session_is_overdue_after_enough_turns_or_enough_waiting() {
         !extractor.overdue(now("2026-10-27T09:00:00.000Z"), 2, hour),
         "一轮都没结束"
     );
-    extractor.note_ended(&[ended(4, "2026-10-27T08:00:00.000Z")]);
+    extractor.note_ended(1, now("2026-10-27T08:00:00.000Z"));
     assert!(
         !extractor.overdue(now("2026-10-27T08:59:59.999Z"), 3, hour),
         "一轮、差一毫秒满一小时"
@@ -86,10 +87,7 @@ fn a_busy_session_is_overdue_after_enough_turns_or_enough_waiting() {
         extractor.overdue(now("2026-10-27T09:00:00.000Z"), 3, hour),
         "最早那一轮正好等满一小时"
     );
-    extractor.note_ended(&[
-        ended(8, "2026-10-27T08:10:00.000Z"),
-        ended(12, "2026-10-27T08:20:00.000Z"),
-    ]);
+    extractor.note_ended(2, now("2026-10-27T08:20:00.000Z"));
     assert!(
         extractor.overdue(now("2026-10-27T08:20:00.000Z"), 3, hour),
         "正好三轮"
@@ -110,7 +108,7 @@ fn a_busy_session_is_overdue_after_enough_turns_or_enough_waiting() {
         !extractor.overdue(now("2026-10-27T12:00:00.000Z"), 1, hour),
         "清零了"
     );
-    extractor.note_ended(&[ended(16, "2026-10-27T11:30:00.000Z")]);
+    extractor.note_ended(1, now("2026-10-27T11:30:00.000Z"));
     assert!(
         !extractor.overdue(now("2026-10-27T12:00:00.000Z"), 2, hour),
         "从这一轮算起才半小时"
@@ -118,11 +116,35 @@ fn a_busy_session_is_overdue_after_enough_turns_or_enough_waiting() {
     assert!(extractor.overdue(now("2026-10-27T12:30:00.000Z"), 2, hour));
 }
 
+/// 最早那一轮从它那一批落盘的时刻起算（施工 FL-2）：没有结束的轮的那一批落了盘不算，不提前开始等。
+#[test]
+fn the_wait_starts_when_a_batch_with_an_ended_turn_lands() {
+    let hour = std::time::Duration::from_secs(3600);
+    let at = |text: &str| Timestamp::parse(text).expect("合写法");
+    let extractor = Extractor::default();
+    extractor.note_ended(0, at("2026-10-27T08:00:00.000Z"));
+    extractor.note_ended(1, at("2026-10-27T09:30:00.000Z"));
+    assert!(
+        !extractor.overdue(at("2026-10-27T10:00:00.000Z"), 3, hour),
+        "从九点半落盘那一批起算，才半小时"
+    );
+    assert!(extractor.overdue(at("2026-10-27T10:30:00.000Z"), 3, hour));
+    // 后面又落了一轮：还是从最早那一轮起算。
+    extractor.note_ended(1, at("2026-10-27T10:20:00.000Z"));
+    assert!(
+        extractor.overdue(at("2026-10-27T10:30:00.000Z"), 3, hour),
+        "照最早那一轮，不照最新那一轮"
+    );
+}
+
 /// 不等闲的那一次（施工 E-5）：新一轮开始撤闹钟不撤它，读回来照样开得成，不会让一直不闲的会话永远抽不成；在路上的只有一个。
 #[test]
 fn a_forced_extraction_survives_a_new_turn() {
     let extractor = Extractor::default();
-    extractor.note_ended(&[ended(4, "2026-10-27T08:00:00.000Z")]);
+    extractor.note_ended(
+        1,
+        Timestamp::parse("2026-10-27T08:00:00.000Z").expect("合写法"),
+    );
     assert!(extractor.force());
     assert!(extractor.pending(), "等着的也不退下");
     assert!(!extractor.force(), "已经有一次在等着");
@@ -215,12 +237,7 @@ fn failing_doubles_the_turns_a_busy_session_waits_for() {
     let hour = std::time::Duration::from_secs(3600);
     let at = |text: &str| Timestamp::parse(text).expect("合写法");
     let extractor = Extractor::default();
-    let turns = |n: u64| {
-        let events: Vec<_> = (0..n)
-            .map(|k| ended(10 + k, "2026-10-27T08:00:00.000Z"))
-            .collect();
-        extractor.note_ended(&events);
-    };
+    let turns = |n: usize| extractor.note_ended(n, at("2026-10-27T08:00:00.000Z"));
     let fail = || {
         assert!(extractor.force() && extractor.start_forced());
         extractor.finish(seq(1), false);

@@ -92,13 +92,17 @@ impl Calls {
         (&self.keeper, &self.session, &self.extractor)
     }
 
-    /// 会话记下了 `events`（施工 E-1 修三）：人话带着她在场所里叫什么的，记住最新的，她当场记的时候认她（`her.rs`）；结束了的
-    /// 回合数一数，一直不闲的会话照它不等闲就抽（施工 E-5）。
+    /// 会话记下了 `events`（施工 E-1 修三）：人话带着她在场所里叫什么的，记住最新的，她当场记的时候认她（`her.rs`）。
     pub(crate) fn heard(&self, events: &[miyu_kernel::event::Event]) {
         self.keeper.hear(events);
-        self.extractor.note_ended(events);
         // 抽取只读上次以后那一截要的（施工 E-5 补）：接着折进来。
         self.extractor.note_prefix(events, self.keeper.extracts());
+    }
+
+    /// 会话那一批落了盘，里面结束了 `turns` 轮，`at` 是写的那一边回来的那一刻（施工 E-5、FL-2）：一直不闲的会话照它不等闲
+    /// 就抽，最早那一轮从落盘起算等了多久。
+    pub(crate) fn ended(&self, turns: usize, at: miyu_kernel::time::Timestamp) {
+        self.extractor.note_ended(turns, at);
     }
 
     /// 会话那一批落完了，日志照到 `mark`（施工 E-5 补）：抽取记一处读起的位置。

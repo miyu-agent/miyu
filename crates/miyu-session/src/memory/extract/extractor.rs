@@ -2,7 +2,7 @@
 
 use std::sync::{Mutex, PoisonError};
 
-use miyu_kernel::event::{Body, Event};
+use miyu_kernel::event::Event;
 use miyu_kernel::id::Seq;
 use miyu_kernel::time::Timestamp;
 
@@ -100,15 +100,19 @@ impl Extractor {
         self.marks().seed(landed);
     }
 
-    /// 落了盘的这一批 `events`（施工 E-5）：数结束了的回合，记下最早那一轮结束的时刻。
-    pub(crate) fn note_ended(&self, events: &[Event]) {
-        let mut state = self.state();
-        for event in events {
-            if matches!(event.body, Body::TurnEnded(_)) {
-                state.ended = state.ended.saturating_add(1);
-                state.first_ended.get_or_insert(event.at);
-            }
+    /// 落了盘的这一批里结束了 `turns` 轮（施工 E-5）：数上，最早那一轮从 `at`（这一批落了盘、写的那一边回来的那一刻）起算
+    /// 等了多久。
+    ///
+    /// 不照 `turn.ended` 上的时刻（施工 FL-2）：那是写之前打的，写得慢的，一轮自己收尾的那一批写完一看，写的工夫已经算成等了，
+    /// 当场判等够、不等闲就抽。只有这一条来路：重启以后从零数，不从日志里恢复。
+    pub(crate) fn note_ended(&self, turns: usize, at: Timestamp) {
+        if turns == 0 {
+            return;
         }
+        let mut state = self.state();
+        let turns = u32::try_from(turns).unwrap_or(u32::MAX);
+        state.ended = state.ended.saturating_add(turns);
+        state.first_ended.get_or_insert(at);
     }
 
     /// 该不等闲就抽了（施工 E-5，`memory.md` 第六条第 1 款）：没有一次在路上、没有一次不等闲的在等着，上次开始抽以后结束了
