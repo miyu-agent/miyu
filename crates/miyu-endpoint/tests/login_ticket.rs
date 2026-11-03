@@ -89,3 +89,25 @@ async fn a_bad_ticket_or_another_credential_with_it_is_refused() {
     let shaken = hello_with(&mut browser, json!({"ticket": value})).await;
     assert!(shaken["result"]["login"]["token"].is_string(), "{shaken}");
 }
+
+/// 要票时可以说一句是给谁的（施工 LT-2）：`via` 是 `page`（网页服务替本机页面要的）、`open`（`miyu web` 开网页要的），记进运行
+/// 日志，不进回应、不改票；不写的照旧。别的值、别的格回 `bad_params`。
+#[tokio::test]
+async fn a_ticket_may_say_what_it_is_for() {
+    let home = Home::new();
+    let core = home.core(&Script::new([]));
+    let mut owner = local(&core).await;
+    for params in [json!({}), json!({"via": "page"}), json!({"via": "open"})] {
+        let reply = owner.call("t", "login.ticket", params.clone()).await;
+        assert!(reply["result"]["ticket"].is_string(), "{params}：{reply}");
+        assert!(reply["result"].get("via").is_none(), "{reply}");
+    }
+    for params in [
+        json!({"via": "elsewhere"}),
+        json!({"via": 1}),
+        json!({"other": true}),
+    ] {
+        let reply = owner.call("t", "login.ticket", params.clone()).await;
+        assert_eq!(why(&reply), "bad_params", "{params}：{reply}");
+    }
+}

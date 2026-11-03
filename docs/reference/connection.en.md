@@ -233,7 +233,7 @@ Hand-off tickets: a signed-in person jumps from one page to another program's pa
 
 | Method | Params | Result |
 |---|---|---|
-| `login.ticket` | none | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds |
+| `login.ticket` | optional `via`: `"page"` (the web service asking for a page opened on this machine) or `"open"` (`miyu web`) | `{"ticket", "expires"}`: a 64-hex-digit ticket, valid for 60 seconds. `via` only goes into the core's run log, with how the connection was recognised; it does not change the ticket. Other values or fields get `bad_params` |
 | `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`: a new device token (30 days) |
 
 A ticket works once, whether given in a handshake or redeemed. At most 16 exist at a time; the oldest is dropped. Tickets live only in the core's memory and die with a restart.

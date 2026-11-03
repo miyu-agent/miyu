@@ -177,7 +177,7 @@
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
-| `login.ticket` | 没有 | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废 |
+| `login.ticket` | 可写 `via`：`"page"`（网页服务替本机打开的页面要的）、`"open"`（`miyu web` 要的） | `{"ticket", "expires"}`：64 位十六进制的票，60 秒后作废。`via` 只进核心的运行日志（连同这个连接怎么认出来的），不改票；别的值、别的格回 `bad_params` |
 | `login.redeem` | `ticket` | `{"login": {"expires", "token"}}`：换出的设备令牌（30 天） |
 
 一张票只用一次（握手交了、`login.redeem` 换了都算）；同时最多 16 张，多了作废最早的。票只在核心的内存里，核心重启全部作废。

@@ -226,7 +226,7 @@
 | `blob.put` | 传一个附件，存成 blob（施工 3-9 三补） |
 | `account.setup_code` | 要一个一次性码：网页第一次设访问密码；只给出示本机令牌的连接（施工 W-8） |
 | `core.stop` | 叫核心停下：回应 `{}` 写出去以后照收到停的信号那样停（`core.md`「停下」第 10 条）；只给出示本机令牌的连接，别的回 `local_only`，远程的回 `local_machine_only`（施工 DT-4 下：桌面端托盘里的「退出」连核心一起关） |
-| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌；扩展要不了票。详见 `docs/reference/connection.md` |
+| `login.ticket`、`login.redeem` | 交接票（施工 W-8 补，接入通讯平台要的）：人要一张 60 秒、一次性的票（本机令牌、设备令牌、密码、交接票连上的都能要）；接的一方握手交 `ticket`（施工 LT-1），或者 `login.redeem` 换一个设备令牌；扩展要不了票。要票时可以写 `via`（`page`、`open`，施工 LT-2），只进运行日志。详见 `docs/reference/connection.md` |
 | `account.setup` | 设、改访问密码（施工 W-8）：`{"password"}`，本机令牌连上的回 `{}`，别的换一个设备令牌；以前的设备全部作废、连着的断开。设备令牌连上的（施工 SU-1 补）设过的要带对现在的 `old`，照来源限流同密码登录 |
 | `account.logout` | 作废设备令牌：这一个，或者 `all` 全部（施工 W-8） |
 | `account.set_avatar`、`account.avatar` | 你的头像（施工 AV-1，`login/avatar.rs`）：放在数据根 `avatar.<扩展名>`，查法、写法、上限同人格头像（`personas/picture.rs` 的 `check`、`replace`、`encoded`）；握手回应带版本 |

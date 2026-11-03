@@ -3,6 +3,8 @@
 //! 运行日志。
 //!
 //! - `login.ticket`：只给人（本机令牌、设备令牌、密码连上的），一次性码连上的、核心拉起的扩展回 `local_only`。回应 `{ticket, expires}`。
+//!   参数可以写 `via`（施工 LT-2）：`page` 是网页服务替本机页面要的（本机打开网页不要凭据，网页 W-1089），`open` 是 `miyu web`
+//!   开网页要的；只进运行日志（连同这个连接怎么认出来的），不进回应、不改票。别的值、别的格 `bad_params`。
 //! - `login.redeem {ticket}`：谁拿着票谁能换（票是 32 个随机字节，猜不出来）；没有、过期、用过的回 `bad_ticket`。
 //! - 握手的凭据 `ticket`（施工 LT-1，接入通讯平台设计 07 第四节 4.6 第 4 样）：待遇同密码，对上了当场作废，回应带新的设备令牌
 //!   （[`handshake`]）；不认的同样是 `bad_ticket`。
@@ -59,6 +61,32 @@ impl Tickets {
     }
 }
 
+/// `login.ticket` 的参数（施工 LT-2）：都可以不写。
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IssueParams {
+    via: Option<Purpose>,
+}
+
+/// 票是给谁要的：只进运行日志。
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+enum Purpose {
+    /// 网页服务替本机打开的页面要的。
+    Page,
+    /// `miyu web` 开网页要的。
+    Open,
+}
+
+impl Purpose {
+    fn as_str(self) -> &'static str {
+        match self {
+            Purpose::Page => "page",
+            Purpose::Open => "open",
+        }
+    }
+}
+
 /// `login.redeem` 的参数。
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -73,7 +101,11 @@ pub(crate) async fn call(
     request: &Request,
 ) -> Result<Value, Refusal> {
     match request.method.as_str() {
-        "login.ticket" => issue(core, via),
+        "login.ticket" => {
+            let params: IssueParams =
+                serde_json::from_value(request.params.clone()).map_err(|_| Refusal::BAD_PARAMS)?;
+            issue(core, via, params.via)
+        }
         "login.redeem" => {
             let params: RedeemParams =
                 serde_json::from_value(request.params.clone()).map_err(|_| Refusal::BAD_PARAMS)?;
@@ -83,8 +115,8 @@ pub(crate) async fn call(
     }
 }
 
-/// `login.ticket`：交回 `{ticket, expires}`。
-fn issue(core: &Core, via: Option<&Via>) -> Result<Value, Refusal> {
+/// `login.ticket`：交回 `{ticket, expires}`。运行日志记一行：给谁要的（`purpose`）、这个连接怎么认出来的（`by`），不记票。
+fn issue(core: &Core, via: Option<&Via>, purpose: Option<Purpose>) -> Result<Value, Refusal> {
     if !matches!(via, Some(Via::Token | Via::Login(_) | Via::Password(_))) {
         return Err(Refusal::LOCAL_ONLY);
     }
@@ -92,7 +124,13 @@ fn issue(core: &Core, via: Option<&Via>) -> Result<Value, Refusal> {
     let until = Instant::now() + TICKET_TTL;
     core.identity.tickets.put(ticket.clone(), until);
     let expires = crate::sessions::now().unix_millis() + millis(TICKET_TTL);
-    tracing::info!(target: TARGET, "ticket issued");
+    let by = match via {
+        Some(Via::Token) => "token",
+        Some(Via::Login(_)) => "login",
+        _ => "password",
+    };
+    let purpose = purpose.map_or("unknown", Purpose::as_str);
+    tracing::info!(target: TARGET, purpose, by, "ticket issued");
     Ok(json!({"ticket": ticket, "expires": stamp(expires)}))
 }
 
