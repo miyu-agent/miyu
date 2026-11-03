@@ -209,6 +209,7 @@ mod personas;
 mod platform_tools;
 mod ports;
 mod prefix_ask;
+mod prefs;
 mod preset_background;
 mod preset_env;
 mod preset_face;

@@ -1381,6 +1381,12 @@ flowchart LR
 | UP-1 | 花费分四种 | 每一次请求的金额照它自己记下的价格分成没命中的输入、读缓存、写缓存、输出，写汇总那一行时算好跟着存（`usage.db` 版本 3，删掉的会话的 `usage.purged` 连同分四种的写）；`usage.query` 的行、会话状态的 `usage`、`usage_tree` 多 `converted_parts`（币种同 `converted`、照同样的汇率换，加起来就是 `converted.amount`）；有一笔没分四种的老账整行不给，有一笔哪一种用了、价格又不知道的那一种不给，用量是 0 的是准的 0 |
 | UP-2 | 压缩注明最早一段没进摘要 | 摘要请求太长、截掉最老的几组才压成的，`context.compacted` 记 `truncated`（几次截短一共截掉的组数，出错再来、改走隔离式的接着算），推的 `compaction.done`、视图流和翻页里那一条压缩跟着带；没截过的不写，日志和推送的字节和以前一样 |
 
+**头自己的设置**（HP 线，2026-11-03 主会话定：网页的皮肤、配色、主题、吉祥物这些存在浏览器里，换个地址、换台设备就是另一份，旧版就这样；存进数据根，跟着人走）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| HP-1 | 头自己的设置存进数据根 | `prefs.get {package}` 交整份（没有的 `{}`），`prefs.set {package, values}` 照顶层的键并、`null` 删，交回整份；存在那个包状态目录里的 `prefs.json`（`DataRoot::package_state`，照只给自己看的 JSON 小文件写），整份写成 JSON 最多 64 KiB，超了 `prefs_too_big`（`data` 带 `size`、`limit`）；只有装着的界面包（`[ui]`）有，没装的 `unknown_package`、别的种类 `not_a_ui_package`；`subscribe {stream: "prefs", package}` 回这一刻的整份，别的连接改了推 `prefs.changed {package, values}`，改的那个不推；只给人，扩展、平台桥调、订都 `local_only`。蓝图 `protocol.md`「头自己的设置」，参考 `prefs.md` |
+
 ### 四、施工单的格式
 
 每一张施工单只写这几节（2026-09-28 项目主人定：有了蓝图，施工单变薄）：

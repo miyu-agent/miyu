@@ -138,6 +138,31 @@ async fn extensions_only_reach_what_they_declared() {
 }
 
 #[tokio::test]
+async fn heads_own_prefs_are_people_only() {
+    // 头自己的设置（施工 HP-1）：批了这几项能力的扩展（平台桥也是扩展）照样调不了、订不了。
+    let home = Home::new();
+    let program = Program::new();
+    let asks = [
+        r#"ask:prefs.get:{"package":"plain"}"#,
+        r#"ask:prefs.set:{"package":"plain","values":{"a":1}}"#,
+        r#"ask:subscribe:{"stream":"prefs","package":"plain"}"#,
+    ];
+    let all = [
+        "events.read",
+        "events.write",
+        "sessions.drive",
+        "act_for_external",
+    ];
+    let path = install(&home, &program, "plain", &all, &asks);
+    let _core = core(&home, &Script::new([]), json!({"plain": all}));
+    let replies = lines(&path, 2 + asks.len()).await;
+    for (n, ask) in asks.iter().enumerate() {
+        let reply = &replies[1 + n];
+        assert_eq!(reason(reply), "local_only", "{ask}：{reply}");
+    }
+}
+
+#[tokio::test]
 async fn an_extension_speaks_as_itself() {
     let home = Home::new();
     let program = Program::new();

@@ -117,6 +117,16 @@ impl Peer {
         Arc::ptr_eq(&self.state, &other.state)
     }
 
+    /// 往 `out` 这个写队列写（施工 HP-1：`prefs.changed` 照它认出改的那个连接，不推给它）。连接断了的（[`Peer::close`] 过）
+    /// 谁都不是。
+    pub(crate) fn writes_to(&self, out: &mpsc::Sender<String>) -> bool {
+        let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        state
+            .out
+            .as_ref()
+            .is_some_and(|mine| mine.same_channel(out))
+    }
+
     /// 不再往它发了：连接断了（[`Peer::close`] 过，或者连接整个被丢下、写的那一头没了：核心停扩展时就是这样，施工 IM-5）。
     /// 找连接的都跳过它。
     pub(crate) fn closed(&self) -> bool {

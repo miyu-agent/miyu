@@ -122,6 +122,7 @@
 | `extension_off` | 重启一个关着的扩展 | |
 | `port_taken` | 扩展登记的端口别的扩展登记着（`port.claim`）；不说是谁 | |
 | `unknown_server` | 系统配置里没有这个 MCP 服务 | |
+| `not_a_ui_package`、`prefs_too_big` | `prefs.*`：装着的包不是界面包；并好的设置超过 64 KiB，什么都没改 | `size`、`limit` |
 | `oauth_unregistered`、`oauth_failed` | `mcp.login`：没有客户端、授权服务器又不认动态注册；登录走不下去（`mcp.login_finish`：贴回来的对不上） | `why` |
 | `not_logged_in` | `mcp.logout`：这个服务没登录过 | |
 | `not_waiting` | `mcp.login_finish`：这个服务没有在等的登录 | |

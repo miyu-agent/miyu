@@ -11,6 +11,7 @@ mod knowledge;
 mod memory;
 mod message;
 mod package;
+mod prefs;
 mod project;
 mod schedule;
 mod widgets;

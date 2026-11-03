@@ -13,6 +13,7 @@
 | `crates/miyu-store/src/config_file.rs` | 读配置文件（施工 8-2，`config.md`「怎么走」第二条第 2 条）：没有的是空的，1 MiB 的上限，去掉开头的 BOM（记下有没有），不是 UTF-8 的报错，版本是整份字节的 SHA-256。写（施工 8-3，第五条第 4 到 7 条）：顺着链接写本体、临时文件在本体旁边（本体在数据根里的建在 `run/` 里，施工 R3-1、FH-2）、带上原来的权限位、替换前再读一次（和调用的一方读的版本不一样的放弃）、Windows 上改名失败歇 20 毫秒再试、最多 5 次。核心起来时清掉一个目录里写到一半崩了剩下的临时文件（`sweep_temps`，施工 AS-11：名字是 `.<文件名>.<进程号>-<计数>.tmp`、普通文件、放了满 10 分钟的；认不出的名字、刚写的不碰；看 `run/`） |
 | `crates/miyu-store/src/watch.rs` | 监视几份文件（施工 8-4，`config.md`「怎么走」第七条），或者一整个目录（`watch_dir`，施工 X-12 补：数据根里的脚本，点开头的以外哪个名字变了都算，交出去的是目录）：看它们所在的目录（链接的另看本体所在的目录），照真实的位置和文件名认，只读的动静不理，一份 200 毫秒里没有新的变动了才交出去；系统的监视起不来的退回每 2 秒轮询，交回原因 |
 | `crates/miyu-store/src/access.rs`、`logins.rs`、`private_json.rs` | 访问密码 `access.json`（argon2id，`m=19456`、`t=2`、`p=1`）、设备令牌的哈希 `logins.json`（加的时候删过期的、最多 64 行）；只给自己看的 JSON 小文件照配置文件的规矩读、照密钥文件的规矩写（Unix 上 0600）（施工 W-8，`web-module.md`「怎么走」第一条） |
+| `crates/miyu-store/src/prefs.rs` | 头自己的设置 `prefs.json`，在界面包的状态目录里：整份一个 JSON 对象，读照配置文件的规矩，不是对象的当空的、带着版本能盖掉；写照只给自己看的 JSON 小文件（施工 HP-1，`protocol.md`「头自己的设置」） |
 | `crates/miyu-store/src/secrets.rs` | 密钥文件 `secrets.toml`（施工 8-5，`config.md` 第九条）：照配置文件的规矩读，另看组、别人读不读得到；照配置文件的规矩写，Unix 上一律 0600，临时文件建的时候就是 |
 | `crates/miyu-store/src/journal.rs` | 日志 `journal.jsonl`（施工 8-3，`config.md`「日志」）：每追加一条都重新打开、截掉最后那半行、读最后一行接着数 `seq`，外壳照事件的写法，追加、同步；8-15 起一个核心里照一把锁一条一条追加（写的不止配置服务），用量汇总从记下的字节往后读（`read_from`） |
 | `crates/miyu-store/src/root.rs`、`root/tmp.rs` | 数据根在哪、建骨架、认标记；两个暂存怎么清（施工 FH-3）；缓存目录在哪；别的 crate 在数据根里建目录用的 `create_inside`（施工 TMP-1）；工具、脚本只拿到数据根路径时用的 `DataRoot::at`（施工 FH-2） |
@@ -113,7 +114,7 @@
 │   ├── workspace/<会话编号>/    每个会话的默认工作区
 │   └── pictures/ videos/ documents/ downloads/   照 XDG 给你的几处，用到才建
 ├── var/
-│   ├── lib/                    journal.jsonl、log-salt（0600）、models/、packages/<编号>/（本地库）和 leftovers.json、mcp/<服务>/、<编号>/（包的数据）
+│   ├── lib/                    journal.jsonl、log-salt（0600）、models/、packages/<编号>/（本地库）和 leftovers.json、mcp/<服务>/、<编号>/（包的数据；界面包的里面另有核心写的 prefs.json，头自己的设置）
 │   ├── cache/                  能删（先停核心）：index/、usage.db、rates.db、config/、models/、packages/、mcp/<服务>.json、provide/<包>.json、scripts/、personas/、mermaid/、sandbox-probe.json、perf/、<编号>/
 │   ├── log/                    core.log（和轮换的 .1…）、memory.jsonl、mcp/<服务>.stderr、sandbox/windows-error.json、<编号>/（包的日志；stderr、stderr.old 是核心记的）
 │   └── tmp/                    跨重启留着的暂存，核心起来时清放了满 7 天没碰的

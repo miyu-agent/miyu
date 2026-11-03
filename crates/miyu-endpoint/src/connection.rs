@@ -337,6 +337,7 @@ async fn read_all<R: AsyncRead + Unpin>(
                         Stream::Knowledge => subscriptions.remove_kb(),
                         Stream::Notices => subscriptions.remove_notices(),
                         Stream::Package(package) => subscriptions.remove_package_events(&package),
+                        Stream::Prefs(package) => subscriptions.remove_prefs(&package),
                         Stream::Memory(at) => subscriptions.remove_memory(&at),
                         Stream::Widgets(_) => subscriptions.remove_widgets(),
                     }

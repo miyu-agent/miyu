@@ -58,6 +58,8 @@ pub(super) enum Stream {
     Memory(MemoryAt),
     /// 界面块（施工 X-15 中，`widgets.md`「头」）：头这一刻在看什么。
     Widgets(crate::widgets::head::Looking),
+    /// 一个界面包的设置（施工 HP-1，`prefs.rs`）。
+    Prefs(String),
 }
 
 /// 会话 `session` 的 `session.created`：日志第一条，在阻塞线程里读一行。读不了、第一条不是它的是没有。
@@ -145,6 +147,11 @@ pub(super) async fn subscribe(
             let reply = subscriptions.add_widgets(core, looking, shook, out);
             (Ok(reply), Some(Target::Widgets))
         }
+        (Ok(Stream::Prefs(package)), Some(_)) => match subscriptions.add_prefs(core, &package, out)
+        {
+            Ok(reply) => (Ok(reply), Some(Target::Prefs(package))),
+            Err(refusal) => (Err(refusal), None),
+        },
         (Ok(Stream::Memory(at)), _) => match memory(core, subscriptions, request, at, out).await {
             Ok((result, at)) => (Ok(result), Some(Target::Memory(at))),
             Err(refusal) => (Err(refusal), None),
@@ -158,6 +165,7 @@ pub(super) async fn subscribe(
                 | Stream::Knowledge
                 | Stream::Notices
                 | Stream::Package(_)
+                | Stream::Prefs(_)
                 | Stream::View(_)
                 | Stream::Widgets(_),
             ),
@@ -434,6 +442,9 @@ pub(super) fn stream_of(request: &Request) -> Result<Stream, Refusal> {
             .package
             .map(Stream::Package)
             .ok_or(Refusal::BAD_PARAMS),
+        ("prefs", None) if request.params.get("after").is_none() => {
+            params.package.map(Stream::Prefs).ok_or(Refusal::BAD_PARAMS)
+        }
         _ => Err(Refusal::BAD_PARAMS),
     }
 }

@@ -53,7 +53,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         }
         "subscribe" => match params.get("stream").and_then(Value::as_str) {
             Some("events" | "view" | "sessions") => Needs(EventsRead),
-            Some("projects" | "schedules" | "notices" | "package") => People,
+            Some("projects" | "schedules" | "notices" | "package" | "prefs") => People,
             _ => Anyone,
         },
         // 不写 `to`、只带事实开一轮的（施工 O-64）同只记事实的 `session.note`（施工 R3S-3，项目主人 2026-11-02 定）：开一轮比
@@ -173,6 +173,9 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "project.create"
         | "project.update"
         | "project.delete"
+        // 头自己的设置（施工 HP-1）：只给头，扩展、平台桥都不行。
+        | "prefs.get"
+        | "prefs.set"
         // 整个核心的检查（施工 Y-2 下下上补进表：原来照「表里没有的当只给人」落到这里）。
         | "check" => People,
         // 核心发出去的（反向调用、推送），扩展调了没有意义；写明了门禁才认得全。

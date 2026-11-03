@@ -57,6 +57,7 @@ mod methods;
 mod models;
 pub mod packages;
 mod personas;
+mod prefs;
 mod presets;
 mod projects;
 mod provide;
@@ -111,8 +112,7 @@ use miyu_store::root::DataRoot;
 use miyu_store::usage::UsageIndex;
 use miyu_tool::{Catalog, Shelf};
 
-use config::Config;
-use config::hub::Hub;
+use config::{Config, hub::Hub};
 use queries::Queries;
 use sessions::Sessions;
 
@@ -165,8 +165,7 @@ pub struct Core {
     connections: AtomicUsize,
     /// 来请求了的信号（施工 V-5 中，`activity.rs`）：核心照它在安静下来以后还内存。
     activity: Arc<Activity>,
-    /// 连上以后最多等多久握手（施工 4-9 再补三上）：等不来就断开，不然一个连上不说话的本机进程能让核心一直
-    /// 不空闲退出。
+    /// 连上以后最多等多久握手（施工 4-9 再补三上）：等不来就断开，不然一个连上不说话的本机进程能让核心一直不空闲退出。
     hello_wait: Duration,
     /// 配置（施工 8-2）：起来时读的几份和最终值。施工 8-3 起能改，住在一把锁里（[`Core::config`]）。
     config: std::sync::Mutex<Config>,
@@ -176,13 +175,11 @@ pub struct Core {
     model_data: Arc<ModelData>,
     /// 找文件的清单记几份（施工 W-2，`files.rs`）：各个连接共用。
     files: files::Cache,
-    /// `fresh` 时，清单建好多久以上才重建（施工 W-2）：出厂值 [`miyu_fs::FRESH_SECS`]，测试里设短的，不用真等
-    /// 十秒。
+    /// `fresh` 时，清单建好多久以上才重建（施工 W-2）：出厂值 [`miyu_fs::FRESH_SECS`]，测试里设短的，不用真等十秒。
     files_fresh: Duration,
     /// 可选软件包登记的查询（施工 W-4）：核心起来时照编进来的包往里登记，空表就是没编进来任何一个。
     queries: Queries,
-    /// 分块上传（施工 W-5）：这个连接上的一个上传多久没有 `blob.write` 就作废。出厂 60 秒，测试里设短的，
-    /// 不用真等一分钟。
+    /// 分块上传（施工 W-5）：这个连接上的一个上传多久没有 `blob.write` 就作废。出厂 60 秒，测试里设短的，不用真等一分钟。
     upload_idle: Duration,
     /// 身份（施工 W-8）：一次性码、登录失败的计数、作废登录令牌的广播。
     identity: login::Identity,
@@ -231,6 +228,8 @@ pub struct Core {
     content_rereads: content::Rereads,
     /// 唤醒表（施工 J-1 上，`schedules.rs`）。
     schedules: schedules::Schedules,
+    /// 头自己的设置（施工 HP-1，`prefs.rs`）：改的排着做、改了推给别的头。
+    prefs: prefs::Prefs,
 }
 
 /// 连上以后最多等多久握手。
@@ -327,6 +326,7 @@ impl Core {
             edits: presets::edits::Edits::default(),
             appends: appends::Appends::default(),
             content_rereads: content::Rereads::default(),
+            prefs: prefs::Prefs::default(),
         }
     }
 

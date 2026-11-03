@@ -96,6 +96,11 @@ pub(crate) fn call<'a>(
                 crate::packages::methods::call(core, peer, caller, request).await
             })
         }
+        // 头自己的设置（施工 HP-1）。
+        "prefs.get" => answer(move || async move { crate::prefs::get(core, &params(request)?) }),
+        "prefs.set" => {
+            answer(move || async move { crate::prefs::set(core, caller, &params(request)?) })
+        }
         "project.list" | "project.create" | "project.update" | "project.delete" => {
             answer(move || async move { crate::projects::call(core, request).await })
         }

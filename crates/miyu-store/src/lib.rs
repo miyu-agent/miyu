@@ -43,6 +43,7 @@ pub mod memory;
 pub mod overrides;
 pub mod packages;
 pub mod personas;
+pub mod prefs;
 pub mod presets;
 mod private_json;
 pub mod program;

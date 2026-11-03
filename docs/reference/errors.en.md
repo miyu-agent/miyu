@@ -122,6 +122,7 @@ Chinese version: [errors.md](errors.md).
 | `extension_off` | Restarting an extension that's off | |
 | `port_taken` | Another extension has claimed the port (`port.claim`); it doesn't say which | |
 | `unknown_server` | No such MCP server in the system config | |
+| `not_a_ui_package`, `prefs_too_big` | `prefs.*`: the installed package isn't a UI package; the merged settings are over 64 KiB, nothing changed | `size`, `limit` |
 | `oauth_unregistered`, `oauth_failed` | `mcp.login`: no client and no dynamic registration; the login can't go through (`mcp.login_finish`: the pasted address doesn't match) | `why` |
 | `not_logged_in` | `mcp.logout`: this server was never logged in | |
 | `not_waiting` | `mcp.login_finish`: no login is waiting for this server | |

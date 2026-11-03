@@ -116,6 +116,9 @@ persona.set
 port.claim
 port.list
 port.release
+prefs.changed
+prefs.get
+prefs.set
 preset.delete
 preset.get
 preset.list

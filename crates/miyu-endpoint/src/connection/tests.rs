@@ -46,6 +46,9 @@ fn people_only_stays_people_only() {
         "project.create",
         "project.update",
         "project.delete",
+        // 头自己的设置（施工 HP-1）。
+        "prefs.get",
+        "prefs.set",
         // 施工 X-30：替人回答、改权限级别和工作目录、终端会话、访问密码和登录（删会话施工 Y-2 上起要 `sessions.drive`）。
         "session.answer",
         "session.set_permission_level",
@@ -147,6 +150,7 @@ fn some_hang_on_the_params() {
         ("view", Right::Needs(Capability::EventsRead)),
         ("sessions", Right::Needs(Capability::EventsRead)),
         ("projects", Right::People),
+        ("prefs", Right::People),
         ("config", Right::Anyone),
         ("packages", Right::Anyone),
         ("memory", Right::Anyone),

@@ -36,6 +36,7 @@
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |
 | `crates/miyu-endpoint/src/knowledge.rs` | `kb.list`、`kb.search`、`kb.read`（施工 K-1 上，「`kb.*`」）、`kb.documents`（施工 K-10）：读参数、在阻塞线程里调 `miyu_store::knowledge`、写回应，跳过的文档记一行 |
 | `crates/miyu-endpoint/src/subscriptions/memory.rs` | 记忆日志的订阅（施工 R-12 上，「记忆日志的推送」）：一间一个转发任务，先写补的、再写回应、再推 `memory.event`、整理时的 `memory.dreaming`（施工 R-21），掉队推 `resync`；找哪一间、补什么在 `memory.rs` 的 `follow` |
+| `crates/miyu-endpoint/src/prefs.rs`、`subscriptions/prefs.rs`，`crates/miyu-store/src/prefs.rs` | 头自己的设置（施工 HP-1，下面「头自己的设置」）：`prefs.get`、`prefs.set` 认包、照顶层的键并、量上限、写那个包状态目录里的 `prefs.json`、推给别的连接；`prefs` 流的转发任务（先写回应、跳过改的那个连接）；`prefs.json` 的读写 |
 | `crates/miyu-endpoint/src/undo.rs` | 撤销、恢复、重做的回应里给人看的几样（`protocol/undo.md`） |
 | `crates/miyu-endpoint/src/attach.rs` | 附件（施工 3-9 三补）：`blob.put` 读、存；`session.send`、`session.redo` 的附件变成内容块；认是什么、文件名和媒体类型怎么查、存好了怎么拼回应，和分块上传共用（施工 W-5）；`model.call` 的图照哈希变成图片块（`attach/look.rs` 的 `images`，施工 8-20；人格头像的 `picture` 也在那里）：照存处找 |
 | `crates/miyu-tool/src/attachment.rs` | 认一个附件是什么：图片、PDF、别的文件，媒体类型（施工 C-9 从 `miyu-endpoint/src/attach/kind.rs` 挪来，她发话、派子代理带的附件共用） |
@@ -238,6 +239,7 @@
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
 | `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
 | `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-app` 用，`docs/reference/connection.md`「`notices.claim`」） |
+| `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
 | `session.configure` | 换模型、人格、预设、思考强度，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1） |
 | `session.delete` | 删除会话：挪进回收处，留 7 天（施工 3-8 三补） |
@@ -1177,7 +1179,7 @@
 |---|---|---|
 | `session` | 字符串 | 哪个会话：`events`、`view` 必写，`config`、`sessions` 不写（写了 `bad_params`）；`memory` 可以写，是那个会话用的那一间（施工 R-12 上） |
 | `persona` | 字符串 | 只有 `memory` 认：这个人格那一间（施工 R-12 上）。别的流写了不理 |
-| `stream` | 字符串，必写 | `events` 会话的事件流；`view` 会话的视图流（施工 9-8 下，下面第 9 条、`view.md`「视图流」）；`config` 配置的推送（施工 8-4，`config.md`「订阅配置的推送」）；`sessions` 会话列表的推送（施工 9-5，下面「会话列表的推送」）；`extensions` 扩展的状态的推送（施工 9-4 补，`extensions.md`「推送」）；`packages` 软件包列表的推送（施工 F-8 三补，下面「软件包列表的推送」）；`memory` 一间的记忆日志（施工 R-12 上，下面「记忆日志的推送」）；`widgets` 界面块（施工 X-15 中，`widgets.md`「头」：带 `session`、`showing`、`page`）。别的 `bad_params` |
+| `stream` | 字符串，必写 | `events` 会话的事件流；`view` 会话的视图流（施工 9-8 下，下面第 9 条、`view.md`「视图流」）；`config` 配置的推送（施工 8-4，`config.md`「订阅配置的推送」）；`sessions` 会话列表的推送（施工 9-5，下面「会话列表的推送」）；`extensions` 扩展的状态的推送（施工 9-4 补，`extensions.md`「推送」）；`packages` 软件包列表的推送（施工 F-8 三补，下面「软件包列表的推送」）；`memory` 一间的记忆日志（施工 R-12 上，下面「记忆日志的推送」）；`widgets` 界面块（施工 X-15 中，`widgets.md`「头」：带 `session`、`showing`、`page`）；`prefs` 一个界面包的设置（施工 HP-1，带 `package`，下面「头自己的设置」）。别的 `bad_params` |
 | `after` | 非负整数，可以不写 | 只有 `subscribe` 的 `events`、`memory` 认（施工 3-8 六补、R-12 上，`view`、`config`、`sessions`、`extensions` 写了 `bad_params`）：先补发日志里序号大于它、落了盘的事件，`0` 是从头。见下面「补发」、「记忆日志的推送」 |
 
 回应：`config` 的都是 `{}`；`sessions` 的 `subscribe` 是 `{"sessions": [<一项>, …]}`，`unsubscribe` 是 `{}`（施工 9-5）；`extensions` 的 `subscribe` 是 `{"extensions": [<一个>, …]}`，`unsubscribe` 是 `{}`（施工 9-4 补）；`memory` 的 `subscribe` 是 `{"upto": <序号>}`，`unsubscribe` 是 `{}`（施工 R-12 上）。`subscribe` 的是 `{"limits": <限额>, "model": <模型>}`，写了 `after` 的多一格 `upto`（补到哪一条）：`{"limits": <限额>, "model": <模型>, "upto": <序号>}`。当前的待办不空的多一格 `todos`（施工 D-3，照 `todo.written` 的写法）；会话用哪个人格写在 `persona`（施工 P-1 下）、哪个预设写在 `preset`（施工 P-2 上），都照日志第一条 `session.created` 读，以前的日志没有的不写；之后变了照推送的瞬时事件 `todos.changed`，头只认这两样，不自己翻效果。施工 9-6 上起再多三格「当前的」，和订阅在会话 actor 的同一步里拿，头之后照推过来的事件往上加、不重不漏：`usage` 这个会话（不带子会话）累计的，写法、口径同 `usage.query {"session": <它>}` 那一行（`requests`、`usage`、`amounts`、`unpriced`），另加 `main`（只算主请求的四项用量：`purpose` 是空的，压缩的摘要请求也算，回顾、起标题这些辅助请求不算；头照它算命中率、上下文，施工 9-6 上补）、`compactions`（压缩的检查点有几个）、`cache_breaks`（意外断了缓存的主请求有几次：带 `first_difference`、`purpose` 是空的；压缩的摘要请求（带 `compaction`，或者看到的比之前的主请求少）不算；压缩、撤销以后的头一个主请求本来就会断，也不算；口径同终端，施工 9-6 再补）；`permission` 人这一刻设的权限 `{"level", "read_only"}`；`jobs` 还在跑的后台命令和子代理，照编号，每一个照 `job.started` 的写法（`job`、`what`、`title`，子代理带 `session`）。施工 9-7 上起再多 `workspace`：`{"cwd", "dirs"}`，会话在哪个目录干活，之后照推过来的 `session.workspace_changed` 换。施工 M-1 起再多 `nested`：在跑的嵌套调用（脚本里的 `miyu call`），照编号，每一个 `{id, name}`（施工 M-5 上起 `{id, name, args, at}`：参数原文、派去跑的时刻，头重连以后照它接着计时），没有的不写；之后照推过来的瞬时事件 `tool.nested_started`、事件 `tool.nested` 增减（`kernel/session.md`「嵌套调用」）。施工 X-8 补起再多 `goal`：这个会话的长期目标，写法同视图流会话状态的 `goal`（`view.md`「会话状态」），没有目标的不写；之后变了照推过来的瞬时事件 `goal.changed` 换（`kernel/events.md`），头不自己照 `goal.*` 和回合算第几轮、在不在等人。已经订阅着、再订阅一次不带 `after` 的（「还是那一个」），这几格另要一份这一刻的。`unsubscribe` 的是空对象 `{}`。
@@ -1251,6 +1253,17 @@
 4. 读得太慢、掉了队：推 `resync`（`{"stream": "packages"}`），这个订阅停了，头重新订阅。
 5. 系统配置里的 MCP 服务（施工 F-9 补）：状态变了、系统配置里加了、删了，推 `mcp.changed`：`{"name": <服务名>, "server": <一项>}`，一项同 `mcp.list` 的一项，删掉了的 `server` 是 `null`。它们不是包，不推 `package.changed`。盖住、放开了包里同名服务的，那个包的 `package.changed` 照推（`covered` 变了）。
 
+**头自己的设置**（施工 HP-1，2026-11-03 主会话定：网页把皮肤、配色、主题、吉祥物、网页包的设置存在浏览器里，浏览器照地址分，`127.0.0.1`、`localhost`、局域网地址、手机各看到一份，旧版就是这样；存进数据根，跟着人走）
+
+1. 只有界面包有：`package` 是装着的包（`Core::system_packages` 里有它），清单是 `[ui]`（`PackageKind::Ui`）。没装的、编号不合写法的 `unknown_package`，装着别的种类的 `not_a_ui_package`，都不碰文件。只开给界面包：文件写在那个包的状态目录里，扩展、小程序的状态目录归它们自己的程序，核心不往里放东西；以后要开给别的种类是只加不改（反过来收窄就是改意思了）。
+2. 存在 `DataRoot::package_state(<包>)` 里的 `prefs.json`（`var/lib/<包>/prefs.json`），整份就是那个 JSON 对象，一行、末尾一个换行，照只给自己看的 JSON 小文件写（`private_json`：临时文件建在 `run/`、改名盖上，Unix 上 0600，替换前再读一次、撞上手改的从头再来，最多三次）。卸包时随状态目录一起删（`DataRoot::package_places`）。这个名字归核心，头自己别用。
+3. `prefs.get {"package"}` → `{"values": {…}}`：整份；没有这个文件的是 `{}`。
+4. `prefs.set {"package", "values": {键: 值或 null}}` → `{"values": {…}}`：照顶层的键并，写了的整个换成新值（值是任意 JSON，对象不往里并），`null` 的删掉这个键；交回并好的整份。`values` 不是对象、没写 `package` 的 `bad_params`。并好的整份写成紧凑的 JSON（`serde_json::to_vec`，不带空白）超过 64 KiB（65536 字节）的 `prefs_too_big`，`data` 带 `size`、`limit`，什么都不写；正好 64 KiB 的收。并好了和原来一样的（`values` 是 `{}`、写的和原来的一样）不写文件、不推。
+5. 改、写、推在一把锁里排着做（`Core::prefs`），推的先后就是写的先后。推给订着这个包的别的连接：`prefs.changed {"package", "values"}`，`values` 是改好的整份。改的那个连接不推：回应里就是整份，再推一次头会照它把人正拖着的滑块拉回去。它是不是改的那个照写队列认（`reverse::Peer::writes_to`：广播里带着改的连接那一头，转发任务拿自己的写队列比）。
+6. `subscribe {"stream": "prefs", "package"}`：先过第 1 条（同样的拒绝），先拿收推送的一头再读一份，回应 `{"values": {…}}` 交给新的转发任务先写，之后推的都不比它旧。一个连接一个包一个，再订阅换一个新的；`unsubscribe {"stream": "prefs", "package"}` 停掉，没订过的也回 `{}`。不带 `after`（写了 `bad_params`），没写 `package` 的 `bad_params`。读得慢掉了队推 `resync {"stream": "prefs", "package"}`，这个订阅停了，头重新订阅。
+7. 只给人（施工 HP-1，主会话定）：扩展、平台桥调 `prefs.*`、订 `prefs` 流一律 `local_only`（`extensions.md`「谁能调」）；用一次性码连上的照旧 `setup_first`。远程的连接（网页软件转来的手机、局域网）照常能用：这本来就是给它们的。
+8. 文件读不了、超过 1 MiB、不是 UTF-8 的：`internal_error`，记一行 `WARN prefs unreadable`。是 JSON 但不是一个对象的（手改坏了）当没有：`get` 回 `{}`、`set` 从空的并起、盖掉它，记一行 `WARN prefs not an object`。写不进的 `internal_error`，记一行 `WARN prefs not written`。
+
 **`mcp.*`**（施工 F-9 补，系统配置里的 MCP 服务，`mcp.md`「系统配置里的一张表」；只给本机的人用，扩展调回 `local_only`）
 
 - `mcp.list`：不带参数。回应 `{"servers": [...]}`，照系统配置里写的先后；一项同软件包列表上服务的那一格（施工 X-4）：`name`、`command`（照写的，`~/` 没换）、`venues`、`state`、`failures`，在跑的 `pid`，在等的 `retry_in`，停下的 `reason`、`stderr`；另带 `covers`：它盖住了哪些包里的同名服务（包的编号）；知道有哪些工具的另带 `tools`：这个服务这时在工具目录里的工具名，照目录的先后，起好列完的、照目录缓存先登记的都算（同 `preset.get` 里 `mcp-<名字>` 的工具），还不知道的（没起过、没缓存）没有这一格（施工 X-26）。`on` 是全局开关 `features.mcp-<服务名>`，没写的是 `true`（施工 X-27）。编辑页要先填上原来写的（施工 X-27 补）：`env` 照写的，值是字（照原样，它本来就明文写在系统配置里；要藏的写成密钥的引用）或者 `{"secret": 名字}`、`{"env": 变量}`，没写的没有这一格；`timeout_ms` 不是默认的才带。`command` 是程序加参数，交回 `mcp.set` 时拆成 `command`、`args`。
@@ -1278,9 +1291,10 @@
 | 方法 | `params` | 什么时候 |
 |---|---|---|
 | `event` | `{"session": <编号>, "event": <事件>}` | 订阅着的会话的每一条事件，一条一个；补发的也是它（施工 3-8 六补） |
-| `resync` | `{"session": <编号>, "stream": "events"}`；配置的是 `{"stream": "config"}`（施工 8-4），会话列表的是 `{"stream": "sessions"}`（施工 9-5），记忆日志的是 `{"stream": "memory"}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上），界面块的是 `{"stream": "widgets"}`（施工 X-15 中），定时任务的是 `{"stream": "schedules"}`（施工 J-1 下） | 读得太慢，掉了队：这个订阅停了 |
+| `resync` | `{"session": <编号>, "stream": "events"}`；配置的是 `{"stream": "config"}`（施工 8-4），会话列表的是 `{"stream": "sessions"}`（施工 9-5），记忆日志的是 `{"stream": "memory"}` 加订阅时写的 `persona` 或 `session`（施工 R-12 上），界面块的是 `{"stream": "widgets"}`（施工 X-15 中），定时任务的是 `{"stream": "schedules"}`（施工 J-1 下），头自己的设置的是 `{"stream": "prefs", "package"}`（施工 HP-1） | 读得太慢，掉了队：这个订阅停了 |
 | `sessions.changed` | `{"session": <编号>, "entry": <一项>}`，删了的 `{"session": <编号>, "removed": true}`（施工 9-5） | 订阅着会话列表的：上面「会话列表的推送」第 3 条那几种时刻 |
 | `schedules.changed` | `{"id", "entry": <一项>}`，删了的、一次的跑完了的 `{"id", "removed": true}`（施工 J-1 下，`schedules.md` 第五节） | 订阅着 `schedules` 的：一个任务建了、停了、续了、删了、到点交过了 |
+| `prefs.changed` | `{"package", "values"}`：改好的整份（施工 HP-1） | 订阅着这个界面包的设置的别的连接：「头自己的设置」第 5 条 |
 | `notice` | `{"kind", "at", …}`：`schedule.ran {schedule, session, ok}`、`schedules.reset {}`（施工 J-3 中，`schedules.md` 第七节） | 订阅着 `notices` 的：每次新开会话的定时那一轮结束了、唤醒表坏了换了一份空的 |
 | `notices.claimed` | `{"claimed"}`：有没有连接认领了发后台通知（`notices.claim`）变了（施工 TR-1） | 订阅着 `notices` 的：第一个认领的来了、最后一个走了 |
 | `config.changed` | 见 `config.md`「推送 `config.changed`」（施工 8-4） | 订阅着配置的：系统配置每变一次 |
@@ -1390,6 +1404,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `not_a_directory` | -32010 | `session.set_workspace` 换到的是文件（施工 9-7 上）；`/workspace` 也一样（施工 9-7 下） |
 | `unknown_package`、`not_an_extension`、`extension_off` | -32010 | `extension.*`：没有这个包、清单读不成；是界面包；重启一个关着的（施工 9-4 上，`extensions.md`）。`package.remove`、`package.install {"package"}` 也回 `unknown_package`（施工 F-5 上） |
 | `unknown_source` | -32010 | `package.install` 写的 `from` 没有这个软件源：配置里没加、写错了（施工 U23 下下） |
+| `not_a_ui_package`、`prefs_too_big` | -32010 | `prefs.*`、订 `prefs` 流：装着的包不是界面包；并好的整份超过 64 KiB，`data` 带 `size`、`limit`（施工 HP-1，「头自己的设置」） |
 | `depends_missing`、`package_depended` | -32010 | `package.install`：依赖的包没装，`data.missing`；`package.remove`、`package.disable`：别的装着的包依赖它，`data.by`（施工 F-11，`packages.md`「依赖」） |
 | `package_invalid`、`package_conflict`、`package_exists` | -32010 | `package.install`、`package.remove`：清单写错了；带的名字和装着的别的包撞了（施工 F-8 六补，`data.conflicts`；人格、预设还和几层里有的撞，施工 P-11 下）；和出厂的同编号 |
 | `program_missing`、`not_switchable` | -32010 | `package.enable`、`extension.enable`：包的程序没找到（包文件夹的 `bin/`、`miyu` 旁边都没有），当没装，开不了；`package.enable`、`package.disable`：这个包没有开关（施工 F-6 上，`package-pages.md`） |
@@ -1499,6 +1514,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `WARN` | `lagged, resync session=…` | 掉了队 |
 | `WARN` | `lagged, resync stream=config` | 配置的订阅掉了队（施工 8-4） |
 | `WARN` | `lagged, resync stream=memory` | 记忆日志的订阅掉了队（施工 R-12 上） |
+| `WARN` | `lagged, resync stream=prefs` | 头自己的设置的订阅掉了队（施工 HP-1） |
+| `WARN` | `prefs unreadable package=… error=…`、`prefs not an object package=… error=…`、`prefs not written package=… error=…` | 头自己的设置读不了；不是一个对象、当没有；写不进（施工 HP-1，「头自己的设置」第 8 条） |
 | `WARN` | `replay not read session=… error=…` | 带 `after` 订阅，补发的那一截读不了（施工 3-8 六补） |
 | `INFO` | `session stopped, resync session=…` | 订阅着的会话停了（施工 4-9 再补三上） |
 | `WARN` | `sessions not listed error=…`、`first event not read session=… error=…` | 列会话读不了 |
@@ -1753,6 +1770,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/knowledge_manage.rs`（施工 K-7 上） | 「`kb.*`」管理的七个：建、改、挂、加、换、删文档、删库、重建的回应；各自的拒绝（细节见 `knowledge.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/knowledge_package.rs`（施工 K-8） | 「`kb.*`」软件包带来的库：装上当场列得出、带 `package`、搜得到；改名字、删拒 `kb_packaged`，建同编号 `kb_exists`，`auto` 照改；卸掉当场没了；核心起来时照核对过的清单，没收的包不带库 |
 | `crates/miyu-endpoint/tests/config_watch.rs`、`config_watch_log.rs`（施工 8-4） | 订阅配置、取消、参数不对；手改推 `config.changed`；`config.set` 先见推送后见回应；掉队推 `resync`；改了语言下一句照新的（`config.md`「守着它的」） |
+| `crates/miyu-endpoint/tests/prefs.rs`、`extension_rights.rs` 的 `heads_own_prefs_are_people_only`、`src/connection/tests.rs`、`crates/miyu-store/src/prefs/tests.rs`（施工 HP-1） | 「头自己的设置」：没有的是 `{}`；照顶层的键并、`null` 删、对象整个换、`{}` 不改照样交回整份，文件在包的状态目录里、不留临时文件，重启以后照样读得回；正好 64 KiB 的收、多一点的 `prefs_too_big` 带 `size`、`limit`，什么都不改；订了的别的连接收整份、改的那个不收、没订的不收，订阅回应是这一刻的整份，取消了不再收；没装的、编号带 `..` 的 `unknown_package`，别的种类 `not_a_ui_package`、不写文件，三个入口一样；参数不对的几种 `bad_params`；批了能力的扩展调、订都是 `local_only`，权限表里 `prefs` 流只给人；文件不是对象的当空的、带版本盖得掉，中间手改了的不盖 |
 
 ### 出处
 

@@ -27,6 +27,7 @@ mod later;
 mod lines;
 mod listed;
 mod memory;
+mod prefs;
 mod sessions;
 mod view;
 mod widgets;
@@ -79,6 +80,8 @@ pub(crate) struct Subscriptions {
     memory: BTreeMap<MemoryAt, MemoryForwarder>,
     /// 界面块的订阅（施工 X-15 中，`subscriptions/widgets.rs`）。
     widgets: Option<crate::widgets::head::HeadForwarder>,
+    /// 头自己的设置的订阅（施工 HP-1，`subscriptions/prefs.rs`）：照包，一个包一个。
+    prefs: BTreeMap<String, prefs::PrefsForwarder>,
 }
 
 /// 一条回应经哪个订阅写出去。
@@ -108,6 +111,8 @@ pub(crate) enum Target {
     Memory(MemoryAt),
     /// 界面块的订阅的回应：经它写出去，排在之后的推送前面（施工 X-15 中）。
     Widgets,
+    /// 头自己的设置的订阅的回应：同上（施工 HP-1）。
+    Prefs(String),
 }
 
 /// 一个订阅的转发任务，交回应给它的那一头，和这个订阅还在不在推。
@@ -353,6 +358,10 @@ impl Subscriptions {
                     Err(line) => line,
                 },
                 None => line,
+            },
+            Some(Target::Prefs(package)) => match self.reply_prefs(package, line) {
+                Ok(()) => return true,
+                Err(line) => line,
             },
             Some(Target::Config) => match &self.config {
                 Some(forwarder) => match forwarder.reply(line) {

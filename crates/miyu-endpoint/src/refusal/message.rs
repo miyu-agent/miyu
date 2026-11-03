@@ -26,6 +26,8 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_package" => ("软件包不存在。", "Package not found."),
         "unknown_source" => ("没有这个软件源。", "No such package source."),
         "unknown_project" => ("项目不存在。", "Project not found."),
+        "not_a_ui_package" => ("不是界面软件包。", "Not a UI package."),
+        "prefs_too_big" => ("设置超过 64 KiB。", "Settings over 64 KiB."),
         "unknown_server" => (
             "设置里没有这个 MCP 服务。",
             "No such MCP server in the settings.",
