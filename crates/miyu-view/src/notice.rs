@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use miyu_kernel::event::{CallError, CompactTrigger, PauseReason, Usage};
 use miyu_kernel::id::{JobId, Seq, TurnId};
 
-use crate::entry::{Answered, JobDone, ModelSwap, Peer, Recast, is_false};
+use crate::entry::{Answered, JobDone, ModelSwap, Peer, Recast, WatchedLines, is_false};
 
 /// 一条旁白。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -39,6 +39,8 @@ pub enum Notice {
     },
     /// 一件后台任务了结了。
     Job(JobDone),
+    /// 监视的命令出了一批行（施工 MN-1 下）。
+    Lines(WatchedLines),
     /// 一组题答了。
     Answered(Answered),
     /// 一段回顾。

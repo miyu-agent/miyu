@@ -50,6 +50,7 @@
 | `paused` | 暂停了自动压缩：`reason`、`failures` |
 | `reverted` | 撤销了几轮：`turns`、`said`、`jobs` |
 | `job` | 一件后台任务了结了：`job`、`job_kind`、`title`、`mark`（`done`、`failed`、`stopped`）、`report`、`command`、`output`（`{blob, chars}`）、`exit_code`、`signal`、`took_ms`、`nested`（后台命令的脚本调过工具的，同 `tool` 的） |
+| `lines` | 监视的后台命令出了一批行（`job.lines`）：`job`、`title`、`command`、`text`（这一批全文，最多 4000 个字，截过的中间有一行写省了多少）、`lines`（几行）、`omitted`（截掉几个字）。不是任务了结，`jobs` 里那一行照旧在跑 |
 | `answered` | 一组提问答了：`questions`、`answers`、`by` |
 | `persona` | 会话中途换了人格、预设，真换上的那一刻：`persona: {from, to}`、`preset: {from, to}`，换了哪样写哪样；写编号，没有的是 `null` |
 | `recap` | 一段回顾：`text`、`covers` |

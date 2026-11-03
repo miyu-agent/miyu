@@ -16,7 +16,7 @@
 |---|---|
 | `crates/miyu-view/src/projector.rs`、`projector/`（新） | 投影这台小机器：喂一条事件交出它引起的变化（`Change`）；`users.rs` 消息和排着的话，`turns.rs` 开轮、收尾、每次请求，`blocks.rs` 回复的一块块和起止，`tools.rs` 调工具的一步、确认、提问，`notices.rs` 旁白，`undo.rs` 撤销恢复 |
 | `crates/miyu-view/src/entry.rs`、`notice.rs`、`change.rs`、`id.rs` | 条目、旁白、变化、编号的格；都能读回来（施工 V-D） |
-| `crates/miyu-view/src/entry/job.rs` | 任务了结那一条旁白的几格（施工 V-D 从 `entry.rs` 挪出来） |
+| `crates/miyu-view/src/entry/job.rs` | 任务了结那一条旁白的几格（施工 V-D 从 `entry.rs` 挪出来）；监视的命令出的一批行那一条（`WatchedLines`，施工 MN-1 下） |
 | `crates/miyu-view/src/relay.rs` | 读回来时 `By`、`RawJson` 那几格经通用的 JSON 转一道（施工 V-D） |
 | `crates/miyu-view/src/projector/nested.rs`、`entry/nested.rs`、`nested.rs` | 脚本里调的工具（施工 M-5 上）：`tool.nested_started`、`tool.nested` 照编号认父级，那一步、那一行任务、任务了结的旁白带 `nested`；订阅时补上在跑的（`Projector::nested_running`）；点开时的整份（`listed`） |
 | `crates/miyu-view/tests/nested.rs`（施工 M-5 上） | 前台 `shell` 下面调三次（成、拒、出错）个数和最近一个跟着变，在跑的带开始时刻；没调过的没有；后台命令那一行、了结的旁白带上；订阅时补上在跑的 |
@@ -94,6 +94,7 @@
 | `paused` | 暂停了自动压缩（`context.compaction_paused`）：`reason`、`failures`、`entry`，原样 |
 | `reverted` | 撤销了几轮：`turns`、`said`（撤掉的第一句的头一行）；（施工 U-1 拿掉了 `files`：撤销不再改回文件；以前日志里的 `files.restored` 不进视图）；`jobs`（停掉的后台任务的编号）；撤掉的条目另外 `hidden` |
 | `job` | 一件后台任务了结了：`job`、`job_kind`（`agent`、`command`；不叫 `what`，旁白的种类占了那个名字）、`title`、`mark`（`done`、`failed`、`stopped`）、`reason`（回报里的原样）、`report`（子代理的报告全文）；后台命令的 `command`（派它那次调用的命令原文）、`output`（`{blob, chars}`，照回报，头点开时照 `blob.get` 取）、`exit_code`、`signal`、`took_ms`（照回报，没有的不写；施工 9-8 三补）；`nested`（这个后台命令下面最后那一份，下面「脚本里调的工具」） |
+| `lines` | 监视的后台命令（`shell` 写了 `watch`）出了一批行（`job.lines`，施工 MN-1 下，设计 56 第四节第 4 条）：`job`、`title`（派它那一步的描述）、`command`（派它那次调用的命令原文）、`text`（这一批全文，照事件原样，最多 4000 个字，截过的中间有一行省了多少）、`lines`、`omitted`。不是任务了结：状态里那一行照旧 `running`；头照回报那样画一行，点开看全文 |
 | `answered` | 一组题答了：`questions`（问的那一组，照 `question.asked`）、`answers`（照 `question.answered`）、`by` |
 | `persona` | 中途换了人格、预设（施工 9-8 十四补，P-13）：`persona: {from, to}`、`preset: {from, to}`，换了哪样写哪样；写编号，无人格、没有预设的是 `null`，显示名头照列表查。人换的那一下（带 `persona`、`preset` 的 `session.policy_changed`）先记着，快照真换上（下一条带 `policy` 的）时出这一条，同 `reply` 的 `persona` 起算的时机 |
 | `recap` | 一段回顾：`text`、`covers`（讲到的最后一轮，撤了那一轮跟着藏） |
@@ -161,7 +162,7 @@
 | `todos_done` | 因为全部做完而清空了待办（`todos` 是空的）时，清空前那一份，同事件流 `todos.changed` 的 `done`；头照它全打勾停一下再收（施工 9-8 九补，网页的会话要的）。别的时候不写，再写一份没做完的就没了 |
 | `persona`、`preset` | 同订阅回应的那几格；中途换了的（P-13）照会话这一刻的跟着推（施工 9-8 十四补对齐蓝图，代码 P-13 起就是这样） |
 | `goal` | 长期目标（施工 X-6，`goal.md`）：`{text, limit?, state, reason?, round, resumes, since, usage}`。`state` 是 `running`、`paused`、`completed`、`blocked`、`waiting`（跑着、在等人开口：续轮开的一轮没调工具，施工 X-7；核心重启以后载入的目标记成停着，是 `paused`）；`reason` 卡住的才有；`round` 是设下以后开过几轮（停着时开的不算）；`resumes` 是停过以后又接着跑了几次（施工 GOAL-1：照 `goal.resumed` 数，人续上的、改停着的顺带续上的、核心重启载入记成停着以后续上的都算，0 也写）；`since` 设下的时刻；`usage` 是这个目标花了多少，写法同 `usage`（跑着时的请求）。没设过、清掉了的不写；结束了的照最后的样子留着，再设一个时换掉。向会话要（会话层照整份日志算），不由投影算 |
-| `jobs` | 这个会话直接派出去的任务：在跑的和最近做完的 20 个，照派出的先后。一项 `{job, what, title, state, started, ended?, session?, command?, exit_code?, signal?, why?, nested?, fork?}`（`fork` 施工 A-F 补：fork 子代理写 `true`，照 `job.started`；别的不写）（`nested` 是后台命令下面脚本里调过的工具，「脚本里调的工具」，施工 M-5 上）：`what` 是 `command`、`agent`；`state` 是 `running`、`done`（命令退出码 0；子代理那一轮结束了，还能留言叫醒，叫醒了回到 `running`）、`failed`（退出码不是 0、被信号杀了）、`stopped`（`why` 是 `stopped` 人停或她自己停的、`undone` 撤销时停的、`restarted` 有计划重启时停的、`timed_out` 跑到最长时间停的、`too_large` 输出太多停的，施工 7-12 下）、`aborted`（核心崩了，断了）。翻页、订阅时切点前派出、了结的照日志补上 |
+| `jobs` | 这个会话直接派出去的任务：在跑的和最近做完的 20 个，照派出的先后。一项 `{job, what, title, state, started, ended?, session?, command?, exit_code?, signal?, why?, nested?, fork?}`（`fork` 施工 A-F 补：fork 子代理写 `true`，照 `job.started`；别的不写）（`nested` 是后台命令下面脚本里调过的工具，「脚本里调的工具」，施工 M-5 上）：`what` 是 `command`、`agent`；`state` 是 `running`、`done`（命令退出码 0；子代理那一轮结束了，还能留言叫醒，叫醒了回到 `running`）、`failed`（退出码不是 0、被信号杀了）、`stopped`（`why` 是 `stopped` 人停或她自己停的、`undone` 撤销时停的、`restarted` 有计划重启时停的、`timed_out` 跑到最长时间停的、`too_large` 输出太多停的，施工 7-12 下；`too_chatty` 监视的命令一小时记满了 120 批停的，施工 MN-1 下）、`aborted`（核心崩了，断了）。翻页、订阅时切点前派出、了结的照日志补上 |
 
 | `running_deep` | 这个会话在跑的任务一共几个，连子孙的（施工 9-8 补下） |
 | `usage_tree` | 连子代理一起累计用了多少，写法同 `usage`：自己的加上每个子代理那一支的（施工 9-8 补下） |

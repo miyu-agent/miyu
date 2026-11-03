@@ -18,7 +18,7 @@ mod nested;
 mod swap;
 mod touched;
 
-pub use job::{JobDone, JobEnd, Mark, Output};
+pub use job::{JobDone, JobEnd, Mark, Output, WatchedLines};
 pub use nested::{Nested, NestedCall};
 pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};

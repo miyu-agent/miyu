@@ -281,6 +281,8 @@ impl Projector {
             JobReason::Aborted => (JobState::Aborted, None),
             JobReason::TimedOut => (JobState::Stopped, Some("timed_out")),
             JobReason::TooLarge => (JobState::Stopped, Some("too_large")),
+            // 监视的命令太吵停下的（施工 MN-1 下）。
+            JobReason::TooChatty => (JobState::Stopped, Some("too_chatty")),
             _ => (JobState::Failed, None),
         };
         if let Some(row) = self.row(&reported.job) {

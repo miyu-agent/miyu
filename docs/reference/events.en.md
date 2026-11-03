@@ -45,7 +45,8 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `context.injected` | A block of facts injected into the context (memory, something an extension returned…) |
 | `context.compacted` | A compaction checkpoint; clearing the context is one too (`trigger` is `clear`). When the summary request was too long and the oldest groups had to be cut, it carries `truncated` (how many groups: the earliest part is not in the summary); left out when nothing was cut |
 | `context.compaction_paused` | Automatic compaction was paused |
-| `job.reported` | A background command ended |
+| `job.reported` | A background command ended; `reason` `too_chatty` means a watched command printed 120 batches within an hour and was stopped |
+| `job.lines` | A watched background command (`shell` with `watch`) printed a batch of lines: `job`, `text` (at most 4000 characters; a cut one has a line in the middle saying how many were left out), `lines`, `omitted`. No `turn` |
 | `child.reported` | A subagent's report |
 | `peer.idle` | A session being waited on went idle, or can't be waited on |
 | `image.described` | A description of an image (seen by the vision model for a model that can't see images) |

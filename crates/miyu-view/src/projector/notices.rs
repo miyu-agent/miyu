@@ -4,8 +4,8 @@
 
 use miyu_kernel::event::{
     ChildReason, ChildReported, CompactTrigger, CompactionDone, CompactionPaused,
-    CompactionProgress, ContextCompacted, Event, JobReason, JobReported, ModelCalled, ModelChanged,
-    PeerIdle, PolicyChanged, SessionRecapped, Usage, WorkspaceChanged,
+    CompactionProgress, ContextCompacted, Event, JobLines, JobReason, JobReported, ModelCalled,
+    ModelChanged, PeerIdle, PolicyChanged, SessionRecapped, Usage, WorkspaceChanged,
 };
 use miyu_kernel::id::{JobId, Seq};
 use miyu_kernel::time::Timestamp;
@@ -14,6 +14,7 @@ use super::Projector;
 use super::users::level;
 use crate::entry::{
     Body, EntryId, JobDone, JobEnd, Mark, ModelSwap, Output, Peer, Recast, Swapped, Was,
+    WatchedLines,
 };
 use crate::explain::explain;
 use crate::notice::{Compaction, CompactionState, Notice};
@@ -321,6 +322,23 @@ impl Projector {
                 }
             }
         });
+    }
+
+    /// 监视的命令出了一批行（施工 MN-1 下）：一条 `lines` 旁白，标题、命令照派它那一步。
+    pub(super) fn job_lines(&mut self, event: &Event, seen: &JobLines) {
+        let job = self.jobs.get(&seen.job).cloned();
+        self.notice(
+            EntryId::event(event.seq),
+            event.at,
+            Notice::Lines(WatchedLines {
+                job: seen.job.clone(),
+                title: job.as_ref().map(|j| j.title.clone()).unwrap_or_default(),
+                command: job.and_then(|j| j.command),
+                text: seen.text.clone(),
+                lines: seen.lines,
+                omitted: seen.omitted,
+            }),
+        );
     }
 
     /// 后台命令结束了。叫撤销停掉的记在撤销那一条上，不另起。

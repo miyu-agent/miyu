@@ -43,6 +43,25 @@ pub struct JobDone {
     pub nested: Option<Nested>,
 }
 
+/// 监视的命令出的一批行（施工 MN-1 下，设计 56 第四节第 4 条，`job.lines`）：头照回报那样画一行，点开看全文。不是了结，
+/// 状态栏那一行照旧在跑。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WatchedLines {
+    /// 任务编号。
+    pub job: JobId,
+    /// 标题：派它那一步的描述。
+    pub title: String,
+    /// 派它那次调用的命令原文。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
+    /// 这一批的行，照事件原样（截过的中间有一行省了多少）。
+    pub text: String,
+    /// 这一批原来几行。
+    pub lines: u64,
+    /// 截掉了几个字。
+    pub omitted: u64,
+}
+
 /// 后台任务了结的原因：后台命令的、子代理的。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]

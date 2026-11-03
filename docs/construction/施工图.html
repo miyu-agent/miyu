@@ -278,7 +278,7 @@ a.step:hover{border-color:var(--primary)}
   <ul class="facts">
     <li><b>1026</b><span>/ 1035 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">MN-1 上</b><span>最近一步（MN-1 上 后台命令出一行就叫醒她）</span></li>
+    <li><b class="mono">MN-1 下</b><span>最近一步（MN-1 下 监视的命令在视图流和参考文档里）</span></li>
   </ul>
 </header>
 
@@ -512,6 +512,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV39c"><span class="n">V-39 下</span>分叉底子交给载入和索引<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSP2"><span class="n">SP-2</span>列出会话里的问话<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11813,6 +11814,55 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/MN-1上-监视后台命令.md</code>；设计 <code>docs/designs/56-监视后台命令.md</code>；蓝图 <code>tools/shell.md</code>、<code>agents.md</code> 第三、四条、<code>session/tools.md</code>、<code>kernel/events-bodies.md</code>、<code>kernel/session.md</code>「回报」第 12 条、<code>kernel/request.md</code>「回报」第 6 条、<code>presets.md</code>；登记簿 <code>26-提示词.md</code> 第十节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sMN1b" aria-labelledby="h-sMN1b">
+  <div class="sheet-head"><h2 id="h-sMN1b"><span class="no">MN-1 下</span>监视的命令在视图流里</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">头要看得到监视的命令出的行：视图流里一条旁白，终端、网页照回报那样画一行、点开看全文；太吵停下的任务写清原因。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">视图流</span><span class="dir-note">MN-1 下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>job.lines</code> 投影成 <code>lines</code> 旁白（<code>WatchedLines</code>）：<code>job</code>、<code>title</code>、<code>command</code> 照派它那一步，<code>text</code>、<code>lines</code>、<code>omitted</code> 照事件；不是了结，状态里那一行照旧在跑</li>
+              <li>状态里任务那一行认 <code>too_chatty</code>：<code>stopped</code>、<code>why: too_chatty</code>（原来落到 <code>failed</code>）</li>
+              <li>参考 <code>view.md</code>、<code>events.md</code> 中英两份写上旁白、事件、原因</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">旁白叫 <code>lines</code>，带这一批全文，不另截</span><span class="rl">设计 56 第四节第 4 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MN-1 下</dd></div>
+        <div><dt>名称</dt><dd>监视的命令在视图流里</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-04</dd></div>
+        <div><dt>提交</dt><dd class="mono">MN-1下</dd></div>
+        <div><dt>验收</dt><dd>视图两条先红后绿；变异 4 个都逮住；分支 CI 六项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>监视的命令出两行：一条 <code>lines</code> 旁白，几格都对，没有任务了结的旁白；<code>too_chatty</code> 的那一行是 <code>stopped</code>、<code>why</code> 对</span></li>
+        <li><span class="ok">✓</span><span>手写变异 4 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/MN-1下-监视的视图.md</code>；蓝图 <code>view.md</code>；参考 <code>view.md</code>、<code>events.md</code> 中英两份。</li>
       </ul>
     </div>
   </div>

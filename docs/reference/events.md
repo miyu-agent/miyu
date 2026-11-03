@@ -45,7 +45,8 @@
 | `context.injected` | 注入进上下文的一块事实（记忆、扩展交的……） |
 | `context.compacted` | 压缩的检查点；清空上下文也是它（`trigger` 是 `clear`）。摘要请求太长、截掉了最老的几组才写成的带 `truncated`（几组：最早的那一段没进摘要），没截过的不写 |
 | `context.compaction_paused` | 暂停了自动压缩 |
-| `job.reported` | 一条后台命令结束了 |
+| `job.reported` | 一条后台命令结束了；`reason` 是 `too_chatty` 的：监视的命令一小时里出了 120 批，被停下了 |
+| `job.lines` | 监视的后台命令（`shell` 写了 `watch`）出了一批行：`job`、`text`（最多 4000 个字，截过的中间有一行写省了多少）、`lines`、`omitted`。不带 `turn` |
 | `child.reported` | 子代理的回报 |
 | `peer.idle` | 等的那个会话空下来了，或者等不到了 |
 | `image.described` | 一张图的转述（看不了图的模型由看图的模型替它看过） |

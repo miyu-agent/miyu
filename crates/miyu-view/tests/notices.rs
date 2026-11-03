@@ -117,6 +117,45 @@ fn a_background_command_reports_with_its_title_and_command() {
     assert!(notice.get("signal").is_none(), "{notice}");
 }
 
+/// 监视的命令出的一批行（施工 MN-1 下，设计 56 第四节第 4 条）：一条 `lines` 旁白，带编号、标题、命令原文、这一批全文、
+/// 几行、截掉几个字；不是任务了结，状态栏那一行照旧在跑。
+#[test]
+fn a_watched_command_shows_its_lines() {
+    let mut stage = stage();
+    stage.model([
+        Line::calls(
+            "",
+            &[(
+                "shell",
+                r#"{"command":"tail -f log","description":"Watch log","watch":true}"#,
+            )],
+        ),
+        Line::says("Watching."),
+        Line::says("Saw it."),
+    ]);
+    stage.tools([Play::starts_command(1, "Watch log")]);
+    stage.say("watch");
+    stage.job_lines(1, "ERROR disk full\nERROR again", 2, By::Kernel, None);
+    let entries = same(&stage);
+    let notice = json(
+        entries
+            .iter()
+            .rev()
+            .find(|e| json(e)["what"] == "lines")
+            .expect("有一批行的旁白"),
+    );
+    assert_eq!(notice["job"], "j1");
+    assert_eq!(notice["title"], "Watch log");
+    assert_eq!(notice["command"], "tail -f log");
+    assert_eq!(notice["text"], "ERROR disk full\nERROR again");
+    assert_eq!(notice["lines"], 2);
+    assert_eq!(notice["omitted"], 0);
+    assert!(
+        !entries.iter().any(|e| json(e)["what"] == "job"),
+        "不是任务了结"
+    );
+}
+
 /// 翻页时任务派在更早的一页（施工 9-8 中）：先照切点前的日志学任务，这一页的回报照样有标题和命令。
 #[test]
 fn a_page_cut_after_the_start_still_names_the_job() {

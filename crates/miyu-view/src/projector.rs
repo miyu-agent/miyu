@@ -177,6 +177,7 @@ impl Projector {
             EventBody::CompactionPaused(paused) => self.paused(event, paused),
             EventBody::ModelCalled(called) => self.called(event, called),
             EventBody::JobReported(reported) => self.job_reported(event, reported),
+            EventBody::JobLines(seen) => self.job_lines(event, seen),
             EventBody::ChildReported(reported) => self.child_reported(event, reported),
             EventBody::PeerIdle(idle) => self.peer(event, idle),
             _ => {}

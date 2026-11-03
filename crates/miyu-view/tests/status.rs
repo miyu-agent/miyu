@@ -265,6 +265,8 @@ fn a_job_stopped_at_its_limit_says_which() {
     for (reason, why) in [
         (JobReason::TimedOut, "timed_out"),
         (JobReason::TooLarge, "too_large"),
+        // 监视的命令太吵（施工 MN-1 下）。
+        (JobReason::TooChatty, "too_chatty"),
     ] {
         let mut stage = stage();
         stage.model([

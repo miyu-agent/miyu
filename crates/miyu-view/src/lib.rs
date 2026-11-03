@@ -25,7 +25,7 @@ pub use change::Change;
 pub use entry::{
     Answered, Approval, Attachment, Body, Diff, End, Entry, EntryId, Group, JobDone, JobEnd, Mark,
     Media, ModelSwap, Nested, NestedCall, Output, Part, Peer, Picture, Recast, Reply, SkillUsed,
-    Swapped, Thought, Title, Tone, Tool, ToolState, TouchKind, Touched, User, Was,
+    Swapped, Thought, Title, Tone, Tool, ToolState, TouchKind, Touched, User, Was, WatchedLines,
 };
 pub use nested::{NestedItem, Stored, listed};
 pub use notice::{Compaction, CompactionState, Notice};

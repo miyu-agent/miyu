@@ -50,6 +50,7 @@ One object each, with the common fields `id`, `kind`, `turn` (which turn), `hidd
 | `paused` | Automatic compaction paused: `reason`, `failures` |
 | `reverted` | Turns were undone: `turns`, `said`, `jobs` |
 | `job` | A background job finished: `job`, `job_kind`, `title`, `mark` (`done`, `failed`, `stopped`), `report`, `command`, `output` (`{blob, chars}`), `exit_code`, `signal`, `took_ms`, `nested` (when the command's script called tools, as on `tool`) |
+| `lines` | A watched background command printed a batch of lines (`job.lines`): `job`, `title`, `command`, `text` (the whole batch, at most 4000 characters; a cut one has a line in the middle saying how many were left out), `lines` (how many lines), `omitted` (characters left out). The job hasn't ended: its row in `jobs` is still running |
 | `answered` | A set of questions was answered: `questions`, `answers`, `by` |
 | `persona` | The persona or preset changed mid-session, at the moment it takes effect: `persona: {from, to}`, `preset: {from, to}`, only the ones that changed; ids, `null` for none |
 | `recap` | A recap: `text`, `covers` |
