@@ -170,6 +170,8 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 ### FH-5下：脚本、技能包和软件源（旧名过渡期间不坏，不挡 FH-7）
 
+状态（2026-11-03，sub1）：13 个脚本、技能包各开了 `fh-5b` 分支换成新名字，推了、不发版（等 FHS 全部做完、主人当面同意一起发），只给新名字直接跑过各自的工具；`miyu-index` 收录拒保留名字在 `step/FH-5b-index`（保留名字表挪进 `miyu-config`，`miyu-index` 不为它拉进 `miyu-store`）；合了以后 packages 仓库开分支升 `miyu-rev`、PR 交 core1。在 layout 3 的核心上装包、从会话里调，放在 FH-7 第三轮演练里一起做。
+
 | 仓库 | 改什么 |
 |---|---|
 | miyu-scripts 里 13 个包 | `MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR` 改成 `MIYU_STATE_DIR`、`MIYU_CACHE_DIR`、`MIYU_IMAGES_DIR`：ai-draw、bangumi、douyin-dl、exchange-rate、game-compat、goofish、juya-daily、reddit-search、weather、web-image、skills-aur-pkgbuild-review、skills-bilibili-live-stream、skills-travel-planner（技能包里写在 SKILL.md 给她看的那几处也改） |

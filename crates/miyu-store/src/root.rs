@@ -35,11 +35,9 @@ const VAR: &str = "var";
 const TMP: &str = "tmp";
 
 /// 核心自己在 `etc/`、`var/lib/`、`var/cache/`、`var/log/`、`tmp/`、`run/` 这几层用到的名字（设计 55 第三节第 3 条）：包各占
-/// 一个 `<编号>/`，这些不能用作包的编号。测试照各层的方法推一遍，和这张表对。
-pub const RESERVED: [&str; 17] = [
-    "private", "removed", "models", "packages", "mcp", "index", "config", "provide", "scripts",
-    "personas", "mermaid", "sandbox", "perf", "unpack", "token", "socket", "log-salt",
-];
+/// 一个 `<编号>/`，这些不能用作包的编号。表在 `miyu_config::package`（施工 FH-5下：软件源收录也查）；测试照各层的方法推一遍，
+/// 和这张表对。
+pub use miyu_config::package::RESERVED;
 
 /// 照 XDG 用户目录给主人的几处（施工 Y-11 上）：她替人做出来、拿到的东西放这里，用到的时候才建。名字照 XDG 的英文，界面上照
 /// 语言显示。

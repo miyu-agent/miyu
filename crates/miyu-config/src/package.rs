@@ -22,6 +22,7 @@ mod look;
 mod mcp;
 mod need;
 mod reader;
+mod reserved;
 mod search;
 pub mod settings;
 mod side;
@@ -43,6 +44,7 @@ pub use mcp::{
     configured as configured_mcp, venues_fit,
 };
 pub use need::Need;
+pub use reserved::{RESERVED, reserved_id};
 pub use search::{SEARCH_SOURCE, SearchSource};
 pub use settings::{Choice, Setting, SettingKind};
 pub use side::{SIDE_TIERS, SideRequest};

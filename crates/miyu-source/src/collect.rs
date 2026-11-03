@@ -253,6 +253,10 @@ fn read_package(
     std::fs::write(&file, bytes).map_err(|error| error.to_string())?;
     let unpacked = archive::unpack(&file, &dir.join("unpacked"))
         .map_err(|error| format!("{name}: {error}"))?;
+    // 编号是数据根里保留的名字的不收（施工 FH-5下，设计 55 第三节第 3 条）：装不上的包不进索引，也不占编号。
+    if let Some(problem) = package::reserved_id(&unpacked.id) {
+        return Err(format!("{name}: {}", problem.message));
+    }
     let text = std::fs::read_to_string(unpacked.folder.join("package.toml"))
         .map_err(|_| format!("{name}: no package.toml"))?;
     let manifest = package::read(&text).map_err(|problem| format!("{name}: {problem}"))?;

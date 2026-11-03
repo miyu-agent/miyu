@@ -28,6 +28,8 @@ pub mod leftovers;
 pub mod local;
 
 pub use launch::{Launch, first_line, launcher};
+/// 编号是保留名字的那一条问题（表在 `miyu_config::package`，施工 FH-5下 挪过去）。
+pub use miyu_config::package::reserved_id;
 
 /// 清单在包文件夹里的名字（施工 F-8 上）。
 pub const MANIFEST: &str = "package.toml";
@@ -303,16 +305,6 @@ fn reserved(found: &mut [Found]) {
             one.read = Err(Issue::Wrong(problem));
         }
     }
-}
-
-/// 编号 `id` 是保留的名字的话，那一条问题（装包时查、读清单时查）；不是的没有。
-pub fn reserved_id(id: &str) -> Option<Problem> {
-    crate::root::RESERVED.contains(&id).then(|| Problem {
-        line: None,
-        code: Code::ReservedId,
-        message: format!("package id {id} is reserved in the data root"),
-        detail: id.to_string(),
-    })
 }
 
 /// 读的先后：出厂的先于家目录，同一层照编号。先到先得的几样（子命令名、功能的编号）照它。
