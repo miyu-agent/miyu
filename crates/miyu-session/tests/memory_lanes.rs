@@ -241,6 +241,9 @@ async fn a_rebuilt_index_fills_a_lane_from_its_base_too() {
     // 回合库重建以后补齐旧会话（`memory.md` 第一条第 9 款）：支线照载入时一样读底子，那一段带着底子里那句人话。
     let home = Home::new();
     let lane = heard_then_answered_in_a_lane(&home).await;
+    // 先等载入支线那一份记忆把后台的写都写完（照真用时：重建是核心起来那一刻，没有别人在写）。不等的话它晚到的写落在弄坏的
+    // 库上，库又像个好的，新的一份不重建，等不到补齐（macOS 上红过，施工 FL-2）。
+    home.memory.finish();
     let path = home.root.index().join("recall/turns-engineer.db");
     std::fs::write(&path, "这不是一个库").expect("写得进");
     let memory = miyu_session::Memory::new(&home.root, None);
