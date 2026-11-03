@@ -8,8 +8,7 @@
 //! - [`serve`]：和一个连接说话，直到它关了；
 //! - [`run`]：在本机的监听器上一个个接连接，每个交给 [`serve`]；
 //! - [`Core::idle`]：没有连接、没有在跑的回合、也没有在跑的后台命令，核心据此空闲退出（施工 3-9 上、7-3）；
-//! - [`settings`]：端点的配置项，界面语言 `ui.language`（施工 8-1）、新会话开局只读 `permission.start_read_only`
-//!   （施工 8-2）；
+//! - [`settings`]：端点的配置项，界面语言 `ui.language`（施工 8-1）、新会话开局只读 `permission.start_read_only`（施工 8-2）；
 //! - [`config`]：配置服务：起来时读的几份配置、最终值，`config.schema`、`config.get`、`config.check`（施工 8-2）；
 //!   `config.set`、`config.trust`（施工 8-3）；监视配置文件、推 `config.changed`、把当前的一份交给会话和核心（施工 8-4）；
 //! - 密钥：`secret.set`、`secret.delete`、`secret.list`，只能写、删、列名字，从不交出值（施工 8-5，`secrets.rs`）；

@@ -288,6 +288,7 @@ syn 2.0.119 (MIT OR Apache-2.0)
 syn 3.0.6 (MIT OR Apache-2.0)
 thiserror 2.0.21 (MIT OR Apache-2.0)
 thiserror-impl 2.0.21 (MIT OR Apache-2.0)
+typed-path 0.13.0 (MIT OR Apache-2.0)
 unicode-ident 1.0.26 ((MIT OR Apache-2.0) AND Unicode-3.0)
 zmij 1.0.23 (MIT)
 
@@ -1349,6 +1350,7 @@ syn 2.0.119 (MIT OR Apache-2.0)
 syn 3.0.6 (MIT OR Apache-2.0)
 thiserror 2.0.21 (MIT OR Apache-2.0)
 thiserror-impl 2.0.21 (MIT OR Apache-2.0)
+typed-path 0.13.0 (MIT OR Apache-2.0)
 unicode-ident 1.0.26 ((MIT OR Apache-2.0) AND Unicode-3.0)
 utf8parse 0.2.2 (Apache-2.0 OR MIT)
 yaml-rust2 0.13.0 (MIT OR Apache-2.0)
@@ -7958,6 +7960,7 @@ DEALINGS IN THE SOFTWARE.
 
 ================================================================================
 nix 0.29.0 (MIT)
+nix 0.31.3 (MIT)
 
 The MIT License (MIT)
 
@@ -11986,7 +11989,6 @@ windows-link 0.2.1 (MIT OR Apache-2.0)
 windows-numerics 0.3.1 (MIT OR Apache-2.0)
 windows-result 0.4.1 (MIT OR Apache-2.0)
 windows-strings 0.5.1 (MIT OR Apache-2.0)
-windows-sys 0.52.0 (MIT OR Apache-2.0)
 windows-sys 0.59.0 (MIT OR Apache-2.0)
 windows-sys 0.60.2 (MIT OR Apache-2.0)
 windows-sys 0.61.2 (MIT OR Apache-2.0)
@@ -12210,7 +12212,6 @@ windows-link 0.2.1 (MIT OR Apache-2.0)
 windows-numerics 0.3.1 (MIT OR Apache-2.0)
 windows-result 0.4.1 (MIT OR Apache-2.0)
 windows-strings 0.5.1 (MIT OR Apache-2.0)
-windows-sys 0.52.0 (MIT OR Apache-2.0)
 windows-sys 0.59.0 (MIT OR Apache-2.0)
 windows-sys 0.60.2 (MIT OR Apache-2.0)
 windows-sys 0.61.2 (MIT OR Apache-2.0)
@@ -12603,6 +12604,31 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+================================================================================
+zip 9.3.0 (MIT)
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Mathijs van de Nes
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ================================================================================
 zlib-rs 0.6.8 (Zlib)
