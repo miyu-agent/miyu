@@ -69,7 +69,8 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
     let home = Home::new();
     mine(&home, "term", TERM);
     let packages = listed(&home).await;
-    let state = home.root.path().join("var/lib/term");
+    // 照数据根的方法拼：Windows 上 `join("var/lib/term")` 会留着 `/`，和核心交的 `\` 比字符串对不上。
+    let state = home.root.package_state("term");
     assert_eq!(
         only(&packages, &["miyu-base-mermaid", "term"]),
         [
@@ -83,7 +84,7 @@ async fn shipped_and_home_packages_are_listed_in_the_connections_language() {
                 "protocol": [1, 1],
                 "name": "画 mermaid 图",
                 "features": [],
-                "state": home.root.path().join("var/lib/miyu-base-mermaid").to_string_lossy(),
+                "state": home.root.package_state("miyu-base-mermaid").to_string_lossy(),
                 "status": "ready",
                 "enabled": true,
             }),
