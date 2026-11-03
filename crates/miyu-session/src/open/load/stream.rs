@@ -4,13 +4,16 @@
 //!
 //! 读完才认得出最近一次换的快照：和头一块认的不是同一份的，照最后那一份取策略；内核说一块块喂的对不上（压缩被撤到放掉的
 //! 前面、向上回报的截法换了），照整份再读一遍，走以前的 `Session::load`。
+//!
+//! 分叉出来的会话的底子也一块块读、一块块喂（施工 V-39 中，[`BaseFeed`]）：父会话压缩以前的那一截喂的时候就放掉，手上只留
+//! 最近一次压缩以后到分叉点的；以前整份读进来交给内核，第一块自己的日志进来才放。
 
 use std::path::Path;
 use std::time::{Duration, Instant};
 
 use miyu_kernel::event::{Body, Event, SessionCreated};
 use miyu_kernel::id::{CommandId, ContentHash, Seq, SessionId};
-use miyu_kernel::session::{Loader, Policy, Session};
+use miyu_kernel::session::{BaseFeed, Loader, Policy, Session};
 use miyu_policy::Snapshot;
 use miyu_store::blob::Blobs;
 use miyu_store::log::{Flow, SEGMENT_LIMIT, SessionLog, read_events};
@@ -160,24 +163,26 @@ fn start(
         }) => (created.clone(), cause.clone()),
         _ => return Err(LoadError::NotCreated),
     };
-    // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。读出来的整份交给内核，
-    // 这里只留它在哪（施工 V-20）：以前另留一份、再拷一份给内核，支线活多久底子留多久。
-    let base = created
-        .0
-        .forked
-        .as_ref()
-        .map(|forked| Base::new(parents.session_dir(&forked.from), forked.upto));
-    let events = base
-        .as_ref()
-        .map(|base| base.events_from(Seq::FIRST))
-        .transpose()
-        .map_err(LoadError::Log)?;
-    if let Some(events) = &events {
-        scan.base(events);
-    }
+    // 分叉出来的（施工 C-8 上）：父会话的日志里到分叉点为止的是底子，照只读读（父会话可能正在写）。一块块喂给内核（施工
+    // V-39 中），这里只留它在哪（施工 V-20）：以前另留一份、再拷一份给内核，支线活多久底子留多久。
+    let mut feed = None;
+    let base = match &created.0.forked {
+        Some(forked) => {
+            let base = Base::new(parents.session_dir(&forked.from), forked.upto);
+            let mut fed = BaseFeed::new(forked.from.clone());
+            base.each(|events| {
+                scan.base(&events);
+                fed.feed(events);
+            })
+            .map_err(LoadError::Log)?;
+            feed = Some(fed);
+            Some(base)
+        }
+        None => None,
+    };
     let hash = current_policy(first).unwrap_or(&created.0.policy).clone();
     let snapshot = policy_of(store, &hash)?;
-    let loader = Session::loader(id.clone(), events, first, snapshot.1.reports.clone())
+    let loader = Session::loader(id.clone(), feed, first, snapshot.1.reports.clone())
         .map_err(LoadError::Kernel)?;
     Ok(Started {
         created,

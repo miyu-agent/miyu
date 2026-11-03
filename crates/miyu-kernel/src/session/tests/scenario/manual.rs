@@ -448,7 +448,7 @@ fn a_fork_after_a_compaction_starts_from_the_parent_checkpoint() {
         within: None,
     });
     let child_id = SessionId::parse(crate::testkit::CHILD_SESSION).unwrap();
-    let (child, actions) = Session::fork(
+    let (child, actions) = Session::fork_live(
         child_id.clone(),
         &base,
         id(100),

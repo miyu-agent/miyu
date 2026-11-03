@@ -69,7 +69,7 @@ mod workspace;
 
 pub use action::{Action, Outcome, Reason};
 pub use configure::Replaced;
-pub use fork::{ForkPlan, fork_plan, fork_plan_at};
+pub use fork::{BaseFeed, ForkFeed, ForkPlan};
 pub use input::{
     Answer, Appended, Command, ExtEvent, GoalChange, Injection, Input, Limits, Queued, Received,
     Reread, Verdict,

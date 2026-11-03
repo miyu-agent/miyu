@@ -21,7 +21,8 @@ pub(crate) fn current_policy(events: &[Event]) -> Option<&ContentHash> {
 
 /// 日志里最后一次记下的工作目录、加进来的目录（施工 4-9 再补三上、5-10 上、9-7 上；V-2 三补从会话表挪来）：工作目录照列会话的
 /// 同一个认法（`miyu_store::index::cwd`：最后一条带 `cwd` 的 `turn.started`、换工作区，没有就照 `session.created`）；加进来的
-/// 目录照最后一条 `turn.started` 的，换工作区写了的照它，都没有的是空的。
+/// 目录照最后一条 `turn.started` 的，换工作区写了的照它，都没有的是空的。一路记的是 [`Place`]，这一份整份找的留给测试对照。
+#[cfg(test)]
 pub(crate) fn remembered(events: &[Event]) -> (Option<String>, Vec<String>) {
     let cwd = events
         .iter()
@@ -39,6 +40,39 @@ pub(crate) fn remembered(events: &[Event]) -> (Option<String>, Vec<String>) {
     (cwd, dirs)
 }
 
+/// 最后一次记下的工作目录、加进来的目录（同测试里整份找的 `remembered`），照先后一条条记（施工 V-39 中：分叉时边读边记，载入时 [`Scan`]
+/// 也照它记）。
+#[derive(Debug, Default)]
+pub(crate) struct Place {
+    /// 最后一次记下的工作目录。
+    cwd: Option<String>,
+    /// 最后一次记下的加进来的目录。
+    dirs: Option<Vec<String>>,
+}
+
+impl Place {
+    /// 记一条。
+    pub(crate) fn note(&mut self, event: &Event) {
+        if let Some(cwd) = miyu_store::index::cwd(event) {
+            self.cwd = Some(cwd.to_string());
+        }
+        match &event.body {
+            Body::TurnStarted(started) => self.dirs = Some(started.dirs.clone()),
+            Body::WorkspaceChanged(changed) => {
+                if let Some(dirs) = &changed.dirs {
+                    self.dirs = Some(dirs.clone());
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// 最后一次记下的工作目录、加进来的目录。
+    pub(crate) fn remembered(&self) -> (Option<String>, Vec<String>) {
+        (self.cwd.clone(), self.dirs.clone().unwrap_or_default())
+    }
+}
+
 /// 载入时边读边记的几样（施工 V-15：日志一块块读，读过的放掉，从整份里找的改成一路记）：每一样同上面整份找的那个。
 #[derive(Debug, Default)]
 pub(super) struct Scan {
@@ -48,10 +82,8 @@ pub(super) struct Scan {
     pub(super) recasts: Vec<Event>,
     /// 最后一条带着她在场所里叫什么、带着群名的人话（施工 E-1 修三补、E-4 上）：记忆载入时照它们接上最近听到的（`Heard::last`）。
     heard: [Option<Event>; 2],
-    /// 最后一次记下的工作目录（同 [`remembered`]）。
-    cwd: Option<String>,
-    /// 最后一次记下的加进来的目录（同 [`remembered`]）。
-    dirs: Option<Vec<String>>,
+    /// 最后一次记下的工作目录、加进来的目录（同测试里整份找的 `remembered`）。
+    place: Place,
     /// 她看过的文件（`effects::seen_in`）。
     pub(super) seen: crate::effects::SeenScan,
     /// 派出去的任务（`Roster::from_events`）。
@@ -89,9 +121,7 @@ impl Scan {
     /// 记下照先后的一块。
     pub(super) fn note(&mut self, events: &[Event]) {
         for event in events {
-            if let Some(cwd) = miyu_store::index::cwd(event) {
-                self.cwd = Some(cwd.to_string());
-            }
+            self.place.note(event);
             match &event.body {
                 Body::PolicyChanged(changed) => {
                     if let Some(policy) = &changed.policy {
@@ -111,12 +141,6 @@ impl Scan {
                                 self.heard[n] = Some(event.clone());
                             }
                         }
-                    }
-                }
-                Body::TurnStarted(started) => self.dirs = Some(started.dirs.clone()),
-                Body::WorkspaceChanged(changed) => {
-                    if let Some(dirs) = &changed.dirs {
-                        self.dirs = Some(dirs.clone());
                     }
                 }
                 Body::ModelCalled(called) => {
@@ -151,9 +175,9 @@ impl Scan {
         laid
     }
 
-    /// 最后一次记下的工作目录、加进来的目录（同 [`remembered`]）。
+    /// 最后一次记下的工作目录、加进来的目录（同测试里整份找的 `remembered`）。
     pub(super) fn remembered(&self) -> (Option<String>, Vec<String>) {
-        (self.cwd.clone(), self.dirs.clone().unwrap_or_default())
+        self.place.remembered()
     }
 }
 

@@ -6,6 +6,9 @@
 //! 情况一块块喂对不上，[`Loader::needs_whole`] 是真，调的一方照整份日志走 [`Session::load`]：压缩被撤了（撤掉的回合里的压缩
 //! 不算数），最后算出的起点比已经放掉的还早；会话的策略是读完整份才认得出的（最近一次换的快照），向上回报的截法和开头
 //! 照着过账本的那一份不一样。
+//!
+//! 分叉出来的会话的底子也是一块块喂好才交过来的（施工 V-39 中，[`BaseFeed`]）：父会话压缩以前的那一截喂的时候就放掉了。
+//! 父会话的压缩后来被撤了的，起点比放掉的还早，同样照整份走。
 
 use super::{LoadError, Replay};
 use crate::event::{Body, Event};
@@ -14,7 +17,7 @@ use crate::id::{Seq, SessionId};
 use crate::ledger::Ledger;
 use crate::session::Session;
 use crate::session::configure::Reference;
-use crate::session::fork::{Base, continued, forked_of};
+use crate::session::fork::{BaseFeed, continued, forked_of};
 use crate::session::grants::Grants;
 use crate::session::jobs;
 use crate::session::policy::{Policy, Reports};
@@ -28,7 +31,7 @@ pub struct Loader {
     /// 哪个会话。
     pub(in crate::session) session: SessionId,
     /// 向上回报的截法：过账本时照它算。
-    reports: Reports,
+    pub(in crate::session) reports: Reports,
     /// 分叉出来的：父会话、父会话那一段有效历史的起点。
     pub(in crate::session) parent: Option<(SessionId, Seq)>,
     pub(in crate::session) ledger: Ledger,
@@ -46,38 +49,43 @@ pub struct Loader {
     /// 还没定进不进有效历史的，照先后：序号都不比 `noted` 小。
     pub(in crate::session) kept: Vec<Event>,
     /// 序号比它小的都只记了、放掉了。
-    noted: Seq,
+    pub(in crate::session) noted: Seq,
 }
 
 impl Session {
-    /// 开始一块块载入会话 `session`（施工 V-15）：`first` 是日志的头一块（没有事件的是空的），`base` 是分叉出来的会话的底子
-    /// （同 [`Session::load_forked`]），`reports` 是这时认得出的策略里向上回报的截法。头一块不在这里喂，接着交给
-    /// [`Loader::feed`]。
+    /// 开始一块块载入会话 `session`（施工 V-15）：`first` 是日志的头一块（没有事件的是空的），`base` 是分叉出来的会话喂到分叉点
+    /// 为止的底子（施工 V-39 中，[`BaseFeed`]：一块块喂好的，压缩以前的已经放掉），`reports` 是这时认得出的策略里向上回报的
+    /// 截法。头一块不在这里喂，接着交给 [`Loader::feed`]。
     ///
     /// # Errors
     ///
     /// 分叉出来的：头一条不是带 `forked` 的 `session.created`，底子过不了父会话的账本、和头一条接不上。
     pub fn loader(
         session: SessionId,
-        base: Option<Vec<Event>>,
+        base: Option<BaseFeed>,
         first: &[Event],
         reports: Reports,
     ) -> Result<Loader, LoadError> {
         let start = first.first().map_or(Seq::FIRST, |event| event.seq);
         let mut ledger = Ledger::for_session(session.clone()).starting_at(start);
-        let (parent, base) = match base {
+        let (parent, kept, history, noted) = match base {
             Some(base) => {
-                let of = Base::of(&base, forked_of(first)?)?;
-                ledger = continued(ledger.heard_from(&of.ledger), &of);
-                (Some((of.parent, of.from)), base)
+                let fed = base.finish(&forked_of(first)?)?;
+                ledger = continued(ledger.heard_from(&fed.ledger), fed.within, &fed.ledger);
+                (
+                    Some((fed.parent, fed.from)),
+                    fed.kept,
+                    fed.history,
+                    fed.noted,
+                )
             }
-            None => (None, Vec::new()),
+            None => (None, Vec::new(), History::whole(), Seq::FIRST),
         };
         Ok(Loader {
             session,
             reports,
             parent,
-            kept: base,
+            kept,
             ledger,
             replay: Replay::default(),
             duty: Duty::default(),
@@ -88,8 +96,8 @@ impl Session {
             rounds: Rounds::default(),
             busy: crate::waits::Busy::default(),
             chain: crate::session::chain::Chain::default(),
-            history: History::whole(),
-            noted: Seq::FIRST,
+            history,
+            noted,
         })
     }
 }

@@ -188,6 +188,13 @@ impl Watch {
         !self.accepted.contains(id)
     }
 
+    /// 落了盘的整份日志：造会话那一条，接着追加过的（施工 V-39 中的对照测试拿它当父会话）。
+    pub(super) fn log(&self) -> Vec<Event> {
+        let mut log = vec![self.created()];
+        log.extend(self.events.iter().cloned());
+        log
+    }
+
     /// 追加过的最后一条。造会话那一条算在里面。
     pub(super) fn last(&self) -> u64 {
         self.events.last().map_or(1, |event| event.seq.get())

@@ -52,7 +52,8 @@
 |---|---|
 | `Session::create(session, id, by, at, created, policy, environment)` | 造会话：追加第 1 条 `session.created`，`cause` 是 `id`，出来一个 `Append`；落了盘回应 `id`。开始时的权限取自 `created.permission`。`session` 是这个会话自己的编号（日志所在的目录就叫它），事实 `session` 写它（施工 1-13 再补） |
 | `Session::load(session, events, at, policy, environment)` | 从日志载入会话 `session`，出来会话和要补的动作；载入不了的是 `LoadError`（「载入和崩溃」） |
-| `Session::loader(session, base, first, reports)`、`Loader::feed(events)`、`needs_whole(policy)`、`finish(at, policy, environment)` | 一块块载入（施工 V-15）：头一块、向上回报的截法开始，照先后一块块喂（账本、记账一条条过，有效历史的起点往前挪了，挪过去的只记派出去的任务、待办，放掉），喂完收尾，同 `Session::load`。`needs_whole` 是真的不收尾，照整份走 `Session::load`：压缩被撤到放掉的前面了，或者读完才认得出的策略向上回报的截法和开头的不一样。`load`、`load_forked` 就是整份当一块喂 |
+| `Session::loader(session, base, first, reports)`、`Loader::feed(events)`、`needs_whole(policy)`、`finish(at, policy, environment)` | 一块块载入（施工 V-15）：头一块、向上回报的截法开始，照先后一块块喂（账本、记账一条条过，有效历史的起点往前挪了，挪过去的只记派出去的任务、待办，放掉），喂完收尾，同 `Session::load`。`needs_whole` 是真的不收尾，照整份走 `Session::load`：压缩被撤到放掉的前面了（自己的，或者分叉出来的底子里父会话的），或者读完才认得出的策略向上回报的截法和开头的不一样。`load`、`load_forked` 就是整份当一块喂。分叉出来的 `base` 是一块块喂好的底子（`BaseFeed`，施工 V-39 中） |
+| `BaseFeed::new(parent)`、`feed(events)`、`BaseFeed::of(parent, events)`；`ForkFeed::new(parent)`、`feed(events, settled)`、`finish(call, settled)`；`Session::fork(session, base, …)`、`fork_within(…)` | 分叉、载入支线共用的底子（施工 V-39 中，`session/fork.md`「底子一块块喂」）：父会话的日志一块块喂，过它的账本、压缩以前的当场放掉，过不了账本的记下、交出去的时候照原样报。`ForkFeed` 一块块算分叉（同以前整份的 `fork_plan`、`fork_plan_at`），交回 `ForkPlan` 和喂到分叉点的 `BaseFeed`；喂进底子的每一条交给 `settled`。`Session::fork` 照喂好的底子只写第一批事件、交回它们，不攒底子的有效历史（要接着用的照底子载入）；测试替身用的 `fork_live` 照整份底子交回会话 |
 | `handle(input)` | 送进一条输入，出来一串动作 |
 | `last_job_number()` | 日志里用过的任务编号最后一段最大的数（施工 7-5；照最后一段数，施工 7-1 补）：撤掉的回合里派的、不认识的种类也算，一个都没派过的是 0。只读。执行器照它往下领号，派子代理、后台命令共用一串（`session/tools.md`「派子代理」、第 5 条，施工 7-3） |
 | `waiting_children()` | 欠着一份回报的子代理的子会话，照任务编号：派出去、一次都还没回报过的（施工 7-6），最近一次回报以后又留过言的（`job.messaged`，施工 7-7）。撤掉的回合里派的也在，被停掉的报过了、不在。只读。执行器载入以后照它叫起子会话（`session/actor.md` 第 2 条） |
@@ -593,7 +594,7 @@
 
 **换人格、预设**（`Recast`，施工 P-13，`recast.rs`，`16-人格与预设.md` Y5）：
 
-1. 会话要用的人格、预设从日志算：`session.created` 的 `persona`、`preset`，被后来带这两格的 `session.policy_changed` 盖掉（空的人格是无人格）。`persona()`、`preset()` 只读交给执行器，分叉照分叉点为止的算（`fork_plan`）。
+1. 会话要用的人格、预设从日志算：`session.created` 的 `persona`、`preset`，被后来带这两格的 `session.policy_changed` 盖掉（空的人格是无人格）。`persona()`、`preset()` 只读交给执行器，分叉照分叉点为止的算（`ForkFeed`）。
 2. 有回合在进行的拒，`turn_running`。和现在一样的格去掉；一格都不剩的接受、什么都不记、编号照记。
 3. 别的：追加一条 `session.policy_changed`，写 `persona`（无人格写空的）、`preset`，`by` 是换的人；能压的话紧跟着照手动压缩单开一轮（同「手动压缩」，没有要求），没有能压的不开。两条都落了盘才回应，附上两条的序号。
 4. 真换在下一个回合开始：执行器照 `persona()`、`preset()` 和手里快照的不一样，重拼快照，照「换策略快照」交进来。压缩那一轮不跑挂接点，摘要一定照旧人格的前缀写。压缩没成也照样换。

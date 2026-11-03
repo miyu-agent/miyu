@@ -11,6 +11,7 @@ use std::fmt;
 
 use super::Session;
 use super::action::Action;
+use super::fork::{self, BaseFeed};
 use super::jobs::{Arrived, Waker};
 use super::meta::Meta;
 use super::policy::Policy;
@@ -141,7 +142,7 @@ impl Session {
     }
 
     /// [`Session::load`]、[`Session::load_forked`] 共用的：`base` 是分叉出来的会话的底子，别的没有。整份当一块喂
-    /// （[`Loader`]）。
+    /// （[`Loader`]；底子也当一块喂，[`BaseFeed::of`]）。
     fn load_on(
         session: SessionId,
         base: Option<&[Event]>,
@@ -150,12 +151,11 @@ impl Session {
         policy: Policy,
         environment: Environment,
     ) -> Result<(Session, Vec<Action>), LoadError> {
-        let mut loader = Session::loader(
-            session,
-            base.map(<[Event]>::to_vec),
-            &events,
-            policy.reports.clone(),
-        )?;
+        let base = match base {
+            Some(base) => Some(BaseFeed::of(&fork::forked_of(&events)?.from, base)),
+            None => None,
+        };
+        let mut loader = Session::loader(session, base, &events, policy.reports.clone())?;
         loader.feed(events)?;
         loader.finish(at, policy, environment)
     }

@@ -20,6 +20,7 @@ mod display_name;
 mod embed;
 mod embed_replace;
 mod end_turn;
+mod fork_streamed;
 mod fork_subagent;
 mod forward;
 mod goal;

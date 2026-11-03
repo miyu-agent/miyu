@@ -151,7 +151,7 @@ impl Stage {
         let (session, actions) = match &base {
             Some(base) => {
                 let (cause, at, env) = (command_id(0), now, environment.clone());
-                Session::fork(
+                Session::fork_live(
                     id.clone(),
                     base,
                     cause,

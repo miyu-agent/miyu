@@ -2,25 +2,29 @@
 //! 的第一条（带 `forked` 的 `session.created`，序号接着分叉点），交回分叉点。之后由调的一方照常载入它（载入认得 `forked`，
 //! 照它读父会话的日志当底子）。fork 子代理（施工 A-F 中，[`Within`]）从父会话这一轮派它的那一步分叉，头几条多记那一步的
 //! 占位结果、收住那一轮。
+//!
+//! 父会话一块块读（施工 V-39 中，`docs/construction/V-39中-支线底子边读边喂.md`）：边读边交给内核算分叉（[`ForkFeed`]），
+//! 整份不同时留在内存里；以前整份读进来、过两遍账本，再把分叉点以前的有效历史攒一遍，只为写一条。
 
 use std::fmt;
 use std::io;
 use std::num::NonZeroU32;
+use std::path::Path;
 use std::sync::Arc;
 
-use miyu_kernel::event::{Body, Event, Forked, SessionCreated};
+use miyu_kernel::event::{Body, Forked, SessionCreated};
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{CallId, CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
-use miyu_kernel::session::{Action, LoadError as Broken, Session, fork_plan, fork_plan_at};
+use miyu_kernel::session::{BaseFeed, ForkFeed, ForkPlan, LoadError as Broken, Session};
 use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::{BuildError, Snapshot, SnapshotError};
 use miyu_store::blob::{BlobError, Blobs};
 use miyu_store::index::SessionIndex;
-use miyu_store::log::{OpenError, SEGMENT_LIMIT, SessionLog, abandon, read_events};
+use miyu_store::log::{Flow, OpenError, SEGMENT_LIMIT, SessionLog, abandon, read_range};
 use miyu_store::root::DataRoot;
 
-use super::scan::remembered;
+use super::scan::Place;
 use crate::blocking::blocking;
 use crate::store::{Indexed, Store};
 
@@ -114,32 +118,20 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
     let blobs = Blobs::new(root.blobs());
     let parent = parent.clone();
     blocking(move || {
-        let events = read_events(&parent_dir).map_err(ForkError::Log)?;
-        let created = match events.first().map(|event| &event.body) {
-            Some(Body::SessionCreated(created)) => created.clone(),
-            _ => return Err(ForkError::Kernel(Broken::Empty)),
-        };
-        // 子代理、分叉出来的都有父会话。fork 子代理只看是不是分叉出来的：普通子代理也能派它。
-        let refused = match within {
-            Some(_) => created.forked.is_some(),
-            None => created.parent.is_some(),
-        };
-        if refused {
-            return Err(ForkError::NotMain);
-        }
-        let plan = match &within {
-            Some(within) => fork_plan_at(&parent, &events, within.call),
-            None => fork_plan(&parent, &events),
-        }
-        .map_err(ForkError::Kernel)?;
-        let base: Vec<Event> = events
-            .into_iter()
-            .take_while(|event| event.seq <= plan.upto)
-            .collect();
+        let Parent {
+            created,
+            plan,
+            base,
+            place,
+        } = read_parent(
+            &parent_dir,
+            &parent,
+            within.as_ref().map(|within| within.call),
+        )?;
         let bytes = blobs.get(&plan.policy).map_err(ForkError::Blob)?;
         let snapshot = Snapshot::from_bytes(&bytes).map_err(ForkError::Snapshot)?;
         let policy = snapshot.policy().map_err(ForkError::Policy)?;
-        let (cwd, dirs) = remembered(&base);
+        let (cwd, dirs) = place.remembered();
         let child = SessionCreated {
             venue: created.venue,
             policy: plan.policy,
@@ -168,14 +160,14 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
                 within: plan.within,
             }),
         };
-        // 这一份内核会话只用来查底子、写第一条：环境照记下的，时区不进第一条。
+        // 内核只照底子写第一条，不攒底子的有效历史（施工 V-39 中）：环境照记下的，时区不进第一条。
         let environment = Environment {
             offset: UtcOffset::UTC,
             cwd: cwd.unwrap_or_default(),
             dirs,
         };
         let first_id = id.clone();
-        let (_, actions) = match &within {
+        let first = match &within {
             Some(within) => Session::fork_within(
                 id,
                 &base,
@@ -190,14 +182,8 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
             None => Session::fork(id, &base, cause, by, at, child, policy, environment),
         }
         .map_err(ForkError::Kernel)?;
-        let first: Vec<Event> = actions
-            .into_iter()
-            .filter_map(|action| match action {
-                Action::Append(events) => Some(events),
-                _ => None,
-            })
-            .flatten()
-            .collect();
+        // 喂好的底子到这里就放掉；紧接着的载入另读（交给它是施工 V-39 下的事）。
+        drop(base);
         let start = plan.upto.next();
         let log =
             SessionLog::create_at(&child_dir, SEGMENT_LIMIT, start).map_err(ForkError::Disk)?;
@@ -212,4 +198,63 @@ pub async fn fork(setup: Fork<'_>) -> Result<Seq, ForkError> {
         Ok(plan.upto)
     })
     .await
+}
+
+/// 父会话读完了：它的 `session.created`、分叉要照的几样、喂到分叉点为止的底子、到分叉点为止记下的工作目录。
+struct Parent {
+    created: SessionCreated,
+    plan: ForkPlan,
+    base: BaseFeed,
+    place: Place,
+}
+
+/// 只读地一块块读父会话 `parent` 的日志（在 `dir`，它可能正在写），边读边交给内核算分叉（`call` 是 fork 子代理派它的那次
+/// 调用）。报错的先后同以前整份读进来再算：先是日志打不开、坏了（整份读完才知道，所以账本出的错先记着、接着读到底），
+/// 再是第一条不是造会话、不能从它分叉，再是账本、分叉点。第一条就不对的不交给内核，照样读完。
+fn read_parent(dir: &Path, parent: &SessionId, call: Option<CallId>) -> Result<Parent, ForkError> {
+    // 第一块到了没有，到了的第一条是不是造会话那一条。
+    let mut created: Option<Option<SessionCreated>> = None;
+    let mut feed: Option<ForkFeed> = None;
+    let mut place = Place::default();
+    read_range(dir, Seq::FIRST, None, |events| {
+        if created.is_none() {
+            let first = match events.first().map(|event| &event.body) {
+                Some(Body::SessionCreated(created)) => Some(created.clone()),
+                _ => None,
+            };
+            if first.as_ref().is_some_and(|first| !refused(first, call)) {
+                feed = Some(ForkFeed::new(parent.clone()));
+            }
+            created = Some(first);
+        }
+        if let Some(feed) = &mut feed {
+            feed.feed(events, &mut |event| place.note(event));
+        }
+        Flow::Go
+    })
+    .map_err(ForkError::Log)?;
+    let Some(created) = created.flatten() else {
+        return Err(ForkError::Kernel(Broken::Empty));
+    };
+    let Some(feed) = feed else {
+        return Err(ForkError::NotMain);
+    };
+    let (plan, base) = feed
+        .finish(call, &mut |event| place.note(event))
+        .map_err(ForkError::Kernel)?;
+    Ok(Parent {
+        created,
+        plan,
+        base,
+        place,
+    })
+}
+
+/// 不能从这个会话（第一条是 `created`）分叉：子代理、分叉出来的都有父会话。fork 子代理（派它的调用 `call`）只看是不是
+/// 分叉出来的：普通子代理也能派它。
+fn refused(created: &SessionCreated, call: Option<CallId>) -> bool {
+    match call {
+        Some(_) => created.forked.is_some(),
+        None => created.parent.is_some(),
+    }
 }

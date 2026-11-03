@@ -51,6 +51,7 @@ mod asking;
 mod compacting;
 mod configuring;
 mod endings;
+mod forking;
 mod kinds;
 mod naming;
 mod nesting;
@@ -313,165 +314,165 @@ fn sent_now(seen: Seq) -> Input {
 
 /// 跑一段种子，每一例三百条输入，照看守的规矩查（[`watch`]）。返回走到过的路和喂过的输入种类。
 fn run(seeds: std::ops::Range<u64>) -> (BTreeSet<&'static str>, BTreeSet<InputKind>) {
-    let mut paths = BTreeSet::new();
-    let mut fed = BTreeSet::new();
-    for seed in seeds {
-        let mut rng = Rng(seed);
-        // 五个种子里有一个没人能确认。
-        let attended = seed % 5 != 4;
-        // 三个种子里有一个有隔离式那句 system（施工 6-6 下）：别的调了工具照失败算，连续失败、暂停才走得到。
-        let isolate = seed % 3 == 1;
-        // 七个种子里有一个是一次性的会话（施工 7-2）：没人看着时回报只记下。
-        let oneshot = seed % 7 == 3;
-        let mut session = reporting::opened(random_policy(attended, isolate), oneshot);
-        let mut watch = Watch::new(seed);
-        watch.reports.oneshot = oneshot;
-        watch.approvals.attended = attended;
-        // 双数的种子风平浪静：打断、乱来的增量少，一轮才走得深；单数的种子专门捣乱。
-        watch.calm = seed % 2 == 0;
-        // 十个种子里有一个多调写文件的、不开只读，写的在跑时常被打断（施工 4-9 再补一）。
-        watch.writing = seed % 10 == 2;
-        let mut next_id = 1;
-        // 崩不崩、撤不撤另用两串随机数，撤销、恢复夹在原来的输入之间、不占名额：原来那串输入
-        // 不跟着错开。
-        let mut crashes = Rng(seed ^ 0x00C0_FFEE);
-        let mut undos = Rng(seed ^ 0x0DD0_0DD0);
-        let mut limits = Rng(seed ^ 0x11A1_7500);
-        let mut rereads = Rng(seed ^ 0x2E2E_AD00);
-        let mut overflows = Rng(seed ^ 0x0F10_0D00);
-        let mut readbacks = Rng(seed ^ 0x2EAD_BAC0);
-        let mut compacts = Rng(seed ^ 0xC0_4AC7);
-        let mut reports = Rng(seed ^ 0x2E90_2750);
-        let mut clears = Rng(seed ^ 0xC1EA_2000);
-        // 四个种子里有一个有别的会话发来的话（施工 C-2）：避开多调写文件的种子，别的种子照原来的走。
-        let (mut peers, peering) = (Rng(seed ^ 0x9EE2_5000), seed % 4 == 3);
-        // 空了的通知（施工 C-6）也在这几个种子里，另用一串随机数、另一串命令编号：原来的输入不跟着错开。
-        let (mut notices, mut notice_ids) = (Rng(seed ^ 0x1D1E_0C00), 0);
-        // 四个种子里有一个要回顾（施工 3-8 四补）：别的种子照原来的走，原来走得到的路照样走得到。
-        let (mut recaps, recapping) = (Rng(seed ^ 0x2EC4_9A00), seed % 4 == 1);
-        // 五个种子里有一个、一次性的会话不重做（施工 4-7 再补）：重做占掉闲着的时候，回报闲着时开一轮、没人看着只记下难得走到。
-        let (mut redos, redoing) = (Rng(seed ^ 0x2ED0_2ED0), seed % 5 != 2 && !oneshot);
-        // 四个种子里有一个换模型（施工 8-10）：另一串随机数、另一串命令编号，挂接点的结果偶尔带着退回。
-        let (mut models, configuring, mut model_ids) = (Rng(seed ^ 0x30DE_1000), seed % 4 == 2, 0);
-        // 八个种子里有一个替它看图（施工 8-17）：另一串随机数、另一串命令编号；避开多调写文件的种子，只读拦下写的那几条路
-        // 照原来的走。
-        let sighting = seed % 8 == 5 && !watch.writing;
-        let (mut sights, mut sight_ids) = (Rng(seed ^ 0x5167_0817), 0);
-        // 三个种子里有一个开着提前压好（施工 6-11 上）：另一串随机数。
-        let (mut prepares, preparing) = (Rng(seed ^ 0x6110_0000), seed % 3 == 2);
-        watch.prepares.seeded = preparing;
-        // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
-        let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
-        let mut dreams = Rng(seed ^ 0xD2EA_3E7D);
-        // 三个种子里有一个跑脚本里的 `miyu call`（施工 M-1）：另一串随机数。
-        let (mut nests, nesting) = (Rng(seed ^ 0x2E57_ED00), seed % 3 == 0);
-        for _ in 0..300 {
-            // 有回顾在路上的不崩：崩了它就丢了，等着的命令收不到回应（施工 3-8 四补）。
-            if watch.all_stored() && crashes.below(200) == 0 && watch.recaps_idle() {
-                let planned = crashes.below(2) == 0;
-                session = watch.reload(session, planned, random_policy(attended, isolate));
-                if let Some(input) = watch.recall_answer() {
-                    watch.feed(&mut session, input);
-                }
-                continue;
-            }
-            if let Some(input) = some_read_back(&mut readbacks, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_undo(&mut undos, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_limits(&mut limits) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_reread(&mut rereads, &watch) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_overflow(&mut overflows, &watch) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_compact(&mut compacts, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = reporting::some_report(&mut reports, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_clear(&mut clears, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_clear_todos(&mut todo_clears, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if let Some(input) = some_end_dream(&mut dreams, seed) {
-                watch.feed(&mut session, input);
-            }
-            if peering && let Some(input) = peering::some_peer(&mut peers, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if peering
-                && let Some(input) = peering::some_notice(
-                    &mut notices,
-                    &watch,
-                    !session.watching().is_empty(),
-                    &mut notice_ids,
-                )
-            {
-                watch.feed(&mut session, input);
-            }
-            if redoing && let Some(input) = some_redo(&mut redos, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if recapping && let Some(input) = some_recap(&mut recaps, &watch, &mut next_id) {
-                watch.feed(&mut session, input);
-            }
-            if configuring
-                && let Some(input) = configuring::some_configure(&mut models, &mut model_ids)
-            {
-                watch.feed(&mut session, input);
-            }
-            if sighting
-                && let Some(input) = sighting::some_sight(&mut sights, &watch, &mut sight_ids)
-            {
-                watch.feed(&mut session, input);
-            }
-            if preparing && let Some(input) = preparing::some_prepare(&mut prepares, &watch) {
-                watch.feed(&mut session, input);
-            }
-            if nesting && let Some(input) = nesting::some_nested(&mut nests, &mut watch) {
-                watch.feed(&mut session, input);
-            }
-            let mut input = some_input(&mut rng, &mut watch, &mut next_id);
-            if configuring {
-                input = configuring::with_fallback(&mut models, &watch, input);
-            }
-            watch.feed(&mut session, input);
-        }
-        if let Some(input) = read_back_now(&watch) {
-            watch.feed(&mut session, input);
-        }
-        for input in finish_recap(&watch) {
-            watch.feed(&mut session, input);
-        }
-        // 改标题、置顶放在最后，为什么见 `random/naming.rs`（施工 3-8 三补）。
-        watch.feed(&mut session, some_meta(seed, &mut next_id));
-        watch.feed(&mut session, some_ran(&mut next_id));
-        watch.feed(&mut session, some_workspace(seed, &mut next_id));
-        watch.feed(&mut session, some_goal(seed, &mut next_id));
-        watch.feed(&mut session, some_overheard(&mut next_id));
-        let overheard = watch.last();
-        watch.feed(&mut session, some_respond(seed, overheard, &mut next_id));
-        watch.feed(&mut session, some_note(seed, &mut next_id));
-        watch.feed(&mut session, some_appended(seed, &mut next_id));
-        let last = watch.last();
-        watch.feed(&mut session, stored(last));
-        assert_eq!(
-            watch.received, watch.replied,
-            "种子 {seed}：每收到一次命令要恰好回应一次"
-        );
+    let start = (BTreeSet::new(), BTreeSet::new());
+    seeds.map(drive).fold(start, |(mut paths, mut fed), watch| {
         paths.extend(watch.seen_paths);
         fed.extend(watch.fed);
+        (paths, fed)
+    })
+}
+
+/// 跑一例：种子 `seed`，三百条输入，照看守的规矩查。交回看守：它记着落了盘的日志（施工 V-39 中的对照测试拿它当父会话）。
+fn drive(seed: u64) -> Watch {
+    // 五个种子里有一个没人能确认。
+    let (mut rng, attended) = (Rng(seed), seed % 5 != 4);
+    // 三个种子里有一个有隔离式那句 system（施工 6-6 下）：别的调了工具照失败算，连续失败、暂停才走得到。
+    let isolate = seed % 3 == 1;
+    // 七个种子里有一个是一次性的会话（施工 7-2）：没人看着时回报只记下。
+    let oneshot = seed % 7 == 3;
+    let mut session = reporting::opened(random_policy(attended, isolate), oneshot);
+    let mut watch = Watch::new(seed);
+    watch.reports.oneshot = oneshot;
+    watch.approvals.attended = attended;
+    // 双数的种子风平浪静：打断、乱来的增量少，一轮才走得深；单数的种子专门捣乱。
+    watch.calm = seed.is_multiple_of(2);
+    // 十个种子里有一个多调写文件的、不开只读，写的在跑时常被打断（施工 4-9 再补一）。
+    watch.writing = seed % 10 == 2;
+    let mut next_id = 1;
+    // 崩不崩、撤不撤另用两串随机数，撤销、恢复夹在原来的输入之间、不占名额：原来那串输入
+    // 不跟着错开。
+    let mut crashes = Rng(seed ^ 0x00C0_FFEE);
+    let mut undos = Rng(seed ^ 0x0DD0_0DD0);
+    let mut limits = Rng(seed ^ 0x11A1_7500);
+    let mut rereads = Rng(seed ^ 0x2E2E_AD00);
+    let mut overflows = Rng(seed ^ 0x0F10_0D00);
+    let mut readbacks = Rng(seed ^ 0x2EAD_BAC0);
+    let mut compacts = Rng(seed ^ 0xC0_4AC7);
+    let mut reports = Rng(seed ^ 0x2E90_2750);
+    let mut clears = Rng(seed ^ 0xC1EA_2000);
+    // 四个种子里有一个有别的会话发来的话（施工 C-2）：避开多调写文件的种子，别的种子照原来的走。
+    let (mut peers, peering) = (Rng(seed ^ 0x9EE2_5000), seed % 4 == 3);
+    // 空了的通知（施工 C-6）也在这几个种子里，另用一串随机数、另一串命令编号：原来的输入不跟着错开。
+    let (mut notices, mut notice_ids) = (Rng(seed ^ 0x1D1E_0C00), 0);
+    // 四个种子里有一个要回顾（施工 3-8 四补）：别的种子照原来的走，原来走得到的路照样走得到。
+    let (mut recaps, recapping) = (Rng(seed ^ 0x2EC4_9A00), seed % 4 == 1);
+    // 五个种子里有一个、一次性的会话不重做（施工 4-7 再补）：重做占掉闲着的时候，回报闲着时开一轮、没人看着只记下难得走到。
+    let (mut redos, redoing) = (Rng(seed ^ 0x2ED0_2ED0), seed % 5 != 2 && !oneshot);
+    // 四个种子里有一个换模型（施工 8-10）：另一串随机数、另一串命令编号，挂接点的结果偶尔带着退回。
+    let (mut models, configuring, mut model_ids) = (Rng(seed ^ 0x30DE_1000), seed % 4 == 2, 0);
+    // 八个种子里有一个替它看图（施工 8-17）：另一串随机数、另一串命令编号；避开多调写文件的种子，只读拦下写的那几条路
+    // 照原来的走。
+    let sighting = seed % 8 == 5 && !watch.writing;
+    let (mut sights, mut sight_ids) = (Rng(seed ^ 0x5167_0817), 0);
+    // 三个种子里有一个开着提前压好（施工 6-11 上）：另一串随机数。
+    let (mut prepares, preparing) = (Rng(seed ^ 0x6110_0000), seed % 3 == 2);
+    watch.prepares.seeded = preparing;
+    // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
+    let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
+    let mut dreams = Rng(seed ^ 0xD2EA_3E7D);
+    // 三个种子里有一个跑脚本里的 `miyu call`（施工 M-1）：另一串随机数。
+    let (mut nests, nesting) = (Rng(seed ^ 0x2E57_ED00), seed.is_multiple_of(3));
+    for _ in 0..300 {
+        // 有回顾在路上的不崩：崩了它就丢了，等着的命令收不到回应（施工 3-8 四补）。
+        if watch.all_stored() && crashes.below(200) == 0 && watch.recaps_idle() {
+            let planned = crashes.below(2) == 0;
+            session = watch.reload(session, planned, random_policy(attended, isolate));
+            if let Some(input) = watch.recall_answer() {
+                watch.feed(&mut session, input);
+            }
+            continue;
+        }
+        if let Some(input) = some_read_back(&mut readbacks, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_undo(&mut undos, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_limits(&mut limits) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_reread(&mut rereads, &watch) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_overflow(&mut overflows, &watch) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_compact(&mut compacts, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = reporting::some_report(&mut reports, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_clear(&mut clears, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_clear_todos(&mut todo_clears, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if let Some(input) = some_end_dream(&mut dreams, seed) {
+            watch.feed(&mut session, input);
+        }
+        if peering && let Some(input) = peering::some_peer(&mut peers, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if peering
+            && let Some(input) = peering::some_notice(
+                &mut notices,
+                &watch,
+                !session.watching().is_empty(),
+                &mut notice_ids,
+            )
+        {
+            watch.feed(&mut session, input);
+        }
+        if redoing && let Some(input) = some_redo(&mut redos, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if recapping && let Some(input) = some_recap(&mut recaps, &watch, &mut next_id) {
+            watch.feed(&mut session, input);
+        }
+        if configuring && let Some(input) = configuring::some_configure(&mut models, &mut model_ids)
+        {
+            watch.feed(&mut session, input);
+        }
+        if sighting && let Some(input) = sighting::some_sight(&mut sights, &watch, &mut sight_ids) {
+            watch.feed(&mut session, input);
+        }
+        if preparing && let Some(input) = preparing::some_prepare(&mut prepares, &watch) {
+            watch.feed(&mut session, input);
+        }
+        if nesting && let Some(input) = nesting::some_nested(&mut nests, &mut watch) {
+            watch.feed(&mut session, input);
+        }
+        let mut input = some_input(&mut rng, &mut watch, &mut next_id);
+        if configuring {
+            input = configuring::with_fallback(&mut models, &watch, input);
+        }
+        watch.feed(&mut session, input);
     }
-    (paths, fed)
+    if let Some(input) = read_back_now(&watch) {
+        watch.feed(&mut session, input);
+    }
+    for input in finish_recap(&watch) {
+        watch.feed(&mut session, input);
+    }
+    // 改标题、置顶放在最后，为什么见 `random/naming.rs`（施工 3-8 三补）。
+    watch.feed(&mut session, some_meta(seed, &mut next_id));
+    watch.feed(&mut session, some_ran(&mut next_id));
+    watch.feed(&mut session, some_workspace(seed, &mut next_id));
+    watch.feed(&mut session, some_goal(seed, &mut next_id));
+    watch.feed(&mut session, some_overheard(&mut next_id));
+    let overheard = watch.last();
+    watch.feed(&mut session, some_respond(seed, overheard, &mut next_id));
+    watch.feed(&mut session, some_note(seed, &mut next_id));
+    watch.feed(&mut session, some_appended(seed, &mut next_id));
+    let last = watch.last();
+    watch.feed(&mut session, stored(last));
+    assert_eq!(
+        watch.received, watch.replied,
+        "种子 {seed}：每收到一次命令要恰好回应一次"
+    );
+    watch
 }
 
 /// 平时跑的三百例。还查自己走到了没有：每条路至少走到一次，清单上的每一种输入至少喂过一次

@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1022</b><span>/ 1031 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1023</b><span>/ 1032 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-39上</b><span>最近一步（V-39 上 判官边读边记）</span></li>
+    <li><b class="mono">V-39中</b><span>最近一步（V-39 中 支线底子边读边喂）</span></li>
   </ul>
 </header>
 
@@ -507,6 +507,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV37b"><span class="n">V-37 中</span>日志照定长窗口读<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV37c"><span class="n">V-37 下</span>回合索引和补发边读边处理<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV39a"><span class="n">V-39 上</span>判官边读边记<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV39b"><span class="n">V-39 中</span>支线底子边读边喂<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11536,6 +11537,60 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-39上-判官边读边记.md</code>；蓝图 <code>venues.md</code>「判官看的群聊记录」第 3 条、<code>kernel/request.md</code>「在哪」<code>group/records.rs</code>、<code>store.md</code> 第 7 条 <code>read_range</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV39b" aria-labelledby="h-sV39b">
+  <div class="sheet-head"><h2 id="h-sV39b"><span class="no">V-39 中</span>支线底子边读边喂</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">群里开一条支线时，分叉、载入不再各把整份父会话读进内存：内核加一块块喂的底子 <code>BaseFeed</code>，压缩以前的当场放掉；分叉边读边算，底子和几样记账落后一轮。写下的第一条、分叉点、报错和先后不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">支线底子边读边喂</span><span class="dir-note">V-39 中</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>内核 <code>BaseFeed</code>：父会话的日志一块块喂，过它的账本，有效历史的起点往前挪了的当场 <code>History::note</code>、放掉；过不了账本的记下、交出去时照原样报；<code>check</code> 同以前的 <code>Base::of</code></li>
+              <li>载入支线照 <code>Base::each</code> 一块块读底子喂它，<code>Session::loader</code> 吃喂好的底子；底子的压缩后来被撤了的照整份重来</li>
+              <li><code>ForkFeed</code>：父会话照 <code>read_range</code> 一块块读，开着的那一轮攒着、结束了再喂，读完克隆一次账本定分叉点，攒着的喂到分叉点；工作目录跟着喂进底子的一条条记（<code>Place</code>）</li>
+              <li><code>Session::fork</code> / <code>fork_within</code> 只照底子写第一批事件，不攒底子的有效历史；测试替身另有 <code>fork_live</code></li>
+              <li>报错的先后照旧：日志坏了 &gt; 第一条不对、不能分叉 &gt; 账本 &gt; 取快照；喂好的底子留着口子交给紧接着的载入（V-39 下）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">分叉读好的底子交给紧接着的载入、支线回合索引吃同一遍：拍板做，归 V-39 下</span><span class="rl">项目主人 2026-11-03（V-39 设计问题 3、4）</span></div>
+          <div class="tile new"><span class="nm">载入支线读到分叉点那一块就停：父会话分叉点以后同一段里坏了的不再报（设计 5.1 定的读法）</span><span class="rl">V-39 设计 5.1；V-37 下同一种读法</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-39 中</dd></div>
+        <div><dt>名称</dt><dd>支线底子边读边喂</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-03</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-39中</dd></div>
+        <div><dt>验收</dt><dd>23.8 MB 的群主线开一条支线：堆多 57.8 → 11.1 MB（分叉段、载入支线段各 57.7 → 11.1）、匿名 50.5 → 15.7 MB、<code>session.fork</code> 中位 138 → 113 ms；指令 24.92 → 25.00 亿持平（解析三遍没少，等 V-39 下）</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>内核：以前整份那一套照抄当准绳，随机输入真跑出来的三千份父会话（撤销、撤销跨压缩、撤回、清空、在跑一轮当中、一步刚派出调用、过不了账本的），分叉要照的几样、第一批事件逐字节、载入出来的会话和动作（一块块喂的、分叉喂好交过来的两条路）新旧一样</span></li>
+        <li><span class="ok">✓</span><span>会话：一千份照种子造、过得了账本的父会话写成文件（分段、坏行、半行、空的、没有的、子代理、过不了账本又坏一行、快照取不出），新旧交回的分叉点、报错和先后、写下的每一行一样</span></li>
+        <li><span class="ok">✓</span><span>手写变异 11 个都被逮住</span></li>
+        <li><span class="ok">✓</span><span>两份数据根上主线闲着、在跑一轮时 28 次真分叉，回应、订阅支线推来的逐字节一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-39中-支线底子边读边喂.md</code>；蓝图 <code>session/fork.md</code>「底子一块块喂」「怎么走」第 1 条、<code>kernel/session.md</code>「对外的样子」、<code>store.md</code> 第 7 条 <code>read_range</code>。</li>
       </ul>
     </div>
   </div>

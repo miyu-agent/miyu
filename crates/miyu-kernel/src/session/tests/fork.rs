@@ -5,7 +5,7 @@
 use super::load::Logged;
 use super::*;
 use crate::event::Forked;
-use crate::session::fork::Base;
+use crate::session::{BaseFeed, ForkFeed, ForkPlan};
 use crate::testkit::CHILD_SESSION;
 
 fn child_id() -> SessionId {
@@ -37,7 +37,7 @@ fn parent() -> Logged {
 /// 从父会话的日志 `base` 分叉，`session.created` 落了盘。
 fn fork(base: &[Event]) -> (Session, Vec<Event>) {
     let upto = base.last().unwrap().seq.get();
-    let (mut child, actions) = Session::fork(
+    let (mut child, actions) = Session::fork_live(
         child_id(),
         base,
         id(100),
@@ -122,7 +122,7 @@ fn a_fork_loads_back_the_same() {
     let mut first = logged.log.iter().take(1).cloned().collect::<Vec<_>>();
     let mut loader = Session::loader(
         child_id(),
-        Some(parent.log.clone()),
+        Some(BaseFeed::of(&session_id(), &parent.log)),
         &first,
         policy().reports,
     )
@@ -154,7 +154,7 @@ fn a_fork_must_start_right_after_its_fork_point() {
     let parent = parent();
     let upto = parent.last();
     // 分叉点写错了：底子停在 upto，写的却是更早的一条。
-    let wrong = Session::fork(
+    let wrong = Session::fork_live(
         child_id(),
         &parent.log,
         id(100),
@@ -171,7 +171,7 @@ fn a_fork_must_start_right_after_its_fork_point() {
     );
     // 没写 forked 的不认。
     let plain: SessionCreated = serde_json::from_str(CREATED).unwrap();
-    let unforked = Session::fork(
+    let unforked = Session::fork_live(
         child_id(),
         &parent.log,
         id(100),
@@ -201,7 +201,7 @@ fn a_fork_point_inside_a_turn_is_refused() {
     let mut parent = Logged::new();
     parent.ask(1, "hi");
     // 父会话这一轮还没说完：停在一轮当中。
-    let inside = Session::fork(
+    let inside = Session::fork_live(
         child_id(),
         &parent.log,
         id(100),
@@ -267,15 +267,13 @@ fn the_fork_plan_stops_before_a_running_turn() {
 fn a_fork_hears_what_the_parent_overheard() {
     let parent = parent();
     let (child, _) = fork(&parent.log);
-    let base = Base::of(
-        &parent.log,
-        Forked {
-            from: session_id(),
-            upto: parent.log.last().unwrap().seq,
-            seal_after: None,
-            within: None,
-        },
-    )
+    let base = BaseFeed::of(&session_id(), &parent.log);
+    base.check(&Forked {
+        from: session_id(),
+        upto: parent.log.last().unwrap().seq,
+        seal_after: None,
+        within: None,
+    })
     .unwrap();
     assert_eq!(
         child.ledger.next_seq(),
@@ -285,11 +283,36 @@ fn a_fork_hears_what_the_parent_overheard() {
     for event in &parent.log {
         assert_eq!(
             child.ledger.overheard(event.seq),
-            base.ledger.overheard(event.seq)
+            base.ledger().overheard(event.seq)
         );
         assert_eq!(
             child.ledger.answered(event.seq),
-            base.ledger.answered(event.seq)
+            base.ledger().answered(event.seq)
         );
     }
+}
+
+/// 照父会话 `parent` 的整份日志 `events` 算分叉要照的几样（以前的 `fork_plan`，施工 V-39 中改成一块块读的 [`ForkFeed`]）。
+pub(super) fn fork_plan(parent: &SessionId, events: &[Event]) -> Result<ForkPlan, LoadError> {
+    plan_at(parent, events, None)
+}
+
+/// 同上，fork 子代理从派 `call` 的那一步分叉（以前的 `fork_plan_at`）。
+pub(super) fn fork_plan_at(
+    parent: &SessionId,
+    events: &[Event],
+    call: crate::id::CallId,
+) -> Result<ForkPlan, LoadError> {
+    plan_at(parent, events, Some(call))
+}
+
+/// 整份当一块喂 [`ForkFeed`]。
+fn plan_at(
+    parent: &SessionId,
+    events: &[Event],
+    call: Option<crate::id::CallId>,
+) -> Result<ForkPlan, LoadError> {
+    let mut feed = ForkFeed::new(parent.clone());
+    feed.feed(events.to_vec(), &mut |_| {});
+    feed.finish(call, &mut |_| {}).map(|(plan, _)| plan)
 }

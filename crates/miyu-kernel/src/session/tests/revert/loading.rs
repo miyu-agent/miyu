@@ -4,6 +4,7 @@
 use super::super::load::load;
 use super::compaction::compacted_once;
 use super::*;
+use crate::session::BaseFeed;
 
 /// 一块块载入（施工 V-15）：压缩以后，压到的那一截只记、放掉了；后面撤掉了这次压缩，起点回到放掉的前面，要照整份日志
 /// 走 `Session::load`，载入出来的和一次喂完的一样（`load` 顺带核对）。
@@ -63,7 +64,7 @@ fn a_fork_of_a_compacted_parent_loads_from_its_checkpoint() {
         within: None,
     });
     let child = SessionId::parse(crate::testkit::CHILD_SESSION).unwrap();
-    let (_, actions) = Session::fork(
+    let (_, actions) = Session::fork_live(
         child.clone(),
         &base,
         id(100),
@@ -75,7 +76,13 @@ fn a_fork_of_a_compacted_parent_loads_from_its_checkpoint() {
     )
     .unwrap();
     let own = appended_events(&actions);
-    let mut loader = Session::loader(child, Some(base), &own, policy().reports).unwrap();
+    let mut loader = Session::loader(
+        child,
+        Some(BaseFeed::of(&session_id(), &base)),
+        &own,
+        policy().reports,
+    )
+    .unwrap();
     loader.feed(own).unwrap();
     let (session, _) = loader
         .finish(at(55), policy(), environment("~/src/miyu"))

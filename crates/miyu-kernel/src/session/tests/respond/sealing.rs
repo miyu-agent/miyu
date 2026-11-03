@@ -24,7 +24,7 @@ fn branch(after: u32) -> Logged {
     });
     let child = SessionId::parse(CHILD_SESSION).unwrap();
     let env = environment("~/src/miyu");
-    let (session, actions) = Session::fork(
+    let (session, actions) = Session::fork_live(
         child,
         &parent.log,
         id(100),

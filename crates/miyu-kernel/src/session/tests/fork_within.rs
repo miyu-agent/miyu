@@ -3,11 +3,11 @@
 //! 两个兄弟一字不差；载入的和活着的一样；普通分叉照旧退到这一轮之前、照旧拒停在一轮当中的；停的地方不对的拒。
 
 use super::executor::{reason_of, result_of};
+use super::fork::{fork_plan, fork_plan_at};
 use super::load::Logged;
 use super::*;
 use crate::event::{EndReason, Forked};
 use crate::id::CallId;
-use crate::session::{fork_plan, fork_plan_at};
 use crate::testkit::CHILD_SESSION;
 
 const PLACEHOLDER: &str = "Forked; the parent keeps going.";
@@ -63,7 +63,7 @@ fn fork_at(parent: &Logged, child: SessionId) -> (Session, Vec<Event>, Vec<Event
     let calls = step_calls(&parent.log);
     let plan = fork_plan_at(&session_id(), &parent.log, calls[1]).unwrap();
     let base = parent.upto(plan.upto.get());
-    let (mut session, actions) = Session::fork_within(
+    let (mut session, actions) = Session::fork_within_live(
         child,
         &base,
         PLACEHOLDER,
@@ -223,7 +223,7 @@ fn a_fork_point_in_the_wrong_place_is_refused() {
     let fork = |base: &[Event], created: SessionCreated, within: bool| {
         let opened = (child_id(), id(100), person(), at(30));
         match within {
-            true => Session::fork_within(
+            true => Session::fork_within_live(
                 opened.0,
                 base,
                 PLACEHOLDER,
@@ -234,7 +234,7 @@ fn a_fork_point_in_the_wrong_place_is_refused() {
                 policy(),
                 environment("~/src/miyu"),
             ),
-            false => Session::fork(
+            false => Session::fork_live(
                 opened.0,
                 base,
                 opened.1,
