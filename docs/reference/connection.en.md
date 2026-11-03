@@ -115,6 +115,7 @@ Subscribe to a push stream: from now on its pushes go to this connection.
 | `stream` | string, required | Which stream, see below |
 | `session` | string | Required for `events` and `view`; not allowed for `config` and `sessions`; optional for `memory` (that session's memory) |
 | `persona` | string | `memory` only: this persona's memory |
+| `package` | string | Required for `package` and `prefs`: which package |
 | `after` | non-negative integer | `events` and `memory` only: first replay everything with a higher sequence number; `0` means from the start |
 
 | `stream` | Pushes | `subscribe` response |
@@ -142,7 +143,7 @@ What each stream pushes is in [Pushes](pushes.en.md).
 2. **Replay**: with `after`, the events with a higher sequence number that were on disk when you subscribed are pushed one by one, then the response (with `upto`), then everything from `upto + 1` on, with nothing lost or repeated. If a model request is streaming at that moment, its deltas so far (`model.delta`) are pushed once more after the replay so the live ones that follow line up. Transient events without sequence numbers are not replayed.
 3. **Falling behind**: if you read too slowly, a session keeps at most 1024 pushes per subscription (16 for config, 64 for memory); beyond that it pushes `resync` and the subscription stops. A stopped session also pushes `resync`. Subscribe again, with the last sequence number you saw as `after`, to catch up.
 4. Being subscribed to a session counts as watching it: in a session nobody is watching, a subagent's report is recorded without waking her.
-5. `unsubscribe`: same `stream` and `session`/`persona`; stops forwarding and returns `{}`, also when you weren't subscribed.
+5. `unsubscribe`: same `stream` and `session`/`persona`/`package`; stops forwarding and returns `{}`, also when you weren't subscribed.
 
 ```json
 → {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
@@ -154,7 +155,11 @@ What each stream pushes is in [Pushes](pushes.en.md).
 
 | `data.reason` | When |
 |---|---|
-| `bad_params` (`-32602`) | Unknown `stream`; `session` missing where required or given where not allowed; `after` not a non-negative integer, or not accepted by this stream |
+| `bad_params` (`-32602`) | Unknown `stream`; `session` or `package` missing where required, or given where not allowed; `after` not a non-negative integer, or not accepted by this stream |
+| `local_only` | An extension subscribed to a stream that is for people only |
+| `needs_approval` | An extension subscribed to `events`, `view` or `sessions` without declaring `events.read`; `data.capabilities` names it |
+| `unknown_package` | `package` and `prefs` streams: that package isn't installed |
+| `not_a_ui_package` | `prefs` stream: that package is installed but isn't a UI package |
 | `session_not_found`, `session_broken`, `session_stopped` | The session doesn't exist, can't be read, or stopped (subscribing again reloads it) |
 | `memory_not_installed`, `memory_unavailable` | `memory` stream: memory isn't installed, or that place has no memory |
 

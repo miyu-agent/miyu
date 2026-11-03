@@ -102,6 +102,67 @@
 | `hello_first` | 握手以前调了别的方法（不断开） |
 | `setup_first` | 用一次性码连上的，调了 `human.get`、`account.setup` 以外的方法 |
 
+## `subscribe`、`unsubscribe`
+
+订阅一条推送流：从这时起，它的推送发给这个连接。
+
+**谁能调**：人、扩展。扩展订阅 `events`、`view`、`sessions` 要有 `events.read` 能力；`projects`、`schedules`、`notices`、`package`、`prefs` 只给人（扩展调回 `local_only`）。
+
+**参数**
+
+| 名字 | 类型 | 说明 |
+|---|---|---|
+| `stream` | 字符串，必写 | 哪一条流，见下表 |
+| `session` | 字符串 | `events`、`view` 必写；`config`、`sessions` 不能写；`memory` 可写（这个会话的那一间记忆） |
+| `persona` | 字符串 | 只给 `memory`：这个人格的那一间记忆 |
+| `package` | 字符串 | `package`、`prefs` 必写：哪个软件包 |
+| `after` | 非负整数 | 只给 `events`、`memory`：先补序号比它大的全部，`0` 是从头补 |
+
+| `stream` | 推什么 | `subscribe` 的回应 |
+|---|---|---|
+| `events` | 一个会话的事件，原样 | 会话这时的状态：`model`、`limits`、`permission`、`usage`、`jobs`、`workspace`、`default_workspace`（会话的默认工作区）、`compactable`（这时有没有可压缩的，也就是 `session.compact` 会不会回 `nothing_to_compact`；变了推 `compactable.changed`），有的话还有 `persona`、`preset`、`todos`、`goal`、`nested`（在跑的 `miyu call`：`[{id, name, args, at}]`，`at` 是各自开始的时刻）；写了 `after` 的还有 `upto` |
+| `view` | 一个会话的视图投影（画好就能显示的条目） | 同上，再加最新一页条目和完整的会话 `status` |
+| `config` | 配置的变化 | `{}` |
+| `sessions` | 会话列表里一项变了 | `{"sessions": [<项>…]}`，全部 |
+| `extensions` | 扩展的状态变了 | `{"extensions": […]}` |
+| `packages` | 软件包列表里一项变了 | `{"packages": […]}` |
+| `projects` | 一个项目变了 | `{"projects": […]}`，全部 |
+| `schedules` | 定时任务变了、跑了（施工 J-1 下） | `{"schedules": […]}`，全部 |
+| `notices` | 给人的通知（施工 J-3 中）：新开会话的定时任务那一次跑完了、定时任务表坏了换成了空的。头照它弹系统通知 | `{}`；这一刻有连接认领了后台通知（[`notices.claim`](#noticesclaim)）的是 `{"claimed": true}`。以前的不补 |
+| `package` | 带 `package`：那个软件包推给人的（施工 IM-1 中下 2），它的页面照它更新，不用轮询。没装的回 `unknown_package` | `{}`；以前的不补 |
+| `prefs` | 带 `package`：那个界面包自己的设置被别的连接改了，推 `prefs.changed`（施工 HP-1，[头自己的设置](prefs.md)）。没装的回 `unknown_package`，不是界面包的回 `not_a_ui_package` | `{"values": {…}}`，这一刻的整份 |
+| `kb` | 知识库建索引的进度：`kb.indexing`、`kb.indexed` | `{}`：这时的样子从 `kb.list` 拿 |
+| `memory` | 一间记忆的日志 | `{"upto": <这时最后一条的序号>}` |
+| `widgets` | 界面块 | 见[软件包和命令](packages.md) |
+
+`events` 回应里的 `model` 是会话下一次问谁：`ref`（它的模型或 `@池`）、`endpoint` 和 `model`（下一次请求发给谁；轮换的池两样都没有），还有 `effort` `{"level", "from"}`：那个模型用的思考深度，`from` 是 `session`（`session.configure` 设的，施工 SM-1）或 `system`（配置）。轮换的池、请求不带思考深度的，没有 `effort`。
+
+每条流推的是什么见[推送](pushes.md)。
+
+1. 一个连接对一个会话只有一个订阅（`events`、`view` 算同一个），再订阅一次换掉原来的。`sessions`、`config`、`extensions`、`packages`、`projects`、`schedules`、`notices`、`kb`、`widgets` 每个连接各一个；`package`、`prefs` 每个软件包各一个。
+2. **补**：写了 `after` 的，订阅那一刻磁盘上序号比它大的事件先一条条推过来，然后是回应（带 `upto`），之后从 `upto + 1` 起照常推，不丢不重。这一刻正在流式回的模型请求，补完以后把到这时为止的增量（`model.delta`）再推一遍，接得上后面实时的。没有序号的临时事件不补。
+3. **掉队**：读得太慢的，会话给每个订阅最多攒 1024 条（配置 16 条，记忆 64 条），再多就推一条 `resync`，这个订阅停了。会话停了也推 `resync`。重新订阅，`after` 写你看到的最后一个序号，补上。
+4. 订阅着一个会话算有人在看：没人看着的会话里，子代理回报只记下、不叫醒她。
+5. `unsubscribe`：`stream` 和 `session`、`persona`、`package` 照订阅时写；停止转发，回 `{}`，没订阅过的也是。
+
+```json
+→ {"jsonrpc":"2.0","id":"s1","method":"subscribe","params":{"session":"01a14aca-…","stream":"events","after":30}}
+← （先推 31 到 42 号事件）
+← {"id":"s1","jsonrpc":"2.0","result":{"limits":{"compaction_line":850000,"window":1000000},"model":{"endpoint":"deepseek","model":"deepseek-v4","ref":"deepseek/deepseek-v4"},"upto":42,…}}
+```
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `bad_params`（`-32602`） | 不认得的 `stream`；该写的 `session`、`package` 没写，或者写了不该写的；`after` 不是非负整数，或者这条流不收 |
+| `local_only` | 扩展订阅只给人的流 |
+| `needs_approval` | 扩展订阅 `events`、`view`、`sessions`，清单没声明 `events.read`；`data.capabilities` 是缺的那一项 |
+| `unknown_package` | `package`、`prefs` 流：那个软件包没装 |
+| `not_a_ui_package` | `prefs` 流：那个软件包装着，但不是界面包 |
+| `session_not_found`、`session_broken`、`session_stopped` | 会话没有、读不了、停了（再订阅一次会重新载入） |
+| `memory_not_installed`、`memory_unavailable` | `memory` 流：没装记忆，或者那个地方没有记忆 |
+
 ## `account.setup_code`、`account.setup`、`account.logout`
 
 访问密码：只在要从局域网（手机、别的电脑的浏览器）连时需要；本机的头凭本机令牌，不用密码。从局域网用访问密码登录一次，浏览器记住设备令牌 30 天。
