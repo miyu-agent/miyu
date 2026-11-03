@@ -10,6 +10,7 @@
 //! 第三方许可证清单 `THIRD-PARTY-LICENSES.txt` 是最新的（施工 AU-2，`notices.rs`）；`cargo xtask notices` 重新生成它。
 //! 里面的 cargo 一个接一个跑，不并行。
 
+mod anchors;
 mod dev_home;
 mod drawing;
 mod files;
@@ -185,7 +186,7 @@ fn check() -> ExitCode {
     ];
     println!("\n── 文档：登记簿 {} 第十节 ──", ledger::PATH);
     println!(
-        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法；{} 扩展能调什么的表；{} 协议 1 冻结的方法 ──",
+        "── 文档：{} 和资源、登记簿；蓝图里的样本块；{}；{} 和代码里的方法、页里的锚点；{} 扩展能调什么的表；{} 协议 1 冻结的方法 ──",
         prompts::PATH,
         heads::PATH,
         reference::PATH,
@@ -198,6 +199,7 @@ fn check() -> ExitCode {
         docs.problems.extend(samples::check(&root));
         docs.problems.extend(heads::check(&root));
         docs.problems.extend(reference::check(&root));
+        docs.problems.extend(anchors::check(&root));
         docs.problems.extend(rights::check(&root));
         docs.problems.extend(frozen::check(&root));
     }
