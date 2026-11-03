@@ -37,6 +37,7 @@ mod connection;
 mod content;
 mod diffs;
 mod embedding;
+mod export;
 pub mod extensions;
 mod files;
 mod forking;

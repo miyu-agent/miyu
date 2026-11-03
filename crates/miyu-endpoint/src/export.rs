@@ -1,0 +1,229 @@
+//! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`docs/blueprint/protocol.md`
+//! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown 的三种随 SE-1 中。
+//!
+//! - 包里有：这个会话、它的全部后代（子代理、子代理的子代理）、分叉来源到分叉点为止的那几段（一层层往上），和它们引用到的
+//!   blob（[`miyu_store::bundle`]）。只读日志、不载入会话，在跑的会话照这一刻已经落盘的取。
+//! - 只给人的头（`connection/rights.rs`）：包里和事件流一个级别，还带着 blob。
+//! - 核心照头给的路径写（同 `blob.put` 的 `path` 反过来）：要绝对路径；数据根里面不写（`export_in_data_root`）；已经有了的
+//!   不覆盖（`export_exists`）；目录不在、写不进的 `export_unwritable`。
+//! - 不写进会话日志：它不改会话。运行日志记一行，谁在什么时候导了哪个会话、多大。
+
+use std::collections::{BTreeMap, BTreeSet};
+use std::io;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use serde::Deserialize;
+use serde_json::{Value, json};
+
+use miyu_kernel::event::Body;
+use miyu_kernel::id::{Seq, SessionId};
+use miyu_kernel::time::Timestamp;
+use miyu_store::blob::Blobs;
+use miyu_store::bundle::{self, About, BundleError, Part};
+use miyu_store::index::SessionIndex;
+use miyu_store::log::first_event;
+use miyu_store::root::DataRoot;
+
+use crate::Core;
+use crate::refusal::Refusal;
+
+/// 运行日志的来源。
+const TARGET: &str = "miyu::endpoint";
+
+/// `session.export` 的参数。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ExportParams {
+    /// 会话编号。
+    session: String,
+    /// 导成什么。
+    format: Format,
+    /// 写到哪。
+    to: To,
+}
+
+/// 导成什么：这一步只有原始包。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Format {
+    /// 原始包（ZIP）。
+    Bundle,
+}
+
+/// 写到哪：本机的一个文件。
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct To {
+    /// 绝对路径。
+    path: PathBuf,
+}
+
+/// `session.export`：见模块的说明。回应 `{path, bytes, upto, sessions, blobs}`：写到哪、包多大、主会话导到第几条、包里有哪几个
+/// 会话、几个 blob。
+pub(crate) async fn export(core: &Core, params: ExportParams) -> Result<Value, Refusal> {
+    let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
+    let Format::Bundle = params.format;
+    let out = params.to.path;
+    if !out.is_absolute() || out.file_name().is_none() {
+        return Err(Refusal::BAD_PARAMS);
+    }
+    if !core.sessions.exists(core, &session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
+    let root = core.root.clone();
+    let index = core.index();
+    let main = session.clone();
+    let target = out.clone();
+    let done = tokio::task::spawn_blocking(move || {
+        refuse_inside(&root, &target)?;
+        let parts = gather(&root, Some(&index), &main).map_err(|error| {
+            tracing::warn!(target: TARGET, session = main.as_str(), error = %error, "export not read");
+            Refusal::BROKEN
+        })?;
+        let about = About {
+            main: main.clone(),
+            miyu: env!("CARGO_PKG_VERSION").to_string(),
+            exported: now(),
+        };
+        bundle::write(&parts, &Blobs::new(root.blobs()), &about, &target).map_err(|error| refused(&main, error))
+    })
+    .await
+    .map_err(|_| Refusal::INTERNAL)??;
+    let manifest = &done.manifest;
+    tracing::info!(
+        target: TARGET,
+        session = session.as_str(),
+        sessions = manifest.sessions.len(),
+        blobs = manifest.blobs.len(),
+        bytes = done.bytes,
+        "session exported"
+    );
+    let upto = manifest.sessions.first().and_then(|first| first.upto);
+    let sessions: Vec<&str> = manifest
+        .sessions
+        .iter()
+        .map(|one| one.id.as_str())
+        .collect();
+    Ok(json!({
+        "path": out,
+        "bytes": done.bytes,
+        "upto": upto,
+        "sessions": sessions,
+        "blobs": manifest.blobs.len(),
+    }))
+}
+
+/// 打包失败照哪一种拒。
+fn refused(session: &SessionId, error: BundleError) -> Refusal {
+    match error {
+        BundleError::Exists => Refusal::EXPORT_EXISTS,
+        BundleError::BlobMismatch(hash) => {
+            tracing::warn!(target: TARGET, session = session.as_str(), blob = hash.as_str(), "export blob mismatch");
+            Refusal::BROKEN
+        }
+        BundleError::Io(error) => {
+            tracing::warn!(target: TARGET, session = session.as_str(), error = %error, "export not written");
+            Refusal::EXPORT_UNWRITABLE
+        }
+    }
+}
+
+/// 写到数据根里面的不收；放它的目录不在的 `export_unwritable`。比的是真实的位置，路径里经过链接的也认得出。
+fn refuse_inside(root: &DataRoot, out: &Path) -> Result<(), Refusal> {
+    let parent = out.parent().ok_or(Refusal::BAD_PARAMS)?;
+    let parent = parent
+        .canonicalize()
+        .map_err(|_| Refusal::EXPORT_UNWRITABLE)?;
+    let root = root.path().canonicalize().map_err(|_| Refusal::INTERNAL)?;
+    if parent.starts_with(&root) {
+        return Err(Refusal::EXPORT_IN_DATA_ROOT);
+    }
+    Ok(())
+}
+
+/// 这一刻，RFC 3339。
+fn now() -> String {
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| {
+            i64::try_from(since.as_millis()).unwrap_or(i64::MAX)
+        });
+    Timestamp::from_unix_millis(millis).map_or_else(String::new, |at| at.to_string())
+}
+
+/// 包里要放的会话：`main`、它的全部后代（照编号排），再是一层层往上的分叉来源（取到分叉点；同一个来源被要了几次的取最远的
+/// 那一点；已经整个在包里的不再放）。父子关系先照会话列表的索引，索引里没有的读它的第一条。
+pub(crate) fn gather(
+    root: &DataRoot,
+    index: Option<&SessionIndex>,
+    main: &SessionId,
+) -> io::Result<Vec<Part>> {
+    let rows = index
+        .and_then(|index| index.rows().ok())
+        .unwrap_or_default();
+    let mut parents: BTreeMap<SessionId, SessionId> = BTreeMap::new();
+    for id in root.sessions()? {
+        let parent = match rows.get(&id) {
+            Some(row) => row.parent.clone(),
+            None => created(root, &id).ok().and_then(|created| created.parent),
+        };
+        if let Some(parent) = parent {
+            parents.insert(id, parent);
+        }
+    }
+    let mut whole: Vec<SessionId> = vec![main.clone()];
+    let mut seen: BTreeSet<SessionId> = BTreeSet::from([main.clone()]);
+    let mut next = 0;
+    while next < whole.len() {
+        let current = whole[next].clone();
+        next += 1;
+        for (child, parent) in &parents {
+            if *parent == current && seen.insert(child.clone()) {
+                whole.push(child.clone());
+            }
+        }
+    }
+    let mut sources: BTreeMap<SessionId, Seq> = BTreeMap::new();
+    let mut pending: Vec<SessionId> = whole.clone();
+    while let Some(id) = pending.pop() {
+        let Some(forked) = created(root, &id)?.forked else {
+            continue;
+        };
+        if seen.contains(&forked.from) {
+            continue;
+        }
+        let further = sources
+            .get(&forked.from)
+            .is_none_or(|upto| forked.upto > *upto);
+        if further {
+            sources.insert(forked.from.clone(), forked.upto);
+            pending.push(forked.from);
+        }
+    }
+    let mut parts: Vec<Part> = whole
+        .into_iter()
+        .map(|id| Part {
+            dir: root.session_dir(&id),
+            session: id,
+            upto: None,
+        })
+        .collect();
+    parts.extend(sources.into_iter().map(|(id, upto)| Part {
+        dir: root.session_dir(&id),
+        session: id,
+        upto: Some(upto),
+    }));
+    Ok(parts)
+}
+
+/// 一个会话的第一条：`session.created`。
+fn created(root: &DataRoot, id: &SessionId) -> io::Result<miyu_kernel::event::SessionCreated> {
+    let first = first_event(&root.session_dir(id)).map_err(io::Error::other)?;
+    match first.body {
+        Body::SessionCreated(created) => Ok(created),
+        _ => Err(io::Error::other(format!(
+            "{id}: first event is not session.created"
+        ))),
+    }
+}

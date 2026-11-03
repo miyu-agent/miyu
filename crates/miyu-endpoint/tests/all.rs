@@ -251,6 +251,7 @@ mod scripts;
 mod search_extension;
 mod secrets;
 mod session_context;
+mod session_export;
 mod session_prompts;
 mod session_tools;
 mod session_viewing;

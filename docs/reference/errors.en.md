@@ -37,6 +37,9 @@ Chinese version: [errors.md](errors.md).
 |---|---|---|
 | `session_not_found` | No such session; deleted ones too | |
 | `session_broken` | The session can't be loaded: its log is broken or unreadable | |
+| `export_exists` | The export file is already there; not overwritten | |
+| `export_in_data_root` | An export won't be written inside the data root | |
+| `export_unwritable` | The export folder isn't there or can't be written | |
 | `session_stopped` | The session stopped; sending again reloads it | |
 | `session_sealed` | The session is sealed; commands that change the conversation are refused | |
 | `restoring` | A command arrived while an undo is still finishing | |

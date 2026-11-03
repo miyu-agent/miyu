@@ -37,6 +37,9 @@
 |---|---|---|
 | `session_not_found` | 没有这个会话，删了的也是 | |
 | `session_broken` | 会话载入不了：日志坏了、读不了 | |
+| `export_exists` | 导出写的那个文件已经有了，不覆盖 | |
+| `export_in_data_root` | 导出不往数据目录里写 | |
+| `export_unwritable` | 导出的目录不在、写不进 | |
 | `session_stopped` | 会话停了；再发一次会重新载入 | |
 | `session_sealed` | 会话封存了，改对话的命令不收 | |
 | `restoring` | 撤销还没做完时来的命令 | |

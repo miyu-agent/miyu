@@ -84,6 +84,8 @@ tracing = { version = "0.1", default-features = false, features = ["std"] }
 similar = { version = "2", default-features = false, features = ["text"] }
 
 [dev-dependencies]
+# 读回导出的原始包（施工 SE-1 上）：同 miyu-store 用的那一份。
+zip = { version = "9.3", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 # 测试的临时目录删到一半撞上后台写入的，过一会儿再删（施工 TMP-1）。
 miyu-store = { path = "../miyu-store", features = ["testkit"] }
 # 测试里的假网址服务（施工 X-32 上）：照请求答的 Streamable HTTP MCP 服务。

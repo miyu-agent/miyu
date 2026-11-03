@@ -28,6 +28,12 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_project" => ("项目不存在。", "Project not found."),
         "not_a_ui_package" => ("不是界面软件包。", "Not a UI package."),
         "prefs_too_big" => ("设置超过 64 KiB。", "Settings over 64 KiB."),
+        "export_exists" => ("文件已存在。", "File already exists."),
+        "export_in_data_root" => (
+            "不能导出到数据目录内。",
+            "Cannot export into the data root.",
+        ),
+        "export_unwritable" => ("无法写入该位置。", "Cannot write there."),
         "unknown_server" => (
             "设置里没有这个 MCP 服务。",
             "No such MCP server in the settings.",

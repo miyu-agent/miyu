@@ -152,6 +152,7 @@ session.configure
 session.context
 session.create
 session.delete
+session.export
 session.fork
 session.interrupt
 session.list

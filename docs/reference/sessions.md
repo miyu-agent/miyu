@@ -27,6 +27,7 @@
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
+| [`session.export`](#sessionexport) | 把会话导出成原始包 |
 | [`view.page`](#viewpage) | 按页读历史 |
 | [`view.detail`](#viewdetail) | 一次工具调用的完整差异、一次压缩的摘要原文 |
 
@@ -35,7 +36,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -436,6 +437,26 @@
 - **分叉出来的会话**只列它自己的：底子里的话在父会话里列。
 
 **出错**：`bad_params`；`session_not_found`；`session_broken`。
+
+## `session.export`
+
+把一个会话打成原始包（ZIP）写到你给的位置：存档、换机器、查问题都用它，以后的导入只认它。只给人的头。
+
+**参数**：
+
+| 名字 | 说明 |
+|---|---|
+| `session` | 会话编号 |
+| `format` | `bundle`：原始包。Markdown 以后加 |
+| `to` | `{"path": "<绝对路径>"}`：核心写到这个文件 |
+
+**回应**：`path`、`bytes`（包多大）、`upto`（这个会话导到第几条）、`sessions`（包里有哪几个会话）、`blobs`（几个附件、大内容）。
+
+- **包里有什么**：这个会话日志的各段原文，一个字节不改；挂在它下面的会话（子代理、分叉出来的支线）整份带上；它是分叉出来的，来源会话到分叉点为止的那几段也带上，一层层往上；这些日志引用到的附件、改文件前后的内容、大输出、策略快照；`manifest.json` 写着每一项的 SHA-256。
+- **在跑的会话**照这一刻已经写下的取，正在写的那半行不要。
+- 不改会话，也不写进会话日志。包里什么都有，包括她碰过的文件内容，自己留好。
+
+**出错**：`bad_params`（路径不是绝对的、`format` 不认得）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）。
 
 ## `view.page`
 

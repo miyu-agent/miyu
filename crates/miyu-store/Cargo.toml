@@ -37,6 +37,8 @@ rusqlite = { version = "0.40", features = ["bundled", "hooks"] }
 # 网页登录的密码哈希（施工 W-8，设计 06 U4）：argon2id，RustCrypto 的实现，MIT 或 Apache-2.0。盐由 getrandom 给。
 argon2 = { version = "0.6", default-features = false, features = ["alloc", "password-hash"] }
 getrandom = { version = "0.4", features = ["std"] }
+# 会话的原始包（施工 SE-1 上，设计 58）：ZIP，三个平台都能直接打开。只开 deflate，后端用工作区里已经有的 flate2 + zlib-rs（纯 Rust）。
+zip = { version = "9.3", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [target.'cfg(windows)'.dependencies]
 # 本机是 Windows 10 还是 11（施工 2-7 再补）：内部版本号、是不是服务器版。微软的 windows-rs，MIT 或 Apache-2.0，不用自己写 unsafe。

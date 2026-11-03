@@ -6,6 +6,7 @@ use miyu_kernel::session::Reason;
 mod commands;
 mod config;
 mod edits;
+mod export;
 mod goal;
 mod knowledge;
 mod memory;

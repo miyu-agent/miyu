@@ -27,6 +27,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`session.prompts`](#sessionprompts) | List what was asked in a session |
+| [`session.export`](#sessionexport) | Export a session as a raw bundle |
 | [`view.page`](#viewpage) | Read history page by page |
 | [`view.detail`](#viewdetail) | The full diff of a tool call; a compaction's summary |
 
@@ -35,7 +36,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal` and `session.delete` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete` and `session.export` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -435,6 +436,26 @@ List everything you asked in a session, in order. Heads build a "jump to a promp
 - **A forked session** lists only its own; prompts in the part it was forked from are listed in the parent.
 
 **Errors**: `bad_params`; `session_not_found`; `session_broken`.
+
+## `session.export`
+
+Writes a session as a raw bundle (ZIP) to a path you give: for archiving, moving to another machine, or debugging. Importing will only accept this format. For people's heads only.
+
+**Params**:
+
+| Name | Notes |
+|---|---|
+| `session` | Session id |
+| `format` | `bundle`: the raw bundle. Markdown comes later |
+| `to` | `{"path": "<absolute path>"}`: the core writes this file |
+
+**Result**: `path`, `bytes` (bundle size), `upto` (the last event of this session in it), `sessions` (the sessions in it), `blobs` (how many attachments and large contents).
+
+- **What's in it**: every segment of the session's log, byte for byte; the sessions under it (subagents, forked branches) in full; if it was forked, its source up to the fork point, level by level; the attachments, file contents before and after edits, large outputs and policy snapshots those logs refer to; `manifest.json` with each item's SHA-256.
+- **A running session** is taken as written at that moment, without the half-written last line.
+- It doesn't change the session or write to its log. The bundle holds everything, including file contents she touched, so keep it safe.
+
+**Errors**: `bad_params` (the path isn't absolute, unknown `format`); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written).
 
 ## `view.page`
 

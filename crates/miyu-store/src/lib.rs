@@ -24,6 +24,7 @@
 pub mod access;
 pub mod attachments;
 pub mod blob;
+pub mod bundle;
 pub mod cache;
 pub mod config_file;
 mod durable;

@@ -22,6 +22,7 @@
 | `crates/miyu-store/src/generated.rs` | 核心生成的派生文件：一样的不写，不一样的先写临时文件再替换（施工 8-1，`config.md`「怎么走」第一条第 7 条）。`write` 哪里都建目录（机器的缓存目录、头自己的文件）；写进数据根的用 `write_inside`，目录照第四条建（施工 TMP-1） |
 | `crates/miyu-store/src/log.rs` | 会话日志：新建、写一批、同步、追加（写加同步）、换段（施工 V-18 拆开写和同步） |
 | `crates/miyu-store/src/log/open.rs`、`log/open/walk.rs`、`log/open/parse.rs`、`log/open/parse/stream.rs`、`log/open/range.rs` | 打开时自检、截半行；只读地读；从记下的位置读起（施工 3-8 七补）；只读第一条；一段里行多的分块一起读成事件（施工 V-2 下补），解好一块照先后交一块（施工 V-15）；一段照定长的窗口一窗窗读，原文不整段进内存（施工 V-37 中）；照序号读一截（`read_range`，施工 V-37 中）；只解要的种类的那一份（`read_range_only`，施工 V-39 上补） |
+| `crates/miyu-store/src/bundle.rs`、`bundle/manifest.rs` | 会话的原始包（施工 SE-1 上，设计 58）：几个会话的段原文、引用到的 blob、清单，打成一个 ZIP；写法见下面「原始包」 |
 | `crates/miyu-store/src/blob.rs` | blob：存、取、核对哈希；分块暂存、改名进位置、扔掉、核心起来时清（施工 W-5）；读一段（施工 W-6）；只核对、量大小，打开了从某处读（施工 V-38） |
 | `crates/miyu-store/src/jobs.rs` | 会话目录下后台命令的输出：`jobs/<编号>.out`（施工 7-3） |
 | `crates/miyu-store/src/attachments.rs` | 会话的附件落成文件：清名字、照字节截、补扩展名、撞名接序号、临时文件改名（施工 3-9 六补，「怎么走」第 13 条） |
@@ -223,6 +224,13 @@
 读一段（`Blobs::read_range`，`blob.get`，施工 W-6，`web-module.md`「七、分块读」）：从 `offset` 起读最多 `length` 个字节，读到结尾就停；`offset` 过了结尾的是空的；`length` 是 0 只回大小。不重新核对整份内容的哈希：核对在整份取出来用的时候，就是上面这条。安全地打开照 `miyu-fs` 的 `read_range`，和 `fs.read` 共用一份，不另写一套跟链接的判断：只把 blob 目录换成真实的位置（数据根可能经过一层链接），里面的前两位目录、哈希文件名照原样一层链接都不跟，blob 被换成了链接的打不开（施工 SEC-3，外部审计 L-3）。没有这个文件：同上。
 
 **11. 后台命令的输出**（施工 7-3，`output_path`、`create_output`）：会话目录下的 `jobs/<编号>.out`，一条后台命令一份，执行器的任务表边跑边写、不截（`session/tools.md` 第 5 条）。建的时候没有 `jobs/` 的先建（第 4 条，Unix 上 0700）；文件已经有的清空重写：编号在这个会话里不重复，已经有的只会是崩溃前起了、没来得及记下的那一条留下的。会话日志只认名字是 12 位数字的段（第 6 条），`jobs/` 不碍着它。删会话挪整个会话目录，`jobs/` 跟着一起进回收处（第 12 条，施工 3-8 三补）；造会话没成时收拾会话目录的 `abandon` 只删只剩空的第一段的目录，那时还起不了后台命令。结束了整份存成 blob，`job.reported` 里记它的哈希。
+
+**原始包**（施工 SE-1 上，`bundle::write`，设计 `58-会话导出和导入.md`）：`session.export` 照它把几个会话打成一个 ZIP（`protocol.md`「`session.export`」挑哪几个）。
+
+1. 包里：`sessions/<会话编号>/<段名>`，段原文一个字节不改；`blobs/<64 位>`，引用到的 blob；`manifest.json`：格式版本（`FORMAT`，现在是 1）、核心的版本、导出的时刻、主会话、每个会话的各段（名字、字节数、SHA-256）和取到的最后一条、每个 blob 的哈希和大小、`absent`（日志里写成内容哈希、blob 库里却没有的，多半本来就不是 blob，例如请求字节的哈希）。
+2. 段：会话目录里名字是 12 位数字加 `.jsonl` 的，照名字排；每段取到最后一个换行（后面没写完的半行不要）；写了 `upto` 的（分叉来源）取到序号不大于它的最后一行，后面的段不看。读不成 JSON 的行照原样带（日志本来就照它）。
+3. blob：每一行照 JSON 读一遍，凡是写成内容哈希的字（`ContentHash::parse` 认得的）都算引用。blob 库里有的边读边拷、重新算哈希，对不上整个失败（`BlobMismatch`，不少导）；没有的进 `absent`。
+4. ZIP 用 deflate（`zip` 包，后端 flate2 + zlib-rs）。先在 `to` 的同一个目录里建临时文件（`durable::create_temp`，只许新建），写完同步，再用硬链接挂到 `to`（只许新建，已经有的报 `Exists`），系统不支持硬链接的退回「没有才改名」；失败的删掉临时文件，`to` 不会出现。
 
 **12. 回收处**（施工 3-8 三补，`trash.rs`；2026-09-30 项目主人定：删了的进回收处，留 7 天再真删）
 
