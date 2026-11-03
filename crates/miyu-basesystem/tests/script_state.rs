@@ -22,7 +22,8 @@ async fn a_script_keeps_its_state_per_source() {
             .join("data/root/state/scripts")
             .join(source)
             .join("count");
-        std::fs::canonicalize(folder).expect("建好了")
+        // 交出去的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`（施工 FH-3下补）。
+        miyu_fs::usable(&std::fs::canonicalize(folder).expect("建好了"))
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let first = site.script_by("scripts/count.py", "~home").await;
@@ -71,7 +72,8 @@ async fn a_venue_keeps_its_own_state_across_sessions() {
     site.file("scripts/count.py", COUNT);
     let state = |relative: &str| {
         let folder = site.0.join("data/root/state/scripts").join(relative);
-        std::fs::canonicalize(folder).expect("建好了")
+        // 交出去的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`（施工 FH-3下补）。
+        miyu_fs::usable(&std::fs::canonicalize(folder).expect("建好了"))
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let one = Some("qq:group:1");
@@ -115,7 +117,8 @@ async fn a_script_s_cache_is_in_the_data_root() {
     site.file("scripts/cached.py", CACHED);
     let home = |relative: &str| {
         let folder = site.0.join("data/var/cache/scripts").join(relative);
-        std::fs::canonicalize(folder).expect("建好了")
+        // 交出去的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`（施工 FH-3下补）。
+        miyu_fs::usable(&std::fs::canonicalize(folder).expect("建好了"))
     };
     let printed = |done: &Done| text(done).trim_end().to_string();
     let local = site.script_by("scripts/cached.py", "kit").await;
@@ -155,8 +158,7 @@ async fn a_local_script_gets_the_owner_s_home_folders() {
         .iter()
         .map(|name| {
             let folder = site.0.join("data/root").join(name);
-            std::fs::canonicalize(folder)
-                .expect("建好了")
+            miyu_fs::usable(&std::fs::canonicalize(folder).expect("建好了"))
                 .display()
                 .to_string()
         })

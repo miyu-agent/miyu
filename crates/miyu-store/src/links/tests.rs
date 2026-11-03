@@ -153,6 +153,7 @@ fn a_folder_that_is_itself_a_link_is_checked_where_it_really_is() {
     let site = Site::new();
     let token = site.file("data/keys/token");
     let place = site.at("data/root/scripts");
+    site.dir("data/root");
     if !link(&site.at("data/keys"), &place) {
         return;
     }

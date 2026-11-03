@@ -113,8 +113,11 @@ fn a_package_command_is_told_its_package_folder() {
     let left = home.root.package_tmp("own").join("left.txt");
     std::fs::create_dir_all(left.parent().expect("有上一级")).expect("建得了");
     std::fs::write(&left, "上一回的").expect("写得进");
+    // 包的文件夹照给的交（同上面的 `MIYU_PACKAGE_DIR`），别的交真实位置：macOS 的临时目录在 `/var` 这个链接下面。
+    let printed = miyu(&home, "C", &["own", "MIYU_APP_DIR"]);
+    assert_eq!(printed.status.code(), Some(0), "{}", text(&printed.stderr));
+    assert_eq!(text(&printed.stdout), format!("{}\n", dir.display()));
     for (name, at) in [
-        ("MIYU_APP_DIR", dir.clone()),
         ("MIYU_STATE_DIR", state.clone()),
         ("MIYU_CONFIG_DIR", home.root.package_config("own")),
         ("MIYU_CACHE_DIR", home.root.package_cache("own")),

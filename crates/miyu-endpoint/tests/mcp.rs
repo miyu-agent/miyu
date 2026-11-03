@@ -357,7 +357,9 @@ async fn a_command_server_is_told_its_state_dir() {
             .map(|(_, text, ..)| text.clone())
             .unwrap_or_else(|| panic!("调了 {name}：{got:?}"))
     };
-    let state = std::fs::canonicalize(home.root.mcp_workdir("probe")).expect("建好了");
+    // 交出去的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`。
+    let state =
+        miyu_fs::usable(&std::fs::canonicalize(home.root.mcp_workdir("probe")).expect("建好了"));
     assert_eq!(text("mcp__probe__env"), state.display().to_string());
     assert_eq!(
         text("mcp__probe__cwd"),

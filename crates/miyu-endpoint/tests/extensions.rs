@@ -119,7 +119,10 @@ async fn it_runs_with_the_cores_data_root_and_resources() {
             home.root.packages().join("echo").display()
         )
     );
-    let state = std::fs::canonicalize(home.root.path().join("var/lib/echo")).expect("拉起前建好了");
+    // 交出去的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`（施工 FH-3下补）。
+    let state = miyu_fs::usable(
+        &std::fs::canonicalize(home.root.path().join("var/lib/echo")).expect("拉起前建好了"),
+    );
     assert_eq!(lines[4], format!("MIYU_PACKAGE_STATE={}", state.display()));
     let program = std::env::current_exe()
         .and_then(std::fs::canonicalize)
@@ -438,8 +441,10 @@ async fn it_gets_one_ready_folder_in_each_layer() {
         tokio::time::sleep(Duration::from_millis(20)).await;
     }
     let real = |at: std::path::PathBuf| {
-        std::fs::canonicalize(&at)
-            .unwrap_or_else(|error| panic!("{} 拉起前建好了：{error}", at.display()))
+        miyu_fs::usable(
+            &std::fs::canonicalize(&at)
+                .unwrap_or_else(|error| panic!("{} 拉起前建好了：{error}", at.display())),
+        )
     };
     let root = &home.root;
     let wanted = [

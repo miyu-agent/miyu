@@ -96,7 +96,8 @@ fn ready_makes_every_folder_clears_the_short_lived_one_and_hands_real_places() {
     let dirs = PackageDirs::ready(&root, "kit", app.clone()).expect("建得了");
     assert!(!left.exists(), "短命暂存拉起前清");
     assert!(kept.is_file(), "状态不动");
-    let real = |path: &Path| fs::canonicalize(path).expect("建好了");
+    // 交的是能给别的程序用的写法：Windows 上不带表示得了的 `\\?\`。
+    let real = |path: &Path| miyu_fs::usable(&fs::canonicalize(path).expect("建好了"));
     for (made, at) in [
         (&dirs.config, root.package_config("kit")),
         (&dirs.state, root.package_state("kit")),
