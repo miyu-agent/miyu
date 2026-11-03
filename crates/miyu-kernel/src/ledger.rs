@@ -27,6 +27,7 @@ mod shape;
 mod triggers;
 mod undo;
 
+pub use jobs::JobTally;
 use jobs::Jobs;
 use nested::Settled;
 use peers::Peers;

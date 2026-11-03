@@ -6,17 +6,21 @@
 //! 撤销不再改回文件（2026-10-15 项目主人定），回执也不提文件。
 //!
 //! 照会话的日志读：撤销（恢复）落了盘才回应，这时读得到。碰磁盘，在阻塞线程里调。
+//!
+//! 只读要的那几条（施工 V-41 中）：撤销那一条、撤的第一轮的开头、开它的那句话照序号各读一条（`miyu_store::log::read_one`），
+//! 日志的第一条只读开头那一行；撤销的另从撤的第一轮的开头读到最后（`read_range_only`，只解要的种类），数压缩、记任务。以前整份读进内存再挑，十万条的会话撤一次多 200 MB。
+//! 定位跳过的那一截不自检（2026-11-03 项目主人定，同施工 V-37 下）。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::{Value, json};
 
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, CompactTrigger, Event};
-use miyu_kernel::id::{SessionId, TurnId};
+use miyu_kernel::id::{Seq, SessionId, TurnId};
 use miyu_kernel::origin::By;
-use miyu_store::log::read_events;
+use miyu_store::log::{Flow, OpenError, read_one, read_range_only};
 
 use crate::Core;
 
@@ -84,46 +88,128 @@ pub(crate) struct Report {
 /// 照撤销（恢复）那一条（`events` 里第一个序号）写成回应里的几样。日志读不出来的，
 /// 记一条运行日志，交回空的：撤销本身已经成了。
 pub(crate) fn report(sources: &Sources, events: &[u64]) -> Report {
-    let log = match read_events(&sources.log) {
-        Ok(log) => log,
+    match written(&sources.log, events) {
+        Ok(report) => report,
         Err(error) => {
             tracing::warn!(target: "miyu::endpoint", error = %error, "undo report not written");
-            return Report::default();
+            Report::default()
         }
-    };
-    let find = |seq: u64| log.iter().find(|event| event.seq.get() == seq);
-    let Some(first) = events.first().and_then(|seq| find(*seq)) else {
-        return Report::default();
-    };
-    let (turns, undo) = match &first.body {
-        Body::TurnReverted(reverted) => (reverted.turns.clone(), true),
-        Body::TurnUnreverted(unreverted) => (unreverted.turns.clone(), false),
-        _ => return Report::default(),
-    };
-    Report {
-        turns: turns.len(),
-        said: turns.first().and_then(|turn| said(&log, *turn)),
-        compactions: undo
-            .then(|| compactions(&log, &turns, false))
-            .filter(|count| *count > 0),
-        clears: undo
-            .then(|| compactions(&log, &turns, true))
-            .filter(|count| *count > 0),
-        jobs: match undo {
-            true => jobs::stopped(&log, first.seq, &turns),
-            false => Vec::new(),
-        },
     }
 }
 
-/// 回合 `turn` 里人说的那句话的第一行：照 `turn.started` 找引起它的那一条，是人亲口说的才算。没有触发的（手动压缩、
-/// 清空单开的那一轮，施工 6-8、6-8 补）没有。
-fn said(log: &[Event], turn: TurnId) -> Option<String> {
-    let trigger = log.iter().find_map(|event| match &event.body {
-        Body::TurnStarted(started) if event.seq == turn.started() => started.trigger,
+/// 读回应要的种类，别的只过一遍（施工 V-41 中，`Event::from_line_only`）：撤销、恢复那一条，回合的开头和开它的人话，压缩，
+/// 记任务看的工具结果和两种回报。
+const KINDS: &[&str] = &[
+    "turn.reverted",
+    "turn.unreverted",
+    "turn.started",
+    "message.user",
+    "context.compacted",
+    "tool.result",
+    "job.reported",
+    "child.reported",
+];
+
+/// 同 [`report`]，读不出来的交回读的错。
+fn written(dir: &Path, events: &[u64]) -> Result<Report, OpenError> {
+    let Some(first) = events.first().and_then(|seq| Seq::new(*seq)) else {
+        return Ok(Report::default());
+    };
+    let Some(first) = read_one(dir, first)? else {
+        return Ok(Report::default());
+    };
+    let (turns, undo) = match first.body {
+        Body::TurnReverted(reverted) => (reverted.turns, true),
+        Body::TurnUnreverted(unreverted) => (unreverted.turns, false),
+        _ => return Ok(Report::default()),
+    };
+    // 账本不许撤、恢复空的一串（`ledger/undo.rs`）：日志里不会有，照以前交回撤了 0 轮。
+    let Some(&opened) = turns.first() else {
+        return Ok(Report::default());
+    };
+    if !undo {
+        let started = read_one(dir, opened.started())?;
+        return Ok(Report {
+            turns: turns.len(),
+            said: said(dir, started.as_ref())?,
+            ..Report::default()
+        });
+    }
+    let undone = Undone::read(dir, &turns, first.seq)?;
+    let said = said(dir, undone.started.as_ref())?;
+    Ok(Report {
+        turns: turns.len(),
+        said,
+        compactions: Some(undone.compactions).filter(|count| *count > 0),
+        clears: Some(undone.clears).filter(|count| *count > 0),
+        jobs: undone.jobs.stopped(dir)?,
+    })
+}
+
+/// 撤销从撤的第一轮的开头读到最后记下的：那一轮的开头、撤的几轮里的压缩和清空、任务。撤的几轮里的事件都不早于第一轮的
+/// 开头（账本只许带着正在进行的回合），所以以前整份数的、挑的，从这里读起一样。
+struct Undone {
+    /// 撤的第一轮的 `turn.started`。
+    started: Option<Event>,
+    /// 撤的几轮里的压缩（清空不算）。
+    compactions: usize,
+    /// 撤的几轮里的清空。
+    clears: usize,
+    /// 撤销以前派出去的任务。
+    jobs: jobs::Tally,
+}
+
+impl Undone {
+    /// 从 `turns` 第一轮的开头读到最后；任务只记撤销那一条（第 `revert` 条）以前的。
+    fn read(dir: &Path, turns: &[TurnId], revert: Seq) -> Result<Undone, OpenError> {
+        let from = turns.first().map_or(Seq::FIRST, |turn| turn.started());
+        let mut undone = Undone {
+            started: None,
+            compactions: 0,
+            clears: 0,
+            jobs: jobs::Tally::default(),
+        };
+        read_range_only(dir, from, None, KINDS, |events| {
+            for event in events {
+                undone.note(event, turns, revert);
+            }
+            Flow::Go
+        })?;
+        Ok(undone)
+    }
+
+    /// 记下一条。
+    fn note(&mut self, event: Event, turns: &[TurnId], revert: Seq) {
+        let undone = event.turn.is_some_and(|turn| turns.contains(&turn));
+        match counted(&event, turns) {
+            Some(true) => self.clears += 1,
+            Some(false) => self.compactions += 1,
+            None => {}
+        }
+        if event.seq < revert {
+            self.jobs.note(&event, undone);
+        }
+        let opened = turns.first().map(|turn| turn.started());
+        if Some(event.seq) == opened && matches!(event.body, Body::TurnStarted(_)) {
+            self.started = Some(event);
+        }
+    }
+}
+
+/// 开那一轮的 `turn.started` 照触发找引起它的那一条，是人亲口说的才算，交回那句话的第一行。没有触发的（手动压缩、清空单开的
+/// 那一轮，施工 6-8、6-8 补）没有。
+fn said(dir: &Path, started: Option<&Event>) -> Result<Option<String>, OpenError> {
+    let Some(trigger) = started.and_then(|event| match &event.body {
+        Body::TurnStarted(started) => started.trigger,
         _ => None,
-    })?;
-    let event = log.iter().find(|event| event.seq == trigger)?;
+    }) else {
+        return Ok(None);
+    };
+    Ok(read_one(dir, trigger)?.as_ref().and_then(first_line))
+}
+
+/// 人亲口说的那一条的第一行；不是人话、不是人亲口说的没有。
+fn first_line(event: &Event) -> Option<String> {
     let (Body::MessageUser(message), By::Person(_)) = (&event.body, &event.by) else {
         return None;
     };
@@ -142,16 +228,16 @@ fn said(log: &[Event], turn: TurnId) -> Option<String> {
     })
 }
 
-/// 这几轮里有几次压缩（施工 6-9）：`context.compacted` 带的回合在这几轮里的。`clears` 是数清空的（`trigger` 是
-/// `clear`，施工 6-8 补），不是的数别的几种。
-fn compactions(log: &[Event], turns: &[TurnId], clears: bool) -> usize {
-    log.iter()
-        .filter(|event| event.turn.is_some_and(|turn| turns.contains(&turn)))
-        .filter(|event| {
-            matches!(&event.body, Body::ContextCompacted(compacted)
-            if (compacted.trigger == Some(CompactTrigger::Clear)) == clears)
-        })
-        .count()
+/// 这一条是不是撤的几轮里的压缩（施工 6-9）：`context.compacted` 带的回合在这几轮里的。是清空（`trigger` 是 `clear`，施工 6-8
+/// 补）的交回真，别的几种交回假，不是的没有。
+fn counted(event: &Event, turns: &[TurnId]) -> Option<bool> {
+    if !event.turn.is_some_and(|turn| turns.contains(&turn)) {
+        return None;
+    }
+    match &event.body {
+        Body::ContextCompacted(compacted) => Some(compacted.trigger == Some(CompactTrigger::Clear)),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

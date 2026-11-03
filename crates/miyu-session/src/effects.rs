@@ -185,6 +185,9 @@ impl SeenScan {
     }
 }
 
+/// 记她看过的文件只看的种类（[`SeenScan::note`]）：重算时别的种类只过一遍、不解（施工 V-41 中，`Event::from_line_only`）。
+pub(crate) const SEEN_KINDS: &[&str] = &["tool.result", "turn.reverted", "turn.unreverted"];
+
 /// 这一批里有没有撤销、恢复：有的，她看过的要照日志重算。
 pub(crate) fn reverts(events: &[Event]) -> bool {
     events

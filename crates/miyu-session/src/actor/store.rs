@@ -133,8 +133,8 @@ impl Actor {
                         .and_then(|()| store.sync_handle().map(Some)),
                     false => store.write(&events, sync).map(|()| None),
                 };
-                let seen = (reseen && result.is_ok())
-                    .then(|| store.events().map(|all| effects::seen_in(&all)));
+                // 边读边记，不把整份日志攒在内存里（施工 V-41 中）。
+                let seen = (reseen && result.is_ok()).then(|| store.seen());
                 let mark = store.mark();
                 (store, result, seen, mark)
             })

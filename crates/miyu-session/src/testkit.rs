@@ -21,6 +21,7 @@ use crate::port::{Cancel, ForSession, ModelPort, Models, Reports};
 use crate::route::{Ask, OneShot, Said, Unanswered};
 
 mod persona;
+pub mod undo_log;
 
 pub use persona::{
     SAMPLE_PERSONA, install_sample_persona, sample_persona_dir, sample_persona_texts,

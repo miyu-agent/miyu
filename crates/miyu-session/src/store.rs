@@ -8,17 +8,20 @@
 //! （施工 8-15），更新回合索引（施工 R-2 上）。
 
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{Seq, SessionId};
 use miyu_store::index::SessionIndex;
-use miyu_store::log::{Flow, Mark, OpenError, SessionLog, read_events, read_range, read_segments};
+use miyu_store::log::{
+    Flow, Mark, OpenError, SessionLog, read_events, read_range, read_range_only, read_segments,
+};
 use miyu_store::usage::{UsageIndex, Who};
-use miyu_tool::ReadLog;
+use miyu_tool::{ReadLog, Seen};
 
 use crate::TARGET;
+use crate::effects::{SEEN_KINDS, SeenScan};
 use crate::memory::{Calls, Source, TurnLane};
 
 /// 一次写一批。在阻塞线程里用，所以要能挪到别的线程上。
@@ -69,6 +72,12 @@ pub(crate) trait Store: Send + 'static {
 
     /// 只读地读回第 `from` 条起的日志（施工 6-9）：只留要的。
     fn events_from(&self, from: Seq) -> Result<Vec<Event>, String>;
+
+    /// 照日志重算她看过的文件（撤销、恢复落了盘以后，施工 4-7 上）：同 `effects::seen_in` 照整份日志算的。在磁盘上的边读边记
+    /// （施工 V-41 中），不把整份日志攒在内存里；别的（测试里的）照 [`Store::events`] 整份读来算。
+    fn seen(&self) -> Result<Seen, String> {
+        self.events().map(|events| crate::effects::seen_in(&events))
+    }
 
     /// 日志在哪个目录（施工 R-6 上）：抽取在别的线程里只读地读它，不占 actor。不在磁盘上的（测试里）没有。
     fn dir(&self) -> Option<PathBuf> {
@@ -130,6 +139,13 @@ impl Store for SessionLog {
         })
         .map_err(|error| error.to_string())?;
         Ok(kept)
+    }
+
+    /// 从第一条一块块读、边读边记（施工 V-41 中），只解看过的文件要的种类（`Event::from_line_only`），整份照旧自检。
+    fn seen(&self) -> Result<Seen, String> {
+        let mut scan = SeenScan::default();
+        scan_own(SessionLog::dir(self), &mut scan).map_err(|error| error.to_string())?;
+        Ok(scan.seen())
     }
 
     fn dir(&self) -> Option<PathBuf> {
@@ -252,13 +268,37 @@ impl Base {
     }
 
     /// 照序号读第 `from` 条到分叉点（`miyu_store::log::read_range`），一块块交给 `each`；没读到分叉点的报没有。
-    fn range(&self, from: Seq, mut each: impl FnMut(Vec<Event>)) -> Result<(), OpenError> {
+    fn range(&self, from: Seq, each: impl FnMut(Vec<Event>)) -> Result<(), OpenError> {
+        self.range_with(from, None, each)
+    }
+
+    /// 同 [`Base::range`]，只是每一行只解 `only` 里的种类（`miyu_store::log::read_range_only`，施工 V-41 中：重算她看过的文件）。
+    fn range_only(
+        &self,
+        from: Seq,
+        only: &[&str],
+        each: impl FnMut(Vec<Event>),
+    ) -> Result<(), OpenError> {
+        self.range_with(from, Some(only), each)
+    }
+
+    /// 照序号读第 `from` 条到分叉点，`only` 不是空的只解它里面的种类。
+    fn range_with(
+        &self,
+        from: Seq,
+        only: Option<&[&str]>,
+        mut each: impl FnMut(Vec<Event>),
+    ) -> Result<(), OpenError> {
         let mut reached = false;
-        read_range(&self.dir, from, Some(self.upto), |events| {
+        let sink = |events: Vec<Event>| {
             reached = events.last().is_some_and(|event| event.seq >= self.upto);
             each(events);
             Flow::Go
-        })?;
+        };
+        match only {
+            Some(only) => read_range_only(&self.dir, from, Some(self.upto), only, sink)?,
+            None => read_range(&self.dir, from, Some(self.upto), sink)?,
+        }
         if !reached {
             return Err(OpenError::Missing(self.dir.clone()));
         }
@@ -331,6 +371,21 @@ impl Store for Indexed {
         Ok(events)
     }
 
+    /// 分叉出来的先记底子（读到分叉点为止，施工 V-41 中同 [`Base::each`]），再记自己的；都边读边记。
+    fn seen(&self) -> Result<Seen, String> {
+        let mut scan = SeenScan::default();
+        if let Some(base) = &self.base {
+            base.range_only(Seq::FIRST, SEEN_KINDS, |events| {
+                for event in &events {
+                    scan.note(event);
+                }
+            })
+            .map_err(|error| error.to_string())?;
+        }
+        scan_own(SessionLog::dir(&self.log), &mut scan).map_err(|error| error.to_string())?;
+        Ok(scan.seen())
+    }
+
     fn dir(&self) -> Option<PathBuf> {
         Store::dir(&self.log)
     }
@@ -351,6 +406,17 @@ impl Store for Indexed {
         self.turns = turns;
         Ok(calls)
     }
+}
+
+/// 会话自己的日志（在 `dir`）从第一条一块块读，交给 `scan` 记她看过的文件（施工 V-41 中）：只解看过的文件要的种类，从第一条读起的照
+/// `read_events` 整份自检。
+fn scan_own(dir: &Path, scan: &mut SeenScan) -> Result<(), OpenError> {
+    read_range_only(dir, Seq::FIRST, None, SEEN_KINDS, |events| {
+        for event in &events {
+            scan.note(event);
+        }
+        Flow::Go
+    })
 }
 
 /// 这个会话日志的只读入口（施工 6-4）：会话的目录。

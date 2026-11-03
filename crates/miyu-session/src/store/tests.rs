@@ -79,3 +79,4 @@ fn a_base_reads_its_parent_up_to_the_fork_and_fails_without_it() {
 }
 
 mod range;
+mod seen;

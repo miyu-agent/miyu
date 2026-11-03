@@ -11,8 +11,8 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-endpoint/src/methods.rs` | 三个方法的参数；交给会话，等它的回应 |
-| `crates/miyu-endpoint/src/undo.rs` | 照会话的日志写回应里给人看的几样 |
-| `crates/miyu-endpoint/src/undo/jobs.rs` | 停掉了哪几个任务（施工 7-8） |
+| `crates/miyu-endpoint/src/undo.rs` | 照会话的日志写回应里给人看的几样：只照序号读要的那几条（施工 V-41 中） |
+| `crates/miyu-endpoint/src/undo/jobs.rs` | 停掉了哪几个任务（施工 7-8）：从撤的第一轮开头起边读边记（施工 V-41 中，内核的 `JobTally`） |
 | `crates/miyu-kernel/src/session/revert.rs` | 能不能撤、撤哪几轮、能不能恢复（`kernel/history.md`） |
 
 ### 对外的样子
@@ -46,11 +46,11 @@
 
 ### 怎么走
 
-1. 会话接受了命令、这一次的事件都落了盘，才有回应（`kernel/history.md`）。核心接着在阻塞线程里读这个会话的整份日志，写下面这几样。
+1. 会话接受了命令、这一次的事件都落了盘，才有回应（`kernel/history.md`）。核心接着在阻塞线程里只读地读这个会话的日志，写下面这几样。只读要的那几条（施工 V-41 中，原来整份读进内存，十万条的会话撤一次多 200 MB）：撤销（恢复）那一条、撤的第一轮的 `turn.started`、引起它的那一条照序号各读一条（`store.md` 第 7 条 `read_one`）；撤销的另从撤的第一轮的开头读到最后（`read_range_only`，只解这几样要的种类），数压缩、记任务；日志的第一条只读开头那一行。定位跳过的那一截不自检（2026-11-03 项目主人定，同 `store.md` 第 7 条 `read_range`）：坏在那里的，原来整份读报读不出来、照空的交，现在照读到的写。
 2. **`turns`**：照 `events` 的第一条（`turn.reverted` 或 `turn.unreverted`）列的几轮，数有几轮。
 3. **`said`**：那几轮里的第一轮。找到它的 `turn.started`，再找引起它的那一条（`trigger`）：是 `message.user`、`by` 是人的；命令模板展开成的是人敲的那一行（施工 X-14 上），别的照先后找第一块不空的文字块，取它第一行不空的（去掉前后空白以后），去掉前后空白。一行都不空的，没有这一格。不是人开的（内核、别的会话……）、找不到的，没有这一格。
 5. **`compactions`**、**`clears`**：只有撤销有。数日志里 `context.compacted`，`turn` 在那几轮里的才算（施工 6-9）；`trigger` 是 `clear` 的数进 `clears`，别的数进 `compactions`（施工 6-8 补，2026-09-30 项目主人定撤掉清空单说一句）。是 0 的不写。
-6. **`jobs`**：只有撤销有（施工 7-8，`agents.md` 第七条第 1 条）。回应不等停掉的回报落盘，所以照日志算撤销那一刻的：`turn.reverted` 以前的日志过一遍账本，还在跑的（`running_jobs`）里挑派它的 `job.started` 在撤掉的那几轮里的，照编号；和内核交给执行器停的是同一批。撤销以前的日志过不了账本的，照空的交，记一行 `WARN undo report jobs not read`。一个都没有的不写。恢复的不写：停掉的不会再起来。
+6. **`jobs`**：只有撤销有（施工 7-8，`agents.md` 第七条第 1 条）。回应不等停掉的回报落盘，所以照日志算撤销那一刻的：`turn.reverted` 以前的日志里，派它的 `job.started` 在撤掉的那几轮里、还在跑的（同账本的 `running_jobs`），照编号；和内核交给执行器停的是同一批。从撤的第一轮的开头记到撤销以前就够（施工 V-41 中，内核的 `JobTally` 照账本记任务的那几条记）：撤掉的那几轮派的任务都在那以后，任务编号整份日志里不重复，一个任务的样子只随它派出去以后的事件变。日志的第一条过不了从第 1 条起的账本的（分叉出来的会话，第一条不是第 1 条），照空的交，记一行 `WARN undo report jobs not read`；后面的不再过账本：会话载入、追加时每一条都过过同一套账本（原来撤销以前的整份过一遍，过不了的照空的交，在会话写得出来的日志里只有分叉出来的这一种）。一个都没有的不写。恢复的不写：停掉的不会再起来。
 7. **路径**：`cwd` 在 Windows 上去掉 `\\?\` 这个前缀；`\\?\UNC\` 开头的照原样。
 8. **`cwd`**：会话表里这个会话现在实际干活的目录（`protocol.md`「会话表」），换成真实的位置（顺着链接找到本体，换不成的照原样）：效果里的路径是真实的位置，头照它写相对的路径才对得上。
 9. **写不成的**：日志读不出来的（记一条运行日志）、`events` 的第一条不是撤销或恢复的，这几样照空的交：`turns` 是 `0`，没有 `said`、`compactions`、`clears`、`jobs`。撤销本身已经成了，照样是接受。写的时候崩了的，也照空的交，`cwd` 是空字符串。
@@ -69,7 +69,7 @@
 | `nothing_to_unrevert` | 恢复时没有能恢复的撤销：没撤过，或者撤了以后开过回合、压缩过 |
 | `restoring` | 撤销还没做完：正在读回更早的日志（兜底，照常碰不到） |
 
-运行日志（目标 `miyu::endpoint`）：`WARN undo report not written error=…`（日志读不出来），`WARN undo report jobs not read seq=…`（撤销以前的日志过不了账本，施工 7-8），`ERROR undo report panicked panic=…`（写的时候崩了）。
+运行日志（目标 `miyu::endpoint`）：`WARN undo report not written error=…`（日志读不出来），`WARN undo report jobs not read seq=…`（日志的第一条过不了从第 1 条起的账本，施工 7-8、V-41 中），`ERROR undo report panicked panic=…`（写的时候崩了）。
 
 ### 守着它的
 
@@ -77,6 +77,7 @@
 |---|---|
 | `crates/miyu-endpoint/tests/undo.rs` | 不写回合编号的撤最后一轮：`events`、`cwd`、`turns`、`said`、`commands`、`files`，没撤掉压缩的不写 `compactions`；恢复时不带 `commands`；改回了内容的、之后又被改过的都附差异，连同 `added`、`removed`（施工 4-7 再补）；最多 20 行、`more`；两轮的会话只算撤掉的那一轮、`said` 只取第一行去掉空白；恢复时对照改前的；上下文 3 行、不加「没有换行」；太大的、不是文本的不附差异；工作目录是链接的写真实的位置；被打断的一轮只算跑过的命令、排在后面没派的不算；`said` 跳过开头的空行，全是空白的没有这一格 |
 | `crates/miyu-endpoint/src/undo/tests.rs` | 数跑过的命令：跑过的、可能跑了一半的算，没跑过的不算；数压缩：`turn` 在撤掉的几轮里的才算，一轮里压过两次的是 2（施工 6-9）；清空另数，数压缩的不算它（施工 6-8 补）；改回了内容的附差异、`added`、`removed`，恢复时反过来；新建的文件改回以前当空的算；`trash`、`untrash`、两边一样的不附差异；太大的不附；长差异 `added`、`removed` 照整份算（施工 4-7 再补） |
+| `crates/miyu-endpoint/src/undo/tests/same.rs`（施工 V-41 中） | 照种子造的会话（`miyu_session::testkit::undo_log`，过得了账本：读改删文件、后台命令和子代理、留言、两种回报、撤最近一轮、几轮、很早的一轮、恢复、重做、撤回、压缩和清空、分叉出来的、撤到分叉点以前的）写成几段真文件，每一次撤销、恢复的回应和以前整份读、整份过账本的（照抄在 `tests/old.rs`）逐字一样；日志停在撤销刚落盘那一刻的也比；分叉出来的不列停掉的任务；坏一行、少一行、末尾半行：坏在撤的第一轮开头以后的同以前，坏在跳过的那一截的同以前或同没坏的 |
 | `crates/miyu-endpoint/tests/redo.rs` | 重做的回应：撤销那几样照撤销写，`events` 最后是重发的那一句（施工 4-7 再补，`protocol.md`「守着它的」） |
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 撤销、重做的回应列出停掉的任务（编号、种类、标题），回应之前后台命令已经杀了、随后记 `undone`；恢复的不带、停过的再撤销不列 |
 | `crates/miyu-endpoint/tests/revert.rs` | 撤销、恢复的 `events`；`nothing_to_unrevert`、`unknown_turn`、`nothing_to_revert` 照头的语言；`turn` 写 0 |

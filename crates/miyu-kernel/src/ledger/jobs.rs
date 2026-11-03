@@ -85,6 +85,26 @@ impl Ledger {
     }
 }
 
+/// 只记任务的那一份账（施工 V-41 中：撤销的回应列停掉的任务，不再为它把撤销以前的整份日志过一遍账本）：记法同账本记任务的
+/// 那几条（派出去的、留的言、两种回报），只是别的规矩一条都不查，也可以从日志中途记起。
+///
+/// 从第 `n` 条记起的只认得第 `n` 条以后派出去的任务；任务编号整份日志里不重复（账本查过），一个任务的样子只随它派出去以后的
+/// 事件变，所以这些任务的样子和从第一条记起的一样。
+#[derive(Debug, Clone, Default)]
+pub struct JobTally(Jobs);
+
+impl JobTally {
+    /// 记下一条。
+    pub fn record(&mut self, event: &Event) {
+        self.0.record(event);
+    }
+
+    /// 还在跑的任务，照编号：同 [`Ledger::running_jobs`]，只是只有记下的那一截里派出去的。
+    pub fn running(&self) -> Vec<JobId> {
+        self.0.running()
+    }
+}
+
 /// 账本记着的一个任务：是什么，还会不会再报。
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Job {

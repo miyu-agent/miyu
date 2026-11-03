@@ -258,6 +258,20 @@ pub fn read_line_near(dir: &Path, near: &Mark, seq: Seq) -> Result<Option<Event>
     lines::line_near(dir, near, seq)
 }
 
+/// 只读地读第 `seq` 条（施工 V-41 中：撤销的回应只要撤销那一条、一轮的开头、开它的那句话）：同 [`read_range`] 从 `seq` 读到
+/// `seq`，只是定位到了的那一行定位时已经解过、查过是第 `seq` 条，直接交回，不再照一窗解它后面的行。没有第 `seq` 条的（最后
+/// 一段的整行都在它前面）交回空的。
+///
+/// 定位不了的（`seq` 在第一段前面、对不上）同 [`read_range`] 退回从头读到它为止、照旧自检。跳过的那一截、它后面的都不自检
+/// （同 [`read_range`]，2026-11-03 项目主人定）。
+///
+/// # Errors
+///
+/// 同 [`read_range`]。
+pub fn read_one(dir: &Path, seq: Seq) -> Result<Option<Event>, OpenError> {
+    range::one(dir, seq)
+}
+
 /// 每一行怎么解（施工 V-39 上补）。
 #[derive(Clone, Copy)]
 enum Parse<'a> {

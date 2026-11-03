@@ -36,6 +36,7 @@ pub(super) fn read(
             mark,
             path,
             skipped,
+            ..
         } => match walk(dir, HalfLine::Skip, Some(&mark), parse, &mut sink) {
             Ok(Some(_)) => Ok(()),
             // 定位以后这一段又变了（日志只追加，不该有）：一条都还没交，退回从头读。
@@ -50,6 +51,33 @@ pub(super) fn read(
             }
             Err(error) => Err(error),
         },
+    }
+}
+
+/// 只读第 `seq` 条（同 [`super::read_one`]）：定位到了的交回定位时解的那一行；对不上的同 [`read`] 退回从头读到它为止。
+pub(super) fn one(dir: &Path, seq: Seq) -> Result<Option<Event>, OpenError> {
+    let all = segments(dir)?;
+    if all.is_empty() {
+        return Err(OpenError::Missing(dir.to_path_buf()));
+    }
+    match place(&all, seq)? {
+        Place::Nothing => Ok(None),
+        Place::At { line, .. } => Ok(Some(*line)),
+        Place::Start => {
+            let mut found = None;
+            let mut keep = |events: Vec<Event>| {
+                found = events.into_iter().find(|event| event.seq == seq);
+                Flow::Stop
+            };
+            walk(
+                dir,
+                HalfLine::Skip,
+                None,
+                Parse::Full,
+                &mut between(seq, Some(seq), &mut keep),
+            )?;
+            Ok(found)
+        }
     }
 }
 
@@ -83,11 +111,12 @@ enum Place {
     Start,
     /// 最后一段里整行都在 `from` 前面：还没有，什么都不交。
     Nothing,
-    /// 在这一段的这个字节起（前面跳过了 `skipped` 行）。
+    /// 在这一段的这个字节起（前面跳过了 `skipped` 行），那一行解出来是 `line`。
     At {
         mark: Mark,
         path: PathBuf,
         skipped: usize,
+        line: Box<Event>,
     },
 }
 
@@ -114,13 +143,13 @@ fn place(segments: &[(u64, PathBuf)], from: Seq) -> io::Result<Place> {
     let Some(line) = line_at(&mut file, offset)? else {
         return Ok(behind);
     };
-    let lines_up = std::str::from_utf8(&line)
+    let Some(line) = std::str::from_utf8(&line)
         .ok()
         .and_then(|text| Event::from_line(text).ok())
-        .is_some_and(|event| event.seq == from);
-    if !lines_up {
+        .filter(|event| event.seq == from)
+    else {
         return Ok(Place::Start);
-    }
+    };
     Ok(Place::At {
         mark: Mark {
             segment: *first,
@@ -129,6 +158,7 @@ fn place(segments: &[(u64, PathBuf)], from: Seq) -> io::Result<Place> {
         },
         path: path.clone(),
         skipped: skip,
+        line: Box::new(line),
     })
 }
 

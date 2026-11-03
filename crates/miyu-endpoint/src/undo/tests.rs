@@ -5,7 +5,17 @@ use miyu_kernel::id::{Seq, TurnId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
-use super::compactions;
+use super::counted;
+
+mod old;
+mod same;
+
+/// 撤的几轮 `turns` 里有几次压缩（`clears` 的数清空）：照 [`counted`] 一条条认。
+fn compactions(log: &[Event], turns: &[TurnId], clears: bool) -> usize {
+    log.iter()
+        .filter(|event| counted(event, turns) == Some(clears))
+        .count()
+}
 
 /// 回合 `turn` 里的第 `seq` 条压缩，没写原因的（当作到线了）。
 fn compaction(seq: u64, turn: u64) -> Event {

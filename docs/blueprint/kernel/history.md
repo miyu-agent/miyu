@@ -17,7 +17,7 @@
 | `crates/miyu-kernel/src/ledger.rs` | 账本：查规矩、记下变化 |
 | `crates/miyu-kernel/src/ledger/undo.rs` | 账本里撤销、恢复的几条：撤的是哪几轮、能不能恢复 |
 | `crates/miyu-kernel/src/ledger/nested.rs` | 账本里嵌套调用的几条：还活着的父级下面了结过的序号，父级结束清掉（施工 M-1） |
-| `crates/miyu-kernel/src/ledger/jobs.rs` | 账本里任务的几条：编号不重复、回报对得上派出去的任务、子会话的 `parent`、`depth`（施工 7-1）；从账本读任务的几样（`last_job_number`、`running_jobs` 这些，施工 C-1 从 `ledger.rs` 挪来） |
+| `crates/miyu-kernel/src/ledger/jobs.rs` | 账本里任务的几条：编号不重复、回报对得上派出去的任务、子会话的 `parent`、`depth`（施工 7-1）；从账本读任务的几样（`last_job_number`、`running_jobs` 这些，施工 C-1 从 `ledger.rs` 挪来）；只记任务的那一份账 `JobTally`（施工 V-41 中：撤销的回应从撤的第一轮开头记起，同账本记任务的那几条） |
 | `crates/miyu-kernel/src/ledger/peers.rs` | 账本里跨会话的几条：在等哪几个会话的通知、订的不是自己、`peer.idle` 只认在等的（施工 C-1，`cross-session.md`）；最近收下的别的会话的话、还没听到的（施工 C-2） |
 | `crates/miyu-kernel/src/history.rs` | 有效历史：收事件、压缩、撤回、排先后、落到检查点上 |
 | `crates/miyu-kernel/src/history/undo.rs` | 撤掉的拿走、放回；跟着撤的话 |
