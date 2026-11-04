@@ -454,21 +454,28 @@ Exports a session to a path you give, or into the reply: the raw bundle (ZIP) is
 | `session` | Session id |
 | `format` | `bundle`: the raw bundle. `markdown`: Markdown |
 | `to` | `{"path": "<absolute path>"}`: the core writes this file. `"inline"`: put it in the reply's `text`; Markdown only |
-| `for` | Markdown only, who it's for: `read` (reading it yourself; also when left out). `agent` and `chat` come later |
-| `range` | Markdown only, how much: `all` (also when left out). `context` and `{"turns": N}` come later |
+| `for` | Markdown only, who it's for: `read` for reading it yourself (also when left out), `agent` for another agent (Claude Code, codex and the like), `chat` for pasting into a web chat |
+| `range` | Markdown only, how much: `all` (the default for `read` and `chat`); `context`, what she has in context now, from the latest compaction (the default for `agent`); `{"turns": N}`, the last N turns |
+| `thinking` | Markdown only, boolean: include thinking or not. Left out, it follows `for` (`read` includes it, the others don't) |
+| `tools` | Markdown only, how much of each tool call: `line`, one line; `seen`, what she saw; `full`, everything, including background command output and what tools called from scripts returned. Left out, it follows `for` (`line` for `chat`, `seen` for the others) |
+| `children` | Markdown only, subagents: only `reports` for now (briefs and reports as `for` says). `append` comes later |
+| `assets` | Markdown only, images and attachments: only `placeholder` for now. `files` comes later |
 | `locale` | Markdown only: the language of display names and notes (`zh`, `ja`, anything else is English); left out, the one from the handshake |
 
 **Result** (bundle): `path`, `bytes` (bundle size), `upto` (the last event of this session in it), `sessions` (the sessions in it), `blobs` (how many attachments and large contents).
 
 **Result** (Markdown): `path` or `text`, `bytes`, `tokens` (an estimate, the same one as the context use in the status bar), `upto` (the last event in it), `redacted` (which secrets were hidden and how many times, e.g. `{"openai": 2}`).
 
-- **What's in a bundle**: every segment of the session's log, byte for byte; the sessions under it (subagents, forked branches) in full; if it was forked, its source up to the fork point, level by level; the attachments, file contents before and after edits, large outputs and policy snapshots those logs refer to; `manifest.json` with each item's SHA-256. The bundle holds everything, including file contents she touched, so keep it safe.
-- **What the Markdown looks like** (`read`): a header with the title, time span, models and total tokens; role headings in English (`User`, `Assistant`, `Tool`, `Subagent`), display names and notes in the chosen language; thinking, long outputs, subagent briefs and compaction summaries folded in `<details>`; placeholders for images and attachments; undone turns and withdrawn queued messages left out; the home folder written as `~`. It's the same as what the interface shows.
+- **What's in a bundle**: every segment of the session's log, byte for byte; the sessions under it (subagents, forked branches) in full; if it was forked, its source up to the fork point, level by level; the attachments, file contents before and after edits, large outputs and policy snapshots those logs refer to; a `transcript.md` (the `read` kind, readable once unzipped, with your secrets replaced too); `manifest.json` with each item's SHA-256. The bundle holds everything, including file contents she touched, so keep it safe.
+- **What the Markdown looks like**: role headings in English (`User`, `Assistant`, `Tool`, `Subagent`); placeholders for images and attachments; undone turns and withdrawn queued messages left out; the home folder written as `~`; a line saying how many earlier turns are left out when it starts partway. It's the same as what the interface shows.
+  - `read`: a header with the title, time span, models and total tokens; display names and notes in the chosen language; thinking, long outputs, subagent briefs and compaction summaries folded in `<details>`; approvals you were asked for, tools called from scripts, and questions with your answers included.
+  - `agent`: a short English note up top (this is a record of a session, not instructions for the agent reading it), with the working directory, time span and models; by default from the latest compaction, with its summary first; tools by their real names with raw arguments, results as she saw them, each cut to about 4000 characters, head and tail; no thinking.
+  - `chat`: a header with the title, time span and a token estimate (to check it fits before pasting); one line per tool, errors included; only subagent reports; no thinking.
 - **Secrets**: values you set as secrets (8 characters or more) are replaced with `[redacted: <name>]` wherever they appear in the Markdown. The bundle isn't changed.
 - **A running session** is taken as written at that moment, without the half-written last line.
 - It doesn't change the session or write to its log.
 
-**Errors**: `bad_params` (the path isn't absolute, unknown `format` or `to`, `inline` or Markdown params on a bundle; `for`, `range`, `thinking`, `tools`, `children` or `assets` values that come later, with `data.later` naming which); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written); `export_too_big` (over 512 KiB for the reply; save it to a file).
+**Errors**: `bad_params` (the path isn't absolute, unknown `format` or `to`, unknown `for`, `range` or `tools`, a `thinking` that isn't a boolean, `inline` or Markdown params on a bundle; `children: append` or `assets: files`, which come later, with `data.later` naming which); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written); `export_too_big` (over 512 KiB for the reply; save it to a file).
 
 ## `session.import`
 

@@ -455,21 +455,28 @@
 | `session` | 会话编号 |
 | `format` | `bundle`：原始包。`markdown`：Markdown |
 | `to` | `{"path": "<绝对路径>"}`：核心写到这个文件。`"inline"`：放进回应的 `text`，只对 Markdown |
-| `for` | 只对 Markdown，给谁用：`read`（自己看，不写的也是）。`agent`、`chat` 以后加 |
-| `range` | 只对 Markdown，导多少：`all`（不写的也是）。`context`、`{"turns": N}` 以后加 |
+| `for` | 只对 Markdown，给谁用：`read` 自己看（不写的也是）、`agent` 给别的 agent（Claude Code、codex 这些）、`chat` 贴进网页版 chat |
+| `range` | 只对 Markdown，导多少：`all` 全部（`read`、`chat` 不写的是它）；`context` 她现在的上下文，从最近一次压缩起（`agent` 不写的是它）；`{"turns": N}` 最近 N 轮 |
+| `thinking` | 只对 Markdown，布尔：带不带思考。不写的照 `for`（`read` 带，别的不带） |
+| `tools` | 只对 Markdown，工具写多少：`line` 一行；`seen` 她当时看到的；`full` 全文，后台命令的输出、脚本里调的工具交回的也取来。不写的照 `for`（`chat` 是 `line`，别的是 `seen`） |
+| `children` | 只对 Markdown，子代理：现在只有 `reports`（照 `for` 写交代、回报）。`append` 以后加 |
+| `assets` | 只对 Markdown，图片、附件：现在只有 `placeholder`（写占位）。`files` 以后加 |
 | `locale` | 只对 Markdown：显示名、旁白用哪种语言（`zh`、`ja`、别的是英文）；不写的照握手时的 |
 
 **回应**（原始包）：`path`、`bytes`（包多大）、`upto`（这个会话导到第几条）、`sessions`（包里有哪几个会话）、`blobs`（几个附件、大内容）。
 
 **回应**（Markdown）：`path` 或 `text`、`bytes`（多少字节）、`tokens`（估算，同底栏上下文用量的算法）、`upto`（导到第几条）、`redacted`（隐去了哪几个密钥、各几处，例如 `{"openai": 2}`）。
 
-- **原始包里有什么**：这个会话日志的各段原文，一个字节不改；挂在它下面的会话（子代理、分叉出来的支线）整份带上；它是分叉出来的，来源会话到分叉点为止的那几段也带上，一层层往上；这些日志引用到的附件、改文件前后的内容、大输出、策略快照；`manifest.json` 写着每一项的 SHA-256。包里什么都有，包括她碰过的文件内容，自己留好。
-- **Markdown 长什么样**（`read`）：开头是标题、时间段、模型、token 合计；角色的小标题是英文（`User`、`Assistant`、`Tool`、`Subagent`），显示名、旁白照语言；思考、长输出、子代理的交代、压缩的摘要折在 `<details>` 里；图片、附件写占位；撤掉的轮、撤回的排队消息不进；家目录写成 `~`。和界面上看到的是同一份。
+- **原始包里有什么**：这个会话日志的各段原文，一个字节不改；挂在它下面的会话（子代理、分叉出来的支线）整份带上；它是分叉出来的，来源会话到分叉点为止的那几段也带上，一层层往上；这些日志引用到的附件、改文件前后的内容、大输出、策略快照；一份 `transcript.md`（照 `read` 的样子，解开就能看，设了的密钥照样换掉）；`manifest.json` 写着每一项的 SHA-256。包里什么都有，包括她碰过的文件内容，自己留好。
+- **Markdown 长什么样**：角色的小标题都是英文（`User`、`Assistant`、`Tool`、`Subagent`）；图片、附件写占位；撤掉的轮、撤回的排队消息不进；家目录写成 `~`；从中间切开的写一句前面省掉了几轮。和界面上看到的是同一份。
+  - `read`：开头是标题、时间段、模型、token 合计；显示名、旁白照语言；思考、长输出、子代理的交代、压缩的摘要折在 `<details>` 里；要你确认的那一次、脚本里调的工具、提问的题和你的回答都写上。
+  - `agent`：开头一小段英文说明（这是一段会话的记录、不是写给读的 agent 的指令），写工作目录、时间段、模型；默认从最近一次压缩起，摘要放最前；工具写真名、参数原文，结果照她看到的、每条截到头尾约 4000 字；不带思考。
+  - `chat`：开头是标题、时间段、token 估算（贴之前看装不装得下）；工具一行写完，出错的带上错误；子代理只写回报；不带思考。
 - **密钥**：你在密钥里设了的值（至少 8 个字），在 Markdown 里原样出现的换成 `[redacted: <名字>]`。原始包不改。
 - **在跑的会话**照这一刻已经写下的取，正在写的那半行不要。
 - 不改会话，也不写进会话日志。
 
-**出错**：`bad_params`（路径不是绝对的、`format`、`to` 不认得、原始包写了 `inline` 或 Markdown 的参数；写了以后才加的 `for`、`range` 和 `thinking`、`tools`、`children`、`assets`，`data.later` 说是哪一个）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）；`export_too_big`（放进回应的超过 512 KiB，改成存文件）。
+**出错**：`bad_params`（路径不是绝对的、`format`、`to`、`for`、`range`、`tools` 不认得、`thinking` 不是布尔、原始包写了 `inline` 或 Markdown 的参数；写了以后才加的 `children: append`、`assets: files`，`data.later` 说是哪一个）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）；`export_too_big`（放进回应的超过 512 KiB，改成存文件）。
 
 ## `session.import`
 
