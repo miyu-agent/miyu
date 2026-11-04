@@ -45,7 +45,7 @@ pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
 pub use probe::{BUILD, Platform, Probe, ProbeError, VERSION, probe};
 pub use spec::Spec;
-pub use wrap::{Sandboxed, argv, command};
+pub use wrap::{Sandboxed, argv, checks_files, command};
 
 /// 这台机器的命令能不能用挂载收紧（施工 5-16，Linux 上有能用的 bubblewrap）：进程里一份，核心起来时照探测设、沙盒强度改了
 /// 跟着设；会话写规格时照它决定写不写 [`Spec::mount`]。没设过的是不能。

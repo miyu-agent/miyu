@@ -18,7 +18,7 @@
 |---|---|
 | `crates/miyu-sandbox/src/lib.rs` | 交出去的几样 |
 | `crates/miyu-sandbox/src/spec.rs` | 规格 |
-| `crates/miyu-sandbox/src/wrap.rs` | 照规格包一条命令：`miyu-sandbox run --spec … -- …`（`argv`）；包成能直接起的命令（`command`，施工 V-47：Linux 上只用 Landlock 的带上核心按规格缓存的规则集，`sandbox/linux.md`「核心按规格缓存规则集」） |
+| `crates/miyu-sandbox/src/wrap.rs` | 照规格包一条命令：`miyu-sandbox run --spec … -- …`（`argv`）；包成能直接起的命令（`command`，施工 V-47：Linux 上只用 Landlock 的带上核心按规格缓存的规则集，`sandbox/linux.md`「核心按规格缓存规则集」）；`command` 会不会看文件系统（`checks_files`，施工 V-50：会的，异步的调用方挪到阻塞线程里调） |
 | `crates/miyu-sandbox/src/locate.rs` | 找助手：主程序旁边 |
 | `crates/miyu-sandbox/src/probe.rs` | 探测：跑 `miyu-sandbox probe`，读它说的；构建 id 对不上的不用（施工 5-16 再补） |
 | `crates/miyu-sandbox/build.rs` | 构建 id：照这个包的源码算的摘要（施工 5-16 再补） |

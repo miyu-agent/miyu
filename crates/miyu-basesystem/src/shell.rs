@@ -161,14 +161,15 @@ impl Shell {
         .said(said("shell/failed").with("error", error))
     }
 
-    /// 放到后台（施工 7-3）：照前台一样造命令、起进程，交给任务端口，当场交回编号，报 `job.started`。这里一个 `await`
-    /// 都没有：交上了就一定交回结果，不会交上了却被掐掉、没人知道它在跑。没有任务端口的（会话外面的调用）不跑。
-    fn background(&self, call: &Call, args: Args) -> Done {
+    /// 放到后台（施工 7-3）：照前台一样造命令、起进程，交给任务端口，当场交回编号，报 `job.started`。起进程以后一个 `await`
+    /// 都没有：交上了就一定交回结果，不会交上了却被掐掉、没人知道它在跑。唯一的 `await` 在造命令里（认指纹挪到阻塞线程，
+    /// 施工 V-50），那时什么都还没起，掐掉了只是没跑。没有任务端口的（会话外面的调用）不跑。
+    async fn background(&self, call: &Call, args: Args) -> Done {
         let Some(jobs) = &call.jobs else {
             return Done::error(say(&self.texts.no_background, &[]))
                 .said(said("shell/no-background"));
         };
-        let (command, channel) = match self.prepare(call, &args.command) {
+        let (command, channel) = match self.prepare(call, &args.command).await {
             Ok(prepared) => prepared,
             Err(error) => return self.failed(&error),
         };
@@ -396,14 +397,14 @@ impl Tool for Shell {
                     .said(said("shell/no-cwd").with("cwd", call.cwd.clone()));
             }
             if args.run_in_background || args.watch {
-                return self.background(&call, args);
+                return self.background(&call, args).await;
             }
             // 前台干等的不跑（2026-10-26）：后台任务办完会自己回报。
             if waiting::waits(&args.command) {
                 return Done::error(say(&self.texts.no_sleep, &[])).said(said("shell/no-sleep"));
             }
             let timeout = limit(args.timeout);
-            let (command, channel) = match self.prepare(&call, &args.command) {
+            let (command, channel) = match self.prepare(&call, &args.command).await {
                 Ok(prepared) => prepared,
                 Err(error) => return self.failed(&error),
             };

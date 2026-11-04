@@ -43,7 +43,7 @@ use miyu_kernel::tool::Access;
 use miyu_policy::script::ScriptHead;
 use miyu_store::program::{APP, SCRIPT_CACHE, SCRIPT_IMAGES, SCRIPT_STATE, named};
 use miyu_store::root::DataRoot;
-use miyu_tool::{Call, Done, Progress, Running, Spec, Tool, Venues};
+use miyu_tool::{Call, Done, Progress, Running, Spec, Stop, Tool, Venues};
 
 use super::process::{self, Ending, Guard};
 use super::{Results, env, workdir};
@@ -256,10 +256,11 @@ impl Script {
     }
 
     /// 起它的命令：照 [`launcher`] 找程序，带了沙盒的经它的助手起；`images` 是交图的目录，`state` 是状态目录，建不成的没有；
-    /// `homes` 是家目录那几处（施工 Y-11 补）。
+    /// `homes` 是家目录那几处（施工 Y-11 补）。经助手起、要认指纹的（[`miyu_sandbox::checks_files`]，施工 V-50）在阻塞线程里
+    /// 包，起进程照旧在调的一方。
     ///
     /// [`launcher`]: miyu_store::packages::launcher
-    fn command(
+    async fn command(
         &self,
         call: &Call,
         (cache, args_json): (&Path, &str),
@@ -297,9 +298,17 @@ impl Script {
                     .spec
                     .write
                     .extend(homes.iter().map(|(_, dir)| dir.clone()));
-                // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）。
-                miyu_sandbox::command(&sandboxed, Path::new(&program), &args)
-                    .map_err(io::Error::other)?
+                // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）；要认指纹的在阻塞线程里包（施工 V-50）。
+                match miyu_sandbox::checks_files(&sandboxed) {
+                    true => {
+                        blocking(Stop::default(), move |_| {
+                            miyu_sandbox::command(&sandboxed, Path::new(&program), &args)
+                        })
+                        .await
+                    }
+                    false => miyu_sandbox::command(&sandboxed, Path::new(&program), &args),
+                }
+                .map_err(io::Error::other)?
             }
         };
         let mut vars = env::passed(std::env::vars_os(), call.sandbox.is_some());
@@ -420,14 +429,18 @@ impl Tool for Script {
         Box::pin(async move {
             let cache = self.cache(&call);
             let args_json = self.passed(&call);
-            let command = std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache));
-            let (command, folder) = match command.and_then(|folder| {
-                let state = self.state(&call);
-                let homes = self.homes(&call);
-                let dirs = (folder.as_ref().map(Folder::path), state.as_deref());
-                let command = self.command(&call, (&cache, &args_json), dirs, &homes)?;
-                Ok((command, folder))
-            }) {
+            let made = match std::fs::create_dir_all(&cache).map(|()| Folder::create(&cache)) {
+                Ok(folder) => {
+                    let state = self.state(&call);
+                    let homes = self.homes(&call);
+                    let dirs = (folder.as_ref().map(Folder::path), state.as_deref());
+                    self.command(&call, (&cache, &args_json), dirs, &homes)
+                        .await
+                        .map(|command| (command, folder))
+                }
+                Err(error) => Err(error),
+            };
+            let (command, folder) = match made {
                 Ok(made) => made,
                 Err(error) => return self.failed(&error),
             };

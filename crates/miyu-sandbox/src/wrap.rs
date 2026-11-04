@@ -72,5 +72,19 @@ pub fn command(
     Ok(command)
 }
 
+/// [`command`] 会不会在调的线程里看文件系统（施工 V-50）：Linux 上能缓存的规格（只用 Landlock、有藏起来的、路径都是绝对的，
+/// 这台机器的 Landlock 能用）每次都要照着规格重新看一遍、和缓存的指纹比（列目录、逐条 `fstatat`、读挂载表），约 2 ms，要重建
+/// 的那一次约 5 ms。异步的调用方照它把 [`command`] 挪到阻塞线程里调，造好的命令拿回去照旧起。别的规格、别的平台只拼参数。
+#[must_use]
+pub fn checks_files(sandboxed: &Sandboxed) -> bool {
+    #[cfg(target_os = "linux")]
+    return crate::linux::looks(&sandboxed.spec);
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = sandboxed;
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests;

@@ -21,6 +21,7 @@ mod packages;
 mod person;
 mod read;
 mod read_image;
+mod sandbox_thread;
 mod script;
 mod script_settings;
 mod script_state;

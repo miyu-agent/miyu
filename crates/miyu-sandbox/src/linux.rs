@@ -15,7 +15,7 @@ mod reads;
 mod rules;
 
 pub use aliases::with_aliases;
-pub(crate) use cache::ruleset;
+pub(crate) use cache::{looks, ruleset};
 pub use pass::confine_cached;
 pub(crate) use pass::inherit;
 pub use rules::{available, confine, confines_sockets};

@@ -17,9 +17,10 @@ use std::sync::Arc;
 
 use miyu_kernel::template::Template;
 
-use miyu_tool::Call;
+use miyu_tool::{Call, Stop};
 
 use super::{Shell, env, workdir};
+use crate::blocking::blocking;
 use crate::load::{self, LoadError};
 
 #[cfg(any(unix, windows))]
@@ -93,7 +94,10 @@ impl Texts {
 
 impl Shell {
     /// 造命令：拿到了端口的开通道（施工 M-3），环境变量、沙盒的规格照它加上；开不成的记一行，命令照旧跑。
-    pub(super) fn prepare(
+    ///
+    /// 带沙盒的命令要认指纹的（[`miyu_sandbox::checks_files`]，施工 V-50）在阻塞线程里造，不占着跑异步任务的线程；造好的
+    /// 命令交回来，起进程（`fork`）照旧在调的一方。
+    pub(super) async fn prepare(
         &self,
         call: &Call,
         script: &str,
@@ -114,9 +118,17 @@ impl Shell {
         if let Some(channel) = &channel {
             channel.env(&mut env);
         }
-        let command = self
-            .program
-            .command(script, &workdir(call), env, sandbox.as_ref())?;
+        let cwd = workdir(call);
+        let command = match sandbox.as_ref().is_some_and(miyu_sandbox::checks_files) {
+            true => {
+                let (program, script) = (self.program.clone(), script.to_owned());
+                blocking(Stop::default(), move |_| {
+                    program.command(&script, &cwd, env, sandbox.as_ref())
+                })
+                .await?
+            }
+            false => self.program.command(script, &cwd, env, sandbox.as_ref())?,
+        };
         Ok((command, channel))
     }
 }

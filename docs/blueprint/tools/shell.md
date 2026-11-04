@@ -59,7 +59,7 @@
 1. 读参数，读不懂的（没写 `command`、类型不对）：参数不对。
 2. `run_in_background` 或者 `watch` 是真的：照下面「后台」走，不定超时。
 3. 定超时（上面的表）。
-   - 调用带了沙盒的（`Call.sandbox`，施工 5-1）：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`，别的都照下面走：Unix 上助手换成了 shell，是同一个进程；Windows 上助手起子进程、等它（`sandbox.md`）。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照下面「起不来」说，不会不经沙盒就跑。沙盒带的环境变量（`Sandboxed.env`，例如 `TMPDIR`）照挑好的之后设上，同名的盖掉（施工 5-4 上）。
+   - 调用带了沙盒的（`Call.sandbox`，施工 5-1）：命令写成 `<助手> run --spec <规格的 JSON> -- <shell> <shell 的参数…>`，别的都照下面走：Unix 上助手换成了 shell，是同一个进程；Windows 上助手起子进程、等它（`sandbox.md`）。规格写不成 JSON 的（里面有不是 UTF-8 的路径）：照下面「起不来」说，不会不经沙盒就跑。沙盒带的环境变量（`Sandboxed.env`，例如 `TMPDIR`）照挑好的之后设上，同名的盖掉（施工 5-4 上）。Linux 上只用 Landlock、要认缓存规则集指纹的（`miyu_sandbox::checks_files`，`sandbox/linux.md`「核心按规格缓存规则集」），整条命令在阻塞线程里造，造好了拿回来起（施工 V-50），前台、后台一样；别的当场造。
 4. 前台干等的不跑（2026-10-26 项目主人定，`shell/waiting.rs`）：照顶层把命令切成几段（`;`、`&&`、`||`、换行、单个 `&`；引号、反斜杠、括号、花括号里的不算），有一段就是 `sleep <时长…>`（PowerShell 的 `Start-Sleep`），时长合起来不短于 2 秒（写成变量这类看不出多长的当长的），整条不跑：出错，给她的一句 `no-sleep.txt`（后台任务办完会自己回报），说法 `shell/no-sleep`。管道里的、循环体里的、放到后台的（`sleep 5 &`）、两秒以内的短停照跑。
 5. 起命令：
    - 程序和参数照下面「用哪个 shell」。
@@ -316,6 +316,7 @@ Exit code 2
 | `crates/miyu-basesystem/src/shell/waiting/tests.rs`、`tests/human.rs`（2026-10-26） | 前台干等的认法：顶层的、不短于两秒的 `sleep`、`Start-Sleep` 拒（几种时长写法、变量当长的、`;`、`&&`、`||`、换行、后台以后的那一段）；管道、循环体、放到后台的、引号里的、套在 `sh -c` 里的、短停照跑；拒了说 `shell/no-sleep` |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` 的 `line_ends_are_made_unix_across_pieces`（施工 7-3） | `\r\n` 切在两段中间也换，和一整段换出来的一样 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` 的 `a_sandboxed_background_command_runs_through_the_helper`（施工 7-3） | 后台命令一样经沙盒的助手起 |
+| `crates/miyu-basesystem/tests/sandbox_thread.rs`（施工 V-50，Linux） | 认缓存规则集的指纹不占着跑异步任务的线程：单线程的运行时里另一个任务每 1 ms 醒一次，前台、后台、脚本工具起关起来的命令时它最晚晚的不到认一遍指纹的一半（藏起来的放在几万个文件的目录里，认一遍几十毫秒） |
 | `crates/miyu-basesystem/tests/shell_seen.rs`（施工 E-D 补） | 她看过、命令改了的带 `file.read`（改后的哈希），没动的、没看过的不带；只动了修改时刻、内容没变的不带；命令起来之前外面就改过、命令没碰的不带（照旧要重读） |
 | `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉；照命令里的词 `pkill -f` 杀不到自己所在的 shell、命令看不到 `MIYU_COMMAND`（施工 4-8 再补） |
 | `crates/miyu-basesystem/src/shell/tests.rs` | 超时的上下限；秒数怎么写；参数格式里写的上限、默认值和代码一样；每一段以换行结尾 |

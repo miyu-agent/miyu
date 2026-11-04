@@ -204,13 +204,23 @@ static SWEEPING: AtomicBool = AtomicBool::new(false);
 /// 规格 `spec` 的规则集（核心里的那一个缓存，见模块说明）：这台机器的 Landlock 不能用、规格不能缓存、指纹记不成、建不成的交回
 /// 没有，照旧让助手从头建。
 pub(crate) fn ruleset(spec: &Spec) -> Option<Arc<OwnedFd>> {
-    static USABLE: OnceLock<bool> = OnceLock::new();
-    if !*USABLE.get_or_init(|| rules::available().is_ok()) {
+    if !usable() {
         return None;
     }
     let served = CACHE.ruleset(spec)?;
     sweeper();
     Some(served.fd)
+}
+
+/// [`ruleset`] 会不会看文件系统（施工 V-50）：规格能缓存、这台机器的 Landlock 能用的，每次都要记一份指纹，可能还要建规则集。
+pub(crate) fn looks(spec: &Spec) -> bool {
+    cacheable(spec) && usable()
+}
+
+/// 这台机器的 Landlock 能不能用：只探一次。
+fn usable() -> bool {
+    static USABLE: OnceLock<bool> = OnceLock::new();
+    *USABLE.get_or_init(|| rules::available().is_ok())
 }
 
 /// 起看门的线程（已经在的不再起）：每 [`SWEEP`] 丢掉一次没用过 [`IDLE`] 的，一份都不剩就退出，之后缓存了再起。起不来的不要紧：
