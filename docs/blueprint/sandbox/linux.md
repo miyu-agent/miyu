@@ -14,7 +14,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/aliases.rs` | 藏起来的另挂在别处的（挂载别名，施工 SEC-3）：照 `/proc/self/mountinfo` 找出来，读放行、bubblewrap 的盖法都算上 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/bwrap.rs` | 用 bubblewrap 的挂载收紧（施工 5-16）：找可信的 bwrap、真起一次验、照规格拼挂载、挂好以后在里面再跑一次助手 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/landlock.rs` | 建 Landlock 的规则集、加规则、收紧自己 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的 |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的；藏起来的先照路径的段排成一棵树，每一级的每一样照名字查一次（施工 V-46） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp.rs` | 关起来的会话在 Landlock 管不住连 Unix 套接字的内核上，不准新建 Unix 域套接字（施工 MB-1） |
 
 ### 对外的样子
@@ -72,6 +72,7 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/tests.rs` | 查规格：本身、下面、旁边（`/a/bc` 和 `/a/b`）、上一级各算不算落在里面 |
 | `crates/miyu-sandbox/tests/linux_aliases.rs`、`linux/aliases/tests.rs`、`linux/bwrap/tests.rs` 的 `an_alias_of_a_hidden_path_is_covered_too`（施工 SEC-3） | 在 `unshare -rm` 的命名空间里把家目录 bind 到别处再跑助手：藏起来的从原路径、别名都读不到，别名里别的照旧读得到（不让普通用户建命名空间的机器上跳过）；挂载表的转义、读不懂的行；bind 过来的家目录、btrfs 顶层另挂、藏起来的里面一块挂到别处、叠着挂认最后挂的；挂载表说是别名、其实不是同一个文件的不藏；挂载时别名一样盖住 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests/same.rs`（施工 V-46） | 排成树以后和原来每一样都和每一条藏起来的整条比的写法（照抄在里面）交回的逐项一样、报的错一字不差：照种子造目录树（互为开头的名字、只差大小写、带点、不是 UTF-8 的名字、各种链接、列不出来的目录）和藏起来的（尾斜杠、`//`、`.`、`..`、经链接给的、名字只是别的名字开头的、不在的、树本身、根目录、树外、相对、重复），从树里各处和照 `plan` 从根目录走起比；平时 300 棵，`MIYU_V46_SEEDS` 改 |
 
 ### 出处
 

@@ -3,6 +3,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::*;
 
+mod same;
+
 /// 一个用完就删的临时目录，换成真实的位置（`plan` 交回的是真实的路径）。
 struct Tree(PathBuf);
 
