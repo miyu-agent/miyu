@@ -551,11 +551,11 @@ enabled = false
 idle_new_after = 180
 
 # Shell integration session persona: The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
+# Allowed: a persona id. Only in the system config. Applies to new sessions.
 # persona =
 
 # Shell integration session preset: The preset for a new shell integration session. Unset follows the default preset.
-# Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.
+# Allowed: a preset id. Only in the system config. Applies to new sessions.
 # preset =
 
 [ui]

@@ -1009,12 +1009,12 @@
           "type": "integer"
         },
         "persona": {
-          "description": "The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.",
+          "description": "The persona for a new shell integration session. Unset follows the default persona. A shell integration session in use keeps its own. Allowed: a persona id. Only in the system config. Applies to new sessions.",
           "title": "Shell integration session persona",
           "type": "string"
         },
         "preset": {
-          "description": "The preset for a new shell integration session. Unset follows the default preset. Allowed: a name starting with a lowercase letter, using only lowercase letters, digits, - and _, up to 64 characters. Only in the system config. Applies to new sessions.",
+          "description": "The preset for a new shell integration session. Unset follows the default preset. Allowed: a preset id. Only in the system config. Applies to new sessions.",
           "title": "Shell integration session preset",
           "type": "string"
         }
