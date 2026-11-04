@@ -373,7 +373,8 @@
 | `crates/miyu-recall/src/memory/tests/restored.rs`（R-12 下） | 第二条第 6 款：`restored` 写成事件读回一字不差；底账里作废的那一条不算作废了，没有的那一条不碍事；恢复了摘要合进去的一条，摘要不算了，摘要以后才记的不碍事 |
 | `crates/miyu-session/tests/memory_restore.rs`（R-12 下） | 第二条第 6 款：这里冒不出来的那一条（别的群）当没有，恢复不了、什么都不写；在那个群里、主人那边恢复得了（R-13 上改写） |
 | `crates/miyu-endpoint/tests/memory_restore.rs`（R-12 下） | 「协议」的 `memory.restore`，真核心：忘了的恢复以后照常列出、`retired` 是 `null`、搜得到；同一个编号只算一次（又忘了、清掉了再发照头一次回），本来就算数的回 `{}`、不写；订阅着的补得到 `ext.memory.restored`；改掉的、清掉的 `memory_not_current`，没有的 `unknown_memory`，写错的 `bad_params`，没装的 `memory_not_installed` |
-| `crates/miyu-endpoint/tests/memory_turns.rs`（R-12 下） | 「协议」的 `memory.turns`，真核心、真回合库：搜得到以前那一轮（会话、轮、时刻、人的话加她的回答）；`limit`；写错的六种 `bad_params`，没有的人格、没装的照原因拒 |
+| `crates/miyu-endpoint/tests/memory_turns.rs`（R-12 下） | 「协议」的 `memory.turns`，真核心、真回合库：搜得到以前那一轮（会话、轮、时刻、人的话加她的回答）；`limit`；写错的六种 `bad_params`，没有的人格、没装的照原因拒；导进来的存档不载入也搜得到、不记成记忆（SE-1 下） |
+| `crates/miyu-session/tests/memory_archived.rs`（SE-1 下补） | 第六条：存档载入了照样接回合库、不交工具的端口，落了新的一轮闲下来也不抽取；不是存档的照常抽（对照） |
 | `crates/miyu-recall/src/uses/tests.rs`（R-4 下） | 第八条第 1 款：模块 `memory` 注入的 `refs` 算、一条事件里列几遍算一次、不是编号的不算，别的模块、内核的不算；她搜到的算到第一行不是记忆的为止，`Nothing found.`、没成的、别的工具的不算，一次调用只认一个结果；载入时只交照到的位置以后的，调用在以前、结果在以后的照样认得；一条条喂、收齐了再照序号挑（`since`）和原来喂一条挑一条的一样（照种子三千份，施工 V-37 下） |
 | `crates/miyu-session/tests/memory_uses.rs`（R-4 下） | 第八条第 1、2 款，真会话、真回合库：常驻那一块带过一次；第二个会话常驻一次、她搜到一次，最近一次是搜到的那一刻；回合库里落下了的（删会话那样拿掉），载入时照日志补回来 |
 | `crates/miyu-endpoint/tests/memory_used.rs`（R-4 下） | 第八条第 4 款，真核心：没用过的 `used` 是 0、`used_at` 是 `null`；常驻那一块带过以后是 1，时刻是那一块的；`memory.search` 也带 |

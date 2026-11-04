@@ -54,6 +54,7 @@ mod knowledge_tools;
 mod knowledge_write;
 mod limits;
 mod memory;
+mod memory_archived;
 mod memory_backfill;
 mod memory_card_search;
 mod memory_cards;
