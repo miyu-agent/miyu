@@ -290,6 +290,7 @@ fn each_page_is_its_own_file() {
             (Page::Pkg, "pkg"),
             (Page::Kb, "kb"),
             (Page::Schedule, "schedule"),
+            (Page::Session, "session"),
         ] {
             let file = dir.join(code).join(format!("{name}.txt"));
             let on_disk = std::fs::read_to_string(&file).expect("有这一页");

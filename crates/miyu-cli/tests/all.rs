@@ -25,6 +25,7 @@ mod redo;
 mod rename;
 mod resync;
 mod schedule;
+mod session;
 mod setup;
 mod setup_custom;
 mod setup_skip;

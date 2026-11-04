@@ -10,6 +10,7 @@ Conversation:
   compact [<focus>]   Compact the context
   recap               Summarize the session
   rename <title>      Rename the session
+  session <command>   Export and import sessions
 
 Content:
   memory <command>    Manage memories

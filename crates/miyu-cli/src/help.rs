@@ -46,6 +46,8 @@ pub enum Page {
     Call,
     /// `miyu mcp -h`，`miyu mcp login -h` 也印它（施工 X-42 上）。
     Mcp,
+    /// `miyu session -h`，`export`、`import` 的 `-h` 也印它（施工 SE-1 中上）。
+    Session,
 }
 
 /// 有子命令的那几个命令照名字是哪一页（施工 K-7 修：少了参数时照它说子命令怎么写）；别的没有。
@@ -59,6 +61,7 @@ pub(crate) fn page_named(name: &str) -> Option<Page> {
         "provider" => Some(Page::Provider),
         "sandbox" => Some(Page::Sandbox),
         "service" => Some(Page::Service),
+        "session" => Some(Page::Session),
         _ => None,
     }
 }
@@ -106,6 +109,8 @@ pub fn page(language: Language, page: Page) -> &'static str {
         (Language::English, Page::Call) => include_str!("help/en/call.txt"),
         (Language::Chinese, Page::Mcp) => include_str!("help/zh/mcp.txt"),
         (Language::English, Page::Mcp) => include_str!("help/en/mcp.txt"),
+        (Language::Chinese, Page::Session) => include_str!("help/zh/session.txt"),
+        (Language::English, Page::Session) => include_str!("help/en/session.txt"),
     }
 }
 
