@@ -10,12 +10,16 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 
 | 代码 | 管什么 |
 |---|---|
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs` | `mechanisms`、`run`：照规格收紧（写着 `mount` 的换成 bubblewrap），再换成命令 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/aliases.rs` | 藏起来的另挂在别处的（挂载别名，施工 SEC-3）：照 `/proc/self/mountinfo` 找出来，读放行、bubblewrap 的盖法都算上 |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs` | `mechanisms`、`run`：照规格收紧（写着 `mount` 的换成 bubblewrap），再换成命令；`run_ruled`：照核心交来的缓存的规则集收紧（施工 V-47） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/bwrap.rs` | 用 bubblewrap 的挂载收紧（施工 5-16）：找可信的 bwrap、真起一次验、照规格拼挂载、挂好以后在里面再跑一次助手 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/landlock.rs` | 建 Landlock 的规则集、加规则、收紧自己 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的；藏起来的先照路径的段排成一棵树，每一级的每一样照名字查一次（施工 V-46） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp.rs` | 关起来的会话在 Landlock 管不住连 Unix 套接字的内核上，不准新建 Unix 域套接字（施工 MB-1） |
+| `crates/miyu-sandbox/src/linux.rs` | 库里 Linux 的那一块（施工 V-47 从助手挪过来：助手每条命令从头建、核心缓存规则集用同一份），只给助手用，不算对外的接口 |
+| `crates/miyu-sandbox/src/linux/aliases.rs` | 藏起来的另挂在别处的（挂载别名，施工 SEC-3）：照 `/proc/self/mountinfo` 找出来，读放行、bubblewrap 的盖法都算上 |
+| `crates/miyu-sandbox/src/linux/rules.rs` | 建 Landlock 的规则集、照规格排出规则、加上、收紧自己（原来的助手里的 `linux/landlock.rs`）；规则排成三种：从头建的一层、缓存的那一层、每条命令叠的那一小层（施工 V-47） |
+| `crates/miyu-sandbox/src/linux/reads.rs` | 读怎么放：从根目录一级级往下，绕开藏起来的；藏起来的先照路径的段排成一棵树，每一级的每一样照名字查一次（施工 V-46）；一路看到的可以告诉一个旁观的（施工 V-47，记指纹用） |
+| `crates/miyu-sandbox/src/linux/cache.rs` | 核心按规格缓存规则集（施工 V-47）：能不能缓存、键、比指纹、满了丢最久没用的、闲 5 分钟丢掉 |
+| `crates/miyu-sandbox/src/linux/print.rs` | 规则集的指纹（施工 V-47）：从头建要看的每一样，除了逐条打开、加规则，都照样再看一遍、记成字节 |
+| `crates/miyu-sandbox/src/linux/pass.rs` | 缓存的规则集怎么交给助手、助手怎么照它收紧（施工 V-47） |
 
 ### 对外的样子
 
@@ -46,33 +50,60 @@ Linux 上助手怎么照规格收紧自己。各平台共用的（规格、助�
 |---|---|
 | `landlock is not available: <原话>` | 内核没有 Landlock，或者不到第 2 版 |
 | `cannot open <路径>: <原话>` | 规格里的路径、一级级放行时碰到的目录在，但打不开 |
-| `landlock: <原话>` | 加规则、收紧自己出了错 |
+| `landlock: <原话>` | 加规则、收紧自己出了错；核心交来的规则集号码不是打开着的（`landlock: bad ruleset <号码>: <原话>`，施工 V-47） |
 
 ### 怎么走
 
 1. **`run`**：
-   1. 规格写着 `mount` 的（施工 5-16）：换成 bubblewrap（`bwrap.rs`），见第 3 条；没有能用的 bwrap 的说 `cannot confine: bubblewrap is not available`、退出 125、不跑，不悄悄退回 Landlock。没写的往下（施工 5-15 起不再查「藏起来的落在能写的里面」；施工 5-14 改起写也不绕开，能写的整个放）。
+   1. 规格写着 `mount` 的（施工 5-16）：换成 bubblewrap（`bwrap.rs`），见第 4 条；没有能用的 bwrap 的说 `cannot confine: bubblewrap is not available`、退出 125、不跑，不悄悄退回 Landlock。没写的往下（施工 5-15 起不再查「藏起来的落在能写的里面」；施工 5-14 改起写也不绕开，能写的整个放）。
    2. 建规则集：第 2 版的全部文件操作必须管得住，管不住就拒绝；更新的版本多出来的（截断、设备的 ioctl、连路径上的 Unix 套接字）能管就管；抽象套接字的范围（第 6 版起）能管就管。
    3. 读：根目录放「列目录、执行」。再从根目录起一级级走：这一级目录里的每一样，是藏起来的，跳过；是通向藏起来的那条路上的目录，走进去接着看；是链接，跳过；别的放「读取文件」（它下面都带上）。没有藏起来的，就是根目录整个放「读」。打开了却查不了它是什么的（断开的 FUSE 挂载，`fstat` 报 ENOTCONN 这类），跳过这一条：它本来就读不了，不跳过的话整个规则集加不上、沙盒起不来（施工 5-4 补）。
    4. 每条 `write` 加「全部」的规则，`/dev/null` 加「写」的规则。打不开的：不在的跳过，别的拒绝。
    5. 设 `no_new_privs`，收紧自己（助手这时只有一个线程）。
    6. 关起来的会话（规格写了 `read`，施工 MB-1）：内核的 Landlock 管不住连 Unix 套接字的（连路径上的要第 9 版、抽象的要第 6 版，两样缺一样都算），或者助手的环境里 `MIYU_SANDBOX_SECCOMP=force`（测试在新内核上量这一路，只会更严），再装一个 seccomp 过滤（`seccomp.rs`）：`socket(AF_UNIX, …)` 回 `EACCES`，`socketpair` 照放；x86_64 上 32 位的照它的号挡 `socket`、整个挡 `socketcall`，x32 的、认不出的架构一律回 `EACCES`；aarch64 上 32 位的同样照它的号。装不上的说 `cannot confine: seccomp: …`、退出 125、不跑。要不要装在收紧之前问（收紧以后建不了规则集）。
    7. 换成命令（`unix.rs`）。
-2. **`mechanisms`**：建一个要求第 2 版文件操作的规则集，建得成就报 `landlock`；关起来的会话的套接字怎么管（施工 MB-1）：硬要「连 Unix 套接字」和抽象套接字范围的规则集建得成的报 `landlock-sockets`，建不成、内核有 seccomp 过滤模式的（交空指针给 `PR_SET_SECCOMP` 回 `EFAULT`，什么都不装）报 `seccomp`，两样都没有的不报：核心照它设 `set_confines_sockets`，关起来的场所会话不跑命令，记一行 `WARN sandbox cannot confine unix sockets`。只建不收紧，探测的进程不受影响。Landlock 能用、bubblewrap 也能用的再报 `bwrap`（施工 5-16）：只在 `/usr/bin`、`/bin`、`/usr/local/bin` 找，跟链接以后要是属于 root、组和别人都写不了的普通文件（不照 `PATH`：沙盒里的命令写得了 `~/.local/bin`，放个假的进去以后每条命令都等于没关）；找到了在临时目录里照正式的挂载真起一次（能写的 `w`、它里面藏起来的 `w/h`），里面藏起来的是空的、写进去报错、能写的写得进，都对才算（起得来不等于挂上了）。
-3. **挂载**（施工 5-16，2026-10-20 项目主人定：有就用、不自带）：`--ro-bind / /`、`--dev-bind /dev /dev`、`--die-with-parent`；不在藏起来的里面的 `write` 照原样可写挂回；`hidden` 是目录的盖一层空的 tmpfs、是文件的拿 `/dev/null` 盖；藏起来的里面的 `write`（工作区在数据根里）可写挂回、`reveal` 只读挂回；助手自己被藏起来的盖住了的（私密目录包住了装的位置，比如核心从 `~/Documents` 下的工作树跑、私密目录加了 `~/Documents`），它那一个文件也只读挂回，不然 bwrap 在里面起不来它（施工 5-15 下再修）；最后藏起来的那几层 `--remount-ro`，写进去报只读，不会写进一层用完就丢的内存。不在的跳过。挂好以后在里面跑 `miyu-sandbox run --spec <里面的规格> -- <命令>`：里面的规格只留 `write`（藏、放开只读已经由挂载办了），照第 1 条以下用 Landlock 收紧，系统服务的套接字照旧拦。进程多一层 bwrap（一直在，约 2.3 MB），同一个进程组，整组杀照旧。本机量（2026-10-20，release 的助手，`/usr/bin/true` 300 次的 p50）：放开 `~` 时挂载约 2.4 ms，只用 Landlock 约 1.2 ms。
+2. **核心按规格缓存规则集**（施工 V-47，2026-11-03 项目主人批「规则集缓存带失效检查：做；常驻沙盒派生进程：不做」）：只有 Landlock
+   的那一路，第 1 条那样每条命令从头建要一级级列目录、给几千条规则各开一个描述符、加一条规则（V-40 那份规格 1575 条，助手系统态约 8 ms）。
+   核心（`shell`、脚本工具经 `miyu_sandbox::command` 起助手时）同一份规格只建一次，之后每条命令认过还能用才交出去：
+   1. 能缓存的规格：没写 `mount`、`read`，有藏起来的，`hidden`、`write`、`reveal` 都是绝对路径；这台机器的 Landlock 能用。别的照第 1 条
+      从头建，参数和以前一样。
+   2. **指纹**（`print.rs`）：从头建要看的每一样，除了「逐条打开、加规则」，都照样再看一遍、记成字节——有效用户、组；读到的挂载表原样；
+      换成真实位置、加上别名以后的藏起来的；一级级走进的每个目录的路径、它里面每一样的名字和怎么放的（藏起来的、链接、走进去、放读，照
+      列出来的先后）；每一条规则的路径此刻是什么文件（设备号、inode 号、种类，或者查不了的错误号；一级级放读的用那一级目录的描述符
+      `fstatat(…, AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT)`，别的照路径 `fstatat(…, AT_NO_AUTOMOUNT)`，都不触发自动挂载）。**不看时间戳**。
+   3. 键是规格的 `hidden`、`write`、`reveal`（先后也算）。键一样、指纹逐字节一样的交缓存的；不一样、没有的当场新建：照指纹里排出来的
+      规则一条条加，每条加的时候打开查到的要和指纹里事先查到的对得上（对不上的是建到一半路径变了，这一次不缓存）。指纹记不成、建不成
+      的这一次不缓存，交给助手从头建，报的错和以前一样。
+   4. 规则集只在核心的内存里，不落盘；最多 8 份，满了丢最久没用的，闲 5 分钟丢掉（规则集拿着它放行的每个文件，家目录里删掉的文件要等它
+      丢了才真正释放空间）。带 `O_CLOEXEC`、号码不小于 3：起别的子进程都不会漏过去；起助手时只在这一个子进程里（`fork` 以后、`exec`
+      以前）去掉，号码写进 `--ruleset`（起这种子进程走 `fork`，不走 `posix_spawn`）。
+   5. **两层**：缓存的那一层不管「连 Unix 套接字」（`sockets` 每条命令都不一样，不进这一层）：读、`write`、`/dev/null`、放开只读的照第 1 条，
+      `write`、`/dev/null` 去掉「连 Unix 套接字」。助手先给交来的描述符设回 `O_CLOEXEC`，建每条命令叠的一小层（只管「连 Unix 套接字」和
+      「跨目录改名、链接」：`write`、`/dev/null` 放这两样，`sockets` 放「连 Unix 套接字」；内核管不了「连 Unix 套接字」的不叠，从头建的那一层
+      本来也不管），设 `no_new_privs`，照缓存的收紧、关掉它，再照那一小层收紧，最后换成命令：命令拿不到缓存的规则集，往里加不了规则。
+      两层叠起来和从头建的一层放行的一样：每一样操作，放它的路径在从头建的那一层里和在管它的那一层里一样；「跨目录改名、链接」两层都管、
+      放在同样的路径上（Landlock 每一层都要放这一样，只管「连 Unix 套接字」的一层也会挡跨目录改名）。每条关起来的命令多占一层（Landlock
+      一个进程最多 16 层）。
+3. **`mechanisms`**：建一个要求第 2 版文件操作的规则集，建得成就报 `landlock`；关起来的会话的套接字怎么管（施工 MB-1）：硬要「连 Unix 套接字」和抽象套接字范围的规则集建得成的报 `landlock-sockets`，建不成、内核有 seccomp 过滤模式的（交空指针给 `PR_SET_SECCOMP` 回 `EFAULT`，什么都不装）报 `seccomp`，两样都没有的不报：核心照它设 `set_confines_sockets`，关起来的场所会话不跑命令，记一行 `WARN sandbox cannot confine unix sockets`。只建不收紧，探测的进程不受影响。Landlock 能用、bubblewrap 也能用的再报 `bwrap`（施工 5-16）：只在 `/usr/bin`、`/bin`、`/usr/local/bin` 找，跟链接以后要是属于 root、组和别人都写不了的普通文件（不照 `PATH`：沙盒里的命令写得了 `~/.local/bin`，放个假的进去以后每条命令都等于没关）；找到了在临时目录里照正式的挂载真起一次（能写的 `w`、它里面藏起来的 `w/h`），里面藏起来的是空的、写进去报错、能写的写得进，都对才算（起得来不等于挂上了）。
+4. **挂载**（施工 5-16，2026-10-20 项目主人定：有就用、不自带）：`--ro-bind / /`、`--dev-bind /dev /dev`、`--die-with-parent`；不在藏起来的里面的 `write` 照原样可写挂回；`hidden` 是目录的盖一层空的 tmpfs、是文件的拿 `/dev/null` 盖；藏起来的里面的 `write`（工作区在数据根里）可写挂回、`reveal` 只读挂回；助手自己被藏起来的盖住了的（私密目录包住了装的位置，比如核心从 `~/Documents` 下的工作树跑、私密目录加了 `~/Documents`），它那一个文件也只读挂回，不然 bwrap 在里面起不来它（施工 5-15 下再修）；最后藏起来的那几层 `--remount-ro`，写进去报只读，不会写进一层用完就丢的内存。不在的跳过。挂好以后在里面跑 `miyu-sandbox run --spec <里面的规格> -- <命令>`：里面的规格只留 `write`（藏、放开只读已经由挂载办了），照第 1 条以下用 Landlock 收紧，系统服务的套接字照旧拦。进程多一层 bwrap（一直在，约 2.3 MB），同一个进程组，整组杀照旧。本机量（2026-10-20，release 的助手，`/usr/bin/true` 300 次的 p50）：放开 `~` 时挂载约 2.4 ms，只用 Landlock 约 1.2 ms。
 
 ### 守着它的
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-sandbox/tests/linux.rs` | 真跑助手：规格外的哪儿都读得了（家目录、系统目录），写不了、删不了；能写的读得了、写得了、跨目录改名和硬链接得了；一条能写的都没有时哪儿都写不了，只有 `/dev/null` 写得进；藏起来的读不了、写不了，名字看得到；藏起来的落在能写的里面不挖洞（那一层新建、删除照常，里面的读得到、写得进，施工 5-14 改；施工 5-15 起一级级绕开过）；能写的落在藏起来的里面照样能写；放开只读的落在藏起来的里面读得到、列得出、写不进，旁边的照旧藏着（施工 X-10 中）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；规格外路径上的 Unix 套接字连不上（内核 7.1 起），沙盒外建的抽象套接字连不上（6.12 起），更老的内核上照连得上测；内核启用了 Landlock 的，探测报它。内核没有 Landlock 的机器上，只测拒绝执行；CI 上（设了 `CI`）必须探测到 Landlock |
+| `crates/miyu-sandbox/tests/linux.rs` | 真跑助手：规格外的哪儿都读得了（家目录、系统目录），写不了、删不了；能写的读得了、写得了、跨目录改名和硬链接得了；一条能写的都没有时哪儿都写不了，只有 `/dev/null` 写得进；藏起来的读不了、写不了，名字看得到；藏起来的落在能写的里面不挖洞（那一层新建、删除照常，里面的读得到、写得进，施工 5-14 改；施工 5-15 起一级级绕开过）；能写的落在藏起来的里面照样能写；放开只读的落在藏起来的里面读得到、列得出、写不进，旁边的照旧藏着（施工 X-10 中）；一级级放行时的链接不跟过去；不在的路径跳过；设了 `no_new_privs`；规格外路径上的 Unix 套接字连不上（内核 7.1 起），沙盒外建的抽象套接字连不上（6.12 起），更老的内核上照连得上测；内核启用了 Landlock 的，探测报它。内核没有 Landlock 的机器上，只测拒绝执行；CI 上（设了 `CI`）必须探测到 Landlock。和核心一样经 `miyu_sandbox::command` 起（施工 V-47）：有藏起来的规格走缓存的规则集 |
 | `crates/miyu-sandbox/tests/linux_sockets.rs`（施工 MB-1 从 `linux.rs` 拆出来：规格外的套接字、脚本调工具的通道两条随它搬过来）的 `a_confined_command_reaches_no_unix_socket_on_any_kernel` | 关起来的规格：路径上的、抽象的 Unix 套接字在哪种内核上都连不上；强制走 seccomp 时能写的地方的也连不上（分得出走的哪一路）；`socketpair` 照常；两样都没有的机器上不跑 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/seccomp/tests.rs` | 过滤的每一条跳都落在里面，交回的只有放行和 `EACCES` |
 | `crates/miyu-sandbox/tests/linux_mounts.rs`（施工 5-16）、`linux/bwrap/tests.rs` | 有 bwrap 的机器上挂载收紧：那一层新建、删除都行，藏起来的列出来是空的、读不到、写不进、挪不走；没有的规格要挂载就拒绝执行。挂载的先后、文件拿 `/dev/null` 盖、不在的跳过、里面的规格只留 `write`；助手落在藏起来的里面照样跑命令，藏起来的照旧看不到（施工 5-15 下再修） |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/tests.rs` | 查规格：本身、下面、旁边（`/a/bc` 和 `/a/b`）、上一级各算不算落在里面 |
-| `crates/miyu-sandbox/tests/linux_aliases.rs`、`linux/aliases/tests.rs`、`linux/bwrap/tests.rs` 的 `an_alias_of_a_hidden_path_is_covered_too`（施工 SEC-3） | 在 `unshare -rm` 的命名空间里把家目录 bind 到别处再跑助手：藏起来的从原路径、别名都读不到，别名里别的照旧读得到（不让普通用户建命名空间的机器上跳过）；挂载表的转义、读不懂的行；bind 过来的家目录、btrfs 顶层另挂、藏起来的里面一块挂到别处、叠着挂认最后挂的；挂载表说是别名、其实不是同一个文件的不藏；挂载时别名一样盖住 |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
-| `crates/miyu-sandbox/src/bin/miyu-sandbox/linux/reads/tests/same.rs`（施工 V-46） | 排成树以后和原来每一样都和每一条藏起来的整条比的写法（照抄在里面）交回的逐项一样、报的错一字不差：照种子造目录树（互为开头的名字、只差大小写、带点、不是 UTF-8 的名字、各种链接、列不出来的目录）和藏起来的（尾斜杠、`//`、`.`、`..`、经链接给的、名字只是别的名字开头的、不在的、树本身、根目录、树外、相对、重复），从树里各处和照 `plan` 从根目录走起比；平时 300 棵，`MIYU_V46_SEEDS` 改 |
+| `crates/miyu-sandbox/tests/linux_aliases.rs`、`src/linux/aliases/tests.rs`、`linux/bwrap/tests.rs` 的 `an_alias_of_a_hidden_path_is_covered_too`（施工 SEC-3） | 在 `unshare -rm` 的命名空间里把家目录 bind 到别处再跑助手：藏起来的从原路径、别名都读不到，别名里别的照旧读得到（不让普通用户建命名空间的机器上跳过）；挂载表的转义、读不懂的行；bind 过来的家目录、btrfs 顶层另挂、藏起来的里面一块挂到别处、叠着挂认最后挂的；挂载表说是别名、其实不是同一个文件的不藏；挂载时别名一样盖住 |
+| `crates/miyu-sandbox/src/linux/reads/tests.rs` | 一级级放行：在一个临时目录里摆出几层，看放了哪些、跳过了哪些（藏起来的、链接、通向藏起来的那条路） |
+| `crates/miyu-sandbox/src/linux/reads/tests/same.rs`（施工 V-46） | 排成树以后和原来每一样都和每一条藏起来的整条比的写法（照抄在里面）交回的逐项一样、报的错一字不差：照种子造目录树（互为开头的名字、只差大小写、带点、不是 UTF-8 的名字、各种链接、列不出来的目录）和藏起来的（尾斜杠、`//`、`.`、`..`、经链接给的、名字只是别的名字开头的、不在的、树本身、根目录、树外、相对、重复），从树里各处和照 `plan` 从根目录走起比；平时 300 棵，`MIYU_V46_SEEDS` 改 |
+
+| `crates/miyu-sandbox/src/linux/cache/tests.rs`（施工 V-47） | 缓存交出来的那一份建的时候加的规则（路径、放什么、每条落在哪个文件上）和此刻从头排、从头打开查的逐条一样：藏起来的上级、更上级里新建、删、改名、同名换成新的（文件换目录）、放读的挪进藏起来的、藏起来的改走、旁边的换成藏起来的、藏起来的换成链接、旁边的换成指进藏起来的链接、路上的目录换成链接、链接改指、藏起来的建出来了、能写的删了重建、换成文件、不在的能写的上级进不去了、同一刻改两次再拨回修改时间、路上的目录列不出来又列得出来；规格变了另建一份、只差 `sockets` 的用同一份；不能缓存的不缓存、满了丢最久没用的、闲了丢掉；规则集带 `O_CLOEXEC`、号码不小于 3 |
+| `crates/miyu-sandbox/src/linux/cache/tests/same.rs`（施工 V-47） | 随机对照：照种子造目录树和规格，一步步改（夹着上面那些过期的情形、规格变、什么都不改），每一步缓存交的和从头建的逐条一样，有从缓存交的；平时 40 棵、每棵 16 步，`MIYU_V47_SEEDS` 改 |
+| `crates/miyu-sandbox/src/linux/rules/tests.rs`（施工 V-47） | 两层叠起来和从头建的一层放的一样：每一样操作放它的路径照先后一样，各层管的合起来正好是从头建的那一层管的 |
+| `crates/miyu-sandbox/tests/linux_cache.rs`（施工 V-47） | 真跑助手：经 `command` 起的（带缓存的规则集）和从头建的跑同一个脚本，退出码、输出逐字一样（读藏起来的、列它、旁边的、放开只读的、跨目录改名和硬链接、`/dev/null`、`no_new_privs`、连能写的地方的、规格里的、别处的 Unix 套接字）；上面那些过期的情形改完，新建的读得到、藏起来的读不到、能写的重建了照样能写、规格变了各是各的；命令里、这个进程别处起的子进程里都没有规则集的描述符；只有只用 Landlock、有藏起来的、绝对路径的规格才带 `--ruleset` |
 
 ### 出处
 

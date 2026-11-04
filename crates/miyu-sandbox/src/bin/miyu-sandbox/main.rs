@@ -50,9 +50,25 @@ fn main() -> ExitCode {
     }
 }
 
-/// `run` 后面的：`--spec <JSON> -- <程序> [参数…]`。
+/// `run` 后面的：`--spec <JSON> [--ruleset <号码>] -- <程序> [参数…]`。`--ruleset` 是核心交来的缓存的规则集（施工 V-47，只有
+/// Linux 上只用 Landlock 时有），别的平台给了算参数不对。
 fn run(args: &[OsString]) -> ExitCode {
-    let [flag, spec, dashes, program, rest @ ..] = args else {
+    let (ruleset, args) = match args {
+        [flag, spec, ruled, number, rest @ ..] if ruled == "--ruleset" => {
+            match number
+                .to_str()
+                .and_then(|number| number.parse::<i32>().ok())
+            {
+                Some(number) if number >= 3 => (
+                    Some(number),
+                    [flag, spec].into_iter().chain(rest).cloned().collect(),
+                ),
+                _ => return fail(USAGE),
+            }
+        }
+        _ => (None, args.to_vec()),
+    };
+    let [flag, spec, dashes, program, rest @ ..] = args.as_slice() else {
         return fail(USAGE);
     };
     if flag != "--spec" || dashes != "--" {
@@ -67,7 +83,22 @@ fn run(args: &[OsString]) -> ExitCode {
     if spec.read.is_some() && !miyu_sandbox::CONFINES_READS {
         return fail("cannot confine: reads cannot be confined on this platform");
     }
-    platform::run(&spec, program, rest)
+    match ruleset {
+        None => platform::run(&spec, program, rest),
+        Some(ruleset) => ruled(&spec, ruleset, program, rest),
+    }
+}
+
+/// 照核心交来的规则集收紧（施工 V-47）：只有 Linux 有。
+#[cfg(target_os = "linux")]
+fn ruled(spec: &Spec, ruleset: i32, program: &std::ffi::OsStr, rest: &[OsString]) -> ExitCode {
+    platform::run_ruled(spec, ruleset, program, rest)
+}
+
+/// 同上：别的平台没有，算参数不对。
+#[cfg(not(target_os = "linux"))]
+fn ruled(_spec: &Spec, _ruleset: i32, _program: &std::ffi::OsStr, _rest: &[OsString]) -> ExitCode {
+    fail(USAGE)
 }
 
 /// 执行不了：找不到的 127，别的 126。

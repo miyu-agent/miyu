@@ -97,14 +97,18 @@ impl Program {
         sandbox: Option<&Sandboxed>,
     ) -> io::Result<Command> {
         let args = self.args(script);
-        let (program, args) = match sandbox {
-            None => (self.path.clone(), args),
+        let mut command = match sandbox {
+            None => {
+                let mut command = Command::new(&self.path);
+                command.args(args);
+                command
+            }
+            // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）。
             Some(sandboxed) => {
-                miyu_sandbox::argv(sandboxed, &self.path, &args).map_err(io::Error::other)?
+                miyu_sandbox::command(sandboxed, &self.path, &args).map_err(io::Error::other)?
             }
         };
-        let mut command = Command::new(program);
-        command.args(args).current_dir(cwd).env_clear().envs(env);
+        command.current_dir(cwd).env_clear().envs(env);
         if matches!(self.kind, Kind::Bash | Kind::Zsh) {
             command.env(COMMAND, script);
         }

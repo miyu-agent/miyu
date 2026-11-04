@@ -274,8 +274,12 @@ impl Script {
         let first = miyu_store::packages::first_line(&file)?;
         let launch = miyu_store::packages::launcher(&file, &first, cfg!(windows));
         let (program, args) = (launch.program.into_os_string(), launch.args);
-        let (program, args) = match call.sandbox.as_deref() {
-            None => (program, args),
+        let mut command = match call.sandbox.as_deref() {
+            None => {
+                let mut command = std::process::Command::new(program);
+                command.args(args);
+                command
+            }
             Some(sandboxed) => {
                 // 脚本可能在数据根里（自己放的、自己装的包带的），沙盒藏着那一片：单独放开它这一个文件只读，解释器才
                 // 读得到（施工 X-12 下）。旁边的照旧藏着。
@@ -293,8 +297,8 @@ impl Script {
                     .spec
                     .write
                     .extend(homes.iter().map(|(_, dir)| dir.clone()));
-                miyu_sandbox::argv(&sandboxed, Path::new(&program), &args)
-                    .map(|(helper, args)| (helper.into_os_string(), args))
+                // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）。
+                miyu_sandbox::command(&sandboxed, Path::new(&program), &args)
                     .map_err(io::Error::other)?
             }
         };
@@ -333,12 +337,7 @@ impl Script {
         }
         // Python 的标准输入、输出照 UTF-8：Windows 上默认照本地的编码，中文的参数、输出会乱（输出照 UTF-8 解）。
         vars.push(("PYTHONUTF8".into(), "1".into()));
-        let mut command = std::process::Command::new(program);
-        command
-            .args(args)
-            .current_dir(workdir(call))
-            .env_clear()
-            .envs(vars);
+        command.current_dir(workdir(call)).env_clear().envs(vars);
         if let Some(sandboxed) = call.sandbox.as_deref() {
             command.envs(sandboxed.env.iter().map(|(name, value)| (name, value)));
         }

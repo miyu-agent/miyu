@@ -31,6 +31,9 @@ testkit = []
 landlock = "0.4"
 # 老内核上关起来的会话照 seccomp 不准新建 Unix 域套接字（施工 MB-1）：装过滤要调 `prctl`。MIT OR Apache-2.0，工作区里本来就有。
 libc = "0.2"
+# 核心缓存规则集（施工 V-47）：查路径是什么文件（`fstatat` 带 `AT_NO_AUTOMOUNT`，不碰自动挂载点）、照目录的描述符查、
+# 设描述符的 `O_CLOEXEC`、有效用户和组，都用安全接口。MIT OR Apache-2.0，工作区里本来就有。
+rustix = { version = "1", features = ["fs", "process"] }
 
 [target.'cfg(windows)'.dependencies]
 # Windows 上装沙盒要调的系统接口（施工 5-8）：建、藏、删用户，查是不是管理员，自提升，DPAPI，建只给本人的文件；核心进

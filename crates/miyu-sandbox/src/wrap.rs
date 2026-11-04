@@ -1,8 +1,12 @@
 //! 照规格把一条命令包成交给助手的样子（`docs/blueprint/sandbox.md`「怎么走」第 3 条）：
 //! `<助手> run --spec <规格的 JSON> -- <程序> <参数…>`。工作目录、环境变量、标准输入输出由起命令的一方照旧设。
+//!
+//! Linux 上只有 Landlock 的那一路（施工 V-47）：[`command`] 带上核心按规格缓存的规则集，参数多一段 `--ruleset <号码>`，
+//! 只有这个子进程拿得到那个描述符。别的平台、别的规格和 [`argv`] 拼的一样。
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use crate::Spec;
 
@@ -37,6 +41,35 @@ pub fn argv(
     ];
     out.extend(args.iter().cloned());
     Ok((sandboxed.helper.clone(), out))
+}
+
+/// 同 [`argv`]，拼成能直接起的命令（施工 V-47）：Linux 上规格能缓存（只用 Landlock、有藏起来的、路径都是绝对的）、核心建得成
+/// 规则集的，参数是 `run --spec <规格的 JSON> --ruleset <号码> -- <程序> <参数…>`，只有起的这个子进程拿得到那个规则集；
+/// 别的和 [`argv`] 拼的一样。工作目录、环境变量、标准输入输出由起命令的一方照旧设。
+///
+/// # Errors
+///
+/// 规格写不成 JSON：路径不是 UTF-8 的。
+pub fn command(
+    sandboxed: &Sandboxed,
+    program: &Path,
+    args: &[OsString],
+) -> Result<Command, serde_json::Error> {
+    let (helper, argv) = argv(sandboxed, program, args)?;
+    let mut command = Command::new(helper);
+    #[cfg(target_os = "linux")]
+    if let Some(ruleset) = crate::linux::ruleset(&sandboxed.spec) {
+        let raw = crate::linux::inherit(&mut command, ruleset);
+        let (head, tail) = argv.split_at(3);
+        command
+            .args(head)
+            .arg("--ruleset")
+            .arg(raw.to_string())
+            .args(tail);
+        return Ok(command);
+    }
+    command.args(argv);
+    Ok(command)
 }
 
 #[cfg(test)]

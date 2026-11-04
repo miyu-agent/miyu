@@ -31,7 +31,7 @@ fn trusted(path: &Path) -> bool {
 /// 空的 tmpfs（是文件的拿 `/dev/null` 盖）；藏起来的里面能写的、放开只读的再挂回；最后藏起来的那几层设成只读，写进去报只读，
 /// 不会写进一层用完就丢的内存里。不在的跳过。藏起来的另挂在别处的（挂载别名，施工 SEC-3），别名那一处一样盖住。
 fn mounts(spec: &Spec) -> Vec<OsString> {
-    mounts_with(spec, &super::aliases::with_aliases(&spec.hidden))
+    mounts_with(spec, &miyu_sandbox::linux::with_aliases(&spec.hidden))
 }
 
 /// 同 [`mounts`]，藏起来的照 `hidden`（规格里的连同别名）。

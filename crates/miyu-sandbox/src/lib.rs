@@ -3,7 +3,8 @@
 //! A7）。
 //!
 //! - [`Spec`]：规格；[`Sandboxed`]：一次调用带的，助手在哪、规格是什么；
-//! - [`argv`]：照规格把一条命令包成交给助手的样子；
+//! - [`argv`]：照规格把一条命令包成交给助手的样子；[`command`]：包好、能直接起的命令（Linux 上只有 Landlock 时带上核心按规格
+//!   缓存的规则集，施工 V-47）；
 //! - [`locate()`]：找助手，在主程序旁边；
 //! - [`probe()`]：跑一次助手的 `probe`，读它说这台机器能收紧到什么程度（[`Probe`]、[`Platform`]），和核心是不是同一份源码编的
 //!   （[`BUILD`]，施工 5-16 再补）；
@@ -25,6 +26,9 @@ mod carve;
 mod cmdline;
 pub mod install;
 pub mod lifeline;
+#[cfg(target_os = "linux")]
+#[doc(hidden)]
+pub mod linux;
 mod locate;
 mod probe;
 mod spec;
@@ -41,7 +45,7 @@ pub use cmdline::windows_command_line;
 pub use locate::{HELPER, locate};
 pub use probe::{BUILD, Platform, Probe, ProbeError, VERSION, probe};
 pub use spec::Spec;
-pub use wrap::{Sandboxed, argv};
+pub use wrap::{Sandboxed, argv, command};
 
 /// 这台机器的命令能不能用挂载收紧（施工 5-16，Linux 上有能用的 bubblewrap）：进程里一份，核心起来时照探测设、沙盒强度改了
 /// 跟着设；会话写规格时照它决定写不写 [`Spec::mount`]。没设过的是不能。

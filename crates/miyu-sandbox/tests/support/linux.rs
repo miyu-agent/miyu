@@ -3,7 +3,7 @@
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
-use miyu_sandbox::{EXIT_HELPER, Probe, Spec};
+use miyu_sandbox::{EXIT_HELPER, Probe, Sandboxed, Spec};
 
 use super::HELPER;
 
@@ -24,11 +24,29 @@ pub fn run(spec: &Spec, script: &str) -> Output {
     run_with(spec, script, &[])
 }
 
-/// 同 [`run`]，助手多带几个环境变量 `env`（例如强制走 seccomp 的 `MIYU_SANDBOX_SECCOMP=force`，施工 MB-1）。
+/// 同 [`run`]，助手多带几个环境变量 `env`（例如强制走 seccomp 的 `MIYU_SANDBOX_SECCOMP=force`，施工 MB-1）。和核心一样经
+/// [`miyu_sandbox::command`] 起（施工 V-47）：只用 Landlock、有藏起来的规格带上这个测试进程里缓存的规则集，别的和 [`run_fresh`]
+/// 一样。
 pub fn run_with(spec: &Spec, script: &str, env: &[(&str, &str)]) -> Output {
-    Command::new(HELPER)
+    let sandboxed = Sandboxed {
+        helper: HELPER.into(),
+        spec: spec.clone(),
+        env: Vec::new(),
+    };
+    let args = ["-c".into(), script.into()];
+    miyu_sandbox::command(&sandboxed, Path::new("/bin/sh"), &args)
+        .expect("拼得成")
         .env("LC_ALL", "C")
         .envs(env.iter().copied())
+        .stdin(Stdio::null())
+        .output()
+        .expect("起得来")
+}
+
+/// 同 [`run`]，助手每次从头建（施工 V-47 以前的样子，参数里没有 `--ruleset`）。
+pub fn run_fresh(spec: &Spec, script: &str) -> Output {
+    Command::new(HELPER)
+        .env("LC_ALL", "C")
         .args([
             "run",
             "--spec",

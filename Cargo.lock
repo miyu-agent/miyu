@@ -2314,6 +2314,7 @@ dependencies = [
  "miyu-pipe",
  "miyu-store",
  "mxc-sdk",
+ "rustix",
  "serde",
  "serde_json",
  "windows-sys 0.61.2",

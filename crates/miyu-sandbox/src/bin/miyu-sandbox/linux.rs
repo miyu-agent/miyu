@@ -1,15 +1,15 @@
 //! Linux 上的收紧（`docs/blueprint/sandbox/linux.md`）：只用 Landlock（施工 5-2 起；5-3 照 DeepSeek 的 dsh 改成整盘能
 //! 读、只管写）。不要命名空间、不要 AppArmor（2026-09-29 项目主人定）。
 //!
-//! Landlock 只能放行，不能在放行的范围里再挖掉一块：「除了藏起来的都能读」是一级级放行做出来的（[`reads`]）；能写的
-//! 整个放，不在里面挖洞（施工 5-14 改，照 dsh：藏不住的会话那边不写进 `hidden`；施工 5-15 到 5-14 改之间一级级绕开过，
-//! 冻住了路上那几层）。有能用的 bubblewrap 时规格写着 `mount`，用挂载盖住（[`bwrap`]，施工 5-16）。
+//! Landlock 只能放行，不能在放行的范围里再挖掉一块：「除了藏起来的都能读」是一级级放行做出来的（库里的
+//! `miyu_sandbox::linux`，施工 V-47 从这里挪过去，核心缓存规则集也用它）；能写的整个放，不在里面挖洞（施工 5-14 改，照 dsh：
+//! 藏不住的会话那边不写进 `hidden`；施工 5-15 到 5-14 改之间一级级绕开过，冻住了路上那几层）。有能用的 bubblewrap 时规格
+//! 写着 `mount`，用挂载盖住（[`bwrap`]，施工 5-16）。核心交来缓存的规则集的（`--ruleset`，施工 V-47）照它收紧（[`run_ruled`]）。
 
-mod aliases;
 mod bwrap;
-mod landlock;
-mod reads;
 mod seccomp;
+
+use miyu_sandbox::linux as landlock;
 
 use std::ffi::{OsStr, OsString};
 use std::process::ExitCode;
@@ -55,6 +55,23 @@ pub(crate) fn run(spec: &Spec, program: &OsStr, args: &[OsString]) -> ExitCode {
         return crate::fail(&format!("cannot confine: {why}"));
     }
     if seccomp && let Err(why) = seccomp::deny_unix_sockets() {
+        return crate::fail(&format!("cannot confine: {why}"));
+    }
+    crate::unix::exec(program, args)
+}
+
+/// 照核心交来的规则集（描述符 `ruleset`，施工 V-47）收紧，再换成那条命令。只有只用 Landlock、没写 `read` 的规格才有：写了
+/// `mount` 或 `read` 的不跑（核心不会这样交）。收不住的说原话，退出 125，不跑命令。
+pub(crate) fn run_ruled(
+    spec: &Spec,
+    ruleset: std::os::fd::RawFd,
+    program: &OsStr,
+    args: &[OsString],
+) -> ExitCode {
+    if spec.mount || spec.read.is_some() {
+        return crate::fail("bad spec: --ruleset with mount or read");
+    }
+    if let Err(why) = landlock::confine_cached(spec, ruleset) {
         return crate::fail(&format!("cannot confine: {why}"));
     }
     crate::unix::exec(program, args)

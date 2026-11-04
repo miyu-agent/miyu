@@ -18,11 +18,21 @@ struct Mount {
 }
 
 /// `hidden`（真实的位置）连同它们的别名：每一条后面跟着它在别的挂载里的位置。读不了挂载表的照原样交回。
-pub(super) fn with_aliases(hidden: &[PathBuf]) -> Vec<PathBuf> {
-    let Ok(table) = fs::read("/proc/self/mountinfo") else {
-        return hidden.to_vec();
-    };
-    with_aliases_in(hidden, &parse(&table))
+pub fn with_aliases(hidden: &[PathBuf]) -> Vec<PathBuf> {
+    with_table(hidden, table().as_deref())
+}
+
+/// 这个进程看到的挂载表（`/proc/self/mountinfo` 原样的字节）；读不了的没有。
+pub(super) fn table() -> Option<Vec<u8>> {
+    fs::read("/proc/self/mountinfo").ok()
+}
+
+/// 同 [`with_aliases`]，挂载表照 `table`（[`table`] 读的，施工 V-47：核心缓存规则集时把读到的那一份也记进指纹）。
+pub(super) fn with_table(hidden: &[PathBuf], table: Option<&[u8]>) -> Vec<PathBuf> {
+    match table {
+        Some(table) => with_aliases_in(hidden, &parse(table)),
+        None => hidden.to_vec(),
+    }
 }
 
 /// 同 [`with_aliases`]，挂载表照 `mounts`。

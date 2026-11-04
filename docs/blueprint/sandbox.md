@@ -18,7 +18,7 @@
 |---|---|
 | `crates/miyu-sandbox/src/lib.rs` | 交出去的几样 |
 | `crates/miyu-sandbox/src/spec.rs` | 规格 |
-| `crates/miyu-sandbox/src/wrap.rs` | 照规格包一条命令：`miyu-sandbox run --spec … -- …` |
+| `crates/miyu-sandbox/src/wrap.rs` | 照规格包一条命令：`miyu-sandbox run --spec … -- …`（`argv`）；包成能直接起的命令（`command`，施工 V-47：Linux 上只用 Landlock 的带上核心按规格缓存的规则集，`sandbox/linux.md`「核心按规格缓存规则集」） |
 | `crates/miyu-sandbox/src/locate.rs` | 找助手：主程序旁边 |
 | `crates/miyu-sandbox/src/probe.rs` | 探测：跑 `miyu-sandbox probe`，读它说的；构建 id 对不上的不用（施工 5-16 再补） |
 | `crates/miyu-sandbox/build.rs` | 构建 id：照这个包的源码算的摘要（施工 5-16 再补） |
@@ -65,6 +65,10 @@
   - Unix 上直接换成它（`exec`），进程还是同一个。
   - Windows 上起一个子进程，等它，照它的退出码退出。
   - 成了什么都不印：它的标准错误就是命令的标准错误，印了会混进给她看的输出。
+- `miyu-sandbox run --spec <规格的 JSON> --ruleset <号码> -- <程序> [参数…]`（施工 V-47，只有 Linux）：核心交来按规格缓存的 Landlock 规则集，
+  描述符号码写在这里（不小于 3），助手照它收紧、关掉它，再叠一小层，再换成命令（`sandbox/linux.md`「核心按规格缓存规则集」）。只有只用
+  Landlock、没写 `mount`、`read` 的规格才这样交；写了的说 `bad spec: --ruleset with mount or read`、退出 125。别的平台给了算参数不对。
+  `shell`、脚本工具经 `miyu_sandbox::command` 起，用不上缓存的（别的平台、别的规格、建不成）参数和上一条一样。
 - `miyu-sandbox probe`：标准输出上一行 JSON，说这台机器能收紧到什么程度，例如 `{"version":1,"platform":"linux","mechanisms":[],"build":"3f0c…"}`。`platform` 是 `linux`、`macos`、`windows`、`other` 之一；`mechanisms` 是这台机器上能用上的收紧手段，各平台自己报（Linux 上是 `landlock`，`sandbox/linux.md`；macOS 上是 `seatbelt`，`sandbox/macos.md`），空的就是收紧不了；`build` 是编它的构建 id（施工 5-16 再补）：照 `miyu-sandbox` 这个包的源码（`src/` 下的文件、`Cargo.toml`、`build.rs`）算的 64 位 FNV-1a 摘要，十六位十六进制，核心链进来的这个包和助手是同一份源码编的才一样。核心只认 `version` 是 1、`build` 和自己的一样的（旧版的助手不报 `build`，读成空的，也对不上）；多出来的格不管。
 
 **退出码**，照 `env`、`timeout` 的约定：
