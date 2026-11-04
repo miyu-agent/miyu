@@ -147,3 +147,50 @@ fn choices_are_handed_over_as_written() {
         "照原样交，核心不替它解析"
     );
 }
+
+/// 核心自己的两项也是这两种（施工 PC-4）：终端会话的人格、预设在 `config.schema` 里是 `persona`、`preset`，头照列表让人挑；
+/// 写了现在没有的，`check` 报警告，出厂的预设 `full` 不报。
+#[tokio::test]
+async fn the_terminal_session_picks_a_persona_and_a_preset_too() {
+    let home = Home::new();
+    home.write(
+        "etc/config.toml",
+        "[terminal]\npersona = \"ghost\"\npreset = \"full\"\n",
+    );
+    let mut client = Client::connect(home.core(&miyu_session::testkit::Script::new([])));
+    client.hello().await;
+    let reply = client
+        .call(
+            "t1",
+            "config.schema",
+            json!({"keys": ["terminal.persona", "terminal.preset"]}),
+        )
+        .await;
+    let schema = reply
+        .get("result")
+        .cloned()
+        .unwrap_or_else(|| panic!("{reply}"));
+    assert_eq!(item(&schema, "terminal.persona")["type"], "persona");
+    assert_eq!(item(&schema, "terminal.preset")["type"], "preset");
+    let checked = client.call("t2", "check", json!({})).await;
+    let warned: Vec<(String, String)> = checked["result"]["problems"]
+        .as_array()
+        .expect("有")
+        .iter()
+        .filter(|problem| problem["kind"] == "config")
+        .map(|problem| {
+            (
+                problem["key"].as_str().unwrap_or_default().to_string(),
+                problem["code"].as_str().unwrap_or_default().to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        warned,
+        [(
+            "terminal.persona".to_string(),
+            "unknown_persona".to_string()
+        )],
+        "{checked}"
+    );
+}

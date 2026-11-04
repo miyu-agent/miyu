@@ -210,6 +210,13 @@ macro_rules! __settings_kind {
     (name) => {
         $crate::Kind::Name
     };
+    // 选人格、选预设（施工 PC-4：软件包设置的同一种，头照它弹列表）。
+    (persona) => {
+        $crate::Kind::Persona
+    };
+    (preset) => {
+        $crate::Kind::Preset
+    };
     (reference) => {
         $crate::Kind::Reference
     };

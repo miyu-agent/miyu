@@ -78,16 +78,17 @@ miyu_config::settings! {
     /// 终端会话（施工 8-33，设计 `22-命令行.md` 第七节，2026-10-20 项目主人定）：在 shell 里说的话进的那个一直续下去的会话。
     /// `session.terminal` 照它开新的、换新的。
     pub struct TerminalSettings in "terminal" {
-        /// 新开的终端会话用哪个人格：人格目录的编号。没设的跟随 `persona.default`。只管新开的，在用的不换。
+        /// 新开的终端会话用哪个人格：人格目录的编号。没设的跟随 `persona.default`。只管新开的，在用的不换。类型是选人格
+        /// （施工 PC-4）：头照人格列表让人挑，`check` 照现有的人格查。
         persona: Option<String> = none {
-            kind: name,
+            kind: persona,
             layers: [System],
             applies: new_session,
             ui: { page: "general", group: "terminal", control: text },
         },
-        /// 新开的终端会话用哪个预设：预设文件的编号。没设的跟随 `preset.default`。
+        /// 新开的终端会话用哪个预设：预设文件的编号。没设的跟随 `preset.default`。类型是选预设（施工 PC-4）。
         preset: Option<String> = none {
-            kind: name,
+            kind: preset,
             layers: [System],
             applies: new_session,
             ui: { page: "general", group: "terminal", control: text },
