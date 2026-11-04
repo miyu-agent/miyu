@@ -236,10 +236,16 @@ async fn view(
         return Err(Refusal::STOPPED);
     };
     drop(old);
-    let events = backlog.read().await.map_err(|error| {
-        tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "view not read");
-        Refusal::BROKEN
-    })?;
+    // 最新一页只读要的那一截（施工 V-41 上）：到订阅那一刻落了盘的最后一条为止，读法同 `view.page`，不经补发整份读。
+    let (dir, upto) = (core.root.session_dir(&session), backlog.upto());
+    drop(backlog);
+    let slice = tokio::task::spawn_blocking(move || crate::view::newest_of(&dir, upto))
+        .await
+        .map_err(|_| Refusal::INTERNAL)?
+        .map_err(|error| {
+            tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "view not read");
+            Refusal::BROKEN
+        })?;
     let current = subscription.current().cloned();
     let language = shaken.now(core).language;
     let resources = core.resources.clone();
@@ -247,7 +253,7 @@ async fn view(
     let blobs = miyu_store::blob::Blobs::new(core.root.blobs());
     let (mut page, mut projector) = tokio::task::spawn_blocking(move || {
         crate::view::texts(&resources, language, &skills)
-            .map(|texts| crate::view::newest(&events, texts, blobs))
+            .map(|texts| crate::view::newest(&slice, texts, blobs))
     })
     .await
     .map_err(|_| Refusal::INTERNAL)??;

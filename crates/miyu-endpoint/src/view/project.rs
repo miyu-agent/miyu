@@ -76,8 +76,13 @@ pub(super) fn texts(resources: &ResourceRoot, language: &str) -> Result<Texts, U
 }
 
 /// 喂过这一页的投影：先照 `earlier`（切点前的日志）学派出去的任务，再把这一页的事件 `page` 喂一遍。
-pub(super) fn fed(texts: Texts, blobs: Blobs, earlier: &[Event], page: &[&Event]) -> Projector {
-    let mut projector = Projector::new(Arc::new(texts), Some(Arc::new(BlobLines(blobs))));
+pub(super) fn fed(
+    texts: Arc<Texts>,
+    blobs: Blobs,
+    earlier: &[Event],
+    page: &[&Event],
+) -> Projector {
+    let mut projector = Projector::new(texts, Some(Arc::new(BlobLines(blobs))));
     projector.learn(earlier);
     for event in page {
         projector.event(event);

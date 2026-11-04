@@ -277,6 +277,30 @@ impl Event {
     pub fn from_line_only(line: &str, only: &[&str]) -> Result<Event, serde_json::Error> {
         read::line_only(line, only).or_else(|_| Event::from_line(line))
     }
+
+    /// 不解，照写出去的样子认一行的种类（施工 V-41 上：翻页先扫一遍日志，只解要的那几行）。[`Event::to_line`] 写的每一行
+    /// 都以 `{"seq":<数>,"at":"<时刻>","kind":"<种类>"` 打头（外壳照图纸的先后，紧凑、不转义）：对得上的交回种类；对不上的
+    /// （字段换了先后、带空白、带转义的，内核写不出来）交回空的，要知道种类得照 [`Event::from_line`] 解。
+    ///
+    /// 对得上的、这一行又读得成的，认出来的就是它读成的种类：打头的这一格就是外壳的 `kind`，外壳的每一格只许写一遍。
+    #[must_use]
+    pub fn kind_written(line: &[u8]) -> Option<&str> {
+        let rest = line.strip_prefix(b"{\"seq\":")?;
+        let digits = rest.iter().take_while(|byte| byte.is_ascii_digit()).count();
+        let rest = rest.get(digits..).filter(|_| digits > 0)?;
+        let rest = rest.strip_prefix(b",\"at\":\"")?;
+        let rest = &rest[plain(rest)?..];
+        let kind = rest.strip_prefix(b"\",\"kind\":\"")?;
+        std::str::from_utf8(&kind[..plain(kind)?]).ok()
+    }
+}
+
+/// 一个 JSON 字符串里没有转义、没有控制字符的那一截有多长：到下一个 `"` 为止；先碰到 `\`、控制字符、到了末尾的没有。
+fn plain(text: &[u8]) -> Option<usize> {
+    let end = text
+        .iter()
+        .position(|&byte| byte == b'"' || byte == b'\\' || byte < 0x20)?;
+    (text[end] == b'"').then_some(end)
 }
 
 /// 写出去的样子。字段的顺序就是图纸上的顺序。

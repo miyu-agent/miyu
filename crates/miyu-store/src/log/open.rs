@@ -12,10 +12,12 @@ use miyu_kernel::id::Seq;
 
 use super::{Mark, SessionLog};
 
+mod lines;
 mod parse;
 mod range;
 mod walk;
 
+pub use lines::{Line, scan as scan_lines};
 pub use parse::Flow;
 
 use walk::{Piece, walk};
@@ -220,6 +222,40 @@ pub fn read_range_only(
     mut each: impl FnMut(Vec<Event>) -> Flow,
 ) -> Result<(), OpenError> {
     range::read(dir, from, upto, Parse::Only(only), &mut each)
+}
+
+/// 只读地读 `from` 到 `to` 之间的整行（施工 V-41 上：翻页只读要的那一截）：两样都是一行的开头，多半是 [`scan_lines`] 数到的
+/// （[`Line::start`]、[`Line::end`]），`to` 是要的最后一行后面那一行的开头，可以在后面的段里。照先后一块块交给 `each`，
+/// 它交回 [`Flow::Stop`] 的不读下去；`to` 以后的不读。
+///
+/// 读到的照旧自检：每一行读不读得成、序号从 `from.next` 起连着、从一段开头读起的段名，报坏了的行号照那一段的开头数（同
+/// [`read_range`]）。`from` 以前的不读、不查（同 [`read_range`] 定位跳过的那一截）。
+///
+/// # Errors
+///
+/// 没有这个会话；读到的那一截坏了；`from` 那一段没有了、`from`、`to` 不在一行的开头（读的时候日志变了，只追加的日志不该
+/// 有），报读写出错；读写出错。
+pub fn read_between(
+    dir: &Path,
+    from: &Mark,
+    to: &Mark,
+    mut each: impl FnMut(Vec<Event>) -> Flow,
+) -> Result<(), OpenError> {
+    lines::between(dir, from, to, Parse::Full, &mut |piece| match piece {
+        Piece::Events(events) => each(events),
+        Piece::SegmentEnd => Flow::Go,
+    })
+}
+
+/// 只读地读第 `seq` 条（施工 V-41 上）：`near` 是同一段里它或者它前面一行的开头（多半是 [`scan_lines`] 数到的），从那里数
+/// 换行找到它，解它，对一遍序号。只解这一行，不查别的行。不在 `near` 那一段里的（段没有了、行数不够、`seq` 比 `near` 还
+/// 早、`near` 不在一行的开头）交回空的。
+///
+/// # Errors
+///
+/// 这一行读不成、序号不是 `seq`：日志坏了（哪一段、第几行、为什么）；读写出错。
+pub fn read_line_near(dir: &Path, near: &Mark, seq: Seq) -> Result<Option<Event>, OpenError> {
+    lines::line_near(dir, near, seq)
 }
 
 /// 每一行怎么解（施工 V-39 上补）。

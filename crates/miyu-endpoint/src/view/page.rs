@@ -34,7 +34,8 @@ pub(super) struct Page<'a> {
 }
 
 /// 从 `events`（整份日志，照序号）里切 `before` 之前的一页（没有的是最新一页）：最多 `turns` 轮、`cap` 字节，一条事件多少
-/// 字节照 `size` 算。
+/// 字节照 `size` 算。整份在内存里的切法，同 [`cut`]、[`assemble`] 拼起来的；读日志的那一边只读要的那一截（`read.rs`）。
+#[cfg(test)]
 pub(super) fn page<'a>(
     events: &'a [Event],
     before: Option<u64>,
@@ -45,28 +46,79 @@ pub(super) fn page<'a>(
     let end = before.map_or(events.len(), |before| {
         events.partition_point(|event| event.seq.get() < before)
     });
-    let starts: Vec<usize> = (0..end)
-        .filter(|&index| matches!(events[index].body, Body::TurnStarted(_)))
+    let (cut, capped) = cut(&events[..end], turns, cap, &size);
+    assemble(Cut {
+        outside: &[],
+        region: &events[..end],
+        cut,
+        more: cut > 0,
+        capped,
+        learned: &events[..cut],
+    })
+}
+
+/// 切点：`region`（从一轮的开头或者日志的第一条起，到这一页的最后一条）里从哪一条起给，和是不是因为字节停的。`region` 从一轮
+/// 的开头起的，里面要正好有 `turns` 轮（多一轮的不用读）：数够了就在它的开头停，同整份数到这里（`read.rs`）。
+pub(super) fn cut(
+    region: &[Event],
+    turns: usize,
+    cap: usize,
+    size: &impl Fn(&Event) -> usize,
+) -> (usize, bool) {
+    let starts: Vec<usize> = (0..region.len())
+        .filter(|&index| matches!(region[index].body, Body::TurnStarted(_)))
         .collect();
-    let (cut, capped) = cut_at(&events[..end], &starts, turns.max(1), cap, &size);
-    let triggers: BTreeSet<u64> = events[cut..end]
-        .iter()
+    cut_at(region, &starts, turns.max(1), cap, size)
+}
+
+/// 这一页（`page`，切点到最后一条）里每一轮的触发消息的序号。
+pub(super) fn triggers(page: &[Event]) -> BTreeSet<u64> {
+    page.iter()
         .filter_map(|event| match &event.body {
             Body::TurnStarted(started) => started.trigger.map(|seq| seq.get()),
             _ => None,
         })
-        .collect();
-    let first = events[..end].get(cut).map(|event| event.seq.get());
-    let earlier = events[..cut]
+        .collect()
+}
+
+/// 拼一页要的（[`assemble`]）。
+pub(super) struct Cut<'a> {
+    /// `region` 前面读回来的触发消息，照序号：都比 `region` 的第一条早。
+    pub(super) outside: &'a [Event],
+    /// 读到的那一截：切点在它里面。
+    pub(super) region: &'a [Event],
+    /// 切点在 `region` 里第几条。
+    pub(super) cut: usize,
+    /// 切点前还有。
+    pub(super) more: bool,
+    /// 因为字节的上限少给了轮数。
+    pub(super) capped: bool,
+    /// 切点前的日志里，派出、了结任务的那几条（多了别的也行），照序号：`jobs` 照它找。
+    pub(super) learned: &'a [Event],
+}
+
+/// 照切点拼一页：切点前的触发消息（`outside` 里的、`region` 切点前的）排在最前面，再是切点以后的；`jobs` 照 `learned` 找。
+pub(super) fn assemble(cut: Cut<'_>) -> Page<'_> {
+    let Cut {
+        outside,
+        region,
+        cut,
+        more,
+        capped,
+        learned,
+    } = cut;
+    let triggers = triggers(&region[cut..]);
+    let earlier = outside
         .iter()
+        .chain(&region[..cut])
         .filter(|event| triggers.contains(&event.seq.get()));
-    let page: Vec<&Event> = earlier.chain(&events[cut..end]).collect();
+    let page: Vec<&Event> = earlier.chain(&region[cut..]).collect();
     Page {
-        jobs: started_before(&events[..cut], &page),
+        jobs: started_before(learned, &page),
         events: page,
-        first,
-        last: end.checked_sub(1).map(|index| events[index].seq.get()),
-        more: cut > 0,
+        first: region.get(cut).map(|event| event.seq.get()),
+        last: region.last().map(|event| event.seq.get()),
+        more,
         capped,
     }
 }

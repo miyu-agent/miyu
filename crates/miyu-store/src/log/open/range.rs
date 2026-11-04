@@ -133,7 +133,7 @@ fn place(segments: &[(u64, PathBuf)], from: Seq) -> io::Result<Place> {
 }
 
 /// 第 `skip` 个换行后面那个字节（第 `skip + 1` 行的开头）：一块块流过去数，不解、不留。换行不够 `skip` 个的没有。
-fn after_lines(file: &mut File, skip: usize) -> io::Result<Option<u64>> {
+pub(super) fn after_lines(file: &mut File, skip: usize) -> io::Result<Option<u64>> {
     if skip == 0 {
         return Ok(Some(0));
     }
@@ -158,7 +158,7 @@ fn after_lines(file: &mut File, skip: usize) -> io::Result<Option<u64>> {
 }
 
 /// 从第 `at` 个字节起的一整行（不带 `\n`）：到文件末尾也没有 `\n` 的（半行、什么都没有）没有。
-fn line_at(file: &mut File, at: u64) -> io::Result<Option<Vec<u8>>> {
+pub(super) fn line_at(file: &mut File, at: u64) -> io::Result<Option<Vec<u8>>> {
     file.seek(SeekFrom::Start(at))?;
     let mut line = Vec::new();
     let mut block = vec![0; SCAN];

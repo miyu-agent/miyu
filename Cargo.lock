@@ -2039,6 +2039,7 @@ dependencies = [
  "getrandom 0.4.3",
  "image",
  "jiff",
+ "memchr",
  "miyu-assemble",
  "miyu-basesystem",
  "miyu-config",

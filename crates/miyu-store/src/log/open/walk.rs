@@ -21,7 +21,7 @@ use super::{HalfLine, Mark, OpenError, Parse, broken, segments};
 /// 一窗读多少字节（施工 V-37 中，量过定的）：一段的原文最多这么多同时在内存里，一行比它还长的照这一行撑大。一个线程至少
 /// 分半 MiB、最多 8 个线程（`parse.rs`），4 MiB 是 8 个线程都分得到活的最小的窗口：1 MiB 的打开大会话慢了快一倍；再大只多
 /// 占内存，16 MiB 不更快。
-const WINDOW: usize = 4 * 1024 * 1024;
+pub(super) const WINDOW: usize = 4 * 1024 * 1024;
 
 /// 从后往前找整行的末尾、数换行时一次读多少。
 pub(super) const SCAN: usize = 64 * 1024;
@@ -189,21 +189,21 @@ fn read_segment(
 }
 
 /// 一段里一路查下来的，跨窗接着。
-struct Check<'a> {
+pub(super) struct Check<'a> {
     /// 这一段的名字。
-    first: u64,
+    pub(super) first: u64,
     /// 从这一段开头读起的：名字在这里查。从一段中间读起的，读到的第一条不是这一段的第一条。
-    whole: bool,
+    pub(super) whole: bool,
     /// 下一条该是几号。
-    next: &'a mut Seq,
+    pub(super) next: &'a mut Seq,
     /// 查过几行，从读起的地方数。
-    checked: usize,
+    pub(super) checked: usize,
     /// 序号接不上的那一行。
-    wrong: Option<(usize, String)>,
+    pub(super) wrong: Option<(usize, String)>,
     /// 段名不对：照以前的先后最后才报。
-    misnamed: Option<(usize, String)>,
+    pub(super) misnamed: Option<(usize, String)>,
     /// 收的一方叫停了。
-    stopped: bool,
+    pub(super) stopped: bool,
 }
 
 impl Check<'_> {
@@ -245,7 +245,7 @@ impl Check<'_> {
 ///
 /// 一窗读得完的（几乎所有会话）就在这个线程里读、解，同以前整段读。比一窗大的，另一个线程一窗窗读、解，解好的块排着交过来
 /// （最多排 [`QUEUE`] 块）：这一窗还没查完、交完，下一窗已经在读、在解，窗口边上不用等。查、交都在这个线程里，照先后。
-fn read_windows(
+pub(super) fn read_windows(
     file: &mut File,
     lines: std::ops::Range<u64>,
     (window, how): (usize, Parse<'_>),
@@ -384,7 +384,7 @@ fn next_window(
 }
 
 /// 第 `at` 个字节是不是 `\n`：文件没有那么长的不是。
-fn newline_at(file: &mut File, at: u64, len: u64) -> io::Result<bool> {
+pub(super) fn newline_at(file: &mut File, at: u64, len: u64) -> io::Result<bool> {
     if at >= len {
         return Ok(false);
     }
@@ -395,7 +395,7 @@ fn newline_at(file: &mut File, at: u64, len: u64) -> io::Result<bool> {
 
 /// `from..len` 里整行的末尾：最后一个 `\n` 后面，没有的是 `from`。从后往前一块块找，不整段读进来。读的时候文件变短了的
 /// （载入这个会话的一方刚截掉了末尾的半行），照变短以后的末尾接着找。
-fn whole_lines_end(file: &mut File, from: u64, len: u64) -> io::Result<u64> {
+pub(super) fn whole_lines_end(file: &mut File, from: u64, len: u64) -> io::Result<u64> {
     let mut block = vec![0; usize::try_from(len - from).map_or(SCAN, |size| size.min(SCAN))];
     let mut at = len;
     while at > from {
@@ -416,7 +416,7 @@ fn whole_lines_end(file: &mut File, from: u64, len: u64) -> io::Result<u64> {
 }
 
 /// `from..end` 里有几个 `\n`：一块块流过去数，不留。
-fn count_lines(file: &mut File, from: u64, end: u64) -> io::Result<usize> {
+pub(super) fn count_lines(file: &mut File, from: u64, end: u64) -> io::Result<usize> {
     file.seek(SeekFrom::Start(from))?;
     let mut block = vec![0; usize::try_from(end - from).map_or(SCAN, |size| size.min(SCAN))];
     let mut left = end - from;

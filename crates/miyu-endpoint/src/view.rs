@@ -4,22 +4,26 @@
 //! 写了 `view: true` 的换成视图投影算好的条目（施工 9-8 中，`view/project.rs`，`docs/blueprint/view.md`）；视图流订阅时
 //! 照同一个切法拿最新一页（施工 9-8 下，[`newest`]）。怎么切在 `view/page.rs`。
 //!
-//! 只读地读会话目录里的日志（`read_events`，和列会话、找回工作目录一样），不为翻历史载入会话：读的时候会话照常跑，正在写的
-//! 那半行不算。
+//! 只读地读会话目录里的日志，不为翻历史载入会话：读的时候会话照常跑，正在写的那半行不算。只读一页要的那一截（施工 V-41
+//! 上，`view/read.rs`）：先数一遍行、不解，再只解最后几轮和切点前要的那几行；原来每一页都整份读（`read_events`）。
 
 mod detail;
 mod page;
 mod project;
+mod read;
 pub(crate) mod status;
 pub(crate) mod tree;
 
 pub(crate) use detail::detail;
+pub(crate) use read::Slice;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use serde::Deserialize;
 use serde_json::{Value, json};
+
+use std::path::Path;
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::SessionId;
@@ -68,7 +72,10 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
     if !(1..=MOST_TURNS).contains(&turns) || params.before == Some(0) {
         return Err(Refusal::BAD_PARAMS);
     }
-    let events = events_of(core, &session).await?;
+    if !core.sessions.exists(core, &session).await {
+        return Err(Refusal::NOT_FOUND);
+    }
+    let dir = core.root.session_dir(&session);
     // 要条目的：投影要的字照这个连接的语言读，改了多少行照 blob 算。
     let view = match params.view {
         true => Some((
@@ -79,23 +86,38 @@ pub(crate) async fn page(core: &Core, peer: Peer, params: PageParams) -> Result<
         false => None,
     };
     let before = params.before;
-    // 切页、算条目都在阻塞线程里：一页最多 1 MiB，投影是一条条喂的纯计算。
+    // 读日志、切页、算条目都在阻塞线程里：先读（读不了的先报），再读投影要的字；投影是一条条喂的纯计算。
     tokio::task::spawn_blocking(move || {
+        let slice = read::read(&dir, before, (turns, CAP), view.is_some(), &size)
+            .map_err(|error| unread(&session, error))?;
         let view = match view {
             Some(((resources, skills), language, blobs)) => {
-                Some((texts(&resources, language, &skills)?, blobs))
+                Some((Arc::new(texts(&resources, language, &skills)?), blobs))
             }
             None => None,
         };
-        Ok(paged(&events, before, turns, view).0)
+        Ok(paged(&slice, view).0)
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?
 }
 
+/// 视图流订阅时的最新一页要的（施工 9-8 下；施工 V-41 上起只读要的那一截）：会话目录 `dir` 里到第 `upto` 条（订阅那一刻落了盘
+/// 的最后一条）为止。`upto` 是 0 的一条都没有，不读。碰磁盘。
+///
+/// # Errors
+///
+/// 同 `view.page` 读日志。
+pub(crate) fn newest_of(dir: &Path, upto: u64) -> Result<Slice, OpenError> {
+    if upto == 0 {
+        return Ok(Slice::empty());
+    }
+    read::read(dir, upto.checked_add(1), (TURNS, CAP), true, &size)
+}
+
 /// 最新一页写成视图流订阅的回应的那几格（施工 9-8 下）：交回回应和喂过这一页的投影，之后的推送接着喂它。
-pub(crate) fn newest(events: &[Event], texts: Texts, blobs: Blobs) -> (Value, Projector) {
-    let (reply, projector) = paged(events, None, TURNS, Some((texts, blobs)));
+pub(crate) fn newest(slice: &Slice, texts: Texts, blobs: Blobs) -> (Value, Projector) {
+    let (reply, projector) = paged(slice, Some((Arc::new(texts), blobs)));
     (
         reply,
         projector.unwrap_or_else(|| unreachable!("交了字就有投影")),
@@ -191,23 +213,18 @@ impl Titles {
     }
 }
 
-/// 从 `events`（整份日志）切 `before` 之前的一页写成回应：`view` 有的交条目，连同喂过这一页的投影；没有的交事件。
-fn paged(
-    events: &[Event],
-    before: Option<u64>,
-    turns: usize,
-    view: Option<(Texts, Blobs)>,
-) -> (Value, Option<Projector>) {
-    let cut = page::page(events, before, turns, CAP, |event| {
-        serde_json::to_string(event).map_or(0, |line| line.len())
-    });
+/// 一条事件多少字节：写成一行的长度（切页照它算 1 MiB）。
+fn size(event: &Event) -> usize {
+    serde_json::to_string(event).map_or(0, |line| line.len())
+}
+
+/// 读好、切好的一页写成回应：`view` 有的交条目，连同喂过这一页的投影；没有的交事件。
+fn paged(slice: &Slice, view: Option<(Arc<Texts>, Blobs)>) -> (Value, Option<Projector>) {
+    let cut = slice.page();
     let (mut reply, projector) = match view {
         Some((texts, blobs)) => {
-            // 切点前的日志只学派出去的任务。
-            let earlier = cut.first.map_or(events.len(), |first| {
-                events.partition_point(|event| event.seq.get() < first)
-            });
-            let projector = project::fed(texts, blobs, &events[..earlier], &cut.events);
+            // 切点前的日志只学派出去的任务：只交派出、了结任务的那几条（`view/read.rs`），学出来的和整份一样。
+            let projector = project::fed(texts, blobs, slice.learned(), &cut.events);
             (
                 json!({"entries": projector.entries(), "more": cut.more}),
                 Some(projector),
@@ -229,8 +246,19 @@ fn paged(
     (reply, projector)
 }
 
-/// 只读地读会话 `session` 的日志，交回事件。没有这个会话的 `session_not_found`，
-/// 读不下去的 `broken`。
+/// 读不了日志：没有这个会话的 `session_not_found`，别的记一行日志、回 `session_broken`。
+fn unread(session: &SessionId, error: OpenError) -> Refusal {
+    match error {
+        OpenError::Missing(_) => Refusal::NOT_FOUND,
+        error => {
+            tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "log not read");
+            Refusal::BROKEN
+        }
+    }
+}
+
+/// 只读地读会话 `session` 的整份日志，交回事件（`view.detail` 用）。没有这个会话的 `session_not_found`，读不下去的
+/// `session_broken`。
 async fn events_of(core: &Core, session: &SessionId) -> Result<Vec<Event>, Refusal> {
     if !core.sessions.exists(core, session).await {
         return Err(Refusal::NOT_FOUND);
@@ -239,12 +267,5 @@ async fn events_of(core: &Core, session: &SessionId) -> Result<Vec<Event>, Refus
     let read = tokio::task::spawn_blocking(move || read_events(&dir))
         .await
         .map_err(|_| Refusal::INTERNAL)?;
-    match read {
-        Ok(events) => Ok(events),
-        Err(OpenError::Missing(_)) => Err(Refusal::NOT_FOUND),
-        Err(error) => {
-            tracing::warn!(target: "miyu::endpoint", session = session.as_str(), error = %error, "log not read");
-            Err(Refusal::BROKEN)
-        }
-    }
+    read.map_err(|error| unread(session, error))
 }

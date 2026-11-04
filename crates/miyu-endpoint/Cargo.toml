@@ -55,6 +55,8 @@ miyu-session = { path = "../miyu-session" }
 miyu-sandbox = { path = "../miyu-sandbox" }
 # 数据根、资源目录、会话日志打不开的几种情形。
 miyu-store = { path = "../miyu-store" }
+# 翻页数日志时找派出任务的那几行（施工 V-41 上）：SIMD 找一段字，miyu-store、serde_json 本来就带它，不多编一个包。
+memchr = "2.8"
 miyu-source = { path = "../miyu-source" }
 miyu-http = { path = "../miyu-http" }
 reqwest = { version = "0.12", default-features = false }
