@@ -1,8 +1,9 @@
 //! 包带了什么照表认（施工 F-8 上补，设计 `31-软件包.md` 第二节第 1、2 条）：清单不写种类。程序表 `[ui]`、`[process]`、
 //! `[builtin]`、`[worker]` 至多一张，有哪一张就是哪一种；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2）；
 //! 再没有、有 `[mascot]` 的是吉祥物包；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上），清单里写不出它们，带的是
-//! 包文件夹里的 `skills/`、`scripts/`。写了 `[command]` 或协议版本、却没有程序表的少了程序表（说协议的是程序）。哪种包能写哪几张表照 [`tables`]，吉祥物
-//! 哪一种都能带。
+//! 包文件夹里的 `skills/`、`scripts/`；只带一条子命令（`[command]`，程序在包的 `bin/`）的也是 `bundle`（施工 PK-1：迁移程序
+//! 这种只给人在终端里跑的）。写了协议版本、却没有程序表的少了程序表（说协议的是程序）。哪种包能写哪几张表照 [`tables`]，
+//! 吉祥物哪一种都能带。
 
 use toml_edit::Table;
 
@@ -27,11 +28,11 @@ pub(super) fn of(reader: &Reader<'_>, root: &Table) -> Result<PackageKind, Probl
         [] if root.contains_key("mcp") => Ok(PackageKind::Bundle),
         [] if root.contains_key("mascot") => Ok(PackageKind::Mascot),
         [] if root.contains_key("theme") => Ok(PackageKind::Theme),
-        [] if root.contains_key("command") || speaks_protocol(root) => Err(reader.problem(
+        [] if speaks_protocol(root) => Err(reader.problem(
             None,
             Code::MissingKey,
             "[ui] / [process] / [builtin] / [worker]",
-            "a package with [command] or a protocol carries a program ([ui], [process], [builtin] or [worker])"
+            "a package with a protocol carries a program ([ui], [process], [builtin] or [worker])"
                 .to_string(),
         )),
         [] => Ok(PackageKind::Bundle),
@@ -100,8 +101,10 @@ pub(super) fn tables(kind: PackageKind) -> &'static [&'static str] {
         // 主题包（施工 F-16）：只有主题，不带吉祥物、程序。
         PackageKind::Theme => &["package", "theme", "depends", "recommends"],
         // 只带脚本、技能的包（施工 PS-1）：配置项照 process 包那一套写，值跑它自己的脚本时交给脚本（`MIYU_SETTINGS_JSON`）。
+        // 只带一条子命令的也是它（施工 PK-1）。
         PackageKind::Bundle => &[
             "package",
+            "command",
             "settings",
             "mcp",
             "mascot",

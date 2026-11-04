@@ -36,7 +36,7 @@
 
 **在哪**：一个文件夹就是一个包（施工 F-8 上，设计 `31-软件包.md` 第二节）：出厂的放资源目录的 `packages/<编号>/`，你装的放数据根的 `opt/<编号>/`（`55-数据根仿FHS.md` 第二节；协议上这一层叫 `home`），清单是文件夹里的 `package.toml`，包自己的文件放在同一个文件夹里（照 `miyu_store::packages::Found::files_dir` 算，用的一方不自己拼）。包带的程序（扩展、小程序、界面）放在文件夹里的 `bin/` 下（施工 F-8 上再补，设计 `31-软件包.md` 第二节），名字照清单写的程序名，Windows 上加 `.exe`；装的时候随包拷进来，本地库记它的哈希。编号就是文件夹名，写法同人格的编号（小写字母开头，小写字母、数字、`-`、`_`，最多 64 个），不合写法的、文件夹里没有 `package.toml` 的不算。包自己在这台机器上的状态放 `<数据根>/var/lib/<编号>/`，包自己建、自己用。
 
-**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（施工 F-16，以前叫主题包，TH-1 起能带网页主题）；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`；人格、预设照约定带在 `personas/`、`presets/` 里，施工 P-11 上，`personas.md`「软件包带的」；知识库照约定带在 `kb/<编号>/` 里，同 `skills/`，施工 K-8，`knowledge.md`「对外的样子」软件包带来的那一节），只写一张 `[package]` 就行；写了 `[command]` 或协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle`、`mascot` 或 `theme`）。
+**格式**（TOML；只收下面这些，不认识的表、键报错）。不写种类（施工 F-8 上补，设计 `31-软件包.md` 第二节）：包带了什么看有哪几张表。程序表 `[ui]`（界面）、`[process]`（核心拉起的扩展，9-4，通讯平台的接入也是这一种）、`[builtin]`（内置，代码编在核心里，一张空表）、`[worker]`（小程序，核心按需拉起，施工 F-1）至多一张，写了两张报 `two_programs`；没有程序表、带了 MCP 服务（`[[mcp]]`）的是 `bundle`（施工 X-2，下面「MCP 服务」）；再没有、有 `[mascot]` 的是吉祥物包，有 `[theme]` 的是外观包（施工 F-16，以前叫主题包，TH-1 起能带网页主题）；都没有的也是 `bundle`：只带技能、脚本的包（施工 X-13 上，带的是包文件夹里的 `skills/`、`scripts/`，`skills.md`；人格、预设照约定带在 `personas/`、`presets/` 里，施工 P-11 上，`personas.md`「软件包带的」；知识库照约定带在 `kb/<编号>/` 里，同 `skills/`，施工 K-8，`knowledge.md`「对外的样子」软件包带来的那一节），只写一张 `[package]` 就行；只带一条子命令（`[command]`，程序放在包的 `bin/`，照「转交」第 5 条找）、不写协议版本的也是 `bundle`（施工 PK-1：迁移程序 `miyu migrate` 这种只给人在终端里跑、不做界面也不被核心拉起的）；写了协议版本、却没有程序表的报 `missing_key`（少了程序表）。吉祥物哪一种包都能带。`package.list` 的 `kind` 照这个推出来（程序表的那一种，不带程序的是 `bundle`、`mascot` 或 `theme`）。
 
 ```toml
 [package]
@@ -139,7 +139,7 @@ program = "miyu-embed"
 | `worker` | `[package]`、`[worker]`、`[depends]`、`[recommends]` |
 | `mascot` | `[package]`、`[mascot]`（施工 F-7）、`[depends]`、`[recommends]` |
 | `theme` | `[package]`、`[theme]`（施工 F-16；TH-1 起分 `[theme.tui]`、`[theme.web]`，见「外观包」）、`[depends]`、`[recommends]` |
-| `bundle` | `[package]`、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
+| `bundle` | `[package]`、`[command]`（施工 PK-1）、`[settings]`（施工 PS-1）、`[[mcp]]`、`[mascot]`（施工 X-2）、`[depends]`、`[recommends]`；只带技能、脚本的只有 `[package]`（施工 X-13 上） |
 
 施工 F-11 起，什么种类都能写 `[depends]`、`[recommends]`（照 pacman：依赖是包和包之间的事，不管种类）。
 

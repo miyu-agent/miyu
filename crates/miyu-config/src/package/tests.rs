@@ -150,6 +150,27 @@ fn broken_toml_and_unknown_or_misplaced_tables_say_where() {
     assert_eq!(wrong("[command]\nname = \"x\"\n"), (Code::MissingKey, None));
 }
 
+/// 只带一条子命令的包（施工 PK-1，迁移程序）：没有程序表、没写协议，是 `bundle`，子命令照读；写了协议的照旧少程序表。
+#[test]
+fn a_package_with_only_a_command_is_a_bundle() {
+    let command_only = TUI
+        .replace("\n[ui]\nopens = [\"config\"]\n", "\n")
+        .replace("protocol = [1, 1]\n", "");
+    let bundle = read(&command_only).expect("只带子命令的读得成");
+    assert_eq!(bundle.kind, PackageKind::Bundle);
+    assert_eq!(bundle.protocol, None);
+    assert_eq!(
+        bundle.command().map(|command| command.name.as_str()),
+        Some("tui")
+    );
+    let speaking = TUI.replace("\n[ui]\nopens = [\"config\"]\n", "\n");
+    assert_eq!(
+        wrong(&speaking),
+        (Code::MissingKey, None),
+        "写了协议就是程序"
+    );
+}
+
 #[test]
 fn every_package_field_is_checked() {
     let nothing = TUI.replace("\n[ui]\n", "");
