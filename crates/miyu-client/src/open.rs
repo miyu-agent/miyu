@@ -42,7 +42,7 @@ impl Browser for SystemBrowser {
 }
 
 /// 核心拒了、连不上、没回（施工 W-8 再补，接入通讯平台要的）：`reason` 是核心的 `data.reason`（`bad_password`、`bad_login`、
-/// `login_throttled`、`bad_ticket`……），核心之外的几种是固定的词：`unreachable`（连不上、拉不起来）、`no_answer`（30 秒没回）、
+/// `login_throttled`、`bad_ticket`……），核心之外的几种是固定的词：`unreachable`（连不上、拉不起来）、`no_answer`（等太久没回，默认 30 秒）、
 /// `disconnected`（核心断开）、`io`（写不出去、读不了）。`message` 是原话；`retry_after_ms` 是登录被挡时还要等多久。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refused {
@@ -207,12 +207,27 @@ impl Core {
         self.language.as_deref()
     }
 
-    /// 发一条请求、等它的回应：交回 `result`，拒绝的交回原话。
+    /// 发一条请求、等它的回应：交回 `result`，拒绝的交回原话。一直没有一行到来时最多等 [`WAIT`]。
     ///
     /// # Errors
     ///
     /// 写不出去、30 秒没回、核心断开，核心拒了：[`Refused`]，照 `reason` 分。
     pub async fn call(&mut self, id: &str, method: &str, params: Value) -> Result<Value, Refused> {
+        self.call_waiting(id, method, params, WAIT).await
+    }
+
+    /// 同 [`Core::call`]，只是一直没有一行到来时最多等 `wait`（施工 CA-1）：做得久的请求用，例如导出大会话的原始包。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Core::call`]；没回（`no_answer`）是等了 `wait` 还没有一行到来。
+    pub async fn call_waiting(
+        &mut self,
+        id: &str,
+        method: &str,
+        params: Value,
+        wait: Duration,
+    ) -> Result<Value, Refused> {
         let request = json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params});
         let sent = async {
             self.write
@@ -223,11 +238,10 @@ impl Core {
         sent.await.map_err(|error| Refused::local("io", error))?;
         loop {
             let mut line = String::new();
-            let read =
-                tokio::time::timeout(Duration::from_secs(30), self.lines.read_line(&mut line))
-                    .await
-                    .map_err(|_| Refused::local("no_answer", "no answer"))?
-                    .map_err(|error| Refused::local("io", error))?;
+            let read = tokio::time::timeout(wait, self.lines.read_line(&mut line))
+                .await
+                .map_err(|_| Refused::local("no_answer", "no answer"))?
+                .map_err(|error| Refused::local("io", error))?;
             if read == 0 {
                 return Err(Refused::local("disconnected", "core disconnected"));
             }
@@ -244,6 +258,9 @@ impl Core {
         }
     }
 }
+
+/// [`Core::call`] 一直没有一行到来时最多等多久。
+pub const WAIT: Duration = Duration::from_secs(30);
 
 /// 这台机器的语言：`LC_ALL`、`LC_MESSAGES`、`LANG` 照先后（核心照它算 `auto` 的语言）。
 pub fn locale() -> String {

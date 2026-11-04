@@ -8,6 +8,7 @@ mod support;
 mod ask;
 mod ask_stdin;
 mod call;
+mod client_wait;
 mod commands;
 mod compact;
 mod config;
