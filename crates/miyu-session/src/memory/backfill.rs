@@ -87,7 +87,7 @@ pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room
     let blobs = Blobs::new(root.blobs());
     let mut filled = 0;
     for session in sessions {
-        match one(recall, root, &blobs, room, persona, &session) {
+        match one(recall, root, &blobs, Some((room, persona)), &session) {
             Ok(true) => filled += 1,
             Ok(false) => {}
             Err(why) => {
@@ -104,15 +104,7 @@ pub(crate) fn imported(recall: &Arc<RecallIndexes>, root: &DataRoot, sessions: &
     let blobs = Blobs::new(root.blobs());
     let mut filled = 0;
     for session in sessions {
-        let persona = match snapshot_persona(root, &blobs, session) {
-            Ok(persona) => persona,
-            Err(why) => {
-                tracing::warn!(target: TARGET, session = %session, error = why.as_str(), "imported session not indexed");
-                continue;
-            }
-        };
-        let room = Room::persona(&persona);
-        match one(recall, root, &blobs, &room, &persona, session) {
+        match one(recall, root, &blobs, None, session) {
             Ok(true) => filled += 1,
             Ok(false) => {}
             Err(why) => {
@@ -123,29 +115,13 @@ pub(crate) fn imported(recall: &Arc<RecallIndexes>, root: &DataRoot, sessions: &
     tracing::info!(target: TARGET, sessions = filled, "imported sessions indexed");
 }
 
-/// 会话最近一次换上的快照里的人格：没有的是 [`NO_PERSONA`]。
-fn snapshot_persona(root: &DataRoot, blobs: &Blobs, session: &SessionId) -> Result<String, String> {
-    let events = read_events(&root.session_dir(session)).map_err(|error| error.to_string())?;
-    let Some(Event {
-        body: Body::SessionCreated(created),
-        ..
-    }) = events.first()
-    else {
-        return Err("the first event is not session.created".to_string());
-    };
-    let hash = current_policy(&events).unwrap_or(&created.policy);
-    let bytes = blobs.get(hash).map_err(|error| error.to_string())?;
-    let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
-    Ok(snapshot.persona.unwrap_or_else(|| NO_PERSONA.to_string()))
-}
-
-/// 补一个会话：照载入时的判法该进这一间的，照载入时那一套补，交回 `true`；不该进的 `false`。
+/// 补一个会话：照载入时的判法该进这一间的，照载入时那一套补，交回 `true`；不该进的 `false`。`room` 是补哪一间（人格那一间
+/// 和它的人格）；不写的（导进来的会话，施工 SE-1 下）照它快照里的人格进那一间，日志只读一遍。
 fn one(
     recall: &Arc<RecallIndexes>,
     root: &DataRoot,
     blobs: &Blobs,
-    room: &Room,
-    persona: &str,
+    room: Option<(&Room, &str)>,
     session: &SessionId,
 ) -> Result<bool, String> {
     let events = read_events(&root.session_dir(session)).map_err(|error| error.to_string())?;
@@ -160,9 +136,17 @@ fn one(
     let bytes = blobs.get(hash).map_err(|error| error.to_string())?;
     let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
     let scope = scope(subagent(created), true, snapshot.memory_scope());
+    let own = snapshot.persona.as_deref().unwrap_or(NO_PERSONA);
+    let own_room;
+    let (room, persona) = match room {
+        Some(given) => given,
+        None => {
+            own_room = Room::persona(own);
+            (&own_room, own)
+        }
+    };
     // 场所会话的回合也补（施工 R-13 下，同载入时，`memory.rs` 的 `connect`）：回合库记下它在哪个场所。
-    if scope != MemoryScope::Persona || snapshot.persona.as_deref().unwrap_or(NO_PERSONA) != persona
-    {
+    if scope != MemoryScope::Persona || own != persona {
         return Ok(false);
     }
     // 分叉出来的支线照载入时一样读底子（施工 R-13 三补）：父会话到分叉点为止的，认得那里还没回的人话。
