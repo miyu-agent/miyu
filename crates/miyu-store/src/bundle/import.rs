@@ -164,9 +164,12 @@ fn stage_and_place(
         let mut one = marker.clone();
         one.archive |= session.archived;
         let text = serde_json::to_vec_pretty(&one).map_err(io::Error::other)?;
-        let mut file = File::create(staged.join(MARKER))?;
-        file.write_all(&text)?;
-        file.sync_all()?;
+        // 写完先关上再改名：Windows 上目录里有开着的文件就挪不动（Access is denied）。
+        {
+            let mut file = File::create(staged.join(MARKER))?;
+            file.write_all(&text)?;
+            file.sync_all()?;
+        }
         sync_dir(&staged)?;
         fs::rename(&staged, sessions.join(session.id.as_str()))?;
         added.push(session.id.clone());
