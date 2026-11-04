@@ -77,7 +77,6 @@ pub mod settings;
 mod skills;
 mod spawn;
 mod subscriptions;
-mod sweep;
 mod terminal;
 #[cfg(test)]
 mod test_support;
@@ -110,6 +109,7 @@ use miyu_session::{Jobs, Memory, ModelData, Models, SandboxCache, SummaryTexts};
 use miyu_store::index::SessionIndex;
 use miyu_store::resources::ResourceRoot;
 use miyu_store::root::DataRoot;
+use miyu_store::sweep;
 use miyu_store::usage::UsageIndex;
 use miyu_tool::{Catalog, Shelf};
 

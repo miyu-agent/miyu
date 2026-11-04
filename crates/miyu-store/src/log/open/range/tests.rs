@@ -252,3 +252,71 @@ fn beyond_the_end_and_before_the_start() {
 
 mod one;
 mod only;
+
+/// 调的一方自己定怎么解（施工 V-43，`read_range_with`、`read_marked_with`）：每一行照它解，交出去的和全解的一样多、一样先后；
+/// 读不成的报它交回的错，哪一段、第几行同全解；从头读交回的末尾那一处同 `read_marked`。
+#[test]
+fn a_parse_of_the_callers_own_reads_the_same_lines() {
+    use crate::log::{read_marked, read_marked_with, read_range_with};
+    use miyu_kernel::event::Event;
+    use miyu_kernel::id::TurnId;
+
+    let scratch = Scratch::new();
+    let dir = scratch.path().join("s");
+    let mut last = lines(71, 110);
+    last.extend_from_slice(br#"{"seq":111,"at""#);
+    write(&dir, &[(1, lines(1, 40)), (41, lines(41, 70)), (71, last)]);
+    // 第 50 条以前的照调的一方的另记一样（记在回合上），看得出是照它解的。
+    let parse = |text: &str| -> serde_json::Result<Event> {
+        let mut event = Event::from_line(text)?;
+        if event.seq.get() < 50 {
+            event.turn = Some(TurnId::new(event.seq));
+        }
+        Ok(event)
+    };
+    let mut got = Vec::new();
+    read_range_with(&dir, seq(30), Some(seq(80)), &parse, |events| {
+        got.extend(
+            events
+                .iter()
+                .map(|event| (event.seq.get(), event.turn.is_some())),
+        );
+        Flow::Go
+    })
+    .unwrap();
+    let want: Vec<(u64, bool)> = (30..=80).map(|n| (n, n < 50)).collect();
+    assert_eq!(got, want);
+    let mut seen = Vec::new();
+    let end = read_marked_with(&dir, None, &parse, |events| {
+        seen.extend(events.iter().map(|event| event.seq.get()));
+        Flow::Go
+    })
+    .unwrap();
+    assert_eq!(seen, picked(&dir, 1, None));
+    assert_eq!(
+        end,
+        read_marked(&dir, None, |_| true).unwrap(),
+        "末尾那一处同 read_marked"
+    );
+    // 叫停了不读下去。
+    let mut blocks = 0;
+    read_marked_with(&dir, None, &parse, |_| {
+        blocks += 1;
+        Flow::Stop
+    })
+    .unwrap();
+    assert_eq!(blocks, 1);
+    // 读不成的报它的错，行号同全解。
+    let refuse = |text: &str| -> serde_json::Result<Event> {
+        let event = Event::from_line(text)?;
+        match event.seq.get() {
+            55 => Event::from_line("{"),
+            _ => Ok(event),
+        }
+    };
+    let error = read_marked_with(&dir, None, &refuse, |_| Flow::Go).unwrap_err();
+    assert!(
+        matches!(&error, OpenError::Broken { line: 15, .. }),
+        "第二段第 15 行：{error:?}"
+    );
+}

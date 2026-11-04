@@ -14,11 +14,11 @@ use miyu_kernel::id::{Seq, TurnId};
 
 /// 算不准下界：调的一方退回整份读。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Unsure;
+pub struct Unsure;
 
 /// 读到这里为止的骨架。
 #[derive(Debug, Default)]
-pub(crate) struct Bones {
+pub struct Bones {
     /// 每一轮最早的一条（`turn` 是它的）。
     first: BTreeMap<TurnId, Seq>,
     /// `turn.started`：它的 `turn`、序号、触发。
@@ -35,7 +35,7 @@ pub(crate) struct Bones {
 
 impl Bones {
     /// 记下一条（照先后）。
-    pub(crate) fn note(&mut self, event: &Event) {
+    pub fn note(&mut self, event: &Event) {
         self.seen = Some(event.seq);
         if let Some(turn) = event.turn.filter(|&turn| self.last_turn != Some(turn)) {
             self.first.entry(turn).or_insert(event.seq);
@@ -56,7 +56,11 @@ impl Bones {
 
     /// 这一条（照先后读到它之前已经 [`Bones::note`] 过前面的）是撤销、撤回的：它最早可能碰到、查到第几条；碰不到什么的
     /// （撤的是空的、列的是空的）没有。别的种类没有。
-    pub(crate) fn reach(&self, event: &Event) -> Result<Option<Seq>, Unsure> {
+    ///
+    /// # Errors
+    ///
+    /// 算不准（撤的那一轮日志里一条都没有、触发在日志里还没有）：[`Unsure`]，调的一方整份读。
+    pub fn reach(&self, event: &Event) -> Result<Option<Seq>, Unsure> {
         match &event.body {
             Body::TurnReverted(reverted) => {
                 let mut low = None;
@@ -128,7 +132,7 @@ fn lower(low: &mut Option<Seq>, seq: Seq) {
 }
 
 /// 字的哈希：命令编号的只用来认同一个命令，撞了只会把下界算早；引用的编号的（判官的 `venues/records/pass.rs`）用的时候再对一遍。
-pub(crate) fn hash(cause: &str) -> u64 {
+pub fn hash(cause: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
     cause.hash(&mut hasher);
     hasher.finish()

@@ -7,16 +7,20 @@
 //! 回合结束的，记下这一批落完日志照到哪（[`Landed`]）。抽的时候挑最后一处在上次抽到的那一条以前的，从那里读起
 //! （`miyu_store::log::read_marked`），拼出来的请求和整份读的一个字节不差。
 //!
-//! 接不上的照旧整份读：核心刚起、会话刚换了人格（这时不知道更早的日志里有什么，整份读一次顺手接上，[`Prefix::of`]）；读起的
-//! 那一处和日志对不上；日志里有撤销、恢复、撤回（整份读的名字照撤掉以后的有效历史认，折进来的没法撤，只能整份读）。
+//! 接不上的不再整份读（施工 V-43，`swept.rs`）：核心刚起、会话刚换了人格（这时不知道更早的日志里有什么，读一遍顺手接上，
+//! [`Prefix::of`]）；读起的那一处和日志对不上；日志里有撤销、恢复、撤回（名字照撤掉以后的有效历史认，折进来的没法撤）。从头
+//! 读一遍、边读边过有效历史，上次抽到以前的只解要的种类、认完名字就放掉，有效历史只留可能被撤到的那一截以后的。认不准的（骨架
+//! 认不得、投影切段的那一处切开了一段）照旧整份读。
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 
 use miyu_kernel::event::{Body, Event};
+use miyu_kernel::history::History;
 use miyu_kernel::id::Seq;
 use miyu_store::log::{Mark, read_marked};
+use miyu_store::sweep::Tuning;
 
 use super::voices::{learn, owner_only};
 
@@ -111,6 +115,19 @@ pub(crate) enum From {
     Mark(Arc<Landed>),
     /// 整份读的；要接上的，顺手认出来的读到的末尾那一处。
     Start(Option<Landed>),
+    /// 读一遍、边读边过有效历史的（施工 V-43）：事件不在 [`Read::events`] 里，在这里。
+    Swept(Box<Swept>),
+}
+
+/// 读一遍、边读边过有效历史读回来的（施工 V-43，`swept.rs`）。
+#[derive(Debug)]
+pub(crate) struct Swept {
+    /// 留着一切的有效历史的最后一截：可能被撤到的那一截以后的都在（上次抽到以后的一定在），和整份读拼的那一份里这一截一样。
+    pub(crate) history: History,
+    /// 有效历史里那一截以前的认出来的：拼的时候接着它认。
+    pub(crate) prefix: Prefix,
+    /// 要接上的，顺手认出来的读到的末尾那一处（同 [`From::Start`]）。
+    pub(crate) seed: Option<Landed>,
 }
 
 /// 记下的几处、还要不要整份读一次接上（[`super::Extractor::landings`]）：抽的时候交给读的那个阻塞线程。
@@ -121,12 +138,29 @@ pub(crate) struct Landings {
 }
 
 /// 会话日志在目录 `dir`，上次抽到第 `after` 条：`landings` 里有在它以前的，从最后那一处读起；没有的、对不上的、读起以后有撤销
-/// 恢复撤回的整份读，还接不上的顺手认出读到的末尾那一处（[`Marks::seed`] 拿它接上）。
+/// 恢复撤回的读一遍、边读边过有效历史（施工 V-43），认不准的整份读；还接不上的顺手认出读到的末尾那一处（[`Marks::seed`] 拿它
+/// 接上）。`ended` 是不等闲的那一次（施工 E-5）：只取到读的那一刻最后一条 `turn.ended` 为止（[`super::ended_only`]）。
 ///
 /// # Errors
 ///
 /// 日志读不了：为什么。
-pub(crate) fn read(dir: &Path, after: Seq, landings: &Landings) -> Result<Read, String> {
+pub(crate) fn read(
+    dir: &Path,
+    after: Seq,
+    landings: &Landings,
+    ended: bool,
+) -> Result<Read, String> {
+    read_with(dir, after, landings, ended, Tuning::SHIPPED)
+}
+
+/// 同 [`read`]，读一遍时照 `tuning` 放（测试里调小）。
+pub(crate) fn read_with(
+    dir: &Path,
+    after: Seq,
+    landings: &Landings,
+    ended: bool,
+    tuning: Tuning,
+) -> Result<Read, String> {
     let Landings { landings, seed } = landings;
     let seed = *seed;
     if let Some(landed) = landings
@@ -146,6 +180,9 @@ pub(crate) fn read(dir: &Path, after: Seq, landings: &Landings) -> Result<Read, 
                 .is_none_or(|first| first.seq == landed.mark.next)
             && !events.iter().any(unsettling);
         if fits {
+            if ended {
+                super::ended_only(&mut events);
+            }
             return Ok(Read {
                 after,
                 events,
@@ -153,6 +190,18 @@ pub(crate) fn read(dir: &Path, after: Seq, landings: &Landings) -> Result<Read, 
             });
         }
     }
+    if let Some(swept) = swept::read(dir, after, (seed, ended), tuning)? {
+        return Ok(Read {
+            after,
+            events: Vec::new(),
+            from: From::Swept(Box::new(swept)),
+        });
+    }
+    whole(dir, after, seed, ended)
+}
+
+/// 整份读（认不准的退回这里，施工 V-43 以前接不上的都这样读）：还接不上的（`seed`）顺手认出读到的末尾那一处。
+fn whole(dir: &Path, after: Seq, seed: bool, ended: bool) -> Result<Read, String> {
     let mut events = Vec::new();
     let end = read_marked(dir, None, |segment| {
         gather(&mut events, segment);
@@ -163,6 +212,9 @@ pub(crate) fn read(dir: &Path, after: Seq, landings: &Landings) -> Result<Read, 
         mark,
         prefix: Prefix::of(&events),
     });
+    if ended {
+        super::ended_only(&mut events);
+    }
     Ok(Read {
         after,
         events,
@@ -296,6 +348,8 @@ impl Marks {
         self.push(landed);
     }
 }
+
+mod swept;
 
 #[cfg(test)]
 mod tests;

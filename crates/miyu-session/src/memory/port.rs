@@ -96,7 +96,8 @@ impl Calls {
     pub(crate) fn heard(&self, events: &[miyu_kernel::event::Event]) {
         self.keeper.hear(events);
         // 抽取只读上次以后那一截要的（施工 E-5 补）：接着折进来。
-        self.extractor.note_prefix(events, self.keeper.extracts());
+        self.extractor
+            .note_prefix(events, self.keeper.extract_waits().is_some());
     }
 
     /// 会话那一批落了盘，里面结束了 `turns` 轮，`at` 是写的那一边回来的那一刻（施工 E-5、FL-2）：一直不闲的会话照它不等闲

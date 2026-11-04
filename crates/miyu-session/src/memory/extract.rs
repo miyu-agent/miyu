@@ -391,6 +391,8 @@ pub(crate) use extractor::Extractor;
 pub(crate) use job::Job;
 pub(crate) use place::place_people;
 pub(crate) use prefix::{From, Landings, Read, read};
+#[cfg(test)]
+pub(crate) use prefix::{Prefix, read_with};
 pub(crate) use voices::{Voice, Voices};
 
 #[cfg(test)]

@@ -40,8 +40,8 @@ fn resources() -> ResourceRoot {
     ResourceRoot::at(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"))
 }
 
-/// 群会话的组装器：照随核心附带的 Miyu 拼一份群会话的快照。
-fn group_assembler(scratch: &Scratch) -> Arc<dyn Assembler + Send + Sync> {
+/// 照随核心附带的 Miyu 拼一份快照的组装器：`group` 的是群会话的，不是的是私聊的。
+fn assembler(scratch: &Scratch, group: bool) -> Arc<dyn Assembler + Send + Sync> {
     let env = Env {
         platform: Platform::current(),
         miyu_home: Some(scratch.0.join("data").into_os_string()),
@@ -67,7 +67,7 @@ fn group_assembler(scratch: &Scratch) -> Arc<dyn Assembler + Send + Sync> {
         child: false,
         preset: None,
         roleplay: true,
-        group: Some((540, None)),
+        group: group.then_some((540, None)),
         foreground: false,
         show_hint: true,
         knowledge: None,
@@ -303,7 +303,7 @@ struct Fixture {
 impl Fixture {
     fn new(name: &str) -> Fixture {
         let scratch = scratch(name);
-        let assembler = group_assembler(&scratch);
+        let assembler = assembler(&scratch, true);
         let texts =
             ExtractTexts::load(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources"))
                 .expect("读得到");
@@ -350,8 +350,8 @@ impl Fixture {
     /// 同 [`Fixture::same`]，照 `landings`（抽的那一刻拿到的几处）读。从一处读起的挑的是最后一处：读起的那一条离上次抽到的
     /// 那一条不远（前一轮结束以后）。
     fn same_from(&self, extractor: &Extractor, landings: &Landings, after: u64) -> bool {
-        let mut read =
-            read_extract(&self.dir, Seq::new(after).expect("从 1 起"), landings).expect("读得了");
+        let seq = Seq::new(after).expect("从 1 起");
+        let mut read = read_extract(&self.dir, seq, landings, false).expect("读得了");
         if matches!(read.from, ReadFrom::Mark(_)) {
             let first = read.events.first().map_or(after, |event| event.seq.get());
             assert!(
@@ -359,11 +359,7 @@ impl Fixture {
                 "从上次抽到的那一条以前最后一处读起：第 {first} 条起，上次抽到第 {after} 条"
             );
         }
-        if let ReadFrom::Start(landed) = &mut read.from
-            && let Some(landed) = landed.take()
-        {
-            extractor.seed(landed);
-        }
+        seed_from(extractor, &mut read);
         let marked = matches!(read.from, ReadFrom::Mark(_));
         let fast = planned(read, &self.planning());
         assert!(matches!(fast, Plan::Ask { .. }), "抽到了东西：{fast:?}");
@@ -473,6 +469,7 @@ fn a_reloaded_session_catches_up_with_one_whole_read() {
         &fixture.dir,
         Seq::new(answers[10]).expect("从 1 起"),
         &extractor.landings(),
+        false,
     )
     .expect("读得了");
     // ……以后又落了两批，才交回来接上：头一句是个只说这一次的人，接上时照记下的折进去才认得出。
@@ -481,10 +478,8 @@ fn a_reloaded_session_catches_up_with_one_whole_read() {
         answers.push(busy_round(&mut events, round));
         land(&mut log, &extractor, &events.take());
     }
-    let ReadFrom::Start(landed) = &mut read.from else {
-        panic!("还接不上的整份读");
-    };
-    extractor.seed(landed.take().expect("顺手认出了末尾那一处"));
+    assert!(!matches!(read.from, ReadFrom::Mark(_)), "还接不上的从头读");
+    assert!(seed_from(&extractor, &mut read), "顺手认出了末尾那一处");
     for round in 25..40 {
         answers.push(busy_round(&mut events, round));
         land(&mut log, &extractor, &events.take());
@@ -498,3 +493,6 @@ fn a_reloaded_session_catches_up_with_one_whole_read() {
 }
 
 mod branch;
+mod swept;
+
+use swept::seed_from;

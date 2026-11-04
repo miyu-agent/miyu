@@ -24,8 +24,7 @@ use super::back::answer_back;
 use super::{Actor, answer};
 use crate::config::Turn;
 use crate::memory::{
-    Dreamed, Extractor, Hush, Job, Landings, NotDreamed, Read, ReadFrom, called, ended_only,
-    read_extract,
+    Dreamed, Extractor, Hush, Job, Landings, NotDreamed, Read, ReadFrom, called, read_extract,
 };
 use crate::port::Back;
 use crate::settings::MemorySettings;
@@ -66,17 +65,15 @@ impl Actor {
             return;
         };
         let (keeper, _, extractor) = calls.extracting();
-        if keeper.extraction().is_none() {
+        // 只看闲多久，不拷整份抽取要的几样（施工 V-43：原来每次从忙到闲拷两遍）。
+        let Some((idle, _)) = keeper.extract_waits() else {
             return;
-        }
+        };
         let idle = match self.session.sealed() {
             true => Duration::ZERO,
-            false => keeper
-                .extraction()
-                .and_then(|extraction| extraction.idle)
-                .unwrap_or_else(|| {
-                    MemorySettings::from(&self.config.current().resolved.values()).extract_idle
-                }),
+            false => idle.unwrap_or_else(|| {
+                MemorySettings::from(&self.config.current().resolved.values()).extract_idle
+            }),
         };
         let generation = extractor.arm();
         let idle_ms = u64::try_from(idle.as_millis()).unwrap_or(u64::MAX);
@@ -101,12 +98,13 @@ impl Actor {
             return;
         };
         let (keeper, _, extractor) = calls.extracting();
-        let Some(extraction) = keeper.extraction() else {
+        // 每送完一批都看一眼：只看等多久，不拷整份（施工 V-43）。
+        let Some((_, max_wait)) = keeper.extract_waits() else {
             return;
         };
         let settings = MemorySettings::from(&self.config.current().resolved.values());
         let max_turns = u32::try_from(settings.extract_max_turns).unwrap_or(u32::MAX);
-        let max_wait = extraction.max_wait.unwrap_or(settings.extract_max_wait);
+        let max_wait = max_wait.unwrap_or(settings.extract_max_wait);
         let now = self.clock.now();
         if !extractor.overdue(now, max_turns, max_wait) || !extractor.force() {
             return;
@@ -172,7 +170,7 @@ impl Actor {
         let landings = extractor.landings();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
-            let read = read_after(&keeper, &session, &dir, floor, &landings);
+            let read = read_after(&keeper, &session, &dir, (floor, forced), &landings);
             answer_back(
                 &backs,
                 Back::ExtractRead {
@@ -208,7 +206,7 @@ impl Actor {
             }
             return;
         }
-        let mut read = match read {
+        let read = match read {
             Ok(read) => read,
             Err(error) => {
                 tracing::warn!(target: crate::TARGET, error = error.as_str(), "memory extraction failed");
@@ -216,9 +214,6 @@ impl Actor {
                 return;
             }
         };
-        if forced {
-            ended_only(&mut read.events);
-        }
         let after = read.after;
         let config = Arc::clone(self.config.current());
         let settings = MemorySettings::from(&config.resolved.values());
@@ -294,7 +289,7 @@ impl Actor {
         let landings = extractor.landings();
         let (keeper, session, backs) = (keeper.clone(), session.clone(), self.backs.clone());
         tokio::task::spawn_blocking(move || {
-            let read = read_after(&keeper, &session, &dir, floor, &landings);
+            let read = read_after(&keeper, &session, &dir, (floor, false), &landings);
             answer_back(
                 &backs,
                 Back::DreamRead {
@@ -375,13 +370,14 @@ impl Actor {
     }
 }
 
-/// 在阻塞线程里读这一段（施工 E-5 补）：上次抽到哪（不早于 `floor`），从 `landings` 里最后一处在它以前的读起，没有的整份读；
-/// 还接不上的（`landings` 交回的第二样）整份读时顺手认出末尾那一处。
+/// 在阻塞线程里读这一段（施工 E-5 补）：上次抽到哪（不早于 `floor`），从 `landings` 里最后一处在它以前的读起，没有的读一遍
+/// 只留要的（施工 V-43）；还接不上的（`landings` 交回的第二样）顺手认出末尾那一处。不等闲的那一次（`forced`）只取到读的那一刻
+/// 最后一条 `turn.ended` 为止：正在跑的那一轮留给下次。
 fn read_after(
     keeper: &crate::memory::Keeper,
     session: &miyu_kernel::id::SessionId,
     dir: &std::path::Path,
-    floor: Seq,
+    (floor, forced): (Seq, bool),
     landings: &Landings,
 ) -> Result<Read, String> {
     let after = keeper
@@ -389,14 +385,17 @@ fn read_after(
         .map_err(|refused| format!("{refused:?}"))?
         .unwrap_or(Seq::FIRST)
         .max(floor);
-    read_extract(dir, after, landings)
+    read_extract(dir, after, landings, forced)
 }
 
-/// 读回来的是整份、认出了末尾那一处的：交给抽取状态接上（施工 E-5 补），拼的时候照整份拼。
+/// 读回来的是从头读的、认出了末尾那一处的：交给抽取状态接上（施工 E-5 补）。
 fn seeded(extractor: &Extractor, mut read: Read) -> Read {
-    if let ReadFrom::Start(landed) = &mut read.from
-        && let Some(landed) = landed.take()
-    {
+    let landed = match &mut read.from {
+        ReadFrom::Start(landed) => landed.take(),
+        ReadFrom::Swept(swept) => swept.seed.take(),
+        ReadFrom::Mark(_) => None,
+    };
+    if let Some(landed) = landed {
         extractor.seed(landed);
     }
     read

@@ -3,6 +3,7 @@
 //! 一万多条事件拼一遍要几毫秒，原来在 actor 上同步做，下一轮的回合开头排在后面）；现在就整理那一路照旧在 actor 上调。
 
 use miyu_kernel::assemble::Assembler;
+use miyu_kernel::event::Event;
 use miyu_kernel::history::History;
 use miyu_kernel::id::SessionId;
 use miyu_kernel::time::UtcOffset;
@@ -26,22 +27,24 @@ pub(crate) struct Planning<'a> {
     pub(crate) name: Option<&'a str>,
 }
 
-/// 读回来的 `read` 里上次抽到的那一条以后的那一段怎么抽。从一处读起的（施工 E-5 补）接着那一处以前认出来的认名字，和整份读
-/// 的拼出来一个字节不差。
+/// 读回来的 `read` 里上次抽到的那一条以后的那一段怎么抽。从一处读起的（施工 E-5 补）、读一遍只留最后一截有效历史的（施工
+/// V-43）接着那以前认出来的认名字，和整份读的拼出来一个字节不差。
 pub(crate) fn planned(read: Read, how: &Planning<'_>) -> crate::memory::Plan {
     let Read {
         after,
         events,
         from,
     } = read;
-    let before = match &from {
-        ReadFrom::Mark(landed) => Some(&landed.prefix),
-        ReadFrom::Start(_) => None,
+    let (history, before) = match from {
+        // 读的时候就交给了有效历史：留着的那一截照旧记这个会话自己是谁（不影响撤销、恢复怎么算）。
+        ReadFrom::Swept(swept) => {
+            let swept = *swept;
+            (swept.history.owned_by(how.own.clone()), Some(swept.prefix))
+        }
+        ReadFrom::Mark(landed) => (whole(events, how), Some(landed.prefix.clone())),
+        ReadFrom::Start(_) => (whole(events, how), None),
     };
-    let mut history = History::whole().owned_by(how.own.clone());
-    for event in events {
-        history.append(event);
-    }
+    let before = before.as_ref();
     let spoken = how.assembler.spoken(&history, after);
     let remembered = remembered_since(&history, after);
     let mut voices = Voices::continued(before, history.events(), how.budget);
@@ -55,6 +58,15 @@ pub(crate) fn planned(read: Read, how: &Planning<'_>) -> crate::memory::Plan {
         &voices,
         how.name,
     )
+}
+
+/// 读回来的事件照先后拼一份留着一切的有效历史。
+fn whole(events: Vec<Event>, how: &Planning<'_>) -> History {
+    let mut history = History::whole().owned_by(how.own.clone());
+    for event in events {
+        history.append(event);
+    }
+    history
 }
 
 #[cfg(test)]

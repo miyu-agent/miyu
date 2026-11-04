@@ -1,4 +1,4 @@
-//! 读一遍、边读边过有效历史（施工 V-39 上的判官起头，施工 SP-2 挪到这里、问话列表也用）：事件照先后交给真的有效历史
+//! 读一遍、边读边过有效历史（施工 V-39 上的判官起头，施工 SP-2 挪到端点、问话列表也用，施工 V-43 挪到这里、记忆抽取也用）：事件照先后交给真的有效历史
 //! （`History::whole`，撤销、恢复、撤回的规矩一行不另写），只是它前面那一截谁都碰不到了，就交给调的一方收下（[`Settle`]）、
 //! 放掉。有效历史里只留还可能被撤到的最后一截。
 //!
@@ -6,28 +6,31 @@
 //! 不了了）。放到哪：头一遍不知道后面的撤销会撤多早，留最后 [`Tuning::keep`] 条（[`Plan::Guess`]）；读到一次撤销、撤回比
 //! 留的还早（骨架算的下界，`bones.rs`），这一遍作废，照头一遍记下的每一次的下界再读一遍，每次只放到后面的撤销都碰不到的地方
 //! （[`Plan::Exact`]）。骨架认不得的，调的一方退回整份读。
+//!
+//! 调的一方要留着某一条以后的（记忆抽取要上次抽到以后的那一段），交 [`Sweep::holding`]：不管怎么放，都不放过它。
 
-pub(crate) mod bones;
+pub mod bones;
 
 use miyu_kernel::event::{Body, Event};
 use miyu_kernel::history::History;
 use miyu_kernel::id::Seq;
-use miyu_store::log::Flow;
+
+use crate::log::Flow;
 
 use bones::{Bones, Unsure};
 
 /// 什么时候放、留多少（测试里调小，逼出放了又撤到的几种）。
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct Tuning {
+pub struct Tuning {
     /// 有效历史攒到这么多条才放：一条 `Event` 512 字节，2048 条约 1 MB，加上内容约 2 MB。
-    pub(crate) flush_at: usize,
+    pub flush_at: usize,
     /// 头一遍放的时候留最后这么多条（[`Plan::Guess`]）：撤最近一两轮的（主人撤刚才那一句）碰不到更早的。
-    pub(crate) keep: usize,
+    pub keep: usize,
 }
 
 impl Tuning {
     /// 出厂的。
-    pub(crate) const SHIPPED: Tuning = Tuning {
+    pub const SHIPPED: Tuning = Tuning {
         flush_at: 2048,
         keep: 256,
     };
@@ -35,7 +38,7 @@ impl Tuning {
 
 /// 放到哪。
 #[derive(Debug)]
-pub(crate) enum Plan {
+pub enum Plan {
     /// 头一遍：留最后 [`Tuning::keep`] 条，边读边记骨架。
     Guess(Bones),
     /// 再读一遍：每一次撤销、撤回的序号和下界（头一遍记的，照序号排），`low[k]` 是第 `k` 次及以后的下界里最早的。
@@ -49,12 +52,12 @@ pub(crate) enum Plan {
 
 impl Plan {
     /// 头一遍。
-    pub(crate) fn guess() -> Plan {
+    pub fn guess() -> Plan {
         Plan::Guess(Bones::default())
     }
 
     /// 照头一遍记下的再读一遍。
-    pub(crate) fn exact(reaches: Vec<(Seq, Seq)>) -> Plan {
+    pub fn exact(reaches: Vec<(Seq, Seq)>) -> Plan {
         let mut low = vec![Seq::FIRST; reaches.len()];
         let mut least: Option<Seq> = None;
         for (k, &(_, reach)) in reaches.iter().enumerate().rev() {
@@ -68,7 +71,7 @@ impl Plan {
 
 /// 这一遍怎么样。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Ended {
+pub enum Ended {
     /// 收齐了。
     Done,
     /// 有一次撤销、撤回比放掉的还早：照 [`Sweep::reaches`] 再读一遍。
@@ -78,7 +81,7 @@ pub(crate) enum Ended {
 }
 
 /// 调的一方收下定下来的那一截。
-pub(crate) trait Settle {
+pub trait Settle {
     /// 读到的每一条，交给有效历史之前先看一眼（判官照它记第一条）。不看的不写。
     fn see(&mut self, _event: &Event) {}
 
@@ -88,32 +91,35 @@ pub(crate) trait Settle {
 
 /// 一遍读下来：有效历史的最后一截，和调的一方收下的（`settled`）。
 #[derive(Debug)]
-pub(crate) struct Sweep<S> {
+pub struct Sweep<S> {
     plan: Plan,
     tuning: Tuning,
     /// 有效历史的最后一截：日志里序号不小于 `from` 的、还在有效历史里的都在这里。
     tail: History,
     from: Seq,
+    /// 不放过这一条（[`Sweep::holding`]）：没交的没有。
+    hold: Option<Seq>,
     /// 最近一次撤销以后还没开新的一轮、没压缩过：放在一边的撤销还能恢复，不放。
     reverting: bool,
     /// 读到的最后一条。
-    pub(crate) last: Option<Seq>,
+    pub last: Option<Seq>,
     /// 每一次撤销、撤回的序号和下界（头一遍记）。
-    pub(crate) reaches: Vec<(Seq, Seq)>,
+    pub reaches: Vec<(Seq, Seq)>,
     /// 怎么样了。
-    pub(crate) ended: Ended,
+    pub ended: Ended,
     /// 调的一方收下的。
-    pub(crate) settled: S,
+    pub settled: S,
 }
 
 impl<S: Settle> Sweep<S> {
     /// 开始一遍。
-    pub(crate) fn new(plan: Plan, tuning: Tuning, settled: S) -> Sweep<S> {
+    pub fn new(plan: Plan, tuning: Tuning, settled: S) -> Sweep<S> {
         Sweep {
             plan,
             tuning,
             tail: History::whole(),
             from: Seq::FIRST,
+            hold: None,
             reverting: false,
             last: None,
             reaches: Vec::new(),
@@ -122,8 +128,26 @@ impl<S: Settle> Sweep<S> {
         }
     }
 
+    /// 不放过第 `hold` 条：它和它以后的一直留在有效历史里（[`Sweep::into_tail`] 交回），前面的照旧放。
+    #[must_use]
+    pub fn holding(mut self, hold: Seq) -> Sweep<S> {
+        self.hold = Some(hold);
+        self
+    }
+
+    /// 放到了哪：有效历史里序号小于它的都交给调的一方收下了，不小于它的都还在。
+    pub fn from(&self) -> Seq {
+        self.from
+    }
+
+    /// 不收剩下的（不调 [`Sweep::finish`]）：交回有效历史的最后一截（序号不小于 [`Sweep::from`] 的、还在有效历史里的）和调的一方
+    /// 收下的。
+    pub fn into_tail(self) -> (History, S) {
+        (self.tail, self.settled)
+    }
+
     /// 读到的一块，照先后。再读的那一遍作废了就叫停；头一遍照旧读完（整份自检、骨架都要读完）。
-    pub(crate) fn feed(&mut self, events: Vec<Event>) -> Flow {
+    pub fn feed(&mut self, events: Vec<Event>) -> Flow {
         for event in events {
             self.one(event);
         }
@@ -134,7 +158,7 @@ impl<S: Settle> Sweep<S> {
     }
 
     /// 读完了：有效历史里剩下的都收下。
-    pub(crate) fn finish(&mut self) {
+    pub fn finish(&mut self) {
         if self.ended == Ended::Done {
             let tail = std::mem::take(&mut self.tail);
             self.settled.settle(tail.events());
@@ -194,6 +218,7 @@ impl<S: Settle> Sweep<S> {
                 low.get(k).map_or(at.next(), |&low| low.min(at.next()))
             }
         };
+        let keep_from = self.hold.map_or(keep_from, |hold| keep_from.min(hold));
         if keep_from <= self.from {
             return;
         }
@@ -206,3 +231,6 @@ impl<S: Settle> Sweep<S> {
         self.from = keep_from;
     }
 }
+
+#[cfg(test)]
+mod tests;

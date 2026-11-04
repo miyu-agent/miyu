@@ -224,6 +224,47 @@ pub fn read_range_only(
     range::read(dir, from, upto, Parse::Only(only), &mut each)
 }
 
+/// 同 [`read_range`]，只是每一行照调的一方给的 `parse` 解（施工 V-43：记忆抽取上次抽到以前的只解要的种类，以后的全解）。
+/// 自检、报的错的样子同 [`read_range`]，读不成的那一行报的是 `parse` 交回的错。
+///
+/// # Errors
+///
+/// 同 [`read_range`]。
+pub fn read_range_with(
+    dir: &Path,
+    from: Seq,
+    upto: Option<Seq>,
+    parse: ParseLine<'_>,
+    mut each: impl FnMut(Vec<Event>) -> Flow,
+) -> Result<(), OpenError> {
+    range::read(dir, from, upto, Parse::With(parse), &mut each)
+}
+
+/// 同 [`read_marked`]，只是一块块交给 `each`（不攒成段，同 [`read_range`]；它交回 [`Flow::Stop`] 的不读下去），每一行照调的
+/// 一方给的 `parse` 解（施工 V-43）。交回读到了哪里，`from` 和日志对不上的交回空的，同 [`read_marked`]；`from` 是空的从头读、
+/// 整份自检，同 [`read_events`]。
+///
+/// # Errors
+///
+/// 同 [`read_events`]。
+pub fn read_marked_with(
+    dir: &Path,
+    from: Option<&Mark>,
+    parse: ParseLine<'_>,
+    mut each: impl FnMut(Vec<Event>) -> Flow,
+) -> Result<Option<Mark>, OpenError> {
+    walk(
+        dir,
+        HalfLine::Skip,
+        from,
+        Parse::With(parse),
+        &mut |piece| match piece {
+            Piece::Events(events) => each(events),
+            Piece::SegmentEnd => Flow::Go,
+        },
+    )
+}
+
 /// 只读地读 `from` 到 `to` 之间的整行（施工 V-41 上：翻页只读要的那一截）：两样都是一行的开头，多半是 [`scan_lines`] 数到的
 /// （[`Line::start`]、[`Line::end`]），`to` 是要的最后一行后面那一行的开头，可以在后面的段里。照先后一块块交给 `each`，
 /// 它交回 [`Flow::Stop`] 的不读下去；`to` 以后的不读。
@@ -272,6 +313,9 @@ pub fn read_one(dir: &Path, seq: Seq) -> Result<Option<Event>, OpenError> {
     range::one(dir, seq)
 }
 
+/// 调的一方自己定怎么解一行（[`read_marked_with`]、[`read_range_with`]）：几个线程一起解，所以要 `Sync`。
+pub type ParseLine<'a> = &'a (dyn Fn(&str) -> serde_json::Result<Event> + Sync);
+
 /// 每一行怎么解（施工 V-39 上补）。
 #[derive(Clone, Copy)]
 enum Parse<'a> {
@@ -279,6 +323,8 @@ enum Parse<'a> {
     Full,
     /// 只解这几种（[`Event::from_line_only`]）。
     Only(&'a [&'a str]),
+    /// 照调的一方给的（施工 V-43）。
+    With(ParseLine<'a>),
 }
 
 impl Parse<'_> {
@@ -287,6 +333,7 @@ impl Parse<'_> {
         match self {
             Parse::Full => Event::from_line(text),
             Parse::Only(only) => Event::from_line_only(text, only),
+            Parse::With(parse) => parse(text),
         }
     }
 }

@@ -36,9 +36,10 @@ pub use dreaming::{DreamFeed, Dreaming};
 pub(crate) use extract::From as ReadFrom;
 pub use extract::{ExtractTexts, Extraction};
 pub(crate) use extract::{
-    Extractor, Job, Landings, Plan, Read, Voices, ended_only, plan, read as read_extract,
-    remembered_since,
+    Extractor, Job, Landings, Plan, Read, Voices, plan, read as read_extract, remembered_since,
 };
+#[cfg(test)]
+pub(crate) use extract::{Prefix, place_people, read_with as read_extract_with};
 pub use follow::Following;
 pub use keeper::{Filter, Imported, Keeper, Stamp};
 pub(crate) use lane::{Laid, Source, TurnLane};

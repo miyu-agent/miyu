@@ -7,6 +7,7 @@
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use miyu_kernel::id::{CommandId, ModuleId, Seq, SessionId, TurnId};
 use miyu_kernel::origin::{By, Module, Person};
@@ -162,9 +163,11 @@ impl Keeper {
         self.memory.extraction().cloned()
     }
 
-    /// 核心交过抽取要的几样没有（施工 E-5 补）：同 [`Keeper::extraction`]，不拷。
-    pub(crate) fn extracts(&self) -> bool {
-        self.memory.extraction().is_some()
+    /// 闲多久才抽、一直不闲的等多久（[`super::Extraction`] 的 `idle`、`max_wait`）：核心没交的没有（同 [`Keeper::extraction`]
+    /// 是空的，施工 E-5 补的 `extracts` 并进来）。每批都看，不拷整份（施工 V-43）。
+    pub(crate) fn extract_waits(&self) -> Option<(Option<Duration>, Option<Duration>)> {
+        let extraction = self.memory.extraction()?;
+        Some((extraction.idle, extraction.max_wait))
     }
 
     /// 人格记忆这时装着没有（施工 R-10）：没装的开着的会话不交摘要、不抽。
