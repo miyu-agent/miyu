@@ -40,6 +40,7 @@
 | `export_exists` | 导出写的那个文件已经有了，不覆盖 | |
 | `export_in_data_root` | 导出不往数据目录里写 | |
 | `export_unwritable` | 导出的目录不在、写不进 | |
+| `export_too_big` | 导出放进回应（`inline`）超过 512 KiB：改成存文件 | |
 | `bad_bundle` | 导入的不是会话包 | |
 | `bundle_mismatch` | 导入的会话包坏了：哈希、序号对不上 | |
 | `bundle_too_new` | 导入的会话包是更新的版本打的 | |

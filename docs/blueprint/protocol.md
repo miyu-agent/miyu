@@ -1171,22 +1171,28 @@
 6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
 7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
 
-**`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节）
+**`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上）
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `session` | 字符串，必写 | 会话编号 |
-| `format` | 字符串，必写 | `bundle`：原始包。`markdown` 随 SE-1 中 |
-| `to` | 对象，必写 | `{"path": "<绝对路径>"}`：核心写到这个文件 |
+| `format` | 字符串，必写 | `bundle`：原始包。`markdown`：Markdown |
+| `to` | 对象或字符串，必写 | `{"path": "<绝对路径>"}`：核心写到这个文件。`"inline"`：放进回应（只对 Markdown） |
+| `for` | 字符串，默认 `read` | 只对 Markdown：给谁用。这一步只有 `read`（自己看）；`agent`、`chat` 下一步才有 |
+| `range` | 字符串或对象，默认 `all` | 只对 Markdown：导多少。这一步只有 `all`；`context`、`{"turns": N}` 下一步才有 |
+| `locale` | 字符串 | 只对 Markdown：给人看的字用哪种语言（`zh`、`ja` 开头的照它，别的英文），不写的照连接握手时的 |
 
-回应 `{"path", "bytes", "upto", "sessions", "blobs"}`：写到哪、包多大、主会话取到的最后一条、包里的会话（照放进去的先后）、几个 blob。
+原始包的回应 `{"path", "bytes", "upto", "sessions", "blobs"}`：写到哪、包多大、主会话取到的最后一条、包里的会话（照放进去的先后）、几个 blob。
+
+Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted"}`：写到哪（`to` 是路径的）或者 Markdown 本身（`inline` 的）、多少字节、`tokens` 估算（同底栏上下文用量的本地估算：UTF-8 字节数除以 4，往上取整）、导到的最后一条、`redacted` 隐去了哪几个密钥各几处（`{"<名字>": <几处>}`，一处都没有的是 `{}`）。
 
 1. 包里的会话：这个会话；它的全部后代（父子关系照会话列表的索引，索引里没有的读它的第一条 `session.created` 的 `parent`；分叉出来的支线也挂在父会话下面，一起带走），照编号一层层找；再是分叉来源：包里哪个会话的 `session.created` 写了 `forked`、来源又不在包里的，带上来源到 `upto` 为止的那几段，来源自己是分叉出来的接着往上找；同一个来源被要了几次的取最远的那一点。
 2. 打包照 `miyu_store::bundle`（`store.md`「原始包」）：段原文、到最后一个换行为止、写了 `upto` 的到那一条；日志里写成内容哈希的字，blob 库里有的放进 `blobs/<64 位>`，边拷边核对，对不上整个失败；没有的记进清单的 `absent`；`manifest.json` 最后写。先写同目录的临时文件，写完挂到 `to.path`，已经有的不覆盖。
 3. 只读地读会话目录，不载入会话；在跑的会话照这一刻已经落盘的整行取（日志只追加，取到的是一致的一份）。
-4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大）。
+4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大；Markdown 的是 `format=markdown`、多大、隐去几处，不记密钥的名字和值）。
 5. 只给人的头（`connection/rights.rs` 的 `People`）：包和事件流一个级别，还带着 blob。
-6. 出错：会话编号不合写法、`format` 不认得、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志读不了、blob 和它的哈希对不上：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`。`to.path` 已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。
+6. Markdown（施工 SE-1 中下上）：整个会话照先后一块块读、喂给一台投影（`view/whole.rs`，不整份读成事件），条目同 `view.page` 写 `view: true` 从头翻到尾的；只取这个会话自己的日志（同 `view.page`：分叉出来的会话不带底子那一段，子会话不附在后面，子代理只写交代和回报）。条目照 `read` 预设渲染（`view.md`「导出成 Markdown」）。配了的密钥（`secrets.toml` 的值，至少 8 个字）原样出现的换成 `[redacted: <名字>]`，原始包不改。写文件同原始包的规矩（绝对路径、数据根里面不写、已经有的不覆盖、先写临时文件同步了再挂上去）；`inline` 的超过 512 KiB（524288 字节，照换完密钥的那一份算）拒 `export_too_big`，头改成存文件（协议一行最长 1 MiB，给转义留余量）。
+7. 出错：会话编号不合写法、`format` 不认得、`to` 不是这两种写法、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。原始包写了 `inline` 或者只对 Markdown 的参数：`bad_params`。Markdown 的 `for` 写 `agent`、`chat`，`range` 写 `context`、`{"turns": N}`（N 是正整数），写了 `thinking`、`tools`、`children`、`assets`（盖过预设的开关）：`bad_params`，`data.later` 是哪一个参数（下一步才有）；别的写法照旧 `bad_params`、不带 `later`。没有这个会话：`session_not_found`。日志读不了、blob 和它的哈希对不上：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`（Markdown 读不了日志的记 `WARN log not read`）。`to.path` 已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。`inline` 太大：`export_too_big`。
 
 **`session.import`**（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节）
 

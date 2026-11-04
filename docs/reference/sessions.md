@@ -27,7 +27,7 @@
 | [`session.fork`](#sessionfork) | 从一个会话分叉出子会话 |
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
-| [`session.export`](#sessionexport) | 把会话导出成原始包 |
+| [`session.export`](#sessionexport) | 把会话导出成原始包或者 Markdown |
 | [`session.import`](#sessionimport) | 导入原始包 |
 | [`view.page`](#viewpage) | 按页读历史 |
 | [`view.detail`](#viewdetail) | 一次工具调用的完整差异、一次压缩的摘要原文 |
@@ -442,23 +442,30 @@
 
 ## `session.export`
 
-把一个会话打成原始包（ZIP）写到你给的位置：存档、换机器、查问题都用它，以后的导入只认它。只给人的头。
+把一个会话导出来写到你给的位置，或者放进回应：原始包（ZIP）存档、换机器、查问题都用它，以后的导入只认它；Markdown 给人看。只给人的头。
 
 **参数**：
 
 | 名字 | 说明 |
 |---|---|
 | `session` | 会话编号 |
-| `format` | `bundle`：原始包。Markdown 以后加 |
-| `to` | `{"path": "<绝对路径>"}`：核心写到这个文件 |
+| `format` | `bundle`：原始包。`markdown`：Markdown |
+| `to` | `{"path": "<绝对路径>"}`：核心写到这个文件。`"inline"`：放进回应的 `text`，只对 Markdown |
+| `for` | 只对 Markdown，给谁用：`read`（自己看，不写的也是）。`agent`、`chat` 以后加 |
+| `range` | 只对 Markdown，导多少：`all`（不写的也是）。`context`、`{"turns": N}` 以后加 |
+| `locale` | 只对 Markdown：显示名、旁白用哪种语言（`zh`、`ja`、别的是英文）；不写的照握手时的 |
 
-**回应**：`path`、`bytes`（包多大）、`upto`（这个会话导到第几条）、`sessions`（包里有哪几个会话）、`blobs`（几个附件、大内容）。
+**回应**（原始包）：`path`、`bytes`（包多大）、`upto`（这个会话导到第几条）、`sessions`（包里有哪几个会话）、`blobs`（几个附件、大内容）。
 
-- **包里有什么**：这个会话日志的各段原文，一个字节不改；挂在它下面的会话（子代理、分叉出来的支线）整份带上；它是分叉出来的，来源会话到分叉点为止的那几段也带上，一层层往上；这些日志引用到的附件、改文件前后的内容、大输出、策略快照；`manifest.json` 写着每一项的 SHA-256。
+**回应**（Markdown）：`path` 或 `text`、`bytes`（多少字节）、`tokens`（估算，同底栏上下文用量的算法）、`upto`（导到第几条）、`redacted`（隐去了哪几个密钥、各几处，例如 `{"openai": 2}`）。
+
+- **原始包里有什么**：这个会话日志的各段原文，一个字节不改；挂在它下面的会话（子代理、分叉出来的支线）整份带上；它是分叉出来的，来源会话到分叉点为止的那几段也带上，一层层往上；这些日志引用到的附件、改文件前后的内容、大输出、策略快照；`manifest.json` 写着每一项的 SHA-256。包里什么都有，包括她碰过的文件内容，自己留好。
+- **Markdown 长什么样**（`read`）：开头是标题、时间段、模型、token 合计；角色的小标题是英文（`User`、`Assistant`、`Tool`、`Subagent`），显示名、旁白照语言；思考、长输出、子代理的交代、压缩的摘要折在 `<details>` 里；图片、附件写占位；撤掉的轮、撤回的排队消息不进；家目录写成 `~`。和界面上看到的是同一份。
+- **密钥**：你在密钥里设了的值（至少 8 个字），在 Markdown 里原样出现的换成 `[redacted: <名字>]`。原始包不改。
 - **在跑的会话**照这一刻已经写下的取，正在写的那半行不要。
-- 不改会话，也不写进会话日志。包里什么都有，包括她碰过的文件内容，自己留好。
+- 不改会话，也不写进会话日志。
 
-**出错**：`bad_params`（路径不是绝对的、`format` 不认得）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）。
+**出错**：`bad_params`（路径不是绝对的、`format`、`to` 不认得、原始包写了 `inline` 或 Markdown 的参数；写了以后才加的 `for`、`range` 和 `thinking`、`tools`、`children`、`assets`，`data.later` 说是哪一个）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）；`export_too_big`（放进回应的超过 512 KiB，改成存文件）。
 
 ## `session.import`
 

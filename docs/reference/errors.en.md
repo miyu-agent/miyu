@@ -40,6 +40,7 @@ Chinese version: [errors.md](errors.md).
 | `export_exists` | The export file is already there; not overwritten | |
 | `export_in_data_root` | An export won't be written inside the data root | |
 | `export_unwritable` | The export folder isn't there or can't be written | |
+| `export_too_big` | An export put in the reply (`inline`) is over 512 KiB: save it to a file instead | |
 | `bad_bundle` | The import isn't a session bundle | |
 | `bundle_mismatch` | The session bundle is damaged: hashes or sequence numbers don't match | |
 | `bundle_too_new` | The bundle was made by a newer version | |

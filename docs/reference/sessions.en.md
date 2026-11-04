@@ -27,7 +27,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.fork`](#sessionfork) | Fork a child session |
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`session.prompts`](#sessionprompts) | List what was asked in a session |
-| [`session.export`](#sessionexport) | Export a session as a raw bundle |
+| [`session.export`](#sessionexport) | Export a session as a raw bundle or Markdown |
 | [`session.import`](#sessionimport) | Import a raw bundle |
 | [`view.page`](#viewpage) | Read history page by page |
 | [`view.detail`](#viewdetail) | The full diff of a tool call; a compaction's summary |
@@ -441,23 +441,30 @@ List everything you asked in a session, in order. Heads build a "jump to a promp
 
 ## `session.export`
 
-Writes a session as a raw bundle (ZIP) to a path you give: for archiving, moving to another machine, or debugging. Importing will only accept this format. For people's heads only.
+Exports a session to a path you give, or into the reply: the raw bundle (ZIP) is for archiving, moving to another machine, or debugging, and importing will only accept it; Markdown is for reading. For people's heads only.
 
 **Params**:
 
 | Name | Notes |
 |---|---|
 | `session` | Session id |
-| `format` | `bundle`: the raw bundle. Markdown comes later |
-| `to` | `{"path": "<absolute path>"}`: the core writes this file |
+| `format` | `bundle`: the raw bundle. `markdown`: Markdown |
+| `to` | `{"path": "<absolute path>"}`: the core writes this file. `"inline"`: put it in the reply's `text`; Markdown only |
+| `for` | Markdown only, who it's for: `read` (reading it yourself; also when left out). `agent` and `chat` come later |
+| `range` | Markdown only, how much: `all` (also when left out). `context` and `{"turns": N}` come later |
+| `locale` | Markdown only: the language of display names and notes (`zh`, `ja`, anything else is English); left out, the one from the handshake |
 
-**Result**: `path`, `bytes` (bundle size), `upto` (the last event of this session in it), `sessions` (the sessions in it), `blobs` (how many attachments and large contents).
+**Result** (bundle): `path`, `bytes` (bundle size), `upto` (the last event of this session in it), `sessions` (the sessions in it), `blobs` (how many attachments and large contents).
 
-- **What's in it**: every segment of the session's log, byte for byte; the sessions under it (subagents, forked branches) in full; if it was forked, its source up to the fork point, level by level; the attachments, file contents before and after edits, large outputs and policy snapshots those logs refer to; `manifest.json` with each item's SHA-256.
+**Result** (Markdown): `path` or `text`, `bytes`, `tokens` (an estimate, the same one as the context use in the status bar), `upto` (the last event in it), `redacted` (which secrets were hidden and how many times, e.g. `{"openai": 2}`).
+
+- **What's in a bundle**: every segment of the session's log, byte for byte; the sessions under it (subagents, forked branches) in full; if it was forked, its source up to the fork point, level by level; the attachments, file contents before and after edits, large outputs and policy snapshots those logs refer to; `manifest.json` with each item's SHA-256. The bundle holds everything, including file contents she touched, so keep it safe.
+- **What the Markdown looks like** (`read`): a header with the title, time span, models and total tokens; role headings in English (`User`, `Assistant`, `Tool`, `Subagent`), display names and notes in the chosen language; thinking, long outputs, subagent briefs and compaction summaries folded in `<details>`; placeholders for images and attachments; undone turns and withdrawn queued messages left out; the home folder written as `~`. It's the same as what the interface shows.
+- **Secrets**: values you set as secrets (8 characters or more) are replaced with `[redacted: <name>]` wherever they appear in the Markdown. The bundle isn't changed.
 - **A running session** is taken as written at that moment, without the half-written last line.
-- It doesn't change the session or write to its log. The bundle holds everything, including file contents she touched, so keep it safe.
+- It doesn't change the session or write to its log.
 
-**Errors**: `bad_params` (the path isn't absolute, unknown `format`); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written).
+**Errors**: `bad_params` (the path isn't absolute, unknown `format` or `to`, `inline` or Markdown params on a bundle; `for`, `range`, `thinking`, `tools`, `children` or `assets` values that come later, with `data.later` naming which); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written); `export_too_big` (over 512 KiB for the reply; save it to a file).
 
 ## `session.import`
 
