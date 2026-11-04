@@ -42,11 +42,12 @@ fn said_hello() -> Reply {
     Reply::stream(vec![Piece::Bytes(bytes)])
 }
 
-/// 日志里的 `model.called`，照先后。
+/// 日志里主请求的 `model.called`，照先后。一轮答完内核会另起标题（`purpose` 是 `title`）：假服务器只接剧本里那几个连接，
+/// 起标题的连不上、照样记一条出错的，什么时候落盘看时序，不数它（FL-3）。
 fn called(log: &[Event]) -> Vec<&ModelCalled> {
     log.iter()
         .filter_map(|event| match &event.body {
-            Body::ModelCalled(called) => Some(called),
+            Body::ModelCalled(called) if called.purpose.is_none() => Some(called),
             _ => None,
         })
         .collect()
