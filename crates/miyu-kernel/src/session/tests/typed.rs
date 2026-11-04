@@ -69,6 +69,7 @@ fn a_typed_command_is_sent_like_a_message_and_keeps_the_line() {
             blocks: text("Review a.rs carefully."),
             venue: None,
             command: Some(review()),
+            shell: false,
         })
     );
     let Body::MessageUser(message) = &events[0].body else {

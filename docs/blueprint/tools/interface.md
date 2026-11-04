@@ -18,6 +18,7 @@
 | `crates/miyu-tool/src/questions.rs` | 提问的端口 `QuestionPort`、等回答的 `Answering`，那件工具的名字 `ASK_USER`（施工 D-2） |
 | `crates/miyu-tool/src/nested.rs` | 脚本调工具的端口 `NestedPort`、等它了结的 `Calling`、结局 `Nested`（`Settled`、`Refused`）（施工 M-2，设计 `39-脚本调工具.md`） |
 | `crates/miyu-tool/src/todos.rs` | 待办那件工具的名字 `TODOWRITE`（施工 D-3）：执行器照它定工具面；工具不用端口，只报效果 `todo.written` |
+| `crates/miyu-tool/src/person.rs` | 给人跑一条（施工 SH-1 上，设计 57）：人打的命令 `PersonCommand`、跑完的样子 `PersonRun`、怎么结束的 `PersonEnd`、等它的 `PersonRunning`、叫停的口子 `Halt` |
 | `crates/miyu-tool/src/catalog.rs` | 工具目录，登记时查的几条；改过名的照以前的名字也找得到（施工 7-5 再补） |
 | `crates/miyu-tool/src/jobs.rs` | 任务端口 `JobPort`、交出去的后台命令 `Background`、它的进程 `Process`、怎么结束的 `Exit`（施工 7-3）；列出来的 `Listed`、读到的 `Output`、读不了停不了的 `JobError`（施工 7-4） |
 | `crates/miyu-tool/src/testkit.rs` | 测试用的假工具（`testkit` 开关打开时才编）；`testkit/held.rs` 是假的后台命令 `Held`（施工 7-3）；`testkit/renamed.rs` 是换了名字的一件 `Renamed`，造改名以前的核心的目录（施工 7-5 再补） |
@@ -56,6 +57,7 @@
 | `formerly()` | 以前的名字：改过名的工具，改名以前造的会话快照里冻着旧名字，她照旧名字调；默认没有（施工 7-5 再补，`tools/subagent.md`「以前的名字」） |
 | `clicall_section(tools, shapes)` | 说明末尾讲脚本调工具的那一段（施工 M-4，`tools/shell.md`「脚本调工具」第 10 条）：组工具面时，有脚本里能调的工具才照它接上，`tools` 是能调的名单、`shapes` 是结果的样子；跑命令的工具有，默认没有 |
 | `runs_commands()` | 跑命令的工具（施工 BS-1 上，设计 44 第三节第 3 条）：它跑的命令里开 `miyu call` 的通道、说明后面接 `clicall_section`、放行它在沙盒外跑时 `miyu check` 提醒 `sandbox_shell`。核心照这一条认，不看名字；出厂的 `shell` 是，默认不是 |
+| `run_for_person(PersonCommand, Halt)` | 给人跑一条（施工 SH-1 上，「七、给人跑一条」）：**只给人用**，跑命令的工具实现，默认没有（`None`） |
 | `background_parameter()` | 只在会话有后台时才给的参数（施工 BS-1 上）：后台运行关着的会话，组工具面时去掉它。出厂的 `shell` 是 `run_in_background`，默认没有 |
 | `command_only()` | 不上工具面（施工 BS-1 中，设计 44 第三节第 4 条）：不写进 tools 数组，她直接调、`miyu call` 调都当不认识，只给核心自带的命令（会话里的 `miyu pkg`）经通道调（`op: "pkg"`），照常过链、问人。出厂的 `packages`、`package` 是，默认不是 |
 
@@ -214,6 +216,15 @@
 
 **工具面的预算**（`10-自带软件.md` 第九节，施工 4-10）：`resources/software/basesystem/tools/` 下的几份说明（说明和参数）加起来不超过 7600 字节，回车 `\r` 不算。预算是实测加一成：施工 C-3 加了 `sessions` 以后十二件的边际份量合计 1852 个 token、6858 字节（2026-10-01 量，`sessions` 95），约 3.7 字节一个 token，加一成是 2037 个 token；仓库里没有分词器，所以照字节守。加工具、改说明超了，重新量过再改预算。
 
+#### 七、给人跑一条
+
+施工 SH-1 上，设计 57 第二节第 1 条：人在头的输入框里用 `!` 打的命令（`protocol.md` 的 `session.send` 第 10 条）由声明跑命令的工具跑，核心不认名字。
+
+1. 钩子 `run_for_person(command, halt)`：`command` 是原样的命令行和在哪个目录跑（会话那一刻的工作目录，`~` 已经照家目录接好）。交回一个等结果的 future；工具不跑命令（默认）的交回 `None`。
+2. 结果 `PersonRun`：怎么结束的（`Exited` 自己退出、被信号杀掉的也算，`TimedOut` 到了时限，`Interrupted` 被叫停）、退出码或信号、合法化过的输出（标准输出、标准错误合在一起，`\r\n` 换成 `\n`，太长的照工具自己的截法）、截掉几个字、用时毫秒。起不来的（程序找不到、目录不在）交回出错。
+3. 叫停 `Halt`：执行器打断时举起来（`halt`），工具事先登记的那一下（`on_halt`）当场被调；举起来时还没登记的，登记的那一刻就调。只调一次，不轮询。
+4. 只给人用：执行器只在内核为人发的 `shell` 消息交出 `RunShell` 时调它（`session/tools.md`「人跑的命令」）；她的调用走 `run`，碰不到。这条路不判权限、不进沙盒、不过工具给她设的挡。
+
 ### 出错
 
 登记不上时写成的字（`CatalogError`，名字照 Rust 的写法带引号）：
@@ -250,6 +261,7 @@
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-policy/src/overrides/tests.rs`、`crates/miyu-store/src/overrides/tests.rs`、`crates/miyu-endpoint/tests/tool_override.rs`（施工 OV-1 上） | 只盖写了的格、没写参数说明的字节不变、参数不在的整件不换、写坏的几种说为什么；只认 `<工具名>.toml`；真核心开会话工具面照覆盖换、写坏的照出厂、`check` 报 |
+| `crates/miyu-tool/src/person/tests.rs`、`crates/miyu-basesystem/tests/person.rs`（施工 SH-1 上） | 叫停的口子登记了再举、举了再登记都调一次，举两次只调一次；`shell` 的钩子交回退出码和输出、人打的 `sleep` 照跑而她的同一句照旧被拒、叫停整组杀掉交回到这时的输出，不跑命令的工具没有钩子 |
 | `crates/miyu-tool/src/catalog/tests.rs` | 照名字排、空目录、同名、名字的写法（空的、65 个字节、空格、中文、`.`、`/`；64 个字节的行）、参数格式不是对象、报排在前面的那一件、参数格式一字不差；照以前的名字找得到、以前的名字不进工具面、以前的名字撞名（施工 7-5 再补） |
 | `crates/miyu-policy/src/tools/tests.rs` | 快照里的工具面照名字排、读得回来；没有工具的快照字节不变；两件同名造不出策略；两句带上工具名；两句写坏了说是哪一份 |
 | `crates/miyu-session/tests/tools.rs` | 请求照名字带工具面、载入的老会话照快照发、在这一轮的工作目录里跑、出错的结果、执行中的输出推给头不落盘、两件只读的一起跑、打断丢掉在跑的、目录里没有的、崩了会话照常、会话停了丢掉在跑的 |

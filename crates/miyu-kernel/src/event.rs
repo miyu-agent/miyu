@@ -28,6 +28,7 @@ mod question;
 mod read;
 mod restore;
 mod session;
+mod shell;
 mod tool;
 mod transient;
 mod turn;
@@ -61,6 +62,7 @@ pub use session::{
     CommandRan, Dream, Effort, Forked, Level, MetaChanged, Permission, PolicyChanged,
     SessionCreated, SessionRecapped, SessionSealed, TodosCleared, WorkspaceChanged,
 };
+pub use shell::{ShellRan, ShellReason};
 pub use tool::{ApprovalDecided, ApprovalRequested, Decision, Said, Sent, ToolResult, ToolStatus};
 pub use transient::{
     ChangeWhy, CompactableChanged, CompactionDone, CompactionProgress, CompactionStarted,
@@ -220,6 +222,8 @@ bodies! {
     ChildReported = "child.reported",
     /// 监视的后台命令出的一批行（施工 MN-1 上）。
     JobLines = "job.lines",
+    /// 人在输入框里用 `!` 打的一条命令跑完了（施工 SH-1 上）。
+    ShellRan = "shell.ran",
     /// 等的那个会话空下来了，或者等不到了（施工 C-1）。
     PeerIdle = "peer.idle",
     /// 一张图的转述：看不了图的模型由 `models.vision` 替它看过（施工 8-17）。

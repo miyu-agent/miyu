@@ -49,6 +49,8 @@ pub(super) enum Ending {
     Exited(ExitStatus),
     /// 到时了，整组杀掉了。
     TimedOut,
+    /// 人打断了人打的那条命令，整组杀掉了（施工 SH-1 上）：她的调用不会有。
+    Halted,
 }
 
 /// 跑完的一条命令：怎么结束的，读到的输出。

@@ -131,6 +131,11 @@ pub(super) enum Stage {
         /// 还在等的图。
         waiting: BTreeSet<ContentHash>,
     },
+    /// 人打的一条命令在跑（施工 SH-1 上，`shell.rs`）：交回来了记下、回到「准备好」。
+    Shell {
+        /// 哪一句。
+        message: Seq,
+    },
     /// 请求在路上。
     Asking(Call),
     /// 出了可以重试的错，等着再来（施工 3-5 下）：到点了回到「准备好」，照有效历史再组装一次。
@@ -314,6 +319,10 @@ impl Session {
                 }]
             }
             Stage::Ready if self.unstored.is_empty() => {
+                // 她听到人打的命令的这一刻先跑，记下、落了盘再往下走（施工 SH-1 上，`shell.rs`）。
+                if let Some(running) = self.run_shell() {
+                    return running;
+                }
                 // 这一轮里到的监视命令的行先记下、落了盘再投影（施工 MN-1 上，`watch.rs`）。
                 let lines = self.record_pending_lines(at);
                 match lines.is_empty() {

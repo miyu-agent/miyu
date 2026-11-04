@@ -97,6 +97,8 @@ pub struct Stage {
     pub(super) sight: super::sight::Sight,
     /// 下一个回合开始时换上的策略和它的快照哈希（施工 P-1 再补，`swap.rs`）。
     pub(super) swap: Option<(ContentHash, Box<dyn Fn() -> Policy>)>,
+    /// 人打的命令（施工 SH-1 上，`shell.rs`）。
+    pub(super) shells: super::shell::Bench,
 }
 
 impl Stage {
@@ -452,6 +454,7 @@ impl Stage {
         self.held_tools.clear();
         self.held_wake = None;
         self.drop_nested();
+        self.drop_shell();
         let at = self.tick();
         let (session, actions) = self
             .load(at)

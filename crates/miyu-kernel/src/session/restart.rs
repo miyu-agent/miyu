@@ -61,6 +61,16 @@ impl Session {
                     call.id
                 })
                 .collect(),
+            // 人打的命令在跑（施工 SH-1 上）：叫它停，记 `aborted`；排着的留给接着干的那一轮。
+            Stage::Shell { message } => {
+                stops.push(Action::HaltShell { message });
+                let reason = crate::event::ShellReason::Aborted;
+                let by = By::Kernel;
+                events.extend(
+                    self.give_up_shells(at, (&by, cause.clone()), reason, |seq| seq == message),
+                );
+                Vec::new()
+            }
             Stage::Opening { .. }
             | Stage::Hooking
             | Stage::Ready

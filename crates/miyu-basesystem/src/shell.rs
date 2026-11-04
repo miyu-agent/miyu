@@ -12,6 +12,7 @@ mod clixml;
 mod env;
 mod moved;
 mod output;
+mod person;
 mod process;
 mod program;
 mod results;
@@ -35,7 +36,8 @@ use miyu_kernel::template::Template;
 use miyu_kernel::tool::{Access, Worded};
 use miyu_policy::hazard::{Kind, Places, assess};
 use miyu_tool::{
-    Background, Call, Done, Effect, Hazard, Process as _, Progress, Running, Spec, Tool,
+    Background, Call, Done, Effect, Halt, Hazard, PersonCommand, PersonRunning, Process as _,
+    Progress, Running, Spec, Tool,
 };
 
 use crate::blocking::blocking;
@@ -44,6 +46,7 @@ use crate::load::{self, LoadError, say};
 use process::{Finished, Guard, Handover, Waited};
 use program::Program;
 use results::Results;
+use waiting::{limit, sleeps};
 
 /// 不写 `timeout` 的等多久，毫秒（照 Claude Code）。改它要跟着改参数格式里的那一句。
 const DEFAULT: u64 = 120_000;
@@ -295,6 +298,11 @@ impl Tool for Shell {
         true
     }
 
+    /// 只给人用（`person.rs`）：她的调用走 `run`。
+    fn run_for_person(&self, command: PersonCommand, halt: Halt) -> Option<PersonRunning<'_>> {
+        Some(self.person(command, halt))
+    }
+
     fn background_parameters(&self) -> &'static [&'static str] {
         &[miyu_tool::RUN_IN_BACKGROUND, WATCH]
     }
@@ -451,19 +459,6 @@ fn workdir(call: &Call) -> PathBuf {
     match (tilde(&call.cwd), call.home.as_deref()) {
         (Some(rest), Some(home)) => home.join(rest),
         _ => PathBuf::from(&call.cwd),
-    }
-}
-
-/// 开头是 `sleep` 的（照 Claude Code）：到时照旧杀，不挪到后台（施工 7-12）。
-fn sleeps(command: &str) -> bool {
-    command.split_whitespace().next() == Some("sleep")
-}
-
-/// 她写的 `timeout`：没写、写 0 的按默认，超过上限的按上限。
-fn limit(timeout: Option<u64>) -> u64 {
-    match timeout {
-        None | Some(0) => DEFAULT,
-        Some(timeout) => timeout.min(MAX),
     }
 }
 

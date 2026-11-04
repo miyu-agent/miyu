@@ -180,7 +180,7 @@ fn spoken(history: &History, price: &dyn Price) -> Vec<(Said, u64)> {
             {
                 continue;
             }
-            Body::MessageUser(_) => Said::User,
+            Body::MessageUser(_) | Body::ShellRan(_) => Said::User,
             Body::MessageAssistant(_) => Said::Assistant,
             Body::ToolResult(_) => Said::ToolResult,
             Body::ChildReported(_) | Body::JobReported(_) | Body::JobLines(_) => Said::Report,

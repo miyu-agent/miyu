@@ -13,6 +13,7 @@
 | `crates/miyu-basesystem/src/shell/env.rs` | 命令拿得到哪些环境变量 |
 | `crates/miyu-basesystem/src/shell/process.rs` | 起命令、读输出、等它结束、整组杀 |
 | `crates/miyu-basesystem/src/shell/process/waits.rs` | 等命令结束（施工 M-7 上挪出来）：进程结束和「在等人」「等完了」进同一根通道，等人的那几段不算时限 |
+| `crates/miyu-basesystem/src/shell/person.rs` | 给人跑一条（施工 SH-1 上，`interface.md`「七、给人跑一条」）：只给人用，下面「给人跑」 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
 | `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs`、`channel/leftovers.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/touched.rs` | 前台命令改了她看过的文件：起来之前记修改时刻和大小，跑完变了的重读，交 `file.read`（施工 E-D 补） |
@@ -175,6 +176,14 @@
 - 原来只传白名单，名单外的一律不传：桌面的（`DISPLAY`）、工具链的（`KUBECONFIG`、`PKG_CONFIG_PATH`）都丢了，终端里能跑的命令到这里就不行，名单补不完（2026-10-17 项目主人报，照推荐改）。
 - 拿到的是核心起来时的环境（`config.md`「密钥」）：核心是从 SSH 或者桌面起来以前拉起的，就没有 `DISPLAY`；桌面重登以后那几个值也是旧的。
 
+**给人跑**（施工 SH-1 上，设计 57 第二节第 1 条，`Tool::run_for_person`）：人在头里用 `!` 打的一条，执行器调这个钩子，她的调用碰不到。
+
+1. 同一个程序（「用哪个 shell」）、同一套挑过的环境变量（上面的表，不套沙盒，所以桌面的那几个照传）、同一个起法（自成一组、看门的、标准输入接空的、两路合一根管道）、同一个截法（第 7 条的头尾两段，中间一行写省了多少）。在交来的目录里跑（会话那一刻的工作目录，执行器已经接好 `~`）。
+2. 给她设的几道挡不过：不查高危（那是权限链的事，这条路不过权限链）、不拦干等的 `sleep`（第 4 条）、不开 `miyu call` 的通道、不看她看过的文件改没改、不挪到后台。
+3. 时限照不写 `timeout` 时的默认 120 秒，不开参数调：到了整组杀，交回到这时的输出，结束是 `TimedOut`。
+4. 叫停（`Halt`）：等的那根通道多一种「停」（`process/waits.rs`），举起来就整组杀，交回到这时的输出，结束是 `Interrupted`。它的前台、后台调用不收这一种。
+5. 交回退出码（被信号杀掉的是信号，Unix）、合法化过的输出、截掉几个字、用时；起不来的交回出错，原话照系统的。
+
 ### 样子
 
 `printf 'x\n'; exit 2`：
@@ -300,6 +309,7 @@ Exit code 2
 
 | 测试 | 守哪几条 |
 |---|---|
+| `crates/miyu-basesystem/tests/person.rs`、`src/shell/person/tests.rs`（施工 SH-1 上） | 真的起进程、三个平台：给人跑的交回退出码、两路合在一起的输出；人打的 `sleep` 照跑、她的同一句照旧拒 `shell/no-sleep`；叫停整组杀、交回到这时的输出；到时（测试里换短的）整组杀、带着到这时的输出 |
 | `crates/miyu-basesystem/tests/watch.rs`（施工 MN-1 上） | 真的起进程、三个平台：写了 `watch` 的放到后台、结果那一句（30 分钟）；标准输出单独交进 `lines`、标准错误不在里面，写文件的那一份两路都有；不写的没有 `lines`；没有任务端口的不跑 |
 | `crates/miyu-basesystem/tests/background.rs`（施工 7-3） | 真的起进程、三个平台：当场返回编号、说法、`job.started`（标题是 `description`），命令接着跑；标准错误合进来、`\r\n` 换成 `\n`；退出码；`timeout` 不管后台的；环境变量和前台一样（4-8 补：带着探针重新拉起测试程序）；杀掉就停；没有任务端口的不跑；端口收不下的说起不来、不报效果。Unix：整组杀连它放到后台的、自己退出以后组里剩下的也停了、信号照原样、单独的 `\r` 不动、最后半个字换成 `�` |
 | `crates/miyu-session/tests/jobs_moved.rs`（施工 7-12） | 真的 `shell`、三个平台：前台到时挪到后台，调用当场交回编号、`job.started`，跑完了记 `job.reported`，输出是挪过去以前读到的接上以后的（`\r\n` 换好）；挪过去以前输出太长的照给她看的截在中间；人停得掉；开头是 `sleep` 的照旧杀、不进任务表；Linux 上结束了组里放出去的也杀掉 |

@@ -18,6 +18,7 @@ mod human_history;
 mod jobs;
 mod package;
 mod packages;
+mod person;
 mod read;
 mod read_image;
 mod script;

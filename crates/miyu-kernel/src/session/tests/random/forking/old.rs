@@ -260,6 +260,7 @@ pub(super) fn loader(
         reports,
         parent,
         kept: base,
+        shells: Default::default(),
         ledger,
         replay: Replay::default(),
         duty: Duty::default(),

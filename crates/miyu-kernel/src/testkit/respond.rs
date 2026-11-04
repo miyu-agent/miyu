@@ -76,6 +76,13 @@ impl Stage {
                 self.held_model.take_if(|(held, _)| *held == seen);
                 Vec::new()
             }
+            // 人打的命令（施工 SH-1 上）：`shell.rs`。
+            Action::RunShell {
+                message,
+                command,
+                cwd,
+            } => self.run_shell(message, command, cwd),
+            Action::HaltShell { message } => self.halt_shell(message),
             // 嵌套调用（施工 M-1）：`nested.rs`。
             Action::Nested(nested) => self.act_nested(nested),
             Action::GuardTool { call_id, .. } => vec![Input::ToolGuarded {

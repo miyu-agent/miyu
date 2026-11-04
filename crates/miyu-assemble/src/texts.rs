@@ -249,6 +249,12 @@ pub struct JobTexts {
     pub lines_open: Template,
     /// 它的收尾（`lines-close.txt`，施工 MN-1 上）。以前造的快照里没有，是空的：那样的会话出不了 `job.lines`，不渲染。
     pub lines_close: String,
+    /// 人用 `!` 跑的命令的标签（`shell-open.txt`，施工 SH-1 上）：字段 `reason`。以前造的快照里没有，是空的。
+    pub shell_open: Template,
+    /// 那一行命令（`shell-command.txt`，施工 SH-1 上）：字段 `command`。以前造的快照里没有，是空的。
+    pub shell_command: Template,
+    /// 它的收尾（`shell-close.txt`，施工 SH-1 上）。以前造的快照里没有，是空的：那样的会话照原样放那一行命令，输出不渲染。
+    pub shell_close: String,
 }
 
 /// 别的 harness 发来的话的标签（施工 7-10，`docs/blueprint/kernel/request.md`「别的 harness 发来的话」）：一块带标签的事实，

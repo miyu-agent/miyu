@@ -132,7 +132,8 @@ impl InputKind {
                     venue: Some(venue), ..
                 } if venue.ambient => InputKind::Overheard,
                 Command::Send { urgent: false, .. } => InputKind::Send,
-                Command::Typed { .. } => InputKind::Send,
+                // 随机测试不造人打的命令（施工 SH-1 上，场景测试测）：照发消息算。
+                Command::Typed { .. } | Command::Shell { .. } => InputKind::Send,
                 Command::Send { urgent: true, .. } => InputKind::Urgent,
                 Command::Interrupt {
                     queued: Queued::Send,
@@ -184,7 +185,7 @@ impl InputKind {
             Input::RequestSent { .. } => InputKind::RequestSent,
             Input::ModelDelta { .. } => InputKind::ModelDelta,
             Input::ModelEnded { .. } => InputKind::ModelEnded,
-            Input::ToolDone { .. } => InputKind::ToolDone,
+            Input::ToolDone { .. } | Input::ShellRan { .. } => InputKind::ToolDone,
             Input::ToolProgress { .. } => InputKind::ToolProgress,
             Input::ToolGuarded { .. } => InputKind::ToolGuarded,
             Input::ToolAsks { .. } => InputKind::ToolAsks,

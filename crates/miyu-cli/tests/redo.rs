@@ -39,6 +39,7 @@ fn said(home: &Home, session: &SessionId) -> Vec<String> {
                 blocks,
                 venue: None,
                 command: None,
+                shell: false,
             }) => Some(blocks),
             _ => None,
         })

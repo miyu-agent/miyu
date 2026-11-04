@@ -101,6 +101,11 @@ pub(super) async fn send(
         (None, Some(package)) => from::harness(package)?,
         (None, None) => crate::sessions::person(),
     };
+    // 人用 `!` 打的命令（施工 SH-1 上）：只收人，不带附件，要有跑命令的工具。
+    if params.shell {
+        shell_allowed(&params, caller)?;
+    }
+    let shell = params.shell.then(|| params.text.clone());
     let mut blocks = said(params.text);
     let session = session(&params.session)?;
     // 场所的那几格（施工 O-13 上）：先查写法，只跟着 `as` 来。
@@ -121,20 +126,31 @@ pub(super) async fn send(
     let mut found = core.sessions.get(core, &session).await?;
     // 没有本机路径的落成会话里的文件，她拿得到路径（施工 3-9 六补）。
     attach::keep(core, &session, &mut blocks).await?;
-    let command = Command::Send {
-        blocks,
-        urgent: params.urgent,
-        venue,
+    let shell_sent = shell.is_some();
+    let command = match shell {
+        Some(text) => Command::Shell {
+            text,
+            urgent: params.urgent,
+        },
+        None => Command::Send {
+            blocks,
+            urgent: params.urgent,
+            venue,
+        },
     };
     // 场所会话只收代表外部的人说的话，本机的会话不收（施工 O-3，`venues.md`）。
     let local = found.handle.venue().as_str() == list::LOCAL;
     match (local, params.as_external) {
         (true, None) => {}
         (true, Some(_)) => return Err(Refusal::BAD_PARAMS),
+        (false, _) if shell_sent => return Err(Refusal::SHELL_NOT_ALLOWED),
         (false, None) => return Err(Refusal::VENUE_SESSION),
         (false, Some(speaking)) => {
             by = venues::speaker(core, &found.handle, speaking)?;
         }
+    }
+    if shell_sent && !runs_commands(core) {
+        return Err(Refusal::SHELL_UNAVAILABLE);
     }
     // 先换目录再说（施工 9-7 再补）：这一句开的那一轮照新目录跑。
     let wide = match params.cwd.as_deref() {
@@ -158,6 +174,32 @@ pub(super) async fn send(
         reply["untrusted_project"] = json!(file);
     }
     Ok(reply)
+}
+
+/// 人用 `!` 打的命令能不能收（施工 SH-1 上，设计 57 第二节第 1 到 3 条）：别的 harness 报了名字的、扩展说的、代表平台上的人的
+/// 拒绝 `shell_not_allowed`（场所会话在找到会话以后拒）；带附件、场所那几格的 `bad_params`。
+fn shell_allowed(params: &SendParams, caller: &Caller) -> Result<(), Refusal> {
+    if params.from.is_some() || caller.package.is_some() || params.as_external.is_some() {
+        return Err(Refusal::SHELL_NOT_ALLOWED);
+    }
+    let attached = params
+        .attachments
+        .as_ref()
+        .is_some_and(|attached| !attached.is_empty());
+    match attached || params.venue.is_some() {
+        true => Err(Refusal::BAD_PARAMS),
+        false => Ok(()),
+    }
+}
+
+/// 有没有跑命令的工具（设计 57 第二节第 1 条）：装着、包没关的目录里有一件声明跑命令的；预设不管。
+fn runs_commands(core: &Core) -> bool {
+    let tools = core.tools();
+    tools.specs().any(|spec| {
+        tools
+            .get(&spec.name)
+            .is_some_and(|tool| tool.runs_commands())
+    })
 }
 
 /// `session.interrupt`：打断。

@@ -189,6 +189,8 @@ pub fn event(event: &Event, price: &dyn Price) -> u64 {
         Body::JobReported(reported) => tokens(reported.tail.as_ref().map_or(0, String::len)),
         // 监视的命令出的行（施工 MN-1 上）：这一批原样放进请求。
         Body::JobLines(lines) => tokens(lines.text.len()),
+        // 人打的命令的输出（施工 SH-1 上）：和那句话拼在一起原样放进请求。
+        Body::ShellRan(ran) => tokens(ran.text.len()),
         _ => 0,
     }
 }

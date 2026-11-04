@@ -48,6 +48,7 @@ mod goals;
 mod halt;
 mod kit;
 mod nested;
+mod person;
 mod preview;
 mod questions;
 mod sandboxed;
@@ -117,6 +118,8 @@ pub(crate) struct Tools {
     unsandboxed: crate::unsandboxed::Unsandboxed,
     /// 子目录的项目指令（施工 P-14 下，`docs.rs`）。
     docs: docs::Docs,
+    /// 人用 `!` 打的、在跑的那一条（施工 SH-1 上，`person.rs`）。
+    person: person::Person,
     backs: mpsc::UnboundedSender<Back>,
 }
 
@@ -154,8 +157,7 @@ pub(crate) struct Dispatch {
     pub(crate) asked: Option<By>,
     /// 这一轮的配置（施工 R-5 补）：记忆的端口照它的 `models.embedding` 算向量。
     pub(crate) config: TurnConfig,
-    /// 这个会话脚本里能调的工具和参数格式（施工 M-3，内核的 `Session::clicall_tools`）：直接调的 `shell` 照它开通道，一件
-    /// 都没有的不开。
+    /// 这个会话脚本里能调的工具和参数格式（施工 M-3，内核的 `Session::clicall_tools`）：直接调的 `shell` 照它开通道，一件都没有的不开。
     pub(crate) clicall: Vec<(String, RawJson)>,
     /// 有只给核心自带的命令调的工具（施工 BS-1 中，内核的 `Session::has_command_tools`）：会话里的 `miyu pkg` 要连通道，脚本里
     /// 一件能调的都没有也开。
@@ -246,6 +248,7 @@ impl Tools {
             nested: nested::Nesting::default(),
             unsandboxed: crate::unsandboxed::Unsandboxed::default(),
             docs: docs::Docs::default(),
+            person: person::Person::default(),
             backs,
         }
     }

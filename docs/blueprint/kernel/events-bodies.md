@@ -19,6 +19,7 @@
 | `crates/miyu-kernel/src/event/context.rs` | `context.injected`、`context.compacted`、`context.compaction_paused`（`PauseReason`） |
 | `crates/miyu-kernel/src/event/model.rs` | `model.called`（`FirstDifference`、`Usage`、`BlockSpan`、`CallResult`、`CallError`、`ErrorClass`，辅助请求的用途 `Purpose`、是不是辅助请求 `aside()`，施工 3-8 四补） |
 | `crates/miyu-kernel/src/event/nested.rs` | `tool.nested`（`NestedStatus`）（施工 M-1） |
+| `crates/miyu-kernel/src/event/shell.rs` | `shell.ran`（`ShellReason`）（施工 SH-1 上） |
 | `crates/miyu-kernel/src/event/job.rs` | `job.reported`（`JobReason`）、`child.reported`（`ChildReason`）（施工 7-1）、`job.lines`（施工 MN-1 上） |
 | `crates/miyu-kernel/src/event/peer.rs` | `peer.idle`（`PeerIdle`、`IdleReason`，施工 C-1） |
 | `crates/miyu-kernel/src/event/image.rs` | `image.described`（`ImageDescribed`，施工 8-17） |
@@ -224,6 +225,7 @@
 | `blocks` | 内容块的列表 | 必有 | 消息的内容：文字、图片、文件。现在经协议发来的只有一块文字（`protocol.md`） |
 | `command` | 对象 | 命令模板展开成的才有（施工 X-14 上，`slash.md`） | `name` 命令名，`text` 人敲的那一行原文（去掉前后空白）。`blocks` 是展开的那段，模型照它看；给人看的地方（视图、撤销的回执、会话列表的预览）照 `text` |
 | `venue` | 对象 | 通讯平台上的消息才有（施工 O-13 上） | `msg` 平台的消息编号（必有）；`reply_to` 引用的平台编号；`name` 发的人此刻在这个场所里叫什么；`my_name` 她此刻在这个场所里叫什么（施工 E-1 修三）；`place` 这个场所此刻叫什么（群名，施工 E-4 上，只给记忆）；`mentions` @ 了谁（平台身份的列表）；`mentions_me` @ 了她；`mentions_all` @ 了全体成员（不算 @ 她）；`media` 带的东西（每项 `kind`：`image`、`file`、`voice`、`video`、`sticker`，`id` 平台的编号，`name` 文件名、表情的字，`size` 多少字节（施工 O-33，以前记的没有），`shown` 原图已经当图片块交进来了（施工 O-35，假的不写，以前记的没有），不进内容块）；`forwards` 合并转发的内容（施工 O-34，每项 `nodes`（每条 `name`、`text`、`media`（每样可以带 `index`，转发里的编号，施工 O-61）、`forwards`）、`more`，写法和上限见 `venues.md`「场所的格」，以前记的没有）；`ambient` 旁听；`asleep` 睡着时收到的；`show_ids` 渲染这一条时写不写发的人的平台身份（施工 O-13 中）；`backfill` 补拉回来的，`sent` 平台给的时刻（施工 O-40，`venues.md`「场所的格」）。假的、空的、没写的不写。`ambient` 的不带回合编号：只记下，不开回合，回合进行中也不排进这一轮；投影这一步先跳过它，O-13 下渲染成群聊近况。群会话里不旁听的渲染成一行一条（施工 O-13 中，`miyu-assemble` 的 `group.rs`） |
+| `shell` | 布尔 | 是真时才有（施工 SH-1 上，设计 57） | 人在头里用 `!` 打的一条命令：`blocks` 是一块字，就是那一行命令。核心在她听到它的那一刻跑，结果记 `shell.ran`。不是真的不写，以前的日志一个字节不变 |
 
 **`message.assistant`**：模型一次响应的完整内容，工具调用也在里面。
 
@@ -535,6 +537,25 @@
 {"seq":107,"at":"2026-09-25T07:53:02.000Z","kind":"job.lines","by":{"kind":"tool","call_id":"call_100_1"},"cause":"cmd-6f92","body":{"job":"j1","text":"FAIL tests::tmpdir (macOS)\nFAIL tests::symlink (macOS)","lines":2,"omitted":0}}
 ```
 
+**`shell.ran`**：人用 `!` 打的一条命令跑完了（施工 SH-1 上，设计 57 第四节第 2 条，`kernel/session.md`「人跑的命令」）。`by` 是内核；`cause` 照那句话的，打断、重启时补的照打断的命令、那一轮的。在哪一轮跑的带那一轮的编号，撤掉那一轮就跟着撤；不带效果：命令改了的文件照「外面改的」算。
+
+| 格 | 写法 | 有没有 | 是什么 |
+|---|---|---|---|
+| `message` | 序号 | 必有 | 哪一句：那条写了 `shell` 的 `message.user` |
+| `exit` | 整数 | 自己退出的才有 | 退出码，照系统交回的原样（带符号） |
+| `signal` | 整数 | 被信号杀掉的才有（Unix） | 信号的编号 |
+| `duration_ms` | 整数 | 必有 | 从起进程到结束的毫秒数；没跑起来的（补的）是 `0` |
+| `text` | 字符串 | 必有 | 输出：标准输出、标准错误合在一起，`\r\n` 换成 `\n`，太长的照前台 `shell` 的截法留头尾、中间一行写省了多少；起不来的是为什么 |
+| `omitted` | 整数 | 必有 | 截掉了多少个字（Unicode 字符），没截的是 `0` |
+| `reason` | 字符串 | 异常结束的才有 | `timed_out` 跑到 120 秒整组杀掉了；`interrupted` 人打断了，在跑的整组杀掉、带着到这时的输出，排着没跑、也不接着发的没有输出；`aborted` 核心重启了或者崩了，没跑完、不重跑（重启时记，崩了的、重启以后不接着干的载入时补）。不认识的原样留着 |
+
+样本 `docs/designs/samples/events/shell.ran.jsonl`：
+
+```json
+{"seq":184,"at":"2026-11-04T08:10:00.130Z","kind":"shell.ran","turn":181,"by":{"kind":"kernel"},"cause":"cmd-a91c","body":{"message":180,"exit":0,"duration_ms":130,"text":" M src/main.rs\n?? notes.md\n","omitted":0}}
+{"seq":190,"at":"2026-11-04T08:14:20.000Z","kind":"shell.ran","turn":187,"by":{"kind":"kernel"},"cause":"cmd-b02d","body":{"message":186,"duration_ms":120000,"text":"Compiling miyu v0.1.0\n","omitted":0,"reason":"timed_out"}}
+```
+
 **`child.reported`**：子会话的回报（施工 7-1，`agents.md` 第二条）。`by` 是那个子会话（`{"kind":"session","id":<子会话>}`），由账本查。
 
 | 格 | 写法 | 有没有 | 是什么 |
@@ -631,6 +652,7 @@
 | `crates/miyu-kernel/src/event/tool/tests.rs` | `tool.result` 的五种状态、不认识的原样留着、没真执行过的没有用时、说法怎么记；确认的两种：每种决定、没写规则、说明、理由的不写这几格；坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/effect/tests.rs` | 四种效果读写一字不差；没显示行的不写 `lines`；新建的 `before` 写成 `null`、没写的当新建；不认识的原样留着；`job.started` 不认识的 `what` 原样留着、命令不写 `session`；`job.messaged` 读写一字不差（施工 7-7）；`peer.watch` 读写一字不差（`a_watch_on_another_session_round_trips`，施工 C-1）；`file.changed` 的 `before_text`、`after_text` 写了的读写一字不差、排在哈希后面，没写的不写（`small_contents_ride_along_and_are_left_out_when_absent`，施工 V-18）；坏的读不进来 |
 | `crates/miyu-kernel/src/event/job/tests.rs` | 两种回报（施工 7-1）：图纸上的写法读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、不写是假的几格是假时不写、没有的格不写、负的退出码、坏的说是哪一种 |
+| `crates/miyu-kernel/src/event/shell/tests.rs`（施工 SH-1 上） | `shell.ran`：图纸上的写法读写一字不差、正常结束的不写 `reason`、不认识的 `reason` 原样留着；`message.user` 的 `shell` 只在是真时写 |
 | `crates/miyu-kernel/src/event/image/tests.rs`（施工 8-17） | `image.described`：图纸上的一行读写一字不差、四格都要写、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/peer/tests.rs`（施工 C-1） | `peer.idle`：图纸上的两行读写一字不差、每种 `reason` 读成自己那一种、不认识的原样留着、`status` 写成 `null` 的不写、坏的说是哪一种 |
 | `crates/miyu-kernel/src/event/question/tests.rs` | 提问的两种：图纸上的写法、没写的格子不写、第 4 条对不对得上题目、坏的说是哪一种 |

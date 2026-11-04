@@ -44,6 +44,7 @@ mod retrying;
 mod said;
 mod seal;
 mod session_fact;
+mod shell;
 mod shorten;
 mod spans;
 mod steps;
@@ -91,6 +92,7 @@ fn told(event: &Event) -> String {
         Body::TurnEnded(ended) => format!(":{}", ended.reason.as_str()),
         Body::ContextInjected(fact) => format!(":{}", fact.kind.as_str()),
         Body::ModelCalled(called) => format!(":{}", called.result.as_str()),
+        Body::ShellRan(ran) => format!(":{}", ran.reason.as_ref().map_or("exited", |r| r.as_str())),
         Body::TurnReverted(TurnReverted { turns })
         | Body::TurnUnreverted(TurnUnreverted { turns }) => {
             let turns: Vec<String> = turns.iter().map(ToString::to_string).collect();

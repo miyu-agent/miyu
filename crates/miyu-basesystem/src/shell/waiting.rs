@@ -118,5 +118,18 @@ fn start_sleep(args: &[&str]) -> Option<Duration> {
     Some(found.unwrap_or(Duration::ZERO))
 }
 
+/// 开头是 `sleep` 的（照 Claude Code）：到时照旧杀，不挪到后台（施工 7-12）。
+pub(super) fn sleeps(command: &str) -> bool {
+    command.split_whitespace().next() == Some("sleep")
+}
+
+/// 她写的 `timeout`：没写、写 0 的按默认，超过上限的按上限。
+pub(super) fn limit(timeout: Option<u64>) -> u64 {
+    match timeout {
+        None | Some(0) => super::DEFAULT,
+        Some(timeout) => timeout.min(super::MAX),
+    }
+}
+
 #[cfg(test)]
 mod tests;

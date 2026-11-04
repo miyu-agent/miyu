@@ -15,6 +15,7 @@ mod package;
 mod prefs;
 mod project;
 mod schedule;
+mod shell;
 mod widgets;
 
 /// 一次拒绝：JSON-RPC 的错误码，和原因码。

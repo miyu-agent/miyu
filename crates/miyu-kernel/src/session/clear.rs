@@ -75,6 +75,7 @@ impl Session {
                         | Body::ToolResult(_)
                         | Body::JobReported(_)
                         | Body::JobLines(_)
+                        | Body::ShellRan(_)
                         | Body::ChildReported(_)
                         | Body::PeerIdle(_)
                 )

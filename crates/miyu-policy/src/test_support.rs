@@ -286,6 +286,9 @@ fn jobs() -> crate::JobTexts {
             .to_string(),
         lines_open: include_str!("../../../resources/core/jobs/lines-open.txt").to_string(),
         lines_close: include_str!("../../../resources/core/jobs/lines-close.txt").to_string(),
+        shell_open: include_str!("../../../resources/core/jobs/shell-open.txt").to_string(),
+        shell_command: include_str!("../../../resources/core/jobs/shell-command.txt").to_string(),
+        shell_close: include_str!("../../../resources/core/jobs/shell-close.txt").to_string(),
     }
 }
 

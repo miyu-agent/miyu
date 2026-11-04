@@ -85,6 +85,16 @@ impl Session {
                     return self.wait(at, id, waiting, step, events, stops);
                 }
             }
+            // 人打的命令在跑（施工 SH-1 上）：叫它停，等它交回到这时的输出再收尾。
+            Stage::Shell { message } => {
+                let waiting = Interrupting {
+                    by,
+                    cause: id.clone(),
+                    queued,
+                    wake: message,
+                };
+                return self.halt_shell(at, id, waiting, message);
+            }
             // 等着重试的、在等转述的：请求还没发，叫醒了、转述回来了也不理，直接结束（转述回来的照样记，`sight.rs`）。
             Stage::Opening { .. }
             | Stage::Hooking
@@ -227,8 +237,9 @@ impl Session {
         actions
     }
 
-    /// 收尾（「打断」第 5 条）：退回的先撤回排着的，再 `turn.ended`（`interrupted`）；接着发的，队里有的接着开下一轮。
-    fn close_interrupted(
+    /// 收尾（「打断」第 5 条）：退回的先撤回排着的，再 `turn.ended`（`interrupted`）；接着发的，队里有的接着开下一轮。人打的
+    /// 命令还没跑完、也不接着发的（在跑时不等了的、开轮还没跑到的、留着的）各补 `interrupted`，不跑（施工 SH-1 上）。
+    pub(super) fn close_interrupted(
         &mut self,
         at: Timestamp,
         by: &By,
@@ -246,6 +257,15 @@ impl Session {
             }
             Queued::Send => {}
         }
+        let sending: Vec<_> = self
+            .turn
+            .iter()
+            .flat_map(|turn| &turn.queued)
+            .map(|(seq, _)| *seq)
+            .collect();
+        let reason = crate::event::ShellReason::Interrupted;
+        let gone = |message| !sending.contains(&message);
+        events.extend(self.give_up_shells(at, (by, Some(cause.clone())), reason, gone));
         events.extend(self.finish_turn(
             at,
             by.clone(),
@@ -257,7 +277,7 @@ impl Session {
 }
 
 /// `at` 以后 `wait` 毫秒；算不出来的（快到时间的尽头了）就是 `at`。
-fn later(at: Timestamp, wait: i64) -> Timestamp {
+pub(super) fn later(at: Timestamp, wait: i64) -> Timestamp {
     at.unix_millis()
         .checked_add(wait)
         .and_then(Timestamp::from_unix_millis)

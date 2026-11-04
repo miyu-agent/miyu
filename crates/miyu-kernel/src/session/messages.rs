@@ -80,6 +80,7 @@ impl Session {
             blocks,
             venue: None,
             command: None,
+            shell: false,
         });
         let events = match self.land(at, by, Some(id.clone()), body, Some(waker)) {
             Ok(events) => events,

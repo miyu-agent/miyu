@@ -380,6 +380,7 @@ impl Watch {
                 ..
             } => self.guard(call_id, &name, &cwd, &permission),
             Action::RunTool { call_id, .. } => self.run(call_id),
+            Action::RunShell { .. } | Action::HaltShell { .. } => panic!("种子 {seed}：没打过命令"),
             stop @ Action::StopJobs { .. } => self.stop_checked(&stop),
             // 读回日志照撤销的规矩查（`watch/undo.rs`）；取回原文在这一条输入送完以后交回。
             Action::ReadBack { .. } => {}

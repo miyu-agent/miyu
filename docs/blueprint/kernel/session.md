@@ -16,6 +16,7 @@
 | `crates/miyu-kernel/src/session/turn.rs`、`call.rs`、`call/settle.rs`、`spans.rs`、`retry.rs` | 开回合、发请求、结束回合；收回复，一次请求的结局怎么写回复、记 `model.called`（`settle.rs`，施工 4-15 从 `call.rs` 分出来）、回复每一块的起止（施工 2-3 补）；出错再来 |
 | `crates/miyu-kernel/src/session/compaction.rs` | 压缩这一步：到没到线、替代到哪、发摘要请求、收回来写 `context.compacted`（`compaction.md`，施工 6-2 上） |
 | `crates/miyu-kernel/src/session/manual.rs` | 手动压缩单开的那一轮：收命令、替代到哪、那一轮发摘要请求（`compaction.md` 第七条，施工 6-8） |
+| `crates/miyu-kernel/src/session/shell.rs` | 人跑的命令：还没跑的几条、「准备好」时先跑、记 `shell.ran`、打断和重启时的收尾、载入时补（施工 SH-1 上） |
 | `crates/miyu-kernel/src/session/redo.rs` | 重做：撤最后一轮、重发开它的话、开新的一轮（`history.md`「重做」，施工 4-7 再补） |
 | `crates/miyu-kernel/src/session/clear.rs` | 清空上下文单开的那一轮：收命令、上下文是不是本来就空、一批写开头、空的检查点、结束（`compaction.md` 第十四条，施工 6-8 补） |
 | `crates/miyu-kernel/src/session/recap.rs` | 回顾：收命令、照落了盘的有效历史组装、交回上一句、并进在路上的、收回报、记 `model.called` 和 `session.recapped`（「回顾」，施工 3-8 四补） |
@@ -91,6 +92,7 @@
 | `Reread { at, seen, files }` | 哪一次摘要请求；压完要重读的文件，一个一项，照交出去的先后：读到了（`blob`、原文）、太大、读不到（施工 6-5） | 记在那次摘要请求上，什么都不出（`compaction.md` 第九条） |
 | `Recalled { texts }` | `Recall` 读出来的原文，照 blob 找（施工 6-5；6-9 起是 `Recall` 的回报） | 放进有效历史，什么都不出（`history.md`「重读的原文」） |
 | `Restarting { at }` | 要重启了 | 「有计划的重启」 |
+| `ShellRan { at, ran }` | 人打的一条命令跑完了（施工 SH-1 上）：`ran` 是 `shell.ran` 的 `body`，执行器照 `RunShell` 跑完、到时、叫停以后交 | 「人跑的命令」 |
 | `JobEnded { at, by, cause, reported }` | 后台命令结束了：`reported` 是 `job.reported` 的 `body`，`by`、`cause` 由执行器照原因填（施工 7-2） | 「回报」 |
 | `WatchEnded { at, session, reason }` | 等的会话等不到了：`expired` 到点了、`gone` 不在了（施工 C-6，执行器交） | 「空了的通知」第 3、4 条；读回日志的时候到的先放着 |
 | `Described { at, blob, seen }` | 替它看图回来了（施工 8-17）：哪一张图；成了的是替它看的端点和模型、转述的原文（`(Model, String)`），没成的是没有 | 「替它看图」第 4 到 6 条；读回日志的时候到的先放着 |
@@ -117,6 +119,7 @@
 | `Clear` | `session.clear` | 没有（施工 6-8 补） | 「清空」 |
 | `Report(回报)` | 没有：子会话的执行器经端口交（施工 7-6，`session/actor.md`「向上回报」） | `child.reported` 的 `body`；发命令的一方是子会话（施工 7-2） | 「回报」 |
 | `Recap` | `session.recap` | 没有（施工 3-8 四补） | 「回顾」 |
+| `Shell { text, urgent }` | `session.send` 带 `shell`（施工 SH-1 上，设计 57） | 命令行原样；`urgent` 同 `Send` | 「人跑的命令」 |
 | `Typed { blocks, command }` | `command.run` 的命令模板（施工 X-14 上，`slash.md`） | 展开的那段成的块、人敲的那一条（`TypedCommand`：名字、那一行） | 「斜杠命令」第 4 条 |
 | `Ran { text, command }` | `command.run`（命令本身照它自己的编号先交，这一条用派生的编号 `<编号>/ran`） | 人打的原文、执行了的命令的正名（施工 O-6） | 「斜杠命令」 |
 | `PeerIdle { status }` | 没有：被等的会话的执行器经端口交（施工 C-6，`session/actor.md`「被等的名单」） | 它最近结束的那一轮最后一条有字的回复的第一行，没说话的没有；发命令的一方是被等的会话 | 「空了的通知」 |
@@ -145,6 +148,7 @@
 | `Reread { seen, paths, limit }` | 哪一次摘要请求（排在它的「请求模型」前面）；要重读的文件，真实的位置，照先后；单个最多多少字节（施工 6-5） | 读完、存成 blob 再做下一个动作，送回 `Reread`（`compaction.md` 第九条） |
 | `ReadBack { from }` | 从第几条起（施工 6-9） | 只读地读日志，从第 `from` 条到最后一条，读完才收收件箱，送回 `ReadBack`；读不了的，会话停下（`history.md`「撤掉压缩」） |
 | `Report(Upward)` | 子会话交给父会话的一份回报（施工 7-6）：报的是哪一轮 `turn`、`reason`（`done` 或 `aborted`）、正文 `text`、`truncated`、`person` | 补上任务编号、子会话，经端口交给父会话，命令编号 `<子会话>/report/<turn>`，不送回（`session/actor.md`「向上回报」） |
+| `RunShell { message, command, cwd }`、`HaltShell { message }` | 人打的一条命令（施工 SH-1 上）：哪一句、命令行原样、这一刻会话的工作目录；叫停哪一句 | 跑，送回 `ShellRan`；叫停的整组杀，照常送回到这时的输出（「人跑的命令」） |
 | `StopJobs { jobs, by, cause }` | 撤销（重做的撤销那一半）撤掉的那几轮派出去、还在跑的任务，照编号；撤销的人和命令（施工 7-8） | 后台命令整组杀掉、存好输出，`job.reported`（`undone`，`by`、`cause` 照这里的）经收件箱交回（`JobEnded`）；子代理经会话表停下，回报由子会话交来（`Report`，`undone`）；已经结束了的不管。不送回、不等（`history.md`「撤销」第 5 条，`agents.md` 第七条第 1 条） |
 | `Recall { blobs }` | 检查点里重读的文件的 blob，照先后（施工 6-9） | 照 blob 读出原文，读完才收收件箱，送回 `Recalled`；读不出来的、不是 UTF-8 的不交（`history.md`「重读的原文」） |
 | `Aside { purpose, upto, request }` | 用途（`recap`、`title`、`compaction`：提前压好，施工 6-11 上）、照到第几条（和用途合起来是这一次的名字）、统一的请求（施工 3-8 四补；五补起回顾、起标题共用，原来叫 `Recap`） | 交给这个会话的模型发出去，回报另走一路（和主请求的 `seen` 不撞）；送回 `AsideSent`、`AsideDelta`、`AsideEnded`。不叫停：会话停了，执行器放下它就停了（`session/actor.md` 第 7 条） |
@@ -180,6 +184,7 @@
 | `already_answered` | `AlreadyAnswered` | `Respond` 的 `to` 里有已经当过触发的（撤掉的回合当过的也算）；拒绝的 `about` 是那几条（施工 O-14 上） |
 | `session_sealed` | `Sealed` | 会话封存了（施工 C-8 下，`seal.rs`）：改对话的命令不收；改标题置顶、打断、回答、回顾、回报、空了的通知照收 |
 | `goal_exists`、`no_goal`、`goal_paused`、`goal_running` | `GoalExists`、`NoGoal`、`GoalPaused`、`GoalRunning` | 改长期目标的命令 `Goal`（施工 X-7，`goal.rs`）：已经有一个没完成的（跑着、停着、卡住）再设；没有的改、停、接着跑、结束；停着、卡住的再停；跑着的接着跑。原文空白的照 `empty_message`。卡住的照停着办，接着跑、改、结束都收（施工 X-8 下：账本的 `GoalStage::Blocked`，人答了 `/goal resume`）；账本只放宽：卡住以后再设一个照收（X-8 上的日志里她这么做过），命令那一层拒 |
+| `shell_not_allowed` | `ShellNotAllowed` | 人打的命令（`Shell`）不是人发的（`by` 不是 `person`，施工 SH-1 上）；协议那一层先挡 |
 | `unknown_watch` | `UnknownWatch` | 空了的通知：这边不在等它（没订过、订它的那一轮撤掉了、已经收到过、作废了），或者发命令的不是一个会话（施工 C-6） |
 
 **策略**（`Policy`）：造会话、载入时由执行器照策略快照造好交进来，会话里不再变。
@@ -220,6 +225,17 @@
 3. 空闲时：追加 `message.user`，同一批开一个回合（「回合」第 1 条）。这条消息不带回合编号。急着插话的也一样。
 4. 回合进行中：追加 `message.user`，带上这个回合，排进队（「排队的消息」）。这一步里在等人的调用作废（`asking.md`「在等的怎么了结」）；在路上的主请求一段增量都还没到的，撤掉重发（「排队的消息」第 5 条，施工 4-15）；急着插话的，再跳过还没跑的（「急着插话」）。都在同一批；叫停的 `CancelTool`、`CancelModel` 排在 `Append` 后面。
 5. 场所里旁听的（`venue.ambient`，施工 O-13 上）：追加 `message.user`，不带回合编号，不开回合，回合进行中也不排进队、不作废在等的、不插话；回合说完了不因它接着开一轮。
+
+**人跑的命令**（`Shell`，施工 SH-1 上，设计 57 第三节，`shell.rs`）：人在头里用 `!` 打的一条，在她听到它的那一刻跑，不是收到时跑。
+
+1. 不是 `person` 发的：拒绝，`shell_not_allowed`。命令行去掉首尾空白是空的：`empty_message`。别的照「发一条消息」第 3、4 条，记成写了 `shell` 的 `message.user`（一块字，就是那一行），落了盘就回、不等跑完；`urgent` 照收。
+2. 还没跑的照序号的先后记着（每追加一条记一次，载入时照日志一路算）：写了 `shell` 的 `message.user` 进来，它的 `shell.ran`、撤回它的 `message.withdrawn` 拿走。
+3. **什么时候跑**：这一轮走到「准备好」、追加过的都落了盘（「回合」：开轮的挂接点跑完了、两步之间问模型以前、出错再来以前；回合结束由排着的接着开的那一轮也是走到这里），还有没跑的，最早的那一条先跑：出 `RunShell`（这一刻会话的工作目录），这一轮停在「人的命令在跑」，等 `ShellRan`。闲着收到的由它开一轮，跑完了这一轮第一次问模型；忙着收到的排着，到下一个「准备好」先跑、再发请求；几条照先后一条一条跑。都跑完了才记挂着的监视命令的行（「回报」第 12 条），然后问模型。
+4. `ShellRan` 对得上在跑的那一条：记 `shell.ran`（`by` 是内核，`cause` 是那句话的），回到「准备好」，落了盘接着走第 3 条。对不上的（不等了以后才到的）不理。
+5. **打断**：在跑的出 `HaltShell`，先不收尾，当场回应，最多等 10 秒（同「打断」第 7 条的 `Wake`，记号是那一句的序号）；交回来的照第 4 条记（`reason` 是 `interrupted`、带着到这时的输出），再照「打断」第 5 条收尾，这一轮以 `interrupted` 结束，她不回。到了 10 秒、又打断了一次，不等了，照第 6 条记。
+6. 收尾时（「打断」第 5 条）还没跑完、也不接着发的（`queued` 是 `keep` 的、开轮还没跑到的、不等了的那一条），各补一条 `shell.ran`（`interrupted`，没有输出，`by` 是打断的人，`cause` 是打断的命令），不再跑。`return` 退回的撤回了，不补、不跑；`send` 接着发的照排着的走，到接着开的那一轮跑。
+7. **有计划的重启**：在跑的出 `HaltShell`，记 `shell.ran`（`aborted`，`by` 是内核）；排着的留给接着干的那一轮。**载入**：崩了的那一轮收尾时（「载入和崩溃」第 4 条），没跑完、没跑的各补 `aborted`，排在 `turn.ended` 前面；被重启打断、不接着干的，也补。都不重跑。
+8. 撤销照人说的话：那一轮撤掉，`shell.ran` 跟着撤（它带那一轮的编号），那句话照「拿走什么」走；命令已经做的改动不在撤销范围里。重做照原样重发那一句，接着开的那一轮里再跑一次。
 
 **照记下的几条开一轮**（`Respond`，施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）：
 
@@ -725,6 +741,7 @@
 | `crates/miyu-kernel/src/session/tests/scenario/breaker.rs` 的 `a_new_model_lifts_the_pause_and_failures_count_from_zero`、`scenario/manual.rs` 的 `compacting_and_clearing_after_a_model_change_do_not_resolve_again`（施工 8-10） | 换了模型暂停解除、到线又压、换过去以后再失败从 0 数、载入以后一样、换成一样的不解除；换模型以后手动压缩、清空那一轮不交引用 |
 | `crates/miyu-kernel/src/session/tests/scenario/harness.rs`（施工 7-10） | 别的 harness 发来的话：闲着开一轮、`trigger` 和 `cause` 照它、回应只附它、不带回合编号；正忙下一次请求听到、结束时不再开；最后一步里到的接着开；打断两种都不撤回、不接着开；不作废在等人回答的题；没人看着的一次性会话只记下；能恢复撤销时记在一边、载入以后恢复了接着开；撤掉它开的那一轮它留着，它开的那一轮重做不了；子会话里收到的不欠父会话回报 |
 | `crates/miyu-kernel/src/session/tests/scenario/peers.rs`（施工 C-2） | 别的会话发来的话：三种关系（人的、父会话的话排进这一轮，子代理、别的会话的不带回合编号）；闲着开一轮、`trigger` 和 `cause` 照它、回应只附它；正忙下一次请求听到、结束时不再开；最后一步里到的接着开；打断两种都不撤回、不接着开；不作废在等人回答的题；没人看着的一次性会话只记下；能恢复撤销时记在一边、载入以后恢复了接着开；撤掉它开的那一轮它留着，它开的那一轮重做不了；子会话里收到的不欠父会话回报 |
+| `crates/miyu-kernel/src/session/tests/scenario/shell.rs`（施工 SH-1 上） | 人跑的命令：闲着开一轮、第一件跑、记下落了盘再问（请求里有它）；忙着排着、两步之间先跑、几条照先后；最后一步里来的在接着开的那一轮跑；退回的不跑、不记；打断时在跑的叫停、等它交回、记 `interrupted` 带着输出、她不回；等不到的到点补、迟到的不理；`keep` 留着的补 `interrupted` 不跑；`send` 接着发的在下一轮跑；重启时在跑的记 `aborted`、接着干的不重跑；崩了的载入时补 `aborted`；撤销连同 `shell.ran` 一起撤；不是人的 `shell_not_allowed`、空的 `empty_message` |
 | `crates/miyu-kernel/src/session/tests/scenario/watch.rs`（施工 C-6） | 空了的通知：在等的记下、叫醒、`cause` 照命令；不在等的拒、什么都不记；撤掉订它的那一轮不等了、恢复了又等；作废到点才记（含正好那一刻）、只记下、`cause` 是订它的那一轮的；又订从新的时刻算；`gone` 只记下；执行器交的 `idle` 不理；`vacant()` 要子代理都报完、后台命令不算；`last_line()` 的截法；它开的那一轮重做不了、撤销不带走；能恢复撤销时记在一边、载入以后恢复了接着开 |
 | `crates/miyu-kernel/src/session/tests/scenario/flood.rs`（施工 C-2） | 防刷屏：第 6 句拒、被拒的什么都不记、别的发话方照收；正好 600 秒那一刻还算、过了 1 毫秒就收；一字不差的拒、不占数、别的发话方发同样的照收、窗口过了又收；没听到的第 51 句拒、听到以后又收；重启以后限速、一字不差、没听到的数照日志算回来；子代理的留言不受「5 句」管 |
 | `crates/miyu-kernel/src/session/tests/scenario/messages.rs`（施工 7-7） | 子代理的留言：闲着开一轮、`trigger` 和 `cause` 照它、回应只附它；正忙下一次请求听到、不带回合编号；最后一步里到的接着开；打断两种都不撤回、不接着开；不作废在等人回答的题；没人看着的一次性会话只记下、有头订阅着照常开；派它的那一轮撤掉了的不开轮；能恢复撤销时记在一边、载入以后恢复了接着开；由它接着开的一轮撤掉，人的话跟着撤、留言留着；载入以后下一轮听到；不是她派的会话发来的是别的会话发来的话（施工 C-2），不带回合编号；`subagents()` 的每一种；中间一层答完孙代理的留言不报、孙代理报完再报；孙代理在回报里问、它留言答了（`job.messaged`）也等孙代理再报 |

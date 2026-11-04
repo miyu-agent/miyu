@@ -109,6 +109,15 @@ pub struct JobTexts {
     /// 它的收尾（施工 MN-1 上）。以前造的快照里没有，读成空的。
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub lines_close: String,
+    /// 人用 `!` 跑的命令的标签：`reason`（施工 SH-1 上）。以前造的快照里没有，读成空的；空的不写，旧快照的字节不变。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub shell_open: String,
+    /// 那一行命令：`command`（施工 SH-1 上）。以前造的快照里没有，读成空的。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub shell_command: String,
+    /// 它的收尾（施工 SH-1 上）。以前造的快照里没有，读成空的。
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub shell_close: String,
 }
 
 impl JobTexts {
@@ -140,6 +149,9 @@ impl JobTexts {
             user_message_close: self.user_message_close.clone(),
             lines_open: template(&self.lines_open, &["job", "title"])?,
             lines_close: self.lines_close.clone(),
+            shell_open: template(&self.shell_open, &["reason"])?,
+            shell_command: template(&self.shell_command, &["command"])?,
+            shell_close: self.shell_close.clone(),
         })
     }
 }

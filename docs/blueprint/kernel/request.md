@@ -170,6 +170,13 @@
 5. 派它的那一轮撤掉了的不渲染：派它的调用已经不在上下文里了（`agents.md` 第七条第 2 条）；这种回报内核也不叫醒她（`kernel/session.md`「回报」第 5 条）。恢复了撤销，照常渲染。
 6. 监视的命令出的行（`job.lines`，`lines-*.txt`，施工 MN-1 上）：标签那一行带任务编号 `job`、标题 `title`（字段照转义的规矩），接着是这一批的行，原样、不转义（截过的中间已经有一行省了多少），只中和提前写出的本标签收尾，末尾没有换行的补一个，最后是收尾的标签。快照里没有这两份字的（以前造的会话，出不了 `job.lines`）不渲染。排法同第 1 条。完整的样子见 `docs/designs/samples/reports/lines.txt`。
 
+**人跑的命令**（施工 SH-1 上，设计 57 第四节第 3 条，`miyu-assemble` 的 `shell.rs`）
+
+1. 写了 `shell` 的 `message.user` 和它的 `shell.ran`（照 `message` 对上）在那句话的位置渲染成一块（`shell-*.txt`），`shell.ran` 自己不出字；那句话是开这一轮的，照触发排在开始时注入的事实后面（「组装」第 6 条）。只陈述人跑了什么、输出什么，不是指令。
+2. 标签那一行带怎么结束的 `reason`：自己退出的（被信号杀掉的也算）是 `exited`，别的照 `shell.ran` 的 `reason`（不认识的原样）；字段照模板的规矩转义。接着一行 `$ <命令行>`（命令行原样、不转义：引号、换行照人打的，不照模板的规矩转义），再是输出，原样、不转义（截过的中间已经有一行省了多少），末尾没有换行的补一个；有退出码的写退出码、被信号杀掉的写信号（同后台命令那两句 `command-exit.txt`、`command-signal.txt`）；最后是收尾的标签。命令行和输出里提前写出的本标签收尾照「回报」中和。
+3. 还没有 `shell.ran` 的（读到的日志停在跑之前）照 `aborted` 写、没有输出。快照里没有这几份字的（以前造的会话）照原样放那一行命令，输出不渲染。
+4. 完整的样子见 `docs/designs/samples/reports/shell.txt`、`shell-timed-out.txt`。
+
 **子代理的留言**（施工 7-7，`agents.md` 第九条第 5 条）
 
 1. `message.user` 的 `by` 是这个会话派的子代理的子会话（有效历史记着的派出去过的任务里有它，`history.md`「派出去过的任务」）：渲染成一块带标签的事实。标签那一行带任务编号 `job`、标题 `title`（派它时给的，照转义的规矩），接着是它的话，原样、不转义（和回报的正文一样，是模型写的多行正文），末尾没有换行的补一个，最后是收尾的标签。字以外的块接在这一块后面（`send_message` 只送一块字）。
@@ -640,6 +647,7 @@ Carry on from where the summary leaves off, without redoing work it records as d
 
 | 测试 | 守哪几条 |
 |---|---|
+| `crates/miyu-assemble/src/shell/tests.rs`（施工 SH-1 上） | 人跑的命令和输出在那句话的位置拼成一块、排在开轮的事实后面；异常结束写原因、信号写信号；提前写出的收尾中和、命令行的引号和换行照原样；没有 `shell.ran` 的照 `aborted`；以前的快照照原样放那一行；出厂的写法和样本一字不差 |
 | `crates/miyu-kernel/src/request/tests.rs` | 同样的请求字节、哈希一样；参数格式一个字节不改；消息以角色开头；第一处不同的四种情形 |
 | `crates/miyu-kernel/tests/request_sample.rs` | 样本 `second-step.json` 就是规范的字节；哈希是它的 SHA-256 |
 | `crates/miyu-assemble/src/tests.rs` | 工具面照名字排；示范对话在前、算进 `stable`；接着写的记号什么时候真、什么时候假 |

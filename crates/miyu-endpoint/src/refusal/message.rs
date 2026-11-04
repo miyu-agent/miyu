@@ -130,6 +130,14 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "needs_approval" => ("扩展权限未批准。", "Extension permissions not approved."),
         "session_not_found" => ("会话不存在。", "Session not found."),
         "unknown_call" => ("调用不存在。", "Call not found."),
+        "shell_not_allowed" => (
+            "只有你自己能在这里跑命令。",
+            "Only you can run commands here.",
+        ),
+        "shell_unavailable" => (
+            "没有能跑命令的工具（软件包没装或已关闭）。",
+            "No tool can run commands (package missing or disabled).",
+        ),
         "venue_session" => (
             "平台会话不能直接发消息。",
             "Cannot send messages directly to a platform session.",

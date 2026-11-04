@@ -10,6 +10,9 @@ use crate::id::CommandId;
 use crate::origin::By;
 use crate::time::Timestamp;
 
+/// 一句话：内容块、场所的东西、斜杠命令、是不是人打的命令。
+type Said = (Vec<Block>, Option<VenueMessage>, Option<TypedCommand>, bool);
+
 impl Session {
     /// 发一条消息：一块内容都没有、也没带场所的东西（交了原图的不算，施工 O-35）的拒绝，`empty_message`。别处来的（子代理的留言，施工 7-7；别的 harness 发来的话，
     /// 施工 7-10；别的会话发来的话，施工 C-2）照回报的规矩到。空闲时追加 `message.user`、同一批开一个回合；回合进行中
@@ -21,6 +24,38 @@ impl Session {
         by: By,
         at: Timestamp,
         (blocks, venue, command): (Vec<Block>, Option<VenueMessage>, Option<TypedCommand>),
+        urgent: bool,
+    ) -> Vec<Action> {
+        self.send_as(id, by, at, (blocks, venue, command, false), urgent)
+    }
+
+    /// 人打的一条命令（施工 SH-1 上，`shell.rs`）：不是人说的拒绝 `shell_not_allowed`；空的 `empty_message`；别的照发一条消息，
+    /// 记成写了 `shell` 的 `message.user`。
+    pub(super) fn send_shell(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        text: String,
+        urgent: bool,
+    ) -> Vec<Action> {
+        if !matches!(by, By::Person(_)) {
+            return vec![rejected(id, Reason::ShellNotAllowed)];
+        }
+        if text.trim().is_empty() {
+            return vec![rejected(id, Reason::EmptyMessage)];
+        }
+        let blocks = vec![Block::Text(crate::block::Text { text })];
+        self.send_as(id, by, at, (blocks, None, None, true), urgent)
+    }
+
+    /// 同 [`Self::send`]，第四格是写不写 `shell`。
+    fn send_as(
+        &mut self,
+        id: CommandId,
+        by: By,
+        at: Timestamp,
+        (blocks, venue, command, shell): Said,
         urgent: bool,
     ) -> Vec<Action> {
         // 只有带的东西（图、表情、文件）、没有字的场所消息照样收（施工 O-13 补）：内容块和带的东西都没有才是空的。交了原图的
@@ -37,6 +72,7 @@ impl Session {
             blocks,
             venue,
             command,
+            shell,
         });
         if ambient {
             // 旁听的：只记下，不开回合，回合进行中也不排进这一轮（施工 O-13 上）。

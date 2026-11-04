@@ -22,6 +22,8 @@ enum Wake {
     Exited(io::Result<ExitStatus>, Child),
     /// 命令里调的工具开始等人确认（`true`）、等完了（`false`）。
     Held(bool),
+    /// 人打断了人打的那条命令（施工 SH-1 上，[`Wakes::halter`]）：她的调用从来不送它。
+    Halted,
 }
 
 /// 等一条命令的那根通道（施工 M-7 上）：起命令之前造好，「在等人」的口子先交给端口（[`Self::hold`]），命令起来以后交给
@@ -31,10 +33,11 @@ pub(in crate::shell) struct Wakes {
     wakes: mpsc::Receiver<Wake>,
 }
 
-/// 到时、结束、等的线程没了。
+/// 到时、结束、被叫停、等的线程没了。
 enum Woke {
     Exited(io::Result<ExitStatus>, Child),
     TimedOut,
+    Halted,
     Gone,
 }
 
@@ -54,6 +57,18 @@ impl Wakes {
             )]
             let _ = sender.send(Wake::Held(held));
         })
+    }
+
+    /// 叫停的口子（施工 SH-1 上，只给人打的命令，`person.rs`）：调了，等的那一头当场整组杀、交回到这时的输出。
+    pub(in crate::shell) fn halter(&self) -> impl FnOnce() + Send + 'static {
+        let sender = self.sender.clone();
+        move || {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "等的那一头不等了：这条命令已经结束"
+            )]
+            let _ = sender.send(Wake::Halted);
+        }
     }
 
     /// 另起一个线程等 `child` 结束，结局送进通道。
@@ -84,6 +99,7 @@ impl Wakes {
             };
             match wake {
                 Ok(Wake::Exited(status, child)) => return Woke::Exited(status, child),
+                Ok(Wake::Halted) => return Woke::Halted,
                 Ok(Wake::Held(now)) => {
                     if !held {
                         left = left.saturating_sub(since.elapsed());
@@ -105,7 +121,7 @@ impl Wakes {
                 .recv_timeout(deadline.saturating_duration_since(Instant::now()))
             {
                 Ok(Wake::Exited(status, child)) => return Woke::Exited(status, child),
-                Ok(Wake::Held(_)) => {}
+                Ok(Wake::Held(_) | Wake::Halted) => {}
                 Err(RecvTimeoutError::Timeout) => return Woke::TimedOut,
                 Err(RecvTimeoutError::Disconnected) => return Woke::Gone,
             }
@@ -185,6 +201,8 @@ impl Started {
                     process: crate::shell::moved::Moved::new(wakes.exited(), group, _watch),
                 }))
             }
+            // 她的调用不送叫停；万一来了，照到时那样交出去。
+            Woke::Halted => Err(io::Error::other("a command of hers cannot be halted")),
             Woke::Gone => Err(gone()),
         }
     }
@@ -207,16 +225,21 @@ impl Started {
         wakes.watch(child);
         let (ending, child) = match wakes.until(timeout) {
             Woke::Exited(status, child) => (Ending::Exited(status?), Some(child)),
-            Woke::TimedOut => {
+            // 到时、被叫停（施工 SH-1 上）都整组杀，读完到这时的输出。
+            woke @ (Woke::TimedOut | Woke::Halted) => {
+                let ending = match woke {
+                    Woke::Halted => Ending::Halted,
+                    _ => Ending::TimedOut,
+                };
                 kill(group);
                 match wakes.within(patience) {
                     Woke::Exited(status, child) => {
                         status?;
-                        (Ending::TimedOut, Some(child))
+                        (ending, Some(child))
                     }
-                    Woke::TimedOut => {
+                    Woke::TimedOut | Woke::Halted => {
                         tracing::warn!(target: TARGET, "command still running after kill");
-                        (Ending::TimedOut, None)
+                        (ending, None)
                     }
                     Woke::Gone => return Err(gone()),
                 }

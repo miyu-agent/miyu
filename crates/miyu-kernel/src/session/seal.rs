@@ -91,6 +91,7 @@ pub(super) fn taken_when_sealed(command: &Command) -> bool {
         | Command::EndDream(_) => true,
         Command::Send { .. }
         | Command::Typed { .. }
+        | Command::Shell { .. }
         | Command::Respond { .. }
         | Command::Note { .. }
         | Command::Append { .. }

@@ -73,6 +73,7 @@ impl Session {
         self.grants.note(event);
         self.rounds.note(event);
         self.busy.note(event);
+        self.shells.note(event);
         // 和载入时一样照账本认它会不会叫醒她（审计 R3E-2）。
         let waking = super::jobs::waking(&self.ledger, event);
         self.chain.note(event, waking.as_ref());

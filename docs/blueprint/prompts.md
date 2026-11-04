@@ -4419,6 +4419,43 @@ You are a fork of the agent above. It wrote the task below, not the person. Your
 </command-lines>
 ```
 
+### 人这边：人用 `!` 跑的一条命令（一块带标签的字，替掉那句话）
+
+#### `core/jobs/shell-open.txt`
+
+- 什么时候加进来：标签那一行，写了 `shell` 的 `message.user`；在那句话的位置，开这一轮的照触发排在事实后面，之后每次请求照原文带
+- token：8（`reason` 按 `exited` 算，2026-11-04 照 o200k 数）
+- 为什么加：她要分得清这是人自己跑的命令和输出，不是人说的话，也不是她调的工具；`reason` 说清没跑完的为什么（施工 SH-1 上，设计 57 第四节第 3 条，照回报的外壳）
+- 指纹：`f5fdeb7d`
+
+```text
+<user-shell reason="{reason}">
+```
+
+### 人这边：人用 `!` 跑的一条命令
+
+#### `core/jobs/shell-command.txt`
+
+- 什么时候加进来：标签下面那一行命令，同 `shell-open.txt`
+- token：6（`command` 按 `git status --short` 算，2026-11-04 照 o200k 数）
+- 为什么加：写出跑的是哪一行，输出接在下面；退出码、信号照后台命令那两句（`command-exit.txt`、`command-signal.txt`）（施工 SH-1 上）
+- 指纹：`62583f21`
+
+```text
+$ {command}
+```
+
+#### `core/jobs/shell-close.txt`
+
+- 什么时候加进来：收尾那一行，同 `shell-open.txt`
+- token：4（2026-11-04 照 o200k 数）
+- 为什么加：标签的收尾（施工 SH-1 上）
+- 指纹：`848554c1`
+
+```text
+</user-shell>
+```
+
 ### 人这边：别的 harness 发来的话（一块带标签的事实）
 
 #### `core/harness/message-open.txt`

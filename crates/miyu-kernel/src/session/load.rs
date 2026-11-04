@@ -17,7 +17,7 @@ use super::meta::Meta;
 use super::policy::Policy;
 use super::recent::Recent;
 use super::turn::Stage;
-use crate::event::{Body, EndReason, Event, Permission, PolicyChanged, ToolStatus};
+use crate::event::{Body, EndReason, Event, Permission, PolicyChanged, ShellReason, ToolStatus};
 use crate::facts::Environment;
 use crate::id::{CommandId, Seq, SessionId};
 use crate::ledger::LedgerError;
@@ -188,6 +188,7 @@ impl Loader {
             rounds,
             busy,
             chain,
+            shells,
             mut history,
             kept,
             ..
@@ -250,6 +251,7 @@ impl Loader {
             rounds,
             busy,
             chain,
+            shells,
             told_todos: Vec::new(),
             told_done: Vec::new(),
             told_states: Default::default(),
@@ -302,6 +304,9 @@ impl Session {
                     )
                 })
                 .collect();
+            // 人打的命令没跑完、没跑的（施工 SH-1 上）：补 `aborted`，不重跑。
+            let reason = ShellReason::Aborted;
+            events.extend(self.give_up_shells(at, (&By::Kernel, cause.clone()), reason, |_| true));
             events.push(self.end_turn(at, By::Kernel, cause.clone(), EndReason::Aborted));
             // 跑满了轮数的，崩了以后收尾的这一轮也封存（施工 C-8 下）。
             events.extend(self.seal_if_done(at, cause));
@@ -320,11 +325,16 @@ impl Session {
                 };
                 self.open_turn(at, trigger, cause)
             }
-            // 被有计划的重启打断、不再接着干的那一轮也算跑完了：跑满了轮数的封存（施工 C-8 下）。
-            ended => self
-                .seal_if_done(at, ended.and_then(|ended| ended.cause))
-                .into_iter()
-                .collect(),
+            // 被有计划的重启打断、不再接着干的那一轮也算跑完了：排着的人打的命令补 `aborted`（施工 SH-1 上），跑满了轮数的
+            // 封存（施工 C-8 下）。
+            ended => {
+                let cause = ended.and_then(|ended| ended.cause);
+                let reason = ShellReason::Aborted;
+                let mut events =
+                    self.give_up_shells(at, (&By::Kernel, cause.clone()), reason, |_| true);
+                events.extend(self.seal_if_done(at, cause));
+                events
+            }
         }
     }
 }

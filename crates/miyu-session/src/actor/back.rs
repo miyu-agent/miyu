@@ -44,6 +44,10 @@ impl Actor {
             } => return self.goal_asked(at, call_id, ask, reply),
             Back::Job(ended) => self.jobs.arrived(at, ended),
             Back::JobLines(seen) => crate::jobs::SessionJobs::lines(at, seen),
+            Back::Shell(ran) => {
+                self.tools.person_done(ran.message);
+                Input::ShellRan { at, ran }
+            }
             // 抽取（施工 R-6 上，`extract.rs`）：不进内核。
             Back::ExtractDue { generation, forced } => {
                 self.extract_due(generation, forced);

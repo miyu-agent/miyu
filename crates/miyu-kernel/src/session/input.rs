@@ -210,6 +210,14 @@ pub enum Input {
         /// 这一批：`job`、截过的 `text`、原来几行、截掉几个字。
         lines: JobLines,
     },
+    /// 人打的一条命令跑完了（施工 SH-1 上，`shell.rs`）：执行器照 `RunShell` 跑完、到时、叫停以后交来，记成 `shell.ran`。
+    /// 对不上这一轮在跑的那一条的，不理。
+    ShellRan {
+        /// 跑完的时刻，取自执行器的时钟。
+        at: Timestamp,
+        /// 跑完的样子，原样记。
+        ran: crate::event::ShellRan,
+    },
     /// 辅助请求发出去了（施工 3-8 四补 `recap.rs`；五补起回顾、起标题共用这一路，`aside.rs`）：和主请求的
     /// [`Input::RequestSent`] 一样，名字是用途加它照到的那一条 `upto`。不是在路上的那一次的，不理。
     AsideSent {

@@ -131,6 +131,7 @@ impl Watch {
                     blocks,
                     venue: None,
                     command: None,
+                    shell: false,
                 }) => edited(blocks, change).is_empty(),
                 _ => false,
             })
@@ -276,6 +277,7 @@ impl Watch {
                 blocks,
                 venue: None,
                 command: None,
+                shell: false,
             }) = &original.body
             else {
                 panic!("种子 {seed}：要重发的 {seq} 不是人的话");
@@ -290,6 +292,7 @@ impl Watch {
                     blocks: expected,
                     venue: None,
                     command: None,
+                    shell: false,
                 }),
                 "种子 {seed}：重发的内容照原来的"
             );

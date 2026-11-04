@@ -19,6 +19,10 @@ pub struct MessageUser {
     /// 那段，模型照它看；给人看的地方（时间线、撤销的回执、会话列表）照这一行。别的消息没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub command: Option<TypedCommand>,
+    /// 人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`blocks` 是一块字，就是那一行命令；核心在她听到它的那
+    /// 一刻跑，结果记成 `shell.ran`。别的消息没有，不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub shell: bool,
 }
 
 /// 人敲的一条斜杠命令（施工 X-14 上）。
@@ -35,6 +39,18 @@ impl MessageUser {
     #[must_use]
     pub fn typed(&self) -> Option<&str> {
         self.command.as_ref().map(|command| command.text.as_str())
+    }
+
+    /// 里面的字，几块接在一起：人用 `!` 打的命令（`shell`）就是那一行命令。
+    #[must_use]
+    pub fn text(&self) -> String {
+        self.blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::Text(text) => Some(text.text.as_str()),
+                _ => None,
+            })
+            .collect()
     }
 }
 

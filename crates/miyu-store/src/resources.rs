@@ -356,6 +356,9 @@ impl ResourceRoot {
                 user_message_close: job("user-message-close.txt")?,
                 lines_open: job("lines-open.txt")?,
                 lines_close: job("lines-close.txt")?,
+                shell_open: job("shell-open.txt")?,
+                shell_command: job("shell-command.txt")?,
+                shell_close: job("shell-close.txt")?,
             }),
             harness: Some(HarnessTexts {
                 message_open: core(&["harness", "message-open.txt"])?,

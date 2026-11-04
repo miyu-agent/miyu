@@ -213,10 +213,10 @@ fn open(template: &Template, job: &JobId, dispatched: &Dispatched, reason: &str)
 }
 
 /// 换字段。造快照时试换过，这里换不出只会是造的时候没查到的 bug，照空的写。
-fn fill(template: &Template, fields: &[(&str, &str)]) -> String {
+pub(crate) fn fill(template: &Template, fields: &[(&str, &str)]) -> String {
     let fields: BTreeMap<&str, &str> = fields.iter().copied().collect();
     template.render(&fields).unwrap_or_default()
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

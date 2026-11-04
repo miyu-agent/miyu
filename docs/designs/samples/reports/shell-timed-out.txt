@@ -1,0 +1,4 @@
+<user-shell reason="timed_out">
+$ cargo build
+Compiling miyu v0.1.0
+</user-shell>

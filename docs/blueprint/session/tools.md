@@ -21,6 +21,7 @@
 | `crates/miyu-session/src/job_ids.rs` | 领任务编号（施工 7-5） |
 | `crates/miyu-session/src/spawn.rs` | 造子会话、给别的会话发命令的端口 `SessionPort`，会话表交进来（施工 7-5） |
 | `crates/miyu-session/src/effects.rs` | 效果存成 blob；她看过的：记下、从日志重建 |
+| `crates/miyu-session/src/tools/person.rs` | 人跑的命令（施工 SH-1 上）：找跑命令的工具、调给人跑的钩子、叫停、送回 |
 | `crates/miyu-session/src/jobs.rs` | 执行器的任务表 `Jobs`（核心里一张）、一个会话 actor 的那一份 `SessionJobs`：报 `restarted`、停下时整组杀（施工 7-3） |
 | `crates/miyu-session/src/jobs/run.rs` | 交给一次调用的任务端口：领编号、建输出文件、登记，读输出的线程、等它结束的线程 |
 | `crates/miyu-session/src/jobs/output.rs` | 一条后台命令的输出文件：边跑边写，结束了存成 blob、数字 |
@@ -224,6 +225,12 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 4. **有计划地停下**（`session/actor.md` 第 9 条）：拿着表的锁，把这个会话还没报过结束的记成报了（之后它们自己退出了也不再报），在阻塞线程里关上输出文件、整份存成 blob，各写一条 `job.reported`：`restarted`，`by` 是内核，没有 `cause`，用时是到这时的，输出是到这时的，没有退出码、信号（这时还没杀）。在这以前自己退出、已经报了的，照常从收件箱里拿出来一起交。这些都落了盘，才把这个会话还在表里的都拿掉、整组杀掉（阻塞线程里杀：Windows 上要等 `taskkill`），不再收新的。
 5. **actor 因为别的停了**（写不进去、panic、没人拿着了）：丢掉它那一份时，不再收新的，这个会话还在表里的都拿掉、关上输出、整组杀掉，不记：再载入时内核补 `aborted`（`kernel/session.md`「载入和崩溃」）。
 6. 整组杀照 `tools/shell.md`「后台」第 7 条：已经结束了的不再按编号杀。
+
+**7. 人跑的命令**（施工 SH-1 上，设计 57，`tools/person.rs`；`kernel/session.md`「人跑的命令」、`tools/interface.md`「七、给人跑一条」）
+
+1. 动作 `RunShell`（哪一句、命令行、这一刻会话的工作目录）：工作目录照 `fs.md` 第二节第 1 条接家目录、换成真实的位置（换不了的照原样）。照现在的工具目录找声明跑命令的一件（`Tool::runs_commands`，照名字的先后第一件），预设不管；调它的 `run_for_person`，交一个叫停的口子，记着「在跑的是哪一句」。不判权限、不进沙盒、不写沙盒的规格、不开 `miyu call` 的通道。
+2. 跑在自己的任务里，当场不回；跑完的样子送进 actor 的收件箱（`Back::Shell`），写成内核的 `ShellRan`（时刻是到的那一刻），不再是在跑的那一条。结束是到时、叫停的，`reason` 写 `timed_out`、`interrupted`。没有这件工具、它没有钩子、起不来的也送回：输出是为什么，没有退出码，不写 `reason`。
+3. 动作 `HaltShell`：在跑的是这一句，就举起口子，工具整组杀，照第 2 条送回到这时的输出；别的什么都不做。一个会话同一时刻最多一条在跑（内核一条一条交）。
 
 **6. 查和停**（施工 7-4，`agents.md` 第五条，`tools/jobs.md`）
 

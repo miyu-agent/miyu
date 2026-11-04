@@ -36,8 +36,8 @@ fn dispatched() -> Log {
     log
 }
 
-/// 出厂的写法：资源目录里的真文件。
-fn shipped() -> JobTexts {
+/// 出厂的写法：资源目录里的真文件（人跑的命令的测试也用，`shell/tests.rs`）。
+pub(crate) fn shipped() -> JobTexts {
     macro_rules! job {
         ($name:literal) => {
             include_str!(concat!("../../../../resources/core/jobs/", $name)).to_string()
@@ -65,6 +65,9 @@ fn shipped() -> JobTexts {
         user_message_close: job!("user-message-close.txt"),
         lines_open: template(job!("lines-open.txt")),
         lines_close: job!("lines-close.txt"),
+        shell_open: template(job!("shell-open.txt")),
+        shell_command: template(job!("shell-command.txt")),
+        shell_close: job!("shell-close.txt"),
     }
 }
 

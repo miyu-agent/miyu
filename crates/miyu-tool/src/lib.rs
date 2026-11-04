@@ -35,6 +35,7 @@ mod memory;
 mod messages;
 mod nested;
 mod packages;
+mod person;
 pub mod picture;
 pub mod private;
 mod questions;
@@ -80,6 +81,7 @@ pub use messages::{
 };
 pub use nested::{Calling, Hold, Nested, NestedPort, Schema, Settled};
 pub use packages::{Looking, PACKAGE, PACKAGES, PackageConflict, PackageRefusal, PackagesPort};
+pub use person::{Halt, PersonCommand, PersonEnd, PersonRun, PersonRunning};
 pub use questions::{ASK_USER, Answering, QuestionPort};
 pub use run::{
     Call, CallIds, Done, Effect, Hazard, Picture, Previewing, Progress, Running, Seen, ShownFile,
@@ -256,6 +258,18 @@ pub trait Tool: Send + Sync {
     /// [`Tool::clicall_section`]，没有沙盒时 `miyu check` 提醒。核心照这一条认，不看名字：别人的包带的同类工具照样声明。默认不是。
     fn runs_commands(&self) -> bool {
         false
+    }
+
+    /// 给人跑一条命令（施工 SH-1 上，设计 `57-人在会话里跑命令.md` 第二节第 1 条，[`crate::PersonCommand`]）：**只给人用**，
+    /// 核心只在收到人发的 `session.send {shell: true}` 时调，她的调用走 [`Tool::run`] 碰不到。照这件工具跑命令的程序、环境变量
+    /// 跑，不判权限、不进沙盒、不查高危、不拦干等、到时整组杀、不开 `miyu call` 的通道；`halt` 举起来时整组杀、交回到这时的
+    /// 输出。声明跑命令的工具实现它（`shell` 是）；默认没有，交回 `None`。
+    fn run_for_person(
+        &self,
+        _command: crate::PersonCommand,
+        _halt: crate::Halt,
+    ) -> Option<crate::PersonRunning<'_>> {
+        None
     }
 
     /// 只在会话有后台时才给的那几个参数（施工 BS-1 上，设计 44 第三节第 3 条）：后台运行关着的会话，工具面上去掉它们。`shell`

@@ -172,6 +172,21 @@ pub enum Action {
     },
     /// 嵌套调用的动作（施工 M-1，`docs/blueprint/kernel/session.md`「嵌套调用」）：过链、跑、掐掉、答脚本那头。
     Nested(super::NestedAction),
+    /// 跑人打的一条命令（施工 SH-1 上，`shell.rs`）：执行器找声明跑命令的那件工具、调给人跑的钩子，不判权限、不进沙盒，
+    /// 跑完交回 `ShellRan`。没有那件工具、起不来的，也交回，输出写为什么。
+    RunShell {
+        /// 哪一句：那条 `message.user` 的序号，交回时带上。
+        message: Seq,
+        /// 命令行，原样。
+        command: String,
+        /// 在哪个目录跑：这一刻会话的工作目录。
+        cwd: String,
+    },
+    /// 叫停在跑的那一条人打的命令（施工 SH-1 上）：整组杀掉，照常交回到这时的输出。已经跑完的，什么都不做。
+    HaltShell {
+        /// 哪一句。
+        message: Seq,
+    },
     /// 执行一次工具调用。执行中的输出、执行完了，都带着调用编号回报
     /// （`02-内核.md` 第六节「工具怎么调、下一步怎么走」）。
     RunTool {
@@ -311,6 +326,8 @@ pub enum Reason {
     NothingQueued,
     /// 退回排着队的消息（施工 Q-W）：写的那一条不在队里，请求已经带上了（或者由它接着开了一轮）。
     AlreadyHeard,
+    /// 人打的命令（`session.send {shell: true}`，施工 SH-1 上）不是人说的：别的 agent、扩展、场所会话。
+    ShellNotAllowed,
 }
 
 impl Reason {
@@ -349,6 +366,7 @@ impl Reason {
             Reason::GoalRunning => "goal_running",
             Reason::NothingQueued => "nothing_queued",
             Reason::AlreadyHeard => "already_heard",
+            Reason::ShellNotAllowed => "shell_not_allowed",
         }
     }
 }

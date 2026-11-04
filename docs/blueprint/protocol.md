@@ -341,6 +341,7 @@
 | `session` | 字符串，必写 | 哪个会话 |
 | `text` | 字符串，必写 | 要说的话，照原样成一块文字；空的一块都没有 |
 | `urgent` | 布尔，不写是 `false` | 急着插话 |
+| `shell` | 布尔，不写是 `false` | 人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`text` 是命令行，原样跑。照第 10 条 |
 | `prefix` | `"keep"`、`"compact"`，可以不写 | 前缀要变时人选的（第 9 条）：直接发送、压缩上下文并发送 |
 | `cwd`、`dirs` | 可以不写 | 施工 9-7 上起照收不理：工作区是会话的属性，换它走 `session.set_workspace`。一个连接第一次收到带它们的，记一行运行日志 `WARN session.send cwd ignored`，看得出谁还在发 |
 | `attachments` | 数组，可以不写 | 附件（施工 3-9 三补）：`blob.put` 的回应，照先后。每一项要 `blob`、`name`、`media_type`；可以另写 `path`：这个附件原来在本机的哪儿，就是 `blob.put` 传的那个路径（施工 3-9 五补，剪贴板贴的、传 `data` 的不写），绝对路径（`/`、`~/`、Windows 的盘符或 `\\` 开头）、没有控制字符、最多 4096 字节，不对的 `bad_params`；核心只查写法、不碰磁盘，记进块里，模型看不了这个附件时占位那一句带上它。没写 `path` 的（施工 3-9 六补）：核心把它拷成会话目录 `attachments/` 里的一个文件（`store.md`「会话目录」），块里记那个路径；她读得到（`fs.md` 第一节第 2 行），删会话时跟着走。别的格不看 |
@@ -363,6 +364,10 @@
    - 只问握手 `caps.prefix_ask: true` 的头。开新一轮的三个入口：`session.send`、`session.redo`、开轮的 `command.run`（模板、MCP 提示词、`/goal` 设定和继续）。会话空着、是本机会话、号比会话照着拼过的和人放行过的都新的，不带 `prefix` 就拒 `prefix_changing`，`data.files` 是这以后改了的文件（照数据根写的相对路径，先后、不重，最多 20 个；多的、太早挪出表的数进 `data.more`）。
    - `"keep"`：放行到这个号，照常说。`"compact"`：先手动压缩（同 `session.compact`，不带要求），开了才放行再说这一句，这一句排在压缩那一轮后面；压不了的回压缩自己的拒绝（`nothing_to_compact` 等），这句不发，不退回直接发。
    - 放行照会话记，之后有新的改动再问。正在跑一轮时说的、场所会话、回合开始不换快照的会话（fork 子代理、整理记忆）、定时和 `/loop`、长期目标自己续的轮不问；没声明的头照旧直接发，下一轮换上。
+10. `shell: true`（施工 SH-1 上，设计 57）：人在头里亲手打的一条命令，不判权限、不进沙盒、不弹确认，所有登录了的头都能用。
+   - 只收人：带 `from` 的、核心拉起的扩展说的、带 `as` 的拒 `shell_not_allowed`；场所会话也拒 `shell_not_allowed`（不是 `venue_session`）。和 `attachments`、`venue` 一起写的 `bad_params`。这几样先查、再找会话，拒了的什么都不记。
+   - 核心的工具目录里没有声明跑命令的工具（`tools/interface.md`「给人跑一条」；包没装、关了）的拒 `shell_unavailable`。预设只管她的工具面，不管人的命令：工具面上没有 `shell` 也照跑。
+   - `text` 去掉首尾空白是空的：`empty_message`。别的照第 1、2 条和 `urgent`、`prefix`、`cwd`：记成写了 `shell` 的 `message.user`、落了盘就回，不等跑完；在她听到它的那一刻照会话那时的工作目录跑（`kernel/session.md`「人跑的命令」），结果记 `shell.ran`，她接着回。排着的照普通消息退回（`session.withdraw`、打断的 `queued: "return"`），退回的不跑。
 
 **`blob.put`**（施工 3-9 三补，`04-核心协议.md` 第九节）
 
@@ -1478,6 +1483,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `needs_approval` | -32010 | `extension.enable`、`extension.restart`：要的能力还有没批的，`data.capabilities` 是那几个（施工 9-4 下上，`extensions.md`「能力」） |
 | `session_not_found` | -32010 | 没有这个会话，删了的也是 |
 | `unknown_call` | -32010 | `view.detail` 的会话日志里没有这次调用的结果：编号对不上，或者还没回（施工 9-6 三补）；没有替代到这个序号的压缩（施工 9-8 中） |
+| `shell_not_allowed` | -32010 | `session.send` 的 `shell` 不是人在头里打的：带 `from`、`as` 的，扩展说的，场所会话（施工 SH-1 上） |
+| `shell_unavailable` | -32010 | `session.send` 的 `shell`：核心的工具目录里没有声明跑命令的工具（施工 SH-1 上） |
 | `venue_session` | -32010 | 场所会话只收代表外部的人说的话：不带 `as` 的 `session.send`（施工 O-3）、`command.run`（施工 O-6）；`command.catalog` 只收本机的会话（施工 O-6 补） |
 | `unknown_command` | -32010 | `command.run` 认不出这个命令（施工 O-6） |
 | `command_not_allowed` | -32010 | `command.run`：场所里既不是主人、也不是管理的人（施工 O-6） |
@@ -1666,6 +1673,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `needs_approval` | 扩展权限未批准。 | Extension permissions not approved. |
 | `session_not_found` | 会话不存在。 | Session not found. |
 | `unknown_call` | 调用不存在。 | Call not found. |
+| `shell_not_allowed` | 只有你自己能在这里跑命令。 | Only you can run commands here. |
+| `shell_unavailable` | 没有能跑命令的工具（软件包没装或已关闭）。 | No tool can run commands (package missing or disabled). |
 | `venue_session` | 平台会话不能直接发消息。 | Cannot send messages directly to a platform session. |
 | `unknown_command` | 命令不存在。 | Command not found. |
 | `command_not_allowed` | 仅主人和群管理员可用。 | Owner and group admins only. |
@@ -1784,6 +1793,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/compact.rs` | 协议上手动压缩（施工 6-8）：回应是那一轮的开头、推送里压好了；要求原样到了摘要请求里；撤掉那一轮的回应里没有 `said`；有回合在进行、没有能压的两种拒绝，中文、英文；`instructions` 不是字符串的参数不对 |
 | `crates/miyu-endpoint/tests/recap.rs`（施工 3-8 四补） | 协议上要回顾：回应是那一句、照到的、不是交回的；推送里先有回顾的 `model.called`、`session.recapped`，都不带回合编号、`cause` 是这一条，再是回应，别的头也收到；请求是一条 user、没有 system 和工具面；没有新内容再要一次交回上一句、不请求；有回合在进行时照收、照到的是这一轮那句话；没有能回顾的、没写成的两种拒绝，中文、英文，没写成的不再来；会话编号不对、没写、不是字符串的参数不对，没有的会话找不到 |
 | `crates/miyu-endpoint/tests/title.rs`（施工 3-8 五补） | 自动起标题：第一轮答完，订阅着的头收到起标题的 `model.called`（`purpose: "title"`）和 `session.meta_changed`，`by` 是内核、不带回合编号和 `cause`；请求是一条 user、没有 system 和工具面，只喂第一轮；`session.list` 带上标题，核心重启以后照样；第二轮不再起；人先起过名的不起 |
+| `crates/miyu-endpoint/tests/person_shell.rs`（施工 SH-1 上） | `session.send` 的 `shell`：真核心、真的基础系统，本人发的不问权限就跑、记 `shell.ran`、她的请求里是那条命令和输出；带 `from` 的 `shell_not_allowed`，带附件的 `bad_params`，空的 `empty_message`，工具目录里没有跑命令的工具的 `shell_unavailable`，都什么都不记；场所会话带不带 `as` 都 `shell_not_allowed`（`venues.rs`） |
 | `crates/miyu-endpoint/tests/commands.rs`（施工 O-6） | `command.run`：`/clear`、别名 `/reset`（开头空白、后面跟的字照认）清空并记 `command.ran`，回执是中文那一句；`/stop` 打断、排着的留在日志里不接着开、子代理停了，没有回合也照样记；认不出的、`/` 后面是空白的 `unknown_command`，不以 `/` 开头的、多写格的参数不对，都什么都不写；内核拒的照原因回；同一个编号再发、重启以后再发回应一样、只记一次；场所里主人、管理的人能用，别人 `command_not_allowed`，不带 `as` 的 `venue_session`，本机的会话带 `as` 参数不对；`session.interrupt` 收 `keep` |
 | `crates/miyu-endpoint/tests/goal_heads.rs`（施工 X-8 补） | 事件流订阅的回应没有目标的不写 `goal`、有的同会话状态；设了、开一轮、等人开口各推一条 `goal.changed`（`by` 模块 `goal`，带上限）；续轮消息的 `cause` 是 `goal-1-…`；视图条目带 `round` |
 | `crates/miyu-endpoint/tests/goal_command.rs`、`src/commands/goal/tests.rs`（施工 X-8 下） | `command.run` 第 10 条：设了就开续轮，看、停、改、继续、清掉各一句回执，`goal.*` 的 `by` 是打命令的人，执行了的记 `command.ran`、被拒的不记；没写上限的改照原来的；卡住的再设、停拒，改了上限能接着跑；工具面上没有、预设关了（带预设的名字）、通讯平台的会话 `goal_unavailable`，命令菜单不列；子命令只在后面没字时认，`--rounds` 的几种写法 |

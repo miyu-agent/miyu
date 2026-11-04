@@ -278,7 +278,7 @@ a.step:hover{border-color:var(--primary)}
   <ul class="facts">
     <li><b>1030</b><span>/ 1039 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-41上</b><span>最近一步（V-41 上 翻页不整份读）</span></li>
+    <li><b class="mono">SH-1 上</b><span>最近一步（SH-1 上 人在输入框里用 ! 跑命令）</span></li>
   </ul>
 </header>
 
@@ -514,6 +514,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV41a"><span class="n">V-41 上</span>翻页不整份读<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27"><span class="n">X-27</span>脚本列表和全局开关<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sX-27a"><span class="n">X-27 补</span>包里的服务和打开目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#s514a"><span class="n">5-14 上</span>工作目录和工作区分开<span class="st">✓</span></a></li>
@@ -11920,6 +11921,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/MN-1下-监视的视图.md</code>；蓝图 <code>view.md</code>；参考 <code>view.md</code>、<code>events.md</code> 中英两份。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sSH1a" aria-labelledby="h-sSH1a">
+  <div class="sheet-head"><h2 id="h-sSH1a"><span class="no">SH-1 上</span>人在输入框里用 ! 跑命令</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">人在头里打 <code>!git status</code>：核心照会话的工作目录跑，命令和输出作为人说的一句话进会话，她接着回。人亲手打的不判权限、不进沙盒，只收人。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">协议、内核、执行器、shell</span><span class="dir-note">SH-1 上</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>session.send</code> 多 <code>shell</code>：<code>from</code>、扩展、<code>as</code>、场所会话拒 <code>shell_not_allowed</code>，带附件 <code>bad_params</code>，没有跑命令的工具 <code>shell_unavailable</code>，空的 <code>empty_message</code></li>
+              <li>内核记成写了 <code>shell</code> 的 <code>message.user</code>，在「准备好」那一刻先跑（<code>RunShell</code>），一条一条，记 <code>shell.ran</code> 落了盘再问；退回的不跑</li>
+              <li>打断：在跑的 <code>HaltShell</code>、等它交回（最多 10 秒），不接着发的没跑的补 <code>interrupted</code>；重启记 <code>aborted</code>，崩了载入时补，不重跑</li>
+              <li><code>Tool::run_for_person</code> 只给人用：<code>shell</code> 同一个程序和环境变量、不进沙盒、不查高危不拦 <code>sleep</code>、120 秒整组杀、叫停整组杀交回到这时的输出</li>
+              <li>渲染成 <code>&lt;user-shell reason&gt;</code> 一块：<code>$ 命令</code>、输出、退出码或信号，在那句话的位置</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">核心不认 <code>shell</code> 的名字：跑命令的工具多一个只给人用的钩子</span><span class="rl">设计 57 第二节第 1 条</span></div>
+          <div class="tile new"><span class="nm">听到时跑：「准备好」那一刻先跑完再问模型</span><span class="rl">设计 57 第三节第 2 条</span></div>
+          <div class="tile new"><span class="nm">打断时留着的、没跑到的记 <code>interrupted</code>，不留没结果的命令</span><span class="rl">施工单「风险」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SH-1 上</dd></div>
+        <div><dt>名称</dt><dd>人在输入框里用 ! 跑命令</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-04</dd></div>
+        <div><dt>提交</dt><dd class="mono">SH-1上</dd></div>
+        <div><dt>验收</dt><dd>内核场景 13 条；协议、真会话 5 条；基础系统真进程 5 条；渲染 5 条；变异 20 个；分支 CI 六项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>内核场景：闲着开轮第一件跑、忙着两步之间先跑、几条照先后、最后一步来的在接着开的那一轮跑、退回的不跑、打断叫停她不回、等不到到点补、留着的补 <code>interrupted</code>、接着发的下一轮跑、重启 <code>aborted</code> 不重跑、崩了载入补、撤销一起撤、不是人和空的拒</span></li>
+        <li><span class="ok">✓</span><span>真核心真进程：<code>!echo hi</code> 不问权限就跑、她的请求里是 <code>&lt;user-shell&gt;</code> 那一块；<code>!sleep 30</code> 打断当场整组杀、带着第一行输出、她不回；拒的几种什么都不记</span></li>
+        <li><span class="ok">✓</span><span>基础系统三个平台：钩子交回退出码和输出、人打的 <code>sleep</code> 照跑而她的同一句照旧被拒、叫停整组杀、到时整组杀；不跑命令的工具没有钩子</span></li>
+        <li><span class="ok">✓</span><span>手写变异 20 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SH-1上-人跑命令.md</code>；设计 <code>docs/designs/57-人在会话里跑命令.md</code>；蓝图 <code>protocol.md</code>「<code>session.send</code>」第 10 条、<code>tools/interface.md</code>「七、给人跑一条」、<code>tools/shell.md</code>「给人跑」、<code>kernel/events-bodies.md</code>、<code>kernel/session.md</code>「人跑的命令」、<code>session/tools.md</code> 第 7 条、<code>kernel/request.md</code>「人跑的命令」；登记簿 <code>26-提示词.md</code> 第十节。</li>
       </ul>
     </div>
   </div>

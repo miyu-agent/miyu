@@ -58,6 +58,7 @@ fn fields_are_written_in_the_drawing_order() {
             })],
             venue: None,
             command: None,
+            shell: false,
         }),
     };
     assert_eq!(event.to_line(), USER);

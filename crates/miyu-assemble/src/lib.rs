@@ -24,6 +24,7 @@ mod private;
 mod recap;
 mod render;
 mod schedule;
+mod shell;
 mod size;
 mod summary;
 mod tag;

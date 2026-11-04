@@ -54,7 +54,8 @@ impl Results {
         let Finished { ending, output } = finished;
         let body = self.body(&output);
         match ending {
-            Ending::TimedOut => {
+            // 被叫停的只有人打的命令（施工 SH-1 上，`person.rs` 不走这里）；万一来了，照到时说。
+            Ending::TimedOut | Ending::Halted => {
                 let (note, seconds) = timed_out();
                 Done::error(body + &note).said(said("shell/timed-out").with("seconds", seconds))
             }

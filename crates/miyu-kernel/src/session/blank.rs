@@ -53,6 +53,7 @@ impl Session {
             rounds: super::seal::Rounds::default(),
             chain: super::chain::Chain::default(),
             busy: crate::waits::Busy::default(),
+            shells: super::shell::Shells::default(),
             told_todos: Vec::new(),
             told_done: Vec::new(),
             told_states: Default::default(),

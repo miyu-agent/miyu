@@ -333,6 +333,9 @@ impl Actor {
         Ok(match action {
             Action::Append(events) => self.append(events).await?,
             Action::Nested(action) => self.nested(action).await, // 脚本里调的（施工 M-2，`actor/nested.rs`）
+            shell @ (Action::RunShell { .. } | Action::HaltShell { .. }) => {
+                self.tools.person(shell)
+            }
             Action::Reply { id, outcome } => {
                 self.reply(id, outcome);
                 None

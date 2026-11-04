@@ -217,6 +217,7 @@ impl Stage {
             nested: super::nested::Bench::default(),
             sight: super::sight::Sight::default(),
             swap: None,
+            shells: Default::default(),
         };
         stage.settle(actions);
         stage

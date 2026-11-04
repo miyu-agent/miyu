@@ -142,10 +142,12 @@ impl Session {
             };
             // 斜杠命令模板展开成的那一句（施工 X-14 上）：照原样重发的还是那条命令；换了字的照写的字发，不再是命令。
             let command = message.command.filter(|_| !(opens && redo.text.is_some()));
+            // 人打的命令（施工 SH-1 上）照样是命令：重发的这一轮听到它时再跑一次。
             let body = Body::MessageUser(MessageUser {
                 blocks,
                 venue: None,
                 command,
+                shell: message.shell,
             });
             let message = self.record(at, by, Some(id.clone()), body);
             if opens {

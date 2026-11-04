@@ -22,6 +22,14 @@ pub enum Command {
         /// 通讯平台上的一条消息（施工 O-13 上）：原样记进 `message.user`。旁听的只记下，不开回合，回合进行中也不排进这一轮。
         venue: Option<VenueMessage>,
     },
+    /// `session.send {shell: true}`：人在头的输入框里用 `!` 打的一条命令（施工 SH-1 上，设计 57）。照发一条消息走，记成写了
+    /// `shell` 的 `message.user`，她听到它的那一刻跑（`shell.rs`）。只收人说的：别的拒绝 `shell_not_allowed`（协议那一层先挡）。
+    Shell {
+        /// 命令行，原样。
+        text: String,
+        /// 同 `Send` 的。
+        urgent: bool,
+    },
     /// `session.respond`：照已经记下的几条旁听消息开一轮（施工 O-14 上，`docs/blueprint/chat.md` 第七条第 3 条第 1 项）。
     /// 不新记消息；`facts` 原样记成 `context.injected`，排在触发前面。
     Respond {

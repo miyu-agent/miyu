@@ -388,6 +388,8 @@ pub(crate) enum Back {
     Job(crate::jobs::Ended),
     /// 监视的命令攒好了一批行（施工 MN-1 上）。
     JobLines(crate::jobs::Lines),
+    /// 人用 `!` 打的一条命令跑完了（施工 SH-1 上，`tools/person.rs`）。
+    Shell(miyu_kernel::event::ShellRan),
     /// 替它看图回来了（施工 8-17）：哪一张图，成了的替它看的模型和转述，没成的为什么。
     Described {
         blob: ContentHash,

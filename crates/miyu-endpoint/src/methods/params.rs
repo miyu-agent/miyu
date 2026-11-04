@@ -86,6 +86,9 @@ pub(super) struct SendParams {
     /// 前缀要变了时人选的（施工 OV-1 下，`sessions/prefix.rs`）。
     #[serde(default)]
     pub(super) prefix: Option<crate::sessions::prefix::Choice>,
+    /// 人用 `!` 打的一条命令（施工 SH-1 上，设计 57）：`text` 是命令行，原样跑。只收人在头里打的。
+    #[serde(default)]
+    pub(super) shell: bool,
 }
 
 /// `session.interrupt` 的参数。

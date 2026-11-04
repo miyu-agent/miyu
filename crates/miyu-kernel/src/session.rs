@@ -53,6 +53,7 @@ mod retry;
 mod revert;
 mod seal;
 mod send;
+mod shell;
 mod shorten;
 mod sight;
 mod spans;
@@ -141,8 +142,7 @@ pub struct Session {
     dream: bool,
     /// 有头订阅着（施工 7-2，[`Input::Watched`]）：只在内存里，造会话、载入以后当没人看着。
     watched: bool,
-    /// 闲着时到的、会叫醒她、这时却开不了一轮的回报，照先后（施工 7-2，`jobs.rs`）：随便哪一轮开了就清掉；恢复了撤销、
-    /// 这时开得了，由最后那条接着开。
+    /// 闲着时到的、会叫醒她、这时却开不了一轮的回报，照先后（施工 7-2，`jobs.rs`）：随便哪一轮开了就清掉；恢复了撤销、这时开得了，由最后那条接着开。
     deferred: Vec<Arrived>,
     /// 太吵、已经发过停的动作的监视命令（施工 MN-1 上，`watch.rs`）：再来的批次不记、不再发。只在内存里：重启了命令也就停了。
     chatty: std::collections::BTreeSet<crate::id::JobId>,
@@ -172,6 +172,8 @@ pub struct Session {
     busy: crate::waits::Busy,
     /// 被回报叫醒的这一串用了几步（审计 R3E-2，`chain.rs`）：每追加一条记一次。
     chain: chain::Chain,
+    /// 还没跑的人打的命令（施工 SH-1 上，`shell.rs`）：每追加一条记一次。
+    shells: shell::Shells,
     /// 上次告诉头的待办（施工 D-3，`todos.rs`）：变了才推 `todos.changed`。只在内存里。
     told_todos: Vec<crate::event::Todo>,
     /// 上次告诉头的「因为全部做完而清空的」那一份（施工 9-8 九补）：没写过就一次全做完的，清单前后都是空的，也要推。
@@ -183,8 +185,7 @@ pub struct Session {
 }
 
 impl Session {
-    /// 造一个会话：追加第 1 条事件 `session.created`，它的 `cause` 是造会话的那个命令
-    /// （`04-核心协议.md` 的 `session.create`）。这一条落了盘，再回应这个命令。
+    /// 造一个会话：追加第 1 条事件 `session.created`，它的 `cause` 是造会话的那个命令（`04-核心协议.md` 的 `session.create`）。这一条落了盘，再回应这个命令。
     ///
     /// 会话的编号 `session`、冻结在会话上的策略和会话所在的环境，由执行器一起交进来；开始时的权限取自 `created`。
     ///
@@ -296,6 +297,7 @@ impl Session {
                 excess,
             ),
             Input::Woke { at, seen } => self.woke(at, seen),
+            Input::ShellRan { at, ran } => self.shell_ran(at, ran),
             Input::ToolDone {
                 at,
                 call_id,
@@ -422,6 +424,7 @@ impl Session {
             Command::Typed { blocks, command } => {
                 self.send(id, by, at, (blocks, None, Some(command)), false)
             }
+            Command::Shell { text, urgent } => self.send_shell(id, by, at, text, urgent),
             Command::Append { event } => self.append(id, by, at, event),
             Command::Respond { to, facts } => self.respond(id, by, at, to, facts),
             Command::Note { facts } => self.note(id, by, at, facts),

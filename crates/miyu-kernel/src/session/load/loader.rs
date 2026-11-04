@@ -44,6 +44,8 @@ pub struct Loader {
     pub(in crate::session) rounds: Rounds,
     pub(in crate::session) busy: crate::waits::Busy,
     pub(in crate::session) chain: crate::session::chain::Chain,
+    /// 还没跑的人打的命令（施工 SH-1 上）。
+    pub(in crate::session) shells: crate::session::shell::Shells,
     /// 有效历史：放掉的那一截只记了派出去的任务、待办。
     pub(in crate::session) history: History,
     /// 还没定进不进有效历史的，照先后：序号都不比 `noted` 小。
@@ -96,6 +98,7 @@ impl Session {
             rounds: Rounds::default(),
             busy: crate::waits::Busy::default(),
             chain: crate::session::chain::Chain::default(),
+            shells: crate::session::shell::Shells::default(),
             history,
             noted,
         })
@@ -123,6 +126,7 @@ impl Loader {
             self.grants.note(&event);
             self.rounds.note(&event);
             self.busy.note(&event);
+            self.shells.note(&event);
             let waking = jobs::waking(&self.ledger, &event);
             self.chain.note(&event, waking.as_ref());
             self.replay.note(&event, queued, waking);

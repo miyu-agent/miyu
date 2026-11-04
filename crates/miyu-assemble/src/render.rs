@@ -20,7 +20,7 @@ use miyu_kernel::request::Message;
 
 use crate::tag::defuse;
 use crate::texts::Texts;
-use crate::{group, harness, jobs, peers, private};
+use crate::{group, harness, jobs, peers, private, shell};
 
 mod opening;
 
@@ -37,6 +37,7 @@ pub(crate) fn render(history: &History, texts: &Texts) -> Vec<Message> {
 pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) -> Vec<Message> {
     let mut transcript = Transcript::default();
     let opened = Opened::of(history);
+    let rans = shell::rans(history);
     // 清空的检查点什么都不出（施工 6-8 补）：她看到的上下文从这里起是空的。
     if let Some(checkpoint) = history.checkpoint()
         && let Body::ContextCompacted(compacted) = &checkpoint.body
@@ -52,6 +53,11 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
         match &event.body {
             // 旁听的场所消息这一步先不进上下文，O-13 下渲染成群聊近况（施工 O-13 上）。
             Body::MessageUser(message) if message.venue.as_ref().is_some_and(|venue| venue.ambient) => {}
+            // 人用 `!` 跑的命令（施工 SH-1 上）：和它的 `shell.ran` 拼成一块，`shell.ran` 自己不出字。
+            Body::MessageUser(message) if message.shell => {
+                let blocks = shell::spoken(message, rans.get(&event.seq).copied(), texts);
+                transcript.add(event.seq, Place::Here, blocks);
+            }
             Body::MessageUser(message) => {
                 let blocks = spoken(history, event, message, known(&message.blocks), texts);
                 transcript.add(event.seq, Place::Here, blocks);
@@ -138,6 +144,8 @@ pub(crate) fn render_in(history: &History, ordered: &[&Event], texts: &Texts) ->
             // 换工作区不进上下文：下一轮开始时变了的环境照旧注成一块事实（施工 9-7 上）。
             | Body::WorkspaceChanged(_)
             | Body::SessionRecapped(_)
+            // 人用 `!` 跑的命令的结果和那句话拼在一起，在那句话的位置渲染（施工 SH-1 上）。
+            | Body::ShellRan(_)
             // 斜杠命令的那一句只给人和聊天记录看（施工 O-6）。
             | Body::CommandRan(_)
             // 人清掉待办只动头看的清单（施工 D-3 再补）。

@@ -134,6 +134,20 @@ async fn who_speaks_in_a_venue_session() {
         Some("venue_session"),
         "不带 as 的不收：{reply}"
     );
+    // 人用 `!` 打的命令（施工 SH-1 上）：场所会话不收，带不带 as 都一样。
+    for (id, params) in [
+        (
+            "x1",
+            json!({"session": session, "text": "ls", "shell": true}),
+        ),
+        (
+            "x2",
+            json!({"session": session, "text": "ls", "shell": true, "as": {"external": "qq:10001"}}),
+        ),
+    ] {
+        let reply = send(&mut client, id, params).await;
+        assert_eq!(reason(&reply), Some("shell_not_allowed"), "{reply}");
+    }
     let reply = send(
         &mut client,
         "s1",

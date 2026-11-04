@@ -43,6 +43,7 @@ fn words_at(home: &Home, session: &str, seq: u64) -> Value {
             blocks,
             venue: None,
             command: None,
+            shell: false,
         }) => serde_json::to_value(blocks).expect("写得成 JSON"),
         body => panic!("第 {seq} 条不是人的话：{body:?}"),
     }

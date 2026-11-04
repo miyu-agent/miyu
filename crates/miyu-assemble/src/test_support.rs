@@ -15,7 +15,7 @@ use crate::texts::{
 };
 
 pub(crate) const KERNEL: &str = r#"{"kind":"kernel"}"#;
-const ALICE: &str = r#"{"kind":"person"}"#;
+pub(crate) const ALICE: &str = r#"{"kind":"person"}"#;
 pub(crate) const MODEL: &str = r#"{"kind":"model","endpoint":"deepseek","model":"deepseek-v4"}"#;
 const CREATED: &str = r#"{"venue":"local","policy":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","permission":{"level":"workspace","read_only":false}}"#;
 
@@ -194,6 +194,9 @@ fn job_texts() -> JobTexts {
         user_message_close: "</user>\n".to_string(),
         lines_open: template("<lines {job} {title}>\n"),
         lines_close: "</lines>\n".to_string(),
+        shell_open: template("<shell {reason}>\n"),
+        shell_command: template("$ {command}\n"),
+        shell_close: "</shell>\n".to_string(),
     }
 }
 
