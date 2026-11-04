@@ -1,14 +1,16 @@
 //! `history`（`docs/blueprint/tools/history.md`，施工 6-4）：翻这个会话自己的日志，按关键词找、按序号读，也能按
 //! 时间、谁说的筛。压缩换出去的旧内容都还在日志里，她用它取回。只读日志，不碰文件，不报效果。
 //!
-//! 日志经 [`Call::log`] 一段一段读，交给内核的 `History::whole()` 算出哪些还算数（撤掉的、撤回的不算），再挑出
+//! 日志经 [`Call::log`] 从头一块块读，交给内核的 `History::whole()` 算出哪些还算数（撤掉的、撤回的不算），再挑出
 //! 算一条的（[`entry`]），筛过以后写成一页（[`page`]）。人切权限级别的那几条照读来的原样挑，撤掉的回合里的也算（施工
-//! 2-7 补）。M6 不建索引，每次从头读。
+//! 2-7 补）。M6 不建索引，每次从头读；边读边算、边挑边扔（施工 V-45，[`collect`]）：有效历史只留还可能被撤到的最后一截，
+//! 条目只留这一页放得下的几条，内存不随日志长。
 //!
 //! 多一格 `session`（施工 C-4，`cross-session.md` 第二条）：写了的先经 [`Call::sessions`] 认出是哪一个会话——和
 //! `find_session` 同一个认法，认成她自己的照没写——再只读地开它的日志（[`miyu_tool::SessionsPort::open`]），读法和读自己的日志
 //! 是同一条路（[`look`]）：时刻仍照这个会话自己的时区。没有列会话的端口的（子会话、场所会话），写了 `session` 直接拒。
 
+mod collect;
 mod entry;
 mod page;
 mod time;
@@ -18,22 +20,23 @@ use std::path::Path;
 use serde::Deserialize;
 
 use miyu_kernel::event::Said;
-use miyu_kernel::history::History as Kept;
 use miyu_kernel::template::Template;
-use miyu_kernel::time::UtcOffset;
+use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_kernel::tool::Access;
+use miyu_store::sweep::Tuning;
 use miyu_tool::{Call, Done, Found, Log, Progress, Running, Spec, Stop, Tool, find_session};
 
 use crate::blocking::blocking;
 use crate::common::{Common, given, integer, said, said_n};
 use crate::load::{self, LoadError, say};
 
-use entry::{Entry, Placeholders, Who};
+use collect::Collect;
+use entry::{Placeholders, Who};
 use page::{Footers, Page};
 
 /// 一页默认几条。
 const LIMIT: i64 = 20;
-/// 这件工具的名字：她自己翻记录的那几步不算一条（[`entry::entries`]）。
+/// 这件工具的名字：她自己翻记录的那几步不算一条（`collect.rs` 照调用编号认，`entry::text_of` 不写这件工具的调用）。
 const NAME: &str = "history";
 
 /// `history`。
@@ -227,55 +230,44 @@ fn wanted(texts: &Texts, call: &Call, args: Args) -> Result<Wanted, Box<Done>> {
     })
 }
 
-/// 读日志、筛、找或者读。叫停了的，读下一段之前停下。`log` 是 [`resolve`] 认出来的：没写 `session` 的是这次调用
+/// 读日志、筛、找或者读。叫停了的，读下一块之前停下。`log` 是 [`resolve`] 认出来的：没写 `session` 的是这次调用
 /// 自己的日志，写了的是那个会话的；`offset` 总是这个会话自己的时区，和读的是哪一份日志无关。
 fn look(texts: &Texts, log: &Log, offset: UtcOffset, wanted: &Wanted, stop: &Stop) -> Done {
-    let mut kept = Kept::whole();
-    let mut switches = Vec::new();
-    let read = log.read(|events| {
-        if stop.stopped() {
-            return false;
-        }
-        for event in events {
-            switches.extend(entry::switched(&event, &texts.placeholders));
-            kept.append(event);
-        }
-        true
-    });
-    if let Err(error) = read {
-        return no_log(texts, &error);
-    }
-    if stop.stopped() {
-        return Done::stopped();
-    }
-    let mut entries = entry::entries(&kept, &texts.placeholders, NAME);
-    entries.extend(switches);
-    entries.sort_by_key(|entry| entry.seq);
-    entries.retain(|entry| picked(entry, wanted));
-    let (page, human) = if wanted.words.is_empty() {
-        let page = page::read(&entries, wanted.limit, offset, &texts.footers);
-        let human = said("history/read")
+    look_tuned(texts, log, offset, wanted, stop, Tuning::SHIPPED)
+}
+
+/// 同 [`look`]，边读边算什么时候放、留多少照 `tuning`（测试里调小，逼出放早了再读一遍的）。
+fn look_tuned(
+    texts: &Texts,
+    log: &Log,
+    offset: UtcOffset,
+    wanted: &Wanted,
+    stop: &Stop,
+    tuning: Tuning,
+) -> Done {
+    let new = || Collect::new(&texts.placeholders, wanted, offset);
+    let collected = match collect::collect(log, new, stop, tuning) {
+        Ok(Some(collected)) => collected,
+        Ok(None) => return Done::stopped(),
+        Err(error) => return no_log(texts, &error),
+    };
+    let page = collected.page(&texts.footers);
+    let human = if wanted.words.is_empty() {
+        said("history/read")
             .with("from", page.first.to_string())
-            .with("to", page.last.to_string());
-        (page, human)
+            .with("to", page.last.to_string())
     } else {
-        let found: Vec<_> = entries
-            .into_iter()
-            .filter_map(|entry| page::hit(&entry.text, &wanted.words).map(|hit| (entry, hit)))
-            .collect();
-        let page = page::found(&found, wanted.limit, offset, &texts.footers);
-        let human = said_n("history/found", "count", page.total as u64);
-        (page, human)
+        said_n("history/found", "count", page.total as u64)
     };
     shown(texts, page, human)
 }
 
-/// 照 `from`、`to`、`since`、`until`、`by` 筛。
-fn picked(entry: &Entry, wanted: &Wanted) -> bool {
-    (wanted.from..=wanted.to).contains(&entry.seq)
-        && wanted.since.is_none_or(|since| entry.at >= since.start)
-        && wanted.until.is_none_or(|until| entry.at < until.end)
-        && wanted.by.is_none_or(|by| entry.who == by)
+/// 照 `from`、`to`、`since`、`until`、`by` 筛：第 `seq` 条、显示的时刻 `at`、谁说的 `who`。
+fn picked(seq: u64, at: Timestamp, who: Who, wanted: &Wanted) -> bool {
+    (wanted.from..=wanted.to).contains(&seq)
+        && wanted.since.is_none_or(|since| at >= since.start)
+        && wanted.until.is_none_or(|until| at < until.end)
+        && wanted.by.is_none_or(|by| who == by)
 }
 
 /// 写好的一页，和给人看的那一句；一条都没有的，说没有找到。

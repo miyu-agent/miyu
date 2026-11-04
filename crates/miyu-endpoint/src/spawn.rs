@@ -13,13 +13,13 @@ use std::path::PathBuf;
 use std::sync::{Arc, Weak};
 
 use miyu_kernel::event::Event;
-use miyu_kernel::id::{CommandId, SessionId};
+use miyu_kernel::id::{CommandId, Seq, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_kernel::time::Timestamp;
 use miyu_session::{Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
 use miyu_store::index::Row;
-use miyu_store::log::{read_events, read_segments};
+use miyu_store::log::{Flow, read_events, read_range, read_segments};
 use miyu_tool::{Log, MainSession, ReadLog, Stop};
 
 use crate::Core;
@@ -263,5 +263,20 @@ struct Dir(PathBuf);
 impl ReadLog for Dir {
     fn read(&self, each: &mut dyn FnMut(Vec<Event>) -> bool) -> Result<(), String> {
         read_segments(&self.0, each).map_err(|error| error.to_string())
+    }
+
+    /// 同这个会话自己那份（`miyu-session` 的 `LogDir`）：照序号定位着、一块块读（[`read_range`]，施工 V-45：`history` 读别的
+    /// 会话也边读边挑，不攒成一段段的整块）。`from` 以前的只数换行、不解、不自检。
+    fn read_range(
+        &self,
+        from: Seq,
+        upto: Seq,
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        read_range(&self.0, from, Some(upto), |events| match each(events) {
+            true => Flow::Go,
+            false => Flow::Stop,
+        })
+        .map_err(|error| error.to_string())
     }
 }

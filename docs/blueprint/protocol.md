@@ -35,7 +35,7 @@
 | `crates/miyu-endpoint/src/export.rs`（施工 SE-1 上） | `session.export`：一个会话连着后代、分叉来源打成原始包，写到人给的路径（「`session.export`」）；包里放一份 `read` 预设的 `transcript.md`（施工 SE-1 中下中） |
 | `crates/miyu-endpoint/src/export/markdown.rs`、`export/params.rs`、`export/assets.rs`（施工 SE-1 中下上、中下中、中下下） | `session.export {format: "markdown"}`：参数照预设和开关读（`params.rs`），整份喂投影、记原文、要的算有效历史、取 blob，渲染、写文件或放进回应；`children: append` 照任务编号一个个渲染子会话、接在后面；`assets: files` 查 blob、拷进旁边的文件夹（`assets.rs`）；原始包的 `transcript.md` 也照它 |
 | `crates/miyu-endpoint/src/asked.rs`、`asked/tests.rs`（施工 SP-2） | `session.prompts`：一个会话里主人问过的话，照有效历史，只读日志、一遍读完（「`session.prompts`」） |
-| `crates/miyu-store/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来，V-43 挪到 `miyu-store`、端点照旧叫它 `crate::sweep`，`store.md` 第 7 条） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表、记忆抽取共用 |
+| `crates/miyu-store/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来，V-43 挪到 `miyu-store`、端点照旧叫它 `crate::sweep`，`store.md` 第 7 条） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表、记忆抽取、`history` 工具（施工 V-45）共用 |
 | `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补；读的时候照 `event_lines` 写好的行，施工 V-37 下），再推 `event`、`resync`；换掉一个订阅时等它写完 |
 | `crates/miyu-endpoint/src/subscriptions/later.rs` | 在后台答的回应照办完那一刻的会话订阅走（施工 R-7 补）：会话订阅交回应的通道由它开、开时记下弱引用，换订阅、取消订阅不等它 |
 | `crates/miyu-endpoint/src/subscriptions/config.rs` | 配置的订阅（施工 8-4，`config.md`「协议」）：推 `config.changed`、掉队推 `resync`，`config.set` 的回应排在推送后面 |

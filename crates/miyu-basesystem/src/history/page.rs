@@ -23,7 +23,8 @@ pub(super) struct Footers {
     pub(super) cut: Template,
 }
 
-/// 写好的一页：给她看的，和这一页里第一条、最后一条的序号，找到的一共几条。
+/// 写好的一页：给她看的，和这一页里第一条、最后一条的序号，一共几条（「找」的是命中几条；「读」的是交进来的 `total`，
+/// 施工 V-45 起只够认有没有）。
 pub(super) struct Page {
     pub(super) text: String,
     pub(super) first: u64,
@@ -31,10 +32,11 @@ pub(super) struct Page {
     pub(super) total: usize,
 }
 
-/// 「找」：`found` 是命中的几条，照先后；每条带着第一处命中在原文（空白收过的）里的位置。新的在前，一页最多
-/// `limit` 条。
+/// 「找」：`found` 是命中的最新几条（一页可能放得下的都在，施工 V-45 边读边扔），照先后；每条带着摘出来的一段（[`snippet`]）。
+/// `total` 是一共命中几条。新的在前，一页最多 `limit` 条。
 pub(super) fn found(
-    found: &[(Entry, Hit)],
+    found: &[(Entry, String)],
+    total: usize,
     limit: usize,
     offset: UtcOffset,
     footers: &Footers,
@@ -42,13 +44,12 @@ pub(super) fn found(
     let mut text = String::new();
     let mut chars = 0;
     let mut shown: Vec<u64> = Vec::new();
-    for (entry, hit) in found.iter().rev().take(limit) {
+    for (entry, snippet) in found.iter().rev().take(limit) {
         let line = format!(
-            "#{} {} {}: {}\n",
+            "#{} {} {}: {snippet}\n",
             entry.seq,
             entry.at.local_minute(offset),
             entry.said_by(),
-            snippet(&hit.text, hit.at, hit.len)
         );
         let size = line.chars().count();
         if !shown.is_empty() && chars + size > PAGE {
@@ -59,12 +60,12 @@ pub(super) fn found(
         shown.push(entry.seq);
     }
     let (first, last) = (*shown.last().unwrap_or(&0), *shown.first().unwrap_or(&0));
-    if shown.len() < found.len() {
+    if shown.len() < total {
         text.push_str(&say(
             &footers.more_found,
             &[
                 ("shown", &shown.len().to_string()),
-                ("total", &found.len().to_string()),
+                ("total", &total.to_string()),
                 ("next", &first.saturating_sub(1).to_string()),
             ],
         ));
@@ -73,12 +74,19 @@ pub(super) fn found(
         text,
         first,
         last,
-        total: found.len(),
+        total,
     }
 }
 
-/// 「读」：照先后，从第一条起，最多 `limit` 条，整页不超过 [`PAGE`] 个字。第一条就超过的，截到放得下。
-pub(super) fn read(entries: &[Entry], limit: usize, offset: UtcOffset, footers: &Footers) -> Page {
+/// 「读」：照先后，从第一条起，最多 `limit` 条，整页不超过 [`PAGE`] 个字。第一条就超过的，截到放得下。`entries` 是从第一条起
+/// 一页可能放得下的几条（施工 V-45 边读边扔），`total` 是筛得进的一共几条（只用来认这一页后面还有没有）。
+pub(super) fn read(
+    entries: &[Entry],
+    total: usize,
+    limit: usize,
+    offset: UtcOffset,
+    footers: &Footers,
+) -> Page {
     let mut text = String::new();
     let mut chars = 0;
     let mut shown: usize = 0;
@@ -117,7 +125,7 @@ pub(super) fn read(entries: &[Entry], limit: usize, offset: UtcOffset, footers: 
     let last = entries
         .get(shown.saturating_sub(1))
         .map_or(0, |entry| entry.seq);
-    if shown < entries.len() {
+    if shown < total {
         text.push_str(&say(
             &footers.more_read,
             &[
@@ -131,7 +139,7 @@ pub(super) fn read(entries: &[Entry], limit: usize, offset: UtcOffset, footers: 
         text,
         first,
         last,
-        total: entries.len(),
+        total,
     }
 }
 
@@ -144,13 +152,16 @@ pub(super) struct Hit {
 
 /// `text` 里每个词（已经转成小写）都有的，交回第一处命中；不分大小写，照原样比，中文不分词。比之前连着的空白
 /// （换行也算）收成一个空格。
+///
+/// 每一条都要比（施工 V-45 量的大会话里一次两万多条），所以不另攒「小写的每个字来自原文第几个字」的整张表（一个字 8 字节）：
+/// 只在找到的那一处现数（[`origin`]），原文全是 ASCII 的转小写一字对一字，直接就是。
 pub(super) fn hit(text: &str, words: &[String]) -> Option<Hit> {
     let text = collapse(text);
-    let (folded, origin) = fold(&text);
+    let folded = fold(&text);
     let mut first: Option<(usize, usize)> = None;
     for word in words {
         let byte = folded.find(word.as_str())?;
-        let at = origin[folded[..byte].chars().count()];
+        let at = origin(&text, byte);
         let len = word.chars().count();
         if first.is_none_or(|(earliest, _)| at < earliest) {
             first = Some((at, len));
@@ -162,38 +173,64 @@ pub(super) fn hit(text: &str, words: &[String]) -> Option<Hit> {
 
 /// 连着的空白收成一个空格，头尾的去掉。
 fn collapse(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut collapsed = String::with_capacity(text.len());
+    for word in text.split_whitespace() {
+        if !collapsed.is_empty() {
+            collapsed.push(' ');
+        }
+        collapsed.push_str(word);
+    }
+    collapsed
 }
 
-/// 转成小写，和每个小写的字来自原文的第几个字（有的字转成小写不止一个）。
-fn fold(text: &str) -> (String, Vec<usize>) {
+/// 一个字一个字转成小写（有的字转成小写不止一个）。不用 `str::to_lowercase`：它照上下文转希腊字母 Σ，和一个字一个字转的不一样。
+fn fold(text: &str) -> String {
+    if text.is_ascii() {
+        return text.to_ascii_lowercase();
+    }
     let mut folded = String::with_capacity(text.len());
-    let mut origin = Vec::with_capacity(text.len());
+    for c in text.chars() {
+        folded.extend(c.to_lowercase());
+    }
+    folded
+}
+
+/// [`fold`] 转出来的第 `byte` 个字节起的那个字，来自原文 `text` 的第几个字。
+fn origin(text: &str, byte: usize) -> usize {
+    if text.is_ascii() {
+        return byte;
+    }
+    let mut end = 0;
     for (k, c) in text.chars().enumerate() {
-        for lower in c.to_lowercase() {
-            folded.push(lower);
-            origin.push(k);
+        end += c.to_lowercase().map(char::len_utf8).sum::<usize>();
+        if end > byte {
+            return k;
         }
     }
-    origin.push(text.chars().count());
-    (folded, origin)
+    text.chars().count()
 }
 
-/// 摘第 `at` 个字起、长 `len` 个字的命中前后一段，一共最多 [`SNIPPET`] 个字；前后截掉了的写 `…`。
-fn snippet(text: &str, at: usize, len: usize) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    if chars.len() <= SNIPPET {
+/// 摘第 `at` 个字起、长 `len` 个字的命中前后一段，一共最多 [`SNIPPET`] 个字；前后截掉了的写 `…`。照字的位置切原文，不把整段
+/// 拆成一个个字另存（施工 V-45：每一条命中都要摘）。
+pub(super) fn snippet(text: &str, at: usize, len: usize) -> String {
+    let count = text.chars().count();
+    if count <= SNIPPET {
         return text.to_string();
     }
     let before = SNIPPET.saturating_sub(len) / 2;
-    let start = at.saturating_sub(before).min(chars.len() - SNIPPET);
+    let start = at.saturating_sub(before).min(count - SNIPPET);
     let end = start + SNIPPET;
-    let mut out = String::new();
+    let byte = |k: usize| {
+        text.char_indices()
+            .nth(k)
+            .map_or(text.len(), |(byte, _)| byte)
+    };
+    let mut out = String::with_capacity(SNIPPET * 4 + 6);
     if start > 0 {
         out.push('…');
     }
-    out.extend(&chars[start..end]);
-    if end < chars.len() {
+    out.push_str(&text[byte(start)..byte(end)]);
+    if end < count {
         out.push('…');
     }
     out
