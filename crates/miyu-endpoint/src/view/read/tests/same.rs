@@ -24,12 +24,12 @@ use crate::test_support::{TempDir, resources, temp_root};
 use crate::view::{CAP, TURNS, newest_of, paged, project, read::read, size};
 
 /// 投影要的字：英文的那一份，几千份会话共用。
-fn texts() -> Arc<Texts> {
+pub(in crate::view) fn texts() -> Arc<Texts> {
     Arc::new(project::texts(&ResourceRoot::at(resources()), "en").expect("出厂的字读得成"))
 }
 
 /// 照种子 `seed` 造一份会话日志，写进 `dir`。交回造好的行（照序号，不含末尾的半行）。
-fn made(seed: u64, dir: &Path) -> Vec<String> {
+pub(in crate::view) fn made(seed: u64, dir: &Path) -> Vec<String> {
     let mut dice = Dice(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1);
     let fork = if dice.odds(8) {
         30 + dice.below(400)

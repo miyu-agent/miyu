@@ -28,6 +28,7 @@ use crate::entry::{Body, Entry, EntryId, Group, Notice};
 use crate::summary;
 use crate::words::Texts;
 use parts::{Block, Job, Running};
+pub(crate) use tools::output_head;
 
 /// 改了的文件加减了几行：投影是纯逻辑、不读 blob，由外面交进来（端点照两个 blob 算，同 `view.detail`）。
 pub trait Lines: Send + Sync {

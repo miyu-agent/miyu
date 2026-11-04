@@ -119,7 +119,7 @@ pub(crate) fn call<'a>(
             answer(move || async move { crate::import::import(core, params(request)?).await })
         }
         "session.export" => {
-            answer(move || async move { crate::export::export(core, params(request)?).await })
+            answer(move || async move { crate::export::export(core, peer, params(request)?).await })
         }
         "session.prompts" => {
             answer(move || async move { crate::asked::prompts(core, params(request)?).await })

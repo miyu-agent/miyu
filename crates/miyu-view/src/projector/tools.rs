@@ -433,7 +433,7 @@ const OUTPUT_BYTES: usize = 8 * 1024;
 
 /// 结果原文的前面一段：文字块照先后、块之间空一行（同 `view.detail` 的 `output`），最多 [`OUTPUT_LINES`] 行、
 /// [`OUTPUT_BYTES`] 字节，先到的算，切在字的边界上；后面只剩空白的不算切。交回那一段和切没切，没有字的是 `None`。
-fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
+pub(crate) fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
     let whole = blocks
         .iter()
         .filter_map(|block| match block {

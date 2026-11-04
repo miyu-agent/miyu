@@ -13,6 +13,7 @@ mod project;
 mod read;
 pub(crate) mod status;
 pub(crate) mod tree;
+pub(crate) mod whole;
 
 pub(crate) use detail::detail;
 pub(crate) use read::Slice;
@@ -247,7 +248,7 @@ fn paged(slice: &Slice, view: Option<(Arc<Texts>, Blobs)>) -> (Value, Option<Pro
 }
 
 /// 读不了日志：没有这个会话的 `session_not_found`，别的记一行日志、回 `session_broken`。
-fn unread(session: &SessionId, error: OpenError) -> Refusal {
+pub(crate) fn unread(session: &SessionId, error: OpenError) -> Refusal {
     match error {
         OpenError::Missing(_) => Refusal::NOT_FOUND,
         error => {

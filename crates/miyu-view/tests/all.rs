@@ -3,6 +3,7 @@
 mod support;
 
 mod lines;
+mod markdown;
 mod media;
 mod nested;
 mod notices;

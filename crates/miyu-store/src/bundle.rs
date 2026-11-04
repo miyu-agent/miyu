@@ -95,6 +95,42 @@ pub fn write(
     about: &About,
     out: &Path,
 ) -> Result<Written, BundleError> {
+    let (temp, file) = temp_beside(out)?;
+    let written = fill(parts, blobs, about, file).and_then(|manifest| {
+        let bytes = fs::metadata(&temp)?.len();
+        publish(&temp, out)?;
+        Ok(Written { bytes, manifest })
+    });
+    if written.is_err() {
+        discard(&temp);
+    }
+    written
+}
+
+/// 把写好的一份字节（导出的 Markdown，施工 SE-1 中下上）照包的规矩写到 `out`：先写进同目录的临时文件、同步，再挂上去，
+/// `out` 已经有了的不覆盖。
+///
+/// # Errors
+///
+/// [`BundleError`]：`out` 已经有了、读写出错。失败时 `out` 不会出现，临时文件删掉。
+pub fn write_file(out: &Path, bytes: &[u8]) -> Result<(), BundleError> {
+    let (temp, mut file) = temp_beside(out)?;
+    let written = file
+        .write_all(bytes)
+        .and_then(|()| file.sync_all())
+        .map_err(BundleError::from)
+        .and_then(|()| {
+            drop(file);
+            publish(&temp, out)
+        });
+    if written.is_err() {
+        discard(&temp);
+    }
+    written
+}
+
+/// `out` 旁边开一个临时文件：`out` 已经有了的报 [`BundleError::Exists`]。
+fn temp_beside(out: &Path) -> Result<(PathBuf, File), BundleError> {
     if out.symlink_metadata().is_ok() {
         return Err(BundleError::Exists);
     }
@@ -105,16 +141,7 @@ pub fn write(
     let name = out
         .file_name()
         .map_or_else(|| "bundle".into(), |name| name.to_string_lossy());
-    let (temp, file) = create_temp(dir, || temp_name(&name))?;
-    let written = fill(parts, blobs, about, file).and_then(|manifest| {
-        let bytes = fs::metadata(&temp)?.len();
-        publish(&temp, out)?;
-        Ok(Written { bytes, manifest })
-    });
-    if written.is_err() {
-        discard(&temp);
-    }
-    written
+    Ok(create_temp(dir, || temp_name(&name))?)
 }
 
 /// 往开着的临时文件里写整个包，交回清单。

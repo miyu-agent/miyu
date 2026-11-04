@@ -162,17 +162,17 @@ async fn bad_places_and_unknown_sessions_are_refused() {
         json!("bad_params"),
         "{relative}"
     );
-    let markdown = client
+    let inline = client
         .call(
             "m1",
             "session.export",
-            json!({"session": session, "format": "markdown", "to": {"path": home.work.join("x.md")}}),
+            json!({"session": session, "format": "bundle", "to": "inline"}),
         )
         .await;
     assert_eq!(
-        markdown["error"]["data"]["reason"],
+        inline["error"]["data"]["reason"],
         json!("bad_params"),
-        "Markdown 随 SE-1 中"
+        "原始包只写文件"
     );
     let missing = export(
         &mut client,

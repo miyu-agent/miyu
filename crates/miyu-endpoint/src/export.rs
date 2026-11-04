@@ -1,5 +1,6 @@
 //! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`docs/blueprint/protocol.md`
-//! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown 的三种随 SE-1 中。
+//! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown（`format: "markdown"`，施工
+//! SE-1 中下上）在 `export/markdown.rs`，写文件照同样的规矩。
 //!
 //! - 包里有：这个会话、它的全部后代（子代理、子代理的子代理）、分叉来源到分叉点为止的那几段（一层层往上），和它们引用到的
 //!   blob（[`miyu_store::bundle`]）。只读日志、不载入会话，在跑的会话照这一刻已经落盘的取。
@@ -26,12 +27,15 @@ use miyu_store::log::first_event;
 use miyu_store::root::DataRoot;
 
 use crate::Core;
+use crate::hello::Peer;
 use crate::refusal::Refusal;
+
+mod markdown;
 
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";
 
-/// `session.export` 的参数。
+/// `session.export` 的参数。`for` 以下只对 Markdown（`export/markdown.rs`），原始包写了的 `bad_params`。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct ExportParams {
@@ -41,33 +45,93 @@ pub(crate) struct ExportParams {
     format: Format,
     /// 写到哪。
     to: To,
+    /// 给谁用：`read`（不写的也是）；`agent`、`chat` 下一步才有。
+    #[serde(default, rename = "for")]
+    purpose: Option<String>,
+    /// 导多少：`all`（不写的也是）；`context`、`{"turns": N}` 下一步才有。
+    #[serde(default)]
+    range: Option<Value>,
+    /// 给人看的字用哪种语言；不写的照连接握手时的。
+    #[serde(default)]
+    locale: Option<String>,
+    /// 盖过预设的开关：下一步才有，写了的先拒。
+    #[serde(default)]
+    thinking: Option<Value>,
+    /// 同上。
+    #[serde(default)]
+    tools: Option<Value>,
+    /// 同上。
+    #[serde(default)]
+    children: Option<Value>,
+    /// 同上。
+    #[serde(default)]
+    assets: Option<Value>,
 }
 
-/// 导成什么：这一步只有原始包。
+impl ExportParams {
+    /// 写了只对 Markdown 的参数。
+    fn for_markdown(&self) -> bool {
+        self.purpose.is_some()
+            || self.range.is_some()
+            || self.locale.is_some()
+            || self.thinking.is_some()
+            || self.tools.is_some()
+            || self.children.is_some()
+            || self.assets.is_some()
+    }
+}
+
+/// 导成什么。
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum Format {
     /// 原始包（ZIP）。
     Bundle,
+    /// Markdown（施工 SE-1 中下上）。
+    Markdown,
 }
 
-/// 写到哪：本机的一个文件。
+/// 写到哪：本机的一个文件，或者放进回应（只对 Markdown）。
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum To {
+    /// 本机的一个文件。
+    File(ToFile),
+    /// `"inline"`：放进回应的 `text`。
+    Inline(Inline),
+}
+
+/// 本机的一个文件。
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct To {
+struct ToFile {
     /// 绝对路径。
     path: PathBuf,
 }
 
-/// `session.export`：见模块的说明。回应 `{path, bytes, upto, sessions, blobs}`：写到哪、包多大、主会话导到第几条、包里有哪几个
-/// 会话、几个 blob。
-pub(crate) async fn export(core: &Core, params: ExportParams) -> Result<Value, Refusal> {
+/// 写成字的 `"inline"`。
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Inline {
+    /// 放进回应。
+    Inline,
+}
+
+/// `session.export`：见模块的说明。原始包回应 `{path, bytes, upto, sessions, blobs}`：写到哪、包多大、主会话导到第几条、包里
+/// 有哪几个会话、几个 blob；Markdown 的见 `export/markdown.rs`。
+pub(crate) async fn export(
+    core: &Core,
+    peer: Peer,
+    params: ExportParams,
+) -> Result<Value, Refusal> {
     let session = SessionId::parse(&params.session).map_err(|_| Refusal::BAD_PARAMS)?;
-    let Format::Bundle = params.format;
-    let out = params.to.path;
-    if !out.is_absolute() || out.file_name().is_none() {
-        return Err(Refusal::BAD_PARAMS);
+    if let Format::Markdown = params.format {
+        return markdown::export(core, peer, session, params).await;
     }
+    let (false, To::File(to)) = (params.for_markdown(), params.to) else {
+        return Err(Refusal::BAD_PARAMS);
+    };
+    let out = checked(to.path)?;
     if !core.sessions.exists(core, &session).await {
         return Err(Refusal::NOT_FOUND);
     }
@@ -112,6 +176,14 @@ pub(crate) async fn export(core: &Core, params: ExportParams) -> Result<Value, R
         "sessions": sessions,
         "blobs": manifest.blobs.len(),
     }))
+}
+
+/// 头给的路径：要绝对的、带文件名的。
+fn checked(out: PathBuf) -> Result<PathBuf, Refusal> {
+    match out.is_absolute() && out.file_name().is_some() {
+        true => Ok(out),
+        false => Err(Refusal::BAD_PARAMS),
+    }
 }
 
 /// 打包失败照哪一种拒。

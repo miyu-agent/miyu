@@ -82,10 +82,15 @@ pub(super) fn fed(
     earlier: &[Event],
     page: &[&Event],
 ) -> Projector {
-    let mut projector = Projector::new(texts, Some(Arc::new(BlobLines(blobs))));
+    let mut projector = fresh(texts, blobs);
     projector.learn(earlier);
     for event in page {
         projector.event(event);
     }
     projector
+}
+
+/// 还没喂过的投影：字照 `texts`，改了多少行照 `blobs` 算（导出整份喂的也用它，`view/whole.rs`）。
+pub(super) fn fresh(texts: Arc<Texts>, blobs: Blobs) -> Projector {
+    Projector::new(texts, Some(Arc::new(BlobLines(blobs))))
 }

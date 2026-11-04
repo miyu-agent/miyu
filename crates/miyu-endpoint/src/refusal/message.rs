@@ -34,6 +34,10 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Cannot export into the data root.",
         ),
         "export_unwritable" => ("无法写入该位置。", "Cannot write there."),
+        "export_too_big" => (
+            "导出超过 512 KiB，请存成文件。",
+            "The export is over 512 KiB. Save it to a file.",
+        ),
         "bad_bundle" => ("不是会话包。", "Not a session bundle."),
         "bundle_mismatch" => ("会话包已损坏。", "The session bundle is damaged."),
         "bundle_too_new" => (

@@ -2,13 +2,14 @@
 //! 「显示什么」：种类、状态、属于哪一轮、标题那一句、收起那一行；头决定「怎么画」。
 //!
 //! 纯逻辑：不碰磁盘、网络、时钟。事件一条条喂进 [`Projector`]，每喂一条交回它引起的变化（[`Change`]）；给人看的字
-//! （[`Texts`]）、改了多少行（[`Lines`]）由外面交进来。
+//! （[`Texts`]）、改了多少行（[`Lines`]）由外面交进来。会话导出成 Markdown 的渲染器吃同一份条目（[`markdown`]，施工 SE-1 中下上）。
 
 mod change;
 mod entry;
 mod estimate;
 mod explain;
 mod id;
+pub mod markdown;
 mod nested;
 mod notice;
 mod projector;

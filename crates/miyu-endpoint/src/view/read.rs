@@ -275,4 +275,4 @@ fn keep(event: Event, kept: &mut Vec<Event>) {
 }
 
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
