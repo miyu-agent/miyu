@@ -44,6 +44,19 @@ impl Backfills {
         }
     }
 
+    /// 起一个名叫 `name` 的后台线程做 `work`（施工 SE-1 下：导进来的会话），[`Backfills::settle`] 照样等它；起不来的记一行。
+    pub(crate) fn run(&self, name: &str, work: impl FnOnce() + Send + 'static) {
+        match std::thread::Builder::new()
+            .name(name.to_string())
+            .spawn(work)
+        {
+            Ok(handle) => self.lock().push(handle),
+            Err(error) => {
+                tracing::warn!(target: TARGET, error = %error, "imported sessions not indexed");
+            }
+        }
+    }
+
     /// 等这时在跑的都补完；补的线程 panic 了的记一行。
     pub(crate) fn settle(&self) {
         let running = std::mem::take(&mut *self.lock());
@@ -83,6 +96,47 @@ pub(crate) fn backfill(recall: &Arc<RecallIndexes>, root: &DataRoot, room: &Room
         }
     }
     tracing::info!(target: TARGET, room_kind, room_id, sessions = filled, "memory index backfilled");
+}
+
+/// 导进来的会话（施工 SE-1 下，设计 58 第二节第 8 条）：一个个照它自己快照里的人格，接进那一间的回合库，不载入、不抽取。
+/// 读不了的记一行跳过；补完记一行补了几个。人格那一间照快照里的编号：迁移程序写日志时就写了这里的人格（不对映）。
+pub(crate) fn imported(recall: &Arc<RecallIndexes>, root: &DataRoot, sessions: &[SessionId]) {
+    let blobs = Blobs::new(root.blobs());
+    let mut filled = 0;
+    for session in sessions {
+        let persona = match snapshot_persona(root, &blobs, session) {
+            Ok(persona) => persona,
+            Err(why) => {
+                tracing::warn!(target: TARGET, session = %session, error = why.as_str(), "imported session not indexed");
+                continue;
+            }
+        };
+        let room = Room::persona(&persona);
+        match one(recall, root, &blobs, &room, &persona, session) {
+            Ok(true) => filled += 1,
+            Ok(false) => {}
+            Err(why) => {
+                tracing::warn!(target: TARGET, session = %session, error = why.as_str(), "imported session not indexed");
+            }
+        }
+    }
+    tracing::info!(target: TARGET, sessions = filled, "imported sessions indexed");
+}
+
+/// 会话最近一次换上的快照里的人格：没有的是 [`NO_PERSONA`]。
+fn snapshot_persona(root: &DataRoot, blobs: &Blobs, session: &SessionId) -> Result<String, String> {
+    let events = read_events(&root.session_dir(session)).map_err(|error| error.to_string())?;
+    let Some(Event {
+        body: Body::SessionCreated(created),
+        ..
+    }) = events.first()
+    else {
+        return Err("the first event is not session.created".to_string());
+    };
+    let hash = current_policy(&events).unwrap_or(&created.policy);
+    let bytes = blobs.get(hash).map_err(|error| error.to_string())?;
+    let snapshot = Snapshot::from_bytes(&bytes).map_err(|error| error.to_string())?;
+    Ok(snapshot.persona.unwrap_or_else(|| NO_PERSONA.to_string()))
 }
 
 /// 补一个会话：照载入时的判法该进这一间的，照载入时那一套补，交回 `true`；不该进的 `false`。

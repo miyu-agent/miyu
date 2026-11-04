@@ -34,6 +34,20 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
             "Cannot export into the data root.",
         ),
         "export_unwritable" => ("无法写入该位置。", "Cannot write there."),
+        "bad_bundle" => ("不是会话包。", "Not a session bundle."),
+        "bundle_mismatch" => ("会话包已损坏。", "The session bundle is damaged."),
+        "bundle_too_new" => (
+            "会话包来自更新的版本。",
+            "The bundle is from a newer version.",
+        ),
+        "session_exists" => (
+            "已有同编号的会话。",
+            "A session with this id already exists.",
+        ),
+        "archived" => (
+            "这是存档，不能继续对话。",
+            "This is an archive. It can't be continued.",
+        ),
         "unknown_server" => (
             "设置里没有这个 MCP 服务。",
             "No such MCP server in the settings.",

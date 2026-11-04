@@ -40,6 +40,11 @@ Chinese version: [errors.md](errors.md).
 | `export_exists` | The export file is already there; not overwritten | |
 | `export_in_data_root` | An export won't be written inside the data root | |
 | `export_unwritable` | The export folder isn't there or can't be written | |
+| `bad_bundle` | The import isn't a session bundle | |
+| `bundle_mismatch` | The session bundle is damaged: hashes or sequence numbers don't match | |
+| `bundle_too_new` | The bundle was made by a newer version | |
+| `session_exists` | A session with this id and different content exists | `session` |
+| `archived` | The session is a read-only archive and can't be continued | |
 | `session_stopped` | The session stopped; sending again reloads it | |
 | `session_sealed` | The session is sealed; commands that change the conversation are refused | |
 | `restoring` | A command arrived while an undo is still finishing | |

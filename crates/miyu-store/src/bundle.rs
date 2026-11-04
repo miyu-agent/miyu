@@ -8,6 +8,7 @@
 //!   记进清单的 `absent`，不算错。
 //! - 先写进同目录的临时文件，写完再挂到 `out`：`out` 已经有了的不覆盖（[`BundleError::Exists`]），写到一半失败的删掉临时文件。
 
+mod import;
 mod manifest;
 
 use std::collections::BTreeSet;
@@ -23,6 +24,7 @@ use miyu_kernel::id::{ContentHash, Hasher, Seq, SessionId};
 
 use crate::blob::Blobs;
 use crate::durable::{create_temp, discard, temp_name};
+pub use import::{ImportError, Imported, MARKER, Marker, import};
 pub use manifest::{FORMAT, Manifest, ManifestBlob, ManifestSegment, ManifestSession};
 
 /// 包里放清单的那一项。
@@ -181,6 +183,7 @@ fn one_session<W: Write + io::Seek>(
         id: part.session.clone(),
         upto: last,
         segments,
+        archived: archived(&part.dir),
     })
 }
 
@@ -217,8 +220,17 @@ fn whole_lines<'a>(
     (&bytes[..end], last, false)
 }
 
+/// 会话目录 `dir` 里的 [`MARKER`] 写着它是只读存档（施工 SE-1 下）：读不了、读不懂的当不是。核心拒改存档的方法、记忆不给
+/// 存档抽取都照它。
+pub fn archived(dir: &Path) -> bool {
+    fs::read(dir.join(MARKER))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<Marker>(&bytes).ok())
+        .is_some_and(|marker| marker.archive)
+}
+
 /// 一个 JSON 值里写成内容哈希的字。
-fn hashes_in(value: &Value, found: &mut BTreeSet<String>) {
+pub(crate) fn hashes_in(value: &Value, found: &mut BTreeSet<String>) {
     match value {
         Value::String(text) if ContentHash::parse(text).is_ok() => {
             found.insert(text.clone());
@@ -230,7 +242,7 @@ fn hashes_in(value: &Value, found: &mut BTreeSet<String>) {
 }
 
 /// 会话目录里的段：名字是 12 位数字加 `.jsonl` 的，照名字排。
-fn segment_names(dir: &Path) -> io::Result<Vec<String>> {
+pub(crate) fn segment_names(dir: &Path) -> io::Result<Vec<String>> {
     let mut names: Vec<String> = fs::read_dir(dir)?
         .filter_map(Result::ok)
         .filter_map(|entry| entry.file_name().into_string().ok())

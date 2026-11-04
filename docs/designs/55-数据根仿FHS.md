@@ -36,7 +36,7 @@
 │   ├── prompts/ tools/           提示词、工具说明的覆盖
 │   ├── skills/ scripts/ commands/  你的技能、脚本、斜杠命令
 │   ├── avatar.<png|jpg|webp>     你的头像
-│   ├── sessions/<会话>/          会话日志（段）、attachments/、jobs/
+│   ├── sessions/<会话>/          会话日志（段）、attachments/、jobs/，导进来的另有 imported.json（施工 SE-1 下）
 │   ├── memory/<人格>/            跟着人格的记忆日志；没选人格的是 _none/
 │   ├── kb/<编号>/                你的知识库：文档和这个库的 kb.toml
 │   ├── blobs/<前两位>/<哈希>     附件、大内容；存的时候的临时文件、分块上传在 blobs/tmp/（像 git 的 objects/tmp）

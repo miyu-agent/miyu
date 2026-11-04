@@ -127,12 +127,15 @@ pub(crate) struct Listed {
     pub(crate) origin: Option<String>,
     /// fork 子代理（施工 A-F 补）：头照它换图标，写 `forked: true`；别的不写。
     pub(crate) forked: bool,
+    /// 导进来的只读存档（施工 SE-1 下）：头把它排在单独一段，写 `archived: true`；别的不写。
+    pub(crate) archived: bool,
 }
 
 impl Listed {
-    /// 照索引的一行、会话表里忙不忙。
-    fn new(row: Row, busy: bool) -> Listed {
+    /// 照索引的一行、会话表里忙不忙、会话目录在哪（看它是不是存档）。
+    fn new(row: Row, busy: bool, dir: &std::path::Path) -> Listed {
         Listed {
+            archived: miyu_store::bundle::archived(dir),
             id: row.id,
             oneshot: row.oneshot,
             parent: row.parent,
@@ -223,6 +226,9 @@ impl Listed {
         if self.forked {
             item["forked"] = json!(true);
         }
+        if self.archived {
+            item["archived"] = json!(true);
+        }
         context::write(&mut item, self);
         item
     }
@@ -270,7 +276,7 @@ pub(crate) fn scan(
             None => whole(&dir, id.clone(), None, index, &pick),
         };
         if let Some(row) = row {
-            found.push(Listed::new(row, busy.contains(&id)));
+            found.push(Listed::new(row, busy.contains(&id), &dir));
         }
     }
     Ok(found)
@@ -294,7 +300,7 @@ pub(crate) fn one(
             .or_else(|| whole(&dir, id.clone(), Some(&row.mark), Some(index), &all)),
         None => whole(&dir, id.clone(), None, Some(index), &all),
     }?;
-    Some(Listed::new(row, busy))
+    Some(Listed::new(row, busy, &dir))
 }
 
 /// 索引里的一行补到日志现在的末尾（施工 3-8 七补）：只读它照到的地方后面多出来的那一截，一条条盖上去；多出来了的写回去，

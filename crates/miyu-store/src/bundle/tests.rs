@@ -202,3 +202,5 @@ fn a_blob_that_does_not_match_its_name_fails_the_whole_bundle() {
     assert!(out.symlink_metadata().is_err(), "失败了不留包");
     assert!(leftovers(scratch.path()).is_empty(), "也不留临时文件");
 }
+
+mod import;

@@ -28,6 +28,7 @@
 | [`session.delete`](#sessiondelete) | 删除会话 |
 | [`session.prompts`](#sessionprompts) | 列出会话里问过的话 |
 | [`session.export`](#sessionexport) | 把会话导出成原始包 |
+| [`session.import`](#sessionimport) | 导入原始包 |
 | [`view.page`](#viewpage) | 按页读历史 |
 | [`view.detail`](#viewdetail) | 一次工具调用的完整差异、一次压缩的摘要原文 |
 
@@ -36,7 +37,7 @@
 ## 通用
 
 - **会话编号**是 UUIDv7 字符串，照造的先后排。
-- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
+- **谁能调**：下面的方法人都能调。扩展照它看得到的会话调（平台桥只看得到它的平台的场所会话，别的扩展看得到本机的、你自己的私聊），另要能力：读的（`session.list`、`session.recap`、`session.tools`、`session.context`、`session.usage_parts`、`session.prompts`、`view.page`、`view.detail`）要 `events.read`；造会话、说话、打断、撤销、恢复、重做、压缩、清空、换配置、分叉、改标题要 `sessions.drive`；`session.answer`、`session.set_permission_level`、`session.set_workspace`、`session.terminal`、`session.set_terminal`、`session.delete`、`session.export`、`session.import` 只给人（`local_only`）。扩展不带 `as` 说的话记成它自己（`harness`，名字是包的编号），它不能写 `from`。
 - **会话没在跑的先载入**：核心重启过、闲够了退下的会话，第一次用到时自动载入，不用头操心。
 - **改了什么看推送**：多数方法只回 `{}` 或几条事件的序号，变化本身照事件推给订阅着这个会话的头（[推送](pushes.md)）。
 - **找会话的出错**，每个带 `session` 的方法都可能回：
@@ -121,6 +122,7 @@
 | `kind`、`dream` | 整理会话（整理记忆跑在里面的会话）才有：`kind` 是 `"dream"`，`dream` 是 `{"persona"?, "session"?, "manual"?, "from"?}`：哪个人格的记忆（`session` 只在以前的会话里有），人叫的写 `manual: true`，在哪个会话里叫的写 `from`；这一趟跑完了的多 `result`：`{"given", "revised", "retired", "summary", "stopped"?}`，新记、改了、作废了几条，有没有写摘要，叫停的写 `stopped: true`，没跑完的没有。主列表一般不列它们（传 `dream: false`），记忆页照 `dream` 列那一份记忆的 |
 | `origin` | 终端集成开的会话（`session.terminal` 开的）才有，是 `"terminal"`：头的会话列表照它写「终端集成」。以前开的没有 |
 | `forked` | fork 子代理的会话才有，是 `true`：头照它换图标。普通子代理、主会话没有 |
+| `archived` | 导进来的只读存档才有，是 `true`：头把它排在单独一段，输入框换成一行「这是存档」 |
 | `default_workspace` | 这个会话的默认工作区，绝对路径：主会话是它自己的 `…/workspace/<会话编号>/`，子会话、分叉出来的是主会话的那一个。`cwd` 和它一样的可以写「默认工作区」 |
 
 只列本机的会话；场所会话不在里面（见 [场所](venues.md) 的 `venue.sessions`）。要一直跟着最新的，订阅 `sessions` 流（[连接](connection.md)）。
@@ -457,6 +459,27 @@
 - 不改会话，也不写进会话日志。包里什么都有，包括她碰过的文件内容，自己留好。
 
 **出错**：`bad_params`（路径不是绝对的、`format` 不认得）；`session_not_found`；`session_broken`（日志读不了、附件和它的哈希对不上）；`export_exists`（那个文件已经有了，不覆盖）；`export_in_data_root`（不往数据目录里写）；`export_unwritable`（目录不在、写不进）。
+
+## `session.import`
+
+把 `session.export` 打的原始包导进来：换机器、换数据目录时搬会话，旧版 Miyu 的迁移程序也用它。只给人的头。
+
+**参数**：
+
+| 名字 | 说明 |
+|---|---|
+| `blob` | 先用 `blob.put` 传上来的包 |
+| `path` | 本机上的包，绝对路径（命令行用）；`blob`、`path` 只写一样 |
+| `archive` | 布尔，默认 `false`：导成只读存档 |
+
+**回应**：`main`（包的主会话）、`sessions`（这一次新导进来的）、`present`（早就在的，跳过了）。
+
+- **先核对再落盘**：包里每一项的哈希、日志的序号都对得上才写；有一样不对整个不收，数据目录里什么都不多。
+- **编号照原样**：已经有同编号、内容一样的当导过了跳过，内容不一样的拒。再导一次同一个包什么都不变。
+- **存档**：能翻、能搜、能导出，她搜以前的对话也搜得到；不能接着说，说话、撤销、压缩这些改会话的回 `archived`。包里写了是存档的，导进来照样是存档。不是存档的导进来就能接着聊。
+- 导完马上能搜到，不用先打开一次。会话列表推一条变化。
+
+**出错**：`bad_params`；`unknown_attachment`（`blob` 不在）；`bad_bundle`（不是会话包）；`bundle_mismatch`（包坏了）；`bundle_too_new`（更新的版本打的包）；`session_exists`（已有同编号、内容不一样的会话，`data.session` 是哪一个）。
 
 ## `view.page`
 

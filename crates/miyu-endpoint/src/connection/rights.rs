@@ -105,6 +105,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         "package.call" => Needs(PackagesCall),
         // 导出会话的原始包（施工 SE-1 上）：和事件流一个级别、还带着 blob，只给人的头。
         "session.export" => People,
+        // 导入原始包（施工 SE-1 下）：外面来的包导进来就是这个人的会话，只给人的头。
+        "session.import" => People,
         // 头开着哪个会话（施工 HV-1）：只有人的头开会话。
         "session.viewing" => People,
         // 认领发后台通知（施工 TR-1）：托盘这样给人弹系统通知的头才认领。

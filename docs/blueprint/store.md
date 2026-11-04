@@ -77,6 +77,8 @@
 | `user_dirs()` | 照 XDG 给你的几处（施工 Y-11 上）：`root/` 下的 `pictures/`、`videos/`、`documents/`、`downloads/`，用到才建；文件工具照工作区算（边界表的 `own`，不进沙盒的写名单），握手的 `host.dirs` 交出去（远程的连不给） |
 | `sessions()` | 会话编号，从新到旧 |
 | `session_dir(会话)` | `root/sessions/<会话编号>/` |
+| `sessions_dir()` | `root/sessions/`（施工 SE-1 下：导入在这里暂存） |
+| `imported_file(会话)` | `root/sessions/<会话编号>/imported.json`（施工 SE-1 下：导进来的会话的标记） |
 | `trashed_sessions()` | 回收处 `root/trash/sessions/`（施工 3-8 三补） |
 | `trashed_personas()` | 删掉的人格 `root/trash/personas/`（施工 P-3 下） |
 | `blobs()` | `root/blobs/` |
@@ -105,7 +107,7 @@
 ├── root/                       你的东西
 │   ├── personas/ presets/ prompts/ tools/ skills/ scripts/ commands/   你的，同名的盖出厂的、包带的
 │   ├── avatar.<png|jpg|webp>   你的头像
-│   ├── sessions/<会话编号>/     会话日志，一段一个文件；attachments/ 落成文件的附件；jobs/<编号>.out 后台命令的输出
+│   ├── sessions/<会话编号>/     会话日志，一段一个文件；attachments/ 落成文件的附件；jobs/<编号>.out 后台命令的输出；imported.json 导进来的会话的标记（施工 SE-1 下）
 │   ├── memory/<人格>/           跟着人格的记忆日志（memory.md）
 │   ├── kb/<编号>/               你的知识库（knowledge.md）
 │   ├── blobs/<前两位>/<哈希>     blob；存的时候的临时文件、分块上传在 blobs/tmp/
@@ -233,9 +235,17 @@
 3. blob：每一行照 JSON 读一遍，凡是写成内容哈希的字（`ContentHash::parse` 认得的）都算引用。blob 库里有的边读边拷、重新算哈希，对不上整个失败（`BlobMismatch`，不少导）；没有的进 `absent`。
 4. ZIP 用 deflate（`zip` 包，后端 flate2 + zlib-rs）。先在 `to` 的同一个目录里建临时文件（`durable::create_temp`，只许新建），写完同步，再用硬链接挂到 `to`（只许新建，已经有的报 `Exists`），系统不支持硬链接的退回「没有才改名」；失败的删掉临时文件，`to` 不会出现。
 
+**导入原始包**（施工 SE-1 下，`bundle::import`）：`session.import` 照它把原始包导进来。
+
+1. 先核对：清单的格式版本不比 `FORMAT` 新（新的 `TooNew`）；每一段、每一个 blob 在包里、字节数和 SHA-256 对得上；段名是 12 位数字加 `.jsonl`，一个会话的各段照名字一段接一段；每一行是一整行 JSON、序号从段名那一号起一条接一条，最后以换行结尾；写了 `upto` 的，最后一条就是它；每一行里写成内容哈希的字要么在包的 blob 里、要么在 `absent` 里。不对的整个拒（`Bad`、`Mismatch`），这个数据根里不多出任何会话。
+2. 段先写进 `root/sessions/.import-<进程号>-<计数>/<会话编号>/`（点开头，不是会话编号，列会话时不认），blob 边解边算哈希、放进 blob 库（失败时先放进去的没人引用，照 blob 的回收办）。
+3. 已经有同编号的会话：包里那几段是它日志的开头（前几段一个字节不差，最后一段是它那一段的开头）的，当已经导过、跳过（`present`）；不是的 `Exists`。
+4. 都核对完，每个新的会话目录里写一份 `imported.json`（`archive`、`miyu`、`exported`：从哪个包来；人要了存档，或者清单里这个会话写了 `archived`，就是存档），再改名进 `root/sessions/<会话编号>/`。日志一个字节不改，人格、场所照日志里写的。
+5. 删会话时 `imported.json` 跟着整个会话目录进回收处；再导出时不带这个文件，清单里写 `archived`（第「原始包」第 1 条）。
+
 **12. 回收处**（施工 3-8 三补，`trash.rs`；2026-09-30 项目主人定：删了的进回收处，留 7 天再真删）
 
-1. 删会话（`discard`）：会话目录 `sessions/<会话编号>/` 整个挪进回收处 `trash/sessions/<会话编号>/`。调的一方先停下这个会话、放开它的文件（Windows 上开着的文件挪不走，`protocol.md` 的 `session.delete`）。载入父会话时收掉的派到一半的空子会话也照这样挪（施工 7-8，`protocol.md`「会话表」第 8 条）。
+1. 删会话（`discard`）：会话目录 `sessions/<会话编号>/`（连同 `jobs/`、导进来的 `imported.json`）整个挪进回收处 `trash/sessions/<会话编号>/`。调的一方先停下这个会话、放开它的文件（Windows 上开着的文件挪不走，`protocol.md` 的 `session.delete`）。载入父会话时收掉的派到一半的空子会话也照这样挪（施工 7-8，`protocol.md`「会话表」第 8 条）。
    1. 先在会话目录里只写一个文件 `deleted_at`：删的时刻，事件的时刻写法（`2026-09-30T12:00:00.000Z`），加换行；`sync_all`。会话日志只认 12 位数字的段，写了没来得及挪的不碍着它，会话照旧在原处。
    2. 回收处没有的，照第 4 条建（Unix 上 0700）。
    3. 改名成回收处里的那一个：一次改名，要么挪了、要么没挪。回收处里已经有同名的，改名出错，报错。

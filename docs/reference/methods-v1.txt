@@ -155,6 +155,7 @@ session.create
 session.delete
 session.export
 session.fork
+session.import
 session.interrupt
 session.list
 session.note

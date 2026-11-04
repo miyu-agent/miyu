@@ -31,6 +31,7 @@
 | `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：去掉控制字符、截到 128 字节，记成 `harness`（施工 7-10） |
 | `crates/miyu-endpoint/src/spawn.rs` | 会话表交给会话的端口：造子会话、给会话发命令（施工 7-5，`session/tools.md`「派子代理」）；停下子会话、照日志看它（施工 7-4）；列主会话（施工 C-3） |
 | `crates/miyu-endpoint/src/list.rs` | `session.list`：标题、置顶照日志算（施工 3-8 三补）；工作目录、最近一次动静、忙不忙（施工 C-3）；读会话列表的索引、照日志补，起来时打开它，删会话删行（施工 3-8 七补，`store/index.md`）。她用 `sessions` 列会话也是这一个 `scan`（`tools/sessions.md`） |
+| `crates/miyu-endpoint/src/import.rs`（施工 SE-1 下） | `session.import`：导入原始包，导完在后台接进回合库；改只读存档的方法照它拒 `archived`（「`session.import`」） |
 | `crates/miyu-endpoint/src/export.rs`（施工 SE-1 上） | `session.export`：一个会话连着后代、分叉来源打成原始包，写到人给的路径（「`session.export`」） |
 | `crates/miyu-endpoint/src/asked.rs`、`asked/tests.rs`（施工 SP-2） | `session.prompts`：一个会话里主人问过的话，照有效历史，只读日志、一遍读完（「`session.prompts`」） |
 | `crates/miyu-endpoint/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表共用 |
@@ -269,6 +270,7 @@
 | `subscribe`、`unsubscribe` | 订阅、取消订阅会话的事件流；配置、会话列表、扩展的状态的推送 |
 | `session.prompts` | 一个会话里主人问过的所有话：序号、回合、时刻、第一行（照有效历史；施工 SP-2，网页的「问话跳转」用） |
 | `session.export` | 一个会话打成原始包写到人给的路径（施工 SE-1 上，设计 58）；只给人的头 |
+| `session.import` | 导入原始包，可以导成只读存档（施工 SE-1 下，设计 58）；只给人的头 |
 | `view.page` | 历史按页读：从末尾一页页往前，页的边界落在回合之间（施工 9-6 下）；写了 `view: true` 的交视图投影的条目（施工 9-8 中） |
 | `view.detail` | 一次调用的完整差异和结果原文（施工 9-6 三补、9-8 中）；一次压缩的摘要原文（施工 9-8 中） |
 
@@ -1180,6 +1182,22 @@
 4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大）。
 5. 只给人的头（`connection/rights.rs` 的 `People`）：包和事件流一个级别，还带着 blob。
 6. 出错：会话编号不合写法、`format` 不认得、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。没有这个会话：`session_not_found`。日志读不了、blob 和它的哈希对不上：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`。`to.path` 已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。
+
+**`session.import`**（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节）
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `blob` | 字符串 | 先 `blob.put` 传上来的包的哈希 |
+| `path` | 字符串 | 本机的包，绝对路径；`blob`、`path` 只写一样 |
+| `archive` | 布尔，默认 `false` | 导成只读存档 |
+
+回应 `{"main", "sessions", "present"}`：包的主会话、这一次新落盘的会话、早就在的（跳过的），都照清单的先后。
+
+1. 导入照 `miyu_store::bundle::import`（`store.md`「导入原始包」）：先核对再落盘，坏了什么都不留；同编号内容一样的跳过、不一样的拒。
+2. 导完：新落盘的每个会话推一条会话列表的变化（`Listing::changed`）；交给记忆在后台接进回合库（`Memory::index_imported`，照每个会话快照里的人格进那一间，不载入、不抽取），导完就搜得到。
+3. 只读存档（会话目录的 `imported.json` 写了 `archive`）：`session.list` 那一项写 `archived: true`；改会话的方法照它拒 `archived`（`import.rs` 的 `refused`，在分发之前查一次）：`session.send`、`interrupt`、`withdraw`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`respond`、`answer`、`set_permission_level`、`set_workspace`、`set_state`、`command.run`、`job.stop`，`schedule.add` 的 `target.session` 指到存档的也拒。读的（`view.page`、`session.prompts`、导出……）、删、改标题照常。记忆照它不交工具端口：存档载入了也不抽取、不记用到几次。
+4. 运行日志记一行 `INFO sessions imported`（主会话、新的几个、早就在的几个、是不是存档）；读不成的、对不上的各记一行 `WARN bundle not read` / `WARN bundle mismatch`，原因照它说。
+5. 出错：两样都写或都没写、`path` 不是绝对路径、`blob` 不合写法、写了别的格：`bad_params`。`blob` 不在：`unknown_attachment`。不是认得的包：`bad_bundle`。对不上：`bundle_mismatch`。清单的格式比核心新：`bundle_too_new`。同编号内容不一样：`session_exists`（`data.session`）。只给人的头（`People`）。
 
 **`view.detail`**（施工 9-6 三补，2026-10-09 形状和终端界面、网页的会话对过；`04-核心协议.md` 第九节「条目只带摘要，完整的 diff 头展开时用 `view.detail` 按需取」）
 

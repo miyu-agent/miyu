@@ -284,6 +284,17 @@ impl DataRoot {
         self.user().join("sessions").join(session.as_str())
     }
 
+    /// 会话都在哪：`root/sessions/`（施工 SE-1 下：导入先在这里暂存、核对完再改名进位置）。
+    pub fn sessions_dir(&self) -> PathBuf {
+        self.user().join("sessions")
+    }
+
+    /// 导进来的会话的标记（施工 SE-1 下，设计 58 第二节第 6 条）：`root/sessions/<会话编号>/imported.json`，记从哪个包来、
+    /// 是不是只读存档；不是导进来的没有这个文件。删会话时跟着会话目录一起进回收处。
+    pub fn imported_file(&self, session: &SessionId) -> PathBuf {
+        self.session_dir(session).join(crate::bundle::MARKER)
+    }
+
     /// 删掉的会话放在哪：回收处 `root/trash/sessions/`，一个会话一个目录，名字是会话编号（施工 3-8 三补，[`crate::trash`]）。
     pub fn trashed_sessions(&self) -> PathBuf {
         self.user().join("trash").join("sessions")

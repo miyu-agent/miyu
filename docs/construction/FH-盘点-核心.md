@@ -51,6 +51,7 @@
 | 24 | `sessions/<会话>/000000000001.jsonl …` | 会话日志（段，64 MiB 一段） | `miyu-store/src/log.rs`；目录 `root.rs:206` | 到处（`root.rs:188` 列会话；`miyu-endpoint/src/list.rs:262` 等） | **真** | 目录 0700 | ✔ |
 | 25 | `sessions/<会话>/attachments/` | 没本机路径的附件落成文件；**绝对路径记进会话日志**，以后每次请求照它拼 | `miyu-store/src/attachments.rs:35`；`miyu-endpoint/src/attach/keep.rs` | 模型读；Guard 只读（`miyu-session/src/guard.rs:155-170`） | 真 | — | ✔ |
 | 26 | `sessions/<会话>/jobs/<编号>.out` | 后台命令输出 | `miyu-store/src/jobs.rs:15`；每条命令前建（`miyu-session/src/sandbox.rs:254-257`） | 工具 | 真（可丢但无源） | 0700 | ✔ |
+| 89 | `sessions/<会话>/imported.json` | 导进来的会话的标记：从哪个包导进来、是不是只读存档（施工 SE-1 下） | `miyu-store/src/bundle/import.rs`（`DataRoot::imported_file`） | `miyu-endpoint/src/import.rs`（拒改存档）、`list.rs`（`archived`）、`miyu-session/src/memory.rs`（存档不抽取）、导出 | 真 | — | ✔ |
 | 27 | `sessions/<会话>/memory/log/`、`memory/turns.db`、`memory/memory.db` | 只在这个会话里的那间记忆：日志（真）＋回合库/记忆库（派生） | `miyu-store/src/recall/room.rs:80,88,96,103` | 记忆模块 | 真＋派 | — | ✘ |
 | 28 | `workspace/` | 默认工作区根，核心起来时建 | `root.rs:139,171`；`miyu-core/src/start.rs:25` | `miyu-endpoint/src/hello.rs:315`、`files.rs:267`、`attach.rs:341`、`sessions/places.rs:99,149` | 真（主人的产出） | 0700 | ✔ |
 | 29 | `workspace/<会话>/` | 每个会话的默认工作区（子会话/分叉沿用主会话的） | 用到时建：`miyu-session/src/default_workspace.rs:22-23`、沙盒 `workspace()` | `miyu-endpoint/src/list/defaults.rs:41`（协议 `default_workspace`） | 真 | — | ✔ |
@@ -165,7 +166,7 @@
 | `MARKER` / `MARKER_TEXT` | `.miyu-root` / `layout 2` | 47,50 |
 | `packages()` / `real_packages()` / `own_places()` | | 110-127 |
 | `workspace()` / `session_workspace()` / `prepare_workspace()` | `workspace/[<会话>]` | 139,170,177 |
-| `sessions()` / `session_dir()` | `sessions/<会话>` | 187,205 |
+| `sessions()` / `session_dir()` / `sessions_dir()` / `imported_file()` | `sessions/<会话>`、`sessions/<会话>/imported.json`（施工 SE-1 下） | 187,205 |
 | `trashed_sessions()` / `trashed_personas()` | `trash/sessions`、`trash/personas` | 210,215 |
 | `blobs()` / `index()` / `state()` | | 220,225,230 |
 | `create_inside()` | 往上找到标记才建 | 292 |

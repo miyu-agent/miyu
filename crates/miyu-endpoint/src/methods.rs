@@ -67,6 +67,9 @@ pub(crate) fn call<'a>(
     request: &'a Request,
     uploads: &'a mut Uploads,
 ) -> Answer<'a> {
+    if let Some(refusal) = crate::import::refused(core, &request.method, Some(&request.params)) {
+        return answer(move || async move { Err(refusal) });
+    }
     match request.method.as_str() {
         "session.create" => answer(move || session::create(core, peer, request)),
         "check" => {
@@ -111,6 +114,9 @@ pub(crate) fn call<'a>(
         }
         "view.page" => {
             answer(move || async move { crate::view::page(core, peer, params(request)?).await })
+        }
+        "session.import" => {
+            answer(move || async move { crate::import::import(core, params(request)?).await })
         }
         "session.export" => {
             answer(move || async move { crate::export::export(core, params(request)?).await })

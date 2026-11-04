@@ -28,6 +28,7 @@ A session is one conversation: an append-only event log, from which the core wor
 | [`session.delete`](#sessiondelete) | Delete a session |
 | [`session.prompts`](#sessionprompts) | List what was asked in a session |
 | [`session.export`](#sessionexport) | Export a session as a raw bundle |
+| [`session.import`](#sessionimport) | Import a raw bundle |
 | [`view.page`](#viewpage) | Read history page by page |
 | [`view.detail`](#viewdetail) | The full diff of a tool call; a compaction's summary |
 
@@ -36,7 +37,7 @@ Sessions in venues (group chats and private chats on a chat platform) have a few
 ## Common
 
 - **Session ids** are UUIDv7 strings, ordered by creation.
-- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete` and `session.export` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
+- **Who can call**: people can call all of these. Extensions call them on sessions they can see (a bridge sees the venue sessions of its platforms; other extensions see local sessions and your own private chats) and need a capability: reading (`session.list`, `session.recap`, `session.tools`, `session.context`, `session.usage_parts`, `session.prompts`, `view.page`, `view.detail`) needs `events.read`; creating, sending, interrupting, reverting, unreverting, redoing, compacting, clearing, configuring, forking and renaming need `sessions.drive`; `session.answer`, `session.set_permission_level`, `session.set_workspace`, `session.terminal`, `session.set_terminal`, `session.delete`, `session.export` and `session.import` are for people only (`local_only`). What an extension says without `as` is recorded as itself (`harness`, named after the package); it can't set `from`.
 - **Sessions that aren't running are loaded**: a session the core restarted past or that retired after idling is loaded on first use; heads don't have to care.
 - **Watch pushes for changes**: most methods return `{}` or a few event numbers; the change itself arrives as events to heads subscribed to the session ([Pushes](pushes.en.md)).
 - **Finding the session** can fail on every method with a `session`:
@@ -121,6 +122,7 @@ Sending the same `id` again returns the session created the first time.
 | `project` | Which project it is in; omitted when none |
 | `kind`, `dream` | Only on consolidation sessions (the sessions memory consolidation runs in): `kind` is `"dream"`, `dream` is `{"persona"?, "session"?, "manual"?, "from"?}`: whose memory (the persona; `session` only appears on older sessions), `manual: true` when a person asked for it, `from` the session it was asked from; a finished run adds `result`: `{"given", "revised", "retired", "summary", "stopped"?}`, how many memories it added, revised and retired, whether it wrote the summary, `stopped: true` when it was stopped; a run that did not finish has none. A main session list usually leaves them out (pass `dream: false`); a memory page lists those of its memory by `dream` |
 | `forked` | Only on forked subagent sessions: `true`. Heads show a fork icon for it. Ordinary subagents and main sessions don't have it |
+| `archived` | Only on imported read-only archives: `true`. Heads list them in their own section and replace the input box with a line saying it's an archive |
 | `origin` | Only on sessions the shell integration opened (`session.terminal`): `"terminal"`. Heads show "shell" for it in the session list. Older ones don't have it |
 
 Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [Venues](venues.en.md)). To keep up to date, subscribe to the `sessions` stream ([Connection](connection.en.md)).
@@ -456,6 +458,27 @@ Writes a session as a raw bundle (ZIP) to a path you give: for archiving, moving
 - It doesn't change the session or write to its log. The bundle holds everything, including file contents she touched, so keep it safe.
 
 **Errors**: `bad_params` (the path isn't absolute, unknown `format`); `session_not_found`; `session_broken` (the log can't be read, an attachment doesn't match its hash); `export_exists` (the file is already there, not overwritten); `export_in_data_root` (won't write inside the data root); `export_unwritable` (the folder isn't there or can't be written).
+
+## `session.import`
+
+Imports a raw bundle made by `session.export`: for moving sessions to another machine or data root. The migration tool for the old Miyu uses it too. For people's heads only.
+
+**Params**:
+
+| Name | Notes |
+|---|---|
+| `blob` | The bundle, uploaded first with `blob.put` |
+| `path` | A bundle on this machine, absolute path (used by the CLI); give either `blob` or `path` |
+| `archive` | Boolean, default `false`: import as a read-only archive |
+
+**Result**: `main` (the bundle's main session), `sessions` (newly imported now), `present` (already there, skipped).
+
+- **Checked before written**: every item's hash and the log's sequence numbers must match before anything is written; if anything is off, nothing is imported and the data root gains nothing.
+- **Ids are kept**: a session with the same id and the same content counts as already imported and is skipped; different content is refused. Importing the same bundle again changes nothing.
+- **Archives** can be read, searched and exported, and she finds them when searching past conversations; they can't be continued: sending, reverting, compacting and other changes return `archived`. A session marked as an archive in the bundle stays an archive. A session that isn't an archive can be continued right away.
+- Searchable right after import, without opening it first. The session list gets a change pushed.
+
+**Errors**: `bad_params`; `unknown_attachment` (`blob` isn't there); `bad_bundle` (not a session bundle); `bundle_mismatch` (the bundle is damaged); `bundle_too_new` (made by a newer version); `session_exists` (a session with this id and different content exists; `data.session` says which).
 
 ## `view.page`
 

@@ -175,6 +175,15 @@ impl Memory {
         self.backfills.settle();
     }
 
+    /// 导进来的会话接进回合库（施工 SE-1 下，设计 58 第二节第 8 条）：在后台照日志铺，不载入、不抽取，导完马上搜得到。
+    /// 等它写完照 [`Memory::settle`]。起不来后台线程的记一行。
+    pub fn index_imported(&self, sessions: Vec<SessionId>) {
+        let (recall, root) = (Arc::clone(&self.turns), self.root.clone());
+        self.backfills.run("memory-imported", move || {
+            backfill::imported(&recall, &root, &sessions)
+        });
+    }
+
     /// 核心停下时（施工 TMP-1 补3）：先等回合开始问记忆、会话没等完的那几次读读完，再等回合索引的后台和补齐（[`Memory::settle`]）。
     /// 读在前：联想头一回开回合库会起补齐。交回以后，这一份记忆不再在后台碰数据根。在阻塞线程里调。
     pub fn finish(&self) {
@@ -293,6 +302,11 @@ pub(crate) fn connect(
         source,
         primed,
     });
+    // 导进来的只读存档（施工 SE-1 下）：照样接回合库、搜得到，不交工具的端口，不抽取、不记用到几次（2026-11-03 项目主人定：
+    // 旧版的经历只存档）。
+    if miyu_store::bundle::archived(&memory.root.session_dir(session)) {
+        return (lane, None);
+    }
     let listener = Listener::of(confined, venue);
     let calls = Calls::new(memory, room, listener, session).since(floor);
     calls.extracting().0.called(here);

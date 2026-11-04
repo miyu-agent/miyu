@@ -38,6 +38,10 @@ pub struct ManifestSession {
     pub upto: Option<u64>,
     /// 各段，照名字排。
     pub segments: Vec<ManifestSegment>,
+    /// 只读存档（施工 SE-1 下）：导出时它是导进来的存档（会话目录里的 `imported.json` 写了 `archive`），导进别处照样是存档。
+    /// 不是的不写。
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub archived: bool,
 }
 
 /// 一段。

@@ -40,6 +40,11 @@
 | `export_exists` | 导出写的那个文件已经有了，不覆盖 | |
 | `export_in_data_root` | 导出不往数据目录里写 | |
 | `export_unwritable` | 导出的目录不在、写不进 | |
+| `bad_bundle` | 导入的不是会话包 | |
+| `bundle_mismatch` | 导入的会话包坏了：哈希、序号对不上 | |
+| `bundle_too_new` | 导入的会话包是更新的版本打的 | |
+| `session_exists` | 已有同编号、内容不一样的会话 | `session` |
+| `archived` | 会话是只读存档，不能接着说 | |
 | `session_stopped` | 会话停了；再发一次会重新载入 | |
 | `session_sealed` | 会话封存了，改对话的命令不收 | |
 | `restoring` | 撤销还没做完时来的命令 | |
