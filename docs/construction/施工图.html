@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1038</b><span>/ 1047 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1039</b><span>/ 1048 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-43</b><span>最近一步（V-43 重启后抽取不整份读）</span></li>
+    <li><b class="mono">SE-1中下下</b><span>最近一步（SE-1 中下下 导出 Markdown 的子会话、附件文件夹和命令行）</span></li>
   </ul>
 </header>
 
@@ -514,6 +514,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV41a"><span class="n">V-41 上</span>翻页不整份读<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSE1mda"><span class="n">SE-1 中下上</span>导出 Markdown<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSE1mdb"><span class="n">SE-1 中下中</span>导出 Markdown 的三个预设<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sSE1mdc"><span class="n">SE-1 中下下</span>导出 Markdown 的子会话、附件和命令行<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV41b"><span class="n">V-41 中</span>撤销不整份读两遍<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV42"><span class="n">V-42</span>请求体按条留着编好的历史<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV44"><span class="n">V-44</span>判官记录窗<span class="st">✓</span></a></li>
@@ -11935,6 +11936,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/SE-1中下中-导出Markdown.md</code>；蓝图 <code>protocol.md</code>「<code>session.export</code>」、<code>view.md</code>「导出成 Markdown」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sSE1mdc" aria-labelledby="h-sSE1mdc">
+  <div class="sheet-head"><h2 id="h-sSE1mdc"><span class="no">SE-1 中下下</span>导出 Markdown 的子会话、附件和命令行</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">导出的 Markdown 能连子会话、连图一起带走了：<code>children: "append"</code> 把子会话照同一套写法附在后面，<code>assets: "files"</code> 把图片、附件拷进旁边的文件夹、写相对链接；给别的 agent 的那一份旁白一律英文；命令行 <code>miyu session export --md</code> 能写文件、能打到标准输出。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">导出 Markdown 的子会话、附件和命令行</span><span class="dir-note">SE-1 中下下</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>agent</code> 的旁白、占位（<code>&gt; Context compacted</code>、<code>[Image: …]</code>）是渲染器里的英文常量，不跟 <code>locale</code>；人说的、她回的照原文</li>
+              <li>渲染器拆成 <code>draft</code>（一个会话一份，交回写进去的那几步派的子代理）和 <code>finish</code>（接起来一起换密钥、家目录、估算）</li>
+              <li><code>children: append</code>：照任务编号取子会话（<code>j1</code>、<code>j1.1</code>、<code>j2</code>），开头 <code>---</code>、<code># Subagent j1: 标题</code>；回应带 <code>children</code>，<code>redacted</code> 合计</li>
+              <li><code>assets: files</code>：图片、附件拷进 <code>&lt;名字&gt;_files/</code>，名字三个平台都收、撞名接序号，链接里的怪字写 <code>%XX</code>；取不到的照占位、<code>assets.missing</code> 列出来；Markdown 或文件夹已经有了 <code>export_exists</code></li>
+              <li><code>miyu session export --md [--for …] [--last N] [-o 文件|-]</code>：<code>-o -</code> 打到标准输出，太大的提示存文件</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm"><code>agent</code> 的旁白一律英文，写成渲染器里的常量、不进给人看的字</span><span class="rl">core1 2026-11-04</span></div>
+          <div class="tile new"><span class="nm">带哪些子会话照渲染进去的那几步，范围一律 <code>all</code></span><span class="rl">施工时定，报 core1</span></div>
+          <div class="tile new"><span class="nm">附件文件夹最后才写 Markdown，出错整个删掉</span><span class="rl">施工时定</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SE-1 中下下</dd></div>
+        <div><dt>名称</dt><dd>导出 Markdown 的子会话、附件和命令行</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-04</dd></div>
+        <div><dt>提交</dt><dd class="mono">SE-1中下下</dd></div>
+        <div><dt>验收</dt><dd>真核心派三层子代理照任务编号接上、密钥合计；一张图拷进文件夹、删了 blob 的文件照占位；命令行写文件、打到标准输出、太大的提示；手写变异都红</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>渲染器：<code>agent</code> 中文连接整段英文逐字对；附件链接、取不到的占位；子会话的先后、开头、合计；文件名和链接的写法</span></li>
+        <li><span class="ok">✓</span><span>协议两条：真核心的 <code>children: append</code>、<code>assets: files</code>（拷、缺、已经有了、配 <code>inline</code>、没附件）</span></li>
+        <li><span class="ok">✓</span><span>命令行两条：<code>--md</code> 写文件、<code>-o -</code> 带 <code>--for</code>、<code>--last</code>，太大的报错带建议</span></li>
+        <li><span class="ok">✓</span><span>手写变异都红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/SE-1中下下-导出Markdown.md</code>；蓝图 <code>view.md</code>「导出成 Markdown」、<code>protocol.md</code>「<code>session.export</code>」、<code>cli/session.md</code>。</li>
       </ul>
     </div>
   </div>

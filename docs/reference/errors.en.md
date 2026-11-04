@@ -19,7 +19,7 @@ Chinese version: [errors.md](errors.md).
 | `parse_error` | -32700 | Not JSON; a line too long (then closes) |
 | `invalid_request` | -32600 | JSON but not a request |
 | `unknown_method` | -32601 | No such method (also methods of optional packages not compiled in) |
-| `bad_params` | -32602 | Params can't be read, have the wrong type or form; each method's "Errors" lists its cases. A recognized value that's only supported later (e.g. `children: append` or `assets: files` on `session.export`) has `data.later` naming the param |
+| `bad_params` | -32602 | Params can't be read, have the wrong type or form; each method's "Errors" lists its cases |
 | `internal_error` | -32603 | Something went wrong inside the core (disk, a broken file…); the reason is in the core's log |
 | `hello_first` | -32010 | Another method before the handshake |
 | `local_only` | -32010 | A method for people only, called by an extension; or the wrong way of logging in |

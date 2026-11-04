@@ -19,7 +19,7 @@
 | `parse_error` | -32700 | 不是 JSON；一行太长（之后断开） |
 | `invalid_request` | -32600 | 是 JSON，不是请求 |
 | `unknown_method` | -32601 | 没有这个方法（可选的包没编进来的方法也是） |
-| `bad_params` | -32602 | 参数读不成、类型不对、写法不对；各方法的具体情形写在各自的「出错」里。写法认得、以后才支持的（例如 `session.export` 的 `children: append`、`assets: files`），`data.later` 写是哪一个参数 |
+| `bad_params` | -32602 | 参数读不成、类型不对、写法不对；各方法的具体情形写在各自的「出错」里 |
 | `internal_error` | -32603 | 核心自己出了问题（磁盘、坏了的文件……），原因记在核心的运行日志里 |
 | `hello_first` | -32010 | 握手以前调了别的方法 |
 | `local_only` | -32010 | 只给人的方法，扩展调了；或者登录方式不对 |

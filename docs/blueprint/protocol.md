@@ -33,7 +33,7 @@
 | `crates/miyu-endpoint/src/list.rs` | `session.list`：标题、置顶照日志算（施工 3-8 三补）；工作目录、最近一次动静、忙不忙（施工 C-3）；读会话列表的索引、照日志补，起来时打开它，删会话删行（施工 3-8 七补，`store/index.md`）。她用 `sessions` 列会话也是这一个 `scan`（`tools/sessions.md`） |
 | `crates/miyu-endpoint/src/import.rs`（施工 SE-1 下） | `session.import`：导入原始包，导完在后台接进回合库；改只读存档的方法照它拒 `archived`（「`session.import`」） |
 | `crates/miyu-endpoint/src/export.rs`（施工 SE-1 上） | `session.export`：一个会话连着后代、分叉来源打成原始包，写到人给的路径（「`session.export`」）；包里放一份 `read` 预设的 `transcript.md`（施工 SE-1 中下中） |
-| `crates/miyu-endpoint/src/export/markdown.rs`、`export/params.rs`（施工 SE-1 中下上、中下中） | `session.export {format: "markdown"}`：参数照预设和开关读（`params.rs`），整份喂投影、记原文、要的算有效历史、取 blob，渲染、写文件或放进回应；原始包的 `transcript.md` 也照它 |
+| `crates/miyu-endpoint/src/export/markdown.rs`、`export/params.rs`、`export/assets.rs`（施工 SE-1 中下上、中下中、中下下） | `session.export {format: "markdown"}`：参数照预设和开关读（`params.rs`），整份喂投影、记原文、要的算有效历史、取 blob，渲染、写文件或放进回应；`children: append` 照任务编号一个个渲染子会话、接在后面；`assets: files` 查 blob、拷进旁边的文件夹（`assets.rs`）；原始包的 `transcript.md` 也照它 |
 | `crates/miyu-endpoint/src/asked.rs`、`asked/tests.rs`（施工 SP-2） | `session.prompts`：一个会话里主人问过的话，照有效历史，只读日志、一遍读完（「`session.prompts`」） |
 | `crates/miyu-store/src/sweep.rs`、`sweep/bones.rs`（施工 V-39 上起头，SP-2 挪出来，V-43 挪到 `miyu-store`、端点照旧叫它 `crate::sweep`，`store.md` 第 7 条） | 读一遍、边读边过有效历史：事件照先后交给真的 `History::whole`，谁都碰不到的那一截交给调的一方收下就放；放早了的照骨架算的下界再读一遍，认不得的调的一方整份读。判官的记录、问话列表、记忆抽取共用 |
 | `crates/miyu-endpoint/src/subscriptions.rs` | 订阅：每个订阅一个转发任务，先写补发的（施工 3-8 六补；读的时候照 `event_lines` 写好的行，施工 V-37 下），再推 `event`、`resync`；换掉一个订阅时等它写完 |
@@ -1172,7 +1172,7 @@
 6. 只读地读会话目录里的日志，不载入会话；读的时候会话照常跑，正在写的那半行不算，一整行都还没写完的是空的（同 `view.page`）。读法同判官（`venues.md`「判官看的群聊记录」施工 V-39 上、上补）：一遍读下来，只全解 `message.user` 和有效历史照种类认的那几种，别的种类只认外壳；事件照先后交给真的有效历史，谁都碰不到的那一截收下问话就放掉（`sweep.rs`）；撤销、撤回比放掉的还早的，照骨架算的下界再读一遍；骨架认不得的整份读到头一遍读到的那一条。不落缓存、不常驻。不要的种类正文合 JSON、不合那一种写法的不报坏了（同判官，2026-11-03 项目主人拍板接受）。
 7. 出错同 `view.page`：会话编号不合写法、写了别的格：`bad_params`。没有这个会话（删了的也是）：`session_not_found`。日志读不了：`session_broken`，记一行 `WARN log not read`。扩展要 `events.read`（同 `view.page`），照它看得到的会话。
 
-**`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上、中下中）
+**`session.export`**（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节；Markdown 施工 SE-1 中下上、中下中、中下下）
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -1183,21 +1183,21 @@
 | `range` | 字符串或对象，默认照预设 | 只对 Markdown：导多少。`all` 全部（`read`、`chat` 的默认）；`context` 她现在的上下文，从最近一次还算数的检查点起（`agent` 的默认）；`{"turns": N}` 最近 N 轮，N ≥ 1 |
 | `thinking` | 布尔，默认照预设 | 只对 Markdown，盖过预设：带不带思考（`read` 带，`agent`、`chat` 不带） |
 | `tools` | 字符串，默认照预设 | 只对 Markdown，盖过预设：`line` 一行；`seen` 她当时看到的（`read`、`agent` 的默认）；`full` 全文，后台命令的输出、脚本里调的工具交回的结果去 blob 取 |
-| `children` | 字符串 | 只对 Markdown：子代理。这一步只收 `reports`（照预设写交代、回报）；`append` 下一步才有 |
-| `assets` | 字符串 | 只对 Markdown：图片、附件。这一步只收 `placeholder`（写占位）；`files` 下一步才有 |
+| `children` | 字符串，默认 `reports` | 只对 Markdown：子代理。`reports` 照预设写交代、回报；`append` 再把子会话照同一套开关渲染好，照任务编号附在后面（`view.md`「子会话附在后面」） |
+| `assets` | 字符串，默认 `placeholder` | 只对 Markdown：图片、附件。`placeholder` 写占位；`files` 拷进 Markdown 旁边的 `<名字>_files/` 文件夹，Markdown 里写相对路径（`view.md`「附件文件夹」），只配 `to: {"path"}` |
 | `locale` | 字符串 | 只对 Markdown：给人看的字用哪种语言（`zh`、`ja` 开头的照它，别的英文），不写的照连接握手时的 |
 
 原始包的回应 `{"path", "bytes", "upto", "sessions", "blobs"}`：写到哪、包多大、主会话取到的最后一条、包里的会话（照放进去的先后）、几个 blob。
 
-Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted"}`：写到哪（`to` 是路径的）或者 Markdown 本身（`inline` 的）、多少字节、`tokens` 估算（同底栏上下文用量的本地估算：UTF-8 字节数除以 4，往上取整）、导到的最后一条、`redacted` 隐去了哪几个密钥各几处（`{"<名字>": <几处>}`，一处都没有的是 `{}`）。
+Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "children", "assets"?}`：写到哪（`to` 是路径的）或者 Markdown 本身（`inline` 的）、多少字节、`tokens` 估算（同底栏上下文用量的本地估算：UTF-8 字节数除以 4，往上取整）、主会话导到的最后一条、`redacted` 隐去了哪几个密钥各几处（`{"<名字>": <几处>}`，附在后面的子会话合计，一处都没有的是 `{}`）、`children` 附在后面的子会话（`[{"job", "session", "title"}]` 照先后，不写 `append` 的是 `[]`）；`assets` 只有 `assets: files` 才有：`{"dir"?, "files", "missing"}`，拷进文件夹的几个、文件夹的绝对路径（一个都没拷的不建、不写 `dir`）、要写进来却取不到（blob 不在、对不上）的那几个 blob 的哈希（照占位写了）。
 
 1. 包里的会话：这个会话；它的全部后代（父子关系照会话列表的索引，索引里没有的读它的第一条 `session.created` 的 `parent`；分叉出来的支线也挂在父会话下面，一起带走），照编号一层层找；再是分叉来源：包里哪个会话的 `session.created` 写了 `forked`、来源又不在包里的，带上来源到 `upto` 为止的那几段，来源自己是分叉出来的接着往上找；同一个来源被要了几次的取最远的那一点。
 2. 打包照 `miyu_store::bundle`（`store.md`「原始包」）：段原文、到最后一个换行为止、写了 `upto` 的到那一条；日志里写成内容哈希的字，blob 库里有的放进 `blobs/<64 位>`，边拷边核对，对不上整个失败；没有的记进清单的 `absent`；主会话照 `read` 预设渲染一份 `transcript.md`（施工 SE-1 中下中：语言照连接握手时的，配了的密钥照样换掉，日志原样不改），清单的 `transcript` 记它的字节数和 SHA-256；`manifest.json` 最后写。先写同目录的临时文件，写完挂到 `to.path`，已经有的不覆盖。
 3. 只读地读会话目录，不载入会话；在跑的会话照这一刻已经落盘的整行取（日志只追加，取到的是一致的一份）。
-4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大；Markdown 的是 `format=markdown`、多大、隐去几处，不记密钥的名字和值）。
+4. 不写进会话日志；运行日志记一行 `INFO session exported`（会话、几个会话、几个 blob、多大；Markdown 的是 `format=markdown`、多大、隐去几处、附了几个子会话、拷了几个附件，不记密钥的名字和值）。
 5. 只给人的头（`connection/rights.rs` 的 `People`）：包和事件流一个级别，还带着 blob。
-6. Markdown（施工 SE-1 中下上）：整个会话照先后一块块读、喂给一台投影（`view/whole.rs`，不整份读成事件），条目同 `view.page` 写 `view: true` 从头翻到尾的；只取这个会话自己的日志（同 `view.page`：分叉出来的会话不带底子那一段，子会话不附在后面，子代理只写交代和回报）。条目照 `for` 的预设渲染，写了的开关盖过预设（`view.md`「导出成 Markdown」）；`range: context` 照请求组装用的有效历史算（每一条另交给内核的 `History::whole`，喂完落到检查点上），`tools: full` 再去 blob 库取后台命令的输出、脚本里调的工具交回的结果（取不到的照没有）。配了的密钥（`secrets.toml` 的值，至少 8 个字）原样出现的换成 `[redacted: <名字>]`，原始包不改。写文件同原始包的规矩（绝对路径、数据根里面不写、已经有的不覆盖、先写临时文件同步了再挂上去）；`inline` 的超过 512 KiB（524288 字节，照换完密钥的那一份算）拒 `export_too_big`，头改成存文件（协议一行最长 1 MiB，给转义留余量）。
-7. 出错：会话编号不合写法、`format` 不认得、`to` 不是这两种写法、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。原始包写了 `inline` 或者只对 Markdown 的参数：`bad_params`。Markdown 的 `children` 写 `append`、`assets` 写 `files`：`bad_params`，`data.later` 是哪一个参数（下一步才有）；别的写法（`for` 不认得、`range` 不是那三种、`turns` 不是正整数、`thinking` 不是布尔、`tools` 不是那三种、`children`、`assets` 写了别的）照旧 `bad_params`、不带 `later`。没有这个会话：`session_not_found`。日志读不了、blob 和它的哈希对不上：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`（Markdown 读不了日志的记 `WARN log not read`）。`to.path` 已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。`inline` 太大：`export_too_big`。
+6. Markdown（施工 SE-1 中下上）：整个会话照先后一块块读、喂给一台投影（`view/whole.rs`，不整份读成事件），条目同 `view.page` 写 `view: true` 从头翻到尾的；只取这个会话自己的日志（同 `view.page`：分叉出来的会话不带底子那一段；子代理只写交代和回报，`children: append` 的子会话另照它自己的日志一个个读、接在后面，日志没了的跳过）。条目照 `for` 的预设渲染，写了的开关盖过预设（`view.md`「导出成 Markdown」）；`range: context` 照请求组装用的有效历史算（每一条另交给内核的 `History::whole`，喂完落到检查点上），`tools: full` 再去 blob 库取后台命令的输出、脚本里调的工具交回的结果（取不到的照没有）。配了的密钥（`secrets.toml` 的值，至少 8 个字）原样出现的换成 `[redacted: <名字>]`，原始包不改。写文件同原始包的规矩（绝对路径、数据根里面不写、已经有的不覆盖、先写临时文件同步了再挂上去）；`assets: files` 先拷附件（文件夹用 `create_dir` 建，文件一个个新建、同步），Markdown 最后写，后面出错的把建了的文件夹整个删掉；`inline` 的超过 512 KiB（524288 字节，照换完密钥的那一份算）拒 `export_too_big`，头改成存文件（协议一行最长 1 MiB，给转义留余量）。
+7. 出错：会话编号不合写法、`format` 不认得、`to` 不是这两种写法、`to.path` 不是绝对路径或没有文件名、写了别的格：`bad_params`。原始包写了 `inline` 或者只对 Markdown 的参数：`bad_params`。Markdown 的 `for` 不认得、`range` 不是那三种、`turns` 不是正整数、`thinking` 不是布尔、`tools` 不是那三种、`children`、`assets` 写了别的、`assets: files` 配 `inline`：`bad_params`。没有这个会话：`session_not_found`。日志读不了（`children: append` 的子会话的也算）、blob 和它的哈希对不上（`assets: files` 查过以后拷的那一刻才对不上、没了的也算）：`session_broken`，记一行 `WARN export not read` / `WARN export blob mismatch`（Markdown 读不了日志的记 `WARN log not read`）。`to.path` 已经有了，`assets: files` 的文件夹已经有了：`export_exists`。放它的目录照真实的位置在数据根里面：`export_in_data_root`。目录不在、写不进：`export_unwritable`，记一行 `WARN export not written`。`inline` 太大：`export_too_big`。
 
 **`session.import`**（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二、三节）
 

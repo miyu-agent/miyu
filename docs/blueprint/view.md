@@ -36,9 +36,10 @@
 | `crates/miyu-view/src/projector/progress.rs` | 在跑的工具的进度（施工 X-45 补）：攒半行、认进度行、0.5 秒合并 |
 | `crates/miyu-view/tests/progress.rs`、`src/projector/progress/tests.rs`、`crates/miyu-endpoint/tests/view_progress.rs` | 工具进度（施工 X-45 补）：切半行、只认前缀、取最后一条、截长、半行不涨；视图流带上、结果到了去掉、翻页没有；0.5 秒里一条、压着的到点推、两个调用各算；真订阅里真 `shell` 印的进度到得了、结果以后不带 |
 | `crates/miyu-endpoint/src/view/whole.rs`（施工 SE-1 中下上） | 整个会话喂投影：导出要整份，`view.page` 一页最多 50 轮；照 `read_range` 一块块读、喂完就放掉，不整份读成事件，喂的是同一台投影、同一套字，条目和从头翻到尾的 `view.page`（`view: true`）一样；每一条另交给调的一方看一眼（导出照它记条目里没有的原文）。`whole/tests.rs` 照翻页对照测试的造法造四十份会话，和整份读再喂的条目、交出的事件逐条比 |
-| `crates/miyu-view/src/markdown.rs`、`markdown/`（施工 SE-1 中下上、中下中） | 会话导出成 Markdown 的渲染器：一个不连线的头，纯函数，只吃条目、开关（`options.rs`：三个预设 `read`、`agent`、`chat`，写了的开关盖过预设）、给人看的字（`core/export/…`、思考用时照 `view/summary/thought-for`）、时区、配了的密钥；`sources.rs` 照事件记条目里没有的原文（切过的工具结果全文、压缩的摘要、回复的 `seen` 和序号、脚本里调的工具、`range: context` 要的有效历史，`tools: full` 要的 blob 原文由读日志的一方放进来），`select.rs` 照范围挑条目，`head.rs` 三种开头（`agent` 那一段英文是常量 `AGENT_NOTE`），`steps.rs` 思考和 `read` 的工具，`raw.rs` `agent`、`chat` 的工具，`line.rs` 一行的工具，`extras.rs` 要人确认的那一次、脚本里调的工具、提问，`notices.rs` 旁白和收尾，`text.rs` 代码块、折叠块、列表、截头尾的写法，`scrub.rs` 换密钥、家目录写成 `~`。怎么写见下面「导出成 Markdown」 |
+| `crates/miyu-view/src/markdown.rs`、`markdown/`（施工 SE-1 中下上、中下中、中下下） | 会话导出成 Markdown 的渲染器：一个不连线的头，纯函数，只吃条目、开关（`options.rs`：三个预设 `read`、`agent`、`chat`，写了的开关盖过预设）、给人看的字（`core/export/…`、思考用时照 `view/summary/thought-for`）、时区、配了的密钥、附在后面的子代理（`Child`）、附件文件夹（`Files`）；`render` 是 `draft`（一个会话一份草稿，交回写进去的那几步派的子代理）加 `finish`（接起来的几份一起换密钥、家目录、token 估算）；`sources.rs` 照事件记条目里没有的原文（切过的工具结果全文、压缩的摘要、回复的 `seen` 和序号、脚本里调的工具、`range: context` 要的有效历史、`job.started` 记的子代理，`tools: full` 要的 blob 原文由读日志的一方放进来），`select.rs` 照范围挑条目，`head.rs` 三种开头和附在后面的子会话的开头（`agent` 那一段英文是常量 `AGENT_NOTE`），`steps.rs` 思考和 `read` 的工具，`raw.rs` `agent`、`chat` 的工具，`line.rs` 一行的工具，`extras.rs` 要人确认的那一次、脚本里调的工具、提问，`notices.rs` 旁白和收尾，`text.rs` 代码块、折叠块、列表、截头尾的写法，`scrub.rs` 换密钥、家目录写成 `~`，`agent.rs` `agent` 预设的旁白、占位（固定英文的常量），`files.rs` `assets: files` 起文件名、写相对链接（`files/tests.rs` 守名字和链接的写法）。怎么写见下面「导出成 Markdown」 |
 | `crates/miyu-view/tests/markdown.rs`（施工 SE-1 中下上） | `read` 预设一整轮逐字对；撤掉的、撤回的、撤销说明不进（另照真会话撤一轮）；真会话压缩一次，旁白照时间线、摘要折在下面；长输出折起来、切过的照日志取全文；正文里没合上的代码块、反引号、mermaid、思考里的 `</details>`；子代理的交代和回报；附件占位；家目录只换整段路径；密钥精确匹配、同一处取长的、太短的不换 |
 | `crates/miyu-view/tests/markdown_presets.rs`、`markdown_ranges.rs`、`markdown_extras.rs`（施工 SE-1 中下中） | `agent`、`chat` 各一整段逐字对，结果截头尾、`full` 不截，开关盖过预设；`context` 照真会话从检查点起、压缩撤掉了回到更早、`{"turns": N}`；要人确认的那一次、提问、脚本里调的工具（真会话）三种写法，`full` 取 blob |
+| `crates/miyu-view/tests/markdown_attached.rs`（施工 SE-1 中下下） | `agent` 连接是中文时旁白、占位整段英文逐字对，`read` 照旧跟语言；`assets: files` 人附的、结果里的、她发的图写成链接，取不到的照占位、记下；`children: append` 的子会话照任务编号、撤掉的那一步派的不带，小标题和开头列表三种写法，密钥、token 估算照整份 |
 | `resources/core/human/<语言>.json` | `said` 的 `view/…`：收起那一行的字（照网页演示 `timeline.summary` 搬来，两个头一字不差）、准备中的显示名、「会话 短编号」「父会话」、出错说明（照终端的 `error_classes`、`status_hints`） |
 
 ### 对外的样子
@@ -189,7 +190,7 @@
 6. 排着的话照 `seen` 认被听到：哪一次请求（第一段增量、落了盘的回复、`model.called`，先到的算）看到了它，它就挪到末尾、前面那段收起。开轮时开它的那几条和排在它前面还排着的一起归到这一轮；本来不排着的（空闲时说的、旁听的）只记上这一轮、不挪。用了斜杠命令、没在回答的，留着的排队话挪到末尾、不归到哪一轮（`/stop`）。
 7. 一段的 `group` 在加步、步变了状态时跟着 `view.update`；一段收起时算 `took_ms`（第一步开始到最后一步结束：思考照起止，工具照结果到的时刻）。
 
-### 导出成 Markdown（施工 SE-1 中下上、中下中）
+### 导出成 Markdown（施工 SE-1 中下上、中下中、中下下）
 
 `session.export {format: "markdown"}`（`protocol.md`「`session.export`」）复用投影：整个会话喂一台投影（`view/whole.rs`），条目交给 `miyu_view::markdown` 渲染，界面上有的导出里才有，不另写「显示什么」（调研 `docs/reviews/2026-09-30-会话导出调研.md` 第四节第 3 条）。条目里没有的原文照事件记（`Sources`）：条目只带前面一段的工具结果（`output_cut`）取她当时看到的全文，压缩那一条取检查点的摘要，回复里的块照 `seen` 找回那条回复，脚本里调的工具照父级记了结的 `tool.nested`。
 
@@ -201,18 +202,18 @@
 | `agent` 给别的 agent | `context` | 不带 | `seen`：真名、参数原文，结果截到头尾约 4000 字 | 交代（在参数原文里）和回报 | 一段英文事实 |
 | `chat` 贴网页 chat | `all` | 不带 | `line`：一行 | 回报 | 标题、时间段、token 估算 |
 
-`children` 这一步只收 `reports`（照预设）、`assets` 只收 `placeholder`（写占位），`append`、`files` 下一步。
+`children`：`reports`（不写的也是，照预设写交代、回报）或 `append`（另把子会话附在后面，见下面「子会话附在后面」）。`assets`：`placeholder`（不写的也是，写占位）或 `files`（连图一起导成文件夹，见下面「附件文件夹」）。
 
 **都一样的**：
 
 1. 角色的小标题一律英文：消息 `## User`（别处来的写来处：`User (<平台身份>)`、`Session (<短编号>)`、`Module (<模块>)`、`Harness (<名字>)`、`Schedule`、`Kernel`）；她开口 `## Assistant`，接着说的不再起，旁白、回报以后再开口重起；一步工具 `### Tool: …`（一行的写成列表里的 `- Tool: …`，连着的几步一个列表）；子代理的回报 `## Subagent: <标题>`。
 2. 正文原样（消息、回复、思考、回报、回顾、摘要）：没合上的代码块在末尾替它合上；放进折叠块的，代码块外面的 `</details` 写成 `&lt;/details`。mermaid 留源码代码块。
 3. 思考（带的时候）折在 `<details>` 里，那一行是「思考了 3s」（没记下用时的写「思考」）。
-4. 图片、附件写占位：`[图片：<名字>, <宽>×<高>]`、`[文件：<名字>]`，什么都没有的只写是什么；不内联 base64。
-5. 旁白一行一个引用块（`> 上下文压缩了`）：压缩好了的摘要折在下面，在压的、被打断的不写；清空、暂停自动压缩、后台命令了结（下面脚本里调的工具照各自的写法；`tools: full` 再接 blob 里的输出全文）、监视的命令出的一批行（行折在下面）、答了提问（一题一行；`chat` 一行写完）、回顾（正文跟在下面）、换模型、换人格和预设、换工作目录、等的会话怎么了。一轮出错、被打断、步数到顶、核心停了没走完的写一行；走完的不写。显示名、旁白照 `locale`，三个预设都一样。
+4. 图片、附件写占位：`[图片：<名字>, <宽>×<高>]`、`[文件：<名字>]`，什么都没有的只写是什么；不内联 base64。`assets: files` 的写成相对链接（下面「附件文件夹」）。
+5. 旁白一行一个引用块（`> 上下文压缩了`）：压缩好了的摘要折在下面，在压的、被打断的不写；清空、暂停自动压缩、后台命令了结（下面脚本里调的工具照各自的写法；`tools: full` 再接 blob 里的输出全文）、监视的命令出的一批行（行折在下面）、答了提问（一题一行；`chat` 一行写完）、回顾（正文跟在下面）、换模型、换人格和预设、换工作目录、等的会话怎么了。一轮出错、被打断、步数到顶、核心停了没走完的写一行；走完的不写。`read`、`chat` 的显示名、旁白照 `locale`；`agent` 的旁白、占位一律英文（第 8 条）。
 6. 不进的：撤掉的轮（`hidden`）、撤回的排队消息（`withdrawn`）、撤销说明（撤了就当没发生过，调研第五节第 2 条）；注入的上下文、策略、系统提示词本来就不是条目。
 7. 最后过一遍：配了的密钥（`secrets.toml` 的值，不到 8 个字的不换）原样出现的换成 `[redacted: <名字>]`，几个值重叠的从左往右取、同一处起头的取最长的，报每个名字几处；再把家目录写成 `~`，只换整段路径（前后不是路径里的字）。
-8. 给人看的字在 `resources/core/human/<语言>.json` 的 `said` 的 `export/…`，语言照参数的 `locale`、没写的照连接的；`[redacted: …]`、角色小标题、`agent` 的开头、`agent`、`chat` 的工具写法固定英文。给模型看的字一个不加：导出不进请求。
+8. 给人看的字在 `resources/core/human/<语言>.json` 的 `said` 的 `export/…`，语言照参数的 `locale`、没写的照连接的；`[redacted: …]`、角色小标题、`agent` 的开头、`agent`、`chat` 的工具写法固定英文。`agent` 预设的旁白、占位（`> Context compacted`、`[Image: …]`、`> The turn was interrupted` 这些）也固定英文，不跟 `locale`（core1 2026-11-04 定：它是给别的模型读的机械文本）：写成渲染器里的常量（`markdown/agent.rs`，编号同给人看的字，字段照 `{名字}` 换），不进 `resources/core/human`；那里没有的编号（只有 `read` 走得到的）照英文那一份。人说的话、她回的话照原文。给模型看的字一个不加：导出不进请求。
 
 **范围**（`select.rs`）：
 
@@ -236,6 +237,19 @@
 1. 开头：`# 标题`，下面一个列表：时间段、token 估算（`token 估算：约 N`，同回应的 `tokens`：整份换完密钥、家目录以后的 UTF-8 字节数除以 4，数本身也算在里面，算到不再变）。
 2. 工具一行：``- Tool: `<真名>` `<对象>` ``，后面用 ` · ` 接没成的原样、加减几行、确认的原文、脚本里调的（`nested: #1 read, #2 edit (error)`）、问的题（`asked: …`）；出错的末尾接 `: <结果的头 200 个字>`。写了 `tools: seen`、`full` 的照 `agent` 的工具写法。`read` 写了 `tools: line` 的照显示名、照语言写一行。
 3. 子代理只写回报。答了提问一行写完（`> 回答了提问：问: 答; …`）。
+
+**子会话附在后面**（`children: append`，调研第五节第 6 条）：
+
+1. 带哪些：渲染进去的那几步工具派的子代理（条目的 `job` 对上 `job.started` 记的子会话，`Sources::jobs`）；撤掉的、范围切掉的那几步派的不带。子会话又派的照样带（`j2.1`），一个子会话只带一次。日志已经没了的跳过；读不下去的整个拒（`session_broken`）。
+2. 怎么写：照同一套开关（`for`、`thinking`、`tools`、`assets`）整份渲染，范围一律 `all`；开头换成一条分隔线 `---`、`# Subagent <任务编号>: <标题>`（标题是派它时的 `description`），下面的列表 `read` 时间段、模型、token 合计，`chat` 时间段，`agent` `Working directory`、`Time`、`Model`；`AGENT_NOTE`、token 估算只在最前面写一次。
+3. 先后：照任务编号（`j1`、`j1.1`、`j2`），接在主会话后面。换密钥、家目录写成 `~`、`chat` 的 token 估算照接起来的整份算，`redacted` 是合计。
+
+**附件文件夹**（`assets: files`，调研第五节第 7 条）：
+
+1. 只配写文件：Markdown 写到 `<目录>/<名字>.md` 时，图片、附件拷进 `<目录>/<名字>_files/`（名字去掉扩展名，没有扩展名的照整个名字）。人附的、她发的图、工具结果里的图都算。
+2. 链接：图 `![<说明>](<名字>_files/<文件名>)`，别的附件 `[<说明>](…)`；说明同占位里的（名字、宽高），什么都没有的照文件名。路径里的空格、括号、方括号、尖括号、`#`、`?`、`%`、反斜杠、反引号、引号、控制字符写成 `%XX`。
+3. 文件名：附件的名字，没有的照路径的最后一截，都没有的 `image-<哈希前 8 位>.<类型>`（`file-…`）；只留最后一截，`<>:"/\|?*`、控制字符换成 `_`，头尾的空格和点去掉，最多 80 个字（扩展名留着），`CON`、`NUL`、`COM1` 这类前面垫 `_`。同一个 blob 只拷一份；不同的撞了名（不分大小写）的在扩展名前接 `-2`、`-3`。
+4. 取不到的：渲染前照 blob 库查（核对哈希），取不到的照占位写，回应的 `assets.missing` 列出哈希。
 
 ### 还没有的
 
