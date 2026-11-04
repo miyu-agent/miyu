@@ -78,11 +78,13 @@ fn log(helper: &Path, probe: &miyu_sandbox::Probe, remembered: bool) {
     }
 }
 
-/// 探到了手段的能用，带着助手；手段是空的用不了。报了 `bwrap` 的，这个进程里的命令用挂载收紧（施工 5-16，
+/// 探到了手段的能用，带着助手；手段是空的用不了。探成了的助手（构建 id 对得上）不管有没有手段，命令组里看门的都照它起
+/// （施工 V-48，[`miyu_sandbox::lifeline::use_helper`]）。报了 `bwrap` 的，这个进程里的命令用挂载收紧（施工 5-16，
 /// [`miyu_sandbox::set_mounts`]）。关起来的会话的 Unix 套接字照探到的设（施工 MB-1，[`miyu_sandbox::set_confines_sockets`]）：
 /// 沙盒能用、套接字却管不住的（内核的 Landlock 太老、又没有 seccomp），关起来的场所会话不跑命令，记一行
 /// `WARN sandbox cannot confine unix sockets`，好查群里为什么跑不了。
 fn availability(helper: PathBuf, probe: &miyu_sandbox::Probe) -> Availability {
+    miyu_sandbox::lifeline::use_helper(&helper);
     miyu_sandbox::set_mounts(probe.mechanisms.iter().any(|name| name == "bwrap"));
     let sockets = miyu_sandbox::sockets_confined_by(&probe.mechanisms);
     miyu_sandbox::set_confines_sockets(sockets);

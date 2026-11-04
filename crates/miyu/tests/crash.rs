@@ -1,8 +1,12 @@
-//! 核心崩了，后台命令跟着没（施工 7-8，`docs/blueprint/core.md`「子进程随核心退出」）：真的 `miyu core`，模型是本机回环
-//! 上的假服务器（照 DeepSeek 的写法回一次调 `shell` 放到后台、再说一句）。后台命令是一个心跳：一个子 shell 在后台每
-//! 0.1 秒往文件里写一行（Unix 上它是命令起的孙进程，Windows 上是 PowerShell 自己）。心跳跑起来以后硬杀核心（Unix 上
-//! `SIGKILL`，Windows 上结束进程，不连子进程），心跳要在几秒内停下：Unix 上组里看门的杀了整组，Windows 上核心所在的
-//! 作业对象跟着关。
+//! 核心崩了，命令跟着没（施工 7-8，`docs/blueprint/core.md`「子进程随核心退出」；Unix 上前台、监视的、人跑的几行和看门的是谁
+//! 是施工 V-48 补的）：真的 `miyu core`，模型是本机回环上的假服务器（照 DeepSeek 的写法回一次调 `shell`、再说一句）。命令是
+//! 一个心跳：一个子 shell 在后台每 0.1 秒往文件里写一行（Unix 上它是命令起的孙进程，命令自己和它的组也记下；Windows 上是
+//! PowerShell 自己）。心跳跑起来以后硬杀核心（Unix 上 `SIGKILL`，Windows 上结束进程，不连子进程），心跳要在几秒内停下：Unix
+//! 上组里看门的杀了整组，Windows 上核心所在的作业对象跟着关。
+//!
+//! - 她放到后台的（三个平台）；Unix 上再测她在前台跑着的、她监视的（MN-1 上）、人用 `!` 跑的（SH-1 上，不经模型）：命令自己、
+//!   孙进程都要没了；主程序旁边有助手的，组里看门的是助手（施工 V-48），没有的是 `/bin/sh`。
+//! - 两个核心各有各的看门的：硬杀一个只停它的；另一个有计划地停下（SIGTERM），命令停、看门的也没了。
 //!
 //! 没停下的（修之前的样子），测试最后照心跳记下的进程号把它杀掉：只杀测试自己起的。
 
@@ -27,31 +31,92 @@ fn stream(chunks: &[Value]) -> Reply {
     Reply::stream(vec![Piece::Bytes(body.into_bytes())])
 }
 
-/// 模型的两次回复：先调 `shell` 把 `command` 放到后台，再说一句。
-fn replies(command: &str) -> Vec<Reply> {
-    let args = json!({"command": command, "description": "心跳", "run_in_background": true});
+/// 模型的回复：先照 `args` 调 `shell`，再说一句。人用 `!` 跑的命令（[`How::Person`]，`args` 是空的）不经模型，只备着她
+/// 回的那一句。
+fn replies(args: Option<Value>) -> Vec<Reply> {
     let call = json!({"choices": [{"index": 0, "delta": {"role": "assistant", "tool_calls": [{
         "index": 0, "id": "call_a", "type": "function",
-        "function": {"name": "shell", "arguments": args.to_string()}}]}, "finish_reason": null}]});
+        "function": {"name": "shell", "arguments": args.as_ref().map(Value::to_string)}}]}, "finish_reason": null}]});
     let done = json!({"choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}]});
     let said = json!({"choices": [{"index": 0, "delta": {"role": "assistant", "content": "放出去了。"},
         "finish_reason": "stop"}]});
-    vec![stream(&[call, done]), stream(&[said])]
+    match args {
+        Some(_) => vec![stream(&[call, done]), stream(&[said])],
+        None => vec![stream(&[said])],
+    }
 }
 
-/// 心跳：`beat` 每 0.1 秒多一行，写心跳的进程号记在 `pid` 里。
+/// 命令怎么起的（施工 V-48 的那张表）。
+#[derive(Debug, Clone, Copy)]
+enum How {
+    /// 她放到后台的（施工 7-3）。
+    Background,
+    /// 她在前台跑、还没跑完的。
+    #[cfg(unix)]
+    Foreground,
+    /// 她监视的后台命令（施工 MN-1 上）。
+    #[cfg(unix)]
+    Watched,
+    /// 人用 `!` 跑的（施工 SH-1 上）：不经模型、不进沙盒。
+    #[cfg(unix)]
+    Person,
+}
+
+impl How {
+    /// 模型调 `shell` 的参数；人跑的是空的。
+    fn args(self, command: &str) -> Option<Value> {
+        let mut args = json!({"command": command, "description": "心跳"});
+        match self {
+            How::Background => args["run_in_background"] = json!(true),
+            #[cfg(unix)]
+            How::Foreground => {}
+            #[cfg(unix)]
+            How::Watched => args["watch"] = json!(true),
+            #[cfg(unix)]
+            How::Person => return None,
+        }
+        Some(args)
+    }
+}
+
+/// 心跳的几样：`beat` 每 0.1 秒多一行；`pid` 是写心跳的进程（Unix 上是命令起的孙进程）；Unix 上 `command` 是命令自己，
+/// `group` 是它的进程组（组号就是看门的进程号）。
+struct Beat {
+    beat: PathBuf,
+    pid: PathBuf,
+    command: PathBuf,
+    #[cfg(unix)]
+    group: PathBuf,
+}
+
+impl Beat {
+    fn in_dir(work: &Path) -> Beat {
+        Beat {
+            beat: work.join("beat.txt"),
+            pid: work.join("beat.pid"),
+            command: work.join("command.pid"),
+            #[cfg(unix)]
+            group: work.join("group.txt"),
+        }
+    }
+}
+
+/// 心跳：命令记下自己和自己的组，再在后台起一个子 shell 每 0.1 秒写一行，记下它的进程号。
 #[cfg(unix)]
-fn heartbeat(beat: &Path, pid: &Path) -> String {
-    let (beat, pid) = (beat.display(), pid.display());
-    format!("(while :; do echo x >> '{beat}'; sleep 0.1; done) & echo $! > '{pid}'; wait")
+fn heartbeat(beat: &Beat) -> String {
+    let (file, pid) = (beat.beat.display(), beat.pid.display());
+    let (command, group) = (beat.command.display(), beat.group.display());
+    format!(
+        "echo $$ > '{command}'; ps -o pgid= -p $$ > '{group}'; (while :; do echo x >> '{file}'; sleep 0.1; done) & echo $! > '{pid}'; wait"
+    )
 }
 
 /// 同上，PowerShell。
 #[cfg(windows)]
-fn heartbeat(beat: &Path, pid: &Path) -> String {
-    let (beat, pid) = (beat.display(), pid.display());
+fn heartbeat(beat: &Beat) -> String {
+    let (file, pid) = (beat.beat.display(), beat.pid.display());
     format!(
-        "Set-Content -Path '{pid}' -Value $PID; while ($true) {{ Add-Content -Path '{beat}' -Value x; Start-Sleep -Milliseconds 100 }}"
+        "Set-Content -Path '{pid}' -Value $PID; while ($true) {{ Add-Content -Path '{file}' -Value x; Start-Sleep -Milliseconds 100 }}"
     )
 }
 
@@ -145,15 +210,19 @@ fn start(home: &Home, server: &Server) -> Child {
     core
 }
 
-#[tokio::test]
-async fn a_background_command_dies_with_a_killed_core() {
-    let home = Home::new();
-    let work: PathBuf = home.dir.join("work");
-    std::fs::create_dir_all(&work).expect("建得了");
-    let (beat, pid) = (work.join("beat.txt"), work.join("beat.pid"));
-    let server = Server::start(replies(&heartbeat(&beat, &pid))).await;
-    let mut core = start(&home, &server);
+/// 起着心跳的一个核心：核心、连接、假模型（连接、假模型留到核心被杀以后：人跑的那一条连接断了也不该停）。
+struct Beating {
+    core: Child,
+    _rpc: Rpc,
+    _server: Server,
+}
 
+/// 拉起核心、连上、开一个权限全开的会话（工作目录是心跳所在的目录），照 `how` 起心跳，等它跑起来。
+async fn beating(home: &Home, beat: &Beat, how: How) -> Beating {
+    let work = beat.beat.parent().expect("在工作目录里").to_path_buf();
+    let command = heartbeat(beat);
+    let server = Server::start(replies(how.args(&command))).await;
+    let core = start(home, &server);
     let (connection, token) = within("连上", miyu_ipc::connect(&home.root))
         .await
         .expect("连得上");
@@ -179,30 +248,167 @@ async fn a_background_command_dies_with_a_killed_core() {
         json!({"session": session, "level": "full"}),
     )
     .await;
-    rpc.call(
-        "c3",
-        "session.send",
-        json!({"session": session, "text": "跑个心跳"}),
-    )
-    .await;
-
+    let send = match how.args(&command) {
+        Some(_) => json!({"session": session, "text": "跑个心跳"}),
+        None => json!({"session": session, "text": command, "shell": true}),
+    };
+    rpc.call("c3", "session.send", send).await;
     // 心跳跑起来了：文件在长。
     let started = Instant::now();
-    while size(&beat) < 3 && started.elapsed() < Duration::from_secs(60) {
+    while size(&beat.beat) < 3 && started.elapsed() < Duration::from_secs(60) {
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
-    assert!(size(&beat) >= 3, "心跳没跑起来：{}", home.core_log());
+    assert!(size(&beat.beat) >= 3, "心跳没跑起来：{}", home.core_log());
+    Beating {
+        core,
+        _rpc: rpc,
+        _server: server,
+    }
+}
+
+/// 等心跳停下（最多 60 秒），没停的照记下的进程号收拾掉；交回停没停。
+async fn stopped(beat: &Beat) -> bool {
+    let file = beat.beat.clone();
+    let stopped = tokio::task::spawn_blocking(move || settled(&file, Duration::from_secs(60)))
+        .await
+        .expect("没 panic");
+    if !stopped {
+        kill_heartbeat(&beat.pid);
+        kill_heartbeat(&beat.command);
+    }
+    stopped
+}
+
+/// 照 `how` 起心跳，硬杀核心，心跳要停：核心没了，命令跟着没。Unix 上命令自己、写心跳的孙进程都要没了；主程序旁边有助手的，
+/// 组里看门的是助手（施工 V-48），没有的是 `/bin/sh`。
+async fn dies_with_a_killed_core(how: How) {
+    let home = Home::new();
+    let work: PathBuf = home.dir.join("work");
+    std::fs::create_dir_all(&work).expect("建得了");
+    let beat = Beat::in_dir(&work);
+    let Beating {
+        mut core,
+        _rpc,
+        _server,
+    } = beating(&home, &beat, how).await;
+    #[cfg(unix)]
+    let watcher = watcher(&beat);
 
     core.kill().expect("杀得了核心");
     core.wait().expect("收得了");
-    let stopped = tokio::task::spawn_blocking({
-        let beat = beat.clone();
-        move || settled(&beat, Duration::from_secs(60))
-    })
-    .await
-    .expect("没 panic");
-    if !stopped {
-        kill_heartbeat(&pid);
+    let stopped = stopped(&beat).await;
+    assert!(stopped, "核心没了，命令还在跑（{how:?}）");
+    #[cfg(unix)]
+    {
+        for pid in [&beat.pid, &beat.command] {
+            let pid = std::fs::read_to_string(pid).expect("记下了");
+            assert!(gone(pid.trim()), "{how:?}：{pid} 还在");
+        }
+        let helper = Path::new(crate::support::MIYU).with_file_name("miyu-sandbox");
+        let expected = if helper.is_file() {
+            "miyu-sandbox"
+        } else {
+            "sh"
+        };
+        assert!(
+            watcher.ends_with(expected),
+            "{how:?}：看门的是 {watcher}，该是 {expected}"
+        );
     }
-    assert!(stopped, "核心没了，后台命令还在跑");
+}
+
+/// 组里看门的叫什么：组号就是它的进程号。
+#[cfg(unix)]
+fn watcher(beat: &Beat) -> String {
+    let group = std::fs::read_to_string(&beat.group).expect("记下了组");
+    let out = Command::new("ps")
+        .args(["-o", "comm=", "-p", group.trim()])
+        .output()
+        .expect("问得了");
+    String::from_utf8_lossy(&out.stdout).trim().to_string()
+}
+
+/// 进程 `pid` 没了（最多等 5 秒）：`kill -0` 问不到。
+#[cfg(unix)]
+fn gone(pid: &str) -> bool {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let there = Command::new("kill")
+            .args(["-0", pid])
+            .stderr(Stdio::null())
+            .status()
+            .is_ok_and(|status| status.success());
+        if !there {
+            return true;
+        }
+        if Instant::now() > deadline {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
+#[tokio::test]
+async fn a_background_command_dies_with_a_killed_core() {
+    dies_with_a_killed_core(How::Background).await;
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn a_foreground_command_dies_with_a_killed_core() {
+    dies_with_a_killed_core(How::Foreground).await;
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn a_watched_command_dies_with_a_killed_core() {
+    dies_with_a_killed_core(How::Watched).await;
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn a_person_command_dies_with_a_killed_core() {
+    dies_with_a_killed_core(How::Person).await;
+}
+
+/// 两个核心各有各的看门的：硬杀一个，只有它的命令停；另一个照常跑，有计划地停下（SIGTERM）以后命令停、看门的也没了，不留孤儿。
+#[cfg(unix)]
+#[tokio::test]
+async fn two_cores_watch_their_own_commands_and_a_stopped_core_leaves_no_watcher() {
+    let (one, two) = (Home::new(), Home::new());
+    let mut beats = Vec::new();
+    for home in [&one, &two] {
+        let work = home.dir.join("work");
+        std::fs::create_dir_all(&work).expect("建得了");
+        beats.push(Beat::in_dir(&work));
+    }
+    let mut first = beating(&one, &beats[0], How::Background).await;
+    let second = beating(&two, &beats[1], How::Background).await;
+    let group = std::fs::read_to_string(&beats[1].group).expect("记下了组");
+
+    first.core.kill().expect("杀得了核心");
+    first.core.wait().expect("收得了");
+    let one_stopped = stopped(&beats[0]).await;
+    let before = size(&beats[1].beat);
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let other_beating = size(&beats[1].beat) > before;
+
+    let terminated = Command::new("kill")
+        .args(["-TERM", &second.core.id().to_string()])
+        .status()
+        .is_ok_and(|status| status.success());
+    let Beating {
+        mut core,
+        _rpc,
+        _server,
+    } = second;
+    let exited = tokio::task::spawn_blocking(move || core.wait())
+        .await
+        .expect("没 panic");
+    let two_stopped = stopped(&beats[1]).await;
+    assert!(one_stopped, "硬杀的核心的命令还在跑");
+    assert!(other_beating, "另一个核心的命令跟着停了");
+    assert!(terminated && exited.is_ok(), "{exited:?}");
+    assert!(two_stopped, "有计划地停下以后命令还在跑");
+    assert!(gone(group.trim()), "看门的 {group} 留下了");
 }

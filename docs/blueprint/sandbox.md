@@ -26,6 +26,7 @@
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/main.rs` | 助手里各平台共用的：读参数、读规格、`probe`、出错时说的几句 |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/linux.rs`、`macos.rs`、`windows.rs`、`other.rs` | 各平台收紧、再换成命令（`run`），探测时报的手段（`mechanisms`）；`other.rs` 是别的 Unix |
 | `crates/miyu-sandbox/src/bin/miyu-sandbox/unix.rs` | Unix 上换成命令（`exec`） |
+| `crates/miyu-sandbox/src/bin/miyu-sandbox/lifeline.rs` | Unix 上看门（`lifeline`，施工 V-48） |
 | `crates/miyu-tool/src/run.rs` | 一次调用带的 `sandbox` |
 | `crates/miyu-basesystem/src/shell.rs` | 带了规格的经助手起命令 |
 | `crates/miyu-core/src/sandbox.rs` | 起来时探一次，记日志；探到了手段的，助手交给协议端点（施工 5-4 上） |
@@ -69,6 +70,7 @@
   描述符号码写在这里（不小于 3），助手照它收紧、关掉它，再叠一小层，再换成命令（`sandbox/linux.md`「核心按规格缓存规则集」）。只有只用
   Landlock、没写 `mount`、`read` 的规格才这样交；写了的说 `bad spec: --ruleset with mount or read`、退出 125。别的平台给了算参数不对。
   `shell`、脚本工具经 `miyu_sandbox::command` 起，用不上缓存的（别的平台、别的规格、建不成）参数和上一条一样。
+- `miyu-sandbox lifeline`（施工 V-48，Unix）：看门。核心给每条命令的进程组先起一个它（`core.md`「子进程随核心退出」第 1 条），标准输入是核心那根生命线的读端：读到结尾（核心没了）就杀掉自己所在的整个组（`kill(0, SIGKILL)`），读到的东西不管，读不了也当结尾。不读规格、不收紧、什么都不印。只认光秃秃的这一个参数，后面多了的照参数不对退出 125。
 - `miyu-sandbox probe`：标准输出上一行 JSON，说这台机器能收紧到什么程度，例如 `{"version":1,"platform":"linux","mechanisms":[],"build":"3f0c…"}`。`platform` 是 `linux`、`macos`、`windows`、`other` 之一；`mechanisms` 是这台机器上能用上的收紧手段，各平台自己报（Linux 上是 `landlock`，`sandbox/linux.md`；macOS 上是 `seatbelt`，`sandbox/macos.md`），空的就是收紧不了；`build` 是编它的构建 id（施工 5-16 再补）：照 `miyu-sandbox` 这个包的源码（`src/` 下的文件、`Cargo.toml`、`build.rs`）算的 64 位 FNV-1a 摘要，十六位十六进制，核心链进来的这个包和助手是同一份源码编的才一样。核心只认 `version` 是 1、`build` 和自己的一样的（旧版的助手不报 `build`，读成空的，也对不上）；多出来的格不管。
 
 **退出码**，照 `env`、`timeout` 的约定：

@@ -38,7 +38,7 @@
 | `crates/miyu-endpoint/src/sessions.rs` | 会话表造子会话（施工 7-5）；删会话连子会话（`sessions/delete.rs`，施工 3-8 三补；停子会话、送回报在表的锁里，施工 7-8）；载入以后在后台收掉派到一半的空子会话（`sessions/orphans.rs`，施工 7-8；V-2 三补起在后台；V-37 上起照载入交回的认，不另读父会话的日志） |
 | `crates/miyu-endpoint/src/from.rs` | `session.send` 的 `from`：收下名字，记成 `harness`（施工 7-10） |
 | `crates/miyu-endpoint/src/undo/jobs.rs` | 撤销的回应里停掉的任务（`jobs`，施工 7-8，`protocol/undo.md`） |
-| `crates/miyu-sandbox/src/lifeline.rs`、`lifeline/` | 核心崩了，它起的命令跟着没（施工 7-8，`core.md`「子进程随核心退出」）：Unix 上每个组一个看门的，Windows 上核心进作业对象 |
+| `crates/miyu-sandbox/src/lifeline.rs`、`lifeline/` | 核心崩了，它起的命令跟着没（施工 7-8，`core.md`「子进程随核心退出」）：Unix 上每个组一个看门的（照助手的 `lifeline` 起，退回 `/bin/sh`，施工 V-48），Windows 上核心进作业对象 |
 | `crates/miyu-endpoint/src/methods.rs` | `job.stop`（施工 7-4）；`job.output` 在 `job_output.rs`（施工 7-4 补） |
 | `crates/miyu-endpoint/src/lib.rs` 的 `Core::idle` | 空闲判断算上后台命令（施工 7-3）和在跑的子会话 |
 | `crates/miyu-basesystem/src/shell/background.rs` | `shell` 的 `run_in_background`：交出去的输出、进程（施工 7-3） |
@@ -343,7 +343,7 @@
 | `crates/miyu-endpoint/tests/undo_jobs.rs`（施工 7-8） | 真核心：撤销、重做的回应列出停掉的，恢复不带、停过的再撤销不列 |
 | `crates/miyu-endpoint/src/sessions/delete/tests.rs`、`tests/orphans.rs`（施工 7-8） | 父会话记下子代理停了以后没人叫得醒它、它删得掉；父会话没记下的空子会话载入时挪进回收处，记下了的照留；改名以前造的父会话照样收（施工 7-5 再补） |
 | `crates/miyu-session/src/open/scan/tests/dispatched.rs`、`tests/spawn/recorded.rs`（施工 V-37 上） | 载入时一条条记的「要不要认、哪些记下了」和原来整份读一遍攒的一样：照种子造的三千份日志切成几条一块喂；真会话没派过、派成了、派不成、两个只派成一个、没记下结果就崩了、改名以前的 `agent` |
-| `crates/miyu/tests/crash.rs`、`crates/miyu-sandbox/src/lifeline/tests.rs`（施工 7-8） | 真的 `miyu core` 被硬杀，后台命令（Unix 上连它起的孙进程）跟着停，三个平台都跑；生命线断了看门的杀整组 |
+| `crates/miyu/tests/crash.rs`、`crates/miyu-sandbox/tests/lifeline.rs`（施工 7-8、V-48） | 真的 `miyu core` 被硬杀，后台命令（Unix 上连它起的孙进程）跟着停，三个平台都跑；Unix 上前台、监视的、人用 `!` 跑的也停；生命线断了看门的杀整组 |
 
 以后照每一步补。至少：内核的单元测试和场景（开始、结束、载入补中断、子会话回报的条件）；工具面的预算；真核心走一遍后台命令。
 

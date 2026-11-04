@@ -3,9 +3,11 @@
 //! 没人来杀，命令得自己知道核心没了。三个平台各用自己最稳的现成办法：
 //!
 //! - Unix（Linux、macOS 一样）：一根「生命线」管道，写端只在核心手里（`O_CLOEXEC`，别的子进程拿不到），核心怎么没的，
-//!   内核都会关掉它。每条命令的进程组里先起一个看门的 `/bin/sh`，标准输入是读端：读到结尾（核心没了），用
-//!   `kill -s KILL 0` 杀掉自己所在的整个组。命令起在这个组里，前台、后台、经不经沙盒的助手都一样（`Watcher`）。
-//!   看门的只认自己的组，组里还有它就不会被别的组占了编号，所以不会杀错。
+//!   内核都会关掉它。每条命令的进程组里先起一个看门的，标准输入是读端：读到结尾（核心没了），杀掉自己所在的整个组
+//!   （`kill(0, SIGKILL)`）。命令起在这个组里，前台、后台、经不经沙盒的助手都一样（`Watcher`）。看门的只认自己的组，
+//!   组里还有它就不会被别的组占了编号，所以不会杀错。看门的照沙盒的助手起（`miyu-sandbox lifeline`，施工 V-48：比
+//!   `/bin/sh` 起得快，每条命令省约 0.3 ms 的 CPU），核心探过、同一份源码编的才用（[`use_helper`]）；没设过的、起不来
+//!   的退回 `/bin/sh`，跑 `while read -r _; do :; done; kill -s KILL 0`，做的是同一件事。
 //! - Windows：核心起来时把自己放进一个带 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 的作业对象（[`bind_children`]），之后起的
 //!   子进程、子进程再起的都在里面；核心没了，作业的最后一个句柄跟着关，里面的全部结束。
 //!
@@ -18,7 +20,7 @@ mod unix;
 mod windows;
 
 #[cfg(unix)]
-pub use unix::{Lifeline, Watcher, watcher};
+pub use unix::{Lifeline, MODE, Watcher, use_helper, watcher};
 #[cfg(windows)]
 pub use windows::Job;
 
@@ -35,5 +37,6 @@ pub fn bind_children() -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(all(test, unix))]
-mod tests;
+/// 看门的照这个助手起（施工 V-48，Unix）：别的平台什么都不做，Windows 靠作业对象（[`bind_children`]）。
+#[cfg(not(unix))]
+pub fn use_helper(_helper: &std::path::Path) {}

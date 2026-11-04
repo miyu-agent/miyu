@@ -2,6 +2,7 @@
 //!
 //! - `miyu-sandbox run --spec <规格的 JSON> -- <程序> [参数…]`：Unix 上换成它（`exec`），Windows 上起它、等它。
 //! - `miyu-sandbox probe`：印一行 JSON，说这台机器能收紧到什么程度。
+//! - `miyu-sandbox lifeline`（Unix，施工 V-48）：看门，读到标准输入的结尾就杀掉自己所在的整个组（`lifeline.rs`）。
 //!
 //! 这个文件只管各平台共用的：读参数、读规格、印探测的结果、出错时说的那几句。收紧和换成命令每个平台一个文件
 //! （`linux.rs`、`macos.rs`、`windows.rs`，别的系统 `other.rs`），各平台的施工各改各的；每个都交出同样的两样：
@@ -11,6 +12,8 @@
 //! 成了什么都不印：它的标准错误就是命令的标准错误，印了会混进给她看的输出。出错印一句英文，退出码照 `env`、`timeout`
 //! 的约定（[`EXIT_HELPER`]、[`EXIT_CANNOT_RUN`]、[`EXIT_NOT_FOUND`]）。
 
+#[cfg(unix)]
+mod lifeline;
 #[cfg(target_os = "linux")]
 mod linux;
 // 别的 Unix 上跑测试时也编进去：写配置、换成真实位置的那两块不碰 macOS 的接口，单元测试在 Linux 上也跑（施工 5-7）。
@@ -42,6 +45,18 @@ use miyu_sandbox::{EXIT_HELPER, Probe, Spec};
 const USAGE: &str = "usage: miyu-sandbox run --spec <json> -- <program> [args...]";
 
 fn main() -> ExitCode {
+    // 看门的最先认（施工 V-48）：每条命令起一个，别的什么都不做。
+    #[cfg(unix)]
+    {
+        let mut args = std::env::args_os();
+        if args.len() == 2
+            && args
+                .nth(1)
+                .is_some_and(|mode| mode == miyu_sandbox::lifeline::MODE)
+        {
+            return lifeline::watch();
+        }
+    }
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     match args.split_first() {
         Some((first, [])) if first == "probe" => probe(),
