@@ -115,3 +115,51 @@ async fn wrong_searches_are_refused() {
         .await;
     assert_eq!(reason(&reply), Some("memory_not_installed"), "{reply}");
 }
+
+/// 导进来的只读存档（施工 SE-1 下，设计 58 第二节第 8 条）：不载入也搜得到它以前的对话，照它快照里的人格进那一间。
+#[tokio::test]
+async fn an_imported_archive_is_found_without_being_loaded() {
+    let (source, target) = (Home::new(), Home::new());
+    let script = Script::new([Play::Says("记住了，你用 N 卡。")]);
+    let mut client = Client::connect(with_persona(&source, &script, Catalog::default()));
+    client.hello().await;
+    let session = client.create("c1", "~").await;
+    client.say("c2", &session, "我的显卡是 N 卡").await;
+    source.until_turns(&session, 1).await;
+    let bundle = source.work.join("archive.zip");
+    let exported = client
+        .call(
+            "e1",
+            "session.export",
+            json!({"session": session, "format": "bundle", "to": {"path": bundle}}),
+        )
+        .await;
+    assert!(exported.get("error").is_none(), "{exported}");
+
+    let mut client = Client::connect(with_persona(&target, &Script::new([]), Catalog::default()));
+    client.hello().await;
+    let none = client
+        .call("t-before", "memory.turns", json!({"query": "显卡"}))
+        .await;
+    assert_eq!(none["result"]["turns"], json!([]), "{none}");
+    let imported = client
+        .call(
+            "i1",
+            "session.import",
+            json!({"path": bundle, "archive": true}),
+        )
+        .await;
+    assert_eq!(
+        imported["result"]["sessions"],
+        json!([session]),
+        "{imported}"
+    );
+
+    let found = until_found(&mut client, json!({"query": "显卡"})).await;
+    assert_eq!(found.len(), 1, "{found:?}");
+    assert_eq!(found[0]["session"], session.as_str());
+    assert_eq!(found[0]["text"], "我的显卡是 N 卡\n\n记住了，你用 N 卡。");
+    // 只接回合库，不抽取：存档里的话不变成记下的记忆。
+    let memories = client.call("l1", "memory.list", json!({})).await;
+    assert_eq!(memories["result"]["memories"], json!([]), "{memories}");
+}
