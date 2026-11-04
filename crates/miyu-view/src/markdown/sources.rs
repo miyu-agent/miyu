@@ -9,13 +9,14 @@
 //! - 「她现在的上下文」（施工 SE-1 中下中）：要的（[`Sources::keeping_history`]）把每一条交给内核的有效历史（留着一切的那一份，
 //!   同载入时从日志重建），喂完 [`Sources::settle`] 落到检查点上，记下检查点和还有效的事件的序号，和请求组装看到的是同一份。
 //! - `tools: full` 要的 blob 原文（[`Sources::blobs`]）：读日志的一方照 [`Sources::wanted`] 去 blob 库取。
+//! - 派出去的子代理（施工 SE-1 中下下，`children: append`）：派它那一步的结果里记的 `job.started`，任务编号到子会话、标题。
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use miyu_kernel::block::Block as Content;
 use miyu_kernel::event::{Body, CompactTrigger, Effect, Event};
 use miyu_kernel::history::History;
-use miyu_kernel::id::{CallId, ContentHash, Parent, Seq};
+use miyu_kernel::id::{CallId, ContentHash, JobId, Parent, Seq, SessionId};
 
 use crate::entry::{Body as EntryBody, Entry, EntryId};
 use crate::notice::Notice;
@@ -36,6 +37,8 @@ pub struct Sources {
     pub blobs: BTreeMap<ContentHash, String>,
     /// 她现在的上下文：[`Sources::settle`] 算好的；没要的、还没算的没有。
     pub context: Option<Context>,
+    /// 派出去的子代理：任务编号到子会话和派它时给的标题（`job.started` 的 `session`、`title`）；后台命令不记。
+    pub jobs: BTreeMap<JobId, (SessionId, String)>,
     /// 算上下文用的有效历史：留着一切的那一份，喂完落到检查点上。
     history: Option<History>,
 }
@@ -74,6 +77,16 @@ impl Sources {
                         .collect::<Vec<&str>>()
                         .join("\n\n");
                     self.outputs.insert(result.call_id, whole);
+                }
+                for effect in &result.effects {
+                    if let Effect::JobStarted(started) = effect
+                        && let Some(session) = &started.session
+                    {
+                        self.jobs.insert(
+                            started.job.clone(),
+                            (session.clone(), started.title.clone()),
+                        );
+                    }
                 }
             }
             Body::ContextCompacted(compacted)

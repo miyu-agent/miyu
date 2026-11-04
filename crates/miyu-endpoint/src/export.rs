@@ -1,6 +1,6 @@
 //! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`docs/blueprint/protocol.md`
 //! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown（`format: "markdown"`，施工
-//! SE-1 中下上、中下中）在 `export/markdown.rs`，写文件照同样的规矩。
+//! SE-1 中下上、中下中、中下下）在 `export/markdown.rs`，写文件照同样的规矩；`assets: files` 的附件文件夹在 `export/assets.rs`。
 //!
 //! - 包里有：这个会话、它的全部后代（子代理、子代理的子代理）、分叉来源到分叉点为止的那几段（一层层往上），和它们引用到的
 //!   blob（[`miyu_store::bundle`]）。只读日志、不载入会话，在跑的会话照这一刻已经落盘的取。
@@ -33,6 +33,7 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
+mod assets;
 mod markdown;
 mod params;
 
@@ -64,10 +65,10 @@ pub(crate) struct ExportParams {
     /// 同上：工具写多少，`line`、`seen`、`full`。
     #[serde(default)]
     tools: Option<Value>,
-    /// 同上：子代理，这一步只收 `reports`。
+    /// 同上：子代理，`reports`（照预设写交代、回报）或 `append`（子会话附在后面）。
     #[serde(default)]
     children: Option<Value>,
-    /// 同上：图片、附件，这一步只收 `placeholder`。
+    /// 同上：图片、附件，`placeholder`（写占位）或 `files`（拷进旁边的文件夹）。
     #[serde(default)]
     assets: Option<Value>,
 }
@@ -151,13 +152,12 @@ pub(crate) async fn export(
             tracing::warn!(target: TARGET, session = main.as_str(), error = %error, "export not read");
             Refusal::BROKEN
         })?;
-        let (transcript, _) =
-            markdown::transcript(&root, &main, &kit, language, Options::READ)?;
+        let made = markdown::transcript(&root, &main, &kit, language, Options::READ, false, None)?;
         let about = About {
             main: main.clone(),
             miyu: env!("CARGO_PKG_VERSION").to_string(),
             exported: now(),
-            transcript: Some(transcript.text),
+            transcript: Some(made.rendered.text),
         };
         bundle::write(&parts, &Blobs::new(root.blobs()), &about, &target).map_err(|error| refused(&main, error))
     })

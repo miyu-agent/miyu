@@ -70,7 +70,7 @@ fn read(out: &mut Out, tool: &Tool, doc: &Document<'_>, say: &Say<'_>) {
         out.block(&folded(output, say));
     }
     extras::nested(out, tool.call.map(miyu_kernel::id::Parent::Call), doc, say);
-    let pictures = pictures(tool, say);
+    let pictures = pictures(tool, doc, say);
     if !pictures.is_empty() {
         out.block(&pictures.join("\n"));
     }
@@ -96,13 +96,18 @@ pub(super) fn output<'a>(tool: &'a Tool, doc: &'a Document<'_>) -> Option<&'a St
     }
 }
 
-/// 结果里的图：一张一行占位。
-pub(super) fn pictures(tool: &Tool, say: &Say<'_>) -> Vec<String> {
+/// 结果里的图：一张一行，`assets: files` 取得到的写成链接，别的写占位。
+pub(super) fn pictures(tool: &Tool, doc: &Document<'_>, say: &Say<'_>) -> Vec<String> {
     tool.images
         .iter()
         .map(|picture| {
             let about = format!("{}×{}", picture.width, picture.height);
-            format!("- {}", say.say("image", &[("about", about)]))
+            let link = doc.files.and_then(|files| {
+                let named = (None, picture.media_type.as_str());
+                files.link(&picture.blob, true, Some(about.clone()), named)
+            });
+            let shown = link.unwrap_or_else(|| say.say("image", &[("about", about)]));
+            format!("- {shown}")
         })
         .collect()
 }

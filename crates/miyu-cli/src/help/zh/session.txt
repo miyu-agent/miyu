@@ -1,7 +1,7 @@
 用法：miyu session <命令> [<选项>]
 
-导出、导入会话的原始包（ZIP）。包里有会话日志的原文、子会话、分叉来源和附件，
-换机器、换数据目录时搬会话用。
+导出、导入会话。原始包（ZIP）里有会话日志的原文、子会话、分叉来源和附件，
+换机器、换数据目录时搬会话用；Markdown 给人看、贴给别的 AI。
 
 命令：
   export [<编号>]  导出会话（默认为上一次 miyu ask 的会话），打印写到的位置
@@ -9,6 +9,11 @@
 
 选项：
   -o, --output <文件>  导出到这个文件（默认为当前目录下的
-                       miyu-session-<编号前 8 位>.zip）
+                       miyu-session-<编号前 8 位>.zip，Markdown 是 .md）；
+                       Markdown 写 - 打印到标准输出
+      --md             导出为 Markdown
+      --for <用途>     Markdown 给谁看：read 自己看（默认）、agent 给别的
+                       AI、chat 贴进网页版聊天
+      --last <轮数>    Markdown 只要最近几轮
       --archive        导入为只读存档：能查看、能搜索，不能继续对话
   -h, --help           显示帮助

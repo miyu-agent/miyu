@@ -1,7 +1,7 @@
 //! 会话导出成 Markdown（施工 SE-1 中下上，`docs/blueprint/protocol.md`「`session.export`」）：真核心跑几轮（调工具、思考、
-//! 手动压缩）以后导到文件、放进回应，两份一字不差；配了的密钥换成占位、报几处；照参数换语言；放进回应超了上限的拒；下一步
-//! 才有的写法（施工 SE-1 中下中以后只剩 `children: append`、`assets: files`）拒 `bad_params` 带 `data.later`，写错的不带，
-//! 写文件的规矩同原始包。三个预设、范围、原始包里的 `transcript.md` 见 `session_export_presets.rs`。
+//! 手动压缩）以后导到文件、放进回应，两份一字不差；配了的密钥换成占位、报几处；照参数换语言；放进回应超了上限的拒；写错的
+//! 参数拒 `bad_params`，写文件的规矩同原始包。三个预设、范围、原始包里的 `transcript.md` 见 `session_export_presets.rs`；
+//! `children: append`、`assets: files` 见 `session_export_attached.rs`。
 
 use std::path::Path;
 
@@ -176,7 +176,7 @@ async fn a_big_session_is_refused_inline_and_still_goes_to_a_file() {
 }
 
 #[tokio::test]
-async fn later_options_and_bad_places_are_refused() {
+async fn bad_options_and_bad_places_are_refused() {
     let home = Home::new();
     let script = Script::new([Play::Says("好。")]);
     let mut client = Client::connect(home.core(&script));
@@ -184,19 +184,6 @@ async fn later_options_and_bad_places_are_refused() {
     let session = client.create("c1", "~").await;
     client.say("s1", &session, "你好").await;
     home.until_turns(&session, 1).await;
-    let later = [
-        (json!({"children": "append"}), "children"),
-        (json!({"for": "agent", "assets": "files"}), "assets"),
-    ];
-    for (n, (extra, param)) in later.into_iter().enumerate() {
-        let mut params = json!({"session": session, "to": "inline"});
-        for (key, value) in extra.as_object().expect("是对象") {
-            params[key] = value.clone();
-        }
-        let reply = markdown(&mut client, &format!("l{n}"), params).await;
-        assert_eq!(reason(&reply), Some("bad_params"), "{reply}");
-        assert_eq!(reply["error"]["data"]["later"], json!(param), "{reply}");
-    }
     let taken = home.work.join("taken.md");
     std::fs::write(&taken, "人家的").expect("写得进");
     let bad = [
@@ -211,6 +198,7 @@ async fn later_options_and_bad_places_are_refused() {
         (json!({"tools": "all", "to": "inline"}), "bad_params"),
         (json!({"children": "none", "to": "inline"}), "bad_params"),
         (json!({"assets": 1, "to": "inline"}), "bad_params"),
+        (json!({"assets": "files", "to": "inline"}), "bad_params"),
         (json!({"to": "elsewhere"}), "bad_params"),
         (json!({"to": {"path": "x.md"}}), "bad_params"),
         (json!({"to": {"path": taken}}), "export_exists"),
@@ -228,7 +216,6 @@ async fn later_options_and_bad_places_are_refused() {
         params["session"] = json!(session);
         let reply = markdown(&mut client, &format!("b{n}"), params).await;
         assert_eq!(reason(&reply), Some(wanted), "{reply}");
-        assert!(reply["error"]["data"].get("later").is_none(), "{reply}");
     }
     assert_eq!(std::fs::read_to_string(&taken).expect("在"), "人家的");
     let missing = markdown(

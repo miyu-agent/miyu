@@ -27,16 +27,6 @@ impl Refusal {
         reason: "export_too_big",
         data: None,
     };
-    /// 参数不对，写的是下一步才做的（施工 SE-1 中下上：Markdown 的 `for`、`range` 别的写法和几个开关）：`data.later` 是哪一个
-    /// 参数。
-    pub(crate) fn later(param: &str) -> Refusal {
-        let mut data = serde_json::Map::new();
-        data.insert("later".to_string(), serde_json::json!(param));
-        Refusal {
-            data: Some(data),
-            ..Refusal::BAD_PARAMS
-        }
-    }
     /// 不是认得的包：不是 ZIP、没有清单、清单读不懂。
     pub(crate) const BAD_BUNDLE: Refusal = Refusal {
         code: REFUSED,

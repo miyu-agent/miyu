@@ -1,8 +1,9 @@
 Usage: miyu session <command> [<options>]
 
-Export and import raw session bundles (ZIP). A bundle holds the session's log
-as written, its subsessions, fork sources and attachments, for moving
-sessions to another machine or data root.
+Export and import sessions. A raw bundle (ZIP) holds the session's log as
+written, its subsessions, fork sources and attachments, for moving sessions
+to another machine or data root; Markdown is for reading and for handing to
+another AI.
 
 Commands:
   export [<id>]  Export a session (default: the one from the last miyu ask) and
@@ -11,7 +12,12 @@ Commands:
 
 Options:
   -o, --output <file>  Export to this file (default: miyu-session-<id>.zip in
-                       the current folder, first 8 characters of the id)
+                       the current folder, first 8 characters of the id; .md
+                       for Markdown); - prints Markdown to standard output
+      --md             Export as Markdown
+      --for <use>      Who the Markdown is for: read (default), agent for
+                       another AI, chat to paste into a web chat
+      --last <turns>   Markdown with only the latest turns
       --archive        Import as a read-only archive: viewable and searchable,
                        can't be continued
   -h, --help           Show help

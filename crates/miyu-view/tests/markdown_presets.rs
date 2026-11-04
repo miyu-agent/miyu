@@ -61,6 +61,8 @@ pub(crate) fn rendered(entries: &[Entry], sources: &Sources, options: Options) -
         options,
         offset: UtcOffset::from_minutes(540).expect("在范围里"),
         secrets: &[],
+        child: None,
+        files: None,
     })
 }
 

@@ -83,9 +83,19 @@ async fn three_presets_from_a_real_core() {
             "token=[redacted: demo_key]",
             "读完了。",
             &long,
+            "> Context compacted\n\n<details>\n<summary>Summary</summary>",
         ],
     );
-    lacks(&all, &["文件里有个 token。", "### Tool: 读取", SECRET]);
+    lacks(
+        &all,
+        &[
+            "文件里有个 token。",
+            "### Tool: 读取",
+            SECRET,
+            "上下文压缩了",
+            "摘要",
+        ],
+    );
 
     let (chat, tokens) = inline(&mut client, "c1", &session, json!({"for": "chat"})).await;
     has(

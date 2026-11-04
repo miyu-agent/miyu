@@ -53,7 +53,7 @@ fn agent_context_starts_from_the_checkpoint_with_the_summary_first() {
         ),
         "{got}"
     );
-    for gone in ["first", "one", "上下文压缩了"] {
+    for gone in ["first", "one", "Context compacted", "上下文压缩了"] {
         assert!(
             !got.contains(gone),
             "检查点以前的、压缩那一条不进：{gone}\n{got}"
@@ -67,9 +67,11 @@ fn agent_context_starts_from_the_checkpoint_with_the_summary_first() {
         },
     );
     assert!(
-        all.contains("first") && all.contains("> 上下文压缩了"),
-        "写了 range: all 的全要：{all}"
+        all.contains("first")
+            && all.contains("> Context compacted\n\n<details>\n<summary>Summary</summary>"),
+        "写了 range: all 的全要，旁白照 agent 的英文：{all}"
     );
+    assert!(!all.contains("上下文压缩了"), "{all}");
 }
 
 #[test]

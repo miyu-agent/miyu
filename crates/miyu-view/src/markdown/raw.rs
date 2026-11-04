@@ -38,7 +38,7 @@ pub(super) fn tool(out: &mut Out, tool: &Tool, doc: &Document<'_>, say: &Say<'_>
         };
         out.block(&code_block(&text, "text"));
     }
-    let pictures = pictures(tool, say);
+    let pictures = pictures(tool, doc, say);
     if !pictures.is_empty() {
         out.block(&pictures.join("\n"));
     }

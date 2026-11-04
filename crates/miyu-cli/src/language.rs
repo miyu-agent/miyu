@@ -179,6 +179,14 @@ impl Language {
         }
     }
 
+    /// `miyu session export --md -o -` 超了放进回应的上限（施工 SE-1 中下下）：改成存文件的那条建议。
+    pub(crate) fn export_to_file(&self) -> &'static str {
+        match self {
+            Language::Chinese => "用 -o <文件> 存成文件",
+            Language::English => "use -o <file> to save it to a file",
+        }
+    }
+
     /// `--continue` 找不到可以接着说的会话。
     pub(crate) fn no_oneshot(&self) -> Problem {
         match self {

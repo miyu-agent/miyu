@@ -254,6 +254,7 @@ mod search_extension;
 mod secrets;
 mod session_context;
 mod session_export;
+mod session_export_attached;
 mod session_export_markdown;
 mod session_export_presets;
 mod session_import;

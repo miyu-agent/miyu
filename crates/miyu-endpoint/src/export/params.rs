@@ -1,5 +1,5 @@
-//! `session.export {format: "markdown"}` 的参数怎么读（施工 SE-1 中下中，调研第五节第 3 条）：`for` 定预设，写了的开关盖过
-//! 预设。
+//! `session.export {format: "markdown"}` 的参数怎么读（施工 SE-1 中下中、中下下，调研第五节第 3 条）：`for` 定预设，写了的
+//! 开关盖过预设。
 //!
 //! | 参数 | 收的 |
 //! |---|---|
@@ -7,11 +7,11 @@
 //! | `range` | `all`、`context`、`{"turns": N}`（N ≥ 1） |
 //! | `thinking` | 布尔 |
 //! | `tools` | `line`、`seen`、`full` |
-//! | `children` | `reports`；`append` 下一步才有 |
-//! | `assets` | `placeholder`；`files` 下一步才有 |
+//! | `children` | `reports`（不写的也是）、`append` |
+//! | `assets` | `placeholder`（不写的也是）、`files`；`files` 只配写文件，配 `inline` 的拒 |
 //! | `locale` | `zh`、`ja` 开头的照它，别的一律英文；不写的照连接握手时的 |
 //!
-//! 下一步才有的拒 `bad_params`，`data.later` 写参数名；别的写法（写错的、类型不对的）照旧 `bad_params`、不带 `later`。
+//! 别的写法（写错的、类型不对的）拒 `bad_params`。
 
 use std::path::PathBuf;
 
@@ -30,11 +30,22 @@ pub(super) enum Target {
     Inline,
 }
 
-/// 照参数定写到哪、用哪种语言（`language` 是连接握手时的）、哪一套开关。
-pub(super) fn wanted(
-    params: ExportParams,
-    language: &'static str,
-) -> Result<(Target, &'static str, Options), Refusal> {
+/// 照参数定下的。
+pub(super) struct Wanted {
+    /// 写到哪。
+    pub(super) target: Target,
+    /// 给人看的字用哪种语言。
+    pub(super) language: &'static str,
+    /// 渲染的开关。
+    pub(super) options: Options,
+    /// `children: append`：子会话照同一套开关渲染，附在后面。
+    pub(super) append: bool,
+    /// `assets: files`：图片、附件拷进旁边的文件夹，写成相对链接。
+    pub(super) files: bool,
+}
+
+/// 照参数定写到哪、用哪种语言（`language` 是连接握手时的）、哪一套开关、带不带子会话和附件文件夹。
+pub(super) fn wanted(params: ExportParams, language: &'static str) -> Result<Wanted, Refusal> {
     let purpose = match params.purpose.as_deref() {
         None | Some("read") => Purpose::Read,
         Some("agent") => Purpose::Agent,
@@ -57,17 +68,8 @@ pub(super) fn wanted(
         Some(Some("full")) => options.tools = Tools::Full,
         Some(_) => return Err(Refusal::BAD_PARAMS),
     }
-    for (name, switch, now, later) in [
-        ("children", &params.children, "reports", "append"),
-        ("assets", &params.assets, "placeholder", "files"),
-    ] {
-        match switch.as_ref().map(Value::as_str) {
-            None => {}
-            Some(Some(value)) if value == now => {}
-            Some(Some(value)) if value == later => return Err(Refusal::later(name)),
-            Some(_) => return Err(Refusal::BAD_PARAMS),
-        }
-    }
+    let append = either(params.children.as_ref(), "reports", "append")?;
+    let files = either(params.assets.as_ref(), "placeholder", "files")?;
     let language = match params.locale.as_deref() {
         None => language,
         Some(locale) if locale.starts_with("zh") => "zh",
@@ -76,9 +78,26 @@ pub(super) fn wanted(
     };
     let target = match params.to {
         To::File(to) => Target::File(checked(to.path)?),
+        To::Inline(Inline::Inline) if files => return Err(Refusal::BAD_PARAMS),
         To::Inline(Inline::Inline) => Target::Inline,
     };
-    Ok((target, language, options))
+    Ok(Wanted {
+        target,
+        language,
+        options,
+        append,
+        files,
+    })
+}
+
+/// 两种写法的开关：不写的、写 `off` 的是假，写 `on` 的是真，别的拒。
+fn either(switch: Option<&Value>, off: &str, on: &str) -> Result<bool, Refusal> {
+    match switch.map(Value::as_str) {
+        None => Ok(false),
+        Some(Some(value)) if value == off => Ok(false),
+        Some(Some(value)) if value == on => Ok(true),
+        Some(_) => Err(Refusal::BAD_PARAMS),
+    }
 }
 
 /// `range` 的三种写法。

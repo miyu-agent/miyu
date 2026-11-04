@@ -1,24 +1,29 @@
-//! 会话导出成 Markdown（施工 SE-1 中下上、中下中，设计 `58-会话导出和导入.md` 第一节，调研
-//! `docs/reviews/2026-09-30-会话导出调研.md` 第四节第 1、3 条，第五节第 2、3、6 条）：一个不连线的头，吃视图条目、吐 Markdown。
+//! 会话导出成 Markdown（施工 SE-1 中下上、中下中、中下下，设计 `58-会话导出和导入.md` 第一节，调研
+//! `docs/reviews/2026-09-30-会话导出调研.md` 第四节第 1、3 条，第五节第 2、3、6、7 条）：一个不连线的头，吃视图条目、吐 Markdown。
 //! 界面上有的导出里才有：挑哪些、显示名、一句话摘要、出错说明都照条目；条目里没有的原文（切过的工具结果、压缩的摘要、
-//! 脚本里调的工具、她现在的上下文）由读日志的一方照事件记进 [`Sources`]。
+//! 脚本里调的工具、她现在的上下文、派出去的子代理）由读日志的一方照事件记进 [`Sources`]。
 //!
 //! 纯函数：不碰磁盘、时钟。三个预设（[`Options::READ`]、[`Options::AGENT`]、[`Options::CHAT`]，`markdown/options.rs`），
 //! 写了的开关盖过预设：
 //!
 //! - 开头（`markdown/head.rs`）：`read` 标题、时间段、模型、token 合计；`chat` 标题、时间段、token 估算；`agent` 一小段英文
 //!   事实。范围从中间切开的，`read`、`chat` 写一句省掉了几轮，`agent` 的 `context` 把检查点摘要放最前（`markdown/select.rs`）。
-//! - 角色的小标题一律英文（`User`、`Assistant`、`Tool`、`Subagent`）；`read` 的显示名、旁白照连接的语言（`core/export/…`），
-//!   `agent`、`chat` 写工具的真名。
+//! - 角色的小标题一律英文（`User`、`Assistant`、`Tool`、`Subagent`）；`read`、`chat` 的显示名、旁白照连接的语言
+//!   （`core/export/…`），`agent` 的旁白、占位一律英文（`markdown/agent.rs` 的常量，施工 SE-1 中下下）；`agent`、`chat` 写
+//!   工具的真名。
 //! - 思考折在 `<details>` 里（`agent`、`chat` 默认不带）；工具 `read` 写显示名和摘要、输出照她当时看到的，`agent` 写真名、
 //!   参数原文、结果截到头尾约 4000 字，`chat` 一行（`markdown/steps.rs`、`raw.rs`、`line.rs`）；要人确认的那一次、脚本里调的
-//!   工具、工具上挂的提问照各自的写法（`markdown/extras.rs`）；图片、附件写占位；子代理 `read`、`agent` 写交代和回报，
-//!   `chat` 只写回报；压缩照时间线放一条旁白，摘要折在下面。
+//!   工具、工具上挂的提问照各自的写法（`markdown/extras.rs`）；图片、附件写占位，`assets: files` 写成指向旁边文件夹的相对
+//!   链接（`markdown/files.rs`）；子代理 `read`、`agent` 写交代和回报，`chat` 只写回报；压缩照时间线放一条旁白，摘要折在下面。
+//! - `children: append`：读日志的一方把渲染进去的那几步派的子会话（[`Draft::children`]）一个个照同一套开关渲染（[`draft`]，
+//!   开头换成 `# Subagent <任务编号>: <标题>`），照任务编号接在后面，最后一起过一遍（[`finish`]）。
 //! - 不进的：撤掉的轮（`hidden`）、撤回的排队消息、撤销说明；注入的上下文、策略、系统提示词本来就不是条目。
 //! - 正文原样；没合上的代码块替它合上，代码块的围栏比里面最长的一串反引号长。家目录写成 `~`；配了的密钥换成
 //!   `[redacted: <名字>]`（`markdown/scrub.rs`）。
 
+mod agent;
 mod extras;
+mod files;
 mod head;
 mod line;
 mod notices;
@@ -33,11 +38,13 @@ mod text;
 use std::collections::BTreeMap;
 
 use miyu_kernel::estimate;
+use miyu_kernel::id::{JobId, SessionId};
 use miyu_kernel::origin::By;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
 use crate::entry::{Attachment, Body, Entry, User};
 use crate::words::{Texts, Words, say};
+pub use files::{Files, wanted as assets};
 pub use head::AGENT_NOTE;
 pub use options::{Options, Purpose, Range, Tools};
 pub use sources::{Context, Sources};
@@ -77,6 +84,30 @@ pub struct Document<'a> {
     pub offset: UtcOffset,
     /// 配了的密钥：名字、值。
     pub secrets: &'a [(&'a str, &'a str)],
+    /// 附在主会话后面的子会话（`children: append`）：开头换成子代理的小标题；主会话的是 `None`。
+    pub child: Option<&'a Child>,
+    /// `assets: files` 的附件文件夹：图片、附件写成指向它的相对链接；写占位的是 `None`。
+    pub files: Option<&'a Files>,
+}
+
+/// 一个派出去的子代理：派它那一步的结果里记的（[`Sources::jobs`]）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Child {
+    /// 任务编号：附在后面照它排（`j1`、`j1.1`、`j2`）。
+    pub job: JobId,
+    /// 子会话。
+    pub session: SessionId,
+    /// 派它时给的标题（`description`）。
+    pub title: String,
+}
+
+/// 一个会话渲染好、还没最后过一遍的（[`draft`]）：几个接起来交给 [`finish`]。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Draft {
+    /// Markdown，密钥、家目录、token 估算还没换。
+    pub text: String,
+    /// 写进去的那几步派的子代理，照任务编号；同一个子会话只列一次。
+    pub children: Vec<Child>,
 }
 
 /// 渲染好的。
@@ -88,21 +119,29 @@ pub struct Rendered {
     pub redacted: BTreeMap<String, usize>,
 }
 
-/// 照 `doc` 渲染：见模块的说明。
+/// 照 `doc` 渲染一个会话、最后过一遍：见模块的说明。
 #[must_use]
 pub fn render(doc: &Document<'_>) -> Rendered {
+    finish(&[draft(doc)], doc.secrets, doc.texts.home.as_deref())
+}
+
+/// 照 `doc` 渲染一个会话，还不换密钥、家目录、token 估算：主会话和附在后面的子会话各一份，接起来交给 [`finish`]。
+#[must_use]
+pub fn draft(doc: &Document<'_>) -> Draft {
     let say = Say {
         local: doc.texts.local.as_ref(),
         english: doc.texts.english.as_ref(),
+        agent: doc.options.purpose == Purpose::Agent,
     };
     let picked = select::select(doc);
     let mut out = Out::default();
     head::write(&mut out, doc, &picked, &say);
     let mut speaker = Speaker::Nobody;
-    for entry in picked.entries {
+    let mut children: Vec<Child> = Vec::new();
+    for entry in &picked.entries {
         speaker = match &entry.body {
             Body::User(user) => {
-                write_user(&mut out, user, &say);
+                write_user(&mut out, user, doc, &say);
                 Speaker::User
             }
             Body::Reply(reply) if reply.text.trim().is_empty() => speaker,
@@ -114,7 +153,7 @@ pub fn render(doc: &Document<'_>) -> Rendered {
             Body::Media(media) => {
                 assistant(&mut out, speaker);
                 let about = media.alt.as_deref().or(media.image.name.as_deref());
-                out.block(&placeholder(&media.image, about, &say));
+                out.block(&asset(&media.image, about, doc, &say));
                 Speaker::Assistant
             }
             Body::Thought(thought) if !doc.options.thinking || thought.text.trim().is_empty() => {
@@ -126,6 +165,17 @@ pub fn render(doc: &Document<'_>) -> Rendered {
                 Speaker::Assistant
             }
             Body::Tool(tool) => {
+                if let Some((session, title)) =
+                    tool.job.as_ref().and_then(|job| doc.sources.jobs.get(job))
+                    && let Some(job) = &tool.job
+                    && !children.iter().any(|child| child.session == *session)
+                {
+                    children.push(Child {
+                        job: job.clone(),
+                        session: session.clone(),
+                        title: title.clone(),
+                    });
+                }
                 assistant(&mut out, speaker);
                 steps::tool(&mut out, tool, doc, &say);
                 Speaker::Assistant
@@ -137,9 +187,20 @@ pub fn render(doc: &Document<'_>) -> Rendered {
             }
         };
     }
-    let (text, redacted) = scrub::redact(&out.finish(), doc.secrets);
+    children.sort_by(|a, b| a.job.cmp(&b.job));
+    Draft {
+        text: out.finish(),
+        children,
+    }
+}
+
+/// 接起来的几份最后过一遍：配了的密钥换掉、家目录写成 `~`、`chat` 的 token 估算换成数（整份的，连附在后面的）。
+#[must_use]
+pub fn finish(drafts: &[Draft], secrets: &[(&str, &str)], home: Option<&str>) -> Rendered {
+    let whole: Vec<&str> = drafts.iter().map(|draft| draft.text.as_str()).collect();
+    let (text, redacted) = scrub::redact(&whole.join("\n"), secrets);
     Rendered {
-        text: estimated(scrub::tilde(&text, doc.texts.home.as_deref())),
+        text: estimated(scrub::tilde(&text, home)),
         redacted,
     }
 }
@@ -182,7 +243,7 @@ fn assistant(out: &mut Out, speaker: Speaker) {
 }
 
 /// 一条消息：小标题照来处，正文原样，附件写占位。
-fn write_user(out: &mut Out, user: &User, say: &Say<'_>) {
+fn write_user(out: &mut Out, user: &User, doc: &Document<'_>, say: &Say<'_>) {
     out.block(&format!("## {}", who(user.from.as_ref())));
     if !user.text.trim().is_empty() {
         out.block(&prose(&user.text, false));
@@ -192,7 +253,7 @@ fn write_user(out: &mut Out, user: &User, say: &Say<'_>) {
         .iter()
         .map(|attachment| {
             let name = attachment.name.as_deref().or(attachment.path.as_deref());
-            format!("- {}", placeholder(attachment, name, say))
+            format!("- {}", asset(attachment, name, doc, say))
         })
         .collect();
     if !attached.is_empty() {
@@ -218,44 +279,72 @@ fn short(id: &str) -> &str {
     id.get(..8).unwrap_or(id)
 }
 
-/// 图片、附件的占位：名字（`about`）、图的宽高，都没有的只写是什么。
-fn placeholder(attachment: &Attachment, about: Option<&str>, say: &Say<'_>) -> String {
-    let kind = match attachment.kind.as_str() {
-        "image" => "image",
-        _ => "file",
-    };
+/// 一张图、一个附件：`assets: files` 取得到的写成链接（[`Files`]），别的写占位。说明是名字（`about`）、图的宽高。
+fn asset(
+    attachment: &Attachment,
+    about: Option<&str>,
+    doc: &Document<'_>,
+    say: &Say<'_>,
+) -> String {
+    let image = attachment.kind == "image";
+    let size = attachment.width.zip(attachment.height);
+    let name = attachment.name.as_deref().or(attachment.path.as_deref());
+    let link = doc.files.and_then(|files| {
+        let about = described(about, size);
+        files.link(
+            &attachment.blob,
+            image,
+            about,
+            (name, &attachment.media_type),
+        )
+    });
+    link.unwrap_or_else(|| placeholder(image, described(about, size), say))
+}
+
+/// 说明：名字、宽高，用 `, ` 隔开；都没有的是 `None`。
+fn described(about: Option<&str>, size: Option<(u32, u32)>) -> Option<String> {
     let mut parts: Vec<String> = about
         .map(text::one_line)
         .filter(|about| !about.is_empty())
         .into_iter()
         .collect();
-    if let (Some(width), Some(height)) = (attachment.width, attachment.height) {
+    if let Some((width, height)) = size {
         parts.push(format!("{width}×{height}"));
     }
-    match parts.is_empty() {
-        true => say.say(&format!("{kind}/bare"), &[]),
-        false => say.say(kind, &[("about", parts.join(", "))]),
+    (!parts.is_empty()).then(|| parts.join(", "))
+}
+
+/// 图片、附件的占位：有说明的写说明，没有的只写是什么。
+fn placeholder(image: bool, about: Option<String>, say: &Say<'_>) -> String {
+    let kind = if image { "image" } else { "file" };
+    match about {
+        Some(about) => say.say(kind, &[("about", about)]),
+        None => say.say(&format!("{kind}/bare"), &[]),
     }
 }
 
-/// 给人看的字：先照连接的语言，没有的照英文，都没有的写编号（资源装坏了也不至于空着）。
+/// 给人看的字：先照连接的语言，没有的照英文，都没有的写编号（资源装坏了也不至于空着）。`agent` 预设不照语言：先照
+/// `markdown/agent.rs` 的英文常量，没有的照英文那一份。
 pub(crate) struct Say<'a> {
     local: &'a dyn Words,
     english: &'a dyn Words,
+    /// `agent` 预设：一律英文。
+    agent: bool,
 }
 
 impl Say<'_> {
     /// `core/export/<key>` 照字段说一句。
     fn say(&self, key: &str, fields: &[(&str, String)]) -> String {
         let key = format!("{KEYS}/{key}");
-        say(self.local, &key, fields)
-            .or_else(|| say(self.english, &key, fields))
-            .unwrap_or(key)
+        self.view(&key, fields).unwrap_or(key)
     }
 
-    /// 内核那一份里别处的编号（`view/…`）照字段说一句；没有的是空的。
+    /// 内核那一份里的编号（`core/view/…`、`core/export/…`）照字段说一句；没有的是空的。
     fn view(&self, key: &str, fields: &[(&str, String)]) -> Option<String> {
-        say(self.local, key, fields).or_else(|| say(self.english, key, fields))
+        match self.agent {
+            true => agent::say(key, fields).or_else(|| say(self.english, key, fields)),
+            false => say(self.local, key, fields).or_else(|| say(self.english, key, fields)),
+        }
     }
 
     /// 数是 `count` 的一句：是 1 的编号多接 `/one`。

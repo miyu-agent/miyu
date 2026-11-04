@@ -81,6 +81,8 @@ fn agent_writes_the_approval_raw_and_chat_puts_everything_on_one_line() {
             options: Options::READ,
             offset: miyu_kernel::time::UtcOffset::from_minutes(0).expect("在范围里"),
             secrets: &[],
+            child: None,
+            files: None,
         })
         .text
     };
