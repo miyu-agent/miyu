@@ -58,6 +58,8 @@ pub(crate) struct Sessions {
     idle: std::time::Duration,
     /// 看空闲的任务起了没有：第一次往表里放会话时起。
     sweeping: std::sync::atomic::AtomicBool,
+    /// 封存了、报了退得下了的会话（施工 V-51，`sessions/idle.rs`）：看空闲的任务醒来当场问它们。
+    due: Arc<idle::Due>,
 }
 
 #[derive(Debug, Default)]

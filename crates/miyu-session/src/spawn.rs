@@ -30,6 +30,10 @@ pub trait SessionPort: Send + Sync {
     /// 不做。
     fn moved(&self, _session: SessionId) {}
 
+    /// 封存了的会话 `session` 没事了、退得下了（施工 V-51，`session/actor.md`「退下」）：会话表照它当场问一次退不退，不等
+    /// 隔一阵问的那一遍。只报一声：可能是在会话表的锁里放下把手时报的，不能等那把锁。默认什么都不做。
+    fn retirable(&self, _session: SessionId) {}
+
     /// 照 `child` 造一个子会话：`session.created` 落了盘、会话表里有了它才交回编号。
     fn create(&self, child: Child) -> Pending<'_, Result<SessionId, String>>;
 

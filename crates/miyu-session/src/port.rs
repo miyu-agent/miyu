@@ -403,6 +403,8 @@ pub(crate) enum Back {
         forced: bool,
         read: Result<crate::memory::Read, String>,
     },
+    /// 派出去抽的一次走完了（施工 V-51，`actor/extract.rs`）：抽取的账在那个任务里放下，只为叫醒 actor 照账看一眼退不退得下。
+    Extracted,
     /// 人叫她现在就整理（施工 R-7 补，`/dream`）读回来的：第几个闹钟；上次抽到哪、日志里的事件，读不成的是为什么；合完把结果
     /// 交回的那一头。
     DreamRead {

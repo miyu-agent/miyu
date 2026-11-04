@@ -247,6 +247,7 @@ impl Actor {
         // 拼历史、渲染、定怎么办挪进阻塞线程（施工 PERF-4）：大会话上要几毫秒，不占会话；定好了直接派出去。用的都是这一刻
         // 拿好的，同原来在 actor 上一口气做完的一样。
         let (runtime, span) = (tokio::runtime::Handle::current(), tracing::Span::current());
+        let backs = self.backs.clone();
         tokio::task::spawn_blocking(move || {
             let plan = planned(
                 read,
@@ -261,7 +262,7 @@ impl Actor {
                     name: name.as_deref(),
                 },
             );
-            runtime.spawn(job.run(plan).instrument(span));
+            runtime.spawn(woken(job, plan, backs).instrument(span));
         });
     }
 }
@@ -366,8 +367,19 @@ impl Actor {
             extractor: Arc::clone(extractor),
             again: Box::new(|| {}),
         };
-        tokio::spawn(job.run(plan).in_current_span());
+        tokio::spawn(woken(job, plan, self.backs.clone()).in_current_span());
     }
+}
+
+/// 跑派出去抽的一次，跑完叫醒 actor（施工 V-51，[`Back::Extracted`]）：抽取的账（`Extractor`）在这个任务里放下，actor 不知道；
+/// 封存了的会话照它当场看退不退得下。跑的、记的、交给模型的都是 `job.run` 原样。
+async fn woken(
+    job: Job,
+    plan: crate::memory::Plan,
+    backs: tokio::sync::mpsc::UnboundedSender<Back>,
+) {
+    job.run(plan).await;
+    answer_back(&backs, Back::Extracted);
 }
 
 /// 在阻塞线程里读这一段（施工 E-5 补）：上次抽到哪（不早于 `floor`），从 `landings` 里最后一处在它以前的读起，没有的读一遍

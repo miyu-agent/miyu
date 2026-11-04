@@ -129,6 +129,8 @@ pub(crate) struct Actor {
     goal_run: goal::GoalRun,
     /// 最后一次有动静：收件箱、执行器送回来一封（会话表问退不退的不算），空闲够不够照它算（施工 V-2 再补，`life.rs`）。
     quiet: Instant,
+    /// 封存了的退得下了的那面旗，和 `Handle` 共用（施工 V-51，`handle/retire.rs`）：每办完一封照账立起、放下（`life.rs`）。
+    bell: Arc<crate::handle::Bell>,
 }
 
 /// 会话停了：写不进去。
@@ -184,6 +186,7 @@ impl Actor {
             calls: BTreeMap::new(),
             asides: Vec::new(),
             clock,
+            bell: crate::handle::Bell::new(tools.agents()),
             tools,
             jobs,
             guard: Arc::new(guard),
@@ -212,21 +215,6 @@ impl Actor {
         self.reporter = Some(reporter);
     }
 
-    /// 有没有在跑的回合：交给 `Handle` 的那一份。
-    pub(crate) fn busy(&self) -> Arc<AtomicBool> {
-        Arc::clone(&self.busy)
-    }
-
-    /// 给头看的限额和模型：交给 `Handle` 的那一份（施工 8-9、8-10）。
-    pub(crate) fn shown(&self) -> Arc<Mutex<Shown>> {
-        Arc::clone(&self.shown)
-    }
-
-    /// 这时有没有至少一个头订阅着：交给 `Handle` 的那一份（施工 C-5）。
-    pub(crate) fn watched(&self) -> Arc<AtomicBool> {
-        Arc::clone(&self.watched)
-    }
-
     /// 命令 `id` 在等回应：造会话的那一个，在 actor 跑起来之前就在等。
     pub(crate) fn wait_for(&mut self, id: CommandId, reply: oneshot::Sender<Outcome>, hold: bool) {
         self.replies.entry(id).or_default().push_back((reply, hold));
@@ -238,6 +226,8 @@ impl Actor {
             return;
         }
         loop {
+            // 封存了的没事了就告诉会话表来问退不退（施工 V-51，`life.rs`）。
+            self.offer_retire();
             // 长期目标的续轮（施工 X-7，`goal.rs`）：每办完一封都回到这里看一眼，收件箱空了才开（人优先）。只在 `drain` 收尾时看
             // 不够：收件箱里正好有一封只要答一下的信（头要会话状态）时不开，办那一封又不经过 `drain`，续轮就卡住了。
             if let Some(input) = self.goal_round() {

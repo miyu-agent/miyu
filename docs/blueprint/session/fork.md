@@ -43,7 +43,7 @@
 
 **分叉读好的底子交给紧接着的载入**（施工 V-39 下，2026-11-03 项目主人定，V-39 设计问题 3、4）：`session.fork` 写完第一条马上载入支线，这时分叉那一遍刚把同一截底子喂完。分叉喂底子时顺手照到分叉点的每一条记下她看过的文件、回合索引要认的底子（`Priming::base`），写完第一条连同喂好的 `BaseFeed` 交回（`miyu_session::fork_handing` 交回 `ForkedBase`），端点经会话表交给这一次载入（`Sessions::get_forked` → `Load::forked`）：载入照它接着走、不读父会话，回合索引接上时照它认好的、后台也不读父会话。只交这一次：交的东西只在 `session.fork` 这一个请求的栈上从分叉递到载入，不放进会话表、不落盘；对不上的（不是这条支线、父会话、分叉点）不用、照旧自己读；支线已经在会话表里的（别的路先载入了）、载入不成的跟着放掉。以后再载入这条支线（核心重启、退下以后再用）、别的会话照旧：载入自己读底子，回合索引后台读底子（`memory.md` 第一条第 6 款）。fork 子代理（施工 A-F 中）不交：它照子代理不接记忆，造它的会话表那一头照旧另读。底子到分叉点为止不变（父会话只往后写），喂的是同样的事件、同样的代码，所以载入出来的和自己读的一样。
 
-**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（接入QQ 仓库的 `chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；开着记忆的不等抽取的闹钟，封存时闹钟当场响（施工 V-23，`memory.md` 第六条第 1 款）；日志留在磁盘上，再用到照常载入，载入的认得封存。
+**封存**（C-8 下）：跑满 `seal_after` 轮、这一轮结束（`turn.ended`）、没有接着开的，同一批记一条 `session.sealed`（订阅着的照常收到，桥照它从投影去掉、退订）；崩了以后载入时收尾的那一轮也照这一条。数轮照日志数（`miyu-kernel` 的 `session/seal.rs`）：有触发的一轮开了算一轮；接着开的，`turn.started` 的 `trigger` 落在上一轮的开头和结尾之间、`triggers` 是空的，不另算；手动压缩、清空单开的那一轮没有触发，不算。之后改对话的命令拒 `session_sealed`：`session.send`（谁发的都拒，别的会话、子代理的话也是）、`session.respond`、`session.note`、`events.append`、斜杠命令、重做、压缩、清空、撤销、恢复、换模型、切权限、换工作区；改标题置顶、打断、回答、回顾照收。封存以后到的回报（后台命令、子代理结束）、空了的通知照记，不叫醒她。这一轮还在跑时 `session.send` 来的，照「排队的消息」并进这一轮（接入QQ 仓库的 `chat.md` 分派的「并进支线」）。封存了的会话没人订阅、没事了，问空闲时当场退下，不等闲够（`session/actor.md`「退下」）；也不等会话表隔一阵（最多 3 分钟）来问：判完抽取（该抽的抽完、记进记忆日志，轮数不够的当场判下）、没人订阅、没有别的事了，自己报会话表当场来问（施工 V-51）；开着记忆的不等抽取的闹钟，封存时闹钟当场响（施工 V-23，`memory.md` 第六条第 1 款）；日志留在磁盘上，再用到照常载入，载入的认得封存。
 
 **fork 子代理**（施工 A-F 上起，2026-10-24 项目主人定「从当前上下文分出去」、核心主会话定形状，`agents.md`「fork 子代理」）：她调 `subagent` 写 `fork` 的，子会话从父会话这一轮派它的那一步分叉，不退到这一轮开始之前：她这一轮读过、查到的，子代理都看得到。
 
@@ -77,7 +77,7 @@
 | `crates/miyu-session/src/open/load.rs`、`store.rs` | 载入时认 `forked`、读父会话的日志当底子；读回日志（撤销读回到分叉点以前）接上底子；子代理那一套照主会话办 |
 | `crates/miyu-endpoint/src/forking.rs` | 协议方法 `session.fork` |
 | `crates/miyu-kernel/src/session/seal.rs`、`ledger/seal.rs`（C-8 下） | 数轮、封存、封存了收哪些命令；账本的封存规矩 |
-| `crates/miyu-session/src/actor/life.rs` 的 `retire`（C-8 下） | 封存了的没事了就退下，不等闲够 |
+| `crates/miyu-session/src/actor/life.rs` 的 `retire`（C-8 下）、`offer_retire`（施工 V-51） | 封存了的没事了就退下，不等闲够；没事了就报会话表来问，不等它隔一阵来问 |
 
 ### 怎么走
 
@@ -118,6 +118,7 @@
 | `crates/miyu-kernel/src/ledger/tests/seal.rs`（C-8 下） | 封存只在两轮之间、只记一次；封存以后不再开一轮 |
 | `crates/miyu-session/tests/retire.rs` 的 `a_sealed_branch_retires_without_waiting_to_be_idle_long_enough`（C-8 下） | 封存了的支线没事了就退下 |
 | `crates/miyu-session/tests/retire.rs` 的 `a_sealed_branch_with_memory_does_not_wait_for_the_alarm`（施工 V-23） | 开着记忆、闲一小时才抽的支线封存了照样马上退下，一轮不够抽的不发请求 |
+| `crates/miyu-session/tests/retire_sealed.rs`、`crates/miyu-endpoint/tests/retire.rs` 的 `a_sealed_branch_leaves_as_soon_as_it_is_done_and_reads_back_the_same`（施工 V-51） | 判完就报会话表、退订了当场从表里拿掉；订阅着、抽取在路上的不报；再订阅载入回来补发的一样 |
 
 ### 施工拆分
 

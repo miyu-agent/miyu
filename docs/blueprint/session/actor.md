@@ -17,12 +17,12 @@
 | `crates/miyu-session/src/actor/watchers.rs` | 「空了告诉我」被等的这一边：谁在等这个会话空下来，每送完一批看空没空，空了发通知（施工 C-6，下面「被等的名单」） |
 | `crates/miyu-session/src/peers.rs` | 「空了告诉我」等的这一边：照内核在等的去订、计时，到点、不在了交回（施工 C-6，`session/tools.md`「订、计时、再订」） |
 | `crates/miyu-session/src/actor/model.rs` | 请求模型：交给端口、叫停、说完了记一行；回顾的请求也在这里（施工 3-8 四补）；替它看图交给端口（施工 8-17） |
-| `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条） |
+| `crates/miyu-session/src/actor/life.rs` | 起 actor 的任务、看着它，停了以后把堆还给系统；闲够了退下：照自己的账答会话表（施工 V-2 再补从 `actor.rs` 挪出来，那个文件到了行数上限；第 9 条）；封存了的每办完一封照这本账看一次，退得下了报会话表（`offer_retire`，施工 V-51）；交给 `Handle` 的几份（`busy`、`shown`、`watched`、`leaving`，施工 V-51 从 `actor.rs` 挪来，同样的原因） |
 | `crates/miyu-session/src/actor/stop.rs` | 有计划地停下：要重启了、后台命令记 `restarted`、落了盘再整组杀（施工 7-3） |
 | `crates/miyu-session/src/actor/store.rs` | 写盘，哪一批要同步（`must_sync`，施工 V-18）；撤掉压缩时读回日志（施工 6-9） |
 | `crates/miyu-session/src/handle.rs` | `Handle`：发命令、订阅、停下；推送 |
 | `crates/miyu-session/src/onlooker.rs` | 看着落盘的（施工 V-44）：`Onlooker`，`Handle::onlooker` 装上、取回，actor 每写进去一批交给它（第 5 条第 12 款） |
-| `crates/miyu-session/src/handle/retire.rs` | 问退不退：除了这一个没有别的把手（`alone`）、闲够了没有（`retire`，等一秒不答的叫它别答了，施工 V-2 再补） |
+| `crates/miyu-session/src/handle/retire.rs` | 问退不退：除了这一个没有别的把手（`alone`）、闲够了没有（`retire`，等一秒不答的叫它别答了，施工 V-2 再补）；封存了的退得下了的那面旗（`Bell`，actor 和每个把手共用；`Leaving` 是把手拿的那一份，放下时旗立着的再报一次，施工 V-51） |
 | `crates/miyu-session/src/handle/subscription.rs` | 订阅：掉了队、会话停了就断；放下时告诉 actor（施工 7-9；施工 R-3 补从 `handle.rs` 挪出来：那边放不下了） |
 | `crates/miyu-session/src/backlog.rs` | 订阅时要补发的那一截：补到哪一条、在阻塞线程里读出来（施工 3-8 六补），照序号读、读的时候写成要推的行（施工 V-37 下） |
 | `crates/miyu-session/src/config.rs` | 会话从哪取配置（`ConfigSource`、`Configs`、`fixed`），回合开始时冻结的一份（`TurnConfig`）；造会话、载入时先取一份（施工 8-4）；一次性调用照端点交的一份冻结（`Turn::new`，施工 8-20） |
@@ -271,7 +271,7 @@
 | 有计划地停下（`Handle::stop`） | 先把这个会话在跑的后台命令记成报了、各写一条 `restarted`（`session/tools.md` 第 5 条第 4 款）；收件箱里已经到了的后台命令结束拿出来，别的回报不要了。依次送进「要重启了」、这几条结束（排在后面：内核这时只记下、不开轮，`kernel/session.md`「有计划的重启」）、那几条 `restarted`；都落了盘，这个会话的后台命令整组杀掉，记一行 `stopped`，回一声，actor 退出。再载入时被打断的那一轮接着干（施工 7-3） |
 | 删之前停下（`Handle::delete`、`Handle::discard`，施工 3-8 三补） | `delete` 先问内核（`deletable()`）：删不了的交回原因，照常收下一封。删得了的、`discard` 不问的：这个会话的后台命令不再收新的，在跑的整组杀掉、不记回报（不像有计划地停下那样记 `restarted`：会话要删了，没人再看它的日志）；什么都不再写，关上日志的文件，记一行 `stopped for deletion`，回一声，actor 退出。日志关了才回：会话表一收到就挪会话目录（`protocol.md` 的 `session.delete`），Windows 上开着的文件挪不走。在跑的回合不收尾：路上的请求、在跑的工具随 actor 退出叫停、掐掉 |
 | 拿着 `Handle` 的都放下了 | 记一行 `closed`，actor 退出 |
-| 闲够了退下（`Handle::retire`，施工 V-2 再补，`actor/life.rs`） | 会话表问闲够 `idle` 了没有（`protocol.md`「会话表」）。actor 照自己的账答：还有事的答 `Kept`——内核不空（有回合、在重启、在等子代理），有头订阅着，有等着回应的命令、在路上的请求或辅助请求（起标题这类），派出去还没回报、结束了还没落盘的任务（名册、任务表里还有它的），记忆的闹钟上着或者一次抽取在路上（`memory.md` 第六条），有会话等它空下来、它自己在等别的会话，收件箱、回报的路里还有没办的；别的都空着、最后一次有动静（收件箱、回报到的那一刻，这一问不算）离现在不到 `idle` 的答 `Later`，带还差多久；都没有、闲够了的答 `Retired`，记一行 `retired`，actor 退出；长期目标跑着的也答还有事（施工 X-7，`actor/goal.rs`：退下再载入，目标就停了）；封存了的分叉（施工 C-8 下，`session/fork.md`「封存」）不会再开轮，没事了就答 `Retired`，不等闲够。回答交不出去的（会话表等了一秒不等了）不退。退下的会话磁盘上什么都没变，下次用到照载入走 |
+| 闲够了退下（`Handle::retire`，施工 V-2 再补，`actor/life.rs`） | 会话表问闲够 `idle` 了没有（`protocol.md`「会话表」）。actor 照自己的账答：还有事的答 `Kept`——内核不空（有回合、在重启、在等子代理），有头订阅着，有等着回应的命令、在路上的请求或辅助请求（起标题这类），派出去还没回报、结束了还没落盘的任务（名册、任务表里还有它的），记忆的闹钟上着或者一次抽取在路上（`memory.md` 第六条），有会话等它空下来、它自己在等别的会话，收件箱、回报的路里还有没办的；别的都空着、最后一次有动静（收件箱、回报到的那一刻，这一问不算）离现在不到 `idle` 的答 `Later`，带还差多久；都没有、闲够了的答 `Retired`，记一行 `retired`，actor 退出；长期目标跑着的也答还有事（施工 X-7，`actor/goal.rs`：退下再载入，目标就停了）；封存了的分叉（施工 C-8 下，`session/fork.md`「封存」）不会再开轮，没事了就答 `Retired`，不等闲够。回答交不出去的（会话表等了一秒不等了）不退。退下的会话磁盘上什么都没变，下次用到照载入走。封存了的不等会话表隔一阵来问（施工 V-51）：actor 每办完一封（收件箱、回报、后台同步、派出去抽的一次跑完了的那一声 `Back::Extracted`）照上面这同一本账看一次，没事了立起和把手共用的旗（`handle/retire.rs` 的 `Bell`），刚立起来的经端口报会话表（`SessionPort::retirable`），又有事了放下；会话表来问时放下（没退的下一次看时再立起、再报）；旗立着时放下一个把手也报一次（会话表上次问时它还拿着）。来问、退不退照旧：会话表看回合、订阅、别的把手，actor 照账答；没封存的不看旗 |
 | `goal` 工具交来的（施工 X-8 上，`actor/goal/asked.rs`，`tools/goal.md`） | 这次调用不在跑、叫它停过的不理（口子丢掉）。看的照会话状态当场答：现在的目标、这次调用在不在续轮开的那一轮里（续轮的账，`actor/goal.rs`）。报卡住的，续轮开的那一轮里、目标跑着、开过的轮数不到 3、这一次运行里人没插过话的当场拒（施工 X-9：人说过话、答过她的题的照记在续轮的账里，设下、接着跑时重新算）。别的（设、报完成、报卡住）交内核 `Goal` 命令：编号 `goal-<调用编号>`（内核照编号只生效一次），`by` 是这次调用；记下等这个编号的回应（同头发来的命令），把等的口子交回端口，内核在这一批里回应 |
 | 写不进去、写盘的线程 panic 了 | 第 5 条 |
 | actor 自己 panic 了（内核的 bug、端口的 bug） | 看着它的任务记一行 `panicked, stopped`，别的会话照常 |
@@ -393,7 +393,8 @@ actor 退出以后：等着回应的命令、要订阅的、要停下的，都�
 | `crates/miyu-session/tests/watch.rs`（施工 C-6） | 被等的名单：订进来时已经空着不当场发、等它下一次忙完才发（2026-10-01 改）、起算时刻不晚于上一次忙完的时刻的照样当场发、正忙时订了忙完才发（编号、`by`、带的那一行）、同一个会话只记一个、子代理没报完不发、报完被叫醒的那一轮做完了才发；等的这一边见 `session/tools.md`「订、计时、再订」。真核心见 `crates/miyu-endpoint/tests/watch.rs`（被重启打断的不算空：停的时候不发，再起来做完才发） |
 | `crates/miyu-session/tests/workplace.rs`（施工 V-2 三补） | 照日志里最后一次记下的挑：挑法拿到的是记下的那一个、只挑一次，会话在挑定的目录里，加进来的目录照记下的 |
 | `crates/miyu-session/tests/retire.rs`（施工 V-2 再补） | 闲够了退下：别的都空着的答还差多久，从最后一封信起算；闲够了退下，再交命令是「会话停了」，载入回来接着用；有头订阅着、派出去的后台命令没回报、起标题的请求在路上、有会话等它空下来、它在等别的会话、记忆的闹钟上着的，一直答还有事（假的会话表在 `tests/support/table.rs`）；封存了的支线没事了就退下，不等闲够（施工 C-8 下） |
-| `crates/miyu-endpoint/tests/retire.rs`、`src/sessions/tests.rs`（施工 V-2 再补） | 真核心走一遍：没人订阅的闲够了从表里拿掉、再说话载入回来，核心重启以后先载入的也照样退；订阅着的不退、放下以后退；正在办的请求拿着把手的不退（`protocol.md`「会话表」第 9 条） |
+| `crates/miyu-session/tests/retire_sealed.rs`（施工 V-51） | 封存了的支线判完就报会话表：一轮不够抽的当场报、问了就退；订阅着的不报，放下以后报；报过以后放下一个把手再报一次，退下以后不再报；两轮够抽的抽取在路上不报、问了答还有事（中间支线又收一封、主会话又分出一条跑完），抽完、抽到哪记进记忆日志以后才报、退下；抽取失败不当场重试，账放下了就报（假的会话表记下每一次报） |
+| `crates/miyu-endpoint/tests/retire.rs`、`src/sessions/tests.rs`（施工 V-2 再补） | 真核心走一遍：没人订阅的闲够了从表里拿掉、再说话载入回来，核心重启以后先载入的也照样退；订阅着的不退、放下以后退；正在办的请求拿着把手的不退（`protocol.md`「会话表」第 9 条）；封存了的支线（施工 V-51）会话表隔一小时才问，跑完一轮、退订当场从表里拿掉，再订阅从头补发载入回来、补发的和退下以前收到的逐字一样，再退订又当场退下 |
 | `crates/miyu-session/tests/delete.rs`（施工 3-8 三补） | 删之前停下：空闲的，后台命令回之前整组杀掉、不记回报，日志一条不多，回了以后连打断都收不到；有回合在进行的说删不了、会话照常、打断以后删得了；`discard` 停下停在请求上的会话，后台命令杀掉、不记，那一轮不收尾 |
 | `crates/miyu-endpoint/tests/delete.rs`、`delete_children.rs`（施工 3-8 三补） | 真核心走一遍：目录挪得走；子会话不问忙不忙一起停（`protocol.md`「守着它的」） |
 | `crates/miyu-session/tests/jobs.rs`（施工 7-3） | 有计划地停下先记 `restarted`、杀的时候已经落了盘；没人拿着了停下的，整组杀掉不记、再载入补 `aborted`（`session/tools.md`「守着它的」） |

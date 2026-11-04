@@ -4,14 +4,20 @@
 //!
 //! 拿着锁问：这一刻谁也拿不到新的把手，退下和再载入不会同时有两个写者。下一次什么时候问：差得最少的那一个还差多久；都没得
 //! 问的，过 `idle` 再问（这一刻还有事的，最早也要再闲 `idle` 才退得下）。
+//!
+//! 封存了的会话退得下了自己报一声（施工 V-51，`SessionPort::retirable`）：任务当场醒来，只问报了的那几个，问法同上（没有回合、
+//! 没人订阅、没有别的把手的才问，actor 照账答）；隔一阵问一遍的照旧按原来的点。
 
-use std::sync::Arc;
+use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, PoisonError};
 use std::time::Duration;
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
+use tokio::time::Instant;
 
-use miyu_session::Retire;
+use miyu_kernel::id::SessionId;
+use miyu_session::{Handle, Retire, Stopped};
 
 use super::{Open, Sessions};
 use crate::Core;
@@ -35,7 +41,18 @@ impl Sessions {
             open: Mutex::new(Open::default()),
             idle,
             sweeping: AtomicBool::new(false),
+            due: Arc::default(),
         }
+    }
+
+    /// 封存了的会话 `id` 报它退得下了（施工 V-51）：记下、叫醒看空闲的任务。不拿表的锁：可能是在表的锁里放下把手时报的。
+    pub(crate) fn retirable(&self, id: SessionId) {
+        self.due
+            .ids
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(id);
+        self.due.rung.notify_one();
     }
 
     /// 起看空闲的任务（起过的不再起）：只拿着核心的弱引用，核心放下了就停。
@@ -43,15 +60,22 @@ impl Sessions {
         if self.sweeping.swap(true, Ordering::AcqRel) {
             return;
         }
-        let (core, idle) = (Arc::downgrade(core), self.idle);
+        let (core, idle, due) = (Arc::downgrade(core), self.idle, Arc::clone(&self.due));
         tokio::spawn(async move {
-            let mut wait = idle;
+            let mut at = Instant::now() + idle;
             loop {
-                tokio::time::sleep(wait).await;
+                let rung = tokio::select! {
+                    () = tokio::time::sleep_until(at) => false,
+                    () = due.rung.notified() => true,
+                };
                 let Some(core) = core.upgrade() else {
                     return;
                 };
-                wait = core.sessions.retire_idle().await.max(LEAST);
+                if !rung {
+                    at = Instant::now() + core.sessions.retire_idle().await.max(LEAST);
+                } else if let Some(left) = core.sessions.retire_due().await {
+                    at = at.min(Instant::now() + left.max(LEAST));
+                }
             }
         });
     }
@@ -62,14 +86,10 @@ impl Sessions {
         let mut next = self.idle;
         let mut gone = Vec::new();
         for (id, running) in &open.running {
-            let handle = &running.handle;
-            if handle.busy() || handle.watched() || !handle.alone() {
-                continue;
-            }
-            match handle.retire(self.idle).await {
-                Ok(Retire::Retired) | Err(_) => gone.push(id.clone()),
-                Ok(Retire::Later(left)) => next = next.min(left),
-                Ok(Retire::Kept) => {}
+            match ask(&running.handle, self.idle).await {
+                Some(Ok(Retire::Retired) | Err(_)) => gone.push(id.clone()),
+                Some(Ok(Retire::Later(left))) => next = next.min(left),
+                Some(Ok(Retire::Kept)) | None => {}
             }
         }
         for id in gone {
@@ -77,6 +97,49 @@ impl Sessions {
         }
         next
     }
+
+    /// 只问报了退得下的那几个（施工 V-51）：退下了的、停了的拿掉；不在表里的（已经退下、停了）不管。没问成的（有回合、有人
+    /// 订阅、有别的把手、答了还有事）不再记着：等它们退得下的时候 actor、放下的把手会再报。交回有答了还差多久的，最少的那个。
+    async fn retire_due(&self) -> Option<Duration> {
+        let due = std::mem::take(&mut *self.due.ids.lock().unwrap_or_else(PoisonError::into_inner));
+        if due.is_empty() {
+            return None;
+        }
+        let mut open = self.open.lock().await;
+        let mut next: Option<Duration> = None;
+        let mut gone = Vec::new();
+        for id in due {
+            let Some(running) = open.running.get(&id) else {
+                continue;
+            };
+            match ask(&running.handle, self.idle).await {
+                Some(Ok(Retire::Retired) | Err(_)) => gone.push(id),
+                Some(Ok(Retire::Later(left))) => {
+                    next = Some(next.map_or(left, |next| next.min(left)))
+                }
+                Some(Ok(Retire::Kept)) | None => {}
+            }
+        }
+        for id in gone {
+            open.running.remove(&id);
+        }
+        next
+    }
+}
+
+/// 报了退得下的会话（施工 V-51）：哪几个，和叫醒看空闲的任务的那一声（醒之前报了几次都只醒一次，醒着的时候报的留到下一次）。
+#[derive(Debug, Default)]
+pub(super) struct Due {
+    ids: std::sync::Mutex<BTreeSet<SessionId>>,
+    rung: Notify,
+}
+
+/// 问一个会话退不退：有回合在跑、有人订阅、除了表里这一个还有别的把手的不问（`None`）。
+async fn ask(handle: &Handle, idle: Duration) -> Option<Result<Retire, Stopped>> {
+    if handle.busy() || handle.watched() || !handle.alone() {
+        return None;
+    }
+    Some(handle.retire(idle).await)
 }
 
 impl Core {

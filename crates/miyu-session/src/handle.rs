@@ -30,6 +30,7 @@ use crate::jobs::Unreadable;
 use crate::shown::{Next, Shown};
 pub(crate) use dream::Dream;
 pub use retire::Retire;
+pub(crate) use retire::{Bell, Leaving};
 use subscription::Watching;
 pub use subscription::{Ended, Subscription};
 
@@ -68,6 +69,8 @@ pub struct Handle {
     confined: bool,
     /// 看着落盘的（施工 V-44，[`crate::Onlooker`]），和 actor 共用。
     onlookers: crate::onlooker::Onlookers,
+    /// 封存了的退得下了的那面旗（施工 V-51，`retire.rs`），和 actor 共用。放在最后：先放下收件箱的那一头再告诉会话表。
+    _leaving: Leaving,
 }
 
 /// 发给 actor 的。
@@ -178,6 +181,7 @@ impl Handle {
         oneshot: bool,
         watched: Arc<AtomicBool>,
         shown: Arc<Mutex<Shown>>,
+        leaving: Leaving,
     ) -> Handle {
         let Ids {
             id,
@@ -200,6 +204,7 @@ impl Handle {
             prefix: Arc::default(),
             confined: false,
             onlookers: Arc::default(),
+            _leaving: leaving,
         }
     }
 

@@ -29,7 +29,7 @@
 | `crates/miyu-tool/src/agents.rs` | 交给 `subagent` 的端口：派子代理（`AgentPort`，施工 7-5，`tools/interface.md`）；那件工具现在的、以前的名字（施工 7-5 再补） |
 | `crates/miyu-session/src/jobs.rs`、`jobs/` | 执行器的任务表：后台进程活过那一次调用，输出落盘，结束了告诉会话，有计划地停下先记 `restarted` 再整组杀（施工 7-3）；派出去的任务照日志记着（`roster.rs`），列出、读、停（`query.rs`、`stop.rs`），子代理在做什么照它的日志看（`peek.rs`）（施工 7-4） |
 | `crates/miyu-session/src/actor/halt.rs` | 人用 `job.stop` 停一个、父会话停下这个会话时连它派的全停（施工 7-4）；撤销停掉那几轮派出去的（`undo_jobs`）、人删了的子代理当场记回报（`Halt::Deleted`）（施工 7-8） |
-| `crates/miyu-session/src/spawn.rs` | 造子会话、给别的会话发命令的端口（`SessionPort`），会话表造会话、载入时交进来（施工 7-5）；停下子会话、看它在做什么（施工 7-4） |
+| `crates/miyu-session/src/spawn.rs` | 造子会话、给别的会话发命令的端口（`SessionPort`），会话表造会话、载入时交进来（施工 7-5）；停下子会话、看它在做什么（施工 7-4）；封存了的报退得下（`retirable`，施工 V-51，`session/actor.md` 第 9 条） |
 | `crates/miyu-session/src/agents/spawner.rs`、`crates/miyu-endpoint/src/sessions/forked.rs`、`crates/miyu-store/src/resources/fork.rs`（施工 A-F 中） | fork 子代理：执行器读外壳、占位那一句，经会话表的端口 `SessionPort::fork` 分叉；会话表照父会话落了盘的日志写头几条、载入 |
 | `crates/miyu-session/src/agents.rs` | 执行器派子代理：照父会话填好子会话，经 `SessionPort` 造出来、送交代（施工 7-5，`session/tools.md`「派子代理」） |
 | `crates/miyu-session/src/report.rs` | 执行器交回报：补上任务编号、子会话，经 `SessionPort` 交给父会话；父会话载入以后叫起还没回报的子会话（施工 7-6） |

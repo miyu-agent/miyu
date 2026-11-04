@@ -216,7 +216,8 @@ async fn a_write_that_fails_stops_the_session() {
         venue: miyu_kernel::id::VenueId::parse("local").expect("合写法"),
         workspace: std::env::temp_dir().join("miyu-no-workspace"),
     };
-    let handle = Handle::new(ids, inbox, busy, false, watched, shown);
+    let leaving = crate::handle::Leaving::none();
+    let handle = Handle::new(ids, inbox, busy, false, watched, shown, leaving);
     assert!(!handle.busy(), "刚造出来，没有回合");
     let first = within(
         "第一句的回应",

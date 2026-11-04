@@ -5,7 +5,8 @@
 //! 等着回应的命令、在路上的请求、派出去还没回报或者结束了还没落盘的任务、记忆的闹钟、它在等的和等它空下来的会话，收件箱、
 //! 回报的路里还有没有没办的。都没有、闲够了的答「退下了」就退出；回答交不出去的（会话表不等了）不退。
 
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tokio::sync::oneshot;
@@ -17,7 +18,8 @@ use miyu_kernel::session::Action;
 use super::Actor;
 use super::mail::Mail;
 use crate::TARGET;
-use crate::handle::Retire;
+use crate::handle::{Leaving, Retire};
+use crate::shown::Shown;
 
 /// 会话的 span：开在 `ERROR` 级。span 也照级别筛，开在 `INFO` 的话，调到 `WARN` 它就被筛掉了，底下的
 /// 行就没了会话编号（`miyu-log` 的说明，施工 3-7 上）。
@@ -47,9 +49,39 @@ pub(crate) fn spawn(actor: Actor, first: Vec<Action>, span: tracing::Span) {
 }
 
 impl Actor {
+    /// 有没有在跑的回合：交给 `Handle` 的那一份（施工 V-51 从 `actor.rs` 挪来，那个文件到了行数上限）。
+    pub(crate) fn busy(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.busy)
+    }
+
+    /// 给头看的限额和模型：交给 `Handle` 的那一份（施工 8-9、8-10）。
+    pub(crate) fn shown(&self) -> Arc<Mutex<Shown>> {
+        Arc::clone(&self.shown)
+    }
+
+    /// 这时有没有至少一个头订阅着：交给 `Handle` 的那一份（施工 C-5）。
+    pub(crate) fn watched(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.watched)
+    }
+
+    /// 封存了的退得下了的那面旗：交给 `Handle` 的那一份（施工 V-51）。
+    pub(crate) fn leaving(&self) -> Leaving {
+        Leaving::of(&self.bell)
+    }
+
+    /// 每办完一封看一次（施工 V-51）：封存了的、照 [`Actor::occupied`] 没事了，立起旗告诉会话表来问，不等它隔一阵来问（最多
+    /// 3 分钟）；又有事了放下。来不来问、问了退不退照旧：会话表看有没有回合、有没有人订阅、有没有别的把手，actor 照这同一本账答。
+    /// 没封存的不看：闲够了才退，照会话表隔一阵问。
+    pub(super) fn offer_retire(&self) {
+        if self.session.sealed() {
+            self.bell.offer(!self.occupied());
+        }
+    }
+
     /// 会话表问闲够 `idle` 了没有：照自己的账答，答了「退下了」的交回 [`Mail::Retired`]，actor 退出。封存了的（施工 C-8 下）
-    /// 没事了就退，不等闲够：不会再开轮。
+    /// 没事了就退，不等闲够：不会再开轮。问过就放下旗（施工 V-51）：没退的，下一次看时照账再立起来。
     pub(super) fn retire(&mut self, idle: Duration, reply: oneshot::Sender<Retire>) -> Mail {
+        self.bell.lower();
         let answer = match self.occupied() {
             true => Retire::Kept,
             false if self.session.sealed() => Retire::Retired,

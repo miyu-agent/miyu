@@ -30,6 +30,10 @@ impl Actor {
 
     /// 执行器送回来的，照 actor 的时钟记下到的时刻，写成内核的输入；已经不要了的工具回报，不理。
     pub(super) fn back(&mut self, back: Back) -> Option<Input> {
+        // 一次抽取走完了（施工 V-51）：只叫醒 actor 看一眼退不退得下（`life.rs`），不进内核，也不算一次动静（闲多久照旧）。
+        if matches!(back, Back::Extracted) {
+            return None;
+        }
         self.quiet = std::time::Instant::now();
         let at = self.clock.now();
         Some(match back {
@@ -70,6 +74,7 @@ impl Actor {
                 self.extract_read(generation, forced, read);
                 return None;
             }
+            Back::Extracted => return None,
             // 等的会话等不到了（施工 C-6，`crate::peers`）：内核照账本还在等、确实到了点的才记。
             Back::WatchEnded { session, reason } => Input::WatchEnded {
                 at,

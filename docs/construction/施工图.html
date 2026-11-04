@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1044</b><span>/ 1053 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1045</b><span>/ 1054 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">V-49</b><span>最近一步（V-49 history 只解要的种类）</span></li>
+    <li><b class="mono">V-51</b><span>最近一步（V-51 支线判完就退下）</span></li>
   </ul>
 </header>
 
@@ -524,6 +524,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sV47"><span class="n">V-47</span>沙盒规则集缓存<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV48"><span class="n">V-48</span>看门换成自己的助手<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV49"><span class="n">V-49</span>history 只解要的种类<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV51"><span class="n">V-51</span>支线判完就退下<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
@@ -12477,6 +12478,59 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-49-history只解要的种类.md</code>；蓝图 <code>tools/history.md</code>「怎么走」第 3 条、<code>store.md</code> 第 7 条 <code>read_range_only</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV51" aria-labelledby="h-sV51">
+  <div class="sheet-head"><h2 id="h-sV51"><span class="no">V-51</span>支线判完就退下</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">封存了的群支线判完抽取（抽完记进记忆日志，或轮数不够不抽）、没人订阅、没有别的事了，自己报会话表当场来问退下，不再白挂 3 分钟；守着不能退的那几样一样不少。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">支线判完就退下</span><span class="dir-note">V-51</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>handle/retire.rs</code> 加 <code>Bell</code>：actor 和把手共用的一面旗；actor 每办完一封照 <code>occupied</code> 那同一本账看一次，封存了、没事了立旗，经 <code>SessionPort::retirable</code> 报会话表</li>
+              <li>派出去抽的一次跑完送 <code>Back::Extracted</code> 叫醒 actor（不进内核、不算动静）；旗立着时放下一个把手（<code>Leaving</code>）也报</li>
+              <li>会话表 <code>sessions/idle.rs</code> 被报叫醒，只问报了的那几个，问法和隔一阵问全表的那一遍共用 <code>ask</code>（有回合、有人订阅、有别的把手的不问）</li>
+              <li><code>actor.rs</code> 交给把手的三个小函数挪到 <code>life.rs</code>（行数上限）</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不用拍板：行为不变，只是封存了的支线不再白挂着</span><span class="rl">V-40 找大头第 8 项</span></div>
+          <div class="tile new"><span class="nm">抽取的内容、记法、请求逐字节不变；失败照原来的规矩不当场重试；退下后再用照常载入</span><span class="rl">V-51 派活</span></div>
+          <div class="tile new"><span class="nm">不落盘、不加缓存文件；重新载入的代价要量</span><span class="rl">V-51 派活</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-51</dd></div>
+        <div><dt>名称</dt><dd>支线判完就退下</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-05</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-51</dd></div>
+        <div><dt>验收</dt><dd>群日常（600 条、支线见封存就退订）：安静 5 秒匿名 100～145 → 17～18 MB、RSS 121～166 → 40～41 MB，匿名峰值 114～158 → 62～68 MB，指令不变；灌的那一段零次重新载入，事后再打开一条退下的支线载入约 48 ms</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>retire_sealed.rs</code> 6 条：不够抽的当场报、订阅着不报、抽取挂在闸上不报（中间支线又收一封、主线又分出一条）抽完才报、失败不重试、放下把手再报、没封存的不报</span></li>
+        <li><span class="ok">✓</span><span>真核心：会话表一小时才问，支线退订当场离表，再订阅补发和退下前收到的逐字一样，再退订又退</span></li>
+        <li><span class="ok">✓</span><span>手写变异 10 个都逮住</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-51-支线判完就退下.md</code>；蓝图 <code>session/actor.md</code> 第 9 条、<code>session/fork.md</code>「封存」、<code>memory.md</code> 第六条第 1 款、<code>protocol.md</code>「会话表」第 9 条。</li>
       </ul>
     </div>
   </div>

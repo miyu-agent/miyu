@@ -390,6 +390,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     });
     let busy = actor.busy();
     let watched = actor.watched();
+    let leaving = actor.leaving();
     let shown = actor.shown();
     let on_person = actor.waiting();
     let onlookers = actor.onlookers();
@@ -406,14 +407,16 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
                 venue,
                 workspace: workplace.dir(),
             };
-            Ok(Handle::new(ids, inbox, busy, oneshot, watched, shown)
-                .with_memory(room)
-                .with_goals(on_face)
-                .with_confined(confined)
-                .with_loops(loops)
-                .with_waiting(on_person)
-                .with_prefix(prefix)
-                .with_onlookers(onlookers))
+            Ok(
+                Handle::new(ids, inbox, busy, oneshot, watched, shown, leaving)
+                    .with_memory(room)
+                    .with_goals(on_face)
+                    .with_confined(confined)
+                    .with_loops(loops)
+                    .with_waiting(on_person)
+                    .with_prefix(prefix)
+                    .with_onlookers(onlookers),
+            )
         }
         Err(_) => {
             error::abandoned(abandoned, &id).await;

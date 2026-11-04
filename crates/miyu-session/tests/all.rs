@@ -120,6 +120,7 @@ mod rebuild;
 mod rebuild_skills;
 mod report_up;
 mod retire;
+mod retire_sealed;
 mod route;
 mod route_anthropic;
 mod route_cost;

@@ -1,5 +1,5 @@
 //! 假的会话表（施工 C-6 的 `watch.rs` 用起，施工 V-2 再补挪到这里，闲够了退下的测试也用）：订的照 `gone` 回；命令都接受；
-//! 记下每一次订、每一个命令。看得到的别的会话只有 [`OTHER`]。
+//! 记下每一次订、每一个命令、每一次报退得下（施工 V-51）。看得到的别的会话只有 [`OTHER`]。
 
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -29,6 +29,8 @@ pub struct Table {
     pub gone: bool,
     pub placed: Mutex<Vec<Placed>>,
     pub commands: Mutex<Vec<(SessionId, CommandId, By, Command)>>,
+    /// 报了退得下的会话，照先后（施工 V-51）。
+    pub rung: Mutex<Vec<SessionId>>,
 }
 
 impl Table {
@@ -37,6 +39,16 @@ impl Table {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone()
+    }
+
+    /// 会话 `session` 报了几次退得下（施工 V-51）。
+    pub fn rings(&self, session: &SessionId) -> usize {
+        self.rung
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .iter()
+            .filter(|rung| *rung == session)
+            .count()
     }
 
     /// 送出去的通知：发给谁、编号、谁发的、带的那一行。
@@ -56,6 +68,13 @@ impl Table {
 }
 
 impl SessionPort for Table {
+    fn retirable(&self, session: SessionId) {
+        self.rung
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(session);
+    }
+
     fn create(&self, _child: Child) -> Pending<'_, Result<SessionId, String>> {
         Box::pin(async { Ok(sid(CHILD)) })
     }

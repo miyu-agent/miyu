@@ -435,8 +435,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         config,
     );
     actor.count_from(tally, goals);
-    let busy = actor.busy();
-    let watched = actor.watched();
+    let (busy, watched, leaving) = (actor.busy(), actor.watched(), actor.leaving());
     let (shown, on_person, onlookers) = (actor.shown(), actor.waiting(), actor.onlookers());
     if let Some(upstream) = upstream {
         actor.report_to(Reporter::start(upstream, span.clone()));
@@ -488,7 +487,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         venue,
         workspace: default_workspace.dir(),
     };
-    let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown)
+    let handle = Handle::new(ids, inbox, busy, created.oneshot, watched, shown, leaving)
         .with_memory(room)
         .with_goals(on_face)
         .with_confined(confined)
