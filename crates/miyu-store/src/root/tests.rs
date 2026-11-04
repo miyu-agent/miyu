@@ -375,6 +375,7 @@ fn a_directory_that_is_not_ours_is_left_alone() {
         let said = error.to_string();
         assert!(said.contains(&root.path().display().to_string()), "{said}");
         assert!(said.contains(".miyu-layout"), "{said}");
+        assert_eq!(error.code(), Some("data_root_not_ours"), "施工 LC-1");
         assert_eq!(contents(root.path()), before, "一个字节都不动");
     }
 }
@@ -460,6 +461,7 @@ fn an_old_or_other_layout_is_left_alone() {
         "{error:?}"
     );
     assert!(error.to_string().contains("layout 2"), "{error}");
+    assert_eq!(error.code(), Some("data_root_old_layout"), "施工 LC-1");
     assert_eq!(contents(root.path()), before, "一个字节都不动");
 
     for text in [
@@ -476,6 +478,7 @@ fn an_old_or_other_layout_is_left_alone() {
             matches!(&error, PrepareError::OtherLayout(_)),
             "{text}: {error:?}"
         );
+        assert_eq!(error.code(), Some("data_root_other_layout"));
         assert_eq!(contents(root.path()), before, "一个字节都不动");
     }
 }

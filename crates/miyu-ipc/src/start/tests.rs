@@ -7,10 +7,7 @@ async fn each_line_the_core_writes_is_heard() {
     for (line, heard) in [
         ("ready\n", Ready::Ready),
         ("running\n", Ready::Running),
-        (
-            "error 找不到资源目录\n",
-            Ready::Failed("找不到资源目录".to_string()),
-        ),
+        ("error 找不到资源目录\n", Ready::failed("找不到资源目录")),
     ] {
         let (reader, mut writer) = io::pipe().expect("开得了管道");
         writer.write_all(line.as_bytes()).expect("写得进");

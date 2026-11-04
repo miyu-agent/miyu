@@ -19,13 +19,13 @@ pub(super) async fn start(
 ) -> ExitCode {
     let opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
         Ok(opened) => opened,
-        Err(error) => return failed("socket", error.to_string()),
+        Err(error) => return failed("socket", None, error.to_string()),
     };
     if let Err(error) = root
         .prepare_workspace()
         .and_then(|()| root.prepare_private())
     {
-        return failed("home", error.to_string());
+        return failed("home", None, error.to_string());
     }
     crate::leftovers::tidy(&root);
     let mut found = load_packages(&resources, &root);

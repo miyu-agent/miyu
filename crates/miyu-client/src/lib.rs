@@ -52,7 +52,7 @@ pub mod places {
     pub use miyu_store::generated::write;
     pub use miyu_store::packages::{Issue, Packages};
     pub use miyu_store::resources::ResourceRoot;
-    pub use miyu_store::root::{DataRoot, cache_root};
+    pub use miyu_store::root::{DataRoot, PrepareError, cache_root};
 }
 
 /// 给人看的字：照语言读出来、画工具的显示名和说法。

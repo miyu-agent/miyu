@@ -77,7 +77,7 @@ where
     match launch(start(), root).await? {
         Ready::Ready => connect(root).await.map_err(StartError::Connect),
         Ready::Running => until_connected(root, connect).await,
-        Ready::Failed(reason) => Err(StartError::Refused(reason)),
+        Ready::Failed { code, reason } => Err(StartError::Refused { code, reason }),
     }
 }
 

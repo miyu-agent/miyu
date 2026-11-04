@@ -397,51 +397,6 @@ pub fn create_inside(dir: &Path) -> io::Result<()> {
     crate::durable::create_dir(dir)
 }
 
-/// 建骨架建不成。
-#[derive(Debug)]
-pub enum PrepareError {
-    /// 目录里有别的东西，又没有标记：认不出是 Miyu 的数据根，一个字节都不动它。里面是什么不去猜。
-    NotOurs(PathBuf),
-    /// 有旧版的标记（[`OLD_MARKER`]）、没有这一版的：旧版 Miyu 的数据根（布局 2），新版不认、不动（施工 FH-3，设计 55 第六节
-    /// 第 1 条）。
-    OldLayout(PathBuf),
-    /// 标记写的不是这一版的布局（以后的版本、写坏了的）：不认、不动。
-    OtherLayout(PathBuf),
-    /// 读写出错。
-    Io(io::Error),
-}
-
-impl fmt::Display for PrepareError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PrepareError::NotOurs(path) => write!(
-                f,
-                "{} 里有别的东西，认不出是 Miyu 的数据根（顶层没有 {MARKER}），不动它。设 MIYU_HOME 指到一个空目录",
-                path.display()
-            ),
-            PrepareError::OldLayout(path) => write!(
-                f,
-                "{} 是旧版 Miyu 的数据根（layout 2），新版不认；设 MIYU_HOME 指到一个空目录，旧数据照施工单 FH-7 自己搬",
-                path.display()
-            ),
-            PrepareError::OtherLayout(path) => write!(
-                f,
-                "{} 的 {MARKER} 写的不是这一版的布局（layout 3），不动它",
-                path.display()
-            ),
-            PrepareError::Io(error) => error.fmt(f),
-        }
-    }
-}
-
-impl std::error::Error for PrepareError {}
-
-impl From<io::Error> for PrepareError {
-    fn from(error: io::Error) -> PrepareError {
-        PrepareError::Io(error)
-    }
-}
-
 /// 缓存目录：整台机器共用，不跟着 `MIYU_HOME` 变（`07-存储.md` 第二节）。只找，不建：用到它的
 /// 到时候建。
 ///
@@ -485,8 +440,10 @@ fn local_app_data(env: &Env) -> Result<PathBuf, RootError> {
 }
 
 mod places;
+mod prepare;
 mod tmp;
 
+pub use prepare::PrepareError;
 pub use tmp::{STALE_VAR_TMP, Swept};
 
 #[cfg(test)]

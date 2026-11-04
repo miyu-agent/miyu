@@ -72,10 +72,10 @@ pub fn main(options: Options) -> ExitCode {
     let env = Env::current();
     let root = match DataRoot::locate(&env) {
         Ok(root) => root,
-        Err(error) => return failed("data_root", error.to_string()),
+        Err(error) => return failed("data_root", None, error.to_string()),
     };
     if let Err(error) = root.prepare() {
-        return failed("data_root", error.to_string());
+        return failed("data_root", error.code(), error.to_string());
     }
     let lock = match Lock::acquire(&root) {
         Ok(lock) => lock,
@@ -83,14 +83,14 @@ pub fn main(options: Options) -> ExitCode {
             say(&Ready::Running);
             return ExitCode::SUCCESS;
         }
-        Err(error) => return failed("lock", error.to_string()),
+        Err(error) => return failed("lock", None, error.to_string()),
     };
     // 装上时照 `MIYU_LOG`（没设、读不懂的是 INFO），读完配置再照 `log.level` 换（施工 8-2）。
     let level = miyu_log::level(std::env::var("MIYU_LOG").ok().as_deref());
     let logs = root.logs();
     let log = match miyu_log::install(&logs, "core", level.filter, env.home.as_deref()) {
         Ok(guard) => guard,
-        Err(error) => return failed("log", error.to_string()),
+        Err(error) => return failed("log", None, error.to_string()),
     };
     tracing::info!(
         target: TARGET,
@@ -114,7 +114,7 @@ pub fn main(options: Options) -> ExitCode {
     }
     let resources = match ResourceRoot::locate(&env) {
         Ok(resources) => resources,
-        Err(error) => return failed("resources", error.to_string()),
+        Err(error) => return failed("resources", None, error.to_string()),
     };
     // 系统的证书不再先读（施工 V-33）：第一次验对方的证书时才读（`miyu_http::tls`），一回一次网都不上的核心不读。
     // 目录最先读（施工 V-2 下补）：和下面读清单、配置、生成文件并着走。
@@ -134,7 +134,7 @@ pub fn main(options: Options) -> ExitCode {
         .build()
     {
         Ok(runtime) => runtime,
-        Err(error) => return failed("runtime", error.to_string()),
+        Err(error) => return failed("runtime", None, error.to_string()),
     };
     let outcome = runtime.block_on(start::start(
         env,
@@ -358,7 +358,7 @@ async fn run(
 ) -> ExitCode {
     let routes = match models::prepare(&resources, Some(models::dirs(&root))) {
         Ok(routes) => routes,
-        Err(error) => return failed("models", error),
+        Err(error) => return failed("models", None, error),
     };
     let model_data = Arc::clone(&routes.data);
     // 造好路由就放行目录（施工 V-2 下）：读在找到资源目录时就开始了（施工 V-2 下补），这里等它读完、读用出来的，不挡
@@ -376,7 +376,7 @@ async fn run(
     let kit = Kit::new(&resources);
     let tools = match tools_in(&resources, &live.found, &kit) {
         Ok(tools) => tools,
-        Err(error) => return failed("tools", error),
+        Err(error) => return failed("tools", None, error),
     };
     let (trashed, cached) = (root.clone(), root.clone());
     let logs = root.logs();
@@ -475,10 +475,14 @@ async fn run(
 
 /// 起不来：原因写成那一行交给头，头印给人看；运行日志（装上了的话）只记没过的是哪一步 `stage`，原因是给人看的
 /// 中文，不进日志（施工 4-9 再补四上）。调它的地方接着就走、放锁，所以先等另起线程写盘的写完（施工 TMP-1 补2）。
-fn failed(stage: &'static str, reason: String) -> ExitCode {
+/// 认得出是哪一种的带上代码 `code`（施工 LC-1）：头照 `start/<代码>` 照自己的语言说。
+fn failed(stage: &'static str, code: Option<&'static str>, reason: String) -> ExitCode {
     pending::finish();
     tracing::warn!(target: TARGET, stage, "not started");
-    say(&Ready::Failed(reason));
+    say(&Ready::Failed {
+        code: code.map(str::to_string),
+        reason,
+    });
     ExitCode::FAILURE
 }
 

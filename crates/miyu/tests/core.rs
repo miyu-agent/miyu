@@ -113,6 +113,21 @@ async fn two_heads_at_once_start_one_core() {
     assert_eq!(count(&home.core_log(), "starting"), 1, "只起了一个");
 }
 
+/// 数据根的布局不是这一版的（施工 LC-1）：那一行带代码，头照它照自己的语言说；原因照旧是原话。
+#[tokio::test]
+async fn a_data_root_it_does_not_know_comes_with_a_code() {
+    let home = Home::new();
+    std::fs::write(home.root.path().join(".miyu-layout"), "garbage").expect("写得进");
+    let error = within("拉起", connect_or_start(&home.root, || home.core()))
+        .await
+        .expect_err("起不来");
+    let StartError::Refused { code, reason } = error else {
+        panic!("应该说了原因：{error:?}");
+    };
+    assert_eq!(code.as_deref(), Some("data_root_other_layout"), "{reason}");
+    assert!(reason.contains(".miyu-layout"), "{reason}");
+}
+
 #[tokio::test]
 async fn a_core_that_cannot_start_says_why() {
     let home = Home::new();
@@ -127,9 +142,10 @@ async fn a_core_that_cannot_start_says_why() {
     )
     .await
     .expect_err("起不来");
-    let StartError::Refused(reason) = error else {
+    let StartError::Refused { code, reason } = error else {
         panic!("应该说了原因：{error:?}");
     };
+    assert_eq!(code, None, "找不到资源目录没有代码");
     assert!(reason.contains("MIYU_RESOURCES"), "{reason}");
     assert!(reason.contains("no-resources"), "{reason}");
     home.until_stopped().await;

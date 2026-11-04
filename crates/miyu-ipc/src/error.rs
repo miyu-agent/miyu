@@ -87,8 +87,14 @@ impl From<io::Error> for ConnectError {
 /// 头拉起核心没成。
 #[derive(Debug)]
 pub enum StartError {
-    /// 核心起不来，它说了原因（照原样给人看）。
-    Refused(String),
+    /// 核心起不来，它说了原因（照原样给人看）。认得出是哪一种的带代码（施工 LC-1，[`crate::Ready::Failed`]）：头照
+    /// `start/<代码>` 取给人看的字，照自己的语言说。
+    Refused {
+        /// 代码，没有的是 `None`。
+        code: Option<String>,
+        /// 原因。
+        reason: String,
+    },
     /// 核心没说好了就退了：原因在它的运行日志 `state/logs/core.log` 里。
     Silent,
     /// 等核心说好了，等太久了。
@@ -104,7 +110,7 @@ pub enum StartError {
 impl fmt::Display for StartError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StartError::Refused(reason) => write!(f, "核心起不来：{reason}"),
+            StartError::Refused { reason, .. } => write!(f, "核心起不来：{reason}"),
             StartError::Silent => write!(
                 f,
                 "核心没起来，也没说为什么：看数据根的 state/logs/core.log"

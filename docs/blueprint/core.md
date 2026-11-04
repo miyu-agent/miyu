@@ -106,6 +106,7 @@
 | `ready` | 好了：在套接字上等连接了 | 之后照「停下」 |
 | `running` | 已经有一个核心在跑：这一个走了，头去连那一个 | 0 |
 | `error <原因>` | 起不来。原因是出错的原话，照原样给人看；里面的回车、换行换成空格 | 1 |
+| `error <代码>: <原因>` | 起不来、认得出是哪一种（施工 LC-1）：第 2 步数据根认不出（`data_root_not_ours`）、是旧版的（`data_root_old_layout`）、布局不是这一版的（`data_root_other_layout`）。头照 `core/start/<代码>` 照自己的语言说（`resources/core/human/`），原因照旧是中文原话 | 1 |
 
 - 每一种都带一个 `\n`，写完马上送出去。写不出去的，记一条 `WARN ready line not written error=…`（运行日志装上了的话）。
 - 原因是出错的原话：Miyu 自己写的多是中文，例如 `MIYU_HOME 要写绝对路径，写的是 …`、`找不到资源目录：… 都没有。开发时设 MIYU_RESOURCES 指到源码树的 resources/`（`store.md`、`ipc.md`）；工具的字读不出来的是 `<哪一份文件>: <为什么>`；工具登记时查不过的是英文，例如 `tool "read": another tool has the same name`（`tools/interface.md`）；系统和用到的库报的错（例如 HTTP 客户端造不出来的）照它们的写法。
