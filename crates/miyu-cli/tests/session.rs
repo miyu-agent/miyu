@@ -105,4 +105,5 @@ async fn export_from_one_core_and_import_into_another() {
     .await;
     assert_eq!(taken.code, 1);
     assert!(taken.err.contains("文件已存在"), "{}", taken.err);
+    std::fs::remove_dir_all(&here).expect("删得掉当前目录");
 }

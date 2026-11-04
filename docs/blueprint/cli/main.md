@@ -95,6 +95,7 @@
   compact [<要点>]    压缩上下文
   recap               总结当前会话
   rename <标题>       重命名会话
+  session <命令>      导入导出会话
 
 内容：
   memory <命令>       管理记忆
@@ -142,6 +143,7 @@ Conversation:
   compact [<focus>]   Compact the context
   recap               Summarize the session
   rename <title>      Rename the session
+  session <command>   Export and import sessions
 
 Content:
   memory <command>    Manage memories
