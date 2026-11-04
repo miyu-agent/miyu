@@ -1,6 +1,7 @@
 //! 会话导出成 Markdown（施工 SE-1 中下上，`docs/blueprint/protocol.md`「`session.export`」）：真核心跑几轮（调工具、思考、
 //! 手动压缩）以后导到文件、放进回应，两份一字不差；配了的密钥换成占位、报几处；照参数换语言；放进回应超了上限的拒；下一步
-//! 才有的写法拒 `bad_params` 带 `data.later`，写文件的规矩同原始包。
+//! 才有的写法（施工 SE-1 中下中以后只剩 `children: append`、`assets: files`）拒 `bad_params` 带 `data.later`，写错的不带，
+//! 写文件的规矩同原始包。三个预设、范围、原始包里的 `transcript.md` 见 `session_export_presets.rs`。
 
 use std::path::Path;
 
@@ -12,21 +13,21 @@ use miyu_tool::Catalog;
 use crate::support::*;
 
 /// 密钥的值：会话里人说了一次、读的文件里有一次。
-const SECRET: &str = "sk-test-abcdef123456";
+pub(crate) const SECRET: &str = "sk-test-abcdef123456";
 
 fn tools() -> Catalog {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../resources");
     Catalog::new(miyu_basesystem::tools(&resources).expect("出厂的资源读得出来")).expect("合写法")
 }
 
-async fn markdown(client: &mut Client, id: &str, params: Value) -> Value {
+pub(crate) async fn markdown(client: &mut Client, id: &str, params: Value) -> Value {
     let mut params = params;
     params["format"] = json!("markdown");
     client.call(id, "session.export", params).await
 }
 
 /// 跑三轮：第一句说七万个字（压得掉），第二轮读一个文件、想一想再答，手动压一次，第三轮说再见。交回客户端和会话。
-async fn three_turns(home: &Home) -> (Client, String) {
+pub(crate) async fn three_turns(home: &Home) -> (Client, String) {
     std::fs::write(home.work.join("a.txt"), format!("token={SECRET}\n")).expect("写得进工作区");
     let script = Script::new([
         Play::Says("好。"),
@@ -184,14 +185,8 @@ async fn later_options_and_bad_places_are_refused() {
     client.say("s1", &session, "你好").await;
     home.until_turns(&session, 1).await;
     let later = [
-        (json!({"for": "agent"}), "for"),
-        (json!({"for": "chat"}), "for"),
-        (json!({"range": "context"}), "range"),
-        (json!({"range": {"turns": 3}}), "range"),
-        (json!({"thinking": false}), "thinking"),
-        (json!({"tools": "line"}), "tools"),
         (json!({"children": "append"}), "children"),
-        (json!({"assets": "files"}), "assets"),
+        (json!({"for": "agent", "assets": "files"}), "assets"),
     ];
     for (n, (extra, param)) in later.into_iter().enumerate() {
         let mut params = json!({"session": session, "to": "inline"});
@@ -207,6 +202,15 @@ async fn later_options_and_bad_places_are_refused() {
     let bad = [
         (json!({"for": "nobody", "to": "inline"}), "bad_params"),
         (json!({"range": {"turns": 0}, "to": "inline"}), "bad_params"),
+        (
+            json!({"range": {"turns": 2, "x": 1}, "to": "inline"}),
+            "bad_params",
+        ),
+        (json!({"range": "everything", "to": "inline"}), "bad_params"),
+        (json!({"thinking": "yes", "to": "inline"}), "bad_params"),
+        (json!({"tools": "all", "to": "inline"}), "bad_params"),
+        (json!({"children": "none", "to": "inline"}), "bad_params"),
+        (json!({"assets": 1, "to": "inline"}), "bad_params"),
         (json!({"to": "elsewhere"}), "bad_params"),
         (json!({"to": {"path": "x.md"}}), "bad_params"),
         (json!({"to": {"path": taken}}), "export_exists"),

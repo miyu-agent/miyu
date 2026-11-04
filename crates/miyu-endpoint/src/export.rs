@@ -1,9 +1,11 @@
 //! `session.export {session, format, to}`（施工 SE-1 上，设计 `58-会话导出和导入.md` 第一节，`docs/blueprint/protocol.md`
 //! 「`session.export`」）：把一个会话打成原始包（`format: "bundle"`）写到人给的路径。Markdown（`format: "markdown"`，施工
-//! SE-1 中下上）在 `export/markdown.rs`，写文件照同样的规矩。
+//! SE-1 中下上、中下中）在 `export/markdown.rs`，写文件照同样的规矩。
 //!
 //! - 包里有：这个会话、它的全部后代（子代理、子代理的子代理）、分叉来源到分叉点为止的那几段（一层层往上），和它们引用到的
 //!   blob（[`miyu_store::bundle`]）。只读日志、不载入会话，在跑的会话照这一刻已经落盘的取。
+//! - 包里另放一份 `transcript.md`（施工 SE-1 中下中，调研第五节第 8 条）：主会话照 `read` 预设渲染（语言照连接握手时的，
+//!   配了的密钥照样换掉），解开就能看；包里的日志原样不改。
 //! - 只给人的头（`connection/rights.rs`）：包里和事件流一个级别，还带着 blob。
 //! - 核心照头给的路径写（同 `blob.put` 的 `path` 反过来）：要绝对路径；数据根里面不写（`export_in_data_root`）；已经有了的
 //!   不覆盖（`export_exists`）；目录不在、写不进的 `export_unwritable`。
@@ -25,12 +27,14 @@ use miyu_store::bundle::{self, About, BundleError, Part};
 use miyu_store::index::SessionIndex;
 use miyu_store::log::first_event;
 use miyu_store::root::DataRoot;
+use miyu_view::markdown::Options;
 
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
 mod markdown;
+mod params;
 
 /// 运行日志的来源。
 const TARGET: &str = "miyu::endpoint";
@@ -45,25 +49,25 @@ pub(crate) struct ExportParams {
     format: Format,
     /// 写到哪。
     to: To,
-    /// 给谁用：`read`（不写的也是）；`agent`、`chat` 下一步才有。
+    /// 给谁用：`read`（不写的也是）、`agent`、`chat`（`export/params.rs`）。
     #[serde(default, rename = "for")]
     purpose: Option<String>,
-    /// 导多少：`all`（不写的也是）；`context`、`{"turns": N}` 下一步才有。
+    /// 导多少：`all`、`context`、`{"turns": N}`；不写的照预设。
     #[serde(default)]
     range: Option<Value>,
     /// 给人看的字用哪种语言；不写的照连接握手时的。
     #[serde(default)]
     locale: Option<String>,
-    /// 盖过预设的开关：下一步才有，写了的先拒。
+    /// 盖过预设的开关：带不带思考。
     #[serde(default)]
     thinking: Option<Value>,
-    /// 同上。
+    /// 同上：工具写多少，`line`、`seen`、`full`。
     #[serde(default)]
     tools: Option<Value>,
-    /// 同上。
+    /// 同上：子代理，这一步只收 `reports`。
     #[serde(default)]
     children: Option<Value>,
-    /// 同上。
+    /// 同上：图片、附件，这一步只收 `placeholder`。
     #[serde(default)]
     assets: Option<Value>,
 }
@@ -139,16 +143,21 @@ pub(crate) async fn export(
     let index = core.index();
     let main = session.clone();
     let target = out.clone();
+    let kit = markdown::Kit::of(core);
+    let language = peer.language;
     let done = tokio::task::spawn_blocking(move || {
         refuse_inside(&root, &target)?;
         let parts = gather(&root, Some(&index), &main).map_err(|error| {
             tracing::warn!(target: TARGET, session = main.as_str(), error = %error, "export not read");
             Refusal::BROKEN
         })?;
+        let (transcript, _) =
+            markdown::transcript(&root, &main, &kit, language, Options::READ)?;
         let about = About {
             main: main.clone(),
             miyu: env!("CARGO_PKG_VERSION").to_string(),
             exported: now(),
+            transcript: Some(transcript.text),
         };
         bundle::write(&parts, &Blobs::new(root.blobs()), &about, &target).map_err(|error| refused(&main, error))
     })

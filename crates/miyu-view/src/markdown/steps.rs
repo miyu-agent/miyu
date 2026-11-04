@@ -1,4 +1,8 @@
-//! 她的一步：思考折起来；工具写显示名、对象、结果那一句，派子代理的带交代，输出照她当时看到的，长的折起来。
+//! 她的一步：思考折起来；工具照开关分三种写法：一行（`markdown/line.rs`）、`read` 的（这里）、`agent`、`chat` 的
+//! （`markdown/raw.rs`）。
+//!
+//! `read` 的一步工具：小标题写显示名、对象，下一行结果那一句、出错没出错、加减几行；要人确认的那一次一行；派子代理的交代
+//! 折起来；提问的那一组题；输出照她当时看到的，长的折起来；脚本里调的工具一个列表；结果里的图写占位。
 
 use serde_json::Value;
 
@@ -6,6 +10,8 @@ use crate::entry::{Thought, Tool, ToolState};
 use crate::summary::clock;
 use crate::words::ToolKind;
 
+use super::extras;
+use super::options::{Purpose, Tools};
 use super::text::{Out, code_block, code_span, details, prose};
 use super::{Document, Say};
 
@@ -24,8 +30,17 @@ pub(super) fn thought(out: &mut Out, thought: &Thought, say: &Say<'_>) {
     out.block(&details(&summary, &prose(&thought.text, true)));
 }
 
-/// 一步工具：小标题 `Tool: <显示名>`，后面是对象；下一行结果那一句、出错没出错、加减几行；派子代理的交代折起来；输出、图。
+/// 一步工具：照开关挑写法。
 pub(super) fn tool(out: &mut Out, tool: &Tool, doc: &Document<'_>, say: &Say<'_>) {
+    match (doc.options.tools, doc.options.purpose) {
+        (Tools::Line, _) => super::line::tool(out, tool, doc, say),
+        (_, Purpose::Read) => read(out, tool, doc, say),
+        (_, Purpose::Agent | Purpose::Chat) => super::raw::tool(out, tool, doc, say),
+    }
+}
+
+/// `read` 的一步工具：见模块的说明。
+fn read(out: &mut Out, tool: &Tool, doc: &Document<'_>, say: &Say<'_>) {
     let title = &tool.title;
     let mut head = format!("### Tool: {}", title.name);
     if let Some(via) = &title.via {
@@ -36,57 +51,86 @@ pub(super) fn tool(out: &mut Out, tool: &Tool, doc: &Document<'_>, say: &Say<'_>
         head.push_str(&code_span(object));
     }
     out.block(&head);
-    let mut line: Vec<String> = title.said.iter().cloned().collect();
-    if let Some(state) = state(tool.state) {
-        line.push(say.say(state, &[]));
-    }
-    if let Some(diff) = tool.diff {
-        line.push(format!("+{} −{}", diff.added, diff.removed));
-    }
+    let line = said(tool, say);
     if !line.is_empty() {
         out.block(&line.join(" · "));
+    }
+    if let Some(approval) = &tool.approval {
+        out.block(&extras::approval(approval, say));
     }
     if doc.texts.kinds.of(&tool.name) == Some(ToolKind::Agent)
         && let Some(prompt) = brief(&tool.args)
     {
         out.block(&details(&say.say("brief", &[]), &prose(&prompt, true)));
     }
-    let output = match (tool.output_cut, tool.call) {
-        (true, Some(call)) => doc.sources.outputs.get(&call).or(tool.output.as_ref()),
-        _ => tool.output.as_ref(),
-    };
-    if let Some(output) = output.filter(|output| !output.trim().is_empty()) {
+    if let Some(questions) = extras::questions(tool) {
+        out.block(&questions);
+    }
+    if let Some(output) = output(tool, doc).filter(|output| !output.trim().is_empty()) {
         out.block(&folded(output, say));
     }
-    let pictures: Vec<String> = tool
-        .images
-        .iter()
-        .map(|picture| {
-            let about = format!("{}×{}", picture.width, picture.height);
-            format!("- {}", say.say("image", &[("about", about)]))
-        })
-        .collect();
+    extras::nested(out, tool.call.map(miyu_kernel::id::Parent::Call), doc, say);
+    let pictures = pictures(tool, say);
     if !pictures.is_empty() {
         out.block(&pictures.join("\n"));
     }
 }
 
+/// 结果那一句、出错没出错、加减几行：照连接的语言。
+pub(super) fn said(tool: &Tool, say: &Say<'_>) -> Vec<String> {
+    let mut line: Vec<String> = tool.title.said.iter().cloned().collect();
+    if let Some(state) = state(tool.state) {
+        line.push(say.say(state, &[]));
+    }
+    if let Some(diff) = tool.diff {
+        line.push(format!("+{} −{}", diff.added, diff.removed));
+    }
+    line
+}
+
+/// 她当时看到的结果：切过的照日志里的全文，没切过的条目里整份有。
+pub(super) fn output<'a>(tool: &'a Tool, doc: &'a Document<'_>) -> Option<&'a String> {
+    match (tool.output_cut, tool.call) {
+        (true, Some(call)) => doc.sources.outputs.get(&call).or(tool.output.as_ref()),
+        _ => tool.output.as_ref(),
+    }
+}
+
+/// 结果里的图：一张一行占位。
+pub(super) fn pictures(tool: &Tool, say: &Say<'_>) -> Vec<String> {
+    tool.images
+        .iter()
+        .map(|picture| {
+            let about = format!("{}×{}", picture.width, picture.height);
+            format!("- {}", say.say("image", &[("about", about)]))
+        })
+        .collect()
+}
+
 /// 一段输出放进代码块，长的折起来，那一行写几行。
 pub(super) fn folded(text: &str, say: &Say<'_>) -> String {
+    folded_as(text, say, "")
+}
+
+/// 同 [`folded`]，折起来那一行前面加 `prefix`（脚本里调的工具写 `#序号 `）。
+pub(super) fn folded_as(text: &str, say: &Say<'_>, prefix: &str) -> String {
     let text = text.trim_end_matches(['\n', '\r']);
     let lines = text.lines().count();
     let block = code_block(text, "text");
-    match lines > FOLD_LINES || text.len() > FOLD_BYTES {
+    match lines > FOLD_LINES || text.len() > FOLD_BYTES || !prefix.is_empty() {
         true => {
             let count = u64::try_from(lines).unwrap_or(u64::MAX);
-            details(&say.count("output", count, &[]), &block)
+            details(
+                &format!("{prefix}{}", say.count("output", count, &[])),
+                &block,
+            )
         }
         false => block,
     }
 }
 
 /// 出错、被拒、打断、跳过的写一个字；成了的、还没结果的不写。
-fn state(state: ToolState) -> Option<&'static str> {
+pub(super) fn state(state: ToolState) -> Option<&'static str> {
     match state {
         ToolState::Error => Some("state/error"),
         ToolState::Denied => Some("state/denied"),

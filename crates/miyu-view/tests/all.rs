@@ -4,6 +4,9 @@ mod support;
 
 mod lines;
 mod markdown;
+mod markdown_extras;
+mod markdown_presets;
+mod markdown_ranges;
 mod media;
 mod nested;
 mod notices;

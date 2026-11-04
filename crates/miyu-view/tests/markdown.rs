@@ -15,24 +15,25 @@ use miyu_view::{Entry, EntryId, Projector};
 use crate::support::*;
 
 /// 一条条目：`at` 没写的照 2026-11-04 01:00 UTC。
-fn entry(mut value: Value) -> Entry {
+pub(crate) fn entry(mut value: Value) -> Entry {
     if value.get("at").is_none() {
         value["at"] = json!("2026-11-04T01:00:00.000Z");
     }
     serde_json::from_value(value.clone()).unwrap_or_else(|e| panic!("{e}: {value}"))
 }
 
-fn about() -> About {
+pub(crate) fn about() -> About {
     About {
         title: "看看 main.rs".to_string(),
         from: Timestamp::parse("2026-11-04T01:00:00.000Z").expect("合写法"),
         to: Timestamp::parse("2026-11-04T01:32:00.000Z").expect("合写法"),
         tokens: 1234,
+        cwd: Some("/home/alice/proj".to_string()),
     }
 }
 
 /// 照中文渲染，时区是东九区。
-fn zh(entries: &[Entry], sources: &Sources, secrets: &[(&str, &str)]) -> Rendered {
+pub(crate) fn zh(entries: &[Entry], sources: &Sources, secrets: &[(&str, &str)]) -> Rendered {
     let texts = texts("zh");
     render(&Document {
         entries,
@@ -45,12 +46,12 @@ fn zh(entries: &[Entry], sources: &Sources, secrets: &[(&str, &str)]) -> Rendere
     })
 }
 
-fn text(entries: &[Entry]) -> String {
+pub(crate) fn text(entries: &[Entry]) -> String {
     zh(entries, &Sources::default(), &[]).text
 }
 
 /// 一轮：问、想、读文件、答、收尾。
-fn one_turn() -> Vec<Entry> {
+pub(crate) fn one_turn() -> Vec<Entry> {
     vec![
         entry(json!({"id": "m2", "kind": "user", "text": "帮我看看 main.rs"})),
         entry(

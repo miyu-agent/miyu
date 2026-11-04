@@ -1,11 +1,18 @@
 //! 旁白和一轮的收尾：照时间线放一行。压缩的摘要折在下面；子代理的回报起一个 `Subagent` 小标题写全文；撤销说明不进（撤掉的
 //! 当没发生过）；没出错的收尾不写。
+//!
+//! 施工 SE-1 中下中：后台命令下面脚本里调的工具照写法写（`markdown/extras.rs`），`tools: full` 再接 blob 里的输出全文；答了
+//! 提问的 `chat` 一行写完。
 
 use crate::entry::{Answered, End, Entry, JobDone, Mark};
 use crate::notice::{CompactionState, Notice};
 
+use miyu_kernel::id::Parent;
+
+use super::extras;
+use super::options::{Purpose, Tools};
 use super::steps::folded;
-use super::text::{Out, details, one_line, prose, quote};
+use super::text::{Out, code_block, details, one_line, prose, quote};
 use super::{Document, Say, Speaker, short};
 
 /// 一轮的收尾：出错、打断、步数到顶、核心崩了的写一行；交回写了没有。
@@ -59,23 +66,17 @@ pub(super) fn notice(
         Notice::Paused { .. } => say.say("paused", &[]),
         Notice::Reverted { .. } => return None,
         Notice::Job(done) if done.report.is_some() => return Some(report(out, done, say)),
-        Notice::Job(done) => {
-            let key = match done.mark {
-                Mark::Done => "job/done",
-                Mark::Failed => "job/failed",
-                Mark::Stopped => "job/stopped",
-            };
-            let title = match done.title.trim().is_empty() {
-                true => done.command.clone().unwrap_or_default(),
-                false => done.title.clone(),
-            };
-            say.say(key, &[("title", one_line(&title))])
-        }
+        Notice::Job(done) => return Some(job(out, done, doc, say)),
         Notice::Lines(seen) => {
             let line = say.count("lines", seen.lines, &[("title", one_line(&seen.title))]);
             out.block(&quote(&line));
             out.block(&folded(&seen.text, say));
             return Some(Speaker::Nobody);
+        }
+        Notice::Answered(answered) if doc.options.purpose == Purpose::Chat => {
+            let answers = answers(answered).replace("\n- ", "; ");
+            let answers = answers.trim_start_matches("- ").to_string();
+            say.say("answered/line", &[("answers", answers)])
         }
         Notice::Answered(answered) => {
             out.block(&quote(&say.say("answered", &[])));
@@ -111,6 +112,45 @@ pub(super) fn notice(
     };
     out.block(&quote(&line));
     Some(Speaker::Nobody)
+}
+
+/// 一件后台命令了结了：一行；下面脚本里调的工具照写法写，`full` 再接 blob 里的输出全文。
+fn job(out: &mut Out, done: &JobDone, doc: &Document<'_>, say: &Say<'_>) -> Speaker {
+    let key = match done.mark {
+        Mark::Done => "job/done",
+        Mark::Failed => "job/failed",
+        Mark::Stopped => "job/stopped",
+    };
+    let title = match done.title.trim().is_empty() {
+        true => done.command.clone().unwrap_or_default(),
+        false => done.title.clone(),
+    };
+    let mut line = say.say(key, &[("title", one_line(&title))]);
+    let parent = Some(Parent::Job(done.job.clone()));
+    if doc.options.purpose == Purpose::Chat
+        && let Some(nested) = extras::nested_line(parent.clone(), doc)
+    {
+        line.push_str(&format!(" · {nested}"));
+    }
+    out.block(&quote(&line));
+    match doc.options.purpose {
+        Purpose::Read => extras::nested(out, parent, doc, say),
+        Purpose::Agent => extras::nested_raw(out, parent, doc),
+        Purpose::Chat => {}
+    }
+    if doc.options.tools == Tools::Full
+        && let Some(text) = done
+            .output
+            .as_ref()
+            .and_then(|output| doc.sources.blobs.get(&output.blob))
+            .filter(|text| !text.trim().is_empty())
+    {
+        match doc.options.purpose {
+            Purpose::Read => out.block(&folded(text, say)),
+            Purpose::Agent | Purpose::Chat => out.block(&code_block(text, "text")),
+        }
+    }
+    Speaker::Nobody
 }
 
 /// 子代理的回报：`Subagent` 小标题带标题，没做完的写一行，再是回报全文。

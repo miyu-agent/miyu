@@ -7,6 +7,8 @@
 //!   边拷边重新算哈希，对不上整个失败（照 dsh 的 fail-loud）；库里没有的（有的哈希本来就不是 blob，例如请求字节的哈希）
 //!   记进清单的 `absent`，不算错。
 //! - 先写进同目录的临时文件，写完再挂到 `out`：`out` 已经有了的不覆盖（[`BundleError::Exists`]），写到一半失败的删掉临时文件。
+//! - 人能直接看的一份（施工 SE-1 中下中）：交了 [`About::transcript`] 的放进 [`TRANSCRIPT`]，清单照段、blob 的样子记它的字节数
+//!   和哈希；导入照清单核对它，不导进数据根（它是从日志渲染的）。
 
 mod import;
 mod manifest;
@@ -25,10 +27,15 @@ use miyu_kernel::id::{ContentHash, Hasher, Seq, SessionId};
 use crate::blob::Blobs;
 use crate::durable::{create_temp, discard, temp_name};
 pub use import::{ImportError, Imported, MARKER, Marker, import};
-pub use manifest::{FORMAT, Manifest, ManifestBlob, ManifestSegment, ManifestSession};
+pub use manifest::{
+    FORMAT, Manifest, ManifestBlob, ManifestFile, ManifestSegment, ManifestSession,
+};
 
 /// 包里放清单的那一项。
 pub const MANIFEST: &str = "manifest.json";
+
+/// 包里人能直接看的那一份 Markdown（施工 SE-1 中下中）。
+pub const TRANSCRIPT: &str = "transcript.md";
 
 /// 包里的一个会话：编号、会话目录、取到第几条（分叉来源写分叉点，别的不写）。
 #[derive(Debug, Clone)]
@@ -50,6 +57,8 @@ pub struct About {
     pub miyu: String,
     /// 导出的时刻，RFC 3339。
     pub exported: String,
+    /// 人能直接看的一份 Markdown（施工 SE-1 中下中）：放进包里的 [`TRANSCRIPT`]；没有的不放。
+    pub transcript: Option<String>,
 }
 
 /// 写出来的包。
@@ -156,6 +165,17 @@ fn fill(parts: &[Part], blobs: &Blobs, about: &About, file: File) -> Result<Mani
         sessions.push(one_session(&mut zip, options, part, &mut referenced)?);
     }
     let (kept, absent) = copy_blobs(&mut zip, options, blobs, &referenced)?;
+    let transcript = match &about.transcript {
+        Some(text) => {
+            zip.start_file(TRANSCRIPT, options)?;
+            zip.write_all(text.as_bytes())?;
+            Some(ManifestFile {
+                bytes: text.len() as u64,
+                sha256: ContentHash::of(text.as_bytes()),
+            })
+        }
+        None => None,
+    };
     let manifest = Manifest {
         format: FORMAT,
         miyu: about.miyu.clone(),
@@ -164,6 +184,7 @@ fn fill(parts: &[Part], blobs: &Blobs, about: &About, file: File) -> Result<Mani
         sessions,
         blobs: kept,
         absent,
+        transcript,
     };
     zip.start_file(MANIFEST, options)?;
     let mut text = serde_json::to_vec_pretty(&manifest).map_err(io::Error::other)?;

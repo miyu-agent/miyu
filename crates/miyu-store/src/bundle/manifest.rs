@@ -26,6 +26,19 @@ pub struct Manifest {
     /// 日志里写成内容哈希、blob 库里却没有的：多半本来就不是 blob（例如请求字节的哈希）。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub absent: Vec<ContentHash>,
+    /// 人能直接看的那一份 `transcript.md`（施工 SE-1 中下中）：字节数和哈希，同段、blob。以前的包没有这一格，不放的不写；
+    /// 加了一格可以没有的，[`FORMAT`] 不变，旧核心读到不认识的格不管。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transcript: Option<ManifestFile>,
+}
+
+/// 包里一个名字固定的文件（`transcript.md`）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ManifestFile {
+    /// 多少字节。
+    pub bytes: u64,
+    /// SHA-256。
+    pub sha256: ContentHash,
 }
 
 /// 包里的一个会话。

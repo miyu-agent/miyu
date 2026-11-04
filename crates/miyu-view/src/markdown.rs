@@ -1,32 +1,46 @@
-//! 会话导出成 Markdown（施工 SE-1 中下上，设计 `58-会话导出和导入.md` 第一节，调研 `docs/reviews/2026-09-30-会话导出调研.md`
-//! 第四节第 3 条、第五节第 2 条）：一个不连线的头，吃视图条目、吐 Markdown。界面上有的导出里才有：挑哪些、显示名、一句话
-//! 摘要、出错说明都照条目；条目里没有的原文（切过的工具结果、压缩的摘要）由读日志的一方照事件记进 [`Sources`]。
+//! 会话导出成 Markdown（施工 SE-1 中下上、中下中，设计 `58-会话导出和导入.md` 第一节，调研
+//! `docs/reviews/2026-09-30-会话导出调研.md` 第四节第 1、3 条，第五节第 2、3、6 条）：一个不连线的头，吃视图条目、吐 Markdown。
+//! 界面上有的导出里才有：挑哪些、显示名、一句话摘要、出错说明都照条目；条目里没有的原文（切过的工具结果、压缩的摘要、
+//! 脚本里调的工具、她现在的上下文）由读日志的一方照事件记进 [`Sources`]。
 //!
-//! 纯函数：不碰磁盘、时钟。这一步只有 `read` 预设（自己看）：
+//! 纯函数：不碰磁盘、时钟。三个预设（[`Options::READ`]、[`Options::AGENT`]、[`Options::CHAT`]，`markdown/options.rs`），
+//! 写了的开关盖过预设：
 //!
-//! - 开头：标题、时间段、模型、token 合计（[`About`]）。
-//! - 角色的小标题一律英文（`User`、`Assistant`、`Tool`、`Subagent`）；显示名、旁白照连接的语言（`core/export/…` 的字）。
-//! - 思考折在 `<details>` 里；工具写显示名和摘要，输出照她当时看到的，长的折起来；图片、附件写占位；子代理写交代和回报；
-//!   压缩照时间线放一条旁白，摘要折在下面。
+//! - 开头（`markdown/head.rs`）：`read` 标题、时间段、模型、token 合计；`chat` 标题、时间段、token 估算；`agent` 一小段英文
+//!   事实。范围从中间切开的，`read`、`chat` 写一句省掉了几轮，`agent` 的 `context` 把检查点摘要放最前（`markdown/select.rs`）。
+//! - 角色的小标题一律英文（`User`、`Assistant`、`Tool`、`Subagent`）；`read` 的显示名、旁白照连接的语言（`core/export/…`），
+//!   `agent`、`chat` 写工具的真名。
+//! - 思考折在 `<details>` 里（`agent`、`chat` 默认不带）；工具 `read` 写显示名和摘要、输出照她当时看到的，`agent` 写真名、
+//!   参数原文、结果截到头尾约 4000 字，`chat` 一行（`markdown/steps.rs`、`raw.rs`、`line.rs`）；要人确认的那一次、脚本里调的
+//!   工具、工具上挂的提问照各自的写法（`markdown/extras.rs`）；图片、附件写占位；子代理 `read`、`agent` 写交代和回报，
+//!   `chat` 只写回报；压缩照时间线放一条旁白，摘要折在下面。
 //! - 不进的：撤掉的轮（`hidden`）、撤回的排队消息、撤销说明；注入的上下文、策略、系统提示词本来就不是条目。
 //! - 正文原样；没合上的代码块替它合上，代码块的围栏比里面最长的一串反引号长。家目录写成 `~`；配了的密钥换成
 //!   `[redacted: <名字>]`（`markdown/scrub.rs`）。
 
+mod extras;
 mod head;
+mod line;
 mod notices;
+mod options;
+mod raw;
 mod scrub;
+mod select;
 mod sources;
 mod steps;
 mod text;
 
 use std::collections::BTreeMap;
 
+use miyu_kernel::estimate;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::{Timestamp, UtcOffset};
 
 use crate::entry::{Attachment, Body, Entry, User};
 use crate::words::{Texts, Words, say};
-pub use sources::Sources;
+pub use head::AGENT_NOTE;
+pub use options::{Options, Purpose, Range, Tools};
+pub use sources::{Context, Sources};
 use text::{Out, prose};
 
 /// 给人看的字的编号前缀：都在内核那一份的 `export/` 下面。
@@ -43,18 +57,8 @@ pub struct About {
     pub to: Timestamp,
     /// 这个会话自己的模型调用一共用了多少 token（同会话列表的 `tokens`）。
     pub tokens: u64,
-}
-
-/// 盖过预设的开关：这一步只有 `read` 的那一套。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Options {
-    /// 带思考。
-    pub thinking: bool,
-}
-
-impl Options {
-    /// `read` 预设：自己看。
-    pub const READ: Options = Options { thinking: true };
+    /// 工作目录（同会话列表的 `cwd`）：`agent` 的开头写。
+    pub cwd: Option<String>,
 }
 
 /// 渲染要的全部。
@@ -91,12 +95,12 @@ pub fn render(doc: &Document<'_>) -> Rendered {
         local: doc.texts.local.as_ref(),
         english: doc.texts.english.as_ref(),
     };
+    let picked = select::select(doc);
     let mut out = Out::default();
-    head::write(&mut out, doc, &say);
+    head::write(&mut out, doc, &picked, &say);
     let mut speaker = Speaker::Nobody;
-    for entry in doc.entries.iter().filter(|entry| !entry.hidden) {
+    for entry in picked.entries {
         speaker = match &entry.body {
-            Body::User(user) if user.withdrawn => speaker,
             Body::User(user) => {
                 write_user(&mut out, user, &say);
                 Speaker::User
@@ -135,9 +139,26 @@ pub fn render(doc: &Document<'_>) -> Rendered {
     }
     let (text, redacted) = scrub::redact(&out.finish(), doc.secrets);
     Rendered {
-        text: scrub::tilde(&text, doc.texts.home.as_deref()),
+        text: estimated(scrub::tilde(&text, doc.texts.home.as_deref())),
         redacted,
     }
+}
+
+/// `chat` 开头的 token 估算换成数：同回应的 `tokens`（整份的 UTF-8 字节数除以 4），数本身也算在里面，算到不再变为止。
+fn estimated(text: String) -> String {
+    if !text.contains(head::ESTIMATE) {
+        return text;
+    }
+    let fill = |n: u64| text.replacen(head::ESTIMATE, &n.to_string(), 1);
+    let mut n = estimate::text(&fill(0));
+    for _ in 0..8 {
+        let again = estimate::text(&fill(n));
+        if again == n {
+            break;
+        }
+        n = again;
+    }
+    fill(n)
 }
 
 /// 上一块是谁的：她接着说的不再起小标题。

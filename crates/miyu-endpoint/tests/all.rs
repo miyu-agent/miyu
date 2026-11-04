@@ -255,6 +255,7 @@ mod secrets;
 mod session_context;
 mod session_export;
 mod session_export_markdown;
+mod session_export_presets;
 mod session_import;
 mod session_prompts;
 mod session_tools;

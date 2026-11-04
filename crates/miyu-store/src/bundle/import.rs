@@ -1,7 +1,8 @@
 //! 导入原始包（施工 SE-1 下，设计 `58-会话导出和导入.md` 第二节）：先核对，再落盘；有一样不对整个拒，数据根里什么都不留
 //! （blob 例外：先放进 blob 库的，没人引用、照 blob 的回收办）。
 //!
-//! 1. 清单：认得的格式版本（比 [`FORMAT`] 新的拒）；每一段、每一个 blob 在包里、字节数和 SHA-256 对得上。
+//! 1. 清单：认得的格式版本（比 [`FORMAT`] 新的拒）；每一段、每一个 blob 在包里、字节数和 SHA-256 对得上。清单写了
+//!    `transcript.md` 的它也一样（施工 SE-1 中下中），只核对、不导进来；清单没写的、包里多出来的文件不看。
 //! 2. 每个会话的段：段名是 12 位数字加 `.jsonl`、照名字排；每一行是一整行 JSON、序号从段名那一号起一条接一条；每一行里写成
 //!    内容哈希的字，要么在包里的 blob 里，要么在清单的 `absent` 里。
 //! 3. 段先写进会话目录旁边的暂存目录（名字点开头，不算会话），全部核对完再一个个改名进位置，各写一份 [`MARKER`]。
@@ -20,7 +21,7 @@ use zip::ZipArchive;
 
 use miyu_kernel::id::{ContentHash, Hasher, SessionId};
 
-use super::{FORMAT, MANIFEST, Manifest, ManifestSession, hashes_in, segment_names};
+use super::{FORMAT, MANIFEST, Manifest, ManifestSession, TRANSCRIPT, hashes_in, segment_names};
 use crate::blob::Blobs;
 use crate::durable::sync_dir;
 
@@ -116,6 +117,9 @@ fn stage_and_place(
     blobs: &Blobs,
     marker: &Marker,
 ) -> Result<(Vec<SessionId>, Vec<SessionId>), ImportError> {
+    if let Some(transcript) = &manifest.transcript {
+        check_transcript(archive, transcript)?;
+    }
     let mut referenced = BTreeSet::new();
     for session in &manifest.sessions {
         stage_session(
@@ -286,6 +290,39 @@ fn read_entry(
         )));
     }
     Ok(read)
+}
+
+/// 人能直接看的那一份：边读边算哈希，不留在内存里（它可以比一段日志长）；字节数、哈希要和清单的一样。
+fn check_transcript(
+    archive: &mut ZipArchive<File>,
+    transcript: &super::ManifestFile,
+) -> Result<(), ImportError> {
+    let mut entry = archive
+        .by_name(TRANSCRIPT)
+        .map_err(|_| ImportError::Mismatch(format!("{TRANSCRIPT} is missing")))?;
+    let (mut digest, mut bytes, mut buffer) = (Hasher::default(), 0u64, vec![0u8; 64 * 1024]);
+    loop {
+        let n = entry.read(&mut buffer)?;
+        if n == 0 {
+            break;
+        }
+        digest.update(&buffer[..n]);
+        bytes += n as u64;
+        if bytes > transcript.bytes {
+            break;
+        }
+    }
+    if bytes != transcript.bytes {
+        return Err(ImportError::Mismatch(format!(
+            "{TRANSCRIPT}: size does not match"
+        )));
+    }
+    if digest.finish() != transcript.sha256 {
+        return Err(ImportError::Mismatch(format!(
+            "{TRANSCRIPT}: sha256 does not match"
+        )));
+    }
+    Ok(())
 }
 
 /// 一个 blob：解到暂存目录里的一个文件，边读边算哈希，再交给 blob 库存；对不上的拒。

@@ -7,6 +7,8 @@ use std::borrow::Cow;
 #[derive(Debug, Default)]
 pub(super) struct Out {
     text: String,
+    /// 最后接的是列表里的一行（[`Out::item`]）：下一行接着写，不空行。
+    listing: bool,
 }
 
 impl Out {
@@ -20,6 +22,19 @@ impl Out {
             self.text.push_str("\n\n");
         }
         self.text.push_str(block);
+        self.listing = false;
+    }
+
+    /// 接列表里的一行：上一块也是列表里的一行的紧接着写（同一个列表），不然另起一块。
+    pub(super) fn item(&mut self, line: &str) {
+        let line = line.trim_end();
+        if self.listing {
+            self.text.push('\n');
+            self.text.push_str(line);
+        } else {
+            self.block(line);
+        }
+        self.listing = true;
     }
 
     /// 写完：以一个换行结尾。
@@ -147,4 +162,31 @@ fn html(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
+}
+
+/// 长的一段截成头尾（`agent`、`chat` 写工具结果，施工 SE-1 中下中）：超过 `most` 个字的留头尾各一半，中间一行写省了几个字
+/// （固定英文，同 `agent` 的开头）。头尾能退到换行的退到换行（退得不多于一半的一半），整行好读。
+pub(super) fn head_and_tail(text: &str, most: usize) -> Cow<'_, str> {
+    let count = text.chars().count();
+    if count <= most {
+        return Cow::Borrowed(text);
+    }
+    let half = most / 2;
+    let byte = |n: usize| text.char_indices().nth(n).map_or(text.len(), |(at, _)| at);
+    let mut head = byte(half);
+    if let Some(at) = text[..head].rfind('\n').filter(|at| *at >= byte(half / 2)) {
+        head = at;
+    }
+    let mut tail = byte(count - half);
+    if let Some(at) = text[tail..].find('\n').map(|at| tail + at + 1)
+        && at <= byte(count - half / 2)
+    {
+        tail = at;
+    }
+    let omitted = text[head..tail].chars().count();
+    Cow::Owned(format!(
+        "{}\n[… {omitted} characters omitted …]\n{}",
+        text[..head].trim_end_matches('\n'),
+        &text[tail..]
+    ))
 }

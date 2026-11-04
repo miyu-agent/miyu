@@ -23,6 +23,7 @@ fn about(main: &SessionId) -> About {
         main: main.clone(),
         miyu: "0.0.0".to_string(),
         exported: "2026-11-04T00:00:00Z".to_string(),
+        transcript: None,
     }
 }
 
@@ -204,3 +205,4 @@ fn a_blob_that_does_not_match_its_name_fails_the_whole_bundle() {
 }
 
 mod import;
+mod transcript;
