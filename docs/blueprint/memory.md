@@ -45,6 +45,7 @@
 | `crates/miyu-session/src/memory/keeper.rs` | 一间记忆和这次的听众（`Keeper`）：记、改、忘、清空、搜、列、搜以前的对话，她的工具和协议共用；恢复作废的在 `memory/restore.rs`（R-12 下）；搜以前的对话在 `memory/past.rs`（R-13 下挪出来，照场所挑）；`memory/port.rs` 是她的工具的端口，只管出处是这一轮、`by` 是那次调用 | R-3 中、补 |
 | `crates/miyu-memory/` | 记忆这个软件包（可选、能关，`10-自带软件.md` 第三节）：三件工具 `memory_search`、`remember`、`forget`，经端口碰记忆日志和检索库；不放进基础系统 | R-3 中 |
 | `crates/miyu-endpoint/src/memory.rs`、`memory/params.rs` | 协议 `memory.*`：找哪一间、读参数、写回应；搜以前的对话在 `memory/turns.rs`（R-12 下）；一条在回应里的样子在 `memory/shown.rs`（R-13 上挪出来）；`/remember` 记一条（`commands.rs` 调它）；人格记忆没装的拒绝（R-10，第十一条）；`Core::with_vectors`、`memory_for`（R-10 从 `lib.rs` 挪过来）；跟着看找哪一间（`follow`，R-12 上；转发在 `subscriptions/memory.rs`） | R-3 补 |
+| `crates/miyu-endpoint/src/memory/import.rs`、`crates/miyu-session/src/memory/keeper/import.rs`、`memory/landed.rs` | 导入（`memory.import`，「协议」）：端点逐条查、找哪一间；`Keeper::import` 照 `origin` 去重、记下，`Keeper::settle_imported` 在后台写关键词、补向量、看一眼够不够整理；`landed.rs` 是记下了几条以后写关键词、补向量那一段，抽取和导入共用 | MI-1 |
 | `crates/miyu-session/src/memory/listener.rs` | 谁在听（`Listener`，第九条，R-13 上）：主人还是这个场所，在哪儿冒出来，记下时写什么；`Keeper::as_owner` 给合并用 | R-13 上 |
 | `crates/miyu-session/src/memory/extract/voices.rs` | 抽取那一段每一句是谁说的、群里每一轮带多少（第六条第 4 款，R-13 上） | R-13 上 |
 | `crates/miyu-session/src/memory/follow.rs` | 跟着看一间的记忆日志（`Keeper::follow`、`Following`）：补哪些、之后的照听众挑、放进有界的通道，攒满了算掉队（「协议」的跟着看） | R-12 上 |
@@ -88,7 +89,7 @@
 
 | 事件 | 什么时候 | `body` 的格 | 哪一步 |
 |---|---|---|---|
-| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上）、`keywords`（R-15 上）、`who`（E-1 上）、`people`（E-1 修四）、`place`（E-4 上） | R-3 上 |
+| `ext.memory.saved` | 记下一条；写了 `replaces` 的是改一条（新写一条指着旧的，旧的从此不算） | `class`、`text`、`sources`、`audience`，可以有 `replaces`、`about`、`venue`（R-13 上）、`keywords`（R-15 上）、`who`（E-1 上）、`people`（E-1 修四）、`place`（E-4 上）、`noted`、`origin`（MI-1） | R-3 上 |
 | `ext.memory.tagged` | 只换一条的关键词，编号不变：只用来检索，给她看的地方不显示；空的是去掉（R-15 上，2026-10-19 项目主人定） | `id`、`keywords` | R-15 上 |
 | `ext.memory.retired` | 作废一条，原文还在日志里 | `id`、`why`；整理作废的另有 `kind`（`outdated`、`repeat`、`worthless`，核心核对过的）、`kept`（留下的那一条，`worthless` 没有；R-17） | R-3 上 |
 | `ext.memory.restored` | 人恢复作废了的一条：它不算作废了（第二条第 6 款） | `id` | R-12 下 |
@@ -106,6 +107,7 @@
 - `who`：`person` 那一类说的是谁（E-1 上，设计 42 PN2）：平台上的人是平台编号（`qq:10086`，同一个号跨群、私聊都是他），没有平台号的是名字。别的类、以前记的没有，不写。改一条没写的照旧的。
 - `people`：`episode` 那一类涉及谁（E-1 修四：相处的事——被她禁言、把她 P 成猪——合卡时看得出是谁的）：几个平台编号或名字，认法同 `who`，不写她自己、主人；别的类、没有的、以前记的不写。抽取交回的照这一段的说话人认（第六条第 6 款）；她的工具不收，改一条发生过的事照旧的带过去，改成别的类的不带。
 - `place`：在哪个群（E-4 上，2026-10-27 项目主人定「她看得到每条记忆在哪儿发生的」）：记下那一刻这个群叫什么，桥交的 `venue.place`（`venues.md`「场所的格」，核心不记群名，只有场所编号）。抽取记的照出处那一轮的（到她答完那一条为止最近带群名的那句人话，`memory/keeper/heard.rs` 的 `place_at`）；她当场记的照这个会话最近听到的（会话记下一批事件时记忆的端口记住，载入时照日志里最后带群名的那句接上，同 `my_name`）；改一条的这个会话没听到过群名就照旧的；整理改的照旧的。私聊、本机、人经协议记的、以前记的没有，不写。群改了名，以前记的照旧是那时的名字。给她看的那一行照它和 `venue` 写在哪儿（E-4 下，「工具」`memory_search` 那一行）。
+- `noted`、`origin`（MI-1，`memory.import`）：从别处导进来的才有。`noted` 是原来记下的时刻，底账一条的时刻（`memory.list` 的 `at`、给她和模型看的每一行的日期、记忆库那一行的时刻）照它，没有的照事件的时刻；编号、先后、「上次整理以后新记的」照旧照日志的先后。`origin` 是在原来那边是哪一条，底账另收一张导进来过的表（作废、改掉、清掉了的也在），导入照它去重。别的路记的、以前记的不写。
 - `sources`：几处 `{"session": 会话编号, "turn": 回合编号}`；人在界面上记的是空的。
 - `audience`：出处那几轮会被谁看到，几个 `by` 的写法（`{"kind":"person"}`、`{"kind":"external",…}`），照主人、外部身份比。整理出来的取几处出处的交集，最严的。
 - `venue`：在哪个场所说的（R-13 上）：场所里记的是那个场所（`qq:group:1` 这种），它的 `audience` 是空的。主人那边记的、以前记的没有，不写。改一条的照旧的。只记在哪说的，哪儿都想得起（R-29，第九条）。
@@ -133,7 +135,7 @@
 - 给头看的那一份（`tool.result` 的 `detail`，施工 W-11，2026-10-17 两个头要的：点开画给人看的，不画给她的英文）：`memory_search` 交 `{"memories": [{"id", "class", "date", "text", "forgotten"?, "who"?}], "turns": [{"date", "session", "text"}]}`，搜到卡的另有 `"cards": [{"who", "names", "date", "text"}]`（施工 E-3，原文，日期是写下卡的那天，没卡的不写这一格），照给她看的先后；日期照会话的时区，作废的才写 `forgotten: true`，对话片段是原文（不截、不换行），会话写整个编号；什么都没找到的两个空列表。`remember`、`forget` 不交，头照参数和 `human` 画。
 - 她当场记的那一段，后台不再抽（第六条第 3 款，R-6）。
 
-**协议**（R-3 补，`17-记忆.md` 第九节；原文写法见 `protocol.md`）：人不经过她碰记忆。十一个方法都能写 `persona` 或 `session`（最多一个）指哪一间：`persona` 是这个人格那一间（人格照 `personas.md` 的几层找）；`session` 是那个会话用的那一间，也就是它的人格那一间（照它的快照；`off` 的、不带人格的、场所会话 `memory_unavailable`）；都不写照默认人格，没设默认人格的 `memory_unavailable`；`persona` 写 `_none` 的是无人格那一间（施工 R-12 再补）。听众是主人，记下的 `by` 是人（`person`）。人格记忆这个软件包没装的，十一个都回 `memory_not_installed`，先于别的检查（第十一条，R-10）。人经协议是主人那边（R-13 上）：全部列得出、搜得到、改得了；R-29 起哪儿都是全部（第九条第 3 款）。
+**协议**（R-3 补，`17-记忆.md` 第九节；原文写法见 `protocol.md`）：人不经过她碰记忆。十二个方法都能写 `persona` 或 `session`（最多一个）指哪一间：`persona` 是这个人格那一间（人格照 `personas.md` 的几层找）；`session` 是那个会话用的那一间，也就是它的人格那一间（照它的快照；`off` 的、不带人格的、场所会话 `memory_unavailable`）；都不写照默认人格，没设默认人格的 `memory_unavailable`；`persona` 写 `_none` 的是无人格那一间（施工 R-12 再补）。听众是主人，记下的 `by` 是人（`person`）。人格记忆这个软件包没装的，十二个都回 `memory_not_installed`，先于别的检查（第十一条，R-10）。人经协议是主人那边（R-13 上）：全部列得出、搜得到、改得了；R-29 起哪儿都是全部（第九条第 3 款）。
 
 | 方法 | 类型 | 参数 | 回应 |
 |---|---|---|---|
@@ -141,6 +143,7 @@
 | `memory.search` | 查询 | `query`；`forgotten`、`limit`（1 到 500，不写 10） | `{"memories": [...]}`，最相关的在前；只搜记下的，不搜回合索引 |
 | `memory.turns` | 查询 | `query`；`limit`（1 到 500，不写 10）（R-12 下） | `{"turns": [{"session", "turn", "at", "text"}…]}`：搜以前的对话（回合索引），最相关的在前；同她的 `memory_search` 搜以前的对话那一路，只是不跳过哪个会话 |
 | `memory.remember` | 命令 | `class`（五类）、`text`（不超过 120 字）；`keywords`（R-15 上）；`who`（`person` 要写，没写的 `bad_params`；别的类写了不收，E-1 上） | `{"id"}` |
+| `memory.import` | 命令 | `items`：1 到 500 条，每条 `at`（原来记下的时刻，RFC 3339 带时区，不晚于现在）、`class`、`text`、`origin`（在原来那边是哪一条，1 到 200 字，一批里不重复）必写；`who`（`person` 必写，别的类不收）、`people`（只有 `episode` 能写）、`keywords` 照类写（MI-1） | `{"ids": [<编号或 null>…], "imported", "skipped"}`：`ids` 和 `items` 一一对上，导进来过同一个 `origin` 的跳过、是 `null` |
 | `memory.update` | 命令 | `id`；`text`、`keywords`（R-15 上）、`who`（E-1 上）至少写一个 | `{"id"}`：新的一条，`replaces` 旧的，类照旧的；只写 `keywords` 的编号不变；只写 `who` 的照旧文新记一条、换是谁；没写 `who` 的是谁带过去 |
 | `memory.forget` | 命令 | `id`、`why`（可以不写，写成空的）；或者 `clear`：`session`（清掉从这个会话来的，那个会话就是写的 `session`）、`me`（整间） | 作废的 `{}`；清空的 `{"cleared": <几条>}`（不算改掉的旧版本） |
 | `memory.restore` | 命令 | `id`（R-12 下） | `{}`：恢复作废的一条（第二条第 6 款）；本来就算数的也回 `{}`、不写 |
@@ -151,6 +154,12 @@
 
 - 一条：`{"at", "by", "class", "id", "retired", "sources", "text", "used", "used_at", "venue"}`（`used`、`used_at` 是用到几次、最近一次，第八条第 4 款，R-4 下；`venue` 是在哪个场所说的，本机的是 `null`，R-13 上）。`by` 是 `person`（人记的）或 `tool`（她记的）；`sources` 是 `[{"session", "turn"}]`；`retired` 是作废的原因，没作废的 `null`。只给现在算数的、出处活着的；`forgotten` 时作废的也给，清掉的、改掉的不给。
 - 人记的、改的：`by` 是这个人，出处空，听众是这个人。
+- 导进来的（`memory.import`，MI-1，`17-记忆.md` L19；2026-11-03 项目主人定旧版「知识点转、其余存档」）：旧版的迁移包照它把知识点导成新的记忆。
+  - 先全查后写：`items` 空的、超过 500 条，一条缺必写的、写法不对、类不认识、正文空的或超过 120 字、`person` 没写 `who`、别的类写了 `who` 或 `people`、关键词超过 200 字、`origin` 空的或太长或一批里重复，都回 `bad_params`，`data` 写 `{"index", "field"}`（整批的毛病只有 `field`），一条都不记。正文、`who`、关键词、`origin` 去掉前后空白再用，空的关键词当没有。
+  - 照 `items` 的先后一条一个 `ext.memory.saved`：这一间日志里导进来过同一个 `origin` 的（作废、改掉、清掉了的也算）跳过，重跑迁移不会把整理掉的旧记忆再导回来。`by` 是人，出处空，听众是主人（同人记的：一直算活的，清会话的不动它，第二条）；`noted` 是原来的时刻，`origin` 照写；`person` 说的是她自己的同 `remember` 记成 `episode`、不写是谁。不写 `venue`、`place`、`replaces`。中途写不进的：写进去了的照留，回 `internal_error`，重发时照 `origin` 跳过。
+  - 不认命令编号（同 `memory.dream`）：同一个 `id` 再发照 `origin` 全跳过，回 `imported` 0。
+  - 导进了一条以上：回应以后在后台照抽取记下以后的规矩（`memory/landed.rs`，抽取也走它）给这几条写关键词（一次最多 20 条，多的接着分几次）、补向量，再照 E-9 看一眼够不够整理（第七条第 1 款：从没整理过的这一间马上整理，整理过的满 `memory.merge_every` 才整理；不轮询）。核心没交整理要的几样（照剧本回的端口）的只补向量。要马上去重的，迁移包接着调 `memory.dream`。
+  - 只给人经协议：她的工具、斜杠命令都没有。迁移包不离线写记忆日志。
 - 以前的一段（`memory.turns`）：`session`、`turn` 是哪个会话的哪一轮（`turn` 写法同 `sources`），`at` 是那一轮的时刻，`text` 是回合索引里的字（人的话，空一行，她最后的回答，第一条）。撤销了的一轮、删了的会话本来就不在回合索引里。
 - 记、改、忘、清空、恢复同一个命令编号再发只算一次，回应和头一次一样，核心重启以后也是（上面 `cause`）：先认编号再查参数，改一条重发时那一条已经不算了，照样回头一次的。`/remember` 照 `command.run` 的编号。
 - 出错：`memory_unavailable`、`unknown_memory`（没有这一条，或者听众不合）、`memory_not_current`（已经改掉、作废、清掉了；恢复的是已经改掉、清掉了）、`memory_too_long`（`data.limit`、`data.chars`）、`memory_busy`（这一间正在整理，R-7 补）、`dream_failed`（整理没成，`data.message` 是英文的一句为什么，R-7 补）；类不认识、空的、`persona` 和 `session` 都写、`id` 和 `clear` 都写或都不写、写了 `as`（代表外部的人碰记忆随 O 线）：`bad_params`。
@@ -399,6 +408,7 @@
 | `crates/miyu-endpoint/tests/memory_api.rs` | 「协议」：五个方法各走一遍（新的在前、照类、`limit`、搜、改了旧的不出来、类照旧、作废的只在 `forgotten` 时出来）；写错的几种（超长带 `data`、120 字记得下、类不认识、空白、两样都写、`as`、人格编号、没有的人格、没有的会话、`limit` 出范围、`from` 写错），什么都没记；默认人格、会话那一间、跟着人格的会话、`off` 的 `memory_unavailable`；同一个命令编号记、改、作废、清空再发只算一次，重启以后也是；没设默认人格的不写人格就找不到哪一间；无人格的会话里 `/remember` 记进无人格那一间，另一个无人格会话照会话看得到、人格那一间看不到；无人格的会话重启载入照样接回那一间（施工 P-12） |
 | `crates/miyu-session/tests/memory_installed.rs`（R-10） | 第十一条，真会话：没装的这一轮不交摘要、装回来下一轮交、以前记的都在；没装的闲了不抽、装回来照常抽 |
 | `crates/miyu-session/tests/memory_installed_log.rs`（R-10，BUG-5） | 第十一条，上了闹钟以后卸掉的响了也不抽：照运行日志认先后（看到闹钟上了就卸，等到「没装、跳过」那一行再看假服务器），不等被后台同步扣着的回应，不靠睡多久 |
+| `crates/miyu-endpoint/tests/memory_import.rs`、`crates/miyu-recall/src/memory/tests/imported.rs`、`crates/miyu-store/tests/memory_imported.rs`、`crates/miyu-session/tests/memory_tagging.rs` 的 `an_import_is_tagged_twenty_at_a_time_then_merged`（MI-1） | 「协议」的 `memory.import`，真核心：照先后编号、`at` 是原来的（换成 UTC）、`by` 是人、出处空，关键词、是谁、涉及谁带上；十六种不对的回 `bad_params`、`data` 说第几条哪一项、一条都不记；同一个 `origin` 不再导（同一个命令编号再发、作废、整间清空以后也是）；没带关键词的另发一次写上、从没整理过的接着整理，刚整理过的不起；一次最多写二十条的关键词、多的接着发；`noted`、`origin` 读写得回、没有的不写、以前的日志照读，底账和记忆库那一行（删了重开补回来的也是）的时刻照 `noted`、导进来过的 `origin` 一直记着 |
 | `crates/miyu-endpoint/tests/memory_installed.rs`（R-10） | 第十一条，真核心经 `package.remove` 卸掉出厂的人格记忆：`memory.*` 五个都回 `memory_not_installed`、原话照语言；`/remember` 回 `memory_unavailable`、为什么说没装，`command.catalog` 不列它；装回来以前记的都在、又列出来 |
 | `crates/miyu-core/tests/packages.rs` 的 `memory_removed_before_start_says_not_installed`、`crates/miyu-endpoint/tests/preset_face.rs` 的 `memory_not_in_the_given_list_says_not_installed`（R-10） | 第十一条第 1 款：起来时就卸掉了的（`Core::new` 读的那一份、`Core::with_packages` 交进来的那一份），`memory.*` 回 `memory_not_installed` |
 | `crates/miyu-endpoint/tests/memory_clear.rs` | 清空：她记的和人记的一起清，清一个会话的回一条、清掉的作废的里也没有，清整间回两条、搜不到、改它说不算了；会话那一间清会话的就是整间 |

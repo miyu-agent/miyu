@@ -75,7 +75,7 @@
 | `sessions.drive` | 驱动会话：`session.create`、`send`、`interrupt`、`revert`、`unrevert`、`redo`、`compact`、`clear`、`configure`、`fork`、`set_meta`、`respond`，`command.run`、`job.stop` |
 | `events.read` | 读会话：订阅 `events`、`view`、`sessions` 流，`session.list`、`session.recap`、`view.page`、`view.detail`、`job.output` |
 | `events.write` | 往会话里记自己的事件（`events.append`） |
-| `memory.write` | 写记忆、知识库：`memory.remember`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
+| `memory.write` | 写记忆、知识库：`memory.remember`、`import`、`update`、`forget`、`restore`、`dream`、`dream_stop`，`kb.add`、`create`、`update`、`mount`、`remove`、`delete`、`reindex` |
 | `fs.read` | 经核心读文件（`fs.*`） |
 | `network` | 经核心抓链接（`link.preview`） |
 | `fs.write` | 写指定的路径：扩展进沙盒以后照它放行 |

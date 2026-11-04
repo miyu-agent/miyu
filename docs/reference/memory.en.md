@@ -7,13 +7,14 @@ Chinese version: [memory.md](memory.md).
 | [`memory.list`, `memory.search`](#memorylist-memorysearch) | List and search memories |
 | [`memory.turns`](#memoryturns) | Search past conversations |
 | [`memory.remember`, `memory.update`, `memory.forget`, `memory.restore`](#memoryremember-memoryupdate-memoryforget-memoryrestore) | Remember, change, retire or clear, restore |
+| [`memory.import`](#memoryimport) | Import memories from elsewhere in batches (such as migrating from the old version) |
 | [`memory.cards`, `memory.card_update`, `memory.card_forget`](#person-cards-memorycards-memorycard_update-memorycard_forget) | Cards of the people she knows: list, change, retire |
 | [`memory.dream`](#memorydream) | Organize memory now |
 | [`memory.dream_stop`](#memorydream_stop) | Stop the organizing in progress |
 | [`kb.list`, `kb.search`, `kb.read`, `kb.documents`](#kblist-kbsearch-kbread-kbdocuments) | List knowledge bases, search, read a page, list the documents in one |
 | [`kb.create`, `kb.update`, `kb.mount`, `kb.delete`, `kb.add`, `kb.remove`, `kb.reindex`](#managing-knowledge-bases) | Manage knowledge bases |
 
-**Who can call**: people, extensions; extensions writing (remembering, changing, forgetting, restoring, consolidating, changing and retiring person cards; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
+**Who can call**: people, extensions; extensions writing (remembering, importing, changing, forgetting, restoring, consolidating, changing and retiring person cards; adding, changing, mounting, removing and reindexing knowledge bases) need the `memory.write` capability. People going through the protocol are on the owner's side: everything can be listed, searched and changed.
 
 ## Which memory
 
@@ -87,6 +88,29 @@ Answered once on disk. The same request `id` sent again counts once, also after 
 | `memory_too_long` | Text over 120 characters or keywords over 200, `data.chars`, `data.limit`, `data.field` is `text` or `keywords` |
 | `unknown_memory` | No such memory |
 | `memory_not_current` | Already changed, retired or cleared |
+
+## `memory.import`
+
+Imports memories from elsewhere in batches, keeping when each was first noted (for example, migrating from the old Miyu). An imported memory is like one a person remembered: `by` is `person`, with no sources.
+
+**Parameters**: `items`, 1 to 500 of them, each:
+
+| Name | Meaning |
+|---|---|
+| `at` | When it was first noted, RFC 3339 with an offset (`2026-10-21T10:53:22+08:00`, `…Z`), not in the future. Required |
+| `class` | As in `memory.remember`. Required |
+| `text` | The text, at most 120 characters. Required |
+| `origin` | Which one it was where it came from, 1 to 200 characters, unique within the batch (such as `legacy:default:facts:57`). Required |
+| `who` | Required when `class` is `person`, refused otherwise |
+| `people` | Who was involved (a list of strings), only when `class` is `episode` |
+| `keywords` | Keywords used only for search, at most 200 characters, optional |
+
+**Result**: `{"ids": [...], "imported": <count>, "skipped": <count>}`. `ids` lines up with `items`: an id for each one kept, `null` for each one skipped.
+
+- Everything is checked first: if one item is wrong, nothing is written and the reply is `bad_params` with `data.index` (which item, from 0; absent for a problem with the whole batch) and `data.field` (`items`, `item`, `at`, `class`, `text`, `origin`, `who`, `people` or `keywords`).
+- Duplicates: an item whose `origin` was imported into this memory before is skipped, even if it was since retired, changed or cleared, so running a migration again never brings deleted ones back. Sending the same `id` again works the same way: everything is skipped.
+- `at` in lists and searches is the original time; ids follow the import order and count as newly remembered.
+- Keywords for items without them are written in the background after the reply; when at least one was imported, organizing follows the usual interval (a memory never organized before is organized right away). To remove duplicates right away, call `memory.dream` next.
 
 ## Person cards: `memory.cards`, `memory.card_update`, `memory.card_forget`
 

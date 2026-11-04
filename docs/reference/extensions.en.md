@@ -75,7 +75,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | `sessions.drive` | Driving sessions: `session.create`, `send`, `interrupt`, `revert`, `unrevert`, `redo`, `compact`, `clear`, `configure`, `fork`, `set_meta`, `respond`, `command.run`, `job.stop` |
 | `events.read` | Reading sessions: subscribing to the `events`, `view` and `sessions` streams, `session.list`, `session.recap`, `view.page`, `view.detail`, `job.output` |
 | `events.write` | Recording your own events in a session (`events.append`) |
-| `memory.write` | Writing memories and knowledge bases: `memory.remember`, `update`, `forget`, `restore`, `dream`, `dream_stop`, `kb.add`, `create`, `update`, `mount`, `remove`, `delete`, `reindex` |
+| `memory.write` | Writing memories and knowledge bases: `memory.remember`, `import`, `update`, `forget`, `restore`, `dream`, `dream_stop`, `kb.add`, `create`, `update`, `mount`, `remove`, `delete`, `reindex` |
 | `fs.read` | Reading files through the core (`fs.*`) |
 | `network` | Fetching links through the core (`link.preview`) |
 | `fs.write` | Writing given paths: granted once extensions run in a sandbox |

@@ -217,6 +217,7 @@
 | `check` | 查人手写的文件：配置、密钥文件、人格，照磁盘上现在的字（施工 8-30，`cli/check.md`） |
 | `memory.list`、`memory.search`、`memory.remember`、`memory.update`、`memory.forget` | 人不经过她列、搜、记、改、忘和清空记忆（施工 R-3 补，`memory.md`「协议」） |
 | `memory.turns`、`memory.restore` | 搜以前的对话；恢复作废的一条（施工 R-12 下，`memory.md`「协议」） |
+| `memory.import` | 把别处的记忆成批导进来，保住原来记下的时刻，照 `origin` 去重（施工 MI-1，`memory.md`「协议」） |
 | `memory.dream` | 现在就整理记忆：先抽、再合，回几样数；在后台答（施工 R-7 补，`memory.md` 第七条第 9 款） |
 | `memory.dream_stop` | 叫停这一间这时人叫的整理（施工 R-23，`memory.md` 第七条第 13 款） |
 | `memory.cards`、`memory.card_update`、`memory.card_forget` | 认识的人的卡：列、人写一张、作废一张（施工 E-1 下，`memory.md` 第七条第 15 款） |
@@ -862,7 +863,7 @@
 
 **`memory.*`**（施工 R-3 补，`memory.md`「协议」）
 
-人格记忆这个软件包没装的，十一个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十一个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，这个会话用不了记忆（范围 `off`、不带人格、场所会话）的 `memory_unavailable`；带 `session` 的指的是那个会话的人格那一间。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。听众是主人，记下的 `by` 是人；人格照几层找，`_none` 是无人格那一间；带 `session` 的照「办之前过的几道」。
+人格记忆这个软件包没装的，十二个方法都回 `memory_not_installed`，先于别的检查（施工 R-10，`memory.md` 第十一条）。十二个方法都收 `persona`（字符串）或 `session`（会话编号）指哪一间，最多写一个，都不写照默认人格（同 `session.create`），没设默认人格的 `memory_unavailable`（不带人格记忆不生效）；人格编号的写法、找不到的照 `session.create` 第 6 条，会话找不到的 `session_not_found`，这个会话用不了记忆（范围 `off`、不带人格、场所会话）的 `memory_unavailable`；带 `session` 的指的是那个会话的人格那一间。写了 `as` 的 `bad_params`。人经协议是主人那边：全部列得出、搜得到、改得了（施工 R-13 上，`memory.md` 第九条；施工 R-29 起哪儿都是全部）。听众是主人，记下的 `by` 是人；人格照几层找，`_none` 是无人格那一间；带 `session` 的照「办之前过的几道」。
 
 | 方法 | 参数 | 回应 |
 |---|---|---|
@@ -870,6 +871,7 @@
 | `memory.search` | `query`（字符串，必写、不能是空白）、`forgotten`、`limit`（1 到 500，不写 10） | `{"memories": [...]}`，最相关的在前 |
 | `memory.turns` | `query`（字符串，必写、不能是空白）、`limit`（1 到 500，不写 10）（施工 R-12 下） | `{"turns": [{"at", "session", "text", "turn"}…]}`，最相关的在前（第 7 条） |
 | `memory.remember` | `class`（`user`、`feedback`、`episode`、`reference`、`person`，必写；`person` 施工 E-1 上）、`text`（必写）、`keywords`（施工 R-15 上）、`who`（`person` 必写，别的类不收，施工 E-1 上） | `{"id": "m<序号>"}` |
+| `memory.import` | `items`：1 到 500 条，每条 `at`（RFC 3339 带时区，不晚于现在）、`class`、`text`、`origin`（1 到 200 字，一批里不重复）必写，`who`（`person` 必写，别的类不收）、`people`（只有 `episode`）、`keywords` 可以写（施工 MI-1） | `{"ids": [<"m<序号>"> 或 null…], "imported", "skipped"}`（第 11 条） |
 | `memory.update` | `id` 必写；`text`、`keywords`、`who` 至少一个（施工 R-15 上、E-1 上） | `{"id"}`：新记的那一条（只写 `keywords` 的是原来那一条） |
 | `memory.forget` | `id`（可以带 `why`，不写是空的）；或者 `clear`：`session`（这时 `session` 必写）、`me` | 作废的 `{}`，清空的 `{"cleared": <几条>}` |
 | `memory.restore` | `id`，必写（施工 R-12 下） | `{}`（第 8 条） |
@@ -889,6 +891,7 @@
 8. `memory.restore`（施工 R-12 下，`memory.md` 第二条第 6 款）：作废了的那一条追加 `ext.memory.restored`，它不算作废了，列、搜、摘要、联想照常用它。本来就算数的回 `{}`、什么都不写；改掉的旧版本、清掉的 `memory_not_current`。
 9. `memory.dream_stop`（施工 R-23，`memory.md` 第七条第 13 款）：照参数找哪一间（同 `memory.*`），叫停这一间这时人叫的整理，不管是哪一路叫的（带 `persona`、`session` 的 `memory.dream`，会话里的 `/dream`）；定时的不停。合完了的批留着，正在合的那一批放弃（记 `merge_failed`，`why: stopped`）、下次再合；被叫停的那条 `memory.dream` 照样回应，带 `"stopped": true`。回 `{"stopped": true}`；这时没有人叫的整理（定时的在合也算没有）回 `not_dreaming`。照顺序答：`memory.dream` 在后台答，同一条连接上接着发它就行。
 10. 人卡（施工 E-1 下，`memory.md` 第七条第 15 款）：一人一张，照最新的那一张；`memory.cards` 不写 `forgotten` 的不列作废的，整间清空以前的没有。一张：`who`（平台编号或名字）、`text`、`names`、`at`（写下的时刻）、`by`（`module` 是整理写的，`person` 是人写的）、`retired`（作废的原因，没作废的 `null`）。`memory.card_update` 去掉前后空白再写一张 `ext.memory.card`（作废了的也重新算数）：`who`、`text` 空的，叫法有空的、超过 40 字的、超过 8 个的 `bad_params`；正文超过 400 字的 `memory_too_long`（`data.field` 是 `text`）。`memory.card_forget` 追加 `ext.memory.card_retired`：没有这个人的卡 `unknown_memory`，已经作废了的回 `{}`、什么都不写。同一个 `id` 再发只算一次（第 5 条）。
+11. `memory.import`（施工 MI-1，`memory.md`「协议」）：先全查后写，一条不对整批不写，回 `bad_params`，`data.index` 是第几条（从 0 数，整批的毛病没有）、`data.field` 是哪一项（`items`、`item`、`at`、`class`、`text`、`origin`、`who`、`people`、`keywords`；正文超长也是 `bad_params`，不是 `memory_too_long`）。照 `items` 的先后一条一个 `ext.memory.saved`（带 `noted`、`origin`），`by` 是人、出处空、听众是主人；这一间导进来过同一个 `origin` 的（作废、改掉、清掉了的也算）跳过，`ids` 里是 `null`。不认编号（同 `memory.dream`）：同一个 `id` 再发照 `origin` 全跳过。中途写不进的回 `internal_error`，写进去了的照留。一条的 `at` 是原来的时刻，编号照先后。导进了一条以上的回应以后在后台写关键词、补向量、照间隔看要不要整理。
 
 **`kb.*`**（施工 K-1 上，`knowledge.md`「对外的样子」）
 

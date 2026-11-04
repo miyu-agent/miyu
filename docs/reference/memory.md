@@ -7,13 +7,14 @@
 | [`memory.list`、`memory.search`](#memorylistmemorysearch) | 列、搜记忆 |
 | [`memory.turns`](#memoryturns) | 搜以前的对话 |
 | [`memory.remember`、`memory.update`、`memory.forget`、`memory.restore`](#memoryremembermemoryupdatememoryforgetmemoryrestore) | 记、改、作废和清空、恢复 |
+| [`memory.import`](#memoryimport) | 把别处的记忆成批导进来（比如旧版的迁移） |
 | [`memory.cards`、`memory.card_update`、`memory.card_forget`](#人卡memorycardsmemorycard_updatememorycard_forget) | 认识的人的卡：列、改、作废 |
 | [`memory.dream`](#memorydream) | 现在就整理记忆 |
 | [`memory.dream_stop`](#memorydream_stop) | 叫停正在进行的整理 |
 | [`kb.list`、`kb.search`、`kb.read`、`kb.documents`](#kblistkbsearchkbreadkbdocuments) | 列知识库、搜、读一页、列一个库里的文档 |
 | [`kb.create`、`kb.update`、`kb.mount`、`kb.delete`、`kb.add`、`kb.remove`、`kb.reindex`](#kb-的管理) | 管理知识库 |
 
-**谁能调**：人、扩展；扩展写的（记住、改、忘、恢复、整理、改和作废人卡，知识库加、改、挂、删、重建索引）要能力 `memory.write`。人经协议是主人这一边：全部列得出、搜得到、改得了。
+**谁能调**：人、扩展；扩展写的（记住、导入、改、忘、恢复、整理、改和作废人卡，知识库加、改、挂、删、重建索引）要能力 `memory.write`。人经协议是主人这一边：全部列得出、搜得到、改得了。
 
 ## 记忆的「一间」
 
@@ -87,6 +88,29 @@
 | `memory_too_long` | 正文超过 120 个字、关键词超过 200 个字，`data.chars`、`data.limit`，`data.field` 是 `text` 或 `keywords` |
 | `unknown_memory` | 没有这一条 |
 | `memory_not_current` | 那一条已经改掉、作废、清掉了 |
+
+## `memory.import`
+
+把别处的记忆成批导进来，保住原来记下的时刻（比如旧版 Miyu 的迁移）。导进来的同人记的一条：`by` 是 `person`，出处空。
+
+**参数**：`items`，1 到 500 条，每条：
+
+| 名字 | 说明 |
+|---|---|
+| `at` | 原来记下的时刻，RFC 3339，要带时区（`2026-10-21T10:53:22+08:00`、`…Z`），不能晚于现在。必写 |
+| `class` | 同 `memory.remember`。必写 |
+| `text` | 正文，不超过 120 个字。必写 |
+| `origin` | 在原来那边是哪一条，1 到 200 个字，一批里不能重复（比如 `legacy:default:facts:57`）。必写 |
+| `who` | `class` 是 `person` 的必写，别的类不收 |
+| `people` | 涉及谁（字符串的列表），只有 `class` 是 `episode` 的能写 |
+| `keywords` | 只用来检索的关键词，不超过 200 个字，可以不写 |
+
+**回应**：`{"ids": [...], "imported": <几条>, "skipped": <几条>}`。`ids` 和 `items` 一一对上：记下的是编号，跳过的是 `null`。
+
+- 先全查后写：有一条不对，整批都不写，回 `bad_params`，`data.index` 是第几条（从 0 数，整批的毛病没有）、`data.field` 是哪一项（`items`、`item`、`at`、`class`、`text`、`origin`、`who`、`people`、`keywords`）。
+- 去重：这一间导进来过同一个 `origin` 的跳过，作废、改掉、清空了的也算。重跑迁移不会把删掉的再导回来。同一个 `id` 再发也照这一条：全跳过。
+- 列出、搜到的 `at` 是原来的时刻；编号照导进来的先后排，算这一次新记的。
+- 没带 `keywords` 的，回应以后在后台另写；导进了一条以上的，照「整理」的间隔看要不要整理（这一间从没整理过的马上整理）。要马上去重的，接着调 `memory.dream`。
 
 ## 人卡：`memory.cards`、`memory.card_update`、`memory.card_forget`
 
