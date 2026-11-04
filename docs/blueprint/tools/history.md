@@ -4,7 +4,7 @@
 
 翻这个会话自己的日志：按关键词找，按序号读，也能按时间、谁说的筛。压缩换出去的旧内容都还在日志里，她用它取回（`09-压缩.md` Z1）。只读这个会话自己的日志，不碰文件，不报效果。多一格 `session`（施工 C-4）：写了的读别的会话的日志，和读自己的日志走同一条路。认得出的只有 `sessions` 列得出的本机会话，场所会话读不到（施工 O-3）。
 
-状态：6-4 做好了（2026-09-29）：关键词加筛选，读会话自己的整份日志，压缩换出去的找得回。V-45（2026-11-04）边读边算、边挑边扔：交回的字一个字节没变，内存不随日志长。2-7 补（2026-10-01）列出人切权限级别。C-4（2026-10-01）加 `session`：认出这个会话看得到的别的会话，只读地开它的日志；找不到、对得上不止一个、这个会话没有列会话的端口各拒一句。施工定下的技术细节写在各节里；向量一路、索引见「还没有的」。
+状态：6-4 做好了（2026-09-29）：关键词加筛选，读会话自己的整份日志，压缩换出去的找得回。V-45（2026-11-04）边读边算、边挑边扔：交回的字一个字节没变，内存不随日志长。V-49（2026-11-05）每一行只解要的种类：交回的字一个字节没变，只有不要的种类的正文合 JSON、不合写法的不再报读不了（2026-11-05 项目主人批，同判官的口径）。2-7 补（2026-10-01）列出人切权限级别。C-4（2026-10-01）加 `session`：认出这个会话看得到的别的会话，只读地开它的日志；找不到、对得上不止一个、这个会话没有列会话的端口各拒一句。施工定下的技术细节写在各节里；向量一路、索引见「还没有的」。
 
 ### 在哪
 
@@ -13,26 +13,27 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-basesystem/src/history.rs` | 参数、读日志、筛；`session` 认出来的不是她自己的，只读地开那个会话的日志再读（施工 C-4） |
-| `crates/miyu-basesystem/src/history/collect.rs`（施工 V-45） | 边读边挑：日志一块块交给 `miyu_store::sweep`，定下来的那一截挑出算一条、筛得进的，「读」只留从头一页放得下的几条，「找」只留最新一页放得下的几条和摘出来的一段；她自己翻记录的调用照定下来的回复记；别的会话照读到的每一条记的任务读完再认；放早了的再读一遍，骨架认不得、调用编号对不上规矩的整份读（「怎么走」第 3 条） |
+| `crates/miyu-basesystem/src/history/collect.rs`（施工 V-45） | 边读边挑：日志一块块交给 `miyu_store::sweep`，定下来的那一截挑出算一条、筛得进的，「读」只留从头一页放得下的几条，「找」只留最新一页放得下的几条和摘出来的一段；她自己翻记录的调用照定下来的回复记；别的会话照读到的每一条记的任务读完再认；放早了的再读一遍，骨架认不得、调用编号对不上规矩的整份读（「怎么走」第 3 条）；每一行只解要的种类（`ONLY`，施工 V-49） |
 | `crates/miyu-basesystem/src/history/entry.rs` | 一条事件算不算一条、一条的原文怎么写、「谁」那一格（别的 harness 发来的写名字，施工 7-10；别的会话发来的写短编号，施工 C-2；场所里的人写发的人，施工 O-42）；人切权限级别的那一条（施工 2-7 补） |
 | `crates/miyu-basesystem/src/history/page.rs` | 找、读：一页怎么写、往下翻、整页上限、摘一段 |
 | `crates/miyu-basesystem/src/history/time.rs` | `since`、`until` 的写法 |
 | `crates/miyu-kernel/src/history.rs` | `History::whole()`：留着压缩替代掉的，撤销、恢复、撤回照有效历史的规矩算（`kernel/history.md`）；`History::note` 只记派出去的任务（认别的会话） |
 | `crates/miyu-store/src/sweep.rs`、`sweep/bones.rs` | 读一遍、边读边过有效历史，谁都撤不到的那一截交给调的一方就放（施工 V-45 从端点挪来，`store.md` 第 7 条 `sweep`） |
 | `crates/miyu-kernel/src/time.rs` | 照时区写到分钟、照时区的日期和钟点换回时刻 |
-| `crates/miyu-tool/src/log.rs` | 这个会话日志的只读入口：`ReadLog`，`Call.log` 带着 |
+| `crates/miyu-tool/src/log.rs` | 这个会话日志的只读入口：`ReadLog`，`Call.log` 带着；`read_range_only` 只解要的种类（施工 V-49） |
+| `crates/miyu-kernel/src/event/only.rs` | 只解要的种类读一行（`Event::from_line_only`，施工 V-39 上补）：有效历史照种类认的全解，`model.called` 只解撤销看的几格（施工 V-49 `history` 也用） |
 | `crates/miyu-tool/src/sessions.rs` | `SessionsPort::open`（施工 C-4）：只读地开别的会话的日志，交回 `Log`；`find_session` 认 `session` 写的是哪一个（C-3 做好） |
-| `crates/miyu-store/src/log/open.rs` | `read_range`：只读地从第一条起一块块读（施工 V-45；以前是 `read_segments` 一段段读） |
+| `crates/miyu-store/src/log/open.rs` | `read_range_only`：只读地从第一条起一块块读，只解要的种类（施工 V-49；V-45 是全解的 `read_range`，以前是 `read_segments` 一段段读） |
 | `crates/miyu-session/src/tools.rs` | 执行器把这个会话日志的只读入口、会话的时区、列会话的端口交给这次调用（`sessions`、`history` 共用的 `Call.sessions`） |
 | `crates/miyu-session/src/sessions.rs` | `Lister::open`（施工 C-4）：转给会话表的 `SessionPort::read_log` |
-| `crates/miyu-session/src/spawn.rs`、`crates/miyu-endpoint/src/spawn.rs` | `SessionPort::read_log`（施工 C-4）：会话表这一头只算出会话的真实目录，不读盘，`Log` 包着它，`read_range` 照序号一块块读（施工 V-45，同这个会话自己那份）；`miyu-endpoint` 已经直接依赖 `miyu-store`（`peek` 先例），不必把 `miyu-session` 里自己那份 `LogDir` 公开出来 |
+| `crates/miyu-session/src/spawn.rs`、`crates/miyu-endpoint/src/spawn.rs` | `SessionPort::read_log`（施工 C-4）：会话表这一头只算出会话的真实目录，不读盘，`Log` 包着它，`read_range_only` 照序号一块块读、只解要的种类（施工 V-45、V-49，同这个会话自己那份）；`miyu-endpoint` 已经直接依赖 `miyu-store`（`peek` 先例），不必把 `miyu-session` 里自己那份 `LogDir` 公开出来 |
 | `resources/software/basesystem/tools/history.json` | 说明和参数格式 |
 | `resources/software/basesystem/history/*.txt` | 输出里给她看的几句；`agent.txt` 是别的 harness 发来的那一条的「谁」（施工 7-10）；`session.txt` 是别的会话发来的那一条的「谁」（施工 C-2）；`permission.txt` 是人切权限级别的那一条的原文（施工 2-7 补） |
 | `resources/software/basesystem/human/{zh,en}.json` | 显示名、结果那一句 |
 
 **交给工具的**（施工 6-4，C-4 多一格）：一次调用的 `Call` 多三格，别的工具不看（`sessions` 那格和 `sessions` 工具共用）。
 
-- `log`：这个会话日志的只读入口（`ReadLog`）。一块块交出事件，交给的函数交回「不读了」就停；最后一段末尾没写完的半行跳过，一个字节都不写：会话正在往里写。执行器照会话的目录造，`history` 用它的 `read_range` 从第一条读（底下是存储的 `read_range`，从第一条读的照整份自检，施工 V-45）。测试里的假调用没有，`history` 照「读不了日志」出错。
+- `log`：这个会话日志的只读入口（`ReadLog`）。一块块交出事件，交给的函数交回「不读了」就停；最后一段末尾没写完的半行跳过，一个字节都不写：会话正在往里写。执行器照会话的目录造，`history` 用它的 `read_range_only` 从第一条读、只解要的种类（底下是存储的 `read_range_only`，从第一条读的照整份自检，施工 V-45、V-49；默认的照 `read_range` 全解，测试里的假日志用）。测试里的假调用没有，`history` 照「读不了日志」出错。
 - `offset`：会话的时区，执行器照会话现在的环境交（`kernel/facts` 的 `Environment`，头报上来换了跟着换）。没有环境的测试照 UTC。读别的会话时这一格不变：时刻照这个会话自己的时区写，和读的是哪一份日志无关（施工 C-4）。
 - `sessions`（施工 C-3，C-4 多用一个方法）：列会话的端口（`SessionsPort`）。`session` 参数写了的，先经它的 `list` 列出这个会话看得到的主会话、和 `find_session` 一起认出是哪一个，再经它的 `open` 只读地开那个会话的日志。没有这个端口的（子会话、场所会话、测试里的假调用）写了 `session` 直接拒（`not-here.txt`）。
 
@@ -86,6 +87,7 @@
    - 别的会话（「谁」那一格，施工 C-2）照整份日志记着的派出去的任务认：读到的每一条都记一遍任务（`History::note`，不留事件），这一页的几条读完再认；
    - 撤销、撤回比放掉的还早的，照骨架算的下界再读一遍（读到头一遍读到的那一条）；骨架认不得的整份读，同以前。
    读到的照旧整份自检，只有一处：段名是 `000000000000.jsonl` 的段（序号从 1 数，内核写不出这个名字）不读、不查（同 `store.md` 第 7 条 `read_range` 从第一条读起）。
+   每一行只解要的种类（施工 V-49，`collect.rs` 的 `ONLY`；2026-11-05 项目主人批，同判官的口径，`store.md` 第 7 条 `read_range_only`）：`message.assistant`、`tool.result`（算一条、写原文，认她自己翻记录的调用，工具结果派出去的任务认别的会话）、`session.created`（父会话，认别的会话）、`session.policy_changed`（人切权限级别）全解；人话、以前的摘要、撤销、恢复、撤回、回合的开头结尾、回报这些有效历史照种类认的本来就全解（`kernel/events.md` 的 `Event::from_line_only`）；`model.called` 只解撤销看的几格；别的种类（注入的事实、会话的标题、命令、审批……）不解正文，读成不认识的种类、照先后留在有效历史里。交回的字一个字节没变；只有一处不一样：不要的种类的正文合 JSON、只是不合那一种的写法的（外人改过的日志才有），以前报读不了，现在照读、交回的同那一行没坏时；外壳坏了、不是合法 JSON、要的种类坏了的照报，报的一字不差。一条算不算、「谁」那一格、认别的会话多看了别的种类，`ONLY` 要跟着加；有效历史多认了种类改内核那边。
 4. 照 `from`、`to`、`since`、`until`、`by` 筛。
 5. **找**（有 `query`）：
    1. 每个词都出现的算命中，不分大小写，照原样比，中文不分词。
@@ -107,7 +109,7 @@
 - 以前的摘要：摘要正文。
 - 人切了权限级别：`Changed the permission level to <级别>`（施工 2-7 补）。
 
-- M6 不建索引，每次从头读：会话再长，日志也就几十兆，先量；慢了再建。全文索引随记忆、知识库那一套一起做（`07-存储.md` 第七节、`19-知识库.md`）。施工 V-45 量过：从头读、解析还在，内存不再随日志长（第 3 条）；关键词走回合检索库要改找的口径，没做，要项目主人拍板。
+- M6 不建索引，每次从头读：会话再长，日志也就几十兆，先量；慢了再建。全文索引随记忆、知识库那一套一起做（`07-存储.md` 第七节、`19-知识库.md`）。施工 V-45 量过：从头读、解析还在，内存不再随日志长（第 3 条）；关键词走回合检索库要改找的口径，没做，要项目主人拍板。施工 V-49 每一行只解要的种类（第 3 条），省了 `model.called` 那两成的解析（一页「读」28.7 → 26.5 亿指令）；回复、工具结果照旧全解。
 - 日志里的原文是别人写的（工具输出、网页），当数据给她看，和当时她看到的是同一份。
 
 ### 样子
@@ -180,7 +182,9 @@ This session cannot read other sessions.
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-basesystem/src/history/tests/same.rs`（施工 V-45） | 边读边挑和以前整份读、整份挑的（照抄在 `tests/same/old.rs`）逐字节一样：照种子造的会话（`tests/same/script.rs`：撤销、恢复、重做、撤回、压缩、分叉、子会话、别的来路、派子代理、翻记录的调用、人切权限级别、超长的条目、转小写会变长的字），读、找、翻页、范围、时刻、谁说的、一页几条、越界，放法调小的和出厂的，切成几段交的和写成真段文件经存储读的（坏一行的报的错也比）；再读一遍、骨架认不得、调用编号对不上三条退路都走到 |
+| `crates/miyu-basesystem/src/history/tests/same.rs`（施工 V-45，V-49 新的每一行只解要的种类） | 边读边挑和以前整份读、整份挑的（照抄在 `tests/same/old.rs`）逐字节一样：照种子造的会话（`tests/same/script.rs`：撤销、恢复、重做、撤回、压缩、分叉、子会话、别的来路、派子代理、翻记录的调用、人切权限级别、超长的条目、转小写会变长的字），读、找、翻页、范围、时刻、谁说的、一页几条、越界，放法调小的和出厂的，切成几段交的和写成真段文件经存储读的（坏一行的报的错也比）；再读一遍、骨架认不得、调用编号对不上三条退路都走到 |
+| `crates/miyu-basesystem/src/history/tests/same/only.rs`（施工 V-49） | 只解要的种类：生成器造的不认识的种类多半换成不要的各种（会话的标题、命令、审批、目标、待办、包的状态、暂停着没发出去的请求……），对照测试照它比；真段文件写坏一行：不要的种类正文合 JSON、不合写法的照读、交回的同没坏时（以前的读法报读不了），外壳坏了、要的种类（含请求撤销看的 `seen`）坏了的交回的一字不差，存储报的错连为什么也一样 |
+| `crates/miyu-session/src/store/tests/only.rs`、`crates/miyu-endpoint/src/spawn/tests.rs`（施工 V-49） | 这个会话自己的、读别的会话的只读入口：`read_range_only` 照存储的只解要的种类读，不要的种类坏了的照读、`read_range` 报坏了，要的种类、外壳坏了的两样报的一样 |
 | `crates/miyu-basesystem/src/history/tests.rs` | 哪些算一条；撤掉的、撤回的、她自己翻记录的不算；四种筛；找：每个词都要、不分大小写、新的在前、摘一段、往前翻；读：先后、工具调用的写法、整页上限、一条太长；时刻的写法和时区；参数不对；读不了日志；叫停 |
 | `crates/miyu-kernel/src/history/tests.rs` | `History::whole()`：压缩替代掉的留着，摘要也是一条；撤销、恢复、撤回和有效历史一样；撤掉压缩所在的那一轮，摘要跟着不算（施工 6-9） |
 | `crates/miyu-store/src/log/tests.rs` | `read_segments`：一段一段交、叫停就不读下去、半行跳过不截 |

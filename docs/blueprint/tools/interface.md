@@ -73,7 +73,7 @@
 | `checked` | 权限策略判过的真实位置（`Arc<[PathBuf]>`，施工 5-18）：工具报的每一条 `Target` 判的时候换成的那一个。执行器照这一次调用放进来，工具经 `Call::real`、`Call::real_itself` 换路径时核对（第三节第 4 条）。测试里直接造的调用、执行前的链报路径时没有，照换出来的碰 |
 | `stop` | 叫停的旗（`Stop`）：执行器「叫它停」时举起来，future 被丢掉时也举起来 |
 | `sandbox` | 要关进沙盒的：助手的路径、规格、要设的环境变量（`Sandboxed`，`sandbox.md`）；空的照旧直接跑。施工 5-1 加的，5-4（上）起执行器照这一刻实际生效的级别带（`session/tools.md`） |
-| `log` | 这个会话日志的只读入口（`Log`，里面是一个 `ReadLog`）：一段一段交出事件，交给的函数说不读了就停。只有 `history` 用（施工 6-4，`tools/history.md`）；没有的是空的。另能照序号读一截（`read_range(从第几条, 到第几条, 每一块)`，读过终点就停；默认照段读了再挑，执行器造的照序号定位）：订阅时补发的那一截用（施工 V-37 下，`session/actor.md` 第 6 条），工具不用 |
+| `log` | 这个会话日志的只读入口（`Log`，里面是一个 `ReadLog`）：一段一段交出事件，交给的函数说不读了就停。只有 `history` 用（施工 6-4，`tools/history.md`）；没有的是空的。另能照序号读一截（`read_range(从第几条, 到第几条, 每一块)`，读过终点就停；默认照段读了再挑，执行器造的照序号定位）：订阅时补发的那一截用（施工 V-37 下，`session/actor.md` 第 6 条）。再能照序号只解要的种类读一截（`read_range_only(从第几条, 到第几条, 要的种类, 每一块)`，施工 V-49；默认照 `read_range` 全解，执行器、会话表造的照存储的 `read_range_only`）：`history` 用 |
 | `offset` | 会话的时区：照会话现在的环境。只有 `history` 用（施工 6-4）；测试里照 UTC |
 | `agents` | 派子代理的端口（`Arc<dyn AgentPort>`，施工 7-5）：执行器照这一次调用抄好父会话的那几样（`session/tools.md`「派子代理」）。只有 `subagent` 用；没有的（测试里的假调用、没装会话表的核心）是空的，`subagent` 照派不了出错 |
 | `messages` | 留言的端口（`Arc<dyn MessagePort>`，施工 7-7）：执行器照这一次调用抄好这个会话的父会话、它派出去的子代理（`session/tools.md`「父子之间留言」）。只有 `send_message` 用；没有的（测试里的假调用、没装会话表的核心）是空的，`send_message` 照送不到出错 |

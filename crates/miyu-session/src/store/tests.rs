@@ -78,5 +78,6 @@ fn a_base_reads_its_parent_up_to_the_fork_and_fails_without_it() {
     drop(std::fs::remove_dir_all(&root));
 }
 
+mod only;
 mod range;
 mod seen;

@@ -3,9 +3,13 @@
 //! `Done` 逐字节比。边读边放调小（逼出放早了再读一遍的）和出厂的各比一遍；日志切成几段交，几份写成真的段文件经存储读
 //! （定位读、一块块交），坏一行的报的错也比。再查三条退路（再读一遍、骨架认不得整份读、调用编号对不上整份读）都走到。
 //!
+//! 新的读法每一行只解要的种类（施工 V-49）：切成几段交的照 `Event::from_line_only` 解（`only.rs` 的 `Lines`），真段文件经存储的
+//! `read_range_only`；以前的读法照旧全解。只解要的种类那一处行为差别（不要的种类正文合 JSON、不合写法的不报）在 `only.rs` 比。
+//!
 //! 平时每次跑 [`SEEDS`] 份（Windows 的 debug 门禁一趟已经很长，见施工单）；`MIYU_HISTORY_FULL=1` 跑 [`FULL`] 份。
 
 mod old;
+mod only;
 mod script;
 
 use std::fs;
@@ -13,12 +17,13 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use miyu_kernel::id::Seq;
-use miyu_store::log::{Flow, read_range, read_segments};
+use miyu_store::log::{Flow, read_range, read_range_only, read_segments};
 use miyu_store::sweep::{Ended, Plan, Sweep, Tuning};
 
 use super::*;
 use crate::history::collect::Collect;
 use crate::history::{Args, Texts, Wanted, look_tuned, wanted};
+use only::{Lines, vary};
 use script::{Dice, Script, WORDS};
 
 /// 平时跑几份。
@@ -54,6 +59,22 @@ impl ReadLog for Dir {
         read_range(&self.0, from, Some(upto), |events| match each(events) {
             true => Flow::Go,
             false => Flow::Stop,
+        })
+        .map_err(|error| error.to_string())
+    }
+
+    fn read_range_only(
+        &self,
+        from: Seq,
+        upto: Seq,
+        only: &[&str],
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        read_range_only(&self.0, from, Some(upto), only, |events| {
+            match each(events) {
+                true => Flow::Go,
+                false => Flow::Stop,
+            }
         })
         .map_err(|error| error.to_string())
     }
@@ -237,7 +258,8 @@ fn the_new_reading_is_byte_for_byte_the_old_one() {
         };
         let child = dice.odds(5);
         let forked = dice.odds(6).then(|| 3 + dice.below(400));
-        let script = Script::run(&mut dice, steps, child, forked);
+        let mut script = Script::run(&mut dice, steps, child, forked);
+        vary(&mut dice, &mut script.lines);
         let events: Vec<Event> = script
             .lines
             .iter()
@@ -251,7 +273,7 @@ fn the_new_reading_is_byte_for_byte_the_old_one() {
             *paths.entry(path(&texts, &events, tuning)).or_default() += 1;
         }
         let mut segments = Vec::new();
-        let mut rest = events.as_slice();
+        let mut rest = script.lines.as_slice();
         while !rest.is_empty() {
             let take = (1 + dice.below(400) as usize).min(rest.len());
             segments.push(rest[..take].to_vec());
@@ -259,7 +281,7 @@ fn the_new_reading_is_byte_for_byte_the_old_one() {
         }
         compared += compare(
             &texts,
-            &log(segments),
+            &Log::new(Lines::new(segments)),
             &mut dice,
             &events,
             &[small, Tuning::SHIPPED],

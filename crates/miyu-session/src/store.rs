@@ -441,6 +441,23 @@ impl ReadLog for LogDir {
         })
         .map_err(|error| error.to_string())
     }
+
+    /// 同上，只是每一行只解 `only` 里的种类（施工 V-49，`miyu_store::log::read_range_only`）：`history` 翻记录用。
+    fn read_range_only(
+        &self,
+        from: Seq,
+        upto: Seq,
+        only: &[&str],
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        read_range_only(&self.0, from, Some(upto), only, |events| {
+            match each(events) {
+                true => Flow::Go,
+                false => Flow::Stop,
+            }
+        })
+        .map_err(|error| error.to_string())
+    }
 }
 
 #[cfg(test)]

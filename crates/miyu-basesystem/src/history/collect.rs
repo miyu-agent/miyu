@@ -10,6 +10,9 @@
 //! - 别的会话发来的话，「谁」那一格要照整份日志记着的派出去的任务认（`History::is_peer`）：读到的每一条都记一遍
 //!   （[`Kept::note`]，只记任务、待办、包的状态，不留事件），这一页的几条读完再认；
 //! - 一页放不放得下照不算「谁」那一格的字数估下限：下限都超过了的，整份写的时候也轮不到它。
+//!
+//! 每一行只解要的种类（施工 V-49，[`ONLY`]）：不列、不看的种类不解正文，读成不认识的种类、照先后留在有效历史里，挑的时候本来就
+//! 跳过它们。
 
 use std::collections::{BTreeSet, VecDeque};
 
@@ -25,6 +28,29 @@ use miyu_tool::{Log, Stop};
 use super::entry::{self, Entry, Placeholders, Sender};
 use super::page::{self, Footers, PAGE, Page};
 use super::{NAME, Wanted, picked};
+
+/// 只解要的种类（施工 V-49，`docs/construction/V-49-history只解要的种类.md`；2026-11-05 项目主人批，同 V-39 上补的口径）：
+/// 这几种全解——
+///
+/// - `message.assistant`、`tool.result`：算一条、写原文（`entry.rs`）；她自己翻记录的调用照回复里的调用、结果的编号认
+///   （[`Collect::not_a_lookup`]）；工具结果里派出去的任务（`job.started`）照它记下来，认别的会话（`History::note`、`is_peer`）。
+/// - `session.created`：父会话（`History::note`）：父会话发来的话「谁」写 `user`，不当别的会话。
+/// - `session.policy_changed`：人切权限级别算一条（`entry::switched`）。
+///
+/// 人话、以前的摘要、撤销、恢复、撤回、回合的开头结尾、回报这些有效历史照种类认的，`Event::from_line_only` 本来就全解（内核
+/// `event/only.rs` 的 `HISTORY`；`Sweep` 的骨架看的也都在里面）；`model.called` 只解撤销看的几格（`SEEN`）；别的种类（注入的
+/// 事实、会话的标题、命令、审批、目标、待办、包的状态……）`history` 不列、不看，`body` 不解。
+///
+/// 挨着几处规矩，改了要跟着改：`entry.rs` 多列了别的种类、多看了别的格；`History::note` 认别的会话多看了别的种类、别的效果
+/// （现在是 `session.created` 和工具结果的 `job.started`，工具结果本来就全解）：这里加上。有效历史多认了种类、多看了别的格：改
+/// 内核的 `HISTORY`、`SEEN`（同判官、撤销的回应、记忆抽取），这里不用动。对照测试（`tests/same.rs`、`tests/same/broken.rs`）
+/// 守着。
+pub(super) const ONLY: &[&str] = &[
+    "session.created",
+    "session.policy_changed",
+    "message.assistant",
+    "tool.result",
+];
 
 /// 边读边挑，交给 [`Sweep`] 收下定下来的那一截。
 pub(super) struct Collect<'a> {
@@ -307,8 +333,8 @@ fn own_calls(blocks: &[Block]) -> impl Iterator<Item = CallId> + '_ {
     })
 }
 
-/// 读一遍挑出来：头一遍放早了的照下界再读一遍；骨架认不得、日志对不上调用编号的规矩的整份读（同以前的读法）。叫停了的交回
-/// 空的；读不了的交回原因。`new` 每一遍造一个新的。
+/// 读一遍挑出来：头一遍放早了的照下界再读一遍；骨架认不得、日志对不上调用编号的规矩的整份读（同以前的读法）。三样都只解要的
+/// 种类（[`ONLY`]）。叫停了的交回空的；读不了的交回原因。`new` 每一遍造一个新的。
 pub(super) fn collect<'a>(
     log: &Log,
     new: impl Fn() -> Collect<'a>,
@@ -317,7 +343,7 @@ pub(super) fn collect<'a>(
 ) -> Result<Option<Collect<'a>>, String> {
     let end = Seq::new(u64::MAX).unwrap_or(Seq::FIRST);
     let mut sweep = Sweep::new(Plan::guess(), tuning, new());
-    log.read_range(Seq::FIRST, end, |events| {
+    log.read_range_only(Seq::FIRST, end, ONLY, |events| {
         !stop.stopped() && matches!(sweep.feed(events), Flow::Go)
     })?;
     if stop.stopped() {
@@ -331,7 +357,7 @@ pub(super) fn collect<'a>(
         Ended::Done if !sweep.settled.bad() => return Ok(Some(sweep.settled)),
         Ended::Again if !sweep.settled.bad() => {
             let mut again = Sweep::new(Plan::exact(sweep.reaches), tuning, new());
-            log.read_range(Seq::FIRST, last, |events| {
+            log.read_range_only(Seq::FIRST, last, ONLY, |events| {
                 !stop.stopped() && matches!(again.feed(events), Flow::Go)
             })?;
             if stop.stopped() {
@@ -355,7 +381,7 @@ fn whole<'a>(
     upto: Seq,
 ) -> Result<Option<Collect<'a>>, String> {
     let mut kept = Kept::whole();
-    log.read_range(Seq::FIRST, upto, |events| {
+    log.read_range_only(Seq::FIRST, upto, ONLY, |events| {
         if stop.stopped() {
             return false;
         }

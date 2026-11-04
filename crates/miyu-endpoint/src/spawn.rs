@@ -19,7 +19,7 @@ use miyu_kernel::session::{Command, Outcome, Queued};
 use miyu_kernel::time::Timestamp;
 use miyu_session::{Child, ForkChild, NotWatched, Peek, Pending, SessionPort, peek};
 use miyu_store::index::Row;
-use miyu_store::log::{Flow, read_events, read_range, read_segments};
+use miyu_store::log::{Flow, read_events, read_range, read_range_only, read_segments};
 use miyu_tool::{Log, MainSession, ReadLog, Stop};
 
 use crate::Core;
@@ -279,4 +279,24 @@ impl ReadLog for Dir {
         })
         .map_err(|error| error.to_string())
     }
+
+    /// 同上，只是每一行只解 `only` 里的种类（施工 V-49，[`read_range_only`]）：`history` 读别的会话也只解要的种类，同这个会话自己那份。
+    fn read_range_only(
+        &self,
+        from: Seq,
+        upto: Seq,
+        only: &[&str],
+        each: &mut dyn FnMut(Vec<Event>) -> bool,
+    ) -> Result<(), String> {
+        read_range_only(&self.0, from, Some(upto), only, |events| {
+            match each(events) {
+                true => Flow::Go,
+                false => Flow::Stop,
+            }
+        })
+        .map_err(|error| error.to_string())
+    }
 }
+
+#[cfg(test)]
+mod tests;
