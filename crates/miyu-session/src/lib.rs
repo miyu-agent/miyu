@@ -45,6 +45,7 @@ mod lines;
 pub mod loading;
 mod memory;
 mod messages;
+mod onlooker;
 mod open;
 pub mod packages_off;
 mod path_text;
@@ -92,6 +93,7 @@ pub use memory::{
     Memory, MergeTexts, NotDreamed, Query, RecallTexts, Stamp, SummaryTexts, TagTexts, Using,
     Vectors,
 };
+pub use onlooker::Onlooker;
 pub use open::{
     Create, CreateError, Fork, ForkError, ForkedBase, GroupSettings, Installed, Load, LoadError,
     OfferedFeatures, Placed, PresetPlaces, ToolOverrides, Within, Workplace, create, fork,

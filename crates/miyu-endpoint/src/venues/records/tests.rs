@@ -52,5 +52,6 @@ fn rendering() -> miyu_assemble::GroupChat {
 
 mod files;
 mod old;
+mod recent;
 mod same;
 mod script;

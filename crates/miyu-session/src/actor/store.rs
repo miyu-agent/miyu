@@ -25,6 +25,11 @@ use crate::goal::Goals;
 use crate::store::Flush;
 
 impl Actor {
+    /// 看着落盘的那一格（施工 V-44，`onlooker.rs`）：交给 `Handle` 的那一份。
+    pub(crate) fn onlookers(&self) -> crate::onlooker::Onlookers {
+        Arc::clone(&self.onlookers)
+    }
+
     /// 这一刻「当前的」几样（施工 9-6 上）：订阅时和订阅在同一步里交回。权限、还在跑的任务照内核这一刻的，累计的照给头看的
     /// 那一份。
     pub(super) fn current(&self) -> Current {
@@ -125,6 +130,7 @@ impl Actor {
             .count();
         // 同步挪到后台的（施工 V-19）：只写、不同步，写完拿最新的句柄；不挪的照旧连同同步写。
         let background = store.background();
+        let onlooker = self.onlookers.get().cloned();
         let written = tokio::task::spawn_blocking(move || {
             span.in_scope(|| {
                 let result = match background {
@@ -136,6 +142,10 @@ impl Actor {
                 // 边读边记，不把整份日志攒在内存里（施工 V-41 中）。
                 let seen = (reseen && result.is_ok()).then(|| store.seen());
                 let mark = store.mark();
+                // 看着落盘的（施工 V-44，判官的记录窗）：写进去了、回应之前交给它，也在这个线程里。
+                if let (Some(onlooker), Ok(_)) = (&onlooker, &result) {
+                    onlooker.appended(&events);
+                }
                 (store, result, seen, mark)
             })
         })

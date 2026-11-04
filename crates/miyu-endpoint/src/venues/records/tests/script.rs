@@ -55,6 +55,8 @@ pub(super) struct Script {
     cause: u64,
     /// 回报、子会话回报、等的会话空了：序号。
     reports: Vec<u64>,
+    /// 撤销、恢复、撤回排着的话 `calm` 回里才有一回（施工 V-44 的记录窗测试要长段不撤的）；0 的照旧。
+    calm: u64,
 }
 
 impl Script {
@@ -69,6 +71,7 @@ impl Script {
             undone: Vec::new(),
             cause: 0,
             reports: Vec::new(),
+            calm: 0,
         };
         script.line("session.created", None, MEMBERS[2], None, CREATED);
         script
@@ -103,11 +106,22 @@ impl Script {
 
     /// 照种子写一段：`steps` 步。
     pub(super) fn run(dice: &mut Dice, steps: u64) -> Script {
+        Script::run_calm(dice, steps, 0)
+    }
+
+    /// 同 [`Script::run`]，撤销、恢复、撤回排着的话 `calm` 回里才有一回（0 的同 `run`）。
+    pub(super) fn run_calm(dice: &mut Dice, steps: u64, calm: u64) -> Script {
         let mut script = Script::new();
+        script.calm = calm;
         for _ in 0..steps {
             script.step(dice);
         }
         script
+    }
+
+    /// 这一步撤不撤（`calm` 是 0 的不掷骰子，照旧的种子造出来的一样）。
+    fn loud(&self, dice: &mut Dice) -> bool {
+        self.calm == 0 || dice.odds(self.calm)
     }
 
     fn step(&mut self, dice: &mut Dice) {
@@ -127,8 +141,8 @@ impl Script {
                     &format!(r#"{{"msg":"{msg}","by":"qq:200{by}"}}"#),
                 );
             }
-            15 if self.open.is_none() => self.revert(dice),
-            16 if !self.undone.is_empty() => {
+            15 if self.open.is_none() && self.loud(dice) => self.revert(dice),
+            16 if !self.undone.is_empty() && self.loud(dice) => {
                 let turns = self.undone.pop().expect("有撤的");
                 self.turns.extend(&turns);
                 self.turns.sort_unstable();
@@ -140,7 +154,7 @@ impl Script {
                     &format!(r#"{{"turns":{turns:?}}}"#),
                 );
             }
-            17 => self.withdraw(dice),
+            17 if self.loud(dice) => self.withdraw(dice),
             18 if dice.odds(4) => {
                 let upto = 1 + dice.below(self.next() - 1);
                 self.undone.clear();

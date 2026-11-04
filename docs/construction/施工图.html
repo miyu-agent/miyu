@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1035</b><span>/ 1044 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1036</b><span>/ 1045 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">SH-1 下</b><span>最近一步（SH-1 下 人跑的命令在视图流和参考文档里）</span></li>
+    <li><b class="mono">V-44</b><span>最近一步（V-44 判官记录窗）</span></li>
   </ul>
 </header>
 
@@ -515,6 +515,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sSE1mda"><span class="n">SE-1 中下上</span>导出 Markdown<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV41b"><span class="n">V-41 中</span>撤销不整份读两遍<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sV42"><span class="n">V-42</span>请求体按条留着编好的历史<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sV44"><span class="n">V-44</span>判官记录窗<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
@@ -11986,6 +11987,59 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/V-42-请求体按条留着编好的历史.md</code>；蓝图 <code>drivers/openai-chat.md</code>「留着编好的历史」、<code>drivers/anthropic.md</code>、<code>drivers/openai-responses.md</code>、<code>session/actor.md</code> 第 8 条第 5 款第 2 点。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sV44" aria-labelledby="h-sV44">
+  <div class="sheet-head"><h2 id="h-sV44"><span class="no">V-44</span>判官记录窗</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">载入着的群会话旁边留着判官要的最近几样，追加的事件顺手更新，判官照它答，不再每次把整份群日志从头解一遍；回应一个字节不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">判官记录窗</span><span class="dir-note">V-44</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>会话加 <code>Onlooker</code>：<code>Handle::onlooker</code> 第一次要的时候装上，actor 每写进去一批在写盘线程里交给它，会话退下跟着放掉</li>
+              <li>端点的记录窗 <code>venues/records/recent.rs</code>：第一条、记录总数和最后 128 条、撤回（最多 2048 条）、引用编号的哈希 → 最后一条序号（最近 3584 个）</li>
+              <li>头一回问照旧走边读边记的那一遍（<code>Sweep</code>、<code>read_range_only</code> 不变），同一遍顺手建窗；读的时候又写进来的照日志补读再挂</li>
+              <li>要判的在窗里、要显示的够、引用对得上的照窗答，别的照整份读；撤销、恢复、撤回排着的话、序号接不上、撤回过上限的窗作废，下一问重建</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">做：每个开着的群会话常驻约 1 MB 换判官 CPU，超过 1 MB 要报；撤销、恢复、撤回、窗不够、刚载入的退回整份读</span><span class="rl">项目主人 2026-11-03</span></div>
+          <div class="tile new"><span class="nm">复用 <code>Sweep</code> 和 <code>read_range_only</code> 这一套读法，不另造；不落盘、不加缓存文件</span><span class="rl">core1 2026-11-03</span></div>
+          <div class="tile new"><span class="nm">回应和整份读逐字节一样，拿随机群日志每一问对照</span><span class="rl">V-44 派活</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">V-44</dd></div>
+        <div><dt>名称</dt><dd>判官记录窗</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-04</dd></div>
+        <div><dt>提交</dt><dd class="mono">V-44</dd></div>
+        <div><dt>验收</dt><dd>群日常（600 条、四成问判官）：全套核心指令 1971 → 349 亿、task-clock 32.6 → 7.8 s；只问判官 1717 → 39.4 亿、29.4 → 1.2 s；判官一次 6.85 → 约 0.03 亿、墙钟 52～63 → 0.5～0.8 ms；一个会话常驻约 0.3 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>照种子造的群会话一批批写进日志、交给记录窗，随时问判官，和整份交给有效历史挑的逐字比（平时 250 段，<code>MIYU_RECORDS_FULL=1</code> 6000 段），照窗答、读回引用、建窗、退回、作废、补读、交得慢七条路都走到</span></li>
+        <li><span class="ok">✓</span><span>手写变异 12 个逮住 11 个，另 1 个等价</span></li>
+        <li><span class="ok">✓</span><span>真核心订阅着问的和重启后照旧整份读的 1,920 问，回应 sha 全一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/V-44-判官记录窗.md</code>；蓝图 <code>venues.md</code>「判官看的群聊记录」第 3 条、<code>session/actor.md</code> 第 5 条第 12 款。</li>
       </ul>
     </div>
   </div>

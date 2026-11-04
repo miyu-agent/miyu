@@ -437,8 +437,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
     actor.count_from(tally, goals);
     let busy = actor.busy();
     let watched = actor.watched();
-    let shown = actor.shown();
-    let on_person = actor.waiting();
+    let (shown, on_person, onlookers) = (actor.shown(), actor.waiting(), actor.onlookers());
     if let Some(upstream) = upstream {
         actor.report_to(Reporter::start(upstream, span.clone()));
     }
@@ -495,6 +494,7 @@ async fn open(setup: Load<'_>) -> Result<(Handle, Placed), LoadError> {
         .with_confined(confined)
         .with_loops(loops)
         .with_waiting(on_person)
-        .with_prefix(prefix);
+        .with_prefix(prefix)
+        .with_onlookers(onlookers);
     Ok((handle, placed))
 }

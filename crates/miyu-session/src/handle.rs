@@ -66,6 +66,8 @@ pub struct Handle {
     prefix: Arc<crate::prefix::Prefix>,
     /// 关起来的会话（施工 SU-4 中）：群、陌生人的私聊。造会话、载入时定下，之后不变。
     confined: bool,
+    /// 看着落盘的（施工 V-44，[`crate::Onlooker`]），和 actor 共用。
+    onlookers: crate::onlooker::Onlookers,
 }
 
 /// 发给 actor 的。
@@ -197,6 +199,7 @@ impl Handle {
             loops: false,
             prefix: Arc::default(),
             confined: false,
+            onlookers: Arc::default(),
         }
     }
 

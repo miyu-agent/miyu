@@ -59,6 +59,25 @@ impl Handle {
         &self.prefix
     }
 
+    /// 带上和 actor 共用的看着落盘的那一格（施工 V-44）。
+    #[must_use]
+    pub(crate) fn with_onlookers(mut self, onlookers: crate::onlooker::Onlookers) -> Handle {
+        self.onlookers = onlookers;
+        self
+    }
+
+    /// 看着这个会话落盘的（施工 V-44）：没装的照 `make` 装上；交回装着的那一个，装的是别的种类的没有。装上以后这个会话
+    /// 每写进去一批都交给它，会话退下、停了跟着放掉。
+    pub fn onlooker<T: crate::Onlooker>(
+        &self,
+        make: impl FnOnce() -> T,
+    ) -> Option<std::sync::Arc<T>> {
+        let there: std::sync::Arc<dyn crate::Onlooker> =
+            std::sync::Arc::clone(self.onlookers.get_or_init(|| std::sync::Arc::new(make())));
+        let any: std::sync::Arc<dyn std::any::Any + Send + Sync> = there;
+        any.downcast().ok()
+    }
+
     /// 带上和 actor 共用的「在不在等人」（施工 SL-1）。
     #[must_use]
     pub(crate) fn with_waiting(

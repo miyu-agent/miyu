@@ -12,6 +12,7 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use miyu_assemble::group::{Picked, Records, Window, quoted_as, records_from, records_in};
 use miyu_assemble::{ForwardTexts, GroupChat};
@@ -20,7 +21,8 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 use miyu_store::log::{Flow, OpenError, read_range_only};
 
-use super::pass::{Pass, start};
+use super::pass::{Pass, start_building};
+use super::recent::{Caps, Lately};
 use crate::refusal::Refusal;
 use crate::sweep::bones::hash;
 use crate::sweep::{Ended, Plan, Tuning};
@@ -88,29 +90,68 @@ pub(super) fn judge(
     texts: impl FnOnce(Option<&Event>) -> Result<(GroupChat, Option<ForwardTexts>), Refusal>,
     tuning: Tuning,
 ) -> Result<Records, Refusal> {
+    judge_building(log, msg, window, texts, tuning, None).0
+}
+
+/// 同 [`judge`]；`build` 有的，同一遍顺手收一份到读到的最后一条为止的记录窗（施工 V-44，`recent.rs`），读完了就交回（这一问
+/// 是拒绝码的也交）；头一遍没读完的没有。
+pub(super) fn judge_building(
+    log: &mut dyn Log,
+    msg: Seq,
+    window: Window,
+    texts: impl FnOnce(Option<&Event>) -> Result<(GroupChat, Option<ForwardTexts>), Refusal>,
+    tuning: Tuning,
+    build: Option<Caps>,
+) -> (Result<Records, Refusal>, Option<Lately>) {
+    let mut built = None;
+    let records = judge_with(log, (msg, window), texts, tuning, (build, &mut built));
+    (records, built)
+}
+
+fn judge_with(
+    log: &mut dyn Log,
+    (msg, window): (Seq, Window),
+    texts: impl FnOnce(Option<&Event>) -> Result<(GroupChat, Option<ForwardTexts>), Refusal>,
+    tuning: Tuning,
+    (build, built): (Option<Caps>, &mut Option<Lately>),
+) -> Result<Records, Refusal> {
     let need = window.most();
-    let mut pass = start(msg, need, Plan::guess(), tuning);
+    let mut pass = start_building(msg, need, Plan::guess(), tuning, build);
     log.range(Seq::FIRST, None, &mut |events| pass.feed(events))
         .map_err(refused)?;
     pass.finish();
-    let (chat, forward) = texts(pass.settled.first.as_ref())?;
+    let whole = |log: &mut dyn Log, upto, chat: &GroupChat, forward, built: &mut Option<Lately>| {
+        whole(log, (msg, upto), window, (chat, forward), (build, built))
+    };
+    let (chat, forward) = match texts(pass.settled.first.as_ref()) {
+        Ok(texts) => texts,
+        Err(refusal) => {
+            // 字读不出来的照旧报内部错；读完了的窗照样交回（没骨架认不得的才算读完）。
+            if pass.ended == Ended::Done {
+                *built = finished(&mut pass);
+            }
+            return Err(refusal);
+        }
+    };
     let forward = forward.as_ref();
-    let pass = match pass.ended {
+    let mut pass = match pass.ended {
         Ended::Done => pass,
-        Ended::Unsure => return whole(log, (msg, pass.last), window, &chat, forward),
+        Ended::Unsure => return whole(log, pass.last, &chat, forward, built),
         Ended::Again => {
-            let mut again = start(msg, need, Plan::exact(pass.reaches), tuning);
+            let mut again = start_building(msg, need, Plan::exact(pass.reaches), tuning, build);
             if let Some(last) = pass.last {
                 log.range(Seq::FIRST, Some(last), &mut |events| again.feed(events))
                     .map_err(refused)?;
             }
             again.finish();
             if again.ended != Ended::Done {
-                return whole(log, (msg, pass.last), window, &chat, forward);
+                return whole(log, pass.last, &chat, forward, built);
             }
+            again.last = pass.last;
             again
         }
     };
+    *built = finished(&mut pass);
     let Some(judged) = &pass.settled.judged else {
         return Err(Refusal::BAD_PARAMS);
     };
@@ -119,7 +160,7 @@ pub(super) fn judge(
         Quote::None => None,
         Quote::Kept(k) => Some(&pass.settled.ring[k]),
         Quote::Read(event) => Some(&*read_back.insert(*event)),
-        Quote::Lost => return whole(log, (msg, pass.last), window, &chat, forward),
+        Quote::Lost => return whole(log, pass.last, &chat, forward, &mut None),
     };
     let last: Vec<&Event> = pass.settled.ring.iter().collect();
     let recalled: BTreeMap<&str, &ExternalId> = pass
@@ -138,22 +179,40 @@ pub(super) fn judge(
     records_from(&picked, window, &chat, forward).ok_or(Refusal::BAD_PARAMS)
 }
 
+/// 一遍收齐了：顺手收的记录窗补上第一条、读到的最后一条交出来（施工 V-44）。
+fn finished(pass: &mut Pass) -> Option<Lately> {
+    let mut lately = pass.settled.lately.take()?;
+    lately.first = pass.settled.first.clone().map(Arc::new);
+    lately.last = pass.last;
+    Some(lately)
+}
+
 /// 以前的读法（施工 V-39 上以前），骨架认不得、引用的那一条读不回来时照它：整份读、整份交给留着一切的有效历史。只要头一遍
-/// 读到的第 `upto` 条为止（读的时候还在往后写的，后写的不要，同再读的那一遍）。
+/// 读到的第 `upto` 条为止（读的时候还在往后写的，后写的不要，同再读的那一遍）。要建记录窗、还没建的（`build`、`built`），照
+/// 整份的有效历史收一份。
 fn whole(
     log: &mut dyn Log,
     (msg, upto): (Seq, Option<Seq>),
     window: Window,
-    chat: &GroupChat,
-    forward: Option<&ForwardTexts>,
+    (chat, forward): (&GroupChat, Option<&ForwardTexts>),
+    (build, built): (Option<Caps>, &mut Option<Lately>),
 ) -> Result<Records, Refusal> {
     let mut events = log.whole().map_err(refused)?;
     if let Some(upto) = upto {
         events.truncate(events.partition_point(|event| event.seq <= upto));
     }
+    let first = events.first().cloned().map(Arc::new);
+    let last = events.last().map(|event| event.seq);
     let mut history = History::whole();
     for event in events {
         history.append(event);
+    }
+    if let Some(caps) = build.filter(|_| built.is_none()) {
+        let mut lately = Lately::new(caps);
+        lately.settle(history.events());
+        lately.first = first;
+        lately.last = last;
+        *built = Some(lately);
     }
     records_in(&history, msg, window, chat, forward).ok_or(Refusal::BAD_PARAMS)
 }

@@ -96,6 +96,8 @@ pub(crate) struct Actor {
     busy: Arc<AtomicBool>,
     /// 在不在等人确认、回答（施工 SL-1），和 `Handle` 共用：照 `busy` 每送完一批写一次。
     waiting: Arc<AtomicBool>,
+    /// 看着落盘的（施工 V-44，`onlooker.rs`），和 `Handle` 共用：装上了的，每写进去一批交给它。
+    onlookers: crate::onlooker::Onlookers,
     /// 向上回报交给谁（施工 7-6，`report.rs`）：子会话、有会话表的端口才有。
     reporter: Option<Reporter>,
     /// 配置（施工 8-4）：从哪取，和这一轮的那一份；回合开始时换，这一轮的请求都照它。
@@ -187,6 +189,7 @@ impl Actor {
             guard: Arc::new(guard),
             busy,
             waiting: Arc::new(AtomicBool::new(false)),
+            onlookers: Arc::default(),
             reporter: None,
             config,
             watchers: 0,

@@ -50,6 +50,11 @@ impl Window {
         }
     }
 
+    /// 之前一共 `n` 条里显示几条（施工 V-44：判官的记录窗照它看留着的够不够）。
+    pub fn shown(self, n: usize) -> usize {
+        n - self.start(n)
+    }
+
     /// 一共 `n` 条里从第几条起。
     fn start(self, n: usize) -> usize {
         let plain = n.saturating_sub(self.count);
@@ -132,7 +137,7 @@ pub fn records_from(
         return None;
     };
     let venue = message.venue.as_ref()?;
-    let shown = picked.before - window.start(picked.before);
+    let shown = window.shown(picked.before);
     debug_assert!(picked.last.len() >= shown, "挑的比要显示的少");
     let shown = &picked.last[picked.last.len().saturating_sub(shown)..];
     let mut kept = String::new();

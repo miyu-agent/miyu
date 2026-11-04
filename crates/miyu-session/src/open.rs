@@ -392,6 +392,7 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let watched = actor.watched();
     let shown = actor.shown();
     let on_person = actor.waiting();
+    let onlookers = actor.onlookers();
     let (reply, answer) = oneshot::channel();
     actor.wait_for(command, reply, false);
     span.in_scope(|| {
@@ -411,7 +412,8 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
                 .with_confined(confined)
                 .with_loops(loops)
                 .with_waiting(on_person)
-                .with_prefix(prefix))
+                .with_prefix(prefix)
+                .with_onlookers(onlookers))
         }
         Err(_) => {
             error::abandoned(abandoned, &id).await;
