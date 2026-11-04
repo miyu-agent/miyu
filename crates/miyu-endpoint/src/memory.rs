@@ -13,6 +13,7 @@
 mod cards;
 mod checks;
 pub(crate) mod dream;
+mod import;
 mod params;
 mod shown;
 pub(crate) mod slash;
@@ -69,11 +70,12 @@ const LIST: usize = 50;
 const SEARCH: usize = 10;
 
 /// 按顺序答的 `memory.*`（`methods.rs` 照它转过来）；`memory.dream` 在后台答，另走。
-pub(crate) const METHODS: [&str; 11] = [
+pub(crate) const METHODS: [&str; 12] = [
     "memory.list",
     "memory.search",
     "memory.turns",
     "memory.remember",
+    "memory.import",
     "memory.update",
     "memory.forget",
     "memory.restore",
@@ -99,6 +101,7 @@ pub(crate) async fn call(
         "memory.search" => search(core, read(params)?).await,
         "memory.turns" => turns::turns(core, read(params)?).await,
         "memory.remember" => write::remember(core, stamp(id), read(params)?).await,
+        "memory.import" => import::import(core, stamp(id), read(params)?).await,
         "memory.update" => write::update(core, stamp(id), read(params)?).await,
         "memory.forget" => forget(core, stamp(id), read(params)?).await,
         "memory.restore" => restore(core, stamp(id), read(params)?).await,

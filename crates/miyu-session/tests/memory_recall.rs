@@ -299,6 +299,7 @@ async fn keywords_find_it_but_are_not_shown() {
             who: None,
             people: Vec::new(),
             place: None,
+            imported: None,
         };
         log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
             .expect("记得下");

@@ -284,6 +284,7 @@ async fn replaced_ones_and_her_own_session_stay_out_and_other_places_come_in() {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     memories
         .append(now(), someone, None, &MemoryEvent::Saved(private))

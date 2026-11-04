@@ -104,6 +104,7 @@ fn revising_an_episode_keeps_who_it_involves() {
         who: None,
         people: vec!["qq:2".into()],
         place: None,
+        imported: None,
     };
     let id = log
         .append(now(), alice(), None, &MemoryEvent::Saved(first))
@@ -157,6 +158,7 @@ fn episode(home: &Home, by: By, text: &str, people: &[&str], source: Option<Sour
         who: None,
         people: people.iter().map(|name| name.to_string()).collect(),
         place: None,
+        imported: None,
     };
     log.append(now(), by, None, &MemoryEvent::Saved(saved))
         .expect("记得下");

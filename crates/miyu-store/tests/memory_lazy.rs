@@ -32,6 +32,7 @@ fn saved(text: &str) -> MemoryEvent {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     })
 }
 

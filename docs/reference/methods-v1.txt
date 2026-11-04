@@ -69,6 +69,7 @@ memory.dream
 memory.dream_stop
 memory.dreaming
 memory.forget
+memory.import
 memory.list
 memory.remember
 memory.restore

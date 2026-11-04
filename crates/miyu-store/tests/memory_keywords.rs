@@ -28,6 +28,7 @@ fn saved(text: &str, keywords: Option<&str>) -> MemoryEvent {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     })
 }
 

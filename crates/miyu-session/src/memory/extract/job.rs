@@ -23,6 +23,7 @@ use crate::TARGET;
 use crate::blocking::blocking;
 use crate::clock::wall_now;
 use crate::config::TurnConfig;
+use crate::memory::landed::Landed;
 use crate::memory::merge::{Hush, MergeJob};
 use crate::memory::{Dreamed, Keeper, NotDreamed};
 use crate::route::Ask;
@@ -202,8 +203,7 @@ impl Job {
                     tracing::info!(target: TARGET, session = %self.session, count, took_ms, "memory extracted");
                     if !saved.is_empty() {
                         // 接着给这几条写关键词（施工 R-15 下），再补向量：写上了的照新的字补，只补一遍。
-                        self.tag(saved).await;
-                        self.fill().await;
+                        self.landed().settle(saved).await;
                     }
                 }
                 self.extractor.finish(self.after, true);
@@ -221,39 +221,14 @@ impl Job {
         }
     }
 
-    /// 给刚记下的几条写关键词（施工 R-15 下）。
-    async fn tag(&self, saved: &[miyu_recall::MemoryId]) {
-        let keeper = self.keeper.clone();
-        let first = saved.to_vec();
-        let limit = saved.len();
-        let entries = match blocking(move || keeper.untagged(&first, limit)).await {
-            Ok(entries) => entries,
-            Err(refused) => {
-                tracing::warn!(target: TARGET, session = %self.session, error = ?refused, "memory tagging not read");
-                return;
-            }
-        };
-        // 只写刚记下的：`untagged` 名额照这几条给，补不满的不去拿别的（旧的整理时补）。
-        let entries = entries
-            .into_iter()
-            .filter(|entry| saved.contains(&entry.id))
-            .collect();
-        let tagging = super::super::tag::Tagging {
+    /// 记下了几条以后的那几样（施工 MI-1 挪进 `landed.rs`，导入也用）：写关键词、补向量。
+    fn landed(&self) -> Landed {
+        Landed {
             keeper: self.keeper.clone(),
             extraction: self.extraction.clone(),
             config: Arc::clone(&self.config),
             offset: self.offset,
-        };
-        tagging.run(entries).await;
-    }
-
-    /// 记下了几条以后在后台补它们的向量（施工 R-5 五补：不等下一次搜）。
-    async fn fill(&self) {
-        let keeper = self.keeper.clone();
-        let using = crate::memory::Using {
-            config: Arc::clone(&self.config),
-        };
-        blocking(move || keeper.fill(&using)).await;
+        }
     }
 
     /// 照这一次的几样合并（施工 R-7 上，`merge.rs`）：定时的看一眼够不够、在后台合，人叫的现在就合。照主人那边合（施工

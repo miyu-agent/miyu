@@ -9,6 +9,7 @@ use super::*;
 
 mod cards;
 mod dropped;
+mod imported;
 mod keywords;
 mod merged;
 mod place;
@@ -53,6 +54,7 @@ fn saved(text: &str, replaces: Option<MemoryId>) -> Saved {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     }
 }
 

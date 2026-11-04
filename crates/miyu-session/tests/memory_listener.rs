@@ -46,6 +46,7 @@ fn save(home: &Home, text: &str, venue: Option<VenueId>) -> MemoryId {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")

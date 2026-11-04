@@ -40,6 +40,7 @@ fn said_in(home: &Home, n: u32, text: &str) {
             who: None,
             people: Vec::new(),
             place: None,
+            imported: None,
         }),
     );
 }
@@ -171,6 +172,7 @@ async fn a_cleared_session_hides_only_what_came_from_it() {
             who: None,
             people: Vec::new(),
             place: None,
+            imported: None,
         })
     };
     append(&home, alice(), from(&cleared_one));
@@ -219,6 +221,7 @@ async fn a_memory_whose_sources_are_gone_is_not_filled_in() {
             who: None,
             people: Vec::new(),
             place: None,
+            imported: None,
         }),
     );
     save(&home, "人记的");

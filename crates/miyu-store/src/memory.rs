@@ -263,7 +263,11 @@ impl MemoryLog {
             MemoryEvent::Saved(saved) => Some(vec![Edit::Put {
                 key: MemoryId::new(seq).to_string(),
                 text: indexed(&saved.text, saved.keywords.as_deref()),
-                at,
+                // 导进来的照原来记下的时刻（施工 MI-1），同底账、`put_of`。
+                at: saved
+                    .imported
+                    .as_ref()
+                    .map_or(at, |imported| imported.noted),
             }]),
             // 换了关键词的照新的字重放（施工 R-15 上）：检索库换字的时候拿掉旧的向量，补的照新的字补。清掉的、没有的不放。
             MemoryEvent::Tagged(tagged) => {

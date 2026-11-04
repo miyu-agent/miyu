@@ -62,6 +62,7 @@ fn remembered(home: &Home) {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     write(home, &MemoryEvent::Saved(saved));
 }

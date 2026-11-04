@@ -94,7 +94,7 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         | "venue.records" | "venue.plugins" | "venue.session" | "venue.sessions" => {
             Needs(ActForExternal)
         }
-        "memory.remember" | "memory.update" | "memory.forget" | "memory.restore"
+        "memory.remember" | "memory.import" | "memory.update" | "memory.forget" | "memory.restore"
         | "memory.dream" | "memory.dream_stop" | "memory.card_update" | "memory.card_forget"
         | "kb.add" | "kb.create" | "kb.update" | "kb.mount" | "kb.remove" | "kb.delete"
         | "kb.reindex" => Needs(MemoryWrite),

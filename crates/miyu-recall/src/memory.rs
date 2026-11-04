@@ -190,6 +190,19 @@ pub struct Saved {
     /// 以前记的没有，不写。群改了名字的，以前记的照旧是那时的名字。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub place: Option<String>,
+    /// 从别处导进来的（施工 MI-1，`memory.import`）：原来记下的时刻、在原来那边是哪一条，平铺成 `noted`、`origin` 两格；别的路记的
+    /// 没有，不写。装在盒子里：两格放在外面，`MemoryEvent` 里这一种比别的大出一截（clippy 的 `large_enum_variant`）。
+    #[serde(flatten)]
+    pub imported: Option<Box<Origin>>,
+}
+
+/// 导进来的一条从哪来（施工 MI-1）。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Origin {
+    /// 原来记下的时刻：底账一条的时刻照它。
+    pub noted: Timestamp,
+    /// 在原来那边是哪一条：导入照它去重，这一间日志里出现过的不再导。
+    pub origin: String,
 }
 
 /// `ext.memory.tagged` 的 `body`：只换一条的关键词，编号不变（施工 R-15 上）。空的是去掉。

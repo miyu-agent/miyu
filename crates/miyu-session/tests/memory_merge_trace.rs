@@ -327,6 +327,7 @@ fn save_in(logs: &MemoryLogs, text: &str) {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

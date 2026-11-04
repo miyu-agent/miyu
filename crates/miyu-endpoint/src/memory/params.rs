@@ -69,6 +69,14 @@ pub(super) struct Remember {
     pub(super) who: Option<String>,
 }
 
+/// `memory.import`（施工 MI-1）：每一条先收成 JSON，逐项查（不对的要说出第几条、哪一项）。
+#[derive(Debug, Deserialize)]
+pub(super) struct Import {
+    #[serde(flatten)]
+    pub(super) at: Where,
+    pub(super) items: Vec<Value>,
+}
+
 /// `memory.update`：`text`、`keywords` 至少写一个（施工 R-15 上）。
 #[derive(Debug, Deserialize)]
 pub(super) struct Update {

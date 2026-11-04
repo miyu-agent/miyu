@@ -36,6 +36,7 @@ fn save_in(home: &Home, text: &str, replaces: Option<MemoryId>, place: Option<&s
         who: None,
         people: Vec::new(),
         place: place.map(str::to_string),
+        imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下")

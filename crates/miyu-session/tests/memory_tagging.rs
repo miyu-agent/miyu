@@ -1,13 +1,16 @@
 //! 写关键词（施工 R-15 下，`docs/blueprint/memory.md` 第二条）：真会话、真记忆日志、假的整理记忆的模型。抽取记下以后另发一次，
 //! 给刚记下的几条写上，只收交进去的编号，照关键词搜得到；合并落完以后补这一间还没有的，最多二十条，有了的、作废的不交；写不成的
-//! 不碍抽取。
+//! 不碍抽取。导进来的（施工 MI-1）同抽取记下的，一次最多二十条、多的接着发，写完从没整理过的这一间整理一次。
 
 use std::time::Duration;
 
 use miyu_http::testkit::Server;
+use std::sync::Arc;
+
+use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_recall::{Entry, MemoryEvent, MemoryId, Retired, Saved};
-use miyu_session::Handle;
 use miyu_session::testkit::{Play, Script};
+use miyu_session::{Handle, Imported, Keeper, Listener, Stamp, Turn};
 
 use crate::support::extracting::*;
 use crate::support::meaning::{catalog, chat, persona, save};
@@ -110,6 +113,7 @@ fn save_in_group(home: &Home, text: &str, place: &str) {
         who: None,
         people: Vec::new(),
         place: Some(place.into()),
+        imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");
@@ -130,6 +134,7 @@ fn save_tagged(home: &Home, text: &str, keywords: &str) {
         who: None,
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     log.append(now(), alice(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");
@@ -226,5 +231,59 @@ async fn keywords_given_meanwhile_are_not_overwritten() {
             .as_deref(),
         Some("人写的"),
         "写好了也不盖"
+    );
+}
+
+#[tokio::test]
+async fn an_import_is_tagged_twenty_at_a_time_then_merged() {
+    let server = Server::start(vec![
+        tagged(serde_json::json!({"keywords": [{"id": "m1", "keywords": "猫"}]})),
+        tagged(serde_json::json!({"keywords": []})),
+        stream(&serde_json::json!({"summary": "用户的事。"}).to_string()),
+        tagged(serde_json::json!({"keywords": []})),
+    ])
+    .await;
+    let mut home = Home::new();
+    organizer_tagging(&mut home, &server, "");
+    let keeper = Keeper::new(&home.memory, persona(), Listener::Owner(alice()));
+    let noted = Timestamp::parse("2026-10-21T02:53:22.120Z").expect("合写法");
+    let items = (1..=25)
+        .map(|n| Imported {
+            at: noted,
+            class: "user".to_string(),
+            text: format!("用户的第{n}件事"),
+            origin: format!("o:{n}"),
+            who: None,
+            people: Vec::new(),
+            keywords: None,
+        })
+        .collect();
+    let stamp = Stamp {
+        at: now(),
+        by: alice(),
+        cause: None,
+    };
+    let ids = keeper.import(stamp, items).expect("记得下");
+    assert_eq!(ids.len(), 25);
+    let source = Arc::clone(&*home.configs.borrow());
+    let config = Arc::new(Turn::new(source.with_project("~"), source));
+    let offset = UtcOffset::from_minutes(540).expect("合写法");
+    keeper.settle_imported(ids.into_iter().flatten().collect(), config, offset);
+    assert_eq!(until_tagged(&home, m(1)).await, "猫");
+    // 两次写关键词（二十条、五条），从没整理过的接着整理，整理落完再补一次还没有的。
+    requested(&server, 4).await;
+    let first = asked(&server, 0);
+    assert!(
+        first.contains("\nm20 user ") && !first.contains("\nm21 "),
+        "{first}"
+    );
+    let second = asked(&server, 1);
+    assert!(
+        second.contains("\nm21 user ") && second.contains("\nm25 user "),
+        "{second}"
+    );
+    assert!(
+        asked(&server, 2).contains("用户的第25件事"),
+        "整理交进去导进来的"
     );
 }

@@ -34,9 +34,9 @@ pub use fuse::{FLOOR, fuse, fuse_above};
 pub use known::find_cards;
 pub use memory::{
     CLASSES, Card, CardRetired, Cleared, EPISODE, Entry, Extracted, INTERRUPTED, KEYWORD_CHARS,
-    MemoryBook, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, PERSON, PersonCard, Restored,
-    RetireKind, Retired, STOPPED, Saved, Skipped, Source, Summary, Swept, Tagged, from_event,
-    indexed, keywords_of, shown_class, to_event,
+    MemoryBook, MemoryEvent, MemoryId, MergeFailed, Merged, Merging, Origin, PERSON, PersonCard,
+    Restored, RetireKind, Retired, STOPPED, Saved, Skipped, Source, Summary, Swept, Tagged,
+    from_event, indexed, keywords_of, shown_class, to_event,
 };
 pub use terms::{MAX_QUERY_TERMS, index_terms, query, query_terms};
 pub use turns::{Change, Priming, Replay, TurnFeed, TurnItem, key, replay};

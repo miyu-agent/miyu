@@ -245,6 +245,7 @@ async fn a_revision_without_a_group_name_keeps_the_old_one() {
                 who: None,
                 people: Vec::new(),
                 place: Some("周末摄影群".to_string()),
+                imported: None,
             }),
         )
         .expect("记得下")

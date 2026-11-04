@@ -27,11 +27,13 @@ use super::listener::Listener;
 use super::vectors::{Query, Target, Using, Vectors};
 
 mod heard;
+mod import;
 mod search;
 mod tag;
 mod update;
 
 pub(crate) use heard::{Heard, place_at, places};
+pub use import::Imported;
 
 /// 一间记忆，连同这次会被谁看到（听众）。可以复制：每次调用照它做。
 #[derive(Debug, Clone)]
@@ -149,6 +151,7 @@ impl Keeper {
             who,
             people,
             place: self.place().or(carried_place),
+            imported: None,
         };
         self.append(&log, stamp, &MemoryEvent::Saved(saved))
             .map(|(id, _)| id)
@@ -218,6 +221,7 @@ impl Keeper {
                 who: candidate.who,
                 people: candidate.people,
                 place: places.get(&candidate.turn).cloned(),
+                imported: None,
             };
             let stamp = Stamp {
                 at,

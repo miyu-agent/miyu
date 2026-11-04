@@ -131,6 +131,7 @@ impl Keeper {
                 who: old.who,
                 people: old.people,
                 place: old.place,
+                imported: None,
             };
             self.append(&log, stamp(), &MemoryEvent::Saved(saved))?;
             revised += 1;

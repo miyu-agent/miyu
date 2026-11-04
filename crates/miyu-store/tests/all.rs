@@ -19,6 +19,7 @@ mod knowledge_write;
 mod memory;
 mod memory_extracted;
 mod memory_follow;
+mod memory_imported;
 mod memory_keywords;
 mod memory_lazy;
 mod memory_personas;

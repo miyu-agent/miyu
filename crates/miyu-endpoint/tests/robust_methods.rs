@@ -68,6 +68,7 @@ const METHODS: &[&str] = &[
     "memory.dream",
     "memory.dream_stop",
     "memory.forget",
+    "memory.import",
     "memory.list",
     "memory.remember",
     "memory.restore",

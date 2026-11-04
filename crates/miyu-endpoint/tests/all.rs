@@ -124,6 +124,7 @@ mod memory_dream;
 mod memory_dream_hold;
 mod memory_dream_stop;
 mod memory_follow;
+mod memory_import;
 mod memory_installed;
 mod memory_keywords;
 mod memory_meaning;

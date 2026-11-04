@@ -50,6 +50,7 @@ fn person(home: &Home, who: &str, text: &str) {
         who: Some(who.into()),
         people: Vec::new(),
         place: Some("周末摄影群".into()),
+        imported: None,
     };
     write(home, &MemoryEvent::Saved(saved));
 }

@@ -101,6 +101,7 @@ fn person(home: &Home, who: &str, text: &str, source: &Source) {
         who: Some(who.into()),
         people: Vec::new(),
         place: None,
+        imported: None,
     };
     log.append(now(), tool(), None, &MemoryEvent::Saved(saved))
         .expect("记得下");

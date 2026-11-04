@@ -13,6 +13,7 @@ mod follow;
 mod her;
 mod keeper;
 mod known;
+mod landed;
 mod lane;
 mod listener;
 mod merge;
@@ -39,7 +40,7 @@ pub(crate) use extract::{
     remembered_since,
 };
 pub use follow::Following;
-pub use keeper::{Filter, Keeper, Stamp};
+pub use keeper::{Filter, Imported, Keeper, Stamp};
 pub(crate) use lane::{Laid, Source, TurnLane};
 pub use listener::Listener;
 pub(crate) use merge::Hush;

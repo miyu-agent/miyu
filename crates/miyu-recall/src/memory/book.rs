@@ -1,7 +1,7 @@
 //! 照记忆日志算出的底账（施工 R-3 上；施工 R-6 修从 `memory.rs` 挪出来，那边只剩事件怎么写、怎么读）：一条现在的样子
 //! [`Entry`]，整间的 [`MemoryBook`]。
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use miyu_kernel::event::Event;
 use miyu_kernel::id::{CommandId, Seq, SessionId, VenueId};
@@ -95,6 +95,8 @@ pub struct MemoryBook {
     swept: Option<Seq>,
     /// 人卡（施工 E-1 下）：一个人最新的那一张，照是谁排。整间清空时一起拿掉。
     cards: BTreeMap<String, PersonCard>,
+    /// 导进来过的几条在原来那边是哪一条（施工 MI-1）：作废、改掉、清掉了的也在，导入照它去重。
+    origins: BTreeSet<String>,
 }
 
 impl MemoryBook {
@@ -180,6 +182,11 @@ impl MemoryBook {
         })
     }
 
+    /// 这一间导进来过原来那边的 `origin` 那一条没有（施工 MI-1）：作废、改掉、清掉了的也算导进来过。
+    pub fn imported(&self, origin: &str) -> bool {
+        self.origins.contains(origin)
+    }
+
     /// 命令编号 `cause` 做过的：那一条的编号、清掉几条；没做过的是 `None`。
     pub fn done(&self, cause: &CommandId) -> Option<(MemoryId, usize)> {
         self.done.get(cause).copied()
@@ -198,6 +205,9 @@ impl MemoryBook {
                 if let Some(old) = saved.replaces.and_then(|old| self.entries.get_mut(&old)) {
                     old.replaced_by = Some(id);
                 }
+                if let Some(imported) = &saved.imported {
+                    self.origins.insert(imported.origin.clone());
+                }
                 self.entries.insert(
                     id,
                     Entry {
@@ -213,7 +223,11 @@ impl MemoryBook {
                         people: saved.people,
                         place: saved.place,
                         replaces: saved.replaces,
-                        at: event.at,
+                        // 导进来的照原来记下的时刻（施工 MI-1）。
+                        at: saved
+                            .imported
+                            .as_ref()
+                            .map_or(event.at, |imported| imported.noted),
                         by: event.by.clone(),
                         replaced_by: None,
                         retired: None,

@@ -32,6 +32,7 @@ async fn the_owner_lists_what_was_said_anywhere_with_where() {
             who: None,
             people: vec!["qq:2".into()],
             place: Some("周末摄影群".into()),
+            imported: None,
         };
         let at = miyu_kernel::time::Timestamp::parse("2026-10-11T08:00:00.000Z").expect("合写法");
         log.append(
