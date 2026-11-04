@@ -72,7 +72,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, Weak};
 use std::time::Duration;
 
-use miyu_drivers::{DeepSeekImages, DriverTexts};
+use miyu_drivers::{DeepSeekImages, DriverTexts, Memo};
 use miyu_http::Client;
 use miyu_kernel::estimate::ImagePrice;
 use miyu_kernel::event::{CallError, EffortInUse, ErrorClass};
@@ -154,6 +154,7 @@ impl Models for Routes {
                 effort,
                 config: session.config,
             })),
+            memo: Arc::new(Mutex::new(Memo::new())),
         })
     }
 
@@ -205,6 +206,9 @@ struct Route {
     /// 钉着的：引用、池里的成员、上一次解析出来的模型、限额、换过去的 key、要接着说的那一个。发出去的任务说完了也要改它
     /// （成了才钉，施工 8-9），所以放在 `Arc` 里。
     pinned: Arc<Mutex<Pinned>>,
+    /// 主请求编好的历史（施工 V-42，[`Memo`]）：前后两次请求前面没变的那一大段接着用，不再整段重新转成 JSON。路由在会话
+    /// 在，会话退下一起放；只在内存里。
+    memo: Arc<Mutex<Memo>>,
 }
 
 /// 一个会话钉着的（施工 8-6、8-8、8-9）。
@@ -366,6 +370,7 @@ impl Route {
         Ok(send::Chosen {
             ready,
             blobs: self.blobs.clone(),
+            memo: main.then(|| Arc::clone(&self.memo)),
             tried: send::Tried {
                 picked,
                 pinned: Arc::clone(&self.pinned),

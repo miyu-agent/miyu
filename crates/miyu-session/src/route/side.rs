@@ -76,6 +76,7 @@ impl Route {
         Picked::Served(Box::new(Chosen {
             ready,
             blobs: self.blobs.clone(),
+            memo: None,
             tried: Tried {
                 picked,
                 pinned: Arc::clone(&self.pinned),

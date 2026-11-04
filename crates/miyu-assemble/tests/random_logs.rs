@@ -9,6 +9,7 @@
 
 use std::collections::BTreeSet;
 
+use crate::support::kept::kept_matches;
 use crate::support::sight::{blind, described, picture};
 use crate::support::{anchored, check, lines, sent, stage, stage_with, summarizes};
 use miyu_kernel::block::{Block, Text};
@@ -400,6 +401,8 @@ fn run(seeds: std::ops::Range<u64>) -> BTreeSet<&'static str> {
         if let Err(why) = anchored(&session) {
             panic!("种子 {seed}：{why}\n{}", lines(&session).join("\n"));
         }
+        // 真内核一次次交出的主请求（撤销、恢复、压缩、打断、转述都在里面）照会话留着编好的历史编，和整份编的一样（施工 V-42）。
+        kept_matches(session.requests());
         let again = random_session(seed);
         assert_eq!(
             lines(&session),

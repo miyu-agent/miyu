@@ -121,7 +121,7 @@ pub(super) struct Tool<'a> {
 
 /// 工具面：没有工具、历史里也没有工具调用的不发；历史里有调用的，没有工具也发一个空的。
 pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
-    if request.tools.is_empty() && !calls_tools(request) {
+    if !listed(request) {
         return None;
     }
     Some(
@@ -137,6 +137,11 @@ pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
             })
             .collect(),
     )
+}
+
+/// 发不发工具面（[`tools`] 的条件）：有工具，或者历史里有工具调用。
+pub(super) fn listed(request: &Request) -> bool {
+    !request.tools.is_empty() || calls_tools(request)
 }
 
 /// 历史里有没有工具调用。

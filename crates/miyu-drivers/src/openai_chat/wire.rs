@@ -64,7 +64,7 @@ pub(super) enum Content {
 }
 
 /// 分段的内容里的一段。
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(super) enum Part {
     /// 文字。
@@ -85,14 +85,14 @@ pub(super) enum Part {
 }
 
 /// 图片的地址。
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub(super) struct Url {
     /// data URL：base64 发的时候才编（施工 V-38）。
     pub(super) url: Inline,
 }
 
 /// 文件的名字和内容。
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub(super) struct FileData {
     /// 文件名。
     pub(super) filename: String,
@@ -142,7 +142,7 @@ struct Function<'a> {
 
 /// 工具面：没有工具时不发；可历史里有工具调用的，发一个空的（有的网关要）。参数格式照工具面原样，一律完整（施工 FL-1）。
 pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
-    if request.tools.is_empty() && !calls_tools(request) {
+    if !listed(request) {
         return None;
     }
     Some(
@@ -159,6 +159,11 @@ pub(super) fn tools(request: &Request) -> Option<Vec<Tool<'_>>> {
             })
             .collect(),
     )
+}
+
+/// 发不发工具面（[`tools`] 的条件）：有工具，或者历史里有工具调用。
+pub(super) fn listed(request: &Request) -> bool {
+    !request.tools.is_empty() || calls_tools(request)
 }
 
 /// 历史里有没有工具调用。

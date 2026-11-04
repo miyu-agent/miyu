@@ -35,6 +35,7 @@
 | `blobs_needed(请求, Call)` | 同 openai-chat 第 11 条 |
 | `encode(请求, Call, blob)` | 编码，交回 `Encoded`：`path` 是 `/responses`；`messages` 是 `input` 里每一项的位置，照先后（system 写在 `instructions`，不算） |
 | `blobs_whole`、`fragments` | 同 openai-chat（施工 V-38）：照原样发的图片、PDF 只要大小、base64 记成一段 `Fragment::Base64`，发的时候才读出来编；`encode` 是它拼起来的整份字节 |
+| `fragments_memo` | 同 openai-chat（施工 V-42，`openai-chat.md`「留着编好的历史」）：一条消息留它写成的几项，照先后接上；system（`instructions`）、工具面照字比 |
 | `decoder()` | 一次响应一个解码器 |
 | `classify(Failure)` | 共用 `classify::classify` |
 | `auth(key)` | `Authorization: Bearer <key>` |

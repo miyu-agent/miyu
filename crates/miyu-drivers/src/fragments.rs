@@ -67,6 +67,17 @@ impl Fragments {
         self.len == 0
     }
 
+    /// 编好的字一共多少个字节（base64 那几段不算）：拼进请求体时照它先留地方（施工 V-42）。
+    pub(crate) fn text_len(&self) -> usize {
+        self.parts
+            .iter()
+            .map(|part| match part {
+                Fragment::Text(text) => text.len(),
+                Fragment::Base64 { .. } => 0,
+            })
+            .sum()
+    }
+
     /// 各段，照先后。
     pub fn parts(&self) -> &[Fragment] {
         &self.parts
@@ -135,6 +146,13 @@ impl Encoded<Fragments> {
     }
 }
 
+/// 一个值单独写成一截（施工 V-42：留着的那几截照它编），写法同 [`Builder::json`]。
+pub(crate) fn piece(value: &(impl Serialize + ?Sized)) -> Fragments {
+    let mut builder = Builder::default();
+    builder.json(value);
+    builder.finish()
+}
+
 /// 一边写一边拆成片段：字照常接在后面，碰到 [`Inline`] 收成一段、记一段 base64。各驱动编码时用它代替 `Vec<u8>`。
 #[derive(Debug, Default)]
 pub(crate) struct Builder {
@@ -199,6 +217,21 @@ impl Builder {
         }
     }
 
+    /// 接上一截编好的（施工 V-42：留着的历史消息）：字照样接在后面，base64 那几段照样记，和当初直接写进来的一个字节都不差。
+    pub(crate) fn append(&mut self, fragments: &Fragments) {
+        for part in &fragments.parts {
+            match part {
+                Fragment::Text(text) => self.text.extend_from_slice(text),
+                Fragment::Base64 { blob, size } => self.inline(blob.clone(), *size),
+            }
+        }
+    }
+
+    /// 先留出 `more` 个字节的地方（施工 V-42：照留着的那几截的长短一次留够，不一倍一倍地搬）。
+    pub(crate) fn reserve(&mut self, more: usize) {
+        self.text.reserve(more);
+    }
+
     /// 写好了：收起最后一段。
     pub(crate) fn finish(mut self) -> Fragments {
         self.flush();
@@ -232,7 +265,7 @@ impl Builder {
 
 /// 线上的结构里内嵌一个 blob 的那一格：写成 JSON 的字符串 `"<前缀><blob 整份的 base64>"`，base64 不在编码时编。只有
 /// [`Builder::json`] 认得它：别的写法写出来是一串数，不是这一格该有的样子。
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Inline {
     /// base64 前面的字：data URL 的 `data:<类型>;base64,`，anthropic 的是空的。照 JSON 转义写。
     prefix: String,

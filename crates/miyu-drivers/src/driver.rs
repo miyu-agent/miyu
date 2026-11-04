@@ -13,7 +13,7 @@ use miyu_kernel::request::Request;
 
 use crate::classify::{self, Classified, Failure};
 use crate::openai_chat::{self, Compat, Decoder};
-use crate::{BlobBytes, Call, DriverTexts, EncodeError, Encoded, Ending, Fragments, Listed};
+use crate::{BlobBytes, Call, DriverTexts, EncodeError, Encoded, Ending, Fragments, Listed, Memo};
 use crate::{anthropic, media, openai_responses};
 
 /// 一个驱动：一家接口的翻译器。一个会话造一个，开关和占位冻结在里面。执行器在异步任务里用它，
@@ -39,6 +39,23 @@ pub trait Driver: Send + Sync {
         call: &Call,
         blobs: &dyn BlobBytes,
     ) -> Result<Encoded<Fragments>, EncodeError>;
+
+    /// 编码成片段清单，前面没变的历史接着用 `memo` 里留着的（施工 V-42，[`Memo`]）：发出去的字节、每条消息的位置、路径和
+    /// [`Driver::fragments`] 的一个都不差。会话的主请求走它。默认什么都不留，照 [`Driver::fragments`] 整份编。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Driver::fragments`]；出错时 `memo` 整份扔掉。
+    fn fragments_memo(
+        &self,
+        request: &Request,
+        call: &Call,
+        blobs: &dyn BlobBytes,
+        memo: &mut Memo,
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        memo.clear();
+        self.fragments(request, call, blobs)
+    }
 
     /// 编码成整份的字节：[`Driver::fragments`] 拼起来，base64 照 `blobs` 里整份的字节编。测试、对照用。
     ///
@@ -126,6 +143,16 @@ impl Driver for OpenAiChat {
         openai_chat::fragments(request, call, &self.compat, &self.texts, blobs)
     }
 
+    fn fragments_memo(
+        &self,
+        request: &Request,
+        call: &Call,
+        blobs: &dyn BlobBytes,
+        memo: &mut Memo,
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        openai_chat::fragments_memo(request, call, &self.compat, &self.texts, blobs, memo)
+    }
+
     fn decoder(&self) -> Box<dyn Decode> {
         Box::new(Decoder::new())
     }
@@ -200,6 +227,16 @@ impl Driver for Anthropic {
         blobs: &dyn BlobBytes,
     ) -> Result<Encoded<Fragments>, EncodeError> {
         anthropic::fragments(request, call, &self.texts, blobs)
+    }
+
+    fn fragments_memo(
+        &self,
+        request: &Request,
+        call: &Call,
+        blobs: &dyn BlobBytes,
+        memo: &mut Memo,
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        anthropic::fragments_memo(request, call, &self.texts, blobs, memo)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {
@@ -282,6 +319,16 @@ impl Driver for OpenAiResponses {
         blobs: &dyn BlobBytes,
     ) -> Result<Encoded<Fragments>, EncodeError> {
         openai_responses::fragments(request, call, &self.texts, blobs)
+    }
+
+    fn fragments_memo(
+        &self,
+        request: &Request,
+        call: &Call,
+        blobs: &dyn BlobBytes,
+        memo: &mut Memo,
+    ) -> Result<Encoded<Fragments>, EncodeError> {
+        openai_responses::fragments_memo(request, call, &self.texts, blobs, memo)
     }
 
     fn decoder(&self) -> Box<dyn Decode> {

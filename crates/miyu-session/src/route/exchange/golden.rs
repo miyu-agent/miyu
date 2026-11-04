@@ -6,17 +6,18 @@
 //! （拼字补换行），没有输出的出错结果，思考回传（各家自己的私有数据），工具调用的供应商编号，接着写，替它看的图，占位工具，
 //! 思考强度、温度、输出上限。驱动：openai-chat 的 DeepSeek 那一套（回传思考、前缀续写、思考开关）和默认那一套（看不了图、
 //! 读不了 PDF），anthropic，openai-responses。每一份照主请求的路（请求自己那一份交进去，编完就放）和旁路请求的路（借来的）
-//! 各发一次，两回的字节一样。
+//! 各发一次，两回的字节一样。施工 V-42 起再照主请求留着编好的历史的路发两回（头一回从头编、留下；第二回整份接着用），四回的
+//! 字节、哈希都一样。
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use miyu_drivers::openai_chat::{
     Compat, Continuation, ContinuationField, ReasoningField, ReasoningReplay, Toggle,
 };
-use miyu_drivers::{Anthropic, Call, Driver, EFFORT_ON, Inputs, OpenAiChat, OpenAiResponses};
+use miyu_drivers::{Anthropic, Call, Driver, EFFORT_ON, Inputs, Memo, OpenAiChat, OpenAiResponses};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_http::{Endpoint, Progress, Proxy, client};
 use miyu_kernel::id::{ContentHash, ProviderId};
@@ -206,14 +207,26 @@ pub(super) fn ready(
     }
 }
 
-/// 经 [`exchange`] 发一次，交回「发出去了」报的哈希。
-async fn send(ready: &Ready, request: Cow<'_, Request>, blobs: &Blobs) -> Option<ContentHash> {
+/// 经 [`exchange`] 发一次，交回「发出去了」报的哈希。`memo` 有的照主请求留着编好的历史的路编（施工 V-42）。
+async fn send(
+    ready: &Ready,
+    request: Cow<'_, Request>,
+    memo: Option<&Mutex<Memo>>,
+    blobs: &Blobs,
+) -> Option<ContentHash> {
     let mut sent = None;
-    exchange(ready, request, blobs, std::future::pending(), |progress| {
-        if let Progress::Sent { request, .. } = progress {
-            sent = Some(request);
-        }
-    })
+    exchange(
+        ready,
+        request,
+        memo,
+        blobs,
+        std::future::pending(),
+        |progress| {
+            if let Progress::Sent { request, .. } = progress {
+                sent = Some(request);
+            }
+        },
+    )
     .await;
     sent
 }
@@ -245,18 +258,31 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
     let done = Reply::stream(vec![Piece::Bytes(b"data: [DONE]\n\n".to_vec())]);
     let mut seen = Vec::new();
     for ((driver, call, request, placeholders), case) in cases(&media).into_iter().zip(&CASES) {
-        let server = Server::start(vec![done.clone(), done.clone()]).await;
+        let server = Server::start(vec![done.clone(); 4]).await;
         let ready = ready(&server, driver, call, placeholders);
         // 主请求的路：自己那一份交进去；旁路请求、一次性的路：借来的。
-        let owned = send(&ready, Cow::Owned(request.clone()), &blobs).await;
-        let borrowed = send(&ready, Cow::Borrowed(&request), &blobs).await;
-        let received = server.received();
-        assert_eq!(received.len(), 2, "{}：两回都发出去了", case.name);
+        let owned = send(&ready, Cow::Owned(request.clone()), None, &blobs).await;
+        let borrowed = send(&ready, Cow::Borrowed(&request), None, &blobs).await;
+        // 主请求留着编好的历史（施工 V-42）：头一回从头编、留下，第二回整份接着用。
+        let memo = Mutex::new(Memo::new());
+        let cold = send(&ready, Cow::Owned(request.clone()), Some(&memo), &blobs).await;
+        let warm = send(&ready, Cow::Owned(request.clone()), Some(&memo), &blobs).await;
         assert!(
-            received[0].body == received[1].body,
-            "{}：两条路发出去的字节一样",
+            !memo.lock().expect("锁好的").is_empty(),
+            "{}：留下了",
             case.name
         );
+        let received = server.received();
+        assert_eq!(received.len(), 4, "{}：四回都发出去了", case.name);
+        for (index, other) in received.iter().enumerate().skip(1) {
+            assert!(
+                received[0].body == other.body,
+                "{}：第 {} 回和第一回发出去的字节一样",
+                case.name,
+                index + 1
+            );
+            assert_eq!(received[0].path, other.path, "{}", case.name);
+        }
         let body = &received[0].body;
         let hash = ContentHash::of(body);
         assert_eq!(
@@ -266,6 +292,8 @@ async fn the_bytes_on_the_wire_are_the_same_as_before() {
             case.name
         );
         assert_eq!(borrowed.as_ref(), Some(&hash), "{}", case.name);
+        assert_eq!(cold.as_ref(), Some(&hash), "{}", case.name);
+        assert_eq!(warm.as_ref(), Some(&hash), "{}", case.name);
         // 每条消息的起止照驱动直接编一回：和发出去的是同一串字节。
         let mut filled = request.clone();
         super::super::placeholder::fill(&mut filled, &ready.placeholders);

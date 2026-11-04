@@ -9,6 +9,7 @@
 //! - [`openai_responses`]：OpenAI 的 Responses 接口（官方、opencode Zen 上的 GPT，施工 8-13）；
 //! - [`sse`]：SSE 分帧；[`classify`]：出错分类；[`base64`]：图片、文件写成 data URL 要用的编码；
 //! - [`Fragments`]：编好的请求体是一串片段，图片、PDF 那几段只记 blob，发的时候才读出来编成 base64（施工 V-38）；
+//! - [`Memo`]：一个会话留着编好的历史，下一次请求前面没变的那一大段不再重新转成 JSON（施工 V-42）；
 //! - [`DeepSeekImages`]：一张图在 DeepSeek 上算多少 token（施工 6-3 上）；
 //! - [`text_file`]：人附的文本文件照字放进消息，什么算文本、最多给多少（施工 3-9 三补）。
 //!
@@ -23,6 +24,7 @@ mod driver;
 mod fragments;
 mod image_tokens;
 mod media;
+mod memo;
 pub mod openai_chat;
 pub mod openai_responses;
 pub mod sse;
@@ -32,6 +34,7 @@ mod texts;
 pub use driver::{Anthropic, Decode, Driver, OpenAiChat, OpenAiResponses};
 pub use fragments::{Fragment, Fragments};
 pub use image_tokens::{DeepSeekImages, deepseek_image_tokens};
+pub use memo::Memo;
 pub use texts::{
     AttachedPathSources, DriverTextSources, DriverTexts, ImageDescriptionSources, ImageNameSources,
     OpenPathSources, TextFileSources,

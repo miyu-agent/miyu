@@ -9,6 +9,7 @@
 
 mod decode;
 mod effort;
+mod kept;
 mod marks;
 mod messages;
 mod models;
@@ -16,6 +17,7 @@ mod usage;
 mod wire;
 
 pub use decode::Decoder;
+pub(crate) use kept::Kept;
 pub use models::{MODELS_PATH, parse_models};
 
 use std::collections::BTreeSet;
@@ -27,7 +29,7 @@ use serde::Serialize;
 pub use crate::{EncodeError, Encoded};
 
 use crate::fragments::Builder;
-use crate::{BlobBytes, Call, DriverTexts, Fragments, media};
+use crate::{BlobBytes, Call, DriverTexts, Fragments, Memo, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
 pub const FAMILY: &str = "anthropic";
@@ -77,12 +79,8 @@ pub fn fragments(
 ) -> Result<Encoded<Fragments>, EncodeError> {
     let written = messages::write(request, call, texts, blobs)?;
     let tools = wire::tools(request);
-    let marks = marks::place(request, tools.as_deref(), &written);
-    let mut body = Builder::default();
-    body.extend_from_slice(b"{\"model\":");
-    body.json(call.model.as_str());
-    let limit = call.max_output.unwrap_or(FALLBACK_MAX_TOKENS);
-    body.extend_from_slice(format!(",\"max_tokens\":{limit}").as_bytes());
+    let marks = marks::place(request, tools.as_ref().map(Vec::len), &written);
+    let mut body = head(call);
     if !request.system.is_empty() {
         body.extend_from_slice(b",\"system\":[");
         block(&mut body, &wire::Part::text(&request.system), marks.system);
@@ -118,15 +116,50 @@ pub fn fragments(
         body.extend_from_slice(b"]}");
         ranges.push(start..body.len());
     }
-    body.extend_from_slice(b"],\"stream\":true");
-    crate::write_temperature(&mut body, effort::temperature(call));
-    effort::write(&mut body, call.effort.as_deref());
-    body.push(b'}');
+    rest(&mut body, call);
     Ok(Encoded {
         body: body.finish(),
         messages: ranges,
         path: PATH.to_string(),
     })
+}
+
+/// 编码成片段清单，前面没变的历史接着用 `memo` 里留着的（施工 V-42，[`crate::Memo`]）：发出去的字节和 [`fragments`] 的一个
+/// 都不差。
+///
+/// # Errors
+///
+/// 同 [`fragments`]。出错时 `memo` 整份扔掉。
+pub fn fragments_memo(
+    request: &Request,
+    call: &Call,
+    texts: &DriverTexts,
+    blobs: &dyn BlobBytes,
+    memo: &mut Memo,
+) -> Result<Encoded<Fragments>, EncodeError> {
+    let encoded = kept::fragments(request, call, texts, blobs, memo);
+    if encoded.is_err() {
+        memo.clear();
+    }
+    encoded
+}
+
+/// 请求体的开头：`{"model":<模型名>,"max_tokens":<上限>`。
+fn head(call: &Call) -> Builder {
+    let mut body = Builder::default();
+    body.extend_from_slice(b"{\"model\":");
+    body.json(call.model.as_str());
+    let limit = call.max_output.unwrap_or(FALLBACK_MAX_TOKENS);
+    body.extend_from_slice(format!(",\"max_tokens\":{limit}").as_bytes());
+    body
+}
+
+/// 消息后面的：`stream`、温度、思考强度，收尾的 `}`。
+fn rest(body: &mut Builder, call: &Call) {
+    body.extend_from_slice(b"],\"stream\":true");
+    crate::write_temperature(body, effort::temperature(call));
+    effort::write(body, call.effort.as_deref());
+    body.push(b'}');
 }
 
 /// 这份请求编码时要用哪些 blob：同 openai-chat（`media.rs`）。
@@ -169,8 +202,13 @@ pub fn unmarked(encoded: &Encoded) -> Encoded {
 fn block(body: &mut Builder, value: &impl Serialize, marked: bool) {
     body.json(value);
     if marked {
-        body.pop();
-        body.extend_from_slice(MARK);
-        body.push(b'}');
+        mark(body);
     }
+}
+
+/// 刚写完的那一块打上点：去掉结尾的 `}`，接上打点再补回来。
+fn mark(body: &mut Builder) {
+    body.pop();
+    body.extend_from_slice(MARK);
+    body.push(b'}');
 }

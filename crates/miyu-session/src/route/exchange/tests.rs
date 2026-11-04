@@ -75,6 +75,7 @@ async fn a_blob_that_cannot_be_read_is_reported_and_nothing_is_sent() {
             let exchanged = exchange(
                 &ready,
                 Cow::Borrowed(&request),
+                None,
                 &blobs,
                 std::future::pending(),
                 |_| sent = true,

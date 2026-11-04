@@ -10,6 +10,7 @@
 
 mod decode;
 mod effort;
+mod kept;
 mod messages;
 mod models;
 mod refusal;
@@ -17,6 +18,7 @@ mod usage;
 mod wire;
 
 pub use decode::Decoder;
+pub(crate) use kept::Kept;
 pub use models::{MODELS_PATH, parse_models};
 
 use std::collections::BTreeSet;
@@ -27,7 +29,7 @@ use miyu_kernel::request::Request;
 pub use crate::{EncodeError, Encoded};
 
 use crate::fragments::Builder;
-use crate::{BlobBytes, Call, DriverTexts, Fragments, media};
+use crate::{BlobBytes, Call, DriverTexts, Fragments, Memo, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
 pub const FAMILY: &str = "openai-chat";
@@ -204,10 +206,7 @@ pub fn fragments(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
 ) -> Result<Encoded<Fragments>, EncodeError> {
-    let continuing = match &compat.continuation {
-        Continuation::Prefix { field, path } if request.continuation => Some((*field, path)),
-        _ => None,
-    };
+    let continuing = continuing(compat, request);
     let messages = messages::write(
         request,
         call,
@@ -216,10 +215,7 @@ pub fn fragments(
         blobs,
         continuing.map(|(field, _)| field),
     )?;
-    let mut body = Builder::default();
-    body.extend_from_slice(b"{\"model\":");
-    body.json(call.model.as_str());
-    body.extend_from_slice(b",\"messages\":[");
+    let mut body = head(call);
     let mut ranges = Vec::with_capacity(messages.len());
     // 一条写完就放（施工 V-38）：线上的消息是请求里的字拷出来的一份，不和请求体一起留到最后。
     for (index, message) in messages.into_iter().enumerate() {
@@ -235,6 +231,46 @@ pub fn fragments(
         body.extend_from_slice(b",\"tools\":");
         body.json(&tools);
     }
+    rest(&mut body, call, compat);
+    Ok(Encoded {
+        body: body.finish(),
+        messages: ranges,
+        path: path(compat, request),
+    })
+}
+
+/// 编码成片段清单，前面没变的历史接着用 `memo` 里留着的（施工 V-42，[`crate::Memo`]）：发出去的字节和 [`fragments`] 的一个
+/// 都不差。
+///
+/// # Errors
+///
+/// 同 [`fragments`]。出错时 `memo` 整份扔掉。
+pub fn fragments_memo(
+    request: &Request,
+    call: &Call,
+    compat: &Compat,
+    texts: &DriverTexts,
+    blobs: &dyn BlobBytes,
+    memo: &mut Memo,
+) -> Result<Encoded<Fragments>, EncodeError> {
+    let encoded = kept::fragments(request, call, compat, texts, blobs, memo);
+    if encoded.is_err() {
+        memo.clear();
+    }
+    encoded
+}
+
+/// 请求体的开头：`{"model":<模型名>,"messages":[`。
+fn head(call: &Call) -> Builder {
+    let mut body = Builder::default();
+    body.extend_from_slice(b"{\"model\":");
+    body.json(call.model.as_str());
+    body.extend_from_slice(b",\"messages\":[");
+    body
+}
+
+/// 工具面后面的：`stream`、`stream_options`、输出上限、温度、思考强度，收尾的 `}`。
+fn rest(body: &mut Builder, call: &Call, compat: &Compat) {
     body.extend_from_slice(b",\"stream\":true");
     if compat.stream_usage {
         body.extend_from_slice(b",\"stream_options\":{\"include_usage\":true}");
@@ -243,14 +279,27 @@ pub fn fragments(
         let field = compat.output_limit.field();
         body.extend_from_slice(format!(",\"{field}\":{limit}").as_bytes());
     }
-    crate::write_temperature(&mut body, call.temperature);
-    effort::write(&mut body, call.effort.as_deref(), compat);
+    crate::write_temperature(body, call.temperature);
+    effort::write(body, call.effort.as_deref(), compat);
     body.push(b'}');
-    Ok(Encoded {
-        body: body.finish(),
-        messages: ranges,
-        path: continuing.map_or(PATH, |(_, path)| path).to_string(),
-    })
+}
+
+/// 接着写的这一次照供应商的开关（[`Continuation::Prefix`]）：有的交回字段和路径。
+fn continuing<'a>(
+    compat: &'a Compat,
+    request: &Request,
+) -> Option<(ContinuationField, &'a String)> {
+    match &compat.continuation {
+        Continuation::Prefix { field, path } if request.continuation => Some((*field, path)),
+        _ => None,
+    }
+}
+
+/// 发到哪一条路径：接着写的照开关里的，别的 [`PATH`]。
+fn path(compat: &Compat, request: &Request) -> String {
+    continuing(compat, request)
+        .map_or(PATH, |(_, path)| path)
+        .to_string()
 }
 
 /// 这份请求编码时要用哪些 blob：模型能看图的，要图片；文件每一个都要（施工 3-9 三补）：能读 PDF 的发 PDF，别的

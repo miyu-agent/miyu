@@ -36,6 +36,7 @@
 | `blobs_needed(请求, Call)` | 同 openai-chat 第 11 条：user、tool 消息里的图片（能看图时）、每一个文件 |
 | `encode(请求, Call, blob)` | 编码，交回 `Encoded`：`path` 是 `/messages`；`messages` 是 `messages` 数组里每条线上的消息的位置（system 不在里面，不算） |
 | `blobs_whole`、`fragments` | 同 openai-chat（施工 V-38）：照原样发的图片、PDF 只要大小、base64 记成一段 `Fragment::Base64`，发的时候才读出来编；`encode` 是它拼起来的整份字节 |
+| `fragments_memo` | 同 openai-chat（施工 V-42，`openai-chat.md`「留着编好的历史」）：一条消息留角色和一块块（不带打点），合并相邻同角色、缓存打点每次照这一次的位置现排；system、工具面照字比，打点照这一次的补 |
 | `decoder()` | 一次响应一个解码器，`feed`、`done`、`finished`、`finish` 的意思同 openai-chat |
 | `classify(Failure)` | 出错分类，共用 `classify::classify`（见「出错分类」） |
 | `auth(key)` | `x-api-key: <key>`、`anthropic-version: 2023-06-01`，照这个先后。没有 key 的不问它，版本头也不带 |

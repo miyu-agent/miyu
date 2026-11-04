@@ -32,17 +32,8 @@ pub(super) fn write(
     blobs: &dyn BlobBytes,
     continuing: Option<ContinuationField>,
 ) -> Result<Vec<Wire>, EncodeError> {
-    let writer = Writer {
-        call,
-        compat,
-        texts,
-        media: Media {
-            texts,
-            blobs,
-            described: &request.described,
-        },
-        ids: wire_ids(request),
-    };
+    let ids = wire_ids(request);
+    let writer = Writer::new(request, call, compat, texts, blobs, &ids);
     let mut out = Vec::new();
     if !request.system.is_empty() {
         out.push(Wire::System {
@@ -58,43 +49,80 @@ pub(super) fn write(
         if !matches!(message, Message::Tool { .. }) {
             writer.flush(&mut moved, &mut out);
         }
-        out.push(match message {
-            Message::User { blocks } => Wire::User {
-                content: writer.user(blocks)?,
-            },
-            Message::Assistant { blocks } => writer.assistant(blocks),
-            Message::Tool {
-                call_id, blocks, ..
-            } => writer.tool(call_id, blocks, &mut moved)?,
-        });
+        out.push(writer.one(message, &mut moved)?);
     }
     writer.flush(&mut moved, &mut out);
-    if let (
-        Some(field),
-        Some(Wire::Assistant {
-            prefix, partial, ..
-        }),
-    ) = (continuing, out.last_mut())
+    if let (Some(field), Some(last)) = (continuing, out.last_mut()) {
+        continue_at(last, field);
+    }
+    Ok(out)
+}
+
+/// 接着写：半截那一条 assistant 加上接着写的字段；别的不动。
+pub(super) fn continue_at(wire: &mut Wire, field: ContinuationField) {
+    if let Wire::Assistant {
+        prefix, partial, ..
+    } = wire
     {
         match field {
             ContinuationField::Prefix => *prefix = Some(true),
             ContinuationField::Partial => *partial = Some(true),
         }
     }
-    Ok(out)
 }
 
 /// 写消息要用的：一次调用定的、供应商的开关、占位的几句、换成字要用的，和调用编号的对照。
-struct Writer<'a> {
+pub(super) struct Writer<'a> {
     call: &'a Call,
     compat: &'a Compat,
     texts: &'a DriverTexts,
     media: Media<'a>,
     /// 内核的调用编号到线上的编号。
-    ids: BTreeMap<CallId, String>,
+    ids: &'a BTreeMap<CallId, String>,
+}
+
+impl<'a> Writer<'a> {
+    /// 照这一次的请求、调用、开关、占位、取好的 blob 和调用编号的对照（[`wire_ids`]）造一个。
+    pub(super) fn new(
+        request: &'a Request,
+        call: &'a Call,
+        compat: &'a Compat,
+        texts: &'a DriverTexts,
+        blobs: &'a dyn BlobBytes,
+        ids: &'a BTreeMap<CallId, String>,
+    ) -> Writer<'a> {
+        Writer {
+            call,
+            compat,
+            texts,
+            media: Media {
+                texts,
+                blobs,
+                described: &request.described,
+            },
+            ids,
+        }
+    }
 }
 
 impl Writer<'_> {
+    /// 一条消息写成线上的一条：tool 里的图片、PDF 挪进 `moved`（施工 V-42 起单独拿出来，留着的历史一条一条照它编）。
+    pub(super) fn one(
+        &self,
+        message: &Message,
+        moved: &mut Vec<Part>,
+    ) -> Result<Wire, EncodeError> {
+        Ok(match message {
+            Message::User { blocks } => Wire::User {
+                content: self.user(blocks)?,
+            },
+            Message::Assistant { blocks } => self.assistant(blocks),
+            Message::Tool {
+                call_id, blocks, ..
+            } => self.tool(call_id, blocks, moved)?,
+        })
+    }
+
     /// user 消息。
     fn user(&self, blocks: &[Block]) -> Result<Content, EncodeError> {
         let mut pieces = Pieces::default();
@@ -205,7 +233,7 @@ impl Writer<'_> {
 
     /// 挪出来的图片、文件放成一条 user 消息：先一句说明，再按先后放；带名字的图片前后的标签照 user 的拼法和挨着的
     /// 文字拼成一段。没有就什么都不放。
-    fn flush(&self, moved: &mut Vec<Part>, out: &mut Vec<Wire>) {
+    pub(super) fn flush(&self, moved: &mut Vec<Part>, out: &mut Vec<Wire>) {
         if moved.is_empty() {
             return;
         }
@@ -314,7 +342,7 @@ fn arguments(args: &str) -> String {
 }
 
 /// 内核的调用编号到线上的编号：私有数据是这个驱动的、里面有 `id` 的，用它。
-fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
+pub(super) fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
     let mut ids = BTreeMap::new();
     for message in &request.messages {
         let Message::Assistant { blocks } = message else {
@@ -356,7 +384,7 @@ fn came_from(blocks: &[Block]) -> Option<ReasoningField> {
 }
 
 /// 私有数据里供应商自己的调用编号：`{"id":"…"}`。
-fn provider_id(call: &ToolCall) -> Option<String> {
+pub(super) fn provider_id(call: &ToolCall) -> Option<String> {
     #[derive(Deserialize)]
     struct Id {
         id: String,

@@ -319,6 +319,7 @@ impl OneShot {
             let exchanged = exchange(
                 &ready,
                 Cow::Borrowed(&request),
+                None,
                 blobs,
                 std::future::pending(),
                 |progress| {

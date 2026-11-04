@@ -3,6 +3,9 @@
 //! 流式读回来，「发出去了」和每一段增量交给挑的一方。报上下文超长、说了上限、比手头的窗口小的，记下用出来的窗口（施工
 //! 8-7，`models.md`「怎么走」第二条第 9 条），再交回说完了。
 //!
+//! 主请求编码时前面没变的历史接着用会话留着的那一份（施工 V-42，[`Memo`]）：发出去的字节和整份编的一个都不差；旁路请求、
+//! 一次性的照旧整份编。
+//!
 //! 请求体边编边发（施工 V-38）：照原样发的图片、PDF 只核对、量大小，发的时候 HTTP 执行器才从 blob 一小块一小块地读出来编
 //! （[`StoreBlobs`]）；照字放进消息的文件照旧取整份。编码完，交进来的请求（主请求那一份）、取来的字节、线上的中间结构当场
 //! 放掉，等模型回答时手里不留整份请求。
@@ -11,10 +14,10 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::io::{self, Read};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use miyu_drivers::classify::Classified;
-use miyu_drivers::{BlobBytes, Call, EncodeError};
+use miyu_drivers::{BlobBytes, Call, EncodeError, Memo};
 use miyu_http::{Attempt, BlobSource, Body, Outcome, Progress, send};
 use miyu_kernel::event::{CallError, ErrorClass, Usage};
 use miyu_kernel::id::ContentHash;
@@ -76,10 +79,12 @@ fn capped(call: &Call, cap: Option<u64>) -> Option<Call> {
 }
 
 /// 发一次：取 blob、编码、发、读回来，「发出去了」和增量一有就交给 `on`；`cancel` 一完成就停。`request` 是交进来的那一份
-/// （主请求）的，编码完就放；借来的（旁路请求、一次性的，换人还要再发）照旧借着。
+/// （主请求）的，编码完就放；借来的（旁路请求、一次性的，换人还要再发）照旧借着。`memo` 是会话留着的编好的历史（主请求
+/// 有，施工 V-42）：有的照它接着编，没有的整份编。
 pub(super) async fn exchange(
     ready: &Ready,
     request: Cow<'_, Request>,
+    memo: Option<&Mutex<Memo>>,
     blobs: &Blobs,
     cancel: impl Future<Output = ()> + Send,
     on: impl FnMut(Progress) + Send,
@@ -105,9 +110,22 @@ pub(super) async fn exchange(
     };
     // 快满了的主请求，回答压到窗口剩下的（施工 6-11 三补）：拷一份改输出上限，平常的照原样。
     let call = capped(&ready.call, request.output_cap);
-    let encoded = ready
-        .driver
-        .fragments(&request, call.as_ref().unwrap_or(&ready.call), &fetched);
+    let call = call.as_ref().unwrap_or(&ready.call);
+    let encoded = match memo {
+        Some(memo) => {
+            let mut kept = memo.lock().unwrap_or_else(|poisoned| {
+                // 编到一半 panic 过：留着的不一定齐，整份扔掉重来。
+                let mut kept = poisoned.into_inner();
+                kept.clear();
+                memo.clear_poison();
+                kept
+            });
+            ready
+                .driver
+                .fragments_memo(&request, call, &fetched, &mut kept)
+        }
+        None => ready.driver.fragments(&request, call, &fetched),
+    };
     // 编完了：请求（交进来的那一份）、取来的字节放掉（施工 V-38）。
     drop(request);
     drop(fetched);

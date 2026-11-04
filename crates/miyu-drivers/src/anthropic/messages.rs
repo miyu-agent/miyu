@@ -41,31 +41,15 @@ pub(super) fn write(
     texts: &DriverTexts,
     blobs: &dyn BlobBytes,
 ) -> Result<Written, EncodeError> {
-    let writer = Writer {
-        call,
-        texts,
-        media: Media {
-            texts,
-            blobs,
-            described: &request.described,
-        },
-        ids: wire_ids(request),
-    };
+    let ids = wire_ids(request);
+    let writer = Writer::new(request, call, texts, blobs, &ids);
     let mut written = Written {
         messages: Vec::new(),
         firsts: Vec::new(),
         stable_end: None,
     };
     for (index, message) in request.messages.iter().enumerate() {
-        let (role, parts) = match message {
-            Message::User { blocks } => ("user", writer.blocks(blocks)?),
-            Message::Assistant { blocks } => ("assistant", writer.assistant(blocks)),
-            Message::Tool {
-                call_id,
-                error,
-                blocks,
-            } => ("user", vec![writer.tool(call_id, *error, blocks)?]),
-        };
+        let (role, parts) = writer.one(message)?;
         if !parts.is_empty() {
             match written.messages.last_mut() {
                 Some(last) if last.role == role => last.content.extend(parts),
@@ -88,15 +72,50 @@ pub(super) fn write(
 }
 
 /// 写消息要用的：一次调用定的、占位的几句、换成字要用的，和调用编号的对照。
-struct Writer<'a> {
+pub(super) struct Writer<'a> {
     call: &'a Call,
     texts: &'a DriverTexts,
     media: Media<'a>,
     /// 内核的调用编号到线上的编号。
-    ids: BTreeMap<CallId, String>,
+    ids: &'a BTreeMap<CallId, String>,
+}
+
+impl<'a> Writer<'a> {
+    /// 照这一次的请求、调用、占位、取好的 blob 和调用编号的对照（[`wire_ids`]）造一个。
+    pub(super) fn new(
+        request: &'a Request,
+        call: &'a Call,
+        texts: &'a DriverTexts,
+        blobs: &'a dyn BlobBytes,
+        ids: &'a BTreeMap<CallId, String>,
+    ) -> Writer<'a> {
+        Writer {
+            call,
+            texts,
+            media: Media {
+                texts,
+                blobs,
+                described: &request.described,
+            },
+            ids,
+        }
+    }
 }
 
 impl Writer<'_> {
+    /// 一条消息写成的角色和块（还没和前后合并；一块都没有的不发）。施工 V-42 起单独拿出来，留着的历史一条一条照它编。
+    pub(super) fn one(&self, message: &Message) -> Result<(&'static str, Vec<Part>), EncodeError> {
+        Ok(match message {
+            Message::User { blocks } => ("user", self.blocks(blocks)?),
+            Message::Assistant { blocks } => ("assistant", self.assistant(blocks)),
+            Message::Tool {
+                call_id,
+                error,
+                blocks,
+            } => ("user", vec![self.tool(call_id, *error, blocks)?]),
+        })
+    }
+
     /// user 消息、工具结果里的块：字、图片、文件，一块一块写。
     fn blocks(&self, blocks: &[Block]) -> Result<Vec<Part>, EncodeError> {
         let mut parts = Vec::new();
@@ -234,7 +253,7 @@ fn input(args: &str) -> Box<RawValue> {
 }
 
 /// 内核的调用编号到线上的编号：私有数据是这个驱动的、里面有字符串 `id` 的，用它。
-fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
+pub(super) fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
     let mut ids = BTreeMap::new();
     for message in &request.messages {
         let Message::Assistant { blocks } = message else {
@@ -252,7 +271,7 @@ fn wire_ids(request: &Request) -> BTreeMap<CallId, String> {
 }
 
 /// 私有数据里自己家的调用编号：`{"id":"…"}`。
-fn provider_id(call: &ToolCall) -> Option<String> {
+pub(super) fn provider_id(call: &ToolCall) -> Option<String> {
     #[derive(Deserialize)]
     struct Id {
         id: String,

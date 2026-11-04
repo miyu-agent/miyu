@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 
 use tracing::Instrument;
 
+use miyu_drivers::Memo;
 use miyu_http::Progress;
 use miyu_kernel::event::ErrorClass;
 use miyu_kernel::request::Request;
@@ -31,6 +32,8 @@ use crate::port::{Cancel, Reports};
 pub(super) struct Chosen {
     pub(super) ready: Ready,
     pub(super) blobs: Blobs,
+    /// 会话留着的编好的历史（施工 V-42）：主请求有，旁路请求没有。
+    pub(super) memo: Option<Arc<Mutex<Memo>>>,
     /// 说完了路由照它记（施工 8-9）。
     pub(super) tried: Tried,
 }
@@ -132,6 +135,7 @@ pub(super) async fn attempt(
     let exchanged = exchange(
         ready,
         request,
+        chosen.memo.as_deref(),
         &chosen.blobs,
         stop,
         |progress| match progress {

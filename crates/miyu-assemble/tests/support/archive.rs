@@ -14,6 +14,7 @@ use miyu_kernel::id::Seq;
 use miyu_kernel::request::Request;
 use miyu_kernel::testkit::Stage;
 
+use super::kept::kept_matches;
 use super::{anthropic_wire, lines, responses_wire, wire};
 
 /// 存档所在的目录：这个 crate 的目录往上两级是仓库根。
@@ -66,9 +67,11 @@ pub fn face_files(stage: &Stage) -> Vec<(String, String)> {
     files
 }
 
-/// 这段会话和存档 `name` 逐字节比；设了 `MIYU_PROBE_WRITE` 的重写存档。
+/// 这段会话和存档 `name` 逐字节比；设了 `MIYU_PROBE_WRITE` 的重写存档。主请求另照留着编好的历史的路编一遍，和整份编的比
+/// （施工 V-42，[`kept_matches`]）。
 pub fn matches_the_archive(name: &str, stage: &Stage) {
     compare(name, &files(stage));
+    kept_matches(stage.requests());
 }
 
 /// 同上，多另两家的脸（施工 8-12、8-13，[`face_files`]）。
@@ -76,6 +79,7 @@ pub fn matches_the_archive_with_faces(name: &str, stage: &Stage) {
     let mut files = files(stage);
     files.extend(face_files(stage));
     compare(name, &files);
+    kept_matches(stage.requests());
 }
 
 /// 存档 `name` 和这些文件逐字节比；设了 `MIYU_PROBE_WRITE` 的重写存档。

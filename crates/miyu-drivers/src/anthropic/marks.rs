@@ -15,7 +15,6 @@ use std::collections::BTreeSet;
 use miyu_kernel::request::Request;
 
 use super::messages::Written;
-use super::wire::Tool;
 
 /// 打在哪几处。
 #[derive(Debug, Default)]
@@ -28,29 +27,67 @@ pub(super) struct Marks {
     pub(super) messages: BTreeSet<(usize, usize)>,
 }
 
-/// 照请求、工具面、写好的消息算打点。
-pub(super) fn place(request: &Request, tools: Option<&[Tool<'_>]>, written: &Written) -> Marks {
+/// 打点要看的写好的消息（施工 V-42 起两样都有：整份编的 [`Written`]，留着的历史现排的那一份）。
+pub(super) trait Shape {
+    /// 几条线上的消息。
+    fn len(&self) -> usize;
+    /// 第 `m` 条的角色。
+    fn role(&self, m: usize) -> &'static str;
+    /// 第 `m` 条是从统一的请求里第几条消息开始的。
+    fn first(&self, m: usize) -> usize;
+    /// 第 `m` 条有几块。
+    fn blocks(&self, m: usize) -> usize;
+    /// 第 `m` 条的第 `b` 块能不能打点（[`super::wire::Part::markable`]）。
+    fn markable(&self, m: usize, b: usize) -> bool;
+    /// 前 `stable` 条消息写出的最后一块（[`Written::stable_end`]）。
+    fn stable_end(&self) -> Option<(usize, usize)>;
+}
+
+impl Shape for Written {
+    fn len(&self) -> usize {
+        self.messages.len()
+    }
+
+    fn role(&self, m: usize) -> &'static str {
+        self.messages[m].role
+    }
+
+    fn first(&self, m: usize) -> usize {
+        self.firsts[m]
+    }
+
+    fn blocks(&self, m: usize) -> usize {
+        self.messages[m].content.len()
+    }
+
+    fn markable(&self, m: usize, b: usize) -> bool {
+        self.messages[m].content[b].markable()
+    }
+
+    fn stable_end(&self) -> Option<(usize, usize)> {
+        self.stable_end
+    }
+}
+
+/// 照请求、工具面有几件、写好的消息算打点。
+pub(super) fn place(request: &Request, tools: Option<usize>, written: &impl Shape) -> Marks {
     let mut marks = Marks::default();
     if !request.system.is_empty() {
         marks.system = true;
-    } else if let Some(last) = tools.and_then(|tools| tools.len().checked_sub(1)) {
+    } else if let Some(last) = tools.and_then(|tools| tools.checked_sub(1)) {
         marks.tool = Some(last);
     }
-    let messages = &written.messages;
-    let last_block = |m: usize| (m, messages[m].content.len().saturating_sub(1));
-    let previous = messages
-        .iter()
-        .enumerate()
-        .rposition(|(m, message)| {
-            message.role == "assistant" && written.firsts[m] >= request.stable
-        })
+    let last_block = |m: usize| (m, written.blocks(m).saturating_sub(1));
+    let previous = (0..written.len())
+        .rposition(|m| written.role(m) == "assistant" && written.first(m) >= request.stable)
         .and_then(|assistant| assistant.checked_sub(1))
         .map(last_block);
-    let latest = messages.len().checked_sub(1).map(last_block);
-    for (m, upto) in [written.stable_end, previous, latest].into_iter().flatten() {
-        let found = messages[m].content[..=upto]
-            .iter()
-            .rposition(super::wire::Part::markable);
+    let latest = written.len().checked_sub(1).map(last_block);
+    for (m, upto) in [written.stable_end(), previous, latest]
+        .into_iter()
+        .flatten()
+    {
+        let found = (0..upto + 1).rposition(|b| written.markable(m, b));
         if let Some(b) = found {
             marks.messages.insert((m, b));
         }

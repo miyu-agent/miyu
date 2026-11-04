@@ -9,10 +9,12 @@
 mod decode;
 mod effort;
 mod input;
+mod kept;
 mod usage;
 mod wire;
 
 pub use decode::Decoder;
+pub(crate) use kept::Kept;
 
 use std::collections::BTreeSet;
 
@@ -22,7 +24,7 @@ use miyu_kernel::request::Request;
 pub use crate::{EncodeError, Encoded};
 
 use crate::fragments::Builder;
-use crate::{BlobBytes, Call, DriverTexts, Fragments, media};
+use crate::{BlobBytes, Call, DriverTexts, Fragments, Memo, media};
 
 /// 驱动家族：私有数据里写的是它的，才是这个驱动的（`03-事件模型.md` 第九节）。
 pub const FAMILY: &str = "openai-responses";
@@ -62,9 +64,7 @@ pub fn fragments(
     blobs: &dyn BlobBytes,
 ) -> Result<Encoded<Fragments>, EncodeError> {
     let items = input::write(request, call, texts, blobs)?;
-    let mut body = Builder::default();
-    body.extend_from_slice(b"{\"model\":");
-    body.json(call.model.as_str());
+    let mut body = head(call);
     if !request.system.is_empty() {
         body.extend_from_slice(b",\"instructions\":");
         body.json(&request.system);
@@ -85,18 +85,51 @@ pub fn fragments(
         body.extend_from_slice(b",\"tools\":");
         body.json(&tools);
     }
-    body.extend_from_slice(b",\"store\":false,\"stream\":true");
-    if let Some(limit) = call.max_output {
-        body.extend_from_slice(format!(",\"max_output_tokens\":{limit}").as_bytes());
-    }
-    crate::write_temperature(&mut body, call.temperature);
-    effort::write(&mut body, call.effort.as_deref());
-    body.push(b'}');
+    rest(&mut body, call);
     Ok(Encoded {
         body: body.finish(),
         messages: ranges,
         path: PATH.to_string(),
     })
+}
+
+/// 编码成片段清单，前面没变的历史接着用 `memo` 里留着的（施工 V-42，[`crate::Memo`]）：发出去的字节和 [`fragments`] 的一个
+/// 都不差。
+///
+/// # Errors
+///
+/// 同 [`fragments`]。出错时 `memo` 整份扔掉。
+pub fn fragments_memo(
+    request: &Request,
+    call: &Call,
+    texts: &DriverTexts,
+    blobs: &dyn BlobBytes,
+    memo: &mut Memo,
+) -> Result<Encoded<Fragments>, EncodeError> {
+    let encoded = kept::fragments(request, call, texts, blobs, memo);
+    if encoded.is_err() {
+        memo.clear();
+    }
+    encoded
+}
+
+/// 请求体的开头：`{"model":<模型名>`。
+fn head(call: &Call) -> Builder {
+    let mut body = Builder::default();
+    body.extend_from_slice(b"{\"model\":");
+    body.json(call.model.as_str());
+    body
+}
+
+/// 工具面后面的：`store`、`stream`、输出上限、温度、思考强度，收尾的 `}`。
+fn rest(body: &mut Builder, call: &Call) {
+    body.extend_from_slice(b",\"store\":false,\"stream\":true");
+    if let Some(limit) = call.max_output {
+        body.extend_from_slice(format!(",\"max_output_tokens\":{limit}").as_bytes());
+    }
+    crate::write_temperature(body, call.temperature);
+    effort::write(body, call.effort.as_deref());
+    body.push(b'}');
 }
 
 /// 这份请求编码时要用哪些 blob：同 openai-chat（`media.rs`）。

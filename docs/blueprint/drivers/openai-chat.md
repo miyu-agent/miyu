@@ -24,6 +24,8 @@
 | `crates/miyu-drivers/src/text_file.rs` | 什么算文本文件、最多给多少（施工 3-9 三补） |
 | `crates/miyu-drivers/src/base64.rs` | data URL 用的 base64：`base64` 这个库的标准写法（施工 V-38）；发请求体时一块 48 KiB |
 | `crates/miyu-drivers/src/fragments.rs` | 片段清单（施工 V-38）：编码时代替整份的字节，线上的结构里内嵌 blob 的那一格（`Inline`）拆成单独的一段 |
+| `crates/miyu-drivers/src/memo.rs` | 一个会话留着的编好的历史（施工 V-42，`Memo`）：设置、原样的消息、每条查过的调用编号和用过的 blob；定前几条接着用 |
+| `crates/miyu-drivers/src/openai_chat/kept.rs` | openai-chat 留着编的那一路（施工 V-42）：一条消息留它写成的那一条和挪出来的图片、PDF，system、工具面照字比；挪出来的那条 user、接着写的那一条、头尾每次现排 |
 | `resources/core/drivers/` | 那几句的原文 |
 
 ### 对外的样子
@@ -36,6 +38,7 @@
 | `blobs_needed(请求, Call)` | 编码要用的 blob 清单，执行器照着先取 |
 | `blobs_whole(请求, Call)` | 其中要整份字节的（施工 V-38）：照字放进消息的文件；别的执行器只取大小（`BlobBytes::size`） |
 | `fragments(请求, Call, blob)` | 编码成片段清单，交回 `Encoded<Fragments>`（施工 V-38）：图片、PDF 的 base64 只记 blob 和大小（`Fragment::Base64`），执行器发的时候才读出来编；发请求走它 |
+| `fragments_memo(请求, Call, blob, Memo)` | 同 `fragments`，前面没变的历史接着用会话留着的那一份（施工 V-42，见下面「留着编好的历史」）：发出去的字节、每条消息的位置、路径和 `fragments` 的一个都不差；主请求走它。默认的写法什么都不留，照 `fragments` 整份编 |
 | `encode(请求, Call, blob)` | 编码成整份的字节，交回 `Encoded`：`fragments` 拼起来，base64 照交进来的整份字节编（测试、对照用，有默认的写法） |
 | `decoder()` | 一次响应一个解码器 `Decode`：`feed(字节) -> 增量`、`done()`、`finished()`（`finish_reason` 到了没有，施工 4-9 再补三下）、`finish() -> Ending` |
 | `classify(Failure)` | 出错分类，交回 `Classified` |
@@ -107,6 +110,17 @@
     - 别的情形（开关是 `None`，或者没带记号）照原样发，`path` 是 `/chat/completions`。
 11. **要哪些 blob**（`blobs_needed`）：user 和 tool 消息里的图片（能看图时）、每一个文件（施工 3-9 三补：发不了的也要认是不是文本、要写有多大）。assistant 里的不算。其中要整份字节的（`blobs_whole`，施工 V-38）：照字放进消息的文件（不是能照原样发的 PDF 的那些）；别的只要大小。线上的中间结构（每条线上的消息）写完一条放一条。
 12. **`Encoded.messages`**：每条线上的消息 JSON 在 `body` 里的起止，照先后。
+
+### 留着编好的历史（施工 V-42）
+
+会话的主请求编码时交一份 `Memo`（路由里一个会话一份，`session/actor.md`），前后两次请求前面没变的那一大段不再重新转成 JSON：
+
+1. 设置（驱动家族、开关、占位的几句、模型能收什么、请求里的图的转述）有一样和留着的不同，整份扔掉，从头编。
+2. 消息照原样的一份逐条比，从第一条不一样的起扔掉（压缩、撤销、改写、事实块插进还没收尾的 user、接着写，都落在这里）。不靠哈希。
+3. 留着的消息里查过的调用编号这一次对出来的不一样（后面的消息带来了同一个编号），或者用过的 blob 这一次没取到、大小不一样，从那一条起扔掉重新编（编不了的照旧报缺了哪一个）。
+4. 剩下的接着用，后面的照常编、留下。
+
+留着的只是「一条消息自己写成的那一截」（openai-chat：线上的那一条，tool 另留挪出来的图片、PDF；anthropic：角色和一块块，不带打点；openai-responses：几项），加上 system、工具面照字比的那一截。和前后有关的每次现排：openai-chat 挪出来的图片另起的那条 user、接着写时不发的那句和加字段的那一条；anthropic 相邻同角色合成一条、缓存打点；各家的头尾（模型名、输出上限、温度、思考强度）。图片、PDF 照旧只记 blob（`Fragment::Base64`）。编码出错时整份扔掉。只在内存里，会话退下一起放；多占的大约是上下文那么大的两份（原样的消息、编好的字）。
 
 ### 怎么走：解码
 
@@ -309,7 +323,8 @@ A file was attached here (报告.pdf, application/pdf, 15 bytes), but this model
 | `crates/miyu-drivers/src/base64/tests.rs` | RFC 4648 的测试值，`+`、`/`；换成库以后和原来自己拼的逐字一样（施工 V-38）；3 的倍数的块接起来和整份编的一样 |
 | `crates/miyu-drivers/src/fragments/tests.rs`（施工 V-38） | 内嵌的 blob 拆成单独的一段，拼起来和整份写的一字不差（前缀里的字照 JSON 转义）；位置算上还没编的 base64；blob 长短不对的报缺 |
 | `crates/miyu-session/src/route/exchange/golden.rs`（施工 V-38） | 金样：图、PDF、文本文件、工具结果里夹图、接着写、思考回传、替它看的图、占位工具、思考强度、温度、输出上限，openai-chat 两套、anthropic、openai-responses 四份，边编边发出去的字节和改前（`1b712ee5d`）的 SHA-256 一样，每条消息的起止、路径一样，「发出去了」报的哈希就是它 |
-| `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比） |
+| `crates/miyu-assemble/tests/probe.rs`、`random_logs.rs` | 编码以后也是上一次的前缀延伸（接着写那一次拿不接着写的编码比）；主请求一次次照留着编好的历史编（DeepSeek 那一套、anthropic、openai-responses 各一份 `Memo`），和整份编的一模一样（施工 V-42） |
+| `crates/miyu-drivers/tests/memo.rs`（施工 V-42） | 照种子造的对话一次次请求下去（加消息、再发一次、撤销、压缩、改前面、插事实块、接着写，换 system、工具面、稳定区、模型、输出上限、温度、思考强度、能收什么、转述、占位、驱动和开关，blob 没了、回来、长短变了），留着编的和整份编的片段清单、位置、路径、报的错一模一样；每一种单独来几遍；只往后加的整份接着用。全量 `MIYU_MEMO_SEEDS` |
 
 ### 出处
 
