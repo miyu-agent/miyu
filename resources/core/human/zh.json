@@ -749,8 +749,6 @@
     "config/applies/now": "立即生效",
     "config/option-needs-key": "要 key",
     "config/option-needs-address": "要地址",
-    "config/option-needs-key": "要 key",
-    "config/option-needs-address": "要地址",
     "config/option-cooling": "冷却到 {time}",
     "config/or": "{rest}或{last}",
     "config/or-values": "{rest} 或 {last}",

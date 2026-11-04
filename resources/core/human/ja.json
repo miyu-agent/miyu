@@ -749,8 +749,6 @@
     "config/applies/now": "すぐに反映",
     "config/option-needs-key": "キーが必要",
     "config/option-needs-address": "アドレスが必要",
-    "config/option-needs-key": "キーが必要",
-    "config/option-needs-address": "アドレスが必要",
     "config/option-cooling": "{time} まで休止",
     "config/or": "{rest}または{last}",
     "config/or-values": "{rest} または {last}",

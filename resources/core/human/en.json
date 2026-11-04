@@ -753,8 +753,6 @@
     "config/applies/now": "Takes effect immediately",
     "config/option-needs-key": "Needs a key",
     "config/option-needs-address": "Needs an address",
-    "config/option-needs-key": "Needs a key",
-    "config/option-needs-address": "Needs an address",
     "config/option-cooling": "Resting until {time}",
     "config/or": "{rest} or {last}",
     "config/or-values": "{rest} or {last}",
