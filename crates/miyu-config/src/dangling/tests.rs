@@ -203,7 +203,7 @@ fn a_model_or_word_is_not_checked_and_its_model_is() {
     assert_eq!(problems[0].code, Code::NoProvider);
 }
 
-/// 软件包选 Miyu 自己的东西（施工 PC-3）：模型照引用查供应商、池在不在；人格、知识库没有的报警告；列表里的、一组字段的列表里
+/// 软件包选 Miyu 自己的东西（施工 PC-3、PC-3 补）：模型照引用查供应商、池在不在；人格、知识库、预设没有的报警告；列表里的、一组字段的列表里
 /// 那个字段的都查，位置写成 `<键>[第几项].<字段>`。
 #[test]
 fn package_choices_of_models_personas_and_knowledge_are_checked() {
@@ -224,6 +224,11 @@ name = { en = "Helpers" }
 type = "knowledge"
 name = { en = "KB" }
 
+[settings.modes]
+type = "list"
+element = "preset"
+name = { en = "Modes" }
+
 [settings.accounts]
 type = "list"
 element = "record"
@@ -240,7 +245,7 @@ name = { en = "Persona" }
     )
     .expect("清单读得成");
     let items = crate::package::settings::items("draw", "draw", &manifest.settings);
-    let text = "[draw]\nmodel = \"gone/m\"\nhelpers = [\"cat\", \"dog\"]\nkb = \"notes\"\n\n[[draw.accounts]]\nmodel = \"@fast\"\npersona = \"cat\"\n\n[[draw.accounts]]\nmodel = \"a/m\"\npersona = \"fox\"\n";
+    let text = "[draw]\nmodel = \"gone/m\"\nhelpers = [\"cat\", \"dog\"]\nkb = \"notes\"\nmodes = [\"dev\", \"gone\"]\n\n[[draw.accounts]]\nmodel = \"@fast\"\npersona = \"cat\"\n\n[[draw.accounts]]\nmodel = \"a/m\"\npersona = \"fox\"\n";
     let parsed = parse(&items, Layer::System, text).expect("写法对");
     assert!(parsed.problems.is_empty(), "{:?}", parsed.problems);
     let dangling = dangling(&items, &parsed, Layer::System, &|name| name == "a", &|_| {
@@ -274,8 +279,10 @@ name = { en = "Persona" }
         ]
     );
     let unknown =
-        crate::dangling::unknown_names(&items, &parsed, Layer::System, &|id| id == "cat", &|id| {
-            id == "other"
+        crate::dangling::unknown_names(&items, &parsed, Layer::System, &|kind, id| match kind {
+            Kind::Persona => id == "cat",
+            Kind::Preset => id == "dev",
+            _ => id == "other",
         });
     assert_eq!(
         found(&unknown),
@@ -294,6 +301,11 @@ name = { en = "Persona" }
                 "draw.kb".to_string(),
                 Code::UnknownKnowledge,
                 "notes".to_string()
+            ),
+            (
+                "draw.modes".to_string(),
+                Code::UnknownPreset,
+                "gone".to_string()
             ),
         ]
     );

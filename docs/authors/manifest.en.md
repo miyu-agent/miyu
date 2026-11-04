@@ -128,7 +128,7 @@ One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without
 
 | Field | Notes |
 |---|---|
-| `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `model` (pick a model: `<provider>/<model>` or a pool `@<pool>`), `persona` (pick a persona by id), `knowledge` (pick a knowledge base by id), `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type; `record` makes each entry a set of fields, see below) |
+| `type` | Required: `bool`, `int` (`min`, `max`), `number` (a decimal, `min` and `max` required), `option` (`choices`, at least two), `text` (`max`, default 200 characters; `lines`), `name`, `model` (pick a model: `<provider>/<model>` or a pool `@<pool>`), `persona` (pick a persona by id), `knowledge` (pick a knowledge base by id), `preset` (pick a preset by id), `url`, `secret` (only as a `{ secret = … }` reference), `list` (`element` is the element type; `record` makes each entry a set of fields, see below) |
 | `choices` | The options of an `option`: an array of texts (`["auto", "opaque"]`), or an array of tables, each with a required `value` and an optional `name` and `description` written like the setting's own (the settings screen shows `name` in the dropdown and `description` dimmed below it). Don't mix the two; the config stores `value` |
 | `lines` | `lines = true` on a `text`: a box of several lines (for prompt templates and the like), at most 2000 characters without `max` |
 | `min`, `max` | The range of an `int`, the whole integer range when left out; required for `number` and integers only (like `0` to `2`), use `step` for finer values |

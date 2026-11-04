@@ -175,11 +175,13 @@ pub fn tell(
         | Code::NoPool
         | Code::UnknownEffort
         | Code::UnknownPersona
-        | Code::UnknownKnowledge => {
+        | Code::UnknownKnowledge
+        | Code::UnknownPreset => {
             let said = match problem.code {
                 Code::UnknownSecret => "config/unknown-secret",
                 Code::UnknownPersona => "config/unknown-persona",
                 Code::UnknownKnowledge => "config/unknown-knowledge",
+                Code::UnknownPreset => "config/unknown-preset",
                 Code::EnvNotSet => "config/env-not-set",
                 Code::NoProvider => "config/no-provider",
                 Code::UnknownEffort => "config/unknown-effort",

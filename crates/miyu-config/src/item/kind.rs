@@ -40,6 +40,8 @@ pub enum Kind {
     Persona,
     /// 知识库的编号（施工 PC-3，`type = "knowledge"`）：同 [`Kind::Persona`]，没有的报警告 `unknown_knowledge`。写成字。
     Knowledge,
+    /// 预设的编号（施工 PC-3 补，`type = "preset"`）：同 [`Kind::Persona`]，没有的报警告 `unknown_preset`。写成字。
+    Preset,
     /// 列表：每一个照元素的类型（施工 8-6：供应商的几个 key 是密钥的列表）。元素不能再是列表。
     List(&'static Kind),
     /// 几个字之一或者一个模型（施工 R-5 补：`models.embedding` 写 `local`、`off` 或 `<供应商>/<模型>`）：等于列出的字的就是
@@ -179,7 +181,7 @@ impl Kind {
             (Kind::Url, Value::Text(text)) => ok_or_format(url(text)),
             // 网址也能是环境变量的引用（施工 8-6b）；`{ secret = … }` 不是合法的写法，落到最后的 `wrong_type`。
             (Kind::Url, Value::Secret(Reference::Env(_))) => Ok(()),
-            (Kind::Name | Kind::Persona | Kind::Knowledge, Value::Text(text)) => {
+            (Kind::Name | Kind::Persona | Kind::Knowledge | Kind::Preset, Value::Text(text)) => {
                 ok_or_format(crate::secret::valid_name(text))
             }
             (Kind::Reference, Value::Text(text)) => ok_or_format(reference(text)),
@@ -250,6 +252,7 @@ impl Kind {
             Kind::Record(_) => "record",
             Kind::Persona => "persona",
             Kind::Knowledge => "knowledge",
+            Kind::Preset => "preset",
         }
     }
 

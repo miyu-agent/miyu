@@ -39,24 +39,25 @@ pub fn dangling(
     found
 }
 
-/// 写的人格、知识库现在没有（施工 PC-3，设计 53 第四节）：一处一条警告，`unknown_persona`、`unknown_knowledge`，`name` 是写的
-/// 编号；列表、一组字段的列表照 [`dangling`] 的位置写。人格、知识库可能以后才建，只报不挡。`persona`、`knowledge` 说有没有。
+/// 写的人格、知识库、预设现在没有（施工 PC-3，设计 53 第四节；预设是 PC-3 补）：一处一条警告，`unknown_persona`、
+/// `unknown_knowledge`、`unknown_preset`，`name` 是写的编号；列表、一组字段的列表照 [`dangling`] 的位置写。它们可能以后才建，
+/// 只报不挡。`exists` 说这一种（[`Kind::Persona`]、[`Kind::Knowledge`]、[`Kind::Preset`]）里有没有这个编号。
 pub fn unknown_names(
     items: &[Item],
     parsed: &Parsed,
     layer: Layer,
-    persona: &dyn Fn(&str) -> bool,
-    knowledge: &dyn Fn(&str) -> bool,
+    exists: &dyn Fn(Kind, &str) -> bool,
 ) -> Vec<Problem> {
     let mut found = Vec::new();
-    for (key, entry, text) in texts(items, parsed, |kind| matches!(kind, Kind::Persona)) {
-        if !persona(text) {
-            found.push(problem(Code::UnknownPersona, layer, &key, entry, text));
-        }
-    }
-    for (key, entry, text) in texts(items, parsed, |kind| matches!(kind, Kind::Knowledge)) {
-        if !knowledge(text) {
-            found.push(problem(Code::UnknownKnowledge, layer, &key, entry, text));
+    for (wanted, code) in [
+        (Kind::Persona, Code::UnknownPersona),
+        (Kind::Knowledge, Code::UnknownKnowledge),
+        (Kind::Preset, Code::UnknownPreset),
+    ] {
+        for (key, entry, text) in texts(items, parsed, |kind| kind == wanted) {
+            if !exists(wanted, text) {
+                found.push(problem(code, layer, &key, entry, text));
+            }
         }
     }
     found

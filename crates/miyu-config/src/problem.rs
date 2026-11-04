@@ -90,6 +90,8 @@ pub enum Code {
     UnknownPersona,
     /// 写的知识库现在没有（施工 PC-3）：同 [`Code::UnknownPersona`]。
     UnknownKnowledge,
+    /// 写的预设现在没有（施工 PC-3 补）：同 [`Code::UnknownPersona`]。
+    UnknownPreset,
     /// 列表里一项少写了必写的字段（没有默认值的，施工 PC-2）：`key` 是 `<键>[第几项].<字段>`。整项不收。
     MissingField,
     /// 列表里一项写了不认识的字段（施工 PC-2）：同 `unknown_key`，但这一项整个不收、算错误。
@@ -130,6 +132,7 @@ impl Code {
             Code::MissingField => "missing_field",
             Code::UnknownPersona => "unknown_persona",
             Code::UnknownKnowledge => "unknown_knowledge",
+            Code::UnknownPreset => "unknown_preset",
             Code::UnknownField => "unknown_key",
         }
     }
@@ -142,7 +145,8 @@ impl Code {
             | Code::UnknownSecret
             | Code::EnvNotSet
             | Code::UnknownPersona
-            | Code::UnknownKnowledge => Severity::Warning,
+            | Code::UnknownKnowledge
+            | Code::UnknownPreset => Severity::Warning,
             _ => Severity::Error,
         }
     }

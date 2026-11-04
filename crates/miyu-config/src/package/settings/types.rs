@@ -92,6 +92,7 @@ pub(super) fn scalar(
         "model" => (SettingKind::Model, &[]),
         "persona" => (SettingKind::Persona, &[]),
         "knowledge" => (SettingKind::Knowledge, &[]),
+        "preset" => (SettingKind::Preset, &[]),
         "url" => (SettingKind::Url, &[]),
         "secret" => (SettingKind::Secret, &[]),
         _ => return Ok(None),

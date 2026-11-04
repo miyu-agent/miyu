@@ -1,4 +1,4 @@
-//! 选 Miyu 自己的东西（施工 PC-3，设计 53 第四节）：`type = "model"`、`"persona"`、`"knowledge"`。
+//! 选 Miyu 自己的东西（施工 PC-3，设计 53 第四节）：`type = "model"`、`"persona"`、`"knowledge"`、`"preset"`（PC-3 补）。
 
 use super::*;
 
@@ -12,7 +12,8 @@ fn model_persona_and_knowledge_read() {
     assert_eq!(x("model").kind, SettingKind::Model);
     assert_eq!(x("persona").kind, SettingKind::Persona);
     assert_eq!(x("knowledge").kind, SettingKind::Knowledge);
-    let all = [x("model"), x("persona"), x("knowledge")];
+    assert_eq!(x("preset").kind, SettingKind::Preset);
+    let all = [x("model"), x("persona"), x("knowledge"), x("preset")];
     let shapes: Vec<(Kind, Control)> = items("web", "web", &all)
         .iter()
         .map(|item| (item.kind, item.ui.control))
@@ -23,6 +24,7 @@ fn model_persona_and_knowledge_read() {
             (Kind::Reference, Control::Text),
             (Kind::Persona, Control::Text),
             (Kind::Knowledge, Control::Text),
+            (Kind::Preset, Control::Text),
         ],
         "模型是配置清单的「引用」（模型、池都行）"
     );
@@ -47,6 +49,7 @@ fn model_persona_and_knowledge_read() {
         "type = \"model\"\ndefault = \"no-slash\"",
         "type = \"persona\"\ndefault = \"Cat\"",
         "type = \"knowledge\"\ndefault = \"a/b\"",
+        "type = \"preset\"\ndefault = \"Dev\"",
     ] {
         assert_eq!(
             super::wrong(&format!("[settings.x]\n{wrong}\nname = {{ en = \"X\" }}\n")),

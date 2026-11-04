@@ -109,6 +109,7 @@ pub fn input(kind: Kind, text: &str) -> Option<Value> {
         | Kind::Name
         | Kind::Persona
         | Kind::Knowledge
+        | Kind::Preset
         | Kind::Reference
         | Kind::Model
         | Kind::ModelOr(_)
@@ -138,6 +139,7 @@ pub fn from_json(kind: Kind, value: &serde_json::Value) -> Option<Value> {
             | Kind::Name
             | Kind::Persona
             | Kind::Knowledge
+            | Kind::Preset
             | Kind::Reference
             | Kind::Model
             | Kind::ModelOr(_)

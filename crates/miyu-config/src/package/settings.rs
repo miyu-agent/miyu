@@ -111,6 +111,8 @@ pub enum SettingKind {
     Persona,
     /// 知识库的编号（施工 PC-3）。
     Knowledge,
+    /// 预设的编号（施工 PC-3 补）。
+    Preset,
     /// 网址。
     Url,
     /// 密钥的引用：没有默认值。
@@ -146,6 +148,7 @@ impl SettingKind {
             SettingKind::Model => Kind::Reference,
             SettingKind::Persona => Kind::Persona,
             SettingKind::Knowledge => Kind::Knowledge,
+            SettingKind::Preset => Kind::Preset,
             SettingKind::Url => Kind::Url,
             SettingKind::Secret => Kind::Secret,
             SettingKind::Option(_) | SettingKind::List(_) | SettingKind::Record { .. } => {

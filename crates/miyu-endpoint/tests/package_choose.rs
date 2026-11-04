@@ -1,6 +1,7 @@
-//! 选 Miyu 自己的东西（施工 PC-3，设计 53 第四节）：真核心走一遍。`config.schema` 的 `type` 是 `reference`（模型、池都行，同
-//! `models.chat`）、`persona`、`knowledge`，控件 `text`；`check` 里模型照引用查（供应商、池没有的 `bad_reference`，错误），人格、
-//! 知识库没有的报警告 `unknown_persona`、`unknown_knowledge`，有的不报；交给脚本、扩展的照原样。
+//! 选 Miyu 自己的东西（施工 PC-3，设计 53 第四节；预设是 PC-3 补）：真核心走一遍。`config.schema` 的 `type` 是 `reference`
+//! （模型、池都行，同 `models.chat`）、`persona`、`knowledge`、`preset`，控件 `text`；`check` 里模型照引用查（供应商、池没有的
+//! `bad_reference`，错误），人格、知识库、预设没有的报警告 `unknown_persona`、`unknown_knowledge`、`unknown_preset`，有的不报
+//! （出厂的预设 `full` 算有）；交给脚本、扩展的照原样。
 
 use serde_json::{Value, json};
 
@@ -28,6 +29,15 @@ name = { en = "KB" }
 type = "list"
 element = "persona"
 name = { en = "Helpers" }
+
+[settings.mode]
+type = "preset"
+name = { en = "Mode" }
+
+[settings.modes]
+type = "list"
+element = "preset"
+name = { en = "Modes" }
 "#;
 
 fn item<'a>(schema: &'a Value, key: &str) -> &'a Value {
@@ -46,7 +56,7 @@ async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
     home.write("root/personas/cat/persona.toml", "[voice]\n");
     home.write(
         "etc/config.toml",
-        "[draw]\nmodel = \"gone/m\"\npersona = \"cat\"\nkb = \"notes\"\nhelpers = [\"cat\", \"dog\"]\n",
+        "[draw]\nmodel = \"gone/m\"\npersona = \"cat\"\nkb = \"notes\"\nhelpers = [\"cat\", \"dog\"]\nmode = \"full\"\nmodes = [\"gone\"]\n",
     );
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
@@ -55,6 +65,7 @@ async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
         ("draw.model", "reference"),
         ("draw.persona", "persona"),
         ("draw.kb", "knowledge"),
+        ("draw.mode", "preset"),
     ] {
         let one = item(&schema, key);
         assert_eq!(
@@ -64,6 +75,7 @@ async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
         );
     }
     assert_eq!(item(&schema, "draw.helpers")["element"], "persona");
+    assert_eq!(item(&schema, "draw.modes")["element"], "preset");
     let created = client.call("k0", "kb.create", json!({"kb": "other"})).await;
     assert!(created.get("error").is_none(), "{created}");
     let checked = client.call("c1", "check", json!({})).await;
@@ -99,8 +111,13 @@ async fn the_schema_says_what_to_choose_and_check_warns_about_missing_ones() {
                 "bad_reference".to_string(),
                 "error".to_string()
             ),
+            (
+                "draw.modes".to_string(),
+                "unknown_preset".to_string(),
+                "warning".to_string()
+            ),
         ],
-        "有的人格（cat）不报：{checked}"
+        "有的人格（cat）、出厂的预设（full）不报：{checked}"
     );
     // 建了这个知识库，就不报了。
     let created = client.call("k1", "kb.create", json!({"kb": "notes"})).await;

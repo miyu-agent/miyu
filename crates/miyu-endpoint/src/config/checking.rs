@@ -3,10 +3,10 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use miyu_config::Layer;
 use miyu_config::merge::{Trust, merge};
 use miyu_config::parse::parse;
 use miyu_config::problem::{Code, Problem};
+use miyu_config::{Kind, Layer};
 use miyu_store::human::Human;
 
 use super::Config;
@@ -61,6 +61,8 @@ pub(crate) struct Known {
     pub(crate) personas: Option<std::collections::BTreeSet<String>>,
     /// 知识库的编号。
     pub(crate) knowledge: Option<std::collections::BTreeSet<String>>,
+    /// 预设的编号（施工 PC-3 补）。
+    pub(crate) presets: Option<std::collections::BTreeSet<String>>,
 }
 
 /// 把 `text` 当成 `config` 的 `layer` 那一层的文件查，交回给人看的问题（`config.check`；施工 8-30 起 `check` 也用它）。写了
@@ -82,13 +84,14 @@ pub(crate) fn check_text(
     let missing = config.missing_if(&parsed, layer);
     let external = super::private::external_dirs(&parsed, layer);
     let unknown = known.map_or_else(Vec::new, |known| {
-        miyu_config::dangling::unknown_names(
-            config.items(),
-            &parsed,
-            layer,
-            &|id| known.personas.as_ref().is_none_or(|ids| ids.contains(id)),
-            &|id| known.knowledge.as_ref().is_none_or(|ids| ids.contains(id)),
-        )
+        miyu_config::dangling::unknown_names(config.items(), &parsed, layer, &|kind, id| {
+            let ids = match kind {
+                Kind::Persona => &known.personas,
+                Kind::Knowledge => &known.knowledge,
+                _ => &known.presets,
+            };
+            ids.as_ref().is_none_or(|ids| ids.contains(id))
+        })
     });
     let mut found: Vec<&Problem> = parsed
         .problems
