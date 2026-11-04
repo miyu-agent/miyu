@@ -35,6 +35,7 @@ async fn a_sandboxed_call_runs_through_the_helper() {
                 helper: "/bin/echo".into(),
                 spec,
                 env: Vec::new(),
+                uncached: false,
             },
         )
         .await;
@@ -66,6 +67,7 @@ async fn a_spec_that_cannot_be_written_does_not_run_the_command() {
                 helper: "/bin/echo".into(),
                 spec,
                 env: Vec::new(),
+                uncached: false,
             },
         )
         .await;
@@ -92,6 +94,7 @@ async fn a_sandboxed_background_command_runs_through_the_helper() {
                 helper: "/bin/echo".into(),
                 spec,
                 env: Vec::new(),
+                uncached: false,
             }),
         )
         .await;
@@ -140,6 +143,7 @@ async fn a_sandboxed_command_gets_no_desktop() {
                 helper: "/bin/sh".into(),
                 spec: Spec::from_json("{}").expect("读得懂"),
                 env: Vec::new(),
+                uncached: false,
             },
         )
         .await;

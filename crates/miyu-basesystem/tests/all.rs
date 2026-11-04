@@ -25,6 +25,7 @@ mod sandbox_thread;
 mod script;
 mod script_settings;
 mod script_state;
+mod script_uncached;
 mod send_message;
 mod session_usage;
 mod sessions;

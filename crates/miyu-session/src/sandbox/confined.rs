@@ -145,6 +145,7 @@ impl Sandbox {
                 (OsString::from("TMPDIR"), temp.into_os_string()),
                 (OsString::from("HOME"), home_dir.into_os_string()),
             ],
+            uncached: false,
         })
     }
 }

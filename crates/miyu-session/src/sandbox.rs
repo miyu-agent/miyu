@@ -191,6 +191,7 @@ impl Sandbox {
                 sockets: Vec::new(),
             },
             env,
+            uncached: false,
         }))
     }
 }

@@ -1,7 +1,8 @@
 //! Linux 上核心按规格缓存的规则集（施工 V-47）真跑助手：经 [`miyu_sandbox::command`] 起的（带缓存的规则集）和助手从头建的，
 //! 同一个脚本跑出来的退出码、输出逐字一样；藏起来的上级目录里新建、删除、改名，藏起来的被改名、换成链接、被同名的新目录
 //! 替换，能写的被删了重建，规格变了，时间戳不动（同一刻里改两次、改完把修改时间拨回去）：缓存认得出，新建的照规格读得到，
-//! 藏起来的照旧读不到。规则集只交给起的那一个助手，命令和别的子进程都拿不到。
+//! 藏起来的照旧读不到。规则集只交给起的那一个助手，命令和别的子进程都拿不到。标了不缓存的（施工 V-52，脚本工具）经
+//! `command` 起，拼法和跑出来的都和从头建的一样。
 //!
 //! 内核没有 Landlock 的机器上不缓存（`command` 拼的和从头建的一样），这里只测拼法。
 
@@ -14,10 +15,11 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use miyu_sandbox::{Sandboxed, Spec};
-use support::linux::{landlock, run, run_fresh, spec, text};
+use support::linux::{landlock, run, run_fresh, run_uncached, spec, text};
 use support::{Dir, HELPER, serial};
 
-/// 同一个脚本经缓存的、从头建的各跑一遍，要一样（退出码、标准输出、标准错误），交回缓存的那一遍。
+/// 同一个脚本经缓存的、从头建的、标了不缓存经 `command` 的（施工 V-52）各跑一遍，要一样（退出码、标准输出、标准错误），
+/// 交回缓存的那一遍。
 fn both(spec: &Spec, script: &str) -> Output {
     let cached = run(spec, script);
     let fresh = run_fresh(spec, script);
@@ -25,6 +27,12 @@ fn both(spec: &Spec, script: &str) -> Output {
         (cached.status.code(), &cached.stdout, &cached.stderr),
         (fresh.status.code(), &fresh.stdout, &fresh.stderr),
         "{script}\n缓存的：{cached:?}\n从头建：{fresh:?}"
+    );
+    let uncached = run_uncached(spec, script);
+    assert_eq!(
+        (uncached.status.code(), &uncached.stdout, &uncached.stderr),
+        (fresh.status.code(), &fresh.stdout, &fresh.stderr),
+        "{script}\n标了不缓存的：{uncached:?}\n从头建：{fresh:?}"
     );
     cached
 }
@@ -44,10 +52,16 @@ fn blocked(spec: &Spec, path: &Path) {
 
 /// `command` 拼出来的参数。
 fn args_of(spec: &Spec) -> Vec<String> {
+    args_marked(spec, false)
+}
+
+/// 同 [`args_of`]，`uncached` 是标不标不缓存（施工 V-52）。
+fn args_marked(spec: &Spec, uncached: bool) -> Vec<String> {
     let sandboxed = Sandboxed {
         helper: HELPER.into(),
         spec: spec.clone(),
         env: Vec::new(),
+        uncached,
     };
     miyu_sandbox::command(&sandboxed, Path::new("/bin/true"), &[])
         .expect("拼得成")
@@ -110,6 +124,8 @@ fn only_landlock_only_specs_with_hidden_paths_get_a_cached_ruleset() {
     } else {
         assert_eq!(args, plain(&cached));
     }
+    // 标了不缓存的（施工 V-52）：能缓存的规格也和从头建的拼法一样。
+    assert_eq!(args_marked(&cached, true), plain(&cached));
     // 挂载那一路、关起来的会话、没有藏起来的、相对路径的：和从头建的拼法一样。
     let mounted = Spec {
         mount: true,

@@ -25,7 +25,8 @@
 //! - 名字照设计 55 第四节（施工 FH-3下，`miyu_store::program`）：旧名字 `MIYU_SCRIPT_*_DIR` 过渡期间一起给（FH-6 删）；包带的
 //!   脚本另给它的包文件夹 `MIYU_APP_DIR`，进沙盒的只读放开。
 //! - 要交图的拷进另一个目录 `MIYU_IMAGES_DIR`（施工 X-35，[`images`]）：每次调用一个新的空目录，跑完认得的交成图，
-//!   到时被杀的不看，读完删掉。
+//!   到时被杀的不看，读完删掉。它进了沙盒规格的 `write`，规格次次不一样，标成不进核心的规则集缓存（施工 V-52，
+//!   [`miyu_sandbox::Sandboxed::uncached`]），照施工 V-47 以前让助手从头建。
 //! - 等开头写的秒数，到时整组杀掉；退出码不是 0 的算出错。访问类别是执行：照跑命令的规矩进沙盒、问人；进沙盒的，规格里
 //!   单独放开脚本这一个文件只读（施工 X-12 下：自己放的、自己装的包带的在数据根里，沙盒藏着）。
 //! - 这一次在沙盒外跑（施工 5-14 改下，同 `shell`）：登记时参数里多一格布尔 `outside_sandbox`（说明是
@@ -293,12 +294,16 @@ impl Script {
                 sandboxed.spec.write.push(cache.to_path_buf());
                 // 交图的目录在缓存那一格旁边（同一个来处下面）：缓存挪进数据根以后它也被藏着，单独放开写（施工 Y-11 上）。
                 sandboxed.spec.write.extend(images.map(Path::to_path_buf));
+                // 交图的目录每次调用一个新的随机名，规格次次不一样：不进核心按规格缓存的规则集，照施工 V-47 以前让助手从头建
+                // （施工 V-52；进了从来认不上，还把 `shell` 那几份挤出去）。这一次没有交图目录的，规格照旧每次一样，照旧缓存。
+                sandboxed.uncached = images.is_some();
                 // 数据根里那几处（施工 Y-11 补）：已经建好。
                 sandboxed
                     .spec
                     .write
                     .extend(homes.iter().map(|(_, dir)| dir.clone()));
-                // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）；要认指纹的在阻塞线程里包（施工 V-50）。
+                // Linux 上只用 Landlock 的，带上核心按规格缓存的规则集（施工 V-47）；要认指纹的在阻塞线程里包（施工 V-50），
+                // 不缓存的（上面）不认指纹，当场包。
                 match miyu_sandbox::checks_files(&sandboxed) {
                     true => {
                         blocking(Stop::default(), move |_| {

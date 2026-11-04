@@ -6,6 +6,7 @@
 //! 别处还是可能有人在改（比如别的工作树）：对不上的再取一次，5 次里有一次对上就算（缓存真过期了的话，再取几次交出来的还是
 //! 同一份过期的）。
 
+use std::ffi::OsString;
 use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::process::Command;
@@ -405,4 +406,82 @@ fn the_cached_ruleset_is_close_on_exec_and_not_a_standard_stream() {
             .join(served.fd.as_raw_fd().to_string())
             .exists()
     );
+}
+
+/// `command` 拼出来的参数里 `--ruleset` 后面那个号码；没有的交回没有。
+fn ruleset_arg(command: &Command) -> Option<String> {
+    let args: Vec<String> = command
+        .get_args()
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect();
+    let at = args.iter().position(|arg| arg == "--ruleset")?;
+    args.get(at + 1).cloned()
+}
+
+/// 标了不缓存的规格（施工 V-52，脚本工具：交图目录每次一个新的）经核心的那一个缓存（[`crate::command`]）：不进缓存、不认指纹
+/// （`checks_files` 为假），拼出来的和助手从头建的（[`crate::argv`]）一字不差；接连 `CAP + 2` 份各不一样的，`shell` 那份照旧
+/// 在缓存里、没重建。认不认重建：拿着头一次拼的命令（里面拿着规则集），那份要是被挤掉重建了，新的号码一定和它不一样。
+/// 路上别处有人在改（`shell` 那份因此重建）的那一次再来，5 次里有一次对上就算；标不起作用的话次次都被挤掉。
+#[test]
+fn uncached_specs_stay_out_of_the_core_cache_and_leave_the_others_in_it() {
+    let Some(_serial) = usable() else {
+        return;
+    };
+    let (tree, spec) = world();
+    let shell = crate::Sandboxed {
+        helper: PathBuf::from("/bin/true"),
+        spec,
+        env: Vec::new(),
+        uncached: false,
+    };
+    let program = Path::new("/bin/true");
+    assert!(crate::checks_files(&shell), "不标的照旧缓存、要认指纹");
+    let mut last = String::new();
+    for attempt in 0..5 {
+        let first = crate::command(&shell, program, &[]).expect("拼得成");
+        let held = ruleset_arg(&first).expect("shell 那份带规则集");
+        let count = CACHE.len();
+        for n in 0..CAP + 2 {
+            // 摆在能写的 `work` 里：不在藏起来的上级路上，建它不让 `shell` 那份过期（真的交图目录在藏起来的数据根里，也不在路上）。
+            let images = tree.at(&format!("work/images-{attempt}-{n}"));
+            std::fs::create_dir_all(&images).expect("建得了");
+            let mut script = shell.clone();
+            script.spec.write.push(images);
+            script.uncached = true;
+            assert!(!crate::checks_files(&script), "标了的不认指纹");
+            let command = crate::command(&script, program, &[]).expect("拼得成");
+            let (helper, args) = crate::argv(&script, program, &[]).expect("拼得成");
+            assert_eq!(command.get_program(), helper.as_os_str());
+            assert_eq!(
+                command.get_args().collect::<Vec<_>>(),
+                args.iter().map(OsString::as_os_str).collect::<Vec<_>>(),
+                "和助手从头建的拼法一样"
+            );
+            let key = Key::of(&script.spec);
+            assert!(
+                !CACHE.lock().iter().any(|entry| entry.key == key),
+                "标了的不进缓存"
+            );
+            assert_eq!(CACHE.len(), count, "缓存的条数不变");
+        }
+        let again = crate::command(&shell, program, &[]).expect("拼得成");
+        let now = ruleset_arg(&again).expect("shell 那份带规则集");
+        drop(first);
+        if now == held {
+            // 同一份不标的，照旧进缓存：差别只在标。
+            let mut plain = shell.clone();
+            plain
+                .spec
+                .write
+                .push(tree.at(&format!("work/images-{attempt}-0")));
+            assert!(crate::checks_files(&plain));
+            let command = crate::command(&plain, program, &[]).expect("拼得成");
+            assert!(ruleset_arg(&command).is_some(), "不标的带规则集");
+            let key = Key::of(&plain.spec);
+            assert!(CACHE.lock().iter().any(|entry| entry.key == key));
+            return;
+        }
+        last = format!("头一次 {held}，之后 {now}");
+    }
+    panic!("shell 那份被挤掉、重建了：{last}");
 }

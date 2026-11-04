@@ -28,10 +28,21 @@ pub fn run(spec: &Spec, script: &str) -> Output {
 /// [`miyu_sandbox::command`] 起（施工 V-47）：只用 Landlock、有藏起来的规格带上这个测试进程里缓存的规则集，别的和 [`run_fresh`]
 /// 一样。
 pub fn run_with(spec: &Spec, script: &str, env: &[(&str, &str)]) -> Output {
+    run_marked(spec, script, env, false)
+}
+
+/// 同 [`run`]，规格标了不缓存（施工 V-52，脚本工具那样）：经 [`miyu_sandbox::command`] 起，助手照旧从头建。
+pub fn run_uncached(spec: &Spec, script: &str) -> Output {
+    run_marked(spec, script, &[], true)
+}
+
+/// 经 [`miyu_sandbox::command`] 跑，`uncached` 是标不标不缓存。
+fn run_marked(spec: &Spec, script: &str, env: &[(&str, &str)], uncached: bool) -> Output {
     let sandboxed = Sandboxed {
         helper: HELPER.into(),
         spec: spec.clone(),
         env: Vec::new(),
+        uncached,
     };
     let args = ["-c".into(), script.into()];
     miyu_sandbox::command(&sandboxed, Path::new("/bin/sh"), &args)

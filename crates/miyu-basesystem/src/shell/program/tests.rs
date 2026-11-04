@@ -237,6 +237,7 @@ fn sandboxed() -> Sandboxed {
         helper: PathBuf::from("/opt/miyu/miyu-sandbox"),
         spec: miyu_sandbox::Spec::from_json(r#"{"write":["/work"]}"#).expect("读得懂"),
         env: vec![(OsString::from("TMPDIR"), OsString::from("/work/tmp"))],
+        uncached: false,
     }
 }
 

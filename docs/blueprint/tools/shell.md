@@ -316,7 +316,8 @@ Exit code 2
 | `crates/miyu-basesystem/src/shell/waiting/tests.rs`、`tests/human.rs`（2026-10-26） | 前台干等的认法：顶层的、不短于两秒的 `sleep`、`Start-Sleep` 拒（几种时长写法、变量当长的、`;`、`&&`、`||`、换行、后台以后的那一段）；管道、循环体、放到后台的、引号里的、套在 `sh -c` 里的、短停照跑；拒了说 `shell/no-sleep` |
 | `crates/miyu-basesystem/src/shell/output/tests.rs` 的 `line_ends_are_made_unix_across_pieces`（施工 7-3） | `\r\n` 切在两段中间也换，和一整段换出来的一样 |
 | `crates/miyu-basesystem/tests/shell_sandbox.rs` 的 `a_sandboxed_background_command_runs_through_the_helper`（施工 7-3） | 后台命令一样经沙盒的助手起 |
-| `crates/miyu-basesystem/tests/sandbox_thread.rs`（施工 V-50，Linux） | 认缓存规则集的指纹不占着跑异步任务的线程：单线程的运行时里另一个任务每 1 ms 醒一次，前台、后台、脚本工具起关起来的命令时它最晚晚的不到认一遍指纹的一半（藏起来的放在几万个文件的目录里，认一遍几十毫秒） |
+| `crates/miyu-basesystem/tests/sandbox_thread.rs`（施工 V-50，Linux） | 认缓存规则集的指纹不占着跑异步任务的线程：单线程的运行时里另一个任务每 1 ms 醒一次，前台、后台、脚本工具起关起来的命令时它最晚晚的不到认一遍指纹的一半（藏起来的放在几万个文件的目录里，认一遍几十毫秒）；脚本工具的规格标了不缓存（施工 V-52），不带 `--ruleset`、当场包 |
+| `crates/miyu-basesystem/tests/script_uncached.rs`（施工 V-52，Linux） | 脚本工具的规格不进核心的规则集缓存：假助手 `/bin/echo` 印出参数，接连 10 次脚本都不带 `--ruleset`；之后 `shell` 交的还是缓存里原来那一份（测试拿着头一次的规则集，重建了号码就不一样） |
 | `crates/miyu-basesystem/tests/shell_seen.rs`（施工 E-D 补） | 她看过、命令改了的带 `file.read`（改后的哈希），没动的、没看过的不带；只动了修改时刻、内容没变的不带；命令起来之前外面就改过、命令没碰的不带（照旧要重读） |
 | `crates/miyu-basesystem/tests/shell.rs` | 说明里写的是这台机器的 shell、换过字段、不报路径；在工作目录里跑；标准错误合进来、照先后；退出码；没有输出；超时整组杀、说法的秒数；核心的变量照传、像密钥的和 `MIYU_*` 不给、`PAGER` 是 `cat`（4-8 补：测试进程里不许 `set_var`，带着探针重新拉起测试程序自己，`support::in_child`）；中文照原样；太长截成头尾、一共多少个字，尾巴从行首起的不多丢一行；参数不对、要放后台的不跑、没写 `description` 参数不对；工作目录不在、`~` 开头的照家目录接；输出边跑边推、最后半个字换成 `�`；Unix：放到后台的在命令退出以后停了、叫停时整组停了、被信号杀掉；照命令里的词 `pkill -f` 杀不到自己所在的 shell、命令看不到 `MIYU_COMMAND`（施工 4-8 再补） |
 | `crates/miyu-basesystem/src/shell/tests.rs` | 超时的上下限；秒数怎么写；参数格式里写的上限、默认值和代码一样；每一段以换行结尾 |

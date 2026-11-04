@@ -214,6 +214,7 @@ async fn the_sandbox_lets_the_command_reach_this_socket_only() {
             sockets: Vec::new(),
         },
         env: Vec::new(),
+        uncached: false,
     };
     let sandboxed = channel.sandboxed(&base);
     assert_eq!(sandboxed.spec.sockets, std::slice::from_ref(&channel.path));
@@ -257,6 +258,7 @@ async fn the_core_s_own_program_under_a_hidden_place_is_let_through_read_only() 
         helper: "/helper".into(),
         spec: spec(write),
         env: Vec::new(),
+        uncached: false,
     };
     let hidden = channel.sandboxed(&base(Vec::new()));
     assert_eq!(hidden.spec.reveal, vec![exe.clone()]);

@@ -114,6 +114,7 @@ async fn each_level_gets_its_own_spec() {
                 sockets: Vec::new(),
             },
             env: Vec::new(),
+            uncached: false,
         }),
         "工作区：能写工作目录、临时目录，藏数据根"
     );
@@ -128,6 +129,7 @@ async fn each_level_gets_its_own_spec() {
             sockets: Vec::new(),
         },
         env: Vec::new(),
+        uncached: false,
     };
     for level in [
         permission(Level::Workspace, true),

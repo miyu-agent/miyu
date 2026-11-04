@@ -224,6 +224,7 @@ async fn a_command_in_the_sandbox_reaches_the_pipe() {
         helper,
         spec,
         env: Vec::new(),
+        uncached: false,
     });
     let args: Vec<OsString> = [
         "-NoProfile",

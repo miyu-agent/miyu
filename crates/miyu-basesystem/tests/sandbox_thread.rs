@@ -1,6 +1,7 @@
 //! 认指纹不占着跑异步任务的线程（施工 V-50）：Linux 上只用 Landlock、能缓存的规格，每条命令起之前要照着规格重新看一遍文件
-//! 系统、和缓存的指纹比（`miyu_sandbox::command`）。`shell` 前台、后台、脚本三处都挪到阻塞线程里做，这段时间跑异步任务的线程
-//! 照样跑别的任务。
+//! 系统、和缓存的指纹比（`miyu_sandbox::command`）。`shell` 前台、后台都挪到阻塞线程里做，这段时间跑异步任务的线程照样跑别的
+//! 任务。脚本工具的规格标了不缓存（施工 V-52：交图目录次次不一样），不认指纹（`checks_files` 为假），照旧在原来的线程里当场
+//! 包：这里看它不带缓存的规则集（假助手 `/bin/echo` 印出参数），也不占着线程。
 //!
 //! 怎么看出来：单线程的运行时（`#[tokio::test]` 默认）里，一边调工具，一边另一个任务每 1 ms 醒一次、记下最晚晚了多久。藏起来
 //! 的那一条放在一个有几万个文件的目录里，认一遍指纹要几十毫秒（先在测试线程里直接调 `miyu_sandbox::command` 量出来）。认指纹
@@ -52,6 +53,7 @@ fn slow(site: &Site) -> Option<(Sandboxed, Duration)> {
         helper: "/bin/true".into(),
         spec,
         env: Vec::new(),
+        uncached: false,
     };
     // 照 Landlock 本身判，不照 `checks_files`：它说不认的，正是要逮的。
     if miyu_sandbox::linux::available().is_err() {
@@ -163,13 +165,33 @@ async fn fingerprinting_does_not_hold_the_async_thread() {
         assert_eq!(exit, miyu_tool::Exit::Code(0));
     }
 
+    // 脚本（施工 V-52）：标了不缓存，不认指纹、当场包，参数里没有 `--ruleset`；也不占着线程（没有要认的）。
     let script = site.script_tool("scripts/nothing.sh");
-    check("脚本", took, || {
+    let echoing = Sandboxed {
+        helper: "/bin/echo".into(),
+        ..sandboxed.clone()
+    };
+    let run_script = || {
         let call = miyu_tool::Call {
-            sandbox: Some(Arc::new(sandboxed.clone())),
+            sandbox: Some(Arc::new(echoing.clone())),
             ..site.call_for("work", json!({}), Seen::new(), Stop::default())
         };
         script.run(call, Progress::new(|_| {}))
-    })
-    .await;
+    };
+    let done = run_script().await;
+    let printed: String = done
+        .blocks
+        .iter()
+        .map(|block| match block {
+            miyu_kernel::block::Block::Text(text) => text.text.clone(),
+            other => panic!("只该有字：{other:?}"),
+        })
+        .collect();
+    assert!(!done.error, "{printed}");
+    assert!(printed.starts_with("run --spec "), "{printed}");
+    assert!(
+        !printed.split_whitespace().any(|arg| arg == "--ruleset"),
+        "脚本不带缓存的规则集：{printed}"
+    );
+    check("脚本", took, run_script).await;
 }
