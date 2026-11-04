@@ -172,6 +172,10 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 状态（2026-11-03，sub1）：13 个脚本、技能包各开了 `fh-5b` 分支换成新名字，推了、不发版（等 FHS 全部做完、主人当面同意一起发），只给新名字直接跑过各自的工具；`miyu-index` 收录拒保留名字在 `step/FH-5b-index`（保留名字表挪进 `miyu-config`，`miyu-index` 不为它拉进 `miyu-store`）；合了以后 packages 仓库开分支升 `miyu-rev`、PR 交 core1。在 layout 3 的核心上装包、从会话里调，放在 FH-7 第三轮演练里一起做。
 
+状态（2026-11-05，sub1）：`step/FH-5b-index` 已合（b30819c61）；packages 的 `miyu-rev` 已经是 17775901e（含 FH-3 和 b30819c61）。
+FH-7 第三轮没做到装包调用，这次补上（下面「验收」）。13 个 `fh-5b` 分支各补了一个只升补丁号的提交（0.1.0→0.1.1、0.1.1→0.1.2，
+改了代码，发版要新号），推了、不打标签。发版照旧等 FHS 全部做完、主人当面同意，core1 去问。
+
 | 仓库 | 改什么 |
 |---|---|
 | miyu-scripts 里 13 个包 | `MIYU_SCRIPT_STATE_DIR`、`MIYU_SCRIPT_CACHE_DIR`、`MIYU_SCRIPT_IMAGES_DIR` 改成 `MIYU_STATE_DIR`、`MIYU_CACHE_DIR`、`MIYU_IMAGES_DIR`：ai-draw、bangumi、douyin-dl、exchange-rate、game-compat、goofish、juya-daily、reddit-search、weather、web-image、skills-aur-pkgbuild-review、skills-bilibili-live-stream、skills-travel-planner（技能包里写在 SKILL.md 给她看的那几处也改） |
@@ -184,6 +188,26 @@ FH-3 换布局时只改 `DataRoot` 的方法体（和程序目录那一处），
 
 - 每个改了的包在 layout 3 上跑一次它的工具：状态、缓存写到新位置；第二次跑读得回第一次的状态。
 - `miyu-index` 收一个编号叫 `token` 的包：跳过并记一笔。
+
+做了（2026-11-05，sub1）：
+
+- **装包、经会话调**：核心 main `cdb98e9d5`（layout 3）编 debug，隔离的临时数据根，13 个 `fh-5b` 分支照文件夹 `miyu pkg install`
+  都装上，14 个脚本工具都登记上（旅行规划一个包两个）。没有能用的真模型（clinepass 额度 11 月中才回来），起了一个本机的假
+  openai-chat 服务（标准库 Python，照计划文件发一次指定参数的工具调用、记下工具结果、再回一句话），`miyu ask --permission full`
+  一次调一件，每件调两遍，比前后 `var/`、`root/` 多了哪些文件：
+  - 缓存都在 `var/cache/scripts/<包>/<脚本>/`：bangumi 日历、douyin-dl 的设备 cookie、汇率、game-compat 的反作弊表、goofish 的浏览器
+    目录和会话、juya-daily 的期刊、reddit 的 RSS、天气的地名和预报、web-image 的冷却表、aur 审查的证据和克隆、B 站开播的分区表。
+    第二遍都读缓存、没多写文件。
+  - 状态在 `root/state/scripts/<包>/<脚本>/`：travel-planner 的 `hotel_deals` 搜一次写 `hotel-history.db`，下一次 `places` 读回
+    38 条观测；goofish `monitor-init` 写 `watches/<编号>.json`，下一次 `monitor-list` 读回「1 个监控、见过 30 条」。doctor 报出的
+    缓存、状态目录也是这两处。
+  - 图片：web-image 存进 `root/pictures/网络搜图/`，附图经 `MIYU_IMAGES_DIR` 交上来（blob 落进 `root/blobs/`）。
+  - ai-draw 没配接口，停在「还没填 API Key」（在找目录之前，不是「没有图片目录」）；bilibili-live 的 `status` 没登录，停在
+    「还没登录」（状态目录拿到了，不是 `no_state`）。
+- **不用改的 11 个**：浅克隆各自 main 再 `grep` 一遍 `MIYU_SCRIPT_`、`MIYU_PACKAGE_STATE`、`MIYU_PACKAGE_DIR`、`MIYU_HOME`，都没有。
+- **收录拒保留名字**：b30819c61 带的 `miyu-source` 测试 `collect/tests/reserved.rs` 守着（官方来源一个 `token` 一个 `fine` 只收
+  `fine`、记原因、不占编号），这次没再另跑。
+- 核心现在新旧名字一起给，这次验的是新名字到了对的目录；只给新名字的情形等 FH-6 删旧名时由核心的测试守。
 
 ## 七、FH-6：删旧环境变量名
 
