@@ -34,7 +34,7 @@
 | `turn.started`、`turn.ended` | 一轮开始、结束；`turn.ended` 的 `reason` 是 `completed`、`interrupted`、`error`、`restarted` 等 |
 | `turn.joined` | 照记下的几条并进了正在跑的这一轮 |
 | `turn.reverted`、`turn.unreverted` | 撤销了几轮、恢复了最近一次撤销 |
-| `message.user` | 人（或别的会话、别的 agent、平台上的人）说的一句 |
+| `message.user` | 人（或别的会话、别的 agent、平台上的人）说的一句；人用 `!` 打的命令多 `shell: true`，`blocks` 是那一行命令 |
 | `message.withdrawn` | 排着队、她还没听到的话被退回了 |
 | `message.assistant` | 模型一次响应的完整内容：正文、思考、工具调用 |
 | `model.called` | 一次模型请求的记录：用了谁、用量、花了多少、出错的 `error` |
@@ -46,6 +46,7 @@
 | `context.compacted` | 压缩的检查点；清空上下文也是它（`trigger` 是 `clear`）。摘要请求太长、截掉了最老的几组才写成的带 `truncated`（几组：最早的那一段没进摘要），没截过的不写 |
 | `context.compaction_paused` | 暂停了自动压缩 |
 | `job.reported` | 一条后台命令结束了；`reason` 是 `too_chatty` 的：监视的命令一小时里出了 120 批，被停下了 |
+| `shell.ran` | 人用 `!` 打的命令跑完了：`message`（那句话的序号）、`exit` 或 `signal`、`duration_ms`、`text`（输出，标准输出和标准错误合在一起，太长的留头尾、中间一行写省了多少）、`omitted`；异常结束的另有 `reason`：`timed_out`（跑满 120 秒）、`interrupted`（人打断了）、`aborted`（核心重启或者崩了，不重跑） |
 | `job.lines` | 监视的后台命令（`shell` 写了 `watch`）出了一批行：`job`、`text`（最多 4000 个字，截过的中间有一行写省了多少）、`lines`、`omitted`。不带 `turn` |
 | `child.reported` | 子代理的回报 |
 | `peer.idle` | 等的那个会话空下来了，或者等不到了 |

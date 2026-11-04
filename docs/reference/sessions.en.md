@@ -139,6 +139,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 | `text` | string, required | What to say |
 | `attachments` | array | Attachments, each the `blob`, `name`, `media_type` from a `blob.put` response, optionally `path` (where it was on this machine) |
 | `urgent` | boolean, default `false` | Cut in: if she's busy, she sees it at the next step |
+| `shell` | boolean, default `false` | A command the person typed with `!` in the input box: `text` is the command line, run by the core in the session's working directory (item 4 below) |
 | `prefix` | `"keep"` or `"compact"` | What the person chose when the prefix is changing: send as is, or compact and send (see **Prefix changing** below) |
 | `from` | string | You are another agent program: your name; the message is recorded as yours, not the person's |
 | `cwd` | string | Move to this working directory first (shell integration: each turn's directory follows the shell): checked like [`session.set_workspace`](#sessionset_workspace), `wide` included; the same directory records nothing, a change pushes `session.workspace_changed`. Not for venue sessions |
@@ -149,6 +150,7 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 1. If she's idle, the message starts a turn; if busy, it's queued (`urgent` ones cut in at the next step). The turn's `turn.started` has this request's `id` as `cause`, so you can tell it's yours.
 2. It returns once the message is on disk, without waiting for her answer; watch the pushes for that.
 3. Attachments are checked before the session is looked up: the blob must exist and is recognized again from its content (see [Attachments](blob.en.md)).
+4. `shell: true`: only from a person typing in a head; no permission check, no sandbox, no confirmation. It is recorded as a `message.user` with `shell`, and the reply comes once that is on disk. It runs when she hears it (first thing in a turn it starts when she's idle, or before the next model request when she's busy), in the session's working directory at that moment; the result is recorded as `shell.ran` (see [Events](events.en.md)) and she answers. Queued ones can be handed back like any message, and those never run. It is killed with its whole process group after 120 seconds; interrupting (`session.interrupt`) while it runs kills it and she doesn't answer. With `attachments` or `venue` it is `bad_params`. In the view stream the `user` entry gets a `shell` field (see [View](view.en.md)).
 
 **Prefix changing** (only for heads that sent `caps.prefix_ask: true` in the hello): when files in your tool description and prompt overrides, personas or presets change (skills don't count: a mid-session skill change goes into the end of the messages and leaves the prefix alone), the next request's prefix changes and the cache is lost. Starting a new turn in an idle session (`session.send`, `session.redo`, or a `command.run` that starts a turn) without `prefix` is refused with `prefix_changing`; `data.files` lists the changed files (paths relative to the data root, at most 20) and `data.more` counts the rest. Offer the person "Send", "Compact and send" and "Cancel", then send again with `"prefix": "keep"` or `"compact"`. `compact` compacts first; if it can't, you get the compaction's refusal (for example `nothing_to_compact`) and the message is not sent. A batch that was let through is not asked again.
 
@@ -166,6 +168,8 @@ Only local sessions are listed; venue sessions aren't (see `venue.sessions` in [
 | `unknown_attachment` | An attachment's blob isn't in the core |
 | `attachment_too_big` | An attachment is an image over the limits |
 | `venue_session` | Speaking into a venue session without `as` |
+| `shell_not_allowed` | `shell` not typed by the person in a head: with `from` or `as`, from an extension, or into a venue session |
+| `shell_unavailable` | `shell`: no installed package has a tool that runs commands (not installed, or turned off) |
 
 ## `session.interrupt`
 

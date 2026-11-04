@@ -2,12 +2,12 @@
 //! 它就被听到了：前面那段收起，它挪到末尾，接着的步另起一段。被退回的不画。一次听到的几句照先后挨着排，一句一条。
 
 use miyu_kernel::block::Block;
-use miyu_kernel::event::{Event, MessageUser, MessageWithdrawn, Permission, round_of};
+use miyu_kernel::event::{Event, MessageUser, MessageWithdrawn, Permission, ShellRan, round_of};
 use miyu_kernel::id::Seq;
 use miyu_kernel::origin::By;
 
 use super::Projector;
-use crate::entry::{Attachment, Body, Entry, EntryId, User};
+use crate::entry::{Attachment, Body, Entry, EntryId, Shell, User};
 
 /// 长期目标的续轮是第几轮（施工 X-8 补）：模块 `goal` 发的、命令编号照约定写的才有。
 fn round(event: &Event) -> Option<u32> {
@@ -45,6 +45,7 @@ impl Projector {
             queued,
             withdrawn: false,
             round: round(event),
+            shell: message.shell.then(Shell::running),
         };
         if queued {
             self.queued.insert(event.seq, id.clone());
@@ -75,6 +76,17 @@ impl Projector {
                     }
                 });
             }
+        }
+    }
+
+    /// 人打的命令跑完了（施工 SH-1 下）：挂到那条 `user` 的 `shell` 格上。对不上一条画着的话的不理。
+    pub(super) fn shell_ran(&mut self, ran: &ShellRan) {
+        if let Some(id) = self.users.get(&ran.message).cloned() {
+            self.touch(&id, |entry| {
+                if let Body::User(user) = &mut entry.body {
+                    user.shell = Some(Shell::ran(ran));
+                }
+            });
         }
     }
 

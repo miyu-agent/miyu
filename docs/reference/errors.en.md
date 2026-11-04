@@ -50,6 +50,8 @@ Chinese version: [errors.md](errors.md).
 | `session_sealed` | The session is sealed; commands that change the conversation are refused | |
 | `restoring` | A command arrived while an undo is still finishing | |
 | `venue_session` | Speaking into a venue session without `as` | |
+| `shell_not_allowed` | `session.send` with `shell` not typed by the person in a head (with `from` or `as`, from an extension, a venue session) | |
+| `shell_unavailable` | `session.send` with `shell`: no tool that runs commands | |
 | `empty_message` | A message with no content at all | |
 | `dir_too_wide` | An extra directory is too wide | |
 | `not_running` | Interrupting with no turn running | |

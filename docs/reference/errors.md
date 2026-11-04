@@ -50,6 +50,8 @@
 | `session_sealed` | 会话封存了，改对话的命令不收 | |
 | `restoring` | 撤销还没做完时来的命令 | |
 | `venue_session` | 对场所会话说话却没带 `as` | |
+| `shell_not_allowed` | `session.send` 的 `shell` 不是人在头里打的（带了 `from`、`as`，扩展说的，场所会话） | |
+| `shell_unavailable` | `session.send` 的 `shell`：没有能跑命令的工具 | |
 | `empty_message` | 一句话一块内容都没有 | |
 | `dir_too_wide` | 加进来的目录太宽 | |
 | `not_running` | 打断时没有回合在进行 | |

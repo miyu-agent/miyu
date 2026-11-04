@@ -20,6 +20,7 @@
 | `crates/miyu-view/src/relay.rs` | 读回来时 `By`、`RawJson` 那几格经通用的 JSON 转一道（施工 V-D） |
 | `crates/miyu-view/src/projector/nested.rs`、`entry/nested.rs`、`nested.rs` | 脚本里调的工具（施工 M-5 上）：`tool.nested_started`、`tool.nested` 照编号认父级，那一步、那一行任务、任务了结的旁白带 `nested`；订阅时补上在跑的（`Projector::nested_running`）；点开时的整份（`listed`） |
 | `crates/miyu-view/tests/nested.rs`（施工 M-5 上） | 前台 `shell` 下面调三次（成、拒、出错）个数和最近一个跟着变，在跑的带开始时刻；没调过的没有；后台命令那一行、了结的旁白带上；订阅时补上在跑的 |
+| `crates/miyu-view/tests/shell.rs`（施工 SH-1 下） | 人用 `!` 打的命令：那条 `user` 带 `shell`，跑完了是退出码、输出、截掉几个字、用时；在跑的是 `{"running": true}`，跑完换成结果、异常结束的带 `reason`；别的话没有这一格；翻页和接着推的一样 |
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
 | `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补）、工具的名字照记下的、照这一刻工具目录里的、照工具名（9-8 六补）；`outputs.rs` 一步带结果原文的前面一段，切在 100 行、8 KiB、字的边界上（9-8 十四补） |
 | `crates/miyu-endpoint/tests/view_entries.rs`、`view_page.rs`、`view_detail.rs` | 真核心走一遍（9-8 中）：握手报版本；交条目的页、边界照旧、字照连接的语言；更早派出的任务照样有标题；调用的结果原文、压缩的摘要 |
@@ -78,7 +79,7 @@
 
 | `kind` | 格 |
 |---|---|
-| `user` | `text`（命令模板展开成的是人敲的那一行，施工 X-14 上，`slash.md`）；`attachments`（照 `message.user` 的附件块：`kind`（`image`、`file`）、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；大小头照 `blob` 取）；`from`（别处来的话的来处：别的会话、子代理、父会话、别的 harness、场所里的人，和 `by` 一个写法）；`level`（发出去那一刻的权限级别）；`queued: true`（排着、她还没听到，听到了换成不写）；`withdrawn: true`（排着的被退回了：`message.withdrawn`，打断时没听到的那几条；不画，视图流里推到的那一刻头把字放回输入框，翻页、重新订阅看到的不放回）；`round`（长期目标的续轮是第几轮，施工 X-8 补：`from` 是模块 `goal` 的，照那条消息的 `cause` 读，`protocol.md` 的 `command.run` 第 10 条；网页画成一行「目标 · 第 N 轮」，不把续轮的原文给人看，2026-10-12 项目主人定） |
+| `user` | `text`（命令模板展开成的是人敲的那一行，施工 X-14 上，`slash.md`）；`attachments`（照 `message.user` 的附件块：`kind`（`image`、`file`）、`name`、`media_type`、`blob`，图有 `width`、`height`，带了路径的有 `path`；大小头照 `blob` 取）；`from`（别处来的话的来处：别的会话、子代理、父会话、别的 harness、场所里的人，和 `by` 一个写法）；`level`（发出去那一刻的权限级别）；`queued: true`（排着、她还没听到，听到了换成不写）；`withdrawn: true`（排着的被退回了：`message.withdrawn`，打断时没听到的那几条；不画，视图流里推到的那一刻头把字放回输入框，翻页、重新订阅看到的不放回）；`round`（长期目标的续轮是第几轮，施工 X-8 补：`from` 是模块 `goal` 的，照那条消息的 `cause` 读，`protocol.md` 的 `command.run` 第 10 条；网页画成一行「目标 · 第 N 轮」，不把续轮的原文给人看，2026-10-12 项目主人定）；`shell`（施工 SH-1 下，设计 57 第四节第 4 条：人用 `!` 打的命令，`text` 是那一行；还没跑完的是 `{"running": true}`，排着的也是，头照 `queued` 分；收到 `shell.ran` 换成 `exit` 或 `signal`、`text`、`omitted`、`duration_ms`，异常结束的另有 `reason`；对不上一条画着的话的 `shell.ran` 不理；别的话没有这一格） |
 | `reply` | `text`（Markdown 原文）；`open: true`（还在写，写完不写）；`persona`（施工 9-8 十三补，网页要的）：这一轮是哪个人格回的，无人格的是 `null`。投影照 `session.created` 的人格起头，带 `persona` 的 `session.policy_changed` 先记着，下一条带 `policy` 的（快照真换上了）起算新的：同内核、会话那一层（`kernel/session.md`「换人格、预设」） |
 | `media` | 她发出去的一张图（施工 X-19，`tool.result.sent`）：`image`（同 `user` 的附件那一格，宽高一定有）、`alt`?、`sticker`?。一张一条，排在那一步工具后面，和 `reply` 一样把前面那段 `group` 收起（那一步照旧在 `group` 里） |
 | `group` | 时间线的一段：`steps`（几步的编号，照先后；多了一步，这一段跟着 `view.update`，`steps` 和收起那一行一起变）；`open: true`（还在进行：她没开口、这一轮没结束）；`summary`、`summary_en`（收起那一行，下面「收起那一行」）；`took_ms`（从第一步开始到最后一步结束，刨掉中间等人的，见「会话状态」的 `waited_ms`） |

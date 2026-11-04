@@ -13,6 +13,7 @@ mod progress;
 mod queue;
 mod random;
 mod remembered;
+mod shell;
 mod speed;
 mod status;
 mod steps;

@@ -139,6 +139,7 @@
 | `text` | 字符串，必写 | 要说的话 |
 | `attachments` | 数组 | 附件，每项是 `blob.put` 的回应里的 `blob`、`name`、`media_type`，可另带 `path`（原来在本机哪儿） |
 | `urgent` | 布尔，默认 `false` | 急着插话：她正忙的，下一步就看到 |
+| `shell` | 布尔，默认 `false` | 人在输入框里用 `!` 打的一条命令：`text` 是命令行，核心照会话的工作目录跑（下面第 4 条） |
 | `prefix` | `"keep"` 或 `"compact"` | 前缀要变时人选的：直接发送、压缩上下文并发送（下面「前缀要变」） |
 | `from` | 字符串 | 你是别的 agent 程序：写上你的名字，这句话记成你说的，不是本人 |
 | `cwd` | 字符串 | 先换到这个工作目录再说（终端无缝集成：每一轮的工作目录跟着 shell 走）：查法、太宽的 `wide` 同 [`session.set_workspace`](#sessionset_workspace)；和现在一样的什么都不记，换了的推 `session.workspace_changed`。场所会话不收 |
@@ -149,6 +150,7 @@
 1. 她闲着，这一句开一轮；正忙，排队（`urgent` 的插进下一步）。开的那一轮 `turn.started` 的 `cause` 是这一条的 `id`，照它认出是你开的。
 2. 这一句落了盘就回，不等她答完：她怎么答看推送。
 3. 附件先查再找会话：附件的 blob 要在、照内容再认一遍（见 [附件](blob.md)）。
+4. `shell: true`：只收人在头里打的，不判权限、不进沙盒、不弹确认。记成一句写了 `shell` 的 `message.user`，落了盘就回；在她听到它的那一刻（闲着时开一轮的第一件，正忙时下一步问模型以前）照那时会话的工作目录跑，结果记一条 `shell.ran`（见 [事件](events.md)），她接着回。排着的照普通消息退回，退回的不跑。跑满 120 秒整组杀掉；跑着时打断（`session.interrupt`）整组杀掉、她不回。和 `attachments`、`venue` 一起写的 `bad_params`。视图流里那条 `user` 下面多一格 `shell`（见 [视图](view.md)）。
 
 **前缀要变**（握手 `caps.prefix_ask: true` 的头才有）：你的工具说明、提示词覆盖、人格、预设目录里的文件改了（技能不算：会话中途技能变了走消息尾巴，前缀不变），下一轮的请求前缀会变、缓存失效。会话空着时开新一轮（`session.send`、`session.redo`、开轮的 `command.run`）不带 `prefix` 的，回 `prefix_changing`，`data.files` 是改了的文件（照数据根写的相对路径，最多 20 个），多的在 `data.more`。给人弹「直接发送」「压缩上下文并发送」「取消」，选了再带 `"prefix": "keep"` 或 `"compact"` 发一次。`compact` 先压缩再说，压不了的回压缩的拒绝（例如 `nothing_to_compact`），这句没发。放行过的这一批不再问。
 
@@ -166,6 +168,8 @@
 | `unknown_attachment` | 附件的 blob 核心里没有 |
 | `attachment_too_big` | 附件里有超了上限的图 |
 | `venue_session` | 对场所会话说话却没带 `as` |
+| `shell_not_allowed` | `shell` 不是人在头里打的：带了 `from`、`as`，扩展说的，或者是场所会话 |
+| `shell_unavailable` | `shell`：装着的软件包里没有能跑命令的工具（没装或者关了） |
 
 ## `session.interrupt`
 

@@ -34,7 +34,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `turn.started`, `turn.ended` | A turn began or ended; `turn.ended`'s `reason` is `completed`, `interrupted`, `error`, `restarted` and so on |
 | `turn.joined` | Recorded messages joined the running turn |
 | `turn.reverted`, `turn.unreverted` | Turns were undone; the last undo was restored |
-| `message.user` | A message from a person (or another session, another agent, someone on a platform) |
+| `message.user` | A message from a person (or another session, another agent, someone on a platform); a command the person typed with `!` has `shell: true`, its `blocks` being the command line |
 | `message.withdrawn` | Queued messages she hadn't heard yet were handed back |
 | `message.assistant` | One complete model response: text, thinking, tool calls |
 | `model.called` | One model request: which model, usage, cost, `error` on failure |
@@ -46,6 +46,7 @@ The exact shape of each kind is in the repository's `docs/designs/samples/events
 | `context.compacted` | A compaction checkpoint; clearing the context is one too (`trigger` is `clear`). When the summary request was too long and the oldest groups had to be cut, it carries `truncated` (how many groups: the earliest part is not in the summary); left out when nothing was cut |
 | `context.compaction_paused` | Automatic compaction was paused |
 | `job.reported` | A background command ended; `reason` `too_chatty` means a watched command printed 120 batches within an hour and was stopped |
+| `shell.ran` | A command the person typed with `!` finished: `message` (the number of that message), `exit` or `signal`, `duration_ms`, `text` (the output, stdout and stderr together; a long one keeps the head and tail with a line in the middle saying how much was left out), `omitted`; plus `reason` if it ended abnormally: `timed_out` (ran for 120 seconds), `interrupted` (the person interrupted), `aborted` (the core restarted or crashed; not run again) |
 | `job.lines` | A watched background command (`shell` with `watch`) printed a batch of lines: `job`, `text` (at most 4000 characters; a cut one has a line in the middle saying how many were left out), `lines`, `omitted`. No `turn` |
 | `child.reported` | A subagent's report |
 | `peer.idle` | A session being waited on went idle, or can't be waited on |

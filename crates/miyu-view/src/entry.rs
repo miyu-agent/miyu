@@ -15,11 +15,13 @@ use crate::status::Speed;
 
 mod job;
 mod nested;
+mod shell;
 mod swap;
 mod touched;
 
 pub use job::{JobDone, JobEnd, Mark, Output, WatchedLines};
 pub use nested::{Nested, NestedCall};
+pub use shell::Shell;
 pub use swap::{ModelSwap, Recast, Swapped, Was};
 pub use touched::{SkillUsed, TouchKind, Touched};
 
@@ -97,6 +99,9 @@ pub struct User {
     /// 长期目标的续轮是第几轮（施工 X-8 补）：`from` 是模块 `goal` 的，照那条消息的命令编号（`goal-<第几轮>-<毫秒>`）读。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub round: Option<u32>,
+    /// 人用 `!` 打的命令（施工 SH-1 下，设计 57 第四节第 4 条）：`text` 是那一行命令，这一格是它跑出来的样子；别的话没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell: Option<Shell>,
 }
 
 /// 一件附件。

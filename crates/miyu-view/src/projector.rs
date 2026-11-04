@@ -166,6 +166,7 @@ impl Projector {
             EventBody::MessageUser(message) => self.message(event, message),
             EventBody::MessageAssistant(reply) => self.assistant(event, reply),
             EventBody::MessageWithdrawn(withdrawn) => self.withdrawn(withdrawn),
+            EventBody::ShellRan(ran) => self.shell_ran(ran),
             EventBody::ToolResult(result) => {
                 self.result(event, result);
                 self.sent(event, result);
