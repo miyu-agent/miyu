@@ -122,6 +122,8 @@ async fn a_loaded_session_sends_the_tools_from_its_snapshot() {
             clicall: false,
             result: None,
             plugin: None,
+            role: None,
+            scope: miyu_tool::Scope::Any,
         },
         Act::Echo,
     );
@@ -150,6 +152,8 @@ async fn a_tool_that_asks_to_load_on_demand_is_sent_whole() {
             clicall: false,
             result: None,
             plugin: None,
+            role: None,
+            scope: miyu_tool::Scope::Any,
         },
         Act::Echo,
     );

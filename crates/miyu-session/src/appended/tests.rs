@@ -21,6 +21,7 @@ fn face(names: &[&str]) -> Vec<ToolEntry> {
             clicall: false,
             runs_commands: false,
             command_only: false,
+            role: None,
         })
         .collect()
 }

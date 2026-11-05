@@ -30,7 +30,8 @@
 ```json
 {
   "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]}
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]},
+  "scope": "spawn"
 }
 ```
 

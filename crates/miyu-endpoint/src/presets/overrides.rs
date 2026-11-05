@@ -50,6 +50,7 @@ pub(crate) fn problems(core: &Core) -> Vec<(PathBuf, String)> {
             clicall: false,
             runs_commands: false,
             command_only: false,
+            role: None,
         };
         if let Err(why) = written.apply(&mut entry) {
             let path = core.root.tool_overrides().join(format!("{tool}.toml"));

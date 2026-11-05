@@ -43,6 +43,8 @@
 | `access` | 访问类别：`read`、`write`、`execute`、`network`、`outbound`、`venue`（施工 O-31 前，`kernel/tools.md`）、`install`（施工 F-10 下，`tools/package.md`）；不认识的原样留着，按最严的算 |
 | `clicall` | 脚本里能调（施工 M-2，设计 `39-脚本调工具.md` 第三节）：登记的一方说的默认，人能在配置里改（`clicall.tools.<name>`、`clicall.mcp.<id>`）。内置、软件包的说明文件写 `"clicall": true` 才开，出厂开 `web_search`、`web_fetch`、`memory_search`、`kb_search`、`kb_read`、`history`、`sessions`、`session_usage`、`packages`（施工 M-2 补、再补：要读、要查、shell 原本不方便做到的就开）；扩展 `provide` 写 `true` 才开；MCP 服务默认开（`clicall = false` 关）；脚本工具写 `# Clicall: yes` 才开（施工 M-2 三补）。访问类别不是读、联网、执行的，开了也调不成（内核拦） |
 | `result` | 脚本里调到时交回的结构化结果（`Done.data`）的样子（施工 M-4，设计 `39-脚本调工具.md` 第九节第 3 条）：一行紧凑的字，例如 `{"hits":[{"kb","path","snippet"}]}`。只有交结构化结果的写：内置、软件包的说明文件写 `"result"`（出厂 `web_search`、`memory_search`、`kb_search`、`kb_read`），扩展 `provide` 写；MCP、脚本工具没有。不直接发给模型：换进 `shell` 说明末尾那一段（`tools/shell.md`「脚本调工具」第 10 条）、`miyu call --schema` 的 `Result:` |
+| `role` | 职能（施工 XG-2 上，设计 `64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照名字，第三方声明了同样的职能同样认。取值是封闭的表，现在只有 `read_file`（读文本文件：工具面上有一件这样的才列技能，出厂的 `read` 写了）；认不得的读不进，要加职能就加表项。内置、软件包的说明文件写 `"role"`。进快照（`ToolEntry` 的 `role`，没有的不写），不发给模型 |
+| `scope` | 范围（施工 XG-2 上，设计 `64-工具职能.md` 第五节）：给哪种会话，组工具面时照它多拿掉：`any`（不写就是它）、`local`（本机的会话）、`local_main`（本机的主会话）、`local_main_attended`（本机的主会话、有人看着）、`spawn`（本机、子代理的层数没到上限）。只能收窄、不能放宽：场所的 `venues`、子代理的层数这些原有的限制照旧算。内置、软件包的说明文件写 `"scope"`；取值封闭，认不得的读不进 |
 
 **接口** `Tool`（`Send + Sync`）：
 

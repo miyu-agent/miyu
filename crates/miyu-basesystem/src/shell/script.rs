@@ -142,6 +142,8 @@ impl Script {
                 clicall: head.clicall,
                 result: None,
                 plugin: None,
+                role: None,
+                scope: miyu_tool::Scope::Any,
             },
             display_name: head.display_name.clone(),
             venues: head.venues.as_deref().map(Venues::of),

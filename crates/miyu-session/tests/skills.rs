@@ -1,6 +1,6 @@
 //! 技能（施工 X-10 上，`docs/blueprint/skills.md`「技能」第 2、3 条）：数据根里放的技能列进 system，一个一行带 `SKILL.md`
 //! 的路径；技能的文件夹在数据根里，单独放开只读：读放行、写一律拒（完全放开也拒），旁边的数据根照旧谁都不能碰；只碰得到自己
-//! 工作区的群会话也读得到；载入以后照样放开。工具面上没有 `read` 的不列。
+//! 工作区的群会话也读得到；载入以后照样放开。工具面上没有读文件的工具的不列（施工 XG-2 上起照职能认，不照名字）。
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -231,4 +231,34 @@ async fn reading_the_skill_file_marks_the_skill_in_the_effect() {
         })
         .collect();
     assert_eq!(marks, [Some("notes".to_string()), None], "{log:#?}");
+}
+
+/// 读技能的工具照职能认、不照名字（施工 XG-2 上，`64-工具职能.md` 第四节）：工具面上没有叫 `read` 的，有一件第三方声明了
+/// `read_file`、叫 `open_file` 的，技能照样列进 system；新会话的快照里记着它的职能。
+#[tokio::test]
+async fn a_third_party_file_reader_lists_skills_without_a_tool_named_read() {
+    let home = Home::new();
+    let skill = put(&home);
+    let reader = Fake::from_spec(
+        miyu_tool::Spec {
+            role: Some(miyu_kernel::tool::Role::ReadFile),
+            ..Fake::new("open_file", Access::Read, Act::Echo)
+                .spec()
+                .clone()
+        },
+        Act::Echo,
+    );
+    let tools = Catalog::new([reader as Arc<dyn Tool>]).expect("合写法");
+    let script = Script::new([Play::Says("好。")]);
+    let handle = home
+        .create_full(&script, &tools, Opening::default(), Lines::default())
+        .await;
+    turn(&home, &handle, "cmd-1").await;
+    let system = &script.requests()[0].1.system;
+    assert!(
+        system.ends_with(&format!(
+            "Skills you can use, each with its instructions in the file:\n- notes: Take notes. ({skill})"
+        )),
+        "列在 system 末尾：{system}"
+    );
 }

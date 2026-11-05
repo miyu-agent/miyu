@@ -89,6 +89,8 @@ async fn the_async_thread_is_free_while_the_guard_judges() {
             clicall: false,
             result: None,
             plugin: None,
+            role: None,
+            scope: miyu_tool::Scope::Any,
         },
         entered: entered_tx,
         release: Mutex::new(release_rx),

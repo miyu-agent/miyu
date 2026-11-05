@@ -61,6 +61,8 @@ pub(super) fn tools(
                 clicall: server.clicall,
                 result: None,
                 plugin: None,
+                role: None,
+                scope: miyu_tool::Scope::Any,
             },
             what,
             title: None,

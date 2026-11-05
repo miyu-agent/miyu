@@ -17,6 +17,7 @@ fn entry(name: &str, access: Access, parameters: &str) -> ToolEntry {
         clicall: false,
         runs_commands: false,
         command_only: false,
+        role: None,
     }
 }
 
@@ -282,4 +283,26 @@ fn an_uninstalled_tool_is_named_and_old_snapshots_fall_back() {
         back.run_texts().unwrap().uninstalled("read").text,
         "The tool \"read\" is not available right now.\n"
     );
+}
+
+/// 职能进快照（施工 XG-2 上，`64-工具职能.md` 第七节）：没写的不写这一格，XG-2 以前的快照字节不变、读回来没有职能；写了的读回来
+/// 一样。发给模型的那一份（tools 数组）只有名字、说明、参数，职能不在里面。
+#[test]
+fn a_role_is_kept_in_the_snapshot_only_when_there_is_one() {
+    let plain = entry("glob", Access::Read, r#"{"type":"object"}"#);
+    let text = serde_json::to_string(&plain).expect("写得出");
+    assert!(!text.contains("role"), "{text}");
+    let old: ToolEntry = serde_json::from_str(&text).expect("老的读得懂");
+    assert_eq!(old.role, None);
+    let reader = ToolEntry {
+        role: Some(Role::ReadFile),
+        ..entry("read", Access::Read, READ_PARAMETERS)
+    };
+    let text = serde_json::to_string(&reader).expect("写得出");
+    assert!(text.ends_with(r#","role":"read_file"}"#), "{text}");
+    let back: ToolEntry = serde_json::from_str(&text).expect("读得懂");
+    assert_eq!(back, reader);
+    let (specs, _) = split(&[reader]).expect("拆得开");
+    let sent = serde_json::to_string(&specs).expect("写得出");
+    assert!(!sent.contains("role"), "不发给模型：{sent}");
 }

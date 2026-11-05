@@ -303,6 +303,8 @@ fn checked(tool: ToolParams) -> Result<Checked, Refusal> {
             clicall,
             result,
             plugin,
+            role: None,
+            scope: miyu_tool::Scope::Any,
         },
         venues,
         timeout: Duration::from_millis(timeout),

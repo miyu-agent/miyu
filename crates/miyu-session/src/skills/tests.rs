@@ -1,4 +1,5 @@
-//! 技能那一块（施工 X-10 上）：一个技能一行，三格照模板转义；工具面上没有 `read` 的、没有技能的没有这一块。
+//! 技能那一块（施工 X-10 上）：一个技能一行，三格照模板转义；工具面上没有读文件的（施工 XG-2 上起照职能认，老快照照名字
+//! `read`）、没有技能的没有这一块。
 
 use std::path::Path;
 
@@ -20,6 +21,7 @@ fn tool(name: &str) -> ToolEntry {
         clicall: false,
         runs_commands: false,
         command_only: false,
+        role: None,
     }
 }
 
@@ -49,7 +51,8 @@ fn each_skill_is_one_line_with_its_file() {
         skill("notes", "Take notes. Use when asked to \"remember\"."),
         skill("pdf", "Read <b>PDF</b> files."),
     ];
-    let block = listing(&resources(), &[tool("shell"), tool(READ)], &skills).expect("读得出");
+    let block =
+        listing(&resources(), &[tool("shell"), tool(LEGACY_READ)], &skills).expect("读得出");
     let file = |name: &str| {
         path_text(
             &Path::new("/data/home/admin/skills")
@@ -81,16 +84,60 @@ fn skills_only_a_person_may_invoke_are_not_listed() {
     let mut manual = skill("release", "Cut a release.");
     manual.head.model_invocable = false;
     let skills = [skill("notes", "Take notes."), manual];
-    let block = listing(&resources(), &[tool(READ)], &skills)
+    let block = listing(&resources(), &[tool(LEGACY_READ)], &skills)
         .expect("读得出")
         .expect("有一个列得出");
     assert!(block.contains("- notes: "), "{block}");
     assert!(!block.contains("release"), "{block}");
     assert_eq!(shelves(&skills).len(), 2);
     assert_eq!(
-        listing(&resources(), &[tool(READ)], &skills[1..]).expect("读得出"),
+        listing(&resources(), &[tool(LEGACY_READ)], &skills[1..]).expect("读得出"),
         None
     );
+}
+
+/// 声明了职能 `role` 的一件。
+fn with_role(name: &str, role: Role) -> ToolEntry {
+    ToolEntry {
+        role: Some(role),
+        ..tool(name)
+    }
+}
+
+/// 读文件照职能认、不照名字（施工 XG-2 上，`64-工具职能.md` 第四节）：第三方的读文件工具叫什么都行；好几件都声明了的只看有没有。
+#[test]
+fn a_file_reader_is_found_by_its_role_not_its_name() {
+    let skills = [skill("notes", "Take notes.")];
+    let listed = |face: &[ToolEntry]| {
+        listing(&resources(), face, &skills)
+            .expect("读得出")
+            .is_some()
+    };
+    assert!(
+        listed(&[tool("shell"), with_role("open_file", Role::ReadFile)]),
+        "第三方的读文件工具"
+    );
+    assert!(
+        listed(&[
+            with_role("read", Role::ReadFile),
+            with_role("peek", Role::ReadFile)
+        ]),
+        "好几件只看有没有"
+    );
+    assert!(!listed(&[tool("shell")]), "没有读文件的");
+}
+
+/// XG-2 以前的快照一件都没写职能（第七节）：照名字 `read` 认，老会话的技能那一块照旧在，system 字节不变。
+#[test]
+fn an_old_snapshot_without_roles_still_finds_read_by_name() {
+    let skills = [skill("notes", "Take notes.")];
+    let listed = |face: &[ToolEntry]| {
+        listing(&resources(), face, &skills)
+            .expect("读得出")
+            .is_some()
+    };
+    assert!(listed(&[tool("shell"), tool(LEGACY_READ)]));
+    assert!(!listed(&[tool("shell"), tool("open_file")]));
 }
 
 #[test]
@@ -99,7 +146,7 @@ fn no_read_tool_or_no_skill_lists_nothing() {
     let listed =
         |face: &[ToolEntry], skills: &[Skill]| listing(&resources(), face, skills).expect("读得出");
     assert_eq!(listed(&[tool("shell")], &skills), None, "没有 read 读不了");
-    assert_eq!(listed(&[tool(READ)], &[]), None);
+    assert_eq!(listed(&[tool(LEGACY_READ)], &[]), None);
 }
 
 /// 放开只读的文件夹换成真实的位置（施工 X-10 下）：经链接给的照它指到的地方，权限策略、沙盒、认用过的技能都照真实的位置比

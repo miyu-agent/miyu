@@ -16,6 +16,7 @@ fn entry() -> ToolEntry {
         clicall: false,
         runs_commands: false,
         command_only: false,
+        role: None,
     }
 }
 

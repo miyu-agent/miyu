@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use miyu_kernel::template::Template;
+use miyu_kernel::tool::Role;
 use miyu_policy::ToolEntry;
 use miyu_policy::preset::PresetFile;
 use miyu_policy::skill::feature_id;
@@ -20,8 +21,19 @@ use miyu_tool::load::say;
 use crate::TARGET;
 use crate::path_text::path_text;
 
-/// 读技能用的那件工具（基本系统的 `read`）：工具面上没有它的，列出来她也读不了，不列。
-const READ: &str = "read";
+/// XG-2 以前的快照里读文件那件工具的名字（基本系统的 `read`）：那时的快照里一件都没写职能，照它认（[`reads_files`]）。
+/// 只给老快照用，以后不再加别的名字（`docs/designs/64-工具职能.md` 第七节）。
+const LEGACY_READ: &str = "read";
+
+/// 工具面 `face` 上有没有一件读文件的（声明了 [`Role::ReadFile`] 的，施工 XG-2 上）：没有的，列出来她也读不了，不列技能。
+/// 好几件都声明了的只看有没有，不挑哪一件。XG-2 以前的快照一件都没写职能，照名字认 [`LEGACY_READ`]：老会话的 system 字节不变。
+fn reads_files(face: &[ToolEntry]) -> bool {
+    if face.iter().any(|tool| tool.role.is_some()) {
+        face.iter().any(|tool| tool.role == Some(Role::ReadFile))
+    } else {
+        face.iter().any(|tool| tool.name == LEGACY_READ)
+    }
+}
 
 /// 找用得上的技能：装了的软件包 `installed` 里的，加数据根 `root` 里主人自己放的，加配置开着时别的目录 `external`
 /// 里的（施工 PT-2 外）。跳过的一个记一行，只写哪一种（同名被盖住的、链接指到外面的、别的），路径、原因里有人起的名字，不写
@@ -75,7 +87,7 @@ pub(crate) fn listing(
         .iter()
         .filter(|skill| skill.head.model_invocable)
         .collect();
-    if skills.is_empty() || !face.iter().any(|tool| tool.name == READ) {
+    if skills.is_empty() || !reads_files(face) {
         return Ok(None);
     }
     let texts = resources.skill_texts()?;

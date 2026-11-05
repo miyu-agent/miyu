@@ -4871,13 +4871,14 @@ Reply with OK.
 
 - 什么时候加进来：会话的工具面里有 `read`（每次请求都带）
 - token：TX-1 后 78（o200k 数，改前 144）；原来 172
-- 为什么加：`read` 的说明和参数：照 26 附录的草稿，先去掉图片、PDF；说明里给她一个用它不用 `cat` 的理由（施工 4-4 上）。4-4 下照规范改（`10-自带软件.md` 第十节）：参数改名 `file_path`，每个参数一句说明（W2 改），写明行号是 cat -n 的样子；多出来的大半是参数说明。施工 4-13 加回图片：说明里写上四种格式（PNG、JPEG、GIF、WebP），她才想得到用它看图（+13）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
-- 指纹：`2cceaf19`
+- 为什么加：`read` 的说明和参数：照 26 附录的草稿，先去掉图片、PDF；说明里给她一个用它不用 `cat` 的理由（施工 4-4 上）。4-4 下照规范改（`10-自带软件.md` 第十节）：参数改名 `file_path`，每个参数一句说明（W2 改），写明行号是 cat -n 的样子；多出来的大半是参数说明。施工 4-13 加回图片：说明里写上四种格式（PNG、JPEG、GIF、WebP），她才想得到用它看图（+13）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 XG-2 上加 `"role"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`02c9b1b2`
 
 ```json
 {
   "description": "Read a text file or an image, or list a directory. Text comes back as numbered lines, at most 2000 per call.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]}
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]},
+  "role": "read_file"
 }
 ```
 
@@ -5009,13 +5010,14 @@ Placeholder for a tool this client is expected to send with the request. It is n
 
 - 什么时候加进来：会话的工具面里有 `subagent`：本机、没到深度上限的会话（每次请求都带）；`pool` 那一格会话开局时照配置拼，一个池都没列的没有它
 - token：TX-1 后 161（o200k 数，改前 216）；原来 141（不列池时；2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量。每列一个池约多十几个 token：一个带说明的典型池时 182，tools 数组 2188；施工 8-8 带 `tier` 时是 189）；施工 P-2 补多了 `persona`，会话开局时照这台机器上的人格填 `enum`，出厂两个时多 41（不列池时比，2026-10-08 主会话在开发端点量），每多一个人格约多 7；施工 P-4 下 `persona` 的说明 `Default: engineer.` 改成 `Default: no persona.`（子代理没挑人格的无人格，施工 P-4 上），多约 1 个（估的，一个词）；出厂不带人格，`enum` 照这台机器上的人格填；施工 C-9 加 `attachments`，2026-10-15 主会话照开发端点、`deepseek-v4.1-flash` 量，只带这一件时 434 → 472，多 38；施工 P-10 人格那一行带上名字和简单描述（`<编号>: <名字> — <简单描述>`），每个人格多它自己写的那两句，样本的软件工程师多 14（照 o200k 数的，没走端点：` Software Engineer — Writes code and tracks down problems, no role-play`）；出厂不带人格，没建人格的一个字节不变；施工 P-10 补只列 `persona.toml` 写了 `subagent = true` 的人格，一个都没开的拿掉 `persona`，比只带样本的软件工程师时少 44（照 o200k 数的那一格）；施工 A-F 中加 `fork`、说明第二句前面加 `Without fork`，2026-10-24 照项目主人给的端点、只带这一件量 441 → 473，多 32；施工 SA-1 加 `read_only`，照 o200k 数 167 → 187，多 20
-- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 PE-1（2026-10-31）出厂带软件工程师、写了 `subagent = true`：没建人格的会话也有 `persona` 这一格，照 o200k 数多 47（`enum` 一个编号、说明后面 `software-engineer: Software Engineer — <简单描述>` 一行）；用户删了它（卸了它的出厂包）的照旧拿掉。施工 SA-1（2026-11-05 项目主人定）加 `read_only`：一句，`true` 时它只能读、不能改文件，子会话的只读开关打开，写的调用照只读拦；不写的照父会话的权限。不加的话派去查资料、读代码的子代理照父会话的权限能写，主会话改着的文件可能被它改到，后台还会冒出要人确认的写
-- 指纹：`4352f77a`
+- 为什么加：派子代理的说明和参数（施工 7-5）：说明照附录的草稿，两句：在后台派一个子会话做一件事、回报自己送来，它看不到这边的对话、交代要自己说得清（背景、已知的、目标、要报什么）。参数声明 `description`、`prompt`，各一句，名字照 Claude Code。量法同上，九件一起时的边际份量 140。施工 7-5 再补从 `agent` 改名 `subagent`（2026-10-01 项目主人定：在 Miyu 里「agent」可能指她自己、子代理、别的会话），文件跟着改名，说明、参数一字不改；十一件一起时 140 → 141。施工 8-8 加 `tier`（`models.md`「工具」）：四个挡位的 `enum`，一句说明「从轻到强，不写用你自己的模型」，不进 `required`；说明、另两格一字不改，141 → 189，多 48。不加的话她派不了更便宜、更强的模型，只能和父会话用同一个。施工 8-8 补把 `tier` 换成 `pool`（`models.md`「工具」，2026-10-01 项目主人定：去掉挡位，模型只照池的名字分）：资源里是一句说明「给哪个池，不写用你自己的模型」，没有 `enum`；会话开局时照配置插上开着开关、有成员的池，说明后面每个池一行「池名: 说明」，一个都没有的拿掉 `pool`，189 → 不列池时 141。人格、预设随配置和预设 施工 P-2 补加 `persona`（走查 C5）：子代理能挑人格，能挑的同池，进这个参数的 `enum`、说明后面一行一个，不常驻 system（2026-10-08 项目主人定：子代理只看得到池和人格，预设不给她挑）。施工 C-9 加 `attachments`（设计 29 第五节）：一句，交给子代理的文件路径、最多几个，同 `send_message` 的；说明一字不改。施工 P-10（2026-10-17 项目主人定）人格那一行带上名字和简单描述：只有编号她挑不出该派哪个（`persona-3` 看不出是什么），名字、简单描述是人格作者写的，有英文挑英文，只有中文的照给；会话开局时拼、进快照，整个会话不变。施工 P-10 补（2026-10-17 项目主人定）只列人格自己写了 `subagent = true` 的：角色扮演的人格不该被派去干活，默认全列她会挑错；一个都没开的拿掉 `persona`，同没池时拿掉 `pool`。施工 A-F 中加 `fork`（2026-10-24 项目主人要「从当前上下文分出去」、核心主会话定形状）：一句，`true` 时它接着这边对话的一份副本干、模型和人格照你的（写了池、人格的报参数不对，参数的错照 `serde` 的写法、不另登记）；说明里「看不到这边的对话、交代要自己说得清」只对不 fork 的成立，前面加 `Without fork`。。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 PE-1（2026-10-31）出厂带软件工程师、写了 `subagent = true`：没建人格的会话也有 `persona` 这一格，照 o200k 数多 47（`enum` 一个编号、说明后面 `software-engineer: Software Engineer — <简单描述>` 一行）；用户删了它（卸了它的出厂包）的照旧拿掉。施工 SA-1（2026-11-05 项目主人定）加 `read_only`：一句，`true` 时它只能读、不能改文件，子会话的只读开关打开，写的调用照只读拦；不写的照父会话的权限。不加的话派去查资料、读代码的子代理照父会话的权限能写，主会话改着的文件可能被它改到，后台还会冒出要人确认的写。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`49a9d92e`
 
 ```json
 {
   "description": "Start a subagent in a new session to do one task in the background. Its report arrives as a message when it finishes. Without fork it sees only the prompt, not this conversation.",
-  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]}
+  "parameters": {"type":"object","properties":{"description":{"type":"string","description":"Short title, 3 to 5 words."},"prompt":{"type":"string"},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"pool":{"type":"string","description":"Default: your own model."},"persona":{"type":"string","description":"Default: none."},"fork":{"type":"boolean","description":"true: it continues from a copy of this conversation, with your model and persona."},"read_only":{"type":"boolean","description":"true: it can read but not change files."}},"required":["description","prompt"]},
+  "scope": "spawn"
 }
 ```
 
@@ -5048,14 +5050,15 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `sessions`：本机的主会话（每次请求都带）
 - token：TX-1 后 50（o200k 数，改前 80）；原来 95 → 101（2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量；C-5 第二句点名 `send_message`、`history`，多 6）
-- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
-- 指纹：`99c50e52`
+- 为什么加：`sessions` 的说明和参数（施工 C-3，`cross-session.md` 第一条）：两句，列出你别的会话、最近有动静的在前，每一行有编号、标题、工作目录、忙不忙、最近一次动静。草稿第二句点名 `send_message`、`history`，C-3 时还没有这两样（`send_message` C-5 才改名，`history` 的 `session` C-4 才加），照 J4 先不点名，C-5 改名时补上、和那一次冷启动放在一起（2026-10-01 主会话定）：第二句从「Each row gives the session id, …」改成「Each row gives the id to use with send_message and history, …」。参数 `limit`、`offset` 各一句，照 `history`、`grep` 的写法。列会话是新的一件事，藏进 `jobs`、`history` 的参数里她想不起来（`cross-session.md`「起草时定的」第 1 条）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`c7a48d8f`
 
 ```json
 {
   "description": "List your other sessions, most recently active first. Their ids work with send_message and history.",
   "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer"}}},
-  "clicall": true
+  "clicall": true,
+  "scope": "local_main"
 }
 ```
 
@@ -5063,14 +5066,15 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `session_usage`：本机的会话，主会话、子会话都有（每次请求都带）
 - token：TX-1 后 33（o200k 数，改前 36）；原来 48（2026-10-02 主会话照开发端点、`deepseek-v4.1-flash` 量，十三件一起时的边际份量）
-- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
-- 指纹：`0d0197be`
+- 为什么加：她自己查这个会话用了多少、花了多少钱、上下文还剩多少（施工 8-15，`models.md`「工具」，`15-模型与供应商.md` 第八节）：零参数，一句说明。用量、金额只在日志里，上下文的估算只在内核里，她问「快压缩了吗」「这次花了多少」答不上来。一件管用量、金额和上下文，不拆两件（主会话定，合并前真模型问六句再定）；2026-10-21 施工 M-2 再补加 `"clicall": true`（脚本里能调，不发给模型，token 不变）。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`0a0bd80d`
 
 ```json
 {
   "description": "Show the tokens and money this session has used so far, and how full the context is.",
   "parameters": {"type":"object","properties":{}},
-  "clicall": true
+  "clicall": true,
+  "scope": "local"
 }
 ```
 
@@ -5078,13 +5082,14 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `ask_user`：能问人的会话，有人能回答的本机主会话（每次请求都带）
 - token：TX-1 后 168（o200k 数，改前 188）；原来 237（2026-10-07 主会话照开发端点量，十四件一起时的边际份量）
-- 为什么加：她干活中途遇到要人拿主意的事，问一组题、等回答（施工 D-2，`10-自带软件.md` 第三节，`tools/ask_user.md`）。说明照附录的草稿一字不差，参数照 Claude Code，说明只给名字看不出来的三格（`header`、`preview`、`multiSelect`）。施工 TX-1（2026-10-30）：「Don't add an other option」改成事实「人也能自己打字回答」；留推荐项那一句（项目主人定）
-- 指纹：`fd1ed5f4`
+- 为什么加：她干活中途遇到要人拿主意的事，问一组题、等回答（施工 D-2，`10-自带软件.md` 第三节，`tools/ask_user.md`）。说明照附录的草稿一字不差，参数照 Claude Code，说明只给名字看不出来的三格（`header`、`preview`、`multiSelect`）。施工 TX-1（2026-10-30）：「Don't add an other option」改成事实「人也能自己打字回答」；留推荐项那一句（项目主人定）。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`de39fd29`
 
 ```json
 {
   "description": "Ask the user one or more questions with options and wait for the answers. Put the recommended option first and add \"(Recommended)\" to its label. The user can also type their own answer.",
-  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"Short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Monospace text shown while the option is focused, like code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean"}},"required":["question"]}}},"required":["questions"]}
+  "parameters": {"type":"object","properties":{"questions":{"type":"array","items":{"type":"object","properties":{"question":{"type":"string"},"header":{"type":"string","description":"Short tag shown above the question."},"options":{"type":"array","items":{"type":"object","properties":{"label":{"type":"string"},"description":{"type":"string"},"preview":{"type":"string","description":"Monospace text shown while the option is focused, like code or a sketch."}},"required":["label"]}},"multiSelect":{"type":"boolean"}},"required":["question"]}}},"required":["questions"]},
+  "scope": "local_main_attended"
 }
 ```
 
@@ -5092,13 +5097,14 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `todowrite`：本机的会话，主会话、子会话都有（每次请求都带）
 - token：TX-1 后 80（o200k 数，改前 103）；原来 139（2026-10-07 主会话照开发端点量，十五件一起时的边际份量）
-- 为什么加：她做多步的活时维护一张待办清单，头照着显示（施工 D-3，`10-自带软件.md` 第三节，`tools/todowrite.md`）。每次整份换，照 Claude Code、codex、opencode 的基本款（2026-10-07 项目主人定）；不要 Claude Code 的 `activeForm`，头照 `content` 显示就够。三句：是什么、整份换、怎么标状态。施工 TX-1（2026-10-30）：删了怎么标状态那一句（2026-10-07 定的三句之一，项目主人照推荐定删）
-- 指纹：`66fbeb2f`
+- 为什么加：她做多步的活时维护一张待办清单，头照着显示（施工 D-3，`10-自带软件.md` 第三节，`tools/todowrite.md`）。每次整份换，照 Claude Code、codex、opencode 的基本款（2026-10-07 项目主人定）；不要 Claude Code 的 `activeForm`，头照 `content` 显示就够。三句：是什么、整份换、怎么标状态。施工 TX-1（2026-10-30）：删了怎么标状态那一句（2026-10-07 定的三句之一，项目主人照推荐定删）。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`9cd9b434`
 
 ```json
 {
   "description": "This session's task list, which the user sees. Each call replaces the whole list.",
-  "parameters": {"type":"object","properties":{"todos":{"type":"array","items":{"type":"object","properties":{"content":{"type":"string"},"status":{"type":"string","enum":["pending","in_progress","completed"]}},"required":["content","status"]}}},"required":["todos"]}
+  "parameters": {"type":"object","properties":{"todos":{"type":"array","items":{"type":"object","properties":{"content":{"type":"string"},"status":{"type":"string","enum":["pending","in_progress","completed"]}},"required":["content","status"]}}},"required":["todos"]},
+  "scope": "local"
 }
 ```
 
@@ -5150,13 +5156,14 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `goal`：长期目标开着的本机主会话（群里、私聊、子代理都没有，每次请求都带）
 - token：TX-2 后 116（o200k 数，改前 140）；原来 171 → 174（2026-10-12 主会话照开发端点、`deepseek-v4.1-flash` 量，二十件一起时的边际份量；X-9 给 `reason` 加「One sentence.」+3）
-- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明。施工 X-9 真跑看到卡住的原因写成了整份排查过程（六百多字），头上原样显示：`reason` 加一句「One sentence.」，排查过程写在收尾里。施工 TX-2（2026-10-30，项目主人定做、照重测换）：「只给要很多轮的活设」「验证过再标完成」两句改成事实「设了会话闲着就自己开下一轮，直到标完成或卡住」（验证的要求照旧在每一轮的提示里）。重测：三件一步能做完的小事各 2 次，两边乱开目标都是 0/6（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）
-- 指纹：`7492f3e7`
+- 为什么加：她看、设、结束长期目标（施工 X-8 上，`goal.md`、`tools/goal.md`）：自己开目标当场算授权过（2026-10-11 项目主人定）；三句说是什么、什么时候设（只给要很多轮的活：设了会话闲着就自己开下一轮）、怎么结束；三轮下限、收尾写在调用以后的结果里，不写进说明。施工 X-9 真跑看到卡住的原因写成了整份排查过程（六百多字），头上原样显示：`reason` 加一句「One sentence.」，排查过程写在收尾里。施工 TX-2（2026-10-30，项目主人定做、照重测换）：「只给要很多轮的活设」「验证过再标完成」两句改成事实「设了会话闲着就自己开下一轮，直到标完成或卡住」（验证的要求照旧在每一轮的提示里）。重测：三件一步能做完的小事各 2 次，两边乱开目标都是 0/6（基准测试仓库 `runs/2026-10-30/tx2/`，OpenCode Go 的 `deepseek-v4.1-flash`）。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`dfec2f77`
 
 ```json
 {
   "description": "Read, set or end this session's long-running goal. While it runs, the session starts a new round by itself whenever it is idle, until it is marked complete or blocked.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]},
+  "scope": "local_main"
 }
 ```
 
@@ -5294,13 +5301,14 @@ Start a subagent in a new session to do one task and wait for it. Its report arr
 
 - 什么时候加进来：会话的工具面里有 `send_message`：本机的会话，到了深度上限的也有（每次请求都带）；旧会话冻着 `message_agent` 这个名字
 - token：TX-1 后 155（o200k 数，改前 203）；原来 165 → 204 → 241（施工 C-5 是 165；施工 C-6，2026-10-01 主会话照开发端点、`deepseek-v4.1-flash` 量，十二件一起时的边际份量，多 39。整个 tools 数组 2108 → 2147，多 39；施工 C-9 加 `attachments`，2026-10-15 主会话照同一个模型量，只带这一件时 446 → 483，多 37）
-- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明
-- 指纹：`0a0802a5`
+- 为什么加：`send_message` 的说明和参数（施工 C-5，从 `message_agent` 改名）：说明第一句多了「or to another of your sessions by its id」，第二、三句一字不改（原来施工 7-7 的三句：发给自己派的子代理或者父、对方下一步看到闲着就开一轮、只发对方现在就得知道的）。参数 `to` 多认会话编号。文件从 `message_agent.json` 挪来，这次改名、改说明第一句、`to` 一起改，只冷一次缓存。施工 C-6 加 `notify_when_idle`（「空了告诉我」，`cross-session.md` 第六条，照 Claude Code 的 `SendMessage`，项目主人定）：一句，订那个会话下次空下来时的一条通知；`message` 的说明多半句「可以不写」，必填的只剩 `to`。说明本身一字没动：「只能订别的会话」写进被拒的那一句（调用之后才用得上）。施工 C-9 加 `attachments`（设计 29 第五节，2026-10-15 项目主人定 agent 之间的话能带附件）：一句，带的文件路径、最多几个；说明一字不改，读不成、太大的写进被拒的那一句。施工 TX-1（2026-10-30）：照 J13、W2 改：去掉引导句，名字和类型说清的参数不写说明。施工 XG-2 上加 `"scope"`（工具职能，`64-工具职能.md`；不发给模型，token 不变）
+- 指纹：`674f9acb`
 
 ```json
 {
   "description": "Send a message to a subagent you started, to your parent with `to: parent`, or to another of your sessions by its id. The other side reads it at its next step, or starts a new turn with it if idle.",
-  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"A subagent's job id like j1, parent, or a session id."},"message":{"type":"string","description":"Can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that session next goes idle."}},"required":["to"]}
+  "parameters": {"type":"object","properties":{"to":{"type":"string","description":"A subagent's job id like j1, parent, or a session id."},"message":{"type":"string","description":"Can be left out with notify_when_idle."},"attachments":{"type":"array","items":{"type":"string"},"description":"File paths, at most 8."},"notify_when_idle":{"type":"boolean","description":"Get one notice when that session next goes idle."}},"required":["to"]},
+  "scope": "local"
 }
 ```
 
@@ -5986,7 +5994,7 @@ Memories:
 
 #### `core/skills/open.txt`
 
-- 什么时候加进来：工具面上有 `read`、找得到至少一个技能的会话（施工 X-10 上；每次请求都带）
+- 什么时候加进来：工具面上有读文件的工具（施工 XG-2 上起照职能 `read_file` 认，老快照照名字 `read`）、找得到至少一个技能的会话（施工 X-10 上；每次请求都带）
 - token：TX-1 后 13（o200k 数，改前 12）；原来 13（2026-10-12 照开发端点量）
 - 为什么加：她知道下面是技能、照着做之前先读那份文件（`skills.md`「技能」第 2、3 条）。施工 TX-1（2026-10-30）：照 J13 改：去掉命令口吻和重复，改成事实写法
 - 指纹：`673f6aee`
@@ -6140,7 +6148,7 @@ ARGUMENTS: {arguments}
 
 #### `packages/miyu-base-authoring/skills/skill-creator/SKILL.md`
 
-- 什么时候加进来：出厂包 `miyu-base-authoring`（施工 PN-3 以前叫 `authoring`）装着、预设开着 `skill-skill-creator`、工具面上有 `read` 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
+- 什么时候加进来：出厂包 `miyu-base-authoring`（施工 PN-3 以前叫 `authoring`）装着、预设开着 `skill-skill-creator`、工具面上有读文件的工具（施工 XG-2 上起照职能 `read_file` 认，老快照照名字 `read`） 的会话（施工 X-13 下；那一行每次请求都带，正文用到才读）
 - token：那一行 56（路径按 `/usr/share/miyu/packages/…` 算；施工 PN-3 包目录改名 `miyu-base-authoring`，路径多 10 个字符，估计多 3 左右，没重量）；正文 667（2026-10-12 量；施工 BS-1 中下检查和装两步改写成 `miyu pkg`，约少 5；施工 SK-1 两步的目录写成 `./<folder>`，+2）
 - 为什么加：出厂带两个技能（`skills.md`「定了的」第 5 条）：她自己写技能照包的样子写在工作区、`packages` 检查、`package` 装（设计 31 第六节第 2 条）；说明加引号那一条是 F-10 下上真模型写技能时撞上的
 - 指纹：`ba5c9c94`

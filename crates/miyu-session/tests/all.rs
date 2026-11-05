@@ -158,6 +158,7 @@ mod steps;
 mod stop;
 mod strict_tools;
 mod test_embed;
+mod tool_scope;
 mod tools;
 mod turn_config;
 mod turns_laid;

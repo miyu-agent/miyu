@@ -21,7 +21,7 @@
 | `crates/miyu-store/src/skills.rs` | 找：数据根的 `root/skills/` 先，再找装了的（清单读成了的）软件包的 `skills/`，出厂的包先于装上的、同一层照编号（施工 F-8 六补；装的时候撞了名的装不上，`packages.md`「冲突」），最后找配置开着时别的目录里的（施工 PT-2 中、PT-2 外，`skills/external.rs`：总开关 `skills.external.enabled` 出厂关，目录表 `skills.external.dirs` 出厂一项 `~/.agents/skills`，agentskills.io 的约定，Codex、opencode 这些装的技能放这里；照表里的先后；关着的调的一方交空的，一个都不碰；找到的标着配置里写的那个目录 `external`）；同名的先找到的赢，后来的、开头写错的、读不了的跳过并说为什么（别的目录里被压掉的不记：别的客户端的技能，不算 Miyu 这边写错了）；点开头的文件夹、没有 `SKILL.md` 的不算；照名字排 |
 | `crates/miyu-store/src/links.rs` | 找技能、脚本、斜杠模板时列一层目录（施工 X-37）：认链接，照指到的东西认种类；断了的、绕回自己的跳过说为什么；真实位置落在数据根里的只认 `scripts`、`skills`、`commands`、`packages` 下面，别处的跳过、带真实位置（`*_link_outside`） |
 | `crates/miyu-store/src/resources/skills.rs`、`resources/core/skills/open.txt`、`line.txt` | 列出来的那一块的两份字（26 第十节登记） |
-| `crates/miyu-session/src/skills.rs` | 造会话时找（跳过的记一行运行日志）、拼 system 里那一块（工具面上没有 `read` 的、一个技能都没有的不拼）；放开只读的文件夹 |
+| `crates/miyu-session/src/skills.rs` | 造会话时找（跳过的记一行运行日志）、拼 system 里那一块（工具面上没有读文件的工具的、一个技能都没有的不拼：施工 XG-2 上起照职能 `read_file` 认，不照名字，第三方的同样认；XG-2 以前的快照一件都没写职能，照名字 `read` 认，`64-工具职能.md` 第七节）；放开只读的文件夹 |
 | `crates/miyu-session/src/skills/watch.rs`、`crates/miyu-session/src/actor/skills.rs`、`resources/core/skills/changed-open.txt`、`changed-close.txt`、`none.txt` | 会话中途列表变了（施工 X-11 下）：回合开始再找一遍、换放开的文件夹、和她最后看到的比，变了交一块 `<skills-changed>`（`context.injected`，模块 `skills`） |
 | `crates/miyu-policy/src/script.rs` | 读脚本的开头注释（施工 X-12 上）：旧版的键（全角、半角冒号），`Parameters` 往下逐行拼成一份 JSON 为止，认、不用的键跳过；工具名照文件名；`Venues` 照清单的 `venues_fit` 查（施工 X-43） |
 | `crates/miyu-store/src/scripts.rs` | 找脚本（施工 X-12 上）：数据根的 `root/scripts/` 先，再找装了的包的 `scripts/`，出厂的包先于装上的、同一层照编号（施工 F-8 六补）；同一个工具名先找到的赢；不是字的、开头写错的跳过并说为什么 |

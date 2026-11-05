@@ -29,6 +29,8 @@ fn catalog() -> Catalog {
             clicall: false,
             result: None,
             plugin: None,
+            role: None,
+            scope: miyu_tool::Scope::Any,
         },
         Act::Echo,
     );

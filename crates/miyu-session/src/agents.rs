@@ -28,9 +28,8 @@ use miyu_policy::{Choice, JOB_DEPTH, ToolEntry};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::Personas;
 use miyu_tool::{
-    ASK_USER, AgentPort, BACKGROUND, Catalog, FORGET, GOAL, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE,
-    KB_SEARCH, MEMORY_SEARCH, REMEMBER, SEND_MESSAGE, SESSION_USAGE, SESSIONS, SUBAGENT, TODOWRITE,
-    is_subagent,
+    AgentPort, BACKGROUND, Catalog, FORGET, KB_DELETE, KB_EDIT, KB_READ, KB_SAVE, KB_SEARCH,
+    MEMORY_SEARCH, REMEMBER, Scope, is_subagent,
 };
 
 use crate::TARGET;
@@ -194,7 +193,8 @@ impl Agents {
         attended && Agents::lists_sessions(venue, parent)
     }
 
-    /// 造会话时定的工具面（施工 7-5、7-7、C-3、C-5）：目录里每件工具的规格换成快照里的写法。不能派子代理的会话不给
+    /// 造会话时定的工具面（施工 7-5、7-7、C-3、C-5）：目录里每件工具的规格换成快照里的写法。给哪种会话照工具自己声明的范围
+    /// （施工 XG-2 上，`miyu_tool::Scope`，原来照下面这几件的名字特判，现在写在它们的说明文件里）：不能派子代理的会话不给
     /// `subagent`；场所会话（群）不给 `send_message`：它没有父，也派不了子代理，给了只会被 `not-here.txt` 拒。到了
     /// 深度上限的子会话照样有 `send_message`，能发给父、能发给别的会话，只是不能派子代理。只有本机的主会话有 `sessions`
     /// （[`Agents::lists_sessions`]）。`session_usage` 只给本机的会话（施工 8-15）：群里的人不可信，花了多少钱是主人的事。
@@ -223,16 +223,17 @@ impl Agents {
         let foreground = Agents::foreground(preset.map(|(file, _)| file));
         // 「脚本调工具」关着的预设（施工 M-6）：每件都当不能在脚本里调。
         let scripted = clicall::on(preset.map(|(file, _)| file));
+        // 照工具自己声明的范围筛（施工 XG-2 上，`docs/designs/64-工具职能.md` 第五节）：只多拿掉，别处原有的限制照旧算。
+        let in_scope = |scope: Scope| match scope {
+            Scope::Any => true,
+            Scope::Local => local,
+            Scope::LocalMain => lists,
+            Scope::LocalMainAttended => asks,
+            Scope::Spawn => spawns,
+        };
         let mut face = tools
             .specs()
-            .filter(|spec| spawns || spec.name != SUBAGENT)
-            .filter(|spec| local || spec.name != SEND_MESSAGE)
-            .filter(|spec| lists || spec.name != SESSIONS)
-            .filter(|spec| local || spec.name != SESSION_USAGE)
-            .filter(|spec| asks || spec.name != ASK_USER)
-            .filter(|spec| local || spec.name != TODOWRITE)
-            // 长期目标只给本机的主会话（施工 X-8 上，`goal.md`「定了的」第 4 条）：群里、私聊、子代理都没有。
-            .filter(|spec| lists || spec.name != GOAL)
+            .filter(|spec| in_scope(spec.scope))
             // 记忆的三件给记忆开着的会话（施工 R-3 中、下，`memory.md`「工具」）：本机的、场所的都给，挑法照谁在听（施工
             // R-13 下）；子会话的范围一律 `off`（17 第二节）。
             .filter(|spec| {
@@ -296,6 +297,7 @@ impl Agents {
                     clicall: scripted && offers.clicall.clicall(&spec.name, spec.clicall),
                     runs_commands: tool.is_some_and(|tool| tool.runs_commands()),
                     command_only: tool.is_some_and(|tool| tool.command_only()),
+                    role: spec.role,
                 };
                 // 主人写的覆盖（施工 OV-1 上）：换不进的（参数格式里没有那个参数）照出厂的，记一行。
                 if let Some(written) = offers.overrides.get(&spec.name)

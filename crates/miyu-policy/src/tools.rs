@@ -9,7 +9,7 @@ use miyu_kernel::event::Said;
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::request::ToolSpec;
 use miyu_kernel::template::{Template, TemplateError};
-use miyu_kernel::tool::{Access, ToolRule, Worded};
+use miyu_kernel::tool::{Access, Role, ToolRule, Worded};
 use serde::{Deserialize, Serialize};
 
 use crate::snapshot::{BuildError, Snapshot};
@@ -42,6 +42,11 @@ pub struct ToolEntry {
     /// 不写，以前造的快照读成上工具面：以前的会话照旧带着这几件，字节不变。
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub command_only: bool,
+    /// 职能（施工 XG-2 上，`docs/designs/64-工具职能.md` 第四节、第七节）：组工具面时照规格写进来，技能列表每回合照快照里的工具面
+    /// 找有没有 [`Role::ReadFile`]。没有的不写，以前造的快照读成没有：字节和以前一样；以前的快照一件都没写，照名字认的退路在
+    /// `miyu-session` 的技能列表那一处。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<Role>,
 }
 
 /// 执行器替工具写给模型的几句（施工 4-2）：快照里有、核心的目录里没有的工具；随包卸掉了的工具（施工 F-5 中）；工具执行时

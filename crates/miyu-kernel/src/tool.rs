@@ -52,6 +52,25 @@ impl Access {
     }
 }
 
+/// 一件工具的职能（施工 XG-2 上，`docs/designs/64-工具职能.md` 第四节）：核心要找「哪件是干这个的」时照它认，不照工具的名字，
+/// 第三方的工具声明了同样的职能同样认。内核自己不看它；放在这里是因为工具的规格（`miyu-tool`）和快照的工具面（`miyu-policy`）
+/// 两边都要。取值是一张封闭的表：认不得的读不进（自带的说明文件报错、扩展交的拒 `bad_params`），要加职能就加一项。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    /// 读文本文件（参数里给路径）：技能正文靠它读，工具面上有一件这样的才列技能。
+    ReadFile,
+}
+
+impl Role {
+    /// 写在规格、快照里的样子。
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Role::ReadFile => "read_file",
+        }
+    }
+}
+
 /// 内核要知道的一件工具：访问类别、参数格式、脚本里能不能调。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ToolRule {

@@ -31,3 +31,45 @@ fn a_descriptor_with_a_retired_need_load_is_still_read() {
     let spec = read.expect("照旧读得进");
     assert_eq!(spec.description, "Look a word up.");
 }
+
+/// 职能、范围（施工 XG-2 上，`64-工具职能.md` 第四、五节）：写了的读进规格，没写的没有职能、范围是 `any`；取值是封闭的，
+/// 认不得的整份读不进。
+#[test]
+fn role_and_scope_are_read_and_unknown_values_are_refused() {
+    let dir = std::env::temp_dir().join(format!("miyu-load-role-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("tools")).expect("建得了");
+    let put = |name: &str, extra: &str| {
+        std::fs::write(
+            dir.join("tools").join(format!("{name}.json")),
+            format!(r#"{{"description":"x","parameters":{{"type":"object"}}{extra}}}"#),
+        )
+        .expect("写得进");
+    };
+    put("plain", "");
+    put("reader", r#","role":"read_file","scope":"local_main""#);
+    put("bad_role", r#","role":"write_file""#);
+    put("bad_scope", r#","scope":"everywhere""#);
+    let read = |name: &str| spec_in(&dir, name, Access::Read);
+    let plain = read("plain");
+    let reader = read("reader");
+    let bad_role = read("bad_role");
+    let bad_scope = read("bad_scope");
+    std::fs::remove_dir_all(&dir).expect("删得了");
+    let plain = plain.expect("读得进");
+    assert_eq!((plain.role, plain.scope), (None, crate::Scope::Any));
+    let reader = reader.expect("读得进");
+    assert_eq!(reader.role, Some(Role::ReadFile));
+    assert_eq!(reader.scope, crate::Scope::LocalMain);
+    assert!(
+        bad_role
+            .expect_err("认不得的职能")
+            .why
+            .contains("write_file")
+    );
+    assert!(
+        bad_scope
+            .expect_err("认不得的范围")
+            .why
+            .contains("everywhere")
+    );
+}

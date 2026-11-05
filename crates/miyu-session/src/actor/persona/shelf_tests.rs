@@ -62,6 +62,8 @@ fn provided_tools_join_change_and_leave_the_face() {
         clicall: false,
         result: None,
         plugin: None,
+        role: None,
+        scope: miyu_tool::Scope::Any,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     let snapshot = swap(&mut refresh);
@@ -269,6 +271,8 @@ fn a_changed_preset_takes_provided_tools_as_registered_now() {
         clicall: false,
         result: None,
         plugin: None,
+        role: None,
+        scope: miyu_tool::Scope::Any,
     };
     provide(&refresh, vec![Fake::from_spec(changed, Act::Echo)]);
     super::test_support::write_preset(&root, "[tools]\nshell = false\n");

@@ -28,7 +28,8 @@
 {
   "description": "List your other sessions, most recently active first. Their ids work with send_message and history.",
   "parameters": {"type":"object","properties":{"limit":{"type":"integer","description":"Default 20."},"offset":{"type":"integer"}}},
-  "clicall": true
+  "clicall": true,
+  "scope": "local_main"
 }
 ```
 

@@ -101,6 +101,8 @@ pub(super) fn register(
                 clicall: server.clicall,
                 result: None,
                 plugin: None,
+                role: None,
+                scope: miyu_tool::Scope::Any,
             },
             what: What::Tool(tool.name.clone()),
             title: tool

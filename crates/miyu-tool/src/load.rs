@@ -11,10 +11,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-use crate::Spec;
+use crate::{Scope, Spec};
 use miyu_kernel::raw::RawJson;
 use miyu_kernel::template::Template;
-use miyu_kernel::tool::Access;
+use miyu_kernel::tool::{Access, Role};
 
 /// 一份字读不出来，或者写法不对。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -48,6 +48,12 @@ struct SpecFile {
     /// 结构化结果的样子（施工 M-4）：只有交结构化结果的写。
     #[serde(default)]
     result: Option<String>,
+    /// 职能（施工 XG-2 上，设计 64 第四节）：认不得的读不进。
+    #[serde(default)]
+    role: Option<Role>,
+    /// 范围（施工 XG-2 上，设计 64 第五节）：没写的哪种会话都给。
+    #[serde(default)]
+    scope: Scope,
 }
 
 /// 读软件包 `package` 的工具 `name` 的说明和参数格式，访问类别是 `access`。
@@ -84,6 +90,8 @@ pub fn spec_in(dir: &Path, name: &str, access: Access) -> Result<Spec, LoadError
         clicall: parsed.clicall,
         result: parsed.result,
         plugin: None,
+        role: parsed.role,
+        scope: parsed.scope,
     })
 }
 

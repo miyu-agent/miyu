@@ -1,4 +1,5 @@
 {
   "description": "Read, set or end this session's long-running goal. While it runs, the session starts a new round by itself whenever it is idle, until it is marked complete or blocked.",
-  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]}
+  "parameters": {"type":"object","properties":{"action":{"type":"string","enum":["get","set","complete","blocked"]},"objective":{"type":"string","description":"With set."},"max_rounds":{"type":"integer","description":"With set. Default no limit."},"reason":{"type":"string","description":"With blocked. One sentence."}},"required":["action"]},
+  "scope": "local_main"
 }

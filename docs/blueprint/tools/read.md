@@ -29,7 +29,8 @@
 ```json
 {
   "description": "Read a text file or an image, or list a directory. Text comes back as numbered lines, at most 2000 per call.",
-  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]}
+  "parameters": {"type":"object","properties":{"file_path":{"type":"string"},"offset":{"type":"integer","description":"First line to read, from 1."},"limit":{"type":"integer"}},"required":["file_path"]},
+  "role": "read_file"
 }
 ```
 

@@ -43,6 +43,8 @@ fn spec(name: &str, access: Access, result: Option<&str>) -> Spec {
         clicall: true,
         result: result.map(str::to_string),
         plugin: None,
+        role: None,
+        scope: miyu_tool::Scope::Any,
     }
 }
 
@@ -88,6 +90,7 @@ fn face(catalog: &Catalog, names: &[&str], on: bool) -> Vec<ToolEntry> {
                 clicall: on && *name != SHELL,
                 runs_commands: false,
                 command_only: false,
+                role: None,
             }
         })
         .collect();

@@ -106,6 +106,8 @@ impl Fake {
                 clicall: false,
                 result: None,
                 plugin: None,
+                role: None,
+                scope: crate::Scope::Any,
             },
             act,
         )
@@ -150,6 +152,15 @@ impl Fake {
         let mut fake = Fake::with_parameters(name, access, parameters, act);
         if let Some(fake) = Arc::get_mut(&mut fake) {
             fake.commands = Some(background);
+        }
+        fake
+    }
+
+    /// 声明了范围 `scope` 的假工具（施工 XG-2 上，`64-工具职能.md` 第五节）。
+    pub fn scoped(name: &str, access: Access, scope: crate::Scope, act: Act) -> Arc<Fake> {
+        let mut fake = Fake::new(name, access, act);
+        if let Some(fake) = Arc::get_mut(&mut fake) {
+            fake.spec.scope = scope;
         }
         fake
     }
