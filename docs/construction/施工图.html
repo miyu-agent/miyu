@@ -276,9 +276,9 @@ a.step:hover{border-color:var(--primary)}
   <h1>Miyu 施工图</h1>
   <p class="lede">一步一张图：这一步做完以后仓库长成什么样、新加了什么、怎么验收的。施工方案和每一步的施工单在 <code>docs/construction/</code>，这张图跟着它们一起更新。</p>
   <ul class="facts">
-    <li><b>1058</b><span>/ 1067 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
+    <li><b>1059</b><span>/ 1068 步（不算取消的两步）<strong>已完成</strong>，M6 长会话验收过了：到线就压，压完不失忆、接着干，换出去的她用 <code>history</code> 找得回；一直失败、压完很快又满的会暂停；摘要请求超长截短再试、调了工具改走隔离式；主请求超长先压再重发；撤销能撤掉压缩；人能自己叫她压、附一句要求；M7 分身验收过了：日志记得下任务的开始、结束和回报，回报到了她闲着就开一轮、正忙就在下一步看到；她能派子代理、把命令放到后台跑，子代理做完一层层报上来；她能用 jobs 看、读、停自己派出去的；父子之间能来回说话；<code>miyu ask</code> 派了子代理的，等它们都报回来、她说完才退出；撤销一轮时它派出去的任务一起停，核心崩了后台命令跟着死；Claude Code 这类别的 agent 能用 <code>miyu ask --from</code> 往她的会话里说话，她分得清不是人说的；头能读后台命令跑到一半的输出；M8 配置与模型验收过了：不靠开发用的环境变量，第一次接入找现成的 key、试通、写进配置，三种接口只用配置接上，会话里换模型，池里出错换下一个，思考强度、温度、金额都对；网页登录的核心那一半：第一次用本机终端给的一次性码设用户名和密码，以后用它们登录，记住 30 天</span></li>
     <li><b>8-23</b><span>下一步：M8 要补的 8-21、8-22 做完了，接着 8-23、8-25、8-24（网页演示转来的下架模型移出池；一家供应商一个 key；<code>miyu config</code> 拉起终端界面停在配置页）；网页模块做到 W-10（打包 W-11 暂停：还没到打包那一步），拆 M9（有界面）等终端界面、网页演示改好合进来再接着做</span></li>
-    <li><b class="mono">PK-5</b><span>最近一步（PK-5 卸包默认留配置）</span></li>
+    <li><b class="mono">PK-5补</b><span>最近一步（PK-5补 卸包也留配置里的设置项）</span></li>
   </ul>
 </header>
 
@@ -532,6 +532,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step done" href="#sPK2"><span class="n">PK-2</span>依赖的版本下限<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPK4"><span class="n">PK-4</span>卸包说清状态目录<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sPK5"><span class="n">PK-5</span>卸包默认留配置<span class="st">✓</span></a></li>
+        <li><a class="step done" href="#sPK5b"><span class="n">PK-5补</span>卸包也留配置里的设置项<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1a"><span class="n">MN-1 上</span>后台命令出一行就叫醒她<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sMN1b"><span class="n">MN-1 下</span>监视的命令在视图流里<span class="st">✓</span></a></li>
         <li><a class="step done" href="#sSH1a"><span class="n">SH-1 上</span>人在输入框里用 ! 跑命令<span class="st">✓</span></a></li>
@@ -12926,6 +12927,61 @@ a.step:hover{border-color:var(--primary)}
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>docs/construction/PK-5-卸包留配置.md</code>；蓝图 <code>packages.md</code>「装卸」第 7、8 条，<code>cli/pkg.md</code>、<code>protocol.md</code>；参考 <code>packages.md</code>（中英）；作者文档 <code>README.md</code>、<code>extensions.md</code>（中英）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="sPK5b" aria-labelledby="h-sPK5b">
+  <div class="sheet-head"><h2 id="h-sPK5b"><span class="no">PK-5补</span>卸包也留配置里的设置项</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">PK-5 只留了配置目录，<code>etc/config.toml</code> 里这个包的设置项还是一卸就删。项目主人改了推荐：设置项也照 pacman 留着，<code>--purge</code> 才删；留下的不生效、不报不认识，重装照原样生效。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">卸包也留设置项</span><span class="dir-note">PK-5补</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>端点 <code>packages/remove.rs</code>（从 <code>manage.rs</code> 挪出来）：设置项只在 <code>purge</code> 时删；你装的包留了设置的记 <code>etc/leftover/&lt;编号&gt;.toml</code>（<code>DataRoot::leftover_settings</code>，一行 <code>prefix</code>）；出厂的、系统加装的、下面一层有同编号（被盖住）的不记；重装、<code>purge</code> 删记号</li>
+              <li>配置服务 <code>config/left.rs</code>：手里一份「前缀 → 留下它的包」（卸掉的出厂包加记号，装着的不算），起来时 <code>Config::load_leaving</code> 交进来、装卸后同清单一起换；解析出的 <code>unknown_key</code> 第一段是它的拿掉、另记</li>
+              <li><code>check</code>：一个包一条警告 <code>settings_left</code>「有 N 项是已经卸掉的 &lt;编号&gt; 留下的设置…」，中英日</li>
+              <li>看一眼 <code>config: {path?, kept, settings?}</code>；顶上的 <code>settings</code> 只有 <code>purge</code> 的列；命令行「配置留在 &lt;路径&gt;，另有 N 项设置」「N 项设置留在配置里」</li>
+              <li>没装、还留着东西的编号 <code>--purge</code>：只删设置项、<code>etc/&lt;编号&gt;/</code>、记号，看一眼照常</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">设置项也照 pacman 留，<code>--purge</code> 才删</span><span class="rl">主人 11-05 改推荐</span></div>
+          <div class="tile new"><span class="nm">记号放 <code>etc/leftover/&lt;编号&gt;.toml</code>，不借 <code>etc/removed/</code></span><span class="rl">core1 定，抄 sub1</span></div>
+          <div class="tile new"><span class="nm">没装的编号也收 <code>--purge</code>，只删留下的</span><span class="rl">core1 定</span></div>
+          <div class="tile new"><span class="nm"><code>settings_left</code> 用警告级别</span><span class="rl">PK-5补 技术题：头把别的级别算错误</span></div>
+          <div class="tile new"><span class="nm">终端、网页照 <code>config.settings</code> 印</span><span class="rl">合后 core1 通知</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PK-5补</dd></div>
+        <div><dt>名称</dt><dd>卸包也留配置里的设置项</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-05</dd></div>
+        <div><dt>提交</dt><dd class="mono">PK-5补</dd></div>
+        <div><dt>验收</dt><dd>真核心卸了留设置、不生效、<code>check</code> 只说一句、重启一样、重装生效、前缀换了以新的为准、没装的 <code>purge</code>、出厂的照清单认；看一眼、命令行那一屏；变异都逮住；门禁 11 项、CI 六项</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>packages_settings_left.rs</code>：卸了 <code>xcfg.port</code> 原样留着、记号写了前缀、<code>config.get</code> 不认、<code>check</code> 只有一条 <code>settings_left</code>，重启照记号认；重装照原样生效、记号删了；<code>purge</code> 的删；自己写的前缀、换了前缀的重装；没装的 <code>purge</code> 看一眼、只删三样；出厂的不记、照清单认；盖住系统加装的那一份卸了不记、下面的顶上来照样生效</span></li>
+        <li><span class="ok">✓</span><span><code>config/left/tests.rs</code>、<code>settings_left/tests.rs</code>（store）、<code>packages_preview.rs</code>、<code>packages_purge.rs</code>、<code>packages_config.rs</code>、命令行确认屏中英</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>docs/construction/PK-5补-卸包留设置项.md</code>；蓝图 <code>packages.md</code>「装卸」第 4、7、8 条，<code>cli/pkg.md</code>、<code>cli/check.md</code>、<code>protocol.md</code>、<code>store.md</code>；设计 55 第二、三节；参考 <code>packages.md</code>（中英）；作者文档 <code>README.md</code>、<code>manifest.md</code>（中英）。</li>
       </ul>
     </div>
   </div>

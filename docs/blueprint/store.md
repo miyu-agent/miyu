@@ -67,7 +67,7 @@
 | `prepare()` | 建骨架（「怎么走」第 2 条） |
 | `path()` | 数据根本身 |
 | `run()` | `run/` |
-| 各处的方法（`root/places.rs`） | 数据根里每一处在哪，按设计 55 的分块：`config_file()`、`secrets_file()`、`removed_markers()`、`memory_log(人格)`、`journal_file()`、`package_state(编号)`、`script_caches()`、`package_logs(编号)`、`unpack_staging()` 这些；包在各层的那几个目录 `package_places(编号)`（卸包整个删，施工 FH-3） |
+| 各处的方法（`root/places.rs`） | 数据根里每一处在哪，按设计 55 的分块：`config_file()`、`secrets_file()`、`removed_markers()`、`leftover_settings(编号)`、`memory_log(人格)`、`journal_file()`、`package_state(编号)`、`script_caches()`、`package_logs(编号)`、`unpack_staging()` 这些；包在各层的那几个目录 `package_places(编号)`（卸包整个删，施工 FH-3） |
 | `packages()` | `opt/`：装上的软件包 |
 | `own_places()` | `root/scripts/`、`root/skills/`、`root/commands/`、`opt/` 的真实位置：放行出沙盒的文件得落在这几处下面（施工 X-37） |
 | `workspace()` | `root/workspace/` |
@@ -103,6 +103,7 @@
 ├── etc/                        配置：config.toml、trust.toml、extensions.json、kb.toml
 │   ├── private/                凭据：secrets.toml、access.json、logins.json、sandbox-windows.json（Unix 上 0600）
 │   ├── removed/<编号>          卸掉的出厂包的记号（空文件）
+│   ├── leftover/<编号>.toml    你装的包卸了、配置里还留着它的设置项：它的前缀（施工 PK-5补）
 │   └── <编号>/                 包自己的配置
 ├── opt/<编号>/                 装上的软件包；装、升级时的暂存 .<编号>.new/、备份 .<编号>.old/
 ├── root/                       你的东西
@@ -126,7 +127,7 @@
 └── run/                        core.lock、spawn.lock、token、socket（core.sock）；写数据根里配置、密钥时的临时文件；<编号>/ 包自己的锁、地址（网页的 miyu-webui/lock、address、open/）
 ```
 
-- 包的编号不能是核心在这几层自己用的名字（`root::RESERVED`：private removed models packages mcp index config provide scripts personas mermaid sandbox perf unpack token socket log-salt）：读清单时报 `reserved_id`，装的时候拒（施工 FH-3）。
+- 包的编号不能是核心在这几层自己用的名字（`root::RESERVED`：private removed leftover models packages mcp index config provide scripts personas mermaid sandbox perf unpack token socket log-salt）：读清单时报 `reserved_id`，装的时候拒（施工 FH-3）。
 - 这一页的代码新建的目录，Unix 上权限都是 0700；已经有的不改。Windows 上照系统默认的，靠用户目录本身的访问控制。
 - 这一页的代码新建的文件（标记、段、blob、临时文件、配置文件、日志）照系统默认的权限建，靠上面 0700 的目录挡住别人。替换已经有的配置文件时带上它原来的权限位（施工 8-3）。
 - 核心起来时建好设计 55 第五节第 2 条那张表（`DataRoot::prepare_private`，施工 R3-1 补、FH-3，`core.md`「起来的先后」第 5 条），沙盒里每条命令起来前再补一遍：Windows 的沙盒只禁命令起来那一刻已有的，命令跑着时第一次建的整棵读得到。别的照旧用到时再建。

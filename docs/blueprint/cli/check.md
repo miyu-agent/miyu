@@ -32,6 +32,7 @@
 1. 连核心、握手照 `miyu config`（`cli/config.md` 第 1、2 条），给人看的字照回应的 `language`。
 2. 问 `check`，带当前目录当 `cwd`，写了文件的带 `file`（绝对路径）。
 3. 标准输出上一处一行：`<文件>:<行>:<列> <级别>：<那一句>`，人格的只到行；文件在家目录下的写成 `~/…`、数据根里的接上数据根；「错误」红、「警告」黄。然后一行合计，没有问题的印「没有问题」（英文 `no problems`）。
+   - 已经卸掉的包留在配置里的设置项（施工 PK-5补，2026-11-05 项目主人定卸包照 pacman 留着）：不当不认识的键报，核心一个包给一条警告，印成「<配置文件> 警告：有 N 项是已经卸掉的 <编号> 留下的设置：重装 <编号> 会照原样生效；不要了用 miyu pkg remove <编号> --purge 删掉」（没有行列；英文 `N settings were left by the removed package <id>: …`，一项的说单数）。字在核心（`config/settings-left`），命令行照印；是警告，退出码不变。
 4. 不写文件的，合计后面印语义模型的状态（施工 R-25，2026-10-20 项目主人定：不另开 `miyu embed`）：头一行「语义模型：<模型>」，后台在补的接「，正在建立索引」；下面一类一行、缩两格：「记忆：<人格> 有/共、…」「历史对话：…」「知识库：<名字> 有/共、…」，没有的那一类不写，无人格的那一间写「无人格」。关着的印「语义模型：已关闭（models.embedding = "off"），仅按关键词搜索」，没装内置语义模型的印「语义模型：未安装，仅按关键词搜索」，下一行「提示：用 'miyu pkg install embed' 安装」（CL-2 下照设计 47 改）。不算问题，退出码照上面。
 
 ### 样子
@@ -57,6 +58,7 @@ $ miyu check
 | `crates/miyu/tests/config.rs` | 真核心：全部查、只查一份（照位置认层）、人格写错的那一行、认不出的文件退出码 1、`--format json` |
 | `crates/miyu/tests/login.rs` | 密钥文件写错的那一行，不带值；只查密钥文件的只印它 |
 | `crates/miyu-endpoint/tests/check.rs` | 核心的 `check`（`protocol.md`） |
+| `crates/miyu-endpoint/tests/packages_settings_left.rs` | 卸掉的包留下的设置项不报不认识、一个包一条 `settings_left`，重启也一样，重装、`--purge` 以后不再说（施工 PK-5补） |
 | `crates/miyu-endpoint/tests/check_embedding.rs` | 回应的 `embedding`：真小模型补齐了的样子、关着和没装的为什么、没接照意思那一路的不带、只查一份的不带（施工 R-25） |
 | `crates/miyu-cli/src/language/embedding.rs` 的测试 | 那一段的写法：一类一行、空的不写、无人格、补着、关着、没装（施工 R-25） |
 | `crates/miyu-cli/src/help/tests.rs` | 帮助页和参数对得上、80 列、文件和编进去的一样 |

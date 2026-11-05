@@ -124,7 +124,7 @@ Makes it an extension; needs `[command]`.
 
 ## `[settings.<name>]`
 
-One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: an extension gets the values in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)); a package with only scripts reads them from the environment variable `MIYU_SETTINGS_JSON` (see [Scripts and skills](scripts-skills.en.md)).
+One table per setting; the key is `<prefix>.<name>` (see `prefix` above; without it, the package id). To group many settings, add one level: `[settings.<group>.<name>]` gives `<prefix>.<group>.<name>` (for example `im.qq.listen`); only one extra level, and a setting in a group can't be called `type` or `name`. The settings screen's Packages page has a group for you. **Don't read config files yourself**: an extension gets the values in the handshake and changes are pushed (see [Writing an extension](extensions.en.md)); a package with only scripts reads them from the environment variable `MIYU_SETTINGS_JSON` (see [Scripts and skills](scripts-skills.en.md)). Values people wrote in the config are kept on removal, as pacman does (they take no effect, and `miyu check` only notes your package left them); a reinstall uses them as they were, and only `miyu pkg remove --purge` deletes them.
 
 | Field | Notes |
 |---|---|
