@@ -178,6 +178,23 @@ async fn off_bases_and_a_preset_without_knowledge_bring_nothing() {
     assert!(recalled(&log).is_empty(), "预设关了知识库的不带");
 }
 
+/// 照意思那一路最多试几轮：每轮那一家各回一个向量，剧本各答一句。
+const TRIES: usize = 20;
+
+/// 同一句话从第 `turn` 轮起一直说，说到这一轮带出了东西为止，交回那一轮的日志；[`TRIES`] 轮都没带出来的算红（施工 FL-5）。
+/// 照意思那一路产品只等 `MEANING`（200 毫秒，从自动想起开始数）：每一轮都要现读段、现问那一家（问句的向量不留）、现找最像的，
+/// Windows 的 CI 上几百条测试并着跑时会一连几轮都过，那几轮照规矩只走标题名（这句话里没有）。原来只多说一轮（当头一轮冷、第二轮
+/// 就热），SD-1补 分支 run 42007924983 两轮都没赶上。等的是带出来这件事，不睡定时。
+async fn until_recalled(home: &Home, handle: &Handle, turn: usize, words: &str) -> Vec<Event> {
+    for turn in turn..turn + TRIES {
+        let log = chat(home, handle, turn, words).await;
+        if !recalled(&log).is_empty() {
+            return log;
+        }
+    }
+    panic!("{TRIES} 轮照意思那一路都没赶上");
+}
+
 /// 库 `world` 每一段都补上远程那个模型的向量：前两段同那一家回的（什么都挺像），后面的跟它垂直（一点都不像）。
 fn filled(home: &Home) {
     home.knowledge.list().expect("补得了");
@@ -206,7 +223,7 @@ async fn by_meaning_over_the_threshold_and_only_for_a_model_in_the_table() {
     assert!(server.received().is_empty(), "不问那一家");
 
     // 门槛表里有它：像过门槛的带，不像的不带。
-    let server = Server::start((0..10).map(|_| vector(true)).collect()).await;
+    let server = Server::start((0..TRIES).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
     let resources = copy_resources(&mut home);
@@ -217,13 +234,8 @@ async fn by_meaning_over_the_threshold_and_only_for_a_model_in_the_table() {
     .expect("写得进");
     world(&home, "auto = true\n", people);
     filled(&home);
-    let handle = session(&home, 2, Lines::default()).await;
-    let mut log = chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
-    // 头一轮冷：Windows 的 CI 上头一回连那一家、读索引会过 `MEANING`，照规矩这一轮只走标题名（这句话里没有）。同一句再说
-    // 一轮，热了以后照意思那一路赶得上；头一轮没交过，第二轮照样交得出。
-    if recalled(&log).is_empty() {
-        log = chat(&home, &handle, 2, "那个守灯的姑娘怕什么").await;
-    }
+    let handle = session(&home, TRIES, Lines::default()).await;
+    let log = until_recalled(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
     let blocks = recalled(&log);
     assert_eq!(blocks.len(), 1, "{log:#?}");
     assert_eq!(
@@ -238,7 +250,8 @@ async fn by_meaning_over_the_threshold_and_only_for_a_model_in_the_table() {
 async fn recall_fills_the_vectors_itself() {
     // 她不搜也补得上：开头库里还没有向量，头一轮起了后台补；补上以后下一轮换了说法也带得上。头一轮带不带看谁快（后台补和
     // 照意思那一路并着问同一家），不断言：原来断言头一轮不带，macOS 的 CI 上补得比问得快，偶发红。
-    let server = Server::start((0..20).map(|_| vector(true)).collect()).await;
+    // 补段的向量一段一问，加上照意思那一路每轮一问。
+    let server = Server::start((0..TRIES + 20).map(|_| vector(true)).collect()).await;
     let mut home = Home::new();
     remote(&mut home, &server);
     let resources = copy_resources(&mut home);
@@ -257,7 +270,7 @@ async fn recall_fills_the_vectors_itself() {
         !index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
         "开头还没有向量"
     );
-    let handle = session(&home, 3, Lines::default()).await;
+    let handle = session(&home, 1 + TRIES, Lines::default()).await;
     chat(&home, &handle, 1, "那个守灯的姑娘怕什么").await;
     for _ in 0..600 {
         if index.missing(MODEL, 0, 10).expect("读得了").is_empty() {
@@ -269,12 +282,8 @@ async fn recall_fills_the_vectors_itself() {
         index.missing(MODEL, 0, 10).expect("读得了").is_empty(),
         "后台补上了"
     );
-    let mut log = chat(&home, &handle, 2, "那个守灯的姑娘到底怕什么").await;
-    // 这一轮照意思那一路也会冷：Windows 的 CI 上头一回走这条路的那一问会过 `MEANING`（2026-10-22 run 39673453755），照规矩只走
-    // 标题名（这句话里没有）。同 `by_meaning_over_the_threshold_and_only_for_a_model_in_the_table`：同一句再说一轮，热了赶得上。
-    if recalled(&log).is_empty() {
-        log = chat(&home, &handle, 3, "那个守灯的姑娘到底怕什么").await;
-    }
+    // 照意思那一路也会过 `MEANING`（2026-10-22 run 39673453755 就是）：同 `until_recalled`。
+    let log = until_recalled(&home, &handle, 2, "那个守灯的姑娘到底怕什么").await;
     assert_eq!(recalled(&log)[0].refs, ["world/people.md#0"]);
 }
 
