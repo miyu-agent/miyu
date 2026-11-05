@@ -364,8 +364,12 @@ fn entry_of(
             .iter()
             .flat_map(|process| process.capabilities.iter().map(|c| c.as_str().to_string()))
             .collect(),
-        depends: manifest.depends.clone(),
-        recommends: manifest.recommends.clone(),
+        depends: manifest.depends.iter().map(ToString::to_string).collect(),
+        recommends: manifest
+            .recommends
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
         author: manifest.author.clone(),
         upstream: manifest.upstream.clone(),
         installed: None,

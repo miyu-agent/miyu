@@ -1,7 +1,7 @@
 //! 种类多的两种、必需、平台接入、依赖、小程序（施工 F-1，设计 30 第二节、第五节、第六节）：读成什么；写在不给的种类里、写错
 //! 了报哪个代码、第几行。
 
-use crate::package::{Code, Connection, PackageKind, Worker, read};
+use crate::package::{Code, Connection, Dependency, PackageKind, Worker, read};
 
 /// 内置模型那种小程序。
 const EMBED: &str = r#"[package]
@@ -85,11 +85,11 @@ fn a_worker_must_name_its_program() {
 fn a_builtin_reads_what_it_recommends_and_depends_on() {
     let manifest = read(MEMORY).unwrap();
     assert_eq!(manifest.kind, PackageKind::Builtin);
-    assert_eq!(manifest.recommends, ["embed"]);
+    assert_eq!(ids(&manifest.recommends), ["embed"]);
     assert!(manifest.depends.is_empty());
     let text = MEMORY.replace("[recommends]", "[depends]");
     let manifest = read(&text).unwrap();
-    assert_eq!(manifest.depends, ["embed"]);
+    assert_eq!(ids(&manifest.depends), ["embed"]);
     assert!(manifest.recommends.is_empty());
 }
 
@@ -103,6 +103,48 @@ fn dependencies_are_package_ids_listed_once() {
     assert_eq!(wrong(&text), (Code::NotTexts, Some(6)));
     let text = MEMORY.replace("workers = [\"embed\"]", "tools = [\"embed\"]");
     assert_eq!(wrong(&text), (Code::UnknownKey, Some(6)));
+}
+
+/// 依赖、推荐的编号，照写的先后。
+fn ids(listed: &[Dependency]) -> Vec<&str> {
+    listed.iter().map(|dep| dep.id.as_str()).collect()
+}
+
+/// 版本下限（施工 PK-2）：`packages` 里写 `<编号>>=<版本>`，照写的原样留着；别的写法、`workers` 里带下限的、同一个编号带不带
+/// 下限写了两次的都是 `bad_dependency`，报在那一格。
+#[test]
+fn packages_may_carry_a_version_floor() {
+    let text = format!(
+        "{BRIDGE}\n[depends]\npackages = [\"core-x>=1.2.0\", \"plain\"]\n\n[recommends]\npackages = [\"extra>=0.1.0-rc.1\"]\n"
+    );
+    let manifest = read(&text).unwrap();
+    assert_eq!(
+        manifest.depends,
+        [
+            Dependency {
+                id: "core-x".to_string(),
+                at_least: Some("1.2.0".to_string())
+            },
+            Dependency {
+                id: "plain".to_string(),
+                at_least: None
+            },
+        ]
+    );
+    assert_eq!(manifest.recommends[0].to_string(), "extra>=0.1.0-rc.1");
+    for bad in [
+        "packages = [\"x>=1.2\"]",
+        "packages = [\"x>1.2.0\"]",
+        "packages = [\"x=1.2.0\"]",
+        "packages = [\"x <= 1.2.0\"]",
+        "packages = [\"x>=1.2.0\", \"x\"]",
+        "packages = [\"x\"]\nworkers = [\"x>=1.0.0\"]",
+        "workers = [\"y>=1.0.0\"]",
+    ] {
+        let text = format!("{BRIDGE}\n[depends]\n{bad}\n");
+        let line = 17 + bad.matches('\n').count();
+        assert_eq!(wrong(&text), (Code::BadDependency, Some(line)), "{bad}");
+    }
 }
 
 #[test]
@@ -178,7 +220,11 @@ fn each_kind_writes_only_its_own_tables() {
         );
     }
     let depends = read(&format!("{EMBED}\n[depends]\npackages = [\"x\"]\n")).unwrap();
-    assert_eq!(depends.depends, ["x"], "小程序也能写依赖（施工 F-11）");
+    assert_eq!(
+        ids(&depends.depends),
+        ["x"],
+        "小程序也能写依赖（施工 F-11）"
+    );
     for extra in [command, &check, settings, connection] {
         assert_eq!(
             wrong(&format!("{EMBED}{extra}")).0,

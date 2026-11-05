@@ -55,7 +55,7 @@ pub fn find(env: &Env, found: &[&Found]) -> Result<EmbedSetup, Missing> {
             .and_then(|found| found.read.as_ref().ok().map(|read| (*found, read)))
     };
     let (_, memory) = manifest(miyu_memory::PACKAGE).ok_or(Missing::Wanted)?;
-    if !memory.recommends.iter().any(|worker| worker == WORKER) {
+    if !memory.recommends.iter().any(|worker| worker.id == WORKER) {
         return Err(Missing::Wanted);
     }
     // 有 `[worker]` 的就是小程序：清单的读法管着（小程序必写，别的种类不能写）。

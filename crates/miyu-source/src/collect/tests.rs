@@ -404,7 +404,7 @@ fn size_on_disk(scratch: &Scratch, name: &str, bytes: &[u8]) -> u64 {
 fn recommends_author_upstream_and_installed_size_come_from_the_package() {
     let scratch = Scratch::new();
     let mut net = Net::default();
-    let more = "author = \"Ann\"\nupstream = \"https://example.invalid/ann/stickers\"\n\n[recommends]\npackages = [\"zeta\", \"alpha\"]\n";
+    let more = "author = \"Ann\"\nupstream = \"https://example.invalid/ann/stickers\"\n\n[recommends]\npackages = [\"zeta\", \"alpha>=1.2.0\"]\n\n[depends]\npackages = [\"memes>=0.3.0-rc.1\"]\n";
     let (name, bytes) = package(scratch.path(), "stickers", "1.0.0", more, None);
     let expected = size_on_disk(&scratch, &name, &bytes);
     net.release("miyu-agent/miyu-stickers", &[(name, bytes)]);
@@ -417,7 +417,9 @@ fn recommends_author_upstream_and_installed_size_come_from_the_package() {
     );
     assert_eq!(got.index.packages.len(), 1, "{:?}", got.notes);
     let entry = &got.index.packages[0];
-    assert_eq!(entry.recommends, ["zeta", "alpha"], "照写的先后");
+    // 照写的先后、原样：版本下限也照带（施工 PK-2）。
+    assert_eq!(entry.recommends, ["zeta", "alpha>=1.2.0"]);
+    assert_eq!(entry.depends, ["memes>=0.3.0-rc.1"]);
     assert_eq!(entry.author.as_deref(), Some("Ann"));
     assert_eq!(
         entry.upstream.as_deref(),

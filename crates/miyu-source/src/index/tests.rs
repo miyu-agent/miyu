@@ -150,6 +150,11 @@ fn entries_whose_id_or_version_is_not_a_plain_name_are_dropped() {
         entry("colon", "1:0", &[], &[]),
         entry("depends", "1.0", &["../lib"], &[]),
         entry("recommends", "1.0", &[], &["a/b"]),
+        // 版本下限（施工 PK-2）：照清单的写法，只认 `>=`、版本照 semver。
+        entry("floors", "1.0", &["lib>=1.2.0"], &["extra>=0.1.0-rc.1"]),
+        entry("loose", "1.0", &["lib>=1.2"], &[]),
+        entry("other-op", "1.0", &[], &["extra>1.0.0"]),
+        entry("floor-escape", "1.0", &["../lib>=1.0.0"], &[]),
     ];
     let text = serde_json::json!({"version": 1, "generated": "2026-10-19T03:00:00Z", "packages": packages});
     let index = Index::parse(text.to_string().as_bytes()).expect("读得成");
@@ -158,7 +163,15 @@ fn entries_whose_id_or_version_is_not_a_plain_name_are_dropped() {
         .iter()
         .map(|entry| entry.id.as_str())
         .collect();
-    assert_eq!(ids, ["good"]);
+    assert_eq!(ids, ["good", "floors"]);
+    let floors = index.entry("floors").expect("有");
+    assert_eq!(floors.depends, ["lib>=1.2.0"], "照原样");
+    let depends = floors.depends_on();
+    assert_eq!(
+        (depends[0].id.as_str(), depends[0].at_least.as_deref()),
+        ("lib", Some("1.2.0"))
+    );
+    assert_eq!(floors.recommended()[0].to_string(), "extra>=0.1.0-rc.1");
 }
 
 /// 下载量和排序（施工 DL-1，设计 54 第一、三节）：每一条多 `published`（这一版第一次进索引的时刻）、`downloads`（各版本、各系统

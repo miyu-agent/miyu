@@ -13,6 +13,7 @@ mod code;
 mod command;
 mod content;
 mod credits;
+mod depend;
 mod features;
 mod fields;
 pub mod groups;
@@ -36,6 +37,7 @@ mod widget;
 pub use capability::Capability;
 pub use code::Code;
 pub use content::Content;
+pub use depend::Dependency;
 pub use features::Feature;
 pub use links::{Connection, Worker};
 pub use look::{LOGO_MAX_BYTES, LOGO_MAX_SIDE};
@@ -89,10 +91,10 @@ pub struct Manifest {
     pub features: Option<Vec<Feature>>,
     /// 平台接入（施工 F-1）：只有扩展包能写。
     pub connection: Option<Connection>,
-    /// 依赖的包（施工 F-1，F-11 起什么种类都行）：缺了的装不上、装着的不起；包编号，照写的先后。
-    pub depends: Vec<String>,
+    /// 依赖的包（施工 F-1，F-11 起什么种类都行）：缺了的、版本不够的（施工 PK-2）装不上、装着的不起；照写的先后。
+    pub depends: Vec<Dependency>,
     /// 推荐的包（施工 F-1，F-11 起什么种类都行）：缺了照装、照起，少一部分本事。
-    pub recommends: Vec<String>,
+    pub recommends: Vec<Dependency>,
     /// 小程序怎么拉起（`kind = "worker"`，施工 F-1）。
     pub worker: Option<Worker>,
     /// 图标（施工 F-6 上）：Lucide 的图标名，只查过写法；没写的没有。

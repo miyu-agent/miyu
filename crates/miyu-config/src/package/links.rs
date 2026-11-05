@@ -1,8 +1,9 @@
 //! 包和别处的几条连线（施工 F-1，设计 `30-插件框架.md` 第五节、第六节，`docs/blueprint/packages.md`「格式」）：平台接入
-//! `[connection]`、依赖的包 `[depends]`、`[recommends]`（施工 F-11 起什么种类都行）、小程序自己的 `[worker]`。
+//! `[connection]`、依赖的包 `[depends]`、`[recommends]`（施工 F-11 起什么种类都行，PK-2 起能带版本下限）、小程序自己的 `[worker]`。
 
 use toml_edit::{Item, TableLike};
 
+use super::depend::Dependency;
 use super::reader::{Reader, program_name};
 use super::{Code, Problem};
 use crate::secret::valid_name;
@@ -68,30 +69,35 @@ pub(super) fn connection(
     Ok(Connection { platforms })
 }
 
-/// `[depends]`、`[recommends]`（`name` 是哪一张）：`packages` 是别的包的编号，什么种类都行（施工 F-11，照 pacman 只有一份包名）；
-/// 以前写的 `workers` 照样认，读进同一份。不重复；没写的是空的。
+/// `[depends]`、`[recommends]`（`name` 是哪一张）：`packages` 是别的包的编号，什么种类都行（施工 F-11，照 pacman 只有一份包名），
+/// 施工 PK-2 起能带版本下限 `<编号>>=<版本>`（[`Dependency::parse`]）；以前写的 `workers` 照样认、读进同一份，只写编号。同一个
+/// 编号不写两次（带不带下限都算）；没写的是空的。
 pub(super) fn dependencies(
     reader: &Reader<'_>,
     table: &dyn TableLike,
     name: &str,
-) -> Result<Vec<String>, Problem> {
+) -> Result<Vec<Dependency>, Problem> {
     reader.only(table, name, super::fields::LINKS)?;
-    let mut listed: Vec<String> = Vec::new();
+    let mut listed: Vec<Dependency> = Vec::new();
     for key in ["packages", "workers"] {
-        for id in reader.texts(table, name, key)? {
-            let why = if !valid_name(&id) {
-                "is not a package id"
-            } else if listed.contains(&id) {
-                "is listed twice"
-            } else {
-                listed.push(id);
-                continue;
+        for written in reader.texts(table, name, key)? {
+            let why = match Dependency::parse(&written) {
+                Some(dep) if key == "workers" && dep.at_least.is_some() => "is not a package id",
+                Some(dep) if listed.iter().any(|seen| seen.id == dep.id) => "is listed twice",
+                Some(dep) => {
+                    listed.push(dep);
+                    continue;
+                }
+                None if written.contains(">=") => {
+                    "is not a package id followed by >= and a version like 1.2.0"
+                }
+                None => "is not a package id",
             };
             return Err(reader.problem(
                 table.get(key),
                 Code::BadDependency,
-                &id,
-                format!("{name}.{key}: {id:?} {why}"),
+                &written,
+                format!("{name}.{key}: {written:?} {why}"),
             ));
         }
     }

@@ -13,7 +13,12 @@ fn memory_recommends_the_embed_package_that_is_not_shipped() {
         .join(miyu_memory::PACKAGE)
         .join("package.toml");
     let memory = read(&std::fs::read_to_string(&memory).expect("出厂有")).expect("写法对");
-    assert_eq!(memory.recommends, ["miyu-embed"]);
+    assert_eq!(memory.recommends.len(), 1);
+    assert_eq!(
+        memory.recommends[0].to_string(),
+        "miyu-embed",
+        "不带版本下限"
+    );
     assert!(memory.depends.is_empty(), "推荐，不是缺了不起");
     assert!(
         !resources()

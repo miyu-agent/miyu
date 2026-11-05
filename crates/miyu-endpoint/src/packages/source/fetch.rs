@@ -1,7 +1,9 @@
 //! 从软件源装（施工 G-4 上，设计 `37-软件源.md` 第四节第 4 条）：`package.install {"source": "<编号>", "preview"?}`。
 //!
 //! - 先照 [`super::sync`] 拿索引；编号不在索引里的 `unknown_package`。
-//! - 依赖照 pacman 自动补：缺的依赖从索引里一起装，先装依赖；索引里也没有的 `depends_missing`（`data.missing`）。
+//! - 依赖照 pacman 自动补：缺的依赖从索引里一起装，先装依赖；索引里也没有的 `depends_missing`（`data.missing`）。依赖带版本
+//!   下限的（施工 PK-2）照下限挑：装着的版本够的不动，不够的、没装的照先后找第一个版本够的源一起装（装着的就是一起升），
+//!   哪个源都不够的同缺了，`data.missing` 照写的原样（`<编号>>=<版本>`）。
 //! - 每个包挑本机能用的那个文件（不分系统的、或者写了本机这一种的），没有的 `wrong_target`。
 //! - 看一眼只照索引说要装哪几个、要下多大、装好以后多大、推荐的还没装的有哪些（施工 IN-3），不下载。
 //! - 真装：一次只装一件（`core.packaging`）。照 pacman 分三段（施工 IN-3，设计 `49-装包照pacman.md` 第二节）：先一个一个下完
@@ -9,7 +11,7 @@
 //!   来源仓库；每段的进度推 `package.progress` 给发起的连接（[`super::super::progress`]）。下不成、核对不过的
 //!   `download_failed`（`data.why` 是每一处的原因），一个都不装；装到一半出错的，前面装好的留着。
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use serde::Deserialize;
@@ -118,7 +120,17 @@ pub(crate) async fn install(
     }
     let indexes = chosen(core, &params).await?;
     let seen = core.system_packages();
-    let installed: BTreeSet<String> = seen.iter().map(|found| found.id.clone()).collect();
+    let installed: Installed = seen
+        .iter()
+        .map(|found| {
+            let version = found
+                .read
+                .as_ref()
+                .ok()
+                .and_then(|read| read.version.clone());
+            (found.id.clone(), version)
+        })
+        .collect();
     let steps = plan(&indexes, &params.source, &installed)?;
     if params.preview {
         return Ok(super::glance::preview(
@@ -235,30 +247,29 @@ pub(crate) async fn found(
     Err(failed.unwrap_or(Refusal::UNKNOWN_PACKAGE))
 }
 
-/// 照依赖排好先后：依赖在前，要装的那个最后；装着的依赖不再装。要装的照 `indexes` 头一个找，依赖照先后找。
+/// 装着的包：编号到清单写的版本（没写的、读坏了的是空的），照它看依赖的版本下限够不够（施工 PK-2）。
+type Installed = BTreeMap<String, Option<String>>;
+
+/// 照依赖排好先后：依赖在前，要装的那个最后；装着的、版本够的依赖不再装。要装的照 `indexes` 头一个找，依赖照先后找。
 fn plan<'a>(
     indexes: &'a Indexes,
     id: &str,
-    installed: &BTreeSet<String>,
+    installed: &Installed,
 ) -> Result<Vec<Step<'a>>, Refusal> {
     let (feed, index) = indexes.first().ok_or(Refusal::UNKNOWN_PACKAGE)?;
     let target = index.entry(id).ok_or(Refusal::UNKNOWN_PACKAGE)?;
-    let mut order: Vec<(&Feed, &Entry)> = Vec::new();
-    let mut missing: Vec<String> = Vec::new();
-    let mut seen: BTreeSet<String> = BTreeSet::new();
-    visit(
+    let mut walk = Walk {
         indexes,
-        (feed, target),
         installed,
-        &mut seen,
-        &mut order,
-        &mut missing,
-    );
-    if !missing.is_empty() {
-        let missing: Vec<&str> = missing.iter().map(String::as_str).collect();
-        return Err(Refusal::depends_missing(&missing));
+        seen: BTreeSet::new(),
+        order: Vec::new(),
+        missing: Vec::new(),
+    };
+    walk.visit((feed, target));
+    if !walk.missing.is_empty() {
+        return Err(Refusal::depends_missing(&walk.missing));
     }
-    order
+    walk.order
         .into_iter()
         .map(|(feed, entry)| {
             let file = pick(entry).ok_or(Refusal::WRONG_TARGET)?;
@@ -273,32 +284,54 @@ fn plan<'a>(
         .collect()
 }
 
-/// 深度优先：先排它的依赖，再排它自己；排过的、装着的依赖跳过（依赖成环的也停得下来）。
-fn visit<'a>(
+/// 排依赖时手里的：找的几个源、装着的，排过的编号、排好的先后、缺的（照写的原样）。
+struct Walk<'a, 'i> {
     indexes: &'a Indexes,
-    (feed, entry): (&'a Feed, &'a Entry),
-    installed: &BTreeSet<String>,
-    seen: &mut BTreeSet<String>,
-    order: &mut Vec<(&'a Feed, &'a Entry)>,
-    missing: &mut Vec<String>,
-) {
-    if !seen.insert(entry.id.clone()) {
-        return;
-    }
-    for dep in &entry.depends {
-        if installed.contains(dep) || seen.contains(dep) {
-            continue;
+    installed: &'i Installed,
+    seen: BTreeSet<String>,
+    order: Vec<(&'a Feed, &'a Entry)>,
+    missing: Vec<String>,
+}
+
+impl<'a> Walk<'a, '_> {
+    /// 深度优先：先排它的依赖，再排它自己；排过的、装着的版本够的依赖跳过（依赖成环的也停得下来）。
+    fn visit(&mut self, (feed, entry): (&'a Feed, &'a Entry)) {
+        if !self.seen.insert(entry.id.clone()) {
+            return;
         }
-        let found = indexes
-            .iter()
-            .find_map(|(feed, index)| Some((feed, index.entry(dep)?)));
-        match found {
-            Some(found) => visit(indexes, found, installed, seen, order, missing),
-            None if !missing.contains(dep) => missing.push(dep.clone()),
-            None => {}
+        for dep in entry.depends_on() {
+            let have = self.installed.get(&dep.id);
+            if have.is_some_and(|version| dep.fits(version.as_deref())) {
+                continue;
+            }
+            if self.seen.contains(&dep.id) {
+                // 排过的照排进去的那一份比；还在排的（成环）当够。
+                let planned = self.order.iter().find(|(_, one)| one.id == dep.id);
+                if planned.is_none_or(|(_, one)| dep.fits(Some(&one.version))) {
+                    continue;
+                }
+                self.lack(dep.to_string());
+                continue;
+            }
+            // 没装的、装着不够的：照先后找第一个版本够的（施工 PK-2，索引里每个源只列最新的一版）。
+            let found = self.indexes.iter().find_map(|(feed, index)| {
+                let one = index.entry(&dep.id)?;
+                dep.fits(Some(&one.version)).then_some((feed, one))
+            });
+            match found {
+                Some(found) => self.visit(found),
+                None => self.lack(dep.to_string()),
+            }
+        }
+        self.order.push((feed, entry));
+    }
+
+    /// 记一个缺的，不重复。
+    fn lack(&mut self, written: String) {
+        if !self.missing.contains(&written) {
+            self.missing.push(written);
         }
     }
-    order.push((feed, entry));
 }
 
 /// 本机能用的那个文件：写了本机这一种的先，不分系统的其次。

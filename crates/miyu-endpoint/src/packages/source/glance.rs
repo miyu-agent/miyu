@@ -56,17 +56,27 @@ pub(super) fn preview(
     answer
 }
 
-/// 要装的几个推荐的、还没装的、这一次也不装的，去重，照要装的先后、各自写的先后：编号、版本、本机那份文件多大、装好以后多大
-/// （索引写了的）。索引里找不到的、没有本机能用的文件的不列。
+/// 要装的几个推荐的、还没装的（装着的版本不够下限的也算，施工 PK-2）、这一次也不装的，去重，照要装的先后、各自写的先后：编号、
+/// 版本、本机那份文件多大、装好以后多大（索引写了的）。索引里找不到的、版本不够下限的、没有本机能用的文件的不列。
 fn recommends(indexes: &Indexes, steps: &[Step<'_>], now: &[Found]) -> Vec<Value> {
-    let mut skip: BTreeSet<&str> = now.iter().map(|one| one.id.as_str()).collect();
-    skip.extend(steps.iter().map(|step| step.entry.id.as_str()));
+    let mut skip: BTreeSet<String> = steps.iter().map(|step| step.entry.id.clone()).collect();
     let mut listed = Vec::new();
-    for id in steps.iter().flat_map(|step| &step.entry.recommends) {
-        if !skip.insert(id.as_str()) {
+    for dep in steps.iter().flat_map(|step| step.entry.recommended()) {
+        let enough = now.iter().any(|one| {
+            let version = one
+                .read
+                .as_ref()
+                .ok()
+                .and_then(|read| read.version.as_deref());
+            one.id == dep.id && dep.fits(version)
+        });
+        if enough || !skip.insert(dep.id.clone()) {
             continue;
         }
-        let Some(entry) = indexes.iter().find_map(|(_, index)| index.entry(id)) else {
+        let Some(entry) = indexes.iter().find_map(|(_, index)| {
+            let entry = index.entry(&dep.id)?;
+            dep.fits(Some(&entry.version)).then_some(entry)
+        }) else {
             continue;
         };
         if let Some(one) = recommended(entry) {

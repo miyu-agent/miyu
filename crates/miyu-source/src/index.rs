@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use jiff::Timestamp;
+use miyu_config::package::Dependency;
 use serde::{Deserialize, Serialize};
 
 /// 认得的索引版本。
@@ -64,10 +65,11 @@ pub struct Entry {
     /// 扩展要的能力。
     #[serde(default)]
     pub capabilities: Vec<String>,
-    /// 依赖的包的编号。
+    /// 依赖的包：清单 `[depends]` 的原样，照写的先后，编号或者带版本下限的 `<编号>>=<版本>`（施工 PK-2，读成
+    /// [`Entry::depends_on`]）。
     #[serde(default)]
     pub depends: Vec<String>,
-    /// 推荐的包的编号（施工 IN-1）：清单 `[recommends]` 的原样，照写的先后。没写的、以前生成的索引没有。
+    /// 推荐的包（施工 IN-1）：清单 `[recommends]` 的原样，照写的先后，写法同 `depends`。没写的、以前生成的索引没有。
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub recommends: Vec<String>,
     /// 作者（施工 IN-1）：清单 `[package] author` 的原样；没写的、以前生成的索引没有。
@@ -111,15 +113,37 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// 写法对不对（施工 AS-2）：编号、依赖、推荐照包编号的写法（`plain_id`），版本只许字母、数字、`.`、`_`、`+`、`-`、
-    /// 不以 `.` 开头、最多 64 个。编号、版本要拼进缓存里的文件名（`<编号>-<版本>.miyu`），别人的软件源写的索引不全信：带
-    /// `/`、`..`、`\` 的能让下载落到缓存外面。同 [`Logo::well_formed`]，读索引时不合的整条丢掉。
+    /// 写法对不对（施工 AS-2）：编号照包编号的写法（`plain_id`），版本只许字母、数字、`.`、`_`、`+`、`-`、不以 `.` 开头、
+    /// 最多 64 个；依赖、推荐照清单的写法（编号，或者带版本下限的，施工 PK-2 起，[`Dependency::parse`]）。编号、版本要拼进缓存
+    /// 里的文件名（`<编号>-<版本>.miyu`），别人的软件源写的索引不全信：带 `/`、`..`、`\` 的能让下载落到缓存外面。同
+    /// [`Logo::well_formed`]，读索引时不合的整条丢掉。
     pub fn well_formed(&self) -> bool {
         plain_id(&self.id)
             && plain_version(&self.version)
-            && self.depends.iter().all(|id| plain_id(id))
-            && self.recommends.iter().all(|id| plain_id(id))
+            && self.depends.iter().all(|dep| linked(dep))
+            && self.recommends.iter().all(|dep| linked(dep))
     }
+
+    /// 依赖的包读成 [`Dependency`]，照写的先后（读索引时写法不对的整条已经丢掉了，这里读不成的跳过）。
+    pub fn depends_on(&self) -> Vec<Dependency> {
+        self.depends
+            .iter()
+            .filter_map(|dep| Dependency::parse(dep))
+            .collect()
+    }
+
+    /// 推荐的包读成 [`Dependency`]，同 [`Entry::depends_on`]。
+    pub fn recommended(&self) -> Vec<Dependency> {
+        self.recommends
+            .iter()
+            .filter_map(|dep| Dependency::parse(dep))
+            .collect()
+    }
+}
+
+/// 依赖、推荐的一项：照清单的写法读得成，编号还要合 `plain_id`（拼文件名的那一份，不跟着清单那边改）。
+fn linked(written: &str) -> bool {
+    Dependency::parse(written).is_some_and(|dep| plain_id(&dep.id))
 }
 
 /// 包编号的写法：小写字母开头，小写字母、数字、`-`、`_`，最多 64 个（同 `miyu_store::personas::valid`，这个 crate 不依赖

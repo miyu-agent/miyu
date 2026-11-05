@@ -194,8 +194,9 @@ impl Refusal {
             serde_json::Value::Array(list),
         )
     }
-    /// 装的包依赖的包没装（施工 F-11）：`data.missing` 是缺的那几个，照清单写的先后。
-    pub(crate) fn depends_missing(missing: &[&str]) -> Refusal {
+    /// 装的包依赖的包没装（施工 F-11）、装着的版本不够（施工 PK-2）：`data.missing` 是缺的那几个，照清单写的先后、写的原样
+    /// （带下限的是 `<编号>>=<版本>`）。
+    pub(crate) fn depends_missing(missing: &[String]) -> Refusal {
         Refusal::with("depends_missing", "missing", serde_json::json!(missing))
     }
 
