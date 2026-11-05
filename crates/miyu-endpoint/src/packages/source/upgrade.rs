@@ -3,8 +3,9 @@
 //! - 只碰从软件源装的：本地库记了来源仓库的（施工 G-4 上）；从本机文件夹、包文件装的不碰（照 pacman 的 `-Qm`）。
 //! - 索引里那一版和装着的不一样就升（不比大小：作者撤回新版也跟着回去）；来源仓库和装的时候不一样的不升，报一句；
 //!   `packages.hold` 里的跳过；软件源里没有了的、被拉黑的照用，报一句（第 5 条，装着的人自己定卸不卸）。
-//! - 换就是照从软件源装那一条重装这一个（[`super::fetch`]）：缺的新依赖一起装，设置、状态、开关都留着；新版多要的能力照旧
-//!   要人批了才开（扩展的批准记在 `extensions.json`，核心照它起）。
+//! - 换就是照从软件源装那一条重装这一个（[`super::fetch`]）：缺的新依赖一起装，设置、状态、开关都留着；批过的能力照「来路没变、
+//!   旧的接着用」留着（升级一定是来路没变），新版不再要的去掉，新多要的照 `approve` 批，没批的打开时再批（施工 PK-3 上，
+//!   `approve.rs`）。看一眼的每一项另带 `source`、`feed`、`capabilities`（带 `held`），另有这一次一起装的新依赖 `with`、「注意」。
 //! - 照装的时候记的软件源找（施工 U23 下下，本地库的 `feed`，没记的是官方的）：那个源从配置里删了的、用不了的进 `gone`，
 //!   不换到别的源上同名的包（换源就是换信任的对象）；升也照那个源装。
 
@@ -16,6 +17,8 @@ use serde_json::{Value, json};
 
 use miyu_source::index::Index;
 
+use super::super::approve::Approve;
+use super::super::notice::{self, Item};
 use super::super::packages;
 use super::feeds::OFFICIAL;
 use super::fetch::{self, SourceParams};
@@ -62,14 +65,22 @@ pub(crate) struct UpgradeParams {
     /// 只看一眼。
     #[serde(default)]
     preview: bool,
+    /// 装的时候就批的能力（施工 PK-3 上）：同 `package.install`，升级的、一起装的新依赖各写各的。
+    #[serde(default)]
+    approve: Option<Approve>,
 }
 
 impl UpgradeParams {
-    /// 只升 `only`（没有的是全部），`preview` 的只看一眼（她的工具经端口升，施工 G-6）。
-    pub(crate) fn of(only: Option<String>, preview: bool) -> UpgradeParams {
+    /// 只升 `only`（没有的是全部），`preview` 的只看一眼（她的工具经端口升，施工 G-6）；`approve` 同协议（施工 PK-3 上）。
+    pub(crate) fn of(
+        only: Option<String>,
+        preview: bool,
+        approve: Option<Approve>,
+    ) -> UpgradeParams {
         UpgradeParams {
             packages: only.map(|one| vec![one]),
             preview,
+            approve,
         }
     }
 }
@@ -87,14 +98,15 @@ pub(crate) async fn upgrades(core: &Arc<Core>) -> Result<Value, Refusal> {
     Ok(answer)
 }
 
-/// `package.upgrade`：一个一个换；看一眼的回 `{"upgrades", "download"}`，真换的回 `{"upgraded"}`（都是
-/// `[{"package", "from", "to"}]`）。
+/// `package.upgrade`：一个一个换；看一眼的回 `{"upgrades", "download", "with", "notice"?}`（施工 PK-3 上起 `upgrades` 每一项多
+/// `source`、`feed`、`capabilities`，[`looked`]），真换的回 `{"upgraded"}`（都是 `[{"package", "from", "to"}]`）。
 pub(crate) async fn upgrade(
     core: &Arc<Core>,
     peer: Peer,
     caller: Option<&Reverse>,
     params: UpgradeParams,
 ) -> Result<Value, Refusal> {
+    super::super::approve::valid(params.approve.as_ref())?;
     let synced = super::sync::sync(core, false).await?;
     let indexes = indexes(core, &synced.index).await;
     let (survey, feeds) = survey_core(core, &indexes).await?;
@@ -123,16 +135,82 @@ pub(crate) async fn upgrade(
             .filter_map(fetch::pick)
             .map(|file| file.size)
             .sum();
-        return Ok(json!({"upgrades": rows, "download": download}));
+        let mut answer = looked(core, peer, (&indexes, &feeds), rows).await;
+        answer["download"] = json!(download);
+        return Ok(answer);
     }
     for (id, ..) in &wanted {
-        let params = match feed_of(id) {
+        let one = match feed_of(id) {
             Some(feed) => SourceParams::from(id, &feed),
             None => SourceParams::of(id),
         };
-        fetch::install(core, peer, caller, params).await?;
+        let one = one.approving(params.approve.clone());
+        fetch::install(core, peer, caller, one).await?;
     }
     Ok(json!({"upgraded": rows}))
+}
+
+/// 升级的看一眼（施工 PK-3 上）：每个要升的照从软件源装那一条看一眼（[`fetch::install`] 带 `preview`），`rows` 每一项补上
+/// `source`、`feed`、`capabilities`（声明了的才有，带 `held`）；它们一起装的新依赖（不是这一次本来就升的）去重进 `with`，同从
+/// 软件源装的那一格；社区的写「注意」。看不成的（缺依赖之类，真升时照旧拒）那一项照旧只有编号、版本。
+async fn looked(
+    core: &Arc<Core>,
+    peer: Peer,
+    (indexes, feeds): (&Indexes, &BTreeMap<String, Option<String>>),
+    mut rows: Vec<Value>,
+) -> Value {
+    let upgrading: Vec<String> = rows
+        .iter()
+        .filter_map(|row| row["package"].as_str().map(str::to_string))
+        .collect();
+    let mut with: Vec<Value> = Vec::new();
+    for row in &mut rows {
+        let id = row["package"].as_str().unwrap_or_default().to_string();
+        let one = match feeds.get(&id).cloned().flatten() {
+            Some(feed) => SourceParams::from(&id, &feed),
+            None => SourceParams::of(&id),
+        };
+        let Ok(glance) = fetch::install(core, peer, None, one.previewing()).await else {
+            continue;
+        };
+        for key in ["source", "feed"] {
+            row[key] = glance[key].clone();
+        }
+        if glance["capabilities"]
+            .as_array()
+            .is_some_and(|all| !all.is_empty())
+        {
+            row["capabilities"] = glance["capabilities"].clone();
+        }
+        for dep in glance["with"].as_array().into_iter().flatten() {
+            let named = dep["package"].as_str().unwrap_or_default();
+            let seen = with.iter().any(|one| one["package"] == named);
+            if !seen && !upgrading.iter().any(|id| id == named) {
+                with.push(dep.clone());
+            }
+        }
+    }
+    let items: Vec<Item<'_>> = rows
+        .iter()
+        .chain(&with)
+        .filter_map(|one| {
+            let id = one["package"].as_str()?;
+            let feed = one["feed"].as_str().unwrap_or(OFFICIAL);
+            let entry = indexes.get(feed)?.entry(id)?;
+            Some(Item {
+                id,
+                source: one["source"].as_str()?,
+                runs: notice::entry_runs(entry),
+            })
+        })
+        .collect();
+    let alone = rows.len() + with.len() == 1;
+    let said = notice::notice(core, peer.language, &items, alone);
+    let mut answer = json!({"upgrades": rows, "with": with});
+    if let Some(said) = said {
+        answer["notice"] = said;
+    }
+    answer
 }
 
 /// 用得上的几个源的索引（施工 U23 下下）：官方的是拿好的 `official`，别的照配置拿，拿不成的跳过（它装的包进 `gone`）。

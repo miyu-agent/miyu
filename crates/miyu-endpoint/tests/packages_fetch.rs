@@ -79,7 +79,7 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
     assert_eq!(preview["package"], "app", "{preview}");
     assert_eq!(
         preview["with"],
-        json!([{"package": "lib", "version": "1.0"}])
+        json!([{"package": "lib", "version": "1.0", "source": "official", "feed": "official"}])
     );
     assert_eq!(preview["download"], app.1.len() + lib.1.len());
     assert_eq!(preview["origin"], "github.com/miyu-agent/app");

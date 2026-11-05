@@ -260,6 +260,7 @@ pub fn call(args: &str) -> Call {
         settings: None,
         checked: None,
         caller: None,
+        previewed: None,
     }
 }
 

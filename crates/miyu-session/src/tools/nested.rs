@@ -58,6 +58,8 @@ struct Waiting {
     result: Option<Settled>,
     /// 权限策略判过的真实位置（施工 5-18）：判的时候记下，跑的时候交给工具。
     checked: Option<Arc<[PathBuf]>>,
+    /// 问人的卡片上那一份看一眼（施工 PK-3 上）：问人的时候记下，跑的时候交给工具。
+    previewed: Option<serde_json::Value>,
 }
 
 struct Running {
@@ -142,6 +144,7 @@ impl Tools {
                     origin,
                     result: None,
                     checked: None,
+                    previewed: None,
                 };
                 self.nested.waiting.insert(id.clone(), waiting);
                 Some(Input::Nested(NestedInput::Call {
@@ -182,6 +185,13 @@ impl Tools {
         }
     }
 
+    /// 记下嵌套调用 `id` 问人的卡片上那一份看一眼（施工 PK-3 上）：不在等着的不记。
+    pub(crate) fn previewed_nested(&mut self, id: &NestedId, previewed: Option<serde_json::Value>) {
+        if let Some(waiting) = self.nested.waiting.get_mut(id) {
+            waiting.previewed = previewed;
+        }
+    }
+
     /// 跑一次嵌套调用：在自己的任务里跑，马上返回。目录里没有这件工具的，当场照出错交回。
     pub(crate) fn run_nested(&mut self, at: Timestamp, run: NestedRun) -> Option<Input> {
         let NestedRun {
@@ -198,11 +208,12 @@ impl Tools {
         } = run;
         // 内核只派收下了的：收下时一定记了派它的那次调用。没有的是 bug，不跑；父级结束时照「已取消」收掉。判过的真实位置
         // 没记下的（不该有）按一个都没判过算，工具换出来的一律不碰（施工 5-18）。
-        let Some((origin, checked)) = self.nested.waiting.get_mut(&id).map(|waiting| {
+        let Some((origin, checked, previewed)) = self.nested.waiting.get_mut(&id).map(|waiting| {
             let checked = waiting.checked.take();
             (
                 waiting.origin,
                 checked.unwrap_or_else(|| Arc::from(Vec::new())),
+                waiting.previewed.take(),
             )
         }) else {
             tracing::error!(target: TARGET, nested = id.to_string().as_str(), "nested call run before it came");
@@ -267,6 +278,7 @@ impl Tools {
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
             checked: Some(checked),
             caller: Some(self.callers.of(turn)), // 照派它的那一轮（施工 X-43）
+            previewed,
         };
         let shown = id.to_string();
         tracing::info!(target: TARGET, nested = shown.as_str(), tool = name.as_str(), "running nested");

@@ -166,6 +166,73 @@ async fn full_access_installs_without_asking() {
     assert!(installed(&home, "kit"));
 }
 
+/// 工作目录里放一个要 `capabilities` 这几样能力的扩展包 `id`（程序不在，手动开），交回它的文件夹。
+fn extension(home: &Home, id: &str, capabilities: &[&str]) -> PathBuf {
+    let folder = home.work.join(id);
+    std::fs::create_dir_all(&folder).expect("建得了");
+    let names: Vec<String> = capabilities.iter().map(|one| format!("{one:?}")).collect();
+    std::fs::write(
+        folder.join("package.toml"),
+        format!(
+            "[package]\nprotocol = [1, 1]\nname = {{ en = \"Ext\" }}\n\n[command]\nname = \"{id}\"\nprogram = \"miyu-no-such-program-anywhere\"\nabout = {{ en = \"E\" }}\n\n[process]\nstart = \"manual\"\ncapabilities = [{}]\n",
+            names.join(", ")
+        ),
+    )
+    .expect("写得进");
+    folder
+}
+
+/// 开关文件里包 `id` 批过的；没记的是 `null`。
+fn approved(home: &Home, id: &str) -> Value {
+    let text = std::fs::read_to_string(home.root.extensions_file()).unwrap_or_default();
+    serde_json::from_str::<Value>(&text).unwrap_or(Value::Null)["approved"][id].clone()
+}
+
+/// 她装的时候照问人的卡片上那一份批（施工 PK-3 上）：卡片出来以后包文件夹多要了一样，人答应的只是卡片上的那几样；完全放开的
+/// 不问人，照当场看的那一份批。
+#[tokio::test]
+async fn she_approves_what_the_card_showed() {
+    let home = Home::new();
+    let folder = extension(&home, "ext", &["network"]);
+    let commands = vec![json!({"install": folder}).to_string()];
+    let (mut client, session) = started(&home, commands, false).await;
+    until("装的确认请求", || {
+        requests(&home, &session).len() == 1
+    })
+    .await;
+    let asked = requests(&home, &session).remove(0);
+    let listed = &asked["detail"]["preview"]["capabilities"];
+    assert_eq!(listed[0]["id"], "network", "{asked}");
+    assert_eq!(asked["detail"]["preview"]["source"], "file", "{asked}");
+    extension(&home, "ext", &["tools", "network"]);
+    let call = asked["call_id"].as_str().expect("有编号").to_string();
+    client
+        .call(
+            "a1",
+            "session.answer",
+            json!({"session": session, "call": call, "decision": "once", "nested": 1}),
+        )
+        .await;
+    home.until_turns(&session, 1).await;
+    assert!(installed(&home, "ext"), "允许了才装");
+    assert_eq!(
+        approved(&home, "ext"),
+        json!(["network"]),
+        "卡片上没有的不批"
+    );
+
+    let home = Home::new();
+    let folder = extension(&home, "ext", &["tools", "network"]);
+    let commands = vec![json!({"install": folder}).to_string()];
+    let (_client, session) = started(&home, commands, true).await;
+    home.until_turns(&session, 1).await;
+    assert_eq!(
+        approved(&home, "ext"),
+        json!(["network", "tools"]),
+        "完全放开照看的那一份批"
+    );
+}
+
 #[tokio::test]
 async fn a_folder_that_is_not_a_package_is_refused_without_asking() {
     let home = Home::new();

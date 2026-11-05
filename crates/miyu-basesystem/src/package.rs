@@ -261,11 +261,21 @@ impl Tool for Package {
             if call.stop.stopped() {
                 return Done::stopped();
             }
+            // 看一眼的那一份（施工 PK-3 上）：问过人的是卡片上那一份，没问人的（完全放开）当场看一眼；它列出来的能力一并批。
+            let previewed = call.previewed.clone();
             match doing {
                 Doing::Install(path) => {
                     let what = path.to_string_lossy().into_owned();
                     let preset = call.ids.as_ref().and_then(|ids| ids.preset.clone());
-                    match port.install(path, preset).await {
+                    let looked = match previewed {
+                        Some(looked) => Ok(looked),
+                        None => port.inspect(path.clone()).await,
+                    };
+                    let done = match looked {
+                        Ok(looked) => port.install(path, preset, looked).await,
+                        Err(refusal) => Err(refusal),
+                    };
+                    match done {
                         Ok(entry) => {
                             let package = entry["package"].as_str().unwrap_or_default().to_string();
                             Done::ok(say(&texts.installed, &[("package", &package)]))
@@ -276,7 +286,15 @@ impl Tool for Package {
                 }
                 Doing::Fetch(package) => {
                     let preset = call.ids.as_ref().and_then(|ids| ids.preset.clone());
-                    match port.fetch(package.clone(), preset).await {
+                    let looked = match previewed {
+                        Some(looked) => Ok(looked),
+                        None => port.fetching(package.clone()).await,
+                    };
+                    let done = match looked {
+                        Ok(looked) => port.fetch(package.clone(), preset, looked).await,
+                        Err(refusal) => Err(refusal),
+                    };
+                    match done {
                         Ok(_) => Done::ok(say(&texts.installed, &[("package", &package)]))
                             .said(said("package/installed").with("package", &package)),
                         Err(refusal) => Texts::failed(texts.refused(&refusal, &package)),
@@ -284,7 +302,15 @@ impl Tool for Package {
                 }
                 Doing::Upgrade(which) => {
                     let what = which.clone().unwrap_or_else(|| ALL.to_string());
-                    match port.upgrade(which).await {
+                    let looked = match previewed {
+                        Some(looked) => Ok(looked),
+                        None => port.upgrading(which.clone()).await,
+                    };
+                    let done = match looked {
+                        Ok(looked) => port.upgrade(which, looked).await,
+                        Err(refusal) => Err(refusal),
+                    };
+                    match done {
                         Ok(done) => texts.upgraded_done(&done),
                         Err(refusal) => Texts::failed(texts.refused(&refusal, &what)),
                     }

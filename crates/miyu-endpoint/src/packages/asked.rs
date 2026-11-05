@@ -7,6 +7,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use serde_json::Value;
 
+use super::approve::{Approve, Arrival};
 use super::archive::Then;
 use crate::Core;
 use crate::hello::Peer;
@@ -24,6 +25,9 @@ pub(crate) struct InstallParams {
     /// 只看一眼、什么都不动（施工 F-8 下补，`preview.rs`）。
     #[serde(default)]
     preview: bool,
+    /// 装的时候就批的能力（施工 PK-3 上，`approve.rs`）：编号到能力名。装回出厂的不用批，写了也不理。
+    #[serde(default)]
+    approve: Option<Approve>,
 }
 
 /// `package.remove` 的参数。
@@ -48,7 +52,13 @@ pub(crate) async fn install(
     caller: Option<&Reverse>,
     params: InstallParams,
 ) -> Result<Value, Refusal> {
+    super::approve::valid(params.approve.as_ref())?;
     let _one_at_a_time = core.packaging.lock().await;
+    // 本机文件夹、包文件装的没有来路（施工 PK-3 上）：前面批过的不接着用。
+    let arrival = Arrival {
+        approve: params.approve.as_ref(),
+        came: None,
+    };
     match (params.path, params.package, params.preview) {
         (Some(path), None, preview) => {
             let path = Path::new(&path);
@@ -56,12 +66,14 @@ pub(crate) async fn install(
                 (true, _) => {
                     let then = match preview {
                         true => Then::Preview,
-                        false => Then::Install,
+                        false => Then::Install(arrival),
                     };
-                    super::archive::install(core, peer, path, then, None, caller).await
+                    super::archive::install(core, peer, path, (then, None), caller).await
                 }
                 (false, true) => super::preview::installing(core, peer, path).await,
-                (false, false) => super::manage::from_path(core, (peer, caller), path, None).await,
+                (false, false) => {
+                    super::manage::from_path(core, (peer, caller), path, (None, arrival)).await
+                }
             }
         }
         (None, Some(id), preview) => match preview {

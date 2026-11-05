@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 
 use miyu_tool::{Looking, PackageConflict, PackageRefusal, PackagesPort};
 
+use super::approve;
 use super::source;
 use super::source::fetch::SourceParams;
 use super::source::search::SearchParams;
@@ -139,10 +140,12 @@ impl PackagesPort for Port {
         })
     }
 
-    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_> {
+    fn install(&self, path: PathBuf, preset: Option<String>, looked: Value) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
-            let params = serde_json::from_value(json!({ "path": path }))
+            // 看一眼列出来的能力一并批（施工 PK-3 上）：问人的那一次就是批，完全放开的照级别直接做。
+            let approve = approve::of_looked(&looked);
+            let params = serde_json::from_value(json!({ "path": path, "approve": approve }))
                 .map_err(|_| refused(Refusal::BAD_PARAMS))?;
             self.managing()?;
             let entry = super::asked::install(&core, self.peer(), None, params)
@@ -226,7 +229,7 @@ impl PackagesPort for Port {
         })
     }
 
-    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
+    fn fetch(&self, package: String, preset: Option<String>, looked: Value) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
             // 卸掉的出厂包、组名（施工 BS-1 中下修）：装回来，不走软件源；装回一个的照旧在会话用的预设里打开。
@@ -253,10 +256,10 @@ impl PackagesPort for Port {
                 }
                 None => {}
             }
-            let entry =
-                source::fetch::install(&core, self.peer(), None, SourceParams::of(&package))
-                    .await
-                    .map_err(refused)?;
+            let params = SourceParams::of(&package).approving(Some(approve::of_looked(&looked)));
+            let entry = source::fetch::install(&core, self.peer(), None, params)
+                .await
+                .map_err(refused)?;
             if let (Some(preset), Some(package)) = (preset, entry["package"].as_str()) {
                 open_in(&core, self.peer(), &preset, package).await;
             }
@@ -268,17 +271,19 @@ impl PackagesPort for Port {
         Box::pin(async move {
             let core = self.core()?;
             self.managing()?;
-            source::upgrade::upgrade(&core, self.peer(), None, UpgradeParams::of(only, true))
+            let params = UpgradeParams::of(only, true, None);
+            source::upgrade::upgrade(&core, self.peer(), None, params)
                 .await
                 .map_err(refused)
         })
     }
 
-    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
+    fn upgrade(&self, only: Option<String>, looked: Value) -> Looking<'_> {
         Box::pin(async move {
             let core = self.core()?;
             self.managing()?;
-            source::upgrade::upgrade(&core, self.peer(), None, UpgradeParams::of(only, false))
+            let params = UpgradeParams::of(only, false, Some(approve::of_looked(&looked)));
+            source::upgrade::upgrade(&core, self.peer(), None, params)
                 .await
                 .map_err(refused)
         })

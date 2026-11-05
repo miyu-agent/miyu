@@ -100,8 +100,14 @@ async fn an_installed_extension_starts_and_a_removed_one_stops() {
     core.start_extensions();
     let mut client = Client::connect(Arc::clone(&core));
     client.hello().await;
+    // 装的时候就批它要的能力（施工 PK-3 上）：本机文件夹装的不接着用以前批的。
+    let approve = json!({"xbridge": ["tools"]});
     let reply = client
-        .call("i1", "package.install", json!({"path": source}))
+        .call(
+            "i1",
+            "package.install",
+            json!({"path": source, "approve": approve}),
+        )
         .await;
     assert_eq!(reply["result"]["package"], "xbridge", "{reply}");
     until_state(&mut client, "xbridge", |entry| entry["state"] == "running").await;

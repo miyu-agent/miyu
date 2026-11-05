@@ -2,8 +2,7 @@
 //! 施工 4-2）：照工具名在目录里找到那一件，一件一个任务地跑，量用时。叫停有两种：「叫它停」只举这次调用的旗，
 //! 工具自己停在改之前或者做完（施工 4-9 再补一）；「掐掉」掐掉那个任务。回报送回 actor 的收件箱，由它写成内核的输入。
 //!
-//! 工具报的效果（施工 4-6 上）：跑完以后在阻塞线程里把改前改后存成 blob，再送回来；送回来的先记下她看过的，
-//! 再交进内核。她看过的交给以后每一次调用。
+//! 工具报的效果（施工 4-6 上）：跑完以后在阻塞线程里把改前改后存成 blob 送回来，先记下她看过的再交进内核。她看过的交给以后每一次调用。
 //!
 //! 沙盒（施工 5-4 上）：这台机器上的沙盒能用的，每次调用照派出去那一刻实际生效的那一级写上沙盒（`crate::sandbox`），
 //! 在跑它的任务里、阻塞线程上算；写不成的不跑，照崩了算。
@@ -108,8 +107,8 @@ pub(crate) struct Tools {
     preset: Option<String>,
     /// 在跑的调用：掐掉它的那一头、它的旗、开始跑的那一刻、工具名。
     running: BTreeMap<CallId, Running>,
-    /// 判过的真实位置（施工 5-18，`checked.rs`）：照调用编号记着，派的时候交给工具。
-    checked: BTreeMap<CallId, Arc<[PathBuf]>>,
+    /// 判过的真实位置（施工 5-18）、问人的卡片上那一份看一眼（施工 PK-3 上），`checked.rs`：照调用编号记着，派的时候交给工具。
+    checked: checked::Judged,
     /// 调用的事实（施工 X-43，`caller.rs`）：派的时候照那一轮交给工具。
     callers: caller::Callers,
     /// 脚本里调的（施工 M-2，`nested.rs`）。
@@ -241,7 +240,7 @@ impl Tools {
             schedules: kit.schedules,
             hooks: kit.hooks,
             running: BTreeMap::new(),
-            checked: BTreeMap::new(),
+            checked: checked::Judged::default(),
             venue: kit.venue.clone(),
             plugins: kit.plugins,
             callers: caller::Callers::new(kit.venue, kit.session_log),
@@ -362,6 +361,7 @@ impl Tools {
             settings: Some(Arc::clone(&config) as Arc<dyn miyu_tool::SettingsPort>),
             checked: Some(self.take_checked(call_id)),
             caller: Some(self.callers.of(turn)),
+            previewed: self.checked.previews.remove(&call_id),
         };
         let call_text = call_id.to_string();
         // 场所插件这一刻没开的（施工 O-60）：桥一说关就当场停，当目录里没有。

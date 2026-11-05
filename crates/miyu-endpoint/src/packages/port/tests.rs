@@ -64,7 +64,10 @@ async fn a_confined_session_cannot_change_packages() {
         |got: Result<serde_json::Value, PackageRefusal>| got.err().map(|refusal| refusal.reason);
     let refused = [
         ("inspect", reason(outsider.inspect(kit.clone()).await)),
-        ("install", reason(outsider.install(kit.clone(), None).await)),
+        (
+            "install",
+            reason(outsider.install(kit.clone(), None, Value::Null).await),
+        ),
         (
             "enabling",
             reason(outsider.enabling("ext".to_string()).await),
@@ -81,10 +84,10 @@ async fn a_confined_session_cannot_change_packages() {
         ),
         (
             "fetch",
-            reason(outsider.fetch("kit".to_string(), None).await),
+            reason(outsider.fetch("kit".to_string(), None, Value::Null).await),
         ),
         ("upgrading", reason(outsider.upgrading(None).await)),
-        ("upgrade", reason(outsider.upgrade(None).await)),
+        ("upgrade", reason(outsider.upgrade(None, Value::Null).await)),
     ];
     for (what, got) in refused {
         assert_eq!(got.as_deref(), Some("not_permitted"), "{what}");
@@ -97,7 +100,7 @@ async fn a_confined_session_cannot_change_packages() {
     };
     assert!(owner.inspect(kit.clone()).await.is_ok(), "主人的会话看得了");
     owner
-        .install(kit.clone(), None)
+        .install(kit.clone(), None, Value::Null)
         .await
         .expect("主人的会话装得上");
     // 这台机器上的路径只给主人：不是主人的会话列表里没有 `state`、`package.info` 里没有从哪装的。

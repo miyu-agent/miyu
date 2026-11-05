@@ -32,8 +32,9 @@ pub trait PackagesPort: Send + Sync {
 
     /// 装包文件夹 `path`（绝对路径，施工 F-10 下）：同 `package.install {path}`，交回装上的那一项（同 `package.list` 的一项）。
     /// 写错的、撞了的照协议拒。会话用的预设 `preset`（施工 F-10 下下）不开没列出来的软件、又没写这个包的，在那一份预设里
-    /// 打开它（16 第三节）。
-    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_>;
+    /// 打开它（16 第三节）。`looked` 是看一眼的那一份（[`Self::inspect`]，问人的卡片上那一份；不问人的照样先看一眼）：它列出来的
+    /// 能力一并批（施工 PK-3 上，同 `package.install` 的 `approve`）。
+    fn install(&self, path: PathBuf, preset: Option<String>, looked: Value) -> Looking<'_>;
 
     /// 打开之前看一眼（施工 F-10 下下）：装着的包 `package` 带了什么、要什么能力，同装之前看一眼的样子。
     fn enabling(&self, package: String) -> Looking<'_>;
@@ -57,9 +58,10 @@ pub trait PackagesPort: Send + Sync {
         unavailable(package)
     }
 
-    /// 从软件源装 `package`（施工 G-6）：同 `package.install {source}`；会话用的预设 `preset` 同 [`Self::install`]。
-    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
-        drop(preset);
+    /// 从软件源装 `package`（施工 G-6）：同 `package.install {source}`；会话用的预设 `preset`、看一眼的那一份 `looked`
+    /// （[`Self::fetching`]）同 [`Self::install`]。
+    fn fetch(&self, package: String, preset: Option<String>, looked: Value) -> Looking<'_> {
+        drop((preset, looked));
         unavailable(package)
     }
 
@@ -68,8 +70,9 @@ pub trait PackagesPort: Send + Sync {
         unavailable(only.unwrap_or_default())
     }
 
-    /// 升级（施工 G-6）：同 `package.upgrade {packages}`。
-    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
+    /// 升级（施工 G-6）：同 `package.upgrade {packages}`；看一眼的那一份 `looked`（[`Self::upgrading`]）同 [`Self::install`]。
+    fn upgrade(&self, only: Option<String>, looked: Value) -> Looking<'_> {
+        drop(looked);
         unavailable(only.unwrap_or_default())
     }
 }

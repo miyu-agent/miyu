@@ -11,6 +11,7 @@ use serde_json::Value;
 use miyu_source::archive::{self, EXTENSION};
 
 use super::TARGET;
+use super::approve::Arrival;
 use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
@@ -22,10 +23,10 @@ pub(super) fn is_package_file(path: &Path) -> bool {
 }
 
 /// 包文件解开以后做什么（施工 IN-4 起三种）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Then {
-    /// 照包文件夹装。
-    Install,
+#[derive(Debug, Clone, Copy)]
+pub(super) enum Then<'a> {
+    /// 照包文件夹装：来路和批了什么（施工 PK-3 上）。
+    Install(Arrival<'a>),
     /// 只看一眼（`package.install` 带 `preview`）。
     Preview,
     /// `package.info` 带 `path` 的那一份（`file_info.rs`）。
@@ -37,13 +38,12 @@ pub(super) enum Then {
 ///
 /// 写了 `expected` 的（从软件源装的，索引里那一条的编号，施工 AS-1）：包文件里的编号（最上层文件夹的名字）对不上也是
 /// `package_file_bad`，什么都不装。不查的话，源里写着 `foo` 的条目装进来的可以是别的源装的 `bar`，盖掉它、接着用它的开关和
-/// 批过的能力（设计 `37-软件源.md`「换源就是换信任的对象」）。
+/// 批过的能力（设计 `37-软件源.md`「换源就是换信任的对象」；施工 PK-3 上起批过的能力另照来路认，`approve.rs`）。
 pub(super) async fn install(
     core: &Arc<Core>,
     peer: Peer,
     path: &Path,
-    then: Then,
-    expected: Option<&str>,
+    (then, expected): (Then<'_>, Option<&str>),
     caller: Option<&Reverse>,
 ) -> Result<Value, Refusal> {
     if !path.is_absolute() {
@@ -62,15 +62,14 @@ pub(super) async fn install(
             tracing::warn!(target: TARGET, expected = expected.unwrap_or_default(), got = unpacked.id.as_str(), "package file holds another package");
             Err(Refusal::PACKAGE_FILE_BAD)
         }
-        Ok(Ok(unpacked)) if then == Then::Preview => {
-            super::preview::installing(core, peer, &unpacked.folder).await
-        }
-        Ok(Ok(unpacked)) if then == Then::Describe => {
-            super::file_info::described(core, peer, &unpacked.folder).await
-        }
-        Ok(Ok(unpacked)) => {
-            super::manage::from_path(core, (peer, caller), &unpacked.folder, Some(path)).await
-        }
+        Ok(Ok(unpacked)) => match then {
+            Then::Preview => super::preview::installing(core, peer, &unpacked.folder).await,
+            Then::Describe => super::file_info::described(core, peer, &unpacked.folder).await,
+            Then::Install(arrival) => {
+                let how = (Some(path), arrival);
+                super::manage::from_path(core, (peer, caller), &unpacked.folder, how).await
+            }
+        },
         Ok(Err(error)) => {
             tracing::info!(target: TARGET, error = %error, "package file not unpacked");
             Err(Refusal::PACKAGE_FILE_BAD)

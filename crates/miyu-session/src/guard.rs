@@ -297,6 +297,7 @@ impl Guard {
             settings: None,
             checked: None,
             caller: None,
+            previewed: None,
         };
         let asking = tool.asking(&call);
         if local_venue {

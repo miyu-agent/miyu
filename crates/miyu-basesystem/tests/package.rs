@@ -52,8 +52,8 @@ impl PackagesPort for Port {
         self.answered(format!("inspect {}", path.display()))
     }
 
-    fn install(&self, path: PathBuf, preset: Option<String>) -> Looking<'_> {
-        self.answered(format!("install {} {preset:?}", path.display()))
+    fn install(&self, path: PathBuf, preset: Option<String>, looked: Value) -> Looking<'_> {
+        self.answered(format!("install {} {preset:?} {looked}", path.display()))
     }
 
     fn enabling(&self, package: String) -> Looking<'_> {
@@ -76,16 +76,16 @@ impl PackagesPort for Port {
         self.answered(format!("fetching {package}"))
     }
 
-    fn fetch(&self, package: String, preset: Option<String>) -> Looking<'_> {
-        self.answered(format!("fetch {package} {preset:?}"))
+    fn fetch(&self, package: String, preset: Option<String>, looked: Value) -> Looking<'_> {
+        self.answered(format!("fetch {package} {preset:?} {looked}"))
     }
 
     fn upgrading(&self, only: Option<String>) -> Looking<'_> {
         self.answered(format!("upgrading {only:?}"))
     }
 
-    fn upgrade(&self, only: Option<String>) -> Looking<'_> {
-        self.answered(format!("upgrade {only:?}"))
+    fn upgrade(&self, only: Option<String>, looked: Value) -> Looking<'_> {
+        self.answered(format!("upgrade {only:?} {looked}"))
     }
 }
 
@@ -183,7 +183,8 @@ async fn installing_and_removing_go_through_the_core() {
     assert_eq!(
         port.asked(),
         [
-            format!("install {path} None"),
+            format!("inspect {path}"),
+            format!(r#"install {path} None {{"package":"kit"}}"#),
             "remove kit".to_string(),
             "enable kit".to_string()
         ]
@@ -311,11 +312,18 @@ async fn installing_names_the_sessions_preset() {
         asked: None,
         preset: Some("dev".to_string()),
     });
+    // 问过人的照卡片上那一份批（施工 PK-3 上）：不再另看一眼。
+    call.previewed = Some(json!({"package": "kit", "capabilities": [{"id": "network"}]}));
     let done = tool("package")
         .run(call, miyu_tool::Progress::new(|_| {}))
         .await;
     assert!(!done.error);
-    assert_eq!(port.asked(), [format!("install {path} Some(\"dev\")")]);
+    assert_eq!(
+        port.asked(),
+        [format!(
+            r#"install {path} Some("dev") {{"capabilities":[{{"id":"network"}}],"package":"kit"}}"#
+        )]
+    );
 }
 
 /// 从软件源装、升级（施工 G-6）：`install` 写编号的从软件源装，有路径分隔符又不是绝对路径的照旧说要绝对路径；`upgrade` 写编号
@@ -336,15 +344,19 @@ async fn ids_install_from_the_source_and_upgrades_list_what_changed() {
         "{}",
         text(&done)
     );
-    assert_eq!(port.asked(), ["fetch memes None"]);
+    // 完全放开不问人的照样先看一眼，照那一份批（施工 PK-3 上）。
+    assert_eq!(
+        port.asked(),
+        ["fetching memes", r#"fetch memes None {"package":"memes"}"#]
+    );
     let looked = preview(&port, json!({"install": "memes"})).await;
     assert!(matches!(looked, Some(Ok(_))));
-    assert_eq!(port.asked()[1], "fetching memes");
+    assert_eq!(port.asked()[2], "fetching memes");
     let relative = package(&port, json!({"install": "src/memes"})).await;
     assert!(text(&relative).contains("absolute"), "{}", text(&relative));
     let windows = package(&port, json!({"install": "src\\memes"})).await;
     assert!(text(&windows).contains("absolute"), "{}", text(&windows));
-    assert_eq!(port.asked().len(), 2, "相对路径不问端口");
+    assert_eq!(port.asked().len(), 3, "相对路径不问端口");
 
     let port = Port::new(Ok(
         json!({"upgraded": [{"package": "memes", "from": "1.0", "to": "1.1"}]}),
@@ -353,10 +365,19 @@ async fn ids_install_from_the_source_and_upgrades_list_what_changed() {
     assert_eq!(text(&done), "Upgraded: memes 1.1 (was 1.0).\n");
     let done = package(&port, json!({"upgrade": "memes"})).await;
     assert_eq!(text(&done), "Upgraded: memes 1.1 (was 1.0).\n");
-    assert_eq!(port.asked(), ["upgrade None", "upgrade Some(\"memes\")"]);
+    let rows = r#"{"upgraded":[{"from":"1.0","package":"memes","to":"1.1"}]}"#;
+    assert_eq!(
+        port.asked(),
+        [
+            "upgrading None".to_string(),
+            format!("upgrade None {rows}"),
+            "upgrading Some(\"memes\")".to_string(),
+            format!("upgrade Some(\"memes\") {rows}"),
+        ]
+    );
     let looked = preview(&port, json!({"upgrade": "all"})).await;
     assert!(matches!(looked, Some(Ok(_))));
-    assert_eq!(port.asked()[2], "upgrading None");
+    assert_eq!(port.asked()[4], "upgrading None");
     let port = Port::new(Ok(json!({"upgraded": []})));
     let done = package(&port, json!({"upgrade": "all"})).await;
     assert_eq!(text(&done), "Nothing to upgrade.\n");

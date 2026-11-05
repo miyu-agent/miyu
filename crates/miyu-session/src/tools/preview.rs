@@ -15,14 +15,14 @@ use super::Tools;
 
 impl Tools {
     /// 权限策略判下来的 `verdict`：要问人的、工具 `name` 要看一眼的，带着端口照参数 `args`、工作目录 `cwd` 看，换进说明；
-    /// 看不了的换成拒绝。别的原样交回。
+    /// 看不了的换成拒绝。别的原样交回。另交回看成了的那一份（施工 PK-3 上）：调的一方照调用记下，人答应了跑的时候交给工具。
     pub(crate) async fn previewed(
         &self,
         name: &str,
         args: String,
         cwd: String,
         verdict: Verdict,
-    ) -> Verdict {
+    ) -> (Verdict, Option<Value>) {
         let Verdict::Ask {
             module,
             access,
@@ -30,25 +30,31 @@ impl Tools {
             detail,
         } = verdict
         else {
-            return verdict;
+            return (verdict, None);
         };
         let looked = match self.catalog.get(name) {
             Some(tool) => self.look(tool, args, cwd).await,
             None => None,
         };
-        match looked {
+        let verdict = match looked {
             None => Verdict::Ask {
                 module,
                 access,
                 rule,
                 detail,
             },
-            Some(Ok(preview)) => Verdict::Ask {
-                detail: Some(with_preview(detail, preview)),
-                module,
-                access,
-                rule,
-            },
+            Some(Ok(preview)) => {
+                let detail = Some(with_preview(detail, preview.clone()));
+                return (
+                    Verdict::Ask {
+                        detail,
+                        module,
+                        access,
+                        rule,
+                    },
+                    Some(preview),
+                );
+            }
             Some(Err(done)) => Verdict::Deny {
                 module,
                 text: done
@@ -61,7 +67,8 @@ impl Tools {
                     .collect(),
                 human: done.human,
             },
-        }
+        };
+        (verdict, None)
     }
 
     /// 带着端口看一眼：只给看要用的那几样，没有沙盒、日志、调用编号。
@@ -97,6 +104,7 @@ impl Tools {
             settings: None,
             checked: None,
             caller: None,
+            previewed: None,
         };
         Some(tool.preview(call)?.await)
     }

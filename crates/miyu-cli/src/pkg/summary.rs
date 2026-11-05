@@ -73,7 +73,8 @@ pub(super) fn plan(preview: &Value, language: &Language) -> Vec<String> {
         .collect();
     rows.push(String::new());
     let official = preview["official"].as_bool() == Some(true);
-    let source = preview["source"].as_str().unwrap_or_default();
+    // 软件源的名字（施工 PK-3 上起叫 `feed`；`source` 改成说从哪来，确认屏照它改在 PK-3 下）。
+    let source = preview["feed"].as_str().unwrap_or_default();
     rows.extend(aligned(
         vec![
             (

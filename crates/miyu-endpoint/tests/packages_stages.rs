@@ -115,8 +115,10 @@ async fn the_preview_lists_recommends_and_the_install_pushes_three_stages() {
     assert_eq!(
         preview["recommends"],
         json!([
-            {"package": "rec2", "version": "1.0", "download": rec2.1.len()},
-            {"package": "rec", "version": "1.0", "download": rec.1.len(), "installed_size": 7},
+            {"package": "rec2", "version": "1.0", "download": rec2.1.len(),
+             "source": "official", "feed": "official"},
+            {"package": "rec", "version": "1.0", "download": rec.1.len(), "installed_size": 7,
+             "source": "official", "feed": "official"},
         ]),
         "照要装的先后（依赖在前），装着的、一起装的、找不到的、重了的不列：{preview}"
     );

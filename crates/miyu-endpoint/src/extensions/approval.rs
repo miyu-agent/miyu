@@ -14,7 +14,7 @@ use crate::Core;
 use crate::refusal::Refusal;
 
 /// 包声明的能力，照能力表的先后。
-fn declared(manifest: &Manifest) -> &[Capability] {
+pub(crate) fn declared(manifest: &Manifest) -> &[Capability] {
     manifest
         .process
         .as_ref()
@@ -63,8 +63,8 @@ pub(crate) fn held(core: &Core, package: &str) -> Vec<Capability> {
 }
 
 /// 开包 `id` 之前批，记进正要写回的开关 `switches`（调的一方拿着开关那把锁、读好、批完一起写回）：`approve` 里有不是它声明的名字
-/// 的 `bad_params`；还有没批、`approve` 没盖住的 `needs_approval`（`data.capabilities` 是没盖住的那几个）；盖住了的记下它这时
-/// 声明的全部。都批过了的不动。
+/// 的 `bad_params`；还有没批、`approve` 没盖住的 `needs_approval`（`data.capabilities` 是没盖住的那几个）；盖住了的照装的时候那一套
+/// 记「(批过的 ∪ 这一次批的) ∩ 声明的」（施工 PK-3 上，`packages/approve.rs`；结果就是声明的全部）。都批过了的不动。
 pub(super) fn approve(
     core: &Core,
     (id, manifest): (&str, &Manifest),
@@ -93,8 +93,8 @@ pub(super) fn approve(
     if !left.is_empty() {
         return Err(needs_approval(&left));
     }
-    let mut names: Vec<String> = declared.iter().map(|it| it.as_str().to_string()).collect();
-    names.sort();
+    let before = switches.approved.get(id).cloned().unwrap_or_default();
+    let names = crate::packages::approve::settled(&before, named, declared);
     switches.approved.insert(id.to_string(), names);
     Ok(())
 }

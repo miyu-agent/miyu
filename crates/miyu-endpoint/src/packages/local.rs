@@ -11,11 +11,13 @@ use serde_json::{Value, json};
 use miyu_store::packages::local::{self, Desc, Entry};
 use miyu_store::packages::{Found, Layer, Packages};
 
+use super::approve::Came;
 use super::{TARGET, packages};
 use crate::Core;
 use crate::refusal::Refusal;
 
-/// 记下家目录里的包 `id`：照包目录现在的文件算，`source` 是从哪装的（补的是空的）。
+/// 记下家目录里的包 `id`：照包目录现在的文件算，`source` 是从哪装的（补的是空的）；从软件源装的另记来路 `came`（来源仓库，施工
+/// G-4 上；软件源的名字，施工 U23 下下，官方的不记）。施工 PK-3 上起来路随装一起记，不再装完另补：装之前要照旧的判断来路变没变。
 ///
 /// # Errors
 ///
@@ -24,7 +26,7 @@ pub(super) fn record(
     places: &Packages,
     id: &str,
     version: Option<String>,
-    source: &str,
+    (source, came): (&str, Option<&Came>),
 ) -> std::io::Result<()> {
     let home = places
         .home_dir()
@@ -36,24 +38,10 @@ pub(super) fn record(
         installed: crate::sessions::now().to_string(),
         source: source.to_string(),
         size: local::size(&files),
-        origin: None,
-        feed: None,
+        origin: came.map(|came| came.origin.clone()),
+        feed: came.and_then(|came| came.feed.clone()),
     };
     local::write(&places.local_root(), &desc, &files)
-}
-
-/// 包 `id` 是从软件源装的：本地库 `root` 里那一份记上来源仓库 `origin`（施工 G-4 上）和软件源的名字 `feed`（施工 U23 下下，
-/// 官方的不记）。
-pub(super) fn set_origin(
-    root: &Path,
-    id: &str,
-    (origin, feed): (&str, Option<&str>),
-) -> std::io::Result<()> {
-    let (mut desc, files) =
-        local::read(root, id).ok_or_else(|| std::io::Error::other("package not recorded"))?;
-    desc.origin = Some(origin.to_string());
-    desc.feed = feed.map(str::to_string);
-    local::write(root, &desc, &files)
 }
 
 /// 核心起来时：家目录里读成了、还没记的包补一份，各记一行 `INFO package recorded`；补不成的 `WARN package not recorded`。
@@ -67,7 +55,7 @@ pub(crate) fn backfill(places: &Packages, found: &[Found]) {
         if one.layer != Layer::Home || known.contains(&one.id) {
             continue;
         }
-        match record(places, &one.id, manifest.version.clone(), "") {
+        match record(places, &one.id, manifest.version.clone(), ("", None)) {
             Ok(()) => tracing::info!(target: TARGET, package = one.id.as_str(), "package recorded"),
             Err(error) => {
                 tracing::warn!(target: TARGET, package = one.id.as_str(), error = %error, "package not recorded");

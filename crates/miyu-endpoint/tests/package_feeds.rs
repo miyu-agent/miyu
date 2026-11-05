@@ -133,6 +133,25 @@ async fn a_source_added_in_settings_is_searched_installed_and_remembered() {
     );
     assert_eq!(synced["result"]["sources"][0]["packages"], 1, "{synced}");
 
+    // 看一眼（施工 PK-3 上）：自己加的源里的一律算社区，`feed` 是源的名字；只有一个包的说「这个包」。
+    let preview = owner
+        .call(
+            "p",
+            "package.install",
+            json!({"source": "kit", "from": "friends", "preview": true}),
+        )
+        .await;
+    let preview = &preview["result"];
+    assert_eq!(
+        (&preview["source"], &preview["feed"], &preview["official"]),
+        (&json!("community"), &json!("friends"), &json!(false)),
+        "{preview}"
+    );
+    assert_eq!(
+        preview["notice"],
+        json!(["这个包没经过官方审核。"]),
+        "不带程序的只说没审核"
+    );
     let installed = owner
         .call(
             "i",

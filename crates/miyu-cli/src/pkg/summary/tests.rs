@@ -8,7 +8,7 @@ use crate::language::Language;
 /// 设计 49 第二节那个样子：装 miyu-im，一起装 miyu-embed，推荐 miyu-im-sponsor。
 fn preview() -> Value {
     json!({
-        "package": "miyu-im", "version": "0.2.1", "official": true, "source": "official",
+        "package": "miyu-im", "version": "0.2.1", "official": true, "source": "official", "feed": "official",
         "origin": "github.com/miyu-agent/miyu-im",
         "capabilities": [{"id": "network", "name": "联网"}, {"id": "act_for_external", "name": "替主人说话"}],
         "download": 12_897_485, "installed": 31_562_138,
@@ -56,7 +56,8 @@ fn rows_the_core_left_out_are_not_printed_and_other_sources_are_named() {
         other.as_object_mut().map(|object| object.remove(key));
     }
     other["official"] = json!(false);
-    other["source"] = json!("friend");
+    other["source"] = json!("community");
+    other["feed"] = json!("friend");
     assert_eq!(
         plan(&other, &Language::Chinese),
         [

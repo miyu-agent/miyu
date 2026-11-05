@@ -18,13 +18,27 @@ use crate::Core;
 use crate::hello::Peer;
 use crate::refusal::Refusal;
 
-/// 从包文件夹 `path` 装：编号、版本、换下哪一份（同编号的）、带了什么、要什么能力、几个文件多大。
+/// 从包文件夹 `path` 装：编号、版本、换下哪一份（同编号的）、带了什么、要什么能力、几个文件多大。从哪来是 `file`（施工 PK-3 上：
+/// 本机文件夹、包文件都是，从软件源缓存里拿 `.miyu` 手装的也是：核心看不出它原来是哪一条），能力没有 `held`（来路算变了，前面
+/// 批过的不接着用），另有「注意」。
 pub(crate) async fn installing(
     core: &Arc<Core>,
     peer: Peer,
     path: &Path,
 ) -> Result<Value, Refusal> {
-    let (answer, _) = looked(core, peer, path).await?;
+    let (mut answer, _) = looked(core, peer, path).await?;
+    answer.insert("source".into(), json!("file"));
+    let id = answer["package"].as_str().unwrap_or_default().to_string();
+    let program = answer.get("program").and_then(Value::as_str);
+    let runs = super::notice::runs(program, |kind| answer.contains_key(kind));
+    let item = super::notice::Item {
+        id: &id,
+        source: "file",
+        runs,
+    };
+    if let Some(said) = super::notice::notice(core, peer.language, &[item], true) {
+        answer.insert("notice".into(), said);
+    }
     Ok(Value::Object(answer))
 }
 
@@ -67,6 +81,8 @@ pub(crate) async fn restoring(core: &Arc<Core>, peer: Peer, id: &str) -> Result<
     let manifest = one.read.as_ref().map_err(|_| Refusal::UNKNOWN_PACKAGE)?;
     let mut answer = carries(core, peer, id, manifest, &Content::of(&one.files_dir()));
     answer.insert("restores".into(), json!(true));
+    // 从哪来（施工 PK-3 上）：出厂的 `shipped`，系统加装的 `distro`。
+    answer.insert("source".into(), json!(one.layer.as_str()));
     Ok(Value::Object(answer))
 }
 

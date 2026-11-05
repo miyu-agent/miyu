@@ -21,9 +21,10 @@ use miyu_config::package::Target;
 use miyu_source::archive;
 use miyu_source::index::{Entry, File, Index};
 
+use super::super::TARGET;
+use super::super::approve::{Approve, Arrival, Came};
 use super::super::archive::Then;
 use super::super::progress::{self, At, Stage};
-use super::super::{TARGET, packages};
 use super::download::{self, Wanted};
 use super::feeds::{Feed, Tier};
 use super::sync::Synced;
@@ -46,6 +47,9 @@ pub(crate) struct SourceParams {
     /// 只看一眼。
     #[serde(default)]
     preview: bool,
+    /// 装的时候就批的能力（施工 PK-3 上，`approve.rs`）：编号到能力名，要装的、一起装的依赖各写各的。
+    #[serde(default)]
+    approve: Option<Approve>,
 }
 
 impl SourceParams {
@@ -55,6 +59,7 @@ impl SourceParams {
             source: id.to_string(),
             from: None,
             preview: false,
+            approve: None,
         }
     }
 
@@ -64,7 +69,20 @@ impl SourceParams {
             source: id.to_string(),
             from: Some(feed.to_string()),
             preview: false,
+            approve: None,
         }
+    }
+
+    /// 只看一眼（施工 PK-3 上：升级的看一眼照它一个一个看来源、能力）。
+    pub(crate) fn previewing(mut self) -> SourceParams {
+        self.preview = true;
+        self
+    }
+
+    /// 照这一张表批能力（施工 PK-3 上：命令行、她的工具照看一眼的那一份带上）。
+    pub(crate) fn approving(mut self, approve: Option<Approve>) -> SourceParams {
+        self.approve = approve;
+        self
     }
 
     /// 看一眼编号是 `id` 的（她的工具问人之前，施工 G-6）。
@@ -73,6 +91,7 @@ impl SourceParams {
             source: id.to_string(),
             from: None,
             preview: true,
+            approve: None,
         }
     }
 }
@@ -113,6 +132,7 @@ pub(crate) async fn install(
     if !miyu_store::personas::valid(&params.source) {
         return Err(Refusal::BAD_PARAMS);
     }
+    super::super::approve::valid(params.approve.as_ref())?;
     let indexes = chosen(core, &params).await?;
     let seen = core.system_packages();
     let installed: Installed = seen
@@ -161,29 +181,20 @@ pub(crate) async fn install(
     let mut with = Vec::new();
     for (n, (step, file)) in steps.iter().zip(&files).enumerate() {
         progress::stage(caller, &step.entry.id, Stage::Install, At::nth(n, count));
+        // 来路随装一起交下去（施工 PK-3 上）：本地库记它，照装之前记的判断前面批过的接不接着用。
+        let came = came(step.feed, step.entry);
+        let arrival = Arrival {
+            approve: params.approve.as_ref(),
+            came: Some(&came),
+        };
         answer = super::super::archive::install(
             core,
             peer,
             file,
-            Then::Install,
-            Some(step.entry.id.as_str()),
+            (Then::Install(arrival), Some(step.entry.id.as_str())),
             None,
         )
         .await?;
-        let (record, id, origin) = (
-            packages(core).local_root(),
-            step.entry.id.clone(),
-            step.entry.origin.clone(),
-        );
-        let feed = (step.feed.tier != Tier::Official).then(|| step.feed.name.clone());
-        let recorded = tokio::task::spawn_blocking(move || {
-            super::super::local::set_origin(&record, &id, (&origin, feed.as_deref()))
-        })
-        .await
-        .map_err(|_| Refusal::INTERNAL)?;
-        if let Err(error) = recorded {
-            tracing::warn!(target: TARGET, package = step.entry.id.as_str(), error = %error, "package origin not recorded");
-        }
         if step.entry.id != params.source {
             with.push(step.entry.id.clone());
         }
@@ -192,6 +203,14 @@ pub(crate) async fn install(
         answer["with"] = json!(with);
     }
     Ok(answer)
+}
+
+/// 从源 `feed` 装索引里的 `entry` 的来路：来源仓库，非官方的源另记名字（同本地库 `desc`，施工 U23 下下）。
+pub(super) fn came(feed: &Feed, entry: &Entry) -> Came {
+    Came {
+        origin: entry.origin.clone(),
+        feed: (feed.tier != Tier::Official).then(|| feed.name.clone()),
+    }
 }
 
 /// 装要用的几个源的索引（施工 U23 下下）：挑中的那个在前，依赖在它里面找不到的再照官方的找。

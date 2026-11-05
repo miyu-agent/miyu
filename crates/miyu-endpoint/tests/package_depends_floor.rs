@@ -185,7 +185,7 @@ async fn installing_from_a_source_upgrades_a_dependency_below_the_floor() {
     .await;
     assert_eq!(
         preview["result"]["with"],
-        json!([{"package": "lib", "version": "1.3.0"}]),
+        json!([{"package": "lib", "version": "1.3.0", "source": "official", "feed": "official"}]),
         "{preview}"
     );
     let recommended: Vec<(&str, &str)> = preview["result"]["recommends"]

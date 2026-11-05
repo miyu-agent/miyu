@@ -11,8 +11,9 @@ use serde_json::Value;
 use miyu_config::package;
 use miyu_store::packages::conflicts::conflicts;
 use miyu_store::packages::install::{self, Placed};
-use miyu_store::packages::{Found, Issue};
+use miyu_store::packages::{Found, Issue, local};
 
+use super::approve::{self, Arrival};
 use super::folder::source;
 use super::progress::{self, At, Stage};
 pub(crate) use super::remove::{removable, remove_package, setting_keys};
@@ -130,11 +131,14 @@ impl Core {
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、
 /// 带的名字不和装着的别的包撞（施工 F-8 六补）、拷进去以后照两层重读还是好的，才算装上。编号是文件夹的名字。查清单、冲突之前
 /// 推一次核对，拷进去之前推一次安装（施工 IN-3，推给 `caller`，只有一个包：第 1 个、一共 1 个）。
+///
+/// 包文件解开的另带那个文件 `file`（本地库记它）；`arrival` 是来路和批了什么（施工 PK-3 上）：装成以后、拉起扩展之前照
+/// [`super::approve`] 重算它的批准。
 pub(super) async fn from_path(
     core: &Arc<Core>,
     (peer, caller): (Peer, Option<&Reverse>),
     path: &Path,
-    file: Option<&Path>,
+    (file, arrival): (Option<&Path>, Arrival<'_>),
 ) -> Result<Value, Refusal> {
     if let Some(id) = super::folder::id_of(path) {
         progress::stage(caller, &id, Stage::Verify, At::ONLY);
@@ -149,6 +153,14 @@ pub(super) async fn from_path(
     let target = id.clone();
     // 升级的先停下原来的那一个再换文件（施工 F-5 补）：Windows 上开着的文件挪不走。换不成的照原来的清单换回来。
     let before = core.system_packages();
+    // 来路变没变照装之前本地库记的那一份判断（施工 PK-3 上）：拷进去以后就盖掉了。
+    let (local_root, looked) = (places.local_root(), id.clone());
+    let kept = approve::same_way(
+        blocking(move || Ok(local::desc(&local_root, &looked)))
+            .await?
+            .as_ref(),
+        arrival.came,
+    );
     let all = refs(&before);
     let without = leaving(&all, &id);
     core.switch_packages(&all, &without).await;
@@ -200,11 +212,24 @@ pub(super) async fn from_path(
         id.clone(),
         file.unwrap_or(&folder).display().to_string(),
     );
-    if let Err(refusal) =
-        blocking(move || super::local::record(&record_places, &record_id, version, &from)).await
+    let came = arrival.came.cloned();
+    if let Err(refusal) = blocking(move || {
+        super::local::record(&record_places, &record_id, version, (&from, came.as_ref()))
+    })
+    .await
     {
         tracing::warn!(target: TARGET, package = id.as_str(), reason = refusal.reason, "package not recorded");
     }
+    // 批准在拉起之前写好（施工 PK-3 上）：`start = "always"` 的装上就批过了，下面照旧拉起。
+    let approved = arrival.approve.and_then(|table| table.get(&id));
+    let manifest = mine.and_then(|one| one.read.as_ref().ok());
+    approve::record(
+        core,
+        (&id, manifest),
+        kept,
+        approved.map_or(&[][..], Vec::as_slice),
+    )
+    .await;
     core.switch_packages(&without, &refs(&now)).await;
     tracing::info!(target: TARGET, package = id.as_str(), "package installed");
     let mine = now

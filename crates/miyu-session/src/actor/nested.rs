@@ -30,10 +30,12 @@ impl Actor {
                         .await;
                 // 判过的真实位置跑的时候交给工具（施工 5-18）。
                 self.tools.checked_nested(&id, checked);
-                let verdict = self
+                let (verdict, preview) = self
                     .tools
                     .previewed(&asked.0, asked.1, looked, verdict)
                     .await;
+                // 卡片上那一份跑的时候交给工具（施工 PK-3 上：装包照它批能力）。
+                self.tools.previewed_nested(&id, preview);
                 Some(Input::Nested(NestedInput::Guarded {
                     at: self.clock.now(),
                     id,

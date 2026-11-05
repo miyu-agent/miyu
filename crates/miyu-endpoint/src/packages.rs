@@ -17,6 +17,7 @@ use miyu_store::root::DataRoot;
 
 use crate::Core;
 
+pub(crate) mod approve;
 mod archive;
 pub(crate) mod asked;
 pub(crate) mod changes;
@@ -33,6 +34,7 @@ pub(crate) mod logo;
 pub(crate) mod manage;
 mod may_manage;
 pub(crate) mod methods;
+mod notice;
 pub(crate) mod off;
 pub(crate) mod own;
 pub(crate) mod port;

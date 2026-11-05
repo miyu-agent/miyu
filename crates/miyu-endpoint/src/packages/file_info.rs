@@ -19,7 +19,7 @@ pub(super) async fn file(core: &Arc<Core>, peer: Peer, path: &str) -> Result<Val
     let _one_at_a_time = core.packaging.lock().await;
     let at = Path::new(path);
     let mut answer = match archive::is_package_file(at) {
-        true => archive::install(core, peer, at, Then::Describe, None, None).await?,
+        true => archive::install(core, peer, at, (Then::Describe, None), None).await?,
         false => described(core, peer, at).await?,
     };
     answer["path"] = json!(path);

@@ -179,6 +179,8 @@ mod package_tool;
 mod package_tool_open;
 mod package_vocabulary;
 mod packages;
+mod packages_approve;
+mod packages_approve_source;
 mod packages_archive;
 mod packages_config;
 mod packages_conflicts;
