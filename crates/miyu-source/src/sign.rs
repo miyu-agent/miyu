@@ -22,8 +22,11 @@ pub const OFFICIAL: &[(&str, &str)] = &[(
 
 /// 核心发版的公钥：编号、base64（施工 RL-4，设计 `59-发版.md` 第四节第 2 条）。签发版的 `SHA256SUMS`，和软件源那把分开；
 /// `miyu upgrade` 照它核对下载的新版。项目主人生成以后填进来（私钥只在发版仓库的 Actions 密钥里，不经任何会话）；
-/// 现在是空的：空的时候 `miyu upgrade` 不自己升级。换钥匙时新的加在后面，旧的等没人还在用旧版再删。
-pub const RELEASE: &[(&str, &str)] = &[];
+/// 空的时候 `miyu upgrade` 不自己升级。2026-11-05 主人生成第一把（施工 RL-4补）。换钥匙时新的加在后面，旧的等没人还在用旧版再删。
+pub const RELEASE: &[(&str, &str)] = &[(
+    "ca6918041857843c",
+    "LOj3CWiaD/hcIp5yRUzy6zAGKivZDP5Dl+5O51kupYs=",
+)];
 
 /// 一把公钥。
 #[derive(Debug, Clone, PartialEq, Eq)]

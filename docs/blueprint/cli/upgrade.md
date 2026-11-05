@@ -36,7 +36,8 @@ channel = "script"   # script：安装脚本；aur：AUR 的包；brew：Homebre
 1. **认谁装的**：读标记。没有的说「不自动升级」、提示下载地址 `https://github.com/miyu-agent/miyu/releases/latest`，退出码 0；
    `aur` 说用 `paru -Syu`、`brew` 说用 `brew upgrade`（升整套，不猜装了哪几个包），退出码 0；读不懂的报错。只有 `script` 往下走。
 2. **收拾上次的**：删掉安装目录里上次留下的 `.miyu-old-<版本>/`、`.miyu-upgrade/`（Windows 上跑着的程序删不掉，留到这一次）。
-3. **公钥**：编进来的发版公钥表（`sign::RELEASE`）是空的，报「这一版没有内置发版公钥」，不升级、不跳过签名。系统不在发的四种里的
+3. **公钥**：编进来的发版公钥表（`sign::RELEASE`，施工 RL-4补 填上主人的第一把 `ca6918041857843c`）是空的时候，报「这一版没有内置
+   发版公钥」，不升级、不跳过签名。系统不在发的四种里的
    报没有这种系统的发行包。这两样都在上网之前。
 4. **问 GitHub**：`/repos/miyu-agent/miyu/releases?per_page=30`，草稿不算，预发布只在 `--pre` 时算，标签要是 `v<版本>`。不比现在这一版
    （`miyu --version` 的那一个）新的说「已是最新版本」，退出码 0：只升不降。连不上、限流（`403`、`429` 带 `x-ratelimit-remaining: 0`，

@@ -1383,6 +1383,15 @@ flowchart LR
 |---|---|---|
 | PK-2 | 依赖的版本下限 | `[depends]`、`[recommends]` 的 `packages` 里能写 `<编号>>=<版本>`：只认 `>=`，版本照 semver 2.0.0 写、照它的先后比（`miyu_config::package::Dependency`，自己写的比较，不加 crate），别的写法、`workers` 里带下限的照旧 `bad_dependency`；不写版本的照旧。装着的版本没写、不是 semver、比下限低的同缺了：装（含看一眼）拒 `depends_missing`，`package.list` 写 `depends_missing`、`miyu check` 报，扩展不拉起；`data.missing`、`missing`、协议和索引上的依赖都照写的原样（`onebot>=1.2.0`）。从软件源装照先后找第一个那一版够的源，装着不够的一起升；看一眼的推荐照下限列。索引照旧是字的数组、`version` 1，读的写法检查照清单的写法。新测试：`depend/tests.rs` 5 条、清单一条、索引和收录、`fetch` 单测一条、真核心 `package_depends_floor.rs` 两条（含假软件源上一起升）；手写变异 16 个都逮住。合后 core1 换 packages 的 `miyu-rev`。施工单见 `PK-2-依赖的版本下限.md` |
 
+**发版**（RL 线，设计 59，2026-11-04 项目主人定渠道、版本号、钥匙；施工 RL-3、RL-5 照设计 60 分包，排在 SD 之后）
+
+| 步 | 名字 | 做什么 |
+|---|---|---|
+| RL-1 | 命令行版的压缩包 | `cargo xtask dist`：版本照工作区、系统照本机（不交叉编），`heads.toml` 的两个头克隆、检出钉的那一份并核对，release `--locked` 编核心三个程序、终端、网页（头照自己的工具链）；搭 `miyu-<版本>-<系统>/`（五个程序放一起，`resources/` 只带登记了的、加两个头的包文件夹，网页照它自己的 `pack-web.py --stage` 搭），合核心和两个头的第三方许可证清单、中英 README；打 tar.gz（Windows zip），属主和时刻是 0、打两次一字不差。`heads.toml` 钉终端 46f2699c、网页 v0.1.0。施工单见 `RL-1-打包.md` |
+| RL-2 | 发版流程 | `release.yml`：推 `v<版本>`（演练 `v<版本>-rc.N`）时四种系统各打一个、`cargo xtask dist-check` 查包（解开、五个程序、许可证、README、资源照 `git ls-files` 逐项比字节、`miyu --version`、隔离数据根里 `miyu check`），都过了写 `SHA256SUMS`，没有 secret `MIYU_RELEASE_KEY`、variable `MIYU_RELEASE_PUBLIC` 的停下（不跳过签名），`miyu-index sign-sums` 签、`verify-sums` 验，构建出处证明，建草稿 Release（不发布）；查包比资源一律用 `/` 分开的相对路径。施工单见 `RL-2-发版流程.md` |
+| RL-2补 | rc.1 演练查出的两处 | macOS 的 bash 3.2 把全角逗号的头一个字节并进变量名（`$tag，` 报 unbound），`release.yml` 两处改成 `${tag}`；查包先把压缩包换成绝对路径（相对路径带出来的 `MIYU_HOME` 核心不认，Linux aarch64 上报的）（core1 做） |
+| RL-4 | `miyu upgrade` | 程序旁边的 `install.toml` 认谁装的：`script` 自己升（GitHub Releases 挑新版、草稿预发布不算、`--pre` 才算、只升不降；`SHA256SUMS` 照编进来的发版公钥验签、对压缩包 SHA-256；解到安装目录里的暂存、查五个程序和 `resources/`、跑新的 `--version`；逐样对换，出错照反方向挪回），`aur`、`brew` 只印 `paru -Syu`、`brew upgrade`，没标记的只印下载地址；没写权限的说清楚不提权；连不上、限流分开说；核心重启那条路还没有，只提示 `miyu core stop`。发版公钥表 `sign::RELEASE`（RL-4补 填上主人生成的第一把）。施工单见 `RL-4-upgrade.md` |
+
 **配置项的词汇**（PC 线，设计 53，2026-10-31 项目主人定：四档都做）
 
 | 步 | 名字 | 做什么 |
