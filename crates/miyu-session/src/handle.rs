@@ -88,6 +88,8 @@ pub(crate) enum Message {
     Subscribe(oneshot::Sender<Taken>),
     /// 要这一刻「当前的」几样（施工 9-6 上）：已经订阅着的头再订阅一次时，不另起订阅。
     Current(oneshot::Sender<crate::current::Current>),
+    /// 发送前照这个会话自己判前缀变不变（施工 PX-1）：号是这一次的。
+    PrefixCheck(u64, oneshot::Sender<crate::prefix::PrefixCheck>),
     /// 下一次请求会发的工具（施工 S-T，`handle/tools.rs`）。
     Tools(oneshot::Sender<Vec<String>>),
     /// 这时的上下文一块块的（施工 CX-1 上，`handle/context.rs`）。

@@ -220,6 +220,7 @@ mod personas;
 mod platform_tools;
 mod ports;
 mod prefix_ask;
+mod prefix_session;
 mod prefs;
 mod preset_background;
 mod preset_env;

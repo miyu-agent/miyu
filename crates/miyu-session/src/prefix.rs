@@ -59,3 +59,24 @@ impl Prefix {
         self.allowed.fetch_max(version, Ordering::SeqCst);
     }
 }
+
+/// 发送前照这个会话自己干算一遍的结果（施工 PX-1，[`crate::Handle::check_prefix`]）：号变了，照回合开始那一套把它的快照重拼一次、
+/// 和现在的比。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PrefixCheck {
+    /// 它的前缀不变（改的是别的人格、图片、它用不到的覆盖），或者重拼不成、回合开始也会照旧：不用问人，看到的号已经对到这一次。
+    Unchanged,
+    /// 它的前缀要变：交回它用着的人格、预设、工具面上的工具，端点照它们挑出真进它前缀的那几个改动。
+    Changed(Touches),
+}
+
+/// 一个会话的前缀用到的：人格、预设的编号（没有的是 `None`），工具面上的工具名。
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Touches {
+    /// 人格的编号。
+    pub persona: Option<String>,
+    /// 预设的编号。
+    pub preset: Option<String>,
+    /// 工具面上的工具名。
+    pub tools: Vec<String>,
+}

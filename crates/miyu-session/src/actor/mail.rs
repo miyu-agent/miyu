@@ -74,6 +74,10 @@ impl Actor {
                 self.next_tools(reply);
                 Mail::Done
             }
+            Message::PrefixCheck(version, reply) => {
+                self.check_prefix(version, reply);
+                Mail::Done
+            }
             Message::Context(crate::handle::context::Asked::Now(reply)) => {
                 self.context(reply);
                 Mail::Done

@@ -12,13 +12,12 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use miyu_config::Values;
-use miyu_drivers::DriverTexts;
 use miyu_kernel::id::{ContentHash, VenueId};
 use miyu_kernel::session::Policy;
 use miyu_policy::PersonaTexts;
+use miyu_policy::Snapshot;
 use miyu_policy::features::Features;
 use miyu_policy::preset::{Chosen, MEMORY, ROLEPLAY};
-use miyu_policy::{GuardTexts, RunTexts, Snapshot};
 use miyu_store::blob::Blobs;
 use miyu_store::personas::{PersonaError, Personas};
 use miyu_store::resources::ResourceRoot;
@@ -34,6 +33,7 @@ use crate::snapshot::{Parts, build};
 use crate::spawn::Lineage;
 use face::{followed, offered, refaced, reshelved, shelf_tools};
 use recast::Wanted;
+use swap::{Recast, Retext};
 
 /// 换快照要的：人格的几层、资源目录、存快照的地方，现在的快照，是不是子会话；预设的几层和装了的软件，重新筛工具面要的目录
 /// 架子、场所、父会话（施工 P-2 下、O-2 中）。
@@ -85,6 +85,8 @@ enum Seen {
     Unreadable(String),
     /// 改了，换不了：拼不成、存不进：照旧。
     Kept(String),
+    /// 只干算的（施工 PX-1，[`check`]）：改了、回合开始会换。不建策略、不存。
+    Would,
 }
 
 impl Actor {
@@ -116,8 +118,15 @@ impl Actor {
         let edits = refresh.presets.as_ref().map_or(0, PresetPlaces::edits);
         let prefix = Arc::clone(&refresh.prefix);
         let edited = edits > prefix.seen();
-        match blocking(move || look(&refresh, &values, &now, (asked, project, wanted, edited)))
-            .await
+        match blocking(move || {
+            look(
+                &refresh,
+                &values,
+                &now,
+                (asked, project, wanted, edited, false),
+            )
+        })
+        .await
         {
             Seen::Same => {
                 prefix.see(edits);
@@ -151,6 +160,7 @@ impl Actor {
                 tracing::warn!(target: TARGET, persona = persona.as_deref(), error = error.as_str(), "persona not swapped");
                 None
             }
+            Seen::Would => None,
         }
     }
 }
@@ -162,15 +172,16 @@ fn follows_files(refresh: &Refresh) -> bool {
 }
 
 /// 在阻塞线程里看一遍：`now` 是架子上现在的那一代，`asked` 是开场所会话的扩展这一刻要插的那一段（施工 X-20，没说过的是
-/// `None`）。
+/// `None`）。`dry` 的只干算（施工 PX-1）：要换的交回 [`Seen::Would`]，不建策略、不存 blob。
 fn look(
     refresh: &Refresh,
     values: &Values,
     now: &Edition,
-    (asked, project, wanted, files): (
+    (asked, project, wanted, files, dry): (
         BTreeMap<String, Option<String>>,
         Option<String>,
         Wanted,
+        bool,
         bool,
     ),
 ) -> Seen {
@@ -377,6 +388,9 @@ fn look(
     if !edited && !old.swappable(&new) && new.tools == old.tools {
         return Seen::Same;
     }
+    if dry {
+        return Seen::Would;
+    }
     let built = || -> Result<(Policy, Retext), String> {
         let texts = Retext {
             driver: new.driver_texts().map_err(|error| error.to_string())?,
@@ -402,22 +416,6 @@ fn look(
         Box::new(texts),
         recast,
     )
-}
-
-/// 换了人格（施工 P-13）：快照换上以后 actor 照它挪记忆、换知识库。
-struct Recast {
-    /// 新人格的知识库：没接知识库的没有。
-    shelves: Option<Arc<Shelves>>,
-}
-
-/// 执行器取自快照的几份字（施工 P-1 三补）：换快照时一起换。
-struct Retext {
-    /// 驱动的占位：交给请求模型的端口。
-    driver: DriverTexts,
-    /// 执行工具时替工具写的两句。
-    run: RunTexts,
-    /// 权限策略的几句。
-    guard: GuardTexts,
 }
 
 /// 快照里的预设现在是什么样（施工 P-2 下；O-2 中重新筛工具面也要它）。
@@ -473,6 +471,7 @@ fn preset(refresh: &Refresh, values: &Values) -> Result<Preset, String> {
     })
 }
 
+mod check;
 mod context;
 #[cfg(test)]
 mod context_tests;
@@ -488,6 +487,7 @@ mod recast_tests;
 mod shelf_tests;
 mod spent;
 mod steps;
+mod swap;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

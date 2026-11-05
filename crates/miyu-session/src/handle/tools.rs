@@ -16,3 +16,17 @@ impl Handle {
         answer.await.map_err(|_| Stopped)
     }
 }
+
+impl Handle {
+    /// 发送前照这个会话自己判，号 `version` 的改动让不让它的前缀变（施工 PX-1，`actor/persona/check.rs`）。不变的，它看到的号已经
+    /// 对到 `version`。
+    ///
+    /// # Errors
+    ///
+    /// 会话停了。
+    pub async fn check_prefix(&self, version: u64) -> Result<crate::prefix::PrefixCheck, Stopped> {
+        let (reply, answer) = oneshot::channel();
+        self.send(Message::PrefixCheck(version, reply))?;
+        answer.await.map_err(|_| Stopped)
+    }
+}

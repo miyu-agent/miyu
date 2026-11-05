@@ -37,7 +37,12 @@ impl Actor {
             > refresh.prefix.seen();
         tokio::spawn(async move {
             let tools = blocking(move || {
-                match look(&refresh, &values, &now, (asked, project, wanted, edited)) {
+                match look(
+                    &refresh,
+                    &values,
+                    &now,
+                    (asked, project, wanted, edited, false),
+                ) {
                     Seen::Swapped(snapshot, ..) => offered(&snapshot),
                     _ => offered(&refresh.snapshot),
                 }
