@@ -118,11 +118,25 @@ fn a_refusal_keeps_its_reason_message_and_wait() {
         ("login_throttled", "登录太频繁", Some(1500))
     );
     assert_eq!(refused.to_string(), "登录太频繁");
+    assert_eq!(refused.data, throttled["data"]);
     let bare = crate::open::Refused::of(&serde_json::json!({}));
     assert_eq!(
-        (bare.reason.as_str(), bare.retry_after_ms),
-        ("refused", None)
+        (bare.reason.as_str(), bare.retry_after_ms, &bare.data),
+        ("refused", None, &serde_json::Value::Null)
     );
+}
+
+/// 拒绝里的别的格原样带回（施工 CA-2）：冲突时的 `current`、写错时的 `problems`，头照它画。
+#[test]
+fn a_refusal_keeps_the_whole_data() {
+    let conflict = serde_json::json!({
+        "code": -32602,
+        "message": "配置被别人改过了",
+        "data": {"reason": "config_conflict", "current": {"version": 7}, "problems": [{"message": "要写整数"}]},
+    });
+    let refused = crate::open::Refused::of(&conflict);
+    assert_eq!(refused.data["current"]["version"], 7);
+    assert_eq!(refused.data["problems"][0]["message"], "要写整数");
 }
 
 /// 视图流读回来（施工 V-D）：核心写出去的推送照原样读回来，写回去一字不差；核心以后加的格（这里的 `future`）不管，可以没有的格

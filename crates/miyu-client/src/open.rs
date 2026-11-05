@@ -43,7 +43,9 @@ impl Browser for SystemBrowser {
 
 /// 核心拒了、连不上、没回（施工 W-8 再补，接入通讯平台要的）：`reason` 是核心的 `data.reason`（`bad_password`、`bad_login`、
 /// `login_throttled`、`bad_ticket`……），核心之外的几种是固定的词：`unreachable`（连不上、拉不起来）、`no_answer`（等太久没回，默认 30 秒）、
-/// `disconnected`（核心断开）、`io`（写不出去、读不了）。`message` 是原话；`retry_after_ms` 是登录被挡时还要等多久。
+/// `disconnected`（核心断开）、`io`（写不出去、读不了）。`message` 是原话；`retry_after_ms` 是登录被挡时还要等多久；`data` 是核心
+/// 那份 `error.data` 原样（施工 CA-2：`config_conflict` 的 `current`、写错的 `problems`、续传的 `received` 这些），核心之外的几种是
+/// `null`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refused {
     /// 为什么：照它写给人看的字，不照 `message` 猜。
@@ -52,6 +54,8 @@ pub struct Refused {
     pub message: String,
     /// `login_throttled` 的 `data.retry_after_ms`。
     pub retry_after_ms: Option<u64>,
+    /// 核心的 `error.data` 原样；核心之外的几种是 `null`。
+    pub data: Value,
 }
 
 impl Refused {
@@ -61,6 +65,7 @@ impl Refused {
             reason: reason.to_string(),
             message: message.to_string(),
             retry_after_ms: None,
+            data: Value::Null,
         }
     }
 
@@ -73,6 +78,7 @@ impl Refused {
                 .to_string(),
             message: error["message"].as_str().unwrap_or("refused").to_string(),
             retry_after_ms: error["data"]["retry_after_ms"].as_u64(),
+            data: error["data"].clone(),
         }
     }
 }
