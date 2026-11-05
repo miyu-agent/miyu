@@ -6,7 +6,9 @@ use std::io::{BufRead, Write};
 
 use serde_json::Value;
 
+use super::approve;
 use super::query::size;
+use crate::config::columns;
 use crate::diagnostic;
 use crate::exit;
 use crate::language::{Carried, Doing, Language, PlanLabel};
@@ -62,14 +64,14 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         })
         .collect();
     rows.extend(row(PlanLabel::Skipped, skipped));
-    let needs = preview["capabilities"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|capability| capability["name"].as_str())
-        .map(str::to_string)
-        .collect();
-    rows.extend(row(PlanLabel::Needs, needs));
+    // 能力一项一行、名字接说明（施工 PK-3 下，设计 61 第三节第 1 条）：后面几行缩进到「需要：」后面那一列。
+    let label = language.plan_label(PlanLabel::Needs);
+    for (index, need) in approve::needs(preview, false, language).iter().enumerate() {
+        match index {
+            0 => rows.push(format!("{label}{need}")),
+            _ => rows.push(format!("{}{need}", " ".repeat(columns(label)))),
+        }
+    }
     if doing == Doing::Remove {
         let keys: Vec<&str> = strings(&preview["settings"]);
         let mut deletes = Vec::new();
@@ -116,6 +118,13 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
             PlanLabel::From,
             vec![format!("{origin}{}", language.origin_mark(official))],
         ));
+    }
+    // 不经软件源装的从哪来（施工 PK-3 下）：本机文件、出厂、系统的包管理器；路径是人自己敲的，不再印。
+    if let Some(said) = preview["source"]
+        .as_str()
+        .and_then(|one| language.local_source(one))
+    {
+        rows.extend(row(PlanLabel::From, vec![said.to_string()]));
     }
     if let (Some(files), Some(bytes)) = (preview["files"].as_u64(), preview["size"].as_u64()) {
         rows.extend(row(
@@ -174,6 +183,18 @@ pub(crate) fn included(preview: &Value, doing: Doing, language: &Language) -> Ve
         carried(Carried::Settings(n));
     }
     items
+}
+
+/// 装、装回之前问的那一句（施工 PK-3 下）：装的、核心认 `approve`、有要批的能力的问「安装 '<编号>' 并批准它要的能力？」，别的照旧；
+/// 核心给了 `notice` 的前面先一行「注意：…」。
+pub(crate) fn question(preview: &Value, doing: Doing, id: &str, language: &Language) -> String {
+    let approving =
+        doing == Doing::Install && approve::understood(preview) && approve::asks(&[preview]);
+    let asked = match approving {
+        true => language.proceed_approving(doing, id),
+        false => language.proceed(doing, id),
+    };
+    approve::noticed(approve::notice(&preview["notice"], language), asked)
 }
 
 fn strings(value: &Value) -> Vec<&str> {

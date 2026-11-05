@@ -5,6 +5,7 @@
 //! 做成了退出码 0；核心拒的照核心的原话印在标准错误上（清单装不上的照 `data` 说哪里不对），退出码 1；`owns` 哪个包都没有的、
 //! `check` 查出改了少了的也是 1（照 pacman）；参数写错的 2，由 clap 管。
 
+mod approve;
 mod confirm;
 mod group;
 mod info;

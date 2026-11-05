@@ -28,7 +28,8 @@ pacman forms: -S <id>… installs from the source, -Syu updates and upgrades,
 
 Options:
       --format <text|json>  Output format (default: text)
-      --yes, --noconfirm    Install or remove without asking
+      --yes, --noconfirm    Install, upgrade or remove without asking,
+                            approving the capabilities they need
   -n, --purge               Remove the config too
       --target <target>     Target system for pack
   -o, --out <dir>           Output directory for pack (default: current)

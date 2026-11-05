@@ -17,6 +17,7 @@ mod kb;
 mod login;
 mod memory;
 mod opening;
+mod pkg_approve;
 mod pkg_info_path;
 mod pkg_source;
 mod pkg_stages;

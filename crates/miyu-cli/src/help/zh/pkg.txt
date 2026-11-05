@@ -27,7 +27,7 @@ pacman 写法：-S <编号>… 从软件源安装，-Syu 更新索引后升级�
 
 选项：
       --format <text|json>  输出格式（默认 text）
-      --yes, --noconfirm    安装或卸载前不确认
+      --yes, --noconfirm    安装、升级或卸载前不确认，要的能力一并批准
   -n, --purge               卸载时连配置一起删除
       --target <系统>       打包的目标系统
   -o, --out <目录>          打包的输出目录（默认当前目录）

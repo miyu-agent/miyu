@@ -5,6 +5,10 @@
 //! 冲突；印要装的、推荐的和几行「键 : 值」（`summary.rs`），问装不装，有推荐的再问一句；装的时候照核心推的进度印下载、核对、安装
 //! （`progress.rs`）；推荐的答了「是」的，主包装完以后一个一个照同一条请求装，不再问、不再列它们推荐的。`--yes` 主包当「是」、
 //! 推荐的当「否」。从包目录、包文件装的、装回出厂的照旧印那一份。
+//!
+//! 施工 PK-3 下（设计 `61-装包说清来源和能力.md` 第三节、第四节第 2 条）：确认屏写明来源、能力一项一行、核心给的「注意」；答
+//! 「是」、写 `--yes` 的都算批，看一眼列出的每个包的能力照原样带进 `approve`（`approve.rs`），装好以后一个包一行说批了哪些；推荐
+//! 的另印一段、答「是」另装另批。核心不认 `approve` 的（看一眼没有新的来源写法）不带。
 
 use std::collections::BTreeSet;
 use std::io::{BufRead, Write};
@@ -12,7 +16,9 @@ use std::io::{BufRead, Write};
 use serde_json::{Value, json};
 
 use super::progress::Progress;
-use super::{PkgPlan, ask_about, confirm, lines, open, package_of, previewed, refused, summary};
+use super::{
+    PkgPlan, approve, ask_about, confirm, lines, open, package_of, previewed, refused, summary,
+};
 use crate::diagnostic;
 use crate::exit;
 use crate::language::{Doing, Language};
@@ -54,7 +60,7 @@ pub(super) async fn run(
             let question = summary::question(&shown, language);
             confirm::asked((input, out, err), &question, language)?;
             let wanted = summary::recommends(&shown);
-            let also = language.proceed_recommended(wanted.len());
+            let also = summary::recommended_question(&shown, language);
             if !wanted.is_empty() && confirm::agreed((input, out), &also) {
                 recommended = wanted;
             }
@@ -66,27 +72,48 @@ pub(super) async fn run(
             };
             lines(out, confirm::plan(&shown, doing, language));
             let id = shown["package"].as_str().unwrap_or(what);
-            confirm::asked((input, out, err), &language.proceed(doing, id), language)?;
+            let question = confirm::question(&shown, doing, id, language);
+            confirm::asked((input, out, err), &question, language)?;
         }
     }
-    let mut done = one(rpc, plan, (params, what, &shown), (input, out, err)).await?;
+    // 答了「是」、写了 `--yes` 的都算批（施工 PK-3 下，设计 61 定了的 6）：看一眼列出的每个包的能力照原样带上；核心不认
+    // `approve` 的（PK-3 上以前）不带，照旧装好以后打开时批。
+    let items = approve::installing(&shown);
+    let approving = approve::understood(&shown).then(|| approve::table(&items));
+    let said = approving
+        .as_ref()
+        .map(|_| approve::said(&items, language))
+        .unwrap_or_default();
+    let params = approve::carried(params, &approving.unwrap_or_default());
+    let mut done = one(rpc, plan, (params, what, &shown, said), (input, out, err)).await?;
     for (id, _) in recommended {
         if !done.insert(id.clone()) {
             continue;
         }
         let params = json!({ "source": id });
         let preview = ("package.install", previewed(&params), Some(id.as_str()));
-        let shown = ask_about(rpc, preview, language, err).await?;
-        done.extend(one(rpc, plan, (params, &id, &shown), (input, out, err)).await?);
+        let looked = ask_about(rpc, preview, language, err).await?;
+        // 推荐的照第二句那一段批（列在头一次看一眼的 `recommends` 里的那一份），这一次看一眼多出来的不批。
+        let listed: Vec<&Value> = shown["recommends"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|item| item["package"] == id.as_str() && approve::understood(&looked))
+            .collect();
+        let said = approve::said(&listed, language);
+        let params = approve::carried(params, &approve::table(&listed));
+        let installed = one(rpc, plan, (params, &id, &looked, said), (input, out, err)).await?;
+        done.extend(installed);
     }
     Ok(())
 }
 
-/// 真装一次，照看一眼的 `shown` 印进度；装好了印一行、问要不要打开。交回这一次装上的编号（连一起装的依赖）。
+/// 真装一次，照看一眼的 `shown` 印进度；装好了印一行、印批了哪些（`said`），问要不要打开。交回这一次装上的编号（连一起装的
+/// 依赖）。
 async fn one(
     rpc: &mut Rpc,
     plan: &PkgPlan,
-    (params, what, shown): (Value, &str, &Value),
+    (params, what, shown, said): (Value, &str, &Value, Vec<String>),
     (input, out, err): (&mut dyn BufRead, &mut dyn Write, &mut dyn Write),
 ) -> Result<BTreeSet<String>, u8> {
     let language = &plan.language;
@@ -105,6 +132,7 @@ async fn one(
         .filter(|version| !version.is_empty());
     let installed = version.map_or_else(|| id.to_string(), |version| format!("{id} {version}"));
     say(out, &language.installed(&installed));
+    lines(out, said);
     if !open::wanted(&result, shown) {
         return Ok(done);
     }

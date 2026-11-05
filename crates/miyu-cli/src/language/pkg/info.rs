@@ -18,6 +18,8 @@ pub(crate) enum InfoKey {
     /// 包目录、包文件里读不成的（施工 IN-4）。
     Skipped,
     Capabilities,
+    /// 从软件源装时推荐的包要的能力（施工 PK-3 下）。
+    RecommendedCapabilities,
     Origin,
     Author,
     Upstream,
@@ -52,6 +54,7 @@ impl Language {
             InfoKey::Provides => ("提供", "Provides"),
             InfoKey::Skipped => ("无法读取", "Unreadable"),
             InfoKey::Capabilities => ("需要的能力", "Capabilities"),
+            InfoKey::RecommendedCapabilities => ("推荐的包要的能力", "Recommended Capabilities"),
             InfoKey::Origin => ("来源", "Origin"),
             InfoKey::Author => ("作者", "Author"),
             InfoKey::Upstream => ("上游", "Upstream"),

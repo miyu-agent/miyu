@@ -1,6 +1,7 @@
 //! `miyu pkg` 给人看的字（施工 T-3，`docs/blueprint/cli/pkg.md`「给人看的字」；CL-2 补照设计 47 第三节改：结果行动词打头，
 //! 报错交 [`Problem`]，由 `diagnostic` 加 `miyu: `，建议另起一行）。
 
+mod approve;
 mod info;
 mod install;
 mod pack;

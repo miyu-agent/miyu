@@ -4,7 +4,8 @@
 
 use serde_json::Value;
 
-use super::info::{aligned, capabilities};
+use super::approve;
+use super::info::aligned;
 use super::query::size;
 use crate::config::columns;
 use crate::language::{Doing, InfoKey, Language};
@@ -50,7 +51,8 @@ pub(super) fn named((id, version): &(String, String)) -> String {
 }
 
 /// 印的那一份：「软件包 (N)」一行、有推荐的「推荐 (N)」一行（两行的开头照宽的那个补齐，再空两格），空一行，下载大小、安装后大小
-/// （核心没给的不印）、来源、需要的能力（没有的不印）几行「键 : 值」。
+/// （核心没给的不印）、来源、需要的能力（没有的不印）几行「键 : 值」。施工 PK-3 下起（设计 61 第三节）：来源照每个包说，都一样
+/// 的只写一行，不一样的一个包一行、前面接编号；能力一项一行、名字接说明，几个包的前面接编号，批过的标出来。
 pub(super) fn plan(preview: &Value, language: &Language) -> Vec<String> {
     let installing = packages(preview);
     let recommended = recommends(preview);
@@ -72,9 +74,9 @@ pub(super) fn plan(preview: &Value, language: &Language) -> Vec<String> {
         })
         .collect();
     rows.push(String::new());
-    let official = preview["official"].as_bool() == Some(true);
-    // 软件源的名字（施工 PK-3 上起叫 `feed`；`source` 改成说从哪来，确认屏照它改在 PK-3 下）。
-    let source = preview["feed"].as_str().unwrap_or_default();
+    let items = approve::installing(preview);
+    let ids = (items.len() > 1).then(|| id_width(&items));
+    let needs = approve::needs_of(&items, ids, language);
     rows.extend(aligned(
         vec![
             (
@@ -85,23 +87,95 @@ pub(super) fn plan(preview: &Value, language: &Language) -> Vec<String> {
                 InfoKey::InstalledSize,
                 preview["installed"].as_u64().map(size),
             ),
-            (
-                InfoKey::Origin,
-                Some(language.verified_source(official, source)),
-            ),
-            (InfoKey::Capabilities, capabilities(preview, language)),
+            (InfoKey::Origin, Some(origins(preview, &items, language))),
+            (InfoKey::Capabilities, joined(needs)),
         ],
         language,
     ));
     rows
 }
 
-/// 问的那一句：一个包的「安装 '<编号>'？」，几个的「安装 N 个软件包？」。
-pub(super) fn question(preview: &Value, language: &Language) -> String {
-    match packages(preview).as_slice() {
-        [(id, _)] => language.proceed(Doing::Install, id),
-        many => language.proceed_installs(many.len()),
+/// 几个包的编号里最宽的那个占几列。
+fn id_width(items: &[&Value]) -> usize {
+    items
+        .iter()
+        .map(|item| columns(item["package"].as_str().unwrap_or_default()))
+        .max()
+        .unwrap_or(0)
+}
+
+/// 几行连成一个值（`aligned` 照换行缩进），一行都没有的没有。
+fn joined(lines: Vec<String>) -> Option<String> {
+    (!lines.is_empty()).then(|| lines.join("\n"))
+}
+
+/// 「来源」：每个包照它的 `source`、`feed` 说（施工 PK-3 下）；都一样的只写一行，不一样的一个包一行、前面接编号。旧的核心
+/// （施工 PK-3 上以前，没有 `feed`，`source` 是源的名字）照旧那一句。
+fn origins(preview: &Value, items: &[&Value], language: &Language) -> String {
+    if !preview["feed"].is_string() {
+        let official = preview["official"].as_bool() == Some(true);
+        let source = preview["source"].as_str().unwrap_or_default();
+        return language.verified_source(official, source);
     }
+    let said: Vec<(&str, String)> = items
+        .iter()
+        .filter_map(|item| {
+            let feed = item["feed"].as_str()?;
+            let source = item["source"].as_str().unwrap_or_default();
+            let line = language.verified_from(source, feed, item["origin"].as_str());
+            Some((item["package"].as_str().unwrap_or_default(), line))
+        })
+        .collect();
+    if said.iter().all(|(_, line)| *line == said[0].1) {
+        return said[0].1.clone();
+    }
+    let width = Some(id_width(items));
+    let lines: Vec<String> = said
+        .iter()
+        .map(|(id, line)| approve::prefixed(id, width, line))
+        .collect();
+    lines.join("\n")
+}
+
+/// 问的那一句：一个包的「安装 '<编号>'？」，几个的「安装 N 个软件包？」；有要批的能力的（核心认 `approve` 的）换成「并批准
+/// 它（们）要的能力」（施工 PK-3 下）。核心给了 `notice` 的，前面先一行「注意：…」。
+pub(super) fn question(preview: &Value, language: &Language) -> String {
+    let approving = approve::understood(preview) && approve::asks(&approve::installing(preview));
+    let asked = match (packages(preview).as_slice(), approving) {
+        ([(id, _)], false) => language.proceed(Doing::Install, id),
+        ([(id, _)], true) => language.proceed_approving(Doing::Install, id),
+        (many, false) => language.proceed_installs(many.len()),
+        (many, true) => language.proceed_many_approving(Doing::Install, many.len()),
+    };
+    approve::noticed(approve::notice(&preview["notice"], language), asked)
+}
+
+/// 推荐的那一句（施工 PK-3 下，设计 61 第三节「推荐的」）：推荐的里有要能力的、核心给了 `recommends_notice` 的，先空一行另印
+/// 「推荐的包要的能力」（一项一行、前面接编号）、「注意：…」，问的换成「并批准」；都没有的照旧那一句。
+pub(super) fn recommended_question(preview: &Value, language: &Language) -> String {
+    let items: Vec<&Value> = preview["recommends"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .collect();
+    let width = Some(id_width(&items));
+    let needs = approve::needs_of(&items, width, language);
+    let notice = approve::notice(&preview["recommends_notice"], language);
+    let asked = match approve::understood(preview) && approve::asks(&items) {
+        true => language.proceed_recommended_approving(items.len()),
+        false => language.proceed_recommended(items.len()),
+    };
+    if needs.is_empty() && notice.is_none() {
+        return asked;
+    }
+    let mut said = vec![String::new()];
+    said.extend(aligned(
+        vec![(InfoKey::RecommendedCapabilities, joined(needs))],
+        language,
+    ));
+    said.extend(notice);
+    said.push(asked);
+    said.join("\n")
 }
 
 #[cfg(test)]

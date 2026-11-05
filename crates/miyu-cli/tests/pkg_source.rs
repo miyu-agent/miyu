@@ -357,7 +357,7 @@ async fn install_from_the_source_shows_the_plan_asks_and_cleans_up_after() {
 }
 
 /// 同 [`package`]，版本是 `version`。
-fn package_at(dir: &std::path::Path, id: &str, version: &str) -> (String, Vec<u8>) {
+pub(crate) fn package_at(dir: &std::path::Path, id: &str, version: &str) -> (String, Vec<u8>) {
     let folder = dir.join("src").join(format!("{id}-{version}")).join(id);
     std::fs::create_dir_all(&folder).expect("建得了");
     std::fs::write(
@@ -373,7 +373,11 @@ fn package_at(dir: &std::path::Path, id: &str, version: &str) -> (String, Vec<u8
 }
 
 /// 一份签好的索引（`generated` 那一刻，几个包），两份回应。
-fn index_replies(generated: &str, entries: Vec<serde_json::Value>, secret: &str) -> Vec<Reply> {
+pub(crate) fn index_replies(
+    generated: &str,
+    entries: Vec<serde_json::Value>,
+    secret: &str,
+) -> Vec<Reply> {
     let index =
         serde_json::to_vec(&json!({"version": 1, "generated": generated, "packages": entries}))
             .expect("写得成");

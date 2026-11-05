@@ -198,7 +198,7 @@ async fn pkg_shows_what_it_will_do_and_asks_first() {
     let no = answering(&root, &cwd, &["pkg", "install", "./xpkg"], "n\n").await;
     let shown = stdout(&no);
     assert!(
-        shown.starts_with("将安装 xpkg\n包含：扩展程序、命令 miyu xpkg\n大小：")
+        shown.starts_with("将安装 xpkg\n包含：扩展程序、命令 miyu xpkg\n来源：本机文件\n大小：")
             && shown.ends_with(asked),
         "{shown}"
     );
@@ -346,8 +346,10 @@ async fn pkg_approves_what_the_extension_asks_for_when_turning_it_on() {
     let text = stdout(&installed);
     assert!(text.contains("\n需要："), "先列出要的能力：{text}");
     assert!(
-        text.ends_with("已安装 xcap\n\n现在启用 'xcap'？[Y/n] 已启用 xcap\n"),
-        "能力一并批了才打得开：{installed:?}"
+        text.ends_with(
+            "已安装 xcap\n已批准 xcap 的能力：提供工具\n\n现在启用 'xcap'？[Y/n] 已启用 xcap\n"
+        ),
+        "装的时候就批了（施工 PK-3 下），打开时照旧带上：{installed:?}"
     );
     drop(held);
     if let Err(error) = std::fs::remove_dir_all(&cwd) {

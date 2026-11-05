@@ -113,17 +113,21 @@ pub(crate) fn rows(info: &Value, offset: UtcOffset, language: &Language) -> Vec<
 }
 
 /// 几行「键 : 值」（装之前那一份也照它印，施工 IN-3）：没有值的行不印，键照最宽的那个按显示宽度补齐（中文一个字两格），冒号前后
-/// 各空一格。
+/// 各空一格。值里有换行的（施工 PK-3 下：来源、能力一项一行）后面几行缩进到值的那一列。
 pub(super) fn aligned(rows: Vec<(InfoKey, Option<String>)>, language: &Language) -> Vec<String> {
     let rows: Vec<(&str, String)> = rows
         .into_iter()
         .filter_map(|(key, value)| Some((language.info_key(key), value?)))
         .collect();
     let width = rows.iter().map(|(key, _)| columns(key)).max().unwrap_or(0);
+    let indent = " ".repeat(width + 4);
     rows.into_iter()
-        .map(|(key, value)| {
+        .flat_map(|(key, value)| {
             let pad = " ".repeat(width + 1 - columns(key));
-            format!("{key}{pad} : {value}")
+            let mut parts = value.split('\n');
+            let first = format!("{key}{pad} : {}", parts.next().unwrap_or_default());
+            let rest: Vec<String> = parts.map(|part| format!("{indent}{part}")).collect();
+            std::iter::once(first).chain(rest)
         })
         .collect()
 }

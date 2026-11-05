@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{asked, plan};
+use super::{asked, plan, question};
 use crate::language::{Doing, Language};
 
 #[test]
@@ -20,7 +20,8 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
         [
             "将安装 pudding 1.2.0（替换 1.1.0）",
             "包含：扩展程序、命令 miyu pudding、后台页、吉祥物、接入 qq、2 项设置",
-            "需要：联网、读文件",
+            "需要：联网",
+            "      读文件",
             "大小：1.5 KiB，3 个文件",
         ]
     );
@@ -184,5 +185,98 @@ fn skills_and_scripts_are_listed_by_name() {
     assert_eq!(
         plan(&content, Doing::Install, &Language::English)[1],
         "Includes: skill take-notes, script dice, slash command /review"
+    );
+}
+
+/// 从包文件夹装（施工 PK-3 下，设计 61 第三节的第三个样子）：来源写本机文件，能力一项一行带说明，核心给的「注意」接在问的前面，
+/// 有要批的问「并批准」；装回出厂的写出厂、照旧那一句。
+#[test]
+fn a_local_folder_says_it_is_a_local_file_and_asks_to_approve() {
+    let shown = |language: Language| {
+        let (network, tools, notice) = match language {
+            Language::Chinese => (
+                ("联网", "访问网络、开端口"),
+                ("提供工具", "给 AI 加能调用的工具"),
+                [
+                    "这个包没经过官方审核。",
+                    "它带的程序会以你的身份在这台机器上跑，不在沙盒里。",
+                ],
+            ),
+            Language::English => (
+                ("Network", "Access the network and open ports"),
+                ("Provide tools", "Add tools the AI can call"),
+                [
+                    "This package has not been officially reviewed.",
+                    "The programs it carries run as you on this machine, outside any sandbox.",
+                ],
+            ),
+        };
+        json!({"package": "weather", "version": "0.3.0", "source": "file", "program": "process",
+               "command": "weather", "settings": 2,
+               "capabilities": [{"id": "network", "name": network.0, "summary": network.1},
+                                {"id": "tools", "name": tools.0, "summary": tools.1}],
+               "notice": notice, "files": 12, "size": 1536})
+    };
+    let zh = shown(Language::Chinese);
+    assert_eq!(
+        plan(&zh, Doing::Install, &Language::Chinese),
+        [
+            "将安装 weather 0.3.0",
+            "包含：扩展程序、命令 miyu weather、2 项设置",
+            "需要：联网：访问网络、开端口",
+            "      提供工具：给 AI 加能调用的工具",
+            "来源：本机文件",
+            "大小：1.5 KiB，12 个文件",
+        ]
+    );
+    assert_eq!(
+        question(&zh, Doing::Install, "weather", &Language::Chinese),
+        "注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+         安装 'weather' 并批准它要的能力？[Y/n] "
+    );
+    let en = shown(Language::English);
+    assert_eq!(
+        plan(&en, Doing::Install, &Language::English),
+        [
+            "Will install weather 0.3.0",
+            "Includes: extension, command miyu weather, 2 settings",
+            "Needs: Network: Access the network and open ports",
+            "       Provide tools: Add tools the AI can call",
+            "From: local file",
+            "Size: 1.5 KiB, 12 files",
+        ]
+    );
+    assert_eq!(
+        question(&en, Doing::Install, "weather", &Language::English),
+        "Note: This package has not been officially reviewed. The programs it carries run as you on \
+         this machine, outside any sandbox.\nInstall 'weather' and approve the capabilities it needs? [Y/n] "
+    );
+    let mut nothing = zh.clone();
+    nothing["capabilities"] = json!([]);
+    assert_eq!(
+        question(&nothing, Doing::Install, "weather", &Language::Chinese),
+        "注意：这个包没经过官方审核。它带的程序会以你的身份在这台机器上跑，不在沙盒里。\n\
+         安装 'weather'？[Y/n] ",
+        "没有要批的照旧那一句"
+    );
+    let mut older = zh.clone();
+    for key in ["source", "notice"] {
+        older.as_object_mut().map(|one| one.remove(key));
+    }
+    assert_eq!(
+        question(&older, Doing::Install, "weather", &Language::Chinese),
+        "安装 'weather'？[Y/n] ",
+        "旧的核心不认 approve：不问批准"
+    );
+    let back = json!({"package": "net", "version": "1", "program": "builtin", "restores": true,
+                      "source": "shipped", "capabilities": [{"id": "network", "name": "联网"}]});
+    assert_eq!(
+        plan(&back, Doing::Restore, &Language::Chinese),
+        ["将装回 net 1", "包含：内置功能", "需要：联网", "来源：出厂"]
+    );
+    assert_eq!(
+        question(&back, Doing::Restore, "net", &Language::Chinese),
+        "装回 'net'？[Y/n] ",
+        "出厂的算全批过"
     );
 }
