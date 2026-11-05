@@ -115,3 +115,62 @@ async fn a_script_with_a_wrong_role_or_scope_is_skipped_and_checked() {
     assert!(skipped[1].0.ends_with("odd.py"), "{skipped:?}");
     assert!(skipped[1].1.contains("writer"), "说是哪一行：{skipped:?}");
 }
+
+/// 注释头里 `Role`、`Scope` 这两格的名字写错的（施工 XG-2补，core1 2026-11-06 定）：原来照别的不认识的行静默跳过，范围变回
+/// `any`，比值写错（整份不收）宽。改成认得出就报 `BadRole`、`BadScope`，整份不收、`check` 报 `script_skipped`。
+///
+/// 认到什么程度（照它做）：行的键和 `Role`、`Scope` 不分大小写比，Damerau 编辑距离（增、删、改一个字，或者相邻两个字对调，
+/// 各算一次）不超过 1 的算写错：`scope`、`SCOPE`、`Scpoe`（`o`、`p` 对调）、`Scop`、`Scopes`、`role`、`Rloe`、`Roles`。
+/// 只比这两格，别的键（`Description` 这些）不在这一步的范围里。离得远的（`Author`、`Note`）照旧不认识、静默跳过，脚本照常登记。
+/// 已知的误伤：真想写一行 `Rule: …` 的（和 `Role` 差一个字）会被当成写错；报得出来，作者看得见，比静默放宽好。
+#[tokio::test]
+#[ignore = "红：等 XG-2补"]
+async fn a_misspelled_role_or_scope_key_is_not_silently_skipped() {
+    let home = Home::new();
+    let head = |name: &str, line: &str| {
+        format!("#!/usr/bin/env python3\n# Description: {name}.\n# {line}\nprint('{name}')\n")
+    };
+    home.write("root/scripts/lower.py", &head("lower", "scope: local"));
+    home.write("root/scripts/swapped.py", &head("swapped", "Scpoe: local"));
+    home.write(
+        "root/scripts/lower_role.py",
+        &head("lower_role", "role: read_file"),
+    );
+    home.write("root/scripts/right.py", &head("right", "Scope: local"));
+    home.write("root/scripts/other.py", &head("other", "Author: someone"));
+    let core = script_core(&home, &Script::new([]));
+    let mut names: Vec<String> = core
+        .scripts()
+        .iter()
+        .map(|one| one.head.name.clone())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names,
+        ["other", "right"],
+        "名字写错的不登记；写对的、离得远的照常登记"
+    );
+    let mut client = Client::connect(core);
+    client.hello().await;
+    let reply = client.call("k1", "check", json!({})).await;
+    let mut skipped: Vec<(String, String)> = reply["result"]["problems"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{reply}"))
+        .iter()
+        .filter(|one| one["code"] == "script_skipped")
+        .map(|one| {
+            let text = |key: &str| one[key].as_str().unwrap_or_default().to_string();
+            (text("file"), text("message"))
+        })
+        .collect();
+    skipped.sort();
+    assert_eq!(skipped.len(), 3, "{reply}");
+    for ((file, message), (name, key)) in skipped.iter().zip([
+        ("lower.py", "scope"),
+        ("lower_role.py", "role"),
+        ("swapped.py", "Scpoe"),
+    ]) {
+        assert!(file.ends_with(name), "{skipped:?}");
+        assert!(message.contains(key), "说出写错的那个名字：{skipped:?}");
+    }
+}
