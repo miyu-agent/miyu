@@ -28,6 +28,8 @@
 //!   （施工 X-16）；是 `search.query` 的照 `query` 答（施工 N-5）：`limit` 回限额的错误，`boom` 回一个错误，别的答一条；
 //! - `inject:<怎么答>`：之后的 `serve` 照它答 `user.append`：`hint` 交一块 `meme`，字是 `hint <venue> <text>`（没有 `text` 的写
 //!   `-`）；`slow` 过 600 毫秒再照 `hint` 答；`silent` 不答；`boom` 回一个错误；`garbled` 回写法不对的；`many` 交四块；`empty` 交空的。不写的不答；
+//! - `edits:<路径>`：之后 `serve` 答工具 `ext_edit` 时照参数里的 `old_string`、`new_string` 改这个文件（同内置 `edit`，只换第一处），
+//!   回应的效果里只报哪个文件改了，改前改后由核心自己读（施工 XG-1，设计 63 第四节）；
 //! - `sent:<blob>`：之后 `serve` 答工具 `sticker` 时，`sent` 里放这个 blob 的一张图（施工 X-19）；
 //! - `give:<字,字>`：之后 `serve` 答 `method.call` 的 `give` 时回 `{"given": [这几段字]}`（施工 W-6 三补：回应里带 blob）；
 //! - `pause:<路径>`：等到这个路径有了再往下走（施工 X-20：测试照会话说完了几轮放它走）；
@@ -57,6 +59,8 @@ fn main() {
     let mut sent = String::new();
     // `serve` 答 `method.call` 的 `give` 时交回的几段字（施工 W-6 三补）。
     let mut give = String::new();
+    // `serve` 答工具 `ext_edit` 时改的文件（施工 XG-1）。
+    let mut edits = String::new();
     // 请求编号的前缀。
     let mut ids = String::from("s");
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -131,6 +135,8 @@ fn main() {
                 upload = id;
             }
             keep(&mut record, &reply);
+        } else if let Some(path) = step.strip_prefix("edits:") {
+            path.clone_into(&mut edits);
         } else if let Some(blob) = step.strip_prefix("sent:") {
             blob.clone_into(&mut sent);
         } else if let Some(given) = step.strip_prefix("give:") {
@@ -154,6 +160,13 @@ fn main() {
                     break;
                 }
                 keep(&mut record, &line);
+                if line.contains(r#""method":"tool.call""#)
+                    && field(&line, "tool").as_deref() == Some("ext_edit")
+                    && let Some(id) = field(&line, "id")
+                {
+                    send(&edited(&id, &line, &edits));
+                    continue;
+                }
                 if line.contains(r#""method":"tool.call""#)
                     && let Some(id) = field(&line, "id")
                     && let Some(answer) =
@@ -262,6 +275,24 @@ fn field(line: &str, name: &str) -> Option<String> {
     let (_, rest) = line.split_once(&format!(r#""{name}":""#))?;
     let (value, _) = rest.split_once('"')?;
     Some(value.to_string())
+}
+
+/// 答 `ext_edit`（施工 XG-1）：`path` 里的 `old_string` 换成 `new_string`（只换第一处），效果照设计 63 第四节只报路径。
+/// 设计 63 起扩展该写 `tool.call` 的 `checked` 里的位置；测试照 `edits:` 给的写，那一格对不对由测试看记下的那一行。
+fn edited(id: &str, line: &str, path: &str) -> String {
+    let old = field(line, "old_string").unwrap_or_default();
+    let new = field(line, "new_string").unwrap_or_default();
+    let before = std::fs::read_to_string(path).expect("要改的文件在");
+    std::fs::write(path, before.replacen(&old, &new, 1)).expect("写得进");
+    format!(
+        r#"{{"jsonrpc":"2.0","id":"{id}","result":{{"blocks":[{{"type":"text","text":"edited"}}],"effects":[{{"kind":"file.changed","path":"{}"}}]}}}}"#,
+        quoted(path)
+    )
+}
+
+/// 写进 JSON 字符串里的样子：只转反斜杠和引号，够测试的路径用。
+fn quoted(text: &str) -> String {
+    text.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 /// 答编号是 `id`、工具是 `tool` 的那一次 `tool.call`（施工 O-2 上）；`silent` 不答，等核心超时、发 `tool.cancel`（施工 O-2 下）；

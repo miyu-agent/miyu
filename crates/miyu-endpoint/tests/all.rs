@@ -21,6 +21,7 @@ mod prompt_override;
 mod provide;
 mod provide_data;
 mod provide_detail;
+mod provide_effects;
 mod provide_end_turn;
 mod provide_exit;
 mod provide_features;
