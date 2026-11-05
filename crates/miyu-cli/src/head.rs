@@ -61,7 +61,7 @@ pub fn open(page: Option<&str>, start: impl FnOnce() -> Command) -> Opened {
         }
     };
     let found = match (DataRoot::locate(&env), ResourceRoot::locate(&env)) {
-        (Ok(root), Ok(resources)) => Packages::new(&resources, &root).read(),
+        (Ok(root), Ok(resources)) => Packages::system(&resources, &root).read(),
         _ => Vec::new(),
     };
     let main = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("miyu"));

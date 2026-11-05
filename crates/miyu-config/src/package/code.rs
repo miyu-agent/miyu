@@ -41,8 +41,6 @@ pub enum Code {
     BadPage,
     /// `pages_dir` 不是包文件夹里的相对目录（施工 G-15 起相对包文件夹）。
     BadPagesDir,
-    /// 两层里同一个编号：数据根那一份（`miyu-store` 认）。
-    Duplicate,
     /// 子命令名被先读到的包占了（`miyu-store` 认）。
     CommandTaken,
     /// 编号是数据根里保留的名字（设计 55 第三节第 3 条，施工 FH-3，`miyu-store` 认）：`detail` 是编号。
@@ -154,7 +152,6 @@ impl Code {
             Code::BadStart => "bad_start",
             Code::BadPage => "bad_page",
             Code::BadPagesDir => "bad_pages_dir",
-            Code::Duplicate => "duplicate",
             Code::CommandTaken => "command_taken",
             Code::ReservedId => "reserved_id",
             Code::BadSettingName => "bad_setting_name",
@@ -202,7 +199,7 @@ impl Code {
     }
 
     /// 全部代码：给人看的字的门禁照它查三种语言都有。
-    pub const ALL: [Code; 61] = [
+    pub const ALL: [Code; 60] = [
         Code::Syntax,
         Code::UnknownTable,
         Code::NotATable,
@@ -222,7 +219,6 @@ impl Code {
         Code::BadStart,
         Code::BadPage,
         Code::BadPagesDir,
-        Code::Duplicate,
         Code::CommandTaken,
         Code::ReservedId,
         Code::BadSettingName,

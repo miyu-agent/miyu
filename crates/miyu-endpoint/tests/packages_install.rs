@@ -122,7 +122,7 @@ async fn a_manifest_installs_with_its_files_and_counts_at_once() {
         .await;
     assert_eq!(
         reply["result"],
-        json!({"package": "xtool", "removed": true})
+        json!({"package": "xtool", "removed": true, "layer": "home"})
     );
     assert!(!mine(&home, "xtool").exists());
     assert!(find(&list(&mut client).await, "xtool").is_none());

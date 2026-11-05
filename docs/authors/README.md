@@ -57,6 +57,11 @@ hello/
 2. **发**：包放在自己的 GitHub 仓库里，用官方的打包模板 `miyu-agent/packages/.github/workflows/pack.yml`：打 tag（`v` 加上清单的 `version`）就打包、传进这个 tag 的 Release。怎么写见 [miyu-agent/packages](https://github.com/miyu-agent/packages)。
 3. **收录**：给仓库打上话题（topic）`miyu-package`，软件源每天收一次各仓库最新的 Release，签名后发出去，下一次收录就在里面，标「社区」。编号先到先得：第一个发出这个编号的仓库一直占着它，别的仓库再用这个编号的不收。分叉出来的仓库、存档了的仓库不收。
 
+也能经系统的包管理器（AUR、Homebrew 这些）发：把包文件夹装进 Miyu 认的「系统加装」那一处，`<那一处>/<编号>/package.toml`，程序放在
+包文件夹的 `bin/`。那一处在 Linux 上是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`（没设时 `/usr/local/share`、`/usr/share`，先列的
+优先；Linuxbrew 装在它自己的 `share` 下，用户要把它写进 `XDG_DATA_DIRS`），macOS 上是 Homebrew 前缀的 `share/miyu/packages/`，
+Windows 上没有这一处。同一个编号用户用 `miyu pkg install` 装了的，用户装的盖过系统装的。
+
 ## 三个平台
 
 1. 扩展的程序名照清单写，`bin/<名字>` 可以是编出来的程序，也可以是第一行写了 `#!` 的脚本（`#!/usr/bin/env python3` 这样）。Windows 上核心先找 `<名字>.exe`，没有的照 `bin/<名字>` 的 `#!` 找解释器（`python3` 找的是 `python`，写了这台机器上在的绝对路径的照它），三个平台一份文件、一份清单。Miyu 不带解释器：要哪个写进包的说明，请人自己装。脚本工具在 Windows 上没有 `#!` 的照扩展名找（`.py` 用 `python`，`.ps1` 用 PowerShell，`.js` 用 `node`）。

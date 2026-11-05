@@ -26,6 +26,7 @@ mod leftovers;
 pub mod memlog;
 pub mod models;
 pub mod packages;
+use packages::{distro_dirs, load_packages};
 mod pending;
 mod sandbox;
 mod serve;
@@ -332,13 +333,6 @@ fn manifests_of(core: &Arc<Core>) -> settings::Manifests {
     })
 }
 
-/// 读两层清单（施工 9-1 上），再标出这一份核心没编进来的内置包（施工 F-2）。
-fn load_packages(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
-    let mut found = miyu_endpoint::packages::load(resources, root);
-    miyu_endpoint::packages::compiled(&mut found, &built_in());
-    found
-}
-
 /// 运行中配置换了当场生效要的（施工 8-4）：换运行日志级别的把手，核心这边的系统语言；起来时读的软件包清单（施工 9-1
 /// 下）：交给核心。
 struct Live {
@@ -386,6 +380,7 @@ async fn run(
     let searching = kit.clone();
     let builtins = builtin_tools_in(&resources, &env, kit);
     packages::clear_uploads(&root);
+    let distro = distro_dirs(&resources);
     let mut core = Core::new(
         root,
         resources,
@@ -398,6 +393,7 @@ async fn run(
     .with_config(config)
     .with_packages(live.found)
     .with_built_in(built_in())
+    .with_distro(distro)
     .with_builtins(builtins)
     .with_model_data(Arc::clone(&model_data))
     .with_queries(queries);

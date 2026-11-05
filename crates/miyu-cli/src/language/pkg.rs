@@ -59,6 +59,38 @@ impl Language {
         }
     }
 
+    /// `remove` 卸掉的是系统的包管理器装的（施工 SD-1）：接在「已卸载」后面的提示。
+    pub(crate) fn distro_left(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => {
+                format!(
+                    "提示：{id} 是系统的包管理器装的，文件还在，Miyu 不再加载它；要删用系统的包管理器"
+                )
+            }
+            Language::English => format!(
+                "hint: {id} was installed by the system package manager; its files stay and Miyu no longer loads it; remove it with the package manager"
+            ),
+        }
+    }
+
+    /// `check`：系统的包管理器装的包没问题（施工 SD-1）：文件归它管，不比哈希。
+    pub(crate) fn checked_distro(&self, id: &str) -> String {
+        match self {
+            Language::Chinese => format!("{id}：正常（系统的包管理器装的，文件归它管）"),
+            Language::English => {
+                format!("{id}: OK (installed by the system package manager, which owns its files)")
+            }
+        }
+    }
+
+    /// `check`：系统的包管理器装的包清单读不成（施工 SD-1）：`why` 是问题的代码或 `unreadable`。
+    pub(crate) fn checked_manifest(&self, id: &str, why: &str) -> String {
+        match self {
+            Language::Chinese => format!("{id}：清单读不成（{why}）"),
+            Language::English => format!("{id}: manifest unreadable ({why})"),
+        }
+    }
+
     /// 清单装不上：装的是 `what`（照写的原样，不知道的没有），哪里不对，知道第几行的照 `package.toml:<行>` 带上。
     pub(crate) fn cannot_install(
         &self,

@@ -60,7 +60,7 @@ pub fn added(env: &Env, builtins: &[&str]) -> Vec<Added> {
     let (Ok(root), Ok(resources)) = (DataRoot::locate(env), ResourceRoot::locate(env)) else {
         return Vec::new();
     };
-    let places = Packages::new(&resources, &root);
+    let places = Packages::system(&resources, &root);
     places
         .read()
         .into_iter()

@@ -202,6 +202,9 @@ pub struct Core {
     scripts: scripts::Scripts,
     /// 这一份核心编进来的内置包（施工 F-2、F-5 上）：装卸以后重读清单时照它标没编进来的。没设的不标（测试里造的核心）。
     built_in: Option<Vec<&'static str>>,
+    /// 系统加装那几处（施工 SD-1，`miyu_store::packages::distro`），照先后。真跑的核心起来时照环境算好交进来
+    /// （[`Core::with_distro`]）；测试里造的核心没有，要的自己指一处。
+    distro: Vec<PathBuf>,
     /// 装、卸一次只做一件（施工 F-5 上）。
     packaging: tokio::sync::Mutex<()>,
     /// 软件源的索引照哪几把公钥验（施工 G-3 上）。
@@ -257,7 +260,7 @@ impl Core {
         let mut config = Config::defaults(&root, settings::core_items());
         let model_data = models::empty_data();
         config.set_models(Arc::clone(&model_data));
-        let found = packages::load(&resources, &root);
+        let found = packages::load(&resources, &root, Vec::new());
         let usage = Arc::new(usage::open(&root));
         model_data.keep_ledger(Arc::clone(&usage));
         // 常驻的摘要那一块的字（施工 R-4 上）：读不出来的（安装坏了）这个核心不交摘要，别的照常。
@@ -314,6 +317,7 @@ impl Core {
             visible_packages: packages::own::Visible::default(),
             scripts: scripts::Scripts::default(),
             built_in: None,
+            distro: Vec::new(),
             packaging: tokio::sync::Mutex::new(()),
             trust: packages::source::sync::Trust::default(),
             builtins: None,
@@ -366,13 +370,6 @@ impl Core {
     pub fn with_packages(mut self, packages: Vec<miyu_store::packages::Found>) -> Core {
         self.adopt_packages(&packages);
         self.packages = std::sync::RwLock::new(Arc::new(packages));
-        self
-    }
-
-    /// 同一份家底，这一份核心编进来的内置包照 `built_in`（施工 F-5 上）：装卸以后重读清单时照它标没编进来的。
-    #[must_use]
-    pub fn with_built_in(mut self, built_in: Vec<&'static str>) -> Core {
-        self.built_in = Some(built_in);
         self
     }
 

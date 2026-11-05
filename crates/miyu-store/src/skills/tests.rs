@@ -46,7 +46,7 @@ impl Places {
 
     /// 同 [`Places::found`]，另读临时目录里的这几个别的目录（施工 PT-2 外），照先后。
     fn found_with(&self, external: &[&str]) -> (Vec<Skill>, Vec<Skipped>) {
-        let packages = Packages::new(&self.resources, &self.root).read();
+        let packages = Packages::new(&self.resources, &self.root, Vec::new()).read();
         let external: Vec<External> = external
             .iter()
             .map(|text| External {

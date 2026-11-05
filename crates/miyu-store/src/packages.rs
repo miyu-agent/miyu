@@ -1,13 +1,15 @@
-//! 软件包清单在哪、两层怎么认（施工 9-1 上，`docs/blueprint/packages.md`「在哪」）：一个文件夹就是一个包（施工 F-8 上，设计
-//! `31-软件包.md` 第二节），出厂的放资源目录的 `packages/<编号>/package.toml`，主人自己装的放
-//! 数据根的 `packages/<编号>/package.toml`，包的文件都在这个文件夹里。一个包只有一份清单，不像人格那样一层层
-//! 叠：同一个编号两层都有的，认出厂的，家目录那一份报 `duplicate`。两个包要同一个子命令名的，出厂的先于家目录、同一层照
-//! 编号，后读到的那一份报 `command_taken`。读法同配置文件：顺着链接读。文件怎么读成样子在 `miyu_config::package`。
+//! 软件包清单在哪、三层怎么认（施工 9-1 上，SD-1 改成三层，`docs/blueprint/packages.md`「在哪」「三层怎么认」）：一个文件夹
+//! 就是一个包（施工 F-8 上，设计 `31-软件包.md` 第二节）：出厂的放资源目录的 `packages/<编号>/package.toml`，系统的包管理器另外
+//! 装的放系统加装那几处（[`distro`]，设计 `60-系统源分包.md` 第三节），主人自己装的放数据根的 `opt/<编号>/package.toml`，包的
+//! 文件都在这个文件夹里。一个包只认一份清单：同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的（系统加装
+//! 几处之间先列的优先），被盖住的那几份记成 [`Issue::Covered`]，不算错、不加载。两个包要同一个子命令名、功能、前缀的，照盖的
+//! 先后（装上的、系统加装的、出厂的，同一层照编号）先到先得，后到的那一份报 `command_taken` 这些。读法同配置文件：顺着链接
+//! 读。文件怎么读成样子在 `miyu_config::package`。
 //!
 //! 包自己在这台机器上的状态放 `<数据根>/var/lib/<编号>/`，包自己建、自己用（[`Packages::state_dir`]）。
 //!
-//! 装、卸（施工 F-5 上）：只动家目录那一层（`install.rs`）。卸掉的出厂的包在 `etc/removed/` 记一笔 `<编号>`，读的时候不算装了
-//! （[`Packages::read`]），另外照样读得出来（[`Packages::read_removed`]），好让头给人装回来。
+//! 装、卸（施工 F-5 上）：只动家目录那一层（`install.rs`）。卸掉的出厂的、系统加装的包在 `etc/removed/` 记一笔 `<编号>`，文件不动，
+//! 读的时候不算装了（[`Packages::read`]），另外照样读得出来（[`Packages::read_removed`]），好让头给人装回来。
 
 use std::collections::BTreeMap;
 use std::io;
@@ -22,6 +24,7 @@ use crate::root::DataRoot;
 const RUNNING: &str = env!("CARGO_PKG_VERSION");
 
 pub mod conflicts;
+pub mod distro;
 pub mod install;
 mod launch;
 pub mod leftovers;
@@ -42,7 +45,9 @@ pub const BIN: &str = "bin";
 pub enum Layer {
     /// 随发行附带的，只读。
     Shipped,
-    /// 主人装的：数据根的 `packages/`（协议上叫 `home`）。
+    /// 系统的包管理器另外装的（施工 SD-1，[`distro`]）：只归系统包管理器管，我们不改它的文件。
+    Distro,
+    /// 主人装的：数据根的 `opt/`（协议上叫 `home`）。
     Home,
 }
 
@@ -51,6 +56,7 @@ impl Layer {
     pub fn as_str(self) -> &'static str {
         match self {
             Layer::Shipped => "shipped",
+            Layer::Distro => "distro",
             Layer::Home => "home",
         }
     }
@@ -91,6 +97,14 @@ pub enum Issue {
     Wrong(Problem),
     /// 读不了。
     Unreadable(io::Error),
+    /// 同一个编号上面一层还有一份，这一份被它盖住（施工 SD-1）：不算错，不加载。`by` 是盖住它的那一层，`version` 是这一份
+    /// 自己写的版本（读不成、没写的没有）。
+    Covered {
+        /// 盖住它的那一层。
+        by: Layer,
+        /// 这一份的版本。
+        version: Option<String>,
+    },
 }
 
 /// 拷一份：读不了的照种类和原话另造一个，别的照抄。
@@ -101,11 +115,15 @@ impl Clone for Issue {
             Issue::Unreadable(error) => {
                 Issue::Unreadable(io::Error::new(error.kind(), error.to_string()))
             }
+            Issue::Covered { by, version } => Issue::Covered {
+                by: *by,
+                version: version.clone(),
+            },
         }
     }
 }
 
-/// 软件包清单的两层。
+/// 软件包清单的三层。
 #[derive(Debug, Clone)]
 pub struct Packages {
     dirs: Vec<(Layer, PathBuf)>,
@@ -118,18 +136,36 @@ pub struct Packages {
 }
 
 impl Packages {
-    /// 照资源目录 `resources`、数据根 `root` 定两层的位置：出厂的、装上的（`packages/`，施工 SU-5 上；协议上这一层照旧叫
-    /// `home`）。
-    pub fn new(resources: &ResourceRoot, root: &DataRoot) -> Packages {
+    /// 照资源目录 `resources`、数据根 `root` 定三层的位置：出厂的、系统加装的（`distro`，照先后，施工 SD-1）、装上的
+    /// （`opt/`；协议上这一层照旧叫 `home`）。真跑的用 [`Packages::system`]，测试照要的写 `distro`。
+    pub fn new(resources: &ResourceRoot, root: &DataRoot, distro: Vec<PathBuf>) -> Packages {
+        let mut dirs = vec![(Layer::Shipped, resources.path().join("packages"))];
+        dirs.extend(distro.into_iter().map(|dir| (Layer::Distro, dir)));
+        dirs.push((Layer::Home, root.packages()));
         Packages {
-            dirs: vec![
-                (Layer::Shipped, resources.path().join("packages")),
-                (Layer::Home, root.packages()),
-            ],
+            dirs,
             states: root.package_states(),
             local: root.local_packages(),
             removed: root.removed_markers(),
         }
+    }
+
+    /// 同 [`Packages::new`]，系统加装那几处照这个进程的环境算（[`distro::dirs`]）。
+    pub fn system(resources: &ResourceRoot, root: &DataRoot) -> Packages {
+        let distro = distro::dirs(
+            &distro::Where::current(),
+            &resources.path().join("packages"),
+        );
+        Packages::new(resources, root, distro)
+    }
+
+    /// 系统加装那几处，照先后。
+    pub fn distro(&self) -> Vec<PathBuf> {
+        self.dirs
+            .iter()
+            .filter(|(layer, _)| *layer == Layer::Distro)
+            .map(|(_, dir)| dir.clone())
+            .collect()
     }
 
     /// 只有出厂那一层（施工 9-1 下）：生成配置的样本照出厂带的包，和数据根无关。状态目录没有意义，是空的。
@@ -142,9 +178,9 @@ impl Packages {
         }
     }
 
-    /// 两层里所有的清单，照编号排（同一个编号出厂的在前）。目录读不了的一层当没有；不是文件夹的、编号不合写法的、文件夹里
-    /// 没有 `package.toml` 的不算。
-    /// 卸掉的出厂的包（施工 F-5 上，家目录记了一笔的）不在里面。
+    /// 三层里所有的清单，照编号排（同一个编号认的那一份在前，被盖住的接在后面）。目录读不了的一层当没有；不是文件夹的、编号
+    /// 不合写法的、文件夹里没有 `package.toml` 的不算。
+    /// 卸掉的出厂的、系统加装的包（施工 F-5 上、SD-1，数据根里记了一笔的）不在里面。
     pub fn read(&self) -> Vec<Found> {
         let removed = self.removed();
         let found: Vec<Found> = self
@@ -155,16 +191,20 @@ impl Packages {
                     .into_iter()
                     .map(move |(id, path)| (*layer, id, path))
             })
-            .filter(|(layer, id, _)| !(*layer == Layer::Shipped && removed.contains(id)))
+            .filter(|(layer, id, _)| !(*layer != Layer::Home && removed.contains(id)))
             .map(|(layer, id, path)| read_one(layer, id, path))
             .collect();
         self.checked(found)
     }
 
-    /// 照编号排（同一个编号先读的层在前），认撞没撞（[`Packages::read`]）。
+    /// 照编号排（同一个编号盖得住的在前：装上的、系统加装的、出厂的，系统加装几处照先后），认盖、撞（[`Packages::read`]）。
+    /// 排序是稳定的：系统加装几处之间照读进来的先后（也就是列的先后）。
     fn checked(&self, mut found: Vec<Found>) -> Vec<Found> {
-        found.sort_by(|one, other| (&one.id, one.layer).cmp(&(&other.id, other.layer)));
-        duplicates(&mut found);
+        found.sort_by(|one, other| {
+            (&one.id, std::cmp::Reverse(one.layer))
+                .cmp(&(&other.id, std::cmp::Reverse(other.layer)))
+        });
+        covered(&mut found);
         reserved(&mut found);
         taken(&mut found);
         features_taken(&mut found);
@@ -172,23 +212,36 @@ impl Packages {
         found
     }
 
-    /// 卸掉的出厂的包（施工 F-5 上）：家目录记了一笔、出厂那一层有清单的，照编号排，各自读成样子（不和别的包比撞没撞）。
+    /// 卸掉的出厂的、系统加装的包（施工 F-5 上、SD-1）：数据根里记了一笔、这两层有清单的，照编号排，一个编号一份（照盖的先后
+    /// 取盖得住的那一份），各自读成样子（不和别的包比撞没撞）。
     pub fn read_removed(&self) -> Vec<Found> {
         let removed = self.removed();
-        let Some((_, dir)) = self.dirs.iter().find(|(layer, _)| *layer == Layer::Shipped) else {
-            return Vec::new();
-        };
-        let mut listed = files(dir);
-        listed.sort();
-        listed
+        let mut picked: BTreeMap<String, (Layer, PathBuf)> = BTreeMap::new();
+        // 照盖的先后看：系统加装的（照列的先后）先于出厂的，先看到的留下。
+        let order = self
+            .dirs
+            .iter()
+            .filter(|(layer, _)| *layer == Layer::Distro)
+            .chain(
+                self.dirs
+                    .iter()
+                    .filter(|(layer, _)| *layer == Layer::Shipped),
+            );
+        for (layer, dir) in order {
+            for (id, path) in files(dir) {
+                if removed.contains(&id) && !picked.contains_key(&id) {
+                    picked.insert(id, (*layer, path));
+                }
+            }
+        }
+        picked
             .into_iter()
-            .filter(|(id, _)| removed.contains(id))
-            .map(|(id, path)| Found {
+            .map(|(id, (layer, path))| Found {
                 read: std::fs::read_to_string(&path)
                     .map_err(Issue::Unreadable)
                     .and_then(|text| package::read_for(&text, RUNNING).map_err(Issue::Wrong)),
                 id,
-                layer: Layer::Shipped,
+                layer,
                 path,
             })
             .collect()
@@ -207,7 +260,7 @@ impl Packages {
             .map(|(_, dir)| dir.as_path())
     }
 
-    /// 记着卸掉的出厂的包的编号（施工 F-5 上）。只有出厂那一层的没有。
+    /// 记着卸掉的出厂的、系统加装的包的编号（施工 F-5 上、SD-1）。只有出厂那一层的没有。
     pub fn removed(&self) -> Vec<String> {
         if self.removed.as_os_str().is_empty() {
             return Vec::new();
@@ -220,7 +273,7 @@ impl Packages {
         self.removed.clone()
     }
 
-    /// 两层的目录：`miyu check` 认写了的文件是不是一份清单（两边换成真的路径比，`miyu-endpoint` 的 `check.rs`）。
+    /// 三层的目录：`miyu check` 认写了的文件是不是一份清单（两边换成真的路径比，`miyu-endpoint` 的 `check.rs`）。
     pub fn dirs(&self) -> impl Iterator<Item = (Layer, &Path)> {
         self.dirs.iter().map(|(layer, dir)| (*layer, dir.as_path()))
     }
@@ -283,17 +336,23 @@ fn files(dir: &Path) -> Vec<(String, PathBuf)> {
         .collect()
 }
 
-/// 同一个编号：出厂的那一份照常，家目录那一份报 `duplicate`。
-fn duplicates(found: &mut [Found]) {
+/// 同一个编号：排在前面的那一份认（[`Packages::checked`] 照盖的先后排好了），后面的几份记成被它盖住（施工 SD-1，原来的
+/// `duplicate` 去掉）。
+fn covered(found: &mut [Found]) {
     for index in 1..found.len() {
-        if found[index].id == found[index - 1].id {
-            let id = found[index].id.clone();
-            found[index].read = Err(Issue::Wrong(Problem {
-                line: None,
-                code: Code::Duplicate,
-                message: format!("package {id} is already installed with the shipped ones"),
-                detail: id,
-            }));
+        let winner = (0..index)
+            .rev()
+            .take_while(|&before| found[before].id == found[index].id)
+            .last();
+        if let Some(winner) = winner {
+            let version = match &found[index].read {
+                Ok(manifest) => manifest.version.clone(),
+                Err(_) => None,
+            };
+            found[index].read = Err(Issue::Covered {
+                by: found[winner].layer,
+                version,
+            });
         }
     }
 }
@@ -307,11 +366,13 @@ fn reserved(found: &mut [Found]) {
     }
 }
 
-/// 读的先后：出厂的先于家目录，同一层照编号。先到先得的几样（子命令名、功能的编号）照它。
+/// 读的先后，照盖的先后（施工 SD-1）：装上的、系统加装的、出厂的，同一层照编号（系统加装几处之间照列的先后，排序是稳定的）。
+/// 先到先得的几样（子命令名、功能的编号、前缀）照它。
 fn reading_order(found: &[Found]) -> Vec<usize> {
     let mut order: Vec<usize> = (0..found.len()).collect();
     order.sort_by(|&one, &other| {
-        (found[one].layer, &found[one].id).cmp(&(found[other].layer, &found[other].id))
+        (std::cmp::Reverse(found[one].layer), &found[one].id)
+            .cmp(&(std::cmp::Reverse(found[other].layer), &found[other].id))
     });
     order
 }

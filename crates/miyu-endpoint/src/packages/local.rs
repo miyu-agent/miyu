@@ -109,7 +109,8 @@ pub(super) async fn entry(core: &Arc<Core>, id: &str) -> Result<Looked, Refusal>
     let target = id.to_string();
     let dir = folder.clone();
     let read = tokio::task::spawn_blocking(move || {
-        let recorded = (layer != Layer::Shipped)
+        // 本地库只记装进数据根的（出厂的、系统加装的不记，施工 SD-1）。
+        let recorded = (layer == Layer::Home)
             .then(|| local::read(&root, &target))
             .flatten();
         match recorded {

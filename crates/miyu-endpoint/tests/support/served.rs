@@ -31,7 +31,7 @@ pub fn served_core_with(home: &Home, script: &Script, config: &str) -> Arc<Core>
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root);
+    let found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let config = miyu_endpoint::config::Config::load(
         &home.root,
         None,

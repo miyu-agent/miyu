@@ -18,7 +18,7 @@ pub fn core(home: &Home) -> Arc<Core> {
     ]
     .concat();
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let packaged = miyu_endpoint::packages::settle(&mut found, &core_items);
     let items = core_items.into_iter().chain(packaged).collect();
     let config = Config::load(&home.root, None, items, Environment::of(&[]));

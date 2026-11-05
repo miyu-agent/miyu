@@ -29,7 +29,7 @@ impl Core {
     pub(crate) fn reload_packages(&self) {
         // 列表里变了的推出去（施工 F-8 三补）：前后各照英文算一份比。
         let before = super::changes::snapshot(self);
-        let mut found = load(&self.resources, &self.root);
+        let mut found = load(&self.resources, &self.root, self.distro.clone());
         if let Some(built_in) = &self.built_in {
             compiled(&mut found, built_in);
         }
@@ -207,7 +207,8 @@ pub(crate) async fn remove_package(
                 super::local::forget(&local_root, &id);
                 id
             }),
-            Layer::Shipped => install::mark_removed(&markers, &id).map(|()| id),
+            // 出厂的、系统加装的（施工 SD-1）：文件不动，记一笔不再加载；系统加装的文件归系统的包管理器。
+            Layer::Shipped | Layer::Distro => install::mark_removed(&markers, &id).map(|()| id),
         };
         if removed.is_ok() {
             left.keep();
@@ -249,7 +250,8 @@ pub(crate) async fn remove_package(
     // 它拿得到的 blob（施工 W-6 三补）：装回来从空的开始。
     core.blob_grants.forget(&removed);
     tracing::info!(target: TARGET, package = removed.as_str(), "package removed");
-    Ok(json!({"package": removed, "removed": true}))
+    // 系统加装的说一声：文件还在，要删用系统的包管理器（施工 SD-1，命令行照 `layer` 说）。
+    Ok(json!({"package": removed, "removed": true, "layer": layer.as_str()}))
 }
 
 /// 从 `path` 这个包文件夹装（施工 F-8 上：一个文件夹就是一个包；写成文件夹里的 `package.toml` 也认）：读得成、不和出厂的撞、

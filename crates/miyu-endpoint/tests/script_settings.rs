@@ -15,7 +15,7 @@ const DRAW: &str = "[package]\nname = { en = \"Draw\" }\n\n[settings.endpoint]\n
 /// 照核心起来时那样读包、登记配置项、读配置（只有包的配置项）。
 fn config(home: &Home) -> Config {
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let items = miyu_endpoint::packages::settle(&mut found, &[]);
     Config::load(&home.root, None, items, Environment::of(&[]))
 }

@@ -84,5 +84,9 @@ pub(super) async fn remove(
     }
     let result = ask(rpc, "package.remove", params, language, err).await?;
     say(out, &language.uninstalled(package_of(&result)));
+    // 系统的包管理器装的（施工 SD-1）：只是不再加载，文件还在。
+    if result["layer"] == "distro" {
+        say(out, &language.distro_left(package_of(&result)));
+    }
     Ok(())
 }

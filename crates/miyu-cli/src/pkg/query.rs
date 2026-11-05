@@ -29,7 +29,9 @@ fn within(dir: &Path, path: &str) -> PathBuf {
 /// （包自己后来写的）另一种说法；出厂的不记，算它的。
 pub(crate) fn owner(path: &str, owned: &Value, language: &Language) -> Option<String> {
     let id = owned["package"].as_str()?;
-    let installed = owned["recorded"].as_bool() == Some(true) || owned["layer"] == "shipped";
+    let installed = owned["recorded"].as_bool() == Some(true)
+        || owned["layer"] == "shipped"
+        || owned["layer"] == "distro";
     Some(match installed {
         true => language.owned_by(path, id),
         false => language.inside_of(path, id),
@@ -48,6 +50,11 @@ pub(crate) fn checked(checked: &Value, language: &Language) -> (Vec<String>, boo
     for package in &packages {
         let id = package["package"].as_str().unwrap_or_default();
         let before = rows.len();
+        // 系统的包管理器装的（施工 SD-1）：清单读不成的算坏了。
+        if let Some(why) = package["manifest"].as_str() {
+            rows.push(language.checked_manifest(id, why));
+            broken = true;
+        }
         for (key, what) in [
             ("modified", Checked::Modified),
             ("missing", Checked::Missing),
@@ -59,7 +66,10 @@ pub(crate) fn checked(checked: &Value, language: &Language) -> (Vec<String>, boo
             }
         }
         if rows.len() == before {
-            rows.push(language.checked(id, Checked::Fine, ""));
+            rows.push(match package["layer"] == "distro" {
+                true => language.checked_distro(id),
+                false => language.checked(id, Checked::Fine, ""),
+            });
         }
     }
     (rows, broken)

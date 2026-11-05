@@ -337,7 +337,7 @@ fn configured_with(home: &Home, script: &Script, without: &[&str]) -> Arc<Core> 
         miyu_endpoint::config::Environment::of(&[]),
     );
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     found.retain(|one| !without.contains(&one.id.as_str()));
     Arc::new(
         home.core_full(script, catalog(), None, TOKEN)

@@ -67,6 +67,12 @@ pub(super) fn listed(
                 item["problem"] = json!(sentence(words, "protocol_mismatch", &range));
             }
         }
+        // 被上面一层盖住（施工 SD-1）：不算错，说被哪一层盖住、两边的版本、这一份新不新。
+        Err(Issue::Covered { by, version }) => {
+            let (over, newer) = super::cover(installed, &found.id, version.as_deref());
+            item["covered"] =
+                json!({"by": by.as_str(), "version": version, "over": over, "newer": newer});
+        }
         Err(Issue::Wrong(problem)) => {
             item["code"] = json!(problem.code.as_str());
             item["problem"] = json!(

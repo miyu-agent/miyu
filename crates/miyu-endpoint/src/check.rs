@@ -340,6 +340,18 @@ async fn check_packages(
                     ReadError::Unreadable(std::io::Error::new(error.kind(), error.to_string()));
                 problems.push(unreadable(words, &file, "package", &why));
             }
+            // 被上面一层盖住（施工 SD-1）：不加载，报一条警告说清被谁盖住、两边的版本；这一份更新的说怎么换回来。
+            Err(Issue::Covered { by, version }) => {
+                let (over, newer) = crate::packages::cover(&found, &one.id, version.as_deref());
+                let message = crate::packages::covered_sentence(
+                    words,
+                    &one.id,
+                    *by,
+                    version.as_deref(),
+                    (over.as_deref(), newer),
+                );
+                problems.push(json!({"kind": "package", "file": file, "code": "covered", "level": "warning", "message": message}));
+            }
         }
     }
     if let (Some(path), false) = (wanted, seen) {

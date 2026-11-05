@@ -182,6 +182,8 @@ fn links(item: &mut Value, id: &str, manifest: &Manifest, language: &str) {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum From {
     Shipped,
+    /// 系统的包管理器装的（施工 SD-1）。
+    Distro,
     Official,
     Local,
 }
@@ -190,6 +192,7 @@ impl From {
     pub(crate) fn as_str(self) -> &'static str {
         match self {
             From::Shipped => "shipped",
+            From::Distro => "distro",
             From::Official => "official",
             From::Local => "local",
         }
@@ -198,8 +201,10 @@ impl From {
 
 /// `found` 是从哪来的：出厂那一层的是出厂；装进来的照装的时候记的来源仓库（`desc` 的 `origin`）认。碰磁盘：读一份小文件。
 pub(crate) fn from(found: &Found, places: &Packages) -> From {
-    if found.layer == Layer::Shipped {
-        return From::Shipped;
+    match found.layer {
+        Layer::Shipped => return From::Shipped,
+        Layer::Distro => return From::Distro,
+        Layer::Home => {}
     }
     match miyu_store::packages::local::origin(&places.local_root(), &found.id) {
         Some(_) => From::Official,

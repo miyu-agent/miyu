@@ -65,7 +65,7 @@ impl Builtins for Kit {
 /// 照起来时那样造核心：清单里装着 `xkit`，编进来的内置包有它和出厂的几个。
 fn core(home: &Home, script: &Script) -> Arc<Core> {
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let found = miyu_endpoint::packages::load(&resources, &home.root);
+    let found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let groups = Kit.tools(&found).expect("拼得出");
     let catalog = Catalog::in_packages(
         groups

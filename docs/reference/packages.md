@@ -27,7 +27,7 @@
 
 **谁能调**：`package.install`、`package.remove`、`package.enable`、`package.disable`、`package.restart`、`package.sync`、`package.search`、`package.clean`、`package.upgrades`、`package.upgrade`、`package.file`、`extension.*`、`mcp.*`、`tool.set_loading`、`feature.set` 只给人，扩展调回 `local_only`；`package.info` 带 `path` 的也只给人（看的是本机任意一处的文件夹，同 `package.install`，施工 IN-4）。别的人、扩展都能调；扩展调 `package.call` 另有规矩（见下）。
 
-**两层**：出厂的（随 Miyu 装的）、装上的（数据根的 `opt/`，协议上叫 `home` 层）。这一层装了同编号的就是升级、换掉原来的；出厂的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），能装回来。
+**三层**：出厂的（随 Miyu 装的，`shipped`）、系统加装的（系统的包管理器另外装的，`distro`：Linux 是 `$XDG_DATA_DIRS` 里每一处的 `miyu/packages/`，没设照 `/usr/local/share:/usr/share`，Linuxbrew 自己的 `share` 写进 `XDG_DATA_DIRS`；macOS 是 Homebrew 前缀的 `share/miyu/packages/`；Windows 没有；`MIYU_DISTRO_PACKAGES` 设了的只看它）、装上的（数据根的 `opt/`，`home`）。同一个编号几层都有的，装上的盖过系统加装的、系统加装的盖过出厂的，被盖住的不加载、不算错。装上那一层装了同编号的就是升级、换掉原来的；出厂的、系统加装的卸掉是在 `etc/removed/` 记一笔（空文件 `<编号>`），文件不动，能装回来。
 
 ## `package.list`
 
@@ -35,7 +35,8 @@
 
 | 名字 | 说明 |
 |---|---|
-| `package`、`layer` | 编号，`shipped` 或 `home` |
+| `package`、`layer` | 编号，`shipped`、`distro` 或 `home` |
+| `covered` | 被上面一层盖住的才有：`{"by", "version", "over", "newer"}`，盖住它的那一层、这一份的版本、认的那一份的版本、这一份是不是更新。不算错，没有 `code` |
 | `kind` | `builtin`（编进核心的）、`process`（扩展）、`worker`（按需拉起的小程序）、`ui`（界面）、`mascot`（吉祥物）、`theme`（外观：终端主题、网页主题，见下面 `theme` 一格）、`bundle`（只带 MCP 服务、技能、脚本这类，不带程序） |
 | `name`、`summary`、`icon` | 名字、一句说明、Lucide 图标名 |
 | `logo` | 包自带的图标的版本（施工 F-18 上）：清单写了 `[package] logo`、图合规矩的才有，图用 `package.logo` 读 |
@@ -66,7 +67,7 @@
 | `package.info` | `path`（和 `package` 二选一，不收 `source`；施工 IN-4） | 看本机一个包文件夹（或里面的 `package.toml`）、包文件 `.miyu` 的绝对路径，照 pacman 的 `-Qip`：什么都不装，照真装之前查的那几样查一遍。回应照装着的那一份的样子：`{"from": "file", "path", "package", "files", "size", "version"?, "name"?, "summary"?, "author"?, "upstream"?, "depends"?, "recommends"?, "provides"?, "capabilities"?, "skipped"?, "replaces"?}`：`path` 照写的原样（包文件的是那个文件，不是解开的暂存处），`files`、`size` 是包里几个文件、多少字节，`provides`、`capabilities`、`skipped`（读不成的技能、脚本、斜杠命令模板 `[{"file", "why"}]`）、`replaces` 同 `package.install` 看一眼的那几格；没有 `layer`、`installed`、`required_by`、`origin` |
 | `package.files` | `package` | `{"dir", "files": [{"path", "sha256", "size"}…]}`：`path` 相对 `dir` |
 | `package.owns` | `path`（绝对路径） | `{"package", "layer", "path", "recorded"}`；哪个包都不在的 `{"package": null}` |
-| `package.check` | `package`（可不写） | `{"packages": [{"package", "modified", "missing", "extra"}…]}`：系统那一层装的包，装好以后改了、少了、多了的文件 |
+| `package.check` | `package`（可不写） | `{"packages": [{"package", "modified", "missing", "extra"}…]}`：装上那一层的包，装好以后改了、少了、多了的文件。系统加装的另有一项，多 `"layer": "distro"`，不比哈希：清单读不成的多 `manifest`，清单写的程序不在 `bin/` 的进 `missing` |
 
 **出错**：`unknown_package`（`package.info` 两处都没有）；`source_unreachable`（`package.info` 只查软件源、软件源拿不到，本机也没有索引）；`bad_params`（`owns` 的路径是相对的；`info` 的 `package`、`path` 都写或都没写，带 `path` 又写了 `source`，路径是相对的）。`info` 带 `path` 的另照 `package.install` 的出错拒：`path_unreadable`、`package_invalid`、`package_conflict`、`wrong_target`、`package_exists`、`package_file_bad`、`depends_missing`，见下一节。
 
@@ -78,7 +79,7 @@
 | `package.install` | `package`：出厂包的编号是把卸掉的装回来；别的编号同 `source`，从软件源装 | 同上 |
 | `package.install` | `source`：从软件源装这个编号（缺的依赖一起装，先装依赖；依赖写了版本下限的照下限挑，装着的版本不够的一起升，施工 PK-2）；先全下完、再一个一个核对、再一个一个装，每一段推 `package.progress` 给这个连接（见下）。`from`（可以不写）：从哪个软件源装（`official` 或配置里加的源的名字），不写的照先后找（施工 U23 下下） | 同上，一起装了依赖的多 `with` |
 | `package.install` | `package`：组名（`package.list` 顶上的 `groups`，例如 `basesystem`）是把组里卸掉的出厂包一起装回来 | `{"group", "packages": [<同 `package.list` 的一项>…]}`，一个都没卸过的是空的 |
-| `package.remove` | `package`；`purge`（可以不写，默认 `false`）：`true` 的连配置目录 `etc/<编号>/` 一起删，不写的留下，重装同编号照旧读（照 pacman） | `{"package", "removed": true}` |
+| `package.remove` | `package`；`purge`（可以不写，默认 `false`）：`true` 的连配置目录 `etc/<编号>/` 一起删，不写的留下，重装同编号照旧读（照 pacman） | `{"package", "removed": true, "layer"}` |
 | `package.remove` | `package`：组名是把组里装着的一起卸掉；组外装着的包依赖组里的整个拒（`package_depended`，`data.by` 是它们）；`purge` 同上，照样传给组里每个包 | `{"group", "removed": [<编号>…]}` |
 
 都可以带 `preview: true`：只看一眼、什么都不动，拒绝照真做的那一样。`install` 的预览回 `package`、`version`、要换掉的 `replaces: {"version"}`、装回出厂的 `restores: true`，和带了什么（`program`、`mcp`、`command`（第一个子命令名）、`commands`（全部子命令名）、`page`、`mascot`、`theme`、`connection`、`settings`、`capabilities`、`files`、`size`）；`remove` 的预览回 `package`、`layer`、`version`、`files`、`size`、`settings`（要一并删掉的配置键）、`state`（会一并删掉的状态目录：`{"path", "size"}`，`path` 是 `var/lib/<编号>/` 的位置，`size` 是底下文件一共多少字节，符号链接不跟进去；没有状态目录的不写这一格。以前这一格是 `true`/`false`）、`config`（配置目录：`{"path", "kept"}`，`path` 是 `etc/<编号>/` 的位置，`kept` 是 `true` 会留下、`false` 会删掉（写了 `purge: true`）；不在的、空的不写这一格）。

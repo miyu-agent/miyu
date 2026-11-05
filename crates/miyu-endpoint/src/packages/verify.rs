@@ -2,7 +2,8 @@
 //!
 //! - `package.owns {path}`：这个路径在哪个包的目录里（两层都找，换成真实的位置比），本地库里有没有记它。
 //! - `package.check {package?}`：家目录里本地库记了的包，照记的一个个比哈希：改了的、少了的、多出来的（多出来的只是提示：
-//!   包自己运行时写的也算）。出厂的不进本地库，不查。
+//!   包自己运行时写的也算）。出厂的不进本地库，不查。系统加装的（施工 SD-1）不比哈希、文件归系统的包管理器：只查清单读不读得成
+//!   （`manifest` 写原因）、清单写的程序在不在包文件夹的 `bin/`（少了的进 `missing`），带 `"layer": "distro"`。
 //!
 //! `miyu check` 也报（端点的 `check.rs`）：改了、少了的各一条警告。
 
@@ -105,6 +106,47 @@ pub(crate) fn drift(root: &Path, id: &str, folder: &Path) -> Option<Drift> {
     Some(drift)
 }
 
+/// 系统加装的包（施工 SD-1）：认的那一份是系统加装的（被盖住的不查），只要 `only` 的那一个（写了的话）。不比哈希：清单读不成的
+/// `manifest` 写原因（`unreadable` 或问题的代码）；读成了的，`[command]`、`[worker]` 写的程序不在包文件夹的 `bin/` 的，
+/// 记进 `missing`（`bin/<程序>`，Windows 上带 `.exe`）。
+pub(crate) fn distro_checked(found: &[Found], only: Option<&str>) -> Vec<Value> {
+    let exe = std::env::consts::EXE_SUFFIX;
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    for one in found {
+        // 同一个编号排第一的是认的那一份。
+        if !seen.insert(one.id.clone()) || one.layer != Layer::Distro {
+            continue;
+        }
+        if only.is_some_and(|id| one.id != id) {
+            continue;
+        }
+        let mut entry = json!({"package": one.id, "layer": "distro", "modified": [], "missing": [], "extra": []});
+        match &one.read {
+            Ok(manifest) => {
+                let programs = manifest
+                    .commands
+                    .iter()
+                    .map(|command| command.program.clone())
+                    .chain(manifest.worker.iter().map(|worker| worker.program.clone()));
+                let mut missing: Vec<String> = programs
+                    .map(|program| format!("{}/{program}{exe}", miyu_store::packages::BIN))
+                    .filter(|path| !one.files_dir().join(path).is_file())
+                    .collect();
+                missing.sort();
+                missing.dedup();
+                entry["missing"] = json!(missing);
+            }
+            Err(miyu_store::packages::Issue::Wrong(problem)) => {
+                entry["manifest"] = json!(problem.code.as_str());
+            }
+            Err(_) => entry["manifest"] = json!("unreadable"),
+        }
+        out.push(entry);
+    }
+    out
+}
+
 /// 家目录里本地库记了的包，照编号排：编号、包目录。只要 `only` 的那一个（写了的话）。
 pub(crate) fn recorded(core: &Core, only: Option<&str>) -> Vec<(String, PathBuf)> {
     let now = core.system_packages();
@@ -127,6 +169,7 @@ pub(crate) async fn check(core: &Arc<Core>, params: CheckParams) -> Result<Value
         return Err(Refusal::UNKNOWN_PACKAGE);
     }
     let wanted = recorded(core, params.package.as_deref());
+    let distro = distro_checked(&core.system_packages(), params.package.as_deref());
     let root = packages(core).local_root();
     let checked = tokio::task::spawn_blocking(move || {
         wanted
@@ -136,7 +179,7 @@ pub(crate) async fn check(core: &Arc<Core>, params: CheckParams) -> Result<Value
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?;
-    let packages: Vec<Value> = checked
+    let mut packages: Vec<Value> = checked
         .into_iter()
         .map(|(id, drift)| {
             if !drift.modified.is_empty() || !drift.missing.is_empty() {
@@ -145,6 +188,8 @@ pub(crate) async fn check(core: &Arc<Core>, params: CheckParams) -> Result<Value
             json!({"package": id, "modified": drift.modified, "missing": drift.missing, "extra": drift.extra})
         })
         .collect();
+    packages.extend(distro);
+    packages.sort_by(|a, b| a["package"].as_str().cmp(&b["package"].as_str()));
     Ok(json!({ "packages": packages }))
 }
 

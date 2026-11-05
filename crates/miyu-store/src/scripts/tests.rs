@@ -41,7 +41,7 @@ impl Places {
     }
 
     fn found(&self) -> (Vec<Script>, Vec<Skipped>) {
-        let packages = Packages::new(&self.resources, &self.root).read();
+        let packages = Packages::new(&self.resources, &self.root, Vec::new()).read();
         find(&packages, &self.root)
     }
 }

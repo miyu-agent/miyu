@@ -5,6 +5,7 @@
 use serde_json::{Value, json};
 
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
 use miyu_config::package::{Code, Manifest, PackageKind, Problem, settings};
 use miyu_config::{Item, Words};
@@ -62,24 +63,81 @@ pub(crate) fn program_missing(core: &Core, id: &str, manifest: &Manifest) -> boo
     status::program_missing(&dir_of(core, id), manifest)
 }
 
+/// 被盖住的一份（施工 SD-1）：盖它的那一份（`all` 里同编号排第一的）写的版本，和这一份（版本 `mine`）是不是比它新。两边都
+/// 要照 semver 读得成才比，读不成的不算新。
+pub(crate) fn cover(all: &[Found], id: &str, mine: Option<&str>) -> (Option<String>, bool) {
+    let over = all
+        .iter()
+        .find(|one| one.id == id)
+        .and_then(|one| one.read.as_ref().ok())
+        .and_then(|manifest| manifest.version.clone());
+    let floor =
+        |version: &str| miyu_config::package::Dependency::parse(&format!("{id}>={version}"));
+    let newer = match (mine, over.as_deref()) {
+        (Some(mine), Some(over)) => match (floor(mine), floor(over)) {
+            (Some(mine), Some(_)) => !mine.fits(Some(over)),
+            _ => false,
+        },
+        _ => false,
+    };
+    (over, newer)
+}
+
+/// 被盖住的一份给人看的话（`miyu check`、施工 SD-1）：被哪一层盖住、两边的版本；这一份更新的接一句怎么换回来（盖它的是装上的
+/// 卸掉那一份；是系统加装的用系统的包管理器卸，`pkg remove` 的记号照编号记，会连这一份一起藏起来）。
+pub(crate) fn covered_sentence(
+    words: &Human,
+    id: &str,
+    by: miyu_store::packages::Layer,
+    mine: Option<&str>,
+    (over, newer): (Option<&str>, bool),
+) -> String {
+    let unknown = "?";
+    let layer = Words::sentence(words, &format!("package-layers/{}", by.as_str()), &[])
+        .unwrap_or_else(|| by.as_str().to_string());
+    let mut said = Words::sentence(
+        words,
+        "package-problems/covered",
+        &[
+            ("by", layer.as_str()),
+            ("version", mine.unwrap_or(unknown)),
+            ("over", over.unwrap_or(unknown)),
+        ],
+    )
+    .unwrap_or_default();
+    if newer {
+        let key = match by {
+            miyu_store::packages::Layer::Home => "package-problems/covered_newer",
+            _ => "package-problems/covered_newer_distro",
+        };
+        if let Some(hint) = Words::sentence(words, key, &[("id", id)]) {
+            said.push(' ');
+            said.push_str(&hint);
+        }
+    }
+    said
+}
+
 /// 核心说的协议主版本。
 const PROTOCOL: u32 = 1;
 
 /// 运行日志的目标。
 const TARGET: &str = "miyu::packages";
 
-/// 这个核心的两层清单。
+/// 这个核心的三层清单（系统加装那几处照核心交进来的，施工 SD-1）。
 pub(crate) fn packages(core: &Core) -> Packages {
-    Packages::new(&core.resources, &core.root)
+    Packages::new(&core.resources, &core.root, core.distro.clone())
 }
 
 /// 核心起来时读一次：写错的、撞了的各记一行 `WARN package invalid`，读不了的 `WARN package unreadable`。装包的目录没有的先建
 /// 好（施工 U23 下上）。
-pub fn load(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
+///
+/// 系统加装那一层照 `distro` 这几处（施工 SD-1，`miyu_store::packages::distro::dirs` 算的）。被上面一层盖住的记一行 `INFO`。
+pub fn load(resources: &ResourceRoot, root: &DataRoot, distro: Vec<PathBuf>) -> Vec<Found> {
     if let Err(error) = std::fs::create_dir_all(root.packages()) {
         tracing::warn!(target: TARGET, error = %error, "packages not created");
     }
-    let packages = Packages::new(resources, root);
+    let packages = Packages::new(resources, root, distro);
     let found = packages.read();
     // 本地库（施工 F-8 中上）：以前装的、还没记的补一份。
     local::backfill(&packages, &found);
@@ -91,6 +149,9 @@ pub fn load(resources: &ResourceRoot, root: &DataRoot) -> Vec<Found> {
             }
             Err(Issue::Unreadable(error)) => {
                 tracing::warn!(target: TARGET, package = one.id.as_str(), file = %one.path.display(), error = %error, "package unreadable");
+            }
+            Err(Issue::Covered { by, .. }) => {
+                tracing::info!(target: TARGET, package = one.id.as_str(), layer = one.layer.as_str(), by = by.as_str(), "package covered");
             }
         }
     }
@@ -392,6 +453,23 @@ pub(crate) fn sentence(words: &Human, code: &str, detail: &str) -> Option<String
         &format!("package-problems/{code}"),
         &[("detail", detail)],
     )
+}
+
+impl Core {
+    /// 同一份家底，这一份核心编进来的内置包照 `built_in`（施工 F-5 上）：装卸以后重读清单时照它标没编进来的。
+    #[must_use]
+    pub fn with_built_in(mut self, built_in: Vec<&'static str>) -> Core {
+        self.built_in = Some(built_in);
+        self
+    }
+
+    /// 同一份家底，系统加装那一层照 `distro` 这几处（施工 SD-1）：重读清单、装卸照它。核心起来时读好的清单另由
+    /// [`Core::with_packages`] 交进来。
+    #[must_use]
+    pub fn with_distro(mut self, distro: Vec<PathBuf>) -> Core {
+        self.distro = distro;
+        self
+    }
 }
 
 #[cfg(test)]

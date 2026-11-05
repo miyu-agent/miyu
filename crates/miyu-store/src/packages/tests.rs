@@ -1,5 +1,5 @@
-//! 软件包清单在哪、两层怎么认（施工 9-1 上）：出厂的、数据根里的，照编号排；同一个编号认出厂的；子命令名撞了的
-//! 后读到的那一份报错；读不了的、不是 `.toml` 的、编号不合写法的。
+//! 软件包清单在哪、三层怎么认（施工 9-1 上，SD-1 改成三层）：出厂的、系统加装的、数据根里的，照编号排；同一个编号上面一层
+//! 盖住下面的；子命令名撞了的照盖的先后后读到的那一份报错；读不了的、不是 `.toml` 的、编号不合写法的。
 
 use std::fs;
 
@@ -29,14 +29,19 @@ impl Places {
             exe: None,
         };
         let root = DataRoot::locate(&env).unwrap();
-        let packages = Packages::new(&resources, &root);
+        let distro = vec![
+            scratch.path().join("distro"),
+            scratch.path().join("distro2"),
+        ];
+        let packages = Packages::new(&resources, &root, distro);
         Places { scratch, packages }
     }
 
-    /// 在一层里写一份文件。
+    /// 在一层里写一份文件（系统加装的写在先列的那一处）。
     fn write(&self, layer: Layer, file: &str, text: &str) {
         let base = match layer {
             Layer::Shipped => "res/packages",
+            Layer::Distro => "distro",
             Layer::Home => "data/opt",
         };
         let path = self.scratch.path().join(base).join(file);
@@ -61,6 +66,7 @@ fn brief(found: &[Found]) -> Vec<(String, Layer, Option<Code>)> {
                 Ok(_) => None,
                 Err(Issue::Wrong(problem)) => Some(problem.code),
                 Err(Issue::Unreadable(_)) => Some(Code::Syntax),
+                Err(Issue::Covered { .. }) => panic!("被盖住的用 seen 看"),
             };
             (found.id.clone(), found.layer, code)
         })
@@ -93,43 +99,6 @@ fn both_layers_are_read_in_order_of_id() {
 #[test]
 fn nothing_installed_is_an_empty_list() {
     assert!(Places::new().packages.read().is_empty());
-}
-
-#[test]
-fn the_shipped_one_wins_a_duplicate_id() {
-    let places = Places::new();
-    places.write(Layer::Shipped, "web/package.toml", &ui("web"));
-    places.write(Layer::Home, "web/package.toml", &ui("web2"));
-    assert_eq!(
-        brief(&places.packages.read()),
-        [
-            ("web".to_string(), Layer::Shipped, None),
-            ("web".to_string(), Layer::Home, Some(Code::Duplicate)),
-        ]
-    );
-}
-
-#[test]
-fn a_command_name_is_taken_by_whoever_is_read_first() {
-    let places = Places::new();
-    places.write(Layer::Shipped, "web/package.toml", &ui("open"));
-    places.write(Layer::Shipped, "zeta/package.toml", &ui("open"));
-    places.write(Layer::Home, "alpha/package.toml", &ui("open"));
-    let found = places.packages.read();
-    assert_eq!(
-        brief(&found),
-        [
-            ("alpha".to_string(), Layer::Home, Some(Code::CommandTaken)),
-            ("web".to_string(), Layer::Shipped, None),
-            ("zeta".to_string(), Layer::Shipped, Some(Code::CommandTaken)),
-        ],
-        "出厂的先于家目录，同一层照编号"
-    );
-    let Err(Issue::Wrong(problem)) = &found[0].read else {
-        panic!("撞了");
-    };
-    assert_eq!(problem.detail, "open");
-    assert_eq!(problem.line, Some(6), "报在子命令名那一行");
 }
 
 /// 加两个子命令的界面清单（施工 F-13）。
@@ -167,75 +136,6 @@ fn builtin(feature: &str) -> String {
     format!(
         "[package]\nprotocol = [1, 1]\nname = {{ en = \"B\" }}\n\n[features.{feature}]\nname = {{ en = \"F\" }}\n\n[builtin]\n"
     )
-}
-
-/// 功能的编号（施工 F-1，设计 30 第三节）：两个包撞了，照读的先后（出厂的先于家目录，同一层照编号）先到先得，后到的那一份报
-/// `feature_taken`、整份不收，报在那个功能那一行；没写功能的包，那一个功能的编号就是包的编号。
-#[test]
-fn a_feature_id_is_taken_by_whoever_is_read_first() {
-    let places = Places::new();
-    places.write(Layer::Shipped, "basesystem/package.toml", &builtin("files"));
-    places.write(
-        Layer::Shipped,
-        "files/package.toml",
-        "[package]\nprotocol = [1, 1]\nname = { en = \"Files\" }\n\n[command]\nname = \"files\"\nprogram = \"miyu-files\"\nabout = { en = \"F\" }\n\n[process]\n",
-    );
-    places.write(Layer::Home, "alpha/package.toml", &builtin("files"));
-    places.write(Layer::Home, "beta/package.toml", &builtin("beta"));
-    let found = places.packages.read();
-    assert_eq!(
-        brief(&found),
-        [
-            ("alpha".to_string(), Layer::Home, Some(Code::FeatureTaken)),
-            ("basesystem".to_string(), Layer::Shipped, None),
-            ("beta".to_string(), Layer::Home, None),
-            (
-                "files".to_string(),
-                Layer::Shipped,
-                Some(Code::FeatureTaken)
-            ),
-        ]
-    );
-    let Err(Issue::Wrong(problem)) = &found[0].read else {
-        panic!("撞了");
-    };
-    assert_eq!((problem.detail.as_str(), problem.line), ("files", Some(5)));
-    let Err(Issue::Wrong(problem)) = &found[3].read else {
-        panic!("没写功能的照包的编号算");
-    };
-    assert_eq!((problem.detail.as_str(), problem.line), ("files", None));
-}
-
-/// 前缀（施工 PN-1，设计 48 第二节第 3 条）：照读的先后先到先得，后到的那一份报 `prefix_taken`、整份不收；没写的照包编号。
-#[test]
-fn a_prefix_is_taken_by_whoever_is_read_first() {
-    let places = Places::new();
-    let short = "[package]\nname = { en = \"T\" }\nprefix = \"tui\"\n";
-    places.write(Layer::Shipped, "miyu-tui/package.toml", short);
-    places.write(
-        Layer::Home,
-        "tui/package.toml",
-        "[package]\nname = { en = \"T\" }\n",
-    );
-    places.write(
-        Layer::Home,
-        "web/package.toml",
-        "[package]\nname = { en = \"W\" }\n",
-    );
-    let found = places.packages.read();
-    assert_eq!(
-        brief(&found),
-        [
-            ("miyu-tui".to_string(), Layer::Shipped, None),
-            ("tui".to_string(), Layer::Home, Some(Code::PrefixTaken)),
-            ("web".to_string(), Layer::Home, None),
-        ],
-        "出厂的先读到"
-    );
-    let Err(Issue::Wrong(problem)) = &found[1].read else {
-        panic!("撞了");
-    };
-    assert_eq!(problem.detail, "tui");
 }
 
 #[test]
@@ -381,30 +281,6 @@ fn on_windows_a_script_in_bin_starts_by_its_shebang() {
     );
 }
 
-/// 两个包带了同名的 MCP 服务（施工 X-2）：功能编号 `mcp-<服务名>` 撞了，照功能编号撞了报，后到的整份不收、报在那一段。
-#[test]
-fn an_mcp_server_name_is_taken_by_whoever_is_read_first() {
-    let places = Places::new();
-    let bundle = "[package]\nname = { en = \"G\" }\n\n[[mcp]]\nname = \"github\"\ncommand = [\"npx\", \"server-github\"]\n";
-    places.write(Layer::Home, "alpha/package.toml", bundle);
-    places.write(Layer::Home, "beta/package.toml", bundle);
-    let found = places.packages.read();
-    assert_eq!(
-        brief(&found),
-        [
-            ("alpha".to_string(), Layer::Home, None),
-            ("beta".to_string(), Layer::Home, Some(Code::FeatureTaken)),
-        ]
-    );
-    let Err(Issue::Wrong(problem)) = &found[1].read else {
-        panic!("撞了");
-    };
-    assert_eq!(
-        (problem.detail.as_str(), problem.line),
-        ("mcp-github", Some(4))
-    );
-}
-
 /// 升级一个装上的包时，原来那一份先挪到 `.<编号>.old`、再把暂存的 `.<编号>.new` 换进来（`install::place`）。两次改名之间核心
 /// 被杀，`<编号>/` 没了：起来时 `install::recover` 把原来那一份放回去，包照旧读得到（施工 AE-7，发布前第二轮审查 R2-4）。
 #[test]
@@ -474,3 +350,5 @@ fn a_reserved_id_is_not_taken_as_a_package() {
     assert_eq!(problem.detail, "mcp");
     assert!(reserved_id("web").is_none());
 }
+
+mod layers;

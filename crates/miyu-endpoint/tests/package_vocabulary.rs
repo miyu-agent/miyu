@@ -171,7 +171,7 @@ async fn values_are_checked_by_their_type_and_handed_over_as_written() {
         "[draw]\nprompt = \"\"\"\nA cat.\nIn the snow.\"\"\"\ntemperature = 1.25\n",
     );
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     let items = miyu_endpoint::packages::settle(&mut found, &[]);
     let config = Config::load(&home.root, None, items, Environment::of(&[]));
     assert_eq!(

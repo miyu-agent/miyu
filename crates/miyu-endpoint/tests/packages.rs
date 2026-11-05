@@ -230,7 +230,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
     );
     mine(&home, "term", TERM);
     let resources = miyu_store::resources::ResourceRoot::at(default_resources());
-    let mut found = miyu_endpoint::packages::load(&resources, &home.root);
+    let mut found = miyu_endpoint::packages::load(&resources, &home.root, Vec::new());
     miyu_endpoint::packages::compiled(
         &mut found,
         &[
@@ -248,6 +248,7 @@ fn a_builtin_the_core_lacks_is_not_built_in() {
                 Ok(_) => None,
                 Err(miyu_store::packages::Issue::Wrong(problem)) => Some(problem.code.as_str()),
                 Err(miyu_store::packages::Issue::Unreadable(_)) => Some("unreadable"),
+                Err(miyu_store::packages::Issue::Covered { .. }) => Some("covered"),
             };
             (one.id.as_str(), code)
         })
@@ -274,8 +275,8 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
     let home = Home::new();
     mine(&home, "bad", "[package]\n\n[ui]\n\n[process]\n");
     mine(&home, "miyu-base-mermaid", TERM);
-    // 子命令撞了先读到的 `term`（施工 S-6 下：出厂的包都不带命令了，撞的是家目录里编号排在前面的那一份；出厂的先于家目录由
-    // miyu-store 的单元测试守着）。
+    // 子命令撞了先读到的那一份（施工 S-6 下：出厂的包都不带命令了，撞的是家目录里编号排在前面的那一份；施工 SD-1 起照盖的
+    // 先后，装上的先于出厂的，由 miyu-store 的单元测试守着）。
     mine(&home, "term", TERM);
     mine(&home, "web2", TERM);
     mine(
@@ -309,8 +310,16 @@ async fn broken_taken_and_mismatched_ones_carry_a_code_and_a_sentence() {
         })]
     );
     let mermaid = by_id("miyu-base-mermaid");
-    assert_eq!(mermaid.len(), 2, "出厂的照常，家目录里同编号的那一份报错");
-    assert_eq!(mermaid[1]["code"], "duplicate", "{mermaid:?}");
+    assert_eq!(
+        mermaid.len(),
+        2,
+        "装上的盖住出厂的（施工 SD-1，原来的 duplicate 去掉了）"
+    );
+    assert_eq!(mermaid[0]["layer"], "home", "{mermaid:?}");
+    assert!(mermaid[0].get("covered").is_none() && mermaid[0].get("code").is_none());
+    assert_eq!(mermaid[1]["layer"], "shipped");
+    assert_eq!(mermaid[1]["covered"]["by"], "home", "{mermaid:?}");
+    assert!(mermaid[1].get("code").is_none(), "被盖住的不算错");
     assert_eq!(by_id("web2")[0]["code"], "command_taken");
     let later = &by_id("later")[0];
     assert_eq!(later["code"], "protocol_mismatch", "{later}");

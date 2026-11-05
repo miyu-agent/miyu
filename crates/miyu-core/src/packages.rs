@@ -115,3 +115,21 @@ mod mermaid {
         }
     }
 }
+
+/// 系统加装那几处（施工 SD-1）：照这个进程的环境算（`MIYU_DISTRO_PACKAGES`、`XDG_DATA_DIRS`、Homebrew 的前缀）。
+pub(crate) fn distro_dirs(resources: &ResourceRoot) -> Vec<std::path::PathBuf> {
+    miyu_store::packages::distro::dirs(
+        &miyu_store::packages::distro::Where::current(),
+        &resources.path().join("packages"),
+    )
+}
+
+/// 读三层清单（施工 9-1 上，SD-1 加系统加装那一层），再标出这一份核心没编进来的内置包（施工 F-2）。
+pub(crate) fn load_packages(
+    resources: &ResourceRoot,
+    root: &DataRoot,
+) -> Vec<miyu_store::packages::Found> {
+    let mut found = miyu_endpoint::packages::load(resources, root, distro_dirs(resources));
+    miyu_endpoint::packages::compiled(&mut found, &crate::built_in());
+    found
+}
