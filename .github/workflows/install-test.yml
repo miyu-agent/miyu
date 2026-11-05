@@ -1,0 +1,43 @@
+# 安装脚本的实测（施工 RL-3）：Linux、macOS、Windows 各在一台干净的机器上照 packaging/test-install.* 装、核、卸一遍，资产用
+# 公开的预发布（--prerelease）。只测，不发东西；改了安装脚本、这两个实测脚本、这个文件才跑，也能手动跑。
+name: install-test
+
+on:
+  push:
+    branches: [main, "step/**"]
+    paths:
+      - "packaging/install.sh"
+      - "packaging/install.ps1"
+      - "packaging/test-install.sh"
+      - "packaging/test-install.ps1"
+      - ".github/workflows/install-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unix:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: 装、核、卸
+        run: sh packaging/test-install.sh packaging/install.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  windows:
+    timeout-minutes: 15
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: 装、核、卸
+        shell: pwsh
+        run: ./packaging/test-install.ps1 -Script packaging/install.ps1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

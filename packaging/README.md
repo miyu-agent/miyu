@@ -26,6 +26,12 @@ Linux 两种和 macOS 上 `cargo xtask dist` 另打三份给系统源（AUR、Ho
 
 `dist-check` 也认这三种：头那一份要同一目录里有核心那一份，照系统加装层放好问核心认不认得出。
 
+安装脚本（施工 RL-3）：`install.sh`（Linux、macOS）、`install.ps1`（Windows）从 GitHub Releases 下载这一种的压缩包，核签名（openssl 认
+Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 `miyu --version`，装进 `~/.local/lib/miyu/`（链到 `~/.local/bin/miyu`）或者
+`%LOCALAPPDATA%\Programs\Miyu\`（加进用户的 PATH），旁边写 `install.toml`（`channel = "script"`，`miyu upgrade` 照它自己升级）。参数：
+`--prerelease`、`--version <版本>`、`--uninstall`（Windows 是 `-Prerelease`、`-Version`、`-Uninstall`）。`test-install.sh`、`test-install.ps1`
+在干净的机器上装、核、卸一遍（`.github/workflows/install-test.yml`），别在自己的家目录跑。
+
 每个安装包的根目录都放仓库根上的 `LICENSE`（AGPL-3.0 全文）和 `THIRD-PARTY-LICENSES.txt`（编进程序的第三方包的许可证原文，`cargo xtask notices` 生成，蓝图 `licenses.md`「第三方许可证清单」）。带了头的，头的那一份也放进去（施工 AU-2）。
 
 ## 个人机器（第一版的重点）
