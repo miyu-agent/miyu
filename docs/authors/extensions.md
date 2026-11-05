@@ -147,7 +147,7 @@ core.close()
 - 程序是 `bin/` 下那一个，参数是 `[process] args`。
 - 环境照核心的，另有 `MIYU_HOME`（数据根）、`MIYU_RESOURCES`、`MIYU_PROGRAM`（主程序 `miyu` 的真实位置：要拉起核心的跑 `$MIYU_PROGRAM core`，别照自己旁边找，装进数据根的包旁边没有主程序），和你这个包在数据根里各自的那一格，都已经建好、是真实位置：
   - `MIYU_APP_DIR`：你这个包的文件夹（包里带的文件照它找，别自己拼路径）；
-  - `MIYU_CONFIG_DIR`：给人手改的配置（`etc/<编号>/`）；
+  - `MIYU_CONFIG_DIR`：给人手改的配置（`etc/<编号>/`；卸包默认留下，重装照旧读，`miyu pkg remove --purge` 才删）；
   - `MIYU_STATE_DIR`：数据库、登录态这些要留着的（`var/lib/<编号>/`，被拉起时也是工作目录）；
   - `MIYU_CACHE_DIR`：删了能重新生成的（`var/cache/<编号>/`）；
   - `MIYU_LOG_DIR`：你自己的运行日志（`var/log/<编号>/`；核心记的标准错误也在这里，叫 `stderr`、`stderr.old`，这两个名字别用）；
@@ -156,7 +156,7 @@ core.close()
   - `MIYU_PICTURES_DIR`、`MIYU_VIDEOS_DIR`、`MIYU_DOCUMENTS_DIR`、`MIYU_DOWNLOADS_DIR`：给人的文件存这里。
 
   人在终端敲 `miyu <你的命令>` 时也设这一套。旧名字 `MIYU_PACKAGE_DIR`（同 `MIYU_APP_DIR`）、`MIYU_PACKAGE_STATE`（同 `MIYU_STATE_DIR`）过渡期间照样给，下一版去掉。
-- 你的东西照上面分开放，卸载时这几格一起删（给人的四处不删）。人的数据别放 `MIYU_STATE_DIR`：卸之前那一屏写「会删掉 <路径>（<大小>）」，删了就没了；要留给人的放 `MIYU_DOCUMENTS_DIR`（`root/documents/`）这些人看得见的地方。一律照这些变量找，别靠工作目录（被拉起时工作目录是 `MIYU_STATE_DIR`，可人敲命令时是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
+- 你的东西照上面分开放，卸载时这几格一起删（给人的四处不删；配置目录照 pacman 默认留下，卸之前那一屏写「配置留在 <路径>」，`--purge` 的才删，写「会删掉 <路径>」）。给人改的东西放 `MIYU_CONFIG_DIR`，卸了重装还在；你自己用的状态放 `MIYU_STATE_DIR`，卸包会删。人的数据别放 `MIYU_STATE_DIR`：卸之前那一屏写「会删掉 <路径>（<大小>）」，删了就没了；要留给人的放 `MIYU_DOCUMENTS_DIR`（`root/documents/`）这些人看得见的地方。一律照这些变量找，别靠工作目录（被拉起时工作目录是 `MIYU_STATE_DIR`，可人敲命令时是人当时所在的目录），也别自己拼 `MIYU_HOME` 下的路径。
 - 这个变量只给扩展本身和人敲的命令用：她在沙盒里跑的脚本读不到状态目录（它在数据根里，沙盒整个藏着）。
 - 标准错误接到 `~/.miyu/var/log/<编号>/stderr`（就在 `MIYU_LOG_DIR` 里），出了问题先看它。
 
