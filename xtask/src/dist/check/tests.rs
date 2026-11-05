@@ -219,3 +219,23 @@ fn a_broken_archive_is_an_error() {
     fs::create_dir_all(&into).unwrap();
     assert!(unpack(&archive, &into).unwrap_err().contains("解不开"));
 }
+
+#[test]
+fn relative_paths_are_slashed_whichever_way_they_were_written() {
+    assert_eq!(relative(Path::new("resources/core/a.md")), "core/a.md");
+    assert_eq!(relative(&Path::new("core").join("a.md")), "core/a.md");
+    assert_eq!(relative(Path::new("resources\\core\\a.md")), "core/a.md");
+    assert_eq!(relative(Path::new("core\\a.md")), "core/a.md");
+}
+
+#[test]
+fn a_listed_resource_matches_the_walked_file_on_every_system() {
+    let scratch = Scratch::new("slash");
+    let resources = good(&scratch);
+    // 清单里写成 Windows 的样子也认：比的时候一律 `/`。
+    let windows: Vec<PathBuf> = resources
+        .iter()
+        .map(|file| PathBuf::from(file.to_string_lossy().replace('/', "\\")))
+        .collect();
+    assert_eq!(problems(&scratch, &windows), Vec::<String>::new());
+}

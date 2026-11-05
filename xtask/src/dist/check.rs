@@ -15,7 +15,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use super::archive::walk;
+use super::archive::{slashed, walk};
 use super::fetch::tracked;
 use super::layout::{make_dir, remove};
 use super::{CORE, HOST, TUI_PROGRAM, WEB_PROGRAM, archive_name, read, version};
@@ -141,35 +141,33 @@ pub(super) fn contents(
         problems.push(format!("README.txt 开头该写 Miyu {version} ({target})"));
     }
 
+    // 比、报都用 `resources/` 下的相对路径、一律 `/`（[`relative`]）：`git ls-files` 写的是 `/`，包里走出来的照系统的分隔符，
+    // Windows 上是 `\`。
     let shipped = dir.join("resources");
-    for file in resources {
-        let inside = file.strip_prefix("resources").unwrap_or(file);
+    let listed: std::collections::BTreeSet<String> =
+        resources.iter().map(|file| relative(file)).collect();
+    for inside in &listed {
+        let from_repo = root.join("resources").join(inside);
         match fs::read(shipped.join(inside)) {
-            Err(_) => problems.push(format!("少了资源 {}", file.display())),
-            Ok(bytes) if fs::read(root.join(file)).ok().as_deref() != Some(bytes.as_slice()) => {
-                problems.push(format!("资源 {} 和仓库的不一样", file.display()));
+            Err(_) => problems.push(format!("少了资源 resources/{inside}")),
+            Ok(bytes) if fs::read(&from_repo).ok().as_deref() != Some(bytes.as_slice()) => {
+                problems.push(format!("资源 resources/{inside} 和仓库的不一样"));
             }
             Ok(_) => {}
         }
     }
-    let listed: std::collections::BTreeSet<PathBuf> = resources
-        .iter()
-        .map(|file| file.strip_prefix("resources").unwrap_or(file).to_path_buf())
-        .collect();
     let mut entries = Vec::new();
     if shipped.is_dir() {
         walk(&shipped, Path::new(""), &mut entries)?;
     }
-    let heads = [
-        Path::new("packages/miyu-tui"),
-        Path::new("packages/miyu-webui"),
-    ];
+    let heads = ["packages/miyu-tui/", "packages/miyu-webui/"];
     for (inside, source) in &entries {
+        let inside = relative(inside);
         let extra = source.is_some()
-            && !listed.contains(inside)
+            && !listed.contains(&inside)
             && !heads.iter().any(|head| inside.starts_with(head));
         if extra {
-            problems.push(format!("resources/{} 不在仓库的清单里", inside.display()));
+            problems.push(format!("resources/{inside} 不在仓库的清单里"));
         }
     }
     let needed = [
@@ -192,6 +190,15 @@ pub(super) fn contents(
         );
     }
     Ok(problems)
+}
+
+/// `resources/` 下的相对路径，写成 `/` 分开的字：去掉开头的 `resources`，系统的分隔符和 Windows 写法的 `\\` 都换成 `/`。
+pub(super) fn relative(path: &Path) -> String {
+    let text = slashed(path).replace('\\', "/");
+    match text.strip_prefix("resources/") {
+        Some(inside) => inside.to_string(),
+        None => text,
+    }
 }
 
 /// 跑包里的 `miyu`：`--version` 报这一版；隔离的数据根 `home` 里 `miyu check` 要过，跑完叫核心停下。

@@ -90,6 +90,11 @@ variable，私钥文件自己保管。两样少了哪一样，签名那一步报
 
 ### 坑
 
+- **Windows 上包里走出来的路径带 `\`**（分支 CI 41949460958 红在 Windows：报出来的是 `resources/core\stray.md`）：`git ls-files` 写的是
+  `/`。`Path` 比较时 Windows 上两种分隔符算一样，所以那一趟是报的字不对；但比、报都靠 `Path` 的这一点不稳，改成一律换成 `/` 分开的
+  字再比、再报（`check::relative`：先把 `\` 换成 `/`，再去掉开头的 `resources/`）。测试加两条：几种写法都换成同一个；清单写成
+  Windows 的样子也对得上包里的文件。变异「不换 `\`」「不去开头」都抓住。
+
 - **签名的私钥变量名叫 `MIYU_INDEX_KEY`**：`miyu-index` 签什么都从它读，发版的工作流把 `MIYU_RELEASE_KEY` 填进去，两把钥匙不混：
   软件源的 Actions 在 packages 仓库，填的是软件源那把。
 - **Windows 机器的 bash 里 `$RUNNER_TEMP` 带反斜杠**，拿它拼通配不稳，压缩包放在仓库下的 `target/dist/`。
