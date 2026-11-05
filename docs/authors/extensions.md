@@ -188,6 +188,7 @@ core.close()
 | `scope` | 给哪种会话，在 `venues` 之内再收窄：`local`（本机的会话）、`local_main`（本机的主会话，子代理没有）、`local_main_attended`（本机的主会话、有人看着，比如要问人的工具）、`spawn`（派子会话的工具）。不写是 `any` |
 | `paths` | 哪几个参数是文件路径、是读是写：`[{"parameter": "file_path", "write": true}]`。读写文件的工具都该写：核心照它做权限检查（工作区外的写要问人），你回报的文件效果才收得下。见下面「改文件的工具」 |
 | `background_parameters` | 只在会话能放到后台时才有意义的参数名（比如 `["run_in_background"]`）：后台运行关着的会话里，AI 看到的参数格式没有它们。要是不必填的 |
+| `runs_commands` | `true`：这件工具会跑命令（替换内置 `shell` 的、在容器里跑命令的这类）。清单要声明能力 `tools.commands`、人批过，不然整份 `provide` 回 `needs_approval`。见下面「跑命令的工具」 |
 
 写错的整份不收，回应的 `data` 说哪一件、哪里不对（`{"tool": "hello_greet", "problem": "name"}`）。
 
@@ -240,6 +241,28 @@ core.close()
    - 路径要是 `checked` 里的：改、删的要判了写。别的种类、没判过的路径、写法不对的那一条丢掉，结果照常；运行日志记一行 `tool effect dropped`，排查时看 `why`。
    - 改了一半出了错，照样回 `error: true` 并报改了的文件：改了的是真的。
 4. 撤销不改回文件（内置的也不改），只退回 AI 看过的：撤掉一轮以后再改那个文件，AI 要先重读。
+
+## 跑命令的工具
+
+自己写一件跑命令的工具（换掉内置的 `shell`、在容器或远程机器上跑），想让 AI 在它跑的命令里也能 `miyu call` 调工具，和内置的 `shell` 一样：
+
+1. 清单 `[process] capabilities` 加上 `tools.commands`（装的时候人会看到「工具会跑命令」这一项），规格里写 `"runs_commands": true`，`access` 照实写（一般是 `execute`）。AI 看到的说明后面会自动接上 `miyu call` 怎么用那一段，你不用自己写。
+2. 会话里有 AI 能在脚本里调的工具时，`tool.call` 多一格 `channel`：`{"sock", "token", "bin"}`。给这次调用起命令时设上环境变量：
+
+   ```python
+   env = dict(os.environ)
+   if "channel" in params:
+       ch = params["channel"]
+       env["MIYU_CALL_SOCK"] = ch["sock"]
+       env["MIYU_CALL_TOKEN"] = ch["token"]
+       if "bin" in ch:
+           env["PATH"] = ch["bin"] + os.pathsep + env.get("PATH", "")
+   subprocess.run(command, shell=True, env=env, cwd=params["cwd"])
+   ```
+
+3. 命令要是你这个扩展进程起的（子进程、孙进程都行）：核心照父进程一层层往上认到你的进程，光有令牌不够。`setsid`、两次 `fork` 甩出去的，或者交给别的常驻进程去跑的，调不成（退出码 2）。
+4. 这次调用一回应，通道就关了：命令里的 `miyu call` 要在你回应之前跑完。放到后台、回应以后还在跑的命令调不成（退出码 3）。
+5. 命令里调的工具照这个会话的权限、预设走，和 AI 直接调一样，会记在这次调用下面。人在会话里打的 `!命令` 不会交给你，只给内置的 `shell`。
 
 ## 退出、崩了
 

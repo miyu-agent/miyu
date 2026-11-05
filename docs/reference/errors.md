@@ -25,7 +25,7 @@
 | `local_only` | -32010 | 只给人的方法，扩展调了；或者登录方式不对 |
 | `local_machine_only` | -32010 | 只能在核心所在的机器上用：远程连进来的调了读本机文件、交本机路径这一类（施工 Y-1 下，[连接](connection.md)「本机才能用的」） |
 | `not_a_provider`、`not_an_extension` | -32010 | 只给核心拉起的扩展的方法，别的连接调了 |
-| `needs_approval` | -32010 | 扩展要的能力还没批，或者调的方法要的能力清单没声明，`data.capabilities` |
+| `needs_approval` | -32010 | 扩展要的能力还没批，或者调的方法要的能力清单没声明，或者 `provide` 的工具写了 `runs_commands`、包没批 `tools.commands`，`data.capabilities` |
 
 ## 连接与登录
 

@@ -19,7 +19,7 @@
 | `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8） |
 | `crates/miyu-ipc/src/unreachable.rs` | `running_unreachable`：照 `run/socket` 连不上时，核心是不是还在、只是连不上（施工 CS-3） |
 | `crates/miyu-ipc/src/error.rs` | 起不来、连不上、拉不起的几种情形和它们的话 |
-| `crates/miyu-pipe/src/lib.rs`、`windows.rs`、`process.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID；一个进程还在不在跑（`process_running`，脚本调工具的通道清留下的目录用，施工 WC-1，`tools/shell.md`）。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
+| `crates/miyu-pipe/src/lib.rs`、`windows.rs`、`process.rs`、`parent.rs` | Windows 的安全接口：只对本人开放的管道实例，当前用户和管道另一头的 SID；一个进程还在不在跑（`process_running`，脚本调工具的通道清留下的目录用，施工 WC-1，`tools/shell.md`）；问父进程（施工 XG-1 下，脚本调工具的通道认扩展的子孙，`providers.md`「会跑命令的」）：Windows 拍进程快照（`process_parents`），macOS 问 `proc_pidinfo`（`parent_process`，这个 crate 在 macOS 上唯一的一样）。整个仓库只有这个 crate 放开了 `unsafe`，每个 `unsafe` 块都写着为什么安全 |
 
 ### 对外的样子
 
@@ -183,6 +183,7 @@
 | `crates/miyu-ipc/tests/socket.rs` | 照 `run/socket` 连上、拿到令牌；Linux 在 `$XDG_RUNTIME_DIR` 下；太长的在临时目录下；一个数据根一个核心、走了删套接字、每次换令牌；旧套接字清掉；别的东西不动；别人进得来的目录不用、链接不用；临时目录也要只有自己能进；头不从别人进得来的目录连；没有核心时连不上 |
 | `crates/miyu-ipc/tests/pipe.rs` | Windows：照管道连上、拿到令牌，接走一个以后下一个在等；连上就走的不堵管道；一个数据根一个核心；名字被占了不动；没有核心时连不上 |
 | `crates/miyu-pipe/src/tests.rs` | 安全描述符的写法 |
+| `crates/miyu-pipe/src/parent/tests.rs`（施工 XG-1 下，Windows、macOS） | 起一个子进程，问出来的父进程是测试进程自己；macOS 上测试进程的父进程和标准库说的一样，没有的进程问不出 |
 | `crates/miyu-pipe/src/windows/tests.rs` | Windows：管道只对本人开放；一个名字只有一个第一个实例；头看到另一头是自己；当前用户是一个 SID |
 | `crates/miyu/tests/core.rs` | 真的主程序：拉起、再连不拉起、两个头同时只拉起一个、起不来的说原因、没说话就退了的、已经在跑还没开始等连接的等着连上它、核心的工作目录是数据根 |
 

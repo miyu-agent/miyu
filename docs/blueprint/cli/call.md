@@ -13,7 +13,7 @@ Unix 上端点是套接字，Windows 上是命名管道（施工 M-3 下），�
 | `crates/miyu/src/main.rs` | 第一个词是 `call` 的，不读清单、不经 clap，当场交给 `miyu_cli::call` |
 | `crates/miyu-cli/src/call.rs` | 写法、发请求、照回答印和退出 |
 | `crates/miyu-cli/src/help/{zh,en}/call.txt` | 帮助页 |
-| `resources/software/basesystem/shell/call/{outside,ended,usage,bad-json,quotes}.txt` | 命令行这头说的几句，编进程序；和端点那头的放在一起、一起登记（`26-提示词.md` 第十节） |
+| `resources/core/call/{outside,ended,usage,bad-json,quotes}.txt` | 命令行这头说的几句，编进程序；和端点那头的放在一起、一起登记（`26-提示词.md` 第十节）。施工 XG-1 下从 `software/basesystem/shell/call/` 挪到这里（端点挪进共用的 `miyu-call`，扩展的跑命令工具也用），字节不变 |
 
 ### 对外的样子
 

@@ -15,13 +15,14 @@
 | `crates/miyu-basesystem/src/shell/process/waits.rs` | 等命令结束（施工 M-7 上挪出来）：进程结束和「在等人」「等完了」进同一根通道，等人的那几段不算时限 |
 | `crates/miyu-basesystem/src/shell/person.rs` | 给人跑一条（施工 SH-1 上，`interface.md`「七、给人跑一条」）：只给人用，下面「给人跑」 |
 | `crates/miyu-basesystem/src/shell/background.rs` | 后台命令：起好交出去的输出和进程（`miyu_tool::Background`），等它、整组杀（施工 7-3） |
-| `crates/miyu-basesystem/src/shell/channel.rs`、`channel/serve.rs`、`channel/unix.rs`、`channel/windows.rs`、`channel/reply.rs`、`channel/other.rs`、`channel/leftovers.rs` | 脚本调工具的通道（施工 M-3）：开端点、造命令（`prepare`）；两边共用的一问一答、令牌、认人等的那一会儿、环境变量（`serve.rs`），Unix 的套接字和进程组，Windows 的命名管道和作业对象（施工 M-3 下），结局写成退出码和字；别的系统开不成 |
+| `crates/miyu-basesystem/src/shell/channel.rs` | 脚本调工具的通道这一头（施工 M-3）：开端点（认这条命令，`miyu_call::Kin::command`）、造命令（`prepare`），环境变量、沙盒的规格照端点加上 |
+| `crates/miyu-call/src/lib.rs`、`serve.rs`、`kin.rs`、`unix.rs`、`windows.rs`、`reply.rs`、`section.rs`、`other.rs`、`leftovers.rs` | 通道本身（施工 M-3 起在基础系统，XG-1 下挪成共用的一层，扩展声明了 `runs_commands` 的工具也用，`providers.md`「会跑命令的」）：两边共用的一问一答、令牌、环境变量、交给扩展的那一格（`serve.rs`），认人两种（`kin.rs`：这条命令的进程组、作业对象；扩展进程的子孙），Unix 的套接字，Windows 的命名管道（施工 M-3 下），结局写成退出码和字，说明末尾那一段；别的系统开不成 |
 | `crates/miyu-basesystem/src/shell/touched.rs` | 前台命令改了她看过的文件：起来之前记修改时刻和大小，跑完变了的重读，交 `file.read`（施工 E-D 补） |
 | `crates/miyu-basesystem/src/shell/output.rs` | 输出：边读边解成字、内存里只留头尾、截成头尾两段；后台的边读边换行尾（`Crlf`） |
 | `crates/miyu-basesystem/src/load.rs` | 说明是一段模板，核心起来时换进 shell 的名字 |
 | `resources/software/basesystem/tools/shell.json` | 说明和参数格式 |
 | `resources/software/basesystem/shell/*.txt`、`common/bad-args.txt` | 输出里给她看的几句 |
-| `resources/software/basesystem/shell/call/*.txt` | `miyu call` 退出码 1 到 4 的说法、`--schema` 印的样子（施工 M-3）；命令行那头说的四句也在这里 |
+| `resources/core/call/*.txt` | `miyu call` 退出码 1 到 4 的说法、`--schema` 印的样子（施工 M-3）、说明末尾那一段（施工 M-4）；命令行那头说的几句也在这里。施工 XG-1 下从 `software/basesystem/shell/call/` 挪成核心的字，字节不变 |
 | `resources/software/basesystem/human/{zh,en}.json` | 显示名、结果那一句 |
 
 ### 对外的样子
@@ -123,18 +124,18 @@
 
 1. 哪些命令开：拿到了端口的（`Call.nested`，执行器只给直接调的 `shell`，这个会话的工具面上有 `clicall` 开着的工具才给，`session/tools.md`「1g」）。前台、放到后台、到时挪到后台都开。开不成的（目录建不成、套接字绑不上、Windows 上）记一行 `WARN`，命令照旧跑、没有端点。
 2. 端点：Unix 上一个 Unix 套接字，放在 `<临时目录>/miyu-call-<核心的进程号>/s/` 下（`0700`），名字是令牌的前 16 个十六进制字符加 `.sock`；第一次建那个目录时，顺手删掉别的核心进程留下、进程已经不在了的同名目录（只删自己的）。Windows 上一根命名管道 `\\.\pipe\miyu-call-<令牌的前 16 个字符>`，访问控制开给本人，另给本人沙盒里的命令（MXC 的基础容器，令牌带 `ALL APPLICATION PACKAGES`）只够连上、读写的权限（`miyu_pipe::create_for_containers`，`miyu call` 照同样几样权限开），一个连上来就建下一个实例接着等（施工 M-3 下）。容器里的命令由助手起、放进 MXC 自己的作业对象，嵌在这条命令的作业对象里，认人照旧过得了；别的进程连得上也过不了令牌、作业对象两关。令牌 128 位，系统给的随机字节（`getrandom`）。
-3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上、没有权限）把核心所在的目录放到最前面，建了的 `miyu-call-<进程号>` 当场删掉。脚本里调到的一定是同一个版本。核心走时不删自己的那个目录（Windows 上链接指着正在跑的程序），第一次建它时顺手删掉别的核心进程留下、进程已经不在了的同名目录（`channel/leftovers.rs`，名字是前缀加全是数字的进程号、是目录不是链接才看）：Unix 上只删属主是自己的（临时目录大家共用），Windows 上不看属主（`%TEMP%` 是每个用户自己的；指到共用目录的，别人的目录照访问控制删不掉，别人的进程打不开、当还在），问进程在不在用 `miyu_pipe::process_running`（打开进程看退出码，拿不准的当还在，施工 WC-1）。
+3. 环境变量：在 `env::passed` 挑好以后加 `MIYU_CALL_SOCK`（套接字路径、管道名）、`MIYU_CALL_TOKEN`（令牌），`PATH` 最前面（照这个系统的分隔符连，Windows 上 `Path` 不分大小写）加 `<临时目录>/miyu-call-<进程号>/bin`，里面只有一个 `miyu`：Unix 上是指向核心自己的符号链接，Windows 上是核心程序的硬链接 `miyu.exe`（建符号链接要特权），建不成的（不在同一个盘上、没有权限）把核心所在的目录放到最前面，建了的 `miyu-call-<进程号>` 当场删掉。脚本里调到的一定是同一个版本。核心走时不删自己的那个目录（Windows 上链接指着正在跑的程序），第一次建它时顺手删掉别的核心进程留下、进程已经不在了的同名目录（`miyu-call` 的 `leftovers.rs`，名字是前缀加全是数字的进程号、是目录不是链接才看）：Unix 上只删属主是自己的（临时目录大家共用），Windows 上不看属主（`%TEMP%` 是每个用户自己的；指到共用目录的，别人的目录照访问控制删不掉，别人的进程打不开、当还在），问进程在不在用 `miyu_pipe::process_running`（打开进程看退出码，拿不准的当还在，施工 WC-1）。
 4. 沙盒：规格（`Call.sandbox` 的一份拷贝）的 `sockets` 加上这个端点（`sandbox.md`），只准读名单里的再放开读 `bin` 那个目录和核心的程序。Windows 上放进去的是管道名，助手不看它：容器里连得上靠管道自己的访问控制（第 2 条，施工 M-3 下）。
-5. 认人：请求里的令牌对得上，连上来的进程是这条命令的。Unix 上照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组，要等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）；Windows 上照对方的进程号（`GetNamedPipeClientProcessId`）查它在不在这条命令的作业对象里（`IsProcessInJob`）：命令起来以后马上放进它自己的作业对象（`miyu_sandbox::lifeline::Job`，套在核心那个里面；只用来认人，不设限制，整组杀照旧 `taskkill /T`，2026-10-20 照推荐定），起来到放进去之间它起的不在里面，PowerShell 起来要上百毫秒，碰不到。命令起来以后才记下这一组、这个作业对象：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
+5. 认人（`miyu-call` 的 `kin.rs`）：请求里的令牌对得上，连上来的进程是这条命令的（扩展的工具开的端点照「是扩展进程的子孙」认，`providers.md`「会跑命令的」第 2 条）。Unix 上照对方的进程号（`SO_PEERCRED` / `LOCAL_PEERPID`）查它的进程组，要等于这条命令的那一组（`process.rs` 的 `Group`，每条命令一个看门的、一组）；Windows 上照对方的进程号（`GetNamedPipeClientProcessId`）查它在不在这条命令的作业对象里（`IsProcessInJob`）：命令起来以后马上放进它自己的作业对象（`miyu_sandbox::lifeline::Job`，套在核心那个里面；只用来认人，不设限制，整组杀照旧 `taskkill /T`，2026-10-20 照推荐定），起来到放进去之间它起的不在里面，PowerShell 起来要上百毫秒，碰不到。命令起来以后才记下这一组、这个作业对象：前台的起来就记；放到后台的、到时挪过去的，交给任务表、端口挂到那个任务下面以后才记，之前连上来的最多等 5 秒。过不了的答 `stranger.txt`，退出码 2。
 6. 一次连接一个请求：4 字节大端长度加 JSON（`cli/call.md`「怎么走」第 4 条）。请求帧超过 1 MiB 的断开；同一个端点同时连着的超过 32 个，多的直接断开；协议版本对不上的答 `version.txt`。`call` 交给端口、等内核记过落了盘的结局；`schema` 照端口给的工具面答，不进内核、不记事件。
-7. 结局写成退出码和字（`channel/reply.rs`）：
+7. 结局写成退出码和字（`miyu-call` 的 `reply.rs`）：
    - 跑完成了：0，标准输出是 `data` 的一行 JSON（中文不转义），没有的是工具交回的字，都以换行结尾；丢了图的标准错误写 `images.txt`。
    - 工具出错：1，工具的原话；被拒：1，拒绝的原话；要问人：前台、有人能确认的主会话里停下来等人（施工 M-7 上，`kernel/asking.md`「脚本里调的要人确认」），允许的照常跑、拒绝的 1；后台任务下面的、没人能确认的、子会话里的 4，`approval.txt`；被打断、父级先结束：3，`interrupted.txt`。
    - 没收下：父级不在了 3，`ended.txt`；不认识 2，`unknown.txt`，能调的里面只差一两个字的接上 `guess.txt`；调不了 2，`not-allowed.txt` 列出能调的；参数不是对象 2，`bad-args.txt` 接上这件的 `schema.txt`。
    - `schema.txt` 换进名字、说明、参数格式，说明和参数不转义：是工具面上的原样，她在 tools 数组里看到的也是原样。
-8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`channel::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。
+8. 放到后台（「后台」第 3 条）、到时挪到后台（「怎么走」第 6 条）：端点跟着进程交给任务表（`miyu_call::keep`），任务结束、进程收掉时关；交上了，端口挂到这个任务下面（`NestedPort::adopt`，2026-10-20 项目主人照推荐定）。挪的那一刻还在跑的照「父调用结束」记已取消。
 9. 关：丢掉端点就掐掉服务、删掉套接字，令牌跟着作废，等着的 `miyu call` 读到结尾（退出码 3）。前台的命令结束时丢。
-10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有跑命令的工具（`Tool::runs_commands`，施工 BS-1 上起不看名字；出厂的就是 `shell`）、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`；预设关了「脚本调工具」的一件都不算，施工 M-6）的，`shell` 的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`shell/section.rs`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
+10. 给她看的字（施工 M-4，设计 `39-脚本调工具.md` 第九节）：组工具面时（`Agents::face`，`agents/clicall.rs`），工具面上有跑命令的工具（`Tool::runs_commands`，施工 BS-1 上起不看名字；出厂的就是 `shell`）、有脚本里能调的工具（`clicall` 开着、`Access::scriptable`；预设关了「脚本调工具」的一件都不算，施工 M-6）的，跑命令的工具（`shell`，施工 XG-1 下起还有扩展声明了 `runs_commands` 的）的说明末尾空一行接上 `Tool::clicall_section` 交回的那一段（`miyu-call` 的 `section.rs`，字在 `core/call/`），system 里带 `core/clicall.txt`（`policy.md` 的 `with_clicall`）；一件都没有的两样都不带，说明、system 一字不变。那一段一行一句：
     - `call/describe.txt`：怎么用，`{tools}` 换成能调的名单，照名字排，一个 MCP 服务的几件并成 `mcp__<服务>__*`。
     - `call/example.txt`：`Example: {example}`，核心起来时和 `{shell}` 一起挑一次：PowerShell 的用 `call/example-powershell.txt`；bash、zsh 的 `PATH` 上有 `jq` 用 `example-jq.txt`，没有、有 `python3` 用 `example-python.txt`；都没有的不带这一行。
     - `call/shapes.txt`：能调的工具里写了 `result` 的（`tools/interface.md`），`{shapes}` 换成 `名字 样子`、`; ` 隔开；一件都没有的不带这一行。
@@ -333,9 +334,9 @@ Exit code 2
 | `crates/miyu-session/tests/guard.rs` | 工作区这一级执行命令不问、只读时问（没人能确认就拒绝） |
 | `crates/miyu-basesystem/tests/shell.rs` 的 `shell_says_when_it_wants_out_and_what_to_show`（施工 D-4） | 写了 `outside_sandbox` 的报要在沙盒外跑，没写的、写了假的、参数不对的不报；问人时交 `command`、`title`，参数不对的交空的 |
 | `crates/miyu-session/tests/outside_sandbox.rs`（施工 D-4） | 工作区问人、允许一次的那一次不套沙盒；只读拒绝；完全放开不问；真经助手跑：允许以后写得进工作区以外 |
-| `crates/miyu-basesystem/src/shell/channel/leftovers/tests.rs`（施工 WC-1） | 留下的目录：名字对得上、是目录、进程不在了的整个删，名字差一点的、文件、进程还在的、不是自己的不动；进程号只认全是数字、放得进 `u32` 的 |
+| `crates/miyu-call/src/leftovers/tests.rs`（施工 WC-1） | 留下的目录：名字对得上、是目录、进程不在了的整个删，名字差一点的、文件、进程还在的、不是自己的不动；进程号只认全是数字、放得进 `u32` 的 |
 | `crates/miyu-pipe/src/process/tests.rs`（施工 WC-1，只在 Windows 上） | 自己在跑；等它退了的子进程不在，句柄关了也不在；没有的进程号不在 |
-| `crates/miyu-basesystem/src/shell/channel/reply/tests.rs`（施工 M-3） | 结局写成退出码和字：一行 JSON、中文不转义；丢了图的说一句；出错、被拒、要问人、被打断、父级不在了各自的码和话；写错名字的指出对的；调不了的列出能调的；参数不对的跟上格式；`--schema` 的样子 |
+| `crates/miyu-call/src/reply/tests.rs`（施工 M-3） | 结局写成退出码和字：一行 JSON、中文不转义；丢了图的说一句；出错、被拒、要问人、被打断、父级不在了各自的码和话；写错名字的指出对的；调不了的列出能调的；参数不对的跟上格式；`--schema` 的样子 |
 | `crates/miyu/tests/call.rs`（施工 M-3，Unix） | 真核心、真 `shell`：能调的一行 JSON、退出码 0，子 shell 里再起一层照样；调不了的、写错名字的退出码 2；`--schema`；`setsid` 出去的退出码 2（Linux）；命令结束以后同一个端点连不上，退出码 3；没有那两个变量的退出码 2；每次调用记 `tool.nested`、挂在那次 `shell` 下面、排在它的结果前面。放到后台的挂在任务下面（`j1#1`）、不带回合、排在任务报告前面；到时挪到后台的，挪过去以后的调用挂到任务下面 |
 | `xtask/src/ledger.rs` | 这些字的指纹和登记簿对得上 |
 

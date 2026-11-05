@@ -228,7 +228,7 @@ The tool "{name}" stopped because of an internal error. It may have been partly 
 
 **7. 人跑的命令**（施工 SH-1 上，设计 57，`tools/person.rs`；`kernel/session.md`「人跑的命令」、`tools/interface.md`「七、给人跑一条」）
 
-1. 动作 `RunShell`（哪一句、命令行、这一刻会话的工作目录）：工作目录照 `fs.md` 第二节第 1 条接家目录、换成真实的位置（换不了的照原样）。照现在的工具目录找声明跑命令的一件（`Tool::runs_commands`，照名字的先后第一件），预设不管；调它的 `run_for_person`，交一个叫停的口子，记着「在跑的是哪一句」。不判权限、不进沙盒、不写沙盒的规格、不开 `miyu call` 的通道。
+1. 动作 `RunShell`（哪一句、命令行、这一刻会话的工作目录）：工作目录照 `fs.md` 第二节第 1 条接家目录、换成真实的位置（换不了的照原样）。照现在的工具目录找给人跑命令的一件（`Tool::serves_person`，照名字的先后第一件；施工 XG-1 下以前照 `Tool::runs_commands` 找，扩展声明了跑命令的工具会被挑到、给不了人跑），预设不管；调它的 `run_for_person`，交一个叫停的口子，记着「在跑的是哪一句」。不判权限、不进沙盒、不写沙盒的规格、不开 `miyu call` 的通道。
 2. 跑在自己的任务里，当场不回；跑完的样子送进 actor 的收件箱（`Back::Shell`），写成内核的 `ShellRan`（时刻是到的那一刻），不再是在跑的那一条。结束是到时、叫停的，`reason` 写 `timed_out`、`interrupted`。没有这件工具、它没有钩子、起不来的也送回：输出是为什么，没有退出码，不写 `reason`。
 3. 动作 `HaltShell`：在跑的是这一句，就举起口子，工具整组杀，照第 2 条送回到这时的输出；别的什么都不做。一个会话同一时刻最多一条在跑（内核一条一条交）。
 

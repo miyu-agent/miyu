@@ -65,6 +65,7 @@
 | 能力 | 能做什么 |
 |---|---|
 | `tools` | 向工具目录提供工具（`provide`） |
+| `tools.commands` | 提供的工具会跑命令（`provide` 规格写 `runs_commands`）：这一次调用期间，你起的命令里能用 `miyu call` 以这个会话的身份调 AI 的工具（施工 XG-1 下） |
 | `commands` | 提供斜杠命令（清单 `[[slash]]`） |
 | `widgets` | 在界面上显示自己的内容（界面块） |
 | `context.inject` | 回合开始时往上下文里放几句（`user.append`） |
@@ -107,10 +108,11 @@
 | `subject` | 给人看的名字后面跟哪个参数的值，要是 `input_schema.properties` 里的一个 |
 | `paths` | 哪几个参数是路径：`[{"parameter": "file_path", "write": true}]`。参数要是 `input_schema.properties` 顶层的一个，类型是字或字的数组；`write` 不写是读，写了真的 `access` 要是 `write`。核心照它判这次调用要碰的路径（工作区外的写问人，和内置的 `edit` 一样），`tool.call` 带 `checked`，回应里的文件效果只收这几条。不写的不报路径，文件效果一条都不收 |
 | `background_parameters` | 只在会话有后台时才给的参数名：`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的。后台运行关着的会话里，AI 看到的参数格式没有它们 |
+| `runs_commands` | `true`：这件工具会跑命令（施工 XG-1 下）。包要批过能力 `tools.commands`。AI 看到的说明后面接上 `miyu call` 怎么用那一段（和内置 `shell` 一样）；拿到了通道的调用，`tool.call` 带 `channel`（见下面「跑命令」）。不写、`false` 的不是 |
 
 **回应**：`{"tools": <件数>}`。连接断了工具照旧留在目录里，被调到时回「暂时不可用」。
 
-**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`。
+**出错**：`not_a_provider`（不是核心拉起的扩展）；`bad_tool`：`data.tool` 是哪一件，`data.problem` 是 `duplicate`、`name`、`parameters`、`access`、`venues`、`timeout`、`clicall`、`result`、`display_name`、`subject`、`feature`、`plugin`、`role`、`scope`、`paths`、`background_parameters`、`runs_commands`（不是布尔）；`needs_approval`：写了 `runs_commands` 的、包没批 `tools.commands`，`data.capabilities` 是 `["tools.commands"]`，整个不收。
 
 ## `tool.call`、`tool.cancel`
 
@@ -127,6 +129,7 @@
 | `by` | 是谁要她做的：触发这一轮的那条消息的 `by`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人 |
 | `checked` | 只给声明了 `paths` 的：权限检查判过的真实位置，照参数里路径的先后（数组每项一条）。写文件就写这几个：你自己把参数里的路径换成真实位置以后，不在这里面的别碰（检查以后路径上的链接可能被换过） |
+| `channel` | 只给声明了 `runs_commands` 的、这次调用开了通道的：`{"sock", "token", "bin"}`，见下面「跑命令」 |
 
 **回应** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?, "effects"?}}`：
 
@@ -154,6 +157,19 @@
 - 别的种类、写法不对的、没判过的路径、同一种同一个文件报第二遍的，这一条丢掉，结果别的照常，不算出错；运行日志记一行 `tool effect dropped`（`why` 是 `not_checked`、`unchanged`、`mismatch`、`too_big`、`kind`、`shape` 之一）。
 - `error` 是真的照样收文件效果：改了一半出错，改了的是真的。
 - 撤销不改回文件（和内置工具一样），只退回 AI 看过的。
+
+**跑命令**（声明了 `runs_commands` 的，施工 XG-1 下）：会话里有 AI 能在脚本里调的工具时，这次调用开一个只给它的端点，`tool.call` 带 `channel`：
+
+| 名字 | 说明 |
+|---|---|
+| `sock` | 端点：Unix 上是套接字的路径，Windows 上是命名管道的名字（`\\.\pipe\miyu-call-…`）。设成环境变量 `MIYU_CALL_SOCK` |
+| `token` | 令牌，32 个十六进制字。设成环境变量 `MIYU_CALL_TOKEN` |
+| `bin` | 只放着 `miyu` 的目录，放到 `PATH` 最前面：命令里调到的 `miyu` 和在跑的核心是同一个版本。建不成的不写 |
+
+- 把这三样设进你为这次调用起的命令。命令里的 `miyu call <工具>` 照会话的权限、预设调 AI 的工具，用法、退出码和内置 `shell` 里跑的一样（退出码 1 工具出错或被拒，2 用法不对或认不出你，3 这次调用已经完了，4 要人确认）。
+- 只认你这个扩展进程的子孙：连上来的进程照父进程一层层往上找，要找得到你的进程；你自己、`setsid` 或两次 `fork` 甩出去的、别的进程拿着令牌也连不上（退出码 2）。
+- 这次调用答了、超时、被掐，端点就关，还在等的、之后连的 `miyu call` 退出码 3：要命令里调工具，等命令跑完再回应。
+- 人在会话里打的命令（`!`）不交给你，只交给内置 `shell`。
 
 `detail` 的三种形状（整份写成 JSON 至多 64 KiB）：
 

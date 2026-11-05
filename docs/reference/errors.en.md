@@ -25,7 +25,7 @@ Chinese version: [errors.md](errors.md).
 | `local_only` | -32010 | A method for people only, called by an extension; or the wrong way of logging in |
 | `local_machine_only` | -32010 | Only on the machine running the core: a remote connection called something that reads local files or takes local paths (Y-1 下, [Connection](connection.en.md) "Local machine only") |
 | `not_a_provider`, `not_an_extension` | -32010 | A method only for extensions the core launched, called by another connection |
-| `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, or the method it called needs one its manifest doesn't declare, `data.capabilities` |
+| `needs_approval` | -32010 | Capabilities the extension needs aren't approved yet, or the method it called needs one its manifest doesn't declare, or a tool in `provide` sets `runs_commands` while the package doesn't have `tools.commands` approved, `data.capabilities` |
 
 ## Connecting and logging in
 

@@ -188,6 +188,7 @@ After the handshake, send `provide`; `tools` is **all** the tools you provide no
 | `scope` | Which sessions get it, narrowing further within `venues`: `local` (sessions on this machine), `local_main` (the main session on this machine, not subagents), `local_main_attended` (the main session with someone watching, e.g. a tool that asks the user), `spawn` (a tool that starts subagents). Unset means `any` |
 | `paths` | Which arguments are file paths, and whether they are written: `[{"parameter": "file_path", "write": true}]`. Every tool that reads or writes files should set it: the core runs the permission check from it (writing outside the workspace asks a person), and only then are the file effects you report taken. See **Tools that change files** below |
 | `background_parameters` | Names of arguments that only make sense when the session can run things in the background (such as `["run_in_background"]`): in sessions with background running off, the AI's schema doesn't have them. They must be optional |
+| `runs_commands` | `true`: this tool runs commands (one that replaces the built-in `shell`, or runs commands in a container, and so on). The manifest must declare the capability `tools.commands` and a person must approve it, or the whole `provide` returns `needs_approval`. See **Tools that run commands** below |
 
 A mistake rejects the whole set; the response's `data` says which tool and what's wrong (`{"tool": "hello_greet", "problem": "name"}`).
 
@@ -240,6 +241,28 @@ For an editor, formatter, renamer or similar tool of your own to work like the b
    - Paths must be in `checked`, as a write for changes and trashing. Other kinds, unchecked paths and malformed items are dropped one by one and the result goes on; the core log gets a line `tool effect dropped`, whose `why` helps when you debug.
    - If you fail halfway, still answer `error: true` and report the files you did change: those changes are real.
 4. Undo doesn't put files back (nor does it for the built-in tools); it only rolls back what the AI has seen, so after a turn is undone the AI has to re-read that file before changing it again.
+
+## Tools that run commands
+
+To write your own tool that runs commands (replacing the built-in `shell`, or running them in a container or on another machine) and let the AI use `miyu call` inside those commands, as with the built-in `shell`:
+
+1. Add `tools.commands` to the manifest's `[process] capabilities` (people see "Tools that run commands" when installing), put `"runs_commands": true` in the spec, and set `access` honestly (usually `execute`). The description the AI sees gets the section on how to use `miyu call` appended for you.
+2. When the session has tools the AI can call from scripts, `tool.call` carries `channel`: `{"sock", "token", "bin"}`. Set them in the environment of the commands you start for this call:
+
+   ```python
+   env = dict(os.environ)
+   if "channel" in params:
+       ch = params["channel"]
+       env["MIYU_CALL_SOCK"] = ch["sock"]
+       env["MIYU_CALL_TOKEN"] = ch["token"]
+       if "bin" in ch:
+           env["PATH"] = ch["bin"] + os.pathsep + env.get("PATH", "")
+   subprocess.run(command, shell=True, env=env, cwd=params["cwd"])
+   ```
+
+3. The commands must be started by your extension process (children and grandchildren are fine): the core follows parent processes up to yours, and the token alone isn't enough. Anything detached with `setsid` or a double `fork`, or handed to some other long-running process, can't call (exit code 2).
+4. The channel closes as soon as you respond to the call: `miyu call` in a command must finish before you respond. Commands still running in the background after your response can't call (exit code 3).
+5. Tools called from those commands go through the session's permissions and preset like direct calls, and are recorded under this call. Commands people type in the session (`!`) are not handed to you, only to the built-in `shell`.
 
 ## Exiting and crashing
 

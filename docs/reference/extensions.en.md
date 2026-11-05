@@ -65,6 +65,7 @@ The manifest's `[process] capabilities` declares what it needs. Packages you ins
 | Capability | Allows |
 |---|---|
 | `tools` | Providing tools to the catalog (`provide`) |
+| `tools.commands` | Provided tools run commands (`runs_commands` in the `provide` spec): during a call, the commands you start can use `miyu call` to call the AI's tools as that session (step XG-1 part 2) |
 | `commands` | Providing slash commands (manifest `[[slash]]`) |
 | `widgets` | Showing its own content in the UI (widgets) |
 | `context.inject` | Adding a few lines to the context at the start of a turn (`user.append`) |
@@ -107,10 +108,11 @@ Register every tool this package provides now, replacing the previous registrati
 | `subject` | Which argument's value is shown after the name; must be one of `input_schema.properties` |
 | `paths` | Which arguments are paths: `[{"parameter": "file_path", "write": true}]`. The argument must be a top-level one in `input_schema.properties` whose type is a string or an array of strings; `write` defaults to false (a read), and when true `access` must be `write`. The core checks the paths of each call against the permission rules (writing outside the workspace asks, as with the built-in `edit`), `tool.call` carries `checked`, and the file effects in the response are taken only for these paths. Without it no paths are reported and no file effect is taken |
 | `background_parameters` | Names of arguments that only exist when the session has a background: `["run_in_background"]`. Each must be a top-level one in `input_schema.properties` and not in `required`. In sessions with background running off, the AI's schema doesn't have them |
+| `runs_commands` | `true`: this tool runs commands (step XG-1 part 2). The package must have `tools.commands` approved. The description the AI sees gets the section on how to use `miyu call` appended (as with the built-in `shell`); calls that get a channel carry `channel` in `tool.call` (see **Running commands** below). Unset or `false` means no |
 
 **Response**: `{"tools": <count>}`. If the connection drops, the tools stay in the catalog and answer "temporarily unavailable" when called.
 
-**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`, `role`, `scope`, `paths`, `background_parameters`.
+**Errors**: `not_a_provider` (not an extension the core launched); `bad_tool`: `data.tool` is which one, `data.problem` is `duplicate`, `name`, `parameters`, `access`, `venues`, `timeout`, `clicall`, `result`, `display_name`, `subject`, `feature`, `plugin`, `role`, `scope`, `paths`, `background_parameters`, `runs_commands` (not a boolean); `needs_approval`: a tool with `runs_commands` while the package doesn't have `tools.commands` approved, `data.capabilities` is `["tools.commands"]`, and nothing is registered.
 
 ## `tool.call`, `tool.cancel`
 
@@ -127,6 +129,7 @@ Register every tool this package provides now, replacing the previous registrati
 | `by` | Who asked her: the `by` of the message that triggered the turn; omitted for turns without a trigger |
 | `owner` | Whether the core recognizes `by` as the owner |
 | `checked` | Only for tools that declare `paths`: the real locations the permission check approved, in the order of the paths in the arguments (one per array item). Write to these: after resolving a path from the arguments yourself, don't touch it unless it is in this list (a link on the way may have been swapped after the check) |
+| `channel` | Only for tools that declare `runs_commands`, when this call opened a channel: `{"sock", "token", "bin"}`, see **Running commands** below |
 
 **Response** `{"result": {"blocks": [...], "error"?, "end_turn"?, "sent"?, "detail"?, "data"?, "state"?, "effects"?}}`:
 
@@ -154,6 +157,19 @@ Register every tool this package provides now, replacing the previous registrati
 - Other kinds, malformed items, paths that weren't checked, and a second item of the same kind for the same file are dropped one by one; the rest of the result goes on and the call doesn't fail. The core log gets a line `tool effect dropped` (`why` is one of `not_checked`, `unchanged`, `mismatch`, `too_big`, `kind`, `shape`).
 - File effects are taken even when `error` is true: a change made before failing is real.
 - Undo doesn't put files back (as with the built-in tools); it only rolls back what the AI has seen.
+
+**Running commands** (tools that declare `runs_commands`, step XG-1 part 2): when the session has tools the AI can call from scripts, the call opens an endpoint just for it, and `tool.call` carries `channel`:
+
+| Name | Notes |
+|---|---|
+| `sock` | The endpoint: a socket path on Unix, a named pipe name on Windows (`\\.\pipe\miyu-call-…`). Set it as the environment variable `MIYU_CALL_SOCK` |
+| `token` | The token, 32 hex characters. Set it as `MIYU_CALL_TOKEN` |
+| `bin` | A directory holding only `miyu`; put it first on `PATH` so the `miyu` a command calls is the same version as the running core. Left out if it couldn't be made |
+
+- Set these three for the commands you start for this call. `miyu call <tool>` in those commands calls the AI's tools under the session's permissions and preset, with the same usage and exit codes as in the built-in `shell` (1 the tool failed or was denied, 2 bad usage or not one of yours, 3 the call is already over, 4 needs approval).
+- Only descendants of your extension process get in: the connecting process's parents are followed up and must reach your process; your process itself, anything detached with `setsid` or a double `fork`, and other processes holding the token are refused (exit code 2).
+- Once the call is answered, times out or is cancelled, the endpoint closes; a `miyu call` still waiting or connecting later exits with 3. To call tools from a command, wait for the command to finish before you respond.
+- Commands people type in the session (`!`) are not handed to you, only to the built-in `shell`.
 
 The three shapes of `detail` (at most 64 KiB as JSON):
 

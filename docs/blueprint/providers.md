@@ -4,7 +4,7 @@
 
 核心自带的工具编译在核心里（`tools/`）。通讯平台的桥要给她「发群消息」「撤回」这类只有它做得到的工具，以后头也会有（终端集成）。提供者经协议的 `provide` 把自己的工具登记进核心的工具目录；她调到这件工具时，核心反向调用 `tool.call` 交给那个连接去跑，等它回结果（`05-内核接口.md` 第四节「内核空间模块与外部扩展」、第六节「工具的规格」、第八节「启用、注册与目录快照」，`04-核心协议.md` 第九节「方法一览」的「提供者」「反向调用」）。
 
-状态：图纸，施工 O-2 上起（2026-10-09 主会话写；O-2 由主会话拆成上、中、下，补另起）。上、中、下做了。扩展的工具的效果和声明（设计 `63-扩展工具的效果和声明.md`）：XG-1 上做了（`paths`、`effects`、`background_parameters`），XG-1 下没做（`runs_commands`）。
+状态：图纸，施工 O-2 上起（2026-10-09 主会话写；O-2 由主会话拆成上、中、下，补另起）。上、中、下做了。扩展的工具的效果和声明（设计 `63-扩展工具的效果和声明.md`）：XG-1 上做了（`paths`、`effects`、`background_parameters`），XG-1 下做了（`runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`）。
 
 ### 在哪
 
@@ -15,6 +15,7 @@
 | `crates/miyu-endpoint/src/provide.rs` | `provide`：查规格、登记进目录；提供者表：哪个包现在由哪个连接提供（施工 O-2 上） |
 | `crates/miyu-endpoint/src/provide/remote.rs` | 提供者的一件工具（`Tool` 的实现）：执行时经提供者表找到那个连接、反向调用 `tool.call`（施工 O-2 上）；照 `paths` 报路径、带 `checked`，照 `background_parameters` 交后台参数（施工 XG-1 上） |
 | `crates/miyu-endpoint/src/provide/declared.rs` | 规格里的 `paths`、`background_parameters` 照 `input_schema` 查；照 `paths` 从参数取要碰的路径（施工 XG-1 上，设计 63 第二、三节） |
+| `crates/miyu-endpoint/src/provide/commands.rs` | 声明了 `runs_commands` 的：说明末尾 `miyu call` 那一段、一次调用开一个认扩展子孙的端点（施工 XG-1 下，设计 63 第六节第 2 条；端点在 `miyu-call`，`tools/shell.md`「脚本调工具」） |
 | `crates/miyu-endpoint/src/provide/effects.rs` | 扩展交的效果：发之前读改前，回应到了查 `effects`、读改后，丢的记 `WARN`（施工 XG-1 上，设计 63 第三、四节） |
 | `crates/miyu-tool/src/catalog.rs` | 目录多一样：换掉一个包的工具，交回新的目录（施工 O-2 上）；记着哪几个包是提供者登记的（施工 O-2 中） |
 | `crates/miyu-tool/src/shelf.rs` | 目录架子：核心现在的目录，换一次是一代；核心、执行器、权限策略、换快照的那一段拿着同一个（施工 O-2 中） |
@@ -41,9 +42,10 @@
    - `role`、`scope` 可以不写（施工 XG-2 下，设计 `64-工具职能.md`，写法同出厂的说明文件，`tools/interface.md`）：职能、范围；范围只在 `venues` 之内再收窄。写法不对的 `bad_tool`，`problem` 是 `role`、`scope`；
    - `paths` 可以不写（施工 XG-1 上，设计 63 第二、三节）：哪几个参数是路径，`[{"parameter": "file_path", "write": true}]`。`parameter` 是 `input_schema.properties` 顶层的一个，类型是字（`"type": "string"`）或字的数组（`"items": {"type": "string"}`）；`write` 不写是假（读），写了真的，`access` 要是 `write`；同一个参数不能写两次；别的格不收。写法不对的 `bad_tool`，`problem` 是 `paths`。核心照它报这次调用要碰的路径（下面「声明了 `paths` 的」）；
    - `background_parameters` 可以不写（施工 XG-1 上，设计 63 第六节第 1 条）：只在会话有后台时才给的几个参数名，`["run_in_background"]`。要是 `input_schema.properties` 顶层的、不在 `required` 里的（去掉了请求就对不上格式）、不重复。写法不对的 `bad_tool`，`problem` 是 `background_parameters`。后台运行关着的会话（`presets.md`），组工具面时去掉它们（`Tool::background_parameters`，同出厂的 `shell`）；
-   - 上面两格都不写的工具，规格、工具面、登记缓存逐字节和以前一样；
+   - `runs_commands` 可以不写（施工 XG-1 下，设计 63 第二节、第六节第 2 条）：`true` 是这件工具会跑命令，下面「会跑命令的」；不写、`false` 的不是。不是布尔的 `bad_tool`，`problem` 是 `runs_commands`；写了真的、包没批能力 `tools.commands` 的（清单没声明的也是）整个不收，`needs_approval`，`data.capabilities` 是 `["tools.commands"]`（同 `connection/rights.rs` 挡方法的写法）。出厂的包声明了就算批过（`extensions.md`「能力」第 3 条）；
+   - 上面三格都不写的工具，规格、工具面、登记缓存逐字节和以前一样；
    - `venues` 是给哪种会话：`local`（本机的）、`private`（通讯平台的私聊）、`group`（群）里的一个或几个，不能是空的（05 第六节的 `venues`；2026-10-09 和通讯平台的会话定：「发给任意好友或群」只给本机，`skip_reply` 只给场所）。
-3. 登记进工具目录，归这个包：换掉它上一次登记的那几件。名字撞上核心自带的、别的包的、写法不对的：整个不收，`bad_tool`，`data` 是 `{"tool": 名字, "problem": "duplicate" | "name" | "parameters" | "access" | "venues" | "timeout" | "clicall" | "result" | "display_name" | "subject" | "feature" | "plugin" | "role" | "scope" | "paths" | "background_parameters"}`。`feature`（施工 T-2）：清单写了几个功能、这一件哪个功能都没列，或者写了空的 `[features]`；归法同预设认工具归哪个功能（`Features::of_tool`：列了的照列的，只有一个功能的都归它，没写 `[features]` 的整个包算一个）。归不上的预设开关不了它。回应 `{"tools": 件数}`。
+3. 登记进工具目录，归这个包：换掉它上一次登记的那几件。名字撞上核心自带的、别的包的、写法不对的：整个不收，`bad_tool`，`data` 是 `{"tool": 名字, "problem": "duplicate" | "name" | "parameters" | "access" | "venues" | "timeout" | "clicall" | "result" | "display_name" | "subject" | "feature" | "plugin" | "role" | "scope" | "paths" | "background_parameters" | "runs_commands"}`。`feature`（施工 T-2）：清单写了几个功能、这一件哪个功能都没列，或者写了空的 `[features]`；归法同预设认工具归哪个功能（`Features::of_tool`：列了的照列的，只有一个功能的都归它，没写 `[features]` 的整个包算一个）。归不上的预设开关不了它。回应 `{"tools": 件数}`。
 4. 记下这个包现在由这个连接提供。连接断了、扩展崩了，工具照旧留在目录里（`05-内核接口.md` 第九节：工具从目录里消失会改变请求字节），被调到时回「暂时不可用」。
 5. 这一次登记的原文写进登记缓存 `var/cache/provide/<包>.json`（施工 O-2 中，下面「登记缓存」）。
 
@@ -83,6 +85,7 @@
 | `by` | 是谁要她做的（施工 O-2 下，下面「是谁要的」）：那一条的 `by` 原样，例如 `{"kind":"external","venue":…,"id":"qq:…","role":"manager"}`；没有触发的回合不写 |
 | `owner` | 核心认不认 `by` 是主人本人（施工 O-2 下）：本机的人、私聊里对应表认出的本人、群里对应表里有的外部身份是；没有 `by` 的不是 |
 | `checked` | 只给声明了 `paths` 的（施工 XG-1 上）：权限链判过的真实位置，照参数报的先后（字的数组每项一条），就是 `Call::checked`；交出去之前去掉 Windows 的 `\\?\`（`miyu_fs::usable`）。扩展应当写这几个位置 |
+| `channel` | 只给声明了 `runs_commands` 的、这次调用开了通道的（施工 XG-1 下，下面「会跑命令的」）：`{"sock", "token", "bin"}`。`sock` 是端点（Unix 上套接字的路径，Windows 上 `\\.\pipe\miyu-call-…`），`token` 是 32 个十六进制字的令牌，`bin` 是只放着 `miyu` 的目录（建不成的不写）。扩展把前两个设成 `MIYU_CALL_SOCK`、`MIYU_CALL_TOKEN` 进它起的命令，`bin` 放 `PATH` 最前面 |
 
 回应 `{"result": {"blocks": [内容块…], "error": 布尔, "end_turn": 布尔}}`：内容块照内核的写法（`text`、`image`），`error` 不写是假。`end_turn` 是真的（施工 4-14，通讯平台的 `skip_reply` 这类「这一轮不说了」）：这一步几件工具的结果都到了，核心不再请求模型，这一轮照走完了结束（同一步别的照常跑完；这一轮里排着、并进来的照常接着开下一轮；分叉照常封存），结果上记着 `end_turn`；`error` 是真的不认；不写是假。`detail` 是给头看的结构化结果（施工 W-11 补，2026-10-18 项目主人定）：照 `miyu_tool::detail` 的三种通用形状（`links`、`table`、`images`）读，多一格少一格、超了上限、`error` 是真的，整格丢掉、结果照常，运行日志记 `WARN tool detail dropped tool=… why=…`；读成了的照形状重写一遍记进结果（不是原样）。`images` 引用的 blob 和图片块一样，要在存处里。`data` 是给脚本的结构化结果（施工 X-33，设计 `39-脚本调工具.md` 第六节第 3 条、MC7）：任意 JSON，可以不写；照收、交进 `Done.data`，只给经 `miyu call` 调到它的脚本（印成一行 JSON），不进上下文、不进 `tool.result`；`error` 是真的不交，同 MCP 的 `structuredContent`。不另截断，整条回应照旧受管道一行 1 MiB 的上限。不拿 `detail` 顶它：`detail` 跟着头的画法走，给脚本什么扩展自己写。`state` 是这个包在这个会话里的一份状态（施工 TW-1，设计 46，`kernel/session.md`「包的会话状态」）：照 `session.set_state` 的写法查（`sessions/state.rs` 的 `read`，包声明的状态块在造这件工具时取好），合的记成结果的效果 `package.state`，写坏了整份丢掉、结果照常、运行日志记 `WARN package state dropped package=… why=…`；`null` 当没写，清掉写 `{}`；`error` 是真的不收。`effects` 是这次调用的效果（施工 XG-1 上，下面「扩展交的效果」），查过才收。回应是 JSON-RPC 的错误、写法不对的：算这次调用出错，原话写进结果。图片、文件块引用的 blob 先经 `blob.put` 传上来（扩展和会话共用一个存处），块原样不动（施工 O-2 三补，同 `session.send` 的附件）。存处里没有这个 blob 的，这次调用照暂时不可用。
 
@@ -103,6 +106,14 @@
 5. `error` 是真的照样收文件效果（改了一半出错，改了的是真的）；`todo.written` 不收（同 `state`），不记 `WARN`。超时、被掐的没有回应，没有效果。
 6. 报假效果拿不到什么（设计 63 第五节）：撤销、恢复、重做不写文件，写不坏别的文件；改前改后都是核心自己读的，骗不了看差异的人，最多少报。扩展现在没进沙盒，本来就能自己读写这些文件；这一套守的是「核心不替扩展多做一步」，以后扩展进沙盒照样成立，过了链的写路径就是那时要按调用放开写的几条（能力 `fs.write`）。
 
+**会跑命令的**（施工 XG-1 下，设计 63 第六节第 2 条、第七节第 3 条，2026-11-05 core1 定 3A；照内置 `shell` 的几处，一处不按名字）：
+
+1. `RemoteTool::runs_commands` 照规格交。核心照它认跑命令的工具的几处都接上：说明后面接 `miyu call` 那一段（`Tool::clicall_section`，字是核心的一份 `core/call/`，`shell` 也读它，字节不变；例子照这台机器挑：Windows 上 PowerShell 的，别处有 `jq` 用它、没有有 `python3` 用 Python、都没有不带）；会话照现在的条件开端口（`session/tools.md` 第 6 条：工具面上有脚本里能调的、或者核心自带的命令能调的）；后台运行关着的会话造工具面、拼 system 时算它一件（`agents.rs`）；`miyu check` 放行出沙盒的跑命令工具照旧提醒 `sandbox_shell`（`session/guard.md`）。
+2. 通道：这次调用拿到了端口、知道扩展进程的进程号的（提供者表在 `provide` 时照扩展的状态记下，`Starting`、`Running` 的 `pid`），开一个端点（`miyu-call`，`tools/shell.md`「脚本调工具」），`tool.call` 带 `channel`。认人照「连上来的是这个扩展进程的子孙」加令牌：Linux 照 `/proc/<pid>/stat` 的父进程链，macOS 照 `proc_pidinfo`，Windows 照进程快照的父进程号（`miyu_pipe::process_parents`）；扩展进程自己不算，`setsid`、两次 `fork` 甩出去的链断了，调不成；过不了的退出码 2。命令里调的照会话的链判，记 `tool.nested`，挂在这次调用下面（同 `shell`）。
+3. 端点跟着这次调用：答了、超时、被掐（这次调用的等待被丢掉），丢掉就关，套接字删掉、令牌作废，还在等的、之后连的 `miyu call` 退出码 3。扩展起不了会话的后台任务（不收 `job.started`），没有 `shell` 那种「交给任务表、跟着任务走」。
+4. 开不成的（建不了目录、套接字）记一行 `WARN miyu call endpoint not opened`，调用照旧发，只是没有这一格；不知道进程号的（不是核心拉起的连接）不开，记 `DEBUG`。
+5. 人在会话里跑命令（`session.send {shell: true}`，设计 57）不交给扩展：认的是 `Tool::serves_person`（内置 `shell` 是），扩展的跑命令工具不算，只有它们的会话照「没有能跑命令的工具」拒（`shell_unavailable`）。
+
 **是谁要的**（施工 O-2 下，`asked.rs`）：回合记下她这时在回应的那一条的 `by`。开回合时是触发的那一条（照记下的几条开的是最后一条）；之后每次请求前，请求新看到的排队消息、并进来的群消息（`turn.joined` 的最后一条）、别的 harness 和别的会话发来的话里最新的那一条换上它；后台命令、子代理的回报是她自己派出去的事，不换。多条触发、并进来的几条照最后一条（2026-10-09 和通讯平台的会话定）：她这时看到的最新那一条才是这次调用要回应的。提供者照 `owner`、`by.role` 自己挡（群里的禁言、撤回、踢人只给主人、管理的人）。
 
 **超时、`tool.cancel`**（施工 O-2 下）：到了登记时写的 `timeout_ms` 没回的，这次调用交回「没在 N 秒内答完、可能做了一部分」（`core/tool-results/timed-out.txt`，字段 `name`、`seconds`，秒数往上取整；提供者的工具自己读，不进快照的核心字：进了以后以前造的会话换不了快照）。核心发通知 `{"jsonrpc":"2.0","method":"tool.cancel","params":{"session":…,"call_id":…}}`（不带 `id`，不等回应）：超时、叫它停（打断改东西的调用；照样等它回，内核到点掐掉）、掐掉（打断别的、关核心，这次调用的等待被丢掉）时各发一次，回应先到的不发。提供者收到了就放下那次调用；已经做了的收不回，回的时候照实说。
@@ -119,7 +130,8 @@
 | 什么时候 | 原因码 | 说明 |
 |---|---|---|
 | 不是核心拉起的扩展 | `not_a_provider` | 头扮演提供者随 O-2（下） |
-| 规格不对、撞名、时限出了范围、归不上功能（施工 T-2）、`paths`、`background_parameters` 写错（施工 XG-1 上） | `bad_tool` | `data.tool`、`data.problem` |
+| 规格不对、撞名、时限出了范围、归不上功能（施工 T-2）、`paths`、`background_parameters` 写错（施工 XG-1 上）、`runs_commands` 不是布尔（施工 XG-1 下） | `bad_tool` | `data.tool`、`data.problem` |
+| 写了 `runs_commands`、包没批 `tools.commands`（施工 XG-1 下） | `needs_approval` | `data.capabilities` 是 `["tools.commands"]`；照缓存登记的不收、记 `WARN` |
 | 参数写错 | `bad_params` | |
 
 ### 守着它的
@@ -148,9 +160,11 @@
 | `crates/miyu-endpoint/tests/provide_effects.rs`（施工 XG-1 上，e0 写的红测试） | 契约：第三方 `edit` 和内置 `edit` 改两个一样的文件，`tool.result` 的 `file.changed`、`view.detail` 的差异和增删行数一样；`tool.call` 带 `checked`；接着用内置 `edit` 两边都不用重读；撤掉那一轮两边一样被拦、文件不动 |
 | `crates/miyu-endpoint/tests/provide_paths.rs`（施工 XG-1 上） | 契约：工作区一级写工作区外的问人，人点头以前扩展收不到 `tool.call`，`checked` 照判的；工作区里的不问；后台运行关着的会话工具面上没有声明的后台参数，开着的照旧，不写新格的参数格式逐字节照登记的 |
 | `crates/miyu-endpoint/tests/provide_effects_log.rs`（施工 XG-1 上，单独一个测试程序） | 契约：报工作区别的文件、工作区外的私密文件、没改说改了、还在说删了、不收的种类、写法不对的各自丢、记 `WARN tool effect dropped`、结果照常；私密文件的路径不进日志、不进运行日志；没声明 `paths` 的一条文件效果不收 |
+| `crates/miyu-endpoint/src/provide/tests/declared_tests.rs` 的 `runs_commands_is_a_boolean_and_only_true_runs_commands`（施工 XG-1 下） | `runs_commands` 是布尔、不写是假，别的 `bad_tool`；只有真的跑命令，人跑命令不交给它（`serves_person` 是假）；登记缓存原样存 |
+| `crates/miyu-endpoint/tests/provide_commands.rs`（施工 XG-1 下） | 契约：扩展起的命令里经通道调 `probe` 成了，记一条 `tool.nested`、挂在那次调用下面；`tool.call` 带 `channel`（令牌 32 个字、有 `bin`）；核心进程（扩展的父进程，不是子孙）拿着令牌连上来退出码 2、那一次没调；答完端点关了、连不上；没批 `tools.commands` 的 `needs_approval`、不是布尔的 `bad_tool`；说明后面接 `miyu call` 那一段、不跑命令的照登记的；`!命令` 只有扩展的跑命令工具时 `shell_unavailable`；放行出沙盒的跑命令扩展工具 `miyu check` 报 `sandbox_shell` |
+| `crates/miyu-call/src/kin/tests.rs`、`unix/tests.rs`、`windows/tests.rs`（施工 XG-1 下） | 子孙照父进程链认：子、孙是，自己、别人家的、问不出的、绕回来的、太长的不是；`/proc/<pid>/stat` 的父进程照最后一个 `)` 往后数；真的子进程照这台机器问得出；扩展的端点答它父进程（测试进程是子孙）、拒另一个进程的子孙；交给扩展的那一格和设进命令的环境变量一样 |
 | `crates/miyu-endpoint/tests/provide_later.rs` | 契约：先造的会话下一个回合有扩展的工具、调得通、记 `session.policy_changed`，缓存照登记的原样；关掉以后下一个回合拿掉；重启以后扩展没登记，照缓存在目录里，载入的第一个回合对上、调到的暂时不可用，新造的带上；关着的包不读缓存 |
 
 ### 还没有的
 
 - O-2（补）：执行中的进度 `tool.progress`；头扮演提供者；提供者登记命令、挂接点。
-- XG-1 下（设计 63 第六节第 2 条）：规格的 `runs_commands`、能力 `tools.commands`、`tool.call` 的 `channel`（扩展起的命令里能 `miyu call`）、说明后面接 `miyu call` 那一段、人跑命令只认内置的。
