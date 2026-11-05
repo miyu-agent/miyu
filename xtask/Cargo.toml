@@ -16,6 +16,12 @@ sha2 = { version = "0.11", default-features = false }
 # 读 heads.toml（施工 S-5）：和核心读配置用的是同一个。
 toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
 
+# `cargo xtask dist`（施工 RL-1）打压缩包：Linux、macOS 的 tar.gz，Windows 的 zip。版本、特性同核心里已经用着的那几处
+# （miyu-source 的 tar、miyu-net 的 flate2、miyu-store 的 zip），不多拉新的包。
+tar = { version = "0.4", default-features = false }
+flate2 = "1"
+zip = { version = "9.3", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+
 # `cargo xtask dev-home`（施工 8-6）：照核心的写法建数据根的骨架。
 miyu-store = { path = "../crates/miyu-store" }
 

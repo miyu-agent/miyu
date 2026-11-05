@@ -12,6 +12,10 @@
 | `systemd/system/miyu.service`、`miyu-web.service` | 服务器的样例：systemd 系统服务，核心和网页软件 |
 | `init/{openrc,runit,dinit}/` | 服务器的样例：别的初始化系统 |
 
+命令行版的压缩包由 `cargo xtask dist` 打（施工 RL-1，设计 `59-发版.md` 第三节第 1 条）：本机打本机那一种
+`miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`），照 `heads.toml` 取两个头一起编，里面是五个程序、`resources/`（带两个头的包文件夹）、
+`LICENSE`、合了核心和两个头的 `THIRD-PARTY-LICENSES.txt`、`README.txt`。放在 cargo 的 target 目录下的 `dist/`，`--out` 换地方。
+
 每个安装包的根目录都放仓库根上的 `LICENSE`（AGPL-3.0 全文）和 `THIRD-PARTY-LICENSES.txt`（编进程序的第三方包的许可证原文，`cargo xtask notices` 生成，蓝图 `licenses.md`「第三方许可证清单」）。带了头的，头的那一份也放进去（施工 AU-2）。
 
 ## 个人机器（第一版的重点）

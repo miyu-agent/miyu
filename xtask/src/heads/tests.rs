@@ -50,3 +50,31 @@ fn each_mistake_is_named() {
     assert_eq!(problems(&extra).len(), 1);
     assert_eq!(problems("not toml [").len(), 1);
 }
+
+#[test]
+fn pins_come_out_in_order() {
+    let pinned = pins(GOOD).unwrap();
+    assert_eq!(
+        pinned,
+        vec![
+            Pin {
+                id: "miyu-tui".to_string(),
+                repo: "https://github.com/miyu-agent/miyu-tui".to_string(),
+                rev: "960362426789aaea2d34242711cfc6d301e45ca9".to_string(),
+            },
+            Pin {
+                id: "miyu-webui".to_string(),
+                repo: "https://github.com/miyu-agent/miyu-web".to_string(),
+                rev: "v0.0.1".to_string(),
+            },
+        ]
+    );
+}
+
+#[test]
+fn pins_refuse_what_check_refuses() {
+    let wrong = GOOD.replace("rev = \"v0.0.1\"", "rev = \"main\"");
+    let said = pins(&wrong).unwrap_err();
+    assert_eq!(said, problems(&wrong));
+    assert!(!said.is_empty());
+}

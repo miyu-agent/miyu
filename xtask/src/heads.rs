@@ -23,6 +23,44 @@ pub fn check(root: &Path) -> Vec<String> {
     }
 }
 
+/// 钉的一个头：编号、仓库、取哪一份（提交号或者标签）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Pin {
+    /// 包编号：`miyu-tui`、`miyu-webui`。
+    pub id: String,
+    /// 仓库的网址。
+    pub repo: String,
+    /// 完整的提交号，或者 `v` 开头的标签。
+    pub rev: String,
+}
+
+/// 读出两个头钉的那一份，照 [`HEADS`] 的先后（`cargo xtask dist` 用，施工 RL-1）。写法有问题的交回 [`check`] 那几条。
+pub fn pins(text: &str) -> Result<Vec<Pin>, Vec<String>> {
+    let found = problems(text);
+    if !found.is_empty() {
+        return Err(found);
+    }
+    let doc: DocumentMut = text
+        .parse()
+        .map_err(|error| vec![format!("{PATH}：不是 TOML（{error}）")])?;
+    Ok(HEADS
+        .iter()
+        .map(|head| {
+            let field = |key: &str| {
+                doc[*head][key]
+                    .as_str()
+                    .map(str::to_string)
+                    .unwrap_or_default()
+            };
+            Pin {
+                id: (*head).to_string(),
+                repo: field("repo"),
+                rev: field("rev"),
+            }
+        })
+        .collect())
+}
+
 /// 照文件的内容查。
 fn problems(text: &str) -> Vec<String> {
     let doc: DocumentMut = match text.parse() {

@@ -7,8 +7,8 @@
 
 [miyu-tui]
 repo = "https://github.com/miyu-agent/miyu-tui"
-rev = "4e5a6be67708f048909f614716cfd9eaf1e3bb91"
+rev = "46f2699c6ea326489e819292da64426ea90c858f"
 
 [miyu-webui]
 repo = "https://github.com/miyu-agent/miyu-web"
-rev = "1c529b8d89bad4de53276faec400a0f6a23ea2aa"
+rev = "v0.1.0"
