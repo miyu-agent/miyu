@@ -10,6 +10,6 @@ running stays on the old version until 'miyu core stop'; the next start uses
 the new one.
 
 Options:
-      --pre   Include pre-releases
-      --yes   Upgrade without asking
-  -h, --help  Print help
+      --prerelease  Include pre-releases
+      --yes         Upgrade without asking
+  -h, --help        Print help

@@ -17,6 +17,7 @@ fn every_outcome_reads_in_both_languages() {
         Said::Net(NetError::Limited(None)),
         Said::Net(NetError::Status(500)),
         Said::NoRelease,
+        Said::OnlyPre,
         Said::UpToDate("1.0.0".to_string()),
         Said::Cancelled,
         Said::Unconfirmed,

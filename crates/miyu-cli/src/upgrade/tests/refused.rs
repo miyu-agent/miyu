@@ -185,3 +185,22 @@ fn an_unknown_system_stops_before_the_network() {
     assert_eq!(flow::run(&plain(), &mut world), Said::UnknownSystem);
     assert!(setup.net.asked.borrow().is_empty());
 }
+
+#[test]
+fn without_a_stable_release_the_hint_says_pre_and_with_nothing_it_says_none() {
+    let mut setup = Setup::new("onlypre", "1.0.0-rc.1", true);
+    let list = setup.body("per_page=30");
+    let only: Vec<serde_json::Value> = serde_json::from_slice::<Vec<serde_json::Value>>(&list)
+        .unwrap()
+        .into_iter()
+        .filter(|release| release["tag_name"] != "v0.8.0")
+        .collect();
+    setup.answer("per_page=30", Ok(serde_json::to_vec(&only).unwrap()));
+    let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0-rc.1", Answer::Yes);
+    assert_eq!(said, Said::OnlyPre);
+    assert_eq!(said.code(), 1);
+    setup.answer("per_page=30", Ok(b"[]".to_vec()));
+    let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0-rc.1", Answer::Yes);
+    assert_eq!(said, Said::NoRelease);
+    untouched(&setup);
+}

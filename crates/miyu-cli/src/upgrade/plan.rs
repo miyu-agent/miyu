@@ -199,6 +199,21 @@ pub(crate) fn newest(list: &Value, pre: bool) -> Option<Release> {
         .max_by(|a, b| a.version.cmp(&b.version))
 }
 
+/// 列表里有没有预发布（草稿不算，标签要是 `v<版本>`；标成预发布的、标签带 `-` 的都算）：没有正式版时照它提示加 `--prerelease`
+/// （施工 RL-4补2）。
+pub(crate) fn has_pre(list: &Value) -> bool {
+    list.as_array().into_iter().flatten().any(|release| {
+        let version = release["tag_name"]
+            .as_str()
+            .and_then(|tag| tag.strip_prefix('v'))
+            .and_then(Version::parse);
+        release["draft"].as_bool() != Some(true)
+            && version.is_some_and(|version| {
+                version.is_pre() || release["prerelease"].as_bool() == Some(true)
+            })
+    })
+}
+
 /// 这一版、这一种系统的压缩包名（同 `cargo xtask dist`）：Windows 是 `.zip`，别的 `.tar.gz`。
 pub(crate) fn archive_name(version: &Version, target: &str) -> String {
     let suffix = if target.starts_with("windows") {

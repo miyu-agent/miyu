@@ -87,8 +87,12 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
     let Ok(list) = serde_json::from_slice(&list) else {
         return Said::Failed("releases".to_string(), "not JSON".to_string());
     };
-    let Some(release) = plan::newest(&list, args.pre) else {
-        return Said::NoRelease;
+    let Some(release) = plan::newest(&list, args.prerelease) else {
+        // 没有正式版、有预发布的说一声加 --prerelease（施工 RL-4补2）。
+        return match !args.prerelease && plan::has_pre(&list) {
+            true => Said::OnlyPre,
+            false => Said::NoRelease,
+        };
     };
     if release.version <= world.current {
         return Said::UpToDate(world.current.to_string());

@@ -109,7 +109,7 @@ fn the_newest_release_skips_drafts_and_by_default_prereleases() {
     assert_eq!(
         newest(&list, true).unwrap().version,
         v("1.3.0"),
-        "标成预发布的，--pre 才算"
+        "标成预发布的，--prerelease 才算"
     );
     assert!(newest(&json!([]), false).is_none());
     assert!(newest(&json!({"message": "Not Found"}), false).is_none());
@@ -135,4 +135,27 @@ fn the_hash_is_found_by_exact_name() {
         Some("aaaa".to_string())
     );
     assert_eq!(hash_of(sums, "miyu-1.0.0-macos-aarch64.tar.gz"), None);
+}
+
+#[test]
+fn prereleases_are_noticed_for_the_hint() {
+    assert!(has_pre(&json!([release("v1.0.0-rc.1", false, true)])));
+    assert!(
+        has_pre(&json!([release("v1.0.0", false, true)])),
+        "标成预发布的"
+    );
+    assert!(
+        has_pre(&json!([release("v1.0.0-rc.1", false, false)])),
+        "标签带 - 的"
+    );
+    assert!(
+        !has_pre(&json!([release("v1.0.0-rc.1", true, true)])),
+        "草稿不算"
+    );
+    assert!(
+        !has_pre(&json!([release("models-x", false, true)])),
+        "标签不是 v<版本> 的不算"
+    );
+    assert!(!has_pre(&json!([release("v1.0.0", false, false)])));
+    assert!(!has_pre(&json!({"message": "Not Found"})));
 }

@@ -8,6 +8,6 @@
 'miyu core stop' 后下次打开就是新版。
 
 选项：
-      --pre   预发布版本也算
-      --yes   不询问，直接升级
-  -h, --help  显示帮助
+      --prerelease  预发布版本也算
+      --yes         不询问，直接升级
+  -h, --help        显示帮助

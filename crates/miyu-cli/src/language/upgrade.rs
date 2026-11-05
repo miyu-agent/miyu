@@ -108,6 +108,11 @@ impl Language {
                 format!("GitHub answered HTTP {status}"),
             )),
             Said::NoRelease => pick_problem(zh, ("没有找到可用的发行版", "no release found")),
+            Said::OnlyPre => pick_problem(zh, ("还没有正式版", "there is no stable release yet"))
+                .hint(pick(
+                    "加 '--prerelease' 可以看预发布".to_string(),
+                    "pass '--prerelease' to include pre-releases".to_string(),
+                )),
             Said::MissingAsset(name) => Problem::new(pick(
                 format!("发行版里缺少 {}", clean(name)),
                 format!("the release is missing {}", clean(name)),

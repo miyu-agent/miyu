@@ -13097,7 +13097,7 @@ a.step:hover{border-color:var(--primary)}
             <div class="dir-label"><span class="path">miyu upgrade</span><span class="dir-note">RL-4</span></div>
             <ol class="pipe" aria-label="做了什么">
               <li>程序旁边的 <code>install.toml</code>：<code>script</code> 自己升，<code>aur</code>、<code>brew</code> 只印 <code>paru -Syu</code>、<code>brew upgrade</code>，没标记的只印下载地址</li>
-              <li>GitHub Releases：草稿、预发布不算，<code>--pre</code> 才算，semver 只升不降；连不上、限流分开说</li>
+              <li>GitHub Releases：草稿、预发布不算，<code>--prerelease</code> 才算，semver 只升不降；连不上、限流分开说</li>
               <li><code>SHA256SUMS</code> 照 <code>sign::RELEASE</code> 验签、照 <code>sums::check</code> 查写法、对压缩包 SHA-256</li>
               <li>解到安装目录里的 <code>.miyu-upgrade/</code>，查五个程序和 <code>resources/</code>、跑新的 <code>--version</code>；逐样对换，出错照反方向挪回；没写权限的说清楚不提权</li>
               <li>核心重启（<code>kernel.restart_when_idle</code>）还没有，只提示 <code>miyu core stop</code></li>

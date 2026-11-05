@@ -163,7 +163,7 @@ fn run(
 
 fn plain() -> Upgrade {
     Upgrade {
-        pre: false,
+        prerelease: false,
         yes: false,
     }
 }
@@ -314,7 +314,7 @@ fn nothing_newer_means_up_to_date_and_prereleases_need_pre() {
     let (said, _, _) = run(
         &setup,
         Upgrade {
-            pre: true,
+            prerelease: true,
             yes: true,
         },
         "0.9.0",
@@ -338,7 +338,7 @@ fn the_answer_decides_and_yes_skips_the_question() {
     let (said, _, asked) = run(
         &setup,
         Upgrade {
-            pre: false,
+            prerelease: false,
             yes: true,
         },
         "0.9.0",

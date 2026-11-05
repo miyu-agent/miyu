@@ -28,9 +28,9 @@ pub(crate) use plan::Channel;
 /// `miyu upgrade` 的参数。给人看的说明在帮助页里（[`crate::help`]）。
 #[derive(Debug, Clone, Args)]
 pub struct Upgrade {
-    /// 预发布也算（演练用）。
+    /// 预发布也算（演练用）。长选项写完整的词，同 GitHub、`gh` 的 prerelease（主人 11-05 定，原来叫 `pre`，不留别名）。
     #[arg(long)]
-    pub pre: bool,
+    pub prerelease: bool,
     /// 不问，直接升。
     #[arg(long)]
     pub yes: bool,
@@ -75,6 +75,8 @@ pub(crate) enum Said {
     Net(NetError),
     /// 一个能用的发布都没有。
     NoRelease,
+    /// 还没有正式版，列表里有预发布（不带 `--prerelease` 时，施工 RL-4补2）。
+    OnlyPre,
     /// 已经是最新的：现在这一版。
     UpToDate(String),
     /// 问了，答不升。
