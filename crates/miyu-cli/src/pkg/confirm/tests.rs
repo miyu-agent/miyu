@@ -52,17 +52,34 @@ fn an_upgrade_says_what_it_replaces_carries_needs_and_weighs() {
 
 #[test]
 fn a_removal_says_what_goes_with_it() {
+    let state = json!({"path": "/home/a/.miyu/var/lib/pudding", "size": 3_670_016});
     let shown = json!({"package": "pudding", "layer": "home", "version": "1.2.0", "files": 3,
-                       "size": 1536, "settings": ["pudding.port", "pudding.zones"], "state": true});
+                       "size": 1536, "settings": ["pudding.port", "pudding.zones"], "state": state});
     assert_eq!(
         plan(&shown, Doing::Remove, &Language::Chinese),
         [
             "将卸载 pudding 1.2.0",
-            "一并删除：设置 pudding.port、pudding.zones、状态目录",
+            "一并删除：设置 pudding.port、pudding.zones",
+            "会删掉 /home/a/.miyu/var/lib/pudding（3.5 MiB）",
             "大小：1.5 KiB，3 个文件",
         ]
     );
-    let shipped = json!({"package": "net", "layer": "shipped", "settings": [], "state": false});
+    let empty = json!({"package": "pudding", "layer": "shipped", "settings": [],
+                       "state": {"path": "/x/var/lib/pudding", "size": 0}});
+    assert_eq!(
+        plan(&empty, Doing::Remove, &Language::English),
+        [
+            "Will remove pudding",
+            "Will delete /x/var/lib/pudding (0 B)"
+        ]
+    );
+    // 旧的核心（施工 PK-4 以前）只说有没有：照旧列在「一并删除」里。
+    let old = json!({"package": "pudding", "layer": "home", "settings": [], "state": true});
+    assert_eq!(
+        plan(&old, Doing::Remove, &Language::Chinese),
+        ["将卸载 pudding", "一并删除：状态目录"]
+    );
+    let shipped = json!({"package": "net", "layer": "shipped", "settings": []});
     assert_eq!(
         plan(&shipped, Doing::Remove, &Language::English),
         ["Will remove net"]

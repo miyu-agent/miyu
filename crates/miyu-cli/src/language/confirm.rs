@@ -141,7 +141,15 @@ impl Language {
         }
     }
 
-    /// 一并删除的状态目录。
+    /// 卸的时候会删掉的状态目录（施工 PK-4）：真实位置、多大（`pkg/query.rs` 的 `size` 照 pacman 写好的）。
+    pub(crate) fn deletes_state(&self, path: &str, size: &str) -> String {
+        match self {
+            Language::Chinese => format!("会删掉 {path}（{size}）"),
+            Language::English => format!("Will delete {path} ({size})"),
+        }
+    }
+
+    /// 一并删除的状态目录（旧的核心只说有没有，施工 PK-4 以前）。
     pub(crate) fn state_dir(&self) -> &'static str {
         match self {
             Language::Chinese => "状态目录",

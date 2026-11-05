@@ -32,7 +32,7 @@ pub(crate) fn group_plan(preview: &Value, doing: Doing, language: &Language) -> 
 }
 
 /// 看一眼的回应 `preview` 印成几行：哪个包（版本、换下哪一份）、包含什么、读不成的（施工 X-13 补）、需要什么能力、一并删除
-/// 什么、多大。没有的那一行不印。
+/// 什么、会删掉的状态目录（施工 PK-4）、多大。没有的那一行不印。
 pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<String> {
     let separator = language.list_separator();
     let mut head = language.will(doing, preview["package"].as_str().unwrap_or_default());
@@ -44,16 +44,11 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         head.push_str(&language.replacing(replaces["version"].as_str()));
     }
     let mut rows = vec![head];
-    let mut row = |label: PlanLabel, items: Vec<String>| {
-        if !items.is_empty() {
-            rows.push(format!(
-                "{}{}",
-                language.plan_label(label),
-                items.join(separator)
-            ));
-        }
+    let row = |label: PlanLabel, items: Vec<String>| {
+        (!items.is_empty())
+            .then(|| format!("{}{}", language.plan_label(label), items.join(separator)))
     };
-    row(PlanLabel::Includes, included(preview, doing, language));
+    rows.extend(row(PlanLabel::Includes, included(preview, doing, language)));
     // 读不成、装上也用不了的技能、脚本（施工 X-13 补）：包文件夹里的路径和为什么（英文一句，同 `miyu check`）。
     let skipped = preview["skipped"]
         .as_array()
@@ -66,7 +61,7 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
             )
         })
         .collect();
-    row(PlanLabel::Skipped, skipped);
+    rows.extend(row(PlanLabel::Skipped, skipped));
     let needs = preview["capabilities"]
         .as_array()
         .into_iter()
@@ -74,17 +69,23 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
         .filter_map(|capability| capability["name"].as_str())
         .map(str::to_string)
         .collect();
-    row(PlanLabel::Needs, needs);
+    rows.extend(row(PlanLabel::Needs, needs));
     if doing == Doing::Remove {
         let keys: Vec<&str> = strings(&preview["settings"]);
         let mut deletes = Vec::new();
         if !keys.is_empty() {
             deletes.push(language.deleted_settings(&keys.join(separator)));
         }
+        // 旧的核心只说有没有状态目录（`true`），照旧列一项。
         if preview["state"] == true {
             deletes.push(language.state_dir().to_string());
         }
-        row(PlanLabel::AlsoDeletes, deletes);
+        rows.extend(row(PlanLabel::AlsoDeletes, deletes));
+        // 状态目录在哪、多大（施工 PK-4）：单起一行，好让人看清卸掉会丢什么。
+        if let Some(path) = preview["state"]["path"].as_str() {
+            let bytes = preview["state"]["size"].as_u64().unwrap_or_default();
+            rows.push(language.deletes_state(path, &size(bytes)));
+        }
     }
     // 从软件源装的（施工 G-4 下）：一起装的依赖、要下多大、来源仓库和官方还是社区。
     let with = preview["with"]
@@ -99,22 +100,22 @@ pub(crate) fn plan(preview: &Value, doing: Doing, language: &Language) -> Vec<St
             )
         })
         .collect();
-    row(PlanLabel::With, with);
+    rows.extend(row(PlanLabel::With, with));
     if let Some(bytes) = preview["download"].as_u64() {
-        row(PlanLabel::Download, vec![size(bytes)]);
+        rows.extend(row(PlanLabel::Download, vec![size(bytes)]));
     }
     if let Some(origin) = preview["origin"].as_str() {
         let official = preview["official"].as_bool() == Some(true);
-        row(
+        rows.extend(row(
             PlanLabel::From,
             vec![format!("{origin}{}", language.origin_mark(official))],
-        );
+        ));
     }
     if let (Some(files), Some(bytes)) = (preview["files"].as_u64(), preview["size"].as_u64()) {
-        row(
+        rows.extend(row(
             PlanLabel::Size,
             vec![language.package_size(&size(bytes), files)],
-        );
+        ));
     }
     rows
 }

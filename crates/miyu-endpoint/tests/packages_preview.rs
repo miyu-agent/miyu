@@ -110,8 +110,13 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     home.write("etc/config.toml", "[pane]\nport = 9\n");
     let mut client = Client::connect(packaged::core(&home));
     client.hello().await;
-    let state = home.root.path().join("var/lib/pane");
-    std::fs::create_dir_all(&state).expect("建得了");
+    let state = home.root.package_state("pane");
+    std::fs::create_dir_all(state.join("db")).expect("建得了");
+    std::fs::write(state.join("login.json"), "0123456789").expect("写得进");
+    std::fs::write(state.join("db/notes.sqlite"), [0u8; 2048]).expect("写得进");
+    let outside = home.work.join("big");
+    std::fs::write(&outside, [0u8; 4096]).expect("写得进");
+    linked(&outside, &state.join("db/big"));
     let shown = call(
         &mut client,
         "package.remove",
@@ -129,7 +134,12 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
         "{shown}"
     );
     assert_eq!(result["settings"], json!(["pane.port"]), "只说写了的");
-    assert_eq!(result["state"], true);
+    // 状态目录（施工 PK-4）：真实位置、底下普通文件的字节数；链接不跟进去，指到外面那个 4 KiB 的不算。
+    assert_eq!(
+        result["state"],
+        json!({"path": state.to_string_lossy(), "size": 2058}),
+        "{shown}"
+    );
     assert!(installed(&home, "pane") && state.exists(), "什么都不动");
     let config = std::fs::read_to_string(home.root.config_file());
     assert!(config.is_ok_and(|text| text.contains("port = 9")));
@@ -143,6 +153,60 @@ async fn removing_shows_what_goes_with_it_and_changes_nothing() {
     assert!(
         shipped["result"].is_object() && shipped["result"].get("files").is_none(),
         "出厂的不删文件：{shipped}"
+    );
+    assert!(
+        shipped["result"].get("state").is_none(),
+        "没有状态目录的不写这一格：{shipped}"
+    );
+    // 状态目录那个位置上是普通文件的：不是目录，卸的时候也删不掉，不写这一格。
+    std::fs::write(home.root.package_state("miyu-base-mermaid"), "x").expect("写得进");
+    let file = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "miyu-base-mermaid", "preview": true}),
+    )
+    .await;
+    assert!(
+        file["result"].is_object() && file["result"].get("state").is_none(),
+        "是普通文件的不算状态目录：{file}"
+    );
+}
+
+/// 状态目录里放一个指到 `to` 的符号链接 `at`（Windows 上建链接要权限，放一个空目录顶替：同样不该算进大小）。
+fn linked(to: &Path, at: &Path) {
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(to, at).expect("建得了链接");
+    #[cfg(not(unix))]
+    {
+        let _ = to;
+        std::fs::create_dir_all(at).expect("建得了");
+    }
+}
+
+/// 状态目录本身是个链接（施工 PK-4）：卸的时候只删链接，指到的不动，大小算 0；链接指到的目录里的东西不算。
+#[cfg(unix)]
+#[tokio::test]
+async fn a_linked_state_directory_counts_as_nothing() {
+    let home = Home::new();
+    home.write("opt/pane/package.toml", &pane("1"));
+    let mut client = Client::connect(packaged::core(&home));
+    client.hello().await;
+    let elsewhere = home.work.join("kept");
+    std::fs::create_dir_all(&elsewhere).expect("建得了");
+    std::fs::write(elsewhere.join("photo.png"), [0u8; 512]).expect("写得进");
+    let state = home.root.package_state("pane");
+    std::fs::create_dir_all(state.parent().expect("有上一层")).expect("建得了");
+    std::os::unix::fs::symlink(&elsewhere, &state).expect("建得了链接");
+    let shown = call(
+        &mut client,
+        "package.remove",
+        json!({"package": "pane", "preview": true}),
+    )
+    .await;
+    assert_eq!(
+        shown["result"]["state"],
+        json!({"path": state.to_string_lossy(), "size": 0}),
+        "{shown}"
     );
 }
 

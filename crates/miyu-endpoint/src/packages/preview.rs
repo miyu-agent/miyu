@@ -98,7 +98,7 @@ pub(crate) fn provided(
     (Value::Object(carried), capabilities)
 }
 
-/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、有没有状态目录。
+/// 卸：编号、哪一层、版本；家目录里的几个文件多大；一并删掉的配置项（配置里写了的键）、状态目录在哪多大（施工 PK-4，没有的不写）。
 pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusal> {
     let found = core.system_packages();
     let one = removable(&found, id)?;
@@ -116,12 +116,49 @@ pub(crate) async fn removing(core: &Arc<Core>, id: &str) -> Result<Value, Refusa
     }
     let settings = crate::config::forget::present(core, &setting_keys(one));
     answer.insert("settings".into(), json!(settings));
-    let state = packages(core).state_dir(id);
-    let state = tokio::task::spawn_blocking(move || state.is_dir())
+    // 状态目录（施工 PK-4）：在哪、多大，好让人知道卸掉会丢什么；没有的不写。量大小要走一遍目录，放在阻塞线程里。
+    let state = core.root.package_state(id);
+    let measured = tokio::task::spawn_blocking(move || measured(&state).map(|size| (state, size)))
         .await
         .map_err(|_| Refusal::INTERNAL)?;
-    answer.insert("state".into(), json!(state));
+    if let Some((path, size)) = measured {
+        answer.insert(
+            "state".into(),
+            json!({"path": path.to_string_lossy(), "size": size}),
+        );
+    }
     Ok(Value::Object(answer))
+}
+
+/// 卸包会删掉的状态目录 `dir` 有多大（施工 PK-4）：底下普通文件的字节数之和。不跟符号链接（卸的时候只删链接本身，指到的
+/// 东西不动）：`dir` 自己是链接的算 0，底下的链接不算、不进去；读不了的子目录、文件跳过。`dir` 不在、是普通文件的是 `None`。
+fn measured(dir: &Path) -> Option<u64> {
+    let kind = std::fs::symlink_metadata(dir).ok()?.file_type();
+    if kind.is_symlink() {
+        return Some(0);
+    }
+    if !kind.is_dir() {
+        return None;
+    }
+    let mut total = 0;
+    let mut pending = vec![dir.to_path_buf()];
+    while let Some(at) = pending.pop() {
+        let Ok(entries) = std::fs::read_dir(&at) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            // `DirEntry::file_type` 不跟链接：链接既不是目录也不是普通文件，跳过。
+            let Ok(kind) = entry.file_type() else {
+                continue;
+            };
+            if kind.is_dir() {
+                pending.push(entry.path());
+            } else if kind.is_file() {
+                total += entry.metadata().map_or(0, |meta| meta.len());
+            }
+        }
+    }
+    Some(total)
 }
 
 /// 包文件夹里带的技能、脚本（施工 X-13 上）、斜杠命令模板（施工 X-14 上补，`slash`）：清单里写不出它们，照文件夹找。脚本装上就是这台机器上跑得起来的工具，同 MCP
