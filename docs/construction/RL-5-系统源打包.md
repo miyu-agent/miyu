@@ -1,0 +1,144 @@
+## RL-5 系统源打包：AUR、Homebrew
+
+状态：施工完，待 core1 审（2026-11-05，sub1）。设计 `59-发版.md` 第三节第 3 条、第六节第 5 条；`60-系统源分包.md` 第二节、第五节第 1、2 条；
+SD-1（系统加装层）、SD-2（分包的布局）、RL-4（`miyu upgrade` 认 `install.toml`）。
+
+### 目的
+
+AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miyu-webui` 各一个包，`miyu-agent` 是合集，`miyu-agent-git` 从源码编全套。
+真相源放在核心仓库的 `packaging/`，发版那天照这一次发布的 `SHA256SUMS` 填好版本、哈希，再推到 AUR、tap。
+
+### 定了的（core1 11-05）
+
+1. **做哪几份**：AUR 的 `miyu-core`、`miyu-tui`、`miyu-webui`、`miyu-agent`、`miyu-agent-git`；Homebrew 的四个 formula。托盘 `miyu-applet` 的
+   PKGBUILD、cask 搬不搬、怎么和托盘仓库的流水线分工，core1 去问托盘那条线，另开一步。
+2. **模板加 `cargo xtask packaging <标签> --sums <SHA256SUMS>`** 填版本、哈希。
+3. **`miyu-core` 只写 `conflicts=('miyu')`、`provides=('miyu')`，不写 `replaces`**：旧的 `miyu` 是 0.7.x 那一代、另一套程序，装新的要人明白
+   自己在换掉它，让 pacman 问一次。
+4. **paru、yay 在 AUR 上那一问**：包得真在 AUR 上才测得到（对外发布），写进「发版那天」，到时照着测。
+5. **实测**：rc.5 出来以后用它的分包真装、真卸；在那之前做静态检查。
+6. **tap 仓库**：新的是 `miyu-agent/homebrew-miyu`，主人在发版前建。旧版 Miyu 的是 `SHORiN-KiWATA/homebrew-miyu`，名字一样、组织不同，
+   别弄混。
+
+### AUR 上的名字（2026-11-05 用 aur.archlinux.org 的 RPC 匿名查）
+
+`miyu-core`、`miyu-tui`、`miyu-webui`、`miyu-agent`、`miyu-agent-git` 都没人占。以 `miyu` 开头的只有主人自己维护的 `miyu`（0.7.4-1）、
+`miyu-git`（0.7.4.r1542）、`miyu-voice`。
+
+### 做什么
+
+- **`packaging/aur/`**：
+  - `miyu-core/PKGBUILD.in`：下载 `miyu-core-<版本>-linux-{x86_64,aarch64}.tar.gz`。
+    - 整层放进 `/usr/lib/miyu/`（程序照真实位置的旁边找 `resources/`），`/usr/bin/miyu` 链过去；
+    - 写 `install.toml`（`channel = "aur"`），许可证进 `/usr/share/licenses/`；
+    - `.miyu` 文件类型进 `/usr/share/mime/packages/`，pacman 的钩子会更新类型库；
+    - `depends=('glibc' 'gcc-libs')`：三个程序只要 `libc`、`libm`、`libgcc_s`。`optdepends` 是 bubblewrap。
+  - `miyu-tui/`、`miyu-webui/PKGBUILD.in`：
+    - 版本照它们自己的（压缩包名里写的），下载地址照核心的发版标签；
+    - 包文件夹原样放进 `/usr/share/miyu/packages/<编号>/`，核心照 `XDG_DATA_DIRS` 认它是系统加装那一层；
+    - `depends` 有 `miyu-core`。
+  - `miyu-agent/PKGBUILD.in`：`arch=('any')`，只依赖那三个。托盘进系统源以后加进去。
+  - `miyu-agent-git/PKGBUILD`：不是模板。
+    - `cargo xtask dist` 照 `heads.toml` 编全套（要 rustup、git、python3、网络），解开分包的三份，照上面三个包的位置装；
+    - `provides`、`conflicts` 是 `miyu`、`miyu-core`、`miyu-tui`、`miyu-webui`、`miyu-agent`；
+    - `pkgver` 是 `<工作区版本>.r<提交数>.g<短号>`。
+- **`packaging/homebrew/`**：`miyu-core.rb.in` 等四个。
+  - 核心整层进 `libexec/`，`bin/miyu` 链过去，写 `install.toml`（`channel = "brew"`）。
+  - 终端、网页进 `share/miyu/packages/<编号>/`。链进前缀以后，核心照 `miyu` 所在目录的上一级认它（设计 60 第三节）。
+  - 合集 `miyu-agent`：Homebrew 的 formula 一定要有下载，拿这一版的 `SHA256SUMS` 当下载（哈希照本地那份算），装进文档目录。
+  - 都写 `depends_on arch: :arm64`、`:macos`，各有 `test do`。
+- **`xtask/src/packaging.rs`**：`cargo xtask packaging <标签> --sums <SHA256SUMS> [--out <目录>]`。
+  - 占位：
+    - `@VERSION@` 核心版本；
+    - `@PKG_VERSION@` 这个包自己的版本；
+    - `@PKGVER@` 同上、去掉 `-`：pacman 的 pkgver 不许有 `-`，`0.0.0-rc.5` 写成 `0.0.0rc.5`，照样排在 `0.0.0` 前面；
+    - `@SHA256_<系统>@` 这个包那一种系统的压缩包的哈希；
+    - `@SHA256_SUMS@` 这份 `SHA256SUMS` 自己的哈希。
+  - 出错的：缺哪一份、终端网页三种系统写的版本不一样、哈希写错、填完还有占位。先全填好再写，哪一份不成都不写。
+  - 不写 `--out` 的放 cargo 的 target 目录下的 `packaging/<标签>/`。
+- **实测**：
+  - `packaging/test-aur.sh`：在 Arch 容器里跑，root。
+    - `static`：每份语法对、`makepkg --printsrcinfo` 出得来、namcap 只报已知的那一种。
+    - `install`：`makepkg` 真下载、核哈希，装四个包，查下面这几样，最后 `pacman -R` 卸干净：
+      - `miyu --version` 报这一版，`install.toml` 写 `aur`；
+      - `miyu upgrade` 说用包管理器升级；
+      - 隔离数据根里 `miyu pkg list`：终端、网页是 `distro` 层、程序找得到。
+  - `packaging/test-brew.sh`：在 macOS 上跑。
+    - `static`：`brew style`。
+    - `install`：建本地 tap `local/miyu-test`，`brew install` 合集，查同样几样，`brew test` 四个，`brew uninstall`、`untap`。
+  - `.github/workflows/packaging-test.yml`：
+    - 改了模板、实测脚本、填的程序时自动跑，照造出来的 `SHA256SUMS` 只做静态检查；
+    - 手动跑写了标签的，照那一次发布真装。
+- **守着的**（`xtask/src/packaging/tests.rs`）：
+  - 照造的 `SHA256SUMS` 填仓库里真的模板，填得全，版本、哈希放对地方，合集照 `SHA256SUMS` 自己的哈希，`-git` 照原样；
+  - 缺一份、版本对不上、核心那份不是这一版、哈希写错、一行读不懂、标签没有 `v`、没写 `--sums` 都报错，缺一份时什么都不写；
+  - 剩下没填的占位报出来，邮箱里的 `@` 不算；
+  - 没有一份写 `replaces`，`miyu-core` 写 `conflicts`、`provides` 和 `install.toml`；
+  - `miyu-core` 写的文件类型同 `packaging/mime/miyu.xml`。
+- **文档**：`packaging/README.md` 加系统源一段，设计 59、60 指过来。
+
+### 怎么验
+
+- xtask 的 `packaging` 测试 6 条过；clippy 两种目标都没有警告。
+- 本机照造的 `SHA256SUMS` 填，Arch 容器里 `test-aur.sh static` 五份都过。
+- CI 的 `packaging-test` 静态那一趟见交付。
+- 真装要 rc.5：草稿或预发布出来以后手动跑 `packaging-test`，写 `tag: v0.0.0-rc.5`，Arch、macOS 两台都要过。结果补进这一节。
+  - 要是没出来：只靠静态检查交，真装记成待办。
+
+### 变异
+
+手写 13 个，都抓住：
+- pkgver 不去 `-`；
+- 核心的版本也照文件名找；
+- 三种系统版本不一样也认；
+- 合集的哈希不照 `SHA256SUMS` 自己算；
+- 剩下的占位不报；
+- 邮箱也当占位；
+- 哈希不查写法；
+- 不去二进制模式的 `*`；
+- 两种 Linux 的哈希对调；
+- `-git` 也当模板填；
+- `miyu-core` 不写 `conflicts`；
+- `install.toml` 写成 `script`；
+- 文件类型的权重改了。
+
+「`install.toml` 写成 `script`」第一次没抓住：测试只查模板里有没有 `channel = "aur"`，模板开头的注释里也有这几个字。改成只查写 `install.toml` 的那一行以后抓住了。
+「剩下的占位不报」第一次的写法编不过，换了写法补跑，抓住了。
+
+### 发版那天
+
+在设计 59 第五节「发了以后」那一步做，Release 已经由主人点了发布：
+
+1. **填**：
+   ```sh
+   gh release download v<版本> -R miyu-agent/miyu -p SHA256SUMS -p SHA256SUMS.sig -D /tmp/rel
+   target/debug/miyu-index verify-sums /tmp/rel/SHA256SUMS --public "<发版公钥>"   # 核过签名再用
+   cargo xtask packaging v<版本> --sums /tmp/rel/SHA256SUMS --out /tmp/rel/out
+   ```
+2. **先真装一遍**：手动跑 `packaging-test`，写这个标签，Arch、macOS 都过了再发。
+3. **AUR**：每个包一个 AUR 仓库（`ssh://aur@aur.archlinux.org/<包>.git`）。
+   - 把填好的 `PKGBUILD` 放进去，在 Arch 上 `makepkg --printsrcinfo > .SRCINFO`，一起提交、推送。第一次推送就是在 AUR 上建这个包。
+   - 推的顺序：`miyu-core`、`miyu-tui`、`miyu-webui`，再 `miyu-agent`、`miyu-agent-git`。
+   - 这是对外发布，由主人推，或者主人当面同意以后推。
+4. **paru、yay 那一问**（设计 59 第三节第 3 条）：在干净的 Arch 容器里各装一次 paru、yay。照下面三步做，照实写进发行说明：问了的写怎么答，
+   不问的写手动换的命令（`paru -S miyu-agent`，问冲突时答 y 换掉 `miyu`）。
+   - 先装旧的 `miyu`（AUR 上 0.7.4）；
+   - 再 `paru -Syu`、`yay -Syu`，看会不会提到 `miyu-agent`：`miyu-core` 不写 `replaces`，预计不会；
+   - 再 `paru -S miyu-agent`、`yay -S miyu-agent`，看冲突那一问长什么样，答 y 以后 `/usr/bin/miyu` 是不是新的、旧的数据在不在。
+5. **tap**：主人先建 `miyu-agent/homebrew-miyu`（不是旧版的 `SHORiN-KiWATA/homebrew-miyu`）。把 `homebrew/Formula/` 下四个推进它的 `Formula/`。
+   装法写进发行说明：`brew install miyu-agent/miyu/miyu-agent`。
+6. 照设计 59 第五节，主人装机脚本的分支合进去以后，再从 AUR、旧 tap 删旧的 `miyu`。
+
+### 坑
+
+- **namcap 对按架构写的下载报「x86_64 应该改成 $CARCH」**：`source_x86_64` 本来就要写死架构，是已知的误报。`test-aur.sh` 只滤掉这一句，
+  别的照报。
+- **pkgver 不许有 `-`**：版本号去掉 `-`，pacman 的比较照样把 `rc` 排在正式版前面。下载地址照原来带 `-` 的版本。
+- **Homebrew 的 formula 一定要有下载**：合集没有文件，拿 `SHA256SUMS` 当下载。
+- **aarch64 的 Linux 没有实测**：CI 的 Arch 容器只有 x86_64，`source_aarch64` 只靠和 x86_64 同一个写法、`.SRCINFO` 出得来。
+- **`brew style` 管说明的写法**：CI 第一趟红在这里。
+  - 说明不超过 80 个字符；
+  - 写 `command-line`，不写 `command line`；
+  - 取别的 formula 的程序用 `formula_opt_bin`；
+  - 一行不超过 118 个字符。
+- **`miyu-agent-git` 没有在 CI 上真编**：编一整套要几十分钟、要网络取头，只做静态检查。发版前在 Arch 上手动 `makepkg` 一次。

@@ -1,0 +1,45 @@
+# Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# Miyu 的核心和命令行（施工 RL-5，设计 60 第二节）：装 GitHub Release 上的 miyu-core-<版本>-<系统>.tar.gz。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希再发；别手改填出来的那份。
+#
+# 整层放进 /usr/lib/miyu/（程序照自己真实位置的旁边找 resources/），/usr/bin/miyu 链过去；旁边写 install.toml
+# （channel = "aur"，`miyu upgrade` 照它说用包管理器升级）。终端、网页是另外的包，装在 /usr/share/miyu/packages/。
+# 旧的 miyu（0.7.x 那一代）是另一套程序：这里只写 conflicts、不写 replaces，装的人要明白自己在换掉它（core1 11-05 定）。
+
+pkgname=miyu-core
+_version=@VERSION@
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc='Miyu, an AI assistant that runs on your own computer: the core and the command line'
+arch=('x86_64' 'aarch64')
+url='https://github.com/miyu-agent/miyu'
+license=('AGPL-3.0-or-later')
+depends=('glibc' 'gcc-libs')
+optdepends=('bubblewrap: sandbox commands with mounts (Landlock alone otherwise)')
+provides=('miyu')
+conflicts=('miyu')
+options=('!strip' '!debug')
+source_x86_64=("miyu-core-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_version}/miyu-core-${_version}-linux-x86_64.tar.gz")
+source_aarch64=("miyu-core-${_version}-linux-aarch64.tar.gz::${url}/releases/download/v${_version}/miyu-core-${_version}-linux-aarch64.tar.gz")
+sha256sums_x86_64=('@SHA256_LINUX_X86_64@')
+sha256sums_aarch64=('@SHA256_LINUX_AARCH64@')
+
+package() {
+  local dir="miyu-core-${_version}-linux-${CARCH}"
+  install -d "${pkgdir}/usr/lib/miyu" "${pkgdir}/usr/bin"
+  cp -a "${dir}/." "${pkgdir}/usr/lib/miyu/"
+  printf '# AUR 的 miyu-core 装的：miyu upgrade 说用包管理器升级。\nchannel = "aur"\n' > "${pkgdir}/usr/lib/miyu/install.toml"
+  ln -s /usr/lib/miyu/miyu "${pkgdir}/usr/bin/miyu"
+  install -Dm644 "${dir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  # .miyu 包文件的类型，同 packaging/mime/miyu.xml（测试守着两边一样）；pacman 的钩子会更新类型库。
+  install -d "${pkgdir}/usr/share/mime/packages"
+  cat > "${pkgdir}/usr/share/mime/packages/miyu.xml" <<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-zstd-compressed-tar">
+    <glob pattern="*.miyu" weight="80"/>
+  </mime-type>
+</mime-info>
+XML
+}

@@ -1,0 +1,14 @@
+# Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# Miyu 的合集（施工 RL-5，设计 60 第二节）：不带文件，只依赖核心、终端、网页三个包，装它就是装一整套。托盘程序 miyu-applet
+# 进系统源以后也加进 depends（另一步）。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本再发；别手改填出来的那份。
+
+pkgname=miyu-agent
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc='Miyu, an AI assistant that runs on your own computer: the core with the terminal and web interfaces'
+arch=('any')
+url='https://github.com/miyu-agent/miyu'
+license=('AGPL-3.0-or-later')
+depends=('miyu-core' 'miyu-tui' 'miyu-webui')

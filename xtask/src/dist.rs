@@ -30,7 +30,8 @@ use toml_edit::DocumentMut;
 
 use crate::heads;
 use archive::{digest, pack};
-use fetch::{fetch, head_cargo, python, status, target_dir, tracked};
+pub(crate) use fetch::target_dir;
+use fetch::{fetch, head_cargo, python, status, tracked};
 use layout::{Sources, copy_tree, notices, readme, remove, stage};
 #[cfg(test)]
 use {crate::heads::Pin, layout::executable};

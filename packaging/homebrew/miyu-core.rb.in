@@ -1,0 +1,31 @@
+# Miyu 的核心和命令行（施工 RL-5，设计 60 第二节、第五节第 2 条）：装 GitHub Release 上的 miyu-core-<版本>-macos-aarch64.tar.gz。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希，再推到 tap 仓库 miyu-agent/homebrew-miyu
+# （不是旧版 Miyu 的 SHORiN-KiWATA/homebrew-miyu）。
+#
+# 整层放进 libexec/（程序照自己真实位置的旁边找 resources/），bin/miyu 链过去；旁边写 install.toml（channel = "brew"，
+# `miyu upgrade` 照它说用 brew 升级）。终端、网页是另外的 formula，装在 share/miyu/packages/：核心照 `miyu` 所在目录的上一级
+# （不解开链接，也就是 Homebrew 前缀）找系统加装的那一层（设计 60 第三节）。
+class MiyuCore < Formula
+  desc "AI assistant that runs on your own computer: the core and the command-line"
+  homepage "https://github.com/miyu-agent/miyu"
+  url "https://github.com/miyu-agent/miyu/releases/download/v@VERSION@/miyu-core-@VERSION@-macos-aarch64.tar.gz"
+  version "@VERSION@"
+  sha256 "@SHA256_MACOS_AARCH64@"
+  license "AGPL-3.0-or-later"
+
+  depends_on arch: :arm64
+  depends_on :macos
+
+  def install
+    libexec.install Dir["*"]
+    (libexec/"install.toml").write <<~TOML
+      # Homebrew 的 miyu-core 装的：miyu upgrade 说用 brew 升级。
+      channel = "brew"
+    TOML
+    bin.install_symlink libexec/"miyu"
+  end
+
+  test do
+    assert_equal "miyu #{version}", shell_output("#{bin}/miyu --version").strip
+  end
+end

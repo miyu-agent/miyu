@@ -1,0 +1,76 @@
+# 系统源那几份的实测（施工 RL-5）：`cargo xtask packaging` 填好 AUR 的 PKGBUILD、Homebrew 的 formula，Arch（ubuntu 机器上的
+# 容器）、macOS 各查一遍。只测，不发东西。
+#
+# - 平时（改了模板、实测脚本、填的程序、这个文件）：照一份造出来的 SHA256SUMS 填，只做静态检查（语法、.SRCINFO、namcap、
+#   brew style）；
+# - 手动跑、写了标签（例如 v0.0.0-rc.5）：照这一次发布真的 SHA256SUMS 填，真下载、装、查、卸（packaging/test-aur.sh、
+#   test-brew.sh 的 install）。要那一次发布带着分包（SD-2 以后的）。
+name: packaging-test
+
+on:
+  push:
+    branches: [main, "step/**"]
+    paths:
+      - "packaging/aur/**"
+      - "packaging/homebrew/**"
+      - "packaging/test-aur.sh"
+      - "packaging/test-brew.sh"
+      - "xtask/src/packaging.rs"
+      - "xtask/src/packaging/**"
+      - ".github/workflows/packaging-test.yml"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "装哪一次发布的分包（例如 v0.0.0-rc.5）；不写的只做静态检查"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  packaging:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            check: aur
+          - os: macos-latest
+            check: brew
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: 装上 rust-toolchain.toml 钉住的工具链
+        run: rustup toolchain install
+      - name: SHA256SUMS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir sums
+          if [ -n "${TAG}" ]; then
+            gh release download "${TAG}" -R "${GITHUB_REPOSITORY}" -p SHA256SUMS -D sums
+            echo "MODE=install" >> "$GITHUB_ENV"
+            echo "RELEASE=${TAG}" >> "$GITHUB_ENV"
+          else
+            # 造一份：核心 0.0.0-rc.0、终端 0.1.0、网页 0.2.0，三种系统，哈希随便写。
+            for target in linux-x86_64 linux-aarch64 macos-aarch64; do
+              for part in miyu-core-0.0.0-rc.0 miyu-tui-0.1.0 miyu-webui-0.2.0; do
+                printf '%064d  %s-%s.tar.gz\n' 0 "${part}" "${target}" >> sums/SHA256SUMS
+              done
+            done
+            echo "MODE=static" >> "$GITHUB_ENV"
+            echo "RELEASE=v0.0.0-rc.0" >> "$GITHUB_ENV"
+          fi
+          cat sums/SHA256SUMS
+      - name: 填
+        run: cargo xtask packaging "${RELEASE}" --sums sums/SHA256SUMS --out out
+      - name: Arch
+        if: matrix.check == 'aur'
+        run: docker run --rm -v "$PWD/out:/o:ro" -v "$PWD/packaging:/p:ro" archlinux:latest sh /p/test-aur.sh /o "${MODE}"
+      - name: Homebrew
+        if: matrix.check == 'brew'
+        run: sh packaging/test-brew.sh out "${MODE}"

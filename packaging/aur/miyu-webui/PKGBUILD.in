@@ -1,0 +1,30 @@
+# Maintainer: SHORiN <shorin@users.noreply.github.com>
+#
+# Miyu 的网页（施工 RL-5，设计 60 第二节）：装 GitHub Release 上的 miyu-webui-<版本>-<系统>.tar.gz。版本照它自己的清单，
+# 和核心的不一样；下载地址照核心的发版标签。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希再发；别手改填出来的那份。
+#
+# 压缩包里直接是包文件夹，原样放进 /usr/share/miyu/packages/miyu-webui/：核心照 XDG_DATA_DIRS 认它是「系统加装」那一层
+# （设计 60 第三节），程序在包文件夹的 bin/ 里。
+
+pkgname=miyu-webui
+_release=@VERSION@
+pkgver=@PKGVER@
+_version=@PKG_VERSION@
+pkgrel=1
+pkgdesc='Miyu, an AI assistant that runs on your own computer: the web interface'
+arch=('x86_64' 'aarch64')
+url='https://github.com/miyu-agent/miyu'
+license=('AGPL-3.0-or-later')
+depends=('miyu-core' 'glibc' 'gcc-libs')
+options=('!strip' '!debug')
+source_x86_64=("miyu-webui-${_version}-linux-x86_64.tar.gz::${url}/releases/download/v${_release}/miyu-webui-${_version}-linux-x86_64.tar.gz")
+source_aarch64=("miyu-webui-${_version}-linux-aarch64.tar.gz::${url}/releases/download/v${_release}/miyu-webui-${_version}-linux-aarch64.tar.gz")
+sha256sums_x86_64=('@SHA256_LINUX_X86_64@')
+sha256sums_aarch64=('@SHA256_LINUX_AARCH64@')
+
+package() {
+  install -d "${pkgdir}/usr/share/miyu/packages"
+  cp -a miyu-webui "${pkgdir}/usr/share/miyu/packages/"
+  install -Dm644 miyu-webui/LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

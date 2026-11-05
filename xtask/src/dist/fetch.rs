@@ -73,7 +73,7 @@ pub(super) fn tracked(repo: &Path, under: &str) -> Result<Vec<PathBuf>, String> 
 }
 
 /// cargo 的 target 目录（照 `cargo metadata`，设了 `CARGO_TARGET_DIR` 的照它）。
-pub(super) fn target_dir(root: &Path, cargo: &str) -> Result<PathBuf, String> {
+pub(crate) fn target_dir(root: &Path, cargo: &str) -> Result<PathBuf, String> {
     let text = output(Command::new(cargo).current_dir(root).args([
         "metadata",
         "--format-version",

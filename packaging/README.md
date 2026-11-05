@@ -32,6 +32,11 @@ Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 
 `--prerelease`、`--version <版本>`、`--uninstall`（Windows 是 `-Prerelease`、`-Version`、`-Uninstall`）。`test-install.sh`、`test-install.ps1`
 在干净的机器上装、核、卸一遍（`.github/workflows/install-test.yml`），别在自己的家目录跑。
 
+系统源（施工 RL-5，设计 `60-系统源分包.md`）：`aur/` 下 `miyu-core`、`miyu-tui`、`miyu-webui`、`miyu-agent`（合集）的 `PKGBUILD.in` 和
+`miyu-agent-git` 的 `PKGBUILD`，`homebrew/` 下四个 formula 模板。发版那天照这一次发布的 `SHA256SUMS` 填好再推：
+`cargo xtask packaging v<版本> --sums <SHA256SUMS> --out <目录>`。核心进 `/usr/lib/miyu/`（Homebrew 的 `libexec/`），终端、网页进
+`share/miyu/packages/`。`test-aur.sh`、`test-brew.sh` 是实测（`.github/workflows/packaging-test.yml`）。步骤见施工单 RL-5「发版那天」。
+
 每个安装包的根目录都放仓库根上的 `LICENSE`（AGPL-3.0 全文）和 `THIRD-PARTY-LICENSES.txt`（编进程序的第三方包的许可证原文，`cargo xtask notices` 生成，蓝图 `licenses.md`「第三方许可证清单」）。带了头的，头的那一份也放进去（施工 AU-2）。
 
 ## 个人机器（第一版的重点）

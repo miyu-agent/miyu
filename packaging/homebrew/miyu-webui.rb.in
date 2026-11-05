@@ -1,0 +1,26 @@
+# Miyu 的网页（施工 RL-5，设计 60 第二节、第五节第 2 条）：装 GitHub Release 上的 miyu-webui-<版本>-macos-aarch64.tar.gz。版本照它自己
+# 的清单，下载地址照核心的发版标签。
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希，再推到 tap 仓库 miyu-agent/homebrew-miyu。
+#
+# 压缩包里直接是包文件夹 miyu-webui/（Homebrew 解开时去掉这一层），原样放进 share/miyu/packages/miyu-webui/：链进 Homebrew 前缀以后，
+# 核心认它是「系统加装」那一层（设计 60 第三节），程序在包文件夹的 bin/ 里。
+class MiyuWebui < Formula
+  desc "AI assistant that runs on your own computer: the web interface"
+  homepage "https://github.com/miyu-agent/miyu"
+  url "https://github.com/miyu-agent/miyu/releases/download/v@VERSION@/miyu-webui-@PKG_VERSION@-macos-aarch64.tar.gz"
+  version "@PKG_VERSION@"
+  sha256 "@SHA256_MACOS_AARCH64@"
+  license "AGPL-3.0-or-later"
+
+  depends_on arch: :arm64
+  depends_on :macos
+  depends_on "miyu-core"
+
+  def install
+    (share/"miyu/packages/miyu-webui").install Dir["*"]
+  end
+
+  test do
+    assert_path_exists share/"miyu/packages/miyu-webui/bin/miyu-web"
+  end
+end
