@@ -9,7 +9,7 @@
 //! 4. 跑包里的 `miyu --version`，报的是这一版；隔离的临时数据根里跑 `miyu check`，要过（不设 `MIYU_RESOURCES`，照旁边的 `resources/`
 //!    找），跑完 `miyu core stop`。
 //!
-//! 有一样不对就退出码 1，这一趟不发。解开的目录查完删掉。
+//! 有一样不对就退出码 1，这一趟不发。解开的目录查完删掉：先等里面的程序都退了（Windows 上跑着的删不掉，施工 SD-2补，`settle.rs`）。
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,7 +17,7 @@ use std::process::{Command, ExitCode};
 
 use super::archive::{slashed, walk};
 use super::fetch::tracked;
-use super::layout::{make_dir, remove};
+use super::layout::make_dir;
 use super::{CORE, HOST, TUI_PROGRAM, WEB_PROGRAM, archive_name, read, version};
 
 /// `cargo xtask dist-check <压缩包>`。
@@ -74,7 +74,7 @@ fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
     }
     let stem = format!("miyu-{version}-{target}");
     let work = archive.with_file_name(format!("{stem}.check"));
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     make_dir(&work)?;
     let found = unpack(archive, &work).and_then(|()| {
         let mut problems = top(&work, &stem)?;
@@ -86,7 +86,7 @@ fn check(root: &Path, archive: &Path) -> Result<Vec<String>, String> {
         }
         Ok(problems)
     });
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     found
 }
 
@@ -99,7 +99,7 @@ fn checked_core(
 ) -> Result<Vec<String>, String> {
     let stem = super::split::core_name(version, target);
     let work = archive.with_file_name(format!("{stem}.check"));
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     make_dir(&work)?;
     let found = unpack(archive, &work).and_then(|()| {
         let mut problems = top(&work, &stem)?;
@@ -111,7 +111,7 @@ fn checked_core(
         }
         Ok(problems)
     });
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     found
 }
 
@@ -123,7 +123,7 @@ fn checked_head(
     version: &str,
 ) -> Result<Vec<String>, String> {
     let work = archive.with_file_name(format!("{id}.check"));
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     make_dir(&work)?;
     let distro = work.join("distro");
     let found = unpack(archive, &distro).and_then(|()| {
@@ -134,7 +134,7 @@ fn checked_head(
         }
         Ok(problems)
     });
-    remove(&work)?;
+    settle::remove_settled(&work)?;
     found
 }
 
@@ -321,6 +321,7 @@ fn runnable(file: &Path) -> bool {
 }
 
 mod parts;
+mod settle;
 
 #[cfg(test)]
 mod tests;
