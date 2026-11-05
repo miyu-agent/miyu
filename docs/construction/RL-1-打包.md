@@ -8,6 +8,17 @@
 `miyu-<版本>-<系统>.tar.gz`（Windows 是 `.zip`）：照 `heads.toml` 取两个头、编、搭目录、合许可证清单、打包。RL-2 的
 `release.yml` 在四种机器上各跑一次它，再查包、签名、建草稿 Release。
 
+### 要什么
+
+跑 `cargo xtask dist` 的机器上要有：
+
+- `git`：克隆、检出两个头，列登记了的资源；
+- rustup：头照各自的 `rust-toolchain.toml` 编，PATH 上的 `cargo` 要是 rustup 的代理；
+- `python3`（没有的找 `python`）：网页的包文件夹照网页仓库的 `tools/pack-web.py --stage` 搭，同网页自己的发版模板；
+- 网络：第一次克隆两个头、拉它们的依赖。
+
+GitHub 的 Linux、macOS、Windows 机器上这几样都有。
+
 ### 做什么（`xtask/src/dist.rs`；取和编在 `dist/fetch.rs`，搭目录在 `dist/layout.rs`，打包在 `dist/archive.rs`）
 
 1. **版本和系统**：版本照 `Cargo.toml` 的 `[workspace.package] version`（发版那天改，设计 59 第五节第 2 条；现在是 `0.0.0`）。
