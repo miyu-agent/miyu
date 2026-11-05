@@ -2,7 +2,7 @@
 //! `session.viewing {session}`，核心照连接记一份，连接断了就忘。会话列表那一项至少一个头开着的写 `viewed: true`，变了推
 //! `sessions.changed`：后台会话答完、在问的通知只由开着它的那个头出，别的头照 `viewed` 不再另弹，免得两个头弹两遍。
 //!
-//! 谁来发后台通知（施工 TR-1，托盘 `miyu-app` 的蓝图 `app.md` 第 5 条）：托盘这样浏览器关了也要弹的头调 `notices.claim`，
+//! 谁来发后台通知（施工 TR-1，托盘 `miyu-applet` 的蓝图 `app.md` 第 5 条）：托盘这样浏览器关了也要弹的头调 `notices.claim`，
 //! 核心照同一个座位记，连接断了就放。「有没有人认领」变了往 `notices` 流推 `notices.claimed`（`schedules/notices.rs`），
 //! 订阅的回应照 [`Viewing::claimed`] 写；有人认领时别的头不再为没人开着的会话、`notice` 弹，免得和托盘弹两遍。
 

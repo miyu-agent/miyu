@@ -28,7 +28,7 @@ name = { en = "Open IM connections", zh = "打开通讯平台接入界面" }
    - 图用 `package.logo` 读（下面「`package.logo`」）；软件源里的包的图标随索引走（施工 F-18 下，下面「软件源里的图标」）。
 2. `[page] dir`：相对包目录的路径，写法同 `pages_dir` 的规矩（不能是绝对路径，不带 `..`、`\`、`:`），不合的 `bad_page_dir`。别的种类写了 `wrong_kind`。目录里没有 `index.html` 的不报错，`package.list` 不带 `page`，`miyu check` 报一条警告 `page_missing`。
 3. 包目录照 `miyu_store::packages::Found::files_dir` 算：出厂的是资源目录的 `packages/<编号>/`，装上的是数据根的 `opt/<编号>/`（装包时清单旁边的同名目录一起拷，F-5 上）。
-4. `[tray] name`（施工 TR-2，托盘 `miyu-app` 的蓝图 `app.md` 第 4 条「软件包挂的入口」，2026-11-03 项目主人定）：托盘菜单里挂一行，写法同 `[package] name`，点了用浏览器打开这个包自己的后台页（`miyu web --package <编号>`）。一个包至多一行，只能是「打开它的后台页」：不写目标，也就没法指到命令、网址、别的包。没写 `[page]` 的、写了 `name` 以外的格的 `bad_tray`；别的种类写了 `wrong_kind`。
+4. `[tray] name`（施工 TR-2，托盘 `miyu-applet` 的蓝图 `app.md` 第 4 条「软件包挂的入口」，2026-11-03 项目主人定）：托盘菜单里挂一行，写法同 `[package] name`，点了用浏览器打开这个包自己的后台页（`miyu web --package <编号>`）。一个包至多一行，只能是「打开它的后台页」：不写目标，也就没法指到命令、网址、别的包。没写 `[page]` 的、写了 `name` 以外的格的 `bad_tray`；别的种类写了 `wrong_kind`。
 
 ### `package.list` 每一项多的几格
 

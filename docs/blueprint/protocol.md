@@ -244,7 +244,7 @@
 | `fs.read` | 分块读本机的一份文件：数据根只有默认工作区能读（施工 W-6） |
 | `session.set_meta` | 改标题、置顶（施工 3-8 三补） |
 | `session.viewing` | 头告诉核心自己开着哪个会话（`null` 是没开），核心照连接记、断了就忘；会话列表那一项照它写 `viewed`（施工 HV-1，`docs/reference/sessions.md`） |
-| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-app` 用，`docs/reference/connection.md`「`notices.claim`」） |
+| `notices.claim` | 头认领发后台通知（`{}`，只给人的头）：核心照连接记、断了就放；`notices` 流的订阅回应有人认领时写 `claimed: true`，有没有人认领变了推 `notices.claimed`（施工 TR-1，托盘 `miyu-applet` 用，`docs/reference/connection.md`「`notices.claim`」） |
 | `prefs.get`、`prefs.set` | 界面包自己的设置（皮肤、配色这些），存在数据根里、跟着人走：读整份；照顶层的键并、`null` 删，交回整份，推给别的连接（施工 HP-1，下面「头自己的设置」） |
 | `session.set_workspace` | 换会话在哪个目录干活（施工 9-7 上） |
 | `session.configure` | 换模型、人格、预设、思考强度，下一个回合开始生效（施工 8-10，`models.md`「协议」；人格、预设施工 P-13；思考强度施工 SM-1） |
