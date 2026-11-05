@@ -57,7 +57,31 @@ jobs:
         # Linux 钉 24.04：发行构建以 glibc 2.39 为基线（12-进程形态与分发 R11）。
         os: [ubuntu-24.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      # 测试程序只留行号（施工 CI-3）：调试信息是编测试、链接、占盘的大头，Windows 上生成 PDB 尤其慢；panic 的回溯照样有
+      # 文件和行号，只是调试器里看不了变量。只在 check：randomized 照 release 编，perf 里照 dev 编的只有 xtask 自己。
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
+      # 「clippy（核心不开可选包）」只在 ubuntu 跑（施工 CI-3）：它查的是特性组合，和平台关系不大，Windows、macOS 上省一遍
+      # 编核心。空的等于没设，门禁照跑；本机门禁不设，照旧全跑。
+      MIYU_CHECK_SKIP_BARE_CORE: ${{ !startsWith(matrix.os, 'ubuntu') && '1' || '' }}
     steps:
+      # Windows 上把工作目录、~/.cargo、临时目录加进 Defender 的排除（施工 CI-3）：编译、建文件多的测试每开一个文件都要
+      # 过一遍实时扫描。不关实时扫描，只加排除；托管机器上加不上就打一行原因往下走，不让 CI 红。
+      - name: Defender 排除工作目录
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $paths = @($env:GITHUB_WORKSPACE, "$env:USERPROFILE\.cargo", $env:CARGO_HOME, $env:TEMP, $env:RUNNER_TEMP) |
+            Where-Object { $_ } | Sort-Object -Unique
+          try { Add-MpPreference -ExclusionPath $paths -ErrorAction Stop; "加了：$($paths -join '; ')" }
+          catch { "加不上：$_" }
+          try {
+            $status = Get-MpComputerStatus -ErrorAction Stop
+            "实时扫描：$($status.RealTimeProtectionEnabled)"
+            "排除：$((Get-MpPreference -ErrorAction Stop).ExclusionPath -join '; ')"
+          }
+          catch { "读不到 Defender 的设置：$_" }
       # 腾出盘（施工 CI-2）：GitHub 托管的 ubuntu 机器的盘被编译缓存加 debug 的测试程序吃满过（runner 报
       # 「No space left on device」，门禁开头就死）。删掉用不上的 .NET、Android SDK、GHC、CodeQL，删前删后各打一行 `df -h`。
       - name: 腾出盘
@@ -67,19 +91,30 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h / | tail -1
       - uses: actions/checkout@v7
+      # 机器自带的别的工具链卸掉（施工 CI-3）：取缓存时键里算的是装着的每一个工具链的版本，GitHub 的机器自带的 stable 一批
+      # 一批地换（同一天有 1.98.1 的、有 1.99.0 的，0-3 再补撞见过），留着它分支就对不上 main 存的那一份，连按前缀退回都退不到。
       - name: 装上 rust-toolchain.toml 钉住的工具链
-        run: rustup toolchain install
+        shell: bash
+        run: |
+          rustup toolchain install
+          pinned=$(rustup show active-toolchain | cut -d' ' -f1)
+          rustup toolchain list | cut -d' ' -f1 | while read -r other; do
+            [ "$other" = "$pinned" ] || rustup toolchain uninstall "$other" || true
+          done
+          rustup toolchain list
       # 第三方依赖的编译产物：照 Cargo.lock、工具链、这台机器的系统分开存；只有 main 上的那一次存，分支照 main 的取，
       # 缓存不随分支越攒越多。工作区自己的 crate 每次照旧编。
-      # 键里不算「环境」：它把机器上装着的每个工具链都算进去，GitHub 的机器自带的 stable 版本一批一批地换（同一天
-      # 有 1.98.1 的、有 1.99.0 的），分支几乎对不上 main 存的那一份。钉住的工具链在 rust-toolchain.toml 里，它已经
-      # 算在键的后一半，换了照样换一份缓存（2026-10-08，0-3 再补）。
+      # 键照 rust-cache 默认的那一套（施工 CI-3，core1 11-05 定）：前一半是项名、系统、工具链的版本和 CARGO_ 等开头的环境
+      # 变量，后一半是 Cargo.lock 和各个 Cargo.toml 的哈希。原来关了它（0-3 再补，`add-rust-environment-hash-key: false`），
+      # 这个开关把后一半也一起关了，键里只剩项名和系统；GitHub 的缓存一个键只能存一次，键不变就再也不存新的，main 一直命中
+      # 10-10 存的那一份。现在改了 Cargo.lock 的，按前一半退回到最近的一份，只重编变了的依赖，跑完照新键存一份。
+      # 另加 dev-lines：只留行号的标记，环境变量本来就算在前一半里，写明了好认。
       - name: 取编译缓存
         id: cache
         uses: Swatinem/rust-cache@v2
         with:
+          key: dev-lines
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          add-rust-environment-hash-key: false
       - name: 门禁
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: cargo xtask check
@@ -111,14 +146,21 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h / | tail -1
       - uses: actions/checkout@v7
+      # 别的工具链卸掉（施工 CI-3）：同 check。
       - name: 装上 rust-toolchain.toml 钉住的工具链
-        run: rustup toolchain install
+        shell: bash
+        run: |
+          rustup toolchain install
+          pinned=$(rustup show active-toolchain | cut -d' ' -f1)
+          rustup toolchain list | cut -d' ' -f1 | while read -r other; do
+            [ "$other" = "$pinned" ] || rustup toolchain uninstall "$other" || true
+          done
+          rustup toolchain list
       - name: 取编译缓存
         id: cache
         uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          add-rust-environment-hash-key: false
       - name: 长跑
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'
         run: cargo test --release --no-fail-fast $CRATES --lib --test all -- --ignored for_longer
@@ -167,14 +209,21 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h / | tail -1
       - uses: actions/checkout@v7
+      # 别的工具链卸掉（施工 CI-3）：同 check。
       - name: 装上 rust-toolchain.toml 钉住的工具链
-        run: rustup toolchain install
+        shell: bash
+        run: |
+          rustup toolchain install
+          pinned=$(rustup show active-toolchain | cut -d' ' -f1)
+          rustup toolchain list | cut -d' ' -f1 | while read -r other; do
+            [ "$other" = "$pinned" ] || rustup toolchain uninstall "$other" || true
+          done
+          rustup toolchain list
       - name: 取编译缓存
         id: cache
         uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
-          add-rust-environment-hash-key: false
       # 三家对比的测具（施工 V-7）本身要真模型、要别家的程序，发版前人跑；这里只跑它不用别家就能查的几条：表写得对、占位都认识、汇表。
       - name: 三家对比的测具
         if: needs.tested.outputs.already != 'true' || steps.cache.outputs.cache-hit != 'true'

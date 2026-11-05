@@ -162,23 +162,32 @@ fn check() -> ExitCode {
             true,
         ),
         // 不开可选软件包的核心（im 照它编）：`net` 下才有的代码别处还在用，只有关掉才编得出错来（施工 SU-5 下）。
-        cargo_step(
-            &cargo,
-            &root,
-            "clippy（核心不开可选包）",
-            &[
-                "clippy",
-                "-p",
-                "miyu-core",
-                "--no-default-features",
-                "--quiet",
-                "--",
-                "-D",
-                "warnings",
-            ],
-            &[],
-            true,
-        ),
+        // 设了 [`SKIP_BARE_CORE`] 的跳过（CI 的 Windows、macOS，施工 CI-3）；本机门禁照旧跑。
+        if skip_bare_core() {
+            println!("\n── clippy（核心不开可选包）：设了 {SKIP_BARE_CORE}，这台跳过 ──");
+            Outcome {
+                name: "clippy（核心不开可选包，这台跳过）",
+                problems: Vec::new(),
+            }
+        } else {
+            cargo_step(
+                &cargo,
+                &root,
+                "clippy（核心不开可选包）",
+                &[
+                    "clippy",
+                    "-p",
+                    "miyu-core",
+                    "--no-default-features",
+                    "--quiet",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+                &[],
+                true,
+            )
+        },
         // 注释里的链接断了、写法坏了，生成文档时才看得出来，所以警告也当错。
         // 私有的也要生成：只生成公开的，私有代码注释里的断链查不出来。
         cargo_step(
@@ -289,6 +298,14 @@ fn check() -> ExitCode {
     outcomes.push(tests);
     outcomes.push(temp);
     report(&outcomes)
+}
+
+/// 设成非空（例如 `1`）就跳过「clippy（核心不开可选包）」那一项，结果表里照样有一行、标「这台跳过」（施工 CI-3）。
+/// 它查的是特性组合，和平台关系不大：CI 上只在 ubuntu 跑，Windows、macOS 设这个省一遍编核心。本机门禁不设，照旧全跑。
+const SKIP_BARE_CORE: &str = "MIYU_CHECK_SKIP_BARE_CORE";
+
+fn skip_bare_core() -> bool {
+    std::env::var_os(SKIP_BARE_CORE).is_some_and(|value| !value.is_empty())
 }
 
 /// 几个会话共用一台机器时的编译锁（2026-10-22 项目主人定）：设了这个环境变量（锁文件的路径）的，编译那几步照
